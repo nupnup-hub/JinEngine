@@ -1,0 +1,13 @@
+#pragma once
+
+namespace JinEngine
+{
+	enum class J_DEFAULT_SHADER
+	{
+		DEFAULT_STANDARD_SHADER,
+		DEFAULT_SKY_SHADER,
+		DEFAULT_SHADOW_MAP_SHADER,
+		DEFAULT_DEBUG_LINE_SHADER,
+		COUNTER,
+	}; 
+}
