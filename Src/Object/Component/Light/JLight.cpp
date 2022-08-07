@@ -1,14 +1,13 @@
 #include"JLight.h"
 #include"JLightStruct.h" 
 #include"../JComponentFactory.h"
-#include"../../../Core/Guid/GuidCreator.h"
-#include"../../GameObject/JGameObject.h"
-#include"../../GameObject/GameObjectDirty.h" 
 #include"../../Component/Transform/JTransform.h"
-#include"../../../Graphic/JGraphic.h"
-#include"../../../Graphic/JGraphicTextureHandle.h" 
+#include"../../GameObject/JGameObject.h" 
+#include"../../Resource/Scene/JScene.h"
+
+#include"../../../Core/Guid/GuidCreator.h" 
 #include"../../../Graphic/FrameResource/JLightConstants.h" 
-#include"../../../Graphic/FrameResource/JShadowMapCalConstants.h" 
+#include"../../../Graphic/FrameResource/JShadowMapConstants.h" 
 #include<Windows.h>
 #include<fstream>
 
@@ -36,34 +35,6 @@ namespace JinEngine
 	{
 		return light->spotPower;
 	}
-	uint JLight::GetLightCBIndex()const noexcept
-	{
-		return lightCBIndex;
-	}
-	uint JLight::GetShadowMapWidth()const noexcept
-	{
-		return graphicTextureHandle->GetWidth();
-	}
-	uint JLight::GetShadowMapHeight()const noexcept
-	{
-		return graphicTextureHandle->GetHeight();
-	}
-	uint JLight::GetShadowSrvHeapIndex()const noexcept
-	{
-		return graphicTextureHandle->GetSrvHeapIndex();
-	}
-	uint JLight::GetShadowDsvHeapIndex()const noexcept
-	{
-		return graphicTextureHandle->GetDsvHeapIndex();
-	}
-	uint JLight::GetShadowVectorIndex()const noexcept
-	{
-		return graphicTextureHandle->GetResourceVectorIndex();
-	}
-	int JLight::GetShadowCBIndex()const noexcept
-	{
-		return shadowCBIndex;
-	}
 	J_COMPONENT_TYPE JLight::GetComponentType()const noexcept
 	{
 		return GetStaticComponentType();
@@ -75,150 +46,54 @@ namespace JinEngine
 	void JLight::SetStrength(const DirectX::XMFLOAT3& strength)noexcept
 	{
 		light->strength = strength;
-		gameObjectDirty->SetLightDirty();
+		SetFrameDirty();
 	}
 	void JLight::SetFalloffStart(const float falloffStart)noexcept
 	{
 		light->falloffStart = falloffStart;
-		gameObjectDirty->SetLightDirty();
+		SetFrameDirty();
 	}
 	void JLight::SetFalloffEnd(const float falloffEnd)noexcept
 	{
 		light->falloffEnd = falloffEnd;
-		gameObjectDirty->SetLightDirty();
+		SetFrameDirty();
 	}
 	void JLight::SetSpotPower(const float spotPower)noexcept
 	{
 		light->spotPower = spotPower;
-		gameObjectDirty->SetLightDirty();
-	}
-	void JLight::SetLightCBIndex(const uint index)noexcept
-	{
-		lightCBIndex = index;
-		SetDirty();
+		SetFrameDirty();
 	}
 	void JLight::SetShadow(const bool value)noexcept
 	{
-		if (onShadow && !value)
+		static auto IsShadow = [](JComponent& jcomp)
 		{
-			if (JGraphic::Instance().ResourceInterface()->EraseGraphicTextureResource(graphicTextureHandle))
+			return static_cast<JLight*>(&jcomp)->onShadow;
+		};
+
+		if (value)
+		{
+			if (IsActivated() && !onShadow)
 			{
-				GetOwnerInterface()->DeRegisterShadowLight(this);
+				CreateShadowMap();
+				GetOwner()->GetOwnerScene()->FrameInterface()->SetBackSideComponentDirty(*this, IsShadow);
+				SetFrameDirty();
 				onShadow = value;
 			}
-			graphicTextureHandle = nullptr;
-			SetDirty();
 		}
-		else if (!onShadow && value)
+		else
 		{
-			onShadow = value;
-			graphicTextureHandle = JGraphic::Instance().ResourceInterface()->CreateShadowMapTexture();
-			if (graphicTextureHandle != nullptr)
-				GetOwnerInterface()->RegisterShadowLight(this);
-			SetDirty();
+			if (onShadow)
+			{
+				EraseShadowMap();
+				GetOwner()->GetOwnerScene()->FrameInterface()->SetBackSideComponentDirty(*this, IsShadow);
+				SetFrameDirty();
+				onShadow = value;
+			}
 		}
-	}
-	void JLight::SetShadowCBIndex(const uint index)noexcept
-	{
-		shadowCBIndex = index;
-		SetDirty();
 	}
 	void JLight::SetLightType(const J_LIGHT_TYPE lightType)noexcept
 	{
 		JLight::lightType = lightType;
-	}
-	bool JLight::IsDirtied()const noexcept
-	{
-		return gameObjectDirty->GetLightDirty() > 0;
-	}
-	void JLight::SetDirty()noexcept
-	{
-		gameObjectDirty->SetLightDirty();
-	}
-	void JLight::OffDirty()noexcept
-	{
-		gameObjectDirty->OffLightDirty();
-	}
-	void JLight::MinusDirty()noexcept
-	{
-		gameObjectDirty->LightUpdate();
-	}
-	void JLight::StuffLightContents(Graphic::JLightConstants& constant)noexcept
-	{
-		switch (lightType)
-		{
-		case JinEngine::J_LIGHT_TYPE::DIRECTIONAL:
-			StuffDirectionalLight(constant);
-			break;
-		case JinEngine::J_LIGHT_TYPE::POINT:
-			StuffPointLight(constant);
-			break;
-		case JinEngine::J_LIGHT_TYPE::SPOT:
-			StuffSpotLight(constant);
-			break;
-		default:
-			break;
-		}
-	}
-	void JLight::StuffShadowCalContents(Graphic::JShadowMapCalConstants& constant)noexcept
-	{
-		const XMFLOAT3 rotf = GetOwner()->GetTransform()->GetRotation();
-		const XMVECTOR rotv = XMLoadFloat3(&rotf);
-		const XMVECTOR qV = XMQuaternionRotationRollPitchYawFromVector(XMVectorScale(rotv, JMathHelper::DegToRad)); 
-		const XMVECTOR initDir = XMVectorSet(0, -1, 0, 1);
-		const XMVECTOR lightDirV = XMVector3Normalize(XMVector3Rotate(initDir, qV));
-
-		const XMVECTOR targetPosV = XMVectorSet(0, 0, 0, 1);
-		const XMVECTOR lightPosV = XMVectorScale(lightDirV, -50);
-
-		const XMVECTOR lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-		const XMMATRIX lightView = XMMatrixLookAtLH(lightPosV, targetPosV, lightUp);
-
-		XMFLOAT3 sphereCenterLS;
-		XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPosV, lightView));
-
-		float l = sphereCenterLS.x - 25;
-		float b = sphereCenterLS.y - 25;
-		float n = sphereCenterLS.z - 25;
-		float r = sphereCenterLS.x + 25;
-		float t = sphereCenterLS.y + 25;
-		float f = sphereCenterLS.z + 25;
-
-		const XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
-		//const XMMATRIX lightProj_P = XMMatrixPerspectiveOffCenterLH(l, r, b, t, n, f);
-		// JTransform NDC space [-1,+1]^2 to texture space [0,1]^2
-		const XMMATRIX T(
-			0.5f, 0.0f, 0.0f, 0.0f,
-			0.0f, -0.5f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			0.5f, 0.5f, 0.0f, 1.0f);
-
-		const XMMATRIX S = lightView * lightProj * T;
-		XMStoreFloat4x4(&shadowTransform, S);
-		//constant.s_directionalLight.shadow. 
-
-		const XMMATRIX viewProj = XMMatrixMultiply(lightView, lightProj);
-
-		XMVECTOR viewVec = XMMatrixDeterminant(lightView);
-		XMVECTOR projVec = XMMatrixDeterminant(lightProj);
-		XMVECTOR viewProjVec = XMMatrixDeterminant(viewProj);
-
-		const XMMATRIX invView = XMMatrixInverse(&viewVec, lightView);
-		const XMMATRIX invProj = XMMatrixInverse(&projVec, lightProj);
-		const XMMATRIX invViewProj = XMMatrixInverse(&viewProjVec, viewProj);
-
-		XMStoreFloat4x4(&constant.view, XMMatrixTranspose(lightView));
-		XMStoreFloat4x4(&constant.invView, XMMatrixTranspose(invView));
-		XMStoreFloat4x4(&constant.proj, XMMatrixTranspose(lightProj));
-		XMStoreFloat4x4(&constant.invViewProj, XMMatrixTranspose(invProj));
-		XMStoreFloat4x4(&constant.viewProj, XMMatrixTranspose(viewProj));
-		XMStoreFloat4x4(&constant.invProj, XMMatrixTranspose(invViewProj));
-		XMStoreFloat3(&constant.eyePosW, lightPosV);
-
-		constant.renderTargetSize = XMFLOAT2((float)GetShadowMapWidth(), (float)GetShadowMapHeight());
-		constant.invRenderTargetSize = XMFLOAT2(1.0f / (float)GetShadowMapWidth(), 1.0f / (float)GetShadowMapHeight());
-		constant.nearZ = n;
-		constant.farZ = f;
 	}
 	bool JLight::IsAvailableOverlap()const noexcept
 	{
@@ -234,15 +109,28 @@ namespace JinEngine
 	void JLight::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
-		RegisterComponent<JLight>(this);
-		SetDirty();
+		RegisterComponent();
+		if (onShadow)
+			CreateShadowMap();
+		SetFrameDirty();
 	}
 	void JLight::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
-		JGraphic::Instance().ResourceInterface()->EraseGraphicTextureResource(graphicTextureHandle);
-		DeRegisterComponent<JLight>(this);
-		OffDirty();
+		DeRegisterComponent();
+		if (onShadow)
+			EraseShadowMap();
+		OffFrameDirty();
+	}
+	void JLight::CreateShadowMap()noexcept
+	{
+		CreateShadowMapTexture();
+		AddDrawRequest(GetOwner()->GetOwnerScene(), this);
+	}
+	void JLight::EraseShadowMap()noexcept
+	{
+		PopDrawRequest(GetOwner()->GetOwnerScene(), this); 
+		ClearTxtHandle();
 	}
 	void JLight::StuffDirectionalLight(Graphic::JLightConstants& constant)noexcept
 	{
@@ -255,7 +143,7 @@ namespace JinEngine
 		{
 			XMStoreFloat3(&constant.s_directionalLight[constant.s_directionalLightMax].dLight.direction, dir);
 			constant.s_directionalLight[constant.s_directionalLightMax].dLight.strength = light->strength;
-			constant.s_directionalLight[constant.s_directionalLightMax].shadow.shadowMapIndex = GetShadowVectorIndex();
+			constant.s_directionalLight[constant.s_directionalLightMax].shadow.shadowMapIndex = GetTxtVectorIndex();
 			XMStoreFloat4x4(&constant.s_directionalLight[constant.s_directionalLightMax].shadow.shadowTransform, 
 				XMMatrixTranspose(XMLoadFloat4x4(&shadowTransform)));
 			++constant.s_directionalLightMax;
@@ -275,7 +163,7 @@ namespace JinEngine
 			constant.s_pointLight[constant.s_pointLightMax].pLight.falloffStart = light->falloffStart;
 			constant.s_pointLight[constant.s_pointLightMax].pLight.position = GetOwner()->GetTransform()->GetPosition();
 			constant.s_pointLight[constant.s_pointLightMax].pLight.falloffEnd = light->falloffEnd;
-			constant.s_pointLight[constant.s_pointLightMax].shadow.shadowMapIndex = GetShadowVectorIndex();
+			constant.s_pointLight[constant.s_pointLightMax].shadow.shadowMapIndex = GetTxtVectorIndex();
 			XMStoreFloat4x4(&constant.s_pointLight[constant.s_pointLightMax].shadow.shadowTransform,
 				XMMatrixTranspose(XMLoadFloat4x4(&shadowTransform))); 
 			++constant.s_pointLightMax;
@@ -304,7 +192,7 @@ namespace JinEngine
 			XMStoreFloat3(&constant.s_spotLight[constant.s_spotLightMax].sLight.direction, dir);
 			constant.s_spotLight[constant.s_spotLightMax].sLight.falloffEnd = light->falloffEnd;
 			constant.s_spotLight[constant.s_spotLightMax].sLight.position = GetOwner()->GetTransform()->GetPosition();
-			constant.s_spotLight[constant.s_spotLightMax].shadow.shadowMapIndex = GetShadowVectorIndex();
+			constant.s_spotLight[constant.s_spotLightMax].shadow.shadowMapIndex = GetTxtVectorIndex();
 			XMStoreFloat4x4(&constant.s_spotLight[constant.s_spotLightMax].shadow.shadowTransform,
 				XMMatrixTranspose(XMLoadFloat4x4(&shadowTransform)));
 			++constant.s_spotLightMax;
@@ -318,6 +206,96 @@ namespace JinEngine
 			constant.spotLight[constant.spotLightMax].position = GetOwner()->GetTransform()->GetPosition();
 			++constant.spotLightMax;
 		}
+	}
+	bool JLight::UpdateFrame(Graphic::JLightConstants& lightConstant, Graphic::JShadowMapConstants& shadowConstant)
+	{
+		if (IsFrameDirted())
+		{
+			switch (lightType)
+			{
+			case JinEngine::J_LIGHT_TYPE::DIRECTIONAL:
+				StuffDirectionalLight(lightConstant);
+				break;
+			case JinEngine::J_LIGHT_TYPE::POINT:
+				StuffPointLight(lightConstant);
+				break;
+			case JinEngine::J_LIGHT_TYPE::SPOT:
+				StuffSpotLight(lightConstant);
+				break;
+			default:
+				break;
+			}
+
+			if (onShadow)
+			{
+				const XMFLOAT3 rotf = GetOwner()->GetTransform()->GetRotation();
+				const XMVECTOR rotv = XMLoadFloat3(&rotf);
+				const XMVECTOR qV = XMQuaternionRotationRollPitchYawFromVector(XMVectorScale(rotv, JMathHelper::DegToRad));
+				const XMVECTOR initDir = XMVectorSet(0, -1, 0, 1);
+				const XMVECTOR lightDirV = XMVector3Normalize(XMVector3Rotate(initDir, qV));
+
+				const XMVECTOR targetPosV = XMVectorSet(0, 0, 0, 1);
+				const XMVECTOR lightPosV = XMVectorScale(lightDirV, -50);
+
+				const XMVECTOR lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+				const XMMATRIX lightView = XMMatrixLookAtLH(lightPosV, targetPosV, lightUp);
+
+				XMFLOAT3 sphereCenterLS;
+				XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPosV, lightView));
+
+				float l = sphereCenterLS.x - 25;
+				float b = sphereCenterLS.y - 25;
+				float n = sphereCenterLS.z - 25;
+				float r = sphereCenterLS.x + 25;
+				float t = sphereCenterLS.y + 25;
+				float f = sphereCenterLS.z + 25;
+
+				const XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
+				//const XMMATRIX lightProj_P = XMMatrixPerspectiveOffCenterLH(l, r, b, t, n, f);
+				// JTransform NDC space [-1,+1]^2 to texture space [0,1]^2
+				const XMMATRIX T(
+					0.5f, 0.0f, 0.0f, 0.0f,
+					0.0f, -0.5f, 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f, 0.0f,
+					0.5f, 0.5f, 0.0f, 1.0f);
+
+				const XMMATRIX S = lightView * lightProj * T;
+				XMStoreFloat4x4(&shadowTransform, S);
+				//constant.s_directionalLight.shadow. 
+
+				const XMMATRIX viewProj = XMMatrixMultiply(lightView, lightProj);
+
+				XMVECTOR viewVec = XMMatrixDeterminant(lightView);
+				XMVECTOR projVec = XMMatrixDeterminant(lightProj);
+				XMVECTOR viewProjVec = XMMatrixDeterminant(viewProj);
+
+				const XMMATRIX invView = XMMatrixInverse(&viewVec, lightView);
+				const XMMATRIX invProj = XMMatrixInverse(&projVec, lightProj);
+				const XMMATRIX invViewProj = XMMatrixInverse(&viewProjVec, viewProj);
+
+				XMStoreFloat4x4(&shadowConstant.view, XMMatrixTranspose(lightView));
+				XMStoreFloat4x4(&shadowConstant.invView, XMMatrixTranspose(invView));
+				XMStoreFloat4x4(&shadowConstant.proj, XMMatrixTranspose(lightProj));
+				XMStoreFloat4x4(&shadowConstant.invViewProj, XMMatrixTranspose(invProj));
+				XMStoreFloat4x4(&shadowConstant.viewProj, XMMatrixTranspose(viewProj));
+				XMStoreFloat4x4(&shadowConstant.invProj, XMMatrixTranspose(invViewProj));
+				XMStoreFloat3(&shadowConstant.eyePosW, lightPosV);
+
+				shadowConstant.renderTargetSize = XMFLOAT2((float)GetTxtWidth(), (float)GetTxtHeight());
+				shadowConstant.invRenderTargetSize = XMFLOAT2(1.0f / (float)GetTxtWidth(), 1.0f / (float)GetTxtHeight());
+				shadowConstant.nearZ = n;
+				shadowConstant.farZ = f;
+			}
+
+			MinusFrameDirty();
+			return true;
+		}
+		else
+			return false;
+	}
+	void JLight::SetFrameDirty()noexcept
+	{
+		JFrameInterface::SetFrameDirty(); 
 	}
 	Core::J_FILE_IO_RESULT JLight::CallStoreComponent(std::wofstream& stream)
 	{
@@ -363,8 +341,7 @@ namespace JinEngine
  
 		stream >> newLightComponent->light->strength.x >> newLightComponent->light->strength.y >> newLightComponent->light->strength.z >>
 			newLightComponent->light->falloffStart >> newLightComponent->light->falloffEnd >> newLightComponent->light->spotPower;
-
-		newLightComponent->gameObjectDirty->SetLightDirty(); 
+		
 		return newLightComponent;
 	}
 	void JLight::RegisterFunc()
@@ -399,11 +376,25 @@ namespace JinEngine
 			return newLit;
 		};
 		JCFI<JLight>::Regist(defaultC, initC, loadC, copyC);
+
+		static GetTypeNameCallable getTypeNameCallable{ &JLight::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JLight::StaticTypeInfo };
+
+		static auto setFrameLam = [](JComponent& component)
+		{
+			static_cast<JLight*>(&component)->SetFrameDirty();
+		};
+		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
+
+		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable };
+		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
+
+		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}
 	JLight::JLight(const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)
-		:JComponent(TypeName(), guid, objFlag, owner)
-	{
-		gameObjectDirty = owner->GetGameObjectDirty();
+		:JLightInterface(TypeName(), guid, objFlag, owner)
+	{ 
 		lightType = J_LIGHT_TYPE::DIRECTIONAL;
 		light = std::make_unique<JLightStruct>();
 	}

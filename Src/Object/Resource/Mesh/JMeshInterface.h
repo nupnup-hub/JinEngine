@@ -1,5 +1,6 @@
 #pragma once 
 #include"../JResourceObject.h"
+#include"../JClearableInterface.h"
 #include<DirectXCollision.h>
 
 namespace JinEngine
@@ -7,7 +8,7 @@ namespace JinEngine
 	struct JStaticMeshData;
 	struct JSkinnedMeshData;
 
-	class JMeshInterface : public JResourceObject
+	class JMeshInterface : public JResourceObject, public JClearableInterface
 	{ 
 	private:
 		friend class JModel;

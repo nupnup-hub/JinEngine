@@ -7,8 +7,14 @@
 
 namespace JinEngine
 {
+	class AvatarEditor;
+	class JSkeletonAsset;
+
 	class JAvatar
 	{
+	private:
+		friend class AvatarEditor;
+		friend class JSkeletonAsset;
 	public:
 		struct JAvatarJointReference
 		{

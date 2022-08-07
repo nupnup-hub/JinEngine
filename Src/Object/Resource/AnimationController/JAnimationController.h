@@ -1,6 +1,6 @@
 #pragma once 
 #include<memory>
-#include"../JResourceObject.h" 
+#include"JAnimationControllerInterface.h" 
 #include"../../../Core/FSM/JFSMconditionValueType.h" 
 #include"../../../Core/FSM/AnimationFSM/JAnimationShareData.h" 
 
@@ -23,7 +23,10 @@ namespace JinEngine
 		struct JAnimationConstants;
 	}
 
-	class JAnimationController : public JResourceObject
+	//수정필요 & 추가필요
+	//Load & store
+	//Clear& stuff
+	class JAnimationController : public JAnimationControllerInterface
 	{
 		REGISTER_CLASS(JAnimationController)
 	public:
@@ -68,6 +71,10 @@ namespace JinEngine
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
+	private:
+		void StuffResource() final;
+		void ClearResource() final;
+		bool IsValidResource()const noexcept final;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JAnimationController* animationCont);

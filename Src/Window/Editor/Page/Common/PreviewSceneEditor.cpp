@@ -24,7 +24,7 @@ namespace JinEngine
 	{
 		if (Editor::Activate(editorUtility))
 		{
-			previewScene->GetPreviewCamera(cameraIndex)->SetCameraState(J_CAMERA_STATE::RENDER);
+			//previewScene->GetPreviewCamera(cameraIndex)->SetCameraState(J_CAMERA_STATE::RENDER);
 			return true;
 		}
 		else
@@ -34,7 +34,7 @@ namespace JinEngine
 	{
 		if (Editor::DeActivate(editorUtility))
 		{
-			previewScene->GetPreviewCamera(cameraIndex)->SetCameraState(J_CAMERA_STATE::IDEL);
+			//previewScene->GetPreviewCamera(cameraIndex)->SetCameraState(J_CAMERA_STATE::IDEL);
 			return true;
 		}
 		else
@@ -45,13 +45,13 @@ namespace JinEngine
 		EditorWindow::UpdateWindow(editorUtility);
 		if (IsFocus())
 		{
-			if (ImGui::IsMouseHoveringRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize()))
-				editorCamCtrl->MouseMove(previewScene->GetPreviewCamera(cameraIndex), ImGui::GetMousePos().x, ImGui::GetMousePos().y);
-			editorCamCtrl->KeyboardInput(previewScene->GetPreviewCamera(cameraIndex));
+			//if (ImGui::IsMouseHoveringRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize()))
+		//		editorCamCtrl->MouseMove(previewScene->GetPreviewCamera(cameraIndex), ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+		//	editorCamCtrl->KeyboardInput(previewScene->GetPreviewCamera(cameraIndex));
 		}
 
-		ImVec2 windowSize = ImGui::GetWindowSize();
-		ImGui::Image((ImTextureID)JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(previewScene->GetPreviewCamera(cameraIndex)->GetRsSrvHeapIndex()).ptr,
-			ImVec2(windowSize.x, windowSize.y));
+		//ImVec2 windowSize = ImGui::GetWindowSize();
+		//ImGui::Image((ImTextureID)JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(previewScene->GetPreviewCamera(cameraIndex)->GetRsSrvHeapIndex()).ptr,
+		//	ImVec2(windowSize.x, windowSize.y));
 	}
 }

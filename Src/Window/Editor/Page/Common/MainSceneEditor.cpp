@@ -36,7 +36,7 @@ namespace JinEngine
 			mainScene = JResourceManager::Instance().GetMainScene();
 			camObj = JGFU::CreateCamera(*mainScene->GetRootGameObject(), flag, false, "MainSceneEditorCamera");
 			editorCamera = camObj->GetComponent<JCamera>();
-			editorCamera->SetCameraState(J_CAMERA_STATE::RENDER);
+			//editorCamera->SetCameraState(J_CAMERA_STATE::RENDER);
 			editorCamera->GetTransform()->SetPosition(position); 
 			editorCamera->GetTransform()->SetRotation(rotation);
 			frustumObj = JGFU::CreateDebugGameObject(*mainScene->GetRootGameObject(), flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW);
@@ -100,8 +100,8 @@ namespace JinEngine
 				DrawGameObjectWidget(editorUtility);
 		}
 		ImVec2 windowSize = ImGui::GetWindowSize();	  
-		ImGui::Image((ImTextureID)JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(editorCamera->GetRsSrvHeapIndex()).ptr,
-			ImVec2(windowSize.x, windowSize.y));
+		//ImGui::Image((ImTextureID)JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(editorCamera->GetRsSrvHeapIndex()).ptr,
+		//	ImVec2(windowSize.x, windowSize.y));
 	}
 	void MainSceneEditor::DrawGameObjectWidget(EditorUtility* editorUtility)
 	{

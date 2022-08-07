@@ -1,59 +1,75 @@
 #include"JGraphicDrawList.h"
+#include"JGraphicTextureHandle.h"
 #include"../Object/Resource/Scene/JScene.h" 
+#include"../Object/Component/JComponent.h"
+#include"../Object/Resource/JResourceManager.h"
 
 namespace JinEngine
 {
 	namespace Graphic
 	{
-		std::vector<std::unique_ptr<JGraphicDrawTarget>> JGraphicDrawList::drawList;
-
-		JGraphicDrawTargetListener::JGraphicDrawTargetListener(const J_GRAPHIC_DRAW_FREQUENCY drawFrequency)
-			:drawFrequency(drawFrequency)
+		JShadowMapDrawRequestor::JShadowMapDrawRequestor(JComponent* jLight, JGraphicTextureHandle* handle)
+			:jLight(jLight), handle(handle)
 		{}
-		JGraphicDrawTargetListener::~JGraphicDrawTargetListener() {}
-
-		JGraphicDrawTarget::JGraphicDrawTarget(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY drawFrequency, const bool isMainScene)
-			: scene(scene),
-			sceneFrameDirty(scene),
-			transformCount(scene->GetGameObjectCount()),
-			renderItemCount(scene->GetReferenceCount()),
-			animatorCount(scene->GetAnimatorCount()),
-			cameraCount(scene->GetCameraCount()),
-			lightCount(scene->GetLightCount()),
-			shadowCount(scene->GetShadowCount()),
-			isMainScene(isMainScene)
+		JShadowMapDrawRequestor::~JShadowMapDrawRequestor()
 		{
-			listenerInfo.push_back(std::make_unique<JGraphicDrawTargetListener>(drawFrequency));
+			jLight = nullptr;
+			handle = nullptr;
 		}
+
+		JSceneDrawRequestor::JSceneDrawRequestor(JComponent* jSjCamcene, JGraphicTextureHandle* handle)
+			:jCamera(jCamera), handle(handle)
+		{}
+		JSceneDrawRequestor::~JSceneDrawRequestor()
+		{
+			jCamera = nullptr;
+			handle = nullptr;
+		}
+
+		namespace
+		{
+			static std::deque<std::unique_ptr<JGraphicDrawTarget>> drawList;
+
+			int GetIndex(JScene* scene)noexcept
+			{
+				const size_t sceneGuid = scene->GetGuid();
+				const int drawListCount = (int)drawList.size();
+				for (int i = 0; i < drawListCount; ++i)
+				{
+					if (drawList[i]->scene->GetGuid() == sceneGuid)
+						return i;
+				}
+				return -1;
+			}
+		}
+
+		JGraphicDrawTarget::JGraphicDrawTarget(JScene* scene, const bool isMainScene)
+			: scene(scene), isMainScene(isMainScene)
+		{ }
 		JGraphicDrawTarget::~JGraphicDrawTarget() {}
 
-		bool JGraphicDrawList::AddDrawList(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY drawFrequency, const bool isMainScene)noexcept
+		bool JGraphicDrawList::AddDrawList(JScene* scene)noexcept
 		{
 			if (scene == nullptr)
 				return false;
 
 			if (HasDrawList(scene))
-				return AddDrawListListener(scene, drawFrequency);
+				return false;
 
-			std::unique_ptr<JGraphicDrawTarget> newTarget = std::make_unique<JGraphicDrawTarget>(scene, drawFrequency, isMainScene);
+			bool isMainScene = JResourceManager::Instance().GetMainScene()->GetGuid() == scene->GetGuid();
+			std::unique_ptr<JGraphicDrawTarget> newTarget = std::make_unique<JGraphicDrawTarget>(scene, isMainScene);
 			if (isMainScene)
 			{
-				newTarget->sceneFrameDirty->SetAllComponentDirty();
-				drawList.emplace_back(std::move(newTarget));
+				newTarget->scene->FrameInterface()->SetAllComponentDirty();
+				drawList.push_front(std::move(newTarget));
+				const uint drawListCount = (uint)drawList.size();
+				for (uint i = 1; i < drawListCount; ++i)
+					drawList[i]->scene->FrameInterface()->SetAllComponentDirty();
 			}
 			else
 			{
-				const uint drawListCount = (uint)drawList.size();
-				for (uint i = 0; i < drawListCount; ++i)
-				{
-					if (drawList[i]->isMainScene)
-					{
-						newTarget->sceneFrameDirty->SetAllComponentDirty();
-						drawList.insert(drawList.begin() + i, std::move(newTarget));
-						UpdateDrawList(i);
-						break;
-					}
-				}
+				newTarget->scene->FrameInterface()->SetAllComponentDirty();
+				drawList.push_back(std::move(newTarget));
 			}
 
 			return true;
@@ -68,12 +84,11 @@ namespace JinEngine
 			if (index == -1)
 				return false;
 
-			drawList[index]->listenerInfo.pop_back();
-			if (drawList[index]->listenerInfo.size() == 0)
-			{
-				drawList.erase(drawList.begin() + index);
-				UpdateDrawList(index);
-			}
+			drawList.erase(drawList.begin() + index);
+			const uint drawListCount = (uint)drawList.size();
+			for (uint i = index; i < drawListCount; ++i)
+				drawList[i]->scene->FrameInterface()->SetAllComponentDirty();
+
 			return true;
 		}
 		bool JGraphicDrawList::HasDrawList(JScene* scene)noexcept
@@ -87,7 +102,7 @@ namespace JinEngine
 			}
 			return false;
 		}
-		void JGraphicDrawList::UpdateScene(JScene* scene)noexcept
+		void JGraphicDrawList::UpdateScene(JScene* scene, const J_COMPONENT_TYPE cType)noexcept
 		{
 			if (scene == nullptr)
 				return;
@@ -98,67 +113,97 @@ namespace JinEngine
 				return;
 
 			const uint drawListCount = (uint)drawList.size();
-			if (scene->GetRenderItemCount() != drawList[index]->renderItemCount)
+			for (uint i = index + 1; i < drawListCount; ++i)
+				drawList[i]->scene->FrameInterface()->SetComponentDirty(cType);
+		}
+		void JGraphicDrawList::AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicTextureHandle* handle)noexcept
+		{
+			if (scene == nullptr || jLight == nullptr)
+				return;
+
+			int index = GetIndex(scene);
+
+			if (index == -1)
+				return;
+
+			drawList[index]->shadowRequestor.emplace_back(std::make_unique<JShadowMapDrawRequestor>(jLight, handle));
+			drawList[index]->hasUpdate = true;
+		}
+		void JGraphicDrawList::AddDrawSceneRequest(JScene* scene, JComponent* jCamera, JGraphicTextureHandle* handle)noexcept
+		{
+			if (scene == nullptr || jCamera == nullptr)
+				return;
+
+			int index = GetIndex(scene);
+
+			if (index == -1)
+				return;
+
+			drawList[index]->sceneRequestor.emplace_back(std::make_unique<JSceneDrawRequestor>(jCamera, handle));
+			drawList[index]->hasUpdate = true;
+		}
+		void JGraphicDrawList::PopDrawRequest(JScene* scene, JComponent* jComp)noexcept
+		{
+			if (scene == nullptr || jComp == nullptr)
+				return;
+
+			int index = GetIndex(scene);
+
+			if (index == -1)
+				return;
+
+			if (jComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
 			{
-				for (uint i = index + 1; i < drawListCount; ++i)
+				const uint reqCount = (uint)drawList[index]->sceneRequestor.size();
+				for (uint i = 0; i < reqCount; ++i)
 				{
-					drawList[i]->sceneFrameDirty->SetAllTransformDirty();
-					drawList[i]->sceneFrameDirty->SetAllRenderItemDirty();
+					if (drawList[index]->sceneRequestor[i]->jCamera->GetGuid() == jComp->GetGuid())
+					{
+						drawList[index]->sceneRequestor.erase(drawList[index]->sceneRequestor.begin() + i);
+						drawList[index]->hasUpdate = true;
+						break;
+					}
 				}
-				drawList[index]->transformCount = scene->GetRenderItemCount();
-				drawList[index]->renderItemCount = scene->GetRenderItemCount();
 			}
-			if (scene->GetAnimatorCount() != drawList[index]->animatorCount)
+			else if (jComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
 			{
-				for (uint i = index + 1; i < drawListCount; ++i)
-					drawList[i]->sceneFrameDirty->SetAllAnimatorDirty();
-				drawList[index]->animatorCount = scene->GetAnimatorCount();
+				const uint reqCount = (uint)drawList[index]->shadowRequestor.size();
+				for (uint i = 0; i < reqCount; ++i)
+				{
+					if (drawList[index]->shadowRequestor[i]->jLight->GetGuid() == jComp->GetGuid())
+					{
+						drawList[index]->shadowRequestor.erase(drawList[index]->shadowRequestor.begin() + i);
+						drawList[index]->hasUpdate = true;
+						break;
+					}
+				}
 			}
-			if (scene->GetCameraCount() != drawList[index]->cameraCount)
+
+			if (drawList[index]->sceneRequestor.size() == 0)
 			{
-				for (uint i = index + 1; i < drawListCount; ++i)
-					drawList[i]->sceneFrameDirty->SetAllCameraDirty();
-				drawList[index]->cameraCount = scene->GetCameraCount();
-			}
-			if (scene->GetLightCount() != drawList[index]->lightCount)
-			{
-				for (uint i = index + 1; i < drawListCount; ++i)
-					drawList[i]->sceneFrameDirty->SetAllLightDirty();
-				drawList[index]->lightCount = scene->GetLightCount();
-			}
-			if (scene->GetShadowCount() != drawList[index]->shadowCount)
-			{
-				for (uint i = index + 1; i < drawListCount; ++i)
-					drawList[i]->sceneFrameDirty->SetAllLightDirty();
-				drawList[index]->shadowCount = scene->GetShadowCount();
+				JScene* scene = drawList[index]->scene;
+				scene->DeActivate();
 			}
 		}
-		bool JGraphicDrawList::AddDrawListListener(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY drawFrequency)noexcept
+		bool JGraphicDrawList::HasRequestor(JScene* scene)noexcept
 		{
+			if (scene == nullptr)
+				return false;
+
 			int index = GetIndex(scene);
 
 			if (index == -1)
 				return false;
 
-			drawList[index]->listenerInfo.push_back(std::make_unique<JGraphicDrawTargetListener>(drawFrequency));
-			return true;
+			return drawList[index]->sceneRequestor.size() + drawList[index]->shadowRequestor.size() > 0;
 		}
-		int JGraphicDrawList::GetIndex(JScene* scene)noexcept
+		uint JGraphicDrawList::GetListCount()noexcept
 		{
-			const size_t sceneGuid = scene->GetGuid();
-			const int drawListCount = (int)drawList.size();
-			for (int i = 0; i < drawListCount; ++i)
-			{
-				if (drawList[i]->scene->GetGuid() == sceneGuid)
-					return i;
-			}
-			return -1;
+			return (uint)drawList.size();
 		}
-		void JGraphicDrawList::UpdateDrawList(int index)noexcept
+		JGraphicDrawTarget* JGraphicDrawList::GetDrawScene(const uint index)noexcept
 		{
-			const uint drawListCount = (uint)drawList.size();
-			for (uint i = index; i < drawListCount; ++i)
-				drawList[i]->sceneFrameDirty->SetAllComponentDirty();
+			return drawList[index].get();
 		}
 	}
 }

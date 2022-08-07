@@ -9,5 +9,12 @@ namespace JinEngine
 		ENGINE_DEFIENED_LIGHT,
 		ENGINE_DEFIENED_RENDERITEM,
 		ENGINE_DEFIENED_TRANSFORM, 
+		COUNT,
 	};	 
+
+	enum class COMPONET_ALIGN_TYPE : short
+	{
+		NONE = 0,
+		NAME,
+	};
 }

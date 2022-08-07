@@ -60,19 +60,19 @@ namespace JinEngine
 	JGameObject* JGameObjectFactoryImpl::Create(JGameObject& parent)
 	{
 		JGameObject* res = JGF::Instance().Create(JGameObject::TypeName(), parent);
-		(*addStorage)(res->GetOwnerScene(), &*res);
+		(*addStorage)(res->GetOwnerScene(), *res);
 		return res;
 	}
 	JGameObject* JGameObjectFactoryImpl::Create(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JGameObject& parent)
 	{
 		JGameObject* res = JGF::Instance().Create(JGameObject::TypeName(), name, guid, flag, parent);
-		(*addStorage)(res->GetOwnerScene(), &*res);
+		(*addStorage)(res->GetOwnerScene(), *res);
 		return res;
 	}
 	JGameObject* JGameObjectFactoryImpl::CreateRoot(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JScene& ownerScene)
 	{
 		JGameObject* res = JGF::Instance().CreateRoot(JGameObject::TypeName(), name, guid, flag, ownerScene);
-		(*addStorage)(res->GetOwnerScene(), &*res);
+		(*addStorage)(res->GetOwnerScene(), *res);
 		return res;
 	}
 	JGameObject* JGameObjectFactoryImpl::Copy(JGameObject& ori, JGameObject& tarParent)
@@ -82,13 +82,13 @@ namespace JinEngine
 			return nullptr;
 
 		JGameObject* res = JGF::Instance().Copy(JGameObject::TypeName(), ori, tarParent);
-		(*addStorage)(res->GetOwnerScene(), &*res);
+		(*addStorage)(res->GetOwnerScene(), *res);
 		return res;
 	}
 	JGameObject* JGameObjectFactoryImpl::Create(std::wifstream& stream, JGameObject* parent)
 	{
 		JGameObject* res = JGF::Instance().Create(JGameObject::TypeName(), stream, *parent);
-		(*addStorage)(res->GetOwnerScene(), &*res);
+		(*addStorage)(res->GetOwnerScene(), *res);
 		return res;
 	}
 	void JGameObjectFactoryImpl::Regist(DefaultPtr defaultPtr, InitPtr initPtr, LoadPtr loadPtr, CopytPtr copytPtr)

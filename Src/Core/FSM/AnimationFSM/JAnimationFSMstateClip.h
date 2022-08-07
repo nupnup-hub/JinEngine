@@ -1,6 +1,7 @@
 #pragma once 
 #include"JAnimationFSMstate.h"
 #include"JAnimationTime.h"
+#include"../../../Object/Resource/JResourceUserInterface.h"
 
 namespace JinEngine
 {
@@ -8,7 +9,7 @@ namespace JinEngine
 	namespace Core
 	{
 		struct JAnimationTime;
-		class JAnimationFSMstateClip : public JAnimationFSMstate
+		class JAnimationFSMstateClip : public JAnimationFSMstate, public JResourceUserInterface
 		{
 		private:
 			JAnimationClip* clip;

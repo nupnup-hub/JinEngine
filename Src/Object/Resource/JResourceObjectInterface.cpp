@@ -1,67 +1,130 @@
 #include"JResourceObjectInterface.h" 
+#include"JResourceObject.h"
 #include"../../Core/Singleton/JSingletonHolder.h"
 #include<algorithm> 
 
 namespace JinEngine
 {
 	//For enum type call virtual func 
-	JRI::RTypeHint::RTypeHint(const J_RESOURCE_TYPE thisType, const std::vector<J_RESOURCE_TYPE>& hasType, bool isGraphicResource)
+	JRI::RTypeHint::RTypeHint(const J_RESOURCE_TYPE thisType,
+		const std::vector<J_RESOURCE_TYPE>& hasType,
+		bool hasGraphicResource, 
+		bool isFrameResource,
+		bool isGraphicBuffResource)
 		:thisType(thisType),
 		hasType(hasType),
-		isGraphicResource(isGraphicResource)
+		hasGraphicResource(hasGraphicResource),
+		isFrameResource(isFrameResource),
+		isGraphicBuffResource(isGraphicBuffResource)
 	{}
 	JRI::RTypeHint::~RTypeHint() {}
 
-	JRI::RTypeUtil::RTypeUtil(JRI::GetTypeNameCallable& getTypeName,
+	JRI::RTypeCommonFunc::RTypeCommonFunc(JRI::GetTypeNameCallable& getTypeName,
 		JRI::GetAvailableFormatCallable& getAvailableFormat,
 		JRI::GetFormatIndexCallable& getFormatIndex)
 		: getTypeName(&getTypeName),
 		getAvailableFormat(&getAvailableFormat),
 		getFormatIndex(&getFormatIndex)
 	{  }
-	JRI::RTypeUtil::~RTypeUtil()
+	JRI::RTypeCommonFunc::~RTypeCommonFunc()
 	{
 		getTypeName = nullptr;
 		getAvailableFormat = nullptr;
 		getFormatIndex = nullptr;
 	}
-	std::string JRI::RTypeUtil::CallGetTypeName()
+	std::string JRI::RTypeCommonFunc::CallGetTypeName()
 	{
 		return (*getTypeName)(nullptr);
 	}
-	std::vector<std::string> JRI::RTypeUtil::CallGetAvailableFormat()
+	std::vector<std::string> JRI::RTypeCommonFunc::CallGetAvailableFormat()
 	{
 		return (*getAvailableFormat)(nullptr);
 	}
-	int JRI::RTypeUtil::CallFormatIndex(const std::string& format)
+	int JRI::RTypeCommonFunc::CallFormatIndex(const std::string& format)
 	{
 		return (*getFormatIndex)(nullptr, format);
 	}
 
-	class RTypeInfoImpl
+	JRI::RTypeInterfaceFunc::RTypeInterfaceFunc(SetFrameDirtyCallable* setFrameDirtyCallable, SetBuffIndexCallable* setBuffIndexCallable)
+		:setFrameDirtyCallable(setFrameDirtyCallable), setBuffIndexCallable(setBuffIndexCallable)
+	{
+
+	}
+	JRI::RTypeInterfaceFunc::~RTypeInterfaceFunc()
+	{
+		setFrameDirtyCallable = nullptr;
+	}
+	void JRI::RTypeInterfaceFunc::CallSetFrameDirty(JResourceObject& jRobj)
+	{
+		(*setFrameDirtyCallable)(nullptr, jRobj);
+	}
+	void JRI::RTypeInterfaceFunc::CallSetBuffIndex(JResourceObject& jRobj, const uint index)
+	{
+		(*setBuffIndexCallable)(nullptr, jRobj, index);
+	}
+	JRI::SetFrameDirtyCallable JRI::RTypeInterfaceFunc::GetSetFrameDirtyCallable()
+	{
+		return *setFrameDirtyCallable;
+	}
+	JRI::SetBuffIndexCallable JRI::RTypeInterfaceFunc::GetSetBuffIndexCallable()
+	{
+		return *setBuffIndexCallable;
+	}
+
+	class RTypeInfoData
 	{
 	public:
-		 std::vector<JRI::RTypeHint> infoStorage;;
-		 std::unordered_map<J_RESOURCE_TYPE, JRI::RTypeUtil> funcStorage;
+		 std::vector<JRI::RTypeHint> rInfoStorage;
+		 std::vector<JRI::RTypeCommonFunc> rFuncStorage; 
+		 std::vector<JRI::RTypeInterfaceFunc> rIntefaceStroage;
+	public:
+		RTypeInfoData()
+		{
+			rInfoStorage.resize((int)J_RESOURCE_TYPE::COUNT);
+			rFuncStorage.resize((int)J_RESOURCE_TYPE::COUNT);
+			rIntefaceStroage.resize((int)J_RESOURCE_TYPE::COUNT);
+		}
+		~RTypeInfoData()
+		{
+			rInfoStorage.clear();
+			rFuncStorage.clear();
+			rIntefaceStroage.clear();
+		}
 	};
-	using RTypeInfo = Core::JSingletonHolder<RTypeInfoImpl>;
+	using RTypeInfo = Core::JSingletonHolder<RTypeInfoData>;
 	//FuncStorage
 
 	std::vector<std::string> JResourceObjectInterface::CallGetAvailableFormat(const J_RESOURCE_TYPE type)
 	{
-		return RTypeInfo::Instance().funcStorage.find(type)->second.CallGetAvailableFormat();
+		return RTypeInfo::Instance().rFuncStorage[(int)type].CallGetAvailableFormat();
 	}
 	std::string JResourceObjectInterface::CallGetTypeName(const J_RESOURCE_TYPE type)
 	{
-		return RTypeInfo::Instance().funcStorage.find(type)->second.CallGetTypeName();
+		return RTypeInfo::Instance().rFuncStorage[(int)type].CallGetTypeName();
 	}
 	int JResourceObjectInterface::CallFormatIndex(const J_RESOURCE_TYPE type, const std::string& format)
 	{
-		return RTypeInfo::Instance().funcStorage.find(type)->second.CallFormatIndex(format);
+		return RTypeInfo::Instance().rFuncStorage[(int)type].CallFormatIndex(format);
 	}
 	bool JResourceObjectInterface::CallIsValidFormat(const J_RESOURCE_TYPE type, const std::string& format)
 	{
-		return RTypeInfo::Instance().funcStorage.find(type)->second.CallFormatIndex(format) != -1;
+		return RTypeInfo::Instance().rFuncStorage[(int)type].CallFormatIndex(format) != -1;
+	}
+	void JResourceObjectInterface::CallSetFrameDirty(JResourceObject& jRobj)
+	{
+		RTypeInfo::Instance().rIntefaceStroage[(int)jRobj.GetResourceType()].CallSetFrameDirty(jRobj);
+	}
+	void JResourceObjectInterface::CallSetBuffIndex(JResourceObject& jRobj, const uint index)
+	{
+		RTypeInfo::Instance().rIntefaceStroage[(int)jRobj.GetResourceType()].CallSetBuffIndex(jRobj, index);
+	}
+	JRI::SetFrameDirtyCallable JResourceObjectInterface::GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type)
+	{
+		return RTypeInfo::Instance().rIntefaceStroage[(int)type].GetSetFrameDirtyCallable();
+	}
+	JRI::SetBuffIndexCallable JResourceObjectInterface::GetSetBuffIndexCallable(const J_RESOURCE_TYPE type)
+	{
+		return RTypeInfo::Instance().rIntefaceStroage[(int)type].GetSetBuffIndexCallable();
 	}
 	int JResourceObjectInterface::GetFormatIndex(const J_RESOURCE_TYPE type, const std::string& format)
 	{
@@ -74,27 +137,31 @@ namespace JinEngine
 		}
 		return -1;
 	}
-	const std::vector<JRI::RTypeHint> JResourceObjectInterface::GetRInfo(const RESOURCE_ALIGN_TYPE alignType)
+	const JRI::RTypeHint JResourceObjectInterface::GetRTypeHint(const J_RESOURCE_TYPE type)noexcept
+	{
+		return RTypeInfo::Instance().rInfoStorage[(int)type];
+	}
+	const std::vector<JRI::RTypeHint> JResourceObjectInterface::GetRTypeHintVec(const RESOURCE_ALIGN_TYPE alignType)noexcept
 	{
 		switch (alignType)
 		{
 		case JinEngine::RESOURCE_ALIGN_TYPE::NONE:
 		{
-			return RTypeInfo::Instance().infoStorage;
+			return RTypeInfo::Instance().rInfoStorage;
 		}
 		case JinEngine::RESOURCE_ALIGN_TYPE::NAME:
 		{
-			std::vector<JRI::RTypeHint> infoCopy = RTypeInfo::Instance().infoStorage;
+			std::vector<JRI::RTypeHint> infoCopy = RTypeInfo::Instance().rInfoStorage;
 			sort(infoCopy.begin(), infoCopy.end(), NameOrder);
 			return infoCopy;
 		}
 		case JinEngine::RESOURCE_ALIGN_TYPE::DEPENDENCY:
 		{
 			std::vector<JRI::RTypeHint> overlapInfo;
-			const uint infoStroageCount = (uint)RTypeInfo::Instance().infoStorage.size();
+			const uint infoStroageCount = (uint)RTypeInfo::Instance().rInfoStorage.size();
 			for (uint i = 0; i < infoStroageCount; ++i)
 			{
-				std::vector<JRI::RTypeHint> addV = GetDDSortedType(RTypeInfo::Instance().infoStorage[i]);
+				std::vector<JRI::RTypeHint> addV = GetDDSortedType(RTypeInfo::Instance().rInfoStorage[i]);
 				overlapInfo.insert(overlapInfo.end(), addV.begin(), addV.end());
 			}
 			std::vector<JRI::RTypeHint> resInfo;
@@ -120,46 +187,22 @@ namespace JinEngine
 			return resInfo;
 		}
 		default:
-			return RTypeInfo::Instance().infoStorage;
+			return RTypeInfo::Instance().rInfoStorage;
 		};
 	}
-	 
-	JResourceObjectInterface::JResourceObjectInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag)
-		:JObject(name, guid, flag)
-	{}
-
-	void JResourceObjectInterface::RegisterTypeInfo(const JRI::RTypeHint& rTypeHint, const JRI::RTypeUtil& rTypeUtil)
-	{
-		bool hasOverlap = false;
-		const uint infoStorageCount = (uint)RTypeInfo::Instance().infoStorage.size();
-		for (uint i = 0; i < infoStorageCount; ++i)
-		{
-			if (RTypeInfo::Instance().infoStorage[i].thisType == rTypeHint.thisType)
-			{
-				hasOverlap = true;
-				break;
-			}
-		}
-
-		if (!hasOverlap)
-			RTypeInfo::Instance().infoStorage.push_back(rTypeHint);
-
-		if (RTypeInfo::Instance().funcStorage.empty() ||
-			RTypeInfo::Instance().funcStorage.find(rTypeHint.thisType) == RTypeInfo::Instance().funcStorage.end())
-			RTypeInfo::Instance().funcStorage.emplace(rTypeHint.thisType, rTypeUtil);
-	}
+	
 	std::vector<JRI::RTypeHint> JResourceObjectInterface::GetDDSortedType(const JRI::RTypeHint& info)noexcept
 	{
 		std::vector<JRI::RTypeHint> res;
 		const uint hasCount = (uint)info.hasType.size();
 		for (uint i = 0; i < hasCount; ++i)
 		{
-			const uint infoStorageCount = (uint)RTypeInfo::Instance().infoStorage.size();
+			const uint infoStorageCount = (uint)RTypeInfo::Instance().rInfoStorage.size();
 			for (uint j = 0; j < infoStorageCount; ++j)
 			{
-				if (info.hasType[i] == RTypeInfo::Instance().infoStorage[j].thisType)
+				if (info.hasType[i] == RTypeInfo::Instance().rInfoStorage[j].thisType)
 				{
-					std::vector<JRI::RTypeHint> addV = GetDDSortedType(RTypeInfo::Instance().infoStorage[j]);
+					std::vector<JRI::RTypeHint> addV = GetDDSortedType(RTypeInfo::Instance().rInfoStorage[j]);
 					res.insert(res.end(), addV.begin(), addV.end());
 				}
 			}
@@ -169,6 +212,15 @@ namespace JinEngine
 	}
 	bool JResourceObjectInterface::NameOrder(const JRI::RTypeHint& a, const JRI::RTypeHint& b)noexcept
 	{
-		return RTypeInfo::Instance().funcStorage.find(a.thisType)->second.CallGetTypeName() < RTypeInfo::Instance().funcStorage.find(b.thisType)->second.CallGetTypeName();
+		return RTypeInfo::Instance().rFuncStorage[(int)a.thisType].CallGetTypeName() < RTypeInfo::Instance().rFuncStorage[(int)b.thisType].CallGetTypeName();
 	}
+	void JResourceObjectInterface::RegisterTypeInfo(const JRI::RTypeHint& rTypeHint, const JRI::RTypeCommonFunc& rTypeUtil, const JRI::RTypeInterfaceFunc& rTypeIFunc)
+	{
+		RTypeInfo::Instance().rInfoStorage[(int)rTypeHint.thisType] = rTypeHint;
+		RTypeInfo::Instance().rFuncStorage[(int)rTypeHint.thisType] = rTypeUtil;
+		RTypeInfo::Instance().rIntefaceStroage[(int)rTypeHint.thisType] = rTypeIFunc;
+	}
+	JResourceObjectInterface::JResourceObjectInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag)
+		:JObject(name, guid, flag)
+	{}
 }

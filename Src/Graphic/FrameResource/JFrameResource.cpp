@@ -7,7 +7,7 @@
 #include"JPassConstants.h" 
 #include"JCameraConstants.h"
 #include"JLightConstants.h"
-#include"JShadowMapCalConstants.h"
+#include"JShadowMapConstants.h"
 
 namespace JinEngine
 {
@@ -40,7 +40,7 @@ namespace JinEngine
             passCB = std::make_unique<JUploadBuffer<JPassConstants>>(device, initSceneCount, true);
             cameraCB = std::make_unique<JUploadBuffer<JCameraConstants>>(device, initCameraCount, true);
             lightCB = std::make_unique<JUploadBuffer<JLightConstants>>(device, initSceneCount, true);
-            shadowCalCB = std::make_unique<JUploadBuffer<JShadowMapCalConstants>>(device, initSceneCount * initSceneShadowCount, true);
+            shadowCalCB = std::make_unique<JUploadBuffer<JShadowMapConstants>>(device, initSceneCount * initSceneShadowCount, true);
         }
 
         JFrameResource::~JFrameResource()

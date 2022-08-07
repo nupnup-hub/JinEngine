@@ -1,12 +1,18 @@
 #pragma once
 #include"../Core/JDataType.h"
+#include"../Object/Component/JComponentType.h"
+#include<deque> 
 #include<vector>
 #include<memory>
 
 namespace JinEngine
 {
-	class JScene;
-	class ISceneFrameDirty;
+	class JComponent;
+	class JScene; 
+	class JLight;
+	class JCamera;
+	class PreviewScene;
+
 	namespace Graphic
 	{
 		enum class J_GRAPHIC_DRAW_FREQUENCY
@@ -14,46 +20,64 @@ namespace JinEngine
 			ALWAYS,
 			UPDATED
 		};
-		struct JGraphicDrawTargetListener
+
+		class JGraphicTextureHandle;  
+		class JGraphicDrawList;
+		class JGraphicTexture;
+
+		struct JShadowMapDrawRequestor
 		{
 		public:
-			const J_GRAPHIC_DRAW_FREQUENCY drawFrequency;
-			bool drawRequest = false;
+			JComponent* jLight;
+			JGraphicTextureHandle* handle;
 		public:
-			JGraphicDrawTargetListener(const J_GRAPHIC_DRAW_FREQUENCY drawFrequency);
-			~JGraphicDrawTargetListener();
+			JShadowMapDrawRequestor(JComponent* jLight, JGraphicTextureHandle* handle);
+			~JShadowMapDrawRequestor();
 		};
+		struct JSceneDrawRequestor
+		{
+		public:
+			JComponent* jCamera;
+			JGraphicTextureHandle* handle;
+		public:
+			JSceneDrawRequestor(JComponent* jSjCamcene, JGraphicTextureHandle* handle);
+			~JSceneDrawRequestor();
+		};
+
 		struct JGraphicDrawTarget
 		{
+		private:
+			friend class JGraphicDrawList;
 		public:
 			JScene* scene;
-			ISceneFrameDirty* sceneFrameDirty;
-			uint transformCount;
-			uint renderItemCount;
-			uint animatorCount;
-			uint cameraCount;
-			uint lightCount;
-			uint shadowCount;
 			const bool isMainScene;
-			std::vector<std::unique_ptr<JGraphicDrawTargetListener>>listenerInfo;
+			bool hasUpdate;
+			std::vector<std::unique_ptr<JShadowMapDrawRequestor>> shadowRequestor;
+			std::vector<std::unique_ptr<JSceneDrawRequestor>> sceneRequestor;
 		public:
-			JGraphicDrawTarget(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY drawFrequency, const bool isMainScene);
+			JGraphicDrawTarget(JScene* scene, const bool isMainScene);
 			~JGraphicDrawTarget();
 		};
-		class JGraphicDrawList
-		{
-			friend class JGraphicImpl;
+		 
+		class JGraphicDrawList 
+		{ 
 		private:
-			static std::vector<std::unique_ptr<JGraphicDrawTarget>> drawList;
-		public:
-			static bool AddDrawList(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY drawFrequency, const bool isMainScene)noexcept;
+			friend class JGraphicImpl;
+			friend class JGraphicTexture;
+			friend class JScene; 
+		private:
+			static bool AddDrawList(JScene* scene)noexcept;
 			static bool PopDrawList(JScene* scene)noexcept;
 			static bool HasDrawList(JScene* scene)noexcept;
-			static void UpdateScene(JScene* scene)noexcept;
+			static void UpdateScene(JScene* scene, const J_COMPONENT_TYPE cType)noexcept;
 		private:
-			static bool AddDrawListListener(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY drawFrequency)noexcept;
-			static int GetIndex(JScene* scene)noexcept;
-			static void UpdateDrawList(int index)noexcept;
-		};
+			static void AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicTextureHandle* handle)noexcept;
+			static void AddDrawSceneRequest(JScene* scene, JComponent* jCamera, JGraphicTextureHandle* handle)noexcept;
+			static void PopDrawRequest(JScene* scene, JComponent* jComp)noexcept;
+			static bool HasRequestor(JScene* scene)noexcept;
+		private:
+			static uint GetListCount()noexcept;
+			static JGraphicDrawTarget* GetDrawScene(const uint index)noexcept;
+		};	 
 	}
 }

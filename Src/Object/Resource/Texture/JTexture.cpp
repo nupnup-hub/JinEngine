@@ -3,8 +3,7 @@
 #include"../../Directory/JDirectory.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Utility/JCommonUtility.h"
-#include"../../../Graphic/JGraphic.h"
-#include"../../../Graphic/JGraphicTextureHandle.h" 
+#include"../../../Graphic/JGraphic.h" 
 #include"../../../Application/JApplicationVariable.h"
 #include"../../../../Lib/LoadTextureFromFile.h"
 #include"../../../../Lib/DirectX/DDSTextureLoader.h" 
@@ -12,33 +11,17 @@
 
 namespace JinEngine
 {
-	uint JTexture::GetTextureHeapIndex()const noexcept
+	uint JTexture::GetTextureWidth()const noexcept
 	{
-		return graphicTextureHandle->GetSrvHeapIndex();
+		return GetTxtWidth();
 	}
-	uint JTexture::GetTextureVectorIndex()const noexcept
+	uint JTexture::GetTextureHeight()const noexcept
 	{
-		return graphicTextureHandle->GetResourceVectorIndex();
-	}
-	D3D12_CPU_DESCRIPTOR_HANDLE JTexture::GetCpuHandle() const noexcept
-	{
-		return JGraphic::Instance().ResourceInterface()->GetCpuSrvDescriptorHandle(graphicTextureHandle->GetSrvHeapIndex());
-	}
-	D3D12_GPU_DESCRIPTOR_HANDLE JTexture::GetGpuHandle()const noexcept
-	{
-		return JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(graphicTextureHandle->GetSrvHeapIndex());
+		return GetTxtHeight();
 	}
 	Graphic::J_GRAPHIC_TEXTURE_TYPE JTexture::GetTextureType()const noexcept
 	{
-		return graphicTextureHandle->GetGraphicResourceType();
-	}
-	int JTexture::GetTextureWidth()const noexcept
-	{
-		return graphicTextureHandle->GetWidth();
-	}
-	int JTexture::GetTextureHeight()const noexcept
-	{
-		return graphicTextureHandle->GetHeight();
+		return GetTxtType();
 	}
 	J_RESOURCE_TYPE JTexture::GetResourceType()const noexcept
 	{
@@ -58,48 +41,51 @@ namespace JinEngine
 		if (JTexture::textureType != textureType)
 		{
 			JTexture::textureType = textureType;
-			ClearGraphicTextureHandle();
-			UploadTexture();
+			ClearResource();
+			StuffResource();
 		}
 	}
 	void JTexture::DoActivate()noexcept
 	{
 		JResourceObject::DoActivate(); 
+		StuffResource();
 	}
 	void JTexture::DoDeActivate()noexcept
 	{
 		JResourceObject::DoDeActivate();
-		ClearGraphicTextureHandle();
+		ClearResource();
 	}
-	void JTexture::ClearGraphicTextureHandle()
+	void JTexture::StuffResource()
 	{
-		if (graphicTextureHandle != nullptr)
+		if (!IsValidResource())
 		{
-			JGraphic::Instance().ResourceInterface()->EraseGraphicTextureResource(graphicTextureHandle);
-			graphicTextureHandle = nullptr;
+			if (ReadTextureData())
+				SetValid(true);
+		}
+	}
+	void JTexture::ClearResource()
+	{
+		if (IsValidResource() && HasTxtHandle())
+		{
+			ClearTxtHandle();
 			uploadHeap.Reset();
+			SetValid(false);
 		}
 	}
-	bool JTexture::UploadTexture()
+	bool JTexture::ReadTextureData()
 	{
-		if (graphicTextureHandle != nullptr)
-			return false;
-
-		if (textureType == Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D)
+		if (!HasTxtHandle())
 		{
-			graphicTextureHandle = JGraphic::Instance().ResourceInterface()->Create2DTexture(uploadHeap, GetPath());
-			if (graphicTextureHandle != nullptr)
-				return true;
-			else
-				return false;
-		}
-		else if (textureType == Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE)
-		{
-			graphicTextureHandle = JGraphic::Instance().ResourceInterface()->CreateCubeTexture(uploadHeap, GetPath());
-			if (graphicTextureHandle != nullptr)
-				return true;
-			else
-				return false;
+			if (textureType == Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D)
+			{
+				if (Create2DTexture(uploadHeap, GetPath()))
+					return true;
+			}
+			else if (textureType == Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE)
+			{
+				if (CreateCubeTexture(uploadHeap, GetPath()))
+					return true;
+			}
 		}
 		return false;
 	}
@@ -156,9 +142,13 @@ namespace JinEngine
 			newTexture = new JTexture(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JTexture>(pathData.format));
 
 		newTexture->textureType = (Graphic::J_GRAPHIC_TEXTURE_TYPE)metadata.textureType;
-		newTexture->UploadTexture();
-		return newTexture;
-
+		if (newTexture->ReadTextureData())
+			return newTexture;
+		else
+		{
+			delete newTexture;
+			return nullptr;
+		}
 	}
 	Core::J_FILE_IO_RESULT JTexture::LoadMetadata(std::wifstream& stream, const std::string& folderPath, TextureMetadata& metadata)
 	{
@@ -205,11 +195,13 @@ namespace JinEngine
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JTexture::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 		 
-		RegisterTypeInfo(RTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true },
-			RTypeUtil{getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable });
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false, false };
+		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+
+		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{}); 
 	}
 	JTexture::JTexture(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const int formatIndex)
-		:JResourceObject(name, guid, flag, directory, formatIndex)
+		:JTextureInterface(name, guid, flag, directory, formatIndex)
 	{}
 	JTexture::~JTexture(){}
 }

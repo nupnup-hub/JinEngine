@@ -6,15 +6,12 @@
 namespace JinEngine
 {
 	using namespace DirectX;
-	JSkeleton::JSkeleton(std::vector<Joint>&& joint, const size_t skletonHash)
-		:joint(std::move(joint)), jointCount((uint)joint.size()), skletonHash(skletonHash)
-	{}
-	JSkeleton::JSkeleton(const JSkeleton& skeleton)
-		:joint(skeleton.joint), jointCount((uint)joint.size()), skletonHash(skeleton.skletonHash)
-	{}
+	//JSkeleton::JSkeleton(const JSkeleton& skeleton)
+	///	:joint(skeleton.joint), jointCount((uint)joint.size()), skletonHash(skeleton.skletonHash)
+	//{}
 	uint JSkeleton::GetJointCount()const noexcept
 	{
-		return jointCount;
+		return (uint)joint.size();
 	}
 	size_t JSkeleton::GetHash()const noexcept
 	{
@@ -26,14 +23,14 @@ namespace JinEngine
 	}
 	std::string JSkeleton::GetJointName(int index)const noexcept
 	{
-		if (index < 0 && index >= jointCount)
+		if (index < 0 && index >= (int)joint.size())
 			return " ";
 		else
 			return joint[index].name;
 	}
 	uint8 JSkeleton::GetJointParentIndex(int index)const noexcept
 	{
-		if (index < 0 && index >= jointCount)
+		if (index < 0 && index >= (int)joint.size())
 			return JSkeletonFixedData::incorrectJointIndex;
 		else
 			return joint[index].parentIndex;
@@ -98,9 +95,13 @@ namespace JinEngine
 		return skletonHash == skeleton.skletonHash;
 	}
 	bool JSkeleton::IsSame(const size_t skletonHash)const noexcept
-	{
+	{ 
 		return JSkeleton::skletonHash == skletonHash;
 	}
+	JSkeleton::JSkeleton(std::vector<Joint>&& joint, const size_t skletonHash)
+		:joint(std::move(joint)), skletonHash(skletonHash)
+	{}
+	JSkeleton::~JSkeleton() {}
 }
 /*
 		if (skeleton.jointCount != jointCount)

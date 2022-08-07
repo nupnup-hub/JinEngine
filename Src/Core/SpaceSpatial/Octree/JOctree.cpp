@@ -28,21 +28,29 @@ namespace JinEngine
 			if (debugRoot != nullptr && debugRoot->GetGuid() != newDebugRoot->GetGuid())
 				OffDebugGameObject();
 
-			debugRoot = newDebugRoot;
-			const uint allNodeCount = (uint)allNode.size();
-			if (allNodeCount > 0)
+			if (!isDebugModeActivated)
 			{
-				for (uint i = 0; i < allNodeCount; ++i)
-					allNode[i]->CreateDebugGameObject(debugRoot, onlyLeafNode);
+				isDebugModeActivated = true;
+				debugRoot = newDebugRoot;
+				const uint allNodeCount = (uint)allNode.size();
+				if (allNodeCount > 0)
+				{
+					for (uint i = 0; i < allNodeCount; ++i)
+						allNode[i]->CreateDebugGameObject(debugRoot, onlyLeafNode);
+				}
 			}
 		}
 		void JOctree::OffDebugGameObject()noexcept
 		{
-			const uint allNodeCount = (uint)allNode.size();
-			if (allNodeCount > 0)
+			if (isDebugModeActivated)
 			{
-				for (uint i = 0; i < allNodeCount; ++i)
-					allNode[i]->EraseDebugGameObject();
+				isDebugModeActivated = false;
+				const uint allNodeCount = (uint)allNode.size();
+				if (allNodeCount > 0)
+				{
+					for (uint i = 0; i < allNodeCount; ++i)
+						allNode[i]->EraseDebugGameObject();
+				}
 			}
 		}
 		void JOctree::Culling(const BoundingFrustum& camFrustum)noexcept

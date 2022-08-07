@@ -14,7 +14,7 @@ namespace JinEngine
 		struct JPassConstants;
 		struct JCameraConstants;
 		struct JLightConstants;
-		struct JShadowMapCalConstants;
+		struct JShadowMapConstants;
 
 		struct JFrameResource
 		{
@@ -30,7 +30,7 @@ namespace JinEngine
 			std::unique_ptr<JUploadBuffer<JPassConstants>> passCB = nullptr;
 			std::unique_ptr<JUploadBuffer<JCameraConstants>> cameraCB = nullptr;
 			std::unique_ptr<JUploadBuffer<JLightConstants>> lightCB = nullptr;
-			std::unique_ptr<JUploadBuffer<JShadowMapCalConstants>> shadowCalCB = nullptr;
+			std::unique_ptr<JUploadBuffer<JShadowMapConstants>> shadowCalCB = nullptr;
 
 			// Fence value to mark commands up to this fence point.  This lets us
 			// check if these frame resources are still in use by the GPU.

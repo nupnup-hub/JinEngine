@@ -52,21 +52,21 @@ namespace JinEngine
 	{
 		JDirectory* res = JDF::Instance().Create(parent);
 		if (res != nullptr)
-			(*addStorage)(&JResourceManager::Instance(), &*res);
+			(*addStorage)(&JResourceManager::Instance(), *res);
 		return res;
 	} 
 	JDirectory* JDirectoryFactoryImpl::CreateRoot(const std::string& name, const size_t guid, const JOBJECT_FLAG flag)
 	{
 		JDirectory* res = JDF::Instance().CreateRoot(name, guid, flag);
 		if (res != nullptr)
-			(*addStorage)(&JResourceManager::Instance(), &*res);
+			(*addStorage)(&JResourceManager::Instance(), *res);
 		return res;
 	}
 	JDirectory* JDirectoryFactoryImpl::Create(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory& parent)
 	{
 		JDirectory* res = JDF::Instance().Create(name, guid, flag, parent);
 		if (res != nullptr)
-			(*addStorage)(&JResourceManager::Instance(), &*res);
+			(*addStorage)(&JResourceManager::Instance(), *res);
 		return res;
 	}
 	void JDirectoryFactoryImpl::Regist(DefaultPtr defaultPtr, InitPtr initPtr)

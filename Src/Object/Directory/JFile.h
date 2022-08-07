@@ -3,13 +3,11 @@
 
 namespace JinEngine
 {
-	class JResourceObject;
-	class PreviewScene;
+	class JResourceObject; 
 	class JFile
 	{  
 	private:
-		JResourceObject* resource;
-		PreviewScene* previewScene;
+		JResourceObject* resource; 
 	public:
 		JFile(JResourceObject* resource);
 		~JFile();
@@ -18,9 +16,6 @@ namespace JinEngine
 		 
 		std::string GetName()const noexcept;
 		std::string GetAvailableFormat()const noexcept;
-		JResourceObject* GetResource()noexcept;
-		PreviewScene* GetPreviewScene()noexcept;
-		void SetPreviewScene(PreviewScene* previewScene)noexcept; 
-
+		JResourceObject* GetResource()noexcept;  
 	};
 }

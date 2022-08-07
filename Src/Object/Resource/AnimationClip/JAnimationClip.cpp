@@ -37,7 +37,7 @@ namespace JinEngine
 	J_RESOURCE_TYPE JAnimationClip::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
-	} 
+	}
 	std::string JAnimationClip::GetFormat()const noexcept
 	{
 		return GetAvailableFormat()[0];
@@ -49,6 +49,14 @@ namespace JinEngine
 	}
 	void JAnimationClip::SetClipSkeletonAsset(JSkeletonAsset* clipSkeletonAsset)noexcept
 	{
+		if (JAnimationClip::clipSkeletonAsset != nullptr)
+			OffResourceReference(*JAnimationClip::clipSkeletonAsset);
+
+		JAnimationClip::clipSkeletonAsset = clipSkeletonAsset;
+
+		if (JAnimationClip::clipSkeletonAsset != nullptr)
+			OnResourceReference(*JAnimationClip::clipSkeletonAsset);
+
 		JAnimationClip::clipSkeletonAsset = clipSkeletonAsset;
 		matchClipSkeleton = IsMatchSkeleton();
 	}
@@ -160,20 +168,6 @@ namespace JinEngine
 			//XMMATRIX bind = srcSkeletonAsset->GetSkeleton()->GetBindPose(i);
 			//XMStoreFloat4x4(&localTransform[i], bind);
 		}
-	}
-	void JAnimationClip::DoActivate()noexcept
-	{
-		JResourceObject::DoActivate();
-		//수정필요
-		//LoadObject();
-	}
-	void JAnimationClip::DoDeActivate()noexcept
-	{
-		JResourceObject::DoDeActivate();
-		if (clipSkeletonAsset != nullptr)
-			clipSkeletonAsset->OffReference();
-		//수정필요
-		//animationSample.clear();
 	}
 	uint JAnimationClip::GetAnimationSampleJointIndex(const uint sampleIndex, const float localTime)noexcept
 	{
@@ -357,6 +351,89 @@ namespace JinEngine
 		else
 			return false;
 	}
+	void JAnimationClip::DoActivate()noexcept
+	{
+		JResourceObject::DoActivate();
+		StuffResource();
+	}
+	void JAnimationClip::DoDeActivate()noexcept
+	{
+		JResourceObject::DoDeActivate();
+		ClearResource();
+	}
+	void JAnimationClip::StuffResource()
+	{
+		if (!JValidInterface::IsValidResource())
+		{
+			if (ReadFbxData())
+				SetValid(true);
+		}
+	}
+	void JAnimationClip::ClearResource()
+	{
+		if (JValidInterface::IsValidResource())
+		{
+			animationSample.clear();
+			SetClipSkeletonAsset(nullptr);
+			SetValid(false);
+		}
+	}
+	bool JAnimationClip::IsValidResource()const noexcept
+	{
+		return JValidInterface::IsValidResource() && (clipSkeletonAsset != nullptr);
+	}
+	bool JAnimationClip::ReadFbxData()
+	{
+		const JResourcePathData pathData{ GetWPath() };
+
+		std::wifstream stream;
+		stream.open(ConvertMetafilePath(pathData.wstrPath), std::ios::in | std::ios::binary);
+		AnimationClipMetadata metadata;
+		J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, pathData.folderPath, metadata);
+		stream.close();
+
+		JFbxAnimationData jfbxAniData;
+		J_FBXRESULT res = JFbxFileLoader::Instance().LoadFbxAnimationFile(pathData.strPath, jfbxAniData);
+		if (res == J_FBXRESULT::HAS_ANIMATION)
+		{
+			if (animationSample.size() != jfbxAniData.animationSample.size())
+				animationSample.resize(jfbxAniData.animationSample.size());
+
+			animationSample = jfbxAniData.animationSample;
+			oriSkeletoHash = jfbxAniData.skeletonHash;
+			clipLength = jfbxAniData.clipLength;
+			framePerSecond = jfbxAniData.framePerSecond;
+
+			if (loadMetaRes == J_FILE_IO_RESULT::SUCCESS)
+			{
+				isLooping = metadata.isLooping;
+				if (metadata.hasSkeleton)
+				{
+					JSkeletonAsset* skeletonAsset = JResourceManager::Instance().GetResource<JSkeletonAsset>(metadata.skeletonGuid);
+					if (skeletonAsset != nullptr)
+						SetClipSkeletonAsset(skeletonAsset);
+				}
+			}
+
+			if (clipSkeletonAsset == nullptr)
+			{
+				uint count;
+				std::vector<JResourceObject*>::const_iterator st = JResourceManager::Instance().GetResourceVectorHandle<JSkeletonAsset>(count);
+				for (uint i = 0; i < count; ++i)
+				{
+					JSkeletonAsset* oldSkeletonAsset = static_cast<JSkeletonAsset*>(*(st + i));
+					if (oldSkeletonAsset->GetSkeleton()->IsSame(oriSkeletoHash))
+					{
+						SetClipSkeletonAsset(oldSkeletonAsset);
+						break;
+					}
+				}
+			}
+			return true;
+		}
+		else
+			return false;
+	}
 	J_FILE_IO_RESULT JAnimationClip::CallStoreResource()
 	{
 		return StoreObject(this);
@@ -411,52 +488,22 @@ namespace JinEngine
 		J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, pathData.folderPath, metadata);
 		stream.close();
 
-		JFbxAnimationData jfbxAniData;
-		J_FBXRESULT res = JFbxFileLoader::Instance().LoadFbxAnimationFile(pathData.strPath, jfbxAniData);
-		if (res == J_FBXRESULT::HAS_ANIMATION)
+		JAnimationClip* newClip;
+		if (loadMetaRes == J_FILE_IO_RESULT::SUCCESS)
+			newClip = new JAnimationClip(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JAnimationClip>(pathData.format));
+		else
+			newClip = new JAnimationClip(pathData.name, MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JAnimationClip>(pathData.format));
+
+		if (newClip->ReadFbxData())
 		{
-			JAnimationClip* newClip;
-			if (loadMetaRes == J_FILE_IO_RESULT::SUCCESS)
-				newClip = new JAnimationClip(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JAnimationClip>(pathData.format));
-			else
-				newClip = new JAnimationClip(pathData.name, MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JAnimationClip>(pathData.format));
-
-			if (newClip->animationSample.size() != jfbxAniData.animationSample.size())
-				newClip->animationSample.resize(jfbxAniData.animationSample.size());
-
-			newClip->animationSample = jfbxAniData.animationSample;
-			newClip->oriSkeletoHash = jfbxAniData.skeletonHash;
-			newClip->clipLength = jfbxAniData.clipLength;
-			newClip->framePerSecond = jfbxAniData.framePerSecond;
-		 
-			if (loadMetaRes == J_FILE_IO_RESULT::SUCCESS)
-			{
-				newClip->isLooping = metadata.isLooping;
-				if (metadata.hasSkeleton)
-				{
-					newClip->clipSkeletonAsset = JResourceManager::Instance().GetResource<JSkeletonAsset>(metadata.skeletonGuid);
-					newClip->clipSkeletonAsset->OnReference();
-				}
-			}
-			else
-			{
-				uint count;
-				std::vector<JResourceObject*>::const_iterator st = JResourceManager::Instance().GetResourceVectorHandle<JSkeletonAsset>(count);
-				for (uint i = 0; i < count; ++i)
-				{
-					JSkeletonAsset* oldSkeletonAsset = static_cast<JSkeletonAsset*>(*(st + i));
-					if (oldSkeletonAsset->GetSkeleton()->IsSame(newClip->oriSkeletoHash))
-					{
-						newClip->clipSkeletonAsset = oldSkeletonAsset;
-						newClip->clipSkeletonAsset->OnReference();
-						break;
-					}
-				}
-			}
+			newClip->SetValid(true);
 			return newClip;
 		}
 		else
+		{
+			delete newClip;
 			return nullptr;
+		}
 	}
 	J_FILE_IO_RESULT JAnimationClip::LoadMetadata(std::wifstream& stream, const std::string& folderPath, AnimationClipMetadata& metadata)
 	{
@@ -491,14 +538,14 @@ namespace JinEngine
 		};
 		auto initC = [](const std::string& name, const size_t guid, const JOBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
-			return  new JAnimationClip(name, guid, objFlag, directory, formatIndex);
+			return new JAnimationClip(name, guid, objFlag, directory, formatIndex);
 		};
 		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
 		auto copyC = [](JResourceObject* ori)->JResourceObject*
-		{	  
+		{
 			return static_cast<JAnimationClip*>(ori)->CopyResource();
 		};
 		JRFI<JAnimationClip>::Register(defaultC, initC, loadC, copyC);
@@ -506,14 +553,16 @@ namespace JinEngine
 		auto getFormatIndexLam = [](const std::string& format) {return JResourceObject::GetFormatIndex<JAnimationClip>(format); };
 
 		static GetTypeNameCallable getTypeNameCallable{ &JAnimationClip::TypeName };
-		static GetAvailableFormatCallable getAvailableFormatCallable{ &JAnimationClip::GetAvailableFormat };	 
+		static GetAvailableFormatCallable getAvailableFormatCallable{ &JAnimationClip::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
-		 
-		RegisterTypeInfo(RTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SKELETON}, false },
-			RTypeUtil{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable });		 
+
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SKELETON}, true, false, false };
+		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+
+		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
 	JAnimationClip::JAnimationClip(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
-		:JResourceObject(name, guid, flag, directory, formatIndex)
+		:JAnimationClipInterface(name, guid, flag, directory, formatIndex)
 	{}
 	JAnimationClip::~JAnimationClip()
 	{

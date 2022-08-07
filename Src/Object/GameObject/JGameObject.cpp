@@ -7,8 +7,7 @@
 #include"../Component/RenderItem/JRenderItem.h"  
 #include"../Component/Transform/JTransform.h"   
 #include"../Component/JComponentFactory.h" 
-#include"../Resource/Scene/JScene.h"
-#include"../Resource/Scene/ISceneGameObjectEvent.h" 
+#include"../Resource/Scene/JScene.h" 
 #include"../../Utility/JCommonUtility.h"  
 #include"../../Core/Guid/GuidCreator.h"
 #include<fstream>
@@ -30,10 +29,6 @@ namespace JinEngine
 	JScene* JGameObject::GetOwnerScene()noexcept
 	{
 		return ownerScene;
-	}
-	GameObjectDirty* JGameObject::GetGameObjectDirty()noexcept
-	{
-		return gameObjectDirty.get();
 	}
 	uint JGameObject::GetChildrenCount()const noexcept
 	{
@@ -142,7 +137,7 @@ namespace JinEngine
 		}
 		SetName(name);
 		newParent->children.push_back(this);
-		transform->ChangeParent(childIndex, newParent->transform);
+		static_cast<JTransformInterface*>(transform)->ChangeParent(); 
 	}
 	void JGameObject::DoActivate()noexcept
 	{
@@ -192,55 +187,28 @@ namespace JinEngine
 		}
 		return false;
 	}
-	JComponent* JGameObject::AddComponent(JComponent* component)noexcept
+	JComponent* JGameObject::AddComponent(JComponent& component)noexcept
 	{
-		if (component == nullptr)
-			return nullptr;
-
-		const J_COMPONENT_TYPE cType = component->GetComponentType();
-		const int overlappedCount = GetComponentCount(component->GetComponentType());
-		if (!component->IsAvailableOverlap() && overlappedCount > 0)
+		const J_COMPONENT_TYPE cType = component.GetComponentType();
+		const int overlappedCount = GetComponentCount(component.GetComponentType());
+		if (!component.IsAvailableOverlap() && overlappedCount > 0)
 			return nullptr;		
-
-		gameObjectDirty->RegisterComponent(component);
+	 
 		if (IsActivated())
-		{
-			if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)
-				RegisterAnimator(static_cast<JAnimator*>(component));
-			else if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-				RegisterCamera(static_cast<JCamera*>(component));
-			else if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-				RegisterLight(static_cast<JLight*>(component));
-			else if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
-				RegisterRenderItem(static_cast<JRenderItem*>(component));
-			component->Activate();
-		}
+			component.Activate();		
 		 
-		JGameObject::component.push_back(component);
-		return component;
+		JGameObject::component.push_back(&component);
+		return &component;
 	}
-	bool JGameObject::EraseComponent(JComponent* component)noexcept
+	bool JGameObject::EraseComponent(JComponent& component)noexcept
 	{
-		if (component == nullptr)
-			return false;
+		const J_COMPONENT_TYPE cType = component.GetComponentType();
+		 
+		component.DeActivate(); 
 
-		const J_COMPONENT_TYPE cType = component->GetComponentType();
-
-		if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)
-			DeRegisterAnimator(static_cast<JAnimator*>(component));
-		else if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-			DeRegisterCamera(static_cast<JCamera*>(component));
-		else if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-			DeRegisterLight(static_cast<JLight*>(component));
-		else if (cType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
-			DeRegisterRenderItem(static_cast<JRenderItem*>(component));
-
-		component->DeActivate();
-		gameObjectDirty->DeRegisterComponent(component);
-
-		const std::string componentName = component->GetName();
-		const size_t componenetGuid = component->GetGuid();
-		const J_COMPONENT_TYPE componentType = component->GetComponentType();
+		const std::string componentName = component.GetName();
+		const size_t componenetGuid = component.GetGuid();
+		const J_COMPONENT_TYPE componentType = component.GetComponentType();
 
 		int index = -1;
 		const uint componentCount = (uint)JGameObject::component.size();
@@ -258,72 +226,6 @@ namespace JinEngine
 
 		return true;
 	}
-	bool JGameObject::RegisterAnimator(JAnimator* animator)noexcept
-	{
-		JGameObject::animator = animator;
-		return sceneGameObjectEvent->RegisterAnimator(this, animator);
-	}
-	bool JGameObject::RegisterCamera(JCamera* camera)noexcept
-	{
-		return sceneGameObjectEvent->RegisterCamera(this, camera);
-	}
-	bool JGameObject::RegisterLight(JLight* light)noexcept
-	{
-		return sceneGameObjectEvent->RegisterLight(this, light);
-	}
-	bool JGameObject::RegisterRenderItem(JRenderItem* renderItem)noexcept
-	{
-		JGameObject::renderItem = renderItem;
-		return sceneGameObjectEvent->RegisterRenderItem(this, renderItem);
-	}
-	bool JGameObject::RegisterShadowLight(JLight* light)noexcept
-	{
-		return sceneGameObjectEvent->RegisterShadowLight(this, light);
-	}
-	bool JGameObject::DeRegisterAnimator(JAnimator* animator)noexcept
-	{
-		return sceneGameObjectEvent->DeRegisterAnimator(this, animator);
-	}
-	bool JGameObject::DeRegisterCamera(JCamera* camera)noexcept
-	{
-		return sceneGameObjectEvent->DeRegisterCamera(this, camera);
-	}
-	bool JGameObject::DeRegisterLight(JLight* light)noexcept
-	{
-		return sceneGameObjectEvent->DeRegisterLight(this, light);
-	}
-	bool JGameObject::DeRegisterRenderItem(JRenderItem* renderItem)noexcept
-	{
-		return sceneGameObjectEvent->DeRegisterRenderItem(this, renderItem);
-	}
-	bool JGameObject::DeRegisterShadowLight(JLight* light)noexcept
-	{
-		return sceneGameObjectEvent->DeRegisterShadowLight(this, light);
-	}
-	bool JGameObject::ReRegisterAnimator(JAnimator* animator)noexcept
-	{
-		if (animator->GetOwnerGuid() != GetGuid())
-			return false;
-
-		DeRegisterAnimator(animator);
-		return RegisterAnimator(animator);
-	}
-	bool JGameObject::ReRegisterRenderItem(JRenderItem* renderItem)noexcept
-	{
-		if (renderItem->GetOwnerGuid() != GetGuid())
-			return false;
-
-		DeRegisterRenderItem(renderItem);
-		return RegisterRenderItem(renderItem);
-	}
-	JCamera* JGameObject::SetMainCamera(JCamera* camera)noexcept
-	{
-		return sceneGameObjectEvent->SetMainCamera(this, camera);
-	}
-	void JGameObject::UpdateGameObjectTransform()noexcept
-	{
-		sceneGameObjectEvent->UpdateGameObjectTransform(this);
-	}
 	void JGameObject::EraseGameObject(JGameObject* gameObject)noexcept
 	{
 		if (gameObject == nullptr || (gameObject->GetFlag() & JOBJECT_FLAG::OBJECT_FLAG_INERASABLE) > 0)
@@ -331,8 +233,8 @@ namespace JinEngine
 
 		const size_t guid = gameObject->GetGuid();
 		JGameObject* parent = gameObject->GetParent();
-		const uint childrenCount = (uint)parent->children.size();
-		for (uint i = 0; i < childrenCount; ++i)
+		const uint pChildrenCount = (uint)parent->children.size();
+		for (uint i = 0; i < pChildrenCount; ++i)
 		{
 			if (guid == parent->children[i]->GetGuid())
 			{
@@ -340,21 +242,20 @@ namespace JinEngine
 				break;
 			}
 		}
-		EraseGameObjectChildren(gameObject);
-	}
-	void JGameObject::EraseGameObjectChildren(JGameObject* parent)noexcept
-	{
-		const uint childrenCount = (uint)parent->children.size();
+
+		const uint childrenCount = (uint)gameObject->children.size();
 		for (uint i = 0; i < childrenCount; ++i)
-			EraseGameObjectChildren(parent->children[i]);
+			EraseGameObject(gameObject->children[i]);
 
-		const uint componentCount = (uint)parent->component.size();
+		const uint componentCount = (uint)gameObject->component.size();
 		for (uint i = 0; i < componentCount; ++i)
-			parent->component[i]->DeActivate();
+			gameObject->component[i]->DeActivate();
 
-		parent->component.clear();
-		parent->children.clear();
-		parent->sceneGameObjectEvent->EraseGameObject(parent);
+		gameObject->component.clear();
+		gameObject->children.clear();
+
+		JScene* ownerScene = gameObject->ownerScene;
+		ownerScene->GameObjInterface()->EraseGameObject(*parent);
 	}
 	Core::J_FILE_IO_RESULT JGameObject::CallStoreGameObject(std::wofstream& stream)
 	{
@@ -482,6 +383,7 @@ namespace JinEngine
 			return newObj;
 		};		
 		JGFI::Regist(defaultC, initC, loadC, copyC);
+		JComponentFactoryImplBase::RegistAddStroage(&JGameObject::AddComponent);		
 	} 
 	JGameObject::JGameObject(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JGameObject* parent, JScene* ownerScene)
 		:JGameObjectInterface(name, guid, flag), parent(parent)
@@ -494,9 +396,6 @@ namespace JinEngine
 		}
 		else
 			JGameObject::ownerScene = ownerScene;
-
-		sceneGameObjectEvent = JGameObject::ownerScene;
-		gameObjectDirty = std::make_unique<GameObjectDirty>(GetGuid());
 	}
 	JGameObject::~JGameObject()
 	{
@@ -505,8 +404,7 @@ namespace JinEngine
 		transform = nullptr;
 		animator = nullptr;
 		renderItem = nullptr;
-		ownerScene = nullptr;
-		sceneGameObjectEvent = nullptr;
+		ownerScene = nullptr; 
 
 		children.clear();
 		parent = nullptr;

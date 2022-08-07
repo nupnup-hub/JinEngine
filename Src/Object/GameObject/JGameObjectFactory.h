@@ -19,13 +19,13 @@ namespace JinEngine
 		using InitPtr = JGameObject * (*)(const std::string&, const size_t, const JOBJECT_FLAG, JGameObject*, JScene*);
 		using LoadPtr = JGameObject * (*)(std::wifstream&, JGameObject*);
 		using CopytPtr = JGameObject * (*)(JGameObject*, JGameObject*);
-		using AddStoragePtr = Core::JMemeberCallable<JScene, JGameObject*, JGameObject*>;
+		using AddStoragePtr = JGameObject * (JScene::*)(JGameObject&);
 
 		using DefaultCallable = Core::JStaticCallable<JGameObject*, JGameObject*>;
 		using InitCallable = Core::JStaticCallable<JGameObject*, const std::string&, const size_t, const JOBJECT_FLAG, JGameObject*, JScene*>;
 		using LoadCallable = Core::JStaticCallable<JGameObject*, std::wifstream&, JGameObject*>;
 		using CopyCallable = Core::JStaticCallable<JGameObject*, JGameObject*, JGameObject*>;
-		using AddStorageCallable = Core::JMemeberCallable<JScene, JGameObject*, JGameObject*>;
+		using AddStorageCallable = Core::JMemeberCallable<JScene, JGameObject*, JGameObject&>;
 	private:
 		static AddStorageCallable* addStorage;
 	public:

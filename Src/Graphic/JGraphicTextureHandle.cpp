@@ -1,15 +1,11 @@
 #include"JGraphicTextureHandle.h"
+#include"JGraphicDrawList.h"
+#include"JGraphic.h"
 
 namespace JinEngine
 {
 	namespace Graphic
 	{
-		JGraphicTextureHandle::JGraphicTextureHandle(const J_GRAPHIC_TEXTURE_TYPE graphicResourceType, uint width, uint height)
-			:graphicResourceType(graphicResourceType),
-			width(width), height(height)
-		{}
-		JGraphicTextureHandle::~JGraphicTextureHandle() {}
-
 		J_GRAPHIC_TEXTURE_TYPE JGraphicTextureHandle::GetGraphicResourceType()const noexcept
 		{
 			return graphicResourceType;
@@ -34,9 +30,17 @@ namespace JinEngine
 		{
 			return srvHeapIndex;
 		}
-		int JGraphicTextureHandle::GetResourceVectorIndex()const noexcept
+		bool JGraphicTextureHandle::Erase(JGraphicTextureHandle** handle)
 		{
-			return resourceVectorIndex;
+			if (handle == nullptr || *handle == nullptr)
+				return false;
+
+			return JGraphic::Instance().ResourceInterface()->EraseGraphicTextureResource(handle);
 		}
+		JGraphicTextureHandle::JGraphicTextureHandle(const J_GRAPHIC_TEXTURE_TYPE graphicResourceType, uint width, uint height)
+			:graphicResourceType(graphicResourceType),
+			width(width), height(height)
+		{}
+		JGraphicTextureHandle::~JGraphicTextureHandle() {}
 	}
 }

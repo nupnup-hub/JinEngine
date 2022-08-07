@@ -22,12 +22,9 @@ namespace JinEngine
 {
 	struct JShaderData;
 	class ProjectSelector;
-	class ImGuiManager;
-	class JCamera;
-	class JLight;
+	class ImGuiManager; 
 	class JMeshGeometry;
-	class JShader;
-	class JTexture;
+	class JShader; 
 	class JResourceManager;
 	class JResourceIO;
 	class ObjectDetail;
@@ -46,7 +43,8 @@ namespace JinEngine
 	}
 	namespace Graphic
 	{
-		struct JGraphicTextureHandle;
+		class JGraphicTextureHandle;
+		class JGraphicTexture;
 
 		class JGraphicDeviceInterface
 		{
@@ -63,17 +61,15 @@ namespace JinEngine
 		class JGraphicResourceInterface : public JGraphicDeviceInterface
 		{
 		private:
-			friend class ProjectSelector;
-			friend class JCamera;
-			friend class JLight;
-			friend class JShader;
-			friend class JTexture;
+			friend class ProjectSelector; 
+			friend class JShader;   
 			friend class ObjectDetail;
 			friend class WindowDirectory;
 			friend class MainSceneEditor;
 			friend class PreviewSceneEditor;
 			friend class SceneViewer;
-
+			friend class JGraphicTextureHandle;
+			friend class JGraphicTexture;
 		private:
 			virtual CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvDescriptorHandle(int index)const noexcept = 0;
 			virtual CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept = 0;
@@ -82,7 +78,7 @@ namespace JinEngine
 			virtual JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::string& path) = 0;
 			virtual JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
 			virtual JGraphicTextureHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
-			virtual bool EraseGraphicTextureResource(JGraphicTextureHandle* handle) = 0;
+			virtual bool EraseGraphicTextureResource(JGraphicTextureHandle** handle) = 0;
 			virtual void StuffShaderPso(JShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_SHADER_FUNCTION functionFlag) = 0;
 		};
 

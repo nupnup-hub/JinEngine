@@ -19,12 +19,12 @@ namespace JinEngine
 		using DefaultPtr = JDirectory * (*)(JDirectory*);
 		using InitPtr = JDirectory * (*)(const std::string&, const size_t, const JOBJECT_FLAG, JDirectory*);
 		//using CopytPtr = JDirectory * (*)(JDirectory*);
-		using AddStoragePtr = JDirectory * (JResourceManager::*)(JDirectory*);
+		using AddStoragePtr = JDirectory * (JResourceManager::*)(JDirectory&);
 
 		using DefaultCallable = Core::JStaticCallable<JDirectory*, JDirectory*>;
 		using InitCallable = Core::JStaticCallable<JDirectory*, const std::string&, const size_t, const JOBJECT_FLAG, JDirectory*>;
 	//	using CopyCallable = Core::JStaticCallable<JDirectory*, JDirectory*>;
-		using AddStorageCallable = Core::JMemeberCallable<JResourceManager, JDirectory*, JDirectory*>;
+		using AddStorageCallable = Core::JMemeberCallable<JResourceManager, JDirectory*, JDirectory&>;
 	private:
 		static AddStorageCallable* addStorage;
 	private:

@@ -100,7 +100,7 @@ namespace JinEngine
 	}
 	std::vector<std::string> JMeshGeometry::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::string> format{ ".mesh", ".fbx" };
+		static std::vector<std::string> format{ ".mesh", ".obj", ".fbx" };
 		return format;
 	}
 	J_MESHGEOMETRY_TYPE JMeshGeometry::GetMeshGeometryType()const noexcept
@@ -118,10 +118,119 @@ namespace JinEngine
 	void JMeshGeometry::DoActivate()noexcept
 	{
 		JResourceObject::DoActivate();
+		StuffResource();
 	}
 	void JMeshGeometry::DoDeActivate()noexcept
 	{
 		JResourceObject::DoDeActivate();
+		ClearResource();
+	}
+	void JMeshGeometry::StuffResource()
+	{
+		//구현필요
+		// 0 == mesh 
+		if (!IsValidResource())
+		{
+			if (formatIndex == 0)
+			{
+				;//if(Load Mesh());
+				if(ReadMeshData())
+					SetValid(true);
+			}
+		}
+	}
+	void JMeshGeometry::ClearResource()
+	{
+		//구현필요
+		// 0 == mesh 
+		if (IsValidResource())
+		{
+			if (formatIndex == 0)
+			{
+				vertexBufferCPU.Reset();
+				indexBufferCPU.Reset();
+				vertexBufferGPU.Reset();
+				indexBufferGPU.Reset();
+				vertexBufferUploader.Reset();
+				indexBufferUploader.Reset();
+
+				SetValid(false);
+				;//Clear Mesh;
+			}
+		}
+	}
+	bool JMeshGeometry::ReadMeshData()
+	{
+		const JResourcePathData pathData{ GetWPath() };
+		std::wifstream stream;
+		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
+		if (stream.is_open())
+		{
+			int vertexCount;
+			int indexCount;
+			int meshType;
+
+			stream >> vertexCount;
+			stream >> indexCount;
+			stream >> meshType;
+			if (meshType == (int)J_MESHGEOMETRY_TYPE::STATIC)
+			{
+				JStaticMeshData staticMeshdata;
+				BoundingBox boundingBox;
+				BoundingSphere boundingSphere;
+
+				const XMFLOAT3 vMinf3(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
+				const XMFLOAT3 vMaxf3(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
+				XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+				XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+
+				for (int i = 0; i < vertexCount; ++i)
+				{
+					XMFLOAT3 position;
+					XMFLOAT3 normal;
+					XMFLOAT2 texC;
+					XMFLOAT3 tangentU;
+
+					stream >> position.x >> position.y >> position.z;
+					stream >> normal.x >> normal.y >> normal.z;
+					stream >> texC.x >> texC.y;
+					stream >> tangentU.x >> tangentU.y >> tangentU.z;
+
+					XMVECTOR P = XMLoadFloat3(&position);
+					vMin = XMVectorMin(vMin, P);
+					vMax = XMVectorMax(vMax, P);
+
+					staticMeshdata.vertices.emplace_back(JStaticMeshVertex(position, normal, texC, tangentU));
+				}
+
+				XMStoreFloat3(&boundingBox.Center, 0.5f * (vMin + vMax));
+				XMStoreFloat3(&boundingBox.Extents, 0.5f * (vMax - vMin));
+				XMStoreFloat3(&boundingSphere.Center, 0.5f * (vMin + vMax));
+				XMFLOAT3 dis;
+				XMStoreFloat3(&dis, XMVector3Length((0.5f * (vMin + vMax)) - vMax));
+				boundingSphere.Radius = (float)sqrt(pow(dis.x, 2) + pow(dis.y, 2) + pow(dis.z, 2));
+
+				for (int i = 0; i < indexCount; ++i)
+				{
+					int index;
+					stream >> index;
+					staticMeshdata.indices32.emplace_back(index);
+				}
+
+				StuffStaticMesh(staticMeshdata, boundingBox, boundingSphere);
+				stream.close();				 
+				return true;
+			}
+			else
+			{
+				//수정필요
+				//skinned 미구현 engine내부에서 skeleton 생성이 전제조건
+				stream.close();
+				return false;
+			}
+		}
+		else
+			return false;
 	}
 	bool JMeshGeometry::StuffStaticMesh(JStaticMeshData& meshData, const DirectX::BoundingBox& boundingBox, const DirectX::BoundingSphere& boundingSphere)
 	{
@@ -309,85 +418,28 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
 		stream.close();
 
-		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
-		if (stream.is_open())
+		JMeshGeometry* newMesh;
+		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
 		{
-			int vertexCount;
-			int indexCount;
-			int meshType;
-
-			stream >> vertexCount;
-			stream >> indexCount;
-			stream >> meshType;
-			if (meshType == (int)J_MESHGEOMETRY_TYPE::STATIC)
-			{
-				JStaticMeshData staticMeshdata;
-				BoundingBox boundingBox;
-				BoundingSphere boundingSphere;
-
-				const XMFLOAT3 vMinf3(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
-				const XMFLOAT3 vMaxf3(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-				XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-				XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-
-				for (int i = 0; i < vertexCount; ++i)
-				{
-					XMFLOAT3 position;
-					XMFLOAT3 normal;
-					XMFLOAT2 texC;
-					XMFLOAT3 tangentU;
-
-					stream >> position.x >> position.y >> position.z;
-					stream >> normal.x >> normal.y >> normal.z;
-					stream >> texC.x >> texC.y;
-					stream >> tangentU.x >> tangentU.y >> tangentU.z;
-
-					XMVECTOR P = XMLoadFloat3(&position);
-					vMin = XMVectorMin(vMin, P);
-					vMax = XMVectorMax(vMax, P);
-
-					staticMeshdata.vertices.emplace_back(JStaticMeshVertex(position, normal, texC, tangentU));
-				}
-
-				XMStoreFloat3(&boundingBox.Center, 0.5f * (vMin + vMax));
-				XMStoreFloat3(&boundingBox.Extents, 0.5f * (vMax - vMin));
-				XMStoreFloat3(&boundingSphere.Center, 0.5f * (vMin + vMax));
-				XMFLOAT3 dis;
-				XMStoreFloat3(&dis, XMVector3Length((0.5f * (vMin + vMax)) - vMax));
-				boundingSphere.Radius = (float)sqrt(pow(dis.x, 2) + pow(dis.y, 2) + pow(dis.z, 2));
-
-				for (int i = 0; i < indexCount; ++i)
-				{
-					int index;
-					stream >> index;
-					staticMeshdata.indices32.emplace_back(index);
-				}
-
-				JMeshGeometry* newMesh;
-				if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-				{
-					newMesh = new JMeshGeometry(pathData.name, metadata.guid, metadata.flag, directory,
-						JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
-				}
-				else
-				{
-					newMesh = new JMeshGeometry(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory,
-						JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
-				}
-				newMesh->StuffStaticMesh(staticMeshdata, boundingBox, boundingSphere);
-				stream.close();
-				return newMesh;
-			}
-			else
-			{
-				//수정필요
-				//skinned 미구현 engine내부에서 skeleton 생성이 전제조건
-				stream.close();
-				return nullptr;
-			}
+			newMesh = new JMeshGeometry(pathData.name, metadata.guid, metadata.flag, directory,
+				JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
 		}
 		else
+		{
+			newMesh = new JMeshGeometry(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory,
+				JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
+		}
+
+		if (newMesh->ReadMeshData())
+		{
+			newMesh->SetValid(true);
+			return newMesh;
+		}
+		else
+		{
+			delete newMesh;
 			return nullptr;
+		}
 	}
 	void JMeshGeometry::RegisterFunc()
 	{
@@ -420,8 +472,10 @@ namespace JinEngine
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JMeshGeometry::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 		 
-		RegisterTypeInfo(RTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true },
-			RTypeUtil{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable });
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false, false };
+		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+
+		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
 	JMeshGeometry::JMeshGeometry(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		: JMeshInterface(name, guid, flag, directory, formatIndex)

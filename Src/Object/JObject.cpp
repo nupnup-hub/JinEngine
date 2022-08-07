@@ -4,10 +4,6 @@
 
 namespace JinEngine
 { 
-	JObject::JObject(const std::string& name, const size_t guid, const JOBJECT_FLAG flag)
-		:name(name), guid(guid), flag(flag)
-	{}
-	JObject::~JObject(){}
 	std::string JObject::GetName()const noexcept
 	{   
 		return name;
@@ -27,6 +23,10 @@ namespace JinEngine
 	void JObject::SetName(const std::string& name)noexcept
 	{
 		JObject::name = name;
+	}
+	bool JObject::HasFlag(const JOBJECT_FLAG flag)const noexcept
+	{
+		return (JObject::flag & flag) != 0;
 	}
 	bool JObject::IsActivated()const noexcept
 	{
@@ -80,4 +80,8 @@ namespace JinEngine
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
+	JObject::JObject(const std::string& name, const size_t guid, const JOBJECT_FLAG flag)
+		:name(name), guid(guid), flag(flag)
+	{}
+	JObject::~JObject() {}
 }

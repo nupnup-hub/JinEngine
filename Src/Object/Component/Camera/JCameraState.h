@@ -1,3 +1,4 @@
+#pragma once
 namespace JinEngine
 {
 	enum class J_CAMERA_STATE

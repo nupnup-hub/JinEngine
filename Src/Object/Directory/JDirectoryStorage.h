@@ -17,6 +17,14 @@ namespace JinEngine
 		ResourceVector rVec;
 		ResourceMap rMap;
 	public:
+		uint Count()const noexcept
+		{
+			return rVec.Count();
+		}
+		JDirectory* Get(const uint index)
+		{
+			return rVec.Get(index);
+		}
 		JDirectory* GetByPath(const std::string& path)
 		{
 			const uint count = rVec.Count();
@@ -27,20 +35,21 @@ namespace JinEngine
 			}
 			return nullptr;
 		}
-		JDirectory* GetAcitvatedDirectory()
+		JDirectory* GetOpenDirectory()
 		{
 			const uint count = rVec.Count();
 			for (uint i = 0; i < count; ++i)
 			{
-				if (rVec[i]->IsActivated())
+				if (rVec[i]->IsOpen())
 					return rVec[i];
 			}
 			return nullptr;
 		}
 		JDirectory* AddResource(JDirectory* dir)noexcept
 		{
-			if (dir == nullptr)
+			if (dir == nullptr || rMap.Has(dir->GetGuid()))
 				return nullptr;
+
 			rVec.Add(dir);
 			rMap.Add(dir, dir->GetGuid());
 

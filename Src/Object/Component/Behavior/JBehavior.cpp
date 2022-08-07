@@ -28,12 +28,12 @@ namespace JinEngine
 	void JBehavior::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
-		RegisterComponent<JBehavior>(this);
+		RegisterComponent();
 	}
 	void JBehavior::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
-		DeRegisterComponent<JBehavior>(this);
+		DeRegisterComponent();
 	}
 	Core::J_FILE_IO_RESULT JBehavior::CallStoreComponent(std::wofstream& stream)
 	{
@@ -71,6 +71,14 @@ namespace JinEngine
 			return newB;
 		};
 		JCFI<JBehavior>::Regist(defaultC, initC, loadC, copyC);
+
+		static GetTypeNameCallable getTypeNameCallable{ &JBehavior::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JBehavior::StaticTypeInfo };
+
+		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), false };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable }; 
+
+		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, JCI::CTypeInterfaceFunc{});
 	}
 	JBehavior::JBehavior(const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)
 		:JComponent(TypeName(), guid, objFlag, owner)

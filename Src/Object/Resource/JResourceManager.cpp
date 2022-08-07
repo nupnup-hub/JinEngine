@@ -21,6 +21,8 @@
 #include"../Directory/JFile.h" 
 #include"../Directory/JDirectory.h"
 #include"../Directory/JDirectoryFactory.h"
+#include"../Component/Camera/JCameraState.h"
+#include"../Component/Camera/JCamera.h"
 
 #include"../../Core/Exception/JExceptionMacro.h"
 #include"../../Core/Guid/GuidCreator.h" 
@@ -68,10 +70,25 @@ namespace JinEngine
 	}
 	JResourceObject* JResourceManager::Storage::AddResource(JResourceObject* resource)noexcept
 	{
-		if (resource == nullptr)
+		if (resource == nullptr || rMap.Has(resource->GetGuid()))
 			return nullptr;
+
 		rVec.Add(resource);
 		rMap.Add(resource, resource->GetGuid());
+
+		JRI::RTypeHint rTypeHint = JRI::GetRTypeHint(resource->GetResourceType());
+
+		if (rTypeHint.isFrameResource)
+		{
+			auto callable = JRI::GetSetFrameDirtyCallable(resource->GetResourceType());
+			callable(nullptr, *resource);
+		}
+
+		if (rTypeHint.isGraphicBuffResource)
+		{
+			auto callable = JRI::GetSetBuffIndexCallable(resource->GetResourceType());
+			callable(nullptr, *resource, rVec.Count());
+		}
 
 		return resource;
 	}
@@ -80,12 +97,23 @@ namespace JinEngine
 		if (resource == nullptr)
 			return false;
 
-		if (resource->IsActivated())
-			resource->OffReference();
-
 		static auto equalLam = [](JResourceObject* a, JResourceObject* b) {return a->GetGuid() == b->GetGuid(); };
+		JRI::RTypeHint rTypeHint = JRI::GetRTypeHint(resource->GetResourceType());
+		int index = rVec.GetIndex(resource, equalLam);
 
-		rVec.Erase(resource, equalLam);
+		if (rTypeHint.isFrameResource)
+		{
+			auto callable = JRI::GetSetFrameDirtyCallable(resource->GetResourceType());
+			rVec.ApplyFunc(index, callable);
+		}
+
+		if (rTypeHint.isGraphicBuffResource)
+		{ 
+			auto callable = JRI::GetSetBuffIndexCallable(resource->GetResourceType());
+			rVec.ApplyFuncByIndex(index, callable);
+		}
+
+		rVec.Erase(index);
 		rMap.Erase(resource->GetGuid());
 		return resource;
 	}
@@ -101,7 +129,7 @@ namespace JinEngine
 	{
 		resourceIO = std::make_unique<JResourceIO>();
 
-		std::vector<JRI::RTypeHint> rinfo = JRI::GetRInfo(RESOURCE_ALIGN_TYPE::NONE);
+		std::vector<JRI::RTypeHint> rinfo = JRI::GetRTypeHintVec(RESOURCE_ALIGN_TYPE::NONE);
 		const uint rinfoCount = (uint)rinfo.size();
 		for(uint i = 0; i < rinfoCount; ++i)
 			rCashMap.emplace(rinfo[i].thisType, Storage());
@@ -167,23 +195,20 @@ namespace JinEngine
 			JDirectory* projectContentsDir = GetDirectory(JApplicationVariable::GetProjectContentPath());
 			JDirectory* defaultSceneDir = projectContentsDir->GetChildDirctory(JApplicationVariable::GetProjectContentScenePath());
 			JScene* newScene = JRFI<JScene>::Create(*defaultSceneDir);
-			nowMainScene = newScene;
-			//JScene* newScene = CreateScene(SCENE_TYPE::SCENE_TYPE_MAIN_SCENE, OBJECT_FLAG_NONE, defaultSceneDir);
-			//resourceIO->LoadScene(newScene, true);
+			nowMainScene = newScene; 
+			nowMainScene->GetMainCamera()->StateInterface()->SetCameraState(J_CAMERA_STATE::RENDER);
 		}
-		nowMainScene->OnReference();
-		Graphic::JGraphicDrawList::AddDrawList(nowMainScene, Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS, true);
-		ISceneSpatialStructure* iscene = nowMainScene;
-		//iscene->CreateDemoGameObject();
-		iscene->OnSceneSpatialStructure();
-		iscene->BuildBvh();
-		iscene->OnDebugBoundingBox(false);
+		OnResourceReference(*nowMainScene); 
+		nowMainScene->SpaceSpatialInterface()->OnSceneSpatialStructure();
 	}
 #pragma endregion
 	void JResourceManager::Terminate()
 	{
-		StoreResourceData();
-		nowMainScene->DeActivate();
+		StoreResourceData(); 
+		/*
+		Erase Resource 
+		nowMainScene.Deactivae();
+		*/
 
 		const uint groupCount = (uint)previewSceneGroup.size();
 		for (uint i = 0; i < groupCount; ++i)
@@ -228,8 +253,8 @@ namespace JinEngine
 		return dCash.GetByPath(JApplicationVariable::GetProjectEditorResourcePath());
 	}
 	JDirectory* JResourceManager::GetActivatedDirectory()noexcept
-	{
-		return dCash.GetAcitvatedDirectory();
+	{  
+		return dCash.GetOpenDirectory();
 	}
 	JScene* JResourceManager::GetMainScene()noexcept
 	{
@@ -257,6 +282,9 @@ namespace JinEngine
 	}
 	bool JResourceManager::EraseResource(JResourceObject* resource)noexcept
 	{
+		if (resource != nullptr && resource->IsActivated())
+			OffResourceReference(*resource);
+
 		return rCashMap.find(resource->GetResourceType())->second.EraseResource(resource);
 	}
 	std::vector<PreviewSceneGroup*>::const_iterator JResourceManager::GetPreviewGroupVectorHandle(_Out_ uint& groupCount)noexcept
@@ -553,9 +581,13 @@ namespace JinEngine
 		}
 	}
 
-	JResourceObject* JResourceManager::GetResourceByType(const J_RESOURCE_TYPE type, const size_t guid)noexcept
+	JResourceObject* JResourceManager::AddResource(JResourceObject& newResource)
 	{
-		return rCashMap.find(type)->second.Get(guid);
+		return rCashMap.find(newResource.GetResourceType())->second.AddResource(&newResource);
+	}
+	JDirectory* JResourceManager::AddDirectory(JDirectory& newDirectory)
+	{
+		return dCash.AddResource(&newDirectory);
 	}
 	void JResourceManager::StoreResourceData()
 	{
@@ -573,6 +605,11 @@ namespace JinEngine
 	void JResourceManager::LoadObject()
 	{
 		resourceIO->LoadProjectResource(projectRootDir);
+	}
+	void JResourceManager::RegisterFunc()
+	{
+		JResourceObjectFactoryImplBase::RegistAddStroage(&JResourceManager::AddResource);
+		JDirectoryFactoryImpl::RegistAddStroage(&JResourceManager::AddDirectory);
 	}
 }
 

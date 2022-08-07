@@ -109,29 +109,29 @@ namespace JinEngine
 		using LoadCallable = Core::JStaticCallable<JComponent*, std::wifstream&, JGameObject*>;
 		using CopyCallable = Core::JStaticCallable<JComponent*, JComponent*, JGameObject*>;
 	private:
-		using AddStoragePtr = JComponent * (JGameObject::*)(JComponent*);
-		using AddStorageCallable = Core::JMemeberCallable<JGameObject, JComponent*, JComponent*>;
+		using AddStoragePtr = JComponent * (JGameObject::*)(JComponent&);
+		using AddStorageCallable = Core::JMemeberCallable<JGameObject, JComponent*, JComponent&>;
 	protected:
 		static AddStorageCallable* addStorage;
 	public:
 		static JComponent* CreateByName(const std::string& typeName, JGameObject& owner)
 		{
 			JComponent* res = JCF::Instance().Create(typeName, owner);
-			(*addStorage)(&owner, &*res);
+			(*addStorage)(&owner, *res);
 			return res;
 		}
 	public:
 		static JComponent* CopyByName(const std::string& typeName, JComponent& ori, JGameObject& owner)
 		{
 			JComponent* res = JCF::Instance().Copy(typeName, ori, owner);
-			(*addStorage)(&owner, &*res);
+			(*addStorage)(&owner, *res);
 			return res;
 		}
 	protected:
 		static JComponent* LoadByName(const std::string& typeName, std::wifstream& stream, JGameObject& owner)
 		{
 			JComponent* res = JCF::Instance().Load(typeName, stream, owner);
-			(*addStorage)(&owner, &*res);
+			(*addStorage)(&owner, *res);
 			return res;
 		}
 	private:
@@ -152,26 +152,26 @@ namespace JinEngine
 		static T* Create(JGameObject& owner)
 		{
 			T* res = JCF::Instance().Create<T>(owner);
-			(*addStorage)(&owner, &*res);
+			(*addStorage)(&owner, *res);
 			return res;
 		}
 		static T* Create(const size_t guid, const JOBJECT_FLAG flag, JGameObject& owner)
 		{
 			T* res = JCF::Instance().Create<T>(guid, flag, owner);
-			(*addStorage)(&owner, &*res);
+			(*addStorage)(&owner, *res);
 			return res;
 		}
 		static T* Copy(T& ori, JGameObject& owner)
 		{
 			T* res = JCF::Instance().Copy<T>(ori, owner);
-			(*addStorage)(&owner, &*res);
+			(*addStorage)(&owner, *res);
 			return res;
 		}
 	private:
 		static T* Load(std::wifstream& stream, JGameObject& owner)
 		{
 			T* res = JCF::Instance().Load<T>(stream, owner);
-			(*addStorage)(&owner, &*res);
+			(*addStorage)(&owner, *res);
 			return res;
 		}
 	private:

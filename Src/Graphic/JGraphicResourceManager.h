@@ -1,6 +1,7 @@
 #pragma once
 #include"../../Lib/DirectX/d3dx12.h"
 #include"../Core/JDataType.h" 
+#include"JGraphicBufInterface.h"
 #include<vector>
 #include<string>
 #include<memory>
@@ -13,10 +14,9 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		struct JGraphicTextureHandle;
-		class JGraphicResourceManager
+		class JGraphicTextureHandle; 
+		class JGraphicResourceManager : public JGraphicBufManagerInterface
 		{
-			//Debug Class
 		private:
 			friend class GraphicResourceWatcher;
 			friend class JGraphicImpl;
@@ -69,9 +69,6 @@ namespace JinEngine
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> depthStencil;
 		public:
-			JGraphicResourceManager();
-			~JGraphicResourceManager();
-
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuRtvDescriptorHandle(int index)const noexcept;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuRtvDescriptorHandle(int index)const noexcept;
 
@@ -123,12 +120,15 @@ namespace JinEngine
 				ID3D12GraphicsCommandList* commandList);
 			JGraphicTextureHandle* CreateRenderTargetTexture(ID3D12Device* device, const uint width, const uint height);
 			JGraphicTextureHandle* CreateShadowMapTexture(ID3D12Device* device, const uint width, const uint height);
-			bool EraseGraphicTextureResource(ID3D12Device* device, JGraphicTextureHandle* handle);
+			bool EraseGraphicTextureResource(ID3D12Device* device, JGraphicTextureHandle** handle);
 
 			void ReBind2DTexture(ID3D12Device* device, const uint resourceIndex, const uint heapIndex);
 			void ReBindCubeTexture(ID3D12Device* device, const uint resourceIndex, const uint heapIndex);
 			void ReBindRenderTarget(ID3D12Device* device, const uint resourceIndex, const uint rtvHeapIndex, const uint srvHeapIndex);
 			void ReBindShadowMapTexture(ID3D12Device* device, const uint resourceIndex, const uint dsvHeapIndex, const uint srvHeapIndex);
+		public:
+			JGraphicResourceManager();
+			~JGraphicResourceManager();
 		};
 	}
 }

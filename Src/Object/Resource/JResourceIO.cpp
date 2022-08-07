@@ -68,7 +68,7 @@ namespace JinEngine
 	}
 	void JResourceIO::LoadProjectResource(JDirectory* projectRootDir)
 	{
-		std::vector<JRI::RTypeHint> rInfo = JRI::GetRInfo(RESOURCE_ALIGN_TYPE::DEPENDENCY);
+		std::vector<JRI::RTypeHint> rInfo = JRI::GetRTypeHintVec(RESOURCE_ALIGN_TYPE::DEPENDENCY);
 		const uint rInfoCount = (uint)rInfo.size();
 		for (uint i = 0; i < rInfoCount; ++i)
 		{
@@ -78,7 +78,7 @@ namespace JinEngine
 			else
 				searchRootDir = projectRootDir->SearchDirectory(JApplicationVariable::GetProjectContentPath());
 
-			if (rInfo[i].isGraphicResource)
+			if (rInfo[i].hasGraphicResource)
 			{
 				JGraphic::Instance().CommandInterface()->FlushCommandQueue();
 				JGraphic::Instance().CommandInterface()->StartCommand();

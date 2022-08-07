@@ -1,6 +1,5 @@
 #include"PreviewResourceScene.h"
-#include"../JScene.h" 
-#include"../ISceneFrameDirty.h" 
+#include"../JScene.h"  
 #include"../../JResourceObject.h" 
 #include"../../JResourceManager.h" 
 #include"../../JResourceType.h" 
@@ -10,6 +9,8 @@
 #include"../../JResourceObjectFactory.h"
 #include"../../../Component/JComponentFactoryUtility.h"
 #include"../../../Component/RenderItem/JRenderItem.h"
+#include"../../../Component/Camera/JCamera.h"
+#include"../../../Component/Camera/JCameraState.h"
 #include"../../../GameObject/JGameObject.h" 
 #include"../../../GameObject/JGameObjectFactoryUtility.h" 
 #include"../../../../Graphic/JGraphicDrawList.h"
@@ -27,18 +28,14 @@ namespace JinEngine
 			OBJECT_FLAG_EDITOR_OBJECT,
 			*JResourceManager::Instance().GetEditorResourceDirectory(),
 			JResourceObject::GetInvalidFormatIndex());
-		 
-		sceneFrameDirty = scene;
-		JSceneInterface* iScene = scene;
-		iScene->MakeDefaultObject(true);	 
-		previewCamera.resize(1);
-		previewCamera[0] = scene->GetMainCamera();	 
+		    
+		previewCamera = scene->GetMainCamera();
+		OnSceneReference();
 	}
 	PreviewResourceScene::~PreviewResourceScene() {}
 	bool PreviewResourceScene::Initialze()noexcept
 	{
 		//scene->MakeDefaultObject();
-		scene->OnReference();
 
 		const J_RESOURCE_TYPE resourceType = resource->GetResourceType();
 		bool res = false;
@@ -80,19 +77,10 @@ namespace JinEngine
 			MessageBox(0, L"½ÇÆÐ", resource->GetWName().c_str(), 0);
 			Clear();
 		}
-		else
-		{ 
-			if(previewDimension == PREVIEW_DIMENSION::THREE_DIMENTIONAL_RESOURCE)
-				Graphic::JGraphicDrawList::AddDrawList(GetScene(), Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS, false);
-			else
-				Graphic::JGraphicDrawList::AddDrawList(GetScene(), Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED, false);
-		}
 		return res;
 	}
 	void PreviewResourceScene::Clear()noexcept
 	{
-		PreviewScene::Clear(); 
-
 		if (textureMaterial != nullptr)
 		{
 			JResourceManager::Instance().EraseResource(textureMaterial);
@@ -100,10 +88,9 @@ namespace JinEngine
 		}
 
 		if (scene != nullptr)
-		{
+		{ 
 			JResourceManager::Instance().EraseResource(scene);
-			scene = nullptr;
-			sceneFrameDirty = nullptr;
+			scene = nullptr; 
 		}
 	}
 	JScene* PreviewResourceScene::GetScene()noexcept
@@ -129,7 +116,7 @@ namespace JinEngine
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
-		AdjustCamera(scene, previewCamera[0], center, radius);
+		AdjustCamera(scene, previewCamera, center, radius);
 		return true;
 	}
 	bool PreviewResourceScene::MakeMaterialPreviewScene()noexcept
@@ -149,7 +136,7 @@ namespace JinEngine
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
-		AdjustCamera(scene, previewCamera[0], center, radius);
+		AdjustCamera(scene, previewCamera, center, radius);
 		return true;
 	}
 	bool PreviewResourceScene::MakeUserTexturePreviewScene()noexcept
@@ -173,7 +160,7 @@ namespace JinEngine
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
-		AdjustCamera(scene, previewCamera[0], center, radius, true);
+		AdjustCamera(scene, previewCamera, center, radius, true);
 		return true;
 	}
 	bool PreviewResourceScene::MakeEditorTexturePreviewScene(const J_EDITOR_TEXTURE editorTextureType)noexcept
@@ -199,7 +186,7 @@ namespace JinEngine
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
-		AdjustCamera(scene, previewCamera[0], center, radius, true);
+		AdjustCamera(scene, previewCamera, center, radius, true);
 		return true;
 	}
 }

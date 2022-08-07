@@ -833,12 +833,12 @@ namespace JinEngine
 				continue;
 
 			ImGui::SetCursorPos(ImVec2(editorPositionCal->GetPositionX(), editorPositionCal->GetPositionY()));
-			if (ImGui::ImageButton((ImTextureID)JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(nowPreviewScene->GetPreviewCamera(0)->GetRsSrvHeapIndex()).ptr,
+			/*if (ImGui::ImageButton((ImTextureID)JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(nowPreviewScene->GetPreviewCamera(0)->GetRsSrvHeapIndex()).ptr,
 				ImVec2(selectorIconSize, selectorIconSize)))
 			{
 				*select = nowObject;
 				res = true;
-			}
+			}*/
 			name = editorPositionCal->GetString(nowObject->GetName());
 
 			ImGui::SetCursorPos(ImVec2(editorPositionCal->GetTextPositionX(), editorPositionCal->GetTextPositionY(0)));

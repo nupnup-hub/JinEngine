@@ -1,13 +1,13 @@
 #include"JRenderItem.h" 
 #include"../JComponentFactory.h"
 #include"../Transform/JTransform.h"
-#include"../../GameObject/JGameObject.h"
-#include"../../GameObject/GameObjectDirty.h" 
+#include"../../GameObject/JGameObject.h" 
 #include"../../Resource/Mesh/JMeshGeometry.h"
 #include"../../Resource/Material/JMaterial.h"
 #include"../../Resource/JResourceManager.h" 
 #include"../../Resource/Shader/JShaderFunctionEnum.h"  
 #include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Graphic/FrameResource/JObjectConstants.h"
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Application/JApplicationVariable.h"
 
@@ -33,10 +33,6 @@ namespace JinEngine
 	J_RENDER_LAYER JRenderItem::GetRenderLayer()const noexcept
 	{
 		return renderLayer;
-	}
-	uint JRenderItem::GetObjCBIndex() const noexcept
-	{
-		return objCBIndex;
 	}
 	uint JRenderItem::GetIndexCount()const noexcept
 	{
@@ -122,9 +118,9 @@ namespace JinEngine
 			if (IsActivated())
 			{
 				if (JRenderItem::meshGeo != nullptr)
-					JRenderItem::meshGeo->OffReference();
+					OffResourceReference(*JRenderItem::meshGeo);
 				JRenderItem::meshGeo = meshGeo;
-				JRenderItem::meshGeo->OnReference();
+				OnResourceReference(*JRenderItem::meshGeo);
 			}
 			else
 				JRenderItem::meshGeo = meshGeo; 
@@ -134,12 +130,14 @@ namespace JinEngine
 		else
 		{
 			if (JRenderItem::meshGeo != nullptr)
-				JRenderItem::meshGeo->OffReference();
+				OffResourceReference(*JRenderItem::meshGeo);
 			JRenderItem::meshGeo = meshGeo;
 		}
-		ReRegisterComponent<JRenderItem>(this);
-		if (gameObjectDirty != nullptr)
-			SetDirty();
+		if (PassDefectInspection())
+			RegisterComponent();
+		else
+			DeRegisterComponent();
+		SetFrameDirty();
 	}
 	void JRenderItem::SetMaterial(JMaterial* material)noexcept
 	{
@@ -148,9 +146,9 @@ namespace JinEngine
 			if (IsActivated())
 			{
 				if (JRenderItem::material != nullptr)
-					JRenderItem::material->OffReference();
+					OffResourceReference(*JRenderItem::material);
 				JRenderItem::material = material;
-				JRenderItem::material->OnReference();
+				OnResourceReference(*JRenderItem::material);
 			}
 			else
 				JRenderItem::material = material;
@@ -158,12 +156,14 @@ namespace JinEngine
 		else
 		{
 			if (JRenderItem::material != nullptr)
-				JRenderItem::material->OffReference();
+				OffResourceReference(*JRenderItem::material);
 			JRenderItem::material = material;
 		}
-		ReRegisterComponent<JRenderItem>(this);
-		if (gameObjectDirty != nullptr)
-			SetDirty();
+		if (PassDefectInspection())
+			RegisterComponent();
+		else
+			DeRegisterComponent();
+		SetFrameDirty();
 	}
 	void JRenderItem::SetTextureTransform(const DirectX::XMFLOAT4X4& textureTransform)noexcept
 	{
@@ -179,41 +179,20 @@ namespace JinEngine
 		{
 			JRenderItem::renderLayer = renderLayer;
 			if (IsActivated())
-				ReRegisterComponent<JRenderItem>(this);
+				ReRegisterComponent();
 		}
 	}
 	void JRenderItem::SetRenderVisibility(const J_RENDER_VISIBILITY renderVisibility)noexcept
 	{
 		JRenderItem::renderVisibility = renderVisibility;
 	}
-	void JRenderItem::SetObjCBIndex(const uint objCBIndex)noexcept
-	{
-		JRenderItem::objCBIndex = objCBIndex;
-		SetDirty();
-	}
 	bool JRenderItem::HasMaterial()const noexcept
 	{
 		return material != nullptr;
 	}
-	bool JRenderItem::IsDirtied()const noexcept
-	{
-		return gameObjectDirty->GetRenderItemDirty() > 0;
-	}
 	bool JRenderItem::IsVisible()const noexcept
 	{
 		return renderVisibility == J_RENDER_VISIBILITY::VISIBLE;
-	}
-	void JRenderItem::SetDirty()noexcept
-	{
-		gameObjectDirty->SetRenderItemDirty();
-	}
-	void JRenderItem::OffDirty()noexcept
-	{
-		gameObjectDirty->OffRenderItemDirty();
-	}
-	void JRenderItem::MinusDirty()noexcept
-	{
-		gameObjectDirty->RenderItemUpdate();
 	}
 	J_COMPONENT_TYPE JRenderItem::GetComponentType()const noexcept
 	{
@@ -237,24 +216,42 @@ namespace JinEngine
 	void JRenderItem::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
-		if (meshGeo != nullptr)
-			meshGeo->OnReference();
-
-		if (material != nullptr)
-			material->OnReference();
-		ReRegisterComponent<JRenderItem>(this);
-		SetDirty();
+		RegisterComponent();
+		SetFrameDirty();
 	}
 	void JRenderItem::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
-		if (meshGeo != nullptr)
-			meshGeo->OffReference();
+		DeRegisterComponent();
+		OffFrameDirty();
+	}
+	bool JRenderItem::UpdateFrame(Graphic::JObjectConstants& constant)
+	{ 
+		JTransform* jT = GetOwner()->GetTransform();
+		if (IsFrameDirted() || jT->IsFrameDirted())
+		{   
+			XMStoreFloat4x4(&constant.World, XMMatrixTranspose(jT->GetWorld()));
+			XMStoreFloat4x4(&constant.TexTransform, XMMatrixTranspose(XMLoadFloat4x4(&textureTransform)));
+			constant.MaterialIndex = GetBuffIndex(*material);
+			MinusFrameDirty();
+			return true;
+		}
+		else
+			return false;
+		/*
+		JObjectConstants objectConstants;
+					const XMMATRIX world = transform->GetWorld();
+					const XMFLOAT4X4 fTexTransform = renderItem->GetTextransform();
+					const XMMATRIX texTransform = XMLoadFloat4x4(&fTexTransform);
 
-		if (material != nullptr)
-			material->OffReference();
-		DeRegisterComponent<JRenderItem>(this);
-		OffDirty();
+					XMStoreFloat4x4(&objectConstants.World, XMMatrixTranspose(world));
+					XMStoreFloat4x4(&objectConstants.TexTransform, XMMatrixTranspose(texTransform));
+					objectConstants.MaterialIndex = renderItem->GetMaterial()->GetMatCBIndex();
+					currObjectCB->CopyData(renderItem->GetObjCBIndex() + objCBoffset, objectConstants);
+					transform->MinusFrameDirty();
+					renderItem->MinusFrameDirty();
+					++updateCount;
+		*/
 	}
 	Core::J_FILE_IO_RESULT JRenderItem::CallStoreComponent(std::wofstream& stream)
 	{
@@ -279,8 +276,7 @@ namespace JinEngine
 		bool hasMaterial = renderItem->material != nullptr;
 		size_t materialGuid = hasMaterial ? renderItem->material->GetGuid() : 0;
 
-		stream << hasMaterial << '\n' << renderItem->meshGeo->GetGuid() << '\n' << materialGuid << '\n'
-			<< renderItem->objCBIndex << '\n' << renderItem->primitiveType << '\n' << (int)renderItem->renderLayer << '\n';
+		stream << hasMaterial << '\n' << renderItem->meshGeo->GetGuid() << '\n' << materialGuid << '\n' << '\n' << renderItem->primitiveType << '\n' << (int)renderItem->renderLayer << '\n';
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -303,12 +299,11 @@ namespace JinEngine
 
 		bool hasMaterial;
 		size_t meshGuid;
-		size_t materialGuid;
-		int renderItemIndex;
+		size_t materialGuid; 
 		int primitiveType;
 		int renderLayer;
 
-		stream >> hasMaterial >> meshGuid >> materialGuid >> renderItemIndex >> primitiveType >> renderLayer;
+		stream >> hasMaterial >> meshGuid >> materialGuid  >> primitiveType >> renderLayer;
 
 		JMeshGeometry* mesh = JResourceManager::Instance().GetResource<JMeshGeometry>(meshGuid);
 		JMaterial* material = nullptr;
@@ -348,14 +343,27 @@ namespace JinEngine
 			return newR;
 		};
 		JCFI<JRenderItem>::Regist(defaultC, initC, loadC, copyC);
+
+		static GetTypeNameCallable getTypeNameCallable{ &JRenderItem::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JRenderItem::StaticTypeInfo };
+
+		static auto setFrameLam = [](JComponent& component)
+		{
+			static_cast<JRenderItem*>(&component)->SetFrameDirty();
+		};
+		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
+
+		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable };
+		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
+
+		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}
 	JRenderItem::JRenderItem(const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)
-		:JComponent(TypeName(), guid, objFlag, owner)
+		:JRenderItemInterface(TypeName(), guid, objFlag, owner)
 	{
 		JRenderItem::startIndexLocation = 0;
-		JRenderItem::baseVertexLocation = 0;
-
-		gameObjectDirty = owner->GetGameObjectDirty();
+		JRenderItem::baseVertexLocation = 0;	 
 	}
 	JRenderItem::~JRenderItem()
 	{

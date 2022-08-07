@@ -5,14 +5,11 @@
 
 namespace JinEngine
 {
-	class JResourceObject;
-	class ISceneFrameDirty;
-
+	class JResourceObject; 
 	class PreviewResourceScene : public PreviewScene
 	{
 	private: 
-		JScene* scene;
-		ISceneFrameDirty* sceneFrameDirty;
+		JScene* scene; 
 		JMaterial* textureMaterial;
 	public:
 		PreviewResourceScene(const std::string& previewSceneName, _In_ JResourceObject* resource, const PREVIEW_DIMENSION previewDimension, const PREVIEW_FLAG previewFlag);

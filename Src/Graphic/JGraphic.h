@@ -5,6 +5,7 @@
 #endif 
 #include"JGraphicInterface.h"
 #include"FrameResource/JAnimationConstants.h"
+#include"JGraphicTextureUserInterface.h"
 #include"../Object/Component/RenderItem/JRenderLayer.h"   
 #include"../Object/Resource/Shader/JShaderFunctionEnum.h" 
 #include"../Core/Singleton/JSingletonHolder.h"
@@ -13,12 +14,13 @@
 #include"../../Lib/DirectX/d3dx12.h"
 
 #include<WindowsX.h>
-#include<dxgi1_4.h>  
 #include<wrl/client.h> 
 #include<memory>
+#include<dxgi1_4.h>  
 #include<d3d12.h>
 #include<vector>
 #include<unordered_map>
+
 // Link necessary d3d12 libraries.
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
@@ -26,15 +28,11 @@
 
 namespace JinEngine
 {
-	struct JResourceData;
 	struct JShaderData;
 	class JCamera;
 	class JLight;
-	class JMeshGeometry;
 	class JGameObject;
 	class JScene;
-	class JTexture;
-	class PreviewScene;
 
 	namespace Core
 	{
@@ -44,10 +42,10 @@ namespace JinEngine
 	namespace Graphic
 	{
 		struct JFrameResource;
-		struct JGraphicTextureHandle;
+		class JGraphicTextureHandle;
 		class JGraphicResourceManager;
 
-		class JGraphicImpl : public JGraphicFrameInterface, public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>
+		class JGraphicImpl : public JGraphicFrameInterface, public JGraphicTextureUserInterface, public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>
 		{
 		private:
 			template<typename T>friend class Core::JCreateUsingNew;
@@ -83,7 +81,7 @@ namespace JinEngine
 			int width = 0;
 			int height = 0;
 			const uint defaultShadowWidth = 2048;
-			const uint defaultShadowHeight = 2048;		 
+			const uint defaultShadowHeight = 2048;
 			bool stCommand = false;
 
 		public:
@@ -107,7 +105,7 @@ namespace JinEngine
 			JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::string& path)final;
 			JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			JGraphicTextureHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0)final;
-			bool EraseGraphicTextureResource(JGraphicTextureHandle* handle)final;
+			bool EraseGraphicTextureResource(JGraphicTextureHandle** handle)final;
 			void StuffShaderPso(JShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_SHADER_FUNCTION functionFlag)final;
 		private:
 			void SetImGuiBackEnd()final;
@@ -123,12 +121,12 @@ namespace JinEngine
 			void EndFrame()final;
 			void UpdateWait()final;
 			void UpdateEngine()final;
-			uint UpdateSceneObjectCB(_In_ JScene* scene, const uint objCBoffset);
+			uint UpdateSceneObjectCB(_In_ JScene* scene, uint& objCBoffset);
 			uint UpdateMaterialCB();
-			uint UpdateScenePassCB(_In_ JScene* scene, const uint passCBoffset);
-			uint UpdateSceneAnimationCB(_In_ JScene* scene, const uint aniCBoffset, bool updateAnimation);
-			uint UpdateSceneCameraCB(_In_ JScene* scene, const uint camCBoffset);
-			uint UpdateSceneLightCB(_In_ JScene* scene, const uint lightCBoffset, const uint shadowCalCBoffset);
+			uint UpdateScenePassCB(_In_ JScene* scene, uint& passCBoffset);
+			uint UpdateSceneAnimationCB(_In_ JScene* scene, uint& aniCBoffset);
+			uint UpdateSceneCameraCB(_In_ JScene* scene, uint& camCBoffset);
+			uint UpdateSceneLightCB(_In_ JScene* scene, uint& lightCBoffset, uint& shadowCalCBoffset);
 			void DrawScene()final;
 			void DrawProjectSelector()final;
 			void DrawSceneRenderTarget(_In_ JScene* scene,

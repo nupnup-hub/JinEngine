@@ -77,30 +77,320 @@ namespace JinEngine
 	J_RESOURCE_TYPE JModel::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
-	} 
+	}
 	std::string JModel::GetFormat()const noexcept
 	{
 		return GetAvailableFormat()[formatIndex];
 	}
 	std::vector<std::string> JModel::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::string> format{ ".model", ".fbx", ".obj" };
+		static std::vector<std::string> format{ ".model", ".obj", ".fbx", };
 		return format;
 	}
 	void JModel::DoActivate()noexcept
 	{
 		JResourceObject::DoActivate();
-		//LoadObject();
+		StuffResource();
 	}
 	void JModel::DoDeActivate()noexcept
 	{
-		JResourceObject::DoDeActivate();
-		JResourceManager::Instance().EraseResource(modelScene);
-		modelRoot = nullptr;
-		skeletonRoot = nullptr;
-		meshPartCash.clear();
-		skeletonAsset->OffReference();
-		skeletonAsset = nullptr;
+		JResourceObject::DoDeActivate(); 
+		ClearResource();
+	}
+	void JModel::StuffResource()
+	{
+		if (!JValidInterface::IsValidResource())
+		{
+			switch (formatIndex)
+			{
+			case 0:
+			{
+				//.mesh
+			}
+			case 1:
+			{
+				//.obj
+				if (ReadObjModelData())
+					SetValid(true);
+				break;
+			}
+			case 2:
+			{
+				//.fbx
+				if (ReadFbxModelData())
+					SetValid(true);
+				break;
+			}
+			default:
+				break;
+			}
+		}
+	}
+	void JModel::ClearResource()
+	{
+		if (JValidInterface::IsValidResource())
+		{
+			JResourceManager::Instance().EraseResource(modelScene);
+			modelRoot = nullptr;
+			skeletonRoot = nullptr;
+			meshPartCash.clear();
+			OffResourceReference(*skeletonAsset);
+			skeletonAsset = nullptr;
+			SetValid(false);
+		}
+	}
+	bool JModel::IsValidResource()const noexcept
+	{
+		return JValidInterface::IsValidResource() && (skeletonAsset != nullptr);
+	}
+	bool JModel::ReadObjModelData()
+	{
+		const JResourcePathData pathData{ GetWPath() };
+		std::wifstream stream;
+		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
+		ModelMetadata metadata;
+		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, pathData.folderPath, metadata);
+		stream.close();
+
+		std::vector<Core::JObjMeshPartData>objMeshData;
+		std::vector<Core::JObjMatData> objMatData;
+		JModelAttribute modelAttribute;
+
+		if (JObjFileLoader::Instance().LoadObjFile(pathData.wstrPath, objMeshData, objMatData, modelAttribute))
+		{	 
+			const JOBJECT_FLAG objRFlag = (JOBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_INERASABLE |
+				OBJECT_FLAG_UNEDITABLE);
+
+			using SetTexture = void(JMaterial::*)(JTexture*);
+			SetTexture setTexturePtr;
+
+			const uint objMatCount = (uint)objMatData.size();
+			std::vector<JMaterial*> newMatV(objMatCount);
+			for (uint i = 0; i < objMatCount; ++i)
+			{
+				const size_t matGuid = loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS && metadata.partGuidVector.size() > i ?
+					metadata.partGuidVector[i].matGuid : Core::MakeGuid();
+
+				JMaterial* newMat = JRFI<JMaterial>::Create(objMatData[i].name, matGuid, objRFlag, *GetDirectory(),
+					JResourceObject::GetInvalidFormatIndex());
+
+				if (newMat == nullptr)
+					continue;
+
+				std::string texturePath;
+				if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_ALBEDO_T) > 0)
+				{
+					texturePath = pathData.folderPath + "\\" + objMatData[i].albedoTName;
+					setTexturePtr = &JMaterial::SetAlbedoMap;
+				}
+				else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_NORMAL_T) > 0)
+				{
+					texturePath = pathData.folderPath + "\\" + objMatData[i].normalTName;
+					setTexturePtr = &JMaterial::SetNormalMap;
+				}
+				else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_HEIGHT_T) > 0)
+				{
+					texturePath = pathData.folderPath + "\\" + objMatData[i].heightTName;
+					setTexturePtr = &JMaterial::SetHeightMap;
+				}
+				else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_AMBIENT_T) > 0)
+				{
+					texturePath = pathData.folderPath + "\\" + objMatData[i].ambientTName;
+					setTexturePtr = &JMaterial::SetAmbientOcclusionMap;
+				}
+				else
+					continue;
+
+				JTexture* matTexture = JResourceManager::Instance().GetResourceByPath<JTexture>(texturePath);
+				if (matTexture == nullptr)
+					continue;
+
+				(newMat->*setTexturePtr)(matTexture);
+				newMat->SetAlbedoColor(objMatData[i].albedo);
+				newMatV.push_back(newMat);
+			}
+
+			const uint newMatVCount = (uint)newMatV.size();
+			const uint objMeshCount = (uint)objMeshData.size();
+			std::vector<JMeshGeometry*> newMeshVec;
+			std::vector<int> matIndex;
+			for (uint i = 0; i < objMeshCount; ++i)
+			{
+				const size_t meshGuid = loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS && metadata.partGuidVector.size() > i ?
+					metadata.partGuidVector[i].meshGuid : Core::MakeGuid();
+
+				JMeshGeometry* newMesh = JRFI<JMeshGeometry>::Create(objMeshData[i].meshName, meshGuid, objRFlag, *GetDirectory(), 0);
+				if (newMesh == nullptr)
+					continue;
+
+				JMeshInterface* iMesh = newMesh;
+				iMesh->StuffStaticMesh(objMeshData[i].staticMeshData, objMeshData[i].boundingBox, objMeshData[i].boundingSphere);
+				newMeshVec.push_back(newMesh);
+				matIndex.push_back(-1);
+				for (uint j = 0; j < newMatVCount; ++j)
+				{
+					if (objMeshData[i].meshName == newMatV[i]->GetName())
+						matIndex[i] = j;
+				}
+			}
+
+			JModel::modelAttribute = std::make_unique<JModelAttribute>(modelAttribute);
+			modelScene = JRFI<JScene>::Create(GetDirectory()->MakeUniqueFileName(GetDefaultName<JScene>()),
+				Core::MakeGuid(),
+				(JOBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE),
+				*GetDirectory(),
+				GetInvalidFormatIndex());
+
+			OnResourceReference(*modelScene);
+
+			const uint modelPartCount = (uint)newMeshVec.size();
+			JGameObject* modelPartRoot = JGFI::Create(GetName(), Core::MakeGuid(), OBJECT_FLAG_NONE, *modelRoot);
+
+			std::vector<JGameObject*> meshGameObj;
+			meshGameObj.reserve(modelPartCount + 1);
+			meshGameObj.push_back(modelPartRoot);
+
+			for (uint i = 0; i < modelPartCount; ++i)
+			{
+				const std::string meshName = newMeshVec[i]->GetName();
+				JGameObject* child = JGFI::Create(meshName, Core::MakeGuid(), OBJECT_FLAG_NONE, *modelRoot);
+				if (matIndex[i] == -1)
+					JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *child, newMeshVec[i], nullptr);
+				else
+					JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *child, newMeshVec[i], newMatV[matIndex[i]]);
+
+				meshPartCash.push_back(child);
+				meshGameObj.push_back(child);
+			}
+
+			modelRoot = modelPartRoot;
+			OffResourceReference(*modelScene);
+			return true;
+		}
+		else
+			return false;
+	}
+	bool JModel::ReadFbxModelData()
+	{
+		std::wifstream stream;
+		stream.open(ConvertMetafilePath(GetWPath()), std::ios::in | std::ios::binary);
+		ModelMetadata metadata;
+		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, GetFolderPath(), metadata);
+		stream.close();
+
+		std::vector<Core::JFbxPartMeshData> jFbxPartMeshData;
+		std::vector<JModelPart> modelPart;
+		JModelAttribute modelAttribute;
+		std::vector<Joint> joint;
+
+		Core::J_FBXRESULT fbxLoadRes = Core::JFbxFileLoader::Instance().LoadFbxModelFile(GetPath(), jFbxPartMeshData, modelAttribute, joint);
+		if (((int)fbxLoadRes & (int)Core::J_FBXRESULT::HAS_MESH) > 0)
+		{
+			const uint meshCount = (uint)jFbxPartMeshData.size();
+			modelPart.reserve(jFbxPartMeshData.size());
+
+			const JOBJECT_FLAG meshflag = (JOBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE);
+			const JOBJECT_FLAG matflag = (JOBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE);
+
+			for (uint i = 0; i < meshCount; ++i)
+			{
+				if (!jFbxPartMeshData[i].hasMesh)
+					continue;
+
+				size_t meshGuid = loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS ? metadata.partGuidVector[i].meshGuid : Core::MakeGuid();
+				size_t matGuid = loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS ? metadata.partGuidVector[i].matGuid : Core::MakeGuid();
+
+				JMeshGeometry* mesh = JRFI<JMeshGeometry>::Create(jFbxPartMeshData[i].name, meshGuid, meshflag, *GetDirectory(), JResourceObject::GetInvalidFormatIndex());
+				JMeshInterface* iMesh = mesh;
+				if (modelAttribute.hasSkeleton)
+					iMesh->StuffSkinnedMesh(jFbxPartMeshData[i].skinnedMeshData, jFbxPartMeshData[i].boundingBox, jFbxPartMeshData[i].boundingSphere);
+				else
+					iMesh->StuffStaticMesh(jFbxPartMeshData[i].staticMeshData, jFbxPartMeshData[i].boundingBox, jFbxPartMeshData[i].boundingSphere);
+
+				JMaterial* mat = JRFI<JMaterial>::Create(jFbxPartMeshData[i].name + "_Material", matGuid, matflag, *GetDirectory(), JResourceObject::GetInvalidFormatIndex());
+				modelPart.emplace_back(JModelPart(jFbxPartMeshData[i].name, jFbxPartMeshData[i].parentIndex, mesh, mat));
+			}
+			if (((int)fbxLoadRes & (int)Core::J_FBXRESULT::HAS_SKELETON) > 0)
+			{
+				const uint jointCount = (uint)joint.size();
+				std::string totalName;
+				for (uint i = 0; i < jointCount; ++i)
+					totalName += joint[i].name;
+
+				JSkeleton newSkeleton{std::move(joint), JCommonUtility::CalculateGuid(totalName) };
+
+				uint count;
+				std::vector<JResourceObject*>::const_iterator st = JResourceManager::Instance().GetResourceVectorHandle<JSkeletonAsset>(count);
+				for (uint i = 0; i < count; ++i)
+				{
+					JSkeletonAsset* oldSkeletonAsset = static_cast<JSkeletonAsset*>(*(st + i));
+					if (oldSkeletonAsset->GetSkeleton()->IsSame(newSkeleton))
+					{
+						skeletonAsset = oldSkeletonAsset;
+						OnResourceReference(*skeletonAsset);
+						break;
+					}
+				}
+
+				if (skeletonAsset == nullptr)
+					skeletonAsset = JRFI<JSkeletonAsset>::Create(*GetDirectory(), std::move(newSkeleton));
+			}
+
+			JModel::modelAttribute = std::make_unique<JModelAttribute>(modelAttribute);
+			modelScene = JRFI<JScene>::Create(GetDirectory()->MakeUniqueFileName(GetDefaultName<JScene>()),
+				Core::MakeGuid(),
+				(JOBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE),
+				*GetDirectory(),
+				GetInvalidFormatIndex());
+
+			OnResourceReference(*modelScene);
+			const uint modelPartCount = (uint)modelPart.size();
+
+			JGameObject* modelPartRoot = JGFI::Create(GetName(), Core::MakeGuid(), OBJECT_FLAG_NONE, *modelRoot);
+
+			std::vector<JGameObject*> meshGameObj;
+			meshGameObj.reserve(modelPartCount + 1);
+			meshGameObj.push_back(modelPartRoot);
+
+			for (uint i = 0; i < modelPartCount; ++i)
+			{
+				const int parentIndex = modelPart[i].parentIndex;
+				JGameObject* child = JGFI::Create(modelPart[i].name, Core::MakeGuid(), OBJECT_FLAG_NONE, *meshGameObj[parentIndex]);
+
+				if (modelPart[i].mesh != nullptr)
+				{
+					JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *child, modelPart[i].mesh, modelPart[i].mat);
+					meshPartCash.push_back(child);
+				}
+				meshGameObj.push_back(child);
+			}
+
+			JSkeleton* skeleton = GetSkeletonAsset()->GetSkeleton();
+
+			if (skeleton != nullptr)
+			{
+				const std::string skeletonRootName = skeleton->GetJointName(0);
+				JGameObject* jointRoot = JGFI::Create(skeletonRootName, Core::MakeGuid(), OBJECT_FLAG_NONE, *modelPartRoot);
+
+				const uint8 jointCount = skeleton->GetJointCount();
+				std::vector<JGameObject*> skeletonVector(jointCount);
+				skeletonVector[0] = jointRoot;
+
+				for (uint i = 1; i < jointCount; ++i)
+				{
+					const std::string name = skeleton->GetJointName(i);
+					const uint8 parentIndex = skeleton->GetJointParentIndex(i);
+					JGameObject* joint = JGFI::Create(name, Core::MakeGuid(), OBJECT_FLAG_NONE, *skeletonVector[parentIndex]);
+					skeletonVector[i] = joint;
+				}
+				skeletonRoot = skeletonVector[0];
+			}
+			modelRoot = modelPartRoot;
+			OffResourceReference(*modelScene);
+			return true;
+		}
+		else
+			return false;
 	}
 	std::vector<JGameObject*>::const_iterator JModel::GetMeshPartVectorHandle(uint& count)noexcept
 	{
@@ -163,256 +453,36 @@ namespace JinEngine
 			return nullptr;
 
 		std::wifstream stream;
-		stream.open(ConvertMetafilePath(pathData.wstrPath), std::ios::in | std::ios::binary);
+		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
 		ModelMetadata metadata;
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, pathData.folderPath, metadata);
 		stream.close();
 
+		JModel* newModel;
+		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+			newModel = new JModel(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JModel>(pathData.format));
+		else
+			newModel = new JModel(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JModel>(pathData.format));
+
 		if (pathData.format == ".fbx")
 		{
-			std::vector<Core::JFbxPartMeshData> jFbxPartMeshData;
-			std::vector<JModelPart> modelPart;
-			JModelAttribute modelAttribute;
-			std::vector<Joint> joint;
-
-			Core::J_FBXRESULT fbxLoadRes = Core::JFbxFileLoader::Instance().LoadFbxModelFile(pathData.strPath, jFbxPartMeshData, modelAttribute, joint);
-			if (((int)fbxLoadRes & (int)Core::J_FBXRESULT::HAS_MESH) > 0)
+			if (newModel->ReadFbxModelData())
 			{
-				JModel* newModel;
-				if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-					newModel = new JModel(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JModel>(pathData.format));
-				else
-					newModel = new JModel(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JModel>(pathData.format));
-
-				const uint meshCount = (uint)jFbxPartMeshData.size();
-				modelPart.reserve(jFbxPartMeshData.size());
-
-				const JOBJECT_FLAG meshflag = (JOBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE);
-				const JOBJECT_FLAG matflag = (JOBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE);
-
-				for (uint i = 0; i < meshCount; ++i)
-				{
-					if (!jFbxPartMeshData[i].hasMesh)
-						continue;
-
-					size_t meshGuid = loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS ? metadata.partGuidVector[i].meshGuid : Core::MakeGuid();
-					size_t matGuid = loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS ? metadata.partGuidVector[i].matGuid : Core::MakeGuid();
-
-					JMeshGeometry* mesh = JRFI<JMeshGeometry>::Create(jFbxPartMeshData[i].name, meshGuid, meshflag, *directory, JResourceObject::GetInvalidFormatIndex());
-					JMeshInterface* iMesh = mesh;
-					if (modelAttribute.hasSkeleton)
-						iMesh->StuffSkinnedMesh(jFbxPartMeshData[i].skinnedMeshData, jFbxPartMeshData[i].boundingBox, jFbxPartMeshData[i].boundingSphere);
-					else
-						iMesh->StuffStaticMesh(jFbxPartMeshData[i].staticMeshData, jFbxPartMeshData[i].boundingBox, jFbxPartMeshData[i].boundingSphere);
-
-					JMaterial* mat = JRFI<JMaterial>::Create(jFbxPartMeshData[i].name + "_Material", matGuid, matflag, *directory, JResourceObject::GetInvalidFormatIndex());
-					modelPart.emplace_back(JModelPart(jFbxPartMeshData[i].name, jFbxPartMeshData[i].parentIndex, mesh, mat));
-				}
-				if (((int)fbxLoadRes & (int)Core::J_FBXRESULT::HAS_SKELETON) > 0)
-				{
-					const uint jointCount = (uint)joint.size();
-					std::string totalName;
-					for (uint i = 0; i < jointCount; ++i)
-						totalName += joint[i].name;
-					 
-					JSkeleton newSkeleton{ std::move(joint), JCommonUtility::CalculateGuid(totalName)};
-
-					uint count;
-					std::vector<JResourceObject*>::const_iterator st = JResourceManager::Instance().GetResourceVectorHandle<JSkeletonAsset>(count);
-					for (uint i = 0; i < count; ++i)
-					{
-						JSkeletonAsset* oldSkeletonAsset = static_cast<JSkeletonAsset*>(*(st + i));
-						if (oldSkeletonAsset->GetSkeleton()->IsSame(newSkeleton))
-						{
-							newModel->skeletonAsset = oldSkeletonAsset;
-							newModel->skeletonAsset->OnReference();
-							break;
-						}
-					}
-
-					if (newModel->skeletonAsset == nullptr)
-						newModel->skeletonAsset = JRFI<JSkeletonAsset>::Create(*directory, std::move(newSkeleton));
-				}
-
-				newModel->modelAttribute = std::make_unique<JModelAttribute>(modelAttribute);
-				newModel->modelScene = JRFI<JScene>::Create(directory->MakeUniqueFileName(GetDefaultName<JScene>()),
-					Core::MakeGuid(),
-					(JOBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE),
-					*directory,
-					GetInvalidFormatIndex());
-
-				newModel->modelScene->Activate();
-				const uint modelPartCount = (uint)modelPart.size();
-
-				JGameObject* modelPartRoot = JGFI::Create(newModel->GetName(), Core::MakeGuid(), OBJECT_FLAG_NONE, *newModel->modelRoot);
-
-				std::vector<JGameObject*> meshGameObj;
-				meshGameObj.reserve(modelPartCount + 1);
-				meshGameObj.push_back(modelPartRoot);
-
-				for (uint i = 0; i < modelPartCount; ++i)
-				{
-					const int parentIndex = modelPart[i].parentIndex;
-					JGameObject* child = JGFI::Create(modelPart[i].name, Core::MakeGuid(), OBJECT_FLAG_NONE, *meshGameObj[parentIndex]);
-
-					if (modelPart[i].mesh != nullptr)
-					{
-						JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *child, modelPart[i].mesh, modelPart[i].mat);
-						newModel->meshPartCash.push_back(child);
-					}
-					meshGameObj.push_back(child);
-				}
-
-				JSkeleton* skeleton = newModel->GetSkeletonAsset()->GetSkeleton();
-
-				if (skeleton != nullptr)
-				{
-					const std::string skeletonRootName = skeleton->GetJointName(0);
-					JGameObject* jointRoot = JGFI::Create(skeletonRootName, Core::MakeGuid(), OBJECT_FLAG_NONE, *modelPartRoot);
-
-					const uint8 jointCount = skeleton->GetJointCount();
-					std::vector<JGameObject*> skeletonVector(jointCount);
-					skeletonVector[0] = jointRoot;
-
-					for (uint i = 1; i < jointCount; ++i)
-					{
-						const std::string name = skeleton->GetJointName(i);
-						const uint8 parentIndex = skeleton->GetJointParentIndex(i);
-						JGameObject* joint = JGFI::Create(name, Core::MakeGuid(), OBJECT_FLAG_NONE, *skeletonVector[parentIndex]);
-						skeletonVector[i] = joint;
-					}
-					newModel->skeletonRoot = skeletonVector[0];
-				}
-				newModel->modelRoot = modelPartRoot;
+				newModel->SetValid(true);
 				return newModel;
 			}
-			else
-				return nullptr;
 		}
 		else if (pathData.format == ".obj")
 		{
-			std::vector<Core::JObjMeshPartData>objMeshData;
-			std::vector<Core::JObjMatData> objMatData;
-			JModelAttribute modelAttribute;
-
-			if (JObjFileLoader::Instance().LoadObjFile(pathData.wstrPath, objMeshData, objMatData, modelAttribute))
+			if (newModel->ReadObjModelData())
 			{
-				JModel* newModel;
-				if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-					newModel = new JModel(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JModel>(pathData.format));
-				else
-					newModel = new JModel(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JModel>(pathData.format));
-
-				const JOBJECT_FLAG objRFlag = (JOBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_INERASABLE |
-					OBJECT_FLAG_UNEDITABLE);
-
-				using SetTexture = void(JMaterial::*)(JTexture*);
-				SetTexture setTexturePtr;
-
-				const uint objMatCount = (uint)objMatData.size();
-				std::vector<JMaterial*> newMatV(objMatCount);
-				for (uint i = 0; i < objMatCount; ++i)
-				{
-					const size_t matGuid = loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS && metadata.partGuidVector.size() > i ?
-						metadata.partGuidVector[i].matGuid : Core::MakeGuid();
-
-					JMaterial* newMat = JRFI<JMaterial>::Create(objMatData[i].name, matGuid, objRFlag, *directory,
-						JResourceObject::GetInvalidFormatIndex());
-
-					if (newMat == nullptr)
-						continue;
-
-					std::string texturePath;
-					if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_ALBEDO_T) > 0)
-					{
-						texturePath = pathData.folderPath + "\\" + objMatData[i].albedoTName;
-						setTexturePtr = &JMaterial::SetAlbedoMap;
-					}
-					else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_NORMAL_T) > 0)
-					{
-						texturePath = pathData.folderPath + "\\" + objMatData[i].normalTName;
-						setTexturePtr = &JMaterial::SetNormalMap;
-					}
-					else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_HEIGHT_T) > 0)
-					{
-						texturePath = pathData.folderPath + "\\" + objMatData[i].heightTName;
-						setTexturePtr = &JMaterial::SetHeightMap;
-					}
-					else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_AMBIENT_T) > 0)
-					{
-						texturePath = pathData.folderPath + "\\" + objMatData[i].ambientTName;
-						setTexturePtr = &JMaterial::SetAmbientOcclusionMap;
-					}
-					else
-						continue;
-
-					JTexture* matTexture = JResourceManager::Instance().GetResourceByPath<JTexture>(texturePath);
-					if (matTexture == nullptr)
-						continue;
-
-					(newMat->*setTexturePtr)(matTexture);
-					newMat->SetAlbedoColor(objMatData[i].albedo);
-					newMatV.push_back(newMat);
-				}
-
-				const uint newMatVCount = (uint)newMatV.size();
-				const uint objMeshCount = (uint)objMeshData.size();
-				std::vector<JMeshGeometry*> newMeshVec;
-				std::vector<int> matIndex;
-				for (uint i = 0; i < objMeshCount; ++i)
-				{
-					const size_t meshGuid = loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS && metadata.partGuidVector.size() > i ?
-						metadata.partGuidVector[i].meshGuid : Core::MakeGuid();
-
-					JMeshGeometry* newMesh = JRFI<JMeshGeometry>::Create(objMeshData[i].meshName, meshGuid, objRFlag, *directory, 0);
-					if (newMesh == nullptr)
-						continue;
-
-					JMeshInterface* iMesh = newMesh;
-					iMesh->StuffStaticMesh(objMeshData[i].staticMeshData, objMeshData[i].boundingBox, objMeshData[i].boundingSphere);
-					newMeshVec.push_back(newMesh);
-					matIndex.push_back(-1);
-					for (uint j = 0; j < newMatVCount; ++j)
-					{
-						if (objMeshData[i].meshName == newMatV[i]->GetName())
-							matIndex[i] = j;
-					}
-				}
-
-				newModel->modelAttribute = std::make_unique<JModelAttribute>(modelAttribute);
-				newModel->modelScene = JRFI<JScene>::Create(directory->MakeUniqueFileName(GetDefaultName<JScene>()),
-					Core::MakeGuid(),
-					(JOBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE),
-					*directory,
-					GetInvalidFormatIndex());
-
-				newModel->modelScene->Activate();
-
-				const uint modelPartCount = (uint)newMeshVec.size();
-				JGameObject* modelPartRoot = JGFI::Create(newModel->GetName(), Core::MakeGuid(), OBJECT_FLAG_NONE, *newModel->modelRoot);
-
-				std::vector<JGameObject*> meshGameObj;
-				meshGameObj.reserve(modelPartCount + 1);
-				meshGameObj.push_back(modelPartRoot);
-
-				for (uint i = 0; i < modelPartCount; ++i)
-				{
-					const std::string meshName = newMeshVec[i]->GetName();
-					JGameObject* child = JGFI::Create(meshName, Core::MakeGuid(), OBJECT_FLAG_NONE, *newModel->modelRoot);
-					if (matIndex[i] == -1)
-						JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *child, newMeshVec[i], nullptr);
-					else
-						JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *child, newMeshVec[i], newMatV[matIndex[i]]);
-
-					newModel->meshPartCash.push_back(child);
-					meshGameObj.push_back(child);
-				}
-				newModel->modelRoot = modelPartRoot;
+				newModel->SetValid(true);
 				return newModel;
 			}
-			else
-				return nullptr;
 		}
+		 
+		delete newModel;
+		return nullptr;
 	}
 	Core::J_FILE_IO_RESULT JModel::LoadMetadata(std::wifstream& stream, const std::string& folderPath, ModelMetadata& metadata)
 	{
@@ -463,7 +533,7 @@ namespace JinEngine
 				oriModel->GetFlag(),
 				oriDir,
 				oriModel->formatIndex);
-			
+
 			newModel->modelScene = JRFI<JScene>::Copy(*oriModel->modelScene);
 			const size_t modelRootGuid = oriModel->modelRoot->GetGuid();
 			const size_t skeletonRootGuid = oriModel->skeletonRoot->GetGuid();
@@ -475,7 +545,7 @@ namespace JinEngine
 				const size_t guid = oriObj->GetGuid();
 				if (guid == modelRootGuid)
 					newModel->modelRoot = newModel->modelScene->GetGameObject(i);
-				else if(guid == skeletonRootGuid)
+				else if (guid == skeletonRootGuid)
 					newModel->skeletonRoot = newModel->modelScene->GetGameObject(i);
 
 				JRenderItem* oriR = oriObj->GetRenderItem();
@@ -503,7 +573,7 @@ namespace JinEngine
 			newModel->modelAttribute->hasSkeleton = oriModel->modelAttribute->hasSkeleton;
 			newModel->modelAttribute->totalVertex = oriModel->modelAttribute->totalVertex;
 			newModel->modelAttribute->totalIndex = oriModel->modelAttribute->totalIndex;
-			if(oriModel->skeletonAsset != nullptr)
+			if (oriModel->skeletonAsset != nullptr)
 				newModel->skeletonAsset = JRFI<JSkeletonAsset>::Copy(*oriModel->skeletonAsset);
 			return newModel;
 		};
@@ -515,12 +585,14 @@ namespace JinEngine
 		static GetTypeNameCallable getTypeNameCallable{ &JModel::TypeName };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JModel::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
-		 
-		RegisterTypeInfo(RTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SKELETON}, false },
-			RTypeUtil{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable });
+
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SKELETON}, false, false, false };
+		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+
+		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
 	JModel::JModel(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
-		:JResourceObject(name, guid, flag, directory, formatIndex)
+		:JModelInterface(name, guid, flag, directory, formatIndex)
 	{}
 	JModel::~JModel() {}
 }

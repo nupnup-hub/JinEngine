@@ -1,7 +1,5 @@
 #pragma once  
-#include"JGameObjectInterface.h"
-#include"IGameObjectComponentEvent.h"
-#include"GameObjectDirty.h" 
+#include"JGameObjectInterface.h" 
 #include"../Component/JComponent.h"
 #include<type_traits>
 #include<memory>
@@ -15,16 +13,14 @@ namespace JinEngine
 	class JCamera;
 	class JRenderItem;
 	class JTransform;
-	class JScene;
-	class ISceneGameObjectEvent;
+	class JScene; 
 	class JLight;
 
-	class JGameObject : public JGameObjectInterface, public IGameObjectComponentEvent
+	class JGameObject : public JGameObjectInterface
 	{
 		REGISTER_CLASS(JGameObject)
 		//friend class JScene; 
-	private:
-		std::unique_ptr<GameObjectDirty> gameObjectDirty;
+	private: 
 		std::vector<JGameObject*> children;
 		JGameObject* parent = nullptr;
 		std::vector<JComponent*> component; 
@@ -32,14 +28,12 @@ namespace JinEngine
 		JTransform* transform = nullptr;
 		JAnimator* animator = nullptr;
 		JRenderItem* renderItem = nullptr;
-		JScene* ownerScene = nullptr;
-		ISceneGameObjectEvent* sceneGameObjectEvent = nullptr;
+		JScene* ownerScene = nullptr; 
 	public:
 		JAnimator* GetAnimator()noexcept;
 		JTransform* GetTransform() noexcept;
 		JRenderItem* GetRenderItem()noexcept; 
-		JScene* GetOwnerScene()noexcept;
-		GameObjectDirty* GetGameObjectDirty()noexcept;
+		JScene* GetOwnerScene()noexcept; 
 		uint GetChildrenCount()const noexcept;  
 		uint GetComponentCount()const noexcept;
 		uint GetComponentCount(const J_COMPONENT_TYPE type)noexcept;
@@ -53,37 +47,16 @@ namespace JinEngine
 		bool HasAnimator()const noexcept;  
 		void ChangeParent(JGameObject* newParent)noexcept;
 	protected:
-		void DoActivate()noexcept override;
-		void DoDeActivate()noexcept override; 
+		void DoActivate()noexcept final;
+		void DoDeActivate()noexcept final;
 	private:
 		static bool HasSameName(_In_ JGameObject* parent, _In_ const std::string& initName) noexcept;
 		bool IsChild(JGameObject* obj)noexcept;
-		JComponent* AddComponent(JComponent* component)noexcept;
-		bool EraseComponent(JComponent* component)noexcept;
-
-		//IGameObjectComponentEvent
-		bool RegisterAnimator(JAnimator* animator)noexcept;
-		bool RegisterCamera(JCamera* camera)noexcept;
-		bool RegisterLight(JLight* light)noexcept;
-		bool RegisterRenderItem(JRenderItem* renderItem)noexcept;
-		bool RegisterShadowLight(JLight* light)noexcept;
-
-		bool DeRegisterAnimator(JAnimator* animator)noexcept;
-		bool DeRegisterCamera(JCamera* camera)noexcept;
-		bool DeRegisterLight(JLight* light)noexcept;
-		bool DeRegisterRenderItem(JRenderItem* renderItem)noexcept;
-		bool DeRegisterShadowLight(JLight* light)noexcept;
-
-		bool ReRegisterAnimator(JAnimator* animator)noexcept;
-		bool ReRegisterRenderItem(JRenderItem* renderItem)noexcept;
-		JCamera* SetMainCamera(JCamera* camera)noexcept;		
-		void UpdateGameObjectTransform()noexcept;
-
-	public:
-		static void EraseGameObject(const size_t guid)noexcept;
+		JComponent* AddComponent(JComponent& component)noexcept;
+		bool EraseComponent(JComponent& component)noexcept;
+	public: 
 		static void EraseGameObject(JGameObject* gameObject)noexcept;
 	private:
-		static void EraseGameObjectChildren(JGameObject* parent)noexcept;
 		Core::J_FILE_IO_RESULT CallStoreGameObject(std::wofstream& stream) final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JGameObject* gameObject);
 		static JGameObject* LoadObject(std::wifstream& stream, JGameObject* parent);
@@ -121,6 +94,12 @@ namespace JinEngine
 				}
 				return nullptr;
 			}
+			else if constexpr (std::is_same_v<JAnimator, T>)
+				return animator;
+			else if constexpr (std::is_same_v<JTransform, T>)
+				return transform;
+			else if constexpr (std::is_same_v<JRenderItem, T>)
+				return renderItem;
 			else
 			{
 				const J_COMPONENT_TYPE componentType = T::GetStaticComponentType();
@@ -147,6 +126,12 @@ namespace JinEngine
 				}
 				return res;
 			}
+			else if constexpr (std::is_same_v<JAnimator, T>)
+				return animator;
+			else if constexpr (std::is_same_v<JTransform, T>)
+				return transform;
+			else if constexpr (std::is_same_v<JRenderItem, T>)
+				return renderItem;
 			else
 			{
 				const J_COMPONENT_TYPE componentType = T::GetStaticComponentType();
@@ -188,64 +173,15 @@ namespace JinEngine
 		template<typename T>
 		auto GetComponentWithParent()const noexcept -> typename ToPtr<T, std::is_base_of_v<JComponent, T>>::Ptr
 		{
-			if constexpr (std::is_base_of_v<JBehavior, T>)
+			const JGameObject* nowParent = this;
+			while (nowParent != nullptr)
 			{
-				const std::string componentName = T::TypeName();
-				JGameObject* nowParent = parent;
-				while (nowParent != nullptr)
-				{
-					const uint componentCount = (uint)nowParent->component.size();
-					for (uint i = 0; i < componentCount; ++i)
-					{
-						if (nowParent->component[i]->TypeName() == componentName)
-							return static_cast<T*>(nowParent->component[i]);
-					}
-					nowParent = nowParent->GetParent();
-				}
-				return nullptr;
+				T* res = nowParent->GetComponent<T>();
+				if (res != nullptr)
+					return res;
+				nowParent = nowParent->parent;
 			}
-			else
-			{
-				const J_COMPONENT_TYPE componentType = T::GetStaticComponentType();
-				JGameObject* nowParent = parent;
-				while (nowParent != nullptr)
-				{
-					const uint componentCount = (uint)nowParent->component.size();
-					for (uint i = 0; i < componentCount; ++i)
-					{
-						if (nowParent->component[i]->GetComponentType() == componentType)
-							return static_cast<T*>(nowParent->component[i]);
-					}
-					nowParent = nowParent->GetParent();
-				}
-				return nullptr;
-			}
-		}
-		template<typename T>
-		auto GetComponentsWithChildren()const noexcept -> std::vector<typename ToPtr<T, std::is_base_of_v<JComponent, T>>::Ptr>
-		{
-			std::vector<T*> res;
-			const uint componentCount = (uint)component.size();
-			if constexpr (std::is_base_of_v<JBehavior, T>)
-			{
-				const std::string componentName = T::TypeName();
-				for (uint i = 0; i < componentCount; ++i)
-				{
-					if (component[i]->TypeName() == componentName)
-						res.push_back(static_cast<T*>(component[i]));
-				}
-				return res;
-			}
-			else
-			{ 
-				const J_COMPONENT_TYPE componentType = T::GetStaticComponentType();
-				for (uint i = 0; i < componentCount; ++i)
-				{
-					if (component[i]->GetComponentType() == componentType)
-						res.push_back(static_cast<T*>(component[i]));
-				}
-				return res;
-			}
+			return nullptr;
 		}
 #pragma endregion
 	};

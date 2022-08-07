@@ -7,8 +7,7 @@
 #include"../../../../Object/GameObject/JGameObject.h"
 #include"../../../../Object/Component/Camera/JCamera.h"
 #include"../../../../Object/Component/Transform/JTransform.h"
-#include"../../../../Object/Resource/Scene/JScene.h"
-#include"../../../../Object/Resource/Scene/ISceneAnimator.h"
+#include"../../../../Object/Resource/Scene/JScene.h" 
 
 #include"../../../../Graphic/JGraphic.h"
 #include"../../../../Graphic/JGraphicResourceManager.h" 
@@ -29,8 +28,8 @@ namespace JinEngine
 	{
 		if (EditorWindow::Activate(editorUtility))
 		{
-			if(selectedCamera != nullptr)
-				selectedCamera->SetCameraState(J_CAMERA_STATE::RENDER);
+			if (selectedCamera != nullptr)
+				;// selectedCamera->SetCameraState(J_CAMERA_STATE::RENDER);
 			return true;
 		}
 		else
@@ -41,7 +40,7 @@ namespace JinEngine
 		if (EditorWindow::DeActivate(editorUtility))
 		{
 			if (selectedCamera != nullptr)
-				selectedCamera->SetCameraState(J_CAMERA_STATE::IDEL);
+				;// selectedCamera->SetCameraState(J_CAMERA_STATE::IDEL);
 			return true;
 		}
 		else
@@ -53,7 +52,7 @@ namespace JinEngine
 		if (selectedCamera != nullptr)
 		{
 			stream<< L"HasSelected: " << true << '\n';
-			stream << L"CamOwnerGuid: " << selectedCamera->GetOwnerGuid() << '\n';
+			stream << L"CamOwnerGuid: " << selectedCamera->GetOwner()->GetGuid() << '\n';
 			stream << L"CamGuid: " << selectedCamera->GetGuid() << '\n';
 
 			XMFLOAT3 position = selectedCamera->GetTransform()->GetPosition();
@@ -105,7 +104,7 @@ namespace JinEngine
 		if (selectedCamera == nullptr)
 		{
 			selectedCamera = mainCamera;
-			selectedCamera->SetCameraState(J_CAMERA_STATE::RENDER);
+			;// selectedCamera->SetCameraState(J_CAMERA_STATE::RENDER);
 		}
 		else if (selectedCamera->GetGuid() != mainCamera->GetGuid())
 			selectedCamera = mainCamera;
@@ -118,14 +117,13 @@ namespace JinEngine
 		}
 
 		if (ImGui::Checkbox("OnAnimation", &onAnimation))
-		{
-			ISceneAnimator* isceneAnimator = JResourceManager::Instance().GetMainScene();
-			isceneAnimator->ActivateAnimtor();
+		{  
+			//수정필요
 		}
 
 		ImVec2 windowSize = ImGui::GetWindowSize();
-		ImGui::Image((ImTextureID)JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(selectedCamera->GetRsSrvHeapIndex()).ptr,
-			ImVec2(windowSize.x, windowSize.y)); 
+		//ImGui::Image((ImTextureID)JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(selectedCamera->GetRsSrvHeapIndex()).ptr,
+		//	ImVec2(windowSize.x, windowSize.y)); 
 	}
 }
 

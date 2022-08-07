@@ -1,6 +1,5 @@
 #pragma once  
-#include"../JComponent.h"
-#include"../../IFrameResourceControl.h"
+#include"JRenderItemInterface.h"
 #include"../../../Utility/JMathHelper.h" 
 #include"../../../Core/JDataType.h"
 #include"JRenderLayer.h"
@@ -9,24 +8,21 @@
 #include<d3d12.h>
 
 namespace JinEngine
-{
-	class GameObjectDirty;
+{ 
 	class JMeshGeometry;
 	class JMaterial;
 
-	class JRenderItem : public JComponent , public IFrameResourceControl
+	class JRenderItem : public JRenderItemInterface
 	{
 		REGISTER_CLASS(JRenderItem)
 	private:
 		JMeshGeometry* meshGeo = nullptr;
-		JMaterial* material = nullptr;
-		GameObjectDirty* gameObjectDirty = nullptr;
+		JMaterial* material = nullptr; 
 		DirectX::XMFLOAT4X4 textureTransform;
 		D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT;
 		J_RENDER_VISIBILITY renderVisibility = J_RENDER_VISIBILITY::VISIBLE;
-
-		uint objCBIndex = -1; 
+		 
 		uint startIndexLocation = 0;
 		int baseVertexLocation = 0;
 		// Only applicable to skinned render-items.
@@ -38,8 +34,7 @@ namespace JinEngine
 		JMaterial* GetMaterial()const noexcept;
 		DirectX::XMFLOAT4X4 GetTextransform()const noexcept;
 		D3D12_PRIMITIVE_TOPOLOGY GetPrimitiveType()const noexcept;
-		J_RENDER_LAYER GetRenderLayer()const noexcept; 
-		uint GetObjCBIndex() const noexcept;
+		J_RENDER_LAYER GetRenderLayer()const noexcept;  
 		uint GetIndexCount()const noexcept;
 		uint GetStartIndexLocation()const noexcept;
 		int GetBaseVertexLocation()const noexcept;
@@ -51,15 +46,10 @@ namespace JinEngine
 		void SetTextureTransform(const DirectX::XMFLOAT4X4& textureTransform)noexcept;
 		void SetPrimitiveType(const D3D12_PRIMITIVE_TOPOLOGY primitiveType)noexcept;
 		void SetRenderLayer(const J_RENDER_LAYER renderLayer)noexcept;
-		void SetRenderVisibility(const J_RENDER_VISIBILITY renderVisibility)noexcept;
-		void SetObjCBIndex(const uint objCBIndex)noexcept;
-		bool HasMaterial()const noexcept; 
+		void SetRenderVisibility(const J_RENDER_VISIBILITY renderVisibility)noexcept; 
 
-		bool IsDirtied()const noexcept;
+		bool HasMaterial()const noexcept; 		 
 		bool IsVisible()const noexcept;
-		void SetDirty()noexcept;
-		void OffDirty()noexcept;
-		void MinusDirty()noexcept;
 
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static J_COMPONENT_TYPE GetStaticComponentType()noexcept;
@@ -68,6 +58,8 @@ namespace JinEngine
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 
+	private:
+		bool UpdateFrame(Graphic::JObjectConstants& constant)final;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JRenderItem* renderItem);

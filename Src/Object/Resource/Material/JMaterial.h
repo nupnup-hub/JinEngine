@@ -1,8 +1,8 @@
 #pragma once  
-#include"../JResourceObject.h"    
+#include"JMaterialInterface.h"   
 #include"../Shader/JShaderFunctionEnum.h"
 #include"../../../Graphic/FrameResource/JFrameResourceCash.h"   
-#include"../../../Utility/JMathHelper.h" 
+#include"../../../Utility/JMathHelper.h"  
 
 namespace JinEngine
 { 
@@ -14,17 +14,16 @@ namespace JinEngine
 		struct JMaterialConstants;
 		class JGraphicImpl;
 	}
-	class JMaterial : public JResourceObject
+	class JMaterial : public JMaterialInterface
 	{
 		REGISTER_CLASS(JMaterial)
-		friend class Graphic::JGraphicImpl;
-		friend class ObjectDetail;
-	protected:
-		JShader* shader;
 	private:
-		uint matCBIndex = -1;
-		int gameObjectDirty = Graphic::gNumFrameResources;
-
+		//friend class Graphic::JGraphicImpl;
+		//friend class ObjectDetail;
+	private:
+		JShader* shader;
+	private: 
+		uint matBuffIndex = 0;
 		JTexture* albedoMap = nullptr;
 		JTexture* normalMap = nullptr;
 		JTexture* heightMap = nullptr;
@@ -44,15 +43,16 @@ namespace JinEngine
 		float roughness;
 		DirectX::XMFLOAT4 albedoColor;
 		DirectX::XMFLOAT4X4 matTransform;
-	public: 
-		uint GetMatCBIndex() const noexcept;
+	public:   
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
 			return J_RESOURCE_TYPE::MATERIAL;
 		}
 		std::string GetFormat()const noexcept final;
+		static std::vector<std::string> GetAvailableFormat()noexcept;
 
+		JShader* GetShader()const noexcept;
 		float GetMetallic() const noexcept;
 		float GetRoughness() const noexcept;
 		DirectX::XMFLOAT4 GetAlbedoColor() const noexcept;
@@ -62,7 +62,6 @@ namespace JinEngine
 		JTexture* GetHeightMap() const noexcept;
 		JTexture* GetRoughnessMap() const noexcept;
 		JTexture* GetAmbientOcclusionMap() const noexcept;
-		static std::vector<std::string> GetAvailableFormat()noexcept;
 
 		void SetMetallic(float value) noexcept;
 		void SetRoughness(float value) noexcept;
@@ -88,23 +87,22 @@ namespace JinEngine
 		bool HasAmbientOcclusionMapTexture() const noexcept;
 
 		void PopTexture(JTexture* texture)noexcept;
-
-		bool IsMaterialDirtied()const noexcept; 
 	protected:
-		void DoActivate() noexcept final;
-		void DoDeActivate()noexcept final;
-		void StuffFrameDirty()noexcept;
-		void MinusMaterialformDirty() noexcept;
-
 		void TextureChange(JTexture* be, JTexture* af, const J_SHADER_FUNCTION func)noexcept;
 		void SetNewFunctionFlag(const J_SHADER_FUNCTION newFunc);
 	private:
-		JShader* GetShader()const noexcept;
-		void SetShader(JShader* newShader)noexcept;
-		void SetMatCBIndex(uint value) noexcept;
+		void SetShader(JShader* newShader)noexcept; 
 	private:
-		J_SHADER_FUNCTION CalculateShaderFunc()noexcept;
-		void UpdateMaterial(Graphic::JMaterialConstants& matData)noexcept;
+		bool UpdateFrame(Graphic::JMaterialConstants& constant)final;
+	protected:
+		void DoActivate() noexcept final;
+		void DoDeActivate()noexcept final;
+	private:
+		void StuffResource() final;
+		void ClearResource() final; 
+		bool ReadMateiralData();
+	private:
+		J_SHADER_FUNCTION CalculateShaderFunc()noexcept; 
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JMaterial* material);
 		static JMaterial* LoadObject(JDirectory* directory, const JResourcePathData& pathData);

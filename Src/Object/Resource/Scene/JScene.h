@@ -1,20 +1,16 @@
-#pragma once  
-#include"IScene.h"
+#pragma once   
 #include"JSceneInterface.h"
 #include"../Mesh/JMeshType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"
+#include"../../../Core/SpaceSpatial/Bvh/JBvhType.h"
+#include"../../../Core/Storage/JStorage.h"
 #include<memory>
 #include<vector>  
 
 namespace JinEngine
 {
-	class JAnimator;
-	class JRenderItem;
 	class JComponent;
-	class JCamera;
-	class JLight;
 	class JGameObject;
-	class JResourceIO;
 
 	namespace Graphic
 	{
@@ -25,12 +21,9 @@ namespace JinEngine
 	{
 		class JSceneSpatialStructure;
 	}
-	class JScene : public JSceneInterface, public IScene
+	class JScene : public JSceneInterface
 	{
 		REGISTER_CLASS(JScene)
-	private:
-		friend class JResourceIO;
-		friend class Graphic::JGraphicImpl;
 	protected:
 		struct JSceneMetadata : public ObjectMetadata
 		{
@@ -42,78 +35,69 @@ namespace JinEngine
 		std::unique_ptr<Core::JSceneSpatialStructure> spatialStructure;
 		std::vector<JGameObject*> allObjects;
 		std::vector<JGameObject*> objectLayer[(int)J_RENDER_LAYER::COUNT][(int)J_MESHGEOMETRY_TYPE::COUNT];
-		std::vector<JAnimator*> animators;
-		std::vector<JRenderItem*> renderItems;
-		std::vector<JCamera*> cameras;
-		std::vector<JLight*>light;
-		std::vector<JLight*>shadowLight;
+		std::unordered_map<J_COMPONENT_TYPE, std::vector<JComponent*>> componentCash;
 		JCamera* mainCamera;
-		bool isOpen;
-		bool activateAnimator; 
+		bool isAnimatorActivated;
+		bool isSpatialStructureActivated;
+		bool isSpatialStructureDebugActivated;
 	public:
-		bool IsOpen()const noexcept;
 		bool IsAnimatorActivated()const noexcept;
 
 		JGameObject* FindGameObject(const size_t guid)noexcept;
 		JGameObject* GetRootGameObject()noexcept;
 		JGameObject* GetGameObject(const uint index)noexcept;
-		JAnimator* GetAnimator(const uint index)noexcept;
 		JCamera* GetMainCamera()noexcept;
 		uint GetGameObjectCount()const noexcept;
-		uint GetAnimatorCount()const noexcept;
-		uint GetCameraCount()const noexcept;
-		uint GetRenderItemCount()const noexcept; 
-		uint GetLightCount()const noexcept;
-		uint GetShadowCount()const noexcept; 
-		J_RESOURCE_TYPE GetResourceType()const noexcept final; 		
+		uint GetComponetCount(const J_COMPONENT_TYPE cType)const noexcept;
+		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
 			return J_RESOURCE_TYPE::SCENE;
 		}
 		std::string GetFormat()const noexcept final;
 		static std::vector<std::string> GetAvailableFormat()noexcept;
+
+	public:
+		JSceneCashInterface* CashInterface() final;
+		JSceneGameObjInterface* GameObjInterface() final;
+		JSceneCompInterface* CompInterface()final;
+		JSceneRegisterInterface* RegisterInterface() final;
+		JSceneFrameInterface* FrameInterface() final;
+		JSceneSpaceSpatialInterface* SpaceSpatialInterface() final;
 	protected:
 		void DoActivate() noexcept final;
-		void DoDeActivate()noexcept final; 
-	private:  		
-		void AddGameObject(JGameObject* newGameObject)noexcept;
-		void EraseGameObject(JGameObject* gameObj)noexcept; 
-		void MakeDefaultObject(bool isEditorScene)noexcept final;
-		//ISceneFrameDirty
-		void SetAllComponentDirty()noexcept; 
-		void SetAllTransformDirty()noexcept;
-		void SetAllRenderItemDirty()noexcept;
-		void SetAllAnimatorDirty()noexcept;
-		void SetAllCameraDirty()noexcept;
-		void SetAllLightDirty()noexcept;
+		void DoDeActivate()noexcept final;
+	private:
+		void StuffResource() final;
+		void ClearResource() final;
+	private:
+		std::vector<JGameObject*>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept final;
+		std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)noexcept final;
 
-		//ISceneGameObjectEventListener
-		bool RegisterAnimator(JGameObject* gameObject, JAnimator* animator)noexcept;
-		bool RegisterCamera(JGameObject* gameObject, JCamera* camera)noexcept;
-		bool RegisterLight(JGameObject* gameObject, JLight* light)noexcept;
-		bool RegisterShadowLight(JGameObject* gameObject, JLight* light)noexcept;
-		bool RegisterRenderItem(JGameObject* gameObject, JRenderItem* renderItem)noexcept;
-		bool DeRegisterAnimator(JGameObject* gameObject, JAnimator* animator)noexcept;
-		bool DeRegisterCamera(JGameObject* gameObject, JCamera* camera)noexcept;
-		bool DeRegisterLight(JGameObject* gameObject, JLight* light)noexcept;
-		bool DeRegisterShadowLight(JGameObject* gameObject, JLight* light)noexcept;
-		bool DeRegisterRenderItem(JGameObject* gameObject, JRenderItem* renderItem)noexcept;
-		JCamera* SetMainCamera(JGameObject* gameObject, JCamera* camera)noexcept;  
-		void UpdateGameObjectTransform(JGameObject* gameObject)noexcept;
+		JGameObject* AddGameObject(JGameObject& newGameObject)noexcept;
+		bool EraseGameObject(JGameObject& gameObj)noexcept final;
 
-		//ISceneSpatialStructure
-		void ViewCulling()noexcept;
-		void OnSceneSpatialStructure()noexcept;
-		void OffSceneSpatialStructure()noexcept;
-		void OnDebugBoundingBox(bool onlyLeafNode)noexcept;
-		void OffDebugBoundingBox()noexcept;
-		void CreateDemoGameObject()noexcept;
-		void EraseDemoGameObject()noexcept;
+		void SetAnimation()noexcept final;
+		JCamera* SetMainCamera(JCamera* animator)noexcept final;
+
+		bool RegisterComponent(JComponent& component)noexcept final;
+		bool DeRegisterComponent(JComponent& component)noexcept final;
+
+		void SetAllComponentDirty()noexcept final;
+		void SetComponentDirty(const J_COMPONENT_TYPE cType) noexcept final;
+		void SetBackSideComponentDirty(JComponent& jComp) noexcept final;
+		void SetBackSideComponentDirty(JComponent& jComp, bool(*condition)(JComponent&))noexcept final;
+
+		//SceneSpatial
+		void ViewCulling()noexcept final;
+		void OnSceneSpatialStructure()noexcept final;
+		void OffSceneSpatialStructure()noexcept final;
+		void OnDebugBoundingBox(bool onlyLeafNode)noexcept final;
+		void OffDebugBoundingBox()noexcept final;
 		void BuildOctree(const uint octreeSizeSquare, const float looseFactor, const bool isLooseOctree)noexcept;
 		void BuildBvh(const Core::J_BVH_BUILD_TYPE bvhBuildType, const Core::J_BVH_SPLIT_TYPE splitType)noexcept;
-
-		//ISceneAnimator
-		void ActivateAnimtor()noexcept;
+		void CreateDemoGameObject()noexcept;
+		void EraseDemoGameObject()noexcept;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JScene* scene);

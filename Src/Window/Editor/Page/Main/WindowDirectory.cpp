@@ -272,7 +272,7 @@ namespace JinEngine
 				}
 
 				ImGui::SetCursorPos(ImVec2(editorPositionCal->GetPositionX(), editorPositionCal->GetPositionY()));
-				if (ImGui::ImageButton((ImTextureID)JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(nowPreviewScene->GetPreviewCamera(0)->GetRsSrvHeapIndex()).ptr,
+				/*if (ImGui::ImageButton((ImTextureID)JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(nowPreviewScene->GetPreviewCamera(0)->GetRsSrvHeapIndex()).ptr,
 					ImVec2(selectorIconSize, selectorIconSize)))
 				{
 					if (isSelected)
@@ -292,6 +292,7 @@ namespace JinEngine
 						this->NotifyEvent(*editorUtility->EvInterface(), GetGuid(), EDITOR_EVENT::OPEN_PAGE, openPageEvStruct.get());
 					}
 				}
+				*/
 				if(isSelected)
 					SetButtonDefaultColor();
 
@@ -337,12 +338,11 @@ namespace JinEngine
 				continue;
 			 
 			PreviewScene* previewScene = JResourceManager::Instance().CreatePreviewScene(previewGroup, file->GetResource(), PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE);
-			file->SetPreviewScene(previewScene);
 		}
 		if (opendDirctory != nullptr)
-			opendDirctory->DeActivate();
+			opendDirctory->DirectoryInterface()->CloseDirectory();
 		opendDirctory = newOpendDirectory;
-		opendDirctory->Activate();
+		opendDirctory->DirectoryInterface()->OpenDirectory();
 	}
 	void WindowDirectory::CreateNewFolder(JDirectory* parent)noexcept
 	{
@@ -355,7 +355,6 @@ namespace JinEngine
 		{
 			JFile* addedFile = directory->GetFile(directory->GetFileCount() - 1);
 			PreviewScene* previewScene = JResourceManager::Instance().CreatePreviewScene(previewGroup, mat, PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE);
-			addedFile->SetPreviewScene(previewScene);
 		}
 	}
 	void WindowDirectory::CreateAnimationController(JDirectory* directory)
@@ -365,7 +364,6 @@ namespace JinEngine
 		{
 			JFile* addedFile = directory->GetFile(directory->GetFileCount() - 1);
 			PreviewScene* previewScene = JResourceManager::Instance().CreatePreviewScene(previewGroup, aniController, PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE);
-			addedFile->SetPreviewScene(previewScene);
 		}
 	}
 	//수정필요
@@ -376,7 +374,6 @@ namespace JinEngine
 		{
 			JFile* addedFile = directory->GetFile(directory->GetFileCount() - 1);
 			PreviewScene* previewScene = JResourceManager::Instance().CreatePreviewScene(previewGroup, scene, PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE);
-			addedFile->SetPreviewScene(previewScene);
 		}
 	}
 	void WindowDirectory::EraseDirectory(JDirectory* directory)noexcept

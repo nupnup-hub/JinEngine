@@ -1,5 +1,4 @@
 #include"JSkeletonAsset.h" 
-#include"JSkeleton.h"
 #include"Avatar/JAvatar.h" 
 #include"../JResourceObjectFactory.h"
 #include"../../Directory/JDirectory.h"
@@ -45,6 +44,38 @@ namespace JinEngine
 	{
 		JSkeletonAsset::skeletonType = skeletonType;
 	}
+	bool JSkeletonAsset::HasAvatar()noexcept
+	{
+		return avatar != nullptr;
+	}
+	bool JSkeletonAsset::IsRegularChildJointIndex(uint8 childIndex, uint8 parentIndex)noexcept
+	{  
+		if (childIndex == parentIndex || childIndex < parentIndex)
+			return false;
+
+		uint8 nowParentIndex = skeleton->GetJointParentIndex(childIndex);
+		if (nowParentIndex == parentIndex)
+			return true;
+
+		bool isParent = false;
+		while (nowParentIndex != JSkeletonFixedData::incorrectJointIndex)
+		{
+			if (nowParentIndex == parentIndex)
+			{
+				isParent = true;
+				break;
+			}
+			nowParentIndex = skeleton->GetJointParentIndex(nowParentIndex);
+			if (nowParentIndex < parentIndex)
+				break;
+		}
+ 
+		return isParent;
+	}
+	JSkeletonAssetAvatarInterface* JSkeletonAsset::AvatarInterface()
+	{
+		return this;
+	}
 	void JSkeletonAsset::SetAvatar(JAvatar* inAvatar)noexcept
 	{
 		if (JSkeletonAsset::avatar == nullptr)
@@ -58,7 +89,7 @@ namespace JinEngine
 		}
 		avatar->jointInterpolation[0].translation = XMFLOAT3(0, 0, 0);
 		avatar->jointInterpolation[0].quaternion = XMFLOAT4(0, 0, 0, 0);
-		 
+
 		for (uint32 index = 1; index < jointCount; ++index)
 		{
 			uint parentIndex = skeleton->GetJointParentIndex(index);
@@ -94,8 +125,7 @@ namespace JinEngine
 			if (avatar->jointReference[i] != JSkeletonFixedData::incorrectJointIndex)
 				avatar->jointInterpolation[avatar->jointReference[i]].isAvatarJoint = true;
 		}
-		 
-		JSkeleton* skeleton = GetSkeleton(); 
+
 		if (avatar->jointBackReferenceMap.size() == 0)
 		{
 			avatar->jointBackReferenceMap.resize(jointCount);
@@ -135,7 +165,7 @@ namespace JinEngine
 				JDebugTextOut::PrintWstr(L"refIndex: nullptr");
 			else
 				JDebugTextOut::PrintWstr(L"refIndex: " + JCommonUtility::StringToWstring(GetJointName(avatar->jointReference[avatar->jointBackReferenceMap[i].refIndex])));
-		
+
 			JDebugTextOut::PrintWstr(L"allParent: " + JCommonUtility::StringToWstring(GetJointName(avatar->jointReference[avatar->jointBackReferenceMap[i].allottedParentRefIndex])));
 			JDebugTextOut::PrintEnter(1);
 		}
@@ -154,49 +184,99 @@ namespace JinEngine
 
 		for (uint32 i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
 			outAvatar->jointReference[i] = avatar->jointReference[i];
-
-	}
-	bool JSkeletonAsset::HasAvatar()noexcept
-	{
-		return avatar != nullptr;
-	}
-	bool JSkeletonAsset::IsRegularChildJointIndex(uint8 childIndex, uint8 parentIndex)noexcept
-	{  
-		if (childIndex == parentIndex || childIndex < parentIndex)
-			return false;
-
-		uint8 nowParentIndex = skeleton->GetJointParentIndex(childIndex); 
-		if (nowParentIndex == parentIndex)
-			return true;
-
-		bool isParent = false;
-		while (nowParentIndex != JSkeletonFixedData::incorrectJointIndex)
-		{
-			if (nowParentIndex == parentIndex)
-			{
-				isParent = true;
-				break;
-			}
-			nowParentIndex = skeleton->GetJointParentIndex(nowParentIndex);
-			if (nowParentIndex < parentIndex)
-				break;
-		}
- 
-		return isParent;
 	}
 	void JSkeletonAsset::DoActivate()noexcept
 	{
 		JResourceObject::DoActivate();
+		StuffResource();
 	}
 	void JSkeletonAsset::DoDeActivate()noexcept
 	{
 		JResourceObject::DoDeActivate();
+		ClearResource();
+	}
+	void JSkeletonAsset::StuffResource()
+	{
+		if (!IsValidResource())
+		{
+			if (ReadSkeletonAssetData())
+				SetValid(true);
+		}
+	}
+	void JSkeletonAsset::ClearResource()
+	{
+		if (IsValidResource())
+		{ 
+			skeleton.reset();
+			avatar.reset(); 
+		}
+	}
+	bool JSkeletonAsset::ReadSkeletonAssetData()
+	{
+		const JResourcePathData pathData{ GetWPath() };
+		std::wifstream stream;
+		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
+
+		if (stream.is_open())
+		{
+			std::wstring guide;
+			int jointCount; ;
+			size_t skeletonHash;
+			std::vector<Joint> joint;
+			bool hasAvatar;
+			JAvatar avatar;
+			int skeletonType;
+			int index;
+
+			stream >> skeletonHash;
+			stream >> jointCount;
+
+			joint.resize(jointCount);
+
+			for (int i = 0; i < jointCount; ++i)
+			{
+				Joint newJoint;
+				std::wstring name;
+				int parentIndex;
+
+				stream >> name;
+				stream >> parentIndex;
+				stream >> newJoint.length;
+
+				stream >> newJoint.inbindPose._11 >> newJoint.inbindPose._12 >> newJoint.inbindPose._13 >> newJoint.inbindPose._14;
+				stream >> newJoint.inbindPose._21 >> newJoint.inbindPose._22 >> newJoint.inbindPose._23 >> newJoint.inbindPose._24;
+				stream >> newJoint.inbindPose._31 >> newJoint.inbindPose._32 >> newJoint.inbindPose._33 >> newJoint.inbindPose._34;
+				stream >> newJoint.inbindPose._41 >> newJoint.inbindPose._42 >> newJoint.inbindPose._43 >> newJoint.inbindPose._44;
+
+				newJoint.name = JCommonUtility::WstringToU8String(name);
+				newJoint.parentIndex = (uint8)parentIndex;
+				joint[i] = std::move(newJoint); 
+			}
+			
+			stream >> guide >> hasAvatar;
+			if (hasAvatar)
+			{
+				for (uint32 i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
+				{
+					stream >> guide >> index;
+					avatar.jointReference[i] = (uint8)index;
+				}
+			}
+			stream >> guide >> skeletonType;
+			stream.close();
+			 
+			SetSkeleton(JSkeleton{std::move(joint), skeletonHash });
+			if (hasAvatar)
+				SetAvatar(&avatar);
+			SetSkeletonType((JSKELETON_TYPE)skeletonType);
+			return true;
+		}
+		else
+			return false;
 	}
 	void JSkeletonAsset::SetSkeleton(JSkeleton&& skeleon)
 	{
-		if (skeleton != nullptr)
-			return;
-		skeleton = std::unique_ptr<JSkeleton>(std::move(skeleton));
+		JSkeletonAsset::skeleton = std::make_unique<JSkeleton>(std::move(skeleon));
 	}
 	Core::J_FILE_IO_RESULT JSkeletonAsset::CallStoreResource()
 	{
@@ -280,58 +360,13 @@ namespace JinEngine
 		else
 			newSkeletonAsset = new JSkeletonAsset(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JSkeletonAsset>(pathData.format));
 
-		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
-		if (stream.is_open())
-		{
-			std::wstring guide;
-			int jointCount;
-			std::vector<Joint> joint;
-			size_t skeletonHash;
-			bool hasAvatar;
-			int skeletonType;
-			int index;
-
-			stream >> skeletonHash;
-			stream >> jointCount;
-			for (int i = 0; i < jointCount; ++i)
-			{
-				Joint newJoint; 
-				std::wstring name;
-				int parentIndex; 
-
-				stream >> name;
-				stream >> parentIndex;			 
-				stream >> newJoint.length;
-
-				stream >> newJoint.inbindPose._11  >> newJoint.inbindPose._12  >> newJoint.inbindPose._13  >> newJoint.inbindPose._14 ;
-				stream >> newJoint.inbindPose._21  >> newJoint.inbindPose._22  >> newJoint.inbindPose._23  >> newJoint.inbindPose._24 ;
-				stream >> newJoint.inbindPose._31  >> newJoint.inbindPose._32  >> newJoint.inbindPose._33  >> newJoint.inbindPose._34 ;
-				stream >> newJoint.inbindPose._41  >> newJoint.inbindPose._42  >> newJoint.inbindPose._43  >> newJoint.inbindPose._44 ;
-
-				newJoint.name = JCommonUtility::WstringToU8String(name);
-				newJoint.parentIndex = (uint8)parentIndex;
-				joint.push_back(std::move(newJoint));
-			} 
-			newSkeletonAsset->SetSkeleton(JSkeleton(std::move(joint), skeletonHash));
-			stream >> guide >> hasAvatar;
-
-			if (hasAvatar)
-			{
-				JAvatar avatar;
-				for (uint32 i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
-				{
-					stream >> guide >> index;
-					avatar.jointReference[i] = (uint8)index;
-				}
-				newSkeletonAsset->SetAvatar(&avatar);
-			}
-			stream >> guide >> skeletonType;
-			newSkeletonAsset->SetSkeletonType((JSKELETON_TYPE)skeletonType);
-			stream.close();
+		if (newSkeletonAsset->ReadSkeletonAssetData())
 			return newSkeletonAsset;
-		}
 		else
+		{
+			delete newSkeletonAsset;
 			return nullptr;
+		}
 	}  
 	void JSkeletonAsset::RegisterFunc()
 	{
@@ -364,11 +399,13 @@ namespace JinEngine
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JSkeletonAsset::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 		 
-		RegisterTypeInfo(RTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, false },
-			RTypeUtil{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable });
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, false, false, false };
+		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+
+		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
 	JSkeletonAsset::JSkeletonAsset(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
-		:JResourceObject(name, guid, flag, directory, formatIndex)
+		:JSkeletonAssetInterface(name, guid, flag, directory, formatIndex)
 	{ }
 	JSkeletonAsset::~JSkeletonAsset(){}
 }

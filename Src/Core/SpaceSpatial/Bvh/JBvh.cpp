@@ -62,20 +62,26 @@ namespace JinEngine
 			if (debugRoot != nullptr && debugRoot->GetGuid() != newDebugRoot->GetGuid())
 				OffDebugGameObject();
 
-			debugRoot = newDebugRoot;
-			onDebugObject = true;
-			makeOnlyLeafNodeDebugObject = onlyLeafNode;
-			const int allNodeCount = (int)allNodes.size();
-			for (int i = 0; i < allNodeCount; ++i)
-				allNodes[i]->CreateDebugGameObject(debugRoot, onlyLeafNode);
+			if (!onDebugObject)
+			{
+				onDebugObject = true;
+				debugRoot = newDebugRoot;
+				makeOnlyLeafNodeDebugObject = onlyLeafNode;
+				const int allNodeCount = (int)allNodes.size();
+				for (int i = 0; i < allNodeCount; ++i)
+					allNodes[i]->CreateDebugGameObject(debugRoot, onlyLeafNode);
+			}
 		}
 		void JBvh::OffDebugGameObject()noexcept
 		{
-			onDebugObject = false;
-			makeOnlyLeafNodeDebugObject = false;
-			const int allNodeCount = (int)allNodes.size();
-			for (int i = 0; i < allNodeCount; ++i)
-				allNodes[i]->EraseDebugGameObject();
+			if (onDebugObject)
+			{
+				onDebugObject = false;
+				makeOnlyLeafNodeDebugObject = false;
+				const int allNodeCount = (int)allNodes.size();
+				for (int i = 0; i < allNodeCount; ++i)
+					allNodes[i]->EraseDebugGameObject();
+			}
 		}
 		void JBvh::Culling(const JCullingFrustum& camFrustum)noexcept
 		{
@@ -118,8 +124,9 @@ namespace JinEngine
 			if (containNode != nullptr)
 				ReBuildBvh(containNode->GetNodeNumber(), newGameObject);
 		}
-		void JBvh::EraeGameObject(const size_t guid)noexcept
+		void JBvh::EraeGameObject(JGameObject* gameObj)noexcept
 		{
+			const size_t guid = gameObj->GetGuid();
 			auto leafNode = leafNodeMap.find(guid);
 			if (leafNode != leafNodeMap.end())
 				EraseBvhNode(leafNode->second->GetNodeNumber());

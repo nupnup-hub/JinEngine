@@ -1,15 +1,16 @@
 #pragma once
-#include"../Core/JDataType.h"
-#include"JGraphicTextureType.h"
-#include"../../Lib/DirectX/d3dx12.h"
-#include<d3d12.h>
-
+#include"../Core/JDataType.h" 
+#include"JGraphicBufInterface.h"
+#include"JGraphicTextureType.h" 
+#include<memory>
+ 
 namespace JinEngine
 {
 	namespace Graphic
 	{
-		struct JGraphicTextureHandle
-		{
+		class JGraphicTextureHandle : public JGraphicBufElementInterface
+		{  
+		private: 
 			friend class JGraphicResourceManager;
 		private:
 			const J_GRAPHIC_TEXTURE_TYPE graphicResourceType;
@@ -17,21 +18,19 @@ namespace JinEngine
 			uint height;
 			int rtvHeapIndex = -1;
 			int dsvHeapIndex = -1;
-			int srvHeapIndex = -1;
-			int resourceVectorIndex = -1;
+			int srvHeapIndex = -1; 
 		public:
-			JGraphicTextureHandle(const J_GRAPHIC_TEXTURE_TYPE graphicResourceType, uint width, uint height);
-			~JGraphicTextureHandle();
-			JGraphicTextureHandle(const JGraphicTextureHandle& rhs) = delete;
-			JGraphicTextureHandle& operator=(const JGraphicTextureHandle& rhs) = delete;
-
 			J_GRAPHIC_TEXTURE_TYPE GetGraphicResourceType()const noexcept;
 			uint GetWidth()const noexcept;
 			uint GetHeight()const noexcept;
 			int GetRtvHeapIndex()const noexcept;
 			int GetDsvHeapIndex()const noexcept;
-			int GetSrvHeapIndex()const noexcept;
-			int GetResourceVectorIndex()const noexcept;
+			int GetSrvHeapIndex()const noexcept; 
+			 
+			static bool Erase(JGraphicTextureHandle** handle);
+		public:
+			JGraphicTextureHandle(const J_GRAPHIC_TEXTURE_TYPE graphicResourceType, uint width, uint height);
+			~JGraphicTextureHandle();
 		};
 	}
 }

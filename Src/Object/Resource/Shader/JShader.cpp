@@ -183,8 +183,8 @@ namespace JinEngine
 			int functionFlag;
 			stream >> functionFlag;
 			newShader->functionFlag = (J_SHADER_FUNCTION)functionFlag;
-			CompileShdaer(newShader);
 			stream.close();
+			CompileShdaer(newShader);
 			return newShader;
 		}
 		else
@@ -220,8 +220,10 @@ namespace JinEngine
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JShader::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
-		RegisterTypeInfo(RTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true },
-			RTypeUtil{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable });
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false, false };
+		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+
+		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
 	JShader::JShader(const std::string& name, const size_t guid, const JOBJECT_FLAG objFlag, JDirectory* directory, uint8 formatIndex)
 		: JResourceObject(name, guid, objFlag, directory, formatIndex)

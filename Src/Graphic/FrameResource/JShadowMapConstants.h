@@ -6,7 +6,7 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		struct JShadowMapCalConstants
+		struct JShadowMapConstants
 		{
 			DirectX::XMFLOAT4X4 view = JMathHelper::Identity4x4();
 			DirectX::XMFLOAT4X4 invView = JMathHelper::Identity4x4();

@@ -1,9 +1,9 @@
 #include"JTransform.h"    
 #include"../JComponentFactory.h"
-#include"../../GameObject/JGameObject.h"
-#include"../../GameObject/GameObjectDirty.h"
+#include"../../GameObject/JGameObject.h" 
 #include"../../../Utility/JMathHelper.h"
 #include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Graphic/FrameResource/JObjectConstants.h"
 #include<fstream>
 
 namespace JinEngine
@@ -57,25 +57,25 @@ namespace JinEngine
 	}
 	void JTransform::SetTransform(const XMFLOAT3& position, const XMFLOAT3& rotation, const XMFLOAT3& scale)noexcept
 	{
-		if (parent == nullptr)
+		if (GetOwner()->IsRoot())
 			return;
 
 		JTransform::position = position;
 		JTransform::rotation = rotation;
 		JTransform::scale = scale;
-		SetFrameDirty();
+		Update();
 	}
 	void JTransform::SetPosition(const XMFLOAT3& value)noexcept
 	{
-		if (parent == nullptr)
+		if (GetOwner()->IsRoot())
 			return;
 
 		position = value;
-		SetFrameDirty();
+		Update();
 	}
 	void JTransform::SetRotation(const XMFLOAT3& value)noexcept
 	{
-		if (parent == nullptr)
+		if (GetOwner()->IsRoot())
 			return;
 
 		rotation = value;
@@ -106,18 +106,21 @@ namespace JinEngine
 		XMStoreFloat3(&tUp, XMVector3Normalize(newUp));
 		XMStoreFloat3(&tFront, XMVector3Normalize(newFront));
 
-		SetFrameDirty();
+		Update();
 	}
 	void JTransform::SetScale(const XMFLOAT3& value)noexcept
 	{
-		if (parent == nullptr)
+		if (GetOwner()->IsRoot())
 			return;
 
 		scale = value;
-		SetFrameDirty();
+		Update();
 	}
 	void JTransform::LookAt(const XMFLOAT3& target, const XMFLOAT3& worldUp)noexcept
 	{
+		if (GetOwner()->IsRoot())
+			return;
+
 		const XMVECTOR positionVec = XMLoadFloat3(&position);
 		const XMVECTOR targetVec = XMLoadFloat3(&target);
 		const XMVECTOR upVec = XMLoadFloat3(&worldUp);
@@ -154,24 +157,7 @@ namespace JinEngine
 		//수정필요
 		const XMVECTOR newRotation = XMQuaternionRotationMatrix(XMLoadFloat4x4(&rotation4x4));
 		//rotation = JMathHelper::ToEulerAngle(newRotation);
-		SetFrameDirty();
-	}
-	bool JTransform::IsDirtied()const noexcept
-	{
-		return gameObjectDirty->GetTransformDirty() > 0;
-	}
-	void JTransform::SetDirty()noexcept
-	{
-		GetOwnerInterface()->UpdateGameObjectTransform();
-		gameObjectDirty->SetTransformDirty();
-	}
-	void JTransform::OffDirty()noexcept
-	{
-		gameObjectDirty->OffTransformDirty();
-	}
-	void JTransform::MinusDirty()noexcept
-	{
-		return gameObjectDirty->TransformUpdate();
+		Update();
 	}
 	bool JTransform::IsAvailableOverlap()const noexcept
 	{
@@ -187,14 +173,23 @@ namespace JinEngine
 	void JTransform::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
-		SetDirty();
+		SetFrameDirty();
 	}
 	void JTransform::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
-		OffDirty();
+		OffFrameDirty();
 	}
-	void JTransform::WorldUpdate()const noexcept
+	void JTransform::Update()noexcept
+	{
+		WorldUpdate();
+		SetFrameDirty();
+		JGameObject* owner = GetOwner();
+		const uint childrenCount = owner->GetChildrenCount();
+		for (uint i = 0; i < childrenCount; ++i)
+			owner->GetChild(i)->GetTransform()->Update(); 
+	}
+	void JTransform::WorldUpdate()noexcept
 	{
 		XMVECTOR s = XMLoadFloat3(&scale);
 		XMVECTOR q = XMQuaternionRotationRollPitchYaw(rotation.x * (JMathHelper::Pi / 180),
@@ -204,22 +199,12 @@ namespace JinEngine
 
 		XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 
-		XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), XMLoadFloat4x4(&parent->world));
+		XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), XMLoadFloat4x4(&GetOwner()->GetParent()->GetTransform()->world));
 		XMStoreFloat4x4(&world, worldM);
 	}
-	void JTransform::SetFrameDirty()noexcept
+	void JTransform::ChangeParent()noexcept
 	{
-		WorldUpdate();
-		SetDirty();
-		for (const auto& data : children)
-			data->SetFrameDirty();
-	}
-	void JTransform::ChangeParent(int index, JTransform* newParent)noexcept
-	{
-		parent->children.erase(parent->children.begin() + index);
-		parent = newParent;
-		parent->children.push_back(this);
-		SetFrameDirty();
+		Update();
 	}
 	Core::J_FILE_IO_RESULT JTransform::CallStoreComponent(std::wofstream& stream)
 	{
@@ -299,9 +284,24 @@ namespace JinEngine
 			return newT;
 		};
 		JCFI<JTransform>::Regist(defaultC, initC, loadC, copyC);
+
+		static GetTypeNameCallable getTypeNameCallable{ &JTransform::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JTransform::StaticTypeInfo };
+
+		static auto setFrameLam = [](JComponent& component)
+		{
+			static_cast<JTransform*>(&component)->SetFrameDirty();
+		};
+		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
+
+		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable };
+		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
+
+		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}
 	JTransform::JTransform(const size_t guid, const JOBJECT_FLAG flag, JGameObject* owner)
-		:JComponent(TypeName(), guid, flag, owner)
+		:JTransformInterface(TypeName(), guid, flag, owner)
 	{
 		position = XMFLOAT3(0, 0, 0);
 		rotation = XMFLOAT3(0, 0, 0);
@@ -311,16 +311,9 @@ namespace JinEngine
 		XMStoreFloat3(&tUp, JMathHelper::VectorUp());
 		XMStoreFloat3(&tFront, JMathHelper::VectorForward());
 		XMStoreFloat4x4(&world, JMathHelper::IdentityMatrix4());
-
-		JGameObject* ownerParent = owner->GetParent();
-		if (ownerParent != nullptr)
-		{
-			JTransform* parentTransform = ownerParent->GetTransform();
-			parent = parentTransform;
-			parentTransform->children.push_back(this);
-		}
-
-		gameObjectDirty = owner->GetGameObjectDirty();
+		 
+		if (!owner->IsRoot())
+			WorldUpdate();
 	}
 	JTransform::~JTransform() {}
 }

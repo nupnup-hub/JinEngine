@@ -6,23 +6,15 @@
 
 namespace JinEngine
 {
-	namespace Core
-	{
-		class JFbxFileLoaderImpl;
-	}
+	class JModel;
+	class JSkeletonAsset;
 
 	struct JSkeleton
-	{
-		friend class Core::JFbxFileLoaderImpl;
-	private:
-		const uint jointCount = 0;
+	{ 
+	private: 
 		const std::vector<Joint> joint;
-		const size_t skletonHash;
+		const size_t skletonHash = 0;
 	public:
-		JSkeleton() = default;
-		JSkeleton(std::vector<Joint>&& joint, const size_t nameHash);
-		JSkeleton(const JSkeleton& skeleton);
-
 		uint GetJointCount()const noexcept;
 		size_t GetHash()const noexcept;
 		Joint GetJoint(int index)const noexcept;
@@ -38,7 +30,15 @@ namespace JinEngine
 
 		bool IsSame(const JSkeleton& skeleton)const noexcept;
 		bool IsSame(const size_t skletonHash)const noexcept;
-	private: 
-		//static size_t CalSkeletonHash(const std::vector<Joint>& joint)noexcept;
+	public: 
+		JSkeleton() = default;
+		JSkeleton(std::vector<Joint> && joint, const size_t nameHash);
+		~JSkeleton();
+
+		JSkeleton(const JSkeleton & skeleton) = default;
+		JSkeleton& operator=(const JSkeleton & lhs) = default;
+
+		JSkeleton(JSkeleton && skeleton) = default;
+		JSkeleton& operator=(JSkeleton && rhs) = default;
 	};
 }

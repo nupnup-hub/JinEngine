@@ -188,10 +188,24 @@ namespace JinEngine
 	void JAnimationController::DoActivate()noexcept
 	{
 		JResourceObject::DoActivate();
+		StuffResource();
 	}
 	void JAnimationController::DoDeActivate()noexcept
 	{
 		JResourceObject::DoDeActivate();
+		ClearResource();
+	}
+	void JAnimationController::StuffResource()
+	{
+		SetValid(true);
+	}
+	void JAnimationController::ClearResource()
+	{
+		SetValid(false);
+	}
+	bool JAnimationController::IsValidResource()const noexcept
+	{
+		return JValidInterface::IsValidResource();
 	}
 	Core::J_FILE_IO_RESULT JAnimationController::CallStoreResource()
 	{
@@ -242,11 +256,13 @@ namespace JinEngine
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JAnimationController::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 		 
-		RegisterTypeInfo(RTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, false },
-			RTypeUtil{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable });
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, false, false, false};
+		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+
+		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
 	JAnimationController::JAnimationController(const std::string& name, size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
-		:JResourceObject(name, guid, flag, directory, formatIndex)
+		:JAnimationControllerInterface(name, guid, flag, directory, formatIndex)
 	{
 		conditionStorage = std::make_unique<JFSMconditionStorage>();
 		stateDiagram.push_back(std::make_unique<JAnimationFSMdiagram>("BaseLayer", conditionStorage.get()));

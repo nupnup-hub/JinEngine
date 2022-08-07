@@ -4,11 +4,10 @@
 namespace JinEngine
 {
 	JFile::JFile(JResourceObject* resource)
-		:resource(resource), previewScene(nullptr) {}
+		:resource(resource) {}
 	JFile::~JFile()
 	{
 		resource = nullptr;
-		previewScene = nullptr;
 	}
 
 	std::string JFile::GetName()const noexcept
@@ -22,13 +21,5 @@ namespace JinEngine
 	JResourceObject* JFile::GetResource()noexcept
 	{
 		return resource;
-	}
-	PreviewScene* JFile::GetPreviewScene()noexcept
-	{
-		return previewScene;
-	}
-	void JFile::SetPreviewScene(PreviewScene* previewScene)noexcept
-	{
-		JFile::previewScene = previewScene;
 	}
 }

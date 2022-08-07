@@ -71,6 +71,11 @@ namespace JinEngine
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
 	private:
+		void StuffResource() final;
+		void ClearResource() final;
+		//for .mesh file
+		bool ReadMeshData();
+	private:
 		bool StuffStaticMesh(JStaticMeshData& meshData, const DirectX::BoundingBox& boundingBox, const DirectX::BoundingSphere& boundingSphere)final;
 		bool StuffSkinnedMesh(JSkinnedMeshData& meshData, const DirectX::BoundingBox& boundingBox, const DirectX::BoundingSphere& boundingSphere)final;
 	private:

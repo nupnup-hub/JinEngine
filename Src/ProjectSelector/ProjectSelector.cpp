@@ -178,7 +178,7 @@ namespace JinEngine
 			ImGui::InputText("##Folder Path", menuListValues.newProejctPath, 260, ImGuiInputTextFlags_ReadOnly);
 
 			ImGui::SameLine();
-			uint index = JResourceManager::Instance().GetEditorTexture(J_EDITOR_TEXTURE::SEARCH_FOLDER_ICON)->GetTextureHeapIndex();
+			/*uint index = JResourceManager::Instance().GetEditorTexture(J_EDITOR_TEXTURE::SEARCH_FOLDER_ICON)->GetTextureHeapIndex();
 			if (ImGui::ImageButton((ImTextureID)JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(index).ptr, ImVec2((float)25, (float)25)))
 			{
 				std::wstring dirPath;
@@ -200,7 +200,7 @@ namespace JinEngine
 				else if (menuListValues.newProejctName != " " &&
 					menuListValues.newProejctPath != " ")
 					CreateNewProjectFolderes(applicationVar);
-			}
+			}*/
 			ImGui::End();
 		}
 		else

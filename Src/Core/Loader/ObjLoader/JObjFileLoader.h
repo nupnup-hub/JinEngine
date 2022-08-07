@@ -12,8 +12,7 @@ namespace JinEngine
 {
 	struct JModelAttribute;
 	struct JResourcePathData;
-	struct SubmeshGeometry;
-	struct JStaticMeshData;
+	struct JStaticMeshData; 
 
 	namespace Core
 	{

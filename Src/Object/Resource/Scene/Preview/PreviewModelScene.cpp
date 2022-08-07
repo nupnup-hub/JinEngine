@@ -2,6 +2,8 @@
 #include"../../Scene/JScene.h" 
 #include"../../Model/JModel.h"  
 #include"../../../Component/Camera/JCamera.h"  
+#include"../../../GameObject/JGameObject.h"
+#include"../../../GameObject/JGameObjectFactoryUtility.h"
 #include"../../../../Utility/JMathHelper.h" 
 #include"../../../../Graphic/JGraphicDrawList.h" 
 #include<Windows.h>
@@ -13,9 +15,16 @@ namespace JinEngine
 	{
 		model = static_cast<JModel*>(resource);
 		modelScene = model->GetModelScene(); 
-		previewCamera.resize(1); 
-		JOBJECT_FLAG camFlag = OBJECT_FLAG_EDITOR_OBJECT;
-		previewCamera[0] = modelScene->GetMainCamera();
+
+		if (GetResourceReferenceCount(*modelScene) == 0)
+			previewCamera = modelScene->GetMainCamera();
+		else
+		{
+			JGameObject* camObj = JGFU::CreateCamera(*modelScene->GetRootGameObject(), OBJECT_FLAG_EDITOR_OBJECT, false, "EditorCam");
+			previewCamera = camObj->GetComponent<JCamera>();
+			previewCamera->StateInterface()->SetCameraState(J_CAMERA_STATE::RENDER);
+		}	 
+		OnSceneReference();
 	}
 	PreviewModelScene::~PreviewModelScene()
 	{
@@ -24,23 +33,18 @@ namespace JinEngine
 	bool PreviewModelScene::Initialze()noexcept
 	{
 		if (model != nullptr)
-		{
-			//modelScene->MakeDefaultObject();
-			//modelScene->Activate();   
-			AdjustCamera(modelScene, previewCamera[0], model->GetSkeletonCenter(), model->GetSkeletonRadius());	
-			if (previewDimension == PREVIEW_DIMENSION::THREE_DIMENTIONAL_RESOURCE)
-				Graphic::JGraphicDrawList::AddDrawList(GetScene(), Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS, false);
-			else
-				Graphic::JGraphicDrawList::AddDrawList(GetScene(), Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED, false);
+		{ 
+			AdjustCamera(modelScene, previewCamera, model->GetSkeletonCenter(), model->GetSkeletonRadius());	 
 			return true;
 		}
 		else
 			return false;
 	}
 	void PreviewModelScene::Clear()noexcept
-	{
-		PreviewScene::Clear();  
-		modelScene = nullptr;
+	{ 
+		if (previewCamera->GetGuid() != modelScene->GetMainCamera()->GetGuid())
+			JGameObject::EraseGameObject(previewCamera->GetOwner());
+		OffSceneReference();
 		model = nullptr;	
 	}
 	JScene* PreviewModelScene::GetScene()noexcept

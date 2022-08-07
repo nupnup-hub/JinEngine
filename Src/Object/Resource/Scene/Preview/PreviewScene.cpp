@@ -2,7 +2,7 @@
 #include"../../../GameObject/JGameObject.h"
 #include"../../../Component/Camera/JCamera.h" 
 #include"../../../Component/Transform/JTransform.h" 
-#include"../../../../Graphic/JGraphicDrawList.h" 
+#include"../Jscene.h"
 #include"../../../../Utility/JCommonUtility.h"
 
 namespace JinEngine
@@ -13,21 +13,25 @@ namespace JinEngine
 		guid = JCommonUtility::CalculateGuid(previewSceneName);
 	}
 	PreviewScene::~PreviewScene() {}
-	void PreviewScene::Clear()noexcept
-	{
-		Graphic::JGraphicDrawList::PopDrawList(GetScene());
-	}
 	JResourceObject* PreviewScene::GetResouceObject()noexcept
 	{
 		return resource;
 	}
-	JCamera* PreviewScene::GetPreviewCamera(const uint index)noexcept
+	JCamera* PreviewScene::GetPreviewCamera()noexcept
 	{
-		return previewCamera[index];
+		return previewCamera;
 	}
 	PREVIEW_DIMENSION PreviewScene::GetPreviewDimension()const noexcept
 	{
 		return previewDimension;
+	}
+	void PreviewScene::OnSceneReference()
+	{
+		OnResourceReference(*GetScene());
+	}
+	void PreviewScene::OffSceneReference()
+	{
+		OffResourceReference(*GetScene());
 	}
 	void PreviewScene::AdjustCamera(_In_ JScene* scene,
 		_Inout_ JCamera* camera,

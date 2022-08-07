@@ -63,7 +63,7 @@ namespace JinEngine
 		{
 			JFSMstate::Clear();
 			if (clip != nullptr)
-				clip->OffReference();
+				OffResourceReference(*clip);
 		}
 	}
 }

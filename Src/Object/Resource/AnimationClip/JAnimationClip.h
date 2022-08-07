@@ -1,7 +1,7 @@
 #pragma once
 #include<vector> 
 #include"JAnimationSample.h"
-#include"../JResourceObject.h" 
+#include"JAnimationClipInterface.h"
 
 namespace JinEngine
 {
@@ -10,10 +10,11 @@ namespace JinEngine
 	{
 		struct JAnimationTime;
 		struct JAnimationShareData;
+		struct JFbxAnimationData;
 		class JFbxFileLoaderImpl;
 	}
 
-	class JAnimationClip : public JResourceObject
+	class JAnimationClip : public JAnimationClipInterface
 	{
 		REGISTER_CLASS(JAnimationClip)
 	private:
@@ -55,14 +56,20 @@ namespace JinEngine
 		bool IsSameSkeleton(JSkeletonAsset* srcSkeletonAsset)noexcept;
 		void ClipEnter(Core::JAnimationTime& animationTime, Core::JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const float nowTime, const float timeOffset)noexcept;
 		void ClipClose()noexcept;
-		void Update(Core::JAnimationTime& animationTime, Core::JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& localTransform, float nowTime, float deltaTime)noexcept;
-	protected:
-		void DoActivate()noexcept final;
-		void DoDeActivate()noexcept final;  
+		void Update(Core::JAnimationTime& animationTime, Core::JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& localTransform, float nowTime, float deltaTime)noexcept;  
 	private:
 		uint GetAnimationSampleJointIndex(const uint sampleIndex, const float localTime)noexcept;
 		void UpdateUsingAvatar(Core::JAnimationTime& animationTime, Core::JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& localTransform)noexcept;
 		bool IsMatchSkeleton()const noexcept;
+	protected:
+		void DoActivate()noexcept final;
+		void DoDeActivate()noexcept final;
+	private:
+		void StuffResource() final;
+		void ClearResource() final;
+		bool IsValidResource()const noexcept final;
+		bool ReadFbxData(); 
+	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JAnimationClip* clip);
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JAnimationClip* clip);

@@ -2,13 +2,13 @@
 #include<string>
 #include<vector> 
 #include<memory>
-#include"../JObject.h" 
+#include"JDirectoryInterface.h"
 
 namespace JinEngine
 {
 	class JFile;
 	class JResourceObject;
-	class JDirectory : public JObject
+	class JDirectory : public JDirectoryInterface
 	{
 		REGISTER_CLASS(JDirectory)
 	private: 
@@ -26,12 +26,18 @@ namespace JinEngine
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
 
 		bool HasChild(const std::string& name)const noexcept;
+		bool IsOpen()const noexcept;
 
 		JDirectory* SearchDirectory(const std::string& path)noexcept;
 		std::string MakeUniqueFileName(const std::string& name)noexcept;
+	public:
+		JDirectoryInterface* DirectoryInterface() final;
 	private: 
 		bool AddFile(JResourceObject* resource)noexcept; 
 		bool EraseFile(JResourceObject* resource)noexcept;  
+	private:
+		void OpenDirectory() final;
+		void CloseDirectory() final;
 		static void RegisterFunc();
 	private:
 		JDirectory(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* parentDir);

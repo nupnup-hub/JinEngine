@@ -12,39 +12,38 @@ namespace JinEngine
 	{
 		REGISTER_CLASS(JResourceObject) 
 	protected:
+		//0 is default Resource format
 		const uint8 formatIndex;
 	private: 
-		JDirectory* directory;
-		int referenceCount;
+		JDirectory* directory;  
 	public:
-		JResourceObject(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
-		~JResourceObject(); 
-		JResourceObject(JResourceObject&& rhs) = default;
-		JResourceObject& operator=(JResourceObject&& rhs) = default;
-
 		std::string GetPath()const noexcept;
 		std::wstring GetWPath()const noexcept;
-		std::string GetFolderPath(bool eraseLastBackSlash)const noexcept; 
-		int GetReferenceCount()const noexcept;
+		std::string GetFolderPath()const noexcept; 
+		std::wstring GetFolderWPath()const noexcept;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
 
 		virtual J_RESOURCE_TYPE GetResourceType()const noexcept = 0;
 		virtual std::string GetFormat()const noexcept = 0; 
-
-		void OnReference()noexcept;
-		void OffReference()noexcept; 
 	protected:
-		void DoActivate() noexcept override;
-		void DoDeActivate()noexcept override;
 		std::string GetMetafilePath()const noexcept;
-		JDirectory* GetDirectory()noexcept;  
+		JDirectory* GetDirectory()noexcept;   
 		JResourceObject* CopyResource();
-
+	protected:
 		static std::wstring ConvertMetafilePath(const std::wstring& resourcePath)noexcept; 
 		static bool HasMetafile(const std::string& path);
 		static bool HasMetafile(JResourceObject* resource);
 	private: 
 		virtual Core::J_FILE_IO_RESULT CallStoreResource() = 0;
+	protected:
+		void DoActivate() noexcept override;
+		void DoDeActivate()noexcept override;
+	private: 
+		void OnReference()noexcept final;
+		void OffReference()noexcept final;
+	protected:
+		JResourceObject(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		~JResourceObject();
 	public:
 		static constexpr uint8 GetInvalidFormatIndex()noexcept
 		{

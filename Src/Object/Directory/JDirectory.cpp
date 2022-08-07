@@ -66,6 +66,10 @@ namespace JinEngine
 		}
 		return false;
 	}
+	bool JDirectory::IsOpen()const noexcept
+	{
+		return IsActivated();
+	}
 	JDirectory* JDirectory::SearchDirectory(const std::string& path)noexcept
 	{
 		JDirectory* res = GetChildDirctory(path);
@@ -78,13 +82,16 @@ namespace JinEngine
 				if (res != nullptr)
 					break;
 			}
-		}
-	
+		}	
 		return res;
 	}
 	std::string JDirectory::MakeUniqueFileName(const std::string& name)noexcept
 	{
 		return JCommonUtility::MakeUniqueName(fileList, name);
+	}
+	JDirectoryInterface* JDirectory::DirectoryInterface()
+	{
+		return this;
 	}
 	bool JDirectory::AddFile(JResourceObject* resource)noexcept
 	{
@@ -111,6 +118,14 @@ namespace JinEngine
 		}
 		return false;
 	}
+	void JDirectory::OpenDirectory()
+	{
+		Activate(); 
+	}
+	void JDirectory::CloseDirectory()
+	{
+		DeActivate();
+	}
 	void JDirectory::RegisterFunc()
 	{
 		auto defaultC = [](JDirectory* parent)
@@ -130,7 +145,7 @@ namespace JinEngine
 		JDFI::Regist(defaultC, initC);
 	}
 	JDirectory::JDirectory(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* parentDir)
-		:JObject(name, guid, flag), parentDir(parentDir)
+		:JDirectoryInterface(name, guid, flag), parentDir(parentDir)
 	{
 		if (parentDir != nullptr)
 			parentDir->childrenDir.push_back(this);

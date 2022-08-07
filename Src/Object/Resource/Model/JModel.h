@@ -1,8 +1,8 @@
 #pragma once
 #include<vector>
 #include<memory>
-#include<DirectXMath.h>
-#include"../JResourceObject.h"  
+#include<DirectXMath.h>  
+#include"JModelInterface.h"
 
 namespace JinEngine
 { 
@@ -12,7 +12,7 @@ namespace JinEngine
 	class JSkeletonAsset;
 	class JScene; 
 
-	class JModel : public JResourceObject
+	class JModel : public JModelInterface
 	{
 		REGISTER_CLASS(JModel)
 		struct ModelMetadata : public ObjectMetadata
@@ -57,6 +57,13 @@ namespace JinEngine
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;    
+	private:
+		void StuffResource() final;
+		void ClearResource() final;
+		bool IsValidResource()const noexcept;
+	private:
+		bool ReadObjModelData();
+		bool ReadFbxModelData(); 
 	private:
 		std::vector<JGameObject*>::const_iterator GetMeshPartVectorHandle(uint& count)noexcept;
 		Core::J_FILE_IO_RESULT CallStoreResource()final;

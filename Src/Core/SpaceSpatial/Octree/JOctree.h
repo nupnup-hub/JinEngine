@@ -21,6 +21,7 @@ namespace JinEngine
 			uint octreeSize;
 			float looseFactor;
 			bool isLooseOctree;
+			bool isDebugModeActivated;
 			static constexpr uint minSize = 1;
 			static constexpr uint looseFactorMax = 4;
 			static constexpr uint neighBorIndexList[8][3]

@@ -1,6 +1,5 @@
 #pragma once
-#include"../JComponent.h" 
-#include"../../IFrameResourceControl.h" 
+#include"JAnimatorInterface.h"
 #include"../../../Core/FSM/AnimationFSM/JAnimationTime.h"
 #include<memory>
 #include<vector>
@@ -10,38 +9,22 @@ namespace JinEngine
 {  
 	class JSkeletonAsset;
 	class JAnimationClip;
-	class JAnimationController;
-	class GameObjectDirty;
+	class JAnimationController; 
 
-	namespace Graphic
-	{
-		struct JAnimationConstants;
-	}
-
-	class JAnimator : public JComponent, public IFrameResourceControl
+	class JAnimator : public JAnimatorInterface
 	{
 		REGISTER_CLASS(JAnimator)
-	private:
-		GameObjectDirty* gameObjectDirty;
+	private: 
 		JSkeletonAsset* skeletonAsset;
 		JAnimationController* animationController;
-		std::vector<Core::JAnimationTime>animationTimes;
-		uint aniCBIndex;
+		std::vector<Core::JAnimationTime>animationTimes; 
 	public:
 		void OnAnimation()noexcept;
-		void Update(Graphic::JAnimationConstants& animationConstatns, bool isOnAnimation);
-		JAnimationController* GetAnimatorController()const noexcept;
-		uint GetAnimationCBIndex()const noexcept;
+		JAnimationController* GetAnimatorController()const noexcept; 
 		JSkeletonAsset* GetSkeletonAsset()noexcept;
 
 		void SetAnimatorController(JAnimationController* animationController)noexcept;
-		void SetAnimationCBIndex(const uint index)noexcept;
 		void SetSkeletonAsset(JSkeletonAsset* newSkeletonAsset)noexcept;
-
-		bool IsDirtied()const noexcept;
-		void SetDirty()noexcept;
-		void OffDirty()noexcept;
-		void MinusDirty()noexcept;
 
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static J_COMPONENT_TYPE GetStaticComponentType()noexcept;
@@ -50,6 +33,8 @@ namespace JinEngine
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
+	private: 
+		bool UpdateFrame(Graphic::JAnimationConstants& constant) final;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JAnimator* animator);

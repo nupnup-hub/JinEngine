@@ -1,5 +1,5 @@
 #pragma once
-#include"../JResourceObject.h"
+#include"JSkeletonAssetInterface.h"
 #include"JSkeletonType.h"
 #include"../../../Core/JDataType.h" 
 #include<memory>
@@ -8,8 +8,7 @@ namespace JinEngine
 {
 	struct JSkeleton;
 	class JAvatar;
-
-	class JSkeletonAsset : public JResourceObject
+	class JSkeletonAsset : public JSkeletonAssetInterface
 	{
 		REGISTER_CLASS(JSkeletonAsset)
 	private:
@@ -30,16 +29,23 @@ namespace JinEngine
 		static std::vector<std::string> GetAvailableFormat()noexcept;
 
 		void SetSkeletonType(JSKELETON_TYPE skeletonType)noexcept;
-		void SetAvatar(JAvatar* avatar)noexcept;
-
-		void CopyAvatarJointIndex(JAvatar* target)noexcept; 
 		bool HasAvatar()noexcept;
 		bool IsRegularChildJointIndex(uint8 childIndex, uint8 parentIndex)noexcept; 
+	public:
+		JSkeletonAssetAvatarInterface* AvatarInterface() final;
+	private:
+		void SetAvatar(JAvatar* avatar)noexcept final;
+		void CopyAvatarJointIndex(JAvatar* target)noexcept final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
 	private:
+		void StuffResource() final;
+		void ClearResource() final;
+		bool ReadSkeletonAssetData();
+	private:
 		void SetSkeleton(JSkeleton&& skeleon);
+	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JSkeletonAsset* skeletonAsset);
 		static JSkeletonAsset* LoadObject(JDirectory* directory, const JResourcePathData& pathData);

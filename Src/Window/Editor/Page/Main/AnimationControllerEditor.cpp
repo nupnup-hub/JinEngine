@@ -537,14 +537,14 @@ namespace JinEngine
 		else if (eventType == EDITOR_EVENT::SELECT_GAMEOBJECT)
 		{
 			EditorSelectGameObjectEvStruct* selectGameObjEvStruct = static_cast<EditorSelectGameObjectEvStruct*>(eventStruct);
-			std::vector<JAnimator*> animators = selectGameObjEvStruct->gameObject->GetComponentsWithChildren<JAnimator>();
-			if (animators.size() > 0)
+			JAnimator* animators = selectGameObjEvStruct->gameObject->GetComponentWithParent<JAnimator>();
+			if (animators != nullptr)
 			{
 				if (selectedController == nullptr || selectedController->GetGuid() !=
-					animators[0]->GetAnimatorController()->GetGuid())
+					animators->GetAnimatorController()->GetGuid())
 				{
 					ClearSelectableBuff();
-					selectedController = animators[0]->GetAnimatorController();
+					selectedController = animators->GetAnimatorController();
 					diagramIndex = 0;
 					if (selectedController->GetAnimationDiagramCount() > 0)
 						diagramListSelectable[0] = true;

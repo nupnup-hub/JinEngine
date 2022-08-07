@@ -37,7 +37,7 @@ namespace JinEngine
 			void Clear()noexcept;
 			void UpdateGameObject(const size_t guid)noexcept;
 			void AddGameObject(JGameObject* newGameObject)noexcept;
-			void EraeGameObject(const size_t guid)noexcept;
+			void EraeGameObject(JGameObject* gameObj)noexcept; 
 		private:
 			DirectX::BoundingBox GetRootBoundingBox()const noexcept;
 			int GetMaximumDimension(const DirectX::BoundingBox& box)const noexcept;

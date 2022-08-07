@@ -6,6 +6,7 @@
 #include"JResourceData.h"   
 #include"Scene/Preview/PreviewSceneGroup.h" 
 #include"../Directory/JDirectoryStorage.h"  
+#include"JResourceUserInterface.h"
 
 namespace JinEngine
 {  
@@ -19,8 +20,9 @@ namespace JinEngine
 	class PreviewSceneGroup;
 	class PreviewScene; 
 	 
-	class JResourceManager 
+	class JResourceManager : public JResourceUserInterface
 	{
+		REGISTER_CLASS(JResourceManager)
 	private:
 		class Storage
 		{
@@ -97,13 +99,15 @@ namespace JinEngine
 		void CreateDefaultShader()noexcept;
 		void CreateDefaultMaterial()noexcept;
 		void CreateDefaultMesh();
-		  
-		JResourceObject* GetResourceByType(const J_RESOURCE_TYPE type, const size_t guid)noexcept;
+		 
+		JResourceObject* AddResource(JResourceObject& newResource);
+		JDirectory* AddDirectory(JDirectory& newDirectory);
+
 		void StoreResourceData();
 		void LoadObject();
 		//bool IsOverlappedFilepath(const std::string& name, const std::string& path) noexcept;
-	public:
-
+	private:
+		static void RegisterFunc();
 	public:
 		template<typename T>
 		uint GetResourceCount()
@@ -120,8 +124,8 @@ namespace JinEngine
 		{
 			return static_cast<T*>(rCashMap.find(T::GetStaticResourceType())->second.GetByPath(path));
 		}
-		template<typename T, typename R = typename std::vector<JResourceObject*>::const_iterator>
-		R GetResourceVectorHandle(uint& resouceCount)noexcept
+		template<typename T>
+		auto GetResourceVectorHandle(uint& resouceCount) noexcept -> typename std::vector<JResourceObject*>::const_iterator
 		{
 			return rCashMap.find(T::GetStaticResourceType())->second.GetVectorIter(resouceCount);
 		}

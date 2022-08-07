@@ -16,9 +16,7 @@ namespace JinEngine
 		const size_t ownerPageGuid,
 		SkeletonAssetSettingPageShareData* pageShareData)
 		:EditorWindow(std::move(attribute), ownerPageGuid), pageShareData(pageShareData)
-	{
-
-	}
+	{}
 	void AvatarEditor::Initialize(EditorUtility* editorUtility)noexcept
 	{
 	}
@@ -38,7 +36,7 @@ namespace JinEngine
 			if (pageShareData->skeletonAsset->HasAvatar())
 			{
 				hasAvatar = true;
-				pageShareData->skeletonAsset->CopyAvatarJointIndex(&targetAvatar);
+				pageShareData->skeletonAsset->AvatarInterface()->CopyAvatarJointIndex(&targetAvatar);
 				CheckAllJoint();
 			}
 			return true;
@@ -68,7 +66,7 @@ namespace JinEngine
 			ImGui::BeginTabBar("AvatarSetting");
 			for (int i = 0; i < tabs.size(); ++i)
 			{
-				if (ImGui::TabItemButton(targetAvatar.tabName[i].c_str()))
+				if (ImGui::TabItemButton(JAvatar::tabName[i].c_str()))
 				{
 					CloseAllTab();
 					tabs[i] = true;
@@ -83,15 +81,15 @@ namespace JinEngine
 			}
 
 			int spaceOffset = 25;
-			for (int i = 0; i < targetAvatar.jointGuide[index].size(); ++i)
+			for (int i = 0; i < JAvatar::jointGuide[index].size(); ++i)
 			{
-				ImGui::Text(targetAvatar.jointGuide[index][i].guideName.c_str());
-				int textSize = (int)targetAvatar.jointGuide[index][i].guideName.size();
+				ImGui::Text(JAvatar::jointGuide[index][i].guideName.c_str());
+				int textSize = (int)JAvatar::jointGuide[index][i].guideName.size();
 				ImGui::SameLine();
 
 				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (spaceOffset - textSize) * editorUtility->textWidth);
 
-				int jointIndex = targetAvatar.jointGuide[index][i].index;
+				int jointIndex = JAvatar::jointGuide[index][i].index;
 				int nowRefValue = targetAvatar.jointReference[jointIndex];
 				std::string nowRefJointName;
 				if (nowRefValue == JSkeletonFixedData::incorrectJointIndex)
@@ -262,18 +260,18 @@ namespace JinEngine
 	{
 		JSkeleton* skeleton = pageShareData->skeletonAsset->GetSkeleton();
 		uint32 maxJoint = (uint32)skeleton->GetJointCount();
-		uint32 partCount = (uint32)targetAvatar.jointGuide.size();
+		uint32 partCount = (uint32)JAvatar::jointGuide.size();
 
 		for (uint32 i = 0; i < partCount; ++i)
 		{
-			uint32 jointCount = (uint32)targetAvatar.jointGuide[i].size();
+			uint32 jointCount = (uint32)JAvatar::jointGuide[i].size();
 			for (uint32 j = 0; j < jointCount; ++j)
 			{
 				for (uint32 k = 0; k < maxJoint; ++k)
 				{
-					if (targetAvatar.jointGuide[i][j].defaultJointName == skeleton->GetJointName(k))
+					if (JAvatar::jointGuide[i][j].defaultJointName == skeleton->GetJointName(k))
 					{
-						int referenceIndex = targetAvatar.jointGuide[i][j].index;
+						int referenceIndex = JAvatar::jointGuide[i][j].index;
 						targetAvatar.jointReference[referenceIndex] = (uint8)k;
 					}
 				}
@@ -282,7 +280,7 @@ namespace JinEngine
 	}
 	void AvatarEditor::StoreAvatarData()
 	{
-		pageShareData->skeletonAsset->SetAvatar(&targetAvatar);
+		pageShareData->skeletonAsset->AvatarInterface()->SetAvatar(&targetAvatar);
 	}
 	void AvatarEditor::ClearAllJointReference()
 	{
@@ -315,7 +313,7 @@ namespace JinEngine
 					parentSeletIndex = targetAvatar.jointReference[parentIndex];
 					break;
 				}
-				parentIndex = targetAvatar.jointReferenceParent[parentIndex];
+				parentIndex = JAvatar::jointReferenceParent[parentIndex];
 			}
 			if (parentSeletIndex == JSkeletonFixedData::incorrectJointIndex)
 			{

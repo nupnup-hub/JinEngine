@@ -4,11 +4,10 @@
 #include"../../Resource/Skeleton/JSkeletonAsset.h"
 #include"../../Resource/Skeleton/JSkeletonFixedData.h"
 #include"../../Resource/JResourceManager.h"
-#include"../../GameObject/JGameObject.h"
-#include"../../GameObject/IGameObjectComponentEvent.h"
+#include"../../GameObject/JGameObject.h" 
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Graphic/FrameResource/JAnimationConstants.h"
- 
+
 namespace JinEngine
 {
 	void JAnimator::OnAnimation()noexcept
@@ -16,60 +15,34 @@ namespace JinEngine
 		if (animationController != nullptr)
 			animationController->Initialize(animationTimes, skeletonAsset);
 	}
-	void JAnimator::Update(Graphic::JAnimationConstants& animationConstatns, bool isOnAnimation)
-	{
-		if (animationController != nullptr && isOnAnimation)
-			animationController->Update(animationTimes, skeletonAsset, animationConstatns);
-		else
-		{
-			DirectX::XMFLOAT4X4 iden = JMathHelper::Identity4x4();
-			for (uint i = 0; i < JSkeletonFixedData::maxJointCount; ++i)
-				animationConstatns.boneTransforms[i] = iden;
-		}
-	}
 	JAnimationController* JAnimator::GetAnimatorController()const noexcept
 	{
 		return animationController;
-	}
-	uint JAnimator::GetAnimationCBIndex()const noexcept
-	{
-		return aniCBIndex;
-	}
+	} 
 	JSkeletonAsset* JAnimator::GetSkeletonAsset()noexcept
 	{
 		return skeletonAsset;
 	}
 	void JAnimator::SetAnimatorController(JAnimationController* animationController)noexcept
 	{
+		if (JAnimator::animationController != nullptr)
+			OffResourceReference(*JAnimator::animationController);
+
 		JAnimator::animationController = animationController;
-		ReRegisterComponent<JAnimator>(this);
-		SetDirty();
-	}
-	void JAnimator::SetAnimationCBIndex(const uint index)noexcept
-	{
-		aniCBIndex = index;
+		if (JAnimator::animationController != nullptr)
+			OnResourceReference(*JAnimator::animationController);
+		ReRegisterComponent();
+		SetFrameDirty();
 	}
 	void JAnimator::SetSkeletonAsset(JSkeletonAsset* newSkeletonAsset)noexcept
 	{
+		if (skeletonAsset != nullptr)
+			OffResourceReference(*skeletonAsset);
 		skeletonAsset = newSkeletonAsset;
-		ReRegisterComponent<JAnimator>(this);
-		SetDirty();
-	}
-	bool JAnimator::IsDirtied()const noexcept
-	{
-		return gameObjectDirty->GetAnimatorDirty() > 0;
-	}
-	void JAnimator::SetDirty()noexcept
-	{
-		gameObjectDirty->SetAnimatorDirty();
-	}
-	void JAnimator::OffDirty()noexcept
-	{
-		gameObjectDirty->OffAnimatorDirty();
-	}
-	void JAnimator::MinusDirty()noexcept
-	{
-		gameObjectDirty->AnimatorUpdate();
+		if (skeletonAsset != nullptr)
+			OnResourceReference(*skeletonAsset);
+		ReRegisterComponent();
+		SetFrameDirty();
 	}
 	J_COMPONENT_TYPE JAnimator::GetComponentType()const noexcept
 	{
@@ -93,14 +66,25 @@ namespace JinEngine
 	void JAnimator::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
-		RegisterComponent<JAnimator>(this);
-		SetDirty();
+		RegisterComponent();
+		SetFrameDirty();
 	}
 	void JAnimator::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
-		DeRegisterComponent<JAnimator>(this);
-		OffDirty();
+		DeRegisterComponent();
+		OffFrameDirty();
+	}
+	bool JAnimator::UpdateFrame(Graphic::JAnimationConstants& constant)
+	{
+		if (IsFrameDirted() && animationController != nullptr)
+		{
+			animationController->Update(animationTimes, skeletonAsset, constant);
+			MinusFrameDirty();
+			return true;
+		}
+		else
+			return false;
 	}
 	Core::J_FILE_IO_RESULT JAnimator::CallStoreComponent(std::wofstream& stream)
 	{
@@ -108,7 +92,7 @@ namespace JinEngine
 	}
 	Core::J_FILE_IO_RESULT JAnimator::StoreObject(std::wofstream& stream, JAnimator* animator)
 	{
-		if(animator == nullptr)
+		if (animator == nullptr)
 			return Core::J_FILE_IO_RESULT::FAIL_NULL_OBJECT;
 
 		if (((int)animator->GetFlag() & OBJECT_FLAG_DO_NOT_SAVE) > 0)
@@ -142,10 +126,10 @@ namespace JinEngine
 
 		if (!stream.is_open())
 			return nullptr;
-		 
+
 		ObjectMetadata metadata;
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
-		 
+
 		JAnimator* newAnimator;
 		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
 			newAnimator = new JAnimator(metadata.guid, metadata.flag, owner);
@@ -190,23 +174,36 @@ namespace JinEngine
 		{
 			JAnimator* oriAni = static_cast<JAnimator*>(ori);
 			JAnimator* newAni = new JAnimator(Core::MakeGuid(), oriAni->GetFlag(), owner);
-			
+
 			newAni->SetSkeletonAsset(oriAni->skeletonAsset);
-			newAni->SetAnimatorController(oriAni->animationController); 
+			newAni->SetAnimatorController(oriAni->animationController);
 
 			return newAni;
 		};
 		JCFI<JAnimator>::Regist(defaultC, initC, loadC, copyC);
+
+		static GetTypeNameCallable getTypeNameCallable{ &JAnimator::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JAnimator::StaticTypeInfo };
+
+		static auto setFrameLam = [](JComponent& component)
+		{
+			static_cast<JAnimator*>(&component)->SetFrameDirty();
+		};
+		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
+
+		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable };
+		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{&setFrameDirtyCallable };
+
+		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}
 	JAnimator::JAnimator(const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)
-		:JComponent(TypeName(), guid, objFlag, owner)
+		:JAnimatorInterface(TypeName(), guid, objFlag, owner)
 	{
-		gameObjectDirty = owner->GetGameObjectDirty();
 		animationTimes.resize(JAnimationController::diagramMaxCount);
 	}
 	JAnimator::~JAnimator()
 	{
-		gameObjectDirty = nullptr;
 		skeletonAsset = nullptr;
 		animationController = nullptr;
 	}
