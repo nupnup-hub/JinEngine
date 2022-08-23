@@ -19,10 +19,10 @@ namespace JinEngine
 	class JComponentFactoryUtility
 	{
 	public:
-		static JCamera* CreateCamera(const size_t guid, const JOBJECT_FLAG flag, JGameObject& owner, bool isMainCam);
-		static JLight* CreateLight(const size_t guid, const JOBJECT_FLAG flag, JGameObject& owner, J_LIGHT_TYPE type);
+		static JCamera* CreateCamera(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner, bool isMainCam);
+		static JLight* CreateLight(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner, J_LIGHT_TYPE type);
 		static JRenderItem* CreateRenderItem(const size_t guid,
-			const JOBJECT_FLAG flag,
+			const J_OBJECT_FLAG flag,
 			JGameObject& owner,
 			JMeshGeometry* mesh,
 			JMaterial* mat,

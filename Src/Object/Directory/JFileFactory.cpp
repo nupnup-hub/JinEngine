@@ -1,38 +1,37 @@
 #include"JFileFactory.h" 
-#include"../../Core/Func/Callable/JCallable.h"
+#include"../../Core/Func/Callable/JCallable.h" 
 
 namespace JinEngine
 {
-	class JFileFactoryFunc
+	class JFileFactory
 	{
 	public:
-		using CreateCallable = Core::JStaticCallable<bool, JResourceObject*>;
-		using EraseCallable = Core::JStaticCallable<bool, JResourceObject*>;
+		using CreateCallable = Core::JMemeberCallable<JDirectory, bool, JResourceObject&>;
+		using DestroyCallable = Core::JMemeberCallable<JDirectory, bool, JResourceObject&>;
 	public:
-		static CreateCallable* createCallable;
-		static EraseCallable* eraseCallable;
+		static CreateCallable* createCallable;  
+		static DestroyCallable* destroyCallable; 
 	};
 
-	JFileFactoryFunc::CreateCallable* JFileFactoryFunc::createCallable;
-	JFileFactoryFunc::EraseCallable* JFileFactoryFunc::eraseCallable;
+	JFileFactory::CreateCallable* JFileFactory::createCallable;  
+	JFileFactory::DestroyCallable* JFileFactory::destroyCallable; 
 
-	bool JFileFactory::Regist(CreateFuncPtr& cPtr, EraseFuncPtr& ePtr)
+	bool JFileFactoryImpl::Register(const CreateFuncPtr& cPtr, const DestroyFuncPtr& dPtr)
 	{
-		using CreateCallable = JFileFactoryFunc::CreateCallable;
-		using EraseCallable = JFileFactoryFunc::EraseCallable;
+		using CreateCallable = JFileFactory::CreateCallable; 
+		static CreateCallable crateCallable{ cPtr }; 
+		JFileFactory::createCallable = &crateCallable;
 
-		static CreateCallable crateCallable{ cPtr };
-		static EraseCallable eraseCallable{ ePtr };
-		 
-		JFileFactoryFunc::createCallable = &crateCallable;
-		JFileFactoryFunc::eraseCallable = &eraseCallable;
+		using DestroyCallable = JFileFactory::DestroyCallable;
+		static DestroyCallable destroyCallable{ dPtr };
+		JFileFactory::destroyCallable = &destroyCallable;
 	}
-	bool JFileFactory::Create(JResourceObject& resource)
-	{
-		return (*JFileFactoryFunc::createCallable)(nullptr, &resource);
+	bool JFileFactoryImpl::Create(JDirectory& dir, JResourceObject& resource)
+	{ 
+		return (*JFileFactory::createCallable)(&dir, resource);
 	}
-	bool JFileFactory::Erase(JResourceObject& resource)
+	bool JFileFactoryImpl::Destroy(JDirectory& dir, JResourceObject& resource)
 	{
-		return (*JFileFactoryFunc::eraseCallable)(nullptr, &resource);
+		return (*JFileFactory::destroyCallable)(&dir, resource);
 	}
 }

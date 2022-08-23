@@ -8,7 +8,7 @@ namespace JinEngine
 {
 	J_OBJECT_TYPE JComponent::GetObjectType()const noexcept
 	{
-		return J_OBJECT_TYPE::COMPONENT;
+		return J_OBJECT_TYPE::COMPONENT_OBJECT;
 	}
 	JGameObject* JComponent::GetOwner()noexcept
 	{
@@ -39,7 +39,16 @@ namespace JinEngine
 	{
 		JObject::DoDeActivate();
 	}
-	JComponent::JComponent(const std::string& cTypeName, const size_t guid, JOBJECT_FLAG flag, JGameObject* owner)noexcept
+	void JComponent::Destroy()
+	{
+		if(HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !IsIgnoreUndestroyableFlag())
+			return;
+
+		DeActivate();
+		owner->CompInterface()->RemoveComponent(*this);
+		delete this;
+	}
+	JComponent::JComponent(const std::string& cTypeName, const size_t guid, J_OBJECT_FLAG flag, JGameObject* owner)noexcept
 		:JComponentInterface(cTypeName, guid, flag), owner(owner)
 	{
 	}

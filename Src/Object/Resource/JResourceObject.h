@@ -12,11 +12,12 @@ namespace JinEngine
 	{
 		REGISTER_CLASS(JResourceObject) 
 	protected:
-		//0 is default Resource format
-		const uint8 formatIndex;
+		//0 is default Resource format 
+		const uint8 formatIndex; 
 	private: 
 		JDirectory* directory;  
 	public:
+		std::string GetFullName()const noexcept;
 		std::string GetPath()const noexcept;
 		std::wstring GetWPath()const noexcept;
 		std::string GetFolderPath()const noexcept; 
@@ -33,16 +34,20 @@ namespace JinEngine
 		static std::wstring ConvertMetafilePath(const std::wstring& resourcePath)noexcept; 
 		static bool HasMetafile(const std::string& path);
 		static bool HasMetafile(JResourceObject* resource);
-	private: 
-		virtual Core::J_FILE_IO_RESULT CallStoreResource() = 0;
 	protected:
+		//DoActivate => Load resource file in memory
 		void DoActivate() noexcept override;
+		//DoDeActivate => Unload resource
 		void DoDeActivate()noexcept override;
 	private: 
 		void OnReference()noexcept final;
 		void OffReference()noexcept final;
 	protected:
-		JResourceObject(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		void Destroy()override;
+	private:
+		virtual Core::J_FILE_IO_RESULT CallStoreResource() = 0;
+	protected:
+		JResourceObject(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JResourceObject();
 	public:
 		static constexpr uint8 GetInvalidFormatIndex()noexcept

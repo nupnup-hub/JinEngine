@@ -11,14 +11,14 @@ namespace JinEngine
 		friend class JDirectoryFactoryImpl;
 	private:
 		Core::JFactory<std::string, false, JDirectory*, JDirectory*> defaultFactory;
-		Core::JFactory<std::string, false, JDirectory*, const std::string&, const size_t, const JOBJECT_FLAG, JDirectory*> initFactory;
+		Core::JFactory<std::string, false, JDirectory*, const std::string&, const size_t, const J_OBJECT_FLAG, JDirectory*> initFactory;
 		Core::JFactory<std::string, false, JDirectory*, JDirectory*> copyFactory;
 	private:
 		bool Register(const std::string& iden, Core::JCallableInterface<JDirectory*, JDirectory*>* callable)
 		{
 			return defaultFactory.Regist(iden, callable);
 		}
-		bool Register(const std::string& iden, Core::JCallableInterface<JDirectory*, const std::string&, const size_t, const JOBJECT_FLAG, JDirectory*>* callable)
+		bool Register(const std::string& iden, Core::JCallableInterface<JDirectory*, const std::string&, const size_t, const J_OBJECT_FLAG, JDirectory*>* callable)
 		{
 			return initFactory.Regist(iden, callable);
 		}
@@ -31,11 +31,11 @@ namespace JinEngine
 		{
 			return static_cast<JDirectory*>(defaultFactory.Invoke(JDirectory::TypeName(), &parent));
 		}
-		JDirectory* CreateRoot(const std::string& name, size_t guid, JOBJECT_FLAG flag)
+		JDirectory* CreateRoot(const std::string& name, size_t guid, J_OBJECT_FLAG flag)
 		{
 			return static_cast<JDirectory*>(initFactory.Invoke(JDirectory::TypeName(), name, std::move(guid), std::move(flag), nullptr));
 		}
-		JDirectory* Create(const std::string& name, size_t guid, JOBJECT_FLAG flag, JDirectory& parent)
+		JDirectory* Create(const std::string& name, size_t guid, J_OBJECT_FLAG flag, JDirectory& parent)
 		{
 			return static_cast<JDirectory*>(initFactory.Invoke(JDirectory::TypeName(), name, std::move(guid), std::move(flag), &parent));
 		}
@@ -55,21 +55,21 @@ namespace JinEngine
 			(*addStorage)(&JResourceManager::Instance(), *res);
 		return res;
 	} 
-	JDirectory* JDirectoryFactoryImpl::CreateRoot(const std::string& name, const size_t guid, const JOBJECT_FLAG flag)
+	JDirectory* JDirectoryFactoryImpl::CreateRoot(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag)
 	{
 		JDirectory* res = JDF::Instance().CreateRoot(name, guid, flag);
 		if (res != nullptr)
 			(*addStorage)(&JResourceManager::Instance(), *res);
 		return res;
 	}
-	JDirectory* JDirectoryFactoryImpl::Create(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory& parent)
+	JDirectory* JDirectoryFactoryImpl::Create(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& parent)
 	{
 		JDirectory* res = JDF::Instance().Create(name, guid, flag, parent);
 		if (res != nullptr)
 			(*addStorage)(&JResourceManager::Instance(), *res);
 		return res;
 	}
-	void JDirectoryFactoryImpl::Regist(DefaultPtr defaultPtr, InitPtr initPtr)
+	void JDirectoryFactoryImpl::Register(DefaultPtr defaultPtr, InitPtr initPtr)
 	{
 		static DefaultCallable defaultCallable{ defaultPtr };
 		static InitCallable initCallable{ initPtr }; 
@@ -79,7 +79,7 @@ namespace JinEngine
 		JDF::Instance().Register(JDirectory::TypeName(), &initCallable);
 		//JDF::Instance().RegisterCopy(JDirectory::TypeName(), &copyCallable);
 	}
-	void JDirectoryFactoryImpl::RegistAddStroage(AddStoragePtr addPtr)
+	void JDirectoryFactoryImpl::RegisterAddStroage(AddStoragePtr addPtr)
 	{
 		static AddStorageCallable addStorage{ addPtr };
 		JDirectoryFactoryImpl::addStorage = &addStorage;

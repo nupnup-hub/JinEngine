@@ -1,5 +1,5 @@
-#include"JWindows.h" 
-#include"Editor/ImGuiEx/ImGuiManager.h"
+#include"JWindows.h"  
+#include"../../../Lib/imgui/imgui.h"
 #include"../Utility/JD3DUtility.h" 
 #include"../Core/Guid/GuidCreator.h"
 #include"../Core/Exception/JExceptionMacro.h"
@@ -88,30 +88,17 @@ namespace JinEngine
 		{
 			return preClinetRect.bottom - preClinetRect.top;
 		}
-		JWindowHandleInterface* JWindowImpl::HandleInterface() noexcept
+		JWindowHandleInterface* JWindowImpl::HandleInterface() 
 		{
 			return this;
 		}
-		JWindowImpl::JEventInterface* JWindowImpl::EvInterface()noexcept
+		JWindowImpl::JEventInterface* JWindowImpl::EvInterface()
 		{
 			return this;
 		}
-		JWindowAppInterface* JWindowImpl::AppInterface()noexcept
+		JWindowAppInterface* JWindowImpl::AppInterface()
 		{
 			return this;
-		}
-		JWindowImpl::JWindowImpl()
-			:guid(Core::MakeGuid()),
-			minWidth((int)(GetSystemMetrics(SM_CXSCREEN) * 0.4f)),
-			minHeight((int)(GetSystemMetrics(SM_CYSCREEN) * 0.4f)),
-			hwnd(0)
-		{  
-			auto lam = [](const size_t& a, const size_t& b) {return a == b; };
-			RegistIdenCompareCallable(lam);
-		}
-		JWindowImpl::~JWindowImpl()
-		{
-			//DestroyWindow(hwnd);
 		}
 		void JWindowImpl::Initialize(HINSTANCE hInstance)
 		{
@@ -215,43 +202,6 @@ namespace JinEngine
 		{
 			return hwnd;
 		}
-		void JWindowImpl::Resize(WPARAM wParam)
-		{
-			GetWindowRect(hwnd, &preWindowRect);
-			GetClientRect(hwnd, &preClinetRect);
-			if (wParam != SIZE_MINIMIZED)
-				NotifyEvent(guid, J_WINDOW_EVENT::WINDOW_RESIZE);
-		}
-		void JWindowImpl::RegisterWindowClass()
-		{
-			wc = { 0 };
-			HICON icon;
-
-			icon = (HICON)::LoadImage(hInst,
-				MAKEINTRESOURCE(IDI_ICON1),
-				IMAGE_ICON, 128, 128,
-				LR_DEFAULTCOLOR);
-
-			wc.cbSize = sizeof(wc);
-			wc.style = CS_OWNDC;
-			wc.lpfnWndProc = HandleMsgSetup;
-			wc.cbClsExtra = 0;
-			wc.cbWndExtra = 0;
-			wc.hInstance = hInst;
-			wc.hIcon = icon;
-			wc.hIconSm = icon;
-			wc.hCursor = nullptr;
-			wc.hbrBackground = (HBRUSH)3;
-			wc.lpszMenuName = nullptr;
-			wc.lpszClassName = windowClassName.c_str();
-
-			if (!RegisterClassEx(&wc))
-			{
-				MessageBox(NULL, L"JWindowImpl Registration Failed!", L"Error!",
-					MB_ICONEXCLAMATION | MB_OK);
-			}
-		}
-
 		LRESULT CALLBACK JWindowImpl::HandleMsgSetup(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam)
 		{
 			// use create parameter passed in from CreateWindow() to store window class pointer at WinAPI side
@@ -344,6 +294,59 @@ namespace JinEngine
 				break;
 			}
 			return DefWindowProc(hwnd, msg, wParam, lParam);
+		}
+		void JWindowImpl::Resize(WPARAM wParam)
+		{
+			GetWindowRect(hwnd, &preWindowRect);
+			GetClientRect(hwnd, &preClinetRect);
+			if (wParam != SIZE_MINIMIZED)
+				NotifyEvent(guid, J_WINDOW_EVENT::WINDOW_RESIZE);
+		}
+		void JWindowImpl::RegisterWindowClass()
+		{
+			wc = { 0 };
+			HICON icon;
+
+			icon = (HICON)::LoadImage(hInst,
+				MAKEINTRESOURCE(IDI_ICON1),
+				IMAGE_ICON, 128, 128,
+				LR_DEFAULTCOLOR);
+
+			wc.cbSize = sizeof(wc);
+			wc.style = CS_OWNDC;
+			wc.lpfnWndProc = HandleMsgSetup;
+			wc.cbClsExtra = 0;
+			wc.cbWndExtra = 0;
+			wc.hInstance = hInst;
+			wc.hIcon = icon;
+			wc.hIconSm = icon;
+			wc.hCursor = nullptr;
+			wc.hbrBackground = (HBRUSH)3;
+			wc.lpszMenuName = nullptr;
+			wc.lpszClassName = windowClassName.c_str();
+
+			if (!RegisterClassEx(&wc))
+			{
+				MessageBox(NULL, L"JWindowImpl Registration Failed!", L"Error!",
+					MB_ICONEXCLAMATION | MB_OK);
+			}
+		}
+		void JWindowImpl::RegistEvCallable()
+		{
+			auto lam = [](const size_t& a, const size_t& b) {return a == b; };
+			RegistIdenCompareCallable(lam);
+		}
+		JWindowImpl::JWindowImpl()
+			:guid(Core::MakeGuid()),
+			minWidth((int)(GetSystemMetrics(SM_CXSCREEN) * 0.4f)),
+			minHeight((int)(GetSystemMetrics(SM_CYSCREEN) * 0.4f)),
+			hwnd(0)
+		{
+			RegistEvCallable();
+		}
+		JWindowImpl::~JWindowImpl()
+		{
+			//DestroyWindow(hwnd);
 		}
 	}
 }

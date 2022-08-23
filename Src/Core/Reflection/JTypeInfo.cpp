@@ -1,6 +1,7 @@
 #include"JTypeInfo.h"  
 #include"JPropertyInfo.h"    
 #include"JMethodInfo.h"
+#include"../../Object/JObject.h"
 
 namespace JinEngine
 {
@@ -38,6 +39,45 @@ namespace JinEngine
 			{
 				if (p->IsA(parentCandidate))
 					return true;
+			}
+			return false;
+		}
+		JTypeInstance* JTypeInfo::GetInstance(IdentifierType iden)noexcept
+		{
+			if (instanceData == nullptr)
+				return nullptr;
+
+			auto data = instanceData->classInstanceMap.find(iden);
+			return data != instanceData->classInstanceMap.end() ? data->second : nullptr;
+		}
+		bool JTypeInfo::AddInstance(JTypeInstance* ptr, IdentifierType iden)noexcept
+		{
+			if (instanceData == nullptr)
+				return false;
+
+			if (instanceData->classInstanceMap.find(iden) == instanceData->classInstanceMap.end())
+			{
+				instanceData->classInstanceVec.push_back(ptr);
+				instanceData->classInstanceMap.emplace(iden, ptr);
+				return true;
+			}
+			else
+				return false;
+		}
+		bool JTypeInfo::RemoveInstance(IdentifierType iden)noexcept
+		{
+			if (instanceData == nullptr)
+				return false;
+			 
+			const uint instanceCount = (uint)instanceData->classInstanceVec.size();
+			for (uint i = 0; i < instanceCount; ++i)
+			{
+				if (instanceData->classInstanceVec[i]->GetGuid() == iden)
+				{
+					instanceData->classInstanceVec.erase(instanceData->classInstanceVec.begin() + i);
+					instanceData->classInstanceMap.erase(iden);
+					return true;
+				}
 			}
 			return false;
 		}

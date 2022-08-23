@@ -49,9 +49,9 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JTransform* transform);
 		static JTransform* LoadObject(std::wifstream& stream, JGameObject* owner);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
-		JTransform(const size_t guid, const JOBJECT_FLAG flag, JGameObject* owner);
+		JTransform(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
 		~JTransform();
 	};
 }

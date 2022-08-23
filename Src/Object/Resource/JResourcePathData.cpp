@@ -7,5 +7,6 @@ namespace JinEngine
 		:wstrPath(oriPath), strPath(JCommonUtility::WstringToU8String(oriPath))
 	{
 		JCommonUtility::DecomposeFilePath(strPath, folderPath, name, format);
+		fullName = name + format;
 	}
 }

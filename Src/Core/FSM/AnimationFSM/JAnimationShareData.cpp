@@ -74,7 +74,6 @@ namespace JinEngine
 			const XMFLOAT4X4 iden = JMathHelper::Identity4x4();
 			for (uint i = 0; i < JSkeletonFixedData::maxJointCount; ++i)
 				localTransform[localIndex][i] = iden;
-
 		}
 	}
 }

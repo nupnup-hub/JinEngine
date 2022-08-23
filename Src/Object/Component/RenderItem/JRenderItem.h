@@ -61,12 +61,14 @@ namespace JinEngine
 	private:
 		bool UpdateFrame(Graphic::JObjectConstants& constant)final;
 	private:
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
+	private:
 		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JRenderItem* renderItem);
 		static JRenderItem* LoadObject(std::wifstream& stream, JGameObject* owner);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
-		JRenderItem(const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner);
+		JRenderItem(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner);
 		~JRenderItem();
 	};
 }

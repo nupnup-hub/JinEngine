@@ -15,7 +15,9 @@
 #include"AnimationClip/JAnimationClip.h" 
 #include"AnimationController/JAnimationController.h" 
 #include"Scene/JScene.h"
-#include"Scene/Preview/PreviewEnum.h"
+#include"Scene/Preview/JPreviewScene.h"
+#include"Scene/Preview/JPreviewEnum.h"
+#include"Scene/JSceneManager.h"
 #include"Shader/JShader.h"
 
 #include"../Directory/JFile.h" 
@@ -37,16 +39,16 @@
 using namespace DirectX;
 namespace JinEngine
 {
-	//Storage
-	JResourceObject* JResourceManager::Storage::Get(const size_t guid)noexcept
+	//ResourceStorage
+	JResourceObject* JResourceManagerImpl::ResourceStorage::Get(const size_t guid)noexcept
 	{
 		return rMap.Get(guid);
 	}
-	JResourceObject* JResourceManager::Storage::GetByIndex(const uint index)
+	JResourceObject* JResourceManagerImpl::ResourceStorage::GetByIndex(const uint index)
 	{
 		return rVec.Get(index);
 	}
-	JResourceObject* JResourceManager::Storage::GetByPath(const std::string& path)noexcept
+	JResourceObject* JResourceManagerImpl::ResourceStorage::GetByPath(const std::string& path)noexcept
 	{
 		const uint count = rVec.Count();
 		for (uint i = 0; i < count; ++i)
@@ -56,19 +58,19 @@ namespace JinEngine
 		}
 		return nullptr;
 	}
-	std::vector<JResourceObject*>::const_iterator JResourceManager::Storage::GetVectorIter(uint& count)
+	std::vector<JResourceObject*>::const_iterator JResourceManagerImpl::ResourceStorage::GetVectorIter(uint& count)
 	{
 		return rVec.GetCBegin();
 	}
-	bool JResourceManager::Storage::Has(const size_t guid)noexcept
+	bool JResourceManagerImpl::ResourceStorage::Has(const size_t guid)noexcept
 	{
 		return rMap.Get(guid) != nullptr;
 	}
-	uint JResourceManager::Storage::Count()const noexcept
+	uint JResourceManagerImpl::ResourceStorage::Count()const noexcept
 	{
 		return rVec.Count();
 	}
-	JResourceObject* JResourceManager::Storage::AddResource(JResourceObject* resource)noexcept
+	JResourceObject* JResourceManagerImpl::ResourceStorage::AddResource(JResourceObject* resource)noexcept
 	{
 		if (resource == nullptr || rMap.Has(resource->GetGuid()))
 			return nullptr;
@@ -92,62 +94,173 @@ namespace JinEngine
 
 		return resource;
 	}
-	bool JResourceManager::Storage::EraseResource(JResourceObject* resource)noexcept
+	bool JResourceManagerImpl::ResourceStorage::RemoveResource(JResourceObject& resource)noexcept
 	{
-		if (resource == nullptr)
-			return false;
-
 		static auto equalLam = [](JResourceObject* a, JResourceObject* b) {return a->GetGuid() == b->GetGuid(); };
-		JRI::RTypeHint rTypeHint = JRI::GetRTypeHint(resource->GetResourceType());
-		int index = rVec.GetIndex(resource, equalLam);
+		JRI::RTypeHint rTypeHint = JRI::GetRTypeHint(resource.GetResourceType());
+		int index = rVec.GetIndex(&resource, equalLam);
 
 		if (rTypeHint.isFrameResource)
 		{
-			auto callable = JRI::GetSetFrameDirtyCallable(resource->GetResourceType());
+			auto callable = JRI::GetSetFrameDirtyCallable(resource.GetResourceType());
 			rVec.ApplyFunc(index, callable);
 		}
 
 		if (rTypeHint.isGraphicBuffResource)
 		{ 
-			auto callable = JRI::GetSetBuffIndexCallable(resource->GetResourceType());
+			auto callable = JRI::GetSetBuffIndexCallable(resource.GetResourceType());
 			rVec.ApplyFuncByIndex(index, callable);
 		}
-
-		rVec.Erase(index);
-		rMap.Erase(resource->GetGuid());
-		return resource;
+		 
+		bool res00 = rVec.Remove(index);
+		bool res01 = rMap.Remove(resource.GetGuid());
+		return res00 && res01;
 	}
-	void JResourceManager::Storage::Clear()
+	void JResourceManagerImpl::ResourceStorage::Clear()
 	{
-		rVec.Clear();
 		rMap.Clear();
+		rVec.Clear();
 	}
-
-	std::unique_ptr<JResourceManager> JResourceManager::instance = nullptr;
-	size_t JResourceManager::managerGuid = 0;
-	JResourceManager::JResourceManager()
+	  
+	uint JResourceManagerImpl::DirectoryStorage::Count()const noexcept
 	{
-		resourceIO = std::make_unique<JResourceIO>();
-
-		std::vector<JRI::RTypeHint> rinfo = JRI::GetRTypeHintVec(RESOURCE_ALIGN_TYPE::NONE);
-		const uint rinfoCount = (uint)rinfo.size();
-		for(uint i = 0; i < rinfoCount; ++i)
-			rCashMap.emplace(rinfo[i].thisType, Storage());
+		return dVec.Count();
 	}
-	JResourceManager::~JResourceManager() {}
-	JResourceManager& JResourceManager::Instance()
-	{ 
-		if (instance == nullptr)
+	JDirectory* JResourceManagerImpl::DirectoryStorage::Get(const uint index)
+	{
+		return dVec.Get(index);
+	}
+	JDirectory* JResourceManagerImpl::DirectoryStorage::GetByGuid(const size_t guid)
+	{
+		return dMap.Get(guid);
+	}
+	JDirectory* JResourceManagerImpl::DirectoryStorage::GetByPath(const std::string& path)
+	{
+		const uint count = dVec.Count();
+		for (uint i = 0; i < count; ++i)
 		{
-			instance = std::make_unique<JResourceManager>();
-			managerGuid = JCommonUtility::CalculateGuid(typeid(JResourceManager).name());
+			if (dVec[i]->GetPath() == path)
+				return dVec[i];
 		}
-		return *instance;
+		return nullptr;
 	}
-#pragma region  √ ±‚»≠
-	void JResourceManager::LoadSelectorResource()
+	JDirectory* JResourceManagerImpl::DirectoryStorage::GetOpenDirectory()
 	{
-		JOBJECT_FLAG rootFlag = (JOBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_INERASABLE);
+		const uint count = dVec.Count();
+		for (uint i = 0; i < count; ++i)
+		{
+			if (dVec[i]->IsOpen())
+				return dVec[i];
+		}
+		return nullptr;
+	}
+	JDirectory* JResourceManagerImpl::DirectoryStorage::Add(JDirectory* dir)noexcept
+	{
+		if (dir == nullptr || dMap.Has(dir->GetGuid()))
+			return nullptr;
+
+		dVec.Add(dir);
+		dMap.Add(dir, dir->GetGuid());
+
+		return dir;
+	}
+	bool JResourceManagerImpl::DirectoryStorage::Remove(JDirectory* dir)noexcept
+	{
+		if (dir == nullptr)
+			return false;
+
+		static auto equalLam = [](JDirectory* a, JDirectory* b) {return a->GetGuid() == b->GetGuid(); };
+
+		dVec.Remove(dir, equalLam);
+		dMap.Remove(dir->GetGuid());
+		return dir;
+	}
+	void JResourceManagerImpl::DirectoryStorage::Clear()
+	{
+		dVec.Clear();
+		dMap.Clear();
+	}
+
+	JMeshGeometry* JResourceManagerImpl::GetDefaultMeshGeometry(const J_DEFAULT_SHAPE type)noexcept
+	{
+		auto data = resourceData.basicMeshGuidMap.find(type);
+		return data != resourceData.basicMeshGuidMap.end() ?
+			static_cast<JMeshGeometry*>(rCash.find(JMeshGeometry::GetStaticResourceType())->second.Get(data->second)) : nullptr;
+	}
+	JMaterial* JResourceManagerImpl::GetDefaultMaterial(const J_DEFAULT_MATERIAL materialType)noexcept
+	{
+		const size_t guid = resourceData.basicMaterialGuidMap.find(materialType)->second;
+		return static_cast<JMaterial*>(rCash.find(JMaterial::GetStaticResourceType())->second.Get(guid));
+	}
+	JTexture* JResourceManagerImpl::GetEditorTexture(const J_EDITOR_TEXTURE enumName)noexcept
+	{
+		auto data = resourceData.defaultTextureMap.find(enumName);
+		if (data == resourceData.defaultTextureMap.end())
+			return nullptr;
+
+		return static_cast<JTexture*>(rCash.find(JTexture::GetStaticResourceType())->second.GetByIndex(data->second - 1));
+	}
+	JShader* JResourceManagerImpl::GetDefaultShader(const J_DEFAULT_SHADER shaderType)noexcept
+	{
+		auto data = resourceData.defaultShaderGuidMap.find(shaderType);
+		return data != resourceData.defaultShaderGuidMap.end() ?
+			static_cast<JShader*>(rCash.find(JShader::GetStaticResourceType())->second.Get(data->second)) : nullptr;
+	}
+	JDirectory* JResourceManagerImpl::GetDirectory(const size_t guid)noexcept
+	{
+		return dCash.GetByGuid(guid);
+	}
+	JDirectory* JResourceManagerImpl::GetDirectory(const std::string& path)noexcept
+	{
+		return dCash.GetByPath(path);
+	}
+	JDirectory* JResourceManagerImpl::GetEditorResourceDirectory()noexcept
+	{
+		return dCash.GetByPath(JApplicationVariable::GetProjectEditorResourcePath());
+	}
+	JDirectory* JResourceManagerImpl::GetActivatedDirectory()noexcept
+	{  
+		return dCash.GetOpenDirectory();
+	}
+	uint JResourceManagerImpl::GetResourceCount(const J_RESOURCE_TYPE type)noexcept
+	{
+		return rCash.find(type)->second.Count();
+	}
+	JResourceObject* JResourceManagerImpl::GetResource(const J_RESOURCE_TYPE type, const size_t guid)noexcept
+	{
+		return rCash.find(type)->second.Get(guid);
+	}
+	JResourceObject* JResourceManagerImpl::GetResourceByPath(const J_RESOURCE_TYPE type, const std::string& path)noexcept
+	{
+		return rCash.find(type)->second.GetByPath(path);
+	}
+	std::vector<JResourceObject*>::const_iterator JResourceManagerImpl::GetResourceVectorHandle(const J_RESOURCE_TYPE type, uint& resouceCount)noexcept
+	{
+		return rCash.find(type)->second.GetVectorIter(resouceCount);
+	}
+	bool JResourceManagerImpl::HasResource(const J_RESOURCE_TYPE rType, const size_t guid)noexcept
+	{
+		return rCash.find(rType)->second.Has(guid);
+	}
+	JResourceMangerOwnerInterface* JResourceManagerImpl::OwnerInterface()
+	{
+		return this;
+	}
+	JResourceRemoveInterface* JResourceManagerImpl::ResourceRemoveInterface()
+	{
+		return this;
+	}
+	JDirectoryRemoveInterface* JResourceManagerImpl::DirectoryRemoveInterface()
+	{
+		return this;
+	}
+	JResourceManagerImpl::JEventInterface* JResourceManagerImpl::EvInterface()
+	{
+		return this;
+	}
+	void JResourceManagerImpl::LoadSelectorResource()
+	{
+		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE);
 		std::string dirPath = JApplicationVariable::GetEnginePath();
 		std::string dirFolderPath;
 		std::string dirName;
@@ -162,9 +275,9 @@ namespace JinEngine
 		JGraphic::Instance().CommandInterface()->EndCommand();
 		JGraphic::Instance().CommandInterface()->FlushCommandQueue();
 	}
-	void JResourceManager::LoadProjectResource()
+	void JResourceManagerImpl::LoadProjectResource()
 	{
-		JOBJECT_FLAG rootFlag = (JOBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_INERASABLE);
+		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE);
 		std::string dirPath = JApplicationVariable::GetProjectPath();
 		std::string dirFolderPath;
 		std::string dirName;
@@ -190,183 +303,55 @@ namespace JinEngine
 		JGraphic::Instance().CommandInterface()->FlushCommandQueue();
 		LoadObject();
 
-		if (nowMainScene == nullptr)
+		if (JSceneManager::Instance().GetOpendSceneCount() == 0)
 		{
 			JDirectory* projectContentsDir = GetDirectory(JApplicationVariable::GetProjectContentPath());
 			JDirectory* defaultSceneDir = projectContentsDir->GetChildDirctory(JApplicationVariable::GetProjectContentScenePath());
 			JScene* newScene = JRFI<JScene>::Create(*defaultSceneDir);
-			nowMainScene = newScene; 
-			nowMainScene->GetMainCamera()->StateInterface()->SetCameraState(J_CAMERA_STATE::RENDER);
-		}
-		OnResourceReference(*nowMainScene); 
-		nowMainScene->SpaceSpatialInterface()->OnSceneSpatialStructure();
+			JSceneManager::Instance().TryOpenScene(newScene);
+			newScene->SpaceSpatialInterface()->OnSceneSpatialStructure();
+		} 
 	}
-#pragma endregion
-	void JResourceManager::Terminate()
+	void JResourceManagerImpl::Terminate()
 	{
-		StoreResourceData(); 
-		/*
-		Erase Resource 
-		nowMainScene.Deactivae();
-		*/
+		StoreResourceData();
+		if (engineRootDir != nullptr)
+		{
+			engineRootDir->DestroyInterface()->BeginForcedDestroy();
+			engineRootDir = nullptr;
+		}
+		if (projectRootDir != nullptr)
+		{
+			projectRootDir->DestroyInterface()->BeginForcedDestroy();
+			projectRootDir = nullptr;
+		}
 
-		const uint groupCount = (uint)previewSceneGroup.size();
-		for (uint i = 0; i < groupCount; ++i)
-			previewSceneGroup[i]->Clear();
-		previewSceneGroup.clear();
-
-		for (auto& data : rCashMap)
-			data.second.Clear();
 		dCash.Clear();
-	}
-	JMeshGeometry* JResourceManager::GetDefaultMeshGeometry(const J_DEFAULT_SHAPE type)noexcept
-	{
-		auto data = resourceData.basicMeshGuidMap.find(type);
-		return data != resourceData.basicMeshGuidMap.end() ?
-			static_cast<JMeshGeometry*>(rCashMap.find(JMeshGeometry::GetStaticResourceType())->second.Get(data->second)) : nullptr;
-	}
-	JMaterial* JResourceManager::GetDefaultMaterial(const J_DEFAULT_MATERIAL materialType)noexcept
-	{
-		const size_t guid = resourceData.basicMaterialGuidMap.find(materialType)->second;
-		return static_cast<JMaterial*>(rCashMap.find(JMaterial::GetStaticResourceType())->second.Get(guid));
-	}
-	JTexture* JResourceManager::GetEditorTexture(const J_EDITOR_TEXTURE enumName)noexcept
-	{
-		auto data = resourceData.defaultTextureMap.find(enumName);
-		if (data == resourceData.defaultTextureMap.end())
-			return nullptr;
 
-		return static_cast<JTexture*>(rCashMap.find(JTexture::GetStaticResourceType())->second.GetByIndex(data->second - 1));
+		for (auto& data : rCash)
+			data.second.Clear();
+		rCash.clear();
 	}
-	JShader* JResourceManager::GetDefaultShader(const J_DEFAULT_SHADER shaderType)noexcept
+	JResourceObject* JResourceManagerImpl::AddResource(JResourceObject& newResource)
 	{
-		auto data = resourceData.defaultShaderGuidMap.find(shaderType);
-		return data != resourceData.defaultShaderGuidMap.end() ?
-			static_cast<JShader*>(rCashMap.find(JShader::GetStaticResourceType())->second.Get(data->second)) : nullptr;
+		return rCash.find(newResource.GetResourceType())->second.AddResource(&newResource);
 	}
-	JDirectory* JResourceManager::GetDirectory(const std::string& path)noexcept
+	JDirectory* JResourceManagerImpl::AddDirectory(JDirectory& newDirectory)
 	{
-		return dCash.GetByPath(path);
+		return dCash.Add(&newDirectory);
 	}
-	JDirectory* JResourceManager::GetEditorResourceDirectory()noexcept
+	bool JResourceManagerImpl::RemoveResource(JResourceObject& resource)noexcept
 	{
-		return dCash.GetByPath(JApplicationVariable::GetProjectEditorResourcePath());
-	}
-	JDirectory* JResourceManager::GetActivatedDirectory()noexcept
-	{  
-		return dCash.GetOpenDirectory();
-	}
-	JScene* JResourceManager::GetMainScene()noexcept
-	{
-		return nowMainScene;
-	}
-	uint JResourceManager::GetResourceCount(const J_RESOURCE_TYPE type)noexcept
-	{
-		return rCashMap.find(type)->second.Count();
-	}
-	JResourceObject* JResourceManager::GetResource(const J_RESOURCE_TYPE type, const size_t guid)noexcept
-	{
-		return rCashMap.find(type)->second.Get(guid);
-	}
-	JResourceObject* JResourceManager::GetResourceByPath(const J_RESOURCE_TYPE type, const std::string& path)noexcept
-	{
-		return rCashMap.find(type)->second.GetByPath(path);
-	}
-	std::vector<JResourceObject*>::const_iterator JResourceManager::GetResourceVectorHandle(const J_RESOURCE_TYPE type, uint& resouceCount)noexcept
-	{
-		return rCashMap.find(type)->second.GetVectorIter(resouceCount);
-	}
-	bool JResourceManager::HasResource(const J_RESOURCE_TYPE rType, const size_t guid)noexcept
-	{
-		return rCashMap.find(rType)->second.Has(guid);
-	}
-	bool JResourceManager::EraseResource(JResourceObject* resource)noexcept
-	{
-		if (resource != nullptr && resource->IsActivated())
-			OffResourceReference(*resource);
+		if (resource.IsActivated())
+			NotifyEvent(resource.GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE, &resource);
 
-		return rCashMap.find(resource->GetResourceType())->second.EraseResource(resource);
+		return rCash.find(resource.GetResourceType())->second.RemoveResource(resource);
+	} 
+	bool JResourceManagerImpl::RemoveJDirectory(JDirectory& dir)noexcept
+	{ 
+		return dCash.Remove(&dir);
 	}
-	std::vector<PreviewSceneGroup*>::const_iterator JResourceManager::GetPreviewGroupVectorHandle(_Out_ uint& groupCount)noexcept
-	{
-		groupCount = (uint)previewSceneGroup.size();
-		return previewSceneGroupCashVec.cbegin();
-	}
-	PreviewSceneGroup* JResourceManager::CreatePreviewGroup(const std::string& ownerName, const uint groupSceneCapacity)noexcept
-	{
-		const uint groupCount = (uint)previewSceneGroup.size();
-
-		std::unique_ptr<PreviewSceneGroup> newPreviewGroup = std::make_unique<PreviewSceneGroup>(ownerName, groupSceneCapacity);
-
-		PreviewSceneGroup* res = newPreviewGroup.get();
-		previewSceneGroupCashVec.push_back(newPreviewGroup.get());
-		previewSceneGroup.push_back(std::move(newPreviewGroup));
-		return res;
-	}
-	bool JResourceManager::ClearPreviewGroup(PreviewSceneGroup* group)noexcept
-	{
-		const uint groupCount = (uint)previewSceneGroup.size();
-		const size_t guid = group->GetGuid();
-
-		for (uint i = 0; i < groupCount; ++i)
-		{
-			if (guid == previewSceneGroup[i]->GetGuid())
-			{
-				previewSceneGroup[i]->Clear();
-				return true;
-			}
-		}
-		return false;
-	}
-	bool JResourceManager::ErasePreviewGroup(PreviewSceneGroup* group)noexcept
-	{
-		const uint groupCount = (uint)previewSceneGroup.size();
-		const size_t guid = group->GetGuid();
-		for (uint i = 0; i < groupCount; ++i)
-		{
-			if (guid == previewSceneGroup[i]->GetGuid())
-			{
-				previewSceneGroup[i]->Clear();
-				previewSceneGroup.erase(previewSceneGroup.begin() + i);
-				return true;
-			}
-		}
-		return false;
-	}
-	PreviewScene* JResourceManager::CreatePreviewScene(PreviewSceneGroup* group, JResourceObject* resource, const PREVIEW_DIMENSION previewDimension, const PREVIEW_FLAG previewFlag)noexcept
-	{
-		if (resource == nullptr || resource->GetFlag() == OBJECT_FLAG_EDITOR_OBJECT)
-			return nullptr;
-
-		const size_t guid = group->GetGuid();
-		const uint groupCount = (uint)previewSceneGroup.size();
-
-		for (uint i = 0; i < groupCount; ++i)
-		{
-			if (guid == previewSceneGroup[i]->GetGuid())
-			{
-				return previewSceneGroup[i]->CreateResourcePreviewScene(resource, previewDimension, previewFlag);
-			}
-		}
-		return nullptr;
-	}
-	bool JResourceManager::ErasePreviewScene(PreviewSceneGroup* group, JResourceObject* resource)noexcept
-	{
-		if (resource == nullptr)
-			return false;
-
-		const size_t guid = group->GetGuid();
-		const uint groupCount = (uint)previewSceneGroup.size();
-		for (uint i = 0; i < groupCount; ++i)
-		{
-			if (guid == previewSceneGroup[i]->GetGuid())
-			{
-				return previewSceneGroup[i]->Erase(resource);
-			}
-		}
-		return false;
-	}
-	void JResourceManager::CreateDefaultTexture(const std::vector<JResourceData::DefaultTextureInfo>& textureInfo)noexcept
+	void JResourceManagerImpl::CreateDefaultTexture(const std::vector<JResourceData::DefaultTextureInfo>& textureInfo)noexcept
 	{
 		resourceData.defaultTextureMap.clear();
 
@@ -378,9 +363,9 @@ namespace JinEngine
 		//1 is imgui preserved 
 		for (uint i = 1; i < textureCount; ++i)
 		{  
-			JOBJECT_FLAG objFlag = (JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_INERASABLE | OBJECT_FLAG_DO_NOT_SAVE);
+			J_OBJECT_FLAG objFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_DO_NOT_SAVE);
 			if (textureInfo[i].type == J_EDITOR_TEXTURE::MISSING)
-				objFlag = (JOBJECT_FLAG)(objFlag | OBJECT_FLAG_HIDDEN);
+				objFlag = (J_OBJECT_FLAG)(objFlag | OBJECT_FLAG_HIDDEN);
 
 			JResourcePathData pathData(defaultTextureDir->GetWPath() + L"\\" + textureInfo[i].name);
 			JTexture* newTexture = JRFI<JTexture>::Load(*defaultTextureDir, pathData);
@@ -389,41 +374,31 @@ namespace JinEngine
 			resourceData.defaultTextureMap.emplace(textureInfo[i].type, i);
 		}
 	}
-	void JResourceManager::CreateDefaultShader()noexcept
+	void JResourceManagerImpl::CreateDefaultShader()noexcept
 	{
-		J_SHADER_FUNCTION function[(int)J_DEFAULT_SHADER::COUNTER] =
-		{
-			(J_SHADER_FUNCTION)(SHADER_FUNCTION_SHADOW | SHADER_FUNCTION_LIGHT),
-			SHADER_FUNCTION_SKY,
-			(J_SHADER_FUNCTION)(SHADER_FUNCTION_ALPHA_CLIP | SHADER_FUNCTION_SHADOW_MAP),
-			SHADER_FUNCTION_DEBUG,
-		};
-		JOBJECT_FLAG objFlag[(int)J_DEFAULT_SHADER::COUNTER] =
-		{
-			(JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_INERASABLE | OBJECT_FLAG_DO_NOT_SAVE),
-			(JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_INERASABLE | OBJECT_FLAG_DO_NOT_SAVE),
-			(JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_INERASABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE),
-			(JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_INERASABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE),
-		};
 		JDirectory* shaderDir = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath());
 		for (uint i = 0; i < (int)J_DEFAULT_SHADER::COUNTER; ++i)
 		{
-			JShader* res = JRFI<JShader>::Create(std::to_string((int)function[i]),
+			J_SHADER_FUNCTION shaderF = DefaultShader::GetShaderFunction((J_DEFAULT_SHADER)i);
+			J_OBJECT_FLAG objF = DefaultShader::GetObjectFlag((J_DEFAULT_SHADER)i);
+
+			JShader* res = JRFI<JShader>::Create(std::to_string((int)shaderF),
 				Core::MakeGuid(),
-				objFlag[i],
+				objF,
 				*shaderDir,
 				0,
-				function[i]);
+				shaderF);
 
 			if (res == nullptr)
 				MessageBox(0, L"Default JShader Creator Error", 0, 0);
-			resourceData.defaultShaderGuidMap.emplace(resourceData.defaultShaderTypes[i], res->GetGuid());
+			else
+				resourceData.defaultShaderGuidMap.emplace((J_DEFAULT_SHADER)i, res->GetGuid());
 		}
 	}
-	void JResourceManager::CreateDefaultMaterial()noexcept
+	void JResourceManagerImpl::CreateDefaultMaterial()noexcept
 	{
-		const JOBJECT_FLAG flag = (JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
-			OBJECT_FLAG_INERASABLE |
+		const J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
+			OBJECT_FLAG_UNDESTROYABLE |
 			OBJECT_FLAG_UNEDITABLE |
 			OBJECT_FLAG_DO_NOT_SAVE);
 
@@ -440,7 +415,7 @@ namespace JinEngine
 			{
 			case J_DEFAULT_MATERIAL::DEFAULT_STANDARD:
 			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (JOBJECT_FLAG)(flag),
+				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag),
 					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
 				newMaterial->SetShadow(true);
 				newMaterial->SetLight(true);
@@ -448,14 +423,14 @@ namespace JinEngine
 			}
 			case J_DEFAULT_MATERIAL::DEFAULT_SKY:
 			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (JOBJECT_FLAG)(flag),
+				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag),
 					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
 				newMaterial->SetSkyMaterial(true);
 				break;
 			}
 			case J_DEFAULT_MATERIAL::DEFAULT_SHADOW_MAP:
 			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (JOBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
+				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
 					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
 				newMaterial->SetAlbedoOnly(true);
 				newMaterial->SetShadowMap(true);
@@ -463,7 +438,7 @@ namespace JinEngine
 			}
 			case J_DEFAULT_MATERIAL::DEBUG_LINE_RED:
 			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (JOBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
+				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
 					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
 				newMaterial->SetDebugMaterial(true);
 				newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f));
@@ -471,7 +446,7 @@ namespace JinEngine
 			}
 			case J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN:
 			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (JOBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
+				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
 					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
 				newMaterial->SetDebugMaterial(true);
 				newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f));
@@ -479,7 +454,7 @@ namespace JinEngine
 			}
 			case J_DEFAULT_MATERIAL::DEBUG_LINE_BLUE:
 			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (JOBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
+				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
 					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
 				newMaterial->SetDebugMaterial(true);
 				newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f));
@@ -487,7 +462,7 @@ namespace JinEngine
 			}
 			case J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW:
 			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (JOBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
+				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
 					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
 				newMaterial->SetDebugMaterial(true);
 				newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f));
@@ -499,7 +474,7 @@ namespace JinEngine
 			resourceData.basicMaterialGuidMap.emplace(resourceData.defaultMaterialTypes[i], guid);
 		}
 	}
-	void JResourceManager::CreateDefaultMesh()
+	void JResourceManagerImpl::CreateDefaultMesh()
 	{
 		JDefaultGeometryGenerator geoGen;
 		std::vector<JStaticMeshData> meshData{ geoGen.CreateCube(1, 1, 1, 3),
@@ -561,13 +536,13 @@ namespace JinEngine
 			const uint ibByteSize = (uint)indices[i].size() * sizeof(std::uint16);
 
 			size_t guid = Core::MakeGuid();
-			JOBJECT_FLAG flag = (JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
-				OBJECT_FLAG_INERASABLE |
+			J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
+				OBJECT_FLAG_UNDESTROYABLE |
 				OBJECT_FLAG_UNEDITABLE |
 				OBJECT_FLAG_DO_NOT_SAVE);
 
 			if (i >= JDefaultShape::debugTypeSt)
-				flag = (JOBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN);
+				flag = (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN);
 
 			JMeshGeometry* newMesh = JRFI<JMeshGeometry>::Create(JDefaultShape::ConvertDefaultShapeName(resourceData.defaultMeshTypes[i]),
 				guid,
@@ -580,18 +555,9 @@ namespace JinEngine
 			resourceData.basicMeshGuidMap.emplace(resourceData.defaultMeshTypes[i], guid);
 		}
 	}
-
-	JResourceObject* JResourceManager::AddResource(JResourceObject& newResource)
+	void JResourceManagerImpl::StoreResourceData()
 	{
-		return rCashMap.find(newResource.GetResourceType())->second.AddResource(&newResource);
-	}
-	JDirectory* JResourceManager::AddDirectory(JDirectory& newDirectory)
-	{
-		return dCash.AddResource(&newDirectory);
-	}
-	void JResourceManager::StoreResourceData()
-	{
-		for (auto& rData : rCashMap)
+		for (auto& rData : rCash)
 		{
 			uint count;
 			std::vector<JResourceObject*>::const_iterator begin = rData.second.GetVectorIter(count);
@@ -602,25 +568,44 @@ namespace JinEngine
 			}
 		}
 	}
-	void JResourceManager::LoadObject()
+	void JResourceManagerImpl::LoadObject()
 	{
 		resourceIO->LoadProjectResource(projectRootDir);
 	}
-	void JResourceManager::RegisterFunc()
+	void JResourceManagerImpl::RegisterJFunc()
 	{
-		JResourceObjectFactoryImplBase::RegistAddStroage(&JResourceManager::AddResource);
-		JDirectoryFactoryImpl::RegistAddStroage(&JResourceManager::AddDirectory);
+		JResourceObjectFactoryImplBase::RegisterAddStroage(&JResourceManagerImpl::AddResource);
+		JDirectoryFactoryImpl::RegisterAddStroage(&JResourceManagerImpl::AddDirectory);
+	}
+	void JResourceManagerImpl::RegistEvCallable()
+	{
+		auto lam = [](const size_t& a, const size_t& b) {return a == b; };
+		RegistIdenCompareCallable(lam);
+	}
+	JResourceManagerImpl::JResourceManagerImpl()
+	{
+		resourceIO = std::make_unique<JResourceIO>();
+		RegistEvCallable();
+
+		std::vector<JRI::RTypeHint> rinfo = JRI::GetRTypeHintVec(RESOURCE_ALIGN_TYPE::NONE);
+		const uint rinfoCount = (uint)rinfo.size();
+		for (uint i = 0; i < rinfoCount; ++i)
+			rCash.emplace(rinfo[i].thisType, ResourceStorage());
+	}
+	JResourceManagerImpl::~JResourceManagerImpl()
+	{
+
 	}
 }
 
 /*
-JMeshGeometry* JResourceManager::CreateMesh(const JOBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
+JMeshGeometry* JResourceManagerImpl::CreateMesh(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{
 		return nullptr;
 	}
-	JMeshGeometry* JResourceManager::CreateMesh(const std::string& name,
+	JMeshGeometry* JResourceManagerImpl::CreateMesh(const std::string& name,
 		const size_t guid,
-		const JOBJECT_FLAG flag,
+		const J_OBJECT_FLAG flag,
 		JDirectory* directory,
 		const uint8 formatIndex,
 		JStaticMeshData& meshData,
@@ -640,9 +625,9 @@ JMeshGeometry* JResourceManager::CreateMesh(const JOBJECT_FLAG flag, JDirectory*
 			directory->AddFile(std::make_unique<JFile>(res));
 		return res;
 	}
-	JMeshGeometry* JResourceManager::CreateMesh(const std::string& name,
+	JMeshGeometry* JResourceManagerImpl::CreateMesh(const std::string& name,
 		const size_t guid,
-		const JOBJECT_FLAG flag,
+		const J_OBJECT_FLAG flag,
 		JDirectory* directory,
 		const uint8 formatIndex,
 		JSkinnedMeshData& meshData,
@@ -662,7 +647,7 @@ JMeshGeometry* JResourceManager::CreateMesh(const JOBJECT_FLAG flag, JDirectory*
 			directory->AddFile(std::make_unique<JFile>(res));
 		return res;
 	}
-	JMaterial* JResourceManager::CreateMaterial(const JOBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
+	JMaterial* JResourceManagerImpl::CreateMaterial(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{
 		if (selectedDirctory == nullptr)
 		{
@@ -674,7 +659,7 @@ JMeshGeometry* JResourceManager::CreateMesh(const JOBJECT_FLAG flag, JDirectory*
 
 		return CreateMaterial(JResourceObject::GetDefaultName<JMaterial>(), Core::MakeGuid()(), flag, selectedDirctory);
 	}
-	JMaterial* JResourceManager::CreateMaterial(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
+	JMaterial* JResourceManagerImpl::CreateMaterial(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{
 		const size_t shaderGuid = resourceData.defaultShaderGuidMap[J_DEFAULT_SHADER::DEFAULT_STANDARD_SHADER];
 
@@ -692,23 +677,23 @@ JMeshGeometry* JResourceManager::CreateMesh(const JOBJECT_FLAG flag, JDirectory*
 			selectedDirctory->AddFile(std::make_unique<JFile>(res));
 		return res;
 	}
-	JTexture* JResourceManager::CreateTexture(const JOBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
+	JTexture* JResourceManagerImpl::CreateTexture(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{
 		return nullptr;
 	}
-	JModel* JResourceManager::CreateModel(const JOBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
+	JModel* JResourceManagerImpl::CreateModel(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{
 		return nullptr;
 	}
-	JSkeletonAsset* JResourceManager::CreateSkeletonAsset(const JOBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
+	JSkeletonAsset* JResourceManagerImpl::CreateSkeletonAsset(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{
 		return nullptr;
 	}
-	JAnimationClip* JResourceManager::CreateAnimationClip(const JOBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
+	JAnimationClip* JResourceManagerImpl::CreateAnimationClip(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{
 		return nullptr;
 	}
-	JAnimationController* JResourceManager::CreateAnimationController(const JOBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
+	JAnimationController* JResourceManagerImpl::CreateAnimationController(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{
 		if (selectedDirctory == nullptr)
 		{
@@ -732,7 +717,7 @@ JMeshGeometry* JResourceManager::CreateMesh(const JOBJECT_FLAG flag, JDirectory*
 
 		return res;
 	}
-	JScene* JResourceManager::CreateScene(const SCENE_TYPE sceneType, const JOBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
+	JScene* JResourceManagerImpl::CreateScene(const SCENE_TYPE sceneType, const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{
 		if (selectedDirctory == nullptr)
 		{
@@ -762,9 +747,9 @@ JMeshGeometry* JResourceManager::CreateMesh(const JOBJECT_FLAG flag, JDirectory*
 			selectedDirctory->AddFile(std::make_unique<JFile>(res));
 		return res;
 	}
-	JShader* JResourceManager::CreateShader(const J_SHADER_FUNCTION newFunctionFlag, JOBJECT_FLAG flag)noexcept
+	JShader* JResourceManagerImpl::CreateShader(const J_SHADER_FUNCTION newFunctionFlag, J_OBJECT_FLAG flag)noexcept
 	{
-		flag = (JOBJECT_FLAG)(OBJECT_FLAG_HIDDEN | (flag ^ (flag & OBJECT_FLAG_HIDDEN)));
+		flag = (J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | (flag ^ (flag & OBJECT_FLAG_HIDDEN)));
 
 		uint count;
 		std::vector<JShader*>::const_iterator st = shader->GetResourceVector(count);
@@ -784,12 +769,12 @@ JMeshGeometry* JResourceManager::CreateMesh(const JOBJECT_FLAG flag, JDirectory*
 		NotifyEvent(managerGuid, RESOURCE_EVENT::CREATE_RESOURCE, newShader);
 		return newShader;
 	}
-	JShader* JResourceManager::CreateShader(const size_t guid, JOBJECT_FLAG flag, const J_SHADER_FUNCTION newFunctionFlag)noexcept
+	JShader* JResourceManagerImpl::CreateShader(const size_t guid, J_OBJECT_FLAG flag, const J_SHADER_FUNCTION newFunctionFlag)noexcept
 	{
 		if (shader->HasResource(guid))
 			return nullptr;
 
-		flag = (JOBJECT_FLAG)(OBJECT_FLAG_HIDDEN | (flag ^ (flag & OBJECT_FLAG_HIDDEN)));
+		flag = (J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | (flag ^ (flag & OBJECT_FLAG_HIDDEN)));
 
 		uint count;
 		std::vector<JShader*>::const_iterator st = shader->GetResourceVector(count);
@@ -809,7 +794,7 @@ JMeshGeometry* JResourceManager::CreateMesh(const JOBJECT_FLAG flag, JDirectory*
 		NotifyEvent(managerGuid, RESOURCE_EVENT::CREATE_RESOURCE, newShader);
 		return newShader;
 	}
-	JDirectory* JResourceManager::CreateDirectoryFolder(std::string name, const JOBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
+	JDirectory* JResourceManagerImpl::CreateDirectoryFolder(std::string name, const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{
 		if (selectedDirctory == nullptr)
 			return nullptr;

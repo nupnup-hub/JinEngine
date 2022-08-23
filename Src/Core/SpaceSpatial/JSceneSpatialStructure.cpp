@@ -139,7 +139,7 @@ namespace JinEngine
 				break;
 			}
 		}
-		void JSceneSpatialStructure::EraseGameObject(JGameObject* gameObject)noexcept
+		void JSceneSpatialStructure::RemoveGameObject(JGameObject* gameObject)noexcept
 		{
 			switch (spatialStructureType)
 			{
@@ -149,7 +149,7 @@ namespace JinEngine
 					break;
 			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
 				if (bvh != nullptr)
-					bvh->EraeGameObject(gameObject);
+					bvh->RemoveGameObject(gameObject);
 				break;
 			default:
 				break;

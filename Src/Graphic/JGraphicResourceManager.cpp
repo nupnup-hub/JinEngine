@@ -451,7 +451,7 @@ namespace JinEngine
 			++shadowMapCount;
 			return handleCash;
 		}
-		bool JGraphicResourceManager::EraseGraphicTextureResource(ID3D12Device* device, JGraphicTextureHandle** handle)
+		bool JGraphicResourceManager::DestroyGraphicTextureResource(ID3D12Device* device, JGraphicTextureHandle** handle)
 		{
 			if (*handle == nullptr)
 				return false;

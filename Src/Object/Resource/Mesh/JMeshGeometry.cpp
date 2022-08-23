@@ -1,6 +1,6 @@
 #include"JMeshGeometry.h" 
-#include"../../Directory/JDirectory.h"
 #include"../JResourceObjectFactory.h"
+#include"../../Directory/JDirectory.h"
 #include"../../../Application/JApplicationVariable.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Core/Exception/JExceptionMacro.h" 
@@ -129,7 +129,7 @@ namespace JinEngine
 	{
 		//구현필요
 		// 0 == mesh 
-		if (!IsValidResource())
+		if (!IsValid())
 		{
 			if (formatIndex == 0)
 			{
@@ -143,7 +143,7 @@ namespace JinEngine
 	{
 		//구현필요
 		// 0 == mesh 
-		if (IsValidResource())
+		if (IsValid())
 		{
 			if (formatIndex == 0)
 			{
@@ -418,19 +418,27 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
 		stream.close();
 
-		JMeshGeometry* newMesh;
-		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+		JMeshGeometry* newMesh = nullptr;
+		if (directory->HasFile(pathData.fullName))
+			newMesh = JResourceManager::Instance().GetResourceByPath<JMeshGeometry>(pathData.strPath);
+
+		if (newMesh == nullptr)
 		{
-			newMesh = new JMeshGeometry(pathData.name, metadata.guid, metadata.flag, directory,
-				JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
-		}
-		else
-		{
-			newMesh = new JMeshGeometry(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory,
-				JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
+			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+			{
+				newMesh = new JMeshGeometry(pathData.name, metadata.guid, metadata.flag, directory,
+					JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
+			}
+			else
+			{
+				newMesh = new JMeshGeometry(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory,
+					JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
+			}
 		}
 
-		if (newMesh->ReadMeshData())
+		if (newMesh->IsValid())
+			return newMesh;
+		else if (newMesh->ReadMeshData())
 		{
 			newMesh->SetValid(true);
 			return newMesh;
@@ -441,7 +449,7 @@ namespace JinEngine
 			return nullptr;
 		}
 	}
-	void JMeshGeometry::RegisterFunc()
+	void JMeshGeometry::RegisterJFunc()
 	{
 		auto defaultC = [](JDirectory* owner) ->JResourceObject*
 		{
@@ -451,7 +459,7 @@ namespace JinEngine
 				owner,
 				JResourceObject::GetDefaultFormatIndex());
 		};
-		auto initC = [](const std::string& name, const size_t guid, const JOBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
 			return  new JMeshGeometry(name, guid, objFlag, directory, formatIndex);
 		};
@@ -477,7 +485,7 @@ namespace JinEngine
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
-	JMeshGeometry::JMeshGeometry(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	JMeshGeometry::JMeshGeometry(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		: JMeshInterface(name, guid, flag, directory, formatIndex)
 	{}
 

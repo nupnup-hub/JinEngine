@@ -18,8 +18,7 @@ namespace JinEngine
 
 	class JGameObject : public JGameObjectInterface
 	{
-		REGISTER_CLASS(JGameObject)
-		//friend class JScene; 
+		REGISTER_CLASS(JGameObject) 
 	private: 
 		std::vector<JGameObject*> children;
 		JGameObject* parent = nullptr;
@@ -41,34 +40,39 @@ namespace JinEngine
 		JGameObject* GetChild(const uint index)noexcept;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
    
+		JComponent* FindComponent(const size_t guid)const noexcept;
+
 		bool IsRoot()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE type)noexcept;
 		bool HasRenderItem()const noexcept;
 		bool HasAnimator()const noexcept;  
 		void ChangeParent(JGameObject* newParent)noexcept;
-	protected:
+	public:
+		JGameObjectCompInterface* CompInterface() final;
+	private:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
 	private:
 		static bool HasSameName(_In_ JGameObject* parent, _In_ const std::string& initName) noexcept;
 		bool IsChild(JGameObject* obj)noexcept;
-		JComponent* AddComponent(JComponent& component)noexcept;
-		bool EraseComponent(JComponent& component)noexcept;
-	public: 
-		static void EraseGameObject(JGameObject* gameObject)noexcept;
+		JComponent* AddComponent(JComponent& component)noexcept; 
+		bool RemoveComponent(JComponent& component)noexcept final;
+	protected:
+		void Destroy() final; 
 	private:
 		Core::J_FILE_IO_RESULT CallStoreGameObject(std::wofstream& stream) final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JGameObject* gameObject);
 		static JGameObject* LoadObject(std::wifstream& stream, JGameObject* parent);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
 		/*
 		* JGameObject Register Parent and initialize JTransform
 		* Caution! don't register in parentChildren
 		* only ownerScene parameter is valid by root gameobject
 		*/
-		JGameObject(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JGameObject* parent, JScene* ownerScene = nullptr);
+		JGameObject(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* parent, JScene* ownerScene = nullptr);
 		~JGameObject();
+#pragma region JComponent Template
 	private:
 		template<typename T, bool res>
 		struct ToPtr;
@@ -78,7 +82,6 @@ namespace JinEngine
 		public:
 			using Ptr = T*;
 		};
-#pragma region JComponent Template
 	public:
 		template<typename T>
 		auto GetComponent()const noexcept -> typename ToPtr<T, std::is_base_of_v<JComponent, T>>::Ptr

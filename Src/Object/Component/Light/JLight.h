@@ -41,7 +41,7 @@ namespace JinEngine
 		void DoDeActivate()noexcept final;  
 	private:
 		void CreateShadowMap()noexcept;
-		void EraseShadowMap()noexcept;
+		void DestroyShadowMap()noexcept;
 		void StuffDirectionalLight(Graphic::JLightConstants& constant)noexcept;
 		void StuffPointLight(Graphic::JLightConstants& constant)noexcept;
 		void StuffSpotLight(Graphic::JLightConstants& constant)noexcept;
@@ -52,9 +52,9 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JLight* light);
 		static JLight* LoadObject(std::wifstream& stream, JGameObject* owner);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
-		JLight(const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner);
+		JLight(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner);
 		~JLight();
 	};
 }

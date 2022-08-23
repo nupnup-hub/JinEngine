@@ -21,6 +21,6 @@ namespace JinEngine
 		public Graphic::JGraphicBufElementInterface
 	{
 	protected:
-		JMaterialInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JMaterialInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 	};
 }

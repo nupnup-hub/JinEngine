@@ -64,6 +64,21 @@ namespace JinEngine
 	{
 		return J_OBJECT_TYPE::GAME_OBJECT;
 	}
+	JComponent* JGameObject::FindComponent(const size_t guid)const noexcept
+	{
+		const uint compCount = (uint)component.size();
+		for (uint i = 0; i < compCount; ++i)
+		{
+			if (component[i]->GetGuid() == guid)
+				return component[i];
+		}
+		 
+		const uint childrenCount = (uint)children.size();
+		for (uint i = 0; i < childrenCount; ++i)
+			return children[i]->FindComponent(guid);
+
+		return nullptr;
+	}
 	bool JGameObject::IsRoot()const noexcept
 	{
 		return parent == nullptr;
@@ -111,33 +126,13 @@ namespace JinEngine
 
 		parent->children.erase(parent->children.begin() + childIndex);
 		parent = newParent;
-		std::string name = GetName();
-		bool isOk = false;
-		int count = 0;
-
-		while (!isOk)
-		{
-			bool hasSameName = false;
-			for (const auto& data : parent->children)
-			{
-				if (data->GetName() == name)
-				{
-					hasSameName = true;
-					break;
-				}
-			}
-
-			if (hasSameName)
-			{
-				JCommonUtility::ModifyOverlappedName(name, name.length(), count);
-				++count;
-			}
-			else
-				isOk = true;
-		}
-		SetName(name);
+		SetName(JCommonUtility::MakeUniqueName(parent->children, GetName()));
 		newParent->children.push_back(this);
 		static_cast<JTransformInterface*>(transform)->ChangeParent(); 
+	}
+	JGameObjectCompInterface* JGameObject::CompInterface()
+	{
+		return this;
 	}
 	void JGameObject::DoActivate()noexcept
 	{
@@ -153,7 +148,7 @@ namespace JinEngine
 		}
 	}
 	void JGameObject::DoDeActivate()noexcept
-	{
+	{ 
 		JObject::DoDeActivate();
 		const uint componentCount = (uint)component.size();
 		for (uint i = 0; i < componentCount; ++i)
@@ -200,12 +195,9 @@ namespace JinEngine
 		JGameObject::component.push_back(&component);
 		return &component;
 	}
-	bool JGameObject::EraseComponent(JComponent& component)noexcept
+	bool JGameObject::RemoveComponent(JComponent& component)noexcept
 	{
-		const J_COMPONENT_TYPE cType = component.GetComponentType();
-		 
-		component.DeActivate(); 
-
+		const J_COMPONENT_TYPE cType = component.GetComponentType();		
 		const std::string componentName = component.GetName();
 		const size_t componenetGuid = component.GetGuid();
 		const J_COMPONENT_TYPE componentType = component.GetComponentType();
@@ -223,16 +215,16 @@ namespace JinEngine
 		if (index == -1)
 			return false;
 		JGameObject::component.erase(JGameObject::component.begin() + index); 
-
 		return true;
 	}
-	void JGameObject::EraseGameObject(JGameObject* gameObject)noexcept
+	void JGameObject::Destroy()
 	{
-		if (gameObject == nullptr || (gameObject->GetFlag() & JOBJECT_FLAG::OBJECT_FLAG_INERASABLE) > 0)
+		if(HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !IsIgnoreUndestroyableFlag())
 			return;
 
-		const size_t guid = gameObject->GetGuid();
-		JGameObject* parent = gameObject->GetParent();
+		DeActivate();
+
+		const size_t guid = GetGuid();
 		const uint pChildrenCount = (uint)parent->children.size();
 		for (uint i = 0; i < pChildrenCount; ++i)
 		{
@@ -243,19 +235,31 @@ namespace JinEngine
 			}
 		}
 
-		const uint childrenCount = (uint)gameObject->children.size();
+		const uint childrenCount = (uint)children.size();
 		for (uint i = 0; i < childrenCount; ++i)
-			EraseGameObject(gameObject->children[i]);
+		{
+			children[i]->Destroy();
+			children[i] = nullptr;
+		}
 
-		const uint componentCount = (uint)gameObject->component.size();
+		bool preIgnore = IsIgnoreUndestroyableFlag();
+		if(!preIgnore)
+			SetIgnoreUndestroyableFlag(true);
+		const uint componentCount = (uint)component.size();
 		for (uint i = 0; i < componentCount; ++i)
-			gameObject->component[i]->DeActivate();
+		{
+			component[i]->BeginDestroy();
+			component[i] = nullptr;
+		}
+		if(!preIgnore)
+			SetIgnoreUndestroyableFlag(false);
 
-		gameObject->component.clear();
-		gameObject->children.clear();
+		component.clear();
+		children.clear();
+		 
+		ownerScene->GameObjInterface()->RemoveGameObject(*parent);
 
-		JScene* ownerScene = gameObject->ownerScene;
-		ownerScene->GameObjInterface()->EraseGameObject(*parent);
+		delete this;
 	}
 	Core::J_FILE_IO_RESULT JGameObject::CallStoreGameObject(std::wofstream& stream)
 	{
@@ -338,7 +342,7 @@ namespace JinEngine
 		}
 		return newGameObject;
 	}
-	void JGameObject::RegisterFunc()
+	void JGameObject::RegisterJFunc()
 	{
 		auto defaultC = [](JGameObject* parent)
 		{
@@ -347,17 +351,17 @@ namespace JinEngine
 				name = JCommonUtility::MakeUniqueName(parent->children, name);
 
 			JGameObject* newObj = new JGameObject(name, Core::MakeGuid(), OBJECT_FLAG_NONE, parent);
-			newObj->transform = JCFI<JTransform>::Create(Core::MakeGuid(), (JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_INERASABLE), *newObj);
+			newObj->transform = JCFI<JTransform>::Create(Core::MakeGuid(), (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), *newObj);
 			return newObj;
 		};
-		auto initC = [](const std::string& name, const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* parent, JScene* owner)
+		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* parent, JScene* owner)
 		{
 			std::string newName = name;
 			if (parent != nullptr)
 				newName = JCommonUtility::MakeUniqueName(parent->children, newName);
 
 			JGameObject* newObj = new JGameObject(name, guid, objFlag, parent, owner);
-			newObj->transform = JCFI<JTransform>::Create(Core::MakeGuid(), (JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_INERASABLE), *newObj);
+			newObj->transform = JCFI<JTransform>::Create(Core::MakeGuid(), (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), *newObj);
 			return newObj;
 		};
 		auto loadC = [](std::wifstream& stream, JGameObject* parent)
@@ -383,9 +387,9 @@ namespace JinEngine
 			return newObj;
 		};		
 		JGFI::Regist(defaultC, initC, loadC, copyC);
-		JComponentFactoryImplBase::RegistAddStroage(&JGameObject::AddComponent);		
+		JComponentFactoryImplBase::RegisterAddStroage(&JGameObject::AddComponent);		
 	} 
-	JGameObject::JGameObject(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JGameObject* parent, JScene* ownerScene)
+	JGameObject::JGameObject(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* parent, JScene* ownerScene)
 		:JGameObjectInterface(name, guid, flag), parent(parent)
 	{
 		//parent == nullptr = root

@@ -1,11 +1,11 @@
 #include"JApplication.h"   
 #include"../Window/JWindows.h"
-#include"../Object/Resource/JResourceManager.h"
-#include"../Object/Component/JComponentDatabase.h"
+#include"../Graphic/JGraphic.h" 
+#include"../Object/Resource/JResourceManager.h" 
 #include"../Object/Resource/Scene/JScene.h"
 #include"../Object/Component/Camera/JCamera.h"
-#include"../Graphic/JGraphic.h" 
-#include"../Core/GameTimer/JGameTimer.h" 
+#include"../Core/GameTimer/JGameTimer.h"  
+#include"../Core/Reflection/JReflectionInfo.h"
 
 namespace JinEngine
 {
@@ -16,8 +16,7 @@ namespace JinEngine
 			JWindow::Instance().AppInterface()->Initialize(hInstance);
 		}
 		JApplication::~JApplication()
-		{
-		}
+		{}
 		void JApplication::Run()
 		{ 
 			JWindow::Instance().AppInterface()->OpenWindow();
@@ -51,13 +50,13 @@ namespace JinEngine
 				CalculateFrame();
 			}
 			JGraphic::Instance().FrameInterface()->FlushCommandQueue();
+			JResourceManager::Instance().OwnerInterface()->Terminate();
 		}
 		void JApplication::RunEngine()
 		{
 			JWindow::Instance().AppInterface()->SetEngineWindow();
-			JComponentDatabase::Initialize();
-			JResourceManager::Instance().LoadProjectResource();
-			editorManager.OpenProject(JResourceManager::Instance().GetMainScene()->GetName());
+			JResourceManager::Instance().OwnerInterface()->LoadProjectResource();
+			editorManager.OpenProject();
 			JGameTimer::Instance().Start();
 			JGameTimer::Instance().Reset();
 			JGameTimer::Instance().Tick();
@@ -79,10 +78,11 @@ namespace JinEngine
 				JGameTimer::Instance().Tick();
 				CalculateFrame();
 			}
+
 			JGraphic::Instance().FrameInterface()->FlushCommandQueue();
-			editorManager.StorePage(JResourceManager::Instance().GetMainScene()->GetName());
+			editorManager.StorePage();
 			editorManager.Clear();
-			JResourceManager::Instance().Terminate();
+			JResourceManager::Instance().OwnerInterface()->Terminate();
 		}
 		void JApplication::CalculateFrame()
 		{

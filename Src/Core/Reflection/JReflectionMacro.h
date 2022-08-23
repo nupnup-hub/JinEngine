@@ -51,8 +51,10 @@ namespace JinEngine
 			using ThisType = typeName;																	\
 																										\
 		protected:																						\
-			using JTypeInfo = JinEngine::Core::JTypeInfo;											\
-			using JTypeInfoInitializer = JinEngine::Core::JTypeInfoInitializer<typeName>;			\
+			using JTypeInfo = JinEngine::Core::JTypeInfo;										\
+			using JTypeInfoInitializer = JinEngine::Core::JTypeInfoInitializer<typeName>;		\
+			using JTypeInfoRegister = JinEngine::Core::JTypeInfoRegister<typeName>;				\
+			using JReflectionInfo = JinEngine::Core::JReflectionInfo;							\
 																								\
 		private:																				\
 			friend class JTypeInfoInitializer;													\
@@ -60,8 +62,8 @@ namespace JinEngine
 		public:																					\
 			static JTypeInfo& StaticTypeInfo()													\
 			{																					\
-				static JTypeInfo m_typeInfo{ JTypeInfoInitializer(#typeName) };					\
-				return m_typeInfo;																\
+				static JTypeInfoRegister typeRegister{#typeName};								\
+				return *JReflectionInfo::Instance().GetTypeInfo(#typeName);						\
 			}																					\
 																								\
 			virtual JTypeInfo& GetTypeInfo()const {return typeInfo;}							\
@@ -69,7 +71,7 @@ namespace JinEngine
 			inline static std::string TypeName() {return #typeName;}							\
 																								\
 		private:																				\
-			inline static JTypeInfo& typeInfo =  StaticTypeInfo();								\
+			inline static JTypeInfo& typeInfo = StaticTypeInfo();								\
 																								\
 																								\
 
@@ -136,10 +138,10 @@ namespace JinEngine
 				public:																					\
 					J_MERGE_NAME(enumName, EnumStruct)	()												\
 					{																					\
-						using JEnumInitializer = JinEngine::Core::JEnumInitializer;				\
+						using JEnumInitializer = JinEngine::Core::JEnumInitializer;						\
 						using JEnumInfo	= JinEngine::Core::JEnumInfo;									\
-						static JEnumInfo jEunmInfo{	JEnumInitializer(J_STRINGIZE(enumName),				\
-							typeid(enumName).name(), J_STRINGIZE_ADD_COMMA(__VA_ARGS__), J_COUNT(__VA_ARGS__))};					\
+						static JEnumRegister jEnumRegister{J_STRINGIZE(enumName),						\
+						J_STRINGIZE_ADD_COMMA(__VA_ARGS__), J_COUNT(__VA_ARGS__)};						\
 					}																					\
 			}J_MERGE_NAME(enumName, EnumStruct);														\
 

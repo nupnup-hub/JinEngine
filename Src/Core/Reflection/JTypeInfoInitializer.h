@@ -17,7 +17,7 @@ namespace JinEngine
 			struct HasEngineDefinedRegister : std::false_type
 			{};
 			template<typename T>
-			struct HasEngineDefinedRegister<T, std::void_t<decltype(&T::RegisterFunc)>> : std::true_type
+			struct HasEngineDefinedRegister<T, std::void_t<decltype(&T::RegisterJFunc)>> : std::true_type
 			{};
 		}
 
@@ -25,6 +25,7 @@ namespace JinEngine
 		template<typename Type>
 		class JTypeInfoInitializer
 		{
+		private:
 			friend class JTypeInfo;
 		public:
 			JTypeInfoInitializer(const std::string& name)
@@ -37,11 +38,8 @@ namespace JinEngine
 				else
 					parent = &Type::ParentType::StaticTypeInfo();
 
-				if constexpr (std::is_base_of_v<JObject, Type>)
-				{
-					if constexpr (HasEngineDefinedRegister<Type>::value)
-						Type::RegisterFunc();
-				}
+				if constexpr (HasEngineDefinedRegister<Type>::value)
+					Type::RegisterJFunc();
 			}
 		private:
 			std::string name;

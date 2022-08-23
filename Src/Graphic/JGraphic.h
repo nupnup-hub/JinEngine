@@ -38,18 +38,23 @@ namespace JinEngine
 	{
 		template<typename T>class JCreateUsingNew;
 	}
-
+	namespace Editor
+	{
+		class JGraphicResourceWatcher;
+	}
 	namespace Graphic
 	{
 		struct JFrameResource;
 		class JGraphicTextureHandle;
 		class JGraphicResourceManager;
 
-		class JGraphicImpl : public JGraphicFrameInterface, public JGraphicTextureUserInterface, public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>
+		class JGraphicImpl : public JGraphicFrameInterface,
+			public JGraphicTextureUserInterface, 
+			public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>
 		{
 		private:
 			template<typename T>friend class Core::JCreateUsingNew;
-			friend class GraphicResourceWatcher; 			//Debug Class
+			friend class Editor::JGraphicResourceWatcher; 			//Debug Class
 		private:
 			size_t guid;
 			std::vector<std::unique_ptr<JFrameResource>> frameResources;
@@ -105,7 +110,7 @@ namespace JinEngine
 			JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::string& path)final;
 			JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			JGraphicTextureHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0)final;
-			bool EraseGraphicTextureResource(JGraphicTextureHandle** handle)final;
+			bool DestroyGraphicTextureResource(JGraphicTextureHandle** handle)final;
 			void StuffShaderPso(JShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_SHADER_FUNCTION functionFlag)final;
 		private:
 			void SetImGuiBackEnd()final;

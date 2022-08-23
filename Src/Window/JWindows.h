@@ -20,7 +20,7 @@ namespace JinEngine
 
 	namespace Window
 	{
-		class JWindowImpl : public Core::JEventManager<JWindowHandleInterface, size_t, J_WINDOW_EVENT, void>
+		class JWindowImpl :public JWindowHandleInterface, public Core::JEventManager<size_t, J_WINDOW_EVENT>
 		{
 		private:
 			template<typename T>friend class Core::JCreateUsingNew;
@@ -36,7 +36,7 @@ namespace JinEngine
 			RECT preClinetRect;
 			const int minWidth;
 			const int minHeight;
-			HWND hwnd; 
+			HWND hwnd;
 		public:
 			RECT GetWindowR()const noexcept;
 			RECT GetPreWindowR()const noexcept;
@@ -55,13 +55,10 @@ namespace JinEngine
 			int GetClientPositionY()const noexcept;
 			int GetClientWidth()const noexcept;
 			int GetClientHeight()const noexcept;
-
-			JWindowHandleInterface* HandleInterface() noexcept;
-			JEventInterface* EvInterface()noexcept final;
-			JWindowAppInterface* AppInterface()noexcept;
-		private:
-			JWindowImpl();
-			~JWindowImpl();
+		public:
+			JWindowHandleInterface* HandleInterface() ;
+			JEventInterface* EvInterface()final;
+			JWindowAppInterface* AppInterface();
 		private:
 			void Initialize(HINSTANCE hInstance)final;
 			void OpenWindow()final;
@@ -72,11 +69,16 @@ namespace JinEngine
 		private:
 			HWND GetHandle()const noexcept final;
 		private:
-			void Resize(WPARAM wParam);
-			void RegisterWindowClass();
 			static LRESULT CALLBACK HandleMsgSetup(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam);
 			static LRESULT CALLBACK HandleMsgThunk(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam);
 			static LRESULT HandleMsg(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam);
+			void Resize(WPARAM wParam);
+		private:
+			void RegisterWindowClass();
+			void RegistEvCallable() final;
+		private:
+			JWindowImpl();
+			~JWindowImpl();
 		};
 	}
 	using JWindow = JinEngine::Core::JSingletonHolder<Window::JWindowImpl>;

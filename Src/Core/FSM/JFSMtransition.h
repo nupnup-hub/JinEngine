@@ -26,18 +26,18 @@ namespace JinEngine
 			static constexpr uint maxNumberOffCondition = 25;
 		private:
 			std::vector<std::unique_ptr<FSMConditionWrap>>conditionVec;
-			const size_t outputId;
+			const size_t outputStateGuid;
 		public:
-			JFSMtransition(const size_t outputId);
+			JFSMtransition(const size_t outputStateGuid);
 			virtual ~JFSMtransition() = default;
-			size_t GetOutputId()noexcept;
+			size_t GetOutputStateGuId()noexcept;
 			bool HasSatisfiedCondition()noexcept;
 		protected:
 			virtual void Initialize()noexcept;
 			void SetConditionOnValue(const uint conditionIndex, const float onValue)noexcept;
 			void SetCondition(const uint oldConditionIndex, JFSMcondition* newCondition)noexcept;
 			bool AddCondition(JFSMcondition* condition)noexcept;
-			bool PopCondition(const std::string& name)noexcept;
+			bool PopCondition(const size_t outputStateGuid)noexcept;
 		};
 	}
 }

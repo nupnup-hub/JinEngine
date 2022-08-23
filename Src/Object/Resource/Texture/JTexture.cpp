@@ -57,7 +57,7 @@ namespace JinEngine
 	}
 	void JTexture::StuffResource()
 	{
-		if (!IsValidResource())
+		if (!IsValid())
 		{
 			if (ReadTextureData())
 				SetValid(true);
@@ -65,9 +65,9 @@ namespace JinEngine
 	}
 	void JTexture::ClearResource()
 	{
-		if (IsValidResource() && HasTxtHandle())
+		if (IsValid() && HasTxtHandle())
 		{
-			ClearTxtHandle();
+			DestroyTxtHandle();
 			uploadHeap.Reset();
 			SetValid(false);
 		}
@@ -135,11 +135,20 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, pathData.folderPath, metadata);
 		stream.close();
 
-		JTexture* newTexture;
-		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-			newTexture = new JTexture(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JTexture>(pathData.format));
-		else
-			newTexture = new JTexture(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JTexture>(pathData.format));
+		JTexture* newTexture = nullptr;
+		if (directory->HasFile(pathData.fullName))
+			newTexture = JResourceManager::Instance().GetResourceByPath<JTexture>(pathData.strPath);
+
+		if (newTexture == nullptr)
+		{
+			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+				newTexture = new JTexture(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JTexture>(pathData.format));
+			else
+				newTexture = new JTexture(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JTexture>(pathData.format));
+		}
+		 
+		if (newTexture->IsValid())
+			return newTexture;
 
 		newTexture->textureType = (Graphic::J_GRAPHIC_TEXTURE_TYPE)metadata.textureType;
 		if (newTexture->ReadTextureData())
@@ -164,7 +173,7 @@ namespace JinEngine
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	void JTexture::RegisterFunc()
+	void JTexture::RegisterJFunc()
 	{
 		auto defaultC = [](JDirectory* owner) ->JResourceObject*
 		{
@@ -174,7 +183,7 @@ namespace JinEngine
 				owner,
 				JResourceObject::GetDefaultFormatIndex());
 		};
-		auto initC = [](const std::string& name, const size_t guid, const JOBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
 			return  new JTexture(name, guid, objFlag, directory, formatIndex);
 		};
@@ -200,7 +209,7 @@ namespace JinEngine
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{}); 
 	}
-	JTexture::JTexture(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const int formatIndex)
+	JTexture::JTexture(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const int formatIndex)
 		:JTextureInterface(name, guid, flag, directory, formatIndex)
 	{}
 	JTexture::~JTexture(){}

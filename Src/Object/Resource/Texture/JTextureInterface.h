@@ -9,6 +9,6 @@ namespace JinEngine
 	class JTextureInterface : public JResourceObject, public Graphic::JGraphicTexture , public JClearableInterface
 	{
 	protected:
-		JTextureInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const int formatIndex);
+		JTextureInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const int formatIndex);
 	};
 }

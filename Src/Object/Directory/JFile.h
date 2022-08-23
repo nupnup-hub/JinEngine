@@ -1,21 +1,25 @@
 #pragma once
-#include<string> 
+#include<string>  
 
 namespace JinEngine
 {
-	class JResourceObject; 
+	class JResourceObject;  
+	class JDirectory;
 	class JFile
-	{  
+	{   
+	private:
+		friend class JDirectory;
 	private:
 		JResourceObject* resource; 
 	public:
-		JFile(JResourceObject* resource);
-		~JFile();
-		JFile(JFile&& rhs) = default;
-		JFile& operator=(JFile&& rhs) = default;
-		 
 		std::string GetName()const noexcept;
+		std::string GetFullName()const noexcept;
 		std::string GetAvailableFormat()const noexcept;
 		JResourceObject* GetResource()noexcept;  
+	private:
+		JFile(JResourceObject* resource);
+		~JFile() = default;
+		//JFile(JFile && rhs) = default;
+		//JFile& operator=(JFile&& rhs) = default;
 	};
 }

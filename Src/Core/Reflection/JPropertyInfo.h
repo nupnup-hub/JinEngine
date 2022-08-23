@@ -8,26 +8,19 @@ namespace JinEngine
 	namespace Core
 	{
 		class JTypeInfo;
+		template<typename Type, typename Field, typename Pointer, Pointer ptr> class JPropertyRegister;
+
 		class JPropertyInfo
 		{
 		private:
 			friend class JTypeInfo;
-
+			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyRegister;
 		private:
 			const std::string name;
 			const JParameterHint fieldHint;
 			PropertyHandlerBase* handle;
 			JTypeInfo* ownerType;
-
 		public:
-			template<typename Field>
-			JPropertyInfo(const JPropertyInfoInitializer<Field>& initializer)
-				:name(initializer.name),
-				fieldHint(initializer.fieldHint),
-				handle(initializer.handlerBase),
-				ownerType(initializer.ownerType)
-			{}
-
 			std::string Name()const noexcept;
 			std::string FieldName()const noexcept; 
 			const JParameterHint& GetHint()const noexcept;
@@ -58,6 +51,15 @@ namespace JinEngine
 			{
 				reinterpret_cast<IPropertyHandler<Field>*>(handle)->Set(object, value);
 			}
+		private:
+			template<typename Field>
+			JPropertyInfo(const JPropertyInfoInitializer<Field>& initializer)
+				:name(initializer.name),
+				fieldHint(initializer.fieldHint),
+				handle(initializer.handlerBase),
+				ownerType(initializer.ownerType)
+			{}
+			~JPropertyInfo() = default;
 		};
 	}
 }

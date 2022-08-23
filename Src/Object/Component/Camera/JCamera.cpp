@@ -186,7 +186,7 @@ namespace JinEngine
 		if (camState == J_CAMERA_STATE::RENDER)
 		{
 			if (DeRegisterComponent())
-				EraseRenderTarget();
+				DestroyRenderTarget();
 			OffFrameDirty();
 		}
 	}
@@ -221,11 +221,11 @@ namespace JinEngine
 		CreateRenderTargetTexture(); 
 		AddDrawRequest(GetOwner()->GetOwnerScene(), this);
 	}
-	void JCamera::EraseRenderTarget()noexcept
+	void JCamera::DestroyRenderTarget()noexcept
 	{
 		//if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
 		PopDrawRequest(GetOwner()->GetOwnerScene(), this);
-		ClearTxtHandle();
+		DestroyTxtHandle();
 	}
 	void JCamera::UpdateViewMatrix() noexcept
 	{
@@ -322,7 +322,7 @@ namespace JinEngine
 		else
 		{
 			if (DeRegisterComponent())
-				EraseRenderTarget();
+				DestroyRenderTarget();
 		}
 		SetFrameDirty();
 	}
@@ -403,13 +403,13 @@ namespace JinEngine
 
 		return newCamera;
 	}
-	void JCamera::RegisterFunc()
+	void JCamera::RegisterJFunc()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
 			return new JCamera(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
 		};
-		auto initC = [](const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
+		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
 			return new JCamera(guid, objFlag, owner);
 		};
@@ -453,7 +453,7 @@ namespace JinEngine
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}
-	JCamera::JCamera(const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)
+	JCamera::JCamera(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)
 		:JCameraInterface(TypeName(), guid, objFlag, owner)
 	{
 		ownerTransform = owner->GetComponent<JTransform>();

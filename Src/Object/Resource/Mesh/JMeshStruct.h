@@ -2,7 +2,7 @@
 #include<vector>
 #include<DirectXMath.h>
 #include"../../../Core/JDataType.h"
-#include"../../../Utility/Vector.h"  
+#include"../../../Utility/JVector.h"  
 
 namespace JinEngine
 {
@@ -28,7 +28,7 @@ namespace JinEngine
 		JStaticMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv, const DirectX::XMFLOAT3& t);
 		JStaticMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv, const DirectX::XMFLOAT4& t);
 
-		JStaticMeshVertex(const Vector3<float>& p, const Vector3<float>& n, const Vector2<float>& uv, const Vector3<float>& t);
+		JStaticMeshVertex(const JVector3<float>& p, const JVector3<float>& n, const JVector2<float>& uv, const JVector3<float>& t);
 		JStaticMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv);
 		JStaticMeshVertex(float px, float py, float pz, float nx, float ny, float nz, float u, float v, float tx, float ty, float tz);
 		JStaticMeshVertex(float px, float py, float pz, float nx, float ny, float nz);
@@ -70,7 +70,7 @@ namespace JinEngine
 			const DirectX::XMFLOAT2& uv, 
 			const DirectX::XMFLOAT4& t, 
 			uint8(&jointIndex)[4]);
-		JSkinnedMeshVertex(const Vector3<float>& p, const Vector3<float>& n, const Vector2<float>& uv, const Vector3<float>& t);
+		JSkinnedMeshVertex(const JVector3<float>& p, const JVector3<float>& n, const JVector2<float>& uv, const JVector3<float>& t);
 		JSkinnedMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv);
 		JSkinnedMeshVertex(float px, float py, float pz, float nx, float ny, float nz, float u, float v, float tx, float ty, float tz);
 	};

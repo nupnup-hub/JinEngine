@@ -16,7 +16,7 @@ namespace JinEngine
 		void LoadProjectDirectory(JDirectory* projectRootDir);
 		void LoadProjectResource(JDirectory* projectRootDir);
 	private:
-		void SearchDirectory(JDirectory* parentDir, bool searchDefaultFolder, const JOBJECT_FLAG dirFlag);
+		void SearchDirectory(JDirectory* parentDir, bool searchDefaultFolder, const J_OBJECT_FLAG dirFlag);
 		void SearchResource(const J_RESOURCE_TYPE rType, JDirectory* directory);
 	};
 }

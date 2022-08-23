@@ -220,7 +220,7 @@ namespace JinEngine
 		RTypeInfo::Instance().rFuncStorage[(int)rTypeHint.thisType] = rTypeUtil;
 		RTypeInfo::Instance().rIntefaceStroage[(int)rTypeHint.thisType] = rTypeIFunc;
 	}
-	JResourceObjectInterface::JResourceObjectInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag)
+	JResourceObjectInterface::JResourceObjectInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag)
 		:JObject(name, guid, flag)
 	{}
 }

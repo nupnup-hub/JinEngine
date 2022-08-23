@@ -27,7 +27,7 @@ namespace JinEngine
 			int GetDsvHeapIndex()const noexcept;
 			int GetSrvHeapIndex()const noexcept; 
 			 
-			static bool Erase(JGraphicTextureHandle** handle);
+			static bool Destroy(JGraphicTextureHandle** handle);
 		public:
 			JGraphicTextureHandle(const J_GRAPHIC_TEXTURE_TYPE graphicResourceType, uint width, uint height);
 			~JGraphicTextureHandle();

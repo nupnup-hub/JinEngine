@@ -12,13 +12,16 @@
 
 namespace JinEngine
 {
+	namespace Editor
+	{
+		class JGraphicTextureHandle;
+	}
 	namespace Graphic
 	{
-		class JGraphicTextureHandle; 
 		class JGraphicResourceManager : public JGraphicBufManagerInterface
 		{
 		private:
-			friend class GraphicResourceWatcher;
+			friend class Editor::JGraphicResourceWatcher;
 			friend class JGraphicImpl;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap;
@@ -120,7 +123,7 @@ namespace JinEngine
 				ID3D12GraphicsCommandList* commandList);
 			JGraphicTextureHandle* CreateRenderTargetTexture(ID3D12Device* device, const uint width, const uint height);
 			JGraphicTextureHandle* CreateShadowMapTexture(ID3D12Device* device, const uint width, const uint height);
-			bool EraseGraphicTextureResource(ID3D12Device* device, JGraphicTextureHandle** handle);
+			bool DestroyGraphicTextureResource(ID3D12Device* device, JGraphicTextureHandle** handle);
 
 			void ReBind2DTexture(ID3D12Device* device, const uint resourceIndex, const uint heapIndex);
 			void ReBindCubeTexture(ID3D12Device* device, const uint resourceIndex, const uint heapIndex);

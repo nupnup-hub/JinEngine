@@ -110,7 +110,7 @@ namespace JinEngine
 		CTypeInfo::Instance().cFuncStorage[(uint)cTypeHint.thisType] = cTypeCFunc;
 		CTypeInfo::Instance().cInterfaceStorage[(uint)cTypeHint.thisType] = cTypeIFunc;
 	}
-	JComponentInterface::JComponentInterface(const std::string& cTypeName, const size_t guid, JOBJECT_FLAG flag)
+	JComponentInterface::JComponentInterface(const std::string& cTypeName, const size_t guid, J_OBJECT_FLAG flag)
 		:JObject(cTypeName, guid, flag)
 	{}
 }

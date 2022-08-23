@@ -46,8 +46,11 @@ namespace JinEngine
 	{
 		const uint objCount = (uint)gameObjectVec.size();
 		for (uint i = 0; i < objCount; ++i)
-			JGameObject::EraseGameObject(gameObjectVec[i]);
-
+		{
+			gameObjectVec[i]->Destroy();
+			gameObjectVec[i] = nullptr;
+		}
+		gameObjectVec.clear();
 		isActivated = false;
 	}
 

@@ -19,7 +19,7 @@ namespace JinEngine
 		REGISTER_CLASS(JMaterial)
 	private:
 		//friend class Graphic::JGraphicImpl;
-		//friend class ObjectDetail;
+		//friend class JObjectDetail;
 	private:
 		JShader* shader;
 	private: 
@@ -39,10 +39,10 @@ namespace JinEngine
 		bool shadowMap = false;
 		bool isSkyMateral = false;
 		bool isDebugMaterial = false;
-		float metallic;
-		float roughness;
-		DirectX::XMFLOAT4 albedoColor;
-		DirectX::XMFLOAT4X4 matTransform;
+		float metallic = 0;
+		float roughness = 0;
+		DirectX::XMFLOAT4 albedoColor = { 1,1,1,1 };
+		DirectX::XMFLOAT4X4 matTransform = JMathHelper::Identity4x4();
 	public:   
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
@@ -102,13 +102,15 @@ namespace JinEngine
 		void ClearResource() final; 
 		bool ReadMateiralData();
 	private:
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
+	private:
 		J_SHADER_FUNCTION CalculateShaderFunc()noexcept; 
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JMaterial* material);
 		static JMaterial* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
-		JMaterial(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JMaterial(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JMaterial();
 	};
 }

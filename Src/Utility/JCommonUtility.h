@@ -76,8 +76,37 @@ namespace JinEngine
 			unordedMap.erase(oldGuid);
 			unordedMap.emplace(newGuid, std::move(data));
 		} 
+
 		template<typename Type>
-		static std::string MakeUniqueName(const std::vector<Type>& vec, const std::string& name)
+		static std::string MakeUniqueName(const std::vector<Type*>& vec, const std::string& name)
+		{
+			bool result = true;
+			const uint eleCount = (uint)vec.size();
+			uint index = 0;
+			uint overlapCount = 0;
+
+			std::string uniqueName = name;
+			while (result)
+			{
+				if (index >= eleCount)
+					break;
+				else
+				{
+					if (vec[index]->GetName() == uniqueName)
+					{
+						ModifyOverlappedName(uniqueName, uniqueName.length(), overlapCount);
+						++overlapCount;
+						index = 0;
+					}
+					else
+						++index;
+				}
+			}
+			return uniqueName;
+		}
+
+		template<typename Type>
+		static std::string MakeUniqueName(const std::vector<std::unique_ptr<Type>>& vec, const std::string& name)
 		{
 			bool result = true;
 			const uint eleCount = (uint)vec.size();

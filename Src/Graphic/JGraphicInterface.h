@@ -20,18 +20,12 @@ namespace Microsoft
 
 namespace JinEngine
 {
-	struct JShaderData;
-	class ProjectSelector;
-	class ImGuiManager; 
+	struct JShaderData; 
 	class JMeshGeometry;
 	class JShader; 
-	class JResourceManager;
-	class JResourceIO;
-	class ObjectDetail;
-	class WindowDirectory;
-	class MainSceneEditor;
-	class PreviewSceneEditor;
-	class SceneViewer;
+	class JResourceManagerImpl;
+	class JResourceIO;  
+	class JMainSceneEditor;  
 
 	namespace Application
 	{
@@ -40,6 +34,11 @@ namespace JinEngine
 	namespace Core
 	{
 		class JGraphicException;
+	}
+	namespace Editor
+	{
+		class JImGui;
+		class JImGuiImpl;
 	}
 	namespace Graphic
 	{
@@ -50,7 +49,7 @@ namespace JinEngine
 		{
 		private:
 			friend class JMeshGeometry;
-			friend class JResourceManager;
+			friend class JResourceManagerImpl;
 			friend class Core::JGraphicException;		 
 		protected:
 			virtual ~JGraphicDeviceInterface() = default;
@@ -60,16 +59,11 @@ namespace JinEngine
 
 		class JGraphicResourceInterface : public JGraphicDeviceInterface
 		{
-		private:
-			friend class ProjectSelector; 
-			friend class JShader;   
-			friend class ObjectDetail;
-			friend class WindowDirectory;
-			friend class MainSceneEditor;
-			friend class PreviewSceneEditor;
-			friend class SceneViewer;
+		private: 
+			friend class JShader;       
 			friend class JGraphicTextureHandle;
 			friend class JGraphicTexture;
+			friend class Editor::JImGuiImpl;
 		private:
 			virtual CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvDescriptorHandle(int index)const noexcept = 0;
 			virtual CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept = 0;
@@ -78,14 +72,14 @@ namespace JinEngine
 			virtual JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::string& path) = 0;
 			virtual JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
 			virtual JGraphicTextureHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
-			virtual bool EraseGraphicTextureResource(JGraphicTextureHandle** handle) = 0;
+			virtual bool DestroyGraphicTextureResource(JGraphicTextureHandle** handle) = 0;
 			virtual void StuffShaderPso(JShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_SHADER_FUNCTION functionFlag) = 0;
 		};
 
 		class JGraphicEditorInterface : public JGraphicResourceInterface
 		{
 		private:
-			friend class ImGuiManager;
+			friend class Editor::JImGui;
 		private:
 			virtual void SetImGuiBackEnd() = 0;
 		};
@@ -93,7 +87,7 @@ namespace JinEngine
 		class JGraphicCommandInterface : public JGraphicEditorInterface
 		{
 		private:
-			friend class JResourceManager;
+			friend class JResourceManagerImpl;
 			friend class JResourceIO;
 			friend class JMeshGeometry;
 			friend class Application::JApplication;

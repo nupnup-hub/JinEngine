@@ -13,25 +13,25 @@ namespace JinEngine
 		{
 			friend class JFSMconditionStorage;
 		private:
-			virtual void NotifyEraseCondition(JFSMcondition* condition)noexcept = 0;
+			virtual void NotifyRemoveCondition(JFSMcondition* condition)noexcept = 0;
 		};
 		 
 		__interface IJFSMconditionStorageUser
 		{
 		public:
+			std::string GetConditionUniqueName(const std::string& initName)const noexcept;
 			uint GetConditionCount()const noexcept;
-			uint GetConditionMaxCount()const noexcept;
-			JFSMcondition* GetCondition(const uint index)noexcept;
-			JFSMcondition* GetCondition(const std::string& name)noexcept;  
+			uint GetConditionMaxCount()const noexcept; 	
+			JFSMcondition* GetCondition(const size_t guid)noexcept;
 		};
 		 
 		__interface IJFSMconditionStorageManager : public IJFSMconditionStorageUser
 		{
 		public:
-			void SetConditionName(const std::string& oldName, const std::string& newName)noexcept;
-			void SetConditionValueType(const std::string& conditionName, const J_FSMCONDITION_VALUE_TYPE valueType)noexcept;
-			JFSMcondition* AddConditionValue()noexcept;
-			bool EraseCondition(const std::string& conditionName)noexcept;
+			void SetConditionName(const size_t guid, const std::string& newName)noexcept;
+			void SetConditionValueType(const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType)noexcept;
+			JFSMcondition* AddCondition(const std::string& name, const size_t guid)noexcept;
+			bool RemoveCondition(const size_t guid)noexcept;
 		};
 	}
 }

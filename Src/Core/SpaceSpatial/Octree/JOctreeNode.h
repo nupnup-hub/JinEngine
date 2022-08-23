@@ -28,7 +28,7 @@ namespace JinEngine
 			bool AddGameObject(JGameObject* gameObj, bool isLooseOctree)noexcept;
 			bool AddNeighborNode(JOctreeNode* octreeNode)noexcept;
 			void CreateDebugGameObject(JGameObject* parent, bool onlyLeafNode)noexcept;
-			void EraseDebugGameObject()noexcept;
+			void DestroyDebugGameObject()noexcept;
 			void Clear();
 			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
 
@@ -41,7 +41,7 @@ namespace JinEngine
 			bool IsLeafNode()const noexcept;
 			bool IsRootNode()const noexcept;
 		private:
-			bool EraseInnerGameObject(JGameObject* gameObject)noexcept;
+			bool RemoveInnerGameObject(JGameObject* gameObject)noexcept;
 		};
 	}
 }

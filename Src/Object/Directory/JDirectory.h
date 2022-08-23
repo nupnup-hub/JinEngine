@@ -8,13 +8,13 @@ namespace JinEngine
 {
 	class JFile;
 	class JResourceObject;
-	class JDirectory : public JDirectoryInterface
+	class JDirectory : public JDirectoryOCInterface
 	{
 		REGISTER_CLASS(JDirectory)
-	private: 
-		JDirectory* parentDir;
-		std::vector<JDirectory*> childrenDir;
-		std::vector<std::unique_ptr<JFile>> fileList;  
+	private:
+		JDirectory* parent;
+		std::vector<JDirectory*> children;
+		std::vector<JFile*> fileList;
 	public:
 		JDirectory* GetChildDirctory(const uint index)noexcept;
 		JDirectory* GetChildDirctory(const std::string& path)noexcept;
@@ -22,26 +22,33 @@ namespace JinEngine
 		uint GetFileCount()const noexcept;
 		std::string GetPath()const noexcept;
 		std::wstring GetWPath()const noexcept;
-		JFile* GetFile(const uint index)noexcept; 
+		JFile* GetFile(const uint index)noexcept;
+		JFile* GetRecentFile()noexcept;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
 
 		bool HasChild(const std::string& name)const noexcept;
+		bool HasFile(const std::string& name)const noexcept;
 		bool IsOpen()const noexcept;
 
 		JDirectory* SearchDirectory(const std::string& path)noexcept;
 		std::string MakeUniqueFileName(const std::string& name)noexcept;
 	public:
-		JDirectoryInterface* DirectoryInterface() final;
-	private: 
-		bool AddFile(JResourceObject* resource)noexcept; 
-		bool EraseFile(JResourceObject* resource)noexcept;  
+		JDirectoryDestroyInterface* DestroyInterface() final;
+		JDirectoryOCInterface* OCInterface() final;
 	private:
-		void OpenDirectory() final;
-		void CloseDirectory() final;
-		static void RegisterFunc();
+		bool CreateJFile(JResourceObject& resource)noexcept;
+		bool DestroyJFile(JResourceObject& resource)noexcept;
+	protected:
+		void Destroy()final;
 	private:
-		JDirectory(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* parentDir);
+		void BeginForcedDestroy() final;
+	private:
+		void OpenDirectory()noexcept final;
+		void CloseDirectory()noexcept final;
+		static void RegisterJFunc();
+	private:
+		JDirectory(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* parentDir);
 		~JDirectory();
 	};
- 
+
 }

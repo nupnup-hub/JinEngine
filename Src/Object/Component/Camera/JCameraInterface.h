@@ -6,31 +6,34 @@
 
 namespace JinEngine
 {
-	class JResourceManager;
-	class PreviewResourceScene;
-	class PreviewModelScene;
+	class JResourceManagerImpl;
+	class JPreviewResourceScene;
+	class JPreviewModelScene;
 	namespace Graphic
 	{
 		struct JCameraConstants;
 	}
 
-	class JCameraStateInterface : public JComponent
+	class JCameraStateInterface
 	{
 	private:
-		friend class JResourceManager;
-		friend class PreviewResourceScene;
-		friend class PreviewModelScene;
+		friend class JResourceManagerImpl;
+		friend class JPreviewResourceScene;
+		friend class JPreviewModelScene;
 	protected:
-		JCameraStateInterface(const std::string& cTypeName, size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner);
+		virtual ~JCameraStateInterface() = default;
 	public:
 		virtual JCameraStateInterface* StateInterface() = 0;
 	private:
 		virtual void SetCameraState(const J_CAMERA_STATE state)noexcept = 0;
 	};
 
-	class JCameraInterface : public JCameraStateInterface, public JFrameInterface<Graphic::JCameraConstants>, public Graphic::JGraphicTexture
+	class JCameraInterface : public JComponent,
+		public JCameraStateInterface,
+		public JFrameInterface<Graphic::JCameraConstants>,
+		public Graphic::JGraphicTexture
 	{
 	protected:
-		JCameraInterface(const std::string& cTypeName, size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner); 
+		JCameraInterface(const std::string& cTypeName, size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner);
 	};
 }

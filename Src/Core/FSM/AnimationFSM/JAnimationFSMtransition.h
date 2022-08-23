@@ -14,7 +14,7 @@ namespace JinEngine
 			float durationTime = 0.4f;
 			float targetStateOffset = 0;
 		public:
-			JAnimationFSMtransition(const size_t outputId);
+			JAnimationFSMtransition(const size_t outputStateGuid);
 			bool GetIsWaitExitTime()noexcept;
 			bool GetIsFrozen()noexcept;
 			float GetExitGameTimerate()noexcept;

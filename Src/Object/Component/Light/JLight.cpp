@@ -84,7 +84,7 @@ namespace JinEngine
 		{
 			if (onShadow)
 			{
-				EraseShadowMap();
+				DestroyShadowMap();
 				GetOwner()->GetOwnerScene()->FrameInterface()->SetBackSideComponentDirty(*this, IsShadow);
 				SetFrameDirty();
 				onShadow = value;
@@ -119,7 +119,7 @@ namespace JinEngine
 		JComponent::DoDeActivate();
 		DeRegisterComponent();
 		if (onShadow)
-			EraseShadowMap();
+			DestroyShadowMap();
 		OffFrameDirty();
 	}
 	void JLight::CreateShadowMap()noexcept
@@ -127,10 +127,10 @@ namespace JinEngine
 		CreateShadowMapTexture();
 		AddDrawRequest(GetOwner()->GetOwnerScene(), this);
 	}
-	void JLight::EraseShadowMap()noexcept
+	void JLight::DestroyShadowMap()noexcept
 	{
 		PopDrawRequest(GetOwner()->GetOwnerScene(), this); 
-		ClearTxtHandle();
+		DestroyTxtHandle();
 	}
 	void JLight::StuffDirectionalLight(Graphic::JLightConstants& constant)noexcept
 	{
@@ -344,13 +344,13 @@ namespace JinEngine
 		
 		return newLightComponent;
 	}
-	void JLight::RegisterFunc()
+	void JLight::RegisterJFunc()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
 			return new JLight(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
 		};
-		auto initC = [](const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
+		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
 			return new JLight(guid, objFlag, owner);
 		};
@@ -392,7 +392,7 @@ namespace JinEngine
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}
-	JLight::JLight(const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)
+	JLight::JLight(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)
 		:JLightInterface(TypeName(), guid, objFlag, owner)
 	{ 
 		lightType = J_LIGHT_TYPE::DIRECTIONAL;

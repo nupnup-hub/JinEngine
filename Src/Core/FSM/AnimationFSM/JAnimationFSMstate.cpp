@@ -1,21 +1,15 @@
 #include"JAnimationFSMstate.h" 
 #include"JAnimationFSMtransition.h" 
-#include"JAnimationTime.h"  
-#include"../../../Window/Editor/Diagram/EditorDiagramNode.h"
+#include"JAnimationTime.h"   
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		JAnimationFSMstate::JAnimationFSMstate()
-		{
-			editorCoord = std::make_unique<EditorDiagramNode>();
-		}
+		JAnimationFSMstate::JAnimationFSMstate(const std::string& name, const size_t guid)
+			:JFSMstate(name, guid)
+		{}
 		JAnimationFSMstate::~JAnimationFSMstate() {}
-		EditorDiagramNode* JAnimationFSMstate::GetEditorDiagramNode()noexcept
-		{
-			return editorCoord.get();
-		}
 		std::vector<JAnimationFSMtransition*>::const_iterator JAnimationFSMstate::GetTransitionVectorHandle(_Out_ uint& transitionCount)
 		{
 			transitionCount = (uint)transitionCash.size();
@@ -32,9 +26,9 @@ namespace JinEngine
 			else
 				return cash;
 		}
-		bool JAnimationFSMstate::EraseTransition(const size_t outputId)noexcept
+		bool JAnimationFSMstate::RemoveTransition(const size_t outputStateGuid)noexcept
 		{
-			if (JFSMstate::EraseTransition(outputId))
+			if (JFSMstate::RemoveTransition(outputStateGuid))
 			{
 				uint cashSize = (uint)transitionCash.size();
 				for (uint i = 0; i < cashSize; ++i)

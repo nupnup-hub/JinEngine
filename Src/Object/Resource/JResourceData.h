@@ -40,9 +40,7 @@ namespace JinEngine
 
 		static const std::vector<J_DEFAULT_SHAPE> defaultMeshTypes;
 		static const std::vector<J_DEFAULT_MATERIAL> defaultMaterialTypes;
-
-		static const std::vector<J_DEFAULT_SHADER> defaultShaderTypes;
-
+		 
 		std::unordered_map<J_DEFAULT_SHAPE, size_t> basicMeshGuidMap;
 		std::unordered_map<J_DEFAULT_MATERIAL, size_t> basicMaterialGuidMap;
 		std::unordered_map<J_DEFAULT_SHADER, size_t> defaultShaderGuidMap;

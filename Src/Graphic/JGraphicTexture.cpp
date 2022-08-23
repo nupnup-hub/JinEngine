@@ -27,9 +27,9 @@ namespace JinEngine
 			handle = JGraphic::Instance().ResourceInterface()->CreateShadowMapTexture(textureWidth, textureHeight);
 			return handle != nullptr;
 		}
-		bool JGraphicTexture::ClearTxtHandle()
+		bool JGraphicTexture::DestroyTxtHandle()
 		{
-			return Graphic::JGraphicTextureHandle::Erase(&handle);
+			return Graphic::JGraphicTextureHandle::Destroy(&handle);
 		}
 		bool JGraphicTexture::HasTxtHandle()const noexcept
 		{

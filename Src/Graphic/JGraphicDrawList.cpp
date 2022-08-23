@@ -1,8 +1,7 @@
 #include"JGraphicDrawList.h"
 #include"JGraphicTextureHandle.h"
 #include"../Object/Resource/Scene/JScene.h" 
-#include"../Object/Component/JComponent.h"
-#include"../Object/Resource/JResourceManager.h"
+#include"../Object/Component/JComponent.h" 
 
 namespace JinEngine
 {
@@ -43,8 +42,8 @@ namespace JinEngine
 			}
 		}
 
-		JGraphicDrawTarget::JGraphicDrawTarget(JScene* scene, const bool isMainScene)
-			: scene(scene), isMainScene(isMainScene)
+		JGraphicDrawTarget::JGraphicDrawTarget(JScene* scene)
+			: scene(scene)
 		{ }
 		JGraphicDrawTarget::~JGraphicDrawTarget() {}
 
@@ -55,22 +54,10 @@ namespace JinEngine
 
 			if (HasDrawList(scene))
 				return false;
-
-			bool isMainScene = JResourceManager::Instance().GetMainScene()->GetGuid() == scene->GetGuid();
-			std::unique_ptr<JGraphicDrawTarget> newTarget = std::make_unique<JGraphicDrawTarget>(scene, isMainScene);
-			if (isMainScene)
-			{
-				newTarget->scene->FrameInterface()->SetAllComponentDirty();
-				drawList.push_front(std::move(newTarget));
-				const uint drawListCount = (uint)drawList.size();
-				for (uint i = 1; i < drawListCount; ++i)
-					drawList[i]->scene->FrameInterface()->SetAllComponentDirty();
-			}
-			else
-			{
-				newTarget->scene->FrameInterface()->SetAllComponentDirty();
-				drawList.push_back(std::move(newTarget));
-			}
+			 
+			std::unique_ptr<JGraphicDrawTarget> newTarget = std::make_unique<JGraphicDrawTarget>(scene);
+			newTarget->scene->FrameInterface()->SetAllComponentDirty();
+			drawList.push_back(std::move(newTarget));
 
 			return true;
 		}
@@ -181,8 +168,8 @@ namespace JinEngine
 
 			if (drawList[index]->sceneRequestor.size() == 0)
 			{
-				JScene* scene = drawList[index]->scene;
-				scene->DeActivate();
+				//JScene* scene = drawList[index]->scene;
+				//scene->DeActivate();
 			}
 		}
 		bool JGraphicDrawList::HasRequestor(JScene* scene)noexcept

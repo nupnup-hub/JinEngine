@@ -1,20 +1,22 @@
-#pragma once
-//#include"../../Core/Func/Callable/JCallable.h"
+#pragma once 
 
 namespace JinEngine
 { 
-	class JResourceObject;  
-	class JFileFactory
+	class JResourceObject;    
+	class JDirectory;
+
+	class JFileFactoryImpl
 	{
 	private:
-		friend class JResourceObject;
+		friend class JResourceObject;  
 		friend class JDirectory;
 	private:
-		using CreateFuncPtr = bool(*)(JResourceObject*);
-		using EraseFuncPtr = bool(*)(JResourceObject*);
+		using CreateFuncPtr = bool(JDirectory::*)(JResourceObject&);
+		using DestroyFuncPtr = bool(JDirectory::*)(JResourceObject&);
 	private:
-		static bool Regist(CreateFuncPtr& cPtr, EraseFuncPtr& ePtr);
-		static bool Create(JResourceObject& resource);
-		static bool Erase(JResourceObject& resource);
+		static bool Register(const CreateFuncPtr& cPtr, const DestroyFuncPtr& dPtr);
+		static bool Create(JDirectory& dir, JResourceObject& resource);
+		static bool Destroy(JDirectory& dir, JResourceObject& resource);
 	};
+	using JFFI = JFileFactoryImpl;
 }

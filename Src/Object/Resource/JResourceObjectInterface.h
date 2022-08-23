@@ -10,14 +10,14 @@
 namespace JinEngine
 {
 	class JResourceIO;
-	class JResourceManager;  
+	class JResourceManagerImpl;
 	class JResourceObject; 
 
 	class JResourceObjectInterface : public JObject , public JReferenceInterface, public JValidInterface
 	{
 	private:
 		friend class JResourceIO;
-		friend class JResourceManager; 
+		friend class JResourceManagerImpl; 
 	protected:
 		using GetTypeNameCallable = Core::JStaticCallable<std::string>;
 		using GetAvailableFormatCallable = Core::JStaticCallable<std::vector<std::string>>;
@@ -104,7 +104,7 @@ namespace JinEngine
 	protected:
 		static void RegisterTypeInfo(const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypeInterfaceFunc& rTypeIFunc);
 	protected:
-		JResourceObjectInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag);
+		JResourceObjectInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag);
 	};
 
 	using JRI = JResourceObjectInterface; 

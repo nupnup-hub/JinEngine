@@ -34,6 +34,10 @@ namespace JinEngine
 			{
 				return objectVec[index];
 			}
+			ObjectVector& GetVector()
+			{
+				return objectVec;
+			}
 			int GetIndex(Type* obj, EqualPtr equal)
 			{
 				const uint objectCount = (uint)objectVec.size();
@@ -56,7 +60,7 @@ namespace JinEngine
 				objectVec.push_back(obj);
 				return obj;
 			}
-			bool Erase(const int index)
+			bool Remove(const int index)
 			{
 				if (Get(index) != nullptr)
 				{
@@ -66,7 +70,7 @@ namespace JinEngine
 				else
 					return false;
 			}
-			int Erase(Type* obj, EqualPtr equal)noexcept
+			int Remove(Type* obj, EqualPtr equal)noexcept
 			{
 				if (obj == nullptr)
 					return -1;
@@ -81,7 +85,7 @@ namespace JinEngine
 					return -1;
 			}
 			template<typename Ret, typename ...Param>
-			int Erase(Type* obj, EqualPtr equal, JStaticCallable<Ret, Type&, Param...> afProccessCallable, Param&&... var)noexcept
+			int Remove(Type* obj, EqualPtr equal, JStaticCallable<Ret, Type&, Param...> afProccessCallable, Param&&... var)noexcept
 			{
 				if (obj == nullptr)
 					return -1;
@@ -154,7 +158,7 @@ namespace JinEngine
 				objectMap.emplace(iden, obj);
 				return obj;
 			}
-			bool Erase(Type* obj, EqualPtr equal)noexcept
+			bool Remove(Type* obj, EqualPtr equal)noexcept
 			{
 				if (obj == nullptr)
 					return false;
@@ -169,7 +173,7 @@ namespace JinEngine
 				}
 				return false;
 			}
-			bool Erase(const IdentifierType iden)noexcept
+			bool Remove(const IdentifierType iden)noexcept
 			{
 				if (objectMap.find(iden) != objectMap.end())
 				{

@@ -49,7 +49,7 @@ namespace JinEngine
 				if (allNodeCount > 0)
 				{
 					for (uint i = 0; i < allNodeCount; ++i)
-						allNode[i]->EraseDebugGameObject();
+						allNode[i]->DestroyDebugGameObject();
 				}
 			}
 		}

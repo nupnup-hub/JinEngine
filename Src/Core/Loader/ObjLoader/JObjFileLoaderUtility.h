@@ -2,7 +2,7 @@
 #include<string> 
 #include"../../../../Lib/DirectX/DirectXMesh.h" 
 #include"../../../Object/Resource/Mesh/JMeshStruct.h" 
-#include"../../../Utility/Vector.h"
+#include"../../../Utility/JVector.h"
 #include"../../JDataType.h" 
 
 namespace JinEngine

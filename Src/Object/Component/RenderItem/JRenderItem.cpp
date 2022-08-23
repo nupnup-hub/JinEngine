@@ -253,6 +253,19 @@ namespace JinEngine
 					++updateCount;
 		*/
 	}
+	void JRenderItem::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+	{
+		if (iden == GetGuid())
+			return;
+
+		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
+		{
+			if (meshGeo != nullptr && meshGeo->GetGuid() == jRobj->GetGuid())
+				SetMeshGeometry(nullptr);
+			else if (material != nullptr && material->GetGuid() == jRobj->GetGuid())
+				SetMaterial(nullptr);
+		}
+	}
 	Core::J_FILE_IO_RESULT JRenderItem::CallStoreComponent(std::wofstream& stream)
 	{
 		return StoreObject(stream, this);
@@ -315,13 +328,13 @@ namespace JinEngine
 
 		return newRenderItem;
 	}
-	void JRenderItem::RegisterFunc()
+	void JRenderItem::RegisterJFunc()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
 			return new JRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
 		};
-		auto initC = [](const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
+		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
 			return new JRenderItem(guid, objFlag, owner);
 		};
@@ -359,7 +372,7 @@ namespace JinEngine
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}
-	JRenderItem::JRenderItem(const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)
+	JRenderItem::JRenderItem(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)
 		:JRenderItemInterface(TypeName(), guid, objFlag, owner)
 	{
 		JRenderItem::startIndexLocation = 0;

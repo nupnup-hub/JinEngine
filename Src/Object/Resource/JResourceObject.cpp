@@ -8,6 +8,10 @@
 
 namespace JinEngine
 {
+	std::string JResourceObject::GetFullName()const noexcept
+	{
+		return GetName() + GetFormat();
+	}
 	std::string JResourceObject::GetPath()const noexcept
 	{
 		return directory->GetPath() + "\\" + GetName() + GetFormat();
@@ -75,13 +79,21 @@ namespace JinEngine
 		if (GetReferenceCount() == 0)
 			JObject::DeActivate();
 	}
-	JResourceObject::JResourceObject(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	void JResourceObject::Destroy()
+	{
+		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE))
+			return;
+
+		JResourceManager::Instance().ResourceRemoveInterface()->RemoveResource(*this);
+		delete this;
+	}
+	JResourceObject::JResourceObject(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		: JResourceObjectInterface(name, guid, flag), directory(directory), formatIndex(formatIndex)
 	{
-		JFileFactory::Create(*this);
+		JFFI::CreateJFile(*directory, *this);
 	}
 	JResourceObject::~JResourceObject()
-	{
-		JFileFactory::Erase(*this);
+	{ 
+		JFFI::DestroyJFile(*directory, *this);
 	}
 }

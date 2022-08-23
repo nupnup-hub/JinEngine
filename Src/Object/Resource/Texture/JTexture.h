@@ -42,9 +42,9 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JTexture* texture);
 		static JTexture* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
 		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::string& folderPath, TextureMetadata& metadata);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
-		JTexture(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const int formatIndex);
+		JTexture(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const int formatIndex);
 		~JTexture();
 	};
 

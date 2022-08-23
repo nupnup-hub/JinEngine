@@ -38,17 +38,17 @@ namespace JinEngine
 				debugGameObject->GetTransform()->SetPosition(bv.Center);
 			}
 		}
-		void JBvhNode::EraseDebugGameObject()noexcept
+		void JBvhNode::DestroyDebugGameObject()noexcept
 		{
 			if (debugGameObject != nullptr)
 			{
-				JGameObject::EraseGameObject(debugGameObject);
+				debugGameObject->Destroy();
 				debugGameObject = nullptr;
 			}
 		}
 		void JBvhNode::Clear()noexcept
 		{
-			EraseDebugGameObject();
+			DestroyDebugGameObject();
 			parent = nullptr;
 			left = nullptr;
 			right = nullptr;

@@ -396,8 +396,8 @@ namespace JinEngine
 					rootjoint.parentIndex = -1;
 					rootjoint.name = node->GetParent()->GetName();
 					rootjoint.node = node->GetParent();
-					rootjoint.max = Vector3<float>(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-					rootjoint.min = Vector3<float>(JMathHelper::Infinity, JMathHelper::Infinity, JMathHelper::Infinity);
+					rootjoint.max = JVector3<float>(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
+					rootjoint.min = JVector3<float>(JMathHelper::Infinity, JMathHelper::Infinity, JMathHelper::Infinity);
 					skeleton.joint.push_back(rootjoint);
 					++skeleton.jointCount;
 					++index;
@@ -407,8 +407,8 @@ namespace JinEngine
 				joint.parentIndex = parentIndex;
 				joint.name = node->GetName();
 				joint.node = node;
-				joint.max = Vector3<float>(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-				joint.min = Vector3<float>(JMathHelper::Infinity, JMathHelper::Infinity, JMathHelper::Infinity);
+				joint.max = JVector3<float>(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
+				joint.min = JVector3<float>(JMathHelper::Infinity, JMathHelper::Infinity, JMathHelper::Infinity);
 				joint.size = (float)node->GetSkeleton()->Size;
 
 				skeleton.joint.push_back(joint);
@@ -562,7 +562,7 @@ namespace JinEngine
 						jFbxPartMeshData.skinnedMeshData.indices32.push_back(vertexindex);
 						jFbxPartMeshData.skinnedMeshData.vertices.push_back(vertex);
 
-						Vector3 pos = Vector3<float>(positionXm[j].x, positionXm[j].y, positionXm[j].z);
+						JVector3 pos = JVector3<float>(positionXm[j].x, positionXm[j].y, positionXm[j].z);
 						for (int k = 0; k < controlPoint[controlPointIndex].blendingInfo.size(); ++k)
 						{
 							int jointIndex = controlPoint[controlPointIndex].blendingInfo[k].blendingIndex;
@@ -1447,7 +1447,7 @@ namespace JinEngine
 			//vertexPosition.y *= resizeRate;
 			//vertexPosition.z *= resizeRate;
 		}
-		void JFbxFileLoaderImpl::ResizeVertexPosition(Vector3<float>& vertexPosition)noexcept
+		void JFbxFileLoaderImpl::ResizeVertexPosition(JVector3<float>& vertexPosition)noexcept
 		{
 			//vertexPosition.x *= resizeRate;
 			//vertexPosition.y *= resizeRate;

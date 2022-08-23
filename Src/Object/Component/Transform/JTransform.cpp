@@ -245,7 +245,7 @@ namespace JinEngine
 		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
 			newTransform = new JTransform(metadata.guid, metadata.flag, owner);
 		else
-			newTransform = new JTransform(Core::MakeGuid(), (JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_INERASABLE), owner);
+			newTransform = new JTransform(Core::MakeGuid(), (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), owner);
 
 		stream >> newTransform->position.x >> newTransform->position.y >> newTransform->position.z >>
 			newTransform->rotation.x >> newTransform->rotation.y >> newTransform->rotation.z >>
@@ -254,13 +254,13 @@ namespace JinEngine
 		newTransform->SetFrameDirty();
 		return newTransform;
 	}
-	void JTransform::RegisterFunc()
+	void JTransform::RegisterJFunc()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
-			return new JTransform(Core::MakeGuid(), (JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_INERASABLE), owner);
+			return new JTransform(Core::MakeGuid(), (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), owner);
 		};
-		auto initC = [](const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
+		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
 			return new JTransform(guid, objFlag, owner);
 		};
@@ -300,7 +300,7 @@ namespace JinEngine
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}
-	JTransform::JTransform(const size_t guid, const JOBJECT_FLAG flag, JGameObject* owner)
+	JTransform::JTransform(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner)
 		:JTransformInterface(TypeName(), guid, flag, owner)
 	{
 		position = XMFLOAT3(0, 0, 0);

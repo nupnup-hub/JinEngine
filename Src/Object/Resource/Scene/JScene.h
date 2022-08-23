@@ -41,8 +41,6 @@ namespace JinEngine
 		bool isSpatialStructureActivated;
 		bool isSpatialStructureDebugActivated;
 	public:
-		bool IsAnimatorActivated()const noexcept;
-
 		JGameObject* FindGameObject(const size_t guid)noexcept;
 		JGameObject* GetRootGameObject()noexcept;
 		JGameObject* GetGameObject(const uint index)noexcept;
@@ -57,6 +55,8 @@ namespace JinEngine
 		std::string GetFormat()const noexcept final;
 		static std::vector<std::string> GetAvailableFormat()noexcept;
 
+		bool IsAnimatorActivated()const noexcept; 
+		bool IsMainScene()const noexcept;
 	public:
 		JSceneCashInterface* CashInterface() final;
 		JSceneGameObjInterface* GameObjInterface() final;
@@ -75,7 +75,7 @@ namespace JinEngine
 		std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)noexcept final;
 
 		JGameObject* AddGameObject(JGameObject& newGameObject)noexcept;
-		bool EraseGameObject(JGameObject& gameObj)noexcept final;
+		bool RemoveGameObject(JGameObject& gameObj)noexcept final;
 
 		void SetAnimation()noexcept final;
 		JCamera* SetMainCamera(JCamera* animator)noexcept final;
@@ -97,16 +97,16 @@ namespace JinEngine
 		void BuildOctree(const uint octreeSizeSquare, const float looseFactor, const bool isLooseOctree)noexcept;
 		void BuildBvh(const Core::J_BVH_BUILD_TYPE bvhBuildType, const Core::J_BVH_SPLIT_TYPE splitType)noexcept;
 		void CreateDemoGameObject()noexcept;
-		void EraseDemoGameObject()noexcept;
+		void DestroyDemoGameObject()noexcept;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JScene* scene);
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JScene* scene);
 		static JScene* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
 		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::string& folderPath, JSceneMetadata& metadata);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
-		JScene(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JScene(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JScene();
 	};
 }

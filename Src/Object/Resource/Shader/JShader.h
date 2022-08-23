@@ -14,7 +14,7 @@ namespace JinEngine
 	{
 		REGISTER_CLASS(JShader)
 	private:
-		std::unique_ptr<JShaderData>shaderData[SHADER_VERTEX_COUNT];
+		std::unique_ptr<JShaderData>shaderData[SHADER_VERTEX_COUNT]{ nullptr, nullptr };
 		J_SHADER_FUNCTION functionFlag;
 	private:
 		static std::unordered_map<J_SHADER_FUNCTION, const D3D_SHADER_MACRO> shaderFuncMacroMap;
@@ -41,12 +41,15 @@ namespace JinEngine
 		static void CompileShdaer(JShader* shader);
 		static void GetMacroVec(_Out_ std::vector<D3D_SHADER_MACRO>& outMacro, const J_SHADER_VERTEX_LAYOUT vertexLayoutFlag, const J_SHADER_FUNCTION functionFlag)noexcept;
 		static void GetInputLayout(_Out_ std::vector<D3D12_INPUT_ELEMENT_DESC>& outInputLayout, const J_SHADER_VERTEX_LAYOUT vertexLayoutFlag)noexcept;
+	private:
+		bool HasShaderData()const noexcept;
+	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JShader* shader);
 		static JShader* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
-		JShader(const std::string& name, const size_t guid, const JOBJECT_FLAG objFlag, JDirectory* directory, uint8 formatIndex);
+		JShader(const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, uint8 formatIndex);
 		~JShader();
 	};
 }

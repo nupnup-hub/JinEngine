@@ -19,7 +19,7 @@ namespace JinEngine
 			template<typename T> friend class JComponentFactoryImpl;
 		private:
 			Core::JFactory<std::string, false, JComponent*, JGameObject*> defaultFactory;
-			Core::JFactory<std::string, false, JComponent*, const size_t, const JOBJECT_FLAG, JGameObject*> initFactory;
+			Core::JFactory<std::string, false, JComponent*, const size_t, const J_OBJECT_FLAG, JGameObject*> initFactory;
 			Core::JFactory<std::string, false, JComponent*, std::wifstream&, JGameObject*> loadFactory;
 			Core::JFactory<std::string, false, JComponent*, JComponent*, JGameObject*> copyFactory;
 		private:
@@ -32,7 +32,7 @@ namespace JinEngine
 					return false;
 			}
 			template<typename Type>
-			bool Register(Core::JCallableInterface<JComponent*, const size_t, const JOBJECT_FLAG, JGameObject*>* callable)
+			bool Register(Core::JCallableInterface<JComponent*, const size_t, const J_OBJECT_FLAG, JGameObject*>* callable)
 			{
 				if constexpr (std::is_base_of_v <JComponent, Type >)
 					return initFactory.Regist(Type::TypeName(), callable);
@@ -75,7 +75,7 @@ namespace JinEngine
 				return static_cast<Type*>(defaultFactory.Invoke(Type::TypeName(), &owner));
 			}
 			template<typename Type>
-			Type* Create(size_t guid, JOBJECT_FLAG flag, JGameObject& owner)
+			Type* Create(size_t guid, J_OBJECT_FLAG flag, JGameObject& owner)
 			{
 				return static_cast<Type*>(initFactory.Invoke(Type::TypeName(), std::move(guid), std::move(flag), &owner));
 			}
@@ -97,15 +97,15 @@ namespace JinEngine
 	class JComponentFactoryImplBase
 	{
 	private:
-		friend class JGameObject;
+		friend class JGameObject; 
 	protected:
 		using DefaultPtr = JComponent * (*)(JGameObject*);
-		using InitPtr = JComponent * (*)(const size_t, const JOBJECT_FLAG, JGameObject*);
+		using InitPtr = JComponent * (*)(const size_t, const J_OBJECT_FLAG, JGameObject*);
 		using LoadPtr = JComponent * (*)(std::wifstream&, JGameObject*);
 		using CopytPtr = JComponent * (*)(JComponent*, JGameObject*);
 
 		using DefaultCallable = Core::JStaticCallable<JComponent*, JGameObject*>;
-		using InitCallable = Core::JStaticCallable<JComponent*, const size_t, const JOBJECT_FLAG, JGameObject*>;
+		using InitCallable = Core::JStaticCallable<JComponent*, const size_t, const J_OBJECT_FLAG, JGameObject*>;
 		using LoadCallable = Core::JStaticCallable<JComponent*, std::wifstream&, JGameObject*>;
 		using CopyCallable = Core::JStaticCallable<JComponent*, JComponent*, JGameObject*>;
 	private:
@@ -135,7 +135,7 @@ namespace JinEngine
 			return res;
 		}
 	private:
-		static void RegistAddStroage(AddStoragePtr addPtr)
+		static void RegisterAddStroage(AddStoragePtr addPtr)
 		{
 			static AddStorageCallable addStorage{ addPtr };
 			JComponentFactoryImplBase::addStorage = &addStorage;
@@ -155,7 +155,7 @@ namespace JinEngine
 			(*addStorage)(&owner, *res);
 			return res;
 		}
-		static T* Create(const size_t guid, const JOBJECT_FLAG flag, JGameObject& owner)
+		static T* Create(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner)
 		{
 			T* res = JCF::Instance().Create<T>(guid, flag, owner);
 			(*addStorage)(&owner, *res);

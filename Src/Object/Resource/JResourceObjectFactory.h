@@ -11,7 +11,7 @@ namespace JinEngine
 {
 	class JResourceObject;
 	class JResourceIO;
-	class JResourceManager;
+	class JResourceManagerImpl;
 	class JResourceObjectFactoryImplBase;
 	template<typename T> class JResourceObjectFactoryImpl;
 
@@ -24,7 +24,7 @@ namespace JinEngine
 			template<typename T> friend class JResourceObjectFactoryImpl;
 		private:
 			Core::JFactory<std::string, false, JResourceObject*, JDirectory*> defaultFactory;
-			Core::JFactory<std::string, false, JResourceObject*, const std::string&, const size_t, const JOBJECT_FLAG, JDirectory*, const uint8> initFactory;
+			Core::JFactory<std::string, false, JResourceObject*, const std::string&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8> initFactory;
 			Core::JFactory<std::string, false, JResourceObject*, JDirectory*, const JResourcePathData&> loadFactory;
 			Core::JFactory<std::string, false, JResourceObject*, JResourceObject*> copyFactory;
 		private:
@@ -37,7 +37,7 @@ namespace JinEngine
 					return false;
 			}
 			template<typename Type>
-			bool Register(Core::JCallableInterface<JResourceObject*, const std::string&, const size_t, const JOBJECT_FLAG, JDirectory*, const uint8>* callable)
+			bool Register(Core::JCallableInterface<JResourceObject*, const std::string&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8>* callable)
 			{
 				if constexpr (std::is_base_of_v <JResourceObject, Type >)
 					return initFactory.Regist(Type::TypeName(), callable);
@@ -68,7 +68,7 @@ namespace JinEngine
 			JResourceObject* Create(const std::string& typeName,
 				const std::string& name,
 				size_t guid,
-				JOBJECT_FLAG flag,
+				J_OBJECT_FLAG flag,
 				JDirectory& ownerDir,
 				uint8 formatIndex)
 			{
@@ -87,7 +87,7 @@ namespace JinEngine
 			template<typename Type>
 			Type* Create(const std::string& name,
 				size_t guid,
-				JOBJECT_FLAG flag,
+				J_OBJECT_FLAG flag,
 				JDirectory& ownerDir,
 				uint8 formatIndex)
 			{
@@ -112,33 +112,33 @@ namespace JinEngine
 	{
 	private:
 		friend class JResourceIO;
-		friend class JResourceManager;
+		friend class JResourceManagerImpl;
 	protected:
 		using DefaultPtr = JResourceObject * (*)(JDirectory*);
-		using InitPtr = JResourceObject * (*)(const std::string&, const size_t, const JOBJECT_FLAG, JDirectory*, const uint8);
+		using InitPtr = JResourceObject * (*)(const std::string&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8);
 		using LoadPtr = JResourceObject * (*)(JDirectory*, const JResourcePathData&);
 		using CopytPtr = JResourceObject * (*)(JResourceObject*);
 
 		using DefaultCallable = Core::JStaticCallable<JResourceObject*, JDirectory*>;
-		using InitCallable = Core::JStaticCallable<JResourceObject*, const std::string&, const size_t, const JOBJECT_FLAG, JDirectory*, const uint8>;
+		using InitCallable = Core::JStaticCallable<JResourceObject*, const std::string&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8>;
 		using LoadCallable = Core::JStaticCallable<JResourceObject*, JDirectory*, const JResourcePathData&>;
 		using CopyCallable = Core::JStaticCallable<JResourceObject*, JResourceObject*>;
 	private:
-		using AddStoragePtr = JResourceObject * (JResourceManager::*)(JResourceObject&);
-		using AddStorageCallable = Core::JMemeberCallable<JResourceManager, JResourceObject*, JResourceObject&>;
+		using AddStoragePtr = JResourceObject * (JResourceManagerImpl::*)(JResourceObject&);
+		using AddStorageCallable = Core::JMemeberCallable<JResourceManagerImpl, JResourceObject*, JResourceObject&>;
 	protected:
 		static AddStorageCallable* addStorage;
 	public:
-		static JResourceObject* Create(const std::string& typeName, JDirectory& ownerDir)
+		static JResourceObject* CreateByName(const std::string& typeName, JDirectory& ownerDir)
 		{
 			JResourceObject* res = JRF::Instance().Create(typeName, ownerDir);
 			(*addStorage)(&JResourceManager::Instance(), *res);
 			return res;
 		}
-		static JResourceObject* Create(const std::string& typeName,
+		static JResourceObject* CreateByName(const std::string& typeName,
 			const std::string& name,
 			size_t guid,
-			JOBJECT_FLAG flag,
+			J_OBJECT_FLAG flag,
 			JDirectory& ownerDir,
 			uint8 formatIndex)
 		{
@@ -168,20 +168,20 @@ namespace JinEngine
 			JRF::Instance().Register<T>(&copyCallable);
 		}
 	private:
-		static void RegistAddStroage(AddStoragePtr addPtr)
+		static void RegisterAddStroage(AddStoragePtr addPtr)
 		{
 			static AddStorageCallable addStorage{ addPtr };
 			JResourceObjectFactoryImplBase::addStorage = &addStorage;
 		}
 	};
-
+	 
 	template<typename T>
 	class JResourceObjectFactoryImpl : public JResourceObjectFactoryImplBase
 	{
 	private:
 		friend T;
 		friend class JResourceIO;
-		friend class JResourceManager;
+		friend class JResourceManagerImpl;
 	public:
 		static T* Create(JDirectory& ownerDir)
 		{
@@ -190,7 +190,7 @@ namespace JinEngine
 				(*addStorage)(&JResourceManager::Instance(), *res);
 			return res;
 		}
-		static T* Create(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex)
+		static T* Create(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex)
 		{
 			T* res = JRF::Instance().Create<T>(name, guid, flag, ownerDir, formatIndex);
 			if (res != nullptr)
@@ -241,7 +241,7 @@ namespace JinEngine
 			}
 			return res;
 		}
-		static JShader* Create(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex, J_SHADER_FUNCTION newFunc)
+		static JShader* Create(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex, J_SHADER_FUNCTION newFunc)
 		{
 			JShader* res = FindOverlapShader(newFunc);
 			if (res == nullptr)
@@ -305,7 +305,7 @@ namespace JinEngine
 			(*addStorage)(&JResourceManager::Instance(), *res);
 			return res;
 		}
-		static JSkeletonAsset* Create(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex, JSkeleton&& newSkeleton)
+		static JSkeletonAsset* Create(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex, JSkeleton&& newSkeleton)
 		{
 			JSkeletonAsset* res = JRF::Instance().Create<JSkeletonAsset>(name, guid, flag, ownerDir, formatIndex);
 			CallSetSkeleton(res, std::move(newSkeleton));
@@ -332,7 +332,7 @@ namespace JinEngine
 		{
 			(*setSkeleton)(skeletonAsset, std::move(newSkeleton));
 		}
-		static void RegisterFunc(SetSkeletonCallable& setSkeleton)
+		static void RegisterJFunc(SetSkeletonCallable& setSkeleton)
 		{
 			JResourceObjectFactoryImpl::setSkeleton = &setSkeleton;
 		}
@@ -347,4 +347,6 @@ namespace JinEngine
 	 
 	template<typename T>
 	using JRFI = JResourceObjectFactoryImpl<T>;
+
+	using JRFIB = JResourceObjectFactoryImplBase;
 }

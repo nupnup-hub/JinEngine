@@ -10,40 +10,41 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		template<typename BaseClass,
-			typename IdentifierType,
+		template<typename IdentifierType,
 			typename EVENTTYPE,
-			typename Ret,
 			typename ...Param>
-		class JEventInterface : public BaseClass
+			class JEventInterface
 		{
 		protected:
 			using Listener = JEventListener<IdentifierType, EVENTTYPE, Param...>;
-			using OnEventPtr = Ret(Listener::*)(const IdentifierType&, const EVENTTYPE&, Param...);
+			using OnEventPtr = void(Listener::*)(const IdentifierType&, const EVENTTYPE&, Param...);
 		private:
 			friend Listener;
 		public:
-			virtual JEventInterface* EvInterface()noexcept = 0;
+			virtual JEventInterface* EvInterface() = 0;
+		protected:
+			virtual ~JEventInterface() = default;
 		protected:
 			virtual bool AddEventListener(OnEventPtr ptr, Listener* listener, const IdentifierType& iden, const EVENTTYPE& eventType) = 0;
 			virtual size_t AddEventListener(OnEventPtr ptr, Listener* listener, const IdentifierType& iden, const std::vector<EVENTTYPE>& eventTypeVec) = 0;
+			virtual void AddEventNotification(const IdentifierType& iden, const EVENTTYPE& eventType, Param... var) = 0;
 			virtual void NotifyEvent(const IdentifierType& iden, const EVENTTYPE& eventType, Param... var) = 0;
-			virtual void EraseListener(const IdentifierType& iden) = 0;
-			virtual void EraseListenerEvent(const IdentifierType& iden, const EVENTTYPE& eventType) = 0;
+			virtual void RemoveListener(const IdentifierType& iden) = 0;
+			virtual void RemoveEventListener(const IdentifierType& iden, const EVENTTYPE& eventType) = 0;
 		};
 
-		template<typename BaseClass,
-			typename IdentifierType,
+		template<typename IdentifierType,
 			typename EVENTTYPE,
-			typename Ret,
 			typename ...Param>
-		class JEventManager : public JEventInterface< BaseClass, IdentifierType, EVENTTYPE, Ret, Param...>
+			class JEventManager : public JEventInterface<IdentifierType, EVENTTYPE, Param...>
 		{
 		public:
-			using Interface = JEventInterface< BaseClass, IdentifierType, EVENTTYPE, Ret, Param...>;
+			using Interface = JEventInterface<IdentifierType, EVENTTYPE, Param...>;
 			using Listener = typename Interface::Listener;
 			using OnEventPtr = typename Interface::OnEventPtr;
-			using OnEventFunctor = JFunctor<Ret, const IdentifierType&, const EVENTTYPE&, Param...>;
+			using OnEventFunctor = JFunctor<void, const IdentifierType&, const EVENTTYPE&, Param...>;
+			using NotifyFunctor = JFunctor<void, const IdentifierType&, const EVENTTYPE&, Param...>;
+			using NotifyBinder = JBindHandle<NotifyFunctor, const IdentifierType&, const EVENTTYPE&, Param...>;
 			using IdenComparePtr = bool(*)(const IdentifierType&, const IdentifierType&);
 			using IdenCompareCallable = JStaticCallable<bool, const IdentifierType&, const IdentifierType&>;
 		private:
@@ -62,6 +63,8 @@ namespace JinEngine
 			};
 		private:
 			IdenCompareCallable* idenCompare;
+			NotifyFunctor notifyFunctor;
+			std::vector<std::unique_ptr<NotifyBinder>> eventBinderVec;
 			std::unordered_map<EVENTTYPE, std::vector<std::unique_ptr<ListenerInfo>>> eventDic;
 		protected:
 			bool AddEventListener(OnEventPtr ptr, Listener* listener, const IdentifierType& iden, const EVENTTYPE& eventType)final
@@ -83,7 +86,6 @@ namespace JinEngine
 				vec->second.emplace_back(std::make_unique<ListenerInfo>(ptr, listener, iden));
 				return true;
 			}
-
 			//Res = added 1 << (0..n -1) if fail add 
 			size_t AddEventListener(OnEventPtr ptr, Listener* listener, const IdentifierType& iden, const std::vector<EVENTTYPE>& eventTypeVec)final
 			{
@@ -97,6 +99,19 @@ namespace JinEngine
 				}
 				return resBit;
 			}
+			//Push Event Queue
+			void AddEventNotification(const IdentifierType& iden, const EVENTTYPE& eventType, Param... var)final
+			{
+				eventBinderVec.emplace_back(std::make_unique<NotifyBinder>(notifyFunctor, iden, eventType, std::forward<Param>(var)...));
+			}
+			//Send Event Notification in Event Queue
+			void SendEventNotification()
+			{
+				const uint binderVecCount = (uint)eventBinderVec.size();
+				for (uint i = 0; i < binderVecCount; ++i)
+					eventBinderVec[i]->InvokeCompletelyBind();
+				eventBinderVec.clear();
+			}
 			void NotifyEvent(const IdentifierType& iden, const EVENTTYPE& eventType, Param... as)final
 			{
 				auto vec = eventDic.find(eventType);
@@ -106,7 +121,7 @@ namespace JinEngine
 				for (auto& data : vec->second)
 					data->onEvent->Invoke(iden, eventType, std::forward<Param>(as)...);
 			}
-			void EraseListener(const IdentifierType& iden)final
+			void RemoveListener(const IdentifierType& iden)final
 			{
 				for (auto& data : eventDic)
 				{
@@ -122,7 +137,7 @@ namespace JinEngine
 					}
 				}
 			}
-			void EraseListenerEvent(const IdentifierType& iden, const EVENTTYPE& eventType)final
+			void RemoveEventListener(const IdentifierType& iden, const EVENTTYPE& eventType)final
 			{
 				auto vec = eventDic.find(eventType);
 				for (uint i = 0; i < vec->second.size(); ++i)
@@ -144,6 +159,12 @@ namespace JinEngine
 				delete idenCompare;
 				eventDic.clear();
 			}
+		protected:
+			JEventManager()
+				:notifyFunctor(NotifyFunctor(&JEventManager::NotifyEvent, this))
+			{}
+		private:
+			virtual void RegistEvCallable() = 0;
 		};
 	}
 }

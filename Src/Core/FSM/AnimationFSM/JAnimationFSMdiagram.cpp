@@ -5,7 +5,6 @@
 #include"JAnimationTime.h"
 #include"../../GameTimer/JGameTimer.h"
 #include"../../../Graphic/FrameResource/JAnimationConstants.h"
-#include"../../../Window/Editor/Diagram/EditorDiagram.h"
 #include"../../../Object/Resource/Skeleton/JSkeleton.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
@@ -16,11 +15,9 @@ namespace JinEngine
 	using namespace DirectX;
 	namespace Core
 	{
-		JAnimationFSMdiagram::JAnimationFSMdiagram(const std::string& name, IJFSMconditionStorageUser* conditionStorage)
-			:JFSMdiagram(name, conditionStorage)
-		{
-			editorDiagram = std::make_unique<EditorDiagram>();
-		}
+		JAnimationFSMdiagram::JAnimationFSMdiagram(const std::string& name, const size_t guid, IJFSMconditionStorageUser* conditionStorage)
+			:JFSMdiagram(name, guid, conditionStorage)
+		{ }
 		JAnimationFSMdiagram::~JAnimationFSMdiagram() {}
 		void JAnimationFSMdiagram::Initialize(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset)noexcept
 		{
@@ -47,7 +44,7 @@ namespace JinEngine
 				nextTransition = nowState->FindNextStateTransition(animationTime);
 				if (nextTransition != nullptr)
 				{
-					size_t nextStateId = nextTransition->GetOutputId();
+					size_t nextStateId = nextTransition->GetOutputStateGuId();
 					nextState = static_cast<JAnimationFSMstate*>(GetState(nextStateId));
 					nextState->Enter(animationTime, animationShareData, srcSkeletonAsset, nextTransition->GetTargetStateOffset());
 					blender.Initialize(JGameTimer::Instance().TotalTime(), JGameTimer::Instance().TotalTime() + nextTransition->GetDurationTime());
@@ -81,37 +78,36 @@ namespace JinEngine
 		{
 			return nowState != nullptr;
 		}
-		std::vector<JAnimationFSMstate*>::const_iterator JAnimationFSMdiagram::GetAnimationFSMstateVectorHandle(_Out_ uint& stateCount)noexcept
+		JAnimationFSMstate* JAnimationFSMdiagram::GetState(const size_t stateGuid)noexcept
 		{
-			stateCount = (uint)stateCash.size();
-			return stateCash.cbegin();
+			return GetState(stateGuid);
 		}
-		EditorDiagram* JAnimationFSMdiagram::GetEditorDiagram()noexcept
+		std::vector<JAnimationFSMstate*>& JAnimationFSMdiagram::GetStateVec()noexcept
 		{
-			return editorDiagram.get();
+			return stateCash;
 		}
-		void JAnimationFSMdiagram::SetStateName(const std::string& oldName, const std::string& newName)
+		void JAnimationFSMdiagram::SetStateName(const size_t stateGuid, const std::string& newName)noexcept
 		{
-			JFSMdiagram::SetStateName(oldName, newName);
+			JFSMdiagram::SetStateName(stateGuid, newName);
 		}
-		void JAnimationFSMdiagram::SetAnimationClip(const std::string& stateName, JAnimationClip* clip)
+		void JAnimationFSMdiagram::SetAnimationClip(const size_t stateGuid, JAnimationClip* clip)noexcept
 		{
-			JFSMstate* state = GetState(stateName);
+			JFSMstate* state = GetState(stateGuid);
 			JAnimationFSMstate* aniFsm = static_cast<JAnimationFSMstate*>(state);
 			if (aniFsm->GetStateType() == J_ANIMATION_STATE_TYPE::CLIP)
 				static_cast<JAnimationFSMstateClip*>(state)->SetClip(clip);
 		}
-		void JAnimationFSMdiagram::SetTransitionCondition(const std::string& stateName, const std::string& outputStateName, const std::string& newConditionName, const uint oldConditionIndex)noexcept
+		void JAnimationFSMdiagram::SetTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuid, const size_t conditionGuid, const uint conditionIndex)noexcept
 		{
-			JFSMdiagram::SetTransitionCondition(stateName, outputStateName, newConditionName, oldConditionIndex);
+			JFSMdiagram::SetTransitionCondition(inputStateGuid, outputStateGuid, conditionGuid, conditionIndex);
 		}
-		void JAnimationFSMdiagram::SetTransitionCondtionOnValue(const std::string& stateName, const std::string& outputStateName, const uint conditionIndex, const float value)noexcept
+		void JAnimationFSMdiagram::SetTransitionCondtionOnValue(const size_t inputStateGuid, const size_t outputStateGuid, const uint conditionIndex, const float value)noexcept
 		{
-			JFSMdiagram::SetTransitionCondtionOnValue(stateName, outputStateName, conditionIndex, value);
+			JFSMdiagram::SetTransitionCondtionOnValue(inputStateGuid, outputStateGuid, conditionIndex, value);
 		}
-		JAnimationFSMstate* JAnimationFSMdiagram::AddAnimationClipState()noexcept
+		JAnimationFSMstate* JAnimationFSMdiagram::CreateAnimationClipState(const std::string& name, const size_t guid)noexcept
 		{
-			std::unique_ptr<JAnimationFSMstateClip> stateClip = std::make_unique<JAnimationFSMstateClip>();
+			std::unique_ptr<JAnimationFSMstateClip> stateClip = std::make_unique<JAnimationFSMstateClip>(name, guid);
 			JFSMstate* fsmCash = AddState(std::move(stateClip));
 			if (fsmCash != nullptr)
 			{
@@ -122,48 +118,42 @@ namespace JinEngine
 			else
 				return  nullptr;
 		}
-		JAnimationFSMtransition* JAnimationFSMdiagram::AddAnimationTransition(const std::string& stateName, const std::string& outputStateName)noexcept
+		JAnimationFSMtransition* JAnimationFSMdiagram::CreateAnimationTransition(const size_t inputStateGuid, const size_t outputStateGuid)noexcept
 		{
-			size_t outputId;
-			if (GetStateId(outputStateName, outputId))
-			{
-				std::unique_ptr<JAnimationFSMtransition> animationTransition = std::make_unique< JAnimationFSMtransition>(outputId);
-				JFSMtransition* fsmCash = AddTransition(stateName, std::move(animationTransition));
-				if (fsmCash != nullptr)
-					return static_cast<JAnimationFSMtransition*>(fsmCash);
-				else
-					return nullptr;
-			}
+			std::unique_ptr<JAnimationFSMtransition> animationTransition = std::make_unique< JAnimationFSMtransition>(outputStateGuid);
+			JFSMtransition* fsmCash = AddTransition(inputStateGuid, std::move(animationTransition));
+			if (fsmCash != nullptr)
+				return static_cast<JAnimationFSMtransition*>(fsmCash);
 			else
 				return nullptr;
 		}
-		bool JAnimationFSMdiagram::EraseAnimationState(const std::string& stateName)noexcept
+		bool JAnimationFSMdiagram::DestroyAnimationState(const size_t stateGuid)noexcept
 		{
-			JFSMstate* tarState = GetState(stateName);
+			JFSMstate* tarState = GetState(stateGuid);
 			if (tarState != nullptr)
 			{
-				const size_t stateId = tarState->GetId();
+				const size_t stateId = tarState->GetGuid();
 				const uint cashCount = (uint)stateCash.size();
 				for (uint i = 0; i < cashCount; ++i)
 				{
-					if (stateCash[i]->GetId() == stateId)
+					if (stateCash[i]->GetGuid() == stateId)
 					{
 						stateCash.erase(stateCash.begin() + i);
 						break;
 					}
 				}
 				for (uint i = 0; i < cashCount - 1; ++i)
-					stateCash[i]->EraseTransition(tarState->GetId());
+					stateCash[i]->RemoveTransition(tarState->GetGuid());
 
-				JFSMdiagram::EraseState(stateId);
+				JFSMdiagram::DestroyState(stateId);
 				return true;
 			}
 			else
 				return false;
 		}
-		bool JAnimationFSMdiagram::EraseAnimationTransition(const std::string& stateName, const std::string& outputStateName)noexcept
+		bool JAnimationFSMdiagram::DestroyAnimationTransition(const size_t inputStateGuid, const size_t outputStateGuid)noexcept
 		{
-			return JFSMdiagram::EraseTransition(stateName, outputStateName);
+			return JFSMdiagram::RemoveTransition(inputStateGuid, outputStateGuid);
 		}
 		void JAnimationFSMdiagram::Clear()noexcept
 		{

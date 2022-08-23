@@ -32,7 +32,7 @@ namespace JinEngine
 				if (res == ContainmentType::CONTAINS)
 				{
 					if (parentNode != nullptr)
-						parentNode->EraseInnerGameObject(gameObj);
+						parentNode->RemoveInnerGameObject(gameObj);
 					innerGameObject.push_back(gameObj);
 					return true;
 				}
@@ -44,7 +44,7 @@ namespace JinEngine
 				if (res == ContainmentType::CONTAINS)
 				{
 					if (parentNode != nullptr)
-						parentNode->EraseInnerGameObject(gameObj);
+						parentNode->RemoveInnerGameObject(gameObj);
 					innerGameObject.push_back(gameObj);
 					return true;
 				}
@@ -77,11 +77,11 @@ namespace JinEngine
 				debugGameObject->GetTransform()->SetPosition(boundingBox.Center);
 			}
 		}
-		void JOctreeNode::EraseDebugGameObject()noexcept
+		void JOctreeNode::DestroyDebugGameObject()noexcept
 		{
 			if (debugGameObject != nullptr)
 			{
-				JGameObject::EraseGameObject(debugGameObject);
+				debugGameObject->Destroy();
 				debugGameObject = nullptr;
 			}
 		}
@@ -92,7 +92,7 @@ namespace JinEngine
 			{
 				innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 				innerGameObject[i] = nullptr;
-				EraseDebugGameObject();
+				DestroyDebugGameObject();
 			}
 
 			if (childrenNode.size() != 0)
@@ -163,7 +163,7 @@ namespace JinEngine
 		{
 			return parentNode == nullptr;
 		}
-		bool JOctreeNode::EraseInnerGameObject(JGameObject* gameObject)noexcept
+		bool JOctreeNode::RemoveInnerGameObject(JGameObject* gameObject)noexcept
 		{
 			const size_t tarGuid = gameObject->GetGuid();
 			const uint innerGameObjectCount = (uint)innerGameObject.size();

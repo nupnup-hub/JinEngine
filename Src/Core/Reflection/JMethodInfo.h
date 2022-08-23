@@ -9,9 +9,13 @@ namespace JinEngine
 	{
 		class JCallableBase;
 		class JTypeInfo;
+		template<typename Type, typename Pointer, Pointer ptr, typename Func> class JMethodInfoRegister;
+
 		class JMethodInfo
 		{
+		private:
 			friend class JTypeInfo;
+			template<typename Type, typename Pointer, Pointer ptr, typename Func> friend class JMethodInfoRegister;
 		private:
 			const std::string name;
 			const std::string identificationName;
@@ -22,18 +26,6 @@ namespace JinEngine
 			JTypeInfo* ownerType; 
 
 		public:
-			template<typename Ret, typename ...Param>
-			JMethodInfo(const JMethodInfoInitializer<Ret, Param...>& initializer)
-				:name(initializer.name),
-				identificationName(initializer.identificationName),
-				returnHint(initializer.returnHint),
-				parameterHint(initializer.parameterHint), 
-				callHandle(initializer.callHandle),
-				hintHandle(initializer.hintHandle),
-				ownerType(initializer.ownerType)
-			{ 
-			}
-
 			std::string Name()const noexcept;
 			std::string ReturnFieldName()const noexcept; 
 			std::string ParameterFieldName()const noexcept;
@@ -66,6 +58,18 @@ namespace JinEngine
 			{
 				return (*static_cast<JCallableInterface<Ret, Param...>*>(callHandle))(object, Forward(parameterHint[Is], std::forward<Param>(var))...);
 			}
+		private:
+			template<typename Ret, typename ...Param>
+			JMethodInfo(const JMethodInfoInitializer<Ret, Param...>& initializer)
+				:name(initializer.name),
+				identificationName(initializer.identificationName),
+				returnHint(initializer.returnHint),
+				parameterHint(initializer.parameterHint),
+				callHandle(initializer.callHandle),
+				hintHandle(initializer.hintHandle),
+				ownerType(initializer.ownerType)
+			{}
+			~JMethodInfo() = default;
 		};
 	}
 }

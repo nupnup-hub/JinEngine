@@ -49,13 +49,13 @@ namespace JinEngine
 		//추가필요
 		return nullptr;
 	}
-	void JBehavior::RegisterFunc()
+	void JBehavior::RegisterJFunc()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
 			return new JBehavior(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
 		};
-		auto initC = [](const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
+		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
 			return new JBehavior(guid, objFlag, owner);
 		};
@@ -80,7 +80,7 @@ namespace JinEngine
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, JCI::CTypeInterfaceFunc{});
 	}
-	JBehavior::JBehavior(const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)
+	JBehavior::JBehavior(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)
 		:JComponent(TypeName(), guid, objFlag, owner)
 	{}
 	JBehavior::~JBehavior() {}

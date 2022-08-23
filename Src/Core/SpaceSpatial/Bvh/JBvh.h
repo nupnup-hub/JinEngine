@@ -37,7 +37,7 @@ namespace JinEngine
 			void Clear()noexcept;
 			void UpdateGameObject(const size_t guid)noexcept;
 			void AddGameObject(JGameObject* newGameObject)noexcept;
-			void EraeGameObject(JGameObject* gameObj)noexcept; 
+			void RemoveGameObject(JGameObject* gameObj)noexcept; 
 		private:
 			DirectX::BoundingBox GetRootBoundingBox()const noexcept;
 			int GetMaximumDimension(const DirectX::BoundingBox& box)const noexcept;
@@ -55,7 +55,7 @@ namespace JinEngine
 
 			void ReBuildBvh(const uint nodeNumber, JGameObject* additionalGameObj = nullptr)noexcept;
 			void ClearBvhNode(const uint nodeNumber)noexcept;
-			void EraseBvhNode(const uint nodeNumber)noexcept;
+			void DestroyBvhNode(const uint nodeNumber)noexcept;
 		};
 	}
 }

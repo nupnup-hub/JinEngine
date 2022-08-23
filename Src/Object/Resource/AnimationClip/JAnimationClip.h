@@ -36,7 +36,7 @@ namespace JinEngine
 		size_t oriSkeletoHash;
 		uint32 clipLength;
 		float framePerSecond;
-		bool isLooping;  
+		bool isLooping = false;
 		bool matchClipSkeleton = false;
 	public:  
 		JSkeletonAsset* GetClipSkeletonAsset()noexcept;
@@ -67,17 +67,19 @@ namespace JinEngine
 	private:
 		void StuffResource() final;
 		void ClearResource() final;
-		bool IsValidResource()const noexcept final;
+		bool IsValid()const noexcept final;
 		bool ReadFbxData(); 
+	private:
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JAnimationClip* clip);
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JAnimationClip* clip);
 		static JAnimationClip* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
 		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::string& folderPath, AnimationClipMetadata& metadata);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
-		JAnimationClip(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JAnimationClip(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JAnimationClip();
 	};
 }

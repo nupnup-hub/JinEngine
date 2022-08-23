@@ -7,21 +7,21 @@
 
 namespace JinEngine
 {
-	JCamera* JComponentFactoryUtility::CreateCamera(const size_t guid, const JOBJECT_FLAG flag, JGameObject& owner, bool isMainCam)
+	JCamera* JComponentFactoryUtility::CreateCamera(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner, bool isMainCam)
 	{   
 		JCamera* newCamera = JCFI<JCamera>::Create(guid, flag, owner);
 		if (isMainCam)
 			newCamera->SetMainCamera();
 		return newCamera;
 	}
-	JLight* JComponentFactoryUtility::CreateLight(const size_t guid, const JOBJECT_FLAG flag, JGameObject& owner, J_LIGHT_TYPE type)
+	JLight* JComponentFactoryUtility::CreateLight(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner, J_LIGHT_TYPE type)
 	{ 
 		JLight* newLight = JCFI<JLight>::Create(guid, flag, owner);
 		newLight->SetLightType(type);
 		return newLight;
 	}
 	JRenderItem* JComponentFactoryUtility::CreateRenderItem(const size_t guid,
-		const JOBJECT_FLAG flag,
+		const J_OBJECT_FLAG flag,
 		JGameObject& owner,
 		JMeshGeometry* mesh,
 		JMaterial* mat,

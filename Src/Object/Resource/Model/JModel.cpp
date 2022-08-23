@@ -14,6 +14,7 @@
 #include"../../Component/RenderItem/JRenderItem.h"  
 #include"../../Component/JComponentFactory.h"
 #include"../../Component/JComponentFactoryUtility.h"
+#include"../../Directory/JDirectory.h"
 #include"../../Directory/JDirectoryFactory.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Utility/JCommonUtility.h" 
@@ -23,9 +24,9 @@
 
 namespace JinEngine
 {
-	const JModelAttribute* JModel::GetModelData()const noexcept
+	JSkeletonAsset* JModel::GetSkeletonAsset()noexcept
 	{
-		return modelAttribute.get();
+		return skeletonAsset != nullptr ? skeletonAsset : nullptr;
 	}
 	const uint JModel::GetTotalMeshCount()const noexcept
 	{
@@ -55,25 +56,6 @@ namespace JinEngine
 	{
 		return modelAttribute->skletonBSphere.Radius;
 	}
-	JScene* JModel::GetModelScene()const noexcept
-	{
-		return modelScene;
-	}
-	JGameObject* JModel::GetModelRoot()const noexcept
-	{
-		return modelRoot;
-	}
-	JGameObject* JModel::GetSkeletonRoot()const noexcept
-	{
-		return skeletonRoot;
-	}
-	JSkeletonAsset* JModel::GetSkeletonAsset()const noexcept
-	{
-		if (skeletonAsset != nullptr)
-			return skeletonAsset;
-		else
-			return nullptr;
-	}
 	J_RESOURCE_TYPE JModel::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
@@ -87,6 +69,22 @@ namespace JinEngine
 		static std::vector<std::string> format{ ".model", ".obj", ".fbx", };
 		return format;
 	}
+	JModelSceneInterface* JModel::ModelSceneInterface()
+	{
+		return this;
+	}
+	JScene* JModel::GetModelScene()noexcept
+	{
+		return modelScene;
+	}
+	JGameObject* JModel::GetModelRoot()noexcept
+	{
+		return modelRoot;
+	}
+	JGameObject* JModel::GetSkeletonRoot()noexcept
+	{
+		return skeletonRoot;
+	}
 	void JModel::DoActivate()noexcept
 	{
 		JResourceObject::DoActivate();
@@ -99,7 +97,7 @@ namespace JinEngine
 	}
 	void JModel::StuffResource()
 	{
-		if (!JValidInterface::IsValidResource())
+		if (!JValidInterface::IsValid())
 		{
 			switch (formatIndex)
 			{
@@ -128,9 +126,16 @@ namespace JinEngine
 	}
 	void JModel::ClearResource()
 	{
-		if (JValidInterface::IsValidResource())
+		if (JValidInterface::IsValid())
 		{
-			JResourceManager::Instance().EraseResource(modelScene);
+			const bool preIgnore = IsIgnoreUndestroyableFlag();
+			if (!preIgnore)
+				SetIgnoreUndestroyableFlag(true);
+			modelScene->BeginDestroy();
+			if (!preIgnore)
+				SetIgnoreUndestroyableFlag(false);
+
+			modelScene = nullptr;
 			modelRoot = nullptr;
 			skeletonRoot = nullptr;
 			meshPartCash.clear();
@@ -141,7 +146,7 @@ namespace JinEngine
 	}
 	bool JModel::IsValidResource()const noexcept
 	{
-		return JValidInterface::IsValidResource() && (skeletonAsset != nullptr);
+		return JValidInterface::IsValid() && (skeletonAsset != nullptr);
 	}
 	bool JModel::ReadObjModelData()
 	{
@@ -158,8 +163,7 @@ namespace JinEngine
 
 		if (JObjFileLoader::Instance().LoadObjFile(pathData.wstrPath, objMeshData, objMatData, modelAttribute))
 		{	 
-			const JOBJECT_FLAG objRFlag = (JOBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_INERASABLE |
-				OBJECT_FLAG_UNEDITABLE);
+			const J_OBJECT_FLAG objRFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
 
 			using SetTexture = void(JMaterial::*)(JTexture*);
 			SetTexture setTexturePtr;
@@ -237,7 +241,7 @@ namespace JinEngine
 			JModel::modelAttribute = std::make_unique<JModelAttribute>(modelAttribute);
 			modelScene = JRFI<JScene>::Create(GetDirectory()->MakeUniqueFileName(GetDefaultName<JScene>()),
 				Core::MakeGuid(),
-				(JOBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE),
+				(J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE),
 				*GetDirectory(),
 				GetInvalidFormatIndex());
 
@@ -289,8 +293,8 @@ namespace JinEngine
 			const uint meshCount = (uint)jFbxPartMeshData.size();
 			modelPart.reserve(jFbxPartMeshData.size());
 
-			const JOBJECT_FLAG meshflag = (JOBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE);
-			const JOBJECT_FLAG matflag = (JOBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE);
+			const J_OBJECT_FLAG meshflag = (J_OBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE);
+			const J_OBJECT_FLAG matflag = (J_OBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE);
 
 			for (uint i = 0; i < meshCount; ++i)
 			{
@@ -327,19 +331,19 @@ namespace JinEngine
 					if (oldSkeletonAsset->GetSkeleton()->IsSame(newSkeleton))
 					{
 						skeletonAsset = oldSkeletonAsset;
-						OnResourceReference(*skeletonAsset);
 						break;
 					}
 				}
 
 				if (skeletonAsset == nullptr)
 					skeletonAsset = JRFI<JSkeletonAsset>::Create(*GetDirectory(), std::move(newSkeleton));
+				OnResourceReference(*skeletonAsset);
 			}
 
 			JModel::modelAttribute = std::make_unique<JModelAttribute>(modelAttribute);
 			modelScene = JRFI<JScene>::Create(GetDirectory()->MakeUniqueFileName(GetDefaultName<JScene>()),
 				Core::MakeGuid(),
-				(JOBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE),
+				(J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE),
 				*GetDirectory(),
 				GetInvalidFormatIndex());
 
@@ -391,6 +395,20 @@ namespace JinEngine
 		}
 		else
 			return false;
+	}
+	void JModel::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+	{
+		if (iden == GetGuid())
+			return;
+
+		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
+		{
+			if (skeletonAsset != nullptr && skeletonAsset->GetGuid() == jRobj->GetGuid())
+			{
+				OffResourceReference(*skeletonAsset);
+				skeletonAsset = nullptr;
+			}
+		}
 	}
 	std::vector<JGameObject*>::const_iterator JModel::GetMeshPartVectorHandle(uint& count)noexcept
 	{
@@ -458,13 +476,21 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, pathData.folderPath, metadata);
 		stream.close();
 
-		JModel* newModel;
-		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-			newModel = new JModel(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JModel>(pathData.format));
-		else
-			newModel = new JModel(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JModel>(pathData.format));
+		JModel* newModel = nullptr;
+		if (directory->HasFile(pathData.fullName))
+			newModel = JResourceManager::Instance().GetResourceByPath<JModel>(pathData.strPath);
 
-		if (pathData.format == ".fbx")
+		if (newModel == nullptr)
+		{
+			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+				newModel = new JModel(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JModel>(pathData.format));
+			else
+				newModel = new JModel(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JModel>(pathData.format));
+		}
+
+		if (newModel->IsValid())
+			return newModel;
+		else if (pathData.format == ".fbx")
 		{
 			if (newModel->ReadFbxModelData())
 			{
@@ -505,7 +531,7 @@ namespace JinEngine
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	void JModel::RegisterFunc()
+	void JModel::RegisterJFunc()
 	{
 		auto defaultC = [](JDirectory* owner) ->JResourceObject*
 		{
@@ -515,7 +541,7 @@ namespace JinEngine
 				owner,
 				JResourceObject::GetDefaultFormatIndex());
 		};
-		auto initC = [](const std::string& name, const size_t guid, const JOBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
 			return  new JModel(name, guid, objFlag, directory, formatIndex);
 		};
@@ -591,7 +617,7 @@ namespace JinEngine
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
-	JModel::JModel(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	JModel::JModel(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		:JModelInterface(name, guid, flag, directory, formatIndex)
 	{}
 	JModel::~JModel() {}

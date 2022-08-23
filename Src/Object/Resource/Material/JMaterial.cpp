@@ -3,6 +3,7 @@
 #include"../Texture/JTexture.h"
 #include"../JResourceManager.h" 
 #include"../JResourceObjectFactory.h"
+#include"../../Directory/JDirectory.h"
 #include"../../../Application/JApplicationVariable.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Graphic/FrameResource/JMaterialConstants.h"
@@ -272,7 +273,7 @@ namespace JinEngine
 	}
 	void JMaterial::SetNewFunctionFlag(const J_SHADER_FUNCTION newFunc)
 	{
-		if (shader->GetShaderFunctionFlag() != newFunc)
+		if (shader == nullptr || shader->GetShaderFunctionFlag() != newFunc)
 			SetShader(JRFI<JShader>::Create(*JResourceManager::Instance().GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath()), newFunc));
 	}
 	void JMaterial::SetShader(JShader* newShader)noexcept
@@ -280,9 +281,11 @@ namespace JinEngine
 		if (shader != nullptr)
 			OffResourceReference(*shader);
 
-		if (shader != nullptr && GetResourceReferenceCount(*shader) == 0 && (shader->GetFlag() & JOBJECT_FLAG::OBJECT_FLAG_INERASABLE) == 0)
-			JResourceManager::Instance().EraseResource(shader);
-
+		if (shader != nullptr && GetResourceReferenceCount(*shader) == 0 && (shader->GetFlag() & J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) == 0)
+		{
+			shader->BeginDestroy();
+			shader = nullptr;
+		}
 		shader = newShader;
 
 		if (shader != nullptr)
@@ -324,7 +327,7 @@ namespace JinEngine
 	}
 	void JMaterial::StuffResource()
 	{
-		if (!IsValidResource())
+		if (!IsValid())
 		{
 			if (ReadMateiralData())
 				SetValid(true);
@@ -332,7 +335,7 @@ namespace JinEngine
 	}
 	void JMaterial::ClearResource()
 	{
-		if (IsValidResource())
+		if (IsValid())
 		{
 			SetShader(nullptr);
 			SetAlbedoMap(nullptr);
@@ -345,7 +348,7 @@ namespace JinEngine
 	}
 	bool JMaterial::ReadMateiralData()
 	{
-		std::wifstream stream;  
+		std::wifstream stream;
 		stream.open(GetWPath(), std::ios::in | std::ios::binary);
 
 		if (stream.is_open())
@@ -415,6 +418,26 @@ namespace JinEngine
 		}
 		else
 			return false;
+	}
+	void JMaterial::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+	{
+		if (iden == GetGuid())
+			return;
+
+		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
+		{
+			const size_t txtGuid = jRobj->GetGuid();
+			if (albedoMap != nullptr && albedoMap->GetGuid() == txtGuid)
+				SetAlbedoMap(nullptr);
+			else if (normalMap != nullptr && normalMap->GetGuid() == txtGuid)
+				SetNormalMap(nullptr);
+			else if (heightMap != nullptr && heightMap->GetGuid() == txtGuid)
+				SetHeightMap(nullptr);
+			else if (roughnessMap != nullptr && roughnessMap->GetGuid() == txtGuid)
+				SetRoughnessMap(nullptr);
+			else if (ambientOcclusionMap != nullptr && ambientOcclusionMap->GetGuid() == txtGuid)
+				SetAmbientOcclusionMap(nullptr);
+		}
 	}
 	J_SHADER_FUNCTION JMaterial::CalculateShaderFunc()noexcept
 	{
@@ -557,7 +580,7 @@ namespace JinEngine
 	{
 		if (directory == nullptr)
 			return nullptr;
-		 
+
 		if (!JResourceObject::IsResourceFormat<JMaterial>(pathData.format))
 			return nullptr;
 
@@ -570,13 +593,21 @@ namespace JinEngine
 		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
 		if (stream.is_open())
 		{
-			JMaterial* newMaterial;
-			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-				newMaterial = new JMaterial(pathData.name, metadata.guid, (JOBJECT_FLAG)metadata.flag, directory, GetFormatIndex<JMaterial>(pathData.format));
-			else
-				newMaterial = new JMaterial(pathData.name, Core::MakeGuid(), JOBJECT_FLAG::OBJECT_FLAG_NONE, directory, GetFormatIndex<JMaterial>(pathData.format));
+			JMaterial* newMaterial = nullptr;
+			if (directory->HasFile(pathData.fullName))
+				newMaterial = JResourceManager::Instance().GetResourceByPath<JMaterial>(pathData.strPath);
 
-			if (newMaterial->ReadMateiralData())
+			if (newMaterial == nullptr)
+			{
+				if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+					newMaterial = new JMaterial(pathData.name, metadata.guid, (J_OBJECT_FLAG)metadata.flag, directory, GetFormatIndex<JMaterial>(pathData.format));
+				else
+					newMaterial = new JMaterial(pathData.name, Core::MakeGuid(), J_OBJECT_FLAG::OBJECT_FLAG_NONE, directory, GetFormatIndex<JMaterial>(pathData.format));
+			}
+
+			if (newMaterial->IsValid())
+				return newMaterial;
+			else if (newMaterial->ReadMateiralData())
 			{
 				newMaterial->SetValid(true);
 				return newMaterial;
@@ -586,12 +617,11 @@ namespace JinEngine
 				delete newMaterial;
 				return nullptr;
 			}
-		 
 		}
 		else
 			return nullptr;
 	}
-	void JMaterial::RegisterFunc()
+	void JMaterial::RegisterJFunc()
 	{
 		auto defaultC = [](JDirectory* owner) ->JResourceObject*
 		{
@@ -601,7 +631,7 @@ namespace JinEngine
 				owner,
 				JResourceObject::GetDefaultFormatIndex());
 		};
-		auto initC = [](const std::string& name, const size_t guid, const JOBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
 			return  new JMaterial(name, guid, objFlag, directory, formatIndex);
 		};
@@ -632,15 +662,17 @@ namespace JinEngine
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 		static SetBuffIndexCallable setBuffIndexCallable{ setBuffIndexLam };
 
-		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SHADER}, false, true, true};
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SHADER}, false, true, true };
 		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
-		static RTypeInterfaceFunc rTypeiFunc{&setFrameDirtyCallable, &setBuffIndexCallable };
-		
-		RegisterTypeInfo(rTypeHint, rTypeCFunc, rTypeiFunc);		 
+		static RTypeInterfaceFunc rTypeiFunc{ &setFrameDirtyCallable, &setBuffIndexCallable };
+
+		RegisterTypeInfo(rTypeHint, rTypeCFunc, rTypeiFunc);
 	}
-	JMaterial::JMaterial(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	JMaterial::JMaterial(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		: JMaterialInterface(name, guid, flag, directory, formatIndex)
-	{}
+	{
+		SetNewFunctionFlag(SHADER_FUNCTION_NONE);
+	}
 	JMaterial::~JMaterial()
 	{}
 }

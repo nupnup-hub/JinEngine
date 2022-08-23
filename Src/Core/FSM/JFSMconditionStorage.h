@@ -19,15 +19,16 @@ namespace JinEngine
 			std::vector<IJFSMconditionStorage*>strorageUser;
 			static constexpr uint maxNumberOffCondition = 100;
 		public:
+			std::string GetConditionUniqueName(const std::string& initName)const noexcept;
 			uint GetConditionCount()const noexcept;
 			uint GetConditionMaxCount()const noexcept;
-			JFSMcondition* GetCondition(const uint index)noexcept;
-			JFSMcondition* GetCondition(const std::string& name)noexcept; 
-			void SetConditionName(const std::string& oldName, const std::string& newName)noexcept;
-			void SetConditionValueType(const std::string& conditionName, const J_FSMCONDITION_VALUE_TYPE valueType)noexcept;
+			JFSMcondition* GetCondition(const size_t guid)noexcept;
+			JFSMcondition* GetConditionVec()noexcept;
+			void SetConditionName(const size_t guid, const std::string& newName)noexcept;
+			void SetConditionValueType(const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType)noexcept;
 
-			JFSMcondition* AddConditionValue()noexcept;
-			bool EraseCondition(const std::string& conditionName)noexcept;
+			JFSMcondition* AddCondition(const std::string& name, const size_t guid)noexcept;
+			bool RemoveCondition(const size_t guid)noexcept;
 		};
 	}
 }

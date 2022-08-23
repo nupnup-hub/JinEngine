@@ -21,7 +21,7 @@ namespace JinEngine
 	JResourceIO::~JResourceIO() {}
 	void JResourceIO::LoadEngineDirectory(JDirectory* engineRootDir)
 	{
-		SearchDirectory(engineRootDir, true, (JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_INERASABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE));
+		SearchDirectory(engineRootDir, true, (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE));
 	}
 	void JResourceIO::LoadProjectDirectory(JDirectory* projectRootDir)
 	{
@@ -32,11 +32,11 @@ namespace JinEngine
 			JApplicationVariable::GetProjectContentPath()
 		};
 
-		std::vector<JOBJECT_FLAG> flag
+		std::vector<J_OBJECT_FLAG> flag
 		{
-			(JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_INERASABLE),
-			(JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_INERASABLE),
-			(JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_INERASABLE)
+			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE),
+			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE),
+			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE)
 		};
 
 		std::vector<JDirectory*> defaultFolderCash;
@@ -57,9 +57,9 @@ namespace JinEngine
 		// defaultFolderCash[1] = projectLibraryDir
 		// defaultFolderCash[2] = projectContentsDir
 
-		const JOBJECT_FLAG projectOtherDir = (JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_INERASABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE);
-		const JOBJECT_FLAG projectContentDir = (JOBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_INERASABLE | OBJECT_FLAG_UNEDITABLE);
-		const JOBJECT_FLAG userDefineDir = OBJECT_FLAG_NONE;
+		const J_OBJECT_FLAG projectOtherDir = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE);
+		const J_OBJECT_FLAG projectContentDir = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
+		const J_OBJECT_FLAG userDefineDir = OBJECT_FLAG_NONE;
 
 		SearchDirectory(defaultFolderCash[0], true, projectOtherDir);
 		SearchDirectory(defaultFolderCash[1], true, projectOtherDir);
@@ -90,7 +90,7 @@ namespace JinEngine
 				SearchResource(rInfo[i].thisType, searchRootDir);
 		}
 	}
-	void JResourceIO::SearchDirectory(JDirectory* parentDir, bool searchDefaultFolder, const JOBJECT_FLAG dirFlag)
+	void JResourceIO::SearchDirectory(JDirectory* parentDir, bool searchDefaultFolder, const J_OBJECT_FLAG dirFlag)
 	{
 		WIN32_FIND_DATA  findFileData;
 		HANDLE hFindFile = FindFirstFile((parentDir->GetWPath() + L"\\*.*").c_str(), &findFileData);
@@ -137,7 +137,7 @@ namespace JinEngine
 				{
 					JResourcePathData pathData(directory->GetWPath() + L"\\" + findFileData.cFileName);
 					if (JRI::CallIsValidFormat(rType, pathData.format))
-						JRFI<JResourceObject>::LoadByName(JRI::CallGetTypeName(rType), *directory, pathData);
+						JRFIB::LoadByName(JRI::CallGetTypeName(rType), *directory, pathData);
 				}
 			}
 			bResult = FindNextFile(hFindFile, &findFileData);

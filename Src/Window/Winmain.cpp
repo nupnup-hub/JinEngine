@@ -4,11 +4,20 @@
 #include<string> 
 using namespace JinEngine;
  
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance , PSTR pCmdLine, int nShowCm)
+class ApplicationStarter
+{
+public:
+	static void Start(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, int nShowCm)
+	{
+		Application::JApplication{ hInstance, pCmdLine }.Run();
+	}
+};
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, int nShowCm)
 {  
 	try
 	{
-		Application::JApplication{ hInstance, pCmdLine }.Run();
+		ApplicationStarter::Start(hInstance, hPrevInstance, pCmdLine, nShowCm); 
 	}
 	catch (const Core::JException& e)
 	{ 		

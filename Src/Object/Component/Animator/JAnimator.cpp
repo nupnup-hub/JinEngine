@@ -15,13 +15,23 @@ namespace JinEngine
 		if (animationController != nullptr)
 			animationController->Initialize(animationTimes, skeletonAsset);
 	}
-	JAnimationController* JAnimator::GetAnimatorController()const noexcept
-	{
-		return animationController;
-	} 
 	JSkeletonAsset* JAnimator::GetSkeletonAsset()noexcept
 	{
 		return skeletonAsset;
+	}
+	JAnimationController* JAnimator::GetAnimatorController()const noexcept
+	{
+		return animationController;
+	}
+	void JAnimator::SetSkeletonAsset(JSkeletonAsset* newSkeletonAsset)noexcept
+	{
+		if (skeletonAsset != nullptr)
+			OffResourceReference(*skeletonAsset);
+		skeletonAsset = newSkeletonAsset;
+		if (skeletonAsset != nullptr)
+			OnResourceReference(*skeletonAsset);
+		ReRegisterComponent();
+		SetFrameDirty();
 	}
 	void JAnimator::SetAnimatorController(JAnimationController* animationController)noexcept
 	{
@@ -31,16 +41,6 @@ namespace JinEngine
 		JAnimator::animationController = animationController;
 		if (JAnimator::animationController != nullptr)
 			OnResourceReference(*JAnimator::animationController);
-		ReRegisterComponent();
-		SetFrameDirty();
-	}
-	void JAnimator::SetSkeletonAsset(JSkeletonAsset* newSkeletonAsset)noexcept
-	{
-		if (skeletonAsset != nullptr)
-			OffResourceReference(*skeletonAsset);
-		skeletonAsset = newSkeletonAsset;
-		if (skeletonAsset != nullptr)
-			OnResourceReference(*skeletonAsset);
 		ReRegisterComponent();
 		SetFrameDirty();
 	}
@@ -85,6 +85,19 @@ namespace JinEngine
 		}
 		else
 			return false;
+	}
+	void JAnimator::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+	{
+		if (iden == GetGuid())
+			return;
+
+		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
+		{
+			if (skeletonAsset != nullptr && skeletonAsset->GetGuid() == jRobj->GetGuid())
+				SetSkeletonAsset(nullptr);
+			else if (animationController != nullptr && animationController->GetGuid() == jRobj->GetGuid())
+				SetAnimatorController(nullptr);			 
+		}
 	}
 	Core::J_FILE_IO_RESULT JAnimator::CallStoreComponent(std::wofstream& stream)
 	{
@@ -156,13 +169,13 @@ namespace JinEngine
 		}
 		return newAnimator;
 	}
-	void JAnimator::RegisterFunc()
+	void JAnimator::RegisterJFunc()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
 			return new JAnimator(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
 		};
-		auto initC = [](const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
+		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
 			return new JAnimator(guid, objFlag, owner);
 		};
@@ -192,12 +205,12 @@ namespace JinEngine
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
 		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable };
-		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{&setFrameDirtyCallable };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable };
+		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}
-	JAnimator::JAnimator(const size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner)
+	JAnimator::JAnimator(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)
 		:JAnimatorInterface(TypeName(), guid, objFlag, owner)
 	{
 		animationTimes.resize(JAnimationController::diagramMaxCount);

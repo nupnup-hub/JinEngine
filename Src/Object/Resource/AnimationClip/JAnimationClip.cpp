@@ -5,6 +5,7 @@
 #include"../Skeleton/JSkeleton.h"
 #include"../Skeleton/JSkeletonAsset.h"
 #include"../Skeleton/JSkeletonFixedData.h"
+#include"../../Directory/JDirectory.h"
 #include"../../../Core/Guid/GuidCreator.h" 
 #include"../../../Core/FSM/AnimationFSM/JAnimationTime.h"
 #include"../../../Core/FSM/AnimationFSM/JAnimationShareData.h"
@@ -363,7 +364,7 @@ namespace JinEngine
 	}
 	void JAnimationClip::StuffResource()
 	{
-		if (!JValidInterface::IsValidResource())
+		if (!JValidInterface::IsValid())
 		{
 			if (ReadFbxData())
 				SetValid(true);
@@ -371,16 +372,16 @@ namespace JinEngine
 	}
 	void JAnimationClip::ClearResource()
 	{
-		if (JValidInterface::IsValidResource())
+		if (JValidInterface::IsValid())
 		{
 			animationSample.clear();
 			SetClipSkeletonAsset(nullptr);
 			SetValid(false);
 		}
 	}
-	bool JAnimationClip::IsValidResource()const noexcept
+	bool JAnimationClip::IsValid()const noexcept
 	{
-		return JValidInterface::IsValidResource() && (clipSkeletonAsset != nullptr);
+		return JValidInterface::IsValid() && (clipSkeletonAsset != nullptr);
 	}
 	bool JAnimationClip::ReadFbxData()
 	{
@@ -433,6 +434,17 @@ namespace JinEngine
 		}
 		else
 			return false;
+	}
+	void JAnimationClip::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+	{
+		if (iden == GetGuid())
+			return;
+
+		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
+		{
+			if (clipSkeletonAsset->GetGuid() == jRobj->GetGuid())
+				SetClipSkeletonAsset(nullptr);
+		}
 	}
 	J_FILE_IO_RESULT JAnimationClip::CallStoreResource()
 	{
@@ -488,13 +500,21 @@ namespace JinEngine
 		J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, pathData.folderPath, metadata);
 		stream.close();
 
-		JAnimationClip* newClip;
-		if (loadMetaRes == J_FILE_IO_RESULT::SUCCESS)
-			newClip = new JAnimationClip(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JAnimationClip>(pathData.format));
-		else
-			newClip = new JAnimationClip(pathData.name, MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JAnimationClip>(pathData.format));
+		JAnimationClip* newClip = nullptr;
+		if (directory->HasFile(pathData.fullName))
+			newClip = JResourceManager::Instance().GetResourceByPath<JAnimationClip>(pathData.strPath);
+		
+		if (newClip == nullptr)
+		{
+			if (loadMetaRes == J_FILE_IO_RESULT::SUCCESS)
+				newClip = new JAnimationClip(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JAnimationClip>(pathData.format));
+			else
+				newClip = new JAnimationClip(pathData.name, MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JAnimationClip>(pathData.format));
+		}	
 
-		if (newClip->ReadFbxData())
+		if (newClip->IsValid())
+			return newClip;
+		else if (newClip->ReadFbxData())
 		{
 			newClip->SetValid(true);
 			return newClip;
@@ -526,7 +546,7 @@ namespace JinEngine
 		else
 			return J_FILE_IO_RESULT::FAIL_SEARCH_DATA;
 	}
-	void JAnimationClip::RegisterFunc()
+	void JAnimationClip::RegisterJFunc()
 	{
 		auto defaultC = [](JDirectory* owner) ->JResourceObject*
 		{
@@ -536,7 +556,7 @@ namespace JinEngine
 				owner,
 				JResourceObject::GetDefaultFormatIndex());
 		};
-		auto initC = [](const std::string& name, const size_t guid, const JOBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
 			return new JAnimationClip(name, guid, objFlag, directory, formatIndex);
 		};
@@ -561,7 +581,7 @@ namespace JinEngine
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
-	JAnimationClip::JAnimationClip(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	JAnimationClip::JAnimationClip(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		:JAnimationClipInterface(name, guid, flag, directory, formatIndex)
 	{}
 	JAnimationClip::~JAnimationClip()

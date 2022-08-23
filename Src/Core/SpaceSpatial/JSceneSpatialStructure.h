@@ -44,7 +44,7 @@ namespace JinEngine
 			void UpdateGameObject(const size_t guid)noexcept;
 
 			void AddGameObject(JGameObject* gameObject)noexcept;
-			void EraseGameObject(JGameObject* gameObject)noexcept;
+			void RemoveGameObject(JGameObject* gameObject)noexcept;
 		};
 	}
 }

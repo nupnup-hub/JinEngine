@@ -10,7 +10,8 @@ namespace JinEngine
 		void JReflectionImpl::AddType(JTypeInfo* newType)
 		{
 			assert(newType != nullptr);
-			jType.push_back(newType);		 
+			jType.typeVec.push_back(newType);
+			jType.typeMap.emplace(newType->Name(), newType);
 		}
 		void JReflectionImpl::AddEnum(JEnumInfo* newEnum)
 		{
@@ -19,30 +20,25 @@ namespace JinEngine
 		}
 		JTypeInfo* JReflectionImpl::GetTypeInfo(const std::string& name)
 		{
-			const uint typeCount = (uint)jType.size();
-			for (uint i = 0; i < typeCount; ++i)
-			{
-				if (jType[i]->FullName() == name)
-					return jType[i];
-			}
-			return nullptr;
+			auto data = jType.typeMap.find(name);
+			return data != jType.typeMap.end() ? data->second : nullptr;
 		}
-		JEnumInfo* JReflectionImpl::GetEnumInfo(const std::string& name)
+		JEnumInfo* JReflectionImpl::GetEnumInfo(const std::string& fullname)
 		{
-			auto data = jEnum.find(name);
+			auto data = jEnum.find(fullname);
 			return data != jEnum.end() ? data->second : nullptr;
 		}
 		std::vector<JTypeInfo*> JReflectionImpl::GetDerivedTypeInfo(const JTypeInfo& baseType)
 		{
 			std::vector<JTypeInfo*> res;
-			const uint typeCount = (uint)jType.size();
+			const uint typeCount = (uint)jType.typeVec.size();
 			for (uint i = 0; i < typeCount; ++i)
 			{
-				if (jType[i]->IsA(baseType))
+				if (jType.typeVec[i]->IsA(baseType))
 					continue;
 
-				if (jType[i]->IsChildOf(baseType))
-					res.push_back(jType[i]);
+				if (jType.typeVec[i]->IsChildOf(baseType))
+					res.push_back(jType.typeVec[i]);
 			}
 			return res;
 		}

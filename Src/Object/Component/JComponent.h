@@ -20,14 +20,20 @@ namespace JinEngine
 		/*Defect Inspection When Use JComponent */
 		virtual bool PassDefectInspection()const noexcept;
 	protected:
+		//Regist Scene
 		bool RegisterComponent()noexcept; 
+		//DeRegist Scene
 		bool DeRegisterComponent()noexcept;
 		bool ReRegisterComponent()noexcept;
 	protected:
+		//DoActivate => RegistComponent
 		void DoActivate()noexcept override;
+		//DoDeActivate => DeRegistComponent
 		void DoDeActivate()noexcept override;
 	protected:
-		JComponent(const std::string& cTypeName, const size_t guid, JOBJECT_FLAG flag, JGameObject* owner) noexcept;
+		void Destroy() final; 
+	protected:
+		JComponent(const std::string& cTypeName, const size_t guid, J_OBJECT_FLAG flag, JGameObject* owner) noexcept;
 		~JComponent();
 	};
 }

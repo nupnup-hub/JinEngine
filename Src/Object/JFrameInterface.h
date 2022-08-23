@@ -13,7 +13,7 @@ namespace JinEngine
 	{
 	private:
 		friend Graphic::JGraphicImpl;
-	public:
+	protected:
 		virtual ~IFrameUpdate() = default;
 	private:
 		bool CallUpdateFrame(FrameConstants&... frameConstant)
@@ -22,7 +22,7 @@ namespace JinEngine
 		}
 		virtual bool UpdateFrame(FrameConstants&... frameConstant) = 0;
 	};
-	 
+
 	template<typename ...FrameConstant>
 	class JFrameInterface : public IFrameUpdate<FrameConstant...>
 	{

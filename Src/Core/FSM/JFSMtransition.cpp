@@ -16,12 +16,12 @@ namespace JinEngine
 		{
 			return condition != nullptr;
 		}
-		JFSMtransition::JFSMtransition(const size_t outputId)
-			:outputId(outputId)
+		JFSMtransition::JFSMtransition(const size_t outputStateGuid)
+			:outputStateGuid(outputStateGuid)
 		{}
-		size_t JFSMtransition::GetOutputId()noexcept
+		size_t JFSMtransition::GetOutputStateGuId()noexcept
 		{
-			return outputId;
+			return outputStateGuid;
 		}
 		bool JFSMtransition::HasSatisfiedCondition()noexcept
 		{
@@ -66,7 +66,7 @@ namespace JinEngine
 			conditionVec.push_back(std::make_unique<FSMConditionWrap>(condition));
 			return true;
 		}
-		bool JFSMtransition::PopCondition(const std::string& name)noexcept
+		bool JFSMtransition::PopCondition(const size_t outputStateGuid)noexcept
 		{
 			bool hasCondition = false;
 			const uint conditionVecSize = (uint)conditionVec.size();
@@ -74,7 +74,7 @@ namespace JinEngine
 
 			for (; index < conditionVecSize; ++index)
 			{
-				if (conditionVec[index]->condition->GetName() == name)
+				if (conditionVec[index]->condition->GetGuid() == outputStateGuid)
 				{
 					hasCondition = true;
 					break;

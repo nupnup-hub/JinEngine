@@ -44,7 +44,7 @@ namespace JinEngine
 			bool CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::string& path);
 			bool CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0);
 			bool CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0);
-			bool ClearTxtHandle();
+			bool DestroyTxtHandle();
 			bool HasTxtHandle()const noexcept;
 			void AddDrawRequest(JScene* scene, JComponent* jComp);
 			void PopDrawRequest(JScene* scene, JComponent* jComp);

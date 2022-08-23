@@ -30,12 +30,12 @@ namespace JinEngine
 		{
 			return srvHeapIndex;
 		}
-		bool JGraphicTextureHandle::Erase(JGraphicTextureHandle** handle)
+		bool JGraphicTextureHandle::Destroy(JGraphicTextureHandle** handle)
 		{
 			if (handle == nullptr || *handle == nullptr)
 				return false;
 
-			return JGraphic::Instance().ResourceInterface()->EraseGraphicTextureResource(handle);
+			return JGraphic::Instance().ResourceInterface()->DestroyGraphicTextureResource(handle);
 		}
 		JGraphicTextureHandle::JGraphicTextureHandle(const J_GRAPHIC_TEXTURE_TYPE graphicResourceType, uint width, uint height)
 			:graphicResourceType(graphicResourceType),

@@ -4,11 +4,9 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		JAnimationFSMtransition::JAnimationFSMtransition(const size_t outputId)
-			:JFSMtransition(outputId)
-		{
-
-		}
+		JAnimationFSMtransition::JAnimationFSMtransition(const size_t outputStateGuid)
+			:JFSMtransition(outputStateGuid)
+		{}
 		bool JAnimationFSMtransition::GetIsWaitExitTime()noexcept
 		{
 			return isWaitExitTime;

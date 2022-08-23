@@ -7,13 +7,13 @@
 
 namespace JinEngine
 {
-	class AvatarEditor;
+	class JAvatarEditor;
 	class JSkeletonAsset;
 
 	class JAvatar
 	{
 	private:
-		friend class AvatarEditor;
+		friend class JAvatarEditor;
 		friend class JSkeletonAsset;
 	public:
 		struct JAvatarJointReference
@@ -22,7 +22,7 @@ namespace JinEngine
 			uint8 refIndex = JSkeletonFixedData::incorrectJointIndex;
 			uint8 allottedParentRefIndex = JSkeletonFixedData::incorrectJointIndex;
 		};
-	public:
+	public: 
 		static const std::vector<std::vector<JAvatarJointGuide>> jointGuide;
 		static const std::vector<std::string> tabName;
 		static const std::vector<uint8> jointReferenceParent;

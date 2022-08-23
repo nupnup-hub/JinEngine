@@ -72,7 +72,7 @@ namespace JinEngine
 	protected:
 		static void RegisterTypeInfo(const CTypeHint& cTypeHint, const CTypeCommonFunc& cTypeCFunc, const CTypeInterfaceFunc& cTypeInterfaceFunc)noexcept;
 	protected:
-		JComponentInterface(const std::string& cTypeName, const size_t guid, JOBJECT_FLAG flag);
+		JComponentInterface(const std::string& cTypeName, const size_t guid, J_OBJECT_FLAG flag);
 	};
 
 	using JCI = JComponentInterface;

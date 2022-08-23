@@ -28,15 +28,17 @@
 #include"../Object/Resource/Shader/JShader.h"
 #include"../Object/Resource/Shader/JShaderData.h"
 #include"../Object/Resource/AnimationClip/JAnimationClip.h"
-#include"../Object/Resource/Scene/Preview/PreviewSceneGroup.h"
-#include"../Object/Resource/Scene/Preview/PreviewScene.h"
+#include"../Object/Resource/Scene/Preview/JPreviewSceneGroup.h"
+#include"../Object/Resource/Scene/Preview/JPreviewScene.h"
 #include"../Object/Resource/Texture/JTexture.h"
 
 #include"../Application/JApplicationVariable.h"
 #include"../Utility/JCommonUtility.h"
 #include"../Core/Exception/JExceptionMacro.h"	
-#include"../Window/Editor/ImGuiEx/ImGuiManager.h"
+#include"../Editor/GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../Lib/DirectX/DDSTextureLoader.h" 
+#include"../../Lib/imgui/imgui_impl_dx12.h"
+#include"../../Lib/imgui/imgui_impl_win32.h"
 
 #include<DirectXColors.h>
 #include<functional>
@@ -74,7 +76,7 @@ namespace JinEngine
 			height = JWindow::Instance().GetClientHeight();
 
 			graphicResource = std::make_unique<JGraphicResourceManager>();
-
+			 
 			InitializeD3D();
 			InitializeResource();
 			OnResize();
@@ -173,7 +175,7 @@ namespace JinEngine
 			else
 				return graphicResource->CreateShadowMapTexture(d3dDevice.Get(), textureWidth, textureHeight);
 		}
-		bool JGraphicImpl::EraseGraphicTextureResource(JGraphicTextureHandle** handle)
+		bool JGraphicImpl::DestroyGraphicTextureResource(JGraphicTextureHandle** handle)
 		{
 			if (*handle == nullptr)
 				return false;
@@ -182,14 +184,14 @@ namespace JinEngine
 			{
 				FlushCommandQueue();
 				StartCommand();
-				bool res = graphicResource->EraseGraphicTextureResource(d3dDevice.Get(), handle);
+				bool res = graphicResource->DestroyGraphicTextureResource(d3dDevice.Get(), handle);
 				EndCommand();
 				FlushCommandQueue();
 				return res;
 			}
 			else
 			{
-				bool res = graphicResource->EraseGraphicTextureResource(d3dDevice.Get(), handle);
+				bool res = graphicResource->DestroyGraphicTextureResource(d3dDevice.Get(), handle);
 				return res;
 			}
 		}
@@ -402,7 +404,7 @@ namespace JinEngine
 		}
 		void JGraphicImpl::UpdateEngine()
 		{
-			JResourceManager::Instance().GetMainScene()->SpaceSpatialInterface()->ViewCulling();
+			//JResourceManager::Instance().GetMainScene()->SpaceSpatialInterface()->ViewCulling();
 
 			uint sceneObjCBoffset = 0;
 			uint scenePassCBoffset = 0;
@@ -416,6 +418,7 @@ namespace JinEngine
 			for (uint i = 0; i < drawListCount; ++i)
 			{
 				JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
+				drawTarget->scene->SpaceSpatialInterface()->ViewCulling();
 
 				uint objUpdateCount = UpdateSceneObjectCB(drawTarget->scene, sceneObjCBoffset);
 				uint passUpdateCount = UpdateScenePassCB(drawTarget->scene, scenePassCBoffset);

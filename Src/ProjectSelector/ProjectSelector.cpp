@@ -5,7 +5,7 @@
 #include"../Graphic/JGraphicResourceManager.h"
 #include"../Object/Resource/JResourceManager.h"
 #include"../Object/Resource/Texture/JTexture.h"
-#include"../Window/Editor/ImGuiEx/ImGuiManager.h"
+#include"../Editor/GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../Window/JWindows.h"
 #include"../../Lib/imgui/imgui.h"
 #include<shellapi.h>

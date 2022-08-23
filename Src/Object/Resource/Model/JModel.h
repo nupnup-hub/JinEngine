@@ -34,8 +34,8 @@ namespace JinEngine
 		std::vector<JGameObject*> meshPartCash;
 		std::unique_ptr<JModelAttribute> modelAttribute = nullptr;
 		JSkeletonAsset* skeletonAsset = nullptr;  
-	public: 		  
-		const JModelAttribute* GetModelData()const noexcept; 
+	public: 		   
+		JSkeletonAsset* GetSkeletonAsset()noexcept;
 		const uint GetTotalMeshCount()const noexcept;
 		const uint GetTotalVertexCount()const noexcept;
 		const uint GetTotalIndexCount()const noexcept;
@@ -43,10 +43,6 @@ namespace JinEngine
 		DirectX::XMFLOAT3 GetSkeletonCenter()const noexcept;
 		float GetModelRadius()const noexcept;
 		float GetSkeletonRadius()const noexcept;
-		JScene* GetModelScene()const noexcept;
-		JGameObject* GetModelRoot()const noexcept;
-		JGameObject* GetSkeletonRoot()const noexcept;
-		JSkeletonAsset* GetSkeletonAsset()const noexcept;  
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -54,6 +50,12 @@ namespace JinEngine
 		}
 		std::string GetFormat()const noexcept final;
 		static std::vector<std::string> GetAvailableFormat()noexcept;
+	public:
+		JModelSceneInterface* ModelSceneInterface() final;
+	private:
+		JScene* GetModelScene()noexcept final;
+		JGameObject* GetModelRoot()noexcept final;
+		JGameObject* GetSkeletonRoot()noexcept final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;    
@@ -65,15 +67,17 @@ namespace JinEngine
 		bool ReadObjModelData();
 		bool ReadFbxModelData(); 
 	private:
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
+	private:
 		std::vector<JGameObject*>::const_iterator GetMeshPartVectorHandle(uint& count)noexcept;
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JModel* model);
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JModel* model);
 		static JModel* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
 		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::string& folderPath, ModelMetadata& metadata);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
-		JModel(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JModel(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JModel();
 	};
 }

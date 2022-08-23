@@ -9,12 +9,13 @@ namespace JinEngine
 	{
 		struct JObjectConstants;
 	}
+
 	class JRenderItemInterface : public JComponent,
 		public JFrameInterface<Graphic::JObjectConstants> ,
 		public JResourceUserInterface,
 		public Graphic::JGraphicBufUserInterface
 	{
 	protected:
-		JRenderItemInterface(const std::string& cTypeName, size_t guid, const JOBJECT_FLAG objFlag, JGameObject* owner);
+		JRenderItemInterface(const std::string& cTypeName, size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner);
 	};
 }

@@ -36,7 +36,7 @@ namespace JinEngine
 			JBvhNode& operator=(JBvhNode&& rhs) = default;
 
 			void CreateDebugGameObject(JGameObject* parent, bool onlyLeafNode)noexcept;
-			void EraseDebugGameObject()noexcept;
+			void DestroyDebugGameObject()noexcept;
 			void Clear()noexcept;
 			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
 			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;

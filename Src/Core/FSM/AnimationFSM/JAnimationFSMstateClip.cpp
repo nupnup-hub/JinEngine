@@ -10,11 +10,9 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		JAnimationFSMstateClip::JAnimationFSMstateClip()
-			:JAnimationFSMstate()
-		{
-
-		}
+		JAnimationFSMstateClip::JAnimationFSMstateClip(const std::string& name, const size_t guid)
+			:JAnimationFSMstate(name, guid)
+		{}
 		void JAnimationFSMstateClip::Initialize()noexcept
 		{
 			JFSMstate::Initialize();
@@ -64,6 +62,17 @@ namespace JinEngine
 			JFSMstate::Clear();
 			if (clip != nullptr)
 				OffResourceReference(*clip);
+		}
+		void JAnimationFSMstateClip::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		{
+			if (iden == GetGuid())
+				return;
+
+			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
+			{
+				if (clip != nullptr && jRobj->GetGuid() == clip->GetGuid())
+					SetClip(nullptr);
+			}
 		}
 	}
 }

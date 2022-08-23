@@ -6,16 +6,13 @@
 
 namespace JinEngine
 {
-	struct EditorDiagram;
+	struct JEditorDiagram;
 	class JSkeletonAsset;
 	class JAnimationClip;
 
 	namespace Core
 	{
 		__interface IJFSMconditionStorageManager;
-		class JFSMcondition;
-		class JAnimationFSMdiagram;
-		class JAnimationFSMstate;
 		struct JAnimationTime;
 	}
 	namespace Graphic
@@ -33,7 +30,7 @@ namespace JinEngine
 		constexpr static uint diagramMaxCount = 8;
 	private:
 		std::unique_ptr<Core::IJFSMconditionStorageManager> conditionStorage;
-		std::vector<std::unique_ptr<Core::JAnimationFSMdiagram>> stateDiagram;
+		std::vector<std::unique_ptr<Core::JAnimationFSMdiagram>> fsmDiagram;
 		Core::JAnimationShareData animationShaderData;
 	public:
 		void Initialize(std::vector<Core::JAnimationTime>& animationtimes, JSkeletonAsset* modelSkeleton)noexcept;
@@ -45,43 +42,51 @@ namespace JinEngine
 			return J_RESOURCE_TYPE::ANIMATION_CONTROLLER;
 		}
 		std::string GetFormat()const noexcept final;
-		uint GetAnimationDiagramCount()const noexcept;
-		std::string GetAnimationDiagramName(const uint diagramIndex)noexcept;
-		EditorDiagram* GetEditorDiagram(const uint diagramIndex)noexcept;
-
-		//passing
-		bool GetAnimationFSMstateVectorHandle(const uint diagramIndex, _Out_ uint& stateCount, _Out_ std::vector<Core::JAnimationFSMstate*>::const_iterator& iter)noexcept;
-		uint GetConditionCount()const noexcept;
-		Core::JFSMcondition* GetCondition(const uint index)noexcept;
-
 		static std::vector<std::string> GetAvailableFormat()noexcept;
+	public:
+		uint GetAnimationDiagramCount()const noexcept;
+		std::string GetAnimationDiagramName(const size_t diagramGuid)noexcept; 
+		std::string GetUniqueDiagramName(const std::string& initName)noexcept;
+		std::string GetUniqueStateName(const size_t diagramGuid, const std::string& initName)noexcept;
+		std::string GetUniqueConditionName(const std::string& initName)noexcept;
+		 
+		uint GetConditionCount()const noexcept; 
 
-		void SetConditionName(const std::string& oldName, const std::string& newName)noexcept;
-		void SetConditionValueType(const std::string& name, const Core::J_FSMCONDITION_VALUE_TYPE type)noexcept;
+		void SetConditionName(const size_t guid, const std::string& newName)noexcept;
+		void SetConditionValueType(const size_t guid, const Core::J_FSMCONDITION_VALUE_TYPE type)noexcept;
 
-		bool CreateAnimationDiagram()noexcept;
-		bool CreateAnimationClip(const uint diagramIndex, const float initPosX, const float initPosY)noexcept;
-		bool CreateTransition(const uint diagramIndex, const std::string& stateName, const std::string& outputStateName);
-		bool CreateParameter()noexcept;
+		bool CreateAnimationDiagram(const std::string& name, const size_t guid)noexcept;
+		bool CreateAnimationClipState(const std::string& name, const size_t clipGuid, const size_t diagramGuid)noexcept;
+		bool CreateTransition(const size_t intputStateGuid, const size_t outputStateGuid, const size_t diagramGuid);
+		bool CreateCondition(const std::string& name, const size_t guid)noexcept;
 
-		bool EraseAnimationDiagram(const uint diagramIndex)noexcept;
-		bool EraseAnimationState(const uint diagramIndex, const std::string& stateName)noexcept;
-		bool EraseParameter(const std::string& paraName)noexcept;
-
+		bool DestroyAnimationDiagram(const size_t diagramGuid)noexcept;
+		bool DestroyAnimationState(const size_t statGuid, const size_t diagramGuid)noexcept;
+		bool DestroyCondition(const size_t conditionGuid)noexcept;
+	public:
+		JAnimationControllerEditInterface* EditorInterface() final;
+	private:
+		Core::JAnimationFSMdiagram* GetDiagram(const size_t guid)noexcept final;
+		std::vector<Core::JAnimationFSMdiagram*> GetDiagramVec()noexcept final;
+		Core::JAnimationFSMstate* GetState(const size_t diagramGuid, const size_t stateGuid) noexcept final;
+		std::vector<Core::JAnimationFSMstate*>& GetStateVec(const size_t diagramGuid)noexcept final;
+		Core::JFSMcondition* GetCondition(const size_t guid) noexcept final; 
+	private:
+		Core::JAnimationFSMdiagram* FindDiagram(const size_t guid) noexcept;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
 	private:
 		void StuffResource() final;
 		void ClearResource() final;
-		bool IsValidResource()const noexcept final;
+		bool IsValid()const noexcept final;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JAnimationController* animationCont);
 		static JAnimationController* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
-		JAnimationController(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JAnimationController(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JAnimationController();
 	};
 }

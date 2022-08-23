@@ -121,7 +121,7 @@ namespace JinEngine
 				const bool isSkin)noexcept;
 			void ResizeMatrix(DirectX::XMFLOAT4X4& xmF)noexcept;
 			void ResizeVertexPosition(DirectX::XMFLOAT3& vertexPosition)noexcept;
-			void ResizeVertexPosition(Vector3<float>& vertexPosition)noexcept;
+			void ResizeVertexPosition(JVector3<float>& vertexPosition)noexcept;
 		};
 		using JFbxFileLoader = JSingletonHolder<JFbxFileLoaderImpl>;
 	}

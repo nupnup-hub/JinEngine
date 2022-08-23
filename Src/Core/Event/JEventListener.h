@@ -1,4 +1,4 @@
-#pragma once
+#pragma once 
 #include<vector>
 
 namespace JinEngine
@@ -22,19 +22,24 @@ namespace JinEngine
 				return evInterface.AddEventListener(&JEventListener::OnEvent, this, iden, eventTypeVec);
 			}
 			template<typename EvInterface, typename ...Param>
+			void AddEventNotification(EvInterface& evInterface, const IdentifierType& iden, const EVENTTYPE& eventType, Param&&... var)
+			{
+				evInterface.AddEventNotification(iden, eventType, std::forward<Param>(var)...);
+			}
+			template<typename EvInterface, typename ...Param>
 			void NotifyEvent(EvInterface& evInterface, const IdentifierType& iden, const EVENTTYPE& eventType, Param&&... var)
 			{
 				evInterface.NotifyEvent(iden, eventType, std::forward<Param>(var)...);
 			}
 			template<typename EvInterface>
-			void EraseListener(EvInterface& evInterface, const IdentifierType& iden)
+			void RemoveListener(EvInterface& evInterface, const IdentifierType& iden)
 			{
-				evInterface.EraseListener(iden);
+				evInterface.RemoveListener(iden);
 			}
 			template<typename EvInterface>
-			void EraseListenerEvent(EvInterface& evInterface, const IdentifierType& iden, const EVENTTYPE& eventType)
+			void RemoveEventListener(EvInterface& evInterface, const IdentifierType& iden, const EVENTTYPE& eventType)
 			{
-				evInterface.EraseListenerEvent(iden, eventType);
+				evInterface.RemoveEventListener(iden, eventType);
 			}
 		};
 

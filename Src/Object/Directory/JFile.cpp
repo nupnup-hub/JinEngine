@@ -1,18 +1,15 @@
-#include"JFile.h"
+#include"JFile.h" 
 #include"../Resource/JResourceObject.h"
 
 namespace JinEngine
 {
-	JFile::JFile(JResourceObject* resource)
-		:resource(resource) {}
-	JFile::~JFile()
-	{
-		resource = nullptr;
-	}
-
 	std::string JFile::GetName()const noexcept
 	{
 		return resource->GetName();
+	}
+	std::string JFile::GetFullName()const noexcept
+	{
+		return resource->GetFullName();
 	}
 	std::string JFile::GetAvailableFormat()const noexcept
 	{
@@ -22,4 +19,6 @@ namespace JinEngine
 	{
 		return resource;
 	}
+	JFile::JFile(JResourceObject* resource)
+		:resource(resource) {}
 }

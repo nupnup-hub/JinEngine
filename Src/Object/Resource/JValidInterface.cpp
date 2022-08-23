@@ -6,7 +6,7 @@ namespace JinEngine
 	{
 		isValid = value;
 	}
-	bool JValidInterface::IsValidResource()const noexcept
+	bool JValidInterface::IsValid()const noexcept
 	{
 		return isValid;
 	}

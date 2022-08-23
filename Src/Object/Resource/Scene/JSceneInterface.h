@@ -7,11 +7,12 @@
 
 namespace JinEngine
 {
-	class PreviewResourceScene;
+	class JPreviewResourceScene;
 	class JComponent;
 	class JCamera;
 	class JGameObject;
-	class JResourceManager;
+	class JSceneManagerImpl;
+	class JResourceManagerImpl;
 
 	namespace Graphic
 	{
@@ -19,12 +20,12 @@ namespace JinEngine
 		class JGraphicImpl;
 	}
  
-	class JSceneCashInterface : public JResourceObject
+	class JSceneCashInterface
 	{
 	private:
 		friend class Graphic::JGraphicImpl;
 	protected:
-		JSceneCashInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		virtual ~JSceneCashInterface() = default;
 	public:
 		virtual JSceneCashInterface* CashInterface() = 0;
 	private:
@@ -32,24 +33,24 @@ namespace JinEngine
 		virtual std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)noexcept = 0;
 	};
 
-	class JSceneGameObjInterface : public JSceneCashInterface
+	class JSceneGameObjInterface
 	{
 	private:
 		friend class JGameObject;
 	protected:
-		JSceneGameObjInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		virtual ~JSceneGameObjInterface() = default;
 	public:
 		virtual JSceneGameObjInterface* GameObjInterface() = 0;
 	private:
-		virtual bool EraseGameObject(JGameObject& gameObj)noexcept = 0;
+		virtual bool RemoveGameObject(JGameObject& gameObj)noexcept = 0;
 	};
 
-	class JSceneCompInterface : public JSceneGameObjInterface
+	class JSceneCompInterface
 	{
 	private:
 		friend class JCamera;
 	protected:
-		JSceneCompInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		virtual ~JSceneCompInterface() = default;
 	public:
 		virtual JSceneCompInterface* CompInterface() = 0;
 	private:
@@ -57,12 +58,12 @@ namespace JinEngine
 		virtual void SetAnimation()noexcept = 0;
 	};
 
-	class JSceneRegisterInterface : public JSceneCompInterface
+	class JSceneRegisterInterface 
 	{
 	private:
 		friend class JComponent; 
 	protected:
-		JSceneRegisterInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		virtual ~JSceneRegisterInterface() = default;
 	public:
 		virtual JSceneRegisterInterface* RegisterInterface() = 0;
 	private: 
@@ -70,13 +71,13 @@ namespace JinEngine
 		virtual bool DeRegisterComponent(JComponent& component)noexcept = 0;
 	};
 
-	class JSceneFrameInterface : public JSceneRegisterInterface
+	class JSceneFrameInterface
 	{
 	private:
 		friend class JLight;
 		friend class Graphic::JGraphicDrawList;
 	protected:
-		JSceneFrameInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		virtual ~JSceneFrameInterface() = default;
 	public:
 		virtual JSceneFrameInterface* FrameInterface() = 0;
 	private:
@@ -86,13 +87,13 @@ namespace JinEngine
 		virtual void SetBackSideComponentDirty(JComponent& jComp, bool(*condition)(JComponent&))noexcept = 0;
 	};
 
-	class JSceneSpaceSpatialInterface : public JSceneFrameInterface
+	class JSceneSpaceSpatialInterface
 	{
 	private:
-		friend class JResourceManager;
+		friend class JResourceManagerImpl;
 		friend class Graphic::JGraphicImpl;
 	protected:
-		JSceneSpaceSpatialInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		virtual ~JSceneSpaceSpatialInterface() = default;
 	public:
 		virtual JSceneSpaceSpatialInterface* SpaceSpatialInterface() = 0;
 	private:
@@ -103,9 +104,16 @@ namespace JinEngine
 		virtual void OffDebugBoundingBox()noexcept = 0;
 	};
 
-	class JSceneInterface : public JSceneSpaceSpatialInterface , public JClearableInterface
+	class JSceneInterface :public JResourceObject,
+		public JSceneSpaceSpatialInterface, 
+		public JSceneFrameInterface,
+		public JSceneRegisterInterface,
+		public JSceneCompInterface,
+		public JSceneGameObjInterface,
+		public JSceneCashInterface,
+		public JClearableInterface
 	{
 	protected:
-		JSceneInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JSceneInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 	};
 }

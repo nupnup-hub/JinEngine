@@ -11,7 +11,7 @@ namespace JinEngine
 	class JScene; 
 	class JLight;
 	class JCamera;
-	class PreviewScene;
+	class JPreviewScene;
 
 	namespace Graphic
 	{
@@ -49,13 +49,12 @@ namespace JinEngine
 		private:
 			friend class JGraphicDrawList;
 		public:
-			JScene* scene;
-			const bool isMainScene;
+			JScene* scene; 
 			bool hasUpdate;
 			std::vector<std::unique_ptr<JShadowMapDrawRequestor>> shadowRequestor;
 			std::vector<std::unique_ptr<JSceneDrawRequestor>> sceneRequestor;
 		public:
-			JGraphicDrawTarget(JScene* scene, const bool isMainScene);
+			JGraphicDrawTarget(JScene* scene);
 			~JGraphicDrawTarget();
 		};
 		 

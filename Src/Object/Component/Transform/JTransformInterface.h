@@ -16,7 +16,7 @@ namespace JinEngine
 	private:
 		friend class JGameObject;
 	protected:
-		JTransformInterface(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JGameObject* owner);
+		JTransformInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
 	protected:
 		virtual void ChangeParent() = 0;
 	};

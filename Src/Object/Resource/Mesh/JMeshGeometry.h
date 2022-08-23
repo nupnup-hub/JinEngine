@@ -83,9 +83,9 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JMeshGeometry* mesh);
 		static JMeshGeometry* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
-		static void RegisterFunc();
+		static void RegisterJFunc();
 	private:
-		JMeshGeometry(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JMeshGeometry(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JMeshGeometry();
 	};
 

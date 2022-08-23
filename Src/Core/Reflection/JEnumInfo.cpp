@@ -5,11 +5,6 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		JEnumInfo::JEnumInfo(const JEnumInitializer& jEnumInitializer)
-			:name(jEnumInitializer.name), fullName(jEnumInitializer.fullName), enumElementMap(jEnumInitializer.enumElementMap)
-		{
-			JReflectionInfo::Instance().AddEnum(this);
-		}
 		std::string JEnumInfo::Name()const noexcept
 		{
 			return name;
@@ -22,6 +17,11 @@ namespace JinEngine
 		{
 			auto data = enumElementMap.find(value);
 			return data != enumElementMap.end() ? data->second : "";
+		}
+		JEnumInfo::JEnumInfo(const JEnumInitializer& jEnumInitializer)
+			:name(jEnumInitializer.name), fullName(jEnumInitializer.fullName), enumElementMap(jEnumInitializer.enumElementMap)
+		{
+			JReflectionInfo::Instance().AddEnum(this);
 		}
 	}
 }

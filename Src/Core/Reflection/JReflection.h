@@ -1,12 +1,14 @@
 #pragma once
 #include"JReflectionMacro.h" 
+#include"JTypeInfoRegister.h"
 #include"JPropertyRegister.h"
 #include"JMethodInfoRegister.h"  
-#include"JEnumInfo.h"
+#include"JEnumRegister.h"
 #include"JReflectionInfo.h" 
 
 namespace JinEngine
 {
+	class JObject;
 	namespace Core
 	{
 		template<typename T>
@@ -14,7 +16,7 @@ namespace JinEngine
 		{
 			if constexpr (IsClass_V<T>)
 			{
-				JTypeInfo* jTypeInfo = JReflectionInfo::Instance().GetTypeInfo(typeid(RemoveAll_T<T>).name());
+				JTypeInfo* jTypeInfo = JReflectionInfo::Instance().GetTypeInfo(RemoveAll_T<T>::TypeName());
 				if (jTypeInfo != nullptr)
 					return jTypeInfo->Name();
 				else
@@ -37,7 +39,7 @@ namespace JinEngine
 		{
 			if constexpr (IsClass_V<T>)
 			{
-				JTypeInfo* jTypeInfo = JReflectionInfo::Instance().GetTypeInfo(typeid(RemoveAll_T<T>).name());
+				JTypeInfo* jTypeInfo = JReflectionInfo::Instance().GetTypeInfo(RemoveAll_T<T>::TypeName());
 				if (jTypeInfo != nullptr)
 					return jTypeInfo->Name();
 				else
@@ -52,6 +54,14 @@ namespace JinEngine
 					return "UnKnown";
 			} 
 			return "UnKnown";
+		}
+		template<typename T>
+		T* GetObject(const size_t guid)
+		{
+			if (!std::is_base_of_v<JObject, T>)
+				return nullptr;
+
+			return JReflectionInfo::Instance().GetTypeInfo(T::TypeName())->GetInstance(guid);
 		}
 	}
 }

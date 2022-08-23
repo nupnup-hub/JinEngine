@@ -8,9 +8,10 @@ namespace JinEngine
 	private:
 		friend class JResourceUserInterface;
 	private:
-		bool isValid;
+		bool isValid = false;
 	protected:
-		void SetValid(bool value);
-		virtual bool IsValidResource()const noexcept;
+		void SetValid(bool value); 
+	protected:
+		virtual bool IsValid()const noexcept;
 	};
 }

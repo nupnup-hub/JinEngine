@@ -7,6 +7,10 @@ namespace JinEngine
 {
 	namespace Core
 	{
+		std::string JFSMconditionStorage::GetConditionUniqueName(const std::string& initName)const noexcept
+		{
+			return JCommonUtility::MakeUniqueName(conditionVec, initName);
+		}
 		uint JFSMconditionStorage::GetConditionCount()const noexcept
 		{
 			return (uint)conditionVec.size();
@@ -15,49 +19,37 @@ namespace JinEngine
 		{
 			return maxNumberOffCondition;
 		}
-		JFSMcondition* JFSMconditionStorage::GetCondition(const uint index)noexcept
-		{
-			const uint conditionCount = (uint)conditionVec.size();
-			if (index >= conditionCount)
-				return nullptr;
-			else
-				return conditionVec[index].get();
-		}
-		JFSMcondition* JFSMconditionStorage::GetCondition(const std::string& name)noexcept
-		{
-			const size_t guid = JCommonUtility::CalculateGuid(name);
+		JFSMcondition* JFSMconditionStorage::GetCondition(const size_t guid)noexcept
+		{ 
 			auto data = conditionCashMap.find(guid);
 			if (data != conditionCashMap.end())
 				return data->second;
 			else
 				return nullptr;
 		}
-		void JFSMconditionStorage::SetConditionName(const std::string& oldName, const std::string& newName)noexcept
+		void JFSMconditionStorage::SetConditionName(const size_t guid, const std::string& newName)noexcept
 		{
-			JFSMcondition* tarCondition = GetCondition(oldName);
+			JFSMcondition* tarCondition = GetCondition(guid);
 			if (tarCondition == nullptr)
 				return;
-
-			conditionCashMap.erase(tarCondition->GetId());
-			const size_t newGuid = JCommonUtility::CalculateGuid(newName);
-			tarCondition->SetName(newName, newGuid);
-			conditionCashMap.emplace(newGuid, tarCondition);
+			  
+			tarCondition->SetName(newName); 
 		}
-		void JFSMconditionStorage::SetConditionValueType(const std::string& conditionName, const J_FSMCONDITION_VALUE_TYPE valueType)noexcept
+		void JFSMconditionStorage::SetConditionValueType(const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType)noexcept
 		{
-			JFSMcondition* tarCondition = GetCondition(conditionName);
+			JFSMcondition* tarCondition = GetCondition(guid);
 			if (tarCondition == nullptr)
 				return;
 
 			tarCondition->SetValueType(valueType);
 		}
-		JFSMcondition* JFSMconditionStorage::AddConditionValue()noexcept
+		JFSMcondition* JFSMconditionStorage::AddCondition(const std::string& name, const size_t guid)noexcept
 		{
 			uint conditionVecSize = (uint)conditionVec.size();
 			if (conditionVecSize >= maxNumberOffCondition)
 				return nullptr;
 
-			std::string newName = "NewCondition";
+			std::string newName = name;
 			bool isOk = false;
 			int sameCount = 0;
 			while (!isOk)
@@ -80,20 +72,20 @@ namespace JinEngine
 				else
 					isOk = true;
 			}
-			const size_t conditionId = JCommonUtility::CalculateGuid(newName);
-			conditionVec.emplace_back(std::make_unique<JFSMcondition>(newName, conditionId, J_FSMCONDITION_VALUE_TYPE::BOOL));
-			conditionCashMap.emplace(conditionId, conditionVec[conditionVecSize].get());
+
+			conditionVec.emplace_back(std::make_unique<JFSMcondition>(newName, J_FSMCONDITION_VALUE_TYPE::BOOL));
+			conditionCashMap.emplace(conditionVec[conditionVecSize]->GetGuid(), conditionVec[conditionVecSize].get());
 			return  conditionVec[conditionVecSize].get();
 		}
-		bool JFSMconditionStorage::EraseCondition(const std::string& conditionName)noexcept
+		bool JFSMconditionStorage::RemoveCondition(const size_t guid)noexcept
 		{
-			JFSMcondition* tarCondition = GetCondition(conditionName);
+			JFSMcondition* tarCondition = GetCondition(guid);
 			if (tarCondition == nullptr)
 				return false;
 
 			const uint userCount = (uint)strorageUser.size();
 			for (uint i = 0; i < userCount; ++i)
-				strorageUser[i]->NotifyEraseCondition(tarCondition);
+				strorageUser[i]->NotifyRemoveCondition(tarCondition);
 			return true;
 		}
 	}

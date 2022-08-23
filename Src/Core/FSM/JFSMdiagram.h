@@ -21,45 +21,41 @@ namespace JinEngine
 		private:
 			//vector + unorered map => 64bit overhead
 			std::string name;
+			const size_t guid;
 			IJFSMconditionStorageUser* conditionStorage;
 			std::vector<std::unique_ptr<JFSMstate>> stateVec;
 			std::unordered_map<size_t, JFSMstate*> stateMap;
 			JFSMstate* initState = nullptr;
-			size_t nowStateId;
-			std::hash<std::string> strHash;
-		public:
-			JFSMdiagram(const std::string& name, IJFSMconditionStorageUser* conditionStorage);
+			size_t nowStateId; 
+		public: 
+			JFSMdiagram(const std::string& name, const size_t guid, IJFSMconditionStorageUser* conditionStorage);
 			virtual ~JFSMdiagram();
 			JFSMdiagram(const JFSMdiagram& rhs) = delete;
 			JFSMdiagram& operator=(const JFSMdiagram& rhs) = delete;
 
 			std::string GetName()const noexcept;
+			std::string GetStateUniqueName(const std::string& initName)const noexcept;
+			size_t GetGuid()const noexcept;
 		protected:
 			void Initialize()noexcept;
-			uint GetStateCount()noexcept;
-			bool GetStateId(const std::string& name, size_t& id)noexcept;
+			uint GetStateCount()noexcept; 
 			JFSMstate* GetNowState()noexcept;
-			JFSMstate* GetState(const size_t id)noexcept;
-			JFSMstate* GetState(const std::string& name)noexcept;
-			void SetTransitionCondition(const std::string& stateName, const std::string& outputStateName, const std::string& newConditionName, const uint oldConditionIndex)noexcept;
-			void SetTransitionCondtionOnValue(const std::string& stateName, const std::string& outputStateName, const uint conditionIndex, const float value)noexcept;
-			void SetStateName(const std::string& oldName, const std::string& newName);
+			JFSMstate* GetState(const size_t guid)noexcept; 
+			void SetTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuid, const size_t conditionGuid, const uint conditionIndex)noexcept;
+			void SetTransitionCondtionOnValue(const size_t inputStateGuid, const size_t outputStateGuid, const uint conditionIndex, const float value)noexcept;
+			void SetStateName(const size_t guid, const std::string& newName);
 
-			bool AddTransitionCondition(const size_t stateId, const size_t outputId)noexcept;
-			bool AddTransitionCondition(const std::string& stateName, const std::string& outputStateName)noexcept;
-			bool EraseState(const size_t stateId)noexcept;
-			bool EraseState(const std::string& stateName)noexcept;
-			bool EraseTransition(const size_t stateId, const size_t outputId)noexcept;
-			bool EraseTransition(const std::string& stateName, const std::string& outputStateName)noexcept;
-			bool EraseTransitionCondition(const std::string& stateName, const std::string& outputStateName, const std::string& conditionName)noexcept;
+			bool AddTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuid)noexcept;
+			bool DestroyState(const size_t stateId)noexcept; 
+			bool RemoveTransition(const size_t inputStateGuid, const size_t outputStateGuid)noexcept;
+			bool RemoveTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuid, const size_t conditionGuid)noexcept;
 			void Clear()noexcept;
 
 			JFSMstate* GetStateByIndex(const uint index)noexcept;
 			JFSMstate* AddState(std::unique_ptr<JFSMstate> state)noexcept;
-			JFSMtransition* AddTransition(const size_t stateId, std::unique_ptr<JFSMtransition> transition)noexcept;
-			JFSMtransition* AddTransition(const std::string& stateName, std::unique_ptr<JFSMtransition> transition)noexcept;
+			JFSMtransition* AddTransition(const size_t stateId, std::unique_ptr<JFSMtransition> transition)noexcept; 
 		private:
-			void NotifyEraseCondition(JFSMcondition* condition)noexcept final;
+			void NotifyRemoveCondition(JFSMcondition* condition)noexcept final;
 		};
 	}
 }

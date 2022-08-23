@@ -3,7 +3,7 @@
 #include"../../JDataType.h"  
 #include"../../../Object/Resource/Mesh/JMeshStruct.h"
 #include"../../../Object/Resource/AnimationClip/JAnimationSample.h"
-#include"../../../Utility/Vector.h"
+#include"../../../Utility/JVector.h"
 #include"../../../../Lib/Fbx/Include/fbxsdk.h"
 #include"../../../../Lib/DirectX/DirectXMesh.h" 
 
@@ -43,8 +43,8 @@ namespace JinEngine
 			FbxNode* node;
 			int parentIndex;
 			FbxAMatrix globalBindPositionInverse;
-			Vector3<float> min;
-			Vector3<float> max;
+			JVector3<float> min;
+			JVector3<float> max;
 			float size;
 		public:
 			JFbxJoint();
@@ -59,7 +59,7 @@ namespace JinEngine
 		struct JFbxControlPoint
 		{
 		public:
-			Vector3<float> position;
+			JVector3<float> position;
 			std::vector<JBlendingIndexWeightPair> blendingInfo;
 			bool isSkin = false;
 		};

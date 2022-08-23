@@ -3,9 +3,18 @@
 #include<fstream>
 
 namespace JinEngine
-{ 
+{
+	struct JObjectDestroyData
+	{
+	public:
+		size_t beginGuid;
+		bool isIgnoreUndestroyAbleFlag = false;
+		bool isEnd = true;
+	};
+	static JObjectDestroyData destroyData;
+
 	std::string JObject::GetName()const noexcept
-	{   
+	{
 		return name;
 	}
 	std::wstring JObject::GetWName() const noexcept
@@ -16,15 +25,16 @@ namespace JinEngine
 	{
 		return guid;
 	}
-	JOBJECT_FLAG JObject::GetFlag()const noexcept
+	J_OBJECT_FLAG JObject::GetFlag()const noexcept
 	{
 		return flag;
 	}
 	void JObject::SetName(const std::string& name)noexcept
 	{
-		JObject::name = name;
+		if(!name.empty())
+			JObject::name = name;
 	}
-	bool JObject::HasFlag(const JOBJECT_FLAG flag)const noexcept
+	bool JObject::HasFlag(const J_OBJECT_FLAG flag)const noexcept
 	{
 		return (JObject::flag & flag) != 0;
 	}
@@ -50,6 +60,35 @@ namespace JinEngine
 	{
 		isActivated = false;
 	}
+	void JObject::BeginDestroy()
+	{
+		if (destroyData.isEnd)
+		{
+			//lock 필요 
+			destroyData.beginGuid = GetGuid(); 
+			destroyData.isIgnoreUndestroyAbleFlag = false;
+			destroyData.isEnd = false;
+		}
+		EndDestroy();
+	}
+	bool JObject::IsIgnoreUndestroyableFlag()const noexcept
+	{
+		return destroyData.isIgnoreUndestroyAbleFlag;
+	}
+	void JObject::SetIgnoreUndestroyableFlag(const bool value)noexcept
+	{
+		destroyData.isIgnoreUndestroyAbleFlag = value;
+	}
+	void JObject::EndDestroy()
+	{
+		const size_t guid = GetGuid();
+		Destroy();
+		if (destroyData.beginGuid == guid)
+		{
+			//unlock 필요
+			destroyData.isEnd = true;
+		}
+	}
 	Core::J_FILE_IO_RESULT JObject::StoreMetadata(std::wofstream& stream, JObject* object)
 	{
 		if (((int)object->GetFlag() & OBJECT_FLAG_DO_NOT_SAVE) > 0)
@@ -74,14 +113,21 @@ namespace JinEngine
 			stream >> resourceGuid;
 			stream >> flag;
 			metadata.guid = resourceGuid;
-			metadata.flag = (JOBJECT_FLAG)flag;
+			metadata.flag = (J_OBJECT_FLAG)flag;
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	JObject::JObject(const std::string& name, const size_t guid, const JOBJECT_FLAG flag)
+	JObject::JObject(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag)
 		:name(name), guid(guid), flag(flag)
-	{}
-	JObject::~JObject() {}
+	{
+		if(GetTypeDepth() != JObject::GetTypeDepth())
+			GetTypeInfo().AddInstance(this, GetGuid());
+	}
+	JObject::~JObject()
+	{
+		if (GetTypeDepth() != JObject::GetTypeDepth())
+			GetTypeInfo().RemoveInstance(GetGuid());
+	}
 }

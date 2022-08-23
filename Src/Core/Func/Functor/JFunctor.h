@@ -4,14 +4,13 @@
 #include<vector> 
 #include"../../Typelist/Typelist.h"  
 #include"../../Reflection/JReflection.h"
-#include"../../../Utility/JTypeUtility.h"
+#include"../../../Utility/JTypeUtility.h" 
 
 namespace JinEngine
-{ 
+{
 	namespace Core
 	{
 #pragma region Impl
-
 		template<typename Ret>
 		class FunctionImplBase
 		{
@@ -27,19 +26,21 @@ namespace JinEngine
 		};
 
 		template<typename Pointer, typename Ret, typename ...Param>
-		class FunctionImpl : public IFunctionImpl<Ret, Param...>
+		class StaticFunctionImpl : public IFunctionImpl<Ret, Param...>
 		{
 		private:
 			Pointer ptr;
 		public:
-			FunctionImpl(Pointer ptr)
+			StaticFunctionImpl(Pointer ptr)
 				:ptr(ptr)
 			{}
+		public:
 			Ret operator()(Param... var)
 			{
 				return (*ptr)(std::forward<Param>(var)...);
 			}
 		};
+
 
 		template<typename Pointer, typename Object, typename Ret, typename ...Param>
 		class MemberFunctionImpl : public IFunctionImpl<Ret, Param...>
@@ -51,6 +52,7 @@ namespace JinEngine
 			MemberFunctionImpl(Pointer ptr, Object* object)
 				:ptr(ptr), object(object)
 			{}
+		public:
 			Ret operator()(Param... var)
 			{
 				return ((object)->*ptr)(std::forward<Param>(var)...);
@@ -75,38 +77,32 @@ namespace JinEngine
 			using Return = Ret;
 			using ParamList = typename MakeTypelist<Param...>::Result;
 			using DecayParamList = typename MakeTypelist<std::decay_t<Param>...>::Result;
-
 		protected:
 			std::unique_ptr<Impl> impl;
 		public:
-			JFunctor(const JFunctor&) = default;
-			JFunctor& operator=(const JFunctor&) = default;
-			~JFunctor() {};
+			JFunctor(const JFunctor& rhs) = default;
+			JFunctor& operator=(const JFunctor& rhs) = default;
 
+			~JFunctor() {};
 			JFunctor(std::unique_ptr<Impl> impl)
 				:impl(std::move(impl))
 			{}
-			template<typename Pointer>
-			JFunctor(Pointer ptr)
-				: impl(std::make_unique<FunctionImpl<Pointer, Ret, Param...>>(ptr))
+			JFunctor(Ret(*ptr)(Param...))
+				: impl(std::make_unique<StaticFunctionImpl<Ret(*)(Param...), Ret, Param...>>(ptr))
 			{}
-
-			template<typename Pointer, typename Object>
-			JFunctor(Pointer ptr, Object* object)
-				: impl(std::make_unique<MemberFunctionImpl<Pointer, Object, Ret, Param...>>(ptr, object))
+			template<typename Object>
+			JFunctor(Ret(Object::* ptr)(Param...), Object* object)
+				: impl(std::make_unique<MemberFunctionImpl<Ret(Object::*)(Param...), Object, Ret, Param...>>(ptr, object))
 			{}
-
+		public:
 			Ret operator()(Param... var)
 			{
 				return (*impl)(std::forward<Param>(var)...);
 			}
-
 			Ret Invoke(Param... var)
 			{
 				return (*impl)(std::forward<Param>(var)...);
 			}
-		private:
-
 		};
 #pragma endregion
 #pragma region Bind
@@ -115,28 +111,29 @@ namespace JinEngine
 			//REGISTER_CLASS(JBindHandleBase);
 		public:
 			virtual ~JBindHandleBase() {}
+		public:
+			virtual void InvokeCompletelyBind() = 0;
+			virtual bool IsCompletelyBind() = 0;
 		};
 
 		template<typename OriFunctor, typename ...BindParam>
 		class JBindHandle : public JBindHandleBase
 		{
-		private: 
-			using BindTuple = std::tuple<BindParam&&...>;
+		private:
+			using BindTuple = std::tuple<BindParam...>;
 			using Ret = typename OriFunctor::Return;
 			using OriParamList = typename OriFunctor::ParamList;
 			using DecayParamList = typename OriFunctor::DecayParamList;
 		private:
 			OriFunctor& oriFunctor;
-			BindTuple bindTuple; 
+			BindTuple bindTuple;
 		private:
 			//	res: a condition of bindtuple match element type
 			//		true : is bindtuple element
 			//		false ; is passtuple element
 			//	head: a tuple index
-
 			template<bool IsBindParam, size_t Index>
 			struct ParamSelector;
-
 			template<size_t Index>
 			struct ParamSelector<true, Index>
 			{
@@ -157,6 +154,7 @@ namespace JinEngine
 				using PreSequence = ParamSequence<BindTuple, Index - 1>;
 			public:
 				static constexpr bool isBindParam = !std::is_same_v <RemoveAll_T<std::tuple_element_t<Index, BindTuple>>, EmptyType>;
+				static constexpr bool isCompletely = PreSequence::isCompletely && isBindParam;
 				static constexpr int nextPassIndex = ParamSelector<isBindParam, PreSequence::nextPassIndex>::nextPassIndex;
 				static constexpr int passIndex = nextPassIndex - 1;
 			};
@@ -165,6 +163,7 @@ namespace JinEngine
 			{
 			public:
 				static constexpr bool isBindParam = !std::is_same_v <RemoveAll_T<std::tuple_element_t<0, BindTuple>>, EmptyType>;
+				static constexpr bool isCompletely = isBindParam;
 				static constexpr int nextPassIndex = ParamSelector<isBindParam, 0>::nextPassIndex;
 				static constexpr int passIndex = nextPassIndex - 1;
 			};
@@ -172,8 +171,11 @@ namespace JinEngine
 			JBindHandle(OriFunctor& oriFunctor, BindParam&&... var)
 				:oriFunctor(oriFunctor), bindTuple(std::forward<BindParam>(var)...)
 			{}
-			~JBindHandle()
-			{}
+			~JBindHandle() {}
+			//JBindHandle(const JBindHandle& rhs) = default;
+			//JBindHandle& operator=(const JBindHandle& rhs) = default;
+			//JBindHandle(JBindHandle&& rhs) = default;
+			//JBindHandle& operator=(JBindHandle&& rhs) = default;
 		private:
 			template<size_t ParamIndex, typename PassTuple>
 			constexpr decltype(auto) GetParam(const PassTuple& passTuple)
@@ -190,33 +192,72 @@ namespace JinEngine
 					return std::forward<PassEleType>(std::get<Seq::passIndex>(passTuple));
 				}
 			}
-
+			template<size_t ParamIndex>
+			constexpr decltype(auto) GetParam()
+			{
+				using Seq = ParamSequence<BindTuple, ParamIndex>;
+				if constexpr (Seq::isBindParam)
+				{
+					using BindEleType = std::tuple_element_t<ParamIndex, BindTuple>;
+					return std::forward<BindEleType>(std::get<ParamIndex>(bindTuple));
+				}
+			}
+		private:
 			template<size_t ...Is, typename PassTuple>
-			Ret CallFunc(std::index_sequence<Is...>, const PassTuple& passTuple)
-			{	
+			auto CallFunc(std::index_sequence<Is...>, const PassTuple& passTuple)
+			{
 				return oriFunctor(GetParam<Is>(passTuple)...);
+			}
+			template<size_t ...Is>
+			void CallFunc(std::index_sequence<Is...>)
+			{
+				constexpr int bindParamCount = sizeof...(BindParam);
+				constexpr int seqIndex = bindParamCount - 1;
+				if constexpr (bindParamCount == 0)
+					oriFunctor(GetParam<Is>()...);
+				else if constexpr (ParamSequence<BindTuple, seqIndex>::isCompletely)
+					oriFunctor(GetParam<Is>()...);
 			}
 		public:
 			template<typename ...PassP>
-			auto operator()(PassP&&... var)
+			auto operator()(PassP&&... var) ->
+				decltype(CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>(), std::forward_as_tuple(std::forward<PassP>(var)...)))
 			{
 				return CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>(), std::forward_as_tuple(std::forward<PassP>(var)...));
 			}
 			template<typename ...PassP>
-			auto Invoke(PassP&&... var)
+			auto Invoke(PassP&&... var) ->
+				decltype(CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>(), std::forward_as_tuple(std::forward<PassP>(var)...)))
 			{
 				return CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>(), std::forward_as_tuple(std::forward<PassP>(var)...));
 			}
+			void InvokeCompletelyBind()
+			{
+				CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>());
+			}
+		public:
+			constexpr bool IsCompletelyBind()
+			{
+				constexpr int bindParamCount = sizeof...(BindParam);
+				constexpr int seqIndex = bindParamCount - 1;
+				if constexpr (bindParamCount == 0)
+					return true;
+				else if constexpr (ParamSequence<BindTuple, seqIndex>::isCompletely)
+					return true;
+				else
+					return false;
+			}
+			template<size_t index>
+			decltype(auto) Get()
+			{
+				return std::get<index>(bindTuple);
+			}
 		};
-		class JBindSocket
+
+		template<typename Ret, typename ...Param, typename ...BindParam>
+		JBindHandle<JFunctor<Ret, Param...>, BindParam...> Bind(JFunctor<Ret, Param...>& functor, BindParam&&... bindVar)
 		{
-		private:
-			std::unique_ptr<JBindHandleBase> handleBase;
-		};
-		template<typename Functor, typename ...BindParam>
-		JBindHandle<Functor, BindParam...> Bind(Functor& functor, BindParam&&... bindVar)
-		{
-			return JBindHandle<Functor, BindParam...>(functor, std::forward<BindParam>(bindVar)...);
+			return JBindHandle<JFunctor<Ret, Param...>, BindParam...>(functor, std::forward<BindParam>(bindVar)...);
 		}
 #pragma endregion
 	}

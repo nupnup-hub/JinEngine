@@ -19,9 +19,13 @@ namespace JinEngine
 	{
 		return avatar.get();
 	}
-	JSKELETON_TYPE JSkeletonAsset::GetSkeletonType()noexcept
+	JSKELETON_TYPE JSkeletonAsset::GetSkeletonType()const noexcept
 	{
 		return skeletonType;
+	}
+	size_t JSkeletonAsset::GetOwnerModelGuid()const noexcept
+	{
+		return ownerModelGuid;
 	}
 	std::string JSkeletonAsset::GetJointName(int index)noexcept
 	{
@@ -48,6 +52,10 @@ namespace JinEngine
 	{
 		return avatar != nullptr;
 	}
+	bool JSkeletonAsset::HasValidModelGuid()noexcept
+	{
+		return isValidOwnerModelGuid;
+	}
 	bool JSkeletonAsset::IsRegularChildJointIndex(uint8 childIndex, uint8 parentIndex)noexcept
 	{  
 		if (childIndex == parentIndex || childIndex < parentIndex)
@@ -73,6 +81,10 @@ namespace JinEngine
 		return isParent;
 	}
 	JSkeletonAssetAvatarInterface* JSkeletonAsset::AvatarInterface()
+	{
+		return this;
+	}
+	JSkeletonAssetModelInteface* JSkeletonAsset::ModelInteface()
 	{
 		return this;
 	}
@@ -197,7 +209,7 @@ namespace JinEngine
 	}
 	void JSkeletonAsset::StuffResource()
 	{
-		if (!IsValidResource())
+		if (!IsValid())
 		{
 			if (ReadSkeletonAssetData())
 				SetValid(true);
@@ -205,7 +217,7 @@ namespace JinEngine
 	}
 	void JSkeletonAsset::ClearResource()
 	{
-		if (IsValidResource())
+		if (IsValid())
 		{ 
 			skeleton.reset();
 			avatar.reset(); 
@@ -277,6 +289,11 @@ namespace JinEngine
 	void JSkeletonAsset::SetSkeleton(JSkeleton&& skeleon)
 	{
 		JSkeletonAsset::skeleton = std::make_unique<JSkeleton>(std::move(skeleon));
+	}
+	void JSkeletonAsset::SetOwnerModelGuid(const size_t modelGuid)
+	{
+		JSkeletonAsset::ownerModelGuid = modelGuid;
+		isValidOwnerModelGuid = JResourceManager::Instance().HasResource(J_RESOURCE_TYPE::MODEL, ownerModelGuid);
 	}
 	Core::J_FILE_IO_RESULT JSkeletonAsset::CallStoreResource()
 	{
@@ -354,13 +371,21 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
 		stream.close();
 
-		JSkeletonAsset* newSkeletonAsset;
-		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-			newSkeletonAsset = new JSkeletonAsset(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JSkeletonAsset>(pathData.format));
-		else
-			newSkeletonAsset = new JSkeletonAsset(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JSkeletonAsset>(pathData.format));
+		JSkeletonAsset* newSkeletonAsset = nullptr;
+		if (directory->HasFile(pathData.fullName))
+			newSkeletonAsset = JResourceManager::Instance().GetResourceByPath<JSkeletonAsset>(pathData.strPath);
 
-		if (newSkeletonAsset->ReadSkeletonAssetData())
+		if (newSkeletonAsset == nullptr)
+		{
+			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+				newSkeletonAsset = new JSkeletonAsset(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JSkeletonAsset>(pathData.format));
+			else
+				newSkeletonAsset = new JSkeletonAsset(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JSkeletonAsset>(pathData.format));
+		}
+
+		if (newSkeletonAsset->IsValid())
+			return newSkeletonAsset;
+		else if (newSkeletonAsset->ReadSkeletonAssetData())
 			return newSkeletonAsset;
 		else
 		{
@@ -368,7 +393,7 @@ namespace JinEngine
 			return nullptr;
 		}
 	}  
-	void JSkeletonAsset::RegisterFunc()
+	void JSkeletonAsset::RegisterJFunc()
 	{
 		auto defaultC = [](JDirectory* owner) ->JResourceObject*
 		{
@@ -378,7 +403,7 @@ namespace JinEngine
 				owner,
 				JResourceObject::GetDefaultFormatIndex());
 		};
-		auto initC = [](const std::string& name, const size_t guid, const JOBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
 			return  new JSkeletonAsset(name, guid, objFlag, directory, formatIndex);
 		};
@@ -404,7 +429,7 @@ namespace JinEngine
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
-	JSkeletonAsset::JSkeletonAsset(const std::string& name, const size_t guid, const JOBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	JSkeletonAsset::JSkeletonAsset(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		:JSkeletonAssetInterface(name, guid, flag, directory, formatIndex)
 	{ }
 	JSkeletonAsset::~JSkeletonAsset(){}

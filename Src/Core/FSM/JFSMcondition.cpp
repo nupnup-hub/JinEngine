@@ -1,11 +1,11 @@
-#include"JFSMcondition.h"
+#include"JFSMcondition.h" 
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		JFSMcondition::JFSMcondition(const std::string& name, const size_t id, const J_FSMCONDITION_VALUE_TYPE valueType)
-			:name(name), id(id), valueType(valueType)
+		JFSMcondition::JFSMcondition(const std::string& name, const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType)
+			:name(name), guid(guid), valueType(valueType)
 		{}
 		JFSMcondition::~JFSMcondition() {}
 
@@ -17,9 +17,9 @@ namespace JinEngine
 		{
 			return name;
 		}
-		size_t JFSMcondition::GetId()const noexcept
+		size_t JFSMcondition::GetGuid()const noexcept
 		{
-			return id;
+			return guid;
 		}
 		float JFSMcondition::GetValue()const noexcept
 		{
@@ -34,19 +34,10 @@ namespace JinEngine
 		{
 			return valueType;
 		}
-		void JFSMcondition::SetValue(float value)noexcept
+		void JFSMcondition::SetName(const std::string& name)noexcept
 		{
-			if (valueType == J_FSMCONDITION_VALUE_TYPE::BOOL)
-				JFSMcondition::value = static_cast<float>(std::clamp(static_cast<int>(value), 0, 1));
-			else if (valueType == J_FSMCONDITION_VALUE_TYPE::INT)
-				JFSMcondition::value = static_cast<float>(static_cast<int>(value));
-			else
-				JFSMcondition::value = value;
-		}
-		void JFSMcondition::SetName(const std::string& name, const size_t id)noexcept
-		{
-			JFSMcondition::name = name;
-			JFSMcondition::id = id;
+			if (!name.empty()) 
+				JFSMcondition::name = name; 
 		}
 		void JFSMcondition::SetValueType(const J_FSMCONDITION_VALUE_TYPE valueType)noexcept
 		{
