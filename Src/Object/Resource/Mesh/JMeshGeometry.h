@@ -61,12 +61,14 @@ namespace JinEngine
 		{
 			return J_RESOURCE_TYPE::MESH;
 		}
-		std::string GetFormat()const noexcept final;
-		static std::vector<std::string> GetAvailableFormat()noexcept;
+		std::wstring GetFormat()const noexcept final;
+		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 		J_MESHGEOMETRY_TYPE GetMeshGeometryType()const noexcept;
 
 		bool HasUV()const noexcept;
 		bool HasNormal()const noexcept;
+	public:
+		bool Copy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
@@ -85,7 +87,7 @@ namespace JinEngine
 		static JMeshGeometry* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
 		static void RegisterJFunc();
 	private:
-		JMeshGeometry(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JMeshGeometry(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JMeshGeometry();
 	};
 

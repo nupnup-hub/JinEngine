@@ -15,7 +15,7 @@ namespace JinEngine
 		class JAvatarEditor : public JEditorWindow
 		{
 		private: 
-			size_t modelGuid;
+			Core::JUserPtr<JModel> targetModel;
 			JAvatar targetAvatar;
 
 			bool hasAvatar = false;
@@ -45,7 +45,7 @@ namespace JinEngine
 			void UpdateWindow()final;
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept;
-			void SetModelGuid(const size_t guid)noexcept;
+			void SetTargetModel(const Core::JUserPtr<JModel>& newTargetModel)noexcept;
 		private:
 			//Build Gui
 			void BuildAvatarEdit();

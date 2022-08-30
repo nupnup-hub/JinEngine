@@ -4,8 +4,8 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		JFSMcondition::JFSMcondition(const std::string& name, const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType)
-			:name(name), guid(guid), valueType(valueType)
+		JFSMcondition::JFSMcondition(const std::wstring& name, const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType)
+			:JFSMIdentifier(name ,guid), valueType(valueType)
 		{}
 		JFSMcondition::~JFSMcondition() {}
 
@@ -13,13 +13,9 @@ namespace JinEngine
 		{
 			value = 0;
 		}
-		std::string JFSMcondition::GetName()const noexcept
+		J_FSM_OBJECT_TYPE JFSMcondition::GetFSMobjType()const noexcept
 		{
-			return name;
-		}
-		size_t JFSMcondition::GetGuid()const noexcept
-		{
-			return guid;
+			return J_FSM_OBJECT_TYPE::CONDITION;
 		}
 		float JFSMcondition::GetValue()const noexcept
 		{
@@ -33,11 +29,6 @@ namespace JinEngine
 		J_FSMCONDITION_VALUE_TYPE JFSMcondition::GetValueType()const noexcept
 		{
 			return valueType;
-		}
-		void JFSMcondition::SetName(const std::string& name)noexcept
-		{
-			if (!name.empty()) 
-				JFSMcondition::name = name; 
 		}
 		void JFSMcondition::SetValueType(const J_FSMCONDITION_VALUE_TYPE valueType)noexcept
 		{

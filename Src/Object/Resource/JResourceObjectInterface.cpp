@@ -8,9 +8,16 @@ namespace JinEngine
 	//For enum type call virtual func 
 	JRI::RTypeHint::RTypeHint(const J_RESOURCE_TYPE thisType,
 		const std::vector<J_RESOURCE_TYPE>& hasType,
-		bool hasGraphicResource, 
-		bool isFrameResource,
-		bool isGraphicBuffResource)
+		const bool hasGraphicResource,
+		const bool isFrameResource,
+		const bool isGraphicBuffResource)
+		:thisType(thisType),
+		hasType(hasType),
+		hasGraphicResource(hasGraphicResource),
+		isFrameResource(isFrameResource),
+		isGraphicBuffResource(isGraphicBuffResource)
+	{}
+	JRI::RTypeHint::RTypeHint(const RTypeHint& rhs)
 		:thisType(thisType),
 		hasType(hasType),
 		hasGraphicResource(hasGraphicResource),
@@ -36,20 +43,18 @@ namespace JinEngine
 	{
 		return (*getTypeName)(nullptr);
 	}
-	std::vector<std::string> JRI::RTypeCommonFunc::CallGetAvailableFormat()
+	std::vector<std::wstring> JRI::RTypeCommonFunc::CallGetAvailableFormat()
 	{
 		return (*getAvailableFormat)(nullptr);
 	}
-	int JRI::RTypeCommonFunc::CallFormatIndex(const std::string& format)
+	int JRI::RTypeCommonFunc::CallFormatIndex(const std::wstring& format)
 	{
 		return (*getFormatIndex)(nullptr, format);
 	}
 
 	JRI::RTypeInterfaceFunc::RTypeInterfaceFunc(SetFrameDirtyCallable* setFrameDirtyCallable, SetBuffIndexCallable* setBuffIndexCallable)
 		:setFrameDirtyCallable(setFrameDirtyCallable), setBuffIndexCallable(setBuffIndexCallable)
-	{
-
-	}
+	{}
 	JRI::RTypeInterfaceFunc::~RTypeInterfaceFunc()
 	{
 		setFrameDirtyCallable = nullptr;
@@ -94,7 +99,7 @@ namespace JinEngine
 	using RTypeInfo = Core::JSingletonHolder<RTypeInfoData>;
 	//FuncStorage
 
-	std::vector<std::string> JResourceObjectInterface::CallGetAvailableFormat(const J_RESOURCE_TYPE type)
+	std::vector<std::wstring> JResourceObjectInterface::CallGetAvailableFormat(const J_RESOURCE_TYPE type)
 	{
 		return RTypeInfo::Instance().rFuncStorage[(int)type].CallGetAvailableFormat();
 	}
@@ -102,11 +107,11 @@ namespace JinEngine
 	{
 		return RTypeInfo::Instance().rFuncStorage[(int)type].CallGetTypeName();
 	}
-	int JResourceObjectInterface::CallFormatIndex(const J_RESOURCE_TYPE type, const std::string& format)
+	int JResourceObjectInterface::CallFormatIndex(const J_RESOURCE_TYPE type, const std::wstring& format)
 	{
 		return RTypeInfo::Instance().rFuncStorage[(int)type].CallFormatIndex(format);
 	}
-	bool JResourceObjectInterface::CallIsValidFormat(const J_RESOURCE_TYPE type, const std::string& format)
+	bool JResourceObjectInterface::CallIsValidFormat(const J_RESOURCE_TYPE type, const std::wstring& format)
 	{
 		return RTypeInfo::Instance().rFuncStorage[(int)type].CallFormatIndex(format) != -1;
 	}
@@ -126,9 +131,9 @@ namespace JinEngine
 	{
 		return RTypeInfo::Instance().rIntefaceStroage[(int)type].GetSetBuffIndexCallable();
 	}
-	int JResourceObjectInterface::GetFormatIndex(const J_RESOURCE_TYPE type, const std::string& format)
+	int JResourceObjectInterface::GetFormatIndex(const J_RESOURCE_TYPE type, const std::wstring& format)
 	{
-		std::vector<std::string> validFormat = CallGetAvailableFormat(type);
+		std::vector<std::wstring> validFormat = CallGetAvailableFormat(type);
 		const uint validFormatCount = (uint)validFormat.size();
 		for (uint i = 0; i < validFormatCount; ++i)
 		{
@@ -216,11 +221,12 @@ namespace JinEngine
 	}
 	void JResourceObjectInterface::RegisterTypeInfo(const JRI::RTypeHint& rTypeHint, const JRI::RTypeCommonFunc& rTypeUtil, const JRI::RTypeInterfaceFunc& rTypeIFunc)
 	{
-		RTypeInfo::Instance().rInfoStorage[(int)rTypeHint.thisType] = rTypeHint;
+		const JRI::RTypeHint hint{ rTypeHint };
+		RTypeInfo::Instance().rInfoStorage[(int)rTypeHint.thisType] = std::move(hint);
 		RTypeInfo::Instance().rFuncStorage[(int)rTypeHint.thisType] = rTypeUtil;
 		RTypeInfo::Instance().rIntefaceStroage[(int)rTypeHint.thisType] = rTypeIFunc;
 	}
-	JResourceObjectInterface::JResourceObjectInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag)
+	JResourceObjectInterface::JResourceObjectInterface(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag)
 		:JObject(name, guid, flag)
 	{}
 }

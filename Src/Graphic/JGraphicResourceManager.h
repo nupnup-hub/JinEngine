@@ -12,16 +12,12 @@
 
 namespace JinEngine
 {
-	namespace Editor
-	{
-		class JGraphicTextureHandle;
-	}
 	namespace Graphic
 	{
+		class JGraphicTextureHandle;
 		class JGraphicResourceManager : public JGraphicBufManagerInterface
 		{
-		private:
-			friend class Editor::JGraphicResourceWatcher;
+		private: 
 			friend class JGraphicImpl;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap;
@@ -114,11 +110,11 @@ namespace JinEngine
 				uint m4xMsaaQuality);
 
 			JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
-				const std::string& path,
+				const std::wstring& path,
 				ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList);
 			JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
-				const std::string& path,
+				const std::wstring& path,
 				ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList);
 			JGraphicTextureHandle* CreateRenderTargetTexture(ID3D12Device* device, const uint width, const uint height);

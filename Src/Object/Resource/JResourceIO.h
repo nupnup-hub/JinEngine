@@ -1,6 +1,7 @@
 #pragma once 
 #include<direct.h>	 
 #include<memory>  
+#include<string>
 #include"JResourceType.h"
 #include"../JObjectFlag.h"
 
@@ -12,6 +13,7 @@ namespace JinEngine
 	public:
 		JResourceIO();
 		~JResourceIO();
+		JDirectory* LoadRootDirectory(const std::wstring& path, const J_OBJECT_FLAG initFlag);
 		void LoadEngineDirectory(JDirectory* engineRootDir);
 		void LoadProjectDirectory(JDirectory* projectRootDir);
 		void LoadProjectResource(JDirectory* projectRootDir);

@@ -28,7 +28,7 @@ namespace JinEngine
 		public:
 			virtual J_EDITOR_PAGE_TYPE GetPageType()const noexcept = 0;
 		public:
-			virtual bool IsValidOpenRequest(JObject* selectedObj) noexcept = 0;
+			virtual bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj) noexcept = 0;
 		public:
 			void DoSetOpen()noexcept final;
 			void DoOffOpen()noexcept final;
@@ -47,8 +47,8 @@ namespace JinEngine
 			void UpdateWindowMenuBar();
 			void PrintOpenWindowState();
 		protected:
-			void DoActivate() override;
-			void DoDeActivate() override;
+			void DoActivate()noexcept override;
+			void DoDeActivate()noexcept override;
 		private:
 			JEditorWindow* FindEditorWindow(const std::string& windowName)const noexcept;
 			bool IsWindowInVector(JEditorWindow* window, std::vector<JEditorWindow*>::const_iterator st, const uint count)const noexcept;

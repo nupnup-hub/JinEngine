@@ -4,9 +4,11 @@
 #include"JFileFactory.h"
 #include"../Resource/JResourceObject.h"
 #include"../Resource/JResourceManager.h"
+#include"../Resource/JResourceObjectFactory.h"
 #include"../../Application/JApplicationVariable.h" 
 #include"../../Core/Guid/GuidCreator.h"
 #include"../../Utility/JCommonUtility.h"
+#include<io.h>
 
 namespace JinEngine
 {
@@ -17,13 +19,13 @@ namespace JinEngine
 		else
 			return children[index];
 	}
-	JDirectory* JDirectory::GetChildDirctory(const std::string& path)noexcept
+	JDirectory* JDirectory::GetChildDirctory(const std::wstring& path)noexcept
 	{
-		std::string thisPath = GetPath();
+		std::wstring thisPath = GetPath();
 		const uint childCount = (uint)children.size();
 		for (uint i = 0; i < childCount; ++i)
 		{
-			if (path == thisPath + "\\" + children[i]->GetName())
+			if (path == thisPath + L"\\" + children[i]->GetName())
 				return children[i];
 		}
 		return nullptr;
@@ -36,16 +38,12 @@ namespace JinEngine
 	{
 		return (uint)fileList.size();
 	}
-	std::string JDirectory::GetPath()const noexcept
+	std::wstring JDirectory::GetPath()const noexcept
 	{
 		if (parent == nullptr)
 			return JApplicationVariable::GetProjectPath();
 		else
-			return parent->GetPath() + "\\" + GetName();
-	}
-	std::wstring JDirectory::GetWPath()const noexcept
-	{
-		return JCommonUtility::U8StringToWstring(GetPath());
+			return parent->GetPath() + L"\\" + GetName();
 	}
 	JFile* JDirectory::GetFile(const uint index)noexcept
 	{
@@ -62,7 +60,7 @@ namespace JinEngine
 	{
 		return J_OBJECT_TYPE::DIRECTORY_OBJECT;
 	}
-	bool JDirectory::HasChild(const std::string& name)const noexcept
+	bool JDirectory::HasChild(const std::wstring& name)const noexcept
 	{
 		const uint childrenCount = (uint)children.size();
 		for (uint i = 0; i < childrenCount; ++i)
@@ -72,7 +70,7 @@ namespace JinEngine
 		}
 		return false;
 	}
-	bool JDirectory::HasFile(const std::string& name)const noexcept
+	bool JDirectory::HasFile(const std::wstring& name)const noexcept
 	{
 		const uint fileCount = (uint)fileList.size();
 		for (uint i = 0; i < fileCount; ++i)
@@ -86,7 +84,7 @@ namespace JinEngine
 	{
 		return IsActivated();
 	}
-	JDirectory* JDirectory::SearchDirectory(const std::string& path)noexcept
+	JDirectory* JDirectory::SearchDirectory(const std::wstring& path)noexcept
 	{
 		JDirectory* res = GetChildDirctory(path);
 		if (res == nullptr)
@@ -101,9 +99,34 @@ namespace JinEngine
 		}
 		return res;
 	}
-	std::string JDirectory::MakeUniqueFileName(const std::string& name)noexcept
+	std::wstring JDirectory::MakeUniqueFileName(const std::wstring& name)noexcept
 	{
 		return JCommonUtility::MakeUniqueName(fileList, name);
+	}
+	bool JDirectory::Copy(JObject* ori)
+	{
+		//engine private dir has OBJECT_FLAG_COPYABLE flag
+		//and these dir can't copy
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{
+			Clear();
+			JDirectory* oriDir = static_cast<JDirectory*>(ori);
+			const uint fileCount = (uint)oriDir->fileList.size();
+			for (uint i = 0; i < fileCount; ++i)
+				JRFIB::CopyByName(oriDir->fileList[i]->GetResource()->GetTypeInfo().Name(), *oriDir->fileList[i]->GetResource(), *this);			
+
+			const uint childrenCount = (uint)oriDir->children.size();
+			for (uint i = 0; i < childrenCount; ++i)
+				JDFI::Copy(*oriDir->children[i], *this);
+
+			return true;
+		}
+		else
+			return false;
+
 	}
 	JDirectoryDestroyInterface* JDirectory::DestroyInterface()
 	{
@@ -138,49 +161,75 @@ namespace JinEngine
 		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !IsIgnoreUndestroyableFlag())
 			return;
 
-		const size_t guid = GetGuid();
-		const uint pChildrenCount = (uint)parent->children.size();
-		for (uint i = 0; i < pChildrenCount; ++i)
+		Clear();
+		JResourceManager::Instance().DirectoryStorageInterface()->RemoveJDirectory(*this);
+	}
+	void JDirectory::Clear()
+	{
+		if (parent != nullptr)
 		{
-			if (guid == parent->children[i]->GetGuid())
+			const size_t guid = GetGuid();
+			const uint pChildrenCount = (uint)parent->children.size();
+			for (uint i = 0; i < pChildrenCount; ++i)
 			{
-				parent->children.erase(parent->children.begin() + i);
-				break;
+				if (guid == parent->children[i]->GetGuid())
+				{
+					parent->children.erase(parent->children.begin() + i);
+					parent = nullptr;
+					break;
+				}
 			}
 		}
 
+		bool preIgnore = IsIgnoreUndestroyableFlag();
+		if (!preIgnore)
+			SetIgnoreUndestroyableFlag(true);
 		const uint childrenCount = (uint)children.size();
 		for (uint i = 0; i < childrenCount; ++i)
 		{
-			children[i]->Destroy();
+			children[i]->BeginDestroy();
 			children[i] = nullptr;
 		}
-
-		bool preIgonre = IsIgnoreUndestroyableFlag();
-		if (!preIgonre)
+		if (!preIgnore)
+			SetIgnoreUndestroyableFlag(false);
+		 
+		if (!preIgnore)
 			SetIgnoreUndestroyableFlag(true);
-
 		const uint fileCount = (uint)fileList.size();
 		for (uint i = 0; i < fileCount; ++i)
 			fileList[i]->GetResource()->BeginDestroy();
-		
-		if (!preIgonre)
+		if (!preIgnore)
 			SetIgnoreUndestroyableFlag(false);
 
 		fileList.clear();
 		children.clear();
+	}
+	void JDirectory::DeleteResourceFile(JResourceObject& resource)
+	{
+		const size_t guid = resource.GetGuid();
+		const uint fileCount = (uint)fileList.size();
+		for (uint i = 0; i < fileCount; ++i)
+		{
+			if (fileList[i]->GetResource()->GetGuid() == guid)
+			{ 
+				std::string metaPath = JCommonUtility::WstrToU8Str(ConvertMetafilePath(resource.GetPath()));
+				if (_access(metaPath.c_str(), 00) != -1)
+					remove(metaPath.c_str());
 
-		JResourceManager::Instance().DirectoryRemoveInterface()->RemoveJDirectory(*this);
-		delete this;
+				remove(JCommonUtility::WstrToU8Str(resource.GetPath()).c_str());
+				SetIgnoreUndestroyableFlag(true);
+				resource.BeginDestroy();
+				delete fileList[i];
+				fileList.erase(fileList.begin() + i); 
+			}
+		} 
 	}
 	void JDirectory::BeginForcedDestroy()
 	{
-		bool preIgonre = IsIgnoreUndestroyableFlag();
-		if (!preIgonre)
+		bool preIgnore = IsIgnoreUndestroyableFlag();
+		if (!preIgnore)
 			SetIgnoreUndestroyableFlag(true);
 		BeginDestroy();
-		if (!preIgonre)
-			SetIgnoreUndestroyableFlag(false);
 	}
 	void JDirectory::OpenDirectory()noexcept
 	{
@@ -190,27 +239,89 @@ namespace JinEngine
 	{
 		DeActivate();
 	}
+	Core::J_FILE_IO_RESULT JDirectory::StoreObject(JDirectory* dir)
+	{ 
+		if (dir->HasFlag(OBJECT_FLAG_DO_NOT_SAVE))
+			return Core::J_FILE_IO_RESULT::FAIL_DO_NOT_SAVE_DATA;
+
+		std::wofstream stream;
+		stream.open(ConvertMetafilePath(dir->GetPath()), std::ios::out | std::ios::binary);
+		Core::J_FILE_IO_RESULT res = StoreMetadata(stream, dir);
+		stream.close();
+
+		return res;
+	}
+	JDirectory* JDirectory::LoadObject(JDirectory* parent, const JDirectoryPathData& pathData)
+	{
+		std::wifstream stream; 
+		stream.open(ConvertMetafilePath(pathData.wstrPath), std::ios::in | std::ios::binary);
+		JObject::ObjectMetadata metafile;
+		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metafile);
+		stream.close();
+
+		JDirectory* newDir = nullptr;
+		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JDirectory>(pathData.name, metafile.guid, metafile.flag, parent);
+			newDir = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+		}
+		else
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JDirectory>(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, parent);
+			newDir = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			StoreObject(newDir);
+		}
+
+		return newDir;
+	}
 	void JDirectory::RegisterJFunc()
 	{
 		auto defaultC = [](JDirectory* parent)
 		{
-			std::string name = GetDefaultName<JDirectory>();
+			std::wstring name = GetDefaultName<JDirectory>();
 			if (parent != nullptr)
 				name = JCommonUtility::MakeUniqueName(parent->children, name);
-			return new JDirectory(name, Core::MakeGuid(), OBJECT_FLAG_NONE, parent);
+
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JDirectory>(name, Core::MakeGuid(), OBJECT_FLAG_NONE, parent);
+			JDirectory* newDir = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			StoreObject(newDir);
+			return newDir;
 		};
-		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* parent)
+		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* parent)
 		{
-			std::string newName = name;
+			std::wstring newName = name;
 			if (parent != nullptr)
 				newName = JCommonUtility::MakeUniqueName(parent->children, newName);
-			return new JDirectory(newName, guid, objFlag, parent);
+
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JDirectory>(newName, guid, objFlag, parent);
+			JDirectory* newDir = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return newDir;
 		};
-		JDFI::Register(defaultC, initC);
+		auto loadC = [](JDirectory* parentDir, const JDirectoryPathData& pathData)
+		{
+			return LoadObject(parentDir, pathData);
+		};
+		auto copyC = [](JDirectory* ori, JDirectory* parent)
+		{
+			//copy root dir is restricted
+			std::wstring name = JCommonUtility::MakeUniqueName(parent->children, ori->GetName());
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JDirectory>(name, Core::MakeGuid(), ori->GetFlag(), parent);
+			JDirectory* newDir = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newDir->Copy(ori);
+			StoreObject(newDir);
+			return newDir;
+		};
+
+		JDFI::Register(defaultC, initC, loadC, copyC);
 		JFFI::Register(&JDirectory::CreateJFile, &JDirectory::DestroyJFile);
 	}
-	JDirectory::JDirectory(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* parent)
-		:JDirectoryOCInterface(name, guid, flag), parent(parent)
+	JDirectory::JDirectory(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* parent)
+		:JDirectoryInterface(name, guid, flag), parent(parent)
 	{
 		if (parent != nullptr)
 			parent->children.push_back(this);

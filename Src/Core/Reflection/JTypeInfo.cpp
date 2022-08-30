@@ -42,22 +42,30 @@ namespace JinEngine
 			}
 			return false;
 		}
-		JTypeInstance* JTypeInfo::GetInstance(IdentifierType iden)noexcept
+		JTypeInstance* JTypeInfo::GetInstanceRawPtr(IdentifierType iden)noexcept
 		{
 			if (instanceData == nullptr)
 				return nullptr;
 
 			auto data = instanceData->classInstanceMap.find(iden);
-			return data != instanceData->classInstanceMap.end() ? data->second : nullptr;
+			return data != instanceData->classInstanceMap.end() ? data->second.Get() : nullptr;
 		}
-		bool JTypeInfo::AddInstance(JTypeInstance* ptr, IdentifierType iden)noexcept
+		JUserPtr<JTypeInstance> JTypeInfo::GetInstanceUserPtr(IdentifierType iden)noexcept
 		{
 			if (instanceData == nullptr)
-				return false;
+				return JUserPtr<JTypeInstance>{};
+
+			auto data = instanceData->classInstanceMap.find(iden);
+			return data != instanceData->classInstanceMap.end() ? JUserPtr<JTypeInstance>{data->second } : JUserPtr<JTypeInstance>{};
+		}
+		bool JTypeInfo::AddInstance(IdentifierType iden, JOwnerPtr<JTypeInstance> ptr)noexcept
+		{
+			if (instanceData == nullptr)
+				return false; 
 
 			if (instanceData->classInstanceMap.find(iden) == instanceData->classInstanceMap.end())
 			{
-				instanceData->classInstanceVec.push_back(ptr);
+				instanceData->classInstanceVec.push_back(ptr.Get());
 				instanceData->classInstanceMap.emplace(iden, ptr);
 				return true;
 			}

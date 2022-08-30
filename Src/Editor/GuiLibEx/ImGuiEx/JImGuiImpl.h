@@ -134,7 +134,7 @@ namespace JinEngine
 			static JEditorOpenPageEvStruct GetOpendPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 			static JObject* GetSelectedObj(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 			static void SetPageOpenData(JEditorOpenPageEvStruct* evStruct)noexcept;
-			static void SetSelectedObj(const J_EDITOR_PAGE_TYPE pageType, JObject* obj)noexcept;
+			static void SetSelectObj(const J_EDITOR_PAGE_TYPE pageType, const Core::JUserPtr<JObject>& selectObj)noexcept;
 		private:
 			static void StartEditorUpdate();
 			static void EndEditorUpdate();

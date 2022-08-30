@@ -33,7 +33,7 @@ namespace JinEngine
 		size_t index = path.find_last_of(".");
 		return path.substr(index, path.size() - index);
 	}
-	int JCommonUtility::StringToInt(const std::string& str)noexcept
+	int JCommonUtility::StrToInt(const std::string& str)noexcept
 	{
 		int res = 0;
 		int digit = (int)str.size();
@@ -46,9 +46,9 @@ namespace JinEngine
 		}
 		return res;
 	}
-	int JCommonUtility::WStringToInt(const std::wstring& str)noexcept
+	int JCommonUtility::WstrToInt(const std::wstring& str)noexcept
 	{
-		return StringToInt(WstringToU8String(str));
+		return StrToInt(WstrToU8Str(str));
 	}
 	const wchar_t* JCommonUtility::CharToWChar(const char* src)
 	{
@@ -58,15 +58,15 @@ namespace JinEngine
 		mbstowcs_s(&convertedChars, wcstring, newsize, src, _TRUNCATE);
 		return wcstring;
 	}
-	std::wstring JCommonUtility::StringToWstring(const std::string& str)noexcept
+	std::wstring JCommonUtility::StrToWstr(const std::string& str)noexcept
 	{
 		return std::wstring(CA2W(str.c_str()));
 	}
-	std::string JCommonUtility::WstringToU8String(const std::wstring& wstr)noexcept
+	std::string JCommonUtility::WstrToU8Str(const std::wstring& wstr)noexcept
 	{
 		return std::string(CW2A(wstr.c_str(), CP_UTF8));
 	}
-	std::wstring JCommonUtility::U8StringToWstring(const std::string& str)noexcept
+	std::wstring JCommonUtility::U8StrToWstr(const std::string& str)noexcept
 	{
 		return std::wstring(CA2W(str.c_str(), CP_UTF8));
 	}
@@ -188,32 +188,32 @@ namespace JinEngine
 		else
 			return false;
 	}
-	void JCommonUtility::DecomposeFolderPath(const std::wstring& path, std::wstring& folderParentPath, std::wstring& folderName)noexcept
+	void JCommonUtility::DecomposeFolderPath(const std::wstring& path, std::wstring& folderPath, std::wstring& name)noexcept
 	{
 		const int nameStIndex = GetPathLastBackSlash(path);
 		if (nameStIndex != -1)
 		{
-			folderName = path.substr(nameStIndex, (path.size() - nameStIndex));
-			folderParentPath = path.substr(0, nameStIndex);
+			name = path.substr(nameStIndex, (path.size() - nameStIndex));
+			folderPath = path.substr(0, nameStIndex);
 		}
 		else
 		{
-			folderParentPath = L"";
-			folderName = path;
+			folderPath = L"";
+			name = path;
 		}
 	}
-	void JCommonUtility::DecomposeFolderPath(const std::string& path, std::string& folderParentPath, std::string& folderName)noexcept
+	void JCommonUtility::DecomposeFolderPath(const std::string& path, std::string& folderPath, std::string& name)noexcept
 	{
 		const int nameStIndex = GetPathLastBackSlash(path);
 		if (nameStIndex != -1)
 		{
-			folderName = path.substr(nameStIndex, (path.size() - nameStIndex));
-			folderParentPath = path.substr(0, nameStIndex);
+			name = path.substr(nameStIndex, (path.size() - nameStIndex));
+			folderPath = path.substr(0, nameStIndex);
 		}
 		else
 		{
-			folderParentPath = "";
-			folderName = path;
+			folderPath = "";
+			name = path;
 		}
 	}
 	void JCommonUtility::DecomposeFilePath(const std::wstring& path, std::wstring& folderPath, std::wstring& name, std::wstring& format, bool eraseFolderPathBackSlash)noexcept
@@ -308,7 +308,7 @@ namespace JinEngine
 		int count = 0;
 		while (result)
 		{
-			if (!IsOverlappedFilepath(U8StringToWstring(name + format), U8StringToWstring(folderPath)))
+			if (!IsOverlappedFilepath(U8StrToWstr(name + format), U8StrToWstr(folderPath)))
 				result = false;
 			else
 			{
@@ -442,5 +442,9 @@ namespace JinEngine
 		static std::hash<std::string> stringHash;
 		return stringHash(path);
 	}
-
+	size_t JCommonUtility::CalculateGuid(const std::wstring& path)noexcept
+	{
+		static std::hash<std::wstring> wstringHash;
+		return wstringHash(path);
+	}
 }

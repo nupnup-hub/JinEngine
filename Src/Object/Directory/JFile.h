@@ -12,9 +12,9 @@ namespace JinEngine
 	private:
 		JResourceObject* resource; 
 	public:
-		std::string GetName()const noexcept;
-		std::string GetFullName()const noexcept;
-		std::string GetAvailableFormat()const noexcept;
+		std::wstring GetName()const noexcept;
+		std::wstring GetFullName()const noexcept;
+		std::wstring GetAvailableFormat()const noexcept;
 		JResourceObject* GetResource()noexcept;  
 	private:
 		JFile(JResourceObject* resource);

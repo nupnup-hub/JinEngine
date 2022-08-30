@@ -2,6 +2,7 @@
 #include"JTypeInfoInitializer.h"
 #include"JReflectionInfo.h" 
 #include"../JDataType.h"
+#include"../Pointer/JOwnerPtr.h"
 #include<unordered_map>  
 #include<vector>
 #include<assert.h>  
@@ -17,7 +18,7 @@ namespace JinEngine
 
 		using JTypeInstance = JObject;
 		using IdentifierType = size_t;
-		using TypeInstanceMap = std::unordered_map<IdentifierType, JTypeInstance*>;
+		using TypeInstanceMap = std::unordered_map<IdentifierType, JOwnerPtr<JTypeInstance>>;
 		using TypeInstanceVector = std::vector<JTypeInstance*>;
 		using PropertyMap = std::unordered_map<std::string, JPropertyInfo*>;
 		using MethodMap = std::unordered_map<std::string, JMethodInfo*>;
@@ -35,10 +36,11 @@ namespace JinEngine
 			PropertyMap propertyInfo;
 			MethodMap methodInfo;
 		};
-
-		class JTypeInfo
+ 
+		class JTypeInfo 
 		{
 		private: 
+			friend class JObject;
 			friend class JReflectionImpl;
 			template<typename Type> friend class JTypeInfoRegister;
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyRegister;
@@ -60,11 +62,6 @@ namespace JinEngine
 			bool IsA(const JTypeInfo& tar)const noexcept;
 			bool IsChildOf(const JTypeInfo& parentCandidate)const noexcept;
 		public:
-			JTypeInstance* GetInstance(IdentifierType iden)noexcept;
-		public:
-			bool AddInstance(JTypeInstance* ptr, IdentifierType iden)noexcept;
-			bool RemoveInstance(IdentifierType iden)noexcept;
-		public:
 			template<typename T>
 			bool IsA()
 			{
@@ -74,7 +71,7 @@ namespace JinEngine
 			bool IsChildOf()
 			{
 				return IsChildOf(T::StaticTypeInfo());
-			}	
+			}
 			template<typename ...Param>
 			void InvokeInstanceFunc(void(JTypeInstance::* ptr)(Param...), Param... var)
 			{
@@ -82,9 +79,15 @@ namespace JinEngine
 				{
 					const uint instanceCount = (uint)instanceData->classInstanceVec.size();
 					for (uint i = 0; i < instanceCount; ++i)
-						(instanceData->classInstanceVec[i]->*ptr)(std::forward<Param>(var)...);
+						(instanceData->classInstanceVec[i].Get()->*ptr)(std::forward<Param>(var)...);
 				}
 			}
+		public:
+			JTypeInstance* GetInstanceRawPtr(IdentifierType iden)noexcept;
+			JUserPtr<JTypeInstance> GetInstanceUserPtr(IdentifierType iden)noexcept;
+		private:
+			bool AddInstance(IdentifierType iden, JOwnerPtr<JTypeInstance> ptr)noexcept;
+			bool RemoveInstance(IdentifierType iden)noexcept;
 		private:
 			bool AddPropertyInfo(JPropertyInfo* newProperty);
 			bool AddMethodInfo(JMethodInfo* newMethod);

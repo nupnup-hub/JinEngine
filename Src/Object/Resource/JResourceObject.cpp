@@ -8,49 +8,37 @@
 
 namespace JinEngine
 {
-	std::string JResourceObject::GetFullName()const noexcept
+	std::wstring JResourceObject::GetFullName()const noexcept
 	{
 		return GetName() + GetFormat();
 	}
-	std::string JResourceObject::GetPath()const noexcept
+	std::wstring JResourceObject::GetPath()const noexcept
 	{
-		return directory->GetPath() + "\\" + GetName() + GetFormat();
+		return directory->GetPath() + L"\\" + GetName() + GetFormat();
 	}
-	std::wstring JResourceObject::GetWPath()const noexcept
-	{
-		return JCommonUtility::U8StringToWstring(GetPath());
-	}
-	std::string JResourceObject::GetFolderPath()const noexcept
+	std::wstring JResourceObject::GetFolderPath()const noexcept
 	{
 		return directory->GetPath();
-	}
-	std::wstring JResourceObject::GetFolderWPath()const noexcept
-	{
-		return JCommonUtility::U8StringToWstring(GetFolderPath());
 	}
 	J_OBJECT_TYPE JResourceObject::GetObjectType()const noexcept
 	{
 		return J_OBJECT_TYPE::RESOURCE_OBJECT;
 	}
-	std::string JResourceObject::GetMetafilePath()const noexcept
+	uint8 JResourceObject::GetFormatIndex()const noexcept
 	{
-		return GetPath() + ".meta";
+		return formatIndex;
+	}
+	std::wstring JResourceObject::GetMetafilePath()const noexcept
+	{
+		return ConvertMetafilePath(GetPath());
 	}
 	JDirectory* JResourceObject::GetDirectory()noexcept
 	{
 		return directory;
 	}
-	JResourceObject* JResourceObject::CopyResource()
+	bool JResourceObject::HasMetafile(const std::wstring& path)
 	{
-		return nullptr;
-	}
-	std::wstring JResourceObject::ConvertMetafilePath(const std::wstring& resourcePath)noexcept
-	{
-		return resourcePath + L".meta";
-	}
-	bool JResourceObject::HasMetafile(const std::string& path)
-	{
-		if (_access((path + ".meta").c_str(), 00) == -1)
+		if (_access((JCommonUtility::WstrToU8Str(path) + ".meta").c_str(), 00) == -1)
 			return true;
 		else
 			return false;
@@ -84,16 +72,27 @@ namespace JinEngine
 		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE))
 			return;
 
-		JResourceManager::Instance().ResourceRemoveInterface()->RemoveResource(*this);
-		delete this;
+		JResourceManager::Instance().ResourceStorageInterface()->RemoveResource(*this);
 	}
-	JResourceObject::JResourceObject(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	void JResourceObject::CopyRFile(JResourceObject& from, JResourceObject& to)
+	{
+		from.CallStoreResource();
+		std::ifstream source(from.GetPath(), std::ios::binary);
+		std::ofstream dest(to.GetPath(), std::ios::binary);
+
+		dest << source.rdbuf();
+		source.close();
+		dest.close();
+	}
+	JResourceObject::JResourceObject(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		: JResourceObjectInterface(name, guid, flag), directory(directory), formatIndex(formatIndex)
 	{
-		JFFI::CreateJFile(*directory, *this);
+		JFFI::Create(*directory, *this);
+		if (!HasMetafile(this))
+			CallStoreResource();
 	}
 	JResourceObject::~JResourceObject()
 	{ 
-		JFFI::DestroyJFile(*directory, *this);
+		JFFI::Destroy(*directory, *this);
 	}
 }

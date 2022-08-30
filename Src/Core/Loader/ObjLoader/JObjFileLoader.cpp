@@ -33,8 +33,8 @@ namespace JinEngine
 		{
 			std::wstring next;
 			std::wstring materialLibName;
-			std::vector<std::string> meshName;
-			std::vector<std::string> materialName;
+			std::vector<std::wstring> meshName;
+			std::vector<std::wstring> materialName;
 			std::vector<XMFLOAT3> position;
 			std::vector<XMFLOAT2> texture;
 			std::vector<XMFLOAT3> normal;
@@ -60,7 +60,7 @@ namespace JinEngine
 				if (next == L"o")
 				{
 					std::getline(stream, next);
-					meshName.push_back(JCommonUtility::EraseEmptySpace(JCommonUtility::WstringToU8String(next)));
+					meshName.push_back(JCommonUtility::EraseEmptySpace(next));
 					materialName.emplace_back(std::string());
 					vertexCount.push_back(0);
 					indexCount.push_back(0);
@@ -70,7 +70,7 @@ namespace JinEngine
 				else if (next == L"usemtl")
 				{
 					std::getline(stream, next);
-					materialName[meshCount] = JCommonUtility::EraseEmptySpace(JCommonUtility::WstringToU8String(next));
+					materialName[meshCount] = JCommonUtility::EraseEmptySpace(next);
 				}
 				else if (next == L"mtllib")
 				{
@@ -236,7 +236,7 @@ namespace JinEngine
 					std::getline(stream, next);
 					objMatData.emplace_back(JObjMatData());
 					++matCount;
-					objMatData[matCount].name = JCommonUtility::EraseEmptySpace(JCommonUtility::WstringToU8String(next));
+					objMatData[matCount].name = JCommonUtility::EraseEmptySpace(next);
 				}
 				else if (next == L"Ka")
 				{
@@ -276,49 +276,49 @@ namespace JinEngine
 				else if (next == L"map_Ka")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].ambientTName = JCommonUtility::EraseEmptySpace(JCommonUtility::WstringToU8String(next));
+					objMatData[matCount].ambientTName = JCommonUtility::EraseEmptySpace(next);
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_AMBIENT_T);
 				}
 				else if (next == L"map_Kd")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].albedoTName = JCommonUtility::EraseEmptySpace(JCommonUtility::WstringToU8String(next));
+					objMatData[matCount].albedoTName = JCommonUtility::EraseEmptySpace(next);
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_ALBEDO_T);
 				}
 				else if (next == L"map_Ks")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].specularColorTName = JCommonUtility::EraseEmptySpace(JCommonUtility::WstringToU8String(next));
+					objMatData[matCount].specularColorTName = JCommonUtility::EraseEmptySpace(next);
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_SPECULAR_COLOR_T);
 				}
 				else if (next == L"map_Ns")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].specularHighlightTName = JCommonUtility::EraseEmptySpace(JCommonUtility::WstringToU8String(next));
+					objMatData[matCount].specularHighlightTName = JCommonUtility::EraseEmptySpace(next);
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_SPECULAR_HIGHLIGHT_T);
 				}
 				else if (next == L"map_d")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].ambientTName = JCommonUtility::EraseEmptySpace(JCommonUtility::WstringToU8String(next));
+					objMatData[matCount].ambientTName = JCommonUtility::EraseEmptySpace(next);
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_AMBIENT_T);
 				}
 				else if (next == L"map_bump" || next == L"bump")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].normalTName = JCommonUtility::EraseEmptySpace(JCommonUtility::WstringToU8String(next));
+					objMatData[matCount].normalTName = JCommonUtility::EraseEmptySpace(next);
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_NORMAL_T);
 				}
 				else if (next == L"disp")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].heightTName = JCommonUtility::EraseEmptySpace(JCommonUtility::WstringToU8String(next));
+					objMatData[matCount].heightTName = JCommonUtility::EraseEmptySpace(next);
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_HEIGHT_T);
 				}
 				else if (next == L"decal")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].decalTName = JCommonUtility::EraseEmptySpace(JCommonUtility::WstringToU8String(next));
+					objMatData[matCount].decalTName = JCommonUtility::EraseEmptySpace(next);
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_DECAL_T);
 				}
 			}
@@ -332,8 +332,8 @@ namespace JinEngine
 			if (secondIndex == -1)
 			{
 				//	"V/T"
-				posIndex = JCommonUtility::WStringToInt(wstr.substr(0, firstIndex));
-				uvIndex = JCommonUtility::WStringToInt(wstr.substr(firstIndex + 1));
+				posIndex = JCommonUtility::WstrToInt(wstr.substr(0, firstIndex));
+				uvIndex = JCommonUtility::WstrToInt(wstr.substr(firstIndex + 1));
 				normalIndex = -1;
 			}
 			else
@@ -341,16 +341,16 @@ namespace JinEngine
 				if (secondIndex == 0)
 				{
 					//	"V//N"
-					posIndex = JCommonUtility::WStringToInt(wstr.substr(0, firstIndex));
+					posIndex = JCommonUtility::WstrToInt(wstr.substr(0, firstIndex));
 					uvIndex = -1;
-					normalIndex = JCommonUtility::WStringToInt(wstr.substr(secondIndex + 1));
+					normalIndex = JCommonUtility::WstrToInt(wstr.substr(secondIndex + 1));
 				}
 				else
 				{
 					//"V/T/V"
-					posIndex = JCommonUtility::WStringToInt(wstr.substr(0, firstIndex));
-					uvIndex = JCommonUtility::WStringToInt(wstr.substr(firstIndex + 1, secondIndex));
-					normalIndex = JCommonUtility::WStringToInt(wstr.substr(secondIndex + 1));
+					posIndex = JCommonUtility::WstrToInt(wstr.substr(0, firstIndex));
+					uvIndex = JCommonUtility::WstrToInt(wstr.substr(firstIndex + 1, secondIndex));
+					normalIndex = JCommonUtility::WstrToInt(wstr.substr(secondIndex + 1));
 				}
 			}
 		}

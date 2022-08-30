@@ -25,7 +25,7 @@ namespace JinEngine
 			return res;
 		}
 
-		int FuncUtil::StringToInt(const std::string& str)noexcept
+		int FuncUtil::StrToInt(const std::string& str)noexcept
 		{
 			const uint valueSize = (uint)str.size();
 

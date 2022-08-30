@@ -107,7 +107,7 @@ namespace JinEngine
 		{
 			return graphicResource->GetGpuSrvDescriptorHandle(index);
 		}
-		JGraphicTextureHandle* JGraphicImpl::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::string& path)
+		JGraphicTextureHandle* JGraphicImpl::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path)
 		{
 			if (!stCommand)
 			{
@@ -121,7 +121,7 @@ namespace JinEngine
 			else
 				return graphicResource->Create2DTexture(uploadHeap, path, d3dDevice.Get(), commandList.Get());
 		}
-		JGraphicTextureHandle* JGraphicImpl::CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::string& path)
+		JGraphicTextureHandle* JGraphicImpl::CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path)
 		{
 			if (!stCommand)
 			{

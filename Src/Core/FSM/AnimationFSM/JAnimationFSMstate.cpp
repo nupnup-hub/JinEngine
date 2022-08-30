@@ -1,30 +1,30 @@
 #include"JAnimationFSMstate.h" 
 #include"JAnimationFSMtransition.h" 
 #include"JAnimationTime.h"   
+#include<fstream>
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		JAnimationFSMstate::JAnimationFSMstate(const std::string& name, const size_t guid)
+		JAnimationFSMstate::JAnimationFSMstate(const std::wstring& name, const size_t guid)
 			:JFSMstate(name, guid)
 		{}
 		JAnimationFSMstate::~JAnimationFSMstate() {}
-		std::vector<JAnimationFSMtransition*>::const_iterator JAnimationFSMstate::GetTransitionVectorHandle(_Out_ uint& transitionCount)
+		std::vector<JAnimationFSMtransition*>& JAnimationFSMstate::GetTransitionVector()noexcept
 		{
-			transitionCount = (uint)transitionCash.size();
-			return transitionCash.cbegin();
+			return transitionCash;
 		}
-		JFSMtransition* JAnimationFSMstate::AddTransition(std::unique_ptr<JFSMtransition> newTransition)noexcept
+		JAnimationFSMtransition* JAnimationFSMstate::AddTransition(std::unique_ptr<JFSMtransition> newTransition)noexcept
 		{
-			JFSMtransition* cash = JFSMstate::AddTransition(std::move(newTransition));
-			if (cash != nullptr)
+			JFSMtransition* ret = JFSMstate::AddTransition(std::move(newTransition));
+			if (ret != nullptr)
 			{
-				transitionCash.push_back(dynamic_cast<JAnimationFSMtransition*>(cash));
-				return cash;
+				transitionCash.push_back(static_cast<JAnimationFSMtransition*>(ret));
+				return static_cast<JAnimationFSMtransition*>(ret);
 			}
 			else
-				return cash;
+				return nullptr;
 		}
 		bool JAnimationFSMstate::RemoveTransition(const size_t outputStateGuid)noexcept
 		{
@@ -55,6 +55,41 @@ namespace JinEngine
 				}
 			}
 			return nullptr;
+		}
+		J_FILE_IO_RESULT JAnimationFSMstate::StoreIdentifierData(std::wofstream& stream)
+		{
+			if (!stream.is_open())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+			 			
+			return JFSMIdentifier::StoreIdentifierData(stream, *this);
+		}
+		J_FILE_IO_RESULT JAnimationFSMstate::StoreContentsData(std::wofstream& stream)
+		{
+			if (!stream.is_open())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+			const uint transitionCount = (uint)transitionCash.size();
+			stream << transitionCount << '\n';
+			for (uint i = 0; i < transitionCount; ++i)
+				transitionCash[i]->StoreData(stream);
+
+			return J_FILE_IO_RESULT::SUCCESS;
+		}
+		J_FILE_IO_RESULT JAnimationFSMstate::LoadContentsData(std::wifstream& stream, JFSMLoadGuidMap& guidMap, IJFSMconditionStorageUser& iFSMconditionStorage)
+		{
+			if (!stream.is_open())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+			uint transitionCount = 0;
+			stream >> transitionCount; 
+
+			for (uint i = 0; i < transitionCount; ++i)
+			{
+				std::unique_ptr<JAnimationFSMtransition> newTransition = JAnimationFSMtransition::LoadData(stream, guidMap, iFSMconditionStorage);
+				if(newTransition != nullptr)
+					AddTransition(std::move(newTransition));
+			}
+			return J_FILE_IO_RESULT::SUCCESS;
 		}
 	}
 }

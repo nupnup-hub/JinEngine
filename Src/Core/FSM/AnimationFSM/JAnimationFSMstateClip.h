@@ -14,7 +14,7 @@ namespace JinEngine
 		private:
 			JAnimationClip* clip;
 		public:
-			JAnimationFSMstateClip(const std::string& name, const size_t guid);
+			JAnimationFSMstateClip(const std::wstring& name, const size_t guid);
 		public:
 			void Initialize()noexcept final;
 			J_ANIMATION_STATE_TYPE GetStateType()const noexcept final;
@@ -24,6 +24,11 @@ namespace JinEngine
 			void GetRegisteredSkeleton(std::vector<JSkeletonAsset*>& skeletonVec)noexcept override;
 			void SetClip(JAnimationClip* clip)noexcept;
 			void Clear()noexcept final;
+		private:
+			J_FILE_IO_RESULT StoreContentsData(std::wofstream& stream)final;
+		public:
+			static std::unique_ptr<JAnimationFSMstate> LoadIdentifierData(std::wifstream& stream, JFSMLoadGuidMap& guidMap);
+			J_FILE_IO_RESULT LoadContentsData(std::wifstream& stream, JFSMLoadGuidMap& guidMap, IJFSMconditionStorageUser& iConditionUser)final;
 		private:
 			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 		};

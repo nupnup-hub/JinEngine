@@ -3,8 +3,7 @@
 #include"Menubar/JEditorMenuBar.h"
 #include"Page/JEditorWindow.h"  
 #include"Page/ProjectMain/JProjectMainPage.h"
-#include"Page/SkeletonaAssetSetting/JEditorSkeletonPage.h" 
-#include"Page/CommonWindow/Debug/JDebugHelper.h"
+#include"Page/SkeletonaAssetSetting/JEditorSkeletonPage.h"  
 #include"GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../Utility/JCommonUtility.h"
 #include"../Application/JApplicationVariable.h" 
@@ -111,14 +110,7 @@ namespace JinEngine
 			{
 				if (!page->second->IsOpen())
 				{ 
-					JObject* selected = nullptr;
-					if (evStruct->hasOpenInitObjType)
-					{ 
-						Core::JTypeInfo* typeInfo = Core::JReflectionInfo::Instance().GetTypeInfo(evStruct->objTypeName);
-						selected = typeInfo->GetInstance(evStruct->objGuid);
-					}
-
-					if (page->second->IsValidOpenRequest(selected))
+					if (page->second->IsValidOpenRequest(evStruct->openSelected))
 					{
 						JImGuiImpl::SetPageOpenData(evStruct);
 						page->second->SetOpen();
@@ -271,13 +263,13 @@ namespace JinEngine
 			case J_EDITOR_EVENT::SELECT_OBJECT:
 			{	
 				JEditorSelectObjectEvStruct* selectEvStruct = static_cast<JEditorSelectObjectEvStruct*>(eventStruct);
-				JImGuiImpl::SetSelectedObj(selectEvStruct->pageType, selectEvStruct->GetJObject());
+				JImGuiImpl::SetSelectObj(selectEvStruct->pageType, selectEvStruct->selectObj);
 				break;
 			}
 			case J_EDITOR_EVENT::DESELECT_OBJECT:
 			{
 				JEditorDeSelectObjectEvStruct* deSelectEvStruct = static_cast<JEditorDeSelectObjectEvStruct*>(eventStruct);
-				JImGuiImpl::SetSelectedObj(deSelectEvStruct->pageType, nullptr);
+				JImGuiImpl::SetSelectObj(deSelectEvStruct->pageType, Core::JUserPtr<JObject>{});
 				break;
 			}
 			case J_EDITOR_EVENT::OPEN_PAGE:	 
@@ -335,7 +327,7 @@ namespace JinEngine
 		JEditorManager::JEditorManager()
 			:editorManagerGuid(JCommonUtility::CalculateGuid("JEditorManager"))
 		{
-			JDebugHelper::Initialize();
+			 
 		}
 		JEditorManager::~JEditorManager() {}
 	}

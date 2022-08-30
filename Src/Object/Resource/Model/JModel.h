@@ -48,14 +48,16 @@ namespace JinEngine
 		{
 			return J_RESOURCE_TYPE::MODEL;
 		}
-		std::string GetFormat()const noexcept final;
-		static std::vector<std::string> GetAvailableFormat()noexcept;
+		std::wstring GetFormat()const noexcept final;
+		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 	public:
 		JModelSceneInterface* ModelSceneInterface() final;
 	private:
 		JScene* GetModelScene()noexcept final;
 		JGameObject* GetModelRoot()noexcept final;
 		JGameObject* GetSkeletonRoot()noexcept final;
+	public:
+		bool Copy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;    
@@ -74,10 +76,10 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT StoreObject(JModel* model);
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JModel* model);
 		static JModel* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::string& folderPath, ModelMetadata& metadata);
+		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, ModelMetadata& metadata);
 		static void RegisterJFunc();
 	private:
-		JModel(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JModel(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JModel();
 	};
 }

@@ -46,10 +46,9 @@ namespace JinEngine
 
 		DeActivate();
 		owner->CompInterface()->RemoveComponent(*this);
-		delete this;
 	}
 	JComponent::JComponent(const std::string& cTypeName, const size_t guid, J_OBJECT_FLAG flag, JGameObject* owner)noexcept
-		:JComponentInterface(cTypeName, guid, flag), owner(owner)
+		:JComponentInterface(JCommonUtility::StrToWstr(cTypeName), guid, flag), owner(owner)
 	{
 	}
 	JComponent::~JComponent()

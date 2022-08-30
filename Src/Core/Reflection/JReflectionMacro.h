@@ -1,6 +1,7 @@
 #pragma once   
 #include<type_traits> 
 #include"../../Utility/JMacroUtility.h"
+#include"../Pointer/JOwnerPtr.h"
 
 namespace JinEngine
 {
@@ -42,7 +43,7 @@ namespace JinEngine
 			};
 
 		}
-
+		 
 #define REGISTER_CLASS(typeName, ...)																	\
 																										\
 		public:																							\
@@ -55,9 +56,12 @@ namespace JinEngine
 			using JTypeInfoInitializer = JinEngine::Core::JTypeInfoInitializer<typeName>;		\
 			using JTypeInfoRegister = JinEngine::Core::JTypeInfoRegister<typeName>;				\
 			using JReflectionInfo = JinEngine::Core::JReflectionInfo;							\
+			using JPtrUtil = JinEngine::Core::JPtrUtil;											\
 																								\
 		private:																				\
 			friend class JTypeInfoInitializer;													\
+			template<typename T> friend class JinEngine::Core::JOwnerPtr;																\
+			friend class JPtrUtil;																\
 																								\
 		public:																					\
 			static JTypeInfo& StaticTypeInfo()													\
@@ -69,6 +73,7 @@ namespace JinEngine
 			virtual JTypeInfo& GetTypeInfo()const {return typeInfo;}							\
 			virtual int GetTypeDepth()const {return TypeDepth::value;}							\
 			inline static std::string TypeName() {return #typeName;}							\
+			inline static std::wstring TypeWName() {return L#typeName;}							\
 																								\
 		private:																				\
 			inline static JTypeInfo& typeInfo = StaticTypeInfo();								\

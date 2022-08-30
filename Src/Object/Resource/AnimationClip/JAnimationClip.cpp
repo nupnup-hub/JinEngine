@@ -39,13 +39,13 @@ namespace JinEngine
 	{
 		return GetStaticResourceType();
 	}
-	std::string JAnimationClip::GetFormat()const noexcept
+	std::wstring JAnimationClip::GetFormat()const noexcept
 	{
 		return GetAvailableFormat()[0];
 	}
-	std::vector<std::string> JAnimationClip::GetAvailableFormat()noexcept
+	std::vector<std::wstring> JAnimationClip::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::string> format{ ".fbx" };
+		static std::vector<std::wstring> format{ L".fbx" };
 		return format;
 	}
 	void JAnimationClip::SetClipSkeletonAsset(JSkeletonAsset* clipSkeletonAsset)noexcept
@@ -103,7 +103,7 @@ namespace JinEngine
 		{
 			if (animationSample[i].jointPose.size() == 0)
 			{
-				//MessageBox(0, L"Zero Pose", JCommonUtility::StringToWstring(tarSkeleton->GetJointName(i)).c_str(), 0);
+				//MessageBox(0, L"Zero Pose", JCommonUtility::StrToWstr(tarSkeleton->GetJointName(i)).c_str(), 0);
 				const uint parentIndex = tarSkeleton->GetJointParentIndex(i);
 				const XMMATRIX parentWorldBindM = tarSkeleton->GetBindPose(parentIndex);
 				const XMMATRIX childWorldBindM = tarSkeleton->GetBindPose(i);
@@ -352,6 +352,22 @@ namespace JinEngine
 		else
 			return false;
 	}
+	bool JAnimationClip::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{
+			JAnimationClip* oriClip = static_cast<JAnimationClip*>(ori);
+			CopyRFile(*oriClip, *this);
+			ClearResource();
+			StuffResource();
+			return true;
+		}
+		else
+			return false;
+	}
 	void JAnimationClip::DoActivate()noexcept
 	{
 		JResourceObject::DoActivate();
@@ -385,7 +401,7 @@ namespace JinEngine
 	}
 	bool JAnimationClip::ReadFbxData()
 	{
-		const JResourcePathData pathData{ GetWPath() };
+		const JResourcePathData pathData{ GetPath() };
 
 		std::wifstream stream;
 		stream.open(ConvertMetafilePath(pathData.wstrPath), std::ios::in | std::ios::binary);
@@ -502,14 +518,31 @@ namespace JinEngine
 
 		JAnimationClip* newClip = nullptr;
 		if (directory->HasFile(pathData.fullName))
-			newClip = JResourceManager::Instance().GetResourceByPath<JAnimationClip>(pathData.strPath);
+			newClip = JResourceManager::Instance().GetResourceByPath<JAnimationClip>(pathData.wstrPath);
 		
 		if (newClip == nullptr)
 		{
 			if (loadMetaRes == J_FILE_IO_RESULT::SUCCESS)
-				newClip = new JAnimationClip(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JAnimationClip>(pathData.format));
+			{
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(pathData.name,
+					metadata.guid, 
+					metadata.flag, 
+					directory, 
+					GetFormatIndex<JAnimationClip>(pathData.format));
+
+				newClip = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
+			}
 			else
-				newClip = new JAnimationClip(pathData.name, MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JAnimationClip>(pathData.format));
+			{
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(pathData.name,
+					Core::MakeGuid(),
+					OBJECT_FLAG_NONE,
+					directory,
+					GetFormatIndex<JAnimationClip>(pathData.format));
+				newClip = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
+			}
 		}	
 
 		if (newClip->IsValid())
@@ -521,11 +554,12 @@ namespace JinEngine
 		}
 		else
 		{
-			delete newClip;
+			newClip->SetIgnoreUndestroyableFlag(true);
+			newClip->BeginDestroy();
 			return nullptr;
 		}
 	}
-	J_FILE_IO_RESULT JAnimationClip::LoadMetadata(std::wifstream& stream, const std::string& folderPath, AnimationClipMetadata& metadata)
+	J_FILE_IO_RESULT JAnimationClip::LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, AnimationClipMetadata& metadata)
 	{
 		if (stream.is_open())
 		{
@@ -546,31 +580,47 @@ namespace JinEngine
 		else
 			return J_FILE_IO_RESULT::FAIL_SEARCH_DATA;
 	}
+
 	void JAnimationClip::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* owner) ->JResourceObject*
-		{
-			return new JAnimationClip(owner->MakeUniqueFileName(GetDefaultName<JAnimationClip>()),
+		auto defaultC = [](JDirectory* directory) ->JResourceObject*
+		{ 
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(directory->MakeUniqueFileName(GetDefaultName<JAnimationClip>()),
 				Core::MakeGuid(),
 				OBJECT_FLAG_NONE,
-				owner,
-				JResourceObject::GetDefaultFormatIndex());
+				directory,
+				JResourceObject::GetDefaultFormatIndex());		 
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
-		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
-			return new JAnimationClip(name, guid, objFlag, directory, formatIndex);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(name, guid, objFlag, directory, formatIndex);
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
-		auto copyC = [](JResourceObject* ori)->JResourceObject*
-		{
-			return static_cast<JAnimationClip*>(ori)->CopyResource();
+		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
+		{		 
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(directory->MakeUniqueFileName(ori->GetName()),
+				Core::MakeGuid(),
+				ori->GetFlag(),
+				directory,
+				GetFormatIndex<JAnimationClip>(ori->GetFormat()));
+
+			JAnimationClip* newClip = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newClip->Copy(ori);
+			return newClip;
 		};
 		JRFI<JAnimationClip>::Register(defaultC, initC, loadC, copyC);
 
-		auto getFormatIndexLam = [](const std::string& format) {return JResourceObject::GetFormatIndex<JAnimationClip>(format); };
+		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JAnimationClip>(format); };
 
 		static GetTypeNameCallable getTypeNameCallable{ &JAnimationClip::TypeName };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JAnimationClip::GetAvailableFormat };
@@ -581,7 +631,7 @@ namespace JinEngine
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
-	JAnimationClip::JAnimationClip(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	JAnimationClip::JAnimationClip(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		:JAnimationClipInterface(name, guid, flag, directory, formatIndex)
 	{}
 	JAnimationClip::~JAnimationClip()

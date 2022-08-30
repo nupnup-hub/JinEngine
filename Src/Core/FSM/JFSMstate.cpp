@@ -1,46 +1,38 @@
 #include"JFSMstate.h"
 #include"JFSMtransition.h"
 #include"JFSMcondition.h"
-#include"../Guid/GuidCreator.h"
+#include"../Guid/GuIdCreator.h"
+
 namespace JinEngine
 {
 	namespace Core
 	{
-		JFSMstate::JFSMstate(const std::string& name, const size_t guid)
-			:name(name), guid(guid)
+		JFSMstate::JFSMstate(const std::wstring& name, const size_t guid)
+			:JFSMIdentifier(name, guid)
 		{}
 		JFSMstate::~JFSMstate() {}
-		std::string JFSMstate::GetName()noexcept
+		J_FSM_OBJECT_TYPE JFSMstate::GetFSMobjType()const noexcept
 		{
-			return name;
+			return J_FSM_OBJECT_TYPE::STATE;
 		}
-		size_t JFSMstate::GetGuid()noexcept
-		{
-			return guid;
-		}
-		void JFSMstate::SetName(const std::string& name)
-		{
-			if(!name.empty())
-				JFSMstate::name = name; 
-		}
-		void JFSMstate::SetTransitionCondtion(const size_t outputStateGuId, const uint conditionIndex, JFSMcondition* newCondition)noexcept
+		void JFSMstate::SetTransitionCondtion(const size_t outputStateGuid, const uint conditionIndex, JFSMcondition* newCondition)noexcept
 		{
 			const uint transitionSize = (uint)transition.size();
 			for (uint i = 0; i < transitionSize; ++i)
 			{
-				if (transition[i]->GetOutputStateGuId() == outputStateGuId)
+				if (transition[i]->GetOutputStateGuid() == outputStateGuid)
 				{
 					transition[i]->SetCondition(conditionIndex, newCondition);
 					break;
 				}
 			}
 		}
-		void JFSMstate::SetTransitionCondtionOnValue(const size_t outputStateGuId, const uint conditionIndex, const float onValue)noexcept
+		void JFSMstate::SetTransitionCondtionOnValue(const size_t outputStateGuid, const uint conditionIndex, const float onValue)noexcept
 		{
 			const uint transitionSize = (uint)transition.size();
 			for (uint i = 0; i < transitionSize; ++i)
 			{
-				if (transition[i]->GetOutputStateGuId() == outputStateGuId)
+				if (transition[i]->GetOutputStateGuid() == outputStateGuid)
 				{
 					transition[i]->SetConditionOnValue(conditionIndex, onValue);
 					break;
@@ -55,6 +47,10 @@ namespace JinEngine
 			for (uint index = 0; index < transitionSize; ++index)
 				transition[index]->Initialize();
 		}
+		void JFSMstate::EnterState()noexcept
+		{
+			decidedNextState = false;
+		}
 		JFSMtransition* JFSMstate::AddTransition(std::unique_ptr<JFSMtransition> newTransition)noexcept
 		{
 			JFSMtransition* res = nullptr;
@@ -64,10 +60,10 @@ namespace JinEngine
 			if (transitionSize >= maxNumberOffTransistions)
 				return res;
 
-			size_t newTransitionId = newTransition->GetOutputStateGuId();
+			size_t newTransitionId = newTransition->GetOutputStateGuid();
 			for (uint i = 0; i < transitionSize; ++i)
 			{
-				if (transition[i]->GetOutputStateGuId() == newTransitionId)
+				if (transition[i]->GetOutputStateGuid() == newTransitionId)
 				{
 					hasSameOutput = true;
 					break;
@@ -83,12 +79,12 @@ namespace JinEngine
 				return res;
 			}
 		}
-		bool JFSMstate::RemoveTransition(const size_t outputStateGuId)noexcept
+		bool JFSMstate::RemoveTransition(const size_t outputStateGuid)noexcept
 		{
 			const uint transitionSize = (uint)transition.size();
 			for (uint index; index < transitionSize; ++index)
 			{
-				if (transition[index]->GetOutputStateGuId() == outputStateGuId)
+				if (transition[index]->GetOutputStateGuid() == outputStateGuid)
 				{
 					transition[index].reset();
 					transition.erase(transition.begin() + index);
@@ -97,19 +93,15 @@ namespace JinEngine
 			}	
 			return false;
 		}
-		void JFSMstate::EnterState()noexcept
-		{
-			decidedNextState = false;
-		}
-		bool JFSMstate::AddTransitionCondition(const size_t outputStateGuId, JFSMcondition* condition)noexcept
+		JFSMconditionWrap* JFSMstate::AddTransitionCondition(const size_t outputStateGuid, JFSMcondition* condition)noexcept
 		{
 			const uint transitionSize = (uint)transition.size();
 			for (uint index = 0; index < transitionSize; ++index)
 			{
-				if (transition[index]->GetOutputStateGuId() == outputStateGuId)
+				if (transition[index]->GetOutputStateGuid() == outputStateGuid)
 					return transition[index]->AddCondition(condition);
 			}
-			return false;
+			return nullptr;
 		}
 		bool JFSMstate::RemoveCondition(const size_t guid)noexcept
 		{
@@ -118,12 +110,12 @@ namespace JinEngine
 				transition[i]->PopCondition(guid);
 			return true;
 		}
-		bool JFSMstate::RemoveTransitionCondition(const size_t outputStateGuId, const size_t conditionGuid)noexcept
+		bool JFSMstate::RemoveTransitionCondition(const size_t outputStateGuid, const size_t conditionGuid)noexcept
 		{
 			const uint transitionSize = (uint)transition.size();
 			for (uint index = 0; index < transitionSize; ++index)
 			{
-				if (transition[index]->GetOutputStateGuId() == outputStateGuId)
+				if (transition[index]->GetOutputStateGuid() == outputStateGuid)
 					return transition[index]->PopCondition(conditionGuid);
 			}
 			return false;

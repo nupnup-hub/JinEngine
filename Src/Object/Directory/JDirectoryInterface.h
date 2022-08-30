@@ -20,17 +20,24 @@ namespace JinEngine
 		virtual void BeginForcedDestroy() = 0;
 	};
 
-	class JDirectoryOCInterface :public JObject,
-		public JDirectoryDestroyInterface
+	class JDirectoryOCInterface
 	{
 	private:
 		friend class Editor::JWindowDirectory;
 	protected:
-		JDirectoryOCInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag);
+		virtual ~JDirectoryOCInterface() = default;
 	public:
 		virtual JDirectoryOCInterface* OCInterface() = 0;
 	private:
 		virtual void OpenDirectory()noexcept = 0;
 		virtual void CloseDirectory()noexcept = 0;
+	};
+
+	class JDirectoryInterface :public JObject,
+		public JDirectoryOCInterface,
+		public JDirectoryDestroyInterface
+	{
+	protected:
+		JDirectoryInterface(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag);
 	};
 }

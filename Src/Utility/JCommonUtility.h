@@ -19,13 +19,13 @@ namespace JinEngine
 		static std::wstring GetFileFormat(const std::wstring& path)noexcept;
 		static std::string GetFileFormat(const std::string& path)noexcept;
 
-		static int StringToInt(const std::string& str)noexcept;
-		static int WStringToInt(const std::wstring& str)noexcept;
+		static int StrToInt(const std::string& str)noexcept;
+		static int WstrToInt(const std::wstring& str)noexcept;
 		static const wchar_t* CharToWChar(const char* src);
 		 
-		static std::wstring StringToWstring(const std::string& str)noexcept; 
-		static std::string WstringToU8String(const std::wstring& wstr)noexcept;
-		static std::wstring U8StringToWstring(const std::string& str)noexcept;
+		static std::wstring StrToWstr(const std::string& str)noexcept; 
+		static std::string WstrToU8Str(const std::wstring& wstr)noexcept;
+		static std::wstring U8StrToWstr(const std::string& str)noexcept;
 
 		static std::string EraseEmptySpace(const std::string& str)noexcept;
 		static std::wstring EraseEmptySpace(const std::wstring& wstr)noexcept;
@@ -39,8 +39,8 @@ namespace JinEngine
 		static bool Contain(const std::wstring& source, const std::wstring& target)noexcept;
 		static bool Contain(const std::string& source, const std::string& target)noexcept;
 
-		static void DecomposeFolderPath(const std::wstring& path, std::wstring& folderParentPath, std::wstring& folderName)noexcept;
-	 	static void DecomposeFolderPath(const std::string& path, std::string& folderParentPath, std::string& folderName)noexcept;
+		static void DecomposeFolderPath(const std::wstring& path, std::wstring& folderPath, std::wstring& name)noexcept;
+	 	static void DecomposeFolderPath(const std::string& path, std::string& folderPath, std::string& name)noexcept;
 	
 		static void DecomposeFilePath(const std::wstring& path, std::wstring& folderPath, std::wstring& name, std::wstring& format, bool eraseFolderPathBackSlash = false)noexcept;
 		static void DecomposeFilePath(const std::string& path, std::string& folderPath, std::string& name, std::string& format, bool eraseFolderPathBackSlash = false)noexcept;
@@ -59,6 +59,7 @@ namespace JinEngine
 		static void DeleteDirectoryFile(const std::string& path);
 		 
 		static size_t CalculateGuid(const std::string& path)noexcept;
+		static size_t CalculateGuid(const std::wstring& path)noexcept;
 	public:
 		template <class T>
 		static inline void hash_combine(std::size_t& s, const T& v)
@@ -77,6 +78,33 @@ namespace JinEngine
 			unordedMap.emplace(newGuid, std::move(data));
 		} 
 
+		template<typename Type>
+		static std::wstring MakeUniqueName(const std::vector<Type*>& vec, const std::wstring& name)
+		{
+			bool result = true;
+			const uint eleCount = (uint)vec.size();
+			uint index = 0;
+			uint overlapCount = 0;
+
+			std::wstring uniqueName = name;
+			while (result)
+			{
+				if (index >= eleCount)
+					break;
+				else
+				{
+					if (vec[index]->GetName() == uniqueName)
+					{
+						ModifyOverlappedName(uniqueName, uniqueName.length(), overlapCount);
+						++overlapCount;
+						index = 0;
+					}
+					else
+						++index;
+				}
+			}
+			return uniqueName;
+		}
 		template<typename Type>
 		static std::string MakeUniqueName(const std::vector<Type*>& vec, const std::string& name)
 		{
@@ -104,7 +132,33 @@ namespace JinEngine
 			}
 			return uniqueName;
 		}
+		template<typename Type>
+		static std::wstring MakeUniqueName(const std::vector<std::unique_ptr<Type>>& vec, const std::wstring& name)
+		{
+			bool result = true;
+			const uint eleCount = (uint)vec.size();
+			uint index = 0;
+			uint overlapCount = 0;
 
+			std::wstring uniqueName = name;
+			while (result)
+			{
+				if (index >= eleCount)
+					break;
+				else
+				{
+					if (vec[index]->GetName() == uniqueName)
+					{
+						ModifyOverlappedName(uniqueName, uniqueName.length(), overlapCount);
+						++overlapCount;
+						index = 0;
+					}
+					else
+						++index;
+				}
+			}
+			return uniqueName;
+		}
 		template<typename Type>
 		static std::string MakeUniqueName(const std::vector<std::unique_ptr<Type>>& vec, const std::string& name)
 		{
@@ -133,5 +187,7 @@ namespace JinEngine
 			return uniqueName;
 		}
 	};
+
+	using JCUtil = JCommonUtility;
 }
 

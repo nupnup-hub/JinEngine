@@ -24,8 +24,6 @@ namespace JinEngine
 		float GetFalloffStart()const noexcept;
 		float GetFalloffEnd()const noexcept;
 		float GetSpotPower()const noexcept; 
-		J_COMPONENT_TYPE GetComponentType()const noexcept final;
-		static J_COMPONENT_TYPE GetStaticComponentType()noexcept;
 
 		void SetStrength(const DirectX::XMFLOAT3& strength)noexcept;
 		void SetFalloffStart(const float falloffStart)noexcept;
@@ -34,8 +32,11 @@ namespace JinEngine
 		void SetShadow(const bool value)noexcept; 
 		void SetLightType(const J_LIGHT_TYPE lightType)noexcept;
 		 
+		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		bool IsAvailableOverlap()const noexcept final;
-		bool PassDefectInspection()const noexcept final; 
+		bool PassDefectInspection()const noexcept final;
+	public:
+		bool Copy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;  

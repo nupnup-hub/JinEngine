@@ -11,6 +11,7 @@
 #include"../../Application/JApplicationVariable.h"  
 #include"../../Core/Guid/GuidCreator.h"
 #include<Windows.h>
+#include<io.h>
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -19,35 +20,42 @@ namespace JinEngine
 {
 	JResourceIO::JResourceIO() {}
 	JResourceIO::~JResourceIO() {}
+	JDirectory* JResourceIO::LoadRootDirectory(const std::wstring& path, const J_OBJECT_FLAG initFlag)
+	{
+		JDirectoryPathData pathData{ path };
+		if (_access(pathData.strPath.c_str(), 00) != -1)
+			return JDFI::LoadRoot(pathData);
+		else
+			return JDFI::CreateRoot(pathData.name, Core::MakeGuid(), initFlag);
+	}
 	void JResourceIO::LoadEngineDirectory(JDirectory* engineRootDir)
 	{
-		SearchDirectory(engineRootDir, true, (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE));
+		SearchDirectory(engineRootDir, true, (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE));
 	}
 	void JResourceIO::LoadProjectDirectory(JDirectory* projectRootDir)
 	{
-		std::vector<std::string> defaultFolderPath
+		std::vector<std::wstring> defaultFolderPath
 		{
 			JApplicationVariable::GetProjectSettingPath(),
 			JApplicationVariable::GetProjectLibraryPath(),
-			JApplicationVariable::GetProjectContentPath()
+			JApplicationVariable::GetProjectContentPath(),
 		};
 
 		std::vector<J_OBJECT_FLAG> flag
 		{
-			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE),
-			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE),
-			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE)
+			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE),
+			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE),
+			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE)
 		};
 
 		std::vector<JDirectory*> defaultFolderCash;
 		for (uint i = 0; i < defaultFolderPath.size(); ++i)
 		{
-			std::string dirPath = defaultFolderPath[i];
-			std::string dirFolderPath;
-			std::string dirName;
-			std::string dirFormat;
-			JCommonUtility::DecomposeFilePath(dirPath, dirFolderPath, dirName, dirFormat);
-			defaultFolderCash.push_back(JDFI::Create(dirName, Core::MakeGuid(), flag[i], *projectRootDir));
+			JDirectoryPathData pathData{ defaultFolderPath[i] };
+			if (_access(pathData.strPath.c_str(), 00) != -1)
+				defaultFolderCash.push_back(JDFI::Load(*projectRootDir, pathData));
+			else
+				defaultFolderCash.push_back(JDFI::Create(pathData.name, Core::MakeGuid(), flag[i], *projectRootDir));
 		}
 		/*
 		* dependence resource
@@ -57,8 +65,8 @@ namespace JinEngine
 		// defaultFolderCash[1] = projectLibraryDir
 		// defaultFolderCash[2] = projectContentsDir
 
-		const J_OBJECT_FLAG projectOtherDir = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE);
-		const J_OBJECT_FLAG projectContentDir = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
+		const J_OBJECT_FLAG projectOtherDir = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE);
+		const J_OBJECT_FLAG projectContentDir = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE);
 		const J_OBJECT_FLAG userDefineDir = OBJECT_FLAG_NONE;
 
 		SearchDirectory(defaultFolderCash[0], true, projectOtherDir);
@@ -93,7 +101,7 @@ namespace JinEngine
 	void JResourceIO::SearchDirectory(JDirectory* parentDir, bool searchDefaultFolder, const J_OBJECT_FLAG dirFlag)
 	{
 		WIN32_FIND_DATA  findFileData;
-		HANDLE hFindFile = FindFirstFile((parentDir->GetWPath() + L"\\*.*").c_str(), &findFileData);
+		HANDLE hFindFile = FindFirstFile((parentDir->GetPath() + L"\\*.*").c_str(), &findFileData);
 		BOOL bResult = TRUE;
 		if (hFindFile == INVALID_HANDLE_VALUE)
 			return;
@@ -106,11 +114,15 @@ namespace JinEngine
 			if (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
 				if (wcscmp(findFileData.cFileName, L".") && wcscmp(findFileData.cFileName, L".."))
-				{
-					const std::string cFileName = JCommonUtility::WstringToU8String(findFileData.cFileName);
-					if (!parentDir->HasChild(cFileName))
+				{ 
+					if (!parentDir->HasChild(findFileData.cFileName))
 					{
-						JDirectory* next = JDFI::Create(cFileName, Core::MakeGuid(), dirFlag, *parentDir);
+						JDirectory* next = nullptr;
+						JDirectoryPathData pathData{ parentDir->GetPath() + L"\\" + findFileData.cFileName };
+						if (_access(pathData.strPath.c_str(), 00) != -1)
+							next = JDFI::Load(*parentDir, pathData);
+						else
+							next = JDFI::Create(pathData.name, Core::MakeGuid(), dirFlag, *parentDir);			 
 						SearchDirectory(next, searchDefaultFolder, dirFlag);
 					}
 				}
@@ -121,7 +133,7 @@ namespace JinEngine
 	}
 	void JResourceIO::SearchResource(const J_RESOURCE_TYPE rType, JDirectory* directory)
 	{
-		const std::wstring dirWPath = directory->GetWPath();
+		const std::wstring dirWPath = directory->GetPath();
 		WIN32_FIND_DATA  findFileData;
 		HANDLE hFindFile = FindFirstFile((dirWPath + L"\\*.*").c_str(), &findFileData);
 		BOOL bResult = TRUE;
@@ -135,7 +147,7 @@ namespace JinEngine
 			{
 				if (wcscmp(findFileData.cFileName, L".") && wcscmp(findFileData.cFileName, L".."))
 				{
-					JResourcePathData pathData(directory->GetWPath() + L"\\" + findFileData.cFileName);
+					JResourcePathData pathData(directory->GetPath() + L"\\" + findFileData.cFileName);
 					if (JRI::CallIsValidFormat(rType, pathData.format))
 						JRFIB::LoadByName(JRI::CallGetTypeName(rType), *directory, pathData);
 				}

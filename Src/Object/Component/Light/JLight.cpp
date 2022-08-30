@@ -4,7 +4,6 @@
 #include"../../Component/Transform/JTransform.h"
 #include"../../GameObject/JGameObject.h" 
 #include"../../Resource/Scene/JScene.h"
-
 #include"../../../Core/Guid/GuidCreator.h" 
 #include"../../../Graphic/FrameResource/JLightConstants.h" 
 #include"../../../Graphic/FrameResource/JShadowMapConstants.h" 
@@ -14,6 +13,8 @@
 namespace JinEngine
 {
 	using namespace DirectX;
+	static auto isAvailableoverlapLam = []() {return true; };
+	static auto componentTypeLam = []() {return J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT; };
 
 	bool JLight::IsShadowActivated()const noexcept
 	{
@@ -34,14 +35,6 @@ namespace JinEngine
 	float JLight::GetSpotPower()const noexcept
 	{
 		return light->spotPower;
-	}
-	J_COMPONENT_TYPE JLight::GetComponentType()const noexcept
-	{
-		return GetStaticComponentType();
-	}
-	J_COMPONENT_TYPE JLight::GetStaticComponentType()noexcept
-	{
-		return J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT;
 	}
 	void JLight::SetStrength(const DirectX::XMFLOAT3& strength)noexcept
 	{
@@ -95,14 +88,41 @@ namespace JinEngine
 	{
 		JLight::lightType = lightType;
 	}
+	J_COMPONENT_TYPE JLight::GetComponentType()const noexcept
+	{
+		return componentTypeLam();
+	}
 	bool JLight::IsAvailableOverlap()const noexcept
 	{
-		return true;
+		return isAvailableoverlapLam();
 	}
 	bool JLight::PassDefectInspection()const noexcept
 	{
 		if (JComponent::PassDefectInspection())
 			return true;
+		else
+			return false;
+	}
+	bool JLight::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{ 
+			JLight* oriLit = static_cast<JLight*>(ori);
+			light->strength = oriLit->light->strength;
+			light->falloffStart = oriLit->light->falloffStart;
+			light->direction = oriLit->light->direction;
+			light->falloffEnd = oriLit->light->falloffEnd;
+			light->position = oriLit->light->position;
+			light->spotPower = oriLit->light->spotPower;
+
+			SetLightType(oriLit->lightType);
+			SetShadow(oriLit->onShadow);
+			SetFrameDirty();
+			return true;
+		}
 		else
 			return false;
 	}
@@ -335,10 +355,17 @@ namespace JinEngine
 
 		JLight* newLightComponent;
 		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-			newLightComponent = new JLight(metadata.guid, metadata.flag, owner);
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(metadata.guid, metadata.flag, owner);
+			JLight* newLightComponent = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+		}
 		else
-			newLightComponent = new JLight(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
- 
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			JLight* newLightComponent = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+		}
 		stream >> newLightComponent->light->strength.x >> newLightComponent->light->strength.y >> newLightComponent->light->strength.z >>
 			newLightComponent->light->falloffStart >> newLightComponent->light->falloffEnd >> newLightComponent->light->spotPower;
 		
@@ -348,11 +375,17 @@ namespace JinEngine
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
-			return new JLight(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			JComponent* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
-			return new JLight(guid, objFlag, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(guid, objFlag, owner);
+			JComponent* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret; 
 		};
 		auto loadC = [](std::wifstream& stream, JGameObject* owner) -> JComponent*
 		{
@@ -360,34 +393,24 @@ namespace JinEngine
 		};
 		auto copyC = [](JComponent* ori, JGameObject* owner) -> JComponent*
 		{
-			JLight* oriLit = static_cast<JLight*>(ori);
-			JLight* newLit = new JLight(Core::MakeGuid(), oriLit->GetFlag(), owner);
-
-			newLit->light->strength = oriLit->light->strength;
-			newLit->light->falloffStart = oriLit->light->falloffStart;
-			newLit->light->direction = oriLit->light->direction;
-			newLit->light->falloffEnd = oriLit->light->falloffEnd;
-			newLit->light->position = oriLit->light->position;
-			newLit->light->spotPower = oriLit->light->spotPower;
-
-			newLit->SetLightType(oriLit->lightType);
-			newLit->SetShadow(oriLit->onShadow);
-
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(Core::MakeGuid(), ori->GetFlag(), owner);
+			JLight* newLit = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newLit->Copy(ori);
 			return newLit;
 		};
 		JCFI<JLight>::Regist(defaultC, initC, loadC, copyC);
 
 		static GetTypeNameCallable getTypeNameCallable{ &JLight::TypeName };
 		static GetTypeInfoCallable getTypeInfoCallable{ &JLight::StaticTypeInfo };
+		bool(*ptr)() = isAvailableoverlapLam;
+		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 
-		static auto setFrameLam = [](JComponent& component)
-		{
-			static_cast<JLight*>(&component)->SetFrameDirty();
-		};
+		static auto setFrameLam = [](JComponent& component){static_cast<JLight*>(&component)->SetFrameDirty();};
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
-		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable };
+		static JCI::CTypeHint cTypeHint{ componentTypeLam(), true };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);

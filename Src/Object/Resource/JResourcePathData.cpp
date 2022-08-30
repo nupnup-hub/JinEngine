@@ -4,9 +4,9 @@
 namespace JinEngine
 {
 	JResourcePathData::JResourcePathData(const std::wstring& oriPath)
-		:wstrPath(oriPath), strPath(JCommonUtility::WstringToU8String(oriPath))
+		:wstrPath(oriPath), strPath(JCommonUtility::WstrToU8Str(oriPath))
 	{
-		JCommonUtility::DecomposeFilePath(strPath, folderPath, name, format);
+		JCommonUtility::DecomposeFilePath(wstrPath, folderPath, name, format);
 		fullName = name + format;
 	}
 }

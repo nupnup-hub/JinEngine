@@ -25,10 +25,11 @@ namespace JinEngine
 		void SetSkeletonAsset(JSkeletonAsset* newSkeletonAsset)noexcept;
 		void SetAnimatorController(JAnimationController* animationController)noexcept;
 
-		J_COMPONENT_TYPE GetComponentType()const noexcept final;
-		static J_COMPONENT_TYPE GetStaticComponentType()noexcept;
-		bool IsAvailableOverlap()const noexcept final;
+		J_COMPONENT_TYPE GetComponentType()const noexcept final; 
+		bool IsAvailableOverlap()const noexcept final; 
 		bool PassDefectInspection()const noexcept final; 
+	public:
+		bool Copy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

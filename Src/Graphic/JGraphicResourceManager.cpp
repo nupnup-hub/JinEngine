@@ -168,24 +168,24 @@ namespace JinEngine
 			commandList->ResourceBarrier(1, &dsBarrier);
 		}
 		JGraphicTextureHandle* JGraphicResourceManager::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
-			const std::string& path,
+			const std::wstring& path,
 			ID3D12Device* device,
 			ID3D12GraphicsCommandList* commandList)
 		{
-			std::string folderPath;
-			std::string name;
-			std::string format;
+			std::wstring folderPath;
+			std::wstring name;
+			std::wstring format;
 			JCommonUtility::DecomposeFilePath(path, folderPath, name, format);
 			Microsoft::WRL::ComPtr<ID3D12Resource> newTexture;
 			JGraphicTextureHandle* handleCash = nullptr;
 
-			if (format == ".dds")
+			if (format == L".dds")
 			{
 				size_t width;
 				size_t height;
 				HRESULT res = DirectX::CreateDDSTextureFromFile12(device,
 					commandList,
-					JCommonUtility::U8StringToWstring(path).c_str(),
+					path.c_str(),
 					newTexture,
 					uploadHeap,
 					width,
@@ -219,7 +219,7 @@ namespace JinEngine
 			{
 				int width;
 				int height;
-				bool res = LoadTextureFromFile(path.c_str(),
+				bool res = LoadTextureFromFile(JCommonUtility::WstrToU8Str(path).c_str(),
 					device,
 					GetCpuSrvDescriptorHandle(user2DTextureCount),
 					newTexture,
@@ -243,24 +243,24 @@ namespace JinEngine
 			return handleCash;
 		}
 		JGraphicTextureHandle* JGraphicResourceManager::CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
-			const std::string& path,
+			const std::wstring& path,
 			ID3D12Device* device,
 			ID3D12GraphicsCommandList* commandList)
 		{
-			std::string folderPath;
-			std::string name;
-			std::string format;
+			std::wstring folderPath;
+			std::wstring name;
+			std::wstring format;
 			JCommonUtility::DecomposeFilePath(path, folderPath, name, format);
 			Microsoft::WRL::ComPtr<ID3D12Resource> newTexture;
 			JGraphicTextureHandle* handleCash = nullptr;
 
-			if (format == ".dds")
+			if (format == L".dds")
 			{
 				size_t width;
 				size_t height;
 				HRESULT res = DirectX::CreateDDSTextureFromFile12(device,
 					commandList,
-					JCommonUtility::U8StringToWstring(path).c_str(),
+					path.c_str(),
 					newTexture,
 					uploadHeap,
 					width,
@@ -294,7 +294,7 @@ namespace JinEngine
 			{
 				int width;
 				int height;
-				bool res = LoadCubemapFromFile(path.c_str(),
+				bool res = LoadCubemapFromFile(JCommonUtility::WstrToU8Str(path).c_str(),
 					device,
 					GetCpuSrvDescriptorHandle(GetSrvUserCubeTextureStart() + userCubeTextureCount),
 					newTexture,

@@ -3,6 +3,8 @@
 #include"JAnimationFSMstateClip.h" 
 #include"JAnimationFSMtransition.h" 
 #include"JAnimationTime.h"
+#include"../JFSMLoadGuidMap.h"
+#include"../../Guid/GuidCreator.h"
 #include"../../GameTimer/JGameTimer.h"
 #include"../../../Graphic/FrameResource/JAnimationConstants.h"
 #include"../../../Object/Resource/Skeleton/JSkeleton.h"
@@ -15,7 +17,7 @@ namespace JinEngine
 	using namespace DirectX;
 	namespace Core
 	{
-		JAnimationFSMdiagram::JAnimationFSMdiagram(const std::string& name, const size_t guid, IJFSMconditionStorageUser* conditionStorage)
+		JAnimationFSMdiagram::JAnimationFSMdiagram(const std::wstring& name, const size_t guid, IJFSMconditionStorageUser* conditionStorage)
 			:JFSMdiagram(name, guid, conditionStorage)
 		{ }
 		JAnimationFSMdiagram::~JAnimationFSMdiagram() {}
@@ -44,7 +46,7 @@ namespace JinEngine
 				nextTransition = nowState->FindNextStateTransition(animationTime);
 				if (nextTransition != nullptr)
 				{
-					size_t nextStateId = nextTransition->GetOutputStateGuId();
+					size_t nextStateId = nextTransition->GetOutputStateGuid();
 					nextState = static_cast<JAnimationFSMstate*>(GetState(nextStateId));
 					nextState->Enter(animationTime, animationShareData, srcSkeletonAsset, nextTransition->GetTargetStateOffset());
 					blender.Initialize(JGameTimer::Instance().TotalTime(), JGameTimer::Instance().TotalTime() + nextTransition->GetDurationTime());
@@ -78,6 +80,10 @@ namespace JinEngine
 		{
 			return nowState != nullptr;
 		}
+		bool JAnimationFSMdiagram::HasState()noexcept
+		{
+			return nowState != nullptr;
+		}
 		JAnimationFSMstate* JAnimationFSMdiagram::GetState(const size_t stateGuid)noexcept
 		{
 			return GetState(stateGuid);
@@ -85,10 +91,6 @@ namespace JinEngine
 		std::vector<JAnimationFSMstate*>& JAnimationFSMdiagram::GetStateVec()noexcept
 		{
 			return stateCash;
-		}
-		void JAnimationFSMdiagram::SetStateName(const size_t stateGuid, const std::string& newName)noexcept
-		{
-			JFSMdiagram::SetStateName(stateGuid, newName);
 		}
 		void JAnimationFSMdiagram::SetAnimationClip(const size_t stateGuid, JAnimationClip* clip)noexcept
 		{
@@ -105,9 +107,9 @@ namespace JinEngine
 		{
 			JFSMdiagram::SetTransitionCondtionOnValue(inputStateGuid, outputStateGuid, conditionIndex, value);
 		}
-		JAnimationFSMstate* JAnimationFSMdiagram::CreateAnimationClipState(const std::string& name, const size_t guid)noexcept
+		JAnimationFSMstate* JAnimationFSMdiagram::CreateAnimationClipState(const std::wstring& name)noexcept
 		{
-			std::unique_ptr<JAnimationFSMstateClip> stateClip = std::make_unique<JAnimationFSMstateClip>(name, guid);
+			std::unique_ptr<JAnimationFSMstateClip> stateClip = std::make_unique<JAnimationFSMstateClip>(name, Core::MakeGuid());
 			JFSMstate* fsmCash = AddState(std::move(stateClip));
 			if (fsmCash != nullptr)
 			{
@@ -119,7 +121,10 @@ namespace JinEngine
 				return  nullptr;
 		}
 		JAnimationFSMtransition* JAnimationFSMdiagram::CreateAnimationTransition(const size_t inputStateGuid, const size_t outputStateGuid)noexcept
-		{
+		{		 
+			if (inputStateGuid == outputStateGuid)
+				return nullptr;
+
 			std::unique_ptr<JAnimationFSMtransition> animationTransition = std::make_unique< JAnimationFSMtransition>(outputStateGuid);
 			JFSMtransition* fsmCash = AddTransition(inputStateGuid, std::move(animationTransition));
 			if (fsmCash != nullptr)
@@ -132,11 +137,11 @@ namespace JinEngine
 			JFSMstate* tarState = GetState(stateGuid);
 			if (tarState != nullptr)
 			{
-				const size_t stateId = tarState->GetGuid();
+				const size_t stateGuid = tarState->GetGuid();
 				const uint cashCount = (uint)stateCash.size();
 				for (uint i = 0; i < cashCount; ++i)
 				{
-					if (stateCash[i]->GetGuid() == stateId)
+					if (stateCash[i]->GetGuid() == stateGuid)
 					{
 						stateCash.erase(stateCash.begin() + i);
 						break;
@@ -145,7 +150,7 @@ namespace JinEngine
 				for (uint i = 0; i < cashCount - 1; ++i)
 					stateCash[i]->RemoveTransition(tarState->GetGuid());
 
-				JFSMdiagram::DestroyState(stateId);
+				JFSMdiagram::RemoveState(stateGuid);
 				return true;
 			}
 			else
@@ -158,10 +163,6 @@ namespace JinEngine
 		void JAnimationFSMdiagram::Clear()noexcept
 		{
 			JFSMdiagram::Clear();
-		}
-		bool JAnimationFSMdiagram::HasState()noexcept
-		{
-			return nowState != nullptr;
 		}
 		void JAnimationFSMdiagram::StuffFinalTransform(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns)noexcept
 		{
@@ -244,6 +245,88 @@ namespace JinEngine
 					}
 				}
 			}
+		}
+		J_FILE_IO_RESULT JAnimationFSMdiagram::StoreIdentifierData(std::wofstream& stream)
+		{
+			if (!stream.is_open())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+ 
+			JFSMIdentifier::StoreIdentifierData(stream, *this);
+
+			const uint stateCount = (uint)stateCash.size();
+			stream << stateCount << '\n';
+
+			for (uint i = 0; i < stateCount; ++i)
+			{
+				stream << (int)stateCash[i]->GetStateType() << '\n';
+				stateCash[i]->StoreIdentifierData(stream);
+			}
+			return J_FILE_IO_RESULT::SUCCESS;
+		}
+		J_FILE_IO_RESULT JAnimationFSMdiagram::StoreContentsData(std::wofstream& stream)
+		{
+			if (!stream.is_open())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+			const uint stateCount = (uint)stateCash.size();
+			stream << stateCount << '\n';
+
+			for (uint i = 0; i < stateCount; ++i)		 
+				stateCash[i]->StoreContentsData(stream);
+
+			return J_FILE_IO_RESULT::SUCCESS;
+		}
+		 std::unique_ptr<JAnimationFSMdiagram> JAnimationFSMdiagram::LoadIdentifierData(std::wifstream& stream, JFSMLoadGuidMap& guidMap, IJFSMconditionStorageUser* conditionStorage)
+		{
+			if (!stream.is_open())
+				return nullptr;
+
+			JFSMIdentifier::JFSMIdentifierData data;
+			JFSMIdentifier::LoadIdentifierData(stream, data);
+ 
+			std::unique_ptr<JAnimationFSMdiagram> newDiagram = nullptr;
+			if (guidMap.isNewGuid)
+			{
+				newDiagram = std::make_unique<JAnimationFSMdiagram>(data.name, MakeGuid(), conditionStorage);
+				guidMap.diagram.emplace(data.guid, newDiagram->GetGuid());
+			}
+			else
+				newDiagram = std::make_unique<JAnimationFSMdiagram>(data.name, data.guid, conditionStorage);
+
+			uint stateCount = 0;
+			stream >> stateCount; 
+
+			for (uint i = 0; i < stateCount; ++i)
+			{
+				int stateType = 0;
+				stream >> stateType;
+
+				if (stateType == (int)J_ANIMATION_STATE_TYPE::CLIP)
+				{
+					std::unique_ptr<JAnimationFSMstate> newState = JAnimationFSMstateClip::LoadIdentifierData(stream, guidMap);
+					if(newState != nullptr)
+						newDiagram->AddState(std::move(newState));
+				}
+				else if (stateType == (int)J_ANIMATION_STATE_TYPE::BLEND_TREE)
+					;//¹Ì±¸Çö 
+			} 
+			return newDiagram;
+		}
+		J_FILE_IO_RESULT JAnimationFSMdiagram::LoadContentsData(std::wifstream& stream, JFSMLoadGuidMap& guidMap)
+		{
+			 if (!stream.is_open())
+				 return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+			 uint stateCount = 0;
+			 stream >> stateCount;
+
+			 if (stateCount != stateCash.size())
+				 return J_FILE_IO_RESULT::FAIL_CORRUPTED_DATA;
+
+			 for (uint i = 0; i < stateCount; ++i)
+				 stateCash[i]->LoadContentsData(stream, guidMap, *GetIConditionStorage());
+
+			 return J_FILE_IO_RESULT::SUCCESS;
 		}
 	}
 }

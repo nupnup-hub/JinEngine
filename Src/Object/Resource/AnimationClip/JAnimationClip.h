@@ -48,8 +48,8 @@ namespace JinEngine
 		{
 			return J_RESOURCE_TYPE::ANIMATION_CLIP;
 		}
-		std::string GetFormat()const noexcept final;
-		static std::vector<std::string> GetAvailableFormat()noexcept;
+		std::wstring GetFormat()const noexcept final;
+		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 
 		void SetClipSkeletonAsset(JSkeletonAsset* clipSkeletonAsset)noexcept;
 
@@ -61,6 +61,8 @@ namespace JinEngine
 		uint GetAnimationSampleJointIndex(const uint sampleIndex, const float localTime)noexcept;
 		void UpdateUsingAvatar(Core::JAnimationTime& animationTime, Core::JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& localTransform)noexcept;
 		bool IsMatchSkeleton()const noexcept;
+	public:
+		bool Copy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
@@ -76,10 +78,10 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT StoreObject(JAnimationClip* clip);
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JAnimationClip* clip);
 		static JAnimationClip* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::string& folderPath, AnimationClipMetadata& metadata);
+		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, AnimationClipMetadata& metadata);
 		static void RegisterJFunc();
 	private:
-		JAnimationClip(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JAnimationClip(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JAnimationClip();
 	};
 }

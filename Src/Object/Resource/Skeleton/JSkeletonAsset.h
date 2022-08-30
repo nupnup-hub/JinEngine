@@ -23,14 +23,14 @@ namespace JinEngine
 		JAvatar* GetAvatar()noexcept;
 		JSKELETON_TYPE GetSkeletonType()const noexcept;
 		size_t GetOwnerModelGuid()const noexcept;
-		std::string GetJointName(int index)noexcept;
+		std::wstring GetJointName(int index)noexcept;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
 			return J_RESOURCE_TYPE::SKELETON;
 		}
-		std::string GetFormat()const noexcept final;
-		static std::vector<std::string> GetAvailableFormat()noexcept;
+		std::wstring GetFormat()const noexcept final;
+		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 
 		void SetSkeletonType(JSKELETON_TYPE skeletonType)noexcept;
 		bool HasAvatar()noexcept;
@@ -42,6 +42,8 @@ namespace JinEngine
 	private:
 		void SetAvatar(JAvatar* avatar)noexcept final;
 		void CopyAvatarJointIndex(JAvatar* target)noexcept final;
+	public:
+		bool Copy(JObject* ori);
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
@@ -51,7 +53,7 @@ namespace JinEngine
 		bool ReadSkeletonAssetData();
 	private:
 		void SetSkeleton(JSkeleton&& skeleon);
-		void SetOwnerModelGuid(const size_t modelGuid) final;
+		void SetOwnerModelGuid(const size_t modelGuid)noexcept final;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JSkeletonAsset* skeletonAsset);

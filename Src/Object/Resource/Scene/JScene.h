@@ -52,8 +52,8 @@ namespace JinEngine
 		{
 			return J_RESOURCE_TYPE::SCENE;
 		}
-		std::string GetFormat()const noexcept final;
-		static std::vector<std::string> GetAvailableFormat()noexcept;
+		std::wstring GetFormat()const noexcept final;
+		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 
 		bool IsAnimatorActivated()const noexcept; 
 		bool IsMainScene()const noexcept;
@@ -64,6 +64,8 @@ namespace JinEngine
 		JSceneRegisterInterface* RegisterInterface() final;
 		JSceneFrameInterface* FrameInterface() final;
 		JSceneSpaceSpatialInterface* SpaceSpatialInterface() final;
+	public:
+		bool Copy(JObject* ori) final;
 	protected:
 		void DoActivate() noexcept final;
 		void DoDeActivate()noexcept final;
@@ -103,10 +105,10 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT StoreObject(JScene* scene);
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JScene* scene);
 		static JScene* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::string& folderPath, JSceneMetadata& metadata);
+		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, JSceneMetadata& metadata);
 		static void RegisterJFunc();
 	private:
-		JScene(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JScene(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JScene();
 	};
 }

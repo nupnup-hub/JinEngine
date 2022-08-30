@@ -3,15 +3,15 @@
 
 namespace JinEngine
 {
-	std::string JFile::GetName()const noexcept
+	std::wstring JFile::GetName()const noexcept
 	{
 		return resource->GetName();
 	}
-	std::string JFile::GetFullName()const noexcept
+	std::wstring JFile::GetFullName()const noexcept
 	{
 		return resource->GetFullName();
 	}
-	std::string JFile::GetAvailableFormat()const noexcept
+	std::wstring JFile::GetAvailableFormat()const noexcept
 	{
 		return resource->GetFormat();
 	}

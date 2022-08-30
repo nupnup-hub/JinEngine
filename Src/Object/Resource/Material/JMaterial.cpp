@@ -14,13 +14,13 @@ namespace JinEngine
 	{
 		return GetStaticResourceType();
 	}
-	std::string JMaterial::GetFormat()const noexcept
+	std::wstring JMaterial::GetFormat()const noexcept
 	{
 		return GetAvailableFormat()[0];
 	}
-	std::vector<std::string> JMaterial::GetAvailableFormat()noexcept
+	std::vector<std::wstring> JMaterial::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::string> format{ ".mat" };
+		static std::vector<std::wstring> format{ L".mat" };
 		return format;
 	}
 	JShader* JMaterial::GetShader()const noexcept
@@ -156,79 +156,57 @@ namespace JinEngine
 	{
 		light = value;
 		if (light)
-			SetNewFunctionFlag(JShader::AddShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_SHADOW));
+			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW));
 		else
-			SetNewFunctionFlag(JShader::MinusShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_SHADOW));
+			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW));
 	}
 	void JMaterial::SetLight(bool value)noexcept
 	{
 		shadow = value;
 		if (shadow)
-			SetNewFunctionFlag(JShader::AddShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_LIGHT));
+			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LIGHT));
 		else
-			SetNewFunctionFlag(JShader::MinusShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_LIGHT));
+			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LIGHT));
 	}
 	void JMaterial::SetAlbedoOnly(bool value)noexcept
 	{
 		albedoOnly = value;
 		if (albedoOnly)
-			SetNewFunctionFlag(JShader::AddShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_ALBEDO_MAP_ONLY));
+			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
 		else
-			SetNewFunctionFlag(JShader::MinusShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_ALBEDO_MAP_ONLY));
+			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
 	}
 	void JMaterial::SetNonCulling(bool value)noexcept
 	{
 		nonCulling = value;
 		if (nonCulling)
-			SetNewFunctionFlag(JShader::AddShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_NONCULLING));
+			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_NONCULLING));
 		else
-			SetNewFunctionFlag(JShader::MinusShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_NONCULLING));
+			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_NONCULLING));
 	}
 	void JMaterial::SetShadowMap(bool value)noexcept
 	{
 		shadowMap = value;
 		if (shadowMap)
-			SetNewFunctionFlag(JShader::AddShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_SHADOW_MAP));
+			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW_MAP));
 		else
-			SetNewFunctionFlag(JShader::MinusShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_SHADOW_MAP));
+			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW_MAP));
 	}
 	void JMaterial::SetSkyMaterial(bool value)noexcept
 	{
 		isSkyMateral = value;
 		if (isSkyMateral)
-		{
-			SetNewFunctionFlag(JShader::AddShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_SKY));
-		}
+			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SKY));
 		else
-		{
-			SetNewFunctionFlag(JShader::MinusShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_SKY));
-		}
+			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SKY));
 	}
 	void JMaterial::SetDebugMaterial(bool value)noexcept
 	{
 		isDebugMaterial = value;
 		if (isDebugMaterial)
-		{
-			SetNewFunctionFlag(JShader::AddShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_DEBUG));
-		}
+			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
 		else
-		{
-			SetNewFunctionFlag(JShader::MinusShaderFunctionFlag(shader->GetShaderFunctionFlag(),
-				SHADER_FUNCTION_DEBUG));
-		}
+			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
 	}
 	bool JMaterial::HasAlbedoMapTexture() const noexcept
 	{
@@ -267,9 +245,9 @@ namespace JinEngine
 	void JMaterial::TextureChange(JTexture* be, JTexture* af, const J_SHADER_FUNCTION func)noexcept
 	{
 		if (be == nullptr && af != nullptr)
-			SetNewFunctionFlag(JShader::AddShaderFunctionFlag(shader->GetShaderFunctionFlag(), func));
+			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), func));
 		else if (be != nullptr && af == nullptr)
-			SetNewFunctionFlag(JShader::MinusShaderFunctionFlag(shader->GetShaderFunctionFlag(), func));
+			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), func));
 	}
 	void JMaterial::SetNewFunctionFlag(const J_SHADER_FUNCTION newFunc)
 	{
@@ -313,6 +291,22 @@ namespace JinEngine
 
 		return true;
 	}
+	bool JMaterial::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{
+			JMaterial* oriM = static_cast<JMaterial*>(ori);
+			CopyRFile(*oriM, *this);
+			ClearResource();
+			StuffResource();
+			return true;
+		}
+		else
+			return false;
+	}
 	void JMaterial::DoActivate() noexcept
 	{
 		JResourceObject::DoActivate();
@@ -349,7 +343,7 @@ namespace JinEngine
 	bool JMaterial::ReadMateiralData()
 	{
 		std::wifstream stream;
-		stream.open(GetWPath(), std::ios::in | std::ios::binary);
+		stream.open(GetPath(), std::ios::in | std::ios::binary);
 
 		if (stream.is_open())
 		{
@@ -481,7 +475,7 @@ namespace JinEngine
 		if (storeMetaRes != Core::J_FILE_IO_RESULT::SUCCESS)
 			return storeMetaRes;
 
-		stream.open(material->GetWPath(), std::ios::out | std::ios::binary);
+		stream.open(material->GetPath(), std::ios::out | std::ios::binary);
 		if (stream.is_open())
 		{
 			stream << material->GetShader()->GetGuid() << "\n" <<
@@ -590,62 +584,88 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
 		stream.close();
 
-		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
-		if (stream.is_open())
+		JMaterial* newMaterial = nullptr;
+		if (directory->HasFile(pathData.fullName))
+			newMaterial = JResourceManager::Instance().GetResourceByPath<JMaterial>(pathData.wstrPath);
+
+		if (newMaterial == nullptr)
 		{
-			JMaterial* newMaterial = nullptr;
-			if (directory->HasFile(pathData.fullName))
-				newMaterial = JResourceManager::Instance().GetResourceByPath<JMaterial>(pathData.strPath);
-
-			if (newMaterial == nullptr)
+			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
 			{
-				if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-					newMaterial = new JMaterial(pathData.name, metadata.guid, (J_OBJECT_FLAG)metadata.flag, directory, GetFormatIndex<JMaterial>(pathData.format));
-				else
-					newMaterial = new JMaterial(pathData.name, Core::MakeGuid(), J_OBJECT_FLAG::OBJECT_FLAG_NONE, directory, GetFormatIndex<JMaterial>(pathData.format));
-			}
-
-			if (newMaterial->IsValid())
-				return newMaterial;
-			else if (newMaterial->ReadMateiralData())
-			{
-				newMaterial->SetValid(true);
-				return newMaterial;
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(pathData.name,
+					metadata.guid,
+					(J_OBJECT_FLAG)metadata.flag,
+					directory,
+					GetFormatIndex<JMaterial>(pathData.format));
+				newMaterial = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
 			}
 			else
 			{
-				delete newMaterial;
-				return nullptr;
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(pathData.name,
+					Core::MakeGuid(),
+					J_OBJECT_FLAG::OBJECT_FLAG_NONE,
+					directory,
+					GetFormatIndex<JMaterial>(pathData.format));
+				newMaterial = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
 			}
 		}
+
+		if (newMaterial->IsValid())
+			return newMaterial;
+		else if (newMaterial->ReadMateiralData())
+		{
+			newMaterial->SetValid(true);
+			return newMaterial;
+		}
 		else
+		{
+			newMaterial->SetIgnoreUndestroyableFlag(true);
+			newMaterial->BeginDestroy();
 			return nullptr;
+		}
 	}
 	void JMaterial::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* owner) ->JResourceObject*
+		auto defaultC = [](JDirectory* directory) ->JResourceObject*
 		{
-			return new JMaterial(owner->MakeUniqueFileName(GetDefaultName<JMaterial>()),
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(directory->MakeUniqueFileName(GetDefaultName<JMaterial>()),
 				Core::MakeGuid(),
 				OBJECT_FLAG_NONE,
-				owner,
+				directory,
 				JResourceObject::GetDefaultFormatIndex());
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
-		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
-			return  new JMaterial(name, guid, objFlag, directory, formatIndex);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(name, guid, objFlag, directory, formatIndex);
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
-		auto copyC = [](JResourceObject* ori)->JResourceObject*
+		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
 		{
-			return static_cast<JMaterial*>(ori)->CopyResource();
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(directory->MakeUniqueFileName(ori->GetName()),
+				Core::MakeGuid(),
+				ori->GetFlag(),
+				directory,
+				GetFormatIndex<JMaterial>(ori->GetFormat()));
+
+			JMaterial* newMaterial = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newMaterial->Copy(ori);
+			return newMaterial;
 		};
 		JRFI<JMaterial>::Register(defaultC, initC, loadC, copyC);
 
-		auto getFormatIndexLam = [](const std::string& format) {return JResourceObject::GetFormatIndex<JMaterial>(format); };
+		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JMaterial>(format); };
 
 		static GetTypeNameCallable getTypeNameCallable{ &JMaterial::TypeName };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JMaterial::GetAvailableFormat };
@@ -668,7 +688,7 @@ namespace JinEngine
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, rTypeiFunc);
 	}
-	JMaterial::JMaterial(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	JMaterial::JMaterial(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		: JMaterialInterface(name, guid, flag, directory, formatIndex)
 	{
 		SetNewFunctionFlag(SHADER_FUNCTION_NONE);

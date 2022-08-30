@@ -27,8 +27,6 @@ namespace JinEngine
 		DirectX::XMVECTOR GetRight()const noexcept;
 		DirectX::XMVECTOR GetUp()const noexcept;
 		DirectX::XMVECTOR GetFront()const noexcept;
-		J_COMPONENT_TYPE GetComponentType()const noexcept final;
-		static J_COMPONENT_TYPE GetStaticComponentType()noexcept;
 
 		void SetTransform(const DirectX::XMFLOAT3& position, const DirectX::XMFLOAT3& rotation, const DirectX::XMFLOAT3& scale)noexcept;
 		void SetPosition(const DirectX::XMFLOAT3& value)noexcept;
@@ -36,8 +34,12 @@ namespace JinEngine
 		void SetScale(const DirectX::XMFLOAT3& value)noexcept;
 		  
 		void LookAt(const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& worldUp = DirectX::XMFLOAT3(0,1,0))noexcept;
+
+		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final; 
+	public:
+		bool Copy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 

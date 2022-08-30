@@ -1,10 +1,12 @@
 #pragma once
-#include"../JFSMtransition.h" 
+#include"../JFSMtransition.h"  
 
 namespace JinEngine
 {
 	namespace Core
 	{
+		struct JFSMLoadGuidMap;
+		__interface IJFSMconditionStorageUser;
 		class JAnimationFSMtransition : public JFSMtransition
 		{
 		private:
@@ -28,6 +30,10 @@ namespace JinEngine
 			void SetTargetStateOffset(bool value)noexcept;
 
 			bool IsSatisfiedOption(const float normalizedTime)noexcept;
+		public: 
+			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
+			static std::unique_ptr<JAnimationFSMtransition> LoadData(std::wifstream& stream, JFSMLoadGuidMap& guidMap, IJFSMconditionStorageUser& IConditionUser);
+		public:
 			void Initialize()noexcept override;
 		};
 	}

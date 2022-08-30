@@ -7,7 +7,10 @@
 #include<fstream>
 
 namespace JinEngine
-{ 
+{
+	static auto isAvailableoverlapLam = []() {return false; };
+	static auto componentTypeLam = []() {return J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM; };
+
 	using namespace DirectX;
 	XMFLOAT3 JTransform::GetPosition()const noexcept
 	{
@@ -46,14 +49,6 @@ namespace JinEngine
 	XMVECTOR JTransform::GetFront()const noexcept
 	{
 		return XMLoadFloat3(&tFront);
-	}
-	J_COMPONENT_TYPE JTransform::GetComponentType()const noexcept
-	{
-		return GetStaticComponentType();
-	}
-	J_COMPONENT_TYPE JTransform::GetStaticComponentType()noexcept
-	{
-		return J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM;
 	}
 	void JTransform::SetTransform(const XMFLOAT3& position, const XMFLOAT3& rotation, const XMFLOAT3& scale)noexcept
 	{
@@ -94,14 +89,14 @@ namespace JinEngine
 		if (rotation.z <= -360)
 			rotation.z += 360;
 
-		const XMVECTOR q = XMQuaternionRotationRollPitchYaw(JMathHelper::DegToRad * rotation.x, 
-			JMathHelper::DegToRad * rotation.y, 
+		const XMVECTOR q = XMQuaternionRotationRollPitchYaw(JMathHelper::DegToRad * rotation.x,
+			JMathHelper::DegToRad * rotation.y,
 			JMathHelper::DegToRad * rotation.z);
 
 		XMVECTOR newRight = XMVector3Rotate(JMathHelper::VectorRight(), q);
 		XMVECTOR newUp = XMVector3Rotate(JMathHelper::VectorUp(), q);
 		XMVECTOR newFront = XMVector3Rotate(JMathHelper::VectorForward(), q);
-		 
+
 		XMStoreFloat3(&tRight, XMVector3Normalize(newRight));
 		XMStoreFloat3(&tUp, XMVector3Normalize(newUp));
 		XMStoreFloat3(&tFront, XMVector3Normalize(newFront));
@@ -159,14 +154,38 @@ namespace JinEngine
 		//rotation = JMathHelper::ToEulerAngle(newRotation);
 		Update();
 	}
+	J_COMPONENT_TYPE JTransform::GetComponentType()const noexcept
+	{
+		return componentTypeLam();
+	}
 	bool JTransform::IsAvailableOverlap()const noexcept
 	{
-		return false;
+		return isAvailableoverlapLam();
 	}
 	bool JTransform::PassDefectInspection()const noexcept
 	{
 		if (JComponent::PassDefectInspection())
 			return true;
+		else
+			return false;
+	}
+	bool JTransform::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{
+			JTransform* oriT = static_cast<JTransform*>(ori);
+			position = oriT->position;
+			rotation = oriT->rotation;
+			scale = oriT->scale;
+			tFront = oriT->tFront;
+			tRight = oriT->tRight;
+			tUp = oriT->tUp;
+			Update();
+			return true;
+		}
 		else
 			return false;
 	}
@@ -187,7 +206,7 @@ namespace JinEngine
 		JGameObject* owner = GetOwner();
 		const uint childrenCount = owner->GetChildrenCount();
 		for (uint i = 0; i < childrenCount; ++i)
-			owner->GetChild(i)->GetTransform()->Update(); 
+			owner->GetChild(i)->GetTransform()->Update();
 	}
 	void JTransform::WorldUpdate()noexcept
 	{
@@ -237,16 +256,24 @@ namespace JinEngine
 
 		if (!stream.is_open())
 			return nullptr;
-		 
+
 		ObjectMetadata metadata;
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
-	 
+
 		JTransform* newTransform;
 		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-			newTransform = new JTransform(metadata.guid, metadata.flag, owner);
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(metadata.guid, metadata.flag, owner);
+			JTransform* newTransform = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+		}
 		else
-			newTransform = new JTransform(Core::MakeGuid(), (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), owner);
-
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(Core::MakeGuid(),
+				(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), owner);
+			JTransform* newTransform = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+		}
 		stream >> newTransform->position.x >> newTransform->position.y >> newTransform->position.z >>
 			newTransform->rotation.x >> newTransform->rotation.y >> newTransform->rotation.z >>
 			newTransform->scale.x >> newTransform->scale.y >> newTransform->scale.z;
@@ -258,11 +285,18 @@ namespace JinEngine
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
-			return new JTransform(Core::MakeGuid(), (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(Core::MakeGuid(),
+				(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), owner);
+			JComponent* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
-			return new JTransform(guid, objFlag, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(guid, objFlag, owner);
+			JComponent* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto loadC = [](std::wifstream& stream, JGameObject* owner) -> JComponent*
 		{
@@ -270,32 +304,24 @@ namespace JinEngine
 		};
 		auto copyC = [](JComponent* ori, JGameObject* owner) -> JComponent*
 		{
-			JTransform* oriT = static_cast<JTransform*>(ori); 
-			JTransform* newT = new JTransform(Core::MakeGuid(), oriT->GetFlag(), owner);
-
-			newT->position = oriT->position;
-			newT->rotation = oriT->rotation;
-			newT->scale = oriT->scale;
-			newT->tFront = oriT->tFront;
-			newT->tRight = oriT->tRight;
-			newT->tUp = oriT->tUp; 
-			newT->WorldUpdate();
-
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(Core::MakeGuid(), ori->GetFlag(), owner);
+			JTransform* newT = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newT->Copy(ori);
 			return newT;
 		};
 		JCFI<JTransform>::Regist(defaultC, initC, loadC, copyC);
 
 		static GetTypeNameCallable getTypeNameCallable{ &JTransform::TypeName };
 		static GetTypeInfoCallable getTypeInfoCallable{ &JTransform::StaticTypeInfo };
+		bool(*ptr)() = isAvailableoverlapLam;
+		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 
-		static auto setFrameLam = [](JComponent& component)
-		{
-			static_cast<JTransform*>(&component)->SetFrameDirty();
-		};
+		static auto setFrameLam = [](JComponent& component){static_cast<JTransform*>(&component)->SetFrameDirty();};
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
-		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable };
+		static JCI::CTypeHint cTypeHint{ componentTypeLam(), true };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
@@ -311,7 +337,7 @@ namespace JinEngine
 		XMStoreFloat3(&tUp, JMathHelper::VectorUp());
 		XMStoreFloat3(&tFront, JMathHelper::VectorForward());
 		XMStoreFloat4x4(&world, JMathHelper::IdentityMatrix4());
-		 
+
 		if (!owner->IsRoot())
 			WorldUpdate();
 	}

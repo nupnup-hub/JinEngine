@@ -11,28 +11,25 @@ namespace JinEngine
 	class JResourceObject : public JResourceObjectInterface
 	{
 		REGISTER_CLASS(JResourceObject) 
-	protected:
+	private:
 		//0 is default Resource format 
 		const uint8 formatIndex; 
-	private: 
 		JDirectory* directory;  
 	public:
-		std::string GetFullName()const noexcept;
-		std::string GetPath()const noexcept;
-		std::wstring GetWPath()const noexcept;
-		std::string GetFolderPath()const noexcept; 
-		std::wstring GetFolderWPath()const noexcept;
+		std::wstring GetFullName()const noexcept; 
+		std::wstring GetPath()const noexcept;
+		std::wstring GetFolderPath()const noexcept;  
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
 
 		virtual J_RESOURCE_TYPE GetResourceType()const noexcept = 0;
-		virtual std::string GetFormat()const noexcept = 0; 
+		virtual std::wstring GetFormat()const noexcept = 0; 
 	protected:
-		std::string GetMetafilePath()const noexcept;
-		JDirectory* GetDirectory()noexcept;   
-		JResourceObject* CopyResource();
+		uint8 GetFormatIndex()const noexcept;
+		std::wstring GetMetafilePath()const noexcept;
+		JDirectory* GetDirectory()noexcept;    
 	protected:
 		static std::wstring ConvertMetafilePath(const std::wstring& resourcePath)noexcept; 
-		static bool HasMetafile(const std::string& path);
+		static bool HasMetafile(const std::wstring& path);
 		static bool HasMetafile(JResourceObject* resource);
 	protected:
 		//DoActivate => Load resource file in memory
@@ -43,11 +40,11 @@ namespace JinEngine
 		void OnReference()noexcept final;
 		void OffReference()noexcept final;
 	protected:
-		void Destroy()override;
-	private:
-		virtual Core::J_FILE_IO_RESULT CallStoreResource() = 0;
+		void Destroy()override; 
 	protected:
-		JResourceObject(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		static void CopyRFile(JResourceObject& from, JResourceObject& to);
+	protected:
+		JResourceObject(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JResourceObject();
 	public:
 		static constexpr uint8 GetInvalidFormatIndex()noexcept
@@ -60,9 +57,9 @@ namespace JinEngine
 		}
 	protected: 
 		template<typename T>
-		static int GetFormatIndex(const std::string& format)noexcept
+		static int GetFormatIndex(const std::wstring& format)noexcept
 		{
-			std::vector<std::string> formatVec = T::GetAvailableFormat();
+			std::vector<std::wstring> formatVec = T::GetAvailableFormat();
 			const uint formatVecCount = (uint)formatVec.size();
 			for (uint i = 0; i < formatVecCount; ++i)
 			{
@@ -72,9 +69,9 @@ namespace JinEngine
 			return -1;
 		}
 		template<typename T>
-		static bool IsResourceFormat(const std::string& format)noexcept
+		static bool IsResourceFormat(const std::wstring& format)noexcept
 		{
-			std::vector<std::string> formatVec = T::GetAvailableFormat();
+			std::vector<std::wstring> formatVec = T::GetAvailableFormat();
 			const uint formatVecCount = (uint)formatVec.size();
 			for (uint i = 0; i < formatVecCount; ++i)
 			{

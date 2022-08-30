@@ -109,8 +109,8 @@ namespace JinEngine
 		 
 		for (const auto& data : projectInfoList)
 		{ 
-			stream << JCommonUtility::U8StringToWstring(data.name) << " " << 
-				JCommonUtility::U8StringToWstring(data.path) << " " <<
+			stream << JCommonUtility::U8StrToWstr(data.name) << " " << 
+				JCommonUtility::U8StrToWstr(data.path) << " " <<
 				data.mainVersion << " " << data.subVersion << " ";
 		}
 
@@ -147,11 +147,11 @@ namespace JinEngine
 			//https://stackoverflow.com/questions/4533063/how-does-ifstreams-eof-work
 			while (stream >> name >> path >> mainVersion >> subVersion)
 			{
-				if (_access(JCommonUtility::WstringToU8String(path).c_str(), 00) == 0)
+				if (_access(JCommonUtility::WstrToU8Str(path).c_str(), 00) == 0)
 				{
 					// 필) 프로젝트 존재여부를 확인할 방법추가 
-					projectInfoList.push_back(ProjectInfo(JCommonUtility::WstringToU8String(name),
-						JCommonUtility::WstringToU8String(path),
+					projectInfoList.push_back(ProjectInfo(JCommonUtility::WstrToU8Str(name),
+						JCommonUtility::WstrToU8Str(path),
 						mainVersion, subVersion));
 				}
 			}
@@ -184,7 +184,7 @@ namespace JinEngine
 				std::wstring dirPath;
 				if (SelectFolderPath(dirPath) && HasStroageSpace(dirPath))
 				{
-					const std::string strDirPath = JCommonUtility::WstringToU8String(dirPath);
+					const std::string strDirPath = JCommonUtility::WstrToU8Str(dirPath);
 					const uint strDirPathSize = (uint)strDirPath.size();
 
 					for (uint i = 0; i < strDirPathSize; ++i)
@@ -194,8 +194,8 @@ namespace JinEngine
 
 			if (ImGui::Button("Create Proejct"))
 			{  
-				if (JCommonUtility::IsOverlappedDirectoryPath(JCommonUtility::U8StringToWstring(menuListValues.newProejctName),
-					JCommonUtility::U8StringToWstring(menuListValues.newProejctPath)))
+				if (JCommonUtility::IsOverlappedDirectoryPath(JCommonUtility::U8StrToWstr(menuListValues.newProejctName),
+					JCommonUtility::U8StrToWstr(menuListValues.newProejctPath)))
 					MessageBox(0, L"Overlapped Project Name", 0, 0);
 				else if (menuListValues.newProejctName != " " &&
 					menuListValues.newProejctPath != " ")
@@ -249,7 +249,7 @@ namespace JinEngine
 		ULARGE_INTEGER uliTotal;
 		ULARGE_INTEGER uliFree;
 
-		if (GetDiskFreeSpaceExA(JCommonUtility::WstringToU8String(dirPath).c_str(), &uliAvailable, &uliTotal, &uliFree))
+		if (GetDiskFreeSpaceExA(JCommonUtility::WstrToU8Str(dirPath).c_str(), &uliAvailable, &uliTotal, &uliFree))
 		{
 			ULONGLONG result = uliAvailable.QuadPart / 1048576;
 			if (result > necessaryCapacityMB)

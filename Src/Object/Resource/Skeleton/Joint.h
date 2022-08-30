@@ -9,7 +9,7 @@ namespace JinEngine
 	{
 	public:  
 		DirectX::XMFLOAT4X4 inbindPose;
-		std::string name = "";
+		std::wstring name;
 		uint8 parentIndex; 
 		float length;
 	};

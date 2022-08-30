@@ -45,8 +45,8 @@ namespace JinEngine
 			if (ImGui::InputText("##TestInputText", &buf[0], 255, flag))
 			{
 				ori = JCommonUtility::EraseEmptySpace(buf);
-				oriToWstr = JCommonUtility::U8StringToWstring(ori);
-				wstrToStr = JCommonUtility::WstringToU8String(oriToWstr);
+				oriToWstr = JCommonUtility::U8StrToWstr(ori);
+				wstrToStr = JCommonUtility::WstrToU8Str(oriToWstr);
 				buf[0] = '\0';
 			}
 		}

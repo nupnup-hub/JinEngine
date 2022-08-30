@@ -12,8 +12,8 @@ namespace JinEngine
 		struct JObjMeshPartData
 		{
 		public:
-			std::string meshName;
-			std::string materialName;
+			std::wstring meshName;
+			std::wstring materialName;
 			JStaticMeshData staticMeshData;
 			DirectX::BoundingBox boundingBox;
 			DirectX::BoundingSphere boundingSphere;
@@ -35,18 +35,18 @@ namespace JinEngine
 		struct JObjMatData
 		{
 		public:
-			std::string name;
-			std::string albedoTName;
-			std::string normalTName;
-			std::string heightTName;
-			std::string ambientTName;
+			std::wstring name;
+			std::wstring albedoTName;
+			std::wstring normalTName;
+			std::wstring heightTName;
+			std::wstring ambientTName;
 			//미구현
-			std::string specularColorTName;
+			std::wstring specularColorTName;
 			//미구현
-			std::string specularHighlightTName;
-			std::string alphaTName;
+			std::wstring specularHighlightTName;
+			std::wstring alphaTName;
 			//미구현
-			std::string decalTName;
+			std::wstring decalTName;
 
 			//미구현
 			DirectX::XMFLOAT4 ambient;

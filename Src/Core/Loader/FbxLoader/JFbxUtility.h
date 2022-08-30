@@ -18,7 +18,7 @@ namespace JinEngine
 		struct JFbxPartMeshData
 		{
 		public:
-			std::string name;
+			std::wstring name;
 			int parentIndex = -1;
 			JStaticMeshData staticMeshData;
 			JSkinnedMeshData skinnedMeshData;

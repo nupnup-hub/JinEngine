@@ -9,12 +9,12 @@ namespace JinEngine
 	struct JModelPart
 	{
 	public:
-		std::string name;
+		std::wstring name;
 		int parentIndex;
 		JMeshGeometry* mesh = nullptr;
 		JMaterial* mat = nullptr;
 	public: 
-		JModelPart(std::string name, int parentIndex, JMeshGeometry* mesh, JMaterial* mat)
+		JModelPart(std::wstring name, int parentIndex, JMeshGeometry* mesh, JMaterial* mat)
 			:name(name), parentIndex(parentIndex), mesh(mesh), mat(mat)
 		{}
 	};

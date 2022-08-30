@@ -27,13 +27,13 @@ namespace JinEngine
 	{
 		return GetStaticResourceType();
 	} 
-	std::string JTexture::GetFormat()const noexcept
+	std::wstring JTexture::GetFormat()const noexcept
 	{
-		return GetAvailableFormat()[formatIndex];
+		return GetAvailableFormat()[GetFormatIndex()];
 	}
-	std::vector<std::string> JTexture::GetAvailableFormat()noexcept
+	std::vector<std::wstring> JTexture::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::string> format{ ".jpg",".png",".dds",".tga",".bmp" };
+		static std::vector<std::wstring> format{ L".jpg",L".png",L".dds",L".tga",L".bmp" };
 		return format;
 	}
 	void JTexture::SetTextureType(const Graphic::J_GRAPHIC_TEXTURE_TYPE textureType)noexcept
@@ -44,6 +44,22 @@ namespace JinEngine
 			ClearResource();
 			StuffResource();
 		}
+	}
+	bool JTexture::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{
+			JTexture* oriT = static_cast<JTexture*>(oriT);
+			CopyRFile(*oriT, *this);
+			ClearResource();
+			StuffResource();
+			return true;
+		}
+		else
+			return false;
 	}
 	void JTexture::DoActivate()noexcept
 	{
@@ -137,14 +153,30 @@ namespace JinEngine
 
 		JTexture* newTexture = nullptr;
 		if (directory->HasFile(pathData.fullName))
-			newTexture = JResourceManager::Instance().GetResourceByPath<JTexture>(pathData.strPath);
+			newTexture = JResourceManager::Instance().GetResourceByPath<JTexture>(pathData.wstrPath);
 
 		if (newTexture == nullptr)
 		{
 			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-				newTexture = new JTexture(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JTexture>(pathData.format));
+			{
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(pathData.name, 
+					metadata.guid,
+					metadata.flag, 
+					directory, 
+					GetFormatIndex<JTexture>(pathData.format));
+				newTexture = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
+			}
 			else
-				newTexture = new JTexture(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JTexture>(pathData.format));
+			{
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(pathData.name,
+					Core::MakeGuid(), 
+					OBJECT_FLAG_NONE, 
+					directory, 
+					GetFormatIndex<JTexture>(pathData.format));
+				newTexture = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
+			}
 		}
 		 
 		if (newTexture->IsValid())
@@ -155,11 +187,12 @@ namespace JinEngine
 			return newTexture;
 		else
 		{
-			delete newTexture;
+			newTexture->SetIgnoreUndestroyableFlag(true);
+			newTexture->BeginDestroy();
 			return nullptr;
 		}
 	}
-	Core::J_FILE_IO_RESULT JTexture::LoadMetadata(std::wifstream& stream, const std::string& folderPath, TextureMetadata& metadata)
+	Core::J_FILE_IO_RESULT JTexture::LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, TextureMetadata& metadata)
 	{
 		if (stream.is_open())
 		{
@@ -175,30 +208,45 @@ namespace JinEngine
 	}
 	void JTexture::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* owner) ->JResourceObject*
+		auto defaultC = [](JDirectory* directory) ->JResourceObject*
 		{
-			return new JTexture(owner->MakeUniqueFileName(GetDefaultName<JTexture>()),
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(directory->MakeUniqueFileName(GetDefaultName<JTexture>()),
 				Core::MakeGuid(),
 				OBJECT_FLAG_NONE,
-				owner,
+				directory,
 				JResourceObject::GetDefaultFormatIndex());
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
-		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
-		{
-			return  new JTexture(name, guid, objFlag, directory, formatIndex);
+		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		{ 
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(name, guid, objFlag, directory, formatIndex);
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
-		auto copyC = [](JResourceObject* ori)->JResourceObject*
+		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
 		{
-			return static_cast<JTexture*>(ori)->CopyResource();
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(directory->MakeUniqueFileName(ori->GetName()),
+				Core::MakeGuid(),
+				ori->GetFlag(),
+				directory,
+				GetFormatIndex<JTexture>(ori->GetFormat()));
+
+			JTexture* newTexture = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newTexture->Copy(ori);
+			return newTexture;
 		};
 
 		JRFI<JTexture>::Register(defaultC, initC, loadC, copyC);
 
-		auto getFormatIndexLam = [](const std::string& format) {return JResourceObject::GetFormatIndex<JTexture>(format); };
+		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JTexture>(format); };
 
 		static GetTypeNameCallable getTypeNameCallable{ &JTexture::TypeName };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JTexture::GetAvailableFormat };

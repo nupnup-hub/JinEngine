@@ -16,25 +16,25 @@ namespace JinEngine
 			friend class JApplication;
 			friend class ProjectSelector;
 		private:
-			static std::string engineExePath;
-			static std::string enginePath;
+			static std::wstring engineExePath;
+			static std::wstring enginePath;
 			static std::wstring enginePathW;
-			static std::string defaultResourcePath;
-			static std::string shaderPath;
-			static std::string activatedProjectPath;
-			static std::string activatedProjectName;
+			static std::wstring defaultResourcePath;
+			static std::wstring shaderPath;
+			static std::wstring activatedProjectPath;
+			static std::wstring activatedProjectName;
 
-			static std::string contentPath;
-			static std::string projectSettingPath;
-			static std::string libraryPath;
-			static std::string shaderMetafilePath;
-			static std::string projectDefaultResourcePath;
-			static std::string projectEditorResoucePath;
+			static std::wstring contentPath;
+			static std::wstring projectSettingPath;
+			static std::wstring libraryPath;
+			static std::wstring shaderMetafilePath;
+			static std::wstring projectDefaultResourcePath;
+			static std::wstring projectEditorResoucePath;
 
-			static std::string sceneFolderPath;
-			static std::string scriptFolderPath;
-			static std::string resourceFolderPath;
-			static std::vector<std::string> folderPath;
+			static std::wstring sceneFolderPath;
+			static std::wstring scriptFolderPath;
+			static std::wstring resourceFolderPath;
+			static std::vector<std::wstring> folderPath;
 
 			static J_APPLICATION_STATE applicationState;
 			static Core::J_LANGUAGE_TYPE engineLanguage;
@@ -44,28 +44,27 @@ namespace JinEngine
 			JApplicationVariable(const JApplicationVariable& rhs) = delete;
 			JApplicationVariable& operator=(const JApplicationVariable& rhs) = delete;
 
-			static std::string GetEngineExePath()noexcept;
-			static std::string GetEnginePath()noexcept;
-			static std::wstring GetEnginePathW()noexcept;
-			static std::string GetDefaultResourcePath()noexcept;
-			static std::string GetShaderPath()noexcept;
-			static std::string GetActivatedProjectPath()noexcept;
-			static std::string GetActivatedProjectName()noexcept;
-			static std::string GetProjectPath()noexcept;
-			static std::string GetProjectContentPath()noexcept;
-			static std::string GetProjectSettingPath()noexcept;
-			static std::string GetProjectLibraryPath()noexcept;
-			static std::string GetProjectShaderMetafilePath()noexcept;
-			static std::string GetProjectDefaultResourcePath()noexcept;
-			static std::string GetProjectEditorResourcePath()noexcept;
-			static std::string GetProjectContentScenePath()noexcept;
-			static std::string GetProjectContentScriptPath()noexcept;
-			static std::string GetProjectContentResourcePath()noexcept;
+			static std::wstring GetEngineExePath()noexcept;
+			static std::wstring GetEnginePath()noexcept; 
+			static std::wstring GetDefaultResourcePath()noexcept;
+			static std::wstring GetShaderPath()noexcept;
+			static std::wstring GetActivatedProjectPath()noexcept;
+			static std::wstring GetActivatedProjectName()noexcept;
+			static std::wstring GetProjectPath()noexcept;
+			static std::wstring GetProjectContentPath()noexcept;
+			static std::wstring GetProjectSettingPath()noexcept;
+			static std::wstring GetProjectLibraryPath()noexcept;
+			static std::wstring GetProjectShaderMetafilePath()noexcept;
+			static std::wstring GetProjectDefaultResourcePath()noexcept;
+			static std::wstring GetProjectEditorResourcePath()noexcept;
+			static std::wstring GetProjectContentScenePath()noexcept;
+			static std::wstring GetProjectContentScriptPath()noexcept;
+			static std::wstring GetProjectContentResourcePath()noexcept;
 			static J_APPLICATION_STATE GetApplicationState()noexcept;
 			static Core::J_LANGUAGE_TYPE GetEngineLanguageType()noexcept;
-			static bool IsDefaultFolder(const std::string& path)noexcept; 
+			static bool IsDefaultFolder(const std::wstring& path)noexcept;
 		private:
-			void MakeFolderPath(const std::string& projectName, const std::string& projectPath);
+			void MakeFolderPath(const std::wstring& projectName, const std::wstring& projectPath);
 			bool AccessProjectFolder();
 			void StartNewProject();
 		};

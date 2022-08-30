@@ -25,23 +25,23 @@ namespace JinEngine
 	};
 
 	class JResourceObject; 
-	class JResourceRemoveInterface : public JResourceMangerOwnerInterface
+	class JResourceStorageInterface : public JResourceMangerOwnerInterface
 	{
 	private:
 		friend class JResourceObject; 
 	public:
-		virtual JResourceRemoveInterface* ResourceRemoveInterface() = 0;
+		virtual JResourceStorageInterface* ResourceStorageInterface() = 0;
 	private:
 		virtual bool RemoveResource(JResourceObject& resource)noexcept = 0;
 	};
 
 	class JDirectory;
-	class JDirectoryRemoveInterface : public JResourceRemoveInterface
+	class JDirectoryStorageInterface : public JResourceStorageInterface
 	{
 	private:
 		friend class JDirectory;
 	public:
-		virtual JDirectoryRemoveInterface* DirectoryRemoveInterface() = 0;
+		virtual JDirectoryStorageInterface* DirectoryStorageInterface() = 0;
 	private:
 		virtual bool RemoveJDirectory(JDirectory& dir)noexcept = 0;
 	};

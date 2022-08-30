@@ -14,6 +14,7 @@ namespace JinEngine
 	protected:
 		using GetTypeNameCallable = Core::JStaticCallable<std::string>;
 		using GetTypeInfoCallable = Core::JStaticCallable<JTypeInfo&>; 
+		using IsAvailableOverlapCallable = Core::JStaticCallable<bool>;
 	protected:
 		using SetFrameDirtyCallable = Core::JStaticCallable<void, JComponent&>;
 	public:
@@ -32,13 +33,17 @@ namespace JinEngine
 		private:
 			GetTypeNameCallable* getTypeName = nullptr;
 			GetTypeInfoCallable* getTypeInfo = nullptr;
+			IsAvailableOverlapCallable* isAvailableOverlapCallable = nullptr;
 		public:
 			CTypeCommonFunc() = default;
-			CTypeCommonFunc(GetTypeNameCallable& getTypeName, GetTypeInfoCallable& getTypeInfo);
+			CTypeCommonFunc(GetTypeNameCallable& getTypeName,
+				GetTypeInfoCallable& getTypeInfo,
+				IsAvailableOverlapCallable& isAvailableOverlapCallable);
 			~CTypeCommonFunc();
 		public:
 			std::string CallGetTypeName();
 			JTypeInfo& CallGetTypeInfo();
+			bool CallIsAvailableOverlapCallable();
 		};
 
 		class CTypeInterfaceFunc
@@ -59,8 +64,8 @@ namespace JinEngine
 	//Common
 	public:
 		static JTypeInfo& CallGetTypeInfo(const J_COMPONENT_TYPE cType);
-	protected:
 		static std::string CallGetTypeName(const J_COMPONENT_TYPE cType); 	
+		static bool CallIsAvailableOverlap(const J_COMPONENT_TYPE cType);
 	private:
 		virtual Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream) = 0;
 	//Interface
@@ -72,7 +77,7 @@ namespace JinEngine
 	protected:
 		static void RegisterTypeInfo(const CTypeHint& cTypeHint, const CTypeCommonFunc& cTypeCFunc, const CTypeInterfaceFunc& cTypeInterfaceFunc)noexcept;
 	protected:
-		JComponentInterface(const std::string& cTypeName, const size_t guid, J_OBJECT_FLAG flag);
+		JComponentInterface(const std::wstring& cTypeName, const size_t guid, J_OBJECT_FLAG flag);
 	};
 
 	using JCI = JComponentInterface;

@@ -8,10 +8,10 @@ namespace JinEngine
 	public:
 		const std::wstring wstrPath;
 		std::string strPath;
-		std::string folderPath;
-		std::string name;
-		std::string fullName;
-		std::string format;
+		std::wstring folderPath;
+		std::wstring name;
+		std::wstring fullName;
+		std::wstring format;
 	public:
 		JResourcePathData(const std::wstring& oriPath);
 	};

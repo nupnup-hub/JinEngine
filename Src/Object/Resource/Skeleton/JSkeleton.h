@@ -18,7 +18,7 @@ namespace JinEngine
 		uint GetJointCount()const noexcept;
 		size_t GetHash()const noexcept;
 		Joint GetJoint(int index)const noexcept;
-		std::string GetJointName(int index)const noexcept;
+		std::wstring GetJointName(int index)const noexcept;
 		uint8 GetJointParentIndex(int index)const noexcept;
 		DirectX::XMMATRIX GetInBindPose(int index)const noexcept;
 		DirectX::XMMATRIX GetBindPose(int index)const noexcept;

@@ -21,10 +21,10 @@ namespace JinEngine
 	{
 		return joint[index];
 	}
-	std::string JSkeleton::GetJointName(int index)const noexcept
+	std::wstring JSkeleton::GetJointName(int index)const noexcept
 	{
 		if (index < 0 && index >= (int)joint.size())
-			return " ";
+			return std::wstring{};
 		else
 			return joint[index].name;
 	}

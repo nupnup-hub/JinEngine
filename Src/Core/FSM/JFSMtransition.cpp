@@ -1,29 +1,65 @@
 #include"JFSMtransition.h"
 #include"JFSMcondition.h"
+#include<fstream>
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		FSMConditionWrap::FSMConditionWrap(JFSMcondition* condition)
+		JFSMconditionWrap::JFSMconditionWrap(JFSMcondition* condition)
 			:condition(condition), onValue(0)
 		{}
-		bool FSMConditionWrap::IsSatisfied()const noexcept
+		JFSMcondition* JFSMconditionWrap::GetCondition()noexcept
+		{
+			return condition;
+		}
+		float JFSMconditionWrap::GetOnValue()const noexcept
+		{
+			J_FSMCONDITION_VALUE_TYPE valueType = condition->GetValueType();
+			if (valueType == J_FSMCONDITION_VALUE_TYPE::BOOL)
+				return std::clamp(onValue, 0.0f, 1.0f);
+			else if (valueType == J_FSMCONDITION_VALUE_TYPE::INT)
+				return onValue;
+			else if (valueType == J_FSMCONDITION_VALUE_TYPE::FLOAT)
+				return onValue;
+		}
+		void JFSMconditionWrap::SetCondition(JFSMcondition* newCondition)noexcept
+		{
+			condition = newCondition;
+			SetOnValue(onValue);
+		}
+		void JFSMconditionWrap::SetOnValue(float newValue)noexcept
+		{
+			onValue = newValue;
+		}
+
+		bool JFSMconditionWrap::IsSatisfied()const noexcept
 		{
 			return (PassDefectInspection()) && (condition->GetValue() == onValue);
 		}
-		bool FSMConditionWrap::PassDefectInspection()const noexcept
+		bool JFSMconditionWrap::PassDefectInspection()const noexcept
 		{
 			return condition != nullptr;
 		}
 		JFSMtransition::JFSMtransition(const size_t outputStateGuid)
 			:outputStateGuid(outputStateGuid)
 		{}
-		size_t JFSMtransition::GetOutputStateGuId()noexcept
+		uint JFSMtransition::GetConditioCount()const noexcept
+		{
+			return (uint)conditionVec.size();
+		}
+		float JFSMtransition::GetConditionOnValue(const uint index)const noexcept
+		{
+			if (index >= conditionVec.size())
+				return errorOnValue;
+
+			return conditionVec[index]->GetOnValue();
+		}
+		size_t JFSMtransition::GetOutputStateGuid()const noexcept
 		{
 			return outputStateGuid;
 		}
-		bool JFSMtransition::HasSatisfiedCondition()noexcept
+		bool JFSMtransition::HasSatisfiedCondition()const noexcept
 		{
 			const uint conditionVecSize = (uint)conditionVec.size();
 
@@ -37,34 +73,34 @@ namespace JinEngine
 			}
 			return false;
 		}
-		void JFSMtransition::Initialize()noexcept
+		JFSMcondition* JFSMtransition::GetConditionByIndex(const uint index)const noexcept
 		{
-			const uint conditionVecSize = (uint)conditionVec.size();
+			if (index >= conditionVec.size())
+				return nullptr;
 
-			for (uint index = 0; index < conditionVecSize; ++index)
-				conditionVec[index]->onValue = 0;
+			return conditionVec[index]->GetCondition();
 		}
-		void JFSMtransition::SetConditionOnValue(const uint conditionIndex, const float onValue)noexcept
+		void JFSMtransition::SetConditionOnValue(const uint index, const float onValue)noexcept
 		{
-			if (conditionIndex >= conditionVec.size())
+			if (index >= conditionVec.size())
 				return;
 
-			conditionVec[conditionIndex]->onValue = onValue;
+			conditionVec[index]->SetOnValue(onValue);
 		}
-		void JFSMtransition::SetCondition(const uint oldConditionIndex, JFSMcondition* newCondition)noexcept
+		void JFSMtransition::SetCondition(const uint oldIndex, JFSMcondition* newCondition)noexcept
 		{
-			if (oldConditionIndex >= conditionVec.size())
+			if (oldIndex >= conditionVec.size())
 				return;
 
-			conditionVec[oldConditionIndex]->condition = newCondition;
+			conditionVec[oldIndex]->SetCondition(newCondition);
 		}
-		bool JFSMtransition::AddCondition(JFSMcondition* condition)noexcept
+		JFSMconditionWrap* JFSMtransition::AddCondition(JFSMcondition* condition)noexcept
 		{
 			if (conditionVec.size() >= maxNumberOffCondition)
 				return false;
 
-			conditionVec.push_back(std::make_unique<FSMConditionWrap>(condition));
-			return true;
+			conditionVec.push_back(std::make_unique<JFSMconditionWrap>(condition));
+			return conditionVec[conditionVec.size() - 1].get();
 		}
 		bool JFSMtransition::PopCondition(const size_t outputStateGuid)noexcept
 		{
@@ -74,7 +110,7 @@ namespace JinEngine
 
 			for (; index < conditionVecSize; ++index)
 			{
-				if (conditionVec[index]->condition->GetGuid() == outputStateGuid)
+				if (conditionVec[index]->GetCondition()->GetGuid() == outputStateGuid)
 				{
 					hasCondition = true;
 					break;
@@ -89,6 +125,13 @@ namespace JinEngine
 				conditionVec.erase(conditionVec.begin() + index);
 				return true;
 			}
+		}
+		void JFSMtransition::Initialize()noexcept
+		{
+			const uint conditionVecSize = (uint)conditionVec.size();
+
+			for (uint index = 0; index < conditionVecSize; ++index)
+				conditionVec[index]->SetOnValue(0);
 		}
 	}
 }

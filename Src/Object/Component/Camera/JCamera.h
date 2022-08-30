@@ -60,12 +60,13 @@ namespace JinEngine
 		void SetPerspectiveCamera()noexcept;
 		void SetMainCamera()noexcept;
 
-		J_COMPONENT_TYPE GetComponentType()const noexcept final;
-		static J_COMPONENT_TYPE GetStaticComponentType()noexcept;
+		J_COMPONENT_TYPE GetComponentType()const noexcept final; 
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final; 
 
 		JCameraStateInterface* StateInterface() final;
+	public:
+		bool Copy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 

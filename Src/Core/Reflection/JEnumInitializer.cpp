@@ -27,7 +27,7 @@ namespace JinEngine
 					}
 					else
 					{
-						int value = FuncUtil::StringToInt(FuncUtil::EraseSpace(elementPart.substr(equalIndex + 1)));
+						int value = FuncUtil::StrToInt(FuncUtil::EraseSpace(elementPart.substr(equalIndex + 1)));
 						map.emplace(value, elementPart.substr(0, equalIndex));
 						eleValue += value;
 					}
@@ -40,7 +40,7 @@ namespace JinEngine
 						map.emplace(eleValue, elementCopy);
 					else
 					{
-						int value = FuncUtil::StringToInt(FuncUtil::EraseSpace(elementCopy.substr(equalIndex + 1)));
+						int value = FuncUtil::StrToInt(FuncUtil::EraseSpace(elementCopy.substr(equalIndex + 1)));
 						map.emplace(value, elementCopy.substr(0, equalIndex));
 					}
 					break;

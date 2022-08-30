@@ -35,7 +35,7 @@ namespace JinEngine
 		JScene* GetOwnerScene()noexcept; 
 		uint GetChildrenCount()const noexcept;  
 		uint GetComponentCount()const noexcept;
-		uint GetComponentCount(const J_COMPONENT_TYPE type)noexcept;
+		uint GetComponentCount(const J_COMPONENT_TYPE type)const noexcept;
 		JGameObject* GetParent()noexcept;
 		JGameObject* GetChild(const uint index)noexcept;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
@@ -43,22 +43,26 @@ namespace JinEngine
 		JComponent* FindComponent(const size_t guid)const noexcept;
 
 		bool IsRoot()const noexcept;
-		bool HasComponent(const J_COMPONENT_TYPE type)noexcept;
+		bool HasComponent(const J_COMPONENT_TYPE type)const noexcept;
 		bool HasRenderItem()const noexcept;
-		bool HasAnimator()const noexcept;  
+		bool HasAnimator()const noexcept; 
+		bool CanAddComponent(const J_COMPONENT_TYPE type)const noexcept;
 		void ChangeParent(JGameObject* newParent)noexcept;
 	public:
 		JGameObjectCompInterface* CompInterface() final;
+	public:
+		bool Copy(JObject* ori) final;
 	private:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
 	private:
-		static bool HasSameName(_In_ JGameObject* parent, _In_ const std::string& initName) noexcept;
+		static bool HasSameName(_In_ JGameObject* parent, _In_ const std::wstring& initName) noexcept;
 		bool IsChild(JGameObject* obj)noexcept;
 		JComponent* AddComponent(JComponent& component)noexcept; 
 		bool RemoveComponent(JComponent& component)noexcept final;
-	protected:
+	private:
 		void Destroy() final; 
+		void Clear();
 	private:
 		Core::J_FILE_IO_RESULT CallStoreGameObject(std::wofstream& stream) final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JGameObject* gameObject);
@@ -70,7 +74,7 @@ namespace JinEngine
 		* Caution! don't register in parentChildren
 		* only ownerScene parameter is valid by root gameobject
 		*/
-		JGameObject(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* parent, JScene* ownerScene = nullptr);
+		JGameObject(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* parent, JScene* ownerScene = nullptr);
 		~JGameObject();
 #pragma region JComponent Template
 	private:

@@ -94,13 +94,13 @@ namespace JinEngine
 	{
 		return GetStaticResourceType();
 	} 
-	std::string JMeshGeometry::GetFormat()const noexcept
+	std::wstring JMeshGeometry::GetFormat()const noexcept
 	{
-		return GetAvailableFormat()[formatIndex];
+		return GetAvailableFormat()[GetFormatIndex()];
 	}
-	std::vector<std::string> JMeshGeometry::GetAvailableFormat()noexcept
+	std::vector<std::wstring> JMeshGeometry::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::string> format{ ".mesh", ".obj", ".fbx" };
+		static std::vector<std::wstring> format{ L".mesh", L".obj", L".fbx" };
 		return format;
 	}
 	J_MESHGEOMETRY_TYPE JMeshGeometry::GetMeshGeometryType()const noexcept
@@ -114,6 +114,22 @@ namespace JinEngine
 	bool JMeshGeometry::HasNormal()const noexcept
 	{
 		return hasNormal;
+	}
+	bool JMeshGeometry::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{ 
+			JMeshGeometry* oriM = static_cast<JMeshGeometry*>(ori);
+			CopyRFile(*oriM, *this);
+			ClearResource();
+			StuffResource();
+			return true;
+		}
+		else
+			return false;
 	}
 	void JMeshGeometry::DoActivate()noexcept
 	{
@@ -131,7 +147,7 @@ namespace JinEngine
 		// 0 == mesh 
 		if (!IsValid())
 		{
-			if (formatIndex == 0)
+			if (GetFormatIndex() == 0)
 			{
 				;//if(Load Mesh());
 				if(ReadMeshData())
@@ -145,7 +161,7 @@ namespace JinEngine
 		// 0 == mesh 
 		if (IsValid())
 		{
-			if (formatIndex == 0)
+			if (GetFormatIndex() == 0)
 			{
 				vertexBufferCPU.Reset();
 				indexBufferCPU.Reset();
@@ -161,7 +177,7 @@ namespace JinEngine
 	}
 	bool JMeshGeometry::ReadMeshData()
 	{
-		const JResourcePathData pathData{ GetWPath() };
+		const JResourcePathData pathData{ GetPath() };
 		std::wifstream stream;
 		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
 		if (stream.is_open())
@@ -420,19 +436,29 @@ namespace JinEngine
 
 		JMeshGeometry* newMesh = nullptr;
 		if (directory->HasFile(pathData.fullName))
-			newMesh = JResourceManager::Instance().GetResourceByPath<JMeshGeometry>(pathData.strPath);
+			newMesh = JResourceManager::Instance().GetResourceByPath<JMeshGeometry>(pathData.wstrPath);
 
 		if (newMesh == nullptr)
 		{
 			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
 			{
-				newMesh = new JMeshGeometry(pathData.name, metadata.guid, metadata.flag, directory,
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMeshGeometry>(pathData.name,
+					metadata.guid,
+					metadata.flag, 
+					directory,
 					JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
+				newMesh = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
 			}
 			else
 			{
-				newMesh = new JMeshGeometry(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory,
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMeshGeometry>(pathData.name,
+					Core::MakeGuid(), 
+					OBJECT_FLAG_NONE,
+					directory,
 					JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
+				newMesh = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
 			}
 		}
 
@@ -445,36 +471,52 @@ namespace JinEngine
 		}
 		else
 		{
-			delete newMesh;
+			newMesh->SetIgnoreUndestroyableFlag(true);
+			newMesh->BeginDestroy();
 			return nullptr;
 		}
 	}
 	void JMeshGeometry::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* owner) ->JResourceObject*
+		auto defaultC = [](JDirectory* directory) ->JResourceObject*
 		{
-			return new JMeshGeometry(owner->MakeUniqueFileName(GetDefaultName<JMeshGeometry>()),
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMeshGeometry>(directory->MakeUniqueFileName(GetDefaultName<JMeshGeometry>()),
 				Core::MakeGuid(),
 				OBJECT_FLAG_NONE,
-				owner,
+				directory,
 				JResourceObject::GetDefaultFormatIndex());
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
-		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
-		{
-			return  new JMeshGeometry(name, guid, objFlag, directory, formatIndex);
+		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		{ 
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMeshGeometry>(name, guid, objFlag, directory, formatIndex);
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
-		auto copyC = [](JResourceObject* ori)->JResourceObject*
+		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
 		{
-			return static_cast<JMeshGeometry*>(ori)->CopyResource();
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMeshGeometry>(directory->MakeUniqueFileName(ori->GetName()),
+				Core::MakeGuid(),
+				ori->GetFlag(),
+				directory,
+				GetFormatIndex<JMeshGeometry>(ori->GetFormat()));
+
+			JMeshGeometry* newMesh = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newMesh->Copy(ori);
+			return newMesh;	 
 		};
 
 		JRFI<JMeshGeometry>::Register(defaultC, initC, loadC, copyC);
 
-		auto getFormatIndexLam = [](const std::string& format) {return JResourceObject::GetFormatIndex<JMeshGeometry>(format); };
+		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JMeshGeometry>(format); };
 
 		static GetTypeNameCallable getTypeNameCallable{ &JMeshGeometry::TypeName };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JMeshGeometry::GetAvailableFormat };
@@ -485,7 +527,7 @@ namespace JinEngine
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
-	JMeshGeometry::JMeshGeometry(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	JMeshGeometry::JMeshGeometry(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		: JMeshInterface(name, guid, flag, directory, formatIndex)
 	{}
 

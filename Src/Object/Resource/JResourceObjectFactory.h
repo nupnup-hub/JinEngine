@@ -24,9 +24,9 @@ namespace JinEngine
 			template<typename T> friend class JResourceObjectFactoryImpl;
 		private:
 			Core::JFactory<std::string, false, JResourceObject*, JDirectory*> defaultFactory;
-			Core::JFactory<std::string, false, JResourceObject*, const std::string&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8> initFactory;
+			Core::JFactory<std::string, false, JResourceObject*, const std::wstring&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8> initFactory;
 			Core::JFactory<std::string, false, JResourceObject*, JDirectory*, const JResourcePathData&> loadFactory;
-			Core::JFactory<std::string, false, JResourceObject*, JResourceObject*> copyFactory;
+			Core::JFactory<std::string, false, JResourceObject*, JResourceObject*, JDirectory*> copyFactory;
 		private:
 			template<typename Type>
 			bool Register(Core::JCallableInterface<JResourceObject*, JDirectory*>* callable)
@@ -37,7 +37,7 @@ namespace JinEngine
 					return false;
 			}
 			template<typename Type>
-			bool Register(Core::JCallableInterface<JResourceObject*, const std::string&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8>* callable)
+			bool Register(Core::JCallableInterface<JResourceObject*, const std::wstring&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8>* callable)
 			{
 				if constexpr (std::is_base_of_v <JResourceObject, Type >)
 					return initFactory.Regist(Type::TypeName(), callable);
@@ -53,7 +53,7 @@ namespace JinEngine
 					return false;
 			}
 			template<typename Type>
-			bool Register(Core::JCallableInterface<JResourceObject*, JResourceObject*>* callable)
+			bool Register(Core::JCallableInterface<JResourceObject*, JResourceObject*, JDirectory*>* callable)
 			{
 				if constexpr (std::is_base_of_v <JResourceObject, Type >)
 					return copyFactory.Regist(Type::TypeName(), callable);
@@ -66,7 +66,7 @@ namespace JinEngine
 				return defaultFactory.Invoke(typeName, &ownerDir);
 			}
 			JResourceObject* Create(const std::string& typeName,
-				const std::string& name,
+				const std::wstring& name,
 				size_t guid,
 				J_OBJECT_FLAG flag,
 				JDirectory& ownerDir,
@@ -78,6 +78,10 @@ namespace JinEngine
 			{
 				return loadFactory.Invoke(typeName, &ownerDir, pathData);
 			}
+			JResourceObject* Copy(const std::string& typeName, JResourceObject& ori, JDirectory& ownerDir)
+			{
+				return copyFactory.Invoke(typeName, &ori, &ownerDir);
+			}
 
 			template<typename Type>
 			Type* Create(JDirectory& ownerDir)
@@ -85,7 +89,7 @@ namespace JinEngine
 				return static_cast<Type*>(defaultFactory.Invoke(Type::TypeName(), &ownerDir));
 			}
 			template<typename Type>
-			Type* Create(const std::string& name,
+			Type* Create(const std::wstring& name,
 				size_t guid,
 				J_OBJECT_FLAG flag,
 				JDirectory& ownerDir,
@@ -99,9 +103,9 @@ namespace JinEngine
 				return static_cast<Type*>(loadFactory.Invoke(Type::TypeName(), &ownerDir, pathData));
 			}
 			template<typename Type>
-			Type* Copy(Type& ori)
+			Type* Copy(Type& ori, JDirectory& ownerDir)
 			{
-				return static_cast<Type*>(copyFactory.Invoke(Type::TypeName(), &ori));
+				return static_cast<Type*>(copyFactory.Invoke(Type::TypeName(), &ori, &ownerDir));
 			}
 		};
 	}
@@ -111,18 +115,19 @@ namespace JinEngine
 	class JResourceObjectFactoryImplBase
 	{
 	private:
+		friend class JDirectory;
 		friend class JResourceIO;
 		friend class JResourceManagerImpl;
 	protected:
 		using DefaultPtr = JResourceObject * (*)(JDirectory*);
-		using InitPtr = JResourceObject * (*)(const std::string&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8);
+		using InitPtr = JResourceObject * (*)(const std::wstring&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8);
 		using LoadPtr = JResourceObject * (*)(JDirectory*, const JResourcePathData&);
-		using CopytPtr = JResourceObject * (*)(JResourceObject*);
+		using CopytPtr = JResourceObject * (*)(JResourceObject*, JDirectory*);
 
 		using DefaultCallable = Core::JStaticCallable<JResourceObject*, JDirectory*>;
-		using InitCallable = Core::JStaticCallable<JResourceObject*, const std::string&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8>;
+		using InitCallable = Core::JStaticCallable<JResourceObject*, const std::wstring&, const size_t, const J_OBJECT_FLAG, JDirectory*, const uint8>;
 		using LoadCallable = Core::JStaticCallable<JResourceObject*, JDirectory*, const JResourcePathData&>;
-		using CopyCallable = Core::JStaticCallable<JResourceObject*, JResourceObject*>;
+		using CopyCallable = Core::JStaticCallable<JResourceObject*, JResourceObject*, JDirectory*>;
 	private:
 		using AddStoragePtr = JResourceObject * (JResourceManagerImpl::*)(JResourceObject&);
 		using AddStorageCallable = Core::JMemeberCallable<JResourceManagerImpl, JResourceObject*, JResourceObject&>;
@@ -132,27 +137,38 @@ namespace JinEngine
 		static JResourceObject* CreateByName(const std::string& typeName, JDirectory& ownerDir)
 		{
 			JResourceObject* res = JRF::Instance().Create(typeName, ownerDir);
-			(*addStorage)(&JResourceManager::Instance(), *res);
+			if (res != nullptr)
+				(*addStorage)(&JResourceManager::Instance(), *res);
 			return res;
 		}
 		static JResourceObject* CreateByName(const std::string& typeName,
-			const std::string& name,
+			const std::wstring& name,
 			size_t guid,
 			J_OBJECT_FLAG flag,
 			JDirectory& ownerDir,
 			uint8 formatIndex)
 		{
 			JResourceObject* res = JRF::Instance().Create(typeName, name, guid, flag, ownerDir, formatIndex);
-			(*addStorage)(&JResourceManager::Instance(), *res);
+			if (res != nullptr)
+				(*addStorage)(&JResourceManager::Instance(), *res);
 			return res;
 		}
 	private:
 		static JResourceObject* LoadByName(const std::string& typeName, JDirectory& ownerDir, const JResourcePathData& pathData)
 		{
 			JResourceObject* res = JRF::Instance().Create(typeName, ownerDir, pathData);
-			(*addStorage)(&JResourceManager::Instance(), *res);
+			if (res != nullptr)
+				(*addStorage)(&JResourceManager::Instance(), *res);
 			return res;
 		}
+		static JResourceObject* CopyByName(const std::string& typeName, JResourceObject& ori, JDirectory& ownerDir)
+		{
+			JResourceObject* res = JRF::Instance().Copy(typeName, ori, ownerDir);
+			if (res != nullptr)
+				(*addStorage)(&JResourceManager::Instance(), *res);
+			return res;
+		}
+
 	protected:
 		template<typename T>
 		static void Register(DefaultPtr defaultPtr, InitPtr initPtr, LoadPtr loadPtr, CopytPtr copytPtr)
@@ -190,7 +206,7 @@ namespace JinEngine
 				(*addStorage)(&JResourceManager::Instance(), *res);
 			return res;
 		}
-		static T* Create(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex)
+		static T* Create(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex)
 		{
 			T* res = JRF::Instance().Create<T>(name, guid, flag, ownerDir, formatIndex);
 			if (res != nullptr)
@@ -241,7 +257,7 @@ namespace JinEngine
 			}
 			return res;
 		}
-		static JShader* Create(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex, J_SHADER_FUNCTION newFunc)
+		static JShader* Create(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex, J_SHADER_FUNCTION newFunc)
 		{
 			JShader* res = FindOverlapShader(newFunc);
 			if (res == nullptr)
@@ -305,16 +321,16 @@ namespace JinEngine
 			(*addStorage)(&JResourceManager::Instance(), *res);
 			return res;
 		}
-		static JSkeletonAsset* Create(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex, JSkeleton&& newSkeleton)
+		static JSkeletonAsset* Create(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& ownerDir, const uint8 formatIndex, JSkeleton&& newSkeleton)
 		{
 			JSkeletonAsset* res = JRF::Instance().Create<JSkeletonAsset>(name, guid, flag, ownerDir, formatIndex);
 			CallSetSkeleton(res, std::move(newSkeleton));
 			(*addStorage)(&JResourceManager::Instance(), *res);
 			return res;
 		}
-		static JSkeletonAsset* Copy(JSkeletonAsset& ori)
+		static JSkeletonAsset* Copy(JSkeletonAsset& ori, JDirectory& ownerDir)
 		{
-			JSkeletonAsset* res = JRF::Instance().Copy<JSkeletonAsset>(ori);
+			JSkeletonAsset* res = JRF::Instance().Copy<JSkeletonAsset>(ori, ownerDir);
 			if (res != nullptr)
 				(*addStorage)(&JResourceManager::Instance(), *res);
 			return res;

@@ -23,7 +23,7 @@ namespace JinEngine
 
 		return newGameObj;
 	}
-	JGameObject* JGameObjectFactoryUtility::CreateSky(JGameObject& parent, const J_OBJECT_FLAG flag, const std::string name)
+	JGameObject* JGameObjectFactoryUtility::CreateSky(JGameObject& parent, const J_OBJECT_FLAG flag, const std::wstring name)
 	{
 		JGameObject* newGameObj = JGFI::Create(name, Core::MakeGuid(), flag, parent);
 		newGameObj->GetTransform()->SetScale(XMFLOAT3(5000, 5000, 5000));
@@ -36,13 +36,13 @@ namespace JinEngine
 			J_RENDER_LAYER::SKY);
 		return newGameObj;
 	}
-	JGameObject* JGameObjectFactoryUtility::CreateCamera(JGameObject& parent, const J_OBJECT_FLAG flag, bool isMainCamera, const std::string name)
+	JGameObject* JGameObjectFactoryUtility::CreateCamera(JGameObject& parent, const J_OBJECT_FLAG flag, bool isMainCamera, const std::wstring name)
 	{
 		JGameObject* newGameObj = JGFI::Create(name, Core::MakeGuid(), flag, parent);
 		JCFU::CreateCamera(Core::MakeGuid(), OBJECT_FLAG_NONE, *newGameObj, isMainCamera);
 		return newGameObj;
 	}
-	JGameObject* JGameObjectFactoryUtility::CreateLight(JGameObject& parent, const J_OBJECT_FLAG flag, const J_LIGHT_TYPE type, const std::string name)
+	JGameObject* JGameObjectFactoryUtility::CreateLight(JGameObject& parent, const J_OBJECT_FLAG flag, const J_LIGHT_TYPE type, const std::wstring name)
 	{
 		JGameObject* newGameObj = JGFI::Create(name, Core::MakeGuid(), flag, parent);
 		JCFU::CreateLight(Core::MakeGuid(), OBJECT_FLAG_NONE, *newGameObj, type);
@@ -53,7 +53,7 @@ namespace JinEngine
 		const J_DEFAULT_SHAPE meshType,
 		const J_DEFAULT_MATERIAL matType)
 	{
-		const std::string name = JDefaultShape::ConvertDefaultShapeName(meshType) + "DebugObject";
+		const std::wstring name = JDefaultShape::ConvertDefaultShapeName(meshType) + L"DebugObject";
 		JGameObject* newGameObj = JGFI::Create(name, Core::MakeGuid(), flag, parent);
 		JCFU::CreateRenderItem(Core::MakeGuid(),
 			OBJECT_FLAG_NONE,

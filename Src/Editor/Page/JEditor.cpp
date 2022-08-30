@@ -13,7 +13,7 @@ namespace JinEngine
 		}
 		std::wstring JEditor::GetWName()const noexcept
 		{
-			return JCommonUtility::StringToWstring(attribute->name);
+			return JCommonUtility::StrToWstr(attribute->name);
 		}
 		size_t JEditor::GetGuid()const noexcept
 		{

@@ -7,9 +7,9 @@ namespace JinEngine
 	namespace Core
 	{
 		JNormalException::JNormalException(int line, const std::string file, const std::string msg)
-			:JException(line, JCommonUtility::StringToWstring(file))
+			:JException(line, JCommonUtility::StrToWstr(file))
 		{
-			whatBuffer = JCommonUtility::StringToWstring(msg);
+			whatBuffer = JCommonUtility::StrToWstr(msg);
 		}
 		const std::wstring JNormalException::what() const
 		{

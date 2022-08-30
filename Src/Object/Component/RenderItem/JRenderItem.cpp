@@ -14,6 +14,9 @@
 using namespace DirectX;
 namespace JinEngine
 {
+	static auto isAvailableoverlapLam = []() {return false; };
+	static auto componentTypeLam = []() {return J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM; };
+
 	JMeshGeometry* JRenderItem::GetMesh()const noexcept
 	{
 		return meshGeo;
@@ -196,20 +199,35 @@ namespace JinEngine
 	}
 	J_COMPONENT_TYPE JRenderItem::GetComponentType()const noexcept
 	{
-		return GetStaticComponentType();
-	}
-	J_COMPONENT_TYPE JRenderItem::GetStaticComponentType()noexcept
-	{
-		return J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM;
+		return componentTypeLam();
 	}
 	bool JRenderItem::IsAvailableOverlap()const noexcept
 	{
-		return false;
+		return isAvailableoverlapLam();
 	}
 	bool JRenderItem::PassDefectInspection()const noexcept
 	{
 		if (JComponent::PassDefectInspection() && meshGeo != nullptr && material != nullptr)
 			return true;
+		else
+			return false;
+	}
+	bool JRenderItem::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{
+			JRenderItem* oriR = static_cast<JRenderItem*>(ori);
+			SetMeshGeometry(oriR->meshGeo);
+			SetMaterial(oriR->material);
+			textureTransform = oriR->textureTransform;
+			SetPrimitiveType(oriR->primitiveType);
+			SetRenderLayer(oriR->renderLayer);
+			SetFrameDirty();
+			return true;
+		}
 		else
 			return false;
 	}
@@ -306,9 +324,17 @@ namespace JinEngine
 
 		JRenderItem* newRenderItem;
 		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-			newRenderItem = new JRenderItem(metadata.guid, metadata.flag, owner);
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(metadata.guid, metadata.flag, owner);
+			JRenderItem* newRenderItem = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr)); 
+		}
 		else
-			newRenderItem = new JRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			JRenderItem* newRenderItem = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr)); 
+		}
 
 		bool hasMaterial;
 		size_t meshGuid;
@@ -332,11 +358,17 @@ namespace JinEngine
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
-			return new JRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			JComponent* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret; 
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
-			return new JRenderItem(guid, objFlag, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(guid, objFlag, owner);
+			JComponent* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret; 
 		};
 		auto loadC = [](std::wifstream& stream, JGameObject* owner) -> JComponent*
 		{
@@ -344,30 +376,24 @@ namespace JinEngine
 		};
 		auto copyC = [](JComponent* ori, JGameObject* owner) -> JComponent*
 		{
-			JRenderItem* oriR = static_cast<JRenderItem*>(ori);
-			JRenderItem* newR = new JRenderItem(Core::MakeGuid(), oriR->GetFlag(), owner);
-
-			newR->SetMeshGeometry(oriR->meshGeo);
-			newR->SetMaterial(oriR->material);
-			newR->textureTransform = oriR->textureTransform;
-			newR->SetPrimitiveType(oriR->primitiveType);
-			newR->SetRenderLayer(oriR->renderLayer);
-
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(Core::MakeGuid(), ori->GetFlag(), owner);
+			JRenderItem* newR = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newR->Copy(ori);
 			return newR;
 		};
 		JCFI<JRenderItem>::Regist(defaultC, initC, loadC, copyC);
 
 		static GetTypeNameCallable getTypeNameCallable{ &JRenderItem::TypeName };
 		static GetTypeInfoCallable getTypeInfoCallable{ &JRenderItem::StaticTypeInfo };
+		bool(*ptr)() = isAvailableoverlapLam;
+		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 
-		static auto setFrameLam = [](JComponent& component)
-		{
-			static_cast<JRenderItem*>(&component)->SetFrameDirty();
-		};
+		static auto setFrameLam = [](JComponent& component) {static_cast<JRenderItem*>(&component)->SetFrameDirty(); };
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
-		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable };
+		static JCI::CTypeHint cTypeHint{ componentTypeLam(), true };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);

@@ -2,15 +2,19 @@
 #include"JAnimationTime.h"
 #include"JAnimationShareData.h"
 #include"JAnimationFSMtransition.h"
+#include"../JFSMLoadGuidMap.h"
 #include"../../GameTimer/JGameTimer.h"
+#include"../../Guid/GuidCreator.h"
 #include"../../../Object/Resource/AnimationClip/JAnimationClip.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"
+#include"../../../Object/Resource/JResourceManager.h"
+
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		JAnimationFSMstateClip::JAnimationFSMstateClip(const std::string& name, const size_t guid)
+		JAnimationFSMstateClip::JAnimationFSMstateClip(const std::wstring& name, const size_t guid)
 			:JAnimationFSMstate(name, guid)
 		{}
 		void JAnimationFSMstateClip::Initialize()noexcept
@@ -62,6 +66,53 @@ namespace JinEngine
 			JFSMstate::Clear();
 			if (clip != nullptr)
 				OffResourceReference(*clip);
+		}
+		J_FILE_IO_RESULT JAnimationFSMstateClip::StoreContentsData(std::wofstream& stream)
+		{
+			if (!stream.is_open())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+			
+			if (clip != nullptr)
+				stream << true << " " << clip->GetGuid() << '\n';
+			else
+				stream << false << " " << 0 << '\n';
+			 
+			return JAnimationFSMstate::StoreContentsData(stream);
+		}
+		std::unique_ptr<JAnimationFSMstate> JAnimationFSMstateClip::LoadIdentifierData(std::wifstream& stream, JFSMLoadGuidMap& guidMap)
+		{
+			if (!stream.is_open())
+				return nullptr;
+			
+			JFSMIdentifier::JFSMIdentifierData data;
+			JFSMIdentifier::LoadIdentifierData(stream, data);
+
+			std::unique_ptr<JAnimationFSMstateClip> newState = nullptr;
+			if (guidMap.isNewGuid)
+			{
+				newState = std::make_unique<JAnimationFSMstateClip>(data.name, MakeGuid());
+				guidMap.state.emplace(data.guid, newState->GetGuid());
+			}
+			else
+				newState = std::make_unique<JAnimationFSMstateClip>(data.name, data.guid);
+
+			return newState;
+		}
+		J_FILE_IO_RESULT JAnimationFSMstateClip::LoadContentsData(std::wifstream& stream, JFSMLoadGuidMap& guidMap, IJFSMconditionStorageUser& iConditionUser)
+		{
+			if (!stream.is_open())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+			bool hasClip = false;
+			size_t clipGuid = 0;
+			
+			stream >> hasClip;
+			stream >> clipGuid;
+
+			if (hasClip)
+				SetClip(JResourceManager::Instance().GetResource<JAnimationClip>(clipGuid));
+
+			return JAnimationFSMstate::LoadContentsData(stream, guidMap, iConditionUser);
 		}
 		void JAnimationFSMstateClip::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 		{

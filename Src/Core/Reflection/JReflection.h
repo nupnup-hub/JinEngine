@@ -4,7 +4,7 @@
 #include"JPropertyRegister.h"
 #include"JMethodInfoRegister.h"  
 #include"JEnumRegister.h"
-#include"JReflectionInfo.h" 
+#include"JReflectionInfo.h"  
 
 namespace JinEngine
 {
@@ -61,7 +61,29 @@ namespace JinEngine
 			if (!std::is_base_of_v<JObject, T>)
 				return nullptr;
 
-			return JReflectionInfo::Instance().GetTypeInfo(T::TypeName())->GetInstance(guid);
+			return static_cast<T*>(JReflectionInfo::Instance().GetTypeInfo(T::TypeName())->GetInstanceRawPtr(guid));
+		}
+		template<typename T>
+		JUserPtr<T> GetUserPtr(const size_t guid)
+		{
+			if (!std::is_base_of_v<JObject, T>)
+				return nullptr;
+
+			JUserPtr<JObject> userObjPtr = JReflectionInfo::Instance().GetTypeInfo(T::TypeName())->GetInstanceUserPtr(guid);
+			JUserPtr<T> userTPtr;
+			userTPtr.ConnnectBaseUser(userObjPtr);
+			return userTPtr;
+		}
+
+		template<typename enumType>
+		enumType AddTwoSquareValueEnum(const enumType ori, const enumType addValue)
+		{
+			return (enumType)(ori | (addValue ^ (addValue & ori)));
+		}
+		template<typename enumType>
+		enumType MinusTwoSquareValueEnum(const enumType ori, const enumType minusValue)
+		{
+			return (enumType)(ori ^ (minusValue & ori));
 		}
 	}
 }

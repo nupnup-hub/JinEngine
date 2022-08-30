@@ -159,34 +159,30 @@ namespace JinEngine
 		{
 			return J_EDITOR_PAGE_TYPE::SKELETON_SETTING;
 		}
-		bool JEditorSkeletonPage::IsValidOpenRequest(JObject* selectedObj)noexcept
+		bool JEditorSkeletonPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept
 		{
-			return IsValidOpenRequest(selectedObj);
+			return StuffSkeletonAssetData(selectedObj);
 		}
-		bool JEditorSkeletonPage::StuffSkeletonAssetData(JObject* selectedObj)
+		bool JEditorSkeletonPage::StuffSkeletonAssetData(const Core::JUserPtr<JObject>& selectedObj)
 		{
-			if (selectedObj == nullptr || selectedObj->GetObjectType() != J_OBJECT_TYPE::RESOURCE_OBJECT)
+			if (!selectedObj.IsValid())
 				return false;
 
-			JResourceObject* jRobj = static_cast<JResourceObject*>(selectedObj);
-
-			if (jRobj->GetResourceType() != J_RESOURCE_TYPE::MODEL)
+			Core::JUserPtr<JModel> jModel;
+			if(!jModel.ConnnectBaseUser(selectedObj))
 				return false;
-
-			JModel* model = static_cast<JModel*>(jRobj);
-
-			JGameObject* skeletonRoot = model->ModelSceneInterface()->GetSkeletonRoot();
-			JSkeletonAsset* skeletonAsset = model->GetSkeletonAsset();
+			 
+			JGameObject* skeletonRoot = jModel.Get()->ModelSceneInterface()->GetSkeletonRoot();
+			JSkeletonAsset* skeletonAsset = jModel.Get()->GetSkeletonAsset();
 
 			if (skeletonRoot != nullptr && skeletonAsset != nullptr)
 			{
-				 /*
-				skeletonExplorer->Initialize();
+				 /*skeletonExplorer->Initialize();
 				avatarEdit->Initialize();
 				modelViewer->Initialize();
-				avatarDetail->Initialize();
-				 */
-				avatarEdit->SetModelGuid(model->GetGuid());
+				avatarDetail->Initialize();*/
+
+				avatarEdit->SetTargetModel(jModel);
 				return true;
 			}
 			else

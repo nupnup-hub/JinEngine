@@ -10,8 +10,10 @@ namespace JinEngine
 	{}
 	JCI::CTypeHint::~CTypeHint() {}
 
-	JCI::CTypeCommonFunc::CTypeCommonFunc(GetTypeNameCallable& getTypeName, GetTypeInfoCallable& getTypeInfo)
-		: getTypeName(&getTypeName), getTypeInfo(&getTypeInfo)
+	JCI::CTypeCommonFunc::CTypeCommonFunc(GetTypeNameCallable& getTypeName,
+		GetTypeInfoCallable& getTypeInfo,
+		IsAvailableOverlapCallable& isAvailableOverlapCallable)
+		: getTypeName(&getTypeName), getTypeInfo(&getTypeInfo), isAvailableOverlapCallable(&isAvailableOverlapCallable)
 	{}
 	JCI::CTypeCommonFunc::~CTypeCommonFunc()
 	{
@@ -24,6 +26,10 @@ namespace JinEngine
 	JinEngine::Core::JTypeInfo& JCI::CTypeCommonFunc::CallGetTypeInfo()
 	{
 		return (*getTypeInfo)(nullptr);
+	}
+	bool JCI::CTypeCommonFunc::CallIsAvailableOverlapCallable()
+	{
+		return (*isAvailableOverlapCallable)(nullptr);
 	}
 
 	JCI::CTypeInterfaceFunc::CTypeInterfaceFunc(SetFrameDirtyCallable* setFrameDirtyCallable)
@@ -92,6 +98,10 @@ namespace JinEngine
 	{
 		return CTypeInfo::Instance().cFuncStorage[(uint)cType].CallGetTypeName();
 	}
+	bool JComponentInterface::CallIsAvailableOverlap(const J_COMPONENT_TYPE cType)
+	{
+		return CTypeInfo::Instance().cFuncStorage[(uint)cType].CallIsAvailableOverlapCallable();
+	}
 	void JComponentInterface::CallSetFrameDirty(JComponent& jComp)
 	{
 		return CTypeInfo::Instance().cInterfaceStorage[(uint)jComp.GetComponentType()].CallSetFrameDirty(jComp);
@@ -110,7 +120,7 @@ namespace JinEngine
 		CTypeInfo::Instance().cFuncStorage[(uint)cTypeHint.thisType] = cTypeCFunc;
 		CTypeInfo::Instance().cInterfaceStorage[(uint)cTypeHint.thisType] = cTypeIFunc;
 	}
-	JComponentInterface::JComponentInterface(const std::string& cTypeName, const size_t guid, J_OBJECT_FLAG flag)
+	JComponentInterface::JComponentInterface(const std::wstring& cTypeName, const size_t guid, J_OBJECT_FLAG flag)
 		:JObject(cTypeName, guid, flag)
 	{}
 }

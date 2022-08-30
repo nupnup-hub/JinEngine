@@ -217,7 +217,7 @@ namespace JinEngine
 			}
 			ImGui::End();
 		}
-		void JEditorPage::DoActivate()
+		void JEditorPage::DoActivate()noexcept
 		{ 
 			const uint opendWindowCount = (uint)opendWindow.size();
 			for (uint i = 0; i < opendWindowCount; ++i)
@@ -227,7 +227,7 @@ namespace JinEngine
 			}
 			pageOpen = true;
 		}
-		void JEditorPage::DoDeActivate()
+		void JEditorPage::DoDeActivate()noexcept
 		{ 
 			const uint opendWindowCount = (uint)opendWindow.size();
 			for (uint i = 0; i < opendWindowCount; ++i)

@@ -1,13 +1,16 @@
 #include"JFSMconditionStorage.h" 
 #include"JFSMcondition.h"  
 #include"JFSMconditionStorageAccess.h"
+#include"JFSMLoadGuidMap.h"
 #include"../../Utility/JCommonUtility.h"
+#include"../Guid/GuidCreator.h"
+#include<fstream>
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		std::string JFSMconditionStorage::GetConditionUniqueName(const std::string& initName)const noexcept
+		std::wstring JFSMconditionStorage::GetConditionUniqueName(const std::wstring& initName)const noexcept
 		{
 			return JCommonUtility::MakeUniqueName(conditionVec, initName);
 		}
@@ -27,53 +30,19 @@ namespace JinEngine
 			else
 				return nullptr;
 		}
-		void JFSMconditionStorage::SetConditionName(const size_t guid, const std::string& newName)noexcept
+		JFSMcondition* JFSMconditionStorage::GetConditionByIndex(const uint index)noexcept
 		{
-			JFSMcondition* tarCondition = GetCondition(guid);
-			if (tarCondition == nullptr)
-				return;
-			  
-			tarCondition->SetName(newName); 
+			if (conditionVec.size() <= index)
+				return nullptr;
+			return conditionVec[index].get();
 		}
-		void JFSMconditionStorage::SetConditionValueType(const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType)noexcept
-		{
-			JFSMcondition* tarCondition = GetCondition(guid);
-			if (tarCondition == nullptr)
-				return;
-
-			tarCondition->SetValueType(valueType);
-		}
-		JFSMcondition* JFSMconditionStorage::AddCondition(const std::string& name, const size_t guid)noexcept
+		JFSMcondition* JFSMconditionStorage::AddCondition(const std::wstring& name)noexcept
 		{
 			uint conditionVecSize = (uint)conditionVec.size();
 			if (conditionVecSize >= maxNumberOffCondition)
 				return nullptr;
-
-			std::string newName = name;
-			bool isOk = false;
-			int sameCount = 0;
-			while (!isOk)
-			{
-				bool hasSameName = false;
-				for (uint i = 0; i < conditionVecSize; ++i)
-				{
-					if (conditionVec[i]->GetName() == newName)
-					{
-						hasSameName = true;
-						break;
-					}
-				}
-
-				if (hasSameName)
-				{
-					JCommonUtility::ModifyOverlappedName(newName, newName.length(), sameCount);
-					++sameCount;
-				}
-				else
-					isOk = true;
-			}
-
-			conditionVec.emplace_back(std::make_unique<JFSMcondition>(newName, J_FSMCONDITION_VALUE_TYPE::BOOL));
+			 		 
+			conditionVec.emplace_back(std::make_unique<JFSMcondition>(GetConditionUniqueName(name), Core::MakeGuid(), J_FSMCONDITION_VALUE_TYPE::BOOL));
 			conditionCashMap.emplace(conditionVec[conditionVecSize]->GetGuid(), conditionVec[conditionVecSize].get());
 			return  conditionVec[conditionVecSize].get();
 		}
@@ -87,6 +56,84 @@ namespace JinEngine
 			for (uint i = 0; i < userCount; ++i)
 				strorageUser[i]->NotifyRemoveCondition(tarCondition);
 			return true;
+		}
+		JFSMcondition* JFSMconditionStorage::AddCondition(const std::wstring& name, const size_t guid)
+		{
+			conditionVec.emplace_back(std::make_unique<JFSMcondition>(GetConditionUniqueName(name), Core::MakeGuid(), J_FSMCONDITION_VALUE_TYPE::BOOL));
+			conditionCashMap.emplace(guid, conditionVec[conditionVec.size() - 1].get());
+			return conditionVec[conditionVec.size() - 1].get();
+		}
+		J_FILE_IO_RESULT JFSMconditionStorage::StoreIdentifierData(std::wofstream& stream)
+		{
+			if (!stream.is_open())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+			const uint conditionCount = (uint)conditionVec.size();
+			stream << conditionCount << '\n'; 
+			  
+			for (uint i = 0; i < conditionCount; ++i)
+				JFSMIdentifier::StoreIdentifierData(stream, *conditionVec[i]); 
+			
+			return J_FILE_IO_RESULT::SUCCESS;
+		}
+		J_FILE_IO_RESULT JFSMconditionStorage::StoreContentsData(std::wofstream& stream)
+		{
+			if (!stream.is_open())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+			const uint conditionCount = (uint)conditionVec.size();
+			stream << conditionCount << '\n';
+
+			for (uint i = 0; i < conditionCount; ++i)
+			{
+				stream << (uint)conditionVec[i]->GetValueType() << '\n';
+				stream << conditionVec[i]->GetValue() << '\n';
+			}
+			return J_FILE_IO_RESULT::SUCCESS;
+		}
+		J_FILE_IO_RESULT JFSMconditionStorage::LoadIdentifierData(std::wifstream& stream, JFSMLoadGuidMap& guidMap)
+		{
+			if (!stream.is_open())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+			uint conditionCount = 0;
+			stream >> conditionCount;
+			for (uint i = 0; i < conditionCount; ++i)
+			{
+				JFSMIdentifier::JFSMIdentifierData data;
+				JFSMIdentifier::LoadIdentifierData(stream, data);
+
+				if (guidMap.isNewGuid)
+					guidMap.condition.emplace(data.guid, AddCondition(data.name)->GetGuid());
+				else
+					AddCondition(data.name, data.guid);
+			}
+
+			return J_FILE_IO_RESULT::SUCCESS;
+		}
+		J_FILE_IO_RESULT JFSMconditionStorage::LoadContentsData(std::wifstream& stream, JFSMLoadGuidMap& guidMap)
+		{
+			if (!stream.is_open())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+			uint conditionCount = 0;
+			stream >> conditionCount;
+
+			if(conditionCount != conditionVec.size())
+				return J_FILE_IO_RESULT::FAIL_CORRUPTED_DATA;
+
+			for (uint i = 0; i < conditionCount; ++i)
+			{
+				uint valueType = 0;
+				float value = 0;
+
+				stream >> valueType;
+				stream >> value;
+
+				conditionVec[i]->SetValueType((J_FSMCONDITION_VALUE_TYPE)valueType);
+				conditionVec[i]->SetValue(value);
+			}
+			return J_FILE_IO_RESULT::SUCCESS;
 		}
 	}
 }

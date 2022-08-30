@@ -282,10 +282,8 @@ namespace JinEngine
 		class JEditorPageData
 		{
 		public:
-			std::string openInitObjTypeName;
-			size_t openInitObjGuid;
-			bool hasOpenInitObjType;
-			JObject* selectObject;
+			Core::JUserPtr<JObject> openObject;
+			Core::JUserPtr<JObject> selectObj;
 			const bool IsRequiredInitData;
 		public:
 			JEditorPageData(const bool IsRequiredInitData)
@@ -624,35 +622,32 @@ namespace JinEngine
 		}
 		void JImGuiImpl::ClearPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
-			pageData.find(pageType)->second.selectObject = nullptr;
+			auto pagedata = pageData.find(pageType);
+			pagedata->second.openObject.Clear();
+			pagedata->second.selectObj.Clear(); 
 		}
 		bool JImGuiImpl::HasValidOpenPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
 			auto data = pageData.find(pageType);
-			return data->second.IsRequiredInitData ? data->second.IsRequiredInitData && data->second.hasOpenInitObjType : true;
+			return data->second.IsRequiredInitData ? data->second.IsRequiredInitData && data->second.openObject.IsValid() : true;
 		}
 		JEditorOpenPageEvStruct JImGuiImpl::GetOpendPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
 			auto data = pageData.find(pageType);
-			if (data->second.hasOpenInitObjType)
-				return JEditorOpenPageEvStruct{ data->second.openInitObjTypeName, data->second.openInitObjGuid, pageType };
-			else
-				return JEditorOpenPageEvStruct{ pageType };
+			return JEditorOpenPageEvStruct{pageType, data->second.openObject};
 		}
 		JObject* JImGuiImpl::GetSelectedObj(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
-			return pageData.find(pageType)->second.selectObject;
+			return pageData.find(pageType)->second.selectObj.Get();
 		}
 		void JImGuiImpl::SetPageOpenData(JEditorOpenPageEvStruct* evStruct)noexcept
 		{
 			auto data = pageData.find(evStruct->pageType);
-			data->second.openInitObjTypeName = evStruct->objTypeName;
-			data->second.openInitObjGuid = evStruct->objGuid;
-			data->second.hasOpenInitObjType = evStruct->hasOpenInitObjType;
+			data->second.openObject = evStruct->openSelected; 
 		}
-		void JImGuiImpl::SetSelectedObj(const J_EDITOR_PAGE_TYPE pageType, JObject* obj)noexcept
+		void JImGuiImpl::SetSelectObj(const J_EDITOR_PAGE_TYPE pageType, const Core::JUserPtr<JObject>& selectObj)noexcept
 		{
-			pageData.find(pageType)->second.selectObject = obj;
+			pageData.find(pageType)->second.selectObj = selectObj;
 		}
 		void JImGuiImpl::StartEditorUpdate()
 		{

@@ -14,7 +14,7 @@ namespace JinEngine
 	JStaticMeshVertex::JStaticMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv, const DirectX::XMFLOAT4& t)
 		: position(p), normal(n), texC(uv), tangentU(t.x, t.y, t.z)
 	{}
-	JStaticMeshVertex::JStaticMeshVertex(const Vector3<float>& p, const Vector3<float>& n, const Vector2<float>& uv, const Vector3<float>& t)
+	JStaticMeshVertex::JStaticMeshVertex(const JVector3<float>& p, const JVector3<float>& n, const JVector2<float>& uv, const JVector3<float>& t)
 		: position(p.x, p.y, p.z), normal(n.x, n.y, n.z), tangentU(t.x, t.y, t.z), texC(uv.x, uv.y)
 	{}
 	JStaticMeshVertex::JStaticMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv)
@@ -92,7 +92,7 @@ namespace JinEngine
 		for (int i = 0; i < 4; ++i)
 			JSkinnedMeshVertex::jointIndex[i] = jointIndex[i];
 	}
-	JSkinnedMeshVertex::JSkinnedMeshVertex(const Vector3<float>& p, const Vector3<float>& n, const Vector2<float>& uv, const Vector3<float>& t)
+	JSkinnedMeshVertex::JSkinnedMeshVertex(const JVector3<float>& p, const JVector3<float>& n, const JVector2<float>& uv, const JVector3<float>& t)
 		:position(p.x, p.y, p.z), normal(n.x, n.y, n.z), tangentU(t.x, t.y, t.z), texC(uv.x, uv.y)
 	{}
 

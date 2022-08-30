@@ -26,9 +26,11 @@ namespace JinEngine
 		{
 			return J_RESOURCE_TYPE::TEXTURE;
 		}
-		std::string GetFormat()const noexcept final;
-		static std::vector<std::string> GetAvailableFormat()noexcept;
+		std::wstring GetFormat()const noexcept final;
+		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 		void SetTextureType(const Graphic::J_GRAPHIC_TEXTURE_TYPE textureType)noexcept;
+	public:
+		bool Copy(JObject* ori);
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
@@ -41,7 +43,7 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT StoreObject(JTexture* texture);
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JTexture* texture);
 		static JTexture* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::string& folderPath, TextureMetadata& metadata);
+		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, TextureMetadata& metadata);
 		static void RegisterJFunc();
 	private:
 		JTexture(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const int formatIndex);

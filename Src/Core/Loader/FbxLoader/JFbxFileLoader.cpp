@@ -328,7 +328,7 @@ namespace JinEngine
 		}
 		void JFbxFileLoaderImpl::LoadNode(FbxNode* node, std::vector<JFbxPartMeshData>& jFbxPartMeshData, JModelAttribute& modeAttribute, JFbxSkeleton& skeleton, int meshIndex, int meshParentIndex)
 		{
-			//stream << L"nodeName: " << JCommonUtility::StringToWstring(node->GetName()) << '\n';  
+			//stream << L"nodeName: " << JCommonUtility::StrToWstr(node->GetName()) << '\n';  
 			FbxNodeAttribute* nodeAttribute = node->GetNodeAttribute();
 			if (nodeAttribute)
 			{
@@ -339,7 +339,7 @@ namespace JinEngine
 					SortBlendingWeight();
 
 					JFbxPartMeshData newMeshData;
-					newMeshData.name = node->GetName();
+					newMeshData.name = JCommonUtility::StrToWstr(node->GetName());
 					newMeshData.parentIndex = meshParentIndex;
 
 					if (modeAttribute.hasSkeleton)
@@ -385,7 +385,7 @@ namespace JinEngine
 		}
 		void JFbxFileLoaderImpl::LoadJoint(FbxNode* node, int depth, int index, int parentIndex, JFbxSkeleton& skeleton)
 		{
-			//stream << JCommonUtility::StringToWstring(node->GetName()) << '\n';
+			//stream << JCommonUtility::StrToWstr(node->GetName()) << '\n';
 			FbxNodeAttribute* nodeAttribute = node->GetNodeAttribute();
 
 			if (nodeAttribute && nodeAttribute->GetAttributeType() == FbxNodeAttribute::eSkeleton)
@@ -413,7 +413,7 @@ namespace JinEngine
 
 				skeleton.joint.push_back(joint);
 				++skeleton.jointCount;
-				//stream << L"Name: " << JCommonUtility::StringToWstring(joint.name) << '\n';
+				//stream << L"Name: " << JCommonUtility::StrToWstr(joint.name) << '\n';
 				///stream << L"Index: " << index << '\n';
 				//stream << L"Parent: " << parentIndex << '\n';
 				//stream << '\n';
@@ -1001,7 +1001,7 @@ namespace JinEngine
 
 			for (uint i = 0; i < fbxSkeleton.jointCount; ++i)
 			{
-				joint[i].name = fbxSkeleton.joint[i].name;
+				joint[i].name = JCommonUtility::StrToWstr(fbxSkeleton.joint[i].name);
 				joint[i].parentIndex = fbxSkeleton.joint[i].parentIndex;
 				ConvertFbaToXM(fbxSkeleton.joint[i].globalBindPositionInverse, joint[i].inbindPose);
 				ResizeMatrix(joint[i].inbindPose);
@@ -1457,8 +1457,8 @@ namespace JinEngine
 }
 /*
 
-//JDebugTextOut::PrintWstr(JCommonUtility::StringToWstring("P: "+ skeleton.joint[parentIndex].name));
-//JDebugTextOut::PrintWstr(JCommonUtility::StringToWstring("C: "+ skeleton.joint[i].name));
+//JDebugTextOut::PrintWstr(JCommonUtility::StrToWstr("P: "+ skeleton.joint[parentIndex].name));
+//JDebugTextOut::PrintWstr(JCommonUtility::StrToWstr("C: "+ skeleton.joint[i].name));
 //JDebugTextOut::PrintMatrixAndVector(childWorldBind, L"childWorldBind");
 //JDebugTextOut::PrintMatrixAndVector(childLocalBind, L"childLocalBind");
 //JDebugTextOut::PrintVector(lengthV, L"lengthV");

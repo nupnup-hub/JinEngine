@@ -7,12 +7,12 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		bool JGraphicTexture::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::string& path)
+		bool JGraphicTexture::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path)
 		{
 			handle = JGraphic::Instance().ResourceInterface()->Create2DTexture(uploadHeap, path);
 			return handle != nullptr;
 		}
-		bool JGraphicTexture::CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::string& path)
+		bool JGraphicTexture::CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path)
 		{
 			handle = JGraphic::Instance().ResourceInterface()->CreateCubeTexture(uploadHeap, path);
 			return handle != nullptr;

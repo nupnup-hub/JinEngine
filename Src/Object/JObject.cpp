@@ -13,13 +13,9 @@ namespace JinEngine
 	};
 	static JObjectDestroyData destroyData;
 
-	std::string JObject::GetName()const noexcept
+	std::wstring JObject::GetName() const noexcept
 	{
 		return name;
-	}
-	std::wstring JObject::GetWName() const noexcept
-	{
-		return JCommonUtility::U8StringToWstring(name);
 	}
 	size_t JObject::GetGuid()const noexcept
 	{
@@ -29,9 +25,9 @@ namespace JinEngine
 	{
 		return flag;
 	}
-	void JObject::SetName(const std::string& name)noexcept
-	{
-		if(!name.empty())
+	void JObject::SetName(const std::wstring& name)noexcept
+	{ 
+		if (!name.empty())
 			JObject::name = name;
 	}
 	bool JObject::HasFlag(const J_OBJECT_FLAG flag)const noexcept
@@ -65,7 +61,7 @@ namespace JinEngine
 		if (destroyData.isEnd)
 		{
 			//lock 필요 
-			destroyData.beginGuid = GetGuid(); 
+			destroyData.beginGuid = GetGuid();
 			destroyData.isIgnoreUndestroyAbleFlag = false;
 			destroyData.isEnd = false;
 		}
@@ -80,14 +76,23 @@ namespace JinEngine
 		destroyData.isIgnoreUndestroyAbleFlag = value;
 	}
 	void JObject::EndDestroy()
-	{
+	{ 
 		const size_t guid = GetGuid();
 		Destroy();
+		RemoveInstance(GetGuid());
 		if (destroyData.beginGuid == guid)
 		{
 			//unlock 필요
 			destroyData.isEnd = true;
 		}
+	}
+	bool JObject::RemoveInstance(const size_t guid)noexcept
+	{
+		return GetTypeInfo().RemoveInstance(guid);
+	}
+	std::wstring JObject::ConvertMetafilePath(const std::wstring& path)noexcept
+	{
+		return path + L".meta";
 	}
 	Core::J_FILE_IO_RESULT JObject::StoreMetadata(std::wofstream& stream, JObject* object)
 	{
@@ -119,15 +124,9 @@ namespace JinEngine
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	JObject::JObject(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag)
+	JObject::JObject(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag)
 		:name(name), guid(guid), flag(flag)
-	{
-		if(GetTypeDepth() != JObject::GetTypeDepth())
-			GetTypeInfo().AddInstance(this, GetGuid());
-	}
+	{}
 	JObject::~JObject()
-	{
-		if (GetTypeDepth() != JObject::GetTypeDepth())
-			GetTypeInfo().RemoveInstance(GetGuid());
-	}
+	{}
 }

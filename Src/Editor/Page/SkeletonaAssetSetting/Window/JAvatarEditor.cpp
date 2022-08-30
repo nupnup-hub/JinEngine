@@ -13,9 +13,7 @@
 namespace JinEngine
 {
 	namespace Editor
-	{
-		static JModel* model = nullptr;
-
+	{ 
 		JAvatarEditor::JAvatarEditor(std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType)
 			:JEditorWindow(std::move(attribute),ownerPageType),
 			makeAvatarFunctor(&JAvatarEditor::MakeAvatar, this),
@@ -30,23 +28,20 @@ namespace JinEngine
 		JAvatarEditor::~JAvatarEditor()
 		{ }
 		void JAvatarEditor::UpdateWindow()
-		{
-			JObject* obj = Core::JReflectionInfo::Instance().GetTypeInfo(JModel::TypeName())->GetInstance(modelGuid);
-			if (obj != nullptr)
-			{
-				model = static_cast<JModel*>(obj);
+		{ 
+			if (targetModel.IsValid())
+			{ 
 				JEditorWindow::UpdateWindow();
-				BuildAvatarEdit();
-				model = nullptr;
+				BuildAvatarEdit(); 
 			}		 
 		}
 		J_EDITOR_WINDOW_TYPE JAvatarEditor::GetWindowType()const noexcept
 		{
 			return J_EDITOR_WINDOW_TYPE::AVATAR_EDITOR;
 		}
-		void JAvatarEditor::SetModelGuid(const size_t guid)noexcept
+		void JAvatarEditor::SetTargetModel(const Core::JUserPtr<JModel>& newTargetModel)noexcept
 		{
-			modelGuid = guid;
+			targetModel = newTargetModel;
 		}
 		void JAvatarEditor::BuildAvatarEdit()
 		{ 
@@ -94,7 +89,7 @@ namespace JinEngine
 					if (nowRefValue == JSkeletonFixedData::incorrectJointIndex)
 						nowRefJointName = "None##" + std::to_string(i);
 					else
-						nowRefJointName = model->GetSkeletonAsset()->GetSkeleton()->GetJointName(nowRefValue);
+						nowRefJointName = JCUtil::WstrToU8Str(targetModel.Get()->GetSkeletonAsset()->GetSkeleton()->GetJointName(nowRefValue));
 
 					if (!isValidJointRef[jointRefIndex])
 						JImGuiImpl::SetColor(ImVec4(failColor.x, failColor.y, failColor.z, failColor.w), ImGuiCol_Button);
@@ -174,7 +169,7 @@ namespace JinEngine
 				if (isOpenJointSelector)
 				{
 					JImGuiImpl::BeginWindow("Selector", &isOpenJointSelector); 
-					BuildObjectExplorer(model->ModelSceneInterface()->GetSkeletonRoot(), 0);
+					BuildObjectExplorer(targetModel.Get()->ModelSceneInterface()->GetSkeletonRoot(), 0);
 					JImGuiImpl::EndWindow();
 				}
 			}
@@ -184,7 +179,7 @@ namespace JinEngine
 			if ((obj->GetFlag() & OBJECT_FLAG_HIDDEN) > 0)
 				return;
 
-			std::string name = obj->GetName();
+			std::string name = JCUtil::WstrToU8Str(obj->GetName());
 			if (selectJointIndex == index)
 				JImGuiImpl::SetColor(ImVec4(0.26f, 0.59f, 0.98f, 0.11f), ImGuiCol_Header);
 			bool arrowClick = ArrowClick(name);
@@ -255,7 +250,7 @@ namespace JinEngine
 		}
 		void JAvatarEditor::SetAllJointReferenceByAuto()
 		{
-			JSkeleton* skeleton = model->GetSkeletonAsset()->GetSkeleton();
+			JSkeleton* skeleton = targetModel.Get()->GetSkeletonAsset()->GetSkeleton();
 			uint32 maxJoint = (uint32)skeleton->GetJointCount();
 			uint32 partCount = (uint32)JAvatar::jointGuide.size();
 
@@ -266,7 +261,7 @@ namespace JinEngine
 				{
 					for (uint32 k = 0; k < maxJoint; ++k)
 					{
-						if (JAvatar::jointGuide[i][j].defaultJointName == skeleton->GetJointName(k))
+						if (JCUtil::StrToWstr(JAvatar::jointGuide[i][j].defaultJointName) == skeleton->GetJointName(k))
 						{
 							int referenceIndex = JAvatar::jointGuide[i][j].index;
 							targetAvatar.jointReference[referenceIndex] = (uint8)k;
@@ -301,7 +296,7 @@ namespace JinEngine
 		}
 		bool JAvatarEditor::CheckAllJoint()noexcept
 		{ 
-			JSkeletonAsset* skeletonAsset = model->GetSkeletonAsset();
+			JSkeletonAsset* skeletonAsset = targetModel.Get()->GetSkeletonAsset();
 			uint32 maxJoint = (uint32)skeletonAsset->GetSkeleton()->GetJointCount();
 			uint32 referenceSize = (uint32)targetAvatar.jointReference.size();
 
@@ -364,7 +359,7 @@ namespace JinEngine
 		}
 		void JAvatarEditor::StoreAvatarData()
 		{ 
-			model->GetSkeletonAsset()->AvatarInterface()->SetAvatar(&targetAvatar);
+			targetModel.Get()->GetSkeletonAsset()->AvatarInterface()->SetAvatar(&targetAvatar);
 		}
 		void JAvatarEditor::DoActivate() noexcept
 		{
@@ -384,14 +379,12 @@ namespace JinEngine
 
 			ClearJointReference();
 
-			JObject* obj = Core::JReflectionInfo::Instance().GetTypeInfo(JModel::TypeName())->GetInstance(modelGuid);
-			if (obj != nullptr)
-			{
-				JModel* model = static_cast<JModel*>(obj);
-				if (model->GetSkeletonAsset()->HasAvatar())
+			if (targetModel.IsValid())
+			{ 
+				if (targetModel.Get()->GetSkeletonAsset()->HasAvatar())
 				{
 					hasAvatar = true;
-					model->GetSkeletonAsset()->AvatarInterface()->CopyAvatarJointIndex(&targetAvatar);
+					targetModel.Get()->GetSkeletonAsset()->AvatarInterface()->CopyAvatarJointIndex(&targetAvatar);
 					CheckAllJoint();
 				}
 			}

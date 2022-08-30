@@ -33,7 +33,7 @@ namespace JinEngine
 	{
 		static int DirectoryLevelFinder(const std::string& path, std::wstring& copyTarget)
 		{
-			std::wstring copy = JCommonUtility::U8StringToWstring(path);
+			std::wstring copy = JCommonUtility::U8StrToWstr(path);
 			int st = 0;
 			size_t index = 0;
 			int level = 0;
@@ -305,7 +305,7 @@ namespace JinEngine
 
 					if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
 					{
-						JImGuiImpl::SetSelectedObj(GetOwnerPageType(), nowObject);
+						JImGuiImpl::SetSelectObj(GetOwnerPageType(), nowObject);
 						JImGuiImpl::SetMouseDrag(true);
 						int noUse = 0;
 						std::string selectResourceName = nowObject->GetName();

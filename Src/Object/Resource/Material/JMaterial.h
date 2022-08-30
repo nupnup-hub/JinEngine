@@ -49,8 +49,8 @@ namespace JinEngine
 		{
 			return J_RESOURCE_TYPE::MATERIAL;
 		}
-		std::string GetFormat()const noexcept final;
-		static std::vector<std::string> GetAvailableFormat()noexcept;
+		std::wstring GetFormat()const noexcept final;
+		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 
 		JShader* GetShader()const noexcept;
 		float GetMetallic() const noexcept;
@@ -94,6 +94,8 @@ namespace JinEngine
 		void SetShader(JShader* newShader)noexcept; 
 	private:
 		bool UpdateFrame(Graphic::JMaterialConstants& constant)final;
+	public:
+		bool Copy(JObject* ori) final;
 	protected:
 		void DoActivate() noexcept final;
 		void DoDeActivate()noexcept final;
@@ -110,7 +112,7 @@ namespace JinEngine
 		static JMaterial* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
 		static void RegisterJFunc();
 	private:
-		JMaterial(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JMaterial(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
 		~JMaterial();
 	};
 }

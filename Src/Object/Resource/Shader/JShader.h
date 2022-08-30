@@ -28,11 +28,10 @@ namespace JinEngine
 		{
 			return J_RESOURCE_TYPE::SHADER;
 		}
-		std::string GetFormat()const noexcept final;
-		static std::vector<std::string> GetAvailableFormat()noexcept;
-
-		static J_SHADER_FUNCTION AddShaderFunctionFlag(const J_SHADER_FUNCTION ori, const J_SHADER_FUNCTION addValue)noexcept;
-		static J_SHADER_FUNCTION MinusShaderFunctionFlag(const J_SHADER_FUNCTION ori, const J_SHADER_FUNCTION minusValue)noexcept;
+		std::wstring GetFormat()const noexcept final;
+		static std::vector<std::wstring> GetAvailableFormat()noexcept;
+	public:
+		bool Copy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
@@ -49,7 +48,7 @@ namespace JinEngine
 		static JShader* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
 		static void RegisterJFunc();
 	private:
-		JShader(const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, uint8 formatIndex);
+		JShader(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, uint8 formatIndex);
 		~JShader();
 	};
 }

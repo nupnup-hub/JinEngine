@@ -63,13 +63,13 @@ namespace JinEngine
 	{
 		return GetStaticResourceType();
 	}
-	std::string JScene::GetFormat()const noexcept
+	std::wstring JScene::GetFormat()const noexcept
 	{
 		return GetAvailableFormat()[0];
 	}
-	std::vector<std::string> JScene::GetAvailableFormat()noexcept
+	std::vector<std::wstring> JScene::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::string> format{ ".scene" };
+		static std::vector<std::wstring> format{ L".scene" };
 		return format;
 	}
 	bool JScene::IsAnimatorActivated()const noexcept
@@ -104,6 +104,22 @@ namespace JinEngine
 	{
 		return this;
 	}
+	bool JScene::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{
+			JScene* oriS = static_cast<JScene*>(ori);
+			CopyRFile(*oriS, *this);
+			ClearResource();
+			StuffResource();
+			return true;
+		}
+		else
+			return false;
+	}
 	void JScene::DoActivate() noexcept
 	{
 		JResourceObject::DoActivate();
@@ -137,7 +153,7 @@ namespace JinEngine
 		if (!IsValid())
 		{
 			std::wifstream stream;
-			stream.open(GetWPath(), std::ios::in | std::ios::binary);
+			stream.open(GetPath(), std::ios::in | std::ios::binary);
 			if(JGFI::Create(stream, root) != nullptr)
 				SetValid(true);
 			stream.close();		 
@@ -457,7 +473,7 @@ namespace JinEngine
 
 		if (scene->IsValid())
 		{
-			stream.open(scene->GetWPath(), std::ios::out | std::ios::binary);
+			stream.open(scene->GetPath(), std::ios::out | std::ios::binary);
 			stream << scene->isSpatialStructureActivated;
 
 			JGameObjectInterface* gI = scene->root;
@@ -498,13 +514,28 @@ namespace JinEngine
  
 		JScene* newScene = nullptr;
 		if (directory->HasFile(pathData.fullName))
-			newScene = JResourceManager::Instance().GetResourceByPath<JScene>(pathData.strPath);
+			newScene = JResourceManager::Instance().GetResourceByPath<JScene>(pathData.wstrPath);
 
 		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-			newScene = new JScene(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JScene>(pathData.format));
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JScene>(pathData.name,
+				metadata.guid,
+				metadata.flag, 
+				directory, 
+				GetFormatIndex<JScene>(pathData.format));
+			newScene = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+		}
 		else
-			newScene = new JScene(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JScene>(pathData.format));
-
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JScene>(pathData.name, 
+				Core::MakeGuid(),
+				OBJECT_FLAG_NONE, 
+				directory, 
+				GetFormatIndex<JScene>(pathData.format));
+			newScene = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+		}
 		if (!metadata.isOpen)
 			return newScene;
 
@@ -534,14 +565,15 @@ namespace JinEngine
 			else
 			{
 				stream.close();
-				delete newScene;
+				newScene->SetIgnoreUndestroyableFlag(true);
+				newScene->BeginDestroy();
 				return nullptr;
 			}
 		}
 		else
 			return nullptr;
 	}
-	Core::J_FILE_IO_RESULT JScene::LoadMetadata(std::wifstream& stream, const std::string& folderPath, JSceneMetadata& metadata)
+	Core::J_FILE_IO_RESULT JScene::LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, JSceneMetadata& metadata)
 	{
 		if (stream.is_open())
 		{
@@ -554,33 +586,37 @@ namespace JinEngine
 	}
 	void JScene::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* owner) ->JResourceObject*
+		auto defaultC = [](JDirectory* directory) ->JResourceObject*
 		{
-			JScene* newScene = new JScene(owner->MakeUniqueFileName(JResourceObject::GetDefaultName<JScene>()),
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JScene>(directory->MakeUniqueFileName(JResourceObject::GetDefaultName<JScene>()),
 				Core::MakeGuid(),
 				OBJECT_FLAG_NONE,
-				owner,
+				directory,
 				JResourceObject::GetDefaultFormatIndex());
+			JScene* newScene = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
 
 			const J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED| OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
-			newScene->root = JGFI::CreateRoot("RootGameObject", Core::MakeGuid(), rootFlag, *newScene);
+			newScene->root = JGFI::CreateRoot(L"RootGameObject", Core::MakeGuid(), rootFlag, *newScene);
 
 			J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE);
 			if (newScene->allObjects.size() == 1)
 			{
-				JGFU::CreateSky(*newScene->root, flag, "DefaultSky");
-				JGFU::CreateCamera(*newScene->root, flag, true, "MainCamera");
-				JGFU::CreateLight(*newScene->root, flag, J_LIGHT_TYPE::DIRECTIONAL, "MainLight");
+				JGFU::CreateSky(*newScene->root, flag, L"DefaultSky");
+				JGFU::CreateCamera(*newScene->root, flag, true, L"MainCamera");
+				JGFU::CreateLight(*newScene->root, flag, J_LIGHT_TYPE::DIRECTIONAL, L"MainLight");
 			}
 
 			return newScene;
 		};
-		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
-			JScene* newScene = new JScene(name, guid, objFlag, directory, formatIndex);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JScene>(name, guid, objFlag, directory, formatIndex);
+			JScene* newScene = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));	 
 
 			const J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
-			newScene->root = JGFI::CreateRoot("RootGameObject", Core::MakeGuid(), rootFlag, *newScene);
+			newScene->root = JGFI::CreateRoot(L"RootGameObject", Core::MakeGuid(), rootFlag, *newScene);
 
 			J_OBJECT_FLAG flag = OBJECT_FLAG_NONE;
 			if (objFlag == OBJECT_FLAG_EDITOR_OBJECT)
@@ -591,9 +627,9 @@ namespace JinEngine
 			//only has root
 			if (newScene->allObjects.size() == 1)
 			{
-				JGFU::CreateSky(*newScene->root, flag, "DefaultSky");
-				JGFU::CreateCamera(*newScene->root, flag, true, "MainCamera");
-				JGFU::CreateLight(*newScene->root, flag, J_LIGHT_TYPE::DIRECTIONAL, "MainLight");
+				JGFU::CreateSky(*newScene->root, flag, L"DefaultSky");
+				JGFU::CreateCamera(*newScene->root, flag, true, L"MainCamera");
+				JGFU::CreateLight(*newScene->root, flag, J_LIGHT_TYPE::DIRECTIONAL, L"MainLight");
 			}
 			return newScene;
 		};
@@ -601,14 +637,23 @@ namespace JinEngine
 		{
 			return LoadObject(directory, pathData);
 		};
-		auto copyC = [](JResourceObject* ori)->JResourceObject*
+		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
 		{
-			return static_cast<JScene*>(ori)->CopyResource();
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JScene>(directory->MakeUniqueFileName(ori->GetName()),
+				Core::MakeGuid(),
+				ori->GetFlag(),
+				directory,
+				GetFormatIndex<JScene>(ori->GetFormat()));
+
+			JScene* newScene = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newScene->Copy(ori);
+			return newScene;
 		};
 
 		JRFI<JScene>::Register(defaultC, initC, loadC, copyC);
 
-		auto getFormatIndexLam = [](const std::string& format) {return JResourceObject::GetFormatIndex<JScene>(format); };
+		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JScene>(format); };
 
 		static GetTypeNameCallable getTypeNameCallable{ &JScene::TypeName };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JScene::GetAvailableFormat };
@@ -621,7 +666,7 @@ namespace JinEngine
 
 		JGameObjectFactoryImpl::RegisterAddStroage(&JScene::AddGameObject);
 	}
-	JScene::JScene(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	JScene::JScene(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		:JSceneInterface(name, guid, flag, directory, formatIndex), isAnimatorActivated(false)
 	{
 		spatialStructure = std::make_unique<Core::JSceneSpatialStructure>();

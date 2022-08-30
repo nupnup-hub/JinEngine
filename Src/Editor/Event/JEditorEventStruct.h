@@ -5,13 +5,11 @@
 #include"../Page/JEditorPageType.h"
 #include"../../Core/JDataType.h" 
 #include"../../Object/Resource/JResourceType.h"
+#include"../../Core/Pointer/JOwnerPtr.h"
 
 namespace JinEngine
 { 
-	class JGameObject;
-	class JResourceObject;
-	class JDirectory;
-
+	class JObject;
 	namespace Editor
 	{  
 		class JEditorPage;
@@ -46,15 +44,10 @@ namespace JinEngine
 		struct JEditorSelectObjectEvStruct : public JEditorEventStruct
 		{
 		public:
-			const std::string objName;
-			const size_t objGuid;
-			const int mainType;
-			const int subType;
 			const J_EDITOR_PAGE_TYPE pageType;
+			const Core::JUserPtr<JObject> selectObj;
 		public:
-			JEditorSelectObjectEvStruct(JGameObject& gObj, const J_EDITOR_PAGE_TYPE pageType);
-			JEditorSelectObjectEvStruct(JResourceObject& rObj, const J_EDITOR_PAGE_TYPE pageType);
-			JEditorSelectObjectEvStruct(JDirectory& dObj, const J_EDITOR_PAGE_TYPE pageType);
+			JEditorSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> selectObj = {});
 			~JEditorSelectObjectEvStruct() = default;
 			JEditorSelectObjectEvStruct(const JEditorSelectObjectEvStruct& rhs) = default;
 			JEditorSelectObjectEvStruct& operator=(const JEditorSelectObjectEvStruct& rhs) = default;
@@ -62,8 +55,7 @@ namespace JinEngine
 			JEditorSelectObjectEvStruct& operator=(JEditorSelectObjectEvStruct&& rhs) = default;
 		public:
 			bool PassDefectInspection()const noexcept final;
-			J_EDITOR_EVENT GetEventType()const noexcept final;
-			JObject* GetJObject()noexcept;
+			J_EDITOR_EVENT GetEventType()const noexcept final; 
 		};
 		struct JEditorDeSelectObjectEvStruct : public JEditorEventStruct
 		{
@@ -84,13 +76,10 @@ namespace JinEngine
 		struct JEditorOpenPageEvStruct : public JEditorEventStruct
 		{
 		public:  
-			const std::string objTypeName;
-			const size_t objGuid; 
-			const J_EDITOR_PAGE_TYPE pageType;
-			const bool hasOpenInitObjType;
-		public:
-			JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType);
-			JEditorOpenPageEvStruct(const std::string& objTypeName, const size_t objGuid, const J_EDITOR_PAGE_TYPE pageType);
+			const J_EDITOR_PAGE_TYPE pageType; 
+			const Core::JUserPtr<JObject> openSelected;
+		public: 
+			JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> openSelected = {});
 			~JEditorOpenPageEvStruct() = default;
 			JEditorOpenPageEvStruct(const JEditorOpenPageEvStruct& rhs) = default;
 			JEditorOpenPageEvStruct& operator=(const JEditorOpenPageEvStruct& rhs) = default;

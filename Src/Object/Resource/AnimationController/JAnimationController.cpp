@@ -6,17 +6,18 @@
 #include"../../../Core/FSM/AnimationFSM/JAnimationFSMDiagram.h"  
 #include"../../../Core/FSM/AnimationFSM/JAnimationFSMstate.h" 
 #include"../../../Core/FSM/AnimationFSM/JAnimationTime.h" 
+#include"../../../Core/FSM/AnimationFSM/JAnimationFSMtransition.h"
 #include"../../../Core/FSM/JFSMstate.h" 
 #include"../../../Core/FSM/JFSMcondition.h" 
 #include"../../../Core/FSM/JFSMconditionStorage.h"  
-
+#include"../../../Core/FSM/JFSMLoadGuidMap.h"
+#
 #include"../../../Application/JApplicationVariable.h"
 #include"../../../Editor/Diagram/JEditorDiagram.h" 
 #include"../../../Editor/Diagram/JEditorDiagramNode.h" 
 #include"../../../Utility/JCommonUtility.h"
 
-//수정필요
-//포트폴리오용 임시코드
+//수정필요 
 #include"../../../Core/FSM/AnimationFSM/JAnimationFSMstateClip.h" 
 #include"../JResourceManager.h"
 
@@ -26,7 +27,7 @@ namespace JinEngine
 	using namespace Graphic;
 
 	void JAnimationController::Initialize(std::vector<JAnimationTime>& animationtimes, JSkeletonAsset* srcSkeletonAsset)noexcept
-	{
+	{ 
 		animationShaderData.Initialize();
 
 		uint layerSize = (uint)fsmDiagram.size();
@@ -49,34 +50,34 @@ namespace JinEngine
 	{
 		return GetStaticResourceType();
 	}
-	std::string JAnimationController::GetFormat()const noexcept
+	std::wstring JAnimationController::GetFormat()const noexcept
 	{
 		return GetAvailableFormat()[0];
 	}
-	std::vector<std::string> JAnimationController::GetAvailableFormat()noexcept
+	std::vector<std::wstring> JAnimationController::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::string> format{ ".controller" };
+		static std::vector<std::wstring> format{ L".controller" };
 		return format;
 	}
 	uint JAnimationController::GetAnimationDiagramCount()const noexcept
 	{
 		return (uint)fsmDiagram.size();
 	}
-	std::string JAnimationController::GetAnimationDiagramName(const size_t diagramGuid) noexcept
+	std::wstring JAnimationController::GetAnimationDiagramName(const size_t diagramGuid) noexcept
 	{
 		JAnimationFSMdiagram* diagarm = FindDiagram(diagramGuid);
-		return diagarm != nullptr ? diagarm->GetName() : "Nullptr";
+		return diagarm != nullptr ? diagarm->GetName() : L"Nullptr";
 	}
-	std::string JAnimationController::GetUniqueDiagramName(const std::string& initName)noexcept
+	std::wstring JAnimationController::GetUniqueDiagramName(const std::wstring& initName)noexcept
 	{
 		return JCommonUtility::MakeUniqueName(fsmDiagram, initName);
 	}
-	std::string JAnimationController::GetUniqueStateName(const size_t diagramGuid, const std::string& initName)noexcept
+	std::wstring JAnimationController::GetUniqueStateName(const size_t diagramGuid, const std::wstring& initName)noexcept
 	{
 		JAnimationFSMdiagram* diagarm = FindDiagram(diagramGuid);
 		return diagarm->GetStateUniqueName(initName);
 	}
-	std::string JAnimationController::GetUniqueConditionName(const std::string& initName)noexcept
+	std::wstring JAnimationController::GetUniqueConditionName(const std::wstring& initName)noexcept
 	{
 		return conditionStorage->GetConditionUniqueName(initName);
 	}
@@ -84,29 +85,29 @@ namespace JinEngine
 	{
 		return conditionStorage->GetConditionCount();
 	}
-	void JAnimationController::SetConditionName(const size_t guid, const std::string& newName)noexcept
+	void JAnimationController::SetConditionName(const size_t guid, const std::wstring& newName)noexcept
 	{
-		conditionStorage->SetConditionName(guid, newName);
+		conditionStorage->GetCondition(guid)->SetName(newName);
 	}
 	void JAnimationController::SetConditionValueType(const size_t guid, const J_FSMCONDITION_VALUE_TYPE type)noexcept
 	{
-		conditionStorage->SetConditionValueType(guid, type);
+		conditionStorage->GetCondition(guid)->SetValueType(type); 
 	}
-	bool JAnimationController::CreateAnimationDiagram(const std::string& name, const size_t guid)noexcept
+	bool JAnimationController::CreateAnimationDiagram(const std::wstring& name)noexcept
 	{
 		if (fsmDiagram.size() >= diagramMaxCount)
 			return false;
 
-		fsmDiagram.push_back(std::make_unique<JAnimationFSMdiagram>(GetUniqueDiagramName(name), guid, conditionStorage.get()));
+		fsmDiagram.push_back(std::make_unique<JAnimationFSMdiagram>(GetUniqueDiagramName(name), Core::MakeGuid(), conditionStorage.get()));
 		return true;
 	}
-	bool JAnimationController::CreateAnimationClipState(const std::string& name, const size_t clipGuid, const size_t diagramGuid)noexcept
+	bool JAnimationController::CreateAnimationClipState(const std::wstring& name, const size_t diagramGuid)noexcept
 	{
 		JAnimationFSMdiagram* diagarm = FindDiagram(diagramGuid);
 		if (diagarm == nullptr)
 			return false;
 
-		JAnimationFSMstate* state = diagarm->CreateAnimationClipState(name, clipGuid);
+		JAnimationFSMstate* state = diagarm->CreateAnimationClipState(name);
 		if (state != nullptr)
 			return true;
 		else
@@ -120,9 +121,9 @@ namespace JinEngine
 
 		return diagarm->CreateAnimationTransition(intputStateGuid, outputStateGuid);
 	}
-	bool JAnimationController::CreateCondition(const std::string& name, const size_t guid)noexcept
+	bool JAnimationController::CreateCondition(const std::wstring& name)noexcept
 	{
-		JFSMcondition* newCondition = conditionStorage->AddCondition(name, guid);
+		JFSMcondition* newCondition = conditionStorage->AddCondition(name);
 		return newCondition != nullptr;
 	}
 	bool JAnimationController::DestroyAnimationDiagram(const size_t diagramGuid)noexcept
@@ -149,6 +150,10 @@ namespace JinEngine
 	bool JAnimationController::DestroyCondition(const size_t conditionGuid)noexcept
 	{
 		return conditionStorage->RemoveCondition(conditionGuid);
+	}
+	JAnimationControllerEditInterface* JAnimationController::EditorInterface()
+	{
+		return this;
 	}
 	Core::JAnimationFSMdiagram* JAnimationController::GetDiagram(const size_t guid)noexcept
 	{
@@ -196,6 +201,20 @@ namespace JinEngine
 		}
 		return nullptr;
 	}
+	bool JAnimationController::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{
+			JAnimationController* oriC = static_cast<JAnimationController*>(ori);
+			CopyRFile(*oriC, *this);
+			ClearResource();
+			StuffResource(); 
+			return true;
+		}
+	}
 	void JAnimationController::DoActivate()noexcept
 	{
 		JResourceObject::DoActivate();
@@ -208,11 +227,58 @@ namespace JinEngine
 	}
 	void JAnimationController::StuffResource()
 	{
-		SetValid(true);
+		if (!IsValid())
+		{
+			if(ReadAnimationControllerData())
+				SetValid(true);
+		}
 	}
 	void JAnimationController::ClearResource()
 	{
-		SetValid(false);
+		if (IsValid())
+		{
+			conditionStorage.reset();
+			fsmDiagram.clear();
+			SetValid(false);
+		}
+	}
+	bool JAnimationController::ReadAnimationControllerData()
+	{
+		std::wifstream stream;
+		stream.open(GetPath(), std::ios::in | std::ios::binary);
+
+		if (stream.is_open())
+		{
+			JFSMLoadGuidMap guidMap;
+			size_t storeGuid;
+			stream >> storeGuid;
+
+			if (storeGuid != GetGuid())
+				guidMap.isNewGuid = true;
+			else
+				guidMap.isNewGuid = false;
+
+			conditionStorage->LoadIdentifierData(stream, guidMap);
+
+			uint diagramCount = 0;
+			stream >> diagramCount;
+
+			for (uint i = 0; i < diagramCount; ++i)
+			{ 
+				std::unique_ptr<Core::JAnimationFSMdiagram> newDiagram = Core::JAnimationFSMdiagram::LoadIdentifierData(stream, guidMap, conditionStorage.get());
+				if (newDiagram != nullptr)
+					fsmDiagram.push_back(std::move(newDiagram));
+			}
+
+			conditionStorage->LoadContentsData(stream, guidMap);
+			for (uint i = 0; i < diagramCount; ++i)
+				fsmDiagram[i]->LoadContentsData(stream, guidMap);
+
+			stream.close();
+			return true;
+		}
+		else
+			return false;
 	}
 	bool JAnimationController::IsValid()const noexcept
 	{
@@ -222,46 +288,143 @@ namespace JinEngine
 	{
 		return StoreObject(this);
 	}
-	Core::J_FILE_IO_RESULT JAnimationController::StoreObject(JAnimationController* animationCont)
+	Core::J_FILE_IO_RESULT JAnimationController::StoreObject(JAnimationController* cont)
 	{
 		//수정필요
-		if (animationCont == nullptr)
+		if (cont == nullptr)
 			return Core::J_FILE_IO_RESULT::FAIL_NULL_OBJECT;
-		if (((int)animationCont->GetFlag() & OBJECT_FLAG_DO_NOT_SAVE) > 0)
+
+		if (((int)cont->GetFlag() & OBJECT_FLAG_DO_NOT_SAVE) > 0)
 			return Core::J_FILE_IO_RESULT::FAIL_DO_NOT_SAVE_DATA;
 
-		return Core::J_FILE_IO_RESULT::SUCCESS;
+		std::wofstream stream;
+		stream.open(cont->GetMetafilePath(), std::ios::out | std::ios::binary);
+		Core::J_FILE_IO_RESULT storeMetaRes = JResourceObject::StoreMetadata(stream, cont);
+		stream.close();
+
+		if (storeMetaRes != Core::J_FILE_IO_RESULT::SUCCESS)
+			return storeMetaRes;
+
+		stream.open(cont->GetPath(), std::ios::out | std::ios::binary);
+		if (stream.is_open())
+		{
+			//For classify copy object call
+			stream << cont->GetGuid() << '\n';
+			cont->conditionStorage->StoreIdentifierData(stream);
+
+			const uint diagramCount = (uint)cont->fsmDiagram.size();
+			stream << diagramCount << '\n';
+
+			for (uint i = 0; i < diagramCount; ++i)
+				cont->fsmDiagram[i]->StoreIdentifierData(stream);
+
+			cont->conditionStorage->StoreContentsData(stream);
+			for (uint i = 0; i < diagramCount; ++i)
+				cont->fsmDiagram[i]->StoreContentsData(stream);
+
+			stream.close();
+			return Core::J_FILE_IO_RESULT::SUCCESS;
+		}
+		else
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
 	JAnimationController* JAnimationController::LoadObject(JDirectory* directory, const JResourcePathData& pathData)
 	{
-		//수정필요
-		return nullptr;
+		if (directory == nullptr)
+			return nullptr;
+
+		if (!JResourceObject::IsResourceFormat<JAnimationController>(pathData.format))
+			return nullptr;
+
+		std::wifstream stream;
+		stream.open(ConvertMetafilePath(pathData.wstrPath), std::ios::in | std::ios::binary);
+		ObjectMetadata metadata;
+		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
+		stream.close();
+
+		JAnimationController* newCont = nullptr;
+		if (directory->HasFile(pathData.fullName))
+			newCont = JResourceManager::Instance().GetResourceByPath<JAnimationController>(pathData.wstrPath);
+
+		if (newCont == nullptr)
+		{
+			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+			{
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationController>(pathData.name,
+					metadata.guid,
+					(J_OBJECT_FLAG)metadata.flag,
+					directory,
+					GetFormatIndex<JAnimationController>(pathData.format));
+				newCont = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
+			}
+			else
+			{
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationController>(pathData.name,
+					Core::MakeGuid(),
+					J_OBJECT_FLAG::OBJECT_FLAG_NONE,
+					directory,
+					GetFormatIndex<JAnimationController>(pathData.format));
+				newCont = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
+			}
+		}
+
+		if (newCont->IsValid())
+			return newCont;
+		else if (newCont->ReadAnimationControllerData())
+		{
+			newCont->SetValid(true);
+			return newCont;
+		}
+		else
+		{
+			newCont->SetIgnoreUndestroyableFlag(true);
+			newCont->BeginDestroy();
+			return nullptr;
+		}
 	}
 	void JAnimationController::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* owner) ->JResourceObject*
+		auto defaultC = [](JDirectory* directory) ->JResourceObject*
 		{
-			return new JAnimationController(owner->MakeUniqueFileName(GetDefaultName<JAnimationController>()),
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationController>(directory->MakeUniqueFileName(GetDefaultName<JAnimationController>()),
 				Core::MakeGuid(),
 				OBJECT_FLAG_NONE,
-				owner,
+				directory,
 				JResourceObject::GetDefaultFormatIndex());
+
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
-		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
-			return  new JAnimationController(name, guid, objFlag, directory, formatIndex);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationController>(name, guid, objFlag, directory, formatIndex);
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
-		auto copyC = [](JResourceObject* ori)->JResourceObject*
+		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
 		{
-			return static_cast<JAnimationController*>(ori)->CopyResource();
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationController>(directory->MakeUniqueFileName(ori->GetName()),
+				Core::MakeGuid(),
+				ori->GetFlag(),
+				directory,
+				GetFormatIndex<JAnimationClip>(ori->GetFormat()));
+
+			JAnimationController* newController = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newController->Copy(ori);
+			return newController;
 		};
 		JRFI<JAnimationController>::Register(defaultC, initC, loadC, copyC);
 
-		auto getFormatIndexLam = [](const std::string& format) {return JResourceObject::GetFormatIndex<JAnimationController>(format); };
+		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JAnimationController>(format); };
 
 		static GetTypeNameCallable getTypeNameCallable{ &JAnimationController::TypeName };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JAnimationController::GetAvailableFormat };
@@ -275,7 +438,7 @@ namespace JinEngine
 	JAnimationController::JAnimationController(const std::string& name, size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		:JAnimationControllerInterface(name, guid, flag, directory, formatIndex)
 	{
-		conditionStorage = std::make_unique<JFSMconditionStorage>();
+		conditionStorage = std::make_unique<Core::JFSMconditionStorage>();
 		fsmDiagram.push_back(std::make_unique<JAnimationFSMdiagram>("BaseLayer", conditionStorage.get()));
 	}
 	JAnimationController::~JAnimationController() {}

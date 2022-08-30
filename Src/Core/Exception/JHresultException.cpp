@@ -6,7 +6,7 @@ namespace JinEngine
 	namespace Core
 	{
 		JHresultException::JHresultException(int line, const std::string file, HRESULT hr)
-			:JException(line, JCommonUtility::StringToWstring(file)), hr(hr)
+			:JException(line, JCommonUtility::StrToWstr(file)), hr(hr)
 		{}
 		const std::wstring JHresultException::what() const
 		{

@@ -22,40 +22,16 @@ namespace JinEngine
 			return J_EDITOR_EVENT::MOUSE_CLICK;
 		}
 
-		JEditorSelectObjectEvStruct::JEditorSelectObjectEvStruct(JGameObject& gObj, const J_EDITOR_PAGE_TYPE pageType)
-			:objName(gObj.GetName()), objGuid(gObj.GetGuid()), mainType((int)gObj.GetObjectType()), subType(-1), pageType(pageType)
-		{}
-		JEditorSelectObjectEvStruct::JEditorSelectObjectEvStruct(JResourceObject& rObj, const J_EDITOR_PAGE_TYPE pageType)
-			: objName(rObj.GetName()), objGuid(rObj.GetGuid()), mainType((int)rObj.GetObjectType()), subType((int)rObj.GetResourceType()), pageType(pageType)
-		{}
-		JEditorSelectObjectEvStruct::JEditorSelectObjectEvStruct(JDirectory& dObj, const J_EDITOR_PAGE_TYPE pageType)
-			: objName(dObj.GetName()), objGuid(dObj.GetGuid()), mainType((int)dObj.GetObjectType()), subType(-1), pageType(pageType)
+		JEditorSelectObjectEvStruct::JEditorSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> selectObj)
+			:pageType(pageType), selectObj(selectObj)
 		{}
 		bool JEditorSelectObjectEvStruct::PassDefectInspection()const noexcept
 		{
-			if (mainType == (int)J_OBJECT_TYPE::GAME_OBJECT)
-				return Core::JReflectionInfo::Instance().GetTypeInfo(JGameObject::TypeName())->GetInstance(objGuid) != nullptr;
-			else if (mainType == (int)J_OBJECT_TYPE::RESOURCE_OBJECT)
-				return JResourceManager::Instance().GetResource((J_RESOURCE_TYPE)mainType, objGuid) != nullptr;
-			else if (mainType == (int)J_OBJECT_TYPE::DIRECTORY_OBJECT)
-				return JResourceManager::Instance().GetDirectory(objGuid) != nullptr;
-			else
-				return false;
+			return selectObj.IsValid();
 		}
 		J_EDITOR_EVENT JEditorSelectObjectEvStruct::GetEventType()const noexcept
 		{
 			return J_EDITOR_EVENT::SELECT_OBJECT;
-		}
-		JObject* JEditorSelectObjectEvStruct::GetJObject()noexcept
-		{
-			if (mainType == (int)J_OBJECT_TYPE::GAME_OBJECT)
-				return Core::JReflectionInfo::Instance().GetTypeInfo(JGameObject::TypeName())->GetInstance(objGuid);
-			else if (mainType == (int)J_OBJECT_TYPE::RESOURCE_OBJECT)
-				return JResourceManager::Instance().GetResource((J_RESOURCE_TYPE)mainType, objGuid);
-			else if (mainType == (int)J_OBJECT_TYPE::DIRECTORY_OBJECT)
-				return JResourceManager::Instance().GetDirectory(objGuid);
-			else
-				return nullptr;
 		}
 
 		JEditorDeSelectObjectEvStruct::JEditorDeSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType)
@@ -70,11 +46,8 @@ namespace JinEngine
 			return J_EDITOR_EVENT::DESELECT_OBJECT;
 		}
 
-		JEditorOpenPageEvStruct::JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType)
-			:objTypeName(" "), objGuid(0), pageType(pageType), hasOpenInitObjType(false)
-		{}
-		JEditorOpenPageEvStruct::JEditorOpenPageEvStruct(const std::string& objTypeName, const size_t objGuid, const J_EDITOR_PAGE_TYPE pageType)
-			: objTypeName(objTypeName), objGuid(objGuid), pageType(pageType), hasOpenInitObjType(true)
+		JEditorOpenPageEvStruct::JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> openSelected)
+			:pageType(pageType), openSelected(openSelected)
 		{}
 		bool JEditorOpenPageEvStruct::PassDefectInspection()const noexcept
 		{

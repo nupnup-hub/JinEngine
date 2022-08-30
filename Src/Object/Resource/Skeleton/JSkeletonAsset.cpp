@@ -27,21 +27,21 @@ namespace JinEngine
 	{
 		return ownerModelGuid;
 	}
-	std::string JSkeletonAsset::GetJointName(int index)noexcept
+	std::wstring JSkeletonAsset::GetJointName(int index)noexcept
 	{
 		return skeleton->GetJointName(index);
 	}
 	J_RESOURCE_TYPE JSkeletonAsset::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
-	} 
-	std::string JSkeletonAsset::GetFormat()const noexcept
+	}
+	std::wstring JSkeletonAsset::GetFormat()const noexcept
 	{
 		return GetAvailableFormat()[0];
 	}
-	std::vector<std::string> JSkeletonAsset::GetAvailableFormat()noexcept
+	std::vector<std::wstring> JSkeletonAsset::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::string> format{ ".skel" };
+		static std::vector<std::wstring> format{ L".skel" };
 		return format;
 	}
 	void JSkeletonAsset::SetSkeletonType(JSKELETON_TYPE skeletonType)noexcept
@@ -57,7 +57,7 @@ namespace JinEngine
 		return isValidOwnerModelGuid;
 	}
 	bool JSkeletonAsset::IsRegularChildJointIndex(uint8 childIndex, uint8 parentIndex)noexcept
-	{  
+	{
 		if (childIndex == parentIndex || childIndex < parentIndex)
 			return false;
 
@@ -77,7 +77,7 @@ namespace JinEngine
 			if (nowParentIndex < parentIndex)
 				break;
 		}
- 
+
 		return isParent;
 	}
 	JSkeletonAssetAvatarInterface* JSkeletonAsset::AvatarInterface()
@@ -172,13 +172,13 @@ namespace JinEngine
 		}
 		/*for (uint i = 0; i < jointCount; ++i)
 		{
-			JDebugTextOut::PrintWstr(JCommonUtility::StringToWstring(GetJointName(i)));
+			JDebugTextOut::PrintWstr(JCommonUtility::StrToWstr(GetJointName(i)));
 			if (avatar->jointBackReferenceMap[i].refIndex == JSkeletonFixedData::incorrectJointIndex)
 				JDebugTextOut::PrintWstr(L"refIndex: nullptr");
 			else
-				JDebugTextOut::PrintWstr(L"refIndex: " + JCommonUtility::StringToWstring(GetJointName(avatar->jointReference[avatar->jointBackReferenceMap[i].refIndex])));
+				JDebugTextOut::PrintWstr(L"refIndex: " + JCommonUtility::StrToWstr(GetJointName(avatar->jointReference[avatar->jointBackReferenceMap[i].refIndex])));
 
-			JDebugTextOut::PrintWstr(L"allParent: " + JCommonUtility::StringToWstring(GetJointName(avatar->jointReference[avatar->jointBackReferenceMap[i].allottedParentRefIndex])));
+			JDebugTextOut::PrintWstr(L"allParent: " + JCommonUtility::StrToWstr(GetJointName(avatar->jointReference[avatar->jointBackReferenceMap[i].allottedParentRefIndex])));
 			JDebugTextOut::PrintEnter(1);
 		}
 		JDebugTextOut::CloseStream();*/
@@ -196,6 +196,22 @@ namespace JinEngine
 
 		for (uint32 i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
 			outAvatar->jointReference[i] = avatar->jointReference[i];
+	}
+	bool JSkeletonAsset::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{
+			JSkeletonAsset* oriS = static_cast<JSkeletonAsset*>(ori);
+			CopyRFile(*oriS, *this);
+			ClearResource();
+			StuffResource();
+			return true;
+		}
+		else
+			return false;
 	}
 	void JSkeletonAsset::DoActivate()noexcept
 	{
@@ -218,14 +234,14 @@ namespace JinEngine
 	void JSkeletonAsset::ClearResource()
 	{
 		if (IsValid())
-		{ 
+		{
 			skeleton.reset();
-			avatar.reset(); 
+			avatar.reset();
 		}
 	}
 	bool JSkeletonAsset::ReadSkeletonAssetData()
 	{
-		const JResourcePathData pathData{ GetWPath() };
+		const JResourcePathData pathData{ GetPath() };
 		std::wifstream stream;
 		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
 
@@ -260,11 +276,11 @@ namespace JinEngine
 				stream >> newJoint.inbindPose._31 >> newJoint.inbindPose._32 >> newJoint.inbindPose._33 >> newJoint.inbindPose._34;
 				stream >> newJoint.inbindPose._41 >> newJoint.inbindPose._42 >> newJoint.inbindPose._43 >> newJoint.inbindPose._44;
 
-				newJoint.name = JCommonUtility::WstringToU8String(name);
+				newJoint.name = name;
 				newJoint.parentIndex = (uint8)parentIndex;
-				joint[i] = std::move(newJoint); 
+				joint[i] = std::move(newJoint);
 			}
-			
+
 			stream >> guide >> hasAvatar;
 			if (hasAvatar)
 			{
@@ -276,8 +292,8 @@ namespace JinEngine
 			}
 			stream >> guide >> skeletonType;
 			stream.close();
-			 
-			SetSkeleton(JSkeleton{std::move(joint), skeletonHash });
+
+			SetSkeleton(JSkeleton{ std::move(joint), skeletonHash });
 			if (hasAvatar)
 				SetAvatar(&avatar);
 			SetSkeletonType((JSKELETON_TYPE)skeletonType);
@@ -290,7 +306,7 @@ namespace JinEngine
 	{
 		JSkeletonAsset::skeleton = std::make_unique<JSkeleton>(std::move(skeleon));
 	}
-	void JSkeletonAsset::SetOwnerModelGuid(const size_t modelGuid)
+	void JSkeletonAsset::SetOwnerModelGuid(const size_t modelGuid)noexcept
 	{
 		JSkeletonAsset::ownerModelGuid = modelGuid;
 		isValidOwnerModelGuid = JResourceManager::Instance().HasResource(J_RESOURCE_TYPE::MODEL, ownerModelGuid);
@@ -311,7 +327,7 @@ namespace JinEngine
 		stream.open(skeletonAsset->GetMetafilePath(), std::ios::out | std::ios::binary);
 		Core::J_FILE_IO_RESULT res = StoreMetadata(stream, skeletonAsset);
 		stream.close();
-		 
+
 		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 			return res;
 
@@ -322,12 +338,12 @@ namespace JinEngine
 
 			stream << "JSkeleton Hash: " << skeletonAsset->skeleton->GetHash() << '\n';
 			stream << "JSkeleton JointCount: " << skeletonAsset->skeleton->GetJointCount() << '\n';
-		 
+
 			const uint jointCount = skeletonAsset->skeleton->GetJointCount();
 			for (uint i = 0; i < skeletonAsset->skeleton->GetJointCount(); ++i)
 			{
 				const Joint joint = skeletonAsset->skeleton->GetJoint(i);
-				stream << JCommonUtility::U8StringToWstring(joint.name) << '\n';
+				stream << joint.name << '\n';
 				stream << joint.parentIndex << '\n';
 				stream << joint.length << '\n';
 
@@ -361,7 +377,7 @@ namespace JinEngine
 	{
 		if (directory == nullptr)
 			return nullptr;
-		 
+
 		if (!JResourceObject::IsResourceFormat<JSkeletonAsset>(pathData.format))
 			return nullptr;
 
@@ -373,14 +389,30 @@ namespace JinEngine
 
 		JSkeletonAsset* newSkeletonAsset = nullptr;
 		if (directory->HasFile(pathData.fullName))
-			newSkeletonAsset = JResourceManager::Instance().GetResourceByPath<JSkeletonAsset>(pathData.strPath);
+			newSkeletonAsset = JResourceManager::Instance().GetResourceByPath<JSkeletonAsset>(pathData.wstrPath);
 
 		if (newSkeletonAsset == nullptr)
 		{
 			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-				newSkeletonAsset = new JSkeletonAsset(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JSkeletonAsset>(pathData.format));
+			{
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JSkeletonAsset>(pathData.name,
+					metadata.guid,
+					metadata.flag,
+					directory,
+					GetFormatIndex<JSkeletonAsset>(pathData.format));
+				newSkeletonAsset = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
+			}
 			else
-				newSkeletonAsset = new JSkeletonAsset(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JSkeletonAsset>(pathData.format));
+			{
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JSkeletonAsset>(pathData.name,
+					Core::MakeGuid(),
+					OBJECT_FLAG_NONE,
+					directory,
+					GetFormatIndex<JSkeletonAsset>(pathData.format));
+				newSkeletonAsset = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
+			}
 		}
 
 		if (newSkeletonAsset->IsValid())
@@ -389,41 +421,57 @@ namespace JinEngine
 			return newSkeletonAsset;
 		else
 		{
-			delete newSkeletonAsset;
+			newSkeletonAsset->SetIgnoreUndestroyableFlag(true);
+			newSkeletonAsset->BeginDestroy();
 			return nullptr;
 		}
-	}  
+	}
 	void JSkeletonAsset::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* owner) ->JResourceObject*
+		auto defaultC = [](JDirectory* directory) ->JResourceObject*
 		{
-			return new JSkeletonAsset(owner->MakeUniqueFileName(GetDefaultName<JSkeletonAsset>()),
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JSkeletonAsset>(directory->MakeUniqueFileName(GetDefaultName<JSkeletonAsset>()),
 				Core::MakeGuid(),
 				OBJECT_FLAG_NONE,
-				owner,
+				directory,
 				JResourceObject::GetDefaultFormatIndex());
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
-		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
-			return  new JSkeletonAsset(name, guid, objFlag, directory, formatIndex);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JSkeletonAsset>(name, guid, objFlag, directory, formatIndex);
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
-		auto copyC = [](JResourceObject* ori)->JResourceObject*
+		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
 		{
-			return static_cast<JSkeletonAsset*>(ori)->CopyResource();
-		}; 
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JSkeletonAsset>(directory->MakeUniqueFileName(ori->GetName()),
+				Core::MakeGuid(),
+				ori->GetFlag(),
+				directory,
+				GetFormatIndex<JSkeletonAsset>(ori->GetFormat()));
+
+			JSkeletonAsset* newSkeletonAsset = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newSkeletonAsset->Copy(ori);
+			return newSkeletonAsset;
+		};
 
 		JRFI<JSkeletonAsset>::Register(defaultC, initC, loadC, copyC, &JSkeletonAsset::SetSkeleton);
 
-		auto getFormatIndexLam = [](const std::string& format) {return JResourceObject::GetFormatIndex<JSkeletonAsset>(format); };
+		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JSkeletonAsset>(format); };
 
 		static GetTypeNameCallable getTypeNameCallable{ &JSkeletonAsset::TypeName };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JSkeletonAsset::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
-		 
+
 		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, false, false, false };
 		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
@@ -432,5 +480,5 @@ namespace JinEngine
 	JSkeletonAsset::JSkeletonAsset(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		:JSkeletonAssetInterface(name, guid, flag, directory, formatIndex)
 	{ }
-	JSkeletonAsset::~JSkeletonAsset(){}
+	JSkeletonAsset::~JSkeletonAsset() {}
 }

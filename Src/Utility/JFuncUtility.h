@@ -10,7 +10,7 @@ namespace JinEngine
 		{
 		public:
 			static std::string EraseSpace(const std::string& str)noexcept;
-			static int StringToInt(const std::string& str)noexcept;
+			static int StrToInt(const std::string& str)noexcept;
 		};
 	}
 }

@@ -60,13 +60,13 @@ namespace JinEngine
 	{
 		return GetStaticResourceType();
 	}
-	std::string JModel::GetFormat()const noexcept
+	std::wstring JModel::GetFormat()const noexcept
 	{
-		return GetAvailableFormat()[formatIndex];
+		return GetAvailableFormat()[GetFormatIndex()];
 	}
-	std::vector<std::string> JModel::GetAvailableFormat()noexcept
+	std::vector<std::wstring> JModel::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::string> format{ ".model", ".obj", ".fbx", };
+		static std::vector<std::wstring> format{ L".model", L".obj", L".fbx", };
 		return format;
 	}
 	JModelSceneInterface* JModel::ModelSceneInterface()
@@ -85,6 +85,22 @@ namespace JinEngine
 	{
 		return skeletonRoot;
 	}
+	bool JModel::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{
+			JModel* oriM = static_cast<JModel*>(ori);
+			CopyRFile(*oriM, *this);
+			ClearResource();
+			StuffResource();
+			return true;
+		}
+		else
+			return false;
+	}
 	void JModel::DoActivate()noexcept
 	{
 		JResourceObject::DoActivate();
@@ -92,14 +108,14 @@ namespace JinEngine
 	}
 	void JModel::DoDeActivate()noexcept
 	{
-		JResourceObject::DoDeActivate(); 
+		JResourceObject::DoDeActivate();
 		ClearResource();
 	}
 	void JModel::StuffResource()
 	{
 		if (!JValidInterface::IsValid())
 		{
-			switch (formatIndex)
+			switch (GetFormatIndex())
 			{
 			case 0:
 			{
@@ -150,7 +166,7 @@ namespace JinEngine
 	}
 	bool JModel::ReadObjModelData()
 	{
-		const JResourcePathData pathData{ GetWPath() };
+		const JResourcePathData pathData{ GetPath() };
 		std::wifstream stream;
 		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
 		ModelMetadata metadata;
@@ -162,7 +178,7 @@ namespace JinEngine
 		JModelAttribute modelAttribute;
 
 		if (JObjFileLoader::Instance().LoadObjFile(pathData.wstrPath, objMeshData, objMatData, modelAttribute))
-		{	 
+		{
 			const J_OBJECT_FLAG objRFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
 
 			using SetTexture = void(JMaterial::*)(JTexture*);
@@ -181,25 +197,25 @@ namespace JinEngine
 				if (newMat == nullptr)
 					continue;
 
-				std::string texturePath;
+				std::wstring texturePath;
 				if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_ALBEDO_T) > 0)
 				{
-					texturePath = pathData.folderPath + "\\" + objMatData[i].albedoTName;
+					texturePath = pathData.folderPath + L"\\" + objMatData[i].albedoTName;
 					setTexturePtr = &JMaterial::SetAlbedoMap;
 				}
 				else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_NORMAL_T) > 0)
 				{
-					texturePath = pathData.folderPath + "\\" + objMatData[i].normalTName;
+					texturePath = pathData.folderPath + L"\\" + objMatData[i].normalTName;
 					setTexturePtr = &JMaterial::SetNormalMap;
 				}
 				else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_HEIGHT_T) > 0)
 				{
-					texturePath = pathData.folderPath + "\\" + objMatData[i].heightTName;
+					texturePath = pathData.folderPath + L"\\" + objMatData[i].heightTName;
 					setTexturePtr = &JMaterial::SetHeightMap;
 				}
 				else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_AMBIENT_T) > 0)
 				{
-					texturePath = pathData.folderPath + "\\" + objMatData[i].ambientTName;
+					texturePath = pathData.folderPath + L"\\" + objMatData[i].ambientTName;
 					setTexturePtr = &JMaterial::SetAmbientOcclusionMap;
 				}
 				else
@@ -256,7 +272,7 @@ namespace JinEngine
 
 			for (uint i = 0; i < modelPartCount; ++i)
 			{
-				const std::string meshName = newMeshVec[i]->GetName();
+				const std::wstring meshName = newMeshVec[i]->GetName();
 				JGameObject* child = JGFI::Create(meshName, Core::MakeGuid(), OBJECT_FLAG_NONE, *modelRoot);
 				if (matIndex[i] == -1)
 					JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *child, newMeshVec[i], nullptr);
@@ -276,10 +292,11 @@ namespace JinEngine
 	}
 	bool JModel::ReadFbxModelData()
 	{
+		JResourcePathData pathData{ GetPath() };
 		std::wifstream stream;
-		stream.open(ConvertMetafilePath(GetWPath()), std::ios::in | std::ios::binary);
+		stream.open(ConvertMetafilePath(GetPath()), std::ios::in | std::ios::binary);
 		ModelMetadata metadata;
-		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, GetFolderPath(), metadata);
+		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, pathData.folderPath, metadata);
 		stream.close();
 
 		std::vector<Core::JFbxPartMeshData> jFbxPartMeshData;
@@ -287,7 +304,7 @@ namespace JinEngine
 		JModelAttribute modelAttribute;
 		std::vector<Joint> joint;
 
-		Core::J_FBXRESULT fbxLoadRes = Core::JFbxFileLoader::Instance().LoadFbxModelFile(GetPath(), jFbxPartMeshData, modelAttribute, joint);
+		Core::J_FBXRESULT fbxLoadRes = Core::JFbxFileLoader::Instance().LoadFbxModelFile(pathData.strPath, jFbxPartMeshData, modelAttribute, joint);
 		if (((int)fbxLoadRes & (int)Core::J_FBXRESULT::HAS_MESH) > 0)
 		{
 			const uint meshCount = (uint)jFbxPartMeshData.size();
@@ -311,17 +328,17 @@ namespace JinEngine
 				else
 					iMesh->StuffStaticMesh(jFbxPartMeshData[i].staticMeshData, jFbxPartMeshData[i].boundingBox, jFbxPartMeshData[i].boundingSphere);
 
-				JMaterial* mat = JRFI<JMaterial>::Create(jFbxPartMeshData[i].name + "_Material", matGuid, matflag, *GetDirectory(), JResourceObject::GetInvalidFormatIndex());
+				JMaterial* mat = JRFI<JMaterial>::Create(jFbxPartMeshData[i].name + L"_Material", matGuid, matflag, *GetDirectory(), JResourceObject::GetInvalidFormatIndex());
 				modelPart.emplace_back(JModelPart(jFbxPartMeshData[i].name, jFbxPartMeshData[i].parentIndex, mesh, mat));
 			}
 			if (((int)fbxLoadRes & (int)Core::J_FBXRESULT::HAS_SKELETON) > 0)
 			{
 				const uint jointCount = (uint)joint.size();
-				std::string totalName;
+				std::wstring totalName;
 				for (uint i = 0; i < jointCount; ++i)
 					totalName += joint[i].name;
 
-				JSkeleton newSkeleton{std::move(joint), JCommonUtility::CalculateGuid(totalName) };
+				JSkeleton newSkeleton{ std::move(joint), JCommonUtility::CalculateGuid(totalName) };
 
 				uint count;
 				std::vector<JResourceObject*>::const_iterator st = JResourceManager::Instance().GetResourceVectorHandle<JSkeletonAsset>(count);
@@ -373,7 +390,7 @@ namespace JinEngine
 
 			if (skeleton != nullptr)
 			{
-				const std::string skeletonRootName = skeleton->GetJointName(0);
+				const std::wstring skeletonRootName = skeleton->GetJointName(0);
 				JGameObject* jointRoot = JGFI::Create(skeletonRootName, Core::MakeGuid(), OBJECT_FLAG_NONE, *modelPartRoot);
 
 				const uint8 jointCount = skeleton->GetJointCount();
@@ -382,7 +399,7 @@ namespace JinEngine
 
 				for (uint i = 1; i < jointCount; ++i)
 				{
-					const std::string name = skeleton->GetJointName(i);
+					const std::wstring name = skeleton->GetJointName(i);
 					const uint8 parentIndex = skeleton->GetJointParentIndex(i);
 					JGameObject* joint = JGFI::Create(name, Core::MakeGuid(), OBJECT_FLAG_NONE, *skeletonVector[parentIndex]);
 					skeletonVector[i] = joint;
@@ -456,7 +473,7 @@ namespace JinEngine
 	}
 	JModel* JModel::LoadObject(JDirectory* directory, const JResourcePathData& pathData)
 	{
-		if (pathData.format == ".fbx")
+		if (pathData.format == L".fbx")
 		{
 			using FbxFileTypeInfo = Core::JFbxFileLoaderImpl::FbxFileTypeInfo;
 			FbxFileTypeInfo fileTypeInfo = Core::JFbxFileLoader::Instance().GetFileTypeInfo(pathData.strPath);
@@ -478,19 +495,35 @@ namespace JinEngine
 
 		JModel* newModel = nullptr;
 		if (directory->HasFile(pathData.fullName))
-			newModel = JResourceManager::Instance().GetResourceByPath<JModel>(pathData.strPath);
+			newModel = JResourceManager::Instance().GetResourceByPath<JModel>(pathData.wstrPath);
 
 		if (newModel == nullptr)
 		{
 			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-				newModel = new JModel(pathData.name, metadata.guid, metadata.flag, directory, GetFormatIndex<JModel>(pathData.format));
+			{
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JModel>(pathData.name,
+					metadata.guid,
+					metadata.flag, 
+					directory, 
+					GetFormatIndex<JModel>(pathData.format)); 
+				newModel = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
+			}
 			else
-				newModel = new JModel(pathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, directory, GetFormatIndex<JModel>(pathData.format));
+			{
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JModel>(pathData.name,
+					Core::MakeGuid(),
+					OBJECT_FLAG_NONE, 
+					directory, 
+					GetFormatIndex<JModel>(pathData.format));
+				newModel = ownerPtr.Get();
+				AddInstance(std::move(ownerPtr));
+			}
 		}
 
 		if (newModel->IsValid())
 			return newModel;
-		else if (pathData.format == ".fbx")
+		else if (pathData.format == L".fbx")
 		{
 			if (newModel->ReadFbxModelData())
 			{
@@ -498,7 +531,7 @@ namespace JinEngine
 				return newModel;
 			}
 		}
-		else if (pathData.format == ".obj")
+		else if (pathData.format == L".obj")
 		{
 			if (newModel->ReadObjModelData())
 			{
@@ -506,11 +539,12 @@ namespace JinEngine
 				return newModel;
 			}
 		}
-		 
-		delete newModel;
+
+		newModel->SetIgnoreUndestroyableFlag(true);
+		newModel->BeginDestroy();
 		return nullptr;
 	}
-	Core::J_FILE_IO_RESULT JModel::LoadMetadata(std::wifstream& stream, const std::string& folderPath, ModelMetadata& metadata)
+	Core::J_FILE_IO_RESULT JModel::LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, ModelMetadata& metadata)
 	{
 		if (stream.is_open())
 		{
@@ -533,80 +567,46 @@ namespace JinEngine
 	}
 	void JModel::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* owner) ->JResourceObject*
+		auto defaultC = [](JDirectory* directory) ->JResourceObject*
 		{
-			return new JModel(owner->MakeUniqueFileName(GetDefaultName<JModel>()),
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JModel>(directory->MakeUniqueFileName(GetDefaultName<JModel>()),
 				Core::MakeGuid(),
 				OBJECT_FLAG_NONE,
-				owner,
+				directory,
 				JResourceObject::GetDefaultFormatIndex());
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
-		auto initC = [](const std::string& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
 		{
-			return  new JModel(name, guid, objFlag, directory, formatIndex);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JModel>(name, guid, objFlag, directory, formatIndex);
+			JResourceObject* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
 
-		auto copyC = [](JResourceObject* ori)->JResourceObject*
+		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
 		{
-			JModel* oriModel = static_cast<JModel*>(ori);
-			JDirectory* oriDir = oriModel->GetDirectory();
-			JModel* newModel = new JModel(oriDir->MakeUniqueFileName(oriModel->GetName()),
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JModel>(directory->MakeUniqueFileName(ori->GetName()),
 				Core::MakeGuid(),
-				oriModel->GetFlag(),
-				oriDir,
-				oriModel->formatIndex);
+				ori->GetFlag(),
+				directory,
+				GetFormatIndex<JModel>(ori->GetFormat()));
 
-			newModel->modelScene = JRFI<JScene>::Copy(*oriModel->modelScene);
-			const size_t modelRootGuid = oriModel->modelRoot->GetGuid();
-			const size_t skeletonRootGuid = oriModel->skeletonRoot->GetGuid();
-
-			const uint gameObjCount = (uint)oriModel->modelScene->GetGameObjectCount();
-			for (uint i = 0; i < gameObjCount; ++i)
-			{
-				JGameObject* oriObj = oriModel->modelScene->GetGameObject(i);
-				const size_t guid = oriObj->GetGuid();
-				if (guid == modelRootGuid)
-					newModel->modelRoot = newModel->modelScene->GetGameObject(i);
-				else if (guid == skeletonRootGuid)
-					newModel->skeletonRoot = newModel->modelScene->GetGameObject(i);
-
-				JRenderItem* oriR = oriObj->GetRenderItem();
-				if (oriR != nullptr)
-				{
-					JGameObject* newObj = newModel->modelScene->GetGameObject(i);
-					JRenderItem* newR = JCFI<JRenderItem>::Copy(*oriR, *newObj);
-					if (newR->GetMesh() != nullptr)
-					{
-						JMeshGeometry* oriMesh = oriR->GetMesh();
-						newR->SetMeshGeometry(JRFI<JMeshGeometry>::Copy(*oriMesh));
-					}
-					if (newR->GetMaterial() != nullptr)
-					{
-						JMaterial* oriMat = oriR->GetMaterial();
-						newR->SetMaterial(JRFI<JMaterial>::Copy(*oriMat));
-					}
-					newModel->meshPartCash.push_back(newObj);
-				}
-			}
-			newModel->modelAttribute = std::make_unique<JModelAttribute>();
-			newModel->modelAttribute->modelBBox = oriModel->modelAttribute->modelBBox;
-			newModel->modelAttribute->modelBSphere = oriModel->modelAttribute->modelBSphere;
-			newModel->modelAttribute->skletonBSphere = oriModel->modelAttribute->skletonBSphere;
-			newModel->modelAttribute->hasSkeleton = oriModel->modelAttribute->hasSkeleton;
-			newModel->modelAttribute->totalVertex = oriModel->modelAttribute->totalVertex;
-			newModel->modelAttribute->totalIndex = oriModel->modelAttribute->totalIndex;
-			if (oriModel->skeletonAsset != nullptr)
-				newModel->skeletonAsset = JRFI<JSkeletonAsset>::Copy(*oriModel->skeletonAsset);
+			JModel* newModel = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newModel->Copy(ori);
 			return newModel;
 		};
 
 		JRFI<JModel>::Register(defaultC, initC, loadC, copyC);
 
-		auto getFormatIndexLam = [](const std::string& format) {return JResourceObject::GetFormatIndex<JModel>(format); };
+		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JModel>(format); };
 
 		static GetTypeNameCallable getTypeNameCallable{ &JModel::TypeName };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JModel::GetAvailableFormat };
@@ -617,7 +617,7 @@ namespace JinEngine
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
-	JModel::JModel(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
+	JModel::JModel(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
 		:JModelInterface(name, guid, flag, directory, formatIndex)
 	{}
 	JModel::~JModel() {}

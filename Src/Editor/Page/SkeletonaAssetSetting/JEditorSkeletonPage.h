@@ -16,8 +16,7 @@ namespace JinEngine
 			std::unique_ptr<JObjectExplorer> skeletonExplorer;
 			std::unique_ptr<JAvatarEditor>avatarEdit;
 			std::unique_ptr<JEditorViewer> modelViewer;
-			std::unique_ptr<JObjectDetail>avatarDetail;
-			 
+			std::unique_ptr<JObjectDetail>avatarDetail;		 
 		public:
 			JEditorSkeletonPage(bool hasMetadata);
 			~JEditorSkeletonPage();
@@ -27,9 +26,9 @@ namespace JinEngine
 		public:
 			J_EDITOR_PAGE_TYPE GetPageType()const noexcept final;
 		public:
-			bool IsValidOpenRequest(JObject* selectedObj)noexcept final;
+			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
 		private:
-			bool StuffSkeletonAssetData(JObject* selectedObj);
+			bool StuffSkeletonAssetData(const Core::JUserPtr<JObject>& selectedObj);
 		public:
 			void StorePage(std::wofstream& stream)override;
 			void LoadPage(std::wifstream& stream)final;

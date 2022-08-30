@@ -35,7 +35,7 @@
 #include"../../Graphic/JGraphic.h"
 #include"../../Graphic/JGraphicDrawList.h"
 #include"../../Graphic/JGraphicResourceManager.h"
- 
+
 using namespace DirectX;
 namespace JinEngine
 {
@@ -48,7 +48,7 @@ namespace JinEngine
 	{
 		return rVec.Get(index);
 	}
-	JResourceObject* JResourceManagerImpl::ResourceStorage::GetByPath(const std::string& path)noexcept
+	JResourceObject* JResourceManagerImpl::ResourceStorage::GetByPath(const std::wstring& path)noexcept
 	{
 		const uint count = rVec.Count();
 		for (uint i = 0; i < count; ++i)
@@ -57,6 +57,10 @@ namespace JinEngine
 				return rVec.Get(i);
 		}
 		return nullptr;
+	}
+	std::vector<JResourceObject*>& JResourceManagerImpl::ResourceStorage::GetVector()
+	{
+		return rVec.GetVector();
 	}
 	std::vector<JResourceObject*>::const_iterator JResourceManagerImpl::ResourceStorage::GetVectorIter(uint& count)
 	{
@@ -107,11 +111,11 @@ namespace JinEngine
 		}
 
 		if (rTypeHint.isGraphicBuffResource)
-		{ 
+		{
 			auto callable = JRI::GetSetBuffIndexCallable(resource.GetResourceType());
 			rVec.ApplyFuncByIndex(index, callable);
 		}
-		 
+
 		bool res00 = rVec.Remove(index);
 		bool res01 = rMap.Remove(resource.GetGuid());
 		return res00 && res01;
@@ -121,7 +125,7 @@ namespace JinEngine
 		rMap.Clear();
 		rVec.Clear();
 	}
-	  
+
 	uint JResourceManagerImpl::DirectoryStorage::Count()const noexcept
 	{
 		return dVec.Count();
@@ -134,7 +138,7 @@ namespace JinEngine
 	{
 		return dMap.Get(guid);
 	}
-	JDirectory* JResourceManagerImpl::DirectoryStorage::GetByPath(const std::string& path)
+	JDirectory* JResourceManagerImpl::DirectoryStorage::GetByPath(const std::wstring& path)
 	{
 		const uint count = dVec.Count();
 		for (uint i = 0; i < count; ++i)
@@ -210,7 +214,7 @@ namespace JinEngine
 	{
 		return dCash.GetByGuid(guid);
 	}
-	JDirectory* JResourceManagerImpl::GetDirectory(const std::string& path)noexcept
+	JDirectory* JResourceManagerImpl::GetDirectory(const std::wstring& path)noexcept
 	{
 		return dCash.GetByPath(path);
 	}
@@ -219,7 +223,7 @@ namespace JinEngine
 		return dCash.GetByPath(JApplicationVariable::GetProjectEditorResourcePath());
 	}
 	JDirectory* JResourceManagerImpl::GetActivatedDirectory()noexcept
-	{  
+	{
 		return dCash.GetOpenDirectory();
 	}
 	uint JResourceManagerImpl::GetResourceCount(const J_RESOURCE_TYPE type)noexcept
@@ -230,7 +234,7 @@ namespace JinEngine
 	{
 		return rCash.find(type)->second.Get(guid);
 	}
-	JResourceObject* JResourceManagerImpl::GetResourceByPath(const J_RESOURCE_TYPE type, const std::string& path)noexcept
+	JResourceObject* JResourceManagerImpl::GetResourceByPath(const J_RESOURCE_TYPE type, const std::wstring& path)noexcept
 	{
 		return rCash.find(type)->second.GetByPath(path);
 	}
@@ -246,11 +250,11 @@ namespace JinEngine
 	{
 		return this;
 	}
-	JResourceRemoveInterface* JResourceManagerImpl::ResourceRemoveInterface()
+	JResourceStorageInterface* JResourceManagerImpl::ResourceStorageInterface()
 	{
 		return this;
 	}
-	JDirectoryRemoveInterface* JResourceManagerImpl::DirectoryRemoveInterface()
+	JDirectoryStorageInterface* JResourceManagerImpl::DirectoryStorageInterface()
 	{
 		return this;
 	}
@@ -260,13 +264,8 @@ namespace JinEngine
 	}
 	void JResourceManagerImpl::LoadSelectorResource()
 	{
-		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE);
-		std::string dirPath = JApplicationVariable::GetEnginePath();
-		std::string dirFolderPath;
-		std::string dirName;
-		std::string dirFormat;
-		JCommonUtility::DecomposeFilePath(dirPath, dirFolderPath, dirName, dirFormat);
-		engineRootDir = JDFI::CreateRoot(dirName, Core::MakeGuid(), rootFlag);
+		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE);
+		engineRootDir = resourceIO->LoadRootDirectory(JApplicationVariable::GetEnginePath(), rootFlag);
 
 		resourceIO->LoadEngineDirectory(engineRootDir);
 		JGraphic::Instance().CommandInterface()->FlushCommandQueue();
@@ -277,13 +276,8 @@ namespace JinEngine
 	}
 	void JResourceManagerImpl::LoadProjectResource()
 	{
-		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE);
-		std::string dirPath = JApplicationVariable::GetProjectPath();
-		std::string dirFolderPath;
-		std::string dirName;
-		std::string dirFormat;
-		JCommonUtility::DecomposeFilePath(dirPath, dirFolderPath, dirName, dirFormat);
-		projectRootDir = JDFI::CreateRoot(dirName, Core::MakeGuid(), rootFlag);
+		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE);
+		projectRootDir = resourceIO->LoadRootDirectory(JApplicationVariable::GetProjectPath(), rootFlag);
 
 		resourceIO->LoadProjectDirectory(projectRootDir);
 
@@ -310,11 +304,13 @@ namespace JinEngine
 			JScene* newScene = JRFI<JScene>::Create(*defaultSceneDir);
 			JSceneManager::Instance().TryOpenScene(newScene);
 			newScene->SpaceSpatialInterface()->OnSceneSpatialStructure();
-		} 
+		}
+		DestroyUnusedResource(J_RESOURCE_TYPE::SHADER, false);
 	}
 	void JResourceManagerImpl::Terminate()
 	{
 		StoreResourceData();
+		DeleteUnuseMetafile();
 		if (engineRootDir != nullptr)
 		{
 			engineRootDir->DestroyInterface()->BeginForcedDestroy();
@@ -332,6 +328,10 @@ namespace JinEngine
 			data.second.Clear();
 		rCash.clear();
 	}
+	void JResourceManagerImpl::DeleteUnuseMetafile()
+	{
+		//추가필요
+	}
 	JResourceObject* JResourceManagerImpl::AddResource(JResourceObject& newResource)
 	{
 		return rCash.find(newResource.GetResourceType())->second.AddResource(&newResource);
@@ -346,10 +346,28 @@ namespace JinEngine
 			NotifyEvent(resource.GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE, &resource);
 
 		return rCash.find(resource.GetResourceType())->second.RemoveResource(resource);
-	} 
+	}
 	bool JResourceManagerImpl::RemoveJDirectory(JDirectory& dir)noexcept
-	{ 
+	{
 		return dCash.Remove(&dir);
+	}
+	bool JResourceManagerImpl::DestroyUnusedResource(const J_RESOURCE_TYPE rType, bool isIgnreUndestroyableFlag)
+	{
+		//추가필요
+		//engine resource destory -> window file destory
+		std::vector<JResourceObject*>& rvec = rCash.find(rType)->second.GetVector();
+		std::vector<JResourceObject*> copied = rvec;
+		for (uint i = 0; i < copied.size(); ++i)
+		{
+			if (!copied[i]->IsActivated())
+			{
+				if(isIgnreUndestroyableFlag)
+					copied[i]->SetIgnoreUndestroyableFlag(true);
+				copied[i]->BeginDestroy();
+				copied[i] = nullptr;
+				// window file destory 필요
+			}
+		}
 	}
 	void JResourceManagerImpl::CreateDefaultTexture(const std::vector<JResourceData::DefaultTextureInfo>& textureInfo)noexcept
 	{
@@ -359,15 +377,15 @@ namespace JinEngine
 		uint handleIncrement = JGraphic::Instance().DeviceInterface()->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		uint textureCount = (uint)textureInfo.size();
 		JDirectory* defaultTextureDir = GetDirectory(JApplicationVariable::GetDefaultResourcePath());
-	
+
 		//1 is imgui preserved 
 		for (uint i = 1; i < textureCount; ++i)
-		{  
+		{
 			J_OBJECT_FLAG objFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_DO_NOT_SAVE);
 			if (textureInfo[i].type == J_EDITOR_TEXTURE::MISSING)
 				objFlag = (J_OBJECT_FLAG)(objFlag | OBJECT_FLAG_HIDDEN);
 
-			JResourcePathData pathData(defaultTextureDir->GetWPath() + L"\\" + textureInfo[i].name);
+			JResourcePathData pathData(defaultTextureDir->GetPath() + L"\\" + textureInfo[i].name);
 			JTexture* newTexture = JRFI<JTexture>::Load(*defaultTextureDir, pathData);
 			//ThrowIfFailedNM(newTexture != nullptr, "Load default texture is error please retry again");
 
@@ -382,7 +400,7 @@ namespace JinEngine
 			J_SHADER_FUNCTION shaderF = DefaultShader::GetShaderFunction((J_DEFAULT_SHADER)i);
 			J_OBJECT_FLAG objF = DefaultShader::GetObjectFlag((J_DEFAULT_SHADER)i);
 
-			JShader* res = JRFI<JShader>::Create(std::to_string((int)shaderF),
+			JShader* res = JRFI<JShader>::Create(std::to_wstring((int)shaderF),
 				Core::MakeGuid(),
 				objF,
 				*shaderDir,
@@ -405,7 +423,7 @@ namespace JinEngine
 		constexpr int formatIndex = 0;
 		for (uint i = 0; i < (int)J_DEFAULT_MATERIAL::COUNTER; ++i)
 		{
-			const std::string name = JDefaultMateiralType::ConvertBasicMateiralName(resourceData.defaultMaterialTypes[i]);
+			const std::wstring name = JDefaultMateiralType::ConvertBasicMateiralName(resourceData.defaultMaterialTypes[i]);
 
 			const size_t shaderGuid = resourceData.defaultShaderGuidMap[JDefaultMateiralType::FindMatchBasicShaderType(resourceData.defaultMaterialTypes[i])];
 			JShader* defaultShader = GetResource<JShader>(shaderGuid);

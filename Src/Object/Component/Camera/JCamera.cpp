@@ -14,6 +14,9 @@
 namespace JinEngine
 {
 	using namespace DirectX;
+	static auto isAvailableoverlapLam = []() {return false; };
+	static auto componentTypeLam = []() {return J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA; };
+
 	bool JCamera::IsMainCamera()const noexcept
 	{
 		return isMainCamera;
@@ -149,15 +152,11 @@ namespace JinEngine
 	}
 	J_COMPONENT_TYPE JCamera::GetComponentType()const noexcept
 	{
-		return GetStaticComponentType();
-	}
-	J_COMPONENT_TYPE JCamera::GetStaticComponentType()noexcept
-	{
-		return J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
+		return componentTypeLam();
 	}
 	bool JCamera::IsAvailableOverlap()const noexcept
 	{
-		return false;
+		return isAvailableoverlapLam();
 	}
 	bool JCamera::PassDefectInspection()const noexcept
 	{
@@ -169,6 +168,31 @@ namespace JinEngine
 	JCameraStateInterface* JCamera::StateInterface()
 	{
 		return this;
+	}
+	bool JCamera::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (typeInfo.IsA(ori->GetTypeInfo()))
+		{
+			JCamera* oriCam = static_cast<JCamera*>(ori);
+			cameraNear = oriCam->cameraNear;
+			cameraFar = oriCam->cameraFar;
+			cameraAspect = oriCam->cameraAspect;
+			cameraFov = oriCam->cameraFov;
+			cameraNearViewHeight = oriCam->cameraNearViewHeight;
+			cameraFarViewHeight = oriCam->cameraFarViewHeight;
+			isOrtho = oriCam->isOrtho;
+			if (!isOrtho)
+				CalPerspectiveLens();
+			else
+				CalOrthoLens();
+			SetFrameDirty();
+			return true;
+		}
+		else
+			return false;
 	}
 	void JCamera::DoActivate()noexcept
 	{
@@ -367,10 +391,17 @@ namespace JinEngine
 
 		JCamera* newCamera;
 		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-			newCamera = new JCamera(metadata.guid, metadata.flag, owner);
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JCamera>(metadata.guid, metadata.flag, owner);
+			JCamera* newCamera = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+		}
 		else
-			newCamera = new JCamera(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
-
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JCamera>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			JCamera* newCamera = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+		}
 		int camState;
 		XMFLOAT3 pos;
 		int viewWidth;
@@ -407,11 +438,17 @@ namespace JinEngine
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
-			return new JCamera(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JCamera>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			JComponent* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
-			return new JCamera(guid, objFlag, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JCamera>(guid, objFlag, owner);
+			JComponent* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto loadC = [](std::wifstream& stream, JGameObject* owner) -> JComponent*
 		{
@@ -419,36 +456,24 @@ namespace JinEngine
 		};
 		auto copyC = [](JComponent* ori, JGameObject* owner) -> JComponent*
 		{
-			JCamera* oriCam = static_cast<JCamera*>(ori);
-			JCamera* newCam = new JCamera(Core::MakeGuid(), oriCam->GetFlag(), owner);
-
-			newCam->cameraNear = oriCam->cameraNear;
-			newCam->cameraFar = oriCam->cameraFar;
-			newCam->cameraAspect = oriCam->cameraAspect;
-			newCam->cameraFov = oriCam->cameraFov;
-			newCam->cameraNearViewHeight = oriCam->cameraNearViewHeight;
-			newCam->cameraFarViewHeight = oriCam->cameraFarViewHeight;
-			newCam->isOrtho = oriCam->isOrtho;
-
-			if (!newCam->isOrtho)
-				newCam->CalPerspectiveLens();
-			else
-				newCam->CalOrthoLens();
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JCamera>(Core::MakeGuid(), ori->GetFlag(), owner);
+			JCamera* newCam = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newCam->Copy(ori);
 			return newCam;
 		};
 		JCFI<JCamera>::Regist(defaultC, initC, loadC, copyC);
 
 		static GetTypeNameCallable getTypeNameCallable{ &JCamera::TypeName };
 		static GetTypeInfoCallable getTypeInfoCallable{ &JCamera::StaticTypeInfo };
+		bool(*ptr)() = isAvailableoverlapLam;
+		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 
-		static auto setFrameLam = [](JComponent& component)
-		{
-			static_cast<JCamera*>(&component)->SetFrameDirty();
-		};
+		static auto setFrameLam = [](JComponent& component){static_cast<JCamera*>(&component)->SetFrameDirty();};
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
-		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable };
+		static JCI::CTypeHint cTypeHint{ componentTypeLam(), true };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable, isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);

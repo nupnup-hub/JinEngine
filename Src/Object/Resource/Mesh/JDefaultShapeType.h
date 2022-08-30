@@ -19,28 +19,28 @@ namespace JinEngine
 	struct JDefaultShape
 	{ 
 		static constexpr int debugTypeSt = (int)J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX;
-		static std::string ConvertDefaultShapeName(const J_DEFAULT_SHAPE type)
+		static std::wstring ConvertDefaultShapeName(const J_DEFAULT_SHAPE type)
 		{
 			switch (type)
 			{
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_EMPTY:
-				return "Empty";
+				return L"Empty";
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE:
-				return "Cube";
+				return L"Cube";
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_GRID:
-				return "Grid";
+				return L"Grid";
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE:
-				return "Sphere";
+				return L"Sphere";
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_CYILINDER:
-				return "Cyilinder";
+				return L"Cyilinder";
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD:
-				return "Quad";
+				return L"Quad";
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX:
-				return "BoundingBox";
+				return L"BoundingBox";
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM:
-				return "BoundingFrustum";
+				return L"BoundingFrustum";
 			default:
-				return "Error";
+				return L"Error";
 			}
 		}
 	};	 

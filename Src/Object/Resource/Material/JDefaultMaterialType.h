@@ -41,26 +41,26 @@ namespace JinEngine
 			}
 			return J_DEFAULT_SHADER::DEFAULT_STANDARD_SHADER;
 		}
-		static std::string ConvertBasicMateiralName(const J_DEFAULT_MATERIAL type)
+		static std::wstring ConvertBasicMateiralName(const J_DEFAULT_MATERIAL type)
 		{
 			switch (type)
 			{
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_STANDARD:
-				return "Default JMaterial";
+				return L"Default JMaterial";
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SKY:
-				return "Default Sky JMaterial";
+				return L"Default Sky JMaterial";
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SHADOW_MAP:
-				return "Default JShadow Map JMaterial";
+				return L"Default JShadow Map JMaterial";
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_RED:
-				return "Default Debug BoundingBox Red JMaterial";
+				return L"Default Debug BoundingBox Red JMaterial";
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN:
-				return "Default Debug BoundingBox Green JMaterial";
+				return L"Default Debug BoundingBox Green JMaterial";
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_BLUE:
-				return "Default Debug BoundingBox Blue JMaterial";
+				return L"Default Debug BoundingBox Blue JMaterial";
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW:
-				return "Default Debug BoundingBox Yellow JMaterial";
+				return L"Default Debug BoundingBox Yellow JMaterial";
 			default:
-				return "Error";
+				return L"Error";
 			}
 		}
 	};

@@ -5,18 +5,16 @@
 
 namespace JinEngine
 {
+	static auto isAvailableoverlapLam = [](){return true;};
+	static auto componentTypeLam = [](){return J_COMPONENT_TYPE::USER_DEFIENED_BEHAVIOR; };
+
 	J_COMPONENT_TYPE JBehavior::GetComponentType()const noexcept
 	{
-		return GetStaticComponentType();
+		return componentTypeLam();
 	}
-	J_COMPONENT_TYPE JBehavior::GetStaticComponentType()noexcept
-	{
-		return J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT;
-	}
-
 	bool JBehavior::IsAvailableOverlap()const noexcept
 	{
-		return true;
+		return isAvailableoverlapLam();
 	}
 	bool JBehavior::PassDefectInspection()const noexcept
 	{
@@ -24,6 +22,12 @@ namespace JinEngine
 			return true;
 		else
 			return false;
+	}
+	bool JBehavior::Copy(JObject* ori)
+	{
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+		return true;
 	}
 	void JBehavior::DoActivate()noexcept
 	{
@@ -53,30 +57,39 @@ namespace JinEngine
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
-			return new JBehavior(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JBehavior>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			JComponent* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
-			return new JBehavior(guid, objFlag, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JBehavior>(guid, objFlag, owner);
+			JComponent* ret = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			return ret;
 		};
 		auto loadC = [](std::wifstream& stream, JGameObject* owner) -> JComponent*
 		{
 			return LoadObject(stream, owner);
 		};
-		auto copyC = [](JComponent* oriC, JGameObject* owner) -> JComponent*
+		auto copyC = [](JComponent* ori, JGameObject* owner) -> JComponent*
 		{
-			JBehavior* oriB = static_cast<JBehavior*>(oriC);
-			JBehavior* newB = new JBehavior(Core::MakeGuid(), oriB->GetFlag(), owner);
-			 
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JBehavior>(Core::MakeGuid(), ori->GetFlag(), owner);
+			JBehavior* newB = ownerPtr.Get();
+			AddInstance(std::move(ownerPtr));
+			newB->Copy(ori); 		 
 			return newB;
 		};
 		JCFI<JBehavior>::Regist(defaultC, initC, loadC, copyC);
 
 		static GetTypeNameCallable getTypeNameCallable{ &JBehavior::TypeName };
 		static GetTypeInfoCallable getTypeInfoCallable{ &JBehavior::StaticTypeInfo };
+		bool(*ptr)() = isAvailableoverlapLam;
+		static IsAvailableOverlapCallable isAvailableOverlapCallable{ ptr };
 
-		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), false };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable }; 
+		static JCI::CTypeHint cTypeHint{ componentTypeLam(), false };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable, isAvailableOverlapCallable };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, JCI::CTypeInterfaceFunc{});
 	}

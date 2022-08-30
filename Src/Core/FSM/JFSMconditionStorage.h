@@ -19,16 +19,21 @@ namespace JinEngine
 			std::vector<IJFSMconditionStorage*>strorageUser;
 			static constexpr uint maxNumberOffCondition = 100;
 		public:
-			std::string GetConditionUniqueName(const std::string& initName)const noexcept;
+			std::wstring GetConditionUniqueName(const std::wstring& initName)const noexcept;
 			uint GetConditionCount()const noexcept;
 			uint GetConditionMaxCount()const noexcept;
 			JFSMcondition* GetCondition(const size_t guid)noexcept;
-			JFSMcondition* GetConditionVec()noexcept;
-			void SetConditionName(const size_t guid, const std::string& newName)noexcept;
-			void SetConditionValueType(const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType)noexcept;
+			JFSMcondition* GetConditionByIndex(const uint index)noexcept; 
 
-			JFSMcondition* AddCondition(const std::string& name, const size_t guid)noexcept;
-			bool RemoveCondition(const size_t guid)noexcept;
+			JFSMcondition* AddCondition(const std::wstring& name)noexcept;
+			bool RemoveCondition(const size_t guid)noexcept; 
+		private:
+			JFSMcondition* AddCondition(const std::wstring& name, const size_t guid);
+		public:
+			J_FILE_IO_RESULT StoreIdentifierData(std::wofstream& stream);
+			J_FILE_IO_RESULT StoreContentsData(std::wofstream& stream); 
+			J_FILE_IO_RESULT LoadIdentifierData(std::wifstream& stream, JFSMLoadGuidMap& guidMap);
+			J_FILE_IO_RESULT LoadContentsData(std::wifstream& stream, JFSMLoadGuidMap& guidMap);
 		};
 	}
 }
