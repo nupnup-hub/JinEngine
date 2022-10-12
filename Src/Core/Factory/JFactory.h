@@ -3,7 +3,7 @@
 #include"../Singleton/JSingletonHolder.h"
 #include"../Func/Callable/JCallable.h"
 #include<unordered_map>
-
+#include<windows.h>
 namespace JinEngine
 {
 	namespace Core
@@ -13,34 +13,32 @@ namespace JinEngine
 		template<typename IdentifierType, bool isThrowException, typename Ret, typename ...Param>
 		class JFactory
 		{
-		private:
+		public:
 			std::unordered_map<IdentifierType, JCallableBase*> funcMap;
 		public:
-			bool Regist(IdentifierType idenType, JCallableInterface<Ret, Param...>* callable)
+			bool Register(IdentifierType idenType, JCallableInterface<Ret, Param...>* callable)
 			{
 				if constexpr (isThrowException)
 				{
-					ThrowIfFailedN(funcMap.find(idenType) != funcMap.end());
+					ThrowIfFailedN(funcMap.find(idenType) == funcMap.end());
 				}
-				else
-				{
-					ReturnIfFailedN(funcMap.find(idenType) != funcMap.end(), false);
-				}
+				else if (funcMap.find(idenType) != funcMap.end())
+					return false;
+
 				funcMap.emplace(idenType, callable);
 				return true;
 			}
 
-			Ret Invoke(IdentifierType idenType, Param&&... value)
+			Ret Invoke(IdentifierType idenType, Param... value)
 			{
 				auto func = funcMap.find(idenType);
 				if constexpr (isThrowException)
 				{
 					ThrowIfFailedN(func != funcMap.end());
 				}
-				else
-				{
-					ReturnIfFailedN(func != funcMap.end(), nullptr);
-				}
+				else if (funcMap.find(idenType) == funcMap.end())
+					return nullptr;
+				 
 				return (*static_cast<JCallableInterface<Ret, Param...>*>(func->second))(nullptr, std::forward<Param>(value)...);
 			}
 		};

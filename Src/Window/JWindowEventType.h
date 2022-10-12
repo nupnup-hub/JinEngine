@@ -6,7 +6,9 @@ namespace JinEngine
 	{
 		enum class J_WINDOW_EVENT
 		{
-			WINDOW_RESIZE
+			WINDOW_RESIZE,
+			WINDOW_MOVE,
+			WINDOW_CLOSE
 		};
 	}
 }

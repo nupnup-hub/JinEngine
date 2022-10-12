@@ -1,21 +1,25 @@
 #pragma once
 #include"../JComponent.h" 
-#include<DirectXMath.h>
+#include<DirectXMath.h> 
 
 namespace JinEngine
 { 
 	class JGameObject;
 
 	//¹Ì±¸Çö
-	class JBehavior : public JComponent
+	class JBehavior final : public JComponent
 	{
 		REGISTER_CLASS(JBehavior)
 	public:	 
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;  
+		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
+		{
+			return J_COMPONENT_TYPE::USER_DEFIENED_BEHAVIOR;
+		}
 		bool IsAvailableOverlap()const noexcept final; 
 		bool PassDefectInspection()const noexcept final; 
-	public:
-		bool Copy(JObject* ori) final;
+	private:
+		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 

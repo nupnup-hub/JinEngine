@@ -81,7 +81,7 @@ namespace JinEngine
 		{
 			if (debugGameObject != nullptr)
 			{
-				debugGameObject->Destroy();
+				debugGameObject->BeginDestroy();
 				debugGameObject = nullptr;
 			}
 		}

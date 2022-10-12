@@ -2,24 +2,43 @@
 #include"JFSMstate.h" 
 #include"JFSMcondition.h"
 #include"JFSMtransition.h" 
+#include"JFSMfactory.h" 
+#include"../Guid/GuidCreator.h"
 #include"../../Utility/JCommonUtility.h"
- 
+
 namespace JinEngine
 {
 	namespace Core
 	{
-		JFSMdiagram::JFSMdiagram(const std::wstring& name, const size_t guid, IJFSMconditionStorageUser* conditionStorage)
-			:JFSMIdentifier( name, guid), conditionStorage(conditionStorage)
+		JFSMdiagram::JFSMdiagramInitData::JFSMdiagramInitData(const std::wstring& name, const size_t guid, JUserPtr<IJFSMdiagramOwner> diagramOwner)
+			:JFSMIdentifierInitData(name, guid), diagramOwner(diagramOwner)
 		{}
-		JFSMdiagram::~JFSMdiagram() {}
+		JFSMdiagram::JFSMdiagramInitData::JFSMdiagramInitData(const size_t guid, JUserPtr<IJFSMdiagramOwner> diagramOwner)
+			: JFSMIdentifierInitData(JIdentifier::GetDefaultName<JFSMdiagram>(), guid), diagramOwner(diagramOwner)
+		{}
+		JFSMdiagram::JFSMdiagramInitData::JFSMdiagramInitData(JUserPtr<IJFSMdiagramOwner> diagramOwner)
+			: JFSMIdentifierInitData(JIdentifier::GetDefaultName<JFSMdiagram>(), MakeGuid()), diagramOwner(diagramOwner)
+		{}
+		bool JFSMdiagram::JFSMdiagramInitData::IsValid() noexcept
+		{
+			return diagramOwner.IsValid();
+		}
+		J_FSM_OBJECT_TYPE JFSMdiagram::JFSMdiagramInitData::GetFSMobjType()const noexcept
+		{
+			return J_FSM_OBJECT_TYPE::DIAGRAM;
+		}
 
 		J_FSM_OBJECT_TYPE JFSMdiagram::GetFSMobjType()const noexcept
 		{
 			return J_FSM_OBJECT_TYPE::DIAGRAM;
 		}
-		std::wstring JFSMdiagram::GetStateUniqueName(const std::wstring& initName)const noexcept
+		std::wstring JFSMdiagram::GetUniqueStateName(const std::wstring& initName)const noexcept
 		{
-			return JCommonUtility::MakeUniqueName(stateVec, initName);
+			return JCUtil::MakeUniqueName(stateVec, initName);
+		}
+		uint JFSMdiagram::GetStateCount()const noexcept
+		{
+			return (uint)stateVec.size();
 		}
 		void JFSMdiagram::Initialize()noexcept
 		{
@@ -27,137 +46,105 @@ namespace JinEngine
 			for (uint i = 0; i < stateVecSize; ++i)
 				stateVec[i]->Initialize();
 		}
-		uint JFSMdiagram::GetStateCount()noexcept
-		{
-			return (uint)stateVec.size();
-		}
 		JFSMstate* JFSMdiagram::GetNowState()noexcept
 		{
 			auto data = stateMap.find(nowStateGuid);
-			if (data == stateMap.end())
-				return nullptr;
-			else
+			if (data != stateMap.end())
 				return data->second;
+			else
+				return nullptr;
 		}
 		JFSMstate* JFSMdiagram::GetState(const size_t guid)noexcept
 		{
 			auto data = stateMap.find(guid);
-			if (data == stateMap.end())
-				return nullptr;
-			else
+			if (data != stateMap.end())
 				return data->second;
+			else
+				return nullptr;
 		}
 		JFSMstate* JFSMdiagram::GetStateByIndex(const uint index)noexcept
 		{
-			const uint stateVecSize = (uint)stateVec.size();
-			if (index >= stateVecSize)
-				return nullptr;
+			const uint stateCount = (uint)stateVec.size();
+			if (index < stateCount)
+				return stateVec[index];
 			else
-				return stateVec[index].get();
+				return nullptr;
 		}
-		IJFSMconditionStorageUser* JFSMdiagram::GetIConditionStorage()noexcept
+		std::vector<JFSMstate*>& JFSMdiagram::GetStateVec()noexcept
 		{
-			return conditionStorage;
+			return stateVec;
 		}
-		void JFSMdiagram::SetTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuid, const size_t conditionGuid, const uint conditionIndex)noexcept
+		IJFSMconditionStorageUser* JFSMdiagram::GetStroageUser()noexcept
 		{
-			JFSMcondition* newCondition = conditionStorage->GetCondition(conditionGuid);
-			if (newCondition == nullptr)
-				return;
-
-			auto inputState = stateMap.find(inputStateGuid);
-			auto outputState = stateMap.find(outputStateGuid);
-			if (inputState != stateMap.end() && outputState != stateMap.end())
-				inputState->second->SetTransitionCondtion(outputStateGuid, conditionIndex, newCondition);
+			return diagramOwner->GetConditionStorageUser();
 		}
-		void JFSMdiagram::SetTransitionCondtionOnValue(const size_t inputStateGuid, const size_t outputStateGuid, const uint conditionIndex, const float value)noexcept
+		bool JFSMdiagram::IsValidCondition(JFSMcondition* condition) noexcept
 		{
-			auto inputState = stateMap.find(inputStateGuid);
-			auto outputState = stateMap.find(outputStateGuid);
-			if (inputState != stateMap.end() && outputState != stateMap.end())
-				inputState->second->SetTransitionCondtionOnValue(outputStateGuid, conditionIndex, value);
+			return condition != nullptr && diagramOwner->GetConditionStorageUser()->GetCondition(condition->GetGuid());
 		}
-		JFSMstate* JFSMdiagram::AddState(std::unique_ptr<JFSMstate> state)noexcept
+		bool JFSMdiagram::IsDiagramState(const size_t guid)noexcept
 		{
-			JFSMstate* res = nullptr;
-			if (state == nullptr)
-				return res;
+			return GetState(guid) != nullptr;
+		}
+		bool JFSMdiagram::AddState(JFSMstate* newState)noexcept
+		{
+			if (newState == nullptr)
+				return false;
 
 			const uint stateVecSize = (uint)stateVec.size();
 			if (stateVecSize >= maxNumberOffState)
-				return res;
-			  
-			std::wstring newName = JCommonUtility::MakeUniqueName(stateVec, state->GetName());
+				return false;
+
 			if (stateVec.size() == 0)
 			{
-				initState = state.get();
-				nowStateGuid = state->GetGuid();
+				initState = newState;
+				nowStateGuid = newState->GetGuid();
 			}
-			state->SetName(newName);
-			res = state.get();
-			stateMap.emplace(state->GetGuid(), state.get());
-			stateVec.push_back(std::move(state));
+			stateMap.emplace(newState->GetGuid(), newState);
+			stateVec.push_back(newState);
 
-			return res;
+			return true;
 		}
-		JFSMtransition* JFSMdiagram::AddTransition(const size_t stateGuid, std::unique_ptr<JFSMtransition> transition)noexcept
+		bool JFSMdiagram::RemoveState(JFSMstate* state)noexcept
 		{
-			if (transition == nullptr || stateGuid == transition->GetOutputStateGuid())
-				return nullptr;
+			if (state == nullptr)
+				return false;
 
-			auto state = stateMap.find(stateGuid);
-			return state != stateMap.end() ? state->second->AddTransition(std::move(transition)) : nullptr;
-		}
-		JFSMconditionWrap* JFSMdiagram::AddTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuId, const size_t conditionGuid)noexcept
-		{
-			auto data = stateMap.find(inputStateGuid);
-			if (data == stateMap.end())
-				return nullptr;
-
-			return data->second->AddTransitionCondition(outputStateGuId, conditionStorage->GetCondition(conditionGuid));
-		}
-		bool JFSMdiagram::RemoveState(const size_t stateGuid)noexcept
-		{
-			if (stateMap.find(stateGuid) != stateMap.end())
+			const size_t guid = state->GetGuid();
+			if (stateMap.find(guid) != stateMap.end())
 			{
-				stateMap.erase(stateGuid);
-				const uint stateVecSize = (uint)stateVec.size();
-				for (uint i = 0; i < stateVecSize; ++i)
+				stateMap.erase(guid);
+				int index = JCUtil::GetJIdenIndex(stateVec, guid);
+				if (index != -1)
 				{
-					if (stateVec[i]->GetGuid() == stateGuid)
-					{
-						stateVec[i]->Clear();
-						stateVec[i].reset();
-						stateVec.erase(stateVec.begin() + i);
-					}
+					stateVec[index]->Clear();
+					stateVec.erase(stateVec.begin() + index);
+					const uint stateCount = (uint)stateVec.size();
+					for (uint i = 0; i < stateCount; ++i)
+						stateVec[i]->RemoveTransition(state->GetGuid());
+
+					return true;
 				}
-				return true;
+				else
+					return false;
 			}
 			else
 				return false;
 		}
-		bool JFSMdiagram::RemoveTransition(const size_t inputStateGuid, const size_t outputStateGuId)noexcept
+		bool JFSMdiagram::RegisterCashData()noexcept
 		{
-			JFSMstate* state = GetState(inputStateGuid);
-			return state != nullptr ? state->RemoveTransition(outputStateGuId) : false;
+			return diagramOwner->AddDiagram(this);
 		}
-		bool JFSMdiagram::RemoveTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuId, const size_t conditionGuid)noexcept
+		bool JFSMdiagram::DeRegisterCashData()noexcept
 		{
-			auto inputState = stateMap.find(inputStateGuid);
-			auto outputState = stateMap.find(outputStateGuId);
-
-			if (inputState != stateMap.end() && outputState != stateMap.end())
-				inputState->second->RemoveTransitionCondition(outputStateGuId, conditionGuid);
+			return diagramOwner->RemoveDiagram(this);
 		}
 		void JFSMdiagram::Clear()noexcept
 		{
 			stateMap.clear();
 			const uint stateVecCount = (uint)stateVec.size();
 			for (uint i = 0; i < stateVecCount; ++i)
-			{
-				stateVec[i]->Clear();
-				stateVec[i].reset();
-			}
+				stateVec[i]->Destroy();
 			stateVec.clear();
 		}
 		void JFSMdiagram::NotifyRemoveCondition(JFSMcondition* condition)noexcept
@@ -168,6 +155,16 @@ namespace JinEngine
 			const uint stateVecCount = (uint)stateVec.size();
 			for (uint i = 0; i < stateVecCount; ++i)
 				stateVec[i]->RemoveCondition(condition->GetGuid());
+		}
+		JFSMdiagram::JFSMdiagram(const JFSMdiagramInitData& initData)
+			:JFSMInterface(initData.diagramOwner->GetUniqueDiagramName(initData.name), initData.guid),
+			diagramOwner(initData.diagramOwner.Get())
+		{
+			diagramOwner->GetConditionStorageUser()->AddUser(this, GetGuid());
+		}
+		JFSMdiagram::~JFSMdiagram()
+		{
+			diagramOwner->GetConditionStorageUser()->RemoveUser(this, GetGuid());
 		}
 	}
 }

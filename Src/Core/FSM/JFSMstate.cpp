@@ -1,22 +1,46 @@
 #include"JFSMstate.h"
 #include"JFSMtransition.h"
 #include"JFSMcondition.h"
+#include"JFSMdiagram.h"
 #include"../Guid/GuIdCreator.h"
+#include"../../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		JFSMstate::JFSMstate(const std::wstring& name, const size_t guid)
-			:JFSMIdentifier(name, guid)
+		JFSMstate::JFSMstateInitData::JFSMstateInitData(const std::wstring& name, const size_t guid, JUserPtr<JFSMdiagram> ownerDiagram)
+			:JFSMIdentifierInitData(name, guid), ownerDiagram(ownerDiagram)
 		{}
-		JFSMstate::~JFSMstate() {}
+		JFSMstate::JFSMstateInitData::JFSMstateInitData(const size_t guid, JUserPtr<JFSMdiagram> ownerDiagram)
+			: JFSMIdentifierInitData(JIdentifier::GetDefaultName<JFSMstate>(), guid), ownerDiagram(ownerDiagram)
+		{}
+		bool JFSMstate::JFSMstateInitData::IsValid() noexcept
+		{
+			return ownerDiagram.IsValid();
+		}
+		J_FSM_OBJECT_TYPE JFSMstate::JFSMstateInitData::GetFSMobjType()const noexcept
+		{
+			return J_FSM_OBJECT_TYPE::STATE;
+		}
+
 		J_FSM_OBJECT_TYPE JFSMstate::GetFSMobjType()const noexcept
 		{
 			return J_FSM_OBJECT_TYPE::STATE;
 		}
-		void JFSMstate::SetTransitionCondtion(const size_t outputStateGuid, const uint conditionIndex, JFSMcondition* newCondition)noexcept
+		uint JFSMstate::GetTransitionCount()const noexcept
 		{
+			return (uint)transition.size();
+		}
+		JFSMtransition* JFSMstate::GetTransition(uint index)noexcept
+		{
+			if (transition.size() <= index)
+				return nullptr;
+			else
+				return transition[index].get();
+		}
+		void JFSMstate::SetTransitionCondtion(const size_t outputStateGuid, const uint conditionIndex, JFSMcondition* newCondition)noexcept
+		{ 
 			const uint transitionSize = (uint)transition.size();
 			for (uint i = 0; i < transitionSize; ++i)
 			{
@@ -53,36 +77,31 @@ namespace JinEngine
 		}
 		JFSMtransition* JFSMstate::AddTransition(std::unique_ptr<JFSMtransition> newTransition)noexcept
 		{
-			JFSMtransition* res = nullptr;
-			bool hasSameOutput = false;
-			const uint transitionSize = (uint)transition.size();
-
-			if (transitionSize >= maxNumberOffTransistions)
-				return res;
-
-			size_t newTransitionId = newTransition->GetOutputStateGuid();
-			for (uint i = 0; i < transitionSize; ++i)
-			{
-				if (transition[i]->GetOutputStateGuid() == newTransitionId)
-				{
-					hasSameOutput = true;
-					break;
-				}
-			}
-
-			if (hasSameOutput)
-				return res;
-			else
+			JFSMtransition* res = nullptr; 
+			if (newTransition != nullptr && ownerDiagram->IsDiagramState(newTransition->GetOutputStateGuid()))
 			{
 				res = newTransition.get();
 				transition.push_back(std::move(newTransition));
-				return res;
 			}
+			return res;
+		}
+		JFSMconditionWrap* JFSMstate::AddTransitionCondition(const size_t outputStateGuid, JFSMcondition* condition)noexcept
+		{
+			if (condition == nullptr || !ownerDiagram->IsValidCondition(condition))
+				return nullptr;
+
+			const uint transitionSize = (uint)transition.size();
+			for (uint index = 0; index < transitionSize; ++index)
+			{
+				if (transition[index]->GetOutputStateGuid() == outputStateGuid)
+					return transition[index]->AddCondition(condition);
+			}
+			return nullptr;
 		}
 		bool JFSMstate::RemoveTransition(const size_t outputStateGuid)noexcept
 		{
 			const uint transitionSize = (uint)transition.size();
-			for (uint index; index < transitionSize; ++index)
+			for (uint index = 0; index < transitionSize; ++index)
 			{
 				if (transition[index]->GetOutputStateGuid() == outputStateGuid)
 				{
@@ -92,16 +111,6 @@ namespace JinEngine
 				}
 			}	
 			return false;
-		}
-		JFSMconditionWrap* JFSMstate::AddTransitionCondition(const size_t outputStateGuid, JFSMcondition* condition)noexcept
-		{
-			const uint transitionSize = (uint)transition.size();
-			for (uint index = 0; index < transitionSize; ++index)
-			{
-				if (transition[index]->GetOutputStateGuid() == outputStateGuid)
-					return transition[index]->AddCondition(condition);
-			}
-			return nullptr;
 		}
 		bool JFSMstate::RemoveCondition(const size_t guid)noexcept
 		{
@@ -127,5 +136,17 @@ namespace JinEngine
 				transition[i].reset();
 			transition.clear();
 		}
+		bool JFSMstate::RegisterCashData()noexcept
+		{
+			return ownerDiagram->AddState(this);
+		}
+		bool JFSMstate::DeRegisterCashData()noexcept
+		{
+			return ownerDiagram->RemoveState(this);
+		}
+		JFSMstate::JFSMstate(const JFSMstateInitData& initData)
+			:JFSMInterface(ownerDiagram->GetUniqueStateName(initData.name), initData.guid), ownerDiagram(initData.ownerDiagram.Get())
+		{}
+		JFSMstate::~JFSMstate() {}
 	}
 }

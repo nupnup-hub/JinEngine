@@ -1,5 +1,5 @@
 #pragma once
-#include"JFSMIdentifier.h"
+#include"JFSMInterface.h"
 #include"JFSMconditionValueType.h"
 #include<string>
 #include<algorithm>
@@ -7,23 +7,40 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JFSMcondition : public JFSMIdentifier
+		class JFSMconditionStorage;
+		class IJFSMconditionStorageOwner;
+		class IJFSMconditionOwner;
+		 
+		class JFSMcondition : public JFSMInterface
 		{
+			REGISTER_CLASS(JFSMcondition)
+		private:
 			friend class JFSMconditionStorage;
+		public:
+			struct JFSMconditionInitData : public JFSMIdentifierInitData
+			{
+			public:
+				J_FSMCONDITION_VALUE_TYPE valueType;
+				IJFSMconditionOwner* conditionOwner = nullptr;
+				IJFSMconditionStorageOwner* storageOwner = nullptr;
+			public:
+				JFSMconditionInitData(const std::wstring& name, const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType, IJFSMconditionOwner* ownerStorage);
+				JFSMconditionInitData(const size_t guid, IJFSMconditionStorageOwner* storageOwner);
+			public:
+				bool IsValid() noexcept;
+				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept;
+			};
+			using InitData = JFSMconditionInitData;
 		private: 
 			float value = 0;
 			J_FSMCONDITION_VALUE_TYPE valueType;
-		public:
-			JFSMcondition(const std::wstring& name, const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType);
-			~JFSMcondition();
-			JFSMcondition(const JFSMcondition& rhs) = delete;
-			JFSMcondition& operator=(const JFSMcondition& rhs) = delete;
+			IJFSMconditionOwner* conditionOwner;
 		public:
 			void Initialize()noexcept;  
 		public:
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
 			float GetValue()const noexcept;
-			J_FSMCONDITION_VALUE_TYPE GetValueType()const noexcept; 
+			J_FSMCONDITION_VALUE_TYPE GetValueType()const noexcept;  
 			void SetValueType(const J_FSMCONDITION_VALUE_TYPE valueType)noexcept;
 			template<typename T>
 			void SetValue(T value)noexcept
@@ -44,6 +61,18 @@ namespace JinEngine
 						JFSMcondition::value = value;
 				}
 			} 
+		private:
+			void Clear()override;
+		private:
+			bool RegisterCashData()noexcept final;
+			bool DeRegisterCashData()noexcept final;
+		private:
+			static void RegisterJFunc();
+		private:
+			JFSMcondition(const JFSMconditionInitData& initData);
+			~JFSMcondition();
+			JFSMcondition(const JFSMcondition& rhs) = delete;
+			JFSMcondition& operator=(const JFSMcondition& rhs) = delete;
 		};
 	}
 }

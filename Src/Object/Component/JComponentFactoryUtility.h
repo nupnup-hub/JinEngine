@@ -5,7 +5,7 @@
 #include"../Component/JComponentType.h"
 #include<d3d12.h>
 #include<string>
-
+#include <vector>
 namespace JinEngine
 {
 	class JComponent;
@@ -24,8 +24,14 @@ namespace JinEngine
 		static JRenderItem* CreateRenderItem(const size_t guid,
 			const J_OBJECT_FLAG flag,
 			JGameObject& owner,
+			JMeshGeometry* mesh, 
+			D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+			J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT);
+		static JRenderItem* CreateRenderItem(const size_t guid,
+			const J_OBJECT_FLAG flag,
+			JGameObject& owner,
 			JMeshGeometry* mesh,
-			JMaterial* mat,
+			std::vector<JMaterial*> mat,
 			D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 			J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT);
 		static JComponent* CreateComponent(const std::string& componentName, JGameObject& owner);

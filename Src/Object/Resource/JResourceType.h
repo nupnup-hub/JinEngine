@@ -1,27 +1,22 @@
 #pragma once
+#include"../../Core/Reflection/JReflection.h"
 
 namespace JinEngine
 {
-	enum class J_RESOURCE_TYPE
-	{
-		NONE = 0,
+	REGISTER_ENUM_CLASS(J_RESOURCE_TYPE, int,
 		MESH,
 		MATERIAL,
 		TEXTURE,
+		SHADER,
+		SCENE,
 		SCRIPT,
-		SHADER, 
-		SCENE, 
-		MODEL,
 		SKELETON,
 		ANIMATION_CLIP,
-		ANIMATION_CONTROLLER, 
-		COUNT
-	};
+		ANIMATION_CONTROLLER);
 
-	enum class RESOURCE_ALIGN_TYPE : short
-	{
+	REGISTER_ENUM_CLASS(J_RESOURCE_ALIGN_TYPE, short,
 		NONE,
-		NAME = 1, 
+		NAME = 1,
 		DEPENDENCY = 2,
-	};
+		DEPENDENCY_REVERSE = 3);
 }

@@ -3,22 +3,24 @@
 #include<memory>
 #include<string>
 #include"../../Core/JDataType.h"
+#include"../../Core/Func/Functor/JFunctor.h"
 
 namespace JinEngine
 {
 	namespace Editor
-	{ 
-		class JEditorAttribute;
+	{  
 		struct JMenuNode
 		{
 		private:
-			const std::string nodeName;
-			const std::string windowName;
+			const std::string nodeName; 
 			bool isRoot;
 			bool isLeaf;
 			bool* isOpend; // Leaf Only window attribute isOpen ptr
+			bool isCreateOpendPtr = false;
 			JMenuNode* parent;
 			std::vector<JMenuNode*> children;
+		private:
+			std::unique_ptr<Core::JBindHandleBase> bindHandle;
 		public:
 			JMenuNode(const std::string& windowName, bool isRoot, bool isLeaf, bool* isOpend = nullptr, JMenuNode* parent = nullptr);
 			~JMenuNode();
@@ -27,13 +29,15 @@ namespace JinEngine
 			JMenuNode(JMenuNode&& rhs) = default;
 			JMenuNode& operator=(JMenuNode&& rhs) = default;
 
-			std::string GetMenuNodeName()const noexcept;
-			std::string GetWindowName()const noexcept;
+			std::string GetNodeName()const noexcept; 
 			const uint GetChildrenCount()const noexcept;
 			JMenuNode* GetChild(const uint index)const noexcept;
 			bool IsRootNode()const noexcept;
 			bool IsLeafNode()const noexcept;
 			bool IsOpendNode()const noexcept; // LeftNode only
+		public:
+			void RegisterBind(std::unique_ptr<Core::JBindHandleBase>&& newBindHandle);
+			void ExecuteBind();
 		};
 		class JEditorMenuBar
 		{

@@ -1,25 +1,24 @@
 #pragma once
 #include"JCameraState.h" 
 #include"../JComponent.h" 
-#include"../../JFrameInterface.h"
+#include"../../JFrameUpdate.h"
 #include"../../../Graphic/JGraphicTexture.h"
 
 namespace JinEngine
-{
-	class JResourceManagerImpl;
-	class JPreviewResourceScene;
-	class JPreviewModelScene;
+{ 
 	namespace Graphic
 	{
 		struct JCameraConstants;
 	}
+	namespace Editor
+	{
+		class JSceneObserver;
+	}
 
 	class JCameraStateInterface
 	{
-	private:
-		friend class JResourceManagerImpl;
-		friend class JPreviewResourceScene;
-		friend class JPreviewModelScene;
+	private: 
+		friend class Editor::JSceneObserver;
 	protected:
 		virtual ~JCameraStateInterface() = default;
 	public:
@@ -27,10 +26,10 @@ namespace JinEngine
 	private:
 		virtual void SetCameraState(const J_CAMERA_STATE state)noexcept = 0;
 	};
-
+	 
 	class JCameraInterface : public JComponent,
 		public JCameraStateInterface,
-		public JFrameInterface<Graphic::JCameraConstants>,
+		public JFrameUpdate<IFrameUpdate<Graphic::JCameraConstants&>, JFrameDirtyListener, false>,
 		public Graphic::JGraphicTexture
 	{
 	protected:

@@ -6,14 +6,14 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JWindowException : public JException
+		class JWindowException final : public JException
 		{
 		private:
 			DWORD lastError;
 		public:
 			JWindowException(int line, const std::string file);
-			const std::wstring what() const override;
-			const std::wstring GetType() const override;
+			const std::wstring what() const final;
+			const std::wstring GetType() const final;
 		};
 	}
 }

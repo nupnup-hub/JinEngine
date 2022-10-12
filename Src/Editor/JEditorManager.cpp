@@ -1,15 +1,20 @@
 #include"JEditorManager.h" 
 #include"Event/JEditorEventStruct.h"
+#include"Event/JEditorEvent.h"
 #include"Menubar/JEditorMenuBar.h"
 #include"Page/JEditorWindow.h"  
+#include"Page/JEditorPageShareData.h"
 #include"Page/ProjectMain/JProjectMainPage.h"
 #include"Page/SkeletonaAssetSetting/JEditorSkeletonPage.h"  
+#include"Page/ProjectSelector/JProjectSelectorPage.h"
 #include"GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../Utility/JCommonUtility.h"
+#include"../Core/File/JFileConstant.h"
 #include"../Application/JApplicationVariable.h" 
 #include"../Object/Resource/Scene/JScene.h"
 #include"../Object/Resource/Scene/JSceneManager.h"
 #include"../Object/Resource/JResourceManager.h"
+#include"../Core/Undo/JTransition.h"
 #include"../Window/JWindows.h"
 #include<fstream>  
 #include<io.h>   
@@ -21,64 +26,85 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		void JEditorManager::SetEditorBackend()
+		void JEditorManager::Initialize()
 		{
 			JImGuiImpl::Initialize();
+			JEditorEvent::Initialize();
 		}
 		void JEditorManager::OpenProjectSelector()
 		{
-			JImGuiImpl::SetTextSize();
-			JImGuiImpl::SetFont(2);
+			editorPage.push_back(std::make_unique<JProjectSelectorPage>());
+			editorPageMap.emplace(editorPage[0]->GetPageType(), editorPage[0].get());
+
+			JEditorOpenPageEvStruct evOpenStruct{ editorPage[0]->GetPageType() };
+			JEditorActPageEvStruct evActStruct{ editorPage[0].get()};
+			OpenPage(&evOpenStruct);
+			ActivatePage(&evActStruct);
 		}
 		void JEditorManager::OpenProject()
 		{
-			JImGuiImpl::SetTextSize();
-			JImGuiImpl::SetFont(2);
-
-			bool hasMetadata = (_access(GetMetadataPath().c_str(), 00) != -1);
+			const std::wstring imguiTxt = Core::JFileConstant::MakeFilePath(JApplicationVariable::GetEnginePath(), L"imgui.ini");
+			bool hasMetadata = (_waccess(GetMetadataPath().c_str(), 00) != -1);
+			bool hasImguiTxt = (_waccess(imguiTxt.c_str(), 00) != -1);
+			if (!(hasMetadata && hasImguiTxt))
+				_wremove(imguiTxt.c_str());
 
 			editorPage.push_back(std::make_unique<JProjectMainPage>(hasMetadata));
 			editorPage.push_back(std::make_unique<JEditorSkeletonPage>(hasMetadata));
-
-			const std::string imguiTxt = JApplicationVariable::GetEnginePath() + "imgui.ini";
-			bool hasImguiTxt = false;
-			if (_access(imguiTxt.c_str(), 00) != -1)
-				hasImguiTxt = true;
+ 
+			//bool hasImguiTxt = false;
+			//if (_waccess(imguiTxt.c_str(), 00) != -1)
+			//	hasImguiTxt = true;
 
 			for (uint i = 0; i < editorPage.size(); ++i)
 			{
-				editorPage[i]->Initialize(hasImguiTxt);
-				editorPageMap.emplace(editorPage[i]->GetGuid(), editorPage[i].get());
+				editorPage[i]->Initialize();
+				editorPageMap.emplace(editorPage[i]->GetPageType(), editorPage[i].get());
 			}
-	
+		
 			if (hasMetadata)
 				LoadPage();
 			else
 			{
-				JEditorOpenPageEvStruct evStruct{editorPage[0]->GetPageType()};
-				OpenPage(&evStruct);
+				JEditorOpenPageEvStruct evOpenStruct{editorPage[0]->GetPageType()};
+				JEditorActPageEvStruct evActStruct{ editorPage[0].get() };
+				OpenPage(&evOpenStruct);
+				ActivatePage(&evActStruct);
 			}
+			 
+			std::vector<J_EDITOR_EVENT> eventVector = Core::GetEnumVec<J_EDITOR_EVENT>();
+			this->AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector);
 
-			std::vector<J_EDITOR_EVENT> eventVector
-			{
-				J_EDITOR_EVENT::OPEN_PAGE, J_EDITOR_EVENT::CLOSE_PAGE,
-				J_EDITOR_EVENT::OPEN_WINDOW, J_EDITOR_EVENT::CLOSE_WINDOW,
-			};
-			this->AddEventListener(*JImGuiImpl::EvInterface(), editorManagerGuid, eventVector);
+			Core::JTransition::Initialize();
 		}
 		void JEditorManager::Update()
-		{
+		{ 
+			JImGuiImpl::SetTextSize();
+			JEditorEvent::ExecuteEvent();
 			JImGuiImpl::StartEditorUpdate();
+			JImGuiImpl::MouseUpdate();
+
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(JWindow::Instance().GetClientSize() * 0.1f));
 			uint8 pageCount = (uint8)opendEditorPage.size();
 			for (uint8 i = 0; i < pageCount; ++i)
 				opendEditorPage[i]->UpdatePage();
+			ImGui::PopStyleVar();
+
 			JImGuiImpl::EndEditorUpdate();
 		}
 		void JEditorManager::Clear()
 		{
-			uint8 pageCount = (uint8)opendEditorPage.size();
+			uint8 pageCount = (uint8)editorPage.size();
 			for (uint8 i = 0; i < pageCount; ++i)
-				opendEditorPage[i]->DeActivate();
+			{
+				JEditorClosePageEvStruct evStruct{ editorPage[i]->GetPageType() };
+				ClosePage(&evStruct); 
+			}
+
+			JEditorEvent::Clear();
+			JEditorPageShareData::Clear();
+			JImGuiImpl::Clear();
+			Core::JTransition::Clear();
 
 			editorPageMap.clear();
 			opendEditorPage.clear();
@@ -112,7 +138,7 @@ namespace JinEngine
 				{ 
 					if (page->second->IsValidOpenRequest(evStruct->openSelected))
 					{
-						JImGuiImpl::SetPageOpenData(evStruct);
+						JEditorPageShareData::SetPageOpenData(evStruct);
 						page->second->SetOpen();
 						opendEditorPage.push_back(page->second);
 					}
@@ -127,8 +153,7 @@ namespace JinEngine
 				if (page->second->IsOpen())
 				{
 					page->second->DeActivate();
-					page->second->OffFront();
-					page->second->OffOpen();
+					page->second->SetClose();
 
 					const size_t tarGuid = page->second->GetGuid();
 					const uint openEditorPageCount = (uint)opendEditorPage.size();
@@ -143,25 +168,6 @@ namespace JinEngine
 				}
 			}
 		}
-		void JEditorManager::FrontPage(JEditorFrontPageEvStruct* evStruct)
-		{
-			auto page = editorPageMap.find(evStruct->page->GetPageType());
-			if (page != editorPageMap.end())
-			{
-				if (page->second->IsOpen())
-					page->second->SetFront();
-			}
-		}
-		void JEditorManager::BackPage(JEditorBackPageEvStruct* evStruct)
-		{
-			auto page = editorPageMap.find(evStruct->page->GetPageType());
-			if (page != editorPageMap.end())
-			{
-				if (page->second->IsActivated())
-					page->second->DeActivate();
-				page->second->OffFront();
-			}
-		}
 		void JEditorManager::ActivatePage(JEditorActPageEvStruct* evStruct)
 		{
 			auto page = editorPageMap.find(evStruct->actPage->GetPageType());
@@ -169,8 +175,8 @@ namespace JinEngine
 			{
 				if (page->second->IsOpen())
 				{
-					if (!page->second->IsFront())
-						page->second->SetFront();
+					if (!page->second->IsOpen())
+						page->second->SetOpen();
 					page->second->Activate();
 				}
 			}
@@ -186,20 +192,18 @@ namespace JinEngine
 			auto page = editorPageMap.find(evStruct->focusPage->GetPageType());
 			if (page != editorPageMap.end())
 			{
-				if (!page->second->IsFront())
-					page->second->SetFront();
+				if (!page->second->IsOpen())
+					page->second->SetOpen();
 				if (!page->second->IsActivated())
 					page->second->Activate();
-
-				if (page->second->IsOpen())
-					page->second->SetFocus();
+				page->second->SetFocus();
 			}
 		}
 		void JEditorManager::UnFocusPage(JEditorUnFocusPageEvStruct* evStruct)
 		{
 			auto page = editorPageMap.find(evStruct->unFocusPage->GetPageType());
 			if (page != editorPageMap.end())
-				page->second->OffFocus();
+				page->second->SetUnFocus();
 		}
 		void JEditorManager::OpenWindow(JEditorOpenWindowEvStruct* evStruct)
 		{
@@ -212,18 +216,6 @@ namespace JinEngine
 			auto page = editorPageMap.find(evStruct->pageType);
 			if (page != editorPageMap.end())
 				page->second->CloseWindow(evStruct->closeWindowName);
-		}
-		void JEditorManager::FrontWindow(JEditorFrontWindowEvStruct* evStruct)
-		{
-			auto page = editorPageMap.find(evStruct->pageType);
-			if (page != editorPageMap.end())
-				page->second->FrontWindow(evStruct->frontWindow);
-		}
-		void JEditorManager::BackWindow(JEditorBackWindowEvStruct* evStruct)
-		{
-			auto page = editorPageMap.find(evStruct->pageType);
-			if (page != editorPageMap.end())
-				page->second->BackWindow(evStruct->backWindow);
 		}
 		void JEditorManager::AcitvateWindow(JEditorActWindowEvStruct* evStruct)
 		{
@@ -249,86 +241,103 @@ namespace JinEngine
 			if (page != editorPageMap.end())
 				page->second->UnFocusWindow(evStruct->unFocusWindow);
 		}
-		std::string JEditorManager::GetMetadataPath()noexcept
+		std::wstring JEditorManager::GetMetadataPath()const noexcept
 		{
-			return JApplicationVariable::GetProjectEditorResourcePath() + "\\"+ editorPageDataFileName;
+			return Core::JFileConstant::MakeFilePath(JApplicationVariable::GetProjectEditorResourcePath(), editorPageDataFileName);
 		}
-		void JEditorManager::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEventStruct* eventStruct)
-		{
+		void JEditorManager::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
+		{   
 			if (senderGuid == editorManagerGuid || !eventStruct->PassDefectInspection())
 				return;
  
 			switch (eventType)
 			{
 			case J_EDITOR_EVENT::SELECT_OBJECT:
-			{	
+			{
 				JEditorSelectObjectEvStruct* selectEvStruct = static_cast<JEditorSelectObjectEvStruct*>(eventStruct);
-				JImGuiImpl::SetSelectObj(selectEvStruct->pageType, selectEvStruct->selectObj);
+				JEditorPageShareData::SetSelectObj(selectEvStruct->pageType, selectEvStruct->selectObj);
 				break;
 			}
 			case J_EDITOR_EVENT::DESELECT_OBJECT:
 			{
 				JEditorDeSelectObjectEvStruct* deSelectEvStruct = static_cast<JEditorDeSelectObjectEvStruct*>(eventStruct);
-				JImGuiImpl::SetSelectObj(deSelectEvStruct->pageType, Core::JUserPtr<JObject>{});
+				JEditorPageShareData::SetSelectObj(deSelectEvStruct->pageType, Core::JUserPtr<JObject>{});
 				break;
 			}
-			case J_EDITOR_EVENT::OPEN_PAGE:	 
+			case J_EDITOR_EVENT::BIND_FUNC:
+			{
+				JEditorBindFuncEvStruct* bindEv = static_cast<JEditorBindFuncEvStruct*>(eventStruct);
+				bindEv->Execute();
+				break;
+			}
+			case J_EDITOR_EVENT::OPEN_PAGE:
+			{
 				OpenPage(static_cast<JEditorOpenPageEvStruct*>(eventStruct));
 				break;
+			}
 			case J_EDITOR_EVENT::CLOSE_PAGE:
+			{
 				ClosePage(static_cast<JEditorClosePageEvStruct*>(eventStruct));
 				break;
-			case J_EDITOR_EVENT::FRONT_PAGE:
-				FrontPage(static_cast<JEditorFrontPageEvStruct*>(eventStruct));
-				break;
-			case J_EDITOR_EVENT::BACK_PAGE:
-				BackPage(static_cast<JEditorBackPageEvStruct*>(eventStruct));
-				break;
+			}
 			case J_EDITOR_EVENT::ACTIVATE_PAGE:
+			{
 				ActivatePage(static_cast<JEditorActPageEvStruct*>(eventStruct));
 				break;
+			}
 			case J_EDITOR_EVENT::DEACTIVATE_PAGE:
+			{
 				DeActivatePage(static_cast<JEditorDeActPageEvStruct*>(eventStruct));
 				break;
+			}
 			case J_EDITOR_EVENT::FOCUS_PAGE:
+			{
 				FocusPage(static_cast<JEditorFocusPageEvStruct*>(eventStruct));
 				break;
+			}
 			case J_EDITOR_EVENT::UNFOCUS_PAGE:
+			{
 				UnFocusPage(static_cast<JEditorUnFocusPageEvStruct*>(eventStruct));
 				break;
+			}
 			case J_EDITOR_EVENT::OPEN_WINDOW:
+			{
 				OpenWindow(static_cast<JEditorOpenWindowEvStruct*>(eventStruct));
 				break;
+			}
 			case J_EDITOR_EVENT::CLOSE_WINDOW:
+			{
 				CloseWindow(static_cast<JEditorCloseWindowEvStruct*>(eventStruct));
 				break;
-			case J_EDITOR_EVENT::FRONT_WINDOW:
-				FrontWindow(static_cast<JEditorFrontWindowEvStruct*>(eventStruct));
-				break;
-			case J_EDITOR_EVENT::BACK_WINDOW:
-				BackWindow(static_cast<JEditorBackWindowEvStruct*>(eventStruct));
-				break;
+			}
 			case J_EDITOR_EVENT::ACTIVATE_WINDOW:
+			{
 				AcitvateWindow(static_cast<JEditorActWindowEvStruct*>(eventStruct));
 				break;
+			}
 			case J_EDITOR_EVENT::DEACTIVATE_WINDOW:
+			{
 				DeActivateWindow(static_cast<JEditorDeActWindowEvStruct*>(eventStruct));
 				break;
+			}
 			case J_EDITOR_EVENT::FOCUS_WINDOW:
+			{
 				FocusWindow(static_cast<JEditorFocusWindowEvStruct*>(eventStruct));
 				break;
+			}
 			case J_EDITOR_EVENT::UNFOCUS_WINDOW:
+			{
 				UnFocusWindow(static_cast<JEditorUnFocusWindowEvStruct*>(eventStruct));
 				break;
+			}
 			default:
 				break;
 			}
 		} 
 		JEditorManager::JEditorManager()
-			:editorManagerGuid(JCommonUtility::CalculateGuid("JEditorManager"))
-		{
-			 
-		}
-		JEditorManager::~JEditorManager() {}
+			:editorManagerGuid(JCUtil::CalculateGuid("JEditorManager"))
+		{}
+		JEditorManager::~JEditorManager()
+		{}
 	}
 }

@@ -32,13 +32,13 @@ namespace JinEngine
 		}
 
 		//It is only valid cast when From class depth level is over the To depth level
-		template<typename From, typename To>
+		template<typename To, typename From>
 		To* UnSafeFastCast(From* p)
 		{
 			return IsParent<To, From>() ? static_cast<To*>(p) : nullptr;
 		}
 
-		template<typename From, typename To>
+		template<typename To, typename From>
 		To* Cast(From* p)
 		{
 			if (IsInvalidType<From, To>())
@@ -47,7 +47,7 @@ namespace JinEngine
 			if constexpr (!std::is_base_of_v< From, To> && !std::is_base_of_v< From, To>)
 				return nullptr;
 
-			if constexpr (std::is_same<From, To>::value)
+			if constexpr (std::is_same_v<From, To>)
 				return p;
 
 			return p && p->GetTypeInfo().IsChildOf<To>() ? static_cast<To*>(p) : nullptr;
@@ -56,7 +56,7 @@ namespace JinEngine
 		//Caution!
 		//A templateBase and Template<T, ...> relationship is unsafe
 		//Non template class is safe
-		template<typename From, typename To>
+		template<typename To, typename From>
 		To* FastCast(From* p)
 		{
 			if (IsInvalidType<From, To>())
@@ -65,7 +65,7 @@ namespace JinEngine
 			if constexpr (!std::is_base_of_v< From, To> && !std::is_base_of_v< From, To>)
 				return nullptr;
 
-			if constexpr (std::is_same<From, To>::value)
+			if constexpr (std::is_same_v<From, To>)
 				return p;
 
 			if (To::TypeDepth::value > p->GetTypeDepth())

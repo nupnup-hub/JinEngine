@@ -6,9 +6,24 @@
 
 namespace JinEngine
 { 
-	class JTextureInterface : public JResourceObject, public Graphic::JGraphicTexture , public JClearableInterface
+	class JTextureImportInterface
+	{
+	private:
+		friend class JResourceManagerImpl;
+	protected:
+		virtual ~JTextureImportInterface() = default;
+	public:
+		virtual JTextureImportInterface* ImportInterface()noexcept = 0;
+	private:
+		virtual bool ImportTexture(const std::wstring& oriPath) = 0;
+	};
+
+	class JTextureInterface : public JResourceObject,
+		public Graphic::JGraphicTexture ,
+		public JClearableInterface,
+		public JTextureImportInterface
 	{
 	protected:
-		JTextureInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const int formatIndex);
+		JTextureInterface(const JResourceObject::JResourceInitData& initdata);
 	};
 }

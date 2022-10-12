@@ -682,8 +682,8 @@ namespace JinEngine
 					const XMMATRIX srcWorldFinalBind = XMMatrixAffineTransformation(srcWorldS, idenQ, srcWorldModQ, srcWorldT);
 
 					//XMStoreFloat4x4(&modBindPose[srcIndex], srcWorldFinalBind);
-					//JDebugTextOut::PrintWstr(JCommonUtility::StrToWstr("D root: " + srcSkeleton->GetJointName(srcIndex)));
-					//JDebugTextOut::PrintWstr(JCommonUtility::StrToWstr("Child: " + srcSkeleton->GetJointName(srcChildIndex)));
+					//JDebugTextOut::PrintWstr(JCUtil::StrToWstr("D root: " + srcSkeleton->GetJointName(srcIndex)));
+					//JDebugTextOut::PrintWstr(JCUtil::StrToWstr("Child: " + srcSkeleton->GetJointName(srcChildIndex)));
 					//JDebugTextOut::PrintQuaternion(deltaQ, L"deltaQ");
 					//JDebugTextOut::PrintVector(srcLocalDir, L"srcLocalDir");
 					//JDebugTextOut::PrintVector(tarLocalDir, L"tarLocalDir");

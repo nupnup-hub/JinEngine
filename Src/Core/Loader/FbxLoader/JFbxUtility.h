@@ -15,17 +15,6 @@ namespace JinEngine
 		{
 			return a.blendingWeight > b.blendingWeight;
 		}
-		struct JFbxPartMeshData
-		{
-		public:
-			std::wstring name;
-			int parentIndex = -1;
-			JStaticMeshData staticMeshData;
-			JSkinnedMeshData skinnedMeshData;
-			DirectX::BoundingBox boundingBox;
-			DirectX::BoundingSphere boundingSphere;
-			bool hasMesh;
-		};
 		struct JFbxKeyFrame
 		{
 		public:

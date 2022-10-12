@@ -1,15 +1,13 @@
-#include"JAnimationFSMtransition.h"
-#include"../JFSMLoadGuidMap.h"
+#include"JAnimationFSMtransition.h" 
 #include"../JFSMconditionStorageAccess.h"
+#include"../../File/JFileConstant.h" 
+#include"../../File/JFileIOHelper.h"
 #include<fstream>
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		JAnimationFSMtransition::JAnimationFSMtransition(const size_t outputStateGuid)
-			:JFSMtransition(outputStateGuid)
-		{}
 		bool JAnimationFSMtransition::GetIsWaitExitTime()noexcept
 		{
 			return isWaitExitTime;
@@ -64,72 +62,52 @@ namespace JinEngine
 				return true;
 
 		}
+		void JAnimationFSMtransition::Initialize()noexcept
+		{
+			JFSMtransition::Initialize();
+		}
 		J_FILE_IO_RESULT JAnimationFSMtransition::StoreData(std::wofstream& stream)
 		{
 			if (!stream.is_open())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-	 
-			stream << GetOutputStateGuid() << '\n';
-			const uint conditionCount = GetConditioCount();
-			stream << conditionCount << '\n';
-
+	    
+			JFileIOHelper::StoreAtomicData(stream, L"ConditionCount:", GetConditioCount());
+			const uint conditionCount = GetConditioCount(); 
 			for (uint i = 0; i < conditionCount; ++i)
 			{
-				stream << GetConditionByIndex(i)->GetGuid() << '\n';
-				stream << GetConditionOnValue(i) << '\n';
+				JFileIOHelper::StoreAtomicData(stream, JFileConstant::StreamHasObjGuidSymbol(), GetConditionByIndex(i)->GetGuid());
+				JFileIOHelper::StoreAtomicData(stream, L"ConditionValue:", GetConditionOnValue(i));
 			}
-
-			stream << isWaitExitTime << '\n';
-			stream << isFrozen << '\n';
-			stream << exitGameTimerate << '\n';
-			stream << durationTime << '\n';
-			stream << targetStateOffset << '\n';
+			JFileIOHelper::StoreAtomicData(stream, L"IsWaitExitTime:", isWaitExitTime);
+			JFileIOHelper::StoreAtomicData(stream, L"IsFrozen:", isFrozen);
+			JFileIOHelper::StoreAtomicData(stream, L"ExitGameTimerate:", exitGameTimerate);
+			JFileIOHelper::StoreAtomicData(stream, L"DurationTime:", durationTime);
+			JFileIOHelper::StoreAtomicData(stream, L"TargetStateOffset:", targetStateOffset);
 
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
-		std::unique_ptr<JAnimationFSMtransition> JAnimationFSMtransition::LoadData(std::wifstream& stream, JFSMLoadGuidMap& guidMap, IJFSMconditionStorageUser& IConditionUser)
+		J_FILE_IO_RESULT JAnimationFSMtransition::LoadData(std::wifstream& stream, IJFSMconditionStorageUser& IConditionUser)
 		{
 			if (!stream.is_open())
-				return nullptr;
- 
-			size_t outputGuid = 0;
-			stream >> outputGuid;
-
-			std::unique_ptr<JAnimationFSMtransition> newTransition = nullptr;
-			if (guidMap.isNewGuid)
-			{
-				auto newStateGuid = guidMap.state.find(outputGuid);
-				if (newStateGuid != guidMap.state.end())
-					newTransition = std::make_unique<JAnimationFSMtransition>(guidMap.state.find(outputGuid)->second);
-			}
-			else
-				newTransition = std::make_unique<JAnimationFSMtransition>(outputGuid);
-
-			uint conditionCount = 0;
-			stream >> conditionCount;
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+  
+			uint conditionCount = 0; 
+			JFileIOHelper::LoadAtomicData(stream, conditionCount);
 
 			for (uint i = 0; i < conditionCount; ++i)
 			{
-				size_t guid;
+				size_t conditionGuid;
 				float onValue;
 
-				stream >> guid;
-				stream >> onValue;
+				JFileIOHelper::LoadAtomicData(stream, conditionGuid);
+				JFileIOHelper::LoadAtomicData(stream, onValue);
 
-				JFSMcondition* newCondition = nullptr;		
-				if (guidMap.isNewGuid)
+				JFSMcondition* newCondition = IConditionUser.GetCondition(conditionGuid);
+				if (newCondition != nullptr)
 				{
-					auto newGuid = guidMap.condition.find(guid);
-					if (newGuid == guidMap.condition.end())
-						continue;
-
-					newCondition = IConditionUser.GetCondition(newGuid->second);
+					JFSMconditionWrap* newConditionWrap = AddCondition(newCondition);
+					newConditionWrap->SetOnValue(onValue);
 				}
-				else
-					newCondition = IConditionUser.GetCondition(guid);
-
-				JFSMconditionWrap* newConditionWrap = newTransition->AddCondition(newCondition);
-				newConditionWrap->SetOnValue(onValue);
 			}
 
 			bool isWaitExitTime = false;
@@ -138,23 +116,23 @@ namespace JinEngine
 			float durationTime =0;
 			float targetStateOffset = 0;
 
-			stream >> isWaitExitTime;
-			stream >> isFrozen;
-			stream >> exitGameTimerate;
-			stream >> durationTime;
-			stream >> targetStateOffset;
+			JFileIOHelper::LoadAtomicData(stream, isWaitExitTime);
+			JFileIOHelper::LoadAtomicData(stream, isFrozen);
+			JFileIOHelper::LoadAtomicData(stream, exitGameTimerate);
+			JFileIOHelper::LoadAtomicData(stream, durationTime);
+			JFileIOHelper::LoadAtomicData(stream, targetStateOffset);
 
-			newTransition->SetIsWaitExitTime(isWaitExitTime);
-			newTransition->SetIsFrozen(isFrozen);
-			newTransition->SetExitGameTimerate(exitGameTimerate);
-			newTransition->SetDurationTime(durationTime);
-			newTransition->SetTargetStateOffset(targetStateOffset);
+			SetIsWaitExitTime(isWaitExitTime);
+			SetIsFrozen(isFrozen);
+			SetExitGameTimerate(exitGameTimerate);
+			SetDurationTime(durationTime);
+			SetTargetStateOffset(targetStateOffset);
 
-			return newTransition;
+			return J_FILE_IO_RESULT::SUCCESS;
 		}
-		void JAnimationFSMtransition::Initialize()noexcept
-		{
-			JFSMtransition::Initialize();
-		}
+		JAnimationFSMtransition::JAnimationFSMtransition(const size_t outputStateGuid)
+			:JFSMtransition(outputStateGuid)
+		{}
+		JAnimationFSMtransition::~JAnimationFSMtransition(){}
 	}
 }

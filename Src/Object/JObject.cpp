@@ -1,6 +1,8 @@
 #include"JObject.h"
 #include"../Utility/JCommonUtility.h"
+#include"../Core/File/JFileIOHelper.h"
 #include<fstream>
+#include<io.h>
 
 namespace JinEngine
 {
@@ -13,26 +15,27 @@ namespace JinEngine
 	};
 	static JObjectDestroyData destroyData;
 
-	std::wstring JObject::GetName() const noexcept
-	{
-		return name;
-	}
-	size_t JObject::GetGuid()const noexcept
-	{
-		return guid;
-	}
 	J_OBJECT_FLAG JObject::GetFlag()const noexcept
 	{
 		return flag;
 	}
-	void JObject::SetName(const std::wstring& name)noexcept
-	{ 
-		if (!name.empty())
-			JObject::name = name;
-	}
 	bool JObject::HasFlag(const J_OBJECT_FLAG flag)const noexcept
 	{
 		return (JObject::flag & flag) != 0;
+	}
+	bool JObject::Copy(JObject* ori)
+	{
+		//engine private object has OBJECT_FLAG_COPYABLE flag
+		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
+			return false;
+
+		if (GetTypeInfo().IsA(ori->GetTypeInfo()))
+		{
+			DoCopy(ori);
+			return true;
+		}
+		else
+			return false;
 	}
 	bool JObject::IsActivated()const noexcept
 	{
@@ -56,18 +59,22 @@ namespace JinEngine
 	{
 		isActivated = false;
 	}
-	void JObject::BeginDestroy()
+	bool JObject::BeginDestroy()
 	{
 		if (destroyData.isEnd)
 		{
 			//lock 필요 
 			destroyData.beginGuid = GetGuid();
-			destroyData.isIgnoreUndestroyAbleFlag = false;
 			destroyData.isEnd = false;
 		}
-		EndDestroy();
+		return EndDestroy();
 	}
-	bool JObject::IsIgnoreUndestroyableFlag()const noexcept
+	bool JObject::BegineForcedDestroy()
+	{
+		SetIgnoreUndestroyableFlag(true);
+		return BeginDestroy();
+	}
+	bool JObject::IsIgnoreUndestroyableFlag()noexcept
 	{
 		return destroyData.isIgnoreUndestroyAbleFlag;
 	}
@@ -75,24 +82,24 @@ namespace JinEngine
 	{
 		destroyData.isIgnoreUndestroyAbleFlag = value;
 	}
-	void JObject::EndDestroy()
-	{ 
+	bool JObject::EndDestroy()
+	{
 		const size_t guid = GetGuid();
-		Destroy();
-		RemoveInstance(GetGuid());
+		bool res = Destroy();
 		if (destroyData.beginGuid == guid)
 		{
-			//unlock 필요
+			//unlock 필요 
 			destroyData.isEnd = true;
+			destroyData.isIgnoreUndestroyAbleFlag = false;
 		}
-	}
-	bool JObject::RemoveInstance(const size_t guid)noexcept
-	{
-		return GetTypeInfo().RemoveInstance(guid);
-	}
-	std::wstring JObject::ConvertMetafilePath(const std::wstring& path)noexcept
-	{
-		return path + L".meta";
+
+		if (res)
+		{
+			RemoveInstance();
+			return true;
+		}
+		else
+			return false;
 	}
 	Core::J_FILE_IO_RESULT JObject::StoreMetadata(std::wofstream& stream, JObject* object)
 	{
@@ -100,32 +107,25 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_DO_NOT_SAVE_DATA;
 
 		if (stream.is_open())
-		{
-			stream << object->GetGuid() << '\n';
-			stream << object->GetFlag() << '\n';
+		{ 
+			JFileIOHelper::StoreObjectIden(stream, object); 
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	Core::J_FILE_IO_RESULT JObject::LoadMetadata(std::wifstream& stream, ObjectMetadata& metadata)
+	Core::J_FILE_IO_RESULT JObject::LoadMetadata(std::wifstream& stream, JObjectMetaData& metadata)
 	{
 		if (stream.is_open())
 		{
-			size_t resourceGuid;
-			int flag;
-
-			stream >> resourceGuid;
-			stream >> flag;
-			metadata.guid = resourceGuid;
-			metadata.flag = (J_OBJECT_FLAG)flag;
+			JFileIOHelper::LoadObjectIden(stream, metadata.guid, metadata.flag);
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
 	JObject::JObject(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag)
-		:name(name), guid(guid), flag(flag)
+		:JIdentifier(name, guid), flag(flag)
 	{}
 	JObject::~JObject()
 	{}

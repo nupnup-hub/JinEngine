@@ -4,8 +4,9 @@
 #include <crtdbg.h>
 #endif 
 #include"JGraphicInterface.h"
-#include"FrameResource/JAnimationConstants.h"
 #include"JGraphicTextureUserInterface.h"
+#include"FrameResource/JAnimationConstants.h"
+#include"../Object/JFrameUpdate.h"
 #include"../Object/Component/RenderItem/JRenderLayer.h"   
 #include"../Object/Resource/Shader/JShaderFunctionEnum.h" 
 #include"../Core/Singleton/JSingletonHolder.h"
@@ -48,8 +49,9 @@ namespace JinEngine
 		class JGraphicTextureHandle;
 		class JGraphicResourceManager;
 
-		class JGraphicImpl : public JGraphicFrameInterface,
-			public JGraphicTextureUserInterface, 
+		class JGraphicImpl final : public JGraphicApplicationIterface,
+			public JGraphicTextureUserInterface,
+			public JFrameBuffManagerInterface,
 			public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>
 		{
 		private:
@@ -94,26 +96,26 @@ namespace JinEngine
 			JGraphicResourceInterface* ResourceInterface()noexcept;
 			JGraphicEditorInterface* EditorInterface()noexcept;
 			JGraphicCommandInterface* CommandInterface()noexcept;
-			JGraphicFrameInterface* FrameInterface()noexcept;
+			JGraphicApplicationIterface* AppInterface()noexcept;
+		public:
+			//test 
+			UINT64 GetCompFence();
+			UINT64 GetCurFence();
+			void TestEnd();
 		private:
-			JGraphicImpl();
-			~JGraphicImpl();
-		private:
-			virtual void OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)final;
+			void OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)final;
 		private:
 			ID3D12Device* GetDevice() const noexcept final;
 		private:
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvDescriptorHandle(int index)const noexcept final;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept final;
 
-			JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path)final;
-			JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path)final;
+			JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
+			JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
 			JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			JGraphicTextureHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			bool DestroyGraphicTextureResource(JGraphicTextureHandle** handle)final;
 			void StuffShaderPso(JShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_SHADER_FUNCTION functionFlag)final;
-		private:
-			void SetImGuiBackEnd()final;
 		private:
 			ID3D12CommandQueue* GetCommandQueue()const noexcept final;
 			ID3D12CommandAllocator* GetCommandAllocator()const noexcept final;
@@ -121,6 +123,10 @@ namespace JinEngine
 			void StartCommand()final;
 			void EndCommand()final;
 			void FlushCommandQueue()final;
+		private:
+			void SetImGuiBackEnd()final;
+			void Initialize()final;
+			void Clear()final;
 		private:
 			void StartFrame()final;
 			void EndFrame()final;
@@ -143,7 +149,7 @@ namespace JinEngine
 				const uint lightCBoffset);
 			void DrawSceneShadowMap(_In_ JScene* scene,
 				_In_ JLight* light,
-				const uint objCBoffset,
+				uint& objCBoffset,
 				const uint passCBoffset,
 				const uint aniCBoffset,
 				const uint shadowCalCBoffset);
@@ -168,6 +174,9 @@ namespace JinEngine
 			ID3D12Resource* CurrentBackBuffer()const;
 			D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView()	const;
 			const std::vector<CD3DX12_STATIC_SAMPLER_DESC> Sampler()const noexcept;
+		private:
+			JGraphicImpl();
+			~JGraphicImpl();
 		};
 	}
 	using JGraphic = JinEngine::Core::JSingletonHolder<Graphic::JGraphicImpl>;

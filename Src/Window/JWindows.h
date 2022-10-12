@@ -6,6 +6,7 @@
 #include"../Core/Exception/JException.h"  
 #include"../Core/Event/JEventManager.h"
 #include"../Core/Singleton/JSingletonHolder.h"
+#include"../Utility/JVector.h"
 #include<windowsx.h> 
 #include<windows.h> 
 #include<vector>
@@ -14,29 +15,27 @@
 namespace JinEngine
 {
 	namespace Core
-	{
+	{ 
 		template<typename T>class JCreateUsingNew;
 	}
 
 	namespace Window
 	{
-		class JWindowImpl :public JWindowHandleInterface, public Core::JEventManager<size_t, J_WINDOW_EVENT>
+		class JWindowImpl final : public JWindowHandleInterface, public Core::JEventManager<size_t, J_WINDOW_EVENT>
 		{
 		private:
 			template<typename T>friend class Core::JCreateUsingNew;
 		private:
 			const size_t guid;
+			const std::wstring windowClassName = L"JinEngineClass";
+			const std::wstring windowName = L"JinEngine";
 			JInputManager inputManager;
 			WNDCLASSEX wc;
 			HINSTANCE hInst;
-			const std::wstring windowClassName = L"JinEngineClass";
-			const std::wstring windowName = L"JinEngine";
-			bool cursorEnabled = true;
 			RECT preWindowRect;
 			RECT preClinetRect;
-			const int minWidth;
-			const int minHeight;
 			HWND hwnd;
+			bool enableCursor = true; 
 		public:
 			RECT GetWindowR()const noexcept;
 			RECT GetPreWindowR()const noexcept;
@@ -51,20 +50,27 @@ namespace JinEngine
 			int GetWindowPositionY()const noexcept;
 			int GetWindowWidth()const noexcept;
 			int GetWindowHeight()const noexcept;
+			JVector2<int> GetClientPos()const noexcept;
 			int GetClientPositionX()const noexcept;
 			int GetClientPositionY()const noexcept;
+			JVector2<int> GetClientSize()const noexcept;
 			int GetClientWidth()const noexcept;
 			int GetClientHeight()const noexcept;
+		public:
+			bool IsFullScreen()const noexcept;
+		public:
+			bool SelectDirectory(std::wstring& dirPath, const std::wstring& guide)noexcept;
+			bool SelectFile(std::wstring& filePath, const std::wstring& guide)noexcept;
+			bool HasStorageSpace(const std::wstring& dirPath, size_t capacity)noexcept;
 		public:
 			JWindowHandleInterface* HandleInterface() ;
 			JEventInterface* EvInterface()final;
 			JWindowAppInterface* AppInterface();
 		private:
 			void Initialize(HINSTANCE hInstance)final;
-			void OpenWindow()final;
+			void OpenProjecSelectorWindow()final;
+			void OpenEngineWindow()final; 
 			void CloseWindow()final;
-			void SetProjectSelectorWindow()final;
-			void SetEngineWindow()final;
 			std::optional<int> ProcessMessages()final;
 		private:
 			HWND GetHandle()const noexcept final;
@@ -73,6 +79,7 @@ namespace JinEngine
 			static LRESULT CALLBACK HandleMsgThunk(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam);
 			static LRESULT HandleMsg(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam);
 			void Resize(WPARAM wParam);
+			void Move();
 		private:
 			void RegisterWindowClass();
 			void RegistEvCallable() final;

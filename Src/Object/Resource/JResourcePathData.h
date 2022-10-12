@@ -3,16 +3,29 @@
 
 namespace JinEngine
 {
-	struct JResourcePathData
+	struct JAssetFileLoadPathData
 	{
 	public:
-		const std::wstring wstrPath;
-		std::string strPath;
+		const std::wstring engineFilePath;
+		const std::wstring engineMetaFilePath;
+		std::wstring folderPath;
+		std::wstring name;
+	public:
+		JAssetFileLoadPathData(const std::wstring& engineFilePath);
+	};
+
+	struct JFileImportPathData
+	{
+	public:
+		const std::wstring oriFileWPath;
+		const std::string oriFilePath;
+		std::wstring engineFilePath;
+		std::wstring engineMetaFilePath;
 		std::wstring folderPath;
 		std::wstring name;
 		std::wstring fullName;
 		std::wstring format;
 	public:
-		JResourcePathData(const std::wstring& oriPath);
+		JFileImportPathData(const std::wstring& oriPath);
 	};
 }

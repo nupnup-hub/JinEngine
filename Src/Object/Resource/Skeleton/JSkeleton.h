@@ -5,10 +5,7 @@
 #include"../../../Core/JDataType.h" 
 
 namespace JinEngine
-{
-	class JModel;
-	class JSkeletonAsset;
-
+{  
 	struct JSkeleton
 	{ 
 	private: 
@@ -28,11 +25,14 @@ namespace JinEngine
 		DirectX::XMVECTOR GetBindT(int index)const noexcept;
 		float GetJointLength(int index)const noexcept;
 
+	public:
 		bool IsSame(const JSkeleton& skeleton)const noexcept;
 		bool IsSame(const size_t skletonHash)const noexcept;
+	private:
+		size_t GetSkeletonHash()const noexcept;
 	public: 
-		JSkeleton() = default;
-		JSkeleton(std::vector<Joint> && joint, const size_t nameHash);
+		//JSkeleton() = default;
+		JSkeleton(std::vector<Joint> && joint);
 		~JSkeleton();
 
 		JSkeleton(const JSkeleton & skeleton) = default;

@@ -1,9 +1,9 @@
 #pragma once  
 #include"JRenderItemInterface.h"
-#include"../../../Utility/JMathHelper.h" 
-#include"../../../Core/JDataType.h"
 #include"JRenderLayer.h"
 #include"JRenderVisibility.h"
+#include"../../../Core/JDataType.h"
+#include"../../../Utility/JMathHelper.h" 
 #include<DirectXCollision.h>
 #include<d3d12.h>
 
@@ -12,55 +12,51 @@ namespace JinEngine
 	class JMeshGeometry;
 	class JMaterial;
 
-	class JRenderItem : public JRenderItemInterface
+	class JRenderItem final : public JRenderItemInterface
 	{
 		REGISTER_CLASS(JRenderItem)
 	private:
-		JMeshGeometry* meshGeo = nullptr;
-		JMaterial* material = nullptr; 
-		DirectX::XMFLOAT4X4 textureTransform;
+		JMeshGeometry* meshGeo = nullptr; 
+		std::vector<JMaterial*> material;
+		DirectX::XMFLOAT4X4 textureTransform = JMathHelper::Identity4x4();
 		D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT;
 		J_RENDER_VISIBILITY renderVisibility = J_RENDER_VISIBILITY::VISIBLE;
-		 
-		uint startIndexLocation = 0;
-		int baseVertexLocation = 0;
-		// Only applicable to skinned render-items.
-		//uint aniCBIndex = -1;
-		// nullptr if this render-item is not animated by skinned mesh.
-		//SkinnedModelInstance* SkinnedModelInst = nullptr;
 	public:
-		JMeshGeometry* GetMesh()const noexcept;
-		JMaterial* GetMaterial()const noexcept;
+		J_COMPONENT_TYPE GetComponentType()const noexcept final;
+		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
+		{
+			return J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM;
+		}
+	public:
+		JMeshGeometry* GetMesh()const noexcept; 
+		JMaterial* GetMaterial(int index)const noexcept;
 		DirectX::XMFLOAT4X4 GetTextransform()const noexcept;
 		D3D12_PRIMITIVE_TOPOLOGY GetPrimitiveType()const noexcept;
 		J_RENDER_LAYER GetRenderLayer()const noexcept;  
-		uint GetIndexCount()const noexcept;
-		uint GetStartIndexLocation()const noexcept;
-		int GetBaseVertexLocation()const noexcept;
+		uint GetVertexTotalCount()const noexcept;
+		uint GetIndexTotalCount()const noexcept;
+		uint GetSubmeshCount()const noexcept;
 		DirectX::BoundingBox GetBoundingBox()noexcept;
 		DirectX::BoundingSphere GetBoundingSphere()noexcept;
 
-		void SetMeshGeometry(JMeshGeometry* meshGeo)noexcept;
-		void SetMaterial(JMaterial* material)noexcept;
+		void SetMeshGeometry(JMeshGeometry* newMesh)noexcept; 
+		void SetMaterial(int index, JMaterial* newMaterial)noexcept;
 		void SetTextureTransform(const DirectX::XMFLOAT4X4& textureTransform)noexcept;
 		void SetPrimitiveType(const D3D12_PRIMITIVE_TOPOLOGY primitiveType)noexcept;
 		void SetRenderLayer(const J_RENDER_LAYER renderLayer)noexcept;
 		void SetRenderVisibility(const J_RENDER_VISIBILITY renderVisibility)noexcept; 
-
-		bool HasMaterial()const noexcept; 		 
+		 		 
 		bool IsVisible()const noexcept;
-		 
-		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final; 
-	public:
-		bool Copy(JObject* ori) final;
+	private:
+		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 
 	private:
-		bool UpdateFrame(Graphic::JObjectConstants& constant)final;
+		bool UpdateFrame(Graphic::JObjectConstants& constant, const uint submeshIndex)final;
 	private:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 	private:

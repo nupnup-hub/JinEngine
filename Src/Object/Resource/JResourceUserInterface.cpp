@@ -4,20 +4,22 @@
 
 namespace JinEngine
 {
-	void JResourceUserInterface::OnResourceReference(JReferenceInterface& jRobj)
+	void JResourceUserInterface::CallOnResourceReference(JReferenceInterface* jRobj)
 	{
-		jRobj.OnReference();
+		if(jRobj != nullptr)
+			jRobj->OnReference();
 	}
-	void JResourceUserInterface::OffResourceReference(JReferenceInterface& jRobj)
+	void JResourceUserInterface::CallOffResourceReference(JReferenceInterface* jRobj)
 	{
-		jRobj.OffReference();
+		if (jRobj != nullptr)
+			jRobj->OffReference();
 	}
-	int JResourceUserInterface::GetResourceReferenceCount(JReferenceInterface& jRobj)
+	int JResourceUserInterface::CallGetResourceReferenceCount(JReferenceInterface& jRobj)
 	{
 		return jRobj.GetReferenceCount();
 	}
-	bool JResourceUserInterface::IsVaildResource(JValidInterface& jRobj)
+	bool JResourceUserInterface::CallIsVaildResource(JValidInterface& jRobj)
 	{
-		return jRobj.IsValidResource();
+		return jRobj.IsValid();
 	}
 }

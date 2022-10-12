@@ -1,6 +1,7 @@
 #pragma once  
 #include"JGameObjectInterface.h" 
 #include"../Component/JComponent.h"
+#include"../../Utility/JTypeUtility.h"
 #include<type_traits>
 #include<memory>
 #include<vector> 
@@ -16,7 +17,7 @@ namespace JinEngine
 	class JScene; 
 	class JLight;
 
-	class JGameObject : public JGameObjectInterface
+	class JGameObject final : public JGameObjectInterface
 	{
 		REGISTER_CLASS(JGameObject) 
 	private: 
@@ -39,8 +40,8 @@ namespace JinEngine
 		JGameObject* GetParent()noexcept;
 		JGameObject* GetChild(const uint index)noexcept;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
-   
-		JComponent* FindComponent(const size_t guid)const noexcept;
+
+		void SetName(const std::wstring& newName)noexcept final;
 
 		bool IsRoot()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE type)const noexcept;
@@ -48,25 +49,29 @@ namespace JinEngine
 		bool HasAnimator()const noexcept; 
 		bool CanAddComponent(const J_COMPONENT_TYPE type)const noexcept;
 		void ChangeParent(JGameObject* newParent)noexcept;
+		JComponent* FindComponent(const size_t guid)const noexcept;
 	public:
 		JGameObjectCompInterface* CompInterface() final;
 	public:
-		bool Copy(JObject* ori) final;
+		void DoCopy(JObject* ori) final;
 	private:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
 	private:
 		static bool HasSameName(_In_ JGameObject* parent, _In_ const std::wstring& initName) noexcept;
 		bool IsChild(JGameObject* obj)noexcept;
-		JComponent* AddComponent(JComponent& component)noexcept; 
+		bool AddComponent(JComponent& component)noexcept final;
 		bool RemoveComponent(JComponent& component)noexcept final;
 	private:
-		void Destroy() final; 
+		bool Destroy() final; 
 		void Clear();
+	private:
+		bool RegisterCashData()noexcept final;
+		bool DeRegisterCashData()noexcept final;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreGameObject(std::wofstream& stream) final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JGameObject* gameObject);
-		static JGameObject* LoadObject(std::wifstream& stream, JGameObject* parent);
+		static JGameObject* LoadObject(std::wifstream& stream, JGameObject* parent, JScene* owenerScene);
 		static void RegisterJFunc();
 	private:
 		/*
@@ -77,18 +82,9 @@ namespace JinEngine
 		JGameObject(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* parent, JScene* ownerScene = nullptr);
 		~JGameObject();
 #pragma region JComponent Template
-	private:
-		template<typename T, bool res>
-		struct ToPtr;
-		template<typename T>
-		struct ToPtr<T, true>
-		{
-		public:
-			using Ptr = T*;
-		};
 	public:
 		template<typename T>
-		auto GetComponent()const noexcept -> typename ToPtr<T, std::is_base_of_v<JComponent, T>>::Ptr
+		auto GetComponent()const noexcept -> typename Core::TypeCondition<T*, std::is_base_of_v<JComponent, T>>::Type
 		{
 			const uint componentCount = (uint)component.size();
 			if constexpr (std::is_base_of_v<JBehavior, T>)
@@ -119,7 +115,7 @@ namespace JinEngine
 			}
 		} 
 		template<typename T>
-		auto GetComponents()const noexcept -> std::vector<typename ToPtr<T, std::is_base_of_v<JComponent, T>>::Ptr>
+		auto GetComponents()const noexcept -> std::vector<typename  Core::TypeCondition<T*, std::is_base_of_v<JComponent, T>>::Type>
 		{
 			std::vector<T*> res;
 			const uint componentCount = (uint)component.size();
@@ -156,7 +152,7 @@ namespace JinEngine
 			return T::TypeName() == typeName;
 		} 
 		template<typename ...ExceptParam>
-		auto GetExceptedComponents()const noexcept -> std::vector<typename ToPtr<JComponent, std::is_base_of_v<JComponent, ExceptParam...>>::Ptr>
+		auto GetExceptedComponents()const noexcept -> std::vector<typename Core::TypeCondition<JComponent*, std::is_base_of_v<JComponent, ExceptParam...>>::Type>
 		{
 			std::vector<JComponent*> res;
 			const uint componentCount = (uint)component.size();
@@ -178,7 +174,7 @@ namespace JinEngine
 			return res;
 		}
 		template<typename T>
-		auto GetComponentWithParent()const noexcept -> typename ToPtr<T, std::is_base_of_v<JComponent, T>>::Ptr
+		auto GetComponentWithParent()const noexcept -> typename Core::TypeCondition<T*, std::is_base_of_v<JComponent, T>>::Type
 		{
 			const JGameObject* nowParent = this;
 			while (nowParent != nullptr)

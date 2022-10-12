@@ -2,6 +2,7 @@
 #include"JGraphicTextureHandle.h"
 #include"../Object/Resource/Scene/JScene.h" 
 #include"../Object/Component/JComponent.h" 
+#include"../Object/GameObject/JGameObject.h"
 
 namespace JinEngine
 {
@@ -16,7 +17,7 @@ namespace JinEngine
 			handle = nullptr;
 		}
 
-		JSceneDrawRequestor::JSceneDrawRequestor(JComponent* jSjCamcene, JGraphicTextureHandle* handle)
+		JSceneDrawRequestor::JSceneDrawRequestor(JComponent* jCamera, JGraphicTextureHandle* handle)
 			:jCamera(jCamera), handle(handle)
 		{}
 		JSceneDrawRequestor::~JSceneDrawRequestor()
@@ -42,27 +43,25 @@ namespace JinEngine
 			}
 		}
 
-		JGraphicDrawTarget::JGraphicDrawTarget(JScene* scene)
-			: scene(scene)
+		JGraphicDrawTarget::JGraphicDrawTarget(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, IFrameDirty* observationFrame)
+			: scene(scene), updateFrequency(updateFrequency), observationFrame(observationFrame)
 		{ }
 		JGraphicDrawTarget::~JGraphicDrawTarget() {}
 
-		bool JGraphicDrawList::AddDrawList(JScene* scene)noexcept
-		{
+		bool JGraphicDrawList::AddDrawList(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
+		{ 
 			if (scene == nullptr)
 				return false;
 
 			if (HasDrawList(scene))
 				return false;
 			 
-			std::unique_ptr<JGraphicDrawTarget> newTarget = std::make_unique<JGraphicDrawTarget>(scene);
-			newTarget->scene->FrameInterface()->SetAllComponentDirty();
+			std::unique_ptr<JGraphicDrawTarget> newTarget = std::make_unique<JGraphicDrawTarget>(scene, updateFrequency);
 			drawList.push_back(std::move(newTarget));
-
 			return true;
 		}
 		bool JGraphicDrawList::PopDrawList(JScene* scene)noexcept
-		{
+		{ 
 			if (scene == nullptr)
 				return false;
 
@@ -74,7 +73,7 @@ namespace JinEngine
 			drawList.erase(drawList.begin() + index);
 			const uint drawListCount = (uint)drawList.size();
 			for (uint i = index; i < drawListCount; ++i)
-				drawList[i]->scene->FrameInterface()->SetAllComponentDirty();
+				drawList[i]->scene->AppInterface()->SetAllComponentDirty();
 
 			return true;
 		}
@@ -101,7 +100,7 @@ namespace JinEngine
 
 			const uint drawListCount = (uint)drawList.size();
 			for (uint i = index + 1; i < drawListCount; ++i)
-				drawList[i]->scene->FrameInterface()->SetComponentDirty(cType);
+				drawList[i]->scene->AppInterface()->SetComponentDirty(cType);
 		}
 		void JGraphicDrawList::AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicTextureHandle* handle)noexcept
 		{
@@ -114,10 +113,10 @@ namespace JinEngine
 				return;
 
 			drawList[index]->shadowRequestor.emplace_back(std::make_unique<JShadowMapDrawRequestor>(jLight, handle));
-			drawList[index]->hasUpdate = true;
+			drawList[index]->hasShadowUpdate = true;
 		}
 		void JGraphicDrawList::AddDrawSceneRequest(JScene* scene, JComponent* jCamera, JGraphicTextureHandle* handle)noexcept
-		{
+		{ 
 			if (scene == nullptr || jCamera == nullptr)
 				return;
 
@@ -127,7 +126,7 @@ namespace JinEngine
 				return;
 
 			drawList[index]->sceneRequestor.emplace_back(std::make_unique<JSceneDrawRequestor>(jCamera, handle));
-			drawList[index]->hasUpdate = true;
+			drawList[index]->hasSceneUpdate = true;			 
 		}
 		void JGraphicDrawList::PopDrawRequest(JScene* scene, JComponent* jComp)noexcept
 		{
@@ -147,7 +146,7 @@ namespace JinEngine
 					if (drawList[index]->sceneRequestor[i]->jCamera->GetGuid() == jComp->GetGuid())
 					{
 						drawList[index]->sceneRequestor.erase(drawList[index]->sceneRequestor.begin() + i);
-						drawList[index]->hasUpdate = true;
+						drawList[index]->hasSceneUpdate = true;
 						break;
 					}
 				}
@@ -160,7 +159,7 @@ namespace JinEngine
 					if (drawList[index]->shadowRequestor[i]->jLight->GetGuid() == jComp->GetGuid())
 					{
 						drawList[index]->shadowRequestor.erase(drawList[index]->shadowRequestor.begin() + i);
-						drawList[index]->hasUpdate = true;
+						drawList[index]->hasShadowUpdate = true;
 						break;
 					}
 				}

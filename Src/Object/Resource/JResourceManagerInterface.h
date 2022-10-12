@@ -10,28 +10,31 @@ namespace JinEngine
 		class JApplication;
 	}
 
-	class JResourceMangerOwnerInterface
+	class JResourceMangerAppInterface
 	{
 	private:
 		friend class Application::JApplication;
 	protected:
-		virtual ~JResourceMangerOwnerInterface() = default;
+		virtual ~JResourceMangerAppInterface() = default;
 	public:
-		virtual JResourceMangerOwnerInterface* OwnerInterface() = 0;
+		virtual JResourceMangerAppInterface* AppInterface() = 0;
 	private:
+		virtual void Initialize() = 0;
+		virtual void Terminate() = 0;
+		virtual void StoreProjectResource() = 0;
 		virtual void LoadSelectorResource() = 0;
 		virtual void LoadProjectResource() = 0;
-		virtual void Terminate() = 0;
 	};
 
 	class JResourceObject; 
-	class JResourceStorageInterface : public JResourceMangerOwnerInterface
+	class JResourceStorageInterface : public JResourceMangerAppInterface
 	{
 	private:
 		friend class JResourceObject; 
 	public:
 		virtual JResourceStorageInterface* ResourceStorageInterface() = 0;
 	private:
+		virtual bool AddResource(JResourceObject& resource)noexcept = 0;
 		virtual bool RemoveResource(JResourceObject& resource)noexcept = 0;
 	};
 
@@ -43,6 +46,7 @@ namespace JinEngine
 	public:
 		virtual JDirectoryStorageInterface* DirectoryStorageInterface() = 0;
 	private:
+		virtual bool AddJDirectory(JDirectory& dir)noexcept = 0;
 		virtual bool RemoveJDirectory(JDirectory& dir)noexcept = 0;
 	};
 }

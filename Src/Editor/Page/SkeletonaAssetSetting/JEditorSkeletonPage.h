@@ -3,35 +3,43 @@
 
 namespace JinEngine
 { 
+	class JScene;
 	namespace Editor
 	{
 		class JObjectExplorer;
-		class JAvatarEditor; 
-		class JEditorViewer;
+		class JAvatarEditor;  
+		class JSceneViewer;
 		class JObjectDetail;
 
-		class JEditorSkeletonPage : public JEditorPage
-		{ 
+		class JEditorSkeletonPage final: public JEditorPage
+		{  
 		private:
-			std::unique_ptr<JObjectExplorer> skeletonExplorer;
-			std::unique_ptr<JAvatarEditor>avatarEdit;
-			std::unique_ptr<JEditorViewer> modelViewer;
-			std::unique_ptr<JObjectDetail>avatarDetail;		 
+			std::unique_ptr< JObjectExplorer> explorer;
+			std::unique_ptr< JAvatarEditor> avatarEdit;
+			std::unique_ptr< JSceneViewer> avatarViewer;
+			std::unique_ptr<JObjectDetail>avatarDetail;
+		private:
+			Core::JUserPtr<JScene> avatarScene;
+		private:
+			bool reqInitDockNode;
 		public:
 			JEditorSkeletonPage(bool hasMetadata);
 			~JEditorSkeletonPage();
 		public:
-			void Initialize(bool hasImguiTxt)override;
-			void UpdatePage()final;
-		public:
 			J_EDITOR_PAGE_TYPE GetPageType()const noexcept final;
+			void Initialize()final;
+			void UpdatePage()final; 
 		public:
 			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
 		private:
 			bool StuffSkeletonAssetData(const Core::JUserPtr<JObject>& selectedObj);
+		protected:
+			void DoSetClose()noexcept final;
 		public:
-			void StorePage(std::wofstream& stream)override;
+			void StorePage(std::wofstream& stream)final;
 			void LoadPage(std::wifstream& stream)final;
+		private:
+			void BuildDockNode();
 		};
 	}
 }

@@ -12,41 +12,41 @@ namespace JinEngine
 	private:
 		Core::JFactory<std::string, false, JGameObject*, JGameObject*> defaultFactory;
 		Core::JFactory<std::string, false, JGameObject*, const std::wstring&, const size_t, const J_OBJECT_FLAG, JGameObject*, JScene*> initFactory;
-		Core::JFactory<std::string, false, JGameObject*, std::wifstream&, JGameObject*> loadFactory;
+		Core::JFactory<std::string, false, JGameObject*, std::wifstream&, JGameObject*, JScene*> loadFactory;
 		Core::JFactory<std::string, false, JGameObject*, JGameObject*, JGameObject*> copyFactory;
 	private:
 		bool RegisterDefault(const std::string& iden, Core::JCallableInterface<JGameObject*, JGameObject*>* callable)
 		{
-			return defaultFactory.Regist(iden, callable);
+			return defaultFactory.Register(iden, callable);
 		}
 		bool RegisterInit(const std::string& iden, Core::JCallableInterface<JGameObject*, const std::wstring&, const size_t, const J_OBJECT_FLAG, JGameObject*, JScene*>* callable)
 		{
-			return initFactory.Regist(iden, callable);
+			return initFactory.Register(iden, callable);
 		}
-		bool RegisterLoad(const std::string& iden, Core::JCallableInterface<JGameObject*, std::wifstream&, JGameObject*>* callable)
+		bool RegisterLoad(const std::string& iden, Core::JCallableInterface<JGameObject*, std::wifstream&, JGameObject*, JScene*>* callable)
 		{
-			return loadFactory.Regist(iden, callable);
+			return loadFactory.Register(iden, callable);
 		}
 		bool RegisterCopy(const std::string& iden, Core::JCallableInterface<JGameObject*, JGameObject*, JGameObject*>* callable)
 		{
-			return copyFactory.Regist(iden, callable);
+			return copyFactory.Register(iden, callable);
 		}
 
 		JGameObject* Create(const std::string& iden, JGameObject& parent)
 		{
 			return defaultFactory.Invoke(iden, &parent);
 		}
-		JGameObject* Create(const std::string& iden, const std::wstring& name, size_t guid, J_OBJECT_FLAG flag, JGameObject& parent)
+		JGameObject* Create(const std::string& iden, const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject& parent)
 		{
-			return initFactory.Invoke(iden, name, std::move(guid), std::move(flag), &parent, nullptr);
+			return initFactory.Invoke(iden, name, guid, flag, &parent, nullptr);
 		}
-		JGameObject* CreateRoot(const std::string& iden, const std::wstring& name, size_t guid, J_OBJECT_FLAG flag, JScene& ownerScene)
+		JGameObject* CreateRoot(const std::string& iden, const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JScene& ownerScene)
 		{
-			return initFactory.Invoke(iden, name, std::move(guid), std::move(flag), nullptr, &ownerScene);
+			return initFactory.Invoke(iden, name, guid, flag, nullptr, &ownerScene);
 		}
-		JGameObject* Create(const std::string& iden, std::wifstream& stream, JGameObject& parent)
+		JGameObject* Create(const std::string& iden, std::wifstream& stream, JGameObject& parent, JScene& owner)
 		{
-			return loadFactory.Invoke(iden, stream, &parent);
+			return loadFactory.Invoke(iden, stream, &parent, &owner);
 		}
 		JGameObject* Copy(const std::string& iden, JGameObject& ori, JGameObject& parent)
 		{
@@ -55,25 +55,17 @@ namespace JinEngine
 	};
 	using JGF = Core::JSingletonHolder<JGameObjectFactory>;
 
-	JGameObjectFactoryImpl::AddStorageCallable* JGameObjectFactoryImpl::addStorage;
-
 	JGameObject* JGameObjectFactoryImpl::Create(JGameObject& parent)
 	{
-		JGameObject* res = JGF::Instance().Create(JGameObject::TypeName(), parent);
-		(*addStorage)(res->GetOwnerScene(), *res);
-		return res;
+		return JGF::Instance().Create(JGameObject::TypeName(), parent);
 	}
 	JGameObject* JGameObjectFactoryImpl::Create(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject& parent)
 	{
-		JGameObject* res = JGF::Instance().Create(JGameObject::TypeName(), name, guid, flag, parent);
-		(*addStorage)(res->GetOwnerScene(), *res);
-		return res;
+		return JGF::Instance().Create(JGameObject::TypeName(), name, guid, flag, parent);
 	}
 	JGameObject* JGameObjectFactoryImpl::CreateRoot(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JScene& ownerScene)
 	{
-		JGameObject* res = JGF::Instance().CreateRoot(JGameObject::TypeName(), name, guid, flag, ownerScene);
-		(*addStorage)(res->GetOwnerScene(), *res);
-		return res;
+		return JGF::Instance().CreateRoot(JGameObject::TypeName(), name, guid, flag, ownerScene);
 	}
 	JGameObject* JGameObjectFactoryImpl::Copy(JGameObject& ori, JGameObject& tarParent)
 	{
@@ -81,17 +73,13 @@ namespace JinEngine
 		if (ori.IsRoot())
 			return nullptr;
 
-		JGameObject* res = JGF::Instance().Copy(JGameObject::TypeName(), ori, tarParent);
-		(*addStorage)(res->GetOwnerScene(), *res);
-		return res;
+		return JGF::Instance().Copy(JGameObject::TypeName(), ori, tarParent);
 	}
-	JGameObject* JGameObjectFactoryImpl::Create(std::wifstream& stream, JGameObject* parent)
+	JGameObject* JGameObjectFactoryImpl::Create(std::wifstream& stream, JGameObject* parent, JScene* ownerScene)
 	{
-		JGameObject* res = JGF::Instance().Create(JGameObject::TypeName(), stream, *parent);
-		(*addStorage)(res->GetOwnerScene(), *res);
-		return res;
+		return JGF::Instance().Create(JGameObject::TypeName(), stream, *parent, *ownerScene);
 	}
-	void JGameObjectFactoryImpl::Regist(DefaultPtr defaultPtr, InitPtr initPtr, LoadPtr loadPtr, CopytPtr copytPtr)
+	void JGameObjectFactoryImpl::Register(DefaultPtr defaultPtr, InitPtr initPtr, LoadPtr loadPtr, CopytPtr copytPtr)
 	{
 		static DefaultCallable defaultCallable{ defaultPtr };
 		static InitCallable initCallable{ initPtr };
@@ -102,10 +90,5 @@ namespace JinEngine
 		JGF::Instance().RegisterInit(JGameObject::TypeName(), &initCallable);
 		JGF::Instance().RegisterLoad(JGameObject::TypeName(), &loadCallable);
 		JGF::Instance().RegisterCopy(JGameObject::TypeName(), &copyCallable);
-	}
-	void JGameObjectFactoryImpl::RegisterAddStroage(AddStoragePtr addPtr)
-	{
-		static AddStorageCallable addStorage{ addPtr };
-		JGameObjectFactoryImpl::addStorage = &addStorage;
 	}
 }

@@ -9,9 +9,10 @@ namespace JinEngine
 {
 	class JComponent;
 	class JScene; 
+	class JSceneManagerImpl;
 	class JLight;
-	class JCamera;
-	class JPreviewScene;
+	class JCamera; 
+	class IFrameDirty;
 
 	namespace Graphic
 	{
@@ -40,7 +41,7 @@ namespace JinEngine
 			JComponent* jCamera;
 			JGraphicTextureHandle* handle;
 		public:
-			JSceneDrawRequestor(JComponent* jSjCamcene, JGraphicTextureHandle* handle);
+			JSceneDrawRequestor(JComponent* jCamera, JGraphicTextureHandle* handle);
 			~JSceneDrawRequestor();
 		};
 
@@ -50,11 +51,14 @@ namespace JinEngine
 			friend class JGraphicDrawList;
 		public:
 			JScene* scene; 
-			bool hasUpdate;
+			IFrameDirty* observationFrame = nullptr;		// for resource preview scene
+			bool hasShadowUpdate;
+			bool hasSceneUpdate;
+			const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
 			std::vector<std::unique_ptr<JShadowMapDrawRequestor>> shadowRequestor;
 			std::vector<std::unique_ptr<JSceneDrawRequestor>> sceneRequestor;
 		public:
-			JGraphicDrawTarget(JScene* scene);
+			JGraphicDrawTarget(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, IFrameDirty* observationFrame = nullptr);
 			~JGraphicDrawTarget();
 		};
 		 
@@ -63,9 +67,10 @@ namespace JinEngine
 		private:
 			friend class JGraphicImpl;
 			friend class JGraphicTexture;
-			friend class JScene; 
+			friend class JSceneManagerImpl;
+			friend class JScene;
 		private:
-			static bool AddDrawList(JScene* scene)noexcept;
+			static bool AddDrawList(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept;
 			static bool PopDrawList(JScene* scene)noexcept;
 			static bool HasDrawList(JScene* scene)noexcept;
 			static void UpdateScene(JScene* scene, const J_COMPONENT_TYPE cType)noexcept;

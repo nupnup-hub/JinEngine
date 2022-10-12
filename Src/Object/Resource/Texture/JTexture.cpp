@@ -1,16 +1,68 @@
 #include"JTexture.h"
 #include"../JResourceObjectFactory.h"
+#include"../JResourceImporter.h"
 #include"../../Directory/JDirectory.h"
 #include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphic.h" 
 #include"../../../Application/JApplicationVariable.h"
 #include"../../../../Lib/LoadTextureFromFile.h"
 #include"../../../../Lib/DirectX/DDSTextureLoader.h" 
 #include<memory>
+#include<fstream>
+#include<io.h>
 
 namespace JinEngine
 {
+	JTexture::JTextureInitData::JTextureInitData(const std::wstring& name,
+		const size_t guid,
+		const J_OBJECT_FLAG flag,
+		JDirectory* directory,
+		const std::wstring oridataPath)
+		:JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JTexture>(JCUtil::DecomposeFileFormat(oridataPath))),
+		oridataPath(oridataPath)
+	{ 
+	}
+	JTexture::JTextureInitData::JTextureInitData(const std::wstring& name,
+		const size_t guid,
+		const J_OBJECT_FLAG flag,
+		JDirectory* directory,
+		const uint8 formatIndex)
+		: JResourceInitData(name, guid, flag, directory, formatIndex), oridataPath(oridataPath)
+	{ }
+	JTexture::JTextureInitData::JTextureInitData(const std::wstring& name,
+		JDirectory* directory,
+		const std::wstring oridataPath)
+		: JResourceInitData(name, directory, JResourceObject::GetFormatIndex<JTexture>(JCUtil::DecomposeFileFormat(oridataPath))),
+		oridataPath(oridataPath)
+	{ }
+
+	bool JTexture::JTextureInitData::IsValidCreateData()
+	{
+		if (JResourceInitData::IsValidCreateData() && _waccess(oridataPath.c_str(), 00) != -1)
+			return true;
+		else
+			return false;
+	}
+	J_RESOURCE_TYPE JTexture::JTextureInitData::GetResourceType() const noexcept
+	{
+		return J_RESOURCE_TYPE::TEXTURE;
+	}
+
+	J_RESOURCE_TYPE JTexture::GetResourceType()const noexcept
+	{
+		return GetStaticResourceType();
+	}
+	std::wstring JTexture::GetFormat()const noexcept
+	{
+		return GetAvailableFormat()[GetFormatIndex()];
+	}
+	std::vector<std::wstring> JTexture::GetAvailableFormat()noexcept
+	{
+		static std::vector<std::wstring> format{ L".jpg",L".png",L".dds",L".tga",L".bmp" };
+		return format;
+	}
 	uint JTexture::GetTextureWidth()const noexcept
 	{
 		return GetTxtWidth();
@@ -21,20 +73,7 @@ namespace JinEngine
 	}
 	Graphic::J_GRAPHIC_TEXTURE_TYPE JTexture::GetTextureType()const noexcept
 	{
-		return GetTxtType();
-	}
-	J_RESOURCE_TYPE JTexture::GetResourceType()const noexcept
-	{
-		return GetStaticResourceType();
-	} 
-	std::wstring JTexture::GetFormat()const noexcept
-	{
-		return GetAvailableFormat()[GetFormatIndex()];
-	}
-	std::vector<std::wstring> JTexture::GetAvailableFormat()noexcept
-	{
-		static std::vector<std::wstring> format{ L".jpg",L".png",L".dds",L".tga",L".bmp" };
-		return format;
+		return textureType;
 	}
 	void JTexture::SetTextureType(const Graphic::J_GRAPHIC_TEXTURE_TYPE textureType)noexcept
 	{
@@ -45,29 +84,31 @@ namespace JinEngine
 			StuffResource();
 		}
 	}
-	bool JTexture::Copy(JObject* ori)
+	JTextureImportInterface* JTexture::ImportInterface()noexcept
 	{
-		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
-			return false;
-
-		if (typeInfo.IsA(ori->GetTypeInfo()))
-		{
-			JTexture* oriT = static_cast<JTexture*>(oriT);
-			CopyRFile(*oriT, *this);
-			ClearResource();
-			StuffResource();
-			return true;
-		}
-		else
-			return false;
+		return this;
+	}
+	void JTexture::DoCopy(JObject* ori)
+	{
+		JTexture* oriT = static_cast<JTexture*>(ori);
+		CopyRFile(*oriT);
+		ClearResource();
+		SetTextureType(oriT->GetTextureType());
+		StuffResource();
 	}
 	void JTexture::DoActivate()noexcept
-	{
-		JResourceObject::DoActivate(); 
+	{	
+		JResourceObject::DoActivate();
 		StuffResource();
 	}
 	void JTexture::DoDeActivate()noexcept
-	{
+	{ 
+		std::wofstream stream;
+		stream.open(GetMetafilePath(), std::ios::out | std::ios::binary);
+		StoreMetadata(stream, this);
+		stream.close();
+	
+		StoreObject(this);
 		JResourceObject::DoDeActivate();
 		ClearResource();
 	}
@@ -94,16 +135,39 @@ namespace JinEngine
 		{
 			if (textureType == Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D)
 			{
-				if (Create2DTexture(uploadHeap, GetPath()))
+				if (Create2DTexture(uploadHeap, GetPath(), GetFormat()))
 					return true;
 			}
 			else if (textureType == Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE)
 			{
-				if (CreateCubeTexture(uploadHeap, GetPath()))
+				if (CreateCubeTexture(uploadHeap, GetPath(), GetFormat()))
 					return true;
 			}
 		}
 		return false;
+	}
+	bool JTexture::ImportTexture(const std::wstring& oriPath)
+	{
+		if (_waccess(oriPath.c_str(), 00) == -1)
+			return false;
+
+		std::wstring folderPath;
+		std::wstring name;
+		std::wstring format;
+		JCUtil::DecomposeFilePath(oriPath, folderPath, name, format);
+
+		int formatIndex = GetFormatIndex<JTexture>(format);
+		if (formatIndex != GetFormatIndex() || formatIndex == GetInvalidFormatIndex())
+			return false;
+
+		std::ifstream source(oriPath, std::ios::binary);
+		std::ofstream dest(GetPath(), std::ios::binary);
+
+		dest << source.rdbuf();
+		source.close();
+		dest.close();
+
+		return true;
 	}
 	Core::J_FILE_IO_RESULT JTexture::CallStoreResource()
 	{
@@ -131,134 +195,123 @@ namespace JinEngine
 			if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 				return res;
 
-			stream << (int)texture->GetTextureType();
+			JFileIOHelper::StoreEnumData(stream, L"TextureType:", texture->GetTextureType());
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	JTexture* JTexture::LoadObject(JDirectory* directory, const JResourcePathData& pathData)
+	JTexture* JTexture::LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)
 	{
 		if (directory == nullptr)
 			return nullptr;
 
-		if (!JResourceObject::IsResourceFormat<JTexture>(pathData.format))
-			return nullptr;
-
 		std::wifstream stream;
-		stream.open(ConvertMetafilePath(pathData.wstrPath), std::ios::in | std::ios::binary);
-		TextureMetadata metadata;
-		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, pathData.folderPath, metadata);
+		stream.open(pathData.engineMetaFileWPath, std::ios::in | std::ios::binary);
+		JTextureMetadata metadata;
+		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
 		stream.close();
 
 		JTexture* newTexture = nullptr;
-		if (directory->HasFile(pathData.fullName))
-			newTexture = JResourceManager::Instance().GetResourceByPath<JTexture>(pathData.wstrPath);
+		if (directory->HasFile(pathData.name))
+			newTexture = JResourceManager::Instance().GetResourceByPath<JTexture>(pathData.engineFileWPath);
 
-		if (newTexture == nullptr)
+		if (newTexture == nullptr && loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
 		{
-			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+			JTextureInitData initdata{ pathData.name, metadata.guid,metadata.flag, directory, (uint8)metadata.formatIndex };
+			if (initdata.IsValidLoadData())
 			{
-				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(pathData.name, 
-					metadata.guid,
-					metadata.flag, 
-					directory, 
-					GetFormatIndex<JTexture>(pathData.format));
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(initdata);
 				newTexture = ownerPtr.Get();
-				AddInstance(std::move(ownerPtr));
-			}
-			else
-			{
-				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(pathData.name,
-					Core::MakeGuid(), 
-					OBJECT_FLAG_NONE, 
-					directory, 
-					GetFormatIndex<JTexture>(pathData.format));
-				newTexture = ownerPtr.Get();
-				AddInstance(std::move(ownerPtr));
+				if (!AddInstance(std::move(ownerPtr)))
+					return nullptr;
 			}
 		}
-		 
-		if (newTexture->IsValid())
-			return newTexture;
-
-		newTexture->textureType = (Graphic::J_GRAPHIC_TEXTURE_TYPE)metadata.textureType;
-		if (newTexture->ReadTextureData())
-			return newTexture;
-		else
-		{
-			newTexture->SetIgnoreUndestroyableFlag(true);
-			newTexture->BeginDestroy();
-			return nullptr;
-		}
+		if(newTexture != nullptr)
+			newTexture->textureType = metadata.textureType;
+		return newTexture;
 	}
-	Core::J_FILE_IO_RESULT JTexture::LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, TextureMetadata& metadata)
+	Core::J_FILE_IO_RESULT JTexture::LoadMetadata(std::wifstream& stream, JTextureMetadata& metadata)
 	{
 		if (stream.is_open())
 		{
 			Core::J_FILE_IO_RESULT res = JResourceObject::LoadMetadata(stream, metadata);
 			if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 				return res;
-
-			stream >> metadata.textureType;
+			  
+			JFileIOHelper::LoadEnumData(stream, metadata.textureType);
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
 	void JTexture::RegisterJFunc()
-	{
-		auto defaultC = [](JDirectory* directory) ->JResourceObject*
+	{ 
+		auto defaultC = [](Core::JOwnerPtr<JResourceInitData> initdata) -> JResourceObject*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(directory->MakeUniqueFileName(GetDefaultName<JTexture>()),
-				Core::MakeGuid(),
-				OBJECT_FLAG_NONE,
-				directory,
-				JResourceObject::GetDefaultFormatIndex());
-			JResourceObject* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
+			if (initdata.IsValid() && initdata->GetResourceType() == J_RESOURCE_TYPE::TEXTURE && initdata->IsValidCreateData())
+			{
+				JTextureInitData* tInitdata = static_cast<JTextureInitData*>(initdata.Get());
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(*tInitdata);
+				JTexture* newTexture = ownerPtr.Get();
+			 
+				if (AddInstance(std::move(ownerPtr)))
+				{ 
+					newTexture->ImportTexture(tInitdata->oridataPath); 
+					StoreObject(newTexture);
+					return newTexture;
+				}
+			}
+			return nullptr;
 		};
-		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
-		{ 
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(name, guid, objFlag, directory, formatIndex);
-			JResourceObject* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
-		};
-		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
+		auto loadC = [](JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
 		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(directory->MakeUniqueFileName(ori->GetName()),
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTexture>(InitData(ori->GetName(),
 				Core::MakeGuid(),
 				ori->GetFlag(),
 				directory,
-				GetFormatIndex<JTexture>(ori->GetFormat()));
+				GetFormatIndex<JTexture>(ori->GetFormat())));
 
 			JTexture* newTexture = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			newTexture->Copy(ori);
-			return newTexture;
+			if (AddInstance(std::move(ownerPtr)))
+			{
+				newTexture->Copy(ori);
+				return newTexture;
+			}
+			else
+				return nullptr;
 		};
 
-		JRFI<JTexture>::Register(defaultC, initC, loadC, copyC);
+		JRFI<JTexture>::Register(defaultC, loadC, copyC);
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JTexture>(format); };
 
 		static GetTypeNameCallable getTypeNameCallable{ &JTexture::TypeName };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JTexture::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
-		 
-		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false, false };
+
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false};
 		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
-		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{}); 
+		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
+
+		auto txtImportC = [](JDirectory* dir, const Core::JFileImportPathData importPathData) -> std::vector<JResourceObject*>
+		{
+			return { JRFI<JTexture>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name, dir, importPathData.oriFileWPath)) };
+		};
+
+		JResourceImporter::Instance().AddFormatInfo(L".jpg", J_RESOURCE_TYPE::TEXTURE, txtImportC);
+		JResourceImporter::Instance().AddFormatInfo(L".png", J_RESOURCE_TYPE::TEXTURE, txtImportC);
+		JResourceImporter::Instance().AddFormatInfo(L".dds", J_RESOURCE_TYPE::TEXTURE, txtImportC);
+		JResourceImporter::Instance().AddFormatInfo(L".tga", J_RESOURCE_TYPE::TEXTURE, txtImportC);
+		JResourceImporter::Instance().AddFormatInfo(L".bmp", J_RESOURCE_TYPE::TEXTURE, txtImportC);
 	}
-	JTexture::JTexture(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const int formatIndex)
-		:JTextureInterface(name, guid, flag, directory, formatIndex)
+	JTexture::JTexture(const JTextureInitData& initdata)
+		: JTextureInterface(initdata)
 	{}
-	JTexture::~JTexture(){}
+	JTexture::~JTexture() {}
 }

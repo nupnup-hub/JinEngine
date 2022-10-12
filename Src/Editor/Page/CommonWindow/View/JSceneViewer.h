@@ -1,33 +1,27 @@
 #pragma once
-#include"../../JEditorWindow.h"
-#include"../../../../Utility/JDelegate.h"    
-#include"../../../../Utility/JVector.h"    
+#include"../../JEditorWindow.h"    
 
 namespace JinEngine
-{ 
-	class JCamera;
+{  
+	class JScene;
 	namespace Editor
 	{
 		class JEditorCameraControl;
-		class JSceneViewer : public JEditorWindow
-		{
-		private:
-			JCamera* selectedCamera;
+		class JSceneViewer final : public JEditorWindow
+		{ 
+		private: 
+			Core::JUserPtr<JScene> scene;
 			std::unique_ptr<JEditorCameraControl> editorCamCtrl;
-
-			//수정필요
-			//포트폴리오용코드
-			bool onAnimation = false;
 		public:
-			JSceneViewer(std::unique_ptr<JEditorAttribute> attribute, const size_t ownerPageGuid);
+			JSceneViewer(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType);
 			~JSceneViewer();
 			JSceneViewer(const JSceneViewer& rhs) = delete;
 			JSceneViewer& operator=(const JSceneViewer& rhs) = delete;
-			bool Activate(JEditorUtility* editorUtility) final;
-			bool DeActivate(JEditorUtility* editorUtility) final;
-			void StoreEditorWindow(std::wofstream& stream)final;
-			void LoadEditorWindow(std::wifstream& stream)final;
-			void UpdateWindow(JEditorUtility* editorUtility)override;
+		public:
+			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept;
+		public:
+			void Initialize(Core::JUserPtr<JScene> newScene);
+			void UpdateWindow()final;
 		};
 	}
 }

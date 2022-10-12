@@ -21,7 +21,7 @@ namespace JinEngine
 		for (uint i = 0; i < objectCount; ++i)
 		{
 			gameObjectVec[i] = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, DefaultShapeType, J_DEFAULT_MATERIAL::DEFAULT_STANDARD);
-			gameObjectVec[i]->SetName(std::to_string(i) + "CullingDemoObj");
+			gameObjectVec[i]->SetName(std::to_wstring(i) + L"CullingDemoObj");
 		}
 		DirectX::BoundingBox boundingBox = gameObjectVec[0]->GetRenderItem()->GetBoundingBox();
 		float xPad = boundingBox.Extents.x + 2;
@@ -47,7 +47,7 @@ namespace JinEngine
 		const uint objCount = (uint)gameObjectVec.size();
 		for (uint i = 0; i < objCount; ++i)
 		{
-			gameObjectVec[i]->Destroy();
+			gameObjectVec[i]->BeginDestroy();
 			gameObjectVec[i] = nullptr;
 		}
 		gameObjectVec.clear();

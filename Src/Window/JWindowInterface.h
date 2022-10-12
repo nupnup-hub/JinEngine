@@ -3,8 +3,7 @@
 #include<optional>
 
 namespace JinEngine
-{
-	class ProjectSelector;
+{ 
 	namespace Application 
 	{
 		class JApplication;
@@ -21,6 +20,7 @@ namespace JinEngine
 	{
 		class JEditorCameraControl;
 		class JImGui;
+		class JProjectSelectorHub;
 	}
 	namespace Window
 	{
@@ -31,21 +31,20 @@ namespace JinEngine
 		protected:
 			virtual ~JWindowAppInterface() = default;
 		private:
-			virtual void Initialize(HINSTANCE hInstance) = 0;
-			virtual void OpenWindow() = 0;
+			virtual void Initialize(HINSTANCE hInstance) = 0; 
+			virtual void OpenProjecSelectorWindow() = 0;
+			virtual void OpenEngineWindow() = 0; 
 			virtual void CloseWindow() = 0;
-			virtual void SetProjectSelectorWindow() = 0;
-			virtual void SetEngineWindow() = 0;
-			virtual std::optional<int> ProcessMessages() = 0;
+			virtual std::optional<int> ProcessMessages() = 0; 
 		};
 		class JWindowHandleInterface : public JWindowAppInterface
 		{
 		private:
-			friend class ProjectSelector;
 			friend class Application::JApplication;
 			friend class Core::JWindowException;
 			friend class Graphic::JGraphicImpl;
 			friend class Editor::JEditorCameraControl;
+			friend class Editor::JProjectSelectorHub;
 			friend class Editor::JImGui;
 		private:
 			virtual HWND GetHandle()const noexcept = 0;

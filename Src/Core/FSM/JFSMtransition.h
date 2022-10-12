@@ -8,9 +8,9 @@
 namespace JinEngine
 {
 	namespace Core
-	{
-		struct JFSMLoadGuidMap;
+	{ 
 		class JFSMcondition; 
+		class JFSMstate;
 		class JFSMconditionWrap
 		{
 		private:
@@ -26,9 +26,12 @@ namespace JinEngine
 			bool IsSatisfied()const noexcept;
 			bool PassDefectInspection()const noexcept;
 		};
+ 
 		class JFSMtransition
 		{
+		private:
 			friend class JFSMstate;
+			friend std::unique_ptr<JFSMtransition>::deleter_type;
 		protected:
 			using ConditionMap = std::unordered_map<size_t, JFSMcondition&>;
 		public:
@@ -37,9 +40,6 @@ namespace JinEngine
 		private:
 			std::vector<std::unique_ptr<JFSMconditionWrap>>conditionVec;
 			const size_t outputStateGuid;
-		public:
-			JFSMtransition(const size_t outputStateGuid);
-			virtual ~JFSMtransition() = default;
 		public:
 			uint GetConditioCount()const noexcept;
 			float GetConditionOnValue(const uint index)const noexcept;
@@ -54,6 +54,11 @@ namespace JinEngine
 			bool PopCondition(const size_t outputStateGuid)noexcept;
 		protected:
 			virtual void Initialize()noexcept;
+		protected:
+			JFSMtransition(const size_t outputStateGuid);
+			~JFSMtransition();
+			JFSMtransition(JFSMtransition&& rhs) = default;
+			JFSMtransition& operator=(JFSMtransition&& rhs) = default;
 		};
 	}
 }

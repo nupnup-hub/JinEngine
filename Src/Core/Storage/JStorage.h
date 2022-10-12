@@ -148,7 +148,7 @@ namespace JinEngine
 			}
 			bool Has(const IdentifierType iden)
 			{
-				return  objectMap.find(iden) != objectMap.end();
+				return objectMap.find(iden) != objectMap.end();
 			}
 			Type* Add(Type* obj, const IdentifierType iden)noexcept
 			{ 

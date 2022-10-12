@@ -1,6 +1,15 @@
 #pragma once
+#include"../Core/Reflection/JReflection.h"
+
 namespace JinEngine
-{
+{	
+	REGISTER_ENUM_CLASS(J_OBJECT_TYPE, int, GAME_OBJECT,
+		COMPONENT_OBJECT,
+		RESOURCE_OBJECT,
+		DIRECTORY_OBJECT,
+		EDITOR_OBJECT);
+
+	/*
 	enum class J_OBJECT_TYPE
 	{  
 		GAME_OBJECT,
@@ -8,5 +17,5 @@ namespace JinEngine
 		RESOURCE_OBJECT,
 		DIRECTORY_OBJECT,
 		EDITOR_OBJECT
-	};
+	};*/
 }

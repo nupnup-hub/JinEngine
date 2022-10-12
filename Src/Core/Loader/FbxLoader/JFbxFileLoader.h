@@ -7,8 +7,7 @@
 #include"../../Singleton/JSingletonHolder.h"
 
 namespace JinEngine
-{
-	struct JModelAttribute;
+{ 
 	struct JSkeleton;
 	struct Joint;
 	class JAnimationClip;
@@ -31,8 +30,6 @@ namespace JinEngine
 			std::unordered_map<size_t, uint32> indexMapping;
 			std::vector<JFbxControlPoint> controlPoint;
 			std::vector<JBlendingIndexWeightPair> nowBlendingPair[3];
-			DirectX::XMVECTOR modelMinXmV;
-			DirectX::XMVECTOR modelMaxXmV;
 			DirectX::XMFLOAT3 positionXm[3];
 			DirectX::XMFLOAT2 textureXm[3];
 			DirectX::XMFLOAT3 normalXm[3];
@@ -71,24 +68,18 @@ namespace JinEngine
 			int num = 0;
 		public:
 			~JFbxFileLoaderImpl();
-			J_FBXRESULT LoadFbxFile(const std::string& path,
-				std::vector<JFbxPartMeshData>& jFbxPartMeshData,
-				JModelAttribute& modeAttribute,
-				std::vector<Joint>& joint,
-				JFbxAnimationData& jfbxAniData);
-			J_FBXRESULT LoadFbxModelFile(const std::string& path,
-				std::vector<JFbxPartMeshData>& jFbxPartMeshData,
-				JModelAttribute& modeAttribute,
-				std::vector<Joint>& joint);
+			J_FBXRESULT LoadFbxMeshFile(const std::string& path, JStaticMeshGroup& meshGroup);
+			J_FBXRESULT LoadFbxMeshFile(const std::string& path, JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint);
 			J_FBXRESULT LoadFbxAnimationFile(const std::string& path, JFbxAnimationData& jfbxAniData);
 			FbxFileTypeInfo GetFileTypeInfo(const std::string& path);
 		private:
 			void GetMeshCount(FbxNode* node, uint& count, FbxFileTypeInfo& typeInfo);
 			void GetJointCount(FbxNode* node, uint& count, FbxFileTypeInfo& typeInfo);
-			void LoadNode(FbxNode* node, std::vector<JFbxPartMeshData>& jFbxPartMeshData, JModelAttribute& modeAttribute, JFbxSkeleton& skeleton, int meshIndex, int meshParentIndex);
+			void LoadNode(FbxNode* node, JStaticMeshGroup& meshGroup);
+			void LoadNode(FbxNode* node, JSkinnedMeshGroup& meshGroup, JFbxSkeleton& skeleton);
 			void LoadJoint(FbxNode* node, int depth, int index, int parentIndex, JFbxSkeleton& skeleton);
-			bool LoadStaticMesh(FbxNode* node, JFbxPartMeshData& jFbxPartMeshData);
-			bool LoadSkinnedMesh(FbxNode* node, JFbxPartMeshData& jFbxPartMeshData, JFbxSkeleton& skeleton);
+			JStaticMeshData LoadStaticMesh(FbxNode* node);
+			JSkinnedMeshData LoadSkinnedMesh(FbxNode* node, JFbxSkeleton& skeleton);
 			void LoadControlPoint(FbxMesh* mesh);
 			bool LoadTextureUV(const FbxMesh* mesh, int controlPointIndex, int inTextureUVIndex, DirectX::XMFLOAT2& outUV);
 			bool LoadNormal(const FbxMesh* mesh, int controlPointIndex, int vertexCounter, DirectX::XMFLOAT3& outNormal);
@@ -96,10 +87,11 @@ namespace JinEngine
 			bool LoadTangent(const FbxMesh* mesh, int controlPointIndex, int vertexCounter, DirectX::XMFLOAT4& outTangent);
 			void LoadSkinnedMeshInfo(FbxNode* node, JFbxSkeleton& skeleton);
 			J_FBXRESULT LoadAnimationClip(FbxScene* scene, FbxNode* node, JFbxSkeleton& skeleton, bool hasSkeleton, JFbxAnimationData& jfbxAniData);
+		private:
 			void SortBlendingWeight(); 
-			void StuffSkletonData(JFbxSkeleton& fbxSkeleton, std::vector<Joint>& joint, JModelAttribute& modeAttribute);
-			FbxAMatrix GetGeometryTransformation(FbxNode* inNode);
-			void CheckModelAxis(std::vector<JFbxPartMeshData>& jFbxPartMeshData, JModelAttribute& modeAttribute, std::vector<Joint>& joint)noexcept;
+			void StuffSkletonData(JFbxSkeleton& fbxSkeleton, std::vector<Joint>& joint);
+			FbxAMatrix GetGeometryTransformation(FbxNode* inNode); 
+			void CheckModelAxis(JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint)noexcept;
 			void GetModelYUP(std::vector<Joint>& joint, int& outUpDir, FbxAxisSystem::EUpVector& outUpAxis)noexcept;
 			void SetLeftHandMatrix(FbxAMatrix& m)noexcept;
 			void SetLeftHandPosition(FbxVector4& t)noexcept;
@@ -108,8 +100,9 @@ namespace JinEngine
 			void SetRotationDegreeToRadian(FbxAMatrix& mat)noexcept;
 			void SetRotationDegreeToRadian(FbxVector4& r)noexcept;
 			void SetSceneAxis(FbxScene* scene, FbxNode* root)noexcept;
-			void ConvertFbaToXM(FbxAMatrix& fbxM, DirectX::XMFLOAT4X4& xmM)noexcept;
-			void ConvertAxis(std::vector<JFbxPartMeshData>& jFbxPartMeshData, JModelAttribute& modeAttribute, std::vector<Joint>& joint, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
+		private:
+			void ConvertFbaToXM(FbxAMatrix& fbxM, DirectX::XMFLOAT4X4& xmM)noexcept; 
+			void ConvertAxis(JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
 			void ConvertPosition(DirectX::XMFLOAT3& posion, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
 			void ConvertQuaternion(DirectX::XMFLOAT4& quaternion, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
 			void ConvertScale(DirectX::XMFLOAT3& scale, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;

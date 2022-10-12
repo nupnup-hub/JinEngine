@@ -4,6 +4,7 @@
 #include"../../Object/Component/Light/JLight.h"
 #include"../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../Object/Resource/JResourceManager.h"
+#include"../../Object/Resource/Mesh/JMeshGeometry.h"
 
 namespace JinEngine
 {
@@ -11,7 +12,7 @@ namespace JinEngine
 	{   
 		JCamera* newCamera = JCFI<JCamera>::Create(guid, flag, owner);
 		if (isMainCam)
-			newCamera->SetMainCamera();
+			newCamera->SetMainCamera(true);
 		return newCamera;
 	}
 	JLight* JComponentFactoryUtility::CreateLight(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner, J_LIGHT_TYPE type)
@@ -23,8 +24,7 @@ namespace JinEngine
 	JRenderItem* JComponentFactoryUtility::CreateRenderItem(const size_t guid,
 		const J_OBJECT_FLAG flag,
 		JGameObject& owner,
-		JMeshGeometry* mesh,
-		JMaterial* mat,
+		JMeshGeometry* mesh,  
 		D3D12_PRIMITIVE_TOPOLOGY primitiveType,
 		J_RENDER_LAYER renderLayer)
 	{
@@ -32,13 +32,34 @@ namespace JinEngine
 			return nullptr;
 
 		JRenderItem* newRenderItem = JCFI<JRenderItem>::Create(guid, flag, owner);
-		if (mesh != nullptr)
-			newRenderItem->SetMeshGeometry(mesh);
-		if (mat != nullptr)
-			newRenderItem->SetMaterial(mat);
+		newRenderItem->SetMeshGeometry(mesh);
+		newRenderItem->SetPrimitiveType(primitiveType);
+		newRenderItem->SetRenderLayer(renderLayer); 
+
+		return newRenderItem;
+	}
+	JRenderItem* JComponentFactoryUtility::CreateRenderItem(const size_t guid,
+		const J_OBJECT_FLAG flag,
+		JGameObject& owner,
+		JMeshGeometry* mesh,
+		std::vector<JMaterial*> mat,
+		D3D12_PRIMITIVE_TOPOLOGY primitiveType,
+		J_RENDER_LAYER renderLayer)
+	{
+		if (mesh == nullptr)
+			return nullptr;
+
+		JRenderItem* newRenderItem = JCFI<JRenderItem>::Create(guid, flag, owner);
+		newRenderItem->SetMeshGeometry(mesh);
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
-
+		 
+		const int matCount = (uint)mat.size();
+		for (uint i = 0; i < matCount; ++i)
+		{
+			if (mat[i] != nullptr)
+				newRenderItem->SetMaterial(i, mat[i]);
+		}
 		return newRenderItem;
 	}
 	JComponent* JComponentFactoryUtility::CreateComponent(const std::string& componentName, JGameObject& owner)

@@ -5,7 +5,7 @@ namespace JinEngine
 	namespace Core
 	{
 		class EmptyType {};
-		static constexpr EmptyType emptyType;
+		static constexpr EmptyType empty;
 
 		inline bool operator==(const EmptyType&, const EmptyType&)
 		{

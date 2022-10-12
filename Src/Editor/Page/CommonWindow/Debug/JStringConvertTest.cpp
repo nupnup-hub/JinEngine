@@ -1,54 +1,48 @@
 #include"JStringConvertTest.h"
 #include"../../JEditorAttribute.h"  
 #include"../../../../Utility/JCommonUtility.h"
-#include"../../../../../Lib/imgui/imgui.h"
+#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../../../Core/Identity/JIdentifier.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		JStringConvertTest::JStringConvertTest(std::unique_ptr<JEditorAttribute> attribute, const size_t ownerPageGuid)
-			:JEditorWindow(std::move(attribute), ownerPageGuid)
+		JStringConvertTest::JStringConvertTest(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorWindow(name, std::move(attribute), pageType)
 		{
 			buf.resize(255);
 		}
 		JStringConvertTest::~JStringConvertTest() {}
 
-		bool JStringConvertTest::Activate()
+		J_EDITOR_WINDOW_TYPE JStringConvertTest::GetWindowType()const noexcept
 		{
-			if (JEditorWindow::Activate())
-				return true;
-			else
-				return false;
-		}
-		bool JStringConvertTest::DeActivate()
-		{
-			if (JEditorWindow::DeActivate())
-				return true;
-			else
-				return false;
+			return J_EDITOR_WINDOW_TYPE::TEST_WINDOW;
 		}
 		void JStringConvertTest::UpdateWindow()
 		{
-			JEditorWindow::UpdateWindow();
-
-			ImGui::Text(u8"결과");
-			ImGui::Text(("ori: " + ori).c_str());
-			ImGui::Text(("ori -> wstr -> str: " + wstrToStr).c_str());
-
-			ImGui::NewLine();
-			ImGui::NewLine();
-			ImGui::NewLine();
-
-			ImGuiInputTextFlags_ flag = (ImGuiInputTextFlags_)(ImGuiInputTextFlags_EnterReturnsTrue);
-
-			if (ImGui::InputText("##TestInputText", &buf[0], 255, flag))
+			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			if (IsActivated())
 			{
-				ori = JCommonUtility::EraseEmptySpace(buf);
-				oriToWstr = JCommonUtility::U8StrToWstr(ori);
-				wstrToStr = JCommonUtility::WstrToU8Str(oriToWstr);
-				buf[0] = '\0';
+				JImGuiImpl::Text(u8"결과");
+				JImGuiImpl::Text(("ori: " + ori));
+				JImGuiImpl::Text(("ori -> wstr -> str: " + wstrToStr));
+
+				ImGui::NewLine();
+				ImGui::NewLine();
+				ImGui::NewLine();
+
+				ImGuiInputTextFlags_ flag = (ImGuiInputTextFlags_)(ImGuiInputTextFlags_EnterReturnsTrue);
+
+				if (ImGui::InputText("##TestInputText", &buf[0], 255, flag))
+				{
+					ori = JCUtil::EraseChar(buf, ' ');
+					oriToWstr = JCUtil::U8StrToWstr(ori);
+					wstrToStr = JCUtil::WstrToU8Str(oriToWstr);
+					buf[0] = '\0';
+				}
 			}
+			CloseWindow();
 		}
 	}
 }

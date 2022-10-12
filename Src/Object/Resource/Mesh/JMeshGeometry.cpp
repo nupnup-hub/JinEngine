@@ -1,99 +1,155 @@
 #include"JMeshGeometry.h" 
+#include"JStaticMeshGeometry.h"
+#include"JSkinnedMeshGeometry.h"
+
+#include"../JResourceManager.h"
 #include"../JResourceObjectFactory.h"
+#include"../JResourceImporter.h"
+#include"../Material/JMaterial.h"
 #include"../../Directory/JDirectory.h"
-#include"../../../Application/JApplicationVariable.h"
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Application/JApplicationVariable.h" 
 #include"../../../Core/Exception/JExceptionMacro.h" 
+#include"../../../Core/File/JFileConstant.h"
+#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/DirectXEx/JDirectXCollisionEx.h"
+#include"../../../Core/Loader/FbxLoader/JFbxFileLoader.h"
+#include"../../../Core/Loader/ObjLoader/JObjFileLoader.h"
+
 #include"../../../Utility/JMathHelper.h" 
 #include"../../../Utility/JD3DUtility.h" 
+#include"../../../Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphic.h"
+#include<fstream>
 
 namespace JinEngine
 {
 	using namespace DirectX;
-	D3D12_VERTEX_BUFFER_VIEW JMeshGeometry::VertexBufferView()const
-	{
-		D3D12_VERTEX_BUFFER_VIEW vbv;
-		vbv.BufferLocation = vertexBufferGPU->GetGPUVirtualAddress();
-		vbv.StrideInBytes = vertexByteStride;
-		vbv.SizeInBytes = vertexBufferByteSize;
 
-		return vbv;
+	JMeshGeometry::JMeshInitData::JMeshInitData(const std::wstring& name,
+		const size_t guid,
+		const J_OBJECT_FLAG flag,
+		JDirectory* directory,
+		const std::wstring oridataPath,
+		Core::JOwnerPtr<JMeshGroup> meshGroup)
+		:JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JMeshGeometry>(JCUtil::DecomposeFileFormat(oridataPath))),
+		meshGroup(std::move(meshGroup))
+	{}
+	JMeshGeometry::JMeshInitData::JMeshInitData(const std::wstring& name,
+		const size_t guid,
+		const J_OBJECT_FLAG flag,
+		JDirectory* directory,
+		const uint8 formatIndex,
+		Core::JOwnerPtr<JMeshGroup> meshGroup)
+		: JResourceInitData(name, guid, flag, directory, formatIndex),
+		meshGroup(std::move(meshGroup))
+	{}
+	JMeshGeometry::JMeshInitData::JMeshInitData(const std::wstring& name,
+		JDirectory* directory,
+		const std::wstring oridataPath,
+		Core::JOwnerPtr<JMeshGroup> meshGroup)
+		: JResourceInitData(name, directory, JResourceObject::GetFormatIndex<JMeshGeometry>(JCUtil::DecomposeFileFormat(oridataPath))),
+		meshGroup(std::move(meshGroup))
+	{}
+	bool JMeshGeometry::JMeshInitData::IsValidCreateData()
+	{
+		if (JResourceInitData::IsValidCreateData() && meshGroup.IsValid())
+			return true;
+		else
+			return false;
+	}
+	J_RESOURCE_TYPE JMeshGeometry::JMeshInitData::GetResourceType() const noexcept
+	{
+		return J_RESOURCE_TYPE::MESH;
 	}
 
-	D3D12_INDEX_BUFFER_VIEW JMeshGeometry::IndexBufferView()const
+	JMeshGeometry::SubmeshGeometry::SubmeshGeometry(const JMeshData& meshData, const uint vertexSt, const uint indexSt)
+		:guid(meshData.GetGuid())
 	{
-		D3D12_INDEX_BUFFER_VIEW ibv;
-		ibv.BufferLocation = indexBufferGPU->GetGPUVirtualAddress();
-		ibv.Format = indexFormat;
-		ibv.SizeInBytes = indexBufferByteSize;
+		Core::JUserPtr<JMaterial> meshMaterial = meshData.GetMaterial();
+		if (meshMaterial.IsValid())
+			material = meshMaterial.Get();
+		else
+			material = JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_STANDARD);
 
-		return ibv;
-	}
+		vertexStrat = vertexSt;
+		vertexCount = meshData.GetVertexCount();
+		indexStart = indexSt;
+		indexCount = meshData.GetIndexCount();
 
-	// We can free this memory after we finish upload to the GPU.
-	void JMeshGeometry::DisposeUploaders()
-	{
-		vertexBufferUploader = nullptr;
-		indexBufferUploader = nullptr;
-	}
+		SubmeshGeometry::boundingBox = meshData.GetBBox();
+		SubmeshGeometry::boundingSphere = meshData.GetBSphere();
 
-	uint JMeshGeometry::GetVertexByteStride()const noexcept
-	{
-		return vertexByteStride;
+		hasNormal = meshData.HasNormal();
+		hasUV = meshData.HasUV();
+		type = meshData.GetMeshType();
 	}
-	uint JMeshGeometry::GetVertexBufferByteSize()const noexcept
+	JMeshGeometry::SubmeshGeometry::~SubmeshGeometry()
 	{
-		return vertexBufferByteSize;
 	}
-	uint JMeshGeometry::GetMeshVertexCount()const noexcept
+	JMaterial* JMeshGeometry::SubmeshGeometry::GetMaterial()const noexcept
+	{
+		return material;
+	}
+	uint JMeshGeometry::SubmeshGeometry::GetVertexCount()const noexcept
 	{
 		return vertexCount;
 	}
-	uint JMeshGeometry::GetIndexBufferByteSize()const noexcept
+	uint JMeshGeometry::SubmeshGeometry::GetVertexStart()const noexcept
 	{
-		return indexBufferByteSize;
+		return vertexStrat;
 	}
-	DXGI_FORMAT JMeshGeometry::GetIndexFormat()const noexcept
+	uint JMeshGeometry::SubmeshGeometry::GetIndexStart()const noexcept
 	{
-		return indexFormat;
+		return indexStart;
 	}
-	uint JMeshGeometry::GetMeshIndexCount()const noexcept
+	uint JMeshGeometry::SubmeshGeometry::GetIndexCount()const noexcept
 	{
 		return indexCount;
 	}
-	uint JMeshGeometry::GetSubmeshIndexCount(int i)const noexcept
-	{
-		return submeshes[i].IndexCount;
-	}
-	uint JMeshGeometry::GetSubmeshStartIndexLocation(int i)const noexcept
-	{
-		return submeshes[i].StartIndexLocation;
-	}
-	int JMeshGeometry::GetSubmeshBaseVertexLocation(int i)const noexcept
-	{
-		return submeshes[i].BaseVertexLocation;
-	}
-	DirectX::XMFLOAT3 JMeshGeometry::GetBoundingBoxCenter()const noexcept
+	DirectX::XMFLOAT3 JMeshGeometry::SubmeshGeometry::GetBBoxCenter()const noexcept
 	{
 		return boundingBox.Center;
 	}
-	DirectX::XMFLOAT3 JMeshGeometry::GetBoundingBoxExtent()const noexcept
+	DirectX::XMVECTOR JMeshGeometry::SubmeshGeometry::GetBBoxCenterV()const noexcept
+	{
+		return XMLoadFloat3(&boundingBox.Center);
+	}
+	DirectX::XMFLOAT3 JMeshGeometry::SubmeshGeometry::GetBBoxExtent()const noexcept
 	{
 		return boundingBox.Extents;
 	}
-	DirectX::XMFLOAT3 JMeshGeometry::GetBoundingSphereCenter()const noexcept
+	DirectX::XMVECTOR JMeshGeometry::SubmeshGeometry::GetBBoxExtentV()const noexcept
+	{
+		return XMLoadFloat3(&boundingBox.Extents);
+	}
+	DirectX::XMFLOAT3 JMeshGeometry::SubmeshGeometry::GetBSphereCenter()const noexcept
 	{
 		return boundingSphere.Center;
 	}
-	float JMeshGeometry::GetBoundingSphereRadius()const noexcept
+	float JMeshGeometry::SubmeshGeometry::GetBSphereRadius()const noexcept
 	{
 		return boundingSphere.Radius;
+	}
+	void JMeshGeometry::SubmeshGeometry::SetMaterial(JMaterial* newMaterial)noexcept
+	{
+		material = newMaterial;
+	}
+	bool JMeshGeometry::SubmeshGeometry::HasUV()const noexcept
+	{
+		return hasUV;
+	}
+	bool JMeshGeometry::SubmeshGeometry::HasNormal()const noexcept
+	{
+		return hasNormal;
+	}
+	void JMeshGeometry::SubmeshGeometry::Clear()
+	{
+		SetMaterial(nullptr);
 	}
 	J_RESOURCE_TYPE JMeshGeometry::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
-	} 
+	}
 	std::wstring JMeshGeometry::GetFormat()const noexcept
 	{
 		return GetAvailableFormat()[GetFormatIndex()];
@@ -103,33 +159,101 @@ namespace JinEngine
 		static std::vector<std::wstring> format{ L".mesh", L".obj", L".fbx" };
 		return format;
 	}
-	J_MESHGEOMETRY_TYPE JMeshGeometry::GetMeshGeometryType()const noexcept
+	uint JMeshGeometry::GetTotalVertexCount()const noexcept
 	{
-		return meshType;
+		return vertexCount;
 	}
-	bool JMeshGeometry::HasUV()const noexcept
+	uint JMeshGeometry::GetTotalIndexCount()const noexcept
 	{
-		return hasUV;
+		return indexCount;
 	}
-	bool JMeshGeometry::HasNormal()const noexcept
+	uint JMeshGeometry::GetTotalSubmeshCount()const noexcept
 	{
-		return hasNormal;
+		return (uint)submeshes.size();
 	}
-	bool JMeshGeometry::Copy(JObject* ori)
+	uint JMeshGeometry::GetSubmeshVertexCount(const uint index)const noexcept
 	{
-		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
-			return false;
+		return submeshes.size() > index ? submeshes[index].GetVertexCount() : 0;
+	}
+	uint JMeshGeometry::GetSubmeshIndexCount(const uint index)const noexcept
+	{
+		return submeshes.size() > index ? submeshes[index].GetIndexCount() : 0;
+	}
+	uint JMeshGeometry::GetSubmeshBaseVertexLocation(const uint index)const noexcept
+	{
+		return submeshes.size() > index ? submeshes[index].GetVertexStart() : 0;
+	}
+	uint JMeshGeometry::GetSubmeshStartIndexLocation(const uint index)const noexcept
+	{
+		return submeshes.size() > index ? submeshes[index].GetIndexStart() : 0;
+	}
+	JMaterial* JMeshGeometry::GetSubmeshMaterial(const uint index)const noexcept
+	{
+		return submeshes.size() > index ? submeshes[index].GetMaterial() : nullptr;
+	}
+	DirectX::XMFLOAT3 JMeshGeometry::GetBBoxCenter()const noexcept
+	{
+		return boundingBox.Center;
+	}
+	DirectX::XMFLOAT3 JMeshGeometry::GetBBoxExtent()const noexcept
+	{
+		return boundingBox.Extents;
+	}
+	DirectX::XMFLOAT3 JMeshGeometry::GetBSphereCenter()const noexcept
+	{
+		return boundingSphere.Center;
+	}
+	float JMeshGeometry::GetBSphereRadius()const noexcept
+	{
+		return boundingSphere.Radius;
+	}
+	D3D12_VERTEX_BUFFER_VIEW JMeshGeometry::VertexBufferView()const
+	{
+		D3D12_VERTEX_BUFFER_VIEW vbv;
+		vbv.BufferLocation = vertexBufferGPU->GetGPUVirtualAddress();
+		vbv.StrideInBytes = vertexByteStride;
+		vbv.SizeInBytes = vertexBufferByteSize;
+		return vbv;
+	}
+	D3D12_INDEX_BUFFER_VIEW JMeshGeometry::IndexBufferView()const
+	{
+		D3D12_INDEX_BUFFER_VIEW ibv;
+		ibv.BufferLocation = indexBufferGPU->GetGPUVirtualAddress();
+		ibv.Format = indexFormat;
+		ibv.SizeInBytes = indexBufferByteSize;
+		return ibv;
+	}
+	void JMeshGeometry::CalculateMeshBound()noexcept
+	{
+		const uint submeshCount = (uint)submeshes.size();
 
-		if (typeInfo.IsA(ori->GetTypeInfo()))
-		{ 
-			JMeshGeometry* oriM = static_cast<JMeshGeometry*>(ori);
-			CopyRFile(*oriM, *this);
-			ClearResource();
-			StuffResource();
-			return true;
+		XMFLOAT3 minInit(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
+		XMFLOAT3 maxInit(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
+		XMVECTOR minXmV = XMLoadFloat3(&minInit);
+		XMVECTOR maxXmV = XMLoadFloat3(&maxInit);
+
+		for (uint i = 0; i < submeshCount; ++i)
+		{
+			const XMVECTOR minV = submeshes[i].GetBBoxCenterV() - submeshes[i].GetBBoxExtentV();
+			const XMVECTOR maxV = submeshes[i].GetBBoxCenterV() + submeshes[i].GetBBoxExtentV();
+			minXmV = XMVectorMin(minXmV, minV);
+			maxXmV = XMVectorMax(maxXmV, maxV);
 		}
-		else
-			return false;
+		boundingBox = Core::JDirectXCollisionEx::CreateBoundingBox(minXmV, maxXmV);
+		boundingSphere = Core::JDirectXCollisionEx::CreateBoundingSphere(minXmV, maxXmV);
+	}
+	JMeshInterface* JMeshGeometry::Interface()noexcept
+	{
+		return this;
+	}
+	void JMeshGeometry::DoCopy(JObject* ori)
+	{
+		JMeshGeometry* oriM = static_cast<JMeshGeometry*>(ori);
+		CopyRFile(*oriM, true);
+		ClearResource();
+		StuffResource();
+		for (uint i = 0; i < oriM->submeshes.size(); ++i)
+			submeshes[i].SetMaterial(oriM->submeshes[i].GetMaterial());
 	}
 	void JMeshGeometry::DoActivate()noexcept
 	{
@@ -138,269 +262,209 @@ namespace JinEngine
 	}
 	void JMeshGeometry::DoDeActivate()noexcept
 	{
+		std::wofstream stream;
+		stream.open(GetMetafilePath(), std::ios::out | std::ios::binary);
+		StoreMetadata(stream, this);
+		stream.close();
+
 		JResourceObject::DoDeActivate();
 		ClearResource();
 	}
+	bool JMeshGeometry::StuffSubMesh(JMeshGroup& meshGroup)
+	{
+		Clear();
+		const uint submeshCount = (uint)meshGroup.GetMeshDataCount();
+		uint vertexCount = 0;
+		uint indexCount = 0;
+		for (uint i = 0; i < submeshCount; ++i)
+		{
+			if (meshGroup.GetMeshData(i)->GetMeshType() == J_MESHGEOMETRY_TYPE::STATIC)
+				submeshes.emplace_back(*static_cast<JStaticMeshData*>(meshGroup.GetMeshData(i)), vertexCount, indexCount);
+			else
+				submeshes.emplace_back(*static_cast<JSkinnedMeshData*>(meshGroup.GetMeshData(i)), vertexCount, indexCount);
+
+			vertexCount += submeshes[i].GetVertexCount();
+			indexCount += submeshes[i].GetIndexCount();
+		}
+		JMeshGeometry::vertexCount = vertexCount;
+		JMeshGeometry::indexCount = indexCount;
+
+		ID3D12Device* device = JGraphic::Instance().DeviceInterface()->GetDevice();
+		ID3D12CommandQueue* mCommandQueue = JGraphic::Instance().CommandInterface()->GetCommandQueue();
+		ID3D12CommandAllocator* mDirectCmdListAlloc = JGraphic::Instance().CommandInterface()->GetCommandAllocator();
+		ID3D12GraphicsCommandList* mCommandList = JGraphic::Instance().CommandInterface()->GetCommandList();
+
+		if (meshGroup.GetMeshGroupType() == J_MESHGEOMETRY_TYPE::STATIC)
+		{
+			vertexByteStride = sizeof(JStaticMeshVertex);
+			vertexBufferByteSize = vertexCount * vertexByteStride;
+
+			std::vector<JStaticMeshVertex> vertices(vertexCount);
+			uint vertexOffset = 0;
+			for (uint i = 0; i < submeshCount; ++i)
+			{
+				JStaticMeshData* meshdata = static_cast<JStaticMeshData*>(meshGroup.GetMeshData(i));
+				const uint vertexCount = meshdata->GetVertexCount();
+				for (uint j = 0; j < vertexCount; ++j)
+					vertices[vertexOffset + j] = meshdata[i].GetVertex(j);
+				vertexOffset += vertexCount;
+			}
+
+			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
+			JGraphic::Instance().CommandInterface()->StartCommand();
+			vertexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, vertices.data(), vertexBufferByteSize, vertexBufferUploader);
+			JGraphic::Instance().CommandInterface()->EndCommand();
+			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
+		}
+		else
+		{
+			vertexByteStride = sizeof(JSkinnedMeshVertex);
+			vertexBufferByteSize = vertexCount * vertexByteStride;
+
+			std::vector<JSkinnedMeshVertex> vertices(vertexCount);
+			uint vertexOffset = 0;
+			for (uint i = 0; i < submeshCount; ++i)
+			{
+				JSkinnedMeshData* meshdata = static_cast<JSkinnedMeshData*>(meshGroup.GetMeshData(i));
+				const uint vertexCount = meshdata->GetVertexCount();
+				for (uint j = 0; j < vertexCount; ++j)
+					vertices[vertexOffset + j] = meshdata[i].GetVertex(j);
+				vertexOffset += vertexCount;
+			}
+			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
+			JGraphic::Instance().CommandInterface()->StartCommand();
+			vertexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, vertices.data(), vertexBufferByteSize, vertexBufferUploader);
+			JGraphic::Instance().CommandInterface()->EndCommand();
+			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
+		}
+
+		if (indexCount >= 1 << 16)
+		{
+			indexFormat = DXGI_FORMAT_R32_UINT;
+			indexBufferByteSize = indexCount * sizeof(uint32);
+			std::vector<uint32> indices32(indexCount);
+
+			uint indicesOffset = 0;
+			for (uint i = 0; i < submeshCount; ++i)
+			{
+				const JMeshData* meshdata = meshGroup.GetMeshData(i);
+				if (meshdata->Is16bit())
+				{
+					const uint indexCount = meshdata->GetIndexCount();
+					for (uint j = 0; j < indexCount; ++j)
+						indices32[indicesOffset + j] = meshdata[i].GetU16Index(j);
+					indicesOffset += indexCount;
+				}
+				else
+				{
+					const uint indexCount = meshdata->GetIndexCount();
+					for (uint j = 0; j < indexCount; ++j)
+						indices32[indicesOffset + j] = meshdata[i].GetU32Index(j);
+					indicesOffset += indexCount;
+				}
+			}
+			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
+			JGraphic::Instance().CommandInterface()->StartCommand();
+			indexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, indices32.data(), indexBufferByteSize, indexBufferUploader);
+			JGraphic::Instance().CommandInterface()->EndCommand();
+			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
+		}
+		else
+		{
+			indexFormat = DXGI_FORMAT_R16_UINT;
+			indexBufferByteSize = indexCount * sizeof(uint16);
+			std::vector<uint16> indices16(indexCount);
+			uint indicesOffset = 0;
+
+			for (uint i = 0; i < submeshCount; ++i)
+			{
+				const JMeshData* meshdata = meshGroup.GetMeshData(i);
+				if (meshdata->Is16bit())
+				{
+					const uint indexCount = meshdata->GetIndexCount();
+					for (uint j = 0; j < indexCount; ++j)
+						indices16[indicesOffset + j] = meshdata[i].GetU16Index(j);
+					indicesOffset += indexCount;
+				}
+				else
+				{
+					const uint indexCount = meshdata->GetIndexCount();
+					for (uint j = 0; j < indexCount; ++j)
+						indices16[indicesOffset + j] = meshdata[i].GetU32Index(j);
+					indicesOffset += indexCount;
+				}
+			}
+			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
+			JGraphic::Instance().CommandInterface()->StartCommand();
+			indexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, indices16.data(), indexBufferByteSize, indexBufferUploader);
+			JGraphic::Instance().CommandInterface()->EndCommand();
+			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
+		}
+		for (uint i = 0; i < submeshCount; ++i)
+			CallOnResourceReference(submeshes[i].GetMaterial());
+		CalculateMeshBound();
+		return true;
+	}
 	void JMeshGeometry::StuffResource()
 	{
-		//구현필요
-		// 0 == mesh 
 		if (!IsValid())
 		{
 			if (GetFormatIndex() == 0)
 			{
-				;//if(Load Mesh());
-				if(ReadMeshData())
+				if (ReadMeshData())
 					SetValid(true);
 			}
 		}
 	}
 	void JMeshGeometry::ClearResource()
 	{
-		//구현필요
-		// 0 == mesh 
 		if (IsValid())
 		{
-			if (GetFormatIndex() == 0)
-			{
-				vertexBufferCPU.Reset();
-				indexBufferCPU.Reset();
-				vertexBufferGPU.Reset();
-				indexBufferGPU.Reset();
-				vertexBufferUploader.Reset();
-				indexBufferUploader.Reset();
-
-				SetValid(false);
-				;//Clear Mesh;
-			}
+			// vertexBufferCPU.Reset();
+			//indexBufferCPU.Reset(); 
+			Clear();
+			SetValid(false);
 		}
 	}
-	bool JMeshGeometry::ReadMeshData()
+	void JMeshGeometry::Clear()
 	{
-		const JResourcePathData pathData{ GetPath() };
-		std::wifstream stream;
-		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
-		if (stream.is_open())
+		const uint subMeshCount = (uint)submeshes.size();
+		for (uint i = 0; i < subMeshCount; ++i)
 		{
-			int vertexCount;
-			int indexCount;
-			int meshType;
+			CallOffResourceReference(submeshes[i].GetMaterial());
+			submeshes[i].Clear();
+		}
+		submeshes.clear();
+	}
+	void JMeshGeometry::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+	{
+		if (iden == GetGuid())
+			return;
 
-			stream >> vertexCount;
-			stream >> indexCount;
-			stream >> meshType;
-			if (meshType == (int)J_MESHGEOMETRY_TYPE::STATIC)
+		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE && jRobj->GetResourceType() == J_RESOURCE_TYPE::MATERIAL)
+		{
+			JMaterial* defaultMat = JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_STANDARD);
+
+			const size_t tarGuid = jRobj->GetGuid();
+			const uint subMeshCount = (uint)submeshes.size();
+			for (uint i = 0; i < subMeshCount; ++i)
 			{
-				JStaticMeshData staticMeshdata;
-				BoundingBox boundingBox;
-				BoundingSphere boundingSphere;
-
-				const XMFLOAT3 vMinf3(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
-				const XMFLOAT3 vMaxf3(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-				XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-				XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-
-				for (int i = 0; i < vertexCount; ++i)
+				JMaterial* preMat = submeshes[i].GetMaterial();
+				if (preMat->GetGuid() == tarGuid)
 				{
-					XMFLOAT3 position;
-					XMFLOAT3 normal;
-					XMFLOAT2 texC;
-					XMFLOAT3 tangentU;
-
-					stream >> position.x >> position.y >> position.z;
-					stream >> normal.x >> normal.y >> normal.z;
-					stream >> texC.x >> texC.y;
-					stream >> tangentU.x >> tangentU.y >> tangentU.z;
-
-					XMVECTOR P = XMLoadFloat3(&position);
-					vMin = XMVectorMin(vMin, P);
-					vMax = XMVectorMax(vMax, P);
-
-					staticMeshdata.vertices.emplace_back(JStaticMeshVertex(position, normal, texC, tangentU));
+					if(IsActivated())
+						CallOffResourceReference(preMat);
+					if (defaultMat != nullptr)
+					{
+						submeshes[i].SetMaterial(defaultMat);
+						if (IsActivated())
+							CallOnResourceReference(defaultMat);
+					}
+					else
+						submeshes[i].SetMaterial(nullptr);
 				}
-
-				XMStoreFloat3(&boundingBox.Center, 0.5f * (vMin + vMax));
-				XMStoreFloat3(&boundingBox.Extents, 0.5f * (vMax - vMin));
-				XMStoreFloat3(&boundingSphere.Center, 0.5f * (vMin + vMax));
-				XMFLOAT3 dis;
-				XMStoreFloat3(&dis, XMVector3Length((0.5f * (vMin + vMax)) - vMax));
-				boundingSphere.Radius = (float)sqrt(pow(dis.x, 2) + pow(dis.y, 2) + pow(dis.z, 2));
-
-				for (int i = 0; i < indexCount; ++i)
-				{
-					int index;
-					stream >> index;
-					staticMeshdata.indices32.emplace_back(index);
-				}
-
-				StuffStaticMesh(staticMeshdata, boundingBox, boundingSphere);
-				stream.close();				 
-				return true;
-			}
-			else
-			{
-				//수정필요
-				//skinned 미구현 engine내부에서 skeleton 생성이 전제조건
-				stream.close();
-				return false;
 			}
 		}
-		else
-			return false;
-	}
-	bool JMeshGeometry::StuffStaticMesh(JStaticMeshData& meshData, const DirectX::BoundingBox& boundingBox, const DirectX::BoundingSphere& boundingSphere)
-	{
-		if (vertexCount == 0 && meshData.vertices.size() < 0)
-		{
-			ID3D12Device* device = JGraphic::Instance().DeviceInterface()->GetDevice();
-			ID3D12CommandQueue* mCommandQueue = JGraphic::Instance().CommandInterface()->GetCommandQueue();
-			ID3D12CommandAllocator* mDirectCmdListAlloc = JGraphic::Instance().CommandInterface()->GetCommandAllocator();
-			ID3D12GraphicsCommandList* mCommandList = JGraphic::Instance().CommandInterface()->GetCommandList();
-
-			uint vbByteSize = (uint)meshData.vertices.size() * sizeof(JStaticMeshVertex);
-			if (meshData.indices32.size() > 65535)
-			{
-				const uint ibByteSize = (uint)meshData.indices32.size() * sizeof(uint32_t);
-				ThrowIfFailedHr(D3DCreateBlob(vbByteSize, &vertexBufferCPU));
-				CopyMemory(vertexBufferCPU->GetBufferPointer(), meshData.vertices.data(), vbByteSize);
-
-				ThrowIfFailedHr(D3DCreateBlob(ibByteSize, &indexBufferCPU));
-				CopyMemory(indexBufferCPU->GetBufferPointer(), meshData.indices32.data(), ibByteSize);
-
-				vertexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, meshData.vertices.data(), vbByteSize, vertexBufferUploader);
-				indexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, meshData.indices32.data(), ibByteSize, indexBufferUploader);
-
-				vertexByteStride = sizeof(JStaticMeshVertex);
-				vertexBufferByteSize = vbByteSize;
-				vertexCount = (uint)meshData.vertices.size();
-				indexFormat = DXGI_FORMAT_R32_UINT;
-				indexBufferByteSize = ibByteSize;
-				indexCount = (uint)meshData.indices32.size();
-			}
-			else
-			{
-				if (meshData.IsIndices16Empty())
-					meshData.Stuff8ByteDataTo4Byte();
-
-				const uint ibByteSize = (uint)meshData.indices16.size() * sizeof(std::uint16_t);
-				ThrowIfFailedHr(D3DCreateBlob(vbByteSize, &vertexBufferCPU));
-				CopyMemory(vertexBufferCPU->GetBufferPointer(), meshData.vertices.data(), vbByteSize);
-
-				ThrowIfFailedHr(D3DCreateBlob(ibByteSize, &indexBufferCPU));
-				CopyMemory(indexBufferCPU->GetBufferPointer(), meshData.indices16.data(), ibByteSize);
-
-				vertexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, meshData.vertices.data(), vbByteSize, vertexBufferUploader);
-				indexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, meshData.indices16.data(), ibByteSize, indexBufferUploader);
-
-				vertexByteStride = sizeof(JStaticMeshVertex);
-				vertexBufferByteSize = vbByteSize;
-				vertexCount = (uint)meshData.vertices.size();
-				indexFormat = DXGI_FORMAT_R16_UINT;
-				indexBufferByteSize = ibByteSize;
-				indexCount = (uint)meshData.indices16.size();
-			}
-			JMeshGeometry::boundingBox = boundingBox;
-			JMeshGeometry::boundingSphere = boundingSphere;
-
-			SubmeshGeometry submesh;
-			submesh.IndexCount = indexCount;
-			submesh.BaseVertexLocation = 0;
-			submesh.StartIndexLocation = 0;
-			submeshes.push_back(submesh);
-			meshType = J_MESHGEOMETRY_TYPE::STATIC;
-			hasNormal = meshData.hasNormal;
-			hasUV = meshData.hasUV;
-			return true;
-		}
-		else
-			return false;
-	}
-	bool JMeshGeometry::StuffSkinnedMesh(JSkinnedMeshData& meshData, const DirectX::BoundingBox& boundingBox, const DirectX::BoundingSphere& boundingSphere)
-	{
-		if (vertexCount == 0 && meshData.vertices.size() > 0)
-		{
-			ID3D12Device* device = JGraphic::Instance().DeviceInterface()->GetDevice();
-			ID3D12CommandQueue* mCommandQueue = JGraphic::Instance().CommandInterface()->GetCommandQueue();
-			ID3D12CommandAllocator* mDirectCmdListAlloc = JGraphic::Instance().CommandInterface()->GetCommandAllocator();
-			ID3D12GraphicsCommandList* mCommandList = JGraphic::Instance().CommandInterface()->GetCommandList();
-
-			uint vbByteSize = (uint)meshData.vertices.size() * sizeof(JSkinnedMeshVertex);
-			if (meshData.indices32.size() > 65535)
-			{
-				const uint ibByteSize = (uint)meshData.indices32.size() * sizeof(uint32);
-				ThrowIfFailedHr(D3DCreateBlob(vbByteSize, &vertexBufferCPU));
-				CopyMemory(vertexBufferCPU->GetBufferPointer(), meshData.vertices.data(), vbByteSize);
-
-				ThrowIfFailedHr(D3DCreateBlob(ibByteSize, &indexBufferCPU));
-				CopyMemory(indexBufferCPU->GetBufferPointer(), meshData.indices32.data(), ibByteSize);
-
-				vertexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, meshData.vertices.data(), vbByteSize, vertexBufferUploader);
-				indexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, meshData.indices32.data(), ibByteSize, indexBufferUploader);
-
-				vertexByteStride = sizeof(JSkinnedMeshVertex);
-				vertexBufferByteSize = vbByteSize;
-				vertexCount = (uint)meshData.vertices.size();
-				indexFormat = DXGI_FORMAT_R32_UINT;
-				indexBufferByteSize = ibByteSize;
-				indexCount = (uint)meshData.indices32.size();
-			}
-			else
-			{
-				meshData.Stuff8ByteDataTo4Byte();
-				const uint ibByteSize = (uint)meshData.indices16.size() * sizeof(std::uint16);
-				ThrowIfFailedHr(D3DCreateBlob(vbByteSize, &vertexBufferCPU));
-				CopyMemory(vertexBufferCPU->GetBufferPointer(), meshData.vertices.data(), vbByteSize);
-
-				ThrowIfFailedHr(D3DCreateBlob(ibByteSize, &indexBufferCPU));
-				CopyMemory(indexBufferCPU->GetBufferPointer(), meshData.indices16.data(), ibByteSize);
-
-				vertexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, meshData.vertices.data(), vbByteSize, vertexBufferUploader);
-				indexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, meshData.indices16.data(), ibByteSize, indexBufferUploader);
-
-				vertexByteStride = sizeof(JSkinnedMeshVertex);
-				vertexBufferByteSize = vbByteSize;
-				vertexCount = (uint)meshData.vertices.size();
-				indexFormat = DXGI_FORMAT_R16_UINT;
-				indexBufferByteSize = ibByteSize;
-				indexCount = (uint)meshData.indices16.size();
-			}
-			JMeshGeometry::boundingBox = boundingBox;
-			JMeshGeometry::boundingSphere = boundingSphere;
-
-			SubmeshGeometry submesh;
-			submesh.IndexCount = indexCount;
-			submesh.BaseVertexLocation = 0;
-			submesh.StartIndexLocation = 0;
-			submeshes.push_back(submesh);
-			meshType = J_MESHGEOMETRY_TYPE::SKINNED;
-			hasNormal = meshData.hasNormal;
-			hasUV = meshData.hasUV;
-			return true;
-		}
-		else
-			return false;
-	}
-	void JMeshGeometry::MakeBoundingCollider(const std::vector<JStaticMeshVertex>& vertices)noexcept
-	{
-		const XMFLOAT3 vMinf3(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
-		const XMFLOAT3 vMaxf3(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-		XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-		XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-
-		for (int i = 0; i < vertices.size(); ++i)
-		{
-			const XMVECTOR position = XMLoadFloat3(&vertices[i].position);
-			vMin = XMVectorMin(vMin, position);
-			vMax = XMVectorMax(vMax, position);
-		}
-
-		XMStoreFloat3(&boundingBox.Center, 0.5f * (vMin + vMax));
-		XMStoreFloat3(&boundingBox.Extents, 0.5f * (vMax - vMin));
-
-		XMStoreFloat3(&boundingSphere.Center, 0.5f * (vMin + vMax));
-		XMFLOAT3 dis;
-		XMStoreFloat3(&dis, XMVector3Length((0.5f * (vMin + vMax)) - vMax));
-		boundingSphere.Radius = (float)sqrt(pow(dis.x, 2) + pow(dis.y, 2) + pow(dis.z, 2));
 	}
 	Core::J_FILE_IO_RESULT JMeshGeometry::CallStoreResource()
 	{
@@ -416,121 +480,181 @@ namespace JinEngine
 
 		std::wofstream stream;
 		stream.open(mesh->GetMetafilePath(), std::ios::out | std::ios::binary);
-		Core::J_FILE_IO_RESULT storeMetaRes = JResourceObject::StoreMetadata(stream, mesh);
+		Core::J_FILE_IO_RESULT storeMetaRes = StoreMetadata(stream, mesh);
 		stream.close();
 		return storeMetaRes;
 	}
-	JMeshGeometry* JMeshGeometry::LoadObject(JDirectory* directory, const JResourcePathData& pathData)
+	Core::J_FILE_IO_RESULT JMeshGeometry::StoreMetadata(std::wofstream& stream, JMeshGeometry* mesh)
+	{
+		if (stream.is_open())
+		{
+			Core::J_FILE_IO_RESULT res = JResourceObject::StoreMetadata(stream, mesh);
+			if (res != Core::J_FILE_IO_RESULT::SUCCESS)
+				return res;
+
+			JFileIOHelper::StoreEnumData(stream, L"MeshType:", mesh->GetMeshGeometryType());
+			return Core::J_FILE_IO_RESULT::SUCCESS;
+		}
+		else
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+	}
+	JMeshGeometry* JMeshGeometry::LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)
 	{
 		if (directory == nullptr)
 			return nullptr;
 		 
-		if (!JResourceObject::IsResourceFormat<JMeshGeometry>(pathData.format))
-			return nullptr;
-
 		std::wifstream stream;
-		stream.open(ConvertMetafilePath(pathData.wstrPath), std::ios::in | std::ios::binary);
-		ObjectMetadata metadata;
+		stream.open(pathData.engineMetaFileWPath, std::ios::in | std::ios::binary);
+		JMeshMetadata metadata;
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
 		stream.close();
 
 		JMeshGeometry* newMesh = nullptr;
-		if (directory->HasFile(pathData.fullName))
-			newMesh = JResourceManager::Instance().GetResourceByPath<JMeshGeometry>(pathData.wstrPath);
+		if (directory->HasFile(pathData.name))
+			newMesh = JResourceManager::Instance().GetResourceByPath<JMeshGeometry>(pathData.engineFileWPath);
 
-		if (newMesh == nullptr)
+		if (newMesh == nullptr && loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
 		{
-			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+			JMeshInitData initdata{ pathData.name, metadata.guid,metadata.flag, directory, (uint8)metadata.formatIndex };
+			if (initdata.IsValidLoadData())
 			{
-				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMeshGeometry>(pathData.name,
-					metadata.guid,
-					metadata.flag, 
-					directory,
-					JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
-				newMesh = ownerPtr.Get();
-				AddInstance(std::move(ownerPtr));
-			}
-			else
-			{
-				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMeshGeometry>(pathData.name,
-					Core::MakeGuid(), 
-					OBJECT_FLAG_NONE,
-					directory,
-					JResourceObject::GetFormatIndex<JMeshGeometry>(pathData.format));
-				newMesh = ownerPtr.Get();
-				AddInstance(std::move(ownerPtr));
+				if (metadata.meshType == J_MESHGEOMETRY_TYPE::STATIC)
+				{
+					Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JStaticMeshGeometry>(initdata);
+					newMesh = ownerPtr.Get();
+					if (!AddInstance(std::move(ownerPtr)))
+						return nullptr;
+				}
+				else
+				{
+					Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JSkinnedMeshGeometry>(initdata);
+					newMesh = ownerPtr.Get();
+					if (!AddInstance(std::move(ownerPtr)))
+						return nullptr;
+				}
 			}
 		}
-
-		if (newMesh->IsValid())
-			return newMesh;
-		else if (newMesh->ReadMeshData())
+		return newMesh;
+	}
+	Core::J_FILE_IO_RESULT JMeshGeometry::LoadMetadata(std::wifstream& stream, JMeshMetadata& metadata)
+	{
+		if (stream.is_open())
 		{
-			newMesh->SetValid(true);
-			return newMesh;
+			Core::J_FILE_IO_RESULT res = JResourceObject::LoadMetadata(stream, metadata);
+			if (res != Core::J_FILE_IO_RESULT::SUCCESS)
+				return res;
+
+			JFileIOHelper::LoadEnumData(stream, metadata.meshType);
+			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
-		{
-			newMesh->SetIgnoreUndestroyableFlag(true);
-			newMesh->BeginDestroy();
-			return nullptr;
-		}
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
 	void JMeshGeometry::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* directory) ->JResourceObject*
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMeshGeometry>(directory->MakeUniqueFileName(GetDefaultName<JMeshGeometry>()),
-				Core::MakeGuid(),
-				OBJECT_FLAG_NONE,
-				directory,
-				JResourceObject::GetDefaultFormatIndex());
-			JResourceObject* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
-		};
-		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
-		{ 
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMeshGeometry>(name, guid, objFlag, directory, formatIndex);
-			JResourceObject* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
-		};
-		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
+		auto loadC = [](JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
-		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMeshGeometry>(directory->MakeUniqueFileName(ori->GetName()),
-				Core::MakeGuid(),
-				ori->GetFlag(),
-				directory,
-				GetFormatIndex<JMeshGeometry>(ori->GetFormat()));
-
-			JMeshGeometry* newMesh = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			newMesh->Copy(ori);
-			return newMesh;	 
-		};
-
-		JRFI<JMeshGeometry>::Register(defaultC, initC, loadC, copyC);
+		JRFI<JMeshGeometry>::Register(nullptr, loadC, nullptr);
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JMeshGeometry>(format); };
-
 		static GetTypeNameCallable getTypeNameCallable{ &JMeshGeometry::TypeName };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JMeshGeometry::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
-		 
-		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false, false };
+
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::MATERIAL, J_RESOURCE_TYPE::SKELETON}, true, false};
 		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
-	}
-	JMeshGeometry::JMeshGeometry(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
-		: JMeshInterface(name, guid, flag, directory, formatIndex)
-	{}
 
+		//JResourceObject*, const std::wstring, JDirectory*, const std::wstring>
+		auto fbxClassifyC = [](const std::wstring path) -> std::vector<J_RESOURCE_TYPE>
+		{
+			using FbxFileTypeInfo = Core::JFbxFileLoaderImpl::FbxFileTypeInfo;
+			FbxFileTypeInfo info = Core::JFbxFileLoader::Instance().GetFileTypeInfo(JCUtil::WstrToU8Str(path));
+			if (info.typeInfo == Core::J_FBXRESULT::FAIL)
+				return {};
+
+			std::vector<J_RESOURCE_TYPE> resVec;
+			if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
+				resVec.push_back(J_RESOURCE_TYPE::MESH);
+			if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_ANIMATION))
+				resVec.push_back(J_RESOURCE_TYPE::ANIMATION_CLIP);
+
+			return resVec;
+		};
+		auto fbxMeshImportC = [](JDirectory* dir, const Core::JFileImportPathData importPathData) -> std::vector<JResourceObject*>
+		{
+			std::vector<JResourceObject*> res; 
+
+			using FbxFileTypeInfo = Core::JFbxFileLoaderImpl::FbxFileTypeInfo;
+			FbxFileTypeInfo info = Core::JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
+			if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
+			{
+				JSkinnedMeshGroup skinnedGroup;
+				std::vector<Joint> joint;
+				Core::J_FBXRESULT loadRes = Core::JFbxFileLoader::Instance().LoadFbxMeshFile(importPathData.oriFilePath, skinnedGroup, joint);
+				if (loadRes == Core::J_FBXRESULT::FAIL)
+					return { nullptr };
+
+				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
+				{
+					res.push_back(JRFI<JSkinnedMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+						dir,
+						importPathData.oriFileWPath,
+						Core::JPtrUtil::MakeOwnerPtr<JSkinnedMeshGroup>(std::move(skinnedGroup)))));
+				}
+				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
+				{
+					res.push_back(JRFI<JSkeletonAsset>::Create(Core::JPtrUtil::MakeOwnerPtr<JSkeletonAsset::InitData>(importPathData.name + L"Skel",
+						dir,
+						importPathData.oriFileWPath,
+						std::make_unique<JSkeleton>(std::move(joint)))));
+				}
+			}
+			else
+			{
+				JStaticMeshGroup staticMeshGroup;
+				Core::J_FBXRESULT loadRes = Core::JFbxFileLoader::Instance().LoadFbxMeshFile(importPathData.oriFilePath, staticMeshGroup);
+				if (loadRes == Core::J_FBXRESULT::FAIL)
+					return { nullptr };
+
+				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
+				{
+					res.push_back(JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+						dir,
+						importPathData.oriFileWPath,
+						Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGroup>(std::move(staticMeshGroup)))));
+				}
+			}
+			return res;
+		};
+		auto objMeshImportC = [](JDirectory* dir, const Core::JFileImportPathData importPathData) -> std::vector<JResourceObject*>
+		{
+			std::vector<JResourceObject*> res;
+
+			Core::JObjFileMeshData objMeshData;
+			std::vector<Core::JObjFileMatData> objMatData;
+
+			if (JObjFileLoader::Instance().LoadObjFile(importPathData, objMeshData, objMatData))
+			{
+				res.push_back(JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+					dir,
+					importPathData.oriFileWPath,
+					Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGroup>(std::move(objMeshData.meshGroup)))));
+			}
+			else
+				return { nullptr };
+			return res;
+		};
+
+		JResourceImporter::Instance().AddFormatInfo(L".fbx", J_RESOURCE_TYPE::MESH, fbxMeshImportC, fbxClassifyC);
+		JResourceImporter::Instance().AddFormatInfo(L".obj", J_RESOURCE_TYPE::MESH, objMeshImportC);
+	}
+	JMeshGeometry::JMeshGeometry(const JMeshInitData& initdata)
+		: JMeshInterface(initdata)
+	{}
 	JMeshGeometry::~JMeshGeometry()
 	{
 

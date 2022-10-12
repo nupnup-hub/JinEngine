@@ -14,7 +14,7 @@ namespace JinEngine
 	public:
 		std::wstring GetName()const noexcept;
 		std::wstring GetFullName()const noexcept;
-		std::wstring GetAvailableFormat()const noexcept;
+		std::wstring GetFormat()const noexcept;
 		JResourceObject* GetResource()noexcept;  
 	private:
 		JFile(JResourceObject* resource);

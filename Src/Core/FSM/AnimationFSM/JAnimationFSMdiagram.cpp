@@ -2,25 +2,24 @@
 #include"JAnimationShareData.h"
 #include"JAnimationFSMstateClip.h" 
 #include"JAnimationFSMtransition.h" 
-#include"JAnimationTime.h"
-#include"../JFSMLoadGuidMap.h"
-#include"../../Guid/GuidCreator.h"
-#include"../../GameTimer/JGameTimer.h"
+#include"JAnimationTime.h" 
+#include"../JFSMfactory.h" 
+#include"../../File/JFileIOHelper.h"
+#include"../../Time/JGameTimer.h"
+#include"../../Reflection/JTypeTemplate.h"
 #include"../../../Graphic/FrameResource/JAnimationConstants.h"
 #include"../../../Object/Resource/Skeleton/JSkeleton.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
+#include"../../../Utility/JCommonUtility.h"
 #include<DirectXMath.h>
+#include<fstream>
 
 namespace JinEngine
 {
 	using namespace DirectX;
 	namespace Core
 	{
-		JAnimationFSMdiagram::JAnimationFSMdiagram(const std::wstring& name, const size_t guid, IJFSMconditionStorageUser* conditionStorage)
-			:JFSMdiagram(name, guid, conditionStorage)
-		{ }
-		JAnimationFSMdiagram::~JAnimationFSMdiagram() {}
 		void JAnimationFSMdiagram::Initialize(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset)noexcept
 		{
 			JFSMdiagram::Initialize();
@@ -76,89 +75,36 @@ namespace JinEngine
 				StuffFinalTransform(animationShareData, srcSkeletonAsset, animationConstatns);
 			}
 		}
-		bool JAnimationFSMdiagram::HasAnimationData()noexcept
+		bool JAnimationFSMdiagram::HasNowState()const noexcept
 		{
 			return nowState != nullptr;
 		}
-		bool JAnimationFSMdiagram::HasState()noexcept
+		bool JAnimationFSMdiagram::CanCreateState()const noexcept
 		{
-			return nowState != nullptr;
+			return GetStateCount() < maxNumberOffState;
 		}
 		JAnimationFSMstate* JAnimationFSMdiagram::GetState(const size_t stateGuid)noexcept
 		{
-			return GetState(stateGuid);
+			JFSMstate* state = JFSMdiagram::GetState(stateGuid);
+			if (state != nullptr)
+				return static_cast<JAnimationFSMstate*>(state);
+			else
+				return nullptr; 
 		}
-		std::vector<JAnimationFSMstate*>& JAnimationFSMdiagram::GetStateVec()noexcept
+		JAnimationFSMstate* JAnimationFSMdiagram::GetStateByIndex(const uint index)noexcept
 		{
-			return stateCash;
+			return static_cast<JAnimationFSMstate*>(JFSMdiagram::GetStateByIndex(index));
 		}
-		void JAnimationFSMdiagram::SetAnimationClip(const size_t stateGuid, JAnimationClip* clip)noexcept
+		const std::vector<JFSMstate*>& JAnimationFSMdiagram::GetStateVec()noexcept
+		{
+			return JFSMdiagram::GetStateVec();
+		}
+		void JAnimationFSMdiagram::SetClip(const size_t stateGuid, JAnimationClip* clip)noexcept
 		{
 			JFSMstate* state = GetState(stateGuid);
 			JAnimationFSMstate* aniFsm = static_cast<JAnimationFSMstate*>(state);
 			if (aniFsm->GetStateType() == J_ANIMATION_STATE_TYPE::CLIP)
 				static_cast<JAnimationFSMstateClip*>(state)->SetClip(clip);
-		}
-		void JAnimationFSMdiagram::SetTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuid, const size_t conditionGuid, const uint conditionIndex)noexcept
-		{
-			JFSMdiagram::SetTransitionCondition(inputStateGuid, outputStateGuid, conditionGuid, conditionIndex);
-		}
-		void JAnimationFSMdiagram::SetTransitionCondtionOnValue(const size_t inputStateGuid, const size_t outputStateGuid, const uint conditionIndex, const float value)noexcept
-		{
-			JFSMdiagram::SetTransitionCondtionOnValue(inputStateGuid, outputStateGuid, conditionIndex, value);
-		}
-		JAnimationFSMstate* JAnimationFSMdiagram::CreateAnimationClipState(const std::wstring& name)noexcept
-		{
-			std::unique_ptr<JAnimationFSMstateClip> stateClip = std::make_unique<JAnimationFSMstateClip>(name, Core::MakeGuid());
-			JFSMstate* fsmCash = AddState(std::move(stateClip));
-			if (fsmCash != nullptr)
-			{
-				JAnimationFSMstate* aniFsmCash = static_cast<JAnimationFSMstate*>(fsmCash);
-				stateCash.push_back(aniFsmCash);
-				return aniFsmCash;
-			}
-			else
-				return  nullptr;
-		}
-		JAnimationFSMtransition* JAnimationFSMdiagram::CreateAnimationTransition(const size_t inputStateGuid, const size_t outputStateGuid)noexcept
-		{		 
-			if (inputStateGuid == outputStateGuid)
-				return nullptr;
-
-			std::unique_ptr<JAnimationFSMtransition> animationTransition = std::make_unique< JAnimationFSMtransition>(outputStateGuid);
-			JFSMtransition* fsmCash = AddTransition(inputStateGuid, std::move(animationTransition));
-			if (fsmCash != nullptr)
-				return static_cast<JAnimationFSMtransition*>(fsmCash);
-			else
-				return nullptr;
-		}
-		bool JAnimationFSMdiagram::DestroyAnimationState(const size_t stateGuid)noexcept
-		{
-			JFSMstate* tarState = GetState(stateGuid);
-			if (tarState != nullptr)
-			{
-				const size_t stateGuid = tarState->GetGuid();
-				const uint cashCount = (uint)stateCash.size();
-				for (uint i = 0; i < cashCount; ++i)
-				{
-					if (stateCash[i]->GetGuid() == stateGuid)
-					{
-						stateCash.erase(stateCash.begin() + i);
-						break;
-					}
-				}
-				for (uint i = 0; i < cashCount - 1; ++i)
-					stateCash[i]->RemoveTransition(tarState->GetGuid());
-
-				JFSMdiagram::RemoveState(stateGuid);
-				return true;
-			}
-			else
-				return false;
-		}
-		bool JAnimationFSMdiagram::DestroyAnimationTransition(const size_t inputStateGuid, const size_t outputStateGuid)noexcept
-		{
-			return JFSMdiagram::RemoveTransition(inputStateGuid, outputStateGuid);
 		}
 		void JAnimationFSMdiagram::Clear()noexcept
 		{
@@ -246,87 +192,79 @@ namespace JinEngine
 				}
 			}
 		}
-		J_FILE_IO_RESULT JAnimationFSMdiagram::StoreIdentifierData(std::wofstream& stream)
+		J_FILE_IO_RESULT JAnimationFSMdiagram::StoreData(std::wofstream& stream)
 		{
 			if (!stream.is_open())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
  
-			JFSMIdentifier::StoreIdentifierData(stream, *this);
+			JFileIOHelper::StoreFsmObjectIden(stream, this);
 
-			const uint stateCount = (uint)stateCash.size();
-			stream << stateCount << '\n';
-
+			const std::vector<JFSMstate*>& stateVec = GetStateVec();
+			const uint stateCount = (uint)stateVec.size();
+			JFileIOHelper::StoreAtomicData(stream, L"StateCount:", stateCount);
+		 
 			for (uint i = 0; i < stateCount; ++i)
 			{
-				stream << (int)stateCash[i]->GetStateType() << '\n';
-				stateCash[i]->StoreIdentifierData(stream);
+				JAnimationFSMstate* fsmState = GetState(i);
+				JFileIOHelper::StoreHasObjectIden(stream, fsmState);
+				JFileIOHelper::StoreEnumData(stream, L"StateType:", fsmState->GetStateType());
 			}
-			return J_FILE_IO_RESULT::SUCCESS;
-		}
-		J_FILE_IO_RESULT JAnimationFSMdiagram::StoreContentsData(std::wofstream& stream)
-		{
-			if (!stream.is_open())
-				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
-			const uint stateCount = (uint)stateCash.size();
-			stream << stateCount << '\n';
-
-			for (uint i = 0; i < stateCount; ++i)		 
-				stateCash[i]->StoreContentsData(stream);
+			for (uint i = 0; i < stateCount; ++i)
+				GetState(i)->StreamInterface()->StoreData(stream);
 
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
-		 std::unique_ptr<JAnimationFSMdiagram> JAnimationFSMdiagram::LoadIdentifierData(std::wifstream& stream, JFSMLoadGuidMap& guidMap, IJFSMconditionStorageUser* conditionStorage)
+		JAnimationFSMdiagram* JAnimationFSMdiagram::LoadData(std::wifstream& stream, JUserPtr<IJFSMdiagramOwner> fsmOwner)
 		{
 			if (!stream.is_open())
 				return nullptr;
+			 
+			std::wstring name;
+			size_t guid;
+			J_FSM_OBJECT_TYPE type;
 
-			JFSMIdentifier::JFSMIdentifierData data;
-			JFSMIdentifier::LoadIdentifierData(stream, data);
- 
-			std::unique_ptr<JAnimationFSMdiagram> newDiagram = nullptr;
-			if (guidMap.isNewGuid)
-			{
-				newDiagram = std::make_unique<JAnimationFSMdiagram>(data.name, MakeGuid(), conditionStorage);
-				guidMap.diagram.emplace(data.guid, newDiagram->GetGuid());
-			}
-			else
-				newDiagram = std::make_unique<JAnimationFSMdiagram>(data.name, data.guid, conditionStorage);
-
+			JFileIOHelper::LoadFsmObjectIden(stream, name, guid, type);
+  
+			JAnimationFSMdiagram* newDiagram = JFDFI<JAnimationFSMdiagram>::Create(JPtrUtil::MakeOwnerPtr<InitData>(name, guid, fsmOwner));
+			JUserPtr<JAnimationFSMdiagram> diagramUser = Core::GetUserPtr<JAnimationFSMdiagram>(newDiagram->GetGuid());
 			uint stateCount = 0;
-			stream >> stateCount; 
+			JFileIOHelper::LoadAtomicData(stream, stateCount);
 
 			for (uint i = 0; i < stateCount; ++i)
 			{
-				int stateType = 0;
-				stream >> stateType;
+				J_ANIMATION_STATE_TYPE stateType;
+				JAnimationFSMstate* newState = nullptr;
+				JFileIOHelper::LoadFsmObjectIden(stream, name, guid, type);
+				JFileIOHelper::LoadEnumData(stream, stateType);
 
-				if (stateType == (int)J_ANIMATION_STATE_TYPE::CLIP)
-				{
-					std::unique_ptr<JAnimationFSMstate> newState = JAnimationFSMstateClip::LoadIdentifierData(stream, guidMap);
-					if(newState != nullptr)
-						newDiagram->AddState(std::move(newState));
-				}
-				else if (stateType == (int)J_ANIMATION_STATE_TYPE::BLEND_TREE)
+				if (stateType == J_ANIMATION_STATE_TYPE::CLIP)
+					newState = JFSFI<JAnimationFSMstateClip>::Create(JPtrUtil::MakeOwnerPtr<JFSMstate::InitData>(name, guid, diagramUser));
+				else if (stateType == J_ANIMATION_STATE_TYPE::BLEND_TREE)
 					;//¹Ì±¸Çö 
 			} 
+			for (uint i = 0; i < stateCount; ++i)
+				newDiagram->GetState(i)->StreamInterface()->LoadData(stream, *newDiagram->GetStroageUser());
+			
 			return newDiagram;
 		}
-		J_FILE_IO_RESULT JAnimationFSMdiagram::LoadContentsData(std::wifstream& stream, JFSMLoadGuidMap& guidMap)
+		void JAnimationFSMdiagram::RegisterJFunc()
 		{
-			 if (!stream.is_open())
-				 return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
-			 uint stateCount = 0;
-			 stream >> stateCount;
-
-			 if (stateCount != stateCash.size())
-				 return J_FILE_IO_RESULT::FAIL_CORRUPTED_DATA;
-
-			 for (uint i = 0; i < stateCount; ++i)
-				 stateCash[i]->LoadContentsData(stream, guidMap, *GetIConditionStorage());
-
-			 return J_FILE_IO_RESULT::SUCCESS;
+			auto createDiagramLam = [](JOwnerPtr<JFSMdiagramInitData> initData)-> JFSMdiagram*
+			{
+				if (initData.IsValid())
+				{
+					JOwnerPtr<JAnimationFSMdiagram> ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationFSMdiagram>(*initData.Get());
+					JAnimationFSMdiagram* newDiagram = ownerPtr.Get();
+					if (AddInstance(std::move(ownerPtr)))
+						return newDiagram;
+				}
+				return nullptr;
+			};
+			JFDFI< JAnimationFSMdiagram>::RegisterDiagram(createDiagramLam);
 		}
+		JAnimationFSMdiagram::JAnimationFSMdiagram(const JFSMdiagramInitData& initData)
+			:JFSMdiagram(initData)
+		{ }
+		JAnimationFSMdiagram::~JAnimationFSMdiagram() {}
 	}
 }

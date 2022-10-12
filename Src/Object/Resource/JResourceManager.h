@@ -2,6 +2,7 @@
 #include<vector>
 #include<functional> 
 #include<algorithm>
+#include<type_traits>
 #include"JResourceType.h"
 #include"JResourceData.h"   
 #include"JResourceUserInterface.h" 
@@ -13,8 +14,7 @@
 #include"../../Core/File/JFileIOResult.h"
 
 namespace JinEngine
-{  
-	struct ResourceHandleStruct; 
+{   
 	class JMeshGeometry;
 	class JMaterial;
 	class JTexture;
@@ -26,7 +26,8 @@ namespace JinEngine
 		template <typename T> class JCreateUsingNew;
 	}
 
-	class JResourceManagerImpl : public JDirectoryStorageInterface, public Core::JEventManager<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>
+	class JResourceManagerImpl : public JDirectoryStorageInterface, 
+		public Core::JEventManager<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>
 	{
 		REGISTER_CLASS(JResourceManagerImpl)
 	private:
@@ -49,7 +50,7 @@ namespace JinEngine
 			std::vector<JResourceObject*>::const_iterator GetVectorIter(uint& count);
 			bool Has(const size_t guid)noexcept;
 			uint Count()const noexcept;
-			JResourceObject* AddResource(JResourceObject* resource)noexcept;
+			bool AddResource(JResourceObject* resource)noexcept;
 			bool RemoveResource(JResourceObject& resource)noexcept;
 			void Clear();
 		};
@@ -68,7 +69,7 @@ namespace JinEngine
 			JDirectory* GetByGuid(const size_t guid);
 			JDirectory* GetByPath(const std::wstring& path);
 			JDirectory* GetOpenDirectory();
-			JDirectory* Add(JDirectory* dir)noexcept;
+			bool Add(JDirectory* dir)noexcept;
 			bool Remove(JDirectory* dir)noexcept;
 			void Clear();
 		};
@@ -103,55 +104,64 @@ namespace JinEngine
 
 		bool HasResource(const J_RESOURCE_TYPE rType, const size_t guid)noexcept;
 	public:
-		JResourceMangerOwnerInterface* OwnerInterface() final;
+		JResourceMangerAppInterface* AppInterface() final;
 		JResourceStorageInterface* ResourceStorageInterface() final;
 		JDirectoryStorageInterface* DirectoryStorageInterface() final;
 		JEventInterface* EvInterface() final;
 	private:
+		void Initialize()final;
+		void Terminate()final;
+		void StoreProjectResource()final;
 		void LoadSelectorResource()final;
 		void LoadProjectResource()final;
-		void Terminate()final;
 		void DeleteUnuseMetafile();
 	private:
-		JResourceObject* AddResource(JResourceObject& newResource);
-		JDirectory* AddDirectory(JDirectory& newDirectory);
-	private:
+		bool AddResource(JResourceObject& newResource)noexcept final;
 		bool RemoveResource(JResourceObject& resource)noexcept final; 
+		bool AddJDirectory(JDirectory& newDirectory)noexcept final;
 		bool RemoveJDirectory(JDirectory& dir)noexcept final;
 	private:
-		bool DestroyUnusedResource(const J_RESOURCE_TYPE rType, bool isIgnreUndestroyableFlag);
-
+		void DestroyUnusedResource(const J_RESOURCE_TYPE rType, bool isIgnreUndestroyableFlag);
 	private: 
 		//Create Default Resource  
-		void CreateDefaultTexture(const std::vector<JResourceData::DefaultTextureInfo>& textureInfo)noexcept;
-		void CreateDefaultShader()noexcept;
-		void CreateDefaultMaterial()noexcept;
+		void CreateDefaultTexture(const std::vector<JResourceData::DefaultTextureInfo>& textureInfo);
+		void CreateDefaultShader();
+		void CreateDefaultMaterial();
 		void CreateDefaultMesh();
-
-		void StoreResourceData();
-		void LoadObject();
 		//bool IsOverlappedFilepath(const std::string& name, const std::string& path) noexcept;
-	private:
-		static void RegisterJFunc();
+	private: 
 		void RegistEvCallable();
 	private:
 		JResourceManagerImpl();
 		~JResourceManagerImpl();
 	public:
-		template<typename T>
+		template<typename T, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		uint GetResourceCount()
 		{
 			return rCash.find(T::GetStaticResourceType())->second.Count();
 		}
-		template<typename T>
+		template<typename T, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		T* GetResource(const size_t guid)noexcept
 		{ 
 			return static_cast<T*>(rCash.find(T::GetStaticResourceType())->second.Get(guid));
 		}
-		template<typename T>
+		template<typename T, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		T* GetResourceByPath(const std::wstring& path)noexcept
 		{
 			return static_cast<T*>(rCash.find(T::GetStaticResourceType())->second.GetByPath(path));
+		}
+		template<typename T, typename ...Param, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
+		T* GetResourceByCondition(Core::JFunctor<bool, T*, Param...> functor, Param... var)
+		{
+			std::vector<JResourceObject*>& rvec = rCash.find(T::GetStaticResourceType())->second.GetVector();
+			const uint rVecCount = (uint)rvec.size();
+			for (uint i = 0; i < rVecCount; ++i)
+			{ 
+				T* rObj = static_cast<T*>(rvec[i]);
+				if (functor(rObj, std::forward<Param>(var)...))
+					return rObj;
+			}
+			return nullptr;
 		}
 		template<typename T>
 		auto GetResourceVectorHandle(uint& resouceCount) noexcept -> typename std::vector<JResourceObject*>::const_iterator

@@ -1,14 +1,12 @@
-#include"JEditorMenuBar.h"  
-#include"../../Utility/JCommonUtility.h"
+#include"JEditorMenuBar.h"   
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		JMenuNode::JMenuNode(const std::string& windowName, bool isRoot, bool isLeaf, bool* isOpend, JMenuNode* parent)
-			:nodeName(windowName + "##_MenuBar"),
-			windowName(windowName),
+		JMenuNode::JMenuNode(const std::string& nodeName, bool isRoot, bool isLeaf, bool* isOpend, JMenuNode* parent)
+			:nodeName(nodeName + "##_MenuBarNode"),
 			isRoot(isRoot),
 			isLeaf(isLeaf),
 			isOpend(isOpend),
@@ -16,15 +14,21 @@ namespace JinEngine
 		{
 			if (!isRoot)
 				parent->children.push_back(this);
+
+			if (isLeaf && isOpend == nullptr)
+			{
+				JMenuNode::isOpend = new bool();
+				isCreateOpendPtr = true;
+			}
 		}
-		JMenuNode::~JMenuNode() {}
-		std::string JMenuNode::GetMenuNodeName()const noexcept
+		JMenuNode::~JMenuNode()
+		{
+			if (isCreateOpendPtr)
+				delete isOpend;
+		}
+		std::string JMenuNode::GetNodeName()const noexcept
 		{
 			return nodeName;
-		}
-		std::string JMenuNode::GetWindowName()const noexcept
-		{
-			return windowName;
 		}
 		const uint JMenuNode::GetChildrenCount()const noexcept
 		{
@@ -49,7 +53,15 @@ namespace JinEngine
 		{
 			return *isOpend;
 		}
-
+		void JMenuNode::RegisterBind(std::unique_ptr<Core::JBindHandleBase>&& newBindHandle)
+		{
+			bindHandle = std::move(newBindHandle);
+		}
+		void JMenuNode::ExecuteBind()
+		{
+			if (bindHandle != nullptr)
+				bindHandle->InvokeCompletelyBind();
+		}
 		JEditorMenuBar::JEditorMenuBar() {}
 		JEditorMenuBar::~JEditorMenuBar() {}
 		JMenuNode* JEditorMenuBar::GetSelectedNode()noexcept
@@ -59,7 +71,7 @@ namespace JinEngine
 		bool JEditorMenuBar::UpdateMenuBar()
 		{
 			selectedNode = nullptr;
-			JImGuiImpl::BeginMainMenuBar();
+			if(JImGuiImpl::BeginMainMenuBar())
 			{
 				LoopNode(rootNode);
 				JImGuiImpl::EndMenuBar();
@@ -68,7 +80,7 @@ namespace JinEngine
 		}
 		void JEditorMenuBar::LoopNode(JMenuNode* node)
 		{
-			std::string nodeName = node->GetMenuNodeName();
+			std::string nodeName = node->GetNodeName();
 			if (node->IsLeafNode())
 			{
 				if (JImGuiImpl::MenuItem(nodeName.c_str(), node->IsOpendNode(), true))

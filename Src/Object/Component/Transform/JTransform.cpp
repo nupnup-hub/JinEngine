@@ -1,17 +1,22 @@
 #include"JTransform.h"    
 #include"../JComponentFactory.h"
 #include"../../GameObject/JGameObject.h" 
+#include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Utility/JMathHelper.h"
 #include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/File/JFileConstant.h"
 #include"../../../Graphic/FrameResource/JObjectConstants.h"
 #include<fstream>
 
 namespace JinEngine
 {
 	static auto isAvailableoverlapLam = []() {return false; };
-	static auto componentTypeLam = []() {return J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM; };
 
 	using namespace DirectX;
+	J_COMPONENT_TYPE JTransform::GetComponentType()const noexcept
+	{
+		return GetStaticComponentType();
+	}
 	XMFLOAT3 JTransform::GetPosition()const noexcept
 	{
 		return position;
@@ -154,10 +159,6 @@ namespace JinEngine
 		//rotation = JMathHelper::ToEulerAngle(newRotation);
 		Update();
 	}
-	J_COMPONENT_TYPE JTransform::GetComponentType()const noexcept
-	{
-		return componentTypeLam();
-	}
 	bool JTransform::IsAvailableOverlap()const noexcept
 	{
 		return isAvailableoverlapLam();
@@ -169,25 +170,16 @@ namespace JinEngine
 		else
 			return false;
 	}
-	bool JTransform::Copy(JObject* ori)
+	void JTransform::DoCopy(JObject* ori)
 	{
-		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
-			return false;
-
-		if (typeInfo.IsA(ori->GetTypeInfo()))
-		{
-			JTransform* oriT = static_cast<JTransform*>(ori);
-			position = oriT->position;
-			rotation = oriT->rotation;
-			scale = oriT->scale;
-			tFront = oriT->tFront;
-			tRight = oriT->tRight;
-			tUp = oriT->tUp;
-			Update();
-			return true;
-		}
-		else
-			return false;
+		JTransform* oriT = static_cast<JTransform*>(ori);
+		position = oriT->position;
+		rotation = oriT->rotation;
+		scale = oriT->scale;
+		tFront = oriT->tFront;
+		tRight = oriT->tRight;
+		tUp = oriT->tUp;
+		Update();
 	}
 	void JTransform::DoActivate()noexcept
 	{
@@ -196,8 +188,7 @@ namespace JinEngine
 	}
 	void JTransform::DoDeActivate()noexcept
 	{
-		JComponent::DoDeActivate();
-		OffFrameDirty();
+		JComponent::DoDeActivate(); 
 	}
 	void JTransform::Update()noexcept
 	{
@@ -240,13 +231,11 @@ namespace JinEngine
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		Core::J_FILE_IO_RESULT res = StoreMetadata(stream, transform);
-		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
-			return res;
+		JFileIOHelper::StoreObjectIden(stream, transform);
+		JFileIOHelper::StoreXMFloat3(stream, L"Pos:", transform->position);
+		JFileIOHelper::StoreXMFloat3(stream, L"Rot:", transform->rotation);
+		JFileIOHelper::StoreXMFloat3(stream, L"Scale:", transform->scale);
 
-		stream << transform->position.x << " " << transform->position.y << " " << transform->position.z << '\n' <<
-			transform->rotation.x << " " << transform->rotation.y << " " << transform->rotation.z << '\n' <<
-			transform->scale.x << " " << transform->scale.y << " " << transform->scale.z << '\n';
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	JTransform* JTransform::LoadObject(std::wifstream& stream, JGameObject* owner)
@@ -257,27 +246,27 @@ namespace JinEngine
 		if (!stream.is_open())
 			return nullptr;
 
-		ObjectMetadata metadata;
-		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
+		std::wstring guide;
+		size_t guid;
+		J_OBJECT_FLAG flag;
 
-		JTransform* newTransform;
-		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(metadata.guid, metadata.flag, owner);
-			JTransform* newTransform = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-		}
-		else
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(Core::MakeGuid(),
-				(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), owner);
-			JTransform* newTransform = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-		}
-		stream >> newTransform->position.x >> newTransform->position.y >> newTransform->position.z >>
-			newTransform->rotation.x >> newTransform->rotation.y >> newTransform->rotation.z >>
-			newTransform->scale.x >> newTransform->scale.y >> newTransform->scale.z;
+		XMFLOAT3 pos;
+		XMFLOAT3 rot;
+		XMFLOAT3 scale;
 
+		JFileIOHelper::LoadObjectIden(stream, guid, flag);
+		JFileIOHelper::LoadXMFloat3(stream, pos);
+		JFileIOHelper::LoadXMFloat3(stream, rot);
+		JFileIOHelper::LoadXMFloat3(stream, scale);
+
+		Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(guid, flag, owner);
+		JTransform* newTransform = ownerPtr.Get();
+		if (!AddInstance(std::move(ownerPtr)))
+			return nullptr;
+
+		newTransform->SetPosition(pos);
+		newTransform->SetRotation(rot);
+		newTransform->SetScale(scale);
 		newTransform->SetFrameDirty();
 		return newTransform;
 	}
@@ -287,16 +276,20 @@ namespace JinEngine
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(Core::MakeGuid(),
 				(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), owner);
-			JComponent* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
+			JTransform* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+				return newComp;
+			else
+				return nullptr;
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(guid, objFlag, owner);
-			JComponent* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
+			JTransform* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+				return newComp;
+			else
+				return nullptr;
 		};
 		auto loadC = [](std::wifstream& stream, JGameObject* owner) -> JComponent*
 		{
@@ -305,22 +298,31 @@ namespace JinEngine
 		auto copyC = [](JComponent* ori, JGameObject* owner) -> JComponent*
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(Core::MakeGuid(), ori->GetFlag(), owner);
-			JTransform* newT = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			newT->Copy(ori);
-			return newT;
+			JTransform* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+			{
+				if (newComp->Copy(ori))
+					return newComp;
+				else
+				{
+					newComp->BegineForcedDestroy();
+					return nullptr;
+				}
+			}
+			else
+				return nullptr;
 		};
-		JCFI<JTransform>::Regist(defaultC, initC, loadC, copyC);
+		JCFI<JTransform>::Register(defaultC, initC, loadC, copyC);
 
 		static GetTypeNameCallable getTypeNameCallable{ &JTransform::TypeName };
 		static GetTypeInfoCallable getTypeInfoCallable{ &JTransform::StaticTypeInfo };
 		bool(*ptr)() = isAvailableoverlapLam;
 		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 
-		static auto setFrameLam = [](JComponent& component){static_cast<JTransform*>(&component)->SetFrameDirty();};
+		static auto setFrameLam = [](JComponent& component) {static_cast<JTransform*>(&component)->SetFrameDirty(); };
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
-		static JCI::CTypeHint cTypeHint{ componentTypeLam(), true };
+		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
 		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
 

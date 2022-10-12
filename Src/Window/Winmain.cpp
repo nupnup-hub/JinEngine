@@ -25,7 +25,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 	}
 	catch (const std::exception& e)
 	{		
-		MessageBox(GetDesktopWindow(), JCommonUtility::CharToWChar(e.what()), L"Standard Exception", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(GetDesktopWindow(), JCUtil::CharToWChar(e.what()), L"Standard Exception", MB_OK | MB_ICONEXCLAMATION);
 	}
 	catch (...)
 	{

@@ -1,12 +1,12 @@
 #pragma once 
 #include "../JDataType.h"
-#include<type_traits>
+#include<type_traits> 
 
 namespace JinEngine
-{
-	class JObject;
+{  
 	namespace Core
 	{
+		class JIdentifier;
 		class JPtrRefCount
 		{
 		private:
@@ -54,7 +54,7 @@ namespace JinEngine
 			}
 			bool IsValid()const noexcept
 			{
-				return ptrRef != nullptr ? ptrRef->IsValid() : false;
+				return ptrRef != nullptr ? ptrRef->IsValid() && ptr != nullptr : false;
 			}
 		protected:
 			void TryDestroyPtrRef()noexcept
@@ -68,11 +68,14 @@ namespace JinEngine
 		};
 
 		template<typename T>
-		class JOwnerPtr : public JPtrBase<T>
+		class JOwnerPtr final : public JPtrBase<T>
 		{
+		private:
+			template<typename T> friend class JOwnerPtr;
 		private:
 			using PtrBase = JPtrBase<T>;
 		public:
+			JOwnerPtr() = default;
 			JOwnerPtr(T* newPtr)
 			{
 				OwnerConnect(newPtr);
@@ -127,16 +130,47 @@ namespace JinEngine
 				T* newPtr = new T(std::forward<Param>(var)...);
 				OwnerConnect(newPtr);
 			}
+			T* Release()
+			{
+				if (PtrBase::ptrRef != nullptr)
+				{
+					PtrBase::ptrRef->SetValid(false);
+					PtrBase::TryDestroyPtrRef();
+					PtrBase::ptrRef = nullptr;
+				}
+				T* ptr = PtrBase::ptr;
+				PtrBase::ptr = nullptr;
+				return ptr;
+			}
 			void Clear()
 			{
 				OwnerDisConnect();
+			}
+		public:
+			template<typename BaseType>
+			static JOwnerPtr ConvertChildType(JOwnerPtr<BaseType>&& base)
+			{
+				if constexpr (!std::is_base_of_v<JIdentifier, BaseType> || !std::is_base_of_v<JIdentifier, T>)
+					return false;
+				 
+				if (!base.IsValid())
+					return JOwnerPtr<T>{};
+
+				if (base.Get()->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				{
+					JOwnerPtr newOwner;
+					newOwner.OwnerMove(base);
+					return newOwner;
+				}
+				else
+					return JOwnerPtr{};
 			}
 		private:
 			template<typename NewType>
 			void OwnerMove(JOwnerPtr<NewType>& rhs)
 			{
 				Clear();
-				PtrBase::ptr = rhs.ptr;
+				PtrBase::ptr = static_cast<T*>(rhs.ptr);
 				PtrBase::ptrRef = rhs.ptrRef;
 				rhs.ptr = nullptr;
 				rhs.ptrRef = nullptr;
@@ -165,8 +199,10 @@ namespace JinEngine
 		};
 
 		template<typename T>
-		class JUserPtr : public JPtrBase<T>
+		class JUserPtr final : public JPtrBase<T>
 		{
+		private:
+			template<typename T> friend class JUserPtr;
 		private:
 			using PtrBase = JPtrBase<T>;
 		public:
@@ -220,17 +256,46 @@ namespace JinEngine
 				Clear();
 				UserConnect(rhs);
 			}
-			//For JObject
+			T* Release()
+			{
+				T* res = PtrBase::ptr;
+				UserDisConnect();
+				return res;
+			}
+			//For JIdentifier
+			//Connect base user ... is same downcast base to t
 			template<typename BaseType>
-			bool ConnnectBaseUser(const JUserPtr<BaseType>& basePtr)
-			{			  
-				if constexpr (!std::is_base_of_v<JObject, BaseType> || !std::is_base_of_v<JObject, T>)
+			static JUserPtr<T> ConvertChildType(JUserPtr<BaseType>&& base)
+			{
+				if constexpr (!std::is_base_of_v<JIdentifier, BaseType> || !std::is_base_of_v<JIdentifier, T>)
 					return false;
-				 
-				if (T::GetTypeInfo()->IsChildOf(BaseType::GetTypeInfo()))
+
+				if(!base.IsValid())
+					return JUserPtr<T>{};
+
+				if (base.Get()->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				{
+					JUserPtr<T> newUser; 
+					newUser.UserConnect(base);
+					base.UserDisConnect();
+					return newUser;
+				}
+				else
+					return JUserPtr<T>{};
+			}
+			template<typename BaseType>
+			bool ConnnectBaseUser(const JUserPtr<BaseType>& base)
+			{			  
+				if constexpr (!std::is_base_of_v<JIdentifier, BaseType> || !std::is_base_of_v<JIdentifier, T>)
+					return false;
+
+				if (!base.IsValid())
+					return false;
+
+				if (base.Get()->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
 				{
 					UserDisConnect();
-					UserConnect(basePtr); 
+					UserConnect(base);
 					return true;
 				}
 				else
@@ -240,7 +305,7 @@ namespace JinEngine
 			template<typename NewType>
 			void UserConnect(const JPtrBase<NewType>& ptrBase)noexcept
 			{
-				PtrBase::ptr = ptrBase.ptr;
+				PtrBase::ptr = static_cast<T*>(ptrBase.ptr);
 				PtrBase::ptrRef = ptrBase.ptrRef;
 				if(PtrBase::ptrRef != nullptr)
 					PtrBase::ptrRef->AddUserCount();

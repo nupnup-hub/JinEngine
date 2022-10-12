@@ -1,41 +1,66 @@
 #pragma once  
 #include"../JEditorPage.h"  
+#include"../CommonWindow/Debug/JStringConvertTest.h" 
+#include"../CommonWindow/View/JSceneViewer.h"
+#include"../CommonWindow/View/JSceneObserver.h"
+#include"../CommonWindow/Detail/JObjectDetail.h"
+#include"../CommonWindow/Explorer/JObjectExplorer.h"
+#include"../CommonWindow/Debug/JGraphicResourceWatcher.h"
+#include"../CommonWindow/Debug/JAppElapsedTime.h"
+#include"Window/JAnimationControllerEditor.h"
+#include"Window/JLogViewer.h" 
+#include"Window/JWindowDirectory.h"  
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		class JLogViewer;
-		class JObjectDetail;
-		class JObjectExplorer;
-		class JMainSceneEditor;
-		class JSceneViewer;
-		class JWindowDirectory;
-		class JAnimationControllerEditor;
-		class JGraphicResourceWatcher;
-		class JStringConvertTest;
+		//class JWindowDirectory;
+		//class JSceneViewer;
+		//class JSceneObserver;
+		//class JObjectExplorer;
+		//class JLogViewer;
 
-		class JProjectMainPage : public JEditorPage
+	//	class JAnimationControllerEditor;
+		//class JStringConvertTest;
+		//class JGraphicResourceWatcher;
+
+		class JProjectMainPage final : public JEditorPage
 		{
 		private:
-			std::unique_ptr<JWindowDirectory>windowDirectory;
-			std::unique_ptr<JObjectExplorer>objectExplorer;
-			std::unique_ptr<JMainSceneEditor>sceneEditor;
+			using StoreProjectF = Core::JSFunctorType<void>;
+			using LoadProjectF = Core::JSFunctorType<void>;
+		private:
+			std::unique_ptr<JWindowDirectory> windowDirectory;
+			std::unique_ptr<JObjectExplorer> objectExplorer;
 			std::unique_ptr<JObjectDetail>objectDetail;
-			std::unique_ptr<JLogViewer>logViewer;
 			std::unique_ptr<JSceneViewer> sceneViewer;
+			std::unique_ptr<JSceneObserver> sceneObserver;
+			std::unique_ptr<JLogViewer> logViewer;
 			std::unique_ptr<JAnimationControllerEditor> animationControllerEditor;
 			std::unique_ptr<JGraphicResourceWatcher> graphicResourceWatcher;
 			std::unique_ptr<JStringConvertTest> stringConvertTest;
-
+			std::unique_ptr<JAppElapsedTime> appElapseTime;
+		private:
+			std::unique_ptr<StoreProjectF::Functor> storeProjectF;
+			std::unique_ptr<LoadProjectF::Functor> loadProjectF;
+		private:
+			bool reqInitDockNode = false;
 		public:
 			JProjectMainPage(bool hasMetadata);
-			~JProjectMainPage() = default;
+			~JProjectMainPage();
 			JProjectMainPage(const JProjectMainPage& rhs) = delete;
 			JProjectMainPage& operator=(const JProjectMainPage& rhs) = delete;
 		public:
-			void Initialize(bool hasImguiTxt)override;
-			void UpdatePage()override;
+			J_EDITOR_PAGE_TYPE GetPageType()const noexcept final;
+		public:
+			void Initialize()final;
+			void UpdatePage()final;
+		public:
+			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
+		private:
+			void BuildDockNode();
+			void BuildMenuNode();
 		};
 	}
 }

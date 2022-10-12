@@ -1,7 +1,7 @@
-#pragma once 
-#include"JApplicationVariable.h" 
-#include"../Editor/JEditorManager.h"
-#include"../ProjectSelector/ProjectSelector.h"
+
+#pragma once  
+#include"../Editor/JEditorManager.h" 
+#include<windows.h> 
 
 class ApplicationStarter;
 namespace JinEngine
@@ -12,20 +12,20 @@ namespace JinEngine
 		{
 		private:
 			friend class ApplicationStarter;
-		public:
-			void Run();
 		private:
+			void Run();
 			void RunProjectSelector();
 			void RunEngine();
 			void CalculateFrame();
+		private:
+			void StoreProject();
+			void LoadProject();
 		private:
 			JApplication(HINSTANCE hInstance, const char* commandLine);
 			JApplication(const JApplication& rhs) = delete;
 			JApplication& operator=(const JApplication& rhs) = delete;
 			~JApplication();
-		private:
-			JApplicationVariable applicationVar;
-			ProjectSelector projectSelector;
+		private: 
 			Editor::JEditorManager editorManager;
 		};
 	}

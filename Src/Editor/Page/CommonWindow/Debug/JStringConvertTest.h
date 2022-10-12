@@ -6,23 +6,22 @@ namespace JinEngine
 { 
 	namespace Editor
 	{
-		class JStringConvertTest : public JEditorWindow
-		{
+		class JStringConvertTest final : public JEditorWindow
+		{ 
 		private:
 			std::string buf;
-
 			std::string ori;
 			std::wstring oriToWstr;
 			std::string wstrToStr;
 		public:
-			JStringConvertTest(std::unique_ptr<JEditorAttribute> attribute, const size_t ownerPageGuid);
+			JStringConvertTest(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType);
 			~JStringConvertTest();
 			JStringConvertTest(const JStringConvertTest& rhs) = delete;
 			JStringConvertTest& operator=(const JStringConvertTest& rhs) = delete;
-
-			bool Activate(JEditorUtility* editorUtility) final;
-			bool DeActivate(JEditorUtility* editorUtility) final;
-			void UpdateWindow(JEditorUtility* editorUtility)override;
+		public:
+			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
+		public:
+			void UpdateWindow()final;
 		};
 	}
 }

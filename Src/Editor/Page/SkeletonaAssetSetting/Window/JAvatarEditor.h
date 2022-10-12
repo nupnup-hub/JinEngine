@@ -8,48 +8,57 @@
 
 namespace JinEngine
 {
-	class JGameObject;
-	class JModel;
+	class JGameObject; 
 	namespace Editor
 	{
-		class JAvatarEditor : public JEditorWindow
-		{
+		class JAvatarEditor final : public JEditorWindow
+		{ 
+		private:
+			using MakeAvatarF = Core::JMFunctorType<JAvatarEditor, void>;
+			using ClearAvatarF = Core::JMFunctorType<JAvatarEditor, void>;
+			using SelectTabF = Core::JMFunctorType<JAvatarEditor, void, const uint>;
+			using OpenJointSelectorF = Core::JMFunctorType<JAvatarEditor, void, const int>;
+			using SetJointRefF = Core::JMFunctorType<JAvatarEditor, void, const int, const int>;
+			using SetAllJointRefByVecF = Core::JMFunctorType<JAvatarEditor, void, std::vector<uint8>&&>;
+			using SetAllJointRefByAutoF = Core::JMFunctorType<JAvatarEditor, void>;
+			using ClearJointRefF = Core::JMFunctorType<JAvatarEditor, void>;
+		private:
+			//Functor
+			MakeAvatarF::Functor makeAvatarFunctor;
+			ClearAvatarF::Functor clearAvatarFunctor;
+			SelectTabF::Functor selectTabFunctor;
+			OpenJointSelectorF::Functor openJointSelectorFunctor;
+			SetJointRefF::Functor setJointRefFunctor;
+			SetAllJointRefByVecF::Functor setAllJointRefByVecFunctor;
+			SetAllJointRefByAutoF::Functor setAllJointRefByAutoFunctor;
+			ClearJointRefF::Functor clearJointRefFunctor;
 		private: 
-			Core::JUserPtr<JModel> targetModel;
+			Core::JUserPtr<JSkeletonAsset> targetSkeleton; 
 			JAvatar targetAvatar;
 
 			bool hasAvatar = false;
 			bool isOpenAvatarSetting = false;
 			bool isOpenJointSelector = false; 
-			int selectJointRefIndex;
+			int selectJointRefIndex; 
 			int selectJointIndex;
 			std::bitset<JSkeletonFixedData::maxAvatarJointCount> isValidJointRef; 
 			std::bitset<4> tabs;
 			const JVector4<float> failColor{ 0.85f, 0.2f, 0.2f, 0.75f };
-		private:
-			//Functor
-			Core::JFunctor<void> makeAvatarFunctor;
-			Core::JFunctor<void> clearAvatarFunctor;
-			Core::JFunctor<void, const uint> selectTabFunctor;
-			Core::JFunctor<void, const int> openJointSelectorFunctor;
-			Core::JFunctor<void, const int, const int> setJointRefFunctor; 
-			Core::JFunctor<void, std::vector<uint8>&&> setAllJointRefByVecFunctor; 
-			Core::JFunctor<void> setAllJointRefByAutoFunctor;
-			Core::JFunctor<void> clearJointRefFunctor;
 		public:
-			JAvatarEditor(std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
+			JAvatarEditor(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
 			~JAvatarEditor();
 			JAvatarEditor(const JAvatarEditor & rhs) = delete;
 			JAvatarEditor& operator=(const JAvatarEditor & rhs) = delete;
-		public:			  
-			void UpdateWindow()final;
 		public:
-			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept;
-			void SetTargetModel(const Core::JUserPtr<JModel>& newTargetModel)noexcept;
+			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
+		public:			  
+			void Initialize(const Core::JUserPtr<JSkeletonAsset>& newTargetSkeleton)noexcept;
+			void UpdateWindow()final;
 		private:
 			//Build Gui
 			void BuildAvatarEdit();
-			void BuildObjectExplorer(JGameObject* obj, uint index);
+			void BuildObjectExplorer(const uint8 index, const std::vector<std::vector<uint8>>& treeIndexVec);
+			//void BuildObjectExplorer(JGameObject* obj, uint index);
 		private:
 			void MakeAvatar();
 			void ClearAvatar();

@@ -1,6 +1,7 @@
 #pragma once
 #include"JPreviewEnum.h" 
 #include"../../../../Core/JDataType.h"
+#include"../../../../Core/Pointer/JOwnerPtr.h"
 #include<vector>
 #include<string> 
 #include<memory> 
@@ -43,8 +44,9 @@ namespace JinEngine
 	private:
 		void Clear()noexcept;
 	private:
-		JPreviewScene* CreatePreviewScene(_In_ JObject* jobject, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)noexcept;
+		JPreviewScene* CreatePreviewScene(_In_ Core::JUserPtr<JObject> jObj, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)noexcept;
 		bool DestroyPreviewScene(const size_t sceneGuid)noexcept;
-		bool DestroyPreviewScene(JObject* jObj)noexcept;
+		bool DestroyPreviewScene(Core::JUserPtr<JObject> jObj)noexcept;
+		void DestroyInvalidPreviewScene()noexcept;
 	};
 }

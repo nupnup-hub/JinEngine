@@ -1,29 +1,37 @@
 #include"JEditor.h"
 #include"JEditorAttribute.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../Event/JEditorEvent.h"
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
 	namespace Editor
-	{ 
+	{
+		JEditor::JEditor(const std::string& name, std::unique_ptr<JEditorAttribute> attribute)
+			:name(name),
+			guid(JCUtil::CalculateGuid(name)),
+			attribute(std::move(attribute))
+		{}
+		JEditor::~JEditor()
+		{}
 		std::string JEditor::GetName()const noexcept
 		{
-			return attribute->name;
+			return name;
 		}
-		std::wstring JEditor::GetWName()const noexcept
+		std::string JEditor::GetDockNodeName()const noexcept
 		{
-			return JCommonUtility::StrToWstr(attribute->name);
+			return GetName() + "DockNode";
 		}
 		size_t JEditor::GetGuid()const noexcept
 		{
-			return attribute->guid;
+			return guid;
 		}
 		float JEditor::GetInitPosXRate()const noexcept
 		{
 			return attribute->initPosXRate;
 		}
-		float JEditor::GetInitPsYRate()const noexcept
+		float JEditor::GetInitPosYRate()const noexcept
 		{
 			return attribute->initPosYRate;
 		}
@@ -39,13 +47,14 @@ namespace JinEngine
 		{
 			return &attribute->isOpen;
 		}
+		void JEditor::SetName(const std::string& newName)noexcept
+		{ 
+			if(!newName.empty())
+				name = newName;
+		}
 		bool JEditor::IsOpen()const noexcept
 		{
 			return attribute->isOpen;
-		}
-		bool JEditor::IsFront()const noexcept
-		{
-			return attribute->isFront;
 		}
 		bool JEditor::IsFocus()const noexcept
 		{
@@ -55,35 +64,29 @@ namespace JinEngine
 		{
 			return attribute->isActivated;
 		}
+		bool JEditor::IsLastActivated()const noexcept
+		{
+			return attribute->isLastAct;
+		}
 		void JEditor::SetOpen()noexcept
 		{
 			if (!attribute->isOpen)
 				DoSetOpen();			
 		}
-		void JEditor::OffOpen()noexcept
+		void JEditor::SetClose()noexcept
 		{
 			if (attribute->isOpen)
-				DoOffOpen();
-		}
-		void JEditor::SetFront()noexcept
-		{
-			if (!attribute->isFront)
-				DoSetFront();
-		}
-		void JEditor::OffFront()noexcept
-		{
-			if (attribute->isFront)
-				DoOffFront();
+				DoSetClose();
 		}
 		void JEditor::SetFocus()noexcept
 		{
 			if (!attribute->isFocus)
 				DoSetFocus();
 		}
-		void JEditor::OffFocus()noexcept
+		void JEditor::SetUnFocus()noexcept
 		{
 			if (attribute->isFocus)
-				DoOffFront();
+				DoSetUnFocus();
 		}
 		void JEditor::Activate()noexcept
 		{
@@ -95,27 +98,23 @@ namespace JinEngine
 			if (attribute->isActivated)
 				DoDeActivate();
 		}
+		void JEditor::SetLastActivated(bool value)noexcept
+		{
+			attribute->isLastAct = value;
+		}
 		void JEditor::DoSetOpen()noexcept
 		{
 			attribute->isOpen = true;
 		}
-		void JEditor::DoOffOpen()noexcept
+		void JEditor::DoSetClose()noexcept
 		{
 			attribute->isOpen = false;
 		}
-		void JEditor::DoSetFront()noexcept
-		{
-			attribute->isFront = true;
-		}
-		void JEditor::DoOffFront()noexcept
-		{
-			attribute->isFront = false;
-		}
 		void JEditor::DoSetFocus()noexcept
-		{
+		{ 
 			attribute->isFocus = true;
 		}
-		void JEditor::DoOffFocus()noexcept
+		void JEditor::DoSetUnFocus()noexcept
 		{
 			attribute->isFocus = false;
 		}
@@ -127,16 +126,10 @@ namespace JinEngine
 		{
 			attribute->isActivated = false;
 		}
-		void JEditor::RegisterJFunc()
+		void JEditor::OnEvent(const size_t& iden, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{
-
-		}
-		JEditor::JEditor(std::unique_ptr<JEditorAttribute> attribute)
-			:attribute(std::move(attribute))
-		{}
-		JEditor::~JEditor()
-		{
-			RemoveListener(*JImGuiImpl::EvInterface(), GetGuid());
+			if (iden == guid)
+				return;
 		}
 	}
 }
@@ -157,7 +150,7 @@ namespace JinEngine
 			if (attribute->isActivated && attribute->isOpen && attribute->isFront)
 			{
 				if (attribute->isFocus)
-					OffFocus(editorUtility);
+					SetUnFocus(editorUtility);
 				attribute->isActivated = false;
 				return true;
 			}

@@ -1,37 +1,27 @@
 #include"JFileFactory.h" 
+#include"JDirectory.h"
 #include"../../Core/Func/Callable/JCallable.h" 
-
 namespace JinEngine
 {
-	class JFileFactory
+	namespace
 	{
-	public:
-		using CreateCallable = Core::JMemeberCallable<JDirectory, bool, JResourceObject&>;
-		using DestroyCallable = Core::JMemeberCallable<JDirectory, bool, JResourceObject&>;
-	public:
-		static CreateCallable* createCallable;  
-		static DestroyCallable* destroyCallable; 
-	};
+		using CreateCallable = Core::JMemberCallable<JDirectory, bool, JResourceObject&>;
+		using DestroyCallable = Core::JMemberCallable<JDirectory, bool, JResourceObject&>;
+		static std::unique_ptr< CreateCallable> createCallable;
+		static std::unique_ptr< DestroyCallable> destroyCallable;
+	}
 
-	JFileFactory::CreateCallable* JFileFactory::createCallable;  
-	JFileFactory::DestroyCallable* JFileFactory::destroyCallable; 
-
-	bool JFileFactoryImpl::Register(const CreateFuncPtr& cPtr, const DestroyFuncPtr& dPtr)
-	{
-		using CreateCallable = JFileFactory::CreateCallable; 
-		static CreateCallable crateCallable{ cPtr }; 
-		JFileFactory::createCallable = &crateCallable;
-
-		using DestroyCallable = JFileFactory::DestroyCallable;
-		static DestroyCallable destroyCallable{ dPtr };
-		JFileFactory::destroyCallable = &destroyCallable;
+	void JFileFactoryImpl::Register(const CreateFuncPtr& cPtr, const DestroyFuncPtr& dPtr)
+	{ 
+		createCallable = std::make_unique<CreateCallable>(cPtr);
+		destroyCallable = std::make_unique<DestroyCallable>(dPtr);
 	}
 	bool JFileFactoryImpl::Create(JDirectory& dir, JResourceObject& resource)
-	{ 
-		return (*JFileFactory::createCallable)(&dir, resource);
+	{
+		return (*createCallable)(&dir, resource);
 	}
 	bool JFileFactoryImpl::Destroy(JDirectory& dir, JResourceObject& resource)
 	{
-		return (*JFileFactory::destroyCallable)(&dir, resource);
+		return (*destroyCallable)(&dir, resource);
 	}
 }

@@ -21,7 +21,7 @@ namespace JinEngine
 				previewGroup = nullptr;
 			}
 		public:
-			JPreviewScene* CreatePreviewScene(JObject* jObj,
+			JPreviewScene* CreatePreviewScene(Core::JUserPtr<JObject> jObj,
 				const J_PREVIEW_DIMENSION previewDimension,
 				const J_PREVIEW_FLAG previewFlag)noexcept
 			{
@@ -31,9 +31,14 @@ namespace JinEngine
 			{
 				return previewGroup != nullptr ? previewGroup->DestroyPreviewScene(sceneGuid) : false;
 			}
-			bool DestroyPreviewScene(JObject* jObj)noexcept
+			bool DestroyPreviewScene(Core::JUserPtr<JObject> jObj)noexcept
 			{
 				return previewGroup != nullptr ? previewGroup->DestroyPreviewScene(jObj) : false;
+			}
+			void DestroyInvalidPreviewScene()noexcept
+			{
+				if (previewGroup != nullptr)
+					previewGroup->DestroyInvalidPreviewScene();
 			}
 			void ClearPreviewGroup()noexcept
 			{
@@ -44,11 +49,15 @@ namespace JinEngine
 			{
 				if (previewGroup != nullptr)
 					return previewGroup->GetPreviewSceneCount();
+				else
+					return 0;
 			}
 			JPreviewScene* GetPreviewScene(const uint index)noexcept
 			{
 				if (previewGroup != nullptr)
 					return previewGroup->GetPreviewScene(index);
+				else
+					return nullptr;
 			}
 			void SetPreviewGroupCapacity(const uint capacity)noexcept
 			{
@@ -57,19 +66,26 @@ namespace JinEngine
 			}
 		};
 
-		JPreviewScene* JEditorPreviewInterface::CreatePreviewScene(JObject* jObj,
+		JPreviewScene* JEditorPreviewInterface::CreatePreviewScene(Core::JUserPtr<JObject> jObj,
 			const J_PREVIEW_DIMENSION previewDimension,
 			const J_PREVIEW_FLAG previewFlag)noexcept
 		{
+			if (!jObj.IsValid())
+				return nullptr;
+
 			return impl->CreatePreviewScene(jObj, previewDimension, previewFlag);
 		}
 		bool JEditorPreviewInterface::DestroyPreviewScene(const size_t sceneGuid)noexcept
 		{
 			return impl->DestroyPreviewScene(sceneGuid);
 		}
-		bool JEditorPreviewInterface::DestroyPreviewScene(JObject* jObj)noexcept
+		bool JEditorPreviewInterface::DestroyPreviewScene(Core::JUserPtr<JObject> jObj)noexcept
 		{
 			return impl->DestroyPreviewScene(jObj);
+		}
+		void JEditorPreviewInterface::DestroyInvalidPreviewScene()noexcept
+		{
+			impl->DestroyInvalidPreviewScene();
 		}
 		void JEditorPreviewInterface::ClearPreviewGroup()noexcept
 		{

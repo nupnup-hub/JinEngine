@@ -1,4 +1,5 @@
 #include"JComponent.h"
+#include"JComponentFactory.h"
 #include"../GameObject/JGameObject.h"
 #include"../Resource/Scene/JScene.h"
 #include"../../Utility/JCommonUtility.h"
@@ -39,20 +40,27 @@ namespace JinEngine
 	{
 		JObject::DoDeActivate();
 	}
-	void JComponent::Destroy()
+	bool JComponent::Destroy()
 	{
 		if(HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !IsIgnoreUndestroyableFlag())
-			return;
+			return false;
 
 		DeActivate();
-		owner->CompInterface()->RemoveComponent(*this);
+		return true;
+	}
+	bool JComponent::RegisterCashData()noexcept
+	{
+		return owner->CompInterface()->AddComponent(*this);
+	}
+	bool JComponent::DeRegisterCashData()noexcept
+	{
+		return owner->CompInterface()->RemoveComponent(*this);
 	}
 	JComponent::JComponent(const std::string& cTypeName, const size_t guid, J_OBJECT_FLAG flag, JGameObject* owner)noexcept
-		:JComponentInterface(JCommonUtility::StrToWstr(cTypeName), guid, flag), owner(owner)
+		:JComponentInterface(JCUtil::StrToWstr(cTypeName), guid, flag), owner(owner)
 	{
 	}
 	JComponent::~JComponent()
 	{
-		owner = nullptr;
 	}
 }

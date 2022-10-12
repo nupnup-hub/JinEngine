@@ -9,12 +9,11 @@ namespace JinEngine
 	namespace Core
 	{
 		struct JAnimationTime;
-		class JAnimationFSMstateClip : public JAnimationFSMstate, public JResourceUserInterface
+		class JAnimationFSMstateClip final : public JAnimationFSMstate, public JResourceUserInterface
 		{
+			REGISTER_CLASS(JAnimationFSMstateClip)
 		private:
 			JAnimationClip* clip;
-		public:
-			JAnimationFSMstateClip(const std::wstring& name, const size_t guid);
 		public:
 			void Initialize()noexcept final;
 			J_ANIMATION_STATE_TYPE GetStateType()const noexcept final;
@@ -22,15 +21,21 @@ namespace JinEngine
 			void Update(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const uint updateNumber)noexcept override;
 			void Close(JAnimationShareData& animationShareData)noexcept override;
 			void GetRegisteredSkeleton(std::vector<JSkeletonAsset*>& skeletonVec)noexcept override;
-			void SetClip(JAnimationClip* clip)noexcept;
+			void SetClip(JAnimationClip* newClip)noexcept;
+		protected:
 			void Clear()noexcept final;
 		private:
-			J_FILE_IO_RESULT StoreContentsData(std::wofstream& stream)final;
-		public:
-			static std::unique_ptr<JAnimationFSMstate> LoadIdentifierData(std::wifstream& stream, JFSMLoadGuidMap& guidMap);
-			J_FILE_IO_RESULT LoadContentsData(std::wifstream& stream, JFSMLoadGuidMap& guidMap, IJFSMconditionStorageUser& iConditionUser)final;
-		private:
 			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
+		private:
+			J_FILE_IO_RESULT StoreData(std::wofstream& stream)final;
+			J_FILE_IO_RESULT LoadData(std::wifstream& stream, IJFSMconditionStorageUser& iConditionUser)final;
+		private:
+			static void RegisterJFunc();
+		private:
+			JAnimationFSMstateClip(const JFSMstateInitData& initData);
+			~JAnimationFSMstateClip();
+			JAnimationFSMstateClip(const JAnimationFSMstateClip& rhs) = delete;
+			JAnimationFSMstateClip& operator=(const JAnimationFSMstateClip& rhs) = delete;
 		};
 	}
 }

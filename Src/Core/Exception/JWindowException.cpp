@@ -7,7 +7,7 @@ namespace JinEngine
 	namespace Core
 	{
 		JWindowException::JWindowException(int line, const std::string file)
-			:JException(line, JCommonUtility::StrToWstr(file)), lastError(GetLastError())
+			:JException(line, JCUtil::StrToWstr(file)), lastError(GetLastError())
 		{ 
 			DWORD dwError = GetDlgItemInt(JWindow::Instance().HandleInterface()->GetHandle(), 1000, NULL, FALSE);
 			HLOCAL hlocal = NULL;

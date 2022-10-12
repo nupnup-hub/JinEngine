@@ -8,6 +8,7 @@ namespace JinEngine
 #define J_IDENTITY(x) x
 #define J_TO_STR(x) #x
 #define J_TO_STR_ADD_COMMA(x) #x    J_TO_STR(@)
+#define J_FRIEND(x) friend x;
 
 #define J_APPLY(macro, ...) J_IDENTITY(macro(__VA_ARGS__))
 
@@ -43,6 +44,16 @@ namespace JinEngine
 #define MAP18(m, x, ...) m(x) J_IDENTITY(MAP17(m, __VA_ARGS__))
 #define MAP19(m, x, ...) m(x) J_IDENTITY(MAP18(m, __VA_ARGS__))
 #define MAP20(m, x, ...) m(x) J_IDENTITY(MAP19(m, __VA_ARGS__)) 
+#define MAP21(m, x, ...) m(x) J_IDENTITY(MAP20(m, __VA_ARGS__))
+#define MAP22(m, x, ...) m(x) J_IDENTITY(MAP21(m, __VA_ARGS__))
+#define MAP23(m, x, ...) m(x) J_IDENTITY(MAP22(m, __VA_ARGS__))
+#define MAP24(m, x, ...) m(x) J_IDENTITY(MAP23(m, __VA_ARGS__))
+#define MAP25(m, x, ...) m(x) J_IDENTITY(MAP24(m, __VA_ARGS__)) 
+#define MAP26(m, x, ...) m(x) J_IDENTITY(MAP25(m, __VA_ARGS__))
+#define MAP27(m, x, ...) m(x) J_IDENTITY(MAP26(m, __VA_ARGS__))
+#define MAP28(m, x, ...) m(x) J_IDENTITY(MAP27(m, __VA_ARGS__))
+#define MAP29(m, x, ...) m(x) J_IDENTITY(MAP28(m, __VA_ARGS__))
+#define MAP30(m, x, ...) m(x) J_IDENTITY(MAP29(m, __VA_ARGS__)) 
 
 #define MAP_MERGE_1(m, x)      m(x)
 #define MAP_MERGE_2(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_1(m, __VA_ARGS__))
@@ -63,7 +74,17 @@ namespace JinEngine
 #define MAP_MERGE_17(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_16(m, __VA_ARGS__))
 #define MAP_MERGE_18(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_17(m, __VA_ARGS__))
 #define MAP_MERGE_19(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_18(m, __VA_ARGS__))
-#define MAP_MERGE_20(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_19(m, __VA_ARGS__)) 
+#define MAP_MERGE_20(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_19(m, __VA_ARGS__))             
+#define MAP_MERGE_21(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_20(m, __VA_ARGS__))
+#define MAP_MERGE_22(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_21(m, __VA_ARGS__))
+#define MAP_MERGE_23(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_22(m, __VA_ARGS__))
+#define MAP_MERGE_24(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_23(m, __VA_ARGS__))
+#define MAP_MERGE_25(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_24(m, __VA_ARGS__))
+#define MAP_MERGE_26(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_25(m, __VA_ARGS__))
+#define MAP_MERGE_27(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_26(m, __VA_ARGS__))
+#define MAP_MERGE_28(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_27(m, __VA_ARGS__))
+#define MAP_MERGE_29(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_28(m, __VA_ARGS__))
+#define MAP_MERGE_30(m, x, ...) m(x) ## J_IDENTITY(MAP_MERGE_29(m, __VA_ARGS__)) 
 
 #define MAP_HELPER(count) MAP##count 
 #define MAP_MERGE_HELPER(count) MAP_MERGE_##count 
@@ -77,6 +98,8 @@ namespace JinEngine
 #define J_STRINGIZE(...) J_IDENTITY(CALL_DEFINE(J_TO_STR, MAP_HELPER, __VA_ARGS__))
 #define J_STRINGIZE_ADD_COMMA(...) J_IDENTITY(CALL_DEFINE(J_TO_STR_ADD_COMMA, MAP_HELPER, __VA_ARGS__))
 #define J_MAKE_ENUM_ELEMENT(...) __VA_ARGS__ 
+
+#define J_MAKE_FRIEND(...) J_IDENTITY(CALL_DEFINE(J_FRIEND, MAP_HELPER, __VA_ARGS__)) 
 
     }
 }

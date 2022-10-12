@@ -2,16 +2,25 @@
 #include"JResourceObject.h"
 #include"JResourceObjectInterface.h"
 #include"JResourceObjectFactory.h"
+#include"JResourceImporter.h"
+#include"Texture/JTexture.h"
+#include"Mesh/JMeshGeometry.h"
+#include"AnimationClip/JAnimationClip.h"
+
 #include"../Directory/JDirectory.h"
-#include"../../Core/JDataType.h"
-#include"../../Utility/JCommonUtility.h"
 #include"../Directory/JDirectoryFactory.h"
+#include"../../Core/JDataType.h"
+#include"../../Core/File/JFileConstant.h"
+#include"../../Core/File/JFilePathData.h"
+#include"../../Core/File/JFileIOHelper.h"
+#include"../../Utility/JCommonUtility.h"
 #include"../../Graphic/JGraphic.h"
 #include"../../Graphic/JGraphicResourceManager.h"
 #include"../../Application/JApplicationVariable.h"  
 #include"../../Core/Guid/GuidCreator.h"
 #include<Windows.h>
 #include<io.h>
+#include<fstream>
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -22,15 +31,23 @@ namespace JinEngine
 	JResourceIO::~JResourceIO() {}
 	JDirectory* JResourceIO::LoadRootDirectory(const std::wstring& path, const J_OBJECT_FLAG initFlag)
 	{
-		JDirectoryPathData pathData{ path };
-		if (_access(pathData.strPath.c_str(), 00) != -1)
+		Core::JAssetFileLoadPathData pathData{ path };
+		if (_waccess(pathData.engineFileWPath.c_str(), 00) != -1 &&
+			_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
 			return JDFI::LoadRoot(pathData);
 		else
-			return JDFI::CreateRoot(pathData.name, Core::MakeGuid(), initFlag);
+			return JDFI::CreateRoot(pathData.engineFileWPath, Core::MakeGuid(), initFlag);
 	}
 	void JResourceIO::LoadEngineDirectory(JDirectory* engineRootDir)
 	{
 		SearchDirectory(engineRootDir, true, (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE));
+	}
+	void JResourceIO::LoadEngineResource(JDirectory* engineRootDir)
+	{
+		std::vector<JRI::RTypeHint> rInfo = JRI::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
+		const uint rInfoCount = (uint)rInfo.size();
+		for (uint i = 0; i < rInfoCount; ++i)
+			SearchResource(rInfo[i].thisType, engineRootDir);
 	}
 	void JResourceIO::LoadProjectDirectory(JDirectory* projectRootDir)
 	{
@@ -51,8 +68,9 @@ namespace JinEngine
 		std::vector<JDirectory*> defaultFolderCash;
 		for (uint i = 0; i < defaultFolderPath.size(); ++i)
 		{
-			JDirectoryPathData pathData{ defaultFolderPath[i] };
-			if (_access(pathData.strPath.c_str(), 00) != -1)
+			Core::JAssetFileLoadPathData pathData{ defaultFolderPath[i] };
+			if (_waccess(pathData.engineFileWPath.c_str(), 00) != -1 &&
+				_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
 				defaultFolderCash.push_back(JDFI::Load(*projectRootDir, pathData));
 			else
 				defaultFolderCash.push_back(JDFI::Create(pathData.name, Core::MakeGuid(), flag[i], *projectRootDir));
@@ -65,41 +83,28 @@ namespace JinEngine
 		// defaultFolderCash[1] = projectLibraryDir
 		// defaultFolderCash[2] = projectContentsDir
 
-		const J_OBJECT_FLAG projectOtherDir = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE);
-		const J_OBJECT_FLAG projectContentDir = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE);
-		const J_OBJECT_FLAG userDefineDir = OBJECT_FLAG_NONE;
+		const J_OBJECT_FLAG projectOtherDirFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE);
+		const J_OBJECT_FLAG projectContentDirFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE);
+		const J_OBJECT_FLAG userDefineDirFlag = OBJECT_FLAG_NONE;
 
-		SearchDirectory(defaultFolderCash[0], true, projectOtherDir);
-		SearchDirectory(defaultFolderCash[1], true, projectOtherDir);
-		SearchDirectory(defaultFolderCash[2], true, projectContentDir);
-		SearchDirectory(defaultFolderCash[2], false, userDefineDir);
+		SearchDirectory(defaultFolderCash[0], true, projectOtherDirFlag);
+		SearchDirectory(defaultFolderCash[1], true, projectOtherDirFlag);
+		SearchDirectory(defaultFolderCash[2], true, projectContentDirFlag);
+		SearchDirectory(defaultFolderCash[2], false, userDefineDirFlag);
 	}
 	void JResourceIO::LoadProjectResource(JDirectory* projectRootDir)
 	{
-		std::vector<JRI::RTypeHint> rInfo = JRI::GetRTypeHintVec(RESOURCE_ALIGN_TYPE::DEPENDENCY);
+		std::vector<JRI::RTypeHint> rInfo = JRI::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
 		const uint rInfoCount = (uint)rInfo.size();
 		for (uint i = 0; i < rInfoCount; ++i)
-		{
-			JDirectory* searchRootDir;
-			if (rInfo[i].thisType == J_RESOURCE_TYPE::SHADER)
-				searchRootDir = projectRootDir->SearchDirectory(JApplicationVariable::GetProjectShaderMetafilePath());
-			else
-				searchRootDir = projectRootDir->SearchDirectory(JApplicationVariable::GetProjectContentPath());
-
-			if (rInfo[i].hasGraphicResource)
-			{
-				JGraphic::Instance().CommandInterface()->FlushCommandQueue();
-				JGraphic::Instance().CommandInterface()->StartCommand();
-				SearchResource(rInfo[i].thisType, searchRootDir);
-				JGraphic::Instance().CommandInterface()->EndCommand();
-				JGraphic::Instance().CommandInterface()->FlushCommandQueue();
-			}
-			else
-				SearchResource(rInfo[i].thisType, searchRootDir);
-		}
+			SearchResource(rInfo[i].thisType, projectRootDir);
+	}
+	std::vector<JResourceObject*> JResourceIO::ImportResource(JDirectory* dir, const std::wstring& path)
+	{
+		return JResourceImporter::Instance().ImportResource(dir, path);
 	}
 	void JResourceIO::SearchDirectory(JDirectory* parentDir, bool searchDefaultFolder, const J_OBJECT_FLAG dirFlag)
-	{
+	{ 
 		WIN32_FIND_DATA  findFileData;
 		HANDLE hFindFile = FindFirstFile((parentDir->GetPath() + L"\\*.*").c_str(), &findFileData);
 		BOOL bResult = TRUE;
@@ -118,12 +123,29 @@ namespace JinEngine
 					if (!parentDir->HasChild(findFileData.cFileName))
 					{
 						JDirectory* next = nullptr;
-						JDirectoryPathData pathData{ parentDir->GetPath() + L"\\" + findFileData.cFileName };
-						if (_access(pathData.strPath.c_str(), 00) != -1)
-							next = JDFI::Load(*parentDir, pathData);
+						Core::JAssetFileLoadPathData pathData{Core::JFileConstant::MakeFilePath(parentDir->GetPath(),  findFileData.cFileName) };						
+						
+						if (searchDefaultFolder)
+						{
+							if (JApplicationVariable::IsDefaultFolder(pathData.engineFileWPath))
+							{
+								if (_waccess(pathData.engineFileWPath.c_str(), 00) != -1 &&
+									_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
+									next = JDFI::Load(*parentDir, pathData);
+								else
+									next = JDFI::Create(pathData.name, Core::MakeGuid(), dirFlag, *parentDir);
+							}
+						}
 						else
-							next = JDFI::Create(pathData.name, Core::MakeGuid(), dirFlag, *parentDir);			 
-						SearchDirectory(next, searchDefaultFolder, dirFlag);
+						{
+							if (_waccess(pathData.engineFileWPath.c_str(), 00) != -1 &&
+								_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
+								next = JDFI::Load(*parentDir, pathData);
+							else
+								next = JDFI::Create(pathData.name, Core::MakeGuid(), dirFlag, *parentDir);
+						}
+						if(next != nullptr)
+							SearchDirectory(next, searchDefaultFolder, dirFlag);
 					}
 				}
 			}
@@ -147,9 +169,23 @@ namespace JinEngine
 			{
 				if (wcscmp(findFileData.cFileName, L".") && wcscmp(findFileData.cFileName, L".."))
 				{
-					JResourcePathData pathData(directory->GetPath() + L"\\" + findFileData.cFileName);
-					if (JRI::CallIsValidFormat(rType, pathData.format))
-						JRFIB::LoadByName(JRI::CallGetTypeName(rType), *directory, pathData);
+					Core::JAssetFileLoadPathData pathData(directory->GetPath() + L"\\" + findFileData.cFileName);
+					if (pathData.format == Core::JFileConstant::GetFileFormat())
+					{
+						std::wifstream stream;
+						stream.open(pathData.engineMetaFileWPath, std::ios::in | std::ios::binary);
+						if (stream.is_open())
+						{
+							if (JFileIOHelper::SkipStream(stream, Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>()))
+							{
+								int storeType = 0;
+								stream >> storeType;
+								stream.close();
+								if ((J_RESOURCE_TYPE)storeType == rType)
+									JRFIB::LoadByName(JRI::CallGetTypeName((J_RESOURCE_TYPE)rType), *directory, pathData);
+							}
+						}
+					}
 				}
 			}
 			bResult = FindNextFile(hFindFile, &findFileData);

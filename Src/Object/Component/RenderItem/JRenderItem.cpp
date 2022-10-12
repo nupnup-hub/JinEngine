@@ -6,24 +6,38 @@
 #include"../../Resource/Material/JMaterial.h"
 #include"../../Resource/JResourceManager.h" 
 #include"../../Resource/Shader/JShaderFunctionEnum.h"  
+#include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/File/JFileConstant.h"
 #include"../../../Graphic/FrameResource/JObjectConstants.h"
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Application/JApplicationVariable.h"
+#include<fstream>
 
 using namespace DirectX;
 namespace JinEngine
 {
 	static auto isAvailableoverlapLam = []() {return false; };
-	static auto componentTypeLam = []() {return J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM; };
 
+	J_COMPONENT_TYPE JRenderItem::GetComponentType()const noexcept
+	{
+		return GetStaticComponentType();
+	}
 	JMeshGeometry* JRenderItem::GetMesh()const noexcept
 	{
 		return meshGeo;
 	}
-	JMaterial* JRenderItem::GetMaterial()const noexcept
+	JMaterial* JRenderItem::GetMaterial(int index)const noexcept
 	{
-		return material;
+		if (material.size() <= index)
+			return nullptr;
+		else
+		{
+			if (material[index])
+				return material[index];
+			else
+				return meshGeo->GetSubmeshMaterial(index);
+		}
 	}
 	DirectX::XMFLOAT4X4 JRenderItem::GetTextransform()const noexcept
 	{
@@ -37,17 +51,17 @@ namespace JinEngine
 	{
 		return renderLayer;
 	}
-	uint JRenderItem::GetIndexCount()const noexcept
+	uint JRenderItem::GetVertexTotalCount()const noexcept
 	{
-		return meshGeo != nullptr ? meshGeo->GetMeshIndexCount() : 0;
+		return meshGeo != nullptr ? meshGeo->GetTotalVertexCount() : 0;
 	}
-	uint JRenderItem::GetStartIndexLocation()const noexcept
+	uint JRenderItem::GetIndexTotalCount()const noexcept
 	{
-		return startIndexLocation;
+		return meshGeo != nullptr ? meshGeo->GetTotalIndexCount() : 0;
 	}
-	int JRenderItem::GetBaseVertexLocation()const noexcept
+	uint JRenderItem::GetSubmeshCount()const noexcept
 	{
-		return baseVertexLocation;
+		return meshGeo != nullptr ? meshGeo->GetTotalSubmeshCount() : 0;
 	}
 	DirectX::BoundingBox JRenderItem::GetBoundingBox()noexcept
 	{
@@ -66,8 +80,8 @@ namespace JinEngine
 			XMStoreFloat3(&pos, t);
 			XMStoreFloat3(&scale, s);
 
-			XMFLOAT3 meshBoxCenter = meshGeo->GetBoundingBoxCenter();
-			XMFLOAT3 meshBoxExtent = meshGeo->GetBoundingBoxExtent();
+			XMFLOAT3 meshBoxCenter = meshGeo->GetBBoxCenter();
+			XMFLOAT3 meshBoxExtent = meshGeo->GetBBoxExtent();
 
 			XMFLOAT3 gameObjBoxCenter = XMFLOAT3(meshBoxCenter.x + pos.x,
 				meshBoxCenter.y + pos.y,
@@ -90,8 +104,8 @@ namespace JinEngine
 			XMFLOAT3 pos = ownerTransform->GetPosition();
 			XMFLOAT3 scale = ownerTransform->GetScale();
 
-			XMFLOAT3 meshSphereCenter = meshGeo->GetBoundingSphereCenter();
-			float meshSphereRad = meshGeo->GetBoundingSphereRadius();
+			XMFLOAT3 meshSphereCenter = meshGeo->GetBSphereCenter();
+			float meshSphereRad = meshGeo->GetBSphereRadius();
 
 			XMFLOAT3 gameObjSphereCenter = XMFLOAT3(meshSphereCenter.x * scale.x + pos.x,
 				meshSphereCenter.y * scale.y + pos.y,
@@ -111,62 +125,41 @@ namespace JinEngine
 		else
 			return DirectX::BoundingSphere();
 	}
-	void JRenderItem::SetMeshGeometry(JMeshGeometry* meshGeo)noexcept
+	void JRenderItem::SetMeshGeometry(JMeshGeometry* newMesh)noexcept
 	{
-		JMeshGeometry* pre = JRenderItem::meshGeo;
-		JMeshGeometry* af = meshGeo;
+		const uint materialCount = (uint)material.size();
+		for (int i = 0; i < materialCount; ++i)
+		{
+			if (material[i] != nullptr)
+				SetMaterial(i, nullptr);
+		}
 
+		if (IsActivated())
+			CallOffResourceReference(meshGeo);
+		meshGeo = newMesh;
+		if (IsActivated())
+			CallOnResourceReference(meshGeo);
+
+		material.clear();
 		if (meshGeo != nullptr)
-		{
-			if (IsActivated())
-			{
-				if (JRenderItem::meshGeo != nullptr)
-					OffResourceReference(*JRenderItem::meshGeo);
-				JRenderItem::meshGeo = meshGeo;
-				OnResourceReference(*JRenderItem::meshGeo);
-			}
-			else
-				JRenderItem::meshGeo = meshGeo; 
-			JRenderItem::startIndexLocation = 0;
-			JRenderItem::baseVertexLocation = 0;
-		}
-		else
-		{
-			if (JRenderItem::meshGeo != nullptr)
-				OffResourceReference(*JRenderItem::meshGeo);
-			JRenderItem::meshGeo = meshGeo;
-		}
+			material.resize(meshGeo->GetTotalSubmeshCount());
+
 		if (PassDefectInspection())
 			RegisterComponent();
 		else
 			DeRegisterComponent();
 		SetFrameDirty();
 	}
-	void JRenderItem::SetMaterial(JMaterial* material)noexcept
+	void JRenderItem::SetMaterial(int index, JMaterial* newMaterial)noexcept
 	{
-		if (material != nullptr)
-		{
-			if (IsActivated())
-			{
-				if (JRenderItem::material != nullptr)
-					OffResourceReference(*JRenderItem::material);
-				JRenderItem::material = material;
-				OnResourceReference(*JRenderItem::material);
-			}
-			else
-				JRenderItem::material = material;
-		}
-		else
-		{
-			if (JRenderItem::material != nullptr)
-				OffResourceReference(*JRenderItem::material);
-			JRenderItem::material = material;
-		}
-		if (PassDefectInspection())
-			RegisterComponent();
-		else
-			DeRegisterComponent();
-		SetFrameDirty();
+		if (material.size() <= index)
+			return;
+
+		if (IsActivated())
+			CallOffResourceReference(material[index]);
+		material[index] = newMaterial;
+		if (IsActivated())
+			CallOnResourceReference(material[index]);
 	}
 	void JRenderItem::SetTextureTransform(const DirectX::XMFLOAT4X4& textureTransform)noexcept
 	{
@@ -180,26 +173,20 @@ namespace JinEngine
 	{
 		if (JRenderItem::renderLayer != renderLayer)
 		{
+			if (IsActivated())
+				DeRegisterComponent();
 			JRenderItem::renderLayer = renderLayer;
 			if (IsActivated())
-				ReRegisterComponent();
+				RegisterComponent();
 		}
 	}
 	void JRenderItem::SetRenderVisibility(const J_RENDER_VISIBILITY renderVisibility)noexcept
 	{
 		JRenderItem::renderVisibility = renderVisibility;
 	}
-	bool JRenderItem::HasMaterial()const noexcept
-	{
-		return material != nullptr;
-	}
 	bool JRenderItem::IsVisible()const noexcept
 	{
 		return renderVisibility == J_RENDER_VISIBILITY::VISIBLE;
-	}
-	J_COMPONENT_TYPE JRenderItem::GetComponentType()const noexcept
-	{
-		return componentTypeLam();
 	}
 	bool JRenderItem::IsAvailableOverlap()const noexcept
 	{
@@ -207,69 +194,51 @@ namespace JinEngine
 	}
 	bool JRenderItem::PassDefectInspection()const noexcept
 	{
-		if (JComponent::PassDefectInspection() && meshGeo != nullptr && material != nullptr)
+		if (JComponent::PassDefectInspection() && meshGeo != nullptr)
 			return true;
 		else
 			return false;
 	}
-	bool JRenderItem::Copy(JObject* ori)
+	void JRenderItem::DoCopy(JObject* ori)
 	{
-		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
-			return false;
-
-		if (typeInfo.IsA(ori->GetTypeInfo()))
-		{
-			JRenderItem* oriR = static_cast<JRenderItem*>(ori);
-			SetMeshGeometry(oriR->meshGeo);
-			SetMaterial(oriR->material);
-			textureTransform = oriR->textureTransform;
-			SetPrimitiveType(oriR->primitiveType);
-			SetRenderLayer(oriR->renderLayer);
-			SetFrameDirty();
-			return true;
-		}
-		else
-			return false;
+		JRenderItem* oriR = static_cast<JRenderItem*>(ori);
+		SetMeshGeometry(oriR->meshGeo);
+		textureTransform = oriR->textureTransform;
+		SetPrimitiveType(oriR->primitiveType);
+		SetRenderLayer(oriR->renderLayer);
+		SetFrameDirty();
 	}
 	void JRenderItem::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
 		RegisterComponent();
 		SetFrameDirty();
-	}
+		CallOnResourceReference(meshGeo);
+		const uint matCount = (uint)material.size();
+		for(uint i = 0; i < matCount; ++i)
+			CallOnResourceReference(material[i]);
+	} 
 	void JRenderItem::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
 		DeRegisterComponent();
 		OffFrameDirty();
+		CallOffResourceReference(meshGeo);
+		const uint matCount = (uint)material.size();
+		for (uint i = 0; i < matCount; ++i)
+			CallOffResourceReference(material[i]);
 	}
-	bool JRenderItem::UpdateFrame(Graphic::JObjectConstants& constant)
-	{ 
-		JTransform* jT = GetOwner()->GetTransform();
-		if (IsFrameDirted() || jT->IsFrameDirted())
-		{   
-			XMStoreFloat4x4(&constant.World, XMMatrixTranspose(jT->GetWorld()));
+	bool JRenderItem::UpdateFrame(Graphic::JObjectConstants& constant, const uint submeshIndex)
+	{
+		if (IsFrameDirted())
+		{
+			XMStoreFloat4x4(&constant.World, XMMatrixTranspose(GetOwner()->GetTransform()->GetWorld()));
 			XMStoreFloat4x4(&constant.TexTransform, XMMatrixTranspose(XMLoadFloat4x4(&textureTransform)));
-			constant.MaterialIndex = GetBuffIndex(*material);
-			MinusFrameDirty();
+			constant.MaterialIndex = CallGetFrameBuffOffset(*GetMaterial(submeshIndex));
 			return true;
 		}
 		else
 			return false;
-		/*
-		JObjectConstants objectConstants;
-					const XMMATRIX world = transform->GetWorld();
-					const XMFLOAT4X4 fTexTransform = renderItem->GetTextransform();
-					const XMMATRIX texTransform = XMLoadFloat4x4(&fTexTransform);
-
-					XMStoreFloat4x4(&objectConstants.World, XMMatrixTranspose(world));
-					XMStoreFloat4x4(&objectConstants.TexTransform, XMMatrixTranspose(texTransform));
-					objectConstants.MaterialIndex = renderItem->GetMaterial()->GetMatCBIndex();
-					currObjectCB->CopyData(renderItem->GetObjCBIndex() + objCBoffset, objectConstants);
-					transform->MinusFrameDirty();
-					renderItem->MinusFrameDirty();
-					++updateCount;
-		*/
 	}
 	void JRenderItem::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 	{
@@ -280,8 +249,15 @@ namespace JinEngine
 		{
 			if (meshGeo != nullptr && meshGeo->GetGuid() == jRobj->GetGuid())
 				SetMeshGeometry(nullptr);
-			else if (material != nullptr && material->GetGuid() == jRobj->GetGuid())
-				SetMaterial(nullptr);
+			else
+			{
+				const uint matCount = (uint)material.size();
+				for (uint i = 0; i < matCount; ++i)
+				{
+					if (material[i] != nullptr && material[i]->GetGuid() == jRobj->GetGuid())
+						SetMaterial(i, nullptr);
+				}
+			}
 		}
 	}
 	Core::J_FILE_IO_RESULT JRenderItem::CallStoreComponent(std::wofstream& stream)
@@ -299,15 +275,14 @@ namespace JinEngine
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		Core::J_FILE_IO_RESULT res = StoreMetadata(stream, renderItem);
-		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
-			return res;
-		 
+		JFileIOHelper::StoreObjectIden(stream, renderItem);
+		JFileIOHelper::StoreHasObjectIden(stream, renderItem->meshGeo);
+		JFileIOHelper::StoreEnumData(stream, L"PrimitiveType:", renderItem->primitiveType);
+		JFileIOHelper::StoreEnumData(stream, L"RenderLayer:", renderItem->renderLayer);
+		JFileIOHelper::StoreAtomicData(stream, L"MaterialCount:", renderItem->material.size());
 
-		bool hasMaterial = renderItem->material != nullptr;
-		size_t materialGuid = hasMaterial ? renderItem->material->GetGuid() : 0;
-
-		stream << hasMaterial << '\n' << renderItem->meshGeo->GetGuid() << '\n' << materialGuid << '\n' << '\n' << renderItem->primitiveType << '\n' << (int)renderItem->renderLayer << '\n';
+		for (uint i = 0; i < renderItem->material.size(); ++i)
+			JFileIOHelper::StoreHasObjectIden(stream, renderItem->material[i]);
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -318,40 +293,41 @@ namespace JinEngine
 
 		if (!stream.is_open())
 			return nullptr;
-		 
-		ObjectMetadata metadata;
-		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
 
-		JRenderItem* newRenderItem;
-		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+		std::wstring guide;
+		size_t guid;
+		J_OBJECT_FLAG flag;
+
+		D3D12_PRIMITIVE_TOPOLOGY primitiveType;
+		J_RENDER_LAYER renderLayer;
+		uint materialCount;
+
+		JFileIOHelper::LoadObjectIden(stream, guid, flag);
+		Core::JIdentifier* mesh = JFileIOHelper::LoadHasObjectIden(stream);
+		JFileIOHelper::LoadEnumData(stream, primitiveType);
+		JFileIOHelper::LoadEnumData(stream, renderLayer);
+		JFileIOHelper::LoadAtomicData(stream, materialCount);
+
+		std::vector<Core::JIdentifier*>materialVec(materialCount);
+		for (uint i = 0; i < materialCount; ++i)
+			materialVec[i] = JFileIOHelper::LoadHasObjectIden(stream);
+
+		Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(guid, flag, owner);
+		JRenderItem* newRenderItem = ownerPtr.Get();
+		if (!AddInstance(std::move(ownerPtr)))
+			return nullptr;
+
+		if (mesh != nullptr && mesh->GetTypeInfo().IsChildOf(JMeshGeometry::StaticTypeInfo()))
+			newRenderItem->SetMeshGeometry(static_cast<JMeshGeometry*>(mesh));
+
+		newRenderItem->SetPrimitiveType(primitiveType);
+		newRenderItem->SetRenderLayer(renderLayer);
+		newRenderItem->material.resize(materialCount);
+		for (uint i = 0; i < materialCount; ++i)
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(metadata.guid, metadata.flag, owner);
-			JRenderItem* newRenderItem = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr)); 
+			if (materialVec[i] != nullptr && materialVec[i]->GetTypeInfo().IsA(JMaterial::StaticTypeInfo()))
+				newRenderItem->SetMaterial(i, static_cast<JMaterial*>(materialVec[i]));
 		}
-		else
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
-			JRenderItem* newRenderItem = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr)); 
-		}
-
-		bool hasMaterial;
-		size_t meshGuid;
-		size_t materialGuid; 
-		int primitiveType;
-		int renderLayer;
-
-		stream >> hasMaterial >> meshGuid >> materialGuid  >> primitiveType >> renderLayer;
-
-		JMeshGeometry* mesh = JResourceManager::Instance().GetResource<JMeshGeometry>(meshGuid);
-		JMaterial* material = nullptr;
-		if (hasMaterial)
-			material = JResourceManager::Instance().GetResource<JMaterial>(materialGuid);
-
-		newRenderItem->SetMeshGeometry(mesh);
-		newRenderItem->SetMaterial(material);
-
 		return newRenderItem;
 	}
 	void JRenderItem::RegisterJFunc()
@@ -359,16 +335,20 @@ namespace JinEngine
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
-			JComponent* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret; 
+			JRenderItem* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+				return newComp;
+			else
+				return nullptr;
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(guid, objFlag, owner);
-			JComponent* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret; 
+			JRenderItem* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+				return newComp;
+			else
+				return nullptr;
 		};
 		auto loadC = [](std::wifstream& stream, JGameObject* owner) -> JComponent*
 		{
@@ -377,12 +357,21 @@ namespace JinEngine
 		auto copyC = [](JComponent* ori, JGameObject* owner) -> JComponent*
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(Core::MakeGuid(), ori->GetFlag(), owner);
-			JRenderItem* newR = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			newR->Copy(ori);
-			return newR;
+			JRenderItem* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+			{
+				if (newComp->Copy(ori))
+					return newComp;
+				else
+				{
+					newComp->BegineForcedDestroy();
+					return nullptr;
+				}
+			}
+			else
+				return nullptr;
 		};
-		JCFI<JRenderItem>::Regist(defaultC, initC, loadC, copyC);
+		JCFI<JRenderItem>::Register(defaultC, initC, loadC, copyC);
 
 		static GetTypeNameCallable getTypeNameCallable{ &JRenderItem::TypeName };
 		static GetTypeInfoCallable getTypeInfoCallable{ &JRenderItem::StaticTypeInfo };
@@ -392,8 +381,8 @@ namespace JinEngine
 		static auto setFrameLam = [](JComponent& component) {static_cast<JRenderItem*>(&component)->SetFrameDirty(); };
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
-		static JCI::CTypeHint cTypeHint{ componentTypeLam(), true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
+		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
@@ -401,11 +390,13 @@ namespace JinEngine
 	JRenderItem::JRenderItem(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)
 		:JRenderItemInterface(TypeName(), guid, objFlag, owner)
 	{
-		JRenderItem::startIndexLocation = 0;
-		JRenderItem::baseVertexLocation = 0;	 
+		AddEventListener(*JResourceManager::Instance().EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+		RegisterFrameDirtyListener(*GetOwner()->GetTransform());
 	}
 	JRenderItem::~JRenderItem()
 	{
-
+		RemoveListener(*JResourceManager::Instance().EvInterface(), GetGuid());
+		if(GetOwner()->GetTransform() != nullptr)
+			DeRegisterFrameDirtyListener(*GetOwner()->GetTransform());
 	}
 }

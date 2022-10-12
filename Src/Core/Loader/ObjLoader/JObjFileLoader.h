@@ -9,13 +9,10 @@ struct DirectX::BoundingBox;
 struct DirectX::BoundingSphere;
 
 namespace JinEngine
-{
-	struct JModelAttribute;
-	struct JResourcePathData;
-	struct JStaticMeshData; 
-
+{   
 	namespace Core
 	{
+		struct JFileImportPathData;
 		class JObjFileLoaderImpl
 		{
 		private:
@@ -29,11 +26,11 @@ namespace JinEngine
 				FaceInfo(const std::vector<DirectX::XMINT3>& ptn);
 			};
 		public:
-			bool LoadObjFile(const JResourcePathData& pathData, std::vector<JObjMeshPartData>& objMeshData, std::vector<JObjMatData>& objMatData, JModelAttribute& modelAttribute);
+			bool LoadObjFile(const JFileImportPathData& pathData, JObjFileMeshData& objMeshData, std::vector<JObjFileMatData>& objMatData);
 		private:
-			bool LoadMatFile(const std::wstring& path, std::vector<JObjMatData>& objMatData);
+			bool LoadMatFile(const std::wstring& path, std::vector<JObjFileMatData>& objMatData);
 			void GetVectorIndex(const std::wstring& wstr, int& posIndex, int& uvIndex, int& normalIndex)const noexcept;
-			std::string GetMaterialPath(const std::string& folderPath, const std::string& name)const noexcept;
+			std::wstring GetMaterialPath(const std::wstring& folderPath, const std::wstring& name)const noexcept;
 		};
 	}
 	using JObjFileLoader = Core::JSingletonHolder<Core::JObjFileLoaderImpl>;

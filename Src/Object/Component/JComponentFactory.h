@@ -1,4 +1,5 @@
 #pragma once 
+#include"JComponent.h"
 #include"../JObjectFlag.h" 
 #include"../../Core/Factory/JFactory.h"
 #include"../../Core/Func/Callable/JCallable.h"
@@ -10,156 +11,54 @@ namespace JinEngine
 	class JComponentFactoryImplBase;
 	template<typename T> class JComponentFactoryImpl;
 
-	namespace
+
+	class JComponentFactory
 	{
-		class JComponentFactory
-		{
-		private:
-			friend class JComponentFactoryImplBase;
-			template<typename T> friend class JComponentFactoryImpl;
-		private:
-			Core::JFactory<std::string, false, JComponent*, JGameObject*> defaultFactory;
-			Core::JFactory<std::string, false, JComponent*, const size_t, const J_OBJECT_FLAG, JGameObject*> initFactory;
-			Core::JFactory<std::string, false, JComponent*, std::wifstream&, JGameObject*> loadFactory;
-			Core::JFactory<std::string, false, JComponent*, JComponent*, JGameObject*> copyFactory;
-		private:
-			template<typename Type>
-			bool Register(Core::JCallableInterface<JComponent*, JGameObject*>* callable)
-			{
-				if constexpr (std::is_base_of_v <JComponent, Type >)
-					return defaultFactory.Regist(Type::TypeName(), callable);
-				else
-					return false;
-			}
-			template<typename Type>
-			bool Register(Core::JCallableInterface<JComponent*, const size_t, const J_OBJECT_FLAG, JGameObject*>* callable)
-			{
-				if constexpr (std::is_base_of_v <JComponent, Type >)
-					return initFactory.Regist(Type::TypeName(), callable);
-				else
-					return false;
-			}
-			template<typename Type>
-			bool Register(Core::JCallableInterface<JComponent*, std::wifstream&, JGameObject*>* callable)
-			{
-				if constexpr (std::is_base_of_v <JComponent, Type >)
-					return loadFactory.Regist(Type::TypeName(), callable);
-				else
-					return false;
-			}
-			template<typename Type>
-			bool Register(Core::JCallableInterface<JComponent*, JComponent*, JGameObject*>* callable)
-			{
-				if constexpr (std::is_base_of_v <JComponent, Type >)
-					return copyFactory.Regist(Type::TypeName(), callable);
-				else
-					return false;
-			}
+	private:
+		friend class JComponentFactoryImplBase;
+		template<typename T> friend class JComponentFactoryImpl;
+	private:
+		Core::JFactory<std::string, false, JComponent*, JGameObject*> defaultFactory;
+		Core::JFactory<std::string, false, JComponent*, const size_t, const J_OBJECT_FLAG, JGameObject*> initFactory;
+		Core::JFactory<std::string, false, JComponent*, std::wifstream&, JGameObject*> loadFactory;
+		Core::JFactory<std::string, false, JComponent*, JComponent*, JGameObject*> copyFactory;
+	private:
+		bool Register(const std::string& iden, Core::JCallableInterface<JComponent*, JGameObject*>* callable);
+		bool Register(const std::string& iden, Core::JCallableInterface<JComponent*, const size_t, const J_OBJECT_FLAG, JGameObject*>* callable);
+		bool Register(const std::string& iden, Core::JCallableInterface<JComponent*, std::wifstream&, JGameObject*>* callable);
+		bool Register(const std::string& iden, Core::JCallableInterface<JComponent*, JComponent*, JGameObject*>* callable);
 
-			JComponent* Create(const std::string& typeName, JGameObject& owner)
-			{
-				return defaultFactory.Invoke(typeName, &owner);
-			}
-			JComponent* Load(const std::string& typeName, std::wifstream& stream, JGameObject& owner)
-			{
-				return loadFactory.Invoke(typeName, stream, &owner);
-			}
-			JComponent* Copy(const std::string& typeName, JComponent& ori, JGameObject& owner)
-			{
-				return copyFactory.Invoke(typeName, &ori, &owner);
-			}
+		JComponent* Create(const std::string& typeName, JGameObject& owner);
+		JComponent* Create(const std::string& typeName, const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner);
+		JComponent* Load(const std::string& typeName, std::wifstream& stream, JGameObject& owner);
+		JComponent* Copy(const std::string& typeName, JComponent& ori, JGameObject& owner);
+	};
 
-			template<typename Type>
-			Type* Create(JGameObject& owner)
-			{
-				return static_cast<Type*>(defaultFactory.Invoke(Type::TypeName(), &owner));
-			}
-			template<typename Type>
-			Type* Create(size_t guid, J_OBJECT_FLAG flag, JGameObject& owner)
-			{
-				return static_cast<Type*>(initFactory.Invoke(Type::TypeName(), std::move(guid), std::move(flag), &owner));
-			}
-			template<typename Type>
-			Type* Load(std::wifstream& stream, JGameObject& owner)
-			{
-				return static_cast<Type*>(loadFactory.Invoke(Type::TypeName(), stream, &owner));
-			}
-			template<typename Type>
-			Type* Copy(Type& ori, JGameObject& owner)
-			{
-				return static_cast<Type*>(copyFactory.Invoke(Type::TypeName(), &ori, &owner));
-			}
-		};
-	}
-	 
 	using JCF = Core::JSingletonHolder<JComponentFactory>;
 
 	class JComponentFactoryImplBase
 	{
 	private:
-		friend class JGameObject; 
+		friend class JComponent;
 	protected:
-		using DefaultPtr = JComponent * (*)(JGameObject*);
-		using InitPtr = JComponent * (*)(const size_t, const J_OBJECT_FLAG, JGameObject*);
-		using LoadPtr = JComponent * (*)(std::wifstream&, JGameObject*);
-		using CopytPtr = JComponent * (*)(JComponent*, JGameObject*);
-
-		using DefaultCallable = Core::JStaticCallable<JComponent*, JGameObject*>;
-		using InitCallable = Core::JStaticCallable<JComponent*, const size_t, const J_OBJECT_FLAG, JGameObject*>;
-		using LoadCallable = Core::JStaticCallable<JComponent*, std::wifstream&, JGameObject*>;
-		using CopyCallable = Core::JStaticCallable<JComponent*, JComponent*, JGameObject*>;
-	private:
-		using AddStoragePtr = JComponent * (JGameObject::*)(JComponent&);
-		using AddStorageCallable = Core::JMemeberCallable<JGameObject, JComponent*, JComponent&>;
-	protected:
-		static AddStorageCallable* addStorage;
+		using Default = Core::JStaticCallableType<JComponent*, JGameObject*>;
+		using Init = Core::JStaticCallableType<JComponent*, const size_t, const J_OBJECT_FLAG, JGameObject*>;
+		using Load = Core::JStaticCallableType<JComponent*, std::wifstream&, JGameObject*>;
+		using Copy = Core::JStaticCallableType<JComponent*, JComponent*, JGameObject*>;
 	public:
 		static JComponent* CreateByName(const std::string& typeName, JGameObject& owner)
 		{
-			JComponent* res = JCF::Instance().Create(typeName, owner);
-			if (res != nullptr)
-			{
-				if ((*addStorage)(&owner, *res) == nullptr)
-				{
-					res->BeginDestroy();
-					res = nullptr;
-				}
-			}
-			return res;
+			return JCF::Instance().Create(typeName, owner);
 		}
 	public:
 		static JComponent* CopyByName(JComponent& ori, JGameObject& owner)
 		{
-			JComponent* res = JCF::Instance().Copy(ori.GetTypeInfo().Name(), ori, owner);
-			if (res != nullptr)
-			{
-				if ((*addStorage)(&owner, *res) == nullptr)
-				{
-					res->BeginDestroy();
-					res = nullptr;
-				}
-			}
-			return res;
+			return JCF::Instance().Copy(ori.GetTypeInfo().Name(), ori, owner);
 		}
 	protected:
 		static JComponent* LoadByName(const std::string& typeName, std::wifstream& stream, JGameObject& owner)
 		{
-			JComponent* res = JCF::Instance().Load(typeName, stream, owner);
-			if (res != nullptr)
-			{
-				if ((*addStorage)(&owner, *res) == nullptr)
-				{
-					res->BeginDestroy();
-					res = nullptr;
-				}
-			}
-			return res;
-		}
-	private:
-		static void RegisterAddStroage(AddStoragePtr addPtr)
-		{
-			static AddStorageCallable addStorage{ addPtr };
-			JComponentFactoryImplBase::addStorage = &addStorage;
+			return JCF::Instance().Load(typeName, stream, owner);
 		}
 	};
 
@@ -172,69 +71,33 @@ namespace JinEngine
 	public:
 		static T* Create(JGameObject& owner)
 		{
-			T* res = JCF::Instance().Create<T>(owner);
-			if (res != nullptr)
-			{
-				if ((*addStorage)(&owner, *res) == nullptr)
-				{
-					res->BeginDestroy();
-					res = nullptr;
-				}
-			}
-			return res;
+			return static_cast<T*>(JCF::Instance().Create(T::TypeName(), owner));
 		}
 		static T* Create(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner)
 		{
-			T* res = JCF::Instance().Create<T>(guid, flag, owner);
-			if (res != nullptr)
-			{
-				if ((*addStorage)(&owner, *res) == nullptr)
-				{
-					res->BeginDestroy();
-					res = nullptr;
-				}
-			}
-			return res;
+			return static_cast<T*>(JCF::Instance().Create(T::TypeName(), guid, flag, owner));
 		}
 		static T* Copy(T& ori, JGameObject& owner)
 		{
-			T* res = JCF::Instance().Copy<T>(ori, owner);
-			if (res != nullptr)
-			{
-				if ((*addStorage)(&owner, *res) == nullptr)
-				{
-					res->BeginDestroy();
-					res = nullptr;
-				}
-			}
-			return res;
+			return static_cast<T*>(JCF::Instance().Copy(T::TypeName(), ori, owner));
 		}
 	private:
 		static T* Load(std::wifstream& stream, JGameObject& owner)
 		{
-			T* res = JCF::Instance().Load<T>(stream, owner);
-			if (res != nullptr)
-			{
-				if ((*addStorage)(&owner, *res) == nullptr)
-				{
-					res->BeginDestroy();
-					res = nullptr;
-				}
-			}
-			return res;
+			return static_cast<T*>(JCF::Instance().Load(T::TypeName(), stream, owner));
 		}
 	private:
-		static void Regist(DefaultPtr defaultPtr, InitPtr initPtr, LoadPtr loadPtr, CopytPtr copytPtr)
+		static void Register(Default::Ptr defaultPtr, Init::Ptr initPtr, Load::Ptr loadPtr, Copy::Ptr copytPtr)
 		{
-			static DefaultCallable defaultCallable{ defaultPtr };
-			static InitCallable initCallable{ initPtr };
-			static LoadCallable loadCallable{ loadPtr };
-			static CopyCallable copyCallable{ copytPtr };
+			static Default::Callable defaultCallable{ defaultPtr };
+			static Init::Callable initCallable{ initPtr };
+			static Load::Callable loadCallable{ loadPtr };
+			static Copy::Callable copyCallable{ copytPtr };
 
-			JCF::Instance().Register<T>(&defaultCallable);
-			JCF::Instance().Register<T>(&initCallable);
-			JCF::Instance().Register<T>(&loadCallable);
-			JCF::Instance().Register<T>(&copyCallable);
+			JCF::Instance().Register(T::TypeName(), &defaultCallable);
+			JCF::Instance().Register(T::TypeName(), &initCallable);
+			JCF::Instance().Register(T::TypeName(), &loadCallable);
+			JCF::Instance().Register(T::TypeName(), &copyCallable);
 		}
 	};
 

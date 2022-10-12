@@ -4,7 +4,7 @@
 #include<direct.h>
 #include<Windows.h>
 #include"../Core/JDataType.h"
-#include"../Object/Resource/Texture/EditorTextureEnum.h"
+#include"../Object/Resource/Texture/JEditorTextureEnum.h"
 #include"../Application/JApplicationVariable.h"
 
 namespace JinEngine
@@ -16,7 +16,6 @@ namespace JinEngine
 		std::string path;
 		int mainVersion;
 		float subVersion;
-
 	public:
 		ProjectInfo(const std::string& name, const std::string& path, int mainVersion, float subVersion)
 			:name(name), path(path), mainVersion(mainVersion), subVersion(subVersion)

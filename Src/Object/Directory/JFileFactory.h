@@ -14,7 +14,7 @@ namespace JinEngine
 		using CreateFuncPtr = bool(JDirectory::*)(JResourceObject&);
 		using DestroyFuncPtr = bool(JDirectory::*)(JResourceObject&);
 	private:
-		static bool Register(const CreateFuncPtr& cPtr, const DestroyFuncPtr& dPtr);
+		static void Register(const CreateFuncPtr& cPtr, const DestroyFuncPtr& dPtr);
 		static bool Create(JDirectory& dir, JResourceObject& resource);
 		static bool Destroy(JDirectory& dir, JResourceObject& resource);
 	};

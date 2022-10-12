@@ -2,10 +2,8 @@
 #include<utility>
 #include<memory> 
 #include<vector> 
-#include"../../Typelist/Typelist.h"  
-#include"../../Reflection/JReflection.h"
+#include"../../Typelist/Typelist.h"   
 #include"../../../Utility/JTypeUtility.h" 
-
 namespace JinEngine
 {
 	namespace Core
@@ -26,7 +24,7 @@ namespace JinEngine
 		};
 
 		template<typename Pointer, typename Ret, typename ...Param>
-		class StaticFunctionImpl : public IFunctionImpl<Ret, Param...>
+		class StaticFunctionImpl final : public IFunctionImpl<Ret, Param...>
 		{
 		private:
 			Pointer ptr;
@@ -43,7 +41,7 @@ namespace JinEngine
 
 
 		template<typename Pointer, typename Object, typename Ret, typename ...Param>
-		class MemberFunctionImpl : public IFunctionImpl<Ret, Param...>
+		class MemberFunctionImpl final : public IFunctionImpl<Ret, Param...>
 		{
 		private:
 			Pointer ptr;
@@ -54,22 +52,15 @@ namespace JinEngine
 			{}
 		public:
 			Ret operator()(Param... var)
-			{
+			{  
 				return ((object)->*ptr)(std::forward<Param>(var)...);
 			}
 		};
 
 #pragma endregion
 #pragma region JFunctor 
-		class JFunctorBase
-		{
-			//REGISTER_CLASS(JFunctorBase);
-		public:
-			virtual ~JFunctorBase() {}
-		};
-
 		template<typename Ret, typename ...Param>
-		class JFunctor : public JFunctorBase
+		class JFunctor
 		{
 			//REGISTER_CLASS(JFunctor);
 		public:
@@ -117,7 +108,7 @@ namespace JinEngine
 		};
 
 		template<typename OriFunctor, typename ...BindParam>
-		class JBindHandle : public JBindHandleBase
+		class JBindHandle final : public JBindHandleBase
 		{
 		private:
 			using BindTuple = std::tuple<BindParam...>;
@@ -259,6 +250,28 @@ namespace JinEngine
 		{
 			return JBindHandle<JFunctor<Ret, Param...>, BindParam...>(functor, std::forward<BindParam>(bindVar)...);
 		}
+		template<typename Ret, typename ...Param, typename ...BindParam>
+		std::unique_ptr<JBindHandle<JFunctor<Ret, Param...>, BindParam...>> UniqueBind(JFunctor<Ret, Param...>& functor, BindParam&&... bindVar)
+		{
+			return  std::make_unique<JBindHandle<JFunctor<Ret, Param...>, BindParam...>>(functor, std::forward<BindParam>(bindVar)...);
+		}
+
+		template<typename Ret, typename ...Param>
+		struct JSFunctorType
+		{
+		public:
+			using Ptr = Ret(*)(Param...);
+			using Functor = JFunctor<Ret, Param...>;
+			using CompletelyBind = JBindHandle<Functor, Param...>;
+		};
+		template<typename Object, typename Ret, typename ...Param>
+		struct JMFunctorType
+		{
+		public:
+			using Ptr = Ret(Object::*)(Param...);
+			using Functor = JFunctor<Ret, Param...>;
+			using CompletelyBind = JBindHandle<Functor, Param...>;
+		};
 #pragma endregion
 	}
 }

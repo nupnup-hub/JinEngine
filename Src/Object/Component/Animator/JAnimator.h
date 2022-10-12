@@ -10,7 +10,7 @@ namespace JinEngine
 	class JSkeletonAsset; 
 	class JAnimationController; 
 
-	class JAnimator : public JAnimatorInterface
+	class JAnimator final : public JAnimatorInterface
 	{
 		REGISTER_CLASS(JAnimator)
 	private: 
@@ -18,18 +18,24 @@ namespace JinEngine
 		JAnimationController* animationController;
 		std::vector<Core::JAnimationTime>animationTimes; 
 	public:
-		void OnAnimation()noexcept;
+		J_COMPONENT_TYPE GetComponentType()const noexcept final;
+		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
+		{
+			return J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR;
+		}
+	public:
 		JSkeletonAsset* GetSkeletonAsset()noexcept;
 		JAnimationController* GetAnimatorController()const noexcept; 
 
 		void SetSkeletonAsset(JSkeletonAsset* newSkeletonAsset)noexcept;
-		void SetAnimatorController(JAnimationController* animationController)noexcept;
+		void SetAnimatorController(JAnimationController* newAnimationController)noexcept;
 
-		J_COMPONENT_TYPE GetComponentType()const noexcept final; 
 		bool IsAvailableOverlap()const noexcept final; 
 		bool PassDefectInspection()const noexcept final; 
-	public:
-		bool Copy(JObject* ori) final;
+
+		void OnAnimation()noexcept;
+	private:
+		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

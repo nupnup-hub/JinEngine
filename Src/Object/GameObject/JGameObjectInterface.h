@@ -15,6 +15,7 @@ namespace JinEngine
 	public:
 		virtual JGameObjectCompInterface* CompInterface() = 0;
 	private:
+		virtual bool AddComponent(JComponent& jComp)noexcept = 0;
 		virtual bool RemoveComponent(JComponent& jComp)noexcept = 0;
 	};
 

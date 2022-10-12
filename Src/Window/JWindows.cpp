@@ -1,10 +1,15 @@
 #include"JWindows.h"  
-#include"../../../Lib/imgui/imgui.h"
 #include"../Utility/JD3DUtility.h" 
 #include"../Core/Guid/GuidCreator.h"
 #include"../Core/Exception/JExceptionMacro.h"
-#include"resource.h"
+#include"../Utility/JCommonUtility.h"
+#include"../../resource.h"
+#include"../../../Lib/imgui/imgui.h"
 #include<tchar.h>
+#include<fstream>
+#include<shellapi.h>
+#include<ShlObj_core.h> 
+#pragma comment(lib, "shell32")
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 namespace JinEngine
@@ -42,19 +47,19 @@ namespace JinEngine
 		}
 		int JWindowImpl::GetDisplayWidth()const noexcept
 		{
-			return GetSystemMetrics(SM_CXSCREEN);
+			return GetSystemMetrics(SM_CXFULLSCREEN);
 		}
 		int JWindowImpl::GetDisplayHeight()const noexcept
 		{
-			return GetSystemMetrics(SM_CYSCREEN);
+			return GetSystemMetrics(SM_CYFULLSCREEN);
 		}
 		int JWindowImpl::GetMinWidth()const noexcept
 		{
-			return minWidth;
+			return GetDisplayWidth() * 0.4f;
 		}
 		int JWindowImpl::GetMinHeight()const noexcept
 		{
-			return minHeight;
+			return GetDisplayHeight() * 0.4f;
 		}
 		int JWindowImpl::GetWindowPositionX()const noexcept
 		{
@@ -72,6 +77,10 @@ namespace JinEngine
 		{
 			return preWindowRect.bottom - preWindowRect.top;
 		}
+		JVector2<int> JWindowImpl::GetClientPos()const noexcept
+		{
+			return JVector2<int>(preClinetRect.left, preClinetRect.top);
+		}
 		int JWindowImpl::GetClientPositionX()const noexcept
 		{
 			return preClinetRect.left;
@@ -79,6 +88,10 @@ namespace JinEngine
 		int JWindowImpl::GetClientPositionY()const noexcept
 		{
 			return preClinetRect.top;
+		}
+		JVector2<int> JWindowImpl::GetClientSize()const noexcept
+		{
+			return JVector2<int>(GetClientWidth(), GetClientHeight());
 		}
 		int JWindowImpl::GetClientWidth()const noexcept
 		{
@@ -88,7 +101,69 @@ namespace JinEngine
 		{
 			return preClinetRect.bottom - preClinetRect.top;
 		}
-		JWindowHandleInterface* JWindowImpl::HandleInterface() 
+		bool JWindowImpl::IsFullScreen()const noexcept
+		{
+			return IsZoomed(hwnd);
+		}
+		bool JWindowImpl::SelectDirectory(std::wstring& dirPath, const std::wstring& guide)noexcept
+		{
+			BROWSEINFO   browserInfo;
+			LPITEMIDLIST  idl;
+			TCHAR path[MAX_PATH] = { 0, };
+			ZeroMemory(&browserInfo, sizeof(BROWSEINFO));
+			browserInfo.hwndOwner = GetHandle();
+			browserInfo.pszDisplayName = path;
+			browserInfo.lpszTitle = guide.c_str();
+			browserInfo.ulFlags = BIF_EDITBOX | BIF_USENEWUI | 0x0040;
+
+			idl = SHBrowseForFolder(&browserInfo);
+			if (idl)
+			{
+				SHGetPathFromIDList(idl, path);
+				dirPath = path;
+				return true;
+			}
+			else
+				return false;
+		}
+		bool JWindowImpl::SelectFile(std::wstring& filePath, const std::wstring& guide)noexcept
+		{
+			BROWSEINFO   browserInfo;
+			LPITEMIDLIST  idl;
+			TCHAR path[MAX_PATH] = { 0, };
+			ZeroMemory(&browserInfo, sizeof(BROWSEINFO));
+			browserInfo.hwndOwner = GetHandle();
+			browserInfo.pszDisplayName = path;
+			browserInfo.lpszTitle = guide.c_str();
+			browserInfo.ulFlags = BIF_EDITBOX | BIF_USENEWUI | BIF_BROWSEINCLUDEFILES | 0x0040;
+
+			idl = SHBrowseForFolder(&browserInfo);
+			if (idl)
+			{
+				SHGetPathFromIDList(idl, path);
+				filePath = path;
+				return true;
+			}
+			else
+				return false;
+
+		}
+		bool JWindowImpl::HasStorageSpace(const std::wstring& dirPath, size_t capacity)noexcept
+		{
+			ULARGE_INTEGER uliAvailable;
+			ULARGE_INTEGER uliTotal;
+			ULARGE_INTEGER uliFree;
+
+			if (GetDiskFreeSpaceExA(JCUtil::WstrToU8Str(dirPath).c_str(), &uliAvailable, &uliTotal, &uliFree))
+			{ 
+				if (uliAvailable.QuadPart > capacity)
+					return true;
+				else
+					return false;
+			}
+			return false;
+		}
+		JWindowHandleInterface* JWindowImpl::HandleInterface()
 		{
 			return this;
 		}
@@ -104,22 +179,32 @@ namespace JinEngine
 		{
 			hInst = hInstance;
 		}
-		void JWindowImpl::OpenWindow()
+		void JWindowImpl::OpenProjecSelectorWindow()
 		{
-			int displayWidth = GetSystemMetrics(SM_CXSCREEN);
-			int displayHeight = GetSystemMetrics(SM_CYSCREEN);
+			LONG displayWidth = GetSystemMetrics(SM_CXFULLSCREEN);
+			LONG displayHeight = GetSystemMetrics(SM_CYFULLSCREEN);
+
+			int widthHalf = (int)(displayWidth * 0.5f);
+			int heightHalf = (int)(displayHeight * 0.5f);
+			int widthOffset = (int)(displayWidth * 0.35f);
+			int heightOffset = (int)(displayHeight * 0.4f);
+
+			int left = widthHalf - widthOffset;
+			int right = widthHalf + widthOffset;
+			int top = heightHalf - heightOffset;
+			int bottom = heightHalf + heightOffset;
+
+			int windowX = left;
+			int windowY = top;
+			int windowWidth = right - left;
+			int windowHeight = bottom - top;
 
 			RegisterWindowClass();
-
-			int windowX = 0;
-			int windowY = 0;
-			int windowWidth = displayWidth;
-			int windowHeight = displayHeight;
 
 			hwnd = CreateWindowEx(
 				WS_EX_ACCEPTFILES,
 				windowClassName.c_str(), windowName.c_str(),
-				WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
+				WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 				windowX, windowY, windowWidth, windowHeight,
 				nullptr, nullptr, hInst, this);
 
@@ -137,53 +222,66 @@ namespace JinEngine
 			rid.usUsage = 0x02; // mouse usage
 			rid.dwFlags = 0;
 			rid.hwndTarget = nullptr;
-			 
+
 			ThrowIfFailedW(RegisterRawInputDevices(&rid, 1, sizeof(rid)))
+		}
+		void JWindowImpl::OpenEngineWindow()
+		{
+			RECT workArea;
+			SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0);
+
+			int left = workArea.left;
+			int right = workArea.right;
+			int top = workArea.top;
+			int bottom = workArea.bottom;
+
+			int windowX = left;
+			int windowY = top;
+			int windowWidth = right - left;
+			int windowHeight = bottom - top;
+
+			RegisterWindowClass();
+
+			hwnd = CreateWindowEx(
+				WS_EX_ACCEPTFILES,
+				windowClassName.c_str(), windowName.c_str(),
+				WS_CAPTION  | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_MAXIMIZE,
+				windowX, windowY, windowWidth, windowHeight,
+				nullptr, nullptr, hInst, this);
+
+			HMONITOR hmon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+			MONITORINFO moninfo;
+			moninfo.cbSize = sizeof(moninfo);
+			GetMonitorInfo(hmon, &moninfo);
+
+			SetWindowPos(hwnd, 0, moninfo.rcWork.left, moninfo.rcWork.top,
+				moninfo.rcWork.right, moninfo.rcWork.bottom, SWP_NOZORDER);
+
+			if (hwnd == nullptr)
+				ThrowIfFailedW(false);
+			// newly created windows start off as hidden
+			ShowWindow(hwnd, SW_SHOW);
+
+			ThrowIfFailedW(UpdateWindow(hwnd));
+
+			//SHFullScreen(m_hWnd, SHFS_HIDETASKBAR);		 
+			//pGfx = std::make_unique<Graphics>(hWnd, width, height);*/
+			// register mouse raw input device
+			RAWINPUTDEVICE rid;
+			rid.usUsagePage = 0x01; // mouse page
+			rid.usUsage = 0x02; // mouse usage
+			rid.dwFlags = 0;
+			rid.hwndTarget = nullptr;
+
+			ThrowIfFailedW(RegisterRawInputDevices(&rid, 1, sizeof(rid)));
 		}
 		void JWindowImpl::CloseWindow()
 		{
-			DestroyWindow(hwnd);
-		}
-		void JWindowImpl::SetProjectSelectorWindow()
-		{
-			LONG displayWidth = GetSystemMetrics(SM_CXSCREEN);
-			LONG displayHeight = GetSystemMetrics(SM_CYSCREEN);
-
-			int widthHalf = (int)(displayWidth * 0.5f);
-			int heightHalf = (int)(displayHeight * 0.5f);
-			int widthOffset = (int)(displayWidth * 0.25f);
-			int heightOffset = (int)(displayHeight * 0.4f);
-
-			int left = widthHalf - widthOffset;
-			int right = widthHalf + widthOffset;
-			int top = heightHalf - heightOffset;
-			int bottom = heightHalf + heightOffset;
-
-			int windowX = left;
-			int windowY = top;
-			int windowWidth = right - left;
-			int windowHeight = bottom - top;
-
-			SetWindowPos(hwnd, nullptr, windowX, windowY, windowWidth, windowHeight, 0);
-			ThrowIfFailedW(UpdateWindow(hwnd));
-		}
-		void JWindowImpl::SetEngineWindow()
-		{
-			int displayWidth = GetSystemMetrics(SM_CXSCREEN);
-			int displayHeight = GetSystemMetrics(SM_CYSCREEN);
-
-			int left = 0;
-			int right = displayWidth;
-			int top = 0;
-			int bottom = displayHeight;
-
-			int windowX = left;
-			int windowY = top;
-			int windowWidth = right - left;
-			int windowHeight = bottom - top;
-
-			SetWindowPos(hwnd, nullptr, windowX, windowY, windowWidth, windowHeight, 0);
-			ThrowIfFailedW(UpdateWindow(hwnd));
+			NotifyEvent(JWindow::Instance().guid, J_WINDOW_EVENT::WINDOW_CLOSE);
+			ClearEvent();
+			ImGui::DestroyContext();
+			DestroyWindow(GetHandle());
+			UnregisterClass(windowClassName.c_str(), hInst);
 		}
 		std::optional<int> JWindowImpl::ProcessMessages()
 		{
@@ -197,7 +295,7 @@ namespace JinEngine
 				DispatchMessage(&msg);
 			}
 			return {};
-		}	 
+		}
 		HWND JWindowImpl::GetHandle()const noexcept
 		{
 			return hwnd;
@@ -238,10 +336,7 @@ namespace JinEngine
 			{
 			case WM_CLOSE:
 			{
-				ImGui_ImplDX12_Shutdown();
-				ImGui_ImplWin32_Shutdown();
-				ImGui::DestroyContext();
-				DestroyWindow(JWindow::Instance().GetHandle());
+				JWindow::Instance().CloseWindow();
 				return 0;
 			}
 			case WM_DESTROY:
@@ -250,10 +345,25 @@ namespace JinEngine
 				return 0;
 			}
 			case WM_QUIT:
+			{
 				break;
 				return 0;
+			}
+			case WM_MDIMAXIMIZE:
+			{ 
+				HMONITOR hmon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+				MONITORINFO moninfo;
+				moninfo.cbSize = sizeof(moninfo);
+				GetMonitorInfo(hmon, &moninfo);
+
+				SetWindowPos(hwnd, 0, moninfo.rcWork.left, moninfo.rcWork.top,
+					moninfo.rcWork.right, moninfo.rcWork.bottom, SWP_NOZORDER);
+
+				JWindow::Instance().Resize(wParam);
+				break;
+			}
 			case WM_SIZING:
-			{
+			{ 
 				int newWidth = ((RECT*)lParam)->right - ((RECT*)lParam)->left;
 				int newHeight = ((RECT*)lParam)->bottom - ((RECT*)lParam)->top;
 				int minWidth = JWindow::Instance().GetMinWidth();
@@ -267,20 +377,25 @@ namespace JinEngine
 					((RECT*)lParam)->top = preWindowRect.top;
 					((RECT*)lParam)->bottom = preWindowRect.bottom;
 				}
-				if (newWidth > GetSystemMetrics(SM_CXSCREEN) || newHeight > GetSystemMetrics(SM_CYSCREEN))
-				{
+				/*if (newWidth > GetSystemMetrics(SM_CXFULLSCREEN) || newHeight > GetSystemMetrics(SM_CYFULLSCREEN))
+				{ 
 					RECT preWindowRect = JWindow::Instance().GetPreClientR();
 					((RECT*)lParam)->left = preWindowRect.left;
 					((RECT*)lParam)->right = preWindowRect.right;
 					((RECT*)lParam)->top = preWindowRect.top;
 					((RECT*)lParam)->bottom = preWindowRect.bottom;
-				}
+				}*/
 				return TRUE;
 			}
 			case WM_SIZE:
-			{
-				JWindow::Instance().Resize(wParam);
+			{ 
+				JWindow::Instance().Resize(wParam); 
 				return 0;
+			}
+			case WM_MOVE: 
+			{ 
+				JWindow::Instance().Move();
+				break;
 			}
 			case WM_NCDESTROY:
 				break;
@@ -298,28 +413,36 @@ namespace JinEngine
 		void JWindowImpl::Resize(WPARAM wParam)
 		{
 			GetWindowRect(hwnd, &preWindowRect);
-			GetClientRect(hwnd, &preClinetRect);
+			GetClientRect(hwnd, &preClinetRect);	
+			 
 			if (wParam != SIZE_MINIMIZED)
 				NotifyEvent(guid, J_WINDOW_EVENT::WINDOW_RESIZE);
+		}
+		void JWindowImpl::Move()
+		{
+			GetWindowRect(hwnd, &preWindowRect);
+			GetClientRect(hwnd, &preClinetRect);
+			NotifyEvent(guid, J_WINDOW_EVENT::WINDOW_MOVE);
 		}
 		void JWindowImpl::RegisterWindowClass()
 		{
 			wc = { 0 };
-			HICON icon;
+			/*HICON icon;
 
 			icon = (HICON)::LoadImage(hInst,
 				MAKEINTRESOURCE(IDI_ICON1),
 				IMAGE_ICON, 128, 128,
 				LR_DEFAULTCOLOR);
-
+			 */
 			wc.cbSize = sizeof(wc);
-			wc.style = CS_OWNDC;
+			wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+			//wc.style = CS_HREDRAW | CS_VREDRAW;
 			wc.lpfnWndProc = HandleMsgSetup;
 			wc.cbClsExtra = 0;
 			wc.cbWndExtra = 0;
 			wc.hInstance = hInst;
-			wc.hIcon = icon;
-			wc.hIconSm = icon;
+			wc.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON2));
+			//wc.hIconSm = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON2));
 			wc.hCursor = nullptr;
 			wc.hbrBackground = (HBRUSH)3;
 			wc.lpszMenuName = nullptr;
@@ -337,10 +460,7 @@ namespace JinEngine
 			RegistIdenCompareCallable(lam);
 		}
 		JWindowImpl::JWindowImpl()
-			:guid(Core::MakeGuid()),
-			minWidth((int)(GetSystemMetrics(SM_CXSCREEN) * 0.4f)),
-			minHeight((int)(GetSystemMetrics(SM_CYSCREEN) * 0.4f)),
-			hwnd(0)
+			:guid(Core::MakeGuid()), hwnd(0)
 		{
 			RegistEvCallable();
 		}

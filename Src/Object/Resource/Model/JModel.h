@@ -5,8 +5,7 @@
 #include"JModelInterface.h"
 
 namespace JinEngine
-{ 
-	struct JModelAttribute;
+{  
 	struct ModelConstructionData;
 	class JGameObject; 
 	class JSkeletonAsset;
@@ -15,18 +14,6 @@ namespace JinEngine
 	class JModel : public JModelInterface
 	{
 		REGISTER_CLASS(JModel)
-		struct ModelMetadata : public ObjectMetadata
-		{
-		public:
-			struct GuidStruct
-			{
-			public:
-				size_t meshGuid;
-				size_t matGuid;
-			};
-			uint meshPartCount;
-			std::vector<GuidStruct> partGuidVector;
-		};
 	private:
 		JScene* modelScene;
 		JGameObject* modelRoot;
@@ -51,7 +38,7 @@ namespace JinEngine
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 	public:
-		JModelSceneInterface* ModelSceneInterface() final;
+		JModelInterface* Interface()noexcept;
 	private:
 		JScene* GetModelScene()noexcept final;
 		JGameObject* GetModelRoot()noexcept final;
@@ -73,10 +60,8 @@ namespace JinEngine
 	private:
 		std::vector<JGameObject*>::const_iterator GetMeshPartVectorHandle(uint& count)noexcept;
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
-		static Core::J_FILE_IO_RESULT StoreObject(JModel* model);
-		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JModel* model);
-		static JModel* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, ModelMetadata& metadata);
+		static Core::J_FILE_IO_RESULT StoreObject(JModel* model); 
+		static JModel* LoadObject(JDirectory* directory, const JResourceLoadPathData& pathData); 
 		static void RegisterJFunc();
 	private:
 		JModel(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);

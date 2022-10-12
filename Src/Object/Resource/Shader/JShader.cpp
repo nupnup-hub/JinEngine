@@ -4,6 +4,7 @@
 #include"../JResourceObjectFactory.h"
 #include"../../Directory/JDirectory.h"
 #include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Graphic/JGraphic.h"
 #include"../../../Application/JApplicationVariable.h"
 #include"../../../Utility/JD3DUtility.h"
@@ -53,14 +54,56 @@ namespace JinEngine
 			{ "BONEINDICES", 0, DXGI_FORMAT_R8G8B8A8_UINT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		}},
 	};
-	ID3D12PipelineState* JShader::GetPso(const J_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
+
+	static JShader* FindOverlapShader(const J_SHADER_FUNCTION newFunc)
 	{
-		return shaderData[(int)vertexLayout]->Pso.Get();
+		uint count;
+		std::vector<JResourceObject*>::const_iterator st = JResourceManager::Instance().GetResourceVectorHandle<JShader>(count);
+		for (uint i = 0; i < count; ++i)
+		{
+			JShader* shader = static_cast<JShader*>(*(st + i));
+			if (newFunc == shader->GetShaderFunctionFlag())
+				return shader;
+		}
+		return nullptr;
 	}
-	J_SHADER_FUNCTION JShader::GetShaderFunctionFlag()const noexcept
+	static JDirectory* GetShaderDirectory()
 	{
-		return functionFlag;
+		return JResourceManager::Instance().GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath());
 	}
+
+	JShader::JShaderInitdata::JShaderInitdata(const size_t guid,
+		const J_OBJECT_FLAG flag,
+		const J_SHADER_FUNCTION shaderFunctionFlag)
+		:JResourceInitData(ConvertShaderFuncFlagToName(shaderFunctionFlag),
+			guid, 
+			Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE),
+			GetShaderDirectory(),
+			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
+		shaderFunctionFlag(shaderFunctionFlag)
+	{}
+	JShader::JShaderInitdata::JShaderInitdata(const J_OBJECT_FLAG flag,
+		const J_SHADER_FUNCTION shaderFunctionFlag)
+		: JResourceInitData(ConvertShaderFuncFlagToName(shaderFunctionFlag),
+			Core::MakeGuid(),
+			Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE),
+			GetShaderDirectory(),
+			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
+		shaderFunctionFlag(shaderFunctionFlag)
+	{}
+	JShader::JShaderInitdata::JShaderInitdata(const J_SHADER_FUNCTION shaderFunctionFlag)
+		: JResourceInitData(ConvertShaderFuncFlagToName(shaderFunctionFlag),
+			Core::MakeGuid(), 
+			OBJECT_FLAG_UNEDITABLE,
+			GetShaderDirectory(), 
+			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
+		shaderFunctionFlag(shaderFunctionFlag)
+	{}
+	J_RESOURCE_TYPE JShader::JShaderInitdata::GetResourceType() const noexcept
+	{
+		return J_RESOURCE_TYPE::SHADER;
+	}
+
 	J_RESOURCE_TYPE JShader::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
@@ -74,36 +117,41 @@ namespace JinEngine
 		static std::vector<std::wstring> format{ L".shader" };
 		return format;
 	}
-	bool JShader::Copy(JObject* ori)
+	ID3D12PipelineState* JShader::GetPso(const J_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
 	{
-		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
-			return false;
-
-		if (typeInfo.IsA(ori->GetTypeInfo()))
-		{
-			JShader* oriS = static_cast<JShader*>(ori);
-			CopyRFile(*oriS, *this);
-			functionFlag = oriS->functionFlag;
-			CompileShdaer(this);
-			return true;
-		}
-		else
-			return false;
+		return shaderData[(int)vertexLayout]->Pso.Get();
+	}
+	J_SHADER_FUNCTION JShader::GetShaderFunctionFlag()const noexcept
+	{
+		return functionFlag;
+	}
+	void JShader::DoCopy(JObject* ori)
+	{
+		JShader* oriS = static_cast<JShader*>(ori);
+		CopyRFile(*oriS);
+		functionFlag = oriS->functionFlag;
+		CompileShdaer(this);
 	}
 	void JShader::DoActivate()noexcept
-	{
+	{ 
 		JResourceObject::DoActivate();
+		CompileShdaer(this);
+		SetValid(true);
 	}
 	void JShader::DoDeActivate()noexcept
-	{
+	{ 
 		JResourceObject::DoDeActivate();
+		shaderData[0].reset();
+		shaderData[1].reset();
+		SetValid(false);
 	}
 	void JShader::SetShaderFunctionFlag(const J_SHADER_FUNCTION newFunctionFlag)
 	{
 		if (functionFlag != newFunctionFlag || !HasShaderData())
 		{
 			functionFlag = newFunctionFlag;
-			CompileShdaer(this);
+			if(IsActivated())
+				CompileShdaer(this);
 		}
 	}
 	void JShader::CompileShdaer(JShader* shader)
@@ -115,8 +163,9 @@ namespace JinEngine
 		for (uint j = 0; j < SHADER_VERTEX_COUNT; ++j)
 			GetMacroVec(macroVec[j], (J_SHADER_VERTEX_LAYOUT)(SHADER_VERTEX_LAYOUT_STATIC + j), shader->GetShaderFunctionFlag());
 
-		std::wstring vertexShaderPath = JApplicationVariable::GetShaderPath() + L"VertexJShader.hlsl";
-		std::wstring pixelShaderPath = JApplicationVariable::GetShaderPath() + L"PixelJShader.hlsl";
+		std::wstring vertexShaderPath = JApplicationVariable::GetShaderPath() + L"\\VertexShader.hlsl";
+		std::wstring pixelShaderPath = JApplicationVariable::GetShaderPath() + L"\\PixelShader.hlsl";
+		 
 		for (uint j = 0; j < SHADER_VERTEX_COUNT; ++j)
 		{
 			shader->shaderData[j] = std::make_unique<JShaderData>();
@@ -171,61 +220,49 @@ namespace JinEngine
 		stream.open(shader->GetPath(), std::ios::out | std::ios::binary);
 		if (stream.is_open())
 		{
-			stream << (int)shader->functionFlag;
+			JFileIOHelper::StoreEnumData(stream, L"FuncFlag:", shader->functionFlag);
 			stream.close();
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	JShader* JShader::LoadObject(JDirectory* directory, const JResourcePathData& pathData)
+	JShader* JShader::LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)
 	{
 		if (directory == nullptr)
 			return nullptr;
 
-		if (!JResourceObject::IsResourceFormat<JShader>(pathData.format))
-			return nullptr;
-
 		std::wifstream stream;
-		stream.open(ConvertMetafilePath(pathData.wstrPath), std::ios::in | std::ios::binary);
-		ObjectMetadata metadata;
+		stream.open(pathData.engineMetaFileWPath, std::ios::in | std::ios::binary);
+		JResourceMetaData metadata;
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
 		stream.close();
 
-		stream.open(pathData.wstrPath, std::ios::in | std::ios::binary);
+		stream.open(pathData.engineFileWPath, std::ios::in | std::ios::binary);
 		if (stream.is_open())
 		{
-			int functionFlag;
-			stream >> functionFlag;
+			J_SHADER_FUNCTION functionFlag;
+			JFileIOHelper::LoadEnumData(stream, functionFlag);
 			stream.close();
 
 			JShader* newShader = nullptr;
-			if (directory->HasFile(pathData.fullName))
-				newShader = JResourceManager::Instance().GetResourceByPath<JShader>(pathData.wstrPath);
+			if (directory->HasFile(pathData.name))
+				newShader = JResourceManager::Instance().GetResourceByPath<JShader>(pathData.engineFileWPath);
 
-			if (newShader == nullptr)
+			if (newShader == nullptr && loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
 			{
-				if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+				JShaderInitdata initdata{metadata.guid, metadata.flag, functionFlag};
+				if (initdata.IsValidLoadData())
 				{
-					Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JShader>(pathData.name,
-						metadata.guid,
-						metadata.flag,
-						directory,
-						GetFormatIndex<JShader>(pathData.format));
+					Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JShader>(initdata);
 					newShader = ownerPtr.Get();
-					AddInstance(std::move(ownerPtr));
-				}
-				else
-				{
-					Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JShader>(pathData.name,
-						Core::MakeGuid(),
-						OBJECT_FLAG_UNEDITABLE,
-						directory,
-						GetFormatIndex<JShader>(pathData.format));
-					newShader = ownerPtr.Get();
-					AddInstance(std::move(ownerPtr));
+					if (!AddInstance(std::move(ownerPtr)))
+						return nullptr;
 				}
 			}
+
+			if (newShader == nullptr)
+				return newShader;
 
 			if (newShader->IsValid())
 				return newShader;
@@ -240,42 +277,49 @@ namespace JinEngine
 	}
 	void JShader::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* directory) ->JResourceObject*
+		auto defaultC = [](Core::JOwnerPtr<JResourceInitData> initdata) ->JResourceObject*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JShader>(directory->MakeUniqueFileName(GetDefaultName<JShader>()),
-				Core::MakeGuid(),
-				OBJECT_FLAG_UNEDITABLE,
-				directory,
-				JResourceObject::GetDefaultFormatIndex());
-			JResourceObject* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
+			if (initdata.IsValid() && initdata->GetResourceType() == J_RESOURCE_TYPE::SHADER && initdata->IsValidCreateData())
+			{
+				JShaderInitdata* sInitdata = static_cast<JShaderInitdata*>(initdata.Get());
+				JShader* newShader = FindOverlapShader(sInitdata->shaderFunctionFlag);
+				if (newShader != nullptr)
+					return newShader;
+
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JShader>(*sInitdata);
+				newShader = ownerPtr.Get();
+				if (AddInstance(std::move(ownerPtr)))
+				{
+					StoreObject(newShader); 
+					return newShader;
+				}
+			}
+			return nullptr;
 		};
-		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JShader>(name, guid, objFlag, directory, formatIndex);
-			JResourceObject* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
-		};
-		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
+		auto loadC = [](JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
 		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JShader>(directory->MakeUniqueFileName(ori->GetName()),
-				Core::MakeGuid(),
+			if (ori->GetResourceType() != J_RESOURCE_TYPE::SHADER)
+				return nullptr;
+
+			JShader* oriS = static_cast<JShader*>(ori);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JShader>(InitData(Core::MakeGuid(),
 				ori->GetFlag(),
-				directory,
-				GetFormatIndex<JShader>(ori->GetFormat()));
+				oriS->functionFlag));
 
 			JShader* newShader = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			newShader->Copy(ori);
-			return newShader;
+			if (AddInstance(std::move(ownerPtr)))
+			{
+				newShader->Copy(ori);
+				return newShader;
+			}
+			else
+				return nullptr;
 		};
-		JRFI<JShader>::Register(defaultC, initC, loadC, copyC, &JShader::SetShaderFunctionFlag);
+		JRFI<JShader>::Register(defaultC, loadC, copyC);
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JShader>(format); };
 
@@ -283,15 +327,13 @@ namespace JinEngine
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JShader::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
-		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false, false };
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false};
 		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
-	JShader::JShader(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, uint8 formatIndex)
-		: JResourceObject(name, guid, Core::AddTwoSquareValueEnum(objFlag, OBJECT_FLAG_UNCOPYABLE), directory, formatIndex)
-	{
-
-	}
+	JShader::JShader(const JShaderInitdata& initdata)
+		: JResourceObject(initdata), functionFlag(initdata.shaderFunctionFlag)
+	{}
 	JShader::~JShader() {}
 }

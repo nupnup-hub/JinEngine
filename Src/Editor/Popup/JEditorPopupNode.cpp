@@ -131,8 +131,8 @@ namespace JinEngine
 			return isOpen;
 		}
 		bool JEditorPopupNode::IsMouseInPopup()const noexcept
-		{
-			return JImGuiImpl::GetMousePos().Contain(popupPos, popupSize); 
+		{ 
+			return JVector2<float>(ImGui::GetMousePos().x, ImGui::GetMousePos().y).Contain(popupPos, popupSize);
 		}
 	}
 }

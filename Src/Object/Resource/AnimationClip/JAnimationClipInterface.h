@@ -5,9 +5,16 @@
 
 namespace JinEngine
 {
-	class JAnimationClipInterface : public JResourceObject , public JClearableInterface, public JResourceUserInterface
+	namespace Core
+	{
+		struct JFbxAnimationData;
+	}
+
+	class JAnimationClipInterface : public JResourceObject, 
+		public JClearableInterface, 
+		public JResourceUserInterface
 	{
 	protected:
-		JAnimationClipInterface(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JAnimationClipInterface(const JResourceObject::JResourceInitData& initdata);
 	};
 }

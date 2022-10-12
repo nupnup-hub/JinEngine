@@ -4,7 +4,9 @@
 #include"../../Component/Transform/JTransform.h"
 #include"../../GameObject/JGameObject.h" 
 #include"../../Resource/Scene/JScene.h"
+#include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Guid/GuidCreator.h" 
+#include"../../../Core/File/JFileConstant.h"
 #include"../../../Graphic/FrameResource/JLightConstants.h" 
 #include"../../../Graphic/FrameResource/JShadowMapConstants.h" 
 #include<Windows.h>
@@ -14,46 +16,44 @@ namespace JinEngine
 {
 	using namespace DirectX;
 	static auto isAvailableoverlapLam = []() {return true; };
-	static auto componentTypeLam = []() {return J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT; };
-
-	bool JLight::IsShadowActivated()const noexcept
+	J_COMPONENT_TYPE JLight::GetComponentType()const noexcept
 	{
-		return onShadow;
+		return GetStaticComponentType();
 	}
 	DirectX::XMFLOAT3 JLight::GetStrength()const noexcept
 	{
-		return light->strength;
+		return lightData->strength;
 	}
 	float JLight::GetFalloffStart()const noexcept
 	{
-		return light->falloffStart;
+		return lightData->falloffStart;
 	}
 	float JLight::GetFalloffEnd()const noexcept
 	{
-		return light->falloffEnd;
+		return lightData->falloffEnd;
 	}
 	float JLight::GetSpotPower()const noexcept
 	{
-		return light->spotPower;
+		return lightData->spotPower;
 	}
 	void JLight::SetStrength(const DirectX::XMFLOAT3& strength)noexcept
 	{
-		light->strength = strength;
+		lightData->strength = strength;
 		SetFrameDirty();
 	}
 	void JLight::SetFalloffStart(const float falloffStart)noexcept
 	{
-		light->falloffStart = falloffStart;
+		lightData->falloffStart = falloffStart;
 		SetFrameDirty();
 	}
 	void JLight::SetFalloffEnd(const float falloffEnd)noexcept
 	{
-		light->falloffEnd = falloffEnd;
+		lightData->falloffEnd = falloffEnd;
 		SetFrameDirty();
 	}
 	void JLight::SetSpotPower(const float spotPower)noexcept
 	{
-		light->spotPower = spotPower;
+		lightData->spotPower = spotPower;
 		SetFrameDirty();
 	}
 	void JLight::SetShadow(const bool value)noexcept
@@ -68,7 +68,7 @@ namespace JinEngine
 			if (IsActivated() && !onShadow)
 			{
 				CreateShadowMap();
-				GetOwner()->GetOwnerScene()->FrameInterface()->SetBackSideComponentDirty(*this, IsShadow);
+				GetOwner()->GetOwnerScene()->AppInterface()->SetBackSideComponentDirty(*this, IsShadow);
 				SetFrameDirty();
 				onShadow = value;
 			}
@@ -78,7 +78,7 @@ namespace JinEngine
 			if (onShadow)
 			{
 				DestroyShadowMap();
-				GetOwner()->GetOwnerScene()->FrameInterface()->SetBackSideComponentDirty(*this, IsShadow);
+				GetOwner()->GetOwnerScene()->AppInterface()->SetBackSideComponentDirty(*this, IsShadow);
 				SetFrameDirty();
 				onShadow = value;
 			}
@@ -88,9 +88,9 @@ namespace JinEngine
 	{
 		JLight::lightType = lightType;
 	}
-	J_COMPONENT_TYPE JLight::GetComponentType()const noexcept
+	bool JLight::IsShadowActivated()const noexcept
 	{
-		return componentTypeLam();
+		return onShadow;
 	}
 	bool JLight::IsAvailableOverlap()const noexcept
 	{
@@ -103,28 +103,19 @@ namespace JinEngine
 		else
 			return false;
 	}
-	bool JLight::Copy(JObject* ori)
+	void JLight::DoCopy(JObject* ori)
 	{
-		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
-			return false;
+		JLight* oriLit = static_cast<JLight*>(ori);
+		lightData->strength = oriLit->lightData->strength;
+		lightData->falloffStart = oriLit->lightData->falloffStart;
+		lightData->direction = oriLit->lightData->direction;
+		lightData->falloffEnd = oriLit->lightData->falloffEnd;
+		lightData->position = oriLit->lightData->position;
+		lightData->spotPower = oriLit->lightData->spotPower;
 
-		if (typeInfo.IsA(ori->GetTypeInfo()))
-		{ 
-			JLight* oriLit = static_cast<JLight*>(ori);
-			light->strength = oriLit->light->strength;
-			light->falloffStart = oriLit->light->falloffStart;
-			light->direction = oriLit->light->direction;
-			light->falloffEnd = oriLit->light->falloffEnd;
-			light->position = oriLit->light->position;
-			light->spotPower = oriLit->light->spotPower;
-
-			SetLightType(oriLit->lightType);
-			SetShadow(oriLit->onShadow);
-			SetFrameDirty();
-			return true;
-		}
-		else
-			return false;
+		SetLightType(oriLit->lightType);
+		SetShadow(oriLit->onShadow);
+		SetFrameDirty();
 	}
 	void JLight::DoActivate()noexcept
 	{
@@ -149,7 +140,7 @@ namespace JinEngine
 	}
 	void JLight::DestroyShadowMap()noexcept
 	{
-		PopDrawRequest(GetOwner()->GetOwnerScene(), this); 
+		PopDrawRequest(GetOwner()->GetOwnerScene(), this);
 		DestroyTxtHandle();
 	}
 	void JLight::StuffDirectionalLight(Graphic::JLightConstants& constant)noexcept
@@ -162,16 +153,16 @@ namespace JinEngine
 		if (IsShadowActivated())
 		{
 			XMStoreFloat3(&constant.s_directionalLight[constant.s_directionalLightMax].dLight.direction, dir);
-			constant.s_directionalLight[constant.s_directionalLightMax].dLight.strength = light->strength;
+			constant.s_directionalLight[constant.s_directionalLightMax].dLight.strength = lightData->strength;
 			constant.s_directionalLight[constant.s_directionalLightMax].shadow.shadowMapIndex = GetTxtVectorIndex();
-			XMStoreFloat4x4(&constant.s_directionalLight[constant.s_directionalLightMax].shadow.shadowTransform, 
+			XMStoreFloat4x4(&constant.s_directionalLight[constant.s_directionalLightMax].shadow.shadowTransform,
 				XMMatrixTranspose(XMLoadFloat4x4(&shadowTransform)));
 			++constant.s_directionalLightMax;
 		}
 		else
 		{
 			XMStoreFloat3(&constant.directionalLight[constant.directionalLightMax].direction, dir);
-			constant.directionalLight[constant.directionalLightMax].strength = light->strength;
+			constant.directionalLight[constant.directionalLightMax].strength = lightData->strength;
 			++constant.directionalLightMax;
 		}
 	}
@@ -179,21 +170,21 @@ namespace JinEngine
 	{
 		if (IsShadowActivated())
 		{
-			constant.s_pointLight[constant.s_pointLightMax].pLight.strength = light->strength;
-			constant.s_pointLight[constant.s_pointLightMax].pLight.falloffStart = light->falloffStart;
+			constant.s_pointLight[constant.s_pointLightMax].pLight.strength = lightData->strength;
+			constant.s_pointLight[constant.s_pointLightMax].pLight.falloffStart = lightData->falloffStart;
 			constant.s_pointLight[constant.s_pointLightMax].pLight.position = GetOwner()->GetTransform()->GetPosition();
-			constant.s_pointLight[constant.s_pointLightMax].pLight.falloffEnd = light->falloffEnd;
+			constant.s_pointLight[constant.s_pointLightMax].pLight.falloffEnd = lightData->falloffEnd;
 			constant.s_pointLight[constant.s_pointLightMax].shadow.shadowMapIndex = GetTxtVectorIndex();
 			XMStoreFloat4x4(&constant.s_pointLight[constant.s_pointLightMax].shadow.shadowTransform,
-				XMMatrixTranspose(XMLoadFloat4x4(&shadowTransform))); 
+				XMMatrixTranspose(XMLoadFloat4x4(&shadowTransform)));
 			++constant.s_pointLightMax;
 		}
 		else
 		{
-			constant.pointLight[constant.pointLightMax].strength = light->strength;
-			constant.pointLight[constant.pointLightMax].falloffStart = light->falloffStart;
+			constant.pointLight[constant.pointLightMax].strength = lightData->strength;
+			constant.pointLight[constant.pointLightMax].falloffStart = lightData->falloffStart;
 			constant.pointLight[constant.pointLightMax].position = GetOwner()->GetTransform()->GetPosition();
-			constant.pointLight[constant.pointLightMax].falloffEnd = light->falloffEnd;
+			constant.pointLight[constant.pointLightMax].falloffEnd = lightData->falloffEnd;
 			++constant.pointLightMax;
 		}
 	}
@@ -207,10 +198,10 @@ namespace JinEngine
 
 		if (IsShadowActivated())
 		{
-			constant.s_spotLight[constant.s_spotLightMax].sLight.strength = light->strength;
-			constant.s_spotLight[constant.s_spotLightMax].sLight.falloffStart = light->falloffStart;
+			constant.s_spotLight[constant.s_spotLightMax].sLight.strength = lightData->strength;
+			constant.s_spotLight[constant.s_spotLightMax].sLight.falloffStart = lightData->falloffStart;
 			XMStoreFloat3(&constant.s_spotLight[constant.s_spotLightMax].sLight.direction, dir);
-			constant.s_spotLight[constant.s_spotLightMax].sLight.falloffEnd = light->falloffEnd;
+			constant.s_spotLight[constant.s_spotLightMax].sLight.falloffEnd = lightData->falloffEnd;
 			constant.s_spotLight[constant.s_spotLightMax].sLight.position = GetOwner()->GetTransform()->GetPosition();
 			constant.s_spotLight[constant.s_spotLightMax].shadow.shadowMapIndex = GetTxtVectorIndex();
 			XMStoreFloat4x4(&constant.s_spotLight[constant.s_spotLightMax].shadow.shadowTransform,
@@ -219,10 +210,10 @@ namespace JinEngine
 		}
 		else
 		{
-			constant.spotLight[constant.spotLightMax].strength = light->strength;
-			constant.spotLight[constant.spotLightMax].falloffStart = light->falloffStart;
+			constant.spotLight[constant.spotLightMax].strength = lightData->strength;
+			constant.spotLight[constant.spotLightMax].falloffStart = lightData->falloffStart;
 			XMStoreFloat3(&constant.spotLight[constant.spotLightMax].direction, dir);
-			constant.spotLight[constant.spotLightMax].falloffEnd = light->falloffEnd;
+			constant.spotLight[constant.spotLightMax].falloffEnd = lightData->falloffEnd;
 			constant.spotLight[constant.spotLightMax].position = GetOwner()->GetTransform()->GetPosition();
 			++constant.spotLightMax;
 		}
@@ -306,16 +297,10 @@ namespace JinEngine
 				shadowConstant.nearZ = n;
 				shadowConstant.farZ = f;
 			}
-
-			MinusFrameDirty();
 			return true;
 		}
 		else
 			return false;
-	}
-	void JLight::SetFrameDirty()noexcept
-	{
-		JFrameInterface::SetFrameDirty(); 
 	}
 	Core::J_FILE_IO_RESULT JLight::CallStoreComponent(std::wofstream& stream)
 	{
@@ -332,14 +317,12 @@ namespace JinEngine
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		Core::J_FILE_IO_RESULT res = StoreMetadata(stream, light);
-		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
-			return res;
+		JFileIOHelper::StoreObjectIden(stream, light);
+		JFileIOHelper::StoreXMFloat3(stream, L"Strength:", light->lightData->strength);
+		JFileIOHelper::StoreAtomicData(stream, L"FallOffsetStart:", light->lightData->falloffStart);
+		JFileIOHelper::StoreAtomicData(stream, L"FallOffsetEnd:", light->lightData->falloffEnd);
+		JFileIOHelper::StoreAtomicData(stream, L"SpotPower:", light->lightData->spotPower);
 
-		stream << light->light->strength.x << " " << light->light->strength.y << " " << light->light->strength.z << '\n' 
-			<< light->light->falloffStart << " " << light->light->falloffEnd << '\n'
-			<< light->light->spotPower << '\n';
-		 
 		return  Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	JLight* JLight::LoadObject(std::wifstream& stream, JGameObject* owner)
@@ -349,26 +332,33 @@ namespace JinEngine
 
 		if (!stream.is_open())
 			return nullptr;
-		 
-		ObjectMetadata metadata;
-		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
 
-		JLight* newLightComponent;
-		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(metadata.guid, metadata.flag, owner);
-			JLight* newLightComponent = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-		}
-		else
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
-			JLight* newLightComponent = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-		}
-		stream >> newLightComponent->light->strength.x >> newLightComponent->light->strength.y >> newLightComponent->light->strength.z >>
-			newLightComponent->light->falloffStart >> newLightComponent->light->falloffEnd >> newLightComponent->light->spotPower;
-		
+		std::wstring guide;
+		size_t guid;
+		J_OBJECT_FLAG flag;
+
+		XMFLOAT3 strength;
+		float fallOffsetStart;
+		float fallOffsetEnd;
+		float spotPower;
+
+		JFileIOHelper::LoadObjectIden(stream, guid, flag);
+		JFileIOHelper::LoadXMFloat3(stream, strength);
+		JFileIOHelper::LoadAtomicData(stream, fallOffsetStart);
+		JFileIOHelper::LoadAtomicData(stream, fallOffsetEnd);
+		JFileIOHelper::LoadAtomicData(stream, spotPower);
+
+		Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(guid, flag, owner);
+		JLight* newLightComponent = ownerPtr.Get();
+
+		if (!AddInstance(std::move(ownerPtr)))
+			return nullptr;
+
+		newLightComponent->SetStrength(strength);
+		newLightComponent->SetFalloffStart(fallOffsetStart);
+		newLightComponent->SetFalloffEnd(fallOffsetEnd);
+		newLightComponent->SetSpotPower(spotPower);
+
 		return newLightComponent;
 	}
 	void JLight::RegisterJFunc()
@@ -376,16 +366,20 @@ namespace JinEngine
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
-			JComponent* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
+			JLight* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+				return newComp;
+			else
+				return nullptr;
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(guid, objFlag, owner);
-			JComponent* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret; 
+			JLight* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+				return newComp;
+			else
+				return nullptr;
 		};
 		auto loadC = [](std::wifstream& stream, JGameObject* owner) -> JComponent*
 		{
@@ -394,22 +388,31 @@ namespace JinEngine
 		auto copyC = [](JComponent* ori, JGameObject* owner) -> JComponent*
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(Core::MakeGuid(), ori->GetFlag(), owner);
-			JLight* newLit = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			newLit->Copy(ori);
-			return newLit;
+			JLight* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+			{
+				if (newComp->Copy(ori))
+					return newComp;
+				else
+				{
+					newComp->BegineForcedDestroy();
+					return nullptr;
+				}
+			}
+			else
+				return nullptr;
 		};
-		JCFI<JLight>::Regist(defaultC, initC, loadC, copyC);
+		JCFI<JLight>::Register(defaultC, initC, loadC, copyC);
 
 		static GetTypeNameCallable getTypeNameCallable{ &JLight::TypeName };
 		static GetTypeInfoCallable getTypeInfoCallable{ &JLight::StaticTypeInfo };
 		bool(*ptr)() = isAvailableoverlapLam;
 		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 
-		static auto setFrameLam = [](JComponent& component){static_cast<JLight*>(&component)->SetFrameDirty();};
+		static auto setFrameLam = [](JComponent& component) {static_cast<JLight*>(&component)->SetFrameDirty(); };
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
-		static JCI::CTypeHint cTypeHint{ componentTypeLam(), true };
+		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
 		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
 
@@ -417,9 +420,9 @@ namespace JinEngine
 	}
 	JLight::JLight(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)
 		:JLightInterface(TypeName(), guid, objFlag, owner)
-	{ 
+	{
 		lightType = J_LIGHT_TYPE::DIRECTIONAL;
-		light = std::make_unique<JLightStruct>();
+		lightData = std::make_unique<JLightStruct>();
 	}
 	JLight::~JLight() {}
 }

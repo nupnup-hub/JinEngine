@@ -1,9 +1,7 @@
 #pragma once
 
 //¹Ì±¸Çö
-namespace JinEngine
-{
-	struct JResourcePathData;
+namespace JinEngine 
 	struct JStaticMeshData;
 
 	namespace Core

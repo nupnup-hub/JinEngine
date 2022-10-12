@@ -8,6 +8,8 @@ namespace JinEngine
 		template<typename IdentifierType, typename EVENTTYPE, typename ...Param>
 		class JEventListener
 		{
+		public:
+			virtual ~JEventListener() = default;
 		protected: 
 			virtual void OnEvent(const IdentifierType& iden, const EVENTTYPE& eventType, Param... var) = 0;
 		protected: 

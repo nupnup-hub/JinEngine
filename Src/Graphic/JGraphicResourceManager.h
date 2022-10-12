@@ -12,13 +12,18 @@
 
 namespace JinEngine
 {
+	namespace Editor
+	{
+		class JGraphicResourceWatcher;
+	}
 	namespace Graphic
 	{
 		class JGraphicTextureHandle;
-		class JGraphicResourceManager : public JGraphicBufManagerInterface
+		class JGraphicResourceManager final : public JGraphicBufManagerInterface
 		{
 		private: 
 			friend class JGraphicImpl;
+			friend class Editor::JGraphicResourceWatcher; 
 		private:
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap;
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvHeap;
@@ -27,7 +32,7 @@ namespace JinEngine
 			uint dsvDescriptorSize = 0;
 			uint cbvSrvUavDescriptorSize = 0;
 
-			static constexpr uint swapChainBuffercount = 3;
+			static constexpr uint swapChainBuffercount = 2;
 			Microsoft::WRL::ComPtr<ID3D12Resource> swapChainBuffer[swapChainBuffercount];
 
 			DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -45,7 +50,7 @@ namespace JinEngine
 			//Fixed: 1( CommonDepth)
 			//Dynamic: ShadowMap
 
-			const uint imGuiTextureCount = 1;
+			const uint srvFixedCount = 1;
 			uint user2DTextureCount = 0;
 			uint user2DTextureCapacity = 1000;
 			std::vector<std::unique_ptr<JGraphicTextureHandle>> user2DTextureHandle;
@@ -111,10 +116,12 @@ namespace JinEngine
 
 			JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
 				const std::wstring& path,
+				const std::wstring& oriFormat,
 				ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList);
 			JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
 				const std::wstring& path,
+				const std::wstring& oriFormat,
 				ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList);
 			JGraphicTextureHandle* CreateRenderTargetTexture(ID3D12Device* device, const uint width, const uint height);
@@ -125,6 +132,8 @@ namespace JinEngine
 			void ReBindCubeTexture(ID3D12Device* device, const uint resourceIndex, const uint heapIndex);
 			void ReBindRenderTarget(ID3D12Device* device, const uint resourceIndex, const uint rtvHeapIndex, const uint srvHeapIndex);
 			void ReBindShadowMapTexture(ID3D12Device* device, const uint resourceIndex, const uint dsvHeapIndex, const uint srvHeapIndex);
+		private:
+			void Clear();
 		public:
 			JGraphicResourceManager();
 			~JGraphicResourceManager();

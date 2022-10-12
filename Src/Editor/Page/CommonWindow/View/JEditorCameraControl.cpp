@@ -1,9 +1,9 @@
 #include"JEditorCameraControl.h" 
+#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../../../Object/Component/Camera/JCamera.h"
 #include"../../../../Object/Component/Transform/JTransform.h"
-#include"../../../../Core/GameTimer/JGameTimer.h"   
+#include"../../../../Core/Time/JGameTimer.h"  
 #include"../../../../Window/JWindows.h"
-#include"../../../../../Lib/imgui/imgui.h"  
 #include<DirectXMath.h> 
 
 namespace JinEngine
@@ -29,7 +29,7 @@ namespace JinEngine
 			ReleaseCapture();
 		}
 		void JEditorCameraControl::MouseMove(JCamera* sceneCamera, float x, float y)
-		{
+		{ 
 			if (ImGui::IsMouseDown(1))
 			{
 				// Make each pixel correspond to a quarter of a degree.

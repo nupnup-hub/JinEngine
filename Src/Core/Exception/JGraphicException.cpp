@@ -7,12 +7,12 @@ namespace JinEngine
 	namespace Core
 	{
 		JGraphicException::JGraphicException(int line, const std::string file, HRESULT hr)
-			:JException(line, JCommonUtility::StrToWstr(file)), hr(hr), gfxHr(JGraphic::Instance().DeviceInterface()->GetDevice()->GetDeviceRemovedReason())
+			:JException(line, JCUtil::StrToWstr(file)), hr(hr), gfxHr(JGraphic::Instance().DeviceInterface()->GetDevice()->GetDeviceRemovedReason())
 		{
 			std::ostringstream oss;
 			oss << std::hex << gfxHr << std::endl;
 			hexerrorcode = oss.str();
-			//MessageBox(0, JWindow::Instance().HrException::TranslateErrorCode(gfxHr).c_str(), (L"\n[Error Code] 0x" + JCommonUtility::StrToWstr(hexerrorcode)).c_str(), 0);
+			//MessageBox(0, JWindow::Instance().HrException::TranslateErrorCode(gfxHr).c_str(), (L"\n[Error Code] 0x" + JCUtil::StrToWstr(hexerrorcode)).c_str(), 0);
 			whatBuffer = TranslateErrorCode(gfxHr);
 		}
 		const std::wstring JGraphicException::GetType() const
@@ -22,7 +22,7 @@ namespace JinEngine
 		const std::wstring JGraphicException::what() const
 		{
 			std::wstring oss;
-			oss = GetType() + L"\n[Error Code] 0x" + JCommonUtility::StrToWstr(hexerrorcode)
+			oss = GetType() + L"\n[Error Code] 0x" + JCUtil::StrToWstr(hexerrorcode)
 				+ L"\n[Description]" + whatBuffer + L"\n" + GetOriginString();
 			return oss;
 		}

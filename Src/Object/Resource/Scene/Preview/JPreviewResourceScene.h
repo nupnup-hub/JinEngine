@@ -11,8 +11,8 @@ namespace JinEngine
 	private: 
 		JScene* scene; 
 		JMaterial* textureMaterial;
-	public:
-		JPreviewResourceScene(_In_ JResourceObject* resource, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag);
+	public: 
+		JPreviewResourceScene(_In_ Core::JUserPtr<JResourceObject> resource, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag);
 		~JPreviewResourceScene();
 		JPreviewResourceScene(JPreviewResourceScene&& rhs) = default;
 		JPreviewResourceScene& operator=(JPreviewResourceScene && rhs) = default;
@@ -20,12 +20,11 @@ namespace JinEngine
 		bool Initialze()noexcept; 
 		void Clear()noexcept final; 
 	protected:
-		JScene* GetScene()noexcept final; ;
+		JScene* GetScene()noexcept final;
 	private:
 		bool MakeMeshPreviewScene()noexcept;
 		bool MakeMaterialPreviewScene()noexcept;
 		bool MakeUserTexturePreviewScene()noexcept;
 		bool MakeEditorTexturePreviewScene(const J_EDITOR_TEXTURE editorTextureType)noexcept;
-
 	};
 }

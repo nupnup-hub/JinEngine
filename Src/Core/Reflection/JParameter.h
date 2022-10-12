@@ -375,7 +375,7 @@ namespace JinEngine
 				using Type = typename JSelect<Convertible::value>::template Result<Success, Fail>;
 			};
 			template<typename T>
-			J_PARAMETER_TYPE GetJDataEnum()
+			J_PARAMETER_TYPE GetJParameterType()
 			{
 				if constexpr (std::is_integral_v<T>)
 				{

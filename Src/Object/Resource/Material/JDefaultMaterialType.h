@@ -46,19 +46,19 @@ namespace JinEngine
 			switch (type)
 			{
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_STANDARD:
-				return L"Default JMaterial";
+				return L"Default Material";
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SKY:
-				return L"Default Sky JMaterial";
+				return L"Default Sky Material";
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SHADOW_MAP:
-				return L"Default JShadow Map JMaterial";
+				return L"Default Shadow Map Material";
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_RED:
-				return L"Default Debug BoundingBox Red JMaterial";
+				return L"Default Debug BoundingBox Red Material";
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN:
-				return L"Default Debug BoundingBox Green JMaterial";
+				return L"Default Debug BoundingBox Green Material";
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_BLUE:
-				return L"Default Debug BoundingBox Blue JMaterial";
+				return L"Default Debug BoundingBox Blue Material";
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW:
-				return L"Default Debug BoundingBox Yellow JMaterial";
+				return L"Default Debug BoundingBox Yellow Material";
 			default:
 				return L"Error";
 			}

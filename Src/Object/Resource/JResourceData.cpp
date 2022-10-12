@@ -1,4 +1,7 @@
 #include"JResourceData.h"
+#include"JResourceManager.h"
+#include"Texture/JTexture.h" 
+#include"../../Core/Guid/GuidCreator.h"  
 
 namespace JinEngine
 {
@@ -11,6 +14,7 @@ namespace JinEngine
 		{L"Reserved texture by Imgui", J_EDITOR_TEXTURE::IMGUI_RESERVED},
 		{L"Missing.jpg", J_EDITOR_TEXTURE::MISSING},
 		{L"BlueSearchIcon.png", J_EDITOR_TEXTURE::SEARCH_FOLDER_ICON},
+		{L"Shiro_Background.jpg", J_EDITOR_TEXTURE::PROJECT_SELECTOR_BACKGROUND},
 	};
 
 	const std::vector<JResourceData::DefaultTextureInfo> JResourceData::projectTexInfo
@@ -23,13 +27,13 @@ namespace JinEngine
 		{L"Dirctory.png", J_EDITOR_TEXTURE::DIRECTORY},
 		{L"Text.png", J_EDITOR_TEXTURE::TEXT},
 		{L"Script.png", J_EDITOR_TEXTURE::SCRIPT},
-		{L"JShader.png", J_EDITOR_TEXTURE::SHADER},
+		{L"Shader.png", J_EDITOR_TEXTURE::SHADER},
 		{L"skeleton.png", J_EDITOR_TEXTURE::SKELETON},
 		{L"clip.png", J_EDITOR_TEXTURE::ANIMATION_CLIP},
 		{L"Scene.png", J_EDITOR_TEXTURE::SCENE},
 		{L"AniController.png", J_EDITOR_TEXTURE::ANIMATION_CONTROLLER}
 	};
-	std::unordered_map<J_EDITOR_TEXTURE, int> JResourceData::defaultTextureMap;
+	std::unordered_map<J_EDITOR_TEXTURE, size_t> JResourceData::defaultTextureMap;
 
 	//const uint JResourceData::editorTextureCapacity = (uint)textureNames.size();
 	const std::string JResourceData::basicTextureFolder = "BasicResource";
@@ -53,4 +57,39 @@ namespace JinEngine
 		J_DEFAULT_MATERIAL::DEBUG_LINE_BLUE,
 		J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW,
 	};
+	JResourceData::JResourceData()
+		:guid(Core::MakeGuid())
+	{}
+	JResourceData::~JResourceData()
+	{}
+	void JResourceData::Initialize()
+	{
+		AddEventListener(*JResourceManager::Instance().EvInterface(), guid, J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+	}
+	void JResourceData::Clear()
+	{
+		RemoveListener(*JResourceManager::Instance().EvInterface(), guid);
+		defaultMeshGuidMap.clear();
+		defaultMaterialGuidMap.clear();
+		defaultShaderGuidMap.clear();
+		missingTerxture.Clear();
+		defaultTextureMap.clear();
+	}
+	void JResourceData::SetMissing(JTexture* texture)
+	{
+		CallOffResourceReference(missingTerxture.Get());
+		missingTerxture = Core::GetUserPtr(texture);
+		CallOnResourceReference(missingTerxture.Get());
+	}
+	void JResourceData::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+	{
+		if (iden == guid)
+			return;
+
+		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
+		{
+			if (missingTerxture.IsValid() && missingTerxture->GetGuid() == jRobj->GetGuid())
+				SetMissing(nullptr); 
+		}
+	}
 }

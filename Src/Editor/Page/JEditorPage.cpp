@@ -1,8 +1,11 @@
-#include"JEditorPage.h"
+#include"JEditorPage.h" 
 #include"JEditorWindow.h"
 #include"JEditorAttribute.h" 
+#include"JEditorPageShareData.h"
 #include"../Menubar/JEditorMenuBar.h"
 #include"../Event/JEditorEventStruct.h"
+#include"../Event/JEditorEvent.h"
+#include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/Reflection/JReflectionInfo.h"
 #include"../../Object/Resource/Scene/JSceneManager.h"
 #include"../../Object/Component/JComponent.h"
@@ -10,56 +13,79 @@
 #include"../../Object/Resource/JResourceManager.h"
 #include"../../Object/Resource/Scene/JScene.h"
 #include"../../Object/GameObject/JGameObject.h"
+#include"../../Window/JWindows.h"
 #include"../../Utility/JCommonUtility.h"
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
-#include<fstream>
+#include<fstream> 
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		void JEditorPage::EnterPage(const int windowFlag, const int dockspaceFlag, bool isMainPage)noexcept
+		JEditorPage::WindowInitInfo::WindowInitInfo(const std::string name,
+			float initWidthRate, float initHeightRate,
+			float initPosXRate, float initPosYRate,
+			bool isOpen, bool isLastAct)
+			:name(name),
+			initWidthRate(initWidthRate), initHeightRate(initHeightRate),
+			initPosXRate(initPosXRate), initPosYRate(initPosYRate),
+			isOpen(isOpen), isLastAct(isLastAct)
 		{
-			if (JImGuiImpl::IsFullScreen())
+		}
+		std::string JEditorPage::WindowInitInfo::GetName()const noexcept
+		{
+			return name;
+		}
+		std::unique_ptr<JEditorAttribute> JEditorPage::WindowInitInfo::MakeAttribute()noexcept
+		{
+			return std::make_unique<JEditorAttribute>(initWidthRate, initHeightRate, initPosXRate, initPosYRate, isOpen, isLastAct);
+		}
+
+		JEditorPage::JEditorPage(const std::string name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_FLAG pageFlag)
+			:JEditor(name, std::move(attribute)), pageFlag(pageFlag)
+		{
+			auto openWindowLam = [](JEditorPage& page, const std::string windowName)
 			{
-				const ImGuiViewport* viewport = ImGui::GetMainViewport();
-				ImGui::SetNextWindowPos(viewport->WorkPos);
-				ImGui::SetNextWindowSize(viewport->WorkSize);
-				ImGui::SetNextWindowViewport(viewport->ID);
-				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-				ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+				JEditorWindow* selectedWindow = page.FindEditorWindow(windowName);
+				if (!selectedWindow->IsOpen())
+				{
+					page.AddEventNotification(*JEditorEvent::EvInterface(), page.GetGuid(), J_EDITOR_EVENT::ACTIVATE_WINDOW,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActWindowEvStruct>(selectedWindow, page.GetPageType())));
+				}
+				else
+				{
+					page.AddEventNotification(*JEditorEvent::EvInterface(), page.GetGuid(), J_EDITOR_EVENT::CLOSE_WINDOW,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorCloseWindowEvStruct>(selectedWindow->GetName(), page.GetPageType())));
+				}
+			};
+			openWindowFunctor = std::make_unique<OpenWindowF::Functor>(openWindowLam);
+		}
+		JEditorPage::~JEditorPage()
+		{}
+		J_EDITOR_PAGE_FLAG JEditorPage::GetPageFlag()const noexcept
+		{
+			return pageFlag;
+		}
+		void JEditorPage::EnterPage(const int windowFlag)noexcept
+		{
+			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING))
+			{
+				bool res = ImGui::Begin(GetName().c_str(), &isPageOpen, (ImGuiWindowFlags)windowFlag);
+				if (!res)
+				{
+					AddEventNotification(*JEditorEvent::EvInterface(),
+						GetGuid(),
+						J_EDITOR_EVENT::CLOSE_PAGE,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePageEvStruct>(GetPageType())));
+				}
 			}
-			if (!JImGuiImpl::IsWindowPadding())
-				ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-			if (isMainPage)
-				ImGui::Begin(GetName().c_str(), 0, (ImGuiWindowFlags)windowFlag);
 			else
-				ImGui::Begin(GetName().c_str(), &pageOpen, (ImGuiWindowFlags)windowFlag);
-
-			JImGuiImpl::PushFont();
-
-			if (!JImGuiImpl::IsWindowPadding())
-				ImGui::PopStyleVar();
-			if (JImGuiImpl::IsFullScreen())
-				ImGui::PopStyleVar(2);
-
-			ImGuiID dockspace_id = ImGui::GetID((GetName() + "DockSpace").c_str());
-			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), (ImGuiDockNodeFlags)dockspaceFlag);
+				ImGui::Begin(GetName().c_str(), 0, (ImGuiWindowFlags)windowFlag);
 		}
 		void JEditorPage::ClosePage()noexcept
 		{
-			JImGuiImpl::PopFont();
 			ImGui::End();
-		}
-		void JEditorPage::DoSetOpen()noexcept
-		{
-			JEditor::DoSetOpen();
-		}
-		void JEditorPage::DoOffOpen()noexcept
-		{
-			JEditor::DoOffOpen();
-			JImGuiImpl::ClearPageData(GetPageType());
+			SetLastActivated(IsActivated());
 		}
 		void JEditorPage::OpenWindow(const std::string& windowname)noexcept
 		{
@@ -90,45 +116,24 @@ namespace JinEngine
 			if (windowIndex == -1)
 				return;
 
-			window->DeActivate();
-			window->OffFront();
-			window->OffOpen(); 
+			if (window->IsActivated())
+				DeActivateWindow(window);
+
+			window->SetClose();
 			opendWindow.erase(opendWindow.begin() + windowIndex);
-		}
-		void JEditorPage::FrontWindow(JEditorWindow* window)noexcept
-		{
-			if (window == nullptr)
-				return;
-
-			int windowIndex = FindWindowIndex(window, opendWindow.cbegin(), (uint)opendWindow.size());
-			if (windowIndex == -1)
-				return;
-
-			window->SetFront();
-		}
-		void JEditorPage::BackWindow(JEditorWindow* window)noexcept
-		{
-			if (window == nullptr)
-				return;
-
-			int windowIndex = FindWindowIndex(window, opendWindow.cbegin(), (uint)opendWindow.size());
-			if (windowIndex == -1)
-				return;
-
-			window->DeActivate();
-			window->OffFront();
 		}
 		void JEditorPage::ActivateWindow(JEditorWindow* window)noexcept
 		{
 			if (window == nullptr)
 				return;
 
+			if (!window->IsOpen())
+				OpenWindow(window);
+
 			int windowIndex = FindWindowIndex(window, opendWindow.cbegin(), (uint)opendWindow.size());
 			if (windowIndex == -1)
 				return;
 
-			if (!window->IsFront())
-				window->SetFront();
 			window->Activate();
 		}
 		void JEditorPage::DeActivateWindow(JEditorWindow* window)noexcept
@@ -140,23 +145,25 @@ namespace JinEngine
 			if (windowIndex == -1)
 				return;
 
+			if (window->IsFocus())
+				UnFocusWindow(window);
 			window->DeActivate();
 		}
 		void JEditorPage::FocusWindow(JEditorWindow* window)noexcept
 		{
 			if (window == nullptr)
 				return;
-
+ 
 			int windowIndex = FindWindowIndex(window, opendWindow.cbegin(), (uint)opendWindow.size());
 			if (windowIndex == -1)
 				return;
 
-			if (!window->IsFront())
-				window->SetFront();
 			if (!window->IsActivated())
-				window->Activate();
-
+				ActivateWindow(window);
 			window->SetFocus();
+			if (focusWindow != nullptr)
+				UnFocusWindow(focusWindow);
+			focusWindow = window;
 		}
 		void JEditorPage::UnFocusWindow(JEditorWindow* window)noexcept
 		{
@@ -167,24 +174,26 @@ namespace JinEngine
 			if (windowIndex == -1)
 				return;
 
-			window->OffFocus();
+			window->SetUnFocus();
+		}
+		JEditorPage::OpenWindowF::Functor* JEditorPage::GetFunctorPtr()noexcept
+		{
+			return openWindowFunctor.get();
+		}
+		void JEditorPage::UpdateDockSpace(const int dockspaceFlag)
+		{
+			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_SUPPORT_DOCK))
+			{
+				ImGuiID dockspace_id = ImGui::GetID(GetDockNodeName().c_str());
+				ImGui::DockSpace(dockspace_id, ImGui::GetMainViewport()->WorkSize, dockspaceFlag);
+			}
 		}
 		void JEditorPage::UpdateWindowMenuBar()
 		{
 			if (editorMenuBar != nullptr && editorMenuBar->UpdateMenuBar())
 			{
 				JMenuNode* selectedNode = editorMenuBar->GetSelectedNode();
-				JEditorWindow* selectedWindow = FindEditorWindow(selectedNode->GetWindowName());
-				if (!selectedWindow->IsOpen())
-				{
-					JEditorOpenWindowEvStruct openWindowEvStruct{ selectedWindow->GetName(), GetPageType()};
-					NotifyEvent(*JImGuiImpl::EvInterface(), GetGuid(), J_EDITOR_EVENT::ACTIVATE_WINDOW, &openWindowEvStruct);					
-				}
-				else
-				{
-					JEditorCloseWindowEvStruct closeWindowEvStruct{ selectedWindow->GetName(),  GetPageType()};
-					NotifyEvent(*JImGuiImpl::EvInterface(), GetGuid(), J_EDITOR_EVENT::CLOSE_WINDOW, &closeWindowEvStruct);
-				}
+				selectedNode->ExecuteBind();
 			}
 		}
 		void JEditorPage::PrintOpenWindowState()
@@ -200,11 +209,6 @@ namespace JinEngine
 				else
 					ImGui::Text("Close");
 
-				if (opendWindow[i]->IsFront())
-					ImGui::Text("Front");
-				else
-					ImGui::Text("Back");
-
 				if (opendWindow[i]->IsActivated())
 					ImGui::Text("Activate");
 				else
@@ -217,25 +221,33 @@ namespace JinEngine
 			}
 			ImGui::End();
 		}
+		void JEditorPage::DoSetOpen()noexcept
+		{
+			JEditor::DoSetOpen();
+			isPageOpen = true;
+		}
+		void JEditorPage::DoSetClose()noexcept
+		{
+			JEditor::DoSetClose();
+			JEditorPageShareData::ClearPageData(GetPageType());
+			isPageOpen = false;
+		}
 		void JEditorPage::DoActivate()noexcept
-		{ 
+		{
+			JEditor::DoActivate();
 			const uint opendWindowCount = (uint)opendWindow.size();
 			for (uint i = 0; i < opendWindowCount; ++i)
 			{
-				if (opendWindow[i]->IsFront())
+				if (opendWindow[i]->IsLastActivated())
 					opendWindow[i]->Activate();
 			}
-			pageOpen = true;
 		}
 		void JEditorPage::DoDeActivate()noexcept
-		{ 
+		{
+			JEditor::DoDeActivate();
 			const uint opendWindowCount = (uint)opendWindow.size();
 			for (uint i = 0; i < opendWindowCount; ++i)
-			{
-				if (opendWindow[i]->IsFront())
-					opendWindow[i]->DeActivate();
-			}
-			pageOpen = false; 
+				opendWindow[i]->DeActivate();
 		}
 		JEditorWindow* JEditorPage::FindEditorWindow(const std::string& windowName)const noexcept
 		{
@@ -269,34 +281,24 @@ namespace JinEngine
 		}
 		void JEditorPage::StorePage(std::wofstream& stream)
 		{
-			stream << L"PageName: " << GetWName() << '\n';
-			stream << L"PageGuid: " << GetGuid() << '\n';
-			stream << L"Open: " << IsOpen() << '\n';
-			stream << L"Front: " << IsFront() << '\n';
-			stream << L"Activate: " << IsActivated() << '\n';
-			stream << L"Focus: " << IsFocus() << '\n';
+			JFileIOHelper::StoreJString(stream, L"PageName:", JCUtil::U8StrToWstr(GetName()));
+			JFileIOHelper::StoreAtomicData(stream, L"PageGuid:", GetGuid());
+			JFileIOHelper::StoreAtomicData(stream, L"Open:", IsOpen());
+			JFileIOHelper::StoreAtomicData(stream, L"Activate:", IsActivated());
+			JFileIOHelper::StoreAtomicData(stream, L"Focus:", IsFocus());
 
-			JObject* sObj = JImGuiImpl::GetSelectedObj(GetPageType());
-			if (sObj != nullptr)
-			{
-				const J_OBJECT_TYPE objType = sObj->GetObjectType();
-				stream << L"HasSelectedObj: " << true << '\n';
-				stream << L"Guid: " << sObj->GetGuid() << '\n';
-				stream << L"Type: " << (int)objType << '\n';
-
-				if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)
-					stream << L"SubType: " << (int)static_cast<JResourceObject*>(sObj)->GetResourceType() << '\n';
-				else
-					stream << L"SubType: " << 0 << '\n';
-			}
+			JFileIOHelper::StoreHasObjectIden(stream, JEditorPageShareData::GetOpendPageData(GetPageType()).openSelected.Get());
+			JFileIOHelper::StoreHasObjectIden(stream, JEditorPageShareData::GetSelectedObj(GetPageType()).Get());
+			
+			bool hasFocusWindow = focusWindow != nullptr;
+			JFileIOHelper::StoreAtomicData(stream, L"HasFocusWindow:", hasFocusWindow);
+			if (hasFocusWindow)
+				JFileIOHelper::StoreJString(stream, L"FocusWindowName:", JCUtil::U8StrToWstr(focusWindow->GetName()));
 			else
-			{
-				stream << L"HasSelectedObj: " << false << '\n';
-				stream << L"Guid: " << 0 << '\n';
-				stream << L"Type: " << 0 << '\n';
-				stream << L"SubType: " << 0 << '\n';
-			}
+				JFileIOHelper::StoreJString(stream, L"FocusWindowName:", L"None");
 
+
+			JFileIOHelper::StoreAtomicData(stream, L"WindowCount:", (uint)windows.size());
 			const uint editorWindowCount = (uint)windows.size();
 			for (uint i = 0; i < editorWindowCount; ++i)
 				windows[i]->StoreEditorWindow(stream);
@@ -307,69 +309,60 @@ namespace JinEngine
 			std::wstring name;
 			size_t pageGuid;
 			bool isOpen;
-			bool isFront;
 			bool active;
 			bool isFocus;
+			bool hasFocusWindow;
+			std::wstring focusWindowName;
+			int windowCount;
 
-			bool hasSelectedObj;
-			size_t sObjGuid; 
-			int sObjType;
-			int sObjSubType; 
+			JFileIOHelper::LoadJString(stream, name);
+			JFileIOHelper::LoadAtomicData(stream, pageGuid);
+			JFileIOHelper::LoadAtomicData(stream, isOpen);
+			JFileIOHelper::LoadAtomicData(stream, active);
+			JFileIOHelper::LoadAtomicData(stream, isFocus);
 
-			stream >> guide; stream >> name;
-			stream >> guide; stream >> pageGuid;
-			stream >> guide; stream >> isOpen;
-			stream >> guide; stream >> isFront;
-			stream >> guide; stream >> active;
-			stream >> guide; stream >> isFocus;
+			Core::JIdentifier* openObj = JFileIOHelper::LoadHasObjectIden(stream);
+			Core::JIdentifier* selectObj = JFileIOHelper::LoadHasObjectIden(stream);
+			JFileIOHelper::LoadAtomicData(stream, hasFocusWindow);
+			JFileIOHelper::LoadJString(stream, focusWindowName);
+			JFileIOHelper::LoadAtomicData(stream, windowCount);
 
-			stream >> guide; stream >> hasSelectedObj;
-			stream >> guide; stream >> sObjGuid;
-			stream >> guide; stream >> sObjType;
-			stream >> guide; stream >> sObjSubType;
-
-			JObject* selectedObj = nullptr;
-			if (hasSelectedObj)
-			{
-				if (sObjType == (int)J_OBJECT_TYPE::RESOURCE_OBJECT)
-					selectedObj = JResourceManager::Instance().GetResource((J_RESOURCE_TYPE)sObjSubType, sObjGuid);
-				if (sObjType == (int)J_OBJECT_TYPE::GAME_OBJECT)
-					selectedObj = Core::JReflectionInfo::Instance().GetTypeInfo(JGameObject::TypeName())->GetInstance(sObjGuid);
-			}
 			if (isOpen)
 			{
-				JEditorOpenPageEvStruct evStruct{selectedObj->TypeName(), selectedObj->GetGuid(), GetPageType() };
-				AddEventNotification(*JImGuiImpl::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE, &evStruct);
-			}
-			if (isFront)
-			{
-				JEditorFrontPageEvStruct evStruct{ this };
-				AddEventNotification(*JImGuiImpl::EvInterface(), GetGuid(), J_EDITOR_EVENT::FRONT_PAGE, &evStruct);
+				bool reqOpenObj = JEditorPageShareData::HasValidOpenPageData(GetPageType());
+				bool hasOpenObj = openObj != nullptr && openObj->GetTypeInfo().IsChildOf(JObject::StaticTypeInfo());
+				if (hasOpenObj)
+				{
+					auto userObj = Core::JUserPtr<JObject>::ConvertChildType(Core::GetUserPtr(openObj->TypeName(), openObj->GetGuid()));
+					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), userObj)));
+				}
+				else if (reqOpenObj)
+				{
+					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), Core::JUserPtr<JObject>())));
+				}
 			}
 			if (active)
 			{
-				JEditorActPageEvStruct evStruct{ this };
-				AddEventNotification(*JImGuiImpl::EvInterface(), GetGuid(), J_EDITOR_EVENT::ACTIVATE_PAGE, &evStruct);
+				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::ACTIVATE_PAGE,
+					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(this)));
 			}
 			if (isFocus)
 			{
-				JEditorFocusPageEvStruct evStruct{ this };
-				AddEventNotification(*JImGuiImpl::EvInterface(), GetGuid(), J_EDITOR_EVENT::FOCUS_PAGE, &evStruct);
-			} 
-			 
-			const uint windowCount = (uint)windows.size();
+				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::FOCUS_PAGE,
+					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorFocusPageEvStruct>(this)));
+			}
+
+			if (selectObj != nullptr && selectObj->GetTypeInfo().IsChildOf(JObject::StaticTypeInfo()))
+			{
+				auto userObj = Core::JUserPtr<JObject>::ConvertChildType(Core::GetUserPtr(selectObj->TypeName(), selectObj->GetGuid()));
+				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::SELECT_OBJECT,
+					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorSelectObjectEvStruct>(GetPageType(), userObj)));
+			}
+
 			for (uint i = 0; i < windowCount; ++i)
-				windows[i]->LoadEditorWindow(stream);		
-		}
-		JEditorPage::JEditorPage(std::unique_ptr<JEditorAttribute> attribute, bool hasOpenInitObjType)
-			:JEditor(std::move(attribute))
-		{
-			dockSpaceName = GetName() + "DockSpace";
-			JImGuiImpl::RegisterPage(GetPageType(), hasOpenInitObjType);
-		}
-		JEditorPage::~JEditorPage()
-		{
-			JImGuiImpl::UnRegisterPage(GetPageType());
+				windows[i]->LoadEditorWindow(stream);
 		}
 	}
 }

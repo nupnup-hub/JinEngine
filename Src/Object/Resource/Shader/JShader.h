@@ -10,9 +10,25 @@
 namespace JinEngine
 {
 	struct JShaderData;
-	class JShader : public JResourceObject
+	class JShader final : public JResourceObject
 	{
 		REGISTER_CLASS(JShader)
+	public:
+		struct JShaderInitdata : public JResourceInitData
+		{
+		public:
+			const J_SHADER_FUNCTION shaderFunctionFlag;
+		public:
+			JShaderInitdata(const size_t guid,
+				const J_OBJECT_FLAG flag,
+				const J_SHADER_FUNCTION shaderFunctionFlag);
+			JShaderInitdata(const J_OBJECT_FLAG flag,
+				const J_SHADER_FUNCTION shaderFunctionFlag);
+			JShaderInitdata(const J_SHADER_FUNCTION shaderFunctionFlag);
+		public: 
+			J_RESOURCE_TYPE GetResourceType() const noexcept;
+		};
+		using InitData = JShaderInitdata;
 	private:
 		std::unique_ptr<JShaderData>shaderData[SHADER_VERTEX_COUNT]{ nullptr, nullptr };
 		J_SHADER_FUNCTION functionFlag;
@@ -21,8 +37,6 @@ namespace JinEngine
 		static std::unordered_map<J_SHADER_VERTEX_LAYOUT, const D3D_SHADER_MACRO> vertexLayoutMacroMap;
 		static std::unordered_map<J_SHADER_VERTEX_LAYOUT, std::vector<D3D12_INPUT_ELEMENT_DESC>> inputLayout;
 	public:	
-		ID3D12PipelineState* GetPso(const J_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
-		J_SHADER_FUNCTION GetShaderFunctionFlag()const noexcept;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -31,7 +45,10 @@ namespace JinEngine
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 	public:
-		bool Copy(JObject* ori) final;
+		ID3D12PipelineState* GetPso(const J_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
+		J_SHADER_FUNCTION GetShaderFunctionFlag()const noexcept;
+	public:
+		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
@@ -45,10 +62,10 @@ namespace JinEngine
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JShader* shader);
-		static JShader* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
+		static JShader* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
 		static void RegisterJFunc();
 	private:
-		JShader(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, uint8 formatIndex);
+		JShader(const JShaderInitdata& initdata);
 		~JShader();
 	};
 }

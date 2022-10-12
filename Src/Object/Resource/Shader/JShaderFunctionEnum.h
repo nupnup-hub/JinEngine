@@ -1,5 +1,6 @@
 #pragma once
 #include"../Mesh/JMeshType.h"
+#include<string>
 
 namespace JinEngine
 {
@@ -27,6 +28,10 @@ namespace JinEngine
 		SHADER_FUNCTION_DEBUG =  1 << 12,
 	}; 
 
+	static std::wstring ConvertShaderFuncFlagToName(const J_SHADER_FUNCTION funcFlag)
+	{
+		return std::to_wstring(funcFlag);
+	}
 	static J_SHADER_VERTEX_LAYOUT ConvertMeshTypeToShaderVertexLayout(const J_MESHGEOMETRY_TYPE type)
 	{  
 		return type == J_MESHGEOMETRY_TYPE::STATIC ? SHADER_VERTEX_LAYOUT_STATIC : SHADER_VERTEX_LAYOUT_SKINNED;

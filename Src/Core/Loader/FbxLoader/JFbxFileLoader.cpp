@@ -1,10 +1,10 @@
-#include"JFbxFileLoader.h"   
-#include"../../../Object/Resource/Model/JModelAttribute.h"
+#include"JFbxFileLoader.h"    
 #include"../../../Object/Resource/Skeleton/JSkeleton.h"
 #include"../../../Object/Resource/AnimationClip/JAnimationClip.h"
 #include"../../../Utility/JMathHelper.h" 
 #include"../../../Utility/JCommonUtility.h"
 #include"../../DirectXEx/JDirectXCollisionEx.h"
+#include"../../Guid/GuidCreator.h"
 
 using namespace DirectX;
 namespace JinEngine
@@ -18,11 +18,7 @@ namespace JinEngine
 				fbxManager->Destroy();
 			}
 		}
-		J_FBXRESULT JFbxFileLoaderImpl::LoadFbxFile(const std::string& path,
-			std::vector<JFbxPartMeshData>& jFbxPartMeshData,
-			JModelAttribute& modeAttribute,
-			std::vector<Joint>& joint,
-			JFbxAnimationData& jfbxAniData)
+		J_FBXRESULT JFbxFileLoaderImpl::LoadFbxMeshFile(const std::string& path, JStaticMeshGroup& meshGroup)
 		{
 			if (fbxManager == nullptr)
 			{
@@ -54,39 +50,12 @@ namespace JinEngine
 				J_FBXRESULT result;
 
 				indexMapping.clear();
-				vertexCount = 0;
-				//hasRootJoint = true;
+				vertexCount = 0; 
+				LoadNode(rootNode, meshGroup);
 
-				XMFLOAT3 modelMinInit(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
-				XMFLOAT3 modelMaxInit(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-				modelMinXmV = XMLoadFloat3(&modelMinInit);
-				modelMaxXmV = XMLoadFloat3(&modelMaxInit);
-				JFbxSkeleton fbxSkeleton;
+				if (meshGroup.GetMeshDataCount() > 0)
+					result = J_FBXRESULT::HAS_MESH;
 
-				LoadJoint(rootNode, -1, -1, -1, fbxSkeleton);
-
-				//ProcessSkeletonHierarchy(rootNode, fbxSkeleton);
-				//fbxSkeleton.joint[0].parentIndex == 0 add emptyNode in front
-				modeAttribute.hasSkeleton = fbxSkeleton.jointCount > 0;
-
-				result = LoadAnimationClip(scene, rootNode, fbxSkeleton, modeAttribute.hasSkeleton, jfbxAniData);
-				LoadNode(rootNode, jFbxPartMeshData, modeAttribute, fbxSkeleton, 0, 0);
-
-				if (modeAttribute.hasSkeleton)
-				{
-					StuffSkletonData(fbxSkeleton, joint, modeAttribute);
-					CheckModelAxis(jFbxPartMeshData, modeAttribute, joint);
-					result = (J_FBXRESULT)((int)result | (int)J_FBXRESULT::HAS_SKELETON);
-				}
-
-				if (jFbxPartMeshData.size() > 1)
-				{
-					modeAttribute.modelBBox = JDirectXCollisionEx::CreateBoundingBox(modelMinXmV, modelMaxXmV);
-					modeAttribute.modelBSphere = JDirectXCollisionEx::CreateBoundingSphere(modelMinXmV, modelMaxXmV);
-					result = (J_FBXRESULT)((int)result | (int)J_FBXRESULT::HAS_MESH);
-				}
-
-				fbxSkeleton.joint.clear();
 				controlPoint.clear();
 				indexMapping.clear();
 				scene->Destroy();
@@ -100,10 +69,7 @@ namespace JinEngine
 				return J_FBXRESULT::FAIL;
 			}
 		}
-		J_FBXRESULT JFbxFileLoaderImpl::LoadFbxModelFile(const std::string& path,
-			std::vector<JFbxPartMeshData>& jFbxPartMeshData,
-			JModelAttribute& modeAttribute,
-			std::vector<Joint>& joint)
+		J_FBXRESULT JFbxFileLoaderImpl::LoadFbxMeshFile(const std::string& path, JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint)
 		{
 			if (fbxManager == nullptr)
 			{
@@ -138,32 +104,19 @@ namespace JinEngine
 				vertexCount = 0;
 				//hasRootJoint = true;
 
-				XMFLOAT3 modelMinInit(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
-				XMFLOAT3 modelMaxInit(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-				modelMinXmV = XMLoadFloat3(&modelMinInit);
-				modelMaxXmV = XMLoadFloat3(&modelMaxInit);
 				JFbxSkeleton fbxSkeleton;
-
 				LoadJoint(rootNode, -1, -1, -1, fbxSkeleton);
 
 				//ProcessSkeletonHierarchy(rootNode, fbxSkeleton);
 				//fbxSkeleton.joint[0].parentIndex == 0 add emptyNode in front
-				modeAttribute.hasSkeleton = fbxSkeleton.jointCount > 0;
+				bool hasSkeleton = fbxSkeleton.jointCount > 0;			 
+				LoadNode(rootNode, meshGroup, fbxSkeleton);
 
-				LoadNode(rootNode, jFbxPartMeshData, modeAttribute, fbxSkeleton, 0, 0);
-
-				if (modeAttribute.hasSkeleton)
+				if (hasSkeleton)
 				{
-					StuffSkletonData(fbxSkeleton, joint, modeAttribute);
-					CheckModelAxis(jFbxPartMeshData, modeAttribute, joint);
+					StuffSkletonData(fbxSkeleton, joint);
+					CheckModelAxis(meshGroup, joint);
 					result = (J_FBXRESULT)((int)result | (int)J_FBXRESULT::HAS_SKELETON);
-				}
-
-				if (jFbxPartMeshData.size() > 0)
-				{
-					modeAttribute.modelBBox = JDirectXCollisionEx::CreateBoundingBox(modelMinXmV, modelMaxXmV);
-					modeAttribute.modelBSphere = JDirectXCollisionEx::CreateBoundingSphere(modelMinXmV, modelMaxXmV);
-					result = (J_FBXRESULT)((int)result | (int)J_FBXRESULT::HAS_MESH);
 				}
 
 				fbxSkeleton.joint.clear();
@@ -230,7 +183,7 @@ namespace JinEngine
 					std::string totalName;
 					for (uint i = 0; i < fbxSkeleton.jointCount; ++i)
 						totalName += fbxSkeleton.joint[i].name;
-					jfbxAniData.skeletonHash = JCommonUtility::CalculateGuid(totalName);
+					jfbxAniData.skeletonHash = JCUtil::CalculateGuid(totalName);
 				}
 				fbxSkeleton.joint.clear();
 				controlPoint.clear();
@@ -326,9 +279,26 @@ namespace JinEngine
 			for (uint i = 0; i < childCount; ++i)
 				GetJointCount(node->GetChild(i), count, typeInfo);
 		}
-		void JFbxFileLoaderImpl::LoadNode(FbxNode* node, std::vector<JFbxPartMeshData>& jFbxPartMeshData, JModelAttribute& modeAttribute, JFbxSkeleton& skeleton, int meshIndex, int meshParentIndex)
+		void JFbxFileLoaderImpl::LoadNode(FbxNode* node, JStaticMeshGroup& meshGroup)
 		{
-			//stream << L"nodeName: " << JCommonUtility::StrToWstr(node->GetName()) << '\n';  
+			FbxNodeAttribute* nodeAttribute = node->GetNodeAttribute();
+			if (nodeAttribute)
+			{
+				if (nodeAttribute->GetAttributeType() == FbxNodeAttribute::eMesh)
+				{
+					LoadControlPoint(node->GetMesh()); 
+					SortBlendingWeight();
+					JStaticMeshData staticMesh = LoadStaticMesh(node);
+					if (staticMesh.IsValid())
+						meshGroup.AddMeshData(std::move(staticMesh));
+				}
+			}
+			const uint childCount = node->GetChildCount();
+			for (uint i = 0; i < childCount; ++i)
+				LoadNode(node->GetChild(i), meshGroup);
+		}
+		void JFbxFileLoaderImpl::LoadNode(FbxNode* node, JSkinnedMeshGroup& meshGroup, JFbxSkeleton& skeleton)
+		{
 			FbxNodeAttribute* nodeAttribute = node->GetNodeAttribute();
 			if (nodeAttribute)
 			{
@@ -337,55 +307,19 @@ namespace JinEngine
 					LoadControlPoint(node->GetMesh());
 					LoadSkinnedMeshInfo(node, skeleton);
 					SortBlendingWeight();
-
-					JFbxPartMeshData newMeshData;
-					newMeshData.name = JCommonUtility::StrToWstr(node->GetName());
-					newMeshData.parentIndex = meshParentIndex;
-
-					if (modeAttribute.hasSkeleton)
-					{
-						if (LoadSkinnedMesh(node, newMeshData, skeleton))
-						{
-							modeAttribute.totalVertex += (uint)newMeshData.skinnedMeshData.vertices.size();
-							modeAttribute.totalIndex += (uint)newMeshData.skinnedMeshData.indices32.size();
-							newMeshData.skinnedMeshData.InverseIndex();
-							newMeshData.hasMesh = true;
-							newMeshData.skinnedMeshData.hasNormal = true;
-							newMeshData.skinnedMeshData.hasUV = true;
-						}
-						else
-						{
-							/*FbxMesh* currMesh = node->GetMesh();
-							uint numOfDeformers = currMesh->GetDeformerCount();
-							if (numOfDeformers > 0)
-								;// stream << L"has deformers: " << std::to_wstring(numOfDeformers).c_str() << '\n';*/
-							newMeshData.hasMesh = false;
-						}
-					}
-					else
-					{
-						if (LoadStaticMesh(node, newMeshData))
-						{
-							modeAttribute.totalVertex += (uint)newMeshData.staticMeshData.vertices.size();
-							modeAttribute.totalIndex += (uint)newMeshData.staticMeshData.indices32.size();
-							newMeshData.staticMeshData.InverseIndex();
-							newMeshData.hasMesh = true;
-							newMeshData.staticMeshData.hasNormal = true;
-							newMeshData.staticMeshData.hasUV = true;
-						}
-						else
-							newMeshData.hasMesh = false;
-					}
-					jFbxPartMeshData.emplace_back(std::move(newMeshData));
+					  
+					JSkinnedMeshData skinnedMesh = LoadSkinnedMesh(node, skeleton);
+					if (skinnedMesh.IsValid())
+						meshGroup.AddMeshData(std::move(skinnedMesh));
 				}
 			}
 			const uint childCount = node->GetChildCount();
 			for (uint i = 0; i < childCount; ++i)
-				LoadNode(node->GetChild(i), jFbxPartMeshData, modeAttribute, skeleton, (int)jFbxPartMeshData.size(), meshIndex);
+				LoadNode(node->GetChild(i), meshGroup, skeleton);
 		}
 		void JFbxFileLoaderImpl::LoadJoint(FbxNode* node, int depth, int index, int parentIndex, JFbxSkeleton& skeleton)
 		{
-			//stream << JCommonUtility::StrToWstr(node->GetName()) << '\n';
+			//stream << JCUtil::StrToWstr(node->GetName()) << '\n';
 			FbxNodeAttribute* nodeAttribute = node->GetNodeAttribute();
 
 			if (nodeAttribute && nodeAttribute->GetAttributeType() == FbxNodeAttribute::eSkeleton)
@@ -413,7 +347,7 @@ namespace JinEngine
 
 				skeleton.joint.push_back(joint);
 				++skeleton.jointCount;
-				//stream << L"Name: " << JCommonUtility::StrToWstr(joint.name) << '\n';
+				//stream << L"Name: " << JCUtil::StrToWstr(joint.name) << '\n';
 				///stream << L"Index: " << index << '\n';
 				//stream << L"Parent: " << parentIndex << '\n';
 				//stream << '\n';
@@ -424,16 +358,14 @@ namespace JinEngine
 			for (uint i = 0; i < childCount; ++i)
 				LoadJoint(node->GetChild(i), depth + 1, (int)skeleton.joint.size(), index, skeleton);
 		}
-		bool JFbxFileLoaderImpl::LoadStaticMesh(FbxNode* node, JFbxPartMeshData& jFbxPartMeshData)
+		JStaticMeshData JFbxFileLoaderImpl::LoadStaticMesh(FbxNode* node)
 		{
 			FbxMesh* mesh = node->GetMesh();
 			if (!mesh->GetNode())
-				return false;
-
-			XMFLOAT3 partMinInit(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
-			XMFLOAT3 partMaxInit(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-			XMVECTOR partMinXmV = XMLoadFloat3(&partMinInit);
-			XMVECTOR partMaxXmV = XMLoadFloat3(&partMaxInit);
+				return JStaticMeshData{};
+ 
+			std::vector<JStaticMeshVertex> vertices;
+			std::vector<uint32> indices;
 
 			uint triangleCount = mesh->GetPolygonCount();
 			uint idx[3];
@@ -450,17 +382,13 @@ namespace JinEngine
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 					idx[j] = index;
-					controlPoint[controlPointIndex].position.ConvertXM(positionXm[j]);
+					positionXm[j] = controlPoint[controlPointIndex].position.ConvertXM();
 
 					hasUv = LoadTextureUV(mesh, controlPointIndex, mesh->GetTextureUVIndex(i, index), textureXm[j]);
 					hasNormal = LoadNormal(mesh, controlPointIndex, vertexCount, normalXm[j]);
 					hasBinormal = LoadBinormal(mesh, controlPointIndex, vertexCount, biNormalXm[j]);
 					hasTangent = LoadTangent(mesh, controlPointIndex, vertexCount, tangentXm[j]);
-
-					textureXm[j].y = 1 - textureXm[j].y;
-					XMVECTOR P = XMLoadFloat3(&positionXm[j]);
-					partMinXmV = XMVectorMin(partMinXmV, P);
-					partMaxXmV = XMVectorMax(partMaxXmV, P);
+					textureXm[j].y = 1 - textureXm[j].y; 
 					++vertexCount;
 				}
 
@@ -468,48 +396,37 @@ namespace JinEngine
 				{
 					ComputeTangentFrame(idx, 1, positionXm, normalXm, textureXm, 3, tangentXm);
 				}
-
-				uint vertexSt = (uint)jFbxPartMeshData.staticMeshData.vertices.size();
+				 
 				for (int j = 0; j < 3; ++j)
 				{
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
-					JStaticMeshVertex vertex(positionXm[j], normalXm[j], textureXm[j], tangentXm[j]);
+
+					JStaticMeshVertex newVertex(positionXm[j], normalXm[j], textureXm[j], tangentXm[j]);
 					size_t guid = MakeIndexMapKey(positionXm[j], textureXm[j], normalXm[j], biNormalXm[j], tangentXm[j], controlPoint[controlPointIndex].isSkin);
+				
 					auto data = indexMapping.find(guid);
 					if (data != indexMapping.end())
-						jFbxPartMeshData.staticMeshData.indices32.push_back(data->second);
+						indices.push_back(data->second);
 					else
 					{
-						uint32 vertexindex = (uint32)jFbxPartMeshData.staticMeshData.vertices.size();
-						indexMapping.emplace(guid, vertexindex);
-						jFbxPartMeshData.staticMeshData.indices32.push_back(vertexindex);
-						jFbxPartMeshData.staticMeshData.vertices.push_back(vertex);
+						uint verticesIndex = (uint)vertices.size();
+						indexMapping.emplace(guid, verticesIndex);
+						indices.push_back(verticesIndex);
+						vertices.push_back(newVertex);
 					}
 				}
 			}
-
-			if (jFbxPartMeshData.staticMeshData.vertices.size() == 0 || jFbxPartMeshData.staticMeshData.indices32.size() == 0)
-				return false;
-			else
-			{
-				modelMinXmV = XMVectorMin(modelMinXmV, partMinXmV);
-				modelMaxXmV = XMVectorMax(modelMaxXmV, partMaxXmV);
-				jFbxPartMeshData.boundingBox = JDirectXCollisionEx::CreateBoundingBox(partMinXmV, partMaxXmV);
-				jFbxPartMeshData.boundingSphere = JDirectXCollisionEx::CreateBoundingSphere(partMinXmV, partMaxXmV);
-				return true;
-			}
+			return JStaticMeshData{ JCUtil::StrToWstr(node->GetName()), MakeGuid(), std::move(indices), true, true, std::move(vertices)};
 		}
-		bool JFbxFileLoaderImpl::LoadSkinnedMesh(FbxNode* node, JFbxPartMeshData& jFbxPartMeshData, JFbxSkeleton& skeleton)
+		JSkinnedMeshData JFbxFileLoaderImpl::LoadSkinnedMesh(FbxNode* node, JFbxSkeleton& skeleton)
 		{
 			FbxMesh* mesh = node->GetMesh();
 			if (!mesh->GetNode())
-				return false;
+				return JSkinnedMeshData{};
 
-			XMFLOAT3 partMinInit(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
-			XMFLOAT3 partMaxInit(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-			XMVECTOR partMinXmV = XMLoadFloat3(&partMinInit);
-			XMVECTOR partMaxXmV = XMLoadFloat3(&partMaxInit);
+			std::vector<JSkinnedMeshVertex> vertices;
+			std::vector<uint32> indices;
 
 			uint triangleCount = mesh->GetPolygonCount();
 			uint idx[3];
@@ -527,40 +444,38 @@ namespace JinEngine
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 					idx[j] = index;
-					controlPoint[controlPointIndex].position.ConvertXM(positionXm[j]);
+					positionXm[j] = controlPoint[controlPointIndex].position.ConvertXM();
 
 					hasUv = LoadTextureUV(mesh, controlPointIndex, mesh->GetTextureUVIndex(i, index), textureXm[j]);
 					hasNormal = LoadNormal(mesh, controlPointIndex, vertexCount, normalXm[j]);
 					hasBinormal = LoadBinormal(mesh, controlPointIndex, vertexCount, biNormalXm[j]);
 					hasTangent = LoadTangent(mesh, controlPointIndex, vertexCount, tangentXm[j]);
 
-					textureXm[j].y = 1 - textureXm[j].y;
-					XMVECTOR P = XMLoadFloat3(&positionXm[j]);
-					partMinXmV = XMVectorMin(partMinXmV, P);
-					partMaxXmV = XMVectorMax(partMaxXmV, P);
+					textureXm[j].y = 1 - textureXm[j].y; 
 					++vertexCount;
 				}
 
 				if (!hasTangent)
-				{
 					ComputeTangentFrame(idx, 1, positionXm, normalXm, textureXm, 3, tangentXm);
-				}
 
 				for (int j = 0; j < 3; ++j)
 				{
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
+
 					size_t guid = MakeIndexMapKey(positionXm[j], textureXm[j], normalXm[j], biNormalXm[j], tangentXm[j], controlPoint[controlPointIndex].isSkin);
 					auto data = indexMapping.find(guid);
+					
 					if (data != indexMapping.end())
-						jFbxPartMeshData.skinnedMeshData.indices32.push_back(data->second);
+						indices.push_back(data->second);
 					else
 					{
-						JSkinnedMeshVertex vertex(positionXm[j], normalXm[j], textureXm[j], tangentXm[j], controlPoint[controlPointIndex].blendingInfo);
-						uint32 vertexindex = (uint32)jFbxPartMeshData.skinnedMeshData.vertices.size();
+						JSkinnedMeshVertex newVertex(positionXm[j], normalXm[j], textureXm[j], tangentXm[j], controlPoint[controlPointIndex].blendingInfo);
+						uint32 vertexindex = (uint32)vertices.size();
 						indexMapping.emplace(guid, vertexindex);
-						jFbxPartMeshData.skinnedMeshData.indices32.push_back(vertexindex);
-						jFbxPartMeshData.skinnedMeshData.vertices.push_back(vertex);
+
+						indices.push_back(vertexindex);
+						vertices.push_back(newVertex);
 
 						JVector3 pos = JVector3<float>(positionXm[j].x, positionXm[j].y, positionXm[j].z);
 						for (int k = 0; k < controlPoint[controlPointIndex].blendingInfo.size(); ++k)
@@ -577,16 +492,8 @@ namespace JinEngine
 					}
 				}
 			}
-			if (jFbxPartMeshData.skinnedMeshData.vertices.size() == 0 || jFbxPartMeshData.skinnedMeshData.indices32.size() == 0)
-				return false;
-			else
-			{
-				modelMinXmV = XMVectorMin(modelMinXmV, partMinXmV);
-				modelMaxXmV = XMVectorMax(modelMaxXmV, partMaxXmV);
-				jFbxPartMeshData.boundingBox = JDirectXCollisionEx::CreateBoundingBox(partMinXmV, partMaxXmV);
-				jFbxPartMeshData.boundingSphere = JDirectXCollisionEx::CreateBoundingSphere(partMinXmV, partMaxXmV);
-				return true;
-			}
+
+			return JSkinnedMeshData{JCUtil::StrToWstr(node->GetName()), MakeGuid(), std::move(indices), true, true, std::move(vertices) };
 		}
 		void JFbxFileLoaderImpl::LoadControlPoint(FbxMesh* mesh)
 		{
@@ -989,7 +896,7 @@ namespace JinEngine
 				sort(controlPoint[i].blendingInfo.begin(), controlPoint[i].blendingInfo.end(), CompareBlendingWeight);
 			}
 		}
-		void JFbxFileLoaderImpl::StuffSkletonData(JFbxSkeleton& fbxSkeleton, std::vector<Joint>& joint, JModelAttribute& modeAttribute)
+		void JFbxFileLoaderImpl::StuffSkletonData(JFbxSkeleton& fbxSkeleton, std::vector<Joint>& joint)
 		{  
 			joint.reserve(fbxSkeleton.jointCount);
 			joint.resize(fbxSkeleton.jointCount);
@@ -1001,7 +908,7 @@ namespace JinEngine
 
 			for (uint i = 0; i < fbxSkeleton.jointCount; ++i)
 			{
-				joint[i].name = JCommonUtility::StrToWstr(fbxSkeleton.joint[i].name);
+				joint[i].name = JCUtil::StrToWstr(fbxSkeleton.joint[i].name);
 				joint[i].parentIndex = fbxSkeleton.joint[i].parentIndex;
 				ConvertFbaToXM(fbxSkeleton.joint[i].globalBindPositionInverse, joint[i].inbindPose);
 				ResizeMatrix(joint[i].inbindPose);
@@ -1054,8 +961,7 @@ namespace JinEngine
 					else
 						joint[i].length = 0;
 				}
-			} 
-			modeAttribute.skletonBSphere = JDirectXCollisionEx::CreateBoundingSphere(skeletonMinXmV, skeletonMaxXmV);
+			}  
 		}
 		FbxAMatrix JFbxFileLoaderImpl::GetGeometryTransformation(FbxNode* inNode)
 		{
@@ -1071,14 +977,14 @@ namespace JinEngine
 
 			return FbxAMatrix(lT, lR, lS);
 		}
-		void JFbxFileLoaderImpl::CheckModelAxis(std::vector<JFbxPartMeshData>& jFbxPartMeshData, JModelAttribute& modeAttribute, std::vector<Joint>& joint)noexcept
+		void JFbxFileLoaderImpl::CheckModelAxis(JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint)noexcept
 		{
 			int modelUpDir;
 			FbxAxisSystem::EUpVector modelUpV;
 			GetModelYUP(joint, modelUpDir, modelUpV);
 
 			if (modelUpDir != failUpDirSearch && (modelUpV != sceneUpV || modelUpDir != sceneUpDir))
-				ConvertAxis(jFbxPartMeshData, modeAttribute, joint, modelUpDir, modelUpV);
+				ConvertAxis(meshGroup, joint, modelUpDir, modelUpV);
 		}
 		void JFbxFileLoaderImpl::GetModelYUP(std::vector<Joint>& joint, int& outUpDir, FbxAxisSystem::EUpVector& outUpAxis)noexcept
 		{
@@ -1107,6 +1013,7 @@ namespace JinEngine
 
 			XMFLOAT3 rootT{ rootFM._41, rootFM._42, rootFM._43 };
 			XMFLOAT3 childT{ chilFM._41, chilFM._42, chilFM._43 };
+			//child joint(주로 root 다음은 heap) - root joint = dirVec 
 			XMFLOAT3 gap = JMathHelper::Vector3Minus(childT, rootT);
 
 			if (abs(gap.x) >= abs(gap.y) && abs(gap.x) >= abs(gap.z))
@@ -1213,19 +1120,6 @@ namespace JinEngine
 				sceneAxis = FbxAxisSystem::EPreDefinedAxisSystem::eDirectX;
 				sceneAxisSystem = FbxAxisSystem::DirectX;
 			}
-			//FbxAxisSystem::OpenGL.ConvertScene(scene);
-			//scene->GetGlobalSettings().SetAxisSystem(FbxAxisSystem::OpenGL);
-			//FbxAxisSystem::OpenGL.DeepConvertScene(scene);
-			/*
-			JDebugTextOut::PrintWstr(L"JScene ");
-			JDebugTextOut::PrintIntData((int)sceneUpV, L" UpEnum: ");
-			JDebugTextOut::PrintIntData((int)sceneUpDir, L" UpDir: ");
-			JDebugTextOut::PrintIntData((int)sceneFrontV, L" FrontEnum: ");
-			JDebugTextOut::PrintIntData((int)sceneFrontDir, L" FrontDir: ");
-			JDebugTextOut::PrintIntData((int)sceneAxis, L"SceneAxis: ");
-			JDebugTextOut::PrintIntData((int)root->AxisLen, L" Root AxisLen: ");
-			JDebugTextOut::PrintIntData((int)scene->GetGlobalSettings().GetOriginalUpAxis(), L" Root UpVecP: ");
-			 */
 		}
 		void JFbxFileLoaderImpl::ConvertFbaToXM(FbxAMatrix& fbxM, XMFLOAT4X4& xmM)noexcept
 		{
@@ -1235,11 +1129,7 @@ namespace JinEngine
 
 			JMathHelper::QuaternionNormalize(xmM);
 		}
-		void JFbxFileLoaderImpl::ConvertAxis(std::vector<JFbxPartMeshData>& jFbxPartMeshData,
-			JModelAttribute& modeAttribute,
-			std::vector<Joint>& joint,
-			int modelUpDir,
-			FbxAxisSystem::EUpVector modelUpV)noexcept
+		void JFbxFileLoaderImpl::ConvertAxis(JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept
 		{
 			switch (sceneUpV)
 			{
@@ -1283,71 +1173,20 @@ namespace JinEngine
 			default:
 				break;
 			}
-
-			XMFLOAT3 boundingMinInit(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
-			XMFLOAT3 boundingMaxInit(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-			modelMinXmV = XMLoadFloat3(&boundingMinInit);
-			modelMaxXmV = XMLoadFloat3(&boundingMaxInit);
-
-			if (modeAttribute.hasSkeleton)
+			uint meshCount = meshGroup.GetMeshDataCount();
+			for (uint i = 0; i < meshCount; ++i)
 			{
-				uint partMeshSize = (uint)jFbxPartMeshData.size();
-				for (uint i = 0; i < partMeshSize; ++i)
+				JSkinnedMeshData* mesdata = static_cast<JSkinnedMeshData*>(meshGroup.GetMeshData(i));
+				const uint vertexCount = mesdata->GetVertexCount();
+				for (uint j = 0; j < vertexCount; ++j)
 				{
-					if (!jFbxPartMeshData[i].hasMesh)
-						continue;
-
-					uint vertexSize = (uint)jFbxPartMeshData[i].skinnedMeshData.vertices.size();
-					XMVECTOR partMinXmV = XMLoadFloat3(&boundingMinInit);
-					XMVECTOR partMaxXmV = XMLoadFloat3(&boundingMaxInit);
-					for (uint j = 0; j < vertexSize; ++j)
-					{
-						ConvertPosition(jFbxPartMeshData[i].skinnedMeshData.vertices[j].position, modelUpDir, modelUpV);
-						ConvertPosition(jFbxPartMeshData[i].skinnedMeshData.vertices[j].normal, modelUpDir, modelUpV);
-						ConvertPosition(jFbxPartMeshData[i].skinnedMeshData.vertices[j].tangentU, modelUpDir, modelUpV);
-						XMVECTOR P = XMLoadFloat3(&jFbxPartMeshData[i].skinnedMeshData.vertices[j].position);
-						partMinXmV = XMVectorMin(partMinXmV, P);
-						partMaxXmV = XMVectorMax(partMaxXmV, P);
-						modelMinXmV = XMVectorMin(modelMinXmV, P);
-						modelMaxXmV = XMVectorMax(modelMaxXmV, P);
-					}
-					XMStoreFloat3(&jFbxPartMeshData[i].boundingBox.Center, 0.5f * (partMinXmV + partMaxXmV));
-					XMStoreFloat3(&jFbxPartMeshData[i].boundingBox.Extents, 0.5f * (partMaxXmV - partMinXmV));
-					XMStoreFloat3(&jFbxPartMeshData[i].boundingSphere.Center, 0.5f * (partMinXmV + partMaxXmV));
-					XMFLOAT3 dis;
-					XMStoreFloat3(&dis, XMVector3Length((0.5f * (partMinXmV + partMaxXmV)) - partMaxXmV));
-					jFbxPartMeshData[i].boundingSphere.Radius = (float)sqrt(pow(dis.x, 2) + pow(dis.y, 2) + pow(dis.z, 2));
+					JSkinnedMeshVertex vertex = mesdata->GetVertex(j);
+					ConvertPosition(vertex.position, modelUpDir, modelUpV);
+					ConvertPosition(vertex.normal, modelUpDir, modelUpV);
+					ConvertPosition(vertex.tangentU, modelUpDir, modelUpV);
+					mesdata->SetVertex(j, vertex);
 				}
-			}
-			else
-			{
-				uint partMeshSize = (uint)jFbxPartMeshData.size();
-				for (uint i = 0; i < partMeshSize; ++i)
-				{
-					if (!jFbxPartMeshData[i].hasMesh)
-						continue;
-
-					uint vertexSize = (uint)jFbxPartMeshData[i].staticMeshData.vertices.size();
-					XMVECTOR partMinXmV = XMLoadFloat3(&boundingMinInit);
-					XMVECTOR partMaxXmV = XMLoadFloat3(&boundingMaxInit);
-					for (uint j = 0; j < vertexSize; ++j)
-					{
-						ConvertPosition(jFbxPartMeshData[i].staticMeshData.vertices[j].position, modelUpDir, modelUpV);
-						ConvertPosition(jFbxPartMeshData[i].staticMeshData.vertices[j].normal, modelUpDir, modelUpV);
-						ConvertPosition(jFbxPartMeshData[i].staticMeshData.vertices[j].tangentU, modelUpDir, modelUpV);
-						XMVECTOR P = XMLoadFloat3(&jFbxPartMeshData[i].skinnedMeshData.vertices[j].position);
-						partMinXmV = XMVectorMin(partMinXmV, P);
-						partMaxXmV = XMVectorMax(partMaxXmV, P);
-						modelMinXmV = XMVectorMin(modelMinXmV, P);
-						modelMaxXmV = XMVectorMax(modelMaxXmV, P);
-					}
-					XMStoreFloat3(&jFbxPartMeshData[i].boundingBox.Center, 0.5f * (partMinXmV + partMaxXmV));
-					XMStoreFloat3(&jFbxPartMeshData[i].boundingBox.Extents, 0.5f * (partMaxXmV - partMinXmV));
-					XMStoreFloat3(&jFbxPartMeshData[i].boundingSphere.Center, 0.5f * (partMinXmV + partMaxXmV));
-					XMFLOAT3 dis;
-					XMStoreFloat3(&dis, XMVector3Length((0.5f * (partMinXmV + partMaxXmV)) - partMaxXmV));
-					jFbxPartMeshData[i].boundingSphere.Radius = (float)sqrt(pow(dis.x, 2) + pow(dis.y, 2) + pow(dis.z, 2));
-				}
+				mesdata->CreateBoundingObject();
 			}
 		}
 		void JFbxFileLoaderImpl::ConvertPosition(XMFLOAT3& position, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept
@@ -1433,7 +1272,7 @@ namespace JinEngine
 				"z:" + std::to_string(tangentXm.z) +
 				"w:" + std::to_string(tangentXm.w);
 			hashKey += "isSkin:" + std::to_string(isSkin);
-			return JCommonUtility::CalculateGuid(hashKey);
+			return JCUtil::CalculateGuid(hashKey);
 		}
 		void JFbxFileLoaderImpl::ResizeMatrix(XMFLOAT4X4& xmF)noexcept
 		{
@@ -1457,8 +1296,8 @@ namespace JinEngine
 }
 /*
 
-//JDebugTextOut::PrintWstr(JCommonUtility::StrToWstr("P: "+ skeleton.joint[parentIndex].name));
-//JDebugTextOut::PrintWstr(JCommonUtility::StrToWstr("C: "+ skeleton.joint[i].name));
+//JDebugTextOut::PrintWstr(JCUtil::StrToWstr("P: "+ skeleton.joint[parentIndex].name));
+//JDebugTextOut::PrintWstr(JCUtil::StrToWstr("C: "+ skeleton.joint[i].name));
 //JDebugTextOut::PrintMatrixAndVector(childWorldBind, L"childWorldBind");
 //JDebugTextOut::PrintMatrixAndVector(childLocalBind, L"childLocalBind");
 //JDebugTextOut::PrintVector(lengthV, L"lengthV");

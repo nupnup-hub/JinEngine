@@ -15,40 +15,38 @@ namespace JinEngine
 	class JFile;
 	class JDirectory; 
 	class JResourceObject;
+	class JObject;
+
 	namespace Editor
 	{
 		class JEditorString;
 		class JEditorPopup;
 		class JEditorWidgetPosCalculator;
 
-		class JWindowDirectory : public JEditorWindow, public JEditorPreviewInterface
-		{
+		class JWindowDirectory final : public JEditorWindow, public JEditorPreviewInterface
+		{ 
 		private:
 			//Create Resource & Directory
-			using CreateObjectFunctor = Core::JFunctor<void, JWindowDirectory&, JDirectory&>;
-			using CreateObjectBinder = Core::JBindHandle<CreateObjectFunctor, JWindowDirectory&, JDirectory&>;
-
-			using DestroyObjectFunctor = Core::JFunctor<void, JWindowDirectory&, JObject&>;
-			using DestroyObjectBinder = Core::JBindHandle<DestroyObjectFunctor, JWindowDirectory&, JObject&>;
-
-			using DestroyRecentFunctor = Core::JFunctor<void, JWindowDirectory&, JDirectory&>;
-			using DestroyRecentBinder = Core::JBindHandle<DestroyRecentFunctor, JWindowDirectory&, JDirectory&>;
-
-			using OpenNewDirectoryFunctor = Core::JFunctor<void, JWindowDirectory&, const size_t>;
-			using OpenNewDirectoryBinder = Core::JBindHandle<OpenNewDirectoryFunctor, JWindowDirectory&, const size_t>;
+			using CreateObjectF = Core::JFunctor<void, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
+			using DestroyObjectF = Core::JFunctor<void, JWindowDirectory&, Core::JUserPtr<JObject>>;
+			 
+			using OpenNewDirectoryF = Core::JFunctor<void, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
+			using OpenNewDirectoryB = Core::JBindHandle<OpenNewDirectoryF, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
+		
+			using ImportResourceF = Core::JFunctor<void, JWindowDirectory&>;
 		private:
 			const std::string directoryViewName = "DirectoryView";
 			const std::string fileViewName = "FileView";
-			JDirectory* root;
-			JDirectory* opendDirctory;
+			Core::JUserPtr<JDirectory> root;
+			Core::JUserPtr<JDirectory> opendDirctory;
 
 			std::unique_ptr<JEditorString> editorString;
 			std::unique_ptr<JEditorPopup>fileviewPopup;
-			std::unordered_map<size_t, CreateObjectFunctor> createResourceFuncMap;
-			std::unordered_map<size_t, DestroyObjectFunctor> destroyResourceFuncMap;
-			std::unique_ptr<DestroyRecentFunctor> destroyRecentFunc; 
-			std::unique_ptr<OpenNewDirectoryFunctor> openNewDirectoryFunc;
-			std::unique_ptr<OpenNewDirectoryBinder> openNewDirectoryBinder;
+			std::unordered_map<size_t, std::unique_ptr<CreateObjectF>> createResourceFuncMap;
+			std::unordered_map<size_t, std::unique_ptr<DestroyObjectF>> destroyResourceFuncMap;
+			std::unique_ptr<OpenNewDirectoryF> openNewDirFunctor;
+			std::unique_ptr<OpenNewDirectoryB> openNewDirBinder;
+			std::tuple<size_t, std::unique_ptr<ImportResourceF>> importResourceT;
 
 			std::unique_ptr<JEditorWidgetPosCalculator> editorPositionCal;
 			static constexpr float selectorIconMaxRate = 0.075f;
@@ -56,36 +54,38 @@ namespace JinEngine
 			float btnIconMaxSize;
 			float btnIconMinSize;
 			float btnIconSize = 0;
-			size_t selectorIconSlidebarId;
-		private:
-			Core::JFunctor<void, const size_t> openNewDirByGuidFunctor; 
+			size_t selectorIconSlidebarId; 
+
+			std::wstring importFilePath;
+			bool actImport = false;
 		public:
-			JWindowDirectory(std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
+			JWindowDirectory(const std::string &name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
 			~JWindowDirectory();
 			JWindowDirectory(const JWindowDirectory& rhs) = delete;
 			JWindowDirectory& operator=(const JWindowDirectory& rhs) = delete;
 		public:
+			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
+		public:
 			void Initialize();
 			void UpdateWindow()final;
-		public:
-			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept;
 		private:
 			void BuildDirectoryView();
-			void DirectoryViewOnScreen(JDirectory* directory);
 			void BuildFileView();
+			//Ret is NewOpend Directory
+			JDirectory* DirectoryViewOnScreen(JDirectory* directory);
 			void FileViewOnScreen();
 			void ResourceFileViewOnScreen(JPreviewScene* nowPreviewScene, JResourceObject* jRobj);
 			void DirectoryFileViewOnScreen(JPreviewScene* nowPreviewScene, JDirectory* jDir);
+			void ImportFile();
 		private:
-			void OpenNewDirectory(JDirectory* newOpendDirectory);
-			void OpenNewDirectoryByGuid(const size_t guid); 
+			void OpenNewDirectory(JDirectory* newOpendDirectory); 
 		protected:
 			void DoSetFocus()noexcept final;
-			void DoOffFocus()noexcept final;
+			void DoSetUnFocus()noexcept final;
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;
 		private:
-			virtual void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEventStruct* eventStruct)final;
+			void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)final;
 		};
 	}
 }

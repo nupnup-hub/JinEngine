@@ -8,7 +8,7 @@
 
 namespace JinEngine
 {
-	JPreviewScene::JPreviewScene(JObject* jobject, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)
+	JPreviewScene::JPreviewScene(Core::JUserPtr<JObject>  jobject, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)
 		:guid(Core::MakeGuid()), jobject(jobject), previewDimension(previewDimension), previewFlag(previewFlag)
 	{}
 	JPreviewScene::~JPreviewScene() {}
@@ -16,13 +16,13 @@ namespace JinEngine
 	{
 		return guid;
 	}
-	JObject* JPreviewScene::GetJObject()noexcept
+	Core::JUserPtr<JObject> JPreviewScene::GetJObject()noexcept
 	{ 
 		return jobject;
 	}
-	JCamera* JPreviewScene::GetPreviewCamera()noexcept
+	Core::JUserPtr<JCamera> JPreviewScene::GetPreviewCamera()noexcept
 	{
-		return previewCamera;
+		return Core::GetUserPtr<JCamera>(previewCamera->GetGuid());
 	}
 	J_PREVIEW_DIMENSION JPreviewScene::GetPreviewDimension()const noexcept
 	{

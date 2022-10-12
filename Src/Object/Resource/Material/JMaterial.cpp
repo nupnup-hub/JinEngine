@@ -6,10 +6,34 @@
 #include"../../Directory/JDirectory.h"
 #include"../../../Application/JApplicationVariable.h"
 #include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Graphic/FrameResource/JMaterialConstants.h"
+#include<fstream>
 
 namespace JinEngine
 {
+	JMaterial::JMaterialInitData::JMaterialInitData(const std::wstring& name,
+		const size_t guid,
+		const J_OBJECT_FLAG flag,
+		JDirectory* directory,
+		const uint8 formatIndex)
+		:JResourceInitData(name, guid, flag, directory, formatIndex)
+	{}
+	JMaterial::JMaterialInitData::JMaterialInitData(const std::wstring& name,
+		JDirectory* directory,
+		const uint8 formatIndex)
+		: JResourceInitData(name, directory, formatIndex)
+	{}
+	JMaterial::JMaterialInitData::JMaterialInitData(JDirectory* directory,
+		const uint8 formatIndex)
+		: JResourceInitData(GetDefaultName<JMaterial>(), directory, formatIndex)
+	{}
+
+	J_RESOURCE_TYPE JMaterial::JMaterialInitData::GetResourceType() const noexcept
+	{
+		return J_RESOURCE_TYPE::MATERIAL;
+	}
+
 	J_RESOURCE_TYPE JMaterial::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
@@ -88,13 +112,12 @@ namespace JinEngine
 		JTexture* be = albedoMap;
 		JTexture* af = texture;
 
-		if (albedoMap != nullptr && IsActivated())
-			OffResourceReference(*albedoMap);
+		if (IsActivated())
+			CallOffResourceReference(albedoMap);
 		albedoMap = texture;
-		if (albedoMap != nullptr && IsActivated())
-			OnResourceReference(*albedoMap);
+		if (IsActivated())
+			CallOnResourceReference(albedoMap);
 		SetFrameDirty();
-
 		TextureChange(be, af, SHADER_FUNCTION_ALBEDO_MAP);
 	}
 	void JMaterial::SetNormalMap(JTexture* texture) noexcept
@@ -102,13 +125,12 @@ namespace JinEngine
 		JTexture* be = normalMap;
 		JTexture* af = texture;
 
-		if (normalMap != nullptr && IsActivated())
-			OffResourceReference(*normalMap);
+		if (IsActivated())
+			CallOffResourceReference(normalMap);
 		normalMap = texture;
-		if (normalMap != nullptr && IsActivated())
-			OnResourceReference(*normalMap);
+		if (IsActivated())
+			CallOnResourceReference(normalMap);
 		SetFrameDirty();
-
 		TextureChange(be, af, SHADER_FUNCTION_NORMAL_MAP);
 	}
 	void JMaterial::SetHeightMap(JTexture* texture) noexcept
@@ -116,13 +138,12 @@ namespace JinEngine
 		JTexture* be = heightMap;
 		JTexture* af = texture;
 
-		if (heightMap != nullptr && IsActivated())
-			OffResourceReference(*heightMap);
+		if (IsActivated())
+			CallOffResourceReference(heightMap);
 		heightMap = texture;
-		if (heightMap != nullptr && IsActivated())
-			OnResourceReference(*heightMap);
+		if (IsActivated())
+			CallOnResourceReference(heightMap);
 		SetFrameDirty();
-
 		TextureChange(be, af, SHADER_FUNCTION_HEIGHT_MAP);
 	}
 	void JMaterial::SetRoughnessMap(JTexture* texture) noexcept
@@ -130,11 +151,11 @@ namespace JinEngine
 		JTexture* be = roughnessMap;
 		JTexture* af = texture;
 
-		if (roughnessMap != nullptr && IsActivated())
-			OffResourceReference(*roughnessMap);
+		if (IsActivated())
+			CallOffResourceReference(roughnessMap);
 		roughnessMap = texture;
 		if (IsActivated())
-			OnResourceReference(*roughnessMap);
+			CallOnResourceReference(roughnessMap);
 		SetFrameDirty();
 		TextureChange(be, af, SHADER_FUNCTION_ROUGHNESS_MAP);
 	}
@@ -143,70 +164,97 @@ namespace JinEngine
 		JTexture* be = ambientOcclusionMap;
 		JTexture* af = texture;
 
-		if (ambientOcclusionMap != nullptr && IsActivated())
-			OffResourceReference(*ambientOcclusionMap);
+		if (IsActivated())
+			CallOffResourceReference(ambientOcclusionMap);
 		ambientOcclusionMap = texture;
 		if (IsActivated())
-			OnResourceReference(*ambientOcclusionMap);
+			CallOnResourceReference(ambientOcclusionMap);
 		SetFrameDirty();
-
 		TextureChange(be, af, SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP);
 	}
 	void JMaterial::SetShadow(bool value)noexcept
 	{
-		light = value;
-		if (light)
-			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW));
+		if (shadow == value)
+			return;
+
+		shadow = value;
+		SetFrameDirty();
+		if (shadow)
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW));
 		else
-			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW));
 	}
 	void JMaterial::SetLight(bool value)noexcept
 	{
-		shadow = value;
-		if (shadow)
-			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LIGHT));
+		if (light == value)
+			return;
+
+		light = value;
+		SetFrameDirty();
+		if (light)
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LIGHT));
 		else
-			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LIGHT));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LIGHT));
 	}
 	void JMaterial::SetAlbedoOnly(bool value)noexcept
 	{
+		if (albedoOnly == value)
+			return;
+
 		albedoOnly = value;
+		SetFrameDirty();
 		if (albedoOnly)
-			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
 		else
-			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
 	}
 	void JMaterial::SetNonCulling(bool value)noexcept
 	{
+		if (nonCulling == value)
+			return;
+
 		nonCulling = value;
+		SetFrameDirty();
 		if (nonCulling)
-			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_NONCULLING));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_NONCULLING));
 		else
-			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_NONCULLING));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_NONCULLING));
 	}
 	void JMaterial::SetShadowMap(bool value)noexcept
 	{
+		if (shadowMap == value)
+			return;
+
 		shadowMap = value;
+		SetFrameDirty();
 		if (shadowMap)
-			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW_MAP));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW_MAP));
 		else
-			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW_MAP));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW_MAP));
 	}
 	void JMaterial::SetSkyMaterial(bool value)noexcept
 	{
+		if (isSkyMateral == value)
+			return;
+
 		isSkyMateral = value;
+		SetFrameDirty();
 		if (isSkyMateral)
-			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SKY));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SKY));
 		else
-			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SKY));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SKY));
 	}
 	void JMaterial::SetDebugMaterial(bool value)noexcept
 	{
+		if (isDebugMaterial == value)
+			return;
+
 		isDebugMaterial = value;
+		SetFrameDirty();
 		if (isDebugMaterial)
-			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
 		else
-			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
 	}
 	bool JMaterial::HasAlbedoMapTexture() const noexcept
 	{
@@ -245,100 +293,107 @@ namespace JinEngine
 	void JMaterial::TextureChange(JTexture* be, JTexture* af, const J_SHADER_FUNCTION func)noexcept
 	{
 		if (be == nullptr && af != nullptr)
-			SetNewFunctionFlag(Core::AddTwoSquareValueEnum(shader->GetShaderFunctionFlag(), func));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), func));
 		else if (be != nullptr && af == nullptr)
-			SetNewFunctionFlag(Core::MinusTwoSquareValueEnum(shader->GetShaderFunctionFlag(), func));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), func));
 	}
 	void JMaterial::SetNewFunctionFlag(const J_SHADER_FUNCTION newFunc)
 	{
 		if (shader == nullptr || shader->GetShaderFunctionFlag() != newFunc)
-			SetShader(JRFI<JShader>::Create(*JResourceManager::Instance().GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath()), newFunc));
+			SetShader(JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(newFunc)));
 	}
+	//쉐이더는 머테리얼 activate 여부에 관계없이 소유될때 참조 카운트가 증감한다. 
 	void JMaterial::SetShader(JShader* newShader)noexcept
 	{
-		if (shader != nullptr)
-			OffResourceReference(*shader);
-
-		if (shader != nullptr && GetResourceReferenceCount(*shader) == 0 && (shader->GetFlag() & J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) == 0)
-		{
+		CallOffResourceReference(shader);
+		if (shader != nullptr && CallGetResourceReferenceCount(*shader) == 0)
 			shader->BeginDestroy();
-			shader = nullptr;
-		}
 		shader = newShader;
-
-		if (shader != nullptr)
-			OnResourceReference(*shader);
+		CallOnResourceReference(shader);
 	}
 	bool JMaterial::UpdateFrame(Graphic::JMaterialConstants& constant)
 	{
-		DirectX::XMFLOAT4X4 matTransformFloat4x4 = matTransform;
-		DirectX::XMMATRIX matTransform = XMLoadFloat4x4(&matTransformFloat4x4);
-
-		constant.AlbedoColor = albedoColor;
-		constant.Metalic = metallic;
-		constant.Roughness = roughness;
-		XMStoreFloat4x4(&constant.MatTransform, XMMatrixTranspose(matTransform));
-		if (albedoMap != nullptr)
-			constant.AlbedoMapIndex = GetTxtVectorIndex(*albedoMap);
-		if (normalMap != nullptr)
-			constant.NormalMapIndex = GetTxtVectorIndex(*normalMap);
-		if (heightMap != nullptr)
-			constant.HeightMapIndex = GetTxtVectorIndex(*heightMap);
-		if (roughnessMap != nullptr)
-			constant.RoughnessMapIndex = GetTxtVectorIndex(*roughnessMap);
-		if (ambientOcclusionMap != nullptr)
-			constant.AmbientOcclusionMapIndex = GetTxtVectorIndex(*ambientOcclusionMap);
-
-		return true;
-	}
-	bool JMaterial::Copy(JObject* ori)
-	{
-		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
-			return false;
-
-		if (typeInfo.IsA(ori->GetTypeInfo()))
-		{
-			JMaterial* oriM = static_cast<JMaterial*>(ori);
-			CopyRFile(*oriM, *this);
-			ClearResource();
-			StuffResource();
+		if (IsFrameDirted())
+		{ 
+			constant.AlbedoColor = albedoColor;
+			constant.Metalic = metallic;
+			constant.Roughness = roughness;
+			XMStoreFloat4x4(&constant.MatTransform, XMMatrixTranspose(XMLoadFloat4x4(&matTransform)));
+			if (albedoMap != nullptr)
+				constant.AlbedoMapIndex = CallGetTxtSrvHeapIndex(*albedoMap);
+			if (normalMap != nullptr)
+				constant.NormalMapIndex = CallGetTxtSrvHeapIndex(*normalMap);
+			if (heightMap != nullptr)
+				constant.HeightMapIndex = CallGetTxtSrvHeapIndex(*heightMap);
+			if (roughnessMap != nullptr)
+				constant.RoughnessMapIndex = CallGetTxtSrvHeapIndex(*roughnessMap);
+			if (ambientOcclusionMap != nullptr)
+				constant.AmbientOcclusionMapIndex = CallGetTxtSrvHeapIndex(*ambientOcclusionMap);
 			return true;
 		}
 		else
 			return false;
 	}
+	void JMaterial::DoCopy(JObject* ori)
+	{
+		JMaterial* oriM = static_cast<JMaterial*>(ori);
+		CopyRFile(*oriM);
+		ReadMateiralData();
+	}
 	void JMaterial::DoActivate() noexcept
 	{
 		JResourceObject::DoActivate();
-		StuffResource();
+		SetValid(true);
 		SetFrameDirty();
+		CallOnResourceReference(albedoMap);
+		CallOnResourceReference(normalMap);
+		CallOnResourceReference(heightMap);
+		CallOnResourceReference(roughnessMap);
+		CallOnResourceReference(ambientOcclusionMap);
 	}
 	void JMaterial::DoDeActivate()noexcept
 	{
+		StoreObject(this);
 		JResourceObject::DoDeActivate();
-		ClearResource();
+		SetValid(false);
 		OffFrameDirty();
+		CallOffResourceReference(albedoMap);
+		CallOffResourceReference(normalMap);
+		CallOffResourceReference(heightMap);
+		CallOffResourceReference(roughnessMap);
+		CallOffResourceReference(ambientOcclusionMap);
 	}
-	void JMaterial::StuffResource()
+	bool JMaterial::WriteMaterialData()
 	{
-		if (!IsValid())
+		std::wofstream stream;
+		stream.open(GetPath(), std::ios::out | std::ios::binary);
+
+		if (stream.is_open())
 		{
-			if (ReadMateiralData())
-				SetValid(true);
+			JFileIOHelper::StoreAtomicData(stream, L"Shadow", shadow);
+			JFileIOHelper::StoreAtomicData(stream, L"Light", light);
+			JFileIOHelper::StoreAtomicData(stream, L"AlbedoOnly", albedoOnly);
+			JFileIOHelper::StoreAtomicData(stream, L"NonCulling", nonCulling);
+			JFileIOHelper::StoreAtomicData(stream, L"ShadowMap", shadowMap);
+			JFileIOHelper::StoreAtomicData(stream, L"SkyMaterial", isSkyMateral);
+			JFileIOHelper::StoreAtomicData(stream, L"DebugMaterial", isDebugMaterial);
+			JFileIOHelper::StoreAtomicData(stream, L"Metallic", metallic);
+			JFileIOHelper::StoreAtomicData(stream, L"Roughness", roughness);
+
+			JFileIOHelper::StoreXMFloat4(stream, L"AlbedoColor", albedoColor);
+			JFileIOHelper::StoreXMFloat4x4(stream, L"Matransform", matTransform);
+
+			JFileIOHelper::StoreHasObjectIden(stream, albedoMap);
+			JFileIOHelper::StoreHasObjectIden(stream, normalMap);
+			JFileIOHelper::StoreHasObjectIden(stream, heightMap);
+			JFileIOHelper::StoreHasObjectIden(stream, roughnessMap);
+			JFileIOHelper::StoreHasObjectIden(stream, ambientOcclusionMap);
+
+			stream.close();
+			return true;
 		}
-	}
-	void JMaterial::ClearResource()
-	{
-		if (IsValid())
-		{
-			SetShader(nullptr);
-			SetAlbedoMap(nullptr);
-			SetNormalMap(nullptr);
-			SetHeightMap(nullptr);
-			SetRoughnessMap(nullptr);
-			SetAmbientOcclusionMap(nullptr);
-			SetValid(false);
-		}
+		else
+			return false;
 	}
 	bool JMaterial::ReadMateiralData()
 	{
@@ -347,7 +402,6 @@ namespace JinEngine
 
 		if (stream.is_open())
 		{
-			size_t shaderGuid;
 			bool sShadow = false;
 			bool sLight = false;
 			bool sAlbedoOnly = false;
@@ -360,54 +414,49 @@ namespace JinEngine
 			DirectX::XMFLOAT4 sAlbedoColor;
 			DirectX::XMFLOAT4X4 sMatTransform;
 
-			size_t albedoGuid = 0;
-			size_t normalGuid = 0;
-			size_t heightGuid = 0;
-			size_t roughnessGuid = 0;
-			size_t ambientOcclusionGuid = 0;
-			bool hasAlbedo = false;
-			bool hasNormal = false;
-			bool hasHeight = false;
-			bool hasRoughness = false;
-			bool hasAmbientOcclusion = false;
+			JFileIOHelper::LoadAtomicData(stream, sShadow);
+			JFileIOHelper::LoadAtomicData(stream, sLight);
+			JFileIOHelper::LoadAtomicData(stream, sAlbedoOnly);
+			JFileIOHelper::LoadAtomicData(stream, sNonCulling);
+			JFileIOHelper::LoadAtomicData(stream, sShadowMap);
+			JFileIOHelper::LoadAtomicData(stream, sIsSkyMateral);
+			JFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial);
+			JFileIOHelper::LoadAtomicData(stream, sMetallic);
+			JFileIOHelper::LoadAtomicData(stream, sRoughness);
 
-			stream >> shaderGuid;
-			stream >> sShadow;
-			stream >> sLight;
-			stream >> sAlbedoOnly;
-			stream >> sNonCulling;
-			stream >> sShadowMap;
-			stream >> sIsSkyMateral;
-			stream >> sIsDebugMaterial;
+			JFileIOHelper::LoadXMFloat4(stream, sAlbedoColor);
+			JFileIOHelper::LoadXMFloat4x4(stream, sMatTransform);
 
-			stream >> sMetallic;
-			stream >> sRoughness;
-			stream >> sAlbedoColor.x; stream >> sAlbedoColor.y; stream >> sAlbedoColor.z; stream >> sAlbedoColor.w;
-
-			stream >> sMatTransform._11; stream >> sMatTransform._12; stream >> sMatTransform._13; stream >> sMatTransform._14;
-			stream >> sMatTransform._21; stream >> sMatTransform._22; stream >> sMatTransform._23; stream >> sMatTransform._24;
-			stream >> sMatTransform._31; stream >> sMatTransform._32; stream >> sMatTransform._33; stream >> sMatTransform._34;
-			stream >> sMatTransform._41; stream >> sMatTransform._42; stream >> sMatTransform._43; stream >> sMatTransform._44;
-
-			stream >> albedoGuid; stream >> hasAlbedo;
-			stream >> normalGuid; stream >> hasNormal;
-			stream >> heightGuid; stream >> hasHeight;
-			stream >> roughnessGuid; stream >> hasRoughness;
-			stream >> ambientOcclusionGuid; stream >> hasAmbientOcclusion;
+			JIdentifier* sAlbedoMap = JFileIOHelper::LoadHasObjectIden(stream);
+			JIdentifier* sNormalMap = JFileIOHelper::LoadHasObjectIden(stream);
+			JIdentifier* sHeightMap = JFileIOHelper::LoadHasObjectIden(stream);
+			JIdentifier* sRoughnessMap = JFileIOHelper::LoadHasObjectIden(stream);
+			JIdentifier* sAmbientOcclusionMap = JFileIOHelper::LoadHasObjectIden(stream);
 			stream.close();
 
-			if (hasAlbedo)
-				albedoMap = JResourceManager::Instance().GetResource<JTexture>(albedoGuid);
-			if (hasNormal)
-				normalMap = JResourceManager::Instance().GetResource<JTexture>(normalGuid);
-			if (hasHeight)
-				heightMap = JResourceManager::Instance().GetResource<JTexture>(heightGuid);
-			if (hasRoughness)
-				roughnessMap = JResourceManager::Instance().GetResource<JTexture>(roughnessGuid);
-			if (hasAmbientOcclusion)
-				ambientOcclusionMap = JResourceManager::Instance().GetResource<JTexture>(ambientOcclusionGuid);
+			SetShadow(sShadow);
+			SetLight(sLight);
+			SetAlbedoOnly(sAlbedoOnly);
+			SetNonCulling(sNonCulling);
+			SetShadowMap(sShadowMap);
+			SetSkyMaterial(sIsSkyMateral);
+			SetDebugMaterial(sIsDebugMaterial);
 
-			SetNewFunctionFlag(CalculateShaderFunc());
+			SetMetallic(sMetallic);
+			SetRoughness(sRoughness);
+			SetAlbedoColor(sAlbedoColor);
+			SetMatTransform(sMatTransform);
+
+			if (sAlbedoMap != nullptr && sAlbedoMap->GetTypeInfo().IsA(JTexture::StaticTypeInfo()))
+				SetAlbedoMap(static_cast<JTexture*>(sAlbedoMap));
+			if (sNormalMap != nullptr && sNormalMap->GetTypeInfo().IsA(JTexture::StaticTypeInfo()))
+				SetNormalMap(static_cast<JTexture*>(sNormalMap));
+			if (sHeightMap != nullptr && sHeightMap->GetTypeInfo().IsA(JTexture::StaticTypeInfo()))
+				SetHeightMap(static_cast<JTexture*>(sHeightMap));
+			if (sRoughnessMap != nullptr && sRoughnessMap->GetTypeInfo().IsA(JTexture::StaticTypeInfo()))
+				SetRoughnessMap(static_cast<JTexture*>(sRoughnessMap));
+			if (sAmbientOcclusionMap != nullptr && sAmbientOcclusionMap->GetTypeInfo().IsA(JTexture::StaticTypeInfo()))
+				SetAmbientOcclusionMap(static_cast<JTexture*>(sAmbientOcclusionMap));
 			return true;
 		}
 		else
@@ -420,40 +469,21 @@ namespace JinEngine
 
 		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 		{
-			const size_t txtGuid = jRobj->GetGuid();
-			if (albedoMap != nullptr && albedoMap->GetGuid() == txtGuid)
+			const size_t objGuid = jRobj->GetGuid();
+			if (albedoMap != nullptr && albedoMap->GetGuid() == objGuid)
 				SetAlbedoMap(nullptr);
-			else if (normalMap != nullptr && normalMap->GetGuid() == txtGuid)
+			if (normalMap != nullptr && normalMap->GetGuid() == objGuid)
 				SetNormalMap(nullptr);
-			else if (heightMap != nullptr && heightMap->GetGuid() == txtGuid)
+			if (heightMap != nullptr && heightMap->GetGuid() == objGuid)
 				SetHeightMap(nullptr);
-			else if (roughnessMap != nullptr && roughnessMap->GetGuid() == txtGuid)
+			if (roughnessMap != nullptr && roughnessMap->GetGuid() == objGuid)
 				SetRoughnessMap(nullptr);
-			else if (ambientOcclusionMap != nullptr && ambientOcclusionMap->GetGuid() == txtGuid)
+			if (ambientOcclusionMap != nullptr && ambientOcclusionMap->GetGuid() == objGuid)
 				SetAmbientOcclusionMap(nullptr);
-		}
-	}
-	J_SHADER_FUNCTION JMaterial::CalculateShaderFunc()noexcept
-	{
-		J_SHADER_FUNCTION func = SHADER_FUNCTION_NONE;
-		if (albedoMap != nullptr)
-			func = (J_SHADER_FUNCTION)(func | SHADER_FUNCTION_ALBEDO_MAP);
-		if (normalMap != nullptr)
-			func = (J_SHADER_FUNCTION)(func | SHADER_FUNCTION_NORMAL_MAP);
-		if (heightMap != nullptr)
-			func = (J_SHADER_FUNCTION)(func | SHADER_FUNCTION_HEIGHT_MAP);
-		if (roughnessMap != nullptr)
-			func = (J_SHADER_FUNCTION)(func | SHADER_FUNCTION_ROUGHNESS_MAP);
-		if (ambientOcclusionMap != nullptr)
-			func = (J_SHADER_FUNCTION)(func | SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP);
-		if (albedoOnly)
-			func = (J_SHADER_FUNCTION)(func | SHADER_FUNCTION_ALBEDO_MAP_ONLY);
-		if (nonCulling)
-			func = (J_SHADER_FUNCTION)(func | SHADER_FUNCTION_NONCULLING);
-		if (isSkyMateral)
-			func = (J_SHADER_FUNCTION)(func | SHADER_FUNCTION_SKY);
 
-		return func;
+			if (shader != nullptr && shader->GetGuid() == objGuid)
+				SetShader(nullptr);
+		}
 	}
 	Core::J_FILE_IO_RESULT JMaterial::CallStoreResource()
 	{
@@ -475,142 +505,40 @@ namespace JinEngine
 		if (storeMetaRes != Core::J_FILE_IO_RESULT::SUCCESS)
 			return storeMetaRes;
 
-		stream.open(material->GetPath(), std::ios::out | std::ios::binary);
-		if (stream.is_open())
-		{
-			stream << material->GetShader()->GetGuid() << "\n" <<
-				material->shadow << "\n" <<
-				material->light << "\n" <<
-				material->albedoOnly << "\n" <<
-				material->nonCulling << "\n" <<
-				material->shadowMap << "\n" <<
-				material->isSkyMateral << "\n" <<
-				material->isDebugMaterial << "\n" <<
-				material->GetMetallic() << "\n" <<
-				material->GetRoughness() << "\n" <<
-				material->albedoColor.x << " " <<
-				material->albedoColor.y << " " <<
-				material->albedoColor.z << " " <<
-				material->albedoColor.w << "\n" <<
-				material->matTransform._11 << " " <<
-				material->matTransform._12 << " " <<
-				material->matTransform._13 << " " <<
-				material->matTransform._14 << " " <<
-				material->matTransform._21 << " " <<
-				material->matTransform._22 << " " <<
-				material->matTransform._23 << " " <<
-				material->matTransform._24 << " " <<
-				material->matTransform._31 << " " <<
-				material->matTransform._32 << " " <<
-				material->matTransform._33 << " " <<
-				material->matTransform._34 << " " <<
-				material->matTransform._41 << " " <<
-				material->matTransform._42 << " " <<
-				material->matTransform._43 << " " <<
-				material->matTransform._44 << "\n";
-
-			if (material->albedoMap != nullptr)
-			{
-				stream << material->albedoMap->GetGuid();
-				stream << true;
-			}
-			else
-			{
-				stream << 0;
-				stream << false;
-			}
-
-			if (material->normalMap != nullptr)
-			{
-				stream << material->normalMap->GetGuid();
-				stream << true;
-			}
-			else
-			{
-				stream << 0;
-				stream << false;
-			}
-
-			if (material->heightMap != nullptr)
-			{
-				stream << material->heightMap->GetGuid();
-				stream << true;
-			}
-			else
-			{
-				stream << 0;
-				stream << false;
-			}
-
-			if (material->roughnessMap != nullptr)
-			{
-				stream << material->roughnessMap->GetGuid();
-				stream << true;
-			}
-			else
-			{
-				stream << 0;
-				stream << false;
-			}
-
-			if (material->ambientOcclusionMap != nullptr)
-			{
-				stream << material->ambientOcclusionMap->GetGuid();
-				stream << true;
-			}
-			else
-			{
-				stream << 0;
-				stream << false;
-			}
-
-			stream.close();
+		if (material->WriteMaterialData())
 			return Core::J_FILE_IO_RESULT::SUCCESS;
-		}
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	JMaterial* JMaterial::LoadObject(JDirectory* directory, const JResourcePathData& pathData)
+	JMaterial* JMaterial::LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)
 	{
 		if (directory == nullptr)
 			return nullptr;
 
-		if (!JResourceObject::IsResourceFormat<JMaterial>(pathData.format))
-			return nullptr;
-
 		std::wifstream stream;
-		stream.open(ConvertMetafilePath(pathData.wstrPath), std::ios::in | std::ios::binary);
-		ObjectMetadata metadata;
+		stream.open(pathData.engineMetaFileWPath, std::ios::in | std::ios::binary);
+		JResourceMetaData metadata;
 		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
 		stream.close();
 
 		JMaterial* newMaterial = nullptr;
-		if (directory->HasFile(pathData.fullName))
-			newMaterial = JResourceManager::Instance().GetResourceByPath<JMaterial>(pathData.wstrPath);
+		if (directory->HasFile(pathData.name))
+			newMaterial = JResourceManager::Instance().GetResourceByPath<JMaterial>(pathData.engineFileWPath);
 
-		if (newMaterial == nullptr)
+		if (newMaterial == nullptr && loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
 		{
-			if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+			JMaterialInitData initdata{ pathData.name, metadata.guid,metadata.flag, directory, (uint8)metadata.formatIndex };
+			if (initdata.IsValidLoadData())
 			{
-				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(pathData.name,
-					metadata.guid,
-					(J_OBJECT_FLAG)metadata.flag,
-					directory,
-					GetFormatIndex<JMaterial>(pathData.format));
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(initdata);
 				newMaterial = ownerPtr.Get();
-				AddInstance(std::move(ownerPtr));
-			}
-			else
-			{
-				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(pathData.name,
-					Core::MakeGuid(),
-					J_OBJECT_FLAG::OBJECT_FLAG_NONE,
-					directory,
-					GetFormatIndex<JMaterial>(pathData.format));
-				newMaterial = ownerPtr.Get();
-				AddInstance(std::move(ownerPtr));
+				if (!AddInstance(std::move(ownerPtr)))
+					return nullptr;
 			}
 		}
+
+		if (newMaterial == nullptr)
+			return nullptr;
 
 		if (newMaterial->IsValid())
 			return newMaterial;
@@ -621,49 +549,49 @@ namespace JinEngine
 		}
 		else
 		{
-			newMaterial->SetIgnoreUndestroyableFlag(true);
-			newMaterial->BeginDestroy();
+			newMaterial->BegineForcedDestroy();
 			return nullptr;
 		}
 	}
 	void JMaterial::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* directory) ->JResourceObject*
+		auto defaultC = [](Core::JOwnerPtr<JResourceInitData>initdata) ->JResourceObject*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(directory->MakeUniqueFileName(GetDefaultName<JMaterial>()),
-				Core::MakeGuid(),
-				OBJECT_FLAG_NONE,
-				directory,
-				JResourceObject::GetDefaultFormatIndex());
-			JResourceObject* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
+			if (initdata.IsValid() && initdata->GetResourceType() == J_RESOURCE_TYPE::MATERIAL && initdata->IsValidCreateData())
+			{
+				JMaterialInitData* mInitdata = static_cast<JMaterialInitData*>(initdata.Get());
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(*mInitdata);
+				JMaterial* newMaterial = ownerPtr.Get();
+				if (AddInstance(std::move(ownerPtr)))
+				{
+					StoreObject(newMaterial);
+					return newMaterial;
+				}
+			}
+			return nullptr;
 		};
-		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(name, guid, objFlag, directory, formatIndex);
-			JResourceObject* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
-		};
-		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
+		auto loadC = [](JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
 		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(directory->MakeUniqueFileName(ori->GetName()),
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JMaterial>(InitData(ori->GetName(),
 				Core::MakeGuid(),
 				ori->GetFlag(),
 				directory,
-				GetFormatIndex<JMaterial>(ori->GetFormat()));
+				GetFormatIndex<JMaterial>(ori->GetFormat())));
 
 			JMaterial* newMaterial = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			newMaterial->Copy(ori);
-			return newMaterial;
+			if (AddInstance(std::move(ownerPtr)))
+			{
+				newMaterial->Copy(ori);
+				return newMaterial;
+			}
+			else
+				return nullptr;
 		};
-		JRFI<JMaterial>::Register(defaultC, initC, loadC, copyC);
+		JRFI<JMaterial>::Register(defaultC, loadC, copyC);
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JMaterial>(format); };
 
@@ -675,24 +603,28 @@ namespace JinEngine
 		{
 			static_cast<JMaterial*>(&jRobj)->SetFrameDirty();
 		};
-		static auto setBuffIndexLam = [](JResourceObject& jRobj, const uint& index)
+		static auto setBuffIndexLam = [](JResourceObject& jRobj, const uint& value)
 		{
-			static_cast<JMaterial*>(&jRobj)->SetBuffIndex(index);
+			static_cast<JMaterial*>(&jRobj)->SetFrameBuffOffset(value);
 		};
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
-		static SetBuffIndexCallable setBuffIndexCallable{ setBuffIndexLam };
+		static SetFrameBuffIndexCallable setFrameBuffIndexCallable{ setBuffIndexLam };
 
-		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SHADER}, false, true, true };
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SHADER}, false, true };
 		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
-		static RTypeInterfaceFunc rTypeiFunc{ &setFrameDirtyCallable, &setBuffIndexCallable };
+		static RTypeInterfaceFunc rTypeiFunc{ &setFrameDirtyCallable, &setFrameBuffIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, rTypeiFunc);
 	}
-	JMaterial::JMaterial(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
-		: JMaterialInterface(name, guid, flag, directory, formatIndex)
+	JMaterial::JMaterial(const JMaterialInitData& initdata)
+		: JMaterialInterface(initdata)
 	{
 		SetNewFunctionFlag(SHADER_FUNCTION_NONE);
+		AddEventListener(*JResourceManager::Instance().EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+		SetFrameDirty();
 	}
 	JMaterial::~JMaterial()
-	{}
+	{
+		RemoveListener(*JResourceManager::Instance().EvInterface(), GetGuid());
+	}
 }

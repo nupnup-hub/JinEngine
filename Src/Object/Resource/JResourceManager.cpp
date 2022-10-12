@@ -1,31 +1,26 @@
 #include"JResourceManager.h" 
 #include"JResourceIO.h"
 #include"JResourceObjectFactory.h" 
+#include"JResourcePathData.h"
+
 #include"Mesh/JDefaultGeometryGenerator.h"
 #include"Mesh/JDefaultShapeType.h"  
-
-#include"Mesh/JMeshGeometry.h" 
-#include"Mesh/JMeshInterface.h"
+#include"Mesh/JMeshGeometry.h"  
+#include"Mesh/JStaticMeshGeometry.h"
 #include"Mesh/JDefaultGeometryGenerator.h"
-#include"Material/JMaterial.h" 
-#include"Model/JModel.h" 
+#include"Material/JMaterial.h"  
 #include"Texture/JTexture.h" 
-#include"Texture/EditorTextureEnum.h"  
-#include"Skeleton/JSkeletonAsset.h"
-#include"AnimationClip/JAnimationClip.h" 
-#include"AnimationController/JAnimationController.h" 
-#include"Scene/JScene.h"
-#include"Scene/Preview/JPreviewScene.h"
-#include"Scene/Preview/JPreviewEnum.h"
+#include"Texture/JEditorTextureEnum.h"   
+#include"Scene/JScene.h" 
 #include"Scene/JSceneManager.h"
 #include"Shader/JShader.h"
 
 #include"../Directory/JFile.h" 
 #include"../Directory/JDirectory.h"
-#include"../Directory/JDirectoryFactory.h"
-#include"../Component/Camera/JCameraState.h"
+#include"../Directory/JDirectoryFactory.h" 
 #include"../Component/Camera/JCamera.h"
 
+#include"../../Core/File/JFileConstant.h"
 #include"../../Core/Exception/JExceptionMacro.h"
 #include"../../Core/Guid/GuidCreator.h" 
 #include"../../Utility/JCommonUtility.h"
@@ -64,6 +59,7 @@ namespace JinEngine
 	}
 	std::vector<JResourceObject*>::const_iterator JResourceManagerImpl::ResourceStorage::GetVectorIter(uint& count)
 	{
+		count = rVec.Count();
 		return rVec.GetCBegin();
 	}
 	bool JResourceManagerImpl::ResourceStorage::Has(const size_t guid)noexcept
@@ -74,29 +70,24 @@ namespace JinEngine
 	{
 		return rVec.Count();
 	}
-	JResourceObject* JResourceManagerImpl::ResourceStorage::AddResource(JResourceObject* resource)noexcept
+	bool JResourceManagerImpl::ResourceStorage::AddResource(JResourceObject* resource)noexcept
 	{
 		if (resource == nullptr || rMap.Has(resource->GetGuid()))
-			return nullptr;
+			return false;
+
+		JRI::RTypeHint rTypeHint = JRI::GetRTypeHint(resource->GetResourceType());
+		if (rTypeHint.isFrameResource)
+		{
+			auto setFrameDirtyCallable = JRI::GetSetFrameDirtyCallable(resource->GetResourceType());
+			setFrameDirtyCallable(nullptr, *resource);
+
+			auto setFrameBuffIndexCallable = JRI::GetSetFrameBuffIndexCallable(resource->GetResourceType());
+			setFrameBuffIndexCallable(nullptr, *resource, rVec.Count());
+		}
 
 		rVec.Add(resource);
 		rMap.Add(resource, resource->GetGuid());
-
-		JRI::RTypeHint rTypeHint = JRI::GetRTypeHint(resource->GetResourceType());
-
-		if (rTypeHint.isFrameResource)
-		{
-			auto callable = JRI::GetSetFrameDirtyCallable(resource->GetResourceType());
-			callable(nullptr, *resource);
-		}
-
-		if (rTypeHint.isGraphicBuffResource)
-		{
-			auto callable = JRI::GetSetBuffIndexCallable(resource->GetResourceType());
-			callable(nullptr, *resource, rVec.Count());
-		}
-
-		return resource;
+		return true;
 	}
 	bool JResourceManagerImpl::ResourceStorage::RemoveResource(JResourceObject& resource)noexcept
 	{
@@ -104,16 +95,16 @@ namespace JinEngine
 		JRI::RTypeHint rTypeHint = JRI::GetRTypeHint(resource.GetResourceType());
 		int index = rVec.GetIndex(&resource, equalLam);
 
+		if (index == -1)
+			return false;
+
 		if (rTypeHint.isFrameResource)
 		{
-			auto callable = JRI::GetSetFrameDirtyCallable(resource.GetResourceType());
-			rVec.ApplyFunc(index, callable);
-		}
+			auto setFrameDirtyCallable = JRI::GetSetFrameDirtyCallable(resource.GetResourceType());
+			rVec.ApplyFunc(index, setFrameDirtyCallable);
 
-		if (rTypeHint.isGraphicBuffResource)
-		{
-			auto callable = JRI::GetSetBuffIndexCallable(resource.GetResourceType());
-			rVec.ApplyFuncByIndex(index, callable);
+			auto setFrameBuffIndexCallable = JRI::GetSetFrameBuffIndexCallable(resource.GetResourceType());
+			rVec.ApplyFuncByIndex(index, setFrameBuffIndexCallable);
 		}
 
 		bool res00 = rVec.Remove(index);
@@ -142,7 +133,7 @@ namespace JinEngine
 	{
 		const uint count = dVec.Count();
 		for (uint i = 0; i < count; ++i)
-		{
+		{ 
 			if (dVec[i]->GetPath() == path)
 				return dVec[i];
 		}
@@ -158,20 +149,22 @@ namespace JinEngine
 		}
 		return nullptr;
 	}
-	JDirectory* JResourceManagerImpl::DirectoryStorage::Add(JDirectory* dir)noexcept
+	bool JResourceManagerImpl::DirectoryStorage::Add(JDirectory* dir)noexcept
 	{
 		if (dir == nullptr || dMap.Has(dir->GetGuid()))
-			return nullptr;
+			return false;
 
 		dVec.Add(dir);
 		dMap.Add(dir, dir->GetGuid());
-
-		return dir;
+		return true;
 	}
 	bool JResourceManagerImpl::DirectoryStorage::Remove(JDirectory* dir)noexcept
 	{
 		if (dir == nullptr)
 			return false;
+
+		if (dir->IsActivated())
+			dir->DeActivate();
 
 		static auto equalLam = [](JDirectory* a, JDirectory* b) {return a->GetGuid() == b->GetGuid(); };
 
@@ -187,13 +180,13 @@ namespace JinEngine
 
 	JMeshGeometry* JResourceManagerImpl::GetDefaultMeshGeometry(const J_DEFAULT_SHAPE type)noexcept
 	{
-		auto data = resourceData.basicMeshGuidMap.find(type);
-		return data != resourceData.basicMeshGuidMap.end() ?
+		auto data = resourceData.defaultMeshGuidMap.find(type);
+		return data != resourceData.defaultMeshGuidMap.end() ?
 			static_cast<JMeshGeometry*>(rCash.find(JMeshGeometry::GetStaticResourceType())->second.Get(data->second)) : nullptr;
 	}
 	JMaterial* JResourceManagerImpl::GetDefaultMaterial(const J_DEFAULT_MATERIAL materialType)noexcept
 	{
-		const size_t guid = resourceData.basicMaterialGuidMap.find(materialType)->second;
+		const size_t guid = resourceData.defaultMaterialGuidMap.find(materialType)->second;
 		return static_cast<JMaterial*>(rCash.find(JMaterial::GetStaticResourceType())->second.Get(guid));
 	}
 	JTexture* JResourceManagerImpl::GetEditorTexture(const J_EDITOR_TEXTURE enumName)noexcept
@@ -202,7 +195,7 @@ namespace JinEngine
 		if (data == resourceData.defaultTextureMap.end())
 			return nullptr;
 
-		return static_cast<JTexture*>(rCash.find(JTexture::GetStaticResourceType())->second.GetByIndex(data->second - 1));
+		return static_cast<JTexture*>(rCash.find(JTexture::GetStaticResourceType())->second.Get(data->second));
 	}
 	JShader* JResourceManagerImpl::GetDefaultShader(const J_DEFAULT_SHADER shaderType)noexcept
 	{
@@ -246,7 +239,7 @@ namespace JinEngine
 	{
 		return rCash.find(rType)->second.Has(guid);
 	}
-	JResourceMangerOwnerInterface* JResourceManagerImpl::OwnerInterface()
+	JResourceMangerAppInterface* JResourceManagerImpl::AppInterface()
 	{
 		return this;
 	}
@@ -262,318 +255,7 @@ namespace JinEngine
 	{
 		return this;
 	}
-	void JResourceManagerImpl::LoadSelectorResource()
-	{
-		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE);
-		engineRootDir = resourceIO->LoadRootDirectory(JApplicationVariable::GetEnginePath(), rootFlag);
-
-		resourceIO->LoadEngineDirectory(engineRootDir);
-		JGraphic::Instance().CommandInterface()->FlushCommandQueue();
-		JGraphic::Instance().CommandInterface()->StartCommand();
-		CreateDefaultTexture(resourceData.selectorTexInfo);
-		JGraphic::Instance().CommandInterface()->EndCommand();
-		JGraphic::Instance().CommandInterface()->FlushCommandQueue();
-	}
-	void JResourceManagerImpl::LoadProjectResource()
-	{
-		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE);
-		projectRootDir = resourceIO->LoadRootDirectory(JApplicationVariable::GetProjectPath(), rootFlag);
-
-		resourceIO->LoadProjectDirectory(projectRootDir);
-
-		JGraphic::Instance().CommandInterface()->FlushCommandQueue();
-		JGraphic::Instance().CommandInterface()->StartCommand();
-		CreateDefaultTexture(resourceData.projectTexInfo);
-		JGraphic::Instance().CommandInterface()->EndCommand();
-		JGraphic::Instance().CommandInterface()->FlushCommandQueue();
-
-		CreateDefaultShader();
-		CreateDefaultMaterial();
-
-		JGraphic::Instance().CommandInterface()->FlushCommandQueue();
-		JGraphic::Instance().CommandInterface()->StartCommand();
-		CreateDefaultMesh();
-		JGraphic::Instance().CommandInterface()->EndCommand();
-		JGraphic::Instance().CommandInterface()->FlushCommandQueue();
-		LoadObject();
-
-		if (JSceneManager::Instance().GetOpendSceneCount() == 0)
-		{
-			JDirectory* projectContentsDir = GetDirectory(JApplicationVariable::GetProjectContentPath());
-			JDirectory* defaultSceneDir = projectContentsDir->GetChildDirctory(JApplicationVariable::GetProjectContentScenePath());
-			JScene* newScene = JRFI<JScene>::Create(*defaultSceneDir);
-			JSceneManager::Instance().TryOpenScene(newScene);
-			newScene->SpaceSpatialInterface()->OnSceneSpatialStructure();
-		}
-		DestroyUnusedResource(J_RESOURCE_TYPE::SHADER, false);
-	}
-	void JResourceManagerImpl::Terminate()
-	{
-		StoreResourceData();
-		DeleteUnuseMetafile();
-		if (engineRootDir != nullptr)
-		{
-			engineRootDir->DestroyInterface()->BeginForcedDestroy();
-			engineRootDir = nullptr;
-		}
-		if (projectRootDir != nullptr)
-		{
-			projectRootDir->DestroyInterface()->BeginForcedDestroy();
-			projectRootDir = nullptr;
-		}
-
-		dCash.Clear();
-
-		for (auto& data : rCash)
-			data.second.Clear();
-		rCash.clear();
-	}
-	void JResourceManagerImpl::DeleteUnuseMetafile()
-	{
-		//추가필요
-	}
-	JResourceObject* JResourceManagerImpl::AddResource(JResourceObject& newResource)
-	{
-		return rCash.find(newResource.GetResourceType())->second.AddResource(&newResource);
-	}
-	JDirectory* JResourceManagerImpl::AddDirectory(JDirectory& newDirectory)
-	{
-		return dCash.Add(&newDirectory);
-	}
-	bool JResourceManagerImpl::RemoveResource(JResourceObject& resource)noexcept
-	{
-		if (resource.IsActivated())
-			NotifyEvent(resource.GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE, &resource);
-
-		return rCash.find(resource.GetResourceType())->second.RemoveResource(resource);
-	}
-	bool JResourceManagerImpl::RemoveJDirectory(JDirectory& dir)noexcept
-	{
-		return dCash.Remove(&dir);
-	}
-	bool JResourceManagerImpl::DestroyUnusedResource(const J_RESOURCE_TYPE rType, bool isIgnreUndestroyableFlag)
-	{
-		//추가필요
-		//engine resource destory -> window file destory
-		std::vector<JResourceObject*>& rvec = rCash.find(rType)->second.GetVector();
-		std::vector<JResourceObject*> copied = rvec;
-		for (uint i = 0; i < copied.size(); ++i)
-		{
-			if (!copied[i]->IsActivated())
-			{
-				if(isIgnreUndestroyableFlag)
-					copied[i]->SetIgnoreUndestroyableFlag(true);
-				copied[i]->BeginDestroy();
-				copied[i] = nullptr;
-				// window file destory 필요
-			}
-		}
-	}
-	void JResourceManagerImpl::CreateDefaultTexture(const std::vector<JResourceData::DefaultTextureInfo>& textureInfo)noexcept
-	{
-		resourceData.defaultTextureMap.clear();
-
-		//수정필요
-		uint handleIncrement = JGraphic::Instance().DeviceInterface()->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		uint textureCount = (uint)textureInfo.size();
-		JDirectory* defaultTextureDir = GetDirectory(JApplicationVariable::GetDefaultResourcePath());
-
-		//1 is imgui preserved 
-		for (uint i = 1; i < textureCount; ++i)
-		{
-			J_OBJECT_FLAG objFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_DO_NOT_SAVE);
-			if (textureInfo[i].type == J_EDITOR_TEXTURE::MISSING)
-				objFlag = (J_OBJECT_FLAG)(objFlag | OBJECT_FLAG_HIDDEN);
-
-			JResourcePathData pathData(defaultTextureDir->GetPath() + L"\\" + textureInfo[i].name);
-			JTexture* newTexture = JRFI<JTexture>::Load(*defaultTextureDir, pathData);
-			//ThrowIfFailedNM(newTexture != nullptr, "Load default texture is error please retry again");
-
-			resourceData.defaultTextureMap.emplace(textureInfo[i].type, i);
-		}
-	}
-	void JResourceManagerImpl::CreateDefaultShader()noexcept
-	{
-		JDirectory* shaderDir = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath());
-		for (uint i = 0; i < (int)J_DEFAULT_SHADER::COUNTER; ++i)
-		{
-			J_SHADER_FUNCTION shaderF = DefaultShader::GetShaderFunction((J_DEFAULT_SHADER)i);
-			J_OBJECT_FLAG objF = DefaultShader::GetObjectFlag((J_DEFAULT_SHADER)i);
-
-			JShader* res = JRFI<JShader>::Create(std::to_wstring((int)shaderF),
-				Core::MakeGuid(),
-				objF,
-				*shaderDir,
-				0,
-				shaderF);
-
-			if (res == nullptr)
-				MessageBox(0, L"Default JShader Creator Error", 0, 0);
-			else
-				resourceData.defaultShaderGuidMap.emplace((J_DEFAULT_SHADER)i, res->GetGuid());
-		}
-	}
-	void JResourceManagerImpl::CreateDefaultMaterial()noexcept
-	{
-		const J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
-			OBJECT_FLAG_UNDESTROYABLE |
-			OBJECT_FLAG_UNEDITABLE |
-			OBJECT_FLAG_DO_NOT_SAVE);
-
-		constexpr int formatIndex = 0;
-		for (uint i = 0; i < (int)J_DEFAULT_MATERIAL::COUNTER; ++i)
-		{
-			const std::wstring name = JDefaultMateiralType::ConvertBasicMateiralName(resourceData.defaultMaterialTypes[i]);
-
-			const size_t shaderGuid = resourceData.defaultShaderGuidMap[JDefaultMateiralType::FindMatchBasicShaderType(resourceData.defaultMaterialTypes[i])];
-			JShader* defaultShader = GetResource<JShader>(shaderGuid);
-			size_t guid = Core::MakeGuid();
-
-			switch (resourceData.defaultMaterialTypes[i])
-			{
-			case J_DEFAULT_MATERIAL::DEFAULT_STANDARD:
-			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag),
-					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
-				newMaterial->SetShadow(true);
-				newMaterial->SetLight(true);
-				break;
-			}
-			case J_DEFAULT_MATERIAL::DEFAULT_SKY:
-			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag),
-					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
-				newMaterial->SetSkyMaterial(true);
-				break;
-			}
-			case J_DEFAULT_MATERIAL::DEFAULT_SHADOW_MAP:
-			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
-					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
-				newMaterial->SetAlbedoOnly(true);
-				newMaterial->SetShadowMap(true);
-				break;
-			}
-			case J_DEFAULT_MATERIAL::DEBUG_LINE_RED:
-			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
-					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
-				newMaterial->SetDebugMaterial(true);
-				newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f));
-				break;
-			}
-			case J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN:
-			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
-					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
-				newMaterial->SetDebugMaterial(true);
-				newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f));
-				break;
-			}
-			case J_DEFAULT_MATERIAL::DEBUG_LINE_BLUE:
-			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
-					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
-				newMaterial->SetDebugMaterial(true);
-				newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f));
-				break;
-			}
-			case J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW:
-			{
-				JMaterial* newMaterial = JRFI<JMaterial>::Create(name, guid, (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN),
-					*GetDirectory(JApplicationVariable::GetDefaultResourcePath()), formatIndex);
-				newMaterial->SetDebugMaterial(true);
-				newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f));
-				break;
-			}
-			default:
-				break;
-			}
-			resourceData.basicMaterialGuidMap.emplace(resourceData.defaultMaterialTypes[i], guid);
-		}
-	}
-	void JResourceManagerImpl::CreateDefaultMesh()
-	{
-		JDefaultGeometryGenerator geoGen;
-		std::vector<JStaticMeshData> meshData{ geoGen.CreateCube(1, 1, 1, 3),
-			geoGen.CreateGrid(40.0f, 60.0f, 60, 40),
-			geoGen.CreateSphere(0.5f, 20, 20),
-			geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20),
-			geoGen.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f),
-			geoGen.CreateBoundingBox(),
-			geoGen.CreateBoundingFrustum() };
-
-		std::vector<std::vector<JStaticMeshVertex>> vertices((int)J_DEFAULT_SHAPE::COUNT);
-		std::vector<SubmeshGeometry> submesh((int)J_DEFAULT_SHAPE::COUNT);
-
-		for (int i = 0; i < (int)J_DEFAULT_SHAPE::COUNT; ++i)
-			vertices[i].resize(meshData[i].vertices.size());
-
-		XMFLOAT3 vMinf3(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
-		XMFLOAT3 vMaxf3(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-
-		std::vector<BoundingBox> boundingBox((int)J_DEFAULT_SHAPE::COUNT);
-		std::vector<BoundingSphere> boundingSphere((int)J_DEFAULT_SHAPE::COUNT);
-
-		for (int i = 0; i < (int)J_DEFAULT_SHAPE::COUNT; ++i)
-		{
-			XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-			XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-			for (int j = 0; j < meshData[i].vertices.size(); ++j)
-			{
-				vertices[i][j].position = meshData[i].vertices[j].position;
-				vertices[i][j].normal = meshData[i].vertices[j].normal;
-				vertices[i][j].texC = meshData[i].vertices[j].texC;
-				vertices[i][j].tangentU = meshData[i].vertices[j].tangentU;
-
-				XMVECTOR P = XMLoadFloat3(&vertices[i][j].position);
-				vMin = XMVectorMin(vMin, P);
-				vMax = XMVectorMax(vMax, P);
-			}
-
-			XMStoreFloat3(&boundingBox[i].Center, 0.5f * (vMin + vMax));
-			XMStoreFloat3(&boundingBox[i].Extents, 0.5f * (vMax - vMin));
-
-			XMStoreFloat3(&boundingSphere[i].Center, 0.5f * (vMin + vMax));
-			XMFLOAT3 dis;
-			XMStoreFloat3(&dis, XMVector3Length((0.5f * (vMin + vMax)) - vMax));
-			boundingSphere[i].Radius = (float)sqrt(pow(dis.x, 2) + pow(dis.y, 2) + pow(dis.z, 2));
-		}
-
-		std::vector<std::vector<uint16>> indices((int)J_DEFAULT_SHAPE::COUNT);
-		for (int i = 0; i < (int)J_DEFAULT_SHAPE::COUNT; ++i)
-		{
-			meshData[i].Stuff8ByteDataTo4Byte();
-			indices[i].insert(indices[i].end(), meshData[i].indices16.begin(), meshData[i].indices16.end());
-		}
-
-		constexpr int formatIndex = 0;
-		for (int i = 0; i < (int)J_DEFAULT_SHAPE::COUNT; ++i)
-		{
-			const uint vbByteSize = (uint)vertices[i].size() * sizeof(JStaticMeshVertex);
-			const uint ibByteSize = (uint)indices[i].size() * sizeof(std::uint16);
-
-			size_t guid = Core::MakeGuid();
-			J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
-				OBJECT_FLAG_UNDESTROYABLE |
-				OBJECT_FLAG_UNEDITABLE |
-				OBJECT_FLAG_DO_NOT_SAVE);
-
-			if (i >= JDefaultShape::debugTypeSt)
-				flag = (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN);
-
-			JMeshGeometry* newMesh = JRFI<JMeshGeometry>::Create(JDefaultShape::ConvertDefaultShapeName(resourceData.defaultMeshTypes[i]),
-				guid,
-				flag,
-				*GetDirectory(JApplicationVariable::GetDefaultResourcePath()),
-				formatIndex);
-
-			JMeshInterface* iMesh = newMesh;
-			iMesh->StuffStaticMesh(meshData[i], boundingBox[i], boundingSphere[i]);
-			resourceData.basicMeshGuidMap.emplace(resourceData.defaultMeshTypes[i], guid);
-		}
-	}
-	void JResourceManagerImpl::StoreResourceData()
+	void JResourceManagerImpl::StoreProjectResource()
 	{
 		for (auto& rData : rCash)
 		{
@@ -586,14 +268,324 @@ namespace JinEngine
 			}
 		}
 	}
-	void JResourceManagerImpl::LoadObject()
+	void JResourceManagerImpl::LoadSelectorResource()
 	{
-		resourceIO->LoadProjectResource(projectRootDir);
+		resourceData.Initialize();
+		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
+		engineRootDir = JDFI::CreateRoot(JApplicationVariable::GetEnginePath(), Core::MakeGuid(), rootFlag);
+		resourceIO->LoadEngineDirectory(engineRootDir);
+		resourceIO->LoadEngineResource(engineRootDir);
+		CreateDefaultTexture(resourceData.selectorTexInfo);
 	}
-	void JResourceManagerImpl::RegisterJFunc()
+	void JResourceManagerImpl::LoadProjectResource()
 	{
-		JResourceObjectFactoryImplBase::RegisterAddStroage(&JResourceManagerImpl::AddResource);
-		JDirectoryFactoryImpl::RegisterAddStroage(&JResourceManagerImpl::AddDirectory);
+		resourceData.Initialize();
+		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
+		engineRootDir = JDFI::CreateRoot(JApplicationVariable::GetEnginePath(), Core::MakeGuid(), rootFlag);
+		resourceIO->LoadEngineDirectory(engineRootDir);
+		resourceIO->LoadEngineResource(engineRootDir);
+		 
+		rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
+		projectRootDir = resourceIO->LoadRootDirectory(JApplicationVariable::GetProjectPath(), rootFlag);
+		resourceIO->LoadProjectDirectory(projectRootDir);
+		resourceIO->LoadProjectResource(projectRootDir); 
+
+		CreateDefaultTexture(resourceData.projectTexInfo);
+		CreateDefaultShader();
+		CreateDefaultMaterial();
+		CreateDefaultMesh();
+
+		if (JSceneManager::Instance().GetOpendSceneCount() == 0)
+		{
+			JDirectory* projectContentsDir = GetDirectory(JApplicationVariable::GetProjectContentPath());
+			JDirectory* defaultSceneDir = projectContentsDir->GetChildDirctory(JApplicationVariable::GetProjectContentScenePath());
+			JScene* newScene = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(defaultSceneDir));
+			JSceneManager::Instance().TryOpenScene(newScene, true);
+			JSceneManager::Instance().SetMainScene(newScene);
+			newScene->SpaceSpatialInterface()->OnSceneSpatialStructure();
+		}
+		DestroyUnusedResource(J_RESOURCE_TYPE::SHADER, false);
+	}
+	void JResourceManagerImpl::Initialize()
+	{
+		std::vector<JRI::RTypeHint> rinfo = JRI::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::NONE);
+		const uint rinfoCount = (uint)rinfo.size();
+		for (uint i = 0; i < rinfoCount; ++i)
+			rCash.emplace(rinfo[i].thisType, ResourceStorage());
+	}
+	void JResourceManagerImpl::Terminate()
+	{
+		StoreProjectResource();
+		DeleteUnuseMetafile();
+
+		auto rHintVec = JResourceObjectInterface::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY_REVERSE);
+		for (uint i = 0; i < rHintVec.size(); ++i)
+		{
+			std::vector<JResourceObject*> copyVec = rCash.find(rHintVec[i].thisType)->second.GetVector();
+			for (uint j = 0; j < copyVec.size(); ++j)
+				copyVec[j]->BegineForcedDestroy();
+		}
+
+		if (engineRootDir != nullptr)
+		{ 
+			engineRootDir->BegineForcedDestroy();
+			engineRootDir = nullptr;
+		}
+		if (projectRootDir != nullptr)
+		{
+			projectRootDir->BegineForcedDestroy();
+			projectRootDir = nullptr;
+		}
+		dCash.Clear();
+		for (auto& data : rCash)
+			data.second.Clear();
+		rCash.clear();
+		resourceData.Clear();
+	}
+	void JResourceManagerImpl::DeleteUnuseMetafile()
+	{
+		//추가필요
+	}
+	bool JResourceManagerImpl::AddResource(JResourceObject& newResource)noexcept
+	{
+		return rCash.find(newResource.GetResourceType())->second.AddResource(&newResource);
+	}
+	bool JResourceManagerImpl::RemoveResource(JResourceObject& resource)noexcept
+	{
+		if (resource.IsActivated())
+			NotifyEvent(resource.GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE, &resource);
+
+		return rCash.find(resource.GetResourceType())->second.RemoveResource(resource);
+	}
+	bool JResourceManagerImpl::AddJDirectory(JDirectory& newDirectory)noexcept
+	{
+		return dCash.Add(&newDirectory);
+	}
+	bool JResourceManagerImpl::RemoveJDirectory(JDirectory& dir)noexcept
+	{
+		return dCash.Remove(&dir);
+	}
+	void JResourceManagerImpl::DestroyUnusedResource(const J_RESOURCE_TYPE rType, bool isIgnreUndestroyableFlag)
+	{
+		//추가필요
+		//engine resource destory -> window file destory
+		std::vector<JResourceObject*>& rvec = rCash.find(rType)->second.GetVector();
+		std::vector<JResourceObject*> copied = rvec;
+		for (uint i = 0; i < copied.size(); ++i)
+		{
+			bool canDestroy = (!copied[i]->HasFlag(OBJECT_FLAG_UNDESTROYABLE)) || isIgnreUndestroyableFlag; 
+			//ref count == 0 is deactivated state
+			if (!copied[i]->IsActivated() && canDestroy)
+			{
+				JResourceObjectInterface* Ir = copied[i];
+				Ir->DeleteRFile();
+				copied[i] = nullptr;
+			}
+		}
+	}
+	void JResourceManagerImpl::CreateDefaultTexture(const std::vector<JResourceData::DefaultTextureInfo>& textureInfo)
+	{
+		resourceData.defaultTextureMap.clear();
+		//수정필요
+		uint handleIncrement = JGraphic::Instance().DeviceInterface()->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		uint textureCount = (uint)textureInfo.size();
+		JDirectory* textureDir = GetDirectory(JApplicationVariable::GetEngineDefaultResourcePath());
+ 
+		//1 is imgui preserved 
+		for (uint i = 1; i < textureCount; ++i)
+		{
+			J_OBJECT_FLAG objFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE);
+			if (textureInfo[i].type == J_EDITOR_TEXTURE::MISSING)
+				objFlag = (J_OBJECT_FLAG)(objFlag | OBJECT_FLAG_HIDDEN);
+
+			std::wstring foldernam;
+			std::wstring name;
+			std::wstring format;
+			JCUtil::DecomposeFileName(textureInfo[i].name, name, format);
+			JFile* file = textureDir->GetFile(name); 
+			 
+			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::TEXTURE && file->GetFormat() == format)
+				resourceData.defaultTextureMap.emplace(textureInfo[i].type, file->GetResource()->GetGuid());
+			else
+			{
+				const std::wstring oriPath = Core::JFileConstant::MakeFilePath(textureDir->GetPath(), textureInfo[i].name);
+				JTexture* newTexture = JRFI<JTexture>::Create(Core::JPtrUtil::MakeOwnerPtr<JTexture::InitData>(name, Core::MakeGuid(), objFlag, textureDir, oriPath));
+				if (textureInfo[i].type == J_EDITOR_TEXTURE::DEFAULT_SKY)
+					newTexture->SetTextureType(Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE);
+				ThrowIfFailedN(newTexture != nullptr); 
+				resourceData.defaultTextureMap.emplace(textureInfo[i].type, newTexture->GetGuid());
+			}
+			if (textureInfo[i].type == J_EDITOR_TEXTURE::MISSING)
+			{
+				JTexture* missingT = GetResource<JTexture>(resourceData.defaultTextureMap.find(textureInfo[i].type)->second);
+				resourceData.SetMissing(missingT); 
+			}
+		}
+	}
+	void JResourceManagerImpl::CreateDefaultShader()
+	{
+		JDirectory* shaderDir = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath());
+		for (uint i = 0; i < (int)J_DEFAULT_SHADER::COUNTER; ++i)
+		{
+			J_SHADER_FUNCTION shaderF = DefaultShader::GetShaderFunction((J_DEFAULT_SHADER)i);
+			J_OBJECT_FLAG objF = DefaultShader::GetObjectFlag((J_DEFAULT_SHADER)i);
+
+			std::wstring shaderName = ConvertShaderFuncFlagToName(shaderF);
+			JFile* file = shaderDir->GetFile(shaderName );
+
+			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::SHADER)
+				resourceData.defaultShaderGuidMap.emplace((J_DEFAULT_SHADER)i, file->GetResource()->GetGuid());
+			else
+			{
+				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, shaderF));
+				ThrowIfFailedN(newShader != nullptr);
+				resourceData.defaultShaderGuidMap.emplace((J_DEFAULT_SHADER)i, newShader->GetGuid());
+			}
+		}
+	}
+	void JResourceManagerImpl::CreateDefaultMaterial()
+	{
+		const J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
+
+		JDirectory* matDir = GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath());
+		for (uint i = 0; i < (int)J_DEFAULT_MATERIAL::COUNTER; ++i)
+		{
+			//BasicMaterial format is all .mat( default format)
+			const std::wstring name = JDefaultMateiralType::ConvertBasicMateiralName(resourceData.defaultMaterialTypes[i]);
+			JFile* file = matDir->GetFile(name);
+			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::MATERIAL)
+				resourceData.defaultMaterialGuidMap.emplace(resourceData.defaultMaterialTypes[i], file->GetResource()->GetGuid());
+			else
+			{
+				const size_t shaderGuid = resourceData.defaultShaderGuidMap[JDefaultMateiralType::FindMatchBasicShaderType(resourceData.defaultMaterialTypes[i])];
+				JShader* defaultShader = GetResource<JShader>(shaderGuid);
+
+				JMaterial* newMaterial = nullptr;
+				size_t guid = Core::MakeGuid();
+				switch (resourceData.defaultMaterialTypes[i])
+				{
+				case J_DEFAULT_MATERIAL::DEFAULT_STANDARD:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, flag, matDir));
+					newMaterial->SetShadow(true);
+					newMaterial->SetLight(true); 
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
+				case J_DEFAULT_MATERIAL::DEFAULT_SKY:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, flag, matDir));
+					newMaterial->SetSkyMaterial(true);
+					newMaterial->SetAlbedoMap(GetEditorTexture(J_EDITOR_TEXTURE::DEFAULT_SKY));
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
+				case J_DEFAULT_MATERIAL::DEFAULT_SHADOW_MAP:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
+					newMaterial->SetAlbedoOnly(true);
+					newMaterial->SetShadowMap(true);
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
+				case J_DEFAULT_MATERIAL::DEBUG_LINE_RED:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
+					newMaterial->SetDebugMaterial(true);
+					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f));
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
+				case J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
+					newMaterial->SetDebugMaterial(true);
+					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f));
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
+				case J_DEFAULT_MATERIAL::DEBUG_LINE_BLUE:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
+					newMaterial->SetDebugMaterial(true);
+					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f));
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
+				case J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
+					newMaterial->SetDebugMaterial(true);
+					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f));
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
+				default:
+					break;
+				}
+
+				ThrowIfFailedN(newMaterial != nullptr);
+				resourceData.defaultMaterialGuidMap.emplace(resourceData.defaultMaterialTypes[i], guid);
+			}
+		}
+	}
+	void JResourceManagerImpl::CreateDefaultMesh()
+	{
+		auto createCubeLam = [](JDefaultGeometryGenerator& geoGen){return geoGen.CreateCube(1, 1, 1, 3);};
+		auto createGridLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateGrid(40.0f, 60.0f, 60, 40); };
+		auto createSphereLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateSphere(0.5f, 20, 20); };
+		auto createCylinderLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20); };
+		auto createQuadLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f); };
+		auto createBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingBox(); };
+		auto createBFrustumLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingFrustum();};
+
+		using CreateStaticMesh = Core::JStaticCallableType<JStaticMeshData, JDefaultGeometryGenerator&>;
+		std::vector<CreateStaticMesh::Callable> callableVec
+		{
+			(CreateStaticMesh::Ptr)createCubeLam, (CreateStaticMesh::Ptr)createGridLam,
+			(CreateStaticMesh::Ptr)createSphereLam, (CreateStaticMesh::Ptr)createCylinderLam,
+			(CreateStaticMesh::Ptr)createQuadLam, (CreateStaticMesh::Ptr)createBBoxLam,
+			(CreateStaticMesh::Ptr)createBFrustumLam
+		};
+
+		JDefaultGeometryGenerator geoGen;
+		JDirectory* meshDir = GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath());
+		for (int i = 0; i < (int)J_DEFAULT_SHAPE::COUNT - 1; ++i)
+		{
+			const std::wstring meshName = JDefaultShape::ConvertDefaultShapeName(resourceData.defaultMeshTypes[i]);
+			JFile* file = meshDir->GetFile(meshName);
+
+			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::MESH)
+				resourceData.defaultMeshGuidMap.emplace(resourceData.defaultMeshTypes[i], file->GetResource()->GetGuid());
+			else
+			{
+				JStaticMeshData staticMeshData = callableVec[i](nullptr, geoGen);
+				staticMeshData.CreateBoundingObject();
+
+				Core::JOwnerPtr<JStaticMeshGroup> group = Core::JPtrUtil::MakeOwnerPtr< JStaticMeshGroup>();
+				group->AddMeshData(std::move(staticMeshData));
+
+				size_t guid = Core::MakeGuid();
+				J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
+					OBJECT_FLAG_UNDESTROYABLE |
+					OBJECT_FLAG_UNEDITABLE);
+
+				if (i >= JDefaultShape::debugTypeSt)
+					flag = (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN);
+
+				JMeshGeometry* newMesh = JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr
+					<JMeshGeometry::JMeshInitData>(meshName, guid, flag, meshDir, JRI::CallFormatIndex(J_RESOURCE_TYPE::MESH, L".mesh"), std::move(group)));
+				ThrowIfFailedN(newMesh != nullptr);
+				resourceData.defaultMeshGuidMap.emplace(resourceData.defaultMeshTypes[i], newMesh->GetGuid());
+			}
+		}
 	}
 	void JResourceManagerImpl::RegistEvCallable()
 	{
@@ -604,11 +596,6 @@ namespace JinEngine
 	{
 		resourceIO = std::make_unique<JResourceIO>();
 		RegistEvCallable();
-
-		std::vector<JRI::RTypeHint> rinfo = JRI::GetRTypeHintVec(RESOURCE_ALIGN_TYPE::NONE);
-		const uint rinfoCount = (uint)rinfo.size();
-		for (uint i = 0; i < rinfoCount; ++i)
-			rCash.emplace(rinfo[i].thisType, ResourceStorage());
 	}
 	JResourceManagerImpl::~JResourceManagerImpl()
 	{
@@ -675,7 +662,7 @@ JMeshGeometry* JResourceManagerImpl::CreateMesh(const J_OBJECT_FLAG flag, JDirec
 				selectedDirctory = GetActivatedDirectory();
 		}
 
-		return CreateMaterial(JResourceObject::GetDefaultName<JMaterial>(), Core::MakeGuid()(), flag, selectedDirctory);
+		return CreateMaterial(JResourceObject::GetDefaultName<JMaterial>(), Core::MakeGuid(), flag, selectedDirctory);
 	}
 	JMaterial* JResourceManagerImpl::CreateMaterial(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{

@@ -1,14 +1,15 @@
 #pragma once
-#include<vector>
+#include<vector> 
 #include"../JResourceUserInterface.h"
 #include"../../../Core/Singleton/JSingletonHolder.h"
 #include"../../../Core/JDataType.h"
+#include"../../Component/JComponentType.h"
 
 namespace JinEngine
 {
 	class JResourceObject;
-	class JScene;
-	class JGameObject;
+	class JScene; 
+	class IFrameDirty;
 	namespace Core
 	{
 		template <class T> class JCreateUsingNew;
@@ -19,15 +20,24 @@ namespace JinEngine
 	private:
 		template <class T> friend class Core::JCreateUsingNew;
 	private:
+		//opend Scene  
+		//scene vector[0] is main scene  
 		std::vector<JScene*> opendScene; 
+		JScene* mainScene;
 	public:
-		bool TryOpenScene(JScene* scene)noexcept;
+		bool TryOpenScene(JScene* scene, bool isPreviewScene, IFrameDirty* observation = nullptr)noexcept;
 		bool TryCloseScene(JScene* scene)noexcept;
 		bool IsOpen(JScene* scene)noexcept;
+		bool IsMainScene(JScene* scene)const noexcept;
+	public:
+		void UpdateScene(JScene* scene, const J_COMPONENT_TYPE compType);
 	public:
 		uint GetOpendSceneCount()const noexcept; 
-	private:
-		int GetIndex(const size_t guid);
+		JScene* GetMainScene()noexcept;
+	public:
+		//Set main scene 
+		//if scene isn't opend return fail
+		void SetMainScene(JScene* scene)noexcept;
 	private:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 	private:

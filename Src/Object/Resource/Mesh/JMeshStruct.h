@@ -1,11 +1,14 @@
 #pragma once
+#include"JMeshType.h"
+#include"../../../Core/JDataType.h"
+#include"../../../Core/Pointer/JOwnerPtr.h"
+#include"../../../Utility/JVector.h"  
 #include<vector>
 #include<DirectXMath.h>
-#include"../../../Core/JDataType.h"
-#include"../../../Utility/JVector.h"  
+#include<DirectXCollision.h>
 
 namespace JinEngine
-{
+{ 
 	struct JBlendingIndexWeightPair
 	{
 	public:
@@ -34,29 +37,15 @@ namespace JinEngine
 		JStaticMeshVertex(float px, float py, float pz, float nx, float ny, float nz);
 		JStaticMeshVertex(float px, float py, float pz);
 	};
-	struct JStaticMeshData
-	{
-	public:
-		std::vector<JStaticMeshVertex> vertices;
-		std::vector<uint> indices32;
-		std::vector<uint16> indices16;
-		bool hasUV;
-		bool hasNormal;
-	public:
-		void Stuff8ByteDataTo4Byte()noexcept;
-		void InverseIndex()noexcept;
-		bool IsIndices32Empty()const noexcept;
-		bool IsIndices16Empty()const noexcept;
-	};
 	struct JSkinnedMeshVertex
 	{
 	public:
-		DirectX::XMFLOAT3 position;
-		DirectX::XMFLOAT3 normal;
-		DirectX::XMFLOAT2 texC;
-		DirectX::XMFLOAT3 tangentU;
-		DirectX::XMFLOAT3 jointWeight;
-		uint8 jointIndex[4];
+		DirectX::XMFLOAT3 position{ 0,0,0 };
+		DirectX::XMFLOAT3 normal{ 0,0,0 };
+		DirectX::XMFLOAT2 texC{ 0,0};
+		DirectX::XMFLOAT3 tangentU{ 0,0,0 };
+		DirectX::XMFLOAT3 jointWeight{ 0,0,0 };
+		uint8 jointIndex[4]{ 0,0,0,0 };
 	public:
 		JSkinnedMeshVertex() = default;
 		JSkinnedMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv, const DirectX::XMFLOAT3& t);
@@ -65,32 +54,171 @@ namespace JinEngine
 			const DirectX::XMFLOAT2& uv, 
 			const DirectX::XMFLOAT4& t, 
 			const std::vector<JBlendingIndexWeightPair>& blendWeightPair);
-		JSkinnedMeshVertex(const DirectX::XMFLOAT3& p, 
-			const DirectX::XMFLOAT3& n,
-			const DirectX::XMFLOAT2& uv, 
-			const DirectX::XMFLOAT4& t, 
-			uint8(&jointIndex)[4]);
+		JSkinnedMeshVertex(const DirectX::XMFLOAT3 position,
+			const DirectX::XMFLOAT3 normal,
+			const DirectX::XMFLOAT2 texC,
+			const DirectX::XMFLOAT3 tangentU,
+			const DirectX::XMFLOAT3 jointWeight,
+			const uint(&jointIndex)[4]);
 		JSkinnedMeshVertex(const JVector3<float>& p, const JVector3<float>& n, const JVector2<float>& uv, const JVector3<float>& t);
 		JSkinnedMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv);
 		JSkinnedMeshVertex(float px, float py, float pz, float nx, float ny, float nz, float u, float v, float tx, float ty, float tz);
 	};
 
-	struct JSkinnedMeshData
+	class JMaterial;
+
+	struct JMeshData
 	{
-	public:
-		std::vector<JSkinnedMeshVertex> vertices;
-		std::vector<uint> indices32;
+	private:
+		std::wstring name;
+		size_t guid; 
+		Core::JUserPtr<JMaterial> material;
+		std::vector<uint32> indices32;
 		std::vector<uint16> indices16;
-		bool hasUV;
-		bool hasNormal;
+		DirectX::BoundingBox boundingBox;
+		DirectX::BoundingSphere boundingSphere;
+		bool hasUV = false;
+		bool hasNormal = false;
+		bool is16bit = false; 
+	public:
+		JMeshData();
+		JMeshData(const std::wstring& name,
+			const size_t guid,
+			std::vector<uint32>&& indices32,
+			const bool hasUV,
+			const bool hasNormal);
+		JMeshData(const std::wstring& name,
+			const size_t guid,
+			std::vector<uint16>&& indices16,
+			const bool hasUV,
+			const bool hasNormal);
 	public:
 		void Stuff8ByteDataTo4Byte()noexcept;
+		void Stuff4ByteDataTo8Byte()noexcept;
 		void InverseIndex()noexcept;
+	public:
+		std::wstring GetName()const noexcept;
+		size_t GetGuid()const noexcept;
+		Core::JUserPtr<JMaterial> GetMaterial()const noexcept;
+		uint GetIndexCount()const noexcept;
+		uint16 GetU16Index(const uint index)const noexcept;
+		uint32 GetU32Index(const uint index)const noexcept;
+		const std::vector<uint16>& GetU16Vector()const noexcept;
+		const std::vector<uint32>& GetU32Vector()const noexcept;
+		DirectX::BoundingBox GetBBox()const noexcept;
+		DirectX::BoundingSphere GetBSphere()const noexcept;
+		virtual J_MESHGEOMETRY_TYPE GetMeshType()const noexcept = 0;
+		virtual uint GetVertexCount()const noexcept = 0;
+		virtual DirectX::XMVECTOR GetPosition(uint i)const noexcept = 0;
+	public:
+		void SetMaterial(Core::JUserPtr<JMaterial> material)noexcept;
+	public:
+		void AddIndex(const uint index)noexcept;
+	public:
+		bool HasUV()const noexcept;
+		bool HasNormal()const noexcept;
+		bool Is16bit()const noexcept;
+		bool IsValid()const noexcept;
+	public:
+		void CreateBoundingObject()noexcept;
 	};
-	struct SubmeshGeometry
+
+	struct JStaticMeshData : public JMeshData
 	{
-		uint IndexCount = 0;
-		uint StartIndexLocation = 0;
-		int BaseVertexLocation = 0;
+	private:
+		mutable std::vector<JStaticMeshVertex> vertices;
+	public:
+		JStaticMeshData();
+		JStaticMeshData(const std::wstring& name,
+			const size_t guid,
+			std::vector<uint32>&& indices32,
+			const bool hasUV,
+			const bool hasNormal,
+			std::vector<JStaticMeshVertex>&& vertices);
+		JStaticMeshData(const std::wstring& name,
+			const size_t guid,
+			std::vector<uint16>&& indices16,
+			const bool hasUV,
+			const bool hasNormal,
+			std::vector<JStaticMeshVertex>&& vertices);
+		JStaticMeshData(const std::wstring& name,
+			std::vector<uint16>&& indices16,
+			const bool hasUV,
+			const bool hasNormal,
+			std::vector<JStaticMeshVertex>&& vertices);
+		JStaticMeshData(const std::wstring& name,
+			std::vector<uint32>&& indices32,
+			const bool hasUV,
+			const bool hasNormal,
+			std::vector<JStaticMeshVertex>&& vertices);
+	public:
+		J_MESHGEOMETRY_TYPE GetMeshType()const noexcept final; 
+		uint GetVertexCount()const noexcept;
+		DirectX::XMVECTOR GetPosition(const uint index)const noexcept;
+		JStaticMeshVertex GetVertex(const uint index)const noexcept;
+		void SetVertex(const uint index, const JStaticMeshVertex& vertex)const noexcept;
+	public:
+		void AddVertex(const JStaticMeshVertex& vertex)noexcept;
+	};
+
+	struct JSkinnedMeshData : public JMeshData
+	{
+	private:
+		mutable std::vector<JSkinnedMeshVertex> vertices;
+	public:
+		JSkinnedMeshData() = default; 
+		JSkinnedMeshData(const std::wstring& name,
+			const size_t guid,
+			std::vector<uint>&& indices32,
+			const bool hasUV,
+			const bool hasNormal,
+			std::vector<JSkinnedMeshVertex>&& vertices);
+		JSkinnedMeshData(const std::wstring& name,
+			const size_t guid,
+			std::vector<uint16>&& indices16,
+			const bool hasUV,
+			const bool hasNormal,
+			std::vector<JSkinnedMeshVertex>&& vertices);
+	public:
+		J_MESHGEOMETRY_TYPE GetMeshType()const noexcept final; 
+		uint GetVertexCount()const noexcept;
+		DirectX::XMVECTOR GetPosition(const uint index)const noexcept;
+		JSkinnedMeshVertex GetVertex(const uint index)const noexcept;
+		void SetVertex(const uint index, const JSkinnedMeshVertex& vertex)const noexcept;
+	};
+
+	struct JMeshGroup
+	{
+	public:
+		virtual uint GetMeshDataCount()const noexcept = 0;
+		virtual JMeshData* GetMeshData(const uint index) noexcept = 0;
+		virtual J_MESHGEOMETRY_TYPE GetMeshGroupType()const noexcept = 0; 
+		uint GetTotalVertexCount() noexcept;
+		uint GetTotalIndexCount() noexcept; 
+	};
+
+	struct JStaticMeshGroup final : public JMeshGroup
+	{
+	private:
+		std::vector<JStaticMeshData> staticMeshData;
+	public:
+		uint GetMeshDataCount()const noexcept final;
+		JMeshData* GetMeshData(const uint index) noexcept final;
+		J_MESHGEOMETRY_TYPE GetMeshGroupType()const noexcept final;
+		void AddMeshData(JStaticMeshData&& meshData) noexcept;
+	};
+	 
+	class JSkeletonAsset;
+	struct JSkinnedMeshGroup final : public JMeshGroup
+	{
+	private:  
+		std::vector<JSkinnedMeshData> skinnedMeshData;
+		Core::JUserPtr<JSkeletonAsset> skeletonAsset;
+	public:
+		uint GetMeshDataCount()const noexcept final;
+		JMeshData* GetMeshData(const uint index) noexcept final;
+		J_MESHGEOMETRY_TYPE GetMeshGroupType()const noexcept final;
+		Core::JUserPtr<JSkeletonAsset> GetSkeletonAsset()const noexcept;
+		void AddMeshData(JSkinnedMeshData&& meshData) noexcept;
 	};
 }

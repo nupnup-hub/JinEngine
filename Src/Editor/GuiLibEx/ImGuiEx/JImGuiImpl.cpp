@@ -1,5 +1,9 @@
 #include"JImGuiImpl.h" 
+#include"../../../Application/JApplicationVariable.h"
+
+#include"../../../Core/Identity/JIdentifier.h"
 #include"../../../Core/JDataType.h"  
+#include"../../../Core/Platform/JLanguageType.h"
 
 #include"../../../Window/JWindows.h"
 #include"../../../Window/JWindowEventType.h" 
@@ -8,56 +12,25 @@
 #include"../../../Graphic/JGraphicTextureUserInterface.h"
 
 #include"../../../Utility/JCommonUtility.h"
-#include "../../Icon/IconFontCppHeaders-master/IconsFontAwesome5.h" 
 #include"../../../../Lib/imgui/imgui_impl_dx12.h"
 #include"../../../../Lib/imgui/imgui_impl_win32.h" 
+#include "../../Icon/IconFontCppHeaders-master/IconsFontAwesome5.h" 
 
 #include<Windows.h> 
 #include<memory>
 #include<deque>
 
-template<typename T>
-ImVec2::ImVec2(const JinEngine::JVector2<T>& jVec2)
-{
-	x = jVec2.x;
-	y = jVec2.y;
-}
-
-template<typename T>
-ImVec2& ImVec2::operator=(const JinEngine::JVector2<T>& jVec2)
-{
-	x = jVec2.x;
-	y = jVec2.y;
-	return *this;
-}
-
-template<typename T>
-ImVec4::ImVec4(const JinEngine::JVector4<T>& jVec4)
-{
-	x = jVec4.x;
-	y = jVec4.y;
-	z = jVec4.z;
-	w = jVec4.a;
-}
-template<typename T>
-ImVec4& ImVec4::operator=(const JinEngine::JVector4<T>& jVec4)
-{
-	x = jVec4.x;
-	y = jVec4.y;
-	z = jVec4.z;
-	w = jVec4.a;
-	return *this;
-}
-
 namespace JinEngine
 {
-	class JObject;
 	namespace Editor
 	{
-		class JImGui : public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>, public Graphic::JGraphicTextureUserInterface
+		class JImGui : public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>,
+			public Graphic::JGraphicTextureUserInterface
 		{
+		private:
+			using FontMap = std::unordered_map<J_EDITOR_FONT_TYPE, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>>;
 		public:
-			const size_t guid;
+			const size_t guid;  
 		public:
 			JVector2<int> displaySize;
 			JVector2<int> windowSize;
@@ -67,16 +40,18 @@ namespace JinEngine
 			JVector2<int> textSize;
 			JVector2<int> textSizeOffset;
 		public:
-			ImFont* fontVector[3];
-			int fontIndex = 0;
+			FontMap fontMap;
+			J_EDITOR_FONT_TYPE fontType;
 		public:
 			ImVec4 colors[ImGuiCol_COUNT];
 		public:
-			bool optFullScreen;
 			bool optWindowPadding;
 		public:
 			std::bitset<3> mouseClick;
 			bool isDrag;
+		public:
+			bool enablePopup = true;
+			bool enableSelector = true;
 		public:
 			static constexpr float minRate = 7.5f;
 		public:
@@ -98,34 +73,38 @@ namespace JinEngine
 			uint menuCount;
 			uint menuItemCount;
 			uint comboCount;
+			uint textureCount;
 		public:
 			JImGui()
-				:guid(JCommonUtility::CalculateGuid(typeid(JImGui).name()))
+				:guid(JCUtil::CalculateGuid(typeid(JImGui).name()))
 			{
 				this->AddEventListener(*JWindow::Instance().EvInterface(), guid, Window::J_WINDOW_EVENT::WINDOW_RESIZE);
+				this->AddEventListener(*JWindow::Instance().EvInterface(), guid, Window::J_WINDOW_EVENT::WINDOW_CLOSE);
+
 				IMGUI_CHECKVERSION();
 				ImGui::CreateContext();
 				ImGuiIO& io = ImGui::GetIO(); (void)io;
 				//io.ConfigWindowsResizeFromEdges = true;
 				//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 				//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-				io.ConfigWindowsResizeFromEdges = true;
+				//io.ConfigWindowsResizeFromEdges = true;
 				io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
 				//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;        // Enable Multi-Viewport / Platform Windows
 				LoadDefaultColor();
 				LoadFontFile();
 				//PushFont();
-				OnResize();
 
 				ImGuiStyle& style = ImGui::GetStyle();
-				style.FrameBorderSize = 1;
-
+				//ImGuiStyle& style = ImGui::GetStyle();
+				//style.FrameBorderSize = 1; 
 				ImGui_ImplWin32_Init(JWindow::Instance().HandleInterface()->GetHandle());
 				JGraphic::Instance().EditorInterface()->SetImGuiBackEnd();
+
+				OnResize();
 			}
 			~JImGui()
 			{
-				this->RemoveListener(*JWindow::Instance().EvInterface(), guid);
+				RemoveListener(*JWindow::Instance().EvInterface(), guid);
 			}
 		public:
 			void ClearWidgetCount()
@@ -133,23 +112,23 @@ namespace JinEngine
 				windowCount = childWindowCount = textCount = checkBoxCount = buttonCount =
 					imageButtonCount = treeNodeCount = selectableCount = inputDataCount = sliderCount =
 					tabBarCount = tabItemCount = tableCount = menuBarCount = menuCount =
-					menuItemCount = comboCount = 0;
+					menuItemCount = comboCount = textureCount = 0;
 			}
 			uint WidgetSum()
 			{
 				return windowCount + childWindowCount + textCount + checkBoxCount + buttonCount +
 					imageButtonCount + treeNodeCount + selectableCount + inputDataCount + sliderCount +
 					tabBarCount + tabItemCount + tableCount + menuBarCount + menuCount +
-					menuItemCount + comboCount;
+					menuItemCount + comboCount + textureCount;
 			}
 		public:
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetGraphicCpuHandle(Graphic::JGraphicTexture& graphicTexture)
 			{
-				return GetCpuHandle(graphicTexture);
+				return CallGetCpuHandle(graphicTexture);
 			}
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGraphicGpuHandle(Graphic::JGraphicTexture& graphicTexture)
 			{
-				return GetGpuHandle(graphicTexture);
+				return CallGetGpuHandle(graphicTexture);
 			}
 		private:
 			void OnResize()
@@ -159,9 +138,6 @@ namespace JinEngine
 				clientSize = { JWindow::Instance().GetClientWidth() ,  JWindow::Instance().GetClientHeight() };
 				clientPos = { JWindow::Instance().GetClientPositionX() ,  JWindow::Instance().GetClientPositionY() };
 				minClientSize = { (int)(clientSize.x / minRate),  (int)(clientSize.y / minRate) };
-
-				ImGuiStyle& style = ImGui::GetStyle();
-				ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(250, 250));
 			}
 			void OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)
 			{
@@ -169,6 +145,11 @@ namespace JinEngine
 					return;
 				if (eventType == Window::J_WINDOW_EVENT::WINDOW_RESIZE)
 					OnResize();
+				else if (eventType == Window::J_WINDOW_EVENT::WINDOW_CLOSE)
+				{
+					ImGui_ImplDX12_Shutdown();
+					ImGui_ImplWin32_Shutdown();
+				}
 			}
 		private:
 			void LoadDefaultColor()
@@ -237,65 +218,52 @@ namespace JinEngine
 			{
 				ImGuiIO& io = ImGui::GetIO();
 				ImFontConfig config;
-
-				fontVector[0] = io.Fonts->AddFontDefault();
-				fontVector[1] = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\GameEngine\\JinEngine\\Font\\NotoSerifKR-Bold.otf",
+				 
+				ImFont* defaultFont = io.Fonts->AddFontDefault();
+				ImFont* boldFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\GameEngine\\JinEngine\\Font\\NotoSerifKR-Bold.otf",
 					48,
 					nullptr,
 					io.Fonts->GetGlyphRangesKorean());
-				fontVector[2] = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\GameEngine\\JinEngine\\Font\\NotoSerifKR-Bold.otf",
-					18,
+				ImFont* semiBoldFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\GameEngine\\JinEngine\\Font\\NotoSerifKR-SemiBold.otf",
+					20,
 					nullptr,
 					io.Fonts->GetGlyphRangesKorean());
-			}
-		};
-		class JImGuiEventManager : public Core::JEventManager<size_t, J_EDITOR_EVENT, JEditorEventStruct*>
-		{
-		public:
-			std::deque<std::unique_ptr<JEditorEventStruct>> evQueue;
-		public:
-			JImGuiEventManager()
-			{
-				RegistEvCallable();
-			}
-			~JImGuiEventManager()
-			{
-				ClearEvent();
-			}
-		public:
-			JEventInterface* EvInterface()final
-			{
-				return this;
-			}
-		public:
-			void OnEvnet()
-			{
-				SendEventNotification();
-			}
-		private:
-			void RegistEvCallable()final
-			{
-				auto lam = [](const size_t& a, const size_t& b) {return a == b; };
-				RegistIdenCompareCallable(lam);
-			}
-		};
-		class JEditorPageData
-		{
-		public:
-			Core::JUserPtr<JObject> openObject;
-			Core::JUserPtr<JObject> selectObj;
-			const bool IsRequiredInitData;
-		public:
-			JEditorPageData(const bool IsRequiredInitData)
-				:IsRequiredInitData(IsRequiredInitData)
-			{}
-		};
+				ImFont* regularFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\GameEngine\\JinEngine\\Font\\NotoSerifKR-Regular.otf",
+					20,
+					nullptr,
+					io.Fonts->GetGlyphRangesKorean());
+				ImFont* mediumFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\GameEngine\\JinEngine\\Font\\NotoSerifKR-Medium.otf",
+					20,
+					nullptr,
+					io.Fonts->GetGlyphRangesKorean());
 
+				fontMap.clear();
+
+				fontMap.emplace(J_EDITOR_FONT_TYPE::DEFAULT, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
+				fontMap.emplace(J_EDITOR_FONT_TYPE::BOLD, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
+				fontMap.emplace(J_EDITOR_FONT_TYPE::SEMI_BOLD, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
+				fontMap.emplace(J_EDITOR_FONT_TYPE::REGULAR, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
+				fontMap.emplace(J_EDITOR_FONT_TYPE::MEDIUM, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
+
+				fontMap.find(J_EDITOR_FONT_TYPE::DEFAULT)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, defaultFont);
+				fontMap.find(J_EDITOR_FONT_TYPE::DEFAULT)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, defaultFont);
+
+				fontMap.find(J_EDITOR_FONT_TYPE::BOLD)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, boldFont);
+				fontMap.find(J_EDITOR_FONT_TYPE::BOLD)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, boldFont);
+
+				fontMap.find(J_EDITOR_FONT_TYPE::SEMI_BOLD)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, semiBoldFont);
+				fontMap.find(J_EDITOR_FONT_TYPE::SEMI_BOLD)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, semiBoldFont);
+
+				fontMap.find(J_EDITOR_FONT_TYPE::REGULAR)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, regularFont);
+				fontMap.find(J_EDITOR_FONT_TYPE::REGULAR)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, regularFont);
+
+				fontMap.find(J_EDITOR_FONT_TYPE::MEDIUM)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, mediumFont);
+				fontMap.find(J_EDITOR_FONT_TYPE::MEDIUM)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, mediumFont);
+			}
+		};
 		namespace
 		{
 			static std::unique_ptr<JImGui> jImgui;
-			static std::unique_ptr<JImGuiEventManager> jImguiEvM;
-			static std::unordered_map<J_EDITOR_PAGE_TYPE, JEditorPageData> pageData;
 			static JVector2<float> Convert(const ImVec2 imV2)
 			{
 				return JVector2<float>(imV2.x, imV2.y);
@@ -318,13 +286,13 @@ namespace JinEngine
 		{
 			jImgui->textSizeOffset = offset;
 		}
-		void JImGuiImpl::SetFont(int index)noexcept
+		void JImGuiImpl::SetFont(const J_EDITOR_FONT_TYPE fontType)noexcept
 		{
-			jImgui->fontIndex = index;
+			jImgui->fontType = fontType;
 		}
 		void JImGuiImpl::PushFont()noexcept
 		{
-			ImGui::PushFont(jImgui->fontVector[jImgui->fontIndex]);
+			ImGui::PushFont(jImgui->fontMap.find(jImgui->fontType)->second.find(JApplicationVariable::GetEngineLanguageType())->second);
 		}
 		void JImGuiImpl::PopFont()noexcept
 		{
@@ -419,16 +387,6 @@ namespace JinEngine
 			++jImgui->buttonCount;
 			return ImGui::Button(btnName.c_str(), jVec2);
 		}
-		bool JImGuiImpl::ImageButton(Graphic::JGraphicTexture& graphicTexture,
-			const JVector2<float>& size,
-			const JVector2<float>& uv0,
-			const JVector2<float>& uv1,
-			int framePadding,
-			const JVector4<float>& bgCol,
-			const JVector4<float>& tintCol)
-		{
-			return ImGui::ImageButton((ImTextureID)jImgui->GetGraphicGpuHandle(graphicTexture).ptr, size, uv0, uv1, framePadding, bgCol, tintCol);
-		}
 		bool JImGuiImpl::TreeNodeEx(const std::string& nodeName, ImGuiTreeNodeFlags flags)
 		{
 			++jImgui->treeNodeCount;
@@ -456,7 +414,7 @@ namespace JinEngine
 			++jImgui->inputDataCount;
 			return ImGui::InputInt(name.c_str(), value, step, stepFast, flags);
 		}
-		bool JImGuiImpl::InputFloat(const std::string& name, float* value, float step , float stepFast, const char* format, ImGuiInputTextFlags flags)
+		bool JImGuiImpl::InputFloat(const std::string& name, float* value, float step, float stepFast, const char* format, ImGuiInputTextFlags flags)
 		{
 			++jImgui->inputDataCount;
 			return ImGui::InputFloat(name.c_str(), value, step, stepFast, format, flags);
@@ -480,7 +438,7 @@ namespace JinEngine
 			++jImgui->tableCount;
 			return ImGui::BeginTable(name.c_str(), columnCount, flags, outerSize, innerWidth);
 		}
-		bool JImGuiImpl::EndTable()
+		void JImGuiImpl::EndTable()
 		{
 			ImGui::EndTable();
 		}
@@ -551,17 +509,53 @@ namespace JinEngine
 		{
 			ImGui::EndCombo();
 		}
-		bool JImGuiImpl::IsLeftMouseClick()noexcept
+		void JImGuiImpl::Image(Graphic::JGraphicTexture& graphicTexture,
+			const JVector2<float>& size,
+			const JVector2<float>& uv0,
+			const JVector2<float>& uv1,
+			const JVector4<float>& tintCol,
+			const JVector4<float>& borderCol)
+		{
+			ImGui::Image((ImTextureID)jImgui->GetGraphicGpuHandle(graphicTexture).ptr, size, uv0, uv1, tintCol, borderCol);
+		}
+		bool JImGuiImpl::ImageButton(Graphic::JGraphicTexture& graphicTexture,
+			const JVector2<float>& size,
+			const JVector2<float>& uv0,
+			const JVector2<float>& uv1,
+			int framePadding,
+			const JVector4<float>& bgCol,
+			const JVector4<float>& tintCol)
+		{
+			return ImGui::ImageButton((ImTextureID)jImgui->GetGraphicGpuHandle(graphicTexture).ptr, size, uv0, uv1, framePadding, bgCol, tintCol);
+		}
+		void JImGuiImpl::AddImage(Graphic::JGraphicTexture& graphicTexture,
+			const JVector2<float>& pMin,
+			const JVector2<float>& pMax,
+			bool isBack,
+			ImU32 color,
+			const JVector2<float>& uvMin,
+			const JVector2<float>& uvMax)
+		{
+			if (isBack)
+				ImGui::GetBackgroundDrawList()->AddImage((ImTextureID)jImgui->GetGraphicGpuHandle(graphicTexture).ptr, pMin, pMax, uvMin, uvMax, color);
+			else
+				ImGui::GetForegroundDrawList()->AddImage((ImTextureID)jImgui->GetGraphicGpuHandle(graphicTexture).ptr, pMin, pMax, uvMin, uvMax, color);
+		}
+		bool JImGuiImpl::IsLeftMouseClicked()noexcept
 		{
 			return jImgui->mouseClick[0];
 		}
-		bool JImGuiImpl::IsRightMouseClick()noexcept
+		bool JImGuiImpl::IsRightMouseClicked()noexcept
 		{
 			return jImgui->mouseClick[1];
 		}
-		bool JImGuiImpl::IsMiddleMouseClick()noexcept
+		bool JImGuiImpl::IsMiddleMouseClicked()noexcept
 		{
 			return jImgui->mouseClick[2];
+		}
+		bool JImGuiImpl::IsDraggingMouse()noexcept
+		{
+			return jImgui->isDrag;
 		}
 		bool JImGuiImpl::IsMouseInWindow(const JVector2<float>& position, const JVector2<float>& size)noexcept
 		{
@@ -580,79 +574,34 @@ namespace JinEngine
 		{
 			jImgui->isDrag = value;
 		}
-		uint JImGuiImpl::GetSliderWidth()noexcept
+		float JImGuiImpl::GetSliderWidth()noexcept
 		{
-			int sliderOffset = ImGui::GetStyle().ScrollbarSize + (ImGui::GetStyle().ItemSpacing.x * 2) + (JImGuiImpl::GetTextSize().x * 4);
+			float sliderOffset = ImGui::GetStyle().ScrollbarSize + (ImGui::GetStyle().ItemSpacing.x * 2) + (JImGuiImpl::GetTextSize().x * 4);
 			return ImGui::GetWindowWidth() - sliderOffset;
 		}
 		bool JImGuiImpl::IsFullScreen()noexcept
 		{
-			return jImgui->optFullScreen;
+			return JWindow::Instance().IsFullScreen();
 		}
 		bool JImGuiImpl::IsWindowPadding()noexcept
 		{
 			return jImgui->optWindowPadding;
 		}
-		JImGuiImpl::JEvInterface* JImGuiImpl::EvInterface()
+		bool JImGuiImpl::IsEnablePopup()noexcept
 		{
-			return jImguiEvM.get();
+			return jImgui->enablePopup;
 		}
-		JEditorEventStruct* JImGuiImpl::RegisterEvStruct(std::unique_ptr<JEditorEventStruct> evStruct)
+		bool JImGuiImpl::IsEnableSelector()noexcept
 		{
-			if (evStruct != nullptr)
-			{
-				JEditorEventStruct* ptr = evStruct.get();
-				jImguiEvM->evQueue.push_back(std::move(evStruct));
-				return ptr;
-			}
-			else
-				return nullptr;
-		}
-		void JImGuiImpl::ClearEvStructQueue()
-		{
-			jImguiEvM->evQueue.clear();
-		}
-		void JImGuiImpl::RegisterPage(const J_EDITOR_PAGE_TYPE pageType, bool hasOpenInitObjType)noexcept
-		{
-			pageData.emplace(pageType, JEditorPageData(hasOpenInitObjType));
-		}
-		void JImGuiImpl::UnRegisterPage(const J_EDITOR_PAGE_TYPE pageType)noexcept
-		{
-			pageData.erase(pageType);
-		}
-		void JImGuiImpl::ClearPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
-		{
-			auto pagedata = pageData.find(pageType);
-			pagedata->second.openObject.Clear();
-			pagedata->second.selectObj.Clear(); 
-		}
-		bool JImGuiImpl::HasValidOpenPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
-		{
-			auto data = pageData.find(pageType);
-			return data->second.IsRequiredInitData ? data->second.IsRequiredInitData && data->second.openObject.IsValid() : true;
-		}
-		JEditorOpenPageEvStruct JImGuiImpl::GetOpendPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
-		{
-			auto data = pageData.find(pageType);
-			return JEditorOpenPageEvStruct{pageType, data->second.openObject};
-		}
-		JObject* JImGuiImpl::GetSelectedObj(const J_EDITOR_PAGE_TYPE pageType)noexcept
-		{
-			return pageData.find(pageType)->second.selectObj.Get();
-		}
-		void JImGuiImpl::SetPageOpenData(JEditorOpenPageEvStruct* evStruct)noexcept
-		{
-			auto data = pageData.find(evStruct->pageType);
-			data->second.openObject = evStruct->openSelected; 
-		}
-		void JImGuiImpl::SetSelectObj(const J_EDITOR_PAGE_TYPE pageType, const Core::JUserPtr<JObject>& selectObj)noexcept
-		{
-			pageData.find(pageType)->second.selectObj = selectObj;
+			return jImgui->enableSelector;
 		}
 		void JImGuiImpl::StartEditorUpdate()
+		{ }
+		void JImGuiImpl::MouseUpdate()
 		{
-			jImguiEvM->OnEvnet();
-			ClearEvStructQueue();
+			JImGuiImpl::SetMouseClick(0, ImGui::IsMouseClicked(0));
+			JImGuiImpl::SetMouseClick(1, ImGui::IsMouseClicked(1));
+			JImGuiImpl::SetMouseClick(2, ImGui::IsMouseClicked(2));
 		}
 		void JImGuiImpl::EndEditorUpdate()
 		{
@@ -662,14 +611,10 @@ namespace JinEngine
 		{
 			if (jImgui == nullptr)
 				jImgui = std::make_unique<JImGui>();
-
-			if (jImguiEvM == nullptr)
-				jImguiEvM = std::make_unique<JImGuiEventManager>();
 		}
 		void JImGuiImpl::Clear()
 		{
 			jImgui.reset();
-			jImguiEvM.reset();
 		}
 	}
 }

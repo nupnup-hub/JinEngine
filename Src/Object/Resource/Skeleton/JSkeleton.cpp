@@ -98,8 +98,16 @@ namespace JinEngine
 	{ 
 		return JSkeleton::skletonHash == skletonHash;
 	}
-	JSkeleton::JSkeleton(std::vector<Joint>&& joint, const size_t skletonHash)
-		:joint(std::move(joint)), skletonHash(skletonHash)
+	size_t JSkeleton::GetSkeletonHash()const noexcept
+	{
+		std::wstring totalName;
+		const uint jointCount = (uint)joint.size();
+		for (uint i = 0; i < jointCount; ++i)
+			totalName += joint[i].name;
+		return std::hash<std::wstring>{}(totalName);
+	}
+	JSkeleton::JSkeleton(std::vector<Joint>&& joint)
+		:joint(std::move(joint)), skletonHash(GetSkeletonHash())
 	{}
 	JSkeleton::~JSkeleton() {}
 }

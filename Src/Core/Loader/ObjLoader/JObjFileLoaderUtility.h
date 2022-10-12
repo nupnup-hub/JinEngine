@@ -9,14 +9,11 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		struct JObjMeshPartData
+		struct JObjFileMeshData
 		{
 		public:
-			std::wstring meshName;
-			std::wstring materialName;
-			JStaticMeshData staticMeshData;
-			DirectX::BoundingBox boundingBox;
-			DirectX::BoundingSphere boundingSphere;
+			JStaticMeshGroup meshGroup;
+			std::vector<std::wstring> materialName; 
 		};
 
 		enum class JOBJ_MATERIAL_FLAG
@@ -32,7 +29,7 @@ namespace JinEngine
 			HAS_DECAL_T = 1 << 7,
 		};
 
-		struct JObjMatData
+		struct JObjFileMatData
 		{
 		public:
 			std::wstring name;

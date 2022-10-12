@@ -1,7 +1,7 @@
 #include"JEditorPopup.h"
 #include"JEditorPopupNode.h"
 #include"../../Core/JDataType.h"  
-#include"../../../Lib/imgui/imgui.h"
+#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 
 namespace JinEngine
 {
@@ -13,6 +13,18 @@ namespace JinEngine
 			allPopupNode.push_back(std::move(popupRoot));
 		}
 		JEditorPopup::~JEditorPopup() {}
+		void JEditorPopup::Update()
+		{
+			if (JImGuiImpl::IsRightMouseClicked() && !IsOpen() && JImGuiImpl::IsMouseInWindow(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
+				SetOpen(true);
+			else if (JImGuiImpl::IsRightMouseClicked() && IsOpen())
+				SetOpen(false);
+			else if (JImGuiImpl::IsLeftMouseClicked() && IsOpen() && !IsMouseInPopup())
+				SetOpen(false);
+
+			if(IsOpen() && !JImGuiImpl::IsEnablePopup())
+				SetOpen(false);
+		}
 		void JEditorPopup::AddPopupNode(std::unique_ptr<JEditorPopupNode> child)noexcept
 		{
 			if (child != nullptr)
@@ -32,6 +44,10 @@ namespace JinEngine
 					ImGui::EndPopup();
 				}
 			}
+		}
+		void JEditorPopup::SetOpen(bool value)noexcept
+		{
+			isOpen = value;
 		}
 		bool JEditorPopup::IsOpen()const noexcept
 		{
@@ -62,10 +78,6 @@ namespace JinEngine
 				}
 				return false;
 			}
-		}
-		void JEditorPopup::SetOpen(bool value)noexcept
-		{
-			isOpen = value;
 		}
 	}
 }

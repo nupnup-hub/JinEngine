@@ -4,19 +4,22 @@
 namespace JinEngine
 {
 	namespace Core
-	{
-		struct JFSMLoadGuidMap;
+	{ 
 		__interface IJFSMconditionStorageUser;
-		class JAnimationFSMtransition : public JFSMtransition
+		class JAnimationFSMstate;
+
+		class JAnimationFSMtransition final : public JFSMtransition
 		{
+		private:
+			friend class JAnimationFSMstate; 
+			friend std::unique_ptr<JAnimationFSMtransition>::deleter_type;
 		private:
 			bool isWaitExitTime = true;
 			bool isFrozen = false;
 			float exitGameTimerate = 0.8f;
 			float durationTime = 0.4f;
 			float targetStateOffset = 0;
-		public:
-			JAnimationFSMtransition(const size_t outputStateGuid);
+		public:		
 			bool GetIsWaitExitTime()noexcept;
 			bool GetIsFrozen()noexcept;
 			float GetExitGameTimerate()noexcept;
@@ -30,11 +33,14 @@ namespace JinEngine
 			void SetTargetStateOffset(bool value)noexcept;
 
 			bool IsSatisfiedOption(const float normalizedTime)noexcept;
-		public: 
-			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
-			static std::unique_ptr<JAnimationFSMtransition> LoadData(std::wifstream& stream, JFSMLoadGuidMap& guidMap, IJFSMconditionStorageUser& IConditionUser);
 		public:
 			void Initialize()noexcept override;
+		private:
+			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
+			J_FILE_IO_RESULT LoadData(std::wifstream& stream, IJFSMconditionStorageUser& IConditionUser);
+		private:
+			JAnimationFSMtransition(const size_t outputStateGuid);  
+			~JAnimationFSMtransition();
 		};
 	}
 }

@@ -9,17 +9,22 @@ namespace JinEngine
 	struct JLightStruct; 
 	class JGameObject; 
 
-	class JLight :	public JLightInterface
+	class JLight final :public JLightInterface
 	{
 		REGISTER_CLASS(JLight)
 	private:
-		std::unique_ptr<JLightStruct> light;
+		std::unique_ptr<JLightStruct> lightData;
 		J_LIGHT_TYPE lightType;  
 
 		bool onShadow = false; 
 		DirectX::XMFLOAT4X4 shadowTransform;
 	public:
-		bool IsShadowActivated()const noexcept;
+		J_COMPONENT_TYPE GetComponentType()const noexcept final;
+		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
+		{
+			return J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT;
+		}
+	public:
 		DirectX::XMFLOAT3 GetStrength()const noexcept;
 		float GetFalloffStart()const noexcept;
 		float GetFalloffEnd()const noexcept;
@@ -32,11 +37,11 @@ namespace JinEngine
 		void SetShadow(const bool value)noexcept; 
 		void SetLightType(const J_LIGHT_TYPE lightType)noexcept;
 		 
-		J_COMPONENT_TYPE GetComponentType()const noexcept final;
+		bool IsShadowActivated()const noexcept;
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final;
-	public:
-		bool Copy(JObject* ori) final;
+	private:
+		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;  
@@ -48,7 +53,6 @@ namespace JinEngine
 		void StuffSpotLight(Graphic::JLightConstants& constant)noexcept;
 	private:
 		bool UpdateFrame(Graphic::JLightConstants& lightConstant, Graphic::JShadowMapConstants& shadowConstant) final;
-		void SetFrameDirty()noexcept final;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JLight* light);

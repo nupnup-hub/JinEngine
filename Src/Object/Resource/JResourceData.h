@@ -7,12 +7,14 @@
 #include"Mesh/JDefaultShapeType.h"
 #include"Shader/JDefaultShaderType.h"
 #include"Shader/JShaderFunctionEnum.h"
-#include"Texture/EditorTextureEnum.h" 
+#include"Texture/JEditorTextureEnum.h" 
+#include"JResourceUserInterface.h"
 #include"../../Core/JDataType.h"
 
 namespace JinEngine
 {
-	struct JResourceData
+	class JTexture;
+	class JResourceData : public JResourceUserInterface
 	{
 	public:
 		struct DefaultTextureInfo
@@ -30,7 +32,7 @@ namespace JinEngine
 		// 나머지는 컴파일시 생성되고 고정값이므로 유지 
 		static const std::vector<DefaultTextureInfo> selectorTexInfo;
 		static const std::vector<DefaultTextureInfo> projectTexInfo;
-		static std::unordered_map<J_EDITOR_TEXTURE, int> defaultTextureMap; 
+		static std::unordered_map<J_EDITOR_TEXTURE, size_t> defaultTextureMap;
 
 		//static const uint editorTextureCapacity;
 		static const std::string basicTextureFolder;
@@ -41,18 +43,17 @@ namespace JinEngine
 		static const std::vector<J_DEFAULT_SHAPE> defaultMeshTypes;
 		static const std::vector<J_DEFAULT_MATERIAL> defaultMaterialTypes;
 		 
-		std::unordered_map<J_DEFAULT_SHAPE, size_t> basicMeshGuidMap;
-		std::unordered_map<J_DEFAULT_MATERIAL, size_t> basicMaterialGuidMap;
+		std::unordered_map<J_DEFAULT_SHAPE, size_t> defaultMeshGuidMap;
+		std::unordered_map<J_DEFAULT_MATERIAL, size_t> defaultMaterialGuidMap;
 		std::unordered_map<J_DEFAULT_SHADER, size_t> defaultShaderGuidMap;
+		Core::JUserPtr<JTexture> missingTerxture;
+		const size_t guid;
 
 		// Init Resource Capacity
-		static constexpr  uint initMeshCapacity = 250;
-		static constexpr  uint initModelCapacity = 50;
+		static constexpr  uint initMeshCapacity = 250; 
 		static constexpr  uint initMaterialCapacity = 150;
 		static constexpr  uint initTextureCapacity = 150;
-		static constexpr  uint initGameObjectCapacity = 10000;
-		static constexpr  uint initSkinnedGameObjectCapacity = 50;
-		static constexpr  uint initSkinnedObjectCapacity = 10;
+		static constexpr  uint initGameObjectCapacity = 10000; 
 		static constexpr  uint initSceneCapacity = 8;
 		static constexpr  uint initSkeletonCapacity = 25;
 		static constexpr  uint initAnimationClipCapacity = 25;
@@ -62,6 +63,14 @@ namespace JinEngine
 		//JScene Viewer 2 + JScene Editor 1
 		static constexpr  uint initSceneCameraCapacity = 16;
 		static constexpr  uint initPreviewSceneCapacity = 150;
-
+	public:
+		JResourceData();
+		~JResourceData();
+	public:
+		void Initialize();
+		void Clear();
+		void SetMissing(JTexture* missingT);
+	private:
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 	};
 }

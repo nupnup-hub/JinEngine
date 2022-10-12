@@ -4,7 +4,7 @@
 
 namespace JinEngine
 {
-	class JObject;
+	//class JObject;
 	namespace Core
 	{
 		namespace

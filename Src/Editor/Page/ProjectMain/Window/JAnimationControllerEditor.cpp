@@ -1,6 +1,5 @@
 #include"JAnimationControllerEditor.h"
 #include"../../JEditorAttribute.h"
-#include"../../../Transition/JEditorTransition.h"
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
 #include"../../../String/JEditorString.h"
 #include"../../../Popup/JEditorPopup.h"
@@ -11,16 +10,20 @@
 #include"../../../../Object/Resource/JResourceManager.h"
 #include"../../../../Object/Component/Animator/JAnimator.h"
 #include"../../../../Object/GameObject/JGameObject.h"
+#include"../../../../Core/FSM/JFSMfactory.h"
 #include"../../../../Core/FSM/AnimationFSM/JAnimationFSMdiagram.h"
 #include"../../../../Core/FSM/AnimationFSM/JAnimationFSMstate.h"
+#include"../../../../Core/FSM/AnimationFSM/JAnimationFSMstateClip.h"
 #include"../../../../Core/FSM/JFSMcondition.h"
+#include"../../../../Core/Reflection/JTypeTemplate.h"
+#include"../../../../Core/Guid/GuidCreator.h"
 #include"../../../../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		struct JAnimationControllerEditor::DiagramViewFuncData
+		struct DiagramViewFuncData
 		{
 		public:
 			float windowPosX;
@@ -29,19 +32,26 @@ namespace JinEngine
 			float windowHeight;
 		};
 
-		static JAnimationController* controller = nullptr;
-		static Core::JAnimationFSMdiagram* selectedDiagram = nullptr;
-		static Core::JAnimationFSMstate* selectedState = nullptr;
-		static Core::JFSMcondition* selectedCondition = nullptr;
-
-		JAnimationControllerEditor::JAnimationControllerEditor(std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType)
-			:JEditorWindow(std::move(attribute), ownerPageType),
+		JAnimationControllerEditor::JAnimationControllerEditor(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType)
+			:JEditorWindow(name, std::move(attribute), ownerPageType),
 			diagramListName("DiagramList##" + GetName()),
 			conditionListName("ConditionList##" + GetName()),
 			diagramViewName("DiagramView##" + GetName())
 		{
 			editorString = std::make_unique<JEditorString>();
+			RegisterDiagramFunc();
+			RegisterConditionFunc();
+			RegisterStateFunc();
+			nameBuf.resize(maxNameOfLength);
+		}
+		JAnimationControllerEditor::~JAnimationControllerEditor() {};
 
+		J_EDITOR_WINDOW_TYPE JAnimationControllerEditor::GetWindowType()const noexcept
+		{
+			return J_EDITOR_WINDOW_TYPE::ANIMATION_CONTROLLER_EDITOR;
+		}
+		void JAnimationControllerEditor::RegisterDiagramFunc()
+		{
 			//Diagram List Popup
 			std::unique_ptr<JEditorPopupNode> diagramListRootNode =
 				std::make_unique<JEditorPopupNode>("Animation Controller Editor Diagram List Popup Root", J_EDITOR_POPUP_NODE_TYPE::ROOT, nullptr);
@@ -54,16 +64,46 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Destroy Diagram", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, diagramListRootNode.get());
 			editorString->AddString(eraseDiagramNode->GetNodeId(), { "Destroy Diagram" , u8"애니메이션 다이어그램 삭제" });
 
-			DiagramCreateFunctor createDiagramFunc{ &JAnimationControllerEditor::CreateNewDiagram };
-			DiagramDestroyFunctor destroyDiagramFunc{ &JAnimationControllerEditor::DestroyDiagram };
+			auto createDiagramLam = [](DataHandleStructure& dataStructure,
+				Core::JDataHandle& dataHandle,
+				Core::JUserPtr<JAnimationController> aniCont,
+				const size_t guid)
+			{
+				if (aniCont.IsValid())
+				{
+					Core::JOwnerPtr<Core::JIdentifier> owner = dataStructure.Release(dataHandle); 
+					if (owner.IsValid() && Core::Cast<Core::JAnimationFSMdiagram>(owner.Get()))
+						Core::JIdentifier::AddInstance(Core::JOwnerPtr<Core::JAnimationFSMdiagram>::ConvertChildType(std::move(owner)));
+					else
+						Core::JFDFI<Core::JAnimationFSMdiagram>::Create(Core::JPtrUtil::MakeOwnerPtr<Core::JFSMdiagram::InitData>(guid, aniCont));
+				}
+			};
 
-			createDiagramTuple = std::make_unique<DiagramCreateTuple>(createNewDiagramNode->GetNodeId(), createDiagramFunc);
-			destroyDiagramTuple = std::make_unique<DiagramDestroyTuple>(createNewDiagramNode->GetNodeId(), destroyDiagramFunc);
+			auto destroyDiagramLam = [](DataHandleStructure& dataStructure,
+				Core::JDataHandle& dataHandle,
+				Core::JUserPtr<JAnimationController> aniCont,
+				const size_t guid)
+			{
+				if (aniCont.IsValid())
+				{
+					auto diagramPtr = aniCont->GetDiagram(guid);
+					if (diagramPtr != nullptr)
+					{ 
+						Core::JDataHandle newHandle = dataStructure.Add(Core::JIdentifier::ReleaseInstance<Core::JAnimationFSMdiagram>(diagramPtr->GetGuid()));
+						dataStructure.TransitionHandle(newHandle, dataHandle);
+					}
+				}
+			};
+
+			createDiagramT = std::tuple(createNewDiagramNode->GetNodeId(), std::make_unique<CreateDiagramFunctor>(createDiagramLam));
+			destroyDiagramT = std::tuple(eraseDiagramNode->GetNodeId(), std::make_unique<CreateDiagramFunctor>(destroyDiagramLam));
 
 			diagramListPopup = std::make_unique<JEditorPopup>(diagramListName, std::move(diagramListRootNode));
 			diagramListPopup->AddPopupNode(std::move(createNewDiagramNode));
 			diagramListPopup->AddPopupNode(std::move(eraseDiagramNode));
-
+		}
+		void JAnimationControllerEditor::RegisterConditionFunc()
+		{
 			//Condition List Popup
 			std::unique_ptr<JEditorPopupNode> conditionListRootNode =
 				std::make_unique<JEditorPopupNode>("Animation Controller Editor Condition List Popup Root", J_EDITOR_POPUP_NODE_TYPE::ROOT, nullptr);
@@ -76,90 +116,182 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Destroy Condition", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, conditionListRootNode.get());
 			editorString->AddString(destroyConditionNode->GetNodeId(), { "Destroy Condition" , u8"애니메이션 패러미터 삭제" });
 
-			ConditionCreateFunctor createConditionFunc{ &JAnimationControllerEditor::CreateNewCondition };
-			ConditionDestroyFunctor destroyConditionFunc{ &JAnimationControllerEditor::DestroyCondition };
+			auto createConditionLam = [](DataHandleStructure& dataStructure,
+				Core::JDataHandle& dataHandle,
+				Core::JUserPtr<JAnimationController> aniCont,
+				const size_t guid)
+			{
+				if (aniCont.IsValid())
+				{
+					Core::JOwnerPtr<Core::JIdentifier> owner = dataStructure.Release(dataHandle);
+					if (owner.IsValid() && Core::Cast<Core::JFSMcondition>(owner.Get()))
+						Core::JIdentifier::AddInstance(Core::JOwnerPtr<Core::JFSMcondition>::ConvertChildType(std::move(owner)));
+					else
+						Core::JFCFI<Core::JFSMcondition>::Create(Core::JPtrUtil::MakeOwnerPtr<Core::JFSMcondition::InitData>(guid, aniCont.Get()));
+				}
+			};
 
-			createConditionTuple = std::make_unique<ConditionCreateTuple>(createNewConditionNode->GetNodeId(), createConditionFunc);
-			destroyConditionTuple = std::make_unique<ConditionDestroyTuple>(destroyConditionNode->GetNodeId(), destroyConditionFunc);
+			auto destroyConditionLam = [](DataHandleStructure& dataStructure,
+				Core::JDataHandle& dataHandle,
+				Core::JUserPtr<JAnimationController> aniCont,
+				const size_t guid)
+			{
+				if (aniCont.IsValid())
+				{
+					auto conditionPtr = aniCont->GetCondition(guid);
+					if (conditionPtr != nullptr)
+					{
+						Core::JDataHandle newHandle = dataStructure.Add(Core::JIdentifier::ReleaseInstance<Core::JFSMcondition>(conditionPtr->GetGuid()));
+						dataStructure.TransitionHandle(newHandle, dataHandle);
+					}
+				}
+			};
+
+			createConditionT = std::tuple(createNewConditionNode->GetNodeId(), std::make_unique<CreateConditionFunctor>(createConditionLam));
+			destroyConditionT = std::tuple(destroyConditionNode->GetNodeId(), std::make_unique<CreateConditionFunctor>(destroyConditionLam));
 
 			conditionListPopup = std::make_unique<JEditorPopup>(conditionListName, std::move(conditionListRootNode));
 			conditionListPopup->AddPopupNode(std::move(createNewConditionNode));
 			conditionListPopup->AddPopupNode(std::move(destroyConditionNode));
 
+			auto setConditionTypeLam = [](const Core::J_FSMCONDITION_VALUE_TYPE vType,
+				Core::JUserPtr<JAnimationController> aniCont,
+				const size_t guid)
+			{
+				aniCont->GetCondition(guid)->SetValueType(vType);
+			};
+			setConditionTypeF = std::make_unique<SetConditionTypeFunctor>(setConditionTypeLam);
+			auto setConditionNameLam = [](const std::string value,
+				Core::JUserPtr<JAnimationController> aniCont,
+				size_t guid)
+			{
+				aniCont->GetCondition(guid)->SetName(JCUtil::U8StrToWstr(value));			 
+			};
+			auto setConditionBoolLam = [](const bool value,
+				Core::JUserPtr<JAnimationController> aniCont,
+				size_t guid)
+			{
+				aniCont->GetCondition(guid)->SetValue(value);
+			};
+			auto setConditionIntLam = [](const int value,
+				Core::JUserPtr<JAnimationController> aniCont,
+				size_t guid)
+			{
+				aniCont->GetCondition(guid)->SetValue(value);
+			};
+			auto setConditionFloatLam = [](const float value,
+				Core::JUserPtr<JAnimationController> aniCont,
+				size_t guid)
+			{
+				aniCont->GetCondition(guid)->SetValue(value);
+			};
+
+			setConditionNameF = std::make_unique<SetConditionNameFunctor>(setConditionNameLam);
+			setConditionBoolF = std::make_unique< SetConditionBooleanValueFunctor>(setConditionBoolLam);
+			setConditionIntF = std::make_unique< SetConditionIntValueFunctor>(setConditionIntLam);
+			setConditionFloatF = std::make_unique< SetConditionFloatValueFunctor>(setConditionFloatLam);
+		}
+		void JAnimationControllerEditor::RegisterStateFunc()
+		{
 			//Diagram View Popup
 			std::unique_ptr<JEditorPopupNode> diagramViewRootNode =
 				std::make_unique<JEditorPopupNode>("Animation Controller Editor Diagram View Popup Root", J_EDITOR_POPUP_NODE_TYPE::ROOT, nullptr);
 
-			std::unique_ptr<JEditorPopupNode> createNewStateNode =
+			std::unique_ptr<JEditorPopupNode> createNewCilpStateNode =
 				std::make_unique<JEditorPopupNode>("Create New State", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, diagramViewRootNode.get());
-			editorString->AddString(createNewStateNode->GetNodeId(), { "Create New State" , u8"애니메이션 상태 생성" });
+			editorString->AddString(createNewCilpStateNode->GetNodeId(), { "Create New Animation Clip" , u8"애니메이션 클립 생성" });
 
 			std::unique_ptr<JEditorPopupNode> destroyStateNode =
 				std::make_unique<JEditorPopupNode>("Destroy State", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, diagramViewRootNode.get());
-			editorString->AddString(destroyStateNode->GetNodeId(), { "Destroy State" , u8"애니메이션 상태 삭제" });
+			editorString->AddString(destroyStateNode->GetNodeId(), { "Destroy Animation State" , u8"애니메이션 상태 삭제" });
 
-			DiagramViewCreateFunctor createStateFunc{ &JAnimationControllerEditor::CreateNewState };
-			DiagramViewDestroyFunctor destroyStateFunc{ &JAnimationControllerEditor::DestroyState };
+			auto createStateLam = [](DataHandleStructure& dataStructure,
+				Core::JDataHandle& dataHandle,
+				Core::JUserPtr<JAnimationController> aniCont,
+				const size_t diagramGuid,
+				const size_t stateGuid)
+			{
+				if (aniCont.IsValid())
+				{
+					Core::JOwnerPtr<Core::JIdentifier> owner = dataStructure.Release(dataHandle);
+					if (owner.IsValid() && Core::Cast<Core::JAnimationFSMstate>(owner.Get()))
+					{
+						Core::J_ANIMATION_STATE_TYPE sType = Core::Cast<Core::JAnimationFSMstate>(owner.Get())->GetStateType();
+						if (sType == Core::J_ANIMATION_STATE_TYPE::CLIP)
+							Core::JIdentifier::AddInstance(Core::JOwnerPtr<Core::JAnimationFSMstateClip>::ConvertChildType(std::move(owner)));
+						else //미구현
+							;//AddInstance(Core::JOwnerPtr<Core::JAnimationBlend>::ConvertChildType(std::move(owner)));
+					}
+					else
+						Core::JFSFI<Core::JAnimationFSMstate>::Create(Core::JPtrUtil::MakeOwnerPtr<Core::JFSMstate::InitData>
+							(stateGuid, Core::GetUserPtr<Core::JAnimationFSMdiagram>(diagramGuid)));
+				}
+			};
 
-			createDiagramViewTuple = std::make_unique<DiagramViewCreateTuple>(createNewStateNode->GetNodeId(), createStateFunc);
-			destroyDiagramViewTuple = std::make_unique<DiagramViewDestroyTuple>(destroyStateNode->GetNodeId(), destroyStateFunc);
+			auto destroyStateLam = [](DataHandleStructure& dataStructure,
+				Core::JDataHandle& dataHandle,
+				Core::JUserPtr<JAnimationController> aniCont,
+				const size_t diagramGuid,
+				const size_t stateGuid)
+			{
+				if (aniCont.IsValid())
+				{
+					auto diagramPtr = aniCont->GetDiagram(diagramGuid);
+					if (diagramPtr != nullptr)
+					{
+						auto statePtr = diagramPtr->GetState(stateGuid);
+						if (statePtr != nullptr)
+						{
+							if (statePtr->GetStateType() == Core::J_ANIMATION_STATE_TYPE::CLIP)
+							{
+								Core::JDataHandle newHandle = dataStructure.Add(Core::JIdentifier::ReleaseInstance<Core::JAnimationFSMstateClip>(statePtr->GetGuid()));
+								dataStructure.TransitionHandle(newHandle, dataHandle);
+							}
+							else
+							{//미구현
+							//	Core::JDataHandle newHandle = dataStructure.Add(ReleaseInstance<Core::JFSMcondition>(conditionPtr->GetGuid()));
+							//	dataStructure.TransitionHandle(newHandle, dataHandle);
+							}
+						}
+					}
+				}
+			};
+
+			createStateT = std::tuple(createNewCilpStateNode->GetNodeId(), std::make_unique<CreateStateFunctor>(createStateLam));
+			destroyStateT = std::tuple(destroyStateNode->GetNodeId(), std::make_unique<CreateStateFunctor>(destroyStateLam));
 
 			diagramViewPopup = std::make_unique< JEditorPopup>(diagramViewName, std::move(diagramViewRootNode));
-			diagramViewPopup->AddPopupNode(std::move(createNewStateNode));
+			diagramViewPopup->AddPopupNode(std::move(createNewCilpStateNode));
 			diagramViewPopup->AddPopupNode(std::move(destroyStateNode));
-
-			nameBuf.resize(nameMaxLength);
-
-			auto setBooleanLam = [](Core::JFSMcondition& condition, bool value) {condition.SetValue(value); };
-			auto setIntLam = [](Core::JFSMcondition& condition, int value) {condition.SetValue(value); };
-			auto setFloatLam = [](Core::JFSMcondition& condition, float value) {condition.SetValue(value); };
-
-			void(*setBPtr)(Core::JFSMcondition & condition, bool value) = setBooleanLam;
-			void(*setIPtr)(Core::JFSMcondition & condition, int value) = setIntLam;
-			void(*setFPtr)(Core::JFSMcondition & condition, float value) = setFloatLam;
-
-			setBooleanFunctor = std::make_unique< SetBooleanConditionFunctor>(setBPtr);
-			setIntFunctor = std::make_unique< SetIntConditionFunctor>(setIPtr);
-			setFloatFunctor = std::make_unique< SetFloatConditionFunctor>(setFPtr);
-		}
-		JAnimationControllerEditor::~JAnimationControllerEditor() {};
-
-		void JAnimationControllerEditor::Initialize()
-		{
-
-
 		}
 		void JAnimationControllerEditor::UpdateWindow()
 		{
-			JEditorWindow::UpdateWindow();
+			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			UpdateDocking();
+			if (IsActivated() && aniCont.IsValid())
+			{ 
+				UpdateMouseClick(); 
+				float oriSize = ImGui::GetStyle().ChildBorderSize;
+				ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 2);
+				float preCursorPosY = ImGui::GetCursorPosY();
+				BuildDiagramList();
+				BuildConditionList();
 
-			controller = JResourceManager::Instance().GetResource<JAnimationController>(controllerGuid);
-			if (controller != nullptr)
-			{
-				selectedDiagram = isSelectedDiagram ? controller->EditorInterface()->GetDiagram(selectedDiagramGuid) : nullptr;
-				selectedState = isSelectedState ? controller->EditorInterface()->GetState(selectedDiagramGuid, selectedStateGuid) : nullptr;
-				selectedCondition = isSelectedCondition ? controller->EditorInterface()->GetCondition(selectedConditionGuid) : nullptr;
+				JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_Header);
+				JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_HeaderHovered);
+				JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_HeaderActive);
+				BuildDiagramView(preCursorPosY);
+				JImGuiImpl::SetColorToDefault(ImGuiCol_Header);
+				JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderHovered);
+				JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderActive);
+
+				ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, oriSize);
+				preMousePosX = ImGui::GetMousePos().x;
+				preMousePosY = ImGui::GetMousePos().y;
+
+				ClearCash();
 			}
-
-			float oriSize = ImGui::GetStyle().ChildBorderSize;
-			ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 2);
-			float preCursorPosY = ImGui::GetCursorPosY();
-			BuildDiagramList();
-			BuildConditionList();
-
-			JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_Header);
-			JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_HeaderHovered);
-			JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_HeaderActive);
-			BuildAnimationDiagramView(preCursorPosY);
-			JImGuiImpl::SetColorToDefault(ImGuiCol_Header);
-			JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderHovered);
-			JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderActive);
-
-			ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, oriSize);
-			preMousePosX = ImGui::GetMousePos().x;
-			preMousePosY = ImGui::GetMousePos().y;
-
-			ClearCash();
+			CloseWindow();		 
 		}
 		void JAnimationControllerEditor::BuildDiagramList()
 		{
@@ -167,50 +299,47 @@ namespace JinEngine
 			JImGuiImpl::BeginChildWindow("DiagramList##JAnimationControllerEditor", JVector2<float>(windowSize.x * 0.2f, windowSize.y * 0.4f), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 			JImGuiImpl::Text("DiagramList");
 
-			if (controller != nullptr)
-			{
-				std::vector<Core::JAnimationFSMdiagram*> diagramVec = controller->EditorInterface()->GetDiagramVec();
-				const uint diagramCount = (uint)diagramVec.size();
-				ImGuiTableFlags flag = ImGuiTableFlags_Borders | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-				if (JImGuiImpl::BeginTable("##DiagramList_Table_AnimationControllerEditor", 1, flag))
-				{
-					JImGuiImpl::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
-					JImGuiImpl::TableHeadersRow();
-					for (uint i = 0; i < diagramCount; ++i)
-					{
-						JImGuiImpl::TableNextRow();
-						JImGuiImpl::TableSetColumnIndex(0);
+			const std::vector<Core::JAnimationFSMdiagram*>& diagramVec = aniCont->GetDiagramVec();
+			const uint diagramCount = (uint)diagramVec.size();
 
-						if (JImGuiImpl::Selectable(diagramVec[i]->GetName().c_str(), &diagramListSelectable[i]))
+			ImGuiTableFlags flag = ImGuiTableFlags_Borders | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+			if (JImGuiImpl::BeginTable("##DiagramList_Table_AnimationControllerEditor", 1, flag))
+			{
+				JImGuiImpl::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+				JImGuiImpl::TableHeadersRow();
+				for (uint i = 0; i < diagramCount; ++i)
+				{
+					JImGuiImpl::TableNextRow();
+					JImGuiImpl::TableSetColumnIndex(0);
+
+					if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(diagramVec[i]->GetName()), &diagramListSelectable[i]))
+					{
+						if (diagramIndex != i)
 						{
-							if (selectedDiagram == nullptr || diagramVec[i]->GetGuid() != selectedDiagram->GetGuid())
-							{
-								for (uint j = 0; j < diagramCount; ++j)
-									diagramListSelectable[j] = false;
-								diagramListSelectable[i] = true;
-								selectedDiagramGuid = diagramVec[i]->GetGuid();
-								isSelectedDiagram = true;
-							}
-							isSelectedCondition = false;
-							isSelectedState = false;
+							ClearSelectableBuff(diagramListSelectable);
+							diagramListSelectable[i] = true;
+							diagramIndex = i;
+							conditionIndex = invalidIndex;
+							stateIndex = invalidIndex;
 						}
 					}
-					JImGuiImpl::EndTable();
-					BuildDiagramListPopup();
 				}
-
-				if (JImGuiImpl::IsMouseInWindow(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
-				{
-					if (JImGuiImpl::IsRightMouseClick())
-					{
-						diagramListPopup->SetOpen(!diagramListPopup->IsOpen());
-						conditionListPopup->SetOpen(false);
-						diagramViewPopup->SetOpen(false);
-					}
-					else if (JImGuiImpl::IsLeftMouseClick() && diagramListPopup->IsOpen() && !diagramListPopup->IsMouseInPopup())
-						CloseAllPopup();
-				}
+				JImGuiImpl::EndTable();
+				BuildDiagramListPopup();
 			}
+
+			if (JImGuiImpl::IsMouseInWindow(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
+			{
+				if (JImGuiImpl::IsRightMouseClicked())
+				{
+					diagramListPopup->SetOpen(!diagramListPopup->IsOpen());
+					conditionListPopup->SetOpen(false);
+					diagramViewPopup->SetOpen(false);
+				}
+				else if (JImGuiImpl::IsLeftMouseClicked() && diagramListPopup->IsOpen() && !diagramListPopup->IsMouseInPopup())
+					CloseAllPopup();
+			}
+
 			JImGuiImpl::EndChildWindow();
 		}
 		void JAnimationControllerEditor::BuildDiagramListPopup()
@@ -222,23 +351,32 @@ namespace JinEngine
 				diagramListPopup->ExecutePopup(editorString.get(), res, menuGuid);
 				if (res == J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE)
 				{
-					if (std::get<0>(*createDiagramTuple) == menuGuid)
-					{
-						DiagramCreateFunctor& doFunc = std::get<1>(*createDiagramTuple);
-						DiagramDestroyFunctor& undoFunc = std::get<1>(*destroyDiagramTuple);
+					Core::JAnimationFSMdiagram* diagram = aniCont->GetDiagramByIndex(diagramIndex);
+					if (aniCont->CanCreateDiagram())
+					{							
+						if (std::get<0>(createDiagramT) == menuGuid)
+						{ 
+							auto createF = &*(std::get<1>(createDiagramT));
+							auto destroyF = &*(std::get<1>(destroyDiagramT));
+			 
+							size_t guid = Core::MakeGuid(); 
+							auto cUptr = std::make_unique<CreateDiagramBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, std::move(guid));
+							auto dUptr = std::make_unique<CreateDiagramBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, std::move(guid));
+							 
+							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateDiagramBind, CreateDiagramBind>;
+							Core::JTransition::Execute(std::make_unique<CreationTask>("Create Diagram", std::move(cUptr), std::move(dUptr), fsmdata));						  
+						}
+						else if (diagram && std::get<0>(destroyDiagramT) == menuGuid)
+						{
+							auto createF = &*(std::get<1>(createDiagramT));
+							auto destroyF = &*(std::get<1>(destroyDiagramT));
+							 
+							auto cUptr = std::make_unique<CreateDiagramBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid());
+							auto dUptr = std::make_unique<CreateDiagramBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid());
 
-						auto doBind = DiagramCreateBinder(doFunc, *selectedController);
-						auto undoBind = DiagramDestroyBinder(undoFunc, *selectedController);
-						JEditorTransition::Execute(JEditorTask{ doBind, "Create Diagram" }, JEditorTask{ undoBind, "Destroy Diagram" });
-					}
-					else if (std::get<0>(*destroyDiagramTuple) == menuGuid)
-					{
-						DiagramCreateFunctor& doFunc = std::get<1>(*destroyDiagramTuple);
-						DiagramDestroyFunctor& undoFunc = std::get<1>(*createDiagramTuple);
-
-						auto doBind = DiagramDestroyBinder(doFunc, *selectedController);
-						auto undoBind = DiagramCreateBinder(undoFunc, *selectedController);
-						JEditorTransition::Execute(JEditorTask{ doBind, "Destroy Diagram" }, JEditorTask{ undoBind, "Create Diagram" });
+							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateDiagramBind, CreateDiagramBind>;
+							Core::JTransition::Execute(std::make_unique<CreationTask>("Destroy Diagram", std::move(dUptr), std::move(cUptr), fsmdata));
+						}
 					}
 					CloseAllPopup();
 				}
@@ -252,243 +390,252 @@ namespace JinEngine
 
 			ImGuiTableFlags flag = ImGuiTableFlags_BordersV |
 				ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody;
-			if (selectedController != nullptr)
+
+			const uint conditionCount = aniCont->GetConditionCount();
+			if (JImGuiImpl::BeginTable("##ConditionList_Table_AnimationControllerEditor", 4, flag))
 			{
-				const uint conditionCount = selectedController->GetConditionCount();
-				if (JImGuiImpl::BeginTable("##ConditionList_Table_AnimationControllerEditor", 4, flag))
+				JImGuiImpl::TableSetupColumn("", ImGuiTableColumnFlags_DefaultHide, 0.005f);
+				JImGuiImpl::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 0.445f);
+				JImGuiImpl::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch, 0.275f);
+				JImGuiImpl::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 0.275f);
+				JImGuiImpl::TableHeadersRow();
+				for (uint i = 0; i < conditionCount; ++i)
 				{
-					JImGuiImpl::TableSetupColumn("", ImGuiTableColumnFlags_DefaultHide, 0.005f);
-					JImGuiImpl::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 0.445f);
-					JImGuiImpl::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch, 0.275f);
-					JImGuiImpl::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 0.275f);
-					JImGuiImpl::TableHeadersRow();
-					for (uint i = 0; i < conditionCount; ++i)
+					Core::JFSMcondition* nowCondition = aniCont->GetConditionByIndex(i);
+					std::string name = JCUtil::WstrToU8Str(nowCondition->GetName());
+
+					JImGuiImpl::TableNextRow();
+					JImGuiImpl::TableSetColumnIndex(0);
+					if (JImGuiImpl::Selectable(("##ConditionName_Selectable" + name).c_str(), &conditionListSelectable[i], ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap))
 					{
-						Core::JFSMcondition* nowCondition = selectedController->GetCondition(i);
-						std::string name = nowCondition->GetName();
-
-						JImGuiImpl::TableNextRow();
-						JImGuiImpl::TableSetColumnIndex(0);
-						if (JImGuiImpl::Selectable(("##ConditionName_Selectable" + name).c_str(), &conditionListSelectable[i], ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap))
+						if (conditionIndex != i)
 						{
-							if (selectedCondition == nullptr || selectedCondition->GetGuid() != nowCondition->GetGuid())
-							{
-								for (uint j = 0; j < conditionCount; ++j)
-									conditionListSelectable[j] = false;
-								conditionListSelectable[i] = true;
-								selectedCondition = nowCondition;
-							}
-							selectedState = nullptr;
-							nameBuf.clear();
-							nameBuf.resize(nameMaxLength);
-
-							for (uint j = 0; j < name.size(); ++j)
-								nameBuf[j] = name[j];
+							ClearSelectableBuff(conditionListSelectable);
+							conditionListSelectable[i] = true;
+							conditionIndex = i;
+							diagramIndex = invalidIndex;
+							stateIndex = invalidIndex;
 						}
-						JImGuiImpl::TableSetColumnIndex(1);
-						ImGui::PushItemWidth(-FLT_MIN);
-						if (conditionListSelectable[i])
-						{
-							if (JImGuiImpl::InputText(("##ConditionName" + name).c_str(), &nameBuf[0], nameMaxLength, ImGuiInputTextFlags_EnterReturnsTrue))
-							{
-								const std::string newName = JCommonUtility::EraseEmptySpace(nameBuf);
-								if (newName != name)
-									selectedController->SetConditionName(nowCondition->GetName(), newName);
-							}
-						}
-						else
-							JImGuiImpl::Text(name.c_str());
-
-						Core::J_FSMCONDITION_VALUE_TYPE valueType = nowCondition->GetValueType();
-						JImGuiImpl::TableSetColumnIndex(2);
-						ImGui::PushItemWidth(-FLT_MIN);
-						if (JImGuiImpl::BeginCombo(("##SelectConditionValueType" + name).c_str(), Core::JFsmConditionValueType::ConditionEnumToString(valueType).c_str()))
-						{
-							for (uint j = 0; j < Core::JFsmConditionValueType::count; ++j)
-							{
-								Core::J_FSMCONDITION_VALUE_TYPE nowType = (Core::J_FSMCONDITION_VALUE_TYPE)((int)Core::J_FSMCONDITION_VALUE_TYPE::BOOL + j);
-								std::string valueStr = Core::JFsmConditionValueType::ConditionEnumToString(nowType) + "##FSMconditionValue";
-								if (JImGuiImpl::Selectable(valueStr.c_str()))
-									selectedController->SetConditionValueType(nowCondition->GetName(), nowType);
-							}
-							JImGuiImpl::EndCombo();
-						}
-
-						JImGuiImpl::TableSetColumnIndex(3);
-						ImGui::PushItemWidth(-FLT_MIN);
-						if (valueType == Core::J_FSMCONDITION_VALUE_TYPE::BOOL)
-						{
-							bool nowValue = (bool)nowCondition->GetValue();
-							bool preValue = nowValue;
-							if (JImGuiImpl::CheckBox(("##ConditionBoolean" + name).c_str(), nowValue))
-							{
-								auto doBind = SetBooleanConditionBinder(*setBooleanFunctor, *nowCondition, std::move(nowValue));
-
-								nowCondition->SetValue((float)nowValue);
-							}
-						}
-						else if (valueType == Core::J_FSMCONDITION_VALUE_TYPE::INT)
-						{
-							int nowValue = (int)nowCondition->GetValue();
-							if (JImGuiImpl::InputInt(("##ConditionInt" + name).c_str(), &nowValue))
-							{
-								if (nowValue != (int)nowCondition->GetValue())
-								{
-									nowCondition->SetValue((float)nowValue);
-								}
-							}
-						}
-						else if (valueType == Core::J_FSMCONDITION_VALUE_TYPE::FLOAT)
-						{
-							float nowValue = nowCondition->GetValue();
-							if (JImGuiImpl::InputFloat(("##ConditionFloat" + name).c_str(), &nowValue))
-							{
-								if (nowValue != nowCondition->GetValue())
-								{
-									nowCondition->SetValue(nowValue);
-								}
-							}
-						}
+						nameBuf.clear();
+						nameBuf.resize(maxNameOfLength);
+						for (uint j = 0; j < name.size(); ++j)
+							nameBuf[j] = name[j];
 					}
-					JImGuiImpl::EndTable();
-				}
+					JImGuiImpl::TableSetColumnIndex(1);
+					ImGui::PushItemWidth(-FLT_MIN);
+					if (conditionListSelectable[i])
+					{
+						if (JImGuiImpl::InputTextSet(GetName(),
+							nameBuf, 
+							maxNameOfLength,
+							ImGuiInputTextFlags_EnterReturnsTrue,
+							*setConditionNameF,
+							aniCont,
+							nowCondition->GetGuid()))
+							conditionListSelectable[i] = false;
+					}
+					else
+						JImGuiImpl::Text(name.c_str());
 
-				if (conditionListPopup->IsOpen())
+					Core::J_FSMCONDITION_VALUE_TYPE valueType = nowCondition->GetValueType();
+					JImGuiImpl::TableSetColumnIndex(2);
+					ImGui::PushItemWidth(-FLT_MIN);
+
+					JImGuiImpl::ComoboSet(GetName(), valueType, *setConditionTypeF, aniCont, nowCondition->GetGuid());
+
+					JImGuiImpl::TableSetColumnIndex(3);
+					ImGui::PushItemWidth(-FLT_MIN);
+					if (valueType == Core::J_FSMCONDITION_VALUE_TYPE::BOOL)
+						JImGuiImpl::CheckBoxSet(GetName(), (bool)nowCondition->GetValue(), *setConditionBoolF, aniCont, nowCondition->GetGuid());
+					else if (valueType == Core::J_FSMCONDITION_VALUE_TYPE::INT)
+						JImGuiImpl::InputIntSet(GetName(), (int)nowCondition->GetValue(), *setConditionIntF, aniCont, nowCondition->GetGuid());
+					else if (valueType == Core::J_FSMCONDITION_VALUE_TYPE::FLOAT)
+						JImGuiImpl::InputFloatSet(GetName(), (float)nowCondition->GetValue(), *setConditionFloatF, aniCont, nowCondition->GetGuid());
+				}
+				JImGuiImpl::EndTable();
+				BuildConditionListPopup();
+			}
+			if (JImGuiImpl::IsMouseInWindow())
+			{
+				if (JImGuiImpl::IsRightMouseClicked())
 				{
-					J_EDITOR_POPUP_NODE_RES res;
-					size_t menuGuid;
-					conditionListPopup->ExecutePopup(editorString.get(), res, menuGuid);
-					if (res == J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE)
-					{
-						auto func = conditionListPopupFunc.find(menuGuid);
-						if (func != conditionListPopupFunc.end())
-							func->second.Invoke();
-
-						CloseAllPopup();
-					}
+					diagramListPopup->SetOpen(false);
+					conditionListPopup->SetOpen(!conditionListPopup->IsOpen());
+					diagramViewPopup->SetOpen(false);
 				}
-				if (ImGui::IsMouseInWindow(ImGui::GetWindowPos(), ImGui::GetWindowSize()))
-				{
-					if (JImGuiImpl::IsRightMouseClick())
-					{
-						diagramListPopup->SetOpen(false);
-						conditionListPopup->SetOpen(!conditionListPopup->IsOpen());
-						diagramViewPopup->SetOpen(false);
-					}
-					else if (JImGuiImpl::IsLeftMouseClick() && conditionListPopup->IsOpen() && !conditionListPopup->IsMouseInPopup())
-						CloseAllPopup();
-				}
+				else if (JImGuiImpl::IsLeftMouseClicked() && conditionListPopup->IsOpen() && !conditionListPopup->IsMouseInPopup())
+					CloseAllPopup();
 			}
 			ImGui::EndChild();
 		}
 		void JAnimationControllerEditor::BuildConditionListPopup()
 		{
+			if (conditionListPopup->IsOpen())
+			{
+				J_EDITOR_POPUP_NODE_RES res;
+				size_t menuGuid;
+				conditionListPopup->ExecutePopup(editorString.get(), res, menuGuid);
+				if (res == J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE)
+				{
+					Core::JFSMcondition* cond = aniCont->GetConditionByIndex(conditionIndex);
+					if (aniCont->CanCreateCondition())
+					{ 
+						//using CreateBind = Core::
+						if (std::get<0>(createConditionT) == menuGuid)
+						{ 
+							auto createF = &*(std::get<1>(createConditionT));
+							auto destroyF = &*(std::get<1>(destroyConditionT));
 
+							size_t guid = Core::MakeGuid();
+							auto cUptr = std::make_unique<CreateConditionBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, std::move(guid));
+							auto dUptr = std::make_unique<CreateConditionBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, std::move(guid));
+
+							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateConditionBind, CreateConditionBind>;
+							Core::JTransition::Execute(std::make_unique<CreationTask>("Create Condition", std::move(cUptr), std::move(dUptr), fsmdata));
+						}
+						else if (cond && std::get<0>(destroyConditionT) == menuGuid)
+						{
+							auto createF = &*(std::get<1>(createConditionT));
+							auto destroyF = &*(std::get<1>(destroyConditionT));
+							 
+							auto cUptr = std::make_unique<CreateConditionBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, cond->GetGuid());
+							auto dUptr = std::make_unique<CreateConditionBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, cond->GetGuid());
+							 
+							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateConditionBind, CreateConditionBind>;
+							Core::JTransition::Execute(std::make_unique<CreationTask>("Destroy Condition", std::move(dUptr), std::move(cUptr), fsmdata));
+						}
+						CloseAllPopup();
+					}
+				}
+			}
 		}
-		void JAnimationControllerEditor::BuildAnimationDiagramView(float cursorPosY)
+		void JAnimationControllerEditor::BuildDiagramView(float cursorPosY)
 		{
 			ImVec2 windowSize = ImGui::GetWindowSize();
 			ImGui::SetCursorPos(ImVec2(windowSize.x * 0.2f + (ImGui::GetStyle().WindowPadding.x * 2) + (ImGui::GetStyle().WindowBorderSize * 2), cursorPosY));
 			ImGui::BeginChild("Diagram##JAnimationControllerEditor", ImVec2(windowSize.x * 0.8f, windowSize.y), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
-			if (selectedController != nullptr)
+			ImGui::Text(JCUtil::WstrToU8Str(aniCont->GetDiagramName(diagramIndex)).c_str());
+ 
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			DiagramViewFuncData funcData;
+			funcData.windowPosX = ImGui::GetWindowPos().x;
+			funcData.windowPosY = ImGui::GetWindowPos().y;
+			funcData.windowWidth = ImGui::GetWindowWidth();
+			funcData.windowHeight = ImGui::GetWindowHeight();
+
+			ImVec2 shapeSize = ImVec2(stateShapeWidth, stateShapeHeight);
+			ImVec2 shapeOffset = ImVec2(funcData.windowWidth * 0.5f, funcData.windowHeight * 0.5f);
+			ImVec2 windowPos = ImGui::GetWindowPos();
+			ImVec2 mousePos = ImGui::GetMousePos();
+
+			ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
+			ImVec2 canvas_sz = ImGui::GetContentRegionAvail();   // Resize canvas to what's available
+			ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
+			 
+			Core::JAnimationFSMdiagram* diagram = aniCont->GetDiagram(diagramIndex);
+			const uint stateCount = diagram->GetStateCount();
+
+			for (uint i = 0; i < stateCount; ++i)
 			{
-				ImGui::Text(selectedController->GetAnimationDiagramName(diagramIndex).c_str());
-				uint stateCount;
-				std::vector<Core::JAnimationFSMstate*>::const_iterator stateIter;
-				selectedController->GetAnimationFSMstateVectorHandle(diagramIndex, stateCount, stateIter);
-				ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-				DiagramViewFuncData funcData;
-				funcData.windowPosX = ImGui::GetWindowPos().x;
-				funcData.windowPosY = ImGui::GetWindowPos().y;
-				funcData.windowWidth = ImGui::GetWindowWidth();
-				funcData.windowHeight = ImGui::GetWindowHeight();
-
-				ImVec2 shapeSize = ImVec2(stateShapeWidth, stateShapeHeight);
-				ImVec2 shapeOffset = ImVec2(funcData.windowWidth * 0.5f, funcData.windowHeight * 0.5f);
-				ImVec2 windowPos = ImGui::GetWindowPos();
-				ImVec2 mousePos = ImGui::GetMousePos();
-
-				ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
-				ImVec2 canvas_sz = ImGui::GetContentRegionAvail();   // Resize canvas to what's available
-				ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
-
-				for (uint i = 0; i < stateCount; ++i)
+				Core::JAnimationFSMstate* nowState = diagram->GetState(i);
+				JVector2<float> stateCoord = nowState->GetPos();
+				ImVec2 cursorPos = ImVec2(stateCoord.x, stateCoord.y) + shapeOffset;
+				bool isSelect = true;
+				ImGui::SetCursorPos(cursorPos);
+				if (ImGui::Selectable(JCUtil::WstrToU8Str(nowState->GetName()).c_str(), &diagramViewSelectable[i], ImGuiSelectableFlags_SelectOnClick, ImVec2(stateShapeWidth, stateShapeHeight)))
 				{
-					Core::JAnimationFSMstate* nowState = *(stateIter + i);
-					JEditorDiagramNode* nowStateCoord = nowState->GetEditorDiagramNode();
-
-					ImVec2 cursorPos = ImVec2(nowStateCoord->GetPosX(), nowStateCoord->GetPosY()) + shapeOffset;
-					bool isSelect = true;
-					ImGui::SetCursorPos(cursorPos);
-					if (ImGui::Selectable(nowState->GetName().c_str(), &diagramViewSelectable[i], ImGuiSelectableFlags_SelectOnClick, ImVec2(stateShapeWidth, stateShapeHeight)))
+					if (nowState->GetGuid() != diagram->GetState(stateIndex)->GetGuid())
 					{
-						if (selectedState == nullptr || selectedState->GetGuid() != nowState->GetGuid())
-						{
-							for (uint j = 0; j < stateCount; ++j)
-								diagramViewSelectable[j] = false;
-							diagramViewSelectable[i] = true;
-							selectedState = nowState;
-						}
-						selectedCondition = nullptr;
-					}
-
-					ImVec2 pMin = ImVec2(nowStateCoord->GetPosX(), nowStateCoord->GetPosY()) + (windowPos + shapeOffset);
-					ImVec2 pMax = ImVec2(nowStateCoord->GetPosX(), nowStateCoord->GetPosY()) + (windowPos + (shapeOffset + shapeSize));
-
-					if (diagramViewSelectable[i])
-					{
-						ImVec2 framePMin = pMin - ImVec2(frameThickness, frameThickness);
-						ImVec2 framePMax = pMax + ImVec2(frameThickness, frameThickness);
-						drawList->AddRect(framePMin, framePMax, ImGui::GetColorU32(ImVec4(0.2f, 0.2f, 0.75f, 0.7f)), 0.5f, 0, frameThickness + 0.5f);
-					}
-					drawList->AddRectFilledMultiColor(pMin, pMax,
-						ImGui::GetColorU32(ImVec4(0.25f, 0.25f, 0.75f, 0.7f)),
-						ImGui::GetColorU32(ImVec4(0.25f, 0.75f, 0.75f, 0.7f)),
-						ImGui::GetColorU32(ImVec4(0.25f, 0.75f, 0.25f, 0.7f)),
-						ImGui::GetColorU32(ImVec4(0.25f, 0.75f, 0.75f, 0.7f)));
-
-					if (diagramViewSelectable[i] && ImGui::IsMouseDragging(0))
-					{
-						nowStateCoord->SetPos(nowStateCoord->GetPosX() + (mousePos.x - preMousePosX),
-							nowStateCoord->GetPosY() + (mousePos.y - preMousePosY));
-					}
-
-					uint transtionCount;
-					std::vector<Core::JAnimationFSMtransition*>::const_iterator transitionIter = nowState->GetTransitionVectorHandle(transtionCount);
-
-					for (uint j = 0; j < transtionCount; ++j)
-					{
-						Core::JAnimationFSMtransition* nowTransition = *(transitionIter + j);
-					}
+						ClearSelectableBuff(diagramViewSelectable);
+						diagramViewSelectable[i] = true;
+						stateIndex = i; 
+						conditionIndex = invalidIndex;
+					} 
 				}
-				if (diagramViewPopup->IsOpen())
+
+				ImVec2 pMin = ImVec2(stateCoord.x, stateCoord.y) + (windowPos + shapeOffset);
+				ImVec2 pMax = ImVec2(stateCoord.x, stateCoord.y) + (windowPos + (shapeOffset + shapeSize));
+
+				if (diagramViewSelectable[i])
 				{
-					J_EDITOR_POPUP_NODE_RES res;
-					size_t menuGuid;
-					diagramViewPopup->ExecutePopup(editorString.get(), res, menuGuid);
-					if (res == J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE)
-					{
-						auto func = diagramViewPopupFunc.find(menuGuid);
-						if (func != diagramViewPopupFunc.end())
-							func->second.Invoke(funcData);
+					ImVec2 framePMin = pMin - ImVec2(frameThickness, frameThickness);
+					ImVec2 framePMax = pMax + ImVec2(frameThickness, frameThickness);
+					drawList->AddRect(framePMin, framePMax, ImGui::GetColorU32(ImVec4(0.2f, 0.2f, 0.75f, 0.7f)), 0.5f, 0, frameThickness + 0.5f);
+				}
+				drawList->AddRectFilledMultiColor(pMin, pMax,
+					ImGui::GetColorU32(ImVec4(0.25f, 0.25f, 0.75f, 0.7f)),
+					ImGui::GetColorU32(ImVec4(0.25f, 0.75f, 0.75f, 0.7f)),
+					ImGui::GetColorU32(ImVec4(0.25f, 0.75f, 0.25f, 0.7f)),
+					ImGui::GetColorU32(ImVec4(0.25f, 0.75f, 0.75f, 0.7f)));
 
-						CloseAllPopup();
-					}
-				}
-				if (ImGui::IsMouseInWindow(ImGui::GetWindowPos(), ImGui::GetWindowSize()))
+				if (diagramViewSelectable[i] && ImGui::IsMouseDragging(0))
 				{
-					if (editorUtility->rightMouseClick)
-					{
-						diagramListPopup->SetOpen(false);
-						conditionListPopup->SetOpen(false);
-						diagramViewPopup->SetOpen(!diagramViewPopup->IsOpen());
-					}
-					else if (editorUtility->leftMouseClick && diagramViewPopup->IsOpen() && !diagramViewPopup->IsMouseInPopup())
-						CloseAllPopup();
+					nowState->SetPos({ stateCoord.x + (mousePos.x - preMousePosX),
+						stateCoord.y + (mousePos.y - preMousePosY) });
 				}
+
+				//미구현
+				/*std::vector<Core::JAnimationFSMtransition*>& transitionIter = stateVec[i]->GetTransitionVector();
+				const uint transtionCount = (uint)transitionIter.size();
+				for (uint j = 0; j < transtionCount; ++j)
+				{
+					Core::JAnimationFSMtransition* nowTransition = *(transitionIter + j);
+				}*/
+			}
+			BuildDiagramViewPopup();
+			if (JImGuiImpl::IsMouseInWindow())
+			{
+				if (JImGuiImpl::IsRightMouseClicked())
+				{
+					diagramListPopup->SetOpen(false);
+					conditionListPopup->SetOpen(false);
+					diagramViewPopup->SetOpen(!diagramViewPopup->IsOpen());
+				}
+				else if (JImGuiImpl::IsLeftMouseClicked() && diagramViewPopup->IsOpen() && !diagramViewPopup->IsMouseInPopup())
+					CloseAllPopup();
 			}
 			ImGui::EndChild();
+		}
+		void JAnimationControllerEditor::BuildDiagramViewPopup()
+		{
+			if (diagramViewPopup->IsOpen())
+			{
+				J_EDITOR_POPUP_NODE_RES res;
+				size_t menuGuid;
+				diagramViewPopup->ExecutePopup(editorString.get(), res, menuGuid);
+				if (res == J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE)
+				{
+					auto diagram = aniCont->GetDiagram(diagramIndex);	
+					auto state = diagram != nullptr ? diagram->GetState(stateIndex) : nullptr;
+					if (aniCont->CanCreateState(diagramIndex))
+					{ 
+						if (std::get<0>(createStateT) == menuGuid)
+						{ 			
+							auto createF = &*(std::get<1>(createStateT));
+							auto destroyF = &*(std::get<1>(destroyStateT));
+
+							size_t guid = Core::MakeGuid();
+							auto cUptr = std::make_unique<CreateStateBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), std::move(guid));
+							auto dUptr = std::make_unique<CreateStateBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), std::move(guid));
+
+							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateStateBind, CreateStateBind>;
+							Core::JTransition::Execute(std::make_unique<CreationTask>("Create State", std::move(cUptr), std::move(dUptr), fsmdata));
+						}
+						else if (state && std::get<0>(destroyStateT) == menuGuid)
+						{						 
+							auto createF = &*(std::get<1>(createStateT));
+							auto destroyF = &*(std::get<1>(destroyStateT));
+							 
+							auto cUptr = std::make_unique<CreateStateBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), state->GetGuid());
+							auto dUptr = std::make_unique<CreateStateBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), state->GetGuid());
+
+							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateStateBind, CreateStateBind>;
+							Core::JTransition::Execute(std::make_unique<CreationTask>("Destry State", std::move(dUptr), std::move(cUptr), fsmdata));
+						} 
+					}
+					CloseAllPopup();
+				}
+			}
 		}
 		void JAnimationControllerEditor::CloseAllPopup()noexcept
 		{
@@ -496,151 +643,69 @@ namespace JinEngine
 			conditionListPopup->SetOpen(false);
 			diagramViewPopup->SetOpen(false);
 		}
-		void JAnimationControllerEditor::ClearSelectableBuff()noexcept
+		void JAnimationControllerEditor::ClearSelectableBuff(bool* selectableBuf)noexcept
 		{
 			for (uint i = 0; i < selectableBufLength; ++i)
-			{
-				diagramListSelectable[i] = false;
-				conditionListSelectable[i] = false;
-				diagramViewSelectable[i] = false;
-			}
-		}
-		void JAnimationControllerEditor::CreateNewDiagram(const size_t controllerGuid, const std::string name, const size_t guid)noexcept
-		{
-			JAnimationController* controller = JResourceManager::Instance().GetResource<JAnimationController>(controllerGuid);
-			if(controller != nullptr)
-				controller->CreateAnimationDiagram(name, guid);
-		}
-		void JAnimationControllerEditor::CreateNewCondition(const size_t controllerGuid, const std::string name, const size_t guid)noexcept
-		{
-			JAnimationController* controller = JResourceManager::Instance().GetResource<JAnimationController>(controllerGuid);
-			if (controller != nullptr)
-				controller->CreateCondition(name, guid);
-		}
-		void JAnimationControllerEditor::CreateNewState(const size_t controllerGuid, const std::string name, const size_t guid, const DiagramViewFuncData funcData)noexcept
-		{
-			JAnimationController* controller = JResourceManager::Instance().GetResource<JAnimationController>(controllerGuid);
-			if (controller != nullptr)
-			{
-				ImVec2 windowPos = ImVec2(funcData.windowPosX, funcData.windowPosY);
-				ImVec2 mousePos = ImGui::GetMousePos();
-				ImVec2 shapeSize = ImVec2(stateShapeWidth, stateShapeHeight) * 0.5f;
-				ImVec2 shapeOffset = ImVec2(funcData.windowWidth * 0.5f, funcData.windowHeight * 0.5f);
-				ImVec2 newStateCoord = mousePos - windowPos - shapeOffset - shapeSize;
-			}
-			controller.CreateAnimationClip(diagramIndex, newStateCoord.x, newStateCoord.y);
-		}
-		void JAnimationControllerEditor::DestroyDiagram(const size_t controllerGuid, const size_t guid)noexcept
-		{
-			JAnimationController* controller = JResourceManager::Instance().GetResource<JAnimationController>(controllerGuid);
-			if (controller != nullptr)
-			{
-				controller->DestroyAnimationDiagram(guid);
-				for (uint i = 0; i < selectableBufLength; ++i)
-					diagramListSelectable[i] = false;
-			}		 
-		}
-		void JAnimationControllerEditor::DestroyCondition(const size_t controllerGuid, const size_t guid)noexcept
-		{
-			JAnimationController* controller = JResourceManager::Instance().GetResource<JAnimationController>(controllerGuid);
-			if (controller != nullptr)
-			{
-				controller->DestroyCondition(guid);
-				for (uint i = 0; i < selectableBufLength; ++i)
-					conditionListSelectable[i] = false;
-			}
-		}
-		void JAnimationControllerEditor::DestroyState(const size_t controllerGuid, const size_t guid)noexcept
-		{
-			controller.DestroyAnimationState(diagramIndex, aniState.GetName());
-			for (uint i = 0; i < selectableBufLength; ++i)
-				diagramViewSelectable[i] = false;
+				selectableBuf[i] = false;
 		}
 		void JAnimationControllerEditor::ClearCash()noexcept
 		{
-			controller = nullptr;
-			selectedDiagram = nullptr;
-			selectedState = nullptr;
-			selectedCondition = nullptr;
-
-			isSelectedDiagram = false;
-			isSelectedState = false;
-			isSelectedCondition = false;
+			aniCont.Clear();
+			ClearSelectableBuff(diagramListSelectable);
+			ClearSelectableBuff(conditionListSelectable);
+			ClearSelectableBuff(diagramViewSelectable);
+			diagramIndex = invalidIndex;
+			conditionIndex = invalidIndex;
+			stateIndex = invalidIndex;
 		}
-		void JAnimationControllerEditor::Activate()noexcept
+		void JAnimationControllerEditor::DoActivate()noexcept
 		{
-			JEditor::Activate();
+			JEditorWindow::Activate();
 			std::vector<J_EDITOR_EVENT> enumVec
 			{
 				J_EDITOR_EVENT::MOUSE_CLICK, J_EDITOR_EVENT::SELECT_OBJECT, J_EDITOR_EVENT::DESELECT_OBJECT
 			};
-
 			RegisterEventListener(enumVec);
 
 			preMousePosX = ImGui::GetMousePos().x;
 			preMousePosY = ImGui::GetMousePos().y;
 		}
-		void JAnimationControllerEditor::DeActivate()noexcept
+		void JAnimationControllerEditor::DoDeActivate()noexcept
 		{
-			JEditor::DeActivate();
+			JEditorWindow::DeActivate();
 			DeRegisterListener();
 			ClearCash();
 		}
-		void JAnimationControllerEditor::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEventStruct* eventStruct)
+		void JAnimationControllerEditor::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{
 			if (senderGuid == GetGuid())
 				return;
 
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)
 				CloseAllPopup();
-			else if (eventType == J_EDITOR_EVENT::SELECT_GAMEOBJECT)
+			else if (eventType == J_EDITOR_EVENT::SELECT_OBJECT)
 			{
-				JEditorSelectGameObjectEvStruct* selectGameObjEvStruct = static_cast<JEditorSelectGameObjectEvStruct*>(eventStruct);
-				JAnimator* animators = selectGameObjEvStruct->gameObject->GetComponentWithParent<JAnimator>();
-				if (animators != nullptr)
+				JEditorSelectObjectEvStruct* evstruct = static_cast<JEditorSelectObjectEvStruct*>(eventStruct);
+				if (evstruct->pageType == GetOwnerPageType() && evstruct->selectObj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
 				{
-					if (selectedController == nullptr || selectedController->GetGuid() !=
-						animators->GetAnimatorController()->GetGuid())
+					JResourceObject* rObject = static_cast<JResourceObject*>(evstruct->selectObj.Get());
+					if (rObject->GetResourceType() == J_RESOURCE_TYPE::ANIMATION_CONTROLLER)
 					{
-						ClearSelectableBuff();
-						selectedController = animators->GetAnimatorController();
-						diagramIndex = 0;
-						if (selectedController->GetAnimationDiagramCount() > 0)
+						ClearCash();
+						aniCont.ConnnectBaseUser(evstruct->selectObj);
+						if (aniCont->GetDiagramCount() > 0)
+						{
+							diagramIndex = 0;
 							diagramListSelectable[0] = true;
-
-						selectedState = nullptr;
-						selectedCondition = nullptr;
+						}
 					}
 				}
 			}
-			else if (eventType == J_EDITOR_EVENT::SELECT_RESOURCE)
+			else if (eventType == J_EDITOR_EVENT::DESELECT_OBJECT)
 			{
-				JEditorSelectResourceEvStruct* selectResourceEvStruct = static_cast<JEditorSelectResourceEvStruct*>(eventStruct);
-				if (selectResourceEvStruct->rObj->GetResourceType() == J_RESOURCE_TYPE::ANIMATION_CONTROLLER)
-				{
-					selectedController = static_cast<JAnimationController*>(selectResourceEvStruct->rObj);
-					diagramIndex = 0;
-					if (selectedController->GetAnimationDiagramCount() > 0)
-						diagramListSelectable[0] = true;
-
-					selectedState = nullptr;
-					selectedCondition = nullptr;
-				}
-			}
-			else if (eventType == J_EDITOR_EVENT::DESELECT_RESOURCE)
-			{
-				JEditorSelectResourceEvStruct* selectResourceEvStruct = static_cast<JEditorSelectResourceEvStruct*>(eventStruct);
-				if (selectResourceEvStruct->rObj->GetResourceType() == J_RESOURCE_TYPE::ANIMATION_CONTROLLER)
-				{
-					if (selectedController != nullptr && selectedController->GetGuid() == selectResourceEvStruct->rObj->GetGuid())
-					{
-						selectedController = nullptr;
-						diagramIndex = 0;
-						selectedState = nullptr;
-						selectedCondition = nullptr;
-						CloseAllPopup();
-					}
-				}
+				JEditorDeSelectObjectEvStruct* evstruct = static_cast<JEditorDeSelectObjectEvStruct*>(eventStruct);
+				if (evstruct->pageType == GetOwnerPageType())
+					ClearCash();
 			}
 		}
 	}

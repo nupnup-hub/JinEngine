@@ -14,7 +14,7 @@ namespace JinEngine
 		public:
 			JMethodInfoRegister(const std::string& name, const std::string& identificationName)
 			{
-				static JMemeberCallable<Type, Ret, Param...> callHandle{ ptr };
+				static JMemberCallable<Type, Ret, Param...> callHandle{ ptr };
 				static JCallableHint<RemoveAll_T<Ret>, RemoveAll_T<Param>...> hintHandle;
 				static JMethodInfo jMethodInfo{ JMethodInfoInitializer<Ret, Param...>(name, identificationName, typeid(Pointer).name(), callHandle, hintHandle, Type::StaticTypeInfo()) };
 				static bool init = false;

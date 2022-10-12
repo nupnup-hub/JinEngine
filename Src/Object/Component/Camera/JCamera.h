@@ -5,11 +5,11 @@
 namespace JinEngine
 {
 	class JTransform; 
-	class JCamera : public JCameraInterface
+	class JCamera final : public JCameraInterface
 	{
 		REGISTER_CLASS(JCamera)
 	private:
-		JTransform* ownerTransform;  
+		//JTransform* ownerTransform;  
 		J_CAMERA_STATE camState = J_CAMERA_STATE::IDEL; 
 
 		// Cache frustum properties.
@@ -30,9 +30,13 @@ namespace JinEngine
 		DirectX::XMFLOAT4X4 mView;
 		DirectX::XMFLOAT4X4 mProj;
 		DirectX::BoundingFrustum mCamFrustum;
+	public:
+		J_COMPONENT_TYPE GetComponentType()const noexcept final;
+		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
+		{
+			return J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
+		}
 	public: 	  
-		bool IsMainCamera()const noexcept;
-
 		JTransform* GetTransform()noexcept;
 		DirectX::XMMATRIX GetView()const noexcept;
 		DirectX::XMMATRIX GetProj()const noexcept;
@@ -58,15 +62,15 @@ namespace JinEngine
 		void SetViewSize(int width, int height) noexcept;
 		void SetOrthoCamera()noexcept;
 		void SetPerspectiveCamera()noexcept;
-		void SetMainCamera()noexcept;
+		void SetMainCamera(bool value)noexcept;
 
-		J_COMPONENT_TYPE GetComponentType()const noexcept final; 
+		bool IsMainCamera()const noexcept;
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final; 
-
-		JCameraStateInterface* StateInterface() final;
 	public:
-		bool Copy(JObject* ori) final;
+		JCameraStateInterface* StateInterface() final;
+	private:
+		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 
@@ -78,8 +82,7 @@ namespace JinEngine
 		void DestroyRenderTarget()noexcept;
 	private:
 		void UpdateViewMatrix()noexcept;
-		bool UpdateFrame(Graphic::JCameraConstants& constant)final;
-		void SetFrameDirty()noexcept final;
+		bool UpdateFrame(Graphic::JCameraConstants& constant)final; 
 	private:
 		void SetCameraState(const J_CAMERA_STATE state)noexcept final;
 	private:

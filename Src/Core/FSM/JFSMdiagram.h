@@ -1,8 +1,9 @@
 #pragma once
-#include"JFSMIdentifier.h"
+#include"JFSMInterface.h"
 #include"JFSMconditionValueType.h"
 #include"JFSMconditionStorageAccess.h"  
-#include"../JDataType.h"
+#include"JFSMownerInterface.h"
+#include"../JDataType.h" 
 #include<memory>
 #include<string>
 #include<unordered_map>
@@ -16,46 +17,77 @@ namespace JinEngine
 		class JFSMtransition;
 		class JFSMstate;
 
-		class JFSMdiagram : public JFSMIdentifier, public IJFSMconditionStorage
+		class JFSMstateOwner
 		{
+		private:
+			friend class JFSMstate;
+		public:
+			virtual std::wstring GetUniqueStateName(const std::wstring& initName)const noexcept = 0;
+		private:
+			virtual bool IsValidCondition(JFSMcondition* condition) noexcept = 0; 
+			virtual bool IsDiagramState(const size_t guid)noexcept = 0;
+		private:
+			virtual bool AddState(JFSMstate* newState)noexcept = 0;
+			virtual bool RemoveState(JFSMstate* state)noexcept = 0;
+		};
+
+		class JFSMdiagram : public JFSMInterface, 
+			public JFSMstateOwner,
+			public IJFSMconditionStorage
+		{
+			REGISTER_CLASS(JFSMdiagram)
+		public:
+			struct JFSMdiagramInitData : public JFSMIdentifierInitData
+			{
+			public:
+				JUserPtr<IJFSMdiagramOwner> diagramOwner;
+			public:
+				JFSMdiagramInitData(const std::wstring& name, const size_t guid, JUserPtr<IJFSMdiagramOwner> diagramOwner);
+				JFSMdiagramInitData(const size_t guid, JUserPtr<IJFSMdiagramOwner> diagramOwner);
+				JFSMdiagramInitData(JUserPtr<IJFSMdiagramOwner> diagramOwner);
+			public:
+				bool IsValid() noexcept;
+				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept;
+			}; 
+			using InitData = JFSMdiagramInitData;
 		public:
 			static constexpr uint maxNumberOffState = 100;
 		private:
-			//vector + unorered map => 64bit overhead
-			IJFSMconditionStorageUser* conditionStorage;
-			std::vector<std::unique_ptr<JFSMstate>> stateVec;
+			//vector + unorered map => 64bit overhead 
+			IJFSMdiagramOwner* diagramOwner;
+			std::vector<JFSMstate*> stateVec;
 			std::unordered_map<size_t, JFSMstate*> stateMap;
 			JFSMstate* initState = nullptr;
 			size_t nowStateGuid; 
-		public: 
-			JFSMdiagram(const std::wstring& name, const size_t guid, IJFSMconditionStorageUser* conditionStorage);
+		public:
+			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
+			std::wstring GetUniqueStateName(const std::wstring& initName)const noexcept final;
+			uint GetStateCount()const noexcept;
+		protected:
+			void Initialize()noexcept;
+			JFSMstate* GetNowState()noexcept;
+			JFSMstate* GetState(const size_t guid)noexcept; 
+			JFSMstate* GetStateByIndex(const uint index)noexcept;  
+			std::vector<JFSMstate*>& GetStateVec()noexcept;
+			IJFSMconditionStorageUser* GetStroageUser()noexcept;
+		private:
+			bool IsValidCondition(JFSMcondition* condition) noexcept final;
+			bool IsDiagramState(const size_t guid)noexcept final;
+		private:
+			bool AddState(JFSMstate* newState)noexcept final;
+			bool RemoveState(JFSMstate* state)noexcept final;
+		private:
+			bool RegisterCashData()noexcept;
+			bool DeRegisterCashData()noexcept;
+		protected:
+			void Clear()noexcept override; 
+		private:
+			void NotifyRemoveCondition(JFSMcondition* condition)noexcept final;
+		protected:
+			JFSMdiagram(const JFSMdiagramInitData& initData);
 			virtual ~JFSMdiagram();
 			JFSMdiagram(const JFSMdiagram& rhs) = delete;
 			JFSMdiagram& operator=(const JFSMdiagram& rhs) = delete;
-		public:
-			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
-			std::wstring GetStateUniqueName(const std::wstring& initName)const noexcept;
-		protected:
-			void Initialize()noexcept;
-			uint GetStateCount()noexcept; 
-			JFSMstate* GetNowState()noexcept;
-			JFSMstate* GetState(const size_t guid)noexcept; 
-			JFSMstate* GetStateByIndex(const uint index)noexcept;
-			IJFSMconditionStorageUser* GetIConditionStorage()noexcept;
-
-			void SetTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuid, const size_t conditionGuid, const uint conditionIndex)noexcept;
-			void SetTransitionCondtionOnValue(const size_t inputStateGuid, const size_t outputStateGuid, const uint conditionIndex, const float value)noexcept;
- 
-			JFSMstate* AddState(std::unique_ptr<JFSMstate> state)noexcept;
-			JFSMtransition* AddTransition(const size_t stateGuid, std::unique_ptr<JFSMtransition> transition)noexcept; 
-			JFSMconditionWrap* AddTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuid, const size_t conditionGuid)noexcept;
-
-			bool RemoveState(const size_t stateGuid)noexcept;
-			bool RemoveTransition(const size_t inputStateGuid, const size_t outputStateGuid)noexcept;
-			bool RemoveTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuid, const size_t conditionGuid)noexcept;
-			void Clear()noexcept;
-		private:
-			void NotifyRemoveCondition(JFSMcondition* condition)noexcept final;
 		};
 	}
 }

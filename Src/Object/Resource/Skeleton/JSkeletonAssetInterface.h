@@ -1,11 +1,11 @@
 #pragma once
 #include"../JResourceObject.h"  
 #include"../JClearableInterface.h"
+#include<memory>
 
 namespace JinEngine
 {
-	class JAvatar;
-	class JModel;
+	class JAvatar; 
 	namespace Editor
 	{
 		class JAvatarEditor;
@@ -23,25 +23,12 @@ namespace JinEngine
 		virtual void SetAvatar(JAvatar* avatar)noexcept = 0;
 		virtual void CopyAvatarJointIndex(JAvatar* target)noexcept = 0;
 	};
-
-	class JSkeletonAssetModelInteface
-	{
-	private:
-		friend class JModel;
-	protected:
-		virtual ~JSkeletonAssetModelInteface() = default;
-	public:
-		virtual JSkeletonAssetModelInteface* ModelInteface() = 0;
-	private:
-		virtual void SetOwnerModelGuid(const size_t guid)noexcept = 0;
-	};
-
+	 
 	class JSkeletonAssetInterface : public JResourceObject, 
 		public JSkeletonAssetAvatarInterface,
-		public JSkeletonAssetModelInteface,
 		public JClearableInterface
 	{
 	protected:
-		JSkeletonAssetInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JSkeletonAssetInterface(const JResourceObject::JResourceInitData& initdata);
 	};
 }

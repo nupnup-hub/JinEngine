@@ -11,7 +11,7 @@ namespace JinEngine
 	{
 		return resource->GetFullName();
 	}
-	std::wstring JFile::GetAvailableFormat()const noexcept
+	std::wstring JFile::GetFormat()const noexcept
 	{
 		return resource->GetFormat();
 	}

@@ -10,7 +10,7 @@ namespace JinEngine
 		JScene* scene;
 		JMaterial* textureMaterial;
 	public:
-		JPreviewDirectory(_In_ JDirectory* jDir, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag);
+		JPreviewDirectory(_In_ Core::JUserPtr<JDirectory> jDir, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag);
 		~JPreviewDirectory();
 		JPreviewDirectory(JPreviewDirectory&& rhs) = default;
 		JPreviewDirectory& operator=(JPreviewDirectory&& rhs) = default;

@@ -17,10 +17,10 @@ namespace JinEngine
 		{
 			J_FSMCONDITION_VALUE_TYPE valueType = condition->GetValueType();
 			if (valueType == J_FSMCONDITION_VALUE_TYPE::BOOL)
-				return std::clamp(onValue, 0.0f, 1.0f);
+				return static_cast<bool>(onValue);
 			else if (valueType == J_FSMCONDITION_VALUE_TYPE::INT)
-				return onValue;
-			else if (valueType == J_FSMCONDITION_VALUE_TYPE::FLOAT)
+				return static_cast<int>(onValue);
+			else 
 				return onValue;
 		}
 		void JFSMconditionWrap::SetCondition(JFSMcondition* newCondition)noexcept
@@ -41,9 +41,7 @@ namespace JinEngine
 		{
 			return condition != nullptr;
 		}
-		JFSMtransition::JFSMtransition(const size_t outputStateGuid)
-			:outputStateGuid(outputStateGuid)
-		{}
+
 		uint JFSMtransition::GetConditioCount()const noexcept
 		{
 			return (uint)conditionVec.size();
@@ -97,7 +95,7 @@ namespace JinEngine
 		JFSMconditionWrap* JFSMtransition::AddCondition(JFSMcondition* condition)noexcept
 		{
 			if (conditionVec.size() >= maxNumberOffCondition)
-				return false;
+				return nullptr;
 
 			conditionVec.push_back(std::make_unique<JFSMconditionWrap>(condition));
 			return conditionVec[conditionVec.size() - 1].get();
@@ -133,5 +131,9 @@ namespace JinEngine
 			for (uint index = 0; index < conditionVecSize; ++index)
 				conditionVec[index]->SetOnValue(0);
 		}
+		JFSMtransition::JFSMtransition(const size_t outputStateGuid)
+			:outputStateGuid(outputStateGuid)
+		{}
+		JFSMtransition::~JFSMtransition(){}
 	}
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include<type_traits>
-#include"../Core/JDataType.h"
+#include"../Core/JDataType.h" 
 
 namespace JinEngine
 {
@@ -161,9 +161,20 @@ namespace JinEngine
 		public:
 			enum : size_t { value = Remove<ArrayDimension_V<T> >= 2, T>::value };
 		};
+
+		template<typename T, bool res>
+		struct TypeCondition;
+		template<typename T>
+		struct TypeCondition<T, true>
+		{
+		public:
+			using Type = T;
+		};
+		template<typename T, bool res>
+		using TypeCondition_T = typename TypeCondition<T, res>::Type;
+
 		template<typename T>
 		static constexpr size_t ArrayLastDimensionCount_V = ArrayLastDimensionCount<std::remove_reference_t<T>>::value;
-
 		template<typename T>
 		static constexpr bool IsClass_V = std::is_class_v<RemoveAll_T<T>>;
 		template<typename T>

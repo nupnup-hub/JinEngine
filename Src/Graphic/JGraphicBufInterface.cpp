@@ -4,21 +4,21 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		int JGraphicBufElementInterface::GetBuffIndex()const noexcept
+		int JGraphicBufElementInterface::GetGraphicBuffIndex()const noexcept
 		{
 			return buffIndex;
 		}
-		void JGraphicBufElementInterface::SetBuffIndex(const int value)noexcept
+		void JGraphicBufElementInterface::SetGraphicBuffIndex(const int value)noexcept
 		{
 			buffIndex = value;
 		}
-		int JGraphicBufUserInterface::GetBuffIndex(JGraphicBufElementInterface& bufEleInterface)const noexcept
+		int JGraphicBufUserInterface::GetGraphicBuffIndex(JGraphicBufElementInterface& bufEleInterface)const noexcept
 		{
-			return bufEleInterface.GetBuffIndex();
+			return bufEleInterface.GetGraphicBuffIndex();
 		}
-		void JGraphicBufManagerInterface::SetBuffIndex(JGraphicBufElementInterface& bufEleInterface, int index)noexcept
+		void JGraphicBufManagerInterface::SetGraphicBuffIndex(JGraphicBufElementInterface& bufEleInterface, int index)noexcept
 		{
-			bufEleInterface.SetBuffIndex(index);
+			bufEleInterface.SetGraphicBuffIndex(index);
 		}
 	}
 }

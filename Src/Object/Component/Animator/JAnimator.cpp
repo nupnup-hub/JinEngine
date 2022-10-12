@@ -3,20 +3,21 @@
 #include"../../Resource/AnimationController/JAnimationController.h" 
 #include"../../Resource/Skeleton/JSkeletonAsset.h"
 #include"../../Resource/Skeleton/JSkeletonFixedData.h"
-#include"../../Resource/JResourceManager.h"
+#include"../../Resource/JResourceManager.h" 
 #include"../../GameObject/JGameObject.h" 
+#include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/File/JFileConstant.h"
 #include"../../../Graphic/FrameResource/JAnimationConstants.h"
+#include<fstream>
 
 namespace JinEngine
 {
 	static auto isAvailableoverlapLam = []() {return false; };
-	static auto componentTypeLam = []() {return J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR; };
 
-	void JAnimator::OnAnimation()noexcept
+	J_COMPONENT_TYPE JAnimator::GetComponentType()const noexcept
 	{
-		if (animationController != nullptr)
-			animationController->Initialize(animationTimes, skeletonAsset);
+		return GetStaticComponentType();
 	}
 	JSkeletonAsset* JAnimator::GetSkeletonAsset()noexcept
 	{
@@ -28,28 +29,25 @@ namespace JinEngine
 	}
 	void JAnimator::SetSkeletonAsset(JSkeletonAsset* newSkeletonAsset)noexcept
 	{
-		if (skeletonAsset != nullptr)
-			OffResourceReference(*skeletonAsset);
+		if(IsActivated())
+			CallOffResourceReference(skeletonAsset);
 		skeletonAsset = newSkeletonAsset;
-		if (skeletonAsset != nullptr)
-			OnResourceReference(*skeletonAsset);
-		ReRegisterComponent();
-		SetFrameDirty();
-	}
-	void JAnimator::SetAnimatorController(JAnimationController* animationController)noexcept
-	{
-		if (JAnimator::animationController != nullptr)
-			OffResourceReference(*JAnimator::animationController);
+		if (IsActivated())
+			CallOnResourceReference(skeletonAsset);
 
-		JAnimator::animationController = animationController;
-		if (JAnimator::animationController != nullptr)
-			OnResourceReference(*JAnimator::animationController);
 		ReRegisterComponent();
 		SetFrameDirty();
 	}
-	J_COMPONENT_TYPE JAnimator::GetComponentType()const noexcept
+	void JAnimator::SetAnimatorController(JAnimationController* newAnimationController)noexcept
 	{
-		return componentTypeLam();
+		if (IsActivated())
+			CallOffResourceReference(animationController);
+		animationController = newAnimationController;
+		if (IsActivated())
+			CallOnResourceReference(animationController);
+
+		ReRegisterComponent();
+		SetFrameDirty();
 	}
 	bool JAnimator::IsAvailableOverlap()const noexcept
 	{
@@ -62,40 +60,39 @@ namespace JinEngine
 		else
 			return false;
 	}
-	bool JAnimator::Copy(JObject* ori)
+	void JAnimator::OnAnimation()noexcept
 	{
-		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
-			return false;
-
-		if (typeInfo.IsA(ori->GetTypeInfo()))
-		{
-			JAnimator* oriAni = static_cast<JAnimator*>(ori);
-			SetSkeletonAsset(oriAni->skeletonAsset);
-			SetAnimatorController(oriAni->animationController);
-			SetFrameDirty();
-			return true;
-		}
-		else
-			return false;
+		if (animationController != nullptr)
+			animationController->Initialize(animationTimes, skeletonAsset);
+	}
+	void JAnimator::DoCopy(JObject* ori)
+	{
+		JAnimator* oriAni = static_cast<JAnimator*>(ori);
+		SetSkeletonAsset(oriAni->skeletonAsset);
+		SetAnimatorController(oriAni->animationController);
+		SetFrameDirty();
 	}
 	void JAnimator::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
 		RegisterComponent();
 		SetFrameDirty();
+		CallOnResourceReference(skeletonAsset);
+		CallOnResourceReference(animationController);
 	}
 	void JAnimator::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
 		DeRegisterComponent();
 		OffFrameDirty();
+		CallOffResourceReference(skeletonAsset);
+		CallOffResourceReference(animationController);
 	}
 	bool JAnimator::UpdateFrame(Graphic::JAnimationConstants& constant)
 	{
 		if (IsFrameDirted() && animationController != nullptr)
 		{
 			animationController->Update(animationTimes, skeletonAsset, constant);
-			MinusFrameDirty();
 			return true;
 		}
 		else
@@ -111,7 +108,7 @@ namespace JinEngine
 			if (skeletonAsset != nullptr && skeletonAsset->GetGuid() == jRobj->GetGuid())
 				SetSkeletonAsset(nullptr);
 			else if (animationController != nullptr && animationController->GetGuid() == jRobj->GetGuid())
-				SetAnimatorController(nullptr);			 
+				SetAnimatorController(nullptr);
 		}
 	}
 	Core::J_FILE_IO_RESULT JAnimator::CallStoreComponent(std::wofstream& stream)
@@ -128,22 +125,10 @@ namespace JinEngine
 
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
-		Core::J_FILE_IO_RESULT res = StoreMetadata(stream, animator);
-		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
-			return res;
-
-		JAnimationController* aniController = animator->GetAnimatorController();
-		if (aniController != nullptr)
-			stream << true << " " << aniController->GetGuid() << " ";
-		else
-			stream << false << " " << 0 << " ";
-
-		JSkeletonAsset* skeletonAsset = animator->GetSkeletonAsset();
-		if (skeletonAsset != nullptr)
-			stream << true << " " << skeletonAsset->GetGuid() << '\n';
-		else
-			stream << false << " " << 0 << '\n';
+		  
+		JFileIOHelper::StoreObjectIden(stream, animator);
+		JFileIOHelper::StoreHasObjectIden(stream ,animator->GetAnimatorController());
+		JFileIOHelper::StoreHasObjectIden(stream, animator->GetSkeletonAsset());
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -155,40 +140,23 @@ namespace JinEngine
 		if (!stream.is_open())
 			return nullptr;
 
-		ObjectMetadata metadata;
-		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
+		std::wstring guide;
+		size_t guid;
+		J_OBJECT_FLAG flag;
 
-		JAnimator* newAnimator;
-		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimator>(metadata.guid, metadata.flag, owner);
-			JAnimator* newAnimator = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-		}
-		else
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimator>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
-			JAnimator* newAnimator = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-		}
-		bool hasAniController;
-		bool hasSkeletonAsset;
-		size_t aniControllerGuid;
-		size_t skeletonAssetGuid;
-		stream >> hasAniController >> aniControllerGuid >> hasSkeletonAsset >> skeletonAssetGuid;
+		JFileIOHelper::LoadObjectIden(stream, guid, flag);
+		Core::JIdentifier* aniCont = JFileIOHelper::LoadHasObjectIden(stream);
+		Core::JIdentifier* skeletonAsset = JFileIOHelper::LoadHasObjectIden(stream);
+ 
+		Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimator>(guid, flag, owner);
+		JAnimator* newAnimator = ownerPtr.Get();
+		if (!AddInstance(std::move(ownerPtr)))
+			return nullptr;
 
-		if (hasAniController)
-		{
-			JAnimationController* aniController = JResourceManager::Instance().GetResource<JAnimationController>(aniControllerGuid);
-			if (aniController != nullptr)
-				newAnimator->SetAnimatorController(aniController);
-		}
-		if (hasSkeletonAsset)
-		{
-			JSkeletonAsset* skeletonAsset = JResourceManager::Instance().GetResource<JSkeletonAsset>(skeletonAssetGuid);
-			if (skeletonAsset != nullptr)
-				newAnimator->SetSkeletonAsset(skeletonAsset);
-		}
+		if (aniCont != nullptr && aniCont->GetTypeInfo().IsA(JAnimationController::StaticTypeInfo()))
+			newAnimator->SetAnimatorController(static_cast<JAnimationController*>(aniCont));
+		if (skeletonAsset != nullptr && skeletonAsset->GetTypeInfo().IsA(JSkeletonAsset::StaticTypeInfo()))
+			newAnimator->SetSkeletonAsset(static_cast<JSkeletonAsset*>(skeletonAsset));
 		return newAnimator;
 	}
 	void JAnimator::RegisterJFunc()
@@ -196,16 +164,20 @@ namespace JinEngine
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimator>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
-			JComponent* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
+			JAnimator* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+				return newComp;
+			else
+				return nullptr;
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimator>(guid, objFlag, owner);
-			JComponent* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret; 
+			JAnimator* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+				return newComp;
+			else
+				return nullptr;
 		};
 		auto loadC = [](std::wifstream& stream, JGameObject* owner) -> JComponent*
 		{
@@ -214,22 +186,31 @@ namespace JinEngine
 		auto copyC = [](JComponent* ori, JGameObject* owner) -> JComponent*
 		{
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimator>(Core::MakeGuid(), ori->GetFlag(), owner);
-			JAnimator* newAni = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			newAni->Copy(ori);
-			return newAni;
+			JAnimator* newComp = ownerPtr.Get();
+			if (AddInstance(std::move(ownerPtr)))
+			{
+				if (newComp->Copy(ori))
+					return newComp;
+				else
+				{
+					newComp->BegineForcedDestroy();
+					return nullptr;
+				}
+			}
+			else
+				return nullptr;
 		};
-		JCFI<JAnimator>::Regist(defaultC, initC, loadC, copyC);
+		JCFI<JAnimator>::Register(defaultC, initC, loadC, copyC);
 
 		static GetTypeNameCallable getTypeNameCallable{ &JAnimator::TypeName };
-		static GetTypeInfoCallable getTypeInfoCallable{ &JAnimator::StaticTypeInfo };	 
+		static GetTypeInfoCallable getTypeInfoCallable{ &JAnimator::StaticTypeInfo };
 		bool(*ptr)() = isAvailableoverlapLam;
 		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 
-		static auto setFrameLam = [](JComponent& component){static_cast<JAnimator*>(&component)->SetFrameDirty();};
+		static auto setFrameLam = [](JComponent& component) {static_cast<JAnimator*>(&component)->SetFrameDirty(); };
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
-		static JCI::CTypeHint cTypeHint{ componentTypeLam(), true };
+		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
 		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable, isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
 
@@ -239,10 +220,10 @@ namespace JinEngine
 		:JAnimatorInterface(TypeName(), guid, objFlag, owner)
 	{
 		animationTimes.resize(JAnimationController::diagramMaxCount);
+		AddEventListener(*JResourceManager::Instance().EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 	}
 	JAnimator::~JAnimator()
 	{
-		skeletonAsset = nullptr;
-		animationController = nullptr;
+		RemoveListener(*JResourceManager::Instance().EvInterface(), GetGuid());
 	}
 }

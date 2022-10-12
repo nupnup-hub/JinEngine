@@ -8,7 +8,6 @@ namespace JinEngine
 	{
 	public:
 		JStaticMeshData CreateCube(float width, float height, float depth, uint numSubdivisions);
-
 		///<summary>
 		/// Creates a sphere centered at the origin with the given radius.  The
 		/// slices and stacks parameters control the degree of tessellation.

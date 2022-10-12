@@ -1,6 +1,6 @@
 #pragma once
 #include"../JComponent.h"
-#include"../../JFrameInterface.h"
+#include"../../JFrameUpdate.h"
 
 namespace JinEngine
 {
@@ -9,15 +9,20 @@ namespace JinEngine
 	namespace Graphic
 	{
 		struct JObjectConstants;
-	}
-
-	class JTransformInterface : public JComponent , public JShareFrameInterface<JRenderItem>
+	} 
+	class JTransformGameObjectInterface
 	{
 	private:
 		friend class JGameObject;
 	protected:
-		JTransformInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
-	protected:
 		virtual void ChangeParent() = 0;
+	};
+
+	class JTransformInterface : public JComponent, 
+		public JFrameDirtyObserver<JFrameDirtyTrigger>,
+		public JTransformGameObjectInterface
+	{
+	protected:
+		JTransformInterface(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
 	};
 }

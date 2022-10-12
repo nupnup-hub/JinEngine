@@ -1,5 +1,5 @@
 #pragma once   
-#include"JSceneInterface.h"
+#include"JSceneInterface.h" 
 #include"../Mesh/JMeshType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"
 #include"../../../Core/SpaceSpatial/Bvh/JBvhType.h"
@@ -25,28 +25,42 @@ namespace JinEngine
 	{
 		REGISTER_CLASS(JScene)
 	protected:
-		struct JSceneMetadata : public ObjectMetadata
+		struct JSceneMetadata final: public JResourceMetaData
 		{
 		public:
-			bool isOpen;
+			bool isOpen = false;
+			bool isMainScene = false;
+			bool isSpatialStructureActivated = false;
 		};
+	public:
+		struct JSceneInitData : public JResourceInitData
+		{
+		public:
+			JSceneInitData(const std::wstring& name,
+				const size_t guid,
+				const J_OBJECT_FLAG flag,
+				JDirectory* directory,
+				const uint8 formatIndex = JResourceObject::GetFormatIndex<JScene>(GetAvailableFormat()[0]));
+			JSceneInitData(const std::wstring& name,
+				JDirectory* directory,
+				const uint8 formatIndex = JResourceObject::GetFormatIndex<JScene>(GetAvailableFormat()[0]));
+			JSceneInitData(JDirectory* directory,
+				const uint8 formatIndex = JResourceObject::GetFormatIndex<JScene>(GetAvailableFormat()[0]));
+		public:
+			J_RESOURCE_TYPE GetResourceType() const noexcept;
+		};
+		using InitData = JSceneInitData;
 	private:
-		JGameObject* root;
+		JGameObject* root = nullptr;
 		std::unique_ptr<Core::JSceneSpatialStructure> spatialStructure;
 		std::vector<JGameObject*> allObjects;
 		std::vector<JGameObject*> objectLayer[(int)J_RENDER_LAYER::COUNT][(int)J_MESHGEOMETRY_TYPE::COUNT];
 		std::unordered_map<J_COMPONENT_TYPE, std::vector<JComponent*>> componentCash;
-		JCamera* mainCamera;
-		bool isAnimatorActivated;
-		bool isSpatialStructureActivated;
-		bool isSpatialStructureDebugActivated;
+		JCamera* mainCamera = nullptr;
+		bool isAnimatorActivated = false;
+		bool isSpatialStructureActivated = false;
+		bool isSpatialStructureDebugActivated = false; 
 	public:
-		JGameObject* FindGameObject(const size_t guid)noexcept;
-		JGameObject* GetRootGameObject()noexcept;
-		JGameObject* GetGameObject(const uint index)noexcept;
-		JCamera* GetMainCamera()noexcept;
-		uint GetGameObjectCount()const noexcept;
-		uint GetComponetCount(const J_COMPONENT_TYPE cType)const noexcept;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -54,18 +68,27 @@ namespace JinEngine
 		}
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
+	public:
+		JGameObject* FindGameObject(const size_t guid)noexcept;
+		JGameObject* GetRootGameObject()noexcept;
+		JGameObject* GetGameObject(const uint index)noexcept;
+		JCamera* GetMainCamera()noexcept;
+		uint GetGameObjectCount()const noexcept;
+		uint GetComponetCount(const J_COMPONENT_TYPE cType)const noexcept;
+		uint GetMeshCount()const noexcept;
 
 		bool IsAnimatorActivated()const noexcept; 
 		bool IsMainScene()const noexcept;
+		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
 	public:
 		JSceneCashInterface* CashInterface() final;
 		JSceneGameObjInterface* GameObjInterface() final;
 		JSceneCompInterface* CompInterface()final;
 		JSceneRegisterInterface* RegisterInterface() final;
-		JSceneFrameInterface* FrameInterface() final;
+		JSceneFrameInterface* AppInterface() final;
 		JSceneSpaceSpatialInterface* SpaceSpatialInterface() final;
-	public:
-		bool Copy(JObject* ori) final;
+	private:
+		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate() noexcept final;
 		void DoDeActivate()noexcept final;
@@ -73,14 +96,14 @@ namespace JinEngine
 		void StuffResource() final;
 		void ClearResource() final;
 	private:
-		std::vector<JGameObject*>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept final;
-		std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)noexcept final;
+		const std::vector<JGameObject*>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept final;
+		const std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)const noexcept final;
 
-		JGameObject* AddGameObject(JGameObject& newGameObject)noexcept;
+		bool AddGameObject(JGameObject& newGameObject)noexcept final;
 		bool RemoveGameObject(JGameObject& gameObj)noexcept final;
 
 		void SetAnimation()noexcept final;
-		JCamera* SetMainCamera(JCamera* animator)noexcept final;
+		void SetMainCamera(JCamera* animator)noexcept final;
 
 		bool RegisterComponent(JComponent& component)noexcept final;
 		bool DeRegisterComponent(JComponent& component)noexcept final;
@@ -102,13 +125,13 @@ namespace JinEngine
 		void DestroyDemoGameObject()noexcept;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
-		static Core::J_FILE_IO_RESULT StoreObject(JScene* scene);
+		static Core::J_FILE_IO_RESULT StoreObject(JScene* scene); 
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JScene* scene);
-		static JScene* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
+		static JScene* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
 		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, JSceneMetadata& metadata);
 		static void RegisterJFunc();
 	private:
-		JScene(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JScene(const JSceneInitData& initdata);
 		~JScene();
 	};
 }

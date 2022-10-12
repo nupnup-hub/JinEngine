@@ -6,7 +6,7 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JGraphicException : public JException
+		class JGraphicException final : public JException
 		{
 		private:
 			HRESULT hr;
@@ -14,8 +14,8 @@ namespace JinEngine
 			std::string hexerrorcode;
 		public:
 			JGraphicException(int line, const std::string file, HRESULT hr);
-			const std::wstring what() const override;
-			const std::wstring GetType()const override;
+			const std::wstring what() const final;
+			const std::wstring GetType()const final;
 		};
 	}
 }

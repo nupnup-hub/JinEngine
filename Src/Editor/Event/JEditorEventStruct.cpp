@@ -1,17 +1,21 @@
 #include"JEditorEventStruct.h"
 #include"../../Core/Reflection/JReflectionInfo.h"
-#include"../../Object/GameObject/JGameObject.h"
+#include"../../Object/GameObject/JGameObject.h" 
 #include"../../Object/Resource/JResourceManager.h"
 #include"../../Object/Resource/JResourceObject.h"
-#include"../../Object/Directory/JDirectory.h"
-#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../Object/Directory/JDirectory.h" 
+#include"../Page/JEditorPageShareData.h"
+#include"../Page/JEditorPage.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{
+		JEditorEvStruct::JEditorEvStruct(const J_EDITOR_PAGE_TYPE pageType)
+			:pageType(pageType)
+		{}
 		JEditorMouseClickEvStruct::JEditorMouseClickEvStruct(const std::string& windowName, const uint clickBtn, const J_EDITOR_PAGE_TYPE pageType)
-			:windowName(windowName), clickBtn(clickBtn), pageType(pageType)
+			:JEditorEvStruct(pageType), windowName(windowName), clickBtn(clickBtn)
 		{}
 		bool JEditorMouseClickEvStruct::PassDefectInspection()const noexcept
 		{
@@ -23,7 +27,7 @@ namespace JinEngine
 		}
 
 		JEditorSelectObjectEvStruct::JEditorSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> selectObj)
-			:pageType(pageType), selectObj(selectObj)
+			:JEditorEvStruct(pageType), selectObj(selectObj)
 		{}
 		bool JEditorSelectObjectEvStruct::PassDefectInspection()const noexcept
 		{
@@ -35,11 +39,11 @@ namespace JinEngine
 		}
 
 		JEditorDeSelectObjectEvStruct::JEditorDeSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType)
-			:pageType(pageType)
+			:JEditorEvStruct(pageType)
 		{}
 		bool JEditorDeSelectObjectEvStruct::PassDefectInspection()const noexcept
 		{
-			return JImGuiImpl::GetSelectedObj(pageType) != nullptr;
+			return JEditorPageShareData::GetSelectedObj(pageType).IsValid();
 		}
 		J_EDITOR_EVENT JEditorDeSelectObjectEvStruct::GetEventType()const noexcept
 		{
@@ -47,7 +51,7 @@ namespace JinEngine
 		}
 
 		JEditorOpenPageEvStruct::JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> openSelected)
-			:pageType(pageType), openSelected(openSelected)
+			:JEditorEvStruct(pageType), openSelected(openSelected)
 		{}
 		bool JEditorOpenPageEvStruct::PassDefectInspection()const noexcept
 		{
@@ -59,7 +63,7 @@ namespace JinEngine
 		}
 
 		JEditorClosePageEvStruct::JEditorClosePageEvStruct(const J_EDITOR_PAGE_TYPE pageType)
-			:pageType(pageType)
+			:JEditorEvStruct(pageType)
 		{}
 		bool JEditorClosePageEvStruct::PassDefectInspection()const noexcept
 		{
@@ -70,32 +74,8 @@ namespace JinEngine
 			return J_EDITOR_EVENT::CLOSE_PAGE;
 		}
 
-		JEditorFrontPageEvStruct::JEditorFrontPageEvStruct(JEditorPage* page)
-			:page(page)
-		{}
-		bool JEditorFrontPageEvStruct::PassDefectInspection()const noexcept
-		{
-			return page != nullptr;
-		}
-		J_EDITOR_EVENT JEditorFrontPageEvStruct::GetEventType()const noexcept
-		{
-			return J_EDITOR_EVENT::FRONT_PAGE;
-		}
-
-		JEditorBackPageEvStruct::JEditorBackPageEvStruct(JEditorPage* page)
-			:page(page)
-		{}
-		bool JEditorBackPageEvStruct::PassDefectInspection()const noexcept
-		{
-			return page != nullptr;
-		}
-		J_EDITOR_EVENT JEditorBackPageEvStruct::GetEventType()const noexcept
-		{
-			return J_EDITOR_EVENT::BACK_PAGE;
-		}
-
 		JEditorActPageEvStruct::JEditorActPageEvStruct(JEditorPage* actPage)
-			:actPage(actPage)
+			:JEditorEvStruct(actPage->GetPageType()), actPage(actPage)
 		{}
 		bool JEditorActPageEvStruct::PassDefectInspection()const noexcept
 		{
@@ -105,10 +85,8 @@ namespace JinEngine
 		{
 			return J_EDITOR_EVENT::ACTIVATE_PAGE;
 		}
-
-
 		JEditorDeActPageEvStruct::JEditorDeActPageEvStruct(JEditorPage* deActPage)
-			:deActPage(deActPage)
+			:JEditorEvStruct(deActPage->GetPageType()), deActPage(deActPage)
 		{}
 		bool JEditorDeActPageEvStruct::PassDefectInspection()const noexcept
 		{
@@ -120,7 +98,7 @@ namespace JinEngine
 		}
 
 		JEditorFocusPageEvStruct::JEditorFocusPageEvStruct(JEditorPage* focusPage)
-			:focusPage(focusPage)
+			:JEditorEvStruct(focusPage->GetPageType()), focusPage(focusPage)
 		{}
 		bool JEditorFocusPageEvStruct::PassDefectInspection()const noexcept
 		{
@@ -132,7 +110,7 @@ namespace JinEngine
 		}
 
 		JEditorUnFocusPageEvStruct::JEditorUnFocusPageEvStruct(JEditorPage* unFocusPage)
-			:unFocusPage(unFocusPage)
+			:JEditorEvStruct(unFocusPage->GetPageType()), unFocusPage(unFocusPage)
 		{}
 		bool JEditorUnFocusPageEvStruct::PassDefectInspection()const noexcept
 		{
@@ -142,8 +120,9 @@ namespace JinEngine
 		{
 			return J_EDITOR_EVENT::UNFOCUS_PAGE;
 		}
+
 		JEditorOpenWindowEvStruct::JEditorOpenWindowEvStruct(const std::string& openWindowName, const J_EDITOR_PAGE_TYPE pageType)
-			:openWindowName(openWindowName), pageType(pageType)
+			:JEditorEvStruct(pageType), openWindowName(openWindowName)
 		{}
 		bool JEditorOpenWindowEvStruct::PassDefectInspection()const noexcept
 		{
@@ -153,9 +132,8 @@ namespace JinEngine
 		{
 			return J_EDITOR_EVENT::OPEN_WINDOW;
 		}
-
 		JEditorCloseWindowEvStruct::JEditorCloseWindowEvStruct(const std::string& closeWindowName, const J_EDITOR_PAGE_TYPE pageType)
-			:closeWindowName(closeWindowName), pageType(pageType)
+			:JEditorEvStruct(pageType), closeWindowName(closeWindowName)
 		{}
 		bool JEditorCloseWindowEvStruct::PassDefectInspection()const noexcept
 		{
@@ -166,32 +144,8 @@ namespace JinEngine
 			return J_EDITOR_EVENT::CLOSE_WINDOW;
 		}
 
-		JEditorFrontWindowEvStruct::JEditorFrontWindowEvStruct(JEditorWindow* frontWindow, const J_EDITOR_PAGE_TYPE pageType)
-			:frontWindow(frontWindow), pageType(pageType)
-		{}
-		bool JEditorFrontWindowEvStruct::PassDefectInspection()const noexcept
-		{
-			return frontWindow != nullptr;
-		}
-		J_EDITOR_EVENT JEditorFrontWindowEvStruct::GetEventType()const noexcept
-		{
-			return J_EDITOR_EVENT::FRONT_WINDOW;
-		}
-
-		JEditorBackWindowEvStruct::JEditorBackWindowEvStruct(JEditorWindow* backWindow, const J_EDITOR_PAGE_TYPE pageType)
-			:backWindow(backWindow), pageType(pageType)
-		{}
-		bool JEditorBackWindowEvStruct::PassDefectInspection()const noexcept
-		{
-			return backWindow != nullptr;
-		}
-		J_EDITOR_EVENT JEditorBackWindowEvStruct::GetEventType()const noexcept
-		{
-			return J_EDITOR_EVENT::BACK_WINDOW;
-		}
-
 		JEditorActWindowEvStruct::JEditorActWindowEvStruct(JEditorWindow* actWindow, const J_EDITOR_PAGE_TYPE pageType)
-			:actWindow(actWindow), pageType(pageType)
+			:JEditorEvStruct(pageType), actWindow(actWindow)
 		{}
 		bool JEditorActWindowEvStruct::PassDefectInspection()const noexcept
 		{
@@ -203,7 +157,7 @@ namespace JinEngine
 		}
 
 		JEditorDeActWindowEvStruct::JEditorDeActWindowEvStruct(JEditorWindow* deActWindow, const J_EDITOR_PAGE_TYPE pageType)
-			:deActWindow(deActWindow), pageType(pageType)
+			:JEditorEvStruct(pageType), deActWindow(deActWindow)
 		{}
 		bool JEditorDeActWindowEvStruct::PassDefectInspection()const noexcept
 		{
@@ -215,7 +169,7 @@ namespace JinEngine
 		}
 
 		JEditorFocusWindowEvStruct::JEditorFocusWindowEvStruct(JEditorWindow* focusWindow, const J_EDITOR_PAGE_TYPE pageType)
-			:focusWindow(focusWindow), pageType(pageType)
+			:JEditorEvStruct(pageType), focusWindow(focusWindow)
 		{}
 		bool JEditorFocusWindowEvStruct::PassDefectInspection()const noexcept
 		{
@@ -227,7 +181,7 @@ namespace JinEngine
 		}
 
 		JEditorUnFocusWindowEvStruct::JEditorUnFocusWindowEvStruct(JEditorWindow* unFocusWindow, const J_EDITOR_PAGE_TYPE pageType)
-			:unFocusWindow(unFocusWindow), pageType(pageType)
+			:JEditorEvStruct(pageType), unFocusWindow(unFocusWindow)
 		{}
 		bool JEditorUnFocusWindowEvStruct::PassDefectInspection()const noexcept
 		{
@@ -236,6 +190,32 @@ namespace JinEngine
 		J_EDITOR_EVENT JEditorUnFocusWindowEvStruct::GetEventType()const noexcept
 		{
 			return J_EDITOR_EVENT::UNFOCUS_WINDOW;
+		}
+
+		JEditorBindFuncEvStruct::JEditorBindFuncEvStruct(const std::string& taskName, const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorEvStruct(pageType)
+		{}
+		J_EDITOR_EVENT JEditorBindFuncEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::BIND_FUNC;
+		}
+
+		JEditorSetBindFuncEvStruct::JEditorSetBindFuncEvStruct(const std::string& taskName,
+			const J_EDITOR_PAGE_TYPE pageType,
+			std::unique_ptr<Core::JBindHandleBase> doBindHandle,
+			std::unique_ptr<Core::JBindHandleBase> undoBindHandle)
+			:JEditorBindFuncEvStruct(taskName, pageType), 
+			doBindHandle(std::move(doBindHandle)),
+			undoBindHandle(std::move(undoBindHandle))
+		{} 
+		bool JEditorSetBindFuncEvStruct::PassDefectInspection()const noexcept
+		{
+			return doBindHandle != nullptr && undoBindHandle != nullptr;
+		}
+		void JEditorSetBindFuncEvStruct::Execute()
+		{
+			Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(taskName,
+				std::move(doBindHandle), std::move(undoBindHandle)));
 		}
 	}
 }

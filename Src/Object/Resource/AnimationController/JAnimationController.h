@@ -12,7 +12,9 @@ namespace JinEngine
 
 	namespace Core
 	{
-		class JFSMconditionStorage;
+		class JAnimationFSMdiagram; 
+		class JFSMconditionStorage; 
+		class JFSMcondition;
 		struct JAnimationTime;
 	}
 	namespace Graphic
@@ -23,19 +25,37 @@ namespace JinEngine
 	//수정필요 & 추가필요
 	//Load & store
 	//Clear& stuff
-	class JAnimationController : public JAnimationControllerInterface
+	class JAnimationController final : public JAnimationControllerInterface
 	{
 		REGISTER_CLASS(JAnimationController)
 	public:
-		constexpr static uint diagramMaxCount = 8;
+		struct JAnimationControllerInitData : JResourceInitData
+		{
+		public:
+			JAnimationControllerInitData(const std::wstring& name,
+				const size_t guid,
+				const J_OBJECT_FLAG flag,
+				JDirectory* directory,
+				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
+			JAnimationControllerInitData(const std::wstring& name,
+				JDirectory* directory,
+				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
+			JAnimationControllerInitData(JDirectory* directory,
+				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
+		public:
+			J_RESOURCE_TYPE GetResourceType() const noexcept;
+		};
+		using InitData = JAnimationControllerInitData;
+	public:
+		static constexpr uint diagramMaxCount = 8; 
 	private:
 		std::unique_ptr<Core::JFSMconditionStorage> conditionStorage;
-		std::vector<std::unique_ptr<Core::JAnimationFSMdiagram>> fsmDiagram;
+		std::vector<Core::JAnimationFSMdiagram*> fsmDiagram;
 		Core::JAnimationShareData animationShaderData;
 	public:
 		void Initialize(std::vector<Core::JAnimationTime>& animationtimes, JSkeletonAsset* modelSkeleton)noexcept;
 		void Update(std::vector<Core::JAnimationTime>& animationtimes, JSkeletonAsset* modelSkeleton, Graphic::JAnimationConstants& animationConstatns)noexcept;
-		
+	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -44,52 +64,48 @@ namespace JinEngine
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 	public:
-		uint GetAnimationDiagramCount()const noexcept;
-		std::wstring GetAnimationDiagramName(const size_t diagramGuid)noexcept; 
-		std::wstring GetUniqueDiagramName(const std::wstring& initName)noexcept;
+		uint GetDiagramCount()const noexcept; 
+		uint GetConditionCount()const noexcept; 
+		std::wstring GetDiagramName(const size_t diagramGuid)noexcept; 
+		std::wstring GetUniqueDiagramName(const std::wstring& initName)noexcept final;
 		std::wstring GetUniqueStateName(const size_t diagramGuid, const std::wstring& initName)noexcept;
 		std::wstring GetUniqueConditionName(const std::wstring& initName)noexcept;
-		 
-		uint GetConditionCount()const noexcept; 
 
-		void SetConditionName(const size_t guid, const std::wstring& newName)noexcept;
-		void SetConditionValueType(const size_t guid, const Core::J_FSMCONDITION_VALUE_TYPE type)noexcept;
+		Core::JAnimationFSMdiagram* GetDiagram(const size_t guid)noexcept;
+		Core::JAnimationFSMdiagram* GetDiagramByIndex(const uint index)noexcept;
+		const std::vector<Core::JAnimationFSMdiagram*>& GetDiagramVec()noexcept;
+		Core::JFSMcondition* GetCondition(const size_t guid)noexcept;
+		Core::JFSMcondition* GetConditionByIndex(const uint index)noexcept;
 
-		bool CreateAnimationDiagram(const std::wstring& name)noexcept;
-		bool CreateAnimationClipState(const std::wstring& name, const size_t diagramGuid)noexcept;
-		bool CreateTransition(const size_t intputStateGuid, const size_t outputStateGuid, const size_t diagramGuid);
-		bool CreateCondition(const std::wstring& name)noexcept;
-
-		bool DestroyAnimationDiagram(const size_t diagramGuid)noexcept;
-		bool DestroyAnimationState(const size_t statGuid, const size_t diagramGuid)noexcept;
-		bool DestroyCondition(const size_t conditionGuid)noexcept;
-	public:
-		JAnimationControllerEditInterface* EditorInterface() final;
+		bool CanCreateDiagram()const noexcept;
+		bool CanCreateCondition()const noexcept;
+		bool CanCreateState(const uint diagramIndex)const noexcept;
 	private:
-		Core::JAnimationFSMdiagram* GetDiagram(const size_t guid)noexcept final;
-		std::vector<Core::JAnimationFSMdiagram*> GetDiagramVec()noexcept final;
-		Core::JAnimationFSMstate* GetState(const size_t diagramGuid, const size_t stateGuid)noexcept final;
-		std::vector<Core::JAnimationFSMstate*>& GetStateVec(const size_t diagramGuid)noexcept final;
-		Core::JFSMcondition* GetCondition(const size_t guid) noexcept final; 
+		Core::IJFSMconditionOwner* GetConditionOwner()noexcept final;
+	private: 
+		Core::IJFSMconditionStorageUser* GetConditionStorageUser() noexcept final;
+		bool AddDiagram(Core::JFSMdiagram* diagram) noexcept final;
+		bool RemoveDiagram(Core::JFSMdiagram* diagram) noexcept final;
 	private:
 		Core::JAnimationFSMdiagram* FindDiagram(const size_t guid) noexcept;
-	public:
-		bool Copy(JObject* ori) final;
+	private:
+		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
 	private:
 		void StuffResource() final;
 		void ClearResource() final;
+		bool WriteAnimationControllerData();
 		bool ReadAnimationControllerData();
 		bool IsValid()const noexcept final;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JAnimationController* animationCont);
-		static JAnimationController* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
+		static JAnimationController* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
 		static void RegisterJFunc();
 	private:
-		JAnimationController(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JAnimationController(const JAnimationControllerInitData& initdata);
 		~JAnimationController();
 	};
 }

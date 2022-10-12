@@ -75,28 +75,28 @@ namespace JinEngine
 		static DirectX::XMFLOAT3 NormalizeAngles(const DirectX::XMFLOAT3& angles)noexcept;
 		 
 		static bool IsSame(const DirectX::XMFLOAT4X4& a, const DirectX::XMFLOAT4X4& b)noexcept;
-
+ 
 	public:
-		template<typename T, typename C = std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value>>
+		//template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Type>, int> = 0>
+		template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
 		static T Min(const T& a, const T& b)noexcept
 		{
 			return a < b ? a : b;
 		}
-		template<typename T, typename C = std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value>>
+		template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
 		static T Max(const T& a, const T& b)noexcept
 		{
 			return a > b ? a : b;
 		}
-		template<typename T, typename C = std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value>>
+		template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
 		static T Lerp(const T& a, const T& b, float t)noexcept
 		{
 			return a + (b - a) * t;
 		}
-		template<typename T, typename C = std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value>>
+		template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
 		static T Clamp(const T& x, const T& low, const T& high)noexcept
 		{
 			return x < low ? low : (x > high ? high : x);
 		}
-
 	};
 }

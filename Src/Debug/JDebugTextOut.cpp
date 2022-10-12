@@ -39,7 +39,7 @@ namespace JinEngine
 		}
 		void JDebugTextOut::PrintStr(const std::string& str)noexcept
 		{
-			stream << JCommonUtility::U8StrToWstr(str) << '\n';
+			stream << JCUtil::U8StrToWstr(str) << '\n';
 		}
 		void JDebugTextOut::PrintWstr(const std::wstring& str)noexcept
 		{
@@ -304,7 +304,7 @@ namespace JinEngine
 
 			std::string message00 = std::system_category().message(hr);
 			stream << L"Hresult" << '\n';
-			stream << JCommonUtility::StrToWstr(message00) << '\n';
+			stream << JCUtil::StrToWstr(message00) << '\n';
 		}
 		void JDebugTextOut::PrintGameObjectTree(JGameObject* root)
 		{
@@ -316,7 +316,7 @@ namespace JinEngine
 		void JDebugTextOut::PrintGameObjectTreeLoop(JGameObject* obj, uint level)
 		{
 			PrintSpace(level);
-			stream << obj->GetWName() << " HasR: " << obj->HasRenderItem() << '\n';
+			stream << obj->GetName() << " HasR: " << obj->HasRenderItem() << '\n';
 
 			const uint childrenCount = obj->GetChildrenCount();
 			for (uint i = 0; i < childrenCount; ++i)

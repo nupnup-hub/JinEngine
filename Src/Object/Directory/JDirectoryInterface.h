@@ -8,18 +8,6 @@ namespace JinEngine
 		class JWindowDirectory;
 	}
 
-	class JDirectoryDestroyInterface
-	{
-	private:
-		friend class JResourceManagerImpl;
-	protected:
-		virtual ~JDirectoryDestroyInterface() = default;
-	public:
-		virtual JDirectoryDestroyInterface* DestroyInterface() = 0;
-	private:
-		virtual void BeginForcedDestroy() = 0;
-	};
-
 	class JDirectoryOCInterface
 	{
 	private:
@@ -34,9 +22,10 @@ namespace JinEngine
 	};
 
 	class JDirectoryInterface :public JObject,
-		public JDirectoryOCInterface,
-		public JDirectoryDestroyInterface
+		public JDirectoryOCInterface
 	{
+	private:
+		friend class JResourceManagerImpl;
 	protected:
 		JDirectoryInterface(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag);
 	};

@@ -6,8 +6,10 @@
 
 namespace JinEngine
 {
-	class JAnimationClip;
+	class JAnimationClip; 
+	class JAnimationController;
 	class JSkeletonAsset;
+
 	namespace Graphic
 	{
 		struct JAnimationConstants;
@@ -16,52 +18,46 @@ namespace JinEngine
 	namespace Core
 	{
 		struct JAnimationShareData;
-		struct JAnimationTime;
-		struct JFSMLoadGuidMap;
+		struct JAnimationTime; 
 		class JAnimationFSMstate;
 		class JAnimationFSMtransition;
-		class JAnimationFSMdiagram : public JFSMdiagram
+		class JAnimationFSMdiagram final : public JFSMdiagram
 		{
-		private: 
-			std::vector<JAnimationFSMstate*> stateCash;
+			REGISTER_CLASS(JAnimationFSMdiagram)
+		private:
+			friend class JAnimationController;
+		private:  
 			JAnimationFSMstate* nowState;
 			JAnimationFSMstate* nextState;
 			JAnimationFSMtransition* nextTransition;
 			JBlender blender;
 			float weight;
 		public:
-			JAnimationFSMdiagram(const std::wstring& name, const size_t guid, IJFSMconditionStorageUser* conditionStorage);
-			~JAnimationFSMdiagram();
-		public:
 			void Initialize(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset)noexcept;
 			void Enter(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset);
 			void Update(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;
 		public:
-			bool HasAnimationData()noexcept;
-			bool HasState()noexcept;
+			bool HasNowState()const noexcept;
+			bool CanCreateState()const noexcept;
 
 			JAnimationFSMstate* GetState(const size_t stateGuid)noexcept;
-			std::vector<JAnimationFSMstate*>& GetStateVec()noexcept;
+			JAnimationFSMstate* GetStateByIndex(const uint index)noexcept;
+			const std::vector<JFSMstate*>& GetStateVec()noexcept;
 			 
-			void SetAnimationClip(const size_t stateGuid, JAnimationClip* clip)noexcept;
-			void SetTransitionCondition(const size_t inputStateGuid, const size_t outputStateGuid, const size_t conditionGuid, const uint conditionIndex)noexcept;
-			void SetTransitionCondtionOnValue(const size_t inputStateGuid, const size_t outputStateGuid, const uint conditionIndex, const float value)noexcept;
-
-			JAnimationFSMstate* CreateAnimationClipState(const std::wstring& name)noexcept;
-			JAnimationFSMtransition* CreateAnimationTransition(const size_t inputStateGuid, const size_t outputStateGuid)noexcept;
-
-			bool DestroyAnimationState(const size_t stateGuid)noexcept;
-			bool DestroyAnimationTransition(const size_t inputStateGuid, const size_t outputStateGuid)noexcept;
+			void SetClip(const size_t stateGuid, JAnimationClip* clip)noexcept; 
 			void Clear()noexcept;
 		private:
 			void StuffFinalTransform(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns)noexcept;
 			void CrossFading(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns)noexcept;
 			void PreprocessSkeletonBindPose(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset)noexcept;
-		public:
-			J_FILE_IO_RESULT StoreIdentifierData(std::wofstream& stream);
-			J_FILE_IO_RESULT StoreContentsData(std::wofstream& stream);
-			static std::unique_ptr<JAnimationFSMdiagram> LoadIdentifierData(std::wifstream& stream, JFSMLoadGuidMap& guidMap, IJFSMconditionStorageUser* conditionStorage);
-			J_FILE_IO_RESULT LoadContentsData(std::wifstream& stream, JFSMLoadGuidMap& guidMap);
+		private:
+			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
+			static JAnimationFSMdiagram* LoadData(std::wifstream& stream, JUserPtr<IJFSMdiagramOwner> fsmOwner);
+		private:
+			static void RegisterJFunc();
+		private:
+			JAnimationFSMdiagram(const JFSMdiagramInitData& initData);
+			~JAnimationFSMdiagram();
 		};
 	}
 }

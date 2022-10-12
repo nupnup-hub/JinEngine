@@ -38,10 +38,10 @@ namespace JinEngine
 		class JGraphicTexture : public JGraphicTextureInterface
 		{
 		private:
-			Graphic::JGraphicTextureHandle* handle;
+			Graphic::JGraphicTextureHandle* handle = nullptr;
 		protected:
-			bool Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path);
-			bool CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path);
+			bool Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat);
+			bool CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat);
 			bool CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0);
 			bool CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0);
 			bool DestroyTxtHandle();

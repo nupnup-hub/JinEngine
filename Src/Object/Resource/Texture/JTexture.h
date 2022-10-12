@@ -5,22 +5,43 @@
 
 namespace JinEngine
 {
-	class JTexture : public JTextureInterface
+	class JTexture final: public JTextureInterface
 	{
 		REGISTER_CLASS(JTexture)
-	private:
-		struct TextureMetadata : public ObjectMetadata
+	public:
+		struct JTextureInitData : public JResourceInitData
 		{
 		public:
-			int textureType;
+			const std::wstring oridataPath;
+		public:
+			JTextureInitData(const std::wstring& name,
+				const size_t guid,
+				const J_OBJECT_FLAG flag,
+				JDirectory* directory,
+				const std::wstring oridataPath);
+			JTextureInitData(const std::wstring& name,
+				const size_t guid,
+				const J_OBJECT_FLAG flag,
+				JDirectory* directory,
+				const uint8 formatIndex);
+			JTextureInitData(const std::wstring& name,
+				JDirectory* directory,
+				const std::wstring oridataPath);
+		public:
+			bool IsValidCreateData()final;
+			J_RESOURCE_TYPE GetResourceType() const noexcept;
+		};
+		using InitData = JTextureInitData;
+	private:
+		struct JTextureMetadata : public JResourceMetaData
+		{
+		public:
+			Graphic::J_GRAPHIC_TEXTURE_TYPE textureType;
 		};
 	private: 
 		Microsoft::WRL::ComPtr<ID3D12Resource> uploadHeap = nullptr;
 		Graphic::J_GRAPHIC_TEXTURE_TYPE textureType;
-	public:	  
-		uint GetTextureWidth()const noexcept;
-		uint GetTextureHeight()const noexcept;
-		Graphic::J_GRAPHIC_TEXTURE_TYPE GetTextureType()const noexcept;
+	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -28,9 +49,15 @@ namespace JinEngine
 		}
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
+	public:	  
+		uint GetTextureWidth()const noexcept;
+		uint GetTextureHeight()const noexcept;
+		Graphic::J_GRAPHIC_TEXTURE_TYPE GetTextureType()const noexcept;
 		void SetTextureType(const Graphic::J_GRAPHIC_TEXTURE_TYPE textureType)noexcept;
 	public:
-		bool Copy(JObject* ori);
+		JTextureImportInterface* ImportInterface()noexcept final;
+	private:
+		void DoCopy(JObject* ori)final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
@@ -38,15 +65,16 @@ namespace JinEngine
 		void StuffResource() final;
 		void ClearResource() final;
 		bool ReadTextureData();
+		bool ImportTexture(const std::wstring& oriPath) final;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JTexture* texture);
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JTexture* texture);
-		static JTexture* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, TextureMetadata& metadata);
+		static JTexture* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
+		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, JTextureMetadata& metadata);
 		static void RegisterJFunc();
 	private:
-		JTexture(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const int formatIndex);
+		JTexture(const JTextureInitData& initdata);
 		~JTexture();
 	};
 

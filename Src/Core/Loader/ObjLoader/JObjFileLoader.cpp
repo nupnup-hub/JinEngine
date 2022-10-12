@@ -1,11 +1,13 @@
 #include"JObjFileLoader.h"
 #include"../../DirectXEx/JDirectXCollisionEx.h"
+#include"../../Guid/GuidCreator.h"
+#include"../../File/JFilePathData.h"
 #include"../../../Object/Resource/Mesh/JMeshStruct.h"
 #include"../../../Object/Resource/Mesh/JMeshGeometry.h"
 #include"../../../Object/Resource/JResourcePathData.h"
+#include"../../../Object/Resource/Model/JModelAttribute.h"
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Utility/JMathHelper.h"
-#include"../../../Object/Resource/Model/JModelAttribute.h"
 
 #include<fstream>
 #include<io.h>
@@ -29,7 +31,7 @@ namespace JinEngine
 			}
 		}
 
-		bool JObjFileLoaderImpl::LoadObjFile(const JResourcePathData& pathData, std::vector<JObjMeshPartData>& objMeshData, std::vector<JObjMatData>& objMatData, JModelAttribute& modelAttribute)
+		bool JObjFileLoaderImpl::LoadObjFile(const JFileImportPathData& pathData, JObjFileMeshData& objMeshData, std::vector<JObjFileMatData>& objMatData)
 		{
 			std::wstring next;
 			std::wstring materialLibName;
@@ -45,9 +47,10 @@ namespace JinEngine
 
 			float x, y, z;
 			int meshCount = -1;
+			int faceCount =0;
 			std::wifstream stream;
 
-			stream.open(pathData.wstrPath, std::ios::in, std::ios::binary);
+			stream.open(pathData.oriFileWPath, std::ios::in, std::ios::binary);
 			if (!stream.is_open())
 			{
 				MessageBox(0, L"Stream Fail", 0, 0);
@@ -60,8 +63,8 @@ namespace JinEngine
 				if (next == L"o")
 				{
 					std::getline(stream, next);
-					meshName.push_back(JCommonUtility::EraseEmptySpace(next));
-					materialName.emplace_back(std::string());
+					meshName.push_back(JCUtil::EraseSideWChar(next, L' '));
+					materialName.push_back(L" ");
 					vertexCount.push_back(0);
 					indexCount.push_back(0);
 					faceInfo.emplace_back(std::vector<FaceInfo>());
@@ -70,12 +73,12 @@ namespace JinEngine
 				else if (next == L"usemtl")
 				{
 					std::getline(stream, next);
-					materialName[meshCount] = JCommonUtility::EraseEmptySpace(next);
+					materialName[meshCount] = JCUtil::EraseSideWChar(next, L' ');
 				}
 				else if (next == L"mtllib")
 				{
 					std::getline(stream, next);
-					materialLibName = JCommonUtility::EraseEmptySpace(next);
+					materialLibName = JCUtil::EraseSideWChar(next, L' ');
 				}
 				else if (next == L"v")
 				{
@@ -96,7 +99,7 @@ namespace JinEngine
 				else if (next == L"f")
 				{
 					std::getline(stream, next);
-					next = JCommonUtility::EraseEmptySpace(next);
+					next = JCUtil::EraseSideWChar(next, L' ');
 
 					std::vector<XMINT3> ptn;
 					std::wstring ptnIndexWstr;
@@ -117,6 +120,7 @@ namespace JinEngine
 						}
 					}
 					faceInfo[meshCount].emplace_back(FaceInfo(ptn));
+					++faceCount;
 					indexCount[meshCount] += nextCount;
 				}
 			}
@@ -126,13 +130,15 @@ namespace JinEngine
 			if (!materialLibName.empty())
 				hasMat = LoadMatFile(materialLibName, objMatData);
 
-			std::vector<JStaticMeshVertex> vertex(position.size());
+			std::vector<JStaticMeshVertex> totalVertex(position.size());
+			std::vector<std::vector<uint32>> meshIndicies(meshCount);
+		 
+
 			for (int i = 0; i < meshCount; ++i)
 			{
-				objMeshData.push_back(JObjMeshPartData());
-				objMeshData[i].meshName = meshName[i];
-				objMeshData[i].materialName = materialName[i];
-				objMeshData[i].staticMeshData.indices32.resize(indexCount[i]);
+				JStaticMeshData meshdata;
+				objMeshData.materialName.push_back(materialName[i]);
+				meshIndicies[i].resize(indexCount[i]);
 
 				uint indexSum = 0;
 				const int ptnIndexInfoCount = (int)faceInfo[i].size();
@@ -141,84 +147,74 @@ namespace JinEngine
 					uint fCount = (uint)faceInfo[i][j].ptn.size();
 					for (uint k = 0; k < fCount; ++k)
 					{
-						const uint pIndex = faceInfo[i][j].ptn[k].x;
-						const uint nIndex = faceInfo[i][j].ptn[k].y;
-						const uint tIndex = faceInfo[i][j].ptn[k].z;
-						vertex[pIndex] = JStaticMeshVertex(position[pIndex], normal[nIndex], texture[tIndex]);
-						objMeshData[i].staticMeshData.indices32[indexSum] = pIndex - indexCount[i];
+						const int pIndex = faceInfo[i][j].ptn[k].x;
+						const int nIndex = faceInfo[i][j].ptn[k].y;
+						const int tIndex = faceInfo[i][j].ptn[k].z;
+					 
+						totalVertex[pIndex] = JStaticMeshVertex(position[pIndex], { 0,0,0 }, {0, 0});
+						if (nIndex != -1)
+							totalVertex[pIndex].normal = normal[nIndex];
+						if (tIndex != -1)
+							totalVertex[pIndex].texC = texture[tIndex];
+
+						meshIndicies[i][indexSum] = pIndex - indexCount[i];
 						++indexSum;
 					}
 				}
 			}
 
-			XMFLOAT3 vMinf3 = JMathHelper::Min3F();
-			XMFLOAT3 vMaxf3 = JMathHelper::Max3F();
-
 			bool hasTangent = true;
 			bool isSameFace = true;
 
-			XMVECTOR modelMin = XMLoadFloat3(&vMinf3);
-			XMVECTOR modelMax = XMLoadFloat3(&vMaxf3);
-
 			for (int i = 0; i < meshCount; ++i)
 			{
-				XMVECTOR meshMin = XMLoadFloat3(&vMinf3);
-				XMVECTOR meshMax = XMLoadFloat3(&vMaxf3);
-
 				const uint vCount = vertexCount[i];
-				objMeshData[i].staticMeshData.vertices.resize(vCount);
+				std::vector<JStaticMeshVertex> meshVertex(vCount);
 
 				for (uint j = 0; j < vCount; ++j)
-				{
-					objMeshData[i].staticMeshData.vertices[j] = vertex[vertexCount[i] + j];
-
-					const XMVECTOR p = XMLoadFloat3(&objMeshData[i].staticMeshData.vertices[j].position);
-					meshMin = XMVectorMin(meshMin, p);
-					meshMax = XMVectorMax(meshMax, p);
-				}
-				modelMin = XMVectorMin(modelMin, meshMin);
-				modelMax = XMVectorMax(modelMax, meshMax);
-
-				objMeshData[i].boundingBox = JDirectXCollisionEx::CreateBoundingBox(meshMin, meshMax);
-				objMeshData[i].boundingSphere = JDirectXCollisionEx::CreateBoundingSphere(meshMin, meshMax);
+					meshVertex[j] = totalVertex[vertexCount[i] + j];
+				 
+				objMeshData.meshGroup.AddMeshData(JStaticMeshData{meshName[i],
+					MakeGuid(), 
+					std::move(meshIndicies[i]),
+					faceInfo[i][0].hasNormal,
+					faceInfo[i][0].hasUV, 
+					std::move(meshVertex)});
 			}
 			if (hasTangent && isSameFace)
 			{
-				std::vector<XMFLOAT4> tangent(vertex.size());
+				std::vector<XMFLOAT4> tangent(totalVertex.size());
 				for (int i = 0; i < meshCount; ++i)
 				{
-					normal[i] = vertex[i].normal;
-					texture[i] = vertex[i].texC;
+					normal[i] = totalVertex[i].normal;
+					texture[i] = totalVertex[i].texC;
 				}
 
 				ComputeTangentFrame(index.data(),
-					(uint)faceInfo[0][0].ptn.size(),
+					faceCount,
 					position.data(),
 					normal.data(),
 					texture.data(),
-					3,
+					position.size(),
 					tangent.data());
 
 				for (int i = 0; i < meshCount; ++i)
 				{
-					const uint vCount = vertexCount[i];
-					for (uint j = 0; j < vCount; ++j)
+					JStaticMeshData* meshdata = static_cast<JStaticMeshData*>(objMeshData.meshGroup.GetMeshData(i));
+					const int vCount = (int)vertexCount[i];
+					for (int j = 0; j < vCount; ++j)
 					{
-						objMeshData[i].staticMeshData.vertices[j].tangentU.x = tangent[vCount + j].x;
-						objMeshData[i].staticMeshData.vertices[j].tangentU.y = tangent[vCount + j].y;
-						objMeshData[i].staticMeshData.vertices[j].tangentU.z = tangent[vCount + j].z;
+						JStaticMeshVertex vertex = meshdata->GetVertex(j);
+						vertex.tangentU.x = tangent[vCount + j].x;
+						vertex.tangentU.y = tangent[vCount + j].y;
+						vertex.tangentU.z = tangent[vCount + j].z;
+						meshdata->SetVertex(j, vertex);
 					}
 				}
 			}
-			modelAttribute.modelBBox = JDirectXCollisionEx::CreateBoundingBox(modelMin, modelMax);
-			modelAttribute.modelBSphere = JDirectXCollisionEx::CreateBoundingSphere(modelMin, modelMax);
-			modelAttribute.totalIndex = (uint)index.size();
-			modelAttribute.totalVertex = (uint)vertex.size();
-			modelAttribute.hasSkeleton = false;
-
 			return true;
 		}
-		bool JObjFileLoaderImpl::LoadMatFile(const std::wstring& path, std::vector<JObjMatData>& objMatData)
+		bool JObjFileLoaderImpl::LoadMatFile(const std::wstring& path, std::vector<JObjFileMatData>& objMatData)
 		{
 			std::wifstream stream;
 			stream.open(path, std::ios::in, std::ios::binary);
@@ -234,9 +230,9 @@ namespace JinEngine
 				if (next == L"newmtl")
 				{
 					std::getline(stream, next);
-					objMatData.emplace_back(JObjMatData());
+					objMatData.emplace_back(JObjFileMatData());
 					++matCount;
-					objMatData[matCount].name = JCommonUtility::EraseEmptySpace(next);
+					objMatData[matCount].name = JCUtil::EraseSideWChar(next, L' ');
 				}
 				else if (next == L"Ka")
 				{
@@ -276,49 +272,49 @@ namespace JinEngine
 				else if (next == L"map_Ka")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].ambientTName = JCommonUtility::EraseEmptySpace(next);
+					objMatData[matCount].ambientTName = JCUtil::EraseSideWChar(next, L' ');
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_AMBIENT_T);
 				}
 				else if (next == L"map_Kd")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].albedoTName = JCommonUtility::EraseEmptySpace(next);
+					objMatData[matCount].albedoTName = JCUtil::EraseSideWChar(next, L' ');
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_ALBEDO_T);
 				}
 				else if (next == L"map_Ks")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].specularColorTName = JCommonUtility::EraseEmptySpace(next);
+					objMatData[matCount].specularColorTName = JCUtil::EraseSideWChar(next, L' ');
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_SPECULAR_COLOR_T);
 				}
 				else if (next == L"map_Ns")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].specularHighlightTName = JCommonUtility::EraseEmptySpace(next);
+					objMatData[matCount].specularHighlightTName = JCUtil::EraseSideWChar(next, L' ');
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_SPECULAR_HIGHLIGHT_T);
 				}
 				else if (next == L"map_d")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].ambientTName = JCommonUtility::EraseEmptySpace(next);
+					objMatData[matCount].ambientTName = JCUtil::EraseSideWChar(next, L' ');
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_AMBIENT_T);
 				}
 				else if (next == L"map_bump" || next == L"bump")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].normalTName = JCommonUtility::EraseEmptySpace(next);
+					objMatData[matCount].normalTName = JCUtil::EraseSideWChar(next, L' ');
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_NORMAL_T);
 				}
 				else if (next == L"disp")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].heightTName = JCommonUtility::EraseEmptySpace(next);
+					objMatData[matCount].heightTName = JCUtil::EraseSideWChar(next, L' ');
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_HEIGHT_T);
 				}
 				else if (next == L"decal")
 				{
 					std::getline(stream, next);
-					objMatData[matCount].decalTName = JCommonUtility::EraseEmptySpace(next);
+					objMatData[matCount].decalTName = JCUtil::EraseSideWChar(next, L' ');
 					objMatData[matCount].flag = (JOBJ_MATERIAL_FLAG)((int)objMatData[matCount].flag | (int)JOBJ_MATERIAL_FLAG::HAS_DECAL_T);
 				}
 			}
@@ -332,8 +328,8 @@ namespace JinEngine
 			if (secondIndex == -1)
 			{
 				//	"V/T"
-				posIndex = JCommonUtility::WstrToInt(wstr.substr(0, firstIndex));
-				uvIndex = JCommonUtility::WstrToInt(wstr.substr(firstIndex + 1));
+				posIndex = (int)JCUtil::WstringToInt(wstr.substr(0, firstIndex));
+				uvIndex = (int)JCUtil::WstringToInt(wstr.substr(firstIndex + 1));
 				normalIndex = -1;
 			}
 			else
@@ -341,22 +337,22 @@ namespace JinEngine
 				if (secondIndex == 0)
 				{
 					//	"V//N"
-					posIndex = JCommonUtility::WstrToInt(wstr.substr(0, firstIndex));
+					posIndex = (int)JCUtil::WstringToInt(wstr.substr(0, firstIndex));
 					uvIndex = -1;
-					normalIndex = JCommonUtility::WstrToInt(wstr.substr(secondIndex + 1));
+					normalIndex = (int)JCUtil::WstringToInt(wstr.substr(secondIndex + 1));
 				}
 				else
 				{
 					//"V/T/V"
-					posIndex = JCommonUtility::WstrToInt(wstr.substr(0, firstIndex));
-					uvIndex = JCommonUtility::WstrToInt(wstr.substr(firstIndex + 1, secondIndex));
-					normalIndex = JCommonUtility::WstrToInt(wstr.substr(secondIndex + 1));
+					posIndex = (int)JCUtil::WstringToInt(wstr.substr(0, firstIndex));
+					uvIndex = (int)JCUtil::WstringToInt(wstr.substr(firstIndex + 1, secondIndex));
+					normalIndex = (int)JCUtil::WstringToInt(wstr.substr(secondIndex + 1));
 				}
 			}
 		}
-		std::string JObjFileLoaderImpl::GetMaterialPath(const std::string& folderPath, const std::string& name)const noexcept
+		std::wstring JObjFileLoaderImpl::GetMaterialPath(const std::wstring& folderPath, const std::wstring& name)const noexcept
 		{
-			return folderPath + name + u8".mtl";
+			return folderPath + name + L".mtl";
 		}
 	}
 }

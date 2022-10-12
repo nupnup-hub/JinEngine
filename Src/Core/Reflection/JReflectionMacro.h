@@ -1,7 +1,7 @@
 #pragma once   
-#include<type_traits> 
-#include"../../Utility/JMacroUtility.h"
 #include"../Pointer/JOwnerPtr.h"
+#include"../../Utility/JMacroUtility.h"
+#include<type_traits> 
 
 namespace JinEngine
 {
@@ -60,7 +60,7 @@ namespace JinEngine
 																								\
 		private:																				\
 			friend class JTypeInfoInitializer;													\
-			template<typename T> friend class JinEngine::Core::JOwnerPtr;																\
+			template<typename T> friend class JinEngine::Core::JOwnerPtr;						\
 			friend class JPtrUtil;																\
 																								\
 		public:																					\
@@ -82,73 +82,104 @@ namespace JinEngine
 
 
 #define REGISTER_PROPERTY(propertyName, ...)														\
-																									\
-			template<typename Class, typename Field, typename Pointer, Pointer ptr>					\
-			class JinEngine::Core::JPropertyRegister;												\
-																									\
-			inline static struct propertyName##PropertyStruct										\
-			{																						\
-				public:																				\
-					propertyName##PropertyStruct()													\
-					{																				\
-						static JinEngine::Core::JPropertyRegister<ThisType,							\
-						decltype(propertyName),														\
-						decltype(&ThisType::propertyName),											\
-						&ThisType::propertyName> jPropertyRegister{#propertyName};					\
-					}																				\
-			}propertyName##Property;																\
+			namespace ReflectionData																\
+			{																							\
+				template<typename Class, typename Field, typename Pointer, Pointer ptr>					\
+				class JinEngine::Core::JPropertyRegister;												\
+																										\
+				inline static struct propertyName##PropertyStruct										\
+				{																						\
+					public:																				\
+						propertyName##PropertyStruct()													\
+						{																				\
+							static JinEngine::Core::JPropertyRegister<ThisType,							\
+							decltype(propertyName),														\
+							decltype(&ThisType::propertyName),											\
+							&ThisType::propertyName> jPropertyRegister{#propertyName};					\
+						}																				\
+				}propertyName##Property;																\
+			}																							\
 
 
 #define REGISTER_METHOD(methodName, ...)																\
-																										\
-			template<typename Class, typename Pointer, Pointer ptr>										\
-			class JinEngine::Core::JMethodInfoRegisterHelper;											\
-																										\
-			inline static struct methodName##MethodStruct												\
+			namespace ReflectionData																	\
 			{																							\
-				public:																					\
-					methodName##MethodStruct()															\
-					{																					\
-						static JinEngine::Core::JMethodInfoRegisterHelper<ThisType,						\
-						decltype(&ThisType::methodName),												\
-						&ThisType::methodName>															\
-						jMethodInfoRegisterHelper{#methodName, #methodName};							\
-					}																					\
-			}methodName##Method;
+				template<typename Class, typename Pointer, Pointer ptr>										\
+				class JinEngine::Core::JMethodInfoRegisterHelper;											\
+																											\
+				inline static struct methodName##MethodStruct												\
+				{																							\
+					public:																					\
+						methodName##MethodStruct()															\
+						{																					\
+							static JinEngine::Core::JMethodInfoRegisterHelper<ThisType,						\
+							decltype(&ThisType::methodName),												\
+							&ThisType::methodName>															\
+							jMethodInfoRegisterHelper{#methodName, #methodName};							\
+						}																					\
+				}methodName##Method;																		\
+			}																								\
 
 
-#define REGISTER_OVERLAOD_METHOD(methodName, ret, ...)													\
-			template<typename Class, typename Pointer, Pointer ptr>										\
-			class JinEngine::Core::JMethodInfoRegisterHelper;											\
+#define REGISTER_OVERLAOD_METHOD(methodName, ret, ...)														\
+			namespace ReflectionData																		\
+			{																								\
+				template<typename Class, typename Pointer, Pointer ptr>										\
+				class JinEngine::Core::JMethodInfoRegisterHelper;											\
+																											\
+				inline static struct J_MERGE_NAME(methodName, __VA_ARGS__)									\
+				{																							\
+					public:																					\
+						J_MERGE_NAME(methodName, __VA_ARGS__)()												\
+						{																					\
+							using MethodType = ret(ThisType::*)(__VA_ARGS__);								\
+							static JinEngine::Core::JMethodInfoRegisterHelper<ThisType,						\
+							MethodType,																		\
+							static_cast<MethodType>(&ThisType::methodName)>								    \
+							jMethodInfoRegisterHelper{J_STRINGIZE(methodName), J_STRINGIZE(__VA_ARGS__)};	\
+						}																					\
+				} J_MERGE_NAME(methodName, __VA_ARGS__);													\
+			}																								\
+
+
+#define REGISTER_ENUM_CLASS(enumName, dataType, ...)													\
+			enum class enumName : dataType	{J_MAKE_ENUM_ELEMENT(__VA_ARGS__), COUNT};					\
 																										\
-			inline static struct J_MERGE_NAME(methodName, __VA_ARGS__)									\
+			namespace ReflectionData																	\
 			{																							\
-				public:																					\
-					J_MERGE_NAME(methodName, __VA_ARGS__)()												\
-					{																					\
-						using MethodType = ret(ThisType::*)(__VA_ARGS__);								\
-						static JinEngine::Core::JMethodInfoRegisterHelper<ThisType,				\
-						MethodType,																		\
-						static_cast<MethodType>(&ThisType::methodName)>								    \
-						jMethodInfoRegisterHelper{J_STRINGIZE(methodName), J_STRINGIZE(__VA_ARGS__)};	\
-					}																					\
-			} J_MERGE_NAME(methodName, __VA_ARGS__);													\
-
+				inline static struct J_MERGE_NAME(enumName, EnumStruct)										\
+				{																							\
+					public:																					\
+						J_MERGE_NAME(enumName, EnumStruct)	()												\
+						{																					\
+							using JEnumInitializer = JinEngine::Core::JEnumInitializer;						\
+							using JEnumInfo	= JinEngine::Core::JEnumInfo;									\
+							using JEnumRegister	= JinEngine::Core::JEnumRegister<enumName>;					\
+							static JEnumRegister jEnumRegister{J_STRINGIZE(enumName),						\
+							J_STRINGIZE_ADD_COMMA(__VA_ARGS__), J_COUNT(__VA_ARGS__)};						\
+						}																					\
+				}J_MERGE_NAME(enumName, EnumStruct);														\
+			}																								\
+	
 
 #define REGISTER_ENUM(enumName, dataType, ...)															\
-			enum class enumName : dataType	{J_MAKE_ENUM_ELEMENT(__VA_ARGS__)};							\
+			enum enumName : dataType	{J_MAKE_ENUM_ELEMENT(__VA_ARGS__)};								\
 																										\
-			inline static struct J_MERGE_NAME(enumName, EnumStruct)										\
+			namespace ReflectionData																	\
 			{																							\
-				public:																					\
-					J_MERGE_NAME(enumName, EnumStruct)	()												\
-					{																					\
-						using JEnumInitializer = JinEngine::Core::JEnumInitializer;						\
-						using JEnumInfo	= JinEngine::Core::JEnumInfo;									\
-						static JEnumRegister jEnumRegister{J_STRINGIZE(enumName),						\
-						J_STRINGIZE_ADD_COMMA(__VA_ARGS__), J_COUNT(__VA_ARGS__)};						\
-					}																					\
-			}J_MERGE_NAME(enumName, EnumStruct);														\
+				inline static struct J_MERGE_NAME(enumName, EnumStruct)										\
+				{																							\
+					public:																					\
+						J_MERGE_NAME(enumName, EnumStruct)	()												\
+						{																					\
+							using JEnumInitializer = JinEngine::Core::JEnumInitializer;						\
+							using JEnumInfo	= JinEngine::Core::JEnumInfo;									\
+							using JEnumRegister	= JinEngine::Core::JEnumRegister<enumName>;					\
+							static JEnumRegister jEnumRegister{J_STRINGIZE(enumName),						\
+							J_STRINGIZE_ADD_COMMA(__VA_ARGS__), J_COUNT(__VA_ARGS__)};						\
+						}																					\
+				}J_MERGE_NAME(enumName, EnumStruct);														\
+			}																								\
 
 
 	}

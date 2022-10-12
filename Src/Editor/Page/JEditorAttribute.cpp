@@ -4,22 +4,22 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JEditorAttribute::JEditorAttribute(const std::string& name,
-			const size_t guid,
-			float initPosXRate,
+		JEditorAttribute::JEditorAttribute(float initPosXRate,
 			float initPosYRate,
 			float initWidthRate,
 			float initHeightRate,
 			bool isOpen,
-			bool isFront)
-			:name(name),
-			guid(guid),
-			initPosXRate(initPosXRate),
+			bool isLastAct)
+			:initPosXRate(initPosXRate),
 			initPosYRate(initPosYRate),
 			initWidthRate(initWidthRate),
 			initHeightRate(initHeightRate),
-			isFront(isFront),
-			isOpen(isOpen)
+			isOpen(isOpen),
+			isLastAct(isLastAct)
 		{}
+		bool JEditorAttribute::IsFullScreenInit()noexcept
+		{
+			return initPosXRate == 0 && initPosYRate == 0 && initWidthRate == 1 && initHeightRate == 1;
+		}
 	}
 }

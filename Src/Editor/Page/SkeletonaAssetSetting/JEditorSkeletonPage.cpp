@@ -1,14 +1,21 @@
 #include"JEditorSkeletonPage.h"
 #include"Window/JAvatarEditor.h"
-#include"../JEditorAttribute.h" 
-#include"../CommonWindow/Detail/JObjectDetail.h"
-#include"../CommonWindow/View/JEditorViewer.h"
+#include"../JEditorPageShareData.h"
+#include"../JEditorAttribute.h"  
+#include"../CommonWindow/View/JSceneViewer.h"
 #include"../CommonWindow/Explorer/JObjectExplorer.h"
+#include"../CommonWindow/Detail/JObjectDetail.h"
 #include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
-#include"../../../Object/Resource/JResourceManager.h" 
-#include"../../../Object/Resource/Model/JModel.h"
+#include"../../../Object/GameObject/JGameObject.h"
+#include"../../../Object/GameObject/JGameObjectFactory.h"
+#include"../../../Object/Component/JComponentFactoryUtility.h"
+#include"../../../Object/Resource/JResourceManager.h"  
+#include"../../../Object/Resource/Mesh/JSkinnedMeshGeometry.h"
+#include"../../../Object/Resource/Scene/JScene.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"  
+#include"../../../Object/Resource/JResourceObjectFactory.h" 
 #include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Application/JApplicationVariable.h"
 
 namespace JinEngine
 {
@@ -16,13 +23,18 @@ namespace JinEngine
 	{
 		//const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, std::unique_ptr<JEditorAttribute> attribute
 		JEditorSkeletonPage::JEditorSkeletonPage(bool hasMetadata)
-			:JEditorPage(std::make_unique<JEditorAttribute>("SkeletonAssetPage", Core::MakeGuid(), "SkeletonAssetPage",0.0f, 0.0f, 1.0f, 1.0f, false, false),
-				true)
+			:JEditorPage("SkeletonAssetPage",
+				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f, false, false),
+				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, J_EDITOR_PAGE_REQUIRE_INIT_OBJECT)),
+			reqInitDockNode(!hasMetadata)
 		{
 			const uint memberWindowCount = 4;
-			std::vector<std::string> nameVec
+			std::vector<std::string> windowNames
 			{
-				"SkeletonExplorer", "AvarEditor", "AvatarScene", "JAvatarDetail",
+				"Skeleton Explorer##SkeletonAssetPage",
+				"Avatar Editor##SkeletonAssetPage",
+				"Avatar Viewer##SkeletonAssetPage",
+				"Avatar Detail##SkeletonAssetPage"
 			};
 			std::vector<float> initWidthRateVec
 			{
@@ -43,40 +55,28 @@ namespace JinEngine
 			std::vector<bool> openVec
 			{
 				true, true, true, true
-			};
-			std::vector<bool> frontVec
-			{
-				true, true, true, true
-			};
+			};;
 			std::vector<std::unique_ptr< JEditorAttribute>> windowAttributes;
 			for (uint i = 0; i < memberWindowCount; ++i)
-			{ 
-				windowAttributes.push_back(std::make_unique<JEditorAttribute>(nameVec[i],
-					initPosXRateVec[i],
+			{
+				windowAttributes.push_back(std::make_unique<JEditorAttribute>(initPosXRateVec[i],
 					initPosYRateVec[i],
 					initWidthRateVec[i],
 					initHeightRateVec[i],
 					openVec[i],
-					frontVec[i]));
-			} 
-
-			/*
-					std::unique_ptr<JAvatarEditor>avatarEdit;
-			std::unique_ptr<JObjectDetail>avatarDetail;
-			std::unique_ptr<JEditorViewer> modelViewer;
-			std::unique_ptr<JObjectExplorer> skeletonExplorer;
-			*/
+					true));
+			}
 
 			//수정필요
-			skeletonExplorer = std::make_unique<JObjectExplorer>(std::move(windowAttributes[0]), GetGuid());
-			avatarEdit = std::make_unique<JAvatarEditor>(std::move(windowAttributes[1]), GetGuid());
-			modelViewer = std::make_unique<JEditorViewer>(std::move(windowAttributes[2]), GetGuid());
-			avatarDetail = std::make_unique<JObjectDetail>(std::move(windowAttributes[3]), GetGuid());
+			explorer = std::make_unique<JObjectExplorer>(windowNames[0], std::move(windowAttributes[0]), GetPageType());
+			avatarEdit = std::make_unique<JAvatarEditor>(windowNames[1], std::move(windowAttributes[1]), GetPageType());
+			avatarViewer = std::make_unique<JSceneViewer>(windowNames[2], std::move(windowAttributes[2]), GetPageType());
+			avatarDetail = std::make_unique<JObjectDetail>(windowNames[2], std::move(windowAttributes[3]), GetPageType());
 
 			windows.resize(memberWindowCount);
-			windows[0] = skeletonExplorer.get();
+			windows[0] = explorer.get();
 			windows[1] = avatarEdit.get();
-			windows[2] = modelViewer.get();
+			windows[2] = avatarViewer.get();
 			windows[3] = avatarDetail.get();
 
 			if (!hasMetadata)
@@ -85,55 +85,25 @@ namespace JinEngine
 				opendWindow.push_back(windows[1]);
 				opendWindow.push_back(windows[2]);
 				opendWindow.push_back(windows[3]);
-			} 
-		}
-		JEditorSkeletonPage::~JEditorSkeletonPage() {}
-		void JEditorSkeletonPage::Initialize(bool hasImguiTxt)
-		{
-			skeletonExplorer->Initialize();
-			avatarEdit->Initialize();
-			modelViewer->Initialize();
-			avatarDetail->Initialize();
-
-			if (!hasImguiTxt)
-			{
-				ImGuiWindowFlags groupFlag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
-
-				ImGui::Begin(skeletonExplorer->GetName().c_str(), 0, groupFlag); ImGui::End();
-				ImGui::Begin(avatarEdit->GetName().c_str(), 0, groupFlag); ImGui::End();
-				ImGui::Begin(modelViewer->GetName().c_str(), 0, groupFlag); ImGui::End();
-				ImGui::Begin(avatarDetail->GetName().c_str(), 0, groupFlag); ImGui::End();
-
-				ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
-				window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-				window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-				window_flags |= ImGuiWindowFlags_NoBackground;
-
-				ImGui::Begin(GetName().c_str(), 0, window_flags);
-				ImGuiID dockspaceId = ImGui::GetID((dockSpaceName).c_str());
-
-				ImGui::DockBuilderRemoveNode(dockspaceId);
-				ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_None);
-				ImGui::DockBuilderSetNodePos(dockspaceId, ImVec2(0, 0));
-
-				ImGuiID dock_main = dockspaceId;
-				ImGuiID dockSkeletonExplorer = ImGui::DockBuilderSplitNode(dock_main, ImGuiDir_Left, 0.2f, nullptr, &dock_main);
-				ImGuiID dockAvatarEdit = ImGui::DockBuilderSplitNode(dockSkeletonExplorer, ImGuiDir_Down, 0.5f, nullptr, &dockSkeletonExplorer);
-				ImGuiID dockAvatarSceneEditor = ImGui::DockBuilderSplitNode(dock_main, ImGuiDir_Right, 0.8f, nullptr, &dock_main);
-				ImGuiID dockAvatarDetail = ImGui::DockBuilderSplitNode(dockAvatarSceneEditor, ImGuiDir_Right, 0.25f, nullptr, &dockAvatarSceneEditor);
-
-				ImGui::DockBuilderDockWindow(GetName().c_str(), dock_main);
-				ImGui::DockBuilderDockWindow(skeletonExplorer->GetName().c_str(), dockSkeletonExplorer);
-				ImGui::DockBuilderDockWindow(avatarEdit->GetName().c_str(), dockAvatarEdit);
-				ImGui::DockBuilderDockWindow(modelViewer->GetName().c_str(), dockAvatarSceneEditor);
-				ImGui::DockBuilderDockWindow(avatarDetail->GetName().c_str(), dockAvatarDetail);
-				ImGui::DockBuilderFinish(dockspaceId);
-				ImGui::End();
-				ImGui::SetNextWindowDockID();
 			}
+
+			JEditorPageShareData::RegisterPage(GetPageType(), pageFlag);
+		}
+		JEditorSkeletonPage::~JEditorSkeletonPage()
+		{
+			JEditorPageShareData::UnRegisterPage(GetPageType());
+		}
+		J_EDITOR_PAGE_TYPE JEditorSkeletonPage::GetPageType()const noexcept
+		{
+			return J_EDITOR_PAGE_TYPE::SKELETON_SETTING;
+		}
+		void JEditorSkeletonPage::Initialize()
+		{
+
 		}
 		void JEditorSkeletonPage::UpdatePage()
-		{
+		{ 
+			/*
 			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_None;
 			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
 			if (JImGuiImpl::IsFullScreen())
@@ -143,21 +113,25 @@ namespace JinEngine
 
 			if (dockspaceFlag & ImGuiDockNodeFlags_PassthruCentralNode)
 				windowFlag |= ImGuiWindowFlags_NoBackground;
+			*/
+			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_None;
+			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration |
+				ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground;
 
-			EnterPage(windowFlag, dockspaceFlag, false);
+			if (!JImGuiImpl::IsFullScreen())
+				dockspaceFlag &= ~ImGuiDockNodeFlags_PassthruCentralNode;
+
+			EnterPage(windowFlag);
+			if (reqInitDockNode)
+			{
+				BuildDockNode();
+				reqInitDockNode = false;
+			}
+			UpdateDockSpace(dockspaceFlag);
+			ClosePage();
 			uint8 opendWindowCount = (uint8)opendWindow.size();
 			for (uint8 i = 0; i < opendWindowCount; ++i)
-			{
-				opendWindow[i]->EnterWindow();
-				if (opendWindow[i]->IsActivated())
-					opendWindow[i]->UpdateWindow();
-				opendWindow[i]->CloseWindow();
-			}
-			ClosePage();
-		}
-		J_EDITOR_PAGE_TYPE JEditorSkeletonPage::GetPageType()const noexcept
-		{
-			return J_EDITOR_PAGE_TYPE::SKELETON_SETTING;
+				opendWindow[i]->UpdateWindow();
 		}
 		bool JEditorSkeletonPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept
 		{
@@ -168,35 +142,92 @@ namespace JinEngine
 			if (!selectedObj.IsValid())
 				return false;
 
-			Core::JUserPtr<JModel> jModel;
-			if(!jModel.ConnnectBaseUser(selectedObj))
+			Core::JUserPtr<JSkeletonAsset> skeleotnAsset;
+			if (!skeleotnAsset.ConnnectBaseUser(selectedObj))
 				return false;
-			 
-			JGameObject* skeletonRoot = jModel.Get()->ModelSceneInterface()->GetSkeletonRoot();
-			JSkeletonAsset* skeletonAsset = jModel.Get()->GetSkeletonAsset();
 
-			if (skeletonRoot != nullptr && skeletonAsset != nullptr)
+			auto isSameSkelLam = [](JSkinnedMeshGeometry* mesh, size_t skelHash)
 			{
-				 /*skeletonExplorer->Initialize();
-				avatarEdit->Initialize();
-				modelViewer->Initialize();
-				avatarDetail->Initialize();*/
+				JSkeletonAsset* skeletonAsset = mesh->GetSkeletonAsset();
+				if (skeletonAsset != nullptr)
+					return skeletonAsset->GetSkeleton()->GetHash() == skelHash;
+				else
+					return false;
+			};
+			using IsSameSkelFunctor = Core::JFunctor<bool, JSkinnedMeshGeometry*, size_t>;
+			JMeshGeometry* mesh = JResourceManager::Instance().GetResourceByCondition<JSkinnedMeshGeometry, size_t>(IsSameSkelFunctor{ isSameSkelLam }, skeleotnAsset->GetSkeleton()->GetHash());
 
-				avatarEdit->SetTargetModel(jModel);
-				return true;
-			}
-			else
+			if (mesh == nullptr)
 				return false;
+
+			const std::wstring sceneName = skeleotnAsset->GetName() + L"##_EditorScene";
+			JDirectory* dir = JResourceManager::Instance().GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath());
+
+			const J_OBJECT_FLAG flag = Core::AddSQValueEnum(OBJECT_FLAG_UNIQUE_EDITOR_OBJECT, OBJECT_FLAG_UNEDITABLE);
+			JScene* newScene = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(sceneName, Core::MakeGuid(), flag, dir));
+
+			JGameObject* meshObj = JGFI::Create(*newScene->GetRootGameObject());
+			JCFU::CreateRenderItem(Core::MakeGuid(), flag, *meshObj, mesh);
+
+			std::vector<std::vector<uint8>> skeletonVec = skeleotnAsset->GetSkeletonTreeIndexVec();
+			std::vector<JGameObject*> skeletonTree((uint)skeletonVec.size());
+
+			skeletonTree[0] = JGFI::Create(skeleotnAsset->GetJointName(0), Core::MakeGuid(), flag, *meshObj);
+			const uint jointCount = (uint)skeletonVec.size();
+			for (uint i = 0; i < jointCount; ++i)
+			{
+				const uint childrenCount = (uint)skeletonVec[i].size();
+				for (uint j = 0; j < childrenCount; ++j)
+					skeletonTree[j] = JGFI::Create(skeleotnAsset->GetJointName(j), Core::MakeGuid(), OBJECT_FLAG_UNIQUE_EDITOR_OBJECT, *skeletonTree[i]);
+			}
+			avatarScene = Core::GetUserPtr(newScene);
+
+			avatarEdit->Initialize(skeleotnAsset);
+			avatarViewer->Initialize(avatarScene);
+
+			return true;
+		}
+		void JEditorSkeletonPage::DoSetClose()noexcept
+		{
+			JEditorPage::DoSetClose();
+			if (avatarScene.IsValid())
+				avatarScene.Release()->BeginDestroy();
 		}
 		void JEditorSkeletonPage::StorePage(std::wofstream& stream)
 		{
-			JEditorPage::StorePage(stream); 
+			JEditorPage::StorePage(stream);
 		}
 		void JEditorSkeletonPage::LoadPage(std::wifstream& stream)
 		{
 			JEditorPage::LoadPage(stream);
-			std::wstring guide;
-			std::wstring wstrPath; 
+		}
+		void JEditorSkeletonPage::BuildDockNode()
+		{
+			ImGuiViewport* viewport = ImGui::GetMainViewport();
+			ImGuiID dockspaceId = ImGui::GetID(GetDockNodeName().c_str());
+		 
+			ImGui::DockBuilderRemoveNode(dockspaceId);
+			ImGui::DockBuilderAddNode(dockspaceId);
+			ImGui::DockBuilderSetNodePos(dockspaceId, viewport->Size);
+
+			ImGuiID dock_main = dockspaceId;
+			ImGuiID dockAvatarSceneEditor = ImGui::DockBuilderSplitNode(dock_main, ImGuiDir_Up, 1, &dock_main, &dock_main);
+			ImGuiID dockAvatarDetail = ImGui::DockBuilderSplitNode(dockAvatarSceneEditor, ImGuiDir_Right, 0.3f, nullptr, &dockAvatarSceneEditor);
+			ImGuiID dockSkeletonExplorer = ImGui::DockBuilderSplitNode(dockAvatarSceneEditor, ImGuiDir_Left, 0.3f, nullptr, &dockAvatarSceneEditor);
+			ImGuiID dockAvatarEdit = ImGui::DockBuilderSplitNode(dockSkeletonExplorer, ImGuiDir_Down, 0.5f, nullptr, &dockSkeletonExplorer);
+
+			ImGui::DockBuilderDockWindow(GetName().c_str(), dock_main);
+			ImGui::DockBuilderDockWindow(explorer->GetName().c_str(), dockSkeletonExplorer);
+			ImGui::DockBuilderDockWindow(avatarEdit->GetName().c_str(), dockAvatarEdit);
+			ImGui::DockBuilderDockWindow(avatarViewer->GetName().c_str(), dockAvatarSceneEditor);
+			ImGui::DockBuilderDockWindow(avatarDetail->GetName().c_str(), dockAvatarDetail);
+			ImGui::DockBuilderFinish(dockspaceId);
+
+			ImGui::Begin(GetName().c_str()); ImGui::End();
+			ImGui::Begin(explorer->GetName().c_str()); ImGui::End();
+			ImGui::Begin(avatarEdit->GetName().c_str()); ImGui::End();
+			ImGui::Begin(avatarViewer->GetName().c_str()); ImGui::End();
+			ImGui::Begin(avatarDetail->GetName().c_str()); ImGui::End();
 		}
 	}
 }

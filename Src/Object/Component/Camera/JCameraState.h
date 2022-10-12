@@ -3,7 +3,7 @@ namespace JinEngine
 {
 	enum class J_CAMERA_STATE
 	{
-		IDEL,
+		IDEL = 0,
 		RENDER
 	};
 }

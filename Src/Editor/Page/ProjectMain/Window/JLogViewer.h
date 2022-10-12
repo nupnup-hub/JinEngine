@@ -5,16 +5,18 @@ namespace JinEngine
 { 
 	namespace Editor
 	{
-		class JLogViewer : public JEditorWindow
-		{
+		class JLogViewer final : public JEditorWindow
+		{ 
 		private:
 			bool onSceneLog = false;
 			bool onEditorLog = false;
 		public:
-			JLogViewer(std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
+			JLogViewer(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
 			~JLogViewer() = default;
 			JLogViewer(const JLogViewer& rhs) = delete;
 			JLogViewer& operator=(const JLogViewer& rhs) = delete;
+		public:
+			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
 			void Initialize()noexcept;
 			void UpdateWindow()final;

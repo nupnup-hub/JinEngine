@@ -1,7 +1,6 @@
 #include"JPreviewSceneGroup.h"
 #include"JPreviewScene.h"
-#include"JPreviewResourceScene.h"
-#include"JPreviewModelScene.h" 
+#include"JPreviewResourceScene.h" 
 #include"JPreviewDirectory.h"
 #include"../JScene.h" 
 #include"../../../Directory/JDirectory.h"
@@ -47,40 +46,33 @@ namespace JinEngine
 		previewSceneList.clear();
 		previewSceneList.shrink_to_fit();
 	}
-	JPreviewScene* JPreviewSceneGroup::CreatePreviewScene(_In_ JObject* jobject, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)noexcept
+	JPreviewScene* JPreviewSceneGroup::CreatePreviewScene(_In_ Core::JUserPtr<JObject> jObj, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)noexcept
 	{
+		if (!jObj.IsValid())
+			return nullptr;
+
 		if (previewSceneList.size() == maxCapacity)
 			return nullptr;
 
 		JPreviewScene* res = nullptr;
 		const uint previewSceneCount = (uint)previewSceneList.size();
 
-		if (jobject->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
+		if (jObj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
 		{
-			JResourceObject* resource = static_cast<JResourceObject*>(jobject);
-			if (resource->GetResourceType() == J_RESOURCE_TYPE::MODEL)
+			Core::JUserPtr<JResourceObject> resource;
+			resource.ConnnectBaseUser(jObj); 
+			std::unique_ptr<JPreviewResourceScene> previewResouce = std::make_unique<JPreviewResourceScene>(resource, previewDimension, previewFlag);
+			if (previewResouce->Initialze())
 			{
-				std::unique_ptr<JPreviewModelScene> previewModel = std::make_unique<JPreviewModelScene>(resource, previewDimension, previewFlag);
-				if (previewModel->Initialze())
-				{
-					res = previewModel.get();
-					previewSceneList.push_back(std::move(previewModel));
-				}
-			}
-			else
-			{
-				std::unique_ptr<JPreviewResourceScene> previewResouce = std::make_unique<JPreviewResourceScene>(resource, previewDimension, previewFlag);
-				if (previewResouce->Initialze())
-				{
-					res = previewResouce.get();
-					previewSceneList.push_back(std::move(previewResouce));
-				}
+				res = previewResouce.get();
+				previewSceneList.push_back(std::move(previewResouce));
 			}
 		}
-		else if (jobject->GetObjectType() == J_OBJECT_TYPE::DIRECTORY_OBJECT)
+		else if (jObj->GetObjectType() == J_OBJECT_TYPE::DIRECTORY_OBJECT)
 		{
-			JDirectory* jDir = static_cast<JDirectory*>(jobject);
-			std::unique_ptr<JPreviewDirectory> previewResouce = std::make_unique<JPreviewDirectory>(jDir, previewDimension, previewFlag);
+			Core::JUserPtr<JDirectory> dir;
+			dir.ConnnectBaseUser(jObj);		 
+			std::unique_ptr<JPreviewDirectory> previewResouce = std::make_unique<JPreviewDirectory>(dir, previewDimension, previewFlag);
 			if (previewResouce->Initialze())
 			{
 				res = previewResouce.get();
@@ -103,8 +95,11 @@ namespace JinEngine
 		}
 		return false;
 	}
-	bool JPreviewSceneGroup::DestroyPreviewScene(JObject* jObj)noexcept
+	bool JPreviewSceneGroup::DestroyPreviewScene(Core::JUserPtr<JObject> jObj)noexcept
 	{
+		if (!jObj.IsValid())
+			return false;
+
 		const size_t resourceGuid = jObj->GetGuid();
 		const uint previewCount = (uint)previewSceneList.size();
 		for (uint i = 0; i < previewCount; ++i)
@@ -118,6 +113,16 @@ namespace JinEngine
 		}
 		return false;
 	}
+	void JPreviewSceneGroup::DestroyInvalidPreviewScene()noexcept
+	{
+		std::vector<std::unique_ptr<JPreviewScene>> newVector;
+		for (uint i = 0; i < previewSceneList.size(); ++i)
+		{
+			if (previewSceneList[i]->GetJObject().IsValid())
+				newVector.push_back(std::move(previewSceneList[i]));
+		}
+		previewSceneList = std::move(newVector);
+	}
 }
 /*
 std::wstring JPreviewSceneGroup::GetPreviewScenePath(const std::wstring& groupName, const std::wstring& resourcePath)noexcept
@@ -125,7 +130,7 @@ std::wstring JPreviewSceneGroup::GetPreviewScenePath(const std::wstring& groupNa
 		std::wstring resourceFolderPath;
 		std::wstring resourceName;
 		std::wstring resourceFormat;
-		JCommonUtility::DecomposeFilePath(resourcePath, resourceFolderPath, resourceName, resourceFormat);
+		JCUtil::DecomposeFilePath(resourcePath, resourceFolderPath, resourceName, resourceFormat);
 
 		return groupName + L"//" + resourceFolderPath + resourceName + L"##Editor_Preview_Scene" + resourceFormat + L".JPreviewScene";
 	}

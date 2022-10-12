@@ -2,21 +2,22 @@
 #include"JTypeInfoInitializer.h"
 #include"JReflectionInfo.h" 
 #include"../JDataType.h"
-#include"../Pointer/JOwnerPtr.h"
 #include<unordered_map>  
 #include<vector>
 #include<assert.h>  
 #include<memory>
 
 namespace JinEngine
-{
-	class JObject; 
+{ 
 	namespace Core
 	{
+		class JIdentifier;
 		class JPropertyInfo;
 		class JMethodInfo;
+		template<typename T> class JOwnerPtr;
+		template<typename T> class JUserPtr;
 
-		using JTypeInstance = JObject;
+		using JTypeInstance = JIdentifier;
 		using IdentifierType = size_t;
 		using TypeInstanceMap = std::unordered_map<IdentifierType, JOwnerPtr<JTypeInstance>>;
 		using TypeInstanceVector = std::vector<JTypeInstance*>;
@@ -40,7 +41,7 @@ namespace JinEngine
 		class JTypeInfo 
 		{
 		private: 
-			friend class JObject;
+			friend class JIdentifier;
 			friend class JReflectionImpl;
 			template<typename Type> friend class JTypeInfoRegister;
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyRegister;
@@ -88,6 +89,7 @@ namespace JinEngine
 		private:
 			bool AddInstance(IdentifierType iden, JOwnerPtr<JTypeInstance> ptr)noexcept;
 			bool RemoveInstance(IdentifierType iden)noexcept;
+			JOwnerPtr<JTypeInstance> ReleaseInstance(IdentifierType iden)noexcept;
 		private:
 			bool AddPropertyInfo(JPropertyInfo* newProperty);
 			bool AddMethodInfo(JMethodInfo* newMethod);

@@ -4,8 +4,8 @@
 #include<vector>
  
 namespace JinEngine
-{  
-	class JTransform : public JTransformInterface
+{   
+	class JTransform final : public JTransformInterface
 	{
 		REGISTER_CLASS(JTransform) 
 	private: 
@@ -16,8 +16,12 @@ namespace JinEngine
 		mutable DirectX::XMFLOAT3 tFront;
 		mutable DirectX::XMFLOAT3 tRight;
 		mutable DirectX::XMFLOAT3 tUp;
-		 
 	public: 
+		J_COMPONENT_TYPE GetComponentType()const noexcept final;
+		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
+		{
+			return J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM;
+		}
 		DirectX::XMFLOAT3 GetPosition()const noexcept;
 		DirectX::XMFLOAT3 GetRotation()const noexcept;
 		DirectX::XMFLOAT3 GetScale()const noexcept;
@@ -35,11 +39,10 @@ namespace JinEngine
 		  
 		void LookAt(const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& worldUp = DirectX::XMFLOAT3(0,1,0))noexcept;
 
-		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final; 
-	public:
-		bool Copy(JObject* ori) final;
+	private:
+		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 

@@ -13,6 +13,7 @@ namespace JinEngine
 			FAIL_DO_NOT_SAVE_DATA,
 			FAIL_STREAM_ERROR,
 			FAIL_NULL_OBJECT,
+			WAIT,
 		};
 
 		struct JFileIOResultInfo
@@ -24,6 +25,6 @@ namespace JinEngine
 			JFileIOResultInfo(const std::string name, const J_FILE_IO_RESULT res)
 				:name(name),res(res)
 			{}
-		};
+		}; 
 	}
 }

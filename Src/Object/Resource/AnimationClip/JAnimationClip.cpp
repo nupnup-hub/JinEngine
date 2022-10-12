@@ -1,11 +1,13 @@
 #include"JAnimationClip.h"
 #include"../JResourceManager.h"
+#include"../JResourceImporter.h"
 #include"../JResourceObjectFactory.h"
 #include"../Skeleton/Avatar/JAvatar.h"
 #include"../Skeleton/JSkeleton.h"
 #include"../Skeleton/JSkeletonAsset.h"
 #include"../Skeleton/JSkeletonFixedData.h"
 #include"../../Directory/JDirectory.h"
+#include"../../../Core/File/JFileIOHelper.h" 
 #include"../../../Core/Guid/GuidCreator.h" 
 #include"../../../Core/FSM/AnimationFSM/JAnimationTime.h"
 #include"../../../Core/FSM/AnimationFSM/JAnimationShareData.h"
@@ -15,12 +17,51 @@
 using namespace DirectX;
 namespace JinEngine
 {
-	using namespace Core;
+	JAnimationClip::JAnimationClipInitData::JAnimationClipInitData(const std::wstring& name,
+		const size_t guid,
+		const J_OBJECT_FLAG flag,
+		JDirectory* directory,
+		const std::wstring oridataPath,
+		Core::JOwnerPtr<JAnimationData> anidata)
+		:JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JAnimationClip>(oridataPath)),
+		anidata(std::move(anidata))
+	{}
+	JAnimationClip::JAnimationClipInitData::JAnimationClipInitData(const std::wstring& name,
+		const size_t guid,
+		const J_OBJECT_FLAG flag,
+		JDirectory* directory,
+		const uint8 formatIndex)
+		: JResourceInitData(name, guid, flag, directory, formatIndex),
+		anidata(std::move(anidata))
+	{}
+	JAnimationClip::JAnimationClipInitData::JAnimationClipInitData(const std::wstring& name,
+		JDirectory* directory,
+		const std::wstring oridataPath,
+		Core::JOwnerPtr<JAnimationData> anidata)
+		: JResourceInitData(name, directory, JResourceObject::GetFormatIndex<JAnimationClip>(oridataPath)),
+		anidata(std::move(anidata))
+	{}
+	bool JAnimationClip::JAnimationClipInitData::IsValidCreateData()
+	{
+		if (JResourceInitData::IsValidCreateData() && anidata.IsValid())
+			return true;
+		else
+			return false;
+	}
+	J_RESOURCE_TYPE JAnimationClip::JAnimationClipInitData::GetResourceType() const noexcept
+	{
+		return J_RESOURCE_TYPE::ANIMATION_CLIP;
+	}
+
 	JSkeletonAsset* JAnimationClip::GetClipSkeletonAsset()noexcept
 	{
 		return clipSkeletonAsset;
 	}
-	bool JAnimationClip::GetIsLoop()const noexcept
+	float JAnimationClip::GetFramePerSecond()const noexcept
+	{
+		return framePerSecond;
+	}
+	bool JAnimationClip::IsLoop()const noexcept
 	{
 		return isLooping;
 	}
@@ -50,22 +91,27 @@ namespace JinEngine
 	}
 	void JAnimationClip::SetClipSkeletonAsset(JSkeletonAsset* clipSkeletonAsset)noexcept
 	{
-		if (JAnimationClip::clipSkeletonAsset != nullptr)
-			OffResourceReference(*JAnimationClip::clipSkeletonAsset);
-
+		if (IsActivated())
+			CallOffResourceReference(JAnimationClip::clipSkeletonAsset);
 		JAnimationClip::clipSkeletonAsset = clipSkeletonAsset;
+		if (IsActivated())
+			CallOnResourceReference(JAnimationClip::clipSkeletonAsset);
 
-		if (JAnimationClip::clipSkeletonAsset != nullptr)
-			OnResourceReference(*JAnimationClip::clipSkeletonAsset);
-
-		JAnimationClip::clipSkeletonAsset = clipSkeletonAsset;
 		matchClipSkeleton = IsMatchSkeleton();
+	}
+	void JAnimationClip::SetFramePerSpeed(float value)noexcept
+	{
+		framePerSecond = value;
+	}
+	void JAnimationClip::SetLoop(bool value)noexcept
+	{
+		isLooping = value;
 	}
 	bool JAnimationClip::IsSameSkeleton(JSkeletonAsset* srcSkeletonAsset)noexcept
 	{
 		return  clipSkeletonAsset->GetGuid() == srcSkeletonAsset->GetGuid();
 	}
-	void JAnimationClip::ClipEnter(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const float nowTime, const float timeOffset)noexcept
+	void JAnimationClip::ClipEnter(Core::JAnimationTime& animationTime, Core::JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const float nowTime, const float timeOffset)noexcept
 	{
 		animationTime.timePos = nowTime;
 		animationTime.startTime = animationTime.timePos + timeOffset;
@@ -75,7 +121,7 @@ namespace JinEngine
 	void JAnimationClip::ClipClose()noexcept
 	{
 	}
-	void JAnimationClip::Update(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& localTransform, float nowTime, float deltaTime)noexcept
+	void JAnimationClip::Update(Core::JAnimationTime& animationTime, Core::JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& localTransform, float nowTime, float deltaTime)noexcept
 	{
 		//animationTime.timePos = nowTime;
 		animationTime.timePos += deltaTime;
@@ -103,7 +149,7 @@ namespace JinEngine
 		{
 			if (animationSample[i].jointPose.size() == 0)
 			{
-				//MessageBox(0, L"Zero Pose", JCommonUtility::StrToWstr(tarSkeleton->GetJointName(i)).c_str(), 0);
+				//MessageBox(0, L"Zero Pose", JCUtil::StrToWstr(tarSkeleton->GetJointName(i)).c_str(), 0);
 				const uint parentIndex = tarSkeleton->GetJointParentIndex(i);
 				const XMMATRIX parentWorldBindM = tarSkeleton->GetBindPose(parentIndex);
 				const XMMATRIX childWorldBindM = tarSkeleton->GetBindPose(i);
@@ -180,7 +226,7 @@ namespace JinEngine
 		}
 		return 0;
 	}
-	void JAnimationClip::UpdateUsingAvatar(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& localTransform)noexcept
+	void JAnimationClip::UpdateUsingAvatar(Core::JAnimationTime& animationTime, Core::JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& localTransform)noexcept
 	{
 		JAvatar* tarAvatar = clipSkeletonAsset->GetAvatar();
 		JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar();
@@ -352,37 +398,39 @@ namespace JinEngine
 		else
 			return false;
 	}
-	bool JAnimationClip::Copy(JObject* ori)
+	void JAnimationClip::DoCopy(JObject* ori)
 	{
-		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
-			return false;
+		JAnimationClip* oriClip = static_cast<JAnimationClip*>(ori);
+		CopyRFile(*oriClip);
+		ClearResource();
+		StuffResource();
 
-		if (typeInfo.IsA(ori->GetTypeInfo()))
-		{
-			JAnimationClip* oriClip = static_cast<JAnimationClip*>(ori);
-			CopyRFile(*oriClip, *this);
-			ClearResource();
-			StuffResource();
-			return true;
-		}
-		else
-			return false;
+		SetClipSkeletonAsset(oriClip->GetClipSkeletonAsset());
+		SetFramePerSpeed(oriClip->GetFramePerSecond());
+		SetLoop(oriClip->IsLoop());
 	}
 	void JAnimationClip::DoActivate()noexcept
 	{
 		JResourceObject::DoActivate();
 		StuffResource();
+		CallOnResourceReference(JAnimationClip::clipSkeletonAsset);
 	}
 	void JAnimationClip::DoDeActivate()noexcept
 	{
+		std::wofstream stream;
+		stream.open(GetMetafilePath(), std::ios::out | std::ios::binary);
+		StoreMetadata(stream, this);
+		stream.close();
+
 		JResourceObject::DoDeActivate();
 		ClearResource();
+		CallOffResourceReference(JAnimationClip::clipSkeletonAsset);
 	}
 	void JAnimationClip::StuffResource()
 	{
 		if (!JValidInterface::IsValid())
 		{
-			if (ReadFbxData())
+			if (ReadClipData())
 				SetValid(true);
 		}
 	}
@@ -390,8 +438,7 @@ namespace JinEngine
 	{
 		if (JValidInterface::IsValid())
 		{
-			animationSample.clear();
-			SetClipSkeletonAsset(nullptr);
+			animationSample.clear(); 
 			SetValid(false);
 		}
 	}
@@ -399,57 +446,62 @@ namespace JinEngine
 	{
 		return JValidInterface::IsValid() && (clipSkeletonAsset != nullptr);
 	}
-	bool JAnimationClip::ReadFbxData()
+	bool JAnimationClip::WriteClipData()
 	{
-		const JResourcePathData pathData{ GetPath() };
-
-		std::wifstream stream;
-		stream.open(ConvertMetafilePath(pathData.wstrPath), std::ios::in | std::ios::binary);
-		AnimationClipMetadata metadata;
-		J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, pathData.folderPath, metadata);
-		stream.close();
-
-		JFbxAnimationData jfbxAniData;
-		J_FBXRESULT res = JFbxFileLoader::Instance().LoadFbxAnimationFile(pathData.strPath, jfbxAniData);
-		if (res == J_FBXRESULT::HAS_ANIMATION)
-		{
-			if (animationSample.size() != jfbxAniData.animationSample.size())
-				animationSample.resize(jfbxAniData.animationSample.size());
-
-			animationSample = jfbxAniData.animationSample;
-			oriSkeletoHash = jfbxAniData.skeletonHash;
-			clipLength = jfbxAniData.clipLength;
-			framePerSecond = jfbxAniData.framePerSecond;
-
-			if (loadMetaRes == J_FILE_IO_RESULT::SUCCESS)
-			{
-				isLooping = metadata.isLooping;
-				if (metadata.hasSkeleton)
-				{
-					JSkeletonAsset* skeletonAsset = JResourceManager::Instance().GetResource<JSkeletonAsset>(metadata.skeletonGuid);
-					if (skeletonAsset != nullptr)
-						SetClipSkeletonAsset(skeletonAsset);
-				}
-			}
-
-			if (clipSkeletonAsset == nullptr)
-			{
-				uint count;
-				std::vector<JResourceObject*>::const_iterator st = JResourceManager::Instance().GetResourceVectorHandle<JSkeletonAsset>(count);
-				for (uint i = 0; i < count; ++i)
-				{
-					JSkeletonAsset* oldSkeletonAsset = static_cast<JSkeletonAsset*>(*(st + i));
-					if (oldSkeletonAsset->GetSkeleton()->IsSame(oriSkeletoHash))
-					{
-						SetClipSkeletonAsset(oldSkeletonAsset);
-						break;
-					}
-				}
-			}
-			return true;
-		}
-		else
+		std::wofstream stream;
+		stream.open(GetPath(), std::ios::out | std::ios::binary);
+		if (!stream.is_open())
 			return false;
+
+		JFileIOHelper::StoreAtomicData(stream, L"SampleCount:", animationSample.size());
+		const uint sampleCount = (uint)animationSample.size();
+		for (uint i = 0; i < sampleCount; ++i)
+		{
+			JFileIOHelper::StoreAtomicData(stream, L"JointPoseCount:", animationSample[i].jointPose.size());
+			const uint jointCount = (uint)animationSample[i].jointPose.size();
+			for (uint j = 0; j < jointCount; ++j)
+			{
+				JFileIOHelper::StoreXMFloat4(stream, L"Quaternion:", animationSample[i].jointPose[j].RotationQuat);
+				JFileIOHelper::StoreXMFloat3(stream, L"Translation:", animationSample[i].jointPose[j].Translation);
+				JFileIOHelper::StoreXMFloat3(stream, L"Scale:", animationSample[i].jointPose[j].Scale);
+				JFileIOHelper::StoreAtomicData(stream, L"StTime:", animationSample[i].jointPose[j].stTime);
+			}
+		}
+
+		JFileIOHelper::StoreAtomicData(stream, L"OriSkeletonHash:", oriSkeletoHash);
+		JFileIOHelper::StoreAtomicData(stream, L"clipLength", clipLength);
+		stream.close();
+		return true;
+	}
+	bool JAnimationClip::ReadClipData()
+	{
+		std::wifstream stream;
+		stream.open(GetPath(), std::ios::in | std::ios::binary);
+		if (!stream.is_open())
+			return false;
+
+		animationSample.clear();
+
+		uint sampleCount;
+		JFileIOHelper::LoadAtomicData(stream, sampleCount);
+		animationSample.resize(sampleCount);
+		for (uint i = 0; i < sampleCount; ++i)
+		{
+			uint jointCount ;
+			JFileIOHelper::LoadAtomicData(stream, jointCount);
+			animationSample[i].jointPose.resize(jointCount);
+			for (uint j = 0; j < jointCount; ++j)
+			{
+				JFileIOHelper::LoadXMFloat4(stream, animationSample[i].jointPose[j].RotationQuat);
+				JFileIOHelper::LoadXMFloat3(stream, animationSample[i].jointPose[j].Translation);
+				JFileIOHelper::LoadXMFloat3(stream, animationSample[i].jointPose[j].Scale);
+				JFileIOHelper::LoadAtomicData(stream, animationSample[i].jointPose[j].stTime);
+			}
+		}
+		JFileIOHelper::LoadAtomicData(stream, oriSkeletoHash);
+		JFileIOHelper::LoadAtomicData(stream, clipLength);
+		stream.close();
+		return true;
 	}
 	void JAnimationClip::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 	{
@@ -458,167 +510,158 @@ namespace JinEngine
 
 		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 		{
-			if (clipSkeletonAsset->GetGuid() == jRobj->GetGuid())
+			if (clipSkeletonAsset != nullptr && clipSkeletonAsset->GetGuid() == jRobj->GetGuid())
 				SetClipSkeletonAsset(nullptr);
 		}
 	}
-	J_FILE_IO_RESULT JAnimationClip::CallStoreResource()
+	bool JAnimationClip::ImportAnimationClip(const JAnimationData& jfbxAniData)
+	{
+		animationSample = jfbxAniData.animationSample;
+		oriSkeletoHash = jfbxAniData.skeletonHash;
+		clipLength = jfbxAniData.clipLength;
+		framePerSecond = jfbxAniData.framePerSecond;
+
+		uint count;
+		std::vector<JResourceObject*>::const_iterator st = JResourceManager::Instance().GetResourceVectorHandle<JSkeletonAsset>(count);
+		for (uint i = 0; i < count; ++i)
+		{
+			JSkeletonAsset* oldSkeletonAsset = static_cast<JSkeletonAsset*>(*(st + i));
+			if (oldSkeletonAsset->GetSkeleton()->IsSame(oriSkeletoHash))
+			{
+				SetClipSkeletonAsset(oldSkeletonAsset);
+				break;
+			}
+		}
+		StoreObject(this);
+		return true;
+	}
+	Core::J_FILE_IO_RESULT JAnimationClip::CallStoreResource()
 	{
 		return StoreObject(this);
 	}
-	J_FILE_IO_RESULT JAnimationClip::StoreObject(JAnimationClip* clip)
+	Core::J_FILE_IO_RESULT JAnimationClip::StoreObject(JAnimationClip* clip)
 	{
 		if (clip == nullptr)
-			return J_FILE_IO_RESULT::FAIL_NULL_OBJECT;
+			return Core::J_FILE_IO_RESULT::FAIL_NULL_OBJECT;
 
 		if (((int)clip->GetFlag() & OBJECT_FLAG_DO_NOT_SAVE) > 0)
-			return J_FILE_IO_RESULT::FAIL_DO_NOT_SAVE_DATA;
+			return Core::J_FILE_IO_RESULT::FAIL_DO_NOT_SAVE_DATA;
 
 		std::wofstream stream;
 		stream.open(clip->GetMetafilePath(), std::ios::out | std::ios::binary);
-		J_FILE_IO_RESULT storeMetaRes = StoreMetadata(stream, clip);
+		Core::J_FILE_IO_RESULT storeMetaRes = StoreMetadata(stream, clip);
 		stream.close();
 
-		return storeMetaRes;
+		if (storeMetaRes != Core::J_FILE_IO_RESULT::SUCCESS)
+			return storeMetaRes;
+
+		if (clip->WriteClipData())
+			return Core::J_FILE_IO_RESULT::SUCCESS;
+		else
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	J_FILE_IO_RESULT JAnimationClip::StoreMetadata(std::wofstream& stream, JAnimationClip* clip)
+	Core::J_FILE_IO_RESULT JAnimationClip::StoreMetadata(std::wofstream& stream, JAnimationClip* clip)
 	{
 		if (stream.is_open())
 		{
-			JResourceObject::StoreMetadata(stream, clip);
-			if (clip->clipSkeletonAsset != nullptr)
-			{
-				stream << "HasSkeleton: " << true << '\n';
-				stream << "skeletonGuid: " << clip->clipSkeletonAsset->GetGuid() << '\n';
-			}
-			else
-			{
-				stream << "HasSkeleton: " << false << '\n';
-				stream << "skeletonGuid: " << "0" << '\n';
-			}
-			stream << "IsLoop" << clip->isLooping << '\n';
-			return J_FILE_IO_RESULT::SUCCESS;
+			Core::J_FILE_IO_RESULT res = JResourceObject::StoreMetadata(stream, clip);
+			if (res != Core::J_FILE_IO_RESULT::SUCCESS)
+				return res;
+
+			JFileIOHelper::StoreHasObjectIden(stream, clip->clipSkeletonAsset);
+			JFileIOHelper::StoreAtomicData(stream, L"FramePerSecond", clip->framePerSecond);
+			JFileIOHelper::StoreAtomicData(stream, L"IsLooping", clip->isLooping);
+			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
-			return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	JAnimationClip* JAnimationClip::LoadObject(JDirectory* directory, const JResourcePathData& pathData)
+	JAnimationClip* JAnimationClip::LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)
 	{
 		if (directory == nullptr)
 			return nullptr;
 
-		if (JResourceObject::IsResourceFormat<JAnimationClip>(pathData.format))
-			return nullptr;
-
 		std::wifstream stream;
-		stream.open(ConvertMetafilePath(pathData.wstrPath), std::ios::in | std::ios::binary);
-		AnimationClipMetadata metadata;
-		J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, pathData.folderPath, metadata);
+		stream.open(pathData.engineMetaFileWPath, std::ios::in | std::ios::binary);
+		JAnimationClipMetadata metadata;
+		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetadata(stream, metadata);
 		stream.close();
 
 		JAnimationClip* newClip = nullptr;
-		if (directory->HasFile(pathData.fullName))
-			newClip = JResourceManager::Instance().GetResourceByPath<JAnimationClip>(pathData.wstrPath);
-		
-		if (newClip == nullptr)
-		{
-			if (loadMetaRes == J_FILE_IO_RESULT::SUCCESS)
-			{
-				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(pathData.name,
-					metadata.guid, 
-					metadata.flag, 
-					directory, 
-					GetFormatIndex<JAnimationClip>(pathData.format));
+		if (directory->HasFile(pathData.name))
+			newClip = JResourceManager::Instance().GetResourceByPath<JAnimationClip>(pathData.engineFileWPath);
 
-				newClip = ownerPtr.Get();
-				AddInstance(std::move(ownerPtr));
-			}
-			else
+		if (newClip == nullptr && loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
+		{
+			JAnimationClipInitData initdata{ pathData.name, metadata.guid,metadata.flag, directory, (uint8)metadata.formatIndex };
+			if (initdata.IsValidLoadData())
 			{
-				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(pathData.name,
-					Core::MakeGuid(),
-					OBJECT_FLAG_NONE,
-					directory,
-					GetFormatIndex<JAnimationClip>(pathData.format));
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(initdata);
 				newClip = ownerPtr.Get();
-				AddInstance(std::move(ownerPtr));
+				if (!AddInstance(std::move(ownerPtr)))
+					return nullptr;
 			}
-		}	
-
-		if (newClip->IsValid())
-			return newClip;
-		else if (newClip->ReadFbxData())
-		{
-			newClip->SetValid(true);
-			return newClip;
 		}
-		else
-		{
-			newClip->SetIgnoreUndestroyableFlag(true);
-			newClip->BeginDestroy();
-			return nullptr;
-		}
+		if (newClip != nullptr)
+			newClip->SetClipSkeletonAsset(metadata.clipSkeletonAsset);
+		return newClip;
 	}
-	J_FILE_IO_RESULT JAnimationClip::LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, AnimationClipMetadata& metadata)
+	Core::J_FILE_IO_RESULT JAnimationClip::LoadMetadata(std::wifstream& stream, JAnimationClipMetadata& metadata)
 	{
 		if (stream.is_open())
 		{
-			AnimationClipMetadata metadata;
-			J_FILE_IO_RESULT metaLoadRes = JResourceObject::LoadMetadata(stream, metadata);
-			if (metaLoadRes != J_FILE_IO_RESULT::SUCCESS)
-				return metaLoadRes;
+			Core::J_FILE_IO_RESULT res = JResourceObject::LoadMetadata(stream, metadata);
 
-			std::wstring guide;
+			Core::JIdentifier* skeletonAsset = JFileIOHelper::LoadHasObjectIden(stream);
+			JFileIOHelper::LoadAtomicData(stream, metadata.framePerSecond);
+			JFileIOHelper::LoadAtomicData(stream, metadata.isLooping);		
+			if (skeletonAsset != nullptr && skeletonAsset->GetTypeInfo().IsA(JSkeletonAsset::StaticTypeInfo()))
+				metadata.clipSkeletonAsset = static_cast<JSkeletonAsset*>(skeletonAsset);
 
-			stream >> guide >> metadata.hasSkeleton;
-			stream >> guide >> guide;
-			stream >> guide >> metadata.skeletonGuid;
-			stream >> guide >> metadata.isLooping;
-			stream.close();
-			return J_FILE_IO_RESULT::SUCCESS;
+			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
-			return J_FILE_IO_RESULT::FAIL_SEARCH_DATA;
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-
 	void JAnimationClip::RegisterJFunc()
 	{
-		auto defaultC = [](JDirectory* directory) ->JResourceObject*
-		{ 
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(directory->MakeUniqueFileName(GetDefaultName<JAnimationClip>()),
-				Core::MakeGuid(),
-				OBJECT_FLAG_NONE,
-				directory,
-				JResourceObject::GetDefaultFormatIndex());		 
-			JResourceObject* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
-		};
-		auto initC = [](const std::wstring& name, const size_t guid, const J_OBJECT_FLAG objFlag, JDirectory* directory, const uint8 formatIndex)-> JResourceObject*
+		auto defaultC = [](Core::JOwnerPtr<JResourceInitData>initdata) ->JResourceObject*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(name, guid, objFlag, directory, formatIndex);
-			JResourceObject* ret = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			return ret;
+			if (initdata.IsValid() && initdata->GetResourceType() == J_RESOURCE_TYPE::ANIMATION_CLIP && initdata->IsValidCreateData())
+			{
+				const JAnimationClipInitData* aInitdata = static_cast<JAnimationClipInitData*>(initdata.Get());
+				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(*aInitdata);
+				JAnimationClip* newClip = ownerPtr.Get();
+				if (AddInstance(std::move(ownerPtr)))
+				{
+					newClip->ImportAnimationClip(*aInitdata->anidata.Get());
+					return newClip;
+				}
+			}
+			return nullptr;
 		};
-		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
+		auto loadC = [](JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};
 		auto copyC = [](JResourceObject* ori, JDirectory* directory)->JResourceObject*
-		{		 
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(directory->MakeUniqueFileName(ori->GetName()),
+		{
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationClip>(InitData(ori->GetName(),
 				Core::MakeGuid(),
 				ori->GetFlag(),
 				directory,
-				GetFormatIndex<JAnimationClip>(ori->GetFormat()));
+				GetFormatIndex<JAnimationClip>(ori->GetFormat())));
 
 			JAnimationClip* newClip = ownerPtr.Get();
-			AddInstance(std::move(ownerPtr));
-			newClip->Copy(ori);
-			return newClip;
+			if (AddInstance(std::move(ownerPtr)))
+			{
+				newClip->Copy(ori);
+				return newClip;
+			}
+			else
+				return nullptr;
 		};
-		JRFI<JAnimationClip>::Register(defaultC, initC, loadC, copyC);
+		JRFI<JAnimationClip>::Register(defaultC, loadC, copyC);
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JAnimationClip>(format); };
 
@@ -626,16 +669,43 @@ namespace JinEngine
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JAnimationClip::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
-		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SKELETON}, true, false, false };
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SKELETON}, true, false};
 		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
+
+		auto fbxMeshImportC = [](JDirectory* dir, const Core::JFileImportPathData importPathData) -> std::vector<JResourceObject*>
+		{
+			std::vector<JResourceObject*> res;
+			using FbxFileTypeInfo = Core::JFbxFileLoaderImpl::FbxFileTypeInfo;
+			FbxFileTypeInfo info = Core::JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
+			if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
+			{
+				Core::JFbxAnimationData jfbxAniData;
+				Core::J_FBXRESULT loadRes = Core::JFbxFileLoader::Instance().LoadFbxAnimationFile(importPathData.oriFilePath, jfbxAniData);
+				if (loadRes == Core::J_FBXRESULT::FAIL)
+					return { nullptr };
+
+				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_ANIMATION))
+				{
+					res.push_back(JRFI<JAnimationClip>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+						dir,
+						importPathData.oriFileWPath,
+						Core::JPtrUtil::MakeOwnerPtr<JAnimationData>(std::move(jfbxAniData)))));
+				}
+			}
+			return res;
+		};
+
+		JResourceImporter::Instance().AddFormatInfo(L".fbx", J_RESOURCE_TYPE::ANIMATION_CLIP, fbxMeshImportC);
 	}
-	JAnimationClip::JAnimationClip(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex)
-		:JAnimationClipInterface(name, guid, flag, directory, formatIndex)
-	{}
+	JAnimationClip::JAnimationClip(const JAnimationClipInitData& initdata)
+		:JAnimationClipInterface(initdata)
+	{
+		AddEventListener(*JResourceManager::Instance().EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+	}
 	JAnimationClip::~JAnimationClip()
 	{
-		clipSkeletonAsset = nullptr;
+		RemoveListener(*JResourceManager::Instance().EvInterface(), GetGuid());
 	}
 }

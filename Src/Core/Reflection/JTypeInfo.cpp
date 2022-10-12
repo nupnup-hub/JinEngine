@@ -1,6 +1,7 @@
 #include"JTypeInfo.h"  
 #include"JPropertyInfo.h"    
 #include"JMethodInfo.h"
+#include"../Pointer/JOwnerPtr.h"
 #include"../../Object/JObject.h"
 
 namespace JinEngine
@@ -65,9 +66,14 @@ namespace JinEngine
 
 			if (instanceData->classInstanceMap.find(iden) == instanceData->classInstanceMap.end())
 			{
-				instanceData->classInstanceVec.push_back(ptr.Get());
-				instanceData->classInstanceMap.emplace(iden, ptr);
-				return true;
+				if (ptr->GetTypeInfo().IsChildOf(JIdentifier::StaticTypeInfo()))
+				{ 
+					instanceData->classInstanceVec.push_back(ptr.Get());
+					instanceData->classInstanceMap.emplace(iden, std::move(ptr));
+					return true;
+				}
+				else
+					return false;
 			}
 			else
 				return false;
@@ -81,13 +87,31 @@ namespace JinEngine
 			for (uint i = 0; i < instanceCount; ++i)
 			{
 				if (instanceData->classInstanceVec[i]->GetGuid() == iden)
-				{
+				{ 
 					instanceData->classInstanceVec.erase(instanceData->classInstanceVec.begin() + i);
 					instanceData->classInstanceMap.erase(iden);
 					return true;
 				}
 			}
 			return false;
+		}
+		JOwnerPtr<JTypeInstance> JTypeInfo::ReleaseInstance(IdentifierType iden)noexcept
+		{
+			if (instanceData == nullptr)
+				return JOwnerPtr<JTypeInstance>{};
+
+			const uint instanceCount = (uint)instanceData->classInstanceVec.size();
+			for (uint i = 0; i < instanceCount; ++i)
+			{
+				if (instanceData->classInstanceVec[i]->GetGuid() == iden)
+				{
+					instanceData->classInstanceVec.erase(instanceData->classInstanceVec.begin() + i);
+					JOwnerPtr<JTypeInstance> owner = std::move(instanceData->classInstanceMap.find(iden)->second);
+					instanceData->classInstanceMap.erase(iden);
+					return owner;
+				}
+			}
+			return JOwnerPtr<JTypeInstance>{};
 		}
 		bool JTypeInfo::AddPropertyInfo(JPropertyInfo* newProperty)
 		{

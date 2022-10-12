@@ -7,14 +7,14 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		bool JGraphicTexture::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path)
+		bool JGraphicTexture::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)
 		{
-			handle = JGraphic::Instance().ResourceInterface()->Create2DTexture(uploadHeap, path);
+			handle = JGraphic::Instance().ResourceInterface()->Create2DTexture(uploadHeap, path, oriFormat);
 			return handle != nullptr;
 		}
-		bool JGraphicTexture::CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path)
+		bool JGraphicTexture::CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)
 		{
-			handle = JGraphic::Instance().ResourceInterface()->CreateCubeTexture(uploadHeap, path);
+			handle = JGraphic::Instance().ResourceInterface()->CreateCubeTexture(uploadHeap, path, oriFormat);
 			return handle != nullptr;
 		}
 		bool JGraphicTexture::CreateRenderTargetTexture(uint textureWidth, uint textureHeight)
@@ -80,7 +80,7 @@ namespace JinEngine
 		}
 		uint JGraphicTexture::GetTxtVectorIndex()const noexcept
 		{
-			return GetBuffIndex(*handle);
+			return GetGraphicBuffIndex(*handle);
 		}
 		Graphic::J_GRAPHIC_TEXTURE_TYPE JGraphicTexture::GetTxtType()const noexcept
 		{
@@ -91,7 +91,7 @@ namespace JinEngine
 			return JGraphic::Instance().ResourceInterface()->GetCpuSrvDescriptorHandle(handle->GetSrvHeapIndex());
 		}
 		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicTexture::GetGpuHandle() const noexcept
-		{
+		{ 
 			return JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(handle->GetSrvHeapIndex());
 		}
 	}

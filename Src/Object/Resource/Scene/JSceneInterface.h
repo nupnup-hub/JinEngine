@@ -4,6 +4,7 @@
 #include"../Mesh/JMeshType.h"
 #include"../../Component/JComponentType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"  
+#include"../../JFrameUpdate.h"
 
 namespace JinEngine
 {
@@ -23,14 +24,14 @@ namespace JinEngine
 	class JSceneCashInterface
 	{
 	private:
-		friend class Graphic::JGraphicImpl;
+		friend class Graphic::JGraphicImpl; 
 	protected:
 		virtual ~JSceneCashInterface() = default;
 	public:
 		virtual JSceneCashInterface* CashInterface() = 0;
 	private:
-		virtual std::vector<JGameObject*>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept = 0;
-		virtual std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)noexcept = 0;
+		virtual const std::vector<JGameObject*>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept = 0;
+		virtual const std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)const noexcept = 0;
 	};
 
 	class JSceneGameObjInterface
@@ -42,6 +43,7 @@ namespace JinEngine
 	public:
 		virtual JSceneGameObjInterface* GameObjInterface() = 0;
 	private:
+		virtual bool AddGameObject(JGameObject& gameObj)noexcept = 0;
 		virtual bool RemoveGameObject(JGameObject& gameObj)noexcept = 0;
 	};
 
@@ -54,7 +56,7 @@ namespace JinEngine
 	public:
 		virtual JSceneCompInterface* CompInterface() = 0;
 	private:
-		virtual JCamera* SetMainCamera(JCamera* camera)noexcept = 0;
+		virtual void SetMainCamera(JCamera* camera)noexcept = 0;
 		virtual void SetAnimation()noexcept = 0;
 	};
 
@@ -79,7 +81,7 @@ namespace JinEngine
 	protected:
 		virtual ~JSceneFrameInterface() = default;
 	public:
-		virtual JSceneFrameInterface* FrameInterface() = 0;
+		virtual JSceneFrameInterface* AppInterface() = 0;
 	private:
 		virtual void SetAllComponentDirty()noexcept = 0;
 		virtual void SetComponentDirty(const J_COMPONENT_TYPE cType)noexcept = 0;
@@ -111,9 +113,10 @@ namespace JinEngine
 		public JSceneCompInterface,
 		public JSceneGameObjInterface,
 		public JSceneCashInterface,
+		public JFrameBuffManagerInterface,
 		public JClearableInterface
 	{
 	protected:
-		JSceneInterface(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JSceneInterface(const JResourceObject::JResourceInitData& initdata);
 	};
 }

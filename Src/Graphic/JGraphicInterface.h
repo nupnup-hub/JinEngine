@@ -24,8 +24,7 @@ namespace JinEngine
 	class JMeshGeometry;
 	class JShader; 
 	class JResourceManagerImpl;
-	class JResourceIO;  
-	class JMainSceneEditor;  
+	class JResourceIO;   
 
 	namespace Application
 	{
@@ -68,8 +67,8 @@ namespace JinEngine
 			virtual CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvDescriptorHandle(int index)const noexcept = 0;
 			virtual CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept = 0;
 
-			virtual JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path) = 0;
-			virtual JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path) = 0;
+			virtual JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat) = 0;
+			virtual JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat) = 0;
 			virtual JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
 			virtual JGraphicTextureHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
 			virtual bool DestroyGraphicTextureResource(JGraphicTextureHandle** handle) = 0;
@@ -86,9 +85,7 @@ namespace JinEngine
 
 		class JGraphicCommandInterface : public JGraphicEditorInterface
 		{
-		private:
-			friend class JResourceManagerImpl;
-			friend class JResourceIO;
+		private:  
 			friend class JMeshGeometry;
 			friend class Application::JApplication;
 		private:
@@ -100,11 +97,13 @@ namespace JinEngine
 			virtual void FlushCommandQueue() = 0;
 		};
 
-		class JGraphicFrameInterface : public JGraphicCommandInterface
+		class JGraphicApplicationIterface : public JGraphicCommandInterface
 		{
 		private:
 			friend class Application::JApplication;
 		private:
+			virtual void Initialize() = 0;
+			virtual void Clear() = 0;
 			virtual void SetImGuiBackEnd() = 0;
 			virtual void StartFrame() = 0;
 			virtual void EndFrame() = 0;

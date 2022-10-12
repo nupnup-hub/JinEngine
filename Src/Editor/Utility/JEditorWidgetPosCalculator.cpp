@@ -1,4 +1,6 @@
 #include"JEditorWidgetPosCalculator.h"
+#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
+#include"../../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
@@ -32,7 +34,31 @@ namespace JinEngine
 			//3มู - (...)
 			maxValidTextCount = GetSameLineMaxTextCount() * 3 - 3;
 		}
+		void JEditorWidgetPosCalculator::Update(float maxWidth, float maxHeight, float width, float height)noexcept
+		{
+			JEditorWidgetPosCalculator::maxWidth = maxWidth;
+			JEditorWidgetPosCalculator::maxHeight = maxHeight;
+			JEditorWidgetPosCalculator::width = width;
+			JEditorWidgetPosCalculator::height = height;
 
+			ImVec2 nowCursor = JImGuiImpl::GetCursorPos();
+			ImVec2 itemSpacing = ImGui::GetStyle().ItemSpacing;
+			float frameBorder = ImGui::GetStyle().FrameBorderSize;
+			ImVec2 txtSize = JImGuiImpl::GetTextSize();
+
+			JEditorWidgetPosCalculator::positionX = nowCursor.x;
+			JEditorWidgetPosCalculator::positionY = nowCursor.y;
+			JEditorWidgetPosCalculator::xPadding = itemSpacing.x;
+			JEditorWidgetPosCalculator::yPadding = itemSpacing.y;
+			JEditorWidgetPosCalculator::border = frameBorder;
+			JEditorWidgetPosCalculator::textWidth = txtSize.x;
+			JEditorWidgetPosCalculator::textHeight = txtSize.y;
+
+			xTextPadding = textWidth;
+			yTextPadding = textHeight;
+			//3มู - (...)
+			maxValidTextCount = GetSameLineMaxTextCount() * 3 - 3;
+		}
 		void JEditorWidgetPosCalculator::Next()noexcept
 		{
 			float plus = width + xPadding + border + textWidth;
@@ -73,6 +99,24 @@ namespace JinEngine
 			}
 			else
 				return str;
+		}
+		void JEditorWidgetPosCalculator::TitleText(const std::wstring& name)
+		{
+			std::string oriName = JCUtil::WstrToU8Str(name);
+			std::string subName;
+			int maxTextCount = GetSameLineMaxTextCount();
+			int lineCount = 0;
+
+			ImGui::SetCursorPos(ImVec2(GetTextPositionX(), GetTextPositionY(0)));
+			while (oriName.size() > maxTextCount)
+			{
+				++lineCount;
+				subName = oriName.substr(maxTextCount, oriName.size());
+				JImGuiImpl::Text(oriName.substr(0, maxTextCount));
+				ImGui::SetCursorPos(ImVec2(GetTextPositionX(), GetTextPositionY(lineCount)));
+				oriName = subName;
+			}
+			JImGuiImpl::Text(oriName); 
 		}
 	}
 }

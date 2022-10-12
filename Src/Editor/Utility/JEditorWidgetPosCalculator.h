@@ -36,6 +36,7 @@ namespace JinEngine
 				float border,
 				float textWidth,
 				float textHeight)noexcept;
+			void Update(float maxWidth, float maxHeight, float width, float height)noexcept;
 			void Next()noexcept;
 			float GetPositionX()noexcept;
 			float GetPositionY()noexcept;
@@ -43,6 +44,8 @@ namespace JinEngine
 			float GetTextPositionY(int line)noexcept;
 			int GetSameLineMaxTextCount()noexcept;
 			std::string GetString(const std::string& str)noexcept;
+		public:
+			void TitleText(const std::wstring& name);
 		};
 	}
 }

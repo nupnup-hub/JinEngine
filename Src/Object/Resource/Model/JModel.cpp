@@ -69,7 +69,7 @@ namespace JinEngine
 		static std::vector<std::wstring> format{ L".model", L".obj", L".fbx", };
 		return format;
 	}
-	JModelSceneInterface* JModel::ModelSceneInterface()
+	JModelInterface* JModel::Interface()noexcept
 	{
 		return this;
 	}
@@ -145,6 +145,15 @@ namespace JinEngine
 		if (JValidInterface::IsValid())
 		{
 			const bool preIgnore = IsIgnoreUndestroyableFlag();
+			const uint partCount = (uint)meshPartCash.size();
+			for (uint i = 0; i < partCount; ++i)
+			{
+				JRenderItem* rItem = meshPartCash[i]->GetRenderItem();
+				rItem->GetMesh()->BeginDestroy();
+				if(rItem->HasMaterial())
+					rItem->GetMaterial()->BeginDestroy();
+			}
+
 			if (!preIgnore)
 				SetIgnoreUndestroyableFlag(true);
 			modelScene->BeginDestroy();
@@ -179,113 +188,7 @@ namespace JinEngine
 
 		if (JObjFileLoader::Instance().LoadObjFile(pathData.wstrPath, objMeshData, objMatData, modelAttribute))
 		{
-			const J_OBJECT_FLAG objRFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
-
-			using SetTexture = void(JMaterial::*)(JTexture*);
-			SetTexture setTexturePtr;
-
-			const uint objMatCount = (uint)objMatData.size();
-			std::vector<JMaterial*> newMatV(objMatCount);
-			for (uint i = 0; i < objMatCount; ++i)
-			{
-				const size_t matGuid = loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS && metadata.partGuidVector.size() > i ?
-					metadata.partGuidVector[i].matGuid : Core::MakeGuid();
-
-				JMaterial* newMat = JRFI<JMaterial>::Create(objMatData[i].name, matGuid, objRFlag, *GetDirectory(),
-					JResourceObject::GetInvalidFormatIndex());
-
-				if (newMat == nullptr)
-					continue;
-
-				std::wstring texturePath;
-				if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_ALBEDO_T) > 0)
-				{
-					texturePath = pathData.folderPath + L"\\" + objMatData[i].albedoTName;
-					setTexturePtr = &JMaterial::SetAlbedoMap;
-				}
-				else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_NORMAL_T) > 0)
-				{
-					texturePath = pathData.folderPath + L"\\" + objMatData[i].normalTName;
-					setTexturePtr = &JMaterial::SetNormalMap;
-				}
-				else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_HEIGHT_T) > 0)
-				{
-					texturePath = pathData.folderPath + L"\\" + objMatData[i].heightTName;
-					setTexturePtr = &JMaterial::SetHeightMap;
-				}
-				else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_AMBIENT_T) > 0)
-				{
-					texturePath = pathData.folderPath + L"\\" + objMatData[i].ambientTName;
-					setTexturePtr = &JMaterial::SetAmbientOcclusionMap;
-				}
-				else
-					continue;
-
-				JTexture* matTexture = JResourceManager::Instance().GetResourceByPath<JTexture>(texturePath);
-				if (matTexture == nullptr)
-					continue;
-
-				(newMat->*setTexturePtr)(matTexture);
-				newMat->SetAlbedoColor(objMatData[i].albedo);
-				newMatV.push_back(newMat);
-			}
-
-			const uint newMatVCount = (uint)newMatV.size();
-			const uint objMeshCount = (uint)objMeshData.size();
-			std::vector<JMeshGeometry*> newMeshVec;
-			std::vector<int> matIndex;
-			for (uint i = 0; i < objMeshCount; ++i)
-			{
-				const size_t meshGuid = loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS && metadata.partGuidVector.size() > i ?
-					metadata.partGuidVector[i].meshGuid : Core::MakeGuid();
-
-				JMeshGeometry* newMesh = JRFI<JMeshGeometry>::Create(objMeshData[i].meshName, meshGuid, objRFlag, *GetDirectory(), 0);
-				if (newMesh == nullptr)
-					continue;
-
-				JMeshInterface* iMesh = newMesh;
-				iMesh->StuffStaticMesh(objMeshData[i].staticMeshData, objMeshData[i].boundingBox, objMeshData[i].boundingSphere);
-				newMeshVec.push_back(newMesh);
-				matIndex.push_back(-1);
-				for (uint j = 0; j < newMatVCount; ++j)
-				{
-					if (objMeshData[i].meshName == newMatV[i]->GetName())
-						matIndex[i] = j;
-				}
-			}
-
-			JModel::modelAttribute = std::make_unique<JModelAttribute>(modelAttribute);
-			modelScene = JRFI<JScene>::Create(GetDirectory()->MakeUniqueFileName(GetDefaultName<JScene>()),
-				Core::MakeGuid(),
-				(J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE),
-				*GetDirectory(),
-				GetInvalidFormatIndex());
-
-			OnResourceReference(*modelScene);
-
-			const uint modelPartCount = (uint)newMeshVec.size();
-			JGameObject* modelPartRoot = JGFI::Create(GetName(), Core::MakeGuid(), OBJECT_FLAG_NONE, *modelRoot);
-
-			std::vector<JGameObject*> meshGameObj;
-			meshGameObj.reserve(modelPartCount + 1);
-			meshGameObj.push_back(modelPartRoot);
-
-			for (uint i = 0; i < modelPartCount; ++i)
-			{
-				const std::wstring meshName = newMeshVec[i]->GetName();
-				JGameObject* child = JGFI::Create(meshName, Core::MakeGuid(), OBJECT_FLAG_NONE, *modelRoot);
-				if (matIndex[i] == -1)
-					JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *child, newMeshVec[i], nullptr);
-				else
-					JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *child, newMeshVec[i], newMatV[matIndex[i]]);
-
-				meshPartCash.push_back(child);
-				meshGameObj.push_back(child);
-			}
-
-			modelRoot = modelPartRoot;
-			OffResourceReference(*modelScene);
-			return true;
+		 
 		}
 		else
 			return false;
@@ -323,6 +226,7 @@ namespace JinEngine
 
 				JMeshGeometry* mesh = JRFI<JMeshGeometry>::Create(jFbxPartMeshData[i].name, meshGuid, meshflag, *GetDirectory(), JResourceObject::GetInvalidFormatIndex());
 				JMeshInterface* iMesh = mesh;
+
 				if (modelAttribute.hasSkeleton)
 					iMesh->StuffSkinnedMesh(jFbxPartMeshData[i].skinnedMeshData, jFbxPartMeshData[i].boundingBox, jFbxPartMeshData[i].boundingSphere);
 				else
@@ -413,6 +317,112 @@ namespace JinEngine
 		else
 			return false;
 	}
+	bool JModel::ImportObject(const std::vector<Core::JObjMeshPartData>& objMeshData,
+		const std::vector<Core::JObjMatData>& objMatData,
+		const JModelAttribute& attribute)noexcept
+	{
+		const J_OBJECT_FLAG objRFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN);
+
+		using SetTexture = void(JMaterial::*)(JTexture*);
+		SetTexture setTexturePtr;
+
+		const uint objMatCount = (uint)objMatData.size();
+		std::vector<JMaterial*> newMatV(objMatCount);
+		for (uint i = 0; i < objMatCount; ++i)
+		{
+			JMaterial* newMat = JRFI<JMaterial>::Create(objMatData[i].name, Core::MakeGuid(), objRFlag, *GetDirectory(),
+				JResourceObject::GetInvalidFormatIndex());
+
+			if (newMat == nullptr)
+				continue;
+
+			std::wstring texturePath;
+			if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_ALBEDO_T) > 0)
+			{
+				texturePath = pathData.folderPath + L"\\" + objMatData[i].albedoTName;
+				setTexturePtr = &JMaterial::SetAlbedoMap;
+			}
+			else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_NORMAL_T) > 0)
+			{
+				texturePath = pathData.folderPath + L"\\" + objMatData[i].normalTName;
+				setTexturePtr = &JMaterial::SetNormalMap;
+			}
+			else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_HEIGHT_T) > 0)
+			{
+				texturePath = pathData.folderPath + L"\\" + objMatData[i].heightTName;
+				setTexturePtr = &JMaterial::SetHeightMap;
+			}
+			else if (((int)objMatData[i].flag & (int)Core::JOBJ_MATERIAL_FLAG::HAS_AMBIENT_T) > 0)
+			{
+				texturePath = pathData.folderPath + L"\\" + objMatData[i].ambientTName;
+				setTexturePtr = &JMaterial::SetAmbientOcclusionMap;
+			}
+			else
+				continue;
+
+			JTexture* matTexture = JResourceManager::Instance().GetResourceByPath<JTexture>(texturePath);
+			if (matTexture == nullptr)
+				continue;
+
+			(newMat->*setTexturePtr)(matTexture);
+			newMat->SetAlbedoColor(objMatData[i].albedo);
+			newMatV.push_back(newMat);
+		}
+
+		const uint newMatVCount = (uint)newMatV.size();
+		const uint objMeshCount = (uint)objMeshData.size();
+		std::vector<JMeshGeometry*> newMeshVec;
+		std::vector<int> matIndex;
+		for (uint i = 0; i < objMeshCount; ++i)
+		{
+			JMeshGeometry* newMesh = JRFI<JMeshGeometry>::Create(objMeshData[i].meshName, Core::MakeGuid(), objRFlag, *GetDirectory(), 0);
+			if (newMesh == nullptr)
+				continue;
+
+			JMeshInterface* iMesh = newMesh;
+			iMesh->StuffStaticMesh(objMeshData[i].staticMeshData, objMeshData[i].boundingBox, objMeshData[i].boundingSphere);
+			newMeshVec.push_back(newMesh);
+			matIndex.push_back(-1);
+			for (uint j = 0; j < newMatVCount; ++j)
+			{
+				if (objMeshData[i].meshName == newMatV[i]->GetName())
+					matIndex[i] = j;
+			}
+		}
+
+		JModel::modelAttribute = std::make_unique<JModelAttribute>(modelAttribute);
+		modelScene = JRFI<JScene>::Create(GetDirectory()->MakeUniqueFileName(GetDefaultName<JScene>()),
+			Core::MakeGuid(),
+			(J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_UNEDITABLE),
+			*GetDirectory(),
+			GetInvalidFormatIndex());
+
+		OnResourceReference(*modelScene);
+
+		const uint modelPartCount = (uint)newMeshVec.size();
+		JGameObject* modelPartRoot = JGFI::Create(GetName(), Core::MakeGuid(), OBJECT_FLAG_NONE, *modelRoot);
+
+		std::vector<JGameObject*> meshGameObj;
+		meshGameObj.reserve(modelPartCount + 1);
+		meshGameObj.push_back(modelPartRoot);
+
+		for (uint i = 0; i < modelPartCount; ++i)
+		{
+			const std::wstring meshName = newMeshVec[i]->GetName();
+			JGameObject* child = JGFI::Create(meshName, Core::MakeGuid(), OBJECT_FLAG_NONE, *modelRoot);
+			if (matIndex[i] == -1)
+				JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *child, newMeshVec[i], nullptr);
+			else
+				JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *child, newMeshVec[i], newMatV[matIndex[i]]);
+
+			meshPartCash.push_back(child);
+			meshGameObj.push_back(child);
+		}
+
+		modelRoot = modelPartRoot;
+		OffResourceReference(*modelScene);
+		return true;
+	}
 	void JModel::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 	{
 		if (iden == GetGuid())
@@ -451,27 +461,7 @@ namespace JinEngine
 
 		return storeMetaRes;
 	}
-	Core::J_FILE_IO_RESULT JModel::StoreMetadata(std::wofstream& stream, JModel* model)
-	{
-		if (stream.is_open())
-		{
-			Core::J_FILE_IO_RESULT res = JResourceObject::StoreMetadata(stream, model);
-			if (res != Core::J_FILE_IO_RESULT::SUCCESS)
-				return res;
-
-			const uint meshPartCount = (uint)model->meshPartCash.size();
-			stream << "MeshCount: " << meshPartCount << '\n';
-			for (uint i = 0; i < meshPartCount; ++i)
-			{
-				stream << "MeshGuid: " << model->meshPartCash[i]->GetRenderItem()->GetMesh()->GetGuid() << '\n';
-				stream << "MaterialGuid: " << model->meshPartCash[i]->GetRenderItem()->GetMaterial()->GetGuid() << '\n';
-			}
-			return Core::J_FILE_IO_RESULT::SUCCESS;
-		}
-		else
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-	}
-	JModel* JModel::LoadObject(JDirectory* directory, const JResourcePathData& pathData)
+	JModel* JModel::LoadObject(JDirectory* directory, const JResourceLoadPathData& pathData)
 	{
 		if (pathData.format == L".fbx")
 		{
@@ -503,9 +493,9 @@ namespace JinEngine
 			{
 				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JModel>(pathData.name,
 					metadata.guid,
-					metadata.flag, 
-					directory, 
-					GetFormatIndex<JModel>(pathData.format)); 
+					metadata.flag,
+					directory,
+					GetFormatIndex<JModel>(pathData.format));
 				newModel = ownerPtr.Get();
 				AddInstance(std::move(ownerPtr));
 			}
@@ -513,8 +503,8 @@ namespace JinEngine
 			{
 				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JModel>(pathData.name,
 					Core::MakeGuid(),
-					OBJECT_FLAG_NONE, 
-					directory, 
+					OBJECT_FLAG_NONE,
+					directory,
 					GetFormatIndex<JModel>(pathData.format));
 				newModel = ownerPtr.Get();
 				AddInstance(std::move(ownerPtr));
@@ -544,27 +534,6 @@ namespace JinEngine
 		newModel->BeginDestroy();
 		return nullptr;
 	}
-	Core::J_FILE_IO_RESULT JModel::LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, ModelMetadata& metadata)
-	{
-		if (stream.is_open())
-		{
-			Core::J_FILE_IO_RESULT res = JResourceObject::LoadMetadata(stream, metadata);
-			if (res != Core::J_FILE_IO_RESULT::SUCCESS)
-				return res;
-
-			std::wstring guide;
-			stream >> guide >> metadata.meshPartCount;
-			metadata.partGuidVector.resize(metadata.meshPartCount);
-			for (uint i = 0; i < metadata.meshPartCount; ++i)
-			{
-				stream >> guide >> metadata.partGuidVector[i].meshGuid;
-				stream >> guide >> metadata.partGuidVector[i].matGuid;
-			}
-			return Core::J_FILE_IO_RESULT::SUCCESS;
-		}
-		else
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-	}
 	void JModel::RegisterJFunc()
 	{
 		auto defaultC = [](JDirectory* directory) ->JResourceObject*
@@ -585,7 +554,7 @@ namespace JinEngine
 			AddInstance(std::move(ownerPtr));
 			return ret;
 		};
-		auto loadC = [](JDirectory* directory, const JResourcePathData& pathData)-> JResourceObject*
+		auto loadC = [](JDirectory* directory, const JResourceLoadPathData& pathData)-> JResourceObject*
 		{
 			return LoadObject(directory, pathData);
 		};

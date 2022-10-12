@@ -39,7 +39,7 @@ namespace JinEngine
 		}
 		uint JGraphicResourceManager::GetSrvUser2DTextureStart()const noexcept
 		{
-			return imGuiTextureCount;
+			return srvFixedCount;
 		}
 		uint JGraphicResourceManager::GetSrvUserCubeTextureStart()const noexcept
 		{
@@ -169,29 +169,28 @@ namespace JinEngine
 		}
 		JGraphicTextureHandle* JGraphicResourceManager::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
 			const std::wstring& path,
+			const std::wstring& oriFormat,
 			ID3D12Device* device,
 			ID3D12GraphicsCommandList* commandList)
 		{
-			std::wstring folderPath;
-			std::wstring name;
-			std::wstring format;
-			JCommonUtility::DecomposeFilePath(path, folderPath, name, format);
 			Microsoft::WRL::ComPtr<ID3D12Resource> newTexture;
 			JGraphicTextureHandle* handleCash = nullptr;
+			uint heapIndex = GetSrvUser2DTextureStart() + user2DTextureCount;
+			size_t width = 0;
+			size_t height = 0;  	 
+			bool res = false;
 
-			if (format == L".dds")
+			if (oriFormat == L".dds")
 			{
-				size_t width;
-				size_t height;
-				HRESULT res = DirectX::CreateDDSTextureFromFile12(device,
+				res = DirectX::CreateDDSTextureFromFile12(device,
 					commandList,
 					path.c_str(),
 					newTexture,
 					uploadHeap,
 					width,
-					height);
+					height) == S_OK;
 
-				if (res == S_OK)
+				if (res)
 				{
 					D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 					srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -202,71 +201,57 @@ namespace JinEngine
 					srvDesc.TextureCube.MipLevels = newTexture->GetDesc().MipLevels;
 					srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 					srvDesc.Format = newTexture->GetDesc().Format;
-
-					device->CreateShaderResourceView(newTexture.Get(), &srvDesc, GetCpuSrvDescriptorHandle(user2DTextureCount));
-					std::unique_ptr<JGraphicTextureHandle> newHandle =
-						std::make_unique<JGraphicTextureHandle>(J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D, (uint)width, (uint)height);
-					newHandle->srvHeapIndex = user2DTextureCount;
-					SetBuffIndex(*newHandle, user2DTextureCount); 
-					handleCash = newHandle.get();
-
-					user2DTextureHandle.push_back(std::move(newHandle));
-					user2DTextureResouce.push_back(std::move(newTexture));
-					++user2DTextureCount;
+					device->CreateShaderResourceView(newTexture.Get(), &srvDesc, GetCpuSrvDescriptorHandle(heapIndex));
 				}
 			}
 			else
 			{
-				int width;
-				int height;
-				bool res = LoadTextureFromFile(JCommonUtility::WstrToU8Str(path).c_str(),
+				res = LoadTextureFromFile(JCUtil::WstrToU8Str(path).c_str(),
 					device,
-					GetCpuSrvDescriptorHandle(user2DTextureCount),
+					GetCpuSrvDescriptorHandle(heapIndex),
 					newTexture,
 					uploadHeap,
-					&width,
-					&height);
+					width,
+					height);
+			}
+			if (res)
+			{
+				std::unique_ptr<JGraphicTextureHandle> newHandle =
+					std::make_unique<JGraphicTextureHandle>(J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D, (uint)width, (uint)height);
+				newHandle->srvHeapIndex = heapIndex;
+				SetGraphicBuffIndex(*newHandle, user2DTextureCount);
+				handleCash = newHandle.get();
 
-				if (res)
-				{
-					std::unique_ptr<JGraphicTextureHandle> newHandle =
-						std::make_unique<JGraphicTextureHandle>(J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D, (uint)width, (uint)height);
-					newHandle->srvHeapIndex = user2DTextureCount;
-					SetBuffIndex(*newHandle, user2DTextureCount);
-					handleCash = newHandle.get();
-
-					user2DTextureHandle.push_back(std::move(newHandle));
-					user2DTextureResouce.push_back(std::move(newTexture));
-					++user2DTextureCount;
-				}
+				user2DTextureHandle.push_back(std::move(newHandle));
+				user2DTextureResouce.push_back(std::move(newTexture));
+				++user2DTextureCount;
 			}
 			return handleCash;
 		}
 		JGraphicTextureHandle* JGraphicResourceManager::CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
 			const std::wstring& path,
+			const std::wstring& oriFormat,
 			ID3D12Device* device,
 			ID3D12GraphicsCommandList* commandList)
 		{
-			std::wstring folderPath;
-			std::wstring name;
-			std::wstring format;
-			JCommonUtility::DecomposeFilePath(path, folderPath, name, format);
 			Microsoft::WRL::ComPtr<ID3D12Resource> newTexture;
 			JGraphicTextureHandle* handleCash = nullptr;
+			uint heapIndex = GetSrvUserCubeTextureStart() + userCubeTextureCount;
+			size_t width = 0;
+			size_t height = 0;
+			bool res = false;
 
-			if (format == L".dds")
-			{
-				size_t width;
-				size_t height;
-				HRESULT res = DirectX::CreateDDSTextureFromFile12(device,
+			if (oriFormat == L".dds")
+			{ 
+				res = DirectX::CreateDDSTextureFromFile12(device,
 					commandList,
 					path.c_str(),
 					newTexture,
 					uploadHeap,
 					width,
-					height);
+					height) == S_OK;
 
-				if (res == S_OK)
+				if (res)
 				{
 					D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 					srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -277,43 +262,30 @@ namespace JinEngine
 					srvDesc.TextureCube.MipLevels = newTexture->GetDesc().MipLevels;
 					srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 					srvDesc.Format = newTexture->GetDesc().Format;
-
-					device->CreateShaderResourceView(newTexture.Get(), &srvDesc, GetCpuSrvDescriptorHandle(GetSrvUserCubeTextureStart() + userCubeTextureCount));
-					std::unique_ptr<JGraphicTextureHandle> newHandle =
-						std::make_unique<JGraphicTextureHandle>(J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE, (uint)width, (uint)height);
-					newHandle->srvHeapIndex = GetSrvUserCubeTextureStart() + userCubeTextureCount;
-					SetBuffIndex(*newHandle, userCubeTextureCount); 
-					handleCash = newHandle.get();
-
-					userCubeTextureHandle.push_back(std::move(newHandle));
-					userCubeTextureResouce.push_back(std::move(newTexture));
-					++userCubeTextureCount;
+					device->CreateShaderResourceView(newTexture.Get(), &srvDesc, GetCpuSrvDescriptorHandle(heapIndex));
 				}
 			}
 			else
 			{
-				int width;
-				int height;
-				bool res = LoadCubemapFromFile(JCommonUtility::WstrToU8Str(path).c_str(),
+				res = LoadCubemapFromFile(JCUtil::WstrToU8Str(path).c_str(),
 					device,
-					GetCpuSrvDescriptorHandle(GetSrvUserCubeTextureStart() + userCubeTextureCount),
+					GetCpuSrvDescriptorHandle(heapIndex),
 					newTexture,
 					uploadHeap,
-					&width,
-					&height);
+					width,
+					height);
+			}
+			if (res)
+			{
+				std::unique_ptr<JGraphicTextureHandle> newHandle =
+					std::make_unique<JGraphicTextureHandle>(J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE, (uint)width, (uint)height);
+				newHandle->srvHeapIndex = heapIndex;
+				SetGraphicBuffIndex(*newHandle, userCubeTextureCount);
+				handleCash = newHandle.get();
 
-				if (res)
-				{
-					std::unique_ptr<JGraphicTextureHandle> newHandle =
-						std::make_unique<JGraphicTextureHandle>(J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE, (uint)width, (uint)height);
-					newHandle->srvHeapIndex = GetSrvUserCubeTextureStart() + userCubeTextureCount;
-					SetBuffIndex(*newHandle, userCubeTextureCount); 
-					handleCash = newHandle.get();
-
-					userCubeTextureHandle.push_back(std::move(newHandle));
-					userCubeTextureResouce.push_back(std::move(newTexture));
-					++userCubeTextureCount;
-				}
+				userCubeTextureHandle.push_back(std::move(newHandle));
+				userCubeTextureResouce.push_back(std::move(newTexture));
+				++userCubeTextureCount;
 			}
 			return handleCash;
 		}
@@ -349,7 +321,7 @@ namespace JinEngine
 			rsResourceDesc.SampleDesc.Quality = 0;
 			rsResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 			rsResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-
+		 
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvHeap->GetCPUDescriptorHandleForHeapStart());
 			rtvHandle.Offset(GetRtvRenderResultStart() + renderResultCount, rtvDescriptorSize);
 
@@ -373,11 +345,11 @@ namespace JinEngine
 
 			newHandle->rtvHeapIndex = GetRtvRenderResultStart() + renderResultCount;
 			newHandle->srvHeapIndex = GetSrvRenderResultStart() + renderResultCount;
-			SetBuffIndex(*newHandle, renderResultCount);
+			SetGraphicBuffIndex(*newHandle, renderResultCount);
 
 			JGraphicTextureHandle* handleCash = newHandle.get();
 			renderResultHandle.push_back(std::move(newHandle));
-			renderResultResource.push_back(std::move(newTexture));
+			renderResultResource.push_back(std::move(newTexture)); 
 			++renderResultCount;
 			return handleCash;
 		}
@@ -443,7 +415,7 @@ namespace JinEngine
 
 			newHandle->dsvHeapIndex = GetDsvShadowMapStart() + shadowMapCount;
 			newHandle->srvHeapIndex = GetSrvShadowMapStart() + shadowMapCount;
-			SetBuffIndex(*newHandle, shadowMapCount);
+			SetGraphicBuffIndex(*newHandle, shadowMapCount);
 
 			JGraphicTextureHandle* handleCash = newHandle.get();
 			shadowMapHandle.push_back(std::move(newHandle));
@@ -456,62 +428,63 @@ namespace JinEngine
 			if (*handle == nullptr)
 				return false;
 
-			const uint vIndex = GetBuffIndex(**handle);
+			const uint vIndex = GetGraphicBuffIndex(**handle);
 			const J_GRAPHIC_TEXTURE_TYPE gRType = (*handle)->graphicResourceType;
-			handle = nullptr;
+			*handle = nullptr;
+
 			switch (gRType)
 			{
-			case J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D:	 
+			case J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D:
 				user2DTextureResouce[vIndex].Reset();
 				user2DTextureHandle.erase(user2DTextureHandle.begin() + vIndex);
 				user2DTextureResouce.erase(user2DTextureResouce.begin() + vIndex);
-				for (uint i = vIndex; i < user2DTextureCount - 1; ++i)
+				--user2DTextureCount;
+				for (uint i = vIndex; i < user2DTextureCount; ++i)
 				{
 					--user2DTextureHandle[i]->srvHeapIndex;
-					SetBuffIndex(*user2DTextureHandle[i], GetBuffIndex(*user2DTextureHandle[i]) - 1);
-					ReBind2DTexture(device, GetBuffIndex(*user2DTextureHandle[i]), user2DTextureHandle[i]->srvHeapIndex);
+					SetGraphicBuffIndex(*user2DTextureHandle[i], GetGraphicBuffIndex(*user2DTextureHandle[i]) - 1);
+					ReBind2DTexture(device, GetGraphicBuffIndex(*user2DTextureHandle[i]), user2DTextureHandle[i]->srvHeapIndex);
 				}
-				--user2DTextureCount;
 				return true;
-			case J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE: 
-				userCubeTextureResouce[vIndex].Reset(); 
+			case J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE:
+				userCubeTextureResouce[vIndex].Reset();
 				userCubeTextureHandle.erase(userCubeTextureHandle.begin() + vIndex);
 				userCubeTextureResouce.erase(userCubeTextureResouce.begin() + vIndex);
-				for (uint i = vIndex; i < userCubeTextureCount - 1; ++i)
+				--userCubeTextureCount;
+				for (uint i = vIndex; i < userCubeTextureCount; ++i)
 				{
 					--userCubeTextureHandle[i]->srvHeapIndex;
-					SetBuffIndex(*userCubeTextureHandle[i], GetBuffIndex(*userCubeTextureHandle[i]) - 1);
-					ReBindCubeTexture(device, GetBuffIndex(*userCubeTextureHandle[i]), userCubeTextureHandle[i]->srvHeapIndex - 1);
+					SetGraphicBuffIndex(*userCubeTextureHandle[i], GetGraphicBuffIndex(*userCubeTextureHandle[i]) - 1);
+					ReBindCubeTexture(device, GetGraphicBuffIndex(*userCubeTextureHandle[i]), userCubeTextureHandle[i]->srvHeapIndex - 1);
 				}
-				--userCubeTextureCount;
 				return true;
-			case J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_COMMON: 
+			case J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_COMMON:
 				renderResultResource[vIndex].Reset();
 				renderResultHandle.erase(renderResultHandle.begin() + vIndex);
 				renderResultResource.erase(renderResultResource.begin() + vIndex);
-				for (uint i = vIndex; i < renderResultCount - 1; ++i)
+				--renderResultCount;
+				for (uint i = vIndex; i < renderResultCount; ++i)
 				{
 					--renderResultHandle[i]->srvHeapIndex;
-					--renderResultHandle[i]->rtvHeapIndex; 
+					--renderResultHandle[i]->rtvHeapIndex;
 
-					SetBuffIndex(*renderResultHandle[i], GetBuffIndex(*renderResultHandle[i]) - 1);
-					ReBindRenderTarget(device, GetBuffIndex(*renderResultHandle[i]), renderResultHandle[i]->rtvHeapIndex, renderResultHandle[i]->srvHeapIndex);
+					SetGraphicBuffIndex(*renderResultHandle[i], GetGraphicBuffIndex(*renderResultHandle[i]) - 1);
+					ReBindRenderTarget(device, GetGraphicBuffIndex(*renderResultHandle[i]), renderResultHandle[i]->rtvHeapIndex, renderResultHandle[i]->srvHeapIndex);
 				}
-				--renderResultCount;
 				return true;
-			case J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP: 
+			case J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP:
 				shadowMapResource[vIndex].Reset();
 				shadowMapHandle.erase(shadowMapHandle.begin() + vIndex);
 				shadowMapResource.erase(shadowMapResource.begin() + vIndex);
-				for (uint i = vIndex; i < shadowMapCount - 1; ++i)
+				--shadowMapCount;
+				for (uint i = vIndex; i < shadowMapCount; ++i)
 				{
 					--shadowMapHandle[i]->srvHeapIndex;
-					--shadowMapHandle[i]->dsvHeapIndex; 
+					--shadowMapHandle[i]->dsvHeapIndex;
 
-					SetBuffIndex(*shadowMapHandle[i], GetBuffIndex(*shadowMapHandle[i]) - 1);
-					ReBindShadowMapTexture(device, GetBuffIndex(*shadowMapHandle[i]), shadowMapHandle[i]->dsvHeapIndex, shadowMapHandle[i]->srvHeapIndex);
+					SetGraphicBuffIndex(*shadowMapHandle[i], GetGraphicBuffIndex(*shadowMapHandle[i]) - 1);
+					ReBindShadowMapTexture(device, GetGraphicBuffIndex(*shadowMapHandle[i]), shadowMapHandle[i]->dsvHeapIndex, shadowMapHandle[i]->srvHeapIndex);
 				}
-				--shadowMapCount;
 				return true;
 			default:
 				return false;
@@ -527,7 +500,7 @@ namespace JinEngine
 			srvDesc.Texture2D.MostDetailedMip = 0;
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-			device->CreateShaderResourceView(user2DTextureResouce[resourceIndex].Get(), &srvDesc, GetCpuRtvDescriptorHandle(heapIndex));
+			device->CreateShaderResourceView(user2DTextureResouce[resourceIndex].Get(), &srvDesc, GetCpuSrvDescriptorHandle(heapIndex));
 		}
 		void JGraphicResourceManager::ReBindCubeTexture(ID3D12Device* device, const uint resourceIndex, const uint heapIndex)
 		{
@@ -541,7 +514,7 @@ namespace JinEngine
 			srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 			srvDesc.Format = userCubeTextureResouce[resourceIndex]->GetDesc().Format;
 
-			device->CreateShaderResourceView(userCubeTextureResouce[resourceIndex].Get(), &srvDesc, GetCpuRtvDescriptorHandle(heapIndex));
+			device->CreateShaderResourceView(userCubeTextureResouce[resourceIndex].Get(), &srvDesc, GetCpuSrvDescriptorHandle(heapIndex));
 		}
 		void JGraphicResourceManager::ReBindRenderTarget(ID3D12Device* device, const uint resourceIndex, const uint rtvHeapIndex, const uint srvHeapIndex)
 		{
@@ -583,7 +556,24 @@ namespace JinEngine
 			device->CreateDepthStencilView(shadowMapResource[resourceIndex].Get(), &shadowMapRsDsvDesc, GetCpuDsvDescriptorHandle(dsvHeapIndex));
 			device->CreateShaderResourceView(shadowMapResource[resourceIndex].Get(), &shadowMapRsSrvDesc, GetCpuSrvDescriptorHandle(srvHeapIndex));
 		}
+		void JGraphicResourceManager::Clear()
+		{
+			rtvHeap.Reset();
+			dsvHeap.Reset();
+			srvHeap.Reset();
+			for (int i = 0; i < swapChainBuffercount; ++i)
+				swapChainBuffer[i].Reset();
 
+			user2DTextureHandle.clear();
+			user2DTextureResouce.clear();
+			userCubeTextureHandle.clear();
+			userCubeTextureResouce.clear();
+			renderResultHandle.clear();
+			renderResultResource.clear();
+			shadowMapHandle.clear();
+			shadowMapResource.clear();
+			depthStencil.Reset();
+		}
 		JGraphicResourceManager::JGraphicResourceManager() {}
 		JGraphicResourceManager::~JGraphicResourceManager() {}
 	}

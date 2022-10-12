@@ -14,8 +14,8 @@ namespace JinEngine
 		public:
 			virtual ~JGraphicBufElementInterface() = default;
 		protected:
-			int GetBuffIndex()const noexcept;
-			void SetBuffIndex(const int value)noexcept;
+			int GetGraphicBuffIndex()const noexcept;
+			void SetGraphicBuffIndex(const int value)noexcept;
 		};
 
 		class JGraphicBufUserInterface
@@ -23,12 +23,12 @@ namespace JinEngine
 		public:
 			virtual ~JGraphicBufUserInterface() = default;
 		protected:
-			int GetBuffIndex(JGraphicBufElementInterface& bufEleInterface)const noexcept;
+			int GetGraphicBuffIndex(JGraphicBufElementInterface& bufEleInterface)const noexcept;
 		};
 		class JGraphicBufManagerInterface : public JGraphicBufUserInterface
 		{
 		protected:
-			void SetBuffIndex(JGraphicBufElementInterface& bufEleInterface, int index)noexcept;
+			void SetGraphicBuffIndex(JGraphicBufElementInterface& bufEleInterface, int index)noexcept;
 		};
 	}
 }

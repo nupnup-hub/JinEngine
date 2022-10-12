@@ -17,13 +17,27 @@ namespace JinEngine
 	class JMaterial : public JMaterialInterface
 	{
 		REGISTER_CLASS(JMaterial)
+	public:
+		struct JMaterialInitData : JResourceInitData
+		{
+		public:
+			JMaterialInitData(const std::wstring& name,
+				const size_t guid,
+				const J_OBJECT_FLAG flag,
+				JDirectory* directory,
+				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0]));
+			JMaterialInitData(const std::wstring& name, 
+				JDirectory* directory,
+				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0]));
+			JMaterialInitData(JDirectory* directory,
+				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0]));
+		public: 
+			J_RESOURCE_TYPE GetResourceType() const noexcept;
+		};
+		using InitData = JMaterialInitData;
 	private:
-		//friend class Graphic::JGraphicImpl;
-		//friend class JObjectDetail;
-	private:
-		JShader* shader;
-	private: 
-		uint matBuffIndex = 0;
+		JShader* shader = nullptr;
+	private:  
 		JTexture* albedoMap = nullptr;
 		JTexture* normalMap = nullptr;
 		JTexture* heightMap = nullptr;
@@ -94,25 +108,23 @@ namespace JinEngine
 		void SetShader(JShader* newShader)noexcept; 
 	private:
 		bool UpdateFrame(Graphic::JMaterialConstants& constant)final;
-	public:
-		bool Copy(JObject* ori) final;
+	private:
+		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate() noexcept final;
 		void DoDeActivate()noexcept final;
-	private:
-		void StuffResource() final;
-		void ClearResource() final; 
+	private: 
+		bool WriteMaterialData();
 		bool ReadMateiralData();
 	private:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
-	private:
-		J_SHADER_FUNCTION CalculateShaderFunc()noexcept; 
+	private: 
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JMaterial* material);
-		static JMaterial* LoadObject(JDirectory* directory, const JResourcePathData& pathData);
+		static JMaterial* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
 		static void RegisterJFunc();
 	private:
-		JMaterial(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* directory, const uint8 formatIndex);
+		JMaterial(const JMaterialInitData& initdata);
 		~JMaterial();
 	};
 }
