@@ -41,7 +41,7 @@ namespace JinEngine
 		for (uint i = 0; i < previewCount; ++i)
 		{
 			previewSceneList[i]->Clear();
-			previewSceneList[i].release();
+			previewSceneList[i].reset();
 		}
 		previewSceneList.clear();
 		previewSceneList.shrink_to_fit();
@@ -81,8 +81,9 @@ namespace JinEngine
 		}
 		return res;
 	}
-	bool JPreviewSceneGroup::DestroyPreviewScene(const size_t sceneGuid)noexcept
+	bool JPreviewSceneGroup::DestroyPreviewScene(JPreviewScene* previewScene)noexcept
 	{
+		const size_t sceneGuid = previewScene->GetGuid();
 		const uint previewCount = (uint)previewSceneList.size();
 		for (uint i = 0; i < previewCount; ++i)
 		{

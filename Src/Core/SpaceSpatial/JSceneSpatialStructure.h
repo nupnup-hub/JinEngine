@@ -1,5 +1,6 @@
 #pragma once 
-#include"JSceneSpatialStructureType.h"
+#include"JSceneSpatialStructureType.h" 
+#include"JSceneSpatialStructureOption.h"
 #include"../JDataType.h"
 #include"Bvh/JBvhType.h"
 #include<DirectXMath.h>
@@ -20,13 +21,14 @@ namespace JinEngine
 		{
 		private:
 			std::unique_ptr<JOctree> octree;
-			std::unique_ptr<JBvh> bvh;
-			J_SCENE_SPATIAL_STRUCTURE_TYPE spatialStructureType;
+			std::unique_ptr<JBvh> bvh; 
+			J_SCENE_SPATIAL_STRUCTURE_TYPE spatialStructureType = J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH;
 		public:
 			JSceneSpatialStructure();
 			~JSceneSpatialStructure();
-
+		public:
 			void BuildOctree(std::vector<JGameObject*>& gameObject,
+				const uint minSize,
 				const uint octreeSizeSquare,
 				const float looseFactor,
 				const bool isLooseOctree)noexcept;
@@ -34,17 +36,25 @@ namespace JinEngine
 				const J_BVH_BUILD_TYPE bvhBuildType,
 				const J_BVH_SPLIT_TYPE splitType)noexcept;
 			void Clear()noexcept;
-
-			void OnDebugBoundingBox(JGameObject* parent, bool onlyLeafNode)noexcept;
+		public:
+			void OnDebugBoundingBox(JGameObject* parent)noexcept;
 			void OffDebugBoundingBox()noexcept;
-
 			void Culling(const JCullingFrustum& camFrustum)noexcept;
 			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
-
-			void UpdateGameObject(const size_t guid)noexcept;
-
+			void UpdateGameObject(JGameObject* gameObject)noexcept;
+		public:
 			void AddGameObject(JGameObject* gameObject)noexcept;
 			void RemoveGameObject(JGameObject* gameObject)noexcept;
+		public:
+			//Option
+			JSceneSpatialStructureOption GetOption()const noexcept;
+			J_SCENE_SPATIAL_STRUCTURE_TYPE GetSpatialStructureType()const noexcept;  
+			void SetSpatialStructureType(const J_SCENE_SPATIAL_STRUCTURE_TYPE newType)noexcept;
+			void SetDebugOnlyLeaf(bool value)noexcept;
+
+			bool IsSpatialStructureActivated()const noexcept;
+			bool IsDebugActivated()const noexcept;
+			bool IsDebugLeafOnly()const noexcept;
 		};
 	}
 }

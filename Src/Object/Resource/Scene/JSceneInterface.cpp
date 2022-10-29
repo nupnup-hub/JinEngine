@@ -3,6 +3,6 @@
 namespace JinEngine
 {
 	JSceneInterface::JSceneInterface(const JResourceObject::JResourceInitData& initdata)
-		: JResourceObject(initdata)
+		:JResourceObject(initdata)
 	{}
 }

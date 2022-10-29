@@ -13,9 +13,12 @@ namespace JinEngine
 		J_CAMERA_STATE camState = J_CAMERA_STATE::IDEL; 
 
 		// Cache frustum properties.
+		REGISTER_PROPERTY_EX(cameraNear, GetNear, SetNear, GUI_SLIDER(0, 1000, true))
 		float cameraNear = 0.0f;
-		float cameraFar = 0.0f;
+		REGISTER_PROPERTY_EX(cameraFar, GetFar, SetFar, GUI_SLIDER(0, 1000, true))
+		float cameraFar = 0.0f; 
 		float cameraAspect = 0.0f;
+		REGISTER_PROPERTY_EX(cameraFov, GetFovYDegree, SetFovDegree, GUI_SLIDER(0, 360, true))
 		float cameraFov = 0.0f;
 		float cameraNearViewHeight = 0.0f;
 		float cameraFarViewHeight = 0.0f;
@@ -23,6 +26,7 @@ namespace JinEngine
 		int viewWidth;
 		int viewHeight;
 		 
+		REGISTER_PROPERTY_EX(isOrtho, IsOrthoCamera, SetOrthoCamera, GUI_CHECKBOX())
 		bool isOrtho = false;
 		bool isMainCamera = false; 
 
@@ -47,6 +51,7 @@ namespace JinEngine
 		float GetFar()const noexcept;
 		float GetAspect()const noexcept;
 		float GetFovY()const noexcept;
+		float GetFovYDegree()const noexcept;
 		float GetFovX()const noexcept;
 		int GetViewWidth()const noexcept;
 		int GetViewHeight()const noexcept; 
@@ -59,11 +64,12 @@ namespace JinEngine
 		void SetNear(float value)noexcept;
 		void SetFar(float value) noexcept;
 		void SetFov(float value) noexcept;
+		void SetFovDegree(float value) noexcept;
 		void SetViewSize(int width, int height) noexcept;
-		void SetOrthoCamera()noexcept;
-		void SetPerspectiveCamera()noexcept;
+		void SetOrthoCamera(bool value)noexcept; 
 		void SetMainCamera(bool value)noexcept;
-
+	public:
+		bool IsOrthoCamera()const noexcept;
 		bool IsMainCamera()const noexcept;
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final; 

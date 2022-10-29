@@ -1,14 +1,14 @@
 #pragma once  
-#include"JMaterialInterface.h"   
+#include"JMaterialInterface.h"  
+#include"../Texture/JTexture.h"
 #include"../Shader/JShaderFunctionEnum.h"
-#include"../../../Graphic/FrameResource/JFrameResourceCash.h"   
+#include"../../../Graphic/FrameResource/JFrameResourceConstant.h"   
 #include"../../../Utility/JMathHelper.h"  
 
 namespace JinEngine
 { 
 	class JDirectory;
-	class JShader;
-	class JTexture;
+	class JShader; 
 	namespace Graphic
 	{
 		struct JMaterialConstants;
@@ -38,24 +38,35 @@ namespace JinEngine
 	private:
 		JShader* shader = nullptr;
 	private:  
+		REGISTER_PROPERTY_EX(albedoMap, GetAlbedoMap, SetAlbedoMap, GUI_SELECTOR(true, true))
 		JTexture* albedoMap = nullptr;
+		REGISTER_PROPERTY_EX(normalMap, GetNormalMap, SetNormalMap, GUI_SELECTOR(true, true))
 		JTexture* normalMap = nullptr;
+		REGISTER_PROPERTY_EX(heightMap, GetHeightMap, SetHeightMap, GUI_SELECTOR(true, true))
 		JTexture* heightMap = nullptr;
+		REGISTER_PROPERTY_EX(roughnessMap, GetRoughnessMap, SetRoughnessMap, GUI_SELECTOR(true, true))
 		JTexture* roughnessMap = nullptr;
+		REGISTER_PROPERTY_EX(ambientOcclusionMap, GetAmbientOcclusionMap, SetAmbientOcclusionMap, GUI_SELECTOR(true, true))
 		JTexture* ambientOcclusionMap = nullptr;
 
 		//수정필요
 		//isDebug
+		REGISTER_PROPERTY_EX(shadow, OnShadow, SetShadow, GUI_CHECKBOX())
 		bool shadow = false;
+		REGISTER_PROPERTY_EX(light, OnLight, SetLight, GUI_CHECKBOX())
 		bool light = false;
+		REGISTER_PROPERTY_EX(albedoOnly, OnAlbedoOnly, SetAlbedoOnly, GUI_CHECKBOX())
 		bool albedoOnly = false;
 		bool nonCulling = false;
 		bool shadowMap = false;
 		bool isSkyMateral = false;
 		bool isDebugMaterial = false;
+		REGISTER_PROPERTY_EX(metallic,  GetMetallic, SetMetallic, GUI_SLIDER(0, 1, false, false))
 		float metallic = 0;
+		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0, 1))
 		float roughness = 0;
-		DirectX::XMFLOAT4 albedoColor = { 1,1,1,1 };
+		REGISTER_PROPERTY_EX(albedoColor, GetAlbedoColor, SetAlbedoColor, GUI_COLOR_PICKER(true))
+		DirectX::XMFLOAT4 albedoColor = { 0.85, 0.85, 0.85, 0.8 };
 		DirectX::XMFLOAT4X4 matTransform = JMathHelper::Identity4x4();
 	public:   
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
@@ -71,7 +82,7 @@ namespace JinEngine
 		float GetRoughness() const noexcept;
 		DirectX::XMFLOAT4 GetAlbedoColor() const noexcept;
 		DirectX::XMFLOAT4X4 GetMatTransform() const noexcept;
-		JTexture* GetDiffsueMap() const noexcept;
+		JTexture* GetAlbedoMap() const noexcept;
 		JTexture* GetNormalMap() const noexcept;
 		JTexture* GetHeightMap() const noexcept;
 		JTexture* GetRoughnessMap() const noexcept;
@@ -93,6 +104,14 @@ namespace JinEngine
 		void SetShadowMap(bool value)noexcept;
 		void SetSkyMaterial(bool value)noexcept;
 		void SetDebugMaterial(bool value)noexcept;
+	public:
+		bool OnShadow()const noexcept;
+		bool OnLight()const noexcept;
+		bool OnAlbedoOnly()const noexcept;
+		bool OnNonCulling()const noexcept;
+		bool OnShadowMap()const noexcept;
+		bool IsSkyMaterial()const noexcept;
+		bool IsDebugMaterial()const noexcept;
 		//레지스터에 등록된 머테리얼만 검사하므로 gameObjectDirty pointer 유무는 체크하지 않는다.
 		bool HasAlbedoMapTexture() const noexcept;
 		bool HasNormalMapTexture() const noexcept;

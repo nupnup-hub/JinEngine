@@ -72,7 +72,7 @@ namespace JinEngine
 			OBJECT_FLAG_NONE,
 			*newGameObj,
 			JResourceManager::Instance().GetDefaultMeshGeometry(meshType),
-			D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+			D3D11_PRIMITIVE_TOPOLOGY_LINELIST,
 			J_RENDER_LAYER::DEBUG_LAYER);
 
 		newRItem->SetMaterial(0, JResourceManager::Instance().GetDefaultMaterial(matType));

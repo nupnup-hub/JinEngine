@@ -19,9 +19,9 @@ namespace JinEngine
 			//has dependency
 			//order 1. AddDrawList, 2. activate
 			if (isPreviewScene)
-				Graphic::JGraphicDrawList::AddDrawList(scene, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
+				Graphic::JGraphicDrawList::AddDrawList(scene, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED, observation);
 			else
-				Graphic::JGraphicDrawList::AddDrawList(scene, Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS);
+				Graphic::JGraphicDrawList::AddDrawList(scene, Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS, observation);
 			CallOnResourceReference(scene);
 			opendScene.push_back(scene);
 			return true;
@@ -54,7 +54,7 @@ namespace JinEngine
 	{
 		return CallGetResourceReferenceCount(*scene) != 0;
 	}
-	bool JSceneManagerImpl::IsMainScene(JScene* scene)const noexcept
+	bool JSceneManagerImpl::IsMainScene(const JScene* scene)const noexcept
 	{
 		return mainScene != nullptr ? scene->GetGuid() == mainScene->GetGuid() : false;
 	}

@@ -31,10 +31,11 @@ namespace JinEngine
 		if (mesh == nullptr)
 			return nullptr;
 
+		//Has dependency into order
 		JRenderItem* newRenderItem = JCFI<JRenderItem>::Create(guid, flag, owner);
-		newRenderItem->SetMeshGeometry(mesh);
 		newRenderItem->SetPrimitiveType(primitiveType);
-		newRenderItem->SetRenderLayer(renderLayer); 
+		newRenderItem->SetRenderLayer(renderLayer);
+		newRenderItem->SetMesh(mesh);
 
 		return newRenderItem;
 	}
@@ -49,10 +50,11 @@ namespace JinEngine
 		if (mesh == nullptr)
 			return nullptr;
 
+		//Has dependency into order
 		JRenderItem* newRenderItem = JCFI<JRenderItem>::Create(guid, flag, owner);
-		newRenderItem->SetMeshGeometry(mesh);
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
+		newRenderItem->SetMesh(mesh);
 		 
 		const int matCount = (uint)mat.size();
 		for (uint i = 0; i < matCount; ++i)

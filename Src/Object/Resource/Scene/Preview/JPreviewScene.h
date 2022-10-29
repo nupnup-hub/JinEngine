@@ -2,7 +2,7 @@
 #include"JPreviewEnum.h"
 #include"../../Texture/JEditorTextureEnum.h"
 #include"../../../../Core/JDataType.h"
-#include"../../../../Graphic/FrameResource/JFrameResourceCash.h" 
+#include"../../../../Graphic/FrameResource/JFrameResourceConstant.h" 
 #include"../../../../Core/Pointer/JOwnerPtr.h"
 #include<memory>
 #include<string>
@@ -21,7 +21,7 @@ namespace JinEngine
 	protected: 
 		const size_t guid;
 		Core::JUserPtr<JObject> jobject;
-		JCamera* previewCamera;
+		JCamera* previewCamera = nullptr;
 		J_PREVIEW_DIMENSION previewDimension; 
 		J_PREVIEW_FLAG previewFlag;  
 	public:

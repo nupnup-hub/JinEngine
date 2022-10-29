@@ -46,7 +46,7 @@ namespace JinEngine
 		public: 
 			const Core::JUserPtr<JObject> selectObj;
 		public:
-			JEditorSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> selectObj = {});
+			JEditorSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> selectObj);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final; 
@@ -183,23 +183,37 @@ namespace JinEngine
 
 		struct JEditorBindFuncEvStruct : public JEditorEvStruct
 		{
+		private:
+			std::unique_ptr<Core::JBindHandleBase> bindHandle;
+		public:
+			JEditorBindFuncEvStruct(std::unique_ptr<Core::JBindHandleBase> bindHandle, const J_EDITOR_PAGE_TYPE pageType);
+		public:
+			bool PassDefectInspection()const noexcept final;
+			J_EDITOR_EVENT GetEventType()const noexcept final;
+		public:
+			void Execute();
+		};
+
+		//support redo undo
+		struct JEditorTBindFuncEvStruct : public JEditorEvStruct
+		{
 		public:
 			const std::string taskName; 
 		public:
-			JEditorBindFuncEvStruct(const std::string& taskName, const J_EDITOR_PAGE_TYPE pageType);
+			JEditorTBindFuncEvStruct(const std::string& taskName, const J_EDITOR_PAGE_TYPE pageType);
 		public: 
 			J_EDITOR_EVENT GetEventType()const noexcept final;
 		public:
 			virtual void Execute() = 0;
 		};
 
-		struct JEditorSetBindFuncEvStruct : public JEditorBindFuncEvStruct
+		struct JEditorTSetBindFuncEvStruct : public JEditorTBindFuncEvStruct
 		{
 		public: 
 			std::unique_ptr<Core::JBindHandleBase> doBindHandle;
 			std::unique_ptr<Core::JBindHandleBase> undoBindHandle;
 		public:
-			JEditorSetBindFuncEvStruct(const std::string& taskName,
+			JEditorTSetBindFuncEvStruct(const std::string& taskName,
 				const J_EDITOR_PAGE_TYPE pageType,
 				std::unique_ptr<Core::JBindHandleBase> doBindHandle,
 				std::unique_ptr<Core::JBindHandleBase> undoBindHandle);
@@ -209,19 +223,19 @@ namespace JinEngine
 		};
 
 		template<typename DataStructure, typename doHandle, typename undoHandle>
-		struct JEditorCreateBindFuncEvStruct : public JEditorBindFuncEvStruct
+		struct JEditorTCreateBindFuncEvStruct : public JEditorTBindFuncEvStruct
 		{
 		public:
 			std::unique_ptr<doHandle> doBindHandle;
 			std::unique_ptr<undoHandle> undoBindHandle;
 			DataStructure& structure;
 		public:
-			JEditorCreateBindFuncEvStruct(const std::string& taskName,
+			JEditorTCreateBindFuncEvStruct(const std::string& taskName,
 				const J_EDITOR_PAGE_TYPE pageType,
 				std::unique_ptr<doHandle> doBindHandle,
 				std::unique_ptr<undoHandle> undoBindHandle,
 				DataStructure& structure)
-				:JEditorBindFuncEvStruct(taskName, pageType),
+				:JEditorTBindFuncEvStruct(taskName, pageType),
 				doBindHandle(std::move(doBindHandle)),
 				undoBindHandle(std::move(undoBindHandle)),
 				structure(structure)

@@ -34,7 +34,7 @@ namespace JinEngine
 			virtual void Initialize(HINSTANCE hInstance) = 0; 
 			virtual void OpenProjecSelectorWindow() = 0;
 			virtual void OpenEngineWindow() = 0; 
-			virtual void CloseWindow() = 0;
+			virtual void CloseWindow() = 0; 
 			virtual std::optional<int> ProcessMessages() = 0; 
 		};
 		class JWindowHandleInterface : public JWindowAppInterface

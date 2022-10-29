@@ -22,11 +22,11 @@ namespace JinEngine
 			uint nodeNumber;
 			J_BVH_NODE_TYPE type;
 			DirectX::BoundingBox bv;
-			JBvhNode* parent;
-			JBvhNode* left;
-			JBvhNode* right;
-			JGameObject* innerGameObject;
-			JGameObject* debugGameObject;
+			JBvhNode* parent = nullptr;
+			JBvhNode* left = nullptr;
+			JBvhNode* right = nullptr;
+			JGameObject* innerGameObject = nullptr;
+			JGameObject* debugGameObject = nullptr;
 		public:
 			JBvhNode(const uint nodeNumber, const J_BVH_NODE_TYPE type, const DirectX::BoundingBox& bv, JBvhNode* parent, JGameObject* innerGameObject, bool isLeftNode);
 			~JBvhNode();
@@ -34,16 +34,17 @@ namespace JinEngine
 			JBvhNode& operator=(const JBvhNode& rhs) = delete;
 			JBvhNode(JBvhNode&& rhs) = default;
 			JBvhNode& operator=(JBvhNode&& rhs) = default;
-
+		public:
 			void CreateDebugGameObject(JGameObject* parent, bool onlyLeafNode)noexcept;
 			void DestroyDebugGameObject()noexcept;
 			void Clear()noexcept;
 			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
 			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
 			void UpdateInnerGameObject()noexcept;
+		public:
 			bool IsLeftNode()const noexcept;
 			bool IsContain(const DirectX::BoundingBox& boundBox)const noexcept;
-
+		public:
 			uint GetNodeNumber()const noexcept;
 			uint GetLeftNumberEnd()const noexcept;
 			uint GetRightNumberEnd()const noexcept;

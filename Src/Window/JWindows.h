@@ -70,7 +70,7 @@ namespace JinEngine
 			void Initialize(HINSTANCE hInstance)final;
 			void OpenProjecSelectorWindow()final;
 			void OpenEngineWindow()final; 
-			void CloseWindow()final;
+			void CloseWindow()final; 
 			std::optional<int> ProcessMessages()final;
 		private:
 			HWND GetHandle()const noexcept final;

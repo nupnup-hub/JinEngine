@@ -13,7 +13,18 @@ namespace JinEngine
 			Int, //short , int, long,  size_t 
 			Float, 
 			String,
-			Class, 
+			JVector2,	//Reflection support JVector<float> or JVector<int> or JVector<std::string>
+			JVector3,
+			JVector4,
+			XMInt2,
+			XMInt3,
+			XMInt4,
+			XMFloat2,
+			XMFloat3,
+			XMFloat4,
+			STD_VECTOR,	//Reflection support std::vector<T> T = AtomicType..
+						// std::vector<Class<T>> is not support gui
+			Class,
 			Enum,
 		};
 	}

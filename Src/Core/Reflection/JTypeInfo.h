@@ -21,7 +21,9 @@ namespace JinEngine
 		using IdentifierType = size_t;
 		using TypeInstanceMap = std::unordered_map<IdentifierType, JOwnerPtr<JTypeInstance>>;
 		using TypeInstanceVector = std::vector<JTypeInstance*>;
+		using PropertyVec = std::vector<JPropertyInfo*>;
 		using PropertyMap = std::unordered_map<std::string, JPropertyInfo*>;
+		using MethodVec = std::vector<JMethodInfo*>;
 		using MethodMap = std::unordered_map<std::string, JMethodInfo*>;
 
 		struct JTypeInstanceData
@@ -34,18 +36,20 @@ namespace JinEngine
 		struct JTypeMemberData
 		{
 		public:
-			PropertyMap propertyInfo;
-			MethodMap methodInfo;
+			PropertyVec propertyInfoVec;
+			PropertyMap propertyInfoMap;
+			MethodVec methodInfoVec;
+			MethodMap methodInfoMap;
 		};
  
 		class JTypeInfo 
 		{
 		private: 
 			friend class JIdentifier;
-			friend class JReflectionImpl;
+			friend class JReflectionInfoImpl;
 			template<typename Type> friend class JTypeInfoRegister;
-			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyRegister;
-			template<typename Type, typename Pointer, Pointer ptr, typename Func> friend class JMethodRegister;
+			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyInfoRegister;
+			template<typename Type, typename Pointer, Pointer ptr> friend class JMethodInfoRegister;
 		private:
 			//name is class Name except namespace and class
 			const std::string name;
@@ -56,10 +60,12 @@ namespace JinEngine
 			std::unique_ptr<JTypeInstanceData> instanceData;
 			std::unique_ptr<JTypeMemberData> memberData;
 		public:
+			//just class name
 			std::string Name()const noexcept;
+			//typeid name
 			std::string FullName()const noexcept;
-			const PropertyMap* GetPropertyMap()const noexcept;
-			const MethodMap* GetMethodMap()const noexcept;
+			const PropertyVec GetPropertyVec()const noexcept;
+			const MethodVec GetMethodVec()const noexcept;
 			bool IsA(const JTypeInfo& tar)const noexcept;
 			bool IsChildOf(const JTypeInfo& parentCandidate)const noexcept;
 		public:

@@ -133,7 +133,7 @@ namespace JinEngine
 					dS.TransitionHandle(newHandle, dH);
 				}
 			};
-			destroyT = std::tuple(destroyNode->GetNodeId(), std::make_unique< DestroyGameObjectFunctor>(destroyLam));
+			destroyT = std::tuple(destroyNode->GetNodeId(), std::make_unique<DestroyGameObjectFunctor>(destroyLam));
 			
 			auto renameLam = [](const std::string newName, Core::JUserPtr<JGameObject> obj) {obj->SetName(JCUtil::U8StrToWstr(newName)); };
 			renameT = std::tuple(renameNode->GetNodeId(), std::make_unique< RenameFuncF::Functor>(renameLam));
@@ -172,8 +172,13 @@ namespace JinEngine
 
 			auto changeParentLam = [](Core::JUserPtr<JGameObject> obj, Core::JUserPtr<JGameObject> newP) {obj->ChangeParent(newP.Get()); };
 			changeParentF = std::make_unique< ChangeParentF::Functor>(changeParentLam);
+
+			nameBuf.resize(JImGuiImpl::GetTextBuffRange());
 		}
-		JObjectExplorer::~JObjectExplorer(){}
+		JObjectExplorer::~JObjectExplorer()
+		{
+			dataStructure.Clear();
+		}
 		J_EDITOR_WINDOW_TYPE JObjectExplorer::GetWindowType()const noexcept
 		{
 			return J_EDITOR_WINDOW_TYPE::OBJECT_EXPLORER;
@@ -222,7 +227,7 @@ namespace JinEngine
 						
 						auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<CreateGameObjectEvStruct>
 							("Create game object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
-						AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, evStruct);
+						AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
 					}
 					else if (selectedObject.IsValid() && menuGuid == std::get<0>(destroyT))
 					{ 
@@ -231,7 +236,7 @@ namespace JinEngine
 					
 						auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<DestroyGameObjectEvStruct>
 							("Destroy game object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
-						AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, evStruct);
+						AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
 					}
 					else if (menuGuid == std::get<0>(renameT))
 					{
@@ -249,15 +254,19 @@ namespace JinEngine
 		{
 			//ImGuiTreeNodeFlags_Selected
 			bool isSelected = selectedObject.IsValid() && gObj->GetGuid() == selectedObject->GetGuid();
+			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow |
+				ImGuiTreeNodeFlags_OpenOnDoubleClick | 
+				ImGuiTreeNodeFlags_SpanAvailWidth | 
+				ImGuiTreeNodeFlags_Framed;
 			std::string name = JCUtil::WstrToU8Str(gObj->GetName());
 
 			if (isSelected)
-				SetTreeNodeSelectColor();
+				SetTreeNodeSelectColor(); 
 
 			if (renameTar.IsValid() && gObj->GetGuid() == renameTar->GetGuid())
 			{
 				if (JImGuiImpl::InputTextSet(GetName(),
-					nameBuf, maxNameOfLength,
+					nameBuf, JImGuiImpl::GetTextBuffRange(),
 					ImGuiInputTextFlags_EnterReturnsTrue,
 					*std::get<1>(renameT), Core::JUserPtr{ renameTar }))
 					renameTar.Clear();
@@ -272,7 +281,7 @@ namespace JinEngine
 					ObjectExplorerOnScreen(child);
 				}
 			}
-			else if(ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_OpenOnArrow))
+			else if(ImGui::TreeNodeEx(name.c_str(), baseFlags))
 			{
 				if (isSelected)
 					SetTreeNodeDefaultColor();
@@ -307,8 +316,8 @@ namespace JinEngine
 	  
 								auto doBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, Core::JUserPtr(selectedObj), Core::GetUserPtr(gObj));
 								auto undoBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, Core::JUserPtr(selectedObj), Core::GetUserPtr(selectedObj->GetParent()));
-								auto evStruct = std::make_unique<JEditorSetBindFuncEvStruct>("Change Parent", GetOwnerPageType(), std::move(doBind), std::move(undoBind));
-								AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
+								auto evStruct = std::make_unique<JEditorTSetBindFuncEvStruct>("Change Parent", GetOwnerPageType(), std::move(doBind), std::move(undoBind));
+								AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
 							}
 							else if (selected->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT && payload)
 							{
@@ -323,7 +332,7 @@ namespace JinEngine
 
 									auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<CreateModelEvStruct>
 										("Create model object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
-									AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, evStruct);
+									AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
 								}
 							}
 						}

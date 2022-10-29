@@ -13,6 +13,7 @@ namespace JinEngine
 	{
 		{L"Reserved texture by Imgui", J_EDITOR_TEXTURE::IMGUI_RESERVED},
 		{L"Missing.jpg", J_EDITOR_TEXTURE::MISSING},
+		{L"None.png", J_EDITOR_TEXTURE::NONE},
 		{L"BlueSearchIcon.png", J_EDITOR_TEXTURE::SEARCH_FOLDER_ICON},
 		{L"Shiro_Background.jpg", J_EDITOR_TEXTURE::PROJECT_SELECTOR_BACKGROUND},
 	};
@@ -21,6 +22,7 @@ namespace JinEngine
 	{
 		{L"Reserved texture by Imgui", J_EDITOR_TEXTURE::IMGUI_RESERVED},
 		{L"Missing.jpg", J_EDITOR_TEXTURE::MISSING},
+		{L"None.png", J_EDITOR_TEXTURE::NONE},
 		{L"DefaultSky.dds", J_EDITOR_TEXTURE::DEFAULT_SKY},
 		{L"white_Albedo.jpg", J_EDITOR_TEXTURE::BASIC_MATERIAL_DIFFUSE_MAP},
 		{L"white_Normal.png", J_EDITOR_TEXTURE::BASIC_MATERIAL_NORMAL_MAP},
@@ -31,7 +33,7 @@ namespace JinEngine
 		{L"skeleton.png", J_EDITOR_TEXTURE::SKELETON},
 		{L"clip.png", J_EDITOR_TEXTURE::ANIMATION_CLIP},
 		{L"Scene.png", J_EDITOR_TEXTURE::SCENE},
-		{L"AniController.png", J_EDITOR_TEXTURE::ANIMATION_CONTROLLER}
+		{L"AniController.png", J_EDITOR_TEXTURE::ANIMATION_CONTROLLER},
 	};
 	std::unordered_map<J_EDITOR_TEXTURE, size_t> JResourceData::defaultTextureMap;
 
@@ -81,6 +83,12 @@ namespace JinEngine
 		missingTerxture = Core::GetUserPtr(texture);
 		CallOnResourceReference(missingTerxture.Get());
 	}
+	void JResourceData::SetNone(JTexture* texture)
+	{
+		CallOffResourceReference(noneTerxture.Get());
+		noneTerxture = Core::GetUserPtr(texture);
+		CallOnResourceReference(noneTerxture.Get());
+	}
 	void JResourceData::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 	{
 		if (iden == guid)
@@ -90,6 +98,8 @@ namespace JinEngine
 		{
 			if (missingTerxture.IsValid() && missingTerxture->GetGuid() == jRobj->GetGuid())
 				SetMissing(nullptr); 
+			else if (noneTerxture.IsValid() && noneTerxture->GetGuid() == jRobj->GetGuid())
+				SetMissing(nullptr);
 		}
 	}
 }

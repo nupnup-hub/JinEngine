@@ -11,12 +11,12 @@ namespace JinEngine
 	{
 		REGISTER_CLASS(JComponent)
 	private:
-		JGameObject* owner; 
+		JGameObject* owner = nullptr;
 	private:
 		using JObject::SetName;
 	public:
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
-		JGameObject* GetOwner()noexcept;
+		JGameObject* GetOwner()const noexcept;
 		virtual J_COMPONENT_TYPE GetComponentType()const noexcept = 0;
 
 		virtual bool IsAvailableOverlap()const noexcept = 0;

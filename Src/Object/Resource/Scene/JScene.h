@@ -31,6 +31,7 @@ namespace JinEngine
 			bool isOpen = false;
 			bool isMainScene = false;
 			bool isSpatialStructureActivated = false;
+			int spatialStructureType;
 		};
 	public:
 		struct JSceneInitData : public JResourceInitData
@@ -58,8 +59,7 @@ namespace JinEngine
 		std::unordered_map<J_COMPONENT_TYPE, std::vector<JComponent*>> componentCash;
 		JCamera* mainCamera = nullptr;
 		bool isAnimatorActivated = false;
-		bool isSpatialStructureActivated = false;
-		bool isSpatialStructureDebugActivated = false; 
+		bool isSpatialStructureActivated = false;  
 	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
@@ -78,7 +78,7 @@ namespace JinEngine
 		uint GetMeshCount()const noexcept;
 
 		bool IsAnimatorActivated()const noexcept; 
-		bool IsMainScene()const noexcept;
+		bool IsMainScene()const noexcept; 
 		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
 	public:
 		JSceneCashInterface* CashInterface() final;
@@ -90,11 +90,13 @@ namespace JinEngine
 	private:
 		void DoCopy(JObject* ori) final;
 	protected:
-		void DoActivate() noexcept final;
+		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
 	private:
 		void StuffResource() final;
 		void ClearResource() final;
+	private:
+		void CreateDefaultGameObject()noexcept;
 	private:
 		const std::vector<JGameObject*>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept final;
 		const std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)const noexcept final;
@@ -103,7 +105,8 @@ namespace JinEngine
 		bool RemoveGameObject(JGameObject& gameObj)noexcept final;
 
 		void SetAnimation()noexcept final;
-		void SetMainCamera(JCamera* animator)noexcept final;
+		void SetMainCamera(JCamera* mainCam)noexcept final;
+		void UpdateTransform(JGameObject* owner)noexcept final;
 
 		bool RegisterComponent(JComponent& component)noexcept final;
 		bool DeRegisterComponent(JComponent& component)noexcept final;
@@ -115,11 +118,15 @@ namespace JinEngine
 
 		//SceneSpatial
 		void ViewCulling()noexcept final;
-		void OnSceneSpatialStructure()noexcept final;
-		void OffSceneSpatialStructure()noexcept final;
-		void OnDebugBoundingBox(bool onlyLeafNode)noexcept final;
-		void OffDebugBoundingBox()noexcept final;
-		void BuildOctree(const uint octreeSizeSquare, const float looseFactor, const bool isLooseOctree)noexcept;
+		Core::JSceneSpatialStructureOption GetSpatialStructureOption()const noexcept final;
+		void SetSceneSpatialStructure(const bool value)noexcept final;
+		void SetSceneSpatialStructureType(const Core::J_SCENE_SPATIAL_STRUCTURE_TYPE type)noexcept final;
+		void SetDebugBoundingBox(const bool value)noexcept final;
+		void SetDebugOnlyLeaf(const bool value)noexcept final;
+	private:
+		void BuildSpatialStructure(const Core::J_SCENE_SPATIAL_STRUCTURE_TYPE type)noexcept;
+		void ClearSpatialStructure()noexcept;
+		void BuildOctree(const uint minSize, const uint octreeSizeSquare, const float looseFactor, const bool isLooseOctree)noexcept;
 		void BuildBvh(const Core::J_BVH_BUILD_TYPE bvhBuildType, const Core::J_BVH_SPLIT_TYPE splitType)noexcept;
 		void CreateDemoGameObject()noexcept;
 		void DestroyDemoGameObject()noexcept;

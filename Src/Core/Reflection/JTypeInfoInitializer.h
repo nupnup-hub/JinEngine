@@ -27,6 +27,11 @@ namespace JinEngine
 		{
 		private:
 			friend class JTypeInfo;
+		private:
+			std::string name;
+			std::string fullName;
+			size_t hashCode;
+			JTypeInfo* parent;
 		public:
 			JTypeInfoInitializer(const std::string& name)
 				:name(name)
@@ -41,11 +46,6 @@ namespace JinEngine
 				if constexpr (HasEngineDefinedRegister<Type>::value)
 					Type::RegisterJFunc();
 			}
-		private:
-			std::string name;
-			std::string fullName;
-			size_t hashCode;
-			JTypeInfo* parent;
 		};
 	}
 } 

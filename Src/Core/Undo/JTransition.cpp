@@ -190,6 +190,8 @@ namespace JinEngine
 		void JTransition::Clear()
 		{
 			doQueue.clear();
+			while (!undoStack.empty())
+				undoStack.pop();
 			logQueue.clear();
 		}
 	}

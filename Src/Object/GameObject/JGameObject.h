@@ -30,10 +30,11 @@ namespace JinEngine
 		JRenderItem* renderItem = nullptr;
 		JScene* ownerScene = nullptr; 
 	public:
-		JAnimator* GetAnimator()noexcept;
-		JTransform* GetTransform() noexcept;
-		JRenderItem* GetRenderItem()noexcept; 
-		JScene* GetOwnerScene()noexcept; 
+		JAnimator* GetAnimator()const noexcept;
+		JTransform* GetTransform() const noexcept;
+		JRenderItem* GetRenderItem()const noexcept;
+		std::vector<JComponent*> GetComponentVec()const noexcept;
+		JScene* GetOwnerScene()const noexcept;
 		uint GetChildrenCount()const noexcept;  
 		uint GetComponentCount()const noexcept;
 		uint GetComponentCount(const J_COMPONENT_TYPE type)const noexcept;

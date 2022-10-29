@@ -258,7 +258,7 @@ namespace JinEngine
 			uint diagramCount = 0;
 			JFileIOHelper::LoadAtomicData(stream, diagramCount);
 			for (uint i = 0; i < diagramCount; ++i)
-				JAnimationFSMdiagram::LoadData(stream, Core::GetUserPtr<JAnimationController>(GetGuid()));
+				JAnimationFSMdiagram::LoadData(stream, Core::GetUserPtr(this));
 
 			stream.close();
 			return true;
@@ -395,7 +395,7 @@ namespace JinEngine
 	{
 		conditionStorage = std::make_unique<Core::JFSMconditionStorage>();
 		Core::JFDFI< JAnimationFSMdiagram>::Create(Core::JPtrUtil::MakeOwnerPtr<JFSMdiagram::InitData>
-			(L"BaseLayer", Core::MakeGuid(), Core::GetUserPtr<JAnimationController>(GetGuid())));
+			(L"BaseLayer", Core::MakeGuid(), Core::GetUserPtr(this)));
 	}
 	JAnimationController::~JAnimationController() {}
 }

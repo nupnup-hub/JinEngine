@@ -124,7 +124,7 @@ namespace JinEngine
 		stream >> guide >> oGuid;
 		stream >> guide >> flag;
 
-		oFlag = (J_OBJECT_FLAG)flag;	 
+		oFlag = (J_OBJECT_FLAG)flag;
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadObjectIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag)
@@ -209,16 +209,27 @@ namespace JinEngine
 		stream >> guide; std::getline(stream, name);
 		stream >> guide >> guid;
 		stream >> guide >> typeWName;
-		 
+
 		if (hasObject)
 			return Core::GetRawPtr(JCUtil::WstrToU8Str(typeWName), guid);
 		else
 			return nullptr;
 	}
-	bool JFileIOHelper::SkipStream(std::wifstream& stream, const std::wstring& symbol)
+	bool JFileIOHelper::SkipLine(std::wifstream& stream, const std::wstring& symbol)
 	{
 		std::wstring guide;
 		while (getline(stream, guide))
+		{
+			if (JCUtil::Contain(guide, symbol))
+				return true;
+		}
+		stream.close();
+		return false;
+	}
+	bool JFileIOHelper::SkipSentence(std::wifstream& stream, const std::wstring& symbol)
+	{
+		std::wstring guide;
+		while (stream >> guide)
 		{
 			if (JCUtil::Contain(guide, symbol))
 				return true;

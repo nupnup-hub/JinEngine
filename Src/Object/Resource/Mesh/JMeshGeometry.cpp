@@ -62,27 +62,9 @@ namespace JinEngine
 		return J_RESOURCE_TYPE::MESH;
 	}
 
-	JMeshGeometry::SubmeshGeometry::SubmeshGeometry(const JMeshData& meshData, const uint vertexSt, const uint indexSt)
-		:guid(meshData.GetGuid())
-	{
-		Core::JUserPtr<JMaterial> meshMaterial = meshData.GetMaterial();
-		if (meshMaterial.IsValid())
-			material = meshMaterial.Get();
-		else
-			material = JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_STANDARD);
-
-		vertexStrat = vertexSt;
-		vertexCount = meshData.GetVertexCount();
-		indexStart = indexSt;
-		indexCount = meshData.GetIndexCount();
-
-		SubmeshGeometry::boundingBox = meshData.GetBBox();
-		SubmeshGeometry::boundingSphere = meshData.GetBSphere();
-
-		hasNormal = meshData.HasNormal();
-		hasUV = meshData.HasUV();
-		type = meshData.GetMeshType();
-	}
+	JMeshGeometry::SubmeshGeometry::SubmeshGeometry(const size_t guid)
+		:guid(guid)
+	{}
 	JMeshGeometry::SubmeshGeometry::~SubmeshGeometry()
 	{
 	}
@@ -130,6 +112,26 @@ namespace JinEngine
 	{
 		return boundingSphere.Radius;
 	}
+	void JMeshGeometry::SubmeshGeometry::SetMesh(const JMeshData& meshData, const uint vertexSt, const uint indexSt)
+	{
+		Core::JUserPtr<JMaterial> meshMaterial = meshData.GetMaterial();
+		if (meshMaterial.IsValid())
+			material = meshMaterial.Get();
+		else
+			material = JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_STANDARD);
+
+		vertexStrat = vertexSt;
+		vertexCount = meshData.GetVertexCount();
+		indexStart = indexSt;
+		indexCount = meshData.GetIndexCount();
+
+		SubmeshGeometry::boundingBox = meshData.GetBBox();
+		SubmeshGeometry::boundingSphere = meshData.GetBSphere();
+
+		hasNormal = meshData.HasNormal();
+		hasUV = meshData.HasUV();
+		type = meshData.GetMeshType();
+	}
 	void JMeshGeometry::SubmeshGeometry::SetMaterial(JMaterial* newMaterial)noexcept
 	{
 		material = newMaterial;
@@ -141,10 +143,6 @@ namespace JinEngine
 	bool JMeshGeometry::SubmeshGeometry::HasNormal()const noexcept
 	{
 		return hasNormal;
-	}
-	void JMeshGeometry::SubmeshGeometry::Clear()
-	{
-		SetMaterial(nullptr);
 	}
 	J_RESOURCE_TYPE JMeshGeometry::GetResourceType()const noexcept
 	{
@@ -216,7 +214,7 @@ namespace JinEngine
 		return vbv;
 	}
 	D3D12_INDEX_BUFFER_VIEW JMeshGeometry::IndexBufferView()const
-	{
+	{ 
 		D3D12_INDEX_BUFFER_VIEW ibv;
 		ibv.BufferLocation = indexBufferGPU->GetGPUVirtualAddress();
 		ibv.Format = indexFormat;
@@ -276,12 +274,19 @@ namespace JinEngine
 		const uint submeshCount = (uint)meshGroup.GetMeshDataCount();
 		uint vertexCount = 0;
 		uint indexCount = 0;
+		if (submeshes.size() != submeshCount)
+		{
+			submeshes.clear();
+			for (uint i = 0; i < submeshCount; ++i)
+				submeshes.emplace_back(meshGroup.GetMeshData(i)->GetGuid());
+		}
+
 		for (uint i = 0; i < submeshCount; ++i)
 		{
 			if (meshGroup.GetMeshData(i)->GetMeshType() == J_MESHGEOMETRY_TYPE::STATIC)
-				submeshes.emplace_back(*static_cast<JStaticMeshData*>(meshGroup.GetMeshData(i)), vertexCount, indexCount);
+				submeshes[i].SetMesh(*static_cast<JStaticMeshData*>(meshGroup.GetMeshData(i)), vertexCount, indexCount);
 			else
-				submeshes.emplace_back(*static_cast<JSkinnedMeshData*>(meshGroup.GetMeshData(i)), vertexCount, indexCount);
+				submeshes[i].SetMesh(*static_cast<JSkinnedMeshData*>(meshGroup.GetMeshData(i)), vertexCount, indexCount);
 
 			vertexCount += submeshes[i].GetVertexCount();
 			indexCount += submeshes[i].GetIndexCount();
@@ -427,14 +432,17 @@ namespace JinEngine
 		}
 	}
 	void JMeshGeometry::Clear()
-	{
+	{ 
 		const uint subMeshCount = (uint)submeshes.size();
 		for (uint i = 0; i < subMeshCount; ++i)
 		{
-			CallOffResourceReference(submeshes[i].GetMaterial());
-			submeshes[i].Clear();
-		}
-		submeshes.clear();
+			if (IsActivated())
+				CallOffResourceReference(submeshes[i].GetMaterial());
+		};
+		vertexBufferGPU.Reset();
+		indexBufferGPU.Reset();
+		vertexBufferUploader.Reset();
+		indexBufferUploader.Reset();
 	}
 	void JMeshGeometry::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 	{
@@ -471,7 +479,7 @@ namespace JinEngine
 		return StoreObject(this);
 	}
 	Core::J_FILE_IO_RESULT JMeshGeometry::StoreObject(JMeshGeometry* mesh)
-	{
+	{ 
 		if (mesh == nullptr)
 			return Core::J_FILE_IO_RESULT::FAIL_NULL_OBJECT;
 

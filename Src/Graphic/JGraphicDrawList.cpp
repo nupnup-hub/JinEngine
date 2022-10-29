@@ -48,7 +48,7 @@ namespace JinEngine
 		{ }
 		JGraphicDrawTarget::~JGraphicDrawTarget() {}
 
-		bool JGraphicDrawList::AddDrawList(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
+		bool JGraphicDrawList::AddDrawList(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, IFrameDirty* observationFrame)noexcept
 		{ 
 			if (scene == nullptr)
 				return false;
@@ -56,7 +56,7 @@ namespace JinEngine
 			if (HasDrawList(scene))
 				return false;
 			 
-			std::unique_ptr<JGraphicDrawTarget> newTarget = std::make_unique<JGraphicDrawTarget>(scene, updateFrequency);
+			std::unique_ptr<JGraphicDrawTarget> newTarget = std::make_unique<JGraphicDrawTarget>(scene, updateFrequency, observationFrame);
 			drawList.push_back(std::move(newTarget));
 			return true;
 		}

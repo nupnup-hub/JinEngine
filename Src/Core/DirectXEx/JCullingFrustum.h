@@ -40,7 +40,7 @@ namespace JinEngine
 			JCullingFrustum& operator=(const JCullingFrustum& rhs) = default;
 			JCullingFrustum(JCullingFrustum&& rhs) = default;
 			JCullingFrustum& operator=(JCullingFrustum&& rhs) = default;
-
+		public:
 			J_CULLING_RESULT IsBoundingBoxIn(_In_ const DirectX::BoundingBox& box, _Inout_ J_CULLING_FLAG& flag)const noexcept;
 		};
 	}

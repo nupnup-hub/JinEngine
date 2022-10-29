@@ -15,7 +15,7 @@ namespace JinEngine
 			:pageType(pageType)
 		{}
 		JEditorMouseClickEvStruct::JEditorMouseClickEvStruct(const std::string& windowName, const uint clickBtn, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorEvStruct(pageType), windowName(windowName), clickBtn(clickBtn)
+			: JEditorEvStruct(pageType), windowName(windowName), clickBtn(clickBtn)
 		{}
 		bool JEditorMouseClickEvStruct::PassDefectInspection()const noexcept
 		{
@@ -192,27 +192,43 @@ namespace JinEngine
 			return J_EDITOR_EVENT::UNFOCUS_WINDOW;
 		}
 
-		JEditorBindFuncEvStruct::JEditorBindFuncEvStruct(const std::string& taskName, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorEvStruct(pageType)
+		JEditorBindFuncEvStruct::JEditorBindFuncEvStruct(std::unique_ptr<Core::JBindHandleBase> bindHandle, const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorEvStruct(pageType), bindHandle(std::move(bindHandle))
 		{}
+		bool JEditorBindFuncEvStruct::PassDefectInspection()const noexcept
+		{
+			return bindHandle != nullptr;
+		}
 		J_EDITOR_EVENT JEditorBindFuncEvStruct::GetEventType()const noexcept
 		{
 			return J_EDITOR_EVENT::BIND_FUNC;
 		}
+		void JEditorBindFuncEvStruct::Execute()
+		{
+			bindHandle->InvokeCompletelyBind();
+		}
 
-		JEditorSetBindFuncEvStruct::JEditorSetBindFuncEvStruct(const std::string& taskName,
+		JEditorTBindFuncEvStruct::JEditorTBindFuncEvStruct(const std::string& taskName, const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorEvStruct(pageType)
+		{}
+		J_EDITOR_EVENT JEditorTBindFuncEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::T_BIND_FUNC;
+		}
+
+		JEditorTSetBindFuncEvStruct::JEditorTSetBindFuncEvStruct(const std::string& taskName,
 			const J_EDITOR_PAGE_TYPE pageType,
 			std::unique_ptr<Core::JBindHandleBase> doBindHandle,
 			std::unique_ptr<Core::JBindHandleBase> undoBindHandle)
-			:JEditorBindFuncEvStruct(taskName, pageType), 
+			:JEditorTBindFuncEvStruct(taskName, pageType),
 			doBindHandle(std::move(doBindHandle)),
 			undoBindHandle(std::move(undoBindHandle))
-		{} 
-		bool JEditorSetBindFuncEvStruct::PassDefectInspection()const noexcept
+		{}
+		bool JEditorTSetBindFuncEvStruct::PassDefectInspection()const noexcept
 		{
 			return doBindHandle != nullptr && undoBindHandle != nullptr;
 		}
-		void JEditorSetBindFuncEvStruct::Execute()
+		void JEditorTSetBindFuncEvStruct::Execute()
 		{
 			Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(taskName,
 				std::move(doBindHandle), std::move(undoBindHandle)));

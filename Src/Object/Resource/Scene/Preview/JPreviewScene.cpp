@@ -22,7 +22,7 @@ namespace JinEngine
 	}
 	Core::JUserPtr<JCamera> JPreviewScene::GetPreviewCamera()noexcept
 	{
-		return Core::GetUserPtr<JCamera>(previewCamera->GetGuid());
+		return Core::GetUserPtr(previewCamera);
 	}
 	J_PREVIEW_DIMENSION JPreviewScene::GetPreviewDimension()const noexcept
 	{
@@ -58,7 +58,7 @@ namespace JinEngine
 	{
 		DirectX::XMFLOAT3 camNewPos{ objCenter.x + additionalPos.x, objCenter.y + additionalPos.y, objCenter.z - 1 + additionalPos.z };
 		camera->GetTransform()->SetPosition(camNewPos);
-		camera->SetOrthoCamera();
+		camera->SetOrthoCamera(true);
 		camera->SetViewSize((int)(objRadius), (int)(objRadius));
 		camera->GetTransform()->LookAt(objCenter);
 	}
@@ -70,7 +70,7 @@ namespace JinEngine
 	{
 		DirectX::XMFLOAT3 camNewPos{ objCenter.x + additionalPos.x, objCenter.y + additionalPos.y, objCenter.z + (objRadius * 1.25f) + additionalPos.z };
 		camera->GetTransform()->SetPosition(camNewPos);
-		camera->SetOrthoCamera();
+		//camera->SetOrthoCamera();
 		camera->SetViewSize((int)(objRadius * 1.325f), (int)(objRadius * 1.325f));
 		camera->GetTransform()->LookAt(objCenter);
 	}
@@ -84,8 +84,7 @@ namespace JinEngine
 		camNewPos.x += objRadius + additionalPos.x;
 		camNewPos.y += objRadius + additionalPos.y;
 		camNewPos.z += objRadius + additionalPos.z;
-		camera->GetTransform()->SetPosition(camNewPos);
-		camera->SetPerspectiveCamera();
+		camera->GetTransform()->SetPosition(camNewPos); 
 		camera->GetTransform()->LookAt(objCenter);
 	}
 	void JPreviewScene::Adjust3DNonFixedCamera(_In_ JScene* scene,
@@ -98,8 +97,7 @@ namespace JinEngine
 		camNewPos.x += objRadius + additionalPos.x;
 		camNewPos.y += objRadius + additionalPos.y;
 		camNewPos.z += objRadius + additionalPos.z;
-		camera->GetTransform()->SetPosition(camNewPos);
-		camera->SetPerspectiveCamera();
+		camera->GetTransform()->SetPosition(camNewPos); 
 		camera->GetTransform()->LookAt(objCenter);
 	}
 }

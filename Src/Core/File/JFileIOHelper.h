@@ -120,8 +120,11 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden);
 		static Core::JIdentifier* LoadHasObjectIden(std::wifstream& stream);
 	public:
-		//skip file until symbol
+		//skip file using getline until symbol
 		//if fail stream is close
-		static bool SkipStream(std::wifstream& stream, const std::wstring& symbol);
+		static bool SkipLine(std::wifstream& stream, const std::wstring& symbol); 
+		//skip file using stream until symbol
+		//if fail stream is close
+		static bool SkipSentence(std::wifstream& stream, const std::wstring& symbol);
 	};
 }

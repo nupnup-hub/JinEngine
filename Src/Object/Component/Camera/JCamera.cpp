@@ -62,6 +62,10 @@ namespace JinEngine
 	{
 		return cameraFov;
 	}
+	float JCamera::GetFovYDegree()const noexcept
+	{
+		return JMathHelper::RadToDeg * cameraFov;
+	}
 	float JCamera::GetFovX()const noexcept
 	{
 		float halfWidth = 0.5f * GetNearViewWidth();
@@ -117,6 +121,12 @@ namespace JinEngine
 		if (!isOrtho)
 			CalPerspectiveLens();
 	}
+	void JCamera::SetFovDegree(float value) noexcept
+	{
+		cameraFov = value * JMathHelper::DegToRad;
+		if (!isOrtho)
+			CalPerspectiveLens();
+	}
 	void JCamera::SetViewSize(int width, int height) noexcept
 	{
 		viewWidth = width;
@@ -127,15 +137,13 @@ namespace JinEngine
 		else
 			CalPerspectiveLens();
 	}
-	void JCamera::SetOrthoCamera()noexcept
+	void JCamera::SetOrthoCamera(bool value)noexcept
 	{
-		isOrtho = true;
-		CalOrthoLens();
-	}
-	void JCamera::SetPerspectiveCamera()noexcept
-	{
-		isOrtho = false;
-		CalPerspectiveLens();
+		isOrtho = value;
+		if (isOrtho)
+			CalOrthoLens();
+		else
+			CalPerspectiveLens();
 	}
 	void JCamera::SetMainCamera(bool value)noexcept
 	{
@@ -158,6 +166,10 @@ namespace JinEngine
 				GetOwner()->GetOwnerScene()->CompInterface()->SetMainCamera(nullptr);
 		}
 		isMainCamera = value;
+	}
+	bool JCamera::IsOrthoCamera()const noexcept
+	{
+		return isOrtho;
 	}
 	bool JCamera::IsMainCamera()const noexcept
 	{

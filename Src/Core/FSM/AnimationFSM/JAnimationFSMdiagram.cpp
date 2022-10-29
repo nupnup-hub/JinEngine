@@ -226,7 +226,7 @@ namespace JinEngine
 			JFileIOHelper::LoadFsmObjectIden(stream, name, guid, type);
   
 			JAnimationFSMdiagram* newDiagram = JFDFI<JAnimationFSMdiagram>::Create(JPtrUtil::MakeOwnerPtr<InitData>(name, guid, fsmOwner));
-			JUserPtr<JAnimationFSMdiagram> diagramUser = Core::GetUserPtr<JAnimationFSMdiagram>(newDiagram->GetGuid());
+			JUserPtr<JAnimationFSMdiagram> diagramUser = Core::GetUserPtr(newDiagram);
 			uint stateCount = 0;
 			JFileIOHelper::LoadAtomicData(stream, stateCount);
 

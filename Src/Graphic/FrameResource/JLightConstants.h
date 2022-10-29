@@ -6,28 +6,32 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
+		//Off Shadow
 		struct JLightConstants
 		{
-			JDirectionalLight directionalLight[maxLight];
-			S_DirectionalLight s_directionalLight[maxLight];
+		public:
+			JDirectionalLight directionalLight[maxLight]; 
+			JPointLight pointLight[maxLight]; 
+			JSpotLight spotLight[maxLight]; 
 
-			JPointLight pointLight[maxLight];
-			S_PointLight s_pointLight[maxLight];
+			uint directionalLightMax = 0;
+			uint pointLightMax = 0;
+			uint spotLightMax = 0;
+			uint litObjPad0 = 0; 
+		};
 
-			JSpotLight spotLight[maxLight];
-			S_SpotLight s_spotLight[maxLight];
+		//On Shadow
+		struct JSMLightConstants
+		{
+		public: 
+			JSMDirectionalLight sDirectionalLight[maxLight];
+			JSMPointLight sPointLight[maxLight];
+			JSMSpotLight sSpotLight[maxLight];
 
-			int directionalLightMax = 0;
-			int s_directionalLightMax = 0;
-
-			int pointLightMax = 0;
-			int s_pointLightMax = 0;
-
-			int spotLightMax = 0;
-			int s_spotLightMax = 0;
-
-			uint objPad0 = 0;
-			uint objPad1 = 0;
+			uint smDirectionalLightMax = 0;
+			uint smPointLightMax = 0;
+			uint smSpotLightMax = 0;
+			uint smLitObjPad0 = 0;
 		};
 	}
 }

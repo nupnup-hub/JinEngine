@@ -67,7 +67,7 @@ namespace JinEngine
 	{
 		return matTransform;
 	}
-	JTexture* JMaterial::GetDiffsueMap() const noexcept
+	JTexture* JMaterial::GetAlbedoMap() const noexcept
 	{
 		return albedoMap;
 	}
@@ -255,6 +255,34 @@ namespace JinEngine
 			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
 		else
 			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
+	}
+	bool JMaterial::OnShadow()const noexcept
+	{
+		return shadow;
+	}
+	bool JMaterial::OnLight()const noexcept
+	{
+		return light;
+	}
+	bool JMaterial::OnAlbedoOnly()const noexcept
+	{
+		return albedoOnly;
+	}
+	bool JMaterial::OnNonCulling()const noexcept
+	{
+		return nonCulling;
+	}
+	bool JMaterial::OnShadowMap()const noexcept
+	{
+		return shadowMap;
+	}
+	bool JMaterial::IsSkyMaterial()const noexcept
+	{
+		return isSkyMateral;
+	}
+	bool JMaterial::IsDebugMaterial()const noexcept
+	{
+		return isDebugMaterial;
 	}
 	bool JMaterial::HasAlbedoMapTexture() const noexcept
 	{

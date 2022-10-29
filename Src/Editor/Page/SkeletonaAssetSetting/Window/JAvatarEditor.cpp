@@ -47,7 +47,7 @@ namespace JinEngine
 		}
 		void JAvatarEditor::BuildAvatarEdit()
 		{
-			JVector2<float> btnSize{ (float)JImGuiImpl::GetWindowSize().x, (float)JImGuiImpl::GetTextSize().y };
+			JVector2<float> btnSize{ (float)JImGuiImpl::GetWindowSize().x, (float)JImGuiImpl::GetAlphabetSize().y };
 			if (JImGuiImpl::Button("Make JAvatar", btnSize))
 			{  
 				Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Make Avatar",
@@ -82,7 +82,7 @@ namespace JinEngine
 					int textSize = (int)JAvatar::jointGuide[index][i].guideName.size();
 
 					ImGui::SameLine();
-					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (spaceOffset - textSize) * JImGuiImpl::GetTextSize().x);
+					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (spaceOffset - textSize) * JImGuiImpl::GetAlphabetSize().x);
 
 					int jointRefIndex = JAvatar::jointGuide[index][i].index;
 					int nowRefValue = targetAvatar.jointReference[jointRefIndex];

@@ -1,6 +1,8 @@
 #pragma once    
 #include<string>
-#include"JParameter.h"
+#include<memory>
+#include"JParameter.h" 
+#include"JPropertyOptionInfo.h"
 
 namespace JinEngine
 {
@@ -8,24 +10,28 @@ namespace JinEngine
 	{
 		class JTypeInfo;
 		class JPropertyInfo;
-		class PropertyHandlerBase;
+		class JPropertyHandlerBase;
 		template<typename Field>
 		class JPropertyInfoInitializer
 		{
-			friend class JPropertyInfo;
-		public:
-			JPropertyInfoInitializer(const std::string& name, PropertyHandlerBase& handlerBase, JTypeInfo& jTypeInfo)
-				:name(name),
-				handlerBase(&handlerBase),
-				ownerType(&jTypeInfo)
-			{}
 		private:
-
+			friend class JPropertyInfo;
 		private:
 			const std::string name;
 			JParameterHint fieldHint = CreateParameterHint<Field>(typeid(Field).name());
-			PropertyHandlerBase* handlerBase;
-			JTypeInfo* ownerType;
+			JPropertyHandlerBase* handlerBase;
+			JTypeInfo* ownerType; 
+			JPropertyOptionInfo* optionInfo;
+		public:
+			JPropertyInfoInitializer(const std::string& name,
+				JPropertyHandlerBase& handlerBase, 
+				JTypeInfo& jTypeInfo, 
+				JPropertyOptionInfo& optionInfo)
+				:name(name),
+				handlerBase(&handlerBase),
+				ownerType(&jTypeInfo),
+				optionInfo(&optionInfo)
+			{}
 		};
 	}
 }

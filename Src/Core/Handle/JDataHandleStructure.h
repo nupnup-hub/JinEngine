@@ -7,6 +7,7 @@
 
 namespace JinEngine
 {
+	class JObject;
 	namespace Core
 	{
 		namespace Handle
@@ -104,6 +105,8 @@ namespace JinEngine
 				validIndex = handle.index;
 				arrState[handle.index] = Handle::empty;
 				arrNumber[handle.index] = 0;
+				if constexpr (std::is_base_of_v<JObject, Type>)
+					data[handle.index]->BeginDestroy();
 				data[handle.index].Clear();
 				return true;
 			}
@@ -117,6 +120,22 @@ namespace JinEngine
 				arrNumber[handle.index] = 0;
 
 				return std::move(data[handle.index]);
+			}
+			void Clear()
+			{
+				for (uint i = 0; i < Capacity; ++i)
+				{
+					if constexpr (std::is_base_of_v<JObject, Type>)
+					{
+						if(data[i].IsValid())
+							data[i]->BeginDestroy();
+					}
+					data[i].Clear();
+					arrState[i] = 0;
+					arrNumber[i] = 0;
+				}
+				validNumber = 0;
+				validIndex = 0;
 			}
 		public:
 			JDataHandle CreateInvalidHandle()const noexcept

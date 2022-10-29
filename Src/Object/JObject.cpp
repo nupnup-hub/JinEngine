@@ -47,7 +47,7 @@ namespace JinEngine
 			DoActivate();
 	}
 	void JObject::DeActivate()noexcept
-	{
+	{ 
 		if (isActivated)
 			DoDeActivate();
 	}

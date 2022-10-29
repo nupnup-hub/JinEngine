@@ -176,7 +176,7 @@ namespace JinEngine
 						stream.open(pathData.engineMetaFileWPath, std::ios::in | std::ios::binary);
 						if (stream.is_open())
 						{
-							if (JFileIOHelper::SkipStream(stream, Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>()))
+							if (JFileIOHelper::SkipLine(stream, Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>()))
 							{
 								int storeType = 0;
 								stream >> storeType;

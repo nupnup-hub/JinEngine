@@ -137,7 +137,7 @@ namespace JinEngine
 			uint UpdateScenePassCB(_In_ JScene* scene, uint& passCBoffset);
 			uint UpdateSceneAnimationCB(_In_ JScene* scene, uint& aniCBoffset);
 			uint UpdateSceneCameraCB(_In_ JScene* scene, uint& camCBoffset);
-			uint UpdateSceneLightCB(_In_ JScene* scene, uint& lightCBoffset, uint& shadowCalCBoffset);
+			uint UpdateSceneLightCB(_In_ JScene* scene, uint& lightCBoffset, uint& shadowCBoffset);
 			void DrawScene()final;
 			void DrawProjectSelector()final;
 			void DrawSceneRenderTarget(_In_ JScene* scene,
@@ -146,13 +146,14 @@ namespace JinEngine
 				const uint passCBoffset,
 				const uint aniCBoffset,
 				const uint camCBoffset,
-				const uint lightCBoffset);
+				const uint lightCBoffset,
+				const uint smLightCBoffset);
 			void DrawSceneShadowMap(_In_ JScene* scene,
 				_In_ JLight* light,
 				uint& objCBoffset,
 				const uint passCBoffset,
 				const uint aniCBoffset,
-				const uint shadowCalCBoffset);
+				const uint shadowCBoffset);
 			void DrawGameObject(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject,
 				const uint objCBoffset,

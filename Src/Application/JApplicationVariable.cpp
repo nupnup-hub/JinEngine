@@ -188,6 +188,10 @@ namespace JinEngine
 		{
 			return appTime;
 		}
+		void JApplicationVariable::SetApplicationState(const J_APPLICATION_STATE newState)noexcept
+		{
+			applicationState = newState;
+		}
 		void JApplicationVariable::Initialize()
 		{
 			TCHAR programpath[_MAX_PATH];
@@ -370,7 +374,6 @@ namespace JinEngine
 		{
 			if (nextProjectInfo == nullptr)
 				return false;
-			JApplicationVariable::applicationState = J_APPLICATION_STATE::EDIT_GAME;
 			SetStartProjectOnce();
 			return true;
 		}
@@ -399,6 +402,8 @@ namespace JinEngine
 			bool res01 = MakeProjectVersionFile(JCUtil::WstrToU8Str(nextProjectInfo->GetVersion()));
 			nextProjectInfo.reset();
 			startProjectOnce = false;
+			if (res00 && res01)
+				JApplicationVariable::SetApplicationState(J_APPLICATION_STATE::EDIT_GAME);
 			return res00 && res01;
 		}
 		void JApplicationProject::SetStartProjectOnce()
@@ -441,7 +446,7 @@ namespace JinEngine
 		{
 			std::wifstream stream;
 			stream.open(JApplicationVariable::GetProjectVersionFilePath().c_str(), std::ios::in | std::ios::binary);
-			if (stream.is_open() && JFileIOHelper::SkipStream(stream, JApplicationVariable::engineProjectSymbol))
+			if (stream.is_open() && JFileIOHelper::SkipLine(stream, JApplicationVariable::engineProjectSymbol))
 			{
 				std::wstring version;
 				JFileIOHelper::LoadJString(stream, version);

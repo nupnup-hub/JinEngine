@@ -123,6 +123,7 @@ namespace JinEngine
 			else
 				newStr = newStr.substr(i + 1);
 		}
+		newStr.shrink_to_fit();
 		return newStr;
 	}
 	std::wstring JCUtil::EraseSideWChar(const std::wstring& wstr, const wchar_t ch)noexcept
@@ -169,59 +170,11 @@ namespace JinEngine
 	}
 	bool JCUtil::Contain(const std::wstring& source, const std::wstring& target)noexcept
 	{
-		bool findSt = false;
-		int i = 0;
-		for (; i < source.size(); ++i)
-		{
-			if (source[i] == target[0])
-			{
-				findSt = true;
-				break;
-			}
-		}
-
-		if (!findSt)
-			return false;
-
-		if (target.size() + i - 1 < source.size())
-		{
-			for (int j = i, k = 0; k < target.size(); ++j, ++k)
-			{
-				if (source[j] != target[k])
-					return false;
-			}
-			return true;
-		}
-		else
-			return false;
+		return source.find(target) != std::wstring::npos;
 	}
 	bool JCUtil::Contain(const std::string& source, const std::string& target)noexcept
 	{
-		bool findSt = false;
-		int i = 0;
-		for (; i < source.size(); ++i)
-		{
-			if (source[i] == target[0])
-			{
-				findSt = true;
-				break;
-			}
-		}
-
-		if (!findSt)
-			return false;
-
-		if (target.size() + i - 1 < source.size())
-		{
-			for (int j = i, k = 0; k < target.size(); ++j, ++k)
-			{
-				if (source[j] != target[k])
-					return false;
-			}
-			return true;
-		}
-		else
-			return false;
+		return source.find(target) != std::string::npos;
 	}
 	void JCUtil::DecomposeFolderPath(const std::wstring& path, std::wstring& folderPath, std::wstring& name)noexcept
 	{

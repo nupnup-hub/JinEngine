@@ -11,7 +11,7 @@ namespace JinEngine
 	{
 		return J_OBJECT_TYPE::COMPONENT_OBJECT;
 	}
-	JGameObject* JComponent::GetOwner()noexcept
+	JGameObject* JComponent::GetOwner()const noexcept
 	{
 		return owner;
 	}

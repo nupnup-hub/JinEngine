@@ -1,6 +1,6 @@
 #pragma once
-#include<DirectXMath.h>
-#include"JShadowStruct.h"
+#include<DirectXMath.h> 
+#include"../../../Utility/JMathHelper.h"
 
 namespace JinEngine
 {
@@ -14,6 +14,15 @@ namespace JinEngine
 		float spotPower = 0;                            // spot light only
 	};
 
+	struct JShadowMapStruct
+	{
+		DirectX::XMFLOAT4X4 shadowTransform = JMathHelper::Identity4x4();
+		uint shadowMapIndex = 0;
+		uint shadowPad00 = 0;
+		uint shadowPad01 = 0;
+		uint shadowPad02 = 0;
+	};
+
 	struct JDirectionalLight
 	{
 		DirectX::XMFLOAT3 strength = { 0.8f, 0.8f, 0.8f };
@@ -22,10 +31,10 @@ namespace JinEngine
 		uint dLightPad01 = 0;
 	}; 
 	//수정필요
-	struct S_DirectionalLight
+	struct JSMDirectionalLight
 	{
 		JDirectionalLight dLight;
-		JShadow shadow;
+		JShadowMapStruct shadow;
 	};
 	struct JPointLight
 	{
@@ -34,10 +43,10 @@ namespace JinEngine
 		DirectX::XMFLOAT3 position = { 0.0f, 0.0f, 0.0f }; 
 		float falloffEnd = 10.0f;
 	};
-	struct S_PointLight
+	struct JSMPointLight
 	{
 		JPointLight pLight;
-		JShadow shadow;
+		JShadowMapStruct shadow;
 	};
 	struct JSpotLight
 	{
@@ -48,10 +57,10 @@ namespace JinEngine
 		DirectX::XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
 		float spotPower = 0;
 	};
-	struct S_SpotLight
+	struct JSMSpotLight
 	{
 		JSpotLight sLight;
-		JShadow shadow;
+		JShadowMapStruct shadow;
 	};
 	static constexpr int maxLight = 16; 
 }

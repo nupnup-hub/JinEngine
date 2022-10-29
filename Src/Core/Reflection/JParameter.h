@@ -1,12 +1,14 @@
 #pragma once
 #include"../JDataType.h"
 #include"../../Utility/JTypeUtility.h" 
+#include"../../Utility/JVector.h"
 #include"JParameterType.h"
 #include<string>
 #include<vector>
+#include<DirectXMath.h>
 
 namespace JinEngine
-{
+{  
 	namespace Core
 	{
 		namespace
@@ -375,61 +377,95 @@ namespace JinEngine
 				using Type = typename JSelect<Convertible::value>::template Result<Success, Fail>;
 			};
 			template<typename T>
-			J_PARAMETER_TYPE GetJParameterType()
+			J_PARAMETER_TYPE GetParameterType()
 			{
-				if constexpr (std::is_integral_v<T>)
+				if constexpr (std::is_void_v<T>)
+					return J_PARAMETER_TYPE::Void;
+				else if constexpr (std::is_enum_v<T>)
+					return J_PARAMETER_TYPE::Enum;
+				else if constexpr (std::is_class_v<T>)
 				{
-					if constexpr (std::is_unsigned_v<T>)
-						return J_PARAMETER_TYPE::UInt;
+					if constexpr (std::is_same_v<T, std::string>)
+						return J_PARAMETER_TYPE::String;
+					else if constexpr (std::is_base_of_v<JVectorBase, T>)
+					{
+						if constexpr (JVectorDetermine<T>::value)
+						{ 
+							if constexpr (T::GetDigitCount() == 2)
+								return J_PARAMETER_TYPE::JVector2;
+							else if constexpr (T::GetDigitCount() == 3)
+								return J_PARAMETER_TYPE::JVector3;
+							else if constexpr (T::GetDigitCount() == 4)
+								return J_PARAMETER_TYPE::JVector4;
+							else
+								return J_PARAMETER_TYPE::UnKnown;
+						}
+						else
+							return J_PARAMETER_TYPE::UnKnown;
+					}
+					else if constexpr (std::is_same_v<T, DirectX::XMINT2>)
+						return J_PARAMETER_TYPE::XMInt2;
+					else if constexpr (std::is_same_v<T, DirectX::XMINT3>)
+						return J_PARAMETER_TYPE::XMInt3;
+					else if constexpr (std::is_same_v<T, DirectX::XMINT4>)
+						return J_PARAMETER_TYPE::XMInt4;
+					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT2>)
+						return J_PARAMETER_TYPE::XMFloat2;
+					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT3>)
+						return J_PARAMETER_TYPE::XMFloat3;
+					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
+						return J_PARAMETER_TYPE::XMFloat4;
+					else if constexpr (StdArrayContainerDetermine<T>::value)
+						return  J_PARAMETER_TYPE::STD_VECTOR;
 					else
-						return J_PARAMETER_TYPE::Int;
+						return J_PARAMETER_TYPE::Class;
 				}
 				else if constexpr (std::is_floating_point_v<T>)
 					return J_PARAMETER_TYPE::Float;
-				else if constexpr (std::is_same_v<char, T>)
-					return J_PARAMETER_TYPE::Char;
-				else if constexpr (std::is_same_v<std::string, T>)
-					return J_PARAMETER_TYPE::String;
-				else if constexpr (std::is_class_v<T>)
-					return J_PARAMETER_TYPE::Class;
-				else if constexpr (std::is_enum_v<T>)
-					return J_PARAMETER_TYPE::Enum;
-				else if constexpr (std::is_void_v<T>)
-					return J_PARAMETER_TYPE::Void;
-				else
-					return J_PARAMETER_TYPE::UnKnown;
+				else if constexpr (std::is_integral_v<T>)
+				{
+					if constexpr (std::is_same_v<T, bool>)
+						return J_PARAMETER_TYPE::Bool;
+					else
+						return J_PARAMETER_TYPE::Int;
+				}
+				return J_PARAMETER_TYPE::UnKnown;
 			}
 		}
 		struct JParameterHint
 		{
 		public:
-			const std::string name;
+			const std::string name;  
+			//Remove_All<T> typeid name... if vector<T> => T name same other template
+			const std::string valueTypeFullName;
 			const bool isConst;
 			const bool isPtr;
 			const bool isArray;
 			const bool isLvalueReference;
 			const bool isRvalueReference;
 			const uint8 dimension;
-			const J_PARAMETER_TYPE jDataEnum;
-			const size_t arrLastDimCount;
+			const J_PARAMETER_TYPE jDataEnum; 
+			const size_t arrLastDimCount;  
 		public:
-			JParameterHint(const std::string name,
+			JParameterHint(const std::string name, 
+				const std::string valueTypeFullName,
 				const bool isConst,
 				const bool isPtr,
 				const bool isArray,
 				const bool isLvalueReference,
 				const bool isRvalueReference,
 				const uint8 dimension,
-				const J_PARAMETER_TYPE jDataEnum,
+				const J_PARAMETER_TYPE jDataEnum,  
 				const size_t arrLastDimCount)
-				: name(name),
+				: name(name), 
+				valueTypeFullName(valueTypeFullName),
 				isConst(isConst),
 				isPtr(isPtr),
 				isArray(isArray),
 				isLvalueReference(isLvalueReference),
 				isRvalueReference(isRvalueReference),
 				dimension(dimension),
-				jDataEnum(jDataEnum),
+				jDataEnum(jDataEnum), 
 				arrLastDimCount(arrLastDimCount)
 			{ }
 
@@ -554,7 +590,7 @@ namespace JinEngine
 			bool isLref = false;
 			bool isRref = false;
 			uint8 dimension = 0;
-			J_PARAMETER_TYPE jDataEnum = J_PARAMETER_TYPE::UnKnown;
+			J_PARAMETER_TYPE jDataEnum = J_PARAMETER_TYPE::UnKnown; 
 			size_t arrLastDimCount = 0;
 
 			if constexpr (IsPointer_V<T>)
@@ -599,30 +635,19 @@ namespace JinEngine
 			if constexpr (std::is_rvalue_reference_v<T>)
 				isRref = true;
 
-			using valueType = RemoveAll_T<T>;
+			using valueType = RemoveAll_T<T>; 
+			jDataEnum = GetParameterType<valueType>();
+			std::string valueTypeFullName;
+			if constexpr (JVectorDetermine<valueType>::value)
+				valueTypeFullName = typeid(RemoveAll_T<JVectorDetermine<valueType>::ValueType>).name();
+			else if constexpr (StdArrayContainerDetermine<valueType>::value)
+				valueTypeFullName = typeid(RemoveAll_T < StdArrayContainerDetermine<valueType>::ValueType>).name();
+			else if constexpr (StdMapDetermine<valueType>::value)
+				valueTypeFullName = typeid(RemoveAll_T < StdMapDetermine<valueType>::ValueType>).name();
+			else
+				valueTypeFullName = typeid(valueType).name();
 
-			if constexpr (std::is_void_v<valueType>)
-				jDataEnum = J_PARAMETER_TYPE::Void;
-			else if constexpr (std::is_enum_v<valueType>)
-				jDataEnum = J_PARAMETER_TYPE::Enum;
-			else if constexpr (std::is_class_v<valueType>)
-			{
-				if constexpr (std::is_same_v<valueType, std::string>)
-					jDataEnum = J_PARAMETER_TYPE::String;
-				else
-					jDataEnum = J_PARAMETER_TYPE::Class;
-			}
-			else if constexpr (std::is_floating_point_v<valueType>)
-				jDataEnum = J_PARAMETER_TYPE::Float;
-			else if constexpr (std::is_integral_v<valueType>)
-			{
-				if constexpr (std::is_same_v<valueType, bool>)
-					jDataEnum = J_PARAMETER_TYPE::Bool;
-				else
-					jDataEnum = J_PARAMETER_TYPE::Int;
-			}
-
-			return JParameterHint(name, isConst, isPtr, isArray, isLref, isRref, dimension, jDataEnum, arrLastDimCount);
+			return JParameterHint(name, valueTypeFullName, isConst, isPtr, isArray, isLref, isRref, dimension, jDataEnum, arrLastDimCount);
 		}
 
 		template<typename ...Param, size_t ...Is>

@@ -14,6 +14,7 @@ namespace JinEngine
 		struct JPassConstants;
 		struct JCameraConstants;
 		struct JLightConstants;
+		struct JSMLightConstants;
 		struct JShadowMapConstants;
 
 		struct JFrameResource
@@ -30,6 +31,7 @@ namespace JinEngine
 			std::unique_ptr<JUploadBuffer<JPassConstants>> passCB = nullptr;
 			std::unique_ptr<JUploadBuffer<JCameraConstants>> cameraCB = nullptr;
 			std::unique_ptr<JUploadBuffer<JLightConstants>> lightCB = nullptr;
+			std::unique_ptr<JUploadBuffer<JSMLightConstants>> smLightCB = nullptr;
 			std::unique_ptr<JUploadBuffer<JShadowMapConstants>> shadowCalCB = nullptr;
 
 			// Fence value to mark commands up to this fence point.  This lets us
@@ -42,7 +44,7 @@ namespace JinEngine
 				const uint initAnimatorCount,
 				const uint initSceneCount,
 				const uint initCameraCount,
-				const uint initSceneShadowCount);
+				const uint initLightCount);
 
 			JFrameResource(const JFrameResource& rhs) = delete;
 			JFrameResource& operator=(const JFrameResource& rhs) = delete;

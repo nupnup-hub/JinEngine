@@ -1,4 +1,4 @@
-#include"JOctreeNode.h" 
+#include"JOctreeNode.h"  
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Object/GameObject/JGameObjectFactoryUtility.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
@@ -13,14 +13,85 @@ namespace JinEngine
 			:boundingBox(boundingBox), parentNode(parentNode)
 		{
 			if (parentNode != nullptr)
-			{
 				parentNode->childrenNode.push_back(this);
-				const uint pInnerGameObjCount = parentNode->GetInnerGameObjectCount();
-				for (uint i = 0; i < pInnerGameObjCount; ++i)
-					AddGameObject(parentNode->innerGameObject[i], isLooseOctree);
-			}
 		}
 		JOctreeNode::~JOctreeNode() {}
+		void JOctreeNode::CreateDebugGameObject(JGameObject* parent, bool onlyLeafNod)noexcept
+		{
+			if (debugGameObject == nullptr)
+			{
+				if (innerGameObject.size() == 0 && onlyLeafNod)
+					return;
+
+				if (innerGameObject.size() == 0)
+					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
+				else
+					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
+				float scaleFactor = boundingBox.Extents.x * 2;
+				debugGameObject->GetTransform()->SetScale(XMFLOAT3(scaleFactor, scaleFactor, scaleFactor));
+				debugGameObject->GetTransform()->SetPosition(boundingBox.Center);
+			}
+		}
+		void JOctreeNode::DestroyDebugGameObject()noexcept
+		{
+			if (debugGameObject != nullptr)
+			{
+				debugGameObject->BeginDestroy();
+				debugGameObject = nullptr;
+			}
+		}
+		void JOctreeNode::Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
+		{
+			J_CULLING_RESULT res = camFrustum.IsBoundingBoxIn(boundingBox, flag);
+			if (res == J_CULLING_RESULT::DISJOINT)
+				SetInVisible();
+			else if (res == J_CULLING_RESULT::CONTAIN)
+				SetVisible(camFrustum, flag);
+			else
+			{			
+				if (childrenNode.size() > 0)
+				{ 
+					for (uint i = 0; i < 8; ++i)
+						childrenNode[i]->Culling(camFrustum, flag);
+				}
+				else
+					CullingInnerObject(camFrustum, flag);
+			}
+		}
+		void JOctreeNode::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
+		{
+			ContainmentType res = camFrustum.Contains(boundingBox);
+			if (res == ContainmentType::DISJOINT)
+				SetInVisible();
+			else if (res == ContainmentType::CONTAINS)
+				SetVisible(camFrustum);
+			else
+			{
+				if (childrenNode.size() > 0)
+				{
+					for (uint i = 0; i < 8; ++i)
+						childrenNode[i]->Culling(camFrustum);
+				}
+				else
+					CullingInnerObject(camFrustum);
+			}	
+		}
+		void JOctreeNode::Clear()
+		{
+			const uint innerCount = (uint)innerGameObject.size();
+			for (uint i = 0; i < innerCount; ++i)
+			{
+				innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+				innerGameObject[i] = nullptr;
+			}
+			innerGameObject.clear();
+			DestroyDebugGameObject();
+			if (childrenNode.size() != 0)
+			{
+				for (uint i = 0; i < 8; ++i)
+					childrenNode[i]->Clear();
+			}
+		}
 		bool JOctreeNode::AddGameObject(JGameObject* gameObj, bool isLooseOctree)noexcept
 		{
 			JRenderItem* rItem = gameObj->GetRenderItem();
@@ -31,8 +102,6 @@ namespace JinEngine
 			{
 				if (res == ContainmentType::CONTAINS)
 				{
-					if (parentNode != nullptr)
-						parentNode->RemoveInnerGameObject(gameObj);
 					innerGameObject.push_back(gameObj);
 					return true;
 				}
@@ -43,8 +112,6 @@ namespace JinEngine
 			{
 				if (res == ContainmentType::CONTAINS)
 				{
-					if (parentNode != nullptr)
-						parentNode->RemoveInnerGameObject(gameObj);
 					innerGameObject.push_back(gameObj);
 					return true;
 				}
@@ -64,73 +131,20 @@ namespace JinEngine
 			neighborNode.push_back(octreeNode);
 			return true;
 		}
-		void JOctreeNode::CreateDebugGameObject(JGameObject* parent, bool onlyLeafNod)noexcept
+		bool JOctreeNode::RemoveGameObject(JGameObject* gameObj)noexcept
 		{
-			if (debugGameObject == nullptr)
-			{
-				if (innerGameObject.size() == 0 && onlyLeafNod)
-					return;
-
-				debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
-				float scaleFactor = boundingBox.Extents.x * 2;
-				debugGameObject->GetTransform()->SetScale(XMFLOAT3(scaleFactor, scaleFactor, scaleFactor));
-				debugGameObject->GetTransform()->SetPosition(boundingBox.Center);
-			}
-		}
-		void JOctreeNode::DestroyDebugGameObject()noexcept
-		{
-			if (debugGameObject != nullptr)
-			{
-				debugGameObject->BeginDestroy();
-				debugGameObject = nullptr;
-			}
-		}
-		void JOctreeNode::Clear()
-		{
-			const uint innerCount = (uint)innerGameObject.size();
-			for (uint i = 0; i < innerCount; ++i)
-			{
-				innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
-				innerGameObject[i] = nullptr;
-				DestroyDebugGameObject();
-			}
-
-			if (childrenNode.size() != 0)
-			{
-				for (uint i = 0; i < 8; ++i)
-					childrenNode[i]->Clear();
-			}
-		}
-		void JOctreeNode::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
-		{
-			const uint innerGameObjCount = (uint)innerGameObject.size();
-			if (innerGameObjCount == 0)
-				return;
-
-			ContainmentType res = camFrustum.Contains(boundingBox);
-			if (res == ContainmentType::DISJOINT)
-			{
-				for (uint i = 0; i < innerGameObjCount; ++i)
-					innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
-			}
-			else if (res == ContainmentType::CONTAINS)
-			{
-				for (uint i = 0; i < innerGameObjCount; ++i)
-					innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
-			}
+			if (gameObj != nullptr)
+				return RemoveInnerGameObject(gameObj);
 			else
-			{
-				if (childrenNode.size() > 0)
-				{
-					for (uint i = 0; i < 8; ++i)
-						childrenNode[i]->Culling(camFrustum);
-				}
-				else
-				{
-					for (uint i = 0; i < innerGameObjCount; ++i)
-						innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
-				}
-			}
+				return false;
+		}
+		bool JOctreeNode::IsLeafNode()const noexcept
+		{
+			return childrenNode.size() == 0;
+		}
+		bool JOctreeNode::IsRootNode()const noexcept
+		{
+			return parentNode == nullptr;
 		}
 		DirectX::BoundingBox JOctreeNode::GetBoundingBox()const noexcept
 		{
@@ -155,14 +169,6 @@ namespace JinEngine
 		{
 			return (uint)innerGameObject.size();
 		}
-		bool JOctreeNode::IsLeafNode()const noexcept
-		{
-			return childrenNode.size() == 0;
-		}
-		bool JOctreeNode::IsRootNode()const noexcept
-		{
-			return parentNode == nullptr;
-		}
 		bool JOctreeNode::RemoveInnerGameObject(JGameObject* gameObject)noexcept
 		{
 			const size_t tarGuid = gameObject->GetGuid();
@@ -176,6 +182,61 @@ namespace JinEngine
 				}
 			}
 			return false;
+		}
+		void JOctreeNode::CullingInnerObject(const JCullingFrustum& camFrustum, J_CULLING_FLAG oriFlag)
+		{
+			const uint innerGameObjCount = (uint)innerGameObject.size();
+			for (uint i = 0; i < innerGameObjCount; ++i)
+			{
+				J_CULLING_FLAG flag = oriFlag;
+				JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
+				if (camFrustum.IsBoundingBoxIn(rItem->GetBoundingBox(), flag) != J_CULLING_RESULT::DISJOINT)
+					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+				else
+					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+			}
+		}
+		void JOctreeNode::CullingInnerObject(const DirectX::BoundingFrustum& camFrustum)
+		{
+			const uint innerGameObjCount = (uint)innerGameObject.size();
+			for (uint i = 0; i < innerGameObjCount; ++i)
+			{
+				JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
+				if (camFrustum.Contains(rItem->GetBoundingBox()) != DirectX::DISJOINT)
+					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+				else
+					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+			}
+		}
+		void JOctreeNode::SetVisible(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
+		{
+			CullingInnerObject(camFrustum, flag);
+			if (childrenNode.size() > 0)
+			{
+				for (uint i = 0; i < 8; ++i)
+					childrenNode[i]->SetVisible(camFrustum, flag);
+			}
+		}
+		void JOctreeNode::SetVisible(const DirectX::BoundingFrustum& camFrustum)noexcept
+		{
+			CullingInnerObject(camFrustum);
+			if (childrenNode.size() > 0)
+			{
+				for (uint i = 0; i < 8; ++i)
+					childrenNode[i]->SetVisible(camFrustum);
+			}
+		}
+		void JOctreeNode::SetInVisible()noexcept
+		{
+			const uint innerGameObjCount = (uint)innerGameObject.size();
+			for (uint i = 0; i < innerGameObjCount; ++i)
+				innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+
+			if (childrenNode.size() > 0)
+			{
+				for (uint i = 0; i < 8; ++i)
+					childrenNode[i]->SetInVisible();
+			}
 		}
 	}
 }

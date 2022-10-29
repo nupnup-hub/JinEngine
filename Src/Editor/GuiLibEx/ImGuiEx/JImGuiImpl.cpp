@@ -30,15 +30,17 @@ namespace JinEngine
 		private:
 			using FontMap = std::unordered_map<J_EDITOR_FONT_TYPE, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>>;
 		public:
-			const size_t guid;  
+			const size_t guid;
 		public:
 			JVector2<int> displaySize;
 			JVector2<int> windowSize;
 			JVector2<int> clientSize;
 			JVector2<int> clientPos;
 			JVector2<int> minClientSize;
-			JVector2<int> textSize;
+			JVector2<int> alphabetSize;
 			JVector2<int> textSizeOffset;
+		public:
+			uint textBufRange = 50;
 		public:
 			FontMap fontMap;
 			J_EDITOR_FONT_TYPE fontType;
@@ -58,6 +60,7 @@ namespace JinEngine
 			//widget Count
 			uint windowCount;
 			uint childWindowCount;
+			uint popupCount;
 			uint textCount;
 			uint checkBoxCount;
 			uint buttonCount;
@@ -78,8 +81,7 @@ namespace JinEngine
 			JImGui()
 				:guid(JCUtil::CalculateGuid(typeid(JImGui).name()))
 			{
-				this->AddEventListener(*JWindow::Instance().EvInterface(), guid, Window::J_WINDOW_EVENT::WINDOW_RESIZE);
-				this->AddEventListener(*JWindow::Instance().EvInterface(), guid, Window::J_WINDOW_EVENT::WINDOW_CLOSE);
+				this->AddEventListener(*JWindow::Instance().EvInterface(), guid, Window::J_WINDOW_EVENT::WINDOW_RESIZE); 
 
 				IMGUI_CHECKVERSION();
 				ImGui::CreateContext();
@@ -90,11 +92,21 @@ namespace JinEngine
 				//io.ConfigWindowsResizeFromEdges = true;
 				io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
 				//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;        // Enable Multi-Viewport / Platform Windows
-				LoadDefaultColor();
+				//LoadDefaultColor();
+				//LoadCustomColor();
+				LoadCustomColor();
 				LoadFontFile();
 				//PushFont();
 
 				ImGuiStyle& style = ImGui::GetStyle();
+				style.WindowBorderSize = 1;
+				style.ChildBorderSize = 1;
+				style.FrameBorderSize = 1;
+				style.PopupBorderSize = 1;
+				style.TabBorderSize = 1;
+
+				style.FrameRounding = 6;
+				style.GrabRounding = 6;
 				//ImGuiStyle& style = ImGui::GetStyle();
 				//style.FrameBorderSize = 1; 
 				ImGui_ImplWin32_Init(JWindow::Instance().HandleInterface()->GetHandle());
@@ -104,19 +116,23 @@ namespace JinEngine
 			}
 			~JImGui()
 			{
+				ImGui_ImplDX12_Shutdown();
+				ImGui_ImplWin32_Shutdown();
+				ImGui::DestroyContext();
+
 				RemoveListener(*JWindow::Instance().EvInterface(), guid);
 			}
 		public:
 			void ClearWidgetCount()
 			{
-				windowCount = childWindowCount = textCount = checkBoxCount = buttonCount =
+				windowCount = childWindowCount = popupCount = textCount = checkBoxCount = buttonCount =
 					imageButtonCount = treeNodeCount = selectableCount = inputDataCount = sliderCount =
 					tabBarCount = tabItemCount = tableCount = menuBarCount = menuCount =
 					menuItemCount = comboCount = textureCount = 0;
 			}
 			uint WidgetSum()
 			{
-				return windowCount + childWindowCount + textCount + checkBoxCount + buttonCount +
+				return windowCount + childWindowCount + popupCount + textCount + checkBoxCount + buttonCount +
 					imageButtonCount + treeNodeCount + selectableCount + inputDataCount + sliderCount +
 					tabBarCount + tabItemCount + tableCount + menuBarCount + menuCount +
 					menuItemCount + comboCount + textureCount;
@@ -145,15 +161,14 @@ namespace JinEngine
 					return;
 				if (eventType == Window::J_WINDOW_EVENT::WINDOW_RESIZE)
 					OnResize();
-				else if (eventType == Window::J_WINDOW_EVENT::WINDOW_CLOSE)
-				{
-					ImGui_ImplDX12_Shutdown();
-					ImGui_ImplWin32_Shutdown();
-				}
 			}
 		private:
 			void LoadDefaultColor()
 			{
+				ImGuiStyle& style = ImGui::GetStyle();
+				for (int i = 0; i < (int)ImGuiCol_COUNT; ++i)
+					colors[i] = style.Colors[i];
+
 				colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 				colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
 				colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 0.94f);
@@ -210,7 +225,79 @@ namespace JinEngine
 				colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
 				colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
 
+				for (int i = 0; i < (int)ImGuiCol_COUNT; ++i)
+					style.Colors[i] = colors[i];
+			}
+			void LoadCustomColor()
+			{
+				constexpr auto ColorFromBytes = [](uint8_t r, uint8_t g, uint8_t b)
+				{
+					return ImVec4((float)r / 255.0f, (float)g / 255.0f, (float)b / 255.0f, 1.0f);
+				};
+
 				ImGuiStyle& style = ImGui::GetStyle();
+				for (int i = 0; i < (int)ImGuiCol_COUNT; ++i)
+					colors[i] = style.Colors[i];
+
+				const ImVec4 bgColor = ColorFromBytes(37, 37, 38);
+				const ImVec4 lightBgColor = ColorFromBytes(82, 82, 85);
+				const ImVec4 veryLightBgColor = ColorFromBytes(90, 90, 95);
+
+				const ImVec4 panelColor = ColorFromBytes(51, 51, 55);
+				const ImVec4 panelHoverColor = ColorFromBytes(29, 151, 236);
+				const ImVec4 panelActiveColor = ColorFromBytes(0, 119, 200);
+
+				const ImVec4 textColor = ColorFromBytes(255, 255, 255);
+				const ImVec4 textDisabledColor = ColorFromBytes(151, 151, 151);
+				const ImVec4 borderColor = ColorFromBytes(78, 78, 78);
+
+				colors[ImGuiCol_Text] = textColor;
+				colors[ImGuiCol_TextDisabled] = textDisabledColor;
+				colors[ImGuiCol_TextSelectedBg] = panelActiveColor;
+				colors[ImGuiCol_WindowBg] = bgColor;
+				colors[ImGuiCol_ChildBg] = bgColor;
+				colors[ImGuiCol_PopupBg] = bgColor;
+				colors[ImGuiCol_Border] = borderColor;
+				colors[ImGuiCol_BorderShadow] = borderColor;
+				colors[ImGuiCol_FrameBg] = lightBgColor;
+				colors[ImGuiCol_FrameBgHovered] = lightBgColor;
+				colors[ImGuiCol_FrameBgActive] = lightBgColor;
+				colors[ImGuiCol_TitleBg] = bgColor;
+				colors[ImGuiCol_TitleBgActive] = bgColor;
+				colors[ImGuiCol_TitleBgCollapsed] = bgColor;
+				colors[ImGuiCol_MenuBarBg] = panelColor;
+				colors[ImGuiCol_ScrollbarBg] = panelColor;
+				colors[ImGuiCol_ScrollbarGrab] = lightBgColor;
+				colors[ImGuiCol_ScrollbarGrabHovered] = veryLightBgColor;
+				colors[ImGuiCol_ScrollbarGrabActive] = veryLightBgColor;
+				colors[ImGuiCol_CheckMark] = panelActiveColor;
+				colors[ImGuiCol_SliderGrab] = panelHoverColor;
+				colors[ImGuiCol_SliderGrabActive] = panelActiveColor;
+				colors[ImGuiCol_Button] = panelColor;
+				colors[ImGuiCol_ButtonHovered] = panelHoverColor;
+				colors[ImGuiCol_ButtonActive] = panelHoverColor;
+				colors[ImGuiCol_Header] = panelColor;
+				colors[ImGuiCol_HeaderHovered] = panelHoverColor;
+				colors[ImGuiCol_HeaderActive] = panelActiveColor;
+				colors[ImGuiCol_Separator] = borderColor;
+				colors[ImGuiCol_SeparatorHovered] = borderColor;
+				colors[ImGuiCol_SeparatorActive] = borderColor;
+				colors[ImGuiCol_ResizeGrip] = bgColor;
+				colors[ImGuiCol_ResizeGripHovered] = panelColor;
+				colors[ImGuiCol_ResizeGripActive] = lightBgColor;
+				colors[ImGuiCol_PlotLines] = panelActiveColor;
+				colors[ImGuiCol_PlotLinesHovered] = panelHoverColor;
+				colors[ImGuiCol_PlotHistogram] = panelActiveColor;
+				colors[ImGuiCol_PlotHistogramHovered] = panelHoverColor;
+				colors[ImGuiCol_DragDropTarget] = bgColor;
+				colors[ImGuiCol_NavHighlight] = bgColor;
+				colors[ImGuiCol_DockingPreview] = panelActiveColor;
+				colors[ImGuiCol_Tab] = bgColor;
+				colors[ImGuiCol_TabActive] = panelActiveColor;
+				colors[ImGuiCol_TabUnfocused] = bgColor;
+				colors[ImGuiCol_TabUnfocusedActive] = panelActiveColor;
+				colors[ImGuiCol_TabHovered] = panelHoverColor;
+
 				for (int i = 0; i < (int)ImGuiCol_COUNT; ++i)
 					style.Colors[i] = colors[i];
 			}
@@ -218,7 +305,7 @@ namespace JinEngine
 			{
 				ImGuiIO& io = ImGui::GetIO();
 				ImFontConfig config;
-				 
+
 				ImFont* defaultFont = io.Fonts->AddFontDefault();
 				ImFont* boldFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\GameEngine\\JinEngine\\Font\\NotoSerifKR-Bold.otf",
 					48,
@@ -269,22 +356,17 @@ namespace JinEngine
 				return JVector2<float>(imV2.x, imV2.y);
 			}
 		}
-		JVector2<int> JImGuiImpl::GetTextSize()noexcept
+		JVector2<int> JImGuiImpl::GetAlphabetSize()noexcept
 		{
-			return jImgui->textSize;
+			return jImgui->alphabetSize;
 		}
-		JVector2<int> JImGuiImpl::GetTextSizeOffset()noexcept
+		uint JImGuiImpl::GetTextBuffRange()noexcept
 		{
-			return jImgui->textSizeOffset;
+			return jImgui->textBufRange;
 		}
-		void JImGuiImpl::SetTextSize()noexcept
+		void JImGuiImpl::SetAlphabetSize()noexcept
 		{
-			jImgui->textSize.x = ImGui::CalcTextSize("d").x;
-			jImgui->textSize.y = ImGui::CalcTextSize("d").y;
-		}
-		void JImGuiImpl::SetTextSizeOffset(JVector2<int> offset)noexcept
-		{
-			jImgui->textSizeOffset = offset;
+			jImgui->alphabetSize = ImGui::CalcTextSize("0");
 		}
 		void JImGuiImpl::SetFont(const J_EDITOR_FONT_TYPE fontType)noexcept
 		{
@@ -372,6 +454,15 @@ namespace JinEngine
 		{
 			ImGui::EndChild();
 		}
+		bool JImGuiImpl::BeginPopup(const std::string& name, ImGuiPopupFlags flags)
+		{
+			++jImgui->popupCount;
+			return ImGui::BeginPopup(name.c_str(), flags);
+		}
+		void JImGuiImpl::EndPopup()
+		{
+			ImGui::EndPopup();
+		}
 		void JImGuiImpl::Text(const std::string& text)
 		{
 			++jImgui->textCount;
@@ -404,25 +495,45 @@ namespace JinEngine
 			else
 				return ImGui::Selectable(name.c_str(), pSelected, flags, sizeArg);
 		}
+		bool JImGuiImpl::Selectable(const std::string& name, bool selected, ImGuiSelectableFlags flags, const JVector2<float>& sizeArg)
+		{
+			++jImgui->selectableCount;
+			return ImGui::Selectable(name.c_str(), selected, flags, sizeArg);
+		}
 		bool JImGuiImpl::InputText(const std::string& name, char* buf, size_t bufSize, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
 		{
 			++jImgui->inputDataCount;
 			return ImGui::InputText(name.c_str(), buf, bufSize, flags, txtCallback, userData);
 		}
-		bool JImGuiImpl::InputInt(const std::string& name, int* value, int step, int stepFast, ImGuiInputTextFlags flags)
+		bool JImGuiImpl::InputInt(const std::string& name, int* value, ImGuiInputTextFlags flags, int step, int stepFast)
 		{
 			++jImgui->inputDataCount;
 			return ImGui::InputInt(name.c_str(), value, step, stepFast, flags);
 		}
-		bool JImGuiImpl::InputFloat(const std::string& name, float* value, float step, float stepFast, const char* format, ImGuiInputTextFlags flags)
+		bool JImGuiImpl::InputFloat(const std::string& name, float* value, ImGuiInputTextFlags flags, const char* format, float step, float stepFast)
 		{
 			++jImgui->inputDataCount;
 			return ImGui::InputFloat(name.c_str(), value, step, stepFast, format, flags);
+		}
+		bool JImGuiImpl::SliderInt(const std::string& name, int* value, int vMin, int vMax, const char* format, ImGuiSliderFlags flags)
+		{ 
+			++jImgui->sliderCount;
+			return ImGui::SliderInt(name.c_str(), value, vMin, vMax, format, flags);
 		}
 		bool JImGuiImpl::SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format, ImGuiSliderFlags flags)
 		{
 			++jImgui->sliderCount;
 			return ImGui::SliderFloat(name.c_str(), value, vMin, vMax, format, flags);
+		}
+		bool JImGuiImpl::VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, const char* format, ImGuiSliderFlags flags)
+		{
+			++jImgui->sliderCount;
+			return ImGui::VSliderInt(name.c_str(), size, value, vMin, vMax, format, flags);
+		}
+		bool JImGuiImpl::VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format, ImGuiSliderFlags flags)
+		{
+			++jImgui->sliderCount;
+			return ImGui::VSliderFloat(name.c_str(), size, value, vMin, vMax, format, flags);
 		}
 		bool JImGuiImpl::BeginTabBar(const std::string& name, const ImGuiTabBarFlags flags)
 		{
@@ -574,10 +685,28 @@ namespace JinEngine
 		{
 			jImgui->isDrag = value;
 		}
+		float JImGuiImpl::GetSliderPosX(bool hasScrollbar)noexcept
+		{
+			float posX = ImGui::GetWindowSize().x - JImGuiImpl::GetSliderWidth() - 
+				ImGui::GetStyle().FramePadding.x - ImGui::GetStyle().ItemSpacing.x;
+
+			if (hasScrollbar)
+				return posX - ImGui::GetStyle().ScrollbarSize;
+			else
+				return posX;
+		}
 		float JImGuiImpl::GetSliderWidth()noexcept
 		{
-			float sliderOffset = ImGui::GetStyle().ScrollbarSize + (ImGui::GetStyle().ItemSpacing.x * 2) + (JImGuiImpl::GetTextSize().x * 4);
-			return ImGui::GetWindowWidth() - sliderOffset;
+			//float sliderOffset = ImGui::GetStyle().ScrollbarSize + (ImGui::GetStyle().ItemSpacing.x * 2) + (JImGuiImpl::GetAlphabetSize().x * 4);
+			return 	GetClientWindowSize().x * 0.05f;
+		}
+		float JImGuiImpl::GetFrameRounding()noexcept
+		{
+			return ImGui::GetStyle().FrameRounding;
+		}
+		void JImGuiImpl::SetFrameRounding(float value)noexcept
+		{
+			ImGui::GetStyle().FrameRounding = value;
 		}
 		bool JImGuiImpl::IsFullScreen()noexcept
 		{

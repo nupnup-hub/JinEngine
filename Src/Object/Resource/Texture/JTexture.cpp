@@ -122,10 +122,13 @@ namespace JinEngine
 	}
 	void JTexture::ClearResource()
 	{
-		if (IsValid() && HasTxtHandle())
+		if (IsValid())
 		{
-			DestroyTxtHandle();
-			uploadHeap.Reset();
+			if(HasTxtHandle())
+			{
+				DestroyTxtHandle();
+				uploadHeap.Reset();
+			}
 			SetValid(false);
 		}
 	}

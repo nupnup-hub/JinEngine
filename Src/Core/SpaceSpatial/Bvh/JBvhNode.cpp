@@ -20,6 +20,8 @@ namespace JinEngine
 				else
 					parent->right = this;
 			}
+			if(JBvhNode::innerGameObject != nullptr)
+				JBvhNode::innerGameObject->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 		}
 		JBvhNode::~JBvhNode() {}
 		void JBvhNode::CreateDebugGameObject(JGameObject* parent, bool onlyLeafNode)noexcept
@@ -48,11 +50,13 @@ namespace JinEngine
 		}
 		void JBvhNode::Clear()noexcept
 		{
-			DestroyDebugGameObject();
+			if (innerGameObject != nullptr)
+				SetVisible();
+			innerGameObject = nullptr;
 			parent = nullptr;
 			left = nullptr;
 			right = nullptr;
-			innerGameObject = nullptr;
+			DestroyDebugGameObject();
 		}
 		void JBvhNode::Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
 		{
@@ -224,6 +228,7 @@ namespace JinEngine
 		void JBvhNode::SetInnerGameObject(JGameObject* newInnerGameObject)noexcept
 		{
 			innerGameObject = newInnerGameObject;
+			innerGameObject->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 		}
 		void JBvhNode::SetVisible()noexcept
 		{

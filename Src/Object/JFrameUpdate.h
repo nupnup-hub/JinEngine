@@ -1,5 +1,5 @@
 #pragma once
-#include"../Graphic/FrameResource/JFrameResourceCash.h"  
+#include"../Graphic/FrameResource/JFrameResourceConstant.h"  
 #include"../Core/JDataType.h"
 #include"../Core/Guid/GuidCreator.h"
 #include<vector>

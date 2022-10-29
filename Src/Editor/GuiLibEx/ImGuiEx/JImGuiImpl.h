@@ -10,7 +10,7 @@
 #include"../../../Core/Undo/JTransition.h"
 #include"../../../../Lib/imgui/imgui.h"
 #include"../../../../Lib/imgui/imgui_internal.h"
-
+  
 template<typename T>
 ImVec2::ImVec2(const JinEngine::JVector2<T>& jVec2)
 {
@@ -82,10 +82,9 @@ namespace JinEngine
 			friend class JEditorManager;
 		public:
 			//Text
-			static JVector2<int> GetTextSize()noexcept;
-			static JVector2<int> GetTextSizeOffset()noexcept;
-			static void SetTextSize()noexcept; 
-			static void SetTextSizeOffset(JVector2<int> offset)noexcept;
+			static JVector2<int> GetAlphabetSize()noexcept;
+			static void SetAlphabetSize()noexcept;
+			static uint GetTextBuffRange()noexcept;
 		public:
 			//Font 
 			static void SetFont(const J_EDITOR_FONT_TYPE fontType)noexcept;
@@ -114,19 +113,25 @@ namespace JinEngine
 			//Passing method for trace to ImGuI widget api calling
 			static bool BeginWindow(const std::string& name, bool* p_open = 0, ImGuiWindowFlags flags = 0);
 			static void EndWindow();
-			static bool BeginChildWindow(const std::string& name, const JVector2<float>& windowSize, bool border, ImGuiWindowFlags extra_flags);
+			static bool BeginChildWindow(const std::string& name, const JVector2<float>& windowSize = JVector2<float>{0,0}, bool border = false, ImGuiWindowFlags extra_flags = 0);
 			static void EndChildWindow();
+			static bool BeginPopup(const std::string& name, ImGuiPopupFlags flags = 0);
+			static void EndPopup();
 			static void Text(const std::string& text);
 			static bool CheckBox(const std::string& checkName, bool& v);
 			static bool Button(const std::string& btnName, const JVector2<float>& jVec2 = { 0,0 });
 			static bool TreeNodeEx(const std::string& nodeName, ImGuiTreeNodeFlags flags);
 			static void TreePop();
 			static bool Selectable(const std::string& name, bool* pSelected = nullptr, ImGuiSelectableFlags flags = 0, const JVector2<float>& sizeArg = { 0,0 });
+			static bool Selectable(const std::string& name, bool selected, ImGuiSelectableFlags flags = 0, const JVector2<float>& sizeArg = { 0,0 });
 			static bool InputText(const std::string& name, char* buf, size_t bufSize, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback txtCallback = 0, void* userData = 0);
-			static bool InputInt(const std::string& name, int* value, int step = 1, int stepFast = 100, ImGuiInputTextFlags flags = 0);
-			static bool InputFloat(const std::string& name, float* value, float step = 0.0f, float stepFast = 0.0f, const char* format = "%.3f", ImGuiInputTextFlags flags = 0);
+			static bool InputInt(const std::string& name, int* value, ImGuiInputTextFlags flags = 0, int step = 1, int stepFast = 100);
+			static bool InputFloat(const std::string& name, float* value, ImGuiInputTextFlags flags = 0, const char* format = "%.2f", float step = 0.0f, float stepFast = 0.0f);
 		public:
+			static bool SliderInt(const std::string& name, int* value, int vMin, int vMax, const char* format, ImGuiSliderFlags flags);
 			static bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format, ImGuiSliderFlags flags);
+			static bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, const char* format, ImGuiSliderFlags flags);
+			static bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format, ImGuiSliderFlags flags);
 		public:
 			static bool BeginTabBar(const std::string& name, const ImGuiTabBarFlags flags = 0);
 			static void EndTabBar();
@@ -184,9 +189,12 @@ namespace JinEngine
 			static void SetMouseDrag(bool value)noexcept;	
 		public:
 			//util 
+			static float GetSliderPosX(bool hasScrollbar = false)noexcept;
 			static float GetSliderWidth()noexcept;
 		public:
 			//Option
+			static float GetFrameRounding()noexcept;
+			static void SetFrameRounding(float value)noexcept;
 			static bool IsFullScreen()noexcept;
 			static bool IsWindowPadding()noexcept;
 			static bool IsEnablePopup()noexcept;
@@ -198,7 +206,7 @@ namespace JinEngine
 		private:
 			static void Initialize();
 			static void Clear();
-		public:
+		public: 
 			//Widget Set
 			//Support Redo undo
 			template<typename ...Param>
@@ -299,7 +307,7 @@ namespace JinEngine
 					for (uint i = 0; i < (int)EnumType::COUNT; ++i)
 					{ 
 						std::string valueStr = Core::GetName((EnumType)i) + "##" + enumName + uniqueLabel;
-						if (JImGuiImpl::Selectable(valueStr.c_str()))
+						if (JImGuiImpl::Selectable(valueStr))
 						{
 							using Functor = Core::JFunctor<void, const EnumType, Param...>;
 							using Binder = Core::JBindHandle<Functor, const EnumType, Param...>;

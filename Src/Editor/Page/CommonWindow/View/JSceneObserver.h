@@ -12,11 +12,15 @@ namespace JinEngine
 	{
 		class JEditorCameraControl;
 		class JSceneObserver final : public JEditorWindow
-		{ 
+		{  
 		private:
 			Core::JUserPtr<JScene> scene;
 			Core::JUserPtr<JGameObject> cameraObj;
+			Core::JUserPtr<JGameObject> mainCamFrustum;
 			std::unique_ptr<JEditorCameraControl> editorCamCtrl;
+		private:
+			bool isOpenSpatialOption = false;
+			bool isMainCameraFrustumActivated = false;
 		private:
 			std::wstring editorCameraName;
 			JVector3<float> lastCamPos{ 0,0,0 };
@@ -31,6 +35,10 @@ namespace JinEngine
 		public:
 			void Initialize(Core::JUserPtr<JScene> newScene, const std::wstring& editorCameraName)noexcept;
 			void UpdateWindow()final;
+		private: 
+			void UpdateMainCamFrustum()noexcept;
+			void SceneStructureOptionOnScreen();
+			void MakeMainCamFrustum();
 		public:
 			void DoActivate() noexcept final;
 			void DoDeActivate() noexcept final;

@@ -24,5 +24,17 @@ namespace JinEngine
 		{
 			return (uint)parameterHint.size();
 		}
+		JParameterHint JMethodInfo::ReturnHint()const noexcept
+		{
+			return returnHint;
+		}
+		JTypeInfo* JMethodInfo::GetTypeInfo()const noexcept
+		{
+			return ownerType;
+		}
+		JMethodOptionInfo* JMethodInfo::GetOptionInfo()const noexcept
+		{
+			return optionInfo;
+		}
 	}
 }

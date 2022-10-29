@@ -277,9 +277,8 @@ namespace JinEngine
 		}
 		void JWindowImpl::CloseWindow()
 		{
-			NotifyEvent(JWindow::Instance().guid, J_WINDOW_EVENT::WINDOW_CLOSE);
+			NotifyEvent(guid, J_WINDOW_EVENT::WINDOW_CLOSE);
 			ClearEvent();
-			ImGui::DestroyContext();
 			DestroyWindow(GetHandle());
 			UnregisterClass(windowClassName.c_str(), hInst);
 		}
@@ -341,7 +340,7 @@ namespace JinEngine
 			}
 			case WM_DESTROY:
 			{
-				PostQuitMessage(0);
+				::PostQuitMessage(0);
 				return 0;
 			}
 			case WM_QUIT:
@@ -465,7 +464,7 @@ namespace JinEngine
 			RegistEvCallable();
 		}
 		JWindowImpl::~JWindowImpl()
-		{
+		{ 
 			//DestroyWindow(hwnd);
 		}
 	}

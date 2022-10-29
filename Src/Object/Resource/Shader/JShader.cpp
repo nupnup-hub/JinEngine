@@ -27,6 +27,7 @@ namespace JinEngine
 		{SHADER_FUNCTION_SKY, {"SKY", "9"}},
 		{SHADER_FUNCTION_NONCULLING, {"NONCULLING", "10"}},
 		{SHADER_FUNCTION_ALPHA_CLIP, {"ALPHA_CLIP", "11"}},
+		//Shadow map rendering material
 		{SHADER_FUNCTION_SHADOW_MAP, {"SHADOW_MAP", "12"}},
 		{SHADER_FUNCTION_DEBUG, {"DEBUG", "13"}},
 	};

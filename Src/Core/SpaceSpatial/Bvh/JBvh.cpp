@@ -57,27 +57,35 @@ namespace JinEngine
 			//MessageBox(0, std::to_wstring(allNodes.size()).c_str(), 0, 0);
 		}
 		JBvh::~JBvh() {}
-		void JBvh::OnDebugGameObject(JGameObject* newDebugRoot, bool onlyLeafNode)noexcept
+		void JBvh::Clear()noexcept
+		{  
+			const int allNodeCount = (int)allNodes.size();
+			for (int i = 0; i < allNodeCount; ++i)
+				allNodes[i]->Clear();
+			allNodes.clear();
+			root = nullptr;
+			innerGameObjectCandidate = nullptr;
+			isDebugActivated = false;
+		}
+		void JBvh::OnDebugGameObject(JGameObject* newDebugRoot)noexcept
 		{
 			if (debugRoot != nullptr && debugRoot->GetGuid() != newDebugRoot->GetGuid())
 				OffDebugGameObject();
 
-			if (!onDebugObject)
+			if (!isDebugActivated)
 			{
-				onDebugObject = true;
-				debugRoot = newDebugRoot;
-				makeOnlyLeafNodeDebugObject = onlyLeafNode;
+				isDebugActivated = true;
+				debugRoot = newDebugRoot; 
 				const int allNodeCount = (int)allNodes.size();
 				for (int i = 0; i < allNodeCount; ++i)
-					allNodes[i]->CreateDebugGameObject(debugRoot, onlyLeafNode);
+					allNodes[i]->CreateDebugGameObject(debugRoot, isDebugLeafOnly);
 			}
 		}
 		void JBvh::OffDebugGameObject()noexcept
 		{
-			if (onDebugObject)
+			if (isDebugActivated)
 			{
-				onDebugObject = false;
-				makeOnlyLeafNodeDebugObject = false;
+				isDebugActivated = false; 
 				const int allNodeCount = (int)allNodes.size();
 				for (int i = 0; i < allNodeCount; ++i)
 					allNodes[i]->DestroyDebugGameObject();
@@ -87,22 +95,37 @@ namespace JinEngine
 		{
 			if (allNodes.size() > 1)
 				root->Culling(camFrustum, J_CULLING_FLAG::NONE);
+
+			if (innerGameObjectCandidate != nullptr)
+			{
+				J_CULLING_FLAG flag = J_CULLING_FLAG::NONE;
+				JRenderItem* rItem = innerGameObjectCandidate->GetRenderItem();
+				J_CULLING_RESULT res = camFrustum.IsBoundingBoxIn(rItem->GetBoundingBox(), flag);
+				if (res == J_CULLING_RESULT::CONTAIN)
+					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+				else if (res == J_CULLING_RESULT::DISJOINT)
+					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+			}
 		}
 		void JBvh::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
 		{
 			if (allNodes.size() > 1)
 				root->Culling(camFrustum);
+
+			if (innerGameObjectCandidate != nullptr)
+			{
+				J_CULLING_FLAG flag = J_CULLING_FLAG::NONE;
+				JRenderItem* rItem = innerGameObjectCandidate->GetRenderItem(); 
+				ContainmentType res = camFrustum.Contains(rItem->GetBoundingBox());
+				if (res == ContainmentType::CONTAINS)
+					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+				else if (res == ContainmentType::DISJOINT)
+					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+			}
 		}
-		void JBvh::Clear()noexcept
-		{
-			OffDebugGameObject();
-			allNodes.clear();
-			root = nullptr;
-			innerGameObjectCandidate = nullptr;
-		}
-		void JBvh::UpdateGameObject(const size_t guid)noexcept
-		{
-			auto leafNode = leafNodeMap.find(guid);
+		void JBvh::UpdateGameObject(JGameObject* gameObject)noexcept
+		{ 
+			auto leafNode = leafNodeMap.find(gameObject->GetGuid());
 			if (leafNode != leafNodeMap.end())
 			{
 				leafNode->second->UpdateInnerGameObject();
@@ -133,10 +156,30 @@ namespace JinEngine
 			else if (innerGameObjectCandidate != nullptr && innerGameObjectCandidate->GetGuid() == guid)
 				innerGameObjectCandidate = nullptr;
 		}
+		bool JBvh::IsDebugActivated()const noexcept
+		{
+			return isDebugActivated;
+		}
+		bool JBvh::IsDebugLeafOnly()const noexcept
+		{
+			return isDebugLeafOnly;
+		}
+		void JBvh::SetDebugOnlyLeaf(bool value)noexcept
+		{
+			if (isDebugLeafOnly != value)
+			{
+				isDebugLeafOnly = value;
+				if (isDebugActivated)
+				{
+					OffDebugGameObject();
+					OnDebugGameObject(debugRoot);
+				}
+			}
+		}
 		DirectX::BoundingBox JBvh::GetRootBoundingBox()const noexcept
 		{
 			constexpr int rootBvSize = 1 << 16;
-			return  BoundingBox(XMFLOAT3(0, 0, 0), XMFLOAT3(rootBvSize, rootBvSize, rootBvSize));
+			return BoundingBox(XMFLOAT3(0, 0, 0), XMFLOAT3(rootBvSize, rootBvSize, rootBvSize));
 		}
 		int JBvh::GetMaximumDimension(const DirectX::BoundingBox& box)const noexcept
 		{
@@ -189,12 +232,16 @@ namespace JinEngine
 				float centroidMaxDim = GetDimensionValue(centroidBound.max, dim);
 				float centroidSub = centroidMaxDim - centroidMinDim;
 
+				//인접한 bbox들에 center를 포함하는 bbox생성
 				for (int i = start; i < end; ++i)
 				{
 					float centroid = GetDimensionValue(objectList[i]->GetRenderItem()->GetBoundingBox().Center, dim);
 					int b = 0;
 					if (centroidSub != 0)
+					{
+						//b is 0 ~ (bucketCount - 1) 
 						b = bucketCount * ((centroid - centroidMinDim) / centroidSub);
+					}
 					if (b >= bucketCount)
 						b = bucketCount - 1;
 					buckets[b].count++;
@@ -205,6 +252,8 @@ namespace JinEngine
 
 				float boundSurface = bound.Surface();
 				float cost[bucketCount - 1];
+				 
+				//최적에 중앙값 결정
 				for (int i = 0; i < bucketCount - 1; ++i)
 				{
 					JBBox b0(XMFLOAT3(Inf, Inf, Inf), XMFLOAT3(-Inf, -Inf, -Inf));
@@ -289,10 +338,11 @@ namespace JinEngine
 					return;
 
 				tarNodeStNumber = tarNode->GetNodeNumber() + 1;
-				tarNode->SetNodeType(J_BVH_NODE_TYPE::NODE);
 				leafNodeMap.erase(tarNode->GetInnerGameObject()->GetGuid());
 				objectList.push_back(tarNode->GetInnerGameObject());
+				tarNode->SetNodeType(J_BVH_NODE_TYPE::NODE);
 				tarNode->SetInnerGameObject(nullptr);
+				tarNode->DestroyDebugGameObject();
 			}
 			else
 			{
@@ -360,12 +410,21 @@ namespace JinEngine
 			default:
 				break;
 			}
+			const uint newNodeCount = (uint)newNodeVec.size();
+			if (isDebugActivated)
+			{			
+				for (uint i = 0; i < newNodeCount; ++i)
+					newNodeVec[i]->CreateDebugGameObject(debugRoot, isDebugLeafOnly);
+			}
+			 
 			allNodes.insert(allNodes.begin() + tarNodeStNumber,
 				std::make_move_iterator(newNodeVec.begin()),
 				std::make_move_iterator(newNodeVec.end()));
 
-			if (onDebugObject)
-				OnDebugGameObject(debugRoot, makeOnlyLeafNodeDebugObject);
+			const uint allNodeCount = (uint)allNodes.size();
+			for (uint i = 0; i < allNodeCount; ++i)
+				allNodes[i]->SetNodeNumber(i);
+
 		}
 		void JBvh::ClearBvhNode(const uint nodeNumber)noexcept
 		{
@@ -390,7 +449,9 @@ namespace JinEngine
 			{
 				const uint allNodeCount = (uint)allNodes.size();
 				if (allNodeCount == 3)
-				{
+				{				
+					//이진트리 유지를 위해 루트 자식 노드를 삭제하고
+					//포함된 게임오브젝트를 후보로 캐싱
 					if (allNodes[nodeNumber]->IsLeftNode())
 						innerGameObjectCandidate = parentNode->GetRightNode()->GetInnerGameObject();
 					else
@@ -410,32 +471,45 @@ namespace JinEngine
 			}
 			else
 			{
-				ClearBvhNode(nodeNumber);
 				JBvhNode* grandParentNode = parentNode->GetParentNode();
 				if (parentNode->IsLeftNode())
 				{
 					if (allNodes[nodeNumber]->IsLeftNode())
+					{
 						grandParentNode->SetLeftNode(parentNode->GetRightNode());
+						parentNode->SetRightNode(nullptr);
+					}
 					else
+					{
 						grandParentNode->SetLeftNode(parentNode->GetLeftNode());
+						parentNode->SetLeftNode(nullptr);
+					}
 				}
 				else
 				{
 					if (allNodes[nodeNumber]->IsLeftNode())
+					{
 						grandParentNode->SetRightNode(parentNode->GetRightNode());
+						parentNode->SetRightNode(nullptr);
+					}
 					else
+					{
 						grandParentNode->SetRightNode(parentNode->GetLeftNode());
+						parentNode->SetLeftNode(nullptr);
+					}
 				}
-				parentNode->SetLeftNode(nullptr);
-				parentNode->SetRightNode(nullptr);
-				ClearBvhNode(parentNode->GetNodeNumber());
+				ClearBvhNode(nodeNumber);
+				parentNode->Clear();
+				//parentNode->SetLeftNode(nullptr);
+				//parentNode->SetRightNode(nullptr);
+				//ClearBvhNode(parentNode->GetNodeNumber());
 
 				const uint parentNumber = parentNode->GetNodeNumber();
 				const uint childNodeNumberEnd = allNodes[nodeNumber]->GetRightNumberEnd();
 
+				allNodes.erase(allNodes.begin() + nodeNumber, allNodes.begin() + childNodeNumberEnd + 1);
 				allNodes.erase(allNodes.begin() + parentNumber, allNodes.begin() + parentNumber + 1);
-				allNodes.erase(allNodes.begin() + nodeNumber - 1, allNodes.begin() + childNodeNumberEnd);
-
+				 
 				const uint allNodeCount = (uint)allNodes.size();
 				for (uint i = parentNumber; i < allNodeCount; ++i)
 					allNodes[i]->SetNodeNumber(i);

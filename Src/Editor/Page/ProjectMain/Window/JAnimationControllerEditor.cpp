@@ -42,7 +42,7 @@ namespace JinEngine
 			RegisterDiagramFunc();
 			RegisterConditionFunc();
 			RegisterStateFunc();
-			nameBuf.resize(maxNameOfLength);
+			nameBuf.resize(JImGuiImpl::GetTextBuffRange());
 		}
 		JAnimationControllerEditor::~JAnimationControllerEditor() {};
 
@@ -417,7 +417,7 @@ namespace JinEngine
 							stateIndex = invalidIndex;
 						}
 						nameBuf.clear();
-						nameBuf.resize(maxNameOfLength);
+						nameBuf.resize(JImGuiImpl::GetTextBuffRange());
 						for (uint j = 0; j < name.size(); ++j)
 							nameBuf[j] = name[j];
 					}
@@ -427,7 +427,7 @@ namespace JinEngine
 					{
 						if (JImGuiImpl::InputTextSet(GetName(),
 							nameBuf, 
-							maxNameOfLength,
+							JImGuiImpl::GetTextBuffRange(),
 							ImGuiInputTextFlags_EnterReturnsTrue,
 							*setConditionNameF,
 							aniCont,

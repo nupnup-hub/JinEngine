@@ -63,7 +63,7 @@ namespace JinEngine
 			bool hasUV = false;
 			J_MESHGEOMETRY_TYPE type;
 		public:
-			SubmeshGeometry(const JMeshData& meshData, const uint vertexSt, const uint indexSt);
+			SubmeshGeometry(const size_t guid);
 			~SubmeshGeometry();
 		public:
 			JMaterial* GetMaterial()const noexcept; 
@@ -78,12 +78,11 @@ namespace JinEngine
 			DirectX::XMFLOAT3 GetBSphereCenter()const noexcept;
 			float GetBSphereRadius()const noexcept;
 		public:
+			void SetMesh(const JMeshData& meshData, const uint vertexSt, const uint indexSt);
 			void SetMaterial(JMaterial* newMaterial)noexcept;
 		public:
 			bool HasUV()const noexcept;
 			bool HasNormal()const noexcept;
-		public:
-			void Clear(); 
 		};
 	private:
 		// System memory copies.  Use Blobs because the vertex/index format can be generic.

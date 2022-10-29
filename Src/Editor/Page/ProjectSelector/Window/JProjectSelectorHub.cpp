@@ -147,7 +147,7 @@ namespace JinEngine
 					for (uint i = 0; i < versionCount; i++)
 					{
 						bool isSelected = (versionIndex == i);
-						if (JImGuiImpl::Selectable(version[i].c_str(), &isSelected))
+						if (JImGuiImpl::Selectable(version[i], &isSelected))
 							versionIndex = i;
 
 						// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)

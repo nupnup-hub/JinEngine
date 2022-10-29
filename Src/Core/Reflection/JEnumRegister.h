@@ -11,9 +11,9 @@ namespace JinEngine
 		class JEnumRegister
 		{
 		public:
-			JEnumRegister(const std::string& name, const std::string element, const size_t enumSize)
+			JEnumRegister(const std::string& name, const std::string element, const size_t enumSize, bool isEnumClass)
 			{
-				static JEnumInfo enumInfo{ JEnumInitializer(name, typeid(enumType).name(), element, enumSize) };
+				static JEnumInfo enumInfo{ JEnumInitializer(name, typeid(enumType).name(), element, enumSize, isEnumClass) };
 			}
 		};
 	}

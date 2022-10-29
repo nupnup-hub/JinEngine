@@ -16,19 +16,23 @@
 
 namespace JinEngine
 {
-	JAnimator* JGameObject::GetAnimator()noexcept
+	JAnimator* JGameObject::GetAnimator()const noexcept
 	{ 
 		return animator;
 	}
-	JTransform* JGameObject::GetTransform() noexcept
+	JTransform* JGameObject::GetTransform()const noexcept
 	{
 		return transform;
 	}
-	JRenderItem* JGameObject::GetRenderItem()noexcept
+	JRenderItem* JGameObject::GetRenderItem()const noexcept
 	{
 		return renderItem;
 	}
-	JScene* JGameObject::GetOwnerScene()noexcept
+	std::vector<JComponent*> JGameObject::GetComponentVec()const noexcept
+	{
+		return component;
+	}
+	JScene* JGameObject::GetOwnerScene()const noexcept
 	{
 		return ownerScene;
 	}

@@ -27,6 +27,8 @@ namespace JinEngine
 			JStaticMeshGroup* staticMeshs = static_cast<JStaticMeshGroup*>(&meshGroup);
 			const uint meshCount = staticMeshs->GetMeshDataCount();
 			JFileIOHelper::StoreAtomicData(stream, L"MeshCount:", meshCount);
+			JFileIOHelper::StoreAtomicData(stream, L"TotalVertexCount:", staticMeshs->GetTotalVertexCount());
+			JFileIOHelper::StoreAtomicData(stream, L"TotalIndexCount:", staticMeshs->GetTotalIndexCount());
 
 			for (uint i = 0; i < meshCount; ++i)
 			{
@@ -85,7 +87,11 @@ namespace JinEngine
 			JStaticMeshGroup meshGroup;
 
 			uint meshCount = 0;
+			uint totalVertexCount = 0;
+			uint totalIndexCount = 0;
 			JFileIOHelper::LoadAtomicData(stream, meshCount);
+			JFileIOHelper::LoadAtomicData(stream, totalVertexCount);
+			JFileIOHelper::LoadAtomicData(stream, totalIndexCount);
 
 			for (uint i = 0; i < meshCount; ++i)
 			{
@@ -148,7 +154,7 @@ namespace JinEngine
 			{
 				Core::JIdentifier* mat = JFileIOHelper::LoadHasObjectIden(stream);
 				if (mat != nullptr && mat->GetTypeInfo().IsA(JMaterial::StaticTypeInfo()))
-					meshGroup.GetMeshData(i)->SetMaterial(Core::GetUserPtr<JMaterial>(mat->GetGuid()));
+					meshGroup.GetMeshData(i)->SetMaterial(Core::GetUserPtr<JMaterial>(mat));
 			}
 			stream.close();
 			StuffSubMesh(meshGroup);

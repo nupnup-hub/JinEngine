@@ -12,9 +12,17 @@ namespace JinEngine
 		{
 			return fieldHint.name;
 		}
-		const JParameterHint& JPropertyInfo::GetHint()const noexcept
+		JParameterHint JPropertyInfo::GetHint()const noexcept
 		{
 			return fieldHint;
+		}
+		JTypeInfo* JPropertyInfo::GetTypeInfo()const noexcept
+		{
+			return ownerType;
+		}
+		JPropertyOptionInfo* JPropertyInfo::GetOptionInfo()const noexcept
+		{
+			return optionInfo;
 		}
 	}
 }

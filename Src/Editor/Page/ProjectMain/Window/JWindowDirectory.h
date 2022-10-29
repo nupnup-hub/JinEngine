@@ -28,8 +28,10 @@ namespace JinEngine
 		private:
 			//Create Resource & Directory
 			using CreateObjectF = Core::JFunctor<void, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
+			using CreateObjectB = Core::JBindHandle<CreateObjectF, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
 			using DestroyObjectF = Core::JFunctor<void, JWindowDirectory&, Core::JUserPtr<JObject>>;
-			 
+			using DestroyObjectB = Core::JBindHandle<DestroyObjectF, JWindowDirectory&, Core::JUserPtr<JObject>>;	
+
 			using OpenNewDirectoryF = Core::JFunctor<void, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
 			using OpenNewDirectoryB = Core::JBindHandle<OpenNewDirectoryF, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
 		

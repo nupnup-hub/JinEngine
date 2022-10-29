@@ -1,13 +1,10 @@
 #pragma once
+#include"../Reflection/JReflection.h"
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		enum class J_SCENE_SPATIAL_STRUCTURE_TYPE
-		{
-			OCTREE,
-			BVH
-		};
+		REGISTER_ENUM_CLASS(J_SCENE_SPATIAL_STRUCTURE_TYPE, short, OCTREE = 0, BVH)
 	}
 }

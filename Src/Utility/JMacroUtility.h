@@ -8,7 +8,7 @@ namespace JinEngine
 #define J_IDENTITY(x) x
 #define J_TO_STR(x) #x
 #define J_TO_STR_ADD_COMMA(x) #x    J_TO_STR(@)
-#define J_FRIEND(x) friend x;
+#define J_FRIEND(x) friend x; 
 
 #define J_APPLY(macro, ...) J_IDENTITY(macro(__VA_ARGS__))
 
@@ -99,7 +99,7 @@ namespace JinEngine
 #define J_STRINGIZE_ADD_COMMA(...) J_IDENTITY(CALL_DEFINE(J_TO_STR_ADD_COMMA, MAP_HELPER, __VA_ARGS__))
 #define J_MAKE_ENUM_ELEMENT(...) __VA_ARGS__ 
 
-#define J_MAKE_FRIEND(...) J_IDENTITY(CALL_DEFINE(J_FRIEND, MAP_HELPER, __VA_ARGS__)) 
+#define J_MAKE_FRIEND(...) J_IDENTITY(CALL_DEFINE(J_FRIEND, MAP_HELPER, __VA_ARGS__))  
 
     }
 }

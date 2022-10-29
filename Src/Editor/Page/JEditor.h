@@ -12,9 +12,7 @@ namespace JinEngine
 	{
 		class JEditorAttribute;  
 		class JEditor : public Core::JEventListener<size_t, J_EDITOR_EVENT, JEditorEvStruct*>
-		{ 
-		public:
-			static constexpr int maxNameOfLength = 50;
+		{  
 		private: 
 			std::string name;
 			size_t guid;

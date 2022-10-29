@@ -70,7 +70,7 @@ namespace JinEngine
 			friend class JSceneManagerImpl;
 			friend class JScene;
 		private:
-			static bool AddDrawList(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept;
+			static bool AddDrawList(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, IFrameDirty* observationFrame = nullptr)noexcept;
 			static bool PopDrawList(JScene* scene)noexcept;
 			static bool HasDrawList(JScene* scene)noexcept;
 			static void UpdateScene(JScene* scene, const J_COMPONENT_TYPE cType)noexcept;

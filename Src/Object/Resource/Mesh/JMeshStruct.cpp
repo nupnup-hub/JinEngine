@@ -358,6 +358,7 @@ namespace JinEngine
 		uint totalVertex = 0;
 		for (uint i = 0; i < meshCount; ++i)
 			totalVertex += GetMeshData(i)->GetVertexCount();
+		return totalVertex;
 	}
 	uint JMeshGroup::GetTotalIndexCount()noexcept
 	{
@@ -368,6 +369,7 @@ namespace JinEngine
 			const JMeshData* meshdata = GetMeshData(i);
 			totalIndex += meshdata->GetIndexCount();
 		}
+		return totalIndex;
 	}
 	uint JStaticMeshGroup::GetMeshDataCount()const noexcept
 	{

@@ -1,7 +1,7 @@
 #include"JEditorPreviewInterface.h"
 #include"../../../Object/Resource/JResourceManager.h"
 #include"../../../Object/Resource/Scene/Preview/JPreviewSceneGroup.h"
-
+#include"../../../Object/Resource/Scene/Preview/JPreviewScene.h"
 namespace JinEngine
 {
 	namespace Editor
@@ -17,6 +17,8 @@ namespace JinEngine
 			}
 			~JEditorPreviewImpl()
 			{
+				if (previewGroup != nullptr)
+					previewGroup->Clear();
 				previewGroup.reset();
 				previewGroup = nullptr;
 			}
@@ -27,9 +29,9 @@ namespace JinEngine
 			{
 				return previewGroup->CreatePreviewScene(jObj, previewDimension, previewFlag);
 			}
-			bool DestroyPreviewScene(const size_t sceneGuid)noexcept
+			bool DestroyPreviewScene(JPreviewScene* previewScene)noexcept
 			{
-				return previewGroup != nullptr ? previewGroup->DestroyPreviewScene(sceneGuid) : false;
+				return previewGroup != nullptr ? previewGroup->DestroyPreviewScene(previewScene) : false;
 			}
 			bool DestroyPreviewScene(Core::JUserPtr<JObject> jObj)noexcept
 			{
@@ -75,9 +77,11 @@ namespace JinEngine
 
 			return impl->CreatePreviewScene(jObj, previewDimension, previewFlag);
 		}
-		bool JEditorPreviewInterface::DestroyPreviewScene(const size_t sceneGuid)noexcept
+		bool JEditorPreviewInterface::DestroyPreviewScene(JPreviewScene* previewScene)noexcept
 		{
-			return impl->DestroyPreviewScene(sceneGuid);
+			if (previewScene == nullptr)
+				return false;
+			return impl->DestroyPreviewScene(previewScene);
 		}
 		bool JEditorPreviewInterface::DestroyPreviewScene(Core::JUserPtr<JObject> jObj)noexcept
 		{
@@ -110,7 +114,7 @@ namespace JinEngine
 		JEditorPreviewInterface::~JEditorPreviewInterface()
 		{
 			impl.reset();
-			impl = nullptr;
+			impl = nullptr; 
 		}
 	}
 }

@@ -13,6 +13,7 @@
 #include"../../../Component/Camera/JCamera.h"
 #include"../../../Component/Camera/JCameraState.h"
 #include"../../../GameObject/JGameObject.h" 
+#include"../../../GameObject/JGameObjectFactory.h" 
 #include"../../../GameObject/JGameObjectFactoryUtility.h" 
 #include"../../../../Graphic/JGraphicDrawList.h"
 #include"../../../../Application/JApplicationVariable.h"
@@ -29,7 +30,6 @@ namespace JinEngine
 				Core::MakeGuid(),
 				OBJECT_FLAG_EDITOR_OBJECT,
 				JResourceManager::Instance().GetEditorResourceDirectory()));
-
 	}
 	JPreviewResourceScene::~JPreviewResourceScene() {}
 	bool JPreviewResourceScene::Initialze()noexcept
@@ -111,9 +111,8 @@ namespace JinEngine
 		if (mesh == nullptr)
 			return false;
 
-		JGameObject* shapeObj = JGFU::CreateShape(*scene->GetRootGameObject(), OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_EMPTY);
-		JRenderItem* renderItem = shapeObj->GetRenderItem();
-		renderItem->SetMeshGeometry(mesh);
+		JGameObject* shapeObj = JGFI::Create(mesh->GetName(), Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, *scene->GetRootGameObject());
+		JRenderItem* renderItem = JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, *shapeObj, mesh);
 
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBSphereRadius();

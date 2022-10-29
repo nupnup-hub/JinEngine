@@ -47,6 +47,7 @@ namespace JinEngine
 		std::unordered_map<J_DEFAULT_MATERIAL, size_t> defaultMaterialGuidMap;
 		std::unordered_map<J_DEFAULT_SHADER, size_t> defaultShaderGuidMap;
 		Core::JUserPtr<JTexture> missingTerxture;
+		Core::JUserPtr<JTexture> noneTerxture;
 		const size_t guid;
 
 		// Init Resource Capacity
@@ -69,7 +70,8 @@ namespace JinEngine
 	public:
 		void Initialize();
 		void Clear();
-		void SetMissing(JTexture* missingT);
+		void SetMissing(JTexture* texture);
+		void SetNone(JTexture* texture);
 	private:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 	};

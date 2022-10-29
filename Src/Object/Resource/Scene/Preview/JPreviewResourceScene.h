@@ -9,8 +9,8 @@ namespace JinEngine
 	class JPreviewResourceScene : public JPreviewScene
 	{
 	private: 
-		JScene* scene; 
-		JMaterial* textureMaterial;
+		JScene* scene = nullptr;
+		JMaterial* textureMaterial = nullptr;
 	public: 
 		JPreviewResourceScene(_In_ Core::JUserPtr<JResourceObject> resource, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag);
 		~JPreviewResourceScene();

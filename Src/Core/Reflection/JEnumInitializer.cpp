@@ -43,9 +43,25 @@ namespace JinEngine
 				}
 			}
 		}
-		JEnumInitializer::EnumElementMap JEnumInitializer::CreateEnumMap()noexcept
+
+		bool IsTwoSqure(const int oriValue)
 		{
-			EnumElementMap map;
+			if (oriValue < 0)
+				return false;
+
+			uint value = (uint)oriValue;
+			while (value > 2)
+			{
+				if (value % 2 == 0)
+					value /= 2;
+				else
+					return false;
+			}
+			return true;
+		}
+		EnumNameMap JEnumInitializer::CreateEnumMap()noexcept
+		{
+			EnumNameMap map;
 			std::string elementCopy = element;
 
 			std::string enumName;
@@ -54,12 +70,12 @@ namespace JinEngine
 			for (size_t i = 0; i < enumSize; ++i)
 			{
 				DecomposeEnumStr(elementCopy, enumName, value); 
-				map.emplace(value, name);
+				map.emplace(value, enumName);
 			}
 			return map;
 		}
 
-		JEnumInitializer::EnumElementVec JEnumInitializer::CreateEnumVec()noexcept
+		EnumElementVec JEnumInitializer::CreateEnumVec()noexcept
 		{
 			EnumElementVec vec;
 			std::string elementCopy = element;
@@ -72,6 +88,38 @@ namespace JinEngine
 				vec.push_back(value);
 			}
 			return vec;
+		}
+
+		bool JEnumInitializer::IsTwoSqureEnum()const noexcept
+		{ 
+			const uint enumCount = (uint)enumElementVec.size();
+			for (uint i = 0; i < enumCount; ++i)
+			{
+				int oriValue = enumElementVec[i];
+				if (oriValue < 0)
+					return false;
+
+				if (IsTwoSqure(oriValue))
+					continue;
+ 
+				for (uint j = 0; j < enumCount; ++j)
+				{
+					if (i == j)
+						continue;
+					 
+					int tarValue = enumElementVec[j];
+					if (tarValue < 0)
+						return false;
+
+					if (IsTwoSqure(tarValue))
+						oriValue = (oriValue ^ (tarValue & oriValue));
+				}
+				if (oriValue == 0)
+					continue;
+				else
+					return false;
+			}
+			return true;
 		}
 	}
 }

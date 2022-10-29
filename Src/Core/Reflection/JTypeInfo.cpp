@@ -16,13 +16,13 @@ namespace JinEngine
 		{
 			return fullName;
 		}
-		const PropertyMap* JTypeInfo::GetPropertyMap()const noexcept
-		{
-			return memberData != nullptr ? &memberData->propertyInfo : nullptr;
+		const PropertyVec JTypeInfo::GetPropertyVec()const noexcept
+		{ 
+			return memberData != nullptr ? memberData->propertyInfoVec : PropertyVec{};
 		}
-		const MethodMap* JTypeInfo::GetMethodMap()const noexcept
+		const MethodVec JTypeInfo::GetMethodVec()const noexcept
 		{
-			return memberData != nullptr ? &memberData->methodInfo : nullptr;
+			return memberData != nullptr ? memberData->methodInfoVec : MethodVec{};
 		}
 		bool JTypeInfo::IsA(const JTypeInfo& tar)const noexcept
 		{
@@ -119,9 +119,10 @@ namespace JinEngine
 				memberData = std::make_unique< JTypeMemberData>();
 
 			assert(newProperty != nullptr);
-			if (memberData->propertyInfo.find(newProperty->name) == memberData->propertyInfo.end())
+			if (memberData->propertyInfoMap.find(newProperty->name) == memberData->propertyInfoMap.end())
 			{
-				memberData->propertyInfo.emplace(newProperty->name, newProperty);
+				memberData->propertyInfoVec.push_back(newProperty);
+				memberData->propertyInfoMap.emplace(newProperty->name, newProperty);
 				return true;
 			}
 			else
@@ -133,9 +134,10 @@ namespace JinEngine
 				memberData = std::make_unique< JTypeMemberData>();
 
 			assert(newMethod != nullptr);
-			if (memberData->methodInfo.find(newMethod->identificationName) == memberData->methodInfo.end())
+			if (memberData->methodInfoMap.find(newMethod->identificationName) == memberData->methodInfoMap.end())
 			{
-				memberData->methodInfo.emplace(newMethod->identificationName, newMethod);
+				memberData->methodInfoVec.push_back(newMethod);
+				memberData->methodInfoMap.emplace(newMethod->identificationName, newMethod);
 				return true;
 			}
 			else

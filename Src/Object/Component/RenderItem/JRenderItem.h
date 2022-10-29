@@ -4,19 +4,20 @@
 #include"JRenderVisibility.h"
 #include"../../../Core/JDataType.h"
 #include"../../../Utility/JMathHelper.h" 
+#include"../../Resource/Mesh/JMeshGeometry.h"
+#include"../../Resource/Material/JMaterial.h"
 #include<DirectXCollision.h>
 #include<d3d12.h>
 
 namespace JinEngine
 { 
-	class JMeshGeometry;
-	class JMaterial;
-
 	class JRenderItem final : public JRenderItemInterface
 	{
 		REGISTER_CLASS(JRenderItem)
 	private:
-		JMeshGeometry* meshGeo = nullptr; 
+		REGISTER_PROPERTY_EX(mesh, GetMesh, SetMesh, GUI_SELECTOR(true, true))
+		JMeshGeometry* mesh = nullptr; 
+		REGISTER_PROPERTY_EX(material, GetMaterialVec, SetMaterialVec, GUI_SELECTOR(true, true))
 		std::vector<JMaterial*> material;
 		DirectX::XMFLOAT4X4 textureTransform = JMathHelper::Identity4x4();
 		D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -30,18 +31,22 @@ namespace JinEngine
 		}
 	public:
 		JMeshGeometry* GetMesh()const noexcept; 
-		JMaterial* GetMaterial(int index)const noexcept;
+		JMaterial* GetValidMaterial(int index)const noexcept;
+		std::vector<JMaterial*> GetMaterialVec()const noexcept;
 		DirectX::XMFLOAT4X4 GetTextransform()const noexcept;
 		D3D12_PRIMITIVE_TOPOLOGY GetPrimitiveType()const noexcept;
 		J_RENDER_LAYER GetRenderLayer()const noexcept;  
+		REGISTER_METHOD(GetVertexTotalCount, GUI_READONLY_TEXT())
 		uint GetVertexTotalCount()const noexcept;
+		REGISTER_METHOD(GetIndexTotalCount, GUI_READONLY_TEXT())
 		uint GetIndexTotalCount()const noexcept;
 		uint GetSubmeshCount()const noexcept;
 		DirectX::BoundingBox GetBoundingBox()noexcept;
 		DirectX::BoundingSphere GetBoundingSphere()noexcept;
 
-		void SetMeshGeometry(JMeshGeometry* newMesh)noexcept; 
+		void SetMesh(JMeshGeometry* newMesh)noexcept; 
 		void SetMaterial(int index, JMaterial* newMaterial)noexcept;
+		void SetMaterialVec(const std::vector<JMaterial*>& newVec)noexcept;
 		void SetTextureTransform(const DirectX::XMFLOAT4X4& textureTransform)noexcept;
 		void SetPrimitiveType(const D3D12_PRIMITIVE_TOPOLOGY primitiveType)noexcept;
 		void SetRenderLayer(const J_RENDER_LAYER renderLayer)noexcept;

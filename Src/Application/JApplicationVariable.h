@@ -103,6 +103,8 @@ namespace JinEngine
 			static void ClearTime()noexcept;
 			static TimeVec GetTime()noexcept;
 		private:
+			static void SetApplicationState(const J_APPLICATION_STATE newState)noexcept;
+		private:
 			static void Initialize(); 
 			static bool MakeEngineFolder(); 
 		private:

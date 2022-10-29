@@ -1,7 +1,9 @@
 #pragma once 
 #include"JMethodInfoInitializer.h" 
+#include"JMethodOptionInfo.h"
 #include"../Func/Callable/JCallable.h"   
 #include"../../Utility/JTypeUtility.h" 
+#include<memory>
 
 namespace JinEngine
 {
@@ -9,13 +11,13 @@ namespace JinEngine
 	{
 		class JCallableBase;
 		class JTypeInfo;
-		template<typename Type, typename Pointer, Pointer ptr, typename Func> class JMethodInfoRegister;
+		template<typename Type, typename Pointer, Pointer ptr> class JMethodInfoRegister;
 
 		class JMethodInfo
 		{
 		private:
 			friend class JTypeInfo;
-			template<typename Type, typename Pointer, Pointer ptr, typename Func> friend class JMethodInfoRegister;
+			template<typename Type, typename Pointer, Pointer ptr> friend class JMethodInfoRegister;
 		private:
 			const std::string name;
 			const std::string identificationName;
@@ -24,13 +26,17 @@ namespace JinEngine
 			JCallableBase* callHandle; 
 			JCallableHintBase* hintHandle;
 			JTypeInfo* ownerType; 
-
+		private:
+			JMethodOptionInfo* optionInfo;
 		public:
 			std::string Name()const noexcept;
 			std::string ReturnFieldName()const noexcept; 
 			std::string ParameterFieldName()const noexcept;
 			uint ParameterCount()const noexcept;
-			
+			JParameterHint ReturnHint()const noexcept;
+			JTypeInfo* GetTypeInfo()const noexcept;
+			JMethodOptionInfo* GetOptionInfo()const noexcept;
+		public:
 			template<typename Ret, typename ...Param>
 			Ret Invoke(void* object, Param&&... var)
 			{
@@ -67,7 +73,8 @@ namespace JinEngine
 				parameterHint(initializer.parameterHint),
 				callHandle(initializer.callHandle),
 				hintHandle(initializer.hintHandle),
-				ownerType(initializer.ownerType)
+				ownerType(initializer.ownerType),
+				optionInfo(initializer.optionInfo)
 			{}
 			~JMethodInfo() = default;
 		};

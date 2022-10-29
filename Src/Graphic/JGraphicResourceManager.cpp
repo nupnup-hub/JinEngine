@@ -435,9 +435,10 @@ namespace JinEngine
 			switch (gRType)
 			{
 			case J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D:
+			{ 
 				user2DTextureResouce[vIndex].Reset();
-				user2DTextureHandle.erase(user2DTextureHandle.begin() + vIndex);
 				user2DTextureResouce.erase(user2DTextureResouce.begin() + vIndex);
+				user2DTextureHandle.erase(user2DTextureHandle.begin() + vIndex);
 				--user2DTextureCount;
 				for (uint i = vIndex; i < user2DTextureCount; ++i)
 				{
@@ -446,22 +447,26 @@ namespace JinEngine
 					ReBind2DTexture(device, GetGraphicBuffIndex(*user2DTextureHandle[i]), user2DTextureHandle[i]->srvHeapIndex);
 				}
 				return true;
+			}
 			case J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE:
+			{ 
 				userCubeTextureResouce[vIndex].Reset();
-				userCubeTextureHandle.erase(userCubeTextureHandle.begin() + vIndex);
 				userCubeTextureResouce.erase(userCubeTextureResouce.begin() + vIndex);
+				userCubeTextureHandle.erase(userCubeTextureHandle.begin() + vIndex);
 				--userCubeTextureCount;
 				for (uint i = vIndex; i < userCubeTextureCount; ++i)
 				{
 					--userCubeTextureHandle[i]->srvHeapIndex;
 					SetGraphicBuffIndex(*userCubeTextureHandle[i], GetGraphicBuffIndex(*userCubeTextureHandle[i]) - 1);
-					ReBindCubeTexture(device, GetGraphicBuffIndex(*userCubeTextureHandle[i]), userCubeTextureHandle[i]->srvHeapIndex - 1);
+					ReBindCubeTexture(device, GetGraphicBuffIndex(*userCubeTextureHandle[i]), userCubeTextureHandle[i]->srvHeapIndex);
 				}
 				return true;
+			}
 			case J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_COMMON:
+			{	 
 				renderResultResource[vIndex].Reset();
-				renderResultHandle.erase(renderResultHandle.begin() + vIndex);
 				renderResultResource.erase(renderResultResource.begin() + vIndex);
+				renderResultHandle.erase(renderResultHandle.begin() + vIndex);
 				--renderResultCount;
 				for (uint i = vIndex; i < renderResultCount; ++i)
 				{
@@ -472,10 +477,12 @@ namespace JinEngine
 					ReBindRenderTarget(device, GetGraphicBuffIndex(*renderResultHandle[i]), renderResultHandle[i]->rtvHeapIndex, renderResultHandle[i]->srvHeapIndex);
 				}
 				return true;
+			}
 			case J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP:
+			{ 
 				shadowMapResource[vIndex].Reset();
-				shadowMapHandle.erase(shadowMapHandle.begin() + vIndex);
 				shadowMapResource.erase(shadowMapResource.begin() + vIndex);
+				shadowMapHandle.erase(shadowMapHandle.begin() + vIndex);
 				--shadowMapCount;
 				for (uint i = vIndex; i < shadowMapCount; ++i)
 				{
@@ -486,6 +493,7 @@ namespace JinEngine
 					ReBindShadowMapTexture(device, GetGraphicBuffIndex(*shadowMapHandle[i]), shadowMapHandle[i]->dsvHeapIndex, shadowMapHandle[i]->srvHeapIndex);
 				}
 				return true;
+			}
 			default:
 				return false;
 			}
@@ -524,16 +532,16 @@ namespace JinEngine
 			rtvDesc.Texture2D.MipSlice = 0;
 			rtvDesc.Texture2D.PlaneSlice = 0;
 
-			D3D12_SHADER_RESOURCE_VIEW_DESC rsSrvDesc = {};
-			rsSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			rsSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-			rsSrvDesc.Texture2D.MostDetailedMip = 0;
-			rsSrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-			rsSrvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-			rsSrvDesc.Texture2D.MipLevels = 1;
-
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D.MostDetailedMip = 0;
+			srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+			srvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+			srvDesc.Texture2D.MipLevels = 1;
+			 
 			device->CreateRenderTargetView(renderResultResource[resourceIndex].Get(), &rtvDesc, GetCpuRtvDescriptorHandle(rtvHeapIndex));
-			device->CreateShaderResourceView(renderResultResource[resourceIndex].Get(), &rsSrvDesc, GetCpuSrvDescriptorHandle(srvHeapIndex));
+			device->CreateShaderResourceView(renderResultResource[resourceIndex].Get(), &srvDesc, GetCpuSrvDescriptorHandle(srvHeapIndex));
 		}
 		void JGraphicResourceManager::ReBindShadowMapTexture(ID3D12Device* device, const uint resourceIndex, const uint dsvHeapIndex, const uint srvHeapIndex)
 		{

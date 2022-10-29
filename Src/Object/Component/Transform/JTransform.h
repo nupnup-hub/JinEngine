@@ -1,5 +1,5 @@
 #pragma once 
- #include"JTransformInterface.h" 
+#include"JTransformInterface.h"  
 #include<DirectXMath.h>
 #include<vector>
  
@@ -9,9 +9,13 @@ namespace JinEngine
 	{
 		REGISTER_CLASS(JTransform) 
 	private: 
-		mutable DirectX::XMFLOAT3 position;
-		mutable DirectX::XMFLOAT3 rotation;
-		mutable DirectX::XMFLOAT3 scale;
+		REGISTER_GUI_TABLE_GROUP(Transform, true, "Name", "x", "y", "z")
+		REGISTER_PROPERTY_EX(position, GetPosition, SetPosition, GUI_INPUT(false, GUI_GROUP_COMMON(Transform)))
+		mutable DirectX::XMFLOAT3 position = DirectX::XMFLOAT3(0, 0, 0);
+		REGISTER_PROPERTY_EX(rotation, GetRotation, SetRotation, GUI_INPUT(false, GUI_GROUP_COMMON(Transform)))
+		mutable DirectX::XMFLOAT3 rotation = DirectX::XMFLOAT3(0, 0, 0);
+		REGISTER_PROPERTY_EX(scale, GetScale, SetScale, GUI_INPUT(false, GUI_GROUP_COMMON(Transform)))
+		mutable DirectX::XMFLOAT3 scale = DirectX::XMFLOAT3(1, 1, 1);
 		mutable DirectX::XMFLOAT4X4 world;
 		mutable DirectX::XMFLOAT3 tFront;
 		mutable DirectX::XMFLOAT3 tRight;

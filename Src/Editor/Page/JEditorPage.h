@@ -36,7 +36,7 @@ namespace JinEngine
 		private:
 			using OpenWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>;
 		protected: 
-			std::unique_ptr<JEditorMenuBar> editorMenuBar;
+			std::unique_ptr<JEditorMenuBar> editorMenuBar = nullptr;
 			std::vector<JEditorWindow*>windows;
 			std::vector<JEditorWindow*>opendWindow;
 			JEditorWindow* focusWindow; 

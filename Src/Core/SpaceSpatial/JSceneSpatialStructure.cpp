@@ -10,12 +10,13 @@ namespace JinEngine
 		JSceneSpatialStructure::~JSceneSpatialStructure() {}
 
 		void JSceneSpatialStructure::BuildOctree(std::vector<JGameObject*>& gameObject,
+			const uint minSize,
 			const uint octreeSizeSquare,
 			const float looseFactor,
 			const bool isLooseOctree)noexcept
 		{
 			Clear();
-			octree = std::make_unique<JOctree>(gameObject, octreeSizeSquare, looseFactor, isLooseOctree);
+			octree = std::make_unique<JOctree>(gameObject, minSize, octreeSizeSquare, looseFactor, isLooseOctree);
 			spatialStructureType = J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE;
 		}
 		void JSceneSpatialStructure::BuildBvh(std::vector<JGameObject*>& gameObject,
@@ -40,7 +41,7 @@ namespace JinEngine
 				bvh.reset();
 			}
 		}
-		void JSceneSpatialStructure::OnDebugBoundingBox(JGameObject* parent, bool onlyLeafNode)noexcept
+		void JSceneSpatialStructure::OnDebugBoundingBox(JGameObject* parent)noexcept
 		{
 			if (parent == nullptr)
 				return;
@@ -49,11 +50,11 @@ namespace JinEngine
 			{
 			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
 				if (octree != nullptr)
-					octree->OnDebugGameObject(parent, onlyLeafNode);
+					octree->OnDebugGameObject(parent);
 				break;
 			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
 				if (bvh != nullptr)
-					bvh->OnDebugGameObject(parent, onlyLeafNode);
+					bvh->OnDebugGameObject(parent);
 				break;
 			default:
 				break;
@@ -81,7 +82,7 @@ namespace JinEngine
 			{
 			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
 				if (octree != nullptr)
-					;//octree->Culling(camFrustum);
+					octree->Culling(camFrustum);
 				break;
 			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
 				if (bvh != nullptr)
@@ -107,17 +108,17 @@ namespace JinEngine
 				break;
 			}
 		}
-		void JSceneSpatialStructure::UpdateGameObject(const size_t guid)noexcept
+		void JSceneSpatialStructure::UpdateGameObject(JGameObject* gameObject)noexcept
 		{
 			switch (spatialStructureType)
 			{
 			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
 				if (octree != nullptr)
-					//octree->Culling(camFrustum);
-					break;
+					octree->UpdateGameObject(gameObject);
+				break;
 			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
 				if (bvh != nullptr)
-					bvh->UpdateGameObject(guid);
+					bvh->UpdateGameObject(gameObject);
 				break;
 			default:
 				break;
@@ -129,8 +130,8 @@ namespace JinEngine
 			{
 			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
 				if (octree != nullptr)
-					//octree->Culling(camFrustum);
-					break;
+					octree->AddGameObject(gameObject);
+				break;
 			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
 				if (bvh != nullptr)
 					bvh->AddGameObject(gameObject);
@@ -145,8 +146,8 @@ namespace JinEngine
 			{
 			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
 				if (octree != nullptr)
-					//octree->Culling(camFrustum);
-					break;
+					octree->RemoveGameObject(gameObject);
+				break;
 			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
 				if (bvh != nullptr)
 					bvh->RemoveGameObject(gameObject);
@@ -154,6 +155,72 @@ namespace JinEngine
 			default:
 				break;
 			}
+		}
+		JSceneSpatialStructureOption JSceneSpatialStructure::GetOption()const noexcept
+		{
+			return JSceneSpatialStructureOption(spatialStructureType, IsSpatialStructureActivated(), IsDebugActivated(), IsDebugLeafOnly());
+		}
+		J_SCENE_SPATIAL_STRUCTURE_TYPE JSceneSpatialStructure::GetSpatialStructureType()const noexcept
+		{
+			return spatialStructureType;
+		}
+		void JSceneSpatialStructure::SetSpatialStructureType(const J_SCENE_SPATIAL_STRUCTURE_TYPE newType)noexcept
+		{
+			spatialStructureType = newType;
+		}
+		void JSceneSpatialStructure::SetDebugOnlyLeaf(bool value)noexcept
+		{
+			switch (spatialStructureType)
+			{
+			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
+				if (octree != nullptr)
+					octree->SetDebugOnlyLeaf(value);
+				break;
+			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
+				if (bvh != nullptr)
+					bvh->SetDebugOnlyLeaf(value);
+				break;
+			default:
+				break;
+			}
+		}
+		bool JSceneSpatialStructure::IsSpatialStructureActivated()const noexcept
+		{
+			return octree != nullptr || bvh != nullptr;
+		}
+		bool JSceneSpatialStructure::IsDebugActivated()const noexcept
+		{
+			switch (spatialStructureType)
+			{
+			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
+				if (octree != nullptr)
+					return octree->IsDebugActivated();
+				break;
+			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
+				if (bvh != nullptr)
+					return bvh->IsDebugActivated();
+				break;
+			default:
+				break;
+			}
+			return false;
+		}
+		bool JSceneSpatialStructure::IsDebugLeafOnly()const noexcept
+		{
+			switch (spatialStructureType)
+			{
+			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
+				if (octree != nullptr)
+					return octree->IsDebugLeafOnly();
+				break;
+			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
+				if (bvh != nullptr)
+					return bvh->IsDebugLeafOnly();
+				break;
+			default:
+				break;
+			}
+			return false;
 		}
 	}
 }

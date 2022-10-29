@@ -37,7 +37,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JImGui;
-		class JImGuiImpl;
+		class JImGuiImpl; 
 	}
 	namespace Graphic
 	{
@@ -87,7 +87,7 @@ namespace JinEngine
 		{
 		private:  
 			friend class JMeshGeometry;
-			friend class Application::JApplication;
+			friend class Application::JApplication; 
 		private:
 			virtual ID3D12CommandQueue* GetCommandQueue()const noexcept = 0;
 			virtual ID3D12CommandAllocator* GetCommandAllocator()const noexcept = 0;

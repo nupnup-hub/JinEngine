@@ -53,6 +53,8 @@ namespace JinEngine
 			JSkinnedMeshGroup* skinnedMeshs = static_cast<JSkinnedMeshGroup*>(&meshGroup);
 			const uint meshCount = skinnedMeshs->GetMeshDataCount();
 			JFileIOHelper::StoreAtomicData(stream, L"MeshCount:", meshCount);
+			JFileIOHelper::StoreAtomicData(stream, L"TotalVertexCount:", skinnedMeshs->GetTotalVertexCount());
+			JFileIOHelper::StoreAtomicData(stream, L"TotalIndexCount:", skinnedMeshs->GetTotalIndexCount());
 
 			for (uint i = 0; i < meshCount; ++i)
 			{
@@ -131,7 +133,11 @@ namespace JinEngine
 			JSkinnedMeshGroup meshGroup;
 
 			uint meshCount = 0;
+			uint totalVertexCount = 0;
+			uint totalIndexCount = 0;
 			JFileIOHelper::LoadAtomicData(stream, meshCount);
+			JFileIOHelper::LoadAtomicData(stream, totalVertexCount);
+			JFileIOHelper::LoadAtomicData(stream, totalIndexCount);
 
 			for (uint i = 0; i < meshCount; ++i)
 			{
@@ -202,7 +208,7 @@ namespace JinEngine
 			{
 				Core::JIdentifier* mat = JFileIOHelper::LoadHasObjectIden(stream);
 				if(mat != nullptr && mat->GetTypeInfo().IsA(JMaterial::StaticTypeInfo()))
-					meshGroup.GetMeshData(i)->SetMaterial(Core::GetUserPtr<JMaterial>(mat->GetGuid()));
+					meshGroup.GetMeshData(i)->SetMaterial(Core::GetUserPtr<JMaterial>(mat));
 			}
 
 			Core::JIdentifier* skeletonAsset = JFileIOHelper::LoadHasObjectIden(stream);
@@ -222,7 +228,7 @@ namespace JinEngine
 		stream.open(GetPath(), std::ios::in | std::ios::binary);
 		if (stream.is_open())
 		{
-			if (!JFileIOHelper::SkipStream(stream, skeletonSymbol))
+			if (!JFileIOHelper::SkipLine(stream, skeletonSymbol))
 				return Core::JOwnerPtr<JSkeleton>{};
 
 			uint jointCount;

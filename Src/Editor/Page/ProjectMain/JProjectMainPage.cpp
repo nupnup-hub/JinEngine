@@ -103,7 +103,7 @@ namespace JinEngine
 
 			const ImGuiViewport* viewport = ImGui::GetMainViewport();
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+			//ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
 			ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -133,7 +133,7 @@ namespace JinEngine
 			//PrintOpenWindowState();
 
 			JImGuiImpl::PopFont();
-			ImGui::PopStyleVar(3);
+			ImGui::PopStyleVar(2);
 		}
 		bool JProjectMainPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept
 		{

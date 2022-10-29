@@ -1,16 +1,19 @@
 #pragma once  
 #include<DirectXMath.h> 
 #include<type_traits> 
-#include<functional> 
- 
+#include<functional>  
+#include"../Core/JDataType.h"
 struct ImVec2;
 struct ImVec4;
 
 namespace JinEngine
 { 
+	struct JVectorBase{};
 	template<typename T>
-	struct JVector2
-	{
+	struct JVector2 : public JVectorBase
+	{ 
+	public:
+		using ValueType = T;
 	public:
 		T x;
 		T y;
@@ -60,10 +63,20 @@ namespace JinEngine
 		{
 			return x >= pos.x && x <= pos.x + size.x && y >= pos.y && y <= pos.y + size.y;
 		}
+	public:
+		//For PrameterInfo
+		static constexpr uint GetDigitCount()noexcept
+		{
+			return 2;
+		}
 	};
+
+
 	template<typename T>
-	struct JVector3
+	struct JVector3 : public JVectorBase
 	{
+	public:
+		using ValueType = T;
 	public:
 		T x;
 		T y;
@@ -116,10 +129,19 @@ namespace JinEngine
 		{
 			return DirectX::XMFLOAT3{(float)x, (float)y, (float)z };
 		}
+	public:
+		//For PrameterInfo
+		static constexpr uint GetDigitCount()noexcept
+		{
+			return 3;
+		}
 	};
+
 	template<typename T>
-	struct JVector4
+	struct JVector4 : public JVectorBase
 	{
+	public:
+		using ValueType = T;
 	public:
 		T x;
 		T y;
@@ -162,6 +184,12 @@ namespace JinEngine
 		DirectX::XMFLOAT4 ConvertXM()noexcept
 		{
 			return DirectX::XMFLOAT4{(float) x,(float)y, (float)z, (float)w };
+		}
+	public:
+		//For PrameterInfo
+		static constexpr uint GetDigitCount()noexcept
+		{
+			return 4;
 		}
 	};
 

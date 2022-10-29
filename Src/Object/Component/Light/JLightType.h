@@ -1,10 +1,7 @@
 #pragma once
+#include"../../../Core/Reflection/JReflection.h"
+
 namespace JinEngine
 {
-	enum class J_LIGHT_TYPE
-	{
-		DIRECTIONAL,
-		POINT,
-		SPOT
-	};
+	REGISTER_ENUM_CLASS(J_LIGHT_TYPE, short, DIRECTIONAL = 0, POINT, SPOT)
 }

@@ -1,10 +1,11 @@
 #include"JTransform.h"    
 #include"../JComponentFactory.h"
 #include"../../GameObject/JGameObject.h" 
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../Resource/Scene/JScene.h"
 #include"../../../Utility/JMathHelper.h"
+#include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Guid/GuidCreator.h"
-#include"../../../Core/File/JFileConstant.h"
+#include"../../../Core/File/JFileConstant.h" 
 #include"../../../Graphic/FrameResource/JObjectConstants.h"
 #include<fstream>
 
@@ -14,11 +15,11 @@ namespace JinEngine
 
 	using namespace DirectX;
 	J_COMPONENT_TYPE JTransform::GetComponentType()const noexcept
-	{
+	{  
 		return GetStaticComponentType();
 	}
 	XMFLOAT3 JTransform::GetPosition()const noexcept
-	{
+	{ 
 		return position;
 	}
 	XMFLOAT3 JTransform::GetRotation()const noexcept
@@ -64,6 +65,7 @@ namespace JinEngine
 		JTransform::rotation = rotation;
 		JTransform::scale = scale;
 		Update();
+		GetOwner()->GetOwnerScene()->CompInterface()->UpdateTransform(GetOwner());
 	}
 	void JTransform::SetPosition(const XMFLOAT3& value)noexcept
 	{
@@ -72,6 +74,7 @@ namespace JinEngine
 
 		position = value;
 		Update();
+		GetOwner()->GetOwnerScene()->CompInterface()->UpdateTransform(GetOwner());
 	}
 	void JTransform::SetRotation(const XMFLOAT3& value)noexcept
 	{
@@ -107,6 +110,7 @@ namespace JinEngine
 		XMStoreFloat3(&tFront, XMVector3Normalize(newFront));
 
 		Update();
+		GetOwner()->GetOwnerScene()->CompInterface()->UpdateTransform(GetOwner());
 	}
 	void JTransform::SetScale(const XMFLOAT3& value)noexcept
 	{
@@ -115,6 +119,7 @@ namespace JinEngine
 
 		scale = value;
 		Update();
+		GetOwner()->GetOwnerScene()->CompInterface()->UpdateTransform(GetOwner());
 	}
 	void JTransform::LookAt(const XMFLOAT3& target, const XMFLOAT3& worldUp)noexcept
 	{
@@ -192,9 +197,12 @@ namespace JinEngine
 	}
 	void JTransform::Update()noexcept
 	{
+		JGameObject* owner = GetOwner();
+		if (owner->IsRoot())
+			return;
+
 		WorldUpdate();
 		SetFrameDirty();
-		JGameObject* owner = GetOwner();
 		const uint childrenCount = owner->GetChildrenCount();
 		for (uint i = 0; i < childrenCount; ++i)
 			owner->GetChild(i)->GetTransform()->Update();
@@ -331,10 +339,6 @@ namespace JinEngine
 	JTransform::JTransform(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner)
 		:JTransformInterface(TypeName(), guid, flag, owner)
 	{
-		position = XMFLOAT3(0, 0, 0);
-		rotation = XMFLOAT3(0, 0, 0);
-		scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
-
 		XMStoreFloat3(&tRight, JMathHelper::VectorRight());
 		XMStoreFloat3(&tUp, JMathHelper::VectorUp());
 		XMStoreFloat3(&tFront, JMathHelper::VectorForward());

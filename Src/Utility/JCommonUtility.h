@@ -47,7 +47,6 @@ namespace JinEngine
 
 		static bool Contain(const std::wstring& source, const std::wstring& target)noexcept;
 		static bool Contain(const std::string& source, const std::string& target)noexcept;
-
 		static void DecomposeFolderPath(const std::wstring& path, std::wstring& folderPath, std::wstring& name)noexcept;
 		static void DecomposeFilePath(const std::wstring& path, std::wstring& folderPath, std::wstring& name, std::wstring& format, bool eraseFolderPathBackSlash = false)noexcept;
 		static void DecomposeFileName(const std::wstring& oriname, std::wstring& name, std::wstring& format);

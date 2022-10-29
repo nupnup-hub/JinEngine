@@ -72,19 +72,19 @@ namespace JinEngine
 				ActivatePage(&evActStruct);
 			}
 			 
-			std::vector<J_EDITOR_EVENT> eventVector = Core::GetEnumVec<J_EDITOR_EVENT>();
+			std::vector<J_EDITOR_EVENT> eventVector = Core::GetEnumElementVec<J_EDITOR_EVENT>();
 			this->AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector);
 
 			Core::JTransition::Initialize();
 		}
 		void JEditorManager::Update()
 		{ 
-			JImGuiImpl::SetTextSize();
+			JImGuiImpl::SetAlphabetSize();
 			JEditorEvent::ExecuteEvent();
 			JImGuiImpl::StartEditorUpdate();
 			JImGuiImpl::MouseUpdate();
 
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(JWindow::Instance().GetClientSize() * 0.1f));
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(JWindow::Instance().GetClientSize() * 0.15f));
 			uint8 pageCount = (uint8)opendEditorPage.size();
 			for (uint8 i = 0; i < pageCount; ++i)
 				opendEditorPage[i]->UpdatePage();
@@ -264,12 +264,6 @@ namespace JinEngine
 				JEditorPageShareData::SetSelectObj(deSelectEvStruct->pageType, Core::JUserPtr<JObject>{});
 				break;
 			}
-			case J_EDITOR_EVENT::BIND_FUNC:
-			{
-				JEditorBindFuncEvStruct* bindEv = static_cast<JEditorBindFuncEvStruct*>(eventStruct);
-				bindEv->Execute();
-				break;
-			}
 			case J_EDITOR_EVENT::OPEN_PAGE:
 			{
 				OpenPage(static_cast<JEditorOpenPageEvStruct*>(eventStruct));
@@ -328,6 +322,18 @@ namespace JinEngine
 			case J_EDITOR_EVENT::UNFOCUS_WINDOW:
 			{
 				UnFocusWindow(static_cast<JEditorUnFocusWindowEvStruct*>(eventStruct));
+				break;
+			}
+			case J_EDITOR_EVENT::BIND_FUNC:
+			{
+				JEditorBindFuncEvStruct* bindEv = static_cast<JEditorBindFuncEvStruct*>(eventStruct);
+				bindEv->Execute();
+				break;
+			}
+			case J_EDITOR_EVENT::T_BIND_FUNC:
+			{
+				JEditorTBindFuncEvStruct* bindEv = static_cast<JEditorTBindFuncEvStruct*>(eventStruct);
+				bindEv->Execute();
 				break;
 			}
 			default:

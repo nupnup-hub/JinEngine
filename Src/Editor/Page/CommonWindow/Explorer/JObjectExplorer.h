@@ -34,13 +34,13 @@ namespace JinEngine
 			using UndoDestroyGameObjectFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&>;
 			using UndoDestroyGameObjectBind = Core::JBindHandle<UndoDestroyGameObjectFunctor, const Core::EmptyType&, const Core::EmptyType&>;
 
-			using CreateGameObjectEvStruct = JEditorCreateBindFuncEvStruct<DataHandleStructure, CreateGameObjectBind, DestroyGameObjectBind>;
-			using DestroyGameObjectEvStruct = JEditorCreateBindFuncEvStruct<DataHandleStructure, DestroyGameObjectBind, UndoDestroyGameObjectBind>;
+			using CreateGameObjectEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateGameObjectBind, DestroyGameObjectBind>;
+			using DestroyGameObjectEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, DestroyGameObjectBind, UndoDestroyGameObjectBind>;
 
 			using CreateModelFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, Core::JUserPtr<JGameObject>, Core::JUserPtr<JMeshGeometry>, const size_t>;
 			using CreateModelBind = Core::JBindHandle<CreateModelFunctor, const Core::EmptyType&, const Core::EmptyType&, Core::JUserPtr<JGameObject>, Core::JUserPtr<JMeshGeometry>, const size_t>;
  
-			using CreateModelEvStruct = JEditorCreateBindFuncEvStruct<DataHandleStructure, CreateModelBind, DestroyGameObjectBind>;
+			using CreateModelEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateModelBind, DestroyGameObjectBind>;
 
 			using RenameFuncF = Core::JSFunctorType<void, const std::string, Core::JUserPtr<JGameObject>>;
 			using ChangeParentF = Core::JSFunctorType<void, Core::JUserPtr<JGameObject>, Core::JUserPtr<JGameObject>>;

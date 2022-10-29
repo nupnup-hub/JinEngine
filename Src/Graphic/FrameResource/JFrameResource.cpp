@@ -19,7 +19,7 @@ namespace JinEngine
             const uint initAnimatorCount,
             const uint initSceneCount,
             const uint initCameraCount,
-            const uint initSceneShadowCount)
+            const uint initLightCount)
         {
             ThrowIfFailedHr(device->CreateCommandAllocator(
                 D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -39,8 +39,9 @@ namespace JinEngine
             skinnedCB = std::make_unique<JUploadBuffer<JAnimationConstants>>(device, initAnimatorCount, true);
             passCB = std::make_unique<JUploadBuffer<JPassConstants>>(device, initSceneCount, true);
             cameraCB = std::make_unique<JUploadBuffer<JCameraConstants>>(device, initCameraCount, true);
-            lightCB = std::make_unique<JUploadBuffer<JLightConstants>>(device, initSceneCount, true);
-            shadowCalCB = std::make_unique<JUploadBuffer<JShadowMapConstants>>(device, initSceneCount * initSceneShadowCount, true);
+            lightCB = std::make_unique<JUploadBuffer<JLightConstants>>(device, initLightCount, true);
+            smLightCB = std::make_unique<JUploadBuffer<JSMLightConstants>>(device, initLightCount, true);
+            shadowCalCB = std::make_unique<JUploadBuffer<JShadowMapConstants>>(device, initLightCount, true);
         }
 
         JFrameResource::~JFrameResource()

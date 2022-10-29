@@ -110,11 +110,11 @@ namespace JinEngine
 		public:
 			static constexpr uint8 GetMaxTaskCapacity() noexcept
 			{
-				return 255;
+				return 50;
 			}
 			static constexpr uint GetMaxLogCapacity() noexcept
 			{
-				return 255;
+				return 50;
 			}
 		public:
 			static const std::deque<std::string>& GetLog()noexcept;

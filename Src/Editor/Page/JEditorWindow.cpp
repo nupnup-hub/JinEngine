@@ -105,9 +105,9 @@ namespace JinEngine
 		}
 		void JEditorWindow::SetButtonSelectColor()noexcept
 		{
-			JImGuiImpl::SetColorToDeep(ImGuiCol_Button, 0.15f);
-			JImGuiImpl::SetColorToDeep(ImGuiCol_ButtonHovered, 0.15f);
-			JImGuiImpl::SetColorToDeep(ImGuiCol_ButtonActive, 0.15f);
+			JImGuiImpl::SetColorToDeep(ImGuiCol_Button, 0.1f);
+			JImGuiImpl::SetColorToDeep(ImGuiCol_ButtonHovered, 0.1f);
+			JImGuiImpl::SetColorToDeep(ImGuiCol_ButtonActive, 0.1f);
 		}
 		void JEditorWindow::SetButtonDefaultColor()noexcept
 		{
@@ -117,9 +117,9 @@ namespace JinEngine
 		}
 		void JEditorWindow::SetTreeNodeSelectColor()noexcept
 		{
-			JImGuiImpl::SetColorToDeep(ImGuiCol_Header, 0.15f);
-			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderHovered, 0.15f);
-			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderActive, 0.15f);
+			JImGuiImpl::SetColorToDeep(ImGuiCol_Header, 0.1f);
+			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderHovered, 0.1f);
+			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderActive, 0.1f);
 		}
 		void JEditorWindow::SetTreeNodeDefaultColor()noexcept
 		{

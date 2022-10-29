@@ -7,11 +7,14 @@ namespace JinEngine
 	namespace Graphic
 	{
 		struct JLightConstants;
+		struct JSMLightConstants;
 		struct JShadowMapConstants;
 	} 
 	 
 	class JLightInterface : public JComponent,  
-		public JFrameUpdate<IFrameUpdate<Graphic::JLightConstants&, Graphic::JShadowMapConstants&>, JFrameDirty, false>,
+		public JFrameUpdate<IFrameUpdate<Graphic::JLightConstants&, 
+		Graphic::JSMLightConstants&,
+		Graphic::JShadowMapConstants&>, JFrameDirtyListener, false>,
 		public Graphic::JGraphicTexture
 	{
 	protected:

@@ -30,6 +30,7 @@
 namespace JinEngine
 {
 	static const std::vector<JComponent*> emptyVec;
+
 	JScene::JSceneInitData::JSceneInitData(const std::wstring& name,
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
@@ -106,7 +107,7 @@ namespace JinEngine
 	}
 	bool JScene::IsMainScene()const noexcept
 	{
-		return !HasFlag((J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE));
+		return JSceneManager::Instance().IsMainScene(this);
 	}
 	bool JScene::HasComponent(const J_COMPONENT_TYPE cType)const noexcept
 	{
@@ -155,12 +156,15 @@ namespace JinEngine
 			allObjects[i]->Activate();
 
 		SetAllComponentDirty();
-		OnSceneSpatialStructure();
+		if (isSpatialStructureActivated)
+			BuildSpatialStructure(spatialStructure->GetSpatialStructureType());
 	}
 	void JScene::DoDeActivate()noexcept
 	{
+		if (isSpatialStructureActivated)
+			ClearSpatialStructure();
+
 		StoreObject(this);
-		OffSceneSpatialStructure();
 		root->DeActivate();
 		const uint objCount = (uint)allObjects.size();
 		for (uint i = 0; i < objCount; ++i)
@@ -176,9 +180,16 @@ namespace JinEngine
 			{
 				std::wifstream stream;
 				stream.open(GetPath(), std::ios::in | std::ios::binary);
-				root = JGFI::Create(stream, nullptr, this);
-				stream.close();
+				if (stream.is_open())
+				{
+					root = JGFI::Create(stream, nullptr, this);
+					stream.close();
+				}
+				else
+					CreateDefaultGameObject();
 			}
+			else
+				CreateDefaultGameObject();
 			SetValid(true);
 		}
 	}
@@ -201,6 +212,24 @@ namespace JinEngine
 			allObjects.shrink_to_fit();
 			SetValid(false);
 		}
+	}
+	void JScene::CreateDefaultGameObject()noexcept
+	{
+		const J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
+		root = JGFI::CreateRoot(L"RootGameObject", Core::MakeGuid(), rootFlag, *this);
+
+		J_OBJECT_FLAG flag = OBJECT_FLAG_NONE;
+		if (GetFlag() == OBJECT_FLAG_EDITOR_OBJECT)
+			flag = OBJECT_FLAG_EDITOR_OBJECT;
+		else if (GetFlag() == OBJECT_FLAG_UNIQUE_EDITOR_OBJECT)
+			flag = OBJECT_FLAG_UNIQUE_EDITOR_OBJECT;
+		else
+			flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE);
+
+		if (!HasFlag(OBJECT_FLAG_EDITOR_OBJECT))
+			JGFU::CreateSky(*root, flag, L"DefaultSky");
+		JGFU::CreateCamera(*root, flag, true, L"MainCamera");
+		JGFU::CreateLight(*root, flag, J_LIGHT_TYPE::DIRECTIONAL, L"MainLight");
 	}
 	const std::vector<JGameObject*>& JScene::GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept
 	{
@@ -246,15 +275,23 @@ namespace JinEngine
 		isAnimatorActivated = !isAnimatorActivated;
 		if (isAnimatorActivated)
 		{
-			std::vector<JComponent*>& cashVec = componentCash.find(J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)->second;
+			const std::vector<JComponent*>& cashVec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR);
 			const uint compCount = (uint)cashVec.size();
 			for (uint i = 0; i < compCount; ++i)
 				static_cast<JAnimator*>(cashVec[i])->OnAnimation();
 		}
 	}
-	void JScene::SetMainCamera(JCamera* camera)noexcept
+	void JScene::SetMainCamera(JCamera* mainCam)noexcept
 	{
-		mainCamera = camera;
+		mainCamera = mainCam;
+	}
+	void JScene::UpdateTransform(JGameObject* owner)noexcept
+	{
+		// && owner->GetRenderItem()->GetRenderLayer() != J_RENDER_LAYER::DEBUG_LAYER
+		if (owner == nullptr)
+			return;
+		if (owner->HasRenderItem() && IsActivated())
+			spatialStructure->UpdateGameObject(owner);
 	}
 	bool JScene::RegisterComponent(JComponent& component)noexcept
 	{
@@ -288,7 +325,7 @@ namespace JinEngine
 			objectLayer[(int)renderLayer][(int)meshType].push_back(jRItem->GetOwner());
 
 			CallSetFrameBuffOffset(*jRItem, cashVec->second.size() - 1);
-			if (renderLayer == J_RENDER_LAYER::OPAQUE_OBJECT && isSpatialStructureActivated)
+			if (renderLayer == J_RENDER_LAYER::OPAQUE_OBJECT && spatialStructure->IsSpatialStructureActivated())
 				spatialStructure->AddGameObject(jRItem->GetOwner());
 		}
 
@@ -334,7 +371,7 @@ namespace JinEngine
 						}
 					}
 					//objectLayer[rIndex][mIndex].push_back(jOwner);
-					if (jRItem->GetRenderLayer() == J_RENDER_LAYER::OPAQUE_OBJECT && isSpatialStructureActivated)
+					if (jRItem->GetRenderLayer() == J_RENDER_LAYER::OPAQUE_OBJECT && spatialStructure->IsSpatialStructureActivated())
 						spatialStructure->RemoveGameObject(jOwner);
 				}
 				SetBackSideComponentDirty(*cashVec[i]);
@@ -355,7 +392,7 @@ namespace JinEngine
 		if (JCI::GetCTypeHint(cType).isFrameInterface)
 		{
 			auto SetFrameDirtyCallable = JCI::GetSetFrameDirtyCallable(cType);
-			std::vector<JComponent*>& cashVec = componentCash.find(cType)->second;
+			const std::vector<JComponent*>& cashVec = GetComponentCashVec(cType);
 			const uint compCount = (uint)cashVec.size();
 			for (uint i = 0; i < compCount; ++i)
 				SetFrameDirtyCallable(nullptr, *cashVec[i]);
@@ -364,7 +401,7 @@ namespace JinEngine
 	void JScene::SetBackSideComponentDirty(JComponent& jComp) noexcept
 	{
 		const J_COMPONENT_TYPE cType = jComp.GetComponentType();
-		std::vector<JComponent*>& cashVec = componentCash.find(cType)->second;
+		const std::vector<JComponent*>& cashVec = GetComponentCashVec(cType);
 		const size_t guid = jComp.GetGuid();
 		const uint compCount = (uint)cashVec.size();
 		uint i = 0;
@@ -385,7 +422,7 @@ namespace JinEngine
 	void JScene::SetBackSideComponentDirty(JComponent& jComp, bool(*condition)(JComponent&))noexcept
 	{
 		const J_COMPONENT_TYPE cType = jComp.GetComponentType();
-		std::vector<JComponent*>& cashVec = componentCash.find(cType)->second;
+		const std::vector<JComponent*>& cashVec = GetComponentCashVec(cType);
 		const size_t guid = jComp.GetGuid();
 		const uint compCount = (uint)cashVec.size();
 		uint i = 0;
@@ -416,39 +453,66 @@ namespace JinEngine
 			spatialStructure->Culling(cFrustum);
 		}
 	}
-	void JScene::OnSceneSpatialStructure()noexcept
+	Core::JSceneSpatialStructureOption JScene::GetSpatialStructureOption()const noexcept
 	{
-		if (!isSpatialStructureActivated)
+		return spatialStructure->GetOption();
+	}
+	void JScene::SetSceneSpatialStructure(const bool value)noexcept
+	{ 
+		isSpatialStructureActivated = value;
+		if (value)
 		{
-			BuildBvh(Core::J_BVH_BUILD_TYPE::TOP_DOWN, Core::J_BVH_SPLIT_TYPE::SAH);
-			isSpatialStructureActivated = true;
+			if (IsActivated())
+				BuildSpatialStructure(spatialStructure->GetSpatialStructureType());
+		}
+		else
+		{
+			if (IsActivated())
+				ClearSpatialStructure();
 		}
 	}
-	void JScene::OffSceneSpatialStructure()noexcept
+	void JScene::SetSceneSpatialStructureType(const Core::J_SCENE_SPATIAL_STRUCTURE_TYPE type)noexcept
 	{
-		if (isSpatialStructureActivated)
+		if (spatialStructure->IsSpatialStructureActivated())
 		{
-			spatialStructure->Clear();
-			isSpatialStructureActivated = false;
+			if (spatialStructure->GetSpatialStructureType() != type)
+			{
+				ClearSpatialStructure();
+				BuildSpatialStructure(type);
+			}
+		}
+		else
+			spatialStructure->SetSpatialStructureType(type);
+	}
+	void JScene::SetDebugBoundingBox(const bool value)noexcept
+	{
+		if (spatialStructure->IsSpatialStructureActivated())
+		{
+			if (value)
+				spatialStructure->OnDebugBoundingBox(root);
+			else
+				spatialStructure->OffDebugBoundingBox();
+		} 
+	}
+	void JScene::SetDebugOnlyLeaf(const bool value)noexcept
+	{
+		spatialStructure->SetDebugOnlyLeaf(value);
+	}
+	void JScene::BuildSpatialStructure(const Core::J_SCENE_SPATIAL_STRUCTURE_TYPE type)noexcept
+	{
+		if (!spatialStructure->IsSpatialStructureActivated())
+		{ 
+			if (type == Core::J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH)
+				BuildBvh(Core::J_BVH_BUILD_TYPE::TOP_DOWN, Core::J_BVH_SPLIT_TYPE::SAH);
+			else
+				BuildOctree(32, 9, 2, true);
 		}
 	}
-	void JScene::OnDebugBoundingBox(bool onlyLeafNode)noexcept
+	void JScene::ClearSpatialStructure()noexcept
 	{
-		if (!isSpatialStructureActivated)
-		{
-			isSpatialStructureDebugActivated = true;
-			spatialStructure->OnDebugBoundingBox(root, onlyLeafNode);
-		}
+		spatialStructure->Clear();
 	}
-	void JScene::OffDebugBoundingBox()noexcept
-	{
-		if (isSpatialStructureActivated)
-		{
-			isSpatialStructureDebugActivated = false;
-			spatialStructure->OffDebugBoundingBox();
-		}
-	}
-	void JScene::BuildOctree(const uint octreeSizeSquare, const float looseFactor, const bool isLooseOctree)noexcept
+	void JScene::BuildOctree(const uint minSize, const uint octreeSizeSquare, const float looseFactor, const bool isLooseOctree)noexcept
 	{
 		if (spatialStructure != nullptr)
 		{
@@ -459,7 +523,7 @@ namespace JinEngine
 			std::copy(objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][0].begin(), objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][0].end(), gameObject.begin());
 			std::copy(objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][1].begin(), objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][1].end(), gameObject.begin() + staticObjectCount);
 
-			spatialStructure->BuildOctree(gameObject, octreeSizeSquare, looseFactor, isLooseOctree);
+			spatialStructure->BuildOctree(gameObject, minSize, octreeSizeSquare, looseFactor, isLooseOctree);
 		}
 	}
 	void JScene::BuildBvh(const Core::J_BVH_BUILD_TYPE bvhBuildType, const Core::J_BVH_SPLIT_TYPE splitType)noexcept
@@ -522,9 +586,11 @@ namespace JinEngine
 			if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 				return res;
 
+			Core::JSceneSpatialStructureOption option = scene->GetSpatialStructureOption();
 			JFileIOHelper::StoreAtomicData(stream, L"IsOpen:", scene->IsValid());
-			JFileIOHelper::StoreAtomicData(stream, L"IsMainScene:", scene->IsValid());
-			JFileIOHelper::StoreAtomicData(stream, L"IsSpatialStructureActivated:", scene->IsValid());
+			JFileIOHelper::StoreAtomicData(stream, L"IsMainScene:", JSceneManager::Instance().IsMainScene(scene));
+			JFileIOHelper::StoreAtomicData(stream, L"IsSpatialStructureActivated:", scene->isSpatialStructureActivated);  
+			JFileIOHelper::StoreAtomicData(stream, L"SpatialStructureType:", (int)option.type);
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
@@ -568,13 +634,10 @@ namespace JinEngine
 
 		if (metadata.isMainScene)
 		{
-			if (metadata.isSpatialStructureActivated)
-				newScene->OnSceneSpatialStructure();
-			else
-				newScene->OffSceneSpatialStructure();
-
 			JSceneManager::Instance().TryOpenScene(newScene, false);
 			JSceneManager::Instance().SetMainScene(newScene);
+			newScene->SetSceneSpatialStructureType((Core::J_SCENE_SPATIAL_STRUCTURE_TYPE)metadata.spatialStructureType);
+			newScene->SetSceneSpatialStructure(metadata.isSpatialStructureActivated);
 		}
 		return newScene;
 	}
@@ -586,6 +649,7 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, metadata.isOpen);
 			JFileIOHelper::LoadAtomicData(stream, metadata.isMainScene);
 			JFileIOHelper::LoadAtomicData(stream, metadata.isSpatialStructureActivated);
+			JFileIOHelper::LoadAtomicData(stream, metadata.spatialStructureType);
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
@@ -603,30 +667,6 @@ namespace JinEngine
 				if (!AddInstance(std::move(ownerPtr)))
 					return nullptr;
 
-				//newScene->Activate();
-				const J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
-				newScene->root = JGFI::CreateRoot(L"RootGameObject", Core::MakeGuid(), rootFlag, *newScene);
-
-				J_OBJECT_FLAG flag = OBJECT_FLAG_NONE;
-				if (sInitdata->flag == OBJECT_FLAG_EDITOR_OBJECT || sInitdata->flag == OBJECT_FLAG_UNIQUE_EDITOR_OBJECT)
-					flag = OBJECT_FLAG_EDITOR_OBJECT;
-				else
-					flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE);
-
-				//only has root
-				if (newScene->allObjects.size() == 1)
-				{
-					if (!newScene->HasFlag(OBJECT_FLAG_EDITOR_OBJECT))
-						JGFU::CreateSky(*newScene->root, flag, L"DefaultSky");
-					JGFU::CreateCamera(*newScene->root, flag, true, L"MainCamera");
-					JGFU::CreateLight(*newScene->root, flag, J_LIGHT_TYPE::DIRECTIONAL, L"MainLight");
-				}
-				if (!newScene->HasFlag(OBJECT_FLAG_DO_NOT_SAVE))
-				{
-					newScene->SetValid(true);
-					StoreObject(newScene);
-					newScene->ClearResource();
-				}
 				return newScene;
 			}
 			else
@@ -662,7 +702,7 @@ namespace JinEngine
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JScene::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
-		std::vector<J_RESOURCE_TYPE> allRType = Core::GetEnumVec<J_RESOURCE_TYPE>();
+		std::vector<J_RESOURCE_TYPE> allRType = Core::GetEnumElementVec<J_RESOURCE_TYPE>();
 		for (uint i = 0; i < allRType.size(); ++i)
 		{
 			if (allRType[i] == J_RESOURCE_TYPE::SCENE)

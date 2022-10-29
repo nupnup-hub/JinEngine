@@ -23,12 +23,12 @@ namespace JinEngine
 		//opend Scene  
 		//scene vector[0] is main scene  
 		std::vector<JScene*> opendScene; 
-		JScene* mainScene;
+		JScene* mainScene = nullptr;
 	public:
 		bool TryOpenScene(JScene* scene, bool isPreviewScene, IFrameDirty* observation = nullptr)noexcept;
 		bool TryCloseScene(JScene* scene)noexcept;
 		bool IsOpen(JScene* scene)noexcept;
-		bool IsMainScene(JScene* scene)const noexcept;
+		bool IsMainScene(const JScene* scene)const noexcept;
 	public:
 		void UpdateScene(JScene* scene, const J_COMPONENT_TYPE compType);
 	public:

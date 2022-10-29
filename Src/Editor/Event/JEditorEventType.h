@@ -22,7 +22,9 @@ namespace JinEngine
 			UNFOCUS_WINDOW,
 			OPEN_SCENE,
 			CLOSE_SCENE,
-			BIND_FUNC);
+			BIND_FUNC,				
+			T_BIND_FUNC			//support redo undo
+			);			 
  
 		/*
 		enum class J_EDITOR_EVENT
@@ -51,7 +53,7 @@ namespace JinEngine
 
 			OPEN_SCENE,
 			CLOSE_SCENE,
-			BIND_FUNC,
+			T_BIND_FUNC,
 		};
 		*/
 	}

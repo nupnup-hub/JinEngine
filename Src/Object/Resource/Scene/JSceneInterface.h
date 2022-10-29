@@ -5,12 +5,14 @@
 #include"../../Component/JComponentType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"  
 #include"../../JFrameUpdate.h"
+#include"../../../Core/SpaceSpatial/JSceneSpatialStructureOption.h" 
 
 namespace JinEngine
 {
 	class JPreviewResourceScene;
 	class JComponent;
 	class JCamera;
+	class JTransform;
 	class JGameObject;
 	class JSceneManagerImpl;
 	class JResourceManagerImpl;
@@ -21,6 +23,10 @@ namespace JinEngine
 		class JGraphicImpl;
 	}
  
+	namespace Editor
+	{
+		class JSceneObserver;
+	}
 	class JSceneCashInterface
 	{
 	private:
@@ -51,6 +57,7 @@ namespace JinEngine
 	{
 	private:
 		friend class JCamera;
+		friend class JTransform;
 	protected:
 		virtual ~JSceneCompInterface() = default;
 	public:
@@ -58,6 +65,7 @@ namespace JinEngine
 	private:
 		virtual void SetMainCamera(JCamera* camera)noexcept = 0;
 		virtual void SetAnimation()noexcept = 0;
+		virtual void UpdateTransform(JGameObject* owner)noexcept = 0;
 	};
 
 	class JSceneRegisterInterface 
@@ -92,18 +100,20 @@ namespace JinEngine
 	class JSceneSpaceSpatialInterface
 	{
 	private:
-		friend class JResourceManagerImpl;
+		friend class JResourceManagerImpl; 
 		friend class Graphic::JGraphicImpl;
+		friend class Editor::JSceneObserver;
 	protected:
 		virtual ~JSceneSpaceSpatialInterface() = default;
 	public:
 		virtual JSceneSpaceSpatialInterface* SpaceSpatialInterface() = 0;
 	private:
-		virtual void ViewCulling()noexcept = 0;   
-		virtual void OnSceneSpatialStructure() noexcept = 0;
-		virtual void OffSceneSpatialStructure() noexcept = 0;
-		virtual void OnDebugBoundingBox(bool onlyLeafNode)noexcept = 0;
-		virtual void OffDebugBoundingBox()noexcept = 0;
+		virtual void ViewCulling()noexcept = 0; 
+		virtual Core::JSceneSpatialStructureOption GetSpatialStructureOption()const noexcept = 0;
+		virtual void SetSceneSpatialStructure(const bool value) noexcept = 0;
+		virtual void SetSceneSpatialStructureType(const Core::J_SCENE_SPATIAL_STRUCTURE_TYPE type) = 0;
+		virtual void SetDebugBoundingBox(const bool value)noexcept = 0;
+		virtual void SetDebugOnlyLeaf(const bool value)noexcept = 0;
 	};
 
 	class JSceneInterface :public JResourceObject,

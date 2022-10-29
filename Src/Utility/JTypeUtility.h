@@ -1,6 +1,6 @@
 #pragma once
-#include<type_traits>
-#include"../Core/JDataType.h" 
+#include<type_traits> 
+#include"../Core/JDataType.h"  
 
 namespace JinEngine
 {
@@ -172,6 +172,46 @@ namespace JinEngine
 		};
 		template<typename T, bool res>
 		using TypeCondition_T = typename TypeCondition<T, res>::Type;
+
+		template<typename T, typename = void>
+		struct StdArrayContainerDetermine : std::false_type {};
+
+		template<typename T>
+		struct StdArrayContainerDetermine<T, std::void_t<typename T::value_type>> : std::true_type
+		{
+		public:
+			using ValueType = typename T::value_type;
+		};
+		template<typename T, typename = void, typename = void>
+		struct StdMapDetermine : std::false_type {};
+
+		template<typename T>
+		struct StdMapDetermine<T, std::void_t<typename T::key_type>, std::void_t<typename T::value_type>> : std::true_type
+		{
+		public:
+			using ValueType = typename T::value_type;
+			using KeyType = typename T::key_type;
+		};
+
+		template<typename T, typename = void>
+		struct JVectorDetermine : std::false_type
+		{
+		public:
+			using ValueType = T;
+		};
+
+		template<typename T>
+		struct JVectorDetermine<T, std::void_t<typename T::ValueType>> : std::true_type
+		{
+		public:
+			using ValueType = typename T::ValueType;
+		};
+
+		template<typename T, typename = void>
+		struct JTypeInfoDetermine : std::false_type {};
+
+		template<typename T>
+		struct JTypeInfoDetermine<T, std::void_t<typename T::ThisType>> : std::true_type {};
 
 		template<typename T>
 		static constexpr size_t ArrayLastDimensionCount_V = ArrayLastDimensionCount<std::remove_reference_t<T>>::value;

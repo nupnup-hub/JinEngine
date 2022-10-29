@@ -98,6 +98,9 @@ namespace JinEngine
 		if (index == -1)
 			return false;
 
+		bool res00 = rVec.Remove(index);
+		bool res01 = rMap.Remove(resource.GetGuid());
+
 		if (rTypeHint.isFrameResource)
 		{
 			auto setFrameDirtyCallable = JRI::GetSetFrameDirtyCallable(resource.GetResourceType());
@@ -106,9 +109,7 @@ namespace JinEngine
 			auto setFrameBuffIndexCallable = JRI::GetSetFrameBuffIndexCallable(resource.GetResourceType());
 			rVec.ApplyFuncByIndex(index, setFrameBuffIndexCallable);
 		}
-
-		bool res00 = rVec.Remove(index);
-		bool res01 = rMap.Remove(resource.GetGuid());
+		 
 		return res00 && res01;
 	}
 	void JResourceManagerImpl::ResourceStorage::Clear()
@@ -133,7 +134,7 @@ namespace JinEngine
 	{
 		const uint count = dVec.Count();
 		for (uint i = 0; i < count; ++i)
-		{ 
+		{
 			if (dVec[i]->GetPath() == path)
 				return dVec[i];
 		}
@@ -284,11 +285,11 @@ namespace JinEngine
 		engineRootDir = JDFI::CreateRoot(JApplicationVariable::GetEnginePath(), Core::MakeGuid(), rootFlag);
 		resourceIO->LoadEngineDirectory(engineRootDir);
 		resourceIO->LoadEngineResource(engineRootDir);
-		 
+
 		rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
 		projectRootDir = resourceIO->LoadRootDirectory(JApplicationVariable::GetProjectPath(), rootFlag);
 		resourceIO->LoadProjectDirectory(projectRootDir);
-		resourceIO->LoadProjectResource(projectRootDir); 
+		resourceIO->LoadProjectResource(projectRootDir);
 
 		CreateDefaultTexture(resourceData.projectTexInfo);
 		CreateDefaultShader();
@@ -300,9 +301,10 @@ namespace JinEngine
 			JDirectory* projectContentsDir = GetDirectory(JApplicationVariable::GetProjectContentPath());
 			JDirectory* defaultSceneDir = projectContentsDir->GetChildDirctory(JApplicationVariable::GetProjectContentScenePath());
 			JScene* newScene = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(defaultSceneDir));
-			JSceneManager::Instance().TryOpenScene(newScene, true);
+			JSceneManager::Instance().TryOpenScene(newScene, false);
 			JSceneManager::Instance().SetMainScene(newScene);
-			newScene->SpaceSpatialInterface()->OnSceneSpatialStructure();
+			newScene->SpaceSpatialInterface()->SetSceneSpatialStructure(true);
+			((JResourceObjectInterface*)newScene)->CallStoreResource();
 		}
 		DestroyUnusedResource(J_RESOURCE_TYPE::SHADER, false);
 	}
@@ -327,7 +329,7 @@ namespace JinEngine
 		}
 
 		if (engineRootDir != nullptr)
-		{ 
+		{
 			engineRootDir->BegineForcedDestroy();
 			engineRootDir = nullptr;
 		}
@@ -336,6 +338,7 @@ namespace JinEngine
 			projectRootDir->BegineForcedDestroy();
 			projectRootDir = nullptr;
 		}
+		//JReflectionInfo::Instance().SearchIntance();
 		dCash.Clear();
 		for (auto& data : rCash)
 			data.second.Clear();
@@ -373,7 +376,7 @@ namespace JinEngine
 		std::vector<JResourceObject*> copied = rvec;
 		for (uint i = 0; i < copied.size(); ++i)
 		{
-			bool canDestroy = (!copied[i]->HasFlag(OBJECT_FLAG_UNDESTROYABLE)) || isIgnreUndestroyableFlag; 
+			bool canDestroy = (!copied[i]->HasFlag(OBJECT_FLAG_UNDESTROYABLE)) || isIgnreUndestroyableFlag;
 			//ref count == 0 is deactivated state
 			if (!copied[i]->IsActivated() && canDestroy)
 			{
@@ -390,7 +393,7 @@ namespace JinEngine
 		uint handleIncrement = JGraphic::Instance().DeviceInterface()->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		uint textureCount = (uint)textureInfo.size();
 		JDirectory* textureDir = GetDirectory(JApplicationVariable::GetEngineDefaultResourcePath());
- 
+
 		//1 is imgui preserved 
 		for (uint i = 1; i < textureCount; ++i)
 		{
@@ -402,8 +405,8 @@ namespace JinEngine
 			std::wstring name;
 			std::wstring format;
 			JCUtil::DecomposeFileName(textureInfo[i].name, name, format);
-			JFile* file = textureDir->GetFile(name); 
-			 
+			JFile* file = textureDir->GetFile(name);
+
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::TEXTURE && file->GetFormat() == format)
 				resourceData.defaultTextureMap.emplace(textureInfo[i].type, file->GetResource()->GetGuid());
 			else
@@ -412,13 +415,18 @@ namespace JinEngine
 				JTexture* newTexture = JRFI<JTexture>::Create(Core::JPtrUtil::MakeOwnerPtr<JTexture::InitData>(name, Core::MakeGuid(), objFlag, textureDir, oriPath));
 				if (textureInfo[i].type == J_EDITOR_TEXTURE::DEFAULT_SKY)
 					newTexture->SetTextureType(Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE);
-				ThrowIfFailedN(newTexture != nullptr); 
+				ThrowIfFailedN(newTexture != nullptr);
 				resourceData.defaultTextureMap.emplace(textureInfo[i].type, newTexture->GetGuid());
 			}
 			if (textureInfo[i].type == J_EDITOR_TEXTURE::MISSING)
 			{
 				JTexture* missingT = GetResource<JTexture>(resourceData.defaultTextureMap.find(textureInfo[i].type)->second);
-				resourceData.SetMissing(missingT); 
+				resourceData.SetMissing(missingT);
+			}
+			else if (textureInfo[i].type == J_EDITOR_TEXTURE::NONE)
+			{
+				JTexture* noneT = GetResource<JTexture>(resourceData.defaultTextureMap.find(textureInfo[i].type)->second);
+				resourceData.SetNone(noneT);
 			}
 		}
 	}
@@ -431,7 +439,7 @@ namespace JinEngine
 			J_OBJECT_FLAG objF = DefaultShader::GetObjectFlag((J_DEFAULT_SHADER)i);
 
 			std::wstring shaderName = ConvertShaderFuncFlagToName(shaderF);
-			JFile* file = shaderDir->GetFile(shaderName );
+			JFile* file = shaderDir->GetFile(shaderName);
 
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::SHADER)
 				resourceData.defaultShaderGuidMap.emplace((J_DEFAULT_SHADER)i, file->GetResource()->GetGuid());
@@ -469,7 +477,7 @@ namespace JinEngine
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, flag, matDir));
 					newMaterial->SetShadow(true);
-					newMaterial->SetLight(true); 
+					newMaterial->SetLight(true);
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
 				}
@@ -538,13 +546,13 @@ namespace JinEngine
 	}
 	void JResourceManagerImpl::CreateDefaultMesh()
 	{
-		auto createCubeLam = [](JDefaultGeometryGenerator& geoGen){return geoGen.CreateCube(1, 1, 1, 3);};
+		auto createCubeLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCube(1, 1, 1, 3); };
 		auto createGridLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateGrid(40.0f, 60.0f, 60, 40); };
 		auto createSphereLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateSphere(0.5f, 20, 20); };
 		auto createCylinderLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20); };
 		auto createQuadLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f); };
 		auto createBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingBox(); };
-		auto createBFrustumLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingFrustum();};
+		auto createBFrustumLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingFrustum(); };
 
 		using CreateStaticMesh = Core::JStaticCallableType<JStaticMeshData, JDefaultGeometryGenerator&>;
 		std::vector<CreateStaticMesh::Callable> callableVec
