@@ -8,6 +8,12 @@
 using namespace DirectX;
 namespace JinEngine
 {
+	int JMathHelper::Log2Int(uint v)noexcept
+	{
+		unsigned long lz = 0;
+		_BitScanReverse64(&lz, v);
+		return lz;
+	}
 	// Returns random float in [0, 1).
 	float JMathHelper::RandF()noexcept
 	{
@@ -144,17 +150,6 @@ namespace JinEngine
 
 		return I;
 	}
-	DirectX::XMMATRIX JMathHelper::ApplyQuaternion(DirectX::FXMMATRIX m, const DirectX::XMFLOAT4& q)noexcept
-	{
-		XMVECTOR tV;
-		XMVECTOR qV;
-		XMVECTOR sV;
-		XMVECTOR zero = XMVectorSet(0, 0, 0, 1);
-
-		XMMatrixDecompose(&sV, &qV, &tV, m);
-		XMVECTOR modQV = XMQuaternionNormalize(XMQuaternionMultiply(XMLoadFloat4(&q), qV));
-		return XMMatrixAffineTransformation(sV, zero, modQV, tV);
-	}
 	DirectX::XMFLOAT3  JMathHelper::Vector3Multiply(const DirectX::XMFLOAT3& src, float s)noexcept
 	{
 		return DirectX::XMFLOAT3(src.x * s, src.y * s, src.z * s);
@@ -216,6 +211,10 @@ namespace JinEngine
 	{
 		return abs(sqrt(src.x * src.x + src.y * src.y + src.z * src.z));
 	}
+	float JMathHelper::Vector3Length(const JVector3<float>& src)noexcept
+	{
+		return abs(sqrt(src.x * src.x + src.y * src.y + src.z * src.z));
+	}
 	float JMathHelper::Vector4Length(const DirectX::XMFLOAT4& src)noexcept
 	{
 		return abs(sqrt(src.x * src.x + src.y * src.y + src.z * src.z + src.w * src.w));
@@ -227,6 +226,52 @@ namespace JinEngine
 	DirectX::XMFLOAT4  JMathHelper::Vector4Minus(const DirectX::XMFLOAT4& a, const DirectX::XMFLOAT4& b)noexcept
 	{
 		return DirectX::XMFLOAT4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
+	}
+	XMVECTOR JMathHelper::RandUnitVec3()noexcept
+	{
+		XMVECTOR One = XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
+		XMVECTOR Zero = XMVectorZero();
+
+		// Keep trying until we get a point on/in the hemisphere.
+		while (true)
+		{
+			// Generate random point in the cube [-1,1]^3.
+			XMVECTOR v = XMVectorSet(JMathHelper::RandF(-1.0f, 1.0f), JMathHelper::RandF(-1.0f, 1.0f), JMathHelper::RandF(-1.0f, 1.0f), 0.0f);
+
+			// Ignore points outside the unit sphere in order to get an even distribution 
+			// over the unit sphere.  Otherwise points will clump more on the sphere near 
+			// the corners of the cube.
+
+			if (XMVector3Greater(XMVector3LengthSq(v), One))
+				continue;
+
+			return XMVector3Normalize(v);
+		}
+	}
+	XMVECTOR JMathHelper::RandHemisphereUnitVec3(XMVECTOR n)noexcept
+	{
+		XMVECTOR One = XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
+		XMVECTOR Zero = XMVectorZero();
+
+		// Keep trying until we get a point on/in the hemisphere.
+		while (true)
+		{
+			// Generate random point in the cube [-1,1]^3.
+			XMVECTOR v = XMVectorSet(JMathHelper::RandF(-1.0f, 1.0f), JMathHelper::RandF(-1.0f, 1.0f), JMathHelper::RandF(-1.0f, 1.0f), 0.0f);
+
+			// Ignore points outside the unit sphere in order to get an even distribution 
+			// over the unit sphere.  Otherwise points will clump more on the sphere near 
+			// the corners of the cube.
+
+			if (XMVector3Greater(XMVector3LengthSq(v), One))
+				continue;
+
+			// Ignore points in the bottom hemisphere.
+			if (XMVector3Less(XMVector3Dot(n, v), Zero))
+				continue;
+
+			return XMVector3Normalize(v);
+		}
 	}
 	DirectX::XMFLOAT4 JMathHelper::QuaternionPlus(const DirectX::XMFLOAT4& a, const DirectX::XMFLOAT4& b)noexcept
 	{
@@ -290,52 +335,16 @@ namespace JinEngine
 	{
 		return a.x == 0 && a.y == 0 && a.z == 0;
 	}
-	XMVECTOR JMathHelper::RandUnitVec3()noexcept
+	DirectX::XMMATRIX JMathHelper::ApplyQuaternion(DirectX::FXMMATRIX m, const DirectX::XMFLOAT4& q)noexcept
 	{
-		XMVECTOR One = XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
-		XMVECTOR Zero = XMVectorZero();
+		XMVECTOR tV;
+		XMVECTOR qV;
+		XMVECTOR sV;
+		XMVECTOR zero = XMVectorSet(0, 0, 0, 1);
 
-		// Keep trying until we get a point on/in the hemisphere.
-		while (true)
-		{
-			// Generate random point in the cube [-1,1]^3.
-			XMVECTOR v = XMVectorSet(JMathHelper::RandF(-1.0f, 1.0f), JMathHelper::RandF(-1.0f, 1.0f), JMathHelper::RandF(-1.0f, 1.0f), 0.0f);
-
-			// Ignore points outside the unit sphere in order to get an even distribution 
-			// over the unit sphere.  Otherwise points will clump more on the sphere near 
-			// the corners of the cube.
-
-			if (XMVector3Greater(XMVector3LengthSq(v), One))
-				continue;
-
-			return XMVector3Normalize(v);
-		}
-	}
-
-	XMVECTOR JMathHelper::RandHemisphereUnitVec3(XMVECTOR n)noexcept
-	{
-		XMVECTOR One = XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
-		XMVECTOR Zero = XMVectorZero();
-
-		// Keep trying until we get a point on/in the hemisphere.
-		while (true)
-		{
-			// Generate random point in the cube [-1,1]^3.
-			XMVECTOR v = XMVectorSet(JMathHelper::RandF(-1.0f, 1.0f), JMathHelper::RandF(-1.0f, 1.0f), JMathHelper::RandF(-1.0f, 1.0f), 0.0f);
-
-			// Ignore points outside the unit sphere in order to get an even distribution 
-			// over the unit sphere.  Otherwise points will clump more on the sphere near 
-			// the corners of the cube.
-
-			if (XMVector3Greater(XMVector3LengthSq(v), One))
-				continue;
-
-			// Ignore points in the bottom hemisphere.
-			if (XMVector3Less(XMVector3Dot(n, v), Zero))
-				continue;
-
-			return XMVector3Normalize(v);
-		}
+		XMMatrixDecompose(&sV, &qV, &tV, m);
+		XMVECTOR modQV = XMQuaternionNormalize(XMQuaternionMultiply(XMLoadFloat4(&q), qV));
+		return XMMatrixAffineTransformation(sV, zero, modQV, tV);
 	}
 	//Directx yaw = y, pitch = x, roll = z
 	//Opengl  yaw = z, pitch = y, roll = x

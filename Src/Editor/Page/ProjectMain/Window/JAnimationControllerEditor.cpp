@@ -561,7 +561,7 @@ namespace JinEngine
 					ImVec2 framePMin = pMin - ImVec2(frameThickness, frameThickness);
 					ImVec2 framePMax = pMax + ImVec2(frameThickness, frameThickness);
 					drawList->AddRect(framePMin, framePMax, ImGui::GetColorU32(ImVec4(0.2f, 0.2f, 0.75f, 0.7f)), 0.5f, 0, frameThickness + 0.5f);
-				}
+				} 
 				drawList->AddRectFilledMultiColor(pMin, pMax,
 					ImGui::GetColorU32(ImVec4(0.25f, 0.25f, 0.75f, 0.7f)),
 					ImGui::GetColorU32(ImVec4(0.25f, 0.75f, 0.75f, 0.7f)),

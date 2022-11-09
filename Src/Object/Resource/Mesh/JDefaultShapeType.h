@@ -19,7 +19,7 @@ namespace JinEngine
 	struct JDefaultShape
 	{ 
 		static constexpr int debugTypeSt = (int)J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX;
-		static std::wstring ConvertDefaultShapeName(const J_DEFAULT_SHAPE type)
+		static std::wstring ConvertToName(const J_DEFAULT_SHAPE type)
 		{
 			switch (type)
 			{

@@ -14,6 +14,8 @@ namespace JinEngine
 	class JCommonUtility
 	{
 	public:
+		static constexpr int searchFail = -1;
+	public:
 		static int GetPathLastBackSlash(const std::wstring& path)noexcept;
 		static int GetPathLastBackSlash(const std::string& path)noexcept;
 
@@ -199,7 +201,7 @@ namespace JinEngine
 			out << std::fixed << value;
 			return out.str();
 		}
-
+		 
 		template<typename Type>
 		static int GetJIdenIndex(std::vector<Type*>& vec, const size_t guid, size_t(Type::*ptr)()const)
 		{
@@ -209,8 +211,9 @@ namespace JinEngine
 				if ((vec[i]->*ptr)() == guid)
 					return i;
 			}
-			return -1;
+			return searchFail;
 		}
+	 
 		template<typename Type>
 		static int GetJIdenIndex(std::vector<std::unique_ptr<Type>>& vec, const size_t guid, size_t(Type::* ptr)()const)
 		{
@@ -220,9 +223,9 @@ namespace JinEngine
 				if (((*vec[i]).*ptr)() == guid)
 					return i;
 			}
-			return -1;
+			return searchFail;
 		}
-		
+		 
 		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Type>, int> = 0>
 		static int GetJIdenIndex(const std::vector<Type*>& vec, const size_t guid)
 		{
@@ -232,8 +235,9 @@ namespace JinEngine
 				if(vec[i]->GetGuid() == guid)
 					return i;
 			}
-			return -1;
-		}
+			return searchFail;
+		} 
+
 		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Type>, int> = 0>
 		static int GetJIdenIndex(const std::vector<std::unique_ptr<Type>>& vec, const size_t guid)
 		{
@@ -243,10 +247,9 @@ namespace JinEngine
 				if (vec[i]->GetGuid() == guid)
 					return i;
 			}
-			return -1;
+			return searchFail;
 		}
-
-
+		 
 		template<typename Type, typename ...Param>
 		static int GetJIndex(const std::vector<Type*>& vec, bool(*ptr)(Type*, Param...), Param... var)
 		{
@@ -256,7 +259,7 @@ namespace JinEngine
 				if (ptr(vec[i], std::forward<Param>(var)...))
 					return i;
 			}
-			return -1;
+			return searchFail;
 		}
 
 	};

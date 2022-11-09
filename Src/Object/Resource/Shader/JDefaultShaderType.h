@@ -17,7 +17,7 @@ namespace JinEngine
 	namespace DefaultShader
 	{
 		static J_SHADER_FUNCTION GetShaderFunction(const J_DEFAULT_SHADER sType)
-		{
+		{ 
 			switch (sType)
 			{
 			case JinEngine::J_DEFAULT_SHADER::DEFAULT_SHADER:

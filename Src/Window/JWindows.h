@@ -81,8 +81,7 @@ namespace JinEngine
 			void Resize(WPARAM wParam);
 			void Move();
 		private:
-			void RegisterWindowClass();
-			void RegistEvCallable() final;
+			void RegisterWindowClass(); 
 		private:
 			JWindowImpl();
 			~JWindowImpl();

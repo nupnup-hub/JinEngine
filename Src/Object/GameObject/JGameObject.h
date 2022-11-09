@@ -38,13 +38,14 @@ namespace JinEngine
 		uint GetChildrenCount()const noexcept;  
 		uint GetComponentCount()const noexcept;
 		uint GetComponentCount(const J_COMPONENT_TYPE type)const noexcept;
-		JGameObject* GetParent()noexcept;
-		JGameObject* GetChild(const uint index)noexcept;
+		JGameObject* GetParent()const noexcept;
+		JGameObject* GetChild(const uint index)const noexcept;
+		std::vector<JGameObject*> GetChildren()const noexcept;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
-
 		void SetName(const std::wstring& newName)noexcept final;
-
+	public:
 		bool IsRoot()const noexcept;
+		bool IsParentLine(JGameObject* child)const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE type)const noexcept;
 		bool HasRenderItem()const noexcept;
 		bool HasAnimator()const noexcept; 
@@ -64,7 +65,7 @@ namespace JinEngine
 		bool AddComponent(JComponent& component)noexcept final;
 		bool RemoveComponent(JComponent& component)noexcept final;
 	private:
-		bool Destroy() final; 
+		bool Destroy(const bool isForced) final;
 		void Clear();
 	private:
 		bool RegisterCashData()noexcept final;

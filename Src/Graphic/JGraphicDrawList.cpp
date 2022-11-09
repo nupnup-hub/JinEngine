@@ -159,6 +159,7 @@ namespace JinEngine
 					if (drawList[index]->shadowRequestor[i]->jLight->GetGuid() == jComp->GetGuid())
 					{
 						drawList[index]->shadowRequestor.erase(drawList[index]->shadowRequestor.begin() + i);
+						drawList[index]->hasSceneUpdate = true;
 						drawList[index]->hasShadowUpdate = true;
 						break;
 					}

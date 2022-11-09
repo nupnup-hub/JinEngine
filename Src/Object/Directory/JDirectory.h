@@ -44,7 +44,7 @@ namespace JinEngine
 		bool CreateJFile(JResourceObject& resource)noexcept;
 		bool DestroyJFile(JResourceObject& resource)noexcept;
 	private:
-		bool Destroy()final;
+		bool Destroy(const bool isForced) final;
 		void Clear(); 
 	private:
 		void OpenDirectory()noexcept final;

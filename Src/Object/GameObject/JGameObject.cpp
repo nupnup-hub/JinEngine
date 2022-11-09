@@ -55,16 +55,20 @@ namespace JinEngine
 		}
 		return res;
 	}
-	JGameObject* JGameObject::GetParent()noexcept
+	JGameObject* JGameObject::GetParent()const noexcept
 	{
 		return parent;
 	}
-	JGameObject* JGameObject::GetChild(const uint index)noexcept
+	JGameObject* JGameObject::GetChild(const uint index)const noexcept
 	{
 		if (index < children.size())
 			return children[index];
 		else
 			return nullptr;
+	}
+	std::vector<JGameObject*> JGameObject::GetChildren()const noexcept
+	{
+		return children;
 	}
 	J_OBJECT_TYPE JGameObject::GetObjectType()const noexcept
 	{
@@ -78,6 +82,21 @@ namespace JinEngine
 	bool JGameObject::IsRoot()const noexcept
 	{
 		return parent == nullptr;
+	}
+	bool JGameObject::IsParentLine(JGameObject* child)const noexcept
+	{
+		bool isParent = false;
+		JGameObject* childParent = child->parent;
+		while (childParent != nullptr)
+		{
+			if (childParent->GetGuid() == GetGuid())
+			{
+				isParent = true;
+				break;
+			}
+			childParent = childParent->parent;
+		}
+		return isParent;
 	}
 	bool JGameObject::HasComponent(const J_COMPONENT_TYPE type)const noexcept
 	{
@@ -266,9 +285,9 @@ namespace JinEngine
 		JGameObject::component.erase(JGameObject::component.begin() + index);
 		return true;
 	}
-	bool JGameObject::Destroy()
+	bool JGameObject::Destroy(const bool isForced)
 	{
-		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !IsIgnoreUndestroyableFlag())
+		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !isForced)
 			return false;
 		 
 		Clear();	 
@@ -281,12 +300,12 @@ namespace JinEngine
 		std::vector<JGameObject*> gCopy = children;
 		const uint childrenCount = (uint)gCopy.size();
 		for (uint i = 0; i < childrenCount; ++i)
-			gCopy[i]->BegineForcedDestroy();
+			JObject::BegineForcedDestroy(gCopy[i]);
 
 		std::vector<JComponent*> cCopy = component;
 		const uint componentCount = (uint)cCopy.size();
 		for (uint i = 0; i < componentCount; ++i)
-			cCopy[i]->BegineForcedDestroy();
+			JObject::BegineForcedDestroy(cCopy[i]);
 
 		component.clear();
 		children.clear();

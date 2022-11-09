@@ -44,14 +44,14 @@ namespace JinEngine
 
 		if (textureMaterial != nullptr)
 		{
-			textureMaterial->BeginDestroy();
+			JObject::BeginDestroy(textureMaterial);
 			textureMaterial = nullptr;
 		}
 
 		if (scene != nullptr)
 		{
 			JSceneManager::Instance().TryCloseScene(scene);
-			scene->BeginDestroy();
+			JObject::BeginDestroy(scene); 
 			scene = nullptr;
 		}
 	}

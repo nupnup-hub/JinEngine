@@ -256,6 +256,18 @@ namespace JinEngine
 		else
 			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
 	}
+	void JMaterial::SetAlphaClip(bool value)noexcept
+	{
+		if (alphaClip == value)
+			return;
+
+		alphaClip = value;
+		SetFrameDirty();
+		if (alphaClip)
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALPHA_CLIP));
+		else
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALPHA_CLIP));
+	}
 	bool JMaterial::OnShadow()const noexcept
 	{
 		return shadow;
@@ -335,7 +347,7 @@ namespace JinEngine
 	{
 		CallOffResourceReference(shader);
 		if (shader != nullptr && CallGetResourceReferenceCount(*shader) == 0)
-			shader->BeginDestroy();
+			BeginDestroy(shader);
 		shader = newShader;
 		CallOnResourceReference(shader);
 	}
@@ -405,6 +417,7 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"ShadowMap", shadowMap);
 			JFileIOHelper::StoreAtomicData(stream, L"SkyMaterial", isSkyMateral);
 			JFileIOHelper::StoreAtomicData(stream, L"DebugMaterial", isDebugMaterial);
+			JFileIOHelper::StoreAtomicData(stream, L"AlphaClip", alphaClip);
 			JFileIOHelper::StoreAtomicData(stream, L"Metallic", metallic);
 			JFileIOHelper::StoreAtomicData(stream, L"Roughness", roughness);
 
@@ -437,6 +450,7 @@ namespace JinEngine
 			bool sShadowMap = false;
 			bool sIsSkyMateral = false;
 			bool sIsDebugMaterial = false;
+			bool sAlphaclip = false;
 			float sMetallic;
 			float sRoughness;
 			DirectX::XMFLOAT4 sAlbedoColor;
@@ -449,6 +463,7 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, sShadowMap);
 			JFileIOHelper::LoadAtomicData(stream, sIsSkyMateral);
 			JFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial);
+			JFileIOHelper::LoadAtomicData(stream, sAlphaclip);
 			JFileIOHelper::LoadAtomicData(stream, sMetallic);
 			JFileIOHelper::LoadAtomicData(stream, sRoughness);
 
@@ -469,6 +484,7 @@ namespace JinEngine
 			SetShadowMap(sShadowMap);
 			SetSkyMaterial(sIsSkyMateral);
 			SetDebugMaterial(sIsDebugMaterial);
+			SetAlphaClip(sAlphaclip);
 
 			SetMetallic(sMetallic);
 			SetRoughness(sRoughness);
@@ -577,7 +593,7 @@ namespace JinEngine
 		}
 		else
 		{
-			newMaterial->BegineForcedDestroy();
+			JObject::BegineForcedDestroy(newMaterial);
 			return nullptr;
 		}
 	}

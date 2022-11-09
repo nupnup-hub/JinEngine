@@ -86,6 +86,7 @@ namespace JinEngine
 		public:
 			bool IsMemberWidget()const noexcept;
 			JGuiGroupKey GetGroupKey()const noexcept;
+			JGuiGroupMemberInfo* GetGroupMemberInfo()const noexcept;
 		};
 
 		class JGuiInputInfo : public JGuiWidgetInfo

@@ -15,126 +15,140 @@ namespace JinEngine
 	using namespace DirectX;
 	namespace Core
 	{
-		JOctree::JOctree(std::vector<JGameObject*>& gameObject, const uint minSize, const uint octreeSizeSquare, const float looseFactor, const bool isLooseOctree)
-			:octreeSize((uint)pow(2, octreeSizeSquare)), minSize(minSize), looseFactor(looseFactor), isLooseOctree(isLooseOctree)
-		{
-			if (JOctree::looseFactor > looseFactorMax)
-				JOctree::looseFactor = looseFactorMax;
-			BuildOctree(gameObject);
+		JOctree::JOctree(){}
+		JOctree::~JOctree(){}
+		void JOctree::Build()noexcept
+		{ 
+			BuildOctree();
 		}
-		JOctree::~JOctree() {}
-		void JOctree::Clear()noexcept
+		void JOctree::UnBuild()noexcept
 		{
 			if (rootNodeCash != nullptr)
 				rootNodeCash->Clear();
 			containNodeMap.clear();
 			allNode.clear();
 			rootNodeCash = nullptr;
-			isDebugActivated = false;
 		}
-		void JOctree::OnDebugGameObject(JGameObject* newDebugRoot)noexcept
+		void JOctree::Clear()noexcept
 		{
-			if (debugRoot != nullptr && debugRoot->GetGuid() != newDebugRoot->GetGuid())
-				OffDebugGameObject();
-
-			if (!isDebugActivated)
+			UnBuild();
+			JSpaceSpatial::Clear();
+		}
+		void JOctree::OnDebugGameObject()noexcept
+		{
+			const uint allNodeCount = (uint)allNode.size();
+			if (allNodeCount > 0)
 			{
-				isDebugActivated = true;
-				debugRoot = newDebugRoot;
-				const uint allNodeCount = (uint)allNode.size();
-				if (allNodeCount > 0)
-				{
-					for (uint i = 0; i < allNodeCount; ++i)
-						allNode[i]->CreateDebugGameObject(debugRoot, isDebugLeafOnly);
-				}
+				for (uint i = 0; i < allNodeCount; ++i)
+					allNode[i]->CreateDebugGameObject(GetDebugRoot(), IsDebugLeafOnly());
 			}
 		}
 		void JOctree::OffDebugGameObject()noexcept
 		{
-			if (isDebugActivated)
+			const uint allNodeCount = (uint)allNode.size();
+			if (allNodeCount > 0)
 			{
-				isDebugActivated = false;
-				const uint allNodeCount = (uint)allNode.size();
-				if (allNodeCount > 0)
-				{
-					for (uint i = 0; i < allNodeCount; ++i)
-						allNode[i]->DestroyDebugGameObject();
-				}
+				for (uint i = 0; i < allNodeCount; ++i)
+					allNode[i]->DestroyDebugGameObject();
 			}
+		}
+		void JOctree::OffCulling()noexcept
+		{
+			if (rootNodeCash != nullptr)
+				rootNodeCash->OffCulling();
 		}
 		void JOctree::Culling(const JCullingFrustum& camFrustum)noexcept
 		{
-			rootNodeCash->Culling(camFrustum, J_CULLING_FLAG::NONE);
+			if(rootNodeCash != nullptr)
+				rootNodeCash->Culling(camFrustum, J_CULLING_FLAG::NONE);
 		}
 		void JOctree::Culling(const BoundingFrustum& camFrustum)noexcept
 		{
-			rootNodeCash->Culling(camFrustum);
+			if (rootNodeCash != nullptr)
+				rootNodeCash->Culling(camFrustum);
 		}
 		void JOctree::UpdateGameObject(JGameObject* gameObject)noexcept
 		{
-			if (RemoveGameObject(gameObject))
+			auto octNode = containNodeMap.find(gameObject->GetGuid());
+			if (octNode != containNodeMap.end())
+			{
+				RemoveGameObject(gameObject);
 				AddGameObject(gameObject);
+			}
 		}
-		bool JOctree::AddGameObject(JGameObject* newGameObject)noexcept
+		void JOctree::AddGameObject(JGameObject* newGameObject)noexcept
 		{
-			if (newGameObject == nullptr)
-				return false;
+			if (!GetInnerRoot()->IsParentLine(newGameObject))
+				return;
+
 			JRenderItem* rItem = newGameObject->GetRenderItem();
-			if (rItem == nullptr)
-				return false;
-
-			JOctreeNode* octNode = FindOptimalNode(rootNodeCash, rItem->GetBoundingBox(), ContainmentType::CONTAINS);
+			JOctreeNode* octNode = FindOptimalNode(rootNodeCash, rItem->GetBoundingBox());
 			if (octNode == nullptr)
-				octNode = FindOptimalNode(rootNodeCash, rItem->GetBoundingBox(), ContainmentType::INTERSECTS);
-			if (octNode == nullptr)
-				return false;
+				return;
 
-			octNode->AddGameObject(newGameObject, isLooseOctree);
-			containNodeMap.emplace(newGameObject->GetGuid(), octNode);
-			if (IsDebugActivated())
-				octNode->CreateDebugGameObject(debugRoot, isDebugLeafOnly);
-			return true;
+			if (octNode->AddGameObject(newGameObject, isLooseOctree))
+			{
+				containNodeMap.emplace(newGameObject->GetGuid(), octNode);
+				if (IsDebugActivated())
+					octNode->CreateDebugGameObject(GetDebugRoot(), IsDebugLeafOnly());
+			}
 		}
-		bool JOctree::RemoveGameObject(JGameObject* gameObj)noexcept
+		void JOctree::RemoveGameObject(JGameObject* gameObj)noexcept
 		{
-			if (gameObj == nullptr)
-				return false;
-			JRenderItem* rItem = gameObj->GetRenderItem();
-			if (rItem == nullptr)
-				return false;
-
 			auto octNode = containNodeMap.find(gameObj->GetGuid());
 			if (octNode != containNodeMap.end())
 			{
 				octNode->second->RemoveGameObject(gameObj); 
 				containNodeMap.erase(gameObj->GetGuid());
-				return true;
 			}
-			else
-				return false;
-		}
-		void JOctree::SetDebugOnlyLeaf(bool value)noexcept
-		{
-			if (isDebugLeafOnly != value)
+			if (IsDebugRoot(gameObj))
 			{
-				isDebugLeafOnly = value;
-				if (isDebugActivated)
-				{
-					OffDebugGameObject();
-					OnDebugGameObject(debugRoot);
+				JSpaceSpatialOption option = GetCommonOption();
+				option.debugRoot = nullptr;
+				SetCommonOption(option);
+			}
+			if (IsInnerRoot(gameObj))
+			{
+				JSpaceSpatialOption option = GetCommonOption();
+				option.innerRoot = nullptr;
+				SetCommonOption(option);
+			}
+		}
+		J_SPACE_SPATIAL_TYPE JOctree::GetType()const noexcept
+		{
+			return J_SPACE_SPATIAL_TYPE::OCTREE;
+		}
+		JOctreeOption JOctree::GetOctreeOption()const noexcept
+		{
+			return JOctreeOption(minSize, octreeSizeSquare, looseFactor, GetCommonOption());
+		}
+		void JOctree::SetOctreeOption(const JOctreeOption& newOption)noexcept
+		{
+			JOctreeOption preOption = GetOctreeOption();
+			minSize = newOption.minSize;
+			octreeSizeSquare = newOption.octreeSizeSquare;
+			octreeSize = ((uint)pow(2, octreeSizeSquare));
+			looseFactor = std::clamp(newOption.looseFactor, looseFactorMin, looseFactorMax);
+			 
+			if (!preOption.EqualCommonOption(newOption))
+				SetCommonOption(newOption.commonOption);
+			else
+			{
+				if (!preOption.EqualOctreeOption(newOption))
+				{ 
+					if (IsSpaceSpatialActivated())
+					{
+						UnBuild();
+						Build(); 
+						if (IsDebugActivated())
+							OnDebugGameObject();
+					}
 				}
 			}
 		}
-		bool JOctree::IsDebugActivated()const noexcept
+		void JOctree::BuildOctree()noexcept
 		{
-			return isDebugActivated;
-		}
-		bool JOctree::IsDebugLeafOnly()const noexcept
-		{
-			return isDebugLeafOnly;
-		}
-		void JOctree::BuildOctree(std::vector<JGameObject*>& gameObject)noexcept
-		{
+			std::vector<JGameObject*> gameObject = GetInnerObject();
 			if (rootNodeCash != nullptr)
 			{
 				rootNodeCash->Clear();
@@ -160,6 +174,9 @@ namespace JinEngine
 			const uint gameObjCount = (uint)gameObject.size();
 			for (uint i = 0; i < gameObjCount; ++i)
 				AddGameObject(gameObject[i]);
+
+			if (IsDebugActivated())
+				OnDebugGameObject();
 		}
 		void JOctree::BuildOctreeNode(JOctreeNode* parent, const uint depth)noexcept
 		{
@@ -274,18 +291,18 @@ namespace JinEngine
 			}
 			return nearestNode;
 		}
-		JOctreeNode* JOctree::FindOptimalNode(JOctreeNode* node, const DirectX::BoundingBox& tarBBox, const DirectX::ContainmentType condition)noexcept
+		JOctreeNode* JOctree::FindOptimalNode(JOctreeNode* node, const DirectX::BoundingBox& tarBBox)noexcept
 		{
 			JOctreeNode* nearestNode = nullptr;
 			ContainmentType containType = node->GetBoundingBox().Contains(tarBBox);
 			if (containType == ContainmentType::CONTAINS)
 				nearestNode = node;
 
-			if (!node->IsLeafNode() && containType == condition)
+			if (!node->IsLeafNode())
 			{
 				for (uint i = 0; i < 8; ++i)
 				{
-					JOctreeNode* loopRes = FindOptimalNode(node->GetChildNode(i), tarBBox, condition);
+					JOctreeNode* loopRes = FindOptimalNode(node->GetChildNode(i), tarBBox);
 					if (loopRes != nullptr)
 					{
 						if (nearestNode == nullptr)

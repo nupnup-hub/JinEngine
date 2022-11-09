@@ -106,7 +106,7 @@ namespace JinEngine
 				arrState[handle.index] = Handle::empty;
 				arrNumber[handle.index] = 0;
 				if constexpr (std::is_base_of_v<JObject, Type>)
-					data[handle.index]->BeginDestroy();
+					JObject::BeginDestroy(data[handle.index].Get());
 				data[handle.index].Clear();
 				return true;
 			}
@@ -128,7 +128,7 @@ namespace JinEngine
 					if constexpr (std::is_base_of_v<JObject, Type>)
 					{
 						if(data[i].IsValid())
-							data[i]->BeginDestroy();
+							JObject::BeginDestroy(data[i].Get());
 					}
 					data[i].Clear();
 					arrState[i] = 0;

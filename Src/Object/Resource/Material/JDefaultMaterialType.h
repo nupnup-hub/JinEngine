@@ -16,11 +16,11 @@ namespace JinEngine
 		COUNTER
 	};
 
-	struct JDefaultMateiralType
+	struct JDefaultMateiral
 	{
 	public: 
 		static constexpr int debugTypeSt = (int)J_DEFAULT_MATERIAL::DEBUG_LINE_RED;
-		static J_DEFAULT_SHADER FindMatchBasicShaderType(const J_DEFAULT_MATERIAL materialType)
+		static J_DEFAULT_SHADER FindMatchDefaultShaderType(const J_DEFAULT_MATERIAL materialType)
 		{
 			switch (materialType)
 			{
@@ -41,7 +41,7 @@ namespace JinEngine
 			}
 			return J_DEFAULT_SHADER::DEFAULT_STANDARD_SHADER;
 		}
-		static std::wstring ConvertBasicMateiralName(const J_DEFAULT_MATERIAL type)
+		static std::wstring ConvertToName(const J_DEFAULT_MATERIAL type)
 		{
 			switch (type)
 			{

@@ -20,7 +20,7 @@ namespace JinEngine
 	}
 	JGameObject* JGameObjectFactoryUtility::CreateShape(JGameObject& parent, const size_t guid, const J_OBJECT_FLAG flag, const J_DEFAULT_SHAPE shape)
 	{
-		JGameObject* newGameObj = JGFI::Create(JDefaultShape::ConvertDefaultShapeName(shape), guid, flag, parent);
+		JGameObject* newGameObj = JGFI::Create(JDefaultShape::ConvertToName(shape), guid, flag, parent);
 		JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *newGameObj,
 			JResourceManager::Instance().GetDefaultMeshGeometry(shape));
 		return newGameObj;
@@ -66,7 +66,7 @@ namespace JinEngine
 		const J_DEFAULT_SHAPE meshType,
 		const J_DEFAULT_MATERIAL matType)
 	{
-		const std::wstring name = JDefaultShape::ConvertDefaultShapeName(meshType) + L"DebugObject";
+		const std::wstring name = JDefaultShape::ConvertToName(meshType) + L"DebugObject";
 		JGameObject* newGameObj = JGFI::Create(name, Core::MakeGuid(), flag, parent);
 		JRenderItem* newRItem = JCFU::CreateRenderItem(Core::MakeGuid(),
 			OBJECT_FLAG_NONE,

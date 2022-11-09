@@ -62,5 +62,8 @@ namespace JinEngine
 		JSpotLight sLight;
 		JShadowMapStruct shadow;
 	};
-	static constexpr int maxLight = 16; 
+	namespace Constant
+	{
+		static constexpr int maxLight = 16;
+	}
 }

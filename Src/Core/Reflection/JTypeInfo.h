@@ -64,8 +64,12 @@ namespace JinEngine
 			std::string Name()const noexcept;
 			//typeid name
 			std::string FullName()const noexcept;
+		public:
 			const PropertyVec GetPropertyVec()const noexcept;
 			const MethodVec GetMethodVec()const noexcept;
+			JPropertyInfo* GetProperty(const std::string& name);
+			JMethodInfo* GetMethod(const std::string& name);
+		public:
 			bool IsA(const JTypeInfo& tar)const noexcept;
 			bool IsChildOf(const JTypeInfo& parentCandidate)const noexcept;
 		public:

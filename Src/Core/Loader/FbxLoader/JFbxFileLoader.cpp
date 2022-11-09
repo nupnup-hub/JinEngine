@@ -3,7 +3,7 @@
 #include"../../../Object/Resource/AnimationClip/JAnimationClip.h"
 #include"../../../Utility/JMathHelper.h" 
 #include"../../../Utility/JCommonUtility.h"
-#include"../../DirectXEx/JDirectXCollisionEx.h"
+#include"../../Geometry/JDirectXCollisionEx.h"
 #include"../../Guid/GuidCreator.h"
 
 using namespace DirectX;
@@ -382,7 +382,7 @@ namespace JinEngine
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 					idx[j] = index;
-					positionXm[j] = controlPoint[controlPointIndex].position.ConvertXM();
+					positionXm[j] = controlPoint[controlPointIndex].position.ConvertXMF();
 
 					hasUv = LoadTextureUV(mesh, controlPointIndex, mesh->GetTextureUVIndex(i, index), textureXm[j]);
 					hasNormal = LoadNormal(mesh, controlPointIndex, vertexCount, normalXm[j]);
@@ -444,7 +444,7 @@ namespace JinEngine
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 					idx[j] = index;
-					positionXm[j] = controlPoint[controlPointIndex].position.ConvertXM();
+					positionXm[j] = controlPoint[controlPointIndex].position.ConvertXMF();
 
 					hasUv = LoadTextureUV(mesh, controlPointIndex, mesh->GetTextureUVIndex(i, index), textureXm[j]);
 					hasNormal = LoadNormal(mesh, controlPointIndex, vertexCount, normalXm[j]);

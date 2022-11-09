@@ -63,10 +63,10 @@ namespace JinEngine
 			friend class JGraphicTextureHandle;
 			friend class JGraphicTexture;
 			friend class Editor::JImGuiImpl;
-		private:
+		private: 
 			virtual CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvDescriptorHandle(int index)const noexcept = 0;
 			virtual CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept = 0;
-
+		private:
 			virtual JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat) = 0;
 			virtual JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat) = 0;
 			virtual JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
@@ -104,11 +104,15 @@ namespace JinEngine
 		private:
 			virtual void Initialize() = 0;
 			virtual void Clear() = 0;
+		private:
 			virtual void SetImGuiBackEnd() = 0;
+		private:
 			virtual void StartFrame() = 0;
 			virtual void EndFrame() = 0;
+		private:
 			virtual void UpdateWait() = 0;
 			virtual void UpdateEngine() = 0;
+		private:
 			virtual void DrawScene() = 0;
 			virtual void DrawProjectSelector() = 0;
 		};

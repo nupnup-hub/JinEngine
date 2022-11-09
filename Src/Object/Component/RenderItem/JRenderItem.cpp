@@ -139,9 +139,13 @@ namespace JinEngine
 		//material.clear();
 		if (mesh != nullptr)
 			material.resize(mesh->GetTotalSubmeshCount());
-		 
-		if (preMesh == nullptr && IsActivated())
+
+		if (IsActivated())
+			DeRegisterComponent();
+		if (IsActivated())
 			RegisterComponent();
+		//if (preMesh == nullptr && IsActivated())
+		//	RegisterComponent();
 		SetFrameDirty();
 	}
 	void JRenderItem::SetMaterial(int index, JMaterial* newMaterial)noexcept
@@ -367,7 +371,7 @@ namespace JinEngine
 					return newComp;
 				else
 				{
-					newComp->BegineForcedDestroy();
+					BegineForcedDestroy(newComp);
 					return nullptr;
 				}
 			}

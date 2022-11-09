@@ -1,5 +1,7 @@
 #pragma once
 #include"JOctreeNode.h"
+#include"JOctreeOption.h"
+#include"../JSpaceSpatial.h"
 #include"../../JDataType.h"
 #include<DirectXCollision.h>
 #include<memory>
@@ -14,50 +16,55 @@ namespace JinEngine
 	namespace Core
 	{
 		class JCullingFrustum;
-		class JOctree
+		class JOctree : public JSpaceSpatial
 		{
 		private:
 			JOctreeNode* rootNodeCash = nullptr;
 			std::vector<std::unique_ptr<JOctreeNode>> allNode;
 			std::unordered_map<size_t, JOctreeNode*> containNodeMap;
-			JGameObject* debugRoot;
-			uint octreeSize;
-			float looseFactor;
-			bool isLooseOctree;
-			bool isDebugActivated = false;
-			bool isDebugLeafOnly = true;
-			uint minSize = 1;
-			static constexpr uint looseFactorMax = 4;
+			uint minSize = 32;
+			uint octreeSizeSquare = 9;
+			uint octreeSize = 1 << 9;
+			float looseFactor = 2;
+			//2022-11-04~ JOctree is looseOctree 
+			static constexpr bool isLooseOctree = true; 
+			static constexpr float looseFactorMin = 2;
+			static constexpr float looseFactorMax = 4;
 			static constexpr uint neighBorIndexList[8][3]
 			{
 				 { 1,2,4 },{ 0,3,5 },{ 0,3,6 },{ 1,2,7 },
 				 { 0,5,6 },{ 1,4,7 },{ 2,4,7 },{ 3,5,6 }
 			};
 		public:
-			JOctree(std::vector<JGameObject*>& gameObject, const uint minSize, const uint octreeSizeSquare, const float looseFactor, const bool isLooseOctree);
+			JOctree();
 			~JOctree();
+		protected:
+			void Build()noexcept final;
+			void UnBuild()noexcept final;
 		public:
-			void Clear()noexcept;
+			void Clear()noexcept final;
+		protected:
+			void OnDebugGameObject()noexcept final;
+			void OffDebugGameObject()noexcept final;
+			void OffCulling()noexcept final;
 		public:
-			void OnDebugGameObject(JGameObject* newDebugRoot)noexcept;
-			void OffDebugGameObject()noexcept;
-			void Culling(const JCullingFrustum& camFrustum)noexcept;
-			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
-			void UpdateGameObject(JGameObject* gameObject)noexcept;
+			void Culling(const JCullingFrustum& camFrustum)noexcept final;
+			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept final;
+			void UpdateGameObject(JGameObject* gameObject)noexcept final;
 		public:
-			bool AddGameObject(JGameObject* newGameObject)noexcept;
-			bool RemoveGameObject(JGameObject* gameObj)noexcept;
+			void AddGameObject(JGameObject* newGameObject)noexcept final;
+			void RemoveGameObject(JGameObject* gameObj)noexcept final;
 		public:
-			void SetDebugOnlyLeaf(bool value)noexcept;
-			bool IsDebugActivated()const noexcept;
-			bool IsDebugLeafOnly()const noexcept;
+			J_SPACE_SPATIAL_TYPE GetType()const noexcept;
+			JOctreeOption GetOctreeOption()const noexcept;
+			void SetOctreeOption(const JOctreeOption& newOption)noexcept;
 		private:
-			void BuildOctree(std::vector<JGameObject*>& gameObject)noexcept;
+			void BuildOctree()noexcept;
 			void BuildOctreeNode(JOctreeNode* parent, const uint depth)noexcept;
 		private:
 			void FindNeighborOctreeNode(JOctreeNode* node)noexcept;
 			JOctreeNode* FindNodeNearCenter(JOctreeNode* node, const DirectX::XMVECTOR point)noexcept;
-			JOctreeNode* FindOptimalNode(JOctreeNode* node, const DirectX::BoundingBox& bbox, const DirectX::ContainmentType condition)noexcept;
+			JOctreeNode* FindOptimalNode(JOctreeNode* node, const DirectX::BoundingBox& bbox)noexcept;
 		private:
 			uint GetExtentLength(const uint depth)const noexcept;
 			uint GetLooseExtentLength(const uint depth)const noexcept;

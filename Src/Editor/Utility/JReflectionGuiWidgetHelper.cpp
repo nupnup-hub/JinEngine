@@ -285,6 +285,17 @@ namespace JinEngine
 					JImGuiImpl::InputText("##GuiSelectorInputText", &inputBuff[0], inputBuff.size(), ImGuiInputTextFlags_EnterReturnsTrue);
 					ImGui::Separator();
 
+					ImGui::BeginGroup();
+					JImGuiImpl::Image(*JResourceManager::Instance().GetEditorTexture(J_EDITOR_TEXTURE::NONE), JVector2<float>(sizeMin, sizeMin));
+					ImGui::SameLine();
+					if (JImGuiImpl::Selectable("None", nullptr, 0, JVector2<float>(0, sizeFactor)))
+					{
+						(*selectedObj) = nullptr;
+						isSelected = true;
+						ImGui::CloseCurrentPopup();
+					}
+					ImGui::EndGroup();
+
 					std::string inputText = JCUtil::EraseSideChar(inputBuff, '\0');
 					const uint previweSceneCount = (uint)selectorPreviewVec.size();
 					for (uint i = 0; i < previweSceneCount; ++i)
@@ -695,6 +706,7 @@ namespace JinEngine
 				}
 			}
 		};
+
 		//GuiTable 
 		class JGuiTableHandle : public JGuiPropertyGroupHandle
 		{
@@ -756,6 +768,26 @@ namespace JinEngine
 				JImGuiImpl::EndTable();
 				isOpen = false;
 				rowIndex = 0;
+			}
+		};
+		class JGuiEnumTriggerHandle : public JGuiPropertyGroupHandle
+		{
+		public:
+			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo, JGuiPropertyWidgetHandle* widgetHandle)final
+			{
+				Core::JGuiWidgetInfo* widgetInfo = pInfo->GetOptionInfo()->GetWidgetInfo();
+				Core::JGuiGroupInfo* groupInfo = Core::JGuiGroupMap::GetGuiGroupInfo(widgetInfo->GetGroupKey());
+				if (groupInfo == nullptr || groupInfo->GetGuiGroupType() != Core::J_GUI_GROUP_TYPE::ENUM_TRIGGER)
+					return;
+
+				Core::JGuiEnumTriggerInfo* enumTriggerInfo = static_cast<Core::JGuiEnumTriggerInfo*>(groupInfo);
+				Core::JPropertyInfo* propertyInfo = pInfo->GetTypeInfo()->GetProperty(enumTriggerInfo->GetParamName());
+				if (propertyInfo == nullptr || propertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+					return;
+				 
+				Core::JGuiEnumTriggerGroupMemberInfoHandle* memberHandle = static_cast<Core::JGuiEnumTriggerGroupMemberInfoHandle*>(widgetInfo->GetGroupMemberInfo());
+				if (memberHandle->OnTrigger(propertyInfo->UnsafeGet<Core::JEnum>(obj)))
+					widgetHandle->Update(obj, pInfo);
 			}
 		};
 #pragma endregion
@@ -1090,7 +1122,6 @@ namespace JinEngine
 					widgetHandle->second->Initialize(obj, pInfo);
 			}
 
-
 			const Core::JGuiGroupKey groupKey = pInfo->GetOptionInfo()->GetWidgetInfo()->GetGroupKey();
 			if (groupKey != Core::Constant::InvalidGroupKey)
 			{
@@ -1100,11 +1131,12 @@ namespace JinEngine
 					auto groupInfo = Core::JGuiGroupMap::GetGuiGroupInfo(groupKey);
 					if (groupInfo != nullptr)
 					{
-						if (groupInfo->GetGuiGroupType() == Core::J_GUI_GROUP_TYPE::TABLE)
-						{
+						const Core::J_GUI_GROUP_TYPE gType = groupInfo->GetGuiGroupType();
+						if (gType == Core::J_GUI_GROUP_TYPE::TABLE)
 							guiPGroupHandleMap.emplace(groupInfo->GetGroupName(), std::make_unique<JGuiTableHandle>());
-							groupHandle = guiPGroupHandleMap.find(groupInfo->GetGroupName());
-						}
+						else if (gType == Core::J_GUI_GROUP_TYPE::ENUM_TRIGGER)
+							guiPGroupHandleMap.emplace(groupInfo->GetGroupName(), std::make_unique<JGuiEnumTriggerHandle>());
+						groupHandle = guiPGroupHandleMap.find(groupInfo->GetGroupName());
 					}
 				}
 				if (groupHandle == guiPGroupHandleMap.end())

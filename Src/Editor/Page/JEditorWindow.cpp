@@ -78,6 +78,16 @@ namespace JinEngine
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorFocusWindowEvStruct>(this, ownerPageType)));
 				}
 			}
+			else
+			{
+				if (IsFocus())
+				{
+					AddEventNotification(*JEditorEvent::EvInterface(),
+						GetGuid(),
+						J_EDITOR_EVENT::UNFOCUS_WINDOW,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorUnFocusWindowEvStruct>(this, ownerPageType)));
+				}			 
+			}
 		}
 		void JEditorWindow::UpdateDocking()
 		{

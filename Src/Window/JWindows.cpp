@@ -453,15 +453,11 @@ namespace JinEngine
 					MB_ICONEXCLAMATION | MB_OK);
 			}
 		}
-		void JWindowImpl::RegistEvCallable()
-		{
-			auto lam = [](const size_t& a, const size_t& b) {return a == b; };
-			RegistIdenCompareCallable(lam);
-		}
 		JWindowImpl::JWindowImpl()
-			:guid(Core::MakeGuid()), hwnd(0)
-		{
-			RegistEvCallable();
+			:JEventManager([](const size_t& a, const size_t& b) {return a == b; }),
+			guid(Core::MakeGuid()),
+			hwnd(0)
+		{ 
 		}
 		JWindowImpl::~JWindowImpl()
 		{ 

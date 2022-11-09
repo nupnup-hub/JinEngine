@@ -38,16 +38,13 @@ namespace JinEngine
 		virtual void DoActivate() noexcept;
 		virtual void DoDeActivate() noexcept;
 	public:
-		bool BeginDestroy();
+		static bool BeginDestroy(JObject* obj);
 	protected:
-		bool BegineForcedDestroy();
-	protected: 
-		static bool IsIgnoreUndestroyableFlag()noexcept;
-		static void SetIgnoreUndestroyableFlag(const bool value)noexcept;
+		static bool BegineForcedDestroy(JObject* obj);
 	protected:
-		virtual bool Destroy() = 0;
+		virtual bool Destroy(const bool isForced) = 0;
 	private:
-		bool EndDestroy();
+		bool EndDestroy(const bool isForced);
 	protected:
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JObject* object);
 		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, JObjectMetaData& metadata);

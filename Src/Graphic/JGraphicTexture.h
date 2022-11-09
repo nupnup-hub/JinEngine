@@ -30,9 +30,9 @@ namespace JinEngine
 			virtual uint GetTxtDsvHeapIndex()const noexcept = 0;
 			virtual uint GetTxtSrvHeapIndex()const noexcept = 0;
 			virtual uint GetTxtVectorIndex()const noexcept = 0;
-			virtual Graphic::J_GRAPHIC_TEXTURE_TYPE GetTxtType()const noexcept = 0;
-			virtual CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuHandle() const noexcept = 0;
-			virtual CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuHandle() const noexcept = 0;
+			virtual Graphic::J_GRAPHIC_TEXTURE_TYPE GetTxtType()const noexcept = 0; 
+			virtual CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvHandle() const noexcept = 0;
+			virtual CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvHandle() const noexcept = 0;
 		};
 
 		class JGraphicTexture : public JGraphicTextureInterface
@@ -55,9 +55,9 @@ namespace JinEngine
 			uint GetTxtDsvHeapIndex()const noexcept final;
 			uint GetTxtSrvHeapIndex()const noexcept final;
 			uint GetTxtVectorIndex()const noexcept final;
-			Graphic::J_GRAPHIC_TEXTURE_TYPE GetTxtType()const noexcept final;
-			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuHandle() const noexcept final;
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuHandle() const noexcept final;
+			Graphic::J_GRAPHIC_TEXTURE_TYPE GetTxtType()const noexcept final; 
+			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvHandle() const noexcept final;
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvHandle() const noexcept final;
 		};
 	}
 }

@@ -159,9 +159,9 @@ namespace JinEngine
 		if (GetReferenceCount() == 0)
 			JObject::DeActivate();
 	}
-	bool JResourceObject::Destroy()
+	bool JResourceObject::Destroy(const bool isForced)
 	{ 
-		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !IsIgnoreUndestroyableFlag())
+		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !isForced)
 			return false;
 		 
 		JResourceManager::Instance().ResourceStorageInterface()->RemoveResource(*this);
@@ -171,14 +171,9 @@ namespace JinEngine
 	{
 		const std::wstring filePath = GetPath();
 		const std::wstring metafilePath = GetMetafilePath(); 
-		if (BegineForcedDestroy())
-		{
-			_wremove(filePath.c_str());
-			_wremove(metafilePath.c_str());
-			return true;
-		}
-		else
-			return false;
+		_wremove(filePath.c_str());
+		_wremove(metafilePath.c_str());
+		return BegineForcedDestroy(this);
 	}
 	bool JResourceObject::RegisterCashData()noexcept
 	{

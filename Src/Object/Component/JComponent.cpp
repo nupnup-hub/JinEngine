@@ -40,9 +40,9 @@ namespace JinEngine
 	{
 		JObject::DoDeActivate();
 	}
-	bool JComponent::Destroy()
+	bool JComponent::Destroy(const bool isForced)
 	{
-		if(HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !IsIgnoreUndestroyableFlag())
+		if(HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !isForced)
 			return false;
 
 		DeActivate();

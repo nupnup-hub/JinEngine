@@ -39,9 +39,9 @@ namespace JinEngine
             skinnedCB = std::make_unique<JUploadBuffer<JAnimationConstants>>(device, initAnimatorCount, true);
             passCB = std::make_unique<JUploadBuffer<JPassConstants>>(device, initSceneCount, true);
             cameraCB = std::make_unique<JUploadBuffer<JCameraConstants>>(device, initCameraCount, true);
-            lightCB = std::make_unique<JUploadBuffer<JLightConstants>>(device, initLightCount, true);
-            smLightCB = std::make_unique<JUploadBuffer<JSMLightConstants>>(device, initLightCount, true);
-            shadowCalCB = std::make_unique<JUploadBuffer<JShadowMapConstants>>(device, initLightCount, true);
+            lightCB = std::make_unique<JUploadBuffer<JLightConstants>>(device, initSceneCount, true);
+            smLightCB = std::make_unique<JUploadBuffer<JSMLightConstants>>(device, initSceneCount, true);
+            shadowCalCB = std::make_unique<JUploadBuffer<JShadowMapConstants>>(device, initLightCount * initSceneCount, true);
         }
 
         JFrameResource::~JFrameResource()

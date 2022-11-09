@@ -12,6 +12,7 @@ namespace JinEngine
 	{
 	private:
 		friend class Editor::JWindowDirectory;
+		friend class JResourceManagerImpl;
 	protected:
 		virtual ~JDirectoryOCInterface() = default;
 	public:

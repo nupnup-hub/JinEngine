@@ -138,13 +138,9 @@ namespace JinEngine
 					menuItemCount + comboCount + textureCount;
 			}
 		public:
-			CD3DX12_CPU_DESCRIPTOR_HANDLE GetGraphicCpuHandle(Graphic::JGraphicTexture& graphicTexture)
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGraphicGpuSrvHandle(Graphic::JGraphicTexture& graphicTexture)
 			{
-				return CallGetCpuHandle(graphicTexture);
-			}
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGraphicGpuHandle(Graphic::JGraphicTexture& graphicTexture)
-			{
-				return CallGetGpuHandle(graphicTexture);
+				return CallGetGpuSrvHandle(graphicTexture);
 			}
 		private:
 			void OnResize()
@@ -627,7 +623,7 @@ namespace JinEngine
 			const JVector4<float>& tintCol,
 			const JVector4<float>& borderCol)
 		{
-			ImGui::Image((ImTextureID)jImgui->GetGraphicGpuHandle(graphicTexture).ptr, size, uv0, uv1, tintCol, borderCol);
+			ImGui::Image((ImTextureID)jImgui->GetGraphicGpuSrvHandle(graphicTexture).ptr, size, uv0, uv1, tintCol, borderCol);
 		}
 		bool JImGuiImpl::ImageButton(Graphic::JGraphicTexture& graphicTexture,
 			const JVector2<float>& size,
@@ -637,7 +633,7 @@ namespace JinEngine
 			const JVector4<float>& bgCol,
 			const JVector4<float>& tintCol)
 		{
-			return ImGui::ImageButton((ImTextureID)jImgui->GetGraphicGpuHandle(graphicTexture).ptr, size, uv0, uv1, framePadding, bgCol, tintCol);
+			return ImGui::ImageButton((ImTextureID)jImgui->GetGraphicGpuSrvHandle(graphicTexture).ptr, size, uv0, uv1, framePadding, bgCol, tintCol);
 		}
 		void JImGuiImpl::AddImage(Graphic::JGraphicTexture& graphicTexture,
 			const JVector2<float>& pMin,
@@ -648,9 +644,9 @@ namespace JinEngine
 			const JVector2<float>& uvMax)
 		{
 			if (isBack)
-				ImGui::GetBackgroundDrawList()->AddImage((ImTextureID)jImgui->GetGraphicGpuHandle(graphicTexture).ptr, pMin, pMax, uvMin, uvMax, color);
+				ImGui::GetBackgroundDrawList()->AddImage((ImTextureID)jImgui->GetGraphicGpuSrvHandle(graphicTexture).ptr, pMin, pMax, uvMin, uvMax, color);
 			else
-				ImGui::GetForegroundDrawList()->AddImage((ImTextureID)jImgui->GetGraphicGpuHandle(graphicTexture).ptr, pMin, pMax, uvMin, uvMax, color);
+				ImGui::GetForegroundDrawList()->AddImage((ImTextureID)jImgui->GetGraphicGpuSrvHandle(graphicTexture).ptr, pMin, pMax, uvMin, uvMax, color);
 		}
 		bool JImGuiImpl::IsLeftMouseClicked()noexcept
 		{

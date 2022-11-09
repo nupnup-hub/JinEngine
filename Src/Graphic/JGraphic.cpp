@@ -69,53 +69,6 @@ namespace JinEngine
 		{
 			return this;
 		}
-		UINT64 JGraphicImpl::GetCompFence()
-		{
-			return fence->GetCompletedValue();
-		}
-		UINT64 JGraphicImpl::GetCurFence()
-		{
-			return  currFrameResource->fence;
-		}
-		void JGraphicImpl::TestEnd()
-		{
-			D3D12_CPU_DESCRIPTOR_HANDLE depthStencilViewHandle = graphicResource->GetCpuDsvDescriptorHandle(0);
-			D3D12_CPU_DESCRIPTOR_HANDLE rendertargetViewHandle = CurrentBackBufferView();
-
-			CD3DX12_RESOURCE_BARRIER rvBarrier = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-				D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-			commandList->ResourceBarrier(1, &rvBarrier);
-
-			commandList->ClearRenderTargetView(rendertargetViewHandle, Colors::DimGray, 0, nullptr);
-			commandList->ClearDepthStencilView(graphicResource->GetCpuDsvDescriptorHandle(0), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-			commandList->OMSetRenderTargets(1, &rendertargetViewHandle, true, &depthStencilViewHandle);
-
-			rvBarrier = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-				D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-			commandList->ResourceBarrier(1, &rvBarrier);
-
-			ThrowIfFailedG(commandList->Close());
-			ID3D12CommandList* cmdsLists[] = { commandList.Get() };
-			commandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-			//ImGuiIO& io = ImGui::GetIO();
-			//if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-			//{
-			//	ImGui::UpdatePlatformWindows();
-			//	ImGui::RenderPlatformWindowsDefault(NULL, (void*)cmdsLists);
-			//}
-
-			// Swap the back and front buffers
-			ThrowIfFailedG(swapChain->Present(0, 0));
-			currBackBuffer = (currBackBuffer + 1) % graphicResource->swapChainBuffercount;
-			// Advance the fence value to mark commands up to this fence point.
-			currFrameResource->fence = ++currentFence;
-
-			// Add an instruction to the command queue to set a new fence point. 
-			// Because we are on the GPU timeline, the new fence point won't be 
-			// set untwil the GPU finishes processing all the commands prior to this Signal().
-			commandQueue->Signal(fence.Get(), currentFence);
-		}
 		void JGraphicImpl::OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)
 		{
 			if (senderGuid == guid)
@@ -491,12 +444,12 @@ namespace JinEngine
 				drawTarget->scene->SpaceSpatialInterface()->ViewCulling();
 
 				uint objUpdateCount = UpdateSceneObjectCB(drawTarget->scene, sceneObjCBoffset);
-				uint passUpdateCount = UpdateScenePassCB(drawTarget->scene, scenePassCBoffset);
+				uint passUpdateCount = UpdateScenePassCB(drawTarget->scene, scenePassCBoffset);	//always update
 
 				uint aniUpdateCount = UpdateSceneAnimationCB(drawTarget->scene, sceneAniCBoffset);
 				uint camUpdateCount = UpdateSceneCameraCB(drawTarget->scene, sceneCamCBoffset);
-				uint lightUpdateCount = UpdateSceneLightCB(drawTarget->scene, sceneLightCBoffset, sceneShadowCBoffset);
-
+				uint lightUpdateCount = UpdateSceneLightCB(drawTarget->scene, sceneLightCBoffset, sceneShadowCBoffset);	//always update
+				 
 				int shadowUpdateCount = objUpdateCount + aniUpdateCount + lightUpdateCount;
 				int sceneUpdateCount = shadowUpdateCount + camUpdateCount;
 
@@ -572,6 +525,7 @@ namespace JinEngine
 
 			auto currPassCB = currFrameResource->passCB.get();
 			currPassCB->CopyData(passCBoffset, passContants);
+			++passCBoffset;
 			return 1;
 		}
 		uint JGraphicImpl::UpdateSceneAnimationCB(_In_ JScene* scene, uint& aniCBoffset)
@@ -620,8 +574,7 @@ namespace JinEngine
 			return updateCount;
 		}
 		uint JGraphicImpl::UpdateSceneLightCB(_In_ JScene* scene, uint& lightCBoffset, uint& shadowCBoffset)
-		{
-			uint updateCount = 0;
+		{ 
 			const std::vector<JComponent*>& jLvec = scene->CashInterface()->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
 			const uint lightCount = (uint)jLvec.size();
 
@@ -629,36 +582,32 @@ namespace JinEngine
 			auto currSMLightCB = currFrameResource->smLightCB.get();
 			auto currShadowCalCB = currFrameResource->shadowCalCB.get();
 
-			uint normalLightCount = 0;
-			uint smLightCount = 0;
+			JLightConstants lightConstants;
+			JSMLightConstants smLightConstants;
+			JShadowMapConstants shadowCalConstant;
 
+			bool hasLitUpdate = false;
 			for (uint i = 0; i < lightCount; ++i)
-			{
-				JLightConstants lightConstants;
-				JSMLightConstants smLightConstants;
-				JShadowMapConstants shadowCalConstant;
+			{				 
 				JLight* light = static_cast<JLight*>(jLvec[i]);
+				IFrameDirty* lFrame = light;
 				if (light->CallUpdateFrame(lightConstants, smLightConstants, shadowCalConstant))
-				{
+				{ 
 					if (light->IsShadowActivated())
-					{
-						currSMLightCB->CopyData(shadowCBoffset + smLightCount, smLightConstants);
-						currShadowCalCB->CopyData(shadowCBoffset + smLightCount, shadowCalConstant);
-					}
-					else
-						currLightCB->CopyData(lightCBoffset + normalLightCount, lightConstants);
-
+						currShadowCalCB->CopyData(shadowCBoffset, shadowCalConstant);
+					if (lFrame->IsFrameDirted())
+						hasLitUpdate = true;
 					light->CallUpdateEnd();
-					++updateCount;
 				}
+
 				if (light->IsShadowActivated())
-					++smLightCount;
-				else
-					++normalLightCount;
+					++shadowCBoffset;
 			}
-			lightCBoffset += normalLightCount;
-			shadowCBoffset += smLightCount;
-			return updateCount;
+
+			currSMLightCB->CopyData(lightCBoffset, smLightConstants);
+			currLightCB->CopyData(lightCBoffset, lightConstants);
+			++lightCBoffset; 
+			return hasLitUpdate ? 1 : 0;
 		}
 		void JGraphicImpl::DrawScene()
 		{
@@ -677,7 +626,7 @@ namespace JinEngine
 			commandList->SetGraphicsRootShaderResourceView(7, matBuffer->GetGPUVirtualAddress());
 
 			JTexture* skyTxt = JResourceManager::Instance().GetEditorTexture(J_EDITOR_TEXTURE::DEFAULT_SKY);
-			commandList->SetGraphicsRootDescriptorTable(8, CallGetGpuHandle(*skyTxt));
+			commandList->SetGraphicsRootDescriptorTable(8, CallGetGpuSrvHandle(*skyTxt));
 			commandList->SetGraphicsRootDescriptorTable(9, graphicResource->srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 			CD3DX12_GPU_DESCRIPTOR_HANDLE shadowHandle = graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvShadowMapStart());
@@ -714,7 +663,7 @@ namespace JinEngine
 					drawTarget->hasShadowUpdate = false;
 				}
 				if (drawTarget->hasSceneUpdate)
-				{
+				{ 
 					const uint sceneReqCount = (uint)drawTarget->sceneRequestor.size();
 					for (uint j = 0; j < sceneReqCount; ++j)
 					{
@@ -725,8 +674,7 @@ namespace JinEngine
 							scenePassCBoffset,
 							sceneAniCBoffset,
 							sceneCamCBoffset + j,
-							sceneLightCBoffset,
-							sceneShadowCBoffset);
+							sceneLightCBoffset);
 					}
 					drawTarget->hasSceneUpdate = false;
 				}
@@ -735,7 +683,7 @@ namespace JinEngine
 				scenePassCBoffset += 1;
 				sceneAniCBoffset += drawTarget->scene->GetComponetCount(J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR);
 				sceneCamCBoffset += drawTarget->scene->GetComponetCount(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA);
-				sceneLightCBoffset += drawTarget->scene->GetComponetCount(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+				sceneLightCBoffset += 1;
 				sceneShadowCBoffset += (uint)drawTarget->shadowRequestor.size();
 			}
 		}
@@ -758,8 +706,7 @@ namespace JinEngine
 			const uint passCBoffset,
 			const uint aniCBoffset,
 			const uint camCBoffset,
-			const uint lightCBoffset,
-			const uint smLightCBoffset)
+			const uint lightCBoffset)
 		{
 			const uint rtvVecIndex = CallGetTxtVectorIndex(*camera);
 			const uint rtvHeapIndex = CallGetTxtRtvHeapIndex(*camera);
@@ -770,7 +717,7 @@ namespace JinEngine
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv = graphicResource->GetCpuRtvDescriptorHandle(rtvHeapIndex);
 			CD3DX12_RESOURCE_BARRIER rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->renderResultResource[rtvVecIndex].Get(),
 				D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
+			 
 			commandList->ResourceBarrier(1, &rsBarrier);
 			commandList->ClearRenderTargetView(rtv, Colors::DarkGray, 0, nullptr);
 			commandList->ClearDepthStencilView(graphicResource->GetCpuDsvDescriptorHandle(0), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
@@ -795,7 +742,7 @@ namespace JinEngine
 
 			uint smLightCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JSMLightConstants));
 			auto smLightCB = currFrameResource->smLightCB->Resource();
-			D3D12_GPU_VIRTUAL_ADDRESS smLightCBAddress = smLightCB->GetGPUVirtualAddress() + smLightCBoffset * smLightCBByteSize;
+			D3D12_GPU_VIRTUAL_ADDRESS smLightCBAddress = smLightCB->GetGPUVirtualAddress() + lightCBoffset * smLightCBByteSize;
 			commandList->SetGraphicsRootConstantBufferView(5, smLightCBAddress);
 
 			DrawGameObject(commandList.Get(), scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC), objCBoffset, aniCBoffset, false, false);
@@ -847,8 +794,8 @@ namespace JinEngine
 			D3D12_GPU_VIRTUAL_ADDRESS shadowCalCBAddress = shadowCalCB->GetGPUVirtualAddress() + shadowCBoffset * shadowCalCBByteSize;
 			commandList->SetGraphicsRootConstantBufferView(6, shadowCalCBAddress);
 
-			DrawGameObject(commandList.Get(), scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC), objCBoffset, aniCBoffset, false, false);
-			DrawGameObject(commandList.Get(), scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED), objCBoffset, aniCBoffset, false, scene->IsAnimatorActivated());
+			DrawGameObject(commandList.Get(), scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC), objCBoffset, aniCBoffset, true, false);
+			DrawGameObject(commandList.Get(), scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED), objCBoffset, aniCBoffset, true, scene->IsAnimatorActivated());
 
 			rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->shadowMapResource[rVecIndex].Get(),
 				D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -861,6 +808,8 @@ namespace JinEngine
 			const bool drawShadowMap,
 			const bool onAnimation)
 		{
+			JShader* shadowShader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_SHADER::DEFAULT_SHADOW_MAP_SHADER);
+
 			uint objectCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JObjectConstants));
 			uint skinCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JAnimationConstants));
 
@@ -894,17 +843,16 @@ namespace JinEngine
 					if (!drawShadowMap)
 					{
 						if (onSkinned)
-							cmdList->SetPipelineState(shader->GetPso(ConvertMeshTypeToShaderVertexLayout(J_MESHGEOMETRY_TYPE::SKINNED)));
+							cmdList->SetPipelineState(shader->GetPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::SKINNED)));
 						else
-							cmdList->SetPipelineState(shader->GetPso(ConvertMeshTypeToShaderVertexLayout(J_MESHGEOMETRY_TYPE::STATIC)));
+							cmdList->SetPipelineState(shader->GetPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::STATIC)));
 					}
 					else
 					{
-						JShader* shadow = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_SHADER::DEFAULT_SHADOW_MAP_SHADER);
 						if (onSkinned)
-							commandList->SetPipelineState(shadow->GetPso(ConvertMeshTypeToShaderVertexLayout(J_MESHGEOMETRY_TYPE::SKINNED)));
+							commandList->SetPipelineState(shadowShader->GetPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::SKINNED)));
 						else
-							commandList->SetPipelineState(shadow->GetPso(ConvertMeshTypeToShaderVertexLayout(J_MESHGEOMETRY_TYPE::STATIC)));
+							commandList->SetPipelineState(shadowShader->GetPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::STATIC)));
 					}
 
 					D3D12_GPU_VIRTUAL_ADDRESS objectCBAddress = objectCB->GetGPUVirtualAddress() + (objCBoffset + CallGetFrameBuffOffset(*renderItem) + j) * objectCBByteSize;
@@ -917,9 +865,9 @@ namespace JinEngine
 					cmdList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(j), 1, mesh->GetSubmeshStartIndexLocation(j), mesh->GetSubmeshBaseVertexLocation(j), 0);
 				}
 			}
-		}
+		} 
 		bool JGraphicImpl::InitializeD3D()
-		{
+		{ 
 #if defined(DEBUG) || defined(_DEBUG) 
 			// Enable the D3D12 DEBUG layer.
 			{
@@ -976,15 +924,12 @@ namespace JinEngine
 		}
 		bool JGraphicImpl::InitializeResource()
 		{
-			FlushCommandQueue();
-			// Reset the command list to prep for initialization commands.
-			ThrowIfFailedHr(commandList->Reset(directCmdListAlloc.Get(), nullptr));
-			// Get the increment size of a descriptor in this heap type.  This is hardware specific, 
-			// so we have to query this information. 		
+			FlushCommandQueue(); 
+			ThrowIfFailedHr(commandList->Reset(directCmdListAlloc.Get(), nullptr)); 
 			BuildRootSignature();
 			graphicResource->BuildRtvDescriptorHeaps(d3dDevice.Get());
 			graphicResource->BuildDsvDescriptorHeaps(d3dDevice.Get());
-			graphicResource->BuildSrvDescriptorHeaps(d3dDevice.Get());
+			graphicResource->BuildSrvDescriptorHeaps(d3dDevice.Get()); 
 			graphicResource->BuildDepthStencilResource(d3dDevice.Get(), commandList.Get(), width, height, m4xMsaaState, m4xMsaaQuality);
 			BuildFrameResources();
 			// Execute the initialization commands.
@@ -1176,7 +1121,7 @@ namespace JinEngine
 					JResourceData::initAnimationControllerCapacity,
 					1 + JResourceData::initPreviewSceneCapacity,
 					JResourceData::initSceneCameraCapacity + JResourceData::initPreviewSceneCapacity,
-					maxLight * (1 + JResourceData::initPreviewSceneCapacity)));
+					JinEngine::Constant::maxLight));
 			}
 			currFrameResource = frameResources[currFrameResourceIndex].get();
 		}

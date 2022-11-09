@@ -84,7 +84,7 @@ namespace JinEngine
 					return newComp;
 				else
 				{
-					newComp->BegineForcedDestroy();
+					BegineForcedDestroy(newComp);
 					return nullptr;
 				}
 			}

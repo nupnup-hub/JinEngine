@@ -89,6 +89,19 @@ namespace JinEngine
 		noneTerxture = Core::GetUserPtr(texture);
 		CallOnResourceReference(noneTerxture.Get());
 	}
+	std::wstring JResourceData::FindEditTextureName(const J_EDITOR_TEXTURE type)const noexcept
+	{
+		for (const auto& data : selectorTexInfo)
+		{
+			if (data.type == type)
+				return data.name;
+		}
+		for (const auto& data : projectTexInfo)
+		{
+			if (data.type == type)
+				return data.name;
+		}
+	}
 	void JResourceData::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 	{
 		if (iden == guid)

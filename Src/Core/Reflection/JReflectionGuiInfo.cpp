@@ -36,6 +36,10 @@ namespace JinEngine
 		{
 			return IsMemberWidget() ? groupMemberInfo->GetGroupKey() : Constant::InvalidGroupKey;
 		}
+		JGuiGroupMemberInfo* JGuiWidgetInfo::GetGroupMemberInfo()const noexcept
+		{
+			return groupMemberInfo.get();
+		}
 
 		JGuiInputInfo::JGuiInputInfo(const bool isEnterToReturn)
 			:JGuiWidgetInfo(), isEnterToReturn(isEnterToReturn)

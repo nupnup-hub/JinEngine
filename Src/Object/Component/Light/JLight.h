@@ -26,6 +26,7 @@ namespace JinEngine
 		REGISTER_PROPERTY_EX(spotPower, GetSpotPower, SetSpotPower, GUI_SLIDER(0, 1, true, false, GUI_GROUP_ENUM_TRIGGER(LightType, J_LIGHT_TYPE::POINT)))
 		float spotPower = 0;                           
 	private:
+		REGISTER_PROPERTY_EX(onShadow, IsShadowActivated, SetShadow, GUI_CHECKBOX())
 		bool onShadow = false; 
 		DirectX::XMFLOAT4X4 shadowTransform;
 	public:

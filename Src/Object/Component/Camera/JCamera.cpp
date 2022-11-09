@@ -43,8 +43,10 @@ namespace JinEngine
 		return mProj;
 	}
 	DirectX::BoundingFrustum JCamera::GetBoundingFrustum()const noexcept
-	{
-		return mCamFrustum;
+	{ 
+		DirectX::BoundingFrustum worldCamFrustum;
+		mCamFrustum.Transform(worldCamFrustum, GetOwner()->GetTransform()->GetWorld());
+		return worldCamFrustum;
 	}
 	float JCamera::GetNear()const noexcept
 	{
@@ -478,7 +480,7 @@ namespace JinEngine
 					return newComp;
 				else
 				{
-					newComp->BegineForcedDestroy();
+					BegineForcedDestroy(newComp);
 					return nullptr;
 				}
 			}

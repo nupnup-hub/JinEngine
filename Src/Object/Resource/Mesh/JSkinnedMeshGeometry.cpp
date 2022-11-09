@@ -275,15 +275,9 @@ namespace JinEngine
 		else
 		{
 			for (uint i = 0; i < meshCount; ++i)
-			{
-				SetIgnoreUndestroyableFlag(true);
-				meshGroup.GetMeshData(i)->GetMaterial()->BeginDestroy();
-			}
+				BegineForcedDestroy(meshGroup.GetMeshData(i)->GetMaterial().Get());
 			if (skeletonAsset != nullptr)
-			{
-				SetIgnoreUndestroyableFlag(true);
-				skeletonAsset->BeginDestroy();
-			}
+				BegineForcedDestroy(skeletonAsset);
 
 			DeleteRFile();
 			return false;

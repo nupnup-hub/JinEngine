@@ -237,4 +237,16 @@ namespace JinEngine
 		stream.close();
 		return false;
 	}
+	bool JFileIOHelper::InputSpace(std::wofstream& stream, int spaceCount)
+	{
+		if (!stream.is_open())
+			return false;
+
+		while (spaceCount > 0)
+		{
+			stream << "\n";
+			--spaceCount;
+		}
+		return true;
+	}
 }

@@ -20,7 +20,7 @@
 #include"../../../Core/Guid/GuidCreator.h" 
 #include"../../../Core/Time/JGameTimer.h"
 #include"../../../Core/File/JFileIOHelper.h"
-#include"../../../Core/DirectXEx/JCullingFrustum.h"
+#include"../../../Core/Geometry/JCullingFrustum.h"
 #include"../../../Core/SpaceSpatial/JSceneSpatialStructure.h"  
 #include"../../../Utility/JCommonUtility.h"
 
@@ -109,6 +109,10 @@ namespace JinEngine
 	{
 		return JSceneManager::Instance().IsMainScene(this);
 	}
+	bool JScene::IsSpaceSpatialActivated()const noexcept
+	{
+		return spatialStructure != nullptr;
+	}
 	bool JScene::HasComponent(const J_COMPONENT_TYPE cType)const noexcept
 	{
 		return componentCash.find(cType) != componentCash.end();
@@ -156,15 +160,21 @@ namespace JinEngine
 			allObjects[i]->Activate();
 
 		SetAllComponentDirty();
-		if (isSpatialStructureActivated)
-			BuildSpatialStructure(spatialStructure->GetSpatialStructureType());
+		if (spatialStructure != nullptr)
+		{
+			if (spatialStructure->IsInitTriggerActivated())
+			{
+				InitializeSpaceSpatial();
+				spatialStructure->SetInitTrigger(false);
+			}
+			spatialStructure->Activate();
+		}
 	}
 	void JScene::DoDeActivate()noexcept
 	{
-		if (isSpatialStructureActivated)
-			ClearSpatialStructure();
-
 		StoreObject(this);
+		if (spatialStructure != nullptr)
+			spatialStructure->DeAcitvate();
 		root->DeActivate();
 		const uint objCount = (uint)allObjects.size();
 		for (uint i = 0; i < objCount; ++i)
@@ -190,15 +200,20 @@ namespace JinEngine
 			}
 			else
 				CreateDefaultGameObject();
+			CreateDebugRoot();
 			SetValid(true);
 		}
 	}
 	void JScene::ClearResource()
 	{
 		if (IsValid())
-		{
-			root->BegineForcedDestroy();
+		{ 
+			BegineForcedDestroy(root);
 			root = nullptr;
+
+			BegineForcedDestroy(debugRoot);
+			debugRoot = nullptr;
+
 			for (int i = 0; i < (int)J_RENDER_LAYER::COUNT; ++i)
 			{
 				for (int j = 0; j < (int)J_MESHGEOMETRY_TYPE::COUNT; ++j)
@@ -231,6 +246,11 @@ namespace JinEngine
 		JGFU::CreateCamera(*root, flag, true, L"MainCamera");
 		JGFU::CreateLight(*root, flag, J_LIGHT_TYPE::DIRECTIONAL, L"MainLight");
 	}
+	void JScene::CreateDebugRoot()noexcept
+	{
+		const J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE);
+		debugRoot = JGFI::CreateRoot(L"DebugRoot", debugRootGuid, rootFlag, *this);
+	}
 	const std::vector<JGameObject*>& JScene::GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept
 	{
 		return objectLayer[(int)rLayer][(int)meshType];
@@ -255,8 +275,8 @@ namespace JinEngine
 		if (gameObj.IsActivated())
 			gameObj.DeActivate();
 
-		if (spatialStructure != nullptr)
-			spatialStructure->RemoveGameObject(&gameObj);
+		//if (spatialStructure != nullptr)
+		//	spatialStructure->RemoveGameObject(&gameObj);
 
 		const uint allObjCount = (uint)allObjects.size();
 		const size_t guid = gameObj.GetGuid();
@@ -288,9 +308,13 @@ namespace JinEngine
 	void JScene::UpdateTransform(JGameObject* owner)noexcept
 	{
 		// && owner->GetRenderItem()->GetRenderLayer() != J_RENDER_LAYER::DEBUG_LAYER
-		if (owner == nullptr)
+		if (owner == nullptr || !owner->HasRenderItem())
 			return;
-		if (owner->HasRenderItem() && IsActivated())
+
+		if (owner->GetRenderItem()->GetRenderLayer() == J_RENDER_LAYER::DEBUG_LAYER)
+			return;
+
+		if (IsActivated())
 			spatialStructure->UpdateGameObject(owner);
 	}
 	bool JScene::RegisterComponent(JComponent& component)noexcept
@@ -325,7 +349,7 @@ namespace JinEngine
 			objectLayer[(int)renderLayer][(int)meshType].push_back(jRItem->GetOwner());
 
 			CallSetFrameBuffOffset(*jRItem, cashVec->second.size() - 1);
-			if (renderLayer == J_RENDER_LAYER::OPAQUE_OBJECT && spatialStructure->IsSpatialStructureActivated())
+			if (spatialStructure != nullptr && renderLayer == J_RENDER_LAYER::OPAQUE_OBJECT)
 				spatialStructure->AddGameObject(jRItem->GetOwner());
 		}
 
@@ -356,22 +380,23 @@ namespace JinEngine
 						CallSetFrameBuffOffset(*backRItem, CallGetFrameBuffOffset(*backRItem) - 1);
 					}
 
-					const int rIndex = (int)jRItem->GetRenderLayer();
-					const int mIndex = (int)jRItem->GetMesh()->GetMeshGeometryType();
-
+					const int rIndex = (int)jRItem->GetRenderLayer(); 
 					const size_t guid = jOwner->GetGuid();
-					const uint vecCount = (uint)objectLayer[rIndex][mIndex].size();
-
-					for (uint j = 0; j < vecCount; ++j)
+				 
+					for (uint j = 0; j < (uint)J_MESHGEOMETRY_TYPE::COUNT; ++j)
 					{
-						if (guid == objectLayer[rIndex][mIndex][j]->GetGuid())
+						const uint vecCount = (uint)objectLayer[rIndex][j].size();
+						for (uint k = 0; k < vecCount; ++k)
 						{
-							objectLayer[rIndex][mIndex].erase(objectLayer[rIndex][mIndex].begin() + j);
-							break;
+							if (guid == objectLayer[rIndex][j][k]->GetGuid())
+							{
+								objectLayer[rIndex][j].erase(objectLayer[rIndex][j].begin() + k);
+								break;
+							}
 						}
 					}
 					//objectLayer[rIndex][mIndex].push_back(jOwner);
-					if (jRItem->GetRenderLayer() == J_RENDER_LAYER::OPAQUE_OBJECT && spatialStructure->IsSpatialStructureActivated())
+					if (spatialStructure != nullptr && jRItem->GetRenderLayer() == J_RENDER_LAYER::OPAQUE_OBJECT)
 						spatialStructure->RemoveGameObject(jOwner);
 				}
 				SetBackSideComponentDirty(*cashVec[i]);
@@ -445,98 +470,99 @@ namespace JinEngine
 	{
 		if (spatialStructure != nullptr && mainCamera != nullptr)
 		{
-			DirectX::BoundingFrustum camFrustum = mainCamera->GetBoundingFrustum();
-			DirectX::BoundingFrustum worldCamFrustum;
-			camFrustum.Transform(worldCamFrustum, mainCamera->GetTransform()->GetWorld());
-			//spatialStructure->Culling(worldCamFrustum);
-			Core::JCullingFrustum cFrustum(worldCamFrustum);
-			spatialStructure->Culling(cFrustum);
+			//DirectX::BoundingFrustum camFrustum = mainCamera->GetBoundingFrustum();
+			//DirectX::BoundingFrustum worldCamFrustum;
+			//camFrustum.Transform(worldCamFrustum, mainCamera->GetTransform()->GetWorld());
+			spatialStructure->Culling(mainCamera->GetBoundingFrustum());
+
+			//Caution: Has Bug
+			//Core::JCullingFrustum cFrustum(worldCamFrustum);
+			//spatialStructure->Culling(cFrustum);
 		}
 	}
-	Core::JSceneSpatialStructureOption JScene::GetSpatialStructureOption()const noexcept
+	void JScene::ActivateSpaceSpatial(bool setInitValue)noexcept
 	{
-		return spatialStructure->GetOption();
-	}
-	void JScene::SetSceneSpatialStructure(const bool value)noexcept
-	{ 
-		isSpatialStructureActivated = value;
-		if (value)
+		if (spatialStructure == nullptr)
 		{
-			if (IsActivated())
-				BuildSpatialStructure(spatialStructure->GetSpatialStructureType());
-		}
-		else
-		{
-			if (IsActivated())
-				ClearSpatialStructure();
-		}
-	}
-	void JScene::SetSceneSpatialStructureType(const Core::J_SCENE_SPATIAL_STRUCTURE_TYPE type)noexcept
-	{
-		if (spatialStructure->IsSpatialStructureActivated())
-		{
-			if (spatialStructure->GetSpatialStructureType() != type)
+			spatialStructure = std::make_unique<Core::JSceneSpatialStructure>();
+			if (setInitValue)
 			{
-				ClearSpatialStructure();
-				BuildSpatialStructure(type);
+				if (IsActivated())
+					InitializeSpaceSpatial();
+				else
+					spatialStructure->SetInitTrigger(true);
 			}
+			if (!IsActivated())
+				spatialStructure->DeAcitvate();
 		}
+	}
+	void JScene::DeActivateSpaceSpatial()noexcept
+	{
+		if (spatialStructure != nullptr)
+		{
+			spatialStructure->Clear();
+			spatialStructure.reset();
+		}
+	}
+	std::vector<JGameObject*> JScene::GetAlignedObject(const DirectX::BoundingFrustum& frustum)const noexcept
+	{
+		if (spatialStructure != nullptr)
+			return spatialStructure->GetAlignedObject(frustum);
 		else
-			spatialStructure->SetSpatialStructureType(type);
+			return std::vector<JGameObject*>();
 	}
-	void JScene::SetDebugBoundingBox(const bool value)noexcept
+	Core::JOctreeOption JScene::GetOctreeOption()const noexcept
 	{
-		if (spatialStructure->IsSpatialStructureActivated())
-		{
-			if (value)
-				spatialStructure->OnDebugBoundingBox(root);
-			else
-				spatialStructure->OffDebugBoundingBox();
-		} 
+		return spatialStructure != nullptr ? spatialStructure->GetOctreeOption() : Core::JOctreeOption();
 	}
-	void JScene::SetDebugOnlyLeaf(const bool value)noexcept
+	Core::JBvhOption JScene::GetBvhOption()const noexcept
 	{
-		spatialStructure->SetDebugOnlyLeaf(value);
+		return spatialStructure != nullptr ? spatialStructure->GetBvhOption() : Core::JBvhOption();
 	}
-	void JScene::BuildSpatialStructure(const Core::J_SCENE_SPATIAL_STRUCTURE_TYPE type)noexcept
+	Core::JKdTreeOption JScene::GetKdTreeOption()const noexcept
 	{
-		if (!spatialStructure->IsSpatialStructureActivated())
-		{ 
-			if (type == Core::J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH)
-				BuildBvh(Core::J_BVH_BUILD_TYPE::TOP_DOWN, Core::J_BVH_SPLIT_TYPE::SAH);
-			else
-				BuildOctree(32, 9, 2, true);
-		}
+		return spatialStructure != nullptr ? spatialStructure->GetKdTreeOption() : Core::JKdTreeOption();
 	}
-	void JScene::ClearSpatialStructure()noexcept
+	void JScene::SetOctreeOption(const Core::JOctreeOption& newOption)noexcept
 	{
-		spatialStructure->Clear();
+		if(spatialStructure != nullptr)
+			spatialStructure->SetOctreeOption(newOption);
 	}
-	void JScene::BuildOctree(const uint minSize, const uint octreeSizeSquare, const float looseFactor, const bool isLooseOctree)noexcept
+	void JScene::SetBvhOption(const Core::JBvhOption& newOption)noexcept
+	{
+		if (spatialStructure != nullptr)
+			spatialStructure->SetBvhOption(newOption);
+	}
+	void JScene::SetKdTreeOption(const Core::JKdTreeOption& newOption)noexcept
+	{
+		if (spatialStructure != nullptr)
+			spatialStructure->SetKdTreeOption(newOption);
+	}
+	void JScene::BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, Editor::JEditorBinaryTreeView& tree)noexcept
+	{
+		if (spatialStructure != nullptr)
+			spatialStructure->BuildDebugTree(type, tree);
+	}
+	void JScene::InitializeSpaceSpatial()noexcept
 	{
 		if (spatialStructure != nullptr)
 		{
-			const uint staticObjectCount = (uint)objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][0].size();
-			const uint skinnedObjectCount = (uint)objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][1].size();
-			const uint objectCount = staticObjectCount + skinnedObjectCount;
-			std::vector<JGameObject*> gameObject(objectCount);
-			std::copy(objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][0].begin(), objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][0].end(), gameObject.begin());
-			std::copy(objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][1].begin(), objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][1].end(), gameObject.begin() + staticObjectCount);
+			Core::JOctreeOption octreeOption = spatialStructure->GetOctreeOption();
+			octreeOption.commonOption.innerRoot = root;
+			octreeOption.commonOption.debugRoot = debugRoot;
+			spatialStructure->SetOctreeOption(octreeOption);
 
-			spatialStructure->BuildOctree(gameObject, minSize, octreeSizeSquare, looseFactor, isLooseOctree);
-		}
-	}
-	void JScene::BuildBvh(const Core::J_BVH_BUILD_TYPE bvhBuildType, const Core::J_BVH_SPLIT_TYPE splitType)noexcept
-	{
-		if (spatialStructure != nullptr)
-		{
-			const uint staticObjectCount = (uint)objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][0].size();
-			const uint skinnedObjectCount = (uint)objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][1].size();
-			std::vector<JGameObject*> gameObject(staticObjectCount + skinnedObjectCount);
-			std::copy(objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][0].begin(), objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][0].end(), gameObject.begin());
-			std::copy(objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][1].begin(), objectLayer[(int)J_RENDER_LAYER::OPAQUE_OBJECT][1].end(), gameObject.begin() + staticObjectCount);
+			Core::JBvhOption bvhOption = spatialStructure->GetBvhOption();
+			bvhOption.commonOption.innerRoot = root;
+			bvhOption.commonOption.debugRoot = debugRoot;
+			bvhOption.commonOption.isSpaceSpatialActivated = true;
+			bvhOption.commonOption.isCullingActivated = true;
+			spatialStructure->SetBvhOption(bvhOption);
 
-			spatialStructure->BuildBvh(gameObject, bvhBuildType, splitType);
+			Core::JKdTreeOption kdOption = spatialStructure->GetKdTreeOption();
+			kdOption.commonOption.innerRoot = root;
+			kdOption.commonOption.debugRoot = debugRoot; 
+			spatialStructure->SetKdTreeOption(kdOption);
 		}
 	}
 	void JScene::CreateDemoGameObject()noexcept
@@ -586,11 +612,18 @@ namespace JinEngine
 			if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 				return res;
 
-			Core::JSceneSpatialStructureOption option = scene->GetSpatialStructureOption();
+			Core::JOctreeOption octreeOption = scene->GetOctreeOption();
+			Core::JBvhOption bvhOption = scene->GetBvhOption();
+			Core::JKdTreeOption kdTreeOption = scene->GetKdTreeOption();
+
 			JFileIOHelper::StoreAtomicData(stream, L"IsOpen:", scene->IsValid());
 			JFileIOHelper::StoreAtomicData(stream, L"IsMainScene:", JSceneManager::Instance().IsMainScene(scene));
-			JFileIOHelper::StoreAtomicData(stream, L"IsSpatialStructureActivated:", scene->isSpatialStructureActivated);  
-			JFileIOHelper::StoreAtomicData(stream, L"SpatialStructureType:", (int)option.type);
+			JFileIOHelper::StoreAtomicData(stream, L"IsActivatedSpaceSpatial:", scene->IsSpaceSpatialActivated());
+    
+			octreeOption.Store(stream);
+			bvhOption.Store(stream);
+			kdTreeOption.Store(stream);
+
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
@@ -636,8 +669,25 @@ namespace JinEngine
 		{
 			JSceneManager::Instance().TryOpenScene(newScene, false);
 			JSceneManager::Instance().SetMainScene(newScene);
-			newScene->SetSceneSpatialStructureType((Core::J_SCENE_SPATIAL_STRUCTURE_TYPE)metadata.spatialStructureType);
-			newScene->SetSceneSpatialStructure(metadata.isSpatialStructureActivated);
+			if (metadata.isActivatedSpaceSpatial)
+			{
+				newScene->ActivateSpaceSpatial();
+
+				if (metadata.hasOctreeInnerRoot)
+					metadata.octreeOption.commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.octreeInnerRootGuid).Get();
+				metadata.octreeOption.commonOption.debugRoot = newScene->debugRoot;
+				newScene->SetOctreeOption(metadata.octreeOption); 
+
+				if (metadata.hasBvhInnerRoot)
+					metadata.bvhOption.commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.bvhInnerRootGuid).Get();
+				metadata.bvhOption.commonOption.debugRoot = newScene->debugRoot;
+				newScene->SetBvhOption(metadata.bvhOption); 
+
+				if (metadata.hasKdTreeInnerRoot)
+					metadata.kdTreeOption.commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.kdTreeInnerRootGuid).Get();
+				metadata.kdTreeOption.commonOption.debugRoot = newScene->debugRoot;
+				newScene->SetKdTreeOption(metadata.kdTreeOption);
+			} 
 		}
 		return newScene;
 	}
@@ -646,10 +696,14 @@ namespace JinEngine
 		if (stream.is_open())
 		{
 			JResourceObject::LoadMetadata(stream, metadata);
+
 			JFileIOHelper::LoadAtomicData(stream, metadata.isOpen);
 			JFileIOHelper::LoadAtomicData(stream, metadata.isMainScene);
-			JFileIOHelper::LoadAtomicData(stream, metadata.isSpatialStructureActivated);
-			JFileIOHelper::LoadAtomicData(stream, metadata.spatialStructureType);
+			JFileIOHelper::LoadAtomicData(stream, metadata.isActivatedSpaceSpatial); 
+			 
+			metadata.octreeOption.Load(stream, metadata.hasOctreeInnerRoot, metadata.octreeInnerRootGuid);
+			metadata.bvhOption.Load(stream, metadata.hasBvhInnerRoot, metadata.bvhInnerRootGuid);
+			metadata.kdTreeOption.Load(stream, metadata.hasKdTreeInnerRoot, metadata.kdTreeInnerRootGuid);
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
@@ -718,10 +772,8 @@ namespace JinEngine
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
 	JScene::JScene(const JSceneInitData& initdata)
-		:JSceneInterface(initdata)
-	{
-		spatialStructure = std::make_unique<Core::JSceneSpatialStructure>();
-	}
+		:JSceneInterface(initdata), debugRootGuid(Core::MakeGuid())
+	{}
 	JScene::~JScene()
-	{ }
+	{}
 }

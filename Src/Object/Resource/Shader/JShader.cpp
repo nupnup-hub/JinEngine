@@ -76,7 +76,7 @@ namespace JinEngine
 	JShader::JShaderInitdata::JShaderInitdata(const size_t guid,
 		const J_OBJECT_FLAG flag,
 		const J_SHADER_FUNCTION shaderFunctionFlag)
-		:JResourceInitData(ConvertShaderFuncFlagToName(shaderFunctionFlag),
+		:JResourceInitData(JShaderType::ConvertToName(shaderFunctionFlag),
 			guid, 
 			Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE),
 			GetShaderDirectory(),
@@ -85,7 +85,7 @@ namespace JinEngine
 	{}
 	JShader::JShaderInitdata::JShaderInitdata(const J_OBJECT_FLAG flag,
 		const J_SHADER_FUNCTION shaderFunctionFlag)
-		: JResourceInitData(ConvertShaderFuncFlagToName(shaderFunctionFlag),
+		: JResourceInitData(JShaderType::ConvertToName(shaderFunctionFlag),
 			Core::MakeGuid(),
 			Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE),
 			GetShaderDirectory(),
@@ -93,7 +93,7 @@ namespace JinEngine
 		shaderFunctionFlag(shaderFunctionFlag)
 	{}
 	JShader::JShaderInitdata::JShaderInitdata(const J_SHADER_FUNCTION shaderFunctionFlag)
-		: JResourceInitData(ConvertShaderFuncFlagToName(shaderFunctionFlag),
+		: JResourceInitData(JShaderType::ConvertToName(shaderFunctionFlag),
 			Core::MakeGuid(), 
 			OBJECT_FLAG_UNEDITABLE,
 			GetShaderDirectory(), 

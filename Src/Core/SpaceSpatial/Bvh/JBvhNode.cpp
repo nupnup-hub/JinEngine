@@ -1,17 +1,18 @@
-#include"JBvhNode.h"
-#include"../../../Object/Resource/Scene/JScene.h"
+#include"JBvhNode.h" 
 #include"../../../Object/GameObject/JGameObject.h" 
 #include"../../../Object/GameObject/JGameObjectFactoryUtility.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../Object/Component/Transform/JTransform.h" 
+#include"../../../Editor/Utility/JEditorBinaryTreeView.h"
+#include"../../../Utility/JCommonUtility.h"
 
 using namespace DirectX;
 namespace JinEngine
 {
 	namespace Core
 	{
-		JBvhNode::JBvhNode(const uint nodeNumber, const J_BVH_NODE_TYPE type, const DirectX::BoundingBox& bv, JBvhNode* parent, JGameObject* innerGameObject, bool isLeftNode)
-			:nodeNumber(nodeNumber), type(type), bv(bv), parent(parent), innerGameObject(innerGameObject)
+		JBvhNode::JBvhNode(const uint nodeNumber, const J_BVH_NODE_TYPE type, const DirectX::BoundingBox& bbox, JBvhNode* parent, JGameObject* innerGameObject, bool isLeftNode)
+			:nodeNumber(nodeNumber), type(type), bbox(bbox), parent(parent), innerGameObject(innerGameObject)
 		{
 			if (parent != nullptr)
 			{
@@ -20,7 +21,7 @@ namespace JinEngine
 				else
 					parent->right = this;
 			}
-			if(JBvhNode::innerGameObject != nullptr)
+			if (JBvhNode::innerGameObject != nullptr)
 				JBvhNode::innerGameObject->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 		}
 		JBvhNode::~JBvhNode() {}
@@ -28,23 +29,23 @@ namespace JinEngine
 		{
 			if (debugGameObject == nullptr)
 			{
-				if (innerGameObject == nullptr && onlyLeafNode)
+				if (type != J_BVH_NODE_TYPE::LEAF && onlyLeafNode)
 					return;
 
-				if (innerGameObject == nullptr)
+				if (type != J_BVH_NODE_TYPE::LEAF)
 					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
 				else
 					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
 
-				debugGameObject->GetTransform()->SetScale(XMFLOAT3(bv.Extents.x * 2, bv.Extents.y * 2, bv.Extents.z * 2));
-				debugGameObject->GetTransform()->SetPosition(bv.Center);
+				debugGameObject->GetTransform()->SetScale(XMFLOAT3(bbox.Extents.x * 2, bbox.Extents.y * 2, bbox.Extents.z * 2));
+				debugGameObject->GetTransform()->SetPosition(bbox.Center);
 			}
 		}
 		void JBvhNode::DestroyDebugGameObject()noexcept
 		{
 			if (debugGameObject != nullptr)
 			{
-				debugGameObject->BeginDestroy();
+				JGameObject::BeginDestroy(debugGameObject);
 				debugGameObject = nullptr;
 			}
 		}
@@ -60,7 +61,7 @@ namespace JinEngine
 		}
 		void JBvhNode::Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
 		{
-			J_CULLING_RESULT res = camFrustum.IsBoundingBoxIn(bv, flag);
+			J_CULLING_RESULT res = camFrustum.IsBoundingBoxIn(bbox, flag);
 			if (res == J_CULLING_RESULT::CONTAIN)
 				SetVisible();
 			else if (res == J_CULLING_RESULT::DISJOINT)
@@ -78,7 +79,7 @@ namespace JinEngine
 		}
 		void JBvhNode::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
 		{
-			ContainmentType res = camFrustum.Contains(bv);
+			ContainmentType res = camFrustum.Contains(bbox);
 			if (res == ContainmentType::CONTAINS)
 				SetVisible();
 			else if (res == ContainmentType::DISJOINT)
@@ -98,13 +99,17 @@ namespace JinEngine
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
 			{
-				bv = innerGameObject->GetRenderItem()->GetBoundingBox();
+				bbox = innerGameObject->GetRenderItem()->GetBoundingBox();
 				if (debugGameObject != nullptr)
 				{
-					debugGameObject->GetTransform()->SetScale(XMFLOAT3(bv.Extents.x * 2, bv.Extents.y * 2, bv.Extents.z * 2));
-					debugGameObject->GetTransform()->SetPosition(bv.Center);
+					debugGameObject->GetTransform()->SetScale(XMFLOAT3(bbox.Extents.x * 2, bbox.Extents.y * 2, bbox.Extents.z * 2));
+					debugGameObject->GetTransform()->SetPosition(bbox.Center);
 				}
 			}
+		}
+		void JBvhNode::OffCulling()noexcept
+		{
+			SetVisible();
 		}
 		bool JBvhNode::IsLeftNode()const noexcept
 		{
@@ -115,7 +120,7 @@ namespace JinEngine
 		}
 		bool JBvhNode::IsContain(const DirectX::BoundingBox& boundBox)const noexcept
 		{
-			return bv.Contains(boundBox) == ContainmentType::CONTAINS;
+			return bbox.Contains(boundBox) == ContainmentType::CONTAINS;
 		}
 		uint JBvhNode::GetNodeNumber()const noexcept
 		{
@@ -141,7 +146,7 @@ namespace JinEngine
 		}
 		DirectX::BoundingBox JBvhNode::GetBoundingBox()const noexcept
 		{
-			return bv;
+			return bbox;
 		}
 		JBvhNode* JBvhNode::GetParentNode()noexcept
 		{
@@ -157,7 +162,7 @@ namespace JinEngine
 		}
 		JBvhNode* JBvhNode::GetContainNodeToRoot(const DirectX::BoundingBox& boundBox)noexcept
 		{
-			ContainmentType res = bv.Contains(boundBox);
+			ContainmentType res = bbox.Contains(boundBox);
 			if (res == ContainmentType::CONTAINS)
 				return this;
 			else
@@ -170,7 +175,7 @@ namespace JinEngine
 		}
 		JBvhNode* JBvhNode::GetContainNodeToLeaf(const DirectX::BoundingBox& boundBox)noexcept
 		{
-			ContainmentType res = bv.Contains(boundBox);
+			ContainmentType res = bbox.Contains(boundBox);
 			if (res == ContainmentType::CONTAINS)
 			{
 				if (type == J_BVH_NODE_TYPE::LEAF || (left == nullptr || right == nullptr))
@@ -191,11 +196,11 @@ namespace JinEngine
 			else
 				return nullptr;
 		}
-		JGameObject* JBvhNode::GetInnerGameObject()noexcept
+		JGameObject* JBvhNode::GetInnerGameObject()const noexcept
 		{
 			return innerGameObject;
 		}
-		JGameObject* JBvhNode::GetDebugGameObject()noexcept
+		JGameObject* JBvhNode::GetDebugGameObject()const noexcept
 		{
 			return debugGameObject;
 		}
@@ -228,7 +233,8 @@ namespace JinEngine
 		void JBvhNode::SetInnerGameObject(JGameObject* newInnerGameObject)noexcept
 		{
 			innerGameObject = newInnerGameObject;
-			innerGameObject->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+			if (innerGameObject != nullptr)
+				innerGameObject->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 		}
 		void JBvhNode::SetVisible()noexcept
 		{
@@ -256,6 +262,35 @@ namespace JinEngine
 				return this;
 			else
 				return right->FindRightLeafNode();
+		}
+		void JBvhNode::BuildDebugNode(Editor::JEditorBinaryTreeView& treeView)
+		{
+			if (type == J_BVH_NODE_TYPE::ROOT)
+			{
+				treeView.BuildNode(std::to_string(nodeNumber));
+				if (left != nullptr)
+					left->BuildDebugNode(treeView);
+				if (right != nullptr)
+					right->BuildDebugNode(treeView);
+			}
+			else if (type == J_BVH_NODE_TYPE::NODE)
+			{
+				treeView.BuildNode(std::to_string(nodeNumber));
+				left->BuildDebugNode(treeView);
+				right->BuildDebugNode(treeView);
+				if (IsLeftNode())
+					treeView.EndLeft();
+				else
+					treeView.EndRight();
+			}
+			else
+			{
+				treeView.BuildNode(std::to_string(nodeNumber), JCUtil::WstrToU8Str(innerGameObject->GetName()));
+				if (IsLeftNode())
+					treeView.EndLeft();
+				else
+					treeView.EndRight();
+			}
 		}
 	}
 }

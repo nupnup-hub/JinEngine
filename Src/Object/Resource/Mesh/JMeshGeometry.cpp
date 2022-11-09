@@ -11,7 +11,7 @@
 #include"../../../Core/Exception/JExceptionMacro.h" 
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/File/JFileIOHelper.h"
-#include"../../../Core/DirectXEx/JDirectXCollisionEx.h"
+#include"../../../Core/Geometry/JDirectXCollisionEx.h"
 #include"../../../Core/Loader/FbxLoader/JFbxFileLoader.h"
 #include"../../../Core/Loader/ObjLoader/JObjFileLoader.h"
 

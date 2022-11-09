@@ -47,7 +47,7 @@ namespace JinEngine
 		const uint objCount = (uint)gameObjectVec.size();
 		for (uint i = 0; i < objCount; ++i)
 		{
-			gameObjectVec[i]->BeginDestroy();
+			JObject::BeginDestroy(gameObjectVec[i]);
 			gameObjectVec[i] = nullptr;
 		}
 		gameObjectVec.clear();

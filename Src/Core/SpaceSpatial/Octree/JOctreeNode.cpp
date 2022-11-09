@@ -36,8 +36,24 @@ namespace JinEngine
 		{
 			if (debugGameObject != nullptr)
 			{
-				debugGameObject->BeginDestroy();
+				JGameObject::BeginDestroy(debugGameObject); 
 				debugGameObject = nullptr;
+			}
+		}
+		void JOctreeNode::Clear()
+		{
+			const uint innerCount = (uint)innerGameObject.size();
+			for (uint i = 0; i < innerCount; ++i)
+			{
+				innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+				innerGameObject[i] = nullptr;
+			}
+			innerGameObject.clear();
+			DestroyDebugGameObject();
+			if (childrenNode.size() != 0)
+			{
+				for (uint i = 0; i < 8; ++i)
+					childrenNode[i]->Clear();
 			}
 		}
 		void JOctreeNode::Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
@@ -76,20 +92,15 @@ namespace JinEngine
 					CullingInnerObject(camFrustum);
 			}	
 		}
-		void JOctreeNode::Clear()
+		void JOctreeNode::OffCulling()
 		{
 			const uint innerCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerCount; ++i)
-			{
 				innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
-				innerGameObject[i] = nullptr;
-			}
-			innerGameObject.clear();
-			DestroyDebugGameObject();
-			if (childrenNode.size() != 0)
+			if (childrenNode.size() > 0)
 			{
 				for (uint i = 0; i < 8; ++i)
-					childrenNode[i]->Clear();
+					childrenNode[i]->OffCulling();
 			}
 		}
 		bool JOctreeNode::AddGameObject(JGameObject* gameObj, bool isLooseOctree)noexcept

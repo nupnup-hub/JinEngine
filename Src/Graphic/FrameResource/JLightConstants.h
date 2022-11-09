@@ -10,9 +10,9 @@ namespace JinEngine
 		struct JLightConstants
 		{
 		public:
-			JDirectionalLight directionalLight[maxLight]; 
-			JPointLight pointLight[maxLight]; 
-			JSpotLight spotLight[maxLight]; 
+			JDirectionalLight directionalLight[JinEngine::Constant::maxLight]; 
+			JPointLight pointLight[JinEngine::Constant::maxLight];
+			JSpotLight spotLight[JinEngine::Constant::maxLight];
 
 			uint directionalLightMax = 0;
 			uint pointLightMax = 0;
@@ -24,9 +24,9 @@ namespace JinEngine
 		struct JSMLightConstants
 		{
 		public: 
-			JSMDirectionalLight sDirectionalLight[maxLight];
-			JSMPointLight sPointLight[maxLight];
-			JSMSpotLight sSpotLight[maxLight];
+			JSMDirectionalLight sDirectionalLight[JinEngine::Constant::maxLight];
+			JSMPointLight sPointLight[JinEngine::Constant::maxLight];
+			JSMSpotLight sSpotLight[JinEngine::Constant::maxLight];
 
 			uint smDirectionalLightMax = 0;
 			uint smPointLightMax = 0;

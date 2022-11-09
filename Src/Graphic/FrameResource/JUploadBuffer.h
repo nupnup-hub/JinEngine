@@ -62,12 +62,11 @@ namespace JinEngine
 
                 mappedData = nullptr;
             }
-
+        public:
             ID3D12Resource* Resource()const
             {
                 return uploadBuffer.Get();
             }
-
             void CopyData(const int elementIndex, const T& data)
             {
                 memcpy(&mappedData[elementIndex * elementByteSize], &data, sizeof(T));

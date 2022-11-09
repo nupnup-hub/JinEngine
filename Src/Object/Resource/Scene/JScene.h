@@ -2,10 +2,13 @@
 #include"JSceneInterface.h" 
 #include"../Mesh/JMeshType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"
-#include"../../../Core/SpaceSpatial/Bvh/JBvhType.h"
+#include"../../../Core/SpaceSpatial/JSpaceSpatialType.h"
 #include"../../../Core/Storage/JStorage.h"
 #include<memory>
 #include<vector>  
+
+//Test
+#include<DirectXCollision.h>
 
 namespace JinEngine
 {
@@ -29,9 +32,21 @@ namespace JinEngine
 		{
 		public:
 			bool isOpen = false;
-			bool isMainScene = false;
-			bool isSpatialStructureActivated = false;
-			int spatialStructureType;
+			bool isMainScene = false;	 
+			//space spatial trigger
+			bool isActivatedSpaceSpatial;
+			//octree Opt
+			bool hasOctreeInnerRoot; 
+			size_t octreeInnerRootGuid; 
+			Core::JOctreeOption octreeOption;
+			//bvh Opt
+			bool hasBvhInnerRoot; 
+			size_t bvhInnerRootGuid; 
+			Core::JBvhOption bvhOption;
+			//kdTree Opt
+			bool hasKdTreeInnerRoot;
+			size_t kdTreeInnerRootGuid;
+			Core::JKdTreeOption kdTreeOption;
 		};
 	public:
 		struct JSceneInitData : public JResourceInitData
@@ -53,13 +68,15 @@ namespace JinEngine
 		using InitData = JSceneInitData;
 	private:
 		JGameObject* root = nullptr;
+		JGameObject* debugRoot = nullptr;
 		std::unique_ptr<Core::JSceneSpatialStructure> spatialStructure;
 		std::vector<JGameObject*> allObjects;
 		std::vector<JGameObject*> objectLayer[(int)J_RENDER_LAYER::COUNT][(int)J_MESHGEOMETRY_TYPE::COUNT];
 		std::unordered_map<J_COMPONENT_TYPE, std::vector<JComponent*>> componentCash;
 		JCamera* mainCamera = nullptr;
-		bool isAnimatorActivated = false;
-		bool isSpatialStructureActivated = false;  
+		bool isAnimatorActivated = false; 
+	private: 
+		const size_t debugRootGuid;
 	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
@@ -79,6 +96,7 @@ namespace JinEngine
 
 		bool IsAnimatorActivated()const noexcept; 
 		bool IsMainScene()const noexcept; 
+		bool IsSpaceSpatialActivated()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
 	public:
 		JSceneCashInterface* CashInterface() final;
@@ -97,37 +115,40 @@ namespace JinEngine
 		void ClearResource() final;
 	private:
 		void CreateDefaultGameObject()noexcept;
+		void CreateDebugRoot()noexcept;
 	private:
 		const std::vector<JGameObject*>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept final;
 		const std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)const noexcept final;
-
+	private:
 		bool AddGameObject(JGameObject& newGameObject)noexcept final;
 		bool RemoveGameObject(JGameObject& gameObj)noexcept final;
-
+	private:
 		void SetAnimation()noexcept final;
 		void SetMainCamera(JCamera* mainCam)noexcept final;
 		void UpdateTransform(JGameObject* owner)noexcept final;
-
+	private:
 		bool RegisterComponent(JComponent& component)noexcept final;
 		bool DeRegisterComponent(JComponent& component)noexcept final;
-
+	private:
 		void SetAllComponentDirty()noexcept final;
 		void SetComponentDirty(const J_COMPONENT_TYPE cType) noexcept final;
 		void SetBackSideComponentDirty(JComponent& jComp) noexcept final;
 		void SetBackSideComponentDirty(JComponent& jComp, bool(*condition)(JComponent&))noexcept final;
-
+	private:
 		//SceneSpatial
 		void ViewCulling()noexcept final;
-		Core::JSceneSpatialStructureOption GetSpatialStructureOption()const noexcept final;
-		void SetSceneSpatialStructure(const bool value)noexcept final;
-		void SetSceneSpatialStructureType(const Core::J_SCENE_SPATIAL_STRUCTURE_TYPE type)noexcept final;
-		void SetDebugBoundingBox(const bool value)noexcept final;
-		void SetDebugOnlyLeaf(const bool value)noexcept final;
+		void ActivateSpaceSpatial(bool setInitValue = false)noexcept final;
+		void DeActivateSpaceSpatial()noexcept final;
+		std::vector<JGameObject*> GetAlignedObject(const DirectX::BoundingFrustum& frustum)const noexcept final;
+		Core::JOctreeOption GetOctreeOption()const noexcept final;
+		Core::JBvhOption GetBvhOption()const noexcept final;
+		Core::JKdTreeOption GetKdTreeOption()const noexcept final;
+		void SetOctreeOption(const Core::JOctreeOption& newOption)noexcept final;
+		void SetBvhOption(const Core::JBvhOption& newOption)noexcept final;
+		void SetKdTreeOption(const Core::JKdTreeOption& newOption)noexcept final;
+		void BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, Editor::JEditorBinaryTreeView& tree)noexcept final; 
+		void InitializeSpaceSpatial()noexcept;
 	private:
-		void BuildSpatialStructure(const Core::J_SCENE_SPATIAL_STRUCTURE_TYPE type)noexcept;
-		void ClearSpatialStructure()noexcept;
-		void BuildOctree(const uint minSize, const uint octreeSizeSquare, const float looseFactor, const bool isLooseOctree)noexcept;
-		void BuildBvh(const Core::J_BVH_BUILD_TYPE bvhBuildType, const Core::J_BVH_SPLIT_TYPE splitType)noexcept;
 		void CreateDemoGameObject()noexcept;
 		void DestroyDemoGameObject()noexcept;
 	private:

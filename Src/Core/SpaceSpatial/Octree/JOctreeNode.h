@@ -1,6 +1,6 @@
 #pragma once
 #include"../../JDataType.h"
-#include"../../DirectXEx/JCullingFrustum.h"
+#include"../../Geometry/JCullingFrustum.h"
 #include<vector> 
 #include<DirectXCollision.h>
 
@@ -29,10 +29,11 @@ namespace JinEngine
 		public:
 			void CreateDebugGameObject(JGameObject* parent, bool onlyLeafNode)noexcept;
 			void DestroyDebugGameObject()noexcept;
+			void Clear();
 			//Culling node bbox
 			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
 			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
-			void Clear();
+			void OffCulling();
 		public:
 			bool AddGameObject(JGameObject* gameObj, bool isLooseOctree)noexcept;
 			bool AddNeighborNode(JOctreeNode* octreeNode)noexcept;

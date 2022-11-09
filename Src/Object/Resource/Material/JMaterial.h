@@ -61,12 +61,13 @@ namespace JinEngine
 		bool shadowMap = false;
 		bool isSkyMateral = false;
 		bool isDebugMaterial = false;
+		bool alphaClip = false;
 		REGISTER_PROPERTY_EX(metallic,  GetMetallic, SetMetallic, GUI_SLIDER(0, 1, false, false))
 		float metallic = 0;
 		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0, 1))
 		float roughness = 0;
 		REGISTER_PROPERTY_EX(albedoColor, GetAlbedoColor, SetAlbedoColor, GUI_COLOR_PICKER(true))
-		DirectX::XMFLOAT4 albedoColor = { 0.85, 0.85, 0.85, 0.8 };
+		DirectX::XMFLOAT4 albedoColor = { 0.85f, 0.85f, 0.85f, 0.8f };
 		DirectX::XMFLOAT4X4 matTransform = JMathHelper::Identity4x4();
 	public:   
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
@@ -104,6 +105,7 @@ namespace JinEngine
 		void SetShadowMap(bool value)noexcept;
 		void SetSkyMaterial(bool value)noexcept;
 		void SetDebugMaterial(bool value)noexcept;
+		void SetAlphaClip(bool value)noexcept;
 	public:
 		bool OnShadow()const noexcept;
 		bool OnLight()const noexcept;

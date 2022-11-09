@@ -11,9 +11,8 @@ namespace JinEngine
 			std::deque<std::unique_ptr<JEditorEvStruct>> evQueue;
 		public:
 			JEditorEventManager()
-			{
-				RegistEvCallable();
-			}
+				:JEventManager([](const size_t& a, const size_t& b) {return a == b; })
+			{}
 			~JEditorEventManager()
 			{
 				ClearEvent();
@@ -27,12 +26,6 @@ namespace JinEngine
 			void OnEvnet()
 			{
 				SendEventNotification();
-			}
-		private:
-			void RegistEvCallable()final
-			{
-				auto lam = [](const size_t& a, const size_t& b) {return a == b; };
-				RegistIdenCompareCallable(lam);
 			}
 		};
 

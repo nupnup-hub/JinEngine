@@ -24,6 +24,26 @@ namespace JinEngine
 		{
 			return memberData != nullptr ? memberData->methodInfoVec : MethodVec{};
 		}
+		JPropertyInfo* JTypeInfo::GetProperty(const std::string& name)
+		{
+			if (memberData != nullptr)
+			{
+				auto data = memberData->propertyInfoMap.find(name);
+				return data != memberData->propertyInfoMap.end() ? data->second : nullptr;
+			}  
+			else
+				return nullptr;
+		}
+		JMethodInfo* JTypeInfo::GetMethod(const std::string& name)
+		{
+			if (memberData != nullptr)
+			{
+				auto data = memberData->methodInfoMap.find(name);
+				return data != memberData->methodInfoMap.end() ? data->second : nullptr;
+			}
+			else
+				return nullptr;
+		}
 		bool JTypeInfo::IsA(const JTypeInfo& tar)const noexcept
 		{
 			if (this == &tar)

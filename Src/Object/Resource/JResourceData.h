@@ -72,6 +72,8 @@ namespace JinEngine
 		void Clear();
 		void SetMissing(JTexture* texture);
 		void SetNone(JTexture* texture);
+	public:
+		std::wstring FindEditTextureName(const J_EDITOR_TEXTURE type)const noexcept;
 	private:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 	};

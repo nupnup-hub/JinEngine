@@ -66,7 +66,7 @@ namespace JinEngine
 			// Set true to use 4X MSAA (?.1.8).  The default is false.
 			bool      m4xMsaaState = false;    // 4X MSAA enabled
 			uint      m4xMsaaQuality = 0;      // quality level of 4X MSAA
-
+			 
 			Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue;
 			Microsoft::WRL::ComPtr<ID3D12CommandAllocator> directCmdListAlloc;
 			Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList;
@@ -90,26 +90,20 @@ namespace JinEngine
 			const uint defaultShadowWidth = 2048;
 			const uint defaultShadowHeight = 2048;
 			bool stCommand = false;
-
 		public:
 			JGraphicDeviceInterface* DeviceInterface()noexcept;
 			JGraphicResourceInterface* ResourceInterface()noexcept;
 			JGraphicEditorInterface* EditorInterface()noexcept;
 			JGraphicCommandInterface* CommandInterface()noexcept;
 			JGraphicApplicationIterface* AppInterface()noexcept;
-		public:
-			//test 
-			UINT64 GetCompFence();
-			UINT64 GetCurFence();
-			void TestEnd();
 		private:
 			void OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)final;
 		private:
 			ID3D12Device* GetDevice() const noexcept final;
-		private:
+		private:  
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvDescriptorHandle(int index)const noexcept final;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept final;
-
+		private:
 			JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
 			JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
 			JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0)final;
@@ -130,14 +124,18 @@ namespace JinEngine
 		private:
 			void StartFrame()final;
 			void EndFrame()final;
+		private:
 			void UpdateWait()final;
 			void UpdateEngine()final;
 			uint UpdateSceneObjectCB(_In_ JScene* scene, uint& objCBoffset);
 			uint UpdateMaterialCB();
+			//Always update
 			uint UpdateScenePassCB(_In_ JScene* scene, uint& passCBoffset);
 			uint UpdateSceneAnimationCB(_In_ JScene* scene, uint& aniCBoffset);
 			uint UpdateSceneCameraCB(_In_ JScene* scene, uint& camCBoffset);
+			//Always update has dirty return 1 or return 0
 			uint UpdateSceneLightCB(_In_ JScene* scene, uint& lightCBoffset, uint& shadowCBoffset);
+		private:
 			void DrawScene()final;
 			void DrawProjectSelector()final;
 			void DrawSceneRenderTarget(_In_ JScene* scene,
@@ -146,8 +144,7 @@ namespace JinEngine
 				const uint passCBoffset,
 				const uint aniCBoffset,
 				const uint camCBoffset,
-				const uint lightCBoffset,
-				const uint smLightCBoffset);
+				const uint lightCBoffset);
 			void DrawSceneShadowMap(_In_ JScene* scene,
 				_In_ JLight* light,
 				uint& objCBoffset,
@@ -159,7 +156,7 @@ namespace JinEngine
 				const uint objCBoffset,
 				const uint aniCBoffset,
 				const bool drawShadowMap,
-				const bool onAnimation);
+				const bool onAnimation);  
 		private:
 			bool InitializeD3D();
 			bool InitializeResource();

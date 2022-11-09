@@ -191,7 +191,7 @@ namespace JinEngine
 		{
 			JEditorPage::DoSetClose();
 			if (avatarScene.IsValid())
-				avatarScene.Release()->BeginDestroy();
+				JObject::BeginDestroy(avatarScene.Release());
 		}
 		void JEditorSkeletonPage::StorePage(std::wofstream& stream)
 		{

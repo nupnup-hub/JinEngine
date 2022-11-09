@@ -335,7 +335,7 @@ namespace JinEngine
 		}
 		else
 		{ 
-			newCont->BegineForcedDestroy();
+			JObject::BegineForcedDestroy(newCont);
 			return nullptr;
 		}
 	}

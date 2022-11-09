@@ -15,15 +15,20 @@ namespace JinEngine
 		JEditorPopup::~JEditorPopup() {}
 		void JEditorPopup::Update()
 		{
-			if (JImGuiImpl::IsRightMouseClicked() && !IsOpen() && JImGuiImpl::IsMouseInWindow(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
-				SetOpen(true);
-			else if (JImGuiImpl::IsRightMouseClicked() && IsOpen())
-				SetOpen(false);
-			else if (JImGuiImpl::IsLeftMouseClicked() && IsOpen() && !IsMouseInPopup())
-				SetOpen(false);
-
-			if(IsOpen() && !JImGuiImpl::IsEnablePopup())
-				SetOpen(false);
+			if (IsOpen())
+			{
+				if (JImGuiImpl::IsRightMouseClicked())
+					SetOpen(false);
+				else if (JImGuiImpl::IsLeftMouseClicked() && !IsMouseInPopup())
+					SetOpen(false);
+			}
+			else
+			{ 
+				if (JImGuiImpl::IsRightMouseClicked() && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && JImGuiImpl::IsMouseInWindow(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
+					SetOpen(true);
+				if (!JImGuiImpl::IsEnablePopup())
+					SetOpen(false);
+			}
 		}
 		void JEditorPopup::AddPopupNode(std::unique_ptr<JEditorPopupNode> child)noexcept
 		{

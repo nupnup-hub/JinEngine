@@ -23,9 +23,9 @@ namespace JinEngine
 			uint CallGetTxtSrvHeapIndex(JGraphicTextureInterface& gtI)const noexcept;
 			//0 ~ n
 			uint CallGetTxtVectorIndex(JGraphicTextureInterface& gtI)const noexcept;
-			Graphic::J_GRAPHIC_TEXTURE_TYPE CallGetTxtType(JGraphicTextureInterface& gtI)const noexcept;
-			CD3DX12_CPU_DESCRIPTOR_HANDLE CallGetCpuHandle(JGraphicTextureInterface& gtI) const noexcept;
-			CD3DX12_GPU_DESCRIPTOR_HANDLE CallGetGpuHandle(JGraphicTextureInterface& gtI) const noexcept;
+			Graphic::J_GRAPHIC_TEXTURE_TYPE CallGetTxtType(JGraphicTextureInterface& gtI)const noexcept; 
+			CD3DX12_CPU_DESCRIPTOR_HANDLE CallGetCpuSrcHandle(JGraphicTextureInterface& gtI) const noexcept;
+			CD3DX12_GPU_DESCRIPTOR_HANDLE CallGetGpuSrvHandle(JGraphicTextureInterface& gtI) const noexcept;
 		};
 	}
 }

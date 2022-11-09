@@ -129,7 +129,7 @@ namespace JinEngine
 				if (jObj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
 				{ 
 					wind.DestroyPreviewScene(jObj);
-					jObj->BeginDestroy();
+					JObject::BeginDestroy(jObj.Get());
 					Core::JTransition::Log("Destroy Object");
 				}
 				else if (jObj->GetObjectType() == J_OBJECT_TYPE::DIRECTORY_OBJECT)
@@ -141,7 +141,7 @@ namespace JinEngine
 						wind.OpenNewDirectory(wind.root.Get());
 
 					wind.DestroyPreviewScene(jObj);
-					jObj->BeginDestroy();
+					JObject::BeginDestroy(jObj.Get());
 					Core::JTransition::Log("Destroy Object");
 				}
 			};

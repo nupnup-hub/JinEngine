@@ -89,9 +89,9 @@ namespace JinEngine
 		std::unique_ptr<JResourceIO> resourceIO; 
 	public: 
 		JMeshGeometry* GetDefaultMeshGeometry(const J_DEFAULT_SHAPE type)noexcept;
-		JMaterial* GetDefaultMaterial(const J_DEFAULT_MATERIAL materialType)noexcept;
+		JMaterial* GetDefaultMaterial(const J_DEFAULT_MATERIAL type)noexcept;
 		JTexture* GetEditorTexture(const J_EDITOR_TEXTURE enumName)noexcept;
-		JShader* GetDefaultShader(const J_DEFAULT_SHADER shaderType)noexcept;  
+		JShader* GetDefaultShader(const J_DEFAULT_SHADER type)noexcept;
 		JDirectory* GetDirectory(const size_t guid)noexcept;
 		JDirectory* GetDirectory(const std::wstring& path)noexcept;
 		JDirectory* GetEditorResourceDirectory()noexcept;
@@ -129,8 +129,6 @@ namespace JinEngine
 		void CreateDefaultMaterial();
 		void CreateDefaultMesh();
 		//bool IsOverlappedFilepath(const std::string& name, const std::string& path) noexcept;
-	private: 
-		void RegistEvCallable();
 	private:
 		JResourceManagerImpl();
 		~JResourceManagerImpl();

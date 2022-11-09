@@ -34,7 +34,7 @@ namespace JinEngine
 		//step) DoDeActivate => DeRegistComponent
 		void DoDeActivate()noexcept override;
 	protected:
-		bool Destroy() final; 
+		bool Destroy(const bool isForced) final;
 	private:
 		bool RegisterCashData()noexcept final;
 		bool DeRegisterCashData()noexcept final;

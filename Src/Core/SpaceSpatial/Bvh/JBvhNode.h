@@ -1,13 +1,15 @@
 #pragma once
 #include"../../JDataType.h"
-#include"../../DirectXEx/JCullingFrustum.h"
-#include<DirectXCollision.h>
+#include"../../Geometry/JCullingFrustum.h" 
 #include<unordered_map>
 
 namespace JinEngine
 {
-	class JGameObject;
-	class JScene;
+	class JGameObject; 
+	namespace Editor
+	{
+		class JEditorBinaryTreeView;
+	}
 	namespace Core
 	{
 		enum class J_BVH_NODE_TYPE
@@ -21,14 +23,14 @@ namespace JinEngine
 		private:
 			uint nodeNumber;
 			J_BVH_NODE_TYPE type;
-			DirectX::BoundingBox bv;
+			DirectX::BoundingBox bbox;
 			JBvhNode* parent = nullptr;
 			JBvhNode* left = nullptr;
 			JBvhNode* right = nullptr;
 			JGameObject* innerGameObject = nullptr;
 			JGameObject* debugGameObject = nullptr;
 		public:
-			JBvhNode(const uint nodeNumber, const J_BVH_NODE_TYPE type, const DirectX::BoundingBox& bv, JBvhNode* parent, JGameObject* innerGameObject, bool isLeftNode);
+			JBvhNode(const uint nodeNumber, const J_BVH_NODE_TYPE type, const DirectX::BoundingBox& bbox, JBvhNode* parent, JGameObject* innerGameObject, bool isLeftNode);
 			~JBvhNode();
 			JBvhNode(const JBvhNode& rhs) = delete;
 			JBvhNode& operator=(const JBvhNode& rhs) = delete;
@@ -41,6 +43,7 @@ namespace JinEngine
 			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
 			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
 			void UpdateInnerGameObject()noexcept;
+			void OffCulling()noexcept;
 		public:
 			bool IsLeftNode()const noexcept;
 			bool IsContain(const DirectX::BoundingBox& boundBox)const noexcept;
@@ -55,8 +58,8 @@ namespace JinEngine
 			JBvhNode* GetRightNode()noexcept;
 			JBvhNode* GetContainNodeToRoot(const DirectX::BoundingBox& boundBox)noexcept;
 			JBvhNode* GetContainNodeToLeaf(const DirectX::BoundingBox& boundBox)noexcept;
-			JGameObject* GetInnerGameObject()noexcept;
-			JGameObject* GetDebugGameObject()noexcept;
+			JGameObject* GetInnerGameObject()const noexcept;
+			JGameObject* GetDebugGameObject()const noexcept;
 
 			void SetNodeNumber(const uint newNumber)noexcept;
 			void SetNodeType(const J_BVH_NODE_TYPE newNodeType)noexcept;
@@ -64,9 +67,11 @@ namespace JinEngine
 			void SetRightNode(JBvhNode* newRightNode)noexcept;
 			void SetInnerGameObject(JGameObject* newInnerGameObject)noexcept;
 		private:
-			void SetVisible()noexcept;
+			void SetVisible()noexcept;  
 			void SetInVisible()noexcept;
 			JBvhNode* FindRightLeafNode()noexcept;
+		public:
+			void BuildDebugNode(Editor::JEditorBinaryTreeView& treeView);
 		};
 	}
 }

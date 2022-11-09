@@ -1,32 +1,125 @@
 #include"JSceneSpatialStructure.h"
 #include"Octree/JOctree.h"
 #include"Bvh/JBvh.h"
-
+#include"Kd-tree/JKdTree.h"
+#include"../../Object/GameObject/JGameObject.h"
+ 
 namespace JinEngine
 {
 	namespace Core
 	{
-		JSceneSpatialStructure::JSceneSpatialStructure() {}
-		JSceneSpatialStructure::~JSceneSpatialStructure() {}
+		JSceneSpatialStructure::ActivatedOptionCash::ActivatedOptionCash(const JOctreeOption& octreeOption,
+			const JBvhOption& bvhOption,
+			const JKdTreeOption& kdTreeOption)
+		{
+			SetOctreeOption(octreeOption);
+			SetBvhOption(bvhOption);
+			SetKdTreeOption(kdTreeOption);
+		}
+		JOctreeOption JSceneSpatialStructure::ActivatedOptionCash::GetOctreeOption()const noexcept
+		{
+			JGameObject* innerRoot = nullptr;
+			if (preHasInnerRoot[(int)J_SPACE_SPATIAL_TYPE::OCTREE])
+				innerRoot = Core::GetRawPtr<JGameObject>(preInnerRootGuid[octreeIndex]);
 
-		void JSceneSpatialStructure::BuildOctree(std::vector<JGameObject*>& gameObject,
-			const uint minSize,
-			const uint octreeSizeSquare,
-			const float looseFactor,
-			const bool isLooseOctree)noexcept
-		{
-			Clear();
-			octree = std::make_unique<JOctree>(gameObject, minSize, octreeSizeSquare, looseFactor, isLooseOctree);
-			spatialStructureType = J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE;
+			JGameObject* debugRoot = nullptr;
+			if (preHasDebugRoot[octreeIndex])
+				debugRoot = Core::GetRawPtr<JGameObject>(preDebugRootGuid[octreeIndex]);
+
+			JOctreeOption option = preOctreeOption;
+			option.commonOption.innerRoot = innerRoot;
+			option.commonOption.debugRoot = debugRoot;
+
+			return option;
 		}
-		void JSceneSpatialStructure::BuildBvh(std::vector<JGameObject*>& gameObject,
-			const J_BVH_BUILD_TYPE bvhBuildType,
-			const J_BVH_SPLIT_TYPE splitType)noexcept
+		JBvhOption JSceneSpatialStructure::ActivatedOptionCash::GetBvhOption()const noexcept
 		{
-			Clear();
-			bvh = std::make_unique<JBvh>(gameObject, bvhBuildType, splitType);
-			spatialStructureType = J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH;
+			JGameObject* innerRoot = nullptr;
+			if (preHasInnerRoot[bvhIndex])
+				innerRoot = Core::GetRawPtr<JGameObject>(preInnerRootGuid[bvhIndex]);
+
+			JGameObject* debugRoot = nullptr;
+			if (preHasDebugRoot[bvhIndex])
+				debugRoot = Core::GetRawPtr<JGameObject>(preDebugRootGuid[bvhIndex]);
+
+			JBvhOption option = preBvhOption;
+			option.commonOption.innerRoot = innerRoot;
+			option.commonOption.debugRoot = debugRoot;
+
+			return option;
 		}
+		JKdTreeOption JSceneSpatialStructure::ActivatedOptionCash::GetKdTreeOption()const noexcept
+		{
+			JGameObject* innerRoot = nullptr;
+			if (preHasInnerRoot[kdTreeIndex])
+				innerRoot = Core::GetRawPtr<JGameObject>(preInnerRootGuid[kdTreeIndex]);
+
+			JGameObject* debugRoot = nullptr;
+			if (preHasDebugRoot[kdTreeIndex])
+				debugRoot = Core::GetRawPtr<JGameObject>(preDebugRootGuid[kdTreeIndex]);
+
+			JKdTreeOption option = preKdTreeOption;
+			option.commonOption.innerRoot = innerRoot;
+			option.commonOption.debugRoot = debugRoot;
+
+			return option;
+		}
+		void JSceneSpatialStructure::ActivatedOptionCash::SetOctreeOption(const JOctreeOption& octreeOption)
+		{
+			preOctreeOption = octreeOption;
+			preHasInnerRoot[octreeIndex] = octreeOption.commonOption.HasInnerRoot();
+			if (preHasInnerRoot[octreeIndex])
+				preInnerRootGuid[octreeIndex] = octreeOption.commonOption.innerRoot->GetGuid();
+			else
+				preInnerRootGuid[octreeIndex] = 0;
+
+			preHasDebugRoot[octreeIndex] = octreeOption.commonOption.HasDebugRoot();
+			if (preHasDebugRoot[octreeIndex])
+				preDebugRootGuid[octreeIndex] = octreeOption.commonOption.debugRoot->GetGuid();
+			else
+				preDebugRootGuid[octreeIndex] = 0;
+		}
+		void JSceneSpatialStructure::ActivatedOptionCash::SetBvhOption(const JBvhOption& bvhOption)
+		{
+			preBvhOption = bvhOption;
+			preHasInnerRoot[bvhIndex] = bvhOption.commonOption.HasInnerRoot();
+			if (preHasInnerRoot[bvhIndex])
+				preInnerRootGuid[bvhIndex] = bvhOption.commonOption.innerRoot->GetGuid();
+			else
+				preInnerRootGuid[bvhIndex] = 0;
+
+			preHasDebugRoot[bvhIndex] = bvhOption.commonOption.HasDebugRoot();
+			if (preHasDebugRoot[bvhIndex])
+				preDebugRootGuid[bvhIndex] = bvhOption.commonOption.debugRoot->GetGuid();
+			else
+				preDebugRootGuid[bvhIndex] = 0;
+		}
+		void JSceneSpatialStructure::ActivatedOptionCash::SetKdTreeOption(const JKdTreeOption& kdTreeOption)
+		{
+			preKdTreeOption = kdTreeOption;
+			preHasInnerRoot[kdTreeIndex] = kdTreeOption.commonOption.HasInnerRoot();
+			if (preHasInnerRoot[kdTreeIndex])
+				preInnerRootGuid[kdTreeIndex] = kdTreeOption.commonOption.innerRoot->GetGuid();
+			else
+				preInnerRootGuid[kdTreeIndex] = 0;
+
+			preHasDebugRoot[kdTreeIndex] = kdTreeOption.commonOption.HasDebugRoot();
+			if (preHasDebugRoot[kdTreeIndex])
+				preDebugRootGuid[kdTreeIndex] = kdTreeOption.commonOption.debugRoot->GetGuid();
+			else
+				preDebugRootGuid[kdTreeIndex] = 0;
+		}
+
+		JSceneSpatialStructure::JSceneSpatialStructure() 
+		{
+			octree = std::make_unique<JOctree>();
+			bvh = std::make_unique<JBvh>();
+			kdTree = std::make_unique<JKdTree>();
+			spaceSpatialVec.push_back(octree.get());
+			spaceSpatialVec.push_back(bvh.get());
+			spaceSpatialVec.push_back(kdTree.get());
+		}
+		JSceneSpatialStructure::~JSceneSpatialStructure(){}
 		void JSceneSpatialStructure::Clear()noexcept
 		{
 			if (octree != nullptr)
@@ -34,193 +127,165 @@ namespace JinEngine
 				octree->Clear();
 				octree.reset();
 			}
-
 			if (bvh != nullptr)
 			{
 				bvh->Clear();
 				bvh.reset();
 			}
-		}
-		void JSceneSpatialStructure::OnDebugBoundingBox(JGameObject* parent)noexcept
-		{
-			if (parent == nullptr)
-				return;
-
-			switch (spatialStructureType)
+			if (kdTree != nullptr)
 			{
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
-				if (octree != nullptr)
-					octree->OnDebugGameObject(parent);
-				break;
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
-				if (bvh != nullptr)
-					bvh->OnDebugGameObject(parent);
-				break;
-			default:
-				break;
+				kdTree->Clear();
+				kdTree.reset();
 			}
-		}
-		void JSceneSpatialStructure::OffDebugBoundingBox()noexcept
-		{
-			switch (spatialStructureType)
-			{
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
-				if (octree != nullptr)
-					octree->OffDebugGameObject();
-				break;
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
-				if (bvh != nullptr)
-					bvh->OffDebugGameObject();
-				break;
-			default:
-				break;
-			}
+			spaceSpatialVec.clear();
 		}
 		void JSceneSpatialStructure::Culling(const JCullingFrustum& camFrustum)noexcept
 		{
-			switch (spatialStructureType)
+			if (octree->IsSpaceSpatialActivated())
+				octree->Culling(camFrustum);
+			if (bvh->IsSpaceSpatialActivated())
+				octree->Culling(camFrustum);
+			/*for (const auto& data : spaceSpatialVec)
 			{
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
-				if (octree != nullptr)
-					octree->Culling(camFrustum);
-				break;
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
-				if (bvh != nullptr)
-					bvh->Culling(camFrustum);
-				break;
-			default:
-				break;
-			}
+				if (data->IsSpaceSpatialActivated())
+					data->Culling(camFrustum);
+			}*/
 		}
 		void JSceneSpatialStructure::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
 		{
-			switch (spatialStructureType)
+			for (const auto& data : spaceSpatialVec)
 			{
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
-				if (octree != nullptr)
-					octree->Culling(camFrustum);
-				break;
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
-				if (bvh != nullptr)
-					bvh->Culling(camFrustum);
-				break;
-			default:
-				break;
+				if (data->IsSpaceSpatialActivated() && data->IsCullingActivated())
+					data->Culling(camFrustum);
 			}
 		}
 		void JSceneSpatialStructure::UpdateGameObject(JGameObject* gameObject)noexcept
 		{
-			switch (spatialStructureType)
+			for (auto& data : spaceSpatialVec)
 			{
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
-				if (octree != nullptr)
-					octree->UpdateGameObject(gameObject);
-				break;
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
-				if (bvh != nullptr)
-					bvh->UpdateGameObject(gameObject);
-				break;
-			default:
-				break;
+				if (data->IsSpaceSpatialActivated() && data->IsCullingActivated())
+					data->UpdateGameObject(gameObject);
 			}
 		}
 		void JSceneSpatialStructure::AddGameObject(JGameObject* gameObject)noexcept
 		{
-			switch (spatialStructureType)
+			for (auto& data : spaceSpatialVec)
 			{
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
-				if (octree != nullptr)
-					octree->AddGameObject(gameObject);
-				break;
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
-				if (bvh != nullptr)
-					bvh->AddGameObject(gameObject);
-				break;
-			default:
-				break;
+				if (data->IsSpaceSpatialActivated())
+					data->AddGameObject(gameObject);
 			}
 		}
 		void JSceneSpatialStructure::RemoveGameObject(JGameObject* gameObject)noexcept
 		{
-			switch (spatialStructureType)
+			if (gameObject == nullptr)
+				return;
+
+			for (auto& data : spaceSpatialVec)
 			{
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
-				if (octree != nullptr)
-					octree->RemoveGameObject(gameObject);
-				break;
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
-				if (bvh != nullptr)
-					bvh->RemoveGameObject(gameObject);
-				break;
-			default:
-				break;
+				if (data->IsSpaceSpatialActivated())
+					data->RemoveGameObject(gameObject);
 			}
 		}
-		JSceneSpatialStructureOption JSceneSpatialStructure::GetOption()const noexcept
+		std::vector<JGameObject*> JSceneSpatialStructure::GetAlignedObject(const DirectX::BoundingFrustum& camFrustum)const noexcept
 		{
-			return JSceneSpatialStructureOption(spatialStructureType, IsSpatialStructureActivated(), IsDebugActivated(), IsDebugLeafOnly());
-		}
-		J_SCENE_SPATIAL_STRUCTURE_TYPE JSceneSpatialStructure::GetSpatialStructureType()const noexcept
-		{
-			return spatialStructureType;
-		}
-		void JSceneSpatialStructure::SetSpatialStructureType(const J_SCENE_SPATIAL_STRUCTURE_TYPE newType)noexcept
-		{
-			spatialStructureType = newType;
-		}
-		void JSceneSpatialStructure::SetDebugOnlyLeaf(bool value)noexcept
-		{
-			switch (spatialStructureType)
+			if (activateTrigger)
 			{
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
-				if (octree != nullptr)
-					octree->SetDebugOnlyLeaf(value);
-				break;
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
-				if (bvh != nullptr)
-					bvh->SetDebugOnlyLeaf(value);
-				break;
-			default:
-				break;
+				if (kdTree->IsSpaceSpatialActivated())
+					return kdTree->GetAlignedObject(camFrustum);
+			}
+			return std::vector<JGameObject*>();
+		}
+		JOctreeOption JSceneSpatialStructure::GetOctreeOption()const noexcept
+		{
+			return octree->GetOctreeOption();
+		}
+		JBvhOption JSceneSpatialStructure::GetBvhOption()const noexcept
+		{
+			return bvh->GetBvhOption();
+		}
+		JKdTreeOption JSceneSpatialStructure::GetKdTreeOption()const noexcept
+		{
+			return kdTree->GetKdTreeOption();
+		}
+		void JSceneSpatialStructure::SetOctreeOption(const JOctreeOption& option)
+		{
+			if (activateTrigger)
+				octree->SetOctreeOption(option);
+			else
+				optionCash->SetOctreeOption(option);
+		}
+		void JSceneSpatialStructure::SetBvhOption(const JBvhOption& option)
+		{
+			if (activateTrigger)
+				bvh->SetBvhOption(option);
+			else
+				optionCash->SetBvhOption(option);
+		}
+		void JSceneSpatialStructure::SetKdTreeOption(const JKdTreeOption& option)
+		{
+			if (activateTrigger)
+				kdTree->SetKdTreeOption(option);
+			else
+				optionCash->SetKdTreeOption(option);
+		}
+		void JSceneSpatialStructure::SetInitTrigger(const bool value)noexcept
+		{
+			initTrigger = value;
+		}
+		bool JSceneSpatialStructure::IsInitTriggerActivated()const noexcept
+		{
+			return initTrigger;
+		}
+		void JSceneSpatialStructure::Activate()noexcept
+		{
+			if (!activateTrigger)
+			{  
+				octree->SetOctreeOption(optionCash->GetOctreeOption());
+				bvh->SetBvhOption(optionCash->GetBvhOption());
+				kdTree->SetKdTreeOption(optionCash->GetKdTreeOption());
+				optionCash.reset();
+				spaceSpatialVec.push_back(octree.get());
+				spaceSpatialVec.push_back(bvh.get());
+				spaceSpatialVec.push_back(kdTree.get());
+				activateTrigger = true;
 			}
 		}
-		bool JSceneSpatialStructure::IsSpatialStructureActivated()const noexcept
+		void JSceneSpatialStructure::DeAcitvate()noexcept
 		{
-			return octree != nullptr || bvh != nullptr;
-		}
-		bool JSceneSpatialStructure::IsDebugActivated()const noexcept
-		{
-			switch (spatialStructureType)
+			if (activateTrigger)
 			{
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
-				if (octree != nullptr)
-					return octree->IsDebugActivated();
-				break;
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
-				if (bvh != nullptr)
-					return bvh->IsDebugActivated();
-				break;
-			default:
-				break;
+				optionCash = std::make_unique<ActivatedOptionCash>(octree->GetOctreeOption(), bvh->GetBvhOption(), kdTree->GetKdTreeOption());
+				octree->Clear();
+				bvh->Clear();
+				kdTree->Clear();
+				spaceSpatialVec.clear();
+				activateTrigger = false;
 			}
-			return false;
 		}
-		bool JSceneSpatialStructure::IsDebugLeafOnly()const noexcept
+		void JSceneSpatialStructure::BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, Editor::JEditorBinaryTreeView& tree)noexcept
 		{
-			switch (spatialStructureType)
+			if (activateTrigger)
 			{
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::OCTREE:
-				if (octree != nullptr)
-					return octree->IsDebugLeafOnly();
-				break;
-			case J_SCENE_SPATIAL_STRUCTURE_TYPE::BVH:
-				if (bvh != nullptr)
-					return bvh->IsDebugLeafOnly();
-				break;
-			default:
-				break;
+				switch (type)
+				{
+				case JinEngine::Core::J_SPACE_SPATIAL_TYPE::OCTREE:
+				{
+					break;
+				}
+				case JinEngine::Core::J_SPACE_SPATIAL_TYPE::BVH:
+				{
+					bvh->BuildDebugTree(tree);
+					break;
+				} 
+				case JinEngine::Core::J_SPACE_SPATIAL_TYPE::KD_TREE:
+				{
+					kdTree->BuildDebugTree(tree);
+					break;
+				}
+				default:
+					break;
+				}
 			}
-			return false;
 		}
 	}
 }

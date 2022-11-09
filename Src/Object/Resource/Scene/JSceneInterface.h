@@ -5,7 +5,10 @@
 #include"../../Component/JComponentType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"  
 #include"../../JFrameUpdate.h"
-#include"../../../Core/SpaceSpatial/JSceneSpatialStructureOption.h" 
+#include"../../../Core/SpaceSpatial/Bvh/JBvhOption.h" 
+#include"../../../Core/SpaceSpatial/Octree/JOctreeOption.h" 
+#include"../../../Core/SpaceSpatial/Kd-tree/JKdTreeOption.h" 
+#include<DirectXCollision.h> 
 
 namespace JinEngine
 {
@@ -26,11 +29,13 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JSceneObserver;
+		class JEditorBinaryTreeView;
 	}
 	class JSceneCashInterface
 	{
 	private:
 		friend class Graphic::JGraphicImpl; 
+		friend class Editor::JSceneObserver; //Debug
 	protected:
 		virtual ~JSceneCashInterface() = default;
 	public:
@@ -108,12 +113,18 @@ namespace JinEngine
 	public:
 		virtual JSceneSpaceSpatialInterface* SpaceSpatialInterface() = 0;
 	private:
-		virtual void ViewCulling()noexcept = 0; 
-		virtual Core::JSceneSpatialStructureOption GetSpatialStructureOption()const noexcept = 0;
-		virtual void SetSceneSpatialStructure(const bool value) noexcept = 0;
-		virtual void SetSceneSpatialStructureType(const Core::J_SCENE_SPATIAL_STRUCTURE_TYPE type) = 0;
-		virtual void SetDebugBoundingBox(const bool value)noexcept = 0;
-		virtual void SetDebugOnlyLeaf(const bool value)noexcept = 0;
+		virtual void ViewCulling()noexcept = 0;  
+		virtual void ActivateSpaceSpatial(bool setInitValue = false)noexcept = 0;
+		virtual void DeActivateSpaceSpatial()noexcept = 0;
+		virtual std::vector<JGameObject*> GetAlignedObject(const DirectX::BoundingFrustum& frustum)const noexcept = 0;
+		virtual Core::JOctreeOption GetOctreeOption()const noexcept = 0;
+		virtual Core::JBvhOption GetBvhOption()const noexcept = 0;
+		virtual Core::JKdTreeOption GetKdTreeOption()const noexcept = 0;
+		virtual void SetOctreeOption(const Core::JOctreeOption& newOption)noexcept = 0;
+		virtual void SetBvhOption(const Core::JBvhOption& newOption)noexcept = 0;
+		virtual void SetKdTreeOption(const Core::JKdTreeOption& newOption)noexcept = 0;
+		//Test
+		virtual void BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, Editor::JEditorBinaryTreeView& tree)noexcept = 0; 
 	};
 
 	class JSceneInterface :public JResourceObject,

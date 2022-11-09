@@ -34,13 +34,13 @@ namespace JinEngine
 		{
 			return gtI.GetTxtType();
 		}
-		CD3DX12_CPU_DESCRIPTOR_HANDLE JGraphicTextureUserInterface::CallGetCpuHandle(JGraphicTextureInterface& gtI) const noexcept
+		CD3DX12_CPU_DESCRIPTOR_HANDLE JGraphicTextureUserInterface::CallGetCpuSrcHandle(JGraphicTextureInterface& gtI) const noexcept
 		{
-			return gtI.GetCpuHandle();
+			return gtI.GetCpuSrvHandle();
 		}
-		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicTextureUserInterface::CallGetGpuHandle(JGraphicTextureInterface& gtI) const noexcept
+		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicTextureUserInterface::CallGetGpuSrvHandle(JGraphicTextureInterface& gtI) const noexcept
 		{
-			return gtI.GetGpuHandle();
+			return gtI.GetGpuSrvHandle();
 		}
 	}
 }

@@ -175,6 +175,7 @@ namespace JinEngine
 				return;
 
 			window->SetUnFocus();
+			focusWindow = nullptr;
 		}
 		JEditorPage::OpenWindowF::Functor* JEditorPage::GetFunctorPtr()noexcept
 		{

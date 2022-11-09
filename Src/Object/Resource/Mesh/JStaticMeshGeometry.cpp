@@ -161,7 +161,10 @@ namespace JinEngine
 			return true;
 		}
 		else
+		{
+			MessageBox(0, L"Fail Load Mesh", 0, 0);
 			return false;
+		}
 	}
 	bool JStaticMeshGeometry::ImportMesh(JMeshGroup& meshGroup)
 	{
@@ -183,10 +186,7 @@ namespace JinEngine
 		else
 		{
 			for (uint i = 0; i < meshCount; ++i)
-			{
-				SetIgnoreUndestroyableFlag(true);
-				meshGroup.GetMeshData(i)->GetMaterial()->BeginDestroy();
-			}
+				BegineForcedDestroy(meshGroup.GetMeshData(i)->GetMaterial().Get());
 
 			DeleteRFile();
 			return false;

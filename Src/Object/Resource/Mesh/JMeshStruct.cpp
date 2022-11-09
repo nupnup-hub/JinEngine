@@ -1,7 +1,7 @@
 #include"JMeshStruct.h"
 #include"../../../Utility/JCommonUtility.h" 
 #include"../../../Utility/JMathHelper.h"
-#include"../../../Core/DirectXEx/JDirectXCollisionEx.h"
+#include"../../../Core/Geometry/JDirectXCollisionEx.h"
 #include"../../../Core/Guid/GuidCreator.h"
  
 namespace JinEngine

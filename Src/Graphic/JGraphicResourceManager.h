@@ -27,7 +27,7 @@ namespace JinEngine
 		private:
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap;
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvHeap;
-			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap;
+			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap; 
 			uint rtvDescriptorSize = 0;
 			uint dsvDescriptorSize = 0;
 			uint cbvSrvUavDescriptorSize = 0;
@@ -70,18 +70,16 @@ namespace JinEngine
 			uint shadowMapCapacity = 1000;
 			std::vector<std::unique_ptr<JGraphicTextureHandle>> shadowMapHandle;
 			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> shadowMapResource;
-
-			Microsoft::WRL::ComPtr<ID3D12Resource> depthStencil;
-		public:
+			 
+			Microsoft::WRL::ComPtr<ID3D12Resource> depthStencil; 
+		public: 
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuRtvDescriptorHandle(int index)const noexcept;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuRtvDescriptorHandle(int index)const noexcept;
-
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDsvDescriptorHandle(int index)const noexcept;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDsvDescriptorHandle(int index)const noexcept;
-
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvDescriptorHandle(int index)const noexcept;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept;
-
+		public:
 			uint GetSrvUser2DTextureStart()const noexcept;
 			uint GetSrvUserCubeTextureStart()const noexcept;
 			uint GetSrvRenderResultStart()const noexcept;
@@ -106,14 +104,14 @@ namespace JinEngine
 		private:
 			void BuildRtvDescriptorHeaps(ID3D12Device* device);
 			void BuildDsvDescriptorHeaps(ID3D12Device* device);
-			void BuildSrvDescriptorHeaps(ID3D12Device* device);
+			void BuildSrvDescriptorHeaps(ID3D12Device* device); 
 			void BuildDepthStencilResource(ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList,
 				const uint viewWidth,
 				const uint viewHeight,
 				bool m4xMsaaState,
 				uint m4xMsaaQuality);
-
+		private:
 			JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
 				const std::wstring& path,
 				const std::wstring& oriFormat,

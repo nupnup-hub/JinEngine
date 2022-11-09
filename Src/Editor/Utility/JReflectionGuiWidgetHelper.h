@@ -18,6 +18,9 @@ namespace JinEngine
 	}
 	namespace Editor
 	{
+		//widget need info 
+		//info is declared reflect system
+
 		class JGuiPropertyWidgetHandle
 		{ 
 		private:

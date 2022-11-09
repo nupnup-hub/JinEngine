@@ -6,15 +6,6 @@
 
 namespace JinEngine
 {
-	struct JObjectDestroyData
-	{
-	public:
-		size_t beginGuid;
-		bool isIgnoreUndestroyAbleFlag = false;
-		bool isEnd = true;
-	};
-	static JObjectDestroyData destroyData;
-
 	J_OBJECT_FLAG JObject::GetFlag()const noexcept
 	{
 		return flag;
@@ -59,41 +50,17 @@ namespace JinEngine
 	{
 		isActivated = false;
 	}
-	bool JObject::BeginDestroy()
+	bool JObject::BeginDestroy(JObject* obj)
 	{
-		if (destroyData.isEnd)
-		{
-			//lock 필요 
-			destroyData.beginGuid = GetGuid();
-			destroyData.isEnd = false;
-		}
-		return EndDestroy();
+		return obj->EndDestroy(false);
 	}
-	bool JObject::BegineForcedDestroy()
-	{
-		SetIgnoreUndestroyableFlag(true);
-		return BeginDestroy();
+	bool JObject::BegineForcedDestroy(JObject* obj)
+	{  
+		return obj->EndDestroy(true);
 	}
-	bool JObject::IsIgnoreUndestroyableFlag()noexcept
-	{
-		return destroyData.isIgnoreUndestroyAbleFlag;
-	}
-	void JObject::SetIgnoreUndestroyableFlag(const bool value)noexcept
-	{
-		destroyData.isIgnoreUndestroyAbleFlag = value;
-	}
-	bool JObject::EndDestroy()
-	{
-		const size_t guid = GetGuid();
-		bool res = Destroy();
-		if (destroyData.beginGuid == guid)
-		{
-			//unlock 필요 
-			destroyData.isEnd = true;
-			destroyData.isIgnoreUndestroyAbleFlag = false;
-		}
-
-		if (res)
+	bool JObject::EndDestroy(const bool isForced)
+	{ 
+		if (Destroy(isForced))
 		{
 			RemoveInstance();
 			return true;

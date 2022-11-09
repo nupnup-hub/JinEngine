@@ -1,5 +1,5 @@
 #include"JObjFileLoader.h"
-#include"../../DirectXEx/JDirectXCollisionEx.h"
+#include"../../Geometry/JDirectXCollisionEx.h"
 #include"../../Guid/GuidCreator.h"
 #include"../../File/JFilePathData.h"
 #include"../../../Object/Resource/Mesh/JMeshStruct.h"

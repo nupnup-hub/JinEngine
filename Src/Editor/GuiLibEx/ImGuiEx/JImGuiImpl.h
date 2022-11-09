@@ -156,7 +156,7 @@ namespace JinEngine
 			static bool BeginCombo(const std::string& name, const char* previewValue, ImGuiComboFlags flags = 0);
 			static void EndCombo();
 		public:
-			//Image
+			//Image  
 			static void Image(Graphic::JGraphicTexture& graphicTexture,
 				const JVector2<float>& size,
 				const JVector2<float>& uv0 = JVector2<float>(0, 0),

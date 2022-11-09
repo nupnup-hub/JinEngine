@@ -7,11 +7,11 @@
 namespace JinEngine
 {
 	namespace Graphic
-	{
+	{ 
 		class JGraphicTextureHandle : public JGraphicBufElementInterface
 		{  
 		private: 
-			friend class JGraphicResourceManager;
+			friend class JGraphicResourceManager; 
 		private:
 			const J_GRAPHIC_TEXTURE_TYPE graphicResourceType;
 			uint width;
@@ -26,7 +26,7 @@ namespace JinEngine
 			int GetRtvHeapIndex()const noexcept;
 			int GetDsvHeapIndex()const noexcept;
 			int GetSrvHeapIndex()const noexcept; 
-			 
+		public:
 			static bool Destroy(JGraphicTextureHandle** handle);
 		public:
 			JGraphicTextureHandle(const J_GRAPHIC_TEXTURE_TYPE graphicResourceType, uint width, uint height);

@@ -126,5 +126,7 @@ namespace JinEngine
 		//skip file using stream until symbol
 		//if fail stream is close
 		static bool SkipSentence(std::wifstream& stream, const std::wstring& symbol);
+	public:
+		static bool InputSpace(std::wofstream& stream, int spaceCount);
 	};
 }

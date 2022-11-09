@@ -166,9 +166,9 @@ namespace JinEngine
 		}
 		return false;
 	}
-	bool JDirectory::Destroy()
+	bool JDirectory::Destroy(const bool isForced)
 	{
-		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !IsIgnoreUndestroyableFlag())
+		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !isForced)
 			return false;
 		 
 		Clear();
@@ -180,12 +180,12 @@ namespace JinEngine
 		std::vector<JDirectory*> copyD = children;
 		const uint childrenCount = (uint)copyD.size();
 		for (uint i = 0; i < childrenCount; ++i)
-			copyD[i]->BegineForcedDestroy();
+			JObject::BegineForcedDestroy(copyD[i]);
 
 		std::vector<JFile*> copyF = fileList;
 		const uint fileCount = (uint)copyF.size();
 		for (uint i = 0; i < fileCount; ++i)
-			copyF[i]->GetResource()->BegineForcedDestroy();
+			JObject::BegineForcedDestroy(copyF[i]->GetResource());
 		
 		children.clear();
 		fileList.clear();

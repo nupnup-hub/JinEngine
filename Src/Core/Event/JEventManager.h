@@ -52,11 +52,12 @@ namespace JinEngine
 			{
 			public:
 				std::unique_ptr<OnEventFunctor> onEvent;
-				const IdentifierType iden;
-				bool isValid;
+				IdentifierType iden;
+				uint listenEventCount = 0;
+				bool isValid = true;
 			public:
-				ListenerInfo(OnEventPtr ptr, Listener* listener, const IdentifierType& iden)
-					:onEvent(std::make_unique<OnEventFunctor>(ptr, listener)), iden(iden), isValid(true)
+				ListenerInfo(OnEventPtr ptr, Listener* listener, IdentifierType iden)
+					:onEvent(std::make_unique<OnEventFunctor>(ptr, listener)), iden(iden)
 				{}
 				~ListenerInfo() = default;
 				ListenerInfo(ListenerInfo&& rhs) = default;
@@ -66,7 +67,9 @@ namespace JinEngine
 			std::unique_ptr<IdenCompareFunctor> idenCompare;
 			NotifyFunctor notifyFunctor;
 			std::vector<std::unique_ptr<NotifyBinder>> eventBinderVec;
-			std::unordered_map<EVENTTYPE, std::vector<std::unique_ptr<ListenerInfo>>> eventDic;
+			std::unordered_map<IdentifierType, std::unique_ptr<ListenerInfo>> listenerDic;
+			std::unordered_map<EVENTTYPE, std::vector<ListenerInfo*>> eventDic;
+			//std::unordered_map<EVENTTYPE, std::vector<std::unique_ptr<ListenerInfo>>> eventDic;
 		private:
 			std::vector<std::tuple<OnEventPtr, Listener*, const IdentifierType&, const EVENTTYPE&>> addWaitVec;
 			std::vector<IdentifierType> remListenerWaitVec;
@@ -94,7 +97,7 @@ namespace JinEngine
 				return resBit;
 			}
 			void RemoveEventListener(const IdentifierType& iden, const EVENTTYPE& eventType)final
-			{
+			{ 
 				if (actNotify)
 					RemoveEventLoosly(iden, eventType);
 				else
@@ -127,26 +130,34 @@ namespace JinEngine
 				if (vec != eventDic.end())
 				{
 					for (auto& data : vec->second)
-						data->onEvent->Invoke(iden, eventType, std::forward<Param>(as)...);
+					{
+						if(data->isValid)
+							data->onEvent->Invoke(iden, eventType, std::forward<Param>(as)...);
+					}
 					ExecuteWaitQuque();
 				}
 				actNotify = false; 
 			}
-			void RegistIdenCompareCallable(IdenComparePtr ptr)
-			{
-				idenCompare = std::make_unique<IdenCompareFunctor>(ptr);
-			}
 			void ClearEvent()
-			{ 
+			{
+				listenerDic.clear();
 				eventDic.clear();
+				eventBinderVec.clear();
 			}
 		private:
 			bool AddDirectly(OnEventPtr ptr, Listener* listener, const IdentifierType& iden, const EVENTTYPE& eventType)
 			{
+				auto listenerData = listenerDic.find(iden);
+				if (listenerData == listenerDic.end())
+				{
+					listenerDic.emplace(iden, std::make_unique<ListenerInfo>(ptr, listener, iden));
+					listenerData = listenerDic.find(iden);
+				}
+
 				auto vec = eventDic.find(eventType);
 				if (vec == eventDic.end())
 				{
-					eventDic.emplace(eventType, std::vector<std::unique_ptr<ListenerInfo>>());
+					eventDic.emplace(eventType, std::vector<ListenerInfo*>());
 					vec = eventDic.find(eventType);
 				}
 				else
@@ -157,7 +168,9 @@ namespace JinEngine
 							return false;
 					}
 				}
-				vec->second.emplace_back(std::make_unique<ListenerInfo>(ptr, listener, iden));
+
+				vec->second.push_back(listenerData->second.get());
+				++listenerData->second->listenEventCount;
 				return true;
 			}
 			bool AddLoosly(OnEventPtr ptr, Listener* listener, const IdentifierType& iden, const EVENTTYPE& eventType)
@@ -168,17 +181,24 @@ namespace JinEngine
 			void RemoveEventDirectly(const IdentifierType& iden, const EVENTTYPE& eventType)
 			{
 				auto vec = eventDic.find(eventType);
-				for (uint i = 0; i < vec->second.size(); ++i)
+				if (vec != eventDic.end())
 				{
-					if ((*idenCompare)(vec->second[i]->iden, iden))
+					const uint vecCount = (uint)vec->second.size();
+					for (uint i = 0; i < vecCount; ++i)
 					{
-						vec->second[i].release();
-						vec->second.erase(vec->second.begin() + i);
+						if ((*idenCompare)(vec->second[i]->iden, iden))
+						{
+							--vec->second[i]->listenEventCount;
+							vec->second.erase(vec->second.begin() + i);
+							if (vec->second[i]->listenEventCount == 0)
+								listenerDic.erase(iden);
+							return;
+						}
 					}
 				}
 			}
 			void RemoveEventLoosly(const IdentifierType& iden, const EVENTTYPE& eventType)
-			{
+			{ 
 				remEvWaitVec.push_back(std::tuple(iden, eventType));
 			}
 			void RemoveListenerDirectly(const IdentifierType& iden)
@@ -190,16 +210,22 @@ namespace JinEngine
 					{
 						if ((*idenCompare)(data.second[i]->iden, iden))
 						{
-							data.second[i].release();
+							--data.second[i]->listenEventCount;
 							data.second.erase(data.second.begin() + i);
 							break;
 						}
 					}
 				}
+				listenerDic.erase(iden);
 			}
 			void RemoveListenerLoosly(const IdentifierType& iden)
 			{
-				remListenerWaitVec.push_back(iden);
+				auto data = listenerDic.find(iden);
+				if(data != listenerDic.end())
+				{
+					data->second->isValid = false;
+					remListenerWaitVec.push_back(iden);
+				}
 			}
 		private:
 			void ExecuteWaitQuque()
@@ -221,11 +247,10 @@ namespace JinEngine
 				remListenerWaitVec.clear();
 			}
 		protected:
-			JEventManager()
-				:notifyFunctor(NotifyFunctor(&JEventManager::NotifyEvent, this))
-			{}
-		private:
-			virtual void RegistEvCallable() = 0;
+			JEventManager(IdenComparePtr ptr)
+				:idenCompare(std::make_unique<IdenCompareFunctor>(ptr)),
+				notifyFunctor(NotifyFunctor(&JEventManager::NotifyEvent, this))
+			{ } 
 		};
 	}
 }

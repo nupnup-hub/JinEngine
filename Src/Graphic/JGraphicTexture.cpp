@@ -86,12 +86,12 @@ namespace JinEngine
 		{
 			return handle->GetGraphicResourceType();
 		}
-		CD3DX12_CPU_DESCRIPTOR_HANDLE JGraphicTexture::GetCpuHandle() const noexcept
+		CD3DX12_CPU_DESCRIPTOR_HANDLE JGraphicTexture::GetCpuSrvHandle() const noexcept
 		{
 			return JGraphic::Instance().ResourceInterface()->GetCpuSrvDescriptorHandle(handle->GetSrvHeapIndex());
 		}
-		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicTexture::GetGpuHandle() const noexcept
-		{ 
+		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicTexture::GetGpuSrvHandle() const noexcept
+		{
 			return JGraphic::Instance().ResourceInterface()->GetGpuSrvDescriptorHandle(handle->GetSrvHeapIndex());
 		}
 	}

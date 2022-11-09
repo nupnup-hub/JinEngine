@@ -327,7 +327,7 @@ namespace JinEngine
 
 			CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvHeap->GetCPUDescriptorHandleForHeapStart());
 			srvHandle.Offset(GetSrvRenderResultStart() + renderResultCount, cbvSrvUavDescriptorSize);
-
+			 
 			Microsoft::WRL::ComPtr<ID3D12Resource> newTexture;
 			ThrowIfFailedHr(device->CreateCommittedResource(
 				&heapProperty,

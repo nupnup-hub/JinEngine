@@ -25,7 +25,7 @@
 #include"../../Core/Guid/GuidCreator.h" 
 #include"../../Utility/JCommonUtility.h"
 #include"../../Application/JApplicationVariable.h"
-#include"../../Core/DirectXEx/JDirectXCollisionEx.h"
+#include"../../Core/Geometry/JDirectXCollisionEx.h"
 
 #include"../../Graphic/JGraphic.h"
 #include"../../Graphic/JGraphicDrawList.h"
@@ -109,7 +109,7 @@ namespace JinEngine
 			auto setFrameBuffIndexCallable = JRI::GetSetFrameBuffIndexCallable(resource.GetResourceType());
 			rVec.ApplyFuncByIndex(index, setFrameBuffIndexCallable);
 		}
-		 
+
 		return res00 && res01;
 	}
 	void JResourceManagerImpl::ResourceStorage::Clear()
@@ -182,27 +182,53 @@ namespace JinEngine
 	JMeshGeometry* JResourceManagerImpl::GetDefaultMeshGeometry(const J_DEFAULT_SHAPE type)noexcept
 	{
 		auto data = resourceData.defaultMeshGuidMap.find(type);
-		return data != resourceData.defaultMeshGuidMap.end() ?
-			static_cast<JMeshGeometry*>(rCash.find(JMeshGeometry::GetStaticResourceType())->second.Get(data->second)) : nullptr;
+		if (data != resourceData.defaultMeshGuidMap.end())
+			return static_cast<JMeshGeometry*>(rCash.find(JMeshGeometry::GetStaticResourceType())->second.Get(data->second));
+		else
+		{
+			JFile* file = GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath())->GetFile(JDefaultShape::ConvertToName(type));
+			return static_cast<JMeshGeometry*>(file->GetResource());
+		}
+
 	}
-	JMaterial* JResourceManagerImpl::GetDefaultMaterial(const J_DEFAULT_MATERIAL materialType)noexcept
+	JMaterial* JResourceManagerImpl::GetDefaultMaterial(const J_DEFAULT_MATERIAL type)noexcept
 	{
-		const size_t guid = resourceData.defaultMaterialGuidMap.find(materialType)->second;
-		return static_cast<JMaterial*>(rCash.find(JMaterial::GetStaticResourceType())->second.Get(guid));
+		auto data = resourceData.defaultMaterialGuidMap.find(type);
+		if (data != resourceData.defaultMaterialGuidMap.end())
+			return static_cast<JMaterial*>(rCash.find(JMaterial::GetStaticResourceType())->second.Get(data->second));
+		else
+		{
+			JFile* file = GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath())->GetFile(JDefaultMateiral::ConvertToName(type));
+			return static_cast<JMaterial*>(file->GetResource());
+		}
 	}
 	JTexture* JResourceManagerImpl::GetEditorTexture(const J_EDITOR_TEXTURE enumName)noexcept
 	{
 		auto data = resourceData.defaultTextureMap.find(enumName);
-		if (data == resourceData.defaultTextureMap.end())
-			return nullptr;
+		if (data != resourceData.defaultTextureMap.end())
+			return static_cast<JTexture*>(rCash.find(JTexture::GetStaticResourceType())->second.Get(data->second));
+		else
+		{ 
+			JFile* file = GetDirectory(JApplicationVariable::GetEngineDefaultResourcePath())->GetFile(resourceData.FindEditTextureName(enumName));
+			if (file != nullptr)
+				return static_cast<JTexture*>(file->GetResource());
+			else
+				return nullptr;
+		}
 
-		return static_cast<JTexture*>(rCash.find(JTexture::GetStaticResourceType())->second.Get(data->second));
 	}
-	JShader* JResourceManagerImpl::GetDefaultShader(const J_DEFAULT_SHADER shaderType)noexcept
+	JShader* JResourceManagerImpl::GetDefaultShader(const J_DEFAULT_SHADER type)noexcept
 	{
-		auto data = resourceData.defaultShaderGuidMap.find(shaderType);
-		return data != resourceData.defaultShaderGuidMap.end() ?
-			static_cast<JShader*>(rCash.find(JShader::GetStaticResourceType())->second.Get(data->second)) : nullptr;
+		//GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath());
+		auto data = resourceData.defaultShaderGuidMap.find(type);
+		if (data != resourceData.defaultShaderGuidMap.end())
+			return static_cast<JShader*>(rCash.find(JShader::GetStaticResourceType())->second.Get(data->second));
+		else
+		{
+			J_SHADER_FUNCTION shaderF = DefaultShader::GetShaderFunction(type);
+			JFile* file = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath())->GetFile(JShaderType::ConvertToName(shaderF));
+			return static_cast<JShader*>(file->GetResource());
+		}
 	}
 	JDirectory* JResourceManagerImpl::GetDirectory(const size_t guid)noexcept
 	{
@@ -288,6 +314,7 @@ namespace JinEngine
 
 		rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
 		projectRootDir = resourceIO->LoadRootDirectory(JApplicationVariable::GetProjectPath(), rootFlag);
+		projectRootDir->OCInterface()->OpenDirectory();
 		resourceIO->LoadProjectDirectory(projectRootDir);
 		resourceIO->LoadProjectResource(projectRootDir);
 
@@ -303,7 +330,8 @@ namespace JinEngine
 			JScene* newScene = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(defaultSceneDir));
 			JSceneManager::Instance().TryOpenScene(newScene, false);
 			JSceneManager::Instance().SetMainScene(newScene);
-			newScene->SpaceSpatialInterface()->SetSceneSpatialStructure(true);
+
+			newScene->SpaceSpatialInterface()->ActivateSpaceSpatial(true);
 			((JResourceObjectInterface*)newScene)->CallStoreResource();
 		}
 		DestroyUnusedResource(J_RESOURCE_TYPE::SHADER, false);
@@ -325,20 +353,20 @@ namespace JinEngine
 		{
 			std::vector<JResourceObject*> copyVec = rCash.find(rHintVec[i].thisType)->second.GetVector();
 			for (uint j = 0; j < copyVec.size(); ++j)
-				copyVec[j]->BegineForcedDestroy();
+				JObject::BegineForcedDestroy(copyVec[j]);
 		}
 
 		if (engineRootDir != nullptr)
 		{
-			engineRootDir->BegineForcedDestroy();
+			JObject::BegineForcedDestroy(engineRootDir); 
 			engineRootDir = nullptr;
 		}
 		if (projectRootDir != nullptr)
 		{
-			projectRootDir->BegineForcedDestroy();
+			JObject::BegineForcedDestroy(projectRootDir);
 			projectRootDir = nullptr;
 		}
-		//JReflectionInfo::Instance().SearchIntance();
+		JReflectionInfo::Instance().SearchIntance();
 		dCash.Clear();
 		for (auto& data : rCash)
 			data.second.Clear();
@@ -438,7 +466,7 @@ namespace JinEngine
 			J_SHADER_FUNCTION shaderF = DefaultShader::GetShaderFunction((J_DEFAULT_SHADER)i);
 			J_OBJECT_FLAG objF = DefaultShader::GetObjectFlag((J_DEFAULT_SHADER)i);
 
-			std::wstring shaderName = ConvertShaderFuncFlagToName(shaderF);
+			std::wstring shaderName = JShaderType::ConvertToName(shaderF);
 			JFile* file = shaderDir->GetFile(shaderName);
 
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::SHADER)
@@ -459,13 +487,13 @@ namespace JinEngine
 		for (uint i = 0; i < (int)J_DEFAULT_MATERIAL::COUNTER; ++i)
 		{
 			//BasicMaterial format is all .mat( default format)
-			const std::wstring name = JDefaultMateiralType::ConvertBasicMateiralName(resourceData.defaultMaterialTypes[i]);
+			const std::wstring name = JDefaultMateiral::ConvertToName(resourceData.defaultMaterialTypes[i]);
 			JFile* file = matDir->GetFile(name);
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::MATERIAL)
 				resourceData.defaultMaterialGuidMap.emplace(resourceData.defaultMaterialTypes[i], file->GetResource()->GetGuid());
 			else
 			{
-				const size_t shaderGuid = resourceData.defaultShaderGuidMap[JDefaultMateiralType::FindMatchBasicShaderType(resourceData.defaultMaterialTypes[i])];
+				const size_t shaderGuid = resourceData.defaultShaderGuidMap[JDefaultMateiral::FindMatchDefaultShaderType(resourceData.defaultMaterialTypes[i])];
 				JShader* defaultShader = GetResource<JShader>(shaderGuid);
 
 				JMaterial* newMaterial = nullptr;
@@ -494,8 +522,8 @@ namespace JinEngine
 				{
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetAlbedoOnly(true);
 					newMaterial->SetShadowMap(true);
+					newMaterial->SetAlphaClip(true);
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
 				}
@@ -567,7 +595,7 @@ namespace JinEngine
 		JDirectory* meshDir = GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath());
 		for (int i = 0; i < (int)J_DEFAULT_SHAPE::COUNT - 1; ++i)
 		{
-			const std::wstring meshName = JDefaultShape::ConvertDefaultShapeName(resourceData.defaultMeshTypes[i]);
+			const std::wstring meshName = JDefaultShape::ConvertToName(resourceData.defaultMeshTypes[i]);
 			JFile* file = meshDir->GetFile(meshName);
 
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::MESH)
@@ -595,15 +623,10 @@ namespace JinEngine
 			}
 		}
 	}
-	void JResourceManagerImpl::RegistEvCallable()
-	{
-		auto lam = [](const size_t& a, const size_t& b) {return a == b; };
-		RegistIdenCompareCallable(lam);
-	}
 	JResourceManagerImpl::JResourceManagerImpl()
+		:JEventManager([](const size_t& a, const size_t& b) {return a == b; })
 	{
 		resourceIO = std::make_unique<JResourceIO>();
-		RegistEvCallable();
 	}
 	JResourceManagerImpl::~JResourceManagerImpl()
 	{
