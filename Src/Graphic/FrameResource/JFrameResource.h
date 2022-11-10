@@ -16,6 +16,7 @@ namespace JinEngine
 		struct JLightConstants;
 		struct JSMLightConstants;
 		struct JShadowMapConstants;
+		struct JBoundingObjectConstants;
 
 		struct JFrameResource
 		{
@@ -33,7 +34,7 @@ namespace JinEngine
 			std::unique_ptr<JUploadBuffer<JLightConstants>> lightCB = nullptr;
 			std::unique_ptr<JUploadBuffer<JSMLightConstants>> smLightCB = nullptr;
 			std::unique_ptr<JUploadBuffer<JShadowMapConstants>> shadowCalCB = nullptr;
-
+			std::unique_ptr<JUploadBuffer<JBoundingObjectConstants>> bundingObjectCB = nullptr;
 			// Fence value to mark commands up to this fence point.  This lets us
 			// check if these frame resources are still in use by the GPU.
 			uint64 fence = 0;

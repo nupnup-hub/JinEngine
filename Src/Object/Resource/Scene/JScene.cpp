@@ -560,9 +560,10 @@ namespace JinEngine
 			spatialStructure->SetBvhOption(bvhOption);
 
 			Core::JKdTreeOption kdOption = spatialStructure->GetKdTreeOption();
+			kdOption.isOcclusionCullingActivated = true;
 			kdOption.commonOption.innerRoot = root;
 			kdOption.commonOption.debugRoot = debugRoot; 
-			spatialStructure->SetKdTreeOption(kdOption);
+			spatialStructure->SetKdTreeOption(kdOption);		 
 		}
 	}
 	void JScene::CreateDemoGameObject()noexcept

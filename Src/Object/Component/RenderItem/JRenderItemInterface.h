@@ -3,15 +3,17 @@
 #include"../../JFrameUpdate.h"
 #include"../../Resource/JResourceUserInterface.h"
 #include"../../../Graphic/JGraphicBufInterface.h"
+
 namespace JinEngine
 {
 	namespace Graphic
 	{
 		struct JObjectConstants;
+		struct JBoundingObjectConstants;
 	}
 	 
 	class JRenderItemInterface : public JComponent,
-		public JFrameUpdate<IFrameUpdate<Graphic::JObjectConstants&, const uint>, JFrameDirtyListener, true>,
+		public JFrameUpdate<IFrameUpdate<Graphic::JObjectConstants&, Graphic::JBoundingObjectConstants&, const uint, const bool>, JFrameDirtyListener, true>,
 		public JFrameBuffUserInterface,
 		public JResourceUserInterface
 	{

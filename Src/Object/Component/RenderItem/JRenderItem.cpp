@@ -8,6 +8,7 @@
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Graphic/FrameResource/JObjectConstants.h"
+#include"../../../Graphic/FrameResource/JBoundingObjectConstants.h"
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Application/JApplicationVariable.h"
 #include<fstream>
@@ -82,8 +83,8 @@ namespace JinEngine
 			XMStoreFloat3(&pos, t);
 			XMStoreFloat3(&scale, s);
 
-			XMFLOAT3 meshBoxCenter = mesh->GetBBoxCenter();
-			XMFLOAT3 meshBoxExtent = mesh->GetBBoxExtent();
+			XMFLOAT3 meshBoxCenter = mesh->GetBoundingBoxCenter();
+			XMFLOAT3 meshBoxExtent = mesh->GetBoundingBoxExtent();
 
 			XMFLOAT3 gameObjBoxCenter = XMFLOAT3(meshBoxCenter.x + pos.x,
 				meshBoxCenter.y + pos.y,
@@ -106,8 +107,8 @@ namespace JinEngine
 			XMFLOAT3 pos = ownerTransform->GetPosition();
 			XMFLOAT3 scale = ownerTransform->GetScale();
 
-			XMFLOAT3 meshSphereCenter = mesh->GetBSphereCenter();
-			float meshSphereRad = mesh->GetBSphereRadius();
+			XMFLOAT3 meshSphereCenter = mesh->GetBoundingSphereCenter();
+			float meshSphereRad = mesh->GetBoundingSphereRadius();
 
 			XMFLOAT3 gameObjSphereCenter = XMFLOAT3(meshSphereCenter.x * scale.x + pos.x,
 				meshSphereCenter.y * scale.y + pos.y,
@@ -235,13 +236,45 @@ namespace JinEngine
 		for (uint i = 0; i < matCount; ++i)
 			CallOffResourceReference(material[i]);
 	}
-	bool JRenderItem::UpdateFrame(Graphic::JObjectConstants& constant, const uint submeshIndex)
+	bool JRenderItem::UpdateFrame(Graphic::JObjectConstants& objConstant,
+		Graphic::JBoundingObjectConstants& boundingObjConstant,
+		const uint submeshIndex,
+		const bool isUpdateBoundingObj)
 	{
 		if (IsFrameDirted())
 		{
-			XMStoreFloat4x4(&constant.World, XMMatrixTranspose(GetOwner()->GetTransform()->GetWorld()));
-			XMStoreFloat4x4(&constant.TexTransform, XMMatrixTranspose(XMLoadFloat4x4(&textureTransform)));
-			constant.MaterialIndex = CallGetFrameBuffOffset(*GetValidMaterial(submeshIndex));
+			JTransform* transform = GetOwner()->GetTransform();
+			XMStoreFloat4x4(&objConstant.World, XMMatrixTranspose(transform->GetWorld()));
+			XMStoreFloat4x4(&objConstant.TexTransform, XMMatrixTranspose(XMLoadFloat4x4(&textureTransform)));
+			objConstant.MaterialIndex = CallGetFrameBuffOffset(*GetValidMaterial(submeshIndex));
+
+			if (isUpdateBoundingObj)
+			{
+				const BoundingBox bbox = mesh->GetBoundingBox();
+
+				const XMFLOAT3 objScale = transform->GetScale();
+				const XMFLOAT3 bboxScale = XMFLOAT3(bbox.Extents.x * objScale.x,
+					bbox.Extents.y * objScale.y,
+					bbox.Extents.z * objScale.z);
+
+				const XMFLOAT3 bboxRotation = transform->GetRotation();
+
+				const XMFLOAT3 objPos = transform->GetPosition();
+				const XMFLOAT3 bboxPos = XMFLOAT3(bbox.Center.x + objPos.x,
+					bbox.Center.y + objPos.y,
+					bbox.Center.z + objPos.z);
+
+				const XMVECTOR s = XMLoadFloat3(&bboxScale);
+				const XMVECTOR q = XMQuaternionRotationRollPitchYaw(bboxRotation.x * (JMathHelper::Pi / 180),
+					bboxRotation.y * (JMathHelper::Pi / 180),
+					bboxRotation.z * (JMathHelper::Pi / 180));
+
+				const XMVECTOR t = XMLoadFloat3(&bboxPos);
+				const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+				const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), GetOwner()->GetParent()->GetTransform()->GetWorld());
+
+				XMStoreFloat4x4(&boundingObjConstant.boundWorld, XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), transform->GetWorld()));			  
+			}
 			return true;
 		}
 		else

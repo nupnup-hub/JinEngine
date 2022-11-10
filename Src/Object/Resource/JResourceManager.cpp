@@ -522,7 +522,7 @@ namespace JinEngine
 				{
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetShadowMap(true);
+					newMaterial->SetDepthTest(true);
 					newMaterial->SetAlphaClip(true);
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;

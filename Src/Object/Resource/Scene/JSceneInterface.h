@@ -115,7 +115,7 @@ namespace JinEngine
 	private:
 		virtual void ViewCulling()noexcept = 0;  
 		virtual void ActivateSpaceSpatial(bool setInitValue = false)noexcept = 0;
-		virtual void DeActivateSpaceSpatial()noexcept = 0;
+		virtual void DeActivateSpaceSpatial()noexcept = 0;	 
 		virtual std::vector<JGameObject*> GetAlignedObject(const DirectX::BoundingFrustum& frustum)const noexcept = 0;
 		virtual Core::JOctreeOption GetOctreeOption()const noexcept = 0;
 		virtual Core::JBvhOption GetBvhOption()const noexcept = 0;

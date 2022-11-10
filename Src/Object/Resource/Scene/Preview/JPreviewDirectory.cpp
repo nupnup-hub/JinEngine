@@ -77,8 +77,8 @@ namespace JinEngine
 		JRenderItem* renderItem = shapeObj->GetRenderItem();
 
 		renderItem->SetMaterial(0, textureMaterial);
-		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBSphereCenter();
-		const float radius = renderItem->GetMesh()->GetBSphereRadius();
+		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
+		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		AdjustCamera(scene, previewCamera, center, radius, true);
 		return true;

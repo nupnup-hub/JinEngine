@@ -183,7 +183,7 @@ namespace JinEngine
 		}
 		JKdTreeOption JKdTree::GetKdTreeOption()const noexcept
 		{
-			return JKdTreeOption(buildType, splitType, GetCommonOption());
+			return JKdTreeOption(buildType, splitType, isOcclusionCullingAcitvated, GetCommonOption());
 		}
 		std::vector<JGameObject*> JKdTree::GetAlignedObject(const JVector3<float>& pos)const noexcept
 		{

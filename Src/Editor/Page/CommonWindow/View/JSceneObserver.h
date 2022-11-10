@@ -52,8 +52,7 @@ namespace JinEngine
 			{0.3f, 0.85f, 0.45f, 0.75f} ,
 			{0.6f, 0.15f, 0.9f, 0.75f} ,
 			{0.25f, 0.25f, 0.25f, 0.75f} };
-			uint streamCount = 0;
-
+			//uint streamCount = 0;
 		public:
 			JSceneObserver(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType);
 			~JSceneObserver();
@@ -81,6 +80,11 @@ namespace JinEngine
 			void DoDeActivate() noexcept final;
 			void StoreEditorWindow(std::wofstream& stream)final;
 			void LoadEditorWindow(std::wifstream& stream)final;
+		private:
+			//Debug
+			//void CreateShapeGroup(const J_DEFAULT_SHAPE& shape);
+			//void CreateDebugMaterial()noexcept;
+			//void DestroyDebugMaterial()noexcept;
 		};
 	}
 }

@@ -13,6 +13,7 @@
 #include"FrameResource/JCameraConstants.h" 
 #include"FrameResource/JLightConstants.h" 
 #include"FrameResource/JShadowMapConstants.h" 
+#include"FrameResource/JBoundingObjectConstants.h"
 
 #include"../Core/Time/JGameTimer.h"
 #include"../Object/GameObject/JGameObject.h"
@@ -239,7 +240,7 @@ namespace JinEngine
 			newShaderPso.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
 			newShaderPso.DSVFormat = graphicResource->depthStencilFormat;
 
-			if ((functionFlag & SHADER_FUNCTION_SHADOW_MAP) > 0)
+			if ((functionFlag & SHADER_FUNCTION_DEPTH_TEST) > 0)
 			{
 				newShaderPso.RasterizerState.DepthBias = 100000;
 				newShaderPso.RasterizerState.DepthBiasClamp = 0.0f;
@@ -464,6 +465,7 @@ namespace JinEngine
 		}
 		uint JGraphicImpl::UpdateSceneObjectCB(_In_ JScene* scene, uint& objCBoffset)
 		{
+			bool isUpdateBoundingObj = scene->SpaceSpatialInterface()->GetKdTreeOption().isOcclusionCullingActivated;
 			uint updateCount = 0;
 			uint addOffset = 0;
 			const std::vector<JComponent*>& jRvec = scene->CashInterface()->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
@@ -471,6 +473,10 @@ namespace JinEngine
 
 			JObjectConstants objectConstants;
 			auto currObjectCB = currFrameResource->objectCB.get();
+
+			JBoundingObjectConstants boundingConstants;
+			auto currBoundingObjectCB = currFrameResource->bundingObjectCB.get();
+
 			for (uint i = 0; i < renderItemCount; ++i)
 			{
 				JRenderItem* renderItem = static_cast<JRenderItem*>(jRvec[i]);
@@ -482,10 +488,10 @@ namespace JinEngine
 				const uint submeshCount = renderItem->GetSubmeshCount();
 				for (uint j = 0; j < submeshCount; ++j)
 				{
-					if (renderItem->CallUpdateFrame(objectConstants, j))
-					{
-						renderItem->CallUpdateFrame(objectConstants, j);
+					if (renderItem->CallUpdateFrame(objectConstants, boundingConstants, j, isUpdateBoundingObj))
+					{  
 						currObjectCB->CopyData(objCBoffset + CallGetFrameBuffOffset(*renderItem) + j, objectConstants);
+						currBoundingObjectCB->CopyData(objCBoffset + CallGetFrameBuffOffset(*renderItem) + j, boundingConstants);
 						++updateCount;
 					}
 				}
@@ -623,14 +629,14 @@ namespace JinEngine
 			commandList->RSSetScissorRects(1, &scissorRect);
 
 			auto matBuffer = currFrameResource->materialBuffer->Resource();
-			commandList->SetGraphicsRootShaderResourceView(7, matBuffer->GetGPUVirtualAddress());
+			commandList->SetGraphicsRootShaderResourceView(8, matBuffer->GetGPUVirtualAddress());
 
 			JTexture* skyTxt = JResourceManager::Instance().GetEditorTexture(J_EDITOR_TEXTURE::DEFAULT_SKY);
-			commandList->SetGraphicsRootDescriptorTable(8, CallGetGpuSrvHandle(*skyTxt));
-			commandList->SetGraphicsRootDescriptorTable(9, graphicResource->srvHeap->GetGPUDescriptorHandleForHeapStart());
+			commandList->SetGraphicsRootDescriptorTable(9, CallGetGpuSrvHandle(*skyTxt));
+			commandList->SetGraphicsRootDescriptorTable(10, graphicResource->srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 			CD3DX12_GPU_DESCRIPTOR_HANDLE shadowHandle = graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvShadowMapStart());
-			commandList->SetGraphicsRootDescriptorTable(10, shadowHandle);
+			commandList->SetGraphicsRootDescriptorTable(11, shadowHandle);
 
 			uint sceneObjCBoffset = 0;
 			uint scenePassCBoffset = 0;
@@ -800,6 +806,9 @@ namespace JinEngine
 			rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->shadowMapResource[rVecIndex].Get(),
 				D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ);
 			commandList->ResourceBarrier(1, &rsBarrier);
+		}
+		void JGraphicImpl::DrawSceneBoundingBox(_In_ JScene* scene, uint& objCBoffset)
+		{
 		}
 		void JGraphicImpl::DrawGameObject(ID3D12GraphicsCommandList* cmdList,
 			const std::vector<JGameObject*>& gameObject,
@@ -1071,7 +1080,7 @@ namespace JinEngine
 			CD3DX12_DESCRIPTOR_RANGE texTable02;
 			texTable02.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 300, 301, 0);
 
-			static constexpr int slotCount = 11;
+			static constexpr int slotCount = 12;
 			CD3DX12_ROOT_PARAMETER slotRootParameter[slotCount];
 
 			// Create root CBV.
@@ -1082,10 +1091,12 @@ namespace JinEngine
 			slotRootParameter[4].InitAsConstantBufferView(4);
 			slotRootParameter[5].InitAsConstantBufferView(5);
 			slotRootParameter[6].InitAsConstantBufferView(6);
-			slotRootParameter[7].InitAsShaderResourceView(0, 1);
-			slotRootParameter[8].InitAsDescriptorTable(1, &texTable00, D3D12_SHADER_VISIBILITY_ALL);
-			slotRootParameter[9].InitAsDescriptorTable(1, &texTable01, D3D12_SHADER_VISIBILITY_ALL);
-			slotRootParameter[10].InitAsDescriptorTable(1, &texTable02, D3D12_SHADER_VISIBILITY_ALL);
+			slotRootParameter[7].InitAsConstantBufferView(7);
+
+			slotRootParameter[8].InitAsShaderResourceView(0, 1);
+			slotRootParameter[9].InitAsDescriptorTable(1, &texTable00, D3D12_SHADER_VISIBILITY_ALL);
+			slotRootParameter[10].InitAsDescriptorTable(1, &texTable01, D3D12_SHADER_VISIBILITY_ALL);
+			slotRootParameter[11].InitAsDescriptorTable(1, &texTable02, D3D12_SHADER_VISIBILITY_ALL);
 
 			const std::vector<CD3DX12_STATIC_SAMPLER_DESC> sam = Sampler();
 

@@ -88,27 +88,27 @@ namespace JinEngine
 	{
 		return indexCount;
 	}
-	DirectX::XMFLOAT3 JMeshGeometry::SubmeshGeometry::GetBBoxCenter()const noexcept
+	DirectX::XMFLOAT3 JMeshGeometry::SubmeshGeometry::GetBoundingBoxCenter()const noexcept
 	{
 		return boundingBox.Center;
 	}
-	DirectX::XMVECTOR JMeshGeometry::SubmeshGeometry::GetBBoxCenterV()const noexcept
+	DirectX::XMVECTOR JMeshGeometry::SubmeshGeometry::GetBoundingBoxCenterV()const noexcept
 	{
 		return XMLoadFloat3(&boundingBox.Center);
 	}
-	DirectX::XMFLOAT3 JMeshGeometry::SubmeshGeometry::GetBBoxExtent()const noexcept
+	DirectX::XMFLOAT3 JMeshGeometry::SubmeshGeometry::GetBoundingBoxExtent()const noexcept
 	{
 		return boundingBox.Extents;
 	}
-	DirectX::XMVECTOR JMeshGeometry::SubmeshGeometry::GetBBoxExtentV()const noexcept
+	DirectX::XMVECTOR JMeshGeometry::SubmeshGeometry::GetBoundingBoxExtentV()const noexcept
 	{
 		return XMLoadFloat3(&boundingBox.Extents);
 	}
-	DirectX::XMFLOAT3 JMeshGeometry::SubmeshGeometry::GetBSphereCenter()const noexcept
+	DirectX::XMFLOAT3 JMeshGeometry::SubmeshGeometry::GetBoundingSphereCenter()const noexcept
 	{
 		return boundingSphere.Center;
 	}
-	float JMeshGeometry::SubmeshGeometry::GetBSphereRadius()const noexcept
+	float JMeshGeometry::SubmeshGeometry::GetBoundingSphereRadius()const noexcept
 	{
 		return boundingSphere.Radius;
 	}
@@ -189,19 +189,23 @@ namespace JinEngine
 	{
 		return submeshes.size() > index ? submeshes[index].GetMaterial() : nullptr;
 	}
-	DirectX::XMFLOAT3 JMeshGeometry::GetBBoxCenter()const noexcept
+	DirectX::BoundingBox JMeshGeometry::GetBoundingBox()const noexcept
+	{
+		return boundingBox;
+	}
+	DirectX::XMFLOAT3 JMeshGeometry::GetBoundingBoxCenter()const noexcept
 	{
 		return boundingBox.Center;
 	}
-	DirectX::XMFLOAT3 JMeshGeometry::GetBBoxExtent()const noexcept
+	DirectX::XMFLOAT3 JMeshGeometry::GetBoundingBoxExtent()const noexcept
 	{
 		return boundingBox.Extents;
 	}
-	DirectX::XMFLOAT3 JMeshGeometry::GetBSphereCenter()const noexcept
+	DirectX::XMFLOAT3 JMeshGeometry::GetBoundingSphereCenter()const noexcept
 	{
 		return boundingSphere.Center;
 	}
-	float JMeshGeometry::GetBSphereRadius()const noexcept
+	float JMeshGeometry::GetBoundingSphereRadius()const noexcept
 	{
 		return boundingSphere.Radius;
 	}
@@ -232,8 +236,8 @@ namespace JinEngine
 
 		for (uint i = 0; i < submeshCount; ++i)
 		{
-			const XMVECTOR minV = submeshes[i].GetBBoxCenterV() - submeshes[i].GetBBoxExtentV();
-			const XMVECTOR maxV = submeshes[i].GetBBoxCenterV() + submeshes[i].GetBBoxExtentV();
+			const XMVECTOR minV = submeshes[i].GetBoundingBoxCenterV() - submeshes[i].GetBoundingBoxExtentV();
+			const XMVECTOR maxV = submeshes[i].GetBoundingBoxCenterV() + submeshes[i].GetBoundingBoxExtentV();
 			minXmV = XMVectorMin(minXmV, minV);
 			maxXmV = XMVectorMax(maxXmV, maxV);
 		}

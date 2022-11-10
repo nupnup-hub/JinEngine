@@ -58,7 +58,7 @@ namespace JinEngine
 		REGISTER_PROPERTY_EX(albedoOnly, OnAlbedoOnly, SetAlbedoOnly, GUI_CHECKBOX())
 		bool albedoOnly = false;
 		bool nonCulling = false;
-		bool shadowMap = false;
+		bool depthTest = false;
 		bool isSkyMateral = false;
 		bool isDebugMaterial = false;
 		bool alphaClip = false;
@@ -102,7 +102,7 @@ namespace JinEngine
 		void SetLight(bool value)noexcept;
 		void SetAlbedoOnly(bool value)noexcept;
 		void SetNonCulling(bool value)noexcept;
-		void SetShadowMap(bool value)noexcept;
+		void SetDepthTest(bool value)noexcept;
 		void SetSkyMaterial(bool value)noexcept;
 		void SetDebugMaterial(bool value)noexcept;
 		void SetAlphaClip(bool value)noexcept;
@@ -111,7 +111,7 @@ namespace JinEngine
 		bool OnLight()const noexcept;
 		bool OnAlbedoOnly()const noexcept;
 		bool OnNonCulling()const noexcept;
-		bool OnShadowMap()const noexcept;
+		bool OnDepthTest()const noexcept;
 		bool IsSkyMaterial()const noexcept;
 		bool IsDebugMaterial()const noexcept;
 		//레지스터에 등록된 머테리얼만 검사하므로 gameObjectDirty pointer 유무는 체크하지 않는다.

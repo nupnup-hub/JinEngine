@@ -28,7 +28,7 @@ namespace JinEngine
 		{SHADER_FUNCTION_NONCULLING, {"NONCULLING", "10"}},
 		{SHADER_FUNCTION_ALPHA_CLIP, {"ALPHA_CLIP", "11"}},
 		//Shadow map rendering material
-		{SHADER_FUNCTION_SHADOW_MAP, {"SHADOW_MAP", "12"}},
+		{SHADER_FUNCTION_DEPTH_TEST, {"DEPTH_TEST", "12"}},
 		{SHADER_FUNCTION_DEBUG, {"DEBUG", "13"}},
 	};
 	std::unordered_map<J_SHADER_VERTEX_LAYOUT, const D3D_SHADER_MACRO> JShader::vertexLayoutMacroMap

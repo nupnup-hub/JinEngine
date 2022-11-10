@@ -45,7 +45,7 @@ namespace JinEngine
 		normal(n),
 		texC(uv),
 		tangentU(t.x, t.y, t.z)
-	{
+	{ 
 		int i = 0;
 		for (; i < blendWeightPair.size() && i < 4; ++i)
 		{

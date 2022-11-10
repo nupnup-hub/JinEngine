@@ -220,17 +220,17 @@ namespace JinEngine
 		else
 			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_NONCULLING));
 	}
-	void JMaterial::SetShadowMap(bool value)noexcept
+	void JMaterial::SetDepthTest(bool value)noexcept
 	{
-		if (shadowMap == value)
+		if (depthTest == value)
 			return;
 
-		shadowMap = value;
+		depthTest = value;
 		SetFrameDirty();
-		if (shadowMap)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW_MAP));
+		if (depthTest)
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEPTH_TEST));
 		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW_MAP));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEPTH_TEST));
 	}
 	void JMaterial::SetSkyMaterial(bool value)noexcept
 	{
@@ -284,9 +284,9 @@ namespace JinEngine
 	{
 		return nonCulling;
 	}
-	bool JMaterial::OnShadowMap()const noexcept
+	bool JMaterial::OnDepthTest()const noexcept
 	{
-		return shadowMap;
+		return depthTest;
 	}
 	bool JMaterial::IsSkyMaterial()const noexcept
 	{
@@ -414,7 +414,7 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"Light", light);
 			JFileIOHelper::StoreAtomicData(stream, L"AlbedoOnly", albedoOnly);
 			JFileIOHelper::StoreAtomicData(stream, L"NonCulling", nonCulling);
-			JFileIOHelper::StoreAtomicData(stream, L"ShadowMap", shadowMap);
+			JFileIOHelper::StoreAtomicData(stream, L"depthTest", depthTest);
 			JFileIOHelper::StoreAtomicData(stream, L"SkyMaterial", isSkyMateral);
 			JFileIOHelper::StoreAtomicData(stream, L"DebugMaterial", isDebugMaterial);
 			JFileIOHelper::StoreAtomicData(stream, L"AlphaClip", alphaClip);
@@ -447,7 +447,7 @@ namespace JinEngine
 			bool sLight = false;
 			bool sAlbedoOnly = false;
 			bool sNonCulling = false;
-			bool sShadowMap = false;
+			bool sDepthTest = false;
 			bool sIsSkyMateral = false;
 			bool sIsDebugMaterial = false;
 			bool sAlphaclip = false;
@@ -460,7 +460,7 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, sLight);
 			JFileIOHelper::LoadAtomicData(stream, sAlbedoOnly);
 			JFileIOHelper::LoadAtomicData(stream, sNonCulling);
-			JFileIOHelper::LoadAtomicData(stream, sShadowMap);
+			JFileIOHelper::LoadAtomicData(stream, sDepthTest);
 			JFileIOHelper::LoadAtomicData(stream, sIsSkyMateral);
 			JFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial);
 			JFileIOHelper::LoadAtomicData(stream, sAlphaclip);
@@ -481,7 +481,7 @@ namespace JinEngine
 			SetLight(sLight);
 			SetAlbedoOnly(sAlbedoOnly);
 			SetNonCulling(sNonCulling);
-			SetShadowMap(sShadowMap);
+			SetDepthTest(sDepthTest);
 			SetSkyMaterial(sIsSkyMateral);
 			SetDebugMaterial(sIsDebugMaterial);
 			SetAlphaClip(sAlphaclip);

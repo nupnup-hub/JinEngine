@@ -40,8 +40,10 @@ namespace JinEngine
 		uint GetVertexTotalCount()const noexcept;
 		REGISTER_METHOD(GetIndexTotalCount, GUI_READONLY_TEXT())
 		uint GetIndexTotalCount()const noexcept;
-		uint GetSubmeshCount()const noexcept;
+		uint GetSubmeshCount()const noexcept; 
+		//apply object transform
 		DirectX::BoundingBox GetBoundingBox()noexcept;
+		//apply object transform
 		DirectX::BoundingSphere GetBoundingSphere()noexcept;
 
 		void SetMesh(JMeshGeometry* newMesh)noexcept; 
@@ -61,7 +63,10 @@ namespace JinEngine
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 
 	private:
-		bool UpdateFrame(Graphic::JObjectConstants& constant, const uint submeshIndex)final;
+		bool UpdateFrame(Graphic::JObjectConstants& constant, 
+			Graphic::JBoundingObjectConstants&,
+			const uint submeshIndex,
+			const bool isUpdateBoundingObj)final;
 	private:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 	private:

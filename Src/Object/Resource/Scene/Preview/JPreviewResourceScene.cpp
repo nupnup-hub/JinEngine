@@ -114,8 +114,8 @@ namespace JinEngine
 		JGameObject* shapeObj = JGFI::Create(mesh->GetName(), Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, *scene->GetRootGameObject());
 		JRenderItem* renderItem = JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, *shapeObj, mesh);
 
-		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBSphereCenter();
-		const float radius = renderItem->GetMesh()->GetBSphereRadius();
+		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
+		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		AdjustCamera(scene, previewCamera, center, radius);
 		return true;
@@ -135,8 +135,8 @@ namespace JinEngine
 		JRenderItem* renderItem = shapeObj->GetRenderItem();
 
 		renderItem->SetMaterial(0, material);
-		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBSphereCenter();
-		const float radius = renderItem->GetMesh()->GetBSphereRadius();
+		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
+		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		AdjustCamera(scene, previewCamera, center, radius);
 		return true;
@@ -162,8 +162,8 @@ namespace JinEngine
 		JGameObject* shapeObj = JGFU::CreateShape(*scene->GetRootGameObject(), flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
 		JRenderItem* renderItem = shapeObj->GetRenderItem();
 		renderItem->SetMaterial(0, textureMaterial);
-		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBSphereCenter();
-		const float radius = renderItem->GetMesh()->GetBSphereRadius();
+		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
+		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		AdjustCamera(scene, previewCamera, center, radius, true);
 		return true;
@@ -190,8 +190,8 @@ namespace JinEngine
 		JGameObject* shapeObj = JGFU::CreateShape(*scene->GetRootGameObject(), flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
 		JRenderItem* renderItem = shapeObj->GetRenderItem();
 		renderItem->SetMaterial(0, textureMaterial);
-		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBSphereCenter();
-		const float radius = renderItem->GetMesh()->GetBSphereRadius();
+		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
+		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		AdjustCamera(scene, previewCamera, center, radius, true);
 		return true;

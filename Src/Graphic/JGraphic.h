@@ -151,6 +151,7 @@ namespace JinEngine
 				const uint passCBoffset,
 				const uint aniCBoffset,
 				const uint shadowCBoffset);
+			void DrawSceneBoundingBox(_In_ JScene* scene, uint& objCBoffset);
 			void DrawGameObject(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject,
 				const uint objCBoffset,

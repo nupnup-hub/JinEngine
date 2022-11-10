@@ -17,11 +17,11 @@
 //#include<fstream>
 
 //Debug
-#include"../../../../Object/Component/RenderItem/JRenderItem.h"
-#include"../../../../Object/Resource/Material/JMaterial.h"  
-#include"../../../../Object/Resource/JResourceObjectFactory.h"  
-#include"../../../../Core/File/JFileIOHelper.h"
-#include"../../../../Debug/JDebugTimer.h"
+//#include"../../../../Object/Component/RenderItem/JRenderItem.h"
+//#include"../../../../Object/Resource/Material/JMaterial.h"  
+//#include"../../../../Object/Resource/JResourceObjectFactory.h"  
+//#include"../../../../Core/File/JFileIOHelper.h"
+//#include"../../../../Debug/JDebugTimer.h"
 
 namespace JinEngine
 {
@@ -32,29 +32,8 @@ namespace JinEngine
 		{
 			editorCamCtrl = std::make_unique<JEditorCameraControl>();
 			editorBTreeView = std::make_unique<JEditorBinaryTreeView>();
-
-			for (uint i = 0; i < debugMaterialCount; ++i)
-			{
-				JMaterial::InitData initData = JMaterial::InitData(L"TestM" + std::to_wstring(i),
-					Core::MakeGuid(),
-					OBJECT_FLAG_EDITOR_OBJECT,
-					JResourceManager::Instance().GetEditorResourceDirectory());
-
-				debugMaterial[i] = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(L"TestM" + std::to_wstring(i),
-					Core::MakeGuid(),
-					OBJECT_FLAG_EDITOR_OBJECT,
-					JResourceManager::Instance().GetEditorResourceDirectory()));
-				debugMaterial[i]->SetAlbedoColor(color[i].ConvertXMF());
-			}
 		}
-		JSceneObserver::~JSceneObserver() 	
-		{
-			for (uint i = 0; i < debugMaterialCount; ++i)
-			{
-				JObject::BeginDestroy(debugMaterial[i]);
-				debugMaterial[i] = nullptr;
-			}
-		}
+		JSceneObserver::~JSceneObserver() 	{}
 		J_EDITOR_WINDOW_TYPE JSceneObserver::GetWindowType()const noexcept
 		{
 			return J_EDITOR_WINDOW_TYPE::SCENE_OBSERVER;
@@ -94,53 +73,11 @@ namespace JinEngine
 				ImGui::SameLine();
 				JImGuiImpl::Selectable("ShadowMap##JSceneObserver", &isShadowViewer, 0, JVector2<float>(ImGui::CalcTextSize("ShadowMap").x, 0));
 
-				if (JImGuiImpl::Button("MakeObject", JVector2<float>(ImGui::CalcTextSize("MakeObject").x, 0)))
-				{
-					for (uint i = 0; i < 30; ++i)
-					{
-						for (uint j = 0; j < 15; ++j)
-						{
-							JGameObject* cube = JGFU::CreateShape(*scene->GetRootGameObject(), OBJECT_FLAG_NONE, J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE);
-							cube->GetTransform()->SetScale(DirectX::XMFLOAT3(4, 4, 4));
-							cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(-8 * i, 0, -8 * j));
-						}		
-						for (uint j = 0; j < 15; ++j)
-						{
-							JGameObject* cube = JGFU::CreateShape(*scene->GetRootGameObject(), OBJECT_FLAG_NONE, J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE);
-							cube->GetTransform()->SetScale(DirectX::XMFLOAT3(4, 4, 4));
-							cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(8 * i, 0, 8 * j));
-						}
-					}
-				}
-
 				if (isOpenSpatialOption)
 					SceneStructureOptionOnScreen();
 				if (isShadowViewer)
 					ShadowMapViewerOnScreen();
 
-				if (JImGuiImpl::Button("StreamCount", JVector2<float>(ImGui::CalcTextSize("StreamCount").x, 0)))
-					streamCount = 5;
-
-				JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
-				Core::JDebugTimer::StartGameTimer();
-				std::vector<JGameObject*> alignObject = iSceneSpace->GetAlignedObject(scene->GetMainCamera()->GetBoundingFrustum());
-				Core::JDebugTimer::StopGameTimer();
-
-				if (streamCount > 0)
-				{
-					std::wofstream stream;
-					stream.open(L"D:\\JinWooJung\\alignedTime.txt", std::ios::out | std::ios::app);
-					JFileIOHelper::StoreAtomicData(stream, L"ElapsedTime:", Core::JDebugTimer::GetElapsedMilliTime());
-					stream.close();
-					--streamCount;
-				}
-				const uint alignObjCount = (uint)alignObject.size();
-				for (uint i = 0; i < alignObjCount; ++i)
-				{
-					if (i < debugMaterialCount)
-						alignObject[i]->GetRenderItem()->SetMaterial(0, debugMaterial[i]);
-				}
-				
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
 				JImGuiImpl::Image(*camera, ImGui::GetWindowSize());
 			}
@@ -423,5 +360,65 @@ namespace JinEngine
 			lastCamPos = lastPos;
 			lastCamRot = lastRot;
 		}
+		/*void JSceneObserver::CreateShapeGroup(const J_DEFAULT_SHAPE& shape)
+		{
+			if (JImGuiImpl::Button("MakeObject", JVector2<float>(ImGui::CalcTextSize("MakeObject").x, 0)))
+			{
+				for (uint i = 0; i < 30; ++i)
+				{
+					for (uint j = 0; j < 15; ++j)
+					{
+						JGameObject* cube = JGFU::CreateShape(*scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
+						cube->GetTransform()->SetScale(DirectX::XMFLOAT3(4, 4, 4));
+						cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(-8 * i, 0, -8 * j));
+					}
+					for (uint j = 0; j < 15; ++j)
+					{
+						JGameObject* cube = JGFU::CreateShape(*scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
+						cube->GetTransform()->SetScale(DirectX::XMFLOAT3(4, 4, 4));
+						cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(8 * i, 0, 8 * j));
+					}
+				}
+			}
+		}
+		void JSceneObserver::CreateDebugMaterial()noexcept
+		{
+			for (uint i = 0; i < debugMaterialCount; ++i)
+			{
+				JMaterial::InitData initData = JMaterial::InitData(L"TestM" + std::to_wstring(i),
+					Core::MakeGuid(),
+					OBJECT_FLAG_EDITOR_OBJECT,
+					JResourceManager::Instance().GetEditorResourceDirectory());
+
+				debugMaterial[i] = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(L"TestM" + std::to_wstring(i),
+					Core::MakeGuid(),
+					OBJECT_FLAG_EDITOR_OBJECT,
+					JResourceManager::Instance().GetEditorResourceDirectory()));
+				debugMaterial[i]->SetAlbedoColor(color[i].ConvertXMF());
+			}
+		}
+		void JSceneObserver::DestroyDebugMaterial()noexcept
+		{
+			for (uint i = 0; i < debugMaterialCount; ++i)
+			{
+				JObject::BeginDestroy(debugMaterial[i]);
+				debugMaterial[i] = nullptr;
+			}
+		}*/
+
 	}
 }
+
+/*
+
+				JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
+				std::vector<JGameObject*> alignObject = iSceneSpace->GetAlignedObject(scene->GetMainCamera()->GetBoundingFrustum());
+
+				const uint alignObjCount = (uint)alignObject.size();
+				for (uint i = 0; i < alignObjCount; ++i)
+				{
+					if (i < debugMaterialCount)
+						alignObject[i]->GetRenderItem()->SetMaterial(0, debugMaterial[i]);
+				}
+
+*/

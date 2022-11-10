@@ -8,6 +8,7 @@
 #include"JCameraConstants.h"
 #include"JLightConstants.h"
 #include"JShadowMapConstants.h"
+#include"JBoundingObjectConstants.h"
 
 namespace JinEngine
 {
@@ -42,6 +43,7 @@ namespace JinEngine
             lightCB = std::make_unique<JUploadBuffer<JLightConstants>>(device, initSceneCount, true);
             smLightCB = std::make_unique<JUploadBuffer<JSMLightConstants>>(device, initSceneCount, true);
             shadowCalCB = std::make_unique<JUploadBuffer<JShadowMapConstants>>(device, initLightCount * initSceneCount, true);
+            bundingObjectCB = std::make_unique<JUploadBuffer<JBoundingObjectConstants>>(device, initRenderItemCount, true);
         }
 
         JFrameResource::~JFrameResource()

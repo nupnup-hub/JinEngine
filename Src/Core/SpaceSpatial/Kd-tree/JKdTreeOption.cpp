@@ -5,9 +5,13 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		JKdTreeOption::JKdTreeOption(const J_SPACE_SPATIAL_BUILD_TYPE buildType, const J_SPACE_SPATIAL_SPLIT_TYPE splitType, const JSpaceSpatialOption& commonOption)
+		JKdTreeOption::JKdTreeOption(const J_SPACE_SPATIAL_BUILD_TYPE buildType,
+			const J_SPACE_SPATIAL_SPLIT_TYPE splitType, 
+			const bool isOcclusionCullingActivated,
+			const JSpaceSpatialOption& commonOption)
 			:buildType(buildType),
 			splitType(splitType),
+			isOcclusionCullingActivated(isOcclusionCullingActivated),
 			commonOption(commonOption)
 		{}
 		bool JKdTreeOption::EqualBvhOption(const JKdTreeOption& tar)const noexcept
@@ -25,7 +29,8 @@ namespace JinEngine
 
 			commonOption.Store(stream);
 			JFileIOHelper::StoreAtomicData(stream, L"buildType:", (int)buildType);
-			JFileIOHelper::StoreAtomicData(stream, L"splitType:", (int)splitType);
+			JFileIOHelper::StoreAtomicData(stream, L"splitType:", (int)splitType); 
+			JFileIOHelper::StoreAtomicData(stream, L"occlusionCullingActivated", isOcclusionCullingActivated);
 		}
 		void JKdTreeOption::Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid)
 		{
@@ -36,7 +41,8 @@ namespace JinEngine
 			int buildTypeN;
 			int splitTypeN;
 			JFileIOHelper::LoadAtomicData(stream, buildTypeN);
-			JFileIOHelper::LoadAtomicData(stream, splitTypeN);
+			JFileIOHelper::LoadAtomicData(stream, splitTypeN); 
+			JFileIOHelper::LoadAtomicData(stream, isOcclusionCullingActivated);
 			buildType = (Core::J_SPACE_SPATIAL_BUILD_TYPE)buildTypeN;
 			splitType = (Core::J_SPACE_SPATIAL_SPLIT_TYPE)splitTypeN;
 		}

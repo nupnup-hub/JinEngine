@@ -70,13 +70,13 @@ namespace JinEngine
 			uint GetVertexCount()const noexcept;
 			uint GetVertexStart()const noexcept; 
 			uint GetIndexCount()const noexcept;
-			uint GetIndexStart()const noexcept; 
-			DirectX::XMFLOAT3 GetBBoxCenter()const noexcept;
-			DirectX::XMVECTOR GetBBoxCenterV()const noexcept;
-			DirectX::XMFLOAT3 GetBBoxExtent()const noexcept;
-			DirectX::XMVECTOR GetBBoxExtentV()const noexcept;
-			DirectX::XMFLOAT3 GetBSphereCenter()const noexcept;
-			float GetBSphereRadius()const noexcept;
+			uint GetIndexStart()const noexcept;  
+			DirectX::XMFLOAT3 GetBoundingBoxCenter()const noexcept;
+			DirectX::XMVECTOR GetBoundingBoxCenterV()const noexcept;
+			DirectX::XMFLOAT3 GetBoundingBoxExtent()const noexcept;
+			DirectX::XMVECTOR GetBoundingBoxExtentV()const noexcept;
+			DirectX::XMFLOAT3 GetBoundingSphereCenter()const noexcept;
+			float GetBoundingSphereRadius()const noexcept;
 		public:
 			void SetMesh(const JMeshData& meshData, const uint vertexSt, const uint indexSt);
 			void SetMaterial(JMaterial* newMaterial)noexcept;
@@ -124,10 +124,11 @@ namespace JinEngine
 		uint GetSubmeshBaseVertexLocation(const uint index)const noexcept;
 		uint GetSubmeshStartIndexLocation(const uint index)const noexcept;
 		JMaterial* GetSubmeshMaterial(const uint index)const noexcept; 
-		DirectX::XMFLOAT3 GetBBoxCenter()const noexcept;
-		DirectX::XMFLOAT3 GetBBoxExtent()const noexcept;
-		DirectX::XMFLOAT3 GetBSphereCenter()const noexcept;
-		float GetBSphereRadius()const noexcept;
+		DirectX::BoundingBox GetBoundingBox()const noexcept;
+		DirectX::XMFLOAT3 GetBoundingBoxCenter()const noexcept;
+		DirectX::XMFLOAT3 GetBoundingBoxExtent()const noexcept;
+		DirectX::XMFLOAT3 GetBoundingSphereCenter()const noexcept;
+		float GetBoundingSphereRadius()const noexcept;
 	public:
 		D3D12_VERTEX_BUFFER_VIEW VertexBufferView()const;
 		D3D12_INDEX_BUFFER_VIEW IndexBufferView()const;

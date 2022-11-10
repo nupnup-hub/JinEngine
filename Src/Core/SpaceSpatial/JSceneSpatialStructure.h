@@ -63,7 +63,7 @@ namespace JinEngine
 			std::unique_ptr<ActivatedOptionCash> optionCash;				//cash predata
 		private:
 			bool activateTrigger = true;
-			bool initTrigger = false;
+			bool initTrigger = false; 
 		public:
 			JSceneSpatialStructure();
 			~JSceneSpatialStructure();
@@ -86,7 +86,7 @@ namespace JinEngine
 			void SetOctreeOption(const JOctreeOption& option);
 			void SetBvhOption(const JBvhOption& option);
 			void SetKdTreeOption(const JKdTreeOption& option);
-			void SetInitTrigger(const bool value)noexcept;
+			void SetInitTrigger(const bool value)noexcept; 
 		public:
 			bool IsInitTriggerActivated()const noexcept;
 		public:

@@ -28,6 +28,7 @@ namespace JinEngine
 			std::vector<std::unique_ptr<JKdTreeNode>> allNodes; 
 			J_SPACE_SPATIAL_BUILD_TYPE buildType = J_SPACE_SPATIAL_BUILD_TYPE::TOP_DOWN;
 			J_SPACE_SPATIAL_SPLIT_TYPE splitType = J_SPACE_SPATIAL_SPLIT_TYPE::SAH;
+			bool isOcclusionCullingAcitvated = false;
 			float isectCost = 80;
 			float traversalCost = 1;
 			float emptyBonus = 0.5f;

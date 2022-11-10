@@ -209,15 +209,13 @@ namespace JinEngine
 	}
 	void JTransform::WorldUpdate()noexcept
 	{
-		XMVECTOR s = XMLoadFloat3(&scale);
-		XMVECTOR q = XMQuaternionRotationRollPitchYaw(rotation.x * (JMathHelper::Pi / 180),
+		const XMVECTOR s = XMLoadFloat3(&scale);
+		const XMVECTOR q = XMQuaternionRotationRollPitchYaw(rotation.x * (JMathHelper::Pi / 180),
 			rotation.y * (JMathHelper::Pi / 180),
 			rotation.z * (JMathHelper::Pi / 180));
-		XMVECTOR t = XMLoadFloat3(&position);
-
-		XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-
-		XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), XMLoadFloat4x4(&GetOwner()->GetParent()->GetTransform()->world));
+		const XMVECTOR t = XMLoadFloat3(&position);
+		const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+		const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), XMLoadFloat4x4(&GetOwner()->GetParent()->GetTransform()->world));
 		XMStoreFloat4x4(&world, worldM);
 	}
 	void JTransform::ChangeParent()noexcept
