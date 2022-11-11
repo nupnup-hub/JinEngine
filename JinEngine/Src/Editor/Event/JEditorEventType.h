@@ -1,0 +1,60 @@
+#pragma once
+#include"../../Core/Reflection/JReflection.h"
+
+namespace JinEngine
+{
+	namespace Editor
+	{
+		REGISTER_ENUM(J_EDITOR_EVENT, int, MOUSE_CLICK,
+			SELECT_OBJECT,
+			DESELECT_OBJECT,
+			OPEN_PAGE,
+			CLOSE_PAGE,
+			ACTIVATE_PAGE,
+			DEACTIVATE_PAGE,
+			FOCUS_PAGE,
+			UNFOCUS_PAGE,
+			OPEN_WINDOW,
+			CLOSE_WINDOW,
+			ACTIVATE_WINDOW,
+			DEACTIVATE_WINDOW,
+			FOCUS_WINDOW,
+			UNFOCUS_WINDOW,
+			OPEN_SCENE,
+			CLOSE_SCENE,
+			BIND_FUNC,				
+			T_BIND_FUNC			//support redo undo
+			);			 
+ 
+		/*
+		enum class J_EDITOR_EVENT
+		{
+			MOUSE_CLICK,
+			SELECT_OBJECT,
+			DESELECT_OBJECT,
+
+			OPEN_PAGE,
+			CLOSE_PAGE,
+			FRONT_PAGE,
+			BACK_PAGE,
+			ACTIVATE_PAGE,
+			DEACTIVATE_PAGE,
+			FOCUS_PAGE,
+			UNFOCUS_PAGE,
+
+			OPEN_WINDOW,
+			CLOSE_WINDOW,
+			FRONT_WINDOW,
+			BACK_WINDOW,
+			ACTIVATE_WINDOW,
+			DEACTIVATE_WINDOW,
+			FOCUS_WINDOW,
+			UNFOCUS_WINDOW,
+
+			OPEN_SCENE,
+			CLOSE_SCENE,
+			T_BIND_FUNC,
+		};
+		*/
+	}
+}
