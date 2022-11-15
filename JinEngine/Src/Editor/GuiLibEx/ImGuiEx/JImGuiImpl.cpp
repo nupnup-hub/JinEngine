@@ -303,19 +303,19 @@ namespace JinEngine
 				ImFontConfig config;
 
 				ImFont* defaultFont = io.Fonts->AddFontDefault();
-				ImFont* boldFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\EngineResource\\Font\\NotoSerifKR-Bold.otf",
+				ImFont* boldFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\JinEngine\\EngineResource\\Font\\NotoSerifKR-Bold.otf",
 					48,
 					nullptr,
 					io.Fonts->GetGlyphRangesKorean());
-				ImFont* semiBoldFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\EngineResource\\Font\\NotoSerifKR-SemiBold.otf",
+				ImFont* semiBoldFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\JinEngine\\EngineResource\\Font\\NotoSerifKR-SemiBold.otf",
 					20,
 					nullptr,
 					io.Fonts->GetGlyphRangesKorean());
-				ImFont* regularFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\EngineResource\\Font\\NotoSerifKR-Regular.otf",
+				ImFont* regularFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\JinEngine\\EngineResource\\Font\\NotoSerifKR-Regular.otf",
 					20,
 					nullptr,
 					io.Fonts->GetGlyphRangesKorean());
-				ImFont* mediumFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\EngineResource\\Font\\NotoSerifKR-Medium.otf",
+				ImFont* mediumFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\JinEngine\\EngineResource\\Font\\NotoSerifKR-Medium.otf",
 					20,
 					nullptr,
 					io.Fonts->GetGlyphRangesKorean());

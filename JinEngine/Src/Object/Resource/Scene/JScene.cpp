@@ -95,7 +95,7 @@ namespace JinEngine
 	{
 		uint sum = 0;
 		const std::vector<JComponent*>& rVec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
-		for (auto& data : rVec)
+		for (const auto& data : rVec)
 			sum += static_cast<JRenderItem*>(data)->GetSubmeshCount();
 		return sum;
 	}

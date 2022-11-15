@@ -19,7 +19,7 @@ float4 PS(VertexOut pin) : SV_Target
 	uint diffuseTexIndex = matData.diffuseMapIndex;
 	return textureMaps[diffuseTexIndex].Sample(samAnisotropicWrap, pin.TexC);
 }
-#elif defined(DEPTH_TEST)
+#elif defined(WRITE_SHADOW_MAP)
 void PS(VertexOut pin)
 { 
 /*
@@ -41,6 +41,9 @@ void PS(VertexOut pin)
 #endif
 */
 }
+#elif defined(BOUNDING_OBJECT_DEPTH_TEST)
+void PS(VertexOut pin)
+{}
 #else
 float4 PS(VertexOut pin) : SV_Target
 {

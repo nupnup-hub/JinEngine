@@ -47,18 +47,46 @@ namespace JinEngine
 
 		struct JGraphicDrawTarget
 		{
+		public:
+			struct UpdateInfo
+			{
+			private:
+				Core::JUserPtr<IFrameDirty> observationFrame;		// for resource preview scene
+				const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
+				const bool isAllowOcclusionCulling;
+			public:
+				uint objUpdateCount;
+				uint aniUpdateCount;
+				uint camUpdateCount;
+				uint lightUpdateCount; 
+			public:
+				//frame dirty = gNumFrameDirty
+				uint hotObjUpdateCount;
+				uint hotAniUpdateCount;
+				uint hotCamUpdateCount;
+				uint hotLitghtUpdateCount; 
+			public:
+				bool hasSceneUpdate;
+				bool hasShadowUpdate;
+				bool hasOcclusionUpdate; 
+			public:
+				void UpdateStart();
+				void UpdateEnd();
+			public:
+				UpdateInfo(Core::JUserPtr<IFrameDirty> observationFrame, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling);
+			};
 		private:
 			friend class JGraphicDrawList;
 		public:
 			JScene* scene; 
-			IFrameDirty* observationFrame = nullptr;		// for resource preview scene
-			bool hasShadowUpdate;
-			bool hasSceneUpdate;
-			const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
+			std::unique_ptr<UpdateInfo> updateInfo;
 			std::vector<std::unique_ptr<JShadowMapDrawRequestor>> shadowRequestor;
 			std::vector<std::unique_ptr<JSceneDrawRequestor>> sceneRequestor;
 		public:
-			JGraphicDrawTarget(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, IFrameDirty* observationFrame = nullptr);
+			JGraphicDrawTarget(JScene* scene, 
+				Core::JUserPtr<IFrameDirty> observationFrame,
+				const J_GRAPHIC_DRAW_FREQUENCY updateFrequency,
+				const bool isAllowOcclusionCulling);
 			~JGraphicDrawTarget();
 		};
 		 
@@ -70,7 +98,7 @@ namespace JinEngine
 			friend class JSceneManagerImpl;
 			friend class JScene;
 		private:
-			static bool AddDrawList(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, IFrameDirty* observationFrame = nullptr)noexcept;
+			static bool AddDrawList(JScene* scene, Core::JUserPtr<IFrameDirty> observationFrame, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling)noexcept;
 			static bool PopDrawList(JScene* scene)noexcept;
 			static bool HasDrawList(JScene* scene)noexcept;
 			static void UpdateScene(JScene* scene, const J_COMPONENT_TYPE cType)noexcept;

@@ -72,7 +72,7 @@ namespace JinEngine
 		std::vector<JGameObject*> objectLayer[(int)J_RENDER_LAYER::COUNT][(int)J_MESHGEOMETRY_TYPE::COUNT];
 		std::unordered_map<J_COMPONENT_TYPE, std::vector<JComponent*>> componentCash;
 		JCamera* mainCamera = nullptr;
-		bool isAnimatorActivated = false; 
+		bool isAnimatorActivated = false;  
 	private: 
 		const size_t debugRootGuid;
 	public:

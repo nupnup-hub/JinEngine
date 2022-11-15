@@ -36,13 +36,44 @@ VertexOut VS(VertexIn vin)
 	return vout;
 }
 
-#elif defined(DEPTH_TEST)
+#elif defined(WRITE_SHADOW_MAP)
 #if defined(STATIC)
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;  
 	float4 posW = mul(float4(vin.PosL, 1.0f), objWorld);
 	vout.PosH = mul(posW, lightViewProj);
+	return vout;
+}
+#elif defined(SKINNED)
+VertexOut VS(VertexIn vin)
+{
+	VertexOut vout = (VertexOut)0.0f;
+	float weights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	weights[0] = vin.BoneWeights.x;
+	weights[1] = vin.BoneWeights.y;
+	weights[2] = vin.BoneWeights.z;
+	weights[3] = 1.0f - weights[0] - weights[1] - weights[2];
+
+	float3 posL = float3(0.0f, 0.0f, 0.0f);
+	for (int i = 0; i < 4; ++i)
+		posL += weights[i] * mul(float4(vin.PosL, 1.0f), objBoneTransforms[vin.BoneIndices[i]]).xyz;
+
+	vin.PosL = posL;
+	float4 posW = mul(float4(vin.PosL, 1.0f), objWorld);
+	vout.PosH = mul(posW, lightViewProj);
+
+	return vout;
+}
+#endif
+
+#elif defined(BOUNDING_OBJECT_DEPTH_TEST)
+#if defined(STATIC)
+VertexOut VS(VertexIn vin)
+{
+	VertexOut vout = (VertexOut)0.0f;
+	float4 posW = mul(float4(vin.PosL, 1.0f), boundObjWorld);
+	vout.PosH = mul(posW, camViewProj);
 	return vout;
 }
 #elif defined(SKINNED)
@@ -60,8 +91,8 @@ VertexOut VS(VertexIn vin)
 		posL += weights[i] * mul(float4(vin.PosL, 1.0f), objBoneTransforms[vin.BoneIndices[i]]).xyz; 
 
 	vin.PosL = posL;  
-	float4 posW = mul(float4(vin.PosL, 1.0f), objWorld);
-	vout.PosH = mul(posW, lightViewProj);
+	float4 posW = mul(float4(vin.PosL, 1.0f), boundObjWorld);
+	vout.PosH = mul(posW, camViewProj);
 
 	return vout;
 }

@@ -9,6 +9,7 @@ struct VertexOut
 	float4 PosH    : SV_POSITION;
 	float3 PosW    : POSITION; 
 };
+
 #elif defined(SKY)
 struct VertexIn
 {
@@ -36,7 +37,7 @@ struct VertexOut
 	float2 TexC    : TEXCOORD;
 };
 
-#elif defined(DEPTH_TEST)
+#elif defined(WRITE_SHADOW_MAP)
 #if defined(STATIC)
 struct VertexIn
 {
@@ -46,7 +47,29 @@ struct VertexOut
 {
 	float4 PosH    : SV_POSITION; 
 };
+#elif defined(SKINNED)
+struct VertexIn
+{
+	float3 PosL    : POSITION;
+	float3 BoneWeights : WEIGHTS;
+	uint4 BoneIndices  : BONEINDICES;
+};
+struct VertexOut
+{
+	float4 PosH    : SV_POSITION;
+};
+#endif
 
+#elif defined(BOUNDING_OBJECT_DEPTH_TEST)
+#if defined(STATIC)
+struct VertexIn
+{
+	float3 PosL    : POSITION;
+};
+struct VertexOut
+{
+	float4 PosH    : SV_POSITION;
+};
 #elif defined(SKINNED)
 struct VertexIn
 {
@@ -59,6 +82,7 @@ struct VertexOut
 	float4 PosH    : SV_POSITION; 
 };
 #endif
+
 #elif defined(STATIC)
 struct VertexIn
 {
@@ -75,6 +99,7 @@ struct VertexOut
 	float2 TexC    : TEXCOORD;
 	float3 TangentW : TANGENT;
 };
+
 #elif defined(SKINNED)
 struct VertexIn
 {
@@ -94,5 +119,6 @@ struct VertexOut
 	float3 TangentW : TANGENT;
 };
 #else
+
 #endif
  

@@ -24,9 +24,9 @@ namespace JinEngine
 					return;
 
 				if (innerGameObject.size() == 0)
-					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
+					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
 				else
-					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
+					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
 				float scaleFactor = boundingBox.Extents.x * 2;
 				debugGameObject->GetTransform()->SetScale(XMFLOAT3(scaleFactor, scaleFactor, scaleFactor));
 				debugGameObject->GetTransform()->SetPosition(boundingBox.Center);

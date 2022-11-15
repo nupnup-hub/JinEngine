@@ -13,6 +13,8 @@
 #include"../../../Application/JApplicationVariable.h"
 #include<fstream>
 
+//Debug
+#include"../../../Debug/JDebugTextOut.h"
 using namespace DirectX;
 namespace JinEngine
 {
@@ -248,7 +250,6 @@ namespace JinEngine
 			XMStoreFloat4x4(&objConstant.TexTransform, XMMatrixTranspose(XMLoadFloat4x4(&textureTransform)));
 			objConstant.MaterialIndex = CallGetFrameBuffOffset(*GetValidMaterial(submeshIndex));
 
-			 /*I
 			if (isUpdateBoundingObj)
 			{
 				const BoundingBox bbox = mesh->GetBoundingBox();
@@ -273,10 +274,9 @@ namespace JinEngine
 				const XMVECTOR t = XMLoadFloat3(&bboxPos);
 				const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 				const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), GetOwner()->GetParent()->GetTransform()->GetWorld());
-
-				XMStoreFloat4x4(&boundingObjConstant.boundWorld, XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), transform->GetWorld()));
+				 
+				XMStoreFloat4x4(&boundingObjConstant.boundWorld, XMMatrixTranspose(worldM));
 			}
-			*/
 			return true;
 		}
 		else

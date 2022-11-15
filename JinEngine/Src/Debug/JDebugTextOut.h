@@ -20,8 +20,8 @@ namespace JinEngine
 		private:
 			static std::wofstream stream;
 			static int count;
-
 		public:
+			//Stream
 			static bool OpenStream(const std::wstring& path, int config, int count);
 			static bool CloseStream();
 			static bool IsOpenedStream();
@@ -55,6 +55,8 @@ namespace JinEngine
 			static void PrintGameObjectTree(JGameObject* root);
 		private:
 			static void PrintGameObjectTreeLoop(JGameObject* obj, uint level);
+		public:
+			static void MessageVector(const DirectX::XMFLOAT3& vector, const std::wstring& guide);
 		};
 	} 
 }

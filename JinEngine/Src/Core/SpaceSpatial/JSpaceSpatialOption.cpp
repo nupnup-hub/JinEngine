@@ -23,8 +23,8 @@ namespace JinEngine
 		{
 			return isSpaceSpatialActivated == tar.isSpaceSpatialActivated &&
 				isDebugActivated == tar.isDebugActivated &&
-				isCullingActivated == tar.isCullingActivated &&
 				isDebugLeafOnly == tar.isDebugLeafOnly &&
+				isCullingActivated == tar.isCullingActivated &&
 				SameInnerRoot(tar) && SameDebugRoot(tar);
 		}
 		bool JSpaceSpatialOption::SameInnerRoot(const JSpaceSpatialOption& tar)const noexcept

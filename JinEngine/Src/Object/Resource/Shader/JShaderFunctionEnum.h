@@ -10,6 +10,8 @@ namespace JinEngine
 		SHADER_VERTEX_LAYOUT_SKINNED, 
 		SHADER_VERTEX_COUNT,
 	};
+
+	//Vs Ps function
 	enum J_SHADER_FUNCTION
 	{  
 		SHADER_FUNCTION_NONE = 0,
@@ -24,16 +26,49 @@ namespace JinEngine
 		SHADER_FUNCTION_SKY = 1 << 8,
 		SHADER_FUNCTION_NONCULLING = 1 << 9,
 		SHADER_FUNCTION_ALPHA_CLIP = 1 << 10, 
-		SHADER_FUNCTION_DEPTH_TEST = 1 << 11,
-		SHADER_FUNCTION_DEBUG =  1 << 12,
+		SHADER_FUNCTION_WRITE_SHADOWMAP = 1 << 11,
+		SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT = 1 << 12,
+		SHADER_FUNCTION_DEBUG =  1 << 13,
 	}; 
+
+	//Cs Function
+	enum J_COMPUTE_SHADER_FUNCTION
+	{
+		COMPUTE_SHADER_FUNCTION_NONE,
+		COMPUTE_SHADER_FUNCTION_HZB_OCCLUSION,
+	};
 
 	class JShaderType
 	{
 	public:
+		struct CompileInfo
+		{
+		public:
+			std::wstring fileName;
+			std::string functionName;
+		public:
+			CompileInfo(const std::wstring& fileName, const std::string& functionName)
+				:fileName(fileName), functionName(functionName)
+			{}
+		};
+	public:
 		static std::wstring ConvertToName(const J_SHADER_FUNCTION funcFlag)
 		{
-			return std::to_wstring(funcFlag);
+			return L"Gs" + std::to_wstring(funcFlag);
+		}
+		static std::wstring ConvertToName(const J_COMPUTE_SHADER_FUNCTION funcFlag)
+		{
+			return L"Cs" + std::to_wstring(funcFlag);
+		}
+		static CompileInfo ComputeShaderCompileInfo(const J_COMPUTE_SHADER_FUNCTION funcFlag)
+		{
+			switch (funcFlag)
+			{ 
+			case JinEngine::COMPUTE_SHADER_FUNCTION_HZB_OCCLUSION:
+				return CompileInfo(L"Hierarchical z-buffer.hlsl", "HZB");
+			default:
+				return CompileInfo(L"Error", "Error");
+			}
 		}
 		static J_SHADER_VERTEX_LAYOUT ConvertToVertexLayout(const J_MESHGEOMETRY_TYPE type)
 		{

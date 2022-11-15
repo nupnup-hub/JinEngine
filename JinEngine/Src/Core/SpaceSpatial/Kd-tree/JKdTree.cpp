@@ -183,7 +183,7 @@ namespace JinEngine
 		}
 		JKdTreeOption JKdTree::GetKdTreeOption()const noexcept
 		{
-			return JKdTreeOption(buildType, splitType, isOcclusionCullingAcitvated, GetCommonOption());
+			return JKdTreeOption(buildType, splitType, GetCommonOption());
 		}
 		std::vector<JGameObject*> JKdTree::GetAlignedObject(const JVector3<float>& pos)const noexcept
 		{
@@ -227,13 +227,13 @@ namespace JinEngine
 		{
 			JKdTreeOption preOption = GetKdTreeOption();
 			buildType = newOption.buildType;
-			splitType = newOption.splitType;
+			splitType = newOption.splitType; 
 
 			if (!preOption.EqualCommonOption(newOption))
 				SetCommonOption(newOption.commonOption);
 			else
 			{
-				if (!preOption.EqualBvhOption(newOption))
+				if (!preOption.EqualKdTreeOption(newOption))
 				{
 					if (IsSpaceSpatialActivated())
 					{

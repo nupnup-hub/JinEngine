@@ -38,7 +38,8 @@ namespace JinEngine
 		///</summary>
 		JStaticMeshData CreateQuad(float x, float y, float w, float h, float depth);
 
-		JStaticMeshData CreateBoundingBox();
+		JStaticMeshData CreateLineBoundingBox();
+		JStaticMeshData CreateTriangleBoundingBox();
 		JStaticMeshData CreateBoundingFrustum();
 	private:
 		void Subdivide(JStaticMeshData& meshData);

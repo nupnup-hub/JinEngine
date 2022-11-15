@@ -3,6 +3,8 @@
 #include"../../../../Utility/JVector.h"
 #include"../../../../Core/SpaceSpatial/JSpaceSpatialType.h"
 
+//Debug
+#include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
 namespace JinEngine
 {
 	class JCamera;
@@ -36,6 +38,8 @@ namespace JinEngine
 			uint shadowIndex = 0;
 			//Debug Spatial Space Tree
 			bool isSpatialSpaceTreeViewer = false;
+			//Debug
+			bool isOcclusionViewer = false;
 		private:
 			std::wstring editorCameraName;
 			JVector3<float> lastCamPos{ 0,0,0 };
@@ -75,6 +79,7 @@ namespace JinEngine
 			void MakeMainCamFrustum();
 		private:
 			void ShadowMapViewerOnScreen();
+			void OcclusionResultOnScreen();
 		public:
 			void DoActivate() noexcept final;
 			void DoDeActivate() noexcept final;
@@ -82,7 +87,7 @@ namespace JinEngine
 			void LoadEditorWindow(std::wifstream& stream)final;
 		private:
 			//Debug
-			//void CreateShapeGroup(const J_DEFAULT_SHAPE& shape);
+			void CreateShapeGroup(const J_DEFAULT_SHAPE& shape);
 			//void CreateDebugMaterial()noexcept;
 			//void DestroyDebugMaterial()noexcept;
 		};

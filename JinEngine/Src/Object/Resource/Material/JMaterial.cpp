@@ -220,17 +220,29 @@ namespace JinEngine
 		else
 			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_NONCULLING));
 	}
-	void JMaterial::SetDepthTest(bool value)noexcept
+	void JMaterial::SetShadowMapWrite(bool value)noexcept
 	{
-		if (depthTest == value)
+		if (isShadowMapWrite == value)
 			return;
 
-		depthTest = value;
+		isShadowMapWrite = value;
 		SetFrameDirty();
-		if (depthTest)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEPTH_TEST));
+		if (isShadowMapWrite)
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_WRITE_SHADOWMAP));
 		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEPTH_TEST));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_WRITE_SHADOWMAP));
+	}
+	void JMaterial::SetBoundingObjectDepthTest(bool value)noexcept
+	{
+		if (isBoundingObjDepthTest == value)
+			return;
+
+		isBoundingObjDepthTest = value;
+		SetFrameDirty();
+		if (isBoundingObjDepthTest)
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT));
+		else
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT));
 	}
 	void JMaterial::SetSkyMaterial(bool value)noexcept
 	{
@@ -284,9 +296,13 @@ namespace JinEngine
 	{
 		return nonCulling;
 	}
-	bool JMaterial::OnDepthTest()const noexcept
+	bool JMaterial::OnShadowMapWrite()const noexcept
 	{
-		return depthTest;
+		return isShadowMapWrite;
+	}
+	bool JMaterial::OnBoundingObjectDepthTest()const noexcept
+	{
+		return isBoundingObjDepthTest;
 	}
 	bool JMaterial::IsSkyMaterial()const noexcept
 	{
@@ -414,7 +430,8 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"Light", light);
 			JFileIOHelper::StoreAtomicData(stream, L"AlbedoOnly", albedoOnly);
 			JFileIOHelper::StoreAtomicData(stream, L"NonCulling", nonCulling);
-			JFileIOHelper::StoreAtomicData(stream, L"depthTest", depthTest);
+			JFileIOHelper::StoreAtomicData(stream, L"ShadowMapWrite", isShadowMapWrite);
+			JFileIOHelper::StoreAtomicData(stream, L"BoundingObjDepthTest", isBoundingObjDepthTest);
 			JFileIOHelper::StoreAtomicData(stream, L"SkyMaterial", isSkyMateral);
 			JFileIOHelper::StoreAtomicData(stream, L"DebugMaterial", isDebugMaterial);
 			JFileIOHelper::StoreAtomicData(stream, L"AlphaClip", alphaClip);
@@ -447,7 +464,8 @@ namespace JinEngine
 			bool sLight = false;
 			bool sAlbedoOnly = false;
 			bool sNonCulling = false;
-			bool sDepthTest = false;
+			bool sIsShadowMapWrite = false;
+			bool sBoundingObjDepthTest = false;
 			bool sIsSkyMateral = false;
 			bool sIsDebugMaterial = false;
 			bool sAlphaclip = false;
@@ -460,7 +478,8 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, sLight);
 			JFileIOHelper::LoadAtomicData(stream, sAlbedoOnly);
 			JFileIOHelper::LoadAtomicData(stream, sNonCulling);
-			JFileIOHelper::LoadAtomicData(stream, sDepthTest);
+			JFileIOHelper::LoadAtomicData(stream, sIsShadowMapWrite); 
+			JFileIOHelper::LoadAtomicData(stream, sBoundingObjDepthTest);
 			JFileIOHelper::LoadAtomicData(stream, sIsSkyMateral);
 			JFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial);
 			JFileIOHelper::LoadAtomicData(stream, sAlphaclip);
@@ -481,7 +500,8 @@ namespace JinEngine
 			SetLight(sLight);
 			SetAlbedoOnly(sAlbedoOnly);
 			SetNonCulling(sNonCulling);
-			SetDepthTest(sDepthTest);
+			SetShadowMapWrite(sIsShadowMapWrite);
+			SetBoundingObjectDepthTest(sBoundingObjDepthTest);
 			SetSkyMaterial(sIsSkyMateral);
 			SetDebugMaterial(sIsDebugMaterial);
 			SetAlphaClip(sAlphaclip);

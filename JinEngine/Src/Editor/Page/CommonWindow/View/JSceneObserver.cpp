@@ -13,6 +13,7 @@
 #include"../../../../Object/Resource/Material/JDefaultMaterialType.h" 
 #include"../../../../Object/GameObject/JGameObject.h" 
 #include"../../../../Object/GameObject/JGameObjectFactoryUtility.h"   
+#include"../../../../Graphic/JGraphic.h"
 #include"../../../../Utility/JCommonUtility.h"
 //#include<fstream>
 
@@ -64,7 +65,7 @@ namespace JinEngine
 				JImGuiImpl::Selectable("SpatialSpace##JSceneObserver", &isOpenSpatialOption, 0, JVector2<float>(ImGui::CalcTextSize("SpatialSpace").x, 0));
 				ImGui::SameLine();
 				if (JImGuiImpl::Selectable("MainCameraFrustum##JSceneObserver", &isMainCameraFrustumActivated, 0, JVector2<float>(ImGui::CalcTextSize("MainCameraFrustum").x, 0)))
-				{
+				{ 
 					if (isMainCameraFrustumActivated)
 						MakeMainCamFrustum();
 					else
@@ -72,12 +73,18 @@ namespace JinEngine
 				}
 				ImGui::SameLine();
 				JImGuiImpl::Selectable("ShadowMap##JSceneObserver", &isShadowViewer, 0, JVector2<float>(ImGui::CalcTextSize("ShadowMap").x, 0));
+				ImGui::SameLine();
+				JImGuiImpl::Selectable("OcclusionResult##JSceneObserver", &isOcclusionViewer, 0, JVector2<float>(ImGui::CalcTextSize("OcclusionResult").x, 0));
 
 				if (isOpenSpatialOption)
 					SceneStructureOptionOnScreen();
 				if (isShadowViewer)
 					ShadowMapViewerOnScreen();
-
+				if (isOcclusionViewer)
+					OcclusionResultOnScreen();
+				//Debug
+				ImGui::SameLine();
+				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE);
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
 				JImGuiImpl::Image(*camera, ImGui::GetWindowSize());
 			}
@@ -275,7 +282,7 @@ namespace JinEngine
 			}
 		}
 		void JSceneObserver::MakeMainCamFrustum()
-		{
+		{ 
 			mainCamFrustum = Core::GetUserPtr(JGFU::CreateDebugGameObject(*scene->GetRootGameObject(),
 				OBJECT_FLAG_EDITOR_OBJECT,
 				J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM,
@@ -312,6 +319,12 @@ namespace JinEngine
 				}
 				JImGuiImpl::Image(*shadowLitVec[shadowIndex], ImGui::GetWindowSize());
 			}
+			JImGuiImpl::EndWindow();
+		}
+		void JSceneObserver::OcclusionResultOnScreen()
+		{
+			JImGuiImpl::BeginWindow("##OcclusionResultWindow", &isOcclusionViewer, ImGuiWindowFlags_NoDocking);
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetOcclusionSrvHandle()).ptr, ImGui::GetWindowSize());
 			JImGuiImpl::EndWindow();
 		}
 		void JSceneObserver::DoActivate()noexcept
@@ -360,7 +373,7 @@ namespace JinEngine
 			lastCamPos = lastPos;
 			lastCamRot = lastRot;
 		}
-		/*void JSceneObserver::CreateShapeGroup(const J_DEFAULT_SHAPE& shape)
+		void JSceneObserver::CreateShapeGroup(const J_DEFAULT_SHAPE& shape)
 		{
 			if (JImGuiImpl::Button("MakeObject", JVector2<float>(ImGui::CalcTextSize("MakeObject").x, 0)))
 			{
@@ -381,6 +394,7 @@ namespace JinEngine
 				}
 			}
 		}
+		/*
 		void JSceneObserver::CreateDebugMaterial()noexcept
 		{
 			for (uint i = 0; i < debugMaterialCount; ++i)

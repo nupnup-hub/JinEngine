@@ -9,7 +9,7 @@ namespace JinEngine
 {
 	static size_t implGuid = Core::MakeGuid();
 
-	bool JSceneManagerImpl::TryOpenScene(JScene* scene, bool isPreviewScene, IFrameDirty* observation)noexcept
+	bool JSceneManagerImpl::TryOpenScene(JScene* scene, bool isPreviewScene, Core::JUserPtr<IFrameDirty> observationFrame)noexcept
 	{
 		if (scene == nullptr)
 			return false;
@@ -19,9 +19,9 @@ namespace JinEngine
 			//has dependency
 			//order 1. AddDrawList, 2. activate
 			if (isPreviewScene)
-				Graphic::JGraphicDrawList::AddDrawList(scene, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED, observation);
+				Graphic::JGraphicDrawList::AddDrawList(scene, observationFrame, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED, false);
 			else
-				Graphic::JGraphicDrawList::AddDrawList(scene, Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS, observation);
+				Graphic::JGraphicDrawList::AddDrawList(scene, observationFrame, Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS, true);
 			CallOnResourceReference(scene);
 			opendScene.push_back(scene);
 			return true;

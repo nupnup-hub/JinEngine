@@ -12,7 +12,8 @@ namespace JinEngine
 		DEFAULT_SHAPE_SPHERE,
 		DEFAULT_SHAPE_CYILINDER,
 		DEFAULT_SHAPE_QUAD,
-		DEFAULT_SHAPE_BOUNDING_BOX,
+		DEFAULT_SHAPE_BOUNDING_BOX_LINE,
+		DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE,
 		DEFAULT_SHAPE_BOUNDING_FRUSTUM,
 		COUNT,
 	};
@@ -20,7 +21,7 @@ namespace JinEngine
 	struct JDefaultShape
 	{ 
 	public:
-		static constexpr int debugTypeSt = (int)J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX;
+		static constexpr int debugTypeSt = (int)J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE;
 		static bool IsDefaultUse(const J_DEFAULT_SHAPE type)
 		{
 			switch (type)
@@ -37,10 +38,12 @@ namespace JinEngine
 				return false;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD:
 				return false;
-			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX:
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE:
+				return true;
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE:
 				return true;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM:
-				return false;
+				return true;
 			default:
 				return L"Error";
 			}
@@ -61,8 +64,10 @@ namespace JinEngine
 				return L"Cyilinder";
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD:
 				return L"Quad";
-			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX:
-				return L"BoundingBox";
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE:
+				return L"BoundingBox_L";
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE:
+				return L"BoundingBox_T";
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM:
 				return L"BoundingFrustum";
 			default:
@@ -85,7 +90,9 @@ namespace JinEngine
 				return J_MESHGEOMETRY_TYPE::STATIC;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD:
 				return J_MESHGEOMETRY_TYPE::STATIC;
-			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX:
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE:
+				return J_MESHGEOMETRY_TYPE::STATIC;
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE:
 				return J_MESHGEOMETRY_TYPE::STATIC;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM:
 				return J_MESHGEOMETRY_TYPE::STATIC;

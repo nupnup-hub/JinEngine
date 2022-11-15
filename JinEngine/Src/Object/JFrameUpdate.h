@@ -9,6 +9,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphicImpl;
+		struct JGraphicDrawTarget;
 	}
 
 #pragma region IFramaeUpdate
@@ -89,6 +90,7 @@ namespace JinEngine
 	{
 	private:
 		friend Graphic::JGraphicImpl;
+		friend Graphic::JGraphicDrawTarget;
 	protected:
 		virtual ~IFrameDirty() = default;
 	protected:

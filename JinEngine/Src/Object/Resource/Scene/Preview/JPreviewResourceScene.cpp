@@ -125,7 +125,7 @@ namespace JinEngine
 		JResourceObject* resource = static_cast<JResourceObject*>(jobject.Get());
 		JMaterial* material = JResourceManager::Instance().GetResource<JMaterial>(resource->GetGuid());
 	
-		JSceneManager::Instance().TryOpenScene(scene, true, material);
+		JSceneManager::Instance().TryOpenScene(scene, true, Core::GetUserPtr(material));
 		previewCamera = scene->GetMainCamera();
 
 		if (material == nullptr)

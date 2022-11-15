@@ -67,6 +67,8 @@ namespace JinEngine
 		const J_DEFAULT_MATERIAL matType)
 	{
 		const std::wstring name = JDefaultShape::ConvertToName(meshType) + L"DebugObject";
+
+		//has sequence dependency
 		JGameObject* newGameObj = JGFI::Create(name, Core::MakeGuid(), flag, parent);
 		JRenderItem* newRItem = JCFU::CreateRenderItem(Core::MakeGuid(),
 			OBJECT_FLAG_NONE,

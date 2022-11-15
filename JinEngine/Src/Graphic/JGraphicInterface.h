@@ -20,7 +20,8 @@ namespace Microsoft
 
 namespace JinEngine
 {
-	struct JShaderData; 
+	struct JGraphicShaderData; 
+	struct JComputeShaderData;
 	class JMeshGeometry;
 	class JShader; 
 	class JResourceManagerImpl;
@@ -72,7 +73,8 @@ namespace JinEngine
 			virtual JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
 			virtual JGraphicTextureHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
 			virtual bool DestroyGraphicTextureResource(JGraphicTextureHandle** handle) = 0;
-			virtual void StuffShaderPso(JShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_SHADER_FUNCTION functionFlag) = 0;
+			virtual void StuffGraphicShaderPso(JGraphicShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_SHADER_FUNCTION functionFlag) = 0;
+			virtual void StuffComputeShaderPso(JComputeShaderData* shaderData, J_COMPUTE_SHADER_FUNCTION cFunctionFlag) = 0;
 		};
 
 		class JGraphicEditorInterface : public JGraphicResourceInterface
@@ -115,6 +117,9 @@ namespace JinEngine
 		private:
 			virtual void DrawScene() = 0;
 			virtual void DrawProjectSelector() = 0;
+		private:
+			virtual void StoreOptionData() = 0;
+			virtual void LoadOptionData() = 0;
 		};
 	}
 }

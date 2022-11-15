@@ -234,14 +234,32 @@ namespace JinEngine
 		}
 
 	}
-	JShader* JResourceManagerImpl::GetDefaultShader(const J_DEFAULT_SHADER type)noexcept
+	JShader* JResourceManagerImpl::GetDefaultShader(const J_DEFAULT_GRAPHIC_SHADER type)noexcept
 	{
 		JResourceObject* resource = resourceData->GetDefaultResource(type);
 		if (resource != nullptr)
 			return static_cast<JShader*>(resource);
 		else
 		{
-			J_SHADER_FUNCTION shaderF = DefaultShader::GetShaderFunction(type);
+			J_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
+			JFile* file = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath())->GetFile(JShaderType::ConvertToName(shaderF));
+			if (file != nullptr)
+				return static_cast<JShader*>(file->GetResource());
+			else
+			{
+				assert("GetDefaultShader Error");
+				return nullptr;
+			}
+		}
+	}
+	JShader* JResourceManagerImpl::GetDefaultShader(const J_DEFAULT_COMPUTE_SHADER type)noexcept
+	{
+		JResourceObject* resource = resourceData->GetDefaultResource(type);
+		if (resource != nullptr)
+			return static_cast<JShader*>(resource);
+		else
+		{
+			J_COMPUTE_SHADER_FUNCTION shaderF = JDefaultShader::GetComputeShaderFunction(type);
 			JFile* file = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath())->GetFile(JShaderType::ConvertToName(shaderF));
 			if (file != nullptr)
 				return static_cast<JShader*>(file->GetResource());
@@ -450,13 +468,12 @@ namespace JinEngine
 			if (textureType[i] == J_DEFAULT_TEXTURE::MISSING)
 				objFlag = (J_OBJECT_FLAG)(objFlag | OBJECT_FLAG_HIDDEN);
 
+			const bool isUse = JDefaultTexture::IsDefaultUse(textureType[i]);
 			std::wstring foldernam;
 			std::wstring name;
 			std::wstring format;
 			JCUtil::DecomposeFileName(JDefaultTexture::GetName(textureType[i]), name, format);
 			JFile* file = textureDir->GetFile(name);
-
-			const bool isUse = JDefaultTexture::IsDefaultUse(textureType[i]);
 	 
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::TEXTURE && file->GetFormat() == format)
 				resourceData->RegisterDefaultResource(textureType[i], Core::GetUserPtr<JTexture>(file->GetResource()), isUse);
@@ -474,21 +491,42 @@ namespace JinEngine
 	void JResourceManagerImpl::CreateDefaultShader()
 	{
 		JDirectory* shaderDir = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath());
-		for (uint i = 0; i < (int)J_DEFAULT_SHADER::COUNTER; ++i)
+		for (uint i = 0; i < (int)J_DEFAULT_GRAPHIC_SHADER::COUNTER; ++i)
 		{
-			J_SHADER_FUNCTION shaderF = DefaultShader::GetShaderFunction((J_DEFAULT_SHADER)i);
-			J_OBJECT_FLAG objF = DefaultShader::GetObjectFlag((J_DEFAULT_SHADER)i);
-
+			const J_DEFAULT_GRAPHIC_SHADER type = (J_DEFAULT_GRAPHIC_SHADER)i;
+			const J_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
+			const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
+ 
 			std::wstring shaderName = JShaderType::ConvertToName(shaderF);
 			JFile* file = shaderDir->GetFile(shaderName);
 
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::SHADER)
-				resourceData->RegisterDefaultResource((J_DEFAULT_SHADER)i, Core::GetUserPtr<JShader>(file->GetResource()), false);
+				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JShader>(file->GetResource()), false);
 			else
 			{
 				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, shaderF));
 				ThrowIfFailedN(newShader != nullptr); 
-				resourceData->RegisterDefaultResource((J_DEFAULT_SHADER)i, Core::GetUserPtr(newShader), false);
+				resourceData->RegisterDefaultResource(type, Core::GetUserPtr(newShader), false);
+			}
+		}
+		  
+		for (uint i = 0; i < (int)J_DEFAULT_COMPUTE_SHADER::COUNTER; ++i)
+		{
+			const J_DEFAULT_COMPUTE_SHADER type = (J_DEFAULT_COMPUTE_SHADER)i;
+			const J_COMPUTE_SHADER_FUNCTION shaderF = JDefaultShader::GetComputeShaderFunction(type);
+			const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
+
+			const bool isUse = JDefaultShader::IsDefaultUse(type);
+			std::wstring shaderName = JShaderType::ConvertToName(shaderF);
+			JFile* file = shaderDir->GetFile(shaderName);
+			 
+			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::SHADER)
+				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JShader>(file->GetResource()), isUse);
+			else
+			{
+				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, shaderF));
+				ThrowIfFailedN(newShader != nullptr);
+				resourceData->RegisterDefaultResource(type, Core::GetUserPtr(newShader), isUse);
 			}
 		}
 	}
@@ -501,10 +539,12 @@ namespace JinEngine
 		{
 			//BasicMaterial format is all .mat( default format)
 			J_DEFAULT_MATERIAL type = (J_DEFAULT_MATERIAL)i;
+			const bool isUse = JDefaultMateiral::IsDefaultUse(type);
+
 			const std::wstring name = JDefaultMateiral::ConvertToName(type);
 			JFile* file = matDir->GetFile(name);
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::MATERIAL)
-				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JMaterial>(file->GetResource()), false);
+				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JMaterial>(file->GetResource()), isUse);
 			else
 			{ 
 				JMaterial* newMaterial = nullptr;
@@ -533,7 +573,7 @@ namespace JinEngine
 				{
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetDepthTest(true);
+					newMaterial->SetShadowMapWrite(true);
 					newMaterial->SetAlphaClip(true);
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
@@ -574,12 +614,20 @@ namespace JinEngine
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
 				}
+				case J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
+					newMaterial->SetBoundingObjectDepthTest(true); 
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
 				default:
 					break;
 				}
 
 				ThrowIfFailedN(newMaterial != nullptr);
-				resourceData->RegisterDefaultResource(type, GetUserPtr(newMaterial), false); 
+				resourceData->RegisterDefaultResource(type, GetUserPtr(newMaterial), isUse);
 			}
 		}
 	}
@@ -590,7 +638,8 @@ namespace JinEngine
 		auto createSphereLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateSphere(0.5f, 20, 20); };
 		auto createCylinderLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20); };
 		auto createQuadLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f); };
-		auto createBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingBox(); };
+		auto createLineBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLineBoundingBox(); };
+		auto createTriangleBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateTriangleBoundingBox(); };
 		auto createBFrustumLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingFrustum(); };
 
 		using CreateStaticMesh = Core::JStaticCallableType<JStaticMeshData, JDefaultGeometryGenerator&>;
@@ -598,8 +647,8 @@ namespace JinEngine
 		{
 			(CreateStaticMesh::Ptr)createCubeLam, (CreateStaticMesh::Ptr)createGridLam,
 			(CreateStaticMesh::Ptr)createSphereLam, (CreateStaticMesh::Ptr)createCylinderLam,
-			(CreateStaticMesh::Ptr)createQuadLam, (CreateStaticMesh::Ptr)createBBoxLam,
-			(CreateStaticMesh::Ptr)createBFrustumLam
+			(CreateStaticMesh::Ptr)createQuadLam, (CreateStaticMesh::Ptr)createLineBBoxLam,
+			 (CreateStaticMesh::Ptr)createTriangleBBoxLam, (CreateStaticMesh::Ptr)createBFrustumLam
 		};
 
 		JDefaultGeometryGenerator geoGen;
@@ -730,7 +779,7 @@ JMeshGeometry* JResourceManagerImpl::CreateMesh(const J_OBJECT_FLAG flag, JDirec
 	}
 	JMaterial* JResourceManagerImpl::CreateMaterial(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
 	{
-		const size_t shaderGuid = resourceData->defaultShaderGuidMap[J_DEFAULT_SHADER::DEFAULT_STANDARD_SHADER];
+		const size_t shaderGuid = resourceData->defaultGraphicShaderGuidMap[J_DEFAULT_GRAPHIC_SHADER::DEFAULT_STANDARD_SHADER];
 
 		JMaterial* res = material->AddResource(std::make_unique<JMaterial>(selectedDirctory->MakeUniqueFileName(name),
 			guid,

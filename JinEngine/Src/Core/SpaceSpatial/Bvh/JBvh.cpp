@@ -158,6 +158,8 @@ namespace JinEngine
 				DestroyBvhNode(leafNode->second->GetNodeNumber());
 			else if (innerGameObjectCandidate != nullptr && innerGameObjectCandidate->GetGuid() == gameObj->GetGuid())
 				innerGameObjectCandidate = nullptr;
+
+
 			if (IsDebugRoot(gameObj))
 			{
 				JSpaceSpatialOption option = GetCommonOption();
@@ -540,9 +542,17 @@ namespace JinEngine
 		}
 		void JBvh::BuildDebugTree(Editor::JEditorBinaryTreeView& treeView)
 		{
-			treeView.Initialize(allNodes.size());
-			if (root != nullptr)
-				root->BuildDebugNode(treeView);
+			if (root == nullptr)
+				return;
+
+			if (allNodes.size() < 2)
+			{
+				treeView.BuildNode(std::to_string(root->GetNodeNumber()));
+				return;
+			}
+
+			treeView.Initialize(allNodes.size());	
+			root->BuildDebugNode(treeView);
 		}
 	}
 }

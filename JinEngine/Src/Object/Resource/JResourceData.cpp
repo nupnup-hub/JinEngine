@@ -45,7 +45,7 @@ namespace JinEngine
 		RemoveListener(*JResourceManager::Instance().EvInterface(), guid);
 		defaultMeshGuidMap.clear();
 		defaultMaterialGuidMap.clear();
-		defaultShaderGuidMap.clear();
+		defaultGraphicShaderGuidMap.clear();
 		defaultTextureGuidMap.clear();
 		defaultResourceMap.clear();
 	}

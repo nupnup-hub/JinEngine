@@ -322,5 +322,13 @@ namespace JinEngine
 			for (uint i = 0; i < childrenCount; ++i)
 				PrintGameObjectTreeLoop(obj->GetChild(i), level + 1);
 		}
+		void JDebugTextOut::MessageVector(const DirectX::XMFLOAT3& vector, const std::wstring& guide)
+		{
+			std::wstring message = L"X: " + std::to_wstring(vector.x) +
+				L" Y: " + std::to_wstring(vector.y) +
+				L" Z: " + std::to_wstring(vector.z );
+			
+			MessageBox(0, message.c_str(), guide.c_str(), 0);
+		}
 	}
 }

@@ -38,9 +38,9 @@ namespace JinEngine
 					return;
 
 				if (nodeType != J_KDTREE_NODE_TYPE::LEAF)
-					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
+					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
 				else
-					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
+					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
 
 				debugGameObject->GetTransform()->SetScale(XMFLOAT3(bbox.Extents.x * 2, bbox.Extents.y * 2, bbox.Extents.z * 2));
 				debugGameObject->GetTransform()->SetPosition(bbox.Center);

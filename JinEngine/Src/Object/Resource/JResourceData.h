@@ -46,7 +46,8 @@ namespace JinEngine
 	private:
 		std::unordered_map<size_t, Core::JUserPtr<JResourceObject>> defaultResourceMap;
 		std::unordered_map<J_DEFAULT_TEXTURE, size_t> defaultTextureGuidMap;
-		std::unordered_map<J_DEFAULT_SHADER, size_t> defaultShaderGuidMap;
+		std::unordered_map<J_DEFAULT_GRAPHIC_SHADER, size_t> defaultGraphicShaderGuidMap;
+		std::unordered_map<J_DEFAULT_COMPUTE_SHADER, size_t> defaultComputeShaderGuidMap;
 		std::unordered_map<J_DEFAULT_MATERIAL, size_t> defaultMaterialGuidMap;
 		std::unordered_map<J_DEFAULT_SHAPE, size_t> defaultMeshGuidMap;
 	public:
@@ -67,10 +68,18 @@ namespace JinEngine
 				else
 					return nullptr;
 			}
-			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_SHADER>)
+			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_GRAPHIC_SHADER>)
 			{
-				auto data = defaultShaderGuidMap.find(key);
-				if (data != defaultShaderGuidMap.end())
+				auto data = defaultGraphicShaderGuidMap.find(key);
+				if (data != defaultGraphicShaderGuidMap.end())
+					return defaultResourceMap.find(data->second)->second.Get();
+				else
+					return nullptr;
+			}
+			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_COMPUTE_SHADER>)
+			{
+				auto data = defaultComputeShaderGuidMap.find(key);
+				if (data != defaultComputeShaderGuidMap.end())
 					return defaultResourceMap.find(data->second)->second.Get();
 				else
 					return nullptr;
@@ -99,8 +108,10 @@ namespace JinEngine
 		{
 			if constexpr (std::is_same_v<EnumName, J_DEFAULT_TEXTURE>)
 				DoRegisterDefaultResource(key, userObj, isUse, defaultTextureGuidMap);
-			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_SHADER>)
-				DoRegisterDefaultResource(key, userObj, isUse, defaultShaderGuidMap);
+			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_GRAPHIC_SHADER>)
+				DoRegisterDefaultResource(key, userObj, isUse, defaultGraphicShaderGuidMap);
+			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_COMPUTE_SHADER>)
+				DoRegisterDefaultResource(key, userObj, isUse, defaultComputeShaderGuidMap);
 			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_MATERIAL>)			
 				DoRegisterDefaultResource(key, userObj, isUse, defaultMaterialGuidMap);
 			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_SHAPE>)

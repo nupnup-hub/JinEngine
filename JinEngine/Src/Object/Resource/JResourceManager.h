@@ -97,7 +97,8 @@ namespace JinEngine
 		JMeshGeometry* GetDefaultMeshGeometry(const J_DEFAULT_SHAPE type)noexcept;
 		JMaterial* GetDefaultMaterial(const J_DEFAULT_MATERIAL type)noexcept;
 		JTexture* GetDefaultTexture(const J_DEFAULT_TEXTURE type)noexcept;
-		JShader* GetDefaultShader(const J_DEFAULT_SHADER type)noexcept;
+		JShader* GetDefaultShader(const J_DEFAULT_GRAPHIC_SHADER type)noexcept;
+		JShader* GetDefaultShader(const J_DEFAULT_COMPUTE_SHADER type)noexcept;
 		JDirectory* GetDirectory(const size_t guid)noexcept;
 		JDirectory* GetDirectory(const std::wstring& path)noexcept;
 		JDirectory* GetEditorResourceDirectory()noexcept;

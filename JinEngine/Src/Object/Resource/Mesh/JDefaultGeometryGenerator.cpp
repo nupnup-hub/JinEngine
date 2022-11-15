@@ -634,7 +634,7 @@ namespace JinEngine
 
 		return JStaticMeshData(L"Quad", std::move(indices32), true, true, std::move(vertices));
 	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateBoundingBox()
+	JStaticMeshData JDefaultGeometryGenerator::CreateLineBoundingBox()
 	{
 		std::vector<JStaticMeshVertex> vertices(8);
 		vertices[0].position = XMFLOAT3(-0.5f, -0.5f, -0.5f);
@@ -661,7 +661,41 @@ namespace JinEngine
 			2, 6,
 			3, 7
 		};
-		return JStaticMeshData(L"Bounding Box", std::move(indices32), false, false, std::move(vertices));
+		return JStaticMeshData(L"Bounding Box_L", std::move(indices32), false, false, std::move(vertices));
+	}
+	JStaticMeshData JDefaultGeometryGenerator::CreateTriangleBoundingBox()
+	{
+		std::vector<JStaticMeshVertex> vertices(8);
+		vertices[0].position = XMFLOAT3(-0.5f, 0.5f, -0.5);
+		vertices[1].position = XMFLOAT3(0.5f, 0.5f, -0.5f);
+		vertices[2].position = XMFLOAT3(0.5f, 0.5f, 0.5f);
+		vertices[3].position = XMFLOAT3(-0.5f, 0.5f, 0.5f);
+		vertices[4].position = XMFLOAT3(-0.5f, -0.5f, 0.5f);
+		vertices[5].position = XMFLOAT3(0.5f, -0.5f, 0.5f);
+		vertices[6].position = XMFLOAT3(0.5f, -0.5f, -0.5f);
+		vertices[7].position = XMFLOAT3(-0.5f, -0.5f, -0.5f);
+
+		std::vector<uint32> indices32
+		{
+			0, 1, 2,
+			0, 2, 3,
+
+			4, 5, 6,
+			4, 6, 7,
+
+			3, 2, 5,
+			3, 5, 4,
+
+			2, 1, 6,
+			2, 6, 5,
+
+			1, 7, 6,
+			1, 0, 7,
+
+			0, 3, 4,
+			0, 4, 7
+		};
+		return JStaticMeshData(L"Bounding Box_T", std::move(indices32), false, false, std::move(vertices));
 	}
 	JStaticMeshData JDefaultGeometryGenerator::CreateBoundingFrustum()
 	{
