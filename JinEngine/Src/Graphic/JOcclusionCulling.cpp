@@ -73,9 +73,9 @@ namespace JinEngine
 			// Create root CBV.
 			slotRootParameter[0].InitAsConstantBufferView(0);
 			slotRootParameter[1].InitAsConstantBufferView(1);
-			slotRootParameter[1].InitAsConstantBufferView(2);
-			slotRootParameter[2].InitAsUnorderedAccessView(0);
-			slotRootParameter[3].InitAsDescriptorTable(1, &texTable00); 
+			slotRootParameter[2].InitAsConstantBufferView(2);
+			slotRootParameter[3].InitAsUnorderedAccessView(0);
+			slotRootParameter[4].InitAsDescriptorTable(1, &texTable00); 
 
 			CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, 1, &samDesc, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
