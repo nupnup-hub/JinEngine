@@ -6,12 +6,15 @@
 #include"JGraphicInterface.h"
 #include"JGraphicTextureUserInterface.h"
 #include"JGraphicOption.h" 
-#include"FrameResource/JAnimationConstants.h"
+#include"JGraphicInfo.h"
+#include"FrameResource/JFrameResourceType.h"
+#include"FrameResource/JAnimationConstants.h" 
 #include"../Object/JFrameUpdate.h"
 #include"../Object/Component/RenderItem/JRenderLayer.h"   
 #include"../Object/Resource/Shader/JShaderFunctionEnum.h" 
 #include"../Core/Singleton/JSingletonHolder.h"
 #include"../Core/Event/JEventListener.h"
+#include"../Core/Func/Callable/JCallable.h"
 #include"../Window/JWindowEventType.h"
 #include"../../Lib/DirectX/d3dx12.h"
 
@@ -60,6 +63,50 @@ namespace JinEngine
 			template<typename T>friend class Core::JCreateUsingNew;
 			friend class Editor::JGraphicResourceWatcher; 			//Debug Class
 		private:
+			struct UpdateHelper
+			{
+			public:
+				using GetElementCountT = Core::JStaticCallableType<uint>; 
+			public:
+				using GetTextureCountT = Core::JStaticCallableType<uint, const JGraphicImpl&>;
+				using IsPassReCompileT = Core::JStaticCallableType<FRAME_CAPACITY_CONDITION, const JGraphicImpl&>;
+				using SetCapacityT = Core::JStaticCallableType<void, JGraphicImpl&>;
+			public:
+				struct FrameUpdateData
+				{ 
+				public:
+					std::unique_ptr<GetElementCountT::Callable> getElementCountCallable = nullptr; ;
+				public:
+					uint count = 0;
+					uint capacity = 0;
+					uint offset = 0;
+					bool setFrameDirty = false;
+					FRAME_CAPACITY_CONDITION rebuildCondition;
+				};
+				struct BindingTextureData
+				{
+				public:
+					std::unique_ptr<GetTextureCountT::Callable> getTextureCountCallable = nullptr;
+					std::unique_ptr<IsPassReCompileT::Callable> isPassRecompileShaderCallable = nullptr; 
+					std::unique_ptr< SetCapacityT::Callable> setCapacityCallable = nullptr;
+				public:
+					uint count;
+					FRAME_CAPACITY_CONDITION recompileShaderCondition;
+				public:
+					bool HasCallable()const noexcept;
+				};
+			public:
+				std::vector<FrameUpdateData> fData;
+				std::vector<BindingTextureData> bData;
+				bool hasRebuildCondition;
+				bool hasRecompileShader;
+			public:
+				void RegisterCallable(J_FRAME_RESOURCE_TYPE type, GetElementCountT::Ptr* gPtr);
+				void RegisterCallable(J_GRAPHIC_TEXTURE_TYPE type, GetTextureCountT::Ptr* gPtr, IsPassReCompileT::Ptr* iPtr, SetCapacityT::Ptr* sPtr);
+				void WriteGraphicInfo(JGraphicInfo& info)const noexcept;
+				void Clear();
+			};
+		private:
 			size_t guid;
 			std::vector<std::unique_ptr<JFrameResource>> frameResources;
 			JFrameResource* currFrameResource = nullptr;
@@ -84,21 +131,17 @@ namespace JinEngine
 			D3D12_RECT scissorRect;
 
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
-			std::unique_ptr<JGraphicResourceManager> graphicResource;
-
 			int currBackBuffer = 0;
 		private:
-			int width = 0;
-			int height = 0;
-			uint occlusionWidth = 512;
-			uint occlusionHeight = 256;
-			const uint defaultShadowWidth = 2048;
-			const uint defaultShadowHeight = 2048;
 			bool stCommand = false;
 		private:
-			JGraphicOption graphicOption;
+			JGraphicInfo info;
+			JGraphicOption option;
+			UpdateHelper updateHelper;
+			std::unique_ptr<JGraphicResourceManager> graphicResource;
 			std::unique_ptr<JOcclusionCulling> occHelper;
 		public:
+			JGraphicInfo GetGraphicInfo()const noexcept;
 			JGraphicOption GetGraphicOption()const noexcept;
 			void SetGraphicOption(const JGraphicOption& newGraphicOption)noexcept;
 		public:
@@ -119,11 +162,11 @@ namespace JinEngine
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept final;
 		private:
 			JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
-			JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
+			JGraphicTextureHandle* CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
 			JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			JGraphicTextureHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			bool DestroyGraphicTextureResource(JGraphicTextureHandle** handle)final;
-			void StuffGraphicShaderPso(JGraphicShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_SHADER_FUNCTION functionFlag)final;
+			void StuffGraphicShaderPso(JGraphicShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_GRAPHIC_SHADER_FUNCTION gFunctionFlag)final;
 			void StuffComputeShaderPso(JComputeShaderData* shaderData, J_COMPUTE_SHADER_FUNCTION cFunctionFlag)final;
 		private:
 			ID3D12CommandQueue* GetCommandQueue()const noexcept final;
@@ -141,15 +184,15 @@ namespace JinEngine
 			void EndFrame()final;
 		private:
 			void UpdateWait()final;
-			void UpdateEngine()final;
-			void UpdateSceneObjectCB(_In_ JScene* scene, uint& objCBoffset, _Out_ uint& updateCount, _Out_ uint& hotUpdateCount);
+			void UpdateEngine()final;  
+			void UpdateSceneObjectCB(_In_ JScene* scene, _Out_ uint& updateCount, _Out_ uint& hotUpdateCount);
 			void UpdateMaterialCB();
 			//Always update
-			void UpdateScenePassCB(_In_ JScene* scene, uint& passCBoffset);
-			void UpdateSceneAnimationCB(_In_ JScene* scene, uint& aniCBoffset, _Out_ uint& updateCount, _Out_ uint& hotUpdateCount);
-			void UpdateSceneCameraCB(_In_ JScene* scene, uint& camCBoffset, _Out_ uint& updateCount, _Out_ uint& hotUpdateCount);
+			void UpdateScenePassCB(_In_ JScene* scene);
+			void UpdateSceneAnimationCB(_In_ JScene* scene, _Out_ uint& updateCount, _Out_ uint& hotUpdateCount);
+			void UpdateSceneCameraCB(_In_ JScene* scene, _Out_ uint& updateCount, _Out_ uint& hotUpdateCount);
 			//Always update has dirty return 1 or return 0
-			void UpdateSceneLightCB(_In_ JScene* scene, uint& lightCBoffset, uint& shadowCBoffset, _Out_ uint& updateCount, _Out_ uint& hotUpdateCount);
+			void UpdateSceneLightCB(_In_ JScene* scene,  _Out_ uint& updateCount, _Out_ uint& hotUpdateCount);
 		private:
 			void DrawScene()final;
 			void DrawProjectSelector()final;
@@ -159,7 +202,7 @@ namespace JinEngine
 				const uint passCBoffset,
 				const uint aniCBoffset,
 				const uint camCBoffset,
-				const uint lightCBoffset,
+				const uint lightIndexCBoffset,
 				const bool isOcclusionActivated);
 			void DrawSceneShadowMap(_In_ JScene* scene,
 				_In_ JLight* light,
@@ -189,14 +232,19 @@ namespace JinEngine
 			void CreateSwapChain();
 			void BuildRootSignature();
 			void BuildFrameResources();
-
+			void ReBuildFrameResource(const J_FRAME_RESOURCE_TYPE type, const FRAME_CAPACITY_CONDITION condition, const uint nowObjCount);
+			void ReCompileGraphicShader();
+			FRAME_CAPACITY_CONDITION IsPassRedefineCapacity(const uint capacity, const uint nowCount)const noexcept;
+			uint CalculateCapacity(const FRAME_CAPACITY_CONDITION condition, const uint nowCapacity, const uint nowCount)const noexcept;
+			//수정필요
+			//Resize시 User RenderTarget size 변경 추가필요 - 2022-11-15
 			void OnResize();
 			ID3D12Resource* CurrentBackBuffer()const;
 			D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView()	const;
 			const std::vector<CD3DX12_STATIC_SAMPLER_DESC> Sampler()const noexcept;
 		private:
-			void StoreOptionData()final;
-			void LoadOptionData()final;
+			void StoreData()final;
+			void LoadData()final;
 		private:
 			JGraphicImpl();
 			~JGraphicImpl();

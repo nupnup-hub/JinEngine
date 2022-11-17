@@ -1,5 +1,4 @@
-#include"JLight.h"
-#include"JLightStruct.h" 
+#include"JLight.h"  
 #include"../JComponentFactory.h"
 #include"../../Component/Transform/JTransform.h"
 #include"../../GameObject/JGameObject.h" 
@@ -157,60 +156,8 @@ namespace JinEngine
 		PopDrawRequest(GetOwner()->GetOwnerScene(), this);
 		DestroyTxtHandle();
 	}
-	void JLight::StuffDirectionalLight(Graphic::JLightConstants& constant)noexcept
-	{
-		XMStoreFloat3(&constant.directionalLight[constant.directionalLightMax].direction, GetLightDir());
-		constant.directionalLight[constant.directionalLightMax].strength = strength;
-		++constant.directionalLightMax;
-	}
-	void JLight::StuffPointLight(Graphic::JLightConstants& constant)noexcept
-	{
-		constant.pointLight[constant.pointLightMax].strength = strength;
-		constant.pointLight[constant.pointLightMax].falloffStart = falloffStart;
-		constant.pointLight[constant.pointLightMax].position = GetOwner()->GetTransform()->GetPosition();
-		constant.pointLight[constant.pointLightMax].falloffEnd = falloffEnd;
-		++constant.pointLightMax;
-	}
-	void JLight::StuffSpotLight(Graphic::JLightConstants& constant)noexcept
-	{
-		constant.spotLight[constant.spotLightMax].strength = strength;
-		constant.spotLight[constant.spotLightMax].falloffStart = falloffStart;
-		XMStoreFloat3(&constant.spotLight[constant.spotLightMax].direction, GetLightDir());
-		constant.spotLight[constant.spotLightMax].falloffEnd = falloffEnd;
-		constant.spotLight[constant.spotLightMax].position = GetOwner()->GetTransform()->GetPosition();
-		++constant.spotLightMax;
-	} 
-	void JLight::StuffSMDirectionalLight(Graphic::JSMLightConstants& constant)noexcept
-	{
-		XMStoreFloat3(&constant.sDirectionalLight[constant.smDirectionalLightMax].dLight.direction, GetLightDir());
-		constant.sDirectionalLight[constant.smDirectionalLightMax].dLight.strength = strength;
-		constant.sDirectionalLight[constant.smDirectionalLightMax].shadow.shadowMapIndex = GetTxtVectorIndex();
-		XMStoreFloat4x4(&constant.sDirectionalLight[constant.smDirectionalLightMax].shadow.shadowTransform, XMMatrixTranspose(XMLoadFloat4x4(&shadowTransform)));
-		++constant.smDirectionalLightMax;
-	}
-	void JLight::StuffSMPointLight(Graphic::JSMLightConstants& constant)noexcept
-	{
-		constant.sPointLight[constant.smPointLightMax].pLight.strength = strength;
-		constant.sPointLight[constant.smPointLightMax].pLight.falloffStart = falloffStart;
-		constant.sPointLight[constant.smPointLightMax].pLight.position = GetOwner()->GetTransform()->GetPosition();
-		constant.sPointLight[constant.smPointLightMax].pLight.falloffEnd = falloffEnd;
-		constant.sPointLight[constant.smPointLightMax].shadow.shadowMapIndex = GetTxtVectorIndex();
-		XMStoreFloat4x4(&constant.sPointLight[constant.smPointLightMax].shadow.shadowTransform, XMMatrixTranspose(XMLoadFloat4x4(&shadowTransform)));
-		++constant.smPointLightMax;
-	}
-	void JLight::StuffSMSpotLight(Graphic::JSMLightConstants& constant)noexcept
-	{
-		constant.sSpotLight[constant.smSpotLightMax].sLight.strength = strength;
-		constant.sSpotLight[constant.smSpotLightMax].sLight.falloffStart = falloffStart;
-		XMStoreFloat3(&constant.sSpotLight[constant.smSpotLightMax].sLight.direction, GetLightDir());
-		constant.sSpotLight[constant.smSpotLightMax].sLight.falloffEnd = falloffEnd;
-		constant.sSpotLight[constant.smSpotLightMax].sLight.position = GetOwner()->GetTransform()->GetPosition();
-		constant.sSpotLight[constant.smSpotLightMax].shadow.shadowMapIndex = GetTxtVectorIndex();
-		XMStoreFloat4x4(&constant.sSpotLight[constant.smSpotLightMax].shadow.shadowTransform, XMMatrixTranspose(XMLoadFloat4x4(&shadowTransform)));
-		++constant.smSpotLightMax;
-	}
 	bool JLight::UpdateFrame(Graphic::JLightConstants& lightConstant,
-		Graphic::JSMLightConstants& smLightConstant,
+		Graphic::JShadowMapLightConstants& smLightConstant,
 		Graphic::JShadowMapConstants& shadowConstant)
 	{
 		if (onShadow)
@@ -267,37 +214,25 @@ namespace JinEngine
 			shadowConstant.nearZ = n;
 			shadowConstant.farZ = f;
 
-			switch (lightType)
-			{
-			case JinEngine::J_LIGHT_TYPE::DIRECTIONAL:
-				StuffSMDirectionalLight(smLightConstant);
-				break;
-			case JinEngine::J_LIGHT_TYPE::POINT:
-				StuffSMPointLight(smLightConstant);
-				break;
-			case JinEngine::J_LIGHT_TYPE::SPOT:
-				StuffSMSpotLight(smLightConstant);
-				break;
-			default:
-				break;
-			}
+			XMStoreFloat4x4(&smLightConstant.shadowTransform, XMMatrixTranspose(XMLoadFloat4x4(&shadowTransform)));
+			smLightConstant.strength = strength;
+			smLightConstant.falloffStart = falloffStart;
+			XMStoreFloat3(&smLightConstant.direction, GetLightDir());
+			smLightConstant.falloffEnd = falloffEnd;
+			smLightConstant.position = GetOwner()->GetTransform()->GetPosition();
+			smLightConstant.spotPower = spotPower;
+			smLightConstant.lightType = (int)lightType;
+			smLightConstant.shadowMapIndex = GetTxtVectorIndex();
 		}
 		else
 		{
-			switch (lightType)
-			{
-			case JinEngine::J_LIGHT_TYPE::DIRECTIONAL:
-				StuffDirectionalLight(lightConstant);
-				break;
-			case JinEngine::J_LIGHT_TYPE::POINT:
-				StuffPointLight(lightConstant);
-				break;
-			case JinEngine::J_LIGHT_TYPE::SPOT:
-				StuffSpotLight(lightConstant);
-				break;
-			default:
-				break;
-			}
+			lightConstant.strength = strength;
+			lightConstant.falloffStart = falloffStart;
+			XMStoreFloat3(&lightConstant.direction, GetLightDir());
+			lightConstant.falloffEnd = falloffEnd;
+			lightConstant.position = GetOwner()->GetTransform()->GetPosition();
+			lightConstant.spotPower = spotPower;
+			smLightConstant.lightType = (int)lightType;
 		}
 		return true;
 	}

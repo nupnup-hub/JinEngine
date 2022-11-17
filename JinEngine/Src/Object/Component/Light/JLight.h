@@ -6,7 +6,7 @@
 
 namespace JinEngine
 {  
-	struct JLightStruct; 
+	struct JLightConstants; 
 	class JGameObject; 
 
 	class JLight final :public JLightInterface
@@ -61,16 +61,9 @@ namespace JinEngine
 	private:
 		void CreateShadowMap()noexcept;
 		void DestroyShadowMap()noexcept;
-		
-		void StuffDirectionalLight(Graphic::JLightConstants& constant)noexcept;
-		void StuffPointLight(Graphic::JLightConstants& constant)noexcept;
-		void StuffSpotLight(Graphic::JLightConstants& constant)noexcept;
-		void StuffSMDirectionalLight(Graphic::JSMLightConstants& constant)noexcept;
-		void StuffSMPointLight(Graphic::JSMLightConstants& constant)noexcept;
-		void StuffSMSpotLight(Graphic::JSMLightConstants& constant)noexcept;
 	private:
 		bool UpdateFrame(Graphic::JLightConstants& lightConstant,
-			Graphic::JSMLightConstants& smLightConstant,
+			Graphic::JShadowMapLightConstants& smLightConstant,
 			Graphic::JShadowMapConstants& shadowConstant) final;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;

@@ -8,7 +8,7 @@
 namespace JinEngine
 {
 	namespace Core
-	{
+	{ 
 		class JCallableBase
 		{
 			REGISTER_CLASS(JCallableBase)

@@ -46,13 +46,13 @@ namespace JinEngine
 		{
 			return GetSrvOcclusionDepthStart() + occlusionDsCapacity;
 		}
-		uint JGraphicResourceManager::GetSrvUserCubeTextureStart()const noexcept
+		uint JGraphicResourceManager::GetSrvUserCubeMapStart()const noexcept
 		{
 			return GetSrvUser2DTextureStart() + user2DTextureCapacity;
 		}
 		uint JGraphicResourceManager::GetSrvRenderResultStart()const noexcept
 		{
-			return GetSrvUserCubeTextureStart() + userCubeTextureCapacity;
+			return GetSrvUserCubeMapStart() + userCubeMapCapacity;
 		}
 		uint JGraphicResourceManager::GetSrvShadowMapStart()const noexcept
 		{
@@ -100,11 +100,11 @@ namespace JinEngine
 		}
 		uint JGraphicResourceManager::GetTotalTextureCount()const noexcept
 		{
-			return srvFixedCount + occlusionDsCount + user2DTextureCount + userCubeTextureCount + renderResultCount + shadowMapCount;
+			return srvFixedCount + occlusionDsCount + user2DTextureCount + userCubeMapCount + renderResultCount + shadowMapCount;
 		}
 		uint JGraphicResourceManager::GetTotalTextureCapacity()const noexcept
 		{
-			return srvFixedCount + occlusionDsCapacity + user2DTextureCapacity + userCubeTextureCapacity + renderResultCapacity + shadowMapCapacity;
+			return srvFixedCount + occlusionDsCapacity + user2DTextureCapacity + userCubeMapCapacity + renderResultCapacity + shadowMapCapacity;
 		}
 		uint JGraphicResourceManager::GetOcclusionQueryHeapCapacity()const noexcept
 		{
@@ -218,7 +218,7 @@ namespace JinEngine
 			}
 			return handleCash;
 		}
-		JGraphicTextureHandle* JGraphicResourceManager::CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
+		JGraphicTextureHandle* JGraphicResourceManager::CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
 			const std::wstring& path,
 			const std::wstring& oriFormat,
 			ID3D12Device* device,
@@ -226,7 +226,7 @@ namespace JinEngine
 		{
 			Microsoft::WRL::ComPtr<ID3D12Resource> newTexture;
 			JGraphicTextureHandle* handleCash = nullptr;
-			uint heapIndex = GetSrvUserCubeTextureStart() + userCubeTextureCount;
+			uint heapIndex = GetSrvUserCubeMapStart() + userCubeMapCount;
 			size_t width = 0;
 			size_t height = 0;
 			bool res = false;
@@ -270,12 +270,12 @@ namespace JinEngine
 				std::unique_ptr<JGraphicTextureHandle> newHandle =
 					std::make_unique<JGraphicTextureHandle>(J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE, (uint)width, (uint)height);
 				newHandle->srvHeapIndex = heapIndex;
-				SetGraphicBuffIndex(*newHandle, userCubeTextureCount);
+				SetGraphicBuffIndex(*newHandle, userCubeMapCount);
 				handleCash = newHandle.get();
 
-				userCubeTextureHandle.push_back(std::move(newHandle));
-				userCubeTextureResouce.push_back(std::move(newTexture));
-				++userCubeTextureCount;
+				userCubeMapHandle.push_back(std::move(newHandle));
+				userCubeMapResouce.push_back(std::move(newTexture));
+				++userCubeMapCount;
 			}
 			return handleCash;
 		}
@@ -440,15 +440,15 @@ namespace JinEngine
 			}
 			case J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE:
 			{
-				userCubeTextureResouce[vIndex].Reset();
-				userCubeTextureResouce.erase(userCubeTextureResouce.begin() + vIndex);
-				userCubeTextureHandle.erase(userCubeTextureHandle.begin() + vIndex);
-				--userCubeTextureCount;
-				for (uint i = vIndex; i < userCubeTextureCount; ++i)
+				userCubeMapResouce[vIndex].Reset();
+				userCubeMapResouce.erase(userCubeMapResouce.begin() + vIndex);
+				userCubeMapHandle.erase(userCubeMapHandle.begin() + vIndex);
+				--userCubeMapCount;
+				for (uint i = vIndex; i < userCubeMapCount; ++i)
 				{
-					--userCubeTextureHandle[i]->srvHeapIndex;
-					SetGraphicBuffIndex(*userCubeTextureHandle[i], GetGraphicBuffIndex(*userCubeTextureHandle[i]) - 1);
-					ReBindCubeTexture(device, GetGraphicBuffIndex(*userCubeTextureHandle[i]), userCubeTextureHandle[i]->srvHeapIndex);
+					--userCubeMapHandle[i]->srvHeapIndex;
+					SetGraphicBuffIndex(*userCubeMapHandle[i], GetGraphicBuffIndex(*userCubeMapHandle[i]) - 1);
+					ReBindCubeMap(device, GetGraphicBuffIndex(*userCubeMapHandle[i]), userCubeMapHandle[i]->srvHeapIndex);
 				}
 				return true;
 			}
@@ -500,7 +500,7 @@ namespace JinEngine
 
 			device->CreateShaderResourceView(user2DTextureResouce[resourceIndex].Get(), &srvDesc, GetCpuSrvDescriptorHandle(heapIndex));
 		}
-		void JGraphicResourceManager::ReBindCubeTexture(ID3D12Device* device, const uint resourceIndex, const uint heapIndex)
+		void JGraphicResourceManager::ReBindCubeMap(ID3D12Device* device, const uint resourceIndex, const uint heapIndex)
 		{
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -508,11 +508,11 @@ namespace JinEngine
 			srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 			srvDesc.TextureCube.MostDetailedMip = 0;
-			srvDesc.TextureCube.MipLevels = userCubeTextureResouce[resourceIndex]->GetDesc().MipLevels;
+			srvDesc.TextureCube.MipLevels = userCubeMapResouce[resourceIndex]->GetDesc().MipLevels;
 			srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-			srvDesc.Format = userCubeTextureResouce[resourceIndex]->GetDesc().Format;
+			srvDesc.Format = userCubeMapResouce[resourceIndex]->GetDesc().Format;
 
-			device->CreateShaderResourceView(userCubeTextureResouce[resourceIndex].Get(), &srvDesc, GetCpuSrvDescriptorHandle(heapIndex));
+			device->CreateShaderResourceView(userCubeMapResouce[resourceIndex].Get(), &srvDesc, GetCpuSrvDescriptorHandle(heapIndex));
 		}
 		void JGraphicResourceManager::ReBindRenderTarget(ID3D12Device* device, const uint resourceIndex, const uint rtvHeapIndex, const uint srvHeapIndex)
 		{
@@ -577,9 +577,9 @@ namespace JinEngine
 				occlusionDepthStencil[i].Reset();
 
 			occlusionDsCount = 0;
-			uint nowWidth = width > maxOcclusionDsSize ? maxOcclusionDsSize : width;
-			uint nowHeight = height > maxOcclusionDsSize ? maxOcclusionDsSize : height;
-			while (nowWidth != 1 && nowHeight != 1)
+			uint nowWidth = width > maxOcclusionDsWidth ? maxOcclusionDsWidth : width;
+			uint nowHeight = height > maxOcclusionDsHeight ? maxOcclusionDsHeight : height;
+			while (nowWidth != 1 || nowHeight != 1)
 			{ 
 				D3D12_RESOURCE_DESC depthStencilDesc;
 				depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -697,8 +697,8 @@ namespace JinEngine
 
 			user2DTextureHandle.clear();
 			user2DTextureResouce.clear();
-			userCubeTextureHandle.clear();
-			userCubeTextureResouce.clear();
+			userCubeMapHandle.clear();
+			userCubeMapResouce.clear();
 			renderResultHandle.clear();
 			renderResultResource.clear();
 			shadowMapHandle.clear();

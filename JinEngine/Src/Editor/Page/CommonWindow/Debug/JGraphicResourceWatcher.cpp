@@ -25,7 +25,7 @@ namespace JinEngine
 			{
 				Graphic::JGraphicResourceManager* grManager = JGraphic::Instance().graphicResource.get();
 				std::string user2DTextreCount = "User2DTextureCount: " + std::to_string(grManager->user2DTextureCount);
-				std::string userCubeTextreCount = "userCubeTextreCount: " + std::to_string(grManager->userCubeTextureCount);
+				std::string userCubeTextreCount = "userCubeTextreCount: " + std::to_string(grManager->userCubeMapCount);
 				std::string rsCount = "renderResultCount: " + std::to_string(grManager->renderResultCount);
 				std::string shadowMapCount = "shadowMapCount: " + std::to_string(grManager->shadowMapCount);
 

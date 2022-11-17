@@ -15,16 +15,14 @@ namespace JinEngine
 			//MessageBox(0, JWindow::Instance().HrException::TranslateErrorCode(gfxHr).c_str(), (L"\n[Error Code] 0x" + JCUtil::StrToWstr(hexerrorcode)).c_str(), 0);
 			whatBuffer = TranslateErrorCode(gfxHr);
 		}
+		const std::wstring JGraphicException::what() const
+		{ 
+			return GetType() + L"\n[Error Code] 0x" + JCUtil::StrToWstr(hexerrorcode)
+				+ L"\n[Description]" + whatBuffer + L"\n" + GetOriginString();
+		}
 		const std::wstring JGraphicException::GetType() const
 		{
 			return L"Graphics Exception";
-		}
-		const std::wstring JGraphicException::what() const
-		{
-			std::wstring oss;
-			oss = GetType() + L"\n[Error Code] 0x" + JCUtil::StrToWstr(hexerrorcode)
-				+ L"\n[Description]" + whatBuffer + L"\n" + GetOriginString();
-			return oss;
 		}
 	}
 }

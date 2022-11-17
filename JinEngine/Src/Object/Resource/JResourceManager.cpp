@@ -33,6 +33,13 @@
 #include"../../Graphic/JGraphicDrawList.h"
 #include"../../Graphic/JGraphicResourceManager.h"
 
+#define DIMX
+#define DIMY
+#define DIMZ
+
+#if defined (DIMX) && defined (DIMY) && defined (DIMZ)
+int a = 20;
+#endif
 using namespace DirectX;
 namespace JinEngine
 {
@@ -241,7 +248,7 @@ namespace JinEngine
 			return static_cast<JShader*>(resource);
 		else
 		{
-			J_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
+			J_GRAPHIC_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
 			JFile* file = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath())->GetFile(JShaderType::ConvertToName(shaderF));
 			if (file != nullptr)
 				return static_cast<JShader*>(file->GetResource());
@@ -494,7 +501,7 @@ namespace JinEngine
 		for (uint i = 0; i < (int)J_DEFAULT_GRAPHIC_SHADER::COUNTER; ++i)
 		{
 			const J_DEFAULT_GRAPHIC_SHADER type = (J_DEFAULT_GRAPHIC_SHADER)i;
-			const J_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
+			const J_GRAPHIC_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
 			const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
  
 			std::wstring shaderName = JShaderType::ConvertToName(shaderF);
@@ -518,13 +525,12 @@ namespace JinEngine
 
 			const bool isUse = JDefaultShader::IsDefaultUse(type);
 			std::wstring shaderName = JShaderType::ConvertToName(shaderF);
-			JFile* file = shaderDir->GetFile(shaderName);
-			 
+			JFile* file = shaderDir->GetFile(shaderName); 
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::SHADER)
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JShader>(file->GetResource()), isUse);
 			else
 			{
-				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, shaderF));
+				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, SHADER_FUNCTION_NONE, shaderF));
 				ThrowIfFailedN(newShader != nullptr);
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr(newShader), isUse);
 			}
@@ -865,7 +871,7 @@ JMeshGeometry* JResourceManagerImpl::CreateMesh(const J_OBJECT_FLAG flag, JDirec
 			selectedDirctory->AddFile(std::make_unique<JFile>(res));
 		return res;
 	}
-	JShader* JResourceManagerImpl::CreateShader(const J_SHADER_FUNCTION newFunctionFlag, J_OBJECT_FLAG flag)noexcept
+	JShader* JResourceManagerImpl::CreateShader(const J_GRAPHIC_SHADER_FUNCTION newFunctionFlag, J_OBJECT_FLAG flag)noexcept
 	{
 		flag = (J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | (flag ^ (flag & OBJECT_FLAG_HIDDEN)));
 
@@ -887,7 +893,7 @@ JMeshGeometry* JResourceManagerImpl::CreateMesh(const J_OBJECT_FLAG flag, JDirec
 		NotifyEvent(managerGuid, RESOURCE_EVENT::CREATE_RESOURCE, newShader);
 		return newShader;
 	}
-	JShader* JResourceManagerImpl::CreateShader(const size_t guid, J_OBJECT_FLAG flag, const J_SHADER_FUNCTION newFunctionFlag)noexcept
+	JShader* JResourceManagerImpl::CreateShader(const size_t guid, J_OBJECT_FLAG flag, const J_GRAPHIC_SHADER_FUNCTION newFunctionFlag)noexcept
 	{
 		if (shader->HasResource(guid))
 			return nullptr;

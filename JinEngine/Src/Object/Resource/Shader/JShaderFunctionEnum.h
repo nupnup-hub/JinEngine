@@ -12,7 +12,7 @@ namespace JinEngine
 	};
 
 	//Vs Ps function
-	enum J_SHADER_FUNCTION
+	enum J_GRAPHIC_SHADER_FUNCTION
 	{  
 		SHADER_FUNCTION_NONE = 0,
 		SHADER_FUNCTION_ALBEDO_MAP = 1 << 0,
@@ -32,10 +32,12 @@ namespace JinEngine
 	}; 
 
 	//Cs Function
-	enum J_COMPUTE_SHADER_FUNCTION
+	enum class J_COMPUTE_SHADER_FUNCTION
 	{
-		COMPUTE_SHADER_FUNCTION_NONE,
-		COMPUTE_SHADER_FUNCTION_HZB_OCCLUSION,
+		NONE = 0,
+		HZB_DOWN_SAMPLING,
+		HZB_OCCLUSION,
+		COUNT,
 	};
 
 	class JShaderType
@@ -52,20 +54,22 @@ namespace JinEngine
 			{}
 		};
 	public:
-		static std::wstring ConvertToName(const J_SHADER_FUNCTION funcFlag)
+		static std::wstring ConvertToName(const J_GRAPHIC_SHADER_FUNCTION funcFlag)
 		{
 			return L"Gs" + std::to_wstring(funcFlag);
 		}
 		static std::wstring ConvertToName(const J_COMPUTE_SHADER_FUNCTION funcFlag)
 		{
-			return L"Cs" + std::to_wstring(funcFlag);
+			return L"Cs" + std::to_wstring((int)funcFlag);
 		}
 		static CompileInfo ComputeShaderCompileInfo(const J_COMPUTE_SHADER_FUNCTION funcFlag)
 		{
 			switch (funcFlag)
-			{ 
-			case JinEngine::COMPUTE_SHADER_FUNCTION_HZB_OCCLUSION:
-				return CompileInfo(L"Hierarchical z-buffer.hlsl", "HZB");
+			{
+			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_DOWN_SAMPLING:
+				return CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBDownSampling");
+			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_OCCLUSION:
+				return CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBOcclusion");
 			default:
 				return CompileInfo(L"Error", "Error");
 			}

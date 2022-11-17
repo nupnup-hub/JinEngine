@@ -58,16 +58,16 @@ namespace JinEngine
 			std::vector<std::unique_ptr<JGraphicTextureHandle>> user2DTextureHandle;
 			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> user2DTextureResouce;
 
-			uint userCubeTextureCount = 0;
-			uint userCubeTextureCapacity = 1000;
-			std::vector<std::unique_ptr<JGraphicTextureHandle>> userCubeTextureHandle;
-			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> userCubeTextureResouce;
+			uint userCubeMapCount = 0;
+			uint userCubeMapCapacity = 1000;
+			std::vector<std::unique_ptr<JGraphicTextureHandle>> userCubeMapHandle;
+			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> userCubeMapResouce;
 
 			uint renderResultCount = 0;
 			uint renderResultCapacity = 1000;
 			std::vector<std::unique_ptr<JGraphicTextureHandle>> renderResultHandle;
 			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> renderResultResource;
-
+			 
 			uint shadowMapCount = 0;
 			uint shadowMapCapacity = 1000;
 			std::vector<std::unique_ptr<JGraphicTextureHandle>> shadowMapHandle;
@@ -75,13 +75,14 @@ namespace JinEngine
 
 			//Engine use
 			static constexpr uint occlusionDsCapacity = 10;
-			static constexpr uint maxOcclusionDsSize = 512;
+			static constexpr uint maxOcclusionDsWidth = 512;
+			static constexpr uint maxOcclusionDsHeight= 256;
 			uint occlusionDsCount = 0;
 			uint occlusionQuaryCapacity = 1000;
 			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionQueryResult;
 			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDepthStencil[occlusionDsCapacity];
 
-			static constexpr uint mainBufDsvCount = 1;
+			const uint mainBufDsvCount = 1;
 			Microsoft::WRL::ComPtr<ID3D12Resource> mainDepthStencil;
 		public:
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuRtvDescriptorHandle(int index)const noexcept;
@@ -94,7 +95,7 @@ namespace JinEngine
 			//Srv
 			uint GetSrvOcclusionDepthStart()const noexcept;
 			uint GetSrvUser2DTextureStart()const noexcept;
-			uint GetSrvUserCubeTextureStart()const noexcept;
+			uint GetSrvUserCubeMapStart()const noexcept;
 			uint GetSrvRenderResultStart()const noexcept;
 			uint GetSrvShadowMapStart()const noexcept; 
 			//Rtv
@@ -135,7 +136,7 @@ namespace JinEngine
 				const std::wstring& oriFormat,
 				ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList);
-			JGraphicTextureHandle* CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
+			JGraphicTextureHandle* CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
 				const std::wstring& path,
 				const std::wstring& oriFormat,
 				ID3D12Device* device,
@@ -145,7 +146,7 @@ namespace JinEngine
 			bool DestroyGraphicTextureResource(ID3D12Device* device, JGraphicTextureHandle** handle);
 		private:
 			void ReBind2DTexture(ID3D12Device* device, const uint resourceIndex, const uint heapIndex);
-			void ReBindCubeTexture(ID3D12Device* device, const uint resourceIndex, const uint heapIndex);
+			void ReBindCubeMap(ID3D12Device* device, const uint resourceIndex, const uint heapIndex);
 			void ReBindRenderTarget(ID3D12Device* device, const uint resourceIndex, const uint rtvHeapIndex, const uint srvHeapIndex);
 			void ReBindShadowMapTexture(ID3D12Device* device, const uint resourceIndex, const uint dsvHeapIndex, const uint srvHeapIndex);
 		private:

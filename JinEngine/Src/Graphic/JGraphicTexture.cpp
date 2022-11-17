@@ -12,9 +12,9 @@ namespace JinEngine
 			handle = JGraphic::Instance().ResourceInterface()->Create2DTexture(uploadHeap, path, oriFormat);
 			return handle != nullptr;
 		}
-		bool JGraphicTexture::CreateCubeTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)
+		bool JGraphicTexture::CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)
 		{
-			handle = JGraphic::Instance().ResourceInterface()->CreateCubeTexture(uploadHeap, path, oriFormat);
+			handle = JGraphic::Instance().ResourceInterface()->CreateCubeMap(uploadHeap, path, oriFormat);
 			return handle != nullptr;
 		}
 		bool JGraphicTexture::CreateRenderTargetTexture(uint textureWidth, uint textureHeight)

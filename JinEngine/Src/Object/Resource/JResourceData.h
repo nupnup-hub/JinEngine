@@ -28,21 +28,6 @@ namespace JinEngine
 		static const std::vector<J_DEFAULT_TEXTURE> selectorTextureType;
 		static const std::vector<J_DEFAULT_TEXTURE> projectTextureType;		 
 		const size_t guid;
-	public:
-		// Init Resource Capacity
-		static constexpr uint initMeshCapacity = 250;
-		static constexpr uint initMaterialCapacity = 150;
-		static constexpr uint initTextureCapacity = 150;
-		static constexpr uint initGameObjectCapacity = 10000;
-		static constexpr uint initSceneCapacity = 8;
-		static constexpr uint initSkeletonCapacity = 25;
-		static constexpr uint initAnimationClipCapacity = 25;
-		static constexpr uint initAnimationControllerCapacity = 8;
-		static constexpr uint initShaderCapacity = 25;
-		static constexpr uint initDirectoryCapacity = 20;
-		//JScene Viewer 2 + JScene Editor 1
-		static constexpr  uint initSceneCameraCapacity = 16;
-		static constexpr  uint initPreviewSceneCapacity = 150;
 	private:
 		std::unordered_map<size_t, Core::JUserPtr<JResourceObject>> defaultResourceMap;
 		std::unordered_map<J_DEFAULT_TEXTURE, size_t> defaultTextureGuidMap;

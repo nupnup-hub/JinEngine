@@ -4,6 +4,7 @@
 #include"JGraphicException.h"
 #include"JWindowException.h"
 #include"JNormalException.h"
+#include"JCudaException.h"
 #include <stdio.h>
 
 namespace JinEngine
@@ -34,6 +35,11 @@ namespace JinEngine
 {                                                                                \
     HRESULT hr__ = (hr);                                                         \
     if(hr__ != S_OK) {throw Core::JGraphicException(__LINE__, __FILE__, hr__); }       \
+}
+#define ThrowIfFailedC(err)                                                       \
+{                                                                                 \
+    BOOL b_ = (err);                                                              \
+    if(b_) {throw Core::JCudaException(__LINE__, __FILE__, err); }              \
 }
 #endif
 

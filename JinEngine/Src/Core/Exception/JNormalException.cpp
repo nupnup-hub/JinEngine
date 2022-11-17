@@ -12,10 +12,8 @@ namespace JinEngine
 			whatBuffer = JCUtil::StrToWstr(msg);
 		}
 		const std::wstring JNormalException::what() const
-		{
-			std::wstring oss;
-			oss = GetType() + L"\n[Description]" + whatBuffer + L"\n" + GetOriginString();
-			return oss;
+		{ 
+			return GetType() + L"\n[Description]" + whatBuffer + L"\n" + GetOriginString();
 		}
 		const std::wstring JNormalException::GetType() const
 		{

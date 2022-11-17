@@ -75,7 +75,6 @@ namespace JinEngine
 			AddEventListener(*JWindow::Instance().EvInterface(), guid, Window::J_WINDOW_EVENT::WINDOW_CLOSE);
 			JWindow::Instance().AppInterface()->OpenEngineWindow();
 			JGraphic::Instance().AppInterface()->Initialize();
-			JGraphic::Instance().AppInterface()->LoadOptionData();
 
 			JResourceManager::Instance().AppInterface()->Initialize();
 			JResourceManager::Instance().AppInterface()->LoadProjectResource();
@@ -185,7 +184,7 @@ namespace JinEngine
 					editorManager.StorePage();
 					editorManager.Clear();
 					JResourceManager::Instance().AppInterface()->Terminate();
-					JGraphic::Instance().AppInterface()->StoreOptionData();
+					JGraphic::Instance().AppInterface()->StoreData();
 					JGraphic::Instance().AppInterface()->Clear();
 				}			 
 			}

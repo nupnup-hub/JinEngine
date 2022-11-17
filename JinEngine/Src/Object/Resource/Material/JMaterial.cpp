@@ -346,14 +346,14 @@ namespace JinEngine
 		if (HasAmbientOcclusionMapTexture() && ambientOcclusionMap->GetGuid() == tarGuid)
 			SetAmbientOcclusionMap(nullptr);
 	}
-	void JMaterial::TextureChange(JTexture* be, JTexture* af, const J_SHADER_FUNCTION func)noexcept
+	void JMaterial::TextureChange(JTexture* be, JTexture* af, const J_GRAPHIC_SHADER_FUNCTION func)noexcept
 	{
 		if (be == nullptr && af != nullptr)
 			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), func));
 		else if (be != nullptr && af == nullptr)
 			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), func));
 	}
-	void JMaterial::SetNewFunctionFlag(const J_SHADER_FUNCTION newFunc)
+	void JMaterial::SetNewFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunc)
 	{
 		if (shader == nullptr || shader->GetShaderFunctionFlag() != newFunc)
 			SetShader(JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(newFunc)));
@@ -376,15 +376,15 @@ namespace JinEngine
 			constant.Roughness = roughness;
 			XMStoreFloat4x4(&constant.MatTransform, XMMatrixTranspose(XMLoadFloat4x4(&matTransform)));
 			if (albedoMap != nullptr)
-				constant.AlbedoMapIndex = CallGetTxtSrvHeapIndex(*albedoMap);
+				constant.AlbedoMapIndex = CallGetTxtVectorIndex(*albedoMap);
 			if (normalMap != nullptr)
-				constant.NormalMapIndex = CallGetTxtSrvHeapIndex(*normalMap);
+				constant.NormalMapIndex = CallGetTxtVectorIndex(*normalMap);
 			if (heightMap != nullptr)
-				constant.HeightMapIndex = CallGetTxtSrvHeapIndex(*heightMap);
+				constant.HeightMapIndex = CallGetTxtVectorIndex(*heightMap);
 			if (roughnessMap != nullptr)
-				constant.RoughnessMapIndex = CallGetTxtSrvHeapIndex(*roughnessMap);
+				constant.RoughnessMapIndex = CallGetTxtVectorIndex(*roughnessMap);
 			if (ambientOcclusionMap != nullptr)
-				constant.AmbientOcclusionMapIndex = CallGetTxtSrvHeapIndex(*ambientOcclusionMap);
+				constant.AmbientOcclusionMapIndex = CallGetTxtVectorIndex(*ambientOcclusionMap);
 			return true;
 		}
 		else

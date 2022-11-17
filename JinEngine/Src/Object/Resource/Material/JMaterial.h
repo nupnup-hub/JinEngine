@@ -128,8 +128,8 @@ namespace JinEngine
 
 		void PopTexture(JTexture* texture)noexcept;
 	protected:
-		void TextureChange(JTexture* be, JTexture* af, const J_SHADER_FUNCTION func)noexcept;
-		void SetNewFunctionFlag(const J_SHADER_FUNCTION newFunc);
+		void TextureChange(JTexture* be, JTexture* af, const J_GRAPHIC_SHADER_FUNCTION func)noexcept;
+		void SetNewFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunc);
 	private:
 		void SetShader(JShader* newShader)noexcept; 
 	private:

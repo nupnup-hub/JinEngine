@@ -143,7 +143,7 @@ namespace JinEngine
 			}
 			else if (textureType == Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE)
 			{
-				if (CreateCubeTexture(uploadHeap, GetPath(), GetFormat()))
+				if (CreateCubeMap(uploadHeap, GetPath(), GetFormat()))
 					return true;
 			}
 		}

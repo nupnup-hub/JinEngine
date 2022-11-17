@@ -42,10 +42,8 @@ namespace JinEngine
 				whatBuffer = L"No text found for this error number.";
 		}
 		const std::wstring JWindowException::what() const
-		{
-			std::wstring oss;
-			oss = GetType() + L"\n[Description]" + whatBuffer + L"\n" + GetOriginString();
-			return oss;
+		{ 
+			return GetType() + L"\n[Description]" + whatBuffer + L"\n" + GetOriginString();
 		}
 		const std::wstring JWindowException::GetType() const
 		{

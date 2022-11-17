@@ -2,6 +2,7 @@
 #include<vector>
 #include<wrl.h> 
 #include<d3d12.h>
+#include"../../../Utility/JVector.h"
 
 namespace JinEngine
 {  
@@ -20,8 +21,19 @@ namespace JinEngine
 	struct JComputeShaderData
 	{
 	public:
-		Microsoft::WRL::ComPtr<ID3DBlob> Cs = nullptr;
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> Pso = nullptr;
-		Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignature = nullptr;
+		struct DispatchInfo
+		{
+		public:
+			JVector3<uint> groupDim;
+			JVector3<uint> threadDim;											 
+			uint threadCount;	
+			uint taskOriCount;
+		};
+	public: 
+		Microsoft::WRL::ComPtr<ID3DBlob> Cs = nullptr;							//Variable
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> Pso = nullptr;				//Constant 
+		ID3D12RootSignature* RootSignature = nullptr;	//Constant
+	public:
+		DispatchInfo dispatchInfo;													//Variable
 	};
 }

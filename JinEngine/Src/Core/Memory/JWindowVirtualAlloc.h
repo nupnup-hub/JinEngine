@@ -30,7 +30,7 @@ namespace JinEngine
 					committedBlockCount = 0;
 					WindowVirtualAlloc::reservedBlockCount = reservedBlockCount;
 					committedPageCount = 0;
-					pageSize = JHardwareInfo::Instance()->GetPageSize();
+					pageSize = JHardwareInfo::Instance()->GetCpuInfo().pageSize;
 					WindowVirtualAlloc::unusedPageLimit = unusedPageLimit;
 					return true;
 				}
