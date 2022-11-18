@@ -6,11 +6,13 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphicImpl;
+		class JOcclusionCulling;
 	}
 	class JShaderCompileInterface
 	{
 	private:
 		friend class Graphic::JGraphicImpl;
+		friend class Graphic::JOcclusionCulling;
 	protected:
 		virtual ~JShaderCompileInterface() = default;
 	private:

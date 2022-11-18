@@ -26,8 +26,8 @@ namespace JinEngine
 		struct JShaderInitdata : public JResourceInitData
 		{
 		public:
-			const J_GRAPHIC_SHADER_FUNCTION gShaderFunctionFlag = SHADER_FUNCTION_NONE;
-			const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
+			J_GRAPHIC_SHADER_FUNCTION gShaderFunctionFlag = SHADER_FUNCTION_NONE;
+			J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
 		public:
 			JShaderInitdata(const size_t guid,
 				const J_OBJECT_FLAG flag,

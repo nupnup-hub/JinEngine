@@ -15,6 +15,7 @@
 #include"../Core/Singleton/JSingletonHolder.h"
 #include"../Core/Event/JEventListener.h"
 #include"../Core/Func/Callable/JCallable.h"
+#include"../Utility/JVector.h"
 #include"../Window/JWindowEventType.h"
 #include"../../Lib/DirectX/d3dx12.h"
 
@@ -67,15 +68,17 @@ namespace JinEngine
 			{
 			public:
 				using GetElementCountT = Core::JStaticCallableType<uint>; 
+				using NotifyUpdateCapacityT = Core::JStaticCallableType<void, JGraphicImpl&>;
 			public:
-				using GetTextureCountT = Core::JStaticCallableType<uint, const JGraphicImpl&>;
-				using IsPassReCompileT = Core::JStaticCallableType<FRAME_CAPACITY_CONDITION, const JGraphicImpl&>;
+				using GetTextureCountT = Core::JStaticCallableType<uint, const JGraphicImpl&>; 
+				using GetTextureCapacityT = Core::JStaticCallableType<uint, const JGraphicImpl&>;
 				using SetCapacityT = Core::JStaticCallableType<void, JGraphicImpl&>;
 			public:
 				struct FrameUpdateData
 				{ 
 				public:
-					std::unique_ptr<GetElementCountT::Callable> getElementCountCallable = nullptr; ;
+					std::unique_ptr<GetElementCountT::Callable> getElementCountCallable = nullptr;
+					std::vector<std::unique_ptr<NotifyUpdateCapacityT::Callable>> notifyUpdateCapacityCallable;
 				public:
 					uint count = 0;
 					uint capacity = 0;
@@ -87,11 +90,12 @@ namespace JinEngine
 				{
 				public:
 					std::unique_ptr<GetTextureCountT::Callable> getTextureCountCallable = nullptr;
-					std::unique_ptr<IsPassReCompileT::Callable> isPassRecompileShaderCallable = nullptr; 
+					std::unique_ptr<GetTextureCapacityT::Callable> getTextureCapacityCallable = nullptr;
 					std::unique_ptr< SetCapacityT::Callable> setCapacityCallable = nullptr;
 				public:
-					uint count;
-					FRAME_CAPACITY_CONDITION recompileShaderCondition;
+					uint count = 0;
+					uint capacity = 0;
+					FRAME_CAPACITY_CONDITION recompileCondition;
 				public:
 					bool HasCallable()const noexcept;
 				};
@@ -102,8 +106,10 @@ namespace JinEngine
 				bool hasRecompileShader;
 			public:
 				void RegisterCallable(J_FRAME_RESOURCE_TYPE type, GetElementCountT::Ptr* gPtr);
-				void RegisterCallable(J_GRAPHIC_TEXTURE_TYPE type, GetTextureCountT::Ptr* gPtr, IsPassReCompileT::Ptr* iPtr, SetCapacityT::Ptr* sPtr);
+				void RegisterCallable(J_GRAPHIC_TEXTURE_TYPE type, GetTextureCountT::Ptr* getCountPtr, GetTextureCapacityT::Ptr* getCapaPtr, SetCapacityT::Ptr* sPtr);
+				void RegisterListener(J_FRAME_RESOURCE_TYPE type, std::unique_ptr<NotifyUpdateCapacityT::Callable>&& listner);
 				void WriteGraphicInfo(JGraphicInfo& info)const noexcept;
+				void NotifyUpdateFrameCapacity(JGraphicImpl& grpahic);
 				void Clear();
 			};
 		private:
@@ -210,7 +216,7 @@ namespace JinEngine
 				const uint passCBoffset,
 				const uint aniCBoffset,
 				const uint shadowCBoffset);
-			void DepthTest(_In_ JScene* scene, const uint objCBoffset);
+			void DrawOcclusionDepthMap(_In_ JScene* scene, const uint objCBoffset);
 			void DrawGameObject(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject,
 				const uint objCBoffset,
@@ -219,9 +225,9 @@ namespace JinEngine
 				const bool isAnimationActivated,
 				const bool isOcclusionActivated);
 			void DrawSceneBoundingBox(ID3D12GraphicsCommandList* cmdList,
-				const std::vector<JGameObject*>& gameObject,
+				const std::vector<JGameObject*>& gameObject, 
 				const uint objCBoffset,
-				const bool isAnimationActivated);
+				const bool occQueryEnable);
 		private:
 			bool InitializeD3D();
 			bool InitializeResource();

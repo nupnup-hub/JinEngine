@@ -580,7 +580,7 @@ namespace JinEngine
 			uint nowWidth = width > maxOcclusionDsWidth ? maxOcclusionDsWidth : width;
 			uint nowHeight = height > maxOcclusionDsHeight ? maxOcclusionDsHeight : height;
 			while (nowWidth != 1 || nowHeight != 1)
-			{ 
+			{
 				D3D12_RESOURCE_DESC depthStencilDesc;
 				depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 				depthStencilDesc.Alignment = 0;
@@ -636,7 +636,7 @@ namespace JinEngine
 					D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
 				commandList->ResourceBarrier(1, &dsBarrier);
-			
+
 				if (nowWidth > 1)
 					nowWidth /= 2;
 				if (nowHeight > 1)

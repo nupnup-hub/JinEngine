@@ -1,7 +1,7 @@
 #include"JGraphic.h" 
 #include"JGraphicResourceManager.h"
 #include"JGraphicDrawList.h"
-#include"JOcclusionCulling.h"
+#include"OcclusionCulling/JOcclusionCulling.h"
 
 #include"../Window/JWindows.h"
 #include"FrameResource/JFrameResource.h"
@@ -55,7 +55,7 @@ namespace JinEngine
 	{
 		bool JGraphicImpl::UpdateHelper::BindingTextureData::HasCallable()const noexcept
 		{
-			return getTextureCountCallable && isPassRecompileShaderCallable && setCapacityCallable;
+			return getTextureCountCallable && getTextureCapacityCallable && setCapacityCallable;
 		}
 		void JGraphicImpl::UpdateHelper::Clear()
 		{
@@ -73,7 +73,8 @@ namespace JinEngine
 			for (uint i = 0; i < bVCount; ++i)
 			{
 				bData[i].count = 0;
-				bData[i].recompileShaderCondition = FRAME_CAPACITY_CONDITION::KEEP;
+				bData[i].capacity = 0;
+				bData[i].recompileCondition = FRAME_CAPACITY_CONDITION::KEEP;
 			}
 			hasRebuildCondition = false;
 			hasRecompileShader = false;
@@ -85,14 +86,18 @@ namespace JinEngine
 
 			fData[(int)type].getElementCountCallable = std::make_unique<GetElementCountT::Callable>(*gPtr); 
 		}
-		void JGraphicImpl::UpdateHelper::RegisterCallable(J_GRAPHIC_TEXTURE_TYPE type, GetTextureCountT::Ptr* gPtr, IsPassReCompileT::Ptr* iPtr, SetCapacityT::Ptr* sPtr)
+		void JGraphicImpl::UpdateHelper::RegisterCallable(J_GRAPHIC_TEXTURE_TYPE type, GetTextureCountT::Ptr* getCountPtr, GetTextureCapacityT::Ptr* getCapaPtr, SetCapacityT::Ptr* sPtr)
 		{
-			if (gPtr == nullptr || iPtr == nullptr || sPtr == nullptr)
+			if (getCountPtr == nullptr || getCapaPtr == nullptr || sPtr == nullptr)
 				return;
 
-			bData[(int)type].getTextureCountCallable = std::make_unique<GetTextureCountT::Callable>(*gPtr);
-			bData[(int)type].isPassRecompileShaderCallable = std::make_unique< IsPassReCompileT::Callable>(*iPtr);
+			bData[(int)type].getTextureCountCallable = std::make_unique<GetTextureCountT::Callable>(*getCountPtr);
+			bData[(int)type].getTextureCapacityCallable = std::make_unique< GetTextureCapacityT::Callable>(*getCapaPtr);
 			bData[(int)type].setCapacityCallable = std::make_unique<SetCapacityT::Callable>(*sPtr);
+		}
+		void JGraphicImpl::UpdateHelper::RegisterListener(J_FRAME_RESOURCE_TYPE type, std::unique_ptr<NotifyUpdateCapacityT::Callable>&& listner)
+		{
+			fData[(int)type].notifyUpdateCapacityCallable.push_back(std::move(listner));
 		}
 		void JGraphicImpl::UpdateHelper::WriteGraphicInfo(JGraphicInfo& info)const noexcept
 		{
@@ -115,8 +120,23 @@ namespace JinEngine
 			info.binding2DTextureCount = bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D].count;
 			info.bindingCubeMapCount = bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE].count;
 			info.bindingShadowTextureCount = bData[(int)J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP].count;
-		}
 
+			info.binding2DTextureCapacity = bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D].capacity;
+			info.bindingCubeMapCapacity = bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE].capacity;
+			info.bindingShadowTextureCapacity = bData[(int)J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP].capacity;
+		}
+		void JGraphicImpl::UpdateHelper::NotifyUpdateFrameCapacity(JGraphicImpl& grpahic)
+		{
+			for (uint i = 0; i < (uint)J_FRAME_RESOURCE_TYPE::COUNT; ++i)
+			{
+				if (fData[i].rebuildCondition != FRAME_CAPACITY_CONDITION::KEEP)
+				{
+					const uint listenerCount = (uint)fData[i].notifyUpdateCapacityCallable.size();
+					for (uint j = 0; j < listenerCount; ++j)
+						(*fData[i].notifyUpdateCapacityCallable[j])(nullptr, grpahic);
+				}
+			}
+		}
 		JGraphicInfo JGraphicImpl::GetGraphicInfo()const noexcept
 		{
 			return info;
@@ -549,11 +569,10 @@ namespace JinEngine
 		}
 		void JGraphicImpl::UpdateEngine()
 		{
-			updateHelper.Clear();
-			for (uint i = 0; i < (uint)J_FRAME_RESOURCE_TYPE::COUNT; ++i)
-				updateHelper.fData[i].count = (*updateHelper.fData[i].getElementCountCallable)(nullptr);
+			updateHelper.Clear(); 
 			for (uint i = 0; i < (uint)J_FRAME_RESOURCE_TYPE::COUNT; ++i)
 			{
+				updateHelper.fData[i].count = (*updateHelper.fData[i].getElementCountCallable)(nullptr);
 				updateHelper.fData[i].capacity = currFrameResource->GetElementCount((J_FRAME_RESOURCE_TYPE)i);
 				updateHelper.fData[i].rebuildCondition = IsPassRedefineCapacity(updateHelper.fData[i].capacity, updateHelper.fData[i].count);
 				updateHelper.hasRebuildCondition |= (bool)updateHelper.fData[i].rebuildCondition;
@@ -563,8 +582,16 @@ namespace JinEngine
 				if (updateHelper.bData[i].HasCallable())
 				{
 					updateHelper.bData[i].count = (*updateHelper.bData[i].getTextureCountCallable)(nullptr, *this);
-					updateHelper.bData[i].recompileShaderCondition = (*updateHelper.bData[i].isPassRecompileShaderCallable)(nullptr, *this);
-					updateHelper.hasRecompileShader |= (bool)updateHelper.bData[i].recompileShaderCondition;
+					updateHelper.bData[i].capacity = (*updateHelper.bData[i].getTextureCapacityCallable)(nullptr, *this);
+					updateHelper.bData[i].recompileCondition = IsPassRedefineCapacity(updateHelper.bData[i].capacity, updateHelper.bData[i].count);
+					updateHelper.hasRecompileShader |= (bool)updateHelper.bData[i].recompileCondition;
+
+					if (updateHelper.bData[i].recompileCondition != FRAME_CAPACITY_CONDITION::KEEP)
+					{
+						updateHelper.bData[i].capacity = CalculateCapacity(updateHelper.bData[i].recompileCondition,
+							updateHelper.bData[i].capacity,
+							updateHelper.bData[i].count);
+					}
 				}
 			}
 
@@ -584,6 +611,7 @@ namespace JinEngine
 				}
 				//Has sequency dependency
 				updateHelper.WriteGraphicInfo(info);
+				updateHelper.NotifyUpdateFrameCapacity(*this);	//use graphic info
 				if (updateHelper.hasRecompileShader)
 					ReCompileGraphicShader();		//use graphic info
 				EndCommand();
@@ -896,7 +924,7 @@ namespace JinEngine
 							sceneLightIndexCBoffset,
 							isOcclusionCullingActivated);
 						if (isOcclusionCullingActivated && drawTarget->updateInfo->hasOcclusionUpdate && jCamera->IsMainCamera())
-							DepthTest(drawTarget->scene, sceneObjCBoffset);
+							DrawOcclusionDepthMap(drawTarget->scene, sceneObjCBoffset);
 					}
 				}
 
@@ -1020,7 +1048,7 @@ namespace JinEngine
 				D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ);
 			commandList->ResourceBarrier(1, &rsBarrier);
 		}
-		void JGraphicImpl::DepthTest(_In_ JScene* scene, const uint objCBoffset)
+		void JGraphicImpl::DrawOcclusionDepthMap(_In_ JScene* scene, const uint objCBoffset)
 		{
 			D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)info.occlusionWidth, (float)info.occlusionHeight, 0.0f, 1.0f };
 			D3D12_RECT mScissorRect = { 0, 0, info.occlusionWidth, info.occlusionHeight };
@@ -1044,12 +1072,13 @@ namespace JinEngine
 			//rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->occlusionDepthStencil.Get(),
 			//	D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ);
 			//commandList->ResourceBarrier(1, &rsBarrier);
-
-			CD3DX12_RESOURCE_BARRIER rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->GetOcclusionResult(), D3D12_RESOURCE_STATE_PREDICATION, D3D12_RESOURCE_STATE_COPY_DEST);
+			/*
+			*CD3DX12_RESOURCE_BARRIER rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->GetOcclusionResult(), D3D12_RESOURCE_STATE_PREDICATION, D3D12_RESOURCE_STATE_COPY_DEST);
 			commandList->ResourceBarrier(1, &rsBarrier);
 			commandList->ResolveQueryData(graphicResource->GetOcclusionQueryHeap(), D3D12_QUERY_TYPE_BINARY_OCCLUSION, 0, graphicResource->GetOcclusionQueryHeapCapacity(), graphicResource->GetOcclusionResult(), 0);
 			rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->GetOcclusionResult(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PREDICATION);
 			commandList->ResourceBarrier(1, &rsBarrier);
+			*/
 		}
 		void JGraphicImpl::DrawGameObject(ID3D12GraphicsCommandList* commandList,
 			const std::vector<JGameObject*>& gameObject,
@@ -1114,8 +1143,8 @@ namespace JinEngine
 						D3D12_GPU_VIRTUAL_ADDRESS skinObjCBAddress = skinCB->GetGPUVirtualAddress() + (aniCBoffset + i) * skinCBByteSize;
 						commandList->SetGraphicsRootConstantBufferView(1, skinObjCBAddress);
 					}
-					if (isOcclusionActivated)
-						commandList->SetPredication(graphicResource->GetOcclusionResult(), finalObjOffset * 8, D3D12_PREDICATION_OP_EQUAL_ZERO);
+					//if (isOcclusionActivated)
+					//	commandList->SetPredication(graphicResource->GetOcclusionResult(), finalObjOffset * 8, D3D12_PREDICATION_OP_EQUAL_ZERO);
 					commandList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(j), 1, mesh->GetSubmeshStartIndexLocation(j), mesh->GetSubmeshBaseVertexLocation(j), 0);
 				}
 			}
@@ -1235,7 +1264,7 @@ namespace JinEngine
 			graphicResource->CreateDepthStencilResource(d3dDevice.Get(), commandList.Get(), info.width, info.height, m4xMsaaState, m4xMsaaQuality);
 			graphicResource->CreateOcclusionQueryResource(d3dDevice.Get(), commandList.Get(), info.occlusionWidth, info.occlusionHeight, m4xMsaaState, m4xMsaaQuality);
 			BuildFrameResources();
-			occHelper->Initialize(d3dDevice.Get(), Sampler()[2], graphicResource->GetOcclusionDsCapacity());
+			occHelper->Initialize(d3dDevice.Get(), Sampler()[2], graphicResource->GetOcclusionDsCapacity(), info.upObjCapacity);
 			// Execute the initialization commands.
 			ThrowIfFailedHr(commandList->Close());
 			ID3D12CommandList* cmdsLists[] = { commandList.Get() };
@@ -1444,7 +1473,7 @@ namespace JinEngine
 			auto handle = JResourceManager::Instance().GetResourceVectorHandle<JShader>(shaderCount);
 			for (uint i = 0; i < shaderCount; ++i)
 			{
-				JShader* shader = static_cast<JShader*>((*handle + i));
+				JShader* shader = static_cast<JShader*>(*(handle + i)); 
 				if (!shader->IsComputeShader())
 					shader->CompileInterface()->RecompileGraphicShader();
 			}
@@ -1473,7 +1502,7 @@ namespace JinEngine
 			}
 			else if (condition == FRAME_CAPACITY_CONDITION::DOWN_CAPACITY)
 			{
-				while (nextCapacity / 2 >= nowCount)
+				while ((nextCapacity / 2)> nowCount && (nextCapacity / 2)> info.minCapacity)
 					nextCapacity /= 2;
 			}
 			return nextCapacity;
@@ -1716,8 +1745,8 @@ namespace JinEngine
 				return sum;
 			};
 
-			using FrameGetElement = uint(*)();
-			std::unordered_map<J_FRAME_RESOURCE_TYPE, FrameGetElement> frameGetFunc
+			using GetElementCount = UpdateHelper::GetElementCountT::Ptr;
+			std::unordered_map<J_FRAME_RESOURCE_TYPE, GetElementCount> frameGetFunc
 			{
 				{J_FRAME_RESOURCE_TYPE::OBJECT, objGetElementLam}, {J_FRAME_RESOURCE_TYPE::PASS, passGetElemenLam},
 				{J_FRAME_RESOURCE_TYPE::ANIMATION, aniGetElementLam},{J_FRAME_RESOURCE_TYPE::CAMERA, camGetElementLam},
@@ -1725,63 +1754,71 @@ namespace JinEngine
 				{J_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT, shadowLitGetElementLam},{J_FRAME_RESOURCE_TYPE::SHADOW_MAP, shadowMapElementLam},
 				{J_FRAME_RESOURCE_TYPE::MATERIAL, materialGetElementLam},{J_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, boundObjGetElementLam}
 			};
-
+		  
+			using NotifyUpdateCapacity = UpdateHelper::NotifyUpdateCapacityT::Callable;
+			auto occlusionOnEvent = [](JGraphicImpl& graphic)
+			{
+				graphic.occHelper->UpdateObjectCapacity(graphic.d3dDevice.Get(), 
+					graphic.currFrameResource->GetElementCount(J_FRAME_RESOURCE_TYPE::OBJECT));
+			};
 			for (uint i = 0; i < (uint)J_FRAME_RESOURCE_TYPE::COUNT; ++i)		 
 			{
 				J_FRAME_RESOURCE_TYPE type = (J_FRAME_RESOURCE_TYPE)i;
 				updateHelper.RegisterCallable(type, &frameGetFunc.find(type)->second);
 			}
+			 
+			updateHelper.RegisterListener(J_FRAME_RESOURCE_TYPE::OBJECT, std::make_unique<NotifyUpdateCapacity>(occlusionOnEvent));
 
-			auto texture2DGetLam = [](const JGraphicImpl& graphic) {return graphic.graphicResource->user2DTextureCount; };
-			auto cubeTextureCubeGetLam = [](const JGraphicImpl& graphic) {return graphic.graphicResource->userCubeMapCount; };
-			auto shadowMapGetLam = [](const JGraphicImpl& graphic) {return graphic.graphicResource->shadowMapCount; };
+			auto texture2DGetCountLam = [](const JGraphicImpl& graphic) {return graphic.graphicResource->user2DTextureCount; };
+			auto cubeMapGetCountLam = [](const JGraphicImpl& graphic) {return graphic.graphicResource->userCubeMapCount; };
+			auto shadowMapGetCountLam = [](const JGraphicImpl& graphic) {return graphic.graphicResource->shadowMapCount; };
 
-			auto texture2DPassRecompileLam = [](const JGraphicImpl& graphic) {return graphic.IsPassRedefineCapacity(graphic.info.binding2DTextureCapacity, graphic.info.binding2DTextureCount); };
-			auto cubeTexturePassRecompileLam = [](const JGraphicImpl& graphic) {return graphic.IsPassRedefineCapacity(graphic.info.bindingCubeMapCapacity, graphic.info.bindingCubeMapCount); };
-			auto shadowMapPassRecompileLam = [](const JGraphicImpl& graphic) {return graphic.IsPassRedefineCapacity(graphic.info.bindingShadowTextureCapacity, graphic.info.bindingShadowTextureCount); };
+			auto texture2DGetCapacityLam = [](const JGraphicImpl& graphic) {return graphic.info.binding2DTextureCapacity; };
+			auto cubeMapGetCapacityLam = [](const JGraphicImpl& graphic) {return graphic.info.bindingCubeMapCapacity; };
+			auto shadowMapGetCapacityLam = [](const JGraphicImpl& graphic) {return graphic.info.bindingShadowTextureCapacity; };
 
 			auto texture2DSetCapaLam = [](JGraphicImpl& graphic) 
 			{ 
-				graphic.info.binding2DTextureCapacity = graphic.CalculateCapacity(graphic.updateHelper.bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D].recompileShaderCondition,
+				graphic.info.binding2DTextureCapacity = graphic.CalculateCapacity(graphic.updateHelper.bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D].recompileCondition,
 					graphic.info.binding2DTextureCapacity,
 					graphic.updateHelper.bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D].count);
 			};
-			auto cubeTextureCubeSetCapaLam = [](JGraphicImpl& graphic) 
+			auto cubeMapeSetCapaLam = [](JGraphicImpl& graphic) 
 			{
-				graphic.info.bindingCubeMapCapacity =  graphic.CalculateCapacity(graphic.updateHelper.bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE].recompileShaderCondition,
+				graphic.info.bindingCubeMapCapacity =  graphic.CalculateCapacity(graphic.updateHelper.bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE].recompileCondition,
 					graphic.info.bindingCubeMapCapacity,
 					graphic.updateHelper.bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE].count);
 			};
 			auto shadowMapSetCapaLam = [](JGraphicImpl& graphic) 
 			{
-				graphic.info.bindingShadowTextureCapacity = graphic.CalculateCapacity(graphic.updateHelper.bData[(int)J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP].recompileShaderCondition,
+				graphic.info.bindingShadowTextureCapacity = graphic.CalculateCapacity(graphic.updateHelper.bData[(int)J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP].recompileCondition,
 					graphic.info.bindingShadowTextureCapacity,
 					graphic.updateHelper.bData[(int)J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP].count);
 			};
 
-			using BindTextureGetCount = uint(*)(const JGraphicImpl& graphic);
-			using BindTexturePassRecompile = FRAME_CAPACITY_CONDITION(*)(const JGraphicImpl&);
-			using BindTextureSetCapacity = void(*)(JGraphicImpl& graphic);
+			using BindTextureGetCount = UpdateHelper::GetTextureCountT::Ptr;
+			using BindTextureGetCapacity = UpdateHelper::GetTextureCapacityT::Ptr;
+			using BindTextureSetCapacity = UpdateHelper::SetCapacityT::Ptr;
 
 			std::unordered_map < J_GRAPHIC_TEXTURE_TYPE, bool> hasCallable
 			{
 				{J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D, true},{J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE, true},
 				{J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_COMMON, false},{J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP, true}
 			};
-			std::unordered_map<J_GRAPHIC_TEXTURE_TYPE, BindTextureGetCount> bindTextureGetFunc
+			std::unordered_map<J_GRAPHIC_TEXTURE_TYPE, BindTextureGetCount> bindTextureGetCountFunc
 			{
-				{J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D, texture2DGetLam}, {J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE, cubeTextureCubeGetLam},
-				{J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP, shadowMapGetLam}
+				{J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D, texture2DGetCountLam}, {J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE, cubeMapGetCountLam},
+				{J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP, shadowMapGetCountLam}
 			};
-			std::unordered_map<J_GRAPHIC_TEXTURE_TYPE, BindTexturePassRecompile> bindTexturePassRecompileFunc
+			std::unordered_map<J_GRAPHIC_TEXTURE_TYPE, BindTextureGetCapacity> bindTextureGetCapacityFunc
 			{
-				{J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D, texture2DPassRecompileLam}, {J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE, cubeTexturePassRecompileLam},
-				{J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP, shadowMapPassRecompileLam}
+				{J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D, texture2DGetCapacityLam}, {J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE, cubeMapGetCapacityLam},
+				{J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP, shadowMapGetCapacityLam}
 			};
 			std::unordered_map<J_GRAPHIC_TEXTURE_TYPE, BindTextureSetCapacity> bindTextureSetCapaFunc
 			{
-				{J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D, texture2DSetCapaLam}, {J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE, cubeTextureCubeSetCapaLam},
-			 {J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP, shadowMapSetCapaLam}
+				{J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D, texture2DSetCapaLam}, {J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE, cubeMapeSetCapaLam},
+				{J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP, shadowMapSetCapaLam}
 			};
 
 			for (uint i = 0; i < (uint)J_GRAPHIC_TEXTURE_TYPE::COUNT; ++i)
@@ -1790,8 +1827,8 @@ namespace JinEngine
 				if (hasCallable.find(type)->second)
 				{
 					updateHelper.RegisterCallable(type,
-						&bindTextureGetFunc.find(type)->second,
-						&bindTexturePassRecompileFunc.find(type)->second,
+						&bindTextureGetCountFunc.find(type)->second,
+						&bindTextureGetCapacityFunc.find(type)->second,
 						&bindTextureSetCapaFunc.find(type)->second);
 				}
 			}

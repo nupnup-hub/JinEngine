@@ -117,36 +117,45 @@ namespace JinEngine
 
 	JShader::JShaderInitdata::JShaderInitdata(const size_t guid,
 		const J_OBJECT_FLAG flag,
-		const J_GRAPHIC_SHADER_FUNCTION gShaderFunctionFlag,
-		const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag)
-		:JResourceInitData(MakeName(gShaderFunctionFlag, cShaderFunctionFlag),
+		const J_GRAPHIC_SHADER_FUNCTION newGShaderFunctionFlag,
+		const J_COMPUTE_SHADER_FUNCTION newCShaderFunctionFlag)
+		:JResourceInitData(MakeName(newGShaderFunctionFlag, newCShaderFunctionFlag),
 			guid,
 			Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE),
 			GetShaderDirectory(),
 			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
-		gShaderFunctionFlag(gShaderFunctionFlag),
-		cShaderFunctionFlag(cShaderFunctionFlag)
-	{}
+		gShaderFunctionFlag(newGShaderFunctionFlag),
+		cShaderFunctionFlag(newCShaderFunctionFlag)
+	{
+		if (cShaderFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
+			gShaderFunctionFlag = SHADER_FUNCTION_NONE;
+	}
 	JShader::JShaderInitdata::JShaderInitdata(const J_OBJECT_FLAG flag,
-		const J_GRAPHIC_SHADER_FUNCTION gShaderFunctionFlag,
-		const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag)
-		: JResourceInitData(MakeName(gShaderFunctionFlag, cShaderFunctionFlag),
+		const J_GRAPHIC_SHADER_FUNCTION newGShaderFunctionFlag,
+		const J_COMPUTE_SHADER_FUNCTION newCShaderFunctionFlag)
+		: JResourceInitData(MakeName(newGShaderFunctionFlag, newCShaderFunctionFlag),
 			Core::MakeGuid(),
 			Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE),
 			GetShaderDirectory(),
 			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
-		gShaderFunctionFlag(gShaderFunctionFlag),
-		cShaderFunctionFlag(cShaderFunctionFlag)
-	{}
-	JShader::JShaderInitdata::JShaderInitdata(const J_GRAPHIC_SHADER_FUNCTION gShaderFunctionFlag, const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag)
-		: JResourceInitData(MakeName(gShaderFunctionFlag, cShaderFunctionFlag),
+		gShaderFunctionFlag(newGShaderFunctionFlag),
+		cShaderFunctionFlag(newCShaderFunctionFlag)
+	{
+		if (cShaderFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
+			gShaderFunctionFlag = SHADER_FUNCTION_NONE;
+	}
+	JShader::JShaderInitdata::JShaderInitdata(const J_GRAPHIC_SHADER_FUNCTION newGShaderFunctionFlag, const J_COMPUTE_SHADER_FUNCTION newCShaderFunctionFlag)
+		: JResourceInitData(MakeName(newGShaderFunctionFlag, newCShaderFunctionFlag),
 			Core::MakeGuid(),
 			OBJECT_FLAG_UNEDITABLE,
 			GetShaderDirectory(),
 			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
-		gShaderFunctionFlag(gShaderFunctionFlag),
-		cShaderFunctionFlag(cShaderFunctionFlag)
-	{}
+		gShaderFunctionFlag(newGShaderFunctionFlag),
+		cShaderFunctionFlag(newCShaderFunctionFlag)
+	{
+		if (cShaderFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
+			gShaderFunctionFlag = SHADER_FUNCTION_NONE;
+	}
 	J_RESOURCE_TYPE JShader::JShaderInitdata::GetResourceType() const noexcept
 	{
 		return J_RESOURCE_TYPE::SHADER;
@@ -394,7 +403,7 @@ namespace JinEngine
 	{
 		if (taskCount < smCount)
 		{
-			dInfo.groupDim = JVector3<uint>(smCount, 1, 1);
+			dInfo.groupDim = JVector3<uint>(taskCount, 1, 1);
 			dInfo.threadDim = JVector3<uint>(1, 1, 1);
 			dInfo.threadCount = taskCount;
 			dInfo.taskOriCount = taskCount;
@@ -402,11 +411,11 @@ namespace JinEngine
 		else
 		{
 			const uint oneCycleMax = smCount * threadMaxDim;
-			uint threadCount = oneCycleMax < taskCount ? oneCycleMax : taskCount;
-			threadCount += (threadCount % smCount);
+			uint threadCount = oneCycleMax < taskCount ? oneCycleMax : taskCount; 
+			threadCount += (threadCount % smCount == 0 ? 0 : (smCount - (threadCount % smCount)));
 
 			uint threadPerGroup = threadCount / smCount;
-			threadPerGroup += (threadPerGroup % warpFactor);
+			threadPerGroup += (threadPerGroup % warpFactor == 0 ? 0 : (warpFactor - (threadPerGroup % warpFactor)));
 
 			dInfo.groupDim = JVector3<uint>(smCount, 1, 1);
 			dInfo.threadDim = JVector3<uint>(threadPerGroup, 1, 1);

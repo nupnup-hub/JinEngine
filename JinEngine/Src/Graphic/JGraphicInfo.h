@@ -24,13 +24,13 @@ namespace JinEngine
 			uint upMaterialCount = 0;
 
 			//FrameResource Capacity
-			uint upObjCapacity = 0;
-			uint upAniCapacity = 0;
-			uint upPassCapacity = 0;
-			uint upCameraCapacity = 0;
-			uint upLightCapacity = 0;
-			uint upSmLightCapacity = 0;
-			uint upMaterialCapacity = 0;
+			uint upObjCapacity = minCapacity;
+			uint upAniCapacity = minCapacity;
+			uint upPassCapacity = minCapacity;
+			uint upCameraCapacity = minCapacity;
+			uint upLightCapacity = minCapacity;
+			uint upSmLightCapacity = minCapacity;
+			uint upMaterialCapacity = minCapacity;
 		public:
 			uint binding2DTextureCount = 0;
 			uint bindingCubeMapCount = 0;

@@ -3,7 +3,7 @@
 #include<wrl/client.h>
 #include"../../Core/JDataType.h"
 #include"../../Core/Func/Callable/JCallable.h"
-#include"JUploadBuffer.h" 
+#include"../Upload/JUploadBuffer.h" 
 #include"JFrameResourceType.h"
 
 namespace JinEngine
