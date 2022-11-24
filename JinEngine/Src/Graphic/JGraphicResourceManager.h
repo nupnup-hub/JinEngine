@@ -29,11 +29,16 @@ namespace JinEngine
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvHeap;
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap;
 			Microsoft::WRL::ComPtr<ID3D12QueryHeap> occlusionQueryHeap;
+			Microsoft::WRL::ComPtr<ID3D12QueryHeap> timeQueryHeap;
 			uint rtvDescriptorSize = 0;
 			uint dsvDescriptorSize = 0;
 			uint cbvSrvUavDescriptorSize = 0;
 
+			//fixed resource
+			static constexpr uint mainBufDsCount = 1;
 			static constexpr uint swapChainBufferCount = 2;  
+			//occlusion +  occlusionDebug
+
 			Microsoft::WRL::ComPtr<ID3D12Resource> swapChainBuffer[swapChainBufferCount];
 
 			DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -72,17 +77,25 @@ namespace JinEngine
 			uint shadowMapCapacity = 1000;
 			std::vector<std::unique_ptr<JGraphicTextureHandle>> shadowMapHandle;
 			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> shadowMapResource;
+			
+			static constexpr uint occlusionCapacity = 10;
+			static constexpr uint occlusionDebugCapacity = occlusionCapacity;
+
+			uint uavCount = 0;
+			uint uavCapacity = occlusionCapacity - 1 + occlusionDebugCapacity;
 
 			//Engine use
-			static constexpr uint occlusionDsCapacity = 10;
-			static constexpr uint maxOcclusionDsWidth = 512;
-			static constexpr uint maxOcclusionDsHeight= 256;
-			uint occlusionDsCount = 0;
+			//uint uavCapacity = depthDebugCapacity; 
+			static constexpr uint occlusionDsCount = 1;
+			uint occlusionCount = 0;
+			uint occlusionDebugCount = 0;
 			uint occlusionQuaryCapacity = 1000;
 			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionQueryResult;
-			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDepthStencil[occlusionDsCapacity];
+			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> occlusionDepthMap;
+			std::vector <Microsoft::WRL::ComPtr<ID3D12Resource>> occlusionDebug;
+			std::vector<std::unique_ptr<JGraphicTextureHandle>> occlsionDepthHandle;
+			std::vector<std::unique_ptr<JGraphicTextureHandle>> occlsionDebugHandle;
 
-			const uint mainBufDsvCount = 1;
 			Microsoft::WRL::ComPtr<ID3D12Resource> mainDepthStencil;
 		public:
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuRtvDescriptorHandle(int index)const noexcept;
@@ -94,11 +107,15 @@ namespace JinEngine
 		public:
 			//Srv
 			uint GetSrvOcclusionDepthStart()const noexcept;
+			uint GetSrvOcclusionDebugStart()const noexcept;
 			uint GetSrvUser2DTextureStart()const noexcept;
 			uint GetSrvUserCubeMapStart()const noexcept;
 			uint GetSrvRenderResultStart()const noexcept;
 			uint GetSrvShadowMapStart()const noexcept; 
-			//Rtv
+			//Uav
+			uint GetUavOcclusionDepthStart()const noexcept;
+			uint GetUavOcclusionDebugStart()const noexcept;
+			//Rtv 
 			uint GetRtvRenderResultStart()const noexcept;
 			uint GetRtvShadowMapStart()const noexcept;
 			//Dsv
@@ -129,7 +146,7 @@ namespace JinEngine
 			void BuildRtvDescriptorHeaps(ID3D12Device* device);
 			void BuildDsvDescriptorHeaps(ID3D12Device* device);
 			void BuildSrvDescriptorHeaps(ID3D12Device* device);
-			void BuildOcclusionQueryHeap(ID3D12Device* device);
+			void BuildOcclusionQueryHeap(ID3D12Device* device); 
 		private:
 			JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
 				const std::wstring& path,
@@ -149,7 +166,7 @@ namespace JinEngine
 			void ReBindCubeMap(ID3D12Device* device, const uint resourceIndex, const uint heapIndex);
 			void ReBindRenderTarget(ID3D12Device* device, const uint resourceIndex, const uint rtvHeapIndex, const uint srvHeapIndex);
 			void ReBindShadowMapTexture(ID3D12Device* device, const uint resourceIndex, const uint dsvHeapIndex, const uint srvHeapIndex);
-		private:
+		private: 
 			void CreateOcclusionQueryResource(ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList,
 				const uint width,

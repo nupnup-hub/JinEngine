@@ -106,15 +106,24 @@ namespace JinEngine
 		if (mesh != nullptr)
 		{
 			JTransform* ownerTransform = GetOwner()->GetTransform();
-			XMFLOAT3 pos = ownerTransform->GetPosition();
-			XMFLOAT3 scale = ownerTransform->GetScale();
+			XMMATRIX worldM = ownerTransform->GetWorld();
+			XMVECTOR s;
+			XMVECTOR q;
+			XMVECTOR t;
+			XMMatrixDecompose(&s, &q, &t, worldM);
+
+			XMFLOAT3 pos;
+			XMFLOAT3 scale;
+
+			XMStoreFloat3(&pos, t);
+			XMStoreFloat3(&scale, s);
 
 			XMFLOAT3 meshSphereCenter = mesh->GetBoundingSphereCenter();
 			float meshSphereRad = mesh->GetBoundingSphereRadius();
 
-			XMFLOAT3 gameObjSphereCenter = XMFLOAT3(meshSphereCenter.x * scale.x + pos.x,
-				meshSphereCenter.y * scale.y + pos.y,
-				meshSphereCenter.z * scale.z + pos.z);
+			XMFLOAT3 gameObjSphereCenter = XMFLOAT3(meshSphereCenter.x + pos.x,
+				meshSphereCenter.y + pos.y,
+				meshSphereCenter.z + pos.z);
 
 			float gameObjSphereRad = meshSphereRad;
 
@@ -125,7 +134,7 @@ namespace JinEngine
 			else
 				gameObjSphereRad *= scale.z;
 
-			return DirectX::BoundingSphere(meshSphereCenter, gameObjSphereRad);
+			return DirectX::BoundingSphere(gameObjSphereCenter, gameObjSphereRad);
 		}
 		else
 			return DirectX::BoundingSphere();
@@ -253,18 +262,19 @@ namespace JinEngine
 			if (isUpdateBoundingObj)
 			{
 				const BoundingBox bbox = mesh->GetBoundingBox();
+				static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
 
 				const XMFLOAT3 objScale = transform->GetScale();
-				const XMFLOAT3 bboxScale = XMFLOAT3(bbox.Extents.x * objScale.x,
-					bbox.Extents.y * objScale.y,
-					bbox.Extents.z * objScale.z);
+				const XMFLOAT3 bboxScale = XMFLOAT3((bbox.Extents.x * objScale.x) / drawBBox.Extents.x,
+					(bbox.Extents.y * objScale.y) / drawBBox.Extents.y,
+					(bbox.Extents.z * objScale.z) / drawBBox.Extents.z);
 
 				const XMFLOAT3 bboxRotation = transform->GetRotation();
 
 				const XMFLOAT3 objPos = transform->GetPosition();
-				const XMFLOAT3 bboxPos = XMFLOAT3(bbox.Center.x + objPos.x,
-					bbox.Center.y + objPos.y,
-					bbox.Center.z + objPos.z);
+				const XMFLOAT3 bboxPos = XMFLOAT3(bbox.Center.x + objPos.x - drawBBox.Center.x,
+					bbox.Center.y + objPos.y - drawBBox.Center.y,
+					bbox.Center.z + objPos.z - drawBBox.Center.z);
 
 				const XMVECTOR s = XMLoadFloat3(&bboxScale);
 				const XMVECTOR q = XMQuaternionRotationRollPitchYaw(bboxRotation.x * (JMathHelper::Pi / 180),

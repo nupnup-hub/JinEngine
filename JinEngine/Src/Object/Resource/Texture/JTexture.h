@@ -39,7 +39,7 @@ namespace JinEngine
 			Graphic::J_GRAPHIC_TEXTURE_TYPE textureType;
 		};
 	private: 
-		Microsoft::WRL::ComPtr<ID3D12Resource> uploadHeap = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer = nullptr;
 		Graphic::J_GRAPHIC_TEXTURE_TYPE textureType;
 	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;

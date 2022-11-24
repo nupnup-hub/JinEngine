@@ -42,9 +42,14 @@ namespace JinEngine
 		{
 			return srvFixedCount;
 		}
+		uint JGraphicResourceManager::GetSrvOcclusionDebugStart()const noexcept
+		{
+			//occlusion = (count - 1)uav + 1dsv
+			return GetSrvOcclusionDepthStart() + occlusionCapacity - 1;
+		}
 		uint JGraphicResourceManager::GetSrvUser2DTextureStart()const noexcept
 		{
-			return GetSrvOcclusionDepthStart() + occlusionDsCapacity;
+			return GetSrvOcclusionDebugStart() + occlusionDebugCapacity;
 		}
 		uint JGraphicResourceManager::GetSrvUserCubeMapStart()const noexcept
 		{
@@ -58,6 +63,14 @@ namespace JinEngine
 		{
 			return GetSrvRenderResultStart() + renderResultCapacity;
 		}
+		uint JGraphicResourceManager::GetUavOcclusionDepthStart()const noexcept
+		{
+			return GetSrvShadowMapStart() + shadowMapCapacity;
+		}
+		uint JGraphicResourceManager::GetUavOcclusionDebugStart()const noexcept
+		{
+			return GetUavOcclusionDepthStart() + occlusionCapacity - 1;
+		}
 		uint JGraphicResourceManager::GetRtvRenderResultStart()const noexcept
 		{
 			return swapChainBufferCount;
@@ -68,11 +81,11 @@ namespace JinEngine
 		}
 		uint JGraphicResourceManager::GetDsvOcclusionDepthStart()const noexcept
 		{
-			return mainBufDsvCount;
+			return mainBufDsCount;
 		}
 		uint JGraphicResourceManager::GetDsvShadowMapStart()const noexcept
 		{
-			return GetDsvOcclusionDepthStart() + occlusionDsCapacity;	//main buff + occlusion buff
+			return GetDsvOcclusionDepthStart() + occlusionDsCount;	//main buff + occlusion buff
 		}
 		uint JGraphicResourceManager::GetTotalRtvCount()const noexcept
 		{
@@ -84,11 +97,11 @@ namespace JinEngine
 		}
 		uint JGraphicResourceManager::GetTotalDsvCount()const noexcept
 		{
-			return mainBufDsvCount + occlusionDsCount + shadowMapCount;
+			return mainBufDsCount + occlusionDsCount + shadowMapCount;
 		}
 		uint JGraphicResourceManager::GetTotalDsvCapacity()const noexcept
 		{
-			return mainBufDsvCount + occlusionDsCapacity + shadowMapCapacity;
+			return mainBufDsCount + occlusionDsCount + shadowMapCapacity;
 		}
 		uint JGraphicResourceManager::GetTotalRsCount()const noexcept
 		{
@@ -100,11 +113,15 @@ namespace JinEngine
 		}
 		uint JGraphicResourceManager::GetTotalTextureCount()const noexcept
 		{
-			return srvFixedCount + occlusionDsCount + user2DTextureCount + userCubeMapCount + renderResultCount + shadowMapCount;
+			return srvFixedCount + occlusionCount + occlusionDebugCount +
+				user2DTextureCount + userCubeMapCount + renderResultCount + shadowMapCount +
+				uavCount;
 		}
 		uint JGraphicResourceManager::GetTotalTextureCapacity()const noexcept
 		{
-			return srvFixedCount + occlusionDsCapacity + user2DTextureCapacity + userCubeMapCapacity + renderResultCapacity + shadowMapCapacity;
+			return srvFixedCount + occlusionCapacity + occlusionDebugCapacity + 
+				user2DTextureCapacity + userCubeMapCapacity + renderResultCapacity + shadowMapCapacity +
+				uavCapacity;
 		}
 		uint JGraphicResourceManager::GetOcclusionQueryHeapCapacity()const noexcept
 		{
@@ -112,7 +129,7 @@ namespace JinEngine
 		}
 		uint JGraphicResourceManager::GetOcclusionDsCapacity()const noexcept
 		{
-			return occlusionDsCapacity;
+			return occlusionCapacity;
 		}
 		ID3D12QueryHeap* JGraphicResourceManager::GetOcclusionQueryHeap()const noexcept
 		{
@@ -290,27 +307,27 @@ namespace JinEngine
 			rtvDesc.Texture2D.MipSlice = 0;
 			rtvDesc.Texture2D.PlaneSlice = 0;
 
-			D3D12_SHADER_RESOURCE_VIEW_DESC rsSrvDesc = {};
-			rsSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			rsSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-			rsSrvDesc.Texture2D.MostDetailedMip = 0;
-			rsSrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-			rsSrvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-			rsSrvDesc.Texture2D.MipLevels = 1;
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D.MostDetailedMip = 0;
+			srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+			srvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+			srvDesc.Texture2D.MipLevels = 1;
 
-			D3D12_RESOURCE_DESC rsResourceDesc;
-			ZeroMemory(&rsResourceDesc, sizeof(D3D12_RESOURCE_DESC));
-			rsResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-			rsResourceDesc.Alignment = 0;
-			rsResourceDesc.Width = width;
-			rsResourceDesc.Height = height;
-			rsResourceDesc.DepthOrArraySize = 1;
-			rsResourceDesc.MipLevels = 1;
-			rsResourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-			rsResourceDesc.SampleDesc.Count = 1;
-			rsResourceDesc.SampleDesc.Quality = 0;
-			rsResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-			rsResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+			D3D12_RESOURCE_DESC resourceDesc;
+			ZeroMemory(&resourceDesc, sizeof(D3D12_RESOURCE_DESC));
+			resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+			resourceDesc.Alignment = 0;
+			resourceDesc.Width = width;
+			resourceDesc.Height = height;
+			resourceDesc.DepthOrArraySize = 1;
+			resourceDesc.MipLevels = 1;
+			resourceDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+			resourceDesc.SampleDesc.Count = 1;
+			resourceDesc.SampleDesc.Quality = 0;
+			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+			resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvHeap->GetCPUDescriptorHandleForHeapStart());
 			rtvHandle.Offset(GetRtvRenderResultStart() + renderResultCount, rtvDescriptorSize);
@@ -322,13 +339,13 @@ namespace JinEngine
 			ThrowIfFailedHr(device->CreateCommittedResource(
 				&heapProperty,
 				D3D12_HEAP_FLAG_NONE,
-				&rsResourceDesc,
+				&resourceDesc,
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				&optClear,
 				IID_PPV_ARGS(&newTexture)));
 
 			device->CreateRenderTargetView(newTexture.Get(), &rtvDesc, rtvHandle);
-			device->CreateShaderResourceView(newTexture.Get(), &rsSrvDesc, srvHandle);
+			device->CreateShaderResourceView(newTexture.Get(), &srvDesc, srvHandle);
 
 			std::unique_ptr<JGraphicTextureHandle> newHandle =
 				std::make_unique<JGraphicTextureHandle>(J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_COMMON, (uint)width, (uint)height);
@@ -347,19 +364,19 @@ namespace JinEngine
 		{
 			CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
-			D3D12_RESOURCE_DESC shadowMapRsResourceDesc;
-			ZeroMemory(&shadowMapRsResourceDesc, sizeof(D3D12_RESOURCE_DESC));
-			shadowMapRsResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-			shadowMapRsResourceDesc.Alignment = 0;
-			shadowMapRsResourceDesc.Width = width;
-			shadowMapRsResourceDesc.Height = height;
-			shadowMapRsResourceDesc.DepthOrArraySize = 1;
-			shadowMapRsResourceDesc.MipLevels = 1;
-			shadowMapRsResourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
-			shadowMapRsResourceDesc.SampleDesc.Count = 1;
-			shadowMapRsResourceDesc.SampleDesc.Quality = 0;
-			shadowMapRsResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-			shadowMapRsResourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+			D3D12_RESOURCE_DESC resourceDesc;
+			ZeroMemory(&resourceDesc, sizeof(D3D12_RESOURCE_DESC));
+			resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+			resourceDesc.Alignment = 0;
+			resourceDesc.Width = width;
+			resourceDesc.Height = height;
+			resourceDesc.DepthOrArraySize = 1;
+			resourceDesc.MipLevels = 1;
+			resourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+			resourceDesc.SampleDesc.Count = 1;
+			resourceDesc.SampleDesc.Quality = 0;
+			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+			resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
 			CD3DX12_CLEAR_VALUE optClear(DXGI_FORMAT_R16G16B16A16_FLOAT, DirectX::Colors::Snow);
 			optClear.Format = depthStencilFormat;
@@ -370,26 +387,26 @@ namespace JinEngine
 			ThrowIfFailedHr(device->CreateCommittedResource(
 				&heapProperty,
 				D3D12_HEAP_FLAG_NONE,
-				&shadowMapRsResourceDesc,
+				&resourceDesc,
 				D3D12_RESOURCE_STATE_COMMON,
 				&optClear,
 				IID_PPV_ARGS(&newTexture)));
 
 			// Create DSV to resource so we can render to the shadow map.
-			D3D12_DEPTH_STENCIL_VIEW_DESC shadowMapRsDsvDesc;
-			shadowMapRsDsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-			shadowMapRsDsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-			shadowMapRsDsvDesc.Format = depthStencilFormat;
-			shadowMapRsDsvDesc.Texture2D.MipSlice = 0;
+			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+			dsvDesc.Format = depthStencilFormat;
+			dsvDesc.Texture2D.MipSlice = 0;
 
-			D3D12_SHADER_RESOURCE_VIEW_DESC shadowMapRsSrvDesc = {};
-			shadowMapRsSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			shadowMapRsSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-			shadowMapRsSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-			shadowMapRsSrvDesc.Texture2D.MostDetailedMip = 0;
-			shadowMapRsSrvDesc.Texture2D.MipLevels = 1;
-			shadowMapRsSrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-			shadowMapRsSrvDesc.Texture2D.PlaneSlice = 0;
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D.MostDetailedMip = 0;
+			srvDesc.Texture2D.MipLevels = 1;
+			srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+			srvDesc.Texture2D.PlaneSlice = 0;
 
 			CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvHeap->GetCPUDescriptorHandleForHeapStart());
 			dsvHandle.Offset(GetDsvShadowMapStart() + shadowMapCount, dsvDescriptorSize);
@@ -397,8 +414,8 @@ namespace JinEngine
 			CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvHeap->GetCPUDescriptorHandleForHeapStart());
 			srvHandle.Offset(GetSrvShadowMapStart() + shadowMapCount, cbvSrvUavDescriptorSize);
 
-			device->CreateDepthStencilView(newTexture.Get(), &shadowMapRsDsvDesc, dsvHandle);
-			device->CreateShaderResourceView(newTexture.Get(), &shadowMapRsSrvDesc, srvHandle);
+			device->CreateDepthStencilView(newTexture.Get(), &dsvDesc, dsvHandle);
+			device->CreateShaderResourceView(newTexture.Get(), &srvDesc, srvHandle);
 
 			std::unique_ptr<JGraphicTextureHandle> newHandle =
 				std::make_unique<JGraphicTextureHandle>(J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP, (uint)width, (uint)height);
@@ -535,25 +552,25 @@ namespace JinEngine
 		}
 		void JGraphicResourceManager::ReBindShadowMapTexture(ID3D12Device* device, const uint resourceIndex, const uint dsvHeapIndex, const uint srvHeapIndex)
 		{
-			D3D12_SHADER_RESOURCE_VIEW_DESC shadowMapRsSrvDesc = {};
-			shadowMapRsSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			shadowMapRsSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-			shadowMapRsSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-			shadowMapRsSrvDesc.Texture2D.MostDetailedMip = 0;
-			shadowMapRsSrvDesc.Texture2D.MipLevels = 1;
-			shadowMapRsSrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-			shadowMapRsSrvDesc.Texture2D.PlaneSlice = 0;
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D.MostDetailedMip = 0;
+			srvDesc.Texture2D.MipLevels = 1;
+			srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+			srvDesc.Texture2D.PlaneSlice = 0;
 
 			// Create DSV to resource so we can render to the shadow map.
-			D3D12_DEPTH_STENCIL_VIEW_DESC shadowMapRsDsvDesc;
-			shadowMapRsDsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-			shadowMapRsDsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-			shadowMapRsDsvDesc.Format = depthStencilFormat;
-			shadowMapRsDsvDesc.Texture2D.MipSlice = 0;
+			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+			dsvDesc.Format = depthStencilFormat;
+			dsvDesc.Texture2D.MipSlice = 0;
 
-			device->CreateDepthStencilView(shadowMapResource[resourceIndex].Get(), &shadowMapRsDsvDesc, GetCpuDsvDescriptorHandle(dsvHeapIndex));
-			device->CreateShaderResourceView(shadowMapResource[resourceIndex].Get(), &shadowMapRsSrvDesc, GetCpuSrvDescriptorHandle(srvHeapIndex));
-		}
+			device->CreateDepthStencilView(shadowMapResource[resourceIndex].Get(), &dsvDesc, GetCpuDsvDescriptorHandle(dsvHeapIndex));
+			device->CreateShaderResourceView(shadowMapResource[resourceIndex].Get(), &srvDesc, GetCpuSrvDescriptorHandle(srvHeapIndex));
+		} 
 		void JGraphicResourceManager::CreateOcclusionQueryResource(ID3D12Device* device,
 			ID3D12GraphicsCommandList* commandList,
 			const uint width,
@@ -573,75 +590,169 @@ namespace JinEngine
 				nullptr,
 				IID_PPV_ARGS(&occlusionQueryResult)));
 
-			for (uint i = 0; i < occlusionDsCount; ++i)
-				occlusionDepthStencil[i].Reset();
+			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+			dsvDesc.Format = depthStencilFormat;
+			dsvDesc.Texture2D.MipSlice = 0;
 
-			occlusionDsCount = 0;
-			uint nowWidth = width > maxOcclusionDsWidth ? maxOcclusionDsWidth : width;
-			uint nowHeight = height > maxOcclusionDsHeight ? maxOcclusionDsHeight : height;
-			while (nowWidth != 1 || nowHeight != 1)
+			D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+			uavDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+			uavDesc.Texture2D.MipSlice = 0;
+
+			D3D12_SHADER_RESOURCE_VIEW_DESC debugSrvDesc = {};
+			debugSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			debugSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			debugSrvDesc.Texture2D.MostDetailedMip = 0;
+			debugSrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+			debugSrvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			debugSrvDesc.Texture2D.MipLevels = 1;
+
+			occlusionDepthMap.clear();
+			occlusionDebug.clear();
+			occlusionDepthMap.resize(occlusionCapacity);
+			occlusionDebug.resize(occlusionCapacity);
+
+			if (occlusionCount > 0)
+				uavCount -= (occlusionCount - 1);
+			if (occlusionDebugCount > 0)
+				uavCount -= occlusionDebugCount;
+
+			occlusionCount = occlusionDebugCount =  0;
+			uint nowWidth = width;
+			uint nowHeight = height;
+			while (occlusionCount != occlusionCapacity)
 			{
+				D3D12_SHADER_RESOURCE_VIEW_DESC depthSrvDesc = {};
+				depthSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+				depthSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+				depthSrvDesc.Texture2D.MostDetailedMip = 0;
+				depthSrvDesc.Texture2D.MipLevels = 1;
+				depthSrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+				depthSrvDesc.Texture2D.PlaneSlice = 0;
+	
 				D3D12_RESOURCE_DESC depthStencilDesc;
+				ZeroMemory(&depthStencilDesc, sizeof(D3D12_RESOURCE_DESC));
 				depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 				depthStencilDesc.Alignment = 0;
 				depthStencilDesc.Width = (uint)nowWidth;
 				depthStencilDesc.Height = (uint)nowHeight;
 				depthStencilDesc.DepthOrArraySize = 1;
 				depthStencilDesc.MipLevels = 1;
-				depthStencilDesc.Format = depthStencilFormat;
-				depthStencilDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
-				depthStencilDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
+				depthStencilDesc.SampleDesc.Count = 1;
+				depthStencilDesc.SampleDesc.Quality = 0;
 				depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-				depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+				if (occlusionCount == 0)
+				{
+					depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+					depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+					depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+				}
+				else
+				{
+					depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+					depthStencilDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+					depthSrvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+				}
 
-				CD3DX12_CLEAR_VALUE optClear(DXGI_FORMAT_R16G16B16A16_FLOAT, DirectX::Colors::Snow);
-				optClear.Format = depthStencilFormat;
-				optClear.DepthStencil.Depth = 1.0f;
-				optClear.DepthStencil.Stencil = 0;
+				 
+				Microsoft::WRL::ComPtr<ID3D12Resource> newOcclusion;
 				CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
+				if (occlusionCount == 0)
+				{
+					CD3DX12_CLEAR_VALUE optClear(DXGI_FORMAT_R16G16B16A16_FLOAT, DirectX::Colors::Snow);
+					optClear.Format = depthStencilFormat;
+					optClear.DepthStencil.Depth = 1.0f;
+					optClear.DepthStencil.Stencil = 0;
 
-				ThrowIfFailedHr(device->CreateCommittedResource(
-					&heapProperties,
-					D3D12_HEAP_FLAG_NONE,
-					&depthStencilDesc,
-					D3D12_RESOURCE_STATE_COMMON,
-					&optClear,
-					IID_PPV_ARGS(&occlusionDepthStencil[occlusionDsCount])));
+					ThrowIfFailedHr(device->CreateCommittedResource(
+						&heapProperties,
+						D3D12_HEAP_FLAG_NONE,
+						&depthStencilDesc,
+						D3D12_RESOURCE_STATE_GENERIC_READ,
+						&optClear,
+						IID_PPV_ARGS(&newOcclusion)));
+				}
+				else
+				{
+					ThrowIfFailedHr(device->CreateCommittedResource(
+						&heapProperties,
+						D3D12_HEAP_FLAG_NONE,
+						&depthStencilDesc,
+						D3D12_RESOURCE_STATE_COMMON,
+						nullptr,
+						IID_PPV_ARGS(&newOcclusion)));
 
-				D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
-				dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-				dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-				dsvDesc.Format = depthStencilFormat;
-				dsvDesc.Texture2D.MipSlice = 0;
+				}
+				occlusionDepthMap[occlusionCount] = std::move(newOcclusion);
 
-				D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-				srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-				srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-				srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-				srvDesc.Texture2D.MostDetailedMip = 0;
-				srvDesc.Texture2D.MipLevels = 1;
-				srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-				srvDesc.Texture2D.PlaneSlice = 0;
+				if (occlusionCount == 0)
+				{
+					CD3DX12_CPU_DESCRIPTOR_HANDLE depthDsvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvHeap->GetCPUDescriptorHandleForHeapStart());
+					depthDsvHandle.Offset(GetDsvOcclusionDepthStart(), dsvDescriptorSize);
+					device->CreateDepthStencilView(occlusionDepthMap[occlusionCount].Get(), &dsvDesc, depthDsvHandle);
+				}
+				else
+				{
+					CD3DX12_CPU_DESCRIPTOR_HANDLE depthUavHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvHeap->GetCPUDescriptorHandleForHeapStart());
+					depthUavHandle.Offset(GetUavOcclusionDepthStart() + occlusionCount - 1, cbvSrvUavDescriptorSize);
+					device->CreateUnorderedAccessView(occlusionDepthMap[occlusionCount].Get(), nullptr, &uavDesc, depthUavHandle);
+				}
 
-				CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvHeap->GetCPUDescriptorHandleForHeapStart());
-				dsvHandle.Offset(GetDsvOcclusionDepthStart() + occlusionDsCount, dsvDescriptorSize);
-
-				CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvHeap->GetCPUDescriptorHandleForHeapStart());
-				srvHandle.Offset(GetSrvOcclusionDepthStart() + occlusionDsCount, cbvSrvUavDescriptorSize);
-
-				device->CreateDepthStencilView(occlusionDepthStencil[occlusionDsCount].Get(), &dsvDesc, dsvHandle);
-				device->CreateShaderResourceView(occlusionDepthStencil[occlusionDsCount].Get(), &srvDesc, srvHandle);
-
-				CD3DX12_RESOURCE_BARRIER dsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(occlusionDepthStencil[occlusionDsCount].Get(),
-					D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-
-				commandList->ResourceBarrier(1, &dsBarrier);
+				CD3DX12_CPU_DESCRIPTOR_HANDLE depthSrvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvHeap->GetCPUDescriptorHandleForHeapStart());
+				depthSrvHandle.Offset(GetSrvOcclusionDepthStart() + occlusionCount, cbvSrvUavDescriptorSize);
+				device->CreateShaderResourceView(occlusionDepthMap[occlusionCount].Get(), &depthSrvDesc, depthSrvHandle);
 
 				if (nowWidth > 1)
 					nowWidth /= 2;
 				if (nowHeight > 1)
 					nowHeight /= 2;
-				++occlusionDsCount;
+				++occlusionCount;
+			}
+
+			nowWidth = width;
+			nowHeight = height;
+			for (uint i = 0; i < occlusionCount; ++i)
+			{
+				D3D12_RESOURCE_DESC debugDesc;
+				ZeroMemory(&debugDesc, sizeof(D3D12_RESOURCE_DESC));
+				debugDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+				debugDesc.Alignment = 0;
+				debugDesc.Width = nowWidth;
+				debugDesc.Height = nowHeight;
+				debugDesc.DepthOrArraySize = 1;
+				debugDesc.MipLevels = 1;
+				debugDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+				debugDesc.SampleDesc.Count = 1;
+				debugDesc.SampleDesc.Quality = 0;
+				debugDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+				debugDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS | D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+				Microsoft::WRL::ComPtr<ID3D12Resource> newDebug;
+				CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
+				ThrowIfFailedHr(device->CreateCommittedResource(
+					&heapProperties,
+					D3D12_HEAP_FLAG_NONE,
+					&debugDesc,
+					D3D12_RESOURCE_STATE_COMMON,
+					nullptr,
+					IID_PPV_ARGS(&newDebug)));
+				occlusionDebug[i] = std::move(newDebug);
+
+				CD3DX12_CPU_DESCRIPTOR_HANDLE debugSrvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvHeap->GetCPUDescriptorHandleForHeapStart());
+				debugSrvHandle.Offset(GetSrvOcclusionDebugStart() + i, cbvSrvUavDescriptorSize);
+				device->CreateShaderResourceView(occlusionDebug[i].Get(), &debugSrvDesc, debugSrvHandle);
+
+				CD3DX12_CPU_DESCRIPTOR_HANDLE debugUavHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvHeap->GetCPUDescriptorHandleForHeapStart());
+				debugUavHandle.Offset(GetUavOcclusionDebugStart() + i, cbvSrvUavDescriptorSize);
+				device->CreateUnorderedAccessView(occlusionDebug[i].Get(), nullptr, &uavDesc, debugUavHandle);
+
+				if (nowWidth > 1)
+					nowWidth /= 2;
+				if (nowHeight > 1)
+					nowHeight /= 2;
+				++occlusionDebugCount;
 			}
 		}
 		void JGraphicResourceManager::CreateDepthStencilResource(ID3D12Device* device,
@@ -703,12 +814,15 @@ namespace JinEngine
 			renderResultResource.clear();
 			shadowMapHandle.clear();
 			shadowMapResource.clear();
-
-			occlusionQueryResult.Reset();
+			occlusionDepthMap.clear();
+			occlusionDebug.clear();
+			occlsionDepthHandle.clear();
+			occlsionDebugHandle.clear();
+			occlusionQueryResult.Reset();			
 			mainDepthStencil.Reset();
-			for (uint i = 0; i < occlusionDsCount; ++i)
-				occlusionDepthStencil[i].Reset();
-			occlusionDsCount = 0;
+			 
+			occlusionCount = occlusionDebugCount = 0;
+			uavCount = shadowMapCount = renderResultCount = userCubeMapCount = user2DTextureCount = 0;
 		}
 		JGraphicResourceManager::JGraphicResourceManager() {}
 		JGraphicResourceManager::~JGraphicResourceManager() {}

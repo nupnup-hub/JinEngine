@@ -504,16 +504,17 @@ namespace JinEngine
 			const J_GRAPHIC_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
 			const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
  
+			const bool isUse = JDefaultShader::IsDefaultUse(type);
 			std::wstring shaderName = JShaderType::ConvertToName(shaderF);
 			JFile* file = shaderDir->GetFile(shaderName);
 
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::SHADER)
-				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JShader>(file->GetResource()), false);
+				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JShader>(file->GetResource()), isUse);
 			else
 			{
 				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, shaderF));
 				ThrowIfFailedN(newShader != nullptr); 
-				resourceData->RegisterDefaultResource(type, Core::GetUserPtr(newShader), false);
+				resourceData->RegisterDefaultResource(type, Core::GetUserPtr(newShader), isUse);
 			}
 		}
 		  

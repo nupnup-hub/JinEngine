@@ -11,7 +11,7 @@
 namespace JinEngine
 {
 	namespace Application
-	{
+	{ 
 		std::wstring JApplicationVariable::engineExePath;
 		std::wstring JApplicationVariable::enginePath; 
 		std::wstring JApplicationVariable::engineEngineResourcePath;

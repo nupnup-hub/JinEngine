@@ -44,6 +44,7 @@ namespace JinEngine
 			int height = 0;
 			uint occlusionWidth = 0;
 			uint occlusionHeight = 0;
+			uint occlusionMapCount = 0;
 			uint occlusionMapCapacity = 0;
 			const uint defaultShadowWidth = 1920;
 			const uint defaultShadowHeight = 1080;

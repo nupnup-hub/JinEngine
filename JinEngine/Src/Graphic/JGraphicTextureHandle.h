@@ -19,6 +19,7 @@ namespace JinEngine
 			int rtvHeapIndex = -1;
 			int dsvHeapIndex = -1;
 			int srvHeapIndex = -1; 
+			int uavHeapIndex = -1;
 		public:
 			J_GRAPHIC_TEXTURE_TYPE GetGraphicResourceType()const noexcept;
 			uint GetWidth()const noexcept;
@@ -26,6 +27,7 @@ namespace JinEngine
 			int GetRtvHeapIndex()const noexcept;
 			int GetDsvHeapIndex()const noexcept;
 			int GetSrvHeapIndex()const noexcept; 
+			int GetUavHeapIndex()const noexcept;
 		public:
 			static bool Destroy(JGraphicTextureHandle** handle);
 		public:

@@ -160,6 +160,9 @@ namespace JinEngine
 		Graphic::JShadowMapLightConstants& smLightConstant,
 		Graphic::JShadowMapConstants& shadowConstant)
 	{
+		if (!IsFrameDirted())
+			return false;
+
 		if (onShadow)
 		{
 			const XMVECTOR targetPosV = XMVectorSet(0, 0, 0, 1);
@@ -171,12 +174,12 @@ namespace JinEngine
 			XMFLOAT3 sphereCenterLS;
 			XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPosV, lightView));
 
-			float l = sphereCenterLS.x - 25;
-			float b = sphereCenterLS.y - 25;
-			float n = sphereCenterLS.z - 25;
-			float r = sphereCenterLS.x + 25;
-			float t = sphereCenterLS.y + 25;
-			float f = sphereCenterLS.z + 25;
+			float l = sphereCenterLS.x - 50;
+			float b = sphereCenterLS.y - 50;
+			float n = sphereCenterLS.z - 50;
+			float r = sphereCenterLS.x + 50;
+			float t = sphereCenterLS.y + 50;
+			float f = sphereCenterLS.z + 50;
 
 			const XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
 			//const XMMATRIX lightProj_P = XMMatrixPerspectiveOffCenterLH(l, r, b, t, n, f);

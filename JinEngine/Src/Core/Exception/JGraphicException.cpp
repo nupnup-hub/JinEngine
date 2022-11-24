@@ -13,7 +13,7 @@ namespace JinEngine
 			oss << std::hex << gfxHr << std::endl;
 			hexerrorcode = oss.str();
 			//MessageBox(0, JWindow::Instance().HrException::TranslateErrorCode(gfxHr).c_str(), (L"\n[Error Code] 0x" + JCUtil::StrToWstr(hexerrorcode)).c_str(), 0);
-			whatBuffer = TranslateErrorCode(gfxHr);
+			whatBuffer = TranslateErrorCode(gfxHr) + L"\n" + TranslateErrorCode(hr);
 		}
 		const std::wstring JGraphicException::what() const
 		{ 

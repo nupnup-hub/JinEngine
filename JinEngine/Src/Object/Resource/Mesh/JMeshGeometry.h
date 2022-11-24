@@ -127,6 +127,7 @@ namespace JinEngine
 		DirectX::BoundingBox GetBoundingBox()const noexcept;
 		DirectX::XMFLOAT3 GetBoundingBoxCenter()const noexcept;
 		DirectX::XMFLOAT3 GetBoundingBoxExtent()const noexcept;
+		DirectX::BoundingSphere GetBoundingSphere()const noexcept;
 		DirectX::XMFLOAT3 GetBoundingSphereCenter()const noexcept;
 		float GetBoundingSphereRadius()const noexcept;
 	public:

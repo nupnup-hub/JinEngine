@@ -25,9 +25,10 @@ namespace JinEngine
 		{
 		public:
 			JVector3<uint> groupDim;
-			JVector3<uint> threadDim;												 
-			uint threadCount;				//total thread
+			JVector3<uint> threadDim; 
 			uint taskOriCount;			
+		public:
+			uint GetTotalThreadCount()const noexcept;
 		};
 	public: 
 		Microsoft::WRL::ComPtr<ID3DBlob> Cs = nullptr;							//Variable

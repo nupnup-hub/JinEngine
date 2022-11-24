@@ -29,7 +29,7 @@ namespace JinEngine
 		{SHADER_FUNCTION_ALPHA_CLIP, {"ALPHA_CLIP", "11"}},
 		{SHADER_FUNCTION_WRITE_SHADOWMAP, {"WRITE_SHADOW_MAP", "12"}},
 		{SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT, {"BOUNDING_OBJECT_DEPTH_TEST", "13"}},
-		{SHADER_FUNCTION_DEBUG, {"DEBUG", "14"}},
+		{SHADER_FUNCTION_DEBUG, {"DEBUG", "14"}}
 	};
 
 	//std::unordered_map<J_COMPUTE_SHADER_FUNCTION, std::unique_ptr<JShader::CSInitHelperCallable>> JShader::computeShaderHelperMap;
@@ -93,7 +93,7 @@ namespace JinEngine
 		for (uint i = 0; i < count; ++i)
 		{
 			JShader* shader = static_cast<JShader*>(*(st + i));
-			if (newFunc == shader->GetShaderFunctionFlag())
+			if (newFunc == shader->GetShaderFunctionFlag() && !shader->IsComputeShader())
 				return shader;
 		}
 		return nullptr;
@@ -105,7 +105,7 @@ namespace JinEngine
 		for (uint i = 0; i < count; ++i)
 		{
 			JShader* shader = static_cast<JShader*>(*(st + i));
-			if (newFunc == shader->GetShdaerComputeFunctionFlag())
+			if (newFunc == shader->GetShdaerComputeFunctionFlag() && shader->IsComputeShader())
 				return shader;
 		}
 		return nullptr;
@@ -193,6 +193,10 @@ namespace JinEngine
 	{
 		return cShaderData->RootSignature;
 	}
+	JVector3<uint> JShader::GetComputeGroupDim()const noexcept
+	{
+		return IsComputeShader() ? cShaderData->dispatchInfo.groupDim : JVector3<uint>(0, 0, 0);
+	}
 	J_GRAPHIC_SHADER_FUNCTION JShader::GetShaderFunctionFlag()const noexcept
 	{
 		return gFunctionFlag;
@@ -235,6 +239,15 @@ namespace JinEngine
 		if (gFunctionFlag != newFunctionFlag || !HasShaderData())
 		{
 			gFunctionFlag = newFunctionFlag;
+			if (IsActivated())
+				CompileShdaer(this);
+		}
+	}
+	void JShader::SetComputeShaderFunctionFlag(const J_COMPUTE_SHADER_FUNCTION newFunctionFlag)
+	{
+		if (cFunctionFlag != newFunctionFlag || !HasShaderData())
+		{
+			cFunctionFlag = newFunctionFlag;
 			if (IsActivated())
 				CompileShdaer(this);
 		}
@@ -286,7 +299,7 @@ namespace JinEngine
 		{
 			JShaderType::CompileInfo compileInfo = JShaderType::ComputeShaderCompileInfo(shader->cFunctionFlag);
 			std::wstring computeShaderPath = JApplicationVariable::GetShaderPath() + L"\\" + compileInfo.fileName;
-			shader->cShaderData = std::make_unique< JComputeShaderData>();
+			shader->cShaderData = std::make_unique<JComputeShaderData>();
 			shader->cShaderData->Cs = JD3DUtility::CompileShader(computeShaderPath, &initHelper.macro[0], compileInfo.functionName, "cs_5_1");
 			shader->cShaderData->dispatchInfo = initHelper.dispatchInfo;
 			JGraphic::Instance().ResourceInterface()->StuffComputeShaderPso(shader->cShaderData.get(), shader->cFunctionFlag);
@@ -336,25 +349,23 @@ namespace JinEngine
 		case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_DOWN_SAMPLING:
 		{
 			std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::Instance().GetGpuInfo();
-			uint totalSmCount = 0;
-			uint totalBlockPerSmCount = 0;
-			uint totalThreadPerBlockCount = 0;
-			for (const auto& data : gpuInfo)
-			{
-				totalSmCount += data.multiProcessorCount;
-				totalBlockPerSmCount += data.maxBlocksPerMultiProcessor;
-				totalThreadPerBlockCount += data.maxThreadsPerBlock;
-			}
-
-			Graphic::JGraphicInfo graphicInfo = JGraphic::Instance().GetGraphicInfo();
-			uint depthMapPixelCount = graphicInfo.occlusionWidth * graphicInfo.occlusionHeight;
+			Graphic::JGraphicInfo graphicInfo = JGraphic::Instance().GetGraphicInfo(); 
 
 			//수정필요 
 			//thread per group factor가 하드코딩됨
 			//이후 amd graphic info 추가와 동시에 수정할 예정
-			uint warpFactor = gpuInfo[0].vendor == Core::J_GRAPHIC_VENDOR::AMD ? 64 : 32;
-			CalculateThreadDim(initHelper.dispatchInfo, depthMapPixelCount, totalSmCount, warpFactor, 1024); 
-		
+			uint warpFactor = gpuInfo[0].vendor == Core::J_GRAPHIC_VENDOR::AMD ? 64 : 32; 
+			uint groupDimX = (uint)std::ceil((float)graphicInfo.occlusionWidth / float(gpuInfo[0].maxThreadsDim.x));
+			uint groupDimY = graphicInfo.occlusionHeight;
+
+			//textuer size is always 2 squared
+			uint threadDimX = graphicInfo.occlusionWidth;
+			uint threadDimY = (uint)std::ceil((float)graphicInfo.occlusionHeight / float(gpuInfo[0].maxGridDim.y)); 
+
+			initHelper.dispatchInfo.threadDim = JVector3<uint>(threadDimX, threadDimY, 1);
+			initHelper.dispatchInfo.groupDim = JVector3<uint>(groupDimX, groupDimY, 1);
+			initHelper.dispatchInfo.taskOriCount = graphicInfo.occlusionWidth * graphicInfo.occlusionHeight;
+
 			StuffComputeShaderThreadDim(cFunctionFlag, initHelper.dispatchInfo.threadDim);
 			hzbSamplingCount = std::to_string(graphicInfo.occlusionMapCapacity);
 			initHelper.macro.push_back({ hzbSamplingCountSymbol.c_str(), hzbSamplingCount.c_str() });
@@ -375,12 +386,25 @@ namespace JinEngine
 			}
 
 			Graphic::JGraphicInfo graphicInfo = JGraphic::Instance().GetGraphicInfo();
+			//graphicInfo.upObjCapacity always 2 squared
 			uint queryCount = graphicInfo.upObjCapacity > 0 ? graphicInfo.upObjCapacity : 1;
+
 			//수정필요 
 			//thread per group factor가 하드코딩됨
 			//이후 amd graphic info 추가와 동시에 수정할 예정
-			uint warpFactor = gpuInfo[0].vendor == Core::J_GRAPHIC_VENDOR::AMD ? 64 : 32;
-			CalculateThreadDim(initHelper.dispatchInfo, queryCount, totalSmCount, warpFactor, 1024);
+			uint warpFactor = gpuInfo[0].vendor == Core::J_GRAPHIC_VENDOR::AMD ? 64 : 32; 
+			if (queryCount < warpFactor)
+			{
+				initHelper.dispatchInfo.threadDim = JVector3<uint>(queryCount, 1, 1);
+				initHelper.dispatchInfo.groupDim = JVector3<uint>(1, 1, 1);
+				initHelper.dispatchInfo.taskOriCount = queryCount;
+			}
+			else
+			{
+				initHelper.dispatchInfo.threadDim = JVector3<uint>(warpFactor, 1, 1);
+				initHelper.dispatchInfo.groupDim = JVector3<uint>(1, queryCount / warpFactor, 1);
+				initHelper.dispatchInfo.taskOriCount = queryCount;
+			}
 
 			StuffComputeShaderThreadDim(cFunctionFlag, initHelper.dispatchInfo.threadDim);
 			hzbSamplingCount = std::to_string(graphicInfo.occlusionMapCapacity);
@@ -398,30 +422,6 @@ namespace JinEngine
 	void JShader::GetInputLayout(_Out_ std::vector<D3D12_INPUT_ELEMENT_DESC>& outInputLayout, const J_SHADER_VERTEX_LAYOUT vertexLayoutFlag)noexcept
 	{
 		outInputLayout = inputLayout.find(vertexLayoutFlag)->second;
-	}
-	void JShader::CalculateThreadDim(JComputeShaderData::DispatchInfo& dInfo, const uint taskCount, const uint smCount, const uint warpFactor, const uint threadMaxDim)
-	{
-		if (taskCount < smCount)
-		{
-			dInfo.groupDim = JVector3<uint>(taskCount, 1, 1);
-			dInfo.threadDim = JVector3<uint>(1, 1, 1);
-			dInfo.threadCount = taskCount;
-			dInfo.taskOriCount = taskCount;
-		}
-		else
-		{
-			const uint oneCycleMax = smCount * threadMaxDim;
-			uint threadCount = oneCycleMax < taskCount ? oneCycleMax : taskCount; 
-			threadCount += (threadCount % smCount == 0 ? 0 : (smCount - (threadCount % smCount)));
-
-			uint threadPerGroup = threadCount / smCount;
-			threadPerGroup += (threadPerGroup % warpFactor == 0 ? 0 : (warpFactor - (threadPerGroup % warpFactor)));
-
-			dInfo.groupDim = JVector3<uint>(smCount, 1, 1);
-			dInfo.threadDim = JVector3<uint>(threadPerGroup, 1, 1);
-			dInfo.threadCount = threadCount;
-			dInfo.taskOriCount = taskCount;
-		}
 	}
 	void JShader::StuffComputeShaderThreadDim(const J_COMPUTE_SHADER_FUNCTION cFunctionFlag, const JVector3<uint> dim)
 	{
@@ -526,7 +526,10 @@ namespace JinEngine
 				return newShader;
 			else
 			{
-				newShader->SetGraphicShaderFunctionFlag((J_GRAPHIC_SHADER_FUNCTION)gFunctionFlag);
+				if(newShader->IsComputeShader())
+					newShader->SetComputeShaderFunctionFlag((J_COMPUTE_SHADER_FUNCTION)cFunctionFlag);
+				else
+					newShader->SetGraphicShaderFunctionFlag((J_GRAPHIC_SHADER_FUNCTION)gFunctionFlag);		 
 				return newShader;
 			}
 		}

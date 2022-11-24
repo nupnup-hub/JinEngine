@@ -21,17 +21,17 @@ namespace JinEngine
 				D3D12_COMMAND_LIST_TYPE_DIRECT,
 				IID_PPV_ARGS(cmdListAlloc.GetAddressOf())));
 
-			materialBuffer = std::make_unique<JUploadBuffer<JMaterialConstants>>(false);
-			lightBuffer = std::make_unique<JUploadBuffer<JLightConstants>>(false);
-			smLightBuffer = std::make_unique<JUploadBuffer<JShadowMapLightConstants>>(false);
-
-			objectCB = std::make_unique<JUploadBuffer<JObjectConstants>>(true);
-			skinnedCB = std::make_unique<JUploadBuffer<JAnimationConstants>>(true);
-			passCB = std::make_unique<JUploadBuffer<JPassConstants>>(true);
-			cameraCB = std::make_unique<JUploadBuffer<JCameraConstants>>(true);
-			lightIndexCB = std::make_unique<JUploadBuffer<JLightIndexConstants>>(true);
-			shadowCalCB = std::make_unique<JUploadBuffer<JShadowMapConstants>>(true);
-			bundingObjectCB = std::make_unique<JUploadBuffer<JBoundingObjectConstants>>(true);
+			materialBuffer = std::make_unique<JUploadBuffer<JMaterialConstants>>(J_UPLOAD_BUFFER_TYPE::COMMON);
+			lightBuffer = std::make_unique<JUploadBuffer<JLightConstants>>(J_UPLOAD_BUFFER_TYPE::COMMON);
+			smLightBuffer = std::make_unique<JUploadBuffer<JShadowMapLightConstants>>(J_UPLOAD_BUFFER_TYPE::COMMON);
+			 
+			objectCB = std::make_unique<JUploadBuffer<JObjectConstants>>(J_UPLOAD_BUFFER_TYPE::CONSTANT);
+			skinnedCB = std::make_unique<JUploadBuffer<JAnimationConstants>>(J_UPLOAD_BUFFER_TYPE::CONSTANT);
+			passCB = std::make_unique<JUploadBuffer<JPassConstants>>(J_UPLOAD_BUFFER_TYPE::CONSTANT);
+			cameraCB = std::make_unique<JUploadBuffer<JCameraConstants>>(J_UPLOAD_BUFFER_TYPE::CONSTANT);
+			lightIndexCB = std::make_unique<JUploadBuffer<JLightIndexConstants>>(J_UPLOAD_BUFFER_TYPE::CONSTANT);
+			shadowCalCB = std::make_unique<JUploadBuffer<JShadowMapConstants>>(J_UPLOAD_BUFFER_TYPE::CONSTANT);
+			bundingObjectCB = std::make_unique<JUploadBuffer<JBoundingObjectConstants>>(J_UPLOAD_BUFFER_TYPE::CONSTANT);
 			
 			materialBuffer->Build(device, gInfo.minCapacity);
 			lightBuffer->Build(device, gInfo.minCapacity);

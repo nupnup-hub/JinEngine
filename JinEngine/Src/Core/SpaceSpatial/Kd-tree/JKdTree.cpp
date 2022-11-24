@@ -211,12 +211,12 @@ namespace JinEngine
 			root->GetAlignLeafNode(camFrustum, alignNode, index);
 
 			uint totalObjCount = 0;
-			for (uint i = 0; i < alignLeafNodeCount; ++i)
+			for (uint i = 0; i < index; ++i)
 				totalObjCount += alignNode[i]->GetInnerGameObjectCount();
 
 			std::vector<JGameObject*> alignObject(totalObjCount);
 			totalObjCount = 0;
-			for (uint i = 0; i < alignLeafNodeCount; ++i)
+			for (uint i = 0; i < index; ++i)
 			{
 				alignNode[i]->StuffInnerGameObject(alignObject, totalObjCount);
 				totalObjCount += alignNode[i]->GetInnerGameObjectCount();

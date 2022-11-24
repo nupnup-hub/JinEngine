@@ -136,7 +136,7 @@ namespace JinEngine
 				SetWindowText(JWindow::Instance().HandleInterface()->GetHandle(), windowText.c_str());
 				// Reset for next average.
 				frameCnt = 0;
-				timeElapsed += 1.0f;
+				timeElapsed += 1.0f; 
 			}
 		}
 		void JApplication::StoreProject()

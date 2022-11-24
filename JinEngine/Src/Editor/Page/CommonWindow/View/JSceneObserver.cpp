@@ -323,9 +323,33 @@ namespace JinEngine
 		}
 		void JSceneObserver::OcclusionResultOnScreen()
 		{
-			JImGuiImpl::BeginWindow("##OcclusionResultWindow", &isOcclusionViewer, ImGuiWindowFlags_NoDocking);
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetOcclusionSrvHandle()).ptr, ImGui::GetWindowSize());
+			JImGuiImpl::BeginWindow("##OcclusionResultWindow1", &isOcclusionViewer, ImGuiWindowFlags_NoDocking);
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetOcclusionSrvHandle(0)).ptr, ImVec2(400, 250));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(1)).ptr, ImVec2(400, 250));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(2)).ptr, ImVec2(400, 250));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(3)).ptr, ImVec2(400, 250));
+
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(4)).ptr, ImVec2(400, 250));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(5)).ptr, ImVec2(400, 250));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(6)).ptr, ImVec2(400, 250));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(7)).ptr, ImVec2(400, 250));
+
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(8)).ptr, ImVec2(400, 250));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(9)).ptr, ImVec2(400, 250));
+			//ImGui::SameLine();
+			//ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugSrvHandle(1)).ptr, ImVec2(400, 250));
 			JImGuiImpl::EndWindow();
+
+			//JImGuiImpl::BeginWindow("##OcclusionResultWindow2", &isOcclusionViewer, ImGuiWindowFlags_NoDocking); 
+			//ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugSrvHandle(0)).ptr, ImGui::GetWindowSize());
+			//JImGuiImpl::EndWindow();
 		}
 		void JSceneObserver::DoActivate()noexcept
 		{

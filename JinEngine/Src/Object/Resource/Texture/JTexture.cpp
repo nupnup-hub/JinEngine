@@ -125,10 +125,7 @@ namespace JinEngine
 		if (IsValid())
 		{
 			if(HasTxtHandle())
-			{
-				DestroyTxtHandle();
-				uploadHeap.Reset();
-			}
+				DestroyTxtHandle(); 
 			SetValid(false);
 		}
 	}
@@ -138,13 +135,19 @@ namespace JinEngine
 		{
 			if (textureType == Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D)
 			{
-				if (Create2DTexture(uploadHeap, GetPath(), GetFormat()))
+				if (Create2DTexture(uploadBuffer, GetPath(), GetFormat()))
+				{
+					uploadBuffer.Reset();
 					return true;
+				}
 			}
 			else if (textureType == Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE)
 			{
-				if (CreateCubeMap(uploadHeap, GetPath(), GetFormat()))
+				if (CreateCubeMap(uploadBuffer, GetPath(), GetFormat()))
+				{
+					uploadBuffer.Reset();
 					return true;
+				}
 			}
 		}
 		return false;

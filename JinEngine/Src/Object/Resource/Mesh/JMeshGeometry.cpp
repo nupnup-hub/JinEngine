@@ -201,6 +201,10 @@ namespace JinEngine
 	{
 		return boundingBox.Extents;
 	}
+	DirectX::BoundingSphere JMeshGeometry::GetBoundingSphere()const noexcept
+	{
+		return boundingSphere;
+	}
 	DirectX::XMFLOAT3 JMeshGeometry::GetBoundingSphereCenter()const noexcept
 	{
 		return boundingSphere.Center;
@@ -412,6 +416,9 @@ namespace JinEngine
 		for (uint i = 0; i < submeshCount; ++i)
 			CallOnResourceReference(submeshes[i].GetMaterial());
 		CalculateMeshBound();
+
+		vertexBufferUploader.Reset();
+		indexBufferUploader.Reset();
 		return true;
 	}
 	void JMeshGeometry::StuffResource()

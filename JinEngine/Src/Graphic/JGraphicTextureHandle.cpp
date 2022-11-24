@@ -30,6 +30,10 @@ namespace JinEngine
 		{
 			return srvHeapIndex;
 		}
+		int JGraphicTextureHandle::GetUavHeapIndex()const noexcept
+		{
+			return uavHeapIndex;
+		}
 		bool JGraphicTextureHandle::Destroy(JGraphicTextureHandle** handle)
 		{
 			if (handle == nullptr || *handle == nullptr)

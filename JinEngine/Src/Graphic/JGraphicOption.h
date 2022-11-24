@@ -6,7 +6,7 @@ namespace JinEngine
 		struct JGraphicOption
 		{
 		public:
-			bool isOcclusionQueryActivated = false;
+			bool isOcclusionQueryActivated = true;
 		};
 	}
 }

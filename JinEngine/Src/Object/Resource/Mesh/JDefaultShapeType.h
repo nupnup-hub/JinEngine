@@ -37,7 +37,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_CYILINDER:
 				return false;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD:
-				return false;
+				return true;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE:
 				return true;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE:

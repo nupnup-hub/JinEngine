@@ -54,6 +54,7 @@ namespace JinEngine
 		class JGraphicTextureHandle;
 		class JGraphicResourceManager;
 		class JOcclusionCulling;
+		class JDepthMapDebug;
 
 		class JGraphicImpl final : public JGraphicApplicationIterface,
 			public JGraphicTextureUserInterface,
@@ -112,6 +113,23 @@ namespace JinEngine
 				void NotifyUpdateFrameCapacity(JGraphicImpl& grpahic);
 				void Clear();
 			};
+			struct DrawHelper
+			{
+			public:
+				JScene* scene = nullptr;
+				JCamera* cam = nullptr;
+				JLight* lit = nullptr;
+			public:
+				uint objectOffset = 0;
+				uint passOffset = 0;
+				uint aniOffset = 0;
+				uint camOffset = 0;
+				uint litIndexOffset = 0;
+				uint shadowOffset = 0;
+			public:
+				bool isOcclusionActivated = false;
+			};
+
 		private:
 			size_t guid;
 			std::vector<std::unique_ptr<JFrameResource>> frameResources;
@@ -146,6 +164,7 @@ namespace JinEngine
 			UpdateHelper updateHelper;
 			std::unique_ptr<JGraphicResourceManager> graphicResource;
 			std::unique_ptr<JOcclusionCulling> occHelper;
+			std::unique_ptr<JDepthMapDebug>  depthMapDebug;
 		public:
 			JGraphicInfo GetGraphicInfo()const noexcept;
 			JGraphicOption GetGraphicOption()const noexcept;
@@ -158,7 +177,10 @@ namespace JinEngine
 			JGraphicApplicationIterface* AppInterface()noexcept;
 		public:
 			//Debug
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionSrvHandle();
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetDebugSrvHandle(const uint index);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetDebugUavHandle(const uint index);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionSrvHandle(const uint index);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionUavHandle(const uint index);
 		private:
 			void OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)final;
 		private:
@@ -202,31 +224,18 @@ namespace JinEngine
 		private:
 			void DrawScene()final;
 			void DrawProjectSelector()final;
-			void DrawSceneRenderTarget(_In_ JScene* scene,
-				_In_ JCamera* camera,
-				const uint objCBoffset,
-				const uint passCBoffset,
-				const uint aniCBoffset,
-				const uint camCBoffset,
-				const uint lightIndexCBoffset,
-				const bool isOcclusionActivated);
-			void DrawSceneShadowMap(_In_ JScene* scene,
-				_In_ JLight* light,
-				const uint objCBoffset,
-				const uint passCBoffset,
-				const uint aniCBoffset,
-				const uint shadowCBoffset);
-			void DrawOcclusionDepthMap(_In_ JScene* scene, const uint objCBoffset);
+			void DrawSceneRenderTarget(const DrawHelper helper);
+			void DrawSceneShadowMap(const DrawHelper helper);
+			void DrawOcclusionDepthMap(DrawHelper helper);
 			void DrawGameObject(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject,
-				const uint objCBoffset,
-				const uint aniCBoffset,
+				const DrawHelper helper,
 				const bool isDrawShadowMap,
 				const bool isAnimationActivated,
-				const bool isOcclusionActivated);
+				const bool allowOcclusion);
 			void DrawSceneBoundingBox(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject, 
-				const uint objCBoffset,
+				const DrawHelper helper,
 				const bool occQueryEnable);
 		private:
 			bool InitializeD3D();

@@ -11,7 +11,7 @@ namespace JinEngine
 		DEFAULT_SKY_SHADER,
 		DEFAULT_SHADOW_MAP_SHADER,
 		DEFAULT_DEBUG_LINE_SHADER,
-		DEFAULT_BOUNDING_OBJECT_DEPTH_TEST_SHADER,
+		DEFAULT_BOUNDING_OBJECT_DEPTH_TEST_SHADER, 
 		COUNTER,
 	}; 
 			
@@ -81,6 +81,14 @@ namespace JinEngine
 			return (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN);
 		}
 
+		static bool IsDefaultUse(const J_DEFAULT_GRAPHIC_SHADER cType)
+		{
+			switch (cType)
+			{		 
+			default:
+				return false;
+			}
+		}
 		static bool IsDefaultUse(const J_DEFAULT_COMPUTE_SHADER cType)
 		{
 			switch (cType)

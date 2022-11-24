@@ -45,7 +45,7 @@ namespace JinEngine
 		DirectX::XMMATRIX GetView()const noexcept;
 		DirectX::XMMATRIX GetProj()const noexcept;
 		DirectX::XMFLOAT4X4 GetView4x4f()const noexcept;
-		DirectX::XMFLOAT4X4 GetProj4x4f()const noexcept; 
+		DirectX::XMFLOAT4X4 GetProj4x4f()const noexcept;  
 		DirectX::BoundingFrustum GetBoundingFrustum()const noexcept;
 		float GetNear()const noexcept;
 		float GetFar()const noexcept;
