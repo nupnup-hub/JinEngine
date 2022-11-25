@@ -43,9 +43,8 @@ namespace JinEngine
 			return srvFixedCount;
 		}
 		uint JGraphicResourceManager::GetSrvOcclusionDebugStart()const noexcept
-		{
-			//occlusion = (count - 1)uav + 1dsv
-			return GetSrvOcclusionDepthStart() + occlusionCapacity - 1;
+		{ 
+			return GetSrvOcclusionDepthStart() + occlusionCapacity;
 		}
 		uint JGraphicResourceManager::GetSrvUser2DTextureStart()const noexcept
 		{
@@ -69,6 +68,7 @@ namespace JinEngine
 		}
 		uint JGraphicResourceManager::GetUavOcclusionDebugStart()const noexcept
 		{
+			//occlusion = (count - 1)uav + 1dsv
 			return GetUavOcclusionDepthStart() + occlusionCapacity - 1;
 		}
 		uint JGraphicResourceManager::GetRtvRenderResultStart()const noexcept
@@ -680,7 +680,7 @@ namespace JinEngine
 						&heapProperties,
 						D3D12_HEAP_FLAG_NONE,
 						&depthStencilDesc,
-						D3D12_RESOURCE_STATE_COMMON,
+						D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 						nullptr,
 						IID_PPV_ARGS(&newOcclusion)));
 

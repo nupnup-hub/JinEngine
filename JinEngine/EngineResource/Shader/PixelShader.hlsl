@@ -5,19 +5,25 @@
 float4 PS(VertexOut pin) : SV_Target
 { 
 	MaterialData matData = materialData[objMaterialIndex]; 
-	return matData.diffuseAlbedo;
+	return matData.albedoColor;
 }
 #elif defined(SKY)
 float4 PS(VertexOut pin) : SV_Target
 { 
-	return cubeMap.Sample(samLinearWrap, pin.PosL);
+	MaterialData matData = materialData[objMaterialIndex];
+	uint albedoTexIndex = matData.albedoMapIndex;
+	cubeMap[albedoTexIndex].Sample(samLinearWrap, pin.PosL);
+	return cubeMap[albedoTexIndex].Sample(samLinearWrap, pin.PosL);
+	//MaterialData matData = materialData[objMaterialIndex];
+	//uint albedoTexIndex = matData.albedoMapIndex;
+	//return cubeMap[albedoTexIndex].Sample(samLinearWrap, pin.PosL);
 }
 #elif defined(ALBEDO_MAP_ONLY)
 float4 PS(VertexOut pin) : SV_Target
 {
 	MaterialData matData = materialData[objMaterialIndex];
-	uint diffuseTexIndex = matData.diffuseMapIndex;
-	return textureMaps[diffuseTexIndex].Sample(samAnisotropicWrap, pin.TexC);
+	uint albedoTexIndex = matData.albedoMapIndex;
+	return textureMaps[albedoTexIndex].Sample(samAnisotropicWrap, pin.TexC);
 }
 #elif defined(WRITE_SHADOW_MAP)
 void PS(VertexOut pin)
@@ -25,19 +31,19 @@ void PS(VertexOut pin)
 /*
 	// Fetch the material data.
 	MaterialData matData = materialData[objMaterialIndex];
-	float4 diffuseAlbedo = matData.diffuseAlbedo;
-	uint diffuseMapIndex = matData.diffuseMapIndex;
+	float4 albedoColor = matData.albedoColor;
+	uint albedoMapIndex = matData.albedoMapIndex;
 
 #ifdef ALBEDO_MAP
 	// Dynamically look up the texture in the array.
-	diffuseAlbedo *= textureMaps[diffuseMapIndex].Sample(samAnisotropicWrap, pin.TexC);
+	albedoColor *= textureMaps[albedoMapIndex].Sample(samAnisotropicWrap, pin.TexC);
 #endif
 
 #ifdef ALPHA_CLIP
 	// Discard pixel if texture alpha < 0.1.  We do this test as soon
 	// as possible in the shader so that we can potentially exit the
 	// shader early, thereby skipping the rest of the shader code.
-	clip(diffuseAlbedo.a - 0.1f);
+	clip(albedoColor.a - 0.1f);
 #endif
 */
 }
@@ -48,16 +54,16 @@ void PS(VertexOut pin)
 float4 PS(VertexOut pin) : SV_Target
 {
 	MaterialData matData = materialData[objMaterialIndex];
-	float4 diffuseAlbedo = matData.diffuseAlbedo;
+	float4 albedoColor = matData.albedoColor;
 	float metalic = matData.metallic;
 	float3 fresnelR0 = float3(metalic, metalic, metalic);
 	float roughness = matData.roughness;
-	uint diffuseTexIndex = matData.diffuseMapIndex;
+	uint albedoTexIndex = matData.albedoMapIndex;
 	uint normalMapIndex = matData.normalMapIndex;
 	uint roughnessMapIndex = matData.roughnessMapIndex;
 	//float roughnessTex = textureMaps[roughnessMapIndex].Sample(gsamAnisotropicClamp, pin.TexC).r;
 #ifdef ALBEDO_MAP
-	diffuseAlbedo *= textureMaps[diffuseTexIndex].Sample(samAnisotropicWrap, pin.TexC);
+	albedoColor *= textureMaps[albedoTexIndex].Sample(samAnisotropicWrap, pin.TexC);
 #endif
 
 	float3 normalW = normalize(pin.NormalW);
@@ -67,7 +73,7 @@ float4 PS(VertexOut pin) : SV_Target
 #endif
 
 	float3 toEyeW = normalize(camEyePosW - pin.PosW);
-	float4 ambient = sceneAmbientLight * diffuseAlbedo;
+	float4 ambient = sceneAmbientLight * albedoColor;
 
 #ifdef HEIGHT_MAP
 #endif
@@ -84,49 +90,27 @@ float4 PS(VertexOut pin) : SV_Target
 	float shininess = (1.001f - roughness);
 #endif
 
-#ifdef SHADOW
-	float shadowFactor[MaxLights * 3];
-	int shadowIndex = 0;
-	for (int i = 0; i < smDirectionalLightMax; ++i)
-	{
-		float4 shadowPosH = mul(float4(pin.PosW, 1.0f), smDirectionalLight[i].shadow.shadowTransform);
-		shadowFactor[shadowIndex] = CalcShadowFactor(shadowPosH, smDirectionalLight[i].shadow.shadowMapIndex);
-		++shadowIndex;
-	}
-	for (int i = 0; i < smPointLightMax; ++i)
-	{
-		float4 shadowPosH = mul(float4(pin.PosW, 1.0f), smPointLight[i].shadow.shadowTransform);
-		shadowFactor[shadowIndex] = CalcShadowFactor(shadowPosH, smPointLight[i].shadow.shadowMapIndex);
-		++shadowIndex;
-	}
-	for (int i = 0; i < smSpotLightMax; ++i)
-	{
-		float4 shadowPosH = mul(float4(pin.PosW, 1.0f), smSpotLight[i].shadow.shadowTransform);
-		shadowFactor[shadowIndex] = CalcShadowFactor(shadowPosH, smSpotLight[i].shadow.shadowMapIndex);
-		++shadowIndex;
-	}
-#endif
-
-	Material mat = { diffuseAlbedo, fresnelR0, shininess };
+	Material mat = { albedoColor, fresnelR0, shininess };
+	float4 directLight = float4(0, 0, 0, 0);
 
 #ifdef LIGHT
-	float4 directLight = ComputeLighting(directionalLight, pointLight, spotLight,
-		directionalLightMax, pointLightMax, spotLightMax,
-		mat, pin.PosW,
-		normalW, toEyeW, 1.0f);
-#else
-	float4 directLight = float4(0, 0, 0, 0);
+	for (int i = litStIndex; i < litEdIndex; ++i)
+		directLight += ComputeLighting(light[i], mat, pin.PosW, normalW, toEyeW, 1.0f);
 #endif
 
 #ifdef SHADOW
-	directLight += ComputeSLighting(smDirectionalLight, smPointLight, smSpotLight,
-		smDirectionalLightMax, smPointLightMax, smSpotLightMax,
-		mat, pin.PosW, 
-		normalW, toEyeW, shadowFactor);
+	float shadowFactor = 0;
+	int shadowIndex = 0;
+	for (int i = shadwMapStIndex; i < shadowMapEdIndex; ++i)
+	{
+		float4 shadowPosH = mul(float4(pin.PosW, 1.0f), smLight[i].shadowTransform);
+		shadowFactor = CalcShadowFactor(shadowPosH, smLight[i].shadowMapIndex);
+		directLight += ComputeSLighting(smLight[i], mat, pin.PosW, normalW, toEyeW, shadowFactor);
+	}
 #endif
 
-	float4 litColor = diffuseAlbedo + directLight;
-	//float4 litColor = diffuseAlbedo;
+	float4 litColor = albedoColor + directLight;
+	//float4 litColor = albedoColor;
 
 #ifdef NORMAL_MAP
 	float3 reflectLight = reflect(-toEyeW, normalW);
@@ -139,7 +123,7 @@ float4 PS(VertexOut pin) : SV_Target
 	litColor.rgb += shininess * fresnelFactor;
 #endif
 
-	litColor.a = diffuseAlbedo.a;
+	litColor.a = albedoColor.a;
 	return litColor; 
 }
 #endif
@@ -152,17 +136,17 @@ void PS(VertexOut pin)
 {
 	// Fetch the material data.
 	MaterialData matData = materialData[objMaterialIndex];
-	float4 diffuseAlbedo = matData.diffuseAlbedo;
-	uint diffuseMapIndex = matData.diffuseMapIndex;
+	float4 albedoColor = matData.albedoColor;
+	uint albedoMapIndex = matData.albedoMapIndex;
 
 	// Dynamically look up the texture in the array.
-	diffuseAlbedo *= textureMaps[diffuseMapIndex].Sample(samAnisotropicWrap, pin.TexC);
+	albedoColor *= textureMaps[albedoMapIndex].Sample(samAnisotropicWrap, pin.TexC);
 
 #ifdef ALPHA_CLIP
 	// Discard pixel if texture alpha < 0.1.  We do this test as soon 
 	// as possible in the shader so that we can potentially exit the
 	// shader early, thereby skipping the rest of the shader code.
-	clip(diffuseAlbedo.a - 0.1f);
+	clip(albedoColor.a - 0.1f);
 #endif
 }
 #endif*/

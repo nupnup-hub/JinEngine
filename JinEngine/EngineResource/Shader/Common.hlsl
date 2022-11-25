@@ -1,16 +1,12 @@
-//***************************************************************************************
-// Common.hlsl by Frank Luna (C) 2015 All Rights Reserved.
-//***************************************************************************************
-
 #include "LightingUtil.hlsl"
 
 struct MaterialData
 {
-	float4 diffuseAlbedo; 
+	float4 albedoColor; 
 	float4x4 matTransform;
     float metallic;
     float roughness;
-	uint diffuseMapIndex;
+	uint albedoMapIndex;
     uint normalMapIndex;
 	uint heightMapIndex;
 	uint roughnessMapIndex;  
@@ -18,14 +14,22 @@ struct MaterialData
     uint materialObjPad;
 };
 
-// An array of textures, which is only supported in shader model 5.1+.  Unlike Texture2DArray, the textures
-// in this array can be different sizes and formats, making it more flexible than texture arrays.
-TextureCube cubeMap : register(t0);  
-Texture2D textureMaps[300] : register(t1);
-Texture2D shadowMaps[300] : register(t301);
+StructuredBuffer<LightData> light : register(t0);
+StructuredBuffer<ShadowMapLightData> smLight : register(t0, space1);
+StructuredBuffer<MaterialData> materialData : register(t1);
+
+#ifdef CUBE_MAP_COUNT
+TextureCube cubeMap[CUBE_MAP_COUNT]: register(t2, space1);
+#endif
+#ifdef TEXTURE_2D_COUNT
+Texture2D textureMaps[TEXTURE_2D_COUNT] : register(t2, space2);
+#endif
+#ifdef SHADOW_MAP_COUNT
+Texture2D shadowMaps[SHADOW_MAP_COUNT] : register(t2, space3);
+#endif
+
 // Put in space1, so the texture array does not overlap with these resources.  
 // The texture array will occupy registers t0, t1, ..., t3 in space0. 
-StructuredBuffer<MaterialData> materialData : register(t0, space1);
 //RWBuffer<float> shadowFactor : register(u0);
 
 SamplerState samPointWrap        : register(s0);
@@ -56,8 +60,8 @@ cbuffer cbPass : register(b2)
     float4 sceneAmbientLight;
     float sceneTotalTime;
     float sceneDeltaTime;
-    uint passPad00;
     uint passPad01;
+    uint passPad02;
 };
 
 cbuffer cbCamera: register(b3)
@@ -78,31 +82,15 @@ cbuffer cbCamera: register(b3)
     uint cameraPad02;
 };
 
-cbuffer cbLight: register(b4)
+cbuffer cbLightIndex : register(b4)
 {
-    DirectionalLightContents directionalLight[MaxLights]; 
-    PointLightContents pointLight[MaxLights];  
-    SpotLightContents spotLight[MaxLights]; 
-
-    uint directionalLightMax;
-    uint pointLightMax;
-    uint spotLightMax;
-    uint lightPad00;
+    uint litStIndex;
+    uint litEdIndex;
+    uint shadwMapStIndex;
+    uint shadowMapEdIndex;
 };
 
-cbuffer cbSMLight: register(b5)
-{
-    SMDirectionalLightContents smDirectionalLight[MaxLights];
-    SMPointLightContents smPointLight[MaxLights];
-    SMSpotLightContents smSpotLight[MaxLights];
-
-    uint smDirectionalLightMax;
-    uint smPointLightMax;
-    uint smSpotLightMax;
-    uint smLightPad00;
-};
-
-cbuffer cbShadow: register(b6)
+cbuffer cbShadowMapCalculate: register(b5)
 {
     float4x4 lightView;
     float4x4 lightInvView;
@@ -120,10 +108,18 @@ cbuffer cbShadow: register(b6)
     uint shadowCalPad02;
 };
 
-cbuffer cbBoundingObject : register(b7)
+cbuffer cbBoundingObject : register(b6)
 {
     float4x4 boundObjWorld;
 };
+
+float4x4 Identity()
+{
+    return float4x4(1.0f, 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f);
+}
 
 float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, float3 tangentW)
 {

@@ -76,10 +76,10 @@ namespace JinEngine
 		static const std::string threadDimXSymbol = "DIMX";
 		static const std::string threadDimYSymbol = "DIMY";
 		static const std::string threadDimZSymbol = "DIMZ";
-
+		 
 		static const std::string hzbSamplingCountSymbol = "DOWN_SAMPLING_COUNT";
 		static const std::string hzbOcclusionQueryCountSymbol = "OCCLUSION_QUERY_COUNT";
-
+		 
 		static std::string hzbSamplingCount;
 		static std::string hzbOcclusionQueryCount;
 
@@ -408,10 +408,11 @@ namespace JinEngine
 
 			StuffComputeShaderThreadDim(cFunctionFlag, initHelper.dispatchInfo.threadDim);
 			hzbSamplingCount = std::to_string(graphicInfo.occlusionMapCapacity);
-			hzbOcclusionQueryCount = std::to_string(queryCount);
+			hzbOcclusionQueryCount = std::to_string(queryCount); 
+
 			initHelper.macro.push_back({ hzbSamplingCountSymbol.c_str(), hzbSamplingCount.c_str() });
 			initHelper.macro.push_back({ hzbOcclusionQueryCountSymbol.c_str(), hzbOcclusionQueryCount.c_str() });
-			OutComputeShaderCommonMacro(initHelper.macro, cFunctionFlag);
+			OutComputeShaderCommonMacro(initHelper.macro, cFunctionFlag); 
 			break;
 		}
 		default:

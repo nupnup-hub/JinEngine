@@ -1073,6 +1073,7 @@ namespace JinEngine
 
 			uint camCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JCameraConstants));
 			auto camCB = currFrameResource->cameraCB->Resource();
+		 
 			D3D12_GPU_VIRTUAL_ADDRESS camCBAddress = camCB->GetGPUVirtualAddress() + helper.camOffset * camCBByteSize;
 			commandList->SetGraphicsRootConstantBufferView(3, camCBAddress);
 			 
@@ -1089,11 +1090,13 @@ namespace JinEngine
 			 
 			occHelper->DepthMapDownSampling(commandList.Get(), 
 				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthStart()),
-				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDepthStart()));
-			occHelper->OcclusuinCulling(commandList.Get());
-
-		 
-			depthMapDebug->DrawDepthDebug(commandList.Get(),
+				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDepthStart()),
+				graphicResource->occlusionDepthMap,
+				info.occlusionMapCount - 1,
+				graphicResource->cbvSrvUavDescriptorSize);
+			occHelper->OcclusuinCulling(commandList.Get(), graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthStart()));
+		 		 		
+			 depthMapDebug->DrawDepthDebug(commandList.Get(),
 				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthStart()),
 				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDebugStart()),
 				JVector2<uint>(info.occlusionWidth, info.occlusionHeight));
@@ -1105,7 +1108,7 @@ namespace JinEngine
 					graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDebugStart() + i),
 					JVector2<uint>(info.occlusionWidth, info.occlusionHeight));
 			}
-		 		
+			 		
 			/*
 			*CD3DX12_RESOURCE_BARRIER rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->GetOcclusionResult(), D3D12_RESOURCE_STATE_PREDICATION, D3D12_RESOURCE_STATE_COPY_DEST);
 			commandList->ResourceBarrier(1, &rsBarrier);

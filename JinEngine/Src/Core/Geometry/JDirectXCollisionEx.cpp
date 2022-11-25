@@ -120,7 +120,7 @@ namespace JinEngine
 			DirectX::BoundingSphere sphere;
 			XMStoreFloat3(&sphere.Center, 0.5f * (vMin + vMax));
 			XMFLOAT3 dis;
-			XMStoreFloat3(&dis, XMVector3Length((0.5f * (vMin + vMax)) - vMax));
+			XMStoreFloat3(&dis, XMVector3Length(vMax - (0.5f * (vMin + vMax))));
 			sphere.Radius = (float)sqrt(pow(dis.x, 2) + pow(dis.y, 2) + pow(dis.z, 2));
 			return sphere;
 		}

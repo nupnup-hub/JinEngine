@@ -206,6 +206,9 @@ namespace JinEngine
 		}
 		std::vector<JGameObject*> JKdTree::GetAlignedObject(const DirectX::BoundingFrustum& camFrustum)const noexcept
 		{
+			if (allNodes.size() < 3)
+				return std::vector<JGameObject*>();
+
 			std::vector<JKdTreeNode*> alignNode(alignLeafNodeCount);
 			uint index = 0;
 			root->GetAlignLeafNode(camFrustum, alignNode, index);

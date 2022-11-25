@@ -2,6 +2,7 @@
 #include "../../Utility/JVector.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
 #include"../Upload/JUploadBuffer.h"
+#include"../Utility/JHlslDebug.h"
 #include"JOcclusionConstants.h"
 #include<DirectXCollision.h>
 #include<wrl/client.h>  
@@ -32,6 +33,8 @@ namespace JinEngine
 			std::unique_ptr<JUploadBuffer<JOcclusionPassConstants>> occlusionPassCB = nullptr;
 			JOcclusionObjectConstants objectConstants;
 		private:
+			std::unique_ptr<JHlslDebug<HZBDebugInfo>> debugBuffer = nullptr;
+		private:
 			float* queryResult = nullptr;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
@@ -56,19 +59,24 @@ namespace JinEngine
 			bool IsCulled(const uint objIndex)const noexcept;
 		public:
 			void UpdateCamera(JCamera* updateCamera);
-			void UpdateOcclusionMapInfo(const JGraphicInfo& info);
+			void UpdateOcclusionMapInfo(ID3D12Device* device, const JGraphicInfo& info);
 			void UpdateObjectCapacity(ID3D12Device* device, const uint objectCapacity);
 		public:
 			void UpdateObject(JRenderItem* rItem, const uint submeshIndex, const uint buffIndex); 
 			void UpdatePass(JScene* scene, const uint queryCount, const uint cbIndex);
 		public:
-			void DepthMapDownSampling(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE downsamplingStartHandle);
-			void OcclusuinCulling(ID3D12GraphicsCommandList* commandList);
+			void DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,
+				CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSrvHandle,
+				CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapUavHandle,
+				std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>& depthResource,
+				const uint samplingCount,
+				const uint srvDescriptorSize);
+			void OcclusuinCulling(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSrvHandle);
 		public:
 			void ReadCullingResult();
 		private:
 			void BuildRootSignature(ID3D12Device* d3dDevice, const uint occlusionDsvCapacity);
-			void BuildUploadBuffer(ID3D12Device* device, const uint objectCapacity);
+			void BuildUploadBuffer(ID3D12Device* device, const uint objectCapacity, const uint occlusionCapacity);
 		};
 	}
 }
