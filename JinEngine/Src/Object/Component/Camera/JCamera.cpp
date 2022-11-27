@@ -243,7 +243,7 @@ namespace JinEngine
 	{
 		cameraNearViewHeight = 2.0f * cameraNear * tanf(0.5f * cameraFov);
 		cameraFarViewHeight = 2.0f * cameraFar * tanf(0.5f * cameraFov);
-
+		  
 		const XMMATRIX P = XMMatrixPerspectiveFovLH(cameraFov, cameraAspect, cameraNear, cameraFar);
 		XMStoreFloat4x4(&mProj, P);
 		BoundingFrustum::CreateFromMatrix(mCamFrustum, XMLoadFloat4x4(&mProj));

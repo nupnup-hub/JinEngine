@@ -104,7 +104,7 @@ namespace JinEngine
 		XMVECTOR newRight = XMVector3Rotate(JMathHelper::VectorRight(), q);
 		XMVECTOR newUp = XMVector3Rotate(JMathHelper::VectorUp(), q);
 		XMVECTOR newFront = XMVector3Rotate(JMathHelper::VectorForward(), q);
-
+  
 		XMStoreFloat3(&tRight, XMVector3Normalize(newRight));
 		XMStoreFloat3(&tUp, XMVector3Normalize(newUp));
 		XMStoreFloat3(&tFront, XMVector3Normalize(newFront));
