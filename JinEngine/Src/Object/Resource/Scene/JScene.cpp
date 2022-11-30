@@ -346,7 +346,15 @@ namespace JinEngine
 			const J_MESHGEOMETRY_TYPE meshType = jRItem->GetMesh()->GetMeshGeometryType();
 			objectLayer[(int)renderLayer][(int)meshType].push_back(jRItem->GetOwner());
 
-			CallSetFrameBuffOffset(*jRItem, cashVec->second.size() - 1);
+			const uint nowCount = (uint)cashVec->second.size();
+			if (nowCount > 1)
+			{
+				JRenderItem* preJRItem = static_cast<JRenderItem*>(cashVec->second[nowCount - 2]);
+				CallSetFrameBuffOffset(*jRItem, CallGetFrameBuffOffset(*preJRItem) + preJRItem->GetSubmeshCount());
+			}
+			else
+				CallSetFrameBuffOffset(*jRItem, 0);
+
 			if (spatialStructure != nullptr && renderLayer == J_RENDER_LAYER::OPAQUE_OBJECT)
 				spatialStructure->AddGameObject(jRItem->GetOwner());
 		}
@@ -375,7 +383,7 @@ namespace JinEngine
 					for (uint j = i + 1; j < compCount; ++j)
 					{
 						JRenderItem* backRItem = static_cast<JRenderItem*>(cashVec[j]);
-						CallSetFrameBuffOffset(*backRItem, CallGetFrameBuffOffset(*backRItem) - 1);
+						CallSetFrameBuffOffset(*backRItem, CallGetFrameBuffOffset(*backRItem) - jRItem->GetSubmeshCount());
 					}
 
 					const int rIndex = (int)jRItem->GetRenderLayer(); 

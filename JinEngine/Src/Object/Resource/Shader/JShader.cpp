@@ -402,7 +402,7 @@ namespace JinEngine
 			else
 			{
 				initHelper.dispatchInfo.threadDim = JVector3<uint>(warpFactor, 1, 1);
-				initHelper.dispatchInfo.groupDim = JVector3<uint>(1, queryCount / warpFactor, 1);
+				initHelper.dispatchInfo.groupDim = JVector3<uint>(queryCount / warpFactor, 1, 1);
 				initHelper.dispatchInfo.taskOriCount = queryCount;
 			}
 

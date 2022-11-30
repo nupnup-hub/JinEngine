@@ -72,7 +72,7 @@ namespace JinEngine
 			for (int i = 0; i < vecCount; ++i)
 			{
 				stream << vec[i] << " ";
-				if (i % spaceoffset == 0)
+				if (i % spaceoffset == 0 && i != 0)
 					stream << '\n';
 			}
 			stream << '\n';

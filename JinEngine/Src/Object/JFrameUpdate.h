@@ -12,6 +12,12 @@ namespace JinEngine
 		struct JGraphicDrawTarget;
 	}
 
+	namespace FrameUpdate
+	{
+		using HasFrameBuff = bool; 
+		static constexpr bool hasFrameBuff = true;
+		static constexpr bool hasNotFrameBuff = false;
+	}
 #pragma region IFramaeUpdate
 	template<typename ...Param>
 	class IFrameUpdate
@@ -180,7 +186,7 @@ namespace JinEngine
 	};
 #pragma endregion
 
-	template<typename IFrameUpdate, typename IFrameDirty, bool hasBuff>
+	template<typename IFrameUpdate, typename IFrameDirty, FrameUpdate::HasFrameBuff>
 	class JFrameUpdate;
 
 	template<typename FrameUpdate, typename FrameDirty>

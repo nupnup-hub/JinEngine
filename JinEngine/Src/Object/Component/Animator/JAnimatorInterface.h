@@ -11,7 +11,7 @@ namespace JinEngine
 		struct JAnimationConstants;
 	}
 	class JAnimatorInterface : public JComponent, 
-		public JFrameUpdate<IFrameUpdate<Graphic::JAnimationConstants&>, JFrameDirty, false>,
+		public JFrameUpdate<IFrameUpdate<Graphic::JAnimationConstants&>, JFrameDirty, FrameUpdate::hasNotFrameBuff>,
 		public JResourceUserInterface
 	{
 	protected:

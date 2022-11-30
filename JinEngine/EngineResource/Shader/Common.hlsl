@@ -71,7 +71,7 @@ cbuffer cbCamera: register(b3)
     float4x4 camProj;
     float4x4 camInvProj;
     float4x4 camViewProj;
-    float4x4 camInvViewProj;
+    float4x4 camInvViewProj; 
     float2 camRenderTargetSize;
     float2 camInvRenderTargetSize;
     float3 camEyePosW;

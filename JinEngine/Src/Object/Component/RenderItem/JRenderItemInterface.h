@@ -13,7 +13,7 @@ namespace JinEngine
 	}
 	 
 	class JRenderItemInterface : public JComponent,
-		public JFrameUpdate<IFrameUpdate<Graphic::JObjectConstants&, Graphic::JBoundingObjectConstants&, const uint, const bool>, JFrameDirtyListener, true>,
+		public JFrameUpdate<IFrameUpdate<Graphic::JObjectConstants&, Graphic::JBoundingObjectConstants&, const uint, const bool>, JFrameDirtyListener, FrameUpdate::hasFrameBuff>,
 		public JFrameBuffUserInterface,
 		public JResourceUserInterface
 	{

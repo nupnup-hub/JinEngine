@@ -29,7 +29,7 @@ namespace JinEngine
 	 
 	class JCameraInterface : public JComponent,
 		public JCameraStateInterface,
-		public JFrameUpdate<IFrameUpdate<Graphic::JCameraConstants&>, JFrameDirtyListener, false>,
+		public JFrameUpdate<IFrameUpdate<Graphic::JCameraConstants&>, JFrameDirtyListener, FrameUpdate::hasNotFrameBuff>,
 		public Graphic::JGraphicTexture
 	{
 	protected:

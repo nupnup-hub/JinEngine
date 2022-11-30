@@ -87,7 +87,7 @@ namespace JinEngine
 			void LoadEditorWindow(std::wifstream& stream)final;
 		private:
 			//Debug
-			void CreateShapeGroup(const J_DEFAULT_SHAPE& shape);
+			void CreateShapeGroup(const J_DEFAULT_SHAPE& shape, const uint loopCount, const uint loopPerObjCount);
 			//void CreateDebugMaterial()noexcept;
 			//void DestroyDebugMaterial()noexcept;
 		};

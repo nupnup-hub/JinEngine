@@ -43,6 +43,16 @@ namespace JinEngine
 		{
 			return JVector2(x * rhs, y * rhs);
 		}
+		void operator*=(float rhs)
+		{
+			x *= rhs;
+			y *= rhs;
+		}
+		void operator/=(float rhs)
+		{
+			x /= rhs;
+			y /= rhs; 
+		}
 		bool operator!=(const JVector2& data) const
 		{
 			return x != data.x || y != data.y;
@@ -120,6 +130,18 @@ namespace JinEngine
 		JVector3 operator*(float rhs)const
 		{
 			return JVector3(x * rhs, y * rhs, z * rhs);
+		}
+		void operator*=(float rhs)
+		{
+			x *= rhs;
+			y *= rhs;
+			z *= rhs;
+		}
+		void operator/=(float rhs)
+		{
+			x /= rhs;
+			y /= rhs;
+			z /= rhs;
 		}
 		bool operator!=(const JVector3& data) const
 		{
@@ -210,6 +232,20 @@ namespace JinEngine
 		JVector4 operator*(float rhs)
 		{
 			return JVector4(x * rhs, y * rhs, z * rhs, w * rhs);
+		}
+		void operator*=(float rhs)
+		{
+			x *= rhs;
+			y *= rhs;
+			z *= rhs;
+			w *= rhs;
+		}
+		void operator/=(float rhs)
+		{
+			x /= rhs;
+			y /= rhs;
+			z /= rhs;
+			w /= rhs;
 		}
 		bool operator!=(const JVector4& data)
 		{

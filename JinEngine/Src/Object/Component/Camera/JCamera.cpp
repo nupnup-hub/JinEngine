@@ -336,7 +336,7 @@ namespace JinEngine
 			XMStoreFloat4x4(&constant.proj, XMMatrixTranspose(proj));
 			XMStoreFloat4x4(&constant.invProj, XMMatrixTranspose(invProj));
 			XMStoreFloat4x4(&constant.viewProj, XMMatrixTranspose(viewProj));
-			XMStoreFloat4x4(&constant.invViewProj, XMMatrixTranspose(invViewProj));
+			XMStoreFloat4x4(&constant.invViewProj, XMMatrixTranspose(invViewProj));  
 
 			constant.renderTargetSize = XMFLOAT2((float)viewWidth, (float)viewHeight);
 			constant.invRenderTargetSize = XMFLOAT2(1.0f / viewWidth, 1.0f / viewHeight);

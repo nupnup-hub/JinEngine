@@ -24,14 +24,12 @@ namespace JinEngine
 		};
 		struct JOcclusionPassConstants
 		{ 
-			DirectX::XMFLOAT4X4 camWorld = JMathHelper::Identity4x4();
-			DirectX::XMFLOAT4X4 view = JMathHelper::Identity4x4();
-			DirectX::XMFLOAT4X4 proj = JMathHelper::Identity4x4();
+			DirectX::XMFLOAT4X4 camWorld = JMathHelper::Identity4x4(); 
 			DirectX::XMFLOAT4X4 viewProj= JMathHelper::Identity4x4(); 
 			float viewWidth = 0;
 			float viewHeight= 0;
+			float camNear = 0;
 			int validQueryCount = 0; 
-			int passPad00 = 0;
 		};
 
 		struct HZBDebugInfo
@@ -42,10 +40,6 @@ namespace JinEngine
 			DirectX::XMFLOAT3 extents = DirectX::XMFLOAT3(0, 0, 0);
 
 			DirectX::XMFLOAT4 posCW = DirectX::XMFLOAT4(0, 0, 0, 0);
-			DirectX::XMFLOAT4 posCV = DirectX::XMFLOAT4(0, 0, 0, 0);
-			DirectX::XMFLOAT4 posCH = DirectX::XMFLOAT4(0, 0, 0, 0);
-			DirectX::XMFLOAT3 posCC = DirectX::XMFLOAT3(0, 0, 0);
-
 			DirectX::XMFLOAT4 posEW = DirectX::XMFLOAT4(0, 0, 0, 0); 
 
 			DirectX::XMFLOAT3 camPos = DirectX::XMFLOAT3(0, 0, 0);
@@ -65,17 +59,26 @@ namespace JinEngine
 			DirectX::XMFLOAT3 nearPoint3 = DirectX::XMFLOAT3(0, 0, 0);
 			DirectX::XMFLOAT3 nearPoint4 = DirectX::XMFLOAT3(0, 0, 0);
 			DirectX::XMFLOAT3 nearPoint5 = DirectX::XMFLOAT3(0, 0, 0);
+			
+			DirectX::XMFLOAT3 clipFrame0 = DirectX::XMFLOAT3(0, 0, 0);
+			DirectX::XMFLOAT3 clipFrame1 = DirectX::XMFLOAT3(0, 0, 0);
+			DirectX::XMFLOAT3 clipFrame2 = DirectX::XMFLOAT3(0, 0, 0);
+			DirectX::XMFLOAT3 clipFrame3 = DirectX::XMFLOAT3(0, 0, 0);
+			DirectX::XMFLOAT3 clipNearW = DirectX::XMFLOAT3(0, 0, 0); 
+			DirectX::XMFLOAT3 clipNearC = DirectX::XMFLOAT3(0, 0, 0);
+			DirectX::XMFLOAT3 clipNearS = DirectX::XMFLOAT3(0, 0, 0);
 
-			DirectX::XMFLOAT3 nearPointF = DirectX::XMFLOAT3(0, 0, 0);
 			float width = 0;
 			float height = 0;
-
-			DirectX::XMFLOAT2 uv = DirectX::XMFLOAT2(0, 0);
-			DirectX::XMFLOAT2 uvExtentsMax = DirectX::XMFLOAT2(0, 0);
-			DirectX::XMFLOAT2 uvExtentsMin = DirectX::XMFLOAT2(0, 0);
+			 
+			DirectX::XMFLOAT3 uvExtentsMax = DirectX::XMFLOAT3(0, 0, 0);
+			DirectX::XMFLOAT3 uvExtentsMin = DirectX::XMFLOAT3(0, 0, 0);
 
 			float centerDepth = 0;
 			float copareDepth = 0;
+
+			int threadIndex = -1;
+			int queryIndex = -1;
 		};
 
 	}

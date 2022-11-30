@@ -84,7 +84,7 @@ namespace JinEngine
 					OcclusionResultOnScreen();
 				//Debug
 				ImGui::SameLine();
-				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE);
+				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 4, 6);
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
 				JImGuiImpl::Image(*camera, ImGui::GetWindowSize());
 			}
@@ -397,19 +397,13 @@ namespace JinEngine
 			lastCamPos = lastPos;
 			lastCamRot = lastRot;
 		}
-		void JSceneObserver::CreateShapeGroup(const J_DEFAULT_SHAPE& shape)
+		void JSceneObserver::CreateShapeGroup(const J_DEFAULT_SHAPE& shape, const uint loopCount, const uint loopPerObjCount)
 		{
 			if (JImGuiImpl::Button("MakeObject", JVector2<float>(ImGui::CalcTextSize("MakeObject").x, 0)))
 			{
-				for (uint i = 0; i < 30; ++i)
+				for (uint i = 0; i < loopCount; ++i)
 				{
-					for (uint j = 0; j < 15; ++j)
-					{
-						JGameObject* cube = JGFU::CreateShape(*scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
-						cube->GetTransform()->SetScale(DirectX::XMFLOAT3(4, 4, 4));
-						cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(-8 * i, 0, -8 * j));
-					}
-					for (uint j = 0; j < 15; ++j)
+					for (uint j = 0; j < loopPerObjCount; ++j)
 					{
 						JGameObject* cube = JGFU::CreateShape(*scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
 						cube->GetTransform()->SetScale(DirectX::XMFLOAT3(4, 4, 4));

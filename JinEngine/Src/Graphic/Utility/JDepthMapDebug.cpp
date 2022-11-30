@@ -37,13 +37,15 @@ namespace JinEngine
 			commandList->SetComputeRootDescriptorTable(0, srcHandle);
 			commandList->SetComputeRootDescriptorTable(1, destHandle);
 
+			commandList->SetComputeRoot32BitConstants(2, 1, &size.x, 0);
+			commandList->SetComputeRoot32BitConstants(2, 1, &size.y, 1);
 			commandList->SetPipelineState(cShaderData->Pso.Get());
 
-			commandList->Dispatch(2, 256, 1);
+			commandList->Dispatch(1, 512, 1);
 		} 
 		void JDepthMapDebug::BuildComputeResource(ID3D12Device* device, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthStencilFormat)
 		{
-			static constexpr int slotCount = 2;
+			static constexpr int slotCount = 3;
 
 			CD3DX12_DESCRIPTOR_RANGE depthMapTable;
 			depthMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
@@ -54,15 +56,23 @@ namespace JinEngine
 			CD3DX12_ROOT_PARAMETER slotRootParameter[slotCount];
 			slotRootParameter[0].InitAsDescriptorTable(1, &depthMapTable);
 			slotRootParameter[1].InitAsDescriptorTable(1, &wTextureTable);
+			slotRootParameter[2].InitAsConstants(2, 0);
 
 			// 생성자 대입자 결과가 다름
-			CD3DX12_STATIC_SAMPLER_DESC sample(0, // shaderRegister
-				D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
-				D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
-				D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
-				D3D12_TEXTURE_ADDRESS_MODE_WRAP);
+			std::vector< CD3DX12_STATIC_SAMPLER_DESC> samDesc
+			{
+				CD3DX12_STATIC_SAMPLER_DESC(0,
+				D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
+				D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressU
+				D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressV
+				D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressW
+				0.0f,                               // mipLODBias
+				16.0f,                                 // maxAnisotropy
+				D3D12_COMPARISON_FUNC_LESS_EQUAL,
+				D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE)
+			};
 
-			CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, 1, &sample, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+			CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, (uint)samDesc.size(), samDesc.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 			// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 			ComPtr<ID3DBlob> serializedRootSig = nullptr;

@@ -14,7 +14,7 @@ namespace JinEngine
 	class JLightInterface : public JComponent,  
 		public JFrameUpdate<IFrameUpdate<Graphic::JLightConstants&, 
 		Graphic::JShadowMapLightConstants&,
-		Graphic::JShadowMapConstants&>, JFrameDirtyListener, false>,
+		Graphic::JShadowMapConstants&>, JFrameDirtyListener, FrameUpdate::hasNotFrameBuff>,
 		public Graphic::JGraphicTexture
 	{
 	protected:

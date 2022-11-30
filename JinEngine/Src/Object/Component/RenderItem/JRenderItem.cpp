@@ -262,29 +262,29 @@ namespace JinEngine
 			if (isUpdateBoundingObj)
 			{
 				const BoundingBox bbox = mesh->GetBoundingBox();
-				static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
+				//static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
+				static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE)->GetBoundingBox();
 
 				const XMFLOAT3 objScale = transform->GetScale();
-				const XMFLOAT3 bboxScale = XMFLOAT3((bbox.Extents.x * objScale.x) / drawBBox.Extents.x,
-					(bbox.Extents.y * objScale.y) / drawBBox.Extents.y,
-					(bbox.Extents.z * objScale.z) / drawBBox.Extents.z);
+				const XMFLOAT3 bboxScale = XMFLOAT3((bbox.Extents.x  / drawBBox.Extents.x) * objScale.x,
+					(bbox.Extents.y / drawBBox.Extents.y) * objScale.y,
+					(bbox.Extents.z / drawBBox.Extents.z) * objScale.z);
+				const XMVECTOR s = XMLoadFloat3(&bboxScale);
 
 				const XMFLOAT3 bboxRotation = transform->GetRotation();
-
-				const XMFLOAT3 objPos = transform->GetPosition();
-				const XMFLOAT3 bboxPos = XMFLOAT3(bbox.Center.x + objPos.x - drawBBox.Center.x,
-					bbox.Center.y + objPos.y - drawBBox.Center.y,
-					bbox.Center.z + objPos.z - drawBBox.Center.z);
-
-				const XMVECTOR s = XMLoadFloat3(&bboxScale);
 				const XMVECTOR q = XMQuaternionRotationRollPitchYaw(bboxRotation.x * (JMathHelper::Pi / 180),
 					bboxRotation.y * (JMathHelper::Pi / 180),
 					bboxRotation.z * (JMathHelper::Pi / 180));
 
+				const XMFLOAT3 objPos = transform->GetPosition();
+				const XMFLOAT3 bboxPos = XMFLOAT3(bbox.Center.x - drawBBox.Center.x + objPos.x,
+					bbox.Center.y - drawBBox.Center.y + objPos.y,
+					bbox.Center.z - drawBBox.Center.z + objPos.z);
 				const XMVECTOR t = XMLoadFloat3(&bboxPos);
+
 				const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 				const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), GetOwner()->GetParent()->GetTransform()->GetWorld());
-				 
+				  
 				XMStoreFloat4x4(&boundingObjConstant.boundWorld, XMMatrixTranspose(worldM));
 			}
 			return true;
