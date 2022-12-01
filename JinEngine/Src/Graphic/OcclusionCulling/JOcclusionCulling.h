@@ -67,11 +67,11 @@ namespace JinEngine
 		public:
 			void DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,
 				CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSrvHandle,
-				CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapUavHandle,
-				std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>& depthResource,
+				CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapSrvHandle,
+				CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapUavHandle, 
 				const uint samplingCount,
 				const uint srvDescriptorSize);
-			void OcclusuinCulling(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSrvHandle);
+			void OcclusuinCulling(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle);
 		public:
 			void ReadCullingResult();
 		private:

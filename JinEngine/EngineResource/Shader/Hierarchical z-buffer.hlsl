@@ -70,13 +70,9 @@ struct HZBDebugInfo
 
 RWStructuredBuffer<HZBDebugInfo> hzbDebugInfo : register(u2, space1);
 
-
 Texture2D depthMap: register(t0);
+Texture2D depthMipmap: register(t1);
 RWTexture2D<float> lastMipmap: register(u0);
-
-#ifdef DOWN_SAMPLING_COUNT
-Texture2D mipmap[DOWN_SAMPLING_COUNT] : register(t1, space1);
-#endif
 
 StructuredBuffer<ObjectInfo> object : register(t2);
 RWStructuredBuffer<float> queryResult : register(u1, space1);
@@ -103,6 +99,17 @@ cbuffer cbPass : register(b1)
 	float camNear;
 	int validQueryCount;
 };
+
+#if defined (DIMX) && defined (DIMY)
+[numthreads(DIMX, DIMY, 1)]
+void HZBCopyDepthMap(int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	if (nowWidth <= dispatchThreadID.x || nowHeight <= dispatchThreadID.y)
+		return;
+
+	lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0)).r;
+} 
+#endif
 
 #define DOWN_SAMPLEING_BY_LOAD 1
 //#define DOWN_SAMPLEING_BY_SAMPLE_LEVEL
@@ -344,15 +351,15 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	const float width = viewWidth * (maxX - minX);
 	const float height = viewHeight * (maxY - minY);
 
-	int lod = DOWN_SAMPLING_COUNT - (ceil(log2(max(width, height)) + 1));
+	int lod = 10 - (ceil(log2(max(width, height)) + 1));
 	if (lod < 0)
 		lod = 0;
 
 	const float centerDepth = clipNearC.z;
-	const float compareDepth00 = mipmap[lod].SampleLevel(occFrameSam, clipFrame[0], 0).r;
-	const float compareDepth01 = mipmap[lod].SampleLevel(occFrameSam, clipFrame[1], 0).r;
-	const float compareDepth02 = mipmap[lod].SampleLevel(occFrameSam, clipFrame[2], 0).r;
-	const float compareDepth03 = mipmap[lod].SampleLevel(occFrameSam, clipFrame[3], 0).r;
+	const float compareDepth00 = depthMipmap.SampleLevel(occFrameSam, clipFrame[0], lod).r;
+	const float compareDepth01 = depthMipmap.SampleLevel(occFrameSam, clipFrame[1], lod).r;
+	const float compareDepth02 = depthMipmap.SampleLevel(occFrameSam, clipFrame[2], lod).r;
+	const float compareDepth03 = depthMipmap.SampleLevel(occFrameSam, clipFrame[3], lod).r;
 
 	const float finalCompareDepth = max(compareDepth00, max(compareDepth01, max(compareDepth02, compareDepth03)));
 	const int queryIndex = object[threadIndex].queryResultIndex;
@@ -362,7 +369,8 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	else
 		queryResult[queryIndex] = 1;
 
-	hzbDebugInfo[threadIndex].objWorld = object[threadIndex].objWorld;
+ /*
+ 	hzbDebugInfo[threadIndex].objWorld = object[threadIndex].objWorld;
 
 	hzbDebugInfo[threadIndex].center = object[threadIndex].center;
 	hzbDebugInfo[threadIndex].extents = object[threadIndex].extents;
@@ -419,5 +427,6 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 
 	hzbDebugInfo[threadIndex].threadIndex = threadIndex;
 	hzbDebugInfo[threadIndex].queryIndex = queryIndex;
+ */
 }
 #endif

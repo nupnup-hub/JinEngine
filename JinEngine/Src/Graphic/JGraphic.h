@@ -179,8 +179,9 @@ namespace JinEngine
 			//Debug
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetDebugSrvHandle(const uint index);
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetDebugUavHandle(const uint index);
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionSrvHandle(const uint index);
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionUavHandle(const uint index);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionMipMapSrvHandle(const uint index);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionMipMapUavHandle(const uint index);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionDepthMapSrvHandle(const uint index);
 		private:
 			void OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)final;
 		private:

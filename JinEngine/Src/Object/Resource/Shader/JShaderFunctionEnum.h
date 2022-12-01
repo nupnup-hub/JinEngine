@@ -35,6 +35,7 @@ namespace JinEngine
 	enum class J_COMPUTE_SHADER_FUNCTION
 	{
 		NONE = 0,
+		HZB_COPY,
 		HZB_DOWN_SAMPLING,
 		HZB_OCCLUSION,
 		COUNT,
@@ -66,6 +67,8 @@ namespace JinEngine
 		{
 			switch (funcFlag)
 			{
+			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_COPY:
+				return CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBCopyDepthMap");
 			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_DOWN_SAMPLING:
 				return CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBDownSampling");
 			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_OCCLUSION:

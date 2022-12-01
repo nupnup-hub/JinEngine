@@ -176,37 +176,48 @@ namespace JinEngine
 		}
 		void JOcclusionCulling::DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,
 			CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSrvHandle,
-			CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapUavHandle,
-			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>& depthResource,
+			CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapSrvHandle,
+			CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapUavHandle,
 			const uint samplingCount,
 			const uint srvDescriptorSize)
 		{
+			const uint depthMapInfoCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JDepthMapInfoConstants));
 			commandList->SetComputeRootSignature(mRootSignature.Get());
 
-			JShader* shader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_DOWNSAMPLING_SHADER);
-			commandList->SetPipelineState(shader->GetComputePso());
+			JShader* copyShader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_COPY_SHADER);
+			commandList->SetPipelineState(copyShader->GetComputePso());
 
-			const uint depthMapInfoCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JDepthMapInfoConstants));
-			for (uint i = 0; i < samplingCount; ++i)
+			commandList->SetComputeRootDescriptorTable(0, depthMapSrvHandle);
+			commandList->SetComputeRootDescriptorTable(1, mipMapUavHandle);
+			commandList->SetComputeRootConstantBufferView(5, depthMapInfoCB->Resource()->GetGPUVirtualAddress());
+
+			JVector3<uint> cgroupDim = copyShader->GetComputeGroupDim();
+			commandList->Dispatch(cgroupDim.x, cgroupDim.y, cgroupDim.z);
+
+			JShader* downSampleShader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_DOWNSAMPLING_SHADER);
+			commandList->SetPipelineState(downSampleShader->GetComputePso());
+
+			const uint loopCount = samplingCount - 1;
+			for (uint i = 0; i < loopCount; ++i)
 			{
-				CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapHandle = depthMapSrvHandle;
-				depthMapHandle.Offset(i, srvDescriptorSize);
+				CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle = mipMapSrvHandle;
+				srcHandle.Offset(i, srvDescriptorSize);
 
-				CD3DX12_GPU_DESCRIPTOR_HANDLE mipmapHandle = depthMapUavHandle;
-				mipmapHandle.Offset(i, srvDescriptorSize);
+				CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle = mipMapUavHandle;
+				destHandle.Offset(i + 1, srvDescriptorSize);
 
-				commandList->SetComputeRootDescriptorTable(0, depthMapHandle);
-				commandList->SetComputeRootDescriptorTable(1, mipmapHandle);
+				commandList->SetComputeRootDescriptorTable(0, srcHandle);
+				commandList->SetComputeRootDescriptorTable(1, destHandle);
 
 				D3D12_GPU_VIRTUAL_ADDRESS depthMapCBAddress = depthMapInfoCB->Resource()->GetGPUVirtualAddress() + i * depthMapInfoCBByteSize;
 				commandList->SetComputeRootConstantBufferView(5, depthMapCBAddress);
-				JVector3<uint> groupDim = shader->GetComputeGroupDim();
-				commandList->Dispatch(groupDim.x, groupDim.y, groupDim.z);
+				JVector3<uint> dgroupDim = downSampleShader->GetComputeGroupDim();
+				commandList->Dispatch(dgroupDim.x, dgroupDim.y, dgroupDim.z);
 			}
 		}
-		void JOcclusionCulling::OcclusuinCulling(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSrvHandle)
+		void JOcclusionCulling::OcclusuinCulling(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle)
 		{
-			commandList->SetComputeRootDescriptorTable(2, depthMapSrvHandle);
+			commandList->SetComputeRootDescriptorTable(2, mipMapStHandle);
 			commandList->SetComputeRootShaderResourceView(3, objectBuffer->Resource()->GetGPUVirtualAddress());
 			commandList->SetComputeRootUnorderedAccessView(4, queryOutBuffer->Resource()->GetGPUVirtualAddress());
 			commandList->SetComputeRootConstantBufferView(6, occlusionPassCB->Resource()->GetGPUVirtualAddress());
@@ -241,7 +252,7 @@ namespace JinEngine
 			//queryResultBuffer->Resource()->Unmap(0, nullptr);
 			isQueryUpdated = false;
 
-			static int streamC = 0;
+			static int streamC = 2;
 			if (streamC < 1)
 			{
 				std::wofstream stream;
@@ -327,7 +338,7 @@ namespace JinEngine
 			CD3DX12_DESCRIPTOR_RANGE lastMipmapTable;
 			lastMipmapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 			CD3DX12_DESCRIPTOR_RANGE mipmapTable;
-			mipmapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, occlusionDsvCapacity, 1, 1);
+			mipmapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
 
 			// Create root CBV. 
 			slotRootParameter[0].InitAsDescriptorTable(1, &depthMapTable);
@@ -342,21 +353,6 @@ namespace JinEngine
 			//Debug
 			slotRootParameter[7].InitAsUnorderedAccessView(2, 1);
 
- 
-			/*
-			D3D11_SAMPLER_DESC hizSD;
-			hizSD.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-			hizSD.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-			hizSD.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-			hizSD.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-			hizSD.MipLODBias = 0.0f;
-			hizSD.MaxAnisotropy = 1;
-			hizSD.ComparisonFunc = D3D11_COMPARISON_NEVER;
-			hizSD.BorderColor[0] = hizSD.BorderColor[1] = hizSD.BorderColor[2] = hizSD.BorderColor[3] = 0;//-FLT_MAX;
-			hizSD.MinLOD = 0;
-			hizSD.MaxLOD = D3D11_FLOAT32_MAX;
-			hr = m_pDevice->CreateSamplerState(&hizSD, &m_pHizCullSampler);
-			*/
 			std::vector< CD3DX12_STATIC_SAMPLER_DESC> samDesc
 			{
 				CD3DX12_STATIC_SAMPLER_DESC(0,

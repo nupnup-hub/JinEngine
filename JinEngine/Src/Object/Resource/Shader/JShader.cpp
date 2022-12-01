@@ -76,10 +76,10 @@ namespace JinEngine
 		static const std::string threadDimXSymbol = "DIMX";
 		static const std::string threadDimYSymbol = "DIMY";
 		static const std::string threadDimZSymbol = "DIMZ";
-		 
+
 		static const std::string hzbSamplingCountSymbol = "DOWN_SAMPLING_COUNT";
 		static const std::string hzbOcclusionQueryCountSymbol = "OCCLUSION_QUERY_COUNT";
-		 
+
 		static std::string hzbSamplingCount;
 		static std::string hzbOcclusionQueryCount;
 
@@ -344,32 +344,40 @@ namespace JinEngine
 
 		using GpuInfo = Core::JHardwareInfoImpl::GpuInfo;
 
-		switch (cFunctionFlag)
-		{
-		case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_DOWN_SAMPLING:
+		auto InitHZBMaps = [](_Out_ CSInitHelper& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 		{
 			std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::Instance().GetGpuInfo();
-			Graphic::JGraphicInfo graphicInfo = JGraphic::Instance().GetGraphicInfo(); 
+			Graphic::JGraphicInfo graphicInfo = JGraphic::Instance().GetGraphicInfo();
 
 			//수정필요 
 			//thread per group factor가 하드코딩됨
 			//이후 amd graphic info 추가와 동시에 수정할 예정
-			uint warpFactor = gpuInfo[0].vendor == Core::J_GRAPHIC_VENDOR::AMD ? 64 : 32; 
+			uint warpFactor = gpuInfo[0].vendor == Core::J_GRAPHIC_VENDOR::AMD ? 64 : 32;
 			uint groupDimX = (uint)std::ceil((float)graphicInfo.occlusionWidth / float(gpuInfo[0].maxThreadsDim.x));
 			uint groupDimY = graphicInfo.occlusionHeight;
 
 			//textuer size is always 2 squared
 			uint threadDimX = graphicInfo.occlusionWidth;
-			uint threadDimY = (uint)std::ceil((float)graphicInfo.occlusionHeight / float(gpuInfo[0].maxGridDim.y)); 
+			uint threadDimY = (uint)std::ceil((float)graphicInfo.occlusionHeight / float(gpuInfo[0].maxGridDim.y));
 
 			initHelper.dispatchInfo.threadDim = JVector3<uint>(threadDimX, threadDimY, 1);
 			initHelper.dispatchInfo.groupDim = JVector3<uint>(groupDimX, groupDimY, 1);
 			initHelper.dispatchInfo.taskOriCount = graphicInfo.occlusionWidth * graphicInfo.occlusionHeight;
 
 			StuffComputeShaderThreadDim(cFunctionFlag, initHelper.dispatchInfo.threadDim);
-			hzbSamplingCount = std::to_string(graphicInfo.occlusionMapCapacity);
-			initHelper.macro.push_back({ hzbSamplingCountSymbol.c_str(), hzbSamplingCount.c_str() });
 			OutComputeShaderCommonMacro(initHelper.macro, cFunctionFlag);
+		};
+
+		switch (cFunctionFlag)
+		{
+		case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_COPY:
+		{
+			InitHZBMaps(initHelper, cFunctionFlag);
+			break;
+		}
+		case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_DOWN_SAMPLING:
+		{
+			InitHZBMaps(initHelper, cFunctionFlag);
 			break;
 		}
 		case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_OCCLUSION:
@@ -407,12 +415,9 @@ namespace JinEngine
 			}
 
 			StuffComputeShaderThreadDim(cFunctionFlag, initHelper.dispatchInfo.threadDim);
-			hzbSamplingCount = std::to_string(graphicInfo.occlusionMapCapacity);
-			hzbOcclusionQueryCount = std::to_string(queryCount); 
-
-			initHelper.macro.push_back({ hzbSamplingCountSymbol.c_str(), hzbSamplingCount.c_str() });
+			hzbOcclusionQueryCount = std::to_string(queryCount);
 			initHelper.macro.push_back({ hzbOcclusionQueryCountSymbol.c_str(), hzbOcclusionQueryCount.c_str() });
-			OutComputeShaderCommonMacro(initHelper.macro, cFunctionFlag); 
+			OutComputeShaderCommonMacro(initHelper.macro, cFunctionFlag);
 			break;
 		}
 		default:

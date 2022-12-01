@@ -15,6 +15,7 @@
 #include"../../../../Object/GameObject/JGameObjectFactoryUtility.h"   
 #include"../../../../Graphic/JGraphic.h"
 #include"../../../../Utility/JCommonUtility.h"
+ 
 //#include<fstream>
 
 //Debug
@@ -324,25 +325,16 @@ namespace JinEngine
 		void JSceneObserver::OcclusionResultOnScreen()
 		{
 			JImGuiImpl::BeginWindow("##OcclusionResultWindow1", &isOcclusionViewer, ImGuiWindowFlags_NoDocking);
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(0)).ptr, ImVec2(400, 250));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(1)).ptr, ImVec2(400, 250));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(2)).ptr, ImVec2(400, 250));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(3)).ptr, ImVec2(400, 250));
-
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(4)).ptr, ImVec2(400, 250));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(5)).ptr, ImVec2(400, 250));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(6)).ptr, ImVec2(400, 250));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(7)).ptr, ImVec2(400, 250));
-
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(8)).ptr, ImVec2(400, 250));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(9)).ptr, ImVec2(400, 250));
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(0)).ptr, ImVec2(1920, 1080));
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(1)).ptr, ImVec2(1920, 1080));
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(2)).ptr, ImVec2(1920, 1080));
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(3)).ptr, ImVec2(1920, 1080));
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(4)).ptr, ImVec2(1920, 1080));
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(5)).ptr, ImVec2(1920, 1080));
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(6)).ptr, ImVec2(1920, 1080));
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(7)).ptr, ImVec2(1920, 1080));
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(8)).ptr, ImVec2(1920, 1080));
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(9)).ptr, ImVec2(1920, 1080));
 			//ImGui::SameLine();
 			//ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugSrvHandle(1)).ptr, ImVec2(400, 250));
 			JImGuiImpl::EndWindow();
@@ -406,8 +398,8 @@ namespace JinEngine
 					for (uint j = 0; j < loopPerObjCount; ++j)
 					{
 						JGameObject* cube = JGFU::CreateShape(*scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
-						cube->GetTransform()->SetScale(DirectX::XMFLOAT3(4, 4, 4));
-						cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(8 * i, 0, 8 * j));
+						cube->GetTransform()->SetScale(DirectX::XMFLOAT3(8, 8, 8));
+						cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(16 * i, j * 4, 16 * j));
 					}
 				}
 			}

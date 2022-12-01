@@ -27,11 +27,11 @@ namespace JinEngine
 			const CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle,
 			const JVector2<uint> size)
 		{
-			//D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)size.x, (float)size.y, 0.0f, 1.0f };
-			//D3D12_RECT mScissorRect = { 0, 0, size.x, size.y };
+			D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)size.x, (float)size.y, 0.0f, 1.0f };
+			D3D12_RECT mScissorRect = { 0, 0, size.x, size.y };
 
-			//commandList->RSSetViewports(1, &mViewport);
-			//commandList->RSSetScissorRects(1, &mScissorRect);
+			commandList->RSSetViewports(1, &mViewport);
+			commandList->RSSetScissorRects(1, &mScissorRect);
 
 			commandList->SetComputeRootSignature(cRootSignature.Get()); 
 			commandList->SetComputeRootDescriptorTable(0, srcHandle);

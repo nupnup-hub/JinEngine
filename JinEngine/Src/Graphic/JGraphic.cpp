@@ -179,13 +179,17 @@ namespace JinEngine
 		{
 			return GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDebugStart() + index);
 		}
-		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicImpl::GetOcclusionSrvHandle(const uint index)
+		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicImpl::GetOcclusionMipMapSrvHandle(const uint index)
 		{
-			return GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthStart() + index);
+			return GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart() + index);
 		}
-		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicImpl::GetOcclusionUavHandle(const uint index)
+		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicImpl::GetOcclusionMipMapUavHandle(const uint index)
 		{
-			return GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDepthStart() + index);
+			return GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionMipMapStart() + index);
+		}
+		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicImpl::GetOcclusionDepthMapSrvHandle(const uint index)
+		{
+			return GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthMapStart() + index);
 		}
 		void JGraphicImpl::OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)
 		{
@@ -396,10 +400,10 @@ namespace JinEngine
 			D3D12_COMPUTE_PIPELINE_STATE_DESC newShaderPso;
 			ZeroMemory(&newShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
 
-			if (cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::HZB_DOWN_SAMPLING)
-				newShaderPso.pRootSignature = occHelper->GetRootSignature();
-			else if (cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::HZB_OCCLUSION)
-				newShaderPso.pRootSignature = occHelper->GetRootSignature();
+			if (cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::HZB_COPY || 
+				cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::HZB_DOWN_SAMPLING ||
+				cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::HZB_OCCLUSION)
+				newShaderPso.pRootSignature = occHelper->GetRootSignature(); 
 
 			shaderData->RootSignature = newShaderPso.pRootSignature;
 			newShaderPso.CS =
@@ -1068,7 +1072,7 @@ namespace JinEngine
 			commandList->RSSetViewports(1, &mViewport);
 			commandList->RSSetScissorRects(1, &mScissorRect);
 			 
-			CD3DX12_RESOURCE_BARRIER rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->occlusionDepthMap[0].Get(),
+			CD3DX12_RESOURCE_BARRIER rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->occlusionDepthMap.Get(),
 				D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			commandList->ResourceBarrier(1, &rsBarrier);
 
@@ -1086,7 +1090,7 @@ namespace JinEngine
 
 			DrawSceneBoundingBox(commandList.Get(), helper.scene->SpaceSpatialInterface()->GetAlignedObject(helper.scene->GetMainCamera()->GetBoundingFrustum()), helper, helper.scene->IsAnimatorActivated());
 
-			rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->occlusionDepthMap[0].Get(),
+			rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->occlusionDepthMap.Get(),
 				D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ);
 			commandList->ResourceBarrier(1, &rsBarrier);
 
@@ -1096,26 +1100,21 @@ namespace JinEngine
 				JVector2<uint>(info.occlusionWidth, info.occlusionHeight));*/
 
 			occHelper->DepthMapDownSampling(commandList.Get(),
-				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthStart()),
-				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDepthStart()),
-				graphicResource->occlusionDepthMap,
-				info.occlusionMapCount - 1,
+				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthMapStart()),
+				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart()),
+				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionMipMapStart()),
+				info.occlusionMapCount,
 				graphicResource->cbvSrvUavDescriptorSize);
-			occHelper->OcclusuinCulling(commandList.Get(), graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthStart()));
+			occHelper->OcclusuinCulling(commandList.Get(), graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart()));
 
 			JVector2<uint> occlusionSize = JVector2<uint>(info.occlusionWidth, info.occlusionHeight);
-			depthMapDebug->DrawDepthDebug(commandList.Get(),
-				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthStart()),
-				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDebugStart()),
-				occlusionSize);
-
-			for (uint i = 1; i < graphicResource->occlusionCount; ++i)
+			for (uint i = 0; i < graphicResource->occlusionCount; ++i)
 			{
-				occlusionSize /= 2; 
 				depthMapDebug->DrawDepthDebug(commandList.Get(),
-					graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDepthStart() + (i - 1)),
+					graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart() + i),
 					graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDebugStart() + i),
 					occlusionSize);
+				occlusionSize /= 2;
 			}
 
 			/*

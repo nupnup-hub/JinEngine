@@ -78,6 +78,7 @@ namespace JinEngine
 			std::vector<std::unique_ptr<JGraphicTextureHandle>> shadowMapHandle;
 			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> shadowMapResource;
 			
+			static constexpr uint occlusionDepthStencilCount = 1;
 			static constexpr uint occlusionCapacity = 10;
 			static constexpr uint occlusionDebugCapacity = occlusionCapacity;
 
@@ -91,11 +92,10 @@ namespace JinEngine
 			uint occlusionDebugCount = 0;
 			uint occlusionQuaryCapacity = 1000;
 			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionQueryResult;
-			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> occlusionDepthMap;
-			std::vector <Microsoft::WRL::ComPtr<ID3D12Resource>> occlusionDebug;
-			std::vector<std::unique_ptr<JGraphicTextureHandle>> occlsionDepthHandle;
-			std::vector<std::unique_ptr<JGraphicTextureHandle>> occlsionDebugHandle;
 
+			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDepthMap;
+			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDepthMipMap;
+			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDebug; 
 			Microsoft::WRL::ComPtr<ID3D12Resource> mainDepthStencil;
 		public:
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuRtvDescriptorHandle(int index)const noexcept;
@@ -106,14 +106,15 @@ namespace JinEngine
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept;
 		public:
 			//Srv
-			uint GetSrvOcclusionDepthStart()const noexcept;
+			uint GetSrvOcclusionDepthMapStart()const noexcept;
+			uint GetSrvOcclusionMipMapStart()const noexcept;
 			uint GetSrvOcclusionDebugStart()const noexcept;
 			uint GetSrvUser2DTextureStart()const noexcept;
 			uint GetSrvUserCubeMapStart()const noexcept;
 			uint GetSrvRenderResultStart()const noexcept;
 			uint GetSrvShadowMapStart()const noexcept; 
 			//Uav
-			uint GetUavOcclusionDepthStart()const noexcept;
+			uint GetUavOcclusionMipMapStart()const noexcept;
 			uint GetUavOcclusionDebugStart()const noexcept;
 			//Rtv 
 			uint GetRtvRenderResultStart()const noexcept;
