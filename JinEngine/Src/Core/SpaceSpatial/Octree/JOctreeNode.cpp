@@ -27,9 +27,13 @@ namespace JinEngine
 					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
 				else
 					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
-				float scaleFactor = boundingBox.Extents.x * 2;
-				debugGameObject->GetTransform()->SetScale(XMFLOAT3(scaleFactor, scaleFactor, scaleFactor));
-				debugGameObject->GetTransform()->SetPosition(boundingBox.Center);
+				
+				const float outlineFactor = 0.025f;
+				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetBoundingBox();
+				debugGameObject->GetTransform()->SetScale(XMFLOAT3(boundingBox.Extents.x / rBBox.Extents.x + outlineFactor,
+					boundingBox.Extents.y / rBBox.Extents.y + outlineFactor,
+					boundingBox.Extents.z / rBBox.Extents.z + outlineFactor));
+				debugGameObject->GetTransform()->SetPosition(JMathHelper::Vector3Plus(boundingBox.Center, rBBox.Center));
 			}
 		}
 		void JOctreeNode::DestroyDebugGameObject()noexcept

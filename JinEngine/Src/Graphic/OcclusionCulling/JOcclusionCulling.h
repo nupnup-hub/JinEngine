@@ -11,20 +11,20 @@
 struct ID3D12RootSignature;
 struct ID3D12Device;
 struct ID3D12GraphicsCommandList;
-struct ID3D12Resource; 
+struct ID3D12Resource;
 
 namespace JinEngine
 {
-	class JCamera; 
+	class JCamera;
 	class JGameObject;
-	class JRenderItem; 
+	class JRenderItem;
 	class JScene;
 
 	namespace Graphic
-	{ 
+	{
 		struct JGraphicInfo;
 		class JOcclusionCulling
-		{ 
+		{
 		private:
 			std::unique_ptr<JUploadBuffer<JOcclusionObjectConstants>> objectBuffer = nullptr;
 			std::unique_ptr<JUploadBuffer<float>> queryOutBuffer = nullptr;
@@ -62,7 +62,7 @@ namespace JinEngine
 			void UpdateOcclusionMapInfo(ID3D12Device* device, const JGraphicInfo& info);
 			void UpdateObjectCapacity(ID3D12Device* device, const uint objectCapacity);
 		public:
-			void UpdateObject(JRenderItem* rItem, const uint submeshIndex, const uint buffIndex); 
+			void UpdateObject(JRenderItem* rItem, const uint submeshIndex, const uint buffIndex);
 			void UpdatePass(JScene* scene, const uint queryCount, const uint cbIndex);
 		public:
 			void DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,

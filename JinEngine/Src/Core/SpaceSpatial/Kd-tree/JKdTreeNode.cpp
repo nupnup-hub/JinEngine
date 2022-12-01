@@ -42,8 +42,12 @@ namespace JinEngine
 				else
 					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
 
-				debugGameObject->GetTransform()->SetScale(XMFLOAT3(bbox.Extents.x * 2, bbox.Extents.y * 2, bbox.Extents.z * 2));
-				debugGameObject->GetTransform()->SetPosition(bbox.Center);
+				const float outlineFactor = 0.025f;
+				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetBoundingBox();
+				debugGameObject->GetTransform()->SetScale(XMFLOAT3(bbox.Extents.x / rBBox.Extents.x + outlineFactor,
+					bbox.Extents.y / rBBox.Extents.y + outlineFactor,
+					bbox.Extents.z / rBBox.Extents.z + outlineFactor));
+				debugGameObject->GetTransform()->SetPosition(JMathHelper::Vector3Plus(bbox.Center, rBBox.Center));
 			}
 		}
 		void JKdTreeNode::DestroyDebugGameObject()noexcept

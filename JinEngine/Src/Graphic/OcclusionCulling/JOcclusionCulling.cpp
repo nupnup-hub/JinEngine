@@ -140,13 +140,13 @@ namespace JinEngine
 			objectConstants.queryResultIndex = buffIndex;
 			XMStoreFloat4x4(&objectConstants.objWorld, XMMatrixTranspose(rItem->GetOwner()->GetTransform()->GetWorld()));
 
-			objectBuffer->CopyData(buffIndex, objectConstants); 
+			objectBuffer->CopyData(buffIndex, objectConstants);
 		}
 		void JOcclusionCulling::UpdatePass(JScene* scene, const uint queryCount, const uint cbIndex)
 		{
 			JCamera* mainCam = scene->GetMainCamera();
 			JOcclusionPassConstants passConstatns;
-			 
+
 			//static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
 			static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE)->GetBoundingBox();
 
@@ -162,8 +162,10 @@ namespace JinEngine
 
 			const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 			const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), mainCamT->GetOwner()->GetParent()->GetTransform()->GetWorld());
- 
+
 			XMStoreFloat4x4(&passConstatns.camWorld, XMMatrixTranspose(worldM));
+			XMStoreFloat4x4(&passConstatns.view, XMMatrixTranspose(mainCam->GetView()));
+			XMStoreFloat4x4(&passConstatns.proj, XMMatrixTranspose(mainCam->GetProj()));
 			XMStoreFloat4x4(&passConstatns.viewProj, XMMatrixTranspose(XMMatrixMultiply(mainCam->GetView(), mainCam->GetProj())));
 			passConstatns.viewWidth = mainCam->GetViewWidth();
 			passConstatns.viewHeight = mainCam->GetViewHeight();
@@ -238,36 +240,29 @@ namespace JinEngine
 			//queryResult = nullptr;
 			//queryResultBuffer->Resource()->Unmap(0, nullptr);
 			isQueryUpdated = false;
- 
+
 			static int streamC = 0;
 			if (streamC < 1)
 			{
 				std::wofstream stream;
-				stream.open(L"D:\\JinWooJung\\HZB_Occlusion_debug_bbox4.txt", std::ios::app | std::ios::out);
+				stream.open(L"D:\\JinWooJung\\HZB_Occlusion_debug_bbox5.txt", std::ios::app | std::ios::out);
 				if (stream.is_open())
 				{
 					int count = 0;
 					HZBDebugInfo* info = debugBuffer->Map(count);
 					for (uint i = 0; i < 8; ++i)
-					{ 
+					{
 						JFileIOHelper::StoreXMFloat4x4(stream, L"ObjWorld", info[i].objWorld);
 
 						JFileIOHelper::StoreXMFloat3(stream, L"Center", info[i].center);
 						JFileIOHelper::StoreXMFloat3(stream, L"Extents", info[i].extents);
 
 						JFileIOHelper::StoreXMFloat4(stream, L"PosCW", info[i].posCW);
+						JFileIOHelper::StoreXMFloat4(stream, L"PosCV", info[i].posCV);
 						JFileIOHelper::StoreXMFloat4(stream, L"PosEW", info[i].posEW);
+						JFileIOHelper::StoreXMFloat4(stream, L"PosEV", info[i].posEV);
 
 						JFileIOHelper::StoreXMFloat3(stream, L"camPos", info[i].camPos);
-
-						JFileIOHelper::StoreXMFloat3(stream, L"bboxPoint00", info[i].bboxPoint0);
-						JFileIOHelper::StoreXMFloat3(stream, L"bboxPoint01", info[i].bboxPoint1);
-						JFileIOHelper::StoreXMFloat3(stream, L"bboxPoint02", info[i].bboxPoint2);
-						JFileIOHelper::StoreXMFloat3(stream, L"bboxPoint03", info[i].bboxPoint3);
-						JFileIOHelper::StoreXMFloat3(stream, L"bboxPoint04", info[i].bboxPoint4);
-						JFileIOHelper::StoreXMFloat3(stream, L"bboxPoint05", info[i].bboxPoint5);
-						JFileIOHelper::StoreXMFloat3(stream, L"bboxPoint06", info[i].bboxPoint6);
-						JFileIOHelper::StoreXMFloat3(stream, L"bboxPoint07", info[i].bboxPoint7);
 
 						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint0", info[i].nearPoint0);
 						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint1", info[i].nearPoint1);
@@ -275,18 +270,37 @@ namespace JinEngine
 						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint3", info[i].nearPoint3);
 						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint4", info[i].nearPoint4);
 						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint5", info[i].nearPoint5);
-						 
-						JFileIOHelper::StoreXMFloat3(stream, L"clipFrame0", info[i].clipFrame0);
-						JFileIOHelper::StoreXMFloat3(stream, L"clipFrame1", info[i].clipFrame1);
-						JFileIOHelper::StoreXMFloat3(stream, L"clipFrame2", info[i].clipFrame2);
-						JFileIOHelper::StoreXMFloat3(stream, L"clipFrame3", info[i].clipFrame3);
-						JFileIOHelper::StoreXMFloat3(stream, L"clipNearW", info[i].clipNearW); 
-						JFileIOHelper::StoreXMFloat3(stream, L"clipNearC", info[i].clipNearC);
-						JFileIOHelper::StoreXMFloat3(stream, L"clipNearS", info[i].clipNearS);
+
+						JFileIOHelper::StoreXMFloat3(stream, L"nearPointW", info[i].nearPointW);
+						JFileIOHelper::StoreXMFloat4(stream, L"nearPointH", info[i].nearPointH);
+						JFileIOHelper::StoreXMFloat3(stream, L"nearPointC", info[i].nearPointC);
+
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV00", info[i].bboxPointV0);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV01", info[i].bboxPointV1);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV02", info[i].bboxPointV2);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV03", info[i].bboxPointV3);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV04", info[i].bboxPointV4);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV05", info[i].bboxPointV5);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV06", info[i].bboxPointV6);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV07", info[i].bboxPointV7);
+
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH00", info[i].bboxPointH0);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH01", info[i].bboxPointH1);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH02", info[i].bboxPointH2);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH03", info[i].bboxPointH3);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH04", info[i].bboxPointH4);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH05", info[i].bboxPointH5);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH06", info[i].bboxPointH6);
+						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH07", info[i].bboxPointH7);
+
+						JFileIOHelper::StoreXMFloat2(stream, L"clipFrame0", info[i].clipFrame0);
+						JFileIOHelper::StoreXMFloat2(stream, L"clipFrame1", info[i].clipFrame1);
+						JFileIOHelper::StoreXMFloat2(stream, L"clipFrame2", info[i].clipFrame2);
+						JFileIOHelper::StoreXMFloat2(stream, L"clipFrame3", info[i].clipFrame3);
 
 						JFileIOHelper::StoreAtomicData(stream, L"Width", info[i].width);
 						JFileIOHelper::StoreAtomicData(stream, L"Height", info[i].height);
-						 
+
 						JFileIOHelper::StoreXMFloat3(stream, L"uvExtentsMax", info[i].uvExtentsMax);
 						JFileIOHelper::StoreXMFloat3(stream, L"uvExtentsMin", info[i].uvExtentsMin);
 
@@ -328,6 +342,21 @@ namespace JinEngine
 			//Debug
 			slotRootParameter[7].InitAsUnorderedAccessView(2, 1);
 
+ 
+			/*
+			D3D11_SAMPLER_DESC hizSD;
+			hizSD.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+			hizSD.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+			hizSD.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+			hizSD.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+			hizSD.MipLODBias = 0.0f;
+			hizSD.MaxAnisotropy = 1;
+			hizSD.ComparisonFunc = D3D11_COMPARISON_NEVER;
+			hizSD.BorderColor[0] = hizSD.BorderColor[1] = hizSD.BorderColor[2] = hizSD.BorderColor[3] = 0;//-FLT_MAX;
+			hizSD.MinLOD = 0;
+			hizSD.MaxLOD = D3D11_FLOAT32_MAX;
+			hr = m_pDevice->CreateSamplerState(&hizSD, &m_pHizCullSampler);
+			*/
 			std::vector< CD3DX12_STATIC_SAMPLER_DESC> samDesc
 			{
 				CD3DX12_STATIC_SAMPLER_DESC(0,
@@ -341,16 +370,16 @@ namespace JinEngine
 				D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE),
 
 				CD3DX12_STATIC_SAMPLER_DESC(1,
-				D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
-				D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressU
-				D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressV
-				D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressW
+				D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
 				0.0f,                               // mipLODBias
-				16.0f,                                 // maxAnisotropy
-				D3D12_COMPARISON_FUNC_LESS_EQUAL,
-				D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE)
+				1,                                 // maxAnisotropy
+				D3D12_COMPARISON_FUNC_NEVER,
+				D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
 			};
-			 
+
 			CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, (uint)samDesc.size(), samDesc.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 			// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer

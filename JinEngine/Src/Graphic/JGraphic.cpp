@@ -1063,11 +1063,11 @@ namespace JinEngine
 		void JGraphicImpl::DrawOcclusionDepthMap(const DrawHelper helper)
 		{
 			D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)info.occlusionWidth, (float)info.occlusionHeight, 0.0f, 1.0f };
-			D3D12_RECT mScissorRect = { 0, 0, info.occlusionWidth, info.occlusionHeight };
+			D3D12_RECT mScissorRect = { 0, 0, info.occlusionWidth, info.occlusionHeight};
 
 			commandList->RSSetViewports(1, &mViewport);
 			commandList->RSSetScissorRects(1, &mScissorRect);
-
+			 
 			CD3DX12_RESOURCE_BARRIER rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->occlusionDepthMap[0].Get(),
 				D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			commandList->ResourceBarrier(1, &rsBarrier);
@@ -1198,8 +1198,8 @@ namespace JinEngine
 			const DrawHelper helper,
 			const bool isAnimationActivated)
 		{	 
-			JMeshGeometry* mesh = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE);
-			//JMeshGeometry* mesh = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE);
+			//JMeshGeometry* mesh = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE);
+			JMeshGeometry* mesh = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE);
 			JMaterial* mat = JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST);
 			JShader* shader = mat->GetShader();
 
@@ -1730,7 +1730,7 @@ namespace JinEngine
 		JGraphicImpl::JGraphicImpl()
 			:guid(JCUtil::CalculateGuid(typeid(JGraphicImpl).name()))
 		{
-			info.occlusionWidth = std::pow(2, JGraphicResourceManager::occlusionCapacity);
+			info.occlusionWidth = std::pow(2, JGraphicResourceManager::occlusionCapacity - 1);
 			info.occlusionHeight = std::pow(2, JGraphicResourceManager::occlusionCapacity - 1);
 			info.occlusionMapCapacity = JGraphicResourceManager::occlusionCapacity;
 			info.occlusionMapCount = JMathHelper::Log2Int(info.occlusionWidth) + 1;

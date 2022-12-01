@@ -23,35 +23,30 @@ namespace JinEngine
 			int samplePad00 = 0;
 		};
 		struct JOcclusionPassConstants
-		{ 
-			DirectX::XMFLOAT4X4 camWorld = JMathHelper::Identity4x4(); 
-			DirectX::XMFLOAT4X4 viewProj= JMathHelper::Identity4x4(); 
+		{
+			DirectX::XMFLOAT4X4 camWorld = JMathHelper::Identity4x4();
+			DirectX::XMFLOAT4X4 view = JMathHelper::Identity4x4();
+			DirectX::XMFLOAT4X4 proj = JMathHelper::Identity4x4();
+			DirectX::XMFLOAT4X4 viewProj = JMathHelper::Identity4x4();
 			float viewWidth = 0;
-			float viewHeight= 0;
+			float viewHeight = 0;
 			float camNear = 0;
-			int validQueryCount = 0; 
+			int validQueryCount = 0;
 		};
 
 		struct HZBDebugInfo
 		{
-			DirectX::XMFLOAT4X4 objWorld = JMathHelper::Identity4x4(); 
+			DirectX::XMFLOAT4X4 objWorld = JMathHelper::Identity4x4();
 
 			DirectX::XMFLOAT3 center = DirectX::XMFLOAT3(0, 0, 0);
 			DirectX::XMFLOAT3 extents = DirectX::XMFLOAT3(0, 0, 0);
 
 			DirectX::XMFLOAT4 posCW = DirectX::XMFLOAT4(0, 0, 0, 0);
-			DirectX::XMFLOAT4 posEW = DirectX::XMFLOAT4(0, 0, 0, 0); 
+			DirectX::XMFLOAT4 posCV = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 posEW = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 posEV = DirectX::XMFLOAT4(0, 0, 0, 0);
 
 			DirectX::XMFLOAT3 camPos = DirectX::XMFLOAT3(0, 0, 0);
-
-			DirectX::XMFLOAT3 bboxPoint0 = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 bboxPoint1 = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 bboxPoint2 = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 bboxPoint3 = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 bboxPoint4 = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 bboxPoint5 = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 bboxPoint6 = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 bboxPoint7 = DirectX::XMFLOAT3(0, 0, 0);
 
 			DirectX::XMFLOAT3 nearPoint0 = DirectX::XMFLOAT3(0, 0, 0);
 			DirectX::XMFLOAT3 nearPoint1 = DirectX::XMFLOAT3(0, 0, 0);
@@ -59,18 +54,38 @@ namespace JinEngine
 			DirectX::XMFLOAT3 nearPoint3 = DirectX::XMFLOAT3(0, 0, 0);
 			DirectX::XMFLOAT3 nearPoint4 = DirectX::XMFLOAT3(0, 0, 0);
 			DirectX::XMFLOAT3 nearPoint5 = DirectX::XMFLOAT3(0, 0, 0);
-			
-			DirectX::XMFLOAT3 clipFrame0 = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 clipFrame1 = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 clipFrame2 = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 clipFrame3 = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 clipNearW = DirectX::XMFLOAT3(0, 0, 0); 
-			DirectX::XMFLOAT3 clipNearC = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 clipNearS = DirectX::XMFLOAT3(0, 0, 0);
+
+			DirectX::XMFLOAT3 nearPointW = DirectX::XMFLOAT3(0, 0, 0);
+			DirectX::XMFLOAT4 nearPointH = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT3 nearPointC = DirectX::XMFLOAT3(0, 0, 0);
+
+			DirectX::XMFLOAT4 bboxPointV0 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointV1 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointV2 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointV3 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointV4 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointV5 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointV6 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointV7 = DirectX::XMFLOAT4(0, 0, 0, 0);
+
+
+			DirectX::XMFLOAT4 bboxPointH0 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointH1 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointH2 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointH3 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointH4 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointH5 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointH6 = DirectX::XMFLOAT4(0, 0, 0, 0);
+			DirectX::XMFLOAT4 bboxPointH7 = DirectX::XMFLOAT4(0, 0, 0, 0);
+
+			DirectX::XMFLOAT2 clipFrame0 = DirectX::XMFLOAT2(0, 0);
+			DirectX::XMFLOAT2 clipFrame1 = DirectX::XMFLOAT2(0, 0);
+			DirectX::XMFLOAT2 clipFrame2 = DirectX::XMFLOAT2(0, 0);
+			DirectX::XMFLOAT2 clipFrame3 = DirectX::XMFLOAT2(0, 0);
 
 			float width = 0;
 			float height = 0;
-			 
+
 			DirectX::XMFLOAT3 uvExtentsMax = DirectX::XMFLOAT3(0, 0, 0);
 			DirectX::XMFLOAT3 uvExtentsMin = DirectX::XMFLOAT3(0, 0, 0);
 

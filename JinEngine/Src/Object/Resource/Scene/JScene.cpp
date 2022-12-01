@@ -380,10 +380,11 @@ namespace JinEngine
 					JRenderItem* jRItem = static_cast<JRenderItem*>(&component);
 					JGameObject* jOwner = jRItem->GetOwner();
 
+					const uint submeshCount = jRItem->GetSubmeshCount();
 					for (uint j = i + 1; j < compCount; ++j)
 					{
 						JRenderItem* backRItem = static_cast<JRenderItem*>(cashVec[j]);
-						CallSetFrameBuffOffset(*backRItem, CallGetFrameBuffOffset(*backRItem) - jRItem->GetSubmeshCount());
+						CallSetFrameBuffOffset(*backRItem, CallGetFrameBuffOffset(*backRItem) - submeshCount);
 					}
 
 					const int rIndex = (int)jRItem->GetRenderLayer(); 

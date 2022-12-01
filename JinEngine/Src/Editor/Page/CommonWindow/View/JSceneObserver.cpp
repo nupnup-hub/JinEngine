@@ -324,7 +324,7 @@ namespace JinEngine
 		void JSceneObserver::OcclusionResultOnScreen()
 		{
 			JImGuiImpl::BeginWindow("##OcclusionResultWindow1", &isOcclusionViewer, ImGuiWindowFlags_NoDocking);
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetOcclusionSrvHandle(0)).ptr, ImVec2(400, 250));
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(0)).ptr, ImVec2(400, 250));
 			ImGui::SameLine();
 			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(1)).ptr, ImVec2(400, 250));
 			ImGui::SameLine();

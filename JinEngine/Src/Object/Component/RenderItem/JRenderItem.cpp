@@ -262,8 +262,8 @@ namespace JinEngine
 			if (isUpdateBoundingObj)
 			{
 				const BoundingBox bbox = mesh->GetBoundingBox();
-				//static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
-				static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE)->GetBoundingBox();
+				static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
+				//static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE)->GetBoundingBox();
 
 				const XMFLOAT3 objScale = transform->GetScale();
 				const XMFLOAT3 bboxScale = XMFLOAT3((bbox.Extents.x  / drawBBox.Extents.x) * objScale.x,

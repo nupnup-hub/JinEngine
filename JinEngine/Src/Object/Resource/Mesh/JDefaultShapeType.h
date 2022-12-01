@@ -29,7 +29,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_EMPTY:
 				return false;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE:
-				return true;
+				return false;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_GRID:
 				return false;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE:
