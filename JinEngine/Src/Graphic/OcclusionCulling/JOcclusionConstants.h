@@ -23,15 +23,18 @@ namespace JinEngine
 			int samplePad00 = 0;
 		};
 		struct JOcclusionPassConstants
-		{
-			DirectX::XMFLOAT4X4 camWorld = JMathHelper::Identity4x4();
+		{ 
 			DirectX::XMFLOAT4X4 view = JMathHelper::Identity4x4();
-			DirectX::XMFLOAT4X4 proj = JMathHelper::Identity4x4();
-			DirectX::XMFLOAT4X4 viewProj = JMathHelper::Identity4x4();
+			DirectX::XMFLOAT4X4 proj = JMathHelper::Identity4x4(); 
+			DirectX::XMFLOAT4 frustumPlane[6];
 			float viewWidth = 0;
 			float viewHeight = 0;
 			float camNear = 0;
 			int validQueryCount = 0;
+			int occMapCount = 0;
+			int maxOccSize = 0;
+			int minOccSize = 0;
+			int passPad00 = 0;
 		};
 
 		struct HZBDebugInfo
@@ -45,9 +48,7 @@ namespace JinEngine
 			DirectX::XMFLOAT4 posCV = DirectX::XMFLOAT4(0, 0, 0, 0);
 			DirectX::XMFLOAT4 posEW = DirectX::XMFLOAT4(0, 0, 0, 0);
 			DirectX::XMFLOAT4 posEV = DirectX::XMFLOAT4(0, 0, 0, 0);
-
-			DirectX::XMFLOAT3 camPos = DirectX::XMFLOAT3(0, 0, 0);
-
+			 
 			DirectX::XMFLOAT3 nearPoint0 = DirectX::XMFLOAT3(0, 0, 0);
 			DirectX::XMFLOAT3 nearPoint1 = DirectX::XMFLOAT3(0, 0, 0);
 			DirectX::XMFLOAT3 nearPoint2 = DirectX::XMFLOAT3(0, 0, 0);
@@ -85,6 +86,7 @@ namespace JinEngine
 
 			float width = 0;
 			float height = 0;
+			int lod = 0;
 
 			DirectX::XMFLOAT3 uvExtentsMax = DirectX::XMFLOAT3(0, 0, 0);
 			DirectX::XMFLOAT3 uvExtentsMin = DirectX::XMFLOAT3(0, 0, 0);

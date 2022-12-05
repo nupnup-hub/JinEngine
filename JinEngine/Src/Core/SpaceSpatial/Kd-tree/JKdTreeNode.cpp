@@ -305,11 +305,28 @@ namespace JinEngine
 			if (index != JCUtil::searchFail)
 				innerGameObject.erase(innerGameObject.begin() + index);
 		}
-		void JKdTreeNode::StuffInnerGameObject(std::vector<JGameObject*>& objList, const uint& offset)
+		void JKdTreeNode::StuffInnerGameObject(std::vector<JGameObject*>& objList, uint& offset)
 		{
 			const uint innerCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerCount; ++i)
-				objList[i + offset] = innerGameObject[i];
+			{
+				bool isOverlap = false;
+				const size_t guid = innerGameObject[i]->GetGuid();
+				for (uint j = 0; j < offset; ++j)
+				{
+					if (objList[j]->GetGuid() == guid)
+					{
+						isOverlap = true;
+						break;
+					}
+				}
+				if (!isOverlap)
+				{
+					objList[i + offset] = innerGameObject[i];
+					++offset;
+				}
+			}
+			//offset += innerCount;
 		}
 		void JKdTreeNode::SetVisible()noexcept
 		{

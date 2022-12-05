@@ -130,9 +130,9 @@ namespace JinEngine
 		{
 			return occlusionQuaryCapacity;
 		}
-		uint JGraphicResourceManager::GetOcclusionDsCapacity()const noexcept
+		uint JGraphicResourceManager::GetOcclusionDsCount()const noexcept
 		{
-			return occlusionCapacity;
+			return occlusionDepthStencilCount;
 		}
 		ID3D12QueryHeap* JGraphicResourceManager::GetOcclusionQueryHeap()const noexcept
 		{
@@ -143,7 +143,7 @@ namespace JinEngine
 			return occlusionQueryResult.Get();
 		}
 		void JGraphicResourceManager::BuildRtvDescriptorHeaps(ID3D12Device* device)
-		{
+		{ 
 			D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
 			rtvHeapDesc.NumDescriptors = GetTotalRtvCapacity();
 			rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
@@ -159,8 +159,7 @@ namespace JinEngine
 			dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 			dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			dsvHeapDesc.NodeMask = 0;
-			ThrowIfFailedHr(device->CreateDescriptorHeap(
-				&dsvHeapDesc, IID_PPV_ARGS(dsvHeap.GetAddressOf())));
+			ThrowIfFailedHr(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(dsvHeap.GetAddressOf())));
 		}
 		void JGraphicResourceManager::BuildSrvDescriptorHeaps(ID3D12Device* device)
 		{
@@ -170,8 +169,9 @@ namespace JinEngine
 			srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 			ThrowIfFailedHr(device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(srvHeap.GetAddressOf())));
 		}
-		void JGraphicResourceManager::BuildOcclusionQueryHeap(ID3D12Device* device)
+		void JGraphicResourceManager::BuildOccQueryHeaps(ID3D12Device* device)
 		{
+			occlusionQueryHeap.Reset();
 			D3D12_QUERY_HEAP_DESC queryHeapDesc = {};
 			queryHeapDesc.Count = occlusionQuaryCapacity;
 			queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_OCCLUSION;
@@ -574,13 +574,8 @@ namespace JinEngine
 			device->CreateDepthStencilView(shadowMapResource[resourceIndex].Get(), &dsvDesc, GetCpuDsvDescriptorHandle(dsvHeapIndex));
 			device->CreateShaderResourceView(shadowMapResource[resourceIndex].Get(), &srvDesc, GetCpuSrvDescriptorHandle(srvHeapIndex));
 		} 
-		void JGraphicResourceManager::CreateOcclusionQueryResource(ID3D12Device* device,
-			ID3D12GraphicsCommandList* commandList,
-			const uint width,
-			const uint height,
-			bool m4xMsaaState,
-			uint m4xMsaaQuality)
-		{
+		void JGraphicResourceManager::CreateOcclusionQueryResource(ID3D12Device* device)
+		{	 
 			occlusionQueryResult.Reset();
 			CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_DEFAULT);
 			auto queryResultDesc = CD3DX12_RESOURCE_DESC::Buffer(8 * occlusionQuaryCapacity);
@@ -592,26 +587,28 @@ namespace JinEngine
 				D3D12_RESOURCE_STATE_PREDICATION,
 				nullptr,
 				IID_PPV_ARGS(&occlusionQueryResult)));
-
+		}
+		void JGraphicResourceManager::CreateOcclusionHZBResource(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const uint occWidth, const uint occHeight)
+		{
 			occlusionDepthMap.Reset();
 			occlusionDepthMipMap.Reset();
-			occlusionDebug.Reset(); 
+			occlusionDebug.Reset();
 
 			if (occlusionCount > 0)
 				uavCount -= occlusionCount;
 			if (occlusionDebugCount > 0)
 				uavCount -= occlusionDebugCount;
 
-			occlusionCount = occlusionDebugCount =  0;
-			uint nowWidth = width;
-			uint nowHeight = height;
+			occlusionCount = occlusionDebugCount = 0;
+			uint nowWidth = occWidth;
+			uint nowHeight = occHeight;
 
 			D3D12_RESOURCE_DESC depthStencilDesc;
 			ZeroMemory(&depthStencilDesc, sizeof(D3D12_RESOURCE_DESC));
 			depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 			depthStencilDesc.Alignment = 0;
-			depthStencilDesc.Width = (uint)nowWidth;
-			depthStencilDesc.Height = (uint)nowHeight;
+			depthStencilDesc.Width = (uint)occWidth;
+			depthStencilDesc.Height = (uint)occHeight;
 			depthStencilDesc.DepthOrArraySize = 1;
 			depthStencilDesc.MipLevels = 1;
 			depthStencilDesc.SampleDesc.Count = 1;
@@ -679,7 +676,7 @@ namespace JinEngine
 				nullptr,
 				IID_PPV_ARGS(&occlusionDepthMipMap)));
 
-			while (occlusionCount != occlusionCapacity)
+			while (occlusionCount != occlusionCapacity && (nowWidth >= minOcclusionSize && nowHeight >= minOcclusionSize))
 			{
 				D3D12_SHADER_RESOURCE_VIEW_DESC mipMapSrvDesc = {};
 				mipMapSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -689,7 +686,7 @@ namespace JinEngine
 				mipMapSrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 				mipMapSrvDesc.Texture2D.PlaneSlice = 0;
 				mipMapSrvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-				 
+
 				D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 				uavDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 				uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
@@ -702,7 +699,7 @@ namespace JinEngine
 				CD3DX12_CPU_DESCRIPTOR_HANDLE mipUavHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvHeap->GetCPUDescriptorHandleForHeapStart());
 				mipUavHandle.Offset(GetUavOcclusionMipMapStart() + occlusionCount, cbvSrvUavDescriptorSize);
 				device->CreateUnorderedAccessView(occlusionDepthMipMap.Get(), nullptr, &uavDesc, mipUavHandle);
-				 
+
 				if (nowWidth > 1)
 					nowWidth /= 2;
 				if (nowHeight > 1)
@@ -711,8 +708,8 @@ namespace JinEngine
 				++uavCount;
 			}
 
-			nowWidth = width;
-			nowHeight = height;
+			nowWidth = occWidth;
+			nowHeight = occHeight;
 
 			D3D12_RESOURCE_DESC debugDesc;
 			ZeroMemory(&debugDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -745,7 +742,7 @@ namespace JinEngine
 				debugSrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 				debugSrvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 				debugSrvDesc.Texture2D.MipLevels = 1;
-			 
+
 				D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 				uavDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 				uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
@@ -809,6 +806,21 @@ namespace JinEngine
 
 			commandList->ResourceBarrier(1, &dsBarrier);
 		}
+		void JGraphicResourceManager::ClearOcclusionQueryResource()
+		{
+			if (occlusionQueryResult != nullptr)
+				occlusionQueryResult->Unmap(0, nullptr);
+			occlusionQueryResult.Reset();
+		}
+		void JGraphicResourceManager::ClearOcclusionHZBResource()
+		{
+			occlusionDepthMap.Reset();
+			occlusionDepthMipMap.Reset();
+			occlusionDebug.Reset();
+
+			uavCount -= (occlusionCount + occlusionDebugCount);
+			occlusionCount = occlusionDebugCount = 0;
+		}
 		void JGraphicResourceManager::Clear()
 		{
 			rtvHeap.Reset();
@@ -825,14 +837,11 @@ namespace JinEngine
 			renderResultHandle.clear();
 			renderResultResource.clear();
 			shadowMapHandle.clear();
-			shadowMapResource.clear();
-			occlusionDepthMap.Reset();
-			occlusionDepthMipMap.Reset();
-			occlusionDebug.Reset();
-			occlusionQueryResult.Reset();			
+			shadowMapResource.clear();	
 			mainDepthStencil.Reset();
 			 
-			occlusionCount = occlusionDebugCount = 0;
+			ClearOcclusionHZBResource();
+			ClearOcclusionQueryResource();
 			uavCount = shadowMapCount = renderResultCount = userCubeMapCount = user2DTextureCount = 0;
 		}
 		JGraphicResourceManager::JGraphicResourceManager() {}

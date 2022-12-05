@@ -44,7 +44,7 @@ namespace JinEngine
 		JEditorPage::JEditorPage(const std::string name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_FLAG pageFlag)
 			:JEditor(name, std::move(attribute)), pageFlag(pageFlag)
 		{
-			auto openWindowLam = [](JEditorPage& page, const std::string windowName)
+			auto openEditorWindowLam = [](JEditorPage& page, const std::string windowName)
 			{
 				JEditorWindow* selectedWindow = page.FindEditorWindow(windowName);
 				if (!selectedWindow->IsOpen())
@@ -58,7 +58,10 @@ namespace JinEngine
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorCloseWindowEvStruct>(selectedWindow->GetName(), page.GetPageType())));
 				}
 			};
-			openWindowFunctor = std::make_unique<OpenWindowF::Functor>(openWindowLam);
+
+			auto openSimpleWindowLam = [](bool& isOpen) {isOpen = !isOpen;};
+			openEditorWindowFunctor = std::make_unique<OpenEditorWindowF::Functor>(openEditorWindowLam);
+			openSimpleWindowFunctor = std::make_unique<OpenSimpleWindowF::Functor>(openSimpleWindowLam);
 		}
 		JEditorPage::~JEditorPage()
 		{}
@@ -177,9 +180,13 @@ namespace JinEngine
 			window->SetUnFocus();
 			focusWindow = nullptr;
 		}
-		JEditorPage::OpenWindowF::Functor* JEditorPage::GetFunctorPtr()noexcept
+		JEditorPage::OpenEditorWindowF::Functor* JEditorPage::GetOpEditorWindowFunctorPtr()noexcept
 		{
-			return openWindowFunctor.get();
+			return openEditorWindowFunctor.get();
+		}
+		JEditorPage::OpenSimpleWindowF::Functor* JEditorPage::GetOpSimpleWindowFunctorPtr()noexcept
+		{
+			return openSimpleWindowFunctor.get();
 		}
 		void JEditorPage::UpdateDockSpace(const int dockspaceFlag)
 		{

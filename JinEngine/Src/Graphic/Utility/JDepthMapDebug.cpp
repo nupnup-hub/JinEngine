@@ -42,7 +42,7 @@ namespace JinEngine
 			commandList->SetPipelineState(cShaderData->Pso.Get());
 
 			commandList->Dispatch(1, 512, 1);
-		} 
+		} 	 
 		void JDepthMapDebug::BuildComputeResource(ID3D12Device* device, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthStencilFormat)
 		{
 			static constexpr int slotCount = 3;
@@ -51,7 +51,7 @@ namespace JinEngine
 			depthMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 			CD3DX12_DESCRIPTOR_RANGE wTextureTable;
-			wTextureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1,0);
+			wTextureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 
 			CD3DX12_ROOT_PARAMETER slotRootParameter[slotCount];
 			slotRootParameter[0].InitAsDescriptorTable(1, &depthMapTable);
@@ -92,13 +92,13 @@ namespace JinEngine
 				IID_PPV_ARGS(cRootSignature.GetAddressOf())));
 
 			D3D_SHADER_MACRO macro{ NULL, NULL };
-			std::wstring computeShaderPath = JApplicationVariable::GetShaderPath() + L"\\DepthMapDebug.hlsl"; 
+			std::wstring computeShaderPath = JApplicationVariable::GetShaderPath() + L"\\DepthMapDebug.hlsl";
 
 			cShaderData = std::make_unique<JComputeShaderData>();
 			cShaderData->Cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "CS", "cs_5_1");
-		 
+
 			D3D12_COMPUTE_PIPELINE_STATE_DESC newShaderPso;
-			ZeroMemory(&newShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC)); 
+			ZeroMemory(&newShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
 			newShaderPso.pRootSignature = cRootSignature.Get();
 			newShaderPso.CS =
 			{

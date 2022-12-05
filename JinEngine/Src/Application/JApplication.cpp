@@ -183,8 +183,7 @@ namespace JinEngine
 					JGraphic::Instance().AppInterface()->FlushCommandQueue();
 					editorManager.StorePage();
 					editorManager.Clear();
-					JResourceManager::Instance().AppInterface()->Terminate();
-					JGraphic::Instance().AppInterface()->StoreData();
+					JResourceManager::Instance().AppInterface()->Terminate(); 
 					JGraphic::Instance().AppInterface()->Clear();
 				}			 
 			}

@@ -88,11 +88,11 @@ namespace JinEngine
 			//Engine use
 			//uint uavCapacity = depthDebugCapacity; 
 			static constexpr uint occlusionDsCount = 1;
+			static constexpr uint minOcclusionSize = 8;
 			uint occlusionCount = 0;
 			uint occlusionDebugCount = 0;
-			uint occlusionQuaryCapacity = 1000;
+			uint occlusionQuaryCapacity = 2000;
 			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionQueryResult;
-
 			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDepthMap;
 			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDepthMipMap;
 			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDebug; 
@@ -136,7 +136,7 @@ namespace JinEngine
 			uint GetTotalTextureCapacity()const noexcept;
 			//Occlusion
 			uint GetOcclusionQueryHeapCapacity()const noexcept;
-			uint GetOcclusionDsCapacity()const noexcept;
+			uint GetOcclusionDsCount()const noexcept;
 			//Engine DepthStencil
 			static constexpr uint GetMainDsIndex()noexcept { return 0; }
 			static constexpr uint GetOcclusionDsIndex()noexcept { return 1; }
@@ -146,8 +146,8 @@ namespace JinEngine
 		private:
 			void BuildRtvDescriptorHeaps(ID3D12Device* device);
 			void BuildDsvDescriptorHeaps(ID3D12Device* device);
-			void BuildSrvDescriptorHeaps(ID3D12Device* device);
-			void BuildOcclusionQueryHeap(ID3D12Device* device); 
+			void BuildSrvDescriptorHeaps(ID3D12Device* device); 
+			void BuildOccQueryHeaps(ID3D12Device* device);
 		private:
 			JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
 				const std::wstring& path,
@@ -168,18 +168,17 @@ namespace JinEngine
 			void ReBindRenderTarget(ID3D12Device* device, const uint resourceIndex, const uint rtvHeapIndex, const uint srvHeapIndex);
 			void ReBindShadowMapTexture(ID3D12Device* device, const uint resourceIndex, const uint dsvHeapIndex, const uint srvHeapIndex);
 		private: 
-			void CreateOcclusionQueryResource(ID3D12Device* device,
-				ID3D12GraphicsCommandList* commandList,
-				const uint width,
-				const uint height,
-				bool m4xMsaaState,
-				uint m4xMsaaQuality);
+			void CreateOcclusionQueryResource(ID3D12Device* device);
+			void CreateOcclusionHZBResource(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const uint occWidth, const uint occHeight);
 			void CreateDepthStencilResource(ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList,
 				const uint viewWidth,
 				const uint viewHeight,
 				bool m4xMsaaState,
 				uint m4xMsaaQuality);
+		private:
+			void ClearOcclusionQueryResource();
+			void ClearOcclusionHZBResource();
 		private:
 			void Clear();
 		public:

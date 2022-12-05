@@ -8,8 +8,7 @@ cbuffer cbSettings : register(b0)
 	uint width;
 	uint height; 
 };
-
-// return (2.0 * n) / (f + n - z * (f - n));	
+ 
 /*
 dim info
 group 1, 512, 1
@@ -27,12 +26,13 @@ void CS(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_Dispat
 
 	while (maxPixelCount > (textureXFactor + (textureYFactor * width)))
 	{
-		static const float n = 2.5; // camera z near
-		static const float f = 250; // camera z far
+		static const float n = 1.0f; // camera z near
+		static const float f = 1000; // camera z far
 
 		float z = depthMap.Load(int3(textureXFactor, textureYFactor, 0)).r;
 		//float z = depthMap.SampleLevel(samLinearWrap, float2(textureXFactor / width, textureYFactor / height), 0).r;
-		float factor = (2.0f * n) / (f + n - z * (f - n)); 
+		// (2.0 * n) / (f + n - z * (f - n));	
+		float factor = 1 - (2.5f * n) / (f + n - z * (f - n)); 
 		result[int2(textureXFactor, textureYFactor)] = float4(factor, factor, factor, 1);
 		textureYFactor += height;
 	}

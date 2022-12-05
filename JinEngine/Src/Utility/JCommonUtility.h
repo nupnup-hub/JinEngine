@@ -261,7 +261,6 @@ namespace JinEngine
 			}
 			return searchFail;
 		}
-
 	};
 
 	using JCUtil = JCommonUtility;

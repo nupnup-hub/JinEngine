@@ -53,7 +53,9 @@ namespace JinEngine
 		struct JFrameResource;
 		class JGraphicTextureHandle;
 		class JGraphicResourceManager;
-		class JOcclusionCulling;
+		class JHardwareOccCulling;
+		class JHZBOccCulling;
+		class JOccBase;
 		class JDepthMapDebug;
 
 		class JGraphicImpl final : public JGraphicApplicationIterface,
@@ -163,12 +165,14 @@ namespace JinEngine
 			JGraphicOption option;
 			UpdateHelper updateHelper;
 			std::unique_ptr<JGraphicResourceManager> graphicResource;
-			std::unique_ptr<JOcclusionCulling> occHelper;
-			std::unique_ptr<JDepthMapDebug>  depthMapDebug;
+			std::unique_ptr<JHardwareOccCulling> hdOccHelper;
+			std::unique_ptr<JHZBOccCulling> hzbOccHelper;
+			std::unique_ptr<JDepthMapDebug> depthMapDebug;
+			JOccBase* occBase = nullptr;
 		public:
 			JGraphicInfo GetGraphicInfo()const noexcept;
 			JGraphicOption GetGraphicOption()const noexcept;
-			void SetGraphicOption(const JGraphicOption& newGraphicOption)noexcept;
+			void SetGraphicOption(JGraphicOption newGraphicOption)noexcept;
 		public:
 			JGraphicDeviceInterface* DeviceInterface()noexcept;
 			JGraphicResourceInterface* ResourceInterface()noexcept;
@@ -237,7 +241,7 @@ namespace JinEngine
 			void DrawSceneBoundingBox(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject, 
 				const DrawHelper helper,
-				const bool occQueryEnable);
+				const bool isAnimationActivated);
 		private:
 			bool InitializeD3D();
 			bool InitializeResource();
@@ -259,8 +263,8 @@ namespace JinEngine
 			D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView()	const;
 			const std::vector<CD3DX12_STATIC_SAMPLER_DESC> Sampler()const noexcept;
 		private:
-			void StoreData()final;
-			void LoadData()final;
+			void StoreData(); 
+			void LoadData();
 		private:
 			JGraphicImpl();
 			~JGraphicImpl();

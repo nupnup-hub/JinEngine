@@ -34,12 +34,12 @@ namespace JinEngine
 			bool isOpenSpatialOption = false;
 			bool isMainCameraFrustumActivated = false;
 			//Debug Shadow
-			bool isShadowViewer = false;
+			bool isOpenShadowViewer = false;
 			uint shadowIndex = 0;
 			//Debug Spatial Space Tree
-			bool isSpatialSpaceTreeViewer = false;
+			bool isOpenSpatialSpaceTreeViewer = false;
 			//Debug
-			bool isOcclusionViewer = false;
+			bool isOpenOcclusionMapViewer = false;
 		private:
 			std::wstring editorCameraName;
 			JVector3<float> lastCamPos{ 0,0,0 };
@@ -87,7 +87,7 @@ namespace JinEngine
 			void LoadEditorWindow(std::wifstream& stream)final;
 		private:
 			//Debug
-			void CreateShapeGroup(const J_DEFAULT_SHAPE& shape, const uint loopCount, const uint loopPerObjCount);
+			void CreateShapeGroup(const J_DEFAULT_SHAPE& shape, const uint xDim, const uint yDim, const uint zDim);
 			//void CreateDebugMaterial()noexcept;
 			//void DestroyDebugMaterial()noexcept;
 		};

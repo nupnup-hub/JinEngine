@@ -25,8 +25,8 @@ namespace JinEngine
 			//graphic
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> cRootSignature;
 			std::unique_ptr<JComputeShaderData> cShaderData;
-		public:
-			void Initialize(ID3D12Device* device,DXGI_FORMAT backBufferFormat,DXGI_FORMAT depthStencilFormat);
+		public: 
+			void Initialize(ID3D12Device* device, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthStencilFormat);
 			void Clear();
 		public:
 			void DrawDepthDebug(ID3D12GraphicsCommandList* commandList,

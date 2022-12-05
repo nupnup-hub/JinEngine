@@ -32,7 +32,7 @@ namespace JinEngine
 			float traversalCost = 1;
 			float emptyBonus = 0.5f;
 			uint leastObj = 2; 
-			uint alignLeafNodeCount = 32;
+			uint alignLeafNodeCount = 64;
 		public:
 			JKdTree();
 			~JKdTree();

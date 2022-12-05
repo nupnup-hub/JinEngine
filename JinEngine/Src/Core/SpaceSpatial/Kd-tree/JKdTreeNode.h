@@ -81,7 +81,7 @@ namespace JinEngine
 			void AddInnerGameObject(JGameObject* newInnerGameObject)noexcept;
 			void AddInnerGameObject(const std::vector<JGameObject*>& newInnerGameObject)noexcept;
 			void RemoveInnerGameObject(const size_t guid)noexcept;
-			void StuffInnerGameObject(std::vector<JGameObject*>& objList, const uint& offset);
+			void StuffInnerGameObject(std::vector<JGameObject*>& objList, uint& offset);
 		private: 
 			void SetVisible()noexcept;
 			void SetInVisible()noexcept;

@@ -10,6 +10,7 @@
 #include"Window/JAnimationControllerEditor.h"
 #include"Window/JLogViewer.h" 
 #include"Window/JWindowDirectory.h"  
+#include"Window/JGraphicOptionSetting.h"
 
 namespace JinEngine
 {
@@ -31,6 +32,7 @@ namespace JinEngine
 			using StoreProjectF = Core::JSFunctorType<void>;
 			using LoadProjectF = Core::JSFunctorType<void>;
 		private:
+			//JEditor derivated window
 			std::unique_ptr<JWindowDirectory> windowDirectory;
 			std::unique_ptr<JObjectExplorer> objectExplorer;
 			std::unique_ptr<JObjectDetail>objectDetail;
@@ -42,10 +44,14 @@ namespace JinEngine
 			std::unique_ptr<JStringConvertTest> stringConvertTest;
 			std::unique_ptr<JAppElapsedTime> appElapseTime;
 		private:
+			//simple window
+			std::unique_ptr<JGraphicOptionSetting> graphicOptionSetting;
+		private:
 			std::unique_ptr<StoreProjectF::Functor> storeProjectF;
 			std::unique_ptr<LoadProjectF::Functor> loadProjectF;
 		private:
 			bool reqInitDockNode = false;
+			bool isOpenGraphicOptionViewer = false;
 		public:
 			JProjectMainPage(bool hasMetadata);
 			~JProjectMainPage();
@@ -58,6 +64,7 @@ namespace JinEngine
 			void UpdatePage()final;
 		public:
 			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
+
 		private:
 			void BuildDockNode();
 			void BuildMenuNode();

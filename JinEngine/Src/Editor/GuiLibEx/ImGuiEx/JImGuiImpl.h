@@ -191,6 +191,7 @@ namespace JinEngine
 			//util 
 			static float GetSliderPosX(bool hasScrollbar = false)noexcept;
 			static float GetSliderWidth()noexcept;
+			static void SetTooltip(const std::string& message)noexcept;
 		public:
 			//Option
 			static float GetFrameRounding()noexcept;

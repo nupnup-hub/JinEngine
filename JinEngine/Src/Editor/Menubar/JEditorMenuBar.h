@@ -20,7 +20,7 @@ namespace JinEngine
 			JMenuNode* parent;
 			std::vector<JMenuNode*> children;
 		private:
-			std::unique_ptr<Core::JBindHandleBase> bindHandle;
+			std::unique_ptr<Core::JBindHandleBase> bindHandle = nullptr;
 		public:
 			JMenuNode(const std::string& windowName, bool isRoot, bool isLeaf, bool* isOpend = nullptr, JMenuNode* parent = nullptr);
 			~JMenuNode();
@@ -28,7 +28,7 @@ namespace JinEngine
 			JMenuNode& operator=(const JMenuNode& rhs) = delete;
 			JMenuNode(JMenuNode&& rhs) = default;
 			JMenuNode& operator=(JMenuNode&& rhs) = default;
-
+		public:
 			std::string GetNodeName()const noexcept; 
 			const uint GetChildrenCount()const noexcept;
 			JMenuNode* GetChild(const uint index)const noexcept;

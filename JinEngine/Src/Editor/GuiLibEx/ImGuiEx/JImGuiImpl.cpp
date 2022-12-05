@@ -696,6 +696,11 @@ namespace JinEngine
 			//float sliderOffset = ImGui::GetStyle().ScrollbarSize + (ImGui::GetStyle().ItemSpacing.x * 2) + (JImGuiImpl::GetAlphabetSize().x * 4);
 			return 	GetClientWindowSize().x * 0.05f;
 		}
+		void JImGuiImpl::SetTooltip(const std::string& message)noexcept
+		{
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+				ImGui::SetTooltip(message.c_str());
+		}
 		float JImGuiImpl::GetFrameRounding()noexcept
 		{
 			return ImGui::GetStyle().FrameRounding;

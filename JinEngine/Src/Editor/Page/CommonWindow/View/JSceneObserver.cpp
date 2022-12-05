@@ -73,19 +73,19 @@ namespace JinEngine
 						JObject::BeginDestroy(mainCamFrustum.Release());
 				}
 				ImGui::SameLine();
-				JImGuiImpl::Selectable("ShadowMap##JSceneObserver", &isShadowViewer, 0, JVector2<float>(ImGui::CalcTextSize("ShadowMap").x, 0));
+				JImGuiImpl::Selectable("ShadowMap##JSceneObserver", &isOpenShadowViewer, 0, JVector2<float>(ImGui::CalcTextSize("ShadowMap").x, 0));
 				ImGui::SameLine();
-				JImGuiImpl::Selectable("OcclusionResult##JSceneObserver", &isOcclusionViewer, 0, JVector2<float>(ImGui::CalcTextSize("OcclusionResult").x, 0));
+				JImGuiImpl::Selectable("OcclusionResult##JSceneObserver", &isOpenOcclusionMapViewer, 0, JVector2<float>(ImGui::CalcTextSize("OcclusionResult").x, 0));
 
 				if (isOpenSpatialOption)
 					SceneStructureOptionOnScreen();
-				if (isShadowViewer)
+				if (isOpenShadowViewer)
 					ShadowMapViewerOnScreen();
-				if (isOcclusionViewer)
+				if (isOpenOcclusionMapViewer)
 					OcclusionResultOnScreen();
 				//Debug
 				ImGui::SameLine();
-				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 4, 6);
+				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 6, 6, 6);
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
 				JImGuiImpl::Image(*camera, ImGui::GetWindowSize());
 			}
@@ -255,13 +255,13 @@ namespace JinEngine
 		}
 		void JSceneObserver::DebugTreeOnScreen(const Core::J_SPACE_SPATIAL_TYPE type, const std::string& uniqueLabel)
 		{
-			JImGuiImpl::CheckBox("TreeViewer##JSceneObserver" + uniqueLabel, isSpatialSpaceTreeViewer);
-			if (isSpatialSpaceTreeViewer)
+			JImGuiImpl::CheckBox("TreeViewer##JSceneObserver" + uniqueLabel, isOpenSpatialSpaceTreeViewer);
+			if (isOpenSpatialSpaceTreeViewer)
 			{
 				JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
 				editorBTreeView->Clear();
 				iSceneSpace->BuildDebugTree(type, *editorBTreeView);
-				editorBTreeView->TreeOnScreen(uniqueLabel, isSpatialSpaceTreeViewer);
+				editorBTreeView->TreeOnScreen(uniqueLabel, isOpenSpatialSpaceTreeViewer);
 			}
 		}
 		void JSceneObserver::UpdateMainCamFrustum()noexcept
@@ -277,7 +277,7 @@ namespace JinEngine
 				float camFar = mainCamera->GetFar();
 				float camDistance = camFar - camNear;
 
-				frumstumT->SetScale(DirectX::XMFLOAT3((camWidth / camDistance) * 20, (camHeight / camDistance) * 20, 20));
+				frumstumT->SetScale(DirectX::XMFLOAT3((camWidth / camDistance) * 100, (camHeight / camDistance) * 100, 100));
 				frumstumT->SetRotation(mainCamera->GetTransform()->GetRotation());
 				frumstumT->SetPosition(mainCamera->GetTransform()->GetPosition());
 			}
@@ -291,7 +291,7 @@ namespace JinEngine
 		}
 		void JSceneObserver::ShadowMapViewerOnScreen()
 		{
-			JImGuiImpl::BeginWindow("##ShadowMapViewerWindow", &isShadowViewer, ImGuiWindowFlags_NoDocking);
+			JImGuiImpl::BeginWindow("##ShadowMapViewerWindow", &isOpenShadowViewer, ImGuiWindowFlags_NoDocking);
 			const std::vector<JComponent*> litVec = scene->CashInterface()->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
 			const uint litCount = (uint)litVec.size();
 
@@ -323,23 +323,35 @@ namespace JinEngine
 			JImGuiImpl::EndWindow();
 		}
 		void JSceneObserver::OcclusionResultOnScreen()
-		{
-			JImGuiImpl::BeginWindow("##OcclusionResultWindow1", &isOcclusionViewer, ImGuiWindowFlags_NoDocking);
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(0)).ptr, ImVec2(1920, 1080));
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(1)).ptr, ImVec2(1920, 1080));
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(2)).ptr, ImVec2(1920, 1080));
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(3)).ptr, ImVec2(1920, 1080));
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(4)).ptr, ImVec2(1920, 1080));
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(5)).ptr, ImVec2(1920, 1080));
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(6)).ptr, ImVec2(1920, 1080));
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(7)).ptr, ImVec2(1920, 1080));
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(8)).ptr, ImVec2(1920, 1080));
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(9)).ptr, ImVec2(1920, 1080));
+		{  
+			JImGuiImpl::BeginWindow("##OcclusionResultWindow1", &isOpenOcclusionMapViewer, ImGuiWindowFlags_NoDocking);
+
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetOcclusionDepthMapSrvHandle(0)).ptr, ImVec2(400, 200));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(0)).ptr, ImVec2(400, 200));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(1)).ptr, ImVec2(400, 200));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(2)).ptr, ImVec2(400, 200));
+
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(3)).ptr, ImVec2(400, 200));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(4)).ptr, ImVec2(400, 200));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(5)).ptr, ImVec2(400, 200));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(6)).ptr, ImVec2(400, 200));
+
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(7)).ptr, ImVec2(400, 200));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(8)).ptr, ImVec2(400, 200));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(9)).ptr, ImVec2(400, 200));
 			//ImGui::SameLine();
 			//ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugSrvHandle(1)).ptr, ImVec2(400, 250));
 			JImGuiImpl::EndWindow();
 
-			//JImGuiImpl::BeginWindow("##OcclusionResultWindow2", &isOcclusionViewer, ImGuiWindowFlags_NoDocking); 
+			//JImGuiImpl::BeginWindow("##OcclusionResultWindow2", &isOpenOcclusionMapViewer, ImGuiWindowFlags_NoDocking); 
 			//ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugSrvHandle(0)).ptr, ImGui::GetWindowSize());
 			//JImGuiImpl::EndWindow();
 		}
@@ -389,17 +401,20 @@ namespace JinEngine
 			lastCamPos = lastPos;
 			lastCamRot = lastRot;
 		}
-		void JSceneObserver::CreateShapeGroup(const J_DEFAULT_SHAPE& shape, const uint loopCount, const uint loopPerObjCount)
+		void JSceneObserver::CreateShapeGroup(const J_DEFAULT_SHAPE& shape, const uint xDim, const uint yDim, const uint zDim)
 		{
 			if (JImGuiImpl::Button("MakeObject", JVector2<float>(ImGui::CalcTextSize("MakeObject").x, 0)))
 			{
-				for (uint i = 0; i < loopCount; ++i)
+				for (uint i = 0; i < xDim; ++i)
 				{
-					for (uint j = 0; j < loopPerObjCount; ++j)
+					for (uint j = 0; j < yDim; ++j)
 					{
-						JGameObject* cube = JGFU::CreateShape(*scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
-						cube->GetTransform()->SetScale(DirectX::XMFLOAT3(8, 8, 8));
-						cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(16 * i, j * 4, 16 * j));
+						for (uint k = 0; k < zDim; ++k)
+						{
+							JGameObject* cube = JGFU::CreateShape(*scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
+							cube->GetTransform()->SetScale(DirectX::XMFLOAT3(8, 8, 8));
+							cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(16 * i, 16 * j, 16 * k));
+						}
 					}
 				}
 			}

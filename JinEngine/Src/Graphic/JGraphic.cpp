@@ -2,7 +2,8 @@
 #include"JGraphicResourceManager.h"
 #include"JGraphicDrawList.h"
 #include"Utility/JDepthMapDebug.h"
-#include"OcclusionCulling/JOcclusionCulling.h"
+#include"OcclusionCulling/JHardwareOccCulling.h"
+#include"OcclusionCulling/JHZBOccCulling.h"
 
 #include"../Window/JWindows.h"
 #include"FrameResource/JFrameResource.h"
@@ -147,9 +148,25 @@ namespace JinEngine
 		{
 			return option;
 		}
-		void JGraphicImpl::SetGraphicOption(const JGraphicOption& newGraphicOption)noexcept
+		void JGraphicImpl::SetGraphicOption(JGraphicOption newGraphicOption)noexcept
 		{
+			if (newGraphicOption.isHDOcclusionAcitvated && newGraphicOption.isHZBOcclusionActivated)
+			{
+				if (!option.isHDOcclusionAcitvated)
+					newGraphicOption.isHZBOcclusionActivated = false;
+				else
+					newGraphicOption.isHDOcclusionAcitvated = false;
+			}
 			option = newGraphicOption;
+			if (option.isHDOcclusionAcitvated)
+				occBase = hdOccHelper.get();
+			else if (option.isHZBOcclusionActivated)
+				occBase = hzbOccHelper.get();
+			else
+				occBase = nullptr;
+
+			hdOccHelper->SetUpdateFrequency(option.occUpdateFrequency);
+			hzbOccHelper->SetUpdateFrequency(option.occUpdateFrequency);
 		}
 		JGraphicDeviceInterface* JGraphicImpl::DeviceInterface()noexcept
 		{
@@ -372,10 +389,10 @@ namespace JinEngine
 				newShaderPso.SampleDesc.Quality = 0;
 			}
 			if ((gFunctionFlag & SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT) > 0)
-			{ 
-				newShaderPso.RasterizerState.DepthBias = 100000;
-				newShaderPso.RasterizerState.DepthBiasClamp = 0.0f;
-				newShaderPso.RasterizerState.SlopeScaledDepthBias = 1.0f;
+			{
+				//newShaderPso.RasterizerState.DepthBias = -50000;
+				//newShaderPso.RasterizerState.DepthBiasClamp = 0.0f;
+				//newShaderPso.RasterizerState.SlopeScaledDepthBias = 1.0f;
 				newShaderPso.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
 				newShaderPso.NumRenderTargets = 0;
 				newShaderPso.SampleDesc.Count = 1;
@@ -400,10 +417,10 @@ namespace JinEngine
 			D3D12_COMPUTE_PIPELINE_STATE_DESC newShaderPso;
 			ZeroMemory(&newShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
 
-			if (cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::HZB_COPY || 
+			if (cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::HZB_COPY ||
 				cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::HZB_DOWN_SAMPLING ||
 				cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::HZB_OCCLUSION)
-				newShaderPso.pRootSignature = occHelper->GetRootSignature(); 
+				newShaderPso.pRootSignature = hzbOccHelper->GetRootSignature();
 
 			shaderData->RootSignature = newShaderPso.pRootSignature;
 			newShaderPso.CS =
@@ -482,16 +499,20 @@ namespace JinEngine
 			info.height = JWindow::Instance().GetClientHeight();
 
 			graphicResource = std::make_unique<JGraphicResourceManager>();
-			occHelper = std::make_unique<JOcclusionCulling>();
+			hdOccHelper = std::make_unique<JHardwareOccCulling>();
+			hzbOccHelper = std::make_unique<JHZBOccCulling>();
 			depthMapDebug = std::make_unique<JDepthMapDebug>();
-			LoadData();
 
+			LoadData();
 			InitializeD3D();
 			InitializeResource();
-			OnResize();
+			OnResize(); 
 		}
 		void JGraphicImpl::Clear()
 		{
+			if (JApplicationVariable::GetApplicationState() != J_APPLICATION_STATE::PROJECT_SELECT)
+				StoreData();
+
 			FlushCommandQueue();
 
 			mRootSignature.Reset();
@@ -501,8 +522,12 @@ namespace JinEngine
 			depthMapDebug->Clear();
 			depthMapDebug.reset();
 
-			occHelper->Clear();
-			occHelper.reset();
+			hdOccHelper->Clear();
+			hdOccHelper.reset();
+
+			hzbOccHelper->Clear();
+			hzbOccHelper.reset();
+			occBase = nullptr;
 
 			frameResources.clear();
 			currFrameResource = nullptr;
@@ -595,8 +620,8 @@ namespace JinEngine
 		}
 		void JGraphicImpl::UpdateEngine()
 		{
-			if (option.isOcclusionQueryActivated)
-				occHelper->ReadCullingResult();
+			if (option.IsHZBOccActivated())
+				hzbOccHelper->ReadCullingResult(); 
 
 			updateHelper.Clear();
 			for (uint i = 0; i < (uint)J_FRAME_RESOURCE_TYPE::COUNT; ++i)
@@ -669,16 +694,22 @@ namespace JinEngine
 				UpdateSceneLightCB(drawTarget->scene, drawTarget->updateInfo->lightUpdateCount, drawTarget->updateInfo->hotLitghtUpdateCount);	//always update
 				if (isAllowOcclusion)
 				{
-					const uint queryCount = drawTarget->scene->GetComponetCount(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
-					occHelper->UpdatePass(drawTarget->scene, queryCount, updateHelper.fData[(int)J_FRAME_RESOURCE_TYPE::PASS].offset - 1);
+					if (option.IsHZBOccActivated())
+					{
+						const uint queryCount = drawTarget->scene->GetComponetCount(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
+						hzbOccHelper->UpdatePass(drawTarget->scene, info, queryCount, updateHelper.fData[(int)J_FRAME_RESOURCE_TYPE::PASS].offset - 1);
+					}
 				}
+
 				drawTarget->updateInfo->UpdateEnd();
 			}
 			UpdateMaterialCB();
+			if(occBase != nullptr)
+				occBase->UpdateTimer(); 
 		}
 		void JGraphicImpl::UpdateSceneObjectCB(_In_ JScene* scene, _Out_ uint& updateCount, _Out_ uint& hotUpdateCount)
 		{
-			bool isUpdateBoundingObj = scene->IsMainScene() && option.isOcclusionQueryActivated;
+			const bool isUpdateBoundingObj = scene->IsMainScene() && option.isOcclusionQueryActivated;
 			uint addOffset = 0;
 			const std::vector<JComponent*>& jRvec = scene->CashInterface()->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
 			const uint renderItemCount = (uint)jRvec.size();
@@ -714,7 +745,7 @@ namespace JinEngine
 						//MessageBox(0, std::to_wstring(index).c_str(), std::to_wstring(CallGetFrameBuffOffset(*renderItem)).c_str(), 0);
 						currObjectCB->CopyData(index, objectConstants);
 						currBoundingObjectCB->CopyData(index, boundingConstants);
-						occHelper->UpdateObject(renderItem, j, index);
+						hzbOccHelper->UpdateObject(renderItem, j, index);
 						++updateCount;
 					}
 				}
@@ -950,12 +981,13 @@ namespace JinEngine
 						DrawHelper copiedHelper = helper;
 						copiedHelper.scene = drawTarget->scene;
 						copiedHelper.cam = static_cast<JCamera*>(drawTarget->sceneRequestor[j]->jCamera);
-						copiedHelper.isOcclusionActivated = option.isOcclusionQueryActivated &&
-							copiedHelper.scene->IsMainScene() && copiedHelper.cam->IsMainCamera();
+						copiedHelper.isOcclusionActivated = copiedHelper.scene->IsMainScene() &&
+							copiedHelper.cam->IsMainCamera() &&
+							occBase != nullptr && 
+							occBase->CanCullingStart();
 						copiedHelper.camOffset += j;
 
 						DrawSceneRenderTarget(copiedHelper);
-
 						if (copiedHelper.isOcclusionActivated)
 							occlusionCash.push_back(copiedHelper);
 					}
@@ -968,7 +1000,6 @@ namespace JinEngine
 				helper.litIndexOffset += 1;
 				helper.shadowOffset += (uint)drawTarget->shadowRequestor.size();
 			}
-
 			const uint occlusionCount = (uint)occlusionCash.size();
 			for (uint i = 0; i < occlusionCount; ++i)
 				DrawOcclusionDepthMap(occlusionCash[i]);
@@ -1018,8 +1049,8 @@ namespace JinEngine
 
 			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC), helper, false, false, true);
 			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED), helper, false, helper.scene->IsAnimatorActivated(), true);
-			//if (isOcclusionActivated)
-			//	commandList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
+			if (option.IsHDOccActivated())
+				commandList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
 			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_LAYER, J_MESHGEOMETRY_TYPE::STATIC), helper, false, false, false);
 			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::SKY, J_MESHGEOMETRY_TYPE::STATIC), helper, false, false, false);
 		}
@@ -1067,11 +1098,11 @@ namespace JinEngine
 		void JGraphicImpl::DrawOcclusionDepthMap(const DrawHelper helper)
 		{
 			D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)info.occlusionWidth, (float)info.occlusionHeight, 0.0f, 1.0f };
-			D3D12_RECT mScissorRect = { 0, 0, info.occlusionWidth, info.occlusionHeight};
+			D3D12_RECT mScissorRect = { 0, 0, info.occlusionWidth, info.occlusionHeight };
 
 			commandList->RSSetViewports(1, &mViewport);
 			commandList->RSSetScissorRects(1, &mScissorRect);
-			 
+
 			CD3DX12_RESOURCE_BARRIER rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->occlusionDepthMap.Get(),
 				D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			commandList->ResourceBarrier(1, &rsBarrier);
@@ -1087,51 +1118,53 @@ namespace JinEngine
 
 			D3D12_GPU_VIRTUAL_ADDRESS camCBAddress = camCB->GetGPUVirtualAddress() + helper.camOffset * camCBByteSize;
 			commandList->SetGraphicsRootConstantBufferView(3, camCBAddress);
-
+			 
 			DrawSceneBoundingBox(commandList.Get(), helper.scene->SpaceSpatialInterface()->GetAlignedObject(helper.scene->GetMainCamera()->GetBoundingFrustum()), helper, helper.scene->IsAnimatorActivated());
+			//DrawSceneBoundingBox(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC), helper, helper.scene->IsAnimatorActivated());
+			//DrawSceneBoundingBox(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED), helper, helper.scene->IsAnimatorActivated());
 
 			rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->occlusionDepthMap.Get(),
 				D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ);
 			commandList->ResourceBarrier(1, &rsBarrier);
 
-			/*depthMapDebug->DrawDepthDebug(commandList.Get(),
-				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthStart()),
-				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDebugStart()),
-				JVector2<uint>(info.occlusionWidth, info.occlusionHeight));*/
-
-			occHelper->DepthMapDownSampling(commandList.Get(),
-				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthMapStart()),
-				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart()),
-				graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionMipMapStart()),
-				info.occlusionMapCount,
-				graphicResource->cbvSrvUavDescriptorSize);
-			occHelper->OcclusuinCulling(commandList.Get(), graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart()));
-
-			JVector2<uint> occlusionSize = JVector2<uint>(info.occlusionWidth, info.occlusionHeight);
-			for (uint i = 0; i < graphicResource->occlusionCount; ++i)
+			if (option.IsHZBOccActivated())
 			{
-				depthMapDebug->DrawDepthDebug(commandList.Get(),
-					graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart() + i),
-					graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDebugStart() + i),
-					occlusionSize);
-				occlusionSize /= 2;
-			}
+				hzbOccHelper->DepthMapDownSampling(commandList.Get(),
+					graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionDepthMapStart()),
+					graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart()),
+					graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionMipMapStart()),
+					info.occlusionMapCount,
+					graphicResource->cbvSrvUavDescriptorSize);
+				hzbOccHelper->OcclusuinCulling(commandList.Get(), graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart()));
 
-			/*
-			*CD3DX12_RESOURCE_BARRIER rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->GetOcclusionResult(), D3D12_RESOURCE_STATE_PREDICATION, D3D12_RESOURCE_STATE_COPY_DEST);
-			commandList->ResourceBarrier(1, &rsBarrier);
-			commandList->ResolveQueryData(graphicResource->GetOcclusionQueryHeap(), D3D12_QUERY_TYPE_BINARY_OCCLUSION, 0, graphicResource->GetOcclusionQueryHeapCapacity(), graphicResource->GetOcclusionResult(), 0);
-			rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->GetOcclusionResult(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PREDICATION);
-			commandList->ResourceBarrier(1, &rsBarrier);
-			*/
+				JVector2<uint> occlusionSize = JVector2<uint>(info.occlusionWidth, info.occlusionHeight);
+				for (uint i = 0; i < graphicResource->occlusionCount; ++i)
+				{
+					depthMapDebug->DrawDepthDebug(commandList.Get(),
+						graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart() + i),
+						graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDebugStart() + i),
+						occlusionSize);
+					occlusionSize /= 2;
+				}
+			}
+			else if (option.IsHDOccActivated())
+			{ 
+				CD3DX12_RESOURCE_BARRIER rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->GetOcclusionResult(), D3D12_RESOURCE_STATE_PREDICATION, D3D12_RESOURCE_STATE_COPY_DEST);
+				commandList->ResourceBarrier(1, &rsBarrier);
+				commandList->ResolveQueryData(graphicResource->GetOcclusionQueryHeap(), D3D12_QUERY_TYPE_BINARY_OCCLUSION, 0, graphicResource->GetOcclusionQueryHeapCapacity(), graphicResource->GetOcclusionResult(), 0);
+				rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(graphicResource->GetOcclusionResult(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PREDICATION);
+				commandList->ResourceBarrier(1, &rsBarrier);
+			}
 		}
 		void JGraphicImpl::DrawGameObject(ID3D12GraphicsCommandList* commandList,
 			const std::vector<JGameObject*>& gameObject,
 			const DrawHelper helper,
 			const bool isDrawShadowMap,
 			const bool isAnimationActivated,
-			const bool isOcclusionActivated)
+			const bool allowOcclusion)
 		{
+			const bool isOcclusionActivated = allowOcclusion && option.isOcclusionQueryActivated;
+
 			JShader* shadowShader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SHADOW_MAP_SHADER);
 
 			uint objectCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JObjectConstants));
@@ -1140,7 +1173,7 @@ namespace JinEngine
 			auto objectCB = currFrameResource->objectCB->Resource();
 			auto skinCB = currFrameResource->skinnedCB->Resource();
 			const uint gameObjCount = (uint)gameObject.size();
-			 
+
 			for (uint i = 0; i < gameObjCount; ++i)
 			{
 				JRenderItem* renderItem = gameObject[i]->GetRenderItem();
@@ -1160,6 +1193,10 @@ namespace JinEngine
 
 				for (uint j = 0; j < submeshCount; ++j)
 				{
+					const uint finalObjOffset = (helper.objectOffset + CallGetFrameBuffOffset(*renderItem) + j);
+					if (isOcclusionActivated && option.IsHZBOccActivated() && hzbOccHelper->IsCulled(finalObjOffset))
+						continue;
+
 					const JMaterial* mat = renderItem->GetValidMaterial(j);
 					const JShader* shader = mat->GetShader();
 					const size_t shaderGuid = shader->GetGuid();
@@ -1179,7 +1216,6 @@ namespace JinEngine
 							commandList->SetPipelineState(shadowShader->GetGraphicPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::STATIC)));
 					}
 
-					const uint finalObjOffset = (helper.objectOffset + CallGetFrameBuffOffset(*renderItem) + j); 
 					D3D12_GPU_VIRTUAL_ADDRESS objectCBAddress = objectCB->GetGPUVirtualAddress() + finalObjOffset * objectCBByteSize;
 					commandList->SetGraphicsRootConstantBufferView(0, objectCBAddress);
 					if (onSkinned)
@@ -1187,16 +1223,17 @@ namespace JinEngine
 						D3D12_GPU_VIRTUAL_ADDRESS skinObjCBAddress = skinCB->GetGPUVirtualAddress() + (helper.aniOffset + i) * skinCBByteSize;
 						commandList->SetGraphicsRootConstantBufferView(1, skinObjCBAddress);
 					}
-					if (!isOcclusionActivated || !occHelper->IsCulled(finalObjOffset))
-						commandList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(j), 1, mesh->GetSubmeshStartIndexLocation(j), mesh->GetSubmeshBaseVertexLocation(j), 0);
-				} 
+					if (isOcclusionActivated && option.IsHDOccActivated())
+						commandList->SetPredication(graphicResource->GetOcclusionResult(), finalObjOffset * 8, D3D12_PREDICATION_OP_EQUAL_ZERO);				 
+					commandList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(j), 1, mesh->GetSubmeshStartIndexLocation(j), mesh->GetSubmeshBaseVertexLocation(j), 0);
+				}
 			}
 		}
 		void JGraphicImpl::DrawSceneBoundingBox(ID3D12GraphicsCommandList* commandList,
 			const std::vector<JGameObject*>& gameObject,
 			const DrawHelper helper,
 			const bool isAnimationActivated)
-		{	 
+		{
 			//JMeshGeometry* mesh = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE);
 			JMeshGeometry* mesh = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE);
 			JMaterial* mat = JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST);
@@ -1221,7 +1258,7 @@ namespace JinEngine
 				JRenderItem* renderItem = gameObject[i]->GetRenderItem();
 				if (!renderItem->IsVisible())
 					continue;
- 
+
 				JAnimator* animator = gameObject[i]->GetComponentWithParent<JAnimator>();
 				const bool onSkinned = animator != nullptr && isAnimationActivated;
 
@@ -1242,11 +1279,15 @@ namespace JinEngine
 						D3D12_GPU_VIRTUAL_ADDRESS skinObjCBAddress = skinCB->GetGPUVirtualAddress() + (helper.aniOffset + i) * skinCBByteSize;
 						commandList->SetGraphicsRootConstantBufferView(1, skinObjCBAddress);
 					}
-
-					//commandList->BeginQuery(graphicResource->GetOcclusionQueryHeap(), D3D12_QUERY_TYPE_BINARY_OCCLUSION, index);
-					commandList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(0), 1, mesh->GetSubmeshStartIndexLocation(0), mesh->GetSubmeshBaseVertexLocation(0), 0);
-					//commandList->EndQuery(graphicResource->GetOcclusionQueryHeap(), D3D12_QUERY_TYPE_BINARY_OCCLUSION, index);
-				} 
+					if (option.isHZBOcclusionActivated)
+						commandList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(0), 1, mesh->GetSubmeshStartIndexLocation(0), mesh->GetSubmeshBaseVertexLocation(0), 0);
+					else
+					{
+						commandList->BeginQuery(graphicResource->GetOcclusionQueryHeap(), D3D12_QUERY_TYPE_BINARY_OCCLUSION, index);
+						commandList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(0), 1, mesh->GetSubmeshStartIndexLocation(0), mesh->GetSubmeshBaseVertexLocation(0), 0);
+						commandList->EndQuery(graphicResource->GetOcclusionQueryHeap(), D3D12_QUERY_TYPE_BINARY_OCCLUSION, index);
+					}
+				}
 			}
 		}
 		bool JGraphicImpl::InitializeD3D()
@@ -1257,7 +1298,7 @@ namespace JinEngine
 				ComPtr<ID3D12Debug> debugController;
 				ThrowIfFailedHr(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
 				debugController->EnableDebugLayer();
-	}
+			}
 #endif 
 			ThrowIfFailedHr(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
 			HRESULT hardwareResult = D3D12CreateDevice(
@@ -1304,7 +1345,7 @@ namespace JinEngine
 			graphicResource->dsvDescriptorSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 			graphicResource->cbvSrvUavDescriptorSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 			return true;
-}
+		}
 		bool JGraphicImpl::InitializeResource()
 		{
 			FlushCommandQueue();
@@ -1313,11 +1354,12 @@ namespace JinEngine
 			graphicResource->BuildRtvDescriptorHeaps(d3dDevice.Get());
 			graphicResource->BuildDsvDescriptorHeaps(d3dDevice.Get());
 			graphicResource->BuildSrvDescriptorHeaps(d3dDevice.Get());
-			graphicResource->BuildOcclusionQueryHeap(d3dDevice.Get());
+			graphicResource->BuildOccQueryHeaps(d3dDevice.Get());
+			graphicResource->CreateOcclusionQueryResource(d3dDevice.Get());
+			graphicResource->CreateOcclusionHZBResource(d3dDevice.Get(), commandList.Get(), info.occlusionWidth, info.occlusionHeight);
 			graphicResource->CreateDepthStencilResource(d3dDevice.Get(), commandList.Get(), info.width, info.height, m4xMsaaState, m4xMsaaQuality);
-			graphicResource->CreateOcclusionQueryResource(d3dDevice.Get(), commandList.Get(), info.occlusionWidth, info.occlusionHeight, m4xMsaaState, m4xMsaaQuality);
 			BuildFrameResources();
-			occHelper->Initialize(d3dDevice.Get(), info);
+			hzbOccHelper->Initialize(d3dDevice.Get(), info);
 			depthMapDebug->Initialize(d3dDevice.Get(), graphicResource->backBufferFormat, graphicResource->depthStencilFormat);
 			EndCommand();
 			FlushCommandQueue();
@@ -1690,6 +1732,7 @@ namespace JinEngine
 			if (!stream.is_open())
 				return;
 
+			JFileIOHelper::StoreJString(stream, L"--Info--", L"");
 			JFileIOHelper::StoreAtomicData(stream, L"UploadObjCount:", info.upObjCount);
 			JFileIOHelper::StoreAtomicData(stream, L"UploadAniCount:", info.upAniCount);
 			JFileIOHelper::StoreAtomicData(stream, L"UploadPassCount:", info.upPassCount);
@@ -1701,7 +1744,10 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"BindCubeMapCount:", info.bindingCubeMapCapacity);
 			JFileIOHelper::StoreAtomicData(stream, L"BindShadowTextureCount:", info.bindingShadowTextureCapacity);
 
+			JFileIOHelper::StoreJString(stream, L"--Option--", L"");
 			JFileIOHelper::StoreAtomicData(stream, L"AllowOcclusionQuery:", option.isOcclusionQueryActivated);
+			JFileIOHelper::StoreAtomicData(stream, L"HardwareOcclusionAcitvated:", option.isHDOcclusionAcitvated);
+			JFileIOHelper::StoreAtomicData(stream, L"HZBOcclusionAcitvated:", option.isHZBOcclusionActivated);
 			stream.close();
 		}
 		void JGraphicImpl::LoadData()
@@ -1711,7 +1757,9 @@ namespace JinEngine
 			stream.open(path, std::ios::binary | std::ios::in);
 			if (!stream.is_open())
 				return;
-
+			 
+			std::wstring guide;
+			JFileIOHelper::LoadJString(stream, guide);
 			JFileIOHelper::LoadAtomicData(stream, info.upObjCount);
 			JFileIOHelper::LoadAtomicData(stream, info.upAniCount);
 			JFileIOHelper::LoadAtomicData(stream, info.upPassCount);
@@ -1723,16 +1771,22 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, info.bindingCubeMapCapacity);
 			JFileIOHelper::LoadAtomicData(stream, info.bindingShadowTextureCapacity);
 
-			JFileIOHelper::LoadAtomicData(stream, option.isOcclusionQueryActivated);
+			JGraphicOption newOption;
+			JFileIOHelper::LoadJString(stream, guide);
+			JFileIOHelper::LoadAtomicData(stream, newOption.isOcclusionQueryActivated);
+			JFileIOHelper::LoadAtomicData(stream, newOption.isHDOcclusionAcitvated);
+			JFileIOHelper::LoadAtomicData(stream, newOption.isHZBOcclusionActivated);
 			stream.close();
+			SetGraphicOption(newOption);
 		}
 		JGraphicImpl::JGraphicImpl()
 			:guid(JCUtil::CalculateGuid(typeid(JGraphicImpl).name()))
 		{
 			info.occlusionWidth = std::pow(2, JGraphicResourceManager::occlusionCapacity - 1);
 			info.occlusionHeight = std::pow(2, JGraphicResourceManager::occlusionCapacity - 1);
+			info.occlusionMinSize = graphicResource->minOcclusionSize;
 			info.occlusionMapCapacity = JGraphicResourceManager::occlusionCapacity;
-			info.occlusionMapCount = JMathHelper::Log2Int(info.occlusionWidth) + 1;
+			info.occlusionMapCount = JMathHelper::Log2Int(info.occlusionWidth) - JMathHelper::Log2Int(graphicResource->minOcclusionSize) + 1;
 
 			updateHelper.fData.resize((int)J_FRAME_RESOURCE_TYPE::COUNT);
 			updateHelper.bData.resize((int)J_GRAPHIC_TEXTURE_TYPE::COUNT);
@@ -1810,9 +1864,9 @@ namespace JinEngine
 			using NotifyUpdateCapacity = UpdateHelper::NotifyUpdateCapacityT::Callable;
 			auto occlusionOnEvent = [](JGraphicImpl& graphic)
 			{
-				graphic.occHelper->UpdateObjectCapacity(graphic.d3dDevice.Get(),
-					graphic.currFrameResource->GetElementCount(J_FRAME_RESOURCE_TYPE::OBJECT));
+				graphic.hzbOccHelper->UpdateObjectCapacity(graphic.d3dDevice.Get(), graphic.currFrameResource->GetElementCount(J_FRAME_RESOURCE_TYPE::OBJECT));
 			};
+
 			for (uint i = 0; i < (uint)J_FRAME_RESOURCE_TYPE::COUNT; ++i)
 			{
 				J_FRAME_RESOURCE_TYPE type = (J_FRAME_RESOURCE_TYPE)i;
@@ -1888,5 +1942,5 @@ namespace JinEngine
 		}
 		JGraphicImpl::~JGraphicImpl()
 		{}
-}
+	}
 }

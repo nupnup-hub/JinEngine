@@ -34,7 +34,8 @@ namespace JinEngine
 				std::unique_ptr<JEditorAttribute> MakeAttribute()noexcept;
 			};
 		private:
-			using OpenWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>;
+			using OpenEditorWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>;
+			using OpenSimpleWindowF = Core::JSFunctorType<void, bool&>;
 		protected: 
 			std::unique_ptr<JEditorMenuBar> editorMenuBar = nullptr;
 			std::vector<JEditorWindow*>windows;
@@ -43,7 +44,8 @@ namespace JinEngine
 			bool isPageOpen;
 			const J_EDITOR_PAGE_FLAG pageFlag;
 		private:
-			std::unique_ptr<OpenWindowF::Functor> openWindowFunctor;
+			std::unique_ptr<OpenEditorWindowF::Functor> openEditorWindowFunctor;
+			std::unique_ptr<OpenSimpleWindowF::Functor> openSimpleWindowFunctor;
 		public:
 			JEditorPage(const std::string name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_FLAG pageFlag);
 			~JEditorPage();
@@ -69,7 +71,8 @@ namespace JinEngine
 			void FocusWindow(JEditorWindow* window)noexcept;
 			void UnFocusWindow(JEditorWindow* window)noexcept;
 		protected:
-			OpenWindowF::Functor* GetFunctorPtr()noexcept;
+			OpenEditorWindowF::Functor* GetOpEditorWindowFunctorPtr()noexcept;
+			OpenSimpleWindowF::Functor* GetOpSimpleWindowFunctorPtr()noexcept;
 		protected:
 			void UpdateDockSpace(const int dockspaceFlag);
 			void UpdateWindowMenuBar();

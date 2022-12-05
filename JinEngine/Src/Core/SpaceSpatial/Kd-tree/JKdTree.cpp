@@ -198,10 +198,7 @@ namespace JinEngine
 			std::vector<JGameObject*> alignObject(totalObjCount);
 			totalObjCount = 0;
 			for (uint i = 0; i < alignLeafNodeCount; ++i)
-			{
 				alignNode[i]->StuffInnerGameObject(alignObject, totalObjCount);
-				totalObjCount += alignNode[i]->GetInnerGameObjectCount();
-			}
 			return alignObject;
 		}
 		std::vector<JGameObject*> JKdTree::GetAlignedObject(const DirectX::BoundingFrustum& camFrustum)const noexcept
@@ -220,10 +217,8 @@ namespace JinEngine
 			std::vector<JGameObject*> alignObject(totalObjCount);
 			totalObjCount = 0;
 			for (uint i = 0; i < index; ++i)
-			{
-				alignNode[i]->StuffInnerGameObject(alignObject, totalObjCount);
-				totalObjCount += alignNode[i]->GetInnerGameObjectCount();
-			}
+				alignNode[i]->StuffInnerGameObject(alignObject, totalObjCount);		
+			alignObject.resize(totalObjCount);
 			return alignObject;
 		}
 		void JKdTree::SetKdTreeOption(const JKdTreeOption& newOption)noexcept

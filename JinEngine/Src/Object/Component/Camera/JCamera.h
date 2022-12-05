@@ -17,6 +17,7 @@ namespace JinEngine
 		float cameraNear = 0.0f;
 		REGISTER_PROPERTY_EX(cameraFar, GetFar, SetFar, GUI_SLIDER(0, 1000, true))
 		float cameraFar = 0.0f; 
+		 
 		float cameraAspect = 0.0f;
 		REGISTER_PROPERTY_EX(cameraFov, GetFovYDegree, SetFovDegree, GUI_SLIDER(0, 360, true))
 		float cameraFov = 0.0f;
@@ -62,7 +63,7 @@ namespace JinEngine
 		J_CAMERA_STATE GetCameraState()const noexcept; 
 	 
 		void SetNear(float value)noexcept;
-		void SetFar(float value) noexcept;
+		void SetFar(float value) noexcept; 
 		void SetFov(float value) noexcept;
 		void SetFovDegree(float value) noexcept;
 		void SetViewSize(int width, int height) noexcept;

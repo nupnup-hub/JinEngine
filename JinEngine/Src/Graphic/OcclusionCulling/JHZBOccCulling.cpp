@@ -1,4 +1,4 @@
-#include"JOcclusionCulling.h" 
+#include"JHZBOccCulling.h" 
 #include"../JGraphicInfo.h"
 #include"../FrameResource/JBoundingObjectConstants.h"
 #include"../../Core/Exception/JExceptionMacro.h"
@@ -15,7 +15,7 @@
 #include"../../../Lib/DirectX/d3dx12.h"
 
 //Debug
-#include"../../Core/File/JFileIOHelper.h"
+//#include"../../Core/File/JFileIOHelper.h"
 
 using namespace DirectX;
 using namespace Microsoft::WRL;
@@ -24,7 +24,7 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		void JOcclusionCulling::Initialize(ID3D12Device* d3dDevice, const JGraphicInfo& info)
+		void JHZBOccCulling::Initialize(ID3D12Device* d3dDevice, const JGraphicInfo& info)
 		{
 			BuildRootSignature(d3dDevice, info.occlusionMapCapacity);
 			BuildUploadBuffer(d3dDevice, info.upObjCapacity, info.occlusionMapCapacity);
@@ -43,58 +43,31 @@ namespace JinEngine
 				nowHeight /= 2;
 			}
 		}
-		void JOcclusionCulling::Clear()
-		{
-			camera.Clear();
+		void JHZBOccCulling::Clear()
+		{ 
 			if (queryResult != nullptr)
 				queryResultBuffer->Resource()->Unmap(0, nullptr);
+
+			objectBuffer.reset();
+			queryOutBuffer.reset();
+			queryResultBuffer.reset();
+			depthMapInfoCB.reset();
+			occlusionPassCB.reset();
+			mRootSignature.Reset();
 			queryResult = nullptr;
+
+			//Debug
+			//debugBuffer.reset();
 		}
-		ID3D12RootSignature* JOcclusionCulling::GetRootSignature()const noexcept
+		ID3D12RootSignature* JHZBOccCulling::GetRootSignature()const noexcept
 		{
 			return mRootSignature.Get();
 		}
-		void JOcclusionCulling::SetCullingTriger(const bool value)noexcept
-		{
-			canCulling = value;
-		}
-		bool JOcclusionCulling::CanCulling()const noexcept
-		{
-			return canCulling;
-		}
-		bool JOcclusionCulling::IsCulled(const uint objIndex)const noexcept
+		bool JHZBOccCulling::IsCulled(const uint objIndex)const noexcept
 		{
 			return queryResult != nullptr ? queryResult[objIndex] : false;
 		}
-		void JOcclusionCulling::UpdateCamera(JCamera* updateCamera)
-		{
-			if (!camera.IsValid())
-			{
-				camera = Core::GetUserPtr(updateCamera);
-				canCulling = true;
-				updateFrustum = camera->GetBoundingFrustum();
-				return;
-			}
-
-			const BoundingFrustum nowFrustum = camera->GetBoundingFrustum();
-			XMVECTOR distanceV = XMVector3Length(XMVectorSubtract(XMLoadFloat3(&nowFrustum.Origin), XMLoadFloat3(&updateFrustum.Origin)));
-			XMFLOAT3 distanceF;
-			XMStoreFloat3(&distanceF, distanceV);
-
-			XMVECTOR quaternionV = XMQuaternionDot(XMLoadFloat4(&nowFrustum.Orientation), XMLoadFloat4(&updateFrustum.Orientation));
-			XMFLOAT3 quaternionF;
-			XMStoreFloat3(&quaternionF, quaternionV);
-
-			float distanceFactor = abs(distanceF.x);
-			float quaternionFactor = (1 - quaternionF.x) * 10;
-
-			if (distanceFactor + quaternionFactor > 2)
-			{
-				canCulling = true;
-				updateFrustum = camera->GetBoundingFrustum();
-			}
-		}
-		void JOcclusionCulling::UpdateOcclusionMapInfo(ID3D12Device* device, const JGraphicInfo& info)
+		void JHZBOccCulling::UpdateOcclusionMapInfo(ID3D12Device* device, const JGraphicInfo& info)
 		{
 			uint nowWidth = info.occlusionWidth;
 			uint nowHeight = info.occlusionHeight;
@@ -113,7 +86,7 @@ namespace JinEngine
 			JShader* shader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_DOWNSAMPLING_SHADER);
 			shader->CompileInterface()->RecompileGraphicShader();
 		}
-		void JOcclusionCulling::UpdateObjectCapacity(ID3D12Device* device, const uint objectCapacity)
+		void JHZBOccCulling::UpdateObjectCapacity(ID3D12Device* device, const uint objectCapacity)
 		{
 			objectBuffer->Clear();
 			objectBuffer->Build(device, objectCapacity);
@@ -125,13 +98,13 @@ namespace JinEngine
 			queryResultBuffer->Build(device, objectCapacity);
 
 			//Debug
-			debugBuffer->Clear();
-			debugBuffer->Build(device, objectCapacity);
+			//debugBuffer->Clear();
+			//debugBuffer->Build(device, objectCapacity);
 
 			JShader* shader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_OCCLUSION_SHADER);
 			shader->CompileInterface()->RecompileGraphicShader();
 		}
-		void JOcclusionCulling::UpdateObject(JRenderItem* rItem, const uint submeshIndex, const uint buffIndex)
+		void JHZBOccCulling::UpdateObject(JRenderItem* rItem, const uint submeshIndex, const uint buffIndex)
 		{
 			const DirectX::BoundingBox bbox = rItem->GetMesh()->GetBoundingBox();
 			objectConstants.center = bbox.Center;
@@ -142,39 +115,32 @@ namespace JinEngine
 
 			objectBuffer->CopyData(buffIndex, objectConstants);
 		}
-		void JOcclusionCulling::UpdatePass(JScene* scene, const uint queryCount, const uint cbIndex)
+		void JHZBOccCulling::UpdatePass(JScene* scene, const JGraphicInfo& info, const uint queryCount, const uint cbIndex)
 		{
 			JCamera* mainCam = scene->GetMainCamera();
 			JOcclusionPassConstants passConstatns;
 
 			//static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
 			static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE)->GetBoundingBox();
-
-			JTransform* mainCamT = mainCam->GetTransform();
-			const XMFLOAT3 r = mainCamT->GetRotation();
-			const XMFLOAT3 p = mainCamT->GetPosition();
-
-			const XMVECTOR s = XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f);
-			const XMVECTOR q = XMQuaternionRotationRollPitchYaw(r.x * (JMathHelper::Pi / 180),
-				r.y * (JMathHelper::Pi / 180),
-				r.z * (JMathHelper::Pi / 180));
-			const XMVECTOR t = XMLoadFloat3(&p);
-
-			const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-			const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), mainCamT->GetOwner()->GetParent()->GetTransform()->GetWorld());
-
-			XMStoreFloat4x4(&passConstatns.camWorld, XMMatrixTranspose(worldM));
 			XMStoreFloat4x4(&passConstatns.view, XMMatrixTranspose(mainCam->GetView()));
 			XMStoreFloat4x4(&passConstatns.proj, XMMatrixTranspose(mainCam->GetProj()));
-			XMStoreFloat4x4(&passConstatns.viewProj, XMMatrixTranspose(XMMatrixMultiply(mainCam->GetView(), mainCam->GetProj())));
+			const BoundingFrustum frustum = mainCam->GetBoundingFrustum();
+			XMVECTOR planeV[6];
+			frustum.GetPlanes(&planeV[0], &planeV[1], &planeV[2], &planeV[3], &planeV[4], &planeV[5]);
+			for (uint i = 0; i < 6; ++i)
+				XMStoreFloat4(&passConstatns.frustumPlane[i], planeV[i]);
+
 			passConstatns.viewWidth = mainCam->GetViewWidth();
 			passConstatns.viewHeight = mainCam->GetViewHeight();
 			passConstatns.camNear = mainCam->GetNear();
 			passConstatns.validQueryCount = queryCount;
-
+			passConstatns.occMapCount = info.occlusionMapCount;
+			passConstatns.maxOccSize = max(info.occlusionWidth, info.occlusionHeight);
+			passConstatns.minOccSize = info.occlusionMinSize;
+			 
 			occlusionPassCB->CopyData(cbIndex, passConstatns);
 		}
-		void JOcclusionCulling::DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,
+		void JHZBOccCulling::DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,
 			CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSrvHandle,
 			CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapSrvHandle,
 			CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapUavHandle,
@@ -215,7 +181,7 @@ namespace JinEngine
 				commandList->Dispatch(dgroupDim.x, dgroupDim.y, dgroupDim.z);
 			}
 		}
-		void JOcclusionCulling::OcclusuinCulling(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle)
+		void JHZBOccCulling::OcclusuinCulling(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle)
 		{
 			commandList->SetComputeRootDescriptorTable(2, mipMapStHandle);
 			commandList->SetComputeRootShaderResourceView(3, objectBuffer->Resource()->GetGPUVirtualAddress());
@@ -223,7 +189,7 @@ namespace JinEngine
 			commandList->SetComputeRootConstantBufferView(6, occlusionPassCB->Resource()->GetGPUVirtualAddress());
 
 			//Debug
-			debugBuffer->SetComputeShader(commandList);
+			//debugBuffer->SetComputeShader(commandList);
 
 			JShader* shader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_OCCLUSION_SHADER);
 			commandList->SetPipelineState(shader->GetComputePso());
@@ -240,19 +206,17 @@ namespace JinEngine
 			rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(queryOutBuffer->Resource(),
 				D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON);
 			commandList->ResourceBarrier(1, &rsBarrier);
-			isQueryUpdated = true;
+			SetReadResultTrigger(true);
 		}
-		void JOcclusionCulling::ReadCullingResult()
+		void JHZBOccCulling::ReadCullingResult()
 		{
-			if (!isQueryUpdated)
+			if (!CanReadOcclusionResult())
 				return;
 
 			ThrowIfFailedHr(queryResultBuffer->Resource()->Map(0, nullptr, reinterpret_cast<void**>(&queryResult)));
-			//queryResult = nullptr;
-			//queryResultBuffer->Resource()->Unmap(0, nullptr);
-			isQueryUpdated = false;
+			SetReadResultTrigger(false);
 
-			static int streamC = 2;
+			/*static int streamC = 0;
 			if (streamC < 1)
 			{
 				std::wofstream stream;
@@ -261,7 +225,7 @@ namespace JinEngine
 				{
 					int count = 0;
 					HZBDebugInfo* info = debugBuffer->Map(count);
-					for (uint i = 0; i < 8; ++i)
+					for (uint i = 0; i < 32; ++i)
 					{
 						JFileIOHelper::StoreXMFloat4x4(stream, L"ObjWorld", info[i].objWorld);
 
@@ -272,9 +236,7 @@ namespace JinEngine
 						JFileIOHelper::StoreXMFloat4(stream, L"PosCV", info[i].posCV);
 						JFileIOHelper::StoreXMFloat4(stream, L"PosEW", info[i].posEW);
 						JFileIOHelper::StoreXMFloat4(stream, L"PosEV", info[i].posEV);
-
-						JFileIOHelper::StoreXMFloat3(stream, L"camPos", info[i].camPos);
-
+						 
 						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint0", info[i].nearPoint0);
 						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint1", info[i].nearPoint1);
 						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint2", info[i].nearPoint2);
@@ -311,6 +273,7 @@ namespace JinEngine
 
 						JFileIOHelper::StoreAtomicData(stream, L"Width", info[i].width);
 						JFileIOHelper::StoreAtomicData(stream, L"Height", info[i].height);
+						JFileIOHelper::StoreAtomicData(stream, L"Lod", info[i].lod);
 
 						JFileIOHelper::StoreXMFloat3(stream, L"uvExtentsMax", info[i].uvExtentsMax);
 						JFileIOHelper::StoreXMFloat3(stream, L"uvExtentsMin", info[i].uvExtentsMin);
@@ -327,10 +290,11 @@ namespace JinEngine
 					stream.close();
 				}
 			}
+			*/
 		}
-		void JOcclusionCulling::BuildRootSignature(ID3D12Device* d3dDevice, const uint occlusionDsvCapacity)
+		void JHZBOccCulling::BuildRootSignature(ID3D12Device* d3dDevice, const uint occlusionDsvCapacity)
 		{
-			static constexpr int slotCount = 8;
+			static constexpr int slotCount =7;
 			CD3DX12_ROOT_PARAMETER slotRootParameter[slotCount];
 
 			CD3DX12_DESCRIPTOR_RANGE depthMapTable;
@@ -351,7 +315,7 @@ namespace JinEngine
 			slotRootParameter[6].InitAsConstantBufferView(1);
 
 			//Debug
-			slotRootParameter[7].InitAsUnorderedAccessView(2, 1);
+			//slotRootParameter[7].InitAsUnorderedAccessView(2, 1);
 
 			std::vector< CD3DX12_STATIC_SAMPLER_DESC> samDesc
 			{
@@ -395,7 +359,7 @@ namespace JinEngine
 				serializedRootSig->GetBufferSize(),
 				IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 		}
-		void JOcclusionCulling::BuildUploadBuffer(ID3D12Device* device, const uint objectCapacity, const uint occlusionCapacity)
+		void JHZBOccCulling::BuildUploadBuffer(ID3D12Device* device, const uint objectCapacity, const uint occlusionCapacity)
 		{
 			objectBuffer = std::make_unique<JUploadBuffer<JOcclusionObjectConstants>>(J_UPLOAD_BUFFER_TYPE::COMMON);
 			queryOutBuffer = std::make_unique<JUploadBuffer<float>>(J_UPLOAD_BUFFER_TYPE::UNORDERED_ACCEESS);
@@ -410,8 +374,8 @@ namespace JinEngine
 			occlusionPassCB->Build(device, 1);
 
 			//Debug
-			debugBuffer = std::make_unique<JHlslDebug<HZBDebugInfo>>(7);
-			debugBuffer->Build(device, objectCapacity);
+			//debugBuffer = std::make_unique<JHlslDebug<HZBDebugInfo>>(7);
+			//debugBuffer->Build(device, objectCapacity);
 		}
 	}
 }

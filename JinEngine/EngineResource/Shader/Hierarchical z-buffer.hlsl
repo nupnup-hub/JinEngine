@@ -7,6 +7,8 @@ struct ObjectInfo
 	int isValid;
 };
 
+//Debug
+/*
 struct HZBDebugInfo
 {
 	float4x4 objWorld;
@@ -18,8 +20,6 @@ struct HZBDebugInfo
 	float4 posCV;
 	float4 posEW;
 	float4 posEV;
-
-	float3 camPos;
 
 	float3 nearPoint0;
 	float3 nearPoint1;
@@ -57,6 +57,7 @@ struct HZBDebugInfo
 
 	float width;
 	float height;
+	int lod;
 
 	float3 uvExtentsMax;
 	float3 uvExtentsMin;
@@ -67,8 +68,8 @@ struct HZBDebugInfo
 	int threadIndex;
 	int queryIndex;
 };
-
 RWStructuredBuffer<HZBDebugInfo> hzbDebugInfo : register(u2, space1);
+*/
 
 Texture2D depthMap: register(t0);
 Texture2D depthMipmap: register(t1);
@@ -89,15 +90,18 @@ cbuffer cbDepthMapInfo : register(b0)
 };
 
 cbuffer cbPass : register(b1)
-{
-	float4x4 camWorld;
+{ 
 	float4x4 camView;
-	float4x4 camProj;
-	float4x4 camViewProj;
+	float4x4 camProj; 
+	float4 frustumPlane[6];
 	float viewWidth;
 	float viewHeight;
 	float camNear;
 	int validQueryCount;
+	int occMapCount;
+	int maxOccSize;
+	int minOccSize;
+	int passPad00;
 };
 
 #if defined (DIMX) && defined (DIMY)
@@ -108,7 +112,7 @@ void HZBCopyDepthMap(int3 dispatchThreadID : SV_DispatchThreadID)
 		return;
 
 	lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0)).r;
-} 
+}
 #endif
 
 #define DOWN_SAMPLEING_BY_LOAD 1
@@ -200,9 +204,22 @@ void HZBDownSampling(int3 dispatchThreadID : SV_DispatchThreadID)
 
 }
 #endif
-
-float3 CalNearPoint(const float3 camPos, float3 p0, float3 p1, float3 p2)
+ 
+int CullBBox(const float3 center, const float3 extents)
 {
+	int isOut = dot(float4(center, 1.0f), frustumPlane[0]) > dot(extents, abs(frustumPlane[0].xyz));
+	isOut += dot(float4(center, 1.0f), frustumPlane[1]) > dot(extents, abs(frustumPlane[1].xyz));
+	isOut += dot(float4(center, 1.0f), frustumPlane[2]) > dot(extents, abs(frustumPlane[2].xyz));
+	isOut += dot(float4(center, 1.0f), frustumPlane[3]) > dot(extents, abs(frustumPlane[3].xyz));
+	isOut += dot(float4(center, 1.0f), frustumPlane[4]) > dot(extents, abs(frustumPlane[4].xyz));
+	isOut += dot(float4(center, 1.0f), frustumPlane[5]) > dot(extents, abs(frustumPlane[5].xyz));
+
+	return isOut;
+}
+
+float3 CalNearPoint(const float3 p0, const float3 p1, const float3 p2)
+{
+	const float3 camPos = float3(0, 0, 0);
 	const float3 pNormal = normalize(cross(p1 - p0, p2 - p0));
 	const float3 dist = dot(-pNormal, p0);
 	const float dotCoord = dot(camPos, pNormal) + dist;
@@ -231,54 +248,60 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	static const float minDistance = -100000;
 
 	const int threadIndex = dispatchThreadID.x;
+	const int queryIndex = object[threadIndex].queryResultIndex;
 
-	if (validQueryCount >= threadIndex && !object[threadIndex].isValid)
+	if (validQueryCount <= threadIndex || !object[threadIndex].isValid)
 		return;
-
-	const float4 posCW = mul(float4(object[threadIndex].center, 1.0f), object[threadIndex].objWorld);
-	const float4 posCV = mul(posCW, camView);
 
 	const float4x4 extentWM = float4x4(object[threadIndex].objWorld._m00_m01_m02_m03,
 		object[threadIndex].objWorld._m10_m11_m12_m13,
 		object[threadIndex].objWorld._m20_m21_m22_m23,
 		0.0f, 0.0f, 0.0f, 1.0f);
+
+	const float4 posCW = mul(float4(object[threadIndex].center, 1.0f), object[threadIndex].objWorld);
+	const float4 posEW = mul(float4(object[threadIndex].extents, 1.0f), extentWM);
+
+	if (CullBBox(posCW.xyz, posEW.xyz) > 0)
+	{
+		queryResult[queryIndex] = 1;
+		return;
+	}
+
 	const float4x4 extentCM = float4x4(camView._m00_m01_m02_m03,
 		camView._m10_m11_m12_m13,
 		camView._m20_m21_m22_m23,
 		0.0f, 0.0f, 0.0f, 1.0f);
 
-	const float4 posEW = mul(float4(object[threadIndex].extents, 1.0f), extentWM);
+	const float4 posCV = mul(posCW, camView);
 	const float4 posEV = mul(posEW, extentCM);
-	const float3 camC = float3(0.0f, 0.0f, 0.0f);
-	//const float3 camC = float3(0.0f, 0.0f, camNear);
 
 	const float4 bboxPointV[8] =
 	{
-		float4(posCV.xyz + float3(posEV.x, posEV.y, posEV.z), 1.0f),
-		float4(posCV.xyz + float3(posEV.x, posEV.y, -posEV.z), 1.0f),
-		float4(posCV.xyz + float3(posEV.x, -posEV.y, posEV.z), 1.0f),
-		float4(posCV.xyz + float3(posEV.x, -posEV.y, -posEV.z), 1.0f),
-		float4(posCV.xyz + float3(-posEV.x, posEV.y, posEV.z), 1.0f),
-		float4(posCV.xyz + float3(-posEV.x, posEV.y, -posEV.z), 1.0f),
-		float4(posCV.xyz + float3(-posEV.x, -posEV.y, posEV.z), 1.0f),
-		float4(posCV.xyz + float3(-posEV.x, -posEV.y, -posEV.z), 1.0f)
+		mul(float4(posCW.xyz + float3(posEW.x, posEW.y, posEW.z), 1.0f), camView),
+		mul(float4(posCW.xyz + float3(posEW.x, posEW.y, -posEW.z), 1.0f), camView),
+		mul(float4(posCW.xyz + float3(posEW.x, -posEW.y, posEW.z), 1.0f), camView),
+		mul(float4(posCW.xyz + float3(posEW.x, -posEW.y, -posEW.z), 1.0f), camView),
+		mul(float4(posCW.xyz + float3(-posEW.x, posEW.y, posEW.z), 1.0f), camView),
+		mul(float4(posCW.xyz + float3(-posEW.x, posEW.y, -posEW.z), 1.0f), camView),
+		mul(float4(posCW.xyz + float3(-posEW.x, -posEW.y, posEW.z), 1.0f), camView),
+		mul(float4(posCW.xyz + float3(-posEW.x, -posEW.y, -posEW.z), 1.0f), camView)
 	};
 
 	const float3 nearPoint[6] =
 	{
-		CalNearPoint(camC, bboxPointV[0].xyz, bboxPointV[1].xyz, bboxPointV[2].xyz),
-		CalNearPoint(camC, bboxPointV[0].xyz, bboxPointV[1].xyz, bboxPointV[4].xyz),
-		CalNearPoint(camC, bboxPointV[0].xyz, bboxPointV[2].xyz, bboxPointV[4].xyz),
-		CalNearPoint(camC, bboxPointV[7].xyz, bboxPointV[5].xyz, bboxPointV[6].xyz),
-		CalNearPoint(camC, bboxPointV[7].xyz, bboxPointV[3].xyz, bboxPointV[5].xyz),
-		CalNearPoint(camC, bboxPointV[7].xyz, bboxPointV[3].xyz, bboxPointV[6].xyz)
+		CalNearPoint(bboxPointV[0].xyz, bboxPointV[1].xyz, bboxPointV[2].xyz),
+		CalNearPoint(bboxPointV[0].xyz, bboxPointV[1].xyz, bboxPointV[4].xyz),
+		CalNearPoint(bboxPointV[0].xyz, bboxPointV[2].xyz, bboxPointV[4].xyz),
+		CalNearPoint(bboxPointV[7].xyz, bboxPointV[5].xyz, bboxPointV[6].xyz),
+		CalNearPoint(bboxPointV[7].xyz, bboxPointV[3].xyz, bboxPointV[5].xyz),
+		CalNearPoint(bboxPointV[7].xyz, bboxPointV[3].xyz, bboxPointV[6].xyz)
 	};
 
 	float nowMinDist = maxDistance;
 	uint minIndex = 0;
 	for (uint i = 0; i < 6; ++i)
 	{
-		float dist = length(nearPoint[i] - camC);
+		float dist = length(nearPoint[i]);
 		if (dist < nowMinDist)
 		{
 			nowMinDist = dist;
@@ -298,24 +321,19 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 		mul(bboxPointV[4], camProj),
 		mul(bboxPointV[5], camProj),
 		mul(bboxPointV[6], camProj),
-		mul(bboxPointV[7], camProj),
+		mul(bboxPointV[7], camProj)
 	};
 
-	static const float4x4 ndcTransform = float4x4(0.5f, 0, 0, 0,
-		0, -0.5f, 0, 0,
-		0, 0, 1.0f, 0,
-		0.5f, 0.5f, 0, 1.0f);
-
-	const float3 bboxPointC[8] =
+	const float2 bboxPointNDC[8] =
 	{
-		mul(bboxPointH[0] / bboxPointH[0].w, ndcTransform).xyz,
-		mul(bboxPointH[1] / bboxPointH[1].w, ndcTransform).xyz,
-		mul(bboxPointH[2] / bboxPointH[2].w, ndcTransform).xyz,
-		mul(bboxPointH[3] / bboxPointH[3].w, ndcTransform).xyz,
-		mul(bboxPointH[4] / bboxPointH[4].w, ndcTransform).xyz,
-		mul(bboxPointH[5] / bboxPointH[5].w, ndcTransform).xyz,
-		mul(bboxPointH[6] / bboxPointH[6].w, ndcTransform).xyz,
-		mul(bboxPointH[7] / bboxPointH[7].w, ndcTransform).xyz,
+		(bboxPointH[0].xy / bboxPointH[0].w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f),
+		(bboxPointH[1].xy / bboxPointH[1].w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f),
+		(bboxPointH[2].xy / bboxPointH[2].w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f),
+		(bboxPointH[3].xy / bboxPointH[3].w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f),
+		(bboxPointH[4].xy / bboxPointH[4].w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f),
+		(bboxPointH[5].xy / bboxPointH[5].w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f),
+		(bboxPointH[6].xy / bboxPointH[6].w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f),
+		(bboxPointH[7].xy / bboxPointH[7].w) * float2(0.5f, -0.5f) + float2(0.5f, 0.5f)
 	};
 
 	float minX = maxDistance;
@@ -325,52 +343,42 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 
 	for (uint i = 0; i < 8; ++i)
 	{
-		if (bboxPointC[i].x > maxX)
-			maxX = bboxPointC[i].x;
-		if (bboxPointC[i].x < minX)
-			minX = bboxPointC[i].x;
-		if (bboxPointC[i].y > maxY)
-			maxY = bboxPointC[i].y;
-		if (bboxPointC[i].y < minY)
-			minY = bboxPointC[i].y;
+		if (bboxPointNDC[i].x > maxX)
+			maxX = bboxPointNDC[i].x;
+		if (bboxPointNDC[i].x < minX)
+			minX = bboxPointNDC[i].x;
+		if (bboxPointNDC[i].y > maxY)
+			maxY = bboxPointNDC[i].y;
+		if (bboxPointNDC[i].y < minY)
+			minY = bboxPointNDC[i].y;
 	}
-
-	//maxX = maxX * 0.5f + 0.5f;
-	//minX = minX * 0.5f + 0.5f;
-	//maxY = maxY * -0.5f + 0.5f;
-	//minY = minY * -0.5f + 0.5f;
-
-	const float2 clipFrame[4] =
-	{
-		float2(maxX, maxY),
-		float2(maxX, minY),
-		float2(minX, maxY),
-		float2(minX, minY)
-	};
-
+	 
 	const float width = viewWidth * (maxX - minX);
 	const float height = viewHeight * (maxY - minY);
+	 
+	int lodFactor = ceil(log2(max(width, height))) - ceil(log2(minOccSize)) + 1;
+	if (lodFactor < 0)
+		lodFactor = 0;
 
-	int lod = 10 - (ceil(log2(max(width, height)) + 1));
-	if (lod < 0)
-		lod = 0;
-
+	const int lod = clamp((occMapCount - 1) - lodFactor, 0, occMapCount - 1);
+ 
 	const float centerDepth = clipNearC.z;
-	const float compareDepth00 = depthMipmap.SampleLevel(occFrameSam, clipFrame[0], lod).r;
-	const float compareDepth01 = depthMipmap.SampleLevel(occFrameSam, clipFrame[1], lod).r;
-	const float compareDepth02 = depthMipmap.SampleLevel(occFrameSam, clipFrame[2], lod).r;
-	const float compareDepth03 = depthMipmap.SampleLevel(occFrameSam, clipFrame[3], lod).r;
+	const float compareDepth00 = depthMipmap.SampleLevel(occFrameSam, float2(maxX, maxY), lod).r;
+	const float compareDepth01 = depthMipmap.SampleLevel(occFrameSam, float2(maxX, minY), lod).r;
+	const float compareDepth02 = depthMipmap.SampleLevel(occFrameSam, float2(minX, maxY), lod).r;
+	const float compareDepth03 = depthMipmap.SampleLevel(occFrameSam, float2(minX, minY), lod).r;
 
 	const float finalCompareDepth = max(compareDepth00, max(compareDepth01, max(compareDepth02, compareDepth03)));
-	const int queryIndex = object[threadIndex].queryResultIndex;
 
 	if (centerDepth <= finalCompareDepth)
 		queryResult[queryIndex] = 0;
 	else
+	{
 		queryResult[queryIndex] = 1;
-
- /*
- 	hzbDebugInfo[threadIndex].objWorld = object[threadIndex].objWorld;
+	}
+	
+/*
+	hzbDebugInfo[threadIndex].objWorld = object[threadIndex].objWorld;
 
 	hzbDebugInfo[threadIndex].center = object[threadIndex].center;
 	hzbDebugInfo[threadIndex].extents = object[threadIndex].extents;
@@ -379,8 +387,6 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	hzbDebugInfo[threadIndex].posCV = posCV;
 	hzbDebugInfo[threadIndex].posEW = posEW;
 	hzbDebugInfo[threadIndex].posEV = posEV;
-
-	hzbDebugInfo[threadIndex].camPos = camC;
 
 	hzbDebugInfo[threadIndex].nearPoint0 = nearPoint[0];
 	hzbDebugInfo[threadIndex].nearPoint1 = nearPoint[1];
@@ -411,13 +417,14 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	hzbDebugInfo[threadIndex].bboxPointH6 = bboxPointH[6];
 	hzbDebugInfo[threadIndex].bboxPointH7 = bboxPointH[7];
 
-	hzbDebugInfo[threadIndex].clipFrame0 = clipFrame[0];
-	hzbDebugInfo[threadIndex].clipFrame1 = clipFrame[1];
-	hzbDebugInfo[threadIndex].clipFrame2 = clipFrame[2];
-	hzbDebugInfo[threadIndex].clipFrame3 = clipFrame[3];
+	hzbDebugInfo[threadIndex].clipFrame0 = float2(maxX, maxY);
+	hzbDebugInfo[threadIndex].clipFrame1 = float2(maxX, minY);
+	hzbDebugInfo[threadIndex].clipFrame2 = float2(minX, maxY);
+	hzbDebugInfo[threadIndex].clipFrame3 = float2(minX, minY);
 
 	hzbDebugInfo[threadIndex].width = width;
 	hzbDebugInfo[threadIndex].height = height;
+	hzbDebugInfo[threadIndex].lod = lod;
 
 	hzbDebugInfo[threadIndex].uvExtentsMax = float3(maxX, maxY, 0);
 	hzbDebugInfo[threadIndex].uvExtentsMin = float3(minX, minY, 0);
@@ -427,6 +434,7 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 
 	hzbDebugInfo[threadIndex].threadIndex = threadIndex;
 	hzbDebugInfo[threadIndex].queryIndex = queryIndex;
- */
+*/
+
 }
 #endif
