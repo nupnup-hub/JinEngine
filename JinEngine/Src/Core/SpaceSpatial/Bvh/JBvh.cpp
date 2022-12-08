@@ -111,7 +111,12 @@ namespace JinEngine
 		void JBvh::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
 		{
 			if (allNodes.size() > 1)
-				root->Culling(camFrustum);
+			{
+				DirectX::BoundingFrustum nearFrustum{ camFrustum };
+				nearFrustum.Far = 1;
+				nearFrustum.Near = 0;
+				root->Culling(camFrustum, nearFrustum);
+			}
 
 			if (innerGameObjectCandidate != nullptr)
 			{

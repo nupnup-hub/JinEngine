@@ -86,7 +86,12 @@ namespace JinEngine
 		void JKdTree::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
 		{
 			if (root != nullptr)
-				root->Culling(camFrustum);
+			{
+				DirectX::BoundingFrustum nearFrustum{ camFrustum };
+				nearFrustum.Far = 1;
+				nearFrustum.Near = 0;
+				root->Culling(camFrustum, nearFrustum);
+			}
 		}
 		void JKdTree::UpdateGameObject(JGameObject* gameObj)noexcept
 		{

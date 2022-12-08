@@ -9,8 +9,9 @@ namespace JinEngine
 			bool isOcclusionQueryActivated = true; 
 			bool isHDOcclusionAcitvated = false;
 			bool isHZBOcclusionActivated = false;
-		public:
-			//Test
+			bool allowHZBCorrectFail = false;
+			bool allowHZBDepthMapDebug = false;
+		public: 
 			float occUpdateFrequency = 0.1f;
 		public:
 			bool IsHDOccActivated()const noexcept;

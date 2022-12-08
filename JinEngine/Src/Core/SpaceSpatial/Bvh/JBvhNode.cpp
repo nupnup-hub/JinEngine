@@ -81,7 +81,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JBvhNode::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
+		void JBvhNode::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept
 		{
 			ContainmentType res = camFrustum.Contains(bbox);
 			if (res == ContainmentType::CONTAINS)
@@ -89,13 +89,18 @@ namespace JinEngine
 			else if (res == ContainmentType::DISJOINT)
 				SetInVisible();
 			else
-			{
+			{ 
 				if (type == J_BVH_NODE_TYPE::LEAF)
-					SetVisible();
+				{
+					if (nearFrustum.Contains(bbox) == ContainmentType::DISJOINT)
+						SetVisible();
+					else
+						SetInVisible();
+				}
 				else
 				{
-					left->Culling(camFrustum);
-					right->Culling(camFrustum);
+					left->Culling(camFrustum, nearFrustum);
+					right->Culling(camFrustum, nearFrustum);
 				}
 			}
 		}

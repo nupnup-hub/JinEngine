@@ -23,6 +23,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		struct JGraphicInfo;
+		struct JGraphicOption;
 		class JHZBOccCulling final: public JOccBase
 		{ 
 		private: 
@@ -31,6 +32,7 @@ namespace JinEngine
 			std::unique_ptr<JUploadBuffer<float>> queryResultBuffer = nullptr;
 			std::unique_ptr<JUploadBuffer<JDepthMapInfoConstants>> depthMapInfoCB = nullptr;
 			std::unique_ptr<JUploadBuffer<JOcclusionPassConstants>> occlusionPassCB = nullptr;
+			//Debug
 			//std::unique_ptr<JHlslDebug<HZBDebugInfo>> debugBuffer = nullptr;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
@@ -51,7 +53,7 @@ namespace JinEngine
 		public:
 			//update upload buffer data
 			void UpdateObject(JRenderItem* rItem, const uint submeshIndex, const uint buffIndex);
-			void UpdatePass(JScene* scene, const JGraphicInfo& info, const uint queryCount, const uint cbIndex);
+			void UpdatePass(JScene* scene, const JGraphicInfo& info, const JGraphicOption& option, const uint queryCount, const uint cbIndex);
 		public:
 			void DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,
 				CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSrvHandle,

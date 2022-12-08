@@ -85,7 +85,7 @@ namespace JinEngine
 					OcclusionResultOnScreen();
 				//Debug
 				ImGui::SameLine();
-				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 6, 6, 6);
+				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 6, 1, 6);
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
 				JImGuiImpl::Image(*camera, ImGui::GetWindowSize());
 			}
@@ -277,7 +277,7 @@ namespace JinEngine
 				float camFar = mainCamera->GetFar();
 				float camDistance = camFar - camNear;
 
-				frumstumT->SetScale(DirectX::XMFLOAT3((camWidth / camDistance) * 100, (camHeight / camDistance) * 100, 100));
+				frumstumT->SetScale(DirectX::XMFLOAT3((camWidth / camDistance) * 50, (camHeight / camDistance) * 50, 50));
 				frumstumT->SetRotation(mainCamera->GetTransform()->GetRotation());
 				frumstumT->SetPosition(mainCamera->GetTransform()->GetPosition());
 			}
@@ -287,7 +287,7 @@ namespace JinEngine
 			mainCamFrustum = Core::GetUserPtr(JGFU::CreateDebugGameObject(*scene->GetRootGameObject(),
 				OBJECT_FLAG_EDITOR_OBJECT,
 				J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM,
-				J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW));
+				J_DEFAULT_MATERIAL::DEBUG_LINE_RED));
 		}
 		void JSceneObserver::ShadowMapViewerOnScreen()
 		{

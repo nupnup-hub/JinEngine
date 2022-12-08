@@ -133,7 +133,7 @@ namespace JinEngine
 			for (uint8 i = 0; i < opendWindowCount; ++i)
 				opendWindow[i]->UpdateWindow();
 			//PrintOpenWindowState();
-			if (isOpenGraphicOptionViewer)
+			if (graphicOptionSetting->IsOpenViewer())
 				graphicOptionSetting->GraphicOptionOnScreen();
 
 			JImGuiImpl::PopFont();
@@ -266,9 +266,9 @@ namespace JinEngine
 			 
 			std::unique_ptr<JMenuNode> grapicOptionNode = std::make_unique<JMenuNode>("Graphic Option",
 				false, true,
-				&isOpenGraphicOptionViewer,
+				graphicOptionSetting->GetOpenPtr(),
 				graphicNode.get());
-			grapicOptionNode->RegisterBind(std::make_unique<OpenSimpleWindowF::CompletelyBind>(*GetOpSimpleWindowFunctorPtr(), isOpenGraphicOptionViewer));
+			grapicOptionNode->RegisterBind(std::make_unique<OpenSimpleWindowF::CompletelyBind>(*GetOpSimpleWindowFunctorPtr(), graphicOptionSetting->GetOpenPtr()));
 
 			editorMenuBar = std::make_unique<JEditorMenuBar>();
 			editorMenuBar->rootNode = rootNode.get();

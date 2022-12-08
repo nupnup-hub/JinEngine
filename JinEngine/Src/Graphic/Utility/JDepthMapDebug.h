@@ -32,7 +32,9 @@ namespace JinEngine
 			void DrawDepthDebug(ID3D12GraphicsCommandList* commandList,
 				const CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
 				const CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle,
-				const JVector2<uint> size);
+				const JVector2<uint> size,
+				const float camNear,
+				const float camFar);
 		private:
 			void BuildComputeResource(ID3D12Device* device, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthStencilFormat);
 		};

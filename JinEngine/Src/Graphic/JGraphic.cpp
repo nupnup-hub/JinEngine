@@ -329,11 +329,14 @@ namespace JinEngine
 				reinterpret_cast<BYTE*>(shaderData->Vs->GetBufferPointer()),
 				shaderData->Vs->GetBufferSize()
 			};
-			newShaderPso.PS =
+			if ((gFunctionFlag & SHADER_FUNCTION_WRITE_SHADOWMAP) == 0 &&  (gFunctionFlag & SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT) == 0)
 			{
-				reinterpret_cast<BYTE*>(shaderData->Ps->GetBufferPointer()),
-				shaderData->Ps->GetBufferSize()
-			};
+				newShaderPso.PS =
+				{
+					reinterpret_cast<BYTE*>(shaderData->Ps->GetBufferPointer()),
+					shaderData->Ps->GetBufferSize()
+				};
+			}
 			if (shaderData->Hs != nullptr)
 			{
 				newShaderPso.HS =
@@ -389,16 +392,11 @@ namespace JinEngine
 				newShaderPso.SampleDesc.Quality = 0;
 			}
 			if ((gFunctionFlag & SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT) > 0)
-			{
-				//newShaderPso.RasterizerState.DepthBias = -50000;
-				//newShaderPso.RasterizerState.DepthBiasClamp = 0.0f;
-				//newShaderPso.RasterizerState.SlopeScaledDepthBias = 1.0f;
+			{ 
 				newShaderPso.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
 				newShaderPso.NumRenderTargets = 0;
 				newShaderPso.SampleDesc.Count = 1;
-				newShaderPso.SampleDesc.Quality = 0;
-				//newShaderPso.BlendState.RenderTarget[0].RenderTargetWriteMask = 0;
-				//newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+				newShaderPso.SampleDesc.Quality = 0;   
 			}
 			if ((gFunctionFlag & SHADER_FUNCTION_DEBUG) > 0)
 			{
@@ -697,7 +695,7 @@ namespace JinEngine
 					if (option.IsHZBOccActivated())
 					{
 						const uint queryCount = drawTarget->scene->GetComponetCount(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
-						hzbOccHelper->UpdatePass(drawTarget->scene, info, queryCount, updateHelper.fData[(int)J_FRAME_RESOURCE_TYPE::PASS].offset - 1);
+						hzbOccHelper->UpdatePass(drawTarget->scene, info, option, queryCount, updateHelper.fData[(int)J_FRAME_RESOURCE_TYPE::PASS].offset - 1);
 					}
 				}
 
@@ -1137,14 +1135,21 @@ namespace JinEngine
 					graphicResource->cbvSrvUavDescriptorSize);
 				hzbOccHelper->OcclusuinCulling(commandList.Get(), graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart()));
 
-				JVector2<uint> occlusionSize = JVector2<uint>(info.occlusionWidth, info.occlusionHeight);
-				for (uint i = 0; i < graphicResource->occlusionCount; ++i)
+				if (option.allowHZBDepthMapDebug)
 				{
-					depthMapDebug->DrawDepthDebug(commandList.Get(),
-						graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart() + i),
-						graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDebugStart() + i),
-						occlusionSize);
-					occlusionSize /= 2;
+					JVector2<uint> occlusionSize = JVector2<uint>(info.occlusionWidth, info.occlusionHeight);
+					const float camNear = helper.cam->GetNear();
+					const float camFar = helper.cam->GetFar();
+					for (uint i = 0; i < graphicResource->occlusionCount; ++i)
+					{
+						depthMapDebug->DrawDepthDebug(commandList.Get(),
+							graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvOcclusionMipMapStart() + i),
+							graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetUavOcclusionDebugStart() + i),
+							occlusionSize,
+							camNear,
+							camFar);
+						occlusionSize /= 2;
+					}
 				}
 			}
 			else if (option.IsHDOccActivated())
@@ -1743,11 +1748,13 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"Bind2DTextureCount:", info.binding2DTextureCapacity);
 			JFileIOHelper::StoreAtomicData(stream, L"BindCubeMapCount:", info.bindingCubeMapCapacity);
 			JFileIOHelper::StoreAtomicData(stream, L"BindShadowTextureCount:", info.bindingShadowTextureCapacity);
-
+			 
 			JFileIOHelper::StoreJString(stream, L"--Option--", L"");
 			JFileIOHelper::StoreAtomicData(stream, L"AllowOcclusionQuery:", option.isOcclusionQueryActivated);
 			JFileIOHelper::StoreAtomicData(stream, L"HardwareOcclusionAcitvated:", option.isHDOcclusionAcitvated);
 			JFileIOHelper::StoreAtomicData(stream, L"HZBOcclusionAcitvated:", option.isHZBOcclusionActivated);
+			JFileIOHelper::StoreAtomicData(stream, L"AllowHZBCorrectFail:", option.allowHZBCorrectFail);
+			JFileIOHelper::StoreAtomicData(stream, L"AllowHZBDepthMapDebug:", option.allowHZBDepthMapDebug);
 			stream.close();
 		}
 		void JGraphicImpl::LoadData()
@@ -1776,6 +1783,8 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, newOption.isOcclusionQueryActivated);
 			JFileIOHelper::LoadAtomicData(stream, newOption.isHDOcclusionAcitvated);
 			JFileIOHelper::LoadAtomicData(stream, newOption.isHZBOcclusionActivated);
+			JFileIOHelper::LoadAtomicData(stream, newOption.allowHZBCorrectFail);
+			JFileIOHelper::LoadAtomicData(stream, newOption.allowHZBDepthMapDebug);
 			stream.close();
 			SetGraphicOption(newOption);
 		}
@@ -1784,9 +1793,10 @@ namespace JinEngine
 		{
 			info.occlusionWidth = std::pow(2, JGraphicResourceManager::occlusionCapacity - 1);
 			info.occlusionHeight = std::pow(2, JGraphicResourceManager::occlusionCapacity - 1);
-			info.occlusionMinSize = graphicResource->minOcclusionSize;
 			info.occlusionMapCapacity = JGraphicResourceManager::occlusionCapacity;
-			info.occlusionMapCount = JMathHelper::Log2Int(info.occlusionWidth) - JMathHelper::Log2Int(graphicResource->minOcclusionSize) + 1;
+			info.occlusionMapCount = (JMathHelper::Log2Int(info.occlusionWidth) -
+				JMathHelper::Log2Int(graphicResource->minOcclusionSize) + 1) % info.occlusionMapCapacity;
+			info.occlusionMinSize = JMathHelper::TwoSquare(info.occlusionWidth, info.occlusionMapCount - 1);
 
 			updateHelper.fData.resize((int)J_FRAME_RESOURCE_TYPE::COUNT);
 			updateHelper.bData.resize((int)J_GRAPHIC_TEXTURE_TYPE::COUNT);

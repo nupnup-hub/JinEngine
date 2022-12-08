@@ -30,11 +30,11 @@ namespace JinEngine
 			float viewWidth = 0;
 			float viewHeight = 0;
 			float camNear = 0;
+			float camFar = 0;
 			int validQueryCount = 0;
-			int occMapCount = 0;
-			int maxOccSize = 0;
-			int minOccSize = 0;
-			int passPad00 = 0;
+			int occMapCount = 0; 
+			int occIndexOffset = 0;
+			int correctFailTrigger = 0; 
 		};
 
 		struct HZBDebugInfo

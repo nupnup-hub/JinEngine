@@ -65,7 +65,12 @@ namespace JinEngine
 		void JOctree::Culling(const BoundingFrustum& camFrustum)noexcept
 		{
 			if (rootNodeCash != nullptr)
-				rootNodeCash->Culling(camFrustum);
+			{
+				DirectX::BoundingFrustum nearFrustum{ camFrustum };
+				nearFrustum.Far = 1;
+				nearFrustum.Near = 0;
+				rootNodeCash->Culling(camFrustum, nearFrustum);
+			}
 		}
 		void JOctree::UpdateGameObject(JGameObject* gameObject)noexcept
 		{

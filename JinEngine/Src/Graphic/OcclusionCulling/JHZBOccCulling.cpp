@@ -1,5 +1,6 @@
 #include"JHZBOccCulling.h" 
 #include"../JGraphicInfo.h"
+#include"../JGraphicOption.h"
 #include"../FrameResource/JBoundingObjectConstants.h"
 #include"../../Core/Exception/JExceptionMacro.h"
 #include"../../Object/GameObject/JGameObject.h"
@@ -115,7 +116,7 @@ namespace JinEngine
 
 			objectBuffer->CopyData(buffIndex, objectConstants);
 		}
-		void JHZBOccCulling::UpdatePass(JScene* scene, const JGraphicInfo& info, const uint queryCount, const uint cbIndex)
+		void JHZBOccCulling::UpdatePass(JScene* scene, const JGraphicInfo& info, const JGraphicOption& option, const uint queryCount, const uint cbIndex)
 		{
 			JCamera* mainCam = scene->GetMainCamera();
 			JOcclusionPassConstants passConstatns;
@@ -133,11 +134,11 @@ namespace JinEngine
 			passConstatns.viewWidth = mainCam->GetViewWidth();
 			passConstatns.viewHeight = mainCam->GetViewHeight();
 			passConstatns.camNear = mainCam->GetNear();
+			passConstatns.camFar = mainCam->GetFar();
 			passConstatns.validQueryCount = queryCount;
-			passConstatns.occMapCount = info.occlusionMapCount;
-			passConstatns.maxOccSize = max(info.occlusionWidth, info.occlusionHeight);
-			passConstatns.minOccSize = info.occlusionMinSize;
-			 
+			passConstatns.occMapCount = info.occlusionMapCount; 
+			passConstatns.occIndexOffset = JMathHelper::Log2Int(info.occlusionMinSize);
+			passConstatns.correctFailTrigger = (int)option.allowHZBCorrectFail;
 			occlusionPassCB->CopyData(cbIndex, passConstatns);
 		}
 		void JHZBOccCulling::DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,
@@ -156,6 +157,7 @@ namespace JinEngine
 			commandList->SetComputeRootDescriptorTable(0, depthMapSrvHandle);
 			commandList->SetComputeRootDescriptorTable(1, mipMapUavHandle);
 			commandList->SetComputeRootConstantBufferView(5, depthMapInfoCB->Resource()->GetGPUVirtualAddress());
+			commandList->SetComputeRootConstantBufferView(6, occlusionPassCB->Resource()->GetGPUVirtualAddress());
 
 			JVector3<uint> cgroupDim = copyShader->GetComputeGroupDim();
 			commandList->Dispatch(cgroupDim.x, cgroupDim.y, cgroupDim.z);
@@ -216,7 +218,9 @@ namespace JinEngine
 			ThrowIfFailedHr(queryResultBuffer->Resource()->Map(0, nullptr, reinterpret_cast<void**>(&queryResult)));
 			SetReadResultTrigger(false);
 
-			/*static int streamC = 0;
+			//Debug
+			/*
+			static int streamC = 2;
 			if (streamC < 1)
 			{
 				std::wofstream stream;
@@ -225,9 +229,18 @@ namespace JinEngine
 				{
 					int count = 0;
 					HZBDebugInfo* info = debugBuffer->Map(count);
-					for (uint i = 0; i < 32; ++i)
+					for (uint i = 0; i < count; ++i)
 					{
 						JFileIOHelper::StoreXMFloat4x4(stream, L"ObjWorld", info[i].objWorld);
+
+						JFileIOHelper::StoreAtomicData(stream, L"CenterDepth", info[i].centerDepth);
+						JFileIOHelper::StoreAtomicData(stream, L"CopareDepth", info[i].copareDepth);
+
+						JFileIOHelper::StoreAtomicData(stream, L"ThreadIndex", info[i].threadIndex);
+						JFileIOHelper::StoreAtomicData(stream, L"QueryIdex", info[i].queryIndex);
+						JFileIOHelper::InputSpace(stream, 1);
+
+							JFileIOHelper::StoreXMFloat4x4(stream, L"ObjWorld", info[i].objWorld);
 
 						JFileIOHelper::StoreXMFloat3(stream, L"Center", info[i].center);
 						JFileIOHelper::StoreXMFloat3(stream, L"Extents", info[i].extents);
@@ -236,7 +249,7 @@ namespace JinEngine
 						JFileIOHelper::StoreXMFloat4(stream, L"PosCV", info[i].posCV);
 						JFileIOHelper::StoreXMFloat4(stream, L"PosEW", info[i].posEW);
 						JFileIOHelper::StoreXMFloat4(stream, L"PosEV", info[i].posEV);
-						 
+
 						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint0", info[i].nearPoint0);
 						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint1", info[i].nearPoint1);
 						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint2", info[i].nearPoint2);
@@ -285,16 +298,19 @@ namespace JinEngine
 						JFileIOHelper::StoreAtomicData(stream, L"QueryIdex", info[i].queryIndex);
 
 						JFileIOHelper::InputSpace(stream, 1);
+						
 					}
 					++streamC;
 					stream.close();
 				}
-			}
-			*/
+			}*/
 		}
 		void JHZBOccCulling::BuildRootSignature(ID3D12Device* d3dDevice, const uint occlusionDsvCapacity)
 		{
-			static constexpr int slotCount =7;
+			//Debug
+			//static constexpr int slotCount = 8;
+			static constexpr int slotCount = 7;
+
 			CD3DX12_ROOT_PARAMETER slotRootParameter[slotCount];
 
 			CD3DX12_DESCRIPTOR_RANGE depthMapTable;

@@ -86,7 +86,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JKdTreeNode::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
+		void JKdTreeNode::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept
 		{
 			ContainmentType res = camFrustum.Contains(bbox);
 			if (res == ContainmentType::CONTAINS)
@@ -96,11 +96,16 @@ namespace JinEngine
 			else
 			{
 				if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
-					SetVisible();
+				{
+					if (nearFrustum.Contains(bbox) == ContainmentType::DISJOINT)
+						SetVisible();
+					else
+						SetInVisible();
+				}
 				else
 				{
-					left->Culling(camFrustum);
-					right->Culling(camFrustum);
+					left->Culling(camFrustum, nearFrustum);
+					right->Culling(camFrustum, nearFrustum);
 				}
 			}
 		}
@@ -305,14 +310,14 @@ namespace JinEngine
 			if (index != JCUtil::searchFail)
 				innerGameObject.erase(innerGameObject.begin() + index);
 		}
-		void JKdTreeNode::StuffInnerGameObject(std::vector<JGameObject*>& objList, uint& offset)
+		void JKdTreeNode::StuffInnerGameObject(std::vector<JGameObject*>& objList, uint& listIndex)
 		{
 			const uint innerCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerCount; ++i)
 			{
 				bool isOverlap = false;
 				const size_t guid = innerGameObject[i]->GetGuid();
-				for (uint j = 0; j < offset; ++j)
+				for (uint j = 0; j < listIndex; ++j)
 				{
 					if (objList[j]->GetGuid() == guid)
 					{
@@ -322,8 +327,8 @@ namespace JinEngine
 				}
 				if (!isOverlap)
 				{
-					objList[i + offset] = innerGameObject[i];
-					++offset;
+					objList[listIndex] = innerGameObject[i];
+					++listIndex;
 				}
 			}
 			//offset += innerCount;

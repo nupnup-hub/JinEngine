@@ -51,7 +51,7 @@ namespace JinEngine
 			void DestroyDebugGameObject()noexcept;
 			void Clear()noexcept;
 			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
-			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
+			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept;
 			void OffCulling()noexcept;
 		public:
 			bool IsLeftNode()const noexcept;
@@ -81,7 +81,7 @@ namespace JinEngine
 			void AddInnerGameObject(JGameObject* newInnerGameObject)noexcept;
 			void AddInnerGameObject(const std::vector<JGameObject*>& newInnerGameObject)noexcept;
 			void RemoveInnerGameObject(const size_t guid)noexcept;
-			void StuffInnerGameObject(std::vector<JGameObject*>& objList, uint& offset);
+			void StuffInnerGameObject(std::vector<JGameObject*>& objList, uint& listIndex);
 		private: 
 			void SetVisible()noexcept;
 			void SetInVisible()noexcept;

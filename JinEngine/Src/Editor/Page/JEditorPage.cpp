@@ -59,7 +59,7 @@ namespace JinEngine
 				}
 			};
 
-			auto openSimpleWindowLam = [](bool& isOpen) {isOpen = !isOpen;};
+			auto openSimpleWindowLam = [](bool* isOpen) {*isOpen = !(*isOpen);};
 			openEditorWindowFunctor = std::make_unique<OpenEditorWindowF::Functor>(openEditorWindowLam);
 			openSimpleWindowFunctor = std::make_unique<OpenSimpleWindowF::Functor>(openSimpleWindowLam);
 		}

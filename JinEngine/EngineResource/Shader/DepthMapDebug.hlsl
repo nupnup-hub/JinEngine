@@ -7,8 +7,16 @@ cbuffer cbSettings : register(b0)
 {
 	uint width;
 	uint height; 
+	float camNear;
+	float camFar;
 };
- 
+/*
+float ToNoLinearZValue(const float v)
+{
+	return  -((camNear + camFar) * v - (2 * camNear)) / ((camNear - camFar) * v);
+}
+*/
+
 /*
 dim info
 group 1, 512, 1
@@ -17,23 +25,26 @@ thread 512, 1, 1
 [numthreads(512, 1, 1)]
 void CS(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
 {
+	if (width <= dispatchThreadID.x || height <= dispatchThreadID.y)
+		return;
+
 	float textureXFactor = dispatchThreadID.x;
 	float textureYFactor = dispatchThreadID.y;
 	uint maxPixelCount = width * height;
 
-	if (textureXFactor >= width || textureYFactor >= height)
-		return; 
-
 	while (maxPixelCount > (textureXFactor + (textureYFactor * width)))
 	{
-		static const float n = 1.0f; // camera z near
-		static const float f = 1000; // camera z far
-
-		float z = depthMap.Load(int3(textureXFactor, textureYFactor, 0)).r;
+		//linear depth value
+		const float z = 1 - depthMap.Load(int3(textureXFactor, textureYFactor, 0)).r;
 		//float z = depthMap.SampleLevel(samLinearWrap, float2(textureXFactor / width, textureYFactor / height), 0).r;
-		// (2.0 * n) / (f + n - z * (f - n));	
-		float factor = 1 - (2.5f * n) / (f + n - z * (f - n)); 
-		result[int2(textureXFactor, textureYFactor)] = float4(factor, factor, factor, 1);
-		textureYFactor += height;
+		// (2.0 * n) / (f + n - z * (f - n));	 
+		//float factor = 1 - (2.5f * camNearn) / (camFar + camNear - z * (camFar - camNear));
+		result[int2(textureXFactor, textureYFactor)] = float4(z, z, z, z);
+		textureXFactor += 512;
+		if (textureXFactor > width)
+		{
+			textureXFactor = dispatchThreadID.x;
+			textureYFactor += 512;
+		} 
 	}
 } 

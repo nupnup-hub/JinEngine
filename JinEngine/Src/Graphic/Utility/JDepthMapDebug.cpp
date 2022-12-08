@@ -22,10 +22,12 @@ namespace JinEngine
 			cShaderData.reset();
 			cRootSignature.Reset();
 		}
-		void JDepthMapDebug::DrawDepthDebug(ID3D12GraphicsCommandList* commandList, 
+		void JDepthMapDebug::DrawDepthDebug(ID3D12GraphicsCommandList* commandList,
 			const CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
 			const CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle,
-			const JVector2<uint> size)
+			const JVector2<uint> size,
+			const float camNear,
+			const float camFar)
 		{
 			D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)size.x, (float)size.y, 0.0f, 1.0f };
 			D3D12_RECT mScissorRect = { 0, 0, size.x, size.y };
@@ -39,6 +41,8 @@ namespace JinEngine
 
 			commandList->SetComputeRoot32BitConstants(2, 1, &size.x, 0);
 			commandList->SetComputeRoot32BitConstants(2, 1, &size.y, 1);
+			commandList->SetComputeRoot32BitConstants(2, 1, &camNear, 2);
+			commandList->SetComputeRoot32BitConstants(2, 1, &camFar, 3);
 			commandList->SetPipelineState(cShaderData->Pso.Get());
 
 			commandList->Dispatch(1, 512, 1);
@@ -56,7 +60,7 @@ namespace JinEngine
 			CD3DX12_ROOT_PARAMETER slotRootParameter[slotCount];
 			slotRootParameter[0].InitAsDescriptorTable(1, &depthMapTable);
 			slotRootParameter[1].InitAsDescriptorTable(1, &wTextureTable);
-			slotRootParameter[2].InitAsConstants(2, 0);
+			slotRootParameter[2].InitAsConstants(4, 0);
 
 			// 생성자 대입자 결과가 다름
 			std::vector< CD3DX12_STATIC_SAMPLER_DESC> samDesc

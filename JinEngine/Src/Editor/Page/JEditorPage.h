@@ -35,7 +35,7 @@ namespace JinEngine
 			};
 		private:
 			using OpenEditorWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>;
-			using OpenSimpleWindowF = Core::JSFunctorType<void, bool&>;
+			using OpenSimpleWindowF = Core::JSFunctorType<void, bool*>;
 		protected: 
 			std::unique_ptr<JEditorMenuBar> editorMenuBar = nullptr;
 			std::vector<JEditorWindow*>windows;

@@ -15,6 +15,8 @@ namespace JinEngine
 		static constexpr float RadToDeg = 180 / Pi;
 	public:
 		static int Log2Int(uint v)noexcept;
+		static uint TwoSquareRoot(uint v)noexcept;
+		static uint TwoSquare(uint v, int count)noexcept;
 	public:
 		// Returns random float in [0, 1).
 		static float RandF()noexcept;

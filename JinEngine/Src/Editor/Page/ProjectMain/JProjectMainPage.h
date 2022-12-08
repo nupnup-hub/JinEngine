@@ -50,8 +50,7 @@ namespace JinEngine
 			std::unique_ptr<StoreProjectF::Functor> storeProjectF;
 			std::unique_ptr<LoadProjectF::Functor> loadProjectF;
 		private:
-			bool reqInitDockNode = false;
-			bool isOpenGraphicOptionViewer = false;
+			bool reqInitDockNode = false; 
 		public:
 			JProjectMainPage(bool hasMetadata);
 			~JProjectMainPage();
@@ -64,7 +63,6 @@ namespace JinEngine
 			void UpdatePage()final;
 		public:
 			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
-
 		private:
 			void BuildDockNode();
 			void BuildMenuNode();

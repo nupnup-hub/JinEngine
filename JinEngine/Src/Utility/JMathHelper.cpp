@@ -14,6 +14,27 @@ namespace JinEngine
 		_BitScanReverse64(&lz, v);
 		return lz;
 	}
+	uint JMathHelper::TwoSquareRoot(uint v)noexcept
+	{
+		uint res = 0;
+		float vF = v;
+		while (vF > 1)
+		{
+			vF *= 0.5f;
+			++res;
+		}
+		return res;
+	}
+	uint JMathHelper::TwoSquare(uint v, int count)noexcept
+	{ 
+		float vF = v;
+		while (vF > 1 && count != 0)
+		{
+			vF *= 0.5f;
+			--count;
+		}
+		return vF;
+	}
 	// Returns random float in [0, 1).
 	float JMathHelper::RandF()noexcept
 	{

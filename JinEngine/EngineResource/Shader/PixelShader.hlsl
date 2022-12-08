@@ -26,8 +26,9 @@ float4 PS(VertexOut pin) : SV_Target
 	return textureMaps[albedoTexIndex].Sample(samAnisotropicWrap, pin.TexC);
 }
 #elif defined(WRITE_SHADOW_MAP)
+/*
 void PS(VertexOut pin)
-{ 
+{
 /*
 	// Fetch the material data.
 	MaterialData matData = materialData[objMaterialIndex];
@@ -47,9 +48,12 @@ void PS(VertexOut pin)
 #endif
 */
 }
+*/
 #elif defined(BOUNDING_OBJECT_DEPTH_TEST)
+/*
 void PS(VertexOut pin)
 {}
+*/
 #else
 float4 PS(VertexOut pin) : SV_Target
 {

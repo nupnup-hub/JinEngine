@@ -32,7 +32,7 @@ namespace JinEngine
 			void Clear();
 			//Culling node bbox
 			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
-			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
+			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept;
 			void OffCulling();
 		public:
 			bool AddGameObject(JGameObject* gameObj, bool isLooseOctree)noexcept;
@@ -51,10 +51,10 @@ namespace JinEngine
 			bool RemoveInnerGameObject(JGameObject* gameObject)noexcept;
 		private:
 			void CullingInnerObject(const JCullingFrustum& camFrustum, J_CULLING_FLAG oriFlag);
-			void CullingInnerObject(const DirectX::BoundingFrustum& camFrustum);
+			void CullingInnerObject(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum);
 		private:
 			void SetVisible(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
-			void SetVisible(const DirectX::BoundingFrustum& camFrustum)noexcept;
+			void SetVisible(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept;
 			void SetInVisible()noexcept;
 		};
 	}

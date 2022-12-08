@@ -615,10 +615,11 @@ namespace JinEngine
 			depthStencilDesc.SampleDesc.Quality = 0;
 			depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 			depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-			depthStencilDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+			depthStencilDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 
-			CD3DX12_CLEAR_VALUE optClear(DXGI_FORMAT_R16G16B16A16_FLOAT, DirectX::Colors::Snow);
-			optClear.Format = depthStencilFormat;
+			float optColor[4] = { 1.0f, 0, 0, 0 };
+			CD3DX12_CLEAR_VALUE optClear(DXGI_FORMAT_D32_FLOAT, optColor);
+			//optClear.Format = depthStencilFormat;
 			optClear.DepthStencil.Depth = 1.0f;
 			optClear.DepthStencil.Stencil = 0;
 
@@ -634,7 +635,7 @@ namespace JinEngine
 			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-			dsvDesc.Format = depthStencilFormat;
+			dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
 			dsvDesc.Texture2D.MipSlice = 0;
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC depthSrvDesc = {};
@@ -644,7 +645,7 @@ namespace JinEngine
 			depthSrvDesc.Texture2D.MipLevels = 1;
 			depthSrvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 			depthSrvDesc.Texture2D.PlaneSlice = 0;
-			depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+			depthSrvDesc.Format = DXGI_FORMAT_R32_FLOAT;
 
 			CD3DX12_CPU_DESCRIPTOR_HANDLE depthDsvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvHeap->GetCPUDescriptorHandleForHeapStart());
 			depthDsvHandle.Offset(GetDsvOcclusionDepthStart(), dsvDescriptorSize);

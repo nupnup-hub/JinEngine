@@ -283,8 +283,9 @@ namespace JinEngine
 		for (uint j = 0; j < SHADER_VERTEX_COUNT; ++j)
 		{
 			shader->gShaderData[j] = std::make_unique<JGraphicShaderData>();
-			shader->gShaderData[j]->Vs = JD3DUtility::CompileShader(vertexShaderPath, &macroVec[j][0], "VS", "vs_5_1");
-			shader->gShaderData[j]->Ps = JD3DUtility::CompileShader(pixelShaderPath, &macroVec[j][0], "PS", "ps_5_1");
+			shader->gShaderData[j]->Vs = JD3DUtility::CompileShader(vertexShaderPath, &macroVec[j][0], "VS", "vs_5_1"); 
+			if((shader->gFunctionFlag & SHADER_FUNCTION_WRITE_SHADOWMAP) == 0 && (shader->gFunctionFlag & SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT) == 0)
+				shader->gShaderData[j]->Ps = JD3DUtility::CompileShader(pixelShaderPath, &macroVec[j][0], "PS", "ps_5_1");
 			GetInputLayout(shader->gShaderData[j]->InputLayout, (J_SHADER_VERTEX_LAYOUT)(SHADER_VERTEX_LAYOUT_STATIC + j));
 			JGraphic::Instance().ResourceInterface()->StuffGraphicShaderPso(shader->gShaderData[j].get(), (J_SHADER_VERTEX_LAYOUT)(SHADER_VERTEX_LAYOUT_STATIC + j), shader->GetShaderFunctionFlag());
 		}
@@ -359,7 +360,7 @@ namespace JinEngine
 			//textuer size is always 2 squared
 			uint threadDimX = graphicInfo.occlusionWidth;
 			uint threadDimY = (uint)std::ceil((float)graphicInfo.occlusionHeight / float(gpuInfo[0].maxGridDim.y));
-
+ 
 			initHelper.dispatchInfo.threadDim = JVector3<uint>(threadDimX, threadDimY, 1);
 			initHelper.dispatchInfo.groupDim = JVector3<uint>(groupDimX, groupDimY, 1);
 			initHelper.dispatchInfo.taskOriCount = graphicInfo.occlusionWidth * graphicInfo.occlusionHeight;

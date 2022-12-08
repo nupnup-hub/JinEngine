@@ -41,7 +41,7 @@ namespace JinEngine
 			void DestroyDebugGameObject()noexcept;
 			void Clear()noexcept;
 			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
-			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
+			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept;
 			void UpdateInnerGameObject()noexcept;
 			void OffCulling()noexcept;
 		public:
