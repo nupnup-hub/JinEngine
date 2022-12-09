@@ -319,7 +319,7 @@ namespace JinEngine
 		void JGraphicImpl::StuffGraphicShaderPso(JGraphicShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_GRAPHIC_SHADER_FUNCTION gFunctionFlag)
 		{
 			FlushCommandQueue();
-			StartCommand();
+			StartCommand(); 
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC newShaderPso;
 			ZeroMemory(&newShaderPso, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 			newShaderPso.InputLayout = { shaderData->InputLayout.data(), (uint)shaderData->InputLayout.size() };
@@ -392,16 +392,11 @@ namespace JinEngine
 				newShaderPso.SampleDesc.Quality = 0;
 			}
 			if ((gFunctionFlag & SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT) > 0)
-			{
-				//newShaderPso.RasterizerState.DepthBias = -50000;
-				//newShaderPso.RasterizerState.DepthBiasClamp = 0.0f;
-				//newShaderPso.RasterizerState.SlopeScaledDepthBias = 1.0f;
+			{ 
 				newShaderPso.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
 				newShaderPso.NumRenderTargets = 0;
 				newShaderPso.SampleDesc.Count = 1;
-				newShaderPso.SampleDesc.Quality = 0;
-				//newShaderPso.BlendState.RenderTarget[0].RenderTargetWriteMask = 0;
-				//newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+				newShaderPso.SampleDesc.Quality = 0; 
 			}
 			if ((gFunctionFlag & SHADER_FUNCTION_DEBUG) > 0)
 			{

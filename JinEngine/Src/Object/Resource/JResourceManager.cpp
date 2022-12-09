@@ -229,7 +229,7 @@ namespace JinEngine
 		if (resource != nullptr)
 			return static_cast<JTexture*>(resource);
 		else
-		{ 
+		{
 			JFile* file = GetDirectory(JApplicationVariable::GetEngineDefaultResourcePath())->GetFile(JDefaultTexture::GetName(type));
 			if (file != nullptr)
 				return static_cast<JTexture*>(file->GetResource());
@@ -405,7 +405,7 @@ namespace JinEngine
 
 		if (engineRootDir != nullptr)
 		{
-			JObject::BegineForcedDestroy(engineRootDir); 
+			JObject::BegineForcedDestroy(engineRootDir);
 			engineRootDir = nullptr;
 		}
 		if (projectRootDir != nullptr)
@@ -462,12 +462,12 @@ namespace JinEngine
 		}
 	}
 	void JResourceManagerImpl::CreateDefaultTexture(const std::vector<J_DEFAULT_TEXTURE>& textureType)
-	{ 
+	{
 		//수정필요
 		uint handleIncrement = JGraphic::Instance().DeviceInterface()->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		uint textureCount = (uint)textureType.size();
 		JDirectory* textureDir = GetDirectory(JApplicationVariable::GetEngineDefaultResourcePath());
- 
+
 		//1 is imgui preserved 
 		for (uint i = 0; i < textureCount; ++i)
 		{
@@ -481,7 +481,7 @@ namespace JinEngine
 			std::wstring format;
 			JCUtil::DecomposeFileName(JDefaultTexture::GetName(textureType[i]), name, format);
 			JFile* file = textureDir->GetFile(name);
-	 
+
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::TEXTURE && file->GetFormat() == format)
 				resourceData->RegisterDefaultResource(textureType[i], Core::GetUserPtr<JTexture>(file->GetResource()), isUse);
 			else
@@ -491,7 +491,7 @@ namespace JinEngine
 				if (textureType[i] == J_DEFAULT_TEXTURE::DEFAULT_SKY)
 					newTexture->SetTextureType(Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE);
 				ThrowIfFailedN(newTexture != nullptr);
-				resourceData->RegisterDefaultResource(textureType[i], Core::GetUserPtr(newTexture), isUse); 
+				resourceData->RegisterDefaultResource(textureType[i], Core::GetUserPtr(newTexture), isUse);
 			}
 		}
 	}
@@ -503,7 +503,7 @@ namespace JinEngine
 			const J_DEFAULT_GRAPHIC_SHADER type = (J_DEFAULT_GRAPHIC_SHADER)i;
 			const J_GRAPHIC_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
 			const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
- 
+
 			const bool isUse = JDefaultShader::IsDefaultUse(type);
 			std::wstring shaderName = JShaderType::ConvertToName(shaderF);
 			JFile* file = shaderDir->GetFile(shaderName);
@@ -513,11 +513,11 @@ namespace JinEngine
 			else
 			{
 				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, shaderF));
-				ThrowIfFailedN(newShader != nullptr); 
+				ThrowIfFailedN(newShader != nullptr);
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr(newShader), isUse);
 			}
 		}
-		  
+
 		for (uint i = 0; i < (int)J_DEFAULT_COMPUTE_SHADER::COUNTER; ++i)
 		{
 			const J_DEFAULT_COMPUTE_SHADER type = (J_DEFAULT_COMPUTE_SHADER)i;
@@ -526,7 +526,7 @@ namespace JinEngine
 
 			const bool isUse = JDefaultShader::IsDefaultUse(type);
 			std::wstring shaderName = JShaderType::ConvertToName(shaderF);
-			JFile* file = shaderDir->GetFile(shaderName); 
+			JFile* file = shaderDir->GetFile(shaderName);
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::SHADER)
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JShader>(file->GetResource()), isUse);
 			else
@@ -553,7 +553,7 @@ namespace JinEngine
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::MATERIAL)
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JMaterial>(file->GetResource()), isUse);
 			else
-			{ 
+			{
 				JMaterial* newMaterial = nullptr;
 				size_t guid = Core::MakeGuid();
 				switch (type)
@@ -621,6 +621,14 @@ namespace JinEngine
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
 				}
+				case J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
+					newMaterial->SetBoundingObjectDepthTest(true); 
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
 				default:
 					break;
 				}
@@ -660,7 +668,7 @@ namespace JinEngine
 			const bool isUse = JDefaultShape::IsDefaultUse(shapeType);
 
 			const std::wstring meshName = JDefaultShape::ConvertToName(shapeType);
-			JFile* file = meshDir->GetFile(meshName); 
+			JFile* file = meshDir->GetFile(meshName);
 
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::MESH)
 			{
@@ -695,18 +703,18 @@ namespace JinEngine
 				}
 				else if (meshType == J_MESHGEOMETRY_TYPE::SKINNED)
 				{
-					 //추가필요
+					//추가필요
 					assert("CreateDefaultMesh MeshType Error.... skinned");
 				}
 				else
-					assert("CreateDefaultMesh MeshType Error");			 
+					assert("CreateDefaultMesh MeshType Error");
 			}
 		}
 	}
 	JResourceManagerImpl::JResourceManagerImpl()
 		:JEventManager([](const size_t& a, const size_t& b) {return a == b; })
 	{
-		resourceData= std::make_unique<JResourceData>();
+		resourceData = std::make_unique<JResourceData>();
 		resourceIO = std::make_unique<JResourceIO>();
 	}
 	JResourceManagerImpl::~JResourceManagerImpl()
