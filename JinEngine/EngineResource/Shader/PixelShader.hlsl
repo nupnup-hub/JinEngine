@@ -3,13 +3,13 @@
 
 #if defined(DEBUG)
 float4 PS(VertexOut pin) : SV_Target
-{ 
-	MaterialData matData = materialData[objMaterialIndex]; 
+{
+	MaterialData matData = materialData[objMaterialIndex];
 	return matData.albedoColor;
 }
 #elif defined(SKY)
 float4 PS(VertexOut pin) : SV_Target
-{ 
+{
 	MaterialData matData = materialData[objMaterialIndex];
 	uint albedoTexIndex = matData.albedoMapIndex;
 	cubeMap[albedoTexIndex].Sample(samLinearWrap, pin.PosL);
@@ -25,35 +25,6 @@ float4 PS(VertexOut pin) : SV_Target
 	uint albedoTexIndex = matData.albedoMapIndex;
 	return textureMaps[albedoTexIndex].Sample(samAnisotropicWrap, pin.TexC);
 }
-#elif defined(WRITE_SHADOW_MAP)
-/*
-void PS(VertexOut pin)
-{
-/*
-	// Fetch the material data.
-	MaterialData matData = materialData[objMaterialIndex];
-	float4 albedoColor = matData.albedoColor;
-	uint albedoMapIndex = matData.albedoMapIndex;
-
-#ifdef ALBEDO_MAP
-	// Dynamically look up the texture in the array.
-	albedoColor *= textureMaps[albedoMapIndex].Sample(samAnisotropicWrap, pin.TexC);
-#endif
-
-#ifdef ALPHA_CLIP
-	// Discard pixel if texture alpha < 0.1.  We do this test as soon
-	// as possible in the shader so that we can potentially exit the
-	// shader early, thereby skipping the rest of the shader code.
-	clip(albedoColor.a - 0.1f);
-#endif
-*/
-}
-*/
-#elif defined(BOUNDING_OBJECT_DEPTH_TEST)
-/*
-void PS(VertexOut pin)
-{}
-*/
 #else
 float4 PS(VertexOut pin) : SV_Target
 {
@@ -87,7 +58,7 @@ float4 PS(VertexOut pin) : SV_Target
 
 #ifdef AMBIENT_OCCLUSION_MAP
 #endif 
-	 
+
 #ifdef NORMAL_MAP
 	float shininess = (1.001f - roughness) * normalMapSample.a;
 #else
@@ -128,14 +99,14 @@ float4 PS(VertexOut pin) : SV_Target
 #endif
 
 	litColor.a = albedoColor.a;
-	return litColor; 
+	return litColor;
 }
 #endif
- 
 
 
 
-/*#ifdef SHADOW_MAP 
+
+/*#ifdef SHADOW_MAP
 void PS(VertexOut pin)
 {
 	// Fetch the material data.
@@ -147,11 +118,11 @@ void PS(VertexOut pin)
 	albedoColor *= textureMaps[albedoMapIndex].Sample(samAnisotropicWrap, pin.TexC);
 
 #ifdef ALPHA_CLIP
-	// Discard pixel if texture alpha < 0.1.  We do this test as soon 
+	// Discard pixel if texture alpha < 0.1.  We do this test as soon
 	// as possible in the shader so that we can potentially exit the
 	// shader early, thereby skipping the rest of the shader code.
 	clip(albedoColor.a - 0.1f);
 #endif
 }
 #endif*/
- 
+

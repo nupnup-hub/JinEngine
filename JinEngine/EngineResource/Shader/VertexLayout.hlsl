@@ -2,12 +2,12 @@
 #if defined(DEBUG)
 struct VertexIn
 {
-	float3 PosL    : POSITION; 
+	float3 PosL    : POSITION;
 };
 struct VertexOut
 {
 	float4 PosH    : SV_POSITION;
-	float3 PosW    : POSITION; 
+	float3 PosW    : POSITION;
 };
 
 #elif defined(SKY)
@@ -41,11 +41,11 @@ struct VertexOut
 #if defined(STATIC)
 struct VertexIn
 {
-	float3 PosL    : POSITION; 
+	float3 PosL    : POSITION;
 };
 struct VertexOut
 {
-	float4 PosH    : SV_POSITION; 
+	float4 PosH    : SV_POSITION;
 };
 #elif defined(SKINNED)
 struct VertexIn
@@ -79,7 +79,7 @@ struct VertexIn
 };
 struct VertexOut
 {
-	float4 PosH    : SV_POSITION; 
+	float4 PosH    : SV_POSITION;
 };
 #endif
 
@@ -121,4 +121,3 @@ struct VertexOut
 #else
 
 #endif
- 

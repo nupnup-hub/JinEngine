@@ -6,9 +6,9 @@
 #include"../../../Utility/JMathHelper.h"  
 
 namespace JinEngine
-{ 
+{
 	class JDirectory;
-	class JShader; 
+	class JShader;
 	namespace Graphic
 	{
 		struct JMaterialConstants;
@@ -26,37 +26,37 @@ namespace JinEngine
 				const J_OBJECT_FLAG flag,
 				JDirectory* directory,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0]));
-			JMaterialInitData(const std::wstring& name, 
+			JMaterialInitData(const std::wstring& name,
 				JDirectory* directory,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0]));
 			JMaterialInitData(JDirectory* directory,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0]));
-		public: 
+		public:
 			J_RESOURCE_TYPE GetResourceType() const noexcept;
 		};
 		using InitData = JMaterialInitData;
 	private:
 		JShader* shader = nullptr;
-	private:  
+	private:
 		REGISTER_PROPERTY_EX(albedoMap, GetAlbedoMap, SetAlbedoMap, GUI_SELECTOR(true, true))
-		JTexture* albedoMap = nullptr;
+			JTexture* albedoMap = nullptr;
 		REGISTER_PROPERTY_EX(normalMap, GetNormalMap, SetNormalMap, GUI_SELECTOR(true, true))
-		JTexture* normalMap = nullptr;
+			JTexture* normalMap = nullptr;
 		REGISTER_PROPERTY_EX(heightMap, GetHeightMap, SetHeightMap, GUI_SELECTOR(true, true))
-		JTexture* heightMap = nullptr;
+			JTexture* heightMap = nullptr;
 		REGISTER_PROPERTY_EX(roughnessMap, GetRoughnessMap, SetRoughnessMap, GUI_SELECTOR(true, true))
-		JTexture* roughnessMap = nullptr;
+			JTexture* roughnessMap = nullptr;
 		REGISTER_PROPERTY_EX(ambientOcclusionMap, GetAmbientOcclusionMap, SetAmbientOcclusionMap, GUI_SELECTOR(true, true))
-		JTexture* ambientOcclusionMap = nullptr;
+			JTexture* ambientOcclusionMap = nullptr;
 
 		//수정필요
 		//isDebug
 		REGISTER_PROPERTY_EX(shadow, OnShadow, SetShadow, GUI_CHECKBOX())
-		bool shadow = false;
+			bool shadow = false;
 		REGISTER_PROPERTY_EX(light, OnLight, SetLight, GUI_CHECKBOX())
-		bool light = false;
+			bool light = false;
 		REGISTER_PROPERTY_EX(albedoOnly, OnAlbedoOnly, SetAlbedoOnly, GUI_CHECKBOX())
-		bool albedoOnly = false;
+			bool albedoOnly = false;
 		bool nonCulling = false;
 		//Draw ShadowMap by depth test
 		bool isShadowMapWrite = false;
@@ -65,14 +65,14 @@ namespace JinEngine
 		bool isSkyMateral = false;
 		bool isDebugMaterial = false;
 		bool alphaClip = false;
-		REGISTER_PROPERTY_EX(metallic,  GetMetallic, SetMetallic, GUI_SLIDER(0, 1, false, false))
-		float metallic = 0;
+		REGISTER_PROPERTY_EX(metallic, GetMetallic, SetMetallic, GUI_SLIDER(0, 1, false, false))
+			float metallic = 0;
 		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0, 1))
-		float roughness = 0;
+			float roughness = 0;
 		REGISTER_PROPERTY_EX(albedoColor, GetAlbedoColor, SetAlbedoColor, GUI_COLOR_PICKER(true))
-		DirectX::XMFLOAT4 albedoColor = { 0.85f, 0.85f, 0.85f, 0.8f };
+			DirectX::XMFLOAT4 albedoColor = { 0.85f, 0.85f, 0.85f, 0.8f };
 		DirectX::XMFLOAT4X4 matTransform = JMathHelper::Identity4x4();
-	public:   
+	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -106,7 +106,7 @@ namespace JinEngine
 		void SetAlbedoOnly(bool value)noexcept;
 		void SetNonCulling(bool value)noexcept;
 		void SetShadowMapWrite(bool value)noexcept;
-		void SetBoundingObjectDepthTest(bool value)noexcept; 
+		void SetBoundingObjectDepthTest(bool value)noexcept;
 		void SetSkyMaterial(bool value)noexcept;
 		void SetDebugMaterial(bool value)noexcept;
 		void SetAlphaClip(bool value)noexcept;
@@ -131,7 +131,7 @@ namespace JinEngine
 		void TextureChange(JTexture* be, JTexture* af, const J_GRAPHIC_SHADER_FUNCTION func)noexcept;
 		void SetNewFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunc);
 	private:
-		void SetShader(JShader* newShader)noexcept; 
+		void SetShader(JShader* newShader)noexcept;
 	private:
 		bool UpdateFrame(Graphic::JMaterialConstants& constant)final;
 	private:
@@ -139,12 +139,12 @@ namespace JinEngine
 	protected:
 		void DoActivate() noexcept final;
 		void DoDeActivate()noexcept final;
-	private: 
+	private:
 		bool WriteMaterialData();
 		bool ReadMateiralData();
 	private:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
-	private: 
+	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JMaterial* material);
 		static JMaterial* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);

@@ -370,7 +370,7 @@ namespace JinEngine
 	bool JMaterial::UpdateFrame(Graphic::JMaterialConstants& constant)
 	{
 		if (IsFrameDirted())
-		{ 
+		{
 			constant.AlbedoColor = albedoColor;
 			constant.Metalic = metallic;
 			constant.Roughness = roughness;
@@ -478,7 +478,7 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, sLight);
 			JFileIOHelper::LoadAtomicData(stream, sAlbedoOnly);
 			JFileIOHelper::LoadAtomicData(stream, sNonCulling);
-			JFileIOHelper::LoadAtomicData(stream, sIsShadowMapWrite); 
+			JFileIOHelper::LoadAtomicData(stream, sIsShadowMapWrite);
 			JFileIOHelper::LoadAtomicData(stream, sBoundingObjDepthTest);
 			JFileIOHelper::LoadAtomicData(stream, sIsSkyMateral);
 			JFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial);

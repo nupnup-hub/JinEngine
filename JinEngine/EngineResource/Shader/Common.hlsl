@@ -2,14 +2,14 @@
 
 struct MaterialData
 {
-	float4 albedoColor; 
-	float4x4 matTransform;
+    float4 albedoColor;
+    float4x4 matTransform;
     float metallic;
     float roughness;
-	uint albedoMapIndex;
+    uint albedoMapIndex;
     uint normalMapIndex;
-	uint heightMapIndex;
-	uint roughnessMapIndex;  
+    uint heightMapIndex;
+    uint roughnessMapIndex;
     uint ambientMapIndex;
     uint materialObjPad;
 };
@@ -54,7 +54,7 @@ cbuffer cbSkinned : register(b1)
 {
     float4x4 objBoneTransforms[256];
 };
- 
+
 cbuffer cbPass : register(b2)
 {
     float4 sceneAmbientLight;
@@ -71,7 +71,7 @@ cbuffer cbCamera: register(b3)
     float4x4 camProj;
     float4x4 camInvProj;
     float4x4 camViewProj;
-    float4x4 camInvViewProj; 
+    float4x4 camInvViewProj;
     float2 camRenderTargetSize;
     float2 camInvRenderTargetSize;
     float3 camEyePosW;
@@ -141,7 +141,7 @@ float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, floa
 
 float CalcShadowFactor(float4 shadowPosH, int shadowMapIndex)
 {
-   // Complete projection by doing division by w.
+    // Complete projection by doing division by w.
     shadowPosH.xyz /= shadowPosH.w;
 
     // Depth in NDC space.
@@ -149,7 +149,7 @@ float CalcShadowFactor(float4 shadowPosH, int shadowMapIndex)
 
     uint width, height, numMips;
     shadowMaps[shadowMapIndex].GetDimensions(0, width, height, numMips);
-    
+
     // Texel size.
     float dx = 1.0f / (float)width;
 

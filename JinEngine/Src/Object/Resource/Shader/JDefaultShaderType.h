@@ -3,7 +3,7 @@
 #include"../../JObjectFlag.h"
 
 namespace JinEngine
-{ 
+{
 	enum class J_DEFAULT_GRAPHIC_SHADER
 	{
 		DEFAULT_SHADER,
@@ -11,10 +11,10 @@ namespace JinEngine
 		DEFAULT_SKY_SHADER,
 		DEFAULT_SHADOW_MAP_SHADER,
 		DEFAULT_DEBUG_LINE_SHADER,
-		DEFAULT_BOUNDING_OBJECT_DEPTH_TEST_SHADER, 
+		DEFAULT_BOUNDING_OBJECT_DEPTH_TEST_SHADER,
 		COUNTER,
-	}; 
-			
+	};
+
 	enum class J_DEFAULT_COMPUTE_SHADER
 	{
 		DEFUALT_HZB_COPY_SHADER = 0,
@@ -87,7 +87,7 @@ namespace JinEngine
 		static bool IsDefaultUse(const J_DEFAULT_GRAPHIC_SHADER cType)
 		{
 			switch (cType)
-			{		 
+			{
 			default:
 				return false;
 			}

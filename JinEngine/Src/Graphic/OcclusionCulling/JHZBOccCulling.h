@@ -3,9 +3,8 @@
 #include"JOcclusionConstants.h"
 #include"../Upload/JUploadBuffer.h"
 #include"../Utility/JHlslDebug.h"
-#include "../../Utility/JVector.h" 
-#include<DirectXCollision.h>
-#include<wrl/client.h>  
+#include "../../Utility/JVector.h"  
+#include<DirectXCollision.h> 
 #include<vector>
 
 struct ID3D12RootSignature;

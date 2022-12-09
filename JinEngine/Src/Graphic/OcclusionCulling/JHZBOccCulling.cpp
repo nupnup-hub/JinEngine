@@ -2,7 +2,7 @@
 #include"../JGraphicInfo.h"
 #include"../JGraphicOption.h"
 #include"../FrameResource/JBoundingObjectConstants.h"
-#include"../../Core/Exception/JExceptionMacro.h"
+#include"../../Core/Exception/JExceptionMacro.h" 
 #include"../../Object/GameObject/JGameObject.h"
 #include"../../Object/Component/Camera/JCamera.h"   
 #include"../../Object/Component/RenderItem/JRenderItem.h"
@@ -26,7 +26,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		void JHZBOccCulling::Initialize(ID3D12Device* d3dDevice, const JGraphicInfo& info)
-		{
+		{ 
 			BuildRootSignature(d3dDevice, info.occlusionMapCapacity);
 			BuildUploadBuffer(d3dDevice, info.upObjCapacity, info.occlusionMapCapacity);
 
@@ -45,7 +45,7 @@ namespace JinEngine
 			}
 		}
 		void JHZBOccCulling::Clear()
-		{ 
+		{  
 			if (queryResult != nullptr)
 				queryResultBuffer->Resource()->Unmap(0, nullptr);
 
@@ -140,7 +140,7 @@ namespace JinEngine
 			passConstatns.occIndexOffset = JMathHelper::Log2Int(info.occlusionMinSize);
 			passConstatns.correctFailTrigger = (int)option.allowHZBCorrectFail;
 			occlusionPassCB->CopyData(cbIndex, passConstatns);
-		}
+		} 
 		void JHZBOccCulling::DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,
 			CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSrvHandle,
 			CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapSrvHandle,

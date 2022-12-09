@@ -3,7 +3,7 @@
 #include<string>
 
 namespace JinEngine
-{ 
+{
 	//has sequence dependency
 	enum class J_DEFAULT_MATERIAL
 	{
@@ -13,14 +13,14 @@ namespace JinEngine
 		DEBUG_LINE_RED,
 		DEBUG_LINE_GREEN,
 		DEBUG_LINE_BLUE,
-		DEBUG_LINE_YELLOW, 
+		DEBUG_LINE_YELLOW,
 		DEFAULT_BOUNDING_OBJECT_DEPTH_TEST,
 		COUNTER
 	};
 
 	struct JDefaultMateiral
 	{
-	public: 
+	public:
 		static constexpr int debugTypeSt = (int)J_DEFAULT_MATERIAL::DEBUG_LINE_RED;
 		static J_DEFAULT_GRAPHIC_SHADER FindMatchDefaultShaderType(const J_DEFAULT_MATERIAL materialType)
 		{
@@ -39,7 +39,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_BLUE:
 				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_LINE_SHADER;
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW:
-				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_LINE_SHADER; 
+				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_LINE_SHADER;
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST:
 				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST_SHADER;
 			}

@@ -4,7 +4,7 @@
 namespace JinEngine
 {
 	namespace Graphic
-	{ 
+	{
 		void JOccBase::UpdateTimer()noexcept
 		{
 			const float totalTime = JGameTimer::Instance().TotalTime();

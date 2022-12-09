@@ -35,7 +35,7 @@ namespace JinEngine
 			uint cbvSrvUavDescriptorSize = 0;
 
 			//fixed resource
-			static constexpr uint mainBufDsCount = 1;
+			static constexpr uint mainBufDsCount = 1; 
 			static constexpr uint swapChainBufferCount = 2;  
 			//occlusion +  occlusionDebug
 
@@ -55,6 +55,20 @@ namespace JinEngine
 			//DsvHeap
 			//Fixed: 1( CommonDepth)
 			//Dynamic: ShadowMap
+
+			Microsoft::WRL::ComPtr<ID3D12Resource> mainDepthStencil; 
+
+			//Engine use
+			//uint uavCapacity = depthDebugCapacity; 
+			static constexpr uint occlusionDsCount = 1;
+			static constexpr uint minOcclusionSize = 8;
+			uint occlusionCount = 0;
+			uint occlusionDebugCount = 0;
+			uint occlusionQuaryCapacity = 2000;
+			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionQueryResult;
+			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDepthMap;
+			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDepthMipMap;
+			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDebug;
 
 			//User use
 			const uint srvFixedCount = 1;
@@ -84,19 +98,6 @@ namespace JinEngine
 
 			uint uavCount = 0;
 			uint uavCapacity = occlusionCapacity - 1 + occlusionDebugCapacity;
-
-			//Engine use
-			//uint uavCapacity = depthDebugCapacity; 
-			static constexpr uint occlusionDsCount = 1;
-			static constexpr uint minOcclusionSize = 8;
-			uint occlusionCount = 0;
-			uint occlusionDebugCount = 0;
-			uint occlusionQuaryCapacity = 2000;
-			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionQueryResult;
-			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDepthMap;
-			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDepthMipMap;
-			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionDebug; 
-			Microsoft::WRL::ComPtr<ID3D12Resource> mainDepthStencil;
 		public:
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuRtvDescriptorHandle(int index)const noexcept;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuRtvDescriptorHandle(int index)const noexcept;
@@ -168,17 +169,14 @@ namespace JinEngine
 			void ReBindRenderTarget(ID3D12Device* device, const uint resourceIndex, const uint rtvHeapIndex, const uint srvHeapIndex);
 			void ReBindShadowMapTexture(ID3D12Device* device, const uint resourceIndex, const uint dsvHeapIndex, const uint srvHeapIndex);
 		private: 
-			void CreateOcclusionQueryResource(ID3D12Device* device);
-			void CreateOcclusionHZBResource(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const uint occWidth, const uint occHeight);
-			void CreateDepthStencilResource(ID3D12Device* device,
+			void CreateMainDepthStencilResource(ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList,
 				const uint viewWidth,
 				const uint viewHeight,
 				bool m4xMsaaState,
-				uint m4xMsaaQuality);
-		private:
-			void ClearOcclusionQueryResource();
-			void ClearOcclusionHZBResource();
+				uint m4xMsaaQuality); 
+			void CreateOcclusionQueryResource(ID3D12Device* device);
+			void CreateOcclusionHZBResource(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const uint occWidth, const uint occHeight);
 		private:
 			void Clear();
 		public:

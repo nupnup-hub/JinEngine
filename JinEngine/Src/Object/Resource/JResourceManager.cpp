@@ -621,14 +621,6 @@ namespace JinEngine
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
 				}
-				case J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST:
-				{
-					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
-						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetBoundingObjectDepthTest(true); 
-					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
-					break;
-				}
 				default:
 					break;
 				}
