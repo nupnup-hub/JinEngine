@@ -1,3 +1,4 @@
+#include"DepthFunc.hlsl"
 
 Texture2D depthMap	: register(t0);
 RWTexture2D<float4> result	: register(u0);
@@ -10,12 +11,6 @@ cbuffer cbSettings : register(b0)
 	float camNear;
 	float camFar;
 };
-/*
-float ToNoLinearZValue(const float v)
-{
-	return  -((camNear + camFar) * v - (2 * camNear)) / ((camNear - camFar) * v);
-}
-*/
 
 /*
 dim info
@@ -23,7 +18,7 @@ group 1, 512, 1
 thread 512, 1, 1
 */
 [numthreads(512, 1, 1)]
-void CS(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+void LinearMap(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
 {
 	if (width <= dispatchThreadID.x || height <= dispatchThreadID.y)
 		return;
@@ -41,10 +36,33 @@ void CS(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_Dispat
 		//float factor = 1 - (2.5f * camNearn) / (camFar + camNear - z * (camFar - camNear));
 		result[int2(textureXFactor, textureYFactor)] = float4(z, z, z, z);
 		textureXFactor += 512;
-		if (textureXFactor > width)
+		if (textureXFactor >= width)
 		{
 			textureXFactor = dispatchThreadID.x;
 			textureYFactor += 512;
 		} 
 	}
 } 
+
+[numthreads(512, 1, 1)]
+void NonLinearMap(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+{
+	if (width <= dispatchThreadID.x || height <= dispatchThreadID.y)
+		return;
+
+	float textureXFactor = dispatchThreadID.x;
+	float textureYFactor = dispatchThreadID.y;
+	uint maxPixelCount = width * height;
+
+	while (maxPixelCount > (textureXFactor + (textureYFactor * width)))
+	{  
+		const float z = 1 - ToLinearZValue(depthMap.Load(int3(textureXFactor, textureYFactor, 0)).r, camNear, camFar);
+		result[int2(textureXFactor, textureYFactor)] = float4(z, z, z, z);
+		textureXFactor += 512;
+		if (textureXFactor >= width)
+		{
+			textureXFactor = dispatchThreadID.x;
+			textureYFactor += 512;
+		}
+	}
+}

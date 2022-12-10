@@ -18,13 +18,13 @@ namespace JinEngine
 		: position(p), normal(n), texC(uv), tangentU(t.x, t.y, t.z)
 	{}
 	JStaticMeshVertex::JStaticMeshVertex(const JVector3<float>& p, const JVector3<float>& n, const JVector2<float>& uv, const JVector3<float>& t)
-		: position(p.x, p.y, p.z), normal(n.x, n.y, n.z), tangentU(t.x, t.y, t.z), texC(uv.x, uv.y)
+		: position(p.x, p.y, p.z), normal(n.x, n.y, n.z), texC(uv.x, uv.y), tangentU(t.x, t.y, t.z)
 	{}
 	JStaticMeshVertex::JStaticMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv)
 		: position(p), normal(n), texC(uv)
 	{}
 	JStaticMeshVertex::JStaticMeshVertex(float px, float py, float pz, float nx, float ny, float nz, float u, float v,  float tx, float ty, float tz)
-		: position(px, py, pz), normal(nx, ny, nz), tangentU(tx, ty, tz), texC(u, v)
+		: position(px, py, pz), normal(nx, ny, nz), texC(u, v), tangentU(tx, ty, tz)
 	{}
 	JStaticMeshVertex::JStaticMeshVertex(float px, float py, float pz, float nx, float ny, float nz)
 		: position(px, py, pz), normal(nx, ny, nz)

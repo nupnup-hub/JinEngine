@@ -35,7 +35,10 @@ namespace JinEngine
 			uint cbvSrvUavDescriptorSize = 0;
 
 			//fixed resource
-			static constexpr uint mainBufDsCount = 1; 
+			static constexpr uint mainDsCount = 1; 
+			static constexpr uint mainDsSrvCount = 2;
+			static constexpr uint mainDsDepthIndex = 0;
+			static constexpr uint mainDsStencilIndex = 1;
 			static constexpr uint swapChainBufferCount = 2;  
 			//occlusion +  occlusionDebug
 
@@ -57,6 +60,7 @@ namespace JinEngine
 			//Dynamic: ShadowMap
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> mainDepthStencil; 
+			Microsoft::WRL::ComPtr<ID3D12Resource> mainDepthStencilDebug;
 
 			//Engine use
 			//uint uavCapacity = depthDebugCapacity; 
@@ -107,6 +111,8 @@ namespace JinEngine
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept;
 		public:
 			//Srv
+			uint GetSrvMainDsStart()const noexcept;
+			uint GetSrvMainDsDebugStart()const noexcept;
 			uint GetSrvOcclusionDepthMapStart()const noexcept;
 			uint GetSrvOcclusionMipMapStart()const noexcept;
 			uint GetSrvOcclusionDebugStart()const noexcept;
@@ -115,6 +121,7 @@ namespace JinEngine
 			uint GetSrvRenderResultStart()const noexcept;
 			uint GetSrvShadowMapStart()const noexcept; 
 			//Uav
+			uint GetUavMainDsDebugStart()const noexcept;
 			uint GetUavOcclusionMipMapStart()const noexcept;
 			uint GetUavOcclusionDebugStart()const noexcept;
 			//Rtv 

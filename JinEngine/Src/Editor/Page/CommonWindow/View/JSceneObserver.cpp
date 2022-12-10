@@ -325,6 +325,9 @@ namespace JinEngine
 		void JSceneObserver::OcclusionResultOnScreen()
 		{  
 			JImGuiImpl::BeginWindow("##OcclusionResultWindow1", &isOpenOcclusionMapViewer, ImGuiWindowFlags_NoDocking);
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetMainDepthSrvHandle()).ptr, ImVec2(400, 200));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)(JGraphic::Instance().GetMainDepthDebugUavHandle()).ptr, ImVec2(400, 200));
 
 			ImGui::Image((ImTextureID)(JGraphic::Instance().GetOcclusionDepthMapSrvHandle(0)).ptr, ImVec2(400, 200));
 			ImGui::SameLine();

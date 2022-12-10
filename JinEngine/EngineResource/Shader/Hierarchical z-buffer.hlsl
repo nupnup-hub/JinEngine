@@ -1,3 +1,5 @@
+#include"DepthFunc.hlsl"
+
 struct ObjectInfo
 {
 	float4x4 objWorld;
@@ -110,15 +112,6 @@ static const float minDistance = -100000;
 //occMap size max is 512
 //512 is less than thread and group max dim
 
-float ToLinearZValue(const float v)
-{
-	return (2.0f * camNear) / (camNear + camFar - v * (camFar - camNear));
-}
-float ToNoLinearZValue(const float v)
-{
-	return  -((camNear + camFar) * v - (2 * camNear)) / ((camNear - camFar) * v);
-}
-
 #if defined (DIMX) && defined (DIMY)
 [numthreads(DIMX, DIMY, 1)]
 void HZBCopyDepthMap(int3 dispatchThreadID : SV_DispatchThreadID)
@@ -126,7 +119,7 @@ void HZBCopyDepthMap(int3 dispatchThreadID : SV_DispatchThreadID)
 	if (nowWidth <= dispatchThreadID.x || nowHeight <= dispatchThreadID.y)
 		return;
 	 
-	lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = ToLinearZValue(depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0)).r);
+	lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = ToLinearZValue(depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0)).r, camNear, camFar);
 }
 #endif
 
@@ -319,10 +312,10 @@ float VertexSampleDepth(const float4 posCW, float4 posEW)
 
 	const int lod = clamp((occMapCount - 1) - lodFactor, 0, occMapCount - 1);
 
-	const float compareDepth00 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(maxXNdc.x, maxYNdc.y), lod).r);
-	const float compareDepth01 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(maxXNdc.x, minYNdc.y), lod).r);
-	const float compareDepth02 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(minXNdc.x, maxYNdc.y), lod).r);
-	const float compareDepth03 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(minXNdc.x, minYNdc.y), lod).r);
+	const float compareDepth00 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(maxXNdc.x, maxYNdc.y), lod).r, camNear, camFar);
+	const float compareDepth01 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(maxXNdc.x, minYNdc.y), lod).r, camNear, camFar);
+	const float compareDepth02 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(minXNdc.x, maxYNdc.y), lod).r, camNear, camFar);
+	const float compareDepth03 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(minXNdc.x, minYNdc.y), lod).r, camNear, camFar);
 
 	return max(compareDepth00, max(compareDepth01, max(compareDepth02, compareDepth03)));
 }
@@ -407,7 +400,7 @@ float RasterizeSampleDepth(const float centerDepth, const float4 posCW, float4 p
 	{
 		for (uint j = 0; j < textureWidth; ++j)
 		{
-			const float compareDepth = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(minXNdc.x + (dx * j), minYNdc.y + (dy * i)), lod).r);
+			const float compareDepth = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(minXNdc.x + (dx * j), minYNdc.y + (dy * i)), lod).r, camNear, camFar);
 			if (centerDepth <= compareDepth)
 				return compareDepth;
 		}

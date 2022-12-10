@@ -130,6 +130,15 @@ namespace JinEngine
 			{
 				memcpy(&mappedData[elementIndex * elementByteSize], &data, sizeof(T));
 			}
+		public:
+			void SetGraphicCBBufferView(ID3D12GraphicsCommandList* commandList, const uint rootIndex, const uint addressOffset)
+			{   
+				commandList->SetGraphicsRootConstantBufferView(rootIndex, uploadBuffer->GetGPUVirtualAddress() + addressOffset * elementByteSize);
+			}
+			void SetComputeCBBufferView(ID3D12GraphicsCommandList* commandList, const uint rootIndex, const uint addressOffset)
+			{
+				commandList->SetComputeRootConstantBufferView(rootIndex, uploadBuffer->GetGPUVirtualAddress() + addressOffset * elementByteSize);
+			}
 		};
 	}
 }

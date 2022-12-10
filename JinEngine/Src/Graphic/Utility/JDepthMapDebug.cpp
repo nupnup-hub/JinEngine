@@ -19,10 +19,11 @@ namespace JinEngine
 		}
 		void JDepthMapDebug::Clear()
 		{
-			cShaderData.reset();
+			linearDepthMapShaderData.reset();
+			nonLinearDepthMapShaderData.reset();
 			cRootSignature.Reset();
 		}
-		void JDepthMapDebug::DrawDepthDebug(ID3D12GraphicsCommandList* commandList,
+		void JDepthMapDebug::DrawLinearDepthDebug(ID3D12GraphicsCommandList* commandList,
 			const CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
 			const CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle,
 			const JVector2<uint> size,
@@ -43,10 +44,35 @@ namespace JinEngine
 			commandList->SetComputeRoot32BitConstants(2, 1, &size.y, 1);
 			commandList->SetComputeRoot32BitConstants(2, 1, &camNear, 2);
 			commandList->SetComputeRoot32BitConstants(2, 1, &camFar, 3);
-			commandList->SetPipelineState(cShaderData->Pso.Get());
+			commandList->SetPipelineState(linearDepthMapShaderData->Pso.Get());
 
 			commandList->Dispatch(1, 512, 1);
 		} 	 
+		void JDepthMapDebug::DrawNonLinearDepthDebug(ID3D12GraphicsCommandList* commandList,
+			const CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
+			const CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle,
+			const JVector2<uint> size,
+			const float camNear,
+			const float camFar)
+		{
+			D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)size.x, (float)size.y, 0.0f, 1.0f };
+			D3D12_RECT mScissorRect = { 0, 0, size.x, size.y };
+
+			commandList->RSSetViewports(1, &mViewport);
+			commandList->RSSetScissorRects(1, &mScissorRect);
+
+			commandList->SetComputeRootSignature(cRootSignature.Get());
+			commandList->SetComputeRootDescriptorTable(0, srcHandle);
+			commandList->SetComputeRootDescriptorTable(1, destHandle);
+
+			commandList->SetComputeRoot32BitConstants(2, 1, &size.x, 0);
+			commandList->SetComputeRoot32BitConstants(2, 1, &size.y, 1);
+			commandList->SetComputeRoot32BitConstants(2, 1, &camNear, 2);
+			commandList->SetComputeRoot32BitConstants(2, 1, &camFar, 3);
+			commandList->SetPipelineState(nonLinearDepthMapShaderData->Pso.Get());
+
+			commandList->Dispatch(1, 512, 1);
+		}
 		void JDepthMapDebug::BuildComputeResource(ID3D12Device* device, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthStencilFormat)
 		{
 			static constexpr int slotCount = 3;
@@ -98,18 +124,28 @@ namespace JinEngine
 			D3D_SHADER_MACRO macro{ NULL, NULL };
 			std::wstring computeShaderPath = JApplicationVariable::GetShaderPath() + L"\\DepthMapDebug.hlsl";
 
-			cShaderData = std::make_unique<JComputeShaderData>();
-			cShaderData->Cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "CS", "cs_5_1");
+			linearDepthMapShaderData = std::make_unique<JComputeShaderData>();
+			linearDepthMapShaderData->Cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "LinearMap", "cs_5_1");
+
+			nonLinearDepthMapShaderData = std::make_unique<JComputeShaderData>();
+			nonLinearDepthMapShaderData->Cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "NonLinearMap", "cs_5_1");
 
 			D3D12_COMPUTE_PIPELINE_STATE_DESC newShaderPso;
 			ZeroMemory(&newShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
 			newShaderPso.pRootSignature = cRootSignature.Get();
 			newShaderPso.CS =
 			{
-				reinterpret_cast<BYTE*>(cShaderData->Cs->GetBufferPointer()),
-				cShaderData->Cs->GetBufferSize()
+				reinterpret_cast<BYTE*>(linearDepthMapShaderData->Cs->GetBufferPointer()),
+				linearDepthMapShaderData->Cs->GetBufferSize()
 			};
-			ThrowIfFailedG(device->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(cShaderData->Pso.GetAddressOf())));
+			ThrowIfFailedG(device->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(linearDepthMapShaderData->Pso.GetAddressOf())));
+
+			newShaderPso.CS =
+			{
+				reinterpret_cast<BYTE*>(nonLinearDepthMapShaderData->Cs->GetBufferPointer()),
+				nonLinearDepthMapShaderData->Cs->GetBufferSize()
+			};
+			ThrowIfFailedG(device->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(nonLinearDepthMapShaderData->Pso.GetAddressOf())));
 		}
 	}
 }

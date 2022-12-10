@@ -600,6 +600,7 @@ namespace JinEngine
 		std::vector<uint32> indices32(6); 
 
 		// position coordinates specified in NDC space.
+		  
 		vertices[0] = JStaticMeshVertex(
 			x, y - h, depth,
 			0.0f, 0.0f, -1.0f,

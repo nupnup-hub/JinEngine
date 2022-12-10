@@ -57,6 +57,7 @@ namespace JinEngine
 		class JHZBOccCulling;
 		class JOccBase;
 		class JDepthMapDebug;
+		class JOutline;
 
 		class JGraphicImpl final : public JGraphicApplicationIterface,
 			public JGraphicTextureUserInterface,
@@ -168,6 +169,7 @@ namespace JinEngine
 			std::unique_ptr<JHardwareOccCulling> hdOccHelper;
 			std::unique_ptr<JHZBOccCulling> hzbOccHelper;
 			std::unique_ptr<JDepthMapDebug> depthMapDebug;
+			std::unique_ptr<JOutline> outlineHelper;
 			JOccBase* occBase = nullptr;
 		public:
 			JGraphicInfo GetGraphicInfo()const noexcept;
@@ -180,7 +182,9 @@ namespace JinEngine
 			JGraphicCommandInterface* CommandInterface()noexcept;
 			JGraphicApplicationIterface* AppInterface()noexcept;
 		public:
-			//Debug
+			//Debug 
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetMainDepthSrvHandle();
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetMainDepthDebugUavHandle();
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetDebugSrvHandle(const uint index);
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetDebugUavHandle(const uint index);
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionMipMapSrvHandle(const uint index);
@@ -242,6 +246,8 @@ namespace JinEngine
 				const std::vector<JGameObject*>& gameObject, 
 				const DrawHelper helper,
 				const bool isAnimationActivated);
+		private:
+			void ResourceTransition(_In_ ID3D12Resource* pResource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 		private:
 			bool InitializeD3D();
 			bool InitializeResource();
