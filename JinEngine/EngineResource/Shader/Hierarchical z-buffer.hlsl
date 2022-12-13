@@ -73,8 +73,8 @@ struct HZBDebugInfo
 RWStructuredBuffer<HZBDebugInfo> hzbDebugInfo : register(u2, space1);
 */
 
-Texture2D depthMap: register(t0);
-Texture2D depthMipmap: register(t1);
+Texture2D<float> depthMap: register(t0);
+Texture2D mipmap: register(t1);
 RWTexture2D<float> lastMipmap: register(u0);
 
 StructuredBuffer<ObjectInfo> object : register(t2);
@@ -119,7 +119,7 @@ void HZBCopyDepthMap(int3 dispatchThreadID : SV_DispatchThreadID)
 	if (nowWidth <= dispatchThreadID.x || nowHeight <= dispatchThreadID.y)
 		return;
 	 
-	lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = ToLinearZValue(depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0)).r, camNear, camFar);
+	lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = ToLinearZValue(depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0)), camNear, camFar);
 }
 #endif
 
@@ -140,10 +140,10 @@ void HZBDownSampling(int3 dispatchThreadID : SV_DispatchThreadID)
 	const float xOffset = 1 / nowWidth;
 	const float yOffset = 1 / nowHeight;
 
-	const float color00 = depthMap.SampleLevel(downSam, uv, 0).r;
-	const float color01 = depthMap.SampleLevel(downSam, uv + float2(xOffset, 0), 0).r;
-	const float color02 = depthMap.SampleLevel(downSam, uv + float2(xOffset, yOffset), 0).r;
-	const float color03 = depthMap.SampleLevel(downSam, uv + float2(0, yOffset), 0).r;
+	const float color00 = mipmap.SampleLevel(downSam, uv, 0).r;
+	const float color01 = mipmap.SampleLevel(downSam, uv + float2(xOffset, 0), 0).r;
+	const float color02 = mipmap.SampleLevel(downSam, uv + float2(xOffset, yOffset), 0).r;
+	const float color03 = mipmap.SampleLevel(downSam, uv + float2(0, yOffset), 0).r;
 
 	float finalColor = max(color00, max(color01, max(color02, color03)));
 
@@ -152,22 +152,22 @@ void HZBDownSampling(int3 dispatchThreadID : SV_DispatchThreadID)
 
 	if (shouldIncludeExtraColumnFromPreviousLevel)
 	{
-		const float extraColor00 = depthMap.SampleLevel(downSam, uv + float2(xOffset * 2, 0), 0).r;
-		const float extraColor01 = depthMap.SampleLevel(downSam, uv + float2(xOffset * 2, yOffset), 0).r;
+		const float extraColor00 = mipmap.SampleLevel(downSam, uv + float2(xOffset * 2, 0), 0).r;
+		const float extraColor01 = mipmap.SampleLevel(downSam, uv + float2(xOffset * 2, yOffset), 0).r;
 
 		// In the case where the width and height are both odd, need to include the
 		// 'corner' value as well.
 		if (shouldIncludeExtraRowFromPreviousLevel)
 		{
-			const float extraColor02 = depthMap.SampleLevel(downSam, uv + float2(xOffset * 2, yOffset * 2), 0).r;
+			const float extraColor02 = mipmap.SampleLevel(downSam, uv + float2(xOffset * 2, yOffset * 2), 0).r;
 			finalColor = max(finalColor, extraColor02);
 		}
 		finalColor = max(finalColor, max(extraColor00, extraColor01));
 	}
 	if (shouldIncludeExtraRowFromPreviousLevel)
 	{
-		const float extraColor00 = depthMap.SampleLevel(downSam, uv + float2(0, yOffset * 2), 0).r;
-		const float extraColor01 = depthMap.SampleLevel(downSam, uv + float2(xOffset, yOffset * 2), 0).r;
+		const float extraColor00 = mipmap.SampleLevel(downSam, uv + float2(0, yOffset * 2), 0).r;
+		const float extraColor01 = mipmap.SampleLevel(downSam, uv + float2(xOffset, yOffset * 2), 0).r;
 
 		finalColor = max(finalColor, max(extraColor00, extraColor01));
 	}
@@ -176,10 +176,10 @@ void HZBDownSampling(int3 dispatchThreadID : SV_DispatchThreadID)
 #elif DOWN_SAMPLEING_BY_LOAD
 
 	const int3 baseIndex = int3(dispatchThreadID.x * 2, dispatchThreadID.y * 2, 0);
-	const float color00 = depthMap.Load(baseIndex).r;
-	const float color01 = depthMap.Load(baseIndex, int2(1, 0)).r;
-	const float color02 = depthMap.Load(baseIndex, int2(1, 1)).r;
-	const float color03 = depthMap.Load(baseIndex, int2(0, 1)).r;
+	const float color00 = mipmap.Load(baseIndex).r;
+	const float color01 = mipmap.Load(baseIndex, int2(1, 0)).r;
+	const float color02 = mipmap.Load(baseIndex, int2(1, 1)).r;
+	const float color03 = mipmap.Load(baseIndex, int2(0, 1)).r;
 
 	float finalColor = max(color00, max(color01, max(color02, color03)));
 
@@ -188,22 +188,22 @@ void HZBDownSampling(int3 dispatchThreadID : SV_DispatchThreadID)
 
 	if (shouldIncludeExtraColumnFromPreviousLevel)
 	{
-		const float extraColor00 = depthMap.Load(baseIndex, int2(2, 0)).r;
-		const float extraColor01 = depthMap.Load(baseIndex, int2(2, 1)).r;
+		const float extraColor00 = mipmap.Load(baseIndex, int2(2, 0)).r;
+		const float extraColor01 = mipmap.Load(baseIndex, int2(2, 1)).r;
 
 		// In the case where the width and height are both odd, need to include the
 		// 'corner' value as well.
 		if (shouldIncludeExtraRowFromPreviousLevel)
 		{
-			const float extraColor02 = depthMap.Load(baseIndex, int2(2, 2)).r;
+			const float extraColor02 = mipmap.Load(baseIndex, int2(2, 2)).r;
 			finalColor = max(finalColor, extraColor02);
 		}
 		finalColor = max(finalColor, max(extraColor00, extraColor01));
 	}
 	if (shouldIncludeExtraRowFromPreviousLevel)
 	{
-		const float extraColor00 = depthMap.Load(baseIndex, int2(0, 2)).r;
-		const float extraColor01 = depthMap.Load(baseIndex, int2(1, 2)).r;
+		const float extraColor00 = mipmap.Load(baseIndex, int2(0, 2)).r;
+		const float extraColor01 = mipmap.Load(baseIndex, int2(1, 2)).r;
 
 		finalColor = max(finalColor, max(extraColor00, extraColor01));
 	}
@@ -312,10 +312,10 @@ float VertexSampleDepth(const float4 posCW, float4 posEW)
 
 	const int lod = clamp((occMapCount - 1) - lodFactor, 0, occMapCount - 1);
 
-	const float compareDepth00 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(maxXNdc.x, maxYNdc.y), lod).r, camNear, camFar);
-	const float compareDepth01 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(maxXNdc.x, minYNdc.y), lod).r, camNear, camFar);
-	const float compareDepth02 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(minXNdc.x, maxYNdc.y), lod).r, camNear, camFar);
-	const float compareDepth03 = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(minXNdc.x, minYNdc.y), lod).r, camNear, camFar);
+	const float compareDepth00 = ToNoLinearZValue(mipmap.SampleLevel(occFrameSam, float2(maxXNdc.x, maxYNdc.y), lod).r, camNear, camFar);
+	const float compareDepth01 = ToNoLinearZValue(mipmap.SampleLevel(occFrameSam, float2(maxXNdc.x, minYNdc.y), lod).r, camNear, camFar);
+	const float compareDepth02 = ToNoLinearZValue(mipmap.SampleLevel(occFrameSam, float2(minXNdc.x, maxYNdc.y), lod).r, camNear, camFar);
+	const float compareDepth03 = ToNoLinearZValue(mipmap.SampleLevel(occFrameSam, float2(minXNdc.x, minYNdc.y), lod).r, camNear, camFar);
 
 	return max(compareDepth00, max(compareDepth01, max(compareDepth02, compareDepth03)));
 }
@@ -390,7 +390,7 @@ float RasterizeSampleDepth(const float centerDepth, const float4 posCW, float4 p
 	uint textureWidth = 0;
 	uint textureHeight = 0;
 	uint numberOfLevels = 0;
-	depthMipmap.GetDimensions(lod, textureWidth, textureHeight, numberOfLevels);
+	mipmap.GetDimensions(lod, textureWidth, textureHeight, numberOfLevels);
 
 	const float dx = (maxXNdc.x - minXNdc.x) / textureWidth;
 	const float dy = (maxYNdc.y - minYNdc.y) / textureHeight;
@@ -400,7 +400,7 @@ float RasterizeSampleDepth(const float centerDepth, const float4 posCW, float4 p
 	{
 		for (uint j = 0; j < textureWidth; ++j)
 		{
-			const float compareDepth = ToNoLinearZValue(depthMipmap.SampleLevel(occFrameSam, float2(minXNdc.x + (dx * j), minYNdc.y + (dy * i)), lod).r, camNear, camFar);
+			const float compareDepth = ToNoLinearZValue(mipmap.SampleLevel(occFrameSam, float2(minXNdc.x + (dx * j), minYNdc.y + (dy * i)), lod).r, camNear, camFar);
 			if (centerDepth <= compareDepth)
 				return compareDepth;
 		}

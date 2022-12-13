@@ -155,7 +155,7 @@ namespace JinEngine
 			commandList->SetPipelineState(copyShader->GetComputePso());
 
 			commandList->SetComputeRootDescriptorTable(0, depthMapSrvHandle);
-			commandList->SetComputeRootDescriptorTable(1, mipMapUavHandle);
+			commandList->SetComputeRootDescriptorTable(2, mipMapUavHandle);
 			commandList->SetComputeRootConstantBufferView(5, depthMapInfoCB->Resource()->GetGPUVirtualAddress());
 			commandList->SetComputeRootConstantBufferView(6, occlusionPassCB->Resource()->GetGPUVirtualAddress());
 
@@ -174,8 +174,8 @@ namespace JinEngine
 				CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle = mipMapUavHandle;
 				destHandle.Offset(i + 1, srvDescriptorSize);
 
-				commandList->SetComputeRootDescriptorTable(0, srcHandle);
-				commandList->SetComputeRootDescriptorTable(1, destHandle);
+				commandList->SetComputeRootDescriptorTable(1, srcHandle);
+				commandList->SetComputeRootDescriptorTable(2, destHandle);
 
 				D3D12_GPU_VIRTUAL_ADDRESS depthMapCBAddress = depthMapInfoCB->Resource()->GetGPUVirtualAddress() + i * depthMapInfoCBByteSize;
 				commandList->SetComputeRootConstantBufferView(5, depthMapCBAddress);
@@ -185,7 +185,7 @@ namespace JinEngine
 		}
 		void JHZBOccCulling::OcclusuinCulling(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle)
 		{
-			commandList->SetComputeRootDescriptorTable(2, mipMapStHandle);
+			commandList->SetComputeRootDescriptorTable(1, mipMapStHandle);
 			commandList->SetComputeRootShaderResourceView(3, objectBuffer->Resource()->GetGPUVirtualAddress());
 			commandList->SetComputeRootUnorderedAccessView(4, queryOutBuffer->Resource()->GetGPUVirtualAddress());
 			commandList->SetComputeRootConstantBufferView(6, occlusionPassCB->Resource()->GetGPUVirtualAddress());
@@ -315,15 +315,15 @@ namespace JinEngine
 
 			CD3DX12_DESCRIPTOR_RANGE depthMapTable;
 			depthMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-			CD3DX12_DESCRIPTOR_RANGE lastMipmapTable;
-			lastMipmapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 			CD3DX12_DESCRIPTOR_RANGE mipmapTable;
 			mipmapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
+			CD3DX12_DESCRIPTOR_RANGE lastMipmapTable;
+			lastMipmapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 
 			// Create root CBV. 
 			slotRootParameter[0].InitAsDescriptorTable(1, &depthMapTable);
-			slotRootParameter[1].InitAsDescriptorTable(1, &lastMipmapTable);
-			slotRootParameter[2].InitAsDescriptorTable(1, &mipmapTable);
+			slotRootParameter[1].InitAsDescriptorTable(1, &mipmapTable);
+			slotRootParameter[2].InitAsDescriptorTable(1, &lastMipmapTable);
 
 			slotRootParameter[3].InitAsShaderResourceView(2);
 			slotRootParameter[4].InitAsUnorderedAccessView(1, 1);
@@ -355,7 +355,6 @@ namespace JinEngine
 				D3D12_COMPARISON_FUNC_NEVER,
 				D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
 			};
-
 			CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, (uint)samDesc.size(), samDesc.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 			// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer

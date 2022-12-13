@@ -377,9 +377,7 @@ namespace JinEngine
 
 			newShaderPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 			newShaderPso.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT); 
-			newShaderPso.DepthStencilState.StencilEnable = true;
-			newShaderPso.DepthStencilState.FrontFace.StencilFailOp = D3D12_STENCIL_OP_INCR;
-			newShaderPso.DepthStencilState.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_INCR;
+			newShaderPso.DepthStencilState.StencilEnable = true; 
 			newShaderPso.DepthStencilState.FrontFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
 			newShaderPso.DepthStencilState.BackFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
 			
@@ -1017,7 +1015,9 @@ namespace JinEngine
 
 						if (copiedHelper.scene->IsMainScene() && copiedHelper.cam->IsMainCamera())
 						{
-							outlineHelper->DrawOutline(commandList.Get(), graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvMainDsStart() + 1));
+							//outlineHelper->DrawOutline(commandList.Get(), 
+							//	graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvMainDsStart()),
+							//	graphicResource->GetGpuSrvDescriptorHandle(graphicResource->GetSrvMainDsStart() + 1));
 
 							const float camNear = copiedHelper.cam->GetNear();
 							const float camFar = copiedHelper.cam->GetFar();

@@ -22,20 +22,27 @@ namespace JinEngine
 			mRootSignature.Reset();
 			gShaderData.reset();
 		}
-		void JOutline::UpdatePassBuf(const uint width, const uint height, const uint cbOffset)
+		void JOutline::UpdatePassBuf(const uint width, const uint height, const uint stencilRefOffset)
 		{
 			JOutlineConstants constants;
-			constants.offset = cbOffset;
+			constants.offset = stencilRefOffset;
 			constants.width = width;
 			constants.height = height;
 
+			const XMVECTOR s = XMVectorSet(2, 2, 1, 1);
+			const XMVECTOR t = XMVectorSet(-1, 1, 0, 1);
+			const XMVECTOR q = XMVectorSet(0, 0, 0, 1);
+			const XMVECTOR zero = XMVectorSet(0, 0, 0, 1);
+
+			XMStoreFloat4x4(&constants.world, XMMatrixTranspose(XMMatrixAffineTransformation(s, zero, q, t)));
 			outlineCB->CopyData(0, constants);
 		}
-		void JOutline::DrawOutline(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE dsHandle)
+		void JOutline::DrawOutline(ID3D12GraphicsCommandList* commandList, const CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapHandle, const CD3DX12_GPU_DESCRIPTOR_HANDLE stencilMapHandle)
 		{
 			commandList->SetGraphicsRootSignature(mRootSignature.Get());
-			commandList->SetGraphicsRootDescriptorTable(0, dsHandle);
-			commandList->SetGraphicsRootConstantBufferView(1, outlineCB->Resource()->GetGPUVirtualAddress());
+			commandList->SetGraphicsRootDescriptorTable(0, depthMapHandle);
+			commandList->SetGraphicsRootDescriptorTable(1, stencilMapHandle);
+			commandList->SetGraphicsRootConstantBufferView(2, outlineCB->Resource()->GetGPUVirtualAddress());
 			commandList->SetPipelineState(gShaderData->Pso.Get());
 
 			JMeshGeometry* mesh = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
@@ -51,16 +58,33 @@ namespace JinEngine
 		}
 		void JOutline::BuildRootSignature(ID3D12Device* device)
 		{
-			static constexpr int slotCount = 2;
+			static constexpr int slotCount = 3;
 
-			CD3DX12_DESCRIPTOR_RANGE dsTexture;
-			dsTexture.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+			CD3DX12_DESCRIPTOR_RANGE depthMap;
+			depthMap.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+			CD3DX12_DESCRIPTOR_RANGE stencilMap;
+			stencilMap.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
 
 			CD3DX12_ROOT_PARAMETER slotRootParameter[slotCount];
-			slotRootParameter[0].InitAsDescriptorTable(1, &dsTexture);
-			slotRootParameter[1].InitAsConstantBufferView(0);
+			slotRootParameter[0].InitAsDescriptorTable(1, &depthMap);
+			slotRootParameter[1].InitAsDescriptorTable(1, &stencilMap);
+			slotRootParameter[2].InitAsConstantBufferView(0);
 
-			CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+			std::vector<CD3DX12_STATIC_SAMPLER_DESC> samDesc
+			{
+				CD3DX12_STATIC_SAMPLER_DESC(0,
+				D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
+				D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressU
+				D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressV
+				D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressW
+				0.0f,                               // mipLODBias
+				1,                                 // maxAnisotropy
+				D3D12_COMPARISON_FUNC_LESS_EQUAL,
+				D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK),
+			};
+
+			CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, (uint)samDesc.size(), samDesc.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 			// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
 			ComPtr<ID3DBlob> serializedRootSig = nullptr;
@@ -111,7 +135,7 @@ namespace JinEngine
 			};
 			newShaderPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 			newShaderPso.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-			newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+			//newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 		 
 			D3D12_RENDER_TARGET_BLEND_DESC outlineBlendDesc;
 			outlineBlendDesc.BlendEnable = true;

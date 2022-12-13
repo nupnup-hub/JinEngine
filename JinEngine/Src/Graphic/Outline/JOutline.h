@@ -27,9 +27,9 @@ namespace JinEngine
 				const uint cbOffset);
 			void Clear();
 		public:
-			void UpdatePassBuf(const uint width, const uint height, const uint cbOffset);
+			void UpdatePassBuf(const uint width, const uint height, const uint stencilRefOffset);
 		public:
-			void DrawOutline(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE dsHandle);
+			void DrawOutline(ID3D12GraphicsCommandList* commandList, const CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapHandle, const CD3DX12_GPU_DESCRIPTOR_HANDLE stencilMapHandle);
 		private:
 			void BuildRootSignature(ID3D12Device* device);
 			void BuildPso(ID3D12Device* device, const DXGI_FORMAT& rtvFormat, const DXGI_FORMAT& dsvFormat);
