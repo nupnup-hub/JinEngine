@@ -1,4 +1,5 @@
 #pragma once 
+#include"JUploadType.h"
 #include"../../Core/JDataType.h"
 #include"../../Core/Exception/JExceptionMacro.h"
 #include"../../Utility/JD3DUtility.h"
@@ -10,14 +11,6 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		enum class J_UPLOAD_BUFFER_TYPE
-		{
-			CONSTANT,
-			COMMON,
-			UNORDERED_ACCEESS,
-			READ_BACK,
-		};
-
 		class JUploadBufferBase
 		{
 		public:

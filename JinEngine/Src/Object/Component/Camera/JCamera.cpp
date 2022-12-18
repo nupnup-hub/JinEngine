@@ -314,39 +314,33 @@ namespace JinEngine
 			mView(3, 3) = 1.0f;
 		}
 	}
-	bool JCamera::UpdateFrame(Graphic::JCameraConstants& constant)
+	void JCamera::UpdateFrame(Graphic::JCameraConstants& constant)
 	{
-		if (IsFrameDirted())
-		{
-			UpdateViewMatrix();
-			const XMMATRIX view = XMLoadFloat4x4(&mView);
-			const XMMATRIX proj = XMLoadFloat4x4(&mProj);
+		UpdateViewMatrix();
+		const XMMATRIX view = XMLoadFloat4x4(&mView);
+		const XMMATRIX proj = XMLoadFloat4x4(&mProj);
 
-			XMVECTOR viewVec = XMMatrixDeterminant(view);
-			XMVECTOR projVec = XMMatrixDeterminant(proj);
+		XMVECTOR viewVec = XMMatrixDeterminant(view);
+		XMVECTOR projVec = XMMatrixDeterminant(proj);
 
-			const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-			const XMMATRIX invView = XMMatrixInverse(&viewVec, view);
-			const XMMATRIX invProj = XMMatrixInverse(&projVec, proj);
-			XMVECTOR viewProjVec = XMMatrixDeterminant(viewProj);
-			const XMMATRIX invViewProj = XMMatrixInverse(&viewProjVec, viewProj);
+		const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+		const XMMATRIX invView = XMMatrixInverse(&viewVec, view);
+		const XMMATRIX invProj = XMMatrixInverse(&projVec, proj);
+		XMVECTOR viewProjVec = XMMatrixDeterminant(viewProj);
+		const XMMATRIX invViewProj = XMMatrixInverse(&viewProjVec, viewProj);
 
-			XMStoreFloat4x4(&constant.view, XMMatrixTranspose(view));
-			XMStoreFloat4x4(&constant.invView, XMMatrixTranspose(invView));
-			XMStoreFloat4x4(&constant.proj, XMMatrixTranspose(proj));
-			XMStoreFloat4x4(&constant.invProj, XMMatrixTranspose(invProj));
-			XMStoreFloat4x4(&constant.viewProj, XMMatrixTranspose(viewProj));
-			XMStoreFloat4x4(&constant.invViewProj, XMMatrixTranspose(invViewProj));  
+		XMStoreFloat4x4(&constant.view, XMMatrixTranspose(view));
+		XMStoreFloat4x4(&constant.invView, XMMatrixTranspose(invView));
+		XMStoreFloat4x4(&constant.proj, XMMatrixTranspose(proj));
+		XMStoreFloat4x4(&constant.invProj, XMMatrixTranspose(invProj));
+		XMStoreFloat4x4(&constant.viewProj, XMMatrixTranspose(viewProj));
+		XMStoreFloat4x4(&constant.invViewProj, XMMatrixTranspose(invViewProj));
 
-			constant.renderTargetSize = XMFLOAT2((float)viewWidth, (float)viewHeight);
-			constant.invRenderTargetSize = XMFLOAT2(1.0f / viewWidth, 1.0f / viewHeight);
-			constant.eyePosW = GetTransform()->GetPosition();
-			constant.nearZ = cameraNear;
-			constant.farZ = cameraFar;
-			return true;
-		}
-		else
-			return false;
+		constant.renderTargetSize = XMFLOAT2((float)viewWidth, (float)viewHeight);
+		constant.invRenderTargetSize = XMFLOAT2(1.0f / viewWidth, 1.0f / viewHeight);
+		constant.eyePosW = GetTransform()->GetPosition();
+		constant.nearZ = cameraNear;
+		constant.farZ = cameraFar;
 	}
 	void JCamera::SetCameraState(const J_CAMERA_STATE state)noexcept
 	{

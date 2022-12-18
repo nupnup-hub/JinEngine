@@ -367,28 +367,22 @@ namespace JinEngine
 		shader = newShader;
 		CallOnResourceReference(shader);
 	}
-	bool JMaterial::UpdateFrame(Graphic::JMaterialConstants& constant)
+	void JMaterial::UpdateFrame(Graphic::JMaterialConstants& constant)
 	{
-		if (IsFrameDirted())
-		{
-			constant.AlbedoColor = albedoColor;
-			constant.Metalic = metallic;
-			constant.Roughness = roughness;
-			XMStoreFloat4x4(&constant.MatTransform, XMMatrixTranspose(XMLoadFloat4x4(&matTransform)));
-			if (albedoMap != nullptr)
-				constant.AlbedoMapIndex = CallGetTxtVectorIndex(*albedoMap);
-			if (normalMap != nullptr)
-				constant.NormalMapIndex = CallGetTxtVectorIndex(*normalMap);
-			if (heightMap != nullptr)
-				constant.HeightMapIndex = CallGetTxtVectorIndex(*heightMap);
-			if (roughnessMap != nullptr)
-				constant.RoughnessMapIndex = CallGetTxtVectorIndex(*roughnessMap);
-			if (ambientOcclusionMap != nullptr)
-				constant.AmbientOcclusionMapIndex = CallGetTxtVectorIndex(*ambientOcclusionMap);
-			return true;
-		}
-		else
-			return false;
+		constant.AlbedoColor = albedoColor;
+		constant.Metalic = metallic;
+		constant.Roughness = roughness;
+		XMStoreFloat4x4(&constant.MatTransform, XMMatrixTranspose(XMLoadFloat4x4(&matTransform)));
+		if (albedoMap != nullptr)
+			constant.AlbedoMapIndex = CallGetTxtVectorIndex(*albedoMap);
+		if (normalMap != nullptr)
+			constant.NormalMapIndex = CallGetTxtVectorIndex(*normalMap);
+		if (heightMap != nullptr)
+			constant.HeightMapIndex = CallGetTxtVectorIndex(*heightMap);
+		if (roughnessMap != nullptr)
+			constant.RoughnessMapIndex = CallGetTxtVectorIndex(*roughnessMap);
+		if (ambientOcclusionMap != nullptr)
+			constant.AmbientOcclusionMapIndex = CallGetTxtVectorIndex(*ambientOcclusionMap);
 	}
 	void JMaterial::DoCopy(JObject* ori)
 	{

@@ -105,8 +105,8 @@ namespace JinEngine
 			JShader* shader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_OCCLUSION_SHADER);
 			shader->CompileInterface()->RecompileGraphicShader();
 		}
-		void JHZBOccCulling::UpdateObject(JRenderItem* rItem, const uint submeshIndex, const uint buffIndex)
-		{
+		void JHZBOccCulling::UpdateObject(JRenderItem* rItem, const uint buffIndex)
+		{ 
 			const DirectX::BoundingBox bbox = rItem->GetMesh()->GetBoundingBox();
 			objectConstants.center = bbox.Center;
 			objectConstants.extents = bbox.Extents;

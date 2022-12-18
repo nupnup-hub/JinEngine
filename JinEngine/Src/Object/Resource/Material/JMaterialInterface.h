@@ -16,7 +16,7 @@ namespace JinEngine
 	class JRenderItem;
 
 	class JMaterialInterface : public JResourceObject,
-		public JFrameUpdate<IFrameUpdate<Graphic::JMaterialConstants&>, JFrameDirty, FrameUpdate::hasFrameBuff>,
+		public JFrameUpdate<IFrameUpdate1<IFrameUpdateBase<Graphic::JMaterialConstants&>>, JFrameDirty, FrameUpdate::singleBuff>,
 		public JResourceUserInterface,
 		public Graphic::JGraphicTextureUserInterface
 	{

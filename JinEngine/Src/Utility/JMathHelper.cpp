@@ -393,6 +393,10 @@ namespace JinEngine
 	{
 		return PitchYawRollToQuaternion(x * DegToRad, y * DegToRad, z * DegToRad);
 	}
+	DirectX::XMFLOAT4 JMathHelper::EulerToQuaternion(const DirectX::XMFLOAT3& e)noexcept
+	{
+		return PitchYawRollToQuaternion(e.x * DegToRad, e.y * DegToRad, e.z * DegToRad);
+	}
 	DirectX::XMFLOAT3 JMathHelper::ToEulerAngle(const DirectX::XMVECTOR q)noexcept
 	{
 		DirectX::XMFLOAT4 qF;

@@ -45,20 +45,20 @@ namespace JinEngine
 			shadowCalCB->Build(device, gInfo.minCapacity);
 			bundingObjectCB->Build(device, gInfo.minCapacity);
 
-			uploadBufferMap = std::unordered_map< J_FRAME_RESOURCE_TYPE, JUploadBufferBase*>
+			uploadBufferMap = std::unordered_map< J_UPLOAD_RESOURCE_TYPE, JUploadBufferBase*>
 			{ 
-				{J_FRAME_RESOURCE_TYPE::MATERIAL, materialBuffer.get()}, {J_FRAME_RESOURCE_TYPE::LIGHT, lightBuffer.get()},
-				{J_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT, smLightBuffer.get()}, {J_FRAME_RESOURCE_TYPE::OBJECT, objectCB.get()},
-				{J_FRAME_RESOURCE_TYPE::ANIMATION, skinnedCB.get()}, {J_FRAME_RESOURCE_TYPE::PASS, passCB.get()},
-				{J_FRAME_RESOURCE_TYPE::CAMERA, cameraCB.get()},  {J_FRAME_RESOURCE_TYPE::LIGHT_INDEX, lightIndexCB.get()},
-				{J_FRAME_RESOURCE_TYPE::SHADOW_MAP, shadowCalCB.get()},  {J_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, bundingObjectCB.get()}
+				{J_UPLOAD_RESOURCE_TYPE::MATERIAL, materialBuffer.get()}, {J_UPLOAD_RESOURCE_TYPE::LIGHT, lightBuffer.get()},
+				{J_UPLOAD_RESOURCE_TYPE::SHADOW_MAP_LIGHT, smLightBuffer.get()}, {J_UPLOAD_RESOURCE_TYPE::OBJECT, objectCB.get()},
+				{J_UPLOAD_RESOURCE_TYPE::ANIMATION, skinnedCB.get()}, {J_UPLOAD_RESOURCE_TYPE::PASS, passCB.get()},
+				{J_UPLOAD_RESOURCE_TYPE::CAMERA, cameraCB.get()},  {J_UPLOAD_RESOURCE_TYPE::LIGHT_INDEX, lightIndexCB.get()},
+				{J_UPLOAD_RESOURCE_TYPE::SHADOW_MAP, shadowCalCB.get()},  {J_UPLOAD_RESOURCE_TYPE::BOUNDING_OBJECT, bundingObjectCB.get()}
 			};
 		}
 		JFrameResource::~JFrameResource()
 		{
 			uploadBufferMap.clear();
 		}
-		void JFrameResource::BuildFrameResource(ID3D12Device* device, const J_FRAME_RESOURCE_TYPE type, const uint newCount)
+		void JFrameResource::BuildFrameResource(ID3D12Device* device, const J_UPLOAD_RESOURCE_TYPE type, const uint newCount)
 		{
 			if (newCount == GetElementCount(type))
 				return;
@@ -67,7 +67,7 @@ namespace JinEngine
 			data->second->Clear();
 			data->second->Build(device, newCount);
 		}
-		uint JFrameResource::GetElementCount(const J_FRAME_RESOURCE_TYPE type)
+		uint JFrameResource::GetElementCount(const J_UPLOAD_RESOURCE_TYPE type)
 		{
 			return uploadBufferMap.find(type)->second->ElementCount();
 		}

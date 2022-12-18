@@ -92,20 +92,7 @@ cbuffer cbLightIndex : register(b4)
 
 cbuffer cbShadowMapCalculate: register(b5)
 {
-    float4x4 lightView;
-    float4x4 lightInvView;
-    float4x4 lightProj;
-    float4x4 lightInvProj;
     float4x4 lightViewProj;
-    float4x4 lightInvViewProj;
-    float2 lightRenderTargetSize;
-    float2 lightInvRenderTargetSize;
-    float3 lightEyePosW;
-    uint shadowCalPad00;
-    float lightNearZ;
-    float lightFarZ;
-    uint shadowCalPad01;
-    uint shadowCalPad02;
 };
 
 cbuffer cbBoundingObject : register(b6)

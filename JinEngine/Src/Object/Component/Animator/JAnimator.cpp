@@ -88,15 +88,10 @@ namespace JinEngine
 		CallOffResourceReference(skeletonAsset);
 		CallOffResourceReference(animationController);
 	}
-	bool JAnimator::UpdateFrame(Graphic::JAnimationConstants& constant)
+	void JAnimator::UpdateFrame(Graphic::JAnimationConstants& constant)
 	{
-		if (IsFrameDirted() && animationController != nullptr)
-		{
+		if (animationController != nullptr)
 			animationController->Update(animationTimes, skeletonAsset, constant);
-			return true;
-		}
-		else
-			return false;
 	}
 	void JAnimator::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 	{

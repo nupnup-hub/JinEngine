@@ -61,6 +61,7 @@ namespace JinEngine
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> mainDepthStencil; 
 			Microsoft::WRL::ComPtr<ID3D12Resource> mainDepthStencilDebug;
+			Microsoft::WRL::ComPtr<ID3D12Resource> mainSceneNormalMap;
 
 			//Engine use
 			//uint uavCapacity = depthDebugCapacity; 

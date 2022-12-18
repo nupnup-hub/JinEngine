@@ -89,7 +89,7 @@ namespace JinEngine
 		void DestroyRenderTarget()noexcept;
 	private:
 		void UpdateViewMatrix()noexcept;
-		bool UpdateFrame(Graphic::JCameraConstants& constant)final; 
+		void UpdateFrame(Graphic::JCameraConstants& constant)final; 
 	private:
 		void SetCameraState(const J_CAMERA_STATE state)noexcept final;
 	private:

@@ -135,16 +135,18 @@ namespace JinEngine
 			};
 			newShaderPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 			newShaderPso.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-			//newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-		 
+			newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+			newShaderPso.DepthStencilState.StencilWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+			//newShaderPso.DepthStencilState.DepthEnable = false;
+
 			D3D12_RENDER_TARGET_BLEND_DESC outlineBlendDesc;
 			outlineBlendDesc.BlendEnable = true;
 			outlineBlendDesc.LogicOpEnable = false;
 			outlineBlendDesc.SrcBlend = D3D12_BLEND_ONE;
-			outlineBlendDesc.DestBlend = D3D12_BLEND_ZERO;
+			outlineBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
 			outlineBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
 			outlineBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
-			outlineBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+			outlineBlendDesc.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
 			outlineBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
 			outlineBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
 			outlineBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;

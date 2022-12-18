@@ -205,7 +205,7 @@ namespace JinEngine
 	void JScene::ClearResource()
 	{
 		if (IsValid())
-		{ 
+		{
 			BegineForcedDestroy(root);
 			root = nullptr;
 
@@ -350,11 +350,12 @@ namespace JinEngine
 			if (nowCount > 1)
 			{
 				JRenderItem* preJRItem = static_cast<JRenderItem*>(cashVec->second[nowCount - 2]);
-				CallSetFrameBuffOffset(*jRItem, CallGetFrameBuffOffset(*preJRItem) + preJRItem->GetSubmeshCount());
+				CallSetFirstFrameBuffOffset(*jRItem, CallGetFirstFrameBuffOffset(*preJRItem) + preJRItem->GetSubmeshCount());
 			}
 			else
-				CallSetFrameBuffOffset(*jRItem, 0);
+				CallSetFirstFrameBuffOffset(*jRItem, 0);
 
+			CallSetSecondFrameBuffOffset(*jRItem, nowCount - 1);
 			if (spatialStructure != nullptr && renderLayer == J_RENDER_LAYER::OPAQUE_OBJECT)
 				spatialStructure->AddGameObject(jRItem->GetOwner());
 		}
@@ -384,12 +385,13 @@ namespace JinEngine
 					for (uint j = i + 1; j < compCount; ++j)
 					{
 						JRenderItem* backRItem = static_cast<JRenderItem*>(cashVec[j]);
-						CallSetFrameBuffOffset(*backRItem, CallGetFrameBuffOffset(*backRItem) - submeshCount);
+						CallSetFirstFrameBuffOffset(*backRItem, CallGetFirstFrameBuffOffset(*backRItem) - submeshCount);
+						CallSetSecondFrameBuffOffset(*backRItem, j - 1);
 					}
 
-					const int rIndex = (int)jRItem->GetRenderLayer(); 
+					const int rIndex = (int)jRItem->GetRenderLayer();
 					const size_t guid = jOwner->GetGuid();
-				 
+
 					for (uint j = 0; j < (uint)J_MESHGEOMETRY_TYPE::COUNT; ++j)
 					{
 						const uint vecCount = (uint)objectLayer[rIndex][j].size();
@@ -532,7 +534,7 @@ namespace JinEngine
 	}
 	void JScene::SetOctreeOption(const Core::JOctreeOption& newOption)noexcept
 	{
-		if(spatialStructure != nullptr)
+		if (spatialStructure != nullptr)
 			spatialStructure->SetOctreeOption(newOption);
 	}
 	void JScene::SetBvhOption(const Core::JBvhOption& newOption)noexcept
@@ -569,8 +571,8 @@ namespace JinEngine
 			Core::JKdTreeOption kdOption = spatialStructure->GetKdTreeOption();
 			//kdOption.isOcclusionCullingActivated = true;
 			kdOption.commonOption.innerRoot = root;
-			kdOption.commonOption.debugRoot = debugRoot; 
-			spatialStructure->SetKdTreeOption(kdOption);		 
+			kdOption.commonOption.debugRoot = debugRoot;
+			spatialStructure->SetKdTreeOption(kdOption);
 		}
 	}
 	Core::J_FILE_IO_RESULT JScene::CallStoreResource()
@@ -619,7 +621,7 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"IsOpen:", scene->IsValid());
 			JFileIOHelper::StoreAtomicData(stream, L"IsMainScene:", JSceneManager::Instance().IsMainScene(scene));
 			JFileIOHelper::StoreAtomicData(stream, L"IsActivatedSpaceSpatial:", scene->IsSpaceSpatialActivated());
-    
+
 			octreeOption.Store(stream);
 			bvhOption.Store(stream);
 			kdTreeOption.Store(stream);
@@ -676,18 +678,18 @@ namespace JinEngine
 				if (metadata.hasOctreeInnerRoot)
 					metadata.octreeOption.commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.octreeInnerRootGuid).Get();
 				metadata.octreeOption.commonOption.debugRoot = newScene->debugRoot;
-				newScene->SetOctreeOption(metadata.octreeOption); 
+				newScene->SetOctreeOption(metadata.octreeOption);
 
 				if (metadata.hasBvhInnerRoot)
 					metadata.bvhOption.commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.bvhInnerRootGuid).Get();
 				metadata.bvhOption.commonOption.debugRoot = newScene->debugRoot;
-				newScene->SetBvhOption(metadata.bvhOption); 
+				newScene->SetBvhOption(metadata.bvhOption);
 
 				if (metadata.hasKdTreeInnerRoot)
 					metadata.kdTreeOption.commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.kdTreeInnerRootGuid).Get();
 				metadata.kdTreeOption.commonOption.debugRoot = newScene->debugRoot;
 				newScene->SetKdTreeOption(metadata.kdTreeOption);
-			} 
+			}
 		}
 		return newScene;
 	}
@@ -699,8 +701,8 @@ namespace JinEngine
 
 			JFileIOHelper::LoadAtomicData(stream, metadata.isOpen);
 			JFileIOHelper::LoadAtomicData(stream, metadata.isMainScene);
-			JFileIOHelper::LoadAtomicData(stream, metadata.isActivatedSpaceSpatial); 
-			 
+			JFileIOHelper::LoadAtomicData(stream, metadata.isActivatedSpaceSpatial);
+
 			metadata.octreeOption.Load(stream, metadata.hasOctreeInnerRoot, metadata.octreeInnerRootGuid);
 			metadata.bvhOption.Load(stream, metadata.hasBvhInnerRoot, metadata.bvhInnerRootGuid);
 			metadata.kdTreeOption.Load(stream, metadata.hasKdTreeInnerRoot, metadata.kdTreeInnerRootGuid);

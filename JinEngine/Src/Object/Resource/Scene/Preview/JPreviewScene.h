@@ -2,7 +2,7 @@
 #include"JPreviewEnum.h"
 #include"../../Texture/JDefaulTextureType.h"
 #include"../../../../Core/JDataType.h"
-#include"../../../../Graphic/FrameResource/JFrameResourceConstant.h" 
+#include"../../../../Graphic/JGraphicConstants.h" 
 #include"../../../../Core/Pointer/JOwnerPtr.h"
 #include<memory>
 #include<string>

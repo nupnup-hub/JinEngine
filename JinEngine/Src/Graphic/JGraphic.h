@@ -6,8 +6,9 @@
 #include"JGraphicInterface.h"
 #include"JGraphicTextureUserInterface.h"
 #include"JGraphicOption.h" 
-#include"JGraphicInfo.h"
-#include"FrameResource/JFrameResourceType.h"
+#include"JGraphicInfo.h" 
+#include"Utility/JGraphicUpdateHelper.h"
+#include"Utility/JGraphicDrawHelper.h"
 #include"FrameResource/JAnimationConstants.h" 
 #include"../Object/JFrameUpdate.h"
 #include"../Object/Component/RenderItem/JRenderLayer.h"   
@@ -68,72 +69,6 @@ namespace JinEngine
 			template<typename T>friend class Core::JCreateUsingNew;
 			friend class Editor::JGraphicResourceWatcher; 			//Debug Class
 		private:
-			struct UpdateHelper
-			{
-			public:
-				using GetElementCountT = Core::JStaticCallableType<uint>; 
-				using NotifyUpdateCapacityT = Core::JStaticCallableType<void, JGraphicImpl&>;
-			public:
-				using GetTextureCountT = Core::JStaticCallableType<uint, const JGraphicImpl&>; 
-				using GetTextureCapacityT = Core::JStaticCallableType<uint, const JGraphicImpl&>;
-				using SetCapacityT = Core::JStaticCallableType<void, JGraphicImpl&>;
-			public:
-				struct FrameUpdateData
-				{ 
-				public:
-					std::unique_ptr<GetElementCountT::Callable> getElementCountCallable = nullptr;
-					std::vector<std::unique_ptr<NotifyUpdateCapacityT::Callable>> notifyUpdateCapacityCallable;
-				public:
-					uint count = 0;
-					uint capacity = 0;
-					uint offset = 0;
-					bool setFrameDirty = false;
-					FRAME_CAPACITY_CONDITION rebuildCondition;
-				};
-				struct BindingTextureData
-				{
-				public:
-					std::unique_ptr<GetTextureCountT::Callable> getTextureCountCallable = nullptr;
-					std::unique_ptr<GetTextureCapacityT::Callable> getTextureCapacityCallable = nullptr;
-					std::unique_ptr< SetCapacityT::Callable> setCapacityCallable = nullptr;
-				public:
-					uint count = 0;
-					uint capacity = 0;
-					FRAME_CAPACITY_CONDITION recompileCondition;
-				public:
-					bool HasCallable()const noexcept;
-				};
-			public:
-				std::vector<FrameUpdateData> fData;
-				std::vector<BindingTextureData> bData;
-				bool hasRebuildCondition;
-				bool hasRecompileShader;
-			public:
-				void RegisterCallable(J_FRAME_RESOURCE_TYPE type, GetElementCountT::Ptr* gPtr);
-				void RegisterCallable(J_GRAPHIC_TEXTURE_TYPE type, GetTextureCountT::Ptr* getCountPtr, GetTextureCapacityT::Ptr* getCapaPtr, SetCapacityT::Ptr* sPtr);
-				void RegisterListener(J_FRAME_RESOURCE_TYPE type, std::unique_ptr<NotifyUpdateCapacityT::Callable>&& listner);
-				void WriteGraphicInfo(JGraphicInfo& info)const noexcept;
-				void NotifyUpdateFrameCapacity(JGraphicImpl& grpahic);
-				void Clear();
-			};
-			struct DrawHelper
-			{
-			public:
-				JScene* scene = nullptr;
-				JCamera* cam = nullptr;
-				JLight* lit = nullptr;
-			public:
-				uint objectOffset = 0;
-				uint passOffset = 0;
-				uint aniOffset = 0;
-				uint camOffset = 0;
-				uint litIndexOffset = 0;
-				uint shadowOffset = 0;
-			public:
-				bool isOcclusionActivated = false;
-			};
-
-		private:
 			size_t guid;
 			std::vector<std::unique_ptr<JFrameResource>> frameResources;
 			JFrameResource* currFrameResource = nullptr;
@@ -164,7 +99,7 @@ namespace JinEngine
 		private:
 			JGraphicInfo info;
 			JGraphicOption option;
-			UpdateHelper updateHelper;
+			JGraphicUpdateHelper updateHelper;
 			std::unique_ptr<JGraphicResourceManager> graphicResource;
 			std::unique_ptr<JHardwareOccCulling> hdOccHelper;
 			std::unique_ptr<JHZBOccCulling> hzbOccHelper;
@@ -233,18 +168,18 @@ namespace JinEngine
 		private:
 			void DrawScene()final;
 			void DrawProjectSelector()final;
-			void DrawSceneRenderTarget(const DrawHelper helper);
-			void DrawSceneShadowMap(const DrawHelper helper);
-			void DrawOcclusionDepthMap(DrawHelper helper);
+			void DrawSceneRenderTarget(const JGraphicDrawHelper helper);
+			void DrawSceneShadowMap(const JGraphicDrawHelper helper);
+			void DrawOcclusionDepthMap(JGraphicDrawHelper helper);
 			void DrawGameObject(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject,
-				const DrawHelper helper,
+				const JGraphicDrawHelper helper,
 				const bool isDrawShadowMap,
 				const bool isAnimationActivated,
 				const bool allowOcclusion);
 			void DrawSceneBoundingBox(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject, 
-				const DrawHelper helper,
+				const JGraphicDrawHelper helper,
 				const bool isAnimationActivated);
 		private:
 			void ResourceTransition(_In_ ID3D12Resource* pResource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
@@ -258,10 +193,10 @@ namespace JinEngine
 			void CreateSwapChain();
 			void BuildRootSignature();
 			void BuildFrameResources();
-			void ReBuildFrameResource(const J_FRAME_RESOURCE_TYPE type, const FRAME_CAPACITY_CONDITION condition, const uint nowObjCount);
+			void ReBuildFrameResource(const J_UPLOAD_RESOURCE_TYPE type, const J_UPLOAD_CAPACITY_CONDITION condition, const uint nowObjCount);
 			void ReCompileGraphicShader();
-			FRAME_CAPACITY_CONDITION IsPassRedefineCapacity(const uint capacity, const uint nowCount)const noexcept;
-			uint CalculateCapacity(const FRAME_CAPACITY_CONDITION condition, const uint nowCapacity, const uint nowCount)const noexcept;
+			J_UPLOAD_CAPACITY_CONDITION IsPassRedefineCapacity(const uint capacity, const uint nowCount)const noexcept;
+			uint CalculateCapacity(const J_UPLOAD_CAPACITY_CONDITION condition, const uint nowCapacity, const uint nowCount)const noexcept;
 			//수정필요
 			//Resize시 User RenderTarget size 변경 추가필요 - 2022-11-15
 			void OnResize();

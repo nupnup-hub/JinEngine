@@ -27,7 +27,9 @@ namespace JinEngine
 			return J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM;
 		}
 		DirectX::XMFLOAT3 GetPosition()const noexcept;
+		//Euler
 		DirectX::XMFLOAT3 GetRotation()const noexcept;
+		DirectX::XMFLOAT4 GetQuaternion()const noexcept;
 		DirectX::XMFLOAT3 GetScale()const noexcept;
 
 		DirectX::XMMATRIX GetWorld()const noexcept;

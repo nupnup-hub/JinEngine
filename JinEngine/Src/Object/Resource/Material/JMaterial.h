@@ -2,7 +2,7 @@
 #include"JMaterialInterface.h"  
 #include"../Texture/JTexture.h"
 #include"../Shader/JShaderFunctionEnum.h"
-#include"../../../Graphic/FrameResource/JFrameResourceConstant.h"   
+#include"../../../Graphic/JGraphicConstants.h"   
 #include"../../../Utility/JMathHelper.h"  
 
 namespace JinEngine
@@ -133,7 +133,7 @@ namespace JinEngine
 	private:
 		void SetShader(JShader* newShader)noexcept;
 	private:
-		bool UpdateFrame(Graphic::JMaterialConstants& constant)final;
+		void UpdateFrame(Graphic::JMaterialConstants& constant)final;
 	private:
 		void DoCopy(JObject* ori) final;
 	protected:

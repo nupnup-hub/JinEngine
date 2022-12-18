@@ -77,6 +77,7 @@ namespace JinEngine
 		static DirectX::XMMATRIX ApplyQuaternion(DirectX::FXMMATRIX m, const DirectX::XMFLOAT4& q)noexcept;
 		static DirectX::XMFLOAT4 PitchYawRollToQuaternion(float pitch, float yaw, float roll)noexcept;
 		static DirectX::XMFLOAT4 EulerToQuaternion(float x, float y, float z)noexcept;
+		static DirectX::XMFLOAT4 EulerToQuaternion(const DirectX::XMFLOAT3& e)noexcept;
 		static DirectX::XMFLOAT3 ToEulerAngle(const DirectX::XMVECTOR q)noexcept;
 		static DirectX::XMFLOAT3 ToEulerAngle(const DirectX::XMFLOAT4& q)noexcept;
 		static float NormalizeAngle(float angle)noexcept;

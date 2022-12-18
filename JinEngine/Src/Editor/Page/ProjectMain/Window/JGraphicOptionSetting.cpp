@@ -15,6 +15,7 @@ namespace JinEngine
 			isChanged |= JImGuiImpl::CheckBox("HZB Occlusion##JGraphicOptionSetting", option.isHZBOcclusionActivated);
 			isChanged |= JImGuiImpl::CheckBox("Allow HZB correct fail##JGraphicOptionSetting", option.allowHZBCorrectFail);
 			isChanged |= JImGuiImpl::CheckBox("Allow HZB depth map debug##JGraphicOptionSetting", option.allowHZBDepthMapDebug);
+			isChanged |= JImGuiImpl::CheckBox("Allow Out line##JGraphicOptionSetting", option.allowOutline);
 			isChanged |= JImGuiImpl::SliderFloat("Update Frequency##JGraphicOptionSetting", &option.occUpdateFrequency, 0.01f, 2.5f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 			JImGuiImpl::EndWindow();
 			if (isChanged)

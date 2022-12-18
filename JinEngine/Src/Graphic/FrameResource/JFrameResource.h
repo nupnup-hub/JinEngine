@@ -4,7 +4,7 @@
 #include"../../Core/JDataType.h"
 #include"../../Core/Func/Callable/JCallable.h"
 #include"../Upload/JUploadBuffer.h" 
-#include"JFrameResourceType.h"
+#include"../Upload/JUploadType.h"
 
 namespace JinEngine
 {
@@ -49,15 +49,15 @@ namespace JinEngine
 			std::unique_ptr<JUploadBuffer<JShadowMapConstants>> shadowCalCB = nullptr;
 			std::unique_ptr<JUploadBuffer<JBoundingObjectConstants>> bundingObjectCB = nullptr; 
 		private:
-			std::unordered_map<J_FRAME_RESOURCE_TYPE, JUploadBufferBase*> uploadBufferMap;
+			std::unordered_map<J_UPLOAD_RESOURCE_TYPE, JUploadBufferBase*> uploadBufferMap;
 		public:
 			JFrameResource(ID3D12Device* device, const JGraphicInfo& gInfo);
 			JFrameResource(const JFrameResource& rhs) = delete;
 			JFrameResource& operator=(const JFrameResource& rhs) = delete;
 			~JFrameResource();
 		public:
-			void BuildFrameResource(ID3D12Device* device, const J_FRAME_RESOURCE_TYPE type, const uint newCount);
-			uint GetElementCount(const J_FRAME_RESOURCE_TYPE type);
+			void BuildFrameResource(ID3D12Device* device, const J_UPLOAD_RESOURCE_TYPE type, const uint newCount);
+			uint GetElementCount(const J_UPLOAD_RESOURCE_TYPE type);
 		};
 	}
 }

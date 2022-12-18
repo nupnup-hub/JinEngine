@@ -9,12 +9,17 @@ namespace JinEngine
 		struct JLightConstants;
 		struct JShadowMapLightConstants;
 		struct JShadowMapConstants;
-	} 
-	 
-	class JLightInterface : public JComponent,  
-		public JFrameUpdate<IFrameUpdate<Graphic::JLightConstants&, 
-		Graphic::JShadowMapLightConstants&,
-		Graphic::JShadowMapConstants&>, JFrameDirtyListener, FrameUpdate::hasNotFrameBuff>,
+	}
+
+	namespace
+	{
+		using ILitFrameUpdate = IFrameUpdate3 <IFrameUpdateBase<Graphic::JLightConstants&>,
+			IFrameUpdateBase<Graphic::JShadowMapLightConstants&>,
+			IFrameUpdateBase<Graphic::JShadowMapConstants&>>;
+	}
+
+	class JLightInterface : public JComponent,
+		public JFrameUpdate<ILitFrameUpdate, JFrameDirtyListener, FrameUpdate::nonBuff>,
 		public Graphic::JGraphicTexture
 	{
 	protected:

@@ -9,6 +9,7 @@
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Graphic/FrameResource/JObjectConstants.h"
 #include"../../../Graphic/FrameResource/JBoundingObjectConstants.h"
+#include"../../../Graphic/OcclusionCulling/JOcclusionConstants.h"
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Application/JApplicationVariable.h"
 #include<fstream>
@@ -21,7 +22,7 @@ namespace JinEngine
 	static auto isAvailableoverlapLam = []() {return false; };
 
 	J_COMPONENT_TYPE JRenderItem::GetComponentType()const noexcept
-	{ 
+	{
 		return GetStaticComponentType();
 	}
 	JMeshGeometry* JRenderItem::GetMesh()const noexcept
@@ -95,7 +96,7 @@ namespace JinEngine
 			XMFLOAT3 gameObjBoxExtent = XMFLOAT3(meshBoxExtent.x * scale.x,
 				meshBoxExtent.y * scale.y,
 				meshBoxExtent.z * scale.z);
-
+ 
 			return DirectX::BoundingBox(gameObjBoxCenter, gameObjBoxExtent);
 		}
 		else
@@ -161,7 +162,7 @@ namespace JinEngine
 		SetFrameDirty();
 	}
 	void JRenderItem::SetMaterial(int index, JMaterial* newMaterial)noexcept
-	{  
+	{
 		if (material.size() <= index)
 			return;
 
@@ -234,9 +235,9 @@ namespace JinEngine
 		if (mesh != nullptr)
 			material.resize(mesh->GetTotalSubmeshCount());
 		const uint matCount = (uint)material.size();
-		for(uint i = 0; i < matCount; ++i)
+		for (uint i = 0; i < matCount; ++i)
 			CallOnResourceReference(material[i]);
-	} 
+	}
 	void JRenderItem::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
@@ -247,50 +248,42 @@ namespace JinEngine
 		for (uint i = 0; i < matCount; ++i)
 			CallOffResourceReference(material[i]);
 	}
-	bool JRenderItem::UpdateFrame(Graphic::JObjectConstants& objConstant,
-		Graphic::JBoundingObjectConstants& boundingObjConstant,
-		const uint submeshIndex,
-		const bool isUpdateBoundingObj)
+	void JRenderItem::UpdateFrame(Graphic::JObjectConstants& constant, const uint submeshIndex)
 	{
-		if (IsFrameDirted())
-		{
-			JTransform* transform = GetOwner()->GetTransform();
-			XMStoreFloat4x4(&objConstant.World, XMMatrixTranspose(transform->GetWorld()));
-			XMStoreFloat4x4(&objConstant.TexTransform, XMMatrixTranspose(XMLoadFloat4x4(&textureTransform)));
-			objConstant.MaterialIndex = CallGetFrameBuffOffset(*GetValidMaterial(submeshIndex));
+		JTransform* transform = GetOwner()->GetTransform();
+		XMStoreFloat4x4(&constant.World, XMMatrixTranspose(transform->GetWorld()));
+		XMStoreFloat4x4(&constant.TexTransform, XMMatrixTranspose(XMLoadFloat4x4(&textureTransform)));
+		constant.MaterialIndex = CallGetFrameBuffOffset(*GetValidMaterial(submeshIndex));
+	}
+	void JRenderItem::UpdateFrame(Graphic::JBoundingObjectConstants& constant)
+	{
+		const BoundingBox bbox = mesh->GetBoundingBox();
+		static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
+		//static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE)->GetBoundingBox();
 
-			if (isUpdateBoundingObj)
-			{
-				const BoundingBox bbox = mesh->GetBoundingBox();
-				static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
-				//static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE)->GetBoundingBox();
+		JTransform* transform = GetOwner()->GetTransform();
 
-				const XMFLOAT3 objScale = transform->GetScale();
-				const XMFLOAT3 bboxScale = XMFLOAT3((bbox.Extents.x  / drawBBox.Extents.x) * objScale.x,
-					(bbox.Extents.y / drawBBox.Extents.y) * objScale.y,
-					(bbox.Extents.z / drawBBox.Extents.z) * objScale.z);
-				const XMVECTOR s = XMLoadFloat3(&bboxScale);
+		const XMFLOAT3 objScale = transform->GetScale();
+		const XMFLOAT3 bboxScale = XMFLOAT3((bbox.Extents.x / drawBBox.Extents.x) * objScale.x,
+			(bbox.Extents.y / drawBBox.Extents.y) * objScale.y,
+			(bbox.Extents.z / drawBBox.Extents.z) * objScale.z);
+		const XMVECTOR s = XMLoadFloat3(&bboxScale);
 
-				const XMFLOAT3 bboxRotation = transform->GetRotation();
-				const XMVECTOR q = XMQuaternionRotationRollPitchYaw(bboxRotation.x * (JMathHelper::Pi / 180),
-					bboxRotation.y * (JMathHelper::Pi / 180),
-					bboxRotation.z * (JMathHelper::Pi / 180));
+		const XMFLOAT3 bboxRotation = transform->GetRotation();
+		const XMVECTOR q = XMQuaternionRotationRollPitchYaw(bboxRotation.x * (JMathHelper::Pi / 180),
+			bboxRotation.y * (JMathHelper::Pi / 180),
+			bboxRotation.z * (JMathHelper::Pi / 180));
 
-				const XMFLOAT3 objPos = transform->GetPosition();
-				const XMFLOAT3 bboxPos = XMFLOAT3(bbox.Center.x - drawBBox.Center.x + objPos.x,
-					bbox.Center.y - drawBBox.Center.y + objPos.y,
-					bbox.Center.z - drawBBox.Center.z + objPos.z);
-				const XMVECTOR t = XMLoadFloat3(&bboxPos);
+		const XMFLOAT3 objPos = transform->GetPosition();
+		const XMFLOAT3 bboxPos = XMFLOAT3(bbox.Center.x - drawBBox.Center.x + objPos.x,
+			bbox.Center.y - drawBBox.Center.y + objPos.y,
+			bbox.Center.z - drawBBox.Center.z + objPos.z);
+		const XMVECTOR t = XMLoadFloat3(&bboxPos);
 
-				const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-				const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), GetOwner()->GetParent()->GetTransform()->GetWorld());
-				  
-				XMStoreFloat4x4(&boundingObjConstant.boundWorld, XMMatrixTranspose(worldM));
-			}
-			return true;
-		}
-		else
-			return false;
+		const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+		const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), GetOwner()->GetParent()->GetTransform()->GetWorld());
+
+		XMStoreFloat4x4(&constant.boundWorld, XMMatrixTranspose(worldM));
 	}
 	void JRenderItem::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 	{
@@ -448,7 +441,7 @@ namespace JinEngine
 	JRenderItem::~JRenderItem()
 	{
 		RemoveListener(*JResourceManager::Instance().EvInterface(), GetGuid());
-		if(GetOwner()->GetTransform() != nullptr)
+		if (GetOwner()->GetTransform() != nullptr)
 			DeRegisterFrameDirtyListener(*GetOwner()->GetTransform());
 	}
 }

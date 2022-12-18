@@ -39,6 +39,7 @@ namespace JinEngine
 
 				const float outlineFactor = 0.025f;
 				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetBoundingBox();
+				debugGameObject->GetTransform()->SetRotation(innerGameObject->GetTransform()->GetRotation());
 				debugGameObject->GetTransform()->SetScale(XMFLOAT3(bbox.Extents.x / rBBox.Extents.x + outlineFactor,
 					bbox.Extents.y / rBBox.Extents.y + outlineFactor,
 					bbox.Extents.z / rBBox.Extents.z + outlineFactor));

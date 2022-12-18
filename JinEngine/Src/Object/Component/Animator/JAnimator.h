@@ -40,7 +40,7 @@ namespace JinEngine
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
 	private: 
-		bool UpdateFrame(Graphic::JAnimationConstants& constant) final;
+		void UpdateFrame(Graphic::JAnimationConstants& constant) final;
 	private:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 	private:

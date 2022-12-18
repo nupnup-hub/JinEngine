@@ -26,6 +26,10 @@ namespace JinEngine
 	{
 		return rotation;
 	}
+	DirectX::XMFLOAT4 JTransform::GetQuaternion()const noexcept
+	{
+		return JMathHelper::EulerToQuaternion(rotation);
+	}
 	XMFLOAT3 JTransform::GetScale()const noexcept
 	{
 		return scale;

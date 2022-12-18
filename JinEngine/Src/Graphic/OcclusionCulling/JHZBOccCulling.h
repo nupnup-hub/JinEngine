@@ -51,7 +51,7 @@ namespace JinEngine
 			void UpdateObjectCapacity(ID3D12Device* device, const uint objectCapacity);
 		public:
 			//update upload buffer data
-			void UpdateObject(JRenderItem* rItem, const uint submeshIndex, const uint buffIndex);
+			void UpdateObject(JRenderItem* rItem, const uint buffIndex);
 			void UpdatePass(JScene* scene, const JGraphicInfo& info, const JGraphicOption& option, const uint queryCount, const uint cbIndex);
 		public:
 			void DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,

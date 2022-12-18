@@ -1,5 +1,5 @@
 #pragma once
-#include"../Graphic/FrameResource/JFrameResourceConstant.h"  
+#include"../Graphic/JGraphicConstants.h"  
 #include"../Core/JDataType.h"
 #include"../Core/Guid/GuidCreator.h"
 #include<vector>
@@ -9,53 +9,116 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphicImpl;
+		class JHZBOccCulling;
 		struct JGraphicDrawTarget;
 	}
 
 	namespace FrameUpdate
 	{
-		using HasFrameBuff = bool; 
-		static constexpr bool hasFrameBuff = true;
-		static constexpr bool hasNotFrameBuff = false;
+		using FrameBuffCount = int;
+		static constexpr int nonBuff = 0;
+		static constexpr int singleBuff = 1;
+		static constexpr int dobuleBuff = 2;
 	}
 #pragma region IFramaeUpdate
 	template<typename ...Param>
-	class IFrameUpdate
-	{
+	class IFrameUpdateBase
+	{ 
 	private:
 		friend Graphic::JGraphicImpl;
 	protected:
-		virtual ~IFrameUpdate() = default;
+		virtual ~IFrameUpdateBase() = default;
 	private:
-		bool CallUpdateFrame(Param... var)
+		virtual void UpdateFrame(Param... var) = 0;
+	};
+
+	/*
+			void CallUpdateFrame(Param... var)
 		{
-			return UpdateFrame(std::forward<Param>(var)...);
+			UpdateFrame(std::forward<Param>(var)...);
 		}
+	*/
+	template<typename IFrameUpdateBase1>
+	class IFrameUpdate1 : public IFrameUpdateBase1
+	{
+	private:
+		using IFrameBase1 = IFrameUpdateBase1;
+	private:
+		friend Graphic::JGraphicImpl;
+	private:
 		void CallUpdateEnd()
 		{
 			UpdateEnd();
 		}
-		virtual bool UpdateFrame(Param... var) = 0;
+		virtual void UpdateEnd() = 0;
+	};
+	template<typename IFrameUpdateBase1, typename IFrameUpdateBase2>
+	class IFrameUpdate2 : public IFrameUpdateBase1,
+		public IFrameUpdateBase2
+	{
+	private:
+		using IFrameBase1 = IFrameUpdateBase1;
+		using IFrameBase2 = IFrameUpdateBase2;
+	private:
+		friend Graphic::JGraphicImpl;
+	private:
+		void CallUpdateEnd()
+		{
+			UpdateEnd();
+		}
 		virtual void UpdateEnd() = 0;
 	};
 
+	template<typename IFrameUpdateBase1, typename IFrameUpdateBase2, typename IFrameUpdateBase3>
+	class IFrameUpdate3 : public IFrameUpdateBase1,
+		public IFrameUpdateBase2,
+		public IFrameUpdateBase3
+	{
+	private:
+		using IFrameBase1 = IFrameUpdateBase1;
+		using IFrameBase2 = IFrameUpdateBase2;
+		using IFrameBase3 = IFrameUpdateBase3;
+	private:
+		friend Graphic::JGraphicImpl;
+	private:
+		void CallUpdateEnd()
+		{
+			UpdateEnd();
+		}
+		virtual void UpdateEnd() = 0;
+	};
 #pragma endregion
 
 #pragma region IFrameBuff
 	class JFrameBuffUserInterface;
 	class JFrameBuffManagerInterface;
-	class IFrameBuff
+
+	class IFrameBuff1
 	{
 	private:
 		friend class JFrameBuffUserInterface;
 		friend class JFrameBuffManagerInterface;
 	public:
-		virtual ~IFrameBuff() = default;
+		virtual ~IFrameBuff1() = default;
 	protected:
 		virtual int GetFrameBuffOffset()const noexcept = 0;
 		virtual void SetFrameBuffOffset(int value)noexcept = 0;
 	};
-	class JFrameBuff : public IFrameBuff
+
+	class IFrameBuff2
+	{
+	private:
+		friend class JFrameBuffUserInterface;
+		friend class JFrameBuffManagerInterface;
+	public:
+		virtual ~IFrameBuff2() = default;
+	protected:
+		virtual int GetFirstFrameBuffOffset()const noexcept = 0;
+		virtual int GetSecondFrameBuffOffset()const noexcept = 0;
+		virtual void SetFirstFrameBuffOffset(int value)noexcept = 0;
+		virtual void SetSecondFrameBuffOffset(int value)noexcept = 0;
+	};
+	class JFrameBuff1 : public IFrameBuff1
 	{
 	private:
 		int frameBuffOffset;
@@ -63,17 +126,36 @@ namespace JinEngine
 		int GetFrameBuffOffset()const noexcept final;
 		void SetFrameBuffOffset(int value)noexcept final;
 	};
+	class JFrameBuff2 : public IFrameBuff2
+	{
+	private:
+		int frameBuffOffset00;
+		int frameBuffOffset01;
+	protected:
+		int GetFirstFrameBuffOffset()const noexcept final;
+		int GetSecondFrameBuffOffset()const noexcept final;
+		void SetFirstFrameBuffOffset(int value)noexcept final;
+		void SetSecondFrameBuffOffset(int value)noexcept final;
+	};
+
 	class JFrameBuffUserInterface
 	{
 	public:
 		virtual ~JFrameBuffUserInterface() = default;
 	protected:
-		int CallGetFrameBuffOffset(IFrameBuff& iFrameBuff)const noexcept;
+		int CallGetFrameBuffOffset(IFrameBuff1& iFrameBuff)const noexcept;
+	protected:
+		int CallGetFirstFrameBuffOffset(IFrameBuff2& iFrameBuff)const noexcept;
+		int CallGetSecondFrameBuffOffset(IFrameBuff2& iFrameBuff)const noexcept;
 	};
+
 	class JFrameBuffManagerInterface : public JFrameBuffUserInterface
 	{
 	protected:
-		void CallSetFrameBuffOffset(IFrameBuff& iFrameBuff, int value)const noexcept;
+		void CallSetFrameBuffOffset(IFrameBuff1& iFrameBuff, int value)const noexcept;
+	protected:
+		void CallSetFirstFrameBuffOffset(IFrameBuff2& iFrameBuff, int value)const noexcept;
+		void CallSetSecondFrameBuffOffset(IFrameBuff2& iFrameBuff, int value)const noexcept;
 	};
 #pragma endregion
 
@@ -96,6 +178,7 @@ namespace JinEngine
 	{
 	private:
 		friend Graphic::JGraphicImpl;
+		friend Graphic::JHZBOccCulling;
 		friend Graphic::JGraphicDrawTarget;
 	protected:
 		virtual ~IFrameDirty() = default;
@@ -169,7 +252,7 @@ namespace JinEngine
 	protected:
 		void AddFrameDirtyListener(JFrameDirtyListener& newListener)noexcept final
 		{
-			listener.push_back(&newListener); 
+			listener.push_back(&newListener);
 		}
 		void RemoveFrameDirtyListener(JFrameDirtyListener& oldListener)noexcept final
 		{
@@ -186,13 +269,24 @@ namespace JinEngine
 	};
 #pragma endregion
 
-	template<typename IFrameUpdate, typename IFrameDirty, FrameUpdate::HasFrameBuff>
+	template<typename IFrameUpdate, typename IFrameDirty, FrameUpdate::FrameBuffCount>
 	class JFrameUpdate;
 
 	template<typename FrameUpdate, typename FrameDirty>
-	class JFrameUpdate<FrameUpdate, FrameDirty, true> : public FrameUpdate,
+	class JFrameUpdate<FrameUpdate, FrameDirty, 2> : public FrameUpdate,
 		public FrameDirty,
-		public JFrameBuff
+		public JFrameBuff2
+	{
+	protected:
+		void UpdateEnd()override
+		{
+			FrameDirty::MinusFrameDirty();
+		}
+	};
+	template<typename FrameUpdate, typename FrameDirty>
+	class JFrameUpdate<FrameUpdate, FrameDirty, 1> : public FrameUpdate,
+		public FrameDirty,
+		public JFrameBuff1
 	{
 	protected:
 		void UpdateEnd()override
@@ -202,7 +296,7 @@ namespace JinEngine
 	};
 
 	template<typename FrameUpdate, typename FrameDirty>
-	class JFrameUpdate<FrameUpdate, FrameDirty, false> : public FrameUpdate,
+	class JFrameUpdate<FrameUpdate, FrameDirty, 0> : public FrameUpdate,
 		public FrameDirty
 	{
 	protected:

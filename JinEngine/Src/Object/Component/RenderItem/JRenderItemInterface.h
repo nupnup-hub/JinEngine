@@ -10,10 +10,17 @@ namespace JinEngine
 	{
 		struct JObjectConstants;
 		struct JBoundingObjectConstants;
+		struct JOcclusionObjectConstants;
 	}
-	 
+
+	namespace
+	{
+		using IRitemFrameUpdate = IFrameUpdate2<IFrameUpdateBase<Graphic::JObjectConstants&, const uint>,
+			IFrameUpdateBase<Graphic::JBoundingObjectConstants&>>;
+	}
+
 	class JRenderItemInterface : public JComponent,
-		public JFrameUpdate<IFrameUpdate<Graphic::JObjectConstants&, Graphic::JBoundingObjectConstants&, const uint, const bool>, JFrameDirtyListener, FrameUpdate::hasFrameBuff>,
+		public JFrameUpdate<IRitemFrameUpdate, JFrameDirtyListener, FrameUpdate::dobuleBuff>,
 		public JFrameBuffUserInterface,
 		public JResourceUserInterface
 	{

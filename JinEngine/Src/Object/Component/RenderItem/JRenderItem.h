@@ -10,15 +10,15 @@
 #include<d3d12.h>
 
 namespace JinEngine
-{ 
+{
 	class JRenderItem final : public JRenderItemInterface
 	{
 		REGISTER_CLASS(JRenderItem)
 	private:
 		REGISTER_PROPERTY_EX(mesh, GetMesh, SetMesh, GUI_SELECTOR(true, true))
-		JMeshGeometry* mesh = nullptr; 
+			JMeshGeometry* mesh = nullptr;
 		REGISTER_PROPERTY_EX(material, GetMaterialVec, SetMaterialVec, GUI_SELECTOR(true, true))
-		std::vector<JMaterial*> material;
+			std::vector<JMaterial*> material;
 		DirectX::XMFLOAT4X4 textureTransform = JMathHelper::Identity4x4();
 		D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT;
@@ -30,43 +30,41 @@ namespace JinEngine
 			return J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM;
 		}
 	public:
-		JMeshGeometry* GetMesh()const noexcept; 
+		JMeshGeometry* GetMesh()const noexcept;
 		JMaterial* GetValidMaterial(int index)const noexcept;
 		std::vector<JMaterial*> GetMaterialVec()const noexcept;
 		DirectX::XMFLOAT4X4 GetTextransform()const noexcept;
 		D3D12_PRIMITIVE_TOPOLOGY GetPrimitiveType()const noexcept;
-		J_RENDER_LAYER GetRenderLayer()const noexcept;  
+		J_RENDER_LAYER GetRenderLayer()const noexcept;
 		REGISTER_METHOD(GetVertexTotalCount, GUI_READONLY_TEXT())
-		uint GetVertexTotalCount()const noexcept;
+			uint GetVertexTotalCount()const noexcept;
 		REGISTER_METHOD(GetIndexTotalCount, GUI_READONLY_TEXT())
-		uint GetIndexTotalCount()const noexcept;
-		uint GetSubmeshCount()const noexcept; 
-		//apply object transform
+			uint GetIndexTotalCount()const noexcept;
+		uint GetSubmeshCount()const noexcept;
+		//apply scale tranlation 
 		DirectX::BoundingBox GetBoundingBox()noexcept;
-		//apply object transform
+		//apply scale tranlation  
 		DirectX::BoundingSphere GetBoundingSphere()noexcept;
 
-		void SetMesh(JMeshGeometry* newMesh)noexcept; 
+		void SetMesh(JMeshGeometry* newMesh)noexcept;
 		void SetMaterial(int index, JMaterial* newMaterial)noexcept;
 		void SetMaterialVec(const std::vector<JMaterial*>& newVec)noexcept;
 		void SetTextureTransform(const DirectX::XMFLOAT4X4& textureTransform)noexcept;
 		void SetPrimitiveType(const D3D12_PRIMITIVE_TOPOLOGY primitiveType)noexcept;
 		void SetRenderLayer(const J_RENDER_LAYER renderLayer)noexcept;
-		void SetRenderVisibility(const J_RENDER_VISIBILITY renderVisibility)noexcept; 
-		 		 
+		void SetRenderVisibility(const J_RENDER_VISIBILITY renderVisibility)noexcept;
+
 		bool IsVisible()const noexcept;
 		bool IsAvailableOverlap()const noexcept final;
-		bool PassDefectInspection()const noexcept final; 
+		bool PassDefectInspection()const noexcept final;
 	private:
 		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
-		void DoDeActivate()noexcept final; 
+		void DoDeActivate()noexcept final;
 	private:
-		bool UpdateFrame(Graphic::JObjectConstants& constant, 
-			Graphic::JBoundingObjectConstants&,
-			const uint submeshIndex,
-			const bool isUpdateBoundingObj)final;
+		void UpdateFrame(Graphic::JObjectConstants& constant, const uint submeshIndex)final;
+		void UpdateFrame(Graphic::JBoundingObjectConstants&)final; 
 	private:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 	private:
