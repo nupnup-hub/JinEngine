@@ -105,7 +105,8 @@ namespace JinEngine
 				if (IsPrintTitle())
 					JImGuiImpl::Text(pInfo->Name());
 
-				bool res = false;
+				bool res = false; 
+
 				if constexpr (std::is_same_v<T, DirectX::XMINT2> ||
 					std::is_same_v<T, DirectX::XMFLOAT2> ||
 					std::is_same_v<T, JVector2<ValueType>>)
@@ -142,7 +143,12 @@ namespace JinEngine
 				else
 					res = BuildInput(buff, pInfo->Name() + "GInput00");
 				if (res)
-					pInfo->Set<T>(obj, buff);
+				{
+					if constexpr (std::is_same_v<T, std::string >)
+						pInfo->Set<T>(obj, JCUtil::EraseSideChar(buff, '\0'));
+					else
+						pInfo->Set<T>(obj, buff);	 
+				}
 				++exeCount;
 				if (exeCount == exeMaxCount)
 					exeCount = 0;
@@ -156,7 +162,7 @@ namespace JinEngine
 				else if constexpr (std::is_floating_point_v<InputType>)
 					return JImGuiImpl::InputFloat("##InputFloat" + uniqSymbol, &data, flag);
 				else if constexpr (std::is_same_v <std::string, InputType>)
-					return JImGuiImpl::InputText("##InputText" + uniqSymbol, &data[0], JImGuiImpl::GetTextBuffRange(), flag);
+					return JImGuiImpl::InputText("##InputText" + uniqSymbol, data, flag);
 				else
 					return false;
 			}
@@ -166,7 +172,7 @@ namespace JinEngine
 		{
 		private:
 			std::vector<JPreviewScene*> selectorPreviewVec;
-			std::string inputBuff;
+			std::unique_ptr<JEditorInputBuffHelper> inputHelper;
 		private:
 			float sizeMin = 0;
 			float sizeMax = 0;
@@ -181,7 +187,7 @@ namespace JinEngine
 		protected:
 			JGuiSelectorHandleHelper()
 			{
-				inputBuff.resize(JImGuiImpl::GetTextBuffRange());
+				inputHelper = std::make_unique<JEditorInputBuffHelper>(JImGuiImpl::GetTextBuffRange());
 			}
 		protected:
 			void Initialize(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) override
@@ -252,8 +258,7 @@ namespace JinEngine
 					{
 						isFirstOpen = false;
 						CreateSelectorList<ValueType>();
-						inputBuff.clear();
-						inputBuff.resize(JImGuiImpl::GetTextBuffRange());
+						inputHelper->Clear(); 
 					}
 
 					JImGuiImpl::Text("Selector");
@@ -282,7 +287,7 @@ namespace JinEngine
 
 					JImGuiImpl::Text("Search");
 					ImGui::SameLine();
-					JImGuiImpl::InputText("##GuiSelectorInputText", &inputBuff[0], inputBuff.size(), ImGuiInputTextFlags_EnterReturnsTrue);
+					JImGuiImpl::InputText("##GuiSelectorInputText", inputHelper->buff, inputHelper->result, ImGuiInputTextFlags_EnterReturnsTrue);
 					ImGui::Separator();
 
 					ImGui::BeginGroup();
@@ -295,13 +300,12 @@ namespace JinEngine
 						ImGui::CloseCurrentPopup();
 					}
 					ImGui::EndGroup();
-
-					std::string inputText = JCUtil::EraseSideChar(inputBuff, '\0');
+					 
 					const uint previweSceneCount = (uint)selectorPreviewVec.size();
 					for (uint i = 0; i < previweSceneCount; ++i)
 					{
 						Core::JUserPtr<JObject> previewObj = selectorPreviewVec[i]->GetJObject();
-						if (!inputText.empty() && JCUtil::Contain(JCUtil::WstrToU8Str(previewObj->GetName()), inputText))
+						if (!inputHelper->result.empty() && JCUtil::Contain(JCUtil::WstrToU8Str(previewObj->GetName()), inputHelper->result))
 							continue;
 
 						ImGui::BeginGroup();
@@ -1123,7 +1127,7 @@ namespace JinEngine
 			}
 
 			const Core::JGuiGroupKey groupKey = pInfo->GetOptionInfo()->GetWidgetInfo()->GetGroupKey();
-			if (groupKey != Core::Constant::InvalidGroupKey)
+			if (groupKey != Core::Constants::InvalidGroupKey)
 			{
 				auto groupHandle = guiPGroupHandleMap.find(groupKey);
 				if (groupHandle == guiPGroupHandleMap.end())

@@ -325,31 +325,21 @@ namespace JinEngine
 		void JSceneObserver::OcclusionResultOnScreen()
 		{  
 			JImGuiImpl::BeginWindow("##OcclusionResultWindow1", &isOpenOcclusionMapViewer, ImGuiWindowFlags_NoDocking);
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetMainDepthSrvHandle()).ptr, ImVec2(400, 200));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetMainDepthDebugUavHandle()).ptr, ImVec2(400, 200));
+			  
+			CD3DX12_GPU_DESCRIPTOR_HANDLE mainDsvDebugHandle = JGraphic::Instance().GetGpuDescriptorHandle(
+				Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0, 0);
+ 
+			ImGui::Image((ImTextureID)(mainDsvDebugHandle).ptr, ImVec2(400, 200));
 
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetOcclusionDepthMapSrvHandle(0)).ptr, ImVec2(400, 200));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(0)).ptr, ImVec2(400, 200));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(1)).ptr, ImVec2(400, 200));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(2)).ptr, ImVec2(400, 200));
-
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(3)).ptr, ImVec2(400, 200));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(4)).ptr, ImVec2(400, 200));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(5)).ptr, ImVec2(400, 200));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(6)).ptr, ImVec2(400, 200));
-
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(7)).ptr, ImVec2(400, 200));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(8)).ptr, ImVec2(400, 200));
-			ImGui::SameLine();
-			ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugUavHandle(9)).ptr, ImVec2(400, 200));
+			Graphic::JGraphicInfo ginfo = JGraphic::Instance().GetGraphicInfo();
+			for (uint i = 0; i < ginfo.occlusionMapCount; ++i)
+			{
+				CD3DX12_GPU_DESCRIPTOR_HANDLE occDebugHandle = JGraphic::Instance().GetGpuDescriptorHandle(
+					Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP, Graphic::J_GRAPHIC_BIND_TYPE::UAV, 0, i);
+				ImGui::Image((ImTextureID)(occDebugHandle).ptr, ImVec2(400, 200));
+				if (i == 0 || i % 4 != 0)
+					ImGui::SameLine();
+			}
 			//ImGui::SameLine();
 			//ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugSrvHandle(1)).ptr, ImVec2(400, 250));
 			JImGuiImpl::EndWindow();

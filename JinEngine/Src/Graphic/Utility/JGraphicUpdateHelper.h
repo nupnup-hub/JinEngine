@@ -1,7 +1,7 @@
 #pragma once
 #include"../JGraphicInfo.h"
-#include"../JGraphicTextureType.h"
 #include"../Upload/JUploadType.h"
+#include"../GraphicResource/JGraphicResourceType.h"
 #include"../../Core/Func/Callable/JCallable.h"
 
 namespace JinEngine
@@ -41,6 +41,7 @@ namespace JinEngine
 				uint count = 0;
 				uint capacity = 0;
 				J_UPLOAD_CAPACITY_CONDITION recompileCondition;
+				bool hasCallable = false;
 			public:
 				bool HasCallable()const noexcept;
 			};
@@ -51,7 +52,7 @@ namespace JinEngine
 			bool hasRecompileShader;
 		public:
 			void RegisterCallable(J_UPLOAD_RESOURCE_TYPE type, GetElementCountT::Ptr* getCountPtr);
-			void RegisterCallable(J_GRAPHIC_TEXTURE_TYPE type, GetTextureCountT::Ptr* getCountPtr, GetTextureCapacityT::Ptr* getCapaPtr, SetCapacityT::Ptr* sPtr);
+			void RegisterCallable(J_GRAPHIC_RESOURCE_TYPE type, GetTextureCountT::Ptr* getCountPtr, GetTextureCapacityT::Ptr* getCapaPtr, SetCapacityT::Ptr* sPtr);
 			void RegisterListener(J_UPLOAD_RESOURCE_TYPE type, std::unique_ptr<NotifyUpdateCapacityT::Callable>&& listner);
 			void WriteGraphicInfo(JGraphicInfo& info)const noexcept;
 			void NotifyUpdateFrameCapacity(JGraphicImpl& grpahic);

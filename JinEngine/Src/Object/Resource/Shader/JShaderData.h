@@ -32,8 +32,8 @@ namespace JinEngine
 		};
 	public: 
 		Microsoft::WRL::ComPtr<ID3DBlob> Cs = nullptr;							//Variable
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> Pso = nullptr;				//Constant 
-		ID3D12RootSignature* RootSignature = nullptr;	//Constant
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> Pso = nullptr;				//Constants 
+		ID3D12RootSignature* RootSignature = nullptr;	//Constants
 	public:
 		DispatchInfo dispatchInfo;													//Variable
 	};

@@ -21,7 +21,7 @@ namespace JinEngine
 		using JGuiFlag = int;
 		using JEnum = int;
 		using JGuiGroupKey = std::string;  
-		namespace Constant
+		namespace Constants
 		{
 			static constexpr JSupportGuiWidgetType NotSupportGuiWidget = 0;
 			static JGuiGroupKey InvalidGroupKey = " ";
@@ -30,7 +30,7 @@ namespace JinEngine
 		class JGuiGroupMemberInfo
 		{
 		private:
-			const JGuiGroupKey groupKey = Constant::InvalidGroupKey;
+			const JGuiGroupKey groupKey = Constants::InvalidGroupKey;
 		public:
 			JGuiGroupMemberInfo(const JGuiGroupKey groupKey);
 			virtual ~JGuiGroupMemberInfo() = default;

@@ -34,7 +34,7 @@ namespace JinEngine
 		}
 		JGuiGroupKey JGuiWidgetInfo::GetGroupKey()const noexcept
 		{
-			return IsMemberWidget() ? groupMemberInfo->GetGroupKey() : Constant::InvalidGroupKey;
+			return IsMemberWidget() ? groupMemberInfo->GetGroupKey() : Constants::InvalidGroupKey;
 		}
 		JGuiGroupMemberInfo* JGuiWidgetInfo::GetGroupMemberInfo()const noexcept
 		{

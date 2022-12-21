@@ -1,3 +1,4 @@
+#include"GraphicResource/JGraphicResourceType.h"
 #include"../Object/Resource/Shader/JShaderFunctionEnum.h"
 #include"../Core/JDataType.h"
 #include<string>
@@ -42,8 +43,8 @@ namespace JinEngine
 	}
 	namespace Graphic
 	{
-		class JGraphicTextureHandle;
-		class JGraphicTexture;
+		class JGraphicResourceHandle;
+		class JGraphicResourceHandleInterface;
 
 		class JGraphicDeviceInterface
 		{
@@ -60,19 +61,19 @@ namespace JinEngine
 		class JGraphicResourceInterface : public JGraphicDeviceInterface
 		{
 		private: 
-			friend class JShader;       
-			friend class JGraphicTextureHandle;
-			friend class JGraphicTexture;
+			friend class JShader;    
+			friend class JGraphicResourceHandle;
+			friend class JGraphicResourceHandleInterface;
 			friend class Editor::JImGuiImpl;
 		private: 
-			virtual CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvDescriptorHandle(int index)const noexcept = 0;
-			virtual CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept = 0;;
+			virtual CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorHandle(const J_GRAPHIC_BIND_TYPE bType, int index)const noexcept = 0;
+			virtual CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(const J_GRAPHIC_BIND_TYPE bType, int index)const noexcept = 0;;
 		private:
-			virtual JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat) = 0;
-			virtual JGraphicTextureHandle* CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat) = 0;
-			virtual JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
-			virtual JGraphicTextureHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
-			virtual bool DestroyGraphicTextureResource(JGraphicTextureHandle** handle) = 0;
+			virtual JGraphicResourceHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat) = 0;
+			virtual JGraphicResourceHandle* CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat) = 0;
+			virtual JGraphicResourceHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
+			virtual JGraphicResourceHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
+			virtual bool DestroyGraphicTextureResource(JGraphicResourceHandle** handle) = 0;
 			virtual void StuffGraphicShaderPso(JGraphicShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_GRAPHIC_SHADER_FUNCTION gFunctionFlag) = 0;
 			virtual void StuffComputeShaderPso(JComputeShaderData* shaderData, J_COMPUTE_SHADER_FUNCTION cFunctionFlag) = 0;
 		};

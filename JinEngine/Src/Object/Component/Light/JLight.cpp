@@ -231,7 +231,7 @@ namespace JinEngine
 		smLightConstant.position = GetOwner()->GetTransform()->GetPosition();
 		smLightConstant.spotPower = spotPower;
 		smLightConstant.lightType = (int)lightType;
-		smLightConstant.shadowMapIndex = GetTxtVectorIndex();
+		smLightConstant.shadowMapIndex = GetResourceArrayIndex();
 	}
 	void JLight::UpdateFrame(Graphic::JShadowMapConstants& shadowConstant)
 	{

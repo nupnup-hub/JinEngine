@@ -1,7 +1,7 @@
 #pragma once
 #include"../JComponent.h" 
 #include"../../JFrameUpdate.h"
-#include"../../../Graphic/JGraphicTexture.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceHandleInterface.h"
 namespace JinEngine
 {
 	namespace Graphic
@@ -20,7 +20,7 @@ namespace JinEngine
 
 	class JLightInterface : public JComponent,
 		public JFrameUpdate<ILitFrameUpdate, JFrameDirtyListener, FrameUpdate::nonBuff>,
-		public Graphic::JGraphicTexture
+		public Graphic::JGraphicResourceHandleInterface
 	{
 	protected:
 		JLightInterface(const std::string& cTypeName, size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner);

@@ -3,7 +3,7 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		namespace Constant
+		namespace Constants
 		{
 			static constexpr int gNumFrameResources = 3;
 			static constexpr int commonStencilRef = 1;

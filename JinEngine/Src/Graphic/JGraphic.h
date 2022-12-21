@@ -4,11 +4,11 @@
 #include <crtdbg.h>
 #endif 
 #include"JGraphicInterface.h"
-#include"JGraphicTextureUserInterface.h"
 #include"JGraphicOption.h" 
 #include"JGraphicInfo.h" 
 #include"Utility/JGraphicUpdateHelper.h"
 #include"Utility/JGraphicDrawHelper.h"
+#include"GraphicResource/JGraphicResourceUserInterface.h"
 #include"FrameResource/JAnimationConstants.h" 
 #include"../Object/JFrameUpdate.h"
 #include"../Object/Component/RenderItem/JRenderLayer.h"   
@@ -52,7 +52,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		struct JFrameResource;
-		class JGraphicTextureHandle;
+		class JGraphicResourceHandle;
 		class JGraphicResourceManager;
 		class JHardwareOccCulling;
 		class JHZBOccCulling;
@@ -61,7 +61,7 @@ namespace JinEngine
 		class JOutline;
 
 		class JGraphicImpl final : public JGraphicApplicationIterface,
-			public JGraphicTextureUserInterface,
+			public JGraphicResourceUserInterface,
 			public JFrameBuffManagerInterface,
 			public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>
 		{
@@ -116,28 +116,25 @@ namespace JinEngine
 			JGraphicEditorInterface* EditorInterface()noexcept;
 			JGraphicCommandInterface* CommandInterface()noexcept;
 			JGraphicApplicationIterface* AppInterface()noexcept;
-		public:
-			//Debug 
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetMainDepthSrvHandle();
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetMainDepthDebugUavHandle();
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetDebugSrvHandle(const uint index);
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetDebugUavHandle(const uint index);
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionMipMapSrvHandle(const uint index);
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionMipMapUavHandle(const uint index);
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetOcclusionDepthMapSrvHandle(const uint index);
 		private:
 			void OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)final;
 		private:
 			ID3D12Device* GetDevice() const noexcept final;
+		public:
+			//Debug 
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(const J_GRAPHIC_RESOURCE_TYPE rType,
+				const J_GRAPHIC_BIND_TYPE bType,
+				const int rIndex,
+				const int bIndex);
 		private:
-			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvDescriptorHandle(int index)const noexcept final;
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept final;
+			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorHandle(const J_GRAPHIC_BIND_TYPE bType, int index)const noexcept final;
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(const J_GRAPHIC_BIND_TYPE bType, int index)const noexcept final;
 		private:
-			JGraphicTextureHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
-			JGraphicTextureHandle* CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
-			JGraphicTextureHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0)final;
-			JGraphicTextureHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0)final;
-			bool DestroyGraphicTextureResource(JGraphicTextureHandle** handle)final;
+			JGraphicResourceHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
+			JGraphicResourceHandle* CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
+			JGraphicResourceHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0)final;
+			JGraphicResourceHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0)final;
+			bool DestroyGraphicTextureResource(JGraphicResourceHandle** handle)final;
 			void StuffGraphicShaderPso(JGraphicShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_GRAPHIC_SHADER_FUNCTION gFunctionFlag)final;
 			void StuffComputeShaderPso(JComputeShaderData* shaderData, J_COMPUTE_SHADER_FUNCTION cFunctionFlag)final;
 		private:
@@ -197,8 +194,6 @@ namespace JinEngine
 			void ReCompileGraphicShader();
 			J_UPLOAD_CAPACITY_CONDITION IsPassRedefineCapacity(const uint capacity, const uint nowCount)const noexcept;
 			uint CalculateCapacity(const J_UPLOAD_CAPACITY_CONDITION condition, const uint nowCapacity, const uint nowCount)const noexcept;
-			//수정필요
-			//Resize시 User RenderTarget size 변경 추가필요 - 2022-11-15
 			void OnResize();
 			ID3D12Resource* CurrentBackBuffer()const;
 			D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView()	const;

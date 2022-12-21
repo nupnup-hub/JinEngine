@@ -126,13 +126,13 @@ namespace JinEngine
 		void JObjectDetail::PropertyOnScreen(JObject* obj, Core::JPropertyInfo* pInfo)
 		{
 			auto optInfo = pInfo->GetOptionInfo();
-			if (optInfo->HasWidgetInfo() && optInfo->GetWidgetInfo()->GetSupportWidgetType() != Core::Constant::NotSupportGuiWidget)
+			if (optInfo->HasWidgetInfo() && optInfo->GetWidgetInfo()->GetSupportWidgetType() != Core::Constants::NotSupportGuiWidget)
 				guiHelper->UpdatePropertyGuiWidget(obj, pInfo);
 		}
 		void JObjectDetail::MethodOnScreen(JObject* obj, Core::JMethodInfo* mInfo)
 		{
 			auto optInfo = mInfo->GetOptionInfo();
-			if (optInfo->HasWidgetInfo() && optInfo->GetWidgetInfo()->GetSupportWidgetType() != Core::Constant::NotSupportGuiWidget)
+			if (optInfo->HasWidgetInfo() && optInfo->GetWidgetInfo()->GetSupportWidgetType() != Core::Constants::NotSupportGuiWidget)
 				guiHelper->UpdateMethodGuiWidget(obj, mInfo);
 		}
 		void JObjectDetail::DoActivate()noexcept

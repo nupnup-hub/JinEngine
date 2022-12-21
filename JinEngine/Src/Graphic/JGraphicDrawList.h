@@ -22,26 +22,26 @@ namespace JinEngine
 			UPDATED
 		};
 
-		class JGraphicTextureHandle;  
+		class JGraphicResourceHandle;  
 		class JGraphicDrawList;
-		class JGraphicTexture;
+		class JGraphicResourceHandleInterface;
 
 		struct JShadowMapDrawRequestor
 		{
 		public:
 			JComponent* jLight;
-			JGraphicTextureHandle* handle;
+			JGraphicResourceHandle* handle;
 		public:
-			JShadowMapDrawRequestor(JComponent* jLight, JGraphicTextureHandle* handle);
+			JShadowMapDrawRequestor(JComponent* jLight, JGraphicResourceHandle* handle);
 			~JShadowMapDrawRequestor();
 		};
 		struct JSceneDrawRequestor
 		{
 		public:
 			JComponent* jCamera;
-			JGraphicTextureHandle* handle;
+			JGraphicResourceHandle* handle;
 		public:
-			JSceneDrawRequestor(JComponent* jCamera, JGraphicTextureHandle* handle);
+			JSceneDrawRequestor(JComponent* jCamera, JGraphicResourceHandle* handle);
 			~JSceneDrawRequestor();
 		};
 
@@ -94,7 +94,7 @@ namespace JinEngine
 		{ 
 		private:
 			friend class JGraphicImpl;
-			friend class JGraphicTexture;
+			friend class JGraphicResourceHandleInterface;
 			friend class JSceneManagerImpl;
 			friend class JScene;
 		private:
@@ -103,8 +103,8 @@ namespace JinEngine
 			static bool HasDrawList(JScene* scene)noexcept;
 			static void UpdateScene(JScene* scene, const J_COMPONENT_TYPE cType)noexcept;
 		private:
-			static void AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicTextureHandle* handle)noexcept;
-			static void AddDrawSceneRequest(JScene* scene, JComponent* jCamera, JGraphicTextureHandle* handle)noexcept;
+			static void AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicResourceHandle* handle)noexcept;
+			static void AddDrawSceneRequest(JScene* scene, JComponent* jCamera, JGraphicResourceHandle* handle)noexcept;
 			static void PopDrawRequest(JScene* scene, JComponent* jComp)noexcept;
 			static bool HasRequestor(JScene* scene)noexcept;
 		private:

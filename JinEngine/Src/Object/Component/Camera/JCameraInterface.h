@@ -2,7 +2,7 @@
 #include"JCameraState.h" 
 #include"../JComponent.h" 
 #include"../../JFrameUpdate.h"
-#include"../../../Graphic/JGraphicTexture.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceHandleInterface.h"
 
 namespace JinEngine
 { 
@@ -30,7 +30,7 @@ namespace JinEngine
 	class JCameraInterface : public JComponent,
 		public JCameraStateInterface,
 		public JFrameUpdate<IFrameUpdate1<IFrameUpdateBase<Graphic::JCameraConstants&>>, JFrameDirtyListener, FrameUpdate::nonBuff>,
-		public Graphic::JGraphicTexture
+		public Graphic::JGraphicResourceHandleInterface
 	{
 	protected:
 		JCameraInterface(const std::string& cTypeName, size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner);

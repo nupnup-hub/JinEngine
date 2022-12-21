@@ -1,5 +1,5 @@
 #include"JGraphicDrawList.h"
-#include"JGraphicTextureHandle.h"
+#include"GraphicResource/JGraphicResourceHandle.h"
 #include"../Object/Resource/Scene/JScene.h" 
 #include"../Object/Component/JComponent.h" 
 #include"../Object/GameObject/JGameObject.h"
@@ -8,7 +8,7 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		JShadowMapDrawRequestor::JShadowMapDrawRequestor(JComponent* jLight, JGraphicTextureHandle* handle)
+		JShadowMapDrawRequestor::JShadowMapDrawRequestor(JComponent* jLight, JGraphicResourceHandle* handle)
 			:jLight(jLight), handle(handle)
 		{}
 		JShadowMapDrawRequestor::~JShadowMapDrawRequestor()
@@ -17,7 +17,7 @@ namespace JinEngine
 			handle = nullptr;
 		}
 
-		JSceneDrawRequestor::JSceneDrawRequestor(JComponent* jCamera, JGraphicTextureHandle* handle)
+		JSceneDrawRequestor::JSceneDrawRequestor(JComponent* jCamera, JGraphicResourceHandle* handle)
 			:jCamera(jCamera), handle(handle)
 		{}
 		JSceneDrawRequestor::~JSceneDrawRequestor()
@@ -142,7 +142,7 @@ namespace JinEngine
 			for (uint i = index + 1; i < drawListCount; ++i)
 				drawList[i]->scene->AppInterface()->SetComponentDirty(cType);
 		}
-		void JGraphicDrawList::AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicTextureHandle* handle)noexcept
+		void JGraphicDrawList::AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicResourceHandle* handle)noexcept
 		{
 			if (scene == nullptr || jLight == nullptr)
 				return;
@@ -155,7 +155,7 @@ namespace JinEngine
 			drawList[index]->shadowRequestor.emplace_back(std::make_unique<JShadowMapDrawRequestor>(jLight, handle));
 			drawList[index]->updateInfo->hasShadowUpdate = true;
 		}
-		void JGraphicDrawList::AddDrawSceneRequest(JScene* scene, JComponent* jCamera, JGraphicTextureHandle* handle)noexcept
+		void JGraphicDrawList::AddDrawSceneRequest(JScene* scene, JComponent* jCamera, JGraphicResourceHandle* handle)noexcept
 		{
 			if (scene == nullptr || jCamera == nullptr)
 				return;

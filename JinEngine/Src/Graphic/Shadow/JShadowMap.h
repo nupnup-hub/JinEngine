@@ -1,5 +1,5 @@
 #pragma once
-#include"../JGraphicTextureUserInterface.h"
+#include"../JGraphicResourceUserInterface.h"
 #include"../Upload/JUploadBuffer.h"
 #include<d3d12.h>
 #include<memory>
@@ -13,7 +13,7 @@ namespace JinEngine
 		struct JGraphicOption;
 		struct JShadowMapConstants;
 
-		class JShadowMap : public JGraphicTextureUserInterface
+		class JShadowMap : public JGraphicResourceUserInterface
 		{
 		private:
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;

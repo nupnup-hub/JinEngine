@@ -8,8 +8,8 @@
 #include"../../../Window/JWindows.h"
 #include"../../../Window/JWindowEventType.h" 
 #include"../../../Graphic/JGraphic.h"
-#include"../../../Graphic/JGraphicTexture.h"
-#include"../../../Graphic/JGraphicTextureUserInterface.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceHandleInterface.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceUserInterface.h"
 
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../../Lib/imgui/imgui_impl_dx12.h"
@@ -25,7 +25,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JImGui : public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>,
-			public Graphic::JGraphicTextureUserInterface
+			public Graphic::JGraphicResourceUserInterface
 		{
 		private:
 			using FontMap = std::unordered_map<J_EDITOR_FONT_TYPE, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>>;
@@ -138,9 +138,9 @@ namespace JinEngine
 					menuItemCount + comboCount + textureCount;
 			}
 		public:
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGraphicGpuSrvHandle(Graphic::JGraphicTexture& graphicTexture)
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGraphicGpuSrvHandle(Graphic::JGraphicResourceHandleInterface& handle)
 			{
-				return CallGetGpuSrvHandle(graphicTexture);
+				return CallGetGpuSrvHandle(handle, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0);
 			}
 		private:
 			void OnResize()
@@ -496,10 +496,18 @@ namespace JinEngine
 			++jImgui->selectableCount;
 			return ImGui::Selectable(name.c_str(), selected, flags, sizeArg);
 		}
-		bool JImGuiImpl::InputText(const std::string& name, char* buf, size_t bufSize, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
+		bool JImGuiImpl::InputText(const std::string& name, std::string& buff, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
 		{
 			++jImgui->inputDataCount;
-			return ImGui::InputText(name.c_str(), buf, bufSize, flags, txtCallback, userData);
+			return ImGui::InputText(name.c_str(), &buff[0], buff.size(), flags, txtCallback, userData);
+		}
+		bool JImGuiImpl::InputText(const std::string& name, std::string& buff, std::string& result, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
+		{
+			++jImgui->inputDataCount;
+			bool isInputEnd = ImGui::InputText(name.c_str(), &buff[0], buff.size(), flags, txtCallback, userData);
+			if (isInputEnd)
+				result = JCUtil::EraseSideChar(buff, '\0');
+			return isInputEnd;
 		}
 		bool JImGuiImpl::InputInt(const std::string& name, int* value, ImGuiInputTextFlags flags, int step, int stepFast)
 		{
@@ -616,16 +624,16 @@ namespace JinEngine
 		{
 			ImGui::EndCombo();
 		}
-		void JImGuiImpl::Image(Graphic::JGraphicTexture& graphicTexture,
+		void JImGuiImpl::Image(Graphic::JGraphicResourceHandleInterface& handle,
 			const JVector2<float>& size,
 			const JVector2<float>& uv0,
 			const JVector2<float>& uv1,
 			const JVector4<float>& tintCol,
 			const JVector4<float>& borderCol)
 		{
-			ImGui::Image((ImTextureID)jImgui->GetGraphicGpuSrvHandle(graphicTexture).ptr, size, uv0, uv1, tintCol, borderCol);
+			ImGui::Image((ImTextureID)jImgui->GetGraphicGpuSrvHandle(handle).ptr, size, uv0, uv1, tintCol, borderCol);
 		}
-		bool JImGuiImpl::ImageButton(Graphic::JGraphicTexture& graphicTexture,
+		bool JImGuiImpl::ImageButton(Graphic::JGraphicResourceHandleInterface& handle,
 			const JVector2<float>& size,
 			const JVector2<float>& uv0,
 			const JVector2<float>& uv1,
@@ -633,9 +641,9 @@ namespace JinEngine
 			const JVector4<float>& bgCol,
 			const JVector4<float>& tintCol)
 		{
-			return ImGui::ImageButton((ImTextureID)jImgui->GetGraphicGpuSrvHandle(graphicTexture).ptr, size, uv0, uv1, framePadding, bgCol, tintCol);
+			return ImGui::ImageButton((ImTextureID)jImgui->GetGraphicGpuSrvHandle(handle).ptr, size, uv0, uv1, framePadding, bgCol, tintCol);
 		}
-		void JImGuiImpl::AddImage(Graphic::JGraphicTexture& graphicTexture,
+		void JImGuiImpl::AddImage(Graphic::JGraphicResourceHandleInterface& handle,
 			const JVector2<float>& pMin,
 			const JVector2<float>& pMax,
 			bool isBack,
@@ -644,9 +652,9 @@ namespace JinEngine
 			const JVector2<float>& uvMax)
 		{
 			if (isBack)
-				ImGui::GetBackgroundDrawList()->AddImage((ImTextureID)jImgui->GetGraphicGpuSrvHandle(graphicTexture).ptr, pMin, pMax, uvMin, uvMax, color);
+				ImGui::GetBackgroundDrawList()->AddImage((ImTextureID)jImgui->GetGraphicGpuSrvHandle(handle).ptr, pMin, pMax, uvMin, uvMax, color);
 			else
-				ImGui::GetForegroundDrawList()->AddImage((ImTextureID)jImgui->GetGraphicGpuSrvHandle(graphicTexture).ptr, pMin, pMax, uvMin, uvMax, color);
+				ImGui::GetForegroundDrawList()->AddImage((ImTextureID)jImgui->GetGraphicGpuSrvHandle(handle).ptr, pMin, pMax, uvMin, uvMax, color);
 		}
 		bool JImGuiImpl::IsLeftMouseClicked()noexcept
 		{
@@ -664,7 +672,7 @@ namespace JinEngine
 		{
 			return jImgui->isDrag;
 		}
-		bool JImGuiImpl::IsMouseInWindow(const JVector2<float>& position, const JVector2<float>& size)noexcept
+		bool JImGuiImpl::IsMouseInRect(const JVector2<float>& position, const JVector2<float>& size)noexcept
 		{
 			ImVec2 mousePos = ImGui::GetMousePos();
 			if (mousePos.x >= position.x && mousePos.x <= position.x + size.x &&

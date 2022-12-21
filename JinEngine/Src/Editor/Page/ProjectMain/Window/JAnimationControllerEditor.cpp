@@ -42,7 +42,7 @@ namespace JinEngine
 			RegisterDiagramFunc();
 			RegisterConditionFunc();
 			RegisterStateFunc();
-			nameBuf.resize(JImGuiImpl::GetTextBuffRange());
+			inputBuff = std::make_unique<JEditorInputBuffHelper>(JImGuiImpl::GetTextBuffRange());
 		}
 		JAnimationControllerEditor::~JAnimationControllerEditor() {};
 
@@ -328,7 +328,7 @@ namespace JinEngine
 				BuildDiagramListPopup();
 			}
 
-			if (JImGuiImpl::IsMouseInWindow(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
+			if (JImGuiImpl::IsMouseInRect(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
 			{
 				if (JImGuiImpl::IsRightMouseClicked())
 				{
@@ -416,23 +416,28 @@ namespace JinEngine
 							diagramIndex = invalidIndex;
 							stateIndex = invalidIndex;
 						}
-						nameBuf.clear();
-						nameBuf.resize(JImGuiImpl::GetTextBuffRange());
-						for (uint j = 0; j < name.size(); ++j)
-							nameBuf[j] = name[j];
+						inputBuff->SetBuff(name);
 					}
 					JImGuiImpl::TableSetColumnIndex(1);
 					ImGui::PushItemWidth(-FLT_MIN);
 					if (conditionListSelectable[i])
 					{
+						const ImVec2 itemPos = ImGui::GetCursorPos() + ImGui::GetWindowPos();
+
 						if (JImGuiImpl::InputTextSet(GetName(),
-							nameBuf, 
-							JImGuiImpl::GetTextBuffRange(),
+							inputBuff.get(),
 							ImGuiInputTextFlags_EnterReturnsTrue,
 							*setConditionNameF,
 							aniCont,
 							nowCondition->GetGuid()))
 							conditionListSelectable[i] = false;
+
+						const ImVec2 itemSize = ImGui::GetItemRectSize();
+						if (JImGuiImpl::IsRightMouseClicked() || JImGuiImpl::IsLeftMouseClicked())
+						{
+							if (!JImGuiImpl::IsMouseInRect(itemPos, itemSize))
+								conditionListSelectable[i] = false;
+						}
 					}
 					else
 						JImGuiImpl::Text(name.c_str());
@@ -455,7 +460,7 @@ namespace JinEngine
 				JImGuiImpl::EndTable();
 				BuildConditionListPopup();
 			}
-			if (JImGuiImpl::IsMouseInWindow())
+			if (JImGuiImpl::IsMouseInRect())
 			{
 				if (JImGuiImpl::IsRightMouseClicked())
 				{
@@ -583,7 +588,7 @@ namespace JinEngine
 				}*/
 			}
 			BuildDiagramViewPopup();
-			if (JImGuiImpl::IsMouseInWindow())
+			if (JImGuiImpl::IsMouseInRect())
 			{
 				if (JImGuiImpl::IsRightMouseClicked())
 				{

@@ -11,6 +11,17 @@ namespace JinEngine
 {
 	namespace Editor
 	{
+		JProjectSelectorHub::MenuListValues::MenuListValues()
+		{
+			nameHelper = std::make_unique<JEditorInputBuffHelper>(maxNameRange);
+			pathHelper = std::make_unique<JEditorInputBuffHelper>(maxPathRange);
+		}
+		void JProjectSelectorHub::MenuListValues::OpenCreateProjectMenu()
+		{
+			newProjectWinow = true;
+			nameHelper->Clear();
+			pathHelper->Clear(); 
+		}
 		JProjectSelectorHub::JProjectSelectorHub(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType)
 			:JEditorWindow(name, std::move(attribute), ownerPageType)
 		{
@@ -126,16 +137,20 @@ namespace JinEngine
 				ImGui::SetWindowFontScale(0.6f);
 				//ImGui::SetCursorPosY(JWindow::Instance().GetClientHeight() * 0.4f);
 				JImGuiImpl::Text("Project Name: ");
-				JImGuiImpl::InputText("##Project Name", &menuListValues.newProjectName[0], menuListValues.maxNameRange);
+				JImGuiImpl::InputText("##Project Name", menuListValues.nameHelper->buff, menuListValues.nameHelper->result);
 
 				JImGuiImpl::Text("Folder: ");
-				JImGuiImpl::InputText("##Folder Path", &menuListValues.newProjectPath[0], menuListValues.maxPathRange, ImGuiInputTextFlags_ReadOnly);
+				JImGuiImpl::InputText("##Folder Path", menuListValues.pathHelper->buff, menuListValues.pathHelper->result, ImGuiInputTextFlags_ReadOnly);
 
 				if (JImGuiImpl::ImageButton(*serachIconTexture.Get(), JVector2<float> {25, 25}))
 				{
 					std::wstring dirPath;
 					if (JWindow::Instance().SelectDirectory(dirPath, L"please, select project parent directory") && JWindow::Instance().HasStorageSpace(dirPath, necessaryCapacityMB))
-						menuListValues.newProjectPath = JCUtil::WstrToU8Str(dirPath);
+					{
+						menuListValues.pathHelper->result = JCUtil::WstrToU8Str(dirPath);
+						menuListValues.pathHelper->buff = menuListValues.pathHelper->result;
+						menuListValues.pathHelper->buff.resize(menuListValues.maxPathRange);
+					}
 				}
 
 				std::vector<std::string> version = JApplicationVariable::GetAppVersion();
@@ -158,12 +173,11 @@ namespace JinEngine
 				}
 
 				if (JImGuiImpl::Button("Create Proejct"))
-				{
-					;
-					if (!menuListValues.newProjectName.empty() && !menuListValues.newProjectPath.empty())
+				{ 
+					if (!menuListValues.nameHelper->result.empty() && !menuListValues.pathHelper->result.empty())
 					{
-						if (JCUtil::IsOverlappedDirectoryPath(JCUtil::U8StrToWstr(menuListValues.newProjectName),
-							JCUtil::U8StrToWstr(menuListValues.newProjectPath)))
+						if (JCUtil::IsOverlappedDirectoryPath(JCUtil::U8StrToWstr(menuListValues.nameHelper->result),
+							JCUtil::U8StrToWstr(menuListValues.pathHelper->result)))
 							MessageBox(0, L"Overlapped Project Name", 0, 0);
 						else
 							CreateNewProjectFolderes();
@@ -176,8 +190,8 @@ namespace JinEngine
 		}
 		void JProjectSelectorHub::CreateNewProjectFolderes()
 		{
-			const std::wstring newProejctName = JCUtil::U8StrToWstr(JCUtil::EraseSideChar(menuListValues.newProjectName, ' '));
-			const std::wstring newProejctPath = JCUtil::U8StrToWstr(JCUtil::EraseSideChar(menuListValues.newProjectPath, ' ')) + newProejctName;
+			const std::wstring newProejctName = JCUtil::U8StrToWstr(JCUtil::EraseSideChar(menuListValues.nameHelper->result, ' '));
+			const std::wstring newProejctPath = JCUtil::U8StrToWstr(JCUtil::EraseSideChar(menuListValues.pathHelper->result, ' ')) + newProejctName;
 			std::vector<std::string> version = JApplicationVariable::GetAppVersion();
 
 			JApplicationProject::SetNextProjectInfo(std::make_unique<JApplicationProject::JProjectInfo>(newProejctName, newProejctPath, JCUtil::U8StrToWstr(version[versionIndex])));

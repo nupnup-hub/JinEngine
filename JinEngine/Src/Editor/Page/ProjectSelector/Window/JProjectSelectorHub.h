@@ -1,5 +1,6 @@
 #pragma once
 #include"../../JEditorWindow.h"
+#include"../../../Utility/JEditorInputBuffHelper.h"
 #include"../../../../Object/Resource/JResourceUserInterface.h"
 #include<string>
 
@@ -15,8 +16,8 @@ namespace JinEngine
 			struct MenuListValues
 			{
 			public:
-				std::string newProjectName;
-				std::string newProjectPath;
+				std::unique_ptr< JEditorInputBuffHelper> nameHelper;
+				std::unique_ptr< JEditorInputBuffHelper> pathHelper;
 				bool newProjectWinow = false;
 				bool newProjectButton = false;
 				bool loadProjectButton = false;
@@ -24,14 +25,9 @@ namespace JinEngine
 				static constexpr uint maxNameRange = 50;
 				static constexpr uint maxPathRange = 260;
 			public:
-				void OpenCreateProjectMenu()
-				{
-					newProjectWinow = true;
-					newProjectName.clear();
-					newProjectPath.clear();
-					newProjectName.resize(maxNameRange);
-					newProjectPath.resize(maxPathRange);
-				}
+				MenuListValues();
+			public:
+				void OpenCreateProjectMenu();
 			};
 		private: 
 			Core::JUserPtr<JTexture> serachIconTexture;

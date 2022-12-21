@@ -60,7 +60,7 @@ namespace JinEngine
 	}
 	void JFrameDirty::SetFrameDirty()noexcept
 	{
-		frameDirty = Graphic::Constant::gNumFrameResources;
+		frameDirty = Graphic::Constants::gNumFrameResources;
 	}
 	void JFrameDirty::MinusFrameDirty()noexcept
 	{

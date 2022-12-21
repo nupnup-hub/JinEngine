@@ -11,7 +11,7 @@ namespace JinEngine
     }
     uint JD3DUtility::CalcConstantBufferByteSize(const uint byteSize)
     {
-        // Constant buffers must be a multiple of the minimum hardware
+        // Constants buffers must be a multiple of the minimum hardware
         // allocation size (usually 256 bytes).  So round up to nearest
         // multiple of 256.  We do this by adding 255 and then masking off
         // the lower 2 bytes which store all bits < 256.

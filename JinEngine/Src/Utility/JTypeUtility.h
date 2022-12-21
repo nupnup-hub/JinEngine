@@ -6,6 +6,7 @@ namespace JinEngine
 {
 	namespace Core
 	{
+#pragma region Struct
 		template<class T, class U =
 			typename std::remove_cv<
 			typename std::remove_pointer<
@@ -212,7 +213,9 @@ namespace JinEngine
 
 		template<typename T>
 		struct JTypeInfoDetermine<T, std::void_t<typename T::ThisType>> : std::true_type {};
+#pragma endregion
 
+#pragma region Param
 		template<typename T>
 		static constexpr size_t ArrayLastDimensionCount_V = ArrayLastDimensionCount<std::remove_reference_t<T>>::value;
 		template<typename T>
@@ -231,6 +234,7 @@ namespace JinEngine
 		static constexpr bool IsRvalueRef_V = std::is_rvalue_reference_v<T>;
 		template<typename T>
 		static constexpr bool IsRefernce_V = std::is_reference_v<T>;
+#pragma endregion
 
 	}
 }

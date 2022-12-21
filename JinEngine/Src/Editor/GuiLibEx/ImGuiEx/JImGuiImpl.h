@@ -2,7 +2,9 @@
 #include<string>  
 #include<bitset>
 #include"../../Page/JEditorWindowFontType.h"
+#include"../../Utility/JEditorInputBuffHelper.h"
 #include"../../../Utility/JVector.h"
+#include"../../../Utility/JCommonUtility.h"
 #include"../../../Core/JDataType.h"
 #include"../../../Core/Empty/EmptyBase.h"
 #include"../../../Core/Reflection/JReflection.h"
@@ -71,7 +73,7 @@ namespace JinEngine
 
 	namespace Graphic
 	{
-		class JGraphicTexture;
+		class JGraphicResourceHandleInterface;
 	}
     namespace Editor
 	{
@@ -124,7 +126,8 @@ namespace JinEngine
 			static void TreePop();
 			static bool Selectable(const std::string& name, bool* pSelected = nullptr, ImGuiSelectableFlags flags = 0, const JVector2<float>& sizeArg = { 0,0 });
 			static bool Selectable(const std::string& name, bool selected, ImGuiSelectableFlags flags = 0, const JVector2<float>& sizeArg = { 0,0 });
-			static bool InputText(const std::string& name, char* buf, size_t bufSize, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback txtCallback = 0, void* userData = 0);
+			static bool InputText(const std::string& name, std::string& buff, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback txtCallback = 0, void* userData = 0);
+			static bool InputText(const std::string& name, std::string& buff, std::string& result, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback txtCallback = 0, void* userData = 0);
 			static bool InputInt(const std::string& name, int* value, ImGuiInputTextFlags flags = 0, int step = 1, int stepFast = 100);
 			static bool InputFloat(const std::string& name, float* value, ImGuiInputTextFlags flags = 0, const char* format = "%.2f", float step = 0.0f, float stepFast = 0.0f);
 		public:
@@ -157,20 +160,20 @@ namespace JinEngine
 			static void EndCombo();
 		public:
 			//Image  
-			static void Image(Graphic::JGraphicTexture& graphicTexture,
+			static void Image(Graphic::JGraphicResourceHandleInterface& handle,
 				const JVector2<float>& size,
 				const JVector2<float>& uv0 = JVector2<float>(0, 0),
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
 				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1),
 				const JVector4<float>& borderCol = JVector4<float>(0, 0, 0, 0));
-			static bool ImageButton(Graphic::JGraphicTexture& graphicTexture,
+			static bool ImageButton(Graphic::JGraphicResourceHandleInterface& handle,
 				const JVector2<float>& size,
 				const JVector2<float>& uv0 = JVector2<float>(0, 0),
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
 				int framePadding = -1,
 				const JVector4<float>& bgCol = JVector4<float>(0, 0, 0, 0),
 				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1));
-			static void AddImage(Graphic::JGraphicTexture& graphicTexture,
+			static void AddImage(Graphic::JGraphicResourceHandleInterface& handle,
 				const JVector2<float>& pMin,
 				const JVector2<float>& pMax,
 				bool isBack = true,
@@ -183,7 +186,7 @@ namespace JinEngine
 			static bool IsRightMouseClicked()noexcept;
 			static bool IsMiddleMouseClicked()noexcept;
 			static bool IsDraggingMouse()noexcept;
-			static bool IsMouseInWindow(const JVector2<float>& position = GetGuiWindowPos(), const JVector2<float>& size = GetGuiWindowSize())noexcept;
+			static bool IsMouseInRect(const JVector2<float>& position = GetGuiWindowPos(), const JVector2<float>& size = GetGuiWindowSize())noexcept;
 			//0 = left, 1 = right, 2 = middle
 			static void SetMouseClick(const ImGuiMouseButton btn, const bool value)noexcept;
 			static void SetMouseDrag(bool value)noexcept;	
@@ -275,26 +278,30 @@ namespace JinEngine
 			}
 			template<typename ...Param>
 			static bool InputTextSet(const std::string& uniqueLabel, 
-				const std::string& preValue, 
-				const size_t bufMaxLength,
+				JEditorInputBuffHelper* helper,
 				ImGuiInputTextFlags flags,
 				Core::JFunctor<void, const std::string, Param...>& commitFunctor, Param... var)
 			{
-				std::string nowValue = preValue;
-				if (JImGuiImpl::InputText(("##InputText" + uniqueLabel).c_str(), &nowValue[0], bufMaxLength, flags))
+				std::string preValue = helper->buff;
+				if (JImGuiImpl::InputText(("##InputText" + uniqueLabel).c_str(), helper->buff, helper->result, flags))
 				{
-					if (nowValue != preValue)
-					{
-						std::string dovalue = nowValue;
-						std::string undovalue = preValue;
-
-						using Functor = Core::JFunctor<void, const std::string, Param...>;
-						using Binder = Core::JBindHandle<Functor, const std::string, Param...>;
-						Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(uniqueLabel + " input text set value: " + nowValue,
-							std::make_unique<Binder>(commitFunctor, std::move(dovalue), std::forward<Param>(var)...),
-							std::make_unique<Binder>(commitFunctor, std::move(undovalue), std::forward<Param>(var)...)));
-						return true;
-					}
+					std::string dovalue = helper->result;
+					std::string undovalue = JCUtil::EraseSideChar(preValue, '\0');
+					  
+					using Functor = Core::JFunctor<void, const std::string, Param...>;
+					using Binder = Core::JBindHandle<Functor, const std::string, Param...>;
+ 
+					ExecuteWidgetSet<Binder>(uniqueLabel + " input text set value: " + dovalue,
+						commitFunctor,
+						dovalue,
+						undovalue,
+						std::make_tuple(var...),
+						std::make_tuple(var...),
+						std::make_index_sequence<sizeof...(Param)>());
+					//Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(uniqueLabel + " input text set value: " + dovalue,
+					//	std::make_unique<Binder>(commitFunctor, std::move(dovalue), DecomposeTuple<>(doParamT)...),
+					//	std::make_unique<Binder>(commitFunctor, std::move(undovalue), DecomposeTuple<>(undoParamT)...)));
+					return true;
 				}
 				return false;
 			}
@@ -323,6 +330,26 @@ namespace JinEngine
 					}
 					JImGuiImpl::EndCombo();
 				}
+			}
+		private:
+			template<size_t ParamIndex, typename Tuple>
+			static constexpr decltype(auto) DecomposeTuple(Tuple& tuple)
+			{
+				using ParamType = std::tuple_element_t<ParamIndex, Tuple>;
+				return std::forward<ParamType>(std::get<ParamIndex>(tuple));
+			}
+			template<typename Binder, typename Functor, typename Value, typename ParamTuple, size_t ...Is>
+			static void ExecuteWidgetSet(const std::string& taskName,
+				Functor& functor, 
+				Value doValue, 
+				Value undoValue,
+				ParamTuple t1,
+				ParamTuple t2,
+				std::index_sequence<Is...>)
+			{
+				Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(taskName,
+					std::make_unique<Binder>(functor, std::move(doValue), DecomposeTuple<Is>(t1)...),
+					std::make_unique<Binder>(functor, std::move(undoValue), DecomposeTuple<Is>(t2)...)));
 			}
 		}; 
     }

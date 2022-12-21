@@ -6,7 +6,7 @@ namespace JinEngine
 	{
 		bool JGraphicUpdateHelper::BindingTextureData::HasCallable()const noexcept
 		{
-			return getTextureCountCallable && getTextureCapacityCallable && setCapacityCallable;
+			return hasCallable;
 		}
 		void JGraphicUpdateHelper::Clear()
 		{
@@ -39,7 +39,7 @@ namespace JinEngine
 			//uData[(int)type].getElementCapacityCallable = std::make_unique<GetElementCapacityT::Callable>(*getCapaPtr);
 			//uData[(int)type].rebuildCallable = std::make_unique<RebuildT::Callable>(*rPtr);
 		}
-		void JGraphicUpdateHelper::RegisterCallable(J_GRAPHIC_TEXTURE_TYPE type, GetTextureCountT::Ptr* getCountPtr, GetTextureCapacityT::Ptr* getCapaPtr, SetCapacityT::Ptr* sPtr)
+		void JGraphicUpdateHelper::RegisterCallable(J_GRAPHIC_RESOURCE_TYPE type, GetTextureCountT::Ptr* getCountPtr, GetTextureCapacityT::Ptr* getCapaPtr, SetCapacityT::Ptr* sPtr)
 		{
 			if (getCountPtr == nullptr || getCapaPtr == nullptr || sPtr == nullptr)
 				return;
@@ -47,6 +47,7 @@ namespace JinEngine
 			bData[(int)type].getTextureCountCallable = std::make_unique<GetTextureCountT::Callable>(*getCountPtr);
 			bData[(int)type].getTextureCapacityCallable = std::make_unique< GetTextureCapacityT::Callable>(*getCapaPtr);
 			bData[(int)type].setCapacityCallable = std::make_unique<SetCapacityT::Callable>(*sPtr);
+			bData[(int)type].hasCallable = true;
 		}
 		void JGraphicUpdateHelper::RegisterListener(J_UPLOAD_RESOURCE_TYPE type, std::unique_ptr<NotifyUpdateCapacityT::Callable>&& listner)
 		{
@@ -70,13 +71,13 @@ namespace JinEngine
 			info.upSmLightCapacity = uData[(int)J_UPLOAD_RESOURCE_TYPE::SHADOW_MAP_LIGHT].capacity;
 			info.upMaterialCapacity = uData[(int)J_UPLOAD_RESOURCE_TYPE::MATERIAL].capacity;
 
-			info.binding2DTextureCount = bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D].count;
-			info.bindingCubeMapCount = bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE].count;
-			info.bindingShadowTextureCount = bData[(int)J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP].count;
+			info.binding2DTextureCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].count;
+			info.bindingCubeMapCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].count;
+			info.bindingShadowTextureCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP].count;
 
-			info.binding2DTextureCapacity = bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D].capacity;
-			info.bindingCubeMapCapacity = bData[(int)J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE].capacity;
-			info.bindingShadowTextureCapacity = bData[(int)J_GRAPHIC_TEXTURE_TYPE::RENDER_RESULT_SHADOW_MAP].capacity;
+			info.binding2DTextureCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].capacity;
+			info.bindingCubeMapCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].capacity;
+			info.bindingShadowTextureCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP].capacity;
 		}
 		void JGraphicUpdateHelper::NotifyUpdateFrameCapacity(JGraphicImpl& grpahic)
 		{

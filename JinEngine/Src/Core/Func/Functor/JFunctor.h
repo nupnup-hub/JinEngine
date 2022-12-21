@@ -169,7 +169,7 @@ namespace JinEngine
 			//JBindHandle& operator=(JBindHandle&& rhs) = default;
 		private:
 			template<size_t ParamIndex, typename PassTuple>
-			constexpr decltype(auto) GetParam(const PassTuple& passTuple)
+			constexpr decltype(auto) GetParam(PassTuple& passTuple)
 			{
 				using Seq = ParamSequence<BindTuple, ParamIndex>;
 				if constexpr (Seq::isBindParam)
@@ -195,7 +195,7 @@ namespace JinEngine
 			}
 		private:
 			template<size_t ...Is, typename PassTuple>
-			auto CallFunc(std::index_sequence<Is...>, const PassTuple& passTuple)
+			auto CallFunc(std::index_sequence<Is...>, PassTuple& passTuple)
 			{
 				return oriFunctor(GetParam<Is>(passTuple)...);
 			}
@@ -211,16 +211,16 @@ namespace JinEngine
 			}
 		public:
 			template<typename ...PassP>
-			auto operator()(PassP&&... var) ->
-				decltype(CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>(), std::forward_as_tuple(std::forward<PassP>(var)...)))
+			decltype(auto) operator()(PassP&&... var)  
 			{
-				return CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>(), std::forward_as_tuple(std::forward<PassP>(var)...));
+				auto passT = std::forward_as_tuple(std::forward<PassP>(var)...);
+				return CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>(), passT);
 			}
 			template<typename ...PassP>
-			auto Invoke(PassP&&... var) ->
-				decltype(CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>(), std::forward_as_tuple(std::forward<PassP>(var)...)))
+			decltype(auto) Invoke(PassP&&... var) 
 			{
-				return CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>(), std::forward_as_tuple(std::forward<PassP>(var)...));
+				auto passT = std::forward_as_tuple(std::forward<PassP>(var)...);
+				return CallFunc(std::make_index_sequence<std::tuple_size_v<BindTuple>>(), passT);
 			}
 			void InvokeCompletelyBind()
 			{

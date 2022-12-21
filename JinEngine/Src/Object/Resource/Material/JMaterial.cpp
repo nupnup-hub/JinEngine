@@ -374,15 +374,15 @@ namespace JinEngine
 		constant.Roughness = roughness;
 		XMStoreFloat4x4(&constant.MatTransform, XMMatrixTranspose(XMLoadFloat4x4(&matTransform)));
 		if (albedoMap != nullptr)
-			constant.AlbedoMapIndex = CallGetTxtVectorIndex(*albedoMap);
+			constant.AlbedoMapIndex = CallGetResourceArrayIndex(*albedoMap);
 		if (normalMap != nullptr)
-			constant.NormalMapIndex = CallGetTxtVectorIndex(*normalMap);
+			constant.NormalMapIndex = CallGetResourceArrayIndex(*normalMap);
 		if (heightMap != nullptr)
-			constant.HeightMapIndex = CallGetTxtVectorIndex(*heightMap);
+			constant.HeightMapIndex = CallGetResourceArrayIndex(*heightMap);
 		if (roughnessMap != nullptr)
-			constant.RoughnessMapIndex = CallGetTxtVectorIndex(*roughnessMap);
+			constant.RoughnessMapIndex = CallGetResourceArrayIndex(*roughnessMap);
 		if (ambientOcclusionMap != nullptr)
-			constant.AmbientOcclusionMapIndex = CallGetTxtVectorIndex(*ambientOcclusionMap);
+			constant.AmbientOcclusionMapIndex = CallGetResourceArrayIndex(*ambientOcclusionMap);
 	}
 	void JMaterial::DoCopy(JObject* ori)
 	{

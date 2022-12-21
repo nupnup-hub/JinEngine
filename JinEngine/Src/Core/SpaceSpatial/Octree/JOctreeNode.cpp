@@ -28,7 +28,7 @@ namespace JinEngine
 				else
 					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
 				
-				const float outlineFactor = 0.025f;
+				const float outlineFactor = 0.01f;
 				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetBoundingBox();
 				debugGameObject->GetTransform()->SetScale(XMFLOAT3(boundingBox.Extents.x / rBBox.Extents.x + outlineFactor,
 					boundingBox.Extents.y / rBBox.Extents.y + outlineFactor,

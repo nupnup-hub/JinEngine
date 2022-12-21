@@ -52,7 +52,7 @@ namespace JinEngine
 		{
 			std::string windowName = GetName();
 
-			if (IsFocus() && IsActivated() && JImGuiImpl::IsMouseInWindow())
+			if (IsFocus() && IsActivated() && JImGuiImpl::IsMouseInRect())
 			{
 				if (JImGuiImpl::IsLeftMouseClicked())
 				{

@@ -1,7 +1,7 @@
 #pragma once
 #include"../JResourceObject.h"
 #include"../JClearableInterface.h"
-#include"../../../Graphic/JGraphicTexture.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceHandleInterface.h"
 #include<string>
 
 namespace JinEngine
@@ -19,7 +19,7 @@ namespace JinEngine
 	};
 
 	class JTextureInterface : public JResourceObject,
-		public Graphic::JGraphicTexture ,
+		public Graphic::JGraphicResourceHandleInterface,
 		public JClearableInterface,
 		public JTextureImportInterface
 	{

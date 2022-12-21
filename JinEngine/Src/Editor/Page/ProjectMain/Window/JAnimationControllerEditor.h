@@ -1,5 +1,6 @@
 #pragma once
 #include"../../JEditorWindow.h"   
+#include"../../../Utility/JEditorInputBuffHelper.h"
 #include"../../../../Core/Event/JEventListener.h" 
 #include"../../../../Core/FSM/AnimationFSM/JAnimationStateType.h"
 #include"../../../../Core/FSM/JFSMconditionValueType.h"
@@ -48,7 +49,7 @@ namespace JinEngine
 			const std::string diagramListName;
 			const std::string conditionListName;
 			const std::string diagramViewName;
-			std::string nameBuf;
+			std::unique_ptr<JEditorInputBuffHelper> inputBuff;
 		private:
 			std::unique_ptr<JEditorPopup>diagramListPopup;
 			std::unique_ptr<JEditorPopup>conditionListPopup;

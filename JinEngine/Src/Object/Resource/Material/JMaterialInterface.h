@@ -3,8 +3,7 @@
 #include"../JClearableInterface.h"
 #include"../JResourceUserInterface.h"
 #include"../../JFrameUpdate.h"
-#include"../../../Graphic/JGraphicTextureUserInterface.h"
-#include"../../../Graphic/JGraphicBufInterface.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceUserInterface.h" 
 
 namespace JinEngine
 {
@@ -18,7 +17,7 @@ namespace JinEngine
 	class JMaterialInterface : public JResourceObject,
 		public JFrameUpdate<IFrameUpdate1<IFrameUpdateBase<Graphic::JMaterialConstants&>>, JFrameDirty, FrameUpdate::singleBuff>,
 		public JResourceUserInterface,
-		public Graphic::JGraphicTextureUserInterface
+		public Graphic::JGraphicResourceUserInterface
 	{
 	protected:
 		JMaterialInterface(const JResourceObject::JResourceInitData& initdata);

@@ -1,8 +1,8 @@
 #include"JGraphicResourceWatcher.h"
 #include"../../JEditorAttribute.h"
 #include"../../../../Graphic/JGraphic.h"
-#include"../../../../Graphic/JGraphicResourceManager.h" 
-#include"../../../../Graphic/JGraphicTextureHandle.h" 
+#include"../../../../Graphic/GraphicResource/JGraphicResourceManager.h" 
+#include"../../../../Graphic/GraphicResource/JGraphicResourceHandle.h" 
 #include"../../../../../Lib/imgui/imgui.h"
 #include"../../../../Core/Identity/JIdentifier.h"
 
@@ -24,21 +24,25 @@ namespace JinEngine
 			if (IsActivated())
 			{
 				Graphic::JGraphicResourceManager* grManager = JGraphic::Instance().graphicResource.get();
-				std::string user2DTextreCount = "User2DTextureCount: " + std::to_string(grManager->user2DTextureCount);
-				std::string userCubeTextreCount = "userCubeTextreCount: " + std::to_string(grManager->userCubeMapCount);
-				std::string rsCount = "renderResultCount: " + std::to_string(grManager->renderResultCount);
-				std::string shadowMapCount = "shadowMapCount: " + std::to_string(grManager->shadowMapCount);
 
-				ImGui::Text(user2DTextreCount.c_str());
-				ImGui::Text(userCubeTextreCount.c_str());
-				ImGui::Text(rsCount.c_str());
-				ImGui::Text(shadowMapCount.c_str());
-
-				if (grManager->shadowMapCount > 0)
+				Core::JEnumInfo* rInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_RESOURCE_TYPE).name());
+				Core::JEnumInfo* bInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_BIND_TYPE).name());
+				auto rNameVec = rInfo->GetEnumNameVec();
+				auto bNameVec = bInfo->GetEnumNameVec();
+				 
+				for (uint i = 0; i < (uint)Graphic::J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
 				{
-					ImVec2 windowSize = ImGui::GetWindowSize();
-					//ImGui::Image((ImTextureID)JGraphic::Instance().GetGpuSrvDescriptorHandle(grManager->shadowMapHandle[0]->GetSrvHeapIndex()).ptr,
-					//	ImVec2(windowSize.x, windowSize.y));
+					Graphic::JGraphicResourceManager::ResourceTypeDesc& desc = grManager->typeDesc[i];
+					ImGui::Text(rNameVec[i].c_str());
+					ImGui::Text(("Resource Count:" + std::to_string(desc.count)).c_str());
+					for (uint j = 0; j < (uint)Graphic::J_GRAPHIC_BIND_TYPE::COUNT; ++j)
+					{
+						ImGui::Text(bNameVec[i].c_str());
+						ImGui::Text(("View Count:" + std::to_string(desc.viewInfo[j].count)).c_str());
+						ImGui::Text(("View Capacity:" + std::to_string(desc.viewInfo[j].capacity)).c_str());
+						ImGui::Text(("View Offset:" + std::to_string(desc.viewInfo[j].offset)).c_str());
+					}
+					ImGui::Separator();
 				}
 			} 
 		}

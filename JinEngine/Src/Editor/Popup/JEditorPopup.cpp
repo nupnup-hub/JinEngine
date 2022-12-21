@@ -24,7 +24,7 @@ namespace JinEngine
 			}
 			else
 			{ 
-				if (JImGuiImpl::IsRightMouseClicked() && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && JImGuiImpl::IsMouseInWindow(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
+				if (JImGuiImpl::IsRightMouseClicked() && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && JImGuiImpl::IsMouseInRect(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
 					SetOpen(true);
 				if (!JImGuiImpl::IsEnablePopup())
 					SetOpen(false);

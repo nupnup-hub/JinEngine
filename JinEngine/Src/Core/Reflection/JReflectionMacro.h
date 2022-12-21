@@ -152,6 +152,8 @@ namespace JinEngine
 		}
 
 
+		//enum class n {...., Count}
+		//Added Count and Count name don't registeted
 #define REGISTER_ENUM_CLASS(enumName, dataType, ...)													\
 			enum class enumName : dataType	{J_MAKE_ENUM_ELEMENT(__VA_ARGS__), COUNT};					\
 																										\

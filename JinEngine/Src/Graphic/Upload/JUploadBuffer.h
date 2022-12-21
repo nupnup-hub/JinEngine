@@ -47,7 +47,7 @@ namespace JinEngine
 
 				elementByteSize = sizeof(T);
 
-				// Constant buffer elements need to be multiples of 256 bytes.
+				// Constants buffer elements need to be multiples of 256 bytes.
 				// This is because the hardware can only view constant data 
 				// at m*256 byte offsets and of n*256 byte lengths. 
 				// typedef struct D3D12_CONSTANT_BUFFER_VIEW_DESC {

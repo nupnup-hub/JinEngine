@@ -173,7 +173,7 @@ namespace JinEngine
 			auto changeParentLam = [](Core::JUserPtr<JGameObject> obj, Core::JUserPtr<JGameObject> newP) {obj->ChangeParent(newP.Get()); };
 			changeParentF = std::make_unique< ChangeParentF::Functor>(changeParentLam);
 
-			nameBuf.resize(JImGuiImpl::GetTextBuffRange());
+			inputBuff = std::make_unique<JEditorInputBuffHelper>(JImGuiImpl::GetTextBuffRange());
 		}
 		JObjectExplorer::~JObjectExplorer()
 		{
@@ -241,7 +241,7 @@ namespace JinEngine
 					else if (menuGuid == std::get<0>(renameT))
 					{
 						renameTar = selectedObject;
-						nameBuf = JCUtil::WstrToU8Str(renameTar->GetName());
+						inputBuff->SetBuff(JCUtil::WstrToU8Str(renameTar->GetName())); 
 					}
 					explorerPopup->SetOpen(false);
 				}
@@ -259,12 +259,20 @@ namespace JinEngine
 				ImGuiTreeNodeFlags_Framed;
 		
 			if (renameTar.IsValid() && gObj->GetGuid() == renameTar->GetGuid())
-			{
+			{  
+				const ImVec2 itemPos = ImGui::GetCursorPos() + ImGui::GetWindowPos();
 				if (JImGuiImpl::InputTextSet(GetName(),
-					nameBuf, JImGuiImpl::GetTextBuffRange(),
+					inputBuff.get(),
 					ImGuiInputTextFlags_EnterReturnsTrue,
 					*std::get<1>(renameT), Core::JUserPtr{ renameTar }))
 					renameTar.Clear();
+				 
+				const ImVec2 itemSize = ImGui::GetItemRectSize();
+				if (JImGuiImpl::IsRightMouseClicked() || JImGuiImpl::IsLeftMouseClicked())
+				{ 
+					if (!JImGuiImpl::IsMouseInRect(itemPos, itemSize))
+						renameTar.Clear();
+				}
 
 				const uint childrenCount = gObj->GetChildrenCount();
 				for (uint i = 0; i < childrenCount; ++i)
@@ -317,6 +325,8 @@ namespace JinEngine
 									auto doBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, Core::JUserPtr(selectedObj), Core::GetUserPtr(gObj));
 									auto undoBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, Core::JUserPtr(selectedObj), Core::GetUserPtr(selectedObj->GetParent()));
 									auto evStruct = std::make_unique<JEditorTSetBindFuncEvStruct>("Change Parent", GetOwnerPageType(), std::move(doBind), std::move(undoBind));
+									
+									doBind->Invoke();
 									AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
 								}
 								else if (selected->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT && payload)
@@ -368,6 +378,7 @@ namespace JinEngine
 		{
 			JEditorWindow::DoSetUnFocus();
 			explorerPopup->SetOpen(false);
+			renameTar.Clear();
 		}
 
 		void JObjectExplorer::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)

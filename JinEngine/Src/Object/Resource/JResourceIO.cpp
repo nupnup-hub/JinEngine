@@ -15,7 +15,7 @@
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Utility/JCommonUtility.h"
 #include"../../Graphic/JGraphic.h"
-#include"../../Graphic/JGraphicResourceManager.h"
+#include"../../Graphic/GraphicResource/JGraphicResourceManager.h"
 #include"../../Application/JApplicationVariable.h"  
 #include"../../Core/Guid/GuidCreator.h"
 #include<Windows.h>

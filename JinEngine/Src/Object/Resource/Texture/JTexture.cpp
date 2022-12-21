@@ -65,17 +65,17 @@ namespace JinEngine
 	}
 	uint JTexture::GetTextureWidth()const noexcept
 	{
-		return GetTxtWidth();
+		return GetResourceWidth();
 	}
 	uint JTexture::GetTextureHeight()const noexcept
 	{
-		return GetTxtHeight();
+		return GetResourceHeight();
 	}
-	Graphic::J_GRAPHIC_TEXTURE_TYPE JTexture::GetTextureType()const noexcept
+	Graphic::J_GRAPHIC_RESOURCE_TYPE JTexture::GetTextureType()const noexcept
 	{
 		return textureType;
 	}
-	void JTexture::SetTextureType(const Graphic::J_GRAPHIC_TEXTURE_TYPE textureType)noexcept
+	void JTexture::SetTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)noexcept
 	{
 		if (JTexture::textureType != textureType)
 		{
@@ -133,7 +133,7 @@ namespace JinEngine
 	{
 		if (!HasTxtHandle())
 		{
-			if (textureType == Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_2D)
+			if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
 			{
 				if (Create2DTexture(uploadBuffer, GetPath(), GetFormat()))
 				{
@@ -141,7 +141,7 @@ namespace JinEngine
 					return true;
 				}
 			}
-			else if (textureType == Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE)
+			else if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 			{
 				if (CreateCubeMap(uploadBuffer, GetPath(), GetFormat()))
 				{

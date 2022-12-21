@@ -1,8 +1,7 @@
 #pragma once
 #include"../JComponent.h" 
 #include"../../JFrameUpdate.h"
-#include"../../Resource/JResourceUserInterface.h"
-#include"../../../Graphic/JGraphicBufInterface.h"
+#include"../../Resource/JResourceUserInterface.h" 
 
 namespace JinEngine
 {

@@ -30,16 +30,8 @@
 #include"../../Core/Geometry/JDirectXCollisionEx.h"
 
 #include"../../Graphic/JGraphic.h"
-#include"../../Graphic/JGraphicDrawList.h"
-#include"../../Graphic/JGraphicResourceManager.h"
-
-#define DIMX
-#define DIMY
-#define DIMZ
-
-#if defined (DIMX) && defined (DIMY) && defined (DIMZ)
-int a = 20;
-#endif
+#include"../../Graphic/JGraphicDrawList.h" 
+ 
 using namespace DirectX;
 namespace JinEngine
 {
@@ -489,7 +481,7 @@ namespace JinEngine
 				const std::wstring oriPath = Core::JFileConstant::MakeFilePath(textureDir->GetPath(), JDefaultTexture::GetName(textureType[i]));
 				JTexture* newTexture = JRFI<JTexture>::Create(Core::JPtrUtil::MakeOwnerPtr<JTexture::InitData>(name, Core::MakeGuid(), objFlag, textureDir, oriPath));
 				if (textureType[i] == J_DEFAULT_TEXTURE::DEFAULT_SKY)
-					newTexture->SetTextureType(Graphic::J_GRAPHIC_TEXTURE_TYPE::TEXTURE_CUBE);
+					newTexture->SetTextureType(Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE);
 				ThrowIfFailedN(newTexture != nullptr);
 				resourceData->RegisterDefaultResource(textureType[i], Core::GetUserPtr(newTexture), isUse);
 			}

@@ -1,6 +1,6 @@
 #pragma once
 #include"JTextureInterface.h"
-#include"../../../Graphic/JGraphicTextureType.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceType.h"
 #include<d3d12.h> 
 
 namespace JinEngine
@@ -36,11 +36,11 @@ namespace JinEngine
 		struct JTextureMetadata : public JResourceMetaData
 		{
 		public:
-			Graphic::J_GRAPHIC_TEXTURE_TYPE textureType;
+			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
 		};
 	private: 
 		Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer = nullptr;
-		Graphic::J_GRAPHIC_TEXTURE_TYPE textureType;
+		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
@@ -52,8 +52,8 @@ namespace JinEngine
 	public:	  
 		uint GetTextureWidth()const noexcept;
 		uint GetTextureHeight()const noexcept;
-		Graphic::J_GRAPHIC_TEXTURE_TYPE GetTextureType()const noexcept;
-		void SetTextureType(const Graphic::J_GRAPHIC_TEXTURE_TYPE textureType)noexcept;
+		Graphic::J_GRAPHIC_RESOURCE_TYPE GetTextureType()const noexcept;
+		void SetTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)noexcept;
 	public:
 		JTextureImportInterface* ImportInterface()noexcept final;
 	private:

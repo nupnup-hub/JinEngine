@@ -1,8 +1,8 @@
 #pragma once
-#include"../../JEditorWindow.h"  
+#include"../../JEditorWindow.h" 
+#include"../../../Utility/JEditorInputBuffHelper.h"
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
-#include"../../../../Utility/JDelegate.h" 
 #include"../../../../Core/Event/JEventListener.h"
 #include"../../../../Core/Undo/JTransition.h"
 
@@ -22,8 +22,7 @@ namespace JinEngine
 			Core::JUserPtr<JGameObject> renameTar;
 			Core::JUserPtr<JGameObject> selectedObject;
 			std::unique_ptr<JEditorString>editorString;
-			std::unique_ptr<JEditorPopup>explorerPopup;
-			std::string nameBuf;
+			std::unique_ptr<JEditorPopup>explorerPopup; 
 		private:
 			using DataHandleStructure = Core::JDataHandleStructure<Core::JTransition::GetMaxTaskCapacity(), JGameObject>;
 			using CreateGameObjectFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, Core::JUserPtr<JGameObject>, const size_t>; 
@@ -52,6 +51,8 @@ namespace JinEngine
 			std::unique_ptr<UndoDestroyGameObjectFunctor> undoDestroyF;
 			std::unique_ptr<CreateModelFunctor> createModelF;
 			std::unique_ptr<ChangeParentF::Functor> changeParentF;
+		private:
+			std::unique_ptr <JEditorInputBuffHelper> inputBuff;
 		public:
 			JObjectExplorer(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType);
 			~JObjectExplorer();
