@@ -194,7 +194,9 @@ namespace JinEngine
 			if (IsActivated() && root.IsValid())
 			{
 				auto selected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
-				if (selected.IsValid() && selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT)
+				const bool isValidGameObject = selected.IsValid() && selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT;
+				const bool canSetGameObject = !selectedObject.IsValid() || selectedObject->GetGuid() != selected->GetGuid();
+				if (isValidGameObject && canSetGameObject)
 					selectedObject.ConnnectBaseUser(selected);
 
 				UpdateMouseClick();

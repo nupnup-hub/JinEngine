@@ -98,6 +98,10 @@ namespace JinEngine
 		}
 		return isParent;
 	}
+	bool JGameObject::IsSelectedbyEditor()const noexcept
+	{
+		return isSelectedbyEditor;
+	}
 	bool JGameObject::HasComponent(const J_COMPONENT_TYPE type)const noexcept
 	{
 		const uint componentCount = (uint)component.size();
@@ -171,6 +175,10 @@ namespace JinEngine
 	{
 		return this;
 	}
+	JGameObjectEditorInterface* JGameObject::EditorInterface()
+	{
+		return this;
+	}
 	void JGameObject::DoCopy(JObject* ori)
 	{
 		bool preIsActivated = IsActivated();
@@ -208,7 +216,7 @@ namespace JinEngine
 		{
 			if (component[i]->IsActivated())
 				component[i]->DeActivate();
-		}
+		} 
 	}
 	bool JGameObject::HasSameName(_In_ JGameObject* parent, _In_ const std::wstring& initName) noexcept
 	{
@@ -234,6 +242,10 @@ namespace JinEngine
 				return true;
 		}
 		return false;
+	}
+	void JGameObject::SetSelectedByEditorTrigger(const bool value)noexcept
+	{
+		isSelectedbyEditor = value;
 	}
 	bool JGameObject::AddComponent(JComponent& component)noexcept
 	{

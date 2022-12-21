@@ -29,6 +29,9 @@ namespace JinEngine
 		JAnimator* animator = nullptr;
 		JRenderItem* renderItem = nullptr;
 		JScene* ownerScene = nullptr; 
+	private:
+		//For Editor
+		bool isSelectedbyEditor = false;
 	public:
 		JAnimator* GetAnimator()const noexcept;
 		JTransform* GetTransform() const noexcept;
@@ -46,6 +49,7 @@ namespace JinEngine
 	public:
 		bool IsRoot()const noexcept;
 		bool IsParentLine(JGameObject* child)const noexcept;
+		bool IsSelectedbyEditor()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE type)const noexcept;
 		bool HasRenderItem()const noexcept;
 		bool HasAnimator()const noexcept; 
@@ -54,6 +58,7 @@ namespace JinEngine
 		JComponent* FindComponent(const size_t guid)const noexcept;
 	public:
 		JGameObjectCompInterface* CompInterface() final;
+		JGameObjectEditorInterface* EditorInterface() final;
 	public:
 		void DoCopy(JObject* ori) final;
 	private:
@@ -62,6 +67,9 @@ namespace JinEngine
 	private:
 		static bool HasSameName(_In_ JGameObject* parent, _In_ const std::wstring& initName) noexcept;
 		bool IsChild(JGameObject* obj)noexcept;
+	private:
+		void SetSelectedByEditorTrigger(const bool value)noexcept final;
+	private:
 		bool AddComponent(JComponent& component)noexcept final;
 		bool RemoveComponent(JComponent& component)noexcept final;
 	private:

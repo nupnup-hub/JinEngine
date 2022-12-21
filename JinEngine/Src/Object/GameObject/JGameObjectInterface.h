@@ -5,8 +5,24 @@ namespace JinEngine
 {
 	class JComponent;
 	class JScene;
+	namespace Editor
+	{
+		class JEditorPageShareData;
+	}
 
-	class JGameObjectCompInterface 
+	class JGameObjectEditorInterface
+	{
+	private:
+		friend class Editor::JEditorPageShareData;
+	protected:
+		virtual ~JGameObjectEditorInterface() = default;
+	public:
+		virtual JGameObjectEditorInterface* EditorInterface() = 0;
+	public:
+		virtual void SetSelectedByEditorTrigger(const bool value)noexcept = 0;
+	};
+
+	class JGameObjectCompInterface
 	{
 	private:
 		friend class JComponent;
@@ -20,7 +36,8 @@ namespace JinEngine
 	};
 
 	class JGameObjectInterface : public JObject,
-		public JGameObjectCompInterface
+		public JGameObjectCompInterface,
+		public JGameObjectEditorInterface
 	{ 
 	private:
 		friend class JScene;

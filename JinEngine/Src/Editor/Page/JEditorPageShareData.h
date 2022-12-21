@@ -5,6 +5,7 @@
 
 namespace JinEngine
 {
+	class JGameObject;
 	namespace Editor
 	{
 		class JEditorPage;
@@ -24,6 +25,8 @@ namespace JinEngine
 			static void SetSelectObj(const J_EDITOR_PAGE_TYPE pageType, const Core::JUserPtr<JObject>& selectObj)noexcept;
 		public:
 			static void Clear()noexcept;
+		private:
+			static void SetSelectedGameObjectTrigger(JGameObject* gObj, const bool triggerValue);
 		};
 	}
 }

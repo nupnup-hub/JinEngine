@@ -65,7 +65,7 @@ namespace JinEngine
 			void UpdateWindow()final;
 		private:
 			void BuildObjectExplorer();
-			void ObjectExplorerOnScreen(JGameObject* gObj);
+			void ObjectExplorerOnScreen(JGameObject* gObj); 
 		private:
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;

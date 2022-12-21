@@ -66,6 +66,21 @@ namespace JinEngine
 			public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>
 		{
 		private:
+			struct DrawCondition
+			{
+			public:
+				const bool isDrawShadowMap = false;
+				const bool isAnimationActivated = false;
+				const bool allowOcclusion = false;
+				const bool allowOutline = false;
+			public:
+				DrawCondition() = default;
+				DrawCondition(const bool isDrawShadowMap, 
+					const bool isAnimationActivated, 
+					const bool allowOcclusion, 
+					const bool allowOutline);
+			};
+		private:
 			template<typename T>friend class Core::JCreateUsingNew;
 			friend class Editor::JGraphicResourceWatcher; 			//Debug Class
 		private:
@@ -171,13 +186,11 @@ namespace JinEngine
 			void DrawGameObject(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject,
 				const JGraphicDrawHelper helper,
-				const bool isDrawShadowMap,
-				const bool isAnimationActivated,
-				const bool allowOcclusion);
+				const DrawCondition condition = DrawCondition());
 			void DrawSceneBoundingBox(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject, 
 				const JGraphicDrawHelper helper,
-				const bool isAnimationActivated);
+				const DrawCondition condition);
 		private:
 			void ResourceTransition(_In_ ID3D12Resource* pResource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 		private:
