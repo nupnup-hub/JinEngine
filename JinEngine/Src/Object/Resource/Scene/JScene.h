@@ -86,6 +86,7 @@ namespace JinEngine
 	public:
 		JGameObject* FindGameObject(const size_t guid)noexcept;
 		JGameObject* GetRootGameObject()noexcept;
+		JGameObject* GetDebugRootGameObject()noexcept;
 		JGameObject* GetGameObject(const uint index)noexcept;
 		JCamera* GetMainCamera()noexcept;
 		uint GetGameObjectCount()const noexcept;

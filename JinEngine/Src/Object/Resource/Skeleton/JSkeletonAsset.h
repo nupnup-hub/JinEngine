@@ -28,6 +28,12 @@ namespace JinEngine
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JSkeletonAsset>(GetAvailableFormat()[0]),
 				std::unique_ptr<JSkeleton> skeleton = nullptr);
 			JSkeletonInitData(const std::wstring& name,
+				const size_t guid,
+				const J_OBJECT_FLAG flag,
+				JDirectory* directory,
+				const std::wstring& oriPath,
+				std::unique_ptr<JSkeleton> skeleton = nullptr);
+			JSkeletonInitData(const std::wstring& name,
 				JDirectory* directory,
 				const std::wstring& oriPath,
 				std::unique_ptr<JSkeleton> skeleton = nullptr);

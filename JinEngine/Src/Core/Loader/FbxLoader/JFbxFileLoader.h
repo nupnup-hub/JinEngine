@@ -27,7 +27,7 @@ namespace JinEngine
 			};
 		private:
 			FbxManager* fbxManager;
-			std::unordered_map<size_t, uint32> indexMapping;
+			std::unordered_map<size_t, uint32> vertexIndexMap;
 			std::vector<JFbxControlPoint> controlPoint;
 			std::vector<JBlendingIndexWeightPair> nowBlendingPair[3];
 			DirectX::XMFLOAT3 positionXm[3];
@@ -106,7 +106,7 @@ namespace JinEngine
 			void ConvertPosition(DirectX::XMFLOAT3& posion, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
 			void ConvertQuaternion(DirectX::XMFLOAT4& quaternion, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
 			void ConvertScale(DirectX::XMFLOAT3& scale, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
-			size_t MakeIndexMapKey(const DirectX::XMFLOAT3& positionXm,
+			size_t MakeVertexMapKey(const DirectX::XMFLOAT3& positionXm,
 				const DirectX::XMFLOAT2& textureXm,
 				const DirectX::XMFLOAT3& normalXm,
 				const DirectX::XMFLOAT3& biNormalXm,

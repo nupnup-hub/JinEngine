@@ -30,10 +30,19 @@ namespace JinEngine
 		skeleton(std::move(skeleton))
 	{}
 	JSkeletonAsset::JSkeletonInitData::JSkeletonInitData(const std::wstring& name,
+		const size_t guid,
+		const J_OBJECT_FLAG flag,
 		JDirectory* directory,
 		const std::wstring& oriPath,
 		std::unique_ptr<JSkeleton> skeleton)
 		: JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JSkeletonAsset>(JCUtil::DecomposeFileFormat(oriPath))),
+		skeleton(std::move(skeleton))
+	{}
+	JSkeletonAsset::JSkeletonInitData::JSkeletonInitData(const std::wstring& name,
+		JDirectory* directory,
+		const std::wstring& oriPath,
+		std::unique_ptr<JSkeleton> skeleton)
+		: JResourceInitData(name, directory, JResourceObject::GetFormatIndex<JSkeletonAsset>(JCUtil::DecomposeFileFormat(oriPath))),
 		skeleton(std::move(skeleton))
 	{}
 	bool JSkeletonAsset::JSkeletonInitData::IsValidCreateData()

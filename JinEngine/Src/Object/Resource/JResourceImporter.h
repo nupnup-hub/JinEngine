@@ -13,12 +13,12 @@ namespace JinEngine
 	class JResourceObject;
 	namespace Core
 	{
-		struct JFileImportPathData;
+		struct JFileImportHelpData;
 		template<typename T> class JCreateUsingNew;
 	}
 
-	using ClassifyTypeF = Core::JStaticCallableType<std::vector<J_RESOURCE_TYPE>, const std::wstring>;
-	using ImportF = Core::JStaticCallableType<std::vector<JResourceObject*>, JDirectory*, const Core::JFileImportPathData>;
+	using ClassifyTypeF = Core::JStaticCallableType<std::vector<J_RESOURCE_TYPE>, const Core::JFileImportHelpData>;
+	using ImportF = Core::JStaticCallableType<std::vector<JResourceObject*>, JDirectory*, const Core::JFileImportHelpData>;
 
 	class JResourceImporterImpl
 	{
@@ -37,7 +37,7 @@ namespace JinEngine
 		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportF::Ptr ptr)noexcept;
 		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportF::Ptr iptr, ClassifyTypeF::Ptr cptr)noexcept;
 	public:
-		std::vector<JResourceObject*> ImportResource(JDirectory* dir, const Core::JFileImportPathData& importPathdata)noexcept;
+		std::vector<JResourceObject*> ImportResource(JDirectory* dir, const Core::JFileImportHelpData& importPathdata)noexcept;
 	public:
 		bool IsValidFormat(const std::wstring& format)const noexcept;
 	private:

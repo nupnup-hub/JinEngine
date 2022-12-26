@@ -39,38 +39,39 @@ namespace JinEngine
 		JShader* shader = nullptr;
 	private:
 		REGISTER_PROPERTY_EX(albedoMap, GetAlbedoMap, SetAlbedoMap, GUI_SELECTOR(true, true))
-			JTexture* albedoMap = nullptr;
+		JTexture* albedoMap = nullptr;
 		REGISTER_PROPERTY_EX(normalMap, GetNormalMap, SetNormalMap, GUI_SELECTOR(true, true))
-			JTexture* normalMap = nullptr;
+		JTexture* normalMap = nullptr;
 		REGISTER_PROPERTY_EX(heightMap, GetHeightMap, SetHeightMap, GUI_SELECTOR(true, true))
-			JTexture* heightMap = nullptr;
+		JTexture* heightMap = nullptr;
 		REGISTER_PROPERTY_EX(roughnessMap, GetRoughnessMap, SetRoughnessMap, GUI_SELECTOR(true, true))
-			JTexture* roughnessMap = nullptr;
+		JTexture* roughnessMap = nullptr;
 		REGISTER_PROPERTY_EX(ambientOcclusionMap, GetAmbientOcclusionMap, SetAmbientOcclusionMap, GUI_SELECTOR(true, true))
-			JTexture* ambientOcclusionMap = nullptr;
+		JTexture* ambientOcclusionMap = nullptr;
 
 		//수정필요
 		//isDebug
 		REGISTER_PROPERTY_EX(shadow, OnShadow, SetShadow, GUI_CHECKBOX())
-			bool shadow = false;
+		bool shadow = false;
 		REGISTER_PROPERTY_EX(light, OnLight, SetLight, GUI_CHECKBOX())
-			bool light = false;
+		bool light = false;
 		REGISTER_PROPERTY_EX(albedoOnly, OnAlbedoOnly, SetAlbedoOnly, GUI_CHECKBOX())
-			bool albedoOnly = false;
+		bool albedoOnly = false;
 		bool nonCulling = false;
 		//Draw ShadowMap by depth test
 		bool isShadowMapWrite = false;
 		//Draw bounding object by depth test
 		bool isBoundingObjDepthTest = false;
 		bool isSkyMateral = false;
-		bool isDebugMaterial = false;
+		bool isDebugMaterial = false; 
+		bool isLineMaterial = false;
 		bool alphaClip = false;
 		REGISTER_PROPERTY_EX(metallic, GetMetallic, SetMetallic, GUI_SLIDER(0, 1, false, false))
-			float metallic = 0;
+		float metallic = 0;
 		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0, 1))
-			float roughness = 0;
+		float roughness = 0;
 		REGISTER_PROPERTY_EX(albedoColor, GetAlbedoColor, SetAlbedoColor, GUI_COLOR_PICKER(true))
-			DirectX::XMFLOAT4 albedoColor = { 0.85f, 0.85f, 0.85f, 0.8f };
+		DirectX::XMFLOAT4 albedoColor = { 0.85f, 0.85f, 0.85f, 0.8f };
 		DirectX::XMFLOAT4X4 matTransform = JMathHelper::Identity4x4();
 	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
@@ -109,6 +110,7 @@ namespace JinEngine
 		void SetBoundingObjectDepthTest(bool value)noexcept;
 		void SetSkyMaterial(bool value)noexcept;
 		void SetDebugMaterial(bool value)noexcept;
+		void SetLineMaterial(bool value)noexcept;
 		void SetAlphaClip(bool value)noexcept;
 	public:
 		bool OnShadow()const noexcept;
@@ -119,6 +121,7 @@ namespace JinEngine
 		bool OnBoundingObjectDepthTest()const noexcept;
 		bool IsSkyMaterial()const noexcept;
 		bool IsDebugMaterial()const noexcept;
+		bool IsLineMaterial()const noexcept;
 		//레지스터에 등록된 머테리얼만 검사하므로 gameObjectDirty pointer 유무는 체크하지 않는다.
 		bool HasAlbedoMapTexture() const noexcept;
 		bool HasNormalMapTexture() const noexcept;

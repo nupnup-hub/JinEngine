@@ -1,6 +1,6 @@
 #pragma once
 #include<string>
-
+#include"../../Object/JObjectFlag.h"
 namespace JinEngine
 {
 	namespace Core
@@ -17,7 +17,7 @@ namespace JinEngine
 			JAssetFileLoadPathData(const std::wstring& engineFilePath);
 		};
 
-		struct JFileImportPathData
+		struct JFileImportHelpData
 		{
 		public:
 			const std::wstring oriFileWPath; 
@@ -29,7 +29,9 @@ namespace JinEngine
 			std::wstring fullName;
 			std::wstring format;
 		public:
-			JFileImportPathData(const std::wstring& oriPath);
+			J_OBJECT_FLAG flag;
+		public:
+			JFileImportHelpData(const std::wstring& oriPath, const J_OBJECT_FLAG flag = OBJECT_FLAG_NONE);
 		};
 	}
 }

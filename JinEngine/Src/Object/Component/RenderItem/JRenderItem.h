@@ -41,8 +41,8 @@ namespace JinEngine
 		REGISTER_METHOD(GetIndexTotalCount, GUI_READONLY_TEXT())
 			uint GetIndexTotalCount()const noexcept;
 		uint GetSubmeshCount()const noexcept;
-		//apply scale tranlation 
-		DirectX::BoundingBox GetBoundingBox()noexcept;
+		//apply scale rotation tranlation 
+		DirectX::BoundingBox GetBoundingBox(const bool applyRotation = false)noexcept;
 		//apply scale tranlation  
 		DirectX::BoundingSphere GetBoundingSphere()noexcept;
 

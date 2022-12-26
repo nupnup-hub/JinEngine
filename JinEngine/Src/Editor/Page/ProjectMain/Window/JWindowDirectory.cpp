@@ -420,7 +420,7 @@ namespace JinEngine
 		{
 			if (JWindow::Instance().SelectFile(importFilePath, L"please, select resource file"))
 			{
-				Core::JFileImportPathData pathData{ importFilePath };
+				Core::JFileImportHelpData pathData{ importFilePath };
 				if (opendDirctory.IsValid())
 				{
 					if (JResourceImporter::Instance().IsValidFormat(pathData.format))

@@ -9,8 +9,8 @@
 #include<DirectXColors.h>
 
 //Debug
-#include<fstream>
-#include"../../Core/File/JFileIOHelper.h"
+//#include<fstream>
+//#include"../../Core/File/JFileIOHelper.h"
 
 namespace JinEngine
 {
@@ -315,7 +315,10 @@ namespace JinEngine
 					totalView[uavIndex] = typeDesc[i].viewInfo[uavIndex].offset + typeDesc[i].viewInfo[uavIndex].capacity;
 				}
 			}
-			std::wofstream stream;
+
+			//Debug
+			/*
+			* 	std::wofstream stream;
 			stream.open(L"D:\\JinWooJung\\gDebug.txt", std::ios::app | std::ios::out);
 
 			Core::JEnumInfo* rInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_RESOURCE_TYPE).name());
@@ -337,6 +340,7 @@ namespace JinEngine
 			}
 			JFileIOHelper::InputSpace(stream, 2);
 			stream.close();
+			*/
 
 			BuildRtvDescriptorHeaps(device);
 			BuildDsvDescriptorHeaps(device);

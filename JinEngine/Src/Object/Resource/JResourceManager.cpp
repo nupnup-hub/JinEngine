@@ -3,6 +3,7 @@
 #include"JResourceObjectFactory.h" 
 #include"JResourcePathData.h"
 #include"JResourceData.h"
+#include"JResourceImporter.h"
 
 #include"Mesh/JDefaultGeometryGenerator.h"
 #include"Mesh/JDefaultShapeType.h"  
@@ -23,8 +24,10 @@
 #include"../Component/Camera/JCamera.h"
 
 #include"../../Core/File/JFileConstant.h"
+#include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/Exception/JExceptionMacro.h"
 #include"../../Core/Guid/GuidCreator.h" 
+
 #include"../../Utility/JCommonUtility.h"
 #include"../../Application/JApplicationVariable.h"
 #include"../../Core/Geometry/JDirectXCollisionEx.h"
@@ -577,11 +580,48 @@ namespace JinEngine
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
 				}
+				case J_DEFAULT_MATERIAL::DEBUG_RED:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
+					newMaterial->SetDebugMaterial(true); 
+					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f));
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
+				case J_DEFAULT_MATERIAL::DEBUG_GREEN:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
+					newMaterial->SetDebugMaterial(true); 
+					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f));
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
+				case J_DEFAULT_MATERIAL::DEBUG_BLUE:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
+					newMaterial->SetDebugMaterial(true); 
+					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f));
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
+				case J_DEFAULT_MATERIAL::DEBUG_YELLOW:
+				{
+					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
+					newMaterial->SetDebugMaterial(true); 
+					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f));
+					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					break;
+				}
 				case J_DEFAULT_MATERIAL::DEBUG_LINE_RED:
 				{
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
 					newMaterial->SetDebugMaterial(true);
+					newMaterial->SetLineMaterial(true);
 					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f));
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
@@ -591,6 +631,7 @@ namespace JinEngine
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
 					newMaterial->SetDebugMaterial(true);
+					newMaterial->SetLineMaterial(true);
 					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f));
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
@@ -600,6 +641,7 @@ namespace JinEngine
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
 					newMaterial->SetDebugMaterial(true);
+					newMaterial->SetLineMaterial(true);
 					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f));
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
@@ -609,6 +651,7 @@ namespace JinEngine
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
 					newMaterial->SetDebugMaterial(true);
+					newMaterial->SetLineMaterial(true);
 					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f));
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
@@ -642,64 +685,110 @@ namespace JinEngine
 		auto createBFrustumLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingFrustum(); };
 
 		using CreateStaticMesh = Core::JStaticCallableType<JStaticMeshData, JDefaultGeometryGenerator&>;
-		std::vector<CreateStaticMesh::Callable> callableVec
+		std::unordered_map<J_DEFAULT_SHAPE, CreateStaticMesh::Callable> callableVec
 		{
-			(CreateStaticMesh::Ptr)createCubeLam, (CreateStaticMesh::Ptr)createGridLam,
-			(CreateStaticMesh::Ptr)createSphereLam, (CreateStaticMesh::Ptr)createCylinderLam,
-			(CreateStaticMesh::Ptr)createQuadLam, (CreateStaticMesh::Ptr)createLineBBoxLam,
-			 (CreateStaticMesh::Ptr)createTriangleBBoxLam, (CreateStaticMesh::Ptr)createBFrustumLam
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, (CreateStaticMesh::Ptr)createCubeLam}, 
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_GRID, (CreateStaticMesh::Ptr)createGridLam},
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE, (CreateStaticMesh::Ptr)createSphereLam},
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_CYILINDER, (CreateStaticMesh::Ptr)createCylinderLam},
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD, (CreateStaticMesh::Ptr)createQuadLam},
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, (CreateStaticMesh::Ptr)createLineBBoxLam},
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE, (CreateStaticMesh::Ptr)createTriangleBBoxLam},
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM, (CreateStaticMesh::Ptr)createBFrustumLam}
 		};
 
 		JDefaultGeometryGenerator geoGen;
-		JDirectory* meshDir = GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath());
+		JDirectory* projectDefualDir = GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath());
+		JDirectory* engineDefaultDir = GetDirectory(JApplicationVariable::GetEngineDefaultResourcePath());
 		//0 = empty
 		for (int i = 1; i < (int)J_DEFAULT_SHAPE::COUNT; ++i)
 		{
 			const J_DEFAULT_SHAPE shapeType = (J_DEFAULT_SHAPE)i;
 			const J_MESHGEOMETRY_TYPE meshType = JDefaultShape::GetMeshType(shapeType);
 			const bool isUse = JDefaultShape::IsDefaultUse(shapeType);
+			const bool isExternalFile = JDefaultShape::IsExternalFile(shapeType);
 
+			//Contain format
+			//default inner shape hasn't format		ex) cube
+			//default external shape has format		ex) arrow.fbx	
 			const std::wstring meshName = JDefaultShape::ConvertToName(shapeType);
-			JFile* file = meshDir->GetFile(meshName);
 
-			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::MESH)
-			{
-				if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
-					resourceData->RegisterDefaultResource(shapeType, Core::GetUserPtr<JStaticMeshGeometry>(file->GetResource()), isUse);
-				else if (meshType == J_MESHGEOMETRY_TYPE::SKINNED)
-					resourceData->RegisterDefaultResource(shapeType, Core::GetUserPtr<JSkinnedMeshGeometry>(file->GetResource()), isUse);
+			if (isExternalFile)
+			{ 
+				//basically external file is stored Engine DefaultResource folder
+				std::wstring name;
+				std::wstring format;
+				JCUtil::DecomposeFileName(meshName, name, format);
+
+				JFile* file = projectDefualDir->GetFile(name);
+				if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::MESH)
+				{
+					if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
+						resourceData->RegisterDefaultResource(shapeType, Core::GetUserPtr<JStaticMeshGeometry>(file->GetResource()), isUse);
+					else if (meshType == J_MESHGEOMETRY_TYPE::SKINNED)
+						resourceData->RegisterDefaultResource(shapeType, Core::GetUserPtr<JSkinnedMeshGeometry>(file->GetResource()), isUse);
+					else
+						assert("MeshType Error");
+				}
 				else
-					assert("CreateDefaultMesh MeshType Error");
+				{ 
+					const std::wstring srcPath = engineDefaultDir->GetPath() + L"\\" + meshName;
+					const std::wstring destPath = projectDefualDir->GetPath() + L"\\" + meshName;
+					Core::J_FILE_IO_RESULT copyRes = JFileIOHelper::CopyFile(srcPath, destPath);
+					if(copyRes != Core::J_FILE_IO_RESULT::SUCCESS)
+						assert("Copy File Error");
+
+					J_OBJECT_FLAG objFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
+						OBJECT_FLAG_UNEDITABLE |
+						OBJECT_FLAG_UNDESTROYABLE |
+						OBJECT_FLAG_UNCOPYABLE |
+						OBJECT_FLAG_HIDDEN);
+					Core::JFileImportHelpData pathData{ projectDefualDir->GetPath() + L"\\" + meshName, objFlag };
+					std::vector<JResourceObject*> result = JResourceImporter::Instance().ImportResource(projectDefualDir, pathData);
+					resourceData->RegisterDefaultResource(shapeType, Core::GetUserPtr(result[0]), isUse);
+				}
 			}
 			else
 			{
-				if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
+				JFile* file = projectDefualDir->GetFile(meshName);
+				if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::MESH)
 				{
-					int callableIndex = i - 1;
-					JStaticMeshData staticMeshData = callableVec[callableIndex](nullptr, geoGen);
-					staticMeshData.CreateBoundingObject();
-
-					Core::JOwnerPtr<JStaticMeshGroup> group = Core::JPtrUtil::MakeOwnerPtr< JStaticMeshGroup>();
-					group->AddMeshData(std::move(staticMeshData));
-
-					const size_t guid = Core::MakeGuid();
-					J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
-
-					if (i >= JDefaultShape::debugTypeSt)
-						flag = (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN);
-
-					JStaticMeshGeometry* newMesh = JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<JMeshGeometry::JMeshInitData>
-						(meshName, guid, flag, meshDir, JRI::CallFormatIndex(J_RESOURCE_TYPE::MESH, L".mesh"), std::move(group)));
-					ThrowIfFailedN(newMesh != nullptr);
-					resourceData->RegisterDefaultResource(shapeType, Core::GetUserPtr(newMesh), isUse);
-				}
-				else if (meshType == J_MESHGEOMETRY_TYPE::SKINNED)
-				{
-					//추가필요
-					assert("CreateDefaultMesh MeshType Error.... skinned");
+					if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
+						resourceData->RegisterDefaultResource(shapeType, Core::GetUserPtr<JStaticMeshGeometry>(file->GetResource()), isUse);
+					else if (meshType == J_MESHGEOMETRY_TYPE::SKINNED)
+						resourceData->RegisterDefaultResource(shapeType, Core::GetUserPtr<JSkinnedMeshGeometry>(file->GetResource()), isUse);
+					else
+						assert("MeshType Error");
 				}
 				else
-					assert("CreateDefaultMesh MeshType Error");
+				{
+					if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
+					{ 
+						JStaticMeshData staticMeshData = callableVec.find(shapeType)->second(nullptr, geoGen);
+						staticMeshData.CreateBoundingObject();
+
+						Core::JOwnerPtr<JStaticMeshGroup> group = Core::JPtrUtil::MakeOwnerPtr< JStaticMeshGroup>();
+						group->AddMeshData(std::move(staticMeshData));
+
+						const size_t guid = Core::MakeGuid();
+						J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
+
+						if (i >= JDefaultShape::debugTypeSt)
+							flag = (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN);
+
+						JStaticMeshGeometry* newMesh = JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<JMeshGeometry::JMeshInitData>
+							(meshName, guid, flag, projectDefualDir, JRI::CallFormatIndex(J_RESOURCE_TYPE::MESH, L".mesh"), std::move(group)));
+						ThrowIfFailedN(newMesh != nullptr);
+						resourceData->RegisterDefaultResource(shapeType, Core::GetUserPtr(newMesh), isUse);
+					}
+					else if (meshType == J_MESHGEOMETRY_TYPE::SKINNED)
+					{
+						//추가필요
+						assert("Load default skinned mesh is not updated");
+					}
+					else
+						assert("MeshType Error");
+				}
 			}
 		}
 	}

@@ -19,15 +19,18 @@ namespace JinEngine
 	{
 		class JEditorBinaryTreeView;
 		class JEditorCameraControl;
+		class JEditorTransformTool;
 		class JSceneObserver final : public JEditorWindow
-		{  
+		{   
 		private:
 			Core::JUserPtr<JScene> scene;
 			Core::JUserPtr<JGameObject> cameraObj;
+			Core::JUserPtr<JCamera> cameraComp;
 			Core::JUserPtr<JGameObject> mainCamFrustum;
 		private:
 			std::unique_ptr< JEditorBinaryTreeView> editorBTreeView;
 			std::unique_ptr<JEditorCameraControl> editorCamCtrl;
+			std::unique_ptr<JEditorTransformTool> transformTool;
 		private:
 			int spaceSpatialIndex = 0; 
 		private:
@@ -75,7 +78,7 @@ namespace JinEngine
 			bool CommonOptionOnScreen(const std::string& uniqueName, Core::JSpaceSpatialOption& commonOption);
 			void DebugTreeOnScreen(const Core::J_SPACE_SPATIAL_TYPE type, const std::string& uniqueLabel);
 		private:
-			void UpdateMainCamFrustum()noexcept;
+			void UpdateMainCamFrustum()noexcept; 
 			void MakeMainCamFrustum();
 		private:
 			void ShadowMapViewerOnScreen();

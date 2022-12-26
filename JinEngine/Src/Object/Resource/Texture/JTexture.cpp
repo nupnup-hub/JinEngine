@@ -305,9 +305,13 @@ namespace JinEngine
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 
-		auto txtImportC = [](JDirectory* dir, const Core::JFileImportPathData importPathData) -> std::vector<JResourceObject*>
+		auto txtImportC = [](JDirectory* dir, const Core::JFileImportHelpData importPathData) -> std::vector<JResourceObject*>
 		{
-			return { JRFI<JTexture>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name, dir, importPathData.oriFileWPath)) };
+			return { JRFI<JTexture>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+				Core::MakeGuid(), 
+				importPathData.flag,
+				dir, 
+				importPathData.oriFileWPath)) };
 		};
 
 		JResourceImporter::Instance().AddFormatInfo(L".jpg", J_RESOURCE_TYPE::TEXTURE, txtImportC);

@@ -720,5 +720,5 @@ namespace JinEngine
 		};
 
 		return JStaticMeshData(L"Bounding Frustum", std::move(indices32), false, false, std::move(vertices));
-	}
+	} 
 }

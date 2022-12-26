@@ -173,7 +173,7 @@ namespace JinEngine
 					vertices[i].jointIndex[3] = jointIndex.w;
 				}
 
-				if (indexCount < 1 << 16)
+				if (indexCount < (1 << 16))
 					JFileIOHelper::LoadAtomicDataVec(stream, u16Indices);
 				else
 					JFileIOHelper::LoadAtomicDataVec(stream, u32Indices);
@@ -271,7 +271,13 @@ namespace JinEngine
 		}
 
 		if (StuffSubMesh(meshGroup) && StoreObject(this) == Core::J_FILE_IO_RESULT::SUCCESS)
-			return WriteMeshData(meshGroup);
+		{
+			bool res = WriteMeshData(meshGroup);
+			Clear();
+			//Resource 할당은 Activated상태에서 이루어진다
+			//Import는 데이터 변환과 메타데이터 저장을 위함
+			return res;
+		}
 		else
 		{
 			for (uint i = 0; i < meshCount; ++i)

@@ -12,7 +12,7 @@ namespace JinEngine
 		engineMetaFilePath = folderPath + name + Core::JFileConstant::GetMetafileFormat();
 	}
 
-	JFileImportPathData::JFileImportPathData(const std::wstring& oriPath)
+	JFileImportHelpData::JFileImportHelpData(const std::wstring& oriPath)
 		:oriFileWPath(oriPath), oriFilePath(JCUtil::WstrToU8Str(oriPath))
 	{
 		JCUtil::DecomposeFilePath(oriFileWPath, folderPath, name, format);

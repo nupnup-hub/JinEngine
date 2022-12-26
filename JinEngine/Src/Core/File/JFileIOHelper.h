@@ -71,9 +71,9 @@ namespace JinEngine
 			int vecCount = (int)vec.size();
 			for (int i = 0; i < vecCount; ++i)
 			{
-				stream << vec[i] << " ";
 				if (i % spaceoffset == 0 && i != 0)
 					stream << '\n';
+				stream << vec[i] << " ";
 			}
 			stream << '\n';
 			return Core::J_FILE_IO_RESULT::SUCCESS;
@@ -85,12 +85,12 @@ namespace JinEngine
 				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 			std::wstring guide;
-			int spaceOffset;
-			int vecCount;
+			int spaceOffset = 0;
+			int vecCount = 0;
 			stream >> guide;
-			stream >> guide >> spaceOffset;
-			stream >> guide >> vecCount;
-
+			stream >> guide >> spaceOffset; 
+			stream >> guide >> vecCount; 
+		 
 			vec.resize(vecCount);
 			for (int i = 0; i < vecCount; ++i)
 				stream >> vec[i];
@@ -119,6 +119,8 @@ namespace JinEngine
 	public:
 		static Core::J_FILE_IO_RESULT StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden);
 		static Core::JIdentifier* LoadHasObjectIden(std::wifstream& stream);
+	public:
+		static Core::J_FILE_IO_RESULT CopyFile(const std::wstring& src, const std::wstring& dest);
 	public:
 		//skip file using getline until symbol
 		//if fail stream is close

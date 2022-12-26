@@ -39,6 +39,10 @@ namespace JinEngine
 		{
 			return JVector2(x + rhs.x, y + rhs.y);
 		}
+		JVector2 operator-(const JVector2& rhs)const
+		{
+			return JVector2(x - rhs.x, y - rhs.y);
+		}
 		JVector2 operator*(float rhs)
 		{
 			return JVector2(x * rhs, y * rhs);

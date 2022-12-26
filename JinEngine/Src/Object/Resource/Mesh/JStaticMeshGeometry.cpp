@@ -67,6 +67,7 @@ namespace JinEngine
 				JFileIOHelper::StoreAtomicData(stream, L"HasUV:", staticData->HasUV());
 				JFileIOHelper::StoreAtomicData(stream, L"HasNormal:", staticData->HasNormal());
 			}
+			 
 			const uint submeshCount = GetTotalSubmeshCount();
 			JFileIOHelper::StoreAtomicData(stream, L"SubmeshCount:", submeshCount);
 			for (uint i = 0; i < submeshCount; ++i)
@@ -96,9 +97,9 @@ namespace JinEngine
 			for (uint i = 0; i < meshCount; ++i)
 			{
 				std::wstring name;
-				size_t guid;
-				uint vertexCount;
-				uint indexCount;
+				size_t guid = 0;
+				uint vertexCount = 0;
+				uint indexCount = 0;
 				J_MESHGEOMETRY_TYPE meshType;
 
 				JFileIOHelper::LoadJString(stream, name);
@@ -119,7 +120,7 @@ namespace JinEngine
 					JFileIOHelper::LoadXMFloat3(stream, vertices[i].tangentU);
 				}
 
-				if (indexCount < 1 << 16)
+				if (indexCount < (1 << 16))
 					JFileIOHelper::LoadAtomicDataVec(stream, u16Indices);
 				else
 					JFileIOHelper::LoadAtomicDataVec(stream, u32Indices);
@@ -137,19 +138,19 @@ namespace JinEngine
 				JFileIOHelper::LoadAtomicData(stream, hasNormal);
 
 				if (u32Indices.size() > 0)
-				{
+				{ 
 					meshGroup.AddMeshData(JStaticMeshData{ name , guid, std::move(u32Indices),
 						hasUV, hasNormal, std::move(vertices) });
 				}
 				else
-				{
+				{ 
 					meshGroup.AddMeshData(JStaticMeshData{ name , guid, std::move(u16Indices),
 						hasUV, hasNormal, std::move(vertices) });
-				}
+				}		
 			}
 			uint submeshCount;
-			JFileIOHelper::LoadAtomicData(stream, submeshCount);
-			 
+			JFileIOHelper::LoadAtomicData(stream, submeshCount); 
+
 			for (uint i = 0; i < submeshCount; ++i)
 			{
 				Core::JIdentifier* mat = JFileIOHelper::LoadHasObjectIden(stream);
@@ -182,7 +183,13 @@ namespace JinEngine
 		}
 
 		if (StuffSubMesh(meshGroup) && StoreObject(this) == Core::J_FILE_IO_RESULT::SUCCESS)
-			return WriteMeshData(meshGroup);
+		{
+			bool res = WriteMeshData(meshGroup);
+			Clear();
+			//Resource 할당은 Activated상태에서 이루어진다
+			//Import는 데이터 변환과 메타데이터 저장을 위함
+			return res;
+		}
 		else
 		{
 			for (uint i = 0; i < meshCount; ++i)

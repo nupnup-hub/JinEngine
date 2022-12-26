@@ -22,10 +22,10 @@ namespace JinEngine
 	struct JStaticMeshVertex
 	{
 	public:
-		DirectX::XMFLOAT3 position;
-		DirectX::XMFLOAT3 normal;
-		DirectX::XMFLOAT2 texC;
-		DirectX::XMFLOAT3 tangentU;
+		DirectX::XMFLOAT3 position = DirectX::XMFLOAT3(0, 0, 0);
+		DirectX::XMFLOAT3 normal = DirectX::XMFLOAT3(0, 0, 0);
+		DirectX::XMFLOAT2 texC = DirectX::XMFLOAT2(0, 0);
+		DirectX::XMFLOAT3 tangentU = DirectX::XMFLOAT3(0, 0, 0);
 	public:
 		JStaticMeshVertex() = default; 
 		JStaticMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv, const DirectX::XMFLOAT3& t);
@@ -40,11 +40,11 @@ namespace JinEngine
 	struct JSkinnedMeshVertex
 	{
 	public:
-		DirectX::XMFLOAT3 position{ 0,0,0 };
-		DirectX::XMFLOAT3 normal{ 0,0,0 };
-		DirectX::XMFLOAT2 texC{ 0,0};
-		DirectX::XMFLOAT3 tangentU{ 0,0,0 };
-		DirectX::XMFLOAT3 jointWeight{ 0,0,0 };
+		DirectX::XMFLOAT3 position = DirectX::XMFLOAT3(0, 0, 0);
+		DirectX::XMFLOAT3 normal = DirectX::XMFLOAT3(0, 0, 0);
+		DirectX::XMFLOAT2 texC = DirectX::XMFLOAT2(0, 0);
+		DirectX::XMFLOAT3 tangentU = DirectX::XMFLOAT3(0, 0, 0);
+		DirectX::XMFLOAT3 jointWeight = DirectX::XMFLOAT3(0, 0, 0);
 		uint8 jointIndex[4]{ 0,0,0,0 };
 	public:
 		JSkinnedMeshVertex() = default;

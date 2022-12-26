@@ -1,7 +1,7 @@
 #pragma once
 #include"../JObject.h"
 #include"../../Core/Func/Callable/JCallable.h"
-#include"JValidInterface.h"
+#include"../../Core/Utility/JValidInterface.h"
 #include"JReferenceInterface.h"
 #include"JResourceType.h"
 #include<vector>
@@ -13,7 +13,7 @@ namespace JinEngine
 	class JResourceManagerImpl;
 	class JResourceObject; 
 
-	class JResourceObjectInterface : public JObject , public JReferenceInterface, public JValidInterface
+	class JResourceObjectInterface : public JObject , public JReferenceInterface, public Core::JValidInterface
 	{
 	private:
 		friend class JDirectory;

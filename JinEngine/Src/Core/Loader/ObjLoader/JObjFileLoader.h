@@ -12,7 +12,7 @@ namespace JinEngine
 {   
 	namespace Core
 	{
-		struct JFileImportPathData;
+		struct JFileImportHelpData;
 		class JObjFileLoaderImpl
 		{
 		private:
@@ -26,11 +26,17 @@ namespace JinEngine
 				FaceInfo(const std::vector<DirectX::XMINT3>& ptn);
 			};
 		public:
-			bool LoadObjFile(const JFileImportPathData& pathData, JObjFileMeshData& objMeshData, std::vector<JObjFileMatData>& objMatData);
+			bool LoadObjFile(const JFileImportHelpData& pathData, JObjFileMeshData& objMeshData, std::vector<JObjFileMatData>& objMatData);
 		private:
 			bool LoadMatFile(const std::wstring& path, std::vector<JObjFileMatData>& objMatData);
 			void GetVectorIndex(const std::wstring& wstr, int& posIndex, int& uvIndex, int& normalIndex)const noexcept;
 			std::wstring GetMaterialPath(const std::wstring& folderPath, const std::wstring& name)const noexcept;
+		private:
+			void DetectNan(float& x, float& y);
+			void DetectNan(float& x, float& y, float& z);
+		private:
+			DirectX::XMFLOAT3 SetLeftHand(const DirectX::XMFLOAT3& v)noexcept;
+			size_t MakeVertexGuid(const uint x, const uint y, const uint z);
 		};
 	}
 	using JObjFileLoader = Core::JSingletonHolder<Core::JObjFileLoaderImpl>;

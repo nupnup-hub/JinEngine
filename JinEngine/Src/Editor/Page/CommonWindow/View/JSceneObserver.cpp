@@ -1,17 +1,17 @@
 #include"JSceneObserver.h" 
-#include"JEditorCameraControl.h"
+#include"JEditorCameraControl.h" 
+#include"../../JEditorPageShareData.h"
 #include"../../JEditorAttribute.h" 
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../../Utility/JEditorBinaryTreeView.h"
+#include"../../../Utility/JEditorGameObjectSurpportTool.h"
 #include"../../../../Core/File/JFileIOHelper.h"
 #include"../../../../Object/Component/Camera/JCamera.h"  
 #include"../../../../Object/Component/Transform/JTransform.h"
-#include"../../../../Object/Component/Light/JLight.h"
-#include"../../../../Object/Resource/JResourceManager.h" 
-#include"../../../../Object/Resource/Scene/JScene.h" 
-#include"../../../../Object/Resource/Mesh/JDefaultShapeType.h" 
-#include"../../../../Object/Resource/Material/JDefaultMaterialType.h" 
-#include"../../../../Object/GameObject/JGameObject.h" 
+#include"../../../../Object/Component/RenderItem/JRenderItem.h"
+#include"../../../../Object/Component/Light/JLight.h" 
+#include"../../../../Object/Resource/Scene/JScene.h"  
+#include"../../../../Object/GameObject/JGameObject.h"  
 #include"../../../../Object/GameObject/JGameObjectFactoryUtility.h"   
 #include"../../../../Graphic/JGraphic.h"
 #include"../../../../Utility/JCommonUtility.h"
@@ -34,8 +34,9 @@ namespace JinEngine
 		{
 			editorCamCtrl = std::make_unique<JEditorCameraControl>();
 			editorBTreeView = std::make_unique<JEditorBinaryTreeView>();
+			transformTool = std::make_unique<JEditorTransformTool>(J_DEFAULT_SHAPE::DEFAULT_SHAPE_ARROW, 1 / 16);
 		}
-		JSceneObserver::~JSceneObserver() 	{}
+		JSceneObserver::~JSceneObserver() {}
 		J_EDITOR_WINDOW_TYPE JSceneObserver::GetWindowType()const noexcept
 		{
 			return J_EDITOR_WINDOW_TYPE::SCENE_OBSERVER;
@@ -46,6 +47,7 @@ namespace JinEngine
 			JSceneObserver::editorCameraName = editorCameraName;
 			lastCamPos = { 0,0,0 };
 			lastCamRot = { 0,0,0 };
+			transformTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
 		}
 		void JSceneObserver::UpdateWindow()
 		{
@@ -53,20 +55,21 @@ namespace JinEngine
 			UpdateDocking();
 			if (IsActivated() && scene.IsValid() && cameraObj.IsValid())
 			{
-				UpdateMouseClick();
-				JCamera* camera = cameraObj->GetComponent<JCamera>();
+				UpdateMouseClick(); 
 				if (IsFocus())
 				{
 					if (ImGui::IsMouseHoveringRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize()))
-						editorCamCtrl->MouseMove(camera, ImGui::GetMousePos().x, ImGui::GetMousePos().y);
-					editorCamCtrl->KeyboardInput(camera);
+						editorCamCtrl->MouseMove(cameraComp.Get(), ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+					editorCamCtrl->KeyboardInput(cameraComp.Get());
 				}
 				UpdateMainCamFrustum();
+				if (transformTool->IsValid())
+					transformTool->Update(JEditorPageShareData::GetSelectedObj(GetOwnerPageType()),  cameraComp);
 
 				JImGuiImpl::Selectable("SpatialSpace##JSceneObserver", &isOpenSpatialOption, 0, JVector2<float>(ImGui::CalcTextSize("SpatialSpace").x, 0));
 				ImGui::SameLine();
 				if (JImGuiImpl::Selectable("MainCameraFrustum##JSceneObserver", &isMainCameraFrustumActivated, 0, JVector2<float>(ImGui::CalcTextSize("MainCameraFrustum").x, 0)))
-				{ 
+				{
 					if (isMainCameraFrustumActivated)
 						MakeMainCamFrustum();
 					else
@@ -87,9 +90,9 @@ namespace JinEngine
 				ImGui::SameLine();
 				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 6, 1, 6);
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
-				JImGuiImpl::Image(*camera, ImGui::GetWindowSize());
+				JImGuiImpl::Image(*cameraComp.Get(), ImGui::GetWindowSize());
 			}
-			CloseWindow(); 
+			CloseWindow();
 		}
 		void JSceneObserver::SceneStructureOptionOnScreen()
 		{
@@ -133,7 +136,7 @@ namespace JinEngine
 			isChanged |= JImGuiImpl::InputInt("minSize##JSceneObserver", &minSize, ImGuiInputTextFlags_EnterReturnsTrue);
 			isChanged |= JImGuiImpl::InputInt("octreeSizeSquare##JSceneObserver", &octreeSizeSquare, ImGuiInputTextFlags_EnterReturnsTrue);
 			isChanged |= JImGuiImpl::InputFloat("looseFactor##JSceneObserver", &octreeOption.looseFactor, ImGuiInputTextFlags_EnterReturnsTrue);
-			isChanged |= CommonOptionOnScreen("Octree", octreeOption.commonOption); 
+			isChanged |= CommonOptionOnScreen("Octree", octreeOption.commonOption);
 
 			octreeOption.minSize = minSize;
 			octreeOption.octreeSizeSquare = octreeSizeSquare;
@@ -358,23 +361,25 @@ namespace JinEngine
 				camObj->GetTransform()->SetPosition(lastCamPos.ConvertXMF());
 				camObj->GetTransform()->SetRotation(lastCamRot.ConvertXMF());
 				cameraObj = Core::GetUserPtr(camObj);
-				cameraObj->GetComponent<JCamera>()->StateInterface()->SetCameraState(J_CAMERA_STATE::RENDER);
+				cameraComp = GetUserPtr(cameraObj->GetComponent<JCamera>());
+				cameraComp->StateInterface()->SetCameraState(J_CAMERA_STATE::RENDER);
 				if (isMainCameraFrustumActivated)
 					MakeMainCamFrustum();
+				transformTool->Activate();
 			}
 		}
 		void JSceneObserver::DoDeActivate()noexcept
 		{
 			JEditorWindow::DoDeActivate();
 			if (cameraObj.IsValid())
-			{
-				JCamera* cam = cameraObj->GetComponent<JCamera>();
-				lastCamPos = cam->GetTransform()->GetPosition();
-				lastCamRot = cam->GetTransform()->GetRotation();
+			{ 
+				lastCamPos = cameraComp->GetTransform()->GetPosition();
+				lastCamRot = cameraComp->GetTransform()->GetRotation();
 				JObject::BeginDestroy(cameraObj.Release());
 				if (isMainCameraFrustumActivated)
 					JObject::BeginDestroy(mainCamFrustum.Release());
-			}
+			} 
+			transformTool->DeActivate();
 		}
 		void JSceneObserver::StoreEditorWindow(std::wofstream& stream)
 		{

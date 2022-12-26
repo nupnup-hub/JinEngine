@@ -206,7 +206,7 @@ namespace JinEngine
 			 
 			enginePath = enginePath + L"\\JinEngine";
 			engineEngineResourcePath = enginePath + L"\\EngineResource";
-			engineDefaultResourcePath = engineEngineResourcePath + L"\\BasicResource";
+			engineDefaultResourcePath = engineEngineResourcePath + L"\\DefaultResource";
 			engineInfoPath = enginePath + L"\\EngineInfo";
 			engineProjectListFilePath = engineInfoPath + L"\\ProejctList.txt";
 			shaderPath = engineEngineResourcePath + L"\\Shader";

@@ -428,7 +428,7 @@ namespace JinEngine
 	}
 	void JAnimationClip::StuffResource()
 	{
-		if (!JValidInterface::IsValid())
+		if (!Core::JValidInterface::IsValid())
 		{
 			if (ReadClipData())
 				SetValid(true);
@@ -436,7 +436,7 @@ namespace JinEngine
 	}
 	void JAnimationClip::ClearResource()
 	{
-		if (JValidInterface::IsValid())
+		if (Core::JValidInterface::IsValid())
 		{
 			animationSample.clear(); 
 			SetValid(false);
@@ -444,7 +444,7 @@ namespace JinEngine
 	}
 	bool JAnimationClip::IsValid()const noexcept
 	{
-		return JValidInterface::IsValid() && (clipSkeletonAsset != nullptr);
+		return Core::JValidInterface::IsValid() && (clipSkeletonAsset != nullptr);
 	}
 	bool JAnimationClip::WriteClipData()
 	{
@@ -533,6 +533,10 @@ namespace JinEngine
 			}
 		}
 		StoreObject(this);
+
+		//Resource 할당은 Activated상태에서 이루어진다
+		//Import는 데이터 변환과 메타데이터 저장을 위함
+		animationSample.clear();
 		return true;
 	}
 	Core::J_FILE_IO_RESULT JAnimationClip::CallStoreResource()
@@ -674,7 +678,7 @@ namespace JinEngine
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 
-		auto fbxMeshImportC = [](JDirectory* dir, const Core::JFileImportPathData importPathData) -> std::vector<JResourceObject*>
+		auto fbxMeshImportC = [](JDirectory* dir, const Core::JFileImportHelpData importPathData) -> std::vector<JResourceObject*>
 		{
 			std::vector<JResourceObject*> res;
 			using FbxFileTypeInfo = Core::JFbxFileLoaderImpl::FbxFileTypeInfo;
@@ -689,6 +693,8 @@ namespace JinEngine
 				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_ANIMATION))
 				{
 					res.push_back(JRFI<JAnimationClip>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+						Core::MakeGuid(),
+						importPathData.flag,
 						dir,
 						importPathData.oriFileWPath,
 						Core::JPtrUtil::MakeOwnerPtr<JAnimationData>(std::move(jfbxAniData)))));

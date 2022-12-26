@@ -20,7 +20,8 @@ namespace JinEngine
 		private:
 			Core::JUserPtr<JGameObject> root;
 			Core::JUserPtr<JGameObject> renameTar;
-			Core::JUserPtr<JGameObject> selectedObject;
+			Core::JUserPtr<JGameObject> selectedObject; 
+
 			std::unique_ptr<JEditorString>editorString;
 			std::unique_ptr<JEditorPopup>explorerPopup; 
 		private:
@@ -66,6 +67,8 @@ namespace JinEngine
 		private:
 			void BuildObjectExplorer();
 			void ObjectExplorerOnScreen(JGameObject* gObj); 
+		private:
+			void SelectedGameObject(JGameObject* newObject);
 		private:
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;

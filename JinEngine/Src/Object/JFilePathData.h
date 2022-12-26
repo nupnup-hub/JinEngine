@@ -16,7 +16,7 @@ namespace JinEngine
 			JAssetFileLoadPathData(const std::wstring& engineFilePath, const std::wstring engineMetaFilePath);
 		};
 
-		struct JFileImportPathData
+		struct JFileImportHelpData
 		{
 		public:
 			const std::wstring oriFileWPath;
@@ -28,7 +28,7 @@ namespace JinEngine
 			std::wstring fullName;
 			std::wstring format;
 		public:
-			JFileImportPathData(const std::wstring& oriPath,
+			JFileImportHelpData(const std::wstring& oriPath,
 				const std::wstring& fileFormat,
 				const std::wstring& metafileFormat);
 		};

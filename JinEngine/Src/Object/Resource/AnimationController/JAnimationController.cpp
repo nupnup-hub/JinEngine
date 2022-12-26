@@ -268,7 +268,7 @@ namespace JinEngine
 	}
 	bool JAnimationController::IsValid()const noexcept
 	{
-		return JValidInterface::IsValid();
+		return Core::JValidInterface::IsValid();
 	}
 	Core::J_FILE_IO_RESULT JAnimationController::CallStoreResource()
 	{

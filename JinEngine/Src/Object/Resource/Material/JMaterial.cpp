@@ -268,6 +268,18 @@ namespace JinEngine
 		else
 			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
 	}
+	void JMaterial::SetLineMaterial(bool value)noexcept
+	{
+		if (isLineMaterial == value)
+			return;
+
+		isLineMaterial = value;
+		SetFrameDirty();
+		if (isLineMaterial)
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LINE));
+		else
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LINE));
+	}
 	void JMaterial::SetAlphaClip(bool value)noexcept
 	{
 		if (alphaClip == value)
@@ -311,6 +323,10 @@ namespace JinEngine
 	bool JMaterial::IsDebugMaterial()const noexcept
 	{
 		return isDebugMaterial;
+	}
+	bool JMaterial::IsLineMaterial()const noexcept
+	{
+		return isLineMaterial;
 	}
 	bool JMaterial::HasAlbedoMapTexture() const noexcept
 	{
@@ -428,6 +444,8 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"BoundingObjDepthTest", isBoundingObjDepthTest);
 			JFileIOHelper::StoreAtomicData(stream, L"SkyMaterial", isSkyMateral);
 			JFileIOHelper::StoreAtomicData(stream, L"DebugMaterial", isDebugMaterial);
+			JFileIOHelper::StoreAtomicData(stream, L"LineMaterial", isLineMaterial);
+
 			JFileIOHelper::StoreAtomicData(stream, L"AlphaClip", alphaClip);
 			JFileIOHelper::StoreAtomicData(stream, L"Metallic", metallic);
 			JFileIOHelper::StoreAtomicData(stream, L"Roughness", roughness);
@@ -462,6 +480,7 @@ namespace JinEngine
 			bool sBoundingObjDepthTest = false;
 			bool sIsSkyMateral = false;
 			bool sIsDebugMaterial = false;
+			bool sIsLineMaterial = false;
 			bool sAlphaclip = false;
 			float sMetallic;
 			float sRoughness;
@@ -476,6 +495,8 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, sBoundingObjDepthTest);
 			JFileIOHelper::LoadAtomicData(stream, sIsSkyMateral);
 			JFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial);
+			JFileIOHelper::LoadAtomicData(stream, sIsLineMaterial);
+
 			JFileIOHelper::LoadAtomicData(stream, sAlphaclip);
 			JFileIOHelper::LoadAtomicData(stream, sMetallic);
 			JFileIOHelper::LoadAtomicData(stream, sRoughness);
@@ -498,6 +519,7 @@ namespace JinEngine
 			SetBoundingObjectDepthTest(sBoundingObjDepthTest);
 			SetSkyMaterial(sIsSkyMateral);
 			SetDebugMaterial(sIsDebugMaterial);
+			SetLineMaterial(sIsLineMaterial);
 			SetAlphaClip(sAlphaclip);
 
 			SetMetallic(sMetallic);

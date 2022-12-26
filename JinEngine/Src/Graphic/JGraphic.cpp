@@ -349,10 +349,27 @@ namespace JinEngine
 			}
 			if ((gFunctionFlag & SHADER_FUNCTION_DEBUG) > 0)
 			{
-				newShaderPso.DepthStencilState.StencilEnable = false; 
-				newShaderPso.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-				newShaderPso.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+				newShaderPso.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+				newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+				newShaderPso.DepthStencilState.StencilEnable = false;  
+
+				D3D12_RENDER_TARGET_BLEND_DESC debugBlendDesc;
+				debugBlendDesc.BlendEnable = true;
+				debugBlendDesc.LogicOpEnable = false;
+				debugBlendDesc.SrcBlend = D3D12_BLEND_ONE;
+				debugBlendDesc.DestBlend = D3D12_BLEND_ZERO;
+				debugBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+				debugBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+				debugBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+				debugBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+				debugBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
+				debugBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+				  
+				for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+					newShaderPso.BlendState.RenderTarget[i] = debugBlendDesc;
 			}
+			if ((gFunctionFlag & SHADER_FUNCTION_LINE) > 0)
+				newShaderPso.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
 			ThrowIfFailedG(d3dDevice->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(shaderData->Pso.GetAddressOf())));
 
 			EndCommand();
@@ -1026,9 +1043,9 @@ namespace JinEngine
 			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED), helper, DrawCondition(false, helper.scene->IsAnimatorActivated(), true, true));
 			if (option.IsHDOccActivated())
 				commandList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
-			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_LAYER, J_MESHGEOMETRY_TYPE::STATIC), helper);
 			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::SKY, J_MESHGEOMETRY_TYPE::STATIC), helper);
-
+			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_LAYER, J_MESHGEOMETRY_TYPE::STATIC), helper);
+			 
 			ResourceTransition(mainDepthResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
 		}
 		void JGraphicImpl::DrawSceneShadowMap(const JGraphicDrawHelper helper)

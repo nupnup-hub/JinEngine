@@ -49,7 +49,7 @@ namespace JinEngine
 				geometryConverter.Triangulate(scene, true);
 				J_FBXRESULT result;
 
-				indexMapping.clear();
+				vertexIndexMap.clear();
 				vertexCount = 0; 
 				LoadNode(rootNode, meshGroup);
 
@@ -57,7 +57,7 @@ namespace JinEngine
 					result = J_FBXRESULT::HAS_MESH;
 
 				controlPoint.clear();
-				indexMapping.clear();
+				vertexIndexMap.clear();
 				scene->Destroy();
 				importer->Destroy();
 				return result;
@@ -100,7 +100,7 @@ namespace JinEngine
 				geometryConverter.Triangulate(scene, true);
 				J_FBXRESULT result;
 
-				indexMapping.clear();
+				vertexIndexMap.clear();
 				vertexCount = 0;
 				//hasRootJoint = true;
 
@@ -121,7 +121,7 @@ namespace JinEngine
 
 				fbxSkeleton.joint.clear();
 				controlPoint.clear();
-				indexMapping.clear();
+				vertexIndexMap.clear();
 				scene->Destroy();
 				importer->Destroy();
 				return result;
@@ -164,7 +164,7 @@ namespace JinEngine
 				geometryConverter.Triangulate(scene, true);
 				J_FBXRESULT result;
 
-				indexMapping.clear();
+				vertexIndexMap.clear();
 				vertexCount = 0;
 				//hasRootJoint = true;
 
@@ -187,7 +187,7 @@ namespace JinEngine
 				}
 				fbxSkeleton.joint.clear();
 				controlPoint.clear();
-				indexMapping.clear();
+				vertexIndexMap.clear();
 				scene->Destroy();
 				importer->Destroy();
 				return result;
@@ -403,16 +403,16 @@ namespace JinEngine
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 
 					JStaticMeshVertex newVertex(positionXm[j], normalXm[j], textureXm[j], tangentXm[j]);
-					size_t guid = MakeIndexMapKey(positionXm[j], textureXm[j], normalXm[j], biNormalXm[j], tangentXm[j], controlPoint[controlPointIndex].isSkin);
+					size_t guid = MakeVertexMapKey(positionXm[j], textureXm[j], normalXm[j], biNormalXm[j], tangentXm[j], controlPoint[controlPointIndex].isSkin);
 				
-					auto data = indexMapping.find(guid);
-					if (data != indexMapping.end())
+					auto data = vertexIndexMap.find(guid);
+					if (data != vertexIndexMap.end())
 						indices.push_back(data->second);
 					else
 					{
-						uint verticesIndex = (uint)vertices.size();
-						indexMapping.emplace(guid, verticesIndex);
-						indices.push_back(verticesIndex);
+						uint vertexIndex = (uint)vertices.size();
+						vertexIndexMap.emplace(guid, vertexIndex);
+						indices.push_back(vertexIndex);
 						vertices.push_back(newVertex);
 					}
 				}
@@ -431,7 +431,7 @@ namespace JinEngine
 			uint triangleCount = mesh->GetPolygonCount();
 			uint idx[3];
 			vertexCount = 0;
-			indexMapping.clear();
+			vertexIndexMap.clear();
 
 			for (uint i = 0; i < triangleCount; ++i)
 			{
@@ -463,18 +463,18 @@ namespace JinEngine
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 
-					size_t guid = MakeIndexMapKey(positionXm[j], textureXm[j], normalXm[j], biNormalXm[j], tangentXm[j], controlPoint[controlPointIndex].isSkin);
-					auto data = indexMapping.find(guid);
+					size_t guid = MakeVertexMapKey(positionXm[j], textureXm[j], normalXm[j], biNormalXm[j], tangentXm[j], controlPoint[controlPointIndex].isSkin);
+					auto data = vertexIndexMap.find(guid);
 					
-					if (data != indexMapping.end())
+					if (data != vertexIndexMap.end())
 						indices.push_back(data->second);
 					else
-					{
+					{  
 						JSkinnedMeshVertex newVertex(positionXm[j], normalXm[j], textureXm[j], tangentXm[j], controlPoint[controlPointIndex].blendingInfo);
-						uint32 vertexindex = (uint32)vertices.size();
-						indexMapping.emplace(guid, vertexindex);
+						uint32 vertexIndex = (uint32)vertices.size();
+						vertexIndexMap.emplace(guid, vertexIndex);
 
-						indices.push_back(vertexindex);
+						indices.push_back(vertexIndex);
 						vertices.push_back(newVertex);
 
 						JVector3 pos = JVector3<float>(positionXm[j].x, positionXm[j].y, positionXm[j].z);
@@ -1248,7 +1248,7 @@ namespace JinEngine
 				break;
 			}
 		}
-		size_t JFbxFileLoaderImpl::MakeIndexMapKey(const XMFLOAT3& positionXm,
+		size_t JFbxFileLoaderImpl::MakeVertexMapKey(const XMFLOAT3& positionXm,
 			const XMFLOAT2& textureXm,
 			const XMFLOAT3& normalXm,
 			const XMFLOAT3& biNormalXm,

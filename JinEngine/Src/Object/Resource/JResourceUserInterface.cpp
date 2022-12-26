@@ -18,8 +18,4 @@ namespace JinEngine
 	{
 		return jRobj.GetReferenceCount();
 	}
-	bool JResourceUserInterface::CallIsVaildResource(JValidInterface& jRobj)
-	{
-		return jRobj.IsValid();
-	}
 }

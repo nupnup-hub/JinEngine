@@ -48,6 +48,11 @@ namespace JinEngine
 			T* ptr = nullptr;
 			JPtrRefCount* ptrRef = nullptr;
 		public:
+			T& operator*()
+			{
+				return *ptr;
+			}
+		public:
 			int GetUserCount()const noexcept
 			{
 				return ptrRef->GetUserCount();

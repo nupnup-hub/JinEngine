@@ -12,8 +12,8 @@ namespace JinEngine
 			JCUtil::DecomposeFilePath(engineFileWPath, folderPath, name, format);
 			engineMetaFileWPath = folderPath + L"\\" + name + Core::JFileConstant::GetMetafileFormat();
 		}
-		JFileImportPathData::JFileImportPathData(const std::wstring& oriPath)
-			: oriFileWPath(oriPath), oriFilePath(JCUtil::WstrToU8Str(oriPath))
+		JFileImportHelpData::JFileImportHelpData(const std::wstring& oriPath, const J_OBJECT_FLAG flag)
+			: oriFileWPath(oriPath), oriFilePath(JCUtil::WstrToU8Str(oriPath)), flag(flag)
 		{
 			JCUtil::DecomposeFilePath(oriFileWPath, folderPath, name, format);
 			engineFileWPath = folderPath + L"\\" + name + Core::JFileConstant::GetFileFormat();

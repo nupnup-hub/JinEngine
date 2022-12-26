@@ -278,6 +278,12 @@ namespace JinEngine
 	}
 	bool JMeshGeometry::StuffSubMesh(JMeshGroup& meshGroup)
 	{
+		//SutffSubMesh는 두가지 경우 호출된다
+		//1) Activated시
+		//2) Import시
+		//Import시에는 원본데이터를 엔진에서 활용할수있게 변환한뒤 저장하고 메모리에서 지우므로
+		//Clear에서 Activated을 조건문으로 설정하면 안된다.
+
 		Clear();
 		const uint submeshCount = (uint)meshGroup.GetMeshDataCount();
 		uint vertexCount = 0;
@@ -317,10 +323,10 @@ namespace JinEngine
 			for (uint i = 0; i < submeshCount; ++i)
 			{
 				JStaticMeshData* meshdata = static_cast<JStaticMeshData*>(meshGroup.GetMeshData(i));
-				const uint vertexCount = meshdata->GetVertexCount();
-				for (uint j = 0; j < vertexCount; ++j)
-					vertices[vertexOffset + j] = meshdata[i].GetVertex(j);
-				vertexOffset += vertexCount;
+				const uint subMeshVertexCount = meshdata->GetVertexCount();
+				for (uint j = 0; j < subMeshVertexCount; ++j)
+					vertices[vertexOffset + j] = meshdata->GetVertex(j);
+				vertexOffset += subMeshVertexCount;
 			}
 
 			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
@@ -339,10 +345,10 @@ namespace JinEngine
 			for (uint i = 0; i < submeshCount; ++i)
 			{
 				JSkinnedMeshData* meshdata = static_cast<JSkinnedMeshData*>(meshGroup.GetMeshData(i));
-				const uint vertexCount = meshdata->GetVertexCount();
-				for (uint j = 0; j < vertexCount; ++j)
-					vertices[vertexOffset + j] = meshdata[i].GetVertex(j);
-				vertexOffset += vertexCount;
+				const uint subMeshVertexCount = meshdata->GetVertexCount();
+				for (uint j = 0; j < subMeshVertexCount; ++j)
+					vertices[vertexOffset + j] = meshdata->GetVertex(j);
+				vertexOffset += subMeshVertexCount;
 			}
 			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
 			JGraphic::Instance().CommandInterface()->StartCommand();
@@ -363,17 +369,17 @@ namespace JinEngine
 				const JMeshData* meshdata = meshGroup.GetMeshData(i);
 				if (meshdata->Is16bit())
 				{
-					const uint indexCount = meshdata->GetIndexCount();
-					for (uint j = 0; j < indexCount; ++j)
-						indices32[indicesOffset + j] = meshdata[i].GetU16Index(j);
-					indicesOffset += indexCount;
+					const uint subMeshIndexCount = meshdata->GetIndexCount();
+					for (uint j = 0; j < subMeshIndexCount; ++j)
+						indices32[indicesOffset + j] = meshdata->GetU16Index(j);
+					indicesOffset += subMeshIndexCount;
 				}
 				else
 				{
-					const uint indexCount = meshdata->GetIndexCount();
-					for (uint j = 0; j < indexCount; ++j)
-						indices32[indicesOffset + j] = meshdata[i].GetU32Index(j);
-					indicesOffset += indexCount;
+					const uint subMeshIndexCount = meshdata->GetIndexCount();
+					for (uint j = 0; j < subMeshIndexCount; ++j)
+						indices32[indicesOffset + j] = meshdata->GetU32Index(j);
+					indicesOffset += subMeshIndexCount;
 				}
 			}
 			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
@@ -394,17 +400,17 @@ namespace JinEngine
 				const JMeshData* meshdata = meshGroup.GetMeshData(i);
 				if (meshdata->Is16bit())
 				{
-					const uint indexCount = meshdata->GetIndexCount();
-					for (uint j = 0; j < indexCount; ++j)
-						indices16[indicesOffset + j] = meshdata[i].GetU16Index(j);
-					indicesOffset += indexCount;
+					const uint subMeshIndexCount = meshdata->GetIndexCount();
+					for (uint j = 0; j < subMeshIndexCount; ++j)
+						indices16[indicesOffset + j] = meshdata->GetU16Index(j);
+					indicesOffset += subMeshIndexCount;
 				}
 				else
 				{
-					const uint indexCount = meshdata->GetIndexCount();
-					for (uint j = 0; j < indexCount; ++j)
-						indices16[indicesOffset + j] = meshdata[i].GetU32Index(j);
-					indicesOffset += indexCount;
+					const uint subMeshIndexCount = meshdata->GetIndexCount();
+					for (uint j = 0; j < subMeshIndexCount; ++j)
+						indices16[indicesOffset + j] = meshdata->GetU32Index(j);
+					indicesOffset += subMeshIndexCount;
 				}
 			}
 			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
@@ -425,7 +431,7 @@ namespace JinEngine
 	{
 		if (!IsValid())
 		{
-			if (GetFormatIndex() == 0)
+			if (GetFormatIndex() != GetInvalidFormatIndex())
 			{
 				if (ReadMeshData())
 					SetValid(true);
@@ -447,9 +453,9 @@ namespace JinEngine
 		const uint subMeshCount = (uint)submeshes.size();
 		for (uint i = 0; i < subMeshCount; ++i)
 		{
-			if (IsActivated())
+			if(submeshes[i].GetMaterial() != nullptr)
 				CallOffResourceReference(submeshes[i].GetMaterial());
-		};
+		}
 		vertexBufferGPU.Reset();
 		indexBufferGPU.Reset();
 		vertexBufferUploader.Reset();
@@ -470,9 +476,7 @@ namespace JinEngine
 			{
 				JMaterial* preMat = submeshes[i].GetMaterial();
 				if (preMat->GetGuid() == tarGuid)
-				{
-					if(IsActivated())
-						CallOffResourceReference(preMat);
+				{ 
 					if (defaultMat != nullptr)
 					{
 						submeshes[i].SetMaterial(defaultMat);
@@ -588,10 +592,10 @@ namespace JinEngine
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 
 		//JResourceObject*, const std::wstring, JDirectory*, const std::wstring>
-		auto fbxClassifyC = [](const std::wstring path) -> std::vector<J_RESOURCE_TYPE>
+		auto fbxClassifyC = [](const Core::JFileImportHelpData importPathdata) -> std::vector<J_RESOURCE_TYPE>
 		{
 			using FbxFileTypeInfo = Core::JFbxFileLoaderImpl::FbxFileTypeInfo;
-			FbxFileTypeInfo info = Core::JFbxFileLoader::Instance().GetFileTypeInfo(JCUtil::WstrToU8Str(path));
+			FbxFileTypeInfo info = Core::JFbxFileLoader::Instance().GetFileTypeInfo(importPathdata.oriFilePath);
 			if (info.typeInfo == Core::J_FBXRESULT::FAIL)
 				return {};
 
@@ -603,7 +607,7 @@ namespace JinEngine
 
 			return resVec;
 		};
-		auto fbxMeshImportC = [](JDirectory* dir, const Core::JFileImportPathData importPathData) -> std::vector<JResourceObject*>
+		auto fbxMeshImportC = [](JDirectory* dir, const Core::JFileImportHelpData importPathData) -> std::vector<JResourceObject*>
 		{
 			std::vector<JResourceObject*> res; 
 
@@ -620,6 +624,8 @@ namespace JinEngine
 				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
 				{
 					res.push_back(JRFI<JSkinnedMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+						Core::MakeGuid(),
+						importPathData.flag,
 						dir,
 						importPathData.oriFileWPath,
 						Core::JPtrUtil::MakeOwnerPtr<JSkinnedMeshGroup>(std::move(skinnedGroup)))));
@@ -627,6 +633,8 @@ namespace JinEngine
 				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
 				{
 					res.push_back(JRFI<JSkeletonAsset>::Create(Core::JPtrUtil::MakeOwnerPtr<JSkeletonAsset::InitData>(importPathData.name + L"Skel",
+						Core::MakeGuid(),
+						importPathData.flag,
 						dir,
 						importPathData.oriFileWPath,
 						std::make_unique<JSkeleton>(std::move(joint)))));
@@ -642,6 +650,8 @@ namespace JinEngine
 				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
 				{
 					res.push_back(JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+						Core::MakeGuid(),
+						importPathData.flag,
 						dir,
 						importPathData.oriFileWPath,
 						Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGroup>(std::move(staticMeshGroup)))));
@@ -649,7 +659,7 @@ namespace JinEngine
 			}
 			return res;
 		};
-		auto objMeshImportC = [](JDirectory* dir, const Core::JFileImportPathData importPathData) -> std::vector<JResourceObject*>
+		auto objMeshImportC = [](JDirectory* dir, const Core::JFileImportHelpData importPathData) -> std::vector<JResourceObject*>
 		{
 			std::vector<JResourceObject*> res;
 
@@ -659,6 +669,8 @@ namespace JinEngine
 			if (JObjFileLoader::Instance().LoadObjFile(importPathData, objMeshData, objMatData))
 			{
 				res.push_back(JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+					Core::MakeGuid(),
+					importPathData.flag,
 					dir,
 					importPathData.oriFileWPath,
 					Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGroup>(std::move(objMeshData.meshGroup)))));

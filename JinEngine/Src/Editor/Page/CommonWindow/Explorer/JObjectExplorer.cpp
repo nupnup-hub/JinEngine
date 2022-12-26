@@ -6,7 +6,7 @@
 #include"../../../String/JEditorString.h"
 #include"../../../Popup/JEditorPopup.h"
 #include"../../../Popup/JEditorPopupNode.h"   
-#include"../../../../Utility/JCommonUtility.h"   
+#include"../../../../Utility/JCommonUtility.h"    
 #include"../../../../Object/Component/JComponentFactoryUtility.h"
 #include"../../../../Object/GameObject/JGameObject.h"  
 #include"../../../../Object/GameObject/JGameObjectFactory.h"
@@ -197,8 +197,8 @@ namespace JinEngine
 				const bool isValidGameObject = selected.IsValid() && selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT;
 				const bool canSetGameObject = !selectedObject.IsValid() || selectedObject->GetGuid() != selected->GetGuid();
 				if (isValidGameObject && canSetGameObject)
-					selectedObject.ConnnectBaseUser(selected);
-
+					SelectedGameObject(static_cast<JGameObject*>(selected.Get()));
+ 
 				UpdateMouseClick();
 				BuildObjectExplorer();
 			}
@@ -366,6 +366,18 @@ namespace JinEngine
 				}
 			}
 		}
+		void JObjectExplorer::SelectedGameObject(JGameObject* newObject)
+		{		 
+			selectedObject = Core::GetUserPtr(newObject);
+			if (selectedObject.Get() != nullptr)
+			{
+				//Activated Transform Arrow
+			}
+			else
+			{
+				//DeActivated Transform Arrow
+			}
+		}
 		void JObjectExplorer::DoActivate()noexcept
 		{
 			JEditorWindow::DoActivate();
@@ -374,7 +386,7 @@ namespace JinEngine
 		void JObjectExplorer::DoDeActivate()noexcept
 		{
 			JEditorWindow::DoDeActivate();
-			RemoveListener(*JEditorEvent::EvInterface(), GetGuid());
+			RemoveListener(*JEditorEvent::EvInterface(), GetGuid()); 
 		}
 		void JObjectExplorer::DoSetUnFocus()noexcept
 		{

@@ -15,6 +15,7 @@ namespace JinEngine
 		DEFAULT_SHAPE_BOUNDING_BOX_LINE,
 		DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE,
 		DEFAULT_SHAPE_BOUNDING_FRUSTUM,
+		DEFAULT_SHAPE_ARROW,
 		COUNT,
 	};
 
@@ -44,8 +45,20 @@ namespace JinEngine
 				return true;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM:
 				return true;
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_ARROW:
+				return true;
 			default:
 				return L"Error";
+			}
+		}
+		static bool IsExternalFile(const J_DEFAULT_SHAPE type)
+		{
+			switch (type)
+			{
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_ARROW:
+				return true;
+			default:
+				return false;
 			}
 		}
 		static std::wstring ConvertToName(const J_DEFAULT_SHAPE type)
@@ -70,6 +83,8 @@ namespace JinEngine
 				return L"BoundingBox_T";
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM:
 				return L"BoundingFrustum";
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_ARROW:
+				return L"_SceneTransformArrow.fbx";
 			default:
 				return L"Error";
 			}
@@ -95,6 +110,8 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE:
 				return J_MESHGEOMETRY_TYPE::STATIC;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM:
+				return J_MESHGEOMETRY_TYPE::STATIC;
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_ARROW:
 				return J_MESHGEOMETRY_TYPE::STATIC;
 			default:
 				return J_MESHGEOMETRY_TYPE::STATIC;

@@ -72,6 +72,10 @@ namespace JinEngine
 	{
 		return root;
 	}
+	JGameObject* JScene::GetDebugRootGameObject()noexcept
+	{
+		return debugRoot;
+	}
 	JGameObject* JScene::GetGameObject(const uint index)noexcept
 	{
 		if (index < allObjects.size())

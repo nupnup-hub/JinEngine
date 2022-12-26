@@ -215,6 +215,24 @@ namespace JinEngine
 		else
 			return nullptr;
 	}
+	Core::J_FILE_IO_RESULT JFileIOHelper::CopyFile(const std::wstring& src, const std::wstring& dest)
+	{
+		std::wifstream fromStream;
+		fromStream.open(src, std::ios::binary | std::ios::in);
+		std::wofstream toStream;
+		toStream.open(dest, std::ios::binary | std::ios::out);
+
+		if(!fromStream.is_open() || !toStream.is_open())
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+		std::wstring guide;
+		while (getline(fromStream, guide))
+			toStream << guide << '\n';
+		toStream.close();
+		fromStream.close();
+
+		return Core::J_FILE_IO_RESULT::SUCCESS;
+	}
 	bool JFileIOHelper::SkipLine(std::wifstream& stream, const std::wstring& symbol)
 	{
 		std::wstring guide;
