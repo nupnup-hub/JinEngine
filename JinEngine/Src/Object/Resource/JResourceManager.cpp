@@ -497,6 +497,7 @@ namespace JinEngine
 		{
 			const J_DEFAULT_GRAPHIC_SHADER type = (J_DEFAULT_GRAPHIC_SHADER)i;
 			const J_GRAPHIC_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
+			const JShaderGraphicSubPSO subPso = JDefaultShader::GetShaderGraphicPso(type);
 			const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
 
 			const bool isUse = JDefaultShader::IsDefaultUse(type);
@@ -507,7 +508,7 @@ namespace JinEngine
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JShader>(file->GetResource()), isUse);
 			else
 			{
-				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, shaderF));
+				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, shaderF, subPso));
 				ThrowIfFailedN(newShader != nullptr);
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr(newShader), isUse);
 			}
@@ -526,7 +527,7 @@ namespace JinEngine
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JShader>(file->GetResource()), isUse);
 			else
 			{
-				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, SHADER_FUNCTION_NONE, shaderF));
+				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, SHADER_FUNCTION_NONE, JShaderGraphicSubPSO(), shaderF));
 				ThrowIfFailedN(newShader != nullptr);
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr(newShader), isUse);
 			}
@@ -567,6 +568,8 @@ namespace JinEngine
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, flag, matDir));
 					newMaterial->SetSkyMaterial(true);
+					newMaterial->SetNonCulling(true);
+					newMaterial->SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::LESS_EQUAL);
 					newMaterial->SetAlbedoMap(GetDefaultTexture(J_DEFAULT_TEXTURE::DEFAULT_SKY));
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
@@ -621,7 +624,7 @@ namespace JinEngine
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
 					newMaterial->SetDebugMaterial(true);
-					newMaterial->SetLineMaterial(true);
+					newMaterial->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE); 
 					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f));
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
@@ -631,7 +634,7 @@ namespace JinEngine
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
 					newMaterial->SetDebugMaterial(true);
-					newMaterial->SetLineMaterial(true);
+					newMaterial->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE);
 					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f));
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
@@ -641,7 +644,7 @@ namespace JinEngine
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
 					newMaterial->SetDebugMaterial(true);
-					newMaterial->SetLineMaterial(true);
+					newMaterial->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE);
 					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f));
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
@@ -651,7 +654,7 @@ namespace JinEngine
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
 					newMaterial->SetDebugMaterial(true);
-					newMaterial->SetLineMaterial(true);
+					newMaterial->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE);
 					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f));
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
@@ -962,7 +965,7 @@ JMeshGeometry* JResourceManagerImpl::CreateMesh(const J_OBJECT_FLAG flag, JDirec
 
 		for (uint i = 0; i < count; ++i)
 		{
-			if (newFunctionFlag == (*(st + i))->GetShaderFunctionFlag())
+			if (newFunctionFlag == (*(st + i))->GetShaderGFunctionFlag())
 				return (*(st + i));
 		}
 
@@ -987,7 +990,7 @@ JMeshGeometry* JResourceManagerImpl::CreateMesh(const J_OBJECT_FLAG flag, JDirec
 
 		for (uint i = 0; i < count; ++i)
 		{
-			if (newFunctionFlag == (*(st + i))->GetShaderFunctionFlag())
+			if (newFunctionFlag == (*(st + i))->GetShaderGFunctionFlag())
 				return (*(st + i));
 		}
 

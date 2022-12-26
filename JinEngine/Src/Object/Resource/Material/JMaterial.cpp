@@ -11,7 +11,7 @@
 #include<fstream>
 
 namespace JinEngine
-{
+{ 
 	JMaterial::JMaterialInitData::JMaterialInitData(const std::wstring& name,
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
@@ -86,6 +86,14 @@ namespace JinEngine
 	JTexture* JMaterial::GetAmbientOcclusionMap() const noexcept
 	{
 		return ambientOcclusionMap;
+	}
+	J_SHADER_PRIMITIVE_TYPE JMaterial::GetPrimitiveType()const noexcept
+	{
+		return primitiveType;
+	}
+	J_SHADER_DEPTH_COMPARISON_FUNC JMaterial::GetDepthCompasionFunc()const noexcept
+	{
+		return depthComparesionFunc;
 	}
 	void JMaterial::SetMetallic(float value) noexcept
 	{
@@ -180,9 +188,9 @@ namespace JinEngine
 		shadow = value;
 		SetFrameDirty();
 		if (shadow)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_SHADOW));
 		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SHADOW));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_SHADOW));
 	}
 	void JMaterial::SetLight(bool value)noexcept
 	{
@@ -192,9 +200,9 @@ namespace JinEngine
 		light = value;
 		SetFrameDirty();
 		if (light)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LIGHT));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_LIGHT));
 		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LIGHT));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_LIGHT));
 	}
 	void JMaterial::SetAlbedoOnly(bool value)noexcept
 	{
@@ -204,9 +212,9 @@ namespace JinEngine
 		albedoOnly = value;
 		SetFrameDirty();
 		if (albedoOnly)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
 		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
 	}
 	void JMaterial::SetNonCulling(bool value)noexcept
 	{
@@ -215,10 +223,19 @@ namespace JinEngine
 
 		nonCulling = value;
 		SetFrameDirty();
+		JShaderGraphicSubPSO subPso = shader->GetSubGraphicPso();
 		if (nonCulling)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_NONCULLING));
+		{
+			subPso.cullModeCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+			subPso.isCullModeNone = true;
+			SetNewOption(subPso);
+		}
 		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_NONCULLING));
+		{
+			subPso.cullModeCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
+			subPso.isCullModeNone = false;
+			SetNewOption(subPso);
+		}
 	}
 	void JMaterial::SetShadowMapWrite(bool value)noexcept
 	{
@@ -228,9 +245,9 @@ namespace JinEngine
 		isShadowMapWrite = value;
 		SetFrameDirty();
 		if (isShadowMapWrite)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_WRITE_SHADOWMAP));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_WRITE_SHADOWMAP));
 		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_WRITE_SHADOWMAP));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_WRITE_SHADOWMAP));
 	}
 	void JMaterial::SetBoundingObjectDepthTest(bool value)noexcept
 	{
@@ -240,9 +257,9 @@ namespace JinEngine
 		isBoundingObjDepthTest = value;
 		SetFrameDirty();
 		if (isBoundingObjDepthTest)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT));
 		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT));
 	}
 	void JMaterial::SetSkyMaterial(bool value)noexcept
 	{
@@ -252,9 +269,9 @@ namespace JinEngine
 		isSkyMateral = value;
 		SetFrameDirty();
 		if (isSkyMateral)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SKY));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_SKY));
 		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_SKY));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_SKY));
 	}
 	void JMaterial::SetDebugMaterial(bool value)noexcept
 	{
@@ -264,21 +281,9 @@ namespace JinEngine
 		isDebugMaterial = value;
 		SetFrameDirty();
 		if (isDebugMaterial)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_DEBUG));
 		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_DEBUG));
-	}
-	void JMaterial::SetLineMaterial(bool value)noexcept
-	{
-		if (isLineMaterial == value)
-			return;
-
-		isLineMaterial = value;
-		SetFrameDirty();
-		if (isLineMaterial)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LINE));
-		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_LINE));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_DEBUG));
 	}
 	void JMaterial::SetAlphaClip(bool value)noexcept
 	{
@@ -288,9 +293,49 @@ namespace JinEngine
 		alphaClip = value;
 		SetFrameDirty();
 		if (alphaClip)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALPHA_CLIP));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_ALPHA_CLIP));
 		else
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), SHADER_FUNCTION_ALPHA_CLIP));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_ALPHA_CLIP));
+	}
+	void JMaterial::SetPrimitiveType(const J_SHADER_PRIMITIVE_TYPE value)noexcept
+	{
+		if (primitiveType == value)
+			return;
+
+		primitiveType = value;
+		SetFrameDirty();
+		JShaderGraphicSubPSO subPso = shader->GetSubGraphicPso();
+		if (primitiveType != J_SHADER_PRIMITIVE_TYPE::DEFAULT)
+		{
+			subPso.primitiveCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+			subPso.primitiveType = primitiveType;
+			SetNewOption(subPso);
+		}
+		else
+		{
+			subPso.primitiveCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
+			SetNewOption(subPso);
+		}
+	}
+	void JMaterial::SetDepthCompareFunc(const J_SHADER_DEPTH_COMPARISON_FUNC value)noexcept
+	{
+		if (depthComparesionFunc == value)
+			return;
+
+		depthComparesionFunc = value;
+		SetFrameDirty();
+		JShaderGraphicSubPSO subPso = shader->GetSubGraphicPso();
+		if (depthComparesionFunc != J_SHADER_DEPTH_COMPARISON_FUNC::DEFAULT)
+		{
+			subPso.depthCompareCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+			subPso.depthCompareFunc = value;
+			SetNewOption(subPso);
+		}
+		else
+		{
+			subPso.depthCompareCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
+			SetNewOption(subPso);
+		}
 	}
 	bool JMaterial::OnShadow()const noexcept
 	{
@@ -323,10 +368,6 @@ namespace JinEngine
 	bool JMaterial::IsDebugMaterial()const noexcept
 	{
 		return isDebugMaterial;
-	}
-	bool JMaterial::IsLineMaterial()const noexcept
-	{
-		return isLineMaterial;
 	}
 	bool JMaterial::HasAlbedoMapTexture() const noexcept
 	{
@@ -365,14 +406,23 @@ namespace JinEngine
 	void JMaterial::TextureChange(JTexture* be, JTexture* af, const J_GRAPHIC_SHADER_FUNCTION func)noexcept
 	{
 		if (be == nullptr && af != nullptr)
-			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderFunctionFlag(), func));
+			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderGFunctionFlag(), func));
 		else if (be != nullptr && af == nullptr)
-			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderFunctionFlag(), func));
+			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderGFunctionFlag(), func));
 	}
 	void JMaterial::SetNewFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunc)
 	{
-		if (shader == nullptr || shader->GetShaderFunctionFlag() != newFunc)
+		if (shader == nullptr)
 			SetShader(JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(newFunc)));
+		else if (shader->GetShaderGFunctionFlag() != newFunc)
+			SetShader(JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(newFunc, shader->GetSubGraphicPso())));
+	}
+	void JMaterial::SetNewOption(const JShaderGraphicSubPSO newPso)
+	{
+		if (shader == nullptr)
+			SetShader(JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(SHADER_FUNCTION_NONE ,newPso)));
+		else if (!newPso.Equal(shader->GetSubGraphicPso()))
+			SetShader(JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(shader->GetShaderGFunctionFlag(), newPso)));	 
 	}
 	//쉐이더는 머테리얼 activate 여부에 관계없이 소유될때 참조 카운트가 증감한다. 
 	void JMaterial::SetShader(JShader* newShader)noexcept
@@ -444,9 +494,11 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"BoundingObjDepthTest", isBoundingObjDepthTest);
 			JFileIOHelper::StoreAtomicData(stream, L"SkyMaterial", isSkyMateral);
 			JFileIOHelper::StoreAtomicData(stream, L"DebugMaterial", isDebugMaterial);
-			JFileIOHelper::StoreAtomicData(stream, L"LineMaterial", isLineMaterial);
-
 			JFileIOHelper::StoreAtomicData(stream, L"AlphaClip", alphaClip);
+
+			JFileIOHelper::StoreAtomicData(stream, L"PrimitiveType", (int)primitiveType);
+			JFileIOHelper::StoreAtomicData(stream, L"DepthComparesionFunc", (int)depthComparesionFunc);
+
 			JFileIOHelper::StoreAtomicData(stream, L"Metallic", metallic);
 			JFileIOHelper::StoreAtomicData(stream, L"Roughness", roughness);
 
@@ -479,9 +531,10 @@ namespace JinEngine
 			bool sIsShadowMapWrite = false;
 			bool sBoundingObjDepthTest = false;
 			bool sIsSkyMateral = false;
-			bool sIsDebugMaterial = false;
-			bool sIsLineMaterial = false;
+			bool sIsDebugMaterial = false; 
 			bool sAlphaclip = false;
+			int sPrimitiveType = 0;
+			int sDepthComparesionFunc = 0;
 			float sMetallic;
 			float sRoughness;
 			DirectX::XMFLOAT4 sAlbedoColor;
@@ -494,10 +547,12 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, sIsShadowMapWrite);
 			JFileIOHelper::LoadAtomicData(stream, sBoundingObjDepthTest);
 			JFileIOHelper::LoadAtomicData(stream, sIsSkyMateral);
-			JFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial);
-			JFileIOHelper::LoadAtomicData(stream, sIsLineMaterial);
-
+			JFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial); 
 			JFileIOHelper::LoadAtomicData(stream, sAlphaclip);
+
+			JFileIOHelper::LoadAtomicData(stream, sPrimitiveType);
+			JFileIOHelper::LoadAtomicData(stream, sDepthComparesionFunc);
+
 			JFileIOHelper::LoadAtomicData(stream, sMetallic);
 			JFileIOHelper::LoadAtomicData(stream, sRoughness);
 
@@ -518,9 +573,11 @@ namespace JinEngine
 			SetShadowMapWrite(sIsShadowMapWrite);
 			SetBoundingObjectDepthTest(sBoundingObjDepthTest);
 			SetSkyMaterial(sIsSkyMateral);
-			SetDebugMaterial(sIsDebugMaterial);
-			SetLineMaterial(sIsLineMaterial);
+			SetDebugMaterial(sIsDebugMaterial); 
 			SetAlphaClip(sAlphaclip);
+
+			SetPrimitiveType((J_SHADER_PRIMITIVE_TYPE)sPrimitiveType);
+			SetDepthCompareFunc((J_SHADER_DEPTH_COMPARISON_FUNC)sDepthComparesionFunc);
 
 			SetMetallic(sMetallic);
 			SetRoughness(sRoughness);

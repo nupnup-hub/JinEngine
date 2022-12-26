@@ -1,5 +1,6 @@
 #pragma once
 #include"JShaderFunctionEnum.h"
+#include"JShaderSubPSO.h"
 #include"../../JObjectFlag.h"
 
 namespace JinEngine
@@ -39,13 +40,37 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SHADOW_MAP_SHADER:
 				return (J_GRAPHIC_SHADER_FUNCTION)(SHADER_FUNCTION_ALPHA_CLIP | SHADER_FUNCTION_WRITE_SHADOWMAP);
 			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_SHADER:
-				return SHADER_FUNCTION_DEBUG;
+				return SHADER_FUNCTION_DEBUG; 
 			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_LINE_SHADER:
-				return (J_GRAPHIC_SHADER_FUNCTION)(SHADER_FUNCTION_DEBUG | SHADER_FUNCTION_LINE);
+				return SHADER_FUNCTION_DEBUG;
 			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST_SHADER:
 				return SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT;
 			default:
 				break;
+			}
+		}
+		static JShaderGraphicSubPSO GetShaderGraphicPso(const J_DEFAULT_GRAPHIC_SHADER sType)
+		{
+			switch (sType)
+			{
+			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SKY_SHADER:
+			{
+				JShaderGraphicSubPSO pso;
+				pso.cullModeCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+				pso.isCullModeNone = true;
+				pso.depthCompareCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+				pso.depthCompareFunc = J_SHADER_DEPTH_COMPARISON_FUNC::LESS_EQUAL;
+				return pso;
+			}
+			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_LINE_SHADER:
+			{
+				JShaderGraphicSubPSO pso;
+				pso.primitiveCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+				pso.primitiveType = J_SHADER_PRIMITIVE_TYPE::LINE; 
+				return pso;
+			}
+			default:
+				return JShaderGraphicSubPSO{};
 			}
 		}
 		static J_COMPUTE_SHADER_FUNCTION GetComputeShaderFunction(const J_DEFAULT_COMPUTE_SHADER cType)

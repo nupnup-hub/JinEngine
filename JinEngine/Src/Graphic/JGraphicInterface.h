@@ -1,5 +1,6 @@
 #include"GraphicResource/JGraphicResourceType.h"
 #include"../Object/Resource/Shader/JShaderFunctionEnum.h"
+#include"../Object/Resource/Shader/JShaderSubPSO.h" 
 #include"../Core/JDataType.h"
 #include<string>
 
@@ -74,8 +75,11 @@ namespace JinEngine
 			virtual JGraphicResourceHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
 			virtual JGraphicResourceHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0) = 0;
 			virtual bool DestroyGraphicTextureResource(JGraphicResourceHandle** handle) = 0;
-			virtual void StuffGraphicShaderPso(JGraphicShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_GRAPHIC_SHADER_FUNCTION gFunctionFlag) = 0;
-			virtual void StuffComputeShaderPso(JComputeShaderData* shaderData, J_COMPUTE_SHADER_FUNCTION cFunctionFlag) = 0;
+			virtual void StuffGraphicShaderPso(JGraphicShaderData* shaderData, 
+				const J_SHADER_VERTEX_LAYOUT vertexLayout,
+				const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, 
+				const JShaderGraphicSubPSO& subPso) = 0;
+			virtual void StuffComputeShaderPso(JComputeShaderData* shaderData, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag) = 0;
 		};
 
 		class JGraphicEditorInterface : public JGraphicResourceInterface

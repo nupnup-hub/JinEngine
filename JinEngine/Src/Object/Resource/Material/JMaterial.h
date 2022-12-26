@@ -2,18 +2,20 @@
 #include"JMaterialInterface.h"  
 #include"../Texture/JTexture.h"
 #include"../Shader/JShaderFunctionEnum.h"
+#include"../Shader/JShaderSubPSO.h"
 #include"../../../Graphic/JGraphicConstants.h"   
-#include"../../../Utility/JMathHelper.h"  
+#include"../../../Utility/JMathHelper.h"   
 
 namespace JinEngine
 {
 	class JDirectory;
-	class JShader;
+	class JShader; 
 	namespace Graphic
 	{
 		struct JMaterialConstants;
 		class JGraphicImpl;
 	}
+	 
 	class JMaterial : public JMaterialInterface
 	{
 		REGISTER_CLASS(JMaterial)
@@ -63,9 +65,10 @@ namespace JinEngine
 		//Draw bounding object by depth test
 		bool isBoundingObjDepthTest = false;
 		bool isSkyMateral = false;
-		bool isDebugMaterial = false; 
-		bool isLineMaterial = false;
+		bool isDebugMaterial = false;  
 		bool alphaClip = false;
+		J_SHADER_PRIMITIVE_TYPE primitiveType = J_SHADER_PRIMITIVE_TYPE::DEFAULT;
+		J_SHADER_DEPTH_COMPARISON_FUNC depthComparesionFunc = J_SHADER_DEPTH_COMPARISON_FUNC::DEFAULT;
 		REGISTER_PROPERTY_EX(metallic, GetMetallic, SetMetallic, GUI_SLIDER(0, 1, false, false))
 		float metallic = 0;
 		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0, 1))
@@ -92,6 +95,8 @@ namespace JinEngine
 		JTexture* GetHeightMap() const noexcept;
 		JTexture* GetRoughnessMap() const noexcept;
 		JTexture* GetAmbientOcclusionMap() const noexcept;
+		J_SHADER_PRIMITIVE_TYPE GetPrimitiveType()const noexcept;
+		J_SHADER_DEPTH_COMPARISON_FUNC GetDepthCompasionFunc()const noexcept;
 
 		void SetMetallic(float value) noexcept;
 		void SetRoughness(float value) noexcept;
@@ -109,9 +114,10 @@ namespace JinEngine
 		void SetShadowMapWrite(bool value)noexcept;
 		void SetBoundingObjectDepthTest(bool value)noexcept;
 		void SetSkyMaterial(bool value)noexcept;
-		void SetDebugMaterial(bool value)noexcept;
-		void SetLineMaterial(bool value)noexcept;
+		void SetDebugMaterial(bool value)noexcept; 
 		void SetAlphaClip(bool value)noexcept;
+		void SetPrimitiveType(const J_SHADER_PRIMITIVE_TYPE value)noexcept;
+		void SetDepthCompareFunc(const J_SHADER_DEPTH_COMPARISON_FUNC value)noexcept;
 	public:
 		bool OnShadow()const noexcept;
 		bool OnLight()const noexcept;
@@ -120,8 +126,7 @@ namespace JinEngine
 		bool OnShadowMapWrite()const noexcept;
 		bool OnBoundingObjectDepthTest()const noexcept;
 		bool IsSkyMaterial()const noexcept;
-		bool IsDebugMaterial()const noexcept;
-		bool IsLineMaterial()const noexcept;
+		bool IsDebugMaterial()const noexcept; 
 		//레지스터에 등록된 머테리얼만 검사하므로 gameObjectDirty pointer 유무는 체크하지 않는다.
 		bool HasAlbedoMapTexture() const noexcept;
 		bool HasNormalMapTexture() const noexcept;
@@ -133,6 +138,7 @@ namespace JinEngine
 	protected:
 		void TextureChange(JTexture* be, JTexture* af, const J_GRAPHIC_SHADER_FUNCTION func)noexcept;
 		void SetNewFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunc);
+		void SetNewOption(const JShaderGraphicSubPSO newPso);
 	private:
 		void SetShader(JShader* newShader)noexcept;
 	private:

@@ -256,7 +256,10 @@ namespace JinEngine
 				return res;
 			}
 		}
-		void JGraphicImpl::StuffGraphicShaderPso(JGraphicShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_GRAPHIC_SHADER_FUNCTION gFunctionFlag)
+		void JGraphicImpl::StuffGraphicShaderPso(JGraphicShaderData* shaderData,
+			const J_SHADER_VERTEX_LAYOUT vertexLayout,
+			const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, 
+			const JShaderGraphicSubPSO& subPso)
 		{
 			FlushCommandQueue();
 			StartCommand(); 
@@ -311,13 +314,9 @@ namespace JinEngine
 			if ((gFunctionFlag & SHADER_FUNCTION_SKY) > 0)
 			{ 
 				newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; 
-				//newShaderPso.DepthStencilState.StencilWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-				newShaderPso.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL; 
-				newShaderPso.DepthStencilState.StencilEnable = false;
-				newShaderPso.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-			}
-			if ((gFunctionFlag & SHADER_FUNCTION_NONCULLING) > 0)
-				newShaderPso.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+				//newShaderPso.DepthStencilState.StencilWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; 
+				newShaderPso.DepthStencilState.StencilEnable = false; 
+			} 
 
 			newShaderPso.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 			newShaderPso.SampleMask = UINT_MAX;
@@ -348,8 +347,7 @@ namespace JinEngine
 				newShaderPso.SampleDesc.Quality = 0; 
 			}
 			if ((gFunctionFlag & SHADER_FUNCTION_DEBUG) > 0)
-			{
-				newShaderPso.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+			{			 
 				newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 				newShaderPso.DepthStencilState.StencilEnable = false;  
 
@@ -368,8 +366,14 @@ namespace JinEngine
 				for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
 					newShaderPso.BlendState.RenderTarget[i] = debugBlendDesc;
 			}
-			if ((gFunctionFlag & SHADER_FUNCTION_LINE) > 0)
-				newShaderPso.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+
+			if (subPso.primitiveCondition == J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO)
+				newShaderPso.PrimitiveTopologyType = subPso.ConvertD3d12PrimitiveType();
+			if (subPso.depthCompareCondition == J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO)
+				newShaderPso.DepthStencilState.DepthFunc = subPso.ConvertD3d12Comparesion();
+			if (subPso.cullModeCondition == J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO)
+				newShaderPso.RasterizerState.CullMode = subPso.ConvertD3d12CullMode(); 
+
 			ThrowIfFailedG(d3dDevice->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(shaderData->Pso.GetAddressOf())));
 
 			EndCommand();

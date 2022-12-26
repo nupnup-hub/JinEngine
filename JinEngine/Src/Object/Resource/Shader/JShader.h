@@ -1,5 +1,6 @@
 #pragma once  
 #include"JShaderFunctionEnum.h" 
+#include"JShaderSubPSO.h"
 #include"JShaderData.h" 
 #include"JShaderInterface.h" 
 #include"../Mesh/JMeshType.h" 
@@ -28,15 +29,20 @@ namespace JinEngine
 		public:
 			J_GRAPHIC_SHADER_FUNCTION gShaderFunctionFlag = SHADER_FUNCTION_NONE;
 			J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
+			JShaderGraphicSubPSO graphicPSO;
 		public:
 			JShaderInitdata(const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag,
+				const JShaderGraphicSubPSO graphicPSO = JShaderGraphicSubPSO(),
 				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 			JShaderInitdata(const J_OBJECT_FLAG flag,
 				const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag,
+				const JShaderGraphicSubPSO graphicPSO = JShaderGraphicSubPSO(),
 				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
-			JShaderInitdata(const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag, const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
+			JShaderInitdata(const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag, 
+				const JShaderGraphicSubPSO graphicPSO = JShaderGraphicSubPSO(),
+				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 		public:
 			J_RESOURCE_TYPE GetResourceType() const noexcept;
 		private:
@@ -48,6 +54,8 @@ namespace JinEngine
 		std::unique_ptr<JComputeShaderData> cShaderData = nullptr;
 		J_GRAPHIC_SHADER_FUNCTION gFunctionFlag = SHADER_FUNCTION_NONE;
 		J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
+	private:
+		JShaderGraphicSubPSO graphicPSO;
 	private:
 		static std::unordered_map<J_GRAPHIC_SHADER_FUNCTION, const D3D_SHADER_MACRO> shaderFuncMacroMap;  
 		static std::unordered_map<J_SHADER_VERTEX_LAYOUT, const D3D_SHADER_MACRO> vertexLayoutMacroMap;
@@ -65,10 +73,11 @@ namespace JinEngine
 		ID3D12PipelineState* GetGraphicPso(const J_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
 		ID3D12RootSignature* GetComputeRootSignature()const noexcept;
 		JVector3<uint> GetComputeGroupDim()const noexcept;
-		J_GRAPHIC_SHADER_FUNCTION GetShaderFunctionFlag()const noexcept;
-		J_COMPUTE_SHADER_FUNCTION GetShdaerComputeFunctionFlag()const noexcept;
+		J_GRAPHIC_SHADER_FUNCTION GetShaderGFunctionFlag()const noexcept;
+		J_COMPUTE_SHADER_FUNCTION GetShdaerCFunctionFlag()const noexcept;
+		JShaderGraphicSubPSO GetSubGraphicPso()const noexcept;
 	public:
-		bool IsComputeShader()const noexcept;
+		bool IsComputeShader()const noexcept; 
 	public:
 		JShaderCompileInterface* CompileInterface()noexcept;
 	public:

@@ -17,7 +17,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		void JEditorTransformTool::Arrow::CreateMaterial(const JVector4<float> matColor)
-		{			
+		{			 
 			JDirectory* dir = JResourceManager::Instance().GetEditorResourceDirectory();
 			JMaterial* material = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(L"ArrowMaterial",
 				Core::MakeGuid(),
@@ -26,6 +26,7 @@ namespace JinEngine
 
 			material->SetAlbedoColor(matColor.ConvertXMF());
 			material->SetDebugMaterial(true);
+			material->SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::ALWAYS);
 
 			JEditorTransformTool::Arrow::material = Core::GetUserPtr(material);
 		}

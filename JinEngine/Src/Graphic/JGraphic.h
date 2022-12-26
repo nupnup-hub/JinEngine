@@ -11,8 +11,7 @@
 #include"GraphicResource/JGraphicResourceUserInterface.h"
 #include"FrameResource/JAnimationConstants.h" 
 #include"../Object/JFrameUpdate.h"
-#include"../Object/Component/RenderItem/JRenderLayer.h"   
-#include"../Object/Resource/Shader/JShaderFunctionEnum.h" 
+#include"../Object/Component/RenderItem/JRenderLayer.h"    
 #include"../Core/Singleton/JSingletonHolder.h"
 #include"../Core/Event/JEventListener.h"
 #include"../Core/Func/Callable/JCallable.h"
@@ -150,8 +149,11 @@ namespace JinEngine
 			JGraphicResourceHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			JGraphicResourceHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			bool DestroyGraphicTextureResource(JGraphicResourceHandle** handle)final;
-			void StuffGraphicShaderPso(JGraphicShaderData* shaderData, J_SHADER_VERTEX_LAYOUT vertexLayout, J_GRAPHIC_SHADER_FUNCTION gFunctionFlag)final;
-			void StuffComputeShaderPso(JComputeShaderData* shaderData, J_COMPUTE_SHADER_FUNCTION cFunctionFlag)final;
+			void StuffGraphicShaderPso(JGraphicShaderData* shaderData, 
+				const J_SHADER_VERTEX_LAYOUT vertexLayout,
+				const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag
+				, const JShaderGraphicSubPSO& subPso)final;
+			void StuffComputeShaderPso(JComputeShaderData* shaderData, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)final;
 		private:
 			ID3D12CommandQueue* GetCommandQueue()const noexcept final;
 			ID3D12CommandAllocator* GetCommandAllocator()const noexcept final;
