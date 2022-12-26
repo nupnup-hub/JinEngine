@@ -59,7 +59,7 @@ namespace JinEngine
 		}
 		bool JEditorTransformTool::Arrow::IsClick(Core::JUserPtr<JCamera> cam, bool onDebug)
 		{
-			const BoundingBox bbox = arrow->GetRenderItem()->GetBoundingBox(true);
+			const BoundingBox bbox = arrow->GetRenderItem()->GetBoundingBox();
 			 
 			const XMFLOAT3 minF = JMathHelper::Vector3Minus(bbox.Center, bbox.Extents);
 			const XMFLOAT3 maxF = JMathHelper::Vector3Plus(bbox.Center, bbox.Extents);
@@ -251,6 +251,7 @@ namespace JinEngine
 		}
 		void JEditorTransformTool::UpdateSelectedPosition(JEditorTransformTool* tool, const JVector2<float> mouseDelta)
 		{ 
+
 		}
 		void JEditorTransformTool::UpdateSelectedRotation(JEditorTransformTool* tool, const JVector2<float> mouseDelta)
 		{

@@ -39,10 +39,9 @@ namespace JinEngine
 
 				const float outlineFactor = 0.01f;
 				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetBoundingBox();
-				debugGameObject->GetTransform()->SetRotation(innerGameObject->GetTransform()->GetRotation());
 				debugGameObject->GetTransform()->SetScale(XMFLOAT3(bbox.Extents.x / rBBox.Extents.x + outlineFactor,
 					bbox.Extents.y / rBBox.Extents.y + outlineFactor,
-					bbox.Extents.z / rBBox.Extents.z + outlineFactor));
+					bbox.Extents.z / rBBox.Extents.z + outlineFactor)); 
 				debugGameObject->GetTransform()->SetPosition(JMathHelper::Vector3Plus(bbox.Center, rBBox.Center));
 			}
 		}
@@ -111,7 +110,7 @@ namespace JinEngine
 			{
 				bbox = innerGameObject->GetRenderItem()->GetBoundingBox();
 				if (debugGameObject != nullptr)
-				{
+				{			 
 					debugGameObject->GetTransform()->SetScale(XMFLOAT3(bbox.Extents.x * 2, bbox.Extents.y * 2, bbox.Extents.z * 2));
 					debugGameObject->GetTransform()->SetPosition(bbox.Center);
 				}

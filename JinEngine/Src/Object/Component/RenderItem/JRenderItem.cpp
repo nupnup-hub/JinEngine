@@ -69,7 +69,7 @@ namespace JinEngine
 	{
 		return mesh != nullptr ? mesh->GetTotalSubmeshCount() : 0;
 	}
-	DirectX::BoundingBox JRenderItem::GetBoundingBox(const bool applyRotation)noexcept
+	DirectX::BoundingBox JRenderItem::GetBoundingBox(bool onDebug)noexcept
 	{
 		if (mesh != nullptr)
 		{
@@ -89,7 +89,6 @@ namespace JinEngine
 			XMFLOAT3 meshBoxCenter = mesh->GetBoundingBoxCenter();
 			XMFLOAT3 meshBoxExtent = mesh->GetBoundingBoxExtent();
 
-
 			XMFLOAT3 gameObjBoxCenter = XMFLOAT3(meshBoxCenter.x + pos.x,
 				meshBoxCenter.y + pos.y,
 				meshBoxCenter.z + pos.z);
@@ -98,14 +97,9 @@ namespace JinEngine
 				meshBoxExtent.y * scale.y,
 				meshBoxExtent.z * scale.z);
 
-			if (applyRotation)
-			{
-				const XMVECTOR gameObjBoxExtentV = XMLoadFloat3(&gameObjBoxExtent);
-				XMVector3Rotate(gameObjBoxExtentV, q);
-				XMStoreFloat3(&gameObjBoxExtent, gameObjBoxExtentV);
-			}
-			return DirectX::BoundingBox(gameObjBoxCenter, gameObjBoxExtent);
+			XMStoreFloat3(&gameObjBoxExtent, XMVectorAbs(XMVector3Rotate(XMLoadFloat3(&gameObjBoxExtent), q)));
 
+			return DirectX::BoundingBox(gameObjBoxCenter, gameObjBoxExtent);
 		}
 		else
 			return DirectX::BoundingBox();

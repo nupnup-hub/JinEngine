@@ -245,7 +245,7 @@ namespace JinEngine
 			{
 				JBBox bound = JBBox::InfBBox();
 				for (int i = start; i < end; ++i)
-					bound = JBBox::Union(bound, objectList[i]->GetRenderItem()->GetBoundingBox());
+					bound = JBBox::Union(bound, objectList[i]->GetRenderItem()->GetBoundingBox(true));
 
 				JBBox centroidBound = JBBox::InfBBox();
 				for (int i = start; i < end; ++i)
