@@ -89,7 +89,7 @@ namespace JinEngine
 		}
 		void JSpaceSpatialOption::Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid)
 		{
-			if (!stream.is_open())
+			if (!stream.is_open() || stream.eof())
 				return;
 
 			JFileIOHelper::LoadAtomicData(stream, isSpaceSpatialActivated);

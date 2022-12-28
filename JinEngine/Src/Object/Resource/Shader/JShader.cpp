@@ -123,47 +123,47 @@ namespace JinEngine
 	JShader::JShaderInitdata::JShaderInitdata(const size_t guid,
 		const J_OBJECT_FLAG flag,
 		const J_GRAPHIC_SHADER_FUNCTION newGShaderFunctionFlag,
-		const JShaderGraphicSubPSO graphicPSO,
+		const JShaderGraphicSubPSO newGraphicPSO,
 		const J_COMPUTE_SHADER_FUNCTION newCShaderFunctionFlag)
-		:JResourceInitData(MakeName(newGShaderFunctionFlag, newCShaderFunctionFlag),
+		:JResourceInitData(MakeName(newGShaderFunctionFlag, newGraphicPSO, newCShaderFunctionFlag),
 			guid,
 			Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE),
 			GetShaderDirectory(),
 			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
 		gShaderFunctionFlag(newGShaderFunctionFlag),
 		cShaderFunctionFlag(newCShaderFunctionFlag),
-		graphicPSO(graphicPSO)
+		graphicPSO(newGraphicPSO)
 	{
 		if (cShaderFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
 			gShaderFunctionFlag = SHADER_FUNCTION_NONE;
 	}
 	JShader::JShaderInitdata::JShaderInitdata(const J_OBJECT_FLAG flag,
 		const J_GRAPHIC_SHADER_FUNCTION newGShaderFunctionFlag,
-		const JShaderGraphicSubPSO graphicPSO,
+		const JShaderGraphicSubPSO newGraphicPSO,
 		const J_COMPUTE_SHADER_FUNCTION newCShaderFunctionFlag)
-		: JResourceInitData(MakeName(newGShaderFunctionFlag, newCShaderFunctionFlag),
+		: JResourceInitData(MakeName(newGShaderFunctionFlag, newGraphicPSO, newCShaderFunctionFlag),
 			Core::MakeGuid(),
 			Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE),
 			GetShaderDirectory(),
 			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
 		gShaderFunctionFlag(newGShaderFunctionFlag),
 		cShaderFunctionFlag(newCShaderFunctionFlag),
-		graphicPSO(graphicPSO)
+		graphicPSO(newGraphicPSO)
 	{
 		if (cShaderFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
 			gShaderFunctionFlag = SHADER_FUNCTION_NONE;
 	}
 	JShader::JShaderInitdata::JShaderInitdata(const J_GRAPHIC_SHADER_FUNCTION newGShaderFunctionFlag, 
-		const JShaderGraphicSubPSO graphicPSO,
+		const JShaderGraphicSubPSO newGraphicPSO,
 		const J_COMPUTE_SHADER_FUNCTION newCShaderFunctionFlag)
-		: JResourceInitData(MakeName(newGShaderFunctionFlag, newCShaderFunctionFlag),
+		: JResourceInitData(MakeName(newGShaderFunctionFlag, newGraphicPSO, newCShaderFunctionFlag),
 			Core::MakeGuid(),
 			OBJECT_FLAG_UNEDITABLE,
 			GetShaderDirectory(),
 			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
 		gShaderFunctionFlag(newGShaderFunctionFlag),
 		cShaderFunctionFlag(newCShaderFunctionFlag),
-		graphicPSO(graphicPSO)
+		graphicPSO(newGraphicPSO)
 	{
 		if (cShaderFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
 			gShaderFunctionFlag = SHADER_FUNCTION_NONE;
@@ -172,12 +172,14 @@ namespace JinEngine
 	{
 		return J_RESOURCE_TYPE::SHADER;
 	}
-	std::wstring JShader::JShaderInitdata::MakeName(const J_GRAPHIC_SHADER_FUNCTION gShaderFunctionFlag, const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag)const noexcept
+	std::wstring JShader::JShaderInitdata::MakeName(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
+		const JShaderGraphicSubPSO& graphicPSO,
+		const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept
 	{
-		if (cShaderFunctionFlag == J_COMPUTE_SHADER_FUNCTION::NONE)
-			return JShaderType::ConvertToName(gShaderFunctionFlag);
+		if (cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::NONE)
+			return JShaderType::ConvertToName(gFunctionFlag, graphicPSO.UniqueID());
 		else
-			return JShaderType::ConvertToName(cShaderFunctionFlag);
+			return JShaderType::ConvertToName(cFunctionFlag);
 	}
 
 	J_RESOURCE_TYPE JShader::GetResourceType()const noexcept
@@ -249,6 +251,16 @@ namespace JinEngine
 		gShaderData[1].reset();
 		cShaderData.reset();
 		SetValid(false);
+	}
+	bool JShader::Destroy(const bool isForced)
+	{
+		if (!JResourceObject::Destroy(isForced))
+			return false;
+
+		const bool hasUnDestroyable = HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE);
+		if (!hasUnDestroyable)
+			DeleteRFile();		// delete shader file in memory
+		return true;
 	}
 	void JShader::SetGraphicShaderFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunctionFlag)
 	{
@@ -505,8 +517,8 @@ namespace JinEngine
 			JFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesionCondition:", shader->graphicPSO.depthCompareCondition);
 			JFileIOHelper::StoreEnumData(stream, L"SubPsoCullModeCondition:", shader->graphicPSO.cullModeCondition);
 
-			JFileIOHelper::StoreAtomicData(stream, L"SubPsoPrimitive:", (int)shader->graphicPSO.primitiveType);
-			JFileIOHelper::StoreAtomicData(stream, L"SubPsoDepthComparesion:", (int)shader->graphicPSO.depthCompareFunc);
+			JFileIOHelper::StoreEnumData(stream, L"SubPsoPrimitive:", shader->graphicPSO.primitiveType);
+			JFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesion:", shader->graphicPSO.depthCompareFunc);
 			JFileIOHelper::StoreAtomicData(stream, L"SubPsoCullMode:", shader->graphicPSO.isCullModeNone);
 			stream.close();
 			return Core::J_FILE_IO_RESULT::SUCCESS;
@@ -530,9 +542,7 @@ namespace JinEngine
 		{
 			J_GRAPHIC_SHADER_FUNCTION gFunctionFlag;
 			J_COMPUTE_SHADER_FUNCTION cFunctionFlag;
-			JShaderGraphicSubPSO subPso;
-			int sPrimitiveType;
-			int sDepthComparesion;
+			JShaderGraphicSubPSO subPso; 
 			bool sCullMode;
 
 			JFileIOHelper::LoadEnumData(stream, gFunctionFlag);
@@ -541,15 +551,11 @@ namespace JinEngine
 			JFileIOHelper::LoadEnumData(stream, subPso.primitiveCondition);
 			JFileIOHelper::LoadEnumData(stream, subPso.depthCompareCondition);
 			JFileIOHelper::LoadEnumData(stream, subPso.cullModeCondition);
-			JFileIOHelper::LoadAtomicData(stream, sPrimitiveType);
-			JFileIOHelper::LoadAtomicData(stream, sDepthComparesion);
-			JFileIOHelper::LoadAtomicData(stream, sCullMode);
+			JFileIOHelper::LoadEnumData(stream, subPso.primitiveType);
+			JFileIOHelper::LoadEnumData(stream, subPso.depthCompareFunc);
+			JFileIOHelper::LoadAtomicData(stream, subPso.isCullModeNone);
 			stream.close();
-
-			subPso.primitiveType = (J_SHADER_PRIMITIVE_TYPE)sPrimitiveType;
-			subPso.depthCompareFunc = (J_SHADER_DEPTH_COMPARISON_FUNC)sDepthComparesion;
-			subPso.isCullModeNone = sCullMode;
-
+			  
 			JShader* newShader = nullptr;
 			if (directory->HasFile(pathData.name))
 				newShader = JResourceManager::Instance().GetResourceByPath<JShader>(pathData.engineFileWPath);

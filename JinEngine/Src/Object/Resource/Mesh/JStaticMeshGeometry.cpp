@@ -196,6 +196,7 @@ namespace JinEngine
 				BegineForcedDestroy(meshGroup.GetMeshData(i)->GetMaterial().Get());
 
 			DeleteRFile();
+			BegineForcedDestroy(this);
 			return false;
 		}
 	}

@@ -17,7 +17,9 @@ namespace JinEngine
 			JBBox bounds = JBBox::InfBBox();
 		};
 
-		JBvh::JBvh() {}
+		JBvh::JBvh(const J_SPACE_SPATIAL_LAYER layer)
+			:JSpaceSpatial(layer)
+		{}
 		JBvh::~JBvh() {}
 		void JBvh::Build()noexcept
 		{
@@ -130,7 +132,7 @@ namespace JinEngine
 			}
 		}
 		void JBvh::UpdateGameObject(JGameObject* gameObject)noexcept
-		{
+		{ 
 			auto leafNode = leafNodeMap.find(gameObject->GetGuid());
 			if (leafNode != leafNodeMap.end())
 			{
@@ -148,10 +150,7 @@ namespace JinEngine
 			}
 		}
 		void JBvh::AddGameObject(JGameObject* newGameObject)noexcept
-		{
-			if (!GetInnerRoot()->IsParentLine(newGameObject))
-				return;
-
+		{  
 			JBvhNode* containNode = root->GetContainNodeToLeaf(newGameObject->GetRenderItem()->GetBoundingBox());
 			if (containNode != nullptr)
 				ReBuildBvh(containNode->GetNodeNumber(), newGameObject);
@@ -163,7 +162,6 @@ namespace JinEngine
 				DestroyBvhNode(leafNode->second->GetNodeNumber());
 			else if (innerGameObjectCandidate != nullptr && innerGameObjectCandidate->GetGuid() == gameObj->GetGuid())
 				innerGameObjectCandidate = nullptr;
-
 
 			if (IsDebugRoot(gameObj))
 			{

@@ -54,9 +54,9 @@ namespace JinEngine
 			{}
 		};
 	public:
-		static std::wstring ConvertToName(const J_GRAPHIC_SHADER_FUNCTION funcFlag)
+		static std::wstring ConvertToName(const J_GRAPHIC_SHADER_FUNCTION funcFlag, const size_t subPsoID)
 		{
-			return L"Gs" + std::to_wstring(funcFlag);
+			return L"Gs" + std::to_wstring(funcFlag) + L"_" + std::to_wstring(subPsoID);
 		}
 		static std::wstring ConvertToName(const J_COMPUTE_SHADER_FUNCTION funcFlag)
 		{

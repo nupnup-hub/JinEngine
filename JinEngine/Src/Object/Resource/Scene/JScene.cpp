@@ -169,7 +169,7 @@ namespace JinEngine
 				InitializeSpaceSpatial();
 				spatialStructure->SetInitTrigger(false);
 			}
-			spatialStructure->Activate();
+			spatialStructure->Activate(root, debugRoot);
 		}
 	}
 	void JScene::DoDeActivate()noexcept
@@ -312,10 +312,7 @@ namespace JinEngine
 		// && owner->GetRenderItem()->GetRenderLayer() != J_RENDER_LAYER::DEBUG_LAYER
 		if (owner == nullptr || !owner->HasRenderItem())
 			return;
-
-		if (owner->GetRenderItem()->GetRenderLayer() == J_RENDER_LAYER::DEBUG_LAYER)
-			return;
-
+		 
 		if (IsActivated())
 			spatialStructure->UpdateGameObject(owner);
 	}
@@ -360,7 +357,7 @@ namespace JinEngine
 				CallSetFirstFrameBuffOffset(*jRItem, 0);
 
 			CallSetSecondFrameBuffOffset(*jRItem, nowCount - 1);
-			if (spatialStructure != nullptr && renderLayer == J_RENDER_LAYER::OPAQUE_OBJECT)
+			if (spatialStructure != nullptr)
 				spatialStructure->AddGameObject(jRItem->GetOwner());
 		}
 
@@ -409,7 +406,7 @@ namespace JinEngine
 						}
 					}
 					//objectLayer[rIndex][mIndex].push_back(jOwner);
-					if (spatialStructure != nullptr && jRItem->GetRenderLayer() == J_RENDER_LAYER::OPAQUE_OBJECT)
+					if (spatialStructure != nullptr)
 						spatialStructure->RemoveGameObject(jOwner);
 				}
 				SetBackSideComponentDirty(*cashVec[i]);
@@ -517,66 +514,75 @@ namespace JinEngine
 			spatialStructure.reset();
 		}
 	}
-	std::vector<JGameObject*> JScene::GetAlignedObject(const DirectX::BoundingFrustum& frustum)const noexcept
+	std::vector<JGameObject*> JScene::GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept
 	{
 		if (spatialStructure != nullptr)
-			return spatialStructure->GetAlignedObject(frustum);
+			return spatialStructure->GetAlignedObject(layer, frustum);
 		else
 			return std::vector<JGameObject*>();
 	}
-	Core::JOctreeOption JScene::GetOctreeOption()const noexcept
+	Core::JOctreeOption JScene::GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept
 	{
-		return spatialStructure != nullptr ? spatialStructure->GetOctreeOption() : Core::JOctreeOption();
+		return spatialStructure != nullptr ? spatialStructure->GetOctreeOption(layer) : Core::JOctreeOption();
 	}
-	Core::JBvhOption JScene::GetBvhOption()const noexcept
+	Core::JBvhOption JScene::GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept
 	{
-		return spatialStructure != nullptr ? spatialStructure->GetBvhOption() : Core::JBvhOption();
+		return spatialStructure != nullptr ? spatialStructure->GetBvhOption(layer) : Core::JBvhOption();
 	}
-	Core::JKdTreeOption JScene::GetKdTreeOption()const noexcept
+	Core::JKdTreeOption JScene::GetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept
 	{
-		return spatialStructure != nullptr ? spatialStructure->GetKdTreeOption() : Core::JKdTreeOption();
+		return spatialStructure != nullptr ? spatialStructure->GetKdTreeOption(layer) : Core::JKdTreeOption();
 	}
-	void JScene::SetOctreeOption(const Core::JOctreeOption& newOption)noexcept
+	void JScene::SetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JOctreeOption& newOption)noexcept
 	{
 		if (spatialStructure != nullptr)
-			spatialStructure->SetOctreeOption(newOption);
+			spatialStructure->SetOctreeOption(layer, newOption);
 	}
-	void JScene::SetBvhOption(const Core::JBvhOption& newOption)noexcept
+	void JScene::SetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JBvhOption& newOption)noexcept
 	{
 		if (spatialStructure != nullptr)
-			spatialStructure->SetBvhOption(newOption);
+			spatialStructure->SetBvhOption(layer, newOption);
 	}
-	void JScene::SetKdTreeOption(const Core::JKdTreeOption& newOption)noexcept
+	void JScene::SetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JKdTreeOption& newOption)noexcept
 	{
 		if (spatialStructure != nullptr)
-			spatialStructure->SetKdTreeOption(newOption);
+			spatialStructure->SetKdTreeOption(layer, newOption);
 	}
-	void JScene::BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, Editor::JEditorBinaryTreeView& tree)noexcept
+	void JScene::BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, const Core::J_SPACE_SPATIAL_LAYER layer, Editor::JEditorBinaryTreeView& tree)noexcept
 	{
 		if (spatialStructure != nullptr)
-			spatialStructure->BuildDebugTree(type, tree);
+			spatialStructure->BuildDebugTree(type, layer, tree);
 	}
 	void JScene::InitializeSpaceSpatial()noexcept
 	{
 		if (spatialStructure != nullptr)
 		{
-			Core::JOctreeOption octreeOption = spatialStructure->GetOctreeOption();
+			Core::J_SPACE_SPATIAL_LAYER commonLayer = Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT;
+			Core::J_SPACE_SPATIAL_LAYER debugLayer = Core::J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT;
+
+			Core::JOctreeOption octreeOption = spatialStructure->GetOctreeOption(commonLayer);
 			octreeOption.commonOption.innerRoot = root;
 			octreeOption.commonOption.debugRoot = debugRoot;
-			spatialStructure->SetOctreeOption(octreeOption);
+			spatialStructure->SetOctreeOption(commonLayer, octreeOption);
 
-			Core::JBvhOption bvhOption = spatialStructure->GetBvhOption();
+			Core::JBvhOption bvhOption = spatialStructure->GetBvhOption(commonLayer);
 			bvhOption.commonOption.innerRoot = root;
 			bvhOption.commonOption.debugRoot = debugRoot;
 			bvhOption.commonOption.isSpaceSpatialActivated = true;
 			bvhOption.commonOption.isCullingActivated = true;
-			spatialStructure->SetBvhOption(bvhOption);
+			spatialStructure->SetBvhOption(commonLayer, bvhOption);
 
-			Core::JKdTreeOption kdOption = spatialStructure->GetKdTreeOption();
+			Core::JKdTreeOption kdOption = spatialStructure->GetKdTreeOption(commonLayer);
 			//kdOption.isOcclusionCullingActivated = true;
 			kdOption.commonOption.innerRoot = root;
 			kdOption.commonOption.debugRoot = debugRoot;
-			spatialStructure->SetKdTreeOption(kdOption);
+			spatialStructure->SetKdTreeOption(commonLayer, kdOption);
+
+			Core::JKdTreeOption kdDebugOption;
+			kdDebugOption.commonOption.innerRoot = debugRoot;
+			kdDebugOption.commonOption.debugRoot = debugRoot;
+			kdDebugOption.commonOption.isSpaceSpatialActivated = true;
+			spatialStructure->SetKdTreeOption(debugLayer, kdOption);
 		}
 	}
 	Core::J_FILE_IO_RESULT JScene::CallStoreResource()
@@ -618,18 +624,20 @@ namespace JinEngine
 			if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 				return res;
 
-			Core::JOctreeOption octreeOption = scene->GetOctreeOption();
-			Core::JBvhOption bvhOption = scene->GetBvhOption();
-			Core::JKdTreeOption kdTreeOption = scene->GetKdTreeOption();
-
 			JFileIOHelper::StoreAtomicData(stream, L"IsOpen:", scene->IsValid());
 			JFileIOHelper::StoreAtomicData(stream, L"IsMainScene:", JSceneManager::Instance().IsMainScene(scene));
 			JFileIOHelper::StoreAtomicData(stream, L"IsActivatedSpaceSpatial:", scene->IsSpaceSpatialActivated());
 
-			octreeOption.Store(stream);
-			bvhOption.Store(stream);
-			kdTreeOption.Store(stream);
+			for (uint i = 0; i < (uint)Core::J_SPACE_SPATIAL_LAYER::COUNT; ++i)
+			{
+				Core::JOctreeOption octreeOption = scene->GetOctreeOption((Core::J_SPACE_SPATIAL_LAYER)i);
+				Core::JBvhOption bvhOption = scene->GetBvhOption((Core::J_SPACE_SPATIAL_LAYER)i);
+				Core::JKdTreeOption kdTreeOption = scene->GetKdTreeOption((Core::J_SPACE_SPATIAL_LAYER)i);
 
+				octreeOption.Store(stream);
+				bvhOption.Store(stream);
+				kdTreeOption.Store(stream);
+			}
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
@@ -679,20 +687,27 @@ namespace JinEngine
 			{
 				newScene->ActivateSpaceSpatial();
 
-				if (metadata.hasOctreeInnerRoot)
-					metadata.octreeOption.commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.octreeInnerRootGuid).Get();
-				metadata.octreeOption.commonOption.debugRoot = newScene->debugRoot;
-				newScene->SetOctreeOption(metadata.octreeOption);
+				for (uint i = 0; i < (uint)Core::J_SPACE_SPATIAL_LAYER::COUNT; ++i)
+				{
+					const uint occIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::OCTREE;
+					const uint bvhIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::BVH;
+					const uint kdIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::KD_TREE;
 
-				if (metadata.hasBvhInnerRoot)
-					metadata.bvhOption.commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.bvhInnerRootGuid).Get();
-				metadata.bvhOption.commonOption.debugRoot = newScene->debugRoot;
-				newScene->SetBvhOption(metadata.bvhOption);
+					if (metadata.hasInnerRoot[occIndex][i])
+						metadata.octreeOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[occIndex][i]).Get();
+					metadata.octreeOption[i].commonOption.debugRoot = newScene->debugRoot;
+					newScene->SetOctreeOption((Core::J_SPACE_SPATIAL_LAYER)i, metadata.octreeOption[i]);
 
-				if (metadata.hasKdTreeInnerRoot)
-					metadata.kdTreeOption.commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.kdTreeInnerRootGuid).Get();
-				metadata.kdTreeOption.commonOption.debugRoot = newScene->debugRoot;
-				newScene->SetKdTreeOption(metadata.kdTreeOption);
+					if (metadata.hasInnerRoot[bvhIndex][i])
+						metadata.bvhOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[bvhIndex][i]).Get();
+					metadata.bvhOption[i].commonOption.debugRoot = newScene->debugRoot;
+					newScene->SetBvhOption((Core::J_SPACE_SPATIAL_LAYER)i, metadata.bvhOption[i]);
+
+					if (metadata.hasInnerRoot[kdIndex][i])
+						metadata.kdTreeOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[kdIndex][i]).Get();
+					metadata.kdTreeOption[i].commonOption.debugRoot = newScene->debugRoot;
+					newScene->SetKdTreeOption((Core::J_SPACE_SPATIAL_LAYER)i, metadata.kdTreeOption[i]);
+				}		 
 			}
 		}
 		return newScene;
@@ -707,9 +722,16 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, metadata.isMainScene);
 			JFileIOHelper::LoadAtomicData(stream, metadata.isActivatedSpaceSpatial);
 
-			metadata.octreeOption.Load(stream, metadata.hasOctreeInnerRoot, metadata.octreeInnerRootGuid);
-			metadata.bvhOption.Load(stream, metadata.hasBvhInnerRoot, metadata.bvhInnerRootGuid);
-			metadata.kdTreeOption.Load(stream, metadata.hasKdTreeInnerRoot, metadata.kdTreeInnerRootGuid);
+			for (uint i = 0; i < (uint)Core::J_SPACE_SPATIAL_LAYER::COUNT; ++i)
+			{ 
+				const uint occIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::OCTREE;
+				const uint bvhIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::BVH;
+				const uint kdIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::KD_TREE;
+
+				metadata.octreeOption[i].Load(stream, metadata.hasInnerRoot[occIndex][i], metadata.innerRootGuid[occIndex][i]);
+				metadata.bvhOption[i].Load(stream, metadata.hasInnerRoot[bvhIndex][i], metadata.innerRootGuid[bvhIndex][i]);
+				metadata.kdTreeOption[i].Load(stream, metadata.hasInnerRoot[kdIndex][i], metadata.innerRootGuid[kdIndex][i]);
+			}
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else

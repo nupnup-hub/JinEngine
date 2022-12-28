@@ -57,6 +57,10 @@ namespace JinEngine
 	{
 		return renderLayer;
 	}
+	J_RENDERITEM_SPACE_SPATIAL_MASK JRenderItem::GetSpaceSpatialMask()const noexcept
+	{
+		return spaceSpatialMask;
+	}
 	uint JRenderItem::GetVertexTotalCount()const noexcept
 	{
 		return mesh != nullptr ? mesh->GetTotalVertexCount() : 0;
@@ -204,6 +208,17 @@ namespace JinEngine
 	{
 		JRenderItem::renderVisibility = renderVisibility;
 	}
+	void JRenderItem::SetSpaceSpatialMask(const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask)noexcept
+	{		 
+		JRenderItem::spaceSpatialMask = spaceSpatialMask;
+		if ((JRenderItem::spaceSpatialMask & SPACE_SPATIAL_ALLOW_CULLING) == 0)
+			SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+
+		if (IsActivated())
+			DeRegisterComponent();
+		if (IsActivated())
+			RegisterComponent();
+	}
 	bool JRenderItem::IsVisible()const noexcept
 	{
 		return renderVisibility == J_RENDER_VISIBILITY::VISIBLE;
@@ -326,6 +341,7 @@ namespace JinEngine
 		JFileIOHelper::StoreHasObjectIden(stream, renderItem->mesh);
 		JFileIOHelper::StoreEnumData(stream, L"PrimitiveType:", renderItem->primitiveType);
 		JFileIOHelper::StoreEnumData(stream, L"RenderLayer:", renderItem->renderLayer);
+		JFileIOHelper::StoreEnumData(stream, L"SpaceSpatialMask:", renderItem->spaceSpatialMask);
 		JFileIOHelper::StoreAtomicData(stream, L"MaterialCount:", renderItem->material.size());
 
 		for (uint i = 0; i < renderItem->material.size(); ++i)
@@ -338,7 +354,7 @@ namespace JinEngine
 		if (owner == nullptr)
 			return nullptr;
 
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return nullptr;
 
 		std::wstring guide;
@@ -347,12 +363,14 @@ namespace JinEngine
 
 		D3D12_PRIMITIVE_TOPOLOGY primitiveType;
 		J_RENDER_LAYER renderLayer;
+		J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask;
 		uint materialCount;
 
 		JFileIOHelper::LoadObjectIden(stream, guid, flag);
 		Core::JIdentifier* mesh = JFileIOHelper::LoadHasObjectIden(stream);
 		JFileIOHelper::LoadEnumData(stream, primitiveType);
 		JFileIOHelper::LoadEnumData(stream, renderLayer);
+		JFileIOHelper::LoadEnumData(stream, spaceSpatialMask);
 		JFileIOHelper::LoadAtomicData(stream, materialCount);
 
 		std::vector<Core::JIdentifier*>materialVec(materialCount);
@@ -369,6 +387,7 @@ namespace JinEngine
 
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
+		newRenderItem->SetSpaceSpatialMask(spaceSpatialMask);
 		newRenderItem->material.resize(materialCount);
 		for (uint i = 0; i < materialCount; ++i)
 		{

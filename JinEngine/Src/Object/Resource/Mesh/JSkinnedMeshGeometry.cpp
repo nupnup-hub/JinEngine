@@ -286,6 +286,7 @@ namespace JinEngine
 				BegineForcedDestroy(skeletonAsset);
 
 			DeleteRFile();
+			BegineForcedDestroy(this);
 			return false;
 		}
 	}

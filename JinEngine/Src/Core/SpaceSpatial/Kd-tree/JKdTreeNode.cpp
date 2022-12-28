@@ -38,9 +38,9 @@ namespace JinEngine
 					return;
 
 				if (nodeType != J_KDTREE_NODE_TYPE::LEAF)
-					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
+					debugGameObject =JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
 				else
-					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
+					debugGameObject =JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
 
 				const float outlineFactor = 0.01f;
 				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetBoundingBox();
@@ -339,7 +339,11 @@ namespace JinEngine
 			{
 				const uint innerCount = (uint)innerGameObject.size();
 				for (uint i = 0; i < innerCount; ++i)
-					innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+				{
+					JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
+					if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
+						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+				}
 			} 
 			else
 			{
@@ -353,7 +357,11 @@ namespace JinEngine
 			{
 				const uint innerCount = (uint)innerGameObject.size();
 				for (uint i = 0; i < innerCount; ++i)
-					innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+				{ 
+					JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
+					if((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
+						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+				}
 			}
 			else
 			{

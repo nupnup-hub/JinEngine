@@ -77,7 +77,7 @@ namespace JinEngine
 		void OffReference()noexcept final;
 	protected:
 		bool Destroy(const bool isForced)override;
-		bool DeleteRFile()final;
+		void DeleteRFile()final;
 	private:
 		bool RegisterCashData()noexcept final;
 		bool DeRegisterCashData()noexcept final;

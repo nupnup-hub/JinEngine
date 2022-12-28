@@ -20,9 +20,12 @@ namespace JinEngine
 	}
 	JGameObject* JGameObjectFactoryUtility::CreateShape(JGameObject& parent, const size_t guid, const J_OBJECT_FLAG flag, const J_DEFAULT_SHAPE shape)
 	{
-		JGameObject* newGameObj = JGFI::Create(JDefaultShape::ConvertToName(shape), guid, flag, parent);
-		JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *newGameObj,
-			JResourceManager::Instance().GetDefaultMeshGeometry(shape));
+		return CreateShape(parent, JDefaultShape::ConvertToName(shape), guid, flag, shape);
+	}
+	JGameObject* JGameObjectFactoryUtility::CreateShape(JGameObject& parent, const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, const J_DEFAULT_SHAPE shape)
+	{
+		JGameObject* newGameObj = JGFI::Create(name, guid, flag, parent);
+		JCFU::CreateRenderItem(Core::MakeGuid(), OBJECT_FLAG_NONE, *newGameObj, JResourceManager::Instance().GetDefaultMeshGeometry(shape));
 		return newGameObj;
 	}
 	JGameObject* JGameObjectFactoryUtility::CreateModel(JGameObject& parent, const J_OBJECT_FLAG flag, JMeshGeometry* mesh)
@@ -61,7 +64,7 @@ namespace JinEngine
 		JCFU::CreateLight(Core::MakeGuid(), OBJECT_FLAG_NONE, *newGameObj, type);
 		return newGameObj;
 	}
-	JGameObject* JGameObjectFactoryUtility::CreateDebugGameObject(JGameObject& parent,
+	JGameObject* JGameObjectFactoryUtility::CreateDebugLineShape(JGameObject& parent,
 		const J_OBJECT_FLAG flag,
 		const J_DEFAULT_SHAPE meshType,
 		const J_DEFAULT_MATERIAL matType)
@@ -76,7 +79,7 @@ namespace JinEngine
 			JResourceManager::Instance().GetDefaultMeshGeometry(meshType),
 			D3D11_PRIMITIVE_TOPOLOGY_LINELIST,
 			J_RENDER_LAYER::DEBUG_LAYER);
-
+		newRItem->SetSpaceSpatialMask(SPACE_SPATIAL_NOT_ALLOW_ALL);
 		newRItem->SetMaterial(0, JResourceManager::Instance().GetDefaultMaterial(matType));
 		return newGameObj;
 	}

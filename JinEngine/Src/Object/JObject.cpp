@@ -73,13 +73,11 @@ namespace JinEngine
 		if (((int)object->GetFlag() & OBJECT_FLAG_DO_NOT_SAVE) > 0)
 			return Core::J_FILE_IO_RESULT::FAIL_DO_NOT_SAVE_DATA;
 
-		if (stream.is_open())
-		{ 
-			JFileIOHelper::StoreObjectIden(stream, object); 
-			return Core::J_FILE_IO_RESULT::SUCCESS;
-		}
-		else
+		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+	
+		JFileIOHelper::StoreObjectIden(stream, object);
+		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT JObject::LoadMetadata(std::wifstream& stream, JObjectMetaData& metadata)
 	{

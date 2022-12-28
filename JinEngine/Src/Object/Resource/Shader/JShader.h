@@ -34,19 +34,21 @@ namespace JinEngine
 			JShaderInitdata(const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag,
-				const JShaderGraphicSubPSO graphicPSO = JShaderGraphicSubPSO(),
+				const JShaderGraphicSubPSO newGraphicPSO = JShaderGraphicSubPSO(),
 				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 			JShaderInitdata(const J_OBJECT_FLAG flag,
 				const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag,
-				const JShaderGraphicSubPSO graphicPSO = JShaderGraphicSubPSO(),
+				const JShaderGraphicSubPSO newGraphicPSO = JShaderGraphicSubPSO(),
 				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 			JShaderInitdata(const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag, 
-				const JShaderGraphicSubPSO graphicPSO = JShaderGraphicSubPSO(),
+				const JShaderGraphicSubPSO newGraphicPSO = JShaderGraphicSubPSO(),
 				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 		public:
 			J_RESOURCE_TYPE GetResourceType() const noexcept;
 		private:
-			std::wstring MakeName(const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag, const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag)const noexcept;
+			static std::wstring MakeName(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, 
+				const JShaderGraphicSubPSO& graphicPSO,
+				const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept;
 		};
 		using InitData = JShaderInitdata;
 	private:
@@ -85,6 +87,8 @@ namespace JinEngine
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
+	protected:
+		bool Destroy(const bool isForced)final;
 	private:
 		void SetGraphicShaderFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunctionFlag);
 		void SetComputeShaderFunctionFlag(const J_COMPUTE_SHADER_FUNCTION newFunctionFlag);

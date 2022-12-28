@@ -132,7 +132,7 @@ namespace JinEngine
 		if (owner == nullptr)
 			return nullptr;
 
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return nullptr;
 
 		std::wstring guide;

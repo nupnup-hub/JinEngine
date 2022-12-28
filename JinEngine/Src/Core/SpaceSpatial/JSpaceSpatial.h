@@ -1,7 +1,7 @@
 #pragma once
 #include"JSpaceSpatialType.h"
 #include"JSpaceSpatialOption.h"
-#include"../Geometry/JCullingFrustum.h"
+#include"../Geometry/JCullingFrustum.h" 
 #include<DirectXCollision.h>
 
 namespace JinEngine
@@ -19,7 +19,10 @@ namespace JinEngine
 			bool isDebugActivated = false;
 			bool isDebugLeafOnly = true;
 			bool isCullingActivated = false;
+		private:
+			const J_SPACE_SPATIAL_LAYER layer;
 		public: 
+			JSpaceSpatial(const J_SPACE_SPATIAL_LAYER layer);
 			virtual ~JSpaceSpatial() = default;
 		protected:
 			virtual void Build()noexcept = 0;
@@ -35,9 +38,14 @@ namespace JinEngine
 			bool IsDebugActivated()const noexcept;
 			bool IsDebugLeafOnly()const noexcept; 
 			bool IsCullingActivated()const noexcept;
+			bool IsValidLayer(const J_RENDER_LAYER objLayer)const noexcept;
 
 			bool HasInnerRoot()const noexcept;
 			bool HasDebugRoot()const noexcept;
+
+			bool CanAddGameObject(JGameObject* gameObj)const noexcept; 
+		public:
+			J_SPACE_SPATIAL_LAYER GetLayer()const noexcept;
 		protected:
 			std::vector<JGameObject*> GetInnerObject()const noexcept;
 			JGameObject* GetInnerRoot()const noexcept;

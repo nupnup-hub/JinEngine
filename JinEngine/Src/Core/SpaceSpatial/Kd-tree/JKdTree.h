@@ -34,7 +34,7 @@ namespace JinEngine
 			uint leastObj = 2; 
 			uint alignLeafNodeCount = 64;
 		public:
-			JKdTree();
+			JKdTree(const J_SPACE_SPATIAL_LAYER layer);
 			~JKdTree();
 		protected:
 			void Build()noexcept final;

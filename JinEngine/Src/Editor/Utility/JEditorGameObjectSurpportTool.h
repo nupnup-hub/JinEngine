@@ -44,7 +44,11 @@ namespace JinEngine
 			public:
 				void CreateMaterial(const JVector4<float> matColor);
 			public:
-				void Initialze(JGameObject* debugRoot, const J_DEFAULT_SHAPE shape,  const JVector3<float> initRotation);
+				void Initialze(JGameObject* debugRoot,
+					const J_DEFAULT_SHAPE shape, 
+					const JVector3<float> initScale,
+					const JVector3<float> initRotation, 
+					const JVector3<float> initMovePos);
 				void Clear();
 			public:
 				bool IsValid()const noexcept;
@@ -65,6 +69,8 @@ namespace JinEngine
 		private:
 			Core::JUserPtr<JGameObject> debugRoot;
 			Core::JUserPtr<JGameObject> transformArrowRoot;
+			Core::JUserPtr<JGameObject> arrowCenter;
+			Core::JUserPtr<JMaterial> arrowCenterMaterial;
 			Arrow arrow[Constants::arrowCount];
 		public:
 			JEditorTransformTool(const J_DEFAULT_SHAPE shape, const float sizeRate); 

@@ -243,8 +243,9 @@ namespace JinEngine
 			return static_cast<JShader*>(resource);
 		else
 		{
-			J_GRAPHIC_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
-			JFile* file = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath())->GetFile(JShaderType::ConvertToName(shaderF));
+			const J_GRAPHIC_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
+			const JShaderGraphicSubPSO subPso = JDefaultShader::GetShaderGraphicPso(type);
+			JFile* file = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath())->GetFile(JShaderType::ConvertToName(shaderF, subPso.UniqueID()));
 			if (file != nullptr)
 				return static_cast<JShader*>(file->GetResource());
 			else
@@ -387,8 +388,7 @@ namespace JinEngine
 	}
 	void JResourceManagerImpl::Terminate()
 	{
-		StoreProjectResource();
-		DeleteUnuseMetafile();
+		StoreProjectResource(); 
 
 		auto rHintVec = JResourceObjectInterface::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY_REVERSE);
 		for (uint i = 0; i < rHintVec.size(); ++i)
@@ -414,11 +414,7 @@ namespace JinEngine
 			data.second.Clear();
 		rCash.clear();
 		resourceData->Clear();
-	}
-	void JResourceManagerImpl::DeleteUnuseMetafile()
-	{
-		//추가필요
-	}
+	} 
 	bool JResourceManagerImpl::AddResource(JResourceObject& newResource)noexcept
 	{
 		return rCash.find(newResource.GetResourceType())->second.AddResource(&newResource);
@@ -452,6 +448,7 @@ namespace JinEngine
 			{
 				JResourceObjectInterface* Ir = copied[i];
 				Ir->DeleteRFile();
+				JObject::BegineForcedDestroy(copied[i]);
 				copied[i] = nullptr;
 			}
 		}
@@ -501,7 +498,7 @@ namespace JinEngine
 			const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
 
 			const bool isUse = JDefaultShader::IsDefaultUse(type);
-			std::wstring shaderName = JShaderType::ConvertToName(shaderF);
+			std::wstring shaderName = JShaderType::ConvertToName(shaderF, subPso.UniqueID());
 			JFile* file = shaderDir->GetFile(shaderName);
 
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::SHADER)

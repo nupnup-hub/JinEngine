@@ -120,8 +120,7 @@ namespace JinEngine
 		void Terminate()final;
 		void StoreProjectResource()final;
 		void LoadSelectorResource()final;
-		void LoadProjectResource()final;
-		void DeleteUnuseMetafile();
+		void LoadProjectResource()final; 
 	private:
 		bool AddResource(JResourceObject& newResource)noexcept final;
 		bool RemoveResource(JResourceObject& resource)noexcept final; 

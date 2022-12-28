@@ -347,10 +347,10 @@ namespace JinEngine
 				newShaderPso.SampleDesc.Quality = 0; 
 			}
 			if ((gFunctionFlag & SHADER_FUNCTION_DEBUG) > 0)
-			{			 
-				newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+			{ 
+				// newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 				newShaderPso.DepthStencilState.StencilEnable = false;  
-
+				
 				D3D12_RENDER_TARGET_BLEND_DESC debugBlendDesc;
 				debugBlendDesc.BlendEnable = true;
 				debugBlendDesc.LogicOpEnable = false;
@@ -362,10 +362,9 @@ namespace JinEngine
 				debugBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
 				debugBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
 				debugBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-				  
 				for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
 					newShaderPso.BlendState.RenderTarget[i] = debugBlendDesc;
-			}
+			} 
 
 			if (subPso.primitiveCondition == J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO)
 				newShaderPso.PrimitiveTopologyType = subPso.ConvertD3d12PrimitiveType();
@@ -969,6 +968,9 @@ namespace JinEngine
 						const bool isEditorTarget = copiedHelper.scene->IsMainScene() && copiedHelper.cam->GetOwner()->GetFlag() == OBJECT_FLAG_UNIQUE_EDITOR_OBJECT;
 						const bool canCullingStart = occBase != nullptr && occBase->CanCullingStart();
 
+						if (isEditorTarget)
+							copiedHelper.allowDrawDebug = true;
+
 						DrawSceneRenderTarget(copiedHelper);
 						if (isMainTarget && canCullingStart)
 							occlusionCash.push_back(copiedHelper);
@@ -1048,8 +1050,11 @@ namespace JinEngine
 			if (option.IsHDOccActivated())
 				commandList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
 			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::SKY, J_MESHGEOMETRY_TYPE::STATIC), helper);
-			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_LAYER, J_MESHGEOMETRY_TYPE::STATIC), helper);
-			 
+			if (helper.allowDrawDebug)
+			{
+				commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+				DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_LAYER, J_MESHGEOMETRY_TYPE::STATIC), helper);
+			}
 			ResourceTransition(mainDepthResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
 		}
 		void JGraphicImpl::DrawSceneShadowMap(const JGraphicDrawHelper helper)
@@ -1100,7 +1105,7 @@ namespace JinEngine
 
 			currFrameResource->cameraCB->SetGraphicCBBufferView(commandList.Get(), 3, helper.camOffset);
 			DrawSceneBoundingBox(commandList.Get(), 
-				helper.scene->SpaceSpatialInterface()->GetAlignedObject(helper.scene->GetMainCamera()->GetBoundingFrustum()),
+				helper.scene->SpaceSpatialInterface()->GetAlignedObject(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, helper.scene->GetMainCamera()->GetBoundingFrustum()),
 				helper, DrawCondition(false, helper.scene->IsAnimatorActivated(), false ,false));
  
 			ResourceTransition(occDepthMap, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);

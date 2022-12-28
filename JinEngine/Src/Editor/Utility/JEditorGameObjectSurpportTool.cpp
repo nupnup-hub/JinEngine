@@ -4,6 +4,7 @@
 #include"../../Object/Component/Camera/JCamera.h"  
 #include"../../Object/Component/Transform/JTransform.h"
 #include"../../Object/Component/RenderItem/JRenderItem.h"
+#include"../../Object/Component/JComponentFactory.h"
 #include"../../Object/GameObject/JGameObject.h" 
 #include"../../Object/GameObject/JGameObjectFactory.h"
 #include"../../Object/GameObject/JGameObjectFactoryUtility.h"   
@@ -26,24 +27,30 @@ namespace JinEngine
 
 			material->SetAlbedoColor(matColor.ConvertXMF());
 			material->SetDebugMaterial(true);
-			material->SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::ALWAYS);
+			//material->SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::LESS_EQUAL);
 
 			JEditorTransformTool::Arrow::material = Core::GetUserPtr(material);
 		}
-		void JEditorTransformTool::Arrow::Initialze(JGameObject* debugRoot, const J_DEFAULT_SHAPE shape,  const JVector3<float> initRotation)
+		void JEditorTransformTool::Arrow::Initialze(JGameObject* debugRoot, 
+			const J_DEFAULT_SHAPE shape,  
+			const JVector3<float> initScale,
+			const JVector3<float> initRotation,
+			const JVector3<float> initMovePos)
 		{
 			J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT; 
 			JGameObject* arrow = JGFU::CreateShape(*debugRoot, flag, shape); 
-			arrow->GetTransform()->SetRotation(initRotation.ConvertXMF());
- 
+			JTransform* transform = arrow->GetTransform();
+
+			transform->SetScale(initScale.ConvertXMF());
+			transform->SetRotation(initRotation.ConvertXMF());
+			transform->SetPosition(initMovePos.ConvertXMF());
+			
 			JRenderItem* rItem = arrow->GetRenderItem();
 			const uint subMeshCount = rItem->GetSubmeshCount();
 			for (uint j = 0; j < subMeshCount; ++j)
 				rItem->SetMaterial(j, material.Get());
 			rItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_LAYER);
-
-			//arrow->GetTransform()->SetScale(initScale.ConvertXMF());
-
+ 
 			JEditorTransformTool::Arrow::arrow = Core::GetUserPtr(arrow); 
 		}
 	 
@@ -91,11 +98,11 @@ namespace JinEngine
 			
 			if (onDebug)
 			{
-				ImGui::Text((std::to_string(minPoint.x) + " " + std::to_string(minPoint.y)).c_str()); 
-				ImGui::SameLine();
-				ImGui::Text((std::to_string(maxPoint.x) + " " + std::to_string(maxPoint.y)).c_str());
-				ImGui::SameLine();
-				ImGui::Text((std::to_string(ImGui::GetMousePos().x) + " " + std::to_string(ImGui::GetMousePos().y)).c_str());
+				//ImGui::Text((std::to_string(minPoint.x) + " " + std::to_string(minPoint.y)).c_str()); 
+				//ImGui::SameLine();
+				//ImGui::Text((std::to_string(maxPoint.x) + " " + std::to_string(maxPoint.y)).c_str());
+				//ImGui::SameLine();
+				//ImGui::Text((std::to_string(ImGui::GetMousePos().x) + " " + std::to_string(ImGui::GetMousePos().y)).c_str());
 			} 
 			if (JImGuiImpl::IsMouseInRect(minPoint, maxPoint - minPoint))
 				return true;
@@ -116,6 +123,18 @@ namespace JinEngine
 			const XMFLOAT3 extents = JResourceManager::Instance().GetDefaultMeshGeometry(shape)->GetBoundingBox().Extents;
 			shapeLength = JMathHelper::Vector3Length(extents) * 2;
 
+			JDirectory* dir = JResourceManager::Instance().GetEditorResourceDirectory();
+			JMaterial* material = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(L"ArrowRootMaterial",
+				Core::MakeGuid(),
+				OBJECT_FLAG_EDITOR_OBJECT,
+				dir));
+
+			material->SetAlbedoColor(XMFLOAT4(0.7f, 0.7f, 0.7f, 0.7f));
+			material->SetDebugMaterial(true);
+			//material->SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::ALWAYS);
+
+			arrowCenterMaterial = Core::GetUserPtr(material);
+
 			JVector4<float> color[Constants::arrowCount]
 			{
 				JVector4<float>{0.8f, 0, 0, 0.75f},
@@ -130,19 +149,39 @@ namespace JinEngine
 		{
 			J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
 			JGameObject* transformArrowRoot = JGFI::Create(L"Transform Arrow Root", Core::MakeGuid(), flag, *debugRoot);
+			
 			//x y z
+			JVector3<float> scale[3]
+			{
+				JVector3<float>{0.85f, 0.85f, 0.85f},
+				JVector3<float>{0.85f, 0.85f, 0.85f},
+				JVector3<float>{0.85f, 0.85f, 0.85f}
+			};
 			JVector3<float> rot[3]
 			{
 				JVector3<float>{0, 0, -90},
 				JVector3<float>{0, 0, 0},
 				JVector3<float>{90, 0, 0},
 			};
+			JVector3<float> pos[3]
+			{
+				JVector3<float>{0.11f, 0, 0},
+				JVector3<float>{0, 0.11f, 0},
+				JVector3<float>{0, 0, 0.11f},
+			};
 
 			for (uint i = 0; i < 3; ++i)
-				arrow[i].Initialze(transformArrowRoot, shape, rot[i]);
+				arrow[i].Initialze(transformArrowRoot, shape, scale[i], rot[i], pos[i]);
 
+			JGameObject* arrowCenter = JGFU::CreateShape(*transformArrowRoot, flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE);
+			JRenderItem* arrowCenterRItem = arrowCenter->GetRenderItem();
+			arrowCenterRItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_LAYER); 
+			arrowCenterRItem->SetMaterial(0, arrowCenterMaterial.Get());
+
+			arrowCenter->GetTransform()->SetScale(XMFLOAT3(0.35f, 0.35f, 0.35f));
 			JEditorTransformTool::transformArrowRoot = Core::GetUserPtr(transformArrowRoot);
- 
+			JEditorTransformTool::arrowCenter = Core::GetUserPtr(arrowCenter);
+
 			isActivated = true;
 			isDraggingObject = false;
 			draggingIndex = -1;
@@ -179,7 +218,7 @@ namespace JinEngine
 
 			UpdateSelectedTransform(gameObject);
 			UpdateArrowPosition(gameObject, cam);
-			//UpdateArrowDragging(gameObject, cam);
+			UpdateArrowDragging(gameObject, cam);
 		}
 		void JEditorTransformTool::UpdateSelectedTransform(JGameObject* selected)
 		{

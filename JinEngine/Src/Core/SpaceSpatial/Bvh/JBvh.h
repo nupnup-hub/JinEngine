@@ -34,7 +34,7 @@ namespace JinEngine
 		private:
 			static constexpr uint bucketCount = 12;
 		public:
-			JBvh();
+			JBvh(const J_SPACE_SPATIAL_LAYER layer);
 			~JBvh();
 		protected:
 			void Build()noexcept final;

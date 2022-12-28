@@ -36,7 +36,7 @@ namespace JinEngine
 				 { 0,5,6 },{ 1,4,7 },{ 2,4,7 },{ 3,5,6 }
 			};
 		public:
-			JOctree();
+			JOctree(const J_SPACE_SPATIAL_LAYER layer);
 			~JOctree();
 		protected:
 			void Build()noexcept final;

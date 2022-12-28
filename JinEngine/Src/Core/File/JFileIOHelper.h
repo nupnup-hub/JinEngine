@@ -81,7 +81,7 @@ namespace JinEngine
 		template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
 		static Core::J_FILE_IO_RESULT LoadAtomicDataVec(std::wifstream& stream, std::vector<T>& vec)
 		{
-			if (!stream.is_open())
+			if (!stream.is_open() || stream.eof())
 				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 			std::wstring guide;

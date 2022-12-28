@@ -383,7 +383,7 @@ namespace JinEngine
 	}
 	JGameObject* JGameObject::LoadObject(std::wifstream& stream, JGameObject* parent, JScene* owenerScene)
 	{
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return nullptr;
 		 
 		std::wstring name;

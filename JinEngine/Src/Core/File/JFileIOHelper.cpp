@@ -17,7 +17,7 @@ namespace JinEngine
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadJString(std::wifstream& stream, std::wstring& str)
 	{
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		std::wstring guide;
@@ -63,7 +63,7 @@ namespace JinEngine
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadXMFloat2(std::wifstream& stream, DirectX::XMFLOAT2& xm2)
 	{
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		std::wstring guide;
@@ -72,7 +72,7 @@ namespace JinEngine
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadXMFloat3(std::wifstream& stream, DirectX::XMFLOAT3& xm3)
 	{
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		std::wstring guide;
@@ -81,7 +81,7 @@ namespace JinEngine
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadXMFloat4(std::wifstream& stream, DirectX::XMFLOAT4& xm4)
 	{
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		std::wstring guide;
@@ -90,7 +90,7 @@ namespace JinEngine
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadXMFloat4x4(std::wifstream& stream, DirectX::XMFLOAT4X4& xm4x4)
 	{
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		std::wstring guide;
@@ -113,7 +113,7 @@ namespace JinEngine
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadObjectIden(std::wifstream& stream, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag)
 	{
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		std::wstring guide;
@@ -129,7 +129,7 @@ namespace JinEngine
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadObjectIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag)
 	{
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		std::wstring guide;
@@ -160,7 +160,7 @@ namespace JinEngine
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadFsmObjectIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ Core::J_FSM_OBJECT_TYPE& oType)
 	{
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		std::wstring guide;
@@ -197,7 +197,7 @@ namespace JinEngine
 	}
 	Core::JIdentifier* JFileIOHelper::LoadHasObjectIden(std::wifstream& stream)
 	{
-		if (!stream.is_open())
+		if (!stream.is_open() || stream.eof())
 			return nullptr;
 
 		std::wstring guide;

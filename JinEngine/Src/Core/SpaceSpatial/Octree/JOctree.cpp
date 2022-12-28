@@ -15,7 +15,9 @@ namespace JinEngine
 	using namespace DirectX;
 	namespace Core
 	{
-		JOctree::JOctree(){}
+		JOctree::JOctree(const J_SPACE_SPATIAL_LAYER layer)
+			:JSpaceSpatial(layer)
+		{}
 		JOctree::~JOctree(){}
 		void JOctree::Build()noexcept
 		{ 
@@ -74,6 +76,9 @@ namespace JinEngine
 		}
 		void JOctree::UpdateGameObject(JGameObject* gameObject)noexcept
 		{
+			if (!IsValidLayer(gameObject->GetRenderItem()->GetRenderLayer()))
+				return;
+
 			auto octNode = containNodeMap.find(gameObject->GetGuid());
 			if (octNode != containNodeMap.end())
 			{
@@ -82,10 +87,7 @@ namespace JinEngine
 			}
 		}
 		void JOctree::AddGameObject(JGameObject* newGameObject)noexcept
-		{
-			if (!GetInnerRoot()->IsParentLine(newGameObject))
-				return;
-
+		{  
 			JRenderItem* rItem = newGameObject->GetRenderItem();
 			JOctreeNode* octNode = FindOptimalNode(rootNodeCash, rItem->GetBoundingBox());
 			if (octNode == nullptr)

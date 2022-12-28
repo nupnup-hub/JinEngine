@@ -36,8 +36,9 @@ namespace JinEngine
 			{ }
 		};
 
-
-		JKdTree::JKdTree() {}
+		JKdTree::JKdTree(const J_SPACE_SPATIAL_LAYER layer)
+			:JSpaceSpatial(layer)
+		{} 
 		JKdTree::~JKdTree() {}
 		void JKdTree::Build()noexcept
 		{
@@ -94,10 +95,10 @@ namespace JinEngine
 			}
 		}
 		void JKdTree::UpdateGameObject(JGameObject* gameObj)noexcept
-		{
-			if (!GetInnerRoot()->IsParentLine(gameObj))
+		{ 
+			if (!IsValidLayer(gameObj->GetRenderItem()->GetRenderLayer()))
 				return;
-
+			 
 			const BoundingBox bbox = gameObj->GetRenderItem()->GetBoundingBox();
 			std::vector<JKdTreeNode*> hitNode;
 			FindHasNode(root, gameObj, bbox, hitNode);
@@ -139,10 +140,7 @@ namespace JinEngine
 			*/
 		}
 		void JKdTree::AddGameObject(JGameObject* newGameObject)noexcept
-		{
-			if (!GetInnerRoot()->IsParentLine(newGameObject))
-				return;
-
+		{  
 			JKdTreeNode* containNode = FindContainNode(root, newGameObject->GetRenderItem()->GetBoundingBox());
 			if (containNode == nullptr)
 			{

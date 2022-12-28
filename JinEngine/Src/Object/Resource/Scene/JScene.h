@@ -33,18 +33,11 @@ namespace JinEngine
 			bool isMainScene = false;	 
 			//space spatial trigger
 			bool isActivatedSpaceSpatial;
-			//octree Opt
-			bool hasOctreeInnerRoot; 
-			size_t octreeInnerRootGuid; 
-			Core::JOctreeOption octreeOption;
-			//bvh Opt
-			bool hasBvhInnerRoot; 
-			size_t bvhInnerRootGuid; 
-			Core::JBvhOption bvhOption;
-			//kdTree Opt
-			bool hasKdTreeInnerRoot;
-			size_t kdTreeInnerRootGuid;
-			Core::JKdTreeOption kdTreeOption;
+			bool hasInnerRoot[(uint)Core::J_SPACE_SPATIAL_TYPE::COUNT][(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
+			size_t innerRootGuid[(uint)Core::J_SPACE_SPATIAL_TYPE::COUNT][(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
+			Core::JOctreeOption octreeOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
+			Core::JBvhOption bvhOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
+			Core::JKdTreeOption kdTreeOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
 		};
 	public:
 		struct JSceneInitData : public JResourceInitData
@@ -138,14 +131,14 @@ namespace JinEngine
 		void ViewCulling()noexcept final;
 		void ActivateSpaceSpatial(bool setInitValue = false)noexcept final;
 		void DeActivateSpaceSpatial()noexcept final;
-		std::vector<JGameObject*> GetAlignedObject(const DirectX::BoundingFrustum& frustum)const noexcept final;
-		Core::JOctreeOption GetOctreeOption()const noexcept final;
-		Core::JBvhOption GetBvhOption()const noexcept final;
-		Core::JKdTreeOption GetKdTreeOption()const noexcept final;
-		void SetOctreeOption(const Core::JOctreeOption& newOption)noexcept final;
-		void SetBvhOption(const Core::JBvhOption& newOption)noexcept final;
-		void SetKdTreeOption(const Core::JKdTreeOption& newOption)noexcept final;
-		void BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, Editor::JEditorBinaryTreeView& tree)noexcept final; 
+		std::vector<JGameObject*> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept final;
+		Core::JOctreeOption GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept final;
+		Core::JBvhOption GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept final;
+		Core::JKdTreeOption GetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept final;
+		void SetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JOctreeOption& newOption)noexcept final;
+		void SetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JBvhOption& newOption)noexcept final;
+		void SetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JKdTreeOption& newOption)noexcept final;
+		void BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, const Core::J_SPACE_SPATIAL_LAYER layer, Editor::JEditorBinaryTreeView& tree)noexcept final;
 		void InitializeSpaceSpatial()noexcept;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;

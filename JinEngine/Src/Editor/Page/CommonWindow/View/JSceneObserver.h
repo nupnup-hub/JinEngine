@@ -84,6 +84,8 @@ namespace JinEngine
 			void ShadowMapViewerOnScreen();
 			void OcclusionResultOnScreen();
 		public:
+			void DoSetOpen()noexcept final;
+			void DoSetClose()noexcept final;
 			void DoActivate() noexcept final;
 			void DoDeActivate() noexcept final;
 			void StoreEditorWindow(std::wofstream& stream)final;

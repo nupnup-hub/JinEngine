@@ -102,7 +102,7 @@ namespace JinEngine
 	protected:
 		virtual Core::J_FILE_IO_RESULT CallStoreResource() = 0;
 	private:
-		virtual bool DeleteRFile() = 0;
+		virtual void DeleteRFile() = 0;
 	protected:
 		static void RegisterTypeInfo(const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypeInterfaceFunc& rTypeIFunc);
 	protected:

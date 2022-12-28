@@ -1,4 +1,5 @@
 #include"JShaderSubPSO.h"
+#include<string>
 
 namespace JinEngine
 {
@@ -10,6 +11,15 @@ namespace JinEngine
 			primitiveType == pso.primitiveType &&
 			depthCompareFunc == pso.depthCompareFunc &&
 			isCullModeNone == pso.isCullModeNone;
+	}
+	size_t JShaderGraphicSubPSO::UniqueID()const noexcept
+	{
+		return std::hash <std::wstring>{}(L"PrimitiveC:" + std::to_wstring((int)primitiveCondition) +
+			L"DepthComparesionC:" + std::to_wstring((int)depthCompareCondition) +
+			L"CullModeC:" + std::to_wstring((int)cullModeCondition) +
+			L"Primitive:" + std::to_wstring((int)primitiveType) +
+			L"DepthComparesion:" + std::to_wstring((int)depthCompareFunc) +
+			L"CullMode:" + std::to_wstring(isCullModeNone));
 	}
 	D3D12_PRIMITIVE_TOPOLOGY_TYPE JShaderGraphicSubPSO::ConvertD3d12PrimitiveType()const noexcept
 	{

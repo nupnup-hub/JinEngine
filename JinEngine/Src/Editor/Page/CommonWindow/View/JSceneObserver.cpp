@@ -33,8 +33,7 @@ namespace JinEngine
 			:JEditorWindow(name, std::move(attribute), pageType)
 		{
 			editorCamCtrl = std::make_unique<JEditorCameraControl>();
-			editorBTreeView = std::make_unique<JEditorBinaryTreeView>();
-			transformTool = std::make_unique<JEditorTransformTool>(J_DEFAULT_SHAPE::DEFAULT_SHAPE_ARROW, 1 / 16);
+			editorBTreeView = std::make_unique<JEditorBinaryTreeView>();		 
 		}
 		JSceneObserver::~JSceneObserver() {}
 		J_EDITOR_WINDOW_TYPE JSceneObserver::GetWindowType()const noexcept
@@ -47,7 +46,6 @@ namespace JinEngine
 			JSceneObserver::editorCameraName = editorCameraName;
 			lastCamPos = { 0,0,0 };
 			lastCamRot = { 0,0,0 };
-			transformTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
 		}
 		void JSceneObserver::UpdateWindow()
 		{
@@ -128,7 +126,7 @@ namespace JinEngine
 		void JSceneObserver::OctreeOptionOnScreen()
 		{
 			JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
-			Core::JOctreeOption octreeOption = iSceneSpace->GetOctreeOption();
+			Core::JOctreeOption octreeOption = iSceneSpace->GetOctreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
 			int minSize = octreeOption.minSize;
 			int octreeSizeSquare = octreeOption.octreeSizeSquare;
 
@@ -141,12 +139,12 @@ namespace JinEngine
 			octreeOption.minSize = minSize;
 			octreeOption.octreeSizeSquare = octreeSizeSquare;
 			if (isChanged)
-				iSceneSpace->SetOctreeOption(octreeOption);
+				iSceneSpace->SetOctreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, octreeOption);
 		}
 		void JSceneObserver::BvhOptionOnScreen()
 		{
 			JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
-			Core::JBvhOption bvhOption = iSceneSpace->GetBvhOption();
+			Core::JBvhOption bvhOption = iSceneSpace->GetBvhOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
 
 			bool isChanged = false;
 
@@ -193,12 +191,12 @@ namespace JinEngine
 
 			isChanged |= CommonOptionOnScreen("Bvh", bvhOption.commonOption);
 			if (isChanged)
-				iSceneSpace->SetBvhOption(bvhOption);
+				iSceneSpace->SetBvhOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, bvhOption);
 		}
 		void JSceneObserver::KdTreeOptionOnScreen()
 		{
 			JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
-			Core::JKdTreeOption kdTreeOption = iSceneSpace->GetKdTreeOption();
+			Core::JKdTreeOption kdTreeOption = iSceneSpace->GetKdTreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
 
 			bool isChanged = false;
 
@@ -245,7 +243,7 @@ namespace JinEngine
 
 			isChanged |= CommonOptionOnScreen("KdTree", kdTreeOption.commonOption);
 			if (isChanged)
-				iSceneSpace->SetKdTreeOption(kdTreeOption);
+				iSceneSpace->SetKdTreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, kdTreeOption);
 		}
 		bool JSceneObserver::CommonOptionOnScreen(const std::string& uniqueName, Core::JSpaceSpatialOption& commonOption)
 		{
@@ -263,7 +261,7 @@ namespace JinEngine
 			{
 				JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
 				editorBTreeView->Clear();
-				iSceneSpace->BuildDebugTree(type, *editorBTreeView);
+				iSceneSpace->BuildDebugTree(type, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, *editorBTreeView);
 				editorBTreeView->TreeOnScreen(uniqueLabel, isOpenSpatialSpaceTreeViewer);
 			}
 		}
@@ -287,7 +285,7 @@ namespace JinEngine
 		}
 		void JSceneObserver::MakeMainCamFrustum()
 		{ 
-			mainCamFrustum = Core::GetUserPtr(JGFU::CreateDebugGameObject(*scene->GetRootGameObject(),
+			mainCamFrustum = Core::GetUserPtr(JGFU::CreateDebugLineShape(*scene->GetRootGameObject(),
 				OBJECT_FLAG_EDITOR_OBJECT,
 				J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM,
 				J_DEFAULT_MATERIAL::DEBUG_LINE_RED));
@@ -350,6 +348,18 @@ namespace JinEngine
 			//JImGuiImpl::BeginWindow("##OcclusionResultWindow2", &isOpenOcclusionMapViewer, ImGuiWindowFlags_NoDocking); 
 			//ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugSrvHandle(0)).ptr, ImGui::GetWindowSize());
 			//JImGuiImpl::EndWindow();
+		}
+		void JSceneObserver::DoSetOpen()noexcept
+		{
+			JEditorWindow::DoSetOpen();
+
+			transformTool = std::make_unique<JEditorTransformTool>(J_DEFAULT_SHAPE::DEFAULT_SHAPE_ARROW, 1 / 16);
+			transformTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
+		}
+		void JSceneObserver::DoSetClose()noexcept
+		{
+			JEditorWindow::DoSetClose();
+			transformTool.reset();
 		}
 		void JSceneObserver::DoActivate()noexcept
 		{

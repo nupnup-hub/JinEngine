@@ -116,15 +116,15 @@ namespace JinEngine
 		virtual void ViewCulling()noexcept = 0;  
 		virtual void ActivateSpaceSpatial(bool setInitValue = false)noexcept = 0;
 		virtual void DeActivateSpaceSpatial()noexcept = 0;	 
-		virtual std::vector<JGameObject*> GetAlignedObject(const DirectX::BoundingFrustum& frustum)const noexcept = 0;
-		virtual Core::JOctreeOption GetOctreeOption()const noexcept = 0;
-		virtual Core::JBvhOption GetBvhOption()const noexcept = 0;
-		virtual Core::JKdTreeOption GetKdTreeOption()const noexcept = 0;
-		virtual void SetOctreeOption(const Core::JOctreeOption& newOption)noexcept = 0;
-		virtual void SetBvhOption(const Core::JBvhOption& newOption)noexcept = 0;
-		virtual void SetKdTreeOption(const Core::JKdTreeOption& newOption)noexcept = 0;
+		virtual std::vector<JGameObject*> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept = 0;
+		virtual Core::JOctreeOption GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept = 0;
+		virtual Core::JBvhOption GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept = 0;
+		virtual Core::JKdTreeOption GetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept = 0;
+		virtual void SetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JOctreeOption& newOption)noexcept = 0;
+		virtual void SetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JBvhOption& newOption)noexcept = 0;
+		virtual void SetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JKdTreeOption& newOption)noexcept = 0;
 		//Test
-		virtual void BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, Editor::JEditorBinaryTreeView& tree)noexcept = 0; 
+		virtual void BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, const Core::J_SPACE_SPATIAL_LAYER layer, Editor::JEditorBinaryTreeView& tree)noexcept = 0;
 	};
 
 	class JSceneInterface :public JResourceObject,

@@ -24,9 +24,9 @@ namespace JinEngine
 					return;
 
 				if (innerGameObject.size() == 0)
-					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
+					debugGameObject =JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
 				else
-					debugGameObject = JGFU::CreateDebugGameObject(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
+					debugGameObject =JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
 				
 				const float outlineFactor = 0.01f;
 				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetBoundingBox();
@@ -203,8 +203,11 @@ namespace JinEngine
 			const uint innerGameObjCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerGameObjCount; ++i)
 			{
-				J_CULLING_FLAG flag = oriFlag;
 				JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
+				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) == 0)
+					continue;
+
+				J_CULLING_FLAG flag = oriFlag;
 				if (camFrustum.IsBoundingBoxIn(rItem->GetBoundingBox(), flag) != J_CULLING_RESULT::DISJOINT)
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 				else
@@ -216,7 +219,10 @@ namespace JinEngine
 			const uint innerGameObjCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerGameObjCount; ++i)
 			{
-				JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
+				JRenderItem* rItem = innerGameObject[i]->GetRenderItem();				 
+				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) == 0)
+					continue;
+
 				const BoundingBox bbox = rItem->GetBoundingBox();
 				const ContainmentType res = camFrustum.Contains(bbox);
 				if (res == ContainmentType::CONTAINS)
@@ -254,7 +260,11 @@ namespace JinEngine
 		{
 			const uint innerGameObjCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerGameObjCount; ++i)
-				innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+			{
+				JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
+				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
+					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+			}
 
 			if (childrenNode.size() > 0)
 			{

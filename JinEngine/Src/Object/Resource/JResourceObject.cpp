@@ -167,13 +167,10 @@ namespace JinEngine
 		JResourceManager::Instance().ResourceStorageInterface()->RemoveResource(*this);
 		return true;
 	}
-	bool JResourceObject::DeleteRFile()
-	{
-		const std::wstring filePath = GetPath();
-		const std::wstring metafilePath = GetMetafilePath(); 
-		_wremove(filePath.c_str());
-		_wremove(metafilePath.c_str());
-		return BegineForcedDestroy(this);
+	void JResourceObject::DeleteRFile()
+	{ 
+		_wremove(GetPath().c_str());
+		_wremove(GetMetafilePath().c_str()); 
 	}
 	bool JResourceObject::RegisterCashData()noexcept
 	{

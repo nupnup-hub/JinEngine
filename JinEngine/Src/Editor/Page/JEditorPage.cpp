@@ -305,7 +305,6 @@ namespace JinEngine
 			else
 				JFileIOHelper::StoreJString(stream, L"FocusWindowName:", L"None");
 
-
 			JFileIOHelper::StoreAtomicData(stream, L"WindowCount:", (uint)windows.size());
 			const uint editorWindowCount = (uint)windows.size();
 			for (uint i = 0; i < editorWindowCount; ++i)

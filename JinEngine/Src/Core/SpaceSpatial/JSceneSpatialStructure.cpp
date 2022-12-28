@@ -3,139 +3,101 @@
 #include"Bvh/JBvh.h"
 #include"Kd-tree/JKdTree.h"
 #include"../../Object/GameObject/JGameObject.h"
- 
+#include"../../Object/Component/RenderItem/JRenderItem.h"
+
 namespace JinEngine
 {
 	namespace Core
 	{
-		JSceneSpatialStructure::ActivatedOptionCash::ActivatedOptionCash(const JOctreeOption& octreeOption,
-			const JBvhOption& bvhOption,
-			const JKdTreeOption& kdTreeOption)
+		JOctreeOption JSceneSpatialStructure::ActivatedOptionCash::GetOctreeOption(const J_SPACE_SPATIAL_LAYER layer)const noexcept
 		{
-			SetOctreeOption(octreeOption);
-			SetBvhOption(bvhOption);
-			SetKdTreeOption(kdTreeOption);
-		}
-		JOctreeOption JSceneSpatialStructure::ActivatedOptionCash::GetOctreeOption()const noexcept
-		{
-			JGameObject* innerRoot = nullptr;
-			if (preHasInnerRoot[(int)J_SPACE_SPATIAL_TYPE::OCTREE])
-				innerRoot = Core::GetRawPtr<JGameObject>(preInnerRootGuid[octreeIndex]);
-
-			JGameObject* debugRoot = nullptr;
-			if (preHasDebugRoot[octreeIndex])
-				debugRoot = Core::GetRawPtr<JGameObject>(preDebugRootGuid[octreeIndex]);
-
-			JOctreeOption option = preOctreeOption;
-			option.commonOption.innerRoot = innerRoot;
-			option.commonOption.debugRoot = debugRoot;
-
+			JOctreeOption option = preOctreeOption[(int)layer];
+			LoadRoot(option.commonOption, J_SPACE_SPATIAL_TYPE::OCTREE, layer);
 			return option;
 		}
-		JBvhOption JSceneSpatialStructure::ActivatedOptionCash::GetBvhOption()const noexcept
+		JBvhOption JSceneSpatialStructure::ActivatedOptionCash::GetBvhOption(const J_SPACE_SPATIAL_LAYER layer)const noexcept
 		{
-			JGameObject* innerRoot = nullptr;
-			if (preHasInnerRoot[bvhIndex])
-				innerRoot = Core::GetRawPtr<JGameObject>(preInnerRootGuid[bvhIndex]);
-
-			JGameObject* debugRoot = nullptr;
-			if (preHasDebugRoot[bvhIndex])
-				debugRoot = Core::GetRawPtr<JGameObject>(preDebugRootGuid[bvhIndex]);
-
-			JBvhOption option = preBvhOption;
-			option.commonOption.innerRoot = innerRoot;
-			option.commonOption.debugRoot = debugRoot;
-
+			JBvhOption option = preBvhOption[(int)layer];
+			LoadRoot(option.commonOption, J_SPACE_SPATIAL_TYPE::BVH, layer);
 			return option;
 		}
-		JKdTreeOption JSceneSpatialStructure::ActivatedOptionCash::GetKdTreeOption()const noexcept
+		JKdTreeOption JSceneSpatialStructure::ActivatedOptionCash::GetKdTreeOption(const J_SPACE_SPATIAL_LAYER layer)const noexcept
 		{
-			JGameObject* innerRoot = nullptr;
-			if (preHasInnerRoot[kdTreeIndex])
-				innerRoot = Core::GetRawPtr<JGameObject>(preInnerRootGuid[kdTreeIndex]);
-
-			JGameObject* debugRoot = nullptr;
-			if (preHasDebugRoot[kdTreeIndex])
-				debugRoot = Core::GetRawPtr<JGameObject>(preDebugRootGuid[kdTreeIndex]);
-
-			JKdTreeOption option = preKdTreeOption;
-			option.commonOption.innerRoot = innerRoot;
-			option.commonOption.debugRoot = debugRoot;
-
+			JKdTreeOption option = preKdTreeOption[(int)layer];
+			LoadRoot(option.commonOption, J_SPACE_SPATIAL_TYPE::KD_TREE, layer);
 			return option;
 		}
-		void JSceneSpatialStructure::ActivatedOptionCash::SetOctreeOption(const JOctreeOption& octreeOption)
-		{
-			preOctreeOption = octreeOption;
-			preHasInnerRoot[octreeIndex] = octreeOption.commonOption.HasInnerRoot();
-			if (preHasInnerRoot[octreeIndex])
-				preInnerRootGuid[octreeIndex] = octreeOption.commonOption.innerRoot->GetGuid();
-			else
-				preInnerRootGuid[octreeIndex] = 0;
-
-			preHasDebugRoot[octreeIndex] = octreeOption.commonOption.HasDebugRoot();
-			if (preHasDebugRoot[octreeIndex])
-				preDebugRootGuid[octreeIndex] = octreeOption.commonOption.debugRoot->GetGuid();
-			else
-				preDebugRootGuid[octreeIndex] = 0;
+		void JSceneSpatialStructure::ActivatedOptionCash::SetOctreeOption(const J_SPACE_SPATIAL_LAYER layer, const JOctreeOption& octreeOption)
+		{ 
+			preOctreeOption[(uint)layer] = octreeOption;
+			StoreRoot(octreeOption.commonOption, J_SPACE_SPATIAL_TYPE::OCTREE, layer);
 		}
-		void JSceneSpatialStructure::ActivatedOptionCash::SetBvhOption(const JBvhOption& bvhOption)
-		{
-			preBvhOption = bvhOption;
-			preHasInnerRoot[bvhIndex] = bvhOption.commonOption.HasInnerRoot();
-			if (preHasInnerRoot[bvhIndex])
-				preInnerRootGuid[bvhIndex] = bvhOption.commonOption.innerRoot->GetGuid();
-			else
-				preInnerRootGuid[bvhIndex] = 0;
-
-			preHasDebugRoot[bvhIndex] = bvhOption.commonOption.HasDebugRoot();
-			if (preHasDebugRoot[bvhIndex])
-				preDebugRootGuid[bvhIndex] = bvhOption.commonOption.debugRoot->GetGuid();
-			else
-				preDebugRootGuid[bvhIndex] = 0;
+		void JSceneSpatialStructure::ActivatedOptionCash::SetBvhOption(const J_SPACE_SPATIAL_LAYER layer, const JBvhOption& bvhOption)
+		{ 
+			preBvhOption[(uint)layer] = bvhOption;
+			StoreRoot(bvhOption.commonOption, J_SPACE_SPATIAL_TYPE::BVH, layer);
 		}
-		void JSceneSpatialStructure::ActivatedOptionCash::SetKdTreeOption(const JKdTreeOption& kdTreeOption)
+		void JSceneSpatialStructure::ActivatedOptionCash::SetKdTreeOption(const J_SPACE_SPATIAL_LAYER layer, const JKdTreeOption& kdTreeOption)
 		{
-			preKdTreeOption = kdTreeOption;
-			preHasInnerRoot[kdTreeIndex] = kdTreeOption.commonOption.HasInnerRoot();
-			if (preHasInnerRoot[kdTreeIndex])
-				preInnerRootGuid[kdTreeIndex] = kdTreeOption.commonOption.innerRoot->GetGuid();
-			else
-				preInnerRootGuid[kdTreeIndex] = 0;
+			preKdTreeOption[(uint)layer] = kdTreeOption;
+			StoreRoot(kdTreeOption.commonOption, J_SPACE_SPATIAL_TYPE::KD_TREE, layer);
+		}
+		void JSceneSpatialStructure::ActivatedOptionCash::LoadRoot(JSpaceSpatialOption& option, const J_SPACE_SPATIAL_TYPE type, const J_SPACE_SPATIAL_LAYER layer)const noexcept
+		{
+			uint typeIndex = (uint)type;
+			uint layerIndex = (uint)layer;
 
-			preHasDebugRoot[kdTreeIndex] = kdTreeOption.commonOption.HasDebugRoot();
-			if (preHasDebugRoot[kdTreeIndex])
-				preDebugRootGuid[kdTreeIndex] = kdTreeOption.commonOption.debugRoot->GetGuid();
+			option.innerRoot = nullptr;
+			if (preHasInnerRoot[typeIndex][layerIndex])
+				option.innerRoot = Core::GetRawPtr<JGameObject>(preInnerRootGuid[typeIndex][layerIndex]);
+
+			option.debugRoot = nullptr;
+			if (preHasDebugRoot[typeIndex][layerIndex])
+				option.debugRoot = Core::GetRawPtr<JGameObject>(preDebugRootGuid[typeIndex][layerIndex]);
+		}
+		void JSceneSpatialStructure::ActivatedOptionCash::StoreRoot(const JSpaceSpatialOption& option, const J_SPACE_SPATIAL_TYPE type, const J_SPACE_SPATIAL_LAYER layer)noexcept
+		{
+			uint typeIndex = (uint)type;
+			uint layerIndex = (uint)layer;
+
+			preHasInnerRoot[typeIndex][layerIndex] = option.HasInnerRoot();
+			if (preHasInnerRoot[typeIndex][layerIndex])
+				preInnerRootGuid[typeIndex][layerIndex] = option.innerRoot->GetGuid();
 			else
-				preDebugRootGuid[kdTreeIndex] = 0;
+				preInnerRootGuid[typeIndex][layerIndex] = 0;
+
+			preHasDebugRoot[typeIndex][layerIndex] = option.HasDebugRoot();
+			if (preHasDebugRoot[typeIndex][layerIndex])
+				preDebugRootGuid[typeIndex][layerIndex] = option.debugRoot->GetGuid();
+			else
+				preDebugRootGuid[typeIndex][layerIndex] = 0;
 		}
 
 		JSceneSpatialStructure::JSceneSpatialStructure() 
-		{
-			octree = std::make_unique<JOctree>();
-			bvh = std::make_unique<JBvh>();
-			kdTree = std::make_unique<JKdTree>();
-			spaceSpatialVec.push_back(octree.get());
-			spaceSpatialVec.push_back(bvh.get());
-			spaceSpatialVec.push_back(kdTree.get());
+		{ 
+			for(uint i = 0; i < (uint)J_SPACE_SPATIAL_LAYER::COUNT; ++i) 
+			{
+				octree[i] = std::make_unique<JOctree>((J_SPACE_SPATIAL_LAYER)i);
+				bvh[i] = std::make_unique<JBvh>((J_SPACE_SPATIAL_LAYER)i);
+				kdTree[i] = std::make_unique<JKdTree>((J_SPACE_SPATIAL_LAYER)i);
+		
+				spaceSpatialVec.push_back(octree[i].get());
+				spaceSpatialVec.push_back(bvh[i].get());
+				spaceSpatialVec.push_back(kdTree[i].get());
+			}		  
 		}
 		JSceneSpatialStructure::~JSceneSpatialStructure(){}
 		void JSceneSpatialStructure::Clear()noexcept
 		{
-			if (octree != nullptr)
+			for (uint i = 0; i < (uint)J_SPACE_SPATIAL_LAYER::COUNT; ++i)
 			{
-				octree->Clear();
-				octree.reset();
-			}
-			if (bvh != nullptr)
-			{
-				bvh->Clear();
-				bvh.reset();
-			}
-			if (kdTree != nullptr)
-			{
-				kdTree->Clear();
-				kdTree.reset();
+				octree[i]->Clear();
+				bvh[i]->Clear();
+				kdTree[i]->Clear();
+
+				octree[i].reset();
+				bvh[i].reset();
+				kdTree[i].reset();
 			}
 			spaceSpatialVec.clear();
 		}
@@ -157,17 +119,20 @@ namespace JinEngine
 		}
 		void JSceneSpatialStructure::UpdateGameObject(JGameObject* gameObject)noexcept
 		{
+			if (!gameObject->HasRenderItem())
+				return;
+			 
 			for (auto& data : spaceSpatialVec)
 			{
-				if (data->IsSpaceSpatialActivated() && data->IsCullingActivated())
+				if (data->IsSpaceSpatialActivated())
 					data->UpdateGameObject(gameObject);
 			}
 		}
 		void JSceneSpatialStructure::AddGameObject(JGameObject* gameObject)noexcept
-		{
+		{ 
 			for (auto& data : spaceSpatialVec)
 			{
-				if (data->IsSpaceSpatialActivated())
+				if (data->IsSpaceSpatialActivated() && data->CanAddGameObject(gameObject))
 					data->AddGameObject(gameObject);
 			}
 		}
@@ -182,47 +147,47 @@ namespace JinEngine
 					data->RemoveGameObject(gameObject);
 			}
 		}
-		std::vector<JGameObject*> JSceneSpatialStructure::GetAlignedObject(const DirectX::BoundingFrustum& camFrustum)const noexcept
+		std::vector<JGameObject*> JSceneSpatialStructure::GetAlignedObject(const J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& camFrustum)const noexcept
 		{
 			if (activateTrigger)
 			{
-				if (kdTree->IsSpaceSpatialActivated())
-					return kdTree->GetAlignedObject(camFrustum);
+				if (kdTree[(uint)layer]->IsSpaceSpatialActivated())
+					return kdTree[(uint)layer]->GetAlignedObject(camFrustum);
 			}
 			return std::vector<JGameObject*>();
 		}
-		JOctreeOption JSceneSpatialStructure::GetOctreeOption()const noexcept
+		JOctreeOption JSceneSpatialStructure::GetOctreeOption(const J_SPACE_SPATIAL_LAYER layer)const noexcept
 		{
-			return octree->GetOctreeOption();
+			return octree[(uint)layer]->GetOctreeOption();
 		}
-		JBvhOption JSceneSpatialStructure::GetBvhOption()const noexcept
+		JBvhOption JSceneSpatialStructure::GetBvhOption(const J_SPACE_SPATIAL_LAYER layer)const noexcept
 		{
-			return bvh->GetBvhOption();
+			return bvh[(uint)layer]->GetBvhOption();
 		}
-		JKdTreeOption JSceneSpatialStructure::GetKdTreeOption()const noexcept
+		JKdTreeOption JSceneSpatialStructure::GetKdTreeOption(const J_SPACE_SPATIAL_LAYER layer)const noexcept
 		{
-			return kdTree->GetKdTreeOption();
+			return kdTree[(uint)layer]->GetKdTreeOption();
 		}
-		void JSceneSpatialStructure::SetOctreeOption(const JOctreeOption& option)
+		void JSceneSpatialStructure::SetOctreeOption(const J_SPACE_SPATIAL_LAYER layer, const JOctreeOption& option)
 		{
 			if (activateTrigger)
-				octree->SetOctreeOption(option);
+				octree[(uint)layer]->SetOctreeOption(option);
 			else
-				optionCash->SetOctreeOption(option);
+				optionCash->SetOctreeOption(layer, option);
 		}
-		void JSceneSpatialStructure::SetBvhOption(const JBvhOption& option)
+		void JSceneSpatialStructure::SetBvhOption(const J_SPACE_SPATIAL_LAYER layer, const JBvhOption& option)
 		{
 			if (activateTrigger)
-				bvh->SetBvhOption(option);
+				bvh[(uint)layer]->SetBvhOption(option);
 			else
-				optionCash->SetBvhOption(option);
+				optionCash->SetBvhOption(layer, option);
 		}
-		void JSceneSpatialStructure::SetKdTreeOption(const JKdTreeOption& option)
+		void JSceneSpatialStructure::SetKdTreeOption(const J_SPACE_SPATIAL_LAYER layer, const JKdTreeOption& option)
 		{
 			if (activateTrigger)
-				kdTree->SetKdTreeOption(option);
+				kdTree[(uint)layer]->SetKdTreeOption(option);
 			else
-				optionCash->SetKdTreeOption(option);
+				optionCash->SetKdTreeOption(layer, option);
 		}
 		void JSceneSpatialStructure::SetInitTrigger(const bool value)noexcept
 		{
@@ -232,17 +197,22 @@ namespace JinEngine
 		{
 			return initTrigger;
 		}
-		void JSceneSpatialStructure::Activate()noexcept
+		void JSceneSpatialStructure::Activate(JGameObject* sceneRoot, JGameObject* sceneDebugRoot)noexcept
 		{
 			if (!activateTrigger)
-			{  
-				octree->SetOctreeOption(optionCash->GetOctreeOption());
-				bvh->SetBvhOption(optionCash->GetBvhOption());
-				kdTree->SetKdTreeOption(optionCash->GetKdTreeOption());
+			{
+				for (uint i = 0; i < (uint)J_SPACE_SPATIAL_LAYER::COUNT; ++i)
+				{
+					octree[i]->SetOctreeOption(optionCash->GetOctreeOption((J_SPACE_SPATIAL_LAYER)i));
+					bvh[i]->SetBvhOption(optionCash->GetBvhOption((J_SPACE_SPATIAL_LAYER)i));
+					kdTree[i]->SetKdTreeOption(optionCash->GetKdTreeOption((J_SPACE_SPATIAL_LAYER)i));
+					
+					spaceSpatialVec.push_back(octree[i].get());
+					spaceSpatialVec.push_back(bvh[i].get());
+					spaceSpatialVec.push_back(kdTree[i].get());
+				}
+				 			
 				optionCash.reset();
-				spaceSpatialVec.push_back(octree.get());
-				spaceSpatialVec.push_back(bvh.get());
-				spaceSpatialVec.push_back(kdTree.get());
 				activateTrigger = true;
 			}
 		}
@@ -250,15 +220,25 @@ namespace JinEngine
 		{
 			if (activateTrigger)
 			{
-				optionCash = std::make_unique<ActivatedOptionCash>(octree->GetOctreeOption(), bvh->GetBvhOption(), kdTree->GetKdTreeOption());
-				octree->Clear();
-				bvh->Clear();
-				kdTree->Clear();
+				optionCash = std::make_unique<ActivatedOptionCash>();
+				for (uint i = 0; i < (uint)J_SPACE_SPATIAL_LAYER::COUNT; ++i)
+				{
+					optionCash->SetOctreeOption(octree[i]->GetLayer(), octree[i]->GetOctreeOption());
+					optionCash->SetBvhOption(bvh[i]->GetLayer(), bvh[i]->GetBvhOption());
+					optionCash->SetKdTreeOption(kdTree[i]->GetLayer(), kdTree[i]->GetKdTreeOption());
+
+					octree[i]->Clear();
+					bvh[i]->Clear();
+					kdTree[i]->Clear();
+				}
+ 
 				spaceSpatialVec.clear();
 				activateTrigger = false;
 			}
 		}
-		void JSceneSpatialStructure::BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, Editor::JEditorBinaryTreeView& tree)noexcept
+		void JSceneSpatialStructure::BuildDebugTree(const Core::J_SPACE_SPATIAL_TYPE type, 
+			const J_SPACE_SPATIAL_LAYER layer,
+			Editor::JEditorBinaryTreeView& tree)noexcept
 		{
 			if (activateTrigger)
 			{
@@ -270,12 +250,12 @@ namespace JinEngine
 				}
 				case JinEngine::Core::J_SPACE_SPATIAL_TYPE::BVH:
 				{
-					bvh->BuildDebugTree(tree);
+					bvh[(uint)layer]->BuildDebugTree(tree);
 					break;
 				} 
 				case JinEngine::Core::J_SPACE_SPATIAL_TYPE::KD_TREE:
 				{
-					kdTree->BuildDebugTree(tree);
+					kdTree[(uint)layer]->BuildDebugTree(tree);
 					break;
 				}
 				default:

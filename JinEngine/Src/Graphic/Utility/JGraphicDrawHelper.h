@@ -25,6 +25,8 @@ namespace JinEngine
 			uint litIndexOffset = 0;
 			uint shadowOffset = 0;
 		public:
+			bool allowDrawDebug = false;
+		public:
 			//bool isDrawShadowMap = false;
 			//bool isAnimationActivated = false;
 		};

@@ -6,6 +6,9 @@ namespace JinEngine
 {
 	namespace Core
 	{
+		JSpaceSpatial::JSpaceSpatial(const J_SPACE_SPATIAL_LAYER layer)
+			:layer(layer)
+		{}
 		void JSpaceSpatial::Clear()noexcept
 		{
 			innerRoot = nullptr;
@@ -42,6 +45,10 @@ namespace JinEngine
 		{
 			return isCullingActivated;
 		}
+		bool JSpaceSpatial::IsValidLayer(const J_RENDER_LAYER objLayer)const noexcept
+		{
+			return ConvertSpaceSpatialLayer(objLayer) == layer;
+		}
 		bool JSpaceSpatial::HasInnerRoot()const noexcept
 		{
 			return innerRoot != nullptr;
@@ -49,6 +56,17 @@ namespace JinEngine
 		bool JSpaceSpatial::HasDebugRoot()const noexcept
 		{
 			return debugRoot != nullptr;
+		}
+		bool JSpaceSpatial::CanAddGameObject(JGameObject* gameObj)const noexcept
+		{
+			return gameObj->HasRenderItem() &&
+				(gameObj->GetRenderItem()->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_BUILD) > 0 &&
+				ConvertSpaceSpatialLayer(gameObj->GetRenderItem()->GetRenderLayer()) == layer &&
+				innerRoot->IsParentLine(gameObj);
+		}
+		J_SPACE_SPATIAL_LAYER JSpaceSpatial::GetLayer()const noexcept
+		{
+			return layer;
 		}
 		std::vector<JGameObject*> JSpaceSpatial::GetInnerObject()const noexcept
 		{
@@ -70,6 +88,9 @@ namespace JinEngine
 		}
 		void JSpaceSpatial::SetInnerRoot(JGameObject* newInnerRoot)noexcept
 		{
+			if (layer == J_SPACE_SPATIAL_LAYER::INVALID)
+				return;
+
 			bool isSameInnerRoot = false;
 			bool hasInnerRoot = innerRoot != nullptr && newInnerRoot != nullptr;
 			if (hasInnerRoot)
@@ -95,6 +116,9 @@ namespace JinEngine
 		}
 		void JSpaceSpatial::SetDebugRoot(JGameObject* newDebugRoot)noexcept
 		{
+			if (layer == J_SPACE_SPATIAL_LAYER::INVALID)
+				return;
+
 			bool isSameDebugRoot = false;
 			bool hasDebugRoot = debugRoot != nullptr && newDebugRoot != nullptr;
 			if (hasDebugRoot)
@@ -120,6 +144,9 @@ namespace JinEngine
 		}
 		void JSpaceSpatial::SetSpaceSpatialActivate(bool value)noexcept
 		{
+			if (layer == J_SPACE_SPATIAL_LAYER::INVALID)
+				return;
+
 			if (value != isSpaceSpatialActivated)
 			{
 				if (HasInnerRoot())
@@ -134,6 +161,12 @@ namespace JinEngine
 		}
 		void JSpaceSpatial::SetDebugActivated(bool value)noexcept
 		{
+			if (layer == J_SPACE_SPATIAL_LAYER::INVALID)
+				return;
+
+			if (layer == J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
+				return;
+
 			if (value != isDebugActivated)
 			{
 				if(HasDebugRoot())
@@ -147,7 +180,13 @@ namespace JinEngine
 			}
 		}
 		void JSpaceSpatial::SetDebugLeafOnly(bool value)noexcept
-		{ 
+		{
+			if (layer == J_SPACE_SPATIAL_LAYER::INVALID)
+				return;
+
+			if (layer == J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
+				return;
+
 			if (isDebugLeafOnly != value)
 			{
 				isDebugLeafOnly = value;
@@ -160,6 +199,9 @@ namespace JinEngine
 		}
 		void JSpaceSpatial::SetCullingActivate(bool value)noexcept
 		{
+			if (layer == J_SPACE_SPATIAL_LAYER::INVALID)
+				return;
+
 			if(isCullingActivated != value)
 			{
 				isCullingActivated = value;
@@ -169,6 +211,9 @@ namespace JinEngine
 		}
 		void JSpaceSpatial::SetCommonOption(const JSpaceSpatialOption& newOption)noexcept
 		{
+			if (layer == J_SPACE_SPATIAL_LAYER::INVALID)
+				return;
+
 			SetInnerRoot(newOption.innerRoot);
 			SetDebugRoot(newOption.debugRoot);
 			SetSpaceSpatialActivate(newOption.isSpaceSpatialActivated);
@@ -178,10 +223,13 @@ namespace JinEngine
 		}
 		void JSpaceSpatial::FindInnerObject(std::vector<JGameObject*>& vec, JGameObject* parent)const noexcept
 		{
+			if (layer == J_SPACE_SPATIAL_LAYER::INVALID)
+				return;
+
 			if (parent == nullptr)
 				return;
 
-			if (parent->HasRenderItem() && parent->GetRenderItem()->GetRenderLayer() == J_RENDER_LAYER::OPAQUE_OBJECT)
+			if (parent->HasRenderItem() && IsValidLayer(parent->GetRenderItem()->GetRenderLayer()))
 				vec.push_back(parent);
 
 			std::vector<JGameObject*> children = parent->GetChildren();

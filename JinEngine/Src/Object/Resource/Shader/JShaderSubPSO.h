@@ -1,5 +1,5 @@
 #pragma once
-#include<d3d12.h>
+#include<d3d12.h> 
 
 namespace JinEngine
 { 
@@ -39,6 +39,7 @@ namespace JinEngine
 		bool isCullModeNone = false;
 	public: 
 		bool Equal(const JShaderGraphicSubPSO& pso)const noexcept;
+		size_t UniqueID()const noexcept;
 	public:
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE ConvertD3d12PrimitiveType()const noexcept;
 		D3D12_COMPARISON_FUNC ConvertD3d12Comparesion()const noexcept; 
