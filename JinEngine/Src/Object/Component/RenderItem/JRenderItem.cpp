@@ -77,33 +77,9 @@ namespace JinEngine
 	{
 		if (mesh != nullptr)
 		{
-			JTransform* ownerTransform = GetOwner()->GetTransform();
-			XMMATRIX worldM = ownerTransform->GetWorld();
-			XMVECTOR s;
-			XMVECTOR q;
-			XMVECTOR t;
-			XMMatrixDecompose(&s, &q, &t, worldM);
-
-			XMFLOAT3 pos;
-			XMFLOAT3 scale;
-
-			XMStoreFloat3(&pos, t);
-			XMStoreFloat3(&scale, s);
-
-			XMFLOAT3 meshBoxCenter = mesh->GetBoundingBoxCenter();
-			XMFLOAT3 meshBoxExtent = mesh->GetBoundingBoxExtent();
-
-			XMFLOAT3 gameObjBoxCenter = XMFLOAT3(meshBoxCenter.x + pos.x,
-				meshBoxCenter.y + pos.y,
-				meshBoxCenter.z + pos.z);
-
-			XMFLOAT3 gameObjBoxExtent = XMFLOAT3(meshBoxExtent.x * scale.x,
-				meshBoxExtent.y * scale.y,
-				meshBoxExtent.z * scale.z);
-
-			XMStoreFloat3(&gameObjBoxExtent, XMVectorAbs(XMVector3Rotate(XMLoadFloat3(&gameObjBoxExtent), q)));
-
-			return DirectX::BoundingBox(gameObjBoxCenter, gameObjBoxExtent);
+			DirectX::BoundingBox res;
+			mesh->GetBoundingBox().Transform(res, GetOwner()->GetTransform()->GetWorld());
+			return res;
 		}
 		else
 			return DirectX::BoundingBox();
@@ -209,15 +185,18 @@ namespace JinEngine
 		JRenderItem::renderVisibility = renderVisibility;
 	}
 	void JRenderItem::SetSpaceSpatialMask(const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask)noexcept
-	{		 
-		JRenderItem::spaceSpatialMask = spaceSpatialMask;
-		if ((JRenderItem::spaceSpatialMask & SPACE_SPATIAL_ALLOW_CULLING) == 0)
-			SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+	{
+		if (JRenderItem::spaceSpatialMask != spaceSpatialMask)
+		{
+			if ((JRenderItem::spaceSpatialMask & SPACE_SPATIAL_ALLOW_CULLING) == 0)
+				SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 
-		if (IsActivated())
-			DeRegisterComponent();
-		if (IsActivated())
-			RegisterComponent();
+			if (IsActivated())
+				DeRegisterComponent();
+			JRenderItem::spaceSpatialMask = spaceSpatialMask;
+			if (IsActivated())
+				RegisterComponent();
+		}
 	}
 	bool JRenderItem::IsVisible()const noexcept
 	{

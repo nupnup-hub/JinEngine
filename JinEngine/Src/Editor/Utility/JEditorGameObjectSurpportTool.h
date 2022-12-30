@@ -41,6 +41,7 @@ namespace JinEngine
 			public:
 				Core::JUserPtr<JGameObject> arrow;
 				Core::JUserPtr<JMaterial> material; 
+				JVector4<float> matColor;
 			public:
 				void CreateMaterial(const JVector4<float> matColor);
 			public:
@@ -51,11 +52,10 @@ namespace JinEngine
 					const JVector3<float> initMovePos);
 				void Clear();
 			public:
-				bool IsValid()const noexcept;
-				bool IsClick(Core::JUserPtr<JCamera> cam, bool onDebug);
+				bool IsValid()const noexcept; 
 			public:
-				void OnDraaing();
-				void OffDragging();
+				void SetHoveredColor()noexcept;
+				void OffHoveredColor()noexcept;
 			};
 		private:
 			const J_DEFAULT_SHAPE shape;
@@ -74,13 +74,14 @@ namespace JinEngine
 			Arrow arrow[Constants::arrowCount];
 		public:
 			JEditorTransformTool(const J_DEFAULT_SHAPE shape, const float sizeRate); 
+			~JEditorTransformTool();
 		public:
 			void Activate() final;
 			void DeActivate()final;
 		public:
 			void Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam)final;
 		private:
-			void UpdateSelectedTransform(JGameObject* selected);
+			void UpdateSelectedTransform(JGameObject* selected); 
 			void UpdateArrowPosition(JGameObject* selected, Core::JUserPtr<JCamera> cam);
 			void UpdateArrowDragging(JGameObject* selected, Core::JUserPtr<JCamera> cam);
 		private:

@@ -17,9 +17,9 @@ namespace JinEngine
 	{
 		class JGraphicImpl;
 	}
-
 	namespace Core
 	{
+		class JRay;
 		class JSceneSpatialStructure;
 	}
 	class JScene : public JSceneInterface
@@ -90,6 +90,9 @@ namespace JinEngine
 		bool IsMainScene()const noexcept; 
 		bool IsSpaceSpatialActivated()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
+	public:
+		//Intersect by scene space spatial
+		JGameObject* Intersect(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
 	public:
 		JSceneCashInterface* CashInterface() final;
 		JSceneGameObjInterface* GameObjInterface() final;

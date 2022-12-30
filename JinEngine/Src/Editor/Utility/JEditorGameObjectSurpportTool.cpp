@@ -9,16 +9,23 @@
 #include"../../Object/GameObject/JGameObjectFactory.h"
 #include"../../Object/GameObject/JGameObjectFactoryUtility.h"   
 #include"../../Object/Resource/Material/JDefaultMaterialType.h" 
+#include"../../Object/Resource/Scene/JScene.h" 
 #include"../../Object/Resource/JResourceManager.h" 
 #include"../../Object/Resource/JResourceObjectFactory.h" 
+#include"../../Core/Geometry/JRay.h"
 
+
+//Debug
+#include"../../Debug/JDebugTextOut.h"
 using namespace DirectX;
 namespace JinEngine
 {
 	namespace Editor
 	{
 		void JEditorTransformTool::Arrow::CreateMaterial(const JVector4<float> matColor)
-		{			 
+		{
+			JEditorTransformTool::Arrow::matColor = matColor;
+
 			JDirectory* dir = JResourceManager::Instance().GetEditorResourceDirectory();
 			JMaterial* material = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(L"ArrowMaterial",
 				Core::MakeGuid(),
@@ -31,29 +38,29 @@ namespace JinEngine
 
 			JEditorTransformTool::Arrow::material = Core::GetUserPtr(material);
 		}
-		void JEditorTransformTool::Arrow::Initialze(JGameObject* debugRoot, 
-			const J_DEFAULT_SHAPE shape,  
+		void JEditorTransformTool::Arrow::Initialze(JGameObject* debugRoot,
+			const J_DEFAULT_SHAPE shape,
 			const JVector3<float> initScale,
 			const JVector3<float> initRotation,
 			const JVector3<float> initMovePos)
 		{
-			J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT; 
-			JGameObject* arrow = JGFU::CreateShape(*debugRoot, flag, shape); 
+			J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
+			JGameObject* arrow = JGFU::CreateShape(*debugRoot, flag, shape);
 			JTransform* transform = arrow->GetTransform();
 
 			transform->SetScale(initScale.ConvertXMF());
 			transform->SetRotation(initRotation.ConvertXMF());
 			transform->SetPosition(initMovePos.ConvertXMF());
-			
+
 			JRenderItem* rItem = arrow->GetRenderItem();
 			const uint subMeshCount = rItem->GetSubmeshCount();
 			for (uint j = 0; j < subMeshCount; ++j)
 				rItem->SetMaterial(j, material.Get());
 			rItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_LAYER);
- 
-			JEditorTransformTool::Arrow::arrow = Core::GetUserPtr(arrow); 
+
+			JEditorTransformTool::Arrow::arrow = Core::GetUserPtr(arrow);
 		}
-	 
+
 		void JEditorTransformTool::Arrow::Clear()
 		{
 			if (arrow.IsValid())
@@ -65,57 +72,13 @@ namespace JinEngine
 		{
 			return arrow.IsValid() && material.IsValid();
 		}
-		bool JEditorTransformTool::Arrow::IsClick(Core::JUserPtr<JCamera> cam, bool onDebug)
+		void JEditorTransformTool::Arrow::SetHoveredColor()noexcept
 		{
-			const BoundingBox bbox = arrow->GetRenderItem()->GetBoundingBox();
-			 
-			const XMFLOAT3 minF = JMathHelper::Vector3Minus(bbox.Center, bbox.Extents);
-			const XMFLOAT3 maxF = JMathHelper::Vector3Plus(bbox.Center, bbox.Extents);
-
-			const XMMATRIX viewProj = XMMatrixMultiply(cam->GetView(), cam->GetProj());
-			const XMVECTOR minPV = XMVector3Transform(XMLoadFloat3(&minF), viewProj);
-			const XMVECTOR maxPV = XMVector3Transform(XMLoadFloat3(&maxF), viewProj);
-			XMFLOAT4 minPF;
-			XMStoreFloat4(&minPF, minPV);
-			XMFLOAT4 maxPF;
-			XMStoreFloat4(&maxPF, maxPV);
-
-			const XMVECTOR minNDCV = XMVectorSet(minPF.x / minPF.w, minPF.y / minPF.w, minPF.z / minPF.w, 1) * 0.5f + XMVectorSet(0.5f, 0.5f, 1, 1);;
-			const XMVECTOR maxNDCV = XMVectorSet(maxPF.x / maxPF.w, maxPF.y / maxPF.w, maxPF.z / maxPF.w, 1) * 0.5f + XMVectorSet(0.5f, 0.5f, 1, 1);;
-			 
-			XMFLOAT3 minNDCF;
-			XMStoreFloat3(&minNDCF, minNDCV);
-			XMFLOAT3 maxNDCF;
-			XMStoreFloat3(&maxNDCF, maxNDCV);
-
-			JVector2<uint> camViewSize = JVector2<uint>(cam->GetViewWidth(), cam->GetViewHeight());
-			JVector2<uint> windowPos = ImGui::GetWindowPos();
-			JVector2<uint> windowSize = ImGui::GetWindowSize();
-			JVector2<float> sizeRate = JVector2<float>((float)windowSize.x / camViewSize.x, (float)windowSize.y / camViewSize.y );
- 
-			JVector2<float> minPoint = JVector2<float>(minNDCF.x * windowSize.x  + windowPos.x, minNDCF.y  * windowSize.y + windowPos.y);
-			JVector2<float> maxPoint = JVector2<float>(maxNDCF.x * windowSize.x  + windowPos.x, maxNDCF.y  * windowSize.y + windowPos.y);
-			
-			if (onDebug)
-			{
-				//ImGui::Text((std::to_string(minPoint.x) + " " + std::to_string(minPoint.y)).c_str()); 
-				//ImGui::SameLine();
-				//ImGui::Text((std::to_string(maxPoint.x) + " " + std::to_string(maxPoint.y)).c_str());
-				//ImGui::SameLine();
-				//ImGui::Text((std::to_string(ImGui::GetMousePos().x) + " " + std::to_string(ImGui::GetMousePos().y)).c_str());
-			} 
-			if (JImGuiImpl::IsMouseInRect(minPoint, maxPoint - minPoint))
-				return true;
-			else
-				return false;
+			material->SetAlbedoColor((matColor + JVector4<float>(0.15f, 0.15f, 0.15f, 0.15f)).ConvertXMF());
 		}
-		void JEditorTransformTool::Arrow::OnDraaing()
+		void JEditorTransformTool::Arrow::OffHoveredColor()noexcept
 		{
-			material->SetAlbedoColor(JMathHelper::Vector4Plus(material->GetAlbedoColor(), XMFLOAT4(0.5f, 0.5f, 0.5f, 0)));
-		}
-		void JEditorTransformTool::Arrow::OffDragging()
-		{
-			material->SetAlbedoColor(JMathHelper::Vector4Minus(material->GetAlbedoColor(), XMFLOAT4(0.5f, 0.5f, 0.5f, 0)));
+			material->SetAlbedoColor(matColor.ConvertXMF());
 		}
 		JEditorTransformTool::JEditorTransformTool(const J_DEFAULT_SHAPE shape, const float sizeRate)
 			:shape(shape), sizeRate(sizeRate)
@@ -145,11 +108,22 @@ namespace JinEngine
 			for (uint i = 0; i < Constants::arrowCount; ++i)
 				arrow[i].CreateMaterial(color[i]);
 		}
+		JEditorTransformTool::~JEditorTransformTool()
+		{
+			for (uint i = 0; i < 3; ++i)
+				arrow[i].Clear();
+			if (transformArrowRoot.IsValid())
+				JObject::BeginDestroy(transformArrowRoot.Get());
+			if (arrowCenter.IsValid())
+				JObject::BeginDestroy(arrowCenter.Get());
+			if (arrowCenterMaterial.IsValid())
+				JObject::BeginDestroy(arrowCenterMaterial.Get());
+		}
 		void JEditorTransformTool::Activate()
 		{
 			J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
 			JGameObject* transformArrowRoot = JGFI::Create(L"Transform Arrow Root", Core::MakeGuid(), flag, *debugRoot);
-			
+
 			//x y z
 			JVector3<float> scale[3]
 			{
@@ -175,7 +149,7 @@ namespace JinEngine
 
 			JGameObject* arrowCenter = JGFU::CreateShape(*transformArrowRoot, flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE);
 			JRenderItem* arrowCenterRItem = arrowCenter->GetRenderItem();
-			arrowCenterRItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_LAYER); 
+			arrowCenterRItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_LAYER);
 			arrowCenterRItem->SetMaterial(0, arrowCenterMaterial.Get());
 
 			arrowCenter->GetTransform()->SetScale(XMFLOAT3(0.35f, 0.35f, 0.35f));
@@ -197,16 +171,18 @@ namespace JinEngine
 		}
 		void JEditorTransformTool::Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam)
 		{
-			if (!transformArrowRoot.IsValid() || !selected.IsValid() || !cam.IsValid() || 
-				selected->GetObjectType() != J_OBJECT_TYPE::GAME_OBJECT)
+			if (!selected.IsValid() || !cam.IsValid() || selected->GetObjectType() != J_OBJECT_TYPE::GAME_OBJECT)
 			{
 				if (isActivated)
 					DeActivate();
 				return;
-			} 
+			}
 
 			JGameObject* gameObject = static_cast<JGameObject*>(selected.Get());
-			if (!gameObject->HasRenderItem())
+			JRenderItem* rItem = gameObject->GetRenderItem();
+
+			if (rItem != nullptr && (rItem->GetRenderLayer() == J_RENDER_LAYER::DEBUG_LAYER ||
+				rItem->GetRenderLayer() == J_RENDER_LAYER::SKY))
 			{
 				if (isActivated)
 					DeActivate();
@@ -215,6 +191,9 @@ namespace JinEngine
 
 			if (!isActivated)
 				Activate();
+
+			if (!IsValid())
+				return;
 
 			UpdateSelectedTransform(gameObject);
 			UpdateArrowPosition(gameObject, cam);
@@ -228,69 +207,72 @@ namespace JinEngine
 			ImVec2 mouseDelta = ImGui::GetMouseDragDelta(0);
 		}
 		void JEditorTransformTool::UpdateArrowPosition(JGameObject* selected, Core::JUserPtr<JCamera> cam)
-		{ 
-			const JVector2<uint> wndsize = ImGui::GetWindowSize();
-			transformArrowRoot->GetTransform()->SetPosition(selected->GetRenderItem()->GetBoundingBox().Center);
-
-			const XMFLOAT3 centerF = selected->GetRenderItem()->GetBoundingBox().Center;
-			const XMFLOAT3 etxtentF = JMathHelper::Vector3Plus(centerF, arrow[0].arrow->GetRenderItem()->GetMesh()->GetBoundingBox().Extents);
-			const XMMATRIX viewProj = XMMatrixMultiply(cam->GetView(), cam->GetProj());
-			const XMVECTOR centerPV = XMVector3Transform(XMLoadFloat3(&centerF), viewProj);
-			const XMVECTOR extentPV = XMVector3Transform(XMLoadFloat3(&etxtentF), viewProj);
-			XMFLOAT4 centerPF;
-			XMStoreFloat4(&centerPF, centerPV);
-			XMFLOAT4 extentPF;
-			XMStoreFloat4(&extentPF, extentPV);
-
-			const XMVECTOR centerNDCV = XMVectorSet(centerPF.x / centerPF.w, centerPF.y / centerPF.w, centerPF.z / centerPF.w, 1) * 0.5f + XMVectorSet(0.5f, -0.5f, 1, 1);;
-			const XMVECTOR extentNDCV = XMVectorSet(extentPF.x / extentPF.w, extentPF.y / extentPF.w, extentPF.z / extentPF.w, 1) * 0.5f + XMVectorSet(0.5f, -0.5f, 1, 1);;
-
-			const XMVECTOR distanceNDCV = XMVectorSubtract(extentNDCV, centerNDCV);
-			XMFLOAT3 distanceNDCF;
-			XMStoreFloat3(&distanceNDCF, distanceNDCV);
-
-			float maxDis = distanceNDCF.x > distanceNDCF.y ? distanceNDCF.x : distanceNDCF.y;
-			float scaleFactor = sizeRate / maxDis;
-			if (maxDis >= sizeRate)
-				transformArrowRoot->GetTransform()->SetScale(XMFLOAT3(1, 1, 1));
+		{
+			JRenderItem* rItem = selected->GetRenderItem();
+			if (rItem)
+			{
+				transformArrowRoot->GetTransform()->SetPosition(rItem->GetBoundingBox().Center);
+			}
 			else
-				transformArrowRoot->GetTransform()->SetScale(XMFLOAT3(scaleFactor, scaleFactor, scaleFactor));
+			{
+				const XMMATRIX worldV = selected->GetTransform()->GetWorld();
+				XMFLOAT4X4 worldF;
+				XMStoreFloat4x4(&worldF, worldV);
+				transformArrowRoot->GetTransform()->SetPosition(XMFLOAT3(worldF._41, worldF._42, worldF._43));
+			}
 		}
 		void JEditorTransformTool::UpdateArrowDragging(JGameObject* selected, Core::JUserPtr<JCamera> cam)
 		{
-			if (!isDraggingObject)
+			if (!ImGui::IsMouseDragging(0))
 			{
-				if (!ImGui::IsMouseDown(0))
-					return;
+				isDraggingObject = false;
+				draggingIndex = -1; 
+			}
+			
+			const ImVec2 wndSize = ImGui::GetWindowSize();
+			const float aspect = wndSize.x / wndSize.y;
+			const XMMATRIX projV = XMMatrixPerspectiveFovLH(cam->GetFovY(), aspect, cam->GetNear(), cam->GetFar());
+			const XMMATRIX invView = XMMatrixInverse(nullptr, cam->GetView());
 
-				int clickedIndex = -1;
+			//const float vx = ((2.0f * ImGui::GetMousePos().x) / wndSize.x - 1.0f) / (1 / (aspect * fov));
+			//const float vy = ((-2.0f * ImGui::GetMousePos().y) / wndSize.y + 1.0f) / (1 / fov);
+			XMFLOAT4X4 projF;
+			XMStoreFloat4x4(&projF, projV);
+			//const float vx = ((2.0f * ImGui::GetMousePos().x) / wndSize.x - 1.0f) / projF(0, 0);
+			//const float vy = ((2.0f * (ImGui::GetMainViewport()->Size.y - ImGui::GetMousePos().y)) / wndSize.y - 1.0f) / projF(1, 1);
+			 
+			const float vx = ((2.0f * ImGui::GetMousePos().x) / wndSize.x - 1.0f) / projF(0, 0);
+			const float vy = ((-2.0f * ImGui::GetMousePos().y) / wndSize.y + 1.0f) / projF(1, 1);
+			const XMVECTOR rayOri = XMVector3TransformCoord(XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), invView);
+			const XMVECTOR rayDir = XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(vx, vy, 1.0f, 0.0f), invView));
+
+			//if (ImGui::IsMouseDragging(0))
+			//{
+				//Core::JDebugTextOut::MessageVector4(rayOri, L"RayOri");
+				//Core::JDebugTextOut::MessageVector4(rayDir, L"RayDir");
+			//} 
+			
+			JScene* scene = transformArrowRoot->GetOwnerScene();
+			JGameObject* hitObj = scene->Intersect(Core::J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT, Core::JRay{ rayOri, rayDir });
+			if (hitObj != nullptr)
+			{
 				for (uint i = 0; i < Constants::arrowCount; ++i)
-				{ 
-					if (arrow[i].IsClick(cam, i == 0))
-					{
-						clickedIndex = i;
-						break;
-					}
+				{
+					if (arrow[i].arrow->GetGuid() == hitObj->GetGuid())
+						arrow[i].SetHoveredColor();
+					else
+						arrow[i].OffHoveredColor();
 				}
-				if (clickedIndex == -1)
-					return;
-				 
-				arrow[clickedIndex].OnDraaing();
-				isDraggingObject = true;
-				draggingIndex = clickedIndex;
 			}
 			else
 			{
-				if (!ImGui::IsMouseDragging(0))
-				{
-					arrow[draggingIndex].OffDragging();
-					isDraggingObject = false;
-					draggingIndex = -1;
-				}
+				for (uint i = 0; i < Constants::arrowCount; ++i)
+					arrow[i].OffHoveredColor();
 			}
+
 		}
 		void JEditorTransformTool::UpdateSelectedPosition(JEditorTransformTool* tool, const JVector2<float> mouseDelta)
-		{ 
+		{
 
 		}
 		void JEditorTransformTool::UpdateSelectedRotation(JEditorTransformTool* tool, const JVector2<float> mouseDelta)

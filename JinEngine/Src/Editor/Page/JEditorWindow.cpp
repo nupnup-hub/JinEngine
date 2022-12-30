@@ -224,6 +224,7 @@ namespace JinEngine
 			JFileIOHelper::StoreJString(stream, L"Name:", JCUtil::U8StrToWstr(GetName()));
 			JFileIOHelper::StoreAtomicData(stream, L"Open:", IsOpen());
 			JFileIOHelper::StoreAtomicData(stream, L"Activate:", IsActivated());
+			JFileIOHelper::StoreAtomicData(stream, L"IsLastActivated:", IsLastActivated());
 			JFileIOHelper::StoreAtomicData(stream, L"Focus:", IsFocus());
 		}
 		void JEditorWindow::LoadEditorWindow(std::wifstream& stream)
@@ -231,12 +232,14 @@ namespace JinEngine
 			std::wstring name;
 			bool isOpen;
 			bool activated;
-			bool isFocus;
+			bool isLastActivated;
+			bool isFocus; 
 
 			JFileIOHelper::LoadJString(stream, name);
 			JFileIOHelper::LoadAtomicData(stream, isOpen);
 			JFileIOHelper::LoadAtomicData(stream, activated);
-			JFileIOHelper::LoadAtomicData(stream, isFocus);
+			JFileIOHelper::LoadAtomicData(stream, isLastActivated);
+			JFileIOHelper::LoadAtomicData(stream, isFocus); 
 
 			if (isOpen)
 			{
@@ -252,6 +255,7 @@ namespace JinEngine
 					J_EDITOR_EVENT::ACTIVATE_WINDOW,
 					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActWindowEvStruct>(this, ownerPageType)));
 			}
+			SetLastActivated(isLastActivated);
 			/*if (isFocus)
 			{
 				AddEventNotification(*JEditorEvent::EvInterface(),

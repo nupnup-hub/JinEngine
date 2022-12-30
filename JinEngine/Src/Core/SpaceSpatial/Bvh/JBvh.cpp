@@ -131,6 +131,25 @@ namespace JinEngine
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
 			}
 		}
+		JGameObject* JBvh::IntersectFirst(const JRay& ray)const noexcept
+		{
+			if (root != nullptr)
+				return root->IntersectFirst(ray.GetPosV(), ray.GetDirV());
+			else
+				return nullptr;
+		}
+		void JBvh::Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JGameObject*>& res)const noexcept
+		{
+			if (root != nullptr)
+			{ 
+				if (sortType == J_SPACE_SPATIAL_SORT_TYPE::ASCENDING)
+					root->IntersectAscendingSort(ray.GetPosV(), ray.GetDirV(), res);
+				else if (sortType == J_SPACE_SPATIAL_SORT_TYPE::DESCENDING)
+					root->IntersectDescendingSort(ray.GetPosV(), ray.GetDirV(), res);
+				else
+					root->Intersect(ray.GetPosV(), ray.GetDirV(), res);
+			}
+		}
 		void JBvh::UpdateGameObject(JGameObject* gameObject)noexcept
 		{ 
 			auto leafNode = leafNodeMap.find(gameObject->GetGuid());

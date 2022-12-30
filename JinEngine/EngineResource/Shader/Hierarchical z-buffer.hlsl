@@ -282,7 +282,6 @@ float VertexSampleDepth(const float4 posCW, float4 posEW)
 		(bboxPointH[7].xyz / bboxPointH[7].w) * float3(0.5f, -0.5f, 1.0f) + float3(0.5f, 0.5f, 0.0f)
 	};
 
-
 	float3 minXNdc = float3(maxDistance, 0, 0);
 	float3 maxXNdc = float3(minDistance, 0, 0);
 	float3 minYNdc = float3(0, maxDistance, 0);

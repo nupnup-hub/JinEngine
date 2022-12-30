@@ -327,8 +327,7 @@ namespace JinEngine
 									auto doBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, Core::JUserPtr(selectedObj), Core::GetUserPtr(gObj));
 									auto undoBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, Core::JUserPtr(selectedObj), Core::GetUserPtr(selectedObj->GetParent()));
 									auto evStruct = std::make_unique<JEditorTSetBindFuncEvStruct>("Change Parent", GetOwnerPageType(), std::move(doBind), std::move(undoBind));
-									
-									doBind->Invoke();
+									 
 									AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
 								}
 								else if (selected->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT && payload)

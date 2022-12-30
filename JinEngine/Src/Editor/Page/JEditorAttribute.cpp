@@ -7,15 +7,11 @@ namespace JinEngine
 		JEditorAttribute::JEditorAttribute(float initPosXRate,
 			float initPosYRate,
 			float initWidthRate,
-			float initHeightRate,
-			bool isOpen,
-			bool isLastAct)
+			float initHeightRate)
 			:initPosXRate(initPosXRate),
 			initPosYRate(initPosYRate),
 			initWidthRate(initWidthRate),
-			initHeightRate(initHeightRate),
-			isOpen(isOpen),
-			isLastAct(isLastAct)
+			initHeightRate(initHeightRate)
 		{}
 		bool JEditorAttribute::IsFullScreenInit()noexcept
 		{

@@ -24,21 +24,18 @@ namespace JinEngine
 	{
 		JEditorPage::WindowInitInfo::WindowInitInfo(const std::string name,
 			float initWidthRate, float initHeightRate,
-			float initPosXRate, float initPosYRate,
-			bool isOpen, bool isLastAct)
+			float initPosXRate, float initPosYRate)
 			:name(name),
 			initWidthRate(initWidthRate), initHeightRate(initHeightRate),
-			initPosXRate(initPosXRate), initPosYRate(initPosYRate),
-			isOpen(isOpen), isLastAct(isLastAct)
-		{
-		}
+			initPosXRate(initPosXRate), initPosYRate(initPosYRate)
+		{}
 		std::string JEditorPage::WindowInitInfo::GetName()const noexcept
 		{
 			return name;
 		}
 		std::unique_ptr<JEditorAttribute> JEditorPage::WindowInitInfo::MakeAttribute()noexcept
 		{
-			return std::make_unique<JEditorAttribute>(initWidthRate, initHeightRate, initPosXRate, initPosYRate, isOpen, isLastAct);
+			return std::make_unique<JEditorAttribute>(initWidthRate, initHeightRate, initPosXRate, initPosYRate);
 		}
 
 		JEditorPage::JEditorPage(const std::string name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_FLAG pageFlag)

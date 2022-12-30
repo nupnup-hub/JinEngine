@@ -348,22 +348,8 @@ namespace JinEngine
 			}
 			if ((gFunctionFlag & SHADER_FUNCTION_DEBUG) > 0)
 			{ 
-				// newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+				//newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 				newShaderPso.DepthStencilState.StencilEnable = false;  
-				
-				D3D12_RENDER_TARGET_BLEND_DESC debugBlendDesc;
-				debugBlendDesc.BlendEnable = true;
-				debugBlendDesc.LogicOpEnable = false;
-				debugBlendDesc.SrcBlend = D3D12_BLEND_ONE;
-				debugBlendDesc.DestBlend = D3D12_BLEND_ZERO;
-				debugBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
-				debugBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
-				debugBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
-				debugBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
-				debugBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
-				debugBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-				for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
-					newShaderPso.BlendState.RenderTarget[i] = debugBlendDesc;
 			} 
 
 			if (subPso.primitiveCondition == J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO)
@@ -1256,6 +1242,12 @@ namespace JinEngine
 			{
 				JRenderItem* renderItem = gameObject[i]->GetRenderItem();
 				if (!renderItem->IsVisible())
+					continue;
+
+				//Test Code
+				//수정필요
+
+				if (JMathHelper::Vector3Length(gameObject[i]->GetTransform()->GetScale()) < 16)
 					continue;
 
 				JAnimator* animator = gameObject[i]->GetComponentWithParent<JAnimator>();

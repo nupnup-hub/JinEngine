@@ -48,6 +48,8 @@ namespace JinEngine
 		public:
 			void Culling(const JCullingFrustum& camFrustum)noexcept final; 
 			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept final;
+			JGameObject* IntersectFirst(const JRay& ray)const noexcept final;
+			void Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JGameObject*>& res)const noexcept final;
 			void UpdateGameObject(JGameObject* gameObject)noexcept final;
 		public:
 			void AddGameObject(JGameObject* newGameObject)noexcept final;

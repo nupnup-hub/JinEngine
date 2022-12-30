@@ -57,6 +57,8 @@ namespace JinEngine
 			static void PrintGameObjectTreeLoop(JGameObject* obj, uint level);
 		public:
 			static void MessageVector(const DirectX::XMFLOAT3& vector, const std::wstring& guide);
+			static void MessageVector(const DirectX::XMFLOAT4& vector, const std::wstring& guide);
+			static void MessageVector4(const DirectX::XMVECTOR& vector, const std::wstring& guide);
 		};
 	} 
 }

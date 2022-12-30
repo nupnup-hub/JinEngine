@@ -21,9 +21,7 @@ namespace JinEngine
 			JEditorAttribute(float initPosXRate,
 				float initPosYRate,
 				float initWidthRate,
-				float initHeightRate,
-				bool isOpen,
-				bool isLastAct);
+				float initHeightRate);
 			~JEditorAttribute() = default;
 			JEditorAttribute(const JEditorAttribute&) = default;
 		public:

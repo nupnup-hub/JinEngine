@@ -24,7 +24,7 @@ namespace JinEngine
 		//const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, std::unique_ptr<JEditorAttribute> attribute
 		JEditorSkeletonPage::JEditorSkeletonPage(bool hasMetadata)
 			:JEditorPage("SkeletonAssetPage",
-				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f, false, false),
+				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
 				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, J_EDITOR_PAGE_REQUIRE_INIT_OBJECT)),
 			reqInitDockNode(!hasMetadata)
 		{
@@ -62,9 +62,7 @@ namespace JinEngine
 				windowAttributes.push_back(std::make_unique<JEditorAttribute>(initPosXRateVec[i],
 					initPosYRateVec[i],
 					initWidthRateVec[i],
-					initHeightRateVec[i],
-					openVec[i],
-					true));
+					initHeightRateVec[i]));
 			}
 
 			//수정필요
@@ -79,14 +77,6 @@ namespace JinEngine
 			windows[2] = avatarViewer.get();
 			windows[3] = avatarDetail.get();
 
-			if (!hasMetadata)
-			{
-				opendWindow.push_back(windows[0]);
-				opendWindow.push_back(windows[1]);
-				opendWindow.push_back(windows[2]);
-				opendWindow.push_back(windows[3]);
-			}
-
 			JEditorPageShareData::RegisterPage(GetPageType(), pageFlag);
 		}
 		JEditorSkeletonPage::~JEditorSkeletonPage()
@@ -96,6 +86,21 @@ namespace JinEngine
 		J_EDITOR_PAGE_TYPE JEditorSkeletonPage::GetPageType()const noexcept
 		{
 			return J_EDITOR_PAGE_TYPE::SKELETON_SETTING;
+		}
+		void JEditorSkeletonPage::SetInitWindow()
+		{
+			uint currOpWndCount = (uint)opendWindow.size();
+			for (uint i = 0; i < currOpWndCount; ++i)
+				CloseWindow(opendWindow[i]);
+
+			OpenWindow(explorer.get());
+			OpenWindow(avatarEdit.get());
+			OpenWindow(avatarViewer.get());
+			OpenWindow(avatarDetail.get()); 
+
+			currOpWndCount = (uint)opendWindow.size();
+			for (uint i = 0; i < currOpWndCount; ++i)
+				opendWindow[i]->SetLastActivated(true); 
 		}
 		void JEditorSkeletonPage::Initialize()
 		{

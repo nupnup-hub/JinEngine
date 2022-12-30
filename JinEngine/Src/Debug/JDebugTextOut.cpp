@@ -330,5 +330,21 @@ namespace JinEngine
 			
 			MessageBox(0, message.c_str(), guide.c_str(), 0);
 		}
+		void JDebugTextOut::MessageVector(const DirectX::XMFLOAT4& vector, const std::wstring& guide)
+		{
+			std::wstring message = L"X: " + std::to_wstring(vector.x) +
+				L" Y: " + std::to_wstring(vector.y) +
+				L" Z: " + std::to_wstring(vector.z) + 
+				L" W: " + std::to_wstring(vector.w);
+
+			MessageBox(0, message.c_str(), guide.c_str(), 0);
+		}
+		void JDebugTextOut::MessageVector4(const DirectX::XMVECTOR& vector, const std::wstring& guide)
+		{
+			XMFLOAT4 f;
+			XMStoreFloat4(&f, vector);
+
+			MessageVector(f, guide);
+		}
 	}
 }

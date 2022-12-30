@@ -119,6 +119,13 @@ namespace JinEngine
 	{
 		return componentCash.find(cType) != componentCash.end();
 	}
+	JGameObject* JScene::Intersect(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept
+	{
+		if (spatialStructure != nullptr)
+			return spatialStructure->Intersect(layer, ray);
+		else
+			return nullptr;
+	}
 	JSceneCashInterface* JScene::CashInterface()
 	{
 		return this;
@@ -577,12 +584,23 @@ namespace JinEngine
 			kdOption.commonOption.innerRoot = root;
 			kdOption.commonOption.debugRoot = debugRoot;
 			spatialStructure->SetKdTreeOption(commonLayer, kdOption);
+ 
+			Core::JBvhOption bvhDebugOption = spatialStructure->GetBvhOption(debugLayer);
+			bvhDebugOption.commonOption.innerRoot = debugRoot;
+			bvhDebugOption.commonOption.debugRoot = debugRoot;
+			bvhDebugOption.commonOption.isSpaceSpatialActivated = true; 
 
-			Core::JKdTreeOption kdDebugOption;
+			//bvhDebugOption.commonOption.isDebugActivated = true;
+			//bvhDebugOption.commonOption.isDebugLeafOnly = true;
+
+			spatialStructure->SetBvhOption(debugLayer, bvhDebugOption);
+			/*
+					Core::JKdTreeOption kdDebugOption;
 			kdDebugOption.commonOption.innerRoot = debugRoot;
 			kdDebugOption.commonOption.debugRoot = debugRoot;
 			kdDebugOption.commonOption.isSpaceSpatialActivated = true;
 			spatialStructure->SetKdTreeOption(debugLayer, kdOption);
+			*/
 		}
 	}
 	Core::J_FILE_IO_RESULT JScene::CallStoreResource()
@@ -694,17 +712,32 @@ namespace JinEngine
 					const uint kdIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::KD_TREE;
 
 					if (metadata.hasInnerRoot[occIndex][i])
-						metadata.octreeOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[occIndex][i]).Get();
+					{
+						if (i == (int)Core::J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
+							metadata.octreeOption[i].commonOption.innerRoot = newScene->debugRoot;
+						else
+							metadata.octreeOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[occIndex][i]).Get();
+					}
 					metadata.octreeOption[i].commonOption.debugRoot = newScene->debugRoot;
 					newScene->SetOctreeOption((Core::J_SPACE_SPATIAL_LAYER)i, metadata.octreeOption[i]);
 
 					if (metadata.hasInnerRoot[bvhIndex][i])
-						metadata.bvhOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[bvhIndex][i]).Get();
+					{
+						if (i == (int)Core::J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
+							metadata.bvhOption[i].commonOption.innerRoot = newScene->debugRoot;
+						else
+							metadata.bvhOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[bvhIndex][i]).Get();
+					}
 					metadata.bvhOption[i].commonOption.debugRoot = newScene->debugRoot;
 					newScene->SetBvhOption((Core::J_SPACE_SPATIAL_LAYER)i, metadata.bvhOption[i]);
 
 					if (metadata.hasInnerRoot[kdIndex][i])
-						metadata.kdTreeOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[kdIndex][i]).Get();
+					{
+						if (i == (int)Core::J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
+							metadata.kdTreeOption[i].commonOption.innerRoot = newScene->debugRoot;
+						else
+							metadata.kdTreeOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[kdIndex][i]).Get();
+					}
 					metadata.kdTreeOption[i].commonOption.debugRoot = newScene->debugRoot;
 					newScene->SetKdTreeOption((Core::J_SPACE_SPATIAL_LAYER)i, metadata.kdTreeOption[i]);
 				}		 

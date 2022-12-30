@@ -34,6 +34,14 @@ namespace JinEngine
 	{
 		return scale;
 	}
+	DirectX::XMVECTOR JTransform::GetWorldQuaternion()const noexcept
+	{
+		XMVECTOR s;
+		XMVECTOR q;
+		XMVECTOR t;
+		XMMatrixDecompose(&s, &q, &t, XMLoadFloat4x4(&world));
+		return q;
+	}
 	XMMATRIX JTransform::GetWorld()const noexcept
 	{
 		return XMLoadFloat4x4(&world);
@@ -68,8 +76,7 @@ namespace JinEngine
 		JTransform::position = position;
 		JTransform::rotation = rotation;
 		JTransform::scale = scale;
-		Update();
-		GetOwner()->GetOwnerScene()->CompInterface()->UpdateTransform(GetOwner());
+		Update();  
 	}
 	void JTransform::SetPosition(const XMFLOAT3& value)noexcept
 	{
@@ -77,8 +84,7 @@ namespace JinEngine
 			return;
 
 		position = value;
-		Update();
-		GetOwner()->GetOwnerScene()->CompInterface()->UpdateTransform(GetOwner());
+		Update(); 
 	}
 	void JTransform::SetRotation(const XMFLOAT3& value)noexcept
 	{
@@ -113,8 +119,7 @@ namespace JinEngine
 		XMStoreFloat3(&tUp, XMVector3Normalize(newUp));
 		XMStoreFloat3(&tFront, XMVector3Normalize(newFront));
 
-		Update();
-		GetOwner()->GetOwnerScene()->CompInterface()->UpdateTransform(GetOwner());
+		Update(); 
 	}
 	void JTransform::SetScale(const XMFLOAT3& value)noexcept
 	{
@@ -122,8 +127,7 @@ namespace JinEngine
 			return;
 
 		scale = value;
-		Update();
-		GetOwner()->GetOwnerScene()->CompInterface()->UpdateTransform(GetOwner());
+		Update(); 
 	}
 	void JTransform::LookAt(const XMFLOAT3& target, const XMFLOAT3& worldUp)noexcept
 	{
@@ -206,6 +210,7 @@ namespace JinEngine
 			return;
 
 		WorldUpdate();
+		GetOwner()->GetOwnerScene()->CompInterface()->UpdateTransform(GetOwner());
 		SetFrameDirty();
 		const uint childrenCount = owner->GetChildrenCount();
 		for (uint i = 0; i < childrenCount; ++i)

@@ -42,6 +42,10 @@ namespace JinEngine
 			void Clear()noexcept;
 			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
 			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept;
+			JGameObject* IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept;
+			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept;
+			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept;
+			void Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept;
 			void UpdateInnerGameObject()noexcept;
 			void OffCulling()noexcept;
 		public:
@@ -70,6 +74,8 @@ namespace JinEngine
 			void SetVisible()noexcept;  
 			void SetInVisible()noexcept;
 			JBvhNode* FindRightLeafNode()noexcept;
+		private:
+			void SetDebugObjectTransform()noexcept;
 		public:
 			void BuildDebugNode(Editor::JEditorBinaryTreeView& treeView);
 		};

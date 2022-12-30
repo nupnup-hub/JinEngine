@@ -61,9 +61,9 @@ namespace JinEngine
 					editorCamCtrl->KeyboardInput(cameraComp.Get());
 				}
 				UpdateMainCamFrustum();
-				if (transformTool->IsValid())
-					transformTool->Update(JEditorPageShareData::GetSelectedObj(GetOwnerPageType()),  cameraComp);
-
+				//if (transformTool->IsValid())
+				transformTool->Update(JEditorPageShareData::GetSelectedObj(GetOwnerPageType()), cameraComp);
+ 
 				JImGuiImpl::Selectable("SpatialSpace##JSceneObserver", &isOpenSpatialOption, 0, JVector2<float>(ImGui::CalcTextSize("SpatialSpace").x, 0));
 				ImGui::SameLine();
 				if (JImGuiImpl::Selectable("MainCameraFrustum##JSceneObserver", &isMainCameraFrustumActivated, 0, JVector2<float>(ImGui::CalcTextSize("MainCameraFrustum").x, 0)))

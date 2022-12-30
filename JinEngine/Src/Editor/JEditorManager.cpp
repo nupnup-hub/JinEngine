@@ -36,6 +36,7 @@ namespace JinEngine
 			editorPage.push_back(std::make_unique<JProjectSelectorPage>());
 			editorPageMap.emplace(editorPage[0]->GetPageType(), editorPage[0].get());
 
+			editorPage[0]->SetInitWindow();
 			JEditorOpenPageEvStruct evOpenStruct{ editorPage[0]->GetPageType() };
 			JEditorActPageEvStruct evActStruct{ editorPage[0].get()};
 			OpenPage(&evOpenStruct);
@@ -56,7 +57,8 @@ namespace JinEngine
 			//if (_waccess(imguiTxt.c_str(), 00) != -1)
 			//	hasImguiTxt = true;
 
-			for (uint i = 0; i < editorPage.size(); ++i)
+			const uint pageCount = (uint)editorPage.size();
+			for (uint i = 0; i < pageCount; ++i)
 			{
 				editorPage[i]->Initialize();
 				editorPageMap.emplace(editorPage[i]->GetPageType(), editorPage[i].get());
@@ -66,8 +68,10 @@ namespace JinEngine
 				LoadPage();
 			else
 			{
+				for (uint i = 0; i < pageCount; ++i)
+					editorPage[i]->SetInitWindow();
 				JEditorOpenPageEvStruct evOpenStruct{editorPage[0]->GetPageType()};
-				JEditorActPageEvStruct evActStruct{ editorPage[0].get() };
+				JEditorActPageEvStruct evActStruct{editorPage[0].get() };
 				OpenPage(&evOpenStruct);
 				ActivatePage(&evActStruct);
 			}

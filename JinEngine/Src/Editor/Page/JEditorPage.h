@@ -27,8 +27,7 @@ namespace JinEngine
 			public:
 				WindowInitInfo(const std::string name,
 					float initWidthRate, float initHeightRate,
-					float initPosXRate, float initPosYRate,
-					bool isOpen, bool isLastAct);
+					float initPosXRate, float initPosYRate);
 			public:
 				std::string GetName()const noexcept;
 				std::unique_ptr<JEditorAttribute> MakeAttribute()noexcept;
@@ -52,8 +51,9 @@ namespace JinEngine
 			JEditorPage(const JEditorPage& rhs) = delete;
 			JEditorPage& operator=(const JEditorPage& rhs) = delete;
 		public:
-			virtual J_EDITOR_PAGE_TYPE GetPageType()const noexcept = 0;
 			J_EDITOR_PAGE_FLAG GetPageFlag()const noexcept; 
+			virtual J_EDITOR_PAGE_TYPE GetPageType()const noexcept = 0;
+			virtual void SetInitWindow() = 0;
 		public: 
 			virtual void Initialize() = 0;
 			virtual void UpdatePage() = 0;

@@ -12,15 +12,14 @@ namespace JinEngine
 	{
 		JProjectSelectorPage::JProjectSelectorPage()
 			: JEditorPage("ProjectSelectorPage",
-				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f, false, false),
+				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
 				J_EDITOR_PAGE_NONE)
 		{
 			projectHub = std::make_unique<JProjectSelectorHub>("Project Selector",
-				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f, true, true),
+				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
 				GetPageType());
 
 			windows.push_back(projectHub.get());
-			opendWindow.push_back(projectHub.get());
 			JEditorPageShareData::RegisterPage(GetPageType(), pageFlag);
 		}
 		JProjectSelectorPage::~JProjectSelectorPage()
@@ -30,6 +29,18 @@ namespace JinEngine
 		J_EDITOR_PAGE_TYPE JProjectSelectorPage::GetPageType()const noexcept
 		{
 			return J_EDITOR_PAGE_TYPE::PROJECT_SELECTOR;
+		}
+		void JProjectSelectorPage::SetInitWindow()
+		{
+			uint currOpWndCount = (uint)opendWindow.size();
+			for (uint i = 0; i < currOpWndCount; ++i)
+				CloseWindow(opendWindow[i]);
+
+			OpenWindow(projectHub.get()); 
+
+			currOpWndCount = (uint)opendWindow.size();
+			for (uint i = 0; i < currOpWndCount; ++i)
+				opendWindow[i]->SetLastActivated(true);			 
 		}
 		void JProjectSelectorPage::Initialize()
 		{

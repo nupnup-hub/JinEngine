@@ -233,6 +233,14 @@ namespace JinEngine
 		JVector4(JVector4&&) = default;
 		JVector4& operator=(JVector4&&) = default;
 	public:
+		JVector4 operator+(const JVector4& rhs)const
+		{
+			return JVector4(x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w);
+		}
+		JVector4 operator-(const JVector4& rhs)const
+		{
+			return JVector4(x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w);
+		}
 		JVector4 operator*(float rhs)
 		{
 			return JVector4(x * rhs, y * rhs, z * rhs, w * rhs);

@@ -27,6 +27,8 @@ namespace JinEngine
 			~JEditorSkeletonPage();
 		public:
 			J_EDITOR_PAGE_TYPE GetPageType()const noexcept final;
+			void SetInitWindow() final;
+		public:
 			void Initialize()final;
 			void UpdatePage()final; 
 		public:

@@ -30,9 +30,14 @@ namespace JinEngine
 			void CreateDebugGameObject(JGameObject* parent, bool onlyLeafNode)noexcept;
 			void DestroyDebugGameObject()noexcept;
 			void Clear();
+		public:
 			//Culling node bbox
 			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
 			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept;
+			JGameObject* IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept;
+			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept;
+			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept;
+			void Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept;
 			void OffCulling();
 		public:
 			bool AddGameObject(JGameObject* gameObj, bool isLooseOctree)noexcept;

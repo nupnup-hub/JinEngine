@@ -15,16 +15,16 @@ using namespace DirectX;
 namespace JinEngine
 {
 	namespace Core
-	{ 
+	{
 		JKdTreeNode::JKdTreeNode(const uint nodeNumber, const J_KDTREE_NODE_TYPE nodeType, const DirectX::BoundingBox& bbox, JKdTreeNode* parent)
 			:nodeNumber(nodeNumber), nodeType(nodeType), bbox(bbox), parent(parent)
-		{  
+		{
 			if (parent != nullptr)
 			{
 				if (parent->left == nullptr)
 					parent->left = this;
 				else
-					parent->right = this;				 
+					parent->right = this;
 			}
 			//else
 			//	JKdTreeNode::nodeType = J_KDTREE_NODE_TYPE::ROOT;
@@ -38,12 +38,12 @@ namespace JinEngine
 					return;
 
 				if (nodeType != J_KDTREE_NODE_TYPE::LEAF)
-					debugGameObject =JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
+					debugGameObject = JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
 				else
-					debugGameObject =JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
+					debugGameObject = JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
 
 				const float outlineFactor = 0.01f;
-				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetBoundingBox();
+				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetMesh()->GetBoundingBox();
 				debugGameObject->GetTransform()->SetScale(XMFLOAT3(bbox.Extents.x / rBBox.Extents.x + outlineFactor,
 					bbox.Extents.y / rBBox.Extents.y + outlineFactor,
 					bbox.Extents.z / rBBox.Extents.z + outlineFactor));
@@ -54,12 +54,12 @@ namespace JinEngine
 		{
 			if (debugGameObject != nullptr)
 			{
-				JGameObject::BeginDestroy(debugGameObject); 
+				JGameObject::BeginDestroy(debugGameObject);
 				debugGameObject = nullptr;
 			}
 		}
 		void JKdTreeNode::Clear()noexcept
-		{ 
+		{
 			if (innerGameObject.size() > 0)
 				SetVisible();
 			innerGameObject.clear();
@@ -107,6 +107,200 @@ namespace JinEngine
 					left->Culling(camFrustum, nearFrustum);
 					right->Culling(camFrustum, nearFrustum);
 				}
+			}
+		}
+		JGameObject* JKdTreeNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
+		{
+			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
+			{
+				float minDist = FLT_MAX;
+				int index = -1;
+				const uint innerCount = (uint)innerGameObject.size();
+				for (uint i = 0; i < innerCount; ++i)
+				{
+					float dist = 0;
+					if (innerGameObject[i]->GetRenderItem()->GetBoundingBox().Intersects(ori, dir, dist))
+					{
+						if (minDist > dist)
+						{
+							minDist = dist;
+							index = i;
+						}
+					}
+				}
+				if (index != -1)
+					return innerGameObject[index];
+				else
+					return nullptr;
+			}
+			else
+			{
+				float leftDist = FLT_MAX;
+				float rightDist = FLT_MAX;
+
+				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
+				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
+
+				JGameObject* res = nullptr;
+				if (leftDist < rightDist)
+				{
+					if (leftRes)
+						res = left->IntersectFirst(ori, dir);
+					if (rightRes && !res)
+						res = right->IntersectFirst(ori, dir);
+				}
+				else
+				{
+					if (rightRes)
+						res = right->IntersectFirst(ori, dir);
+					if (leftRes && !res)
+						res = left->IntersectFirst(ori, dir);
+				}
+				return res;
+			}
+		}
+		void JKdTreeNode::IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res, std::vector<float>& distVec)const noexcept
+		{
+			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
+			{
+				const uint innerCount = (uint)innerGameObject.size();
+				for (uint i = 0; i < innerCount; ++i)
+				{
+					float dist = 0;
+					if (innerGameObject[i]->GetRenderItem()->GetBoundingBox().Intersects(ori, dir, dist))
+					{
+						bool isHit = false;
+						const uint distCount = (uint)distVec.size();
+						for (uint j = 0; j < distCount; ++j)
+						{
+							if (dist < distVec[j])
+							{
+								isHit = true;
+								JGameObject* tempObj = res[j];
+								res[j] = innerGameObject[i];
+								res.push_back(tempObj);
+
+								float tempFloat = distVec[j];
+								distVec[j] = dist;
+								distVec.push_back(tempFloat);
+								break;
+							}
+						}
+						if (!isHit)
+						{
+							res.push_back(innerGameObject[i]);
+							distVec.push_back(dist);
+						}
+					}
+				}
+			}
+			else
+			{
+				float leftDist = FLT_MAX;
+				float rightDist = FLT_MAX;
+
+				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
+				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
+
+				if (leftDist < rightDist)
+				{
+					if (leftRes)
+						left->IntersectAscendingSort(ori, dir, res, distVec);
+					if (rightRes)
+						right->IntersectAscendingSort(ori, dir, res, distVec);
+				}
+				else
+				{
+					if (rightRes)
+						right->IntersectAscendingSort(ori, dir, res, distVec);
+					if (leftRes)
+						left->IntersectAscendingSort(ori, dir, res, distVec);
+				}
+			}
+		}
+		void JKdTreeNode::IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res, std::vector<float>& distVec)const noexcept
+		{
+			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
+			{
+				const uint innerCount = (uint)innerGameObject.size();
+				for (uint i = 0; i < innerCount; ++i)
+				{
+					float dist = 0;
+					if (innerGameObject[i]->GetRenderItem()->GetBoundingBox().Intersects(ori, dir, dist))
+					{
+						bool isHit = false;
+						const uint distCount = (uint)distVec.size();
+						for (uint j = 0; j < distCount; ++j)
+						{
+							if (dist > distVec[j])
+							{
+								isHit = true;
+								JGameObject* tempObj = res[j];
+								res[j] = innerGameObject[i];
+								res.push_back(tempObj);
+
+								float tempFloat = distVec[j];
+								distVec[j] = dist;
+								distVec.push_back(tempFloat);
+								break;
+							}
+						}
+						if (!isHit)
+						{
+							res.push_back(innerGameObject[i]);
+							distVec.push_back(dist);
+						}
+					}
+				}
+			}
+			else
+			{
+				float leftDist = FLT_MAX;
+				float rightDist = FLT_MAX;
+
+				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
+				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
+
+				if (leftDist > rightDist)
+				{
+					if (leftRes)
+						left->IntersectDescendingSort(ori, dir, res, distVec);
+					if (rightRes)
+						right->IntersectDescendingSort(ori, dir, res, distVec);
+				}
+				else
+				{
+					if (rightRes)
+						right->IntersectDescendingSort(ori, dir, res, distVec);
+					if (leftRes)
+						left->IntersectDescendingSort(ori, dir, res, distVec);
+				}
+			}
+		}
+		void JKdTreeNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		{
+			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
+			{
+				const uint innerCount = (uint)innerGameObject.size();
+				for (uint i = 0; i < innerCount; ++i)
+				{
+					float dist = 0;
+					if (innerGameObject[i]->GetRenderItem()->GetBoundingBox().Intersects(ori, dir, dist))
+						res.push_back(innerGameObject[i]);
+				}
+			}
+			else
+			{
+				float leftDist = FLT_MAX;
+				float rightDist = FLT_MAX;
+
+				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
+				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
+
+				if (leftRes)
+					left->Intersect(ori, dir, res);
+				if (rightRes)
+					right->Intersect(ori, dir, res);
 			}
 		}
 		void JKdTreeNode::OffCulling()noexcept
@@ -174,7 +368,7 @@ namespace JinEngine
 			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
 				return innerGameObject;
 			else
-			{ 			
+			{
 				std::vector<JGameObject*> leftRes = left->GetAreaInnerGameObject();
 				std::vector<JGameObject*> rightRes = right->GetAreaInnerGameObject();
 				leftRes.insert(leftRes.end(), rightRes.begin(), rightRes.end());
@@ -204,7 +398,7 @@ namespace JinEngine
 			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
 				alignNode[index++] = this;
 			else
-			{ 
+			{
 				float centerFactor = 0;
 				if (splitType == J_KDTREE_NODE_SPLIT_AXIS::X)
 					centerFactor = bbox.Center.x;
@@ -244,7 +438,7 @@ namespace JinEngine
 					isRight = camFrustum.Origin.y > bbox.Center.y;
 				else
 					isRight = camFrustum.Origin.z > bbox.Center.z;
-		
+
 				if (isRight)
 				{
 					right->GetAlignLeafNode(camFrustum, alignNode, index);
@@ -260,7 +454,7 @@ namespace JinEngine
 		void JKdTreeNode::SetNodeNumber(const uint newNodeNumber)noexcept
 		{
 			nodeNumber = newNodeNumber;
-		} 
+		}
 		void JKdTreeNode::SetSplitType(const uint newSplitType)noexcept
 		{
 			if (newSplitType == 0)
@@ -293,7 +487,7 @@ namespace JinEngine
 				right->parent = this;
 		}
 		bool JKdTreeNode::HasGameObject(const size_t guid)noexcept
-		{ 
+		{
 			return JCUtil::GetJIdenIndex(innerGameObject, guid) != JCUtil::searchFail;
 		}
 		void JKdTreeNode::AddInnerGameObject(JGameObject* newInnerGameObject)noexcept
@@ -344,7 +538,7 @@ namespace JinEngine
 					if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
 						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 				}
-			} 
+			}
 			else
 			{
 				left->SetVisible();
@@ -357,9 +551,9 @@ namespace JinEngine
 			{
 				const uint innerCount = (uint)innerGameObject.size();
 				for (uint i = 0; i < innerCount; ++i)
-				{ 
+				{
 					JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
-					if((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
+					if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
 						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
 				}
 			}

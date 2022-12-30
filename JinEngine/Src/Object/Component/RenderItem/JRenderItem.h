@@ -61,7 +61,7 @@ namespace JinEngine
 
 		bool IsVisible()const noexcept;
 		bool IsAvailableOverlap()const noexcept final;
-		bool PassDefectInspection()const noexcept final;
+		bool PassDefectInspection()const noexcept final; 
 	private:
 		void DoCopy(JObject* ori) final;
 	protected:

@@ -68,13 +68,18 @@ namespace JinEngine
 		void JDirectXCollisionEx::BoundingBoxMinMax(_In_ const DirectX::BoundingBox& box,
 			_Out_ DirectX::XMFLOAT3& min,
 			_Out_ DirectX::XMFLOAT3& max)noexcept
-		{
-			XMVECTOR center = XMLoadFloat3(&box.Center);
-			XMVECTOR extent = XMLoadFloat3(&box.Extents);
+		{ 
+			DirectX::XMFLOAT3 coners[8];
+			box.GetCorners(coners);
 
-			XMVECTOR minV = XMVectorSubtract(center, extent);
-			XMVECTOR maxV = XMVectorAdd(center, extent);
+			XMVECTOR minV = XMVectorSet(FLT_MAX, FLT_MAX, FLT_MAX, 1.0f);
+			XMVECTOR maxV = XMVectorSet(-FLT_MAX, -FLT_MAX, -FLT_MAX, 1.0f);
 
+			for (uint i = 0; i < 8; ++i)
+			{
+				minV = XMVectorMin(minV, XMLoadFloat3(&coners[i]));
+				maxV = XMVectorMax(maxV, XMLoadFloat3(&coners[i]));
+			}
 			XMStoreFloat3(&min, minV);
 			XMStoreFloat3(&max, maxV);
 		}

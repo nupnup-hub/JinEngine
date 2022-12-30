@@ -1,6 +1,7 @@
 #pragma once
 #include"../JObjectFlag.h"
 #include"../Component/RenderItem/JRenderLayer.h"
+#include"../Component/RenderItem/JRenderItemSpaceSpatialMask.h"
 #include"../Component/Light/JLightType.h"
 #include"../Component/JComponentType.h"
 #include<d3d12.h>
@@ -25,15 +26,17 @@ namespace JinEngine
 			const J_OBJECT_FLAG flag,
 			JGameObject& owner,
 			JMeshGeometry* mesh, 
-			D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
-			J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT);
+			const D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+			const J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT,
+			const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask = SPACE_SPATIAL_ALLOW_ALL);
 		static JRenderItem* CreateRenderItem(const size_t guid,
 			const J_OBJECT_FLAG flag,
 			JGameObject& owner,
 			JMeshGeometry* mesh,
 			std::vector<JMaterial*> mat,
-			D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
-			J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT);
+			const D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+			const J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT,
+			const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask = SPACE_SPATIAL_ALLOW_ALL);
 		static JComponent* CreateComponent(const std::string& componentName, JGameObject& owner);
 	};
 

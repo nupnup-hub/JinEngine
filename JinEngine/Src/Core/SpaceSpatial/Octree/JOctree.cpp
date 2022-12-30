@@ -74,6 +74,16 @@ namespace JinEngine
 				rootNodeCash->Culling(camFrustum, nearFrustum);
 			}
 		}
+		JGameObject* JOctree::IntersectFirst(const JRay& ray)const noexcept
+		{
+			//¹Ì±¸Çö
+			if (rootNodeCash == nullptr)
+				return nullptr;
+		}
+		void JOctree::Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JGameObject*>& res)const noexcept
+		{
+
+		}
 		void JOctree::UpdateGameObject(JGameObject* gameObject)noexcept
 		{
 			if (!IsValidLayer(gameObject->GetRenderItem()->GetRenderLayer()))

@@ -52,12 +52,13 @@ namespace JinEngine
 		private:
 			bool reqInitDockNode = false; 
 		public:
-			JProjectMainPage(bool hasMetadata);
+			JProjectMainPage(const bool hasMetadata);
 			~JProjectMainPage();
 			JProjectMainPage(const JProjectMainPage& rhs) = delete;
 			JProjectMainPage& operator=(const JProjectMainPage& rhs) = delete;
 		public:
 			J_EDITOR_PAGE_TYPE GetPageType()const noexcept final;
+			void SetInitWindow() final;
 		public:
 			void Initialize()final;
 			void UpdatePage()final;

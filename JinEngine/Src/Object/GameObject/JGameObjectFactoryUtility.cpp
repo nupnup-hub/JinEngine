@@ -78,8 +78,8 @@ namespace JinEngine
 			*newGameObj,
 			JResourceManager::Instance().GetDefaultMeshGeometry(meshType),
 			D3D11_PRIMITIVE_TOPOLOGY_LINELIST,
-			J_RENDER_LAYER::DEBUG_LAYER);
-		newRItem->SetSpaceSpatialMask(SPACE_SPATIAL_NOT_ALLOW_ALL);
+			J_RENDER_LAYER::DEBUG_LAYER,
+			SPACE_SPATIAL_NOT_ALLOW_ALL);
 		newRItem->SetMaterial(0, JResourceManager::Instance().GetDefaultMaterial(matType));
 		return newGameObj;
 	}

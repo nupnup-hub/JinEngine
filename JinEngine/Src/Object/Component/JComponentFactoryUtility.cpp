@@ -25,8 +25,9 @@ namespace JinEngine
 		const J_OBJECT_FLAG flag,
 		JGameObject& owner,
 		JMeshGeometry* mesh,  
-		D3D12_PRIMITIVE_TOPOLOGY primitiveType,
-		J_RENDER_LAYER renderLayer)
+		const D3D12_PRIMITIVE_TOPOLOGY primitiveType,
+		const J_RENDER_LAYER renderLayer,
+		const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask)
 	{
 		if (mesh == nullptr)
 			return nullptr;
@@ -35,6 +36,7 @@ namespace JinEngine
 		JRenderItem* newRenderItem = JCFI<JRenderItem>::Create(guid, flag, owner);
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
+		newRenderItem->SetSpaceSpatialMask(spaceSpatialMask);
 		newRenderItem->SetMesh(mesh);
 
 		return newRenderItem;
@@ -44,8 +46,9 @@ namespace JinEngine
 		JGameObject& owner,
 		JMeshGeometry* mesh,
 		std::vector<JMaterial*> mat,
-		D3D12_PRIMITIVE_TOPOLOGY primitiveType,
-		J_RENDER_LAYER renderLayer)
+		const D3D12_PRIMITIVE_TOPOLOGY primitiveType,
+		const J_RENDER_LAYER renderLayer,
+		const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask)
 	{
 		if (mesh == nullptr)
 			return nullptr;
@@ -54,6 +57,7 @@ namespace JinEngine
 		JRenderItem* newRenderItem = JCFI<JRenderItem>::Create(guid, flag, owner);
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
+		newRenderItem->SetSpaceSpatialMask(spaceSpatialMask);
 		newRenderItem->SetMesh(mesh);
 		 
 		const int matCount = (uint)mat.size();

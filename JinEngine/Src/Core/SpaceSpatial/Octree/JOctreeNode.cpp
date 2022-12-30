@@ -29,7 +29,7 @@ namespace JinEngine
 					debugGameObject =JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
 				
 				const float outlineFactor = 0.01f;
-				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetBoundingBox();
+				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetMesh()->GetBoundingBox();
 				debugGameObject->GetTransform()->SetScale(XMFLOAT3(boundingBox.Extents.x / rBBox.Extents.x + outlineFactor,
 					boundingBox.Extents.y / rBBox.Extents.y + outlineFactor,
 					boundingBox.Extents.z / rBBox.Extents.z + outlineFactor));
@@ -95,6 +95,22 @@ namespace JinEngine
 				else
 					CullingInnerObject(camFrustum, nearFrustum);
 			}	
+		}
+		JGameObject* JOctreeNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
+		{
+			return nullptr;
+		}
+		void JOctreeNode::IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		{
+			//미;구현
+		}
+		void JOctreeNode::IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		{
+			//미;구현
+		}
+		void JOctreeNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		{
+			//미;구현
 		}
 		void JOctreeNode::OffCulling()
 		{

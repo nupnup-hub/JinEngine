@@ -37,12 +37,7 @@ namespace JinEngine
 				else
 					debugGameObject = JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
 
-				const float outlineFactor = 0.01f;
-				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetBoundingBox();
-				debugGameObject->GetTransform()->SetScale(XMFLOAT3(bbox.Extents.x / rBBox.Extents.x + outlineFactor,
-					bbox.Extents.y / rBBox.Extents.y + outlineFactor,
-					bbox.Extents.z / rBBox.Extents.z + outlineFactor)); 
-				debugGameObject->GetTransform()->SetPosition(JMathHelper::Vector3Plus(bbox.Center, rBBox.Center));
+				SetDebugObjectTransform();
 			}
 		}
 		void JBvhNode::DestroyDebugGameObject()noexcept
@@ -104,16 +99,116 @@ namespace JinEngine
 				}
 			}
 		}
+		JGameObject* JBvhNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
+		{
+			if (type == J_BVH_NODE_TYPE::LEAF)
+				return innerGameObject;
+			else
+			{
+				float leftDist = FLT_MAX;
+				float rightDist = FLT_MAX;
+
+				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
+				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
+
+				JGameObject* res = nullptr;
+				if (leftDist < rightDist)
+				{
+					if (leftRes)
+						res = left->IntersectFirst(ori, dir);
+					if (rightRes && !res)
+						res = right->IntersectFirst(ori, dir);
+				}
+				else
+				{
+					if (rightRes)
+						res = right->IntersectFirst(ori, dir);
+					if (leftRes && !res)
+						res = left->IntersectFirst(ori, dir);
+				}
+				return res;
+			}
+		}
+		void JBvhNode::IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		{
+			if (type == J_BVH_NODE_TYPE::LEAF)
+				res.push_back(innerGameObject);
+			else
+			{
+				float leftDist = FLT_MAX;
+				float rightDist = FLT_MAX;
+
+				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
+				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
+
+				if (leftDist < rightDist)
+				{
+					if (leftRes)
+						left->IntersectAscendingSort(ori, dir, res);
+					if (rightRes)
+						right->IntersectAscendingSort(ori, dir, res);
+				}
+				else
+				{
+					if (rightRes)
+						right->IntersectAscendingSort(ori, dir, res);
+					if (leftRes)
+						left->IntersectAscendingSort(ori, dir, res);
+				}
+			}
+		}
+		void JBvhNode::IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		{
+			if (type == J_BVH_NODE_TYPE::LEAF)
+				res.push_back(innerGameObject);
+			else
+			{
+				float leftDist = FLT_MAX;
+				float rightDist = FLT_MAX;
+
+				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
+				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
+
+				if (leftDist > rightDist)
+				{
+					if (leftRes)
+						left->IntersectAscendingSort(ori, dir, res);
+					if (rightRes)
+						right->IntersectAscendingSort(ori, dir, res);
+				}
+				else
+				{
+					if (rightRes)
+						right->IntersectAscendingSort(ori, dir, res);
+					if (leftRes)
+						left->IntersectAscendingSort(ori, dir, res);
+				}
+			}
+		}
+		void JBvhNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		{
+			if (type == J_BVH_NODE_TYPE::LEAF)
+				res.push_back(innerGameObject);
+			else
+			{
+				float leftDist = FLT_MAX;
+				float rightDist = FLT_MAX;
+
+				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
+				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
+
+				if (leftRes)
+					left->IntersectAscendingSort(ori, dir, res);
+				if (rightRes)
+					right->IntersectAscendingSort(ori, dir, res);
+			}
+		}
 		void JBvhNode::UpdateInnerGameObject()noexcept
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
 			{
 				bbox = innerGameObject->GetRenderItem()->GetBoundingBox();
-				if (debugGameObject != nullptr)
-				{			 
-					debugGameObject->GetTransform()->SetScale(XMFLOAT3(bbox.Extents.x * 2, bbox.Extents.y * 2, bbox.Extents.z * 2));
-					debugGameObject->GetTransform()->SetPosition(bbox.Center);
-				}
+				SetDebugObjectTransform();
 			}
 		}
 		void JBvhNode::OffCulling()noexcept
@@ -279,6 +374,20 @@ namespace JinEngine
 				return this;
 			else
 				return right->FindRightLeafNode();
+		}
+		void JBvhNode::SetDebugObjectTransform()noexcept
+		{
+			if (debugGameObject == nullptr)
+				return;
+
+			static constexpr float outlineFactor = 0.01f;
+			JTransform* transform = debugGameObject->GetTransform(); 
+
+			const BoundingBox debugBox = debugGameObject->GetRenderItem()->GetMesh()->GetBoundingBox(); 
+			transform->SetScale(XMFLOAT3(bbox.Extents.x / debugBox.Extents.x + outlineFactor,
+				bbox.Extents.y / debugBox.Extents.y + outlineFactor,
+				bbox.Extents.z / debugBox.Extents.z + outlineFactor));
+			transform->SetPosition(JMathHelper::Vector3Minus(bbox.Center, debugBox.Center));
 		}
 		void JBvhNode::BuildDebugNode(Editor::JEditorBinaryTreeView& treeView)
 		{

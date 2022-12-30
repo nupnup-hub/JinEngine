@@ -22,9 +22,9 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JProjectMainPage::JProjectMainPage(bool hasMetadata)
+		JProjectMainPage::JProjectMainPage(const bool hasMetadata)
 			:JEditorPage("JEngine",
-				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f, false, false),
+				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
 				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK)),
 			reqInitDockNode(!hasMetadata)
 		{ 
@@ -34,16 +34,16 @@ namespace JinEngine
 			loadProjectF = std::make_unique<LoadProjectF::Functor>(loadProjectLam);
 
 			std::vector<WindowInitInfo> openInfo;
-			openInfo.emplace_back("Window Directory##JEngine", 0.0f, 0.7f, 0.6f, 0.3f, true, true);
-			openInfo.emplace_back("Object Explorer##JEngine", 0.6f, 0.0f, 0.2f, 0.6f, true, true);
-			openInfo.emplace_back("Object Detail", 0.8f, 0.0f, 0.2f, 1.0f, true, true);
-			openInfo.emplace_back("Scene Observe##JEngine", 0.0f, 0.0f, 0.6f, 0.7f, true, true);
-			openInfo.emplace_back("Scene Viewer##JEngine", 0.0f, 0.0f, 0.6f, 0.7f, true, false);
-			openInfo.emplace_back("Log Viewer##JEngine", 0.6f, 0.6f, 0.2f, 0.4f, true, true);
-			openInfo.emplace_back("Animation Controller Editor##JEngine", 0.4f, 0.4f, 0.4f, 0.4f, false, false);
-			openInfo.emplace_back("Graphic Resource Watcher##JEngine", 0.6f, 0.4f, 0.0f, 0.0f, false, false);
-			openInfo.emplace_back("String Convert Test##JEngine", 0.6f, 0.4f, 0.0f, 0.0f, false, false);
-			openInfo.emplace_back("App Elapsed Time##JEngine", 0.6f, 0.4f, 0.0f, 0.0f, false, false);
+			openInfo.emplace_back("Window Directory##JEngine", 0.0f, 0.7f, 0.6f, 0.3f);
+			openInfo.emplace_back("Object Explorer##JEngine", 0.6f, 0.0f, 0.2f, 0.6f);
+			openInfo.emplace_back("Object Detail", 0.8f, 0.0f, 0.2f, 1.0f);
+			openInfo.emplace_back("Scene Observe##JEngine", 0.0f, 0.0f, 0.6f, 0.7f);
+			openInfo.emplace_back("Scene Viewer##JEngine", 0.0f, 0.0f, 0.6f, 0.7f);
+			openInfo.emplace_back("Log Viewer##JEngine", 0.6f, 0.6f, 0.2f, 0.4f);
+			openInfo.emplace_back("Animation Controller Editor##JEngine", 0.4f, 0.4f, 0.4f, 0.4f);
+			openInfo.emplace_back("Graphic Resource Watcher##JEngine", 0.6f, 0.4f, 0.0f, 0.0f);
+			openInfo.emplace_back("String Convert Test##JEngine", 0.6f, 0.4f, 0.0f, 0.0f);
+			openInfo.emplace_back("App Elapsed Time##JEngine", 0.6f, 0.4f, 0.0f, 0.0f);
 
 			windowDirectory = std::make_unique<JWindowDirectory>(openInfo[0].GetName(), openInfo[0].MakeAttribute(), GetPageType());
 			objectExplorer = std::make_unique<JObjectExplorer>(openInfo[1].GetName(), openInfo[1].MakeAttribute(), GetPageType());
@@ -68,17 +68,7 @@ namespace JinEngine
 			windows[8] = stringConvertTest.get();
 			windows[9] = appElapseTime.get();
 
-			if (!hasMetadata)
-			{
-				opendWindow.push_back(windows[0]);
-				opendWindow.push_back(windows[1]);
-				opendWindow.push_back(windows[2]);
-				opendWindow.push_back(windows[3]);
-				opendWindow.push_back(windows[4]);
-				opendWindow.push_back(windows[5]);
-			}
 			JEditorPageShareData::RegisterPage(GetPageType(), pageFlag);
-
 			graphicOptionSetting = std::make_unique<JGraphicOptionSetting>();
 		}
 		JProjectMainPage::~JProjectMainPage()
@@ -88,6 +78,23 @@ namespace JinEngine
 		J_EDITOR_PAGE_TYPE JProjectMainPage::GetPageType()const noexcept
 		{
 			return J_EDITOR_PAGE_TYPE::PROJECT_MAIN;
+		}
+		void JProjectMainPage::SetInitWindow()
+		{
+			uint currOpWndCount = (uint)opendWindow.size();
+			for (uint i = 0; i < currOpWndCount; ++i)
+				CloseWindow(opendWindow[i]);
+			 
+			OpenWindow(windowDirectory.get());
+			OpenWindow(objectExplorer.get());
+			OpenWindow(objectDetail.get());
+			OpenWindow(sceneObserver.get());
+			OpenWindow(sceneViewer.get());
+			OpenWindow(logViewer.get());
+
+			currOpWndCount = (uint)opendWindow.size();
+			for (uint i = 0; i < currOpWndCount; ++i)
+				opendWindow[i]->SetLastActivated(true);
 		}
 		void JProjectMainPage::Initialize()
 		{
