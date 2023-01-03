@@ -1,8 +1,7 @@
 #include"JEditorPage.h" 
 #include"JEditorWindow.h"
 #include"JEditorAttribute.h" 
-#include"JEditorPageShareData.h"
-#include"../Menubar/JEditorMenuBar.h"
+#include"JEditorPageShareData.h" 
 #include"../Event/JEditorEventStruct.h"
 #include"../Event/JEditorEvent.h"
 #include"../../Core/File/JFileIOHelper.h"
@@ -191,14 +190,6 @@ namespace JinEngine
 			{
 				ImGuiID dockspace_id = ImGui::GetID(GetDockNodeName().c_str());
 				ImGui::DockSpace(dockspace_id, ImGui::GetMainViewport()->WorkSize, dockspaceFlag);
-			}
-		}
-		void JEditorPage::UpdateWindowMenuBar()
-		{
-			if (editorMenuBar != nullptr && editorMenuBar->UpdateMenuBar())
-			{
-				JMenuNode* selectedNode = editorMenuBar->GetSelectedNode();
-				selectedNode->ExecuteBind();
 			}
 		}
 		void JEditorPage::PrintOpenWindowState()

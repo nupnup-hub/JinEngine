@@ -78,22 +78,22 @@ namespace JinEngine
 					CullingInnerObject(camFrustum, flag);
 			}
 		}
-		void JOctreeNode::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept
+		void JOctreeNode::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
 		{
 			ContainmentType res = camFrustum.Contains(boundingBox);
 			if (res == ContainmentType::DISJOINT)
 				SetInVisible();
 			else if (res == ContainmentType::CONTAINS)
-				SetVisible(camFrustum, nearFrustum);
+				SetVisible(camFrustum, camPos);
 			else
 			{
 				if (childrenNode.size() > 0)
 				{
 					for (uint i = 0; i < 8; ++i)
-						childrenNode[i]->Culling(camFrustum, nearFrustum);
+						childrenNode[i]->Culling(camFrustum, camPos);
 				}
 				else
-					CullingInnerObject(camFrustum, nearFrustum);
+					CullingInnerObject(camFrustum, camPos);
 			}	
 		}
 		JGameObject* JOctreeNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
@@ -230,7 +230,7 @@ namespace JinEngine
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
 			}
 		}
-		void JOctreeNode::CullingInnerObject(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)
+		void JOctreeNode::CullingInnerObject(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)
 		{
 			const uint innerGameObjCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerGameObjCount; ++i)
@@ -245,7 +245,7 @@ namespace JinEngine
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 				else if (res == ContainmentType::INTERSECTS)
 				{
-					if (nearFrustum.Contains(bbox) == ContainmentType::DISJOINT)
+					if (bbox.Contains(camPos) == ContainmentType::DISJOINT)
 						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 					else
 						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
@@ -263,13 +263,13 @@ namespace JinEngine
 					childrenNode[i]->SetVisible(camFrustum, flag);
 			}
 		}
-		void JOctreeNode::SetVisible(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept
+		void JOctreeNode::SetVisible(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
 		{
-			CullingInnerObject(camFrustum, nearFrustum);
+			CullingInnerObject(camFrustum, camPos);
 			if (childrenNode.size() > 0)
 			{
 				for (uint i = 0; i < 8; ++i)
-					childrenNode[i]->SetVisible(camFrustum, nearFrustum);
+					childrenNode[i]->SetVisible(camFrustum, camPos);
 			}
 		}
 		void JOctreeNode::SetInVisible()noexcept

@@ -680,7 +680,8 @@ namespace JinEngine
 
 			const uint meshOffset = updateHelper.uData[(int)J_UPLOAD_RESOURCE_TYPE::OBJECT].offset;
 			const uint rItemOffset = updateHelper.uData[(int)J_UPLOAD_RESOURCE_TYPE::BOUNDING_OBJECT].offset;
-			const bool forcedSetFrameDirty = updateHelper.uData[(int)J_UPLOAD_RESOURCE_TYPE::OBJECT].setFrameDirty;
+			const bool forcedSetFrameDirty = updateHelper.uData[(int)J_UPLOAD_RESOURCE_TYPE::OBJECT].setFrameDirty
+				|| updateHelper.uData[(int)J_UPLOAD_RESOURCE_TYPE::BOUNDING_OBJECT].setFrameDirty;
 
 			for (uint i = 0; i < renderItemCount; ++i)
 			{
@@ -955,7 +956,10 @@ namespace JinEngine
 						const bool canCullingStart = occBase != nullptr && occBase->CanCullingStart();
 
 						if (isEditorTarget)
+						{
 							copiedHelper.allowDrawDebug = true;
+							copiedHelper.allowCulling = option.allowEditorCulling;
+						}
 
 						DrawSceneRenderTarget(copiedHelper);
 						if (isMainTarget && canCullingStart)
@@ -1143,7 +1147,9 @@ namespace JinEngine
 			const JGraphicDrawHelper helper,
 			const DrawCondition condition)
 		{
-			const bool isOcclusionActivated = condition.allowOcclusion && option.isOcclusionQueryActivated;
+			const bool isOcclusionActivated = helper.allowCulling && 
+				condition.allowOcclusion && 
+				option.isOcclusionQueryActivated;
 
 			JShader* shadowShader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SHADOW_MAP_SHADER);
 
@@ -1157,7 +1163,11 @@ namespace JinEngine
 			for (uint i = 0; i < gameObjCount; ++i)
 			{
 				JRenderItem* renderItem = gameObject[i]->GetRenderItem();
-				if (!renderItem->IsVisible())
+				if (helper.allowCulling && !renderItem->IsVisible())
+					continue;
+
+				const uint finalObjRitemOffset = helper.objectRitemOffset + CallGetSecondFrameBuffOffset(*renderItem);
+				if (isOcclusionActivated && option.IsHZBOccActivated() && hzbOccHelper->IsCulled(finalObjRitemOffset))
 					continue;
 
 				JMeshGeometry* mesh = renderItem->GetMesh();
@@ -1173,9 +1183,7 @@ namespace JinEngine
 
 				for (uint j = 0; j < submeshCount; ++j)
 				{
-					const uint finalObjOffset = (helper.objectMeshOffset + CallGetFirstFrameBuffOffset(*renderItem) + j);
-					if (isOcclusionActivated && option.IsHZBOccActivated() && hzbOccHelper->IsCulled(finalObjOffset))
-						continue;
+					const uint finalObjMeshOffset = (helper.objectMeshOffset + CallGetFirstFrameBuffOffset(*renderItem) + j);
 
 					const JMaterial* mat = renderItem->GetValidMaterial(j);
 					const JShader* shader = mat->GetShader();
@@ -1196,7 +1204,7 @@ namespace JinEngine
 							commandList->SetPipelineState(shadowShader->GetGraphicPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::STATIC)));
 					}
 
-					D3D12_GPU_VIRTUAL_ADDRESS objectCBAddress = objectCB->GetGPUVirtualAddress() + finalObjOffset * objectCBByteSize;
+					D3D12_GPU_VIRTUAL_ADDRESS objectCBAddress = objectCB->GetGPUVirtualAddress() + finalObjMeshOffset * objectCBByteSize;
 					commandList->SetGraphicsRootConstantBufferView(0, objectCBAddress);
 					if (onSkinned)
 					{
@@ -1204,7 +1212,7 @@ namespace JinEngine
 						commandList->SetGraphicsRootConstantBufferView(1, skinObjCBAddress);
 					}
 					if (isOcclusionActivated && option.IsHDOccActivated())
-						commandList->SetPredication(graphicResource->GetOcclusionQueryResult(), finalObjOffset * 8, D3D12_PREDICATION_OP_EQUAL_ZERO);
+						commandList->SetPredication(graphicResource->GetOcclusionQueryResult(), finalObjMeshOffset * 8, D3D12_PREDICATION_OP_EQUAL_ZERO);
 					
 					if (condition.allowOutline && gameObject[i]->IsSelectedbyEditor())
 						commandList->OMSetStencilRef(2);
@@ -1246,9 +1254,8 @@ namespace JinEngine
 
 				//Test Code
 				//수정필요
-
-				if (JMathHelper::Vector3Length(gameObject[i]->GetTransform()->GetScale()) < 16)
-					continue;
+				//if (JMathHelper::Vector3Length(gameObject[i]->GetTransform()->GetScale()) < 5)
+				//	continue;
 
 				JAnimator* animator = gameObject[i]->GetComponentWithParent<JAnimator>();
 				const bool onSkinned = animator != nullptr && condition.isAnimationActivated;
@@ -1716,6 +1723,7 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"AllowHZBCorrectFail:", option.allowHZBCorrectFail);
 			JFileIOHelper::StoreAtomicData(stream, L"AllowHZBDepthMapDebug:", option.allowHZBDepthMapDebug);
 			JFileIOHelper::StoreAtomicData(stream, L"AllowOutline:", option.allowOutline);
+			JFileIOHelper::StoreAtomicData(stream, L"AllowEditorCulling:", option.allowEditorCulling);
 			stream.close();
 		}
 		void JGraphicImpl::LoadData()
@@ -1747,6 +1755,7 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, newOption.allowHZBCorrectFail);
 			JFileIOHelper::LoadAtomicData(stream, newOption.allowHZBDepthMapDebug);
 			JFileIOHelper::LoadAtomicData(stream, newOption.allowOutline);
+			JFileIOHelper::LoadAtomicData(stream, newOption.allowEditorCulling);
 			stream.close();
 			SetGraphicOption(newOption);
 		}

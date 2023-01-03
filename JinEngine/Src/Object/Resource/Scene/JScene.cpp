@@ -590,8 +590,8 @@ namespace JinEngine
 			bvhDebugOption.commonOption.debugRoot = debugRoot;
 			bvhDebugOption.commonOption.isSpaceSpatialActivated = true; 
 
-			//bvhDebugOption.commonOption.isDebugActivated = true;
-			//bvhDebugOption.commonOption.isDebugLeafOnly = true;
+			bvhDebugOption.commonOption.isDebugActivated = true;
+			bvhDebugOption.commonOption.isDebugLeafOnly = true;
 
 			spatialStructure->SetBvhOption(debugLayer, bvhDebugOption);
 			/*

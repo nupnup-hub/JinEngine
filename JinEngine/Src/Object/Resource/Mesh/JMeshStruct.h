@@ -73,8 +73,7 @@ namespace JinEngine
 		std::wstring name;
 		size_t guid; 
 		Core::JUserPtr<JMaterial> material;
-		std::vector<uint32> indices32;
-		std::vector<uint16> indices16;
+		std::vector<uint> indices; 
 		DirectX::BoundingBox boundingBox;
 		DirectX::BoundingSphere boundingSphere;
 		bool hasUV = false;
@@ -102,7 +101,7 @@ namespace JinEngine
 		Core::JUserPtr<JMaterial> GetMaterial()const noexcept;
 		uint GetIndexCount()const noexcept;
 		uint16 GetU16Index(const uint index)const noexcept;
-		uint32 GetU32Index(const uint index)const noexcept;
+		uint32 GetU32Index(const uint index)const noexcept; 
 		const std::vector<uint16>& GetU16Vector()const noexcept;
 		const std::vector<uint32>& GetU32Vector()const noexcept;
 		DirectX::BoundingBox GetBBox()const noexcept;
@@ -111,6 +110,7 @@ namespace JinEngine
 		virtual uint GetVertexCount()const noexcept = 0;
 		virtual DirectX::XMVECTOR GetPosition(uint i)const noexcept = 0;
 	public:
+		void SetName(const std::wstring& newName)noexcept;
 		void SetMaterial(Core::JUserPtr<JMaterial> material)noexcept;
 	public:
 		void AddIndex(const uint index)noexcept;
@@ -121,6 +121,8 @@ namespace JinEngine
 		bool IsValid()const noexcept;
 	public:
 		void CreateBoundingObject()noexcept;
+	protected:
+		void Merge(const JMeshData& mesh);
 	};
 
 	struct JStaticMeshData : public JMeshData
@@ -159,6 +161,8 @@ namespace JinEngine
 		void SetVertex(const uint index, const JStaticMeshVertex& vertex)const noexcept;
 	public:
 		void AddVertex(const JStaticMeshVertex& vertex)noexcept;
+	public:
+		void Merge(const JStaticMeshData& mesh)noexcept;
 	};
 
 	struct JSkinnedMeshData : public JMeshData

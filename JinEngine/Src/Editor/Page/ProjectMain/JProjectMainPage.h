@@ -1,36 +1,29 @@
 #pragma once  
 #include"../JEditorPage.h"  
-#include"../CommonWindow/Debug/JStringConvertTest.h" 
-#include"../CommonWindow/View/JSceneViewer.h"
-#include"../CommonWindow/View/JSceneObserver.h"
-#include"../CommonWindow/Detail/JObjectDetail.h"
-#include"../CommonWindow/Explorer/JObjectExplorer.h"
-#include"../CommonWindow/Debug/JGraphicResourceWatcher.h"
-#include"../CommonWindow/Debug/JAppElapsedTime.h"
-#include"Window/JAnimationControllerEditor.h"
-#include"Window/JLogViewer.h" 
-#include"Window/JWindowDirectory.h"  
-#include"Window/JGraphicOptionSetting.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		//class JWindowDirectory;
-		//class JSceneViewer;
-		//class JSceneObserver;
-		//class JObjectExplorer;
-		//class JLogViewer;
-
-	//	class JAnimationControllerEditor;
-		//class JStringConvertTest;
-		//class JGraphicResourceWatcher;
-
+		class JWindowDirectory;
+		class JObjectExplorer;
+		class JObjectDetail;
+		class JSceneViewer;
+		class JSceneObserver;
+		class JLogViewer;
+		class JAnimationControllerEditor;
+		class JGraphicResourceWatcher;
+		class JStringConvertTest;
+		class JAppElapsedTime;
+		class JEditorMenuBar;
+		class JGraphicOptionSetting;
 		class JProjectMainPage final : public JEditorPage
 		{
 		private:
 			using StoreProjectF = Core::JSFunctorType<void>;
 			using LoadProjectF = Core::JSFunctorType<void>;
+		private:
+			std::unique_ptr<JEditorMenuBar> menuBar = nullptr;
 		private:
 			//JEditor derivated window
 			std::unique_ptr<JWindowDirectory> windowDirectory;

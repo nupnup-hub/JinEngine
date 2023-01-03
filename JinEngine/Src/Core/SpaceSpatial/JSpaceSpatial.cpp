@@ -164,8 +164,8 @@ namespace JinEngine
 			if (layer == J_SPACE_SPATIAL_LAYER::INVALID)
 				return;
 
-			if (layer == J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
-				return;
+			//if (layer == J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
+			//	return;
 
 			if (value != isDebugActivated)
 			{
@@ -184,8 +184,8 @@ namespace JinEngine
 			if (layer == J_SPACE_SPATIAL_LAYER::INVALID)
 				return;
 
-			if (layer == J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
-				return;
+			//if (layer == J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
+			//	return;
 
 			if (isDebugLeafOnly != value)
 			{

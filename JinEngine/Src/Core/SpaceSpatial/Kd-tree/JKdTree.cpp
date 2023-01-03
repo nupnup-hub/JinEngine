@@ -84,15 +84,10 @@ namespace JinEngine
 			if (root != nullptr)
 				root->Culling(camFrustum, J_CULLING_FLAG::NONE);
 		}
-		void JKdTree::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
+		void JKdTree::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
 		{
 			if (root != nullptr)
-			{
-				DirectX::BoundingFrustum nearFrustum{ camFrustum };
-				nearFrustum.Far = 1;
-				nearFrustum.Near = 0;
-				root->Culling(camFrustum, nearFrustum);
-			}
+				root->Culling(camFrustum, camPos);
 		}
 		JGameObject* JKdTree::IntersectFirst(const JRay& ray)const noexcept
 		{

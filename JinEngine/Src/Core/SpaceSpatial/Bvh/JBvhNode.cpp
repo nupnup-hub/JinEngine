@@ -5,7 +5,7 @@
 #include"../../../Object/Component/Transform/JTransform.h" 
 #include"../../../Editor/Utility/JEditorBinaryTreeView.h"
 #include"../../../Utility/JCommonUtility.h"
-
+ 
 using namespace DirectX;
 namespace JinEngine
 {
@@ -27,16 +27,15 @@ namespace JinEngine
 		JBvhNode::~JBvhNode() {}
 		void JBvhNode::CreateDebugGameObject(JGameObject* parent, bool onlyLeafNode)noexcept
 		{
+			if (type != J_BVH_NODE_TYPE::LEAF && onlyLeafNode)
+				return;
+
 			if (debugGameObject == nullptr)
 			{
-				if (type != J_BVH_NODE_TYPE::LEAF && onlyLeafNode)
-					return;
-
-				if (type != J_BVH_NODE_TYPE::LEAF)
-					debugGameObject = JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
-				else
+				if (type == J_BVH_NODE_TYPE::LEAF)
 					debugGameObject = JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN);
-
+				else
+					debugGameObject = JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED);
 				SetDebugObjectTransform();
 			}
 		}
@@ -76,7 +75,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JBvhNode::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept
+		void JBvhNode::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
 		{
 			ContainmentType res = camFrustum.Contains(bbox);
 			if (res == ContainmentType::CONTAINS)
@@ -84,18 +83,18 @@ namespace JinEngine
 			else if (res == ContainmentType::DISJOINT)
 				SetInVisible();
 			else
-			{ 
+			{
 				if (type == J_BVH_NODE_TYPE::LEAF)
 				{
-					if (nearFrustum.Contains(bbox) == ContainmentType::DISJOINT)
+					if (bbox.Contains(camPos) == ContainmentType::DISJOINT)
 						SetVisible();
 					else
 						SetInVisible();
 				}
 				else
 				{
-					left->Culling(camFrustum, nearFrustum);
-					right->Culling(camFrustum, nearFrustum);
+					left->Culling(camFrustum, camPos);
+					right->Culling(camFrustum, camPos);
 				}
 			}
 		}
@@ -381,9 +380,11 @@ namespace JinEngine
 				return;
 
 			static constexpr float outlineFactor = 0.01f;
-			JTransform* transform = debugGameObject->GetTransform(); 
+			JTransform* transform = debugGameObject->GetTransform();
+			const BoundingBox debugBox = debugGameObject->GetRenderItem()->GetMesh()->GetBoundingBox();
 
-			const BoundingBox debugBox = debugGameObject->GetRenderItem()->GetMesh()->GetBoundingBox(); 
+			//Bounding Box는 회전에 상관없이 일정한 모양을 유지하므로
+			//Object에 회전에 맞는 DebugBox는 생성할 수 없다.
 			transform->SetScale(XMFLOAT3(bbox.Extents.x / debugBox.Extents.x + outlineFactor,
 				bbox.Extents.y / debugBox.Extents.y + outlineFactor,
 				bbox.Extents.z / debugBox.Extents.z + outlineFactor));
@@ -393,7 +394,7 @@ namespace JinEngine
 		{
 			if (type == J_BVH_NODE_TYPE::ROOT)
 			{
-				treeView.BuildNode(std::to_string(nodeNumber));
+				treeView.BuildNode(std::to_string(nodeNumber), "Root");
 				if (left != nullptr)
 					left->BuildDebugNode(treeView);
 				if (right != nullptr)

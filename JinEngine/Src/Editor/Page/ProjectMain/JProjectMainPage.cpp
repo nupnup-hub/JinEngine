@@ -1,14 +1,17 @@
 #include"JProjectMainPage.h"
-//#include"Window/JAnimationControllerEditor.h"
-//#include"Window/JLogViewer.h" 
-//#include"Window/JWindowDirectory.h"  
+#include"Window/JAnimationControllerEditor.h"
+#include"Window/JLogViewer.h" 
+#include"Window/JWindowDirectory.h"  
+#include"Window/JGraphicOptionSetting.h"
 #include"../JEditorAttribute.h" 
 #include"../JEditorPageShareData.h"
-//#include"../CommonWindow/View/JSceneViewer.h"
-//#include"../CommonWindow/View/JSceneObserver.h"
-//#include"../CommonWindow/Explorer/JObjectExplorer.h"
-//#include"../CommonWindow/Debug/JGraphicResourceWatcher.h"
-//#include"../CommonWindow/Debug/JStringConvertTest.h"
+#include"../CommonWindow/Debug/JStringConvertTest.h" 
+#include"../CommonWindow/View/JSceneViewer.h"
+#include"../CommonWindow/View/JSceneObserver.h"
+#include"../CommonWindow/Detail/JObjectDetail.h"
+#include"../CommonWindow/Explorer/JObjectExplorer.h"
+#include"../CommonWindow/Debug/JGraphicResourceWatcher.h"
+#include"../CommonWindow/Debug/JAppElapsedTime.h"
 #include"../../Menubar/JEditorMenuBar.h" 
 #include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
 #include"../../../Object/GameObject/JGameObject.h"
@@ -133,7 +136,7 @@ namespace JinEngine
 				reqInitDockNode = false;
 			}
 			UpdateDockSpace(dockspaceFlag);
-			UpdateWindowMenuBar();
+			menuBar->Update(true);
 			ClosePage();
 
 			uint8 opendWindowCount = (uint8)opendWindow.size();
@@ -198,107 +201,103 @@ namespace JinEngine
 		}
 		void JProjectMainPage::BuildMenuNode()
 		{
-			std::unique_ptr<JMenuNode> rootNode = std::make_unique<JMenuNode>("Root", true, false);
+			std::unique_ptr<JEditorMenuNode> rootNode = std::make_unique<JEditorMenuNode>("Root", true, false);
 
 			// root Child
-			std::unique_ptr<JMenuNode> fileNode = std::make_unique<JMenuNode>("JFile", false, false, nullptr, rootNode.get());
-			std::unique_ptr<JMenuNode> windowNode = std::make_unique<JMenuNode>("Window", false, false, nullptr, rootNode.get());
-			std::unique_ptr<JMenuNode> graphicNode = std::make_unique<JMenuNode>("Graphic", false, false, nullptr, rootNode.get());
+			std::unique_ptr<JEditorMenuNode> fileNode = std::make_unique<JEditorMenuNode>("JFile", false, false, nullptr, rootNode.get());
+			std::unique_ptr<JEditorMenuNode> windowNode = std::make_unique<JEditorMenuNode>("Window", false, false, nullptr, rootNode.get());
+			std::unique_ptr<JEditorMenuNode> graphicNode = std::make_unique<JEditorMenuNode>("Graphic", false, false, nullptr, rootNode.get());
 
 			//file Child
-			std::unique_ptr<JMenuNode> saveNode = std::make_unique<JMenuNode>("SaveProject", false, true, nullptr, fileNode.get());
-			saveNode->RegisterBind(std::make_unique<StoreProjectF::CompletelyBind>(*storeProjectF));
-			std::unique_ptr<JMenuNode> loadNode = std::make_unique<JMenuNode>("LoadProject", false, true, nullptr, fileNode.get());
-			loadNode->RegisterBind(std::make_unique<LoadProjectF::CompletelyBind>(*loadProjectF));
-			std::unique_ptr<JMenuNode> buildNode = std::make_unique<JMenuNode>("BuildProject", false, true, nullptr, fileNode.get());
+			std::unique_ptr<JEditorMenuNode> saveNode = std::make_unique<JEditorMenuNode>("SaveProject", false, true, nullptr, fileNode.get());
+			saveNode->RegisterBindHandle(std::make_unique<StoreProjectF::CompletelyBind>(*storeProjectF));
+			std::unique_ptr<JEditorMenuNode> loadNode = std::make_unique<JEditorMenuNode>("LoadProject", false, true, nullptr, fileNode.get());
+			loadNode->RegisterBindHandle(std::make_unique<LoadProjectF::CompletelyBind>(*loadProjectF));
+			std::unique_ptr<JEditorMenuNode> buildNode = std::make_unique<JEditorMenuNode>("BuildProject", false, true, nullptr, fileNode.get());
 
 			//window Child
-			std::unique_ptr<JMenuNode> directoryNode = std::make_unique<JMenuNode>(windowDirectory->GetName(),
+			std::unique_ptr<JEditorMenuNode> directoryNode = std::make_unique<JEditorMenuNode>(windowDirectory->GetName(),
 				false, true,
 				windowDirectory->GetOpenPtr(),
 				windowNode.get());
-			directoryNode->RegisterBind(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, windowDirectory->GetName()));
+			directoryNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, windowDirectory->GetName()));
 
-			std::unique_ptr<JMenuNode> objectExplorerNode = std::make_unique<JMenuNode>(objectExplorer->GetName(),
+			std::unique_ptr<JEditorMenuNode> objectExplorerNode = std::make_unique<JEditorMenuNode>(objectExplorer->GetName(),
 				false, true,
 				objectExplorer->GetOpenPtr(),
 				windowNode.get());
-			objectExplorerNode->RegisterBind(std::make_unique< OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, objectExplorer->GetName()));
+			objectExplorerNode->RegisterBindHandle(std::make_unique< OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, objectExplorer->GetName()));
 
-			std::unique_ptr<JMenuNode> sceneViewerNode = std::make_unique<JMenuNode>(sceneViewer->GetName(),
+			std::unique_ptr<JEditorMenuNode> sceneViewerNode = std::make_unique<JEditorMenuNode>(sceneViewer->GetName(),
 				false, true,
 				sceneViewer->GetOpenPtr(),
 				windowNode.get());
-			sceneViewerNode->RegisterBind(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, sceneViewer->GetName()));
+			sceneViewerNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, sceneViewer->GetName()));
 
-			/*std::unique_ptr<JMenuNode> objectDetailNode = std::make_unique<JMenuNode>(objectDetail->GetName(),
+			/*std::unique_ptr<JEditorMenuNode> objectDetailNode = std::make_unique<JEditorMenuNode>(objectDetail->GetName(),
 				false, true,
 				objectDetail->GetOpenPtr(),
 				windowNode.get());*/
-			std::unique_ptr<JMenuNode> logViewerNode = std::make_unique<JMenuNode>(logViewer->GetName(),
+			std::unique_ptr<JEditorMenuNode> logViewerNode = std::make_unique<JEditorMenuNode>(logViewer->GetName(),
 				false, true,
 				logViewer->GetOpenPtr(),
 				windowNode.get());
-			logViewerNode->RegisterBind(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, logViewer->GetName()));
+			logViewerNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, logViewer->GetName()));
 
-			std::unique_ptr<JMenuNode> sceneObserverNode = std::make_unique<JMenuNode>(sceneObserver->GetName(),
+			std::unique_ptr<JEditorMenuNode> sceneObserverNode = std::make_unique<JEditorMenuNode>(sceneObserver->GetName(),
 				false, true,
 				sceneObserver->GetOpenPtr(),
 				windowNode.get());
-			sceneObserverNode->RegisterBind(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, sceneObserver->GetName()));
+			sceneObserverNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, sceneObserver->GetName()));
 
-			std::unique_ptr<JMenuNode> animationControllderEditorNode = std::make_unique<JMenuNode>(animationControllerEditor->GetName(),
+			std::unique_ptr<JEditorMenuNode> animationControllderEditorNode = std::make_unique<JEditorMenuNode>(animationControllerEditor->GetName(),
 				false, true,
 				animationControllerEditor->GetOpenPtr(),
 				windowNode.get());
-			animationControllderEditorNode->RegisterBind(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, animationControllerEditor->GetName()));
+			animationControllderEditorNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, animationControllerEditor->GetName()));
 
-			std::unique_ptr<JMenuNode> graphicResourceWatcherEditorNode = std::make_unique<JMenuNode>(graphicResourceWatcher->GetName(),
+			std::unique_ptr<JEditorMenuNode> graphicResourceWatcherEditorNode = std::make_unique<JEditorMenuNode>(graphicResourceWatcher->GetName(),
 				false, true,
 				graphicResourceWatcher->GetOpenPtr(),
 				windowNode.get());
-			graphicResourceWatcherEditorNode->RegisterBind(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, graphicResourceWatcher->GetName()));
+			graphicResourceWatcherEditorNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, graphicResourceWatcher->GetName()));
 
-			std::unique_ptr<JMenuNode> stringConvertTestEditorNode = std::make_unique<JMenuNode>(stringConvertTest->GetName(),
+			std::unique_ptr<JEditorMenuNode> stringConvertTestEditorNode = std::make_unique<JEditorMenuNode>(stringConvertTest->GetName(),
 				false, true,
 				stringConvertTest->GetOpenPtr(),
 				windowNode.get());
-			stringConvertTestEditorNode->RegisterBind(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, stringConvertTest->GetName()));
+			stringConvertTestEditorNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, stringConvertTest->GetName()));
 
-			std::unique_ptr<JMenuNode> appElapsedTimeNode = std::make_unique<JMenuNode>(appElapseTime->GetName(),
+			std::unique_ptr<JEditorMenuNode> appElapsedTimeNode = std::make_unique<JEditorMenuNode>(appElapseTime->GetName(),
 				false, true,
 				appElapseTime->GetOpenPtr(),
 				windowNode.get());
-			appElapsedTimeNode->RegisterBind(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, appElapseTime->GetName()));
+			appElapsedTimeNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, appElapseTime->GetName()));
 			 
-			std::unique_ptr<JMenuNode> grapicOptionNode = std::make_unique<JMenuNode>("Graphic Option",
+			std::unique_ptr<JEditorMenuNode> grapicOptionNode = std::make_unique<JEditorMenuNode>("Graphic Option",
 				false, true,
 				graphicOptionSetting->GetOpenPtr(),
 				graphicNode.get());
-			grapicOptionNode->RegisterBind(std::make_unique<OpenSimpleWindowF::CompletelyBind>(*GetOpSimpleWindowFunctorPtr(), graphicOptionSetting->GetOpenPtr()));
+			grapicOptionNode->RegisterBindHandle(std::make_unique<OpenSimpleWindowF::CompletelyBind>(*GetOpSimpleWindowFunctorPtr(), graphicOptionSetting->GetOpenPtr()));
 
-			editorMenuBar = std::make_unique<JEditorMenuBar>();
-			editorMenuBar->rootNode = rootNode.get();
-			editorMenuBar->allNode.push_back(std::move(rootNode));
-			editorMenuBar->allNode.push_back(std::move(fileNode));
-			editorMenuBar->allNode.push_back(std::move(windowNode));
-			editorMenuBar->allNode.push_back(std::move(graphicNode));
-			editorMenuBar->allNode.push_back(std::move(grapicOptionNode));
-
-			editorMenuBar->allNode.push_back(std::move(saveNode));
-			editorMenuBar->allNode.push_back(std::move(loadNode));
-			editorMenuBar->allNode.push_back(std::move(buildNode));
-
-			editorMenuBar->allNode.push_back(std::move(directoryNode));
-			editorMenuBar->allNode.push_back(std::move(objectExplorerNode));
-			editorMenuBar->allNode.push_back(std::move(sceneViewerNode));
-			editorMenuBar->allNode.push_back(std::move(sceneObserverNode));
-			//editorMenuBar->allNode.push_back(std::move(objectDetailNode));
-			editorMenuBar->allNode.push_back(std::move(logViewerNode));
-			editorMenuBar->allNode.push_back(std::move(animationControllderEditorNode));
-			editorMenuBar->allNode.push_back(std::move(graphicResourceWatcherEditorNode));
-			editorMenuBar->allNode.push_back(std::move(stringConvertTestEditorNode));
-			editorMenuBar->allNode.push_back(std::move(appElapsedTimeNode));
+			menuBar = std::make_unique<JEditorMenuBar>(std::move(rootNode), true);
+			menuBar->AddNode(std::move(fileNode));
+			menuBar->AddNode(std::move(windowNode));
+			menuBar->AddNode(std::move(graphicNode));
+			menuBar->AddNode(std::move(grapicOptionNode));
+			menuBar->AddNode(std::move(saveNode));
+			menuBar->AddNode(std::move(loadNode));
+			menuBar->AddNode(std::move(buildNode));
+			menuBar->AddNode(std::move(directoryNode));
+			menuBar->AddNode(std::move(objectExplorerNode));
+			  
+			menuBar->AddNode(std::move(sceneViewerNode));
+			menuBar->AddNode(std::move(sceneObserverNode));
+			menuBar->AddNode(std::move(logViewerNode));
+			menuBar->AddNode(std::move(animationControllderEditorNode));
+			menuBar->AddNode(std::move(graphicResourceWatcherEditorNode));
+			menuBar->AddNode(std::move(stringConvertTestEditorNode));
+			menuBar->AddNode(std::move(appElapsedTimeNode));
 		}
 	}
 }

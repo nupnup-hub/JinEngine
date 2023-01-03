@@ -33,7 +33,7 @@ namespace JinEngine
 		public:
 			//Culling node bbox
 			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
-			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept;
+			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept;
 			JGameObject* IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept;
 			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept;
 			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept;
@@ -56,10 +56,10 @@ namespace JinEngine
 			bool RemoveInnerGameObject(JGameObject* gameObject)noexcept;
 		private:
 			void CullingInnerObject(const JCullingFrustum& camFrustum, J_CULLING_FLAG oriFlag);
-			void CullingInnerObject(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum);
+			void CullingInnerObject(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos);
 		private:
 			void SetVisible(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
-			void SetVisible(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept;
+			void SetVisible(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept;
 			void SetInVisible()noexcept;
 		};
 	}

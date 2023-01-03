@@ -28,28 +28,6 @@ namespace JinEngine
 		else
 			return false;
 	}
-	bool JObject::IsActivated()const noexcept
-	{
-		return isActivated;
-	}
-	void JObject::Activate() noexcept
-	{
-		if (!isActivated)
-			DoActivate();
-	}
-	void JObject::DeActivate()noexcept
-	{ 
-		if (isActivated)
-			DoDeActivate();
-	}
-	void JObject::DoActivate() noexcept
-	{
-		isActivated = true;
-	}
-	void JObject::DoDeActivate()noexcept
-	{
-		isActivated = false;
-	}
 	bool JObject::BeginDestroy(JObject* obj)
 	{
 		return obj->EndDestroy(false);

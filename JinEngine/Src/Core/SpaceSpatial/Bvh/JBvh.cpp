@@ -110,15 +110,10 @@ namespace JinEngine
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
 			}
 		} 
-		void JBvh::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
+		void JBvh::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
 		{
 			if (allNodes.size() > 1)
-			{
-				DirectX::BoundingFrustum nearFrustum{ camFrustum };
-				nearFrustum.Far = 1;
-				nearFrustum.Near = 0;
-				root->Culling(camFrustum, nearFrustum);
-			}
+				root->Culling(camFrustum, camPos);
 
 			if (innerGameObjectCandidate != nullptr)
 			{
@@ -567,13 +562,7 @@ namespace JinEngine
 			if (root == nullptr)
 				return;
 
-			if (allNodes.size() < 2)
-			{
-				treeView.BuildNode(std::to_string(root->GetNodeNumber()));
-				return;
-			}
-
-			treeView.Initialize(allNodes.size());	
+			treeView.Initialize(allNodes.size());
 			root->BuildDebugNode(treeView);
 		}
 	}

@@ -422,15 +422,19 @@ namespace JinEngine
 		}
 		JVector2<float> JImGuiImpl::GetGuiWindowPos()noexcept
 		{
-			return Convert(ImGui::GetWindowPos());
+			return ImGui::GetWindowPos();
 		}
 		JVector2<float> JImGuiImpl::GetGuiWindowSize()noexcept
 		{
-			return Convert(ImGui::GetWindowSize());
+			return ImGui::GetWindowSize();
 		}
-		JVector2<float> JImGuiImpl::GetCursorPos()noexcept
+		JVector2<float> JImGuiImpl::GetLocalCursorPos()noexcept
 		{
-			return JVector2<float>(ImGui::GetCursorPosX(), ImGui::GetCursorPosY());
+			return ImGui::GetCursorPos();
+		}
+		JVector2<float> JImGuiImpl::GetWorldCursorPos()noexcept
+		{
+			return GetLocalCursorPos() + ImGui::GetWindowPos();
 		}
 		bool JImGuiImpl::BeginWindow(const std::string& name, bool* p_open, ImGuiWindowFlags flags)
 		{

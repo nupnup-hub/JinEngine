@@ -26,7 +26,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		void JHZBOccCulling::Initialize(ID3D12Device* d3dDevice, const JGraphicInfo& info)
-		{ 
+		{  
 			BuildRootSignature(d3dDevice, info.occlusionMapCapacity);
 			BuildUploadBuffer(d3dDevice, info.upObjCapacity, info.occlusionMapCapacity);
 
@@ -107,13 +107,12 @@ namespace JinEngine
 		}
 		void JHZBOccCulling::UpdateObject(JRenderItem* rItem, const uint buffIndex)
 		{ 
-			const DirectX::BoundingBox bbox = rItem->GetMesh()->GetBoundingBox();
+			const DirectX::BoundingBox bbox = rItem->GetBoundingBox();
+			bbox.GetCorners(objectConstants.coners); 
 			objectConstants.center = bbox.Center;
 			objectConstants.extents = bbox.Extents;
 			objectConstants.isValid = rItem->GetRenderLayer() == J_RENDER_LAYER::OPAQUE_OBJECT;
-			objectConstants.queryResultIndex = buffIndex;
-			XMStoreFloat4x4(&objectConstants.objWorld, XMMatrixTranspose(rItem->GetOwner()->GetTransform()->GetWorld()));
-
+			objectConstants.queryResultIndex = buffIndex;  
 			objectBuffer->CopyData(buffIndex, objectConstants);
 		}
 		void JHZBOccCulling::UpdatePass(JScene* scene, const JGraphicInfo& info, const JGraphicOption& option, const uint queryCount, const uint cbIndex)
@@ -125,12 +124,15 @@ namespace JinEngine
 			static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE)->GetBoundingBox();
 			XMStoreFloat4x4(&passConstatns.view, XMMatrixTranspose(mainCam->GetView()));
 			XMStoreFloat4x4(&passConstatns.proj, XMMatrixTranspose(mainCam->GetProj()));
+			XMStoreFloat4x4(&passConstatns.viewProj, XMMatrixTranspose(XMMatrixMultiply(mainCam->GetView(), mainCam->GetProj())));
 			const BoundingFrustum frustum = mainCam->GetBoundingFrustum();
 			XMVECTOR planeV[6];
 			frustum.GetPlanes(&planeV[0], &planeV[1], &planeV[2], &planeV[3], &planeV[4], &planeV[5]);
 			for (uint i = 0; i < 6; ++i)
 				XMStoreFloat4(&passConstatns.frustumPlane[i], planeV[i]);
 
+			passConstatns.frustumDir = frustum.Orientation;
+			passConstatns.frustumPos = frustum.Origin;
 			passConstatns.viewWidth = mainCam->GetViewWidth();
 			passConstatns.viewHeight = mainCam->GetViewHeight();
 			passConstatns.camNear = mainCam->GetNear();
@@ -218,92 +220,36 @@ namespace JinEngine
 			ThrowIfFailedHr(queryResultBuffer->Resource()->Map(0, nullptr, reinterpret_cast<void**>(&queryResult)));
 			SetReadResultTrigger(false);
 
-			//Debug
+			//Debug 
 			/*
-			static int streamC = 2;
-			if (streamC < 1)
+			static int streamC = 0;
+			if (streamC < 2)
 			{
 				std::wofstream stream;
-				stream.open(L"D:\\JinWooJung\\HZB_Occlusion_debug_bbox5.txt", std::ios::app | std::ios::out);
+				stream.open(L"D:\\JinWooJung\\HZB_Occlusion_debug_bbox.txt", std::ios::app | std::ios::out);
 				if (stream.is_open())
 				{
 					int count = 0;
 					HZBDebugInfo* info = debugBuffer->Map(count);
 					for (uint i = 0; i < count; ++i)
 					{
-						JFileIOHelper::StoreXMFloat4x4(stream, L"ObjWorld", info[i].objWorld);
-
-						JFileIOHelper::StoreAtomicData(stream, L"CenterDepth", info[i].centerDepth);
-						JFileIOHelper::StoreAtomicData(stream, L"CopareDepth", info[i].copareDepth);
-
-						JFileIOHelper::StoreAtomicData(stream, L"ThreadIndex", info[i].threadIndex);
-						JFileIOHelper::StoreAtomicData(stream, L"QueryIdex", info[i].queryIndex);
-						JFileIOHelper::InputSpace(stream, 1);
-
-							JFileIOHelper::StoreXMFloat4x4(stream, L"ObjWorld", info[i].objWorld);
-
 						JFileIOHelper::StoreXMFloat3(stream, L"Center", info[i].center);
 						JFileIOHelper::StoreXMFloat3(stream, L"Extents", info[i].extents);
-
-						JFileIOHelper::StoreXMFloat4(stream, L"PosCW", info[i].posCW);
-						JFileIOHelper::StoreXMFloat4(stream, L"PosCV", info[i].posCV);
-						JFileIOHelper::StoreXMFloat4(stream, L"PosEW", info[i].posEW);
-						JFileIOHelper::StoreXMFloat4(stream, L"PosEV", info[i].posEV);
-
-						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint0", info[i].nearPoint0);
-						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint1", info[i].nearPoint1);
-						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint2", info[i].nearPoint2);
-						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint3", info[i].nearPoint3);
-						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint4", info[i].nearPoint4);
-						JFileIOHelper::StoreXMFloat3(stream, L"nearPoint5", info[i].nearPoint5);
-
-						JFileIOHelper::StoreXMFloat3(stream, L"nearPointW", info[i].nearPointW);
-						JFileIOHelper::StoreXMFloat4(stream, L"nearPointH", info[i].nearPointH);
-						JFileIOHelper::StoreXMFloat3(stream, L"nearPointC", info[i].nearPointC);
-
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV00", info[i].bboxPointV0);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV01", info[i].bboxPointV1);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV02", info[i].bboxPointV2);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV03", info[i].bboxPointV3);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV04", info[i].bboxPointV4);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV05", info[i].bboxPointV5);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV06", info[i].bboxPointV6);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointV07", info[i].bboxPointV7);
-
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH00", info[i].bboxPointH0);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH01", info[i].bboxPointH1);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH02", info[i].bboxPointH2);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH03", info[i].bboxPointH3);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH04", info[i].bboxPointH4);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH05", info[i].bboxPointH5);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH06", info[i].bboxPointH6);
-						JFileIOHelper::StoreXMFloat4(stream, L"bboxPointH07", info[i].bboxPointH7);
-
-						JFileIOHelper::StoreXMFloat2(stream, L"clipFrame0", info[i].clipFrame0);
-						JFileIOHelper::StoreXMFloat2(stream, L"clipFrame1", info[i].clipFrame1);
-						JFileIOHelper::StoreXMFloat2(stream, L"clipFrame2", info[i].clipFrame2);
-						JFileIOHelper::StoreXMFloat2(stream, L"clipFrame3", info[i].clipFrame3);
-
-						JFileIOHelper::StoreAtomicData(stream, L"Width", info[i].width);
-						JFileIOHelper::StoreAtomicData(stream, L"Height", info[i].height);
-						JFileIOHelper::StoreAtomicData(stream, L"Lod", info[i].lod);
-
-						JFileIOHelper::StoreXMFloat3(stream, L"uvExtentsMax", info[i].uvExtentsMax);
-						JFileIOHelper::StoreXMFloat3(stream, L"uvExtentsMin", info[i].uvExtentsMin);
-
+						JFileIOHelper::StoreAtomicData(stream, L"CullingRes", info[i].cullingRes);
 						JFileIOHelper::StoreAtomicData(stream, L"CenterDepth", info[i].centerDepth);
-						JFileIOHelper::StoreAtomicData(stream, L"CopareDepth", info[i].copareDepth);
+						JFileIOHelper::StoreAtomicData(stream, L"FinalCompareDepth", info[i].finalCompareDepth);
 
 						JFileIOHelper::StoreAtomicData(stream, L"ThreadIndex", info[i].threadIndex);
 						JFileIOHelper::StoreAtomicData(stream, L"QueryIdex", info[i].queryIndex);
 
 						JFileIOHelper::InputSpace(stream, 1);
-						
+
 					}
 					++streamC;
 					stream.close();
 				}
-			}*/
+			}
+			*/
 		}
 		void JHZBOccCulling::BuildRootSignature(ID3D12Device* d3dDevice, const uint occlusionDsvCapacity)
 		{
@@ -375,7 +321,7 @@ namespace JinEngine
 				IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 		}
 		void JHZBOccCulling::BuildUploadBuffer(ID3D12Device* device, const uint objectCapacity, const uint occlusionCapacity)
-		{
+		{ 
 			objectBuffer = std::make_unique<JUploadBuffer<JOcclusionObjectConstants>>(J_UPLOAD_BUFFER_TYPE::COMMON);
 			queryOutBuffer = std::make_unique<JUploadBuffer<float>>(J_UPLOAD_BUFFER_TYPE::UNORDERED_ACCEESS);
 			queryResultBuffer = std::make_unique<JUploadBuffer<float>>(J_UPLOAD_BUFFER_TYPE::READ_BACK);

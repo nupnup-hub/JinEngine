@@ -202,6 +202,10 @@ namespace JinEngine
 	{
 		return boundingSphere;
 	}
+	void JMeshData::SetName(const std::wstring& newName)noexcept
+	{
+		name = newName;
+	}
 	void JMeshData::SetMaterial(Core::JUserPtr<JMaterial> material)noexcept
 	{
 		JMeshData::material = material;
@@ -212,7 +216,7 @@ namespace JinEngine
 			indices16.push_back(index);
 		else
 			indices32.push_back(index);
-	}
+	} 
 	bool JMeshData::HasUV()const noexcept
 	{
 		return hasUV;
@@ -246,6 +250,35 @@ namespace JinEngine
 		}
 		boundingBox = Core::JDirectXCollisionEx::CreateBoundingBox(vMin, vMax);
 		boundingSphere = Core::JDirectXCollisionEx::CreateBoundingSphere(vMin, vMax);
+	}
+	void JMeshData::Merge(const JMeshData& meshData)
+	{
+		const uint addedCount = meshData.GetIndexCount();
+		const uint vertexOffset = GetVertexCount();
+		const uint indexOffset = GetIndexCount();
+		const uint newTotalIndexCount = indexOffset + addedCount;
+		const bool isOver16Bit = newTotalIndexCount >= 1 << 16;
+		if (Is16bit())
+		{
+			if (isOver16Bit)
+			{
+				Stuff4ByteDataTo8Byte();
+				for (uint i = 0; i < addedCount; ++i)
+					indices32[i + indexOffset] = meshData.GetU16Index() + vertexOffset;
+			}
+			else
+			{
+				indices16.resize(newTotalIndexCount);
+				for (uint i = 0; i < addedCount; ++i)
+					indices16[i + indexOffset] = addedIndices32[i] + vertexOffset;
+			}
+		}
+		else
+		{
+			indices32.resize(newTotalIndexCount);
+			for (uint i = 0; i < addedCount; ++i)
+				indices32[i + indexOffset] = addedIndices32[i] + vertexOffset;
+		}
 	}
 	JStaticMeshData::JStaticMeshData(){}
 	JStaticMeshData::JStaticMeshData(const std::wstring& name,
@@ -310,6 +343,13 @@ namespace JinEngine
 	void JStaticMeshData::AddVertex(const JStaticMeshVertex& vertex)noexcept
 	{
 		vertices.push_back(vertex);
+	}
+	void JStaticMeshData::Merge(const JStaticMeshData& mesh)noexcept
+	{
+		//vertices.insert(vertices.end(), std::move(*mesh.vertices.data())); 
+		JMeshData::Merge(mesh);
+		vertices.insert(vertices.end(), mesh.vertices.begin(), mesh.vertices.end());
+		CreateBoundingObject();
 	}
 	JSkinnedMeshData::JSkinnedMeshData(const std::wstring& name,
 		const size_t guid,

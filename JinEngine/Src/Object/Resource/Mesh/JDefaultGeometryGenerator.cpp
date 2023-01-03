@@ -10,7 +10,10 @@ namespace JinEngine
 //***************************************************************************************
 	using namespace DirectX;
 
-	JStaticMeshData JDefaultGeometryGenerator::CreateCube(float width, float height, float depth, uint numSubdivisions)
+	JStaticMeshData JDefaultGeometryGenerator::CreateCube(const float width,
+		const float height,
+		const float depth,
+		uint numSubdivisions)
 	{
 		//
 		// Create the vertices.
@@ -96,7 +99,9 @@ namespace JinEngine
 		return meshData;
 	}
 
-	JStaticMeshData JDefaultGeometryGenerator::CreateSphere(float radius, uint slicecount, uint stackcount)
+	JStaticMeshData JDefaultGeometryGenerator::CreateSphere(const float radius,
+		const uint slicecount,
+		const uint stackcount)
 	{
 		//
 		// Compute the vertices stating at the top pole and moving down the stacks.
@@ -104,7 +109,7 @@ namespace JinEngine
 		// Poles: note that there will be texture coordinate distortion as there is
 		// not a unique point on the texture map to assign to the pole when mapping
 		// a rectangular texture onto a sphere.
-		JStaticMeshVertex topVertex(0.0f, +radius, 0.0f, 0.0f, +1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		JStaticMeshVertex topVertex(0.0f, radius, 0.0f, 0.0f, +1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 		JStaticMeshVertex bottomVertex(0.0f, -radius, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
 
 		std::vector<JStaticMeshVertex> vertices;
@@ -204,99 +209,7 @@ namespace JinEngine
 		//JStaticMeshData meshData{L"Cube", std::move(i), true, true, std::move(v)};
 		return JStaticMeshData{L"Sphere", std::move(indices), true, true, std::move(vertices) };
 	}
-	void JDefaultGeometryGenerator::Subdivide(JStaticMeshData& meshData)
-	{
-		// Save a copy of the input geometry.
-		JStaticMeshData inputCopy = meshData;
- 
-		//       v1
-		//       *
-		//      / \
-		//     /   \
-		//  m0*-----*m1
-		//   / \   / \
-		//  /   \ /   \
-		// *-----*-----*
-		// v0    m2     v2
-
-		std::vector<JStaticMeshVertex> vertices;
-		std::vector<uint32> indices32;
-
-		uint numTris = (uint)inputCopy.GetIndexCount() / 3;
-		for (uint i = 0; i < numTris; ++i)
-		{
-			JStaticMeshVertex v0 = inputCopy.GetVertex(inputCopy.GetU32Index(i * 3 + 0));
-			JStaticMeshVertex v1 = inputCopy.GetVertex(inputCopy.GetU32Index(i * 3 + 1));
-			JStaticMeshVertex v2 = inputCopy.GetVertex(inputCopy.GetU32Index(i * 3 + 2));
-			//
-			// Generate the midpoints.
-			//
-			JStaticMeshVertex m0 = MidPoint(v0, v1);
-			JStaticMeshVertex m1 = MidPoint(v1, v2);
-			JStaticMeshVertex m2 = MidPoint(v0, v2);
-			//
-			// Add new geometry.
-			//
-			vertices.push_back(v0); // 0
-			vertices.push_back(v1); // 1
-			vertices.push_back(v2); // 2
-			vertices.push_back(m0); // 3
-			vertices.push_back(m1); // 4
-			vertices.push_back(m2); // 5
-
-			indices32.push_back(i * 6 + 0);
-			indices32.push_back(i * 6 + 3);
-			indices32.push_back(i * 6 + 5);
-
-			indices32.push_back(i * 6 + 3);
-			indices32.push_back(i * 6 + 4);
-			indices32.push_back(i * 6 + 5);
-
-			indices32.push_back(i * 6 + 5);
-			indices32.push_back(i * 6 + 4);
-			indices32.push_back(i * 6 + 2);
-
-			indices32.push_back(i * 6 + 3);
-			indices32.push_back(i * 6 + 1);
-			indices32.push_back(i * 6 + 4);
-		}
-		meshData = JStaticMeshData(inputCopy.GetName(),
-			inputCopy.GetGuid(),
-			std::move(indices32),
-			inputCopy.HasUV(),
-			inputCopy.HasNormal(),
-			std::move(vertices));
-	}
-	JStaticMeshVertex JDefaultGeometryGenerator::MidPoint(const JStaticMeshVertex& v0, const JStaticMeshVertex& v1)
-	{
-		XMVECTOR p0 = XMLoadFloat3(&v0.position);
-		XMVECTOR p1 = XMLoadFloat3(&v1.position);
-
-		XMVECTOR n0 = XMLoadFloat3(&v0.normal);
-		XMVECTOR n1 = XMLoadFloat3(&v1.normal);
-
-		XMVECTOR tan0 = XMLoadFloat3(&v0.tangentU);
-		XMVECTOR tan1 = XMLoadFloat3(&v1.tangentU);
-
-		XMVECTOR tex0 = XMLoadFloat2(&v0.texC);
-		XMVECTOR tex1 = XMLoadFloat2(&v1.texC);
-
-		// Compute the midpoints of all the attributes.  Vectors need to be normalized
-		// since linear interpolating can make them not unit length.  
-		XMVECTOR pos = 0.5f * (p0 + p1);
-		XMVECTOR normal = XMVector3Normalize(0.5f * (n0 + n1));
-		XMVECTOR tangent = XMVector3Normalize(0.5f * (tan0 + tan1));
-		XMVECTOR tex = 0.5f * (tex0 + tex1);
-
-		JStaticMeshVertex v;
-		XMStoreFloat3(&v.position, pos);
-		XMStoreFloat3(&v.normal, normal);
-		XMStoreFloat3(&v.tangentU, tangent);
-		XMStoreFloat2(&v.texC, tex);
-
-		return v;
-	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateGeosphere(float radius, uint numSubdivisions)
+	JStaticMeshData JDefaultGeometryGenerator::CreateGeosphere(const float radius, uint numSubdivisions)
 	{ 
 		// Put a cap on the number of subdivisions.
 		numSubdivisions = std::min<uint>(numSubdivisions, 6u);
@@ -372,7 +285,11 @@ namespace JinEngine
 
 		return meshData;
 	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateCylinder(float bottomRadius, float topRadius, float height, uint slicecount, uint stackcount)
+	JStaticMeshData JDefaultGeometryGenerator::CreateCylinder(const float bottomRadius,
+		const float topRadius,
+		const float height,
+		const uint slicecount,
+		const uint stackcount)
 	{
 		//
 		// Build Stacks.
@@ -399,7 +316,7 @@ namespace JinEngine
 				float c = cosf(j * dTheta);
 				float s = sinf(j * dTheta);
 
-				vertex.position = XMFLOAT3(r * c, y, r * s);
+				vertex.position = XMFLOAT3(r * c , y, r * s);
 
 				vertex.texC.x = (float)j / slicecount;
 				vertex.texC.y = 1.0f - (float)i / stackcount;
@@ -462,81 +379,10 @@ namespace JinEngine
 
 		return meshData;
 	}
-	void JDefaultGeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius, float height,
-		uint slicecount, uint stackcount, JStaticMeshData& meshData)
-	{
-		uint baseIndex = (uint)meshData.GetVertexCount();
-
-		float y = 0.5f * height;
-		float dTheta = 2.0f * XM_PI / slicecount;
-
-		// Duplicate cap ring vertices because the texture coordinates and normals differ.
-		for (uint i = 0; i <= slicecount; ++i)
-		{
-			float x = topRadius * cosf(i * dTheta);
-			float z = topRadius * sinf(i * dTheta);
-
-			// Scale down by the height to try and make top cap texture coord area
-			// proportional to base.
-			float u = x / height + 0.5f;
-			float v = z / height + 0.5f;
-
-			meshData.AddVertex(JStaticMeshVertex(x, y, z, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
-		}
-
-		// Cap center vertex.
-		meshData.AddVertex(JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
-
-		// Index of center vertex.
-		uint centerIndex = (uint)meshData.GetVertexCount() - 1;
-
-		for (uint i = 0; i < slicecount; ++i)
-		{
-			meshData.AddIndex(centerIndex);
-			meshData.AddIndex(baseIndex + i + 1);
-			meshData.AddIndex(baseIndex + i); 
-		}
-	}
-	void JDefaultGeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height,
-		uint slicecount, uint stackcount, JStaticMeshData& meshData)
-	{
-		// 
-		// Build bottom cap.
-		//
-
-		uint baseIndex = (uint)meshData.GetVertexCount();
-		float y = -0.5f * height;
-
-		// vertices of ring
-		float dTheta = 2.0f * XM_PI / slicecount;
-		for (uint i = 0; i <= slicecount; ++i)
-		{
-			float x = bottomRadius * cosf(i * dTheta);
-			float z = bottomRadius * sinf(i * dTheta);
-
-			// Scale down by the height to try and make top cap texture coord area
-			// proportional to base.
-			float u = x / height + 0.5f;
-			float v = z / height + 0.5f;
-
-			//수정필요
-			meshData.AddVertex(JStaticMeshVertex(x, y, z, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
-		}
-
-		// Cap center vertex.
-		meshData.AddVertex(JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
-
-		// Cache the index of center vertex.
-		uint centerIndex = (uint)meshData.GetVertexCount() - 1;
-
-		for (uint i = 0; i < slicecount; ++i)
-		{
-			meshData.AddIndex(centerIndex);
-			meshData.AddIndex(baseIndex + i);
-			meshData.AddIndex(baseIndex + i + 1); 
-		}
-	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateGrid(float width, float depth, uint m, uint n)
+	JStaticMeshData JDefaultGeometryGenerator::CreateGrid(const float width,
+		const float depth,
+		const uint m,
+		const uint n)
 	{
 		uint vertexcount = m * n;
 		uint facecount = (m - 1) * (n - 1) * 2;
@@ -560,7 +406,7 @@ namespace JinEngine
 			{
 				float x = -halfWidth + j * dx;
 
-				vertices[i * n + j].position = XMFLOAT3(x, 0.0f, z);
+				vertices[i * n + j].position = XMFLOAT3(x, 0.0f, 0.0f);
 				vertices[i * n + j].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
 				vertices[i * n + j].tangentU = XMFLOAT3(1.0f, 0.0f, 0.0f);
 
@@ -594,7 +440,11 @@ namespace JinEngine
 
 		return JStaticMeshData(L"Grid", std::move(indices32), true, true, std::move(vertices));
 	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateQuad(float x, float y, float w, float h, float depth)
+	JStaticMeshData JDefaultGeometryGenerator::CreateQuad(const float x,
+		const float y,
+		const float w,
+		const float h,
+		const float depth)
 	{
 		std::vector<JStaticMeshVertex> vertices(4);
 		std::vector<uint32> indices32(6); 
@@ -721,4 +571,213 @@ namespace JinEngine
 
 		return JStaticMeshData(L"Bounding Frustum", std::move(indices32), false, false, std::move(vertices));
 	} 
+	JStaticMeshData JDefaultGeometryGenerator::CreateCircle(float outRadius, float innerRadius)
+	{
+		const int segments = 32;
+		const int vertexCount = (segments + 1) * 2;
+		const int indexCount = (vertexCount - 2) * 3 + 6; 
+		std::vector<JStaticMeshVertex> vertices(vertexCount);
+		std::vector<uint16> indices(indexCount);
+
+		float theta = 2.0f * XM_PI;
+		vertices[0].position.x = innerRadius * std::cos(theta);
+		vertices[0].position.y = innerRadius * std::sin(theta);
+
+		vertices[1].position.x = outRadius * std::cos(theta);
+		vertices[1].position.y = outRadius * std::sin(theta);
+
+		int indexOffset = 0;
+		int vertexOffset = 0;
+
+		int loopCount = segments + 1;
+		float piRate = 1.0f / segments;
+
+		for (int i = 1; i < loopCount; i++)
+		{ 	 
+			vertexOffset += 2;
+			theta = 2.0f * XM_PI * ((float)((segments + 1) - i) / segments - piRate);
+			vertices[vertexOffset].position.x = innerRadius * std::cos(theta);
+			vertices[vertexOffset].position.y = innerRadius * std::sin(theta);
+			 
+			vertices[vertexOffset + 1].position.x = outRadius * std::cos(theta);
+			vertices[vertexOffset + 1].position.y = outRadius * std::sin(theta);
+
+			indices[indexOffset] = vertexOffset - 2;
+			indices[indexOffset + 1] = vertexOffset - 1;
+			indices[indexOffset + 2] = vertexOffset;
+			indices[indexOffset + 3] = vertexOffset - 1;
+			indices[indexOffset + 4] = vertexOffset + 1;
+			indices[indexOffset + 5] = vertexOffset;
+
+			indexOffset += 6;
+		}  
+		return JStaticMeshData(L"Circle", std::move(indices), false, false, std::move(vertices));
+	}
+
+	void JDefaultGeometryGenerator::Subdivide(JStaticMeshData& meshData)
+	{
+		// Save a copy of the input geometry.
+		JStaticMeshData inputCopy = meshData;
+
+		//       v1
+		//       *
+		//      / \
+		//     /   \
+		//  m0*-----*m1
+		//   / \   / \
+		//  /   \ /   \
+		// *-----*-----*
+		// v0    m2     v2
+
+		std::vector<JStaticMeshVertex> vertices;
+		std::vector<uint32> indices32;
+
+		uint numTris = (uint)inputCopy.GetIndexCount() / 3;
+		for (uint i = 0; i < numTris; ++i)
+		{
+			JStaticMeshVertex v0 = inputCopy.GetVertex(inputCopy.GetU32Index(i * 3 + 0));
+			JStaticMeshVertex v1 = inputCopy.GetVertex(inputCopy.GetU32Index(i * 3 + 1));
+			JStaticMeshVertex v2 = inputCopy.GetVertex(inputCopy.GetU32Index(i * 3 + 2));
+			//
+			// Generate the midpoints.
+			//
+			JStaticMeshVertex m0 = MidPoint(v0, v1);
+			JStaticMeshVertex m1 = MidPoint(v1, v2);
+			JStaticMeshVertex m2 = MidPoint(v0, v2);
+			//
+			// Add new geometry.
+			//
+			vertices.push_back(v0); // 0
+			vertices.push_back(v1); // 1
+			vertices.push_back(v2); // 2
+			vertices.push_back(m0); // 3
+			vertices.push_back(m1); // 4
+			vertices.push_back(m2); // 5
+
+			indices32.push_back(i * 6 + 0);
+			indices32.push_back(i * 6 + 3);
+			indices32.push_back(i * 6 + 5);
+
+			indices32.push_back(i * 6 + 3);
+			indices32.push_back(i * 6 + 4);
+			indices32.push_back(i * 6 + 5);
+
+			indices32.push_back(i * 6 + 5);
+			indices32.push_back(i * 6 + 4);
+			indices32.push_back(i * 6 + 2);
+
+			indices32.push_back(i * 6 + 3);
+			indices32.push_back(i * 6 + 1);
+			indices32.push_back(i * 6 + 4);
+		}
+		meshData = JStaticMeshData(inputCopy.GetName(),
+			inputCopy.GetGuid(),
+			std::move(indices32),
+			inputCopy.HasUV(),
+			inputCopy.HasNormal(),
+			std::move(vertices));
+	}
+	JStaticMeshVertex JDefaultGeometryGenerator::MidPoint(const JStaticMeshVertex& v0, const JStaticMeshVertex& v1)
+	{
+		XMVECTOR p0 = XMLoadFloat3(&v0.position);
+		XMVECTOR p1 = XMLoadFloat3(&v1.position);
+
+		XMVECTOR n0 = XMLoadFloat3(&v0.normal);
+		XMVECTOR n1 = XMLoadFloat3(&v1.normal);
+
+		XMVECTOR tan0 = XMLoadFloat3(&v0.tangentU);
+		XMVECTOR tan1 = XMLoadFloat3(&v1.tangentU);
+
+		XMVECTOR tex0 = XMLoadFloat2(&v0.texC);
+		XMVECTOR tex1 = XMLoadFloat2(&v1.texC);
+
+		// Compute the midpoints of all the attributes.  Vectors need to be normalized
+		// since linear interpolating can make them not unit length.  
+		XMVECTOR pos = 0.5f * (p0 + p1);
+		XMVECTOR normal = XMVector3Normalize(0.5f * (n0 + n1));
+		XMVECTOR tangent = XMVector3Normalize(0.5f * (tan0 + tan1));
+		XMVECTOR tex = 0.5f * (tex0 + tex1);
+
+		JStaticMeshVertex v;
+		XMStoreFloat3(&v.position, pos);
+		XMStoreFloat3(&v.normal, normal);
+		XMStoreFloat3(&v.tangentU, tangent);
+		XMStoreFloat2(&v.texC, tex);
+
+		return v;
+	}
+	void JDefaultGeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius, float height,
+		uint slicecount, uint stackcount, JStaticMeshData& meshData)
+	{
+		uint baseIndex = (uint)meshData.GetVertexCount();
+
+		float y = 0.5f * height;
+		float dTheta = 2.0f * XM_PI / slicecount;
+
+		// Duplicate cap ring vertices because the texture coordinates and normals differ.
+		for (uint i = 0; i <= slicecount; ++i)
+		{
+			float x = topRadius * cosf(i * dTheta);
+			float z = topRadius * sinf(i * dTheta);
+
+			// Scale down by the height to try and make top cap texture coord area
+			// proportional to base.
+			float u = x / height + 0.5f;
+			float v = z / height + 0.5f;
+
+			meshData.AddVertex(JStaticMeshVertex(x, y, z, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
+		}
+
+		// Cap center vertex.
+		meshData.AddVertex(JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
+
+		// Index of center vertex.
+		uint centerIndex = (uint)meshData.GetVertexCount() - 1;
+
+		for (uint i = 0; i < slicecount; ++i)
+		{
+			meshData.AddIndex(centerIndex);
+			meshData.AddIndex(baseIndex + i + 1);
+			meshData.AddIndex(baseIndex + i);
+		}
+	}
+	void JDefaultGeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height,
+		uint slicecount, uint stackcount, JStaticMeshData& meshData)
+	{
+		// 
+		// Build bottom cap.
+		//
+
+		uint baseIndex = (uint)meshData.GetVertexCount();
+		float y = -0.5f * height;
+
+		// vertices of ring
+		float dTheta = 2.0f * XM_PI / slicecount;
+		for (uint i = 0; i <= slicecount; ++i)
+		{
+			float x = bottomRadius * cosf(i * dTheta);
+			float z = bottomRadius * sinf(i * dTheta);
+
+			// Scale down by the height to try and make top cap texture coord area
+			// proportional to base.
+			float u = x / height + 0.5f;
+			float v = z / height + 0.5f;
+
+			//수정필요
+			meshData.AddVertex(JStaticMeshVertex(x, y, z, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
+		}
+
+		// Cap center vertex.
+		meshData.AddVertex(JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
+
+		// Cache the index of center vertex.
+		uint centerIndex = (uint)meshData.GetVertexCount() - 1;
+
+		for (uint i = 0; i < slicecount; ++i)
+		{
+			meshData.AddIndex(centerIndex);
+			meshData.AddIndex(baseIndex + i);
+			meshData.AddIndex(baseIndex + i + 1);
+		}
+	}
 }

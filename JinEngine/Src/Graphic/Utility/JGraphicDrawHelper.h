@@ -26,6 +26,7 @@ namespace JinEngine
 			uint shadowOffset = 0;
 		public:
 			bool allowDrawDebug = false;
+			bool allowCulling = true;
 		public:
 			//bool isDrawShadowMap = false;
 			//bool isAnimationActivated = false;

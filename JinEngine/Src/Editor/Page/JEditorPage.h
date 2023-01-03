@@ -10,7 +10,6 @@ namespace JinEngine
 	{
 		class JEditorAttribute; 
 		class JEditorWindow;
-		class JEditorMenuBar;
 		class JEditorPage : public JEditor
 		{ 
 		protected:
@@ -35,8 +34,7 @@ namespace JinEngine
 		private:
 			using OpenEditorWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>;
 			using OpenSimpleWindowF = Core::JSFunctorType<void, bool*>;
-		protected: 
-			std::unique_ptr<JEditorMenuBar> editorMenuBar = nullptr;
+		protected:  
 			std::vector<JEditorWindow*>windows;
 			std::vector<JEditorWindow*>opendWindow;
 			JEditorWindow* focusWindow; 
@@ -74,8 +72,7 @@ namespace JinEngine
 			OpenEditorWindowF::Functor* GetOpEditorWindowFunctorPtr()noexcept;
 			OpenSimpleWindowF::Functor* GetOpSimpleWindowFunctorPtr()noexcept;
 		protected:
-			void UpdateDockSpace(const int dockspaceFlag);
-			void UpdateWindowMenuBar();
+			void UpdateDockSpace(const int dockspaceFlag); 
 			void PrintOpenWindowState();
 		protected:
 			void DoSetOpen()noexcept override;

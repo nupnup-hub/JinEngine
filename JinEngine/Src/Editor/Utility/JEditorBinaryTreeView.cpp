@@ -83,9 +83,11 @@ namespace JinEngine
 				 
 				drawList->AddLine(lineCP, lineLP, IM_COL32(155, 155, 155, 255), sizeInfo.lineThickness);
 				drawList->AddLine(lineCP, lineRP, IM_COL32(155, 155, 155, 255), sizeInfo.lineThickness);
-
-				left->NodeOnScreen(sizeInfo, leftCenterX, leftCenterY, depth + 1);
-				right->NodeOnScreen(sizeInfo, rightCenterX, rightCenterY, depth + 1);
+				 
+				if(left != nullptr)
+					left->NodeOnScreen(sizeInfo, leftCenterX, leftCenterY, depth + 1);
+				if(right != nullptr)
+					right->NodeOnScreen(sizeInfo, rightCenterX, rightCenterY, depth + 1);
 			}
 		}
 		bool JEditorBinaryTreeView::JNode::IsRoot()const noexcept

@@ -86,7 +86,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JKdTreeNode::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& nearFrustum)noexcept
+		void JKdTreeNode::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
 		{
 			ContainmentType res = camFrustum.Contains(bbox);
 			if (res == ContainmentType::CONTAINS)
@@ -97,15 +97,15 @@ namespace JinEngine
 			{
 				if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
 				{
-					if (nearFrustum.Contains(bbox) == ContainmentType::DISJOINT)
+					if (bbox.Contains(camPos) == ContainmentType::DISJOINT)
 						SetVisible();
 					else
 						SetInVisible();
 				}
 				else
 				{
-					left->Culling(camFrustum, nearFrustum);
-					right->Culling(camFrustum, nearFrustum);
+					left->Culling(camFrustum, camPos);
+					right->Culling(camFrustum, camPos);
 				}
 			}
 		}
@@ -574,7 +574,7 @@ namespace JinEngine
 		{
 			if (nodeType == J_KDTREE_NODE_TYPE::ROOT)
 			{
-				treeView.BuildNode(std::to_string(nodeNumber));
+				treeView.BuildNode(std::to_string(nodeNumber), "Root");
 				if (left != nullptr)
 					left->BuildDebugNode(treeView);
 				if (right != nullptr)

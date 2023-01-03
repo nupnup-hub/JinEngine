@@ -5,6 +5,7 @@
 #include"../../Object/GameObject/JGameObject.h"
 #include"../../Object/Component/RenderItem/JRenderItem.h"
 
+using namespace DirectX;
 namespace JinEngine
 {
 	namespace Core
@@ -111,10 +112,15 @@ namespace JinEngine
 		}
 		void JSceneSpatialStructure::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
 		{
+			const XMVECTOR ori = XMLoadFloat3(&camFrustum.Origin);
+			const XMVECTOR dir = XMLoadFloat4(&camFrustum.Orientation);
+			const XMVECTOR nearZ = XMVector3Rotate(XMVectorSet(0.0f, 0.0f, camFrustum.Near, 1.0f), dir);
+			const XMVECTOR cullingCamPos = ori + nearZ;
+
 			for (const auto& data : spaceSpatialVec)
 			{
 				if (data->IsSpaceSpatialActivated() && data->IsCullingActivated())
-					data->Culling(camFrustum);
+					data->Culling(camFrustum, cullingCamPos);
 			}
 		}
 		JGameObject* JSceneSpatialStructure::Intersect(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept

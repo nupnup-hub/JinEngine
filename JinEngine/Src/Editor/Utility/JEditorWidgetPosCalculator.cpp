@@ -41,7 +41,7 @@ namespace JinEngine
 			JEditorWidgetPosCalculator::width = width;
 			JEditorWidgetPosCalculator::height = height;
 
-			ImVec2 nowCursor = JImGuiImpl::GetCursorPos();
+			ImVec2 nowCursor = JImGuiImpl::GetLocalCursorPos();
 			ImVec2 itemSpacing = ImGui::GetStyle().ItemSpacing;
 			float frameBorder = ImGui::GetStyle().FrameBorderSize;
 			ImVec2 txtSize = JImGuiImpl::GetAlphabetSize();

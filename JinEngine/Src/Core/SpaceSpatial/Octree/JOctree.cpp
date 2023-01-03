@@ -64,15 +64,10 @@ namespace JinEngine
 			if(rootNodeCash != nullptr)
 				rootNodeCash->Culling(camFrustum, J_CULLING_FLAG::NONE);
 		}
-		void JOctree::Culling(const BoundingFrustum& camFrustum)noexcept
+		void JOctree::Culling(const BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
 		{
 			if (rootNodeCash != nullptr)
-			{
-				DirectX::BoundingFrustum nearFrustum{ camFrustum };
-				nearFrustum.Far = 1;
-				nearFrustum.Near = 0;
-				rootNodeCash->Culling(camFrustum, nearFrustum);
-			}
+				rootNodeCash->Culling(camFrustum, camPos);
 		}
 		JGameObject* JOctree::IntersectFirst(const JRay& ray)const noexcept
 		{

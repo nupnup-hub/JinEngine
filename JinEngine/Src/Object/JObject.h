@@ -6,10 +6,11 @@
 #include"../Core/JDataType.h"
 #include"../Core/File/JFileIOResult.h"
 #include"../Core/Identity/JIdentifier.h"
+#include"../Core/Utility/JActivatedInterface.h"
 
 namespace JinEngine
 { 
-	class JObject : public Core::JIdentifier
+	class JObject : public Core::JIdentifier, public Core::JActivatedInterface
 	{
 		REGISTER_CLASS(JObject)
 	protected:
@@ -20,8 +21,7 @@ namespace JinEngine
 			J_OBJECT_FLAG flag;
 		};
 	private: 
-		const J_OBJECT_FLAG flag;
-		bool isActivated = false;
+		const J_OBJECT_FLAG flag; 
 	public:  
 		J_OBJECT_FLAG GetFlag()const noexcept;
 		virtual J_OBJECT_TYPE GetObjectType()const noexcept = 0;  
@@ -30,13 +30,6 @@ namespace JinEngine
 		virtual bool Copy(JObject* ori); 
 	private:
 		virtual void DoCopy(JObject* ori) = 0;
-	protected:
-		bool IsActivated() const noexcept;
-		void Activate() noexcept;
-		void DeActivate()noexcept;
-	protected:
-		virtual void DoActivate() noexcept;
-		virtual void DoDeActivate() noexcept;
 	public:
 		static bool BeginDestroy(JObject* obj);
 	protected:

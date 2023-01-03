@@ -683,7 +683,20 @@ namespace JinEngine
 		auto createLineBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLineBoundingBox(); };
 		auto createTriangleBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateTriangleBoundingBox(); };
 		auto createBFrustumLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingFrustum(); };
+		auto createCircleLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCircle(1.5f, 1.35f); };
+		auto createScaleArrowLam = [](JDefaultGeometryGenerator& geoGen) 
+		{
+			JStaticMeshData cyilinderMesh = geoGen.CreateCylinder(0.25f, 0.25f, 3.0f, 10, 10);
+			cyilinderMesh.CreateBoundingObject();
 
+			DirectX::BoundingBox bbox = cyilinderMesh.GetBBox();
+			DirectX::XMFLOAT3 offset = DirectX::XMFLOAT3(bbox.Center.x + bbox.Extents.x,
+				bbox.Center.y + bbox.Extents.y, 
+				bbox.Center.z + bbox.Extents.z);
+			//cyilinderMesh.Merge(geoGen.CreateCube(1, 1, 1, 2, offset)); 
+			cyilinderMesh.SetName(L"ScaleArrow");
+			return cyilinderMesh;
+		};
 		using CreateStaticMesh = Core::JStaticCallableType<JStaticMeshData, JDefaultGeometryGenerator&>;
 		std::unordered_map<J_DEFAULT_SHAPE, CreateStaticMesh::Callable> callableVec
 		{
@@ -694,7 +707,9 @@ namespace JinEngine
 			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD, (CreateStaticMesh::Ptr)createQuadLam},
 			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, (CreateStaticMesh::Ptr)createLineBBoxLam},
 			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE, (CreateStaticMesh::Ptr)createTriangleBBoxLam},
-			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM, (CreateStaticMesh::Ptr)createBFrustumLam}
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM, (CreateStaticMesh::Ptr)createBFrustumLam},
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_CIRCLE, (CreateStaticMesh::Ptr)createCircleLam},
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_SCALE_ARROW, (CreateStaticMesh::Ptr)createScaleArrowLam}
 		};
 
 		JDefaultGeometryGenerator geoGen;
@@ -738,7 +753,7 @@ namespace JinEngine
 					if(copyRes != Core::J_FILE_IO_RESULT::SUCCESS)
 						assert("Copy File Error");
 
-					J_OBJECT_FLAG objFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
+					const J_OBJECT_FLAG objFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
 						OBJECT_FLAG_UNEDITABLE |
 						OBJECT_FLAG_UNDESTROYABLE |
 						OBJECT_FLAG_UNCOPYABLE |

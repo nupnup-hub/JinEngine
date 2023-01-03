@@ -66,7 +66,7 @@ namespace JinEngine
 			void FindInnerObject(std::vector<JGameObject*>& vec, JGameObject* parent)const noexcept;
 		public:
 			virtual void Culling(const JCullingFrustum& camFrustum)noexcept = 0;
-			virtual void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept = 0;
+			virtual void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept = 0;
 			virtual JGameObject* IntersectFirst(const JRay& ray)const noexcept = 0;
 			virtual void Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, std::vector<JGameObject*>& res)const noexcept = 0;
 			virtual void UpdateGameObject(JGameObject* gameObject)noexcept = 0;
