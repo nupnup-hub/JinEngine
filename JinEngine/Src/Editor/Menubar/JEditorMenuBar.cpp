@@ -106,11 +106,15 @@ namespace JinEngine
 		{
 			return selectedNode;
 		}
-		void JEditorMenuBar::AddNode(std::unique_ptr<JEditorMenuNode> newNode)
+		void JEditorMenuBar::AddNode(std::unique_ptr<JEditorMenuNode> newNode)noexcept
 		{
 			if (newNode->IsLeafNode())
 				leafNode.push_back(newNode.get());
 			allNode.push_back(std::move(newNode));
+		}
+		void JEditorMenuBar::RegisterExtraWidgetBind(std::unique_ptr<Core::JBindHandleBase> newExtraWidgetBind)noexcept
+		{ 
+			extraWidgetBind = std::move(newExtraWidgetBind);
 		}
 		void JEditorMenuBar::Update(const bool leafNodeOnly)
 		{
@@ -138,6 +142,8 @@ namespace JinEngine
 				if (JImGuiImpl::BeginMainMenuBar())
 				{
 					LoopNode(rootNode);
+					if (extraWidgetBind != nullptr)
+						extraWidgetBind->InvokeCompletelyBind();
 					JImGuiImpl::EndMainMenuBar();
 				}
 			}
@@ -146,6 +152,8 @@ namespace JinEngine
 				if (JImGuiImpl::BeginMenuBar())
 				{
 					LoopNode(rootNode);
+					if (extraWidgetBind != nullptr)
+						extraWidgetBind->InvokeCompletelyBind();
 					JImGuiImpl::EndMenuBar();
 				}
 			}

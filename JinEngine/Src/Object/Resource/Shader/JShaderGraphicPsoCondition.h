@@ -27,7 +27,7 @@ namespace JinEngine
 		ALWAYS = 8
 	};
 
-	struct JShaderGraphicSubPSO
+	struct JShaderGraphicPsoCondition
 	{
 	public:
 		J_SHADER_PSO_APPLIY_CONDITION primitiveCondition;
@@ -38,7 +38,7 @@ namespace JinEngine
 		J_SHADER_DEPTH_COMPARISON_FUNC depthCompareFunc;
 		bool isCullModeNone = false;
 	public: 
-		bool Equal(const JShaderGraphicSubPSO& pso)const noexcept;
+		bool Equal(const JShaderGraphicPsoCondition& pso)const noexcept;
 		size_t UniqueID()const noexcept;
 	public:
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE ConvertD3d12PrimitiveType()const noexcept;

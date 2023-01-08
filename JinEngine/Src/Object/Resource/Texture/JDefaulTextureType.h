@@ -20,7 +20,9 @@ namespace JinEngine
 		ANIMATION_CLIP,
 		ANIMATION_CONTROLLER,
 		MISSING, 
-		 
+		POSITION_ARROW,
+		ROTATION_ARROW,
+		SCALE_ARROW,
 		PROJECT_SELECTOR_BACKGROUND
 	};
 
@@ -58,6 +60,12 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_TEXTURE::ANIMATION_CONTROLLER:
 				return false;
 			case JinEngine::J_DEFAULT_TEXTURE::MISSING:
+				return true;
+			case JinEngine::J_DEFAULT_TEXTURE::POSITION_ARROW:
+				return true;
+			case JinEngine::J_DEFAULT_TEXTURE::ROTATION_ARROW:
+				return true;
+			case JinEngine::J_DEFAULT_TEXTURE::SCALE_ARROW:
 				return true;
 			case JinEngine::J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND:
 				return false;
@@ -97,6 +105,12 @@ namespace JinEngine
 				return L"AniController.png";
 			case JinEngine::J_DEFAULT_TEXTURE::MISSING:
 				return L"Missing.jpg";
+			case JinEngine::J_DEFAULT_TEXTURE::POSITION_ARROW:
+				return L"PositionArrow.png";
+			case JinEngine::J_DEFAULT_TEXTURE::ROTATION_ARROW:
+				return L"RotationArrow.png";
+			case JinEngine::J_DEFAULT_TEXTURE::SCALE_ARROW:
+				return L"ScaleArrow.png";
 			case JinEngine::J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND:
 				return L"Shiro_Background.jpg";
 			default:

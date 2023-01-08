@@ -49,6 +49,8 @@ namespace JinEngine
 			using ActivateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 			using DeActivateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 			using UpdateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
+		private:
+			using MenuIconT = typename Core::JSFunctorType<void, JSceneObserver*>;
 		private: 
 			std::unique_ptr<JEditorMenuBar> menubar;
 			JEditorMenuNodeUtilData nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::COUNT];
@@ -56,6 +58,7 @@ namespace JinEngine
 			std::unique_ptr<ActivateMenuNodeT::Functor>activateNodeFunctor;
 			std::unique_ptr<DeActivateMenuNodeT::Functor>deActivateNodeFunctor;
 			std::unique_ptr<UpdateMenuNodeT::Functor>updateNodeFunctor;
+			std::unique_ptr<MenuIconT::Functor> menuIconFunctor;
 		private:
 			Core::JUserPtr<JScene> scene;
 			Core::JUserPtr<JGameObject> cameraObj;

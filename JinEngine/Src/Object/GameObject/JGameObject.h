@@ -42,7 +42,7 @@ namespace JinEngine
 		uint GetComponentCount()const noexcept;
 		uint GetComponentCount(const J_COMPONENT_TYPE type)const noexcept;
 		JGameObject* GetParent()const noexcept;
-		JGameObject* GetChild(const uint index)const noexcept;
+		JGameObject* GetChild(const uint index)const noexcept; 
 		std::vector<JGameObject*> GetChildren()const noexcept;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
 		void SetName(const std::wstring& newName)noexcept final;
@@ -197,6 +197,7 @@ namespace JinEngine
 			return nullptr;
 		}
 #pragma endregion
+
 	};
 }
 

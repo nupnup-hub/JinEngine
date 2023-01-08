@@ -77,33 +77,23 @@ namespace JinEngine
 		DirectX::BoundingBox boundingBox;
 		DirectX::BoundingSphere boundingSphere;
 		bool hasUV = false;
-		bool hasNormal = false;
-		bool is16bit = false; 
+		bool hasNormal = false; 
 	public:
 		JMeshData();
 		JMeshData(const std::wstring& name,
 			const size_t guid,
-			std::vector<uint32>&& indices32,
-			const bool hasUV,
-			const bool hasNormal);
-		JMeshData(const std::wstring& name,
-			const size_t guid,
-			std::vector<uint16>&& indices16,
+			std::vector<uint>&& indices,
 			const bool hasUV,
 			const bool hasNormal);
 	public:
-		void Stuff8ByteDataTo4Byte()noexcept;
-		void Stuff4ByteDataTo8Byte()noexcept;
 		void InverseIndex()noexcept;
 	public:
 		std::wstring GetName()const noexcept;
 		size_t GetGuid()const noexcept;
 		Core::JUserPtr<JMaterial> GetMaterial()const noexcept;
 		uint GetIndexCount()const noexcept;
-		uint16 GetU16Index(const uint index)const noexcept;
-		uint32 GetU32Index(const uint index)const noexcept; 
-		const std::vector<uint16>& GetU16Vector()const noexcept;
-		const std::vector<uint32>& GetU32Vector()const noexcept;
+		uint GetIndex(const uint index)const noexcept; 
+		const std::vector<uint>& GetIndexVector()const noexcept; 
 		DirectX::BoundingBox GetBBox()const noexcept;
 		DirectX::BoundingSphere GetBSphere()const noexcept;
 		virtual J_MESHGEOMETRY_TYPE GetMeshType()const noexcept = 0;
@@ -114,6 +104,8 @@ namespace JinEngine
 		void SetMaterial(Core::JUserPtr<JMaterial> material)noexcept;
 	public:
 		void AddIndex(const uint index)noexcept;
+	protected:
+		virtual void AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept;
 	public:
 		bool HasUV()const noexcept;
 		bool HasNormal()const noexcept;
@@ -133,23 +125,12 @@ namespace JinEngine
 		JStaticMeshData();
 		JStaticMeshData(const std::wstring& name,
 			const size_t guid,
-			std::vector<uint32>&& indices32,
+			std::vector<uint>&& indices,
 			const bool hasUV,
 			const bool hasNormal,
 			std::vector<JStaticMeshVertex>&& vertices);
 		JStaticMeshData(const std::wstring& name,
-			const size_t guid,
-			std::vector<uint16>&& indices16,
-			const bool hasUV,
-			const bool hasNormal,
-			std::vector<JStaticMeshVertex>&& vertices);
-		JStaticMeshData(const std::wstring& name,
-			std::vector<uint16>&& indices16,
-			const bool hasUV,
-			const bool hasNormal,
-			std::vector<JStaticMeshVertex>&& vertices);
-		JStaticMeshData(const std::wstring& name,
-			std::vector<uint32>&& indices32,
+			std::vector<uint>&& indices,
 			const bool hasUV,
 			const bool hasNormal,
 			std::vector<JStaticMeshVertex>&& vertices);
@@ -161,6 +142,7 @@ namespace JinEngine
 		void SetVertex(const uint index, const JStaticMeshVertex& vertex)const noexcept;
 	public:
 		void AddVertex(const JStaticMeshVertex& vertex)noexcept;
+		void AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept final;
 	public:
 		void Merge(const JStaticMeshData& mesh)noexcept;
 	};
@@ -173,13 +155,7 @@ namespace JinEngine
 		JSkinnedMeshData() = default; 
 		JSkinnedMeshData(const std::wstring& name,
 			const size_t guid,
-			std::vector<uint>&& indices32,
-			const bool hasUV,
-			const bool hasNormal,
-			std::vector<JSkinnedMeshVertex>&& vertices);
-		JSkinnedMeshData(const std::wstring& name,
-			const size_t guid,
-			std::vector<uint16>&& indices16,
+			std::vector<uint>&& indices,
 			const bool hasUV,
 			const bool hasNormal,
 			std::vector<JSkinnedMeshVertex>&& vertices);
@@ -189,6 +165,8 @@ namespace JinEngine
 		DirectX::XMVECTOR GetPosition(const uint index)const noexcept;
 		JSkinnedMeshVertex GetVertex(const uint index)const noexcept;
 		void SetVertex(const uint index, const JSkinnedMeshVertex& vertex)const noexcept;
+	public:
+		void AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept final;
 	};
 
 	struct JMeshGroup

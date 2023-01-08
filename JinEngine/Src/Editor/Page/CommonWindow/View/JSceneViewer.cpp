@@ -1,10 +1,10 @@
-#include"JSceneViewer.h" 
-#include"JEditorCameraControl.h"
+#include"JSceneViewer.h"  
 #include"../../JEditorAttribute.h"    
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../../Utility/JEditorCameraControl.h" 
 #include"../../../../Object/Component/Camera/JCamera.h" 
 #include"../../../../Object/Resource/Scene/JScene.h" 
- 
+
 using namespace DirectX;
 
 namespace JinEngine

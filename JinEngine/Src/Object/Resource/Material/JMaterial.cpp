@@ -223,18 +223,18 @@ namespace JinEngine
 
 		nonCulling = value;
 		SetFrameDirty();
-		JShaderGraphicSubPSO subPso = shader->GetSubGraphicPso();
+		JShaderGraphicPsoCondition psoCondition = shader->GetSubGraphicPso();
 		if (nonCulling)
 		{
-			subPso.cullModeCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
-			subPso.isCullModeNone = true;
-			SetNewOption(subPso);
+			psoCondition.cullModeCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+			psoCondition.isCullModeNone = true;
+			SetNewOption(psoCondition);
 		}
 		else
 		{
-			subPso.cullModeCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
-			subPso.isCullModeNone = false;
-			SetNewOption(subPso);
+			psoCondition.cullModeCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
+			psoCondition.isCullModeNone = false;
+			SetNewOption(psoCondition);
 		}
 	}
 	void JMaterial::SetShadowMapWrite(bool value)noexcept
@@ -304,17 +304,17 @@ namespace JinEngine
 
 		primitiveType = value;
 		SetFrameDirty();
-		JShaderGraphicSubPSO subPso = shader->GetSubGraphicPso();
+		JShaderGraphicPsoCondition psoCondition = shader->GetSubGraphicPso();
 		if (primitiveType != J_SHADER_PRIMITIVE_TYPE::DEFAULT)
 		{
-			subPso.primitiveCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
-			subPso.primitiveType = primitiveType;
-			SetNewOption(subPso);
+			psoCondition.primitiveCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+			psoCondition.primitiveType = primitiveType;
+			SetNewOption(psoCondition);
 		}
 		else
 		{
-			subPso.primitiveCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
-			SetNewOption(subPso);
+			psoCondition.primitiveCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
+			SetNewOption(psoCondition);
 		}
 	}
 	void JMaterial::SetDepthCompareFunc(const J_SHADER_DEPTH_COMPARISON_FUNC value)noexcept
@@ -324,17 +324,17 @@ namespace JinEngine
 
 		depthComparesionFunc = value;
 		SetFrameDirty();
-		JShaderGraphicSubPSO subPso = shader->GetSubGraphicPso();
+		JShaderGraphicPsoCondition psoCondition = shader->GetSubGraphicPso();
 		if (depthComparesionFunc != J_SHADER_DEPTH_COMPARISON_FUNC::DEFAULT)
 		{
-			subPso.depthCompareCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
-			subPso.depthCompareFunc = value;
-			SetNewOption(subPso);
+			psoCondition.depthCompareCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+			psoCondition.depthCompareFunc = value;
+			SetNewOption(psoCondition);
 		}
 		else
 		{
-			subPso.depthCompareCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
-			SetNewOption(subPso);
+			psoCondition.depthCompareCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
+			SetNewOption(psoCondition);
 		}
 	}
 	bool JMaterial::OnShadow()const noexcept
@@ -417,7 +417,7 @@ namespace JinEngine
 		else if (shader->GetShaderGFunctionFlag() != newFunc)
 			SetShader(JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(newFunc, shader->GetSubGraphicPso())));
 	}
-	void JMaterial::SetNewOption(const JShaderGraphicSubPSO newPso)
+	void JMaterial::SetNewOption(const JShaderGraphicPsoCondition newPso)
 	{
 		if (shader == nullptr)
 			SetShader(JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(SHADER_FUNCTION_NONE ,newPso)));

@@ -1,17 +1,18 @@
 #include"JSceneObserver.h" 
-#include"JEditorCameraControl.h" 
 #include"../../JEditorPageShareData.h"
 #include"../../JEditorAttribute.h" 
 #include"../../../Menubar/JEditorMenuBar.h"
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../../Utility/JEditorBinaryTreeView.h"
 #include"../../../Utility/JEditorGameObjectSurpportTool.h"
+#include"../../../Utility/JEditorCameraControl.h" 
 #include"../../../../Core/File/JFileIOHelper.h"
 #include"../../../../Object/Component/Camera/JCamera.h"  
 #include"../../../../Object/Component/Transform/JTransform.h"
 #include"../../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../../Object/Component/Light/JLight.h" 
 #include"../../../../Object/Resource/Scene/JScene.h"  
+#include"../../../../Object/Resource/JResourceManager.h"  
 #include"../../../../Object/GameObject/JGameObject.h"  
 #include"../../../../Object/GameObject/JGameObjectFactoryUtility.h"   
 #include"../../../../Graphic/JGraphic.h"
@@ -93,6 +94,47 @@ namespace JinEngine
 				for (uint j = statIndex[i]; j < endIndex[i]; ++j)
 					CreateMenuLeafNode(optionParent[i], (J_OBSERVER_SETTING_TYPE)j);
 			}
+
+			auto menubarIconLam = [](JSceneObserver* ob)
+			{
+				JVector2<int> alphabetSize = JImGuiImpl::GetAlphabetSize();
+				float iconSizeFactor = alphabetSize.x > alphabetSize.y ? alphabetSize.x : alphabetSize.y;
+				iconSizeFactor *= 2;
+
+				JTexture* posIcon = JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::POSITION_ARROW);
+				JTexture* rotIcon = JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::ROTATION_ARROW);
+				JTexture* scaleIcon = JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SCALE_ARROW);
+				 
+				const bool openPos = ob->nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS].isOpen;
+				const bool openRot = ob->nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT].isOpen;
+				const bool openScale = ob->nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE].isOpen;
+
+				if (openPos)
+					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, -0.15f);
+				if (JImGuiImpl::ImageButton(*posIcon, JVector2<float>(iconSizeFactor, iconSizeFactor)))
+					ob->OpenObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS);
+				if (openPos)
+					JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
+
+				ImGui::SameLine();
+				if (openRot)
+					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, -0.15f);
+				if (JImGuiImpl::ImageButton(*rotIcon, JVector2<float>(iconSizeFactor, iconSizeFactor)))
+					ob->OpenObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT);
+				ImGui::SameLine();
+				if (openRot)
+					JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
+
+				if (openScale)
+					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, -0.15f);
+				if (JImGuiImpl::ImageButton(*scaleIcon, JVector2<float>(iconSizeFactor, iconSizeFactor)))
+					ob->OpenObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE);
+				if (openScale)
+					JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
+			};
+
+			menuIconFunctor = std::make_unique<MenuIconT::Functor>(menubarIconLam);
+			menubar->RegisterExtraWidgetBind(std::make_unique< MenuIconT::CompletelyBind>(*menuIconFunctor, this));
 		}
 		JSceneObserver::~JSceneObserver() {}
 		J_EDITOR_WINDOW_TYPE JSceneObserver::GetWindowType()const noexcept
@@ -120,35 +162,28 @@ namespace JinEngine
 					editorCamCtrl->KeyboardInput(cameraComp.Get());
 				}
 
-				menubar->Update(true);
-							   
-				//Warning!
-				//Has order dependency for ImGui::CursorPos 
 				auto selected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
 				const bool isValidObject = selected.IsValid() && selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT;
+				if (ImGui::IsMouseDown(0))
+				{
+					JGameObject* hitObj = nullptr;
+					//JGameObject* hitObj = JEditorGameObjectSurpportTool::SceneIntersect(scene, cameraComp, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
+					if (hitObj != nullptr)
+					{
+						const bool canSetSelected = !selected.IsValid() || (selected.IsValid() &&
+							selected->GetGuid() != hitObj->GetGuid());
+						if(canSetSelected)
+							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(hitObj)));
+					}
+				}
+
+				menubar->Update(true);
+				//Warning!
+				//Has order dependency for ImGui::CursorPos 
 				for (uint i = 0; i < toolCount; ++i)
 				{
 					J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType = toolVec[i]->GetToolType();
 					J_OBSERVER_SETTING_TYPE settingType = ConvertToolToSettingType(toolType);
-					if (lastActivatedToolType == toolType)
-					{
-						const bool isActivaed = toolVec[i]->IsActivated();
-						if (isValidObject && !isActivaed)
-						{
-							if (!nodeUtilData[(int)settingType].isOpen)
-								OpenObserverSettingNode(settingType);
-							else
-								ActivateObserverSetting(settingType);
-						}
-						else if (!isValidObject && isActivaed)
-						{
-							if (nodeUtilData[(int)settingType].isOpen)
-								OpenObserverSettingNode(settingType);
-							else
-								DeActivateObserverSetting(settingType);
-						}
-					}
-
 					if (toolVec[i]->IsActivated())
 						toolVec[i]->Update(JEditorPageShareData::GetSelectedObj(GetOwnerPageType()), cameraComp);
 				} 
@@ -592,21 +627,20 @@ namespace JinEngine
 		void JSceneObserver::ActivateToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)
 		{
 			if (lastActivatedToolType != J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::NONE)
+			{
+				nodeUtilData[(int)ConvertToolToSettingType(lastActivatedToolType)].isOpen = false;
 				DeActivateToolType(lastActivatedToolType);
-
-			bool isActivated = false;
+			}
+			 
 			for (uint i = 0; i < toolCount; ++i)
 			{
 				if (toolVec[i]->GetToolType() == type && !toolVec[i]->IsActivated())
 				{
-					isActivated = true;
-					toolVec[i]->ActivateTool();
-					nodeUtilData[(int)ConvertToolToSettingType(type)].isOpen = true;
+					toolVec[i]->ActivateTool();  
+					lastActivatedToolType = type;
 					break;
 				}
-			}
-			if(isActivated)
-				lastActivatedToolType = type;
+			} 
 		}
 		void JSceneObserver::DeActivateToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)
 		{
@@ -614,8 +648,7 @@ namespace JinEngine
 			{
 				if (toolVec[i]->GetToolType() == type && toolVec[i]->IsActivated())
 				{
-					toolVec[i]->DeActivateTool();
-					nodeUtilData[(int)ConvertToolToSettingType(type)].isOpen = false;
+					toolVec[i]->DeActivateTool();  
 					lastActivatedToolType = J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::NONE;
 					return;
 				}

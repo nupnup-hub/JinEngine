@@ -18,7 +18,7 @@ namespace JinEngine
 			std::unique_ptr<JEditorPreviewImpl> impl;
 		protected:
 			JPreviewScene* CreatePreviewScene(Core::JUserPtr<JObject> jObj,
-				const J_PREVIEW_DIMENSION previewDimension = J_PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE,
+				const J_PREVIEW_DIMENSION previewDimension = J_PREVIEW_DIMENSION::TWO_DIMENTIONAL,
 				const J_PREVIEW_FLAG previewFlag = J_PREVIEW_FLAG::NONE)noexcept;
 			bool DestroyPreviewScene(JPreviewScene* prevewScene)noexcept;
 			bool DestroyPreviewScene(Core::JUserPtr<JObject> jObj)noexcept;

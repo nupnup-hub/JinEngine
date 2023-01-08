@@ -7,7 +7,9 @@ namespace JinEngine
 	{
 		JEditorInputBuffHelper::JEditorInputBuffHelper(const int capacity)
 			:capacity(capacity)
-		{}
+		{
+			Clear();
+		}
 		void JEditorInputBuffHelper::Clear()
 		{
 			result.clear();

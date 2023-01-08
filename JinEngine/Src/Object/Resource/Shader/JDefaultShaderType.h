@@ -1,6 +1,6 @@
 #pragma once
 #include"JShaderFunctionEnum.h"
-#include"JShaderSubPSO.h"
+#include"JShaderGraphicPsoCondition.h"
 #include"../../JObjectFlag.h"
 
 namespace JinEngine
@@ -49,13 +49,13 @@ namespace JinEngine
 				break;
 			}
 		}
-		static JShaderGraphicSubPSO GetShaderGraphicPso(const J_DEFAULT_GRAPHIC_SHADER sType)
+		static JShaderGraphicPsoCondition GetShaderGraphicPso(const J_DEFAULT_GRAPHIC_SHADER sType)
 		{
 			switch (sType)
 			{
 			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SKY_SHADER:
 			{
-				JShaderGraphicSubPSO pso;
+				JShaderGraphicPsoCondition pso;
 				pso.cullModeCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
 				pso.isCullModeNone = true;
 				pso.depthCompareCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
@@ -64,13 +64,13 @@ namespace JinEngine
 			}
 			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_LINE_SHADER:
 			{
-				JShaderGraphicSubPSO pso;
+				JShaderGraphicPsoCondition pso;
 				pso.primitiveCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
 				pso.primitiveType = J_SHADER_PRIMITIVE_TYPE::LINE; 
 				return pso;
 			}
 			default:
-				return JShaderGraphicSubPSO{};
+				return JShaderGraphicPsoCondition{};
 			}
 		}
 		static J_COMPUTE_SHADER_FUNCTION GetComputeShaderFunction(const J_DEFAULT_COMPUTE_SHADER cType)

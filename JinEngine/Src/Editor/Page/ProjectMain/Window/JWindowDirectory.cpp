@@ -8,6 +8,7 @@
 #include"../../../Popup/JEditorPopup.h"
 #include"../../../Popup/JEditorPopupNode.h" 
 #include"../../../Utility/JEditorWidgetPosCalculator.h"
+#include"../../../Utility/JEditorSearchBarHelper.h"
 #include"../../../../Utility/JCommonUtility.h"   
 #include"../../../../Utility/JMathHelper.h"   
 #include"../../../../Core/Guid/GuidCreator.h" 
@@ -33,6 +34,13 @@ namespace JinEngine
 	class JMaterial;
 	namespace Editor
 	{
+		namespace Constants
+		{
+			const std::string directoryViewName = "DirectoryView";
+			const std::string fileViewName = "FileView";
+			const std::wstring newDirectoryName = L"New Directory";
+		}
+
 		static int DirectoryLevelFinder(const std::string& path, std::wstring& copyTarget)
 		{
 			std::wstring copy = JCUtil::U8StrToWstr(path);
@@ -52,8 +60,34 @@ namespace JinEngine
 		{
 			//JEditorString Init
 			editorString = std::make_unique<JEditorString>();
+			editorPositionCal = std::make_unique<JEditorWidgetPosCalculator>();
+			searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
+
 			selectorIconSlidebarId = Core::MakeGuid();
 			editorString->AddString(selectorIconSlidebarId, { "Icon Size" , u8"아이콘 크기" });
+
+			BuildPopup(); 
+		}
+		JWindowDirectory::~JWindowDirectory() {}
+		void JWindowDirectory::BuildPopup()
+		{
+			directoryViewPopup.reset();
+			fileviewPopup.reset();
+
+			std::unique_ptr<JEditorPopupNode> directoryViewPopupNode =
+				std::make_unique<JEditorPopupNode>("Window JDirectory Directory Popup Root", J_EDITOR_POPUP_NODE_TYPE::ROOT, nullptr);
+
+			std::unique_ptr<JEditorPopupNode> createDirectoryInDirectoryViewNode =
+				std::make_unique<JEditorPopupNode>("Create Directory", J_EDITOR_POPUP_NODE_TYPE::LEAF, directoryViewPopupNode.get());
+			editorString->AddString(createDirectoryInDirectoryViewNode->GetNodeId(), { "Create" , u8"폴더 생성" });
+
+			std::unique_ptr<JEditorPopupNode> destoryDirectoryNode =
+				std::make_unique<JEditorPopupNode>("Destroy Directory", J_EDITOR_POPUP_NODE_TYPE::LEAF, directoryViewPopupNode.get());
+			editorString->AddString(destoryDirectoryNode->GetNodeId(), { "Delete" , u8"폴더 삭제" });
+
+			std::unique_ptr<JEditorPopupNode> renameDirectoryNode =
+				std::make_unique<JEditorPopupNode>("Rename Directory", J_EDITOR_POPUP_NODE_TYPE::LEAF, directoryViewPopupNode.get());
+			editorString->AddString(renameDirectoryNode->GetNodeId(), { "Rename" , u8"새 이름" });
 
 			//Popup Init
 			std::unique_ptr<JEditorPopupNode> fileViewPopupRootNode =
@@ -64,62 +98,89 @@ namespace JinEngine
 			editorString->AddString(createResourceNode->GetNodeId(), { "Create Resource" , u8"자원 생성" });
 
 			std::unique_ptr<JEditorPopupNode> createMaterialNode =
-				std::make_unique<JEditorPopupNode>("JMaterial", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, createResourceNode.get());
+				std::make_unique<JEditorPopupNode>("JMaterial", J_EDITOR_POPUP_NODE_TYPE::LEAF, createResourceNode.get());
 			editorString->AddString(createMaterialNode->GetNodeId(), { "JMaterial" , u8"머테리얼" });
 
 			std::unique_ptr<JEditorPopupNode> createSceneNode =
-				std::make_unique<JEditorPopupNode>("JScene", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, createResourceNode.get());
+				std::make_unique<JEditorPopupNode>("JScene", J_EDITOR_POPUP_NODE_TYPE::LEAF, createResourceNode.get());
 			editorString->AddString(createSceneNode->GetNodeId(), { "JScene" , u8"씬" });
 
 			std::unique_ptr<JEditorPopupNode> createAnimationControllerNode =
-				std::make_unique<JEditorPopupNode>("AnimationContorller", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, createResourceNode.get());
+				std::make_unique<JEditorPopupNode>("AnimationContorller", J_EDITOR_POPUP_NODE_TYPE::LEAF, createResourceNode.get());
 			editorString->AddString(createAnimationControllerNode->GetNodeId(), { "AnimationContorller" , u8"애니메이션 컨트롤러" });
 
-			std::unique_ptr<JEditorPopupNode> createDirctoryNode =
-				std::make_unique<JEditorPopupNode>("CreateDirctory", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, fileViewPopupRootNode.get());
-			editorString->AddString(createDirctoryNode->GetNodeId(), { "Create Dirctory" , u8"폴더 생성" });
+			std::unique_ptr<JEditorPopupNode> createDirctoryInFileViewNode =
+				std::make_unique<JEditorPopupNode>("CreateDirctory", J_EDITOR_POPUP_NODE_TYPE::LEAF, fileViewPopupRootNode.get());
+			editorString->AddString(createDirctoryInFileViewNode->GetNodeId(), { "Create Dirctory" , u8"폴더 생성" });
 
 			std::unique_ptr<JEditorPopupNode> destroyNode =
-				std::make_unique<JEditorPopupNode>("Destroy", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, fileViewPopupRootNode.get());
+				std::make_unique<JEditorPopupNode>("Destroy", J_EDITOR_POPUP_NODE_TYPE::LEAF, fileViewPopupRootNode.get());
 			editorString->AddString(destroyNode->GetNodeId(), { "Destroy" , u8"삭제" });
 
 			std::unique_ptr<JEditorPopupNode> importNode =
-				std::make_unique<JEditorPopupNode>("ImportResource", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, fileViewPopupRootNode.get());
+				std::make_unique<JEditorPopupNode>("ImportResource", J_EDITOR_POPUP_NODE_TYPE::LEAF, fileViewPopupRootNode.get());
 			editorString->AddString(importNode->GetNodeId(), { "Import Resource" , u8"자원 불러오기" });
 
-			//CreatePreviewScene(static_cast<JResourceObject*>(res), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE);
+			std::unique_ptr<JEditorPopupNode> renameFileNode =
+				std::make_unique<JEditorPopupNode>("Rename", J_EDITOR_POPUP_NODE_TYPE::LEAF, fileViewPopupRootNode.get());
+			editorString->AddString(renameFileNode->GetNodeId(), { "Rename" , u8"새 이름" });
+
+			//CreatePreviewScene(static_cast<JResourceObject*>(res), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
 			auto createMatLam = [](JWindowDirectory& wind, Core::JUserPtr<JDirectory> dir) -> void
 			{
 				if (!dir.IsValid())
 					return;
-				JObject* newObj = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(dir.Get()));
-				wind.CreatePreviewScene(Core::GetUserPtr<JMaterial>(newObj), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE);
+				JMaterial* newObj = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(dir.Get()));
+				wind.CreatePreviewScene(Core::GetUserPtr(newObj), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
 				Core::JTransition::Log("Create Material");
 			};
 			auto createSceneLam = [](JWindowDirectory& wind, Core::JUserPtr<JDirectory> dir) -> void
 			{
 				if (!dir.IsValid())
 					return;
-				JObject* newObj = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(dir.Get()));
-				wind.CreatePreviewScene(Core::GetUserPtr<JScene>(newObj), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE);
+				JScene* newObj = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(dir.Get()));
+				wind.CreatePreviewScene(Core::GetUserPtr(newObj), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
 				Core::JTransition::Log("Create Scene");
 			};
 			auto createAnimationCtrlLam = [](JWindowDirectory& wind, Core::JUserPtr<JDirectory> dir) -> void
 			{
 				if (!dir.IsValid())
 					return;
-				JObject* newObj = JRFI<JAnimationController>::Create(Core::JPtrUtil::MakeOwnerPtr<JAnimationController::InitData>(dir.Get()));
-				wind.CreatePreviewScene(Core::GetUserPtr<JAnimationController>(newObj), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE);
+				JAnimationController* newObj = JRFI<JAnimationController>::Create(Core::JPtrUtil::MakeOwnerPtr<JAnimationController::InitData>(dir.Get()));
+				wind.CreatePreviewScene(Core::GetUserPtr(newObj), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
 				Core::JTransition::Log("Create Animation Controller");
 			};
-			auto createDirLam = [](JWindowDirectory& wind, Core::JUserPtr<JDirectory> dir) { JDFI::Create(*dir.Get()); 	Core::JTransition::Log("Create Directory"); };
+			auto createDirLam = [](JWindowDirectory& wind, Core::JUserPtr<JDirectory> dir)
+			{
+				JDirectory* newObj = JDFI::Create(*dir.Get());
+				wind.CreatePreviewScene(Core::GetUserPtr(newObj), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
+				Core::JTransition::Log("Create Directory"); 
+			};
+			createResourceFuncMap.emplace(createDirectoryInDirectoryViewNode->GetNodeId(), std::make_unique<CreateObjectF>(createDirLam));
 
 			createResourceFuncMap.emplace(createMaterialNode->GetNodeId(), std::make_unique<CreateObjectF>(createMatLam));
 			createResourceFuncMap.emplace(createSceneNode->GetNodeId(), std::make_unique<CreateObjectF>(createSceneLam));
 			createResourceFuncMap.emplace(createAnimationControllerNode->GetNodeId(), std::make_unique<CreateObjectF>(createAnimationCtrlLam));
-			createResourceFuncMap.emplace(createDirctoryNode->GetNodeId(), std::make_unique<CreateObjectF>(createDirLam));
+			createResourceFuncMap.emplace(createDirctoryInFileViewNode->GetNodeId(), std::make_unique<CreateObjectF>(createDirLam));
 
 			openNewDirFunctor = std::make_unique<OpenNewDirectoryF>(createDirLam);
+
+			auto destroyDirectoryLam = [](JWindowDirectory& wind, Core::JUserPtr<JObject> jObj)
+			{
+				if (!jObj.IsValid())
+					return;
+
+				JDirectory* parent = static_cast<JDirectory*>(jObj.Get())->GetParent();
+				if (parent != nullptr)
+					wind.OpenNewDirectory(parent);
+				else
+					wind.OpenNewDirectory(wind.root.Get());
+
+				wind.DestroyPreviewScene(jObj);
+				JObject::BeginDestroy(jObj.Get());
+				Core::JTransition::Log("Destroy Directory");
+			};
+			destroyResourceFuncMap.emplace(destoryDirectoryNode->GetNodeId(), std::make_unique<DestroyObjectF>(destroyDirectoryLam));
 
 			auto destroyResourceLam = [](JWindowDirectory& wind, Core::JUserPtr<JObject> jObj)
 			{
@@ -127,7 +188,7 @@ namespace JinEngine
 					return;
 
 				if (jObj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
-				{ 
+				{
 					wind.DestroyPreviewScene(jObj);
 					JObject::BeginDestroy(jObj.Get());
 					Core::JTransition::Log("Destroy Object");
@@ -153,24 +214,24 @@ namespace JinEngine
 			};
 			importResourceT = std::tuple(importNode->GetNodeId(), std::make_unique<ImportResourceF>(importResourceLam));
 
+			auto renameLam = [](const std::string newName, Core::JUserPtr<JObject> obj) {obj->SetName(JCUtil::U8StrToWstr(newName)); };		 
+			//renameFuncMap.emplace(renameDirectoryNode->GetNodeId(), std::make_unique<RenameF>(renameLam));
+			//renameFuncMap.emplace(renameFileNode->GetNodeId(), std::make_unique<RenameF>(renameLam));
+
+			directoryViewPopup = std::make_unique<JEditorPopup>("Window JDirectory Directory Popup", std::move(directoryViewPopupNode));
+			directoryViewPopup->AddPopupNode(std::move(createDirectoryInDirectoryViewNode));
+			directoryViewPopup->AddPopupNode(std::move(destoryDirectoryNode));
+			directoryViewPopup->AddPopupNode(std::move(renameDirectoryNode));
+
 			fileviewPopup = std::make_unique<JEditorPopup>("Window JDirectory FileView Popup", std::move(fileViewPopupRootNode));
 			fileviewPopup->AddPopupNode(std::move(createResourceNode));
 			fileviewPopup->AddPopupNode(std::move(createMaterialNode));
 			fileviewPopup->AddPopupNode(std::move(createSceneNode));
 			fileviewPopup->AddPopupNode(std::move(createAnimationControllerNode));
 			fileviewPopup->AddPopupNode(std::move(destroyNode));
-			fileviewPopup->AddPopupNode(std::move(createDirctoryNode));
+			fileviewPopup->AddPopupNode(std::move(createDirctoryInFileViewNode));
 			fileviewPopup->AddPopupNode(std::move(importNode));
-
-			editorPositionCal = std::make_unique<JEditorWidgetPosCalculator>();
-
-			auto oepnNewDirectoryLam = [](JWindowDirectory& windowDir, Core::JUserPtr<JDirectory> newDir)
-			{
-				if (newDir.IsValid())
-					windowDir.OpenNewDirectory(newDir.Get());
-			};
 		}
-		JWindowDirectory::~JWindowDirectory() {}
 		J_EDITOR_WINDOW_TYPE JWindowDirectory::GetWindowType()const noexcept
 		{
 			return J_EDITOR_WINDOW_TYPE::WINDOW_DIRECTORY;
@@ -179,6 +240,7 @@ namespace JinEngine
 		{
 			const std::wstring contentPath = JApplicationVariable::GetProjectContentPath();
 			root = Core::GetUserPtr(JResourceManager::Instance().GetDirectory(contentPath));
+			//searchBarHelper->RegisterDefaultObject(root);
 			OpenNewDirectory(root.Get());
 		}
 		void JWindowDirectory::UpdateWindow()
@@ -187,7 +249,27 @@ namespace JinEngine
 			UpdateDocking();
 			if (IsActivated() && opendDirctory.IsValid())
 			{
-				UpdateMouseClick();
+				selectedObj = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
+
+				UpdateMouseClick(); 
+				searchBarHelper->UpdateSearchBar(GetName(), false); 
+				const bool hasData = searchBarHelper->HasInputData();
+				const bool isUpdated = searchBarHelper->IsUpdateInputData();
+				if (isUpdated)
+				{
+					if (!hasData)
+					{
+						ClearPreviewGroup();
+						CreateOpendDirectoryPreview(opendDirctory.Get(), false);
+					}
+					else
+					{
+						ClearPreviewGroup();
+						CreateAllDirectoryPreview(root.Get(), true, JCUtil::U8StrToWstr(searchBarHelper->GetInputData()));
+					}
+				}
+
+				ImGui::SameLine();
 				btnIconMaxSize = JImGuiImpl::GetDisplaySize().x * selectorIconMaxRate;
 				btnIconMinSize = JImGuiImpl::GetDisplaySize().x * selectorIconMinRate;
 				btnIconSize = JMathHelper::Clamp<float>(btnIconSize, btnIconMinSize, btnIconMaxSize);
@@ -211,23 +293,63 @@ namespace JinEngine
 			CloseWindow();
 		}
 		void JWindowDirectory::BuildDirectoryView()
-		{
+		{ 
 			//editorString->GetString(selectorIconSlidebarId)
 			ImVec2 windowSize = ImGui::GetWindowSize();
 
-			JImGuiImpl::BeginChildWindow(directoryViewName.c_str(),
+			JImGuiImpl::BeginChildWindow(Constants::directoryViewName.c_str(),
 				JVector2<float>(windowSize.x * 0.2f, 0),
 				true,
 				ImGuiWindowFlags_AlwaysAutoResize);
 
-			JDirectory* clickedDir = DirectoryViewOnScreen(root.Get());
+			const bool canSelect = !searchBarHelper->HasInputData();
+			if(!canSelect)
+				SetTreeNodeColor(0.2f);
+			JDirectory* clickedDir = DirectoryViewOnScreen(root.Get(), canSelect);
+			 
 			SetTreeNodeDefaultColor();
-
 			if (clickedDir != nullptr && clickedDir->GetGuid() != opendDirctory->GetGuid())
 			{
 				OpenNewDirectory(clickedDir);
 				Core::JTransition::Log(JCUtil::WstrToU8Str(opendDirctory->GetName() + L" Open Directory"));
 			} 
+
+			if (directoryViewPopup->IsOpen())
+			{
+				J_EDITOR_POPUP_NODE_RES res;
+				size_t clickedPopupGuid = 0;
+				directoryViewPopup->ExecutePopup(editorString.get(), res, clickedPopupGuid);
+				if (res == J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE)
+				{
+					auto createFunc = createResourceFuncMap.find(clickedPopupGuid);
+					auto destroyFunc = destroyResourceFuncMap.find(clickedPopupGuid);
+					auto renameFunc = renameFuncMap.find(clickedPopupGuid);
+
+					if (createFunc != createResourceFuncMap.end())
+					{
+						std::unique_ptr<CreateObjectB> createB = std::make_unique<CreateObjectB>(*createFunc->second, *this, Core::JUserPtr<JDirectory>(opendDirctory));
+						auto evStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(createB), GetOwnerPageType());
+						AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
+					}
+					if (destroyFunc != destroyResourceFuncMap.end())
+					{
+						if (selectedObj.IsValid())
+						{
+							std::unique_ptr<DestroyObjectB> destroyB = std::make_unique<DestroyObjectB>(*destroyFunc->second, *this, std::move(selectedObj));;
+							auto evStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(destroyB), GetOwnerPageType());
+							AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
+						}
+					}
+					if (renameFunc != renameFuncMap.end())
+					{
+
+					}
+					if (clickedPopupGuid == std::get<0>(importResourceT))
+						std::get<1>(importResourceT)->Invoke(*this);
+					directoryViewPopup->SetOpen(false);
+				}
+			}
+			directoryViewPopup->Update();
 			JImGuiImpl::EndChildWindow();
 			ImGui::SameLine();
 			BuildFileView();
@@ -235,7 +357,7 @@ namespace JinEngine
 		void JWindowDirectory::BuildFileView()
 		{
 			ImVec2 windowSize = JImGuiImpl::GetWindowSize();
-			JImGuiImpl::BeginChildWindow(fileViewName.c_str(),
+			JImGuiImpl::BeginChildWindow(Constants::fileViewName.c_str(),
 				JVector2<float>(windowSize.x * 0.8f, 0),
 				true,
 				ImGuiWindowFlags_None);
@@ -264,7 +386,6 @@ namespace JinEngine
 					auto destroyFunc = destroyResourceFuncMap.find(clickedPopupGuid);
 					if (destroyFunc != destroyResourceFuncMap.end())
 					{
-						Core::JUserPtr<JObject> selectedObj = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
 						if (selectedObj.IsValid())
 						{
 							std::unique_ptr<DestroyObjectB> destroyB = std::make_unique<DestroyObjectB>(*destroyFunc->second, *this, std::move(selectedObj));;
@@ -281,19 +402,19 @@ namespace JinEngine
 			fileviewPopup->Update(); 
 			ImGui::EndChild();
 		}
-		JDirectory* JWindowDirectory::DirectoryViewOnScreen(JDirectory* directory)
+		JDirectory* JWindowDirectory::DirectoryViewOnScreen(JDirectory* directory, const bool canSelect)
 		{
 			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow  | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed;
 			bool isSelected = opendDirctory->GetGuid() == directory->GetGuid();	
-			if (isSelected)
-				SetTreeNodeSelectColor();
+			if (isSelected && canSelect)
+				SetTreeNodeColor();
 			JDirectory* clickedDir = nullptr;
 			bool isNodeOpen = JImGuiImpl::TreeNodeEx(JCUtil::WstrToU8Str(directory->GetName()).c_str(), baseFlags);
-			if (isSelected)
+			if (isSelected && canSelect)
 				SetTreeNodeDefaultColor();
 			if (isNodeOpen)
 			{
-				if (ImGui::IsItemClicked())
+				if (ImGui::IsItemClicked(0) && canSelect)
 					clickedDir = directory;
 
 				const uint childDirCount = directory->GetChildernDirctoryCount();
@@ -302,7 +423,7 @@ namespace JinEngine
 					JDirectory* child = directory->GetChildDirctory(i);
 					if (child == nullptr)
 						continue;
-					JDirectory* res = DirectoryViewOnScreen(child);
+					JDirectory* res = DirectoryViewOnScreen(child, canSelect);
 					if (res != nullptr)
 						clickedDir = res;
 				}
@@ -313,8 +434,6 @@ namespace JinEngine
 		void JWindowDirectory::FileViewOnScreen()
 		{
 			editorPositionCal->Update(ImGui::GetWindowWidth() * 0.75f, ImGui::GetWindowHeight(), btnIconSize, btnIconSize);
-			Core::JUserPtr<JObject> selectedObj = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
-
 			bool hasInvaildScene = false;
 			const uint count = GetPreviewSceneCount();
 			for (uint i = 0; i < count; ++i)
@@ -337,7 +456,7 @@ namespace JinEngine
 					if (selectedObj.IsValid() && selectedObj->GetGuid() == nowObject->GetGuid())
 					{
 						isSelected = true;
-						SetButtonSelectColor();
+						SetButtonColor();
 					}
 
 					const J_OBJECT_TYPE objType = nowObject->GetObjectType();
@@ -354,7 +473,6 @@ namespace JinEngine
 					if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
 					{
 						RequestSelectObject({ GetOwnerPageType(), nowObject });
-						JImGuiImpl::SetMouseDrag(true);
 						std::string selectResourceName = JCUtil::WstrToU8Str(nowObject->GetName());
 						JImGuiImpl::Text(selectResourceName);
 						ImGui::SetDragDropPayload(selectResourceName.c_str(), JEditorPageShareData::GetDragGuidPtr(GetOwnerPageType()), sizeof(int));
@@ -379,11 +497,10 @@ namespace JinEngine
 		void JWindowDirectory::ResourceFileViewOnScreen(JPreviewScene* nowPreviewScene, JResourceObject* jRobj)
 		{
 			bool isSelected = false;
-			Core::JUserPtr<JObject> selectedObj = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
 			if (selectedObj.IsValid() && selectedObj->GetGuid() == jRobj->GetGuid())
 			{
 				isSelected = true;
-				SetButtonSelectColor();
+				SetButtonColor();
 			}
 			ImGui::SetCursorPos(ImVec2(editorPositionCal->GetPositionX(), editorPositionCal->GetPositionY()));
 
@@ -400,12 +517,11 @@ namespace JinEngine
 		}
 		void JWindowDirectory::DirectoryFileViewOnScreen(JPreviewScene* nowPreviewScene, JDirectory* jDir)
 		{
-			bool isSelected = false;
-			Core::JUserPtr<JObject> selectedObj = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
-			if (selectedObj->GetGuid() == jDir->GetGuid())
+			bool isSelected = false; 
+			if (selectedObj.IsValid() && selectedObj->GetGuid() == jDir->GetGuid())
 			{
 				isSelected = true;
-				SetButtonSelectColor();
+				SetButtonColor();
 			}
 
 			ImGui::SetCursorPos(ImVec2(editorPositionCal->GetPositionX(), editorPositionCal->GetPositionY()));
@@ -434,7 +550,7 @@ namespace JinEngine
 							for (uint i = 0; i < resCount; ++i)
 							{
 								if (res[i] != nullptr)
-									CreatePreviewScene(Core::GetUserPtr(res[i]), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE);
+									CreatePreviewScene(Core::GetUserPtr(res[i]), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
 							}
 						}
 					}
@@ -448,23 +564,61 @@ namespace JinEngine
 		{
 			if (newOpendDirectory == nullptr)
 				return;
-
-			const uint fileCount = (uint)newOpendDirectory->GetFileCount();
+	 
 			ClearPreviewGroup();
-
-			for (uint i = 0; i < fileCount; ++i)
-			{
-				JFile* file = newOpendDirectory->GetFile(i);
-				if (file == nullptr)
-					continue;
-
-				CreatePreviewScene(Core::GetUserPtr(file->GetResource()), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE);
-			}
+			CreateOpendDirectoryPreview(newOpendDirectory, false);
 
 			if (opendDirctory.IsValid())
 				opendDirctory->OCInterface()->CloseDirectory();
 			opendDirctory = Core::GetUserPtr(newOpendDirectory);
 			opendDirctory->OCInterface()->OpenDirectory();
+		}
+		void JWindowDirectory::CreateOpendDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask)
+		{
+			const uint fileCount = (uint)directory->GetFileCount();
+			for (uint i = 0; i < fileCount; ++i)
+			{
+				JFile* file = directory->GetFile(i);
+				if (file == nullptr)
+					continue;
+
+				if (hasNameMask && !JCUtil::Contain(file->GetName(), mask))
+					continue;
+
+				CreatePreviewScene(Core::GetUserPtr(file->GetResource()), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
+			}
+
+			const uint directoryCount = (uint)directory->GetChildernDirctoryCount();
+			for (uint i = 0; i < directoryCount; ++i)
+			{
+				JDirectory* dir = directory->GetChildDirctory(i);
+				if (dir == nullptr)
+					continue;
+
+				if (hasNameMask && !JCUtil::Contain(dir->GetName(), mask))
+					continue;
+
+				CreatePreviewScene(Core::GetUserPtr(dir), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
+			}
+		}
+		void JWindowDirectory::CreateAllDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask)
+		{
+			const uint fileCount = (uint)directory->GetFileCount();
+			for (uint i = 0; i < fileCount; ++i)
+			{
+				JFile* file = directory->GetFile(i);
+				if (file == nullptr)
+					continue;
+
+				if (hasNameMask && !JCUtil::Contain(file->GetName(), mask))
+					continue;
+
+				CreatePreviewScene(Core::GetUserPtr(file->GetResource()), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
+			}
+
+			const uint childCount = directory->GetChildernDirctoryCount();
+			for (uint i = 0; i < childCount; ++i)
+				CreateAllDirectoryPreview(directory->GetChildDirctory(i), hasNameMask, mask);
 		}
 		void JWindowDirectory::DoSetFocus()noexcept
 		{

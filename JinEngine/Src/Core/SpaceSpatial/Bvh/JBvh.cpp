@@ -257,7 +257,7 @@ namespace JinEngine
 			{
 				JBBox bound = JBBox::InfBBox();
 				for (int i = start; i < end; ++i)
-					bound = JBBox::Union(bound, objectList[i]->GetRenderItem()->GetBoundingBox(true));
+					bound = JBBox::Union(bound, objectList[i]->GetRenderItem()->GetBoundingBox());
 
 				JBBox centroidBound = JBBox::InfBBox();
 				for (int i = start; i < end; ++i)
@@ -297,8 +297,9 @@ namespace JinEngine
 					return;
 				}
 				}
-				constexpr float traverseRate = 0.125f;
-
+				const float traverseRate = 0.125f;
+				const float nanFactor = 1.0f;
+				const float maxCost = JMathHelper::Infinity;
 				float boundSurface = bound.Surface();
 				float cost[bucketCount - 1];
 
@@ -323,10 +324,13 @@ namespace JinEngine
 					}
 					//교차값 = 1, 횡단값 = 1 / 8
 					cost[i] = traverseRate + (count0 * b0.Surface() + count1 * b1.Surface()) / boundSurface;
+					if (std::isnan(cost[i]))
+						cost[i] = maxCost;
 				}
 
 				float minCost = cost[0];
 				int minCostSplitBucket = 0;
+				 
 				for (int i = 1; i < bucketCount - 1; ++i)
 				{
 					if (cost[i] < minCost)
@@ -335,6 +339,7 @@ namespace JinEngine
 						minCostSplitBucket = i;
 					}
 				}
+
 				JGameObject** pmid = std::partition(&objectList[start], &objectList[end - 1] + 1,
 					[=](JGameObject* gameObj)
 					{
@@ -347,7 +352,7 @@ namespace JinEngine
 				int mid = (int)(pmid - &objectList[0]);
 				if (mid == end)
 					mid = (start + end) / 2;
-
+				 
 				JBBox leftBv = JBBox::InfBBox();
 				JBBox rightBv = JBBox::InfBBox();
 				for (int i = start; i < mid; ++i)
@@ -439,31 +444,32 @@ namespace JinEngine
 				}
 			}
 
-			std::vector<std::unique_ptr<JBvhNode>> newNodeVec;
-			switch (buildType)
+			if (objectList.size() > 0)
 			{
-			case J_SPACE_SPATIAL_BUILD_TYPE::TOP_DOWN:
-			{
-				BuildTopdownBvh(tarNode, objectList, newNodeVec, 0, (int)objectList.size(), tarNode->GetNodeNumber() + 1);
+				std::vector<std::unique_ptr<JBvhNode>> newNodeVec;
+				switch (buildType)
+				{
+				case J_SPACE_SPATIAL_BUILD_TYPE::TOP_DOWN:
+				{
+					BuildTopdownBvh(tarNode, objectList, newNodeVec, 0, (int)objectList.size(), tarNode->GetNodeNumber() + 1);
+					break;
+				}
 				break;
+				//case J_SPACE_SPATIAL_BUILD_TYPE::BOTTOP_UP:
+				//	break;
+				default:
+					break;
+				}
+				const uint newNodeCount = (uint)newNodeVec.size();
+				if (IsDebugActivated())
+				{
+					for (uint i = 0; i < newNodeCount; ++i)
+						newNodeVec[i]->CreateDebugGameObject(GetDebugRoot(), IsDebugLeafOnly());
+				}
+				allNodes.insert(allNodes.begin() + tarNodeStNumber,
+					std::make_move_iterator(newNodeVec.begin()),
+					std::make_move_iterator(newNodeVec.end()));
 			}
-			break;
-			//case J_SPACE_SPATIAL_BUILD_TYPE::BOTTOP_UP:
-			//	break;
-			default:
-				break;
-			}
-			const uint newNodeCount = (uint)newNodeVec.size();
-			if (IsDebugActivated())
-			{
-				for (uint i = 0; i < newNodeCount; ++i)
-					newNodeVec[i]->CreateDebugGameObject(GetDebugRoot(), IsDebugLeafOnly());
-			}
-
-			allNodes.insert(allNodes.begin() + tarNodeStNumber,
-				std::make_move_iterator(newNodeVec.begin()),
-				std::make_move_iterator(newNodeVec.end()));
-
 			const uint allNodeCount = (uint)allNodes.size();
 			for (uint i = 0; i < allNodeCount; ++i)
 				allNodes[i]->SetNodeNumber(i);
@@ -501,6 +507,8 @@ namespace JinEngine
 
 					ClearBvhNode(root->GetLeftNode()->GetNodeNumber());
 					ClearBvhNode(root->GetRightNode()->GetNodeNumber());
+					root->SetLeftNode(nullptr);
+					root->SetRightNode(nullptr);
 					allNodes.erase(allNodes.begin() + 1, allNodes.end());
 				}
 				else

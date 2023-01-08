@@ -1,5 +1,5 @@
 #pragma once 
-#include"../../../../Utility/JVector.h" 
+#include"../../Utility/JVector.h" 
 
 namespace JinEngine
 {     
@@ -15,7 +15,7 @@ namespace JinEngine
 			~JEditorCameraControl();
 			JEditorCameraControl(const JEditorCameraControl& rhs) = delete;
 			JEditorCameraControl& operator=(const JEditorCameraControl& rhs) = delete;
-
+		public:
 			void MouseDown(JCamera* sceneCamera, float x, float y);
 			void MouseUp(JCamera* sceneCamera, float x, float y);
 			void MouseMove(JCamera* sceneCamera, float x, float y);

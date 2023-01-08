@@ -81,10 +81,7 @@ namespace JinEngine
 					JFileIOHelper::StoreXMFloat4(stream, L"I", XMFLOAT4(vertices.jointIndex[0],
 						vertices.jointIndex[1], vertices.jointIndex[2], vertices.jointIndex[3]));
 				}
-				if (skinnedData->Is16bit())
-					JFileIOHelper::StoreAtomicDataVec(stream, L"Index:", skinnedData->GetU16Vector(), 6);
-				else
-					JFileIOHelper::StoreAtomicDataVec(stream, L"Index:", skinnedData->GetU32Vector(), 6);
+				JFileIOHelper::StoreAtomicDataVec(stream, L"Index:", skinnedData->GetIndexVector(), 6);
 
 				const DirectX::BoundingBox boundingBox = skinnedData->GetBBox();
 				const DirectX::BoundingSphere boundingSphere = skinnedData->GetBSphere();
@@ -154,8 +151,7 @@ namespace JinEngine
 				JFileIOHelper::LoadEnumData(stream, meshType);
 
 				std::vector<JSkinnedMeshVertex> vertices(vertexCount);
-				std::vector<uint16> u16Indices;
-				std::vector<uint32> u32Indices;
+				std::vector<uint> indices;
 				XMFLOAT4 jointIndex;
 
 				for (uint i = 0; i < vertexCount; ++i)
@@ -173,10 +169,7 @@ namespace JinEngine
 					vertices[i].jointIndex[3] = jointIndex.w;
 				}
 
-				if (indexCount < (1 << 16))
-					JFileIOHelper::LoadAtomicDataVec(stream, u16Indices);
-				else
-					JFileIOHelper::LoadAtomicDataVec(stream, u32Indices);
+				JFileIOHelper::LoadAtomicDataVec(stream, indices);
 
 				DirectX::BoundingBox boundingBox;
 				DirectX::BoundingSphere boundingSphere;
@@ -190,16 +183,7 @@ namespace JinEngine
 				JFileIOHelper::LoadAtomicData(stream, hasUV);
 				JFileIOHelper::LoadAtomicData(stream, hasNormal);
 
-				if (u32Indices.size() > 0)
-				{
-					meshGroup.AddMeshData(JSkinnedMeshData{ name , guid, std::move(u32Indices),
-						hasUV, hasNormal, std::move(vertices) });
-				}
-				else
-				{
-					meshGroup.AddMeshData(JSkinnedMeshData{ name , guid, std::move(u16Indices),
-						hasUV, hasNormal, std::move(vertices) });
-				}
+				meshGroup.AddMeshData(JSkinnedMeshData{ name , guid, std::move(indices), hasUV, hasNormal, std::move(vertices) });
 			}
 			uint submeshCount;
 			JFileIOHelper::LoadAtomicData(stream, submeshCount);

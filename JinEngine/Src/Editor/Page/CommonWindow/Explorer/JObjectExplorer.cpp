@@ -6,6 +6,7 @@
 #include"../../../String/JEditorString.h"
 #include"../../../Popup/JEditorPopup.h"
 #include"../../../Popup/JEditorPopupNode.h"   
+#include"../../../Utility/JEditorSearchBarHelper.h"
 #include"../../../../Utility/JCommonUtility.h"    
 #include"../../../../Object/Component/JComponentFactoryUtility.h"
 #include"../../../../Object/GameObject/JGameObject.h"  
@@ -47,8 +48,9 @@ namespace JinEngine
 				cGObjHelperF = std::make_unique<CreateGameObjectHelperFunctor>(CreateGameObjectHelperLam);
 			}
 
-			//JEditorString Init
 			editorString = std::make_unique<JEditorString>();
+			renameHelper = std::make_unique<JEditorRenameHelper>();
+			searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
 
 			//PopupInit
 			std::unique_ptr<JEditorPopupNode> explorerPopupRootNode =
@@ -60,36 +62,36 @@ namespace JinEngine
 			editorString->AddString(createGameObjectNode->GetTooltipId(), { "Create selected gameObject's child in the scene", u8"씬내에 선택한 게임오브젝에 자식을 생성합니다." });
 
 			std::unique_ptr<JEditorPopupNode> createCubeNode =
-				std::make_unique<JEditorPopupNode>("Cube", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Cube", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
 			editorString->AddString(createCubeNode->GetNodeId(), { "Cube", u8"정육면체" });
 
 			std::unique_ptr<JEditorPopupNode> createGridNode =
-				std::make_unique<JEditorPopupNode>("Grid", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Grid", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
 			editorString->AddString(createGridNode->GetNodeId(), { "Grid", u8"격자판" });
 
 			std::unique_ptr<JEditorPopupNode> createCyilinderNode =
-				std::make_unique<JEditorPopupNode>("Cyilinder", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Cyilinder", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
 			editorString->AddString(createCyilinderNode->GetNodeId(), { "Cyilinder", u8"원기둥" });
 
 			std::unique_ptr<JEditorPopupNode> createSphereNode =
-				std::make_unique<JEditorPopupNode>("Sphere", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Sphere", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
 			editorString->AddString(createSphereNode->GetNodeId(), { "Sphere", u8"구체" });
 
 			std::unique_ptr<JEditorPopupNode> createQuadNode =
-				std::make_unique<JEditorPopupNode>("Quad", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Quad", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
 			editorString->AddString(createQuadNode->GetNodeId(), { "Quad", u8"사각형" });
 
 			std::unique_ptr<JEditorPopupNode> createEmptyNode =
-				std::make_unique<JEditorPopupNode>("Empty", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Empty", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
 			editorString->AddString(createEmptyNode->GetNodeId(), { "Empty", u8"빈 오브젝트" });
 
 			std::unique_ptr<JEditorPopupNode> destroyNode =
-				std::make_unique<JEditorPopupNode>("Destroy JGameObject", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, explorerPopupRootNode.get(), true);
+				std::make_unique<JEditorPopupNode>("Destroy JGameObject", J_EDITOR_POPUP_NODE_TYPE::LEAF, explorerPopupRootNode.get(), true);
 			editorString->AddString(destroyNode->GetNodeId(), { "Destroy JGameObject", u8"게임오브젝트 삭제" });
 			editorString->AddString(destroyNode->GetTooltipId(), { "Destroy selected gameObject in the scene", u8"씬내에 선택한 게임오브젝트를 삭제합니다." });
 
 			std::unique_ptr<JEditorPopupNode> renameNode =
-				std::make_unique<JEditorPopupNode>("Rename JGameObject", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, explorerPopupRootNode.get(), false);
+				std::make_unique<JEditorPopupNode>("Rename JGameObject", J_EDITOR_POPUP_NODE_TYPE::LEAF, explorerPopupRootNode.get(), false);
 			editorString->AddString(renameNode->GetNodeId(), { "Rename", u8"새이름" });
 
 			auto createCubeLam = [](DataHandleStructure& dS, Core::JDataHandle& dH, Core::JUserPtr<JGameObject> p, const size_t guid)
@@ -116,7 +118,7 @@ namespace JinEngine
 			{
 				(*cGObjHelperF)(dS.Release(dH), p, guid, J_DEFAULT_SHAPE::DEFAULT_SHAPE_EMPTY);
 			};
-
+			
 			createFuncMap.emplace(createCubeNode->GetNodeId(), std::make_unique<CreateGameObjectFunctor>(createCubeLam));
 			createFuncMap.emplace(createGridNode->GetNodeId(), std::make_unique< CreateGameObjectFunctor>(createGridLam));
 			createFuncMap.emplace(createCyilinderNode->GetNodeId(), std::make_unique< CreateGameObjectFunctor>(createCyilinderLam));
@@ -134,9 +136,7 @@ namespace JinEngine
 				}
 			};
 			destroyT = std::tuple(destroyNode->GetNodeId(), std::make_unique<DestroyGameObjectFunctor>(destroyLam));
-
-			auto renameLam = [](const std::string newName, Core::JUserPtr<JGameObject> obj) {obj->SetName(JCUtil::U8StrToWstr(newName)); };
-			renameT = std::tuple(renameNode->GetNodeId(), std::make_unique< RenameFuncF::Functor>(renameLam));
+			renameT = std::tuple(renameNode->GetNodeId(), renameHelper->GetActivateFunctor());
 
 			auto undoDestroyLam = [](DataHandleStructure& dS, Core::JDataHandle& dH)
 			{
@@ -171,9 +171,9 @@ namespace JinEngine
 			explorerPopup->AddPopupNode(std::move(renameNode));
 
 			auto changeParentLam = [](Core::JUserPtr<JGameObject> obj, Core::JUserPtr<JGameObject> newP) {obj->ChangeParent(newP.Get()); };
-			changeParentF = std::make_unique< ChangeParentF::Functor>(changeParentLam);
+			changeParentF = std::make_unique< ChangeParentF::Functor>(changeParentLam);		
 
-			inputBuff = std::make_unique<JEditorInputBuffHelper>(JImGuiImpl::GetTextBuffRange());
+			
 		}
 		JObjectExplorer::~JObjectExplorer()
 		{
@@ -186,6 +186,9 @@ namespace JinEngine
 		void JObjectExplorer::Initialize(Core::JUserPtr<JGameObject> newRoot) noexcept
 		{
 			root = newRoot;
+			renameHelper->Clear();
+			searchBarHelper->ClearInputBuffer();
+			explorerPopup->SetOpen(false);
 		}
 		void JObjectExplorer::UpdateWindow()
 		{
@@ -197,16 +200,17 @@ namespace JinEngine
 				const bool isValidGameObject = selected.IsValid() && selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT;
 				const bool canSetGameObject = !selectedObject.IsValid() || selectedObject->GetGuid() != selected->GetGuid();
 				if (isValidGameObject && canSetGameObject)
-					SelectedGameObject(static_cast<JGameObject*>(selected.Get()));
- 
+					selectedObject = Core::GetUserPtr(static_cast<JGameObject*>(selected.Get()));
+
 				UpdateMouseClick();
+				searchBarHelper->UpdateSearchBar(GetName(), false);
 				BuildObjectExplorer();
 			}
 			CloseWindow();
 		}
 		void JObjectExplorer::BuildObjectExplorer()
 		{
-			ObjectExplorerOnScreen(root.Get());
+			ObjectExplorerOnScreen(root.Get(), searchBarHelper->HasInputData());
 			SetTreeNodeDefaultColor();
 
 			if (explorerPopup->IsOpen())
@@ -219,7 +223,7 @@ namespace JinEngine
 					auto func = createFuncMap.find(menuGuid);
 					if (func != createFuncMap.end())
 					{
-						auto parent = selectedObject;
+						auto parent = popupTargetObject;
 						if (!parent.IsValid())
 							parent = root;
 
@@ -231,9 +235,9 @@ namespace JinEngine
 							("Create game object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
 						AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
 					}
-					else if (selectedObject.IsValid() && menuGuid == std::get<0>(destroyT))
+					else if (popupTargetObject.IsValid() && menuGuid == std::get<0>(destroyT))
 					{
-						auto doBind = Core::CTaskUptr<DestroyGameObjectBind>(*std::get<1>(destroyT), selectedObject->GetGuid());
+						auto doBind = Core::CTaskUptr<DestroyGameObjectBind>(*std::get<1>(destroyT), popupTargetObject->GetGuid());
 						auto undoBind = Core::CTaskUptr<UndoDestroyGameObjectBind>(*undoDestroyF);
 
 						auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<DestroyGameObjectEvStruct>
@@ -241,10 +245,7 @@ namespace JinEngine
 						AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
 					}
 					else if (menuGuid == std::get<0>(renameT))
-					{
-						renameTar = selectedObject;
-						inputBuff->SetBuff(JCUtil::WstrToU8Str(renameTar->GetName())); 
-					}
+						(*std::get<1>(renameT))(popupTargetObject);
 					explorerPopup->SetOpen(false);
 				}
 			}
@@ -252,66 +253,51 @@ namespace JinEngine
 			explorerPopup->Update();
 			ImGui::SameLine();
 		}
-		void JObjectExplorer::ObjectExplorerOnScreen(JGameObject* gObj)
+		void JObjectExplorer::ObjectExplorerOnScreen(JGameObject* gObj, const bool isAcivatedSearch)
 		{
 			//ImGuiTreeNodeFlags_Selected
+			bool isNodeOpen = false;
+			bool isRenameActivaetd = renameHelper->IsActivated() && renameHelper->IsRenameTar(gObj->GetGuid());
 			bool isSelected = selectedObject.IsValid() && gObj->GetGuid() == selectedObject->GetGuid();
 			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow |
 				ImGuiTreeNodeFlags_SpanAvailWidth |
 				ImGuiTreeNodeFlags_Framed;
-		
-			if (renameTar.IsValid() && gObj->GetGuid() == renameTar->GetGuid())
-			{  
-				const ImVec2 itemPos = ImGui::GetCursorPos() + ImGui::GetWindowPos();
-				if (JImGuiImpl::InputTextSet(GetName(),
-					inputBuff.get(),
-					ImGuiInputTextFlags_EnterReturnsTrue,
-					*std::get<1>(renameT), Core::JUserPtr{ renameTar }))
-					renameTar.Clear();
-				 
-				const ImVec2 itemSize = ImGui::GetItemRectSize();
-				if (JImGuiImpl::IsRightMouseClicked() || JImGuiImpl::IsLeftMouseClicked())
-				{ 
-					if (!JImGuiImpl::IsMouseInRect(itemPos, itemSize))
-						renameTar.Clear();
-				}
 
-				const uint childrenCount = gObj->GetChildrenCount();
-				for (uint i = 0; i < childrenCount; ++i)
+			std::string name = JCUtil::WstrToU8Str(gObj->GetName());
+			bool canOnScreen = searchBarHelper->CanSrcNameOnScreen(name);
+			if (canOnScreen)
+			{ 
+				if (isRenameActivaetd)
 				{
-					JGameObject* child = gObj->GetChild(i);
-					if ((child->GetFlag() & OBJECT_FLAG_HIDDEN) > 0)
-						continue;
-
-					ObjectExplorerOnScreen(child);
+					isNodeOpen = ImGui::TreeNodeBehaviorIsOpen(ImGui::GetCurrentWindow()->GetID((name + "##TreeNode").c_str()), baseFlags);
+					renameHelper->Update(GetName(), isNodeOpen);
 				}
-			}
-			else
-			{
-				std::string name = JCUtil::WstrToU8Str(gObj->GetName());
-				if (isSelected)
-					SetTreeNodeSelectColor();
-				bool isNodeOpen = ImGui::TreeNodeEx((name + "##TreeNode").c_str(), baseFlags);
-				if (isSelected)
-					SetTreeNodeDefaultColor();
-				if (isNodeOpen)
+				else
 				{
-					if (ImGui::IsItemClicked(0) || ImGui::IsItemClicked(1))
-						RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(gObj)));
-
-					if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+					if (isSelected)
+						SetTreeNodeColor();
+					if (isAcivatedSearch)
+						ImGui::SetNextItemOpen(true);
+					isNodeOpen = JImGuiImpl::TreeNodeEx((name + "##TreeNode").c_str(), baseFlags);
+					if (isSelected)
+						SetTreeNodeDefaultColor();
+					if (isNodeOpen)
 					{
-						RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(gObj)));
-						JImGuiImpl::SetMouseDrag(true);
-						std::string selectName = name;
-						JImGuiImpl::Text(selectName);
-						ImGui::SetDragDropPayload(selectName.c_str(), JEditorPageShareData::GetDragGuidPtr(GetOwnerPageType()), sizeof(int));
-						ImGui::EndDragDropSource();
-					}
+						if (ImGui::IsItemClicked(0))
+							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(gObj)));
+						else if (ImGui::IsItemClicked(1))
+							popupTargetObject = Core::GetUserPtr(gObj);
 
-					if (ImGui::BeginDragDropTarget())
-					{
-						if (JImGuiImpl::IsDraggingMouse())
+						if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+						{
+							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(gObj)));
+							std::string selectName = name;
+							JImGuiImpl::Text(selectName);
+							ImGui::SetDragDropPayload(selectName.c_str(), JEditorPageShareData::GetDragGuidPtr(GetOwnerPageType()), sizeof(int));
+							ImGui::EndDragDropSource();
+						}
+
+						if (ImGui::BeginDragDropTarget())
 						{
 							auto selected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
 							if (selected.IsValid() && !selected->HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNEDITABLE))
@@ -319,7 +305,7 @@ namespace JinEngine
 								const std::string itemName = JCUtil::WstrToU8Str(selected->GetName());
 								const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(itemName.c_str(), ImGuiDragDropFlags_None);
 
-								if (selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT && payload)
+								if (selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT && !ImGui::IsMouseDragging(0))
 								{
 									Core::JUserPtr<JGameObject> selectedObj;
 									selectedObj.ConnnectBaseUser(selected);
@@ -327,10 +313,10 @@ namespace JinEngine
 									auto doBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, Core::JUserPtr(selectedObj), Core::GetUserPtr(gObj));
 									auto undoBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, Core::JUserPtr(selectedObj), Core::GetUserPtr(selectedObj->GetParent()));
 									auto evStruct = std::make_unique<JEditorTSetBindFuncEvStruct>("Change Parent", GetOwnerPageType(), std::move(doBind), std::move(undoBind));
-									 
+
 									AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
 								}
-								else if (selected->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT && payload)
+								else if (selected->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT && !ImGui::IsMouseDragging(0))
 								{
 									Core::JUserPtr<JMeshGeometry> sMesh;
 									sMesh.ConnnectBaseUser(selected);
@@ -347,35 +333,27 @@ namespace JinEngine
 									}
 								}
 							}
-							JImGuiImpl::SetMouseDrag(false);
+							ImGui::EndDragDropTarget();
 						}
-						ImGui::EndDragDropTarget();
 					}
+				}	 
+			}
+			if (isNodeOpen || isAcivatedSearch)
+			{
+				const uint childrenCount = gObj->GetChildrenCount();
+				for (uint i = 0; i < childrenCount; ++i)
+				{
+					JGameObject* child = gObj->GetChild(i);
+					if ((child->GetFlag() & OBJECT_FLAG_HIDDEN) > 0)
+						continue;
 
-					const uint childrenCount = gObj->GetChildrenCount();
-					for (uint i = 0; i < childrenCount; ++i)
-					{
-						JGameObject* child = gObj->GetChild(i);
-						if ((child->GetFlag() & OBJECT_FLAG_HIDDEN) > 0)
-							continue;
-
-						ObjectExplorerOnScreen(child);
-					}
-					ImGui::TreePop();
+					ObjectExplorerOnScreen(child, isAcivatedSearch);
 				}
-			}
-		}
-		void JObjectExplorer::SelectedGameObject(JGameObject* newObject)
-		{		 
-			selectedObject = Core::GetUserPtr(newObject);
-			if (selectedObject.Get() != nullptr)
-			{
-				//Activated Transform Arrow
-			}
-			else
-			{
-				//DeActivated Transform Arrow
-			}
+				if (isRenameActivaetd)
+					ImGui::Unindent();
+				else if (isNodeOpen)
+					JImGuiImpl::TreePop();
+			} 
 		}
 		void JObjectExplorer::DoActivate()noexcept
 		{
@@ -385,15 +363,14 @@ namespace JinEngine
 		void JObjectExplorer::DoDeActivate()noexcept
 		{
 			JEditorWindow::DoDeActivate();
-			RemoveListener(*JEditorEvent::EvInterface(), GetGuid()); 
+			RemoveListener(*JEditorEvent::EvInterface(), GetGuid());
 		}
 		void JObjectExplorer::DoSetUnFocus()noexcept
 		{
 			JEditorWindow::DoSetUnFocus();
 			explorerPopup->SetOpen(false);
-			renameTar.Clear();
+			renameHelper->Clear();
 		}
-
 		void JObjectExplorer::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{
 			if (senderGuid == GetGuid() || !IsActivated() || !eventStruct->PassDefectInspection())

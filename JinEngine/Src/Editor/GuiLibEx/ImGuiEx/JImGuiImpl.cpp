@@ -49,7 +49,7 @@ namespace JinEngine
 		public:
 			bool optWindowPadding;
 		public:
-			std::bitset<3> mouseClick;
+			std::bitset<3> mouseClick; 
 			bool isDrag;
 		public:
 			bool enablePopup = true;
@@ -502,7 +502,7 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::InputText(const std::string& name, std::string& buff, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
 		{
-			++jImgui->inputDataCount;
+			++jImgui->inputDataCount; 
 			return ImGui::InputText(name.c_str(), &buff[0], buff.size(), flags, txtCallback, userData);
 		}
 		bool JImGuiImpl::InputText(const std::string& name, std::string& buff, std::string& result, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
@@ -672,10 +672,6 @@ namespace JinEngine
 		{
 			return jImgui->mouseClick[2];
 		}
-		bool JImGuiImpl::IsDraggingMouse()noexcept
-		{
-			return jImgui->isDrag;
-		}
 		bool JImGuiImpl::IsMouseInRect(const JVector2<float>& position, const JVector2<float>& size)noexcept
 		{
 			ImVec2 mousePos = ImGui::GetMousePos();
@@ -688,10 +684,6 @@ namespace JinEngine
 		void JImGuiImpl::SetMouseClick(const ImGuiMouseButton btn, const bool value)noexcept
 		{
 			jImgui->mouseClick[btn] = value;
-		}
-		void JImGuiImpl::SetMouseDrag(bool value)noexcept
-		{
-			jImgui->isDrag = value;
 		}
 		float JImGuiImpl::GetSliderPosX(bool hasScrollbar)noexcept
 		{

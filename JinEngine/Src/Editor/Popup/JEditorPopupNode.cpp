@@ -14,33 +14,17 @@ namespace JinEngine
 			const bool hasShortCut)
 			:name(name),
 			nodeType(nodeType),
+			nodeId (Core::MakeGuid()),
 			parent(parent),
 			hasTooltip(hasTooltip),
-			hasShortCut(hasShortCut)
+			hasShortCut(hasShortCut),
+			tooltipId(Core::MakeGuid()),
+			shortCutId(Core::MakeGuid())
 		{
 			if (parent != nullptr)
-				parent->children.push_back(this);
-			nodeId = Core::MakeGuid();
-			tooltipId = Core::MakeGuid();
-			shortCutId = Core::MakeGuid();
+				parent->children.push_back(this); 
 		}
 		JEditorPopupNode::~JEditorPopupNode() {}
-		size_t JEditorPopupNode::GetNodeId()const noexcept
-		{
-			return nodeId;
-		}
-		size_t JEditorPopupNode::GetTooltipId()const noexcept
-		{
-			return tooltipId;
-		}
-		size_t JEditorPopupNode::GetShortCutId()const noexcept
-		{
-			return shortCutId;
-		}
-		J_EDITOR_POPUP_NODE_TYPE JEditorPopupNode::GetNodeType()const noexcept
-		{
-			return nodeType;
-		}
 		void JEditorPopupNode::PopupOnScreen(_In_ JEditorString* editorString, _Out_ J_EDITOR_POPUP_NODE_RES& res, _Out_ std::size_t& clickMenuGuid)
 		{
 			const uint childrenCount = (uint)children.size();
@@ -66,7 +50,7 @@ namespace JinEngine
 					isOpen = false;
 				PrintTooltip(editorString);
 				break;
-			case J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT:
+			case J_EDITOR_POPUP_NODE_TYPE::LEAF:
 				if (hasShortCut)
 				{
 					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), editorString->GetString(shortCutId).c_str(), false))
@@ -125,6 +109,31 @@ namespace JinEngine
 				if (ImGui::IsItemHovered())
 					ImGui::SetTooltip(editorString->GetString(tooltipId).c_str());
 			}
+		}
+		void JEditorPopupNode::RegisterSelectBind(std::unique_ptr<Core::JBindHandleBase>&& newSelectBind)noexcept
+		{
+			selectBind = std::move(newSelectBind);
+		}
+		void JEditorPopupNode::InvokeSelectBind()noexcept
+		{
+			if (selectBind != nullptr)
+				selectBind->InvokeCompletelyBind();
+		}
+		size_t JEditorPopupNode::GetNodeId()const noexcept
+		{
+			return nodeId;
+		}
+		size_t JEditorPopupNode::GetTooltipId()const noexcept
+		{
+			return tooltipId;
+		}
+		size_t JEditorPopupNode::GetShortCutId()const noexcept
+		{
+			return shortCutId;
+		}
+		J_EDITOR_POPUP_NODE_TYPE JEditorPopupNode::GetNodeType()const noexcept
+		{
+			return nodeType;
 		}
 		bool JEditorPopupNode::IsOpen()const noexcept
 		{

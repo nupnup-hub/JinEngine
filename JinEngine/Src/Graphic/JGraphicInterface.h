@@ -1,6 +1,7 @@
 #include"GraphicResource/JGraphicResourceType.h"
+#include"../Object/Resource/Shader/JExtraPsoType.h"
 #include"../Object/Resource/Shader/JShaderFunctionEnum.h"
-#include"../Object/Resource/Shader/JShaderSubPSO.h" 
+#include"../Object/Resource/Shader/JShaderGraphicPsoCondition.h" 
 #include"../Core/JDataType.h"
 #include<string>
 
@@ -78,7 +79,8 @@ namespace JinEngine
 			virtual void StuffGraphicShaderPso(JGraphicShaderData* shaderData, 
 				const J_SHADER_VERTEX_LAYOUT vertexLayout,
 				const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, 
-				const JShaderGraphicSubPSO& subPso) = 0;
+				const JShaderGraphicPsoCondition& psoCondition,
+				const J_GRAPHIC_EXTRA_PSO_TYPE extraType = J_GRAPHIC_EXTRA_PSO_TYPE::NONE) = 0;
 			virtual void StuffComputeShaderPso(JComputeShaderData* shaderData, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag) = 0;
 		};
 

@@ -1,9 +1,9 @@
-#include"JShaderSubPSO.h"
+#include"JShaderGraphicPsoCondition.h"
 #include<string>
 
 namespace JinEngine
 {
-	bool JShaderGraphicSubPSO::Equal(const JShaderGraphicSubPSO& pso)const noexcept
+	bool JShaderGraphicPsoCondition::Equal(const JShaderGraphicPsoCondition& pso)const noexcept
 	{
 		return primitiveCondition == pso.primitiveCondition &&
 			depthCompareCondition == pso.depthCompareCondition &&
@@ -12,7 +12,7 @@ namespace JinEngine
 			depthCompareFunc == pso.depthCompareFunc &&
 			isCullModeNone == pso.isCullModeNone;
 	}
-	size_t JShaderGraphicSubPSO::UniqueID()const noexcept
+	size_t JShaderGraphicPsoCondition::UniqueID()const noexcept
 	{
 		return std::hash <std::wstring>{}(L"PrimitiveC:" + std::to_wstring((int)primitiveCondition) +
 			L"DepthComparesionC:" + std::to_wstring((int)depthCompareCondition) +
@@ -21,7 +21,7 @@ namespace JinEngine
 			L"DepthComparesion:" + std::to_wstring((int)depthCompareFunc) +
 			L"CullMode:" + std::to_wstring(isCullModeNone));
 	}
-	D3D12_PRIMITIVE_TOPOLOGY_TYPE JShaderGraphicSubPSO::ConvertD3d12PrimitiveType()const noexcept
+	D3D12_PRIMITIVE_TOPOLOGY_TYPE JShaderGraphicPsoCondition::ConvertD3d12PrimitiveType()const noexcept
 	{
 		switch (primitiveType)
 		{
@@ -33,7 +33,7 @@ namespace JinEngine
 			break;
 		}
 	}
-	D3D12_COMPARISON_FUNC JShaderGraphicSubPSO::ConvertD3d12Comparesion()const noexcept
+	D3D12_COMPARISON_FUNC JShaderGraphicPsoCondition::ConvertD3d12Comparesion()const noexcept
 	{
 		switch (depthCompareFunc)
 		{
@@ -59,7 +59,7 @@ namespace JinEngine
 			break;
 		}
 	} 
-	D3D12_CULL_MODE JShaderGraphicSubPSO::ConvertD3d12CullMode()const noexcept
+	D3D12_CULL_MODE JShaderGraphicPsoCondition::ConvertD3d12CullMode()const noexcept
 	{
 		if (isCullModeNone)
 			return D3D12_CULL_MODE_NONE;

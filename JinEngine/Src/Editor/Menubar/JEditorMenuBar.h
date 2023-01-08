@@ -60,6 +60,8 @@ namespace JinEngine
 			std::vector<std::unique_ptr<JEditorMenuNode>> allNode;
 			std::vector<JEditorMenuNode*> leafNode;
 		private:
+			std::unique_ptr<Core::JBindHandleBase> extraWidgetBind;
+		private:
 			const bool isMainMenu = false;
 		public:
 			JEditorMenuBar(std::unique_ptr<JEditorMenuNode> root, const bool isMainMenu);
@@ -68,7 +70,8 @@ namespace JinEngine
 			JEditorMenuNode* GetRootNode()noexcept;
 			JEditorMenuNode* GetSelectedNode()noexcept;
 		public:
-			void AddNode(std::unique_ptr<JEditorMenuNode> newNode); 
+			void AddNode(std::unique_ptr<JEditorMenuNode> newNode)noexcept;
+			void RegisterExtraWidgetBind(std::unique_ptr<Core::JBindHandleBase> newExtraWidgetBind)noexcept;
 		public:
 			void Update(const bool leafNodeOnly);
 		private:

@@ -7,6 +7,10 @@
 
 namespace JinEngine
 {
+	namespace Constants
+	{
+		static constexpr uint alpahbetGap = 32;
+	}
 	int JCUtil::GetPathLastBackSlash(const std::wstring& path)noexcept
 	{
 		return (int)path.find_last_of(L"\\") + 1;
@@ -168,13 +172,89 @@ namespace JinEngine
 	{
 		return (ch > 47 && ch < 58);
 	}
-	bool JCUtil::Contain(const std::wstring& source, const std::wstring& target)noexcept
+	bool JCUtil::IsAlphabet(const char ch)noexcept
 	{
-		return source.find(target) != std::wstring::npos;
+		return ch >= 'A' && ch <= 'z';
 	}
-	bool JCUtil::Contain(const std::string& source, const std::string& target)noexcept
+	bool JCUtil::IsAlphabet(const wchar_t ch)noexcept
 	{
-		return source.find(target) != std::string::npos;
+		return ch >= L'A' && ch <= L'z';
+	}
+	bool JCUtil::IsSameAlphabet(const char src, const char tar)noexcept
+	{  
+		return src < 'a' ? (src == tar || (src + Constants::alpahbetGap) == (int)tar)
+			: (src == tar || (src - Constants::alpahbetGap) == (int)tar);
+	}
+	bool JCUtil::IsSameAlphabet(const wchar_t src, const wchar_t tar)noexcept
+	{
+		return src < L'a' ? (src == tar || (src + Constants::alpahbetGap) == (int)tar)
+			: (src == tar ||(src - Constants::alpahbetGap) == (int)tar);
+	}
+	bool JCUtil::Contain(const std::wstring& source, const std::wstring& target, const bool caseSensitive)noexcept
+	{
+		if (caseSensitive)
+			return source.find(target) != std::wstring::npos;
+		else
+		{
+			bool has = false;
+			const uint srcCount = (uint)source.size();
+			const uint tarCount = (uint)target.size();
+			uint hitCount = 0;
+			for (uint i = 0; i < srcCount; ++i)
+			{
+				bool isHit = false;
+				const bool isSrcAlphabet = IsAlphabet(source[i]);
+				const bool isTarAlphabet = IsAlphabet(target[hitCount]);
+
+				if (isSrcAlphabet && isTarAlphabet)
+					isHit = IsSameAlphabet(source[i], target[hitCount]);
+				else
+					isHit = source[i] == target[hitCount];
+
+				if (isHit)
+				{
+					++hitCount;
+					if (hitCount == tarCount)
+						return true;
+				}
+				else
+					hitCount = 0;
+			}
+			return has;
+		}		 
+	}
+	bool JCUtil::Contain(const std::string& source, const std::string& target, const bool caseSensitive)noexcept
+	{
+		if (caseSensitive)
+			return source.find(target) != std::string::npos;
+		else
+		{
+			bool has = false;
+			const uint srcCount = (uint)source.size();
+			const uint tarCount = (uint)target.size();
+			uint hitCount = 0;
+			for (uint i = 0; i < srcCount; ++i)
+			{
+				bool isHit = false;
+				const bool isSrcAlphabet = IsAlphabet(source[i]);
+				const bool isTarAlphabet = IsAlphabet(target[hitCount]);
+
+				if (isSrcAlphabet && isTarAlphabet)
+					isHit = IsSameAlphabet(source[i], target[hitCount]);
+				else
+					isHit = source[i] == target[hitCount];
+
+				if (isHit)
+				{
+					++hitCount;
+					if (hitCount == tarCount)
+						return true;
+				}
+				else
+					hitCount = 0;
+			}
+			return has;
+		}
 	}
 	void JCUtil::DecomposeFolderPath(const std::wstring& path, std::wstring& folderPath, std::wstring& name)noexcept
 	{

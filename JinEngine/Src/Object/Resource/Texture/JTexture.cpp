@@ -123,7 +123,7 @@ namespace JinEngine
 	void JTexture::ClearResource()
 	{
 		if (IsValid())
-		{
+		{ 
 			if(HasTxtHandle())
 				DestroyTxtHandle(); 
 			SetValid(false);
@@ -132,7 +132,7 @@ namespace JinEngine
 	bool JTexture::ReadTextureData()
 	{
 		if (!HasTxtHandle())
-		{
+		{ 
 			if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
 			{
 				if (Create2DTexture(uploadBuffer, GetPath(), GetFormat()))
@@ -142,7 +142,7 @@ namespace JinEngine
 				}
 			}
 			else if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
-			{
+			{ 
 				if (CreateCubeMap(uploadBuffer, GetPath(), GetFormat()))
 				{
 					uploadBuffer.Reset();
@@ -238,7 +238,7 @@ namespace JinEngine
 		return newTexture;
 	}
 	Core::J_FILE_IO_RESULT JTexture::LoadMetadata(std::wifstream& stream, JTextureMetadata& metadata)
-	{
+	{ 
 		if (stream.is_open())
 		{
 			Core::J_FILE_IO_RESULT res = JResourceObject::LoadMetadata(stream, metadata);

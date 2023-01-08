@@ -1,6 +1,6 @@
 #pragma once
-#include"../../JEditorWindow.h" 
-#include"../../../Utility/JEditorInputBuffHelper.h"
+#include"../../JEditorWindow.h"  
+#include"../../../Utility/JEditorRenameHelper.h"
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
 #include"../../../../Core/Event/JEventListener.h"
@@ -15,14 +15,17 @@ namespace JinEngine
 	{
 		class JEditorString;
 		class JEditorPopup;
+		class JEditorSearchBarHelper;
 		class JObjectExplorer final : public JEditorWindow
 		{ 
 		private:
 			Core::JUserPtr<JGameObject> root;
-			Core::JUserPtr<JGameObject> renameTar;
 			Core::JUserPtr<JGameObject> selectedObject; 
+			Core::JUserPtr<JGameObject> popupTargetObject;
 
 			std::unique_ptr<JEditorString>editorString;
+			std::unique_ptr<JEditorRenameHelper>renameHelper;
+			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
 			std::unique_ptr<JEditorPopup>explorerPopup; 
 		private:
 			using DataHandleStructure = Core::JDataHandleStructure<Core::JTransition::GetMaxTaskCapacity(), JGameObject>;
@@ -40,20 +43,16 @@ namespace JinEngine
 			using CreateModelFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, Core::JUserPtr<JGameObject>, Core::JUserPtr<JMeshGeometry>, const size_t>;
 			using CreateModelBind = Core::JBindHandle<CreateModelFunctor, const Core::EmptyType&, const Core::EmptyType&, Core::JUserPtr<JGameObject>, Core::JUserPtr<JMeshGeometry>, const size_t>;
  
-			using CreateModelEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateModelBind, DestroyGameObjectBind>;
-
-			using RenameFuncF = Core::JSFunctorType<void, const std::string, Core::JUserPtr<JGameObject>>;
+			using CreateModelEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateModelBind, DestroyGameObjectBind>;;
 			using ChangeParentF = Core::JSFunctorType<void, Core::JUserPtr<JGameObject>, Core::JUserPtr<JGameObject>>;
 		private:
 			DataHandleStructure dataStructure;
 			std::unordered_map<size_t, std::unique_ptr<CreateGameObjectFunctor>> createFuncMap;
 			std::tuple<size_t, std::unique_ptr<DestroyGameObjectFunctor>> destroyT;
-			std::tuple<size_t, std::unique_ptr<RenameFuncF::Functor>> renameT;
+			std::tuple<size_t, JEditorRenameHelper::ActivateF*> renameT;
 			std::unique_ptr<UndoDestroyGameObjectFunctor> undoDestroyF;
 			std::unique_ptr<CreateModelFunctor> createModelF;
 			std::unique_ptr<ChangeParentF::Functor> changeParentF;
-		private:
-			std::unique_ptr <JEditorInputBuffHelper> inputBuff;
 		public:
 			JObjectExplorer(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType);
 			~JObjectExplorer();
@@ -66,9 +65,9 @@ namespace JinEngine
 			void UpdateWindow()final;
 		private:
 			void BuildObjectExplorer();
-			void ObjectExplorerOnScreen(JGameObject* gObj); 
+			void ObjectExplorerOnScreen(JGameObject* gObj, const bool isAcivatedSearch);  
 		private:
-			void SelectedGameObject(JGameObject* newObject);
+			void CreateGameObject();
 		private:
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;

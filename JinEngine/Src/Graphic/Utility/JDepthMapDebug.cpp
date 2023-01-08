@@ -44,7 +44,7 @@ namespace JinEngine
 			commandList->SetComputeRoot32BitConstants(2, 1, &size.y, 1);
 			commandList->SetComputeRoot32BitConstants(2, 1, &camNear, 2);
 			commandList->SetComputeRoot32BitConstants(2, 1, &camFar, 3);
-			commandList->SetPipelineState(linearDepthMapShaderData->Pso.Get());
+			commandList->SetPipelineState(linearDepthMapShaderData->pso.Get());
 
 			commandList->Dispatch(1, 512, 1);
 		} 	 
@@ -69,7 +69,7 @@ namespace JinEngine
 			commandList->SetComputeRoot32BitConstants(2, 1, &size.y, 1);
 			commandList->SetComputeRoot32BitConstants(2, 1, &camNear, 2);
 			commandList->SetComputeRoot32BitConstants(2, 1, &camFar, 3);
-			commandList->SetPipelineState(nonLinearDepthMapShaderData->Pso.Get());
+			commandList->SetPipelineState(nonLinearDepthMapShaderData->pso.Get());
 
 			commandList->Dispatch(1, 512, 1);
 		}
@@ -125,27 +125,27 @@ namespace JinEngine
 			std::wstring computeShaderPath = JApplicationVariable::GetShaderPath() + L"\\DepthMapDebug.hlsl";
 
 			linearDepthMapShaderData = std::make_unique<JComputeShaderData>();
-			linearDepthMapShaderData->Cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "LinearMap", "cs_5_1");
+			linearDepthMapShaderData->cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "LinearMap", "cs_5_1");
 
 			nonLinearDepthMapShaderData = std::make_unique<JComputeShaderData>();
-			nonLinearDepthMapShaderData->Cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "NonLinearMap", "cs_5_1");
+			nonLinearDepthMapShaderData->cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "NonLinearMap", "cs_5_1");
 
 			D3D12_COMPUTE_PIPELINE_STATE_DESC newShaderPso;
 			ZeroMemory(&newShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
 			newShaderPso.pRootSignature = cRootSignature.Get();
 			newShaderPso.CS =
 			{
-				reinterpret_cast<BYTE*>(linearDepthMapShaderData->Cs->GetBufferPointer()),
-				linearDepthMapShaderData->Cs->GetBufferSize()
+				reinterpret_cast<BYTE*>(linearDepthMapShaderData->cs->GetBufferPointer()),
+				linearDepthMapShaderData->cs->GetBufferSize()
 			};
-			ThrowIfFailedG(device->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(linearDepthMapShaderData->Pso.GetAddressOf())));
+			ThrowIfFailedG(device->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(linearDepthMapShaderData->pso.GetAddressOf())));
 
 			newShaderPso.CS =
 			{
-				reinterpret_cast<BYTE*>(nonLinearDepthMapShaderData->Cs->GetBufferPointer()),
-				nonLinearDepthMapShaderData->Cs->GetBufferSize()
+				reinterpret_cast<BYTE*>(nonLinearDepthMapShaderData->cs->GetBufferPointer()),
+				nonLinearDepthMapShaderData->cs->GetBufferSize()
 			};
-			ThrowIfFailedG(device->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(nonLinearDepthMapShaderData->Pso.GetAddressOf())));
+			ThrowIfFailedG(device->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(nonLinearDepthMapShaderData->pso.GetAddressOf())));
 		}
 	}
 }

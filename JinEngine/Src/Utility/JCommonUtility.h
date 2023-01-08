@@ -46,9 +46,15 @@ namespace JinEngine
 
 		static bool IsNumber(const char ch)noexcept;
 		static bool IsNumber(const wchar_t ch)noexcept;
+		static bool IsAlphabet(const char ch)noexcept;
+		static bool IsAlphabet(const wchar_t ch)noexcept;
+		//Classify case-sensitive
+		static bool IsSameAlphabet(const char src, const char tar)noexcept;
+		static bool IsSameAlphabet(const wchar_t src, const wchar_t tar)noexcept;
 
-		static bool Contain(const std::wstring& source, const std::wstring& target)noexcept;
-		static bool Contain(const std::string& source, const std::string& target)noexcept;
+		static bool Contain(const std::wstring& source, const std::wstring& target, const bool caseSensitive = true)noexcept;
+		static bool Contain(const std::string& source, const std::string& target, const bool caseSensitive = true)noexcept;
+ 
 		static void DecomposeFolderPath(const std::wstring& path, std::wstring& folderPath, std::wstring& name)noexcept;
 		static void DecomposeFilePath(const std::wstring& path, std::wstring& folderPath, std::wstring& name, std::wstring& format, bool eraseFolderPathBackSlash = false)noexcept;
 		static void DecomposeFileName(const std::wstring& oriname, std::wstring& name, std::wstring& format);
@@ -200,8 +206,7 @@ namespace JinEngine
 			out.precision(n);
 			out << std::fixed << value;
 			return out.str();
-		}
-		 
+		}	 
 		template<typename Type>
 		static int GetJIdenIndex(std::vector<Type*>& vec, const size_t guid, size_t(Type::*ptr)()const)
 		{
@@ -212,8 +217,7 @@ namespace JinEngine
 					return i;
 			}
 			return searchFail;
-		}
-	 
+		}	 
 		template<typename Type>
 		static int GetJIdenIndex(std::vector<std::unique_ptr<Type>>& vec, const size_t guid, size_t(Type::* ptr)()const)
 		{
@@ -224,8 +228,7 @@ namespace JinEngine
 					return i;
 			}
 			return searchFail;
-		}
-		 
+		}	 
 		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Type>, int> = 0>
 		static int GetJIdenIndex(const std::vector<Type*>& vec, const size_t guid)
 		{
@@ -237,7 +240,6 @@ namespace JinEngine
 			}
 			return searchFail;
 		} 
-
 		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Type>, int> = 0>
 		static int GetJIdenIndex(const std::vector<std::unique_ptr<Type>>& vec, const size_t guid)
 		{
@@ -249,7 +251,6 @@ namespace JinEngine
 			}
 			return searchFail;
 		}
-		 
 		template<typename Type, typename ...Param>
 		static int GetJIndex(const std::vector<Type*>& vec, bool(*ptr)(Type*, Param...), Param... var)
 		{
@@ -261,6 +262,7 @@ namespace JinEngine
 			}
 			return searchFail;
 		}
+ 
 	};
 
 	using JCUtil = JCommonUtility;

@@ -53,22 +53,46 @@
 #include<DirectXColors.h>
 #include<functional>
 
+//#define DEBUG 
+
 namespace JinEngine
 {
 	using namespace DirectX;
 	namespace Graphic
 	{
-		JGraphicImpl::DrawCondition::DrawCondition(const bool isDrawShadowMap,
-			const bool isAnimationActivated,
-			const bool allowOcclusion,
-			const bool allowOutline)
-			:isDrawShadowMap(isDrawShadowMap),
-			isAnimationActivated(isAnimationActivated),
-			allowOcclusion(allowOcclusion),
-			allowOutline(allowOutline)
+		struct DrawCondition
 		{
-
-		}
+		public:
+			//Draw 
+			bool allowAnimation = false;
+		public:
+			//Culling
+			bool allowFrustumCulling = false;
+			bool allowHZBOcclusionCulling = false;
+			bool allowHDOcclusionCulling = false;
+		public:
+			//Outline
+			bool allowDebugOutline = false;
+		public:
+			DrawCondition() = default;
+			DrawCondition(const JGraphicOption& option,
+				const JGraphicDrawHelper& helper,
+				const bool newAllowAnimation,
+				const bool newAllowOcclusionCulling,
+				const bool newAllowDebugOutline)
+				:allowAnimation(allowAnimation)
+			{
+				allowAnimation = newAllowAnimation;
+				allowFrustumCulling = helper.allowCulling;
+				allowHZBOcclusionCulling = newAllowOcclusionCulling &&
+					helper.allowCulling &&
+					option.isOcclusionQueryActivated && option.isHZBOcclusionActivated;
+				allowHDOcclusionCulling = newAllowOcclusionCulling &&
+					helper.allowCulling &&
+					option.isOcclusionQueryActivated && option.isHDOcclusionAcitvated; 
+				allowDebugOutline = newAllowDebugOutline && helper.allowDrawDebug && option.allowDebugOutline;
+			}
+		};
 		JGraphicInfo JGraphicImpl::GetGraphicInfo()const noexcept
 		{
 			return info;
@@ -150,7 +174,7 @@ namespace JinEngine
 				return graphicResource->GetCpuSrvDescriptorHandle(index);
 			default:
 				return CD3DX12_CPU_DESCRIPTOR_HANDLE();
-			}	 
+			}
 		}
 		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicImpl::GetGpuDescriptorHandle(const J_GRAPHIC_BIND_TYPE bType, int index)const noexcept
 		{
@@ -258,65 +282,73 @@ namespace JinEngine
 		}
 		void JGraphicImpl::StuffGraphicShaderPso(JGraphicShaderData* shaderData,
 			const J_SHADER_VERTEX_LAYOUT vertexLayout,
-			const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, 
-			const JShaderGraphicSubPSO& subPso)
+			const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
+			const JShaderGraphicPsoCondition& psoCondition,
+			const J_GRAPHIC_EXTRA_PSO_TYPE extraType)
 		{
 			FlushCommandQueue();
-			StartCommand(); 
+			StartCommand();
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC newShaderPso;
 			ZeroMemory(&newShaderPso, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-			newShaderPso.InputLayout = { shaderData->InputLayout.data(), (uint)shaderData->InputLayout.size() };
+			newShaderPso.InputLayout = { shaderData->inputLayout.data(), (uint)shaderData->inputLayout.size() };
 			newShaderPso.pRootSignature = mRootSignature.Get();
 			newShaderPso.VS =
 			{
-				reinterpret_cast<BYTE*>(shaderData->Vs->GetBufferPointer()),
-				shaderData->Vs->GetBufferSize()
+				reinterpret_cast<BYTE*>(shaderData->vs->GetBufferPointer()),
+				shaderData->vs->GetBufferSize()
 			};
 			if ((gFunctionFlag & SHADER_FUNCTION_WRITE_SHADOWMAP) == 0 && (gFunctionFlag & SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT) == 0)
 			{
 				newShaderPso.PS =
 				{
-					reinterpret_cast<BYTE*>(shaderData->Ps->GetBufferPointer()),
-					shaderData->Ps->GetBufferSize()
+					reinterpret_cast<BYTE*>(shaderData->ps->GetBufferPointer()),
+					shaderData->ps->GetBufferSize()
 				};
 			}
-			if (shaderData->Hs != nullptr)
+			if (shaderData->hs != nullptr)
 			{
 				newShaderPso.HS =
 				{
-					reinterpret_cast<BYTE*>(shaderData->Hs->GetBufferPointer()),
-					shaderData->Hs->GetBufferSize()
+					reinterpret_cast<BYTE*>(shaderData->hs->GetBufferPointer()),
+					shaderData->hs->GetBufferSize()
 				};
 			}
-			if (shaderData->Ds != nullptr)
+			if (shaderData->ds != nullptr)
 			{
 				newShaderPso.DS =
 				{
-					reinterpret_cast<BYTE*>(shaderData->Ds->GetBufferPointer()),
-					shaderData->Ds->GetBufferSize()
+					reinterpret_cast<BYTE*>(shaderData->ds->GetBufferPointer()),
+					shaderData->ds->GetBufferSize()
 				};
 			}
-			if (shaderData->Gs != nullptr)
+			if (shaderData->gs != nullptr)
 			{
 				newShaderPso.GS =
 				{
-					reinterpret_cast<BYTE*>(shaderData->Gs->GetBufferPointer()),
-					shaderData->Gs->GetBufferSize()
+					reinterpret_cast<BYTE*>(shaderData->gs->GetBufferPointer()),
+					shaderData->gs->GetBufferSize()
 				};
 			}
 
 			newShaderPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-			newShaderPso.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT); 
-			newShaderPso.DepthStencilState.StencilEnable = true; 
-			newShaderPso.DepthStencilState.FrontFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
-			newShaderPso.DepthStencilState.BackFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
-			
+			newShaderPso.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+			if (extraType == J_GRAPHIC_EXTRA_PSO_TYPE::STENCIL_WRITE_ALWAYS)
+			{
+				newShaderPso.DepthStencilState.StencilEnable = true;
+				newShaderPso.DepthStencilState.FrontFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+				newShaderPso.DepthStencilState.FrontFace.StencilFailOp = D3D12_STENCIL_OP_REPLACE;
+				newShaderPso.DepthStencilState.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_REPLACE;
+				newShaderPso.DepthStencilState.BackFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+				newShaderPso.DepthStencilState.BackFace.StencilFailOp = D3D12_STENCIL_OP_REPLACE;
+				newShaderPso.DepthStencilState.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_REPLACE;
+			}
+
 			if ((gFunctionFlag & SHADER_FUNCTION_SKY) > 0)
-			{ 
-				newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; 
+			{
+				newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 				//newShaderPso.DepthStencilState.StencilWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO; 
-				newShaderPso.DepthStencilState.StencilEnable = false; 
-			} 
+				newShaderPso.DepthStencilState.StencilEnable = false;
+			}
 
 			newShaderPso.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 			newShaderPso.SampleMask = UINT_MAX;
@@ -325,8 +357,8 @@ namespace JinEngine
 			newShaderPso.RTVFormats[0] = graphicResource->GetBackBufferFormat();
 			newShaderPso.SampleDesc.Count = m4xMsaaState ? 4 : 1;
 			newShaderPso.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
-			newShaderPso.DSVFormat = graphicResource->GetDepthStencilFormat();
-			 
+			newShaderPso.DSVFormat = graphicResource->GetDepthStencilFormat(); 
+
 			if ((gFunctionFlag & SHADER_FUNCTION_WRITE_SHADOWMAP) > 0)
 			{
 				newShaderPso.DepthStencilState.StencilEnable = false;
@@ -344,23 +376,30 @@ namespace JinEngine
 				newShaderPso.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
 				newShaderPso.NumRenderTargets = 0;
 				newShaderPso.SampleDesc.Count = 1;
-				newShaderPso.SampleDesc.Quality = 0; 
+				newShaderPso.SampleDesc.Quality = 0;
 			}
 			if ((gFunctionFlag & SHADER_FUNCTION_DEBUG) > 0)
-			{ 
+			{
 				//newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-				newShaderPso.DepthStencilState.StencilEnable = false;  
-			} 
+				newShaderPso.DepthStencilState.StencilEnable = false;
+			}
 
-			if (subPso.primitiveCondition == J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO)
-				newShaderPso.PrimitiveTopologyType = subPso.ConvertD3d12PrimitiveType();
-			if (subPso.depthCompareCondition == J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO)
-				newShaderPso.DepthStencilState.DepthFunc = subPso.ConvertD3d12Comparesion();
-			if (subPso.cullModeCondition == J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO)
-				newShaderPso.RasterizerState.CullMode = subPso.ConvertD3d12CullMode(); 
+			if (psoCondition.primitiveCondition == J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO)
+				newShaderPso.PrimitiveTopologyType = psoCondition.ConvertD3d12PrimitiveType();
+			if (psoCondition.depthCompareCondition == J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO)
+				newShaderPso.DepthStencilState.DepthFunc = psoCondition.ConvertD3d12Comparesion();
+			if (psoCondition.cullModeCondition == J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO)
+				newShaderPso.RasterizerState.CullMode = psoCondition.ConvertD3d12CullMode();
 
-			ThrowIfFailedG(d3dDevice->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(shaderData->Pso.GetAddressOf())));
-
+			if (extraType == J_GRAPHIC_EXTRA_PSO_TYPE::NONE)
+			{
+				ThrowIfFailedG(d3dDevice->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(shaderData->pso.GetAddressOf())));
+			}
+			else if (extraType == J_GRAPHIC_EXTRA_PSO_TYPE::STENCIL_WRITE_ALWAYS)
+			{
+				ThrowIfFailedG(d3dDevice->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(shaderData->extraPso[(int)extraType].GetAddressOf())));
+			}
+		
 			EndCommand();
 			FlushCommandQueue();
 		}
@@ -379,11 +418,11 @@ namespace JinEngine
 			shaderData->RootSignature = newShaderPso.pRootSignature;
 			newShaderPso.CS =
 			{
-				reinterpret_cast<BYTE*>(shaderData->Cs->GetBufferPointer()),
-				shaderData->Cs->GetBufferSize()
+				reinterpret_cast<BYTE*>(shaderData->cs->GetBufferPointer()),
+				shaderData->cs->GetBufferSize()
 			};
-			newShaderPso.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-			ThrowIfFailedG(d3dDevice->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(shaderData->Pso.GetAddressOf())));
+			newShaderPso.Flags = D3D12_PIPELINE_STATE_FLAG_NONE; 
+			ThrowIfFailedG(d3dDevice->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(shaderData->pso.GetAddressOf())));
 
 			EndCommand();
 			FlushCommandQueue();
@@ -442,7 +481,7 @@ namespace JinEngine
 		{
 			ID3D12DescriptorHeap* srvHeap = graphicResource->GetDescriptorHeap(J_GRAPHIC_BIND_TYPE::SRV);
 			ImGui_ImplDX12_Init(d3dDevice.Get(), Constants::gNumFrameResources,
-				DXGI_FORMAT_R8G8B8A8_UNORM, 
+				graphicResource->GetBackBufferFormat(),
 				srvHeap,
 				srvHeap->GetCPUDescriptorHandleForHeapStart(),
 				srvHeap->GetGPUDescriptorHandleForHeapStart());
@@ -526,20 +565,21 @@ namespace JinEngine
 		void JGraphicImpl::EndFrame()
 		{
 			ImGui::Render();
-			 
+
 			ID3D12Resource* mainDepthResource = graphicResource->GetResource(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL, 0);
+			JGraphicResourceHandle* mainDepthHandle = graphicResource->GetHandle(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL, 0);;
 
 			ResourceTransition(mainDepthResource, D3D12_RESOURCE_STATE_DEPTH_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			ResourceTransition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 			D3D12_CPU_DESCRIPTOR_HANDLE rtv = CurrentBackBufferView();
-			D3D12_CPU_DESCRIPTOR_HANDLE dsv = graphicResource->GetCpuDsvDescriptorHandle(0);
-			commandList->ClearRenderTargetView(rtv, Colors::DimGray, 0, nullptr);
-			commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-			commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
+			D3D12_CPU_DESCRIPTOR_HANDLE dsv = graphicResource->GetCpuDsvDescriptorHandle(mainDepthHandle->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::DSV));
+
+			commandList->ClearRenderTargetView(rtv, graphicResource->GetBackBufferClearColor(), 0, nullptr);
+			commandList->OMSetRenderTargets(1, &rtv, true, nullptr);
 
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
 
-			ResourceTransition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);		 
+			ResourceTransition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 			ResourceTransition(mainDepthResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
 			ThrowIfFailedG(commandList->Close());
 			ID3D12CommandList* cmdsLists[] = { commandList.Get() };
@@ -554,7 +594,7 @@ namespace JinEngine
 
 			// Swap the back and front buffers
 			ThrowIfFailedG(swapChain->Present(0, 0));
-			currBackBuffer = (currBackBuffer + 1) % graphicResource->GetResourceCount(J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN);
+			currBackBuffer = (currBackBuffer + 1) % graphicResource->GetResourceCapacity(J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN);
 			// Advance the fence value to mark commands up to this fence point.
 			currFrameResource->fence = ++currentFence;
 
@@ -705,7 +745,7 @@ namespace JinEngine
 				{
 					if (isDirted)
 					{
-						JRenderItem::IFrameBase1* rFrameBase1 = renderItem; 
+						JRenderItem::IFrameBase1* rFrameBase1 = renderItem;
 						rFrameBase1->UpdateFrame(objectConstants, j);
 						currObjectCB->CopyData(meshOffset + CallGetFirstFrameBuffOffset(*renderItem) + j, objectConstants);
 						++updateCount;
@@ -856,7 +896,7 @@ namespace JinEngine
 					lFrameDirty->SetFrameDirty();
 
 				if (lFrameDirty->IsFrameDirted())
-				{ 
+				{
 					if (onShadow)
 					{
 						JLight::IFrameBase2* lFrameBase2 = light;
@@ -896,37 +936,46 @@ namespace JinEngine
 		}
 		void JGraphicImpl::DrawScene()
 		{
+			auto setGraphicResource = [](JGraphicImpl* g)
+			{
+				g->commandList->SetGraphicsRootSignature(g->mRootSignature.Get());
+
+				g->commandList->SetGraphicsRootShaderResourceView(7, g->currFrameResource->lightBuffer->Resource()->GetGPUVirtualAddress());
+				g->commandList->SetGraphicsRootShaderResourceView(8, g->currFrameResource->smLightBuffer->Resource()->GetGPUVirtualAddress());
+				g->commandList->SetGraphicsRootShaderResourceView(9, g->currFrameResource->materialBuffer->Resource()->GetGPUVirtualAddress());
+
+				g->commandList->SetGraphicsRootDescriptorTable(10, g->graphicResource->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE));
+				g->commandList->SetGraphicsRootDescriptorTable(11, g->graphicResource->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D));
+				g->commandList->SetGraphicsRootDescriptorTable(12, g->graphicResource->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP));
+			};
+
 			auto cmdListAlloc = currFrameResource->cmdListAlloc;
 			ThrowIfFailedHr(cmdListAlloc->Reset());
 			ThrowIfFailedHr(commandList->Reset(cmdListAlloc.Get(), nullptr));
 
-			commandList->SetGraphicsRootSignature(mRootSignature.Get());
 			//Test Code
 			commandList->OMSetStencilRef(Constants::commonStencilRef);
-
 			ID3D12DescriptorHeap* descriptorHeaps[] = { graphicResource->GetDescriptorHeap(J_GRAPHIC_BIND_TYPE::SRV) };
 			commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 			commandList->RSSetViewports(1, &screenViewport);
 			commandList->RSSetScissorRects(1, &scissorRect);
 
-			commandList->SetGraphicsRootShaderResourceView(7, currFrameResource->lightBuffer->Resource()->GetGPUVirtualAddress());		 
-			commandList->SetGraphicsRootShaderResourceView(8, currFrameResource->smLightBuffer->Resource()->GetGPUVirtualAddress());
-			commandList->SetGraphicsRootShaderResourceView(9, currFrameResource->materialBuffer->Resource()->GetGPUVirtualAddress());
-			 
-			commandList->SetGraphicsRootDescriptorTable(10, graphicResource->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE));
-			commandList->SetGraphicsRootDescriptorTable(11, graphicResource->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D));
-			commandList->SetGraphicsRootDescriptorTable(12, graphicResource->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP));
-
 			//수정필요
 			//Shadow Map Draw
 			//Update가 있는 광원만 추적해서 Draw
 			//광원내에 있는 오브젝트 검색을 위한 공간분할 및 검색 필요
-			 
+
+			bool hasToSetGResource = true;
 			const uint drawListCount = JGraphicDrawList::GetListCount();
 			std::vector<JGraphicDrawHelper> occlusionCash;
 			JGraphicDrawHelper helper;
 			for (uint i = 0; i < drawListCount; ++i)
 			{
+				if (hasToSetGResource)
+				{
+					setGraphicResource(this);
+					hasToSetGResource = false;
+				}
 				JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
 				if (drawTarget->updateInfo->hasShadowUpdate)
 				{
@@ -945,16 +994,25 @@ namespace JinEngine
 				{
 					const uint sceneReqCount = (uint)drawTarget->sceneRequestor.size();
 					for (uint j = 0; j < sceneReqCount; ++j)
-					{ 
+					{
+						if (hasToSetGResource)
+						{
+							setGraphicResource(this);
+							hasToSetGResource = false;
+						}
+
 						JGraphicDrawHelper copiedHelper = helper;
 						copiedHelper.scene = drawTarget->scene;
 						copiedHelper.cam = static_cast<JCamera*>(drawTarget->sceneRequestor[j]->jCamera);
 						copiedHelper.camOffset += j;
 
-						const bool isMainTarget = copiedHelper.scene->IsMainScene() && copiedHelper.cam->IsMainCamera();
-						const bool isEditorTarget = copiedHelper.scene->IsMainScene() && copiedHelper.cam->GetOwner()->GetFlag() == OBJECT_FLAG_UNIQUE_EDITOR_OBJECT;
+						const bool isEditorCamera = copiedHelper.cam->GetOwner()->GetFlag() == OBJECT_FLAG_UNIQUE_EDITOR_OBJECT || 
+							copiedHelper.cam->GetOwner()->GetFlag() == OBJECT_FLAG_EDITOR_OBJECT;
+						const bool isMainTarget = copiedHelper.scene->IsMainScene() && copiedHelper.cam->IsMainCamera() && !isEditorCamera;
+						const bool isEditorTarget = copiedHelper.scene->IsMainScene() && isEditorCamera;
+						const bool isOcclusionActivated = option.IsHDOccActivated() || option.IsHZBOccActivated();
 						const bool canCullingStart = occBase != nullptr && occBase->CanCullingStart();
-
+					 
 						if (isEditorTarget)
 						{
 							copiedHelper.allowDrawDebug = true;
@@ -962,27 +1020,29 @@ namespace JinEngine
 						}
 
 						DrawSceneRenderTarget(copiedHelper);
-						if (isMainTarget && canCullingStart)
+						if (isMainTarget && canCullingStart && isOcclusionActivated)
 							occlusionCash.push_back(copiedHelper);
 
-						if (isEditorTarget && option.allowOutline)
+						if (isEditorTarget && option.allowDebugOutline)
 						{
-							JGraphicResourceHandle* mainDepthHandle = graphicResource->GetHandle(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL, 0);
+							JGraphicResourceHandle* editorDepthHandle = graphicResource->GetHandle(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL, 0);
 							outlineHelper->DrawOutline(commandList.Get(),
-								graphicResource->GetGpuSrvDescriptorHandle(mainDepthHandle->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
-								graphicResource->GetGpuSrvDescriptorHandle(mainDepthHandle->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV) + 1));
+								graphicResource->GetGpuSrvDescriptorHandle(editorDepthHandle->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
+								graphicResource->GetGpuSrvDescriptorHandle(editorDepthHandle->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV) + 1));
+							hasToSetGResource = true;
 						}
 						if (isMainTarget)
 						{
 							JGraphicResourceHandle* mainDepthHandle = graphicResource->GetHandle(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL, 0);
 							JGraphicResourceHandle* mainDepthDebugHandle = graphicResource->GetHandle(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG, 0);
-	
+
 							depthMapDebug->DrawNonLinearDepthDebug(commandList.Get(),
 								graphicResource->GetGpuSrvDescriptorHandle(mainDepthHandle->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
 								graphicResource->GetGpuSrvDescriptorHandle(mainDepthDebugHandle->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::UAV)),
 								JVector2<uint>(info.width, info.height),
 								copiedHelper.cam->GetNear(),
 								copiedHelper.cam->GetFar());
+							hasToSetGResource = true;
 						}
 					}
 				}
@@ -995,6 +1055,8 @@ namespace JinEngine
 				helper.shadowOffset += (uint)drawTarget->shadowRequestor.size();
 			}
 			const uint occlusionCount = (uint)occlusionCash.size();
+			if(occlusionCount > 0)
+				setGraphicResource(this);
 			for (uint i = 0; i < occlusionCount; ++i)
 				DrawOcclusionDepthMap(occlusionCash[i]);
 		}
@@ -1019,33 +1081,52 @@ namespace JinEngine
 			commandList->RSSetViewports(1, &screenViewport);
 			commandList->RSSetScissorRects(1, &scissorRect);
 
-			ID3D12Resource* mainDepthResource = graphicResource->GetResource(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL, 0);
-			JGraphicResourceHandle* mainDepthHandle = graphicResource->GetHandle(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL, 0);
+			ID3D12Resource* dsResource = graphicResource->GetResource(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL, 0);
+			JGraphicResourceHandle* dsHandle = graphicResource->GetHandle(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL, 0);
 
-			ResourceTransition(mainDepthResource, D3D12_RESOURCE_STATE_DEPTH_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			ID3D12Resource* rtResource = graphicResource->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtvVecIndex);
+			JGraphicResourceHandle* rtHandle = graphicResource->GetHandle(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtvVecIndex);
+
+			ResourceTransition(dsResource, D3D12_RESOURCE_STATE_DEPTH_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			ResourceTransition(rtResource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv = graphicResource->GetCpuRtvDescriptorHandle(rtvHeapIndex);
-			CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = graphicResource->GetCpuDsvDescriptorHandle(mainDepthHandle->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::DSV));
+			CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = graphicResource->GetCpuDsvDescriptorHandle(dsHandle->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::DSV));
 
-			commandList->ClearRenderTargetView(rtv, Colors::DarkGray, 0, nullptr);
+			commandList->ClearRenderTargetView(rtv, graphicResource->GetBackBufferClearColor(), 0, nullptr);
 			commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 			commandList->OMSetRenderTargets(1, &rtv, true, &dsv);
 
 			currFrameResource->passCB->SetGraphicCBBufferView(commandList.Get(), 2, helper.passOffset);
 			currFrameResource->cameraCB->SetGraphicCBBufferView(commandList.Get(), 3, helper.camOffset);
 			currFrameResource->lightIndexCB->SetGraphicCBBufferView(commandList.Get(), 4, helper.litIndexOffset);
-			 
-			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC), helper, DrawCondition(false, false, true, true));
-			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED), helper, DrawCondition(false, helper.scene->IsAnimatorActivated(), true, true));
+
+			JSceneCashInterface* iCash = helper.scene->CashInterface();
+			const std::vector<JGameObject*>& objVec00 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JGameObject*>& objVec01 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
+			const std::vector<JGameObject*>& objVec02 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::SKY, J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JGameObject*>& objVec03 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::DEBUG, J_MESHGEOMETRY_TYPE::STATIC);
+
+			DrawGameObject(commandList.Get(), objVec00, helper, DrawCondition(option, helper, false, true, helper.allowDrawDebug));
+			DrawGameObject(commandList.Get(), objVec01, helper, DrawCondition(option, helper, helper.scene->IsAnimatorActivated(), true, helper.allowDrawDebug));
 			if (option.IsHDOccActivated())
 				commandList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
-			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::SKY, J_MESHGEOMETRY_TYPE::STATIC), helper);
+			DrawGameObject(commandList.Get(), objVec02, helper, DrawCondition());
 			if (helper.allowDrawDebug)
 			{
-				commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-				DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_LAYER, J_MESHGEOMETRY_TYPE::STATIC), helper);
+				ID3D12Resource* editorResource = graphicResource->GetResource(J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL, 0);
+				JGraphicResourceHandle* editorDepthHandle = graphicResource->GetHandle(J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL, 0);
+
+				CD3DX12_CPU_DESCRIPTOR_HANDLE editorDsv = graphicResource->GetCpuDsvDescriptorHandle(editorDepthHandle->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::DSV));
+				ResourceTransition(editorResource, D3D12_RESOURCE_STATE_DEPTH_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+				commandList->ClearDepthStencilView(editorDsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+				commandList->OMSetRenderTargets(1, &rtv, true, &editorDsv);
+				DrawGameObject(commandList.Get(), objVec03, helper, DrawCondition());
+				ResourceTransition(editorResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
 			}
-			ResourceTransition(mainDepthResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
+		 
+			ResourceTransition(rtResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
+			ResourceTransition(dsResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
 		}
 		void JGraphicImpl::DrawSceneShadowMap(const JGraphicDrawHelper helper)
 		{
@@ -1062,7 +1143,7 @@ namespace JinEngine
 
 			ID3D12Resource* shdowMapResource = graphicResource->GetResource(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, rVecIndex);
 			ResourceTransition(shdowMapResource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-			
+
 			D3D12_CPU_DESCRIPTOR_HANDLE dsv = graphicResource->GetCpuDsvDescriptorHandle(dsvHeapIndex);
 			commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 			commandList->OMSetRenderTargets(0, nullptr, false, &dsv);
@@ -1070,8 +1151,12 @@ namespace JinEngine
 			currFrameResource->passCB->SetGraphicCBBufferView(commandList.Get(), 2, helper.passOffset);
 			currFrameResource->shadowCalCB->SetGraphicCBBufferView(commandList.Get(), 5, helper.shadowOffset);
 
-			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC), helper, DrawCondition(true, false, false, false));
-			DrawGameObject(commandList.Get(), helper.scene->CashInterface()->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED), helper, DrawCondition(true, helper.scene->IsAnimatorActivated(), false, false));
+			JSceneCashInterface* iCash = helper.scene->CashInterface();
+			const std::vector<JGameObject*>& objVec00 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JGameObject*>& objVec01 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
+
+			DrawShadowMapGameObject(commandList.Get(), objVec00, helper, DrawCondition(option, helper, false, false, false));
+			DrawShadowMapGameObject(commandList.Get(), objVec01, helper, DrawCondition(option, helper, helper.scene->IsAnimatorActivated(), false, false));
 
 			ResourceTransition(shdowMapResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ);
 		}
@@ -1094,10 +1179,10 @@ namespace JinEngine
 			commandList->OMSetRenderTargets(0, nullptr, false, &dsv);
 
 			currFrameResource->cameraCB->SetGraphicCBBufferView(commandList.Get(), 3, helper.camOffset);
-			DrawSceneBoundingBox(commandList.Get(), 
+			DrawSceneBoundingBox(commandList.Get(),
 				helper.scene->SpaceSpatialInterface()->GetAlignedObject(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, helper.scene->GetMainCamera()->GetBoundingFrustum()),
-				helper, DrawCondition(false, helper.scene->IsAnimatorActivated(), false ,false));
- 
+				helper, DrawCondition(option, helper, false, true, false));
+
 			ResourceTransition(occDepthMap, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
 
 			if (option.IsHZBOccActivated())
@@ -1117,7 +1202,7 @@ namespace JinEngine
 					JVector2<uint> occlusionSize = JVector2<uint>(info.occlusionWidth, info.occlusionHeight);
 					const float camNear = helper.cam->GetNear();
 					const float camFar = helper.cam->GetFar();
-					 
+
 					//Debug and mipmap viwe count is same
 					JGraphicResourceHandle* occDebugHandle = graphicResource->GetHandle(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP, 0);
 					const uint viewCount = occDebugHandle->GetViewCount(J_GRAPHIC_BIND_TYPE::SRV);
@@ -1145,13 +1230,75 @@ namespace JinEngine
 		void JGraphicImpl::DrawGameObject(ID3D12GraphicsCommandList* commandList,
 			const std::vector<JGameObject*>& gameObject,
 			const JGraphicDrawHelper helper,
-			const DrawCondition condition)
+			const DrawCondition& condition)
 		{
-			const bool isOcclusionActivated = helper.allowCulling && 
-				condition.allowOcclusion && 
-				option.isOcclusionQueryActivated;
+			uint objectCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JObjectConstants));
+			uint skinCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JAnimationConstants));
 
+			auto objectCB = currFrameResource->objectCB->Resource();
+			auto skinCB = currFrameResource->skinnedCB->Resource();
+			const uint gameObjCount = (uint)gameObject.size();
+
+			for (uint i = 0; i < gameObjCount; ++i)
+			{
+				JRenderItem* renderItem = gameObject[i]->GetRenderItem();
+				if (condition.allowFrustumCulling && !renderItem->IsVisible())
+					continue;
+
+				const uint finalObjRitemOffset = helper.objectRitemOffset + CallGetSecondFrameBuffOffset(*renderItem);
+				if (condition.allowHZBOcclusionCulling && hzbOccHelper->IsCulled(finalObjRitemOffset))
+					continue;
+
+				JMeshGeometry* mesh = renderItem->GetMesh();
+				const D3D12_VERTEX_BUFFER_VIEW vertexPtr = mesh->VertexBufferView();
+				const D3D12_INDEX_BUFFER_VIEW indexPtr = mesh->IndexBufferView();
+
+				commandList->IASetVertexBuffers(0, 1, &vertexPtr);
+				commandList->IASetIndexBuffer(&indexPtr);
+				commandList->IASetPrimitiveTopology(renderItem->GetPrimitiveType());
+
+				const JAnimator* animator = gameObject[i]->GetComponentWithParent<JAnimator>();
+				const uint submeshCount = (uint)mesh->GetTotalSubmeshCount();
+
+				if (condition.allowDebugOutline && gameObject[i]->IsSelectedbyEditor())
+					commandList->OMSetStencilRef(2); 
+				
+				for (uint j = 0; j < submeshCount; ++j)
+				{ 
+					const JShader* shader = renderItem->GetValidMaterial(j)->GetShader(); 
+					const bool onSkinned = animator != nullptr && condition.allowAnimation;
+					const J_MESHGEOMETRY_TYPE meshType = onSkinned ? J_MESHGEOMETRY_TYPE::SKINNED : J_MESHGEOMETRY_TYPE::STATIC;
+					const J_SHADER_VERTEX_LAYOUT shaderLayout = JShaderType::ConvertToVertexLayout(meshType);
+
+					if (condition.allowDebugOutline && gameObject[i]->IsSelectedbyEditor())
+						commandList->SetPipelineState(shader->GetGraphicExtraPso(shaderLayout, J_GRAPHIC_EXTRA_PSO_TYPE::STENCIL_WRITE_ALWAYS));
+					else
+						commandList->SetPipelineState(shader->GetGraphicPso(shaderLayout));
+
+					const uint finalObjMeshOffset = (helper.objectMeshOffset + CallGetFirstFrameBuffOffset(*renderItem) + j);
+					D3D12_GPU_VIRTUAL_ADDRESS objectCBAddress = objectCB->GetGPUVirtualAddress() + finalObjMeshOffset * objectCBByteSize;
+					commandList->SetGraphicsRootConstantBufferView(0, objectCBAddress);
+					if (onSkinned)
+					{
+						D3D12_GPU_VIRTUAL_ADDRESS skinObjCBAddress = skinCB->GetGPUVirtualAddress() + (helper.aniOffset + i) * skinCBByteSize;
+						commandList->SetGraphicsRootConstantBufferView(1, skinObjCBAddress);
+					}
+					if (condition.allowHDOcclusionCulling)
+						commandList->SetPredication(graphicResource->GetOcclusionQueryResult(), finalObjMeshOffset * 8, D3D12_PREDICATION_OP_EQUAL_ZERO);
+
+					commandList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(j), 1, mesh->GetSubmeshStartIndexLocation(j), mesh->GetSubmeshBaseVertexLocation(j), 0);
+				}
+				if (condition.allowDebugOutline && gameObject[i]->IsSelectedbyEditor())
+					commandList->OMSetStencilRef(Constants::commonStencilRef);
+			}
+		}
+		void JGraphicImpl::DrawShadowMapGameObject(ID3D12GraphicsCommandList* cmdList,
+			const std::vector<JGameObject*>& gameObject,
+			const JGraphicDrawHelper helper,
+			const DrawCondition& condition)
+		{
 			JShader* shadowShader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SHADOW_MAP_SHADER);
+			commandList->SetPipelineState(shadowShader->GetGraphicPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::SKINNED)));
 
 			uint objectCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JObjectConstants));
 			uint skinCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JAnimationConstants));
@@ -1163,11 +1310,11 @@ namespace JinEngine
 			for (uint i = 0; i < gameObjCount; ++i)
 			{
 				JRenderItem* renderItem = gameObject[i]->GetRenderItem();
-				if (helper.allowCulling && !renderItem->IsVisible())
+				if (condition.allowFrustumCulling && !renderItem->IsVisible())
 					continue;
 
 				const uint finalObjRitemOffset = helper.objectRitemOffset + CallGetSecondFrameBuffOffset(*renderItem);
-				if (isOcclusionActivated && option.IsHZBOccActivated() && hzbOccHelper->IsCulled(finalObjRitemOffset))
+				if (condition.allowHZBOcclusionCulling && hzbOccHelper->IsCulled(finalObjRitemOffset))
 					continue;
 
 				JMeshGeometry* mesh = renderItem->GetMesh();
@@ -1182,28 +1329,9 @@ namespace JinEngine
 				const uint submeshCount = (uint)mesh->GetTotalSubmeshCount();
 
 				for (uint j = 0; j < submeshCount; ++j)
-				{
+				{ 
+					const bool onSkinned = animator != nullptr && condition.allowAnimation;
 					const uint finalObjMeshOffset = (helper.objectMeshOffset + CallGetFirstFrameBuffOffset(*renderItem) + j);
-
-					const JMaterial* mat = renderItem->GetValidMaterial(j);
-					const JShader* shader = mat->GetShader();
-					const size_t shaderGuid = shader->GetGuid();
-					const bool onSkinned = animator != nullptr && condition.isAnimationActivated;
-					if (!condition.isDrawShadowMap)
-					{
-						if (onSkinned)
-							commandList->SetPipelineState(shader->GetGraphicPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::SKINNED)));
-						else
-							commandList->SetPipelineState(shader->GetGraphicPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::STATIC)));
-					}
-					else
-					{
-						if (onSkinned)
-							commandList->SetPipelineState(shadowShader->GetGraphicPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::SKINNED)));
-						else
-							commandList->SetPipelineState(shadowShader->GetGraphicPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::STATIC)));
-					}
-
 					D3D12_GPU_VIRTUAL_ADDRESS objectCBAddress = objectCB->GetGPUVirtualAddress() + finalObjMeshOffset * objectCBByteSize;
 					commandList->SetGraphicsRootConstantBufferView(0, objectCBAddress);
 					if (onSkinned)
@@ -1211,21 +1339,17 @@ namespace JinEngine
 						D3D12_GPU_VIRTUAL_ADDRESS skinObjCBAddress = skinCB->GetGPUVirtualAddress() + (helper.aniOffset + i) * skinCBByteSize;
 						commandList->SetGraphicsRootConstantBufferView(1, skinObjCBAddress);
 					}
-					if (isOcclusionActivated && option.IsHDOccActivated())
+					if (condition.allowHDOcclusionCulling)
 						commandList->SetPredication(graphicResource->GetOcclusionQueryResult(), finalObjMeshOffset * 8, D3D12_PREDICATION_OP_EQUAL_ZERO);
-					
-					if (condition.allowOutline && gameObject[i]->IsSelectedbyEditor())
-						commandList->OMSetStencilRef(2);
+
 					commandList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(j), 1, mesh->GetSubmeshStartIndexLocation(j), mesh->GetSubmeshBaseVertexLocation(j), 0);
-					if (condition.allowOutline && gameObject[i]->IsSelectedbyEditor())
-						commandList->OMSetStencilRef(Constants::commonStencilRef);
 				}
 			}
 		}
 		void JGraphicImpl::DrawSceneBoundingBox(ID3D12GraphicsCommandList* commandList,
 			const std::vector<JGameObject*>& gameObject,
 			const JGraphicDrawHelper helper,
-			const DrawCondition condition)
+			const DrawCondition& condition)
 		{
 			//JMeshGeometry* mesh = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE);
 			JMeshGeometry* mesh = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE);
@@ -1249,7 +1373,7 @@ namespace JinEngine
 			for (uint i = 0; i < gameObjCount; ++i)
 			{
 				JRenderItem* renderItem = gameObject[i]->GetRenderItem();
-				if (!renderItem->IsVisible())
+				if (condition.allowFrustumCulling && !renderItem->IsVisible())
 					continue;
 
 				//Test Code
@@ -1258,7 +1382,7 @@ namespace JinEngine
 				//	continue;
 
 				JAnimator* animator = gameObject[i]->GetComponentWithParent<JAnimator>();
-				const bool onSkinned = animator != nullptr && condition.isAnimationActivated;
+				const bool onSkinned = animator != nullptr && condition.allowAnimation;
 
 				if (onSkinned)
 					commandList->SetPipelineState(shader->GetGraphicPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::SKINNED)));
@@ -1274,9 +1398,9 @@ namespace JinEngine
 					D3D12_GPU_VIRTUAL_ADDRESS skinObjCBAddress = skinCB->GetGPUVirtualAddress() + (helper.aniOffset + i) * skinCBByteSize;
 					commandList->SetGraphicsRootConstantBufferView(1, skinObjCBAddress);
 				}
-				if (option.isHZBOcclusionActivated)
+				if (condition.allowHZBOcclusionCulling)
 					commandList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(0), 1, mesh->GetSubmeshStartIndexLocation(0), mesh->GetSubmeshBaseVertexLocation(0), 0);
-				else
+				else if (condition.allowHDOcclusionCulling)
 				{
 					commandList->BeginQuery(graphicResource->GetOcclusionQueryHeap(), D3D12_QUERY_TYPE_BINARY_OCCLUSION, index);
 					commandList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(0), 1, mesh->GetSubmeshStartIndexLocation(0), mesh->GetSubmeshBaseVertexLocation(0), 0);
@@ -1297,9 +1421,11 @@ namespace JinEngine
 				ComPtr<ID3D12Debug> debugController;
 				ThrowIfFailedHr(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
 				debugController->EnableDebugLayer();
-			}
+	}
 #endif 
 			ThrowIfFailedHr(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
+			//ThrowIfFailedHr(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG,  IID_PPV_ARGS(&dxgiFactory)));
+
 			HRESULT hardwareResult = D3D12CreateDevice(
 				nullptr,
 				D3D_FEATURE_LEVEL_11_0,
@@ -1339,18 +1465,17 @@ namespace JinEngine
 			LogAdapters();
 #endif  
 			CreateCommandObjects();
-			CreateSwapChain(); 
+			CreateSwapChain();
 			return true;
-		}
+}
 		bool JGraphicImpl::InitializeResource()
 		{
 			FlushCommandQueue();
 			StartCommand();
 			BuildRootSignature();
-			graphicResource->Initialize(d3dDevice.Get()); 
+			graphicResource->Initialize(d3dDevice.Get());
 			graphicResource->CreateOcclusionQueryResource(d3dDevice.Get());
 			graphicResource->CreateOcclusionHZBResource(d3dDevice.Get(), commandList.Get(), info.occlusionWidth, info.occlusionHeight);
-			graphicResource->CreateMainDepthStencilResource(d3dDevice.Get(), commandList.Get(), info.width, info.height, m4xMsaaState, m4xMsaaQuality);
 			BuildFrameResources();
 			hzbOccHelper->Initialize(d3dDevice.Get(), info);
 			depthMapDebug->Initialize(d3dDevice.Get(), graphicResource->GetBackBufferFormat(), graphicResource->GetDepthStencilFormat());
@@ -1603,17 +1728,16 @@ namespace JinEngine
 
 			// Flush before changing any resources.
 			FlushCommandQueue();
-			ThrowIfFailedHr(commandList->Reset(directCmdListAlloc.Get(), nullptr));
-  
+			StartCommand();
+
 			currBackBuffer = 0;
-			graphicResource->CreateSwapChainBuffer(d3dDevice.Get(), swapChain.Get(), info.width, info.height);
+			graphicResource->CreateSwapChainBuffer(d3dDevice.Get(), swapChain.Get(), info.width, info.height); 
 			graphicResource->CreateMainDepthStencilResource(d3dDevice.Get(), commandList.Get(), info.width, info.height, m4xMsaaState, m4xMsaaQuality);
+			graphicResource->CreateEditorDepthStencilResource(d3dDevice.Get(), commandList.Get(), info.width, info.height);
 			outlineHelper->UpdatePassBuf(info.width, info.height, Constants::commonStencilRef);
-			// Execute the resize commands.
-			ThrowIfFailedHr(commandList->Close());
-			ID3D12CommandList* cmdsLists[] = { commandList.Get() };
-			commandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+
 			// Wait until resize is complete.
+			EndCommand();
 			FlushCommandQueue();
 
 			// Update the viewport transform to cover the client area.
@@ -1632,7 +1756,8 @@ namespace JinEngine
 		}
 		D3D12_CPU_DESCRIPTOR_HANDLE JGraphicImpl::CurrentBackBufferView()const
 		{
-			return graphicResource->GetCpuRtvDescriptorHandle(currBackBuffer);
+			return graphicResource->GetCpuRtvDescriptorHandle(graphicResource->GetHandle(J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN, currBackBuffer)->
+				GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::RTV));
 		}
 		const std::vector<CD3DX12_STATIC_SAMPLER_DESC> JGraphicImpl::Sampler()const noexcept
 		{
@@ -1722,7 +1847,7 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"HZBOcclusionAcitvated:", option.isHZBOcclusionActivated);
 			JFileIOHelper::StoreAtomicData(stream, L"AllowHZBCorrectFail:", option.allowHZBCorrectFail);
 			JFileIOHelper::StoreAtomicData(stream, L"AllowHZBDepthMapDebug:", option.allowHZBDepthMapDebug);
-			JFileIOHelper::StoreAtomicData(stream, L"AllowOutline:", option.allowOutline);
+			JFileIOHelper::StoreAtomicData(stream, L"AllowOutline:", option.allowDebugOutline);
 			JFileIOHelper::StoreAtomicData(stream, L"AllowEditorCulling:", option.allowEditorCulling);
 			stream.close();
 		}
@@ -1754,7 +1879,7 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, newOption.isHZBOcclusionActivated);
 			JFileIOHelper::LoadAtomicData(stream, newOption.allowHZBCorrectFail);
 			JFileIOHelper::LoadAtomicData(stream, newOption.allowHZBDepthMapDebug);
-			JFileIOHelper::LoadAtomicData(stream, newOption.allowOutline);
+			JFileIOHelper::LoadAtomicData(stream, newOption.allowDebugOutline);
 			JFileIOHelper::LoadAtomicData(stream, newOption.allowEditorCulling);
 			stream.close();
 			SetGraphicOption(newOption);
@@ -1890,7 +2015,7 @@ namespace JinEngine
 			std::unordered_map <J_GRAPHIC_RESOURCE_TYPE, bool> hasCallable
 			{
 				{J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D, true},
-				{J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE, true}, 
+				{J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE, true},
 				{J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, true}
 			};
 			std::unordered_map<J_GRAPHIC_RESOURCE_TYPE, BindTextureGetCount> bindTextureGetCountFunc

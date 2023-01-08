@@ -7,7 +7,7 @@ namespace JinEngine
 	{
 		class JWindowDirectory;
 	}
-
+ 
 	class JDirectoryOCInterface
 	{
 	private:

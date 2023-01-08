@@ -185,12 +185,10 @@ namespace JinEngine
 		public:
 			static bool IsLeftMouseClicked()noexcept;
 			static bool IsRightMouseClicked()noexcept;
-			static bool IsMiddleMouseClicked()noexcept;
-			static bool IsDraggingMouse()noexcept;
+			static bool IsMiddleMouseClicked()noexcept; 
 			static bool IsMouseInRect(const JVector2<float>& position = GetGuiWindowPos(), const JVector2<float>& size = GetGuiWindowSize())noexcept;
 			//0 = left, 1 = right, 2 = middle
 			static void SetMouseClick(const ImGuiMouseButton btn, const bool value)noexcept;
-			static void SetMouseDrag(bool value)noexcept;	
 		public:
 			//util 
 			static float GetSliderPosX(bool hasScrollbar = false)noexcept;

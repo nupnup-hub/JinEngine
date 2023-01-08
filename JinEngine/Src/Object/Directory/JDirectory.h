@@ -51,8 +51,8 @@ namespace JinEngine
 		void CloseDirectory()noexcept final;
 	private:
 		//Create or exist dir is true
-		bool CreateDirectoryFile();
-		void DeleteDirectoryFile(); 
+		static bool CreateDirectoryFile(const std::wstring& path);
+		static void DeleteDirectoryFile(const std::wstring& path);
 	private:
 		bool RegisterCashData()noexcept final;
 		bool DeRegisterCashData()noexcept final;

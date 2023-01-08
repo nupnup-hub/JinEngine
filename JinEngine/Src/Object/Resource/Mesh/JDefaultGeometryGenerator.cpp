@@ -64,7 +64,7 @@ namespace JinEngine
 		// Create the indices.
 		//
 
-		std::vector<uint32> i(36);
+		std::vector<uint> i(36);
 
 		// Fill in the front face index data
 		i[0] = 0; i[1] = 1; i[2] = 2;
@@ -158,7 +158,7 @@ namespace JinEngine
 		// and connects the top pole to the first ring.
 		//
 
-		std::vector<uint32> indices;
+		std::vector<uint> indices;
 		for (uint i = 1; i <= slicecount; ++i)
 		{
 			indices.push_back(0);
@@ -229,7 +229,7 @@ namespace JinEngine
 			XMFLOAT3(Z, -X, 0.0f),  XMFLOAT3(-Z, -X, 0.0f)
 		};
 
-		std::vector<uint32> indices =
+		std::vector<uint> indices =
 		{
 			1,4,0,  4,9,0,  4,5,9,  8,5,4,  1,8,4,
 			1,10,8, 10,3,8, 8,3,5,  3,2,5,  3,7,2,
@@ -295,7 +295,7 @@ namespace JinEngine
 		// Build Stacks.
 		// 
 		std::vector<JStaticMeshVertex> vertices;
-		std::vector<uint32> indices32;
+		std::vector<uint> indices;
 
 		float stackHeight = height / stackcount;
 		// Amount to increment radius as we move up each stack level from bottom to top.
@@ -364,16 +364,16 @@ namespace JinEngine
 		{
 			for (uint j = 0; j < slicecount; ++j)
 			{
-				indices32.push_back(i * ringVertexcount + j);
-				indices32.push_back((i + 1) * ringVertexcount + j);
-				indices32.push_back((i + 1) * ringVertexcount + j + 1);
+				indices.push_back(i * ringVertexcount + j);
+				indices.push_back((i + 1) * ringVertexcount + j);
+				indices.push_back((i + 1) * ringVertexcount + j + 1);
 
-				indices32.push_back(i * ringVertexcount + j);
-				indices32.push_back((i + 1) * ringVertexcount + j + 1);
-				indices32.push_back(i * ringVertexcount + j + 1);
+				indices.push_back(i * ringVertexcount + j);
+				indices.push_back((i + 1) * ringVertexcount + j + 1);
+				indices.push_back(i * ringVertexcount + j + 1);
 			}
 		}
-		JStaticMeshData meshData(L"Cylinder", std::move(indices32), true, true, std::move(vertices));
+		JStaticMeshData meshData(L"Cylinder", std::move(indices), true, true, std::move(vertices));
 		BuildCylinderTopCap(bottomRadius, topRadius, height, slicecount, stackcount, meshData);
 		BuildCylinderBottomCap(bottomRadius, topRadius, height, slicecount, stackcount, meshData);
 
@@ -419,26 +419,26 @@ namespace JinEngine
 		//
 		// Create the indices.
 		//
-		std::vector<uint32> indices32(facecount * 3);
+		std::vector<uint> indices(facecount * 3);
 		// Iterate over each quad and compute indices.
 		uint k = 0;
 		for (uint i = 0; i < m - 1; ++i)
 		{
 			for (uint j = 0; j < n - 1; ++j)
 			{
-				indices32[k] = i * n + j;
-				indices32[k + 1] = i * n + j + 1;
-				indices32[k + 2] = (i + 1) * n + j;
+				indices[k] = i * n + j;
+				indices[k + 1] = i * n + j + 1;
+				indices[k + 2] = (i + 1) * n + j;
 
-				indices32[k + 3] = (i + 1) * n + j;
-				indices32[k + 4] = i * n + j + 1;
-				indices32[k + 5] = (i + 1) * n + j + 1;
+				indices[k + 3] = (i + 1) * n + j;
+				indices[k + 4] = i * n + j + 1;
+				indices[k + 5] = (i + 1) * n + j + 1;
 
 				k += 6; // next quad
 			}
 		}
 
-		return JStaticMeshData(L"Grid", std::move(indices32), true, true, std::move(vertices));
+		return JStaticMeshData(L"Grid", std::move(indices), true, true, std::move(vertices));
 	}
 	JStaticMeshData JDefaultGeometryGenerator::CreateQuad(const float x,
 		const float y,
@@ -447,7 +447,7 @@ namespace JinEngine
 		const float depth)
 	{
 		std::vector<JStaticMeshVertex> vertices(4);
-		std::vector<uint32> indices32(6); 
+		std::vector<uint> indices(6); 
 
 		// position coordinates specified in NDC space.
 		  
@@ -475,15 +475,15 @@ namespace JinEngine
 			1.0f, 1.0f,
 			1.0f, 0.0f, 0.0f);
 
-		indices32[0] = 0;
-		indices32[1] = 1;
-		indices32[2] = 2;
+		indices[0] = 0;
+		indices[1] = 1;
+		indices[2] = 2;
 
-		indices32[3] = 0;
-		indices32[4] = 2;
-		indices32[5] = 3;
+		indices[3] = 0;
+		indices[4] = 2;
+		indices[5] = 3;
 
-		return JStaticMeshData(L"Quad", std::move(indices32), true, true, std::move(vertices));
+		return JStaticMeshData(L"Quad", std::move(indices), true, true, std::move(vertices));
 	}
 	JStaticMeshData JDefaultGeometryGenerator::CreateLineBoundingBox()
 	{
@@ -497,7 +497,7 @@ namespace JinEngine
 		vertices[6].position = XMFLOAT3(0.5f, 0.5f, 0.5f);
 		vertices[7].position = XMFLOAT3(-0.5f, 0.5f, 0.5f);
 
-		std::vector<uint32> indices32
+		std::vector<uint> indices
 		{
 			0, 1,
 			1, 2,
@@ -512,7 +512,7 @@ namespace JinEngine
 			2, 6,
 			3, 7
 		};
-		return JStaticMeshData(L"Bounding Box_L", std::move(indices32), false, false, std::move(vertices));
+		return JStaticMeshData(L"Bounding Box_L", std::move(indices), false, false, std::move(vertices));
 	}
 	JStaticMeshData JDefaultGeometryGenerator::CreateTriangleBoundingBox()
 	{
@@ -526,7 +526,7 @@ namespace JinEngine
 		vertices[6].position = XMFLOAT3(0.5f, -0.5f, -0.5f);
 		vertices[7].position = XMFLOAT3(-0.5f, -0.5f, -0.5f);
 
-		std::vector<uint32> indices32
+		std::vector<uint> indices
 		{
 			0, 1, 2,
 			0, 2, 3,
@@ -546,7 +546,7 @@ namespace JinEngine
 			0, 3, 4,
 			0, 4, 7
 		};
-		return JStaticMeshData(L"Bounding Box_T", std::move(indices32), false, false, std::move(vertices));
+		return JStaticMeshData(L"Bounding Box_T", std::move(indices), false, false, std::move(vertices));
 	}
 	JStaticMeshData JDefaultGeometryGenerator::CreateBoundingFrustum()
 	{
@@ -557,7 +557,7 @@ namespace JinEngine
 		vertices[3].position = XMFLOAT3(0.5f, 0.5f, 1);
 		vertices[4].position = XMFLOAT3(-0.5f, 0.5f, 1);
 
-		std::vector<uint32> indices32
+		std::vector<uint> indices
 		{
 			0, 1,
 			1, 2,
@@ -569,7 +569,7 @@ namespace JinEngine
 			2, 3
 		};
 
-		return JStaticMeshData(L"Bounding Frustum", std::move(indices32), false, false, std::move(vertices));
+		return JStaticMeshData(L"Bounding Frustum", std::move(indices), false, false, std::move(vertices));
 	} 
 	JStaticMeshData JDefaultGeometryGenerator::CreateCircle(float outRadius, float innerRadius)
 	{
@@ -577,7 +577,7 @@ namespace JinEngine
 		const int vertexCount = (segments + 1) * 2;
 		const int indexCount = (vertexCount - 2) * 3 + 6; 
 		std::vector<JStaticMeshVertex> vertices(vertexCount);
-		std::vector<uint16> indices(indexCount);
+		std::vector<uint> indices(indexCount);
 
 		float theta = 2.0f * XM_PI;
 		vertices[0].position.x = innerRadius * std::cos(theta);
@@ -630,14 +630,14 @@ namespace JinEngine
 		// v0    m2     v2
 
 		std::vector<JStaticMeshVertex> vertices;
-		std::vector<uint32> indices32;
+		std::vector<uint> indices;
 
 		uint numTris = (uint)inputCopy.GetIndexCount() / 3;
 		for (uint i = 0; i < numTris; ++i)
 		{
-			JStaticMeshVertex v0 = inputCopy.GetVertex(inputCopy.GetU32Index(i * 3 + 0));
-			JStaticMeshVertex v1 = inputCopy.GetVertex(inputCopy.GetU32Index(i * 3 + 1));
-			JStaticMeshVertex v2 = inputCopy.GetVertex(inputCopy.GetU32Index(i * 3 + 2));
+			JStaticMeshVertex v0 = inputCopy.GetVertex(inputCopy.GetIndex(i * 3 + 0));
+			JStaticMeshVertex v1 = inputCopy.GetVertex(inputCopy.GetIndex(i * 3 + 1));
+			JStaticMeshVertex v2 = inputCopy.GetVertex(inputCopy.GetIndex(i * 3 + 2));
 			//
 			// Generate the midpoints.
 			//
@@ -654,25 +654,25 @@ namespace JinEngine
 			vertices.push_back(m1); // 4
 			vertices.push_back(m2); // 5
 
-			indices32.push_back(i * 6 + 0);
-			indices32.push_back(i * 6 + 3);
-			indices32.push_back(i * 6 + 5);
+			indices.push_back(i * 6 + 0);
+			indices.push_back(i * 6 + 3);
+			indices.push_back(i * 6 + 5);
 
-			indices32.push_back(i * 6 + 3);
-			indices32.push_back(i * 6 + 4);
-			indices32.push_back(i * 6 + 5);
+			indices.push_back(i * 6 + 3);
+			indices.push_back(i * 6 + 4);
+			indices.push_back(i * 6 + 5);
 
-			indices32.push_back(i * 6 + 5);
-			indices32.push_back(i * 6 + 4);
-			indices32.push_back(i * 6 + 2);
+			indices.push_back(i * 6 + 5);
+			indices.push_back(i * 6 + 4);
+			indices.push_back(i * 6 + 2);
 
-			indices32.push_back(i * 6 + 3);
-			indices32.push_back(i * 6 + 1);
-			indices32.push_back(i * 6 + 4);
+			indices.push_back(i * 6 + 3);
+			indices.push_back(i * 6 + 1);
+			indices.push_back(i * 6 + 4);
 		}
 		meshData = JStaticMeshData(inputCopy.GetName(),
 			inputCopy.GetGuid(),
-			std::move(indices32),
+			std::move(indices),
 			inputCopy.HasUV(),
 			inputCopy.HasNormal(),
 			std::move(vertices));

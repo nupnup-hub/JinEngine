@@ -11,7 +11,7 @@ namespace JinEngine
 			bool isHZBOcclusionActivated = false;
 			bool allowHZBCorrectFail = false;
 			bool allowHZBDepthMapDebug = false;
-			bool allowOutline = false;
+			bool allowDebugOutline = false;
 			bool allowEditorCulling = false;
 		public: 
 			float occUpdateFrequency = 0.1f;

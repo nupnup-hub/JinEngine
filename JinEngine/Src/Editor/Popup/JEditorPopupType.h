@@ -7,7 +7,7 @@ namespace JinEngine
 		{
 			ROOT,
 			INTERNAL,
-			LEAF_SELECT,
+			LEAF,
 			LEAF_TOGGLE,
 			LEAF_CHECK_BOX
 		};

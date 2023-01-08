@@ -58,7 +58,7 @@ namespace JinEngine
 			return debugRoot != nullptr;
 		}
 		bool JSpaceSpatial::CanAddGameObject(JGameObject* gameObj)const noexcept
-		{
+		{ 
 			return gameObj->HasRenderItem() &&
 				(gameObj->GetRenderItem()->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_BUILD) > 0 &&
 				ConvertSpaceSpatialLayer(gameObj->GetRenderItem()->GetRenderLayer()) == layer &&

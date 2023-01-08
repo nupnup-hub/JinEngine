@@ -1,7 +1,6 @@
 #pragma once
-#include"../../Core/JDataType.h"
-
-struct ID3D12Resource;
+#include"../../Core/JDataType.h"  
+#include"../../../Lib/DirectX/d3dx12.h"
 
 namespace JinEngine
 {
@@ -25,11 +24,26 @@ namespace JinEngine
 			uint litIndexOffset = 0;
 			uint shadowOffset = 0;
 		public:
+			//draw outline and debug layer object
 			bool allowDrawDebug = false;
-			bool allowCulling = true;
+			//execute frustum and occlusion culling
+			bool allowCulling = true; 
+		public: 
+			CD3DX12_CPU_DESCRIPTOR_HANDLE mainDsv;
+			CD3DX12_CPU_DESCRIPTOR_HANDLE mainRtv;
 		public:
-			//bool isDrawShadowMap = false;
-			//bool isAnimationActivated = false;
+			CD3DX12_CPU_DESCRIPTOR_HANDLE editorDsv; 
+		public:
+			CD3DX12_CPU_DESCRIPTOR_HANDLE* dsvArr[2];	// main .. editor
+			CD3DX12_CPU_DESCRIPTOR_HANDLE* rtvArr[2];	// main .. editor
+		public:
+			void StuffHandleArray()noexcept
+			{
+				dsvArr[0] = &mainDsv;
+				dsvArr[1] = &editorDsv;
+				rtvArr[0] = &mainRtv;
+				rtvArr[1] = nullptr;
+			}
 		};
 	}
 }

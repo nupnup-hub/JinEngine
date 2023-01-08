@@ -51,6 +51,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		struct JFrameResource;
+		struct DrawCondition;
 		class JGraphicResourceHandle;
 		class JGraphicResourceManager;
 		class JHardwareOccCulling;
@@ -64,21 +65,6 @@ namespace JinEngine
 			public JFrameBuffManagerInterface,
 			public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>
 		{
-		private:
-			struct DrawCondition
-			{
-			public:
-				const bool isDrawShadowMap = false;
-				const bool isAnimationActivated = false;
-				const bool allowOcclusion = false;
-				const bool allowOutline = false;
-			public:
-				DrawCondition() = default;
-				DrawCondition(const bool isDrawShadowMap, 
-					const bool isAnimationActivated, 
-					const bool allowOcclusion, 
-					const bool allowOutline);
-			};
 		private:
 			template<typename T>friend class Core::JCreateUsingNew;
 			friend class Editor::JGraphicResourceWatcher; 			//Debug Class
@@ -149,10 +135,11 @@ namespace JinEngine
 			JGraphicResourceHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			JGraphicResourceHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			bool DestroyGraphicTextureResource(JGraphicResourceHandle** handle)final;
-			void StuffGraphicShaderPso(JGraphicShaderData* shaderData, 
+			void StuffGraphicShaderPso(JGraphicShaderData* shaderData,
 				const J_SHADER_VERTEX_LAYOUT vertexLayout,
-				const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag
-				, const JShaderGraphicSubPSO& subPso)final;
+				const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
+				const JShaderGraphicPsoCondition& psoCondition,
+				const J_GRAPHIC_EXTRA_PSO_TYPE extraType)final;
 			void StuffComputeShaderPso(JComputeShaderData* shaderData, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)final;
 		private:
 			ID3D12CommandQueue* GetCommandQueue()const noexcept final;
@@ -184,15 +171,19 @@ namespace JinEngine
 			void DrawProjectSelector()final;
 			void DrawSceneRenderTarget(const JGraphicDrawHelper helper);
 			void DrawSceneShadowMap(const JGraphicDrawHelper helper);
-			void DrawOcclusionDepthMap(JGraphicDrawHelper helper);
+			void DrawOcclusionDepthMap(const JGraphicDrawHelper helper);
 			void DrawGameObject(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject,
 				const JGraphicDrawHelper helper,
-				const DrawCondition condition = DrawCondition());
+				const DrawCondition& condition);
+			void DrawShadowMapGameObject(ID3D12GraphicsCommandList* cmdList,
+				const std::vector<JGameObject*>& gameObject,
+				const JGraphicDrawHelper helper,
+				const DrawCondition& condition);
 			void DrawSceneBoundingBox(ID3D12GraphicsCommandList* cmdList,
 				const std::vector<JGameObject*>& gameObject, 
 				const JGraphicDrawHelper helper,
-				const DrawCondition condition);
+				const DrawCondition& condition);
 		private:
 			void ResourceTransition(_In_ ID3D12Resource* pResource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 		private:

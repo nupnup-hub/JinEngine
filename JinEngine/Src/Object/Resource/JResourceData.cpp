@@ -29,6 +29,9 @@ namespace JinEngine
 		J_DEFAULT_TEXTURE::ANIMATION_CLIP,
 		J_DEFAULT_TEXTURE::SCENE,
 		J_DEFAULT_TEXTURE::ANIMATION_CONTROLLER,
+		J_DEFAULT_TEXTURE::POSITION_ARROW,
+		J_DEFAULT_TEXTURE::ROTATION_ARROW,
+		J_DEFAULT_TEXTURE::SCALE_ARROW,
 	}; 
 	//const uint JResourceData::editorTextureCapacity = (uint)textureNames.size(); 
 	JResourceData::JResourceData()

@@ -52,10 +52,7 @@ namespace JinEngine
 					JFileIOHelper::StoreXMFloat2(stream, L"U:", vertices.texC);
 					JFileIOHelper::StoreXMFloat3(stream, L"T:", vertices.tangentU); 
 				}
-				if (staticData->Is16bit())
-					JFileIOHelper::StoreAtomicDataVec(stream, L"Index:", staticData->GetU16Vector(), 6);
-				else
-					JFileIOHelper::StoreAtomicDataVec(stream, L"Index:", staticData->GetU32Vector(), 6);
+				JFileIOHelper::StoreAtomicDataVec(stream, L"Index:", staticData->GetIndexVector(), 6);
 
 				const DirectX::BoundingBox boundingBox = staticData->GetBBox();
 				const DirectX::BoundingSphere boundingSphere = staticData->GetBSphere();
@@ -109,8 +106,7 @@ namespace JinEngine
 				JFileIOHelper::LoadEnumData(stream, meshType);
 
 				std::vector<JStaticMeshVertex> vertices(vertexCount);
-				std::vector<uint16> u16Indices;
-				std::vector<uint32> u32Indices;
+				std::vector<uint> indices; 
 
 				for (uint i = 0; i < vertexCount; ++i)
 				{
@@ -120,10 +116,7 @@ namespace JinEngine
 					JFileIOHelper::LoadXMFloat3(stream, vertices[i].tangentU);
 				}
 
-				if (indexCount < (1 << 16))
-					JFileIOHelper::LoadAtomicDataVec(stream, u16Indices);
-				else
-					JFileIOHelper::LoadAtomicDataVec(stream, u32Indices);
+				JFileIOHelper::LoadAtomicDataVec(stream, indices);
 
 				DirectX::BoundingBox boundingBox;
 				DirectX::BoundingSphere boundingSphere;
@@ -137,16 +130,7 @@ namespace JinEngine
 				JFileIOHelper::LoadAtomicData(stream, hasUV);
 				JFileIOHelper::LoadAtomicData(stream, hasNormal);
 
-				if (u32Indices.size() > 0)
-				{ 
-					meshGroup.AddMeshData(JStaticMeshData{ name , guid, std::move(u32Indices),
-						hasUV, hasNormal, std::move(vertices) });
-				}
-				else
-				{ 
-					meshGroup.AddMeshData(JStaticMeshData{ name , guid, std::move(u16Indices),
-						hasUV, hasNormal, std::move(vertices) });
-				}		
+				meshGroup.AddMeshData(JStaticMeshData{ name , guid, std::move(indices),hasUV, hasNormal, std::move(vertices) });
 			}
 			uint submeshCount;
 			JFileIOHelper::LoadAtomicData(stream, submeshCount); 

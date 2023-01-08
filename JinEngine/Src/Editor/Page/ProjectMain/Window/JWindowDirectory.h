@@ -1,6 +1,7 @@
 #pragma once
 #include"../../JEditorWindow.h"     
 #include"../../WindowInterface/JEditorPreviewInterface.h"
+#include"../../../Utility/JEditorRenameHelper.h"
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/JResourceType.h"
 #include"../../../../Core/Func/Callable/JCallable.h"
@@ -22,6 +23,7 @@ namespace JinEngine
 		class JEditorString;
 		class JEditorPopup;
 		class JEditorWidgetPosCalculator;
+		class JEditorSearchBarHelper;
 
 		class JWindowDirectory final : public JEditorWindow, public JEditorPreviewInterface
 		{ 
@@ -35,29 +37,34 @@ namespace JinEngine
 			using OpenNewDirectoryF = Core::JFunctor<void, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
 			using OpenNewDirectoryB = Core::JBindHandle<OpenNewDirectoryF, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
 		
-			using ImportResourceF = Core::JFunctor<void, JWindowDirectory&>;
+			using ImportResourceF = Core::JFunctor<void, JWindowDirectory&>; 
 		private:
-			const std::string directoryViewName = "DirectoryView";
-			const std::string fileViewName = "FileView";
 			Core::JUserPtr<JDirectory> root;
 			Core::JUserPtr<JDirectory> opendDirctory;
-
+			Core::JUserPtr<JDirectory> popupTargetDirctory;
+			Core::JUserPtr<JObject> selectedObj;
+		private:
 			std::unique_ptr<JEditorString> editorString;
+			std::unique_ptr<JEditorRenameHelper> renameHelper;
+			std::unique_ptr<JEditorPopup>directoryViewPopup;
 			std::unique_ptr<JEditorPopup>fileviewPopup;
+			std::unique_ptr<JEditorWidgetPosCalculator> editorPositionCal;
+			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
+		private:
 			std::unordered_map<size_t, std::unique_ptr<CreateObjectF>> createResourceFuncMap;
 			std::unordered_map<size_t, std::unique_ptr<DestroyObjectF>> destroyResourceFuncMap;
 			std::unique_ptr<OpenNewDirectoryF> openNewDirFunctor;
 			std::unique_ptr<OpenNewDirectoryB> openNewDirBinder;
 			std::tuple<size_t, std::unique_ptr<ImportResourceF>> importResourceT;
-
-			std::unique_ptr<JEditorWidgetPosCalculator> editorPositionCal;
+			std::unordered_map<size_t, JEditorRenameHelper::ActivateF> renameFuncMap;
+		private:
 			static constexpr float selectorIconMaxRate = 0.075f;
 			static constexpr float selectorIconMinRate = 0.035f;
 			float btnIconMaxSize;
 			float btnIconMinSize;
 			float btnIconSize = 0;
 			size_t selectorIconSlidebarId; 
-
+		private:
 			std::wstring importFilePath;
 			bool actImport = false;
 		public:
@@ -65,6 +72,8 @@ namespace JinEngine
 			~JWindowDirectory();
 			JWindowDirectory(const JWindowDirectory& rhs) = delete;
 			JWindowDirectory& operator=(const JWindowDirectory& rhs) = delete;
+		private:
+			void BuildPopup(); 
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
@@ -74,13 +83,16 @@ namespace JinEngine
 			void BuildDirectoryView();
 			void BuildFileView();
 			//Ret is NewOpend Directory
-			JDirectory* DirectoryViewOnScreen(JDirectory* directory);
-			void FileViewOnScreen();
+			JDirectory* DirectoryViewOnScreen(JDirectory* directory, const bool canSelect);
+			void FileViewOnScreen(); 
 			void ResourceFileViewOnScreen(JPreviewScene* nowPreviewScene, JResourceObject* jRobj);
 			void DirectoryFileViewOnScreen(JPreviewScene* nowPreviewScene, JDirectory* jDir);
 			void ImportFile();
 		private:
 			void OpenNewDirectory(JDirectory* newOpendDirectory); 
+			void CreateOpendDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask = L"");
+			//Only create file preview not directory
+			void CreateAllDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask = L"");
 		protected:
 			void DoSetFocus()noexcept final;
 			void DoSetUnFocus()noexcept final;

@@ -244,8 +244,8 @@ namespace JinEngine
 		else
 		{
 			const J_GRAPHIC_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
-			const JShaderGraphicSubPSO subPso = JDefaultShader::GetShaderGraphicPso(type);
-			JFile* file = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath())->GetFile(JShaderType::ConvertToName(shaderF, subPso.UniqueID()));
+			const JShaderGraphicPsoCondition psoCondition = JDefaultShader::GetShaderGraphicPso(type);
+			JFile* file = GetDirectory(JApplicationVariable::GetProjectShaderMetafilePath())->GetFile(JShaderType::ConvertToName(shaderF, psoCondition.UniqueID()));
 			if (file != nullptr)
 				return static_cast<JShader*>(file->GetResource());
 			else
@@ -494,18 +494,18 @@ namespace JinEngine
 		{
 			const J_DEFAULT_GRAPHIC_SHADER type = (J_DEFAULT_GRAPHIC_SHADER)i;
 			const J_GRAPHIC_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
-			const JShaderGraphicSubPSO subPso = JDefaultShader::GetShaderGraphicPso(type);
+			const JShaderGraphicPsoCondition psoCondition = JDefaultShader::GetShaderGraphicPso(type);
 			const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
 
 			const bool isUse = JDefaultShader::IsDefaultUse(type);
-			std::wstring shaderName = JShaderType::ConvertToName(shaderF, subPso.UniqueID());
+			std::wstring shaderName = JShaderType::ConvertToName(shaderF, psoCondition.UniqueID());
 			JFile* file = shaderDir->GetFile(shaderName);
 
 			if (file != nullptr && file->GetResource()->GetResourceType() == J_RESOURCE_TYPE::SHADER)
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JShader>(file->GetResource()), isUse);
 			else
 			{
-				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, shaderF, subPso));
+				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, shaderF, psoCondition));
 				ThrowIfFailedN(newShader != nullptr);
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr(newShader), isUse);
 			}
@@ -524,7 +524,7 @@ namespace JinEngine
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr<JShader>(file->GetResource()), isUse);
 			else
 			{
-				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, SHADER_FUNCTION_NONE, JShaderGraphicSubPSO(), shaderF));
+				JShader* newShader = JRFI<JShader>::Create(Core::JPtrUtil::MakeOwnerPtr<JShader::InitData>(objF, SHADER_FUNCTION_NONE, JShaderGraphicPsoCondition(), shaderF));
 				ThrowIfFailedN(newShader != nullptr);
 				resourceData->RegisterDefaultResource(type, Core::GetUserPtr(newShader), isUse);
 			}
@@ -683,17 +683,23 @@ namespace JinEngine
 		auto createLineBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLineBoundingBox(); };
 		auto createTriangleBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateTriangleBoundingBox(); };
 		auto createBFrustumLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingFrustum(); };
-		auto createCircleLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCircle(1.5f, 1.35f); };
+		auto createCircleLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCircle(1.2f, 1.1f); };
 		auto createScaleArrowLam = [](JDefaultGeometryGenerator& geoGen) 
 		{
-			JStaticMeshData cyilinderMesh = geoGen.CreateCylinder(0.25f, 0.25f, 3.0f, 10, 10);
-			cyilinderMesh.CreateBoundingObject();
+			JStaticMeshData cyilinderMesh = geoGen.CreateCylinder(0.125f, 0.125f, 2.04f, 10, 10);
+			JStaticMeshData cubeMesh = geoGen.CreateCube(0.5f, 0.5f, 0.5f, 1);
+			 
+			const DirectX::BoundingBox cyilinderBBox = cyilinderMesh.GetBBox();
+			const DirectX::BoundingBox cubeBBox = cubeMesh.GetBBox();
 
-			DirectX::BoundingBox bbox = cyilinderMesh.GetBBox();
-			DirectX::XMFLOAT3 offset = DirectX::XMFLOAT3(bbox.Center.x + bbox.Extents.x,
-				bbox.Center.y + bbox.Extents.y, 
-				bbox.Center.z + bbox.Extents.z);
-			//cyilinderMesh.Merge(geoGen.CreateCube(1, 1, 1, 2, offset)); 
+			const float cyilinderYOffset = (-cyilinderBBox.Center.y)+ cyilinderBBox.Extents.y;
+			const float cubeYOffset = cyilinderYOffset + cyilinderBBox.Center.y + cyilinderBBox.Extents.y + cubeBBox.Center.y;
+			DirectX::XMFLOAT3 cyilinderOffset = DirectX::XMFLOAT3(0, cyilinderYOffset, 0);
+			DirectX::XMFLOAT3 cubeOffset = DirectX::XMFLOAT3(0, cubeYOffset, 0);
+			
+			cyilinderMesh.AddPositionOffset(cyilinderOffset);
+			cubeMesh.AddPositionOffset(cubeOffset);
+			cyilinderMesh.Merge(cubeMesh);
 			cyilinderMesh.SetName(L"ScaleArrow");
 			return cyilinderMesh;
 		};

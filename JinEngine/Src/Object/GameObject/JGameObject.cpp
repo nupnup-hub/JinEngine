@@ -69,7 +69,7 @@ namespace JinEngine
 	std::vector<JGameObject*> JGameObject::GetChildren()const noexcept
 	{
 		return children;
-	}
+	} 
 	J_OBJECT_TYPE JGameObject::GetObjectType()const noexcept
 	{
 		return J_OBJECT_TYPE::GAME_OBJECT;

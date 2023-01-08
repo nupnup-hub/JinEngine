@@ -1,9 +1,9 @@
 #include"JEditorCameraControl.h" 
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../../../../Object/Component/Camera/JCamera.h"
-#include"../../../../Object/Component/Transform/JTransform.h"
-#include"../../../../Core/Time/JGameTimer.h"  
-#include"../../../../Window/JWindows.h"
+#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../Object/Component/Camera/JCamera.h"
+#include"../../Object/Component/Transform/JTransform.h"
+#include"../../Core/Time/JGameTimer.h"  
+#include"../../Window/JWindows.h"
 #include<DirectXMath.h> 
 
 namespace JinEngine

@@ -35,9 +35,9 @@ namespace JinEngine
 			void UpdateMouseClick();
 			void UpdateDocking();
 		protected:
-			void SetButtonSelectColor()noexcept;
+			void SetButtonColor(const float factor = 0.1f)noexcept;
 			void SetButtonDefaultColor()noexcept;
-			void SetTreeNodeSelectColor()noexcept;
+			void SetTreeNodeColor(const float factor = 0.1f)noexcept;
 			void SetTreeNodeDefaultColor()noexcept;
 		protected:
 			bool RegisterEventListener(const J_EDITOR_EVENT evType);

@@ -371,14 +371,14 @@ namespace JinEngine
 				{
 					const uint subMeshIndexCount = meshdata->GetIndexCount();
 					for (uint j = 0; j < subMeshIndexCount; ++j)
-						indices32[indicesOffset + j] = meshdata->GetU16Index(j);
+						indices32[indicesOffset + j] = meshdata->GetIndex(j);
 					indicesOffset += subMeshIndexCount;
 				}
 				else
 				{
 					const uint subMeshIndexCount = meshdata->GetIndexCount();
 					for (uint j = 0; j < subMeshIndexCount; ++j)
-						indices32[indicesOffset + j] = meshdata->GetU32Index(j);
+						indices32[indicesOffset + j] = meshdata->GetIndex(j);
 					indicesOffset += subMeshIndexCount;
 				}
 			}
@@ -402,14 +402,14 @@ namespace JinEngine
 				{
 					const uint subMeshIndexCount = meshdata->GetIndexCount();
 					for (uint j = 0; j < subMeshIndexCount; ++j)
-						indices16[indicesOffset + j] = meshdata->GetU16Index(j);
+						indices16[indicesOffset + j] = meshdata->GetIndex(j);
 					indicesOffset += subMeshIndexCount;
 				}
 				else
 				{
 					const uint subMeshIndexCount = meshdata->GetIndexCount();
 					for (uint j = 0; j < subMeshIndexCount; ++j)
-						indices16[indicesOffset + j] = meshdata->GetU32Index(j);
+						indices16[indicesOffset + j] = meshdata->GetIndex(j);
 					indicesOffset += subMeshIndexCount;
 				}
 			}

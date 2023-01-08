@@ -1,6 +1,8 @@
 #include"JReflectionGuiWidgetHelper.h"
+#include"JEditorSearchBarHelper.h"
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../Page/WindowInterface/JEditorPreviewInterface.h"
+
 #include"../../Object/Resource/AnimationClip/JAnimationClip.h"
 #include"../../Object/Resource/AnimationController/JAnimationController.h"
 #include"../../Object/Resource/Material/JMaterial.h"
@@ -170,9 +172,10 @@ namespace JinEngine
 		//JObject 
 		class JGuiSelectorHandleHelper : public JGuiPropertyWidgetHandle, public JEditorPreviewInterface
 		{
+			//JEditorSearchBarHelper
 		private:
 			std::vector<JPreviewScene*> selectorPreviewVec;
-			std::unique_ptr<JEditorInputBuffHelper> inputHelper;
+			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
 		private:
 			float sizeMin = 0;
 			float sizeMax = 0;
@@ -187,7 +190,10 @@ namespace JinEngine
 		protected:
 			JGuiSelectorHandleHelper()
 			{
-				inputHelper = std::make_unique<JEditorInputBuffHelper>(JImGuiImpl::GetTextBuffRange());
+				//!주의필요
+				//Activated되는 Selector는 엔진내에서 하나이므로
+				//"GuiSelectorInputText"외에 고유라벨은 불필요하다.
+				searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
 			}
 		protected:
 			void Initialize(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) override
@@ -252,13 +258,14 @@ namespace JinEngine
 
 				ImGui::SetNextWindowSize(JImGuiImpl::GetClientWindowSize() * 0.3f);
 				const std::string comboLabel = "##PreviewSelector" + pInfo->GetTypeInfo()->Name() + pInfo->Name();
-				if (JImGuiImpl::BeginCombo(comboLabel, name.c_str(), ImGuiComboFlags_HeightLarge))
+				if (JImGuiImpl::BeginCombo(comboLabel, name.c_str(), ImGuiComboFlags_HeightLarge | ImGuiComboFlags_PopupAlignLeft))
 				{
+					ImGui::BeginGroup();
 					if (isFirstOpen)
 					{
 						isFirstOpen = false;
 						CreateSelectorList<ValueType>();
-						inputHelper->Clear(); 
+						searchBarHelper->ClearInputBuffer();
 					}
 
 					JImGuiImpl::Text("Selector");
@@ -283,14 +290,11 @@ namespace JinEngine
 
 						ImGui::GetStyle().FramePadding.y = preFramePaddingY;
 					}
-					ImGui::Separator();
-
+					ImGui::Separator(); 
 					JImGuiImpl::Text("Search");
 					ImGui::SameLine();
-					JImGuiImpl::InputText("##GuiSelectorInputText", inputHelper->buff, inputHelper->result, ImGuiInputTextFlags_EnterReturnsTrue);
-					ImGui::Separator();
-
-					ImGui::BeginGroup();
+					searchBarHelper->UpdateSearchBar(pInfo->GetTypeInfo()->Name()+ "_" + pInfo->Name() + "_GuiSelector", false);
+				
 					JImGuiImpl::Image(*JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::NONE), JVector2<float>(sizeMin, sizeMin));
 					ImGui::SameLine();
 					if (JImGuiImpl::Selectable("None", nullptr, 0, JVector2<float>(0, sizeFactor)))
@@ -298,17 +302,15 @@ namespace JinEngine
 						(*selectedObj) = nullptr;
 						isSelected = true;
 						ImGui::CloseCurrentPopup();
-					}
-					ImGui::EndGroup();
+					} 
 					 
 					const uint previweSceneCount = (uint)selectorPreviewVec.size();
 					for (uint i = 0; i < previweSceneCount; ++i)
 					{
 						Core::JUserPtr<JObject> previewObj = selectorPreviewVec[i]->GetJObject();
-						if (!inputHelper->result.empty() && JCUtil::Contain(JCUtil::WstrToU8Str(previewObj->GetName()), inputHelper->result))
+						if(!searchBarHelper->CanSrcNameOnScreen(previewObj->GetName()))
 							continue;
-
-						ImGui::BeginGroup();
+						 
 						JImGuiImpl::Image(*selectorPreviewVec[i]->GetPreviewCamera().Get(), JVector2<float>(sizeFactor, sizeFactor));
 						ImGui::SameLine();
 						if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(previewObj.Get()->GetName()),
@@ -319,9 +321,10 @@ namespace JinEngine
 							(*selectedObj) = static_cast<ValueType*>(previewObj.Get());
 							isSelected = true;
 							ImGui::CloseCurrentPopup();
-						}
-						ImGui::EndGroup();
+						} 
 					}
+
+					ImGui::EndGroup();
 					JImGuiImpl::EndCombo();
 				}
 				else

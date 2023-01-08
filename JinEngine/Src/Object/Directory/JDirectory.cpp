@@ -198,19 +198,19 @@ namespace JinEngine
 	{
 		DeActivate();
 	}
-	bool JDirectory::CreateDirectoryFile()
-	{ 
-		if (_waccess(GetPath().c_str(), 00) == -1)
+	bool JDirectory::CreateDirectoryFile(const std::wstring& path)
+	{
+		if (_waccess(path.c_str(), 00) == -1)
 		{
-			if (_wmkdir(GetPath().c_str()) == -1)
+			if (_wmkdir(path.c_str()) == -1)
 				return false;
-		} 
+		}
 		return true;
 	}
-	void JDirectory::DeleteDirectoryFile()
+	void JDirectory::DeleteDirectoryFile(const std::wstring& path)
 	{
-		if (_waccess(GetPath().c_str(), 00) != -1)
-			_wremove(GetPath().c_str());
+		if (_waccess(path.c_str(), 00) != -1)
+			_wremove(path.c_str());
 	}
 	bool JDirectory::RegisterCashData()noexcept
 	{
@@ -275,7 +275,7 @@ namespace JinEngine
 
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JDirectory>(name, Core::MakeGuid(), OBJECT_FLAG_NONE, parent);
 			JDirectory* newDir = ownerPtr.Get();
-			if (AddInstance(std::move(ownerPtr)) && newDir->CreateDirectoryFile())
+			if (AddInstance(std::move(ownerPtr)) && CreateDirectoryFile(newDir->GetPath()))
 			{
 				StoreObject(newDir);
 				return newDir;
@@ -291,7 +291,7 @@ namespace JinEngine
 
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JDirectory>(newName, guid, objFlag, parent);
 			JDirectory* newDir = ownerPtr.Get();
-			if (AddInstance(std::move(ownerPtr)) && newDir->CreateDirectoryFile())
+			if (AddInstance(std::move(ownerPtr)) && CreateDirectoryFile(newDir->GetPath()))
 			{ 
 				StoreObject(newDir);
 				return newDir;
@@ -309,7 +309,7 @@ namespace JinEngine
 			std::wstring name = JCUtil::MakeUniqueName(parent->children, ori->GetName());
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JDirectory>(name, Core::MakeGuid(), ori->GetFlag(), parent);
 			JDirectory* newDir = ownerPtr.Get();
-			if (AddInstance(std::move(ownerPtr)) && newDir->CreateDirectoryFile())
+			if (AddInstance(std::move(ownerPtr)) && CreateDirectoryFile(newDir->GetPath()))
 			{
 				newDir->Copy(ori);
 				StoreObject(newDir);
@@ -324,6 +324,8 @@ namespace JinEngine
 	}
 	JDirectory::JDirectory(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* parent)
 		:JDirectoryInterface(name, guid, flag), parent(parent)
-	{}
+	{
+		
+	}
 	JDirectory::~JDirectory() {}
 }

@@ -2,7 +2,7 @@
 #include"JMaterialInterface.h"  
 #include"../Texture/JTexture.h"
 #include"../Shader/JShaderFunctionEnum.h"
-#include"../Shader/JShaderSubPSO.h"
+#include"../Shader/JShaderGraphicPsoCondition.h"
 #include"../../../Graphic/JGraphicConstants.h"   
 #include"../../../Utility/JMathHelper.h"   
 
@@ -138,7 +138,7 @@ namespace JinEngine
 	protected:
 		void TextureChange(JTexture* be, JTexture* af, const J_GRAPHIC_SHADER_FUNCTION func)noexcept;
 		void SetNewFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunc);
-		void SetNewOption(const JShaderGraphicSubPSO newPso);
+		void SetNewOption(const JShaderGraphicPsoCondition newPso);
 	private:
 		void SetShader(JShader* newShader)noexcept;
 	private:

@@ -37,8 +37,9 @@ namespace JinEngine
 				int count = 0;
 				int capacity = 0;
 				int offset = 0; 
-			public:
-				void Clear();
+			public: 
+				void ClearCount();
+				void ClearAllData();
 			public:
 				int GetNextViewIndex()const noexcept;
 				bool HasSpace()const noexcept;
@@ -50,8 +51,9 @@ namespace JinEngine
 				int capacity = 0; 
 			public:
 				ResourceViewInfo viewInfo[(int)J_GRAPHIC_BIND_TYPE::COUNT];
-			public:
-				void Clear(); 
+			public: 
+				void ClearCount();
+				void ClearAllData(); 
 			public:
 				bool HasSpace()const noexcept;
 			};
@@ -89,6 +91,7 @@ namespace JinEngine
 			uint GetDescriptorSize(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
 			DXGI_FORMAT GetBackBufferFormat()const noexcept;
 			DXGI_FORMAT GetDepthStencilFormat()const noexcept;
+			DirectX::XMVECTORF32 GetBackBufferClearColor()const noexcept;
 		public:		 
 			static uint GetSwapChainBufferCount()noexcept;
 			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept;
@@ -115,6 +118,10 @@ namespace JinEngine
 				const uint viewHeight,
 				bool m4xMsaaState,
 				uint m4xMsaaQuality);
+			void CreateEditorDepthStencilResource(ID3D12Device* device,
+				ID3D12GraphicsCommandList* commandList,
+				const uint viewWidth,
+				const uint viewHeight); 
 			void CreateOcclusionQueryResource(ID3D12Device* device);
 			void CreateOcclusionHZBResource(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const uint occWidth, const uint occHeight);
 			JGraphicResourceHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
@@ -136,6 +143,7 @@ namespace JinEngine
 			void BindSwapChain(ID3D12Device* device, const uint resourceIndex);
 			void BindMainDepthStencil(ID3D12Device* device, const uint resourceIndex);
 			void BindMainDepthStencilDebug(ID3D12Device* device, const uint resourceIndex);
+			void BindEditorDepthStencil(ID3D12Device* device, const uint resourceIndex); 
 			void BindOcclusionHZBDepthMap(ID3D12Device* device, const uint resourceIndex);
 			void BindOcclusionHZBDepthMipMap(ID3D12Device* device, const uint resourceIndex);
 			void BindOcclusionHZBDebug(ID3D12Device* device, const uint resourceIndex);

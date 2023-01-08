@@ -316,7 +316,7 @@ namespace JinEngine
 	}
 	void JScene::UpdateTransform(JGameObject* owner)noexcept
 	{
-		// && owner->GetRenderItem()->GetRenderLayer() != J_RENDER_LAYER::DEBUG_LAYER
+		// && owner->GetRenderItem()->GetRenderLayer() != J_RENDER_LAYER::DEBUG
 		if (owner == nullptr || !owner->HasRenderItem())
 			return;
 		 
@@ -590,8 +590,8 @@ namespace JinEngine
 			bvhDebugOption.commonOption.debugRoot = debugRoot;
 			bvhDebugOption.commonOption.isSpaceSpatialActivated = true; 
 
-			bvhDebugOption.commonOption.isDebugActivated = true;
-			bvhDebugOption.commonOption.isDebugLeafOnly = true;
+			//bvhDebugOption.commonOption.isDebugActivated = true;
+			//bvhDebugOption.commonOption.isDebugLeafOnly = true;
 
 			spatialStructure->SetBvhOption(debugLayer, bvhDebugOption);
 			/*

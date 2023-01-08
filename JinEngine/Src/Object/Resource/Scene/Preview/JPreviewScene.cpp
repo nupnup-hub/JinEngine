@@ -35,7 +35,7 @@ namespace JinEngine
 		bool isQuad,
 		const DirectX::XMFLOAT3 additionalPos)noexcept
 	{
-		if (previewDimension == J_PREVIEW_DIMENSION::TWO_DIMENTIONAL_RESOURCE)
+		if (previewDimension == J_PREVIEW_DIMENSION::TWO_DIMENTIONAL)
 		{
 			if (isQuad)
 				Adjust2DTextureCamera(scene, camera, objCenter, objRadius, additionalPos);

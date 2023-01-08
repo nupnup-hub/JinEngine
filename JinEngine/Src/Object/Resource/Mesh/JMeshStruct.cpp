@@ -91,67 +91,19 @@ namespace JinEngine
 	JMeshData::JMeshData(){}
 	JMeshData::JMeshData(const std::wstring& name,
 		const size_t guid,
-		std::vector<uint>&& indices32,
+		std::vector<uint>&& indices,
 		const bool hasUV,
 		const bool hasNormal)
-		:name(name), guid(guid), indices32(std::move(indices32)), hasUV(hasUV), hasNormal(hasNormal)
-	{
-		is16bit = false;
-	}
-	JMeshData::JMeshData(const std::wstring& name,
-		const size_t guid,
-		std::vector<uint16>&& indices16,
-		const bool hasUV,
-		const bool hasNormal)
-		: name(name), guid(guid), indices16(std::move(indices16)), hasUV(hasUV), hasNormal(hasNormal)
-	{
-		is16bit = true;
-	}
+		:name(name), guid(guid), indices(std::move(indices)), hasUV(hasUV), hasNormal(hasNormal)
+	{}
 
-	void JMeshData::Stuff8ByteDataTo4Byte()noexcept
-	{
-		const uint indexCount = (uint)indices32.size();
-		if (indexCount == 0 && indexCount < 1 << 16)
-			return;
-
-		indices16.resize(indexCount);
-		for (size_t i = 0; i < indexCount; ++i)
-			indices16[i] = indices32[i];
-
-		indices32.clear();
-		is16bit = true;
-	}
-	void JMeshData::Stuff4ByteDataTo8Byte()noexcept
-	{
-		const uint indexCount = (uint)indices16.size();
-		if (indexCount == 0)
-			return;
-
-		indices32.resize(indexCount);
-		for (size_t i = 0; i < indexCount; ++i)
-			indices32[i] = indices16[i];
-
-		indices16.clear();
-		is16bit = false;
-	}
 	void JMeshData::InverseIndex()noexcept
 	{
-		uint indices16Size = (uint)indices16.size();
-		uint indices32Size = (uint)indices32.size();
-		if (indices32Size != 0)
-		{
-			std::vector<uint> oldIndices32;
-			std::copy(indices32.begin(), indices32.end(), std::back_inserter(oldIndices32));
-			for (uint i = 0; i < indices32Size; ++i)
-				indices32[indices32Size - 1 - i] = oldIndices32[i];
-		}
-		else if(indices16Size != 0)
-		{
-			std::vector<uint16> oldIndices16;
-			std::copy(indices16.begin(), indices16.end(), std::back_inserter(oldIndices16));
-			for (uint i = 0; i < indices16Size; ++i)
-				indices16[indices16Size - 1 - i] = oldIndices16[i];
-		}
+		uint indicesCount = GetIndexCount(); ;
+		std::vector<uint> oldIndices;
+		std::copy(indices.begin(), indices.end(), std::back_inserter(oldIndices));
+		for (uint i = 0; i < indicesCount; ++i)
+			indices[indicesCount - 1 - i] = oldIndices[i];
 	}
 	std::wstring JMeshData::GetName()const noexcept
 	{
@@ -167,32 +119,15 @@ namespace JinEngine
 	}
 	uint JMeshData::GetIndexCount()const noexcept
 	{
-		if (is16bit)
-			return (uint)indices16.size();
-		else
-			return (uint)indices32.size();
+		return (uint)indices.size();
 	}
-	uint16 JMeshData::GetU16Index(const uint index)const noexcept
+	uint JMeshData::GetIndex(const uint index)const noexcept
 	{
-		if (is16bit)
-			return indices16[index];
-		else
-			return 0;
+		return indices[index];
 	}
-	uint32 JMeshData::GetU32Index(const uint index)const noexcept
+	const std::vector<uint>& JMeshData::GetIndexVector()const noexcept
 	{
-		if (is16bit)
-			return 0;
-		else
-			return indices32[index];
-	}
-	const std::vector<uint16>& JMeshData::GetU16Vector()const noexcept
-	{
-		return indices16;
-	}
-	const std::vector<uint32>& JMeshData::GetU32Vector()const noexcept
-	{
-		return indices32;
+		return indices;
 	}
 	DirectX::BoundingBox JMeshData::GetBBox()const noexcept
 	{
@@ -212,11 +147,13 @@ namespace JinEngine
 	}
 	void JMeshData::AddIndex(const uint index)noexcept
 	{
-		if (Is16bit())
-			indices16.push_back(index);
-		else
-			indices32.push_back(index);
+		indices.push_back(index);
 	} 
+	void JMeshData::AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept
+	{
+		boundingBox.Center = JMathHelper::Vector3Plus(boundingBox.Center, offsetPos);
+		boundingBox.Extents = JMathHelper::Vector3Plus(boundingBox.Extents, offsetPos);
+	}
 	bool JMeshData::HasUV()const noexcept
 	{
 		return hasUV;
@@ -227,7 +164,7 @@ namespace JinEngine
 	}
 	bool JMeshData::Is16bit()const noexcept
 	{
-		return is16bit;
+		return indices.size() < (1 << 16);
 	}
 	bool JMeshData::IsValid()const noexcept
 	{
@@ -253,69 +190,36 @@ namespace JinEngine
 	}
 	void JMeshData::Merge(const JMeshData& meshData)
 	{
+		if (meshData.GetMeshType() == J_MESHGEOMETRY_TYPE::SKINNED)
+			return;
+
 		const uint addedCount = meshData.GetIndexCount();
 		const uint vertexOffset = GetVertexCount();
 		const uint indexOffset = GetIndexCount();
 		const uint newTotalIndexCount = indexOffset + addedCount;
 		const bool isOver16Bit = newTotalIndexCount >= 1 << 16;
-		if (Is16bit())
-		{
-			if (isOver16Bit)
-			{
-				Stuff4ByteDataTo8Byte();
-				for (uint i = 0; i < addedCount; ++i)
-					indices32[i + indexOffset] = meshData.GetU16Index() + vertexOffset;
-			}
-			else
-			{
-				indices16.resize(newTotalIndexCount);
-				for (uint i = 0; i < addedCount; ++i)
-					indices16[i + indexOffset] = addedIndices32[i] + vertexOffset;
-			}
-		}
-		else
-		{
-			indices32.resize(newTotalIndexCount);
-			for (uint i = 0; i < addedCount; ++i)
-				indices32[i + indexOffset] = addedIndices32[i] + vertexOffset;
-		}
+
+		indices.resize(newTotalIndexCount);
+		for (uint i = 0; i < addedCount; ++i)
+			indices[i + indexOffset] = meshData.indices[i] + vertexOffset;
 	}
 	JStaticMeshData::JStaticMeshData(){}
 	JStaticMeshData::JStaticMeshData(const std::wstring& name,
 		const size_t guid,
-		std::vector<uint32>&& indices32,
+		std::vector<uint>&& indices,
 		const bool hasUV,
 		const bool hasNormal,
 		std::vector<JStaticMeshVertex>&& vertices)
-		:JMeshData(name ,guid, std::move(indices32), hasUV, hasNormal), vertices(std::move(vertices))
+		:JMeshData(name ,guid, std::move(indices), hasUV, hasNormal), vertices(std::move(vertices))
 	{
 		CreateBoundingObject();
 	}
 	JStaticMeshData::JStaticMeshData(const std::wstring& name,
-		const size_t guid,
-		std::vector<uint16>&& indices16,
+		std::vector<uint>&& indices,
 		const bool hasUV,
 		const bool hasNormal,
 		std::vector<JStaticMeshVertex>&& vertices)
-		: JMeshData(name, guid, std::move(indices16), hasUV, hasNormal), vertices(std::move(vertices))
-	{
-		CreateBoundingObject();
-	}
-	JStaticMeshData::JStaticMeshData(const std::wstring& name,
-		std::vector<uint16>&& indices16,
-		const bool hasUV,
-		const bool hasNormal,
-		std::vector<JStaticMeshVertex>&& vertices)
-		: JMeshData(name, Core::MakeGuid(), std::move(indices16), hasUV, hasNormal), vertices(std::move(vertices))
-	{
-		CreateBoundingObject();
-	}
-	JStaticMeshData::JStaticMeshData(const std::wstring& name,
-		std::vector<uint32>&& indices32,
-		const bool hasUV,
-		const bool hasNormal,
-		std::vector<JStaticMeshVertex>&& vertices)
-		: JMeshData(name, Core::MakeGuid(), std::move(indices32), hasUV, hasNormal), vertices(std::move(vertices))
+		: JMeshData(name, Core::MakeGuid(), std::move(indices), hasUV, hasNormal), vertices(std::move(vertices))
 	{
 		CreateBoundingObject();
 	}
@@ -344,6 +248,13 @@ namespace JinEngine
 	{
 		vertices.push_back(vertex);
 	}
+	void JStaticMeshData::AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept
+	{ 
+		const uint vCount = GetVertexCount();
+		for (uint i = 0; i < vCount; ++i)
+			vertices[i].position = JMathHelper::Vector3Plus(vertices[i].position, offsetPos);
+		JMeshData::AddPositionOffset(offsetPos);
+	}
 	void JStaticMeshData::Merge(const JStaticMeshData& mesh)noexcept
 	{
 		//vertices.insert(vertices.end(), std::move(*mesh.vertices.data())); 
@@ -353,21 +264,11 @@ namespace JinEngine
 	}
 	JSkinnedMeshData::JSkinnedMeshData(const std::wstring& name,
 		const size_t guid,
-		std::vector<uint32>&& indices32,
+		std::vector<uint>&& indices,
 		const bool hasUV,
 		const bool hasNormal,
 		std::vector<JSkinnedMeshVertex>&& vertices)
-		:JMeshData(name, guid, std::move(indices32), hasUV, hasNormal), vertices(std::move(vertices))
-	{
-		CreateBoundingObject();
-	}
-	JSkinnedMeshData::JSkinnedMeshData(const std::wstring& name,
-		const size_t guid,
-		std::vector<uint16>&& indices16,
-		const bool hasUV,
-		const bool hasNormal,
-		std::vector<JSkinnedMeshVertex>&& vertices)
-		: JMeshData(name, guid, std::move(indices16), hasUV, hasNormal), vertices(std::move(vertices))
+		:JMeshData(name, guid, std::move(indices), hasUV, hasNormal), vertices(std::move(vertices))
 	{
 		CreateBoundingObject();
 	}
@@ -390,6 +291,13 @@ namespace JinEngine
 	void JSkinnedMeshData::SetVertex(const uint index, const JSkinnedMeshVertex& vertex)const noexcept
 	{
 		vertices[index] = vertex;
+	}
+	void JSkinnedMeshData::AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept
+	{
+		const uint vCount = GetVertexCount();
+		for (uint i = 0; i < vCount; ++i)
+			vertices[i].position = JMathHelper::Vector3Plus(vertices[i].position, offsetPos);
+		JMeshData::AddPositionOffset(offsetPos);
 	}
 
 	uint JMeshGroup::GetTotalVertexCount()noexcept

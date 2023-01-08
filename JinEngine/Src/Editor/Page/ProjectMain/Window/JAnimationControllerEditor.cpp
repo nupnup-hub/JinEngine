@@ -57,11 +57,11 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Animation Controller Editor Diagram List Popup Root", J_EDITOR_POPUP_NODE_TYPE::ROOT, nullptr);
 
 			std::unique_ptr<JEditorPopupNode> createNewDiagramNode =
-				std::make_unique<JEditorPopupNode>("Create New Diagram", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, diagramListRootNode.get());
+				std::make_unique<JEditorPopupNode>("Create New Diagram", J_EDITOR_POPUP_NODE_TYPE::LEAF, diagramListRootNode.get());
 			editorString->AddString(createNewDiagramNode->GetNodeId(), { "Create New Diagram" , u8"애니메이션 다이어그램 생성" });
 
 			std::unique_ptr<JEditorPopupNode> eraseDiagramNode =
-				std::make_unique<JEditorPopupNode>("Destroy Diagram", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, diagramListRootNode.get());
+				std::make_unique<JEditorPopupNode>("Destroy Diagram", J_EDITOR_POPUP_NODE_TYPE::LEAF, diagramListRootNode.get());
 			editorString->AddString(eraseDiagramNode->GetNodeId(), { "Destroy Diagram" , u8"애니메이션 다이어그램 삭제" });
 
 			auto createDiagramLam = [](DataHandleStructure& dataStructure,
@@ -109,11 +109,11 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Animation Controller Editor Condition List Popup Root", J_EDITOR_POPUP_NODE_TYPE::ROOT, nullptr);
 
 			std::unique_ptr<JEditorPopupNode> createNewConditionNode =
-				std::make_unique<JEditorPopupNode>("Create New Condition", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, conditionListRootNode.get());
+				std::make_unique<JEditorPopupNode>("Create New Condition", J_EDITOR_POPUP_NODE_TYPE::LEAF, conditionListRootNode.get());
 			editorString->AddString(createNewConditionNode->GetNodeId(), { "Create New Condition" , u8"애니메이션 패러미터 생성" });
 
 			std::unique_ptr<JEditorPopupNode> destroyConditionNode =
-				std::make_unique<JEditorPopupNode>("Destroy Condition", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, conditionListRootNode.get());
+				std::make_unique<JEditorPopupNode>("Destroy Condition", J_EDITOR_POPUP_NODE_TYPE::LEAF, conditionListRootNode.get());
 			editorString->AddString(destroyConditionNode->GetNodeId(), { "Destroy Condition" , u8"애니메이션 패러미터 삭제" });
 
 			auto createConditionLam = [](DataHandleStructure& dataStructure,
@@ -198,11 +198,11 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Animation Controller Editor Diagram View Popup Root", J_EDITOR_POPUP_NODE_TYPE::ROOT, nullptr);
 
 			std::unique_ptr<JEditorPopupNode> createNewCilpStateNode =
-				std::make_unique<JEditorPopupNode>("Create New State", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, diagramViewRootNode.get());
+				std::make_unique<JEditorPopupNode>("Create New State", J_EDITOR_POPUP_NODE_TYPE::LEAF, diagramViewRootNode.get());
 			editorString->AddString(createNewCilpStateNode->GetNodeId(), { "Create New Animation Clip" , u8"애니메이션 클립 생성" });
 
 			std::unique_ptr<JEditorPopupNode> destroyStateNode =
-				std::make_unique<JEditorPopupNode>("Destroy State", J_EDITOR_POPUP_NODE_TYPE::LEAF_SELECT, diagramViewRootNode.get());
+				std::make_unique<JEditorPopupNode>("Destroy State", J_EDITOR_POPUP_NODE_TYPE::LEAF, diagramViewRootNode.get());
 			editorString->AddString(destroyStateNode->GetNodeId(), { "Destroy Animation State" , u8"애니메이션 상태 삭제" });
 
 			auto createStateLam = [](DataHandleStructure& dataStructure,

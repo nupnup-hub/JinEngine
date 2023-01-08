@@ -73,7 +73,7 @@ namespace JinEngine
 	{
 		return mesh != nullptr ? mesh->GetTotalSubmeshCount() : 0;
 	}
-	DirectX::BoundingBox JRenderItem::GetBoundingBox(bool onDebug)noexcept
+	DirectX::BoundingBox JRenderItem::GetBoundingBox()noexcept
 	{
 		if (mesh != nullptr)
 		{

@@ -43,7 +43,7 @@ namespace JinEngine
 			commandList->SetGraphicsRootDescriptorTable(0, depthMapHandle);
 			commandList->SetGraphicsRootDescriptorTable(1, stencilMapHandle);
 			commandList->SetGraphicsRootConstantBufferView(2, outlineCB->Resource()->GetGPUVirtualAddress());
-			commandList->SetPipelineState(gShaderData->Pso.Get());
+			commandList->SetPipelineState(gShaderData->pso.Get());
 
 			JMeshGeometry* mesh = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
 
@@ -109,9 +109,9 @@ namespace JinEngine
 			std::wstring gShaderPath = JApplicationVariable::GetShaderPath() + L"\\Outline.hlsl";
 
 			gShaderData = std::make_unique<JGraphicShaderData>();
-			gShaderData->Vs = JD3DUtility::CompileShader(gShaderPath, &macro, "VS", "vs_5_1");
-			gShaderData->Ps = JD3DUtility::CompileShader(gShaderPath, &macro, "PS", "ps_5_1");
-			gShaderData->InputLayout =
+			gShaderData->vs = JD3DUtility::CompileShader(gShaderPath, &macro, "VS", "vs_5_1");
+			gShaderData->ps = JD3DUtility::CompileShader(gShaderPath, &macro, "PS", "ps_5_1");
+			gShaderData->inputLayout =
 			{
 				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 				{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -121,17 +121,17 @@ namespace JinEngine
 
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC newShaderPso;
 			ZeroMemory(&newShaderPso, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-			newShaderPso.InputLayout = { gShaderData->InputLayout.data(), (uint)gShaderData->InputLayout.size() };
+			newShaderPso.InputLayout = { gShaderData->inputLayout.data(), (uint)gShaderData->inputLayout.size() };
 			newShaderPso.pRootSignature = mRootSignature.Get();
 			newShaderPso.VS =
 			{
-				reinterpret_cast<BYTE*>(gShaderData->Vs->GetBufferPointer()),
-				gShaderData->Vs->GetBufferSize()
+				reinterpret_cast<BYTE*>(gShaderData->vs->GetBufferPointer()),
+				gShaderData->vs->GetBufferSize()
 			};
 			newShaderPso.PS =
 			{
-				reinterpret_cast<BYTE*>(gShaderData->Ps->GetBufferPointer()),
-				gShaderData->Ps->GetBufferSize()
+				reinterpret_cast<BYTE*>(gShaderData->ps->GetBufferPointer()),
+				gShaderData->ps->GetBufferSize()
 			};
 			newShaderPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 			newShaderPso.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
@@ -160,7 +160,7 @@ namespace JinEngine
 			newShaderPso.SampleDesc.Quality = 0;
 			newShaderPso.DSVFormat = dsvFormat;
 
-			ThrowIfFailedG(device->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(gShaderData->Pso.GetAddressOf())));
+			ThrowIfFailedG(device->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(gShaderData->pso.GetAddressOf())));
 		}
 		void JOutline::BuildUploadBuffer(ID3D12Device* device)
 		{

@@ -1,8 +1,9 @@
 #pragma once  
 #include"JShaderFunctionEnum.h" 
-#include"JShaderSubPSO.h"
+#include"JShaderGraphicPsoCondition.h"
 #include"JShaderData.h" 
 #include"JShaderInterface.h" 
+#include"JExtraPsoType.h"
 #include"../Mesh/JMeshType.h" 
 #include<unordered_map> 
 #include<d3d12.h>
@@ -29,25 +30,25 @@ namespace JinEngine
 		public:
 			J_GRAPHIC_SHADER_FUNCTION gShaderFunctionFlag = SHADER_FUNCTION_NONE;
 			J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
-			JShaderGraphicSubPSO graphicPSO;
+			JShaderGraphicPsoCondition graphicPSO;
 		public:
 			JShaderInitdata(const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag,
-				const JShaderGraphicSubPSO newGraphicPSO = JShaderGraphicSubPSO(),
+				const JShaderGraphicPsoCondition newGraphicPSO = JShaderGraphicPsoCondition(),
 				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 			JShaderInitdata(const J_OBJECT_FLAG flag,
 				const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag,
-				const JShaderGraphicSubPSO newGraphicPSO = JShaderGraphicSubPSO(),
+				const JShaderGraphicPsoCondition newGraphicPSO = JShaderGraphicPsoCondition(),
 				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 			JShaderInitdata(const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag, 
-				const JShaderGraphicSubPSO newGraphicPSO = JShaderGraphicSubPSO(),
+				const JShaderGraphicPsoCondition newGraphicPSO = JShaderGraphicPsoCondition(),
 				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 		public:
 			J_RESOURCE_TYPE GetResourceType() const noexcept;
 		private:
 			static std::wstring MakeName(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, 
-				const JShaderGraphicSubPSO& graphicPSO,
+				const JShaderGraphicPsoCondition& graphicPSO,
 				const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept;
 		};
 		using InitData = JShaderInitdata;
@@ -55,9 +56,9 @@ namespace JinEngine
 		std::unique_ptr<JGraphicShaderData>gShaderData[SHADER_VERTEX_COUNT]{ nullptr, nullptr };
 		std::unique_ptr<JComputeShaderData> cShaderData = nullptr;
 		J_GRAPHIC_SHADER_FUNCTION gFunctionFlag = SHADER_FUNCTION_NONE;
-		J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
+		J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE; 
 	private:
-		JShaderGraphicSubPSO graphicPSO;
+		JShaderGraphicPsoCondition graphicPSO;
 	private:
 		static std::unordered_map<J_GRAPHIC_SHADER_FUNCTION, const D3D_SHADER_MACRO> shaderFuncMacroMap;  
 		static std::unordered_map<J_SHADER_VERTEX_LAYOUT, const D3D_SHADER_MACRO> vertexLayoutMacroMap;
@@ -73,11 +74,12 @@ namespace JinEngine
 	public:
 		ID3D12PipelineState* GetComputePso()const noexcept;
 		ID3D12PipelineState* GetGraphicPso(const J_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
+		ID3D12PipelineState* GetGraphicExtraPso(const J_SHADER_VERTEX_LAYOUT vertexLayout, const J_GRAPHIC_EXTRA_PSO_TYPE type)const noexcept;
 		ID3D12RootSignature* GetComputeRootSignature()const noexcept;
 		JVector3<uint> GetComputeGroupDim()const noexcept;
 		J_GRAPHIC_SHADER_FUNCTION GetShaderGFunctionFlag()const noexcept;
 		J_COMPUTE_SHADER_FUNCTION GetShdaerCFunctionFlag()const noexcept;
-		JShaderGraphicSubPSO GetSubGraphicPso()const noexcept;
+		JShaderGraphicPsoCondition GetSubGraphicPso()const noexcept;
 	public:
 		bool IsComputeShader()const noexcept; 
 	public:
@@ -95,6 +97,7 @@ namespace JinEngine
 		void RecompileGraphicShader()final;
 		static void CompileShdaer(JShader* shader);
 		static void CompileGraphicShader(JShader* shader);
+		static void CompileGraphicExtraPso(JShader* shader, const J_GRAPHIC_EXTRA_PSO_TYPE type);
 		static void CompileComputeShader(JShader* shader);
 		static void GetMacroVec(_Out_ std::vector<D3D_SHADER_MACRO>& outMacro, const J_SHADER_VERTEX_LAYOUT vertexLayoutFlag, const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag)noexcept;
 		static void GetInitHelper(_Out_ CSInitHelper& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept;
