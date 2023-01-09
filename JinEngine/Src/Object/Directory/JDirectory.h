@@ -32,6 +32,7 @@ namespace JinEngine
 
 		bool HasChild(const std::wstring& name)const noexcept;
 		bool HasFile(const std::wstring& name)const noexcept;
+		bool IsParent(JDirectory* dir)const noexcept;
 		bool IsOpen()const noexcept;
 
 		JDirectory* SearchDirectory(const std::wstring& path)noexcept;

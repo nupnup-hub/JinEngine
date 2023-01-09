@@ -11,6 +11,8 @@
 #include<vector>
 #include<unordered_map>
 
+struct ImGuiWindow;
+
 namespace JinEngine
 {
 	class JFile;
@@ -29,34 +31,40 @@ namespace JinEngine
 		{ 
 		private:
 			//Create Resource & Directory
-			using CreateObjectF = Core::JFunctor<void, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
-			using CreateObjectB = Core::JBindHandle<CreateObjectF, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
-			using DestroyObjectF = Core::JFunctor<void, JWindowDirectory&, Core::JUserPtr<JObject>>;
-			using DestroyObjectB = Core::JBindHandle<DestroyObjectF, JWindowDirectory&, Core::JUserPtr<JObject>>;	
+			using CreateObjectF = Core::JMFunctorType<JWindowDirectory, void, Core::JUserPtr<JDirectory>, J_RESOURCE_TYPE>;
+			using CreateDirectoryF = Core::JMFunctorType<JWindowDirectory, void, Core::JUserPtr<JDirectory>>;
+			using DestroyObjectF = Core::JMFunctorType<JWindowDirectory, void, Core::JUserPtr<JObject>>;
+			using OpenNewDirectoryF = Core::JMFunctorType<JWindowDirectory, void, Core::JUserPtr<JDirectory>>;
+			using ImportResourceF = Core::JMFunctorType<JWindowDirectory, void>;
+			using RenameF = Core::JSFunctorType<void, JWindowDirectory*>;
 
-			using OpenNewDirectoryF = Core::JFunctor<void, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
-			using OpenNewDirectoryB = Core::JBindHandle<OpenNewDirectoryF, JWindowDirectory&, Core::JUserPtr<JDirectory>>;
-		
-			using ImportResourceF = Core::JFunctor<void, JWindowDirectory&>; 
+			using RegisterCreateREvF = Core::JMFunctorType<JWindowDirectory, void, J_RESOURCE_TYPE>;
+			using RegisterCreateDEvF = Core::JMFunctorType<JWindowDirectory, void>;
+			using RegisterDestroyEvF = Core::JMFunctorType<JWindowDirectory, void>;
 		private:
 			Core::JUserPtr<JDirectory> root;
 			Core::JUserPtr<JDirectory> opendDirctory;
-			Core::JUserPtr<JDirectory> popupTargetDirctory;
-			Core::JUserPtr<JObject> selectedObj;
+			Core::JUserPtr<JObject> selectedObj;  
+			bool lastUpdateOpenNewDir = false;
 		private:
 			std::unique_ptr<JEditorString> editorString;
 			std::unique_ptr<JEditorRenameHelper> renameHelper;
-			std::unique_ptr<JEditorPopup>directoryViewPopup;
+			//not use
+			//std::unique_ptr<JEditorPopup>directoryViewPopup;
 			std::unique_ptr<JEditorPopup>fileviewPopup;
 			std::unique_ptr<JEditorWidgetPosCalculator> editorPositionCal;
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
 		private:
-			std::unordered_map<size_t, std::unique_ptr<CreateObjectF>> createResourceFuncMap;
-			std::unordered_map<size_t, std::unique_ptr<DestroyObjectF>> destroyResourceFuncMap;
-			std::unique_ptr<OpenNewDirectoryF> openNewDirFunctor;
-			std::unique_ptr<OpenNewDirectoryB> openNewDirBinder;
-			std::tuple<size_t, std::unique_ptr<ImportResourceF>> importResourceT;
-			std::unordered_map<size_t, JEditorRenameHelper::ActivateF> renameFuncMap;
+			std::unique_ptr<CreateObjectF::Functor> createResourceFunctor;
+			std::unique_ptr<CreateDirectoryF::Functor> createDirectoryFunctor;
+			std::unique_ptr<DestroyObjectF::Functor> destroyObjectFunctor;
+			std::unique_ptr<OpenNewDirectoryF::Functor> openNewDirFunctor;
+			std::unique_ptr<OpenNewDirectoryF::CompletelyBind> openNewDirBinder;
+			std::unique_ptr<ImportResourceF::Functor> importResourceFunctor;
+			std::unique_ptr<RenameF::Functor> renameFunctor;
+			std::unique_ptr<RegisterCreateREvF::Functor> regCreateRobjF;
+			std::unique_ptr<RegisterCreateDEvF::Functor> regCreateDirF;
+			std::unique_ptr<RegisterDestroyEvF::Functor> regDestroyObjF;
 		private:
 			static constexpr float selectorIconMaxRate = 0.075f;
 			static constexpr float selectorIconMinRate = 0.035f;
@@ -64,6 +72,8 @@ namespace JinEngine
 			float btnIconMinSize;
 			float btnIconSize = 0;
 			size_t selectorIconSlidebarId; 
+		private:
+			float childWindowHeight = 0;
 		private:
 			std::wstring importFilePath;
 			bool actImport = false;
@@ -87,12 +97,19 @@ namespace JinEngine
 			void FileViewOnScreen(); 
 			void ResourceFileViewOnScreen(JPreviewScene* nowPreviewScene, JResourceObject* jRobj);
 			void DirectoryFileViewOnScreen(JPreviewScene* nowPreviewScene, JDirectory* jDir);
-			void ImportFile();
+			void ImportFile(); 
 		private:
-			void OpenNewDirectory(JDirectory* newOpendDirectory); 
+			void OpenNewDirectory(Core::JUserPtr<JDirectory> newOpendDirectory);
 			void CreateOpendDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask = L"");
 			//Only create file preview not directory
 			void CreateAllDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask = L"");
+		private:
+			void RegisterCreateResourceObjectEv(J_RESOURCE_TYPE shapeType);
+			void RegisterCreateDirectoryEv();
+			void RegisterDestroyResourceObjectEv();
+			void CreateResourceObject(Core::JUserPtr<JDirectory> owner, const J_RESOURCE_TYPE rType);
+			void CreateDirectory(Core::JUserPtr<JDirectory> parent);
+			void DestroyObject(Core::JUserPtr<JObject> obj);
 		protected:
 			void DoSetFocus()noexcept final;
 			void DoSetUnFocus()noexcept final;

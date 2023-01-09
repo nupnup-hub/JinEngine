@@ -35,18 +35,22 @@ namespace JinEngine
 			if (child != nullptr)
 				allPopupNode.push_back(std::move(child));
 		}
-		void JEditorPopup::ExecutePopup(_In_ JEditorString* editorString, _Out_ J_EDITOR_POPUP_NODE_RES& res, _Out_ size_t& clickedPopupGuid)noexcept
+		void JEditorPopup::ExecutePopup(_In_ JEditorString* editorString)noexcept
 		{
-			res = J_EDITOR_POPUP_NODE_RES::NON_CLICK;
-			clickedPopupGuid = 0;
 			if (isOpen)
 			{
 				ImGui::OpenPopup(name.c_str());
 				if (ImGui::BeginPopup(name.c_str()))
 				{
-					popupRoot->PopupOnScreen(editorString, res, clickedPopupGuid);
+					 JEditorPopupNode* selected = popupRoot->PopupOnScreen(editorString);
 					ImGui::Separator();
 					ImGui::EndPopup();
+
+					if (selected != nullptr)
+					{
+						selected->InvokeSelectBind();
+						SetOpen(false);
+					}
 				}
 			}
 		}

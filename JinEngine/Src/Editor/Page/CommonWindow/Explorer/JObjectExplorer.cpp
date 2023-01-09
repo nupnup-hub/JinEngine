@@ -22,32 +22,10 @@
 namespace JinEngine
 {
 	namespace Editor
-	{
-		using CreateGameObjectHelperFunctor = Core::JFunctor<void, Core::JOwnerPtr<JGameObject>, Core::JUserPtr<JGameObject>, const size_t, const J_DEFAULT_SHAPE>;
-		static std::unique_ptr< CreateGameObjectHelperFunctor> cGObjHelperF;
-
-		//std::unique_ptr<
+	{ 
 		JObjectExplorer::JObjectExplorer(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType)
 			:JEditorWindow(name, std::move(attribute), pageType)
 		{
-			if (cGObjHelperF == nullptr)
-			{
-				auto CreateGameObjectHelperLam = [](Core::JOwnerPtr<JGameObject> owner,
-					Core::JUserPtr<JGameObject> parent,
-					const size_t guid,
-					const J_DEFAULT_SHAPE shapeType)
-				{
-					if (owner.IsValid())
-						Core::JIdentifier::AddInstance(std::move(owner));
-					else
-					{
-						if (parent.IsValid())
-							JGFU::CreateShape(*(parent.Get()), guid, OBJECT_FLAG_NONE, shapeType);
-					}
-				};
-				cGObjHelperF = std::make_unique<CreateGameObjectHelperFunctor>(CreateGameObjectHelperLam);
-			}
-
 			editorString = std::make_unique<JEditorString>();
 			renameHelper = std::make_unique<JEditorRenameHelper>();
 			searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
@@ -94,38 +72,6 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Rename JGameObject", J_EDITOR_POPUP_NODE_TYPE::LEAF, explorerPopupRootNode.get(), false);
 			editorString->AddString(renameNode->GetNodeId(), { "Rename", u8"ªı¿Ã∏ß" });
 
-			auto createCubeLam = [](DataHandleStructure& dS, Core::JDataHandle& dH, Core::JUserPtr<JGameObject> p, const size_t guid)
-			{
-				(*cGObjHelperF)(dS.Release(dH), p, guid, J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE);
-			};
-			auto createGridLam = [](DataHandleStructure& dS, Core::JDataHandle& dH, Core::JUserPtr<JGameObject> p, const size_t guid)
-			{
-				(*cGObjHelperF)(dS.Release(dH), p, guid, J_DEFAULT_SHAPE::DEFAULT_SHAPE_GRID);
-			};
-			auto createCyilinderLam = [](DataHandleStructure& dS, Core::JDataHandle& dH, Core::JUserPtr<JGameObject> p, const size_t guid)
-			{
-				(*cGObjHelperF)(dS.Release(dH), p, guid, J_DEFAULT_SHAPE::DEFAULT_SHAPE_CYILINDER);
-			};
-			auto createSphereLam = [](DataHandleStructure& dS, Core::JDataHandle& dH, Core::JUserPtr<JGameObject> p, const size_t guid)
-			{
-				(*cGObjHelperF)(dS.Release(dH), p, guid, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE);
-			};
-			auto createQuadLam = [](DataHandleStructure& dS, Core::JDataHandle& dH, Core::JUserPtr<JGameObject> p, const size_t guid)
-			{
-				(*cGObjHelperF)(dS.Release(dH), p, guid, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
-			};
-			auto createEmptyLam = [](DataHandleStructure& dS, Core::JDataHandle& dH, Core::JUserPtr<JGameObject> p, const size_t guid)
-			{
-				(*cGObjHelperF)(dS.Release(dH), p, guid, J_DEFAULT_SHAPE::DEFAULT_SHAPE_EMPTY);
-			};
-			
-			createFuncMap.emplace(createCubeNode->GetNodeId(), std::make_unique<CreateGameObjectFunctor>(createCubeLam));
-			createFuncMap.emplace(createGridNode->GetNodeId(), std::make_unique< CreateGameObjectFunctor>(createGridLam));
-			createFuncMap.emplace(createCyilinderNode->GetNodeId(), std::make_unique< CreateGameObjectFunctor>(createCyilinderLam));
-			createFuncMap.emplace(createSphereNode->GetNodeId(), std::make_unique< CreateGameObjectFunctor>(createSphereLam));
-			createFuncMap.emplace(createQuadNode->GetNodeId(), std::make_unique< CreateGameObjectFunctor>(createQuadLam));
-			createFuncMap.emplace(createEmptyNode->GetNodeId(), std::make_unique< CreateGameObjectFunctor>(createEmptyLam));
-
 			auto destroyLam = [](DataHandleStructure& dS, Core::JDataHandle& dH, const size_t guid)
 			{
 				auto owner = Core::JIdentifier::ReleaseInstance<JGameObject>(guid);
@@ -135,29 +81,33 @@ namespace JinEngine
 					dS.TransitionHandle(newHandle, dH);
 				}
 			};
-			destroyT = std::tuple(destroyNode->GetNodeId(), std::make_unique<DestroyGameObjectFunctor>(destroyLam));
-			renameT = std::tuple(renameNode->GetNodeId(), renameHelper->GetActivateFunctor());
-
 			auto undoDestroyLam = [](DataHandleStructure& dS, Core::JDataHandle& dH)
 			{
 				auto owner = dS.Release(dH);
 				if (owner.IsValid())
 					Core::JIdentifier::AddInstance(std::move(owner));
 			};
+			auto changeParentLam = [](Core::JUserPtr<JGameObject> obj, Core::JUserPtr<JGameObject> newP) {obj->ChangeParent(newP.Get()); };
+			auto renameLam = [](JObjectExplorer* objEx) {objEx->renameHelper->Activate(objEx->selectedObject); };
+			
+			createF = std::make_unique<CreateGameObjectFunctor>(&JObjectExplorer::CreateGameObject, this);
+			createModelF = std::make_unique<CreateModelFunctor>(&JObjectExplorer::CreateModel, this);
+			destroyF = std::make_unique<DestroyGameObjectFunctor>(destroyLam);
 			undoDestroyF = std::make_unique<UndoDestroyGameObjectFunctor>(undoDestroyLam);
+			changeParentF = std::make_unique< ChangeParentF::Functor>(changeParentLam);
+			regCreateGobjF = std::make_unique<RegisterCreateGEvF::Functor>(&JObjectExplorer::RegisterCreateGameObjectEv, this);
+			regDestroyGobjF = std::make_unique<RegisterDestroyGEvF::Functor>(&JObjectExplorer::RegisterDestroyGameObjectEv, this);
+			renameF = std::make_unique<RenameF::Functor>(renameLam);
 
-			auto createModelLam = [](DataHandleStructure& ds, Core::JDataHandle& dh, Core::JUserPtr<JGameObject> p, Core::JUserPtr<JMeshGeometry> m, const size_t guid)
-			{
-				auto owner = ds.Release(dh);
-				if (owner.IsValid())
-					Core::JIdentifier::AddInstance(std::move(owner));
-				else
-				{
-					if (p.IsValid() && m.IsValid())
-						JGFU::CreateModel(*p.Get(), guid, OBJECT_FLAG_NONE, m.Get());
-				}
-			};
-			createModelF = std::make_unique<CreateModelFunctor>(createModelLam);
+			createCubeNode->RegisterSelectBind(std::make_unique<RegisterCreateGEvF::CompletelyBind>(*regCreateGobjF, J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE));
+			createGridNode->RegisterSelectBind(std::make_unique<RegisterCreateGEvF::CompletelyBind>(*regCreateGobjF, J_DEFAULT_SHAPE::DEFAULT_SHAPE_GRID));
+			createCyilinderNode->RegisterSelectBind(std::make_unique<RegisterCreateGEvF::CompletelyBind>(*regCreateGobjF, J_DEFAULT_SHAPE::DEFAULT_SHAPE_CYILINDER));
+			createSphereNode->RegisterSelectBind(std::make_unique<RegisterCreateGEvF::CompletelyBind>(*regCreateGobjF, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE));
+			createQuadNode->RegisterSelectBind(std::make_unique<RegisterCreateGEvF::CompletelyBind>(*regCreateGobjF, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD));
+			createEmptyNode->RegisterSelectBind(std::make_unique<RegisterCreateGEvF::CompletelyBind>(*regCreateGobjF, J_DEFAULT_SHAPE::DEFAULT_SHAPE_EMPTY));
+
+			destroyNode->RegisterSelectBind(std::make_unique<RegisterDestroyGEvF::CompletelyBind>(*regDestroyGobjF));
+			renameNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*renameF, this));
 
 			explorerPopup = std::make_unique<JEditorPopup>("explorerPopup", std::move(explorerPopupRootNode));
 			explorerPopup->AddPopupNode(std::move(createGameObjectNode));
@@ -169,11 +119,6 @@ namespace JinEngine
 			explorerPopup->AddPopupNode(std::move(createEmptyNode));
 			explorerPopup->AddPopupNode(std::move(destroyNode));
 			explorerPopup->AddPopupNode(std::move(renameNode));
-
-			auto changeParentLam = [](Core::JUserPtr<JGameObject> obj, Core::JUserPtr<JGameObject> newP) {obj->ChangeParent(newP.Get()); };
-			changeParentF = std::make_unique< ChangeParentF::Functor>(changeParentLam);		
-
-			
 		}
 		JObjectExplorer::~JObjectExplorer()
 		{
@@ -214,41 +159,7 @@ namespace JinEngine
 			SetTreeNodeDefaultColor();
 
 			if (explorerPopup->IsOpen())
-			{
-				J_EDITOR_POPUP_NODE_RES res;
-				size_t menuGuid;
-				explorerPopup->ExecutePopup(editorString.get(), res, menuGuid);
-				if (res == J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE)
-				{
-					auto func = createFuncMap.find(menuGuid);
-					if (func != createFuncMap.end())
-					{
-						auto parent = popupTargetObject;
-						if (!parent.IsValid())
-							parent = root;
-
-						size_t guid = Core::MakeGuid();
-						auto doBind = Core::CTaskUptr<CreateGameObjectBind>(*func->second, Core::JUserPtr{ parent }, std::move(guid));
-						auto undoBind = Core::CTaskUptr<DestroyGameObjectBind>(*std::get<1>(destroyT), std::move(guid));
-
-						auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<CreateGameObjectEvStruct>
-							("Create game object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
-						AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
-					}
-					else if (popupTargetObject.IsValid() && menuGuid == std::get<0>(destroyT))
-					{
-						auto doBind = Core::CTaskUptr<DestroyGameObjectBind>(*std::get<1>(destroyT), popupTargetObject->GetGuid());
-						auto undoBind = Core::CTaskUptr<UndoDestroyGameObjectBind>(*undoDestroyF);
-
-						auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<DestroyGameObjectEvStruct>
-							("Destroy game object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
-						AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
-					}
-					else if (menuGuid == std::get<0>(renameT))
-						(*std::get<1>(renameT))(popupTargetObject);
-					explorerPopup->SetOpen(false);
-				}
-			}
+				explorerPopup->ExecutePopup(editorString.get());
 
 			explorerPopup->Update();
 			ImGui::SameLine();
@@ -283,11 +194,9 @@ namespace JinEngine
 						SetTreeNodeDefaultColor();
 					if (isNodeOpen)
 					{
-						if (ImGui::IsItemClicked(0))
+						if (ImGui::IsItemClicked(0) || ImGui::IsItemClicked(1))
 							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(gObj)));
-						else if (ImGui::IsItemClicked(1))
-							popupTargetObject = Core::GetUserPtr(gObj);
-
+				 
 						if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
 						{
 							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(gObj)));
@@ -325,7 +234,7 @@ namespace JinEngine
 										size_t guid = Core::MakeGuid();
 										//using CreateModelBind = Core::JBindHandle<CreateModelFunctor, Core::JUserPtr<JGameObject>, Core::JUserPtr<JMeshGeometry>, const size_t>;
 										auto doBind = Core::CTaskUptr<CreateModelBind>(*createModelF, Core::GetUserPtr(gObj), Core::JUserPtr{ sMesh }, std::move(guid));
-										auto undoBind = Core::CTaskUptr<DestroyGameObjectBind>(*std::get<1>(destroyT), std::move(guid));
+										auto undoBind = Core::CTaskUptr<DestroyGameObjectBind>(*destroyF, std::move(guid));
 
 										auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<CreateModelEvStruct>
 											("Create model object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
@@ -354,6 +263,51 @@ namespace JinEngine
 				else if (isNodeOpen)
 					JImGuiImpl::TreePop();
 			} 
+		}
+		void JObjectExplorer::RegisterCreateGameObjectEv(J_DEFAULT_SHAPE shapeType)
+		{
+			auto parent = selectedObject;
+			if (!parent.IsValid())
+				parent = root;
+
+			size_t guid = Core::MakeGuid();
+			auto doBind = Core::CTaskUptr<CreateGameObjectBind>(*createF, Core::JUserPtr{ parent }, std::move(guid), std::move(shapeType));
+			auto undoBind = Core::CTaskUptr<DestroyGameObjectBind>(*destroyF, std::move(guid));
+
+			auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<CreateGameObjectEvStruct>
+				("Create game object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
+			AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
+		}
+		void JObjectExplorer::RegisterDestroyGameObjectEv()
+		{
+			auto doBind = Core::CTaskUptr<DestroyGameObjectBind>(*destroyF, selectedObject->GetGuid());
+			auto undoBind = Core::CTaskUptr<UndoDestroyGameObjectBind>(*undoDestroyF);
+
+			auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<DestroyGameObjectEvStruct>
+				("Destroy game object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
+			AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
+		}
+		void JObjectExplorer::CreateGameObject(DataHandleStructure& dS,
+			Core::JDataHandle& dH,
+			Core::JUserPtr<JGameObject> p,
+			const size_t guid,
+			const J_DEFAULT_SHAPE shapeType)
+		{ 
+			if (dS.IsValidHandle(dH))
+				Core::JIdentifier::AddInstance(dS.Release(dH));
+			else if (p.IsValid())
+				JGFU::CreateShape(*p, guid, OBJECT_FLAG_NONE, shapeType);
+		}
+		void JObjectExplorer::CreateModel(DataHandleStructure& dS,
+			Core::JDataHandle& dH,
+			Core::JUserPtr<JGameObject> p,
+			Core::JUserPtr<JMeshGeometry> m,
+			const size_t guid)
+		{
+			if (dS.IsValidHandle(dH))
+				Core::JIdentifier::AddInstance(dS.Release(dH));
+			else if (p.IsValid() && m.IsValid())
+				JGFU::CreateModel(*p, guid, OBJECT_FLAG_NONE, m.Get());
 		}
 		void JObjectExplorer::DoActivate()noexcept
 		{

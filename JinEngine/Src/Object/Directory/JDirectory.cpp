@@ -107,6 +107,15 @@ namespace JinEngine
 		}
 		return false;
 	}
+	bool JDirectory::IsParent(JDirectory* dir)const noexcept
+	{
+		if (parent == nullptr)
+			return false;
+		if (parent->GetGuid() == dir->GetGuid())
+			return true;
+		else
+			return parent->IsParent(dir);
+	}
 	bool JDirectory::IsOpen()const noexcept
 	{
 		return IsActivated();

@@ -128,7 +128,7 @@ namespace JinEngine
 			static bool Selectable(const std::string& name, bool* pSelected = nullptr, ImGuiSelectableFlags flags = 0, const JVector2<float>& sizeArg = { 0,0 });
 			static bool Selectable(const std::string& name, bool selected, ImGuiSelectableFlags flags = 0, const JVector2<float>& sizeArg = { 0,0 });
 			static bool InputText(const std::string& name, std::string& buff, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback txtCallback = 0, void* userData = 0);
-			static bool InputText(const std::string& name, std::string& buff, std::string& result, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback txtCallback = 0, void* userData = 0);
+			static bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback txtCallback = 0, void* userData = 0);
 			static bool InputInt(const std::string& name, int* value, ImGuiInputTextFlags flags = 0, int step = 1, int stepFast = 100);
 			static bool InputFloat(const std::string& name, float* value, ImGuiInputTextFlags flags = 0, const char* format = "%.2f", float step = 0.0f, float stepFast = 0.0f);
 		public:
@@ -278,11 +278,12 @@ namespace JinEngine
 			template<typename ...Param>
 			static bool InputTextSet(const std::string& uniqueLabel, 
 				JEditorInputBuffHelper* helper,
+				const std::string& hint,
 				ImGuiInputTextFlags flags,
 				Core::JFunctor<void, const std::string, Param...>& commitFunctor, Param... var)
 			{
 				std::string preValue = helper->buff;
-				if (JImGuiImpl::InputText(("##InputText" + uniqueLabel).c_str(), helper->buff, helper->result, flags))
+				if (JImGuiImpl::InputText(("##InputText" + uniqueLabel).c_str(), helper->buff, helper->result, hint, flags))
 				{
 					std::string dovalue = helper->result;
 					std::string undovalue = JCUtil::EraseSideChar(preValue, '\0');

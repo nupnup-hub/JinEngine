@@ -71,7 +71,7 @@ namespace JinEngine
 			{
 				if (aniCont.IsValid())
 				{
-					Core::JOwnerPtr<Core::JIdentifier> owner = dataStructure.Release(dataHandle); 
+					Core::JOwnerPtr<Core::JIdentifier> owner = dataStructure.Release(dataHandle);
 					if (owner.IsValid() && Core::Cast<Core::JAnimationFSMdiagram>(owner.Get()))
 						Core::JIdentifier::AddInstance(Core::JOwnerPtr<Core::JAnimationFSMdiagram>::ConvertChildType(std::move(owner)));
 					else
@@ -88,7 +88,7 @@ namespace JinEngine
 				{
 					auto diagramPtr = aniCont->GetDiagram(guid);
 					if (diagramPtr != nullptr)
-					{ 
+					{
 						Core::JDataHandle newHandle = dataStructure.Add(Core::JIdentifier::ReleaseInstance<Core::JAnimationFSMdiagram>(diagramPtr->GetGuid()));
 						dataStructure.TransitionHandle(newHandle, dataHandle);
 					}
@@ -165,7 +165,7 @@ namespace JinEngine
 				Core::JUserPtr<JAnimationController> aniCont,
 				size_t guid)
 			{
-				aniCont->GetCondition(guid)->SetName(JCUtil::U8StrToWstr(value));			 
+				aniCont->GetCondition(guid)->SetName(JCUtil::U8StrToWstr(value));
 			};
 			auto setConditionBoolLam = [](const bool value,
 				Core::JUserPtr<JAnimationController> aniCont,
@@ -269,8 +269,8 @@ namespace JinEngine
 			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated() && aniCont.IsValid())
-			{ 
-				UpdateMouseClick(); 
+			{
+				UpdateMouseClick();
 				float oriSize = ImGui::GetStyle().ChildBorderSize;
 				ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 2);
 				float preCursorPosY = ImGui::GetCursorPosY();
@@ -291,7 +291,7 @@ namespace JinEngine
 
 				ClearCash();
 			}
-			CloseWindow();		 
+			CloseWindow();
 		}
 		void JAnimationControllerEditor::BuildDiagramList()
 		{
@@ -348,38 +348,38 @@ namespace JinEngine
 			{
 				J_EDITOR_POPUP_NODE_RES res;
 				size_t menuGuid;
-				diagramListPopup->ExecutePopup(editorString.get(), res, menuGuid);
-				if (res == J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE)
-				{
-					Core::JAnimationFSMdiagram* diagram = aniCont->GetDiagramByIndex(diagramIndex);
-					if (aniCont->CanCreateDiagram())
-					{							
-						if (std::get<0>(createDiagramT) == menuGuid)
-						{ 
-							auto createF = &*(std::get<1>(createDiagramT));
-							auto destroyF = &*(std::get<1>(destroyDiagramT));
-			 
-							size_t guid = Core::MakeGuid(); 
-							auto cUptr = std::make_unique<CreateDiagramBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, std::move(guid));
-							auto dUptr = std::make_unique<CreateDiagramBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, std::move(guid));
-							 
-							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateDiagramBind, CreateDiagramBind>;
-							Core::JTransition::Execute(std::make_unique<CreationTask>("Create Diagram", std::move(cUptr), std::move(dUptr), fsmdata));						  
-						}
-						else if (diagram && std::get<0>(destroyDiagramT) == menuGuid)
-						{
-							auto createF = &*(std::get<1>(createDiagramT));
-							auto destroyF = &*(std::get<1>(destroyDiagramT));
-							 
-							auto cUptr = std::make_unique<CreateDiagramBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid());
-							auto dUptr = std::make_unique<CreateDiagramBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid());
+				diagramListPopup->ExecutePopup(editorString.get());
 
-							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateDiagramBind, CreateDiagramBind>;
-							Core::JTransition::Execute(std::make_unique<CreationTask>("Destroy Diagram", std::move(dUptr), std::move(cUptr), fsmdata));
-						}
-					}
-					CloseAllPopup();
-				}
+				/*
+				Core::JAnimationFSMdiagram* diagram = aniCont->GetDiagramByIndex(diagramIndex);
+			   if (aniCont->CanCreateDiagram())
+			   {
+				   if (std::get<0>(createDiagramT) == menuGuid)
+				   {
+					   auto createF = &*(std::get<1>(createDiagramT));
+					   auto destroyF = &*(std::get<1>(destroyDiagramT));
+
+					   size_t guid = Core::MakeGuid();
+					   auto cUptr = std::make_unique<CreateDiagramBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, std::move(guid));
+					   auto dUptr = std::make_unique<CreateDiagramBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, std::move(guid));
+
+					   using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateDiagramBind, CreateDiagramBind>;
+					   Core::JTransition::Execute(std::make_unique<CreationTask>("Create Diagram", std::move(cUptr), std::move(dUptr), fsmdata));
+				   }
+				   else if (diagram && std::get<0>(destroyDiagramT) == menuGuid)
+				   {
+					   auto createF = &*(std::get<1>(createDiagramT));
+					   auto destroyF = &*(std::get<1>(destroyDiagramT));
+
+					   auto cUptr = std::make_unique<CreateDiagramBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid());
+					   auto dUptr = std::make_unique<CreateDiagramBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid());
+
+					   using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateDiagramBind, CreateDiagramBind>;
+					   Core::JTransition::Execute(std::make_unique<CreationTask>("Destroy Diagram", std::move(dUptr), std::move(cUptr), fsmdata));
+				   }
+			   }
+			   CloseAllPopup();
+				*/
 			}
 		}
 		void JAnimationControllerEditor::BuildConditionList()
@@ -426,6 +426,7 @@ namespace JinEngine
 
 						if (JImGuiImpl::InputTextSet(GetName(),
 							inputBuff.get(),
+							"New name...",
 							ImGuiInputTextFlags_EnterReturnsTrue,
 							*setConditionNameF,
 							aniCont,
@@ -479,39 +480,40 @@ namespace JinEngine
 			{
 				J_EDITOR_POPUP_NODE_RES res;
 				size_t menuGuid;
-				conditionListPopup->ExecutePopup(editorString.get(), res, menuGuid);
-				if (res == J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE)
-				{
-					Core::JFSMcondition* cond = aniCont->GetConditionByIndex(conditionIndex);
-					if (aniCont->CanCreateCondition())
-					{ 
-						//using CreateBind = Core::
-						if (std::get<0>(createConditionT) == menuGuid)
-						{ 
-							auto createF = &*(std::get<1>(createConditionT));
-							auto destroyF = &*(std::get<1>(destroyConditionT));
+				conditionListPopup->ExecutePopup(editorString.get());
 
-							size_t guid = Core::MakeGuid();
-							auto cUptr = std::make_unique<CreateConditionBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, std::move(guid));
-							auto dUptr = std::make_unique<CreateConditionBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, std::move(guid));
+				/*
+				* Core::JFSMcondition* cond = aniCont->GetConditionByIndex(conditionIndex);
+			   if (aniCont->CanCreateCondition())
+			   {
+				   //using CreateBind = Core::
+				   if (std::get<0>(createConditionT) == menuGuid)
+				   {
+					   auto createF = &*(std::get<1>(createConditionT));
+					   auto destroyF = &*(std::get<1>(destroyConditionT));
 
-							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateConditionBind, CreateConditionBind>;
-							Core::JTransition::Execute(std::make_unique<CreationTask>("Create Condition", std::move(cUptr), std::move(dUptr), fsmdata));
-						}
-						else if (cond && std::get<0>(destroyConditionT) == menuGuid)
-						{
-							auto createF = &*(std::get<1>(createConditionT));
-							auto destroyF = &*(std::get<1>(destroyConditionT));
-							 
-							auto cUptr = std::make_unique<CreateConditionBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, cond->GetGuid());
-							auto dUptr = std::make_unique<CreateConditionBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, cond->GetGuid());
-							 
-							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateConditionBind, CreateConditionBind>;
-							Core::JTransition::Execute(std::make_unique<CreationTask>("Destroy Condition", std::move(dUptr), std::move(cUptr), fsmdata));
-						}
-						CloseAllPopup();
-					}
-				}
+					   size_t guid = Core::MakeGuid();
+					   auto cUptr = std::make_unique<CreateConditionBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, std::move(guid));
+					   auto dUptr = std::make_unique<CreateConditionBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, std::move(guid));
+
+					   using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateConditionBind, CreateConditionBind>;
+					   Core::JTransition::Execute(std::make_unique<CreationTask>("Create Condition", std::move(cUptr), std::move(dUptr), fsmdata));
+				   }
+				   else if (cond && std::get<0>(destroyConditionT) == menuGuid)
+				   {
+					   auto createF = &*(std::get<1>(createConditionT));
+					   auto destroyF = &*(std::get<1>(destroyConditionT));
+
+					   auto cUptr = std::make_unique<CreateConditionBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, cond->GetGuid());
+					   auto dUptr = std::make_unique<CreateConditionBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, cond->GetGuid());
+
+					   using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateConditionBind, CreateConditionBind>;
+					   Core::JTransition::Execute(std::make_unique<CreationTask>("Destroy Condition", std::move(dUptr), std::move(cUptr), fsmdata));
+				   }
+				   CloseAllPopup();
+			   }
+				*/
+
 			}
 		}
 		void JAnimationControllerEditor::BuildDiagramView(float cursorPosY)
@@ -520,7 +522,7 @@ namespace JinEngine
 			ImGui::SetCursorPos(ImVec2(windowSize.x * 0.2f + (ImGui::GetStyle().WindowPadding.x * 2) + (ImGui::GetStyle().WindowBorderSize * 2), cursorPosY));
 			ImGui::BeginChild("Diagram##JAnimationControllerEditor", ImVec2(windowSize.x * 0.8f, windowSize.y), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 			ImGui::Text(JCUtil::WstrToU8Str(aniCont->GetDiagramName(diagramIndex)).c_str());
- 
+
 			ImDrawList* drawList = ImGui::GetWindowDrawList();
 			DiagramViewFuncData funcData;
 			funcData.windowPosX = ImGui::GetWindowPos().x;
@@ -536,7 +538,7 @@ namespace JinEngine
 			ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
 			ImVec2 canvas_sz = ImGui::GetContentRegionAvail();   // Resize canvas to what's available
 			ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
-			 
+
 			Core::JAnimationFSMdiagram* diagram = aniCont->GetDiagram(diagramIndex);
 			const uint stateCount = diagram->GetStateCount();
 
@@ -553,9 +555,9 @@ namespace JinEngine
 					{
 						ClearSelectableBuff(diagramViewSelectable);
 						diagramViewSelectable[i] = true;
-						stateIndex = i; 
+						stateIndex = i;
 						conditionIndex = invalidIndex;
-					} 
+					}
 				}
 
 				ImVec2 pMin = ImVec2(stateCoord.x, stateCoord.y) + (windowPos + shapeOffset);
@@ -566,7 +568,7 @@ namespace JinEngine
 					ImVec2 framePMin = pMin - ImVec2(frameThickness, frameThickness);
 					ImVec2 framePMax = pMax + ImVec2(frameThickness, frameThickness);
 					drawList->AddRect(framePMin, framePMax, ImGui::GetColorU32(ImVec4(0.2f, 0.2f, 0.75f, 0.7f)), 0.5f, 0, frameThickness + 0.5f);
-				} 
+				}
 				drawList->AddRectFilledMultiColor(pMin, pMax,
 					ImGui::GetColorU32(ImVec4(0.25f, 0.25f, 0.75f, 0.7f)),
 					ImGui::GetColorU32(ImVec4(0.25f, 0.75f, 0.75f, 0.7f)),
@@ -607,39 +609,39 @@ namespace JinEngine
 			{
 				J_EDITOR_POPUP_NODE_RES res;
 				size_t menuGuid;
-				diagramViewPopup->ExecutePopup(editorString.get(), res, menuGuid);
-				if (res == J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE)
+				diagramViewPopup->ExecutePopup(editorString.get());
+
+				/*
+				auto diagram = aniCont->GetDiagram(diagramIndex);
+				auto state = diagram != nullptr ? diagram->GetState(stateIndex) : nullptr;
+				if (aniCont->CanCreateState(diagramIndex))
 				{
-					auto diagram = aniCont->GetDiagram(diagramIndex);	
-					auto state = diagram != nullptr ? diagram->GetState(stateIndex) : nullptr;
-					if (aniCont->CanCreateState(diagramIndex))
-					{ 
-						if (std::get<0>(createStateT) == menuGuid)
-						{ 			
-							auto createF = &*(std::get<1>(createStateT));
-							auto destroyF = &*(std::get<1>(destroyStateT));
+					if (std::get<0>(createStateT) == menuGuid)
+					{
+						auto createF = &*(std::get<1>(createStateT));
+						auto destroyF = &*(std::get<1>(destroyStateT));
 
-							size_t guid = Core::MakeGuid();
-							auto cUptr = std::make_unique<CreateStateBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), std::move(guid));
-							auto dUptr = std::make_unique<CreateStateBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), std::move(guid));
+						size_t guid = Core::MakeGuid();
+						auto cUptr = std::make_unique<CreateStateBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), std::move(guid));
+						auto dUptr = std::make_unique<CreateStateBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), std::move(guid));
 
-							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateStateBind, CreateStateBind>;
-							Core::JTransition::Execute(std::make_unique<CreationTask>("Create State", std::move(cUptr), std::move(dUptr), fsmdata));
-						}
-						else if (state && std::get<0>(destroyStateT) == menuGuid)
-						{						 
-							auto createF = &*(std::get<1>(createStateT));
-							auto destroyF = &*(std::get<1>(destroyStateT));
-							 
-							auto cUptr = std::make_unique<CreateStateBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), state->GetGuid());
-							auto dUptr = std::make_unique<CreateStateBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), state->GetGuid());
-
-							using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateStateBind, CreateStateBind>;
-							Core::JTransition::Execute(std::make_unique<CreationTask>("Destry State", std::move(dUptr), std::move(cUptr), fsmdata));
-						} 
+						using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateStateBind, CreateStateBind>;
+						Core::JTransition::Execute(std::make_unique<CreationTask>("Create State", std::move(cUptr), std::move(dUptr), fsmdata));
 					}
-					CloseAllPopup();
+					else if (state && std::get<0>(destroyStateT) == menuGuid)
+					{
+						auto createF = &*(std::get<1>(createStateT));
+						auto destroyF = &*(std::get<1>(destroyStateT));
+
+						auto cUptr = std::make_unique<CreateStateBind>(*createF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), state->GetGuid());
+						auto dUptr = std::make_unique<CreateStateBind>(*destroyF, Core::empty, Core::empty, Core::JUserPtr{aniCont}, diagram->GetGuid(), state->GetGuid());
+
+						using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, CreateStateBind, CreateStateBind>;
+						Core::JTransition::Execute(std::make_unique<CreationTask>("Destry State", std::move(dUptr), std::move(cUptr), fsmdata));
+					}
 				}
+				CloseAllPopup();
+				*/
 			}
 		}
 		void JAnimationControllerEditor::CloseAllPopup()noexcept

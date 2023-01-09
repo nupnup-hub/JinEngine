@@ -25,82 +25,82 @@ namespace JinEngine
 				parent->children.push_back(this); 
 		}
 		JEditorPopupNode::~JEditorPopupNode() {}
-		void JEditorPopupNode::PopupOnScreen(_In_ JEditorString* editorString, _Out_ J_EDITOR_POPUP_NODE_RES& res, _Out_ std::size_t& clickMenuGuid)
+		JEditorPopupNode* JEditorPopupNode::PopupOnScreen(_In_ JEditorString* editorString)
 		{
+			JEditorPopupNode* selected = nullptr;
 			const uint childrenCount = (uint)children.size();
 			switch (nodeType)
 			{
 			case J_EDITOR_POPUP_NODE_TYPE::ROOT:
+			{
 				popupPos = JImGuiImpl::GetGuiWindowPos();
 				popupSize = JImGuiImpl::GetGuiWindowSize();
 				for (uint i = 0; i < childrenCount; ++i)
-					children[i]->PopupOnScreen(editorString, res, clickMenuGuid);
+				{
+					JEditorPopupNode* res = children[i]->PopupOnScreen(editorString);
+					if (res != nullptr)
+						selected = res;
+				}
 				break;
+			}
 			case J_EDITOR_POPUP_NODE_TYPE::INTERNAL:
+			{
 				if (ImGui::BeginMenu(editorString->GetString(nodeId).c_str()))
-				{ 
+				{
 					isOpen = true;
 					popupPos = JImGuiImpl::GetGuiWindowPos();
 					popupSize = JImGuiImpl::GetGuiWindowSize();
 					for (uint i = 0; i < childrenCount; ++i)
-						children[i]->PopupOnScreen(editorString, res, clickMenuGuid);
+					{
+						JEditorPopupNode* res = children[i]->PopupOnScreen(editorString);
+						if (res != nullptr)
+							selected = res;
+					}
 					ImGui::EndMenu();
 				}
 				else
 					isOpen = false;
 				PrintTooltip(editorString);
 				break;
+			}
 			case J_EDITOR_POPUP_NODE_TYPE::LEAF:
+			{
 				if (hasShortCut)
 				{
 					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), editorString->GetString(shortCutId).c_str(), false))
-					{
-						res = J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE;
-						clickMenuGuid = nodeId;
-					}
+						selected = this;
 					PrintTooltip(editorString);
 				}
 				else
 				{
 					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str()))
-					{
-						res = J_EDITOR_POPUP_NODE_RES::CLICK_SLELECT_NODE;
-						clickMenuGuid = nodeId;
-					}
+						selected = this;
 					PrintTooltip(editorString);
 				}
 				break;
+			}
 			case J_EDITOR_POPUP_NODE_TYPE::LEAF_TOGGLE:
+			{
 				if (hasShortCut)
 				{
 					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), editorString->GetString(shortCutId).c_str(), &isActivated))
-					{
-						if (isActivated)
-							res = J_EDITOR_POPUP_NODE_RES::CLICK_TOGGLE_TO_ON;
-						else
-							res = J_EDITOR_POPUP_NODE_RES::CLICK_TOGGLE_TO_OFF;
-						clickMenuGuid = nodeId;
-					}
+						selected = this;
 					PrintTooltip(editorString);
 				}
 				else
 				{
 					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), "", &isActivated))
-					{
-						if (isActivated)
-							res = J_EDITOR_POPUP_NODE_RES::CLICK_TOGGLE_TO_ON;
-						else
-							res = J_EDITOR_POPUP_NODE_RES::CLICK_TOGGLE_TO_OFF;
-						clickMenuGuid = nodeId;
-					}
+						selected = this;
 					PrintTooltip(editorString);
 				}
 				break;
+			}
 			case J_EDITOR_POPUP_NODE_TYPE::LEAF_CHECK_BOX:
 				break;
 			default:
 				break;
 			}
+			return selected;
 		}
 		void JEditorPopupNode::PrintTooltip(_In_ JEditorString* editorString)noexcept
 		{

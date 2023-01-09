@@ -28,7 +28,7 @@ namespace JinEngine
 			void Update();
 		public:
 			void AddPopupNode(std::unique_ptr<JEditorPopupNode> child)noexcept;
-			void ExecutePopup(_In_ JEditorString* editorString, _Out_ J_EDITOR_POPUP_NODE_RES& res, _Out_ size_t& clickedPopupGuid)noexcept;
+			void ExecutePopup(_In_ JEditorString* editorString)noexcept;
 		public:
 			void SetOpen(bool value)noexcept;
 		public:

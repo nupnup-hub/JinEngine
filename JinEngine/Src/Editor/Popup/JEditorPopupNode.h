@@ -43,7 +43,7 @@ namespace JinEngine
 			void RegisterSelectBind(std::unique_ptr<Core::JBindHandleBase>&& newSelectBind)noexcept;
 			void InvokeSelectBind()noexcept;
 		public:
-			void PopupOnScreen(_In_ JEditorString* editorString, _Out_ J_EDITOR_POPUP_NODE_RES& res, _Out_ std::size_t& clickMenuGuid);
+			JEditorPopupNode* PopupOnScreen(_In_ JEditorString* editorString);
 			void PrintTooltip(_In_ JEditorString* editorString)noexcept;
 		public:
 			size_t GetNodeId()const noexcept;

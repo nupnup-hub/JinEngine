@@ -23,15 +23,14 @@ namespace JinEngine
 				flag = ImGuiInputTextFlags_ReadOnly;
 			 
 			uint preCount = (uint)inputHelper->result.size();
-
 			ImVec2 preFramePadding = ImGui::GetStyle().FramePadding;
 			ImGui::GetStyle().FramePadding.y = 0.8f;
-
-			JImGuiImpl::InputText("##SearchBarHelper" + uniqueLabel, inputHelper->buff, inputHelper->result, flag);
+			JImGuiImpl::InputText("##SearchBarHelper" + uniqueLabel, inputHelper->buff, inputHelper->result, "Search...", flag);
 			if (inputHelper->result.size() != preCount)
 				isUpdateInputData = true;
 			else
 				isUpdateInputData = false;
+			
 			ImGui::GetStyle().FramePadding = preFramePadding;
 		}
 		std::string JEditorSearchBarHelper::GetInputData()const noexcept

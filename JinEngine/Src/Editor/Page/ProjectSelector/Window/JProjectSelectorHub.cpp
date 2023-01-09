@@ -137,10 +137,10 @@ namespace JinEngine
 				ImGui::SetWindowFontScale(0.6f);
 				//ImGui::SetCursorPosY(JWindow::Instance().GetClientHeight() * 0.4f);
 				JImGuiImpl::Text("Project Name: ");
-				JImGuiImpl::InputText("##Project Name", menuListValues.nameHelper->buff, menuListValues.nameHelper->result);
+				JImGuiImpl::InputText("##Project Name", menuListValues.nameHelper->buff, menuListValues.nameHelper->result, "Name...");
 
 				JImGuiImpl::Text("Folder: ");
-				JImGuiImpl::InputText("##Folder Path", menuListValues.pathHelper->buff, menuListValues.pathHelper->result, ImGuiInputTextFlags_ReadOnly);
+				JImGuiImpl::InputText("##Folder Path", menuListValues.pathHelper->buff, menuListValues.pathHelper->result, "Path...", ImGuiInputTextFlags_ReadOnly);
 
 				if (JImGuiImpl::ImageButton(*serachIconTexture.Get(), JVector2<float> {25, 25}))
 				{

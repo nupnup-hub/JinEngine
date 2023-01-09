@@ -505,10 +505,14 @@ namespace JinEngine
 			++jImgui->inputDataCount; 
 			return ImGui::InputText(name.c_str(), &buff[0], buff.size(), flags, txtCallback, userData);
 		}
-		bool JImGuiImpl::InputText(const std::string& name, std::string& buff, std::string& result, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
-		{
+		bool JImGuiImpl::InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
+		{  
 			++jImgui->inputDataCount;
-			bool isInputEnd = ImGui::InputText(name.c_str(), &buff[0], buff.size(), flags, txtCallback, userData);
+			bool isInputEnd = false;
+			if (result.size() == 0)
+				isInputEnd = ImGui::InputTextWithHint(name.c_str(), hint.c_str(), &buff[0], buff.size(), flags, txtCallback, userData);
+			else
+				isInputEnd = ImGui::InputText(name.c_str(), &buff[0], buff.size(), flags, txtCallback, userData);
 			if (isInputEnd)
 				result = JCUtil::EraseSideChar(buff, '\0');
 			return isInputEnd;
