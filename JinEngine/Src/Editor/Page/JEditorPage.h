@@ -1,13 +1,14 @@
 #pragma once 
 #include"JEditor.h" 
 #include"JEditorPageEnum.h" 
+#include"../JEditorUpdateCondition.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
 
 namespace JinEngine
 { 
 	class JObject;
 	namespace Editor
-	{
+	{ 
 		class JEditorAttribute; 
 		class JEditorWindow;
 		class JEditorPage : public JEditor
@@ -54,8 +55,8 @@ namespace JinEngine
 			virtual void SetInitWindow() = 0;
 		public: 
 			virtual void Initialize() = 0;
-			virtual void UpdatePage() = 0;
-			void EnterPage(const int windowFlag)noexcept;
+			virtual void UpdatePage(const JEditorPageUpdateCondition& condition) = 0;
+			void EnterPage(int windowFlag)noexcept;
 			void ClosePage()noexcept; 
 		public:
 			virtual bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj) noexcept = 0;

@@ -39,8 +39,11 @@ namespace JinEngine
 		{
 			return ownerPageType;
 		}
-		void JEditorWindow::EnterWindow(int windowFlag)
-		{
+		void JEditorWindow::EnterWindow(const JEditorWindowUpdateCondition& condition, int windowFlag)
+		{ 
+			if (!condition.canClickWindow)
+				windowFlag = Core::AddSQValueEnum((ImGuiWindowFlags_)windowFlag, ImGuiWindowFlags_NoInputs);
+			//ImGuiWindowFlags_NoInputs = ImGuiWindowFlags_NoMouseInputs | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoNavFocus,
 			ImGui::Begin(GetName().c_str(), 0, windowFlag);
 		}
 		void JEditorWindow::CloseWindow()
@@ -119,23 +122,11 @@ namespace JinEngine
 			JImGuiImpl::SetColorToDeep(ImGuiCol_ButtonHovered, factor);
 			JImGuiImpl::SetColorToDeep(ImGuiCol_ButtonActive, factor);
 		}
-		void JEditorWindow::SetButtonDefaultColor()noexcept
-		{
-			JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
-			JImGuiImpl::SetColorToDefault(ImGuiCol_ButtonHovered);
-			JImGuiImpl::SetColorToDefault(ImGuiCol_ButtonActive);
-		}
 		void JEditorWindow::SetTreeNodeColor(const float factor)noexcept
 		{
 			JImGuiImpl::SetColorToDeep(ImGuiCol_Header, factor);
 			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderHovered, factor);
 			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderActive, factor);
-		}
-		void JEditorWindow::SetTreeNodeDefaultColor()noexcept
-		{
-			JImGuiImpl::SetColorToDefault(ImGuiCol_Header);
-			JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderHovered);
-			JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderActive);
 		}
 		bool JEditorWindow::RegisterEventListener(const J_EDITOR_EVENT evType)
 		{

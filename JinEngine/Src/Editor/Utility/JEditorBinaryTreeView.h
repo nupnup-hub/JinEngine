@@ -1,5 +1,5 @@
 #pragma once
-#include"JEditorCanvas.h"
+#include"JEditorCoordGrid.h"
 #include"../../Core/JDataType.h"
 #include"../../Utility/JVector.h"
 #include<string>
@@ -79,7 +79,7 @@ namespace JinEngine
 			float nodeSpacingXRate = 0.05f;
 			float nodeSpacingYRate = 0.05f; 
 		private:
-			JEditorCanvas canvas;
+			JEditorGuiCoordGrid coordGrid;
 		private:
 			bool isClickedTitleBar = false;
 		public:

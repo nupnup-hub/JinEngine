@@ -1,12 +1,12 @@
 #include"JGraphicOptionSetting.h"
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../../../../Graphic/JGraphic.h"
+#include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../../Graphic/JGraphic.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		void JGraphicOptionSetting::GraphicOptionOnScreen()
+		void JGraphicOptionSetting::Update()
 		{ 
 			JImGuiImpl::BeginWindow("GraphicOption##GraphicOptionSetting", &isOpenGraphicOptionViewer, ImGuiWindowFlags_NoDocking);
 			Graphic::JGraphicOption option = JGraphic::Instance().GetGraphicOption();

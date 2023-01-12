@@ -34,13 +34,15 @@ namespace JinEngine
 		{
 			targetSkeleton = newTargetSkeleton;
 		}
-		void JAvatarEditor::UpdateWindow()
+		void JAvatarEditor::UpdateWindow(const JEditorWindowUpdateCondition& condition)
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			if (IsActivated() && targetSkeleton.IsValid())
 			{
 				UpdateDocking(); 
 				UpdateMouseClick();
+
+				preBtnColor = JImGuiImpl::GetColor(ImGuiCol_Button);
 				BuildAvatarEdit();
 			}
 			CloseWindow();
@@ -126,7 +128,7 @@ namespace JinEngine
 					}
 
 					if (!isValidJointRef[jointRefIndex])
-						JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
+						JImGuiImpl::SetColor(preBtnColor, ImGuiCol_Button);
 				}
 
 				if (JImGuiImpl::Button("Auto", JVector2<float>(75, 20)))
@@ -168,14 +170,14 @@ namespace JinEngine
 		{
 			bool isSelected = selectJointIndex == index;
 			if (isSelected)
-				JImGuiImpl::SetColor(ImVec4(0.26f, 0.59f, 0.98f, 0.11f), ImGuiCol_Header);
+				SetTreeNodeColor(JImGuiImpl::GetTreeDeepFactor());
 
 			std::string name = JCUtil::WstrToU8Str(targetSkeleton->GetJointName(index));
 			bool arrowClick = ArrowClick(name);
 
 			bool res = JImGuiImpl::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_OpenOnArrow);
 			if (isSelected)
-				JImGuiImpl::SetColorToDefault(ImGuiCol_Header);
+				SetTreeNodeColor(-JImGuiImpl::GetTreeDeepFactor());
 
 			if (ImGui::IsItemClicked() && !arrowClick)
 			{

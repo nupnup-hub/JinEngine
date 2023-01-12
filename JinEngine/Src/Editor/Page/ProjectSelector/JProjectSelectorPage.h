@@ -24,7 +24,7 @@ namespace JinEngine
 			//hasImguiTxt = imgui widget data .txt file
 			void Initialize()final;
 		public: 
-			void UpdatePage()final; 
+			void UpdatePage(const JEditorPageUpdateCondition& condition)final;
 		public:
 			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
 		private:

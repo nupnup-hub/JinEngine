@@ -23,7 +23,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorString;
-		class JEditorPopup;
+		class JEditorPopupMenu;
 		class JEditorWidgetPosCalculator;
 		class JEditorSearchBarHelper;
 
@@ -50,8 +50,8 @@ namespace JinEngine
 			std::unique_ptr<JEditorString> editorString;
 			std::unique_ptr<JEditorRenameHelper> renameHelper;
 			//not use
-			//std::unique_ptr<JEditorPopup>directoryViewPopup;
-			std::unique_ptr<JEditorPopup>fileviewPopup;
+			//std::unique_ptr<JEditorPopupMenu>directoryViewPopup;
+			std::unique_ptr<JEditorPopupMenu>fileviewPopup;
 			std::unique_ptr<JEditorWidgetPosCalculator> editorPositionCal;
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
 		private:
@@ -88,7 +88,7 @@ namespace JinEngine
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
 			void Initialize();
-			void UpdateWindow()final;
+			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
 		private:
 			void BuildDirectoryView();
 			void BuildFileView();

@@ -613,7 +613,30 @@ namespace JinEngine
 		}  
 		return JStaticMeshData(L"Circle", std::move(indices), false, false, std::move(vertices));
 	}
+	JStaticMeshData JDefaultGeometryGenerator::CreateLine(const uint thickness)
+	{
+		const float padding = 0.05f;
+		std::vector<JStaticMeshVertex> vertices(thickness * 2);
+		std::vector<uint> indices(thickness * 2);
 
+		float xFactor = 0; 
+		int divFactor = thickness / 2; 
+		if (thickness % 2)
+			xFactor = padding * -(divFactor - 1) - padding * -0.5f;
+		else
+			xFactor = padding * -divFactor;
+		
+		for (uint i = 0; i < thickness; ++i)
+		{
+			vertices[i].position = XMFLOAT3(xFactor, -0.5f, 0.0f);
+			vertices[i + 1].position = XMFLOAT3(xFactor, 0.5f, 0.0f);
+			xFactor += padding;
+
+			indices[i] = i;
+			indices[i + 1] = i + 1;
+		}
+		return JStaticMeshData(L"Line", std::move(indices), false, false, std::move(vertices));
+	}
 	void JDefaultGeometryGenerator::Subdivide(JStaticMeshData& meshData)
 	{
 		// Save a copy of the input geometry.

@@ -53,6 +53,7 @@ namespace JinEngine
 		JStaticMeshData CreateTriangleBoundingBox();
 		JStaticMeshData CreateBoundingFrustum(); 
 		JStaticMeshData CreateCircle(float outRadius, float innerRadius);
+		JStaticMeshData CreateLine(const uint thickness);
 	private:
 		void Subdivide(JStaticMeshData& meshData);
 		JStaticMeshVertex MidPoint(const JStaticMeshVertex& v0, const JStaticMeshVertex& v1);

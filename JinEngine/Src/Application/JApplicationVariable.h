@@ -12,8 +12,8 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		class JProjectSelectorHub;
-		class JProjectMainPage;
+		class JProjectSelectorHub; 
+		class JEditorManager;
 	}
 	namespace Application
 	{
@@ -115,8 +115,8 @@ namespace JinEngine
 		{
 		private:
 			friend class JApplication;
-			friend class Editor::JProjectSelectorHub;
-			friend class Editor::JProjectMainPage;
+			friend class Editor::JEditorManager;
+			friend class Editor::JProjectSelectorHub; 
 		private:
 			class JProjectInfo
 			{
@@ -135,12 +135,14 @@ namespace JinEngine
 			static std::vector<std::unique_ptr<JProjectInfo>> projectList;
 			static std::unique_ptr<JProjectInfo> nextProjectInfo;
 			static bool startProjectOnce;
+			static bool endProject;
 		private:
 			static uint GetProjectInfoCount()noexcept;
 			static JProjectInfo* GetProjectInfo(uint index)noexcept;
 			static std::unique_ptr<JProjectInfo> MakeProjectInfo(const std::wstring& projectPath);
 		private:
-			static void SetNextProjectInfo(std::unique_ptr<JProjectInfo>&& nextProjectInfo);
+			static void SetNextProjectInfo(std::unique_ptr<JProjectInfo>&& nextProjectInfo)noexcept;
+			static void SetEndProjectTrigger()noexcept;
 		private:
 			static void MakeProjectFolderPath(const std::wstring& projectName, const std::wstring& projectPath);
 			static bool MakeProjectFolder();
@@ -151,6 +153,7 @@ namespace JinEngine
 		private:
 			static bool IsValidVersion(const std::string& pVersion); 
 			static bool CanStartProject()noexcept; 
+			static bool CanEndProject()noexcept;
 		private:
 			static Core::J_FILE_IO_RESULT StoreProjectVersion(const std::string& pVersion);
 			static Core::J_FILE_IO_RESULT LoadProejctVersion(_Out_ std::string& pVersion);

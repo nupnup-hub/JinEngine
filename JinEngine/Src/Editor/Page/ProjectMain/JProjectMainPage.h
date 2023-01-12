@@ -45,7 +45,7 @@ namespace JinEngine
 		private:
 			bool reqInitDockNode = false; 
 		public:
-			JProjectMainPage(const bool hasMetadata);
+			JProjectMainPage(const bool hasMetadata, StoreProjectF::Ptr storePtr, LoadProjectF::Ptr loadPtr);
 			~JProjectMainPage();
 			JProjectMainPage(const JProjectMainPage& rhs) = delete;
 			JProjectMainPage& operator=(const JProjectMainPage& rhs) = delete;
@@ -54,7 +54,7 @@ namespace JinEngine
 			void SetInitWindow() final;
 		public:
 			void Initialize()final;
-			void UpdatePage()final;
+			void UpdatePage(const JEditorPageUpdateCondition& condition)final;
 		public:
 			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
 		private:

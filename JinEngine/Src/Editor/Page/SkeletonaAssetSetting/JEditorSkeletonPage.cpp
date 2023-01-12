@@ -106,7 +106,7 @@ namespace JinEngine
 		{
 
 		}
-		void JEditorSkeletonPage::UpdatePage()
+		void JEditorSkeletonPage::UpdatePage(const JEditorPageUpdateCondition& condition)
 		{ 
 			/*
 			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_None;
@@ -136,7 +136,7 @@ namespace JinEngine
 			ClosePage();
 			uint8 opendWindowCount = (uint8)opendWindow.size();
 			for (uint8 i = 0; i < opendWindowCount; ++i)
-				opendWindow[i]->UpdateWindow();
+				opendWindow[i]->UpdateWindow(condition.CreateWindowCondition());
 		}
 		bool JEditorSkeletonPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept
 		{

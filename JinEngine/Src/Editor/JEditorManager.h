@@ -1,7 +1,9 @@
 #pragma once   
+#include"JEditorManagerOption.h"
 #include"Event/JEditorEventType.h" 
 #include"Event/JEditorEventStruct.h"
 #include"Page/JEditorPageEnum.h"
+#include"../Application/JApplicationCloseType.h"
 #include"../Core/Event/JEventListener.h"
 #include"../Core/JDataType.h"  
 #include<vector>
@@ -18,23 +20,31 @@ namespace JinEngine
 	}
 	namespace Editor
 	{   
-		class JEditorPage; 
+		class JEditorPage;
+		class JProjectCloseConfirm;
+
 		class JEditorManager : public Core::JEventListener<size_t, J_EDITOR_EVENT, JEditorEvStruct*>
 		{
 		private:
 			friend class Application::JApplication;
+		private:
+			const size_t editorManagerGuid;
+			JEditorManagerOption option;
 		private: 
 			std::vector<std::unique_ptr<JEditorPage>> editorPage;
 			std::unordered_map<J_EDITOR_PAGE_TYPE, JEditorPage*> editorPageMap;
 			std::vector<JEditorPage*> opendEditorPage; 
-			const std::wstring editorPageDataFileName = L"EditorData.txt";
-			const size_t editorManagerGuid;
+		private:
+			std::unique_ptr<JProjectCloseConfirm> projectCloseConfirm;
 		public:
 			void Initialize();
-			void OpenProjectSelector(); 
-			void OpenProject(); 
-			void Update();
 			void Clear();
+		public:
+			void OpenProjectSelector(); 
+			void OpenProject();  
+		public:
+			void Update(); 
+		public:
 			void LoadPage();
 			void StorePage();
 		private:
@@ -51,8 +61,11 @@ namespace JinEngine
 			void DeActivateWindow(JEditorDeActWindowEvStruct* evStruct);
 			void FocusWindow(JEditorFocusWindowEvStruct* evStruct);
 			void UnFocusWindow(JEditorUnFocusWindowEvStruct* evStruct);
+		public:
+			JEditorManagerOption GetOption()const noexcept;
+			void SetOption(const JEditorManagerOption& newOption)noexcept;
 		private:
-			std::wstring GetMetadataPath()const noexcept; 
+			std::wstring GetMetadataPath()const noexcept;  
 		private:
 			virtual void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)final;
 		private:

@@ -12,7 +12,7 @@ namespace JinEngine
 	{
 		class JEditorString;
 		class JEditorPopupNode;
-		class JEditorPopup
+		class JEditorPopupMenu
 		{
 		private:
 			const std::string name;
@@ -20,8 +20,8 @@ namespace JinEngine
 			std::vector<std::unique_ptr<JEditorPopupNode>>allPopupNode;
 			bool isOpen;
 		public:
-			JEditorPopup(const std::string& name, std::unique_ptr<JEditorPopupNode> popupRoot);
-			~JEditorPopup();
+			JEditorPopupMenu(const std::string& name, std::unique_ptr<JEditorPopupNode> popupRoot);
+			~JEditorPopupMenu();
 		public:
 			//Update popup
 			//should call api in owner window func

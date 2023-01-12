@@ -15,11 +15,16 @@ namespace JinEngine
 			friend class ApplicationStarter;
 		private:
 			const size_t guid;
+			size_t frameCnt = 0;
+			float timeElapsed = 0.0f;
 		private:
 			void Run();
 			void RunProjectSelector();
-			void RunEngine();
+			void RunEngine(); 
+		private:
 			void CalculateFrame();
+		private:
+			void CloseApp();
 		private:
 			void StoreProject();
 			void LoadProject();

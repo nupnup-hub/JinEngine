@@ -260,6 +260,8 @@ namespace JinEngine
 		std::vector<std::unique_ptr<JApplicationProject::JProjectInfo>> JApplicationProject::projectList;
 		std::unique_ptr<JApplicationProject::JProjectInfo> JApplicationProject::nextProjectInfo;
 		bool JApplicationProject::startProjectOnce = false;
+		bool JApplicationProject::endProject = false;
+
 		JApplicationProject::JProjectInfo::JProjectInfo(const std::wstring& name,
 			const std::wstring& path,
 			std::wstring version)
@@ -308,9 +310,13 @@ namespace JinEngine
 			}
 			return nullptr;
 		}
-		void JApplicationProject::SetNextProjectInfo(std::unique_ptr<JProjectInfo>&& nextProjectInfo)
+		void JApplicationProject::SetNextProjectInfo(std::unique_ptr<JProjectInfo>&& nextProjectInfo)noexcept
 		{
 			JApplicationProject::nextProjectInfo = std::move(nextProjectInfo);
+		}
+		void JApplicationProject::SetEndProjectTrigger()noexcept
+		{
+			endProject = true;
 		}
 		void JApplicationProject::MakeProjectFolderPath(const std::wstring& projectName, const std::wstring& projectPath)
 		{
@@ -426,6 +432,10 @@ namespace JinEngine
 		bool JApplicationProject::CanStartProject()noexcept
 		{
 			return startProjectOnce;
+		}
+		bool JApplicationProject::CanEndProject()noexcept
+		{
+			return endProject;
 		}
 		Core::J_FILE_IO_RESULT JApplicationProject::StoreProjectVersion(const std::string& pVersion)
 		{

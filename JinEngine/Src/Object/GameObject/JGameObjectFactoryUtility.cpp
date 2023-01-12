@@ -67,10 +67,11 @@ namespace JinEngine
 	JGameObject* JGameObjectFactoryUtility::CreateDebugLineShape(JGameObject& parent,
 		const J_OBJECT_FLAG flag,
 		const J_DEFAULT_SHAPE meshType,
-		const J_DEFAULT_MATERIAL matType)
+		const J_DEFAULT_MATERIAL matType,
+		const bool isDebugUI)
 	{
 		const std::wstring name = JDefaultShape::ConvertToName(meshType) + L"DebugObject";
-
+		const J_RENDER_LAYER layer = isDebugUI ? J_RENDER_LAYER::DEBUG_UI : J_RENDER_LAYER::DEBUG_OBJECT;
 		//has sequence dependency
 		JGameObject* newGameObj = JGFI::Create(name, Core::MakeGuid(), flag, parent);
 		JRenderItem* newRItem = JCFU::CreateRenderItem(Core::MakeGuid(),
@@ -78,7 +79,7 @@ namespace JinEngine
 			*newGameObj,
 			JResourceManager::Instance().GetDefaultMeshGeometry(meshType),
 			D3D11_PRIMITIVE_TOPOLOGY_LINELIST,
-			J_RENDER_LAYER::DEBUG,
+			layer,
 			SPACE_SPATIAL_NOT_ALLOW_ALL);
 		newRItem->SetMaterial(0, JResourceManager::Instance().GetDefaultMaterial(matType));
 		return newGameObj;

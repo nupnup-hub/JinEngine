@@ -24,7 +24,8 @@ namespace JinEngine
 		static JGameObject* CreateDebugLineShape(JGameObject& parent,
 			const J_OBJECT_FLAG flag,
 			const J_DEFAULT_SHAPE meshType,
-			const J_DEFAULT_MATERIAL matType);
+			const J_DEFAULT_MATERIAL matType,
+			const bool isDebugUI);
 	};
 
 	using JGFU = JGameObjectFactoryUtility;

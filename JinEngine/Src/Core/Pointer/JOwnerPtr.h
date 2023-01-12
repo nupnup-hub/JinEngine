@@ -215,6 +215,7 @@ namespace JinEngine
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
 			JUserPtr(const JPtrBase<NewType>& rhs)
 			{
+				UserDisConnect();
 				UserConnect(rhs);
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
@@ -225,11 +226,24 @@ namespace JinEngine
 				return *this;
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JUserPtr(JUserPtr<NewType>& rhs)
+			{
+				UserDisConnect();
+				UserConnect(rhs); 
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
 			JUserPtr(JUserPtr<NewType>&& rhs)
 			{
 				UserDisConnect();
 				UserConnect(rhs);
 				rhs.UserDisConnect();
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JUserPtr& operator=(JUserPtr<NewType>& rhs)
+			{
+				UserDisConnect();
+				UserConnect(rhs); 
+				return *this;
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
 			JUserPtr& operator=(JUserPtr<NewType>&& rhs)

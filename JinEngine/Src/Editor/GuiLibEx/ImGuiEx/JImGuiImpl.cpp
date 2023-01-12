@@ -376,7 +376,14 @@ namespace JinEngine
 		{
 			ImGui::PopFont();
 		}
-
+		float JImGuiImpl::GetButtonDeepFactor()noexcept
+		{
+			return 0.1f;
+		}
+		float JImGuiImpl::GetTreeDeepFactor()noexcept
+		{
+			return 0.1f;
+		}
 		ImVec4 JImGuiImpl::GetColor(ImGuiCol_ flag)noexcept
 		{
 			ImGuiStyle& style = ImGui::GetStyle();
@@ -385,8 +392,8 @@ namespace JinEngine
 		void JImGuiImpl::SetColorToDeep(ImGuiCol_ flag, float factor)noexcept
 		{
 			ImGuiStyle& style = ImGui::GetStyle();
-			style.Colors[flag] = ImVec4(jImgui->colors[flag].x - factor, jImgui->colors[flag].y - factor,
-				jImgui->colors[flag].z - factor, jImgui->colors[flag].w - factor);
+			style.Colors[flag] = ImVec4(style.Colors[flag].x - factor, style.Colors[flag].y - factor,
+				style.Colors[flag].z - factor, style.Colors[flag].w - factor);
 		}
 		void JImGuiImpl::SetColor(const ImVec4& color, ImGuiCol_ flag)noexcept
 		{
@@ -397,6 +404,15 @@ namespace JinEngine
 		{
 			ImGuiStyle& style = ImGui::GetStyle();
 			style.Colors[flag] = jImgui->colors[flag];
+		}
+		void JImGuiImpl::SetAllColorToDeep(float factor)noexcept
+		{
+			ImGuiStyle& style = ImGui::GetStyle();
+			for (uint i = 0; i < ImGuiCol_COUNT; ++i)
+			{
+				style.Colors[i] = ImVec4(style.Colors[i].x - factor, style.Colors[i].y - factor,
+					style.Colors[i].z - factor, style.Colors[i].w - factor);
+			}
 		}
 		void JImGuiImpl::SetAllColorToDefault()noexcept
 		{
@@ -648,7 +664,7 @@ namespace JinEngine
 			int framePadding,
 			const JVector4<float>& bgCol,
 			const JVector4<float>& tintCol)
-		{
+		{ 
 			return ImGui::ImageButton((ImTextureID)jImgui->GetGraphicGpuSrvHandle(handle).ptr, size, uv0, uv1, framePadding, bgCol, tintCol);
 		}
 		void JImGuiImpl::AddImage(Graphic::JGraphicResourceHandleInterface& handle,

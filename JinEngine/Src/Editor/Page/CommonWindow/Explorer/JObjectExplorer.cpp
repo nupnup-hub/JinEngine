@@ -4,7 +4,7 @@
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../../Event/JEditorEvent.h"
 #include"../../../String/JEditorString.h"
-#include"../../../Popup/JEditorPopup.h"
+#include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"   
 #include"../../../Utility/JEditorSearchBarHelper.h"
 #include"../../../../Utility/JCommonUtility.h"    
@@ -109,7 +109,7 @@ namespace JinEngine
 			destroyNode->RegisterSelectBind(std::make_unique<RegisterDestroyGEvF::CompletelyBind>(*regDestroyGobjF));
 			renameNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*renameF, this));
 
-			explorerPopup = std::make_unique<JEditorPopup>("explorerPopup", std::move(explorerPopupRootNode));
+			explorerPopup = std::make_unique<JEditorPopupMenu>("explorerPopup", std::move(explorerPopupRootNode));
 			explorerPopup->AddPopupNode(std::move(createGameObjectNode));
 			explorerPopup->AddPopupNode(std::move(createCubeNode));
 			explorerPopup->AddPopupNode(std::move(createGridNode));
@@ -135,9 +135,9 @@ namespace JinEngine
 			searchBarHelper->ClearInputBuffer();
 			explorerPopup->SetOpen(false);
 		}
-		void JObjectExplorer::UpdateWindow()
+		void JObjectExplorer::UpdateWindow(const JEditorWindowUpdateCondition& condition)
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated() && root.IsValid())
 			{
@@ -156,8 +156,6 @@ namespace JinEngine
 		void JObjectExplorer::BuildObjectExplorer()
 		{
 			ObjectExplorerOnScreen(root.Get(), searchBarHelper->HasInputData());
-			SetTreeNodeDefaultColor();
-
 			if (explorerPopup->IsOpen())
 				explorerPopup->ExecutePopup(editorString.get());
 
@@ -186,12 +184,12 @@ namespace JinEngine
 				else
 				{
 					if (isSelected)
-						SetTreeNodeColor();
+						SetTreeNodeColor(JImGuiImpl::GetTreeDeepFactor());
 					if (isAcivatedSearch)
 						ImGui::SetNextItemOpen(true);
 					isNodeOpen = JImGuiImpl::TreeNodeEx((name + "##TreeNode").c_str(), baseFlags);
 					if (isSelected)
-						SetTreeNodeDefaultColor();
+						SetTreeNodeColor(-JImGuiImpl::GetTreeDeepFactor());
 					if (isNodeOpen)
 					{
 						if (ImGui::IsItemClicked(0) || ImGui::IsItemClicked(1))

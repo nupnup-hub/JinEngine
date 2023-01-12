@@ -1,4 +1,4 @@
-#include"JEditorPopup.h"
+#include"JEditorPopupMenu.h"
 #include"JEditorPopupNode.h"
 #include"../../Core/JDataType.h"  
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
@@ -7,13 +7,13 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JEditorPopup::JEditorPopup(const std::string& name, std::unique_ptr<JEditorPopupNode> popupRoot)
+		JEditorPopupMenu::JEditorPopupMenu(const std::string& name, std::unique_ptr<JEditorPopupNode> popupRoot)
 			:name(name), popupRoot(popupRoot.get()), isOpen(false)
 		{
 			allPopupNode.push_back(std::move(popupRoot));
 		}
-		JEditorPopup::~JEditorPopup() {}
-		void JEditorPopup::Update()
+		JEditorPopupMenu::~JEditorPopupMenu() {}
+		void JEditorPopupMenu::Update()
 		{
 			if (IsOpen())
 			{
@@ -30,12 +30,12 @@ namespace JinEngine
 					SetOpen(false);
 			}
 		}
-		void JEditorPopup::AddPopupNode(std::unique_ptr<JEditorPopupNode> child)noexcept
+		void JEditorPopupMenu::AddPopupNode(std::unique_ptr<JEditorPopupNode> child)noexcept
 		{
 			if (child != nullptr)
 				allPopupNode.push_back(std::move(child));
 		}
-		void JEditorPopup::ExecutePopup(_In_ JEditorString* editorString)noexcept
+		void JEditorPopupMenu::ExecutePopup(_In_ JEditorString* editorString)noexcept
 		{
 			if (isOpen)
 			{
@@ -54,15 +54,15 @@ namespace JinEngine
 				}
 			}
 		}
-		void JEditorPopup::SetOpen(bool value)noexcept
+		void JEditorPopupMenu::SetOpen(bool value)noexcept
 		{
 			isOpen = value;
 		}
-		bool JEditorPopup::IsOpen()const noexcept
+		bool JEditorPopupMenu::IsOpen()const noexcept
 		{
 			return isOpen;
 		}
-		bool JEditorPopup::IsMouseInPopup()noexcept
+		bool JEditorPopupMenu::IsMouseInPopup()noexcept
 		{
 			if (!IsOpen())
 				return false;

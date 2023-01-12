@@ -47,7 +47,7 @@ namespace JinEngine
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public: 
-			void UpdateWindow()final;
+			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
 		private:
 			void TitleOnScreen();
 			void MenuListOnScreen();

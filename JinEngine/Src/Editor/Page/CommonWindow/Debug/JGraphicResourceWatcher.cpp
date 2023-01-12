@@ -19,8 +19,10 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::GRAPHIC_WATCHER;
 		}
-		void JGraphicResourceWatcher::UpdateWindow()
-		{ 
+		void JGraphicResourceWatcher::UpdateWindow(const JEditorWindowUpdateCondition& condition)
+		{
+			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			UpdateDocking();
 			if (IsActivated())
 			{
 				Graphic::JGraphicResourceManager* grManager = JGraphic::Instance().graphicResource.get();
@@ -45,6 +47,7 @@ namespace JinEngine
 					ImGui::Separator();
 				}
 			} 
+			CloseWindow();
 		}
 	}
 }

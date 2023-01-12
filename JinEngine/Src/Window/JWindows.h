@@ -18,7 +18,10 @@ namespace JinEngine
 	{ 
 		template<typename T>class JCreateUsingNew;
 	}
-
+	namespace Application
+	{
+		class JApplication;
+	}
 	namespace Window
 	{
 		class JWindowImpl final : public JWindowHandleInterface, public Core::JEventManager<size_t, J_WINDOW_EVENT>
@@ -36,6 +39,8 @@ namespace JinEngine
 			RECT preClinetRect;
 			HWND hwnd;
 			bool enableCursor = true; 
+		private:
+			std::unique_ptr<CloseConfirmF::Functor> closeConfirmF;
 		public:
 			RECT GetWindowR()const noexcept;
 			RECT GetPreWindowR()const noexcept;
@@ -67,7 +72,7 @@ namespace JinEngine
 			JEventInterface* EvInterface()final;
 			JWindowAppInterface* AppInterface();
 		private:
-			void Initialize(HINSTANCE hInstance)final;
+			void Initialize(HINSTANCE hInstance, std::unique_ptr<CloseConfirmF::Functor> closeConfirmF)final;
 			void OpenProjecSelectorWindow()final;
 			void OpenEngineWindow()final; 
 			void CloseWindow()final; 

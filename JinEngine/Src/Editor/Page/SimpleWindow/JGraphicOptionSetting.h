@@ -8,7 +8,7 @@ namespace JinEngine
 		private:
 			bool isOpenGraphicOptionViewer = false;
 		public:
-			void GraphicOptionOnScreen();
+			void Update();
 		public:
 			bool IsOpenViewer()const noexcept;
 			bool* GetOpenPtr() noexcept;

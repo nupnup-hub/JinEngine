@@ -37,14 +37,14 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::PROJECT_SELECTOR_HUB;
 		}
-		void JProjectSelectorHub::UpdateWindow()
+		void JProjectSelectorHub::UpdateWindow(const JEditorWindowUpdateCondition& condition)
 		{
 			const ImGuiViewport* viewport = ImGui::GetMainViewport();
 			ImGui::SetNextWindowSize(viewport->WorkSize);
 			ImGui::SetNextWindowPos(viewport->WorkPos);
 
 			int flag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize;
-			EnterWindow(flag);
+			EnterWindow(condition, flag);
 			if (IsActivated())
 			{
 				//JImGuiImpl::AddImage(*backgroundTexture.Get(), viewport->WorkPos, viewport->WorkSize, false, IM_COL32(255, 255, 255, 50));
@@ -157,21 +157,7 @@ namespace JinEngine
 				const uint versionCount = (uint)version.size();
 
 				JImGuiImpl::Text("Version: ");
-				if (JImGuiImpl::BeginCombo("##ApplicationVersion", version[0].c_str()))
-				{
-					for (uint i = 0; i < versionCount; i++)
-					{
-						bool isSelected = (versionIndex == i);
-						if (JImGuiImpl::Selectable(version[i], &isSelected))
-							versionIndex = i;
-
-						// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-						if (isSelected)
-							ImGui::SetItemDefaultFocus();
-					}
-					ImGui::EndCombo();
-				}
-
+				JImGuiImpl::ComboSet("##ApplicationVersion", versionIndex, version);
 				if (JImGuiImpl::Button("Create Proejct"))
 				{ 
 					if (!menuListValues.nameHelper->result.empty() && !menuListValues.pathHelper->result.empty())

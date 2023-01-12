@@ -52,6 +52,7 @@ namespace JinEngine
 			:JEditorWindow(name, std::move(attribute), pageType)
 		{
 			editorCamCtrl = std::make_unique<JEditorCameraControl>();
+			coordGrid = std::make_unique<JEditorSceneCoordGrid>();
 			editorBTreeView = std::make_unique<JEditorBinaryTreeView>();		 
 			openNodeFunctor = std::make_unique<OpenMenuNodeT::Functor>(&JSceneObserver::OpenObserverSettingNode, this);
 			activateNodeFunctor = std::make_unique<ActivateMenuNodeT::Functor>(&JSceneObserver::ActivateObserverSetting, this);
@@ -110,27 +111,27 @@ namespace JinEngine
 				const bool openScale = ob->nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE].isOpen;
 
 				if (openPos)
-					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, -0.15f);
+					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, -JImGuiImpl::GetButtonDeepFactor());
 				if (JImGuiImpl::ImageButton(*posIcon, JVector2<float>(iconSizeFactor, iconSizeFactor)))
 					ob->OpenObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS);
 				if (openPos)
-					JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
+					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, JImGuiImpl::GetButtonDeepFactor());
 
 				ImGui::SameLine();
 				if (openRot)
-					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, -0.15f);
+					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, -JImGuiImpl::GetButtonDeepFactor());
 				if (JImGuiImpl::ImageButton(*rotIcon, JVector2<float>(iconSizeFactor, iconSizeFactor)))
 					ob->OpenObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT);
 				ImGui::SameLine();
 				if (openRot)
-					JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
+					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, JImGuiImpl::GetButtonDeepFactor());
 
 				if (openScale)
-					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, -0.15f);
+					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, -JImGuiImpl::GetButtonDeepFactor());
 				if (JImGuiImpl::ImageButton(*scaleIcon, JVector2<float>(iconSizeFactor, iconSizeFactor)))
 					ob->OpenObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE);
 				if (openScale)
-					JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
+					JImGuiImpl::SetColorToDeep(ImGuiCol_Button, JImGuiImpl::GetButtonDeepFactor());
 			};
 
 			menuIconFunctor = std::make_unique<MenuIconT::Functor>(menubarIconLam);
@@ -148,9 +149,9 @@ namespace JinEngine
 			lastCamPos = { 0,0,0 };
 			lastCamRot = { 0,0,0 };
 		}
-		void JSceneObserver::UpdateWindow()
+		void JSceneObserver::UpdateWindow(const JEditorWindowUpdateCondition& condition)
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar);
+			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar);
 			UpdateDocking();
 			if (IsActivated() && scene.IsValid() && cameraObj.IsValid())
 			{
@@ -175,7 +176,9 @@ namespace JinEngine
 						if(canSetSelected)
 							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(hitObj)));
 					}
-				}
+				} 
+				coordGrid->Update(JVector2<float>(cameraObj->GetTransform()->GetPosition().x, 
+					cameraObj->GetTransform()->GetPosition().z));
 
 				menubar->Update(true);
 				//Warning!
@@ -368,20 +371,7 @@ namespace JinEngine
 		{
 			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL];
 			JImGuiImpl::BeginWindow("##SpatialSpaceWindow", &data->isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDocking);
-			Core::JEnumInfo* enumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_TYPE).name());
-			if (JImGuiImpl::BeginCombo("Type##SceneObserver", enumInfo->ElementName(enumInfo->EnumValue(data->selectedIndex)).c_str(), ImGuiComboFlags_HeightLarge))
-			{
-				const uint enumCount = enumInfo->GetEnumCount();
-				for (uint i = 0; i < enumCount; i++)
-				{
-					bool isSelected = (data->selectedIndex == i);
-					if (JImGuiImpl::Selectable(enumInfo->ElementName(enumInfo->EnumValue(i)), &isSelected))
-						data->selectedIndex = i;
-					if (isSelected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
+			JImGuiImpl::ComboEnumSet<Core::J_SPACE_SPATIAL_TYPE>("##SpatialSpaceWindow", data->selectedIndex);
 			if (data->selectedIndex == (int)Core::J_SPACE_SPATIAL_TYPE::OCTREE)
 				OctreeOptionOnScreen();
 			else if (data->selectedIndex == (int)Core::J_SPACE_SPATIAL_TYPE::BVH)
@@ -410,106 +400,50 @@ namespace JinEngine
 		}
 		void JSceneObserver::BvhOptionOnScreen()
 		{
+			bool isUpdated = false;
 			JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
 			Core::JBvhOption bvhOption = iSceneSpace->GetBvhOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
-
-			bool isChanged = false;
-
 			Core::JEnumInfo* buildEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_BUILD_TYPE).name());
-			int buildIndex = buildEnumInfo->GetEnumIndex((int)bvhOption.buildType);
-
-			if (JImGuiImpl::BeginCombo("BuildType##Bvh_SceneObserver", buildEnumInfo->ElementName(buildEnumInfo->EnumValue(buildIndex)).c_str(), ImGuiComboFlags_HeightLarge))
-			{
-				const uint enumCount = buildEnumInfo->GetEnumCount();
-				for (uint i = 0; i < enumCount; i++)
-				{
-					bool isSelected = (buildIndex == i);
-					if (JImGuiImpl::Selectable(buildEnumInfo->ElementName(buildEnumInfo->EnumValue(i)), &isSelected))
-					{
-						if (buildIndex != i)
-							isChanged = true;
-						buildIndex = i;
-					}
-					if (isSelected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-
 			Core::JEnumInfo* splitEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_SPLIT_TYPE).name());
+			int buildIndex = buildEnumInfo->GetEnumIndex((int)bvhOption.buildType);
 			int splitIndex = splitEnumInfo->GetEnumIndex((int)bvhOption.splitType);
-			if (JImGuiImpl::BeginCombo("SplitType##Bvh_SceneObserver", splitEnumInfo->ElementName(splitEnumInfo->EnumValue(splitIndex)).c_str(), ImGuiComboFlags_HeightLarge))
-			{
-				const uint enumCount = splitEnumInfo->GetEnumCount();
-				for (uint i = 0; i < enumCount; i++)
-				{
-					bool isSelected = (splitIndex == i);
-					if (JImGuiImpl::Selectable(splitEnumInfo->ElementName(splitEnumInfo->EnumValue(i)), &isSelected))
-					{
-						if (splitIndex != i)
-							isChanged = true;
-						splitIndex = i;
-					}
-					if (isSelected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
+			int preBuildIndex = buildIndex;
+			int preSplitIndex = splitIndex;
 
-			isChanged |= CommonOptionOnScreen("Bvh", bvhOption.commonOption);
-			if (isChanged)
+			JImGuiImpl::ComboEnumSet<Core::J_SPACE_SPATIAL_BUILD_TYPE>("BuildType##Bvh_SceneObserver", buildIndex);
+			if (buildIndex != preBuildIndex)
+				isUpdated = true;
+
+			JImGuiImpl::ComboEnumSet<Core::J_SPACE_SPATIAL_SPLIT_TYPE>("SplitType##Bvh_SceneObserver", splitIndex);
+			if (splitIndex != preSplitIndex)
+				isUpdated = true;
+
+			isUpdated |= CommonOptionOnScreen("Bvh", bvhOption.commonOption);
+			if (isUpdated)
 				iSceneSpace->SetBvhOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, bvhOption);
 		}
 		void JSceneObserver::KdTreeOptionOnScreen()
 		{
+			bool isUpdated = false;
 			JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
 			Core::JKdTreeOption kdTreeOption = iSceneSpace->GetKdTreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
-
-			bool isChanged = false;
-
 			Core::JEnumInfo* buildEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_BUILD_TYPE).name());
-			int buildIndex = buildEnumInfo->GetEnumIndex((int)kdTreeOption.buildType);
-
-			if (JImGuiImpl::BeginCombo("BuildType##KdTree_SceneObserver", buildEnumInfo->ElementName(buildEnumInfo->EnumValue(buildIndex)).c_str(), ImGuiComboFlags_HeightLarge))
-			{
-				const uint enumCount = buildEnumInfo->GetEnumCount();
-				for (uint i = 0; i < enumCount; i++)
-				{
-					bool isSelected = (buildIndex == i);
-					if (JImGuiImpl::Selectable(buildEnumInfo->ElementName(buildEnumInfo->EnumValue(i)), &isSelected))
-					{
-						if (buildIndex != i)
-							isChanged = true;
-						buildIndex = i;
-					}
-					if (isSelected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-
 			Core::JEnumInfo* splitEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_SPLIT_TYPE).name());
+			int buildIndex = buildEnumInfo->GetEnumIndex((int)kdTreeOption.buildType);
 			int splitIndex = splitEnumInfo->GetEnumIndex((int)kdTreeOption.splitType);
-			if (JImGuiImpl::BeginCombo("SplitType##KdTree_SceneObserver", splitEnumInfo->ElementName(splitEnumInfo->EnumValue(splitIndex)).c_str(), ImGuiComboFlags_HeightLarge))
-			{
-				const uint enumCount = splitEnumInfo->GetEnumCount();
-				for (uint i = 0; i < enumCount; i++)
-				{
-					bool isSelected = (splitIndex == i);
-					if (JImGuiImpl::Selectable(splitEnumInfo->ElementName(splitEnumInfo->EnumValue(i)), &isSelected))
-					{
-						if (splitIndex != i)
-							isChanged = true;
-						splitIndex = i;
-					}
-					if (isSelected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
+			int preBuildIndex = buildIndex;
+			int preSplitIndex = splitIndex;
 
-			isChanged |= CommonOptionOnScreen("KdTree", kdTreeOption.commonOption);
-			if (isChanged)
+			JImGuiImpl::ComboEnumSet<Core::J_SPACE_SPATIAL_BUILD_TYPE>("BuildType##Kd_SceneObserver", buildIndex);
+			if (buildIndex != preBuildIndex)
+				isUpdated = true;
+
+			JImGuiImpl::ComboEnumSet<Core::J_SPACE_SPATIAL_SPLIT_TYPE>("SplitType##Kd_SceneObserver", splitIndex);
+			if (splitIndex != preSplitIndex)
+				isUpdated = true;
+
+			isUpdated |= CommonOptionOnScreen("Kd", kdTreeOption.commonOption);
+			if (isUpdated)
 				iSceneSpace->SetKdTreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, kdTreeOption);
 		}
 		bool JSceneObserver::CommonOptionOnScreen(const std::string& uniqueName, Core::JSpaceSpatialOption& commonOption)
@@ -553,19 +487,8 @@ namespace JinEngine
 
 				const uint shadowLitCount = (uint)shadowLitVec.size();
 				if (shadowLitCount > 0)
-				{
-					if (JImGuiImpl::BeginCombo("Light##SceneObserver", JCUtil::WstrToU8Str(shadowLitVec[data->selectedIndex]->GetName()).c_str(), ImGuiComboFlags_HeightLarge))
-					{
-						for (uint i = 0; i < shadowLitCount; ++i)
-						{
-							bool isSelected = (data->selectedIndex == i);
-							if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(shadowLitVec[i]->GetName()), &isSelected))
-								data->selectedIndex = i;
-							if (isSelected)
-								ImGui::SetItemDefaultFocus();
-						}
-						JImGuiImpl::EndCombo();
-					}
+				{ 
+					JImGuiImpl::ComboSet("Light##SceneObserve", data->selectedIndex, shadowLitVec);
 					JImGuiImpl::Image(*shadowLitVec[data->selectedIndex], ImGui::GetWindowSize());
 				}
 				JImGuiImpl::EndWindow();
@@ -622,7 +545,8 @@ namespace JinEngine
 			mainCamFrustum = Core::GetUserPtr(JGFU::CreateDebugLineShape(*scene->GetRootGameObject(),
 				OBJECT_FLAG_EDITOR_OBJECT,
 				J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM,
-				J_DEFAULT_MATERIAL::DEBUG_LINE_RED));
+				J_DEFAULT_MATERIAL::DEBUG_LINE_RED, 
+				true));
 		}
 		void JSceneObserver::ActivateToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)
 		{
@@ -724,6 +648,7 @@ namespace JinEngine
 				cameraComp = GetUserPtr(cameraObj->GetComponent<JCamera>());
 				cameraComp->StateInterface()->SetCameraState(J_CAMERA_STATE::RENDER);
 
+				coordGrid->MakeCoordGrid(scene->GetDebugRootGameObject());
 				menubar->ActivateOpenNode(true);
 			}
 		}
@@ -736,6 +661,7 @@ namespace JinEngine
 				lastCamRot = cameraComp->GetTransform()->GetRotation();
 				JObject::BeginDestroy(cameraObj.Release());
 			} 
+			coordGrid->Clear();
 			menubar->DeActivateOpenNode(true);
 		}
 		void JSceneObserver::StoreEditorWindow(std::wofstream& stream)

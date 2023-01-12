@@ -101,7 +101,7 @@ namespace JinEngine
 
 		void JEditorBinaryTreeView::Initialize(const uint nodeCount)noexcept
 		{
-			canvas.SetCanvasSize(20000);
+			coordGrid.SetGridSize(20000);
 			JEditorBinaryTreeView::nodeCount = nodeCount;
 			allNodes.resize(nodeCount);
 			nowNodeIndex = 0;
@@ -151,18 +151,18 @@ namespace JinEngine
 			if (JImGuiImpl::BeginWindow(treeWindowName + "##BinaryTreeView", &isOpen, flag))
 			{  
 				if (JImGuiImpl::Button("Look Mid"))
-					canvas.Clear();
+					coordGrid.Clear();
 				ImGui::SameLine();
 				JImGuiImpl::Text("Count: " + std::to_string(allNodes.size()));
 				if (allNodes.size() > 0)
 				{
-					canvas.Update();
-					canvas.DrawCanvas();
-					const float zoomRate = canvas.GetZoomRate();
+					coordGrid.Update();
+					coordGrid.Draw();
+					const float zoomRate = coordGrid.GetZoomRate();
 					const JNodeSizeInfo sizeInfo = JNodeSizeInfo(nodeWidth, nodeHeight,
 						nodePaddingX, nodePaddingY + nodeHeight,
 						nodeSpacingX, nodeSpacingY,
-						canvas.GetMouseOffset(),
+						coordGrid.GetMouseOffset(),
 						zoomRate,
 						maxDepth);
 

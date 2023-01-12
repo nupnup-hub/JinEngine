@@ -14,7 +14,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorString;
-		class JEditorPopup;
+		class JEditorPopupMenu;
 		class JEditorSearchBarHelper;
 		class JObjectExplorer final : public JEditorWindow
 		{ 
@@ -25,7 +25,7 @@ namespace JinEngine
 			std::unique_ptr<JEditorString>editorString;
 			std::unique_ptr<JEditorRenameHelper>renameHelper;
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
-			std::unique_ptr<JEditorPopup>explorerPopup; 
+			std::unique_ptr<JEditorPopupMenu>explorerPopup; 
 		private:
 			using DataHandleStructure = Core::JDataHandleStructure<Core::JTransition::GetMaxTaskCapacity(), JGameObject>;
 			using CreateGameObjectFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, Core::JUserPtr<JGameObject>, const size_t, const J_DEFAULT_SHAPE>;
@@ -65,7 +65,7 @@ namespace JinEngine
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
 			void Initialize(Core::JUserPtr<JGameObject> newRoot)noexcept;
-			void UpdateWindow()final;
+			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
 		private:
 			void BuildObjectExplorer();
 			void ObjectExplorerOnScreen(JGameObject* gObj, const bool isAcivatedSearch);  

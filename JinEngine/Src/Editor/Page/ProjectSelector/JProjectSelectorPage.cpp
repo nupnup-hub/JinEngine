@@ -43,10 +43,8 @@ namespace JinEngine
 				opendWindow[i]->SetLastActivated(true);			 
 		}
 		void JProjectSelectorPage::Initialize()
-		{
-
-		}
-		void JProjectSelectorPage::UpdatePage()
+		{}
+		void JProjectSelectorPage::UpdatePage(const JEditorPageUpdateCondition& condition)
 		{
 			ImGui::SetWindowFontScale(2);
 			const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -67,7 +65,7 @@ namespace JinEngine
 			//JImGuiImpl::AddImage(*(backgroundTexture.Get()), wPos, wSize, false, IM_COL32(255, 255, 255, 50));
 			uint8 opendWindowCount = (uint8)opendWindow.size();
 			for (uint8 i = 0; i < opendWindowCount; ++i)
-				opendWindow[i]->UpdateWindow();
+				opendWindow[i]->UpdateWindow(condition.CreateWindowCondition());
 			ClosePage();
 			ImGui::SetWindowFontScale(1);
 		}

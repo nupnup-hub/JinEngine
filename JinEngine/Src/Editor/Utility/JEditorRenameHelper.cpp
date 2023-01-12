@@ -24,7 +24,7 @@ namespace JinEngine
 				return;
 
 			const ImVec2 itemPos = ImGui::GetCursorPos() + ImGui::GetWindowPos();
-			if (JImGuiImpl::InputTextSet(uniqueLabel, renameBuff.get(),
+			if (JImGuiImpl::InputTextSetT(uniqueLabel, renameBuff.get(),
 				"New name...",
 				ImGuiInputTextFlags_EnterReturnsTrue,
 				*renameF, Core::JUserPtr{ renameTar }))

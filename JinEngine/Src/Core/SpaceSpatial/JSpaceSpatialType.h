@@ -26,7 +26,9 @@ namespace JinEngine
 				return J_SPACE_SPATIAL_LAYER::COMMON_OBJECT;
 			case JinEngine::J_RENDER_LAYER::SKY:
 				return J_SPACE_SPATIAL_LAYER::INVALID;
-			case JinEngine::J_RENDER_LAYER::DEBUG:
+			case JinEngine::J_RENDER_LAYER::DEBUG_OBJECT:
+				return J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT;
+			case JinEngine::J_RENDER_LAYER::DEBUG_UI:
 				return J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT;
 			default:
 				return J_SPACE_SPATIAL_LAYER::INVALID;

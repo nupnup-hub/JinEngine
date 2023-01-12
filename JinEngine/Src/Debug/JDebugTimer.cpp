@@ -6,6 +6,7 @@ namespace JinEngine
 	{
 		std::chrono::steady_clock::time_point JDebugTimer::startTime;
 		std::chrono::steady_clock::time_point JDebugTimer::endTime;
+		std::unordered_map<size_t, JDebugTimeResult> JDebugTimer::timeResult;
 
 		void JDebugTimer::StartGameTimer()noexcept
 		{
@@ -15,17 +16,33 @@ namespace JinEngine
 		{
 			endTime = std::chrono::high_resolution_clock::now();
 		}
-		float JDebugTimer::GetElapsedNanoTime()noexcept
+		void JDebugTimer::RecordTime(const size_t guid)noexcept
 		{
-			return (float)std::chrono::duration<double, std::nano>(endTime - startTime).count();
+			auto data = timeResult.find(guid);
+			if (data == timeResult.end())
+			{
+				timeResult.emplace(guid, JDebugTimeResult());
+				data = timeResult.find(guid);
+			}
+			data->second.secondTime = GetElapsedSecondTime();
+			data->second.msTime = GetElapsedMilliTime();
+			data->second.nanoTime = GetElapsedNanoTime();
+		}
+		JDebugTimeResult JDebugTimer::GetTimeResult(const size_t guid)noexcept
+		{
+			return timeResult.find(guid)->second;
+		}
+		float JDebugTimer::GetElapsedSecondTime()noexcept
+		{
+			return (float)std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count();
 		}
 		float JDebugTimer::GetElapsedMilliTime()noexcept
 		{
 			return (float)std::chrono::duration<double, std::milli>(endTime - startTime).count();
 		}
-		float JDebugTimer::GetElapsedSecondTime()noexcept
+		float JDebugTimer::GetElapsedNanoTime()noexcept
 		{
-			return (float)std::chrono::duration_cast<std::chrono::seconds>(endTime - startTime).count();
+			return (float)std::chrono::duration<double, std::nano>(endTime - startTime).count();
 		}
 	}
 }

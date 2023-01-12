@@ -22,9 +22,9 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::OBJECT_DETAIL;
 		}
-		void JObjectDetail::UpdateWindow()
+		void JObjectDetail::UpdateWindow(const JEditorWindowUpdateCondition& condition)
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated())
 			{

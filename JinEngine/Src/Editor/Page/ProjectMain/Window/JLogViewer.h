@@ -19,7 +19,7 @@ namespace JinEngine
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
 			void Initialize()noexcept;
-			void UpdateWindow()final;
+			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
 		private:
 			void BuildLogViewer();
 		private:

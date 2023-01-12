@@ -1,6 +1,8 @@
 #pragma once 
+#include"../Core/Func/Functor/JFunctor.h"
 #include<windows.h> 
 #include<optional>
+#include<memory>
 
 namespace JinEngine
 { 
@@ -29,9 +31,11 @@ namespace JinEngine
 		private:
 			friend class Application::JApplication;
 		protected:
+			using CloseConfirmF = Core::JMFunctorType<Application::JApplication, void>;
+		protected:
 			virtual ~JWindowAppInterface() = default;
 		private:
-			virtual void Initialize(HINSTANCE hInstance) = 0; 
+			virtual void Initialize(HINSTANCE hInstance, std::unique_ptr<CloseConfirmF::Functor> closeConfirmF) = 0;
 			virtual void OpenProjecSelectorWindow() = 0;
 			virtual void OpenEngineWindow() = 0; 
 			virtual void CloseWindow() = 0; 

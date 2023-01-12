@@ -175,9 +175,10 @@ namespace JinEngine
 		{
 			return this;
 		}
-		void JWindowImpl::Initialize(HINSTANCE hInstance)
+		void JWindowImpl::Initialize(HINSTANCE hInstance, std::unique_ptr<CloseConfirmF::Functor> closeConfirmF)
 		{
 			hInst = hInstance;
+			JWindowImpl::closeConfirmF = std::move(closeConfirmF);
 		}
 		void JWindowImpl::OpenProjecSelectorWindow()
 		{
@@ -334,12 +335,12 @@ namespace JinEngine
 			switch (msg)
 			{
 			case WM_CLOSE:
-			{
-				JWindow::Instance().CloseWindow();
+			{ 
+				(*JWindow::Instance().closeConfirmF)();
 				return 0;
 			}
 			case WM_DESTROY:
-			{
+			{ 
 				::PostQuitMessage(0);
 				return 0;
 			}

@@ -87,7 +87,7 @@ namespace JinEngine
 			const uint subMeshCount = rItem->GetSubmeshCount();
 			for (uint j = 0; j < subMeshCount; ++j)
 				rItem->SetMaterial(j, material.Get());
-			rItem->SetRenderLayer(J_RENDER_LAYER::DEBUG);
+			rItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_UI);
 
 			arrow = Core::GetUserPtr(newArrow);
 		}
@@ -399,7 +399,7 @@ namespace JinEngine
 			{
 				JGameObject* newArrowCenter = JGFU::CreateShape(*newTransformArrowRoot, flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE);
 				JRenderItem* arrowCenterRItem = newArrowCenter->GetRenderItem();
-				arrowCenterRItem->SetRenderLayer(J_RENDER_LAYER::DEBUG);
+				arrowCenterRItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_UI);
 				arrowCenterRItem->SetMaterial(0, arrowCenterMaterial.Get());
 				newArrowCenter->GetTransform()->SetScale(XMFLOAT3(0.35f, 0.35f, 0.35f));
 				arrowCenter = Core::GetUserPtr(newArrowCenter);

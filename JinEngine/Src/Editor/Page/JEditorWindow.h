@@ -3,7 +3,9 @@
 #include"JEditorPageEnum.h"
 #include"JEditorWindowType.h" 
 #include"JEditorWindowFontType.h"
+#include"../JEditorUpdateCondition.h"
 #include"../../Core/Func/Functor/JFunctor.h"
+ 
 namespace JinEngine
 {
 	namespace Editor
@@ -27,18 +29,16 @@ namespace JinEngine
 			J_EDITOR_PAGE_TYPE GetOwnerPageType()const noexcept;
 			virtual J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept = 0;
 		public:
-			virtual void UpdateWindow() = 0; 
+			virtual void UpdateWindow(const JEditorWindowUpdateCondition& condition) = 0;
 		protected:
-			void EnterWindow(int windowFlag);
+			void EnterWindow(const JEditorWindowUpdateCondition& condition, int windowFlag);
 			void CloseWindow();
 		protected:
 			void UpdateMouseClick();
 			void UpdateDocking();
 		protected:
-			void SetButtonColor(const float factor = 0.1f)noexcept;
-			void SetButtonDefaultColor()noexcept;
-			void SetTreeNodeColor(const float factor = 0.1f)noexcept;
-			void SetTreeNodeDefaultColor()noexcept;
+			void SetButtonColor(const float factor)noexcept; 
+			void SetTreeNodeColor(const float factor)noexcept; 
 		protected:
 			bool RegisterEventListener(const J_EDITOR_EVENT evType);
 			bool RegisterEventListener(std::vector<J_EDITOR_EVENT>& evType);

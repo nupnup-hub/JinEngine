@@ -44,6 +44,7 @@ namespace JinEngine
 			std::bitset<JSkeletonFixedData::maxAvatarJointCount> isValidJointRef; 
 			std::bitset<4> tabs;
 			const JVector4<float> failColor{ 0.85f, 0.2f, 0.2f, 0.75f };
+			JVector4<float> preBtnColor;
 		public:
 			JAvatarEditor(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
 			~JAvatarEditor();
@@ -53,7 +54,7 @@ namespace JinEngine
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:			  
 			void Initialize(const Core::JUserPtr<JSkeletonAsset>& newTargetSkeleton)noexcept;
-			void UpdateWindow()final;
+			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
 		private:
 			//Build Gui
 			void BuildAvatarEdit();

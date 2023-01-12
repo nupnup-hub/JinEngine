@@ -22,7 +22,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorString;
-		class JEditorPopup;
+		class JEditorPopupMenu;
 		class JAnimationControllerEditor final : public JEditorWindow
 		{ 
 		private:
@@ -51,9 +51,9 @@ namespace JinEngine
 			const std::string diagramViewName;
 			std::unique_ptr<JEditorInputBuffHelper> inputBuff;
 		private:
-			std::unique_ptr<JEditorPopup>diagramListPopup;
-			std::unique_ptr<JEditorPopup>conditionListPopup;
-			std::unique_ptr<JEditorPopup>diagramViewPopup;
+			std::unique_ptr<JEditorPopupMenu>diagramListPopup;
+			std::unique_ptr<JEditorPopupMenu>conditionListPopup;
+			std::unique_ptr<JEditorPopupMenu>diagramViewPopup;
 		private:
 			using DataHandleStructure = Core::JDataHandleStructure<Core::JTransition::GetMaxTaskCapacity(), Core::JIdentifier>;
 			using CreateDiagramFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, Core::JUserPtr<JAnimationController>, const size_t>;
@@ -97,7 +97,7 @@ namespace JinEngine
 			void RegisterConditionFunc();
 			void RegisterStateFunc();
 		public: 
-			void UpdateWindow()final;
+			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
 		private:
 			void BuildDiagramList();
 			void BuildDiagramListPopup();

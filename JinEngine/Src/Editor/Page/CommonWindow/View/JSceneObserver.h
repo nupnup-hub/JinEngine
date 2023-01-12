@@ -20,6 +20,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorBinaryTreeView;
+		class JEditorSceneCoordGrid;
 		class JEditorCameraControl;
 		class JEditorTransformTool;
 		class JEditorMenuBar;
@@ -63,7 +64,9 @@ namespace JinEngine
 			Core::JUserPtr<JScene> scene;
 			Core::JUserPtr<JGameObject> cameraObj;
 			Core::JUserPtr<JCamera> cameraComp;
-			Core::JUserPtr<JGameObject> mainCamFrustum;
+			Core::JUserPtr<JGameObject> mainCamFrustum; 
+		private:
+			std::unique_ptr<JEditorSceneCoordGrid> coordGrid;
 		private:
 			std::unique_ptr<JEditorBinaryTreeView> editorBTreeView;
 			std::unique_ptr<JEditorCameraControl> editorCamCtrl;
@@ -88,7 +91,7 @@ namespace JinEngine
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
 			void Initialize(Core::JUserPtr<JScene> newScene, const std::wstring& editorCameraName)noexcept;
-			void UpdateWindow()final;
+			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
 		private:
 			void CreateMenuLeafNode(JEditorMenuNode* parent, J_OBSERVER_SETTING_TYPE type)noexcept;
 			void OpenObserverSettingNode(const J_OBSERVER_SETTING_TYPE type)noexcept;
@@ -107,7 +110,7 @@ namespace JinEngine
 			void OcclusionResultOnScreen();
 		private:
 			void UpdateMainCamFrustum()noexcept;
-			void MakeMainCamFrustum()noexcept;
+			void MakeMainCamFrustum()noexcept; 
 		private:
 			void ActivateToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type);
 			void DeActivateToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type);

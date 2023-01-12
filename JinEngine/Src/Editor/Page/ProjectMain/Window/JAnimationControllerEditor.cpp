@@ -2,7 +2,7 @@
 #include"../../JEditorAttribute.h"
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
 #include"../../../String/JEditorString.h"
-#include"../../../Popup/JEditorPopup.h"
+#include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"
 #include"../../../Diagram/JEditorDiagramNode.h" 
 
@@ -98,7 +98,7 @@ namespace JinEngine
 			createDiagramT = std::tuple(createNewDiagramNode->GetNodeId(), std::make_unique<CreateDiagramFunctor>(createDiagramLam));
 			destroyDiagramT = std::tuple(eraseDiagramNode->GetNodeId(), std::make_unique<CreateDiagramFunctor>(destroyDiagramLam));
 
-			diagramListPopup = std::make_unique<JEditorPopup>(diagramListName, std::move(diagramListRootNode));
+			diagramListPopup = std::make_unique<JEditorPopupMenu>(diagramListName, std::move(diagramListRootNode));
 			diagramListPopup->AddPopupNode(std::move(createNewDiagramNode));
 			diagramListPopup->AddPopupNode(std::move(eraseDiagramNode));
 		}
@@ -150,7 +150,7 @@ namespace JinEngine
 			createConditionT = std::tuple(createNewConditionNode->GetNodeId(), std::make_unique<CreateConditionFunctor>(createConditionLam));
 			destroyConditionT = std::tuple(destroyConditionNode->GetNodeId(), std::make_unique<CreateConditionFunctor>(destroyConditionLam));
 
-			conditionListPopup = std::make_unique<JEditorPopup>(conditionListName, std::move(conditionListRootNode));
+			conditionListPopup = std::make_unique<JEditorPopupMenu>(conditionListName, std::move(conditionListRootNode));
 			conditionListPopup->AddPopupNode(std::move(createNewConditionNode));
 			conditionListPopup->AddPopupNode(std::move(destroyConditionNode));
 
@@ -260,13 +260,13 @@ namespace JinEngine
 			createStateT = std::tuple(createNewCilpStateNode->GetNodeId(), std::make_unique<CreateStateFunctor>(createStateLam));
 			destroyStateT = std::tuple(destroyStateNode->GetNodeId(), std::make_unique<CreateStateFunctor>(destroyStateLam));
 
-			diagramViewPopup = std::make_unique< JEditorPopup>(diagramViewName, std::move(diagramViewRootNode));
+			diagramViewPopup = std::make_unique< JEditorPopupMenu>(diagramViewName, std::move(diagramViewRootNode));
 			diagramViewPopup->AddPopupNode(std::move(createNewCilpStateNode));
 			diagramViewPopup->AddPopupNode(std::move(destroyStateNode));
 		}
-		void JAnimationControllerEditor::UpdateWindow()
+		void JAnimationControllerEditor::UpdateWindow(const JEditorWindowUpdateCondition& condition)
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated() && aniCont.IsValid())
 			{
@@ -277,13 +277,13 @@ namespace JinEngine
 				BuildDiagramList();
 				BuildConditionList();
 
-				JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_Header);
-				JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_HeaderHovered);
-				JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_HeaderActive);
+				//JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_Header);
+				//JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_HeaderHovered);
+				//JImGuiImpl::SetColor(ImVec4(0, 0, 0, 0), ImGuiCol_HeaderActive);
 				BuildDiagramView(preCursorPosY);
-				JImGuiImpl::SetColorToDefault(ImGuiCol_Header);
-				JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderHovered);
-				JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderActive);
+				//JImGuiImpl::SetColorToDefault(ImGuiCol_Header);
+				//JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderHovered);
+				//JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderActive);
 
 				ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, oriSize);
 				preMousePosX = ImGui::GetMousePos().x;
@@ -424,7 +424,7 @@ namespace JinEngine
 					{
 						const ImVec2 itemPos = ImGui::GetCursorPos() + ImGui::GetWindowPos();
 
-						if (JImGuiImpl::InputTextSet(GetName(),
+						if (JImGuiImpl::InputTextSetT(GetName(),
 							inputBuff.get(),
 							"New name...",
 							ImGuiInputTextFlags_EnterReturnsTrue,
@@ -447,16 +447,16 @@ namespace JinEngine
 					JImGuiImpl::TableSetColumnIndex(2);
 					ImGui::PushItemWidth(-FLT_MIN);
 
-					JImGuiImpl::ComoboSet(GetName(), valueType, *setConditionTypeF, aniCont, nowCondition->GetGuid());
+					JImGuiImpl::ComoboEnumSetT(GetName(), valueType, *setConditionTypeF, aniCont, nowCondition->GetGuid());
 
 					JImGuiImpl::TableSetColumnIndex(3);
 					ImGui::PushItemWidth(-FLT_MIN);
 					if (valueType == Core::J_FSMCONDITION_VALUE_TYPE::BOOL)
-						JImGuiImpl::CheckBoxSet(GetName(), (bool)nowCondition->GetValue(), *setConditionBoolF, aniCont, nowCondition->GetGuid());
+						JImGuiImpl::CheckBoxSetT(GetName(), (bool)nowCondition->GetValue(), *setConditionBoolF, aniCont, nowCondition->GetGuid());
 					else if (valueType == Core::J_FSMCONDITION_VALUE_TYPE::INT)
-						JImGuiImpl::InputIntSet(GetName(), (int)nowCondition->GetValue(), *setConditionIntF, aniCont, nowCondition->GetGuid());
+						JImGuiImpl::InputIntSetT(GetName(), (int)nowCondition->GetValue(), *setConditionIntF, aniCont, nowCondition->GetGuid());
 					else if (valueType == Core::J_FSMCONDITION_VALUE_TYPE::FLOAT)
-						JImGuiImpl::InputFloatSet(GetName(), (float)nowCondition->GetValue(), *setConditionFloatF, aniCont, nowCondition->GetGuid());
+						JImGuiImpl::InputFloatSetT(GetName(), (float)nowCondition->GetValue(), *setConditionFloatF, aniCont, nowCondition->GetGuid());
 				}
 				JImGuiImpl::EndTable();
 				BuildConditionListPopup();

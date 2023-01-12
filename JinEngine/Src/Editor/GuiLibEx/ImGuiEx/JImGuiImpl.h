@@ -94,13 +94,16 @@ namespace JinEngine
 			static void PopFont()noexcept;
 		public:
 			//Color
+			static float GetButtonDeepFactor()noexcept;
+			static float GetTreeDeepFactor()noexcept;
 			static ImVec4 GetColor(ImGuiCol_ flag)noexcept;
 			static void SetColorToDeep(ImGuiCol_ flag, float factor)noexcept;
 			static void SetColor(const ImVec4& color, ImGuiCol_ flag)noexcept;
 			//Set widget color to default
 			static void SetColorToDefault(ImGuiCol_ flag)noexcept;
+			static void SetAllColorToDeep(float factor)noexcept;
 			//Set all widget color to default
-			static void SetAllColorToDefault()noexcept;
+			static void SetAllColorToDefault()noexcept; 
 		public:
 			//Window 
 			static JVector2<int> GetDisplaySize()noexcept; 
@@ -210,10 +213,65 @@ namespace JinEngine
 			static void Initialize();
 			static void Clear();
 		public: 
+			//Widget Set  
+			// 
+			static void ComboSet(const std::string& uniqueLabel, int& selectedIndex, const std::vector<std::string>& strVec)
+			{
+				if (JImGuiImpl::BeginCombo(uniqueLabel.c_str(), strVec[selectedIndex].c_str(), ImGuiComboFlags_HeightLarge))
+				{
+					const uint count = (uint)strVec.size();
+					for (uint i = 0; i < count; i++)
+					{
+						bool isSelected = (selectedIndex == i);
+						if (JImGuiImpl::Selectable(strVec[i], &isSelected))
+							selectedIndex = i;
+
+						// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+						if (isSelected)
+							ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+			template<typename Object, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Object>, int> = 0>
+			static void ComboSet(const std::string& uniqueLabel, int& selectedIndex, const std::vector<Object*>& objVec)
+			{ 
+				if (JImGuiImpl::BeginCombo(uniqueLabel.c_str(), JCUtil::WstrToU8Str(objVec[selectedIndex]->GetName()).c_str(), ImGuiComboFlags_HeightLarge))
+				{ 
+					const uint count = (uint)objVec.size();
+					for (uint i = 0; i < count; i++)
+					{
+						bool isSelected = (selectedIndex == i);
+						if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(objVec[i]->GetName()), &isSelected))
+							selectedIndex = i;
+						if (isSelected)
+							ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
+			template<typename EnumType>
+			static void ComboEnumSet(const std::string& uniqueLabel, int& selectedIndex)
+			{
+				Core::JEnumInfo* enumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(EnumType).name());
+				if (JImGuiImpl::BeginCombo(uniqueLabel.c_str(), enumInfo->ElementName(enumInfo->EnumValue(selectedIndex)).c_str(), ImGuiComboFlags_HeightLarge))
+				{
+					const uint enumCount = enumInfo->GetEnumCount();
+					for (uint i = 0; i < enumCount; i++)
+					{
+						bool isSelected = (selectedIndex == i);
+						if (JImGuiImpl::Selectable(enumInfo->ElementName(enumInfo->EnumValue(i)), &isSelected))
+							selectedIndex = i;
+						if (isSelected)
+							ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
+			}
 			//Widget Set
-			//Support Redo undo
+			//Support Redo undo transition
 			template<typename ...Param>
-			static bool CheckBoxSet(const std::string& uniqueLabel, const bool preValue, Core::JFunctor<void, const bool, Param...>& commitFunctor, Param... var)
+			static bool CheckBoxSetT(const std::string& uniqueLabel, const bool preValue, Core::JFunctor<void, const bool, Param...>& commitFunctor, Param... var)
 			{
 				bool nowValue = preValue;
 				if (JImGuiImpl::CheckBox(("##CheckBox" + uniqueLabel).c_str(), nowValue))
@@ -232,7 +290,7 @@ namespace JinEngine
 				return false;
 			}
 			template<typename ...Param>
-			static bool InputIntSet(const std::string& uniqueLabel, const int preValue, Core::JFunctor<void, const int, Param...>& commitFunctor, Param... var)
+			static bool InputIntSetT(const std::string& uniqueLabel, const int preValue, Core::JFunctor<void, const int, Param...>& commitFunctor, Param... var)
 			{
 				int nowValue = preValue; 
 				if (JImGuiImpl::InputInt(("##InputInt" + uniqueLabel).c_str(), &nowValue))
@@ -254,7 +312,7 @@ namespace JinEngine
 				return false;
 			}
 			template<typename ...Param>
-			static bool InputFloatSet(const std::string& uniqueLabel, const float preValue, Core::JFunctor<void, const float, Param...>& commitFunctor, Param... var)
+			static bool InputFloatSetT(const std::string& uniqueLabel, const float preValue, Core::JFunctor<void, const float, Param...>& commitFunctor, Param... var)
 			{
 				float nowValue = preValue;
 				if (JImGuiImpl::InputFloat(("##IntputFloat" + uniqueLabel).c_str(), &nowValue))
@@ -276,7 +334,7 @@ namespace JinEngine
 				return false;
 			}
 			template<typename ...Param>
-			static bool InputTextSet(const std::string& uniqueLabel, 
+			static bool InputTextSetT(const std::string& uniqueLabel, 
 				JEditorInputBuffHelper* helper,
 				const std::string& hint,
 				ImGuiInputTextFlags flags,
@@ -306,7 +364,7 @@ namespace JinEngine
 				return false;
 			}
 			template<typename EnumType, typename ...Param>
-			static void ComoboSet(const std::string& uniqueLabel, const EnumType preValue, Core::JFunctor<void, const EnumType, Param...>& clickFunctor, Param... var)
+			static void ComoboEnumSetT(const std::string& uniqueLabel, const EnumType preValue, Core::JFunctor<void, const EnumType, Param...>& clickFunctor, Param... var)
 			{
 				const std::string enumName = Core::GetName<EnumType>();
 				const std::string preValueName = Core::GetName(preValue);

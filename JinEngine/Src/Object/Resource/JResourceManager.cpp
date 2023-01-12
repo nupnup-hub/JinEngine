@@ -532,6 +532,24 @@ namespace JinEngine
 	}
 	void JResourceManagerImpl::CreateDefaultMaterial()
 	{
+		auto debugLam = [](JDirectory* ownerDir,
+			const std::wstring& name, 
+			const size_t guid, 
+			const J_OBJECT_FLAG flag,
+			const XMFLOAT4& color,
+			const bool isLine)
+		{
+			JMaterial* newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
+				(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), ownerDir));
+			newMaterial->SetDebugMaterial(true);
+			if(isLine)
+				newMaterial->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE);
+			newMaterial->SetAlbedoColor(color);
+			((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+			return newMaterial;
+		};
+
+
 		const J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
 
 		JDirectory* matDir = GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath());
@@ -582,78 +600,47 @@ namespace JinEngine
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_RED:
 				{
-					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
-						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetDebugMaterial(true); 
-					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f));
-					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f), false);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_GREEN:
 				{
-					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
-						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetDebugMaterial(true); 
-					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f));
-					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f), false);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_BLUE:
 				{
-					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
-						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetDebugMaterial(true); 
-					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f));
-					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f), false);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_YELLOW:
 				{
-					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
-						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetDebugMaterial(true); 
-					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f));
-					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f), false);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_LINE_RED:
 				{
-					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
-						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetDebugMaterial(true);
-					newMaterial->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE); 
-					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f));
-					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f), true);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN:
 				{
-					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
-						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetDebugMaterial(true);
-					newMaterial->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE);
-					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f));
-					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f), true);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_LINE_BLUE:
 				{
-					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
-						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetDebugMaterial(true);
-					newMaterial->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE);
-					newMaterial->SetAlbedoColor(XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f));
-					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f), true);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW:
 				{
-					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
-						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetDebugMaterial(true);
-					newMaterial->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE);
-					newMaterial->SetAlbedoColor(XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f));
-					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f), true);
+					break;
+				}
+				case J_DEFAULT_MATERIAL::DEBUG_LINE_GRAY:
+				{
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.25f, 0.25f, 0.25f, 0.6f), true);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST:
@@ -703,6 +690,8 @@ namespace JinEngine
 			cyilinderMesh.SetName(L"ScaleArrow");
 			return cyilinderMesh;
 		};
+		auto createLineLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLine(3); };
+
 		using CreateStaticMesh = Core::JStaticCallableType<JStaticMeshData, JDefaultGeometryGenerator&>;
 		std::unordered_map<J_DEFAULT_SHAPE, CreateStaticMesh::Callable> callableVec
 		{
@@ -715,7 +704,8 @@ namespace JinEngine
 			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE, (CreateStaticMesh::Ptr)createTriangleBBoxLam},
 			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM, (CreateStaticMesh::Ptr)createBFrustumLam},
 			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_CIRCLE, (CreateStaticMesh::Ptr)createCircleLam},
-			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_SCALE_ARROW, (CreateStaticMesh::Ptr)createScaleArrowLam}
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_SCALE_ARROW, (CreateStaticMesh::Ptr)createScaleArrowLam},
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE, (CreateStaticMesh::Ptr)createLineLam}
 		};
 
 		JDefaultGeometryGenerator geoGen;

@@ -7,6 +7,7 @@
 #include"Page/ProjectMain/JProjectMainPage.h"
 #include"Page/SkeletonaAssetSetting/JEditorSkeletonPage.h"  
 #include"Page/ProjectSelector/JProjectSelectorPage.h"
+#include"Page/SimpleWindow/JProjectCloseConfirm.h"
 #include"GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../Utility/JCommonUtility.h"
 #include"../Core/File/JFileConstant.h"
@@ -26,10 +27,40 @@ namespace JinEngine
 {
 	namespace Editor
 	{
+		namespace Constants
+		{
+			const std::wstring editorPageDataFileName = L"EditorData.txt";
+			JEditorPageUpdateCondition CreatePageUpdateCondition(const JEditorManagerOption& option)
+			{
+				JEditorPageUpdateCondition condition;
+				if (option.acitvatedCloseConfirm)
+					condition.canClickPage = false;
+				return condition;
+			}
+
+		}
 		void JEditorManager::Initialize()
 		{
 			JImGuiImpl::Initialize();
 			JEditorEvent::Initialize();
+		}
+		void JEditorManager::Clear()
+		{
+			uint8 pageCount = (uint8)editorPage.size();
+			for (uint8 i = 0; i < pageCount; ++i)
+			{
+				JEditorClosePageEvStruct evStruct{ editorPage[i]->GetPageType() };
+				ClosePage(&evStruct);
+			}
+
+			JEditorEvent::Clear();
+			JEditorPageShareData::Clear();
+			JImGuiImpl::Clear();
+			Core::JTransition::Clear();
+
+			editorPageMap.clear();
+			opendEditorPage.clear();
+			editorPage.clear();
 		}
 		void JEditorManager::OpenProjectSelector()
 		{
@@ -50,7 +81,7 @@ namespace JinEngine
 			if (!(hasMetadata && hasImguiTxt))
 				_wremove(imguiTxt.c_str());
 
-			editorPage.push_back(std::make_unique<JProjectMainPage>(hasMetadata));
+			editorPage.push_back(std::make_unique<JProjectMainPage>(hasMetadata, &JApplicationProject::RequestStoreProject, &JApplicationProject::RequestLoadProject));
 			editorPage.push_back(std::make_unique<JEditorSkeletonPage>(hasMetadata));
  
 			//bool hasImguiTxt = false;
@@ -80,39 +111,48 @@ namespace JinEngine
 			this->AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector);
 
 			Core::JTransition::Initialize();
-		}
+		} 
 		void JEditorManager::Update()
 		{ 
 			JImGuiImpl::SetAlphabetSize();
 			JEditorEvent::ExecuteEvent();
 			JImGuiImpl::StartEditorUpdate();
 			JImGuiImpl::MouseUpdate();
+			 
+			if (option.acitvatedCloseConfirm)
+			{ 
+				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+				ImGui::PushItemFlag(ImGuiItemFlags_ReadOnly, true);
+				//JImGuiImpl::SetAllColorToDeep(-0.4f);
+			}
 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(JWindow::Instance().GetClientSize() * 0.15f));
 			uint8 pageCount = (uint8)opendEditorPage.size();
 			for (uint8 i = 0; i < pageCount; ++i)
-				opendEditorPage[i]->UpdatePage();
+				opendEditorPage[i]->UpdatePage(Constants::CreatePageUpdateCondition(option));
 			ImGui::PopStyleVar();
-
 			JImGuiImpl::EndEditorUpdate();
-		}
-		void JEditorManager::Clear()
-		{
-			uint8 pageCount = (uint8)editorPage.size();
-			for (uint8 i = 0; i < pageCount; ++i)
+
+			if (option.acitvatedCloseConfirm)
 			{
-				JEditorClosePageEvStruct evStruct{ editorPage[i]->GetPageType() };
-				ClosePage(&evStruct); 
+				ImGui::PopItemFlag();	
+				ImGui::PopItemFlag(); 
 			}
-
-			JEditorEvent::Clear();
-			JEditorPageShareData::Clear();
-			JImGuiImpl::Clear();
-			Core::JTransition::Clear();
-
-			editorPageMap.clear();
-			opendEditorPage.clear();
-			editorPage.clear();
+			JImGuiImpl::SetAllColorToDefault  ();
+			if (option.acitvatedCloseConfirm)
+			{
+				bool isClose = false;
+				bool isCancel = false;
+				projectCloseConfirm->Update(isClose, isCancel);
+				if (isClose)
+					JApplicationProject::SetEndProjectTrigger();
+				if (isCancel)
+				{
+					auto option = GetOption();
+					option.acitvatedCloseConfirm = false;
+					SetOption(option);
+				}
+			}
 		}
 		void JEditorManager::LoadPage()
 		{
@@ -245,9 +285,17 @@ namespace JinEngine
 			if (page != editorPageMap.end())
 				page->second->UnFocusWindow(evStruct->unFocusWindow);
 		}
+		JEditorManagerOption JEditorManager::GetOption()const noexcept
+		{
+			return option;
+		}
+		void JEditorManager::SetOption(const JEditorManagerOption& newOption)noexcept
+		{
+			option = newOption;
+		}
 		std::wstring JEditorManager::GetMetadataPath()const noexcept
 		{
-			return Core::JFileConstant::MakeFilePath(JApplicationVariable::GetProjectEditorResourcePath(), editorPageDataFileName);
+			return Core::JFileConstant::MakeFilePath(JApplicationVariable::GetProjectEditorResourcePath(), Constants::editorPageDataFileName);
 		}
 		void JEditorManager::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{   
@@ -346,7 +394,9 @@ namespace JinEngine
 		} 
 		JEditorManager::JEditorManager()
 			:editorManagerGuid(JCUtil::CalculateGuid("JEditorManager"))
-		{}
+		{
+			projectCloseConfirm = std::make_unique<JProjectCloseConfirm>();
+		}
 		JEditorManager::~JEditorManager()
 		{}
 	}

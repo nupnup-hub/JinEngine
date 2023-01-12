@@ -19,9 +19,9 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::TEST_WINDOW;
 		}
-		void JStringConvertTest::UpdateWindow()
+		void JStringConvertTest::UpdateWindow(const JEditorWindowUpdateCondition& condition)
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			if (IsActivated())
 			{
 				JImGuiImpl::Text(u8"°á°ú");

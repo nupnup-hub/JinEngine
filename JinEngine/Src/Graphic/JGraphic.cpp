@@ -1104,14 +1104,17 @@ namespace JinEngine
 			JSceneCashInterface* iCash = helper.scene->CashInterface();
 			const std::vector<JGameObject*>& objVec00 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
 			const std::vector<JGameObject*>& objVec01 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
-			const std::vector<JGameObject*>& objVec02 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::SKY, J_MESHGEOMETRY_TYPE::STATIC);
-			const std::vector<JGameObject*>& objVec03 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::DEBUG, J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JGameObject*>& objVec02 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JGameObject*>& objVec03 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::SKY, J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JGameObject*>& objVec04 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_UI, J_MESHGEOMETRY_TYPE::STATIC);
 
 			DrawGameObject(commandList.Get(), objVec00, helper, DrawCondition(option, helper, false, true, helper.allowDrawDebug));
 			DrawGameObject(commandList.Get(), objVec01, helper, DrawCondition(option, helper, helper.scene->IsAnimatorActivated(), true, helper.allowDrawDebug));
 			if (option.IsHDOccActivated())
 				commandList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
-			DrawGameObject(commandList.Get(), objVec02, helper, DrawCondition());
+			if (helper.allowDrawDebug)
+				DrawGameObject(commandList.Get(), objVec02, helper, DrawCondition());
+			DrawGameObject(commandList.Get(), objVec03, helper, DrawCondition());
 			if (helper.allowDrawDebug)
 			{
 				ID3D12Resource* editorResource = graphicResource->GetResource(J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL, 0);
@@ -1121,7 +1124,7 @@ namespace JinEngine
 				ResourceTransition(editorResource, D3D12_RESOURCE_STATE_DEPTH_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 				commandList->ClearDepthStencilView(editorDsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 				commandList->OMSetRenderTargets(1, &rtv, true, &editorDsv);
-				DrawGameObject(commandList.Get(), objVec03, helper, DrawCondition());
+				DrawGameObject(commandList.Get(), objVec04, helper, DrawCondition());
 				ResourceTransition(editorResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
 			}
 		 

@@ -2,7 +2,7 @@
 #include"Window/JAnimationControllerEditor.h"
 #include"Window/JLogViewer.h" 
 #include"Window/JWindowDirectory.h"  
-#include"Window/JGraphicOptionSetting.h"
+#include"../SimpleWindow/JGraphicOptionSetting.h"
 #include"../JEditorAttribute.h" 
 #include"../JEditorPageShareData.h"
 #include"../CommonWindow/Debug/JStringConvertTest.h" 
@@ -25,16 +25,14 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JProjectMainPage::JProjectMainPage(const bool hasMetadata)
+		JProjectMainPage::JProjectMainPage(const bool hasMetadata, StoreProjectF::Ptr storePtr, LoadProjectF::Ptr loadPtr)
 			:JEditorPage("JEngine",
 				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
 				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK)),
 			reqInitDockNode(!hasMetadata)
-		{ 
-			auto storeProjectLam = []() { JApplicationProject::RequestStoreProject(); };
-			auto loadProjectLam = []() { JApplicationProject::RequestLoadProject(); };
-			storeProjectF = std::make_unique<StoreProjectF::Functor>(storeProjectLam);
-			loadProjectF = std::make_unique<LoadProjectF::Functor>(loadProjectLam);
+		{  
+			storeProjectF = std::make_unique<StoreProjectF::Functor>(storePtr);
+			loadProjectF = std::make_unique<LoadProjectF::Functor>(loadPtr);
 
 			std::vector<WindowInitInfo> openInfo;
 			openInfo.emplace_back("Window Directory##JEngine", 0.0f, 0.7f, 0.6f, 0.3f);
@@ -108,7 +106,7 @@ namespace JinEngine
 			logViewer->Initialize();
 			BuildMenuNode();
 		}
-		void JProjectMainPage::UpdatePage()
+		void JProjectMainPage::UpdatePage(const JEditorPageUpdateCondition& condition)
 		{
 			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM);
 			JImGuiImpl::PushFont();
@@ -141,10 +139,10 @@ namespace JinEngine
 
 			uint8 opendWindowCount = (uint8)opendWindow.size();
 			for (uint8 i = 0; i < opendWindowCount; ++i)
-				opendWindow[i]->UpdateWindow();
+				opendWindow[i]->UpdateWindow(condition.CreateWindowCondition());
 			//PrintOpenWindowState();
 			if (graphicOptionSetting->IsOpenViewer())
-				graphicOptionSetting->GraphicOptionOnScreen();
+				graphicOptionSetting->Update();
 
 			JImGuiImpl::PopFont();
 			ImGui::PopStyleVar(2);

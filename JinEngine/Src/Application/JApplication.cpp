@@ -1,5 +1,6 @@
 #include"JApplication.h"   
 #include"JApplicationVariable.h" 
+#include"JApplicationCloseType.h"
 #include"../Window/JWindows.h"
 #include"../Graphic/JGraphic.h" 
 #include"../Object/Resource/JResourceManager.h"  
@@ -13,16 +14,14 @@ namespace JinEngine
 {
 	namespace Application
 	{
-		float secondTime = 0;
-		float msTime = 0;
-		float nanoTime = 0;
-
 		JApplication::JApplication(HINSTANCE hInstance, const char* commandLine)
 			:guid(Core::MakeGuid())
 		{		
 			JApplicationVariable::Initialize();
 			JApplicationVariable::RegisterFunctor(this, &JApplication::StoreProject, &JApplication::LoadProject);
-			JWindow::Instance().AppInterface()->Initialize(hInstance);
+			
+			using CloseConfirmF = Window::JWindowAppInterface::CloseConfirmF;
+			JWindow::Instance().AppInterface()->Initialize(hInstance, std::make_unique<CloseConfirmF::Functor>(&JApplication::CloseApp, this));
 		}
 		JApplication::~JApplication()
 		{}
@@ -46,11 +45,10 @@ namespace JinEngine
 
 			JGameTimer::Instance().Start();
 			JGameTimer::Instance().Reset();
-			JGameTimer::Instance().Tick();
-			std::optional<int> encode;
+			JGameTimer::Instance().Tick();  
 			while (true)
 			{
-				encode = JWindow::Instance().AppInterface()->ProcessMessages();
+				std::optional<int> encode = JWindow::Instance().AppInterface()->ProcessMessages();
 				if (encode.has_value())
 					break;
 
@@ -85,11 +83,10 @@ namespace JinEngine
 			JGameTimer::Instance().Start();
 			JGameTimer::Instance().Reset();
 			JGameTimer::Instance().Tick();
-
-			std::optional<int> encode;
+			 
 			while (true)
 			{
-				encode = JWindow::Instance().AppInterface()->ProcessMessages();
+				std::optional<int> encode = JWindow::Instance().AppInterface()->ProcessMessages();					 
 				if (encode.has_value())
 					break;
 
@@ -103,18 +100,15 @@ namespace JinEngine
 				JGraphic::Instance().AppInterface()->DrawScene();
 				JGraphic::Instance().AppInterface()->EndFrame();
 
-				Core::JDebugTimer::StopGameTimer();
-				secondTime = Core::JDebugTimer::GetElapsedSecondTime();
-				msTime = Core::JDebugTimer::GetElapsedMilliTime();
-				nanoTime = Core::JDebugTimer::GetElapsedNanoTime();
+				Core::JDebugTimer::StopGameTimer(); 
+				Core::JDebugTimer::RecordTime(guid);
 				JApplicationVariable::ExecuteAppCommand();
+				if (JApplicationProject::CanEndProject())
+					JWindow::Instance().AppInterface()->CloseWindow();
 			}
 		}
 		void JApplication::CalculateFrame()
-		{
-			static int frameCnt = 0;
-			static float timeElapsed = 0.0f;
-
+		{ 
 			frameCnt++;
 			if ((JGameTimer::Instance().TotalTime() - timeElapsed) >= 1.0f)
 			{
@@ -124,20 +118,35 @@ namespace JinEngine
 				if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
 					title += L"    Project: " + JApplicationVariable::GetActivatedProjectName();
 
+				auto tResult = Core::JDebugTimer::GetTimeResult(guid);
 				std::wstring fpsWstr = std::to_wstring(fps);
 				std::wstring mspfWstr = std::to_wstring(mspf);
 				std::wstring windowText = title +
 					L"    fps: " + fpsWstr +
 					L"   mspf: " + mspfWstr +
-					L"   sec: " + std::to_wstring(secondTime) +
-					L"   ms: " + std::to_wstring(msTime) +
-					L"   nano: " + std::to_wstring(nanoTime);
+					L"   sec: " + std::to_wstring(tResult.secondTime) +
+					L"   ms: " + std::to_wstring(tResult.msTime) +
+					L"   nano: " + std::to_wstring(tResult.nanoTime);
 
 				SetWindowText(JWindow::Instance().HandleInterface()->GetHandle(), windowText.c_str());
 				// Reset for next average.
 				frameCnt = 0;
 				timeElapsed += 1.0f; 
 			}
+		}
+		void JApplication::CloseApp()
+		{
+			const J_APPLICATION_STATE appState = JApplicationVariable::GetApplicationState();
+			if (appState == J_APPLICATION_STATE::PROJECT_SELECT)
+				JWindow::Instance().AppInterface()->CloseWindow();
+			else if (appState == J_APPLICATION_STATE::EDIT_GAME)
+			{
+				auto option = editorManager.GetOption();
+				option.acitvatedCloseConfirm = true;
+				editorManager.SetOption(option);
+			}
+			else
+				;
 		}
 		void JApplication::StoreProject()
 		{

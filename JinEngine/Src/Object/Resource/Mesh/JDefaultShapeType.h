@@ -18,6 +18,7 @@ namespace JinEngine
 		DEFAULT_SHAPE_POSITION_ARROW,
 		DEFAULT_SHAPE_CIRCLE,
 		DEFAULT_SHAPE_SCALE_ARROW,
+		DEFAULT_SHAPE_LINE,
 		COUNT,
 	};
 
@@ -52,6 +53,8 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_CIRCLE:
 				return true;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_SCALE_ARROW:
+				return true;
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE:
 				return true;
 			default:
 				return L"Error";
@@ -96,6 +99,8 @@ namespace JinEngine
 				return L"Circle";
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_SCALE_ARROW:
 				return L"ScaleArrow";
+			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE:
+				return L"Line";
 			default:
 				return L"Error";
 			}
