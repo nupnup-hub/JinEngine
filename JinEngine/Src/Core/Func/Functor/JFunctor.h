@@ -39,7 +39,6 @@ namespace JinEngine
 			}
 		};
 
-
 		template<typename Pointer, typename Object, typename Ret, typename ...Param>
 		class MemberFunctionImpl final : public IFunctionImpl<Ret, Param...>
 		{
@@ -56,7 +55,6 @@ namespace JinEngine
 				return ((object)->*ptr)(std::forward<Param>(var)...);
 			}
 		};
-
 #pragma endregion
 #pragma region JFunctor 
 		template<typename Ret, typename ...Param>
@@ -84,6 +82,10 @@ namespace JinEngine
 			template<typename Object>
 			JFunctor(Ret(Object::* ptr)(Param...), Object* object)
 				: impl(std::make_unique<MemberFunctionImpl<Ret(Object::*)(Param...), Object, Ret, Param...>>(ptr, object))
+			{}
+			template<typename Object>
+			JFunctor(Ret(Object::* ptr)(Param...)const, Object* object)
+				: impl(std::make_unique<MemberFunctionImpl<Ret(Object::*)(Param...)const, Object, Ret, Param...>>(ptr, object))
 			{}
 		public:
 			Ret operator()(Param... var)
@@ -268,7 +270,8 @@ namespace JinEngine
 		struct JMFunctorType
 		{
 		public:
-			using Ptr = Ret(Object::*)(Param...);
+			using Ptr = Ret(Object::*)(Param...); 
+			using CPtr = Ret(Object::*)(Param...)const;
 			using Functor = JFunctor<Ret, Param...>;
 			using CompletelyBind = JBindHandle<Functor, Param...>;
 		};

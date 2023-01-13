@@ -88,7 +88,7 @@ namespace JinEngine
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
 			void Initialize();
-			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
+			void UpdateWindow()final;
 		private:
 			void BuildDirectoryView();
 			void BuildFileView();

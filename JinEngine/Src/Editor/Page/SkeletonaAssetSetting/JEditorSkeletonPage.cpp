@@ -1,5 +1,5 @@
 #include"JEditorSkeletonPage.h"
-#include"Window/JAvatarEditor.h"
+#include"Window/JAvatarEditor.h" 
 #include"../JEditorPageShareData.h"
 #include"../JEditorAttribute.h"  
 #include"../CommonWindow/View/JSceneViewer.h"
@@ -71,13 +71,16 @@ namespace JinEngine
 			avatarViewer = std::make_unique<JSceneViewer>(windowNames[2], std::move(windowAttributes[2]), GetPageType());
 			avatarDetail = std::make_unique<JObjectDetail>(windowNames[2], std::move(windowAttributes[3]), GetPageType());
 
-			windows.resize(memberWindowCount);
-			windows[0] = explorer.get();
-			windows[1] = avatarEdit.get();
-			windows[2] = avatarViewer.get();
-			windows[3] = avatarDetail.get();
-
-			JEditorPageShareData::RegisterPage(GetPageType(), pageFlag);
+			std::vector<JEditorWindow*> windows
+			{
+				explorer.get(),
+				avatarEdit.get(),
+				avatarViewer.get(),
+				avatarDetail.get()
+			};
+			AddWindow(windows);
+			 
+			JEditorPageShareData::RegisterPage(GetPageType(), &JEditorSkeletonPage::GetPageFlag, this);
 		}
 		JEditorSkeletonPage::~JEditorSkeletonPage()
 		{
@@ -89,24 +92,24 @@ namespace JinEngine
 		}
 		void JEditorSkeletonPage::SetInitWindow()
 		{
-			uint currOpWndCount = (uint)opendWindow.size();
+			uint currOpWndCount = GetOpenWindowCount();
 			for (uint i = 0; i < currOpWndCount; ++i)
-				CloseWindow(opendWindow[i]);
+				CloseWindow(GetOpenWindow(i));
 
 			OpenWindow(explorer.get());
 			OpenWindow(avatarEdit.get());
 			OpenWindow(avatarViewer.get());
-			OpenWindow(avatarDetail.get()); 
+			OpenWindow(avatarDetail.get());
 
-			currOpWndCount = (uint)opendWindow.size();
+			currOpWndCount = GetOpenWindowCount();
 			for (uint i = 0; i < currOpWndCount; ++i)
-				opendWindow[i]->SetLastActivated(true); 
+				GetOpenWindow(i)->SetLastActivated(true);
 		}
 		void JEditorSkeletonPage::Initialize()
 		{
 
 		}
-		void JEditorSkeletonPage::UpdatePage(const JEditorPageUpdateCondition& condition)
+		void JEditorSkeletonPage::UpdatePage()
 		{ 
 			/*
 			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_None;
@@ -134,9 +137,9 @@ namespace JinEngine
 			}
 			UpdateDockSpace(dockspaceFlag);
 			ClosePage();
-			uint8 opendWindowCount = (uint8)opendWindow.size();
-			for (uint8 i = 0; i < opendWindowCount; ++i)
-				opendWindow[i]->UpdateWindow(condition.CreateWindowCondition());
+			uint currOpWndCount = GetOpenWindowCount();
+			for (uint i = 0; i < currOpWndCount; ++i)
+				GetOpenWindow(i)->UpdateWindow();
 		}
 		bool JEditorSkeletonPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept
 		{

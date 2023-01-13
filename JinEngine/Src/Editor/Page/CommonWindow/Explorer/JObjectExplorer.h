@@ -65,7 +65,7 @@ namespace JinEngine
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
 			void Initialize(Core::JUserPtr<JGameObject> newRoot)noexcept;
-			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
+			void UpdateWindow()final;
 		private:
 			void BuildObjectExplorer();
 			void ObjectExplorerOnScreen(JGameObject* gObj, const bool isAcivatedSearch);  

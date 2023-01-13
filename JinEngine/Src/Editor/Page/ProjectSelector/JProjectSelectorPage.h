@@ -7,13 +7,13 @@ namespace JinEngine
 	class JTexture;
 	namespace Editor
 	{
-		class JProjectSelectorHub;
+		class JProjectSelectorHub; 
 		class JProjectSelectorPage final: public JEditorPage,
 			public JResourceUserInterface
 		{ 
 		private:
 			std::unique_ptr< JProjectSelectorHub> projectHub;
-			Core::JUserPtr<JTexture> backgroundTexture;
+			Core::JUserPtr<JTexture> backgroundTexture; 
 		public:
 			JProjectSelectorPage();
 			~JProjectSelectorPage();
@@ -24,7 +24,7 @@ namespace JinEngine
 			//hasImguiTxt = imgui widget data .txt file
 			void Initialize()final;
 		public: 
-			void UpdatePage(const JEditorPageUpdateCondition& condition)final;
+			void UpdatePage()final;
 		public:
 			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
 		private:

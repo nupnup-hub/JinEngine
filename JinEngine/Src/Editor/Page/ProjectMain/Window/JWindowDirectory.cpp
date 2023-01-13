@@ -178,9 +178,9 @@ namespace JinEngine
 			//searchBarHelper->RegisterDefaultObject(root);
 			OpenNewDirectory(root);
 		}
-		void JWindowDirectory::UpdateWindow(const JEditorWindowUpdateCondition& condition)
+		void JWindowDirectory::UpdateWindow()
 		{
-			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated() && opendDirctory.IsValid())
 			{ 

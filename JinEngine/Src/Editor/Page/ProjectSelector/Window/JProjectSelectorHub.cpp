@@ -37,14 +37,14 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::PROJECT_SELECTOR_HUB;
 		}
-		void JProjectSelectorHub::UpdateWindow(const JEditorWindowUpdateCondition& condition)
+		void JProjectSelectorHub::UpdateWindow()
 		{
 			const ImGuiViewport* viewport = ImGui::GetMainViewport();
 			ImGui::SetNextWindowSize(viewport->WorkSize);
 			ImGui::SetNextWindowPos(viewport->WorkPos);
 
 			int flag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize;
-			EnterWindow(condition, flag);
+			EnterWindow(flag);
 			if (IsActivated())
 			{
 				//JImGuiImpl::AddImage(*backgroundTexture.Get(), viewport->WorkPos, viewport->WorkSize, false, IM_COL32(255, 255, 255, 50));

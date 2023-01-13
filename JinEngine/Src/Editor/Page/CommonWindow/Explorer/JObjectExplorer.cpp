@@ -135,9 +135,9 @@ namespace JinEngine
 			searchBarHelper->ClearInputBuffer();
 			explorerPopup->SetOpen(false);
 		}
-		void JObjectExplorer::UpdateWindow(const JEditorWindowUpdateCondition& condition)
+		void JObjectExplorer::UpdateWindow()
 		{
-			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated() && root.IsValid())
 			{

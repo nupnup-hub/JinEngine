@@ -19,9 +19,9 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::GRAPHIC_WATCHER;
 		}
-		void JGraphicResourceWatcher::UpdateWindow(const JEditorWindowUpdateCondition& condition)
+		void JGraphicResourceWatcher::UpdateWindow()
 		{
-			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated())
 			{

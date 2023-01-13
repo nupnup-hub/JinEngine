@@ -21,7 +21,7 @@ namespace JinEngine
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept;
 		public:
 			void Initialize(Core::JUserPtr<JScene> newScene);
-			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
+			void UpdateWindow()final;
 		};
 	}
 }

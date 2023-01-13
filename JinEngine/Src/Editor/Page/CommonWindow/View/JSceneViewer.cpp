@@ -25,9 +25,9 @@ namespace JinEngine
 		{
 			scene = newScene;
 		}
-		void JSceneViewer::UpdateWindow(const JEditorWindowUpdateCondition& condition)
+		void JSceneViewer::UpdateWindow()
 		{
-			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated() && scene.IsValid())
 			{ 

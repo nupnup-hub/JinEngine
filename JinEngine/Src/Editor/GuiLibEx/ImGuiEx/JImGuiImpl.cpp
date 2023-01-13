@@ -455,7 +455,13 @@ namespace JinEngine
 		bool JImGuiImpl::BeginWindow(const std::string& name, bool* p_open, ImGuiWindowFlags flags)
 		{
 			++jImgui->windowCount;
-			return ImGui::Begin(name.c_str(), p_open, flags);
+			if(p_open)
+				return ImGui::Begin(name.c_str(), p_open, flags);
+			else
+			{
+				bool openKey = true;
+				return ImGui::Begin(name.c_str(), &openKey, flags);
+			}
 		}
 		void JImGuiImpl::EndWindow()
 		{
@@ -750,7 +756,8 @@ namespace JinEngine
 			return jImgui->enableSelector;
 		}
 		void JImGuiImpl::StartEditorUpdate()
-		{ }
+		{ 
+		}
 		void JImGuiImpl::MouseUpdate()
 		{
 			JImGuiImpl::SetMouseClick(0, ImGui::IsMouseClicked(0));

@@ -1,7 +1,7 @@
 #include"JProjectSelectorPage.h"
 #include"Window/JProjectSelectorHub.h"
 #include"../JEditorAttribute.h"
-#include"../JEditorPageShareData.h"
+#include"../JEditorPageShareData.h" 
 #include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../../Object/Resource/JResourceManager.h"
 #include"../../../Object/Resource/Texture/JTexture.h"
@@ -19,8 +19,13 @@ namespace JinEngine
 				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
 				GetPageType());
 
-			windows.push_back(projectHub.get());
-			JEditorPageShareData::RegisterPage(GetPageType(), pageFlag);
+			std::vector<JEditorWindow*> windows
+			{
+				projectHub.get()
+			};
+
+			AddWindow(windows);
+			JEditorPageShareData::RegisterPage(GetPageType(), &JProjectSelectorPage::GetPageFlag, this);
 		}
 		JProjectSelectorPage::~JProjectSelectorPage()
 		{
@@ -32,19 +37,19 @@ namespace JinEngine
 		}
 		void JProjectSelectorPage::SetInitWindow()
 		{
-			uint currOpWndCount = (uint)opendWindow.size();
+			uint currOpWndCount = GetOpenWindowCount();
 			for (uint i = 0; i < currOpWndCount; ++i)
-				CloseWindow(opendWindow[i]);
+				CloseWindow(GetOpenWindow(i));
 
-			OpenWindow(projectHub.get()); 
+			OpenWindow(projectHub.get());
 
-			currOpWndCount = (uint)opendWindow.size();
+			currOpWndCount = GetOpenWindowCount();
 			for (uint i = 0; i < currOpWndCount; ++i)
-				opendWindow[i]->SetLastActivated(true);			 
+				GetOpenWindow(i)->SetLastActivated(true);		 
 		}
 		void JProjectSelectorPage::Initialize()
 		{}
-		void JProjectSelectorPage::UpdatePage(const JEditorPageUpdateCondition& condition)
+		void JProjectSelectorPage::UpdatePage()
 		{
 			ImGui::SetWindowFontScale(2);
 			const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -63,9 +68,9 @@ namespace JinEngine
 			ImGui::PopStyleVar(3);
 
 			//JImGuiImpl::AddImage(*(backgroundTexture.Get()), wPos, wSize, false, IM_COL32(255, 255, 255, 50));
-			uint8 opendWindowCount = (uint8)opendWindow.size();
-			for (uint8 i = 0; i < opendWindowCount; ++i)
-				opendWindow[i]->UpdateWindow(condition.CreateWindowCondition());
+			uint currOpWndCount = GetOpenWindowCount();
+			for (uint i = 0; i < currOpWndCount; ++i)
+				GetOpenWindow(i)->UpdateWindow();
 			ClosePage();
 			ImGui::SetWindowFontScale(1);
 		}

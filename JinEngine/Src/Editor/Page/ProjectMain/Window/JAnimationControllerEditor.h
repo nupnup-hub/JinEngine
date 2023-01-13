@@ -97,7 +97,7 @@ namespace JinEngine
 			void RegisterConditionFunc();
 			void RegisterStateFunc();
 		public: 
-			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
+			void UpdateWindow()final;
 		private:
 			void BuildDiagramList();
 			void BuildDiagramListPopup();

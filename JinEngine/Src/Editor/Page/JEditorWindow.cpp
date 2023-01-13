@@ -39,11 +39,12 @@ namespace JinEngine
 		{
 			return ownerPageType;
 		}
-		void JEditorWindow::EnterWindow(const JEditorWindowUpdateCondition& condition, int windowFlag)
-		{ 
-			if (!condition.canClickWindow)
+		void JEditorWindow::EnterWindow(int windowFlag)
+		{
+			J_EDITOR_PAGE_FLAG pageFlag = JEditorPageShareData::GetPageFlag(ownerPageType);
+			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
 				windowFlag = Core::AddSQValueEnum((ImGuiWindowFlags_)windowFlag, ImGuiWindowFlags_NoInputs);
-			//ImGuiWindowFlags_NoInputs = ImGuiWindowFlags_NoMouseInputs | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoNavFocus,
+
 			ImGui::Begin(GetName().c_str(), 0, windowFlag);
 		}
 		void JEditorWindow::CloseWindow()

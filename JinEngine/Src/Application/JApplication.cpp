@@ -140,11 +140,7 @@ namespace JinEngine
 			if (appState == J_APPLICATION_STATE::PROJECT_SELECT)
 				JWindow::Instance().AppInterface()->CloseWindow();
 			else if (appState == J_APPLICATION_STATE::EDIT_GAME)
-			{
-				auto option = editorManager.GetOption();
-				option.acitvatedCloseConfirm = true;
-				editorManager.SetOption(option);
-			}
+				editorManager.PressMainWindowCloseButton();
 			else
 				;
 		}

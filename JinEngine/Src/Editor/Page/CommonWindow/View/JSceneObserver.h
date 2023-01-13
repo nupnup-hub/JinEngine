@@ -91,7 +91,7 @@ namespace JinEngine
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
 			void Initialize(Core::JUserPtr<JScene> newScene, const std::wstring& editorCameraName)noexcept;
-			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
+			void UpdateWindow()final;
 		private:
 			void CreateMenuLeafNode(JEditorMenuNode* parent, J_OBSERVER_SETTING_TYPE type)noexcept;
 			void OpenObserverSettingNode(const J_OBSERVER_SETTING_TYPE type)noexcept;

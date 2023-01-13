@@ -18,5 +18,11 @@ namespace JinEngine
 			CLICK_TOGGLE_TO_ON,
 			CLICK_TOGGLE_TO_OFF,
 		};
+
+		enum class J_EDITOR_POPUP_WINDOW_TYPE
+		{
+			CAUTION,
+			CLOSE_CONFIRM
+		};
 	}
 }

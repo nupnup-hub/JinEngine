@@ -2,9 +2,10 @@
 #include"Window/JAnimationControllerEditor.h"
 #include"Window/JLogViewer.h" 
 #include"Window/JWindowDirectory.h"  
-#include"../SimpleWindow/JGraphicOptionSetting.h"
 #include"../JEditorAttribute.h" 
 #include"../JEditorPageShareData.h"
+#include"../SimpleWindow/JGraphicOptionSetting.h" 
+#include"../../Popup/JEditorPopupWindow.h"
 #include"../CommonWindow/Debug/JStringConvertTest.h" 
 #include"../CommonWindow/View/JSceneViewer.h"
 #include"../CommonWindow/View/JSceneObserver.h"
@@ -25,14 +26,14 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JProjectMainPage::JProjectMainPage(const bool hasMetadata, StoreProjectF::Ptr storePtr, LoadProjectF::Ptr loadPtr)
+		JProjectMainPage::JProjectMainPage(const bool hasMetadata)
 			:JEditorPage("JEngine",
 				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
 				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK)),
 			reqInitDockNode(!hasMetadata)
 		{  
-			storeProjectF = std::make_unique<StoreProjectF::Functor>(storePtr);
-			loadProjectF = std::make_unique<LoadProjectF::Functor>(loadPtr);
+			storeProjectF = std::make_unique<StoreProjectF::Functor>(&JApplicationProject::RequestStoreProject);
+			loadProjectF = std::make_unique<LoadProjectF::Functor>(&JApplicationProject::RequestLoadProject);
 
 			std::vector<WindowInitInfo> openInfo;
 			openInfo.emplace_back("Window Directory##JEngine", 0.0f, 0.7f, 0.6f, 0.3f);
@@ -57,20 +58,47 @@ namespace JinEngine
 			stringConvertTest = std::make_unique<JStringConvertTest>(openInfo[8].GetName(), openInfo[8].MakeAttribute(), GetPageType());
 			appElapseTime = std::make_unique<JAppElapsedTime>(openInfo[9].GetName(), openInfo[9].MakeAttribute(), GetPageType());
 
-			windows.resize(openInfo.size());
-			windows[0] = windowDirectory.get();
-			windows[1] = objectExplorer.get();
-			windows[2] = objectDetail.get();
-			windows[3] = sceneObserver.get();
-			windows[4] = sceneViewer.get();
-			windows[5] = logViewer.get();
-			windows[6] = animationControllerEditor.get();
-			windows[7] = graphicResourceWatcher.get();
-			windows[8] = stringConvertTest.get();
-			windows[9] = appElapseTime.get();
+			std::vector<JEditorWindow*> windows
+			{
+				windowDirectory.get(),
+				objectExplorer.get(),
+				objectDetail.get(),
+				sceneObserver.get(),
+				sceneViewer.get(),
+				logViewer.get(),
+				animationControllerEditor.get(),
+				graphicResourceWatcher.get(),
+				stringConvertTest.get(),
+				appElapseTime.get()
+			};
+			AddWindow(windows);
 
-			JEditorPageShareData::RegisterPage(GetPageType(), pageFlag);
+			closePopup = std::make_unique<JEditorCloseConfirmPopup>();
+			std::vector<JEditorPopupWindow*> popupWnds
+			{
+				closePopup.get()
+			};
+			AddPopupWindow(popupWnds);
+
+			auto confirmFunc = [](JEditorPage* page)
+			{
+				page->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
+				JApplicationProject::SetEndProjectTrigger();
+			};
+			auto cancelFunc = [](JEditorPage* page) 
+			{
+				page->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM); 
+			};
+			
+			closePopupConfirmF = std::make_unique<ClosePopupConfirmF::Functor>(confirmFunc);
+			closePopupCancelF = std::make_unique<ClosePopupCancelF::Functor>(cancelFunc);
+			 
+			closePopup->RegisterBind(std::make_unique<ClosePopupConfirmF::CompletelyBind>(*closePopupConfirmF, this),
+				nullptr, nullptr,
+				std::make_unique<ClosePopupCancelF::CompletelyBind>(*closePopupCancelF, this));
+
 			graphicOptionSetting = std::make_unique<JGraphicOptionSetting>();
+			JEditorPageShareData::RegisterPage(GetPageType(), &JProjectMainPage::GetPageFlag, this);
 		}
 		JProjectMainPage::~JProjectMainPage()
 		{
@@ -82,9 +110,9 @@ namespace JinEngine
 		}
 		void JProjectMainPage::SetInitWindow()
 		{
-			uint currOpWndCount = (uint)opendWindow.size();
+			uint currOpWndCount = GetOpenWindowCount();
 			for (uint i = 0; i < currOpWndCount; ++i)
-				CloseWindow(opendWindow[i]);
+				CloseWindow(GetOpenWindow(i));
 			 
 			OpenWindow(windowDirectory.get());
 			OpenWindow(objectExplorer.get());
@@ -93,9 +121,9 @@ namespace JinEngine
 			OpenWindow(sceneViewer.get());
 			OpenWindow(logViewer.get());
 
-			currOpWndCount = (uint)opendWindow.size();
+			currOpWndCount = GetOpenWindowCount();
 			for (uint i = 0; i < currOpWndCount; ++i)
-				opendWindow[i]->SetLastActivated(true);
+				GetOpenWindow(i)->SetLastActivated(true);
 		}
 		void JProjectMainPage::Initialize()
 		{
@@ -106,7 +134,7 @@ namespace JinEngine
 			logViewer->Initialize();
 			BuildMenuNode();
 		}
-		void JProjectMainPage::UpdatePage(const JEditorPageUpdateCondition& condition)
+		void JProjectMainPage::UpdatePage()
 		{
 			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM);
 			JImGuiImpl::PushFont();
@@ -137,15 +165,23 @@ namespace JinEngine
 			menuBar->Update(true);
 			ClosePage();
 
-			uint8 opendWindowCount = (uint8)opendWindow.size();
-			for (uint8 i = 0; i < opendWindowCount; ++i)
-				opendWindow[i]->UpdateWindow(condition.CreateWindowCondition());
+			uint currOpWndCount = GetOpenWindowCount();
+			for (uint i = 0; i < currOpWndCount; ++i)
+				GetOpenWindow(i)->UpdateWindow();
+
 			//PrintOpenWindowState();
 			if (graphicOptionSetting->IsOpenViewer())
 				graphicOptionSetting->Update();
 
 			JImGuiImpl::PopFont();
-			ImGui::PopStyleVar(2);
+			ImGui::PopStyleVar(2); 
+
+			JEditorPopupWindow* openPopup = GetOpenPopupWindow();
+			if (openPopup != nullptr)
+				openPopup->Update(GetName(), 
+					u8"종료하기 전 자원관리",
+					JVector2<float>(0, 0) , 
+					ImGui::GetMainViewport()->WorkSize);
 		}
 		bool JProjectMainPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept
 		{

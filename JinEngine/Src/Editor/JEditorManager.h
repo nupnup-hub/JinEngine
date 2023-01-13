@@ -1,5 +1,4 @@
-#pragma once   
-#include"JEditorManagerOption.h"
+#pragma once    
 #include"Event/JEditorEventType.h" 
 #include"Event/JEditorEventStruct.h"
 #include"Page/JEditorPageEnum.h"
@@ -28,14 +27,11 @@ namespace JinEngine
 		private:
 			friend class Application::JApplication;
 		private:
-			const size_t editorManagerGuid;
-			JEditorManagerOption option;
+			const size_t editorManagerGuid; 
 		private: 
 			std::vector<std::unique_ptr<JEditorPage>> editorPage;
 			std::unordered_map<J_EDITOR_PAGE_TYPE, JEditorPage*> editorPageMap;
-			std::vector<JEditorPage*> opendEditorPage; 
-		private:
-			std::unique_ptr<JProjectCloseConfirm> projectCloseConfirm;
+			std::vector<JEditorPage*> opendEditorPage;  
 		public:
 			void Initialize();
 			void Clear();
@@ -60,12 +56,14 @@ namespace JinEngine
 			void AcitvateWindow(JEditorActWindowEvStruct* evStruct);
 			void DeActivateWindow(JEditorDeActWindowEvStruct* evStruct);
 			void FocusWindow(JEditorFocusWindowEvStruct* evStruct);
-			void UnFocusWindow(JEditorUnFocusWindowEvStruct* evStruct);
-		public:
-			JEditorManagerOption GetOption()const noexcept;
-			void SetOption(const JEditorManagerOption& newOption)noexcept;
+			void UnFocusWindow(JEditorUnFocusWindowEvStruct* evStruct); 
+		private:
+			void OpenPopupWindow(JEditorOpenPopupWindowEvStruct* evStruct);
+			void ClosePopupWindow(JEditorClosePopupWindowEvStruct* evStruct);
 		private:
 			std::wstring GetMetadataPath()const noexcept;  
+		private:
+			void PressMainWindowCloseButton()noexcept;
 		private:
 			virtual void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)final;
 		private:

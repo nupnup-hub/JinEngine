@@ -13,7 +13,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JProjectSelectorHub; 
-		class JEditorManager;
+		class JProjectMainPage;
 	}
 	namespace Application
 	{
@@ -115,7 +115,7 @@ namespace JinEngine
 		{
 		private:
 			friend class JApplication;
-			friend class Editor::JEditorManager;
+			friend class Editor::JProjectMainPage;
 			friend class Editor::JProjectSelectorHub; 
 		private:
 			class JProjectInfo

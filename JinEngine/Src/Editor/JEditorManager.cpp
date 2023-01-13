@@ -6,8 +6,7 @@
 #include"Page/JEditorPageShareData.h"
 #include"Page/ProjectMain/JProjectMainPage.h"
 #include"Page/SkeletonaAssetSetting/JEditorSkeletonPage.h"  
-#include"Page/ProjectSelector/JProjectSelectorPage.h"
-#include"Page/SimpleWindow/JProjectCloseConfirm.h"
+#include"Page/ProjectSelector/JProjectSelectorPage.h" 
 #include"GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../Utility/JCommonUtility.h"
 #include"../Core/File/JFileConstant.h"
@@ -30,15 +29,8 @@ namespace JinEngine
 		namespace Constants
 		{
 			const std::wstring editorPageDataFileName = L"EditorData.txt";
-			JEditorPageUpdateCondition CreatePageUpdateCondition(const JEditorManagerOption& option)
-			{
-				JEditorPageUpdateCondition condition;
-				if (option.acitvatedCloseConfirm)
-					condition.canClickPage = false;
-				return condition;
-			}
-
 		}
+
 		void JEditorManager::Initialize()
 		{
 			JImGuiImpl::Initialize();
@@ -81,7 +73,7 @@ namespace JinEngine
 			if (!(hasMetadata && hasImguiTxt))
 				_wremove(imguiTxt.c_str());
 
-			editorPage.push_back(std::make_unique<JProjectMainPage>(hasMetadata, &JApplicationProject::RequestStoreProject, &JApplicationProject::RequestLoadProject));
+			editorPage.push_back(std::make_unique<JProjectMainPage>(hasMetadata));
 			editorPage.push_back(std::make_unique<JEditorSkeletonPage>(hasMetadata));
  
 			//bool hasImguiTxt = false;
@@ -118,41 +110,14 @@ namespace JinEngine
 			JEditorEvent::ExecuteEvent();
 			JImGuiImpl::StartEditorUpdate();
 			JImGuiImpl::MouseUpdate();
-			 
-			if (option.acitvatedCloseConfirm)
-			{ 
-				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-				ImGui::PushItemFlag(ImGuiItemFlags_ReadOnly, true);
-				//JImGuiImpl::SetAllColorToDeep(-0.4f);
-			}
 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(JWindow::Instance().GetClientSize() * 0.15f));
 			uint8 pageCount = (uint8)opendEditorPage.size();
 			for (uint8 i = 0; i < pageCount; ++i)
-				opendEditorPage[i]->UpdatePage(Constants::CreatePageUpdateCondition(option));
+				opendEditorPage[i]->UpdatePage();
 			ImGui::PopStyleVar();
 			JImGuiImpl::EndEditorUpdate();
-
-			if (option.acitvatedCloseConfirm)
-			{
-				ImGui::PopItemFlag();	
-				ImGui::PopItemFlag(); 
-			}
-			JImGuiImpl::SetAllColorToDefault  ();
-			if (option.acitvatedCloseConfirm)
-			{
-				bool isClose = false;
-				bool isCancel = false;
-				projectCloseConfirm->Update(isClose, isCancel);
-				if (isClose)
-					JApplicationProject::SetEndProjectTrigger();
-				if (isCancel)
-				{
-					auto option = GetOption();
-					option.acitvatedCloseConfirm = false;
-					SetOption(option);
-				}
-			}
+			JImGuiImpl::SetAllColorToDefault();
 		}
 		void JEditorManager::LoadPage()
 		{
@@ -285,17 +250,26 @@ namespace JinEngine
 			if (page != editorPageMap.end())
 				page->second->UnFocusWindow(evStruct->unFocusWindow);
 		}
-		JEditorManagerOption JEditorManager::GetOption()const noexcept
+		void JEditorManager::OpenPopupWindow(JEditorOpenPopupWindowEvStruct* evStruct)
 		{
-			return option;
+			auto page = editorPageMap.find(evStruct->pageType);
+			if (page != editorPageMap.end())
+				page->second->OpenPopupWindow(evStruct->popupWindow);
 		}
-		void JEditorManager::SetOption(const JEditorManagerOption& newOption)noexcept
+		void JEditorManager::ClosePopupWindow(JEditorClosePopupWindowEvStruct* evStruct)
 		{
-			option = newOption;
+			auto page = editorPageMap.find(evStruct->pageType);
+			if (page != editorPageMap.end())
+				page->second->ClosePopupWindow(evStruct->popupWindow);
 		}
 		std::wstring JEditorManager::GetMetadataPath()const noexcept
 		{
 			return Core::JFileConstant::MakeFilePath(JApplicationVariable::GetProjectEditorResourcePath(), Constants::editorPageDataFileName);
+		}
+		void JEditorManager::PressMainWindowCloseButton()noexcept
+		{
+			auto data = editorPageMap.find(J_EDITOR_PAGE_TYPE::PROJECT_MAIN);
+			data->second->OpenPopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
 		}
 		void JEditorManager::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{   
@@ -376,6 +350,16 @@ namespace JinEngine
 				UnFocusWindow(static_cast<JEditorUnFocusWindowEvStruct*>(eventStruct));
 				break;
 			}
+			case J_EDITOR_EVENT::OPEN_POPUP_WINDOW:
+			{
+				OpenPopupWindow(static_cast<JEditorOpenPopupWindowEvStruct*>(eventStruct));
+				break;
+			}
+			case J_EDITOR_EVENT::CLOSE_POPUP_WINDOW:
+			{
+				ClosePopupWindow(static_cast<JEditorClosePopupWindowEvStruct*>(eventStruct));
+				break;
+			}
 			case J_EDITOR_EVENT::BIND_FUNC:
 			{
 				JEditorBindFuncEvStruct* bindEv = static_cast<JEditorBindFuncEvStruct*>(eventStruct);
@@ -394,9 +378,7 @@ namespace JinEngine
 		} 
 		JEditorManager::JEditorManager()
 			:editorManagerGuid(JCUtil::CalculateGuid("JEditorManager"))
-		{
-			projectCloseConfirm = std::make_unique<JProjectCloseConfirm>();
-		}
+		{ }
 		JEditorManager::~JEditorManager()
 		{}
 	}

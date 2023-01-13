@@ -264,9 +264,9 @@ namespace JinEngine
 			diagramViewPopup->AddPopupNode(std::move(createNewCilpStateNode));
 			diagramViewPopup->AddPopupNode(std::move(destroyStateNode));
 		}
-		void JAnimationControllerEditor::UpdateWindow(const JEditorWindowUpdateCondition& condition)
+		void JAnimationControllerEditor::UpdateWindow()
 		{
-			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated() && aniCont.IsValid())
 			{

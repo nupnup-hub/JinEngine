@@ -17,6 +17,7 @@ namespace JinEngine
 	{  
 		class JEditorPage;
 		class JEditorWindow;
+		class JEditorPopupWindow;
 
 		struct JEditorEvStruct
 		{
@@ -176,6 +177,27 @@ namespace JinEngine
 			JEditorWindow* unFocusWindow; 
 		public:
 			JEditorUnFocusWindowEvStruct(JEditorWindow* unFocusWindow, const J_EDITOR_PAGE_TYPE pageType);
+		public:
+			bool PassDefectInspection()const noexcept final;
+			J_EDITOR_EVENT GetEventType()const noexcept final;
+		};
+
+		struct JEditorOpenPopupWindowEvStruct : public JEditorEvStruct
+		{
+		public:
+			JEditorPopupWindow* popupWindow;
+		public:
+			JEditorOpenPopupWindowEvStruct(JEditorPopupWindow* popupWindow, const J_EDITOR_PAGE_TYPE pageType);
+		public:
+			bool PassDefectInspection()const noexcept final;
+			J_EDITOR_EVENT GetEventType()const noexcept final;
+		};
+		struct JEditorClosePopupWindowEvStruct : public JEditorEvStruct
+		{
+		public:
+			JEditorPopupWindow* popupWindow;
+		public:
+			JEditorClosePopupWindowEvStruct(JEditorPopupWindow* popupWindow, const J_EDITOR_PAGE_TYPE pageType);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;

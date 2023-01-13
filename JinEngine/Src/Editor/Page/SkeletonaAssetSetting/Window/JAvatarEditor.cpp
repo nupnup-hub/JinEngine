@@ -34,9 +34,9 @@ namespace JinEngine
 		{
 			targetSkeleton = newTargetSkeleton;
 		}
-		void JAvatarEditor::UpdateWindow(const JEditorWindowUpdateCondition& condition)
+		void JAvatarEditor::UpdateWindow()
 		{
-			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			if (IsActivated() && targetSkeleton.IsValid())
 			{
 				UpdateDocking(); 

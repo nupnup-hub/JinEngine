@@ -2,6 +2,7 @@
 #include"JEditorWindow.h"
 #include"JEditorAttribute.h" 
 #include"JEditorPageShareData.h" 
+#include"../Popup/JEditorPopupWindow.h"
 #include"../Event/JEditorEventStruct.h"
 #include"../Event/JEditorEvent.h"
 #include"../../Core/File/JFileIOHelper.h"
@@ -57,25 +58,67 @@ namespace JinEngine
 
 			auto openSimpleWindowLam = [](bool* isOpen) {*isOpen = !(*isOpen);};
 			openEditorWindowFunctor = std::make_unique<OpenEditorWindowF::Functor>(openEditorWindowLam);
-			openSimpleWindowFunctor = std::make_unique<OpenSimpleWindowF::Functor>(openSimpleWindowLam);
+			openSimpleWindowFunctor = std::make_unique<OpenSimpleWindowF::Functor>(openSimpleWindowLam);			 
 		}
 		JEditorPage::~JEditorPage()
 		{}
+		void JEditorPage::AddWindow(const std::vector<JEditorWindow*>& wnd)noexcept
+		{
+			windows = wnd;
+		}
+		void JEditorPage::AddPopupWindow(const std::vector<JEditorPopupWindow*>& wnd)noexcept
+		{
+			popupWindow = wnd;
+			closeConfirmPopupWindow = FindEditorPopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
+		}
 		J_EDITOR_PAGE_FLAG JEditorPage::GetPageFlag()const noexcept
 		{
 			return pageFlag;
 		}
+		void JEditorPage::SetPageFlag(const J_EDITOR_PAGE_FLAG flag)noexcept
+		{
+			pageFlag = flag;
+		}
+		uint JEditorPage::GetOpenWindowCount()const noexcept
+		{
+			return (uint)opendWindow.size();
+		}
+		JEditorWindow* JEditorPage::GetOpenWindow(const uint index)const noexcept
+		{
+			return opendWindow[index];
+		}
+		JEditorPopupWindow* JEditorPage::GetOpenPopupWindow()const noexcept
+		{
+			return opendPopupWindow;
+		}
 		void JEditorPage::EnterPage(const int windowFlag)noexcept
 		{
+			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
+			{
+				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+				ImGui::PushItemFlag(ImGuiItemFlags_ReadOnly, true);
+			}
+
 			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING))
 			{
-				bool res = ImGui::Begin(GetName().c_str(), &isPageOpen, (ImGuiWindowFlags)windowFlag);
+				bool res = false;
+				res = JImGuiImpl::BeginWindow(GetName().c_str(), &isPageOpen, (ImGuiWindowFlags)windowFlag);
 				if (!res)
 				{
-					AddEventNotification(*JEditorEvent::EvInterface(),
-						GetGuid(),
-						J_EDITOR_EVENT::CLOSE_PAGE,
-						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePageEvStruct>(GetPageType())));
+					if (closeConfirmPopupWindow == nullptr || closeConfirmPopupWindow->IsIgnoreConfirm())
+					{
+						AddEventNotification(*JEditorEvent::EvInterface(),
+							GetGuid(),
+							J_EDITOR_EVENT::CLOSE_PAGE,
+							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePageEvStruct>(GetPageType())));
+					}
+					else
+					{
+						AddEventNotification(*JEditorEvent::EvInterface(),
+							GetGuid(),
+							J_EDITOR_EVENT::OPEN_POPUP_WINDOW,
+							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPopupWindowEvStruct>(closeConfirmPopupWindow, GetPageType())));
+					}
 				}
 			}
 			else
@@ -85,6 +128,12 @@ namespace JinEngine
 		{
 			ImGui::End();
 			SetLastActivated(IsActivated());
+ 
+			if (Core::HasSQValueEnum(GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
+			{
+				ImGui::PopItemFlag();
+				ImGui::PopItemFlag();
+			}
 		}
 		void JEditorPage::OpenWindow(const std::string& windowname)noexcept
 		{
@@ -176,6 +225,34 @@ namespace JinEngine
 			window->SetUnFocus();
 			focusWindow = nullptr;
 		}
+		void JEditorPage::OpenPopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType)
+		{
+			OpenPopupWindow(FindEditorPopupWindow(popupType));
+		}
+		void JEditorPage::OpenPopupWindow(JEditorPopupWindow* popupWindow)
+		{ 
+			if (popupWindow != nullptr && !popupWindow->IsOpen())
+			{
+				SetPageFlag(Core::AddSQValueEnum(GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
+				if (opendPopupWindow != nullptr)
+					ClosePopupWindow(opendPopupWindow->GetPopupType());
+				opendPopupWindow = popupWindow;
+				opendPopupWindow->SetOpen(); 
+			}
+		}
+		void JEditorPage::ClosePopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType)
+		{ 
+			ClosePopupWindow(FindEditorPopupWindow(popupType));
+		}
+		void JEditorPage::ClosePopupWindow(JEditorPopupWindow* popupWindow)
+		{ 
+			if (popupWindow != nullptr && popupWindow->IsOpen())
+			{				 
+				SetPageFlag(Core::MinusSQValueEnum(GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
+				popupWindow->SetClose();
+				opendPopupWindow = nullptr;
+			}
+		}
 		JEditorPage::OpenEditorWindowF::Functor* JEditorPage::GetOpEditorWindowFunctorPtr()noexcept
 		{
 			return openEditorWindowFunctor.get();
@@ -252,6 +329,16 @@ namespace JinEngine
 			{
 				if (windows[i]->GetName() == windowName)
 					return windows[i];
+			}
+			return nullptr;
+		}
+		JEditorPopupWindow* JEditorPage::FindEditorPopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType)const noexcept
+		{
+			const uint windowCount = (uint)popupWindow.size();
+			for (uint i = 0; i < windowCount; ++i)
+			{
+				if (popupWindow[i]->GetPopupType() == popupType)
+					return popupWindow[i];
 			}
 			return nullptr;
 		}

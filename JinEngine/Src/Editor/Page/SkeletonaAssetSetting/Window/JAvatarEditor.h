@@ -54,7 +54,7 @@ namespace JinEngine
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:			  
 			void Initialize(const Core::JUserPtr<JSkeletonAsset>& newTargetSkeleton)noexcept;
-			void UpdateWindow(const JEditorWindowUpdateCondition& condition)final;
+			void UpdateWindow()final;
 		private:
 			//Build Gui
 			void BuildAvatarEdit();

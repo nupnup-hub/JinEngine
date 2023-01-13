@@ -30,7 +30,7 @@ namespace JinEngine
 			void SetInitWindow() final;
 		public:
 			void Initialize()final;
-			void UpdatePage(const JEditorPageUpdateCondition& condition)final;
+			void UpdatePage()final;
 		public:
 			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
 		private:

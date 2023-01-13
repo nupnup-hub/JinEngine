@@ -2,8 +2,7 @@
 #include"JEditor.h"  
 #include"JEditorPageEnum.h"
 #include"JEditorWindowType.h" 
-#include"JEditorWindowFontType.h"
-#include"../JEditorUpdateCondition.h"
+#include"JEditorWindowFontType.h" 
 #include"../../Core/Func/Functor/JFunctor.h"
  
 namespace JinEngine
@@ -29,9 +28,9 @@ namespace JinEngine
 			J_EDITOR_PAGE_TYPE GetOwnerPageType()const noexcept;
 			virtual J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept = 0;
 		public:
-			virtual void UpdateWindow(const JEditorWindowUpdateCondition& condition) = 0;
+			virtual void UpdateWindow() = 0;
 		protected:
-			void EnterWindow(const JEditorWindowUpdateCondition& condition, int windowFlag);
+			void EnterWindow(int windowFlag);
 			void CloseWindow();
 		protected:
 			void UpdateMouseClick();

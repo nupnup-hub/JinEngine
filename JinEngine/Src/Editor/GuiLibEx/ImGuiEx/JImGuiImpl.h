@@ -117,7 +117,7 @@ namespace JinEngine
 		public:
 			//Widget Start
 			//Passing method for trace to ImGuI widget api calling
-			static bool BeginWindow(const std::string& name, bool* p_open = 0, ImGuiWindowFlags flags = 0);
+			static bool BeginWindow(const std::string& name, bool* p_open = nullptr, ImGuiWindowFlags flags = 0);
 			static void EndWindow();
 			static bool BeginChildWindow(const std::string& name, const JVector2<float>& windowSize = JVector2<float>{0,0}, bool border = false, ImGuiWindowFlags extra_flags = 0);
 			static void EndChildWindow();

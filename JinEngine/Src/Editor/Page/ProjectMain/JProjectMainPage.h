@@ -17,11 +17,16 @@ namespace JinEngine
 		class JAppElapsedTime;
 		class JEditorMenuBar;
 		class JGraphicOptionSetting;
+		class JEditorCloseConfirmPopup;
+
 		class JProjectMainPage final : public JEditorPage
 		{
 		private:
 			using StoreProjectF = Core::JSFunctorType<void>;
 			using LoadProjectF = Core::JSFunctorType<void>;
+		private:
+			using ClosePopupConfirmF = Core::JSFunctorType<void, JEditorPage*>; 
+			using ClosePopupCancelF = Core::JSFunctorType<void, JEditorPage*>;
 		private:
 			std::unique_ptr<JEditorMenuBar> menuBar = nullptr;
 		private:
@@ -37,15 +42,20 @@ namespace JinEngine
 			std::unique_ptr<JStringConvertTest> stringConvertTest;
 			std::unique_ptr<JAppElapsedTime> appElapseTime;
 		private:
+			std::unique_ptr<JEditorCloseConfirmPopup> closePopup;
+		private:
 			//simple window
 			std::unique_ptr<JGraphicOptionSetting> graphicOptionSetting;
 		private:
 			std::unique_ptr<StoreProjectF::Functor> storeProjectF;
 			std::unique_ptr<LoadProjectF::Functor> loadProjectF;
 		private:
+			std::unique_ptr<ClosePopupConfirmF::Functor> closePopupConfirmF; 
+			std::unique_ptr<ClosePopupCancelF::Functor> closePopupCancelF;
+		private:
 			bool reqInitDockNode = false; 
 		public:
-			JProjectMainPage(const bool hasMetadata, StoreProjectF::Ptr storePtr, LoadProjectF::Ptr loadPtr);
+			JProjectMainPage(const bool hasMetadata);
 			~JProjectMainPage();
 			JProjectMainPage(const JProjectMainPage& rhs) = delete;
 			JProjectMainPage& operator=(const JProjectMainPage& rhs) = delete;
@@ -54,7 +64,7 @@ namespace JinEngine
 			void SetInitWindow() final;
 		public:
 			void Initialize()final;
-			void UpdatePage(const JEditorPageUpdateCondition& condition)final;
+			void UpdatePage()final;
 		public:
 			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
 		private:

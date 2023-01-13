@@ -18,9 +18,9 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::DEBUG_APP_ELAPSED_TIME;
 		}
-		void JAppElapsedTime::UpdateWindow(const JEditorWindowUpdateCondition& condition)
+		void JAppElapsedTime::UpdateWindow()
 		{
-			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated())
 			{ 

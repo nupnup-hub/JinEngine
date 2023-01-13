@@ -149,9 +149,9 @@ namespace JinEngine
 			lastCamPos = { 0,0,0 };
 			lastCamRot = { 0,0,0 };
 		}
-		void JSceneObserver::UpdateWindow(const JEditorWindowUpdateCondition& condition)
+		void JSceneObserver::UpdateWindow()
 		{
-			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar);
+			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar);
 			UpdateDocking();
 			if (IsActivated() && scene.IsValid() && cameraObj.IsValid())
 			{

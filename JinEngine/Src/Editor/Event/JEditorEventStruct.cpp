@@ -192,6 +192,30 @@ namespace JinEngine
 			return J_EDITOR_EVENT::UNFOCUS_WINDOW;
 		}
 
+		JEditorOpenPopupWindowEvStruct::JEditorOpenPopupWindowEvStruct(JEditorPopupWindow* popupWindow, const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorEvStruct(pageType), popupWindow(popupWindow)
+		{}
+		bool JEditorOpenPopupWindowEvStruct::PassDefectInspection()const noexcept
+		{
+			return popupWindow != nullptr;
+		}
+		J_EDITOR_EVENT JEditorOpenPopupWindowEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::OPEN_POPUP_WINDOW;
+		}
+
+		JEditorClosePopupWindowEvStruct::JEditorClosePopupWindowEvStruct(JEditorPopupWindow* popupWindow, const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorEvStruct(pageType), popupWindow(popupWindow)
+		{}
+		bool JEditorClosePopupWindowEvStruct::PassDefectInspection()const noexcept
+		{
+			return popupWindow != nullptr;
+		}
+		J_EDITOR_EVENT JEditorClosePopupWindowEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::CLOSE_POPUP_WINDOW;
+		}
+
 		JEditorBindFuncEvStruct::JEditorBindFuncEvStruct(std::unique_ptr<Core::JBindHandleBase> bindHandle, const J_EDITOR_PAGE_TYPE pageType)
 			:JEditorEvStruct(pageType), bindHandle(std::move(bindHandle))
 		{}

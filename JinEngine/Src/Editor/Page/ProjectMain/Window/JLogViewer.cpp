@@ -18,9 +18,9 @@ namespace JinEngine
 		}
 		void JLogViewer::Initialize()noexcept
 		{}
-		void JLogViewer::UpdateWindow(const JEditorWindowUpdateCondition& condition)
+		void JLogViewer::UpdateWindow()
 		{
-			EnterWindow(condition, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated())
 			{ 
