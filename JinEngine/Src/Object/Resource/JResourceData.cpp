@@ -49,6 +49,7 @@ namespace JinEngine
 		defaultMeshGuidMap.clear();
 		defaultMaterialGuidMap.clear();
 		defaultGraphicShaderGuidMap.clear();
+		defaultComputeShaderGuidMap.clear();
 		defaultTextureGuidMap.clear();
 		defaultResourceMap.clear();
 	}

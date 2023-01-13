@@ -261,6 +261,7 @@ namespace JinEngine
 		std::unique_ptr<JApplicationProject::JProjectInfo> JApplicationProject::nextProjectInfo;
 		bool JApplicationProject::startProjectOnce = false;
 		bool JApplicationProject::endProject = false;
+		bool JApplicationProject::loadOtherProjectOnce = false;
 
 		JApplicationProject::JProjectInfo::JProjectInfo(const std::wstring& name,
 			const std::wstring& path,
@@ -287,6 +288,32 @@ namespace JinEngine
 		{
 			return projectList[index].get();
 		}
+		void JApplicationProject::SetNextProjectInfo(std::unique_ptr<JProjectInfo>&& nextProjectInfo)noexcept
+		{
+			JApplicationProject::nextProjectInfo = std::move(nextProjectInfo);
+		}
+		void JApplicationProject::TryLoadOtherProject()noexcept
+		{
+			loadOtherProjectOnce = true;
+		}
+		void JApplicationProject::TryCloseProject()noexcept
+		{
+		}
+		void JApplicationProject::CancelCloseProject()noexcept
+		{
+			loadOtherProjectOnce = false;
+			if (loadOtherProjectOnce)
+				nextProjectInfo.reset();
+		}
+		void JApplicationProject::ConfirmCloseProject()noexcept
+		{
+			endProject = true;
+			if (loadOtherProjectOnce)
+			{
+				loadOtherProjectOnce = false;
+				StartNewProject();
+			}
+		}
 		std::unique_ptr<JApplicationProject::JProjectInfo> JApplicationProject::MakeProjectInfo(const std::wstring& projectPath)
 		{
 			bool isValid = false;
@@ -309,14 +336,6 @@ namespace JinEngine
 					return std::make_unique<JProjectInfo>(name, projectPath, JCUtil::U8StrToWstr(version));
 			}
 			return nullptr;
-		}
-		void JApplicationProject::SetNextProjectInfo(std::unique_ptr<JProjectInfo>&& nextProjectInfo)noexcept
-		{
-			JApplicationProject::nextProjectInfo = std::move(nextProjectInfo);
-		}
-		void JApplicationProject::SetEndProjectTrigger()noexcept
-		{
-			endProject = true;
 		}
 		void JApplicationProject::MakeProjectFolderPath(const std::wstring& projectName, const std::wstring& projectPath)
 		{
@@ -379,7 +398,7 @@ namespace JinEngine
 		{
 			if (nextProjectInfo == nullptr)
 				return false;
-			SetStartProjectOnce();
+			startProjectOnce = true; 
 			return true;
 		}
 		bool JApplicationProject::Initialize()
@@ -407,13 +426,10 @@ namespace JinEngine
 			bool res01 = MakeProjectVersionFile(JCUtil::WstrToU8Str(nextProjectInfo->GetVersion()));
 			nextProjectInfo.reset();
 			startProjectOnce = false;
+			endProject = false;
 			if (res00 && res01)
 				JApplicationVariable::SetApplicationState(J_APPLICATION_STATE::EDIT_GAME);
 			return res00 && res01;
-		}
-		void JApplicationProject::SetStartProjectOnce()
-		{
-			startProjectOnce = true;
 		}
 		bool JApplicationProject::IsValidVersion(const std::string& pVersion)
 		{

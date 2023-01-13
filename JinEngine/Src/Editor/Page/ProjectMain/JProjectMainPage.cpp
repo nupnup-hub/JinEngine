@@ -83,11 +83,12 @@ namespace JinEngine
 			auto confirmFunc = [](JEditorPage* page)
 			{
 				page->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
-				JApplicationProject::SetEndProjectTrigger();
+				JApplicationProject::ConfirmCloseProject();
 			};
 			auto cancelFunc = [](JEditorPage* page) 
 			{
-				page->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM); 
+				page->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
+				JApplicationProject::CancelCloseProject();
 			};
 			
 			closePopupConfirmF = std::make_unique<ClosePopupConfirmF::Functor>(confirmFunc);
@@ -178,10 +179,12 @@ namespace JinEngine
 
 			JEditorPopupWindow* openPopup = GetOpenPopupWindow();
 			if (openPopup != nullptr)
-				openPopup->Update(GetName(), 
+			{
+				openPopup->Update(GetName(),
 					u8"종료하기 전 자원관리",
-					JVector2<float>(0, 0) , 
+					JVector2<float>(0, 0),
 					ImGui::GetMainViewport()->WorkSize);
+			}
 		}
 		bool JProjectMainPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept
 		{

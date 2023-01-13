@@ -140,7 +140,10 @@ namespace JinEngine
 			if (appState == J_APPLICATION_STATE::PROJECT_SELECT)
 				JWindow::Instance().AppInterface()->CloseWindow();
 			else if (appState == J_APPLICATION_STATE::EDIT_GAME)
+			{
+				JApplicationProject::TryCloseProject();
 				editorManager.PressMainWindowCloseButton();
+			}
 			else
 				;
 		}
@@ -160,10 +163,12 @@ namespace JinEngine
 				std::unique_ptr<JApplicationProject::JProjectInfo> pInfo = JApplicationProject::MakeProjectInfo(dirpath);
 				if (pInfo != nullptr)
 				{
-					JWindow::Instance().AppInterface()->CloseWindow();
+					JApplicationProject::TryLoadOtherProject();
 					JApplicationProject::SetNextProjectInfo(std::move(pInfo));
-					if (!JApplicationProject::StartNewProject())
-						MessageBox(0, L"Fail start project", 0, 0);
+					CloseApp();
+					//JWindow::Instance().AppInterface()->CloseWindow();
+					//if (!JApplicationProject::StartNewProject())
+					//	MessageBox(0, L"Fail start project", 0, 0);
 				}
 				else
 					MessageBox(0, L"Invalid project path", 0, 0);

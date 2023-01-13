@@ -509,6 +509,7 @@ namespace JinEngine
 			if (JApplicationVariable::GetApplicationState() != J_APPLICATION_STATE::PROJECT_SELECT)
 				StoreData();
 
+			updateHelper.Clear();
 			FlushCommandQueue();
 
 			mRootSignature.Reset();

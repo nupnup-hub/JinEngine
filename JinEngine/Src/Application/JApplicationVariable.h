@@ -136,20 +136,24 @@ namespace JinEngine
 			static std::unique_ptr<JProjectInfo> nextProjectInfo;
 			static bool startProjectOnce;
 			static bool endProject;
+			static bool loadOtherProjectOnce;
 		private:
 			static uint GetProjectInfoCount()noexcept;
 			static JProjectInfo* GetProjectInfo(uint index)noexcept;
-			static std::unique_ptr<JProjectInfo> MakeProjectInfo(const std::wstring& projectPath);
 		private:
 			static void SetNextProjectInfo(std::unique_ptr<JProjectInfo>&& nextProjectInfo)noexcept;
-			static void SetEndProjectTrigger()noexcept;
 		private:
+			static void TryLoadOtherProject()noexcept;
+			static void TryCloseProject()noexcept;
+			static void CancelCloseProject()noexcept;
+			static void ConfirmCloseProject()noexcept;
+		private:
+			static std::unique_ptr<JProjectInfo> MakeProjectInfo(const std::wstring& projectPath);
 			static void MakeProjectFolderPath(const std::wstring& projectName, const std::wstring& projectPath);
 			static bool MakeProjectFolder();
 			static bool MakeProjectVersionFile(const std::string& pVersion);
 			static bool StartNewProject();
 			static bool Initialize();
-			static void SetStartProjectOnce();
 		private:
 			static bool IsValidVersion(const std::string& pVersion); 
 			static bool CanStartProject()noexcept; 
