@@ -22,7 +22,7 @@
 namespace JinEngine
 {
 	namespace Editor
-	{ 
+	{
 		JObjectExplorer::JObjectExplorer(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType)
 			:JEditorWindow(name, std::move(attribute), pageType)
 		{
@@ -72,28 +72,21 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Rename JGameObject", J_EDITOR_POPUP_NODE_TYPE::LEAF, explorerPopupRootNode.get(), false);
 			editorString->AddString(renameNode->GetNodeId(), { "Rename", u8"ªı¿Ã∏ß" });
 
-			auto destroyLam = [](DataHandleStructure& dS, Core::JDataHandle& dH, const size_t guid)
+			auto changeParentLam = [](JObjectExplorer* objEx, Core::JUserPtr<JGameObject> obj, Core::JUserPtr<JGameObject> newP)
 			{
-				auto owner = Core::JIdentifier::ReleaseInstance<JGameObject>(guid);
-				if (owner.IsValid())
-				{
-					Core::JDataHandle newHandle = dS.Add(Core::JOwnerPtr<JGameObject>::ConvertChildType(std::move(owner)));
-					dS.TransitionHandle(newHandle, dH);
-				}
+				obj->ChangeParent(newP.Get());
+				objEx->SetModifiedBit(Core::GetUserPtr(obj->GetOwnerScene()), true);
 			};
-			auto undoDestroyLam = [](DataHandleStructure& dS, Core::JDataHandle& dH)
+			auto renameLam = [](JObjectExplorer* objEx)
 			{
-				auto owner = dS.Release(dH);
-				if (owner.IsValid())
-					Core::JIdentifier::AddInstance(std::move(owner));
+				objEx->renameHelper->Activate(objEx->selectedObject);
+				objEx->SetModifiedBit(Core::GetUserPtr(objEx->selectedObject->GetOwnerScene()), true);
 			};
-			auto changeParentLam = [](Core::JUserPtr<JGameObject> obj, Core::JUserPtr<JGameObject> newP) {obj->ChangeParent(newP.Get()); };
-			auto renameLam = [](JObjectExplorer* objEx) {objEx->renameHelper->Activate(objEx->selectedObject); };
-			
+
 			createF = std::make_unique<CreateGameObjectFunctor>(&JObjectExplorer::CreateGameObject, this);
 			createModelF = std::make_unique<CreateModelFunctor>(&JObjectExplorer::CreateModel, this);
-			destroyF = std::make_unique<DestroyGameObjectFunctor>(destroyLam);
-			undoDestroyF = std::make_unique<UndoDestroyGameObjectFunctor>(undoDestroyLam);
+			destroyF = std::make_unique<DestroyGameObjectFunctor>(&JObjectExplorer::DestroyGameObject, this);
+			undoDestroyF = std::make_unique<UndoDestroyGameObjectFunctor>(&JObjectExplorer::UndoDestroyGameObject, this);
 			changeParentF = std::make_unique< ChangeParentF::Functor>(changeParentLam);
 			regCreateGobjF = std::make_unique<RegisterCreateGEvF::Functor>(&JObjectExplorer::RegisterCreateGameObjectEv, this);
 			regDestroyGobjF = std::make_unique<RegisterDestroyGEvF::Functor>(&JObjectExplorer::RegisterDestroyGameObjectEv, this);
@@ -175,7 +168,7 @@ namespace JinEngine
 			std::string name = JCUtil::WstrToU8Str(gObj->GetName());
 			bool canOnScreen = searchBarHelper->CanSrcNameOnScreen(name);
 			if (canOnScreen)
-			{ 
+			{
 				if (isRenameActivaetd)
 				{
 					isNodeOpen = ImGui::TreeNodeBehaviorIsOpen(ImGui::GetCurrentWindow()->GetID((name + "##TreeNode").c_str()), baseFlags);
@@ -194,7 +187,7 @@ namespace JinEngine
 					{
 						if (ImGui::IsItemClicked(0) || ImGui::IsItemClicked(1))
 							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(gObj)));
-				 
+
 						if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
 						{
 							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(gObj)));
@@ -215,10 +208,10 @@ namespace JinEngine
 								if (selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT && !ImGui::IsMouseDragging(0))
 								{
 									Core::JUserPtr<JGameObject> selectedObj;
-									selectedObj.ConnnectBaseUser(selected);
+									selectedObj.ConnnectChildUser(selected);
 
-									auto doBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, Core::JUserPtr(selectedObj), Core::GetUserPtr(gObj));
-									auto undoBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, Core::JUserPtr(selectedObj), Core::GetUserPtr(selectedObj->GetParent()));
+									auto doBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, this, Core::JUserPtr(selectedObj), Core::GetUserPtr(gObj));
+									auto undoBind = std::make_unique<ChangeParentF::CompletelyBind>(*changeParentF, this, Core::JUserPtr(selectedObj), Core::GetUserPtr(selectedObj->GetParent()));
 									auto evStruct = std::make_unique<JEditorTSetBindFuncEvStruct>("Change Parent", GetOwnerPageType(), std::move(doBind), std::move(undoBind));
 
 									AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
@@ -226,7 +219,7 @@ namespace JinEngine
 								else if (selected->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT && !ImGui::IsMouseDragging(0))
 								{
 									Core::JUserPtr<JMeshGeometry> sMesh;
-									sMesh.ConnnectBaseUser(selected);
+									sMesh.ConnnectChildUser(selected);
 									if (sMesh.IsValid())
 									{
 										size_t guid = Core::MakeGuid();
@@ -243,7 +236,7 @@ namespace JinEngine
 							ImGui::EndDragDropTarget();
 						}
 					}
-				}	 
+				}
 			}
 			if (isNodeOpen || isAcivatedSearch)
 			{
@@ -260,7 +253,7 @@ namespace JinEngine
 					ImGui::Unindent();
 				else if (isNodeOpen)
 					JImGuiImpl::TreePop();
-			} 
+			}
 		}
 		void JObjectExplorer::RegisterCreateGameObjectEv(J_DEFAULT_SHAPE shapeType)
 		{
@@ -290,11 +283,18 @@ namespace JinEngine
 			Core::JUserPtr<JGameObject> p,
 			const size_t guid,
 			const J_DEFAULT_SHAPE shapeType)
-		{ 
+		{
 			if (dS.IsValidHandle(dH))
-				Core::JIdentifier::AddInstance(dS.Release(dH));
+			{
+				auto ownerGobj = dS.Release(dH);
+				SetModifiedBit(Core::GetUserPtr(ownerGobj->GetOwnerScene()), true);
+				Core::JIdentifier::AddInstance(std::move(ownerGobj));
+			}
 			else if (p.IsValid())
-				JGFU::CreateShape(*p, guid, OBJECT_FLAG_NONE, shapeType);
+			{
+				JGameObject* res = JGFU::CreateShape(*p, guid, OBJECT_FLAG_NONE, shapeType);
+				SetModifiedBit(Core::GetUserPtr(res->GetOwnerScene()), true);
+			}
 		}
 		void JObjectExplorer::CreateModel(DataHandleStructure& dS,
 			Core::JDataHandle& dH,
@@ -303,9 +303,37 @@ namespace JinEngine
 			const size_t guid)
 		{
 			if (dS.IsValidHandle(dH))
-				Core::JIdentifier::AddInstance(dS.Release(dH));
+			{
+				auto ownerGobj = dS.Release(dH); 
+				SetModifiedBit(Core::GetUserPtr(ownerGobj->GetOwnerScene()), true);
+				Core::JIdentifier::AddInstance(std::move(ownerGobj));
+			}
 			else if (p.IsValid() && m.IsValid())
-				JGFU::CreateModel(*p, guid, OBJECT_FLAG_NONE, m.Get());
+			{
+				JGameObject* res = JGFU::CreateModel(*p, guid, OBJECT_FLAG_NONE, m.Get());
+				SetModifiedBit(Core::GetUserPtr(res->GetOwnerScene()), true);
+			}
+		}
+		void JObjectExplorer::DestroyGameObject(DataHandleStructure& dS, Core::JDataHandle& dH, const size_t guid)
+		{
+			auto ownerIden = Core::JIdentifier::ReleaseInstance<JGameObject>(guid);
+			if (ownerIden.IsValid())
+			{
+				auto owneGobj = Core::JOwnerPtr<JGameObject>::ConvertChildType(std::move(ownerIden));
+				SetModifiedBit(Core::GetUserPtr(owneGobj->GetOwnerScene()), true);
+
+				Core::JDataHandle newHandle = dS.Add(std::move(owneGobj));
+				dS.TransitionHandle(newHandle, dH);
+			}
+		}
+		void JObjectExplorer::UndoDestroyGameObject(DataHandleStructure& dS, Core::JDataHandle& dH)
+		{
+			auto owner = dS.Release(dH);
+			if (owner.IsValid())
+			{
+				SetModifiedBit(Core::GetUserPtr(owner->GetOwnerScene()), true);
+				Core::JIdentifier::AddInstance(std::move(owner));
+			}
 		}
 		void JObjectExplorer::DoActivate()noexcept
 		{

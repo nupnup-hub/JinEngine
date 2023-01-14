@@ -1,7 +1,7 @@
 #pragma once
 #include"../JObject.h"
 #include"../../Core/Func/Callable/JCallable.h"
-#include"../../Core/Utility/JValidInterface.h"
+#include"../../Core/Interface/JValidInterface.h" 
 #include"JReferenceInterface.h"
 #include"JResourceType.h"
 #include<vector>
@@ -13,7 +13,9 @@ namespace JinEngine
 	class JResourceManagerImpl;
 	class JResourceObject; 
 
-	class JResourceObjectInterface : public JObject , public JReferenceInterface, public Core::JValidInterface
+	class JResourceObjectInterface : public JObject,  
+		public JReferenceInterface, 
+		public Core::JValidInterface
 	{
 	private:
 		friend class JDirectory;
@@ -79,16 +81,19 @@ namespace JinEngine
 			SetFrameDirtyCallable GetSetFrameDirtyCallable();
 			SetFrameBuffIndexCallable GetSetFrameBuffIndexCallable();
 		};
-	//Common
+	//Call Resource Object Functor
 	public:
+		//Common 
+		//all resource support
 		static std::vector<std::wstring> CallGetAvailableFormat(const J_RESOURCE_TYPE type);
 		static std::string CallGetTypeName(const J_RESOURCE_TYPE type);
 		static uint8 CallFormatIndex(const J_RESOURCE_TYPE type, const std::wstring& format);
 		static bool CallIsValidFormat(const J_RESOURCE_TYPE type, const std::wstring& format);
-	//Interface
-	protected:		
+	protected:	
+		//Option
 		static void CallSetFrameDirty(JResourceObject& jRobj);
-		static void CallSetFrameBuffIndex(JResourceObject& jRobj, const uint value);
+		static void CallSetFrameBuffIndex(JResourceObject& jRobj, const uint value); 
+	//Type Data
 	protected:
 		static SetFrameDirtyCallable GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type);
 		static SetFrameBuffIndexCallable GetSetFrameBuffIndexCallable(const J_RESOURCE_TYPE type);

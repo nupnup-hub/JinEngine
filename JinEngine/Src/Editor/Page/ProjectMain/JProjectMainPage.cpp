@@ -104,6 +104,7 @@ namespace JinEngine
 		JProjectMainPage::~JProjectMainPage()
 		{
 			JEditorPageShareData::UnRegisterPage(GetPageType());
+			ClearModifiedInfoStructure();
 		}
 		J_EDITOR_PAGE_TYPE JProjectMainPage::GetPageType()const noexcept
 		{

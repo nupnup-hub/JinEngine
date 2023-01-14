@@ -26,6 +26,8 @@ namespace JinEngine
 	class JShader; 
 	class JResourceIO;
 	class JResourceData;
+	class JResourceObjectInterface;
+	class JResourceDirtyInterface;
 
 	namespace Core
 	{
@@ -42,19 +44,20 @@ namespace JinEngine
 		class ResourceStorage
 		{
 		private:
-			using ResourceVector = Core::JVectorStorage<JResourceObject>;
-			using ResourceMap = Core::JMapStorage<JResourceObject, size_t>;
+			using ResourceVector = Core::JVectorPointerStorage<JResourceObject>;
+			using ResourceMap = Core::JMapPointerStorage<JResourceObject, size_t>;
 			using StoreInfoVec = std::vector<Core::JFileIOResultInfo>;
 		private:
 			ResourceVector rVec;
 			ResourceMap rMap;
 		public:
-			JResourceObject* Get(const size_t guid)noexcept;
-			JResourceObject* GetByIndex(const uint index);
-			JResourceObject* GetByPath(const std::wstring& path)noexcept;
-			std::vector<JResourceObject*>& GetVector();
-			std::vector<JResourceObject*>::const_iterator GetVectorIter(uint& count);
-			bool Has(const size_t guid)noexcept;
+			JResourceObject* Get(const size_t guid)const noexcept;
+			JResourceObject* GetByIndex(const uint index)const noexcept;
+			JResourceObject* GetByPath(const std::wstring& path)const noexcept;
+			std::vector<JResourceObject*> GetVector()const noexcept;
+			std::vector<JResourceObject*>& GetVectorAddress() noexcept;
+			std::vector<JResourceObject*>::const_iterator GetVectorCIter(uint& count)const noexcept;
+			bool Has(const size_t guid)const noexcept;
 			uint Count()const noexcept;
 			bool AddResource(JResourceObject* resource)noexcept;
 			bool RemoveResource(JResourceObject& resource)noexcept;
@@ -63,36 +66,35 @@ namespace JinEngine
 		class DirectoryStorage
 		{
 		private:
-			using ResourceVector = Core::JVectorStorage<JDirectory>;
-			using ResourceMap = Core::JMapStorage<JDirectory, size_t>;
+			using ResourceVector = Core::JVectorPointerStorage<JDirectory>;
+			using ResourceMap = Core::JMapPointerStorage<JDirectory, size_t>;
 			using StoreInfoVec = std::vector<Core::JFileIOResultInfo>;
 		private:
 			ResourceVector dVec;
 			ResourceMap dMap;
 		public:
 			uint Count()const noexcept;
-			JDirectory* Get(const uint index);
-			JDirectory* GetByGuid(const size_t guid);
-			JDirectory* GetByPath(const std::wstring& path);
-			JDirectory* GetOpenDirectory();
+			JDirectory* Get(const uint index)const noexcept;
+			JDirectory* GetByGuid(const size_t guid)const noexcept;
+			JDirectory* GetByPath(const std::wstring& path)const noexcept;
+			JDirectory* GetOpenDirectory()const noexcept;
 			bool Add(JDirectory* dir)noexcept;
 			bool Remove(JDirectory* dir)noexcept;
 			void Clear();
-		};
+		}; 
 	private:
-		using ResourceCash = std::unordered_map<J_RESOURCE_TYPE, ResourceStorage>;
-		using DirectoryCash = DirectoryStorage;
+		using ResourceStorageMap = std::unordered_map<J_RESOURCE_TYPE, ResourceStorage>;
 	private: 
 		size_t managerGuid;
 
-		ResourceCash rCash;
-		DirectoryCash dCash;
-		 
+		ResourceStorageMap rStorage;
+		DirectoryStorage dStorage; 
+
 		JDirectory* engineRootDir;
 		JDirectory* projectRootDir; 
 
 		std::unique_ptr<JResourceData> resourceData;
-		std::unique_ptr<JResourceIO> resourceIO; 
+		std::unique_ptr<JResourceIO> resourceIO;
 	public: 
 		JMeshGeometry* GetDefaultMeshGeometry(const J_DEFAULT_SHAPE type)noexcept;
 		JMaterial* GetDefaultMaterial(const J_DEFAULT_MATERIAL type)noexcept;
@@ -142,22 +144,22 @@ namespace JinEngine
 		template<typename T, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		uint GetResourceCount()
 		{
-			return rCash.find(T::GetStaticResourceType())->second.Count();
+			return rStorage.find(T::GetStaticResourceType())->second.Count();
 		}
 		template<typename T, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		T* GetResource(const size_t guid)noexcept
 		{ 
-			return static_cast<T*>(rCash.find(T::GetStaticResourceType())->second.Get(guid));
+			return static_cast<T*>(rStorage.find(T::GetStaticResourceType())->second.Get(guid));
 		}
 		template<typename T, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		T* GetResourceByPath(const std::wstring& path)noexcept
 		{
-			return static_cast<T*>(rCash.find(T::GetStaticResourceType())->second.GetByPath(path));
+			return static_cast<T*>(rStorage.find(T::GetStaticResourceType())->second.GetByPath(path));
 		}
 		template<typename T, typename ...Param, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		T* GetResourceByCondition(Core::JFunctor<bool, T*, Param...> functor, Param... var)
 		{
-			std::vector<JResourceObject*>& rvec = rCash.find(T::GetStaticResourceType())->second.GetVector();
+			std::vector<JResourceObject*>& rvec = rStorage.find(T::GetStaticResourceType())->second.GetVectorAddress();
 			const uint rVecCount = (uint)rvec.size();
 			for (uint i = 0; i < rVecCount; ++i)
 			{ 
@@ -170,7 +172,7 @@ namespace JinEngine
 		template<typename T>
 		auto GetResourceVectorHandle(uint& resouceCount) noexcept -> typename std::vector<JResourceObject*>::const_iterator
 		{
-			return rCash.find(T::GetStaticResourceType())->second.GetVectorIter(resouceCount);
+			return rStorage.find(T::GetStaticResourceType())->second.GetVectorCIter(resouceCount);
 		}
 	private:
 		template<typename T, typename C = std::enable_if_t<std::is_base_of<JObject, T>::value>>

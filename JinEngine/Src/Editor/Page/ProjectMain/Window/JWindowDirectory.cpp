@@ -128,7 +128,11 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Rename", J_EDITOR_POPUP_NODE_TYPE::LEAF, fileViewPopupRootNode.get());
 			editorString->AddString(renameFileNode->GetNodeId(), { "Rename" , u8"»õ ÀÌ¸§" });
 
-			auto renameLam = [](JWindowDirectory* wndDir) {wndDir->renameHelper->Activate(wndDir->selectedObj); };
+			auto renameLam = [](JWindowDirectory* wndDir) 
+			{
+				wndDir->renameHelper->Activate(wndDir->selectedObj);
+				wndDir->SetModifiedBit(wndDir->selectedObj, true);
+			};
 
 			createResourceFunctor = std::make_unique<CreateObjectF::Functor>(&JWindowDirectory::CreateResourceObject, this);
 			createDirectoryFunctor = std::make_unique<CreateDirectoryF::Functor>(&JWindowDirectory::CreateDirectory, this);
@@ -521,7 +525,7 @@ namespace JinEngine
 		{
 			Core::JUserPtr<JDirectory> p;
 			if (selectedObj.IsValid() && selectedObj->GetObjectType() == J_OBJECT_TYPE::DIRECTORY_OBJECT)
-				p.ConnnectBaseUser(selectedObj);
+				p.ConnnectChildUser(selectedObj);
 			else
 				p = opendDirctory;
 
@@ -574,6 +578,7 @@ namespace JinEngine
 				return;
 
 			CreatePreviewScene(Core::GetUserPtr(resource), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
+			SetModifiedBit(Core::GetUserPtr(resource), true);
 			Core::JTransition::Log(log);
 		}
 		void JWindowDirectory::CreateDirectory(Core::JUserPtr<JDirectory> parent)
@@ -583,6 +588,7 @@ namespace JinEngine
 
 			JDirectory* newObj = JDFI::Create(*parent.Get());
 			CreatePreviewScene(Core::GetUserPtr(newObj), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
+			SetModifiedBit(Core::GetUserPtr(newObj), true);
 			Core::JTransition::Log("Create Directory");
 		}
 		void JWindowDirectory::DestroyObject(Core::JUserPtr<JObject> obj)
@@ -592,6 +598,7 @@ namespace JinEngine
 
 			if (obj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
 			{
+				RemoveModifiedInfo(obj);
 				DestroyPreviewScene(obj);
 				JObject::BeginDestroy(obj.Get());
 				Core::JTransition::Log("Destroy Object");
@@ -604,6 +611,7 @@ namespace JinEngine
 				else
 					OpenNewDirectory(root);
 
+				RemoveModifiedInfo(obj);
 				DestroyPreviewScene(obj);
 				JObject::BeginDestroy(obj.Get());
 				Core::JTransition::Log("Destroy Object");

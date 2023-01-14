@@ -17,62 +17,24 @@ namespace JinEngine
 	}
 	namespace Application
 	{
-		class JApplication;
+		class JApplication; 
 		class JApplicationProject;
+
 		class JApplicationVariable
 		{
 		private:
-			friend class JApplication;
+			friend class JApplication; 
 			friend class JApplicationProject;
-		private:
+		public:
+			using TimeVec = std::vector<std::tuple<std::string, float>>;
 			using AppCommandBind = Core::JBindHandleBase;
 			using StoreProjectF = Core::JMFunctorType<JApplication, void>;
 			using LoadProjectF = Core::JMFunctorType<JApplication, void>;
-		private:
-			static std::wstring engineExePath;
-			static std::wstring enginePath; 
-			static std::wstring engineEngineResourcePath;
-			static std::wstring engineDefaultResourcePath;
-			static std::wstring engineInfoPath; 
-
-			static std::wstring engineProjectListFilePath; 
-
-			static std::wstring shaderPath;
-			static std::vector<std::wstring> engineFolderPath;
-
-			static std::wstring activatedProjectPath;
-			static std::wstring activatedProjectName;
-
-			static std::wstring contentPath;
-			static std::wstring projectSettingPath;
-			static std::wstring libraryPath;
-			static std::wstring shaderMetafilePath;
-			static std::wstring projectDefaultResourcePath;
-			static std::wstring projectEditorResoucePath; 
-			static std::wstring projectVersionFilePath;
-
-			static std::wstring sceneFolderPath;
-			static std::wstring scriptFolderPath;
-			static std::wstring resourceFolderPath;
-			static std::vector<std::wstring> projectFolderPath;
-
-			static J_APPLICATION_STATE applicationState;
-			static Core::J_LANGUAGE_TYPE engineLanguage;
-		private:
-			static std::wstring engineProjectSymbol;
-		private:
-			static std::deque<std::unique_ptr<AppCommandBind>> commandQueue;
-			static std::unique_ptr<StoreProjectF::Functor> storeProjectF;
-			static std::unique_ptr<LoadProjectF::Functor> loadProjectF;
-		private: 
-			static std::vector<std::string> versionList;
-		private:
-			using TimeVec = std::vector<std::tuple<std::string, float>>;
-			static TimeVec appTime;
 		public:
 			static std::string GetLatestVersion()noexcept;
 			static int GetSubverionDigitRange()noexcept;
 			static std::vector<std::string> GetAppVersion()noexcept;
+		public:
 			static std::wstring GetEngineExePath()noexcept;
 			static std::wstring GetEnginePath()noexcept; 
 			static std::wstring GetEngineResourcePath();
@@ -80,6 +42,7 @@ namespace JinEngine
 			static std::wstring GetEngineInfoPath()noexcept;
 			static std::wstring GetEngineProjectListFilePath()noexcept; 
 			static std::wstring GetShaderPath()noexcept;
+		public:
 			static std::wstring GetActivatedProjectPath()noexcept;
 			static std::wstring GetActivatedProjectName()noexcept;
 			static std::wstring GetProjectPath()noexcept;
@@ -89,10 +52,12 @@ namespace JinEngine
 			static std::wstring GetProjectShaderMetafilePath()noexcept;
 			static std::wstring GetProjectDefaultResourcePath()noexcept;
 			static std::wstring GetProjectEditorResourcePath()noexcept;
+			static std::wstring GetProjectResourceCashPath()noexcept;
 			static std::wstring GetProjectVersionFilePath()noexcept;
 			static std::wstring GetProjectContentScenePath()noexcept;
 			static std::wstring GetProjectContentScriptPath()noexcept;
 			static std::wstring GetProjectContentResourcePath()noexcept;
+		public:
 			static J_APPLICATION_STATE GetApplicationState()noexcept;
 			static Core::J_LANGUAGE_TYPE GetEngineLanguageType()noexcept;
 			static bool IsDefaultFolder(const std::wstring& path)noexcept;
@@ -117,7 +82,7 @@ namespace JinEngine
 			friend class JApplication;
 			friend class Editor::JProjectMainPage;
 			friend class Editor::JProjectSelectorHub; 
-		private:
+		public:
 			class JProjectInfo
 			{
 			private:
@@ -131,12 +96,6 @@ namespace JinEngine
 				std::wstring GetPath()const noexcept;
 				std::wstring GetVersion()const noexcept;
 			};
-		private:
-			static std::vector<std::unique_ptr<JProjectInfo>> projectList;
-			static std::unique_ptr<JProjectInfo> nextProjectInfo;
-			static bool startProjectOnce;
-			static bool endProject;
-			static bool loadOtherProjectOnce;
 		private:
 			static uint GetProjectInfoCount()noexcept;
 			static JProjectInfo* GetProjectInfo(uint index)noexcept;

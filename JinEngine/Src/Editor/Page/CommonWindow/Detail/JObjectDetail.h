@@ -1,6 +1,5 @@
 #pragma once
-#include"../../JEditorWindow.h"    
-
+#include"../../JEditorWindow.h"     
 namespace JinEngine
 { 
 	class JObject;

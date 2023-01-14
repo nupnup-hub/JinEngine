@@ -1,9 +1,10 @@
 #pragma once
 #include"JEditorGameObjectSurpportToolType.h"
+#include"../Interface/JEditorObjectInterface.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
 #include"../../Core/Func/Callable/JCallable.h" 
-#include"../../Core/Utility/JActivatedInterface.h"
-#include"../../Core/Utility/JValidInterface.h"
+#include"../../Core/Interface/JActivatedInterface.h"
+#include"../../Core/Interface/JValidInterface.h"
 #include"../../Core/SpaceSpatial/JSpaceSpatialType.h"
 #include"../../Object/Resource/Mesh/JDefaultShapeType.h"
 #include"../../Utility/JVector.h"
@@ -22,7 +23,7 @@ namespace JinEngine
 			static constexpr uint arrowCount = 3;
 		} 
 	
-		class JEditorGameObjectSurpportTool : public Core::JActivatedInterface
+		class JEditorGameObjectSurpportTool : public Core::JActivatedInterface,  public JEditorObjectHandlerInterface
 		{  
 		public:
 			virtual ~JEditorGameObjectSurpportTool() = default;

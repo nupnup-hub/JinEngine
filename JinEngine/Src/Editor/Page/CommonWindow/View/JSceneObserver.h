@@ -2,9 +2,10 @@
 #include"../../JEditorWindow.h"
 #include"../../../Menubar/JEditorMenuNodeUtilData.h"
 #include"../../../Utility/JEditorGameObjectSurpportToolType.h" 
+#include"../../../Interface/JEditorObjectInterface.h"
 #include"../../../../Utility/JVector.h"
 #include"../../../../Core/SpaceSpatial/JSpaceSpatialType.h"
- 
+
 //Debug
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
 namespace JinEngine
@@ -25,7 +26,7 @@ namespace JinEngine
 		class JEditorTransformTool;
 		class JEditorMenuBar;
 		class JEditorMenuNode; 
-		class JSceneObserver final : public JEditorWindow
+		class JSceneObserver final : public JEditorWindow, public JEditorObjectHandlerInterface
 		{    
 		public:
 			enum class J_OBSERVER_SETTING_TYPE

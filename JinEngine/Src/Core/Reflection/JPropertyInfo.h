@@ -53,6 +53,7 @@ namespace JinEngine
 				else
 					assert(false && "JProperty Get Error");
 			}
+			//For enum property
 			template<typename Field>
 			void UnsafeSet(void* object, const Field& value)
 			{

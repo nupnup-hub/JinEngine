@@ -34,20 +34,20 @@
 
 #include"../../Graphic/JGraphic.h"
 #include"../../Graphic/JGraphicDrawList.h" 
- 
+
 using namespace DirectX;
 namespace JinEngine
 {
 	//ResourceStorage
-	JResourceObject* JResourceManagerImpl::ResourceStorage::Get(const size_t guid)noexcept
+	JResourceObject* JResourceManagerImpl::ResourceStorage::Get(const size_t guid)const noexcept
 	{
 		return rMap.Get(guid);
 	}
-	JResourceObject* JResourceManagerImpl::ResourceStorage::GetByIndex(const uint index)
+	JResourceObject* JResourceManagerImpl::ResourceStorage::GetByIndex(const uint index)const noexcept
 	{
 		return rVec.Get(index);
 	}
-	JResourceObject* JResourceManagerImpl::ResourceStorage::GetByPath(const std::wstring& path)noexcept
+	JResourceObject* JResourceManagerImpl::ResourceStorage::GetByPath(const std::wstring& path)const noexcept
 	{
 		const uint count = rVec.Count();
 		for (uint i = 0; i < count; ++i)
@@ -57,16 +57,20 @@ namespace JinEngine
 		}
 		return nullptr;
 	}
-	std::vector<JResourceObject*>& JResourceManagerImpl::ResourceStorage::GetVector()
+	std::vector<JResourceObject*> JResourceManagerImpl::ResourceStorage::GetVector()const noexcept
 	{
 		return rVec.GetVector();
 	}
-	std::vector<JResourceObject*>::const_iterator JResourceManagerImpl::ResourceStorage::GetVectorIter(uint& count)
+	std::vector<JResourceObject*>& JResourceManagerImpl::ResourceStorage::GetVectorAddress() noexcept
+	{
+		return rVec.GetVectorAddress();
+	}
+	std::vector<JResourceObject*>::const_iterator JResourceManagerImpl::ResourceStorage::GetVectorCIter(uint& count)const noexcept
 	{
 		count = rVec.Count();
 		return rVec.GetCBegin();
 	}
-	bool JResourceManagerImpl::ResourceStorage::Has(const size_t guid)noexcept
+	bool JResourceManagerImpl::ResourceStorage::Has(const size_t guid)const noexcept
 	{
 		return rMap.Get(guid) != nullptr;
 	}
@@ -126,15 +130,15 @@ namespace JinEngine
 	{
 		return dVec.Count();
 	}
-	JDirectory* JResourceManagerImpl::DirectoryStorage::Get(const uint index)
+	JDirectory* JResourceManagerImpl::DirectoryStorage::Get(const uint index)const noexcept
 	{
 		return dVec.Get(index);
 	}
-	JDirectory* JResourceManagerImpl::DirectoryStorage::GetByGuid(const size_t guid)
+	JDirectory* JResourceManagerImpl::DirectoryStorage::GetByGuid(const size_t guid)const noexcept
 	{
 		return dMap.Get(guid);
 	}
-	JDirectory* JResourceManagerImpl::DirectoryStorage::GetByPath(const std::wstring& path)
+	JDirectory* JResourceManagerImpl::DirectoryStorage::GetByPath(const std::wstring& path)const noexcept
 	{
 		const uint count = dVec.Count();
 		for (uint i = 0; i < count; ++i)
@@ -144,7 +148,7 @@ namespace JinEngine
 		}
 		return nullptr;
 	}
-	JDirectory* JResourceManagerImpl::DirectoryStorage::GetOpenDirectory()
+	JDirectory* JResourceManagerImpl::DirectoryStorage::GetOpenDirectory()const noexcept
 	{
 		const uint count = dVec.Count();
 		for (uint i = 0; i < count; ++i)
@@ -175,7 +179,7 @@ namespace JinEngine
 
 		dVec.Remove(dir, equalLam);
 		dMap.Remove(dir->GetGuid());
-		return dir;
+		return true;
 	}
 	void JResourceManagerImpl::DirectoryStorage::Clear()
 	{
@@ -275,39 +279,39 @@ namespace JinEngine
 	}
 	JDirectory* JResourceManagerImpl::GetDirectory(const size_t guid)noexcept
 	{
-		return dCash.GetByGuid(guid);
+		return dStorage.GetByGuid(guid);
 	}
 	JDirectory* JResourceManagerImpl::GetDirectory(const std::wstring& path)noexcept
 	{
-		return dCash.GetByPath(path);
+		return dStorage.GetByPath(path);
 	}
 	JDirectory* JResourceManagerImpl::GetEditorResourceDirectory()noexcept
 	{
-		return dCash.GetByPath(JApplicationVariable::GetProjectEditorResourcePath());
+		return dStorage.GetByPath(JApplicationVariable::GetProjectEditorResourcePath());
 	}
 	JDirectory* JResourceManagerImpl::GetActivatedDirectory()noexcept
 	{
-		return dCash.GetOpenDirectory();
+		return dStorage.GetOpenDirectory();
 	}
 	uint JResourceManagerImpl::GetResourceCount(const J_RESOURCE_TYPE type)noexcept
 	{
-		return rCash.find(type)->second.Count();
+		return rStorage.find(type)->second.Count();
 	}
 	JResourceObject* JResourceManagerImpl::GetResource(const J_RESOURCE_TYPE type, const size_t guid)noexcept
 	{
-		return rCash.find(type)->second.Get(guid);
+		return rStorage.find(type)->second.Get(guid);
 	}
 	JResourceObject* JResourceManagerImpl::GetResourceByPath(const J_RESOURCE_TYPE type, const std::wstring& path)noexcept
 	{
-		return rCash.find(type)->second.GetByPath(path);
+		return rStorage.find(type)->second.GetByPath(path);
 	}
 	std::vector<JResourceObject*>::const_iterator JResourceManagerImpl::GetResourceVectorHandle(const J_RESOURCE_TYPE type, uint& resouceCount)noexcept
 	{
-		return rCash.find(type)->second.GetVectorIter(resouceCount);
+		return rStorage.find(type)->second.GetVectorCIter(resouceCount);
 	}
 	bool JResourceManagerImpl::HasResource(const J_RESOURCE_TYPE rType, const size_t guid)noexcept
 	{
-		return rCash.find(rType)->second.Has(guid);
+		return rStorage.find(rType)->second.Has(guid);
 	}
 	JResourceMangerAppInterface* JResourceManagerImpl::AppInterface()
 	{
@@ -327,10 +331,10 @@ namespace JinEngine
 	}
 	void JResourceManagerImpl::StoreProjectResource()
 	{
-		for (auto& rData : rCash)
+		for (auto& rData : rStorage)
 		{
 			uint count;
-			std::vector<JResourceObject*>::const_iterator begin = rData.second.GetVectorIter(count);
+			std::vector<JResourceObject*>::const_iterator begin = rData.second.GetVectorCIter(count);
 			for (uint i = 0; i < count; ++i)
 			{
 				JResourceObjectInterface* iR = *(begin + i);
@@ -348,7 +352,7 @@ namespace JinEngine
 		CreateDefaultTexture(resourceData->selectorTextureType);
 	}
 	void JResourceManagerImpl::LoadProjectResource()
-	{
+	{ 
 		resourceData->Initialize();
 		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
 		engineRootDir = JDFI::CreateRoot(JApplicationVariable::GetEnginePath(), Core::MakeGuid(), rootFlag);
@@ -384,16 +388,16 @@ namespace JinEngine
 		std::vector<JRI::RTypeHint> rinfo = JRI::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::NONE);
 		const uint rinfoCount = (uint)rinfo.size();
 		for (uint i = 0; i < rinfoCount; ++i)
-			rCash.emplace(rinfo[i].thisType, ResourceStorage());
+			rStorage.emplace(rinfo[i].thisType, ResourceStorage());
 	}
 	void JResourceManagerImpl::Terminate()
 	{
-		StoreProjectResource(); 
+		StoreProjectResource();
 
 		auto rHintVec = JResourceObjectInterface::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY_REVERSE);
 		for (uint i = 0; i < rHintVec.size(); ++i)
 		{
-			std::vector<JResourceObject*> copyVec = rCash.find(rHintVec[i].thisType)->second.GetVector();
+			std::vector<JResourceObject*> copyVec = rStorage.find(rHintVec[i].thisType)->second.GetVector();
 			for (uint j = 0; j < copyVec.size(); ++j)
 				JObject::BegineForcedDestroy(copyVec[j]);
 		}
@@ -408,37 +412,37 @@ namespace JinEngine
 			JObject::BegineForcedDestroy(projectRootDir);
 			projectRootDir = nullptr;
 		}
-		JReflectionInfo::Instance().SearchIntance();
-		dCash.Clear();
-		for (auto& data : rCash)
+		JReflectionInfo::Instance().SearchIntance(); 
+		dStorage.Clear();
+		for (auto& data : rStorage)
 			data.second.Clear();
-		rCash.clear();
+		rStorage.clear();
 		resourceData->Clear();
-	} 
+	}
 	bool JResourceManagerImpl::AddResource(JResourceObject& newResource)noexcept
 	{
-		return rCash.find(newResource.GetResourceType())->second.AddResource(&newResource);
+		return rStorage.find(newResource.GetResourceType())->second.AddResource(&newResource);
 	}
 	bool JResourceManagerImpl::RemoveResource(JResourceObject& resource)noexcept
 	{
 		if (resource.IsActivated())
 			NotifyEvent(resource.GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE, &resource);
 
-		return rCash.find(resource.GetResourceType())->second.RemoveResource(resource);
+		return rStorage.find(resource.GetResourceType())->second.RemoveResource(resource);
 	}
 	bool JResourceManagerImpl::AddJDirectory(JDirectory& newDirectory)noexcept
-	{
-		return dCash.Add(&newDirectory);
+	{ 
+		return dStorage.Add(&newDirectory);
 	}
 	bool JResourceManagerImpl::RemoveJDirectory(JDirectory& dir)noexcept
 	{
-		return dCash.Remove(&dir);
+		return dStorage.Remove(&dir);
 	}
 	void JResourceManagerImpl::DestroyUnusedResource(const J_RESOURCE_TYPE rType, bool isIgnreUndestroyableFlag)
 	{
 		//추가필요
 		//engine resource destory -> window file destory
-		std::vector<JResourceObject*>& rvec = rCash.find(rType)->second.GetVector();
+		std::vector<JResourceObject*>& rvec = rStorage.find(rType)->second.GetVectorAddress();
 		std::vector<JResourceObject*> copied = rvec;
 		for (uint i = 0; i < copied.size(); ++i)
 		{
@@ -533,8 +537,8 @@ namespace JinEngine
 	void JResourceManagerImpl::CreateDefaultMaterial()
 	{
 		auto debugLam = [](JDirectory* ownerDir,
-			const std::wstring& name, 
-			const size_t guid, 
+			const std::wstring& name,
+			const size_t guid,
 			const J_OBJECT_FLAG flag,
 			const XMFLOAT4& color,
 			const bool isLine)
@@ -542,7 +546,7 @@ namespace JinEngine
 			JMaterial* newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 				(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), ownerDir));
 			newMaterial->SetDebugMaterial(true);
-			if(isLine)
+			if (isLine)
 				newMaterial->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE);
 			newMaterial->SetAlbedoColor(color);
 			((JResourceObjectInterface*)newMaterial)->CallStoreResource();
@@ -647,7 +651,7 @@ namespace JinEngine
 				{
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetBoundingObjectDepthTest(true); 
+					newMaterial->SetBoundingObjectDepthTest(true);
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
 				}
@@ -671,19 +675,19 @@ namespace JinEngine
 		auto createTriangleBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateTriangleBoundingBox(); };
 		auto createBFrustumLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingFrustum(); };
 		auto createCircleLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCircle(1.2f, 1.1f); };
-		auto createScaleArrowLam = [](JDefaultGeometryGenerator& geoGen) 
+		auto createScaleArrowLam = [](JDefaultGeometryGenerator& geoGen)
 		{
 			JStaticMeshData cyilinderMesh = geoGen.CreateCylinder(0.125f, 0.125f, 2.04f, 10, 10);
 			JStaticMeshData cubeMesh = geoGen.CreateCube(0.5f, 0.5f, 0.5f, 1);
-			 
+
 			const DirectX::BoundingBox cyilinderBBox = cyilinderMesh.GetBBox();
 			const DirectX::BoundingBox cubeBBox = cubeMesh.GetBBox();
 
-			const float cyilinderYOffset = (-cyilinderBBox.Center.y)+ cyilinderBBox.Extents.y;
+			const float cyilinderYOffset = (-cyilinderBBox.Center.y) + cyilinderBBox.Extents.y;
 			const float cubeYOffset = cyilinderYOffset + cyilinderBBox.Center.y + cyilinderBBox.Extents.y + cubeBBox.Center.y;
 			DirectX::XMFLOAT3 cyilinderOffset = DirectX::XMFLOAT3(0, cyilinderYOffset, 0);
 			DirectX::XMFLOAT3 cubeOffset = DirectX::XMFLOAT3(0, cubeYOffset, 0);
-			
+
 			cyilinderMesh.AddPositionOffset(cyilinderOffset);
 			cubeMesh.AddPositionOffset(cubeOffset);
 			cyilinderMesh.Merge(cubeMesh);
@@ -695,7 +699,7 @@ namespace JinEngine
 		using CreateStaticMesh = Core::JStaticCallableType<JStaticMeshData, JDefaultGeometryGenerator&>;
 		std::unordered_map<J_DEFAULT_SHAPE, CreateStaticMesh::Callable> callableVec
 		{
-			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, (CreateStaticMesh::Ptr)createCubeLam}, 
+			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, (CreateStaticMesh::Ptr)createCubeLam},
 			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_GRID, (CreateStaticMesh::Ptr)createGridLam},
 			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE, (CreateStaticMesh::Ptr)createSphereLam},
 			{J_DEFAULT_SHAPE::DEFAULT_SHAPE_CYILINDER, (CreateStaticMesh::Ptr)createCylinderLam},
@@ -725,7 +729,7 @@ namespace JinEngine
 			const std::wstring meshName = JDefaultShape::ConvertToName(shapeType);
 
 			if (isExternalFile)
-			{ 
+			{
 				//basically external file is stored Engine DefaultResource folder
 				std::wstring name;
 				std::wstring format;
@@ -742,11 +746,11 @@ namespace JinEngine
 						assert("MeshType Error");
 				}
 				else
-				{ 
+				{
 					const std::wstring srcPath = engineDefaultDir->GetPath() + L"\\" + meshName;
 					const std::wstring destPath = projectDefualDir->GetPath() + L"\\" + meshName;
 					Core::J_FILE_IO_RESULT copyRes = JFileIOHelper::CopyFile(srcPath, destPath);
-					if(copyRes != Core::J_FILE_IO_RESULT::SUCCESS)
+					if (copyRes != Core::J_FILE_IO_RESULT::SUCCESS)
 						assert("Copy File Error");
 
 					const J_OBJECT_FLAG objFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
@@ -774,7 +778,7 @@ namespace JinEngine
 				else
 				{
 					if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
-					{ 
+					{
 						JStaticMeshData staticMeshData = callableVec.find(shapeType)->second(nullptr, geoGen);
 						staticMeshData.CreateBoundingObject();
 
@@ -814,214 +818,4 @@ namespace JinEngine
 
 	}
 }
-
-/*
-JMeshGeometry* JResourceManagerImpl::CreateMesh(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
-	{
-		return nullptr;
-	}
-	JMeshGeometry* JResourceManagerImpl::CreateMesh(const std::string& name,
-		const size_t guid,
-		const J_OBJECT_FLAG flag,
-		JDirectory* directory,
-		const uint8 formatIndex,
-		JStaticMeshData& meshData,
-		const BoundingBox& boundingBox,
-		const BoundingSphere& boundingSphere)noexcept
-	{
-		if (mesh->HasResource(guid))
-			return nullptr;
-
-		JMeshGeometry* res = mesh->AddResource(std::make_unique<JMeshGeometry>(directory->MakeUniqueFileName(name), guid, flag, directory, formatIndex,
-			meshData, boundingBox, boundingSphere));
-
-		if ((flag & OBJECT_FLAG_DO_NOT_SAVE) == 0)
-			;// resourceIO->StoreMesh(res);	수정필요
-		NotifyEvent(managerGuid, RESOURCE_EVENT::CREATE_RESOURCE, res);
-		if (directory != nullptr)
-			directory->AddFile(std::make_unique<JFile>(res));
-		return res;
-	}
-	JMeshGeometry* JResourceManagerImpl::CreateMesh(const std::string& name,
-		const size_t guid,
-		const J_OBJECT_FLAG flag,
-		JDirectory* directory,
-		const uint8 formatIndex,
-		JSkinnedMeshData& meshData,
-		const BoundingBox& boundingBox,
-		const BoundingSphere& boundingSphere)noexcept
-	{
-		if (mesh->HasResource(guid))
-			return nullptr;
-
-		JMeshGeometry* res = mesh->AddResource(std::make_unique<JMeshGeometry>(directory->MakeUniqueFileName(name), guid, flag, directory, formatIndex,
-			meshData, boundingBox, boundingSphere));
-
-		if ((flag & OBJECT_FLAG_DO_NOT_SAVE) == 0)
-			;// resourceIO->StoreMesh(res);	수정필요
-		NotifyEvent(managerGuid, RESOURCE_EVENT::CREATE_RESOURCE, res);
-		if (directory != nullptr)
-			directory->AddFile(std::make_unique<JFile>(res));
-		return res;
-	}
-	JMaterial* JResourceManagerImpl::CreateMaterial(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
-	{
-		if (selectedDirctory == nullptr)
-		{
-			if ((flag & OBJECT_FLAG_EDITOR_OBJECT) == 0)
-				selectedDirctory = GetResourceByPath<JDirectory>(JApplicationVariable::GetProjectEditorResourcePath());
-			else
-				selectedDirctory = GetActivatedDirectory();
-		}
-
-		return CreateMaterial(JResourceObject::GetDefaultName<JMaterial>(), Core::MakeGuid(), flag, selectedDirctory);
-	}
-	JMaterial* JResourceManagerImpl::CreateMaterial(const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
-	{
-		const size_t shaderGuid = resourceData->defaultGraphicShaderGuidMap[J_DEFAULT_GRAPHIC_SHADER::DEFAULT_STANDARD_SHADER];
-
-		JMaterial* res = material->AddResource(std::make_unique<JMaterial>(selectedDirctory->MakeUniqueFileName(name),
-			guid,
-			flag,
-			selectedDirctory,
-			material->GetResourceCount()));
-
-		if (flag & OBJECT_FLAG_DO_NOT_SAVE == 0)
-			;// resourceIO->StoreMaterial(res);	수정필요
-
-		NotifyEvent(managerGuid, RESOURCE_EVENT::CREATE_RESOURCE, res);
-		if (selectedDirctory != nullptr)
-			selectedDirctory->AddFile(std::make_unique<JFile>(res));
-		return res;
-	}
-	JTexture* JResourceManagerImpl::CreateTexture(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
-	{
-		return nullptr;
-	}
-	JModel* JResourceManagerImpl::CreateModel(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
-	{
-		return nullptr;
-	}
-	JSkeletonAsset* JResourceManagerImpl::CreateSkeletonAsset(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
-	{
-		return nullptr;
-	}
-	JAnimationClip* JResourceManagerImpl::CreateAnimationClip(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
-	{
-		return nullptr;
-	}
-	JAnimationController* JResourceManagerImpl::CreateAnimationController(const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
-	{
-		if (selectedDirctory == nullptr)
-		{
-			if ((flag & OBJECT_FLAG_EDITOR_OBJECT) == 0)
-				selectedDirctory = GetResourceByPath<JDirectory>(JApplicationVariable::GetProjectEditorResourcePath());
-			else
-				selectedDirctory = GetActivatedDirectory();
-		}
-
-		JAnimationController* res = animationController->AddResource(
-			std::make_unique<JAnimationController>(selectedDirctory->MakeUniqueFileName(JResourceObject::GetDefaultName<JAnimationController>()),
-				Core::MakeGuid< JAnimationController>(),
-				flag,
-				selectedDirctory));
-
-		//resourceIO->StoreAnimationController(res);		수정필요
-
-		NotifyEvent(managerGuid, RESOURCE_EVENT::CREATE_RESOURCE, res);
-		if (selectedDirctory != nullptr)
-			selectedDirctory->AddFile(std::make_unique<JFile>(res));
-
-		return res;
-	}
-	JScene* JResourceManagerImpl::CreateScene(const SCENE_TYPE sceneType, const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
-	{
-		if (selectedDirctory == nullptr)
-		{
-			if ((flag & OBJECT_FLAG_EDITOR_OBJECT) == 0)
-				selectedDirctory = GetResourceByPath<JDirectory>(JApplicationVariable::GetProjectEditorResourcePath());
-			else
-				selectedDirctory = GetActivatedDirectory();
-		}
-
-		std::string newPath;
-		std::string newName;
-		size_t guid;
-
-		JScene* res = scene->AddResource(std::make_unique<JScene>(selectedDirctory->MakeUniqueFileName(JResourceObject::GetDefaultName<JScene>()),
-			guid,
-			flag,
-			selectedDirctory,
-			sceneType));
-
-		res->MakeDefaultObject();
-		res->Activate();
-		//resourceIO->StoreScene(res);수정필요
-		res->DeActivate();
-
-		NotifyEvent(managerGuid, RESOURCE_EVENT::CREATE_RESOURCE, res);
-		if (selectedDirctory != nullptr)
-			selectedDirctory->AddFile(std::make_unique<JFile>(res));
-		return res;
-	}
-	JShader* JResourceManagerImpl::CreateShader(const J_GRAPHIC_SHADER_FUNCTION newFunctionFlag, J_OBJECT_FLAG flag)noexcept
-	{
-		flag = (J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | (flag ^ (flag & OBJECT_FLAG_HIDDEN)));
-
-		uint count;
-		std::vector<JShader*>::const_iterator st = shader->GetResourceVector(count);
-
-		for (uint i = 0; i < count; ++i)
-		{
-			if (newFunctionFlag == (*(st + i))->GetShaderGFunctionFlag())
-				return (*(st + i));
-		}
-
-		JShader* newShader = shader->AddResource(std::make_unique<JShader>(std::to_string((int)newFunctionFlag),
-			Core::MakeGuid<JShader>(),
-			flag,
-			GetResourceByPath<JDirectory>(JApplicationVariable::GetProjectShaderMetafilePath()),
-			newFunctionFlag));
-
-		NotifyEvent(managerGuid, RESOURCE_EVENT::CREATE_RESOURCE, newShader);
-		return newShader;
-	}
-	JShader* JResourceManagerImpl::CreateShader(const size_t guid, J_OBJECT_FLAG flag, const J_GRAPHIC_SHADER_FUNCTION newFunctionFlag)noexcept
-	{
-		if (shader->HasResource(guid))
-			return nullptr;
-
-		flag = (J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | (flag ^ (flag & OBJECT_FLAG_HIDDEN)));
-
-		uint count;
-		std::vector<JShader*>::const_iterator st = shader->GetResourceVector(count);
-
-		for (uint i = 0; i < count; ++i)
-		{
-			if (newFunctionFlag == (*(st + i))->GetShaderGFunctionFlag())
-				return (*(st + i));
-		}
-
-		JShader* newShader = shader->AddResource(std::make_unique<JShader>(std::to_string((int)newFunctionFlag),
-			guid,
-			flag,
-			GetResourceByPath<JDirectory>(JApplicationVariable::GetProjectShaderMetafilePath()),
-			newFunctionFlag));
-
-		NotifyEvent(managerGuid, RESOURCE_EVENT::CREATE_RESOURCE, newShader);
-		return newShader;
-	}
-	JDirectory* JResourceManagerImpl::CreateDirectoryFolder(std::string name, const J_OBJECT_FLAG flag, JDirectory* selectedDirctory)noexcept
-	{
-		if (selectedDirctory == nullptr)
-			return nullptr;
-
-		if (name == "")
-			name = JResourceObject::GetDefaultName<JDirectory>();
-
-		name = selectedDirctory->MakeUniqueFileName(name);
-		const std::string path = selectedDirctory->GetPath() + "\\" + name;
-
-		return directory->AddResource(std::make_unique<JDirectory>(name, Core::MakeGuid<JDirectory>(), flag, selectedDirctory));
-	}
-*/
+ 

@@ -300,6 +300,7 @@ namespace JinEngine
 				transform->SetPosition(XMFLOAT3(nowPos.x, nowPos.y + mDelta.y, nowPos.z));
 			else if (tool->draggingIndex == 2)
 				transform->SetPosition(XMFLOAT3(nowPos.x, nowPos.y, nowPos.z + mDelta.x)); 
+			tool->SetModifiedBit(Core::GetUserPtr(selected->GetOwnerScene()), true);
 		}
 		void JEditorTransformTool::UpdateSelectedRotation(JEditorTransformTool* tool, JGameObject* selected)noexcept
 		{ 
@@ -316,6 +317,7 @@ namespace JinEngine
 				transform->SetRotation(XMFLOAT3(nowRot.x, nowRot.y + mDelta.x, nowRot.z));
 			else if (tool->draggingIndex == 2)
 				transform->SetRotation(XMFLOAT3(nowRot.x, nowRot.y, nowRot.z + mDelta.x));
+			tool->SetModifiedBit(Core::GetUserPtr(selected->GetOwnerScene()), true);
 		}
 		void JEditorTransformTool::UpdateSelectedScale(JEditorTransformTool* tool, JGameObject* selected)noexcept
 		{
@@ -333,6 +335,7 @@ namespace JinEngine
 				transform->SetScale(XMFLOAT3(nowScale.x, nowScale.y + mDelta.y, nowScale.z));
 			else if (tool->draggingIndex == 2)
 				transform->SetScale(XMFLOAT3(nowScale.x, nowScale.y, nowScale.z + mDelta.x));
+			tool->SetModifiedBit(Core::GetUserPtr(selected->GetOwnerScene()), true);
 		}
 		void JEditorTransformTool::ActivateTool()noexcept
 		{

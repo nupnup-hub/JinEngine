@@ -1,5 +1,6 @@
 #pragma once 
 #include"../../JEditorWindow.h" 
+#include"../../../Interface/JEditorObjectInterface.h"
 #include"../../../../Object/Resource/Skeleton/Avatar/JAvatar.h"
 #include"../../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
 #include"../../../../Utility/JVector.h"
@@ -11,7 +12,7 @@ namespace JinEngine
 	class JGameObject; 
 	namespace Editor
 	{
-		class JAvatarEditor final : public JEditorWindow
+		class JAvatarEditor final : public JEditorWindow, public JEditorObjectHandlerInterface
 		{ 
 		private:
 			using MakeAvatarF = Core::JMFunctorType<JAvatarEditor, void>;

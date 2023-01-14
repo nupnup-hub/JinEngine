@@ -12,7 +12,7 @@ namespace JinEngine
 		return resource->GetFullName();
 	}
 	std::wstring JFile::GetFormat()const noexcept
-	{
+	{ 
 		return resource->GetFormat();
 	}
 	JResourceObject* JFile::GetResource()noexcept
@@ -20,5 +20,8 @@ namespace JinEngine
 		return resource;
 	}
 	JFile::JFile(JResourceObject* resource)
-		:resource(resource) {}
+		:resource(resource) 
+	{
+
+	}
 }

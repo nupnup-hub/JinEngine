@@ -1,6 +1,7 @@
 #pragma once
 #include"../../JEditorWindow.h"  
 #include"../../../Utility/JEditorRenameHelper.h"
+#include"../../../Interface/JEditorObjectInterface.h"
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
 #include"../../../../Core/Event/JEventListener.h"
@@ -16,7 +17,7 @@ namespace JinEngine
 		class JEditorString;
 		class JEditorPopupMenu;
 		class JEditorSearchBarHelper;
-		class JObjectExplorer final : public JEditorWindow
+		class JObjectExplorer final : public JEditorWindow, public JEditorObjectHandlerInterface
 		{ 
 		private:
 			Core::JUserPtr<JGameObject> root;
@@ -41,7 +42,7 @@ namespace JinEngine
 			using CreateGameObjectEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateGameObjectBind, DestroyGameObjectBind>;
 			using DestroyGameObjectEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, DestroyGameObjectBind, UndoDestroyGameObjectBind>;
 			using CreateModelEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateModelBind, DestroyGameObjectBind>;;
-			using ChangeParentF = Core::JSFunctorType<void, Core::JUserPtr<JGameObject>, Core::JUserPtr<JGameObject>>;
+			using ChangeParentF = Core::JSFunctorType<void, JObjectExplorer*, Core::JUserPtr<JGameObject>, Core::JUserPtr<JGameObject>>;
 		
 			using RegisterCreateGEvF = Core::JMFunctorType<JObjectExplorer, void, J_DEFAULT_SHAPE>;
 			using RegisterDestroyGEvF = Core::JMFunctorType<JObjectExplorer, void>;
@@ -82,6 +83,8 @@ namespace JinEngine
 				Core::JUserPtr<JGameObject> p,
 				Core::JUserPtr<JMeshGeometry> m,
 				const size_t guid);
+			void DestroyGameObject(DataHandleStructure& dS, Core::JDataHandle& dH, const size_t guid);
+			void UndoDestroyGameObject(DataHandleStructure& dS, Core::JDataHandle& dH);
 		private:
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;

@@ -396,7 +396,10 @@ namespace JinEngine
 			octreeOption.minSize = minSize;
 			octreeOption.octreeSizeSquare = octreeSizeSquare;
 			if (isChanged)
+			{
 				iSceneSpace->SetOctreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, octreeOption);
+				SetModifiedBit(scene, true);
+			}
 		}
 		void JSceneObserver::BvhOptionOnScreen()
 		{
@@ -420,7 +423,10 @@ namespace JinEngine
 
 			isUpdated |= CommonOptionOnScreen("Bvh", bvhOption.commonOption);
 			if (isUpdated)
+			{
 				iSceneSpace->SetBvhOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, bvhOption);
+				SetModifiedBit(scene, true);
+			}
 		}
 		void JSceneObserver::KdTreeOptionOnScreen()
 		{
@@ -444,7 +450,10 @@ namespace JinEngine
 
 			isUpdated |= CommonOptionOnScreen("Kd", kdTreeOption.commonOption);
 			if (isUpdated)
+			{
 				iSceneSpace->SetKdTreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, kdTreeOption);
+				SetModifiedBit(scene, true);
+			}
 		}
 		bool JSceneObserver::CommonOptionOnScreen(const std::string& uniqueName, Core::JSpaceSpatialOption& commonOption)
 		{

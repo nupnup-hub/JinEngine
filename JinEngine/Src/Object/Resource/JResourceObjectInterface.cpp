@@ -113,7 +113,8 @@ namespace JinEngine
 	void JResourceObjectInterface::CallSetFrameBuffIndex(JResourceObject& jRobj, const uint value)
 	{
 		RTypeInfo::Instance().rIntefaceStroage[(int)jRobj.GetResourceType()].CallSetFrameBuffIndex(jRobj, value);
-	}
+	} 
+
 	JResourceObjectInterface::SetFrameDirtyCallable JResourceObjectInterface::GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type)
 	{
 		return RTypeInfo::Instance().rIntefaceStroage[(int)type].GetSetFrameDirtyCallable();

@@ -6,7 +6,7 @@
 #include"../Core/JDataType.h"
 #include"../Core/File/JFileIOResult.h"
 #include"../Core/Identity/JIdentifier.h"
-#include"../Core/Utility/JActivatedInterface.h"
+#include"../Core/Interface/JActivatedInterface.h"
 
 namespace JinEngine
 { 

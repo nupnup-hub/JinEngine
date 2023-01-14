@@ -60,7 +60,7 @@ namespace JinEngine
 		if (jObj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
 		{
 			Core::JUserPtr<JResourceObject> resource;
-			resource.ConnnectBaseUser(jObj); 
+			resource.ConnnectChildUser(jObj); 
 			std::unique_ptr<JPreviewResourceScene> previewResouce = std::make_unique<JPreviewResourceScene>(resource, previewDimension, previewFlag);
 			if (previewResouce->Initialze())
 			{
@@ -71,7 +71,7 @@ namespace JinEngine
 		else if (jObj->GetObjectType() == J_OBJECT_TYPE::DIRECTORY_OBJECT)
 		{
 			Core::JUserPtr<JDirectory> dir;
-			dir.ConnnectBaseUser(jObj);		 
+			dir.ConnnectChildUser(jObj);		 
 			std::unique_ptr<JPreviewDirectory> previewResouce = std::make_unique<JPreviewDirectory>(dir, previewDimension, previewFlag);
 			if (previewResouce->Initialze())
 			{

@@ -86,7 +86,7 @@ namespace JinEngine
 
 			JUserPtr<JIdentifier> userObjPtr = JReflectionInfo::Instance().GetTypeInfo(T::TypeName())->GetInstanceUserPtr(guid);
 			JUserPtr<T> userTPtr;
-			userTPtr.ConnnectBaseUser(userObjPtr);
+			userTPtr.ConnnectChildUser(userObjPtr);
 			return userTPtr;
 		}
 		template<typename T>
@@ -103,7 +103,7 @@ namespace JinEngine
 
 			JUserPtr<JIdentifier> userObjPtr = ptr->GetTypeInfo().GetInstanceUserPtr(ptr->GetGuid());
 			JUserPtr<T> userTPtr;
-			userTPtr.ConnnectBaseUser(userObjPtr);
+			userTPtr.ConnnectChildUser(userObjPtr);
 			return userTPtr;
 		} 
 		template<typename T, typename U>
@@ -120,7 +120,7 @@ namespace JinEngine
 
 			JUserPtr<JIdentifier> userObjPtr = ptr->GetTypeInfo().GetInstanceUserPtr(ptr->GetGuid());
 			JUserPtr<T> userTPtr;
-			userTPtr.ConnnectBaseUser(userObjPtr);
+			userTPtr.ConnnectChildUser(userObjPtr);
 			return userTPtr;
 		}
 		static JUserPtr<JIdentifier> GetUserPtr(const std::string& typeName, const size_t guid)

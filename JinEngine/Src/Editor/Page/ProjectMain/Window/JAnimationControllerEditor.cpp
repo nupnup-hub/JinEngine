@@ -699,7 +699,7 @@ namespace JinEngine
 					if (rObject->GetResourceType() == J_RESOURCE_TYPE::ANIMATION_CONTROLLER)
 					{
 						ClearCash();
-						aniCont.ConnnectBaseUser(evstruct->selectObj);
+						aniCont.ConnnectChildUser(evstruct->selectObj);
 						if (aniCont->GetDiagramCount() > 0)
 						{
 							diagramIndex = 0;

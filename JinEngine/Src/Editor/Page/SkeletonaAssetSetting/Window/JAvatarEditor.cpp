@@ -349,6 +349,7 @@ namespace JinEngine
 		void JAvatarEditor::StoreAvatarData()
 		{
 			targetSkeleton->AvatarInterface()->SetAvatar(&targetAvatar);
+			SetModifiedBit(targetSkeleton, true);
 		}
 		void JAvatarEditor::DoActivate() noexcept
 		{

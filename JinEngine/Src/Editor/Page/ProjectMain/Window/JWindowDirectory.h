@@ -2,6 +2,7 @@
 #include"../../JEditorWindow.h"     
 #include"../../WindowInterface/JEditorPreviewInterface.h"
 #include"../../../Utility/JEditorRenameHelper.h"
+#include"../../../Interface/JEditorObjectInterface.h"
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/JResourceType.h"
 #include"../../../../Core/Func/Callable/JCallable.h"
@@ -27,7 +28,9 @@ namespace JinEngine
 		class JEditorWidgetPosCalculator;
 		class JEditorSearchBarHelper;
 
-		class JWindowDirectory final : public JEditorWindow, public JEditorPreviewInterface
+		class JWindowDirectory final : public JEditorWindow, 
+			public JEditorPreviewInterface,
+			public JEditorObjectHandlerInterface
 		{ 
 		private:
 			//Create Resource & Directory

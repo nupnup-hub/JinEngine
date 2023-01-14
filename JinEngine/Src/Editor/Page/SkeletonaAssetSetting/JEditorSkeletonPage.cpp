@@ -151,7 +151,7 @@ namespace JinEngine
 				return false;
 
 			Core::JUserPtr<JSkeletonAsset> skeleotnAsset;
-			if (!skeleotnAsset.ConnnectBaseUser(selectedObj))
+			if (!skeleotnAsset.ConnnectChildUser(selectedObj))
 				return false;
 
 			auto isSameSkelLam = [](JSkinnedMeshGeometry* mesh, size_t skelHash)

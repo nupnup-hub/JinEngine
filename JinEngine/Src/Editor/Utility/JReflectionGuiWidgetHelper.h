@@ -1,5 +1,6 @@
 #pragma once
 #include"../GuiLibEx/JGuiWidgetType.h"
+#include"../Interface/JEditorObjectInterface.h"
 #include"../../Core/JDataType.h" 
 #include"../../Core/Reflection/JReflectionGuiInfo.h"
 #include<vector>

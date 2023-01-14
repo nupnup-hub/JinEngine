@@ -1,5 +1,6 @@
 #pragma once  
 #include"../JEditorPage.h"  
+#include"../../Interface/JEditorObjectInterface.h"
 
 namespace JinEngine
 {
@@ -19,7 +20,8 @@ namespace JinEngine
 		class JGraphicOptionSetting;
 		class JEditorCloseConfirmPopup;
 
-		class JProjectMainPage final : public JEditorPage
+		class JProjectMainPage final : public JEditorPage, 
+			public JEditorModifedObjectStructureInterface
 		{
 		private:
 			using StoreProjectF = Core::JSFunctorType<void>;

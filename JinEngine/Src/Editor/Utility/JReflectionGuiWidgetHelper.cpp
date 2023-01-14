@@ -37,11 +37,29 @@ namespace JinEngine
 		}
 
 #pragma region Property
+		 
+		class JGuiPropertySetInterface : public JEditorObjectHandlerInterface
+		{
+		public: 
+			template<typename T>
+			void SetPropertyValue(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo, const T& value)
+			{
+				pInfo->Set<T>(obj, value);
+				SetModifiedBit(Core::GetUserPtr(obj), true);
+			}
+			template<typename T>
+			void UnsafeSetPropertyValue(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo, const T& value)
+			{
+				pInfo->UnsafeSet<T>(obj, value);
+				SetModifiedBit(Core::GetUserPtr(obj), true);
+			}
+		};
 
 		//Property
 		//int, float, string, vector
 		template<typename T>
-		class JGuiInputHandle : public JGuiPropertyWidgetHandle
+		class JGuiInputHandle : public JGuiPropertyWidgetHandle, 
+			public JGuiPropertySetInterface
 		{
 		private:
 			using ValueType = typename Core::JVectorDetermine<T>::ValueType;
@@ -147,9 +165,9 @@ namespace JinEngine
 				if (res)
 				{
 					if constexpr (std::is_same_v<T, std::string >)
-						pInfo->Set<T>(obj, JCUtil::EraseSideChar(buff, '\0'));
+						SetPropertyValue(obj, pInfo, JCUtil::EraseSideChar(buff, '\0'));
 					else
-						pInfo->Set<T>(obj, buff);	 
+						SetPropertyValue(obj, pInfo, buff);
 				}
 				++exeCount;
 				if (exeCount == exeMaxCount)
@@ -169,10 +187,9 @@ namespace JinEngine
 					return false;
 			}
 		};
-		//JObject 
+		//Select JObject 
 		class JGuiSelectorHandleHelper : public JGuiPropertyWidgetHandle, public JEditorPreviewInterface
-		{
-			//JEditorSearchBarHelper
+		{ 
 		private:
 			std::vector<JPreviewScene*> selectorPreviewVec;
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
@@ -249,8 +266,8 @@ namespace JinEngine
 					ImGui::SameLine();
 				}
 			}
-			template<typename ValueType, typename PointRef>
-			void SelectorOnScreen(PointRef selectedObj, Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
+			template<typename ValueType, typename PointerRef>
+			void SelectorOnScreen(PointerRef selectedObj, Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
 			{
 				std::string name = "None";
 				if (selectedObj != nullptr && (*selectedObj) != nullptr)
@@ -317,9 +334,9 @@ namespace JinEngine
 							nullptr,
 							0,
 							JVector2<float>(0, sizeFactor)))
-						{
+						{ 
 							(*selectedObj) = static_cast<ValueType*>(previewObj.Get());
-							isSelected = true;
+							isSelected = true; 
 							ImGui::CloseCurrentPopup();
 						} 
 					}
@@ -363,7 +380,7 @@ namespace JinEngine
 		};
 		//T is JResourceObject derive class
 		template<typename T>
-		class JGuiSingleSelectorHandle : public JGuiSelectorHandleHelper
+		class JGuiSingleSelectorHandle : public JGuiSelectorHandleHelper, public JGuiPropertySetInterface
 		{
 		private:
 			using ValueType = Core::RemoveAll_T<T>;
@@ -387,7 +404,7 @@ namespace JinEngine
 		protected:
 			void SetSelectObject(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
 			{
-				pInfo->Set<T>(obj, selectedObj);
+				SetPropertyValue(obj, pInfo, selectedObj); 
 			}
 		private:
 			void CreateSelectorPreviewList()
@@ -396,7 +413,7 @@ namespace JinEngine
 			}
 		};
 		template<typename T>
-		class JGuiMultiSelectorHandle : public JGuiSelectorHandleHelper
+		class JGuiMultiSelectorHandle : public JGuiSelectorHandleHelper, public JGuiPropertySetInterface
 		{
 		private:
 			using ValueType = Core::RemoveAll_T<typename Core::StdArrayContainerDetermine<T>::ValueType>;
@@ -428,7 +445,7 @@ namespace JinEngine
 		protected:
 			void SetSelectObject(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
 			{
-				pInfo->Set<T>(obj, container);
+				SetPropertyValue(obj, pInfo, container); 
 			}
 		private:
 			void CreateSelectorPreviewList()
@@ -439,7 +456,7 @@ namespace JinEngine
 			}
 		};
 		//bool
-		class JGuiCheckBoxHandle : public JGuiPropertyWidgetHandle
+		class JGuiCheckBoxHandle : public JGuiPropertyWidgetHandle, public JGuiPropertySetInterface
 		{
 		private:
 			bool value = false;
@@ -457,12 +474,12 @@ namespace JinEngine
 					return;
 
 				if (JImGuiImpl::CheckBox(pInfo->Name() + "##Checkbox", value))
-					pInfo->Set<bool>(obj, value);
+					SetPropertyValue(obj, pInfo, value);
 			}
 		};
 		//int, float
 		template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
-		class JGuiSliderHandle : public JGuiPropertyWidgetHandle
+		class JGuiSliderHandle : public JGuiPropertyWidgetHandle, public JGuiPropertySetInterface
 		{
 		private:
 			T minValue;
@@ -494,12 +511,12 @@ namespace JinEngine
 					if constexpr (std::is_integral_v<T>)
 					{
 						if (JImGuiImpl::InputInt("##IntInput" + pInfo->Name(), &value))
-							pInfo->Set<T>(obj, value);
+							SetPropertyValue(obj, pInfo, value);
 					}
 					else
 					{
 						if (JImGuiImpl::InputFloat("##FloatInput" + pInfo->Name(), &value, 0, "%.1f"))
-							pInfo->Set<T>(obj, value);
+							SetPropertyValue(obj, pInfo, value);
 					}
 					ImGui::SameLine();
 				}
@@ -510,12 +527,12 @@ namespace JinEngine
 					if constexpr (std::is_integral_v<T>)
 					{
 						if (JImGuiImpl::VSliderInt("##IntVSlider" + pInfo->Name(), vSliderSize, &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							pInfo->Set<T>(obj, value);
+							SetPropertyValue(obj, pInfo, value);
 					}
 					else
 					{
 						if (JImGuiImpl::VSliderFloat("##FloatVSlider" + pInfo->Name(), vSliderSize, &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							pInfo->Set<T>(obj, value);
+							SetPropertyValue(obj, pInfo, value);
 					}
 				}
 				else
@@ -524,12 +541,12 @@ namespace JinEngine
 					if constexpr (std::is_integral_v<T>)
 					{
 						if (JImGuiImpl::SliderInt("##IntSlider" + pInfo->Name(), &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							pInfo->Set<T>(obj, value);
+							SetPropertyValue(obj, pInfo, value);
 					}
 					else
 					{
 						if (JImGuiImpl::SliderFloat("##FloatSlider" + pInfo->Name(), &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							pInfo->Set<T>(obj, value);
+							SetPropertyValue(obj, pInfo, value);
 					}
 				}
 
@@ -539,7 +556,7 @@ namespace JinEngine
 		};
 		//XMFLOAT4, JVector4, XMFLOAT3, JVector3
 		template<typename T>
-		class JGuiColorPickerHandle : public JGuiPropertyWidgetHandle
+		class JGuiColorPickerHandle : public JGuiPropertyWidgetHandle, public JGuiPropertySetInterface
 		{
 		private:
 			float hasRgbInput = false;
@@ -564,12 +581,12 @@ namespace JinEngine
 					if constexpr (T::GetDigitCount() == 3)
 					{
 						if (ImGui::ColorPicker3(("##ColorPicker" + pInfo->Name()).c_str(), (float*)&colorV, flag))
-							pInfo->Set<T>(obj, colorV);
+							SetPropertyValue(obj, pInfo, colorV);
 					}
 					else if constexpr (T::GetDigitCount() == 4)
 					{
 						if (ImGui::ColorPicker4(("##ColorPicker" + pInfo->Name()).c_str(), (float*)&colorV, flag))
-							pInfo->Set<T>(obj, colorV);
+							SetPropertyValue(obj, pInfo, colorV);
 					}
 
 				}
@@ -580,7 +597,7 @@ namespace JinEngine
 						if (ImGui::ColorPicker3(("##ColorPicker" + pInfo->Name()).c_str(), (float*)&colorV, flag))
 						{
 							if constexpr (std::is_same_v<T, DirectX::XMFLOAT3>)
-								pInfo->Set<T>(obj, DirectX::XMFLOAT3(colorV.x, colorV.y, colorV.z));
+								SetPropertyValue(obj, pInfo, DirectX::XMFLOAT3(colorV.x, colorV.y, colorV.z));							 
 						}
 					}
 					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
@@ -588,7 +605,7 @@ namespace JinEngine
 						if (ImGui::ColorPicker4(("##ColorPicker" + pInfo->Name()).c_str(), (float*)&colorV, flag))
 						{
 							if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
-								pInfo->Set<T>(obj, DirectX::XMFLOAT4(colorV.x, colorV.y, colorV.z, colorV.w));
+								SetPropertyValue(obj, pInfo, DirectX::XMFLOAT4(colorV.x, colorV.y, colorV.z, colorV.w));
 						}
 					}
 				}
@@ -672,7 +689,7 @@ namespace JinEngine
 					JImGuiImpl::Text(std::to_string(value));
 			}
 		};
-		class JGuiEnumComboBoxHandle : public JGuiPropertyWidgetHandle
+		class JGuiEnumComboBoxHandle : public JGuiPropertyWidgetHandle, public JGuiPropertySetInterface
 		{
 		public:
 			void Initialize(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
@@ -699,8 +716,8 @@ namespace JinEngine
 							const bool isSelected = (selectedIndex == i);
 							if (JImGuiImpl::Selectable(enumInfo->ElementName(enumInfo->EnumValue(i)), isSelected))
 							{
-								if(selectedIndex != i)					 
-									pInfo->UnsafeSet<Core::JEnum>(obj, enumInfo->EnumValue(i));
+								if (selectedIndex != i)
+									UnsafeSetPropertyValue<Core::JEnum>(obj, pInfo, enumInfo->EnumValue(i));
 								selectedIndex = i;
 							}
 

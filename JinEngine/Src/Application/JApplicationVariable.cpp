@@ -12,50 +12,62 @@ namespace JinEngine
 {
 	namespace Application
 	{ 
-		std::wstring JApplicationVariable::engineExePath;
-		std::wstring JApplicationVariable::enginePath; 
-		std::wstring JApplicationVariable::engineEngineResourcePath;
-		std::wstring JApplicationVariable::engineDefaultResourcePath;
-		std::wstring JApplicationVariable::engineInfoPath;
-		std::wstring JApplicationVariable::engineProjectListFilePath;
-
-		std::wstring JApplicationVariable::shaderPath;
-		std::vector<std::wstring> JApplicationVariable::engineFolderPath;
-
-		std::wstring JApplicationVariable::activatedProjectPath;
-		std::wstring JApplicationVariable::activatedProjectName;
-
-		std::wstring JApplicationVariable::contentPath;
-		std::wstring JApplicationVariable::projectSettingPath;
-		std::wstring JApplicationVariable::libraryPath;
-		std::wstring JApplicationVariable::shaderMetafilePath;
-		std::wstring JApplicationVariable::projectDefaultResourcePath;
-		std::wstring JApplicationVariable::projectEditorResoucePath;
-		std::wstring JApplicationVariable::projectVersionFilePath;
-
-		std::wstring JApplicationVariable::sceneFolderPath;
-		std::wstring JApplicationVariable::scriptFolderPath;
-		std::wstring JApplicationVariable::resourceFolderPath;
-		std::vector<std::wstring> JApplicationVariable::projectFolderPath;
-
-		J_APPLICATION_STATE JApplicationVariable::applicationState = J_APPLICATION_STATE::PROJECT_SELECT;
-		Core::J_LANGUAGE_TYPE JApplicationVariable::engineLanguage;
-
-		std::wstring JApplicationVariable::engineProjectSymbol = L"JinEngineProject";
-		std::deque<std::unique_ptr<JApplicationVariable::AppCommandBind>>  JApplicationVariable::commandQueue;
-		std::unique_ptr<JApplicationVariable::StoreProjectF::Functor> JApplicationVariable::storeProjectF;
-		std::unique_ptr<JApplicationVariable::LoadProjectF::Functor>JApplicationVariable::loadProjectF;
-		//versionList
-		//0 ~ n .. Latest version ~ old version
-		std::vector<std::string> JApplicationVariable::versionList
+		namespace Private
 		{
-			"1.00",
-		};
-		std::vector<std::tuple<std::string, float>> JApplicationVariable::appTime;
+			//engine path
+			static std::wstring engineExePath;
+			static std::wstring enginePath;
+			static std::wstring engineEngineResourcePath;
+			static std::wstring engineDefaultResourcePath;
+			static std::wstring engineInfoPath;
+
+			static std::wstring engineProjectListFilePath;
+
+			static std::wstring shaderPath;
+			static std::vector<std::wstring> engineFolderPath;
+
+			//Project path
+			static std::wstring activatedProjectPath;
+			static std::wstring activatedProjectName;
+
+			static std::wstring contentPath;
+			static std::wstring projectSettingPath;
+			static std::wstring libraryPath;
+			static std::wstring shaderMetafilePath;
+
+			static std::wstring projectDefaultResourcePath;
+			static std::wstring projectEditorResoucePath;
+			static std::wstring projectResourceCashPath;
+			static std::wstring projectVersionFilePath;
+
+			static std::wstring sceneFolderPath;
+			static std::wstring scriptFolderPath;
+			static std::wstring resourceFolderPath;
+			static std::vector<std::wstring> projectFolderPath;
+
+			static J_APPLICATION_STATE applicationState;
+			static Core::J_LANGUAGE_TYPE engineLanguage;
+
+			static std::wstring engineProjectSymbol = L"JinEngineProject";
+
+			static std::deque<std::unique_ptr<JApplicationVariable::AppCommandBind>> commandQueue;
+			static std::unique_ptr<JApplicationVariable::StoreProjectF::Functor> storeProjectF;
+			static std::unique_ptr<JApplicationVariable::LoadProjectF::Functor> loadProjectF;
+
+			static std::vector<std::string> versionList
+			{
+				"1.00",
+			};
+			using TimeVec = std::vector<std::tuple<std::string, float>>;
+			static TimeVec appTime;
+		}
+
+		//versionList
+		//0 ~ n .. Latest version ~ old version 
 
 		std::string JApplicationVariable::GetLatestVersion()noexcept
 		{
-			return versionList[0];
+			return Private::versionList[0];
 		}
 		int JApplicationVariable::GetSubverionDigitRange()noexcept
 		{
@@ -63,109 +75,113 @@ namespace JinEngine
 		}
 		std::vector<std::string> JApplicationVariable::GetAppVersion()noexcept
 		{
-			return versionList;
+			return Private::versionList;
 		}
 		std::wstring JApplicationVariable::GetEngineExePath()noexcept
 		{
-			return engineExePath;
+			return Private::engineExePath;
 		}
 		std::wstring JApplicationVariable::GetEnginePath()noexcept
 		{
-			return enginePath;
+			return Private::enginePath;
 		}
 		std::wstring JApplicationVariable::GetEngineResourcePath()
 		{
-			return engineEngineResourcePath;
+			return Private::engineEngineResourcePath;
 		}
 		std::wstring JApplicationVariable::GetEngineDefaultResourcePath()noexcept
 		{
-			return engineDefaultResourcePath;
+			return Private::engineDefaultResourcePath;
 		}
 		std::wstring JApplicationVariable::GetEngineInfoPath()noexcept
 		{
-			return engineInfoPath;
+			return Private::engineInfoPath;
 		}
 		std::wstring JApplicationVariable::GetEngineProjectListFilePath()noexcept
 		{
-			return engineProjectListFilePath;
+			return Private::engineProjectListFilePath;
 		}
 		std::wstring JApplicationVariable::GetShaderPath()noexcept
 		{
-			return shaderPath;
+			return Private::shaderPath;
 		}
 		std::wstring JApplicationVariable::GetActivatedProjectPath()noexcept
 		{
-			return activatedProjectPath;
+			return Private::activatedProjectPath;
 		}
 		std::wstring JApplicationVariable::GetActivatedProjectName()noexcept
 		{
-			return activatedProjectName;
+			return Private::activatedProjectName;
 		}
 		std::wstring JApplicationVariable::GetProjectPath()noexcept
 		{
-			return activatedProjectPath;
+			return Private::activatedProjectPath;
 		}
 		std::wstring JApplicationVariable::GetProjectContentPath()noexcept
 		{
-			return contentPath;
+			return Private::contentPath;
 		}
 		std::wstring JApplicationVariable::GetProjectSettingPath()noexcept
 		{
-			return projectSettingPath;
+			return Private::projectSettingPath;
 		}
 		std::wstring JApplicationVariable::GetProjectLibraryPath()noexcept
 		{
-			return libraryPath;
+			return Private::libraryPath;
 		}
 		std::wstring JApplicationVariable::GetProjectShaderMetafilePath()noexcept
 		{
-			return shaderMetafilePath;
+			return Private::shaderMetafilePath;
 		}
 		std::wstring JApplicationVariable::GetProjectDefaultResourcePath()noexcept
 		{
-			return projectDefaultResourcePath;
+			return Private::projectDefaultResourcePath;
 		}
 		std::wstring JApplicationVariable::GetProjectEditorResourcePath()noexcept
 		{
-			return projectEditorResoucePath;
+			return Private::projectEditorResoucePath;
+		}
+		std::wstring JApplicationVariable::GetProjectResourceCashPath()noexcept
+		{
+			return Private::projectResourceCashPath;
 		}
 		std::wstring JApplicationVariable::GetProjectVersionFilePath()noexcept
 		{
-			return projectVersionFilePath;
+			return Private::projectVersionFilePath;
 		}
 		std::wstring JApplicationVariable::GetProjectContentScenePath()noexcept
 		{
-			return sceneFolderPath;
+			return Private::sceneFolderPath;
 		}
 		std::wstring JApplicationVariable::GetProjectContentScriptPath()noexcept
 		{
-			return scriptFolderPath;
+			return Private::scriptFolderPath;
 		}
 		std::wstring JApplicationVariable::GetProjectContentResourcePath()noexcept
 		{
-			return resourceFolderPath;
+			return Private::resourceFolderPath;
 		}
 		J_APPLICATION_STATE JApplicationVariable::GetApplicationState()noexcept
 		{
-			return applicationState;
+			return Private::applicationState;
 		}
 		Core::J_LANGUAGE_TYPE JApplicationVariable::GetEngineLanguageType()noexcept
 		{
-			return engineLanguage;
+			return Private::engineLanguage;
 		}
 		bool JApplicationVariable::IsDefaultFolder(const std::wstring& path)noexcept
 		{
-			uint folderCount = (uint)projectFolderPath.size();
+			uint folderCount = (uint)Private::projectFolderPath.size();
 			for (uint i = 0; i < folderCount; ++i)
 			{
-				if (path == projectFolderPath[i])
+				if (path == Private::projectFolderPath[i])
 					return true;
 			}
 
-			folderCount = (uint)engineFolderPath.size();
+			folderCount = (uint)Private::engineFolderPath.size();
 			for (uint i = 0; i < folderCount; ++i)
 			{
-				if (path == engineFolderPath[i])
+				if (path == Private::engineFolderPath[i])
 					return true;
 			}
 
@@ -173,70 +189,70 @@ namespace JinEngine
 		}
 		void JApplicationVariable::AddTime(const std::string& str, float time)noexcept
 		{
-			appTime.push_back(std::tuple(str, time));
+			Private::appTime.push_back(std::tuple(str, time));
 		}
 		void JApplicationVariable::UpdateTime(int index, float time)noexcept
 		{
-			appTime[index] = std::tuple(std::get<0>(appTime[index]), time);
+			Private::appTime[index] = std::tuple(std::get<0>(Private::appTime[index]), time);
 		}
 		void JApplicationVariable::ClearTime()noexcept
 		{
-			appTime.clear();
+			Private::appTime.clear();
 		}
 		JApplicationVariable::TimeVec JApplicationVariable::GetTime()noexcept
 		{
-			return appTime;
+			return Private::appTime;
 		}
 		void JApplicationVariable::SetApplicationState(const J_APPLICATION_STATE newState)noexcept
 		{
-			applicationState = newState;
+			Private::applicationState = newState;
 		}
 		void JApplicationVariable::Initialize()
 		{
 			TCHAR programpath[_MAX_PATH];
 			GetModuleFileName(NULL, programpath, _MAX_PATH);
-			engineExePath = programpath;
-			size_t index = engineExePath.find_last_of(L"\\");
-			enginePath = engineExePath.substr(0, index);
+			Private::engineExePath = programpath;
+			size_t index = Private::engineExePath.find_last_of(L"\\");
+			Private::enginePath = Private::engineExePath.substr(0, index);
 
-			index = enginePath.find_last_of(L"\\");
-			enginePath.erase(enginePath.begin() + index, enginePath.end());
-			index = enginePath.find_last_of(L"\\");
-			enginePath.erase(enginePath.begin() + index, enginePath.end());
+			index = Private::enginePath.find_last_of(L"\\");
+			Private::enginePath.erase(Private::enginePath.begin() + index, Private::enginePath.end());
+			index = Private::enginePath.find_last_of(L"\\");
+			Private::enginePath.erase(Private::enginePath.begin() + index, Private::enginePath.end());
 			 
-			enginePath = enginePath + L"\\JinEngine";
-			engineEngineResourcePath = enginePath + L"\\EngineResource";
-			engineDefaultResourcePath = engineEngineResourcePath + L"\\DefaultResource";
-			engineInfoPath = enginePath + L"\\EngineInfo";
-			engineProjectListFilePath = engineInfoPath + L"\\ProejctList.txt";
-			shaderPath = engineEngineResourcePath + L"\\Shader";
+			Private::enginePath = Private::enginePath + L"\\JinEngine";
+			Private::engineEngineResourcePath = Private::enginePath + L"\\EngineResource";
+			Private::engineDefaultResourcePath = Private::engineEngineResourcePath + L"\\DefaultResource";
+			Private::engineInfoPath = Private::enginePath + L"\\EngineInfo";
+			Private::engineProjectListFilePath = Private::engineInfoPath + L"\\ProejctList.txt";
+			Private::shaderPath = Private::engineEngineResourcePath + L"\\Shader";
 
-			engineFolderPath =
+			Private::engineFolderPath =
 			{
-				enginePath,
-				engineEngineResourcePath,
-				engineDefaultResourcePath,
-				engineInfoPath,
-				shaderPath,
+				Private::enginePath,
+				Private::engineEngineResourcePath,
+				Private::engineDefaultResourcePath,
+				Private::engineInfoPath,
+				Private::shaderPath,
 			};
 
 			setlocale(LC_ALL, "");
 			std::string localeStr = setlocale(LC_ALL, NULL);
 			if (localeStr == "Korean_Korea.949")
-				engineLanguage = Core::J_LANGUAGE_TYPE::KOREAN;
+				Private::engineLanguage = Core::J_LANGUAGE_TYPE::KOREAN;
 			else
-				engineLanguage = Core::J_LANGUAGE_TYPE::ENGLISH;
+				Private::engineLanguage = Core::J_LANGUAGE_TYPE::ENGLISH;
 
 			MakeEngineFolder();
 		}
 		bool JApplicationVariable::MakeEngineFolder()
 		{
-			uint folderCount = (uint)engineFolderPath.size();
+			uint folderCount = (uint)Private::engineFolderPath.size();
 			for (uint i = 0; i < folderCount; ++i)
 			{
-				if (_waccess(engineFolderPath[i].c_str(), 00) == -1)
+				if (_waccess(Private::engineFolderPath[i].c_str(), 00) == -1)
 				{
-					if (_wmkdir(engineFolderPath[i].c_str()) == -1)
+					if (_wmkdir(Private::engineFolderPath[i].c_str()) == -1)
 						return false;
 				}
 			}
@@ -246,22 +262,25 @@ namespace JinEngine
 			JApplicationVariable::StoreProjectF::Ptr storeF,
 			JApplicationVariable::LoadProjectF::Ptr loadF)
 		{
-			storeProjectF = std::make_unique<StoreProjectF::Functor>(storeF, app);
-			loadProjectF = std::make_unique<LoadProjectF::Functor>(loadF, app);
+			Private::storeProjectF = std::make_unique<StoreProjectF::Functor>(storeF, app);
+			Private::loadProjectF = std::make_unique<LoadProjectF::Functor>(loadF, app);
 		}
 		void JApplicationVariable::ExecuteAppCommand()
 		{
-			const uint commandCount = (uint)commandQueue.size();
+			const uint commandCount = (uint)Private::commandQueue.size();
 			for (uint i = 0; i < commandCount; ++i)
-				commandQueue[i]->InvokeCompletelyBind();
-			commandQueue.clear();
+				Private::commandQueue[i]->InvokeCompletelyBind();
+			Private::commandQueue.clear();
 		}
 
-		std::vector<std::unique_ptr<JApplicationProject::JProjectInfo>> JApplicationProject::projectList;
-		std::unique_ptr<JApplicationProject::JProjectInfo> JApplicationProject::nextProjectInfo;
-		bool JApplicationProject::startProjectOnce = false;
-		bool JApplicationProject::endProject = false;
-		bool JApplicationProject::loadOtherProjectOnce = false;
+		namespace Private
+		{
+			static std::vector<std::unique_ptr<JApplicationProject::JProjectInfo>> projectList;
+			static std::unique_ptr<JApplicationProject::JProjectInfo> nextProjectInfo;
+			static bool startProjectOnce = false;
+			static bool endProject = false;
+			static bool loadOtherProjectOnce = false;
+		}
 
 		JApplicationProject::JProjectInfo::JProjectInfo(const std::wstring& name,
 			const std::wstring& path,
@@ -282,46 +301,50 @@ namespace JinEngine
 		}
 		uint JApplicationProject::GetProjectInfoCount()noexcept
 		{
-			return (uint)projectList.size();
+			return (uint)Private::projectList.size();
 		}
 		JApplicationProject::JProjectInfo* JApplicationProject::GetProjectInfo(uint index)noexcept
 		{
-			return projectList[index].get();
+			return Private::projectList[index].get();
 		}
 		void JApplicationProject::SetNextProjectInfo(std::unique_ptr<JProjectInfo>&& nextProjectInfo)noexcept
 		{
-			JApplicationProject::nextProjectInfo = std::move(nextProjectInfo);
+			Private::nextProjectInfo = std::move(nextProjectInfo);
 		}
 		void JApplicationProject::TryLoadOtherProject()noexcept
 		{
-			loadOtherProjectOnce = true;
+			Private::loadOtherProjectOnce = true;
 		}
 		void JApplicationProject::TryCloseProject()noexcept
 		{
 		}
 		void JApplicationProject::CancelCloseProject()noexcept
 		{
-			loadOtherProjectOnce = false;
-			if (loadOtherProjectOnce)
-				nextProjectInfo.reset();
+			Private::loadOtherProjectOnce = false;
+			if (Private::loadOtherProjectOnce)
+				Private::nextProjectInfo.reset();
 		}
 		void JApplicationProject::ConfirmCloseProject()noexcept
 		{
-			endProject = true;
-			if (loadOtherProjectOnce)
+			Private::endProject = true;
+			if (Private::loadOtherProjectOnce)
 			{
-				loadOtherProjectOnce = false;
+				Private::loadOtherProjectOnce = false;
 				StartNewProject();
 			}
 		}
 		std::unique_ptr<JApplicationProject::JProjectInfo> JApplicationProject::MakeProjectInfo(const std::wstring& projectPath)
 		{
 			bool isValid = false;
-			const uint projectCount = (uint)projectList.size();
+			const uint projectCount = (uint)Private::projectList.size();
 			for (uint i = 0; i < projectCount; ++i)
 			{
-				if (projectList[i]->GetPath() == projectPath)
-					return std::make_unique<JProjectInfo>(projectList[i]->GetName(), projectList[i]->GetPath(), projectList[i]->GetVersion());
+				if (Private::projectList[i]->GetPath() == projectPath)
+				{
+					return std::make_unique<JProjectInfo>(Private::projectList[i]->GetName(), \
+						Private::projectList[i]->GetPath(),
+						Private::projectList[i]->GetVersion());
+				}
 			}
 
 			std::wstring projectVersionFilePath = projectPath + L"\\" + L"ProjectSetting" + L"\\" + L"ProjectVersion.txt";
@@ -339,44 +362,46 @@ namespace JinEngine
 		}
 		void JApplicationProject::MakeProjectFolderPath(const std::wstring& projectName, const std::wstring& projectPath)
 		{
-			JApplicationVariable::activatedProjectName = JCUtil::EraseSideWChar(projectName, L' ');
-			JApplicationVariable::activatedProjectPath = JCUtil::EraseSideWChar(projectPath, L' ');
+			Private::activatedProjectName = JCUtil::EraseSideWChar(projectName, L' ');
+			Private::activatedProjectPath = JCUtil::EraseSideWChar(projectPath, L' ');
 
-			JApplicationVariable::contentPath = JApplicationVariable::activatedProjectPath + L"\\" + L"Content";
-			JApplicationVariable::projectSettingPath = JApplicationVariable::activatedProjectPath + L"\\" + L"ProjectSetting";
-			JApplicationVariable::libraryPath = JApplicationVariable::activatedProjectPath + L"\\" + L"Library";
-			JApplicationVariable::shaderMetafilePath = JApplicationVariable::libraryPath + L"\\" + L"ShaderMetafile";
-			JApplicationVariable::projectDefaultResourcePath = JApplicationVariable::libraryPath + L"\\" + L"DefaultResource";
-			JApplicationVariable::projectEditorResoucePath = JApplicationVariable::projectSettingPath + L"\\" + L"Editor";
-			JApplicationVariable::projectVersionFilePath = JApplicationVariable::projectSettingPath + L"\\" + L"ProjectVersion.txt";
+			Private::contentPath = Private::activatedProjectPath + L"\\" + L"Content";
+			Private::projectSettingPath = Private::activatedProjectPath + L"\\" + L"ProjectSetting";
+			Private::libraryPath = Private::activatedProjectPath + L"\\" + L"Library";
+			Private::shaderMetafilePath = Private::libraryPath + L"\\" + L"ShaderMetafile";
+			Private::projectDefaultResourcePath = Private::libraryPath + L"\\" + L"DefaultResource";
+			Private::projectEditorResoucePath = Private::projectSettingPath + L"\\" + L"Editor";
+			Private::projectResourceCashPath = Private::projectSettingPath + L"\\" + L"Cash";
+			Private::projectVersionFilePath = Private::projectSettingPath + L"\\" + L"ProjectVersion.txt";
 
-			JApplicationVariable::sceneFolderPath = JApplicationVariable::contentPath + L"\\" + L"Scene";
-			JApplicationVariable::scriptFolderPath = JApplicationVariable::contentPath + L"\\" + L"Script";
-			JApplicationVariable::resourceFolderPath = JApplicationVariable::contentPath + L"\\" + L"Resource";
+			Private::sceneFolderPath = Private::contentPath + L"\\" + L"Scene";
+			Private::scriptFolderPath = Private::contentPath + L"\\" + L"Script";
+			Private::resourceFolderPath = Private::contentPath + L"\\" + L"Resource";
 
-			JApplicationVariable::projectFolderPath.clear();
-			JApplicationVariable::projectFolderPath =
+			Private::projectFolderPath.clear();
+			Private::projectFolderPath =
 			{
-				JApplicationVariable::activatedProjectPath,
-				JApplicationVariable::contentPath,
-				JApplicationVariable::projectSettingPath,
-				JApplicationVariable::libraryPath,
-				JApplicationVariable::shaderMetafilePath,
-				JApplicationVariable::projectDefaultResourcePath,
-				JApplicationVariable::projectEditorResoucePath,
-				JApplicationVariable::sceneFolderPath,
-				JApplicationVariable::scriptFolderPath,
-				JApplicationVariable::resourceFolderPath,
+				Private::activatedProjectPath,
+				Private::contentPath,
+				Private::projectSettingPath,
+				Private::libraryPath,
+				Private::shaderMetafilePath,
+				Private::projectDefaultResourcePath,
+				Private::projectEditorResoucePath,
+				Private::projectResourceCashPath,
+				Private::sceneFolderPath,
+				Private::scriptFolderPath,
+				Private::resourceFolderPath,
 			};
 		}
 		bool JApplicationProject::MakeProjectFolder()
 		{
-			uint folderCount = (uint)JApplicationVariable::projectFolderPath.size();
+			uint folderCount = (uint)Private::projectFolderPath.size();
 			for (uint i = 0; i < folderCount; ++i)
 			{
-				if (_waccess(JApplicationVariable::projectFolderPath[i].c_str(), 00) == -1)
+				if (_waccess(Private::projectFolderPath[i].c_str(), 00) == -1)
 				{
-					if (_wmkdir(JApplicationVariable::projectFolderPath[i].c_str()) == -1)
+					if (_wmkdir(Private::projectFolderPath[i].c_str()) == -1)
 						return false;
 				}
 			}
@@ -396,18 +421,18 @@ namespace JinEngine
 		}
 		bool JApplicationProject::StartNewProject()
 		{
-			if (nextProjectInfo == nullptr)
+			if (Private::nextProjectInfo == nullptr)
 				return false;
-			startProjectOnce = true; 
+			Private::startProjectOnce = true;
 			return true;
 		}
 		bool JApplicationProject::Initialize()
 		{
-			const uint projectListCount = (uint)projectList.size();
+			const uint projectListCount = (uint)Private::projectList.size();
 			bool hasProject = false;
 			for (uint i = 0; i < projectListCount; ++i)
 			{
-				if (projectList[i]->GetPath() == nextProjectInfo->GetPath())
+				if (Private::projectList[i]->GetPath() == Private::nextProjectInfo->GetPath())
 				{
 					hasProject = true;
 					break;
@@ -415,18 +440,18 @@ namespace JinEngine
 			}
 			if (!hasProject)
 			{
-				projectList.emplace_back(std::make_unique<JProjectInfo>(nextProjectInfo->GetName(),
-					nextProjectInfo->GetPath(),
-					nextProjectInfo->GetVersion()));
+				Private::projectList.emplace_back(std::make_unique<JProjectInfo>(Private::nextProjectInfo->GetName(),
+					Private::nextProjectInfo->GetPath(),
+					Private::nextProjectInfo->GetVersion()));
 				StoreProjectList();
 			}
 			//dependency order
-			MakeProjectFolderPath(nextProjectInfo->GetName(), nextProjectInfo->GetPath());
+			MakeProjectFolderPath(Private::nextProjectInfo->GetName(), Private::nextProjectInfo->GetPath());
 			bool res00 = MakeProjectFolder();
-			bool res01 = MakeProjectVersionFile(JCUtil::WstrToU8Str(nextProjectInfo->GetVersion()));
-			nextProjectInfo.reset();
-			startProjectOnce = false;
-			endProject = false;
+			bool res01 = MakeProjectVersionFile(JCUtil::WstrToU8Str(Private::nextProjectInfo->GetVersion()));
+			Private::nextProjectInfo.reset();
+			Private::startProjectOnce = false;
+			Private::endProject = false;
 			if (res00 && res01)
 				JApplicationVariable::SetApplicationState(J_APPLICATION_STATE::EDIT_GAME);
 			return res00 && res01;
@@ -434,10 +459,10 @@ namespace JinEngine
 		bool JApplicationProject::IsValidVersion(const std::string& pVersion)
 		{
 			bool isValidVersion = false;
-			const uint versionCount = (uint)JApplicationVariable::versionList.size();
+			const uint versionCount = (uint)Private::versionList.size();
 			for (uint i = 0; i < versionCount; ++i)
 			{
-				if (JApplicationVariable::versionList[i] == pVersion)
+				if (Private::versionList[i] == pVersion)
 				{
 					isValidVersion = true;
 					break;
@@ -447,11 +472,11 @@ namespace JinEngine
 		}
 		bool JApplicationProject::CanStartProject()noexcept
 		{
-			return startProjectOnce;
+			return Private::startProjectOnce;
 		}
 		bool JApplicationProject::CanEndProject()noexcept
 		{
-			return endProject;
+			return Private::endProject;
 		}
 		Core::J_FILE_IO_RESULT JApplicationProject::StoreProjectVersion(const std::string& pVersion)
 		{
@@ -459,7 +484,7 @@ namespace JinEngine
 			stream.open(JApplicationVariable::GetProjectVersionFilePath().c_str(), std::ios::out | std::ios::binary);
 			if (stream.is_open())
 			{
-				JFileIOHelper::StoreJString(stream, L"Symbol:", JApplicationVariable::engineProjectSymbol);
+				JFileIOHelper::StoreJString(stream, L"Symbol:", Private::engineProjectSymbol);
 				JFileIOHelper::StoreJString(stream, L"Version:", JCUtil::StrToWstr(pVersion));
 				stream.clear();
 				return Core::J_FILE_IO_RESULT::SUCCESS;
@@ -471,7 +496,7 @@ namespace JinEngine
 		{
 			std::wifstream stream;
 			stream.open(JApplicationVariable::GetProjectVersionFilePath().c_str(), std::ios::in | std::ios::binary);
-			if (stream.is_open() && JFileIOHelper::SkipLine(stream, JApplicationVariable::engineProjectSymbol))
+			if (stream.is_open() && JFileIOHelper::SkipLine(stream, Private::engineProjectSymbol))
 			{
 				std::wstring version;
 				JFileIOHelper::LoadJString(stream, version);
@@ -485,12 +510,12 @@ namespace JinEngine
 		void JApplicationProject::RequestStoreProject()
 		{
 			using StoreBind = JApplicationVariable::StoreProjectF::CompletelyBind;
-			JApplicationVariable::commandQueue.push_back(std::make_unique<StoreBind>(*JApplicationVariable::storeProjectF));
+			Private::commandQueue.push_back(std::make_unique<StoreBind>(*Private::storeProjectF));
 		}
 		void JApplicationProject::RequestLoadProject()
 		{
 			using LoadBind = JApplicationVariable::LoadProjectF::CompletelyBind;
-			JApplicationVariable::commandQueue.push_back(std::make_unique<LoadBind>(*JApplicationVariable::loadProjectF));
+			Private::commandQueue.push_back(std::make_unique<LoadBind>(*Private::loadProjectF));
 		}
 		void JApplicationProject::StoreProjectList()
 		{
@@ -500,8 +525,8 @@ namespace JinEngine
 			std::wofstream stream;
 			stream.open(dirPath, std::ios::out | std::ios::binary);
 
-			JFileIOHelper::StoreAtomicData(stream, L"ProjectCount:", (uint)projectList.size());
-			for (const auto& data : projectList)
+			JFileIOHelper::StoreAtomicData(stream, L"ProjectCount:", (uint)Private::projectList.size());
+			for (const auto& data : Private::projectList)
 			{
 				JFileIOHelper::StoreJString(stream, L"Name:", data->GetName());
 				JFileIOHelper::StoreJString(stream, L"Path:", data->GetPath());
@@ -533,7 +558,7 @@ namespace JinEngine
 					JFileIOHelper::LoadJString(stream, path);
 					JFileIOHelper::LoadJString(stream, version);
 					if (_waccess(path.c_str(), 00) == 0)
-						projectList.emplace_back(std::make_unique<JProjectInfo>(name, path, version));
+						Private::projectList.emplace_back(std::make_unique<JProjectInfo>(name, path, version));
 				}
 			}
 		}
