@@ -4,6 +4,7 @@
 #include<memory>
 #include"JEditorEventType.h"
 #include"../Page/JEditorPageEnum.h"
+#include"../Popup/JEditorPopupType.h"
 #include"../../Core/Undo/JTransition.h"
 #include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Core/JDataType.h" 
@@ -185,12 +186,19 @@ namespace JinEngine
 		struct JEditorOpenPopupWindowEvStruct : public JEditorEvStruct
 		{
 		public:
+			using PopupWndFuncTuple = std::tuple <J_EDITOR_POPUP_WINDOW_FUNC_TYPE, std::unique_ptr< Core::JBindHandleBase>>;
+		public:
 			JEditorPopupWindow* popupWindow;
+			std::vector<PopupWndFuncTuple> tupleVec;
+			std::string desc;
 		public:
 			JEditorOpenPopupWindowEvStruct(JEditorPopupWindow* popupWindow, const J_EDITOR_PAGE_TYPE pageType);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
+		public:
+			void AddBind(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type, std::unique_ptr< Core::JBindHandleBase>&& bind);
+			void AddDesc(const std::string& newDesc);
 		};
 		struct JEditorClosePopupWindowEvStruct : public JEditorEvStruct
 		{

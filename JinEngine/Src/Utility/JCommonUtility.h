@@ -44,6 +44,9 @@ namespace JinEngine
 		static std::wstring ComporessWstring(const std::wstring& wstr, const uint lange)noexcept;
 		static std::string ComporessString(const std::string& str, const uint lange)noexcept;
 
+		static std::wstring ComporessWstirngPath(const std::wstring& path, const uint maxLange)noexcept;
+		static std::string ComporessStringPath(const std::string& path, const uint maxLange)noexcept;
+
 		static bool IsNumber(const char ch)noexcept;
 		static bool IsNumber(const wchar_t ch)noexcept;
 		static bool IsAlphabet(const char ch)noexcept;

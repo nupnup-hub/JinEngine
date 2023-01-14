@@ -5,6 +5,7 @@
 #include"../JEditorAttribute.h" 
 #include"../JEditorPageShareData.h"
 #include"../SimpleWindow/JGraphicOptionSetting.h" 
+#include"../../Utility/JEditorLineCalculator.h"
 #include"../../Popup/JEditorPopupWindow.h"
 #include"../CommonWindow/Debug/JStringConvertTest.h" 
 #include"../CommonWindow/View/JSceneViewer.h"
@@ -16,6 +17,7 @@
 #include"../../Menubar/JEditorMenuBar.h" 
 #include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
 #include"../../../Object/GameObject/JGameObject.h"
+#include"../../../Object/Directory/JDirectory.h"
 #include"../../../Object/Resource/JResourceManager.h"
 #include"../../../Object/Resource/Scene/JScene.h"
 #include"../../../Object/Resource/Scene/JSceneManager.h" 
@@ -32,8 +34,8 @@ namespace JinEngine
 				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK)),
 			reqInitDockNode(!hasMetadata)
 		{  
-			storeProjectF = std::make_unique<StoreProjectF::Functor>(&JApplicationProject::RequestStoreProject);
-			loadProjectF = std::make_unique<LoadProjectF::Functor>(&JApplicationProject::RequestLoadProject);
+			storeProjectF = std::make_unique<StoreProjectF::Functor>(&JApplicationProject::StoreProject);
+			loadProjectF = std::make_unique<LoadProjectF::Functor>(&JApplicationProject::LoadProject);
 
 			std::vector<WindowInitInfo> openInfo;
 			openInfo.emplace_back("Window Directory##JEngine", 0.0f, 0.7f, 0.6f, 0.3f);
@@ -80,6 +82,24 @@ namespace JinEngine
 			};
 			AddPopupWindow(popupWnds);
 
+			auto openFunc = [](JProjectMainPage* mainPage)
+			{
+				bool hasMoified = false;
+				auto modVec = mainPage->GetModifiedObjectInfoVec();
+				for (const auto& data : modVec)
+				{
+					if (data->isModified)
+					{
+						hasMoified = true;
+						break;
+					}
+				}			
+				if (!hasMoified)
+				{
+					mainPage->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
+					JApplicationProject::ConfirmCloseProject();
+				}
+			};
 			auto confirmFunc = [](JEditorPage* page)
 			{
 				page->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
@@ -90,20 +110,80 @@ namespace JinEngine
 				page->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
 				JApplicationProject::CancelCloseProject();
 			};
-			
+			auto conetnsFunc = [](JProjectMainPage* mainPage)
+			{
+				constexpr uint columnCount = 4;
+				const ImVec2 wndSize = ImGui::GetWindowSize();
+				const float listWidth = wndSize.x * 0.85f; 
+				const float listHeight = wndSize.y * 0.65f;
+				const float rate[columnCount] =
+				{ 
+					listWidth * 0.2f,
+					listWidth * 0.325f,
+					listWidth * 0.175f, 
+					listWidth * 0.1f
+				};
+				const std::string label[columnCount] =
+				{
+					"Name",
+					"Path",
+					"Type",
+					"Store"
+				};
+
+				ImGui::SetCursorPosX(wndSize.x * 0.075f); 
+				ImGui::BeginListBox("##ModifiedResource_ProjectMainPage", ImVec2(listWidth, listHeight));
+
+				JEditorLineCalculator<columnCount> lineCal(rate);
+				for (uint i = 0; i < columnCount; ++i)
+					lineCal.LabelOnScreen(label[i]);
+				ImGui::Separator();
+
+				const float alphabetWidth = JImGuiImpl::GetAlphabetSize().x;
+				auto modVec = mainPage->GetModifiedObjectInfoVec();
+				for (auto& data : modVec)
+				{
+					Core::JIdentifier* obj = Core::GetRawPtr(data->typeName, data->guid);
+					const std::string name = JCUtil::WstrToU8Str(obj->GetName());
+					const std::string path = JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj)->GetFolderPath());
+					 
+					lineCal.SetNextContentsPosition();
+					JImGuiImpl::Text(JCUtil::ComporessString(name, lineCal.GetItemRangeMax() / alphabetWidth));
+
+					lineCal.SetNextContentsPosition();
+					JImGuiImpl::Text(JCUtil::ComporessStringPath(path, lineCal.GetItemRangeMax() / alphabetWidth));
+
+					lineCal.SetNextContentsPosition();
+					JImGuiImpl::Text(JCUtil::ComporessString(obj->GetTypeInfo().RawName(), lineCal.GetItemRangeMax() / alphabetWidth));
+
+					lineCal.SetNextContentsPosition();
+					JImGuiImpl::CheckBox("##ModifiedResource_CheckBox" + name, data->isStore);
+				}
+				ImGui::EndListBox();
+			};
+
+			closePopupOpenF = std::make_unique<ClosePopupOpenF::Functor>(openFunc);
 			closePopupConfirmF = std::make_unique<ClosePopupConfirmF::Functor>(confirmFunc);
 			closePopupCancelF = std::make_unique<ClosePopupCancelF::Functor>(cancelFunc);
-			 
-			closePopup->RegisterBind(std::make_unique<ClosePopupConfirmF::CompletelyBind>(*closePopupConfirmF, this),
-				nullptr, nullptr,
+			closePopupContetnsF = std::make_unique<ClosePopupContentsF::Functor>(conetnsFunc);
+
+			closePopup->RegisterBind(J_EDITOR_POPUP_WINDOW_FUNC_TYPE::OPEN_POPUP,
+				std::make_unique<ClosePopupOpenF::CompletelyBind>(*closePopupOpenF, this));
+			closePopup->RegisterBind(J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CONFIRM, 
+				std::make_unique<ClosePopupConfirmF::CompletelyBind>(*closePopupConfirmF, this));
+			closePopup->RegisterBind(J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CANCEL,
 				std::make_unique<ClosePopupCancelF::CompletelyBind>(*closePopupCancelF, this));
+			closePopup->RegisterBind(J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CONTENTS,
+				std::make_unique<ClosePopupContentsF::CompletelyBind>(*closePopupContetnsF, this));
+			closePopup->SetDesc(u8"변경된 자원");
 
 			graphicOptionSetting = std::make_unique<JGraphicOptionSetting>();
 			JEditorPageShareData::RegisterPage(GetPageType(), &JProjectMainPage::GetPageFlag, this);
 		}
 		JProjectMainPage::~JProjectMainPage()
 		{
-			JEditorPageShareData::UnRegisterPage(GetPageType());
+			JEditorPageShareData::UnRegisterPage(GetPageType()); 
+			(*storeProjectF)(); 
 			ClearModifiedInfoStructure();
 		}
 		J_EDITOR_PAGE_TYPE JProjectMainPage::GetPageType()const noexcept
@@ -180,12 +260,7 @@ namespace JinEngine
 
 			JEditorPopupWindow* openPopup = GetOpenPopupWindow();
 			if (openPopup != nullptr)
-			{
-				openPopup->Update(GetName(),
-					u8"종료하기 전 자원관리",
-					JVector2<float>(0, 0),
-					ImGui::GetMainViewport()->WorkSize);
-			}
+				openPopup->Update(GetName(), JVector2<float>(0, 0), ImGui::GetMainViewport()->WorkSize);
 		}
 		bool JProjectMainPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept
 		{

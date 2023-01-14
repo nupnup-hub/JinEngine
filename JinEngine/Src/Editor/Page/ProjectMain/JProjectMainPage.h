@@ -20,15 +20,16 @@ namespace JinEngine
 		class JGraphicOptionSetting;
 		class JEditorCloseConfirmPopup;
 
-		class JProjectMainPage final : public JEditorPage, 
-			public JEditorModifedObjectStructureInterface
+		class JProjectMainPage final : public JEditorPage , public JEditorModifedObjectStructureInterface
 		{
 		private:
 			using StoreProjectF = Core::JSFunctorType<void>;
 			using LoadProjectF = Core::JSFunctorType<void>;
 		private:
+			using ClosePopupOpenF = Core::JSFunctorType<void, JProjectMainPage*>;
 			using ClosePopupConfirmF = Core::JSFunctorType<void, JEditorPage*>; 
 			using ClosePopupCancelF = Core::JSFunctorType<void, JEditorPage*>;
+			using ClosePopupContentsF = Core::JSFunctorType<void, JProjectMainPage*>;
 		private:
 			std::unique_ptr<JEditorMenuBar> menuBar = nullptr;
 		private:
@@ -52,8 +53,10 @@ namespace JinEngine
 			std::unique_ptr<StoreProjectF::Functor> storeProjectF;
 			std::unique_ptr<LoadProjectF::Functor> loadProjectF;
 		private:
+			std::unique_ptr<ClosePopupOpenF::Functor> closePopupOpenF;
 			std::unique_ptr<ClosePopupConfirmF::Functor> closePopupConfirmF; 
 			std::unique_ptr<ClosePopupCancelF::Functor> closePopupCancelF;
+			std::unique_ptr<ClosePopupContentsF::Functor> closePopupContetnsF;
 		private:
 			bool reqInitDockNode = false; 
 		public:

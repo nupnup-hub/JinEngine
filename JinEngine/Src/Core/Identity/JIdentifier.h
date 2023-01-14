@@ -22,7 +22,7 @@ namespace JinEngine
 			template<typename T>
 			static std::wstring GetDefaultName()noexcept
 			{
-				return L"New" + std::wstring(T::TypeWName());
+				return L"New" + std::wstring(T::TypeWName()).substr(1);
 			}
 		public:
 			template<typename T, std::enable_if_t<std::is_base_of_v<JIdentifier, T>, int> = 0>

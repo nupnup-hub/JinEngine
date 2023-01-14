@@ -468,8 +468,7 @@ namespace JinEngine
 		CallOnResourceReference(ambientOcclusionMap);
 	}
 	void JMaterial::DoDeActivate()noexcept
-	{
-		StoreObject(this);
+	{ 
 		JResourceObject::DoDeActivate();
 		SetValid(false);
 		OffFrameDirty();

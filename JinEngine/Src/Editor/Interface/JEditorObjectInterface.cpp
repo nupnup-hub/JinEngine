@@ -14,16 +14,15 @@ namespace JinEngine
 			static JModifiedObjectInfoVector infoVec;
 		}
 
-		JModifiedObjectInfo::JModifiedObjectInfo(const size_t guid, const std::string& typeName)
-			:guid(guid), typeName(typeName)
-		{}
-
 		void JEditorObjectHandlerInterface::SetModifiedBit(Core::JUserPtr<Core::JIdentifier> obj, const bool value)noexcept
 		{
 			if (!obj.IsValid())
 				return;
 
 			Core::JUserPtr<Core::JIdentifier> validObj = GetValidModifiedUser(obj);
+			if (!validObj.IsValid())
+				return;
+
 			const size_t guid = validObj->GetGuid();
 			auto data = Private::infoMap.Get(guid);
 			if (data == nullptr)
@@ -52,8 +51,10 @@ namespace JinEngine
 				return Core::GetUserPtr(static_cast<JComponent*>(obj.Get())->GetOwner()->GetOwnerScene());
 			else if (obj->GetTypeInfo().IsChildOf(JGameObject::StaticTypeInfo()))
 				return Core::GetUserPtr(static_cast<JGameObject*>(obj.Get())->GetOwnerScene());
-			else
+			else if (obj->GetTypeInfo().IsChildOf(JResourceObject::StaticTypeInfo()))
 				return obj;
+			else
+				return 	Core::JUserPtr<Core::JIdentifier>{};
 		}
 
 		JModifiedObjectInfoVector::ObjectVector& JEditorModifedObjectStructureInterface::GetModifiedObjectInfoVec()noexcept

@@ -164,6 +164,42 @@ namespace JinEngine
 		else
 			return str;
 	}
+	std::wstring JCUtil::ComporessWstirngPath(const std::wstring& path, const uint maxLange)noexcept
+	{
+		if (path.size() >= maxLange)
+		{
+			constexpr int preFixLength = 4;
+			std::wstring finalpath = path;
+			while (finalpath.size() + preFixLength >= maxLange)
+			{
+				int index = finalpath.find_first_of(L'\\');
+				if (index == -1)
+					break;
+				finalpath = finalpath.substr(index);
+			}
+			return L"...\\" + finalpath;
+		}
+		else
+			return path;
+	}
+	std::string JCUtil::ComporessStringPath(const std::string& path, const uint maxLange)noexcept
+	{
+		if (path.size() >= maxLange)
+		{ 
+			constexpr int preFixLength = 4;
+			std::string finalpath = path;
+			while (finalpath.size() + preFixLength >= maxLange)
+			{
+				int index = finalpath.find_first_of('\\');
+				if (index == -1)
+					break;
+				finalpath = finalpath.substr(index + 1);
+			}	 
+			return "...\\"+ finalpath;
+		}
+		else
+			return path;
+	}
 	bool JCUtil::IsNumber(const char ch)noexcept
 	{
 		return (ch > 47 && ch < 58);

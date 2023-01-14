@@ -225,11 +225,15 @@ namespace JinEngine
 			window->SetUnFocus();
 			focusWindow = nullptr;
 		}
-		void JEditorPage::OpenPopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType)
+		void JEditorPage::OpenPopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType,
+			const std::string& desc, 
+			std::vector<PopupWndFuncTuple>&& tupleVec)
 		{
-			OpenPopupWindow(FindEditorPopupWindow(popupType));
+			OpenPopupWindow(FindEditorPopupWindow(popupType), desc, std::move(tupleVec));
 		}
-		void JEditorPage::OpenPopupWindow(JEditorPopupWindow* popupWindow)
+		void JEditorPage::OpenPopupWindow(JEditorPopupWindow* popupWindow,
+			const std::string& desc,
+			std::vector<PopupWndFuncTuple>&& tupleVec)
 		{ 
 			if (popupWindow != nullptr && !popupWindow->IsOpen())
 			{
@@ -237,7 +241,11 @@ namespace JinEngine
 				if (opendPopupWindow != nullptr)
 					ClosePopupWindow(opendPopupWindow->GetPopupType());
 				opendPopupWindow = popupWindow;
-				opendPopupWindow->SetOpen(); 
+				opendPopupWindow->SetDesc(desc);
+				const uint vecCount = (uint)tupleVec.size();
+				for (uint i = 0; i < vecCount; ++i)
+					opendPopupWindow->RegisterBind(std::get<0>(tupleVec[i]), std::move(std::get<1>(tupleVec[i])));
+				opendPopupWindow->SetOpen();
 			}
 		}
 		void JEditorPage::ClosePopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType)

@@ -148,7 +148,7 @@ namespace JinEngine
 				;
 		}
 		void JApplication::StoreProject()
-		{
+		{ 
 			if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
 				JResourceManager::Instance().AppInterface()->StoreProjectResource();
 		}

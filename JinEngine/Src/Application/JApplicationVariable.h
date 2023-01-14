@@ -121,8 +121,8 @@ namespace JinEngine
 			static Core::J_FILE_IO_RESULT StoreProjectVersion(const std::string& pVersion);
 			static Core::J_FILE_IO_RESULT LoadProejctVersion(_Out_ std::string& pVersion);
 		private:
-			static void RequestStoreProject();
-			static void RequestLoadProject();
+			static void StoreProject();
+			static void LoadProject();
 		private:
 			static void StoreProjectList();
 			static void LoadProjectList();

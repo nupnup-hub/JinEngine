@@ -12,6 +12,10 @@ namespace JinEngine
 		{
 			return name;
 		}
+		std::string JTypeInfo::RawName()const noexcept
+		{
+			return name.substr(1);
+		}
 		std::string JTypeInfo::FullName()const noexcept
 		{
 			return fullName;

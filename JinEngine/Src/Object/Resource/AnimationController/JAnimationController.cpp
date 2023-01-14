@@ -204,8 +204,7 @@ namespace JinEngine
 		StuffResource();
 	}
 	void JAnimationController::DoDeActivate()noexcept
-	{
-		StoreObject(this);
+	{ 
 		JResourceObject::DoDeActivate();
 		ClearResource();
 	}

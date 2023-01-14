@@ -103,12 +103,6 @@ namespace JinEngine
 	}
 	void JTexture::DoDeActivate()noexcept
 	{ 
-		std::wofstream stream;
-		stream.open(GetMetafilePath(), std::ios::out | std::ios::binary);
-		StoreMetadata(stream, this);
-		stream.close();
-	
-		StoreObject(this);
 		JResourceObject::DoDeActivate();
 		ClearResource();
 	}
@@ -173,6 +167,7 @@ namespace JinEngine
 		source.close();
 		dest.close();
 
+		StoreObject(this);
 		return true;
 	}
 	Core::J_FILE_IO_RESULT JTexture::CallStoreResource()
@@ -264,7 +259,6 @@ namespace JinEngine
 				if (AddInstance(std::move(ownerPtr)))
 				{ 
 					newTexture->ImportTexture(tInitdata->oridataPath); 
-					StoreObject(newTexture);
 					return newTexture;
 				}
 			}

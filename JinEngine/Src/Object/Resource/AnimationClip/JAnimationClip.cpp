@@ -417,11 +417,6 @@ namespace JinEngine
 	}
 	void JAnimationClip::DoDeActivate()noexcept
 	{
-		std::wofstream stream;
-		stream.open(GetMetafilePath(), std::ios::out | std::ios::binary);
-		StoreMetadata(stream, this);
-		stream.close();
-
 		JResourceObject::DoDeActivate();
 		ClearResource();
 		CallOffResourceReference(JAnimationClip::clipSkeletonAsset);

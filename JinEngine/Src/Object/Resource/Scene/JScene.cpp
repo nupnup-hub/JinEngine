@@ -180,8 +180,7 @@ namespace JinEngine
 		}
 	}
 	void JScene::DoDeActivate()noexcept
-	{
-		StoreObject(this);
+	{ 
 		if (spatialStructure != nullptr)
 			spatialStructure->DeAcitvate();
 		root->DeActivate();
@@ -204,8 +203,6 @@ namespace JinEngine
 					root = JGFI::Create(stream, nullptr, this);
 					stream.close();
 				}
-				else
-					CreateDefaultGameObject();
 			}
 			else
 				CreateDefaultGameObject();
@@ -220,7 +217,8 @@ namespace JinEngine
 			BegineForcedDestroy(root);
 			root = nullptr;
 
-			BegineForcedDestroy(debugRoot);
+			if(debugRoot != nullptr)
+				BegineForcedDestroy(debugRoot);
 			debugRoot = nullptr;
 
 			for (int i = 0; i < (int)J_RENDER_LAYER::COUNT; ++i)
@@ -782,6 +780,10 @@ namespace JinEngine
 				if (!AddInstance(std::move(ownerPtr)))
 					return nullptr;
 
+				newScene->SetValid(true);
+				newScene->CreateDefaultGameObject();
+				StoreObject(newScene); 
+				newScene->ClearResource();
 				return newScene;
 			}
 			else

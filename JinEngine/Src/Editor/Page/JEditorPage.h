@@ -36,6 +36,7 @@ namespace JinEngine
 		private:
 			using OpenEditorWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>;
 			using OpenSimpleWindowF = Core::JSFunctorType<void, bool*>;
+			using PopupWndFuncTuple = std::tuple <J_EDITOR_POPUP_WINDOW_FUNC_TYPE, std::unique_ptr< Core::JBindHandleBase>>;
 		private:
 			std::vector<JEditorWindow*>windows;
 			std::vector<JEditorWindow*>opendWindow;
@@ -85,8 +86,12 @@ namespace JinEngine
 			void FocusWindow(JEditorWindow* window)noexcept;
 			void UnFocusWindow(JEditorWindow* window)noexcept;
 		public:
-			void OpenPopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType);
-			void OpenPopupWindow(JEditorPopupWindow* popupWindow);
+			void OpenPopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType, 
+				const std::string& desc = "", 
+				std::vector<PopupWndFuncTuple>&& tupleVec = {});
+			void OpenPopupWindow(JEditorPopupWindow* popupWindow,
+				const std::string& desc = "", 
+				std::vector<PopupWndFuncTuple>&& tupleVec = {});
 			void ClosePopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType);
 			void ClosePopupWindow(JEditorPopupWindow* popupWindow);
 		protected:

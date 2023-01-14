@@ -507,15 +507,13 @@ namespace JinEngine
 			else
 				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		}
-		void JApplicationProject::RequestStoreProject()
+		void JApplicationProject::StoreProject()
 		{
-			using StoreBind = JApplicationVariable::StoreProjectF::CompletelyBind;
-			Private::commandQueue.push_back(std::make_unique<StoreBind>(*Private::storeProjectF));
+			(*Private::storeProjectF)();
 		}
-		void JApplicationProject::RequestLoadProject()
+		void JApplicationProject::LoadProject()
 		{
-			using LoadBind = JApplicationVariable::LoadProjectF::CompletelyBind;
-			Private::commandQueue.push_back(std::make_unique<LoadBind>(*Private::loadProjectF));
+			(*Private::loadProjectF)();
 		}
 		void JApplicationProject::StoreProjectList()
 		{

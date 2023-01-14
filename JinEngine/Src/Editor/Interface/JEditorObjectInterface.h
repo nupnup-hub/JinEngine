@@ -1,6 +1,7 @@
 #pragma once
 #include"../../Core/Pointer/JOwnerPtr.h"
 #include"../../Core/Storage/JStorage.h"
+#include"../../Object/JModifiedObjectInfo.h"
 #include<unordered_map>
 #include<string>
 
@@ -12,17 +13,6 @@ namespace JinEngine
 	}
 	namespace Editor
 	{		
-		struct JModifiedObjectInfo
-		{
-		public:
-			const size_t guid;
-			const std::string typeName;
-			bool isModified = false;
-			bool isStore = true;
-		public:
-			JModifiedObjectInfo(const size_t guid, const std::string& typeName); 
-		};		 
-
 		class JEditorObjectHandlerInterface
 		{
 		protected:
@@ -37,9 +27,9 @@ namespace JinEngine
 
 		class JEditorModifedObjectStructureInterface
 		{
-		protected:
+		public:
 			JModifiedObjectInfoVector::ObjectVector& GetModifiedObjectInfoVec()noexcept;
-		protected:
+		public:
 			void ClearModifiedInfoStructure()noexcept;
 		};
 	}

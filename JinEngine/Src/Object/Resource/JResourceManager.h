@@ -112,14 +112,14 @@ namespace JinEngine
 		std::vector<JResourceObject*>::const_iterator GetResourceVectorHandle(const J_RESOURCE_TYPE type, uint& resouceCount)noexcept;
 
 		bool HasResource(const J_RESOURCE_TYPE rType, const size_t guid)noexcept;
-	public:
+	public: 
 		JResourceMangerAppInterface* AppInterface() final;
 		JResourceStorageInterface* ResourceStorageInterface() final;
 		JDirectoryStorageInterface* DirectoryStorageInterface() final;
 		JEventInterface* EvInterface() final;
 	private:
 		void Initialize()final;
-		void Terminate()final;
+		void Terminate()final; 
 		void StoreProjectResource()final;
 		void LoadSelectorResource()final;
 		void LoadProjectResource()final; 

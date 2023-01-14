@@ -35,9 +35,24 @@
 #include"../../Graphic/JGraphic.h"
 #include"../../Graphic/JGraphicDrawList.h" 
 
+#include"../JModifiedObjectInfo.h"
+#include"../../Editor/Interface/JEditorObjectInterface.h"
+
 using namespace DirectX;
 namespace JinEngine
 {
+	namespace Private
+	{
+		class JModifiedObjectInfoReader : public Editor::JEditorModifedObjectStructureInterface
+		{
+			using ModVector = Editor::JModifiedObjectInfoVector::ObjectVector;
+		public:
+			ModVector& GetVector()
+			{
+				return GetModifiedObjectInfoVec();
+			}
+		};
+	}
 	//ResourceStorage
 	JResourceObject* JResourceManagerImpl::ResourceStorage::Get(const size_t guid)const noexcept
 	{
@@ -329,18 +344,53 @@ namespace JinEngine
 	{
 		return this;
 	}
-	void JResourceManagerImpl::StoreProjectResource()
+	void JResourceManagerImpl::Initialize()
 	{
-		for (auto& rData : rStorage)
+		std::vector<JRI::RTypeHint> rinfo = JRI::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::NONE);
+		const uint rinfoCount = (uint)rinfo.size();
+		for (uint i = 0; i < rinfoCount; ++i)
+			rStorage.emplace(rinfo[i].thisType, ResourceStorage());
+	}
+	void JResourceManagerImpl::Terminate()
+	{
+		//StoreProjectResource();
+		auto rHintVec = JResourceObjectInterface::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY_REVERSE);
+		for (uint i = 0; i < rHintVec.size(); ++i)
 		{
-			uint count;
-			std::vector<JResourceObject*>::const_iterator begin = rData.second.GetVectorCIter(count);
-			for (uint i = 0; i < count; ++i)
-			{
-				JResourceObjectInterface* iR = *(begin + i);
-				iR->CallStoreResource();
-			}
+			std::vector<JResourceObject*> copyVec = rStorage.find(rHintVec[i].thisType)->second.GetVector();
+			for (uint j = 0; j < copyVec.size(); ++j)
+				JObject::BegineForcedDestroy(copyVec[j]);
 		}
+
+		if (engineRootDir != nullptr)
+		{
+			JObject::BegineForcedDestroy(engineRootDir);
+			engineRootDir = nullptr;
+		}
+		if (projectRootDir != nullptr)
+		{
+			JObject::BegineForcedDestroy(projectRootDir);
+			projectRootDir = nullptr;
+		}
+		JReflectionInfo::Instance().SearchIntance();
+		dStorage.Clear();
+		for (auto& data : rStorage)
+			data.second.Clear();
+		rStorage.clear();
+		resourceData->Clear();
+	}
+	void JResourceManagerImpl::StoreProjectResource()
+	{ 
+		auto modInfo = Private::JModifiedObjectInfoReader{}.GetVector();
+		for (const auto& data : modInfo)
+		{
+			Core::JIdentifier* obj = Core::GetRawPtr(data->typeName, data->guid);
+			if (data->isModified && data->isStore && obj->GetTypeInfo().IsChildOf<JResourceObject>())
+			{
+				static_cast<JResourceObjectInterface*>(obj)->CallStoreResource();
+				data->isModified = false;
+			}
+		} 
 	}
 	void JResourceManagerImpl::LoadSelectorResource()
 	{
@@ -377,47 +427,10 @@ namespace JinEngine
 			JScene* newScene = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(defaultSceneDir));
 			JSceneManager::Instance().TryOpenScene(newScene, false);
 			JSceneManager::Instance().SetMainScene(newScene);
-
-			newScene->SpaceSpatialInterface()->ActivateSpaceSpatial(true);
-			((JResourceObjectInterface*)newScene)->CallStoreResource();
+			newScene->SpaceSpatialInterface()->ActivateSpaceSpatial(true); 
+			static_cast<JResourceObjectInterface*>(newScene)->CallStoreResource();
 		}
 		DestroyUnusedResource(J_RESOURCE_TYPE::SHADER, false);
-	}
-	void JResourceManagerImpl::Initialize()
-	{
-		std::vector<JRI::RTypeHint> rinfo = JRI::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::NONE);
-		const uint rinfoCount = (uint)rinfo.size();
-		for (uint i = 0; i < rinfoCount; ++i)
-			rStorage.emplace(rinfo[i].thisType, ResourceStorage());
-	}
-	void JResourceManagerImpl::Terminate()
-	{
-		StoreProjectResource();
-
-		auto rHintVec = JResourceObjectInterface::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY_REVERSE);
-		for (uint i = 0; i < rHintVec.size(); ++i)
-		{
-			std::vector<JResourceObject*> copyVec = rStorage.find(rHintVec[i].thisType)->second.GetVector();
-			for (uint j = 0; j < copyVec.size(); ++j)
-				JObject::BegineForcedDestroy(copyVec[j]);
-		}
-
-		if (engineRootDir != nullptr)
-		{
-			JObject::BegineForcedDestroy(engineRootDir);
-			engineRootDir = nullptr;
-		}
-		if (projectRootDir != nullptr)
-		{
-			JObject::BegineForcedDestroy(projectRootDir);
-			projectRootDir = nullptr;
-		}
-		JReflectionInfo::Instance().SearchIntance(); 
-		dStorage.Clear();
-		for (auto& data : rStorage)
-			data.second.Clear();
-		rStorage.clear();
-		resourceData->Clear();
 	}
 	bool JResourceManagerImpl::AddResource(JResourceObject& newResource)noexcept
 	{

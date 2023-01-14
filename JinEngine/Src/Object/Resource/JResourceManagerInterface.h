@@ -8,7 +8,7 @@ namespace JinEngine
 	{
 		class JApplication;
 	}
-
+	 
 	class JResourceMangerAppInterface
 	{
 	private:

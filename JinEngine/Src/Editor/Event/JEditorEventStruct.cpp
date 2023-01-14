@@ -203,6 +203,14 @@ namespace JinEngine
 		{
 			return J_EDITOR_EVENT::OPEN_POPUP_WINDOW;
 		}
+		void JEditorOpenPopupWindowEvStruct::AddBind(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type, std::unique_ptr< Core::JBindHandleBase>&& bind)
+		{
+			tupleVec.push_back(std::make_tuple(type, std::move(bind)));
+		}
+		void JEditorOpenPopupWindowEvStruct::AddDesc(const std::string& newDesc)
+		{
+			desc = newDesc;
+		}
 
 		JEditorClosePopupWindowEvStruct::JEditorClosePopupWindowEvStruct(JEditorPopupWindow* popupWindow, const J_EDITOR_PAGE_TYPE pageType)
 			:JEditorEvStruct(pageType), popupWindow(popupWindow)

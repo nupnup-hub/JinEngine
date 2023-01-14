@@ -93,7 +93,7 @@ namespace JinEngine
 	{
 		if (GetTypeInfo().IsA(ori.GetTypeInfo()) && GetGuid() != ori.GetGuid())
 		{
-			this->CallStoreResource();
+			//this->CallStoreResource();
 			if (setNewInnderGuid)
 			{
 				std::unordered_map<size_t, size_t> guidMap;

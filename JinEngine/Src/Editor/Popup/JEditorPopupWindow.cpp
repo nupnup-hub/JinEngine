@@ -5,13 +5,28 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		void JEditorPopupWindow::RegisterBind(std::unique_ptr<Core::JBindHandleBase> newConfirmBind,
-			std::unique_ptr<Core::JBindHandleBase> newOpenBind,
-			std::unique_ptr<Core::JBindHandleBase> newCloseBind)noexcept
+		void JEditorPopupWindow::RegisterBind(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type, std::unique_ptr<Core::JBindHandleBase>&& bind)noexcept
 		{
-			confirmBind = std::move(newConfirmBind);
-			openBind = std::move(newOpenBind);
-			closeBind = std::move(newCloseBind);
+			switch (type)
+			{
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::OPEN_POPUP:
+			{
+				openBind = std::move(bind);
+				break;
+			}
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CLOSE_POPUP:
+			{
+				closeBind = std::move(bind);
+				break;
+			}
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CONFIRM:
+			{
+				confirmBind = std::move(bind);
+				break;
+			}
+			default:
+				break;
+			}	
 		}
 		bool JEditorPopupWindow::IsOpen()const noexcept
 		{
@@ -24,6 +39,24 @@ namespace JinEngine
 		bool JEditorPopupWindow::IsPressConfirm()const noexcept
 		{
 			return isPressConfirm;
+		}
+		bool JEditorPopupWindow::IsDefaultFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept
+		{
+			switch (type)
+			{
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::OPEN_POPUP:
+				return true;
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CLOSE_POPUP:
+				return true;
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CONFIRM:
+				return true; 
+			default:
+				return false;
+			}
+		}
+		std::string JEditorPopupWindow::GetDesc()const noexcept
+		{
+			return desc;
 		}
 		void JEditorPopupWindow::SetOpen() noexcept
 		{
@@ -48,6 +81,12 @@ namespace JinEngine
 		{
 			isIgnoreConfirm = value;
 		}
+		void JEditorPopupWindow::SetDesc(const std::string& newDesc)noexcept
+		{
+			if (newDesc.empty())
+				return;
+			desc = newDesc;
+		}
 		void JEditorPopupWindow::SetConfirm(const bool value)noexcept
 		{
 			if (value != isPressConfirm)
@@ -57,12 +96,10 @@ namespace JinEngine
 					confirmBind->InvokeCompletelyBind();
 			}
 		}
-
-		void JEditorCautionPopup::Update(const std::string& uniqueLabel,
-			const std::string& desc,
-			const JVector2<float> pagePos,
-			const JVector2<float> pageSize)
+ 
+		void JEditorCautionPopup::Update(const std::string& uniqueLabel, const JVector2<float> pagePos, const JVector2<float> pageSize)
 		{
+			std::string desc = GetDesc();
 			const uint widthFactor = pageSize.x / 4;
 			const uint innerXPadding = widthFactor / 10;
 			const uint heightFactor = pageSize.y / 3;
@@ -109,8 +146,7 @@ namespace JinEngine
 			JImGuiImpl::Text("Close JinEngine");
 			ImGui::Separator();
 			ImGui::SetCursorPosX(innerXPadding);
-			JImGuiImpl::Text(desc);
-
+	 
 			auto style = ImGui::GetStyle();
 			textLength = ImGui::CalcTextSize("Confirm!Cancel");
 			ImGui::SetCursorPosX(ImGui::GetWindowSize().x * 0.5f - textLength.x - (style.ItemSpacing.x / 2));
@@ -120,28 +156,44 @@ namespace JinEngine
 			JImGuiImpl::EndWindow();
 			JImGuiImpl::PopFont();
 		}
+		bool JEditorCautionPopup::IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept
+		{
+			return IsDefaultFuncType(type);
+		}
 		J_EDITOR_POPUP_WINDOW_TYPE JEditorCautionPopup::GetPopupType()const noexcept
 		{
 			return J_EDITOR_POPUP_WINDOW_TYPE::CAUTION;
 		}
 
-		void JEditorCloseConfirmPopup::RegisterBind(std::unique_ptr<Core::JBindHandleBase> newConfirmBind,
-			std::unique_ptr<Core::JBindHandleBase> newOpenBind,
-			std::unique_ptr<Core::JBindHandleBase> newCloseBind,
-			std::unique_ptr<Core::JBindHandleBase> newCancelBind)
+		void JEditorCloseConfirmPopup::RegisterBind(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type, std::unique_ptr<Core::JBindHandleBase>&& bind)noexcept
 		{
-			JEditorPopupWindow::RegisterBind(std::move(newConfirmBind), std::move(newOpenBind), std::move(newCloseBind));
-			if (newCancelBind != nullptr)
-				cancelBind = std::move(newCancelBind);
+			if (IsDefaultFuncType(type))
+				JEditorPopupWindow::RegisterBind(type, std::move(bind));
+			else
+			{
+				switch (type)
+				{ 
+				case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CANCEL:
+				{
+					cancelBind = std::move(bind);
+					break;
+				}
+				case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CONTENTS:
+				{
+					contentsBind = std::move(bind);
+					break;
+				}
+				default:
+					break;
+				} 
+			} 
 		}
-		void JEditorCloseConfirmPopup::Update(const std::string& uniqueLabel,
-			const std::string& desc,
-			const JVector2<float> pagePos,
-			const JVector2<float> pageSize)
+		void JEditorCloseConfirmPopup::Update(const std::string& uniqueLabel, const JVector2<float> pagePos, const JVector2<float> pageSize)
 		{
-			const uint widthFactor = pageSize.x / 4;
+			std::string desc = GetDesc();
+			const uint widthFactor = pageSize.x / 2.5f;
 			const uint innerXPadding = widthFactor / 10;
-			const uint heightFactor = pageSize.y / 3;
+			const uint heightFactor = pageSize.y / 2.5f;
 			const uint innerYPadding = heightFactor / 10;
 
 			const uint descCount = (uint)desc.size();
@@ -188,6 +240,9 @@ namespace JinEngine
 			ImGui::SetCursorPosX(innerXPadding); 
 			JImGuiImpl::Text(desc); 
 
+			if (contentsBind != nullptr)
+				contentsBind->InvokeCompletelyBind();
+
 			auto style = ImGui::GetStyle();
 			textLength = ImGui::CalcTextSize("Confirm!Cancel");
 			ImGui::SetCursorPosX(ImGui::GetWindowSize().x * 0.5f - textLength.x - (style.ItemSpacing.x / 2));
@@ -200,6 +255,18 @@ namespace JinEngine
 				SetCancel(true);
 			JImGuiImpl::EndWindow();
 			JImGuiImpl::PopFont();
+		}
+		bool JEditorCloseConfirmPopup::IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept
+		{
+			switch (type)
+			{
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CANCEL:
+				return true;
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CONTENTS:
+				return true;
+			default:
+				return IsDefaultFuncType(type);
+			}
 		}
 		J_EDITOR_POPUP_WINDOW_TYPE JEditorCloseConfirmPopup::GetPopupType()const noexcept
 		{

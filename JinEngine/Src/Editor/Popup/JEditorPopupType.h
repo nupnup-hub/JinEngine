@@ -24,5 +24,13 @@ namespace JinEngine
 			CAUTION,
 			CLOSE_CONFIRM
 		};
+		enum class J_EDITOR_POPUP_WINDOW_FUNC_TYPE
+		{
+			OPEN_POPUP,
+			CLOSE_POPUP,
+			CONFIRM,
+			CANCEL, 
+			CONTENTS,
+		};
 	}
 }

@@ -62,6 +62,8 @@ namespace JinEngine
 		public:
 			//just class name
 			std::string Name()const noexcept;
+			//Except prefix J
+			std::string RawName()const noexcept;
 			//typeid name
 			std::string FullName()const noexcept;
 		public:
