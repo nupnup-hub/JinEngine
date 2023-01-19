@@ -6,7 +6,7 @@
 #include"../../Directory/JDirectory.h"
 #include"../../../Application/JApplicationVariable.h"
 #include"../../../Core/Guid/GuidCreator.h"
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/File/JFileIOHelper.h" 
 #include"../../../Graphic/FrameResource/JMaterialConstants.h"
 #include<fstream>
 
@@ -430,6 +430,7 @@ namespace JinEngine
 		CallOffResourceReference(shader);
 		if (shader != nullptr && CallGetResourceReferenceCount(*shader) == 0)
 			BeginDestroy(shader);
+
 		shader = newShader;
 		CallOnResourceReference(shader);
 	}

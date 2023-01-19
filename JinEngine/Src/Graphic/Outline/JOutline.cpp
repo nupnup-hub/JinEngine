@@ -19,6 +19,7 @@ namespace JinEngine
 		}
 		void JOutline::Clear()
 		{
+			outlineCB.reset();
 			mRootSignature.Reset();
 			gShaderData.reset();
 		}
@@ -102,6 +103,8 @@ namespace JinEngine
 				serializedRootSig->GetBufferPointer(),
 				serializedRootSig->GetBufferSize(),
 				IID_PPV_ARGS(mRootSignature.GetAddressOf())));
+
+			mRootSignature->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof("Outline RootSignature") - 1, "Outline RootSignature");
 		}
 		void JOutline::BuildPso(ID3D12Device* device, const DXGI_FORMAT& rtvFormat, const DXGI_FORMAT& dsvFormat)
 		{

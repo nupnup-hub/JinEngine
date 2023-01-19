@@ -121,6 +121,8 @@ namespace JinEngine
 				serializedRootSig->GetBufferSize(),
 				IID_PPV_ARGS(cRootSignature.GetAddressOf())));
 
+			cRootSignature->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof("DepthDebug RootSignature") - 1, "DepthDebug RootSignature");
+
 			D3D_SHADER_MACRO macro{ NULL, NULL };
 			std::wstring computeShaderPath = JApplicationVariable::GetShaderPath() + L"\\DepthMapDebug.hlsl";
 

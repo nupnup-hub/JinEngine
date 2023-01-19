@@ -63,6 +63,8 @@ namespace JinEngine
 			if (newCount == GetElementCount(type))
 				return;
 
+			//Caution
+			//초기화시 기존 object들 setFrameDirty 호출 필요!
 			auto data = uploadBufferMap.find(type);
 			data->second->Clear();
 			data->second->Build(device, newCount);

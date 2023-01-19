@@ -289,8 +289,9 @@ namespace JinEngine
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
+			const J_OBJECT_FLAG defaultFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE);
 			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(Core::MakeGuid(),
-				(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), owner);
+				Core::AddSQValueEnum(owner->GetFlag(), defaultFlag), owner);
 			JTransform* newComp = ownerPtr.Get();
 			if (AddInstance(std::move(ownerPtr)))
 				return newComp;
@@ -298,8 +299,10 @@ namespace JinEngine
 				return nullptr;
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(guid, objFlag, owner);
+		{ 
+			const J_OBJECT_FLAG defaultFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE);
+			const J_OBJECT_FLAG finalFlag = Core::AddSQValueEnum(owner->GetFlag(), Core::AddSQValueEnum(objFlag, defaultFlag));
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JTransform>(guid, finalFlag, owner);
 			JTransform* newComp = ownerPtr.Get();
 			if (AddInstance(std::move(ownerPtr)))
 				return newComp;
@@ -339,7 +342,7 @@ namespace JinEngine
 
 		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
 		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
-		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
+		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, nullptr };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}

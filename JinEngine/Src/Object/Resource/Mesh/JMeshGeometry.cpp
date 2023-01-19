@@ -62,11 +62,15 @@ namespace JinEngine
 		return J_RESOURCE_TYPE::MESH;
 	}
 
-	JMeshGeometry::SubmeshGeometry::SubmeshGeometry(const size_t guid)
-		:guid(guid)
+	JMeshGeometry::SubmeshGeometry::SubmeshGeometry(const std::wstring name, const size_t guid)
+		:name(name), guid(guid)
 	{}
 	JMeshGeometry::SubmeshGeometry::~SubmeshGeometry()
 	{
+	}
+	std::wstring JMeshGeometry::SubmeshGeometry::GetName()const noexcept
+	{
+		return name;
 	}
 	JMaterial* JMeshGeometry::SubmeshGeometry::GetMaterial()const noexcept
 	{
@@ -183,7 +187,11 @@ namespace JinEngine
 	}
 	uint JMeshGeometry::GetSubmeshStartIndexLocation(const uint index)const noexcept
 	{
-		return submeshes.size() > index ? submeshes[index].GetIndexStart() : 0;
+		return JMeshGeometry::submeshes.size() > index ? submeshes[index].GetIndexStart() : 0;
+	}
+	std::wstring JMeshGeometry::GetSubMeshName(const uint index)const noexcept
+	{
+		return submeshes.size() > index ? submeshes[index].GetName() : L"InValidAccess";
 	}
 	JMaterial* JMeshGeometry::GetSubmeshMaterial(const uint index)const noexcept
 	{
@@ -279,7 +287,7 @@ namespace JinEngine
 		//Import시에는 원본데이터를 엔진에서 활용할수있게 변환한뒤 저장하고 메모리에서 지우므로
 		//Clear에서 Activated을 조건문으로 설정하면 안된다.
 
-		Clear();
+		ClearGpuBuffer();
 		const uint submeshCount = (uint)meshGroup.GetMeshDataCount();
 		uint vertexCount = 0;
 		uint indexCount = 0;
@@ -287,7 +295,10 @@ namespace JinEngine
 		{
 			submeshes.clear();
 			for (uint i = 0; i < submeshCount; ++i)
-				submeshes.emplace_back(meshGroup.GetMeshData(i)->GetGuid());
+			{
+				submeshes.emplace_back(meshGroup.GetMeshData(i)->GetName(),
+					meshGroup.GetMeshData(i)->GetGuid());
+			}
 		}
 
 		for (uint i = 0; i < submeshCount; ++i)
@@ -414,12 +425,12 @@ namespace JinEngine
 			JGraphic::Instance().CommandInterface()->EndCommand();
 			JGraphic::Instance().CommandInterface()->FlushCommandQueue();
 		}
-		for (uint i = 0; i < submeshCount; ++i)
-			CallOnResourceReference(submeshes[i].GetMaterial());
+		if (IsActivated())
+		{
+			for (uint i = 0; i < submeshCount; ++i)
+				CallOnResourceReference(submeshes[i].GetMaterial());
+		}
 		CalculateMeshBound();
-
-		vertexBufferUploader.Reset();
-		indexBufferUploader.Reset();
 		return true;
 	}
 	void JMeshGeometry::StuffResource()
@@ -429,7 +440,12 @@ namespace JinEngine
 			if (GetFormatIndex() != GetInvalidFormatIndex())
 			{
 				if (ReadMeshData())
+				{
 					SetValid(true);
+					const uint submeshCount = GetTotalSubmeshCount();
+					for (uint i = 0; i < submeshCount; ++i)
+						CallOnResourceReference(submeshes[i].GetMaterial());
+				}
 			}
 		}
 	}
@@ -439,22 +455,38 @@ namespace JinEngine
 		{
 			// vertexBufferCPU.Reset();
 			//indexBufferCPU.Reset(); 
-			Clear();
+			ClearGpuBuffer();
 			SetValid(false);
+			const uint subMeshCount = (uint)submeshes.size();
+			for (uint i = 0; i < subMeshCount; ++i)
+			{
+				if (submeshes[i].GetMaterial() != nullptr)
+					CallOffResourceReference(submeshes[i].GetMaterial());
+			}
 		}
 	}
-	void JMeshGeometry::Clear()
-	{ 
-		const uint subMeshCount = (uint)submeshes.size();
-		for (uint i = 0; i < subMeshCount; ++i)
+	void JMeshGeometry::ClearGpuBuffer()
+	{
+		if (vertexBufferUploader != nullptr)
 		{
-			if(submeshes[i].GetMaterial() != nullptr)
-				CallOffResourceReference(submeshes[i].GetMaterial());
+			vertexBufferUploader->Release();
+			vertexBufferUploader.Reset();
 		}
-		vertexBufferGPU.Reset();
-		indexBufferGPU.Reset();
-		vertexBufferUploader.Reset();
-		indexBufferUploader.Reset();
+		if (indexBufferUploader != nullptr)
+		{
+			indexBufferUploader->Release();
+			indexBufferUploader.Reset();
+		}
+		if (vertexBufferGPU != nullptr)
+		{
+			vertexBufferGPU->Release();
+			vertexBufferGPU.Reset();
+		}
+		if (indexBufferGPU != nullptr)
+		{
+			indexBufferGPU->Release();
+			indexBufferGPU.Reset();
+		}
 	}
 	void JMeshGeometry::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 	{
@@ -603,11 +635,13 @@ namespace JinEngine
 			return resVec;
 		};
 		auto fbxMeshImportC = [](JDirectory* dir, const Core::JFileImportHelpData importPathData) -> std::vector<JResourceObject*>
-		{
+		{ 
 			std::vector<JResourceObject*> res; 
-
 			using FbxFileTypeInfo = Core::JFbxFileLoaderImpl::FbxFileTypeInfo;
 			FbxFileTypeInfo info = Core::JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
+			
+			JMeshGeometry* newMesh = nullptr;
+			JSkeletonAsset* newSkeleton = nullptr;
 			if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
 			{
 				JSkinnedMeshGroup skinnedGroup;
@@ -616,24 +650,28 @@ namespace JinEngine
 				if (loadRes == Core::J_FBXRESULT::FAIL)
 					return { nullptr };
 
-				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
-				{
-					res.push_back(JRFI<JSkinnedMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
-						Core::MakeGuid(),
-						importPathData.flag,
-						dir,
-						importPathData.oriFileWPath,
-						Core::JPtrUtil::MakeOwnerPtr<JSkinnedMeshGroup>(std::move(skinnedGroup)))));
-				}
 				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
 				{
-					res.push_back(JRFI<JSkeletonAsset>::Create(Core::JPtrUtil::MakeOwnerPtr<JSkeletonAsset::InitData>(importPathData.name + L"Skel",
+					newSkeleton = JRFI<JSkeletonAsset>::Create(Core::JPtrUtil::MakeOwnerPtr<JSkeletonAsset::InitData>(importPathData.name + L"Skel",
 						Core::MakeGuid(),
 						importPathData.flag,
 						dir,
 						importPathData.oriFileWPath,
-						std::make_unique<JSkeleton>(std::move(joint)))));
+						std::make_unique<JSkeleton>(std::move(joint))));
+					skinnedGroup.SetSkeletonAsset(Core::GetUserPtr(newSkeleton));
 				}
+				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
+				{
+					newMesh = JRFI<JSkinnedMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+						Core::MakeGuid(),
+						importPathData.flag,
+						dir,
+						importPathData.oriFileWPath,
+						Core::JPtrUtil::MakeOwnerPtr<JSkinnedMeshGroup>(std::move(skinnedGroup))));
+					res.push_back(newMesh);
+				}
+				if (newSkeleton != nullptr)
+					res.push_back(newSkeleton);				 
 			}
 			else
 			{
@@ -644,34 +682,45 @@ namespace JinEngine
 
 				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
 				{
-					res.push_back(JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+					newMesh = JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
 						Core::MakeGuid(),
 						importPathData.flag,
 						dir,
 						importPathData.oriFileWPath,
-						Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGroup>(std::move(staticMeshGroup)))));
+						Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGroup>(std::move(staticMeshGroup))));
+					res.push_back(newMesh);
 				}
+			}
+			if (newMesh != nullptr)
+			{		 
+				const uint subMeshCount = (uint)newMesh->GetTotalSubmeshCount();
+				for (uint i = 0; i < subMeshCount; ++i)
+					res.push_back(newMesh->GetSubmeshMaterial(i));
 			}
 			return res;
 		};
 		auto objMeshImportC = [](JDirectory* dir, const Core::JFileImportHelpData importPathData) -> std::vector<JResourceObject*>
 		{
 			std::vector<JResourceObject*> res;
-
 			Core::JObjFileMeshData objMeshData;
 			std::vector<Core::JObjFileMatData> objMatData;
-
+			JMeshGeometry* newMesh = nullptr;
 			if (JObjFileLoader::Instance().LoadObjFile(importPathData, objMeshData, objMatData))
 			{
-				res.push_back(JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
+				newMesh = JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
 					Core::MakeGuid(),
 					importPathData.flag,
 					dir,
 					importPathData.oriFileWPath,
-					Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGroup>(std::move(objMeshData.meshGroup)))));
+					Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGroup>(std::move(objMeshData.meshGroup))));
+			}	
+			if (newMesh != nullptr)
+			{
+				res.push_back(newMesh);
+				const uint subMeshCount = (uint)newMesh->GetTotalSubmeshCount();
+				for (uint i = 0; i < subMeshCount; ++i)
+					res.push_back(newMesh->GetSubmeshMaterial(i));
 			}
-			else
-				return { nullptr };
 			return res;
 		};
 

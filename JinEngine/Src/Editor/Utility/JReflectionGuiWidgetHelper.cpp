@@ -18,6 +18,7 @@
 #include"../../Object/Resource/JResourceManager.h"
 #include"../../Object/Resource/JResourceObject.h" 
 #include"../../Object/Component/Camera/JCamera.h"
+#include"../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../Core/Identity/JIdentifier.h"
 #include"../../Core/Reflection/JPropertyInfo.h"
 #include"../../Utility/JVector.h" 
@@ -36,6 +37,17 @@ namespace JinEngine
 			isPrintTitle = value;
 		}
 
+		static bool IsEditableObject(Core::JIdentifier* obj)
+		{
+			if (obj->GetTypeInfo().IsChildOf<JObject>() && !static_cast<JObject*>(obj)->HasFlag(OBJECT_FLAG_UNEDITABLE))
+				return true;
+			else
+				return false;
+		}
+		static std::string GetUniqueLabel(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
+		{
+			return pInfo->Name() + std::to_string(obj->GetGuid());
+		}
 #pragma region Property
 		 
 		class JGuiPropertySetInterface : public JEditorObjectHandlerInterface
@@ -44,12 +56,18 @@ namespace JinEngine
 			template<typename T>
 			void SetPropertyValue(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo, const T& value)
 			{
+				if (!IsEditableObject(obj))
+					return;
+
 				pInfo->Set<T>(obj, value);
 				SetModifiedBit(Core::GetUserPtr(obj), true);
 			}
 			template<typename T>
 			void UnsafeSetPropertyValue(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo, const T& value)
 			{
+				if (!IsEditableObject(obj))
+					return;
+
 				pInfo->UnsafeSet<T>(obj, value);
 				SetModifiedBit(Core::GetUserPtr(obj), true);
 			}
@@ -132,36 +150,36 @@ namespace JinEngine
 					std::is_same_v<T, JVector2<ValueType>>)
 				{
 					if (exeCount == 0)
-						res = BuildInput(buff.x, pInfo->Name() + "GInput00");
+						res = BuildInput(buff.x, GetUniqueLabel(obj, pInfo) + "00");
 					else
-						res = BuildInput(buff.y, pInfo->Name() + "GInput01");
+						res = BuildInput(buff.y, GetUniqueLabel(obj, pInfo) + "01");
 				}
 				else if constexpr (std::is_same_v<T, DirectX::XMINT3> ||
 					std::is_same_v<T, DirectX::XMFLOAT3> ||
 					std::is_same_v<T, JVector3<ValueType>>)
 				{
 					if (exeCount == 0)
-						res = BuildInput(buff.x, pInfo->Name() + "GInput00");
+						res = BuildInput(buff.x, GetUniqueLabel(obj, pInfo) + "00");
 					else if (exeCount == 1)
-						res = BuildInput(buff.y, pInfo->Name() + "GInput01");
+						res = BuildInput(buff.y, GetUniqueLabel(obj, pInfo) + "01");
 					else
-						res = BuildInput(buff.z, pInfo->Name() + "GInput02");
+						res = BuildInput(buff.z, GetUniqueLabel(obj, pInfo) + "02");
 				}
 				else if constexpr (std::is_same_v<T, DirectX::XMINT4> ||
 					std::is_same_v<T, DirectX::XMFLOAT4> ||
 					std::is_same_v<T, JVector4<ValueType>>)
 				{
 					if (exeCount == 0)
-						res = BuildInput(buff.x, pInfo->Name() + "GInput00");
+						res = BuildInput(buff.x, GetUniqueLabel(obj, pInfo) + "00");
 					else if (exeCount == 1)
-						res = BuildInput(buff.y, pInfo->Name() + "GInput01");
+						res = BuildInput(buff.y, GetUniqueLabel(obj, pInfo) + "01");
 					else if (exeCount == 2)
-						res = BuildInput(buff.z, pInfo->Name() + "GInput02");
+						res = BuildInput(buff.z, GetUniqueLabel(obj, pInfo) + "02");
 					else
-						res = BuildInput(buff.w, pInfo->Name() + "GInput03");
+						res = BuildInput(buff.w, GetUniqueLabel(obj, pInfo) + "03");
 				}
 				else
-					res = BuildInput(buff, pInfo->Name() + "GInput00");
+					res = BuildInput(buff, GetUniqueLabel(obj, pInfo) + "00");
 				if (res)
 				{
 					if constexpr (std::is_same_v<T, std::string >)
@@ -178,11 +196,11 @@ namespace JinEngine
 			bool BuildInput(InputType& data, const std::string& uniqSymbol)
 			{
 				if constexpr (std::is_integral_v<InputType>)
-					return JImGuiImpl::InputInt("##InputInt" + uniqSymbol, &data, flag);
+					return JImGuiImpl::InputInt("##GuiInputIntHandle" + uniqSymbol, &data, flag);
 				else if constexpr (std::is_floating_point_v<InputType>)
-					return JImGuiImpl::InputFloat("##InputFloat" + uniqSymbol, &data, flag);
+					return JImGuiImpl::InputFloat("##GuiInputFloatHandle" + uniqSymbol, &data, flag);
 				else if constexpr (std::is_same_v <std::string, InputType>)
-					return JImGuiImpl::InputText("##InputText" + uniqSymbol, data, flag);
+					return JImGuiImpl::InputText("##GuiInputStringHandle" + uniqSymbol, data, flag);
 				else
 					return false;
 			}
@@ -267,14 +285,17 @@ namespace JinEngine
 				}
 			}
 			template<typename ValueType, typename PointerRef>
-			void SelectorOnScreen(PointerRef selectedObj, Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
+			bool SelectorOnScreen(PointerRef selectedObj,
+				Core::JIdentifier* obj,
+				Core::JPropertyInfo* pInfo, 
+				const std::string& uniqueLabel)
 			{
 				std::string name = "None";
 				if (selectedObj != nullptr && (*selectedObj) != nullptr)
 					name = JCUtil::WstrToU8Str((*selectedObj)->GetName());
 
 				ImGui::SetNextWindowSize(JImGuiImpl::GetClientWindowSize() * 0.3f);
-				const std::string comboLabel = "##PreviewSelector" + pInfo->GetTypeInfo()->Name() + pInfo->Name();
+				const std::string comboLabel = "##PreviewSelector" + uniqueLabel;
 				if (JImGuiImpl::BeginCombo(comboLabel, name.c_str(), ImGuiComboFlags_HeightLarge | ImGuiComboFlags_PopupAlignLeft))
 				{
 					ImGui::BeginGroup();
@@ -301,55 +322,52 @@ namespace JinEngine
 							sliderWidth -= (textWidth - sliderPosX);
 						ImGui::SetCursorPosX(sliderPosX);
 						ImGui::SetNextItemWidth(sliderWidth);
-						JImGuiImpl::SliderFloat("##GuiSelectorSlider" + pInfo->Name(), &sizeFactor, sizeMin, sizeMax, "", ImGuiSliderFlags_AlwaysClamp);
+						JImGuiImpl::SliderFloat("##GuiSelectorSlider" + uniqueLabel, &sizeFactor, sizeMin, sizeMax, "", ImGuiSliderFlags_AlwaysClamp);
 						if (ImGui::IsItemActive() || ImGui::IsItemHovered())
 							ImGui::SetTooltip("%.1f", sizeFactor);
 
 						ImGui::GetStyle().FramePadding.y = preFramePaddingY;
 					}
-					ImGui::Separator(); 
+					ImGui::Separator();
 					JImGuiImpl::Text("Search");
 					ImGui::SameLine();
-					searchBarHelper->UpdateSearchBar(pInfo->GetTypeInfo()->Name()+ "_" + pInfo->Name() + "_GuiSelector", false);
-				
+					searchBarHelper->UpdateSearchBar(uniqueLabel + "_GuiSelector", false);
+
 					JImGuiImpl::Image(*JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::NONE), JVector2<float>(sizeMin, sizeMin));
 					ImGui::SameLine();
-					if (JImGuiImpl::Selectable("None", nullptr, 0, JVector2<float>(0, sizeFactor)))
+					if (JImGuiImpl::Selectable("None##" + uniqueLabel, nullptr, 0, JVector2<float>(0, sizeFactor)))
 					{
 						(*selectedObj) = nullptr;
 						isSelected = true;
 						ImGui::CloseCurrentPopup();
-					} 
-					 
+					}
+
 					const uint previweSceneCount = (uint)selectorPreviewVec.size();
 					for (uint i = 0; i < previweSceneCount; ++i)
 					{
 						Core::JUserPtr<JObject> previewObj = selectorPreviewVec[i]->GetJObject();
-						if(!searchBarHelper->CanSrcNameOnScreen(previewObj->GetName()))
+						if (!searchBarHelper->CanSrcNameOnScreen(previewObj->GetName()))
 							continue;
-						 
+
 						JImGuiImpl::Image(*selectorPreviewVec[i]->GetPreviewCamera().Get(), JVector2<float>(sizeFactor, sizeFactor));
 						ImGui::SameLine();
-						if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(previewObj.Get()->GetName()),
+						if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(previewObj.Get()->GetName()) + "##" + uniqueLabel,
 							nullptr,
 							0,
 							JVector2<float>(0, sizeFactor)))
-						{ 
+						{
 							(*selectedObj) = static_cast<ValueType*>(previewObj.Get());
-							isSelected = true; 
+							isSelected = true;
 							ImGui::CloseCurrentPopup();
-						} 
+						}
 					}
 
 					ImGui::EndGroup();
 					JImGuiImpl::EndCombo();
+					return true;
 				}
 				else
-				{
-					isFirstOpen = true;
-					if (selectorPreviewVec.size() > 0)
-						isClosePopup = true;
-				}
+					return false;
 			}
 		protected:
 			virtual void CreateSelectorPreviewList() = 0;
@@ -371,9 +389,17 @@ namespace JinEngine
 				return isFirstOpen;
 			}
 		protected:
-			void SetFirstTriggerOpen(bool value)
+			uint GetPreviewCount()const noexcept
+			{
+				return (uint)selectorPreviewVec.size();
+			}
+			void SetFirstTrigger(bool value)noexcept
 			{
 				isFirstOpen = value;
+			}
+			void SetCloseTrigger(bool value)noexcept
+			{
+				isClosePopup = value;
 			}
 		protected:
 			virtual void SetSelectObject(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) = 0;
@@ -399,11 +425,17 @@ namespace JinEngine
 				JImGuiImpl::Text(pInfo->Name());
 				Begin(obj, pInfo);
 				SelectorPreviewOnScreen(selectedPreview, pInfo);
-				SelectorOnScreen<ValueType>(&selectedObj, obj, pInfo);
+				bool isOpen = SelectorOnScreen<ValueType>(&selectedObj, obj, pInfo, GetUniqueLabel(obj, pInfo));
+				if (!isOpen)
+				{
+					SetFirstTrigger(true); 
+					if (GetPreviewCount() > 0)
+						SetCloseTrigger(true);
+				}
 			}
 		protected:
 			void SetSelectObject(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
-			{
+			{ 
 				SetPropertyValue(obj, pInfo, selectedObj); 
 			}
 		private:
@@ -422,6 +454,7 @@ namespace JinEngine
 			std::vector<JPreviewScene*> selectedPreview;
 		private:
 			uint containerCount = 0;
+			int selectedIndex = -1;
 		public:
 			void Initialize(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
 			{
@@ -434,12 +467,34 @@ namespace JinEngine
 			}
 			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
 			{
+				const bool isRenderItemMaterial = obj->GetTypeInfo().IsA<JRenderItem>() && 
+					std::is_base_of_v<JMaterial, ValueType>;
+
 				JImGuiImpl::Text(pInfo->Name());
 				Begin(obj, pInfo);
 				for (uint i = 0; i < containerCount; ++i)
 				{
+					const std::string uniqueLabel = GetUniqueLabel(obj, pInfo) + "_" + std::to_string(i);
+					if (isRenderItemMaterial)
+					{
+						JRenderItem* rItem = static_cast<JRenderItem*>(obj); 
+						JImGuiImpl::Text(JCUtil::WstrToU8Str(rItem->GetMesh()->GetSubMeshName(i)));
+					}
+					
 					SelectorPreviewOnScreen(selectedPreview[i], pInfo);
-					SelectorOnScreen<ValueType>(&container[i], obj, pInfo);
+					bool res = SelectorOnScreen<ValueType>(&container[i], obj, pInfo, uniqueLabel);
+					if (res)
+						selectedIndex = i;
+					else
+					{
+						if (i == selectedIndex)
+						{
+							SetFirstTrigger(true);
+							if (GetPreviewCount() > 0)
+								SetCloseTrigger(true);
+							selectedIndex = -1;
+						}
+					}
 				}
 			}
 		protected:
@@ -473,7 +528,7 @@ namespace JinEngine
 				if (pInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
 					return;
 
-				if (JImGuiImpl::CheckBox(pInfo->Name() + "##Checkbox", value))
+				if (JImGuiImpl::CheckBox(pInfo->Name() + "##GuiCheckbox" + GetUniqueLabel(obj, pInfo), value))
 					SetPropertyValue(obj, pInfo, value);
 			}
 		};
@@ -510,12 +565,12 @@ namespace JinEngine
 					ImGui::SetNextItemWidth(JImGuiImpl::GetSliderWidth());
 					if constexpr (std::is_integral_v<T>)
 					{
-						if (JImGuiImpl::InputInt("##IntInput" + pInfo->Name(), &value))
+						if (JImGuiImpl::InputInt("##GuiSliderIntInput" + GetUniqueLabel(obj, pInfo), &value))
 							SetPropertyValue(obj, pInfo, value);
 					}
 					else
 					{
-						if (JImGuiImpl::InputFloat("##FloatInput" + pInfo->Name(), &value, 0, "%.1f"))
+						if (JImGuiImpl::InputFloat("##GuiSliderFloatInput" + GetUniqueLabel(obj, pInfo), &value, 0, "%.1f"))
 							SetPropertyValue(obj, pInfo, value);
 					}
 					ImGui::SameLine();
@@ -526,12 +581,12 @@ namespace JinEngine
 					JVector2<float> vSliderSize{ JImGuiImpl::GetClientWindowSize().x * 0.01f, JImGuiImpl::GetClientWindowSize().y * 0.075f };
 					if constexpr (std::is_integral_v<T>)
 					{
-						if (JImGuiImpl::VSliderInt("##IntVSlider" + pInfo->Name(), vSliderSize, &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
+						if (JImGuiImpl::VSliderInt("##GuiIntVSlider" + GetUniqueLabel(obj, pInfo), vSliderSize, &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
 							SetPropertyValue(obj, pInfo, value);
 					}
 					else
 					{
-						if (JImGuiImpl::VSliderFloat("##FloatVSlider" + pInfo->Name(), vSliderSize, &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
+						if (JImGuiImpl::VSliderFloat("##GuiFloatVSlider" + GetUniqueLabel(obj, pInfo), vSliderSize, &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
 							SetPropertyValue(obj, pInfo, value);
 					}
 				}
@@ -540,12 +595,12 @@ namespace JinEngine
 					ImGui::SetNextItemWidth(JImGuiImpl::GetSliderWidth());
 					if constexpr (std::is_integral_v<T>)
 					{
-						if (JImGuiImpl::SliderInt("##IntSlider" + pInfo->Name(), &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
+						if (JImGuiImpl::SliderInt("##GuiIntSlider" + GetUniqueLabel(obj, pInfo), &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
 							SetPropertyValue(obj, pInfo, value);
 					}
 					else
 					{
-						if (JImGuiImpl::SliderFloat("##FloatSlider" + pInfo->Name(), &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
+						if (JImGuiImpl::SliderFloat("##GuiFloatSlider" + GetUniqueLabel(obj, pInfo), &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
 							SetPropertyValue(obj, pInfo, value);
 					}
 				}
@@ -580,12 +635,12 @@ namespace JinEngine
 				{
 					if constexpr (T::GetDigitCount() == 3)
 					{
-						if (ImGui::ColorPicker3(("##ColorPicker" + pInfo->Name()).c_str(), (float*)&colorV, flag))
+						if (ImGui::ColorPicker3(("##GuiColorPicker" + GetUniqueLabel(obj, pInfo)).c_str(), (float*)&colorV, flag))
 							SetPropertyValue(obj, pInfo, colorV);
 					}
 					else if constexpr (T::GetDigitCount() == 4)
 					{
-						if (ImGui::ColorPicker4(("##ColorPicker" + pInfo->Name()).c_str(), (float*)&colorV, flag))
+						if (ImGui::ColorPicker4(("##GuiColorPicker" + GetUniqueLabel(obj, pInfo)).c_str(), (float*)&colorV, flag))
 							SetPropertyValue(obj, pInfo, colorV);
 					}
 
@@ -594,7 +649,7 @@ namespace JinEngine
 				{
 					if constexpr (std::is_same_v<T, DirectX::XMFLOAT3>)
 					{
-						if (ImGui::ColorPicker3(("##ColorPicker" + pInfo->Name()).c_str(), (float*)&colorV, flag))
+						if (ImGui::ColorPicker3(("##GuiColorPicker" + GetUniqueLabel(obj, pInfo)).c_str(), (float*)&colorV, flag))
 						{
 							if constexpr (std::is_same_v<T, DirectX::XMFLOAT3>)
 								SetPropertyValue(obj, pInfo, DirectX::XMFLOAT3(colorV.x, colorV.y, colorV.z));							 
@@ -602,7 +657,7 @@ namespace JinEngine
 					}
 					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
 					{
-						if (ImGui::ColorPicker4(("##ColorPicker" + pInfo->Name()).c_str(), (float*)&colorV, flag))
+						if (ImGui::ColorPicker4(("##GuiColorPicker" + GetUniqueLabel(obj, pInfo)).c_str(), (float*)&colorV, flag))
 						{
 							if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
 								SetPropertyValue(obj, pInfo, DirectX::XMFLOAT4(colorV.x, colorV.y, colorV.z, colorV.w));
@@ -707,7 +762,7 @@ namespace JinEngine
 					Core::JEnum enumValue = pInfo->UnsafeGet<Core::JEnum>(obj);
 					int selectedIndex = enumInfo->GetEnumIndex(enumValue);
 
-					const std::string comboLabel = "##EnumComboBox" + pInfo->GetTypeInfo()->Name() + pInfo->Name();
+					const std::string comboLabel = "##GuiEnumComboBox" + GetUniqueLabel(obj, pInfo);
 					if (JImGuiImpl::BeginCombo(comboLabel, enumInfo->ElementName(enumValue).c_str(), ImGuiComboFlags_HeightLarge))
 					{
 						uint enumCount = enumInfo->GetEnumCount();

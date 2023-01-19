@@ -102,6 +102,7 @@ namespace JinEngine
 	public:
 		void SetName(const std::wstring& newName)noexcept;
 		void SetMaterial(Core::JUserPtr<JMaterial> material)noexcept;
+		virtual void SetVertexPositionScale(const float rate)noexcept = 0;
 	public:
 		void AddIndex(const uint index)noexcept;
 	protected:
@@ -139,7 +140,9 @@ namespace JinEngine
 		uint GetVertexCount()const noexcept;
 		DirectX::XMVECTOR GetPosition(const uint index)const noexcept;
 		JStaticMeshVertex GetVertex(const uint index)const noexcept;
+	public:
 		void SetVertex(const uint index, const JStaticMeshVertex& vertex)const noexcept;
+		void SetVertexPositionScale(const float rate)noexcept final;
 	public:
 		void AddVertex(const JStaticMeshVertex& vertex)noexcept;
 		void AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept final;
@@ -164,7 +167,9 @@ namespace JinEngine
 		uint GetVertexCount()const noexcept;
 		DirectX::XMVECTOR GetPosition(const uint index)const noexcept;
 		JSkinnedMeshVertex GetVertex(const uint index)const noexcept;
+	public:
 		void SetVertex(const uint index, const JSkinnedMeshVertex& vertex)const noexcept;
+		void SetVertexPositionScale(const float rate)noexcept final;
 	public:
 		void AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept final;
 	};
@@ -173,10 +178,13 @@ namespace JinEngine
 	{
 	public:
 		virtual uint GetMeshDataCount()const noexcept = 0;
-		virtual JMeshData* GetMeshData(const uint index) noexcept = 0;
+		virtual JMeshData* GetMeshData(const uint index)noexcept = 0;
 		virtual J_MESHGEOMETRY_TYPE GetMeshGroupType()const noexcept = 0; 
 		uint GetTotalVertexCount() noexcept;
 		uint GetTotalIndexCount() noexcept; 
+		DirectX::BoundingBox GetGroupBBox() noexcept;
+	public:
+		void SetVertexPositionScale(const float rate)noexcept;
 	};
 
 	struct JStaticMeshGroup final : public JMeshGroup
@@ -185,7 +193,7 @@ namespace JinEngine
 		std::vector<JStaticMeshData> staticMeshData;
 	public:
 		uint GetMeshDataCount()const noexcept final;
-		JMeshData* GetMeshData(const uint index) noexcept final;
+		JMeshData* GetMeshData(const uint index)noexcept final;
 		J_MESHGEOMETRY_TYPE GetMeshGroupType()const noexcept final;
 		void AddMeshData(JStaticMeshData&& meshData) noexcept;
 	};
@@ -198,9 +206,12 @@ namespace JinEngine
 		Core::JUserPtr<JSkeletonAsset> skeletonAsset;
 	public:
 		uint GetMeshDataCount()const noexcept final;
-		JMeshData* GetMeshData(const uint index) noexcept final;
+		JMeshData* GetMeshData(const uint index)noexcept final;
 		J_MESHGEOMETRY_TYPE GetMeshGroupType()const noexcept final;
 		Core::JUserPtr<JSkeletonAsset> GetSkeletonAsset()const noexcept;
+	public:
+		void SetSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept;
+	public:
 		void AddMeshData(JSkinnedMeshData&& meshData) noexcept;
 	};
 }

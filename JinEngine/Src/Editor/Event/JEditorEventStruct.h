@@ -81,21 +81,17 @@ namespace JinEngine
 			J_EDITOR_EVENT GetEventType()const noexcept final;
 		};
 		struct JEditorActPageEvStruct : public JEditorEvStruct
-		{
+		{ 
 		public:
-			JEditorPage* actPage;
-		public:
-			JEditorActPageEvStruct(JEditorPage* actPage);
+			JEditorActPageEvStruct(const J_EDITOR_PAGE_TYPE pageType);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
 		};
 		struct JEditorDeActPageEvStruct : public JEditorEvStruct
-		{
+		{ 
 		public:
-			JEditorPage* deActPage;
-		public:
-			JEditorDeActPageEvStruct(JEditorPage* deActPage);
+			JEditorDeActPageEvStruct(const J_EDITOR_PAGE_TYPE pageType);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;

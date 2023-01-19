@@ -74,7 +74,7 @@ namespace JinEngine
 		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0, 1))
 		float roughness = 0;
 		REGISTER_PROPERTY_EX(albedoColor, GetAlbedoColor, SetAlbedoColor, GUI_COLOR_PICKER(true))
-		DirectX::XMFLOAT4 albedoColor = { 0.85f, 0.85f, 0.85f, 0.8f };
+		DirectX::XMFLOAT4 albedoColor = { 0.75f, 0.75f, 0.75f, 0.65f };
 		DirectX::XMFLOAT4X4 matTransform = JMathHelper::Identity4x4();
 	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;

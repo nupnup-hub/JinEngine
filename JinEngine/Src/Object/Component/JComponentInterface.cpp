@@ -5,8 +5,8 @@
 
 namespace JinEngine
 {
-	JCI::CTypeHint::CTypeHint(const J_COMPONENT_TYPE thisType, const bool isFrameInterface)
-		:thisType(thisType), isFrameInterface(isFrameInterface)
+	JCI::CTypeHint::CTypeHint(const J_COMPONENT_TYPE thisType, const bool hasFrameDirty, const bool hasFrameOffset)
+		:thisType(thisType), hasFrameDirty(hasFrameDirty), hasFrameOffset(hasFrameOffset)
 	{}
 	JCI::CTypeHint::~CTypeHint() {}
 
@@ -32,11 +32,9 @@ namespace JinEngine
 		return (*isAvailableOverlapCallable)(nullptr);
 	}
 
-	JCI::CTypeInterfaceFunc::CTypeInterfaceFunc(SetFrameDirtyCallable* setFrameDirtyCallable)
-		:setFrameDirtyCallable(setFrameDirtyCallable)
-	{
-
-	}
+	JCI::CTypeInterfaceFunc::CTypeInterfaceFunc(SetFrameDirtyCallable* setFrameDirtyCallable, SetFrameOffsetCallable* setFrameOffsetCallable)
+		:setFrameDirtyCallable(setFrameDirtyCallable), setFrameOffsetCallable(setFrameOffsetCallable)
+	{}
 	JCI::CTypeInterfaceFunc::~CTypeInterfaceFunc()
 	{
 		setFrameDirtyCallable = nullptr;
@@ -45,9 +43,17 @@ namespace JinEngine
 	{
 		(*setFrameDirtyCallable)(nullptr, jComp);
 	}
+	void JCI::CTypeInterfaceFunc::CallSetFrameOffset(JComponent& jComp, JComponent* refComp, bool isCreated)
+	{
+		(*setFrameOffsetCallable)(nullptr, jComp, refComp, isCreated);
+	}
 	JCI::SetFrameDirtyCallable JCI::CTypeInterfaceFunc::GetSetFrameDirtyCallable()
 	{
 		return *setFrameDirtyCallable;
+	}
+	JCI::SetFrameOffsetCallable JCI::CTypeInterfaceFunc::GetSetFrameOffsetCallable()
+	{
+		return *setFrameOffsetCallable;
 	}
 
 	class CTypeInfoData
@@ -106,9 +112,17 @@ namespace JinEngine
 	{
 		return CTypeInfo::Instance().cInterfaceStorage[(uint)jComp.GetComponentType()].CallSetFrameDirty(jComp);
 	}
+	void JComponentInterface::CallSetFrameOffset(JComponent& jComp, JComponent* refComp, bool isCreated)
+	{
+		return CTypeInfo::Instance().cInterfaceStorage[(uint)jComp.GetComponentType()].CallSetFrameOffset(jComp, refComp, isCreated);
+	}
 	JCI::SetFrameDirtyCallable JComponentInterface::GetSetFrameDirtyCallable(const J_COMPONENT_TYPE cType)
 	{
 		return CTypeInfo::Instance().cInterfaceStorage[(uint)cType].GetSetFrameDirtyCallable();
+	}
+	JCI::SetFrameOffsetCallable JComponentInterface::GetSetFrameOffsetCallable(const J_COMPONENT_TYPE cType)
+	{
+		return CTypeInfo::Instance().cInterfaceStorage[(uint)cType].GetSetFrameOffsetCallable();
 	}
 	bool JComponentInterface::NameOrder(const CTypeHint& a, const CTypeHint& b)noexcept
 	{

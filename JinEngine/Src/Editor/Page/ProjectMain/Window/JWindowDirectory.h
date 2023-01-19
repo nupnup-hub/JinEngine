@@ -39,6 +39,7 @@ namespace JinEngine
 			using DestroyObjectF = Core::JMFunctorType<JWindowDirectory, void, Core::JUserPtr<JObject>>;
 			using OpenNewDirectoryF = Core::JMFunctorType<JWindowDirectory, void, Core::JUserPtr<JDirectory>>;
 			using ImportResourceF = Core::JMFunctorType<JWindowDirectory, void>;
+			using CreateImportedResourceF = Core::JSFunctorType<void, JWindowDirectory*, std::vector<JResourceObject*>>;
 			using RenameF = Core::JSFunctorType<void, JWindowDirectory*>;
 
 			using RegisterCreateREvF = Core::JMFunctorType<JWindowDirectory, void, J_RESOURCE_TYPE>;
@@ -58,13 +59,14 @@ namespace JinEngine
 			std::unique_ptr<JEditorWidgetPosCalculator> editorPositionCal;
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
 		private:
-			std::unique_ptr<CreateObjectF::Functor> createResourceFunctor;
-			std::unique_ptr<CreateDirectoryF::Functor> createDirectoryFunctor;
-			std::unique_ptr<DestroyObjectF::Functor> destroyObjectFunctor;
-			std::unique_ptr<OpenNewDirectoryF::Functor> openNewDirFunctor;
-			std::unique_ptr<OpenNewDirectoryF::CompletelyBind> openNewDirBinder;
-			std::unique_ptr<ImportResourceF::Functor> importResourceFunctor;
-			std::unique_ptr<RenameF::Functor> renameFunctor;
+			std::unique_ptr<CreateObjectF::Functor> createResourceF;
+			std::unique_ptr<CreateDirectoryF::Functor> createDirectoryF;
+			std::unique_ptr<DestroyObjectF::Functor> destroyObjectF;
+			std::unique_ptr<OpenNewDirectoryF::Functor> openNewDirF;
+			std::unique_ptr<OpenNewDirectoryF::CompletelyBind> openNewDirB;
+			std::unique_ptr<ImportResourceF::Functor> importResourceF;
+			std::unique_ptr<CreateImportedResourceF::Functor> createImportedResourceF;
+			std::unique_ptr<RenameF::Functor> renameF;
 			std::unique_ptr<RegisterCreateREvF::Functor> regCreateRobjF;
 			std::unique_ptr<RegisterCreateDEvF::Functor> regCreateDirF;
 			std::unique_ptr<RegisterDestroyEvF::Functor> regDestroyObjF;
@@ -76,10 +78,8 @@ namespace JinEngine
 			float btnIconSize = 0;
 			size_t selectorIconSlidebarId; 
 		private:
-			float childWindowHeight = 0;
-		private:
-			std::wstring importFilePath;
-			bool actImport = false;
+			float childWindowHeight = 0; 
+			std::wstring importFilePath; 
 		public:
 			JWindowDirectory(const std::string &name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
 			~JWindowDirectory();

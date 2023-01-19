@@ -164,7 +164,6 @@ namespace JinEngine
 				auto doBinder = std::make_unique<EventFunctorBinder>(*evFunctor, *this, J_EDITOR_EVENT::CLOSE_PAGE, *closeEvStruct);
 				auto undoBinder = std::make_unique<EventFunctorBinder>(*evFunctor, *this, J_EDITOR_EVENT::OPEN_PAGE, *openEvStruct);
 				Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Close Page", std::move(doBinder), std::move(undoBinder)));
-
 			}
 			else
 			{

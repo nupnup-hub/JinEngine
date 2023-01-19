@@ -113,7 +113,7 @@ namespace JinEngine
 			drawList.erase(drawList.begin() + index);
 			const uint drawListCount = (uint)drawList.size();
 			for (uint i = index; i < drawListCount; ++i)
-				drawList[i]->scene->AppInterface()->SetAllComponentDirty();
+				drawList[i]->scene->AppInterface()->SetAllComponentFrameDirty();
 
 			return true;
 		}
@@ -140,7 +140,7 @@ namespace JinEngine
 
 			const uint drawListCount = (uint)drawList.size();
 			for (uint i = index + 1; i < drawListCount; ++i)
-				drawList[i]->scene->AppInterface()->SetComponentDirty(cType);
+				drawList[i]->scene->AppInterface()->SetComponentFrameDirty(cType);
 		}
 		void JGraphicDrawList::AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicResourceHandle* handle)noexcept
 		{

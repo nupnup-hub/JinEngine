@@ -88,6 +88,8 @@ namespace JinEngine
 
 	class JSceneFrameInterface
 	{
+	protected:
+		using SetCompCondition = bool(*)(JComponent&);
 	private:
 		friend class JLight;
 		friend class Graphic::JGraphicDrawList;
@@ -96,10 +98,8 @@ namespace JinEngine
 	public:
 		virtual JSceneFrameInterface* AppInterface() = 0;
 	private:
-		virtual void SetAllComponentDirty()noexcept = 0;
-		virtual void SetComponentDirty(const J_COMPONENT_TYPE cType)noexcept = 0;
-		virtual void SetBackSideComponentDirty(JComponent& jComp)noexcept = 0;
-		virtual void SetBackSideComponentDirty(JComponent& jComp, bool(*condition)(JComponent&))noexcept = 0;
+		virtual void SetAllComponentFrameDirty()noexcept = 0;
+		virtual void SetComponentFrameDirty(const J_COMPONENT_TYPE cType, JComponent* stComp = nullptr, SetCompCondition condiiton = nullptr)noexcept = 0;
 	};
 
 	class JSceneSpaceSpatialInterface
@@ -113,9 +113,7 @@ namespace JinEngine
 	public:
 		virtual JSceneSpaceSpatialInterface* SpaceSpatialInterface() = 0;
 	private:
-		virtual void ViewCulling()noexcept = 0;  
-		virtual void ActivateSpaceSpatial(bool setInitValue = false)noexcept = 0;
-		virtual void DeActivateSpaceSpatial()noexcept = 0;	 
+		virtual void ViewCulling()noexcept = 0;   
 		virtual std::vector<JGameObject*> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept = 0;
 		virtual Core::JOctreeOption GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept = 0;
 		virtual Core::JBvhOption GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept = 0;

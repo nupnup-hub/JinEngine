@@ -11,8 +11,8 @@ namespace JinEngine
 		return flag;
 	}
 	bool JObject::HasFlag(const J_OBJECT_FLAG flag)const noexcept
-	{
-		return (JObject::flag & flag) != 0;
+	{	 
+		return Core::HasSQValueEnum(GetFlag(), flag);
 	}
 	bool JObject::Copy(JObject* ori)
 	{

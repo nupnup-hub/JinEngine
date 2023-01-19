@@ -2,7 +2,7 @@
 #include"Window/JAvatarEditor.h" 
 #include"../JEditorPageShareData.h"
 #include"../JEditorAttribute.h"  
-#include"../CommonWindow/View/JSceneViewer.h"
+#include"../CommonWindow/View/JSceneObserver.h"
 #include"../CommonWindow/Explorer/JObjectExplorer.h"
 #include"../CommonWindow/Detail/JObjectDetail.h"
 #include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
@@ -12,6 +12,7 @@
 #include"../../../Object/Resource/JResourceManager.h"  
 #include"../../../Object/Resource/Mesh/JSkinnedMeshGeometry.h"
 #include"../../../Object/Resource/Scene/JScene.h"
+#include"../../../Object/Resource/Scene/JSceneManager.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"  
 #include"../../../Object/Resource/JResourceObjectFactory.h" 
 #include"../../../Core/Guid/GuidCreator.h"
@@ -33,7 +34,7 @@ namespace JinEngine
 			{
 				"Skeleton Explorer##SkeletonAssetPage",
 				"Avatar Editor##SkeletonAssetPage",
-				"Avatar Viewer##SkeletonAssetPage",
+				"Avatar Observer##SkeletonAssetPage",
 				"Avatar Detail##SkeletonAssetPage"
 			};
 			std::vector<float> initWidthRateVec
@@ -66,16 +67,24 @@ namespace JinEngine
 			}
 
 			//수정필요
+			std::vector<J_OBSERVER_SETTING_TYPE> settingType
+			{
+				J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL,
+				J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS,
+				J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT,
+				J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE
+			};
+
 			explorer = std::make_unique<JObjectExplorer>(windowNames[0], std::move(windowAttributes[0]), GetPageType());
 			avatarEdit = std::make_unique<JAvatarEditor>(windowNames[1], std::move(windowAttributes[1]), GetPageType());
-			avatarViewer = std::make_unique<JSceneViewer>(windowNames[2], std::move(windowAttributes[2]), GetPageType());
-			avatarDetail = std::make_unique<JObjectDetail>(windowNames[2], std::move(windowAttributes[3]), GetPageType());
+			avatarObserver = std::make_unique<JSceneObserver>(windowNames[2], std::move(windowAttributes[2]), GetPageType(), settingType);
+			avatarDetail = std::make_unique<JObjectDetail>(windowNames[3], std::move(windowAttributes[3]), GetPageType());
 
 			std::vector<JEditorWindow*> windows
 			{
 				explorer.get(),
 				avatarEdit.get(),
-				avatarViewer.get(),
+				avatarObserver.get(),
 				avatarDetail.get()
 			};
 			AddWindow(windows);
@@ -98,7 +107,7 @@ namespace JinEngine
 
 			OpenWindow(explorer.get());
 			OpenWindow(avatarEdit.get());
-			OpenWindow(avatarViewer.get());
+			OpenWindow(avatarObserver.get());
 			OpenWindow(avatarDetail.get());
 
 			currOpWndCount = GetOpenWindowCount();
@@ -110,25 +119,35 @@ namespace JinEngine
 
 		}
 		void JEditorSkeletonPage::UpdatePage()
-		{ 
-			/*
+		{
+			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM);
+			JImGuiImpl::PushFont();
+
+			const ImGuiViewport* viewport = ImGui::GetMainViewport();
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+			//ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+   
+			ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x, viewport->WorkSize.y + ImGui::GetFrameHeight()));
+			ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x, viewport->WorkPos.y - ImGui::GetFrameHeight()));
+
 			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_None;
-			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-			if (JImGuiImpl::IsFullScreen())
-				windowFlag |= ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
-			else
-				dockspaceFlag &= ~ImGuiDockNodeFlags_PassthruCentralNode;
+			//ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration |
+			//	ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground;
 
-			if (dockspaceFlag & ImGuiDockNodeFlags_PassthruCentralNode)
-				windowFlag |= ImGuiWindowFlags_NoBackground;
-			*/
-			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_None;
-			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration |
-				ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground;
+			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoNavInputs |
+				ImGuiWindowFlags_NoNavFocus |
+				ImGuiWindowFlags_NoBackground | 
+				ImGuiWindowFlags_NoScrollbar | 
+				ImGuiWindowFlags_NoCollapse | 
+				ImGuiWindowFlags_NoResize | 
+				ImGuiWindowFlags_NoMove;
 
-			if (!JImGuiImpl::IsFullScreen())
-				dockspaceFlag &= ~ImGuiDockNodeFlags_PassthruCentralNode;
-
+			//ImGuiWindowFlags windowFlag =
+			//	ImGuiWindowFlags_NoScrollbar | 
+			//	ImGuiWindowFlags_NoCollapse | 
+			//	ImGuiWindowFlags_NoBackground;
+			 
 			EnterPage(windowFlag);
 			if (reqInitDockNode)
 			{
@@ -136,10 +155,13 @@ namespace JinEngine
 				reqInitDockNode = false;
 			}
 			UpdateDockSpace(dockspaceFlag);
-			ClosePage();
+			ClosePage(); 
+			 
 			uint currOpWndCount = GetOpenWindowCount();
 			for (uint i = 0; i < currOpWndCount; ++i)
-				GetOpenWindow(i)->UpdateWindow();
+				GetOpenWindow(i)->UpdateWindow();  
+			JImGuiImpl::PopFont();
+			ImGui::PopStyleVar(2);
 		}
 		bool JEditorSkeletonPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept
 		{
@@ -154,16 +176,18 @@ namespace JinEngine
 			if (!skeleotnAsset.ConnnectChildUser(selectedObj))
 				return false;
 
-			auto isSameSkelLam = [](JSkinnedMeshGeometry* mesh, size_t skelHash)
+			auto isSameSkelLam = [](JMeshGeometry* mesh, size_t skelHash)
 			{
-				JSkeletonAsset* skeletonAsset = mesh->GetSkeletonAsset();
-				if (skeletonAsset != nullptr)
-					return skeletonAsset->GetSkeleton()->GetHash() == skelHash;
+				if (mesh->GetMeshGeometryType() == J_MESHGEOMETRY_TYPE::SKINNED)
+				{
+					JSkinnedMeshGeometry* skinnedMesh = static_cast<JSkinnedMeshGeometry*>(mesh);
+					return skinnedMesh->GetSkeletonAsset()->GetSkeleton()->GetHash() == skelHash;
+				}
 				else
 					return false;
 			};
-			using IsSameSkelFunctor = Core::JFunctor<bool, JSkinnedMeshGeometry*, size_t>;
-			JMeshGeometry* mesh = JResourceManager::Instance().GetResourceByCondition<JSkinnedMeshGeometry, size_t>(IsSameSkelFunctor{ isSameSkelLam }, skeleotnAsset->GetSkeleton()->GetHash());
+			using IsSameSkelFunctor = Core::JFunctor<bool, JMeshGeometry*, size_t>;
+			JMeshGeometry* mesh = JResourceManager::Instance().GetResourceByCondition<JMeshGeometry, size_t>(IsSameSkelFunctor{ isSameSkelLam }, skeleotnAsset->GetSkeleton()->GetHash());
 
 			if (mesh == nullptr)
 				return false;
@@ -171,11 +195,16 @@ namespace JinEngine
 			const std::wstring sceneName = skeleotnAsset->GetName() + L"##_EditorScene";
 			JDirectory* dir = JResourceManager::Instance().GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath());
 
-			const J_OBJECT_FLAG flag = Core::AddSQValueEnum(OBJECT_FLAG_UNIQUE_EDITOR_OBJECT, OBJECT_FLAG_UNEDITABLE);
-			JScene* newScene = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(sceneName, Core::MakeGuid(), flag, dir));
-
-			JGameObject* meshObj = JGFI::Create(*newScene->GetRootGameObject());
-			JCFU::CreateRenderItem(Core::MakeGuid(), flag, *meshObj, mesh);
+			const J_OBJECT_FLAG flag = Core::AddSQValueEnum(OBJECT_FLAG_DO_NOT_SAVE, OBJECT_FLAG_UNEDITABLE);
+			JScene* newScene = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(sceneName,
+				Core::MakeGuid(),
+				flag,
+				dir,
+				J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW));
+			JSceneManager::Instance().TryOpenScene(newScene, false);
+			 
+			JGameObject* meshObj = JGFI::Create(mesh->GetName(), Core::MakeGuid(), flag, *newScene->GetRootGameObject());
+			JCFU::CreateRenderItem(Core::MakeGuid(), *meshObj, mesh);
 
 			std::vector<std::vector<uint8>> skeletonVec = skeleotnAsset->GetSkeletonTreeIndexVec();
 			std::vector<JGameObject*> skeletonTree((uint)skeletonVec.size());
@@ -186,13 +215,18 @@ namespace JinEngine
 			{
 				const uint childrenCount = (uint)skeletonVec[i].size();
 				for (uint j = 0; j < childrenCount; ++j)
-					skeletonTree[j] = JGFI::Create(skeleotnAsset->GetJointName(j), Core::MakeGuid(), OBJECT_FLAG_UNIQUE_EDITOR_OBJECT, *skeletonTree[i]);
+				{
+					const uint index = skeletonVec[i][j];
+					skeletonTree[index] = JGFI::Create(skeleotnAsset->GetJointName(index),
+						Core::MakeGuid(), 
+						flag,
+						*skeletonTree[i]);
+				}
 			}
 			avatarScene = Core::GetUserPtr(newScene);
-
+			explorer->Initialize(Core::GetUserPtr(meshObj));
 			avatarEdit->Initialize(skeleotnAsset);
-			avatarViewer->Initialize(avatarScene);
-
+			avatarObserver->Initialize(avatarScene, L"Skeleton Edit Cam"); 
 			return true;
 		}
 		void JEditorSkeletonPage::DoSetClose()noexcept
@@ -211,6 +245,12 @@ namespace JinEngine
 		}
 		void JEditorSkeletonPage::BuildDockNode()
 		{
+			ImGui::Begin(GetName().c_str()); ImGui::End();
+			ImGui::Begin(explorer->GetName().c_str()); ImGui::End();
+			ImGui::Begin(avatarEdit->GetName().c_str()); ImGui::End();
+			ImGui::Begin(avatarObserver->GetName().c_str()); ImGui::End();
+			ImGui::Begin(avatarDetail->GetName().c_str()); ImGui::End();
+
 			ImGuiViewport* viewport = ImGui::GetMainViewport();
 			ImGuiID dockspaceId = ImGui::GetID(GetDockNodeName().c_str());
 		 
@@ -219,23 +259,17 @@ namespace JinEngine
 			ImGui::DockBuilderSetNodePos(dockspaceId, viewport->Size);
 
 			ImGuiID dock_main = dockspaceId;
-			ImGuiID dockAvatarSceneEditor = ImGui::DockBuilderSplitNode(dock_main, ImGuiDir_Up, 1, &dock_main, &dock_main);
-			ImGuiID dockAvatarDetail = ImGui::DockBuilderSplitNode(dockAvatarSceneEditor, ImGuiDir_Right, 0.3f, nullptr, &dockAvatarSceneEditor);
-			ImGuiID dockSkeletonExplorer = ImGui::DockBuilderSplitNode(dockAvatarSceneEditor, ImGuiDir_Left, 0.3f, nullptr, &dockAvatarSceneEditor);
+			ImGuiID dockAvatarSceneEditor = ImGui::DockBuilderSplitNode(dock_main, ImGuiDir_Right, 1, &dock_main, &dock_main);
+			ImGuiID dockSkeletonExplorer = ImGui::DockBuilderSplitNode(dockAvatarSceneEditor, ImGuiDir_Left, 0.2f, nullptr, &dockAvatarSceneEditor);
 			ImGuiID dockAvatarEdit = ImGui::DockBuilderSplitNode(dockSkeletonExplorer, ImGuiDir_Down, 0.5f, nullptr, &dockSkeletonExplorer);
+			ImGuiID dockAvatarDetail = ImGui::DockBuilderSplitNode(dockAvatarSceneEditor, ImGuiDir_Right, 0.2f, nullptr, &dockAvatarSceneEditor);
 
 			ImGui::DockBuilderDockWindow(GetName().c_str(), dock_main);
 			ImGui::DockBuilderDockWindow(explorer->GetName().c_str(), dockSkeletonExplorer);
 			ImGui::DockBuilderDockWindow(avatarEdit->GetName().c_str(), dockAvatarEdit);
-			ImGui::DockBuilderDockWindow(avatarViewer->GetName().c_str(), dockAvatarSceneEditor);
+			ImGui::DockBuilderDockWindow(avatarObserver->GetName().c_str(), dockAvatarSceneEditor);
 			ImGui::DockBuilderDockWindow(avatarDetail->GetName().c_str(), dockAvatarDetail);
 			ImGui::DockBuilderFinish(dockspaceId);
-
-			ImGui::Begin(GetName().c_str()); ImGui::End();
-			ImGui::Begin(explorer->GetName().c_str()); ImGui::End();
-			ImGui::Begin(avatarEdit->GetName().c_str()); ImGui::End();
-			ImGui::Begin(avatarViewer->GetName().c_str()); ImGui::End();
-			ImGui::Begin(avatarDetail->GetName().c_str()); ImGui::End();
 		}
 	}
 }

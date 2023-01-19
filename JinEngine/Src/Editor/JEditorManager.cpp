@@ -61,7 +61,7 @@ namespace JinEngine
 
 			editorPage[0]->SetInitWindow();
 			JEditorOpenPageEvStruct evOpenStruct{ editorPage[0]->GetPageType() };
-			JEditorActPageEvStruct evActStruct{ editorPage[0].get()};
+			JEditorActPageEvStruct evActStruct{ editorPage[0]->GetPageType()};
 			OpenPage(&evOpenStruct);
 			ActivatePage(&evActStruct);
 		}
@@ -94,7 +94,7 @@ namespace JinEngine
 				for (uint i = 0; i < pageCount; ++i)
 					editorPage[i]->SetInitWindow();
 				JEditorOpenPageEvStruct evOpenStruct{editorPage[0]->GetPageType()};
-				JEditorActPageEvStruct evActStruct{editorPage[0].get() };
+				JEditorActPageEvStruct evActStruct{editorPage[0]->GetPageType() };
 				OpenPage(&evOpenStruct);
 				ActivatePage(&evActStruct);
 			}
@@ -179,7 +179,7 @@ namespace JinEngine
 		}
 		void JEditorManager::ActivatePage(JEditorActPageEvStruct* evStruct)
 		{
-			auto page = editorPageMap.find(evStruct->actPage->GetPageType());
+			auto page = editorPageMap.find(evStruct->pageType);
 			if (page != editorPageMap.end())
 			{
 				if (page->second->IsOpen())
@@ -192,7 +192,7 @@ namespace JinEngine
 		}
 		void JEditorManager::DeActivatePage(JEditorDeActPageEvStruct* evStruct)
 		{
-			auto page = editorPageMap.find(evStruct->deActPage->GetPageType());
+			auto page = editorPageMap.find(evStruct->pageType);
 			if (page != editorPageMap.end())
 				page->second->DeActivate();
 		}

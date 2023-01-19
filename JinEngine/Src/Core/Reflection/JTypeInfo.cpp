@@ -12,7 +12,7 @@ namespace JinEngine
 		{
 			return name;
 		}
-		std::string JTypeInfo::RawName()const noexcept
+		std::string JTypeInfo::NameWithOutPrefix()const noexcept
 		{
 			return name.substr(1);
 		}

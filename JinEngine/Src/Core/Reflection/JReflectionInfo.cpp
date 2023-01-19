@@ -65,7 +65,7 @@ namespace JinEngine
 			}
 			return res;
 		}
-		void JReflectionInfoImpl::SearchIntance()
+		void JReflectionInfoImpl::SearchInstance()
 		{
 			const uint typeCount = (uint)jType.typeVec.size();
 			for (uint i = 0; i < typeCount; ++i)

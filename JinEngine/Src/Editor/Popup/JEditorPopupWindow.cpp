@@ -228,7 +228,7 @@ namespace JinEngine
 				ImGuiWindowFlags_NoMove |
 				ImGuiWindowFlags_NoTitleBar |
 				ImGuiWindowFlags_NoScrollbar;
-
+			 
 			JImGuiImpl::BeginWindow("##CloseConfirmPopup" + uniqueLabel, nullptr, flag);
 			JVector2<float> textLength = ImGui::CalcTextSize("Close JinEngine!");
 

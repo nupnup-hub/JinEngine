@@ -48,11 +48,11 @@ namespace JinEngine
 			openInfo.emplace_back("Graphic Resource Watcher##JEngine", 0.6f, 0.4f, 0.0f, 0.0f);
 			openInfo.emplace_back("String Convert Test##JEngine", 0.6f, 0.4f, 0.0f, 0.0f);
 			openInfo.emplace_back("App Elapsed Time##JEngine", 0.6f, 0.4f, 0.0f, 0.0f);
-
+			 
 			windowDirectory = std::make_unique<JWindowDirectory>(openInfo[0].GetName(), openInfo[0].MakeAttribute(), GetPageType());
 			objectExplorer = std::make_unique<JObjectExplorer>(openInfo[1].GetName(), openInfo[1].MakeAttribute(), GetPageType());
 			objectDetail = std::make_unique<JObjectDetail>(openInfo[2].GetName(), openInfo[2].MakeAttribute(), GetPageType());
-			sceneObserver = std::make_unique<JSceneObserver>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType());
+			sceneObserver = std::make_unique<JSceneObserver>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType(), Constants::GetAllObserverSetting());
 			sceneViewer = std::make_unique<JSceneViewer>(openInfo[4].GetName(), openInfo[4].MakeAttribute(), GetPageType());
 			logViewer = std::make_unique<JLogViewer>(openInfo[5].GetName(), openInfo[5].MakeAttribute(), GetPageType());
 			animationControllerEditor = std::make_unique<JAnimationControllerEditor>(openInfo[6].GetName(), openInfo[6].MakeAttribute(), GetPageType());
@@ -154,7 +154,7 @@ namespace JinEngine
 					JImGuiImpl::Text(JCUtil::ComporessStringPath(path, lineCal.GetItemRangeMax() / alphabetWidth));
 
 					lineCal.SetNextContentsPosition();
-					JImGuiImpl::Text(JCUtil::ComporessString(obj->GetTypeInfo().RawName(), lineCal.GetItemRangeMax() / alphabetWidth));
+					JImGuiImpl::Text(JCUtil::ComporessString(obj->GetTypeInfo().NameWithOutPrefix(), lineCal.GetItemRangeMax() / alphabetWidth));
 
 					lineCal.SetNextContentsPosition();
 					JImGuiImpl::CheckBox("##ModifiedResource_CheckBox" + name, data->isStore);
@@ -230,7 +230,7 @@ namespace JinEngine
 			ImGui::SetNextWindowPos(viewport->WorkPos);
 
 			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_None;
-			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoInputs |
+			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoInputs |
 				ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground |
 				ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
 
@@ -244,7 +244,7 @@ namespace JinEngine
 				reqInitDockNode = false;
 			}
 			UpdateDockSpace(dockspaceFlag);
-			menuBar->Update(true);
+			menuBar->Update(true);  
 			ClosePage();
 
 			uint currOpWndCount = GetOpenWindowCount();

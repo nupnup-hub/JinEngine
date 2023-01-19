@@ -361,7 +361,7 @@ namespace JinEngine
 			for (uint j = 0; j < copyVec.size(); ++j)
 				JObject::BegineForcedDestroy(copyVec[j]);
 		}
-
+		resourceData->Clear();
 		if (engineRootDir != nullptr)
 		{
 			JObject::BegineForcedDestroy(engineRootDir);
@@ -372,12 +372,11 @@ namespace JinEngine
 			JObject::BegineForcedDestroy(projectRootDir);
 			projectRootDir = nullptr;
 		}
-		JReflectionInfo::Instance().SearchIntance();
+		JReflectionInfo::Instance().SearchInstance();
 		dStorage.Clear();
 		for (auto& data : rStorage)
 			data.second.Clear();
 		rStorage.clear();
-		resourceData->Clear();
 	}
 	void JResourceManagerImpl::StoreProjectResource()
 	{ 
@@ -424,10 +423,9 @@ namespace JinEngine
 		{
 			JDirectory* projectContentsDir = GetDirectory(JApplicationVariable::GetProjectContentPath());
 			JDirectory* defaultSceneDir = projectContentsDir->GetChildDirctory(JApplicationVariable::GetProjectContentScenePath());
-			JScene* newScene = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(defaultSceneDir));
+			JScene* newScene = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(defaultSceneDir, J_SCENE_USE_CASE_TYPE::MAIN));
 			JSceneManager::Instance().TryOpenScene(newScene, false);
-			JSceneManager::Instance().SetMainScene(newScene);
-			newScene->SpaceSpatialInterface()->ActivateSpaceSpatial(true); 
+			JSceneManager::Instance().SetMainScene(newScene); 
 			static_cast<JResourceObjectInterface*>(newScene)->CallStoreResource();
 		}
 		DestroyUnusedResource(J_RESOURCE_TYPE::SHADER, false);
@@ -480,10 +478,7 @@ namespace JinEngine
 		//1 is imgui preserved 
 		for (uint i = 0; i < textureCount; ++i)
 		{
-			J_OBJECT_FLAG objFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE);
-			if (textureType[i] == J_DEFAULT_TEXTURE::MISSING)
-				objFlag = (J_OBJECT_FLAG)(objFlag | OBJECT_FLAG_HIDDEN);
-
+			const J_OBJECT_FLAG objFlag = JDefaultTexture::GetFlag(textureType[i]);	
 			const bool isUse = JDefaultTexture::IsDefaultUse(textureType[i]);
 			std::wstring foldernam;
 			std::wstring name;
@@ -501,6 +496,7 @@ namespace JinEngine
 					newTexture->SetTextureType(Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE);
 				ThrowIfFailedN(newTexture != nullptr);
 				resourceData->RegisterDefaultResource(textureType[i], Core::GetUserPtr(newTexture), isUse);
+				static_cast<JResourceObjectInterface*>(newTexture)->CallStoreResource();
 			}
 		}
 	}
@@ -566,14 +562,12 @@ namespace JinEngine
 			return newMaterial;
 		};
 
-
-		const J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
-
 		JDirectory* matDir = GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath());
 		for (uint i = 0; i < (int)J_DEFAULT_MATERIAL::COUNTER; ++i)
 		{
 			//BasicMaterial format is all .mat( default format)
-			J_DEFAULT_MATERIAL type = (J_DEFAULT_MATERIAL)i;
+			const J_DEFAULT_MATERIAL type = (J_DEFAULT_MATERIAL)i;
+			const J_OBJECT_FLAG flag = JDefaultMateiral::GetFlag(type);
 			const bool isUse = JDefaultMateiral::IsDefaultUse(type);
 
 			const std::wstring name = JDefaultMateiral::ConvertToName(type);
@@ -674,6 +668,7 @@ namespace JinEngine
 
 				ThrowIfFailedN(newMaterial != nullptr);
 				resourceData->RegisterDefaultResource(type, GetUserPtr(newMaterial), isUse);
+				static_cast<JResourceObjectInterface*>(newMaterial)->CallStoreResource();
 			}
 		}
 	}

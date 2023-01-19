@@ -1,5 +1,6 @@
 #pragma once
 #include<string>
+#include"../../JObjectFlag.h"
 
 namespace JinEngine
 {
@@ -70,7 +71,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND:
 				return false;
 			default:
-				break;
+				return false;
 			}
 		}
 		static std::wstring GetName(const J_DEFAULT_TEXTURE& texture)
@@ -115,6 +116,18 @@ namespace JinEngine
 				return L"Shiro_Background.jpg";
 			default:
 				break;
+			}
+		}
+		static J_OBJECT_FLAG GetFlag(const J_DEFAULT_TEXTURE& texture)
+		{
+			switch (texture)
+			{
+			case JinEngine::J_DEFAULT_TEXTURE::NONE:
+				return (J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE);
+			case JinEngine::J_DEFAULT_TEXTURE::MISSING:
+				return (J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE);
+			default:
+				return (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE);
 			}
 		}
 	};

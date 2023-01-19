@@ -28,6 +28,10 @@
 #include"../../../../../Lib/imgui/imgui.h"
 #include<filesystem>
 
+
+//#include"../../../../Core/File/JFileIOHelper.h"  
+// #include "../../../../Graphic/GraphicResource/JGraphicResourceHandle.h"
+
 namespace JinEngine
 {
 	class JAnimationController;
@@ -128,33 +132,46 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Rename", J_EDITOR_POPUP_NODE_TYPE::LEAF, fileViewPopupRootNode.get());
 			editorString->AddString(renameFileNode->GetNodeId(), { "Rename" , u8"ªı ¿Ã∏ß" });
 
+			auto createImportedResourceFLam = [](JWindowDirectory* wndDir, std::vector<JResourceObject*> rVec)
+			{  
+				const uint resCount = (uint)rVec.size();
+				for (uint i = 0; i < resCount; ++i)
+				{
+					if (rVec[i] != nullptr)
+					{
+						wndDir->CreatePreviewScene(Core::GetUserPtr(rVec[i]), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
+						wndDir->SetModifiedBit(Core::GetUserPtr(rVec[i]), true);
+					}
+				}
+			};
 			auto renameLam = [](JWindowDirectory* wndDir) 
 			{
 				wndDir->renameHelper->Activate(wndDir->selectedObj);
 				wndDir->SetModifiedBit(wndDir->selectedObj, true);
 			};
 
-			createResourceFunctor = std::make_unique<CreateObjectF::Functor>(&JWindowDirectory::CreateResourceObject, this);
-			createDirectoryFunctor = std::make_unique<CreateDirectoryF::Functor>(&JWindowDirectory::CreateDirectory, this);
-			destroyObjectFunctor = std::make_unique<DestroyObjectF::Functor>(&JWindowDirectory::DestroyObject, this);
-			openNewDirFunctor = std::make_unique<OpenNewDirectoryF::Functor>(&JWindowDirectory::OpenNewDirectory, this);
-			importResourceFunctor = std::make_unique<ImportResourceF::Functor>(&JWindowDirectory::ImportFile, this);
-			renameFunctor = std::make_unique<RenameF::Functor>(renameLam);
+			createResourceF = std::make_unique<CreateObjectF::Functor>(&JWindowDirectory::CreateResourceObject, this);
+			createDirectoryF = std::make_unique<CreateDirectoryF::Functor>(&JWindowDirectory::CreateDirectory, this);
+			destroyObjectF = std::make_unique<DestroyObjectF::Functor>(&JWindowDirectory::DestroyObject, this);
+			openNewDirF = std::make_unique<OpenNewDirectoryF::Functor>(&JWindowDirectory::OpenNewDirectory, this);
+			importResourceF = std::make_unique<ImportResourceF::Functor>(&JWindowDirectory::ImportFile, this);
+			createImportedResourceF = std::make_unique<CreateImportedResourceF::Functor>(createImportedResourceFLam);
+			renameF = std::make_unique<RenameF::Functor>(renameLam);
 			regCreateRobjF = std::make_unique<RegisterCreateREvF::Functor>(&JWindowDirectory::RegisterCreateResourceObjectEv, this);
 			regCreateDirF = std::make_unique<RegisterCreateDEvF::Functor>(&JWindowDirectory::RegisterCreateDirectoryEv, this);
 			regDestroyObjF = std::make_unique<RegisterDestroyEvF::Functor>(&JWindowDirectory::RegisterDestroyResourceObjectEv, this);
 
 			//createDirectoryInDirectoryViewNode->RegisterSelectBind(std::make_unique<RegisterCreateDEvF::CompletelyBind>(*regCreateDirF));
 		//	destoryDirectoryNode->RegisterSelectBind(std::make_unique<RegisterDestroyEvF::CompletelyBind>(*regDestroyObjF));
-			//renameDirectoryNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*renameFunctor, this));
+			//renameDirectoryNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*renameF, this));
 
 			createMaterialNode->RegisterSelectBind(std::make_unique<RegisterCreateREvF::CompletelyBind>(*regCreateRobjF, J_RESOURCE_TYPE::MATERIAL));
 			createSceneNode->RegisterSelectBind(std::make_unique<RegisterCreateREvF::CompletelyBind>(*regCreateRobjF, J_RESOURCE_TYPE::SCENE));
 			createAnimationControllerNode->RegisterSelectBind(std::make_unique<RegisterCreateREvF::CompletelyBind>(*regCreateRobjF, J_RESOURCE_TYPE::ANIMATION_CONTROLLER));
 			createDirctoryInFileViewNode->RegisterSelectBind(std::make_unique<RegisterCreateDEvF::CompletelyBind>(*regCreateDirF));
 			destroyNode->RegisterSelectBind(std::make_unique<RegisterDestroyEvF::CompletelyBind>(*regDestroyObjF));
-			importNode->RegisterSelectBind(std::make_unique<ImportResourceF::CompletelyBind>(*importResourceFunctor));
-			renameFileNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*renameFunctor, this));
+			importNode->RegisterSelectBind(std::make_unique<ImportResourceF::CompletelyBind>(*importResourceF));
+			renameFileNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*renameF, this));
 
 			//directoryViewPopup = std::make_unique<JEditorPopupMenu>("Window JDirectory Directory Popup", std::move(directoryViewPopupNode));
 			//directoryViewPopup->AddPopupNode(std::move(createDirectoryInDirectoryViewNode));
@@ -187,9 +204,10 @@ namespace JinEngine
 			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
 			UpdateDocking();
 			if (IsActivated() && opendDirctory.IsValid())
-			{ 
+			{
 				selectedObj = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
 				UpdateMouseClick();
+				 
 				ImGui::SetCursorPosX(ImGui::GetWindowSize().x * 0.7f);
 				searchBarHelper->UpdateSearchBar(GetName(), false);
 				const bool hasData = searchBarHelper->HasInputData();
@@ -208,8 +226,7 @@ namespace JinEngine
 					}
 				}
 					 
-				childWindowHeight = ImGui::GetWindowSize().y - ImGui::GetCursorPosY() - 
-					(JImGuiImpl::GetAlphabetSize().y + ImGui::GetStyle().FramePadding.y * 4.0f);
+				childWindowHeight = ImGui::GetWindowSize().y - ImGui::GetCursorPosY() - ImGui::GetFrameHeight() * 1.2f; 
 				BuildDirectoryView();
 				float preFramePaddingY = ImGui::GetStyle().FramePadding.y;
 				ImGui::GetStyle().FramePadding.y = 0;
@@ -220,13 +237,10 @@ namespace JinEngine
 				btnIconMaxSize = JImGuiImpl::GetDisplaySize().x * selectorIconMaxRate;
 				btnIconMinSize = JImGuiImpl::GetDisplaySize().x * selectorIconMinRate;
 				btnIconSize = JMathHelper::Clamp<float>(btnIconSize, btnIconMinSize, btnIconMaxSize);
-				JImGuiImpl::SliderFloat("##WindowDirectory_SizeSlider", &btnIconSize, btnIconMinSize, btnIconMaxSize, "", ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_NoInput);
+				JImGuiImpl::SliderFloat("##" + GetName() + "_SizeSlider", &btnIconSize, btnIconMinSize, btnIconMaxSize, "", ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_NoInput);
 				if (ImGui::IsItemActive() || ImGui::IsItemHovered())
 					ImGui::SetTooltip("%.1f", btnIconSize);
 				ImGui::GetStyle().FramePadding.y = preFramePaddingY;
-
-				if (actImport)
-					ImportFile();
 			}
 			CloseWindow();
 		}
@@ -245,10 +259,10 @@ namespace JinEngine
 			JDirectory* clickedDir = DirectoryViewOnScreen(root.Get(), canSelect);
 			lastUpdateOpenNewDir = false;
 			 
-			if (openNewDirBinder != nullptr)
+			if (openNewDirB != nullptr)
 			{
-				openNewDirBinder->InvokeCompletelyBind();
-				openNewDirBinder.reset();
+				openNewDirB->InvokeCompletelyBind();
+				openNewDirB.reset();
 			}
 			if (clickedDir != nullptr && clickedDir->GetGuid() != opendDirctory->GetGuid())
 			{
@@ -390,7 +404,16 @@ namespace JinEngine
 			{
 				const J_RESOURCE_TYPE resourceType = jRobj->GetResourceType();
 				if (resourceType == J_RESOURCE_TYPE::SKELETON)
-					RequestOpenPage(JEditorOpenPageEvStruct{ J_EDITOR_PAGE_TYPE::SKELETON_SETTING, Core::GetUserPtr(jRobj) });
+				{
+					AddEventNotification(*JEditorEvent::EvInterface(),
+						GetGuid(),
+						J_EDITOR_EVENT::OPEN_PAGE,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(J_EDITOR_PAGE_TYPE::SKELETON_SETTING, Core::GetUserPtr(jRobj))));
+					AddEventNotification(*JEditorEvent::EvInterface(),
+						GetGuid(),
+						J_EDITOR_EVENT::ACTIVATE_PAGE,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(J_EDITOR_PAGE_TYPE::SKELETON_SETTING)));
+				}
 				else
 					RequestSelectObject(JEditorSelectObjectEvStruct{ GetOwnerPageType(), Core::GetUserPtr(jRobj) });
 			}
@@ -411,11 +434,11 @@ namespace JinEngine
 			 
 			ImGui::SetCursorPos(ImVec2(editorPositionCal->GetPositionX(), editorPositionCal->GetPositionY()));
 			ImVec2 preCursor = ImGui::GetCursorPos();
-			const std::string unqName ="##"+ JCUtil::WstrToU8Str(nowPreviewScene->GetJObject()->GetName()) + "_Selectable";
+			const std::string unqName ="##"+ JCUtil::WstrToU8Str(nowPreviewScene->GetJObject()->GetName()) + GetName() + "_Selectable";
 			if (JImGuiImpl::Selectable(unqName, false, ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowItemOverlap, JVector2<float>(btnIconSize, btnIconSize)))
 			{
 				if (ImGui::GetMouseClickedCount(0) >= 2)
-					openNewDirBinder = std::make_unique<OpenNewDirectoryF::CompletelyBind>(*openNewDirFunctor, Core::GetUserPtr(jDir));
+					openNewDirB = std::make_unique<OpenNewDirectoryF::CompletelyBind>(*openNewDirF, Core::GetUserPtr(jDir));
 			}
 			ImGui::SetCursorPos(preCursor);
 			JImGuiImpl::Image(*nowPreviewScene->GetPreviewCamera().Get(), JVector2<float>(btnIconSize, btnIconSize));
@@ -435,22 +458,20 @@ namespace JinEngine
 						size_t fileSize = std::filesystem::file_size(p);
 						if (JWindow::Instance().HasStorageSpace(opendDirctory->GetPath(), fileSize))
 						{
-							std::vector<JResourceObject*> res = JResourceImporter::Instance().ImportResource(opendDirctory.Get(), pathData);
-							const uint resCount = (uint)res.size();
-							for (uint i = 0; i < resCount; ++i)
-							{
-								if (res[i] != nullptr)
-									CreatePreviewScene(Core::GetUserPtr(res[i]), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
-							}
+							std::vector<JResourceObject*> res = JResourceImporter::Instance().ImportResource(opendDirctory.Get(), pathData);		 
+							auto createImpR = std::make_unique<CreateImportedResourceF::CompletelyBind>(*createImportedResourceF,
+								this,
+								std::move(res));
+							auto evStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(createImpR), GetOwnerPageType());
+							AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
 						}
 					}
 					else
 						MessageBox(0, L"Is not valid format", 0, 0);
 				}
-			}
-			actImport = false;
+			} 
+			importFilePath.clear();
 		} 
-
 		void JWindowDirectory::OpenNewDirectory(Core::JUserPtr<JDirectory> newOpendDirectory)
 		{		
 			if (!newOpendDirectory.IsValid())
@@ -468,19 +489,6 @@ namespace JinEngine
 		}
 		void JWindowDirectory::CreateOpendDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask)
 		{
-			const uint fileCount = (uint)directory->GetFileCount();
-			for (uint i = 0; i < fileCount; ++i)
-			{
-				JFile* file = directory->GetFile(i);
-				if (file == nullptr)
-					continue;
-
-				if (hasNameMask && !JCUtil::Contain(file->GetName(), mask))
-					continue;
-
-				CreatePreviewScene(Core::GetUserPtr(file->GetResource()), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
-			}
-
 			const uint directoryCount = (uint)directory->GetChildernDirctoryCount();
 			for (uint i = 0; i < directoryCount; ++i)
 			{
@@ -492,6 +500,19 @@ namespace JinEngine
 					continue;
 
 				CreatePreviewScene(Core::GetUserPtr(dir), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
+			}
+
+			const uint fileCount = (uint)directory->GetFileCount();
+			for (uint i = 0; i < fileCount; ++i)
+			{
+				JFile* file = directory->GetFile(i);
+				if (file == nullptr)
+					continue;
+
+				if (hasNameMask && !JCUtil::Contain(file->GetName(), mask))
+					continue;
+
+				CreatePreviewScene(Core::GetUserPtr(file->GetResource()), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
 			}
 		}
 		void JWindowDirectory::CreateAllDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask)
@@ -515,7 +536,7 @@ namespace JinEngine
 		}
 		void JWindowDirectory::RegisterCreateResourceObjectEv(J_RESOURCE_TYPE shapeType)
 		{
-			std::unique_ptr<CreateObjectF::CompletelyBind> createB = std::make_unique<CreateObjectF::CompletelyBind>(*createResourceFunctor, 
+			std::unique_ptr<CreateObjectF::CompletelyBind> createB = std::make_unique<CreateObjectF::CompletelyBind>(*createResourceF, 
 				Core::JUserPtr{ opendDirctory},
 				std::move(shapeType));
 			auto evStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(createB), GetOwnerPageType());
@@ -529,7 +550,7 @@ namespace JinEngine
 			else
 				p = opendDirctory;
 
-			std::unique_ptr<CreateDirectoryF::CompletelyBind> createB = std::make_unique<CreateDirectoryF::CompletelyBind>(*createDirectoryFunctor, std::move(p));
+			std::unique_ptr<CreateDirectoryF::CompletelyBind> createB = std::make_unique<CreateDirectoryF::CompletelyBind>(*createDirectoryF, std::move(p));
 			auto evStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(createB), GetOwnerPageType());
 			AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
 		}
@@ -537,7 +558,7 @@ namespace JinEngine
 		{
 			if (selectedObj.IsValid())
 			{
-				std::unique_ptr<DestroyObjectF::CompletelyBind> destroyB = std::make_unique<DestroyObjectF::CompletelyBind>(*destroyObjectFunctor, std::move(selectedObj));
+				std::unique_ptr<DestroyObjectF::CompletelyBind> destroyB = std::make_unique<DestroyObjectF::CompletelyBind>(*destroyObjectF, std::move(selectedObj));
 				auto evStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(destroyB), GetOwnerPageType());
 				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
 			}
@@ -559,7 +580,7 @@ namespace JinEngine
 			}
 			case JinEngine::J_RESOURCE_TYPE::SCENE:
 			{
-				resource = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(owner.Get()));
+				resource = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(owner.Get(), J_SCENE_USE_CASE_TYPE::MAIN));
 				log = "Create Scene";
 				break;
 			}
@@ -635,8 +656,7 @@ namespace JinEngine
 		{
 			JEditorWindow::DoDeActivate();
 			DeRegisterListener();
-			ClearPreviewGroup();
-			actImport = false;
+			ClearPreviewGroup(); 
 		}
 		void JWindowDirectory::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{

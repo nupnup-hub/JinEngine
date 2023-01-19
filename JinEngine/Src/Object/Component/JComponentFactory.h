@@ -73,9 +73,13 @@ namespace JinEngine
 		{
 			return static_cast<T*>(JCF::Instance().Create(T::TypeName(), owner));
 		}
-		static T* Create(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner)
+		static T* Create(const size_t guid, JGameObject& owner)
+		{ 
+			return static_cast<T*>(JCF::Instance().Create(T::TypeName(), guid, OBJECT_FLAG_NONE, owner));
+		}
+		static T* Create(const size_t guid, const J_OBJECT_FLAG addedFlag, JGameObject& owner)
 		{
-			return static_cast<T*>(JCF::Instance().Create(T::TypeName(), guid, flag, owner));
+			return static_cast<T*>(JCF::Instance().Create(T::TypeName(), guid, addedFlag, owner));
 		}
 		static T* Copy(T& ori, JGameObject& owner)
 		{

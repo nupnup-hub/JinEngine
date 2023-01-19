@@ -160,7 +160,10 @@ namespace JinEngine
 		for (uint i = 0; i < meshCount; ++i)
 		{
 			const std::wstring materialName = L"m" + meshGroup.GetMeshData(i)->GetName();
-			JMaterial* newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(materialName, GetDirectory()));
+			JMaterial* newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(materialName,
+				Core::MakeGuid(),
+				GetFlag(),
+				GetDirectory()));
 			newMaterial->SetLight(true);
 			newMaterial->SetShadow(true); 
 			meshGroup.GetMeshData(i)->SetMaterial(Core::GetUserPtr(newMaterial));
@@ -169,7 +172,7 @@ namespace JinEngine
 		if (StuffSubMesh(meshGroup) && StoreObject(this) == Core::J_FILE_IO_RESULT::SUCCESS)
 		{
 			bool res = WriteMeshData(meshGroup);
-			Clear();
+			ClearGpuBuffer();
 			//Resource 할당은 Activated상태에서 이루어진다
 			//Import는 데이터 변환과 메타데이터 저장을 위함
 			return res;

@@ -50,6 +50,7 @@ namespace JinEngine
 		class SubmeshGeometry
 		{
 		private:
+			std::wstring name;
 			size_t guid;
 			JMaterial* material;
 		private:
@@ -63,9 +64,10 @@ namespace JinEngine
 			bool hasUV = false;
 			J_MESHGEOMETRY_TYPE type;
 		public:
-			SubmeshGeometry(const size_t guid);
+			SubmeshGeometry(const std::wstring name, const size_t guid);
 			~SubmeshGeometry();
 		public:
+			std::wstring GetName()const noexcept;
 			JMaterial* GetMaterial()const noexcept; 
 			uint GetVertexCount()const noexcept;
 			uint GetVertexStart()const noexcept; 
@@ -123,6 +125,7 @@ namespace JinEngine
 		uint GetSubmeshIndexCount(const uint index)const noexcept;
 		uint GetSubmeshBaseVertexLocation(const uint index)const noexcept;
 		uint GetSubmeshStartIndexLocation(const uint index)const noexcept;
+		std::wstring GetSubMeshName(const uint index)const noexcept;
 		JMaterial* GetSubmeshMaterial(const uint index)const noexcept; 
 		DirectX::BoundingBox GetBoundingBox()const noexcept;
 		DirectX::XMFLOAT3 GetBoundingBoxCenter()const noexcept;
@@ -152,7 +155,7 @@ namespace JinEngine
 		virtual bool ReadMeshData() = 0;
 		virtual bool ImportMesh(JMeshGroup& meshGroup) = 0;
 	protected:
-		void Clear();
+		void ClearGpuBuffer();
 	protected:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)override;
 	protected:

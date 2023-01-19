@@ -25,7 +25,8 @@ namespace JinEngine
 {
 	struct JGraphicShaderData; 
 	struct JComputeShaderData;
-	class JMeshGeometry;
+	class JMeshGeometry; 
+	class JMaterial;
 	class JShader; 
 	class JResourceManagerImpl;
 	class JResourceIO;   
@@ -95,7 +96,8 @@ namespace JinEngine
 		class JGraphicCommandInterface : public JGraphicEditorInterface
 		{
 		private:  
-			friend class JMeshGeometry;
+			friend class JMeshGeometry; 
+			friend class JMaterial;
 			friend class Application::JApplication; 
 		private:
 			virtual ID3D12CommandQueue* GetCommandQueue()const noexcept = 0;

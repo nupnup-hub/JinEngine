@@ -427,7 +427,7 @@ namespace JinEngine
 			JGameObject* newObj = ownerPtr.Get();
 			if (AddInstance(std::move(ownerPtr)))
 			{
-				newObj->transform = JCFI<JTransform>::Create(Core::MakeGuid(), (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), *newObj);
+				newObj->transform = JCFI<JTransform>::Create(Core::MakeGuid(), *newObj);
 				return newObj;
 			}
 			else
@@ -444,7 +444,7 @@ namespace JinEngine
 			JGameObject* newObj = ownerPtr.Get();
 			if (AddInstance(std::move(ownerPtr)))
 			{
-				newObj->transform = JCFI<JTransform>::Create(Core::MakeGuid(), (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE), *newObj);
+				newObj->transform = JCFI<JTransform>::Create(Core::MakeGuid(), *newObj);
 				return newObj;
 			}
 			else

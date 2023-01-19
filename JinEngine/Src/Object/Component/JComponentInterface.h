@@ -17,15 +17,17 @@ namespace JinEngine
 		using IsAvailableOverlapCallable = Core::JStaticCallable<bool>;
 	protected:
 		using SetFrameDirtyCallable = Core::JStaticCallable<void, JComponent&>;
+		using SetFrameOffsetCallable = Core::JStaticCallable<void, JComponent&, JComponent*, bool>;
 	public:
 		struct CTypeHint
 		{
 		public:
 			J_COMPONENT_TYPE thisType;  
-			bool isFrameInterface;
+			bool hasFrameDirty;
+			bool hasFrameOffset;
 		public:
 			CTypeHint() = default;
-			CTypeHint(const J_COMPONENT_TYPE thisType, const bool isFrameInterface);
+			CTypeHint(const J_COMPONENT_TYPE thisType, const bool hasFrameDirty = false, const bool hasFrameOffset = false);
 			~CTypeHint();
 		};
 		struct CTypeCommonFunc
@@ -50,13 +52,16 @@ namespace JinEngine
 		{
 		private:
 			SetFrameDirtyCallable* setFrameDirtyCallable;
+			SetFrameOffsetCallable* setFrameOffsetCallable;
 		public:
-			CTypeInterfaceFunc(SetFrameDirtyCallable* setFrameDirtyCallable);
+			CTypeInterfaceFunc(SetFrameDirtyCallable* setFrameDirtyCallable, SetFrameOffsetCallable* setFrameOffsetCallable);
 			CTypeInterfaceFunc() = default;
 			~CTypeInterfaceFunc();
 		public:
 			void CallSetFrameDirty(JComponent& jComp);
+			void CallSetFrameOffset(JComponent& jComp, JComponent* refComp, bool isCreated);
 			SetFrameDirtyCallable GetSetFrameDirtyCallable();
+			SetFrameOffsetCallable GetSetFrameOffsetCallable();
 		};
 	public:
 		static CTypeHint GetCTypeHint(const J_COMPONENT_TYPE cType);
@@ -71,7 +76,9 @@ namespace JinEngine
 	//Interface
 	protected:
 		static void CallSetFrameDirty(JComponent& jComp);
+		static void CallSetFrameOffset(JComponent& jComp, JComponent* refComp, bool isCreated);
 		static SetFrameDirtyCallable GetSetFrameDirtyCallable(const J_COMPONENT_TYPE cType);
+		static SetFrameOffsetCallable GetSetFrameOffsetCallable(const J_COMPONENT_TYPE cType);
 	protected:
 		static bool NameOrder(const CTypeHint& a, const CTypeHint& b)noexcept;
 	protected:

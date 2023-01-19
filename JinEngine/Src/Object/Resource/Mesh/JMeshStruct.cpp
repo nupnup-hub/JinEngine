@@ -244,6 +244,16 @@ namespace JinEngine
 	{
 		vertices[index] = vertex;
 	}
+	void JStaticMeshData::SetVertexPositionScale(const float rate)noexcept
+	{
+		for (auto& data : vertices)
+		{
+			data.position.x *= rate;
+			data.position.y *= rate;
+			data.position.z *= rate;
+		}
+		CreateBoundingObject();
+	}
 	void JStaticMeshData::AddVertex(const JStaticMeshVertex& vertex)noexcept
 	{
 		vertices.push_back(vertex);
@@ -292,6 +302,15 @@ namespace JinEngine
 	{
 		vertices[index] = vertex;
 	}
+	void JSkinnedMeshData::SetVertexPositionScale(const float rate)noexcept
+	{
+		for (auto& data : vertices)
+		{
+			data.position.x *= rate;
+			data.position.y *= rate;
+			data.position.z *= rate;
+		}
+	}
 	void JSkinnedMeshData::AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept
 	{
 		const uint vCount = GetVertexCount();
@@ -319,6 +338,21 @@ namespace JinEngine
 		}
 		return totalIndex;
 	}
+	DirectX::BoundingBox JMeshGroup::GetGroupBBox()noexcept
+	{
+		Core::JBBox bbox; 
+		const uint meshCount = GetMeshDataCount();
+		for (uint i = 0; i < meshCount; ++i)
+			bbox = Core::JBBox::Union(bbox, GetMeshData(i)->GetBBox());
+		return bbox.Convert();
+	}
+	void JMeshGroup::SetVertexPositionScale(const float rate)noexcept
+	{
+		const uint meshCount = GetMeshDataCount();
+		for (uint i = 0; i < meshCount; ++i)
+			GetMeshData(i)->SetVertexPositionScale(rate);
+	}
+
 	uint JStaticMeshGroup::GetMeshDataCount()const noexcept
 	{
 		return (uint)staticMeshData.size();
@@ -357,6 +391,10 @@ namespace JinEngine
 	Core::JUserPtr<JSkeletonAsset> JSkinnedMeshGroup::GetSkeletonAsset()const noexcept
 	{
 		return skeletonAsset;
+	}
+	void JSkinnedMeshGroup::SetSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept
+	{
+		skeletonAsset = newSkeletonAsset;
 	}
 	void JSkinnedMeshGroup::AddMeshData(JSkinnedMeshData&& meshData) noexcept
 	{

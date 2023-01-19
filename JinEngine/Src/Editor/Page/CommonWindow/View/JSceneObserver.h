@@ -1,4 +1,5 @@
 #pragma once
+#include"JSceneObserverSettingType.h"
 #include"../../JEditorWindow.h"
 #include"../../../Menubar/JEditorMenuNodeUtilData.h"
 #include"../../../Utility/JEditorGameObjectSurpportToolType.h" 
@@ -28,24 +29,6 @@ namespace JinEngine
 		class JEditorMenuNode; 
 		class JSceneObserver final : public JEditorWindow, public JEditorObjectHandlerInterface
 		{    
-		public:
-			enum class J_OBSERVER_SETTING_TYPE
-			{
-				//OPTION is control option panel
-				//VIEW is rendering render result
-				//TOOL is help editor
-
-				OPTION_SPACE_SPATIAL,	 
-				VIEW_SETTING_SPACE_SPATIAL_TREE,
-				VIEW_SHADOW_VIEWER,
-				VIEW_OCCLUSION_VIEWER,
-				TOOL_CAM_FRUSTUM,	//TOOL
-				TOOL_EDIT_GOBJ_POS,	 
-				TOOL_EDIT_GOBJ_ROT,
-				TOOL_EDIT_GOBJ_SCALE,
-				TOOL_MAKE_DEBUG_OBJECT,
-				COUNT
-			}; 
 		private:
 			using OpenMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 			using ActivateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
@@ -83,8 +66,13 @@ namespace JinEngine
 			std::wstring editorCameraName;
 			JVector3<float> lastCamPos{ 0,0,0 };
 			JVector3<float> lastCamRot{ 0,0,0 };
+		private:
+			bool isCreateHelperGameObj = false;
 		public:
-			JSceneObserver(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType);
+			JSceneObserver(const std::string& name,
+				std::unique_ptr<JEditorAttribute> attribute,
+				const J_EDITOR_PAGE_TYPE pageType,
+				const std::vector< J_OBSERVER_SETTING_TYPE> useSettingType);
 			~JSceneObserver();
 			JSceneObserver(const JSceneObserver& rhs) = delete;
 			JSceneObserver& operator=(const JSceneObserver& rhs) = delete;
@@ -117,6 +105,9 @@ namespace JinEngine
 			void DeActivateToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type);
 			J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE ConvertSettingToToolType(const J_OBSERVER_SETTING_TYPE type)const noexcept;
 			J_OBSERVER_SETTING_TYPE ConvertToolToSettingType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)const noexcept;
+		private:
+			void CreateHelperGameObject();
+			void DestroyHelperGameObject();
 		public:
 			void DoSetOpen()noexcept final;
 			void DoSetClose()noexcept final;

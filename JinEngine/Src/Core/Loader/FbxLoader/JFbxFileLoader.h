@@ -62,7 +62,7 @@ namespace JinEngine
 				0,0,0,1
 			};
 			const int failUpDirSearch = -2;
-			const float resizeRate = 0.01f;
+			float resizeRate = 1;
 		private:
 			//Debug 
 			int num = 0;

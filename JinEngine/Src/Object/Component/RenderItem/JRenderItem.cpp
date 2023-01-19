@@ -14,8 +14,8 @@
 #include"../../../Application/JApplicationVariable.h"
 #include<fstream>
 
-//Debug
-#include"../../../Debug/JDebugTextOut.h"
+//Debug  
+//#include"../../../Debug/JDebugTextOut.h"
 using namespace DirectX;
 namespace JinEngine
 {
@@ -35,7 +35,7 @@ namespace JinEngine
 			return nullptr;
 		else
 		{
-			if (material[index])
+			if (material[index] != nullptr)
 				return material[index];
 			else
 				return mesh->GetSubmeshMaterial(index);
@@ -379,7 +379,7 @@ namespace JinEngine
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JRenderItem>(Core::MakeGuid(), owner->GetFlag(), owner);
 			JRenderItem* newComp = ownerPtr.Get();
 			if (AddInstance(std::move(ownerPtr)))
 				return newComp;
@@ -423,12 +423,35 @@ namespace JinEngine
 		bool(*ptr)() = isAvailableoverlapLam;
 		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 
-		static auto setFrameLam = [](JComponent& component) {static_cast<JRenderItem*>(&component)->SetFrameDirty(); };
-		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
-
-		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
+		static auto setFrameDirtyLam = [](JComponent& component) {static_cast<JRenderItem*>(&component)->SetFrameDirty(); };
+		static auto setFrameOffsetLam = [](JComponent& component, JComponent* refComp, const bool isCreated)
+		{
+			JRenderItem* rItem = static_cast<JRenderItem*>(&component); 
+			if (isCreated)
+			{ 
+				if (refComp == nullptr)
+				{
+					rItem->SetFirstFrameBuffOffset(0);
+					rItem->SetSecondFrameBuffOffset(0); 
+				}
+				else
+				{ 
+					JRenderItem* refRItem = static_cast<JRenderItem*>(refComp);
+					rItem->SetFirstFrameBuffOffset(refRItem->GetFirstFrameBuffOffset() + refRItem->GetSubmeshCount());
+					rItem->SetSecondFrameBuffOffset(refRItem->GetSecondFrameBuffOffset() +  1); 
+				}
+			}
+			else
+			{
+				rItem->SetFirstFrameBuffOffset(rItem->GetFirstFrameBuffOffset() - static_cast<JRenderItem*>(refComp)->GetSubmeshCount());
+				rItem->SetSecondFrameBuffOffset(rItem->GetSecondFrameBuffOffset() - 1); 
+			}
+		};
+		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameDirtyLam };
+		static SetFrameOffsetCallable setFrameOffsetCallable{ setFrameOffsetLam };
+		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true, true };
 		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
-		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
+		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, &setFrameOffsetCallable };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}

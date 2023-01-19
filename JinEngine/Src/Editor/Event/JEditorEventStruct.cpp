@@ -74,23 +74,23 @@ namespace JinEngine
 			return J_EDITOR_EVENT::CLOSE_PAGE;
 		}
 
-		JEditorActPageEvStruct::JEditorActPageEvStruct(JEditorPage* actPage)
-			:JEditorEvStruct(actPage->GetPageType()), actPage(actPage)
+		JEditorActPageEvStruct::JEditorActPageEvStruct(const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorEvStruct(pageType)
 		{}
 		bool JEditorActPageEvStruct::PassDefectInspection()const noexcept
 		{
-			return actPage != nullptr;
+			return true;
 		}
 		J_EDITOR_EVENT JEditorActPageEvStruct::GetEventType()const noexcept
 		{
 			return J_EDITOR_EVENT::ACTIVATE_PAGE;
 		}
-		JEditorDeActPageEvStruct::JEditorDeActPageEvStruct(JEditorPage* deActPage)
-			:JEditorEvStruct(deActPage->GetPageType()), deActPage(deActPage)
+		JEditorDeActPageEvStruct::JEditorDeActPageEvStruct(const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorEvStruct(pageType)
 		{}
 		bool JEditorDeActPageEvStruct::PassDefectInspection()const noexcept
 		{
-			return deActPage != nullptr;
+			return true;
 		}
 		J_EDITOR_EVENT JEditorDeActPageEvStruct::GetEventType()const noexcept
 		{

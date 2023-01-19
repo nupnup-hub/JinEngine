@@ -11,6 +11,19 @@ namespace JinEngine
 {
 	namespace Core
 	{
+		//return (2.0f * camNear) / (camNear + camFar - v * (camFar - camNear));
+		namespace Constants
+		{
+			static float GetVPositionResizeRate(const float length)noexcept
+			{
+				static constexpr float preSizeRange = 10000;
+				static constexpr float resizeRange = 100;
+				static constexpr float divFactor = resizeRange / preSizeRange;
+				//return ((length + resizeRange) * divFactor) / length;
+				return 0.1f;
+			}
+		}
+
 		JFbxFileLoaderImpl::~JFbxFileLoaderImpl()
 		{
 			if (fbxManager != nullptr)
@@ -40,7 +53,10 @@ namespace JinEngine
 			if (importer->Import(scene))
 			{
 				//++num;
+				auto& settings = scene->GetGlobalSettings();
+				resizeRate = 0.1f / settings.GetSystemUnit().GetScaleFactor();
 
+				//settings.GetSystemUnit().GetScaleFactor()
 				// 씬 내에서 삼각형화 할 수 있는 모든 노드를 삼각형화 시킨다.
 				FbxNode* rootNode = scene->GetRootNode();
 				SetSceneAxis(scene, rootNode);
@@ -72,7 +88,7 @@ namespace JinEngine
 		J_FBXRESULT JFbxFileLoaderImpl::LoadFbxMeshFile(const std::string& path, JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint)
 		{
 			if (fbxManager == nullptr)
-			{
+			{ 
 				fbxManager = FbxManager::Create();
 				FbxIOSettings* fbxIoSetting = FbxIOSettings::Create(fbxManager, IOSROOT);
 				fbxManager->SetIOSettings(fbxIoSetting);
@@ -86,16 +102,18 @@ namespace JinEngine
 				return J_FBXRESULT::FAIL;
 			}
 			FbxScene* scene = FbxScene::Create(fbxManager, "JScene");
-
+		 
 			//fbx file 내용을 scene으로 가져온다
 			if (importer->Import(scene))
-			{
-				//++num;
+			{ 
+				auto& settings = scene->GetGlobalSettings(); 
+				resizeRate = 0.1f / settings.GetSystemUnit().GetScaleFactor();
 
+				//++num; 
 				// 씬 내에서 삼각형화 할 수 있는 모든 노드를 삼각형화 시킨다.
 				FbxNode* rootNode = scene->GetRootNode();
 				SetSceneAxis(scene, rootNode);
-
+				 
 				FbxGeometryConverter geometryConverter(fbxManager);
 				geometryConverter.Triangulate(scene, true);
 				J_FBXRESULT result;
@@ -227,8 +245,8 @@ namespace JinEngine
 					res.typeInfo = J_FBXRESULT::HAS_ANIMATION;
 				}
 
-				uint meshCount;
-				uint jointCount;
+				uint meshCount = 0;
+				uint jointCount = 0;
 				GetMeshCount(scene->GetRootNode(), meshCount, res);
 				GetJointCount(scene->GetRootNode(), jointCount, res);
 
@@ -290,7 +308,10 @@ namespace JinEngine
 					SortBlendingWeight();
 					JStaticMeshData staticMesh = LoadStaticMesh(node);
 					if (staticMesh.IsValid())
+					{
+						staticMesh.InverseIndex();
 						meshGroup.AddMeshData(std::move(staticMesh));
+					}
 				}
 			}
 			const uint childCount = node->GetChildCount();
@@ -310,7 +331,10 @@ namespace JinEngine
 					  
 					JSkinnedMeshData skinnedMesh = LoadSkinnedMesh(node, skeleton);
 					if (skinnedMesh.IsValid())
+					{
+						skinnedMesh.InverseIndex();
 						meshGroup.AddMeshData(std::move(skinnedMesh));
+					}
 				}
 			}
 			const uint childCount = node->GetChildCount();
@@ -354,7 +378,6 @@ namespace JinEngine
 			}
 
 			const uint childCount = node->GetChildCount();
-
 			for (uint i = 0; i < childCount; ++i)
 				LoadJoint(node->GetChild(i), depth + 1, (int)skeleton.joint.size(), index, skeleton);
 		}
@@ -377,7 +400,7 @@ namespace JinEngine
 				bool hasUv;
 				bool hasBinormal;
 				bool hasTangent;
-				for (int j = 0; j < 3; ++j)
+				for (uint j = 0; j < 3; ++j)
 				{
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
@@ -397,7 +420,7 @@ namespace JinEngine
 					ComputeTangentFrame(idx, 1, positionXm, normalXm, textureXm, 3, tangentXm);
 				}
 				 
-				for (int j = 0; j < 3; ++j)
+				for (uint j = 0; j < 3; ++j)
 				{
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
@@ -439,7 +462,7 @@ namespace JinEngine
 				bool hasUv = false;
 				bool hasBinormal = false;
 				bool hasTangent = false;
-				for (int j = 0; j < 3; ++j)
+				for (uint j = 0; j < 3; ++j)
 				{
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
@@ -458,7 +481,7 @@ namespace JinEngine
 				if (!hasTangent)
 					ComputeTangentFrame(idx, 1, positionXm, normalXm, textureXm, 3, tangentXm);
 
-				for (int j = 0; j < 3; ++j)
+				for (uint j = 0; j < 3; ++j)
 				{
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
@@ -469,7 +492,7 @@ namespace JinEngine
 					if (data != vertexIndexMap.end())
 						indices.push_back(data->second);
 					else
-					{  
+					{   
 						JSkinnedMeshVertex newVertex(positionXm[j], normalXm[j], textureXm[j], tangentXm[j], controlPoint[controlPointIndex].blendingInfo);
 						uint32 vertexIndex = (uint32)vertices.size();
 						vertexIndexMap.emplace(guid, vertexIndex);
@@ -496,7 +519,7 @@ namespace JinEngine
 			return JSkinnedMeshData{JCUtil::StrToWstr(node->GetName()), MakeGuid(), std::move(indices), true, true, std::move(vertices) };
 		}
 		void JFbxFileLoaderImpl::LoadControlPoint(FbxMesh* mesh)
-		{
+		{  
 			uint count = mesh->GetControlPointsCount();
 
 			controlPoint.clear();
@@ -897,8 +920,7 @@ namespace JinEngine
 			}
 		}
 		void JFbxFileLoaderImpl::StuffSkletonData(JFbxSkeleton& fbxSkeleton, std::vector<Joint>& joint)
-		{  
-			joint.reserve(fbxSkeleton.jointCount);
+		{   
 			joint.resize(fbxSkeleton.jointCount);
 
 			XMFLOAT3 skeletonMinInit(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
@@ -1276,21 +1298,21 @@ namespace JinEngine
 		}
 		void JFbxFileLoaderImpl::ResizeMatrix(XMFLOAT4X4& xmF)noexcept
 		{
-			//xmF._41 *= resizeRate;
-			//xmF._42 *= resizeRate;
-			//xmF._43 *= resizeRate;
+			xmF._41 *= resizeRate;
+			xmF._42 *= resizeRate;
+			xmF._43 *= resizeRate;
 		}
 		void JFbxFileLoaderImpl::ResizeVertexPosition(XMFLOAT3& vertexPosition)noexcept
 		{
-			//vertexPosition.x *= resizeRate;
-			//vertexPosition.y *= resizeRate;
-			//vertexPosition.z *= resizeRate;
+			vertexPosition.x *= resizeRate;
+			vertexPosition.y *= resizeRate;
+			vertexPosition.z *= resizeRate;
 		}
 		void JFbxFileLoaderImpl::ResizeVertexPosition(JVector3<float>& vertexPosition)noexcept
 		{
-			//vertexPosition.x *= resizeRate;
-			//vertexPosition.y *= resizeRate;
-			//vertexPosition.z *= resizeRate;
+			vertexPosition.x *= resizeRate;
+			vertexPosition.y *= resizeRate;
+			vertexPosition.z *= resizeRate;
 		}
 	}
 }

@@ -80,8 +80,11 @@ namespace JinEngine
 		if (JTexture::textureType != textureType)
 		{
 			JTexture::textureType = textureType;
-			ClearResource();
-			StuffResource();
+			if (IsValid())
+			{
+				ClearResource();
+				StuffResource();
+			}
 		}
 	}
 	JTextureImportInterface* JTexture::ImportInterface()noexcept
@@ -119,7 +122,8 @@ namespace JinEngine
 		if (IsValid())
 		{ 
 			if(HasTxtHandle())
-				DestroyTxtHandle(); 
+				DestroyTxtHandle();
+			uploadBuffer.Reset();
 			SetValid(false);
 		}
 	}
@@ -131,7 +135,7 @@ namespace JinEngine
 			{
 				if (Create2DTexture(uploadBuffer, GetPath(), GetFormat()))
 				{
-					uploadBuffer.Reset();
+					//uploadBuffer.Reset();
 					return true;
 				}
 			}
@@ -139,7 +143,7 @@ namespace JinEngine
 			{ 
 				if (CreateCubeMap(uploadBuffer, GetPath(), GetFormat()))
 				{
-					uploadBuffer.Reset();
+					//uploadBuffer.Reset();
 					return true;
 				}
 			}

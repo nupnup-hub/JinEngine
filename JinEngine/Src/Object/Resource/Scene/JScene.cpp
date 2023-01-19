@@ -33,14 +33,21 @@ namespace JinEngine
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
 		JDirectory* directory,
+		const J_SCENE_USE_CASE_TYPE useCaseType,
 		const uint8 formatIndex)
-		:JResourceInitData(name, guid, flag, directory, formatIndex)
+		:JResourceInitData(name, guid, flag, directory, formatIndex), useCaseType(useCaseType)
 	{}
-	JScene::JSceneInitData::JSceneInitData(const std::wstring& name, JDirectory* directory, const uint8 formatIndex)
-		: JResourceInitData(name, directory, formatIndex)
+	JScene::JSceneInitData::JSceneInitData(const std::wstring& name,
+		JDirectory* directory,
+		const J_SCENE_USE_CASE_TYPE useCaseType,
+		const uint8 formatIndex)
+		: JResourceInitData(name, directory, formatIndex), useCaseType(useCaseType)
 	{}
-	JScene::JSceneInitData::JSceneInitData(JDirectory* directory, const uint8 formatIndex)
-		: JResourceInitData(JResourceObject::GetDefaultName<JScene>(), directory, formatIndex)
+	JScene::JSceneInitData::JSceneInitData(JDirectory* directory,
+		const J_SCENE_USE_CASE_TYPE useCaseType,
+		const uint8 formatIndex)
+		: JResourceInitData(JResourceObject::GetDefaultName<JScene>(), directory, formatIndex),
+		useCaseType(useCaseType)
 	{}
 	J_RESOURCE_TYPE JScene::JSceneInitData::GetResourceType() const noexcept
 	{
@@ -102,6 +109,10 @@ namespace JinEngine
 		for (const auto& data : rVec)
 			sum += static_cast<JRenderItem*>(data)->GetSubmeshCount();
 		return sum;
+	}
+	J_SCENE_USE_CASE_TYPE JScene::GetUseCaseType()const noexcept
+	{
+		return useCaseType;
 	}
 	bool JScene::IsAnimatorActivated()const noexcept
 	{
@@ -168,19 +179,16 @@ namespace JinEngine
 		for (uint i = 0; i < objCount; ++i)
 			allObjects[i]->Activate();
 
-		SetAllComponentDirty();
+		SetAllComponentFrameDirty();
 		if (spatialStructure != nullptr)
 		{
 			if (spatialStructure->IsInitTriggerActivated())
-			{
 				InitializeSpaceSpatial();
-				spatialStructure->SetInitTrigger(false);
-			}
 			spatialStructure->Activate(root, debugRoot);
 		}
 	}
 	void JScene::DoDeActivate()noexcept
-	{ 
+	{
 		if (spatialStructure != nullptr)
 			spatialStructure->DeAcitvate();
 		root->DeActivate();
@@ -217,7 +225,7 @@ namespace JinEngine
 			BegineForcedDestroy(root);
 			root = nullptr;
 
-			if(debugRoot != nullptr)
+			if (debugRoot != nullptr)
 				BegineForcedDestroy(debugRoot);
 			debugRoot = nullptr;
 
@@ -237,21 +245,19 @@ namespace JinEngine
 	}
 	void JScene::CreateDefaultGameObject()noexcept
 	{
+		const J_OBJECT_FLAG sceneFlag = GetFlag();
 		const J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
-		root = JGFI::CreateRoot(L"RootGameObject", Core::MakeGuid(), rootFlag, *this);
+		root = JGFI::CreateRoot(L"RootGameObject", Core::MakeGuid(), Core::AddSQValueEnum(sceneFlag, rootFlag), *this);
 
-		J_OBJECT_FLAG flag = OBJECT_FLAG_NONE;
-		if (GetFlag() == OBJECT_FLAG_EDITOR_OBJECT)
-			flag = OBJECT_FLAG_EDITOR_OBJECT;
-		else if (GetFlag() == OBJECT_FLAG_UNIQUE_EDITOR_OBJECT)
-			flag = OBJECT_FLAG_UNIQUE_EDITOR_OBJECT;
-		else
-			flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE);
-
-		if (!HasFlag(OBJECT_FLAG_EDITOR_OBJECT))
-			JGFU::CreateSky(*root, flag, L"DefaultSky");
-		JGFU::CreateCamera(*root, flag, true, L"MainCamera");
-		JGFU::CreateLight(*root, flag, J_LIGHT_TYPE::DIRECTIONAL, L"MainLight");
+		const bool is3DScene = (useCaseType == J_SCENE_USE_CASE_TYPE::MAIN ) || 
+			(useCaseType == J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW);
+		J_OBJECT_FLAG objFlag = Core::AddSQValueEnum(sceneFlag, OBJECT_FLAG_UNDESTROYABLE);
+		if (is3DScene)
+			JGFU::CreateSky(*root, objFlag, L"DefaultSky");
+		JGFU::CreateCamera(*root, objFlag, true, L"MainCamera");
+		JGameObject* lit = JGFU::CreateLight(*root, objFlag, J_LIGHT_TYPE::DIRECTIONAL, L"MainLight");
+		if(is3DScene)
+			lit->GetComponent<JLight>()->SetShadow(true);
 	}
 	void JScene::CreateDebugRoot()noexcept
 	{
@@ -317,8 +323,8 @@ namespace JinEngine
 		// && owner->GetRenderItem()->GetRenderLayer() != J_RENDER_LAYER::DEBUG
 		if (owner == nullptr || !owner->HasRenderItem())
 			return;
-		 
-		if (IsActivated())
+
+		if (IsActivated() && spatialStructure != nullptr)
 			spatialStructure->UpdateGameObject(owner);
 	}
 	bool JScene::RegisterComponent(JComponent& component)noexcept
@@ -341,10 +347,9 @@ namespace JinEngine
 			if (cashVec->second[i]->GetGuid() == guid)
 				return false;
 		}
-
+		 
 		JSceneManager::Instance().UpdateScene(this, compType);
 		cashVec->second.push_back(&component);
-
 		if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
 		{
 			JRenderItem* jRItem = static_cast<JRenderItem*>(&component);
@@ -352,20 +357,11 @@ namespace JinEngine
 			const J_MESHGEOMETRY_TYPE meshType = jRItem->GetMesh()->GetMeshGeometryType();
 			objectLayer[(int)renderLayer][(int)meshType].push_back(jRItem->GetOwner());
 
-			const uint nowCount = (uint)cashVec->second.size();
-			if (nowCount > 1)
-			{
-				JRenderItem* preJRItem = static_cast<JRenderItem*>(cashVec->second[nowCount - 2]);
-				CallSetFirstFrameBuffOffset(*jRItem, CallGetFirstFrameBuffOffset(*preJRItem) + preJRItem->GetSubmeshCount());
-			}
-			else
-				CallSetFirstFrameBuffOffset(*jRItem, 0);
-
-			CallSetSecondFrameBuffOffset(*jRItem, nowCount - 1);
 			if (spatialStructure != nullptr)
 				spatialStructure->AddGameObject(jRItem->GetOwner());
-		}
-
+		} 
+		JComponent* preComp = compCount > 0 ? cashVec->second[compCount - 1] : nullptr; 
+		SetComponentFrameOffset(compType, preComp, compCount, true);
 		return true;
 	}
 	bool JScene::DeRegisterComponent(JComponent& component)noexcept
@@ -375,110 +371,103 @@ namespace JinEngine
 		if (cashData == componentCash.end())
 			return false;
 
+		int hitIndex = -1;
 		std::vector<JComponent*>& cashVec = cashData->second;
 		const uint compCount = (uint)cashVec.size();
 		const size_t guid = component.GetGuid();
 		for (uint i = 0; i < compCount; ++i)
 		{
 			if (cashVec[i]->GetGuid() == guid)
-			{
-				if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
-				{
-					JRenderItem* jRItem = static_cast<JRenderItem*>(&component);
-					JGameObject* jOwner = jRItem->GetOwner();
-
-					const uint submeshCount = jRItem->GetSubmeshCount();
-					for (uint j = i + 1; j < compCount; ++j)
-					{
-						JRenderItem* backRItem = static_cast<JRenderItem*>(cashVec[j]);
-						CallSetFirstFrameBuffOffset(*backRItem, CallGetFirstFrameBuffOffset(*backRItem) - submeshCount);
-						CallSetSecondFrameBuffOffset(*backRItem, j - 1);
-					}
-
-					const int rIndex = (int)jRItem->GetRenderLayer();
-					const size_t guid = jOwner->GetGuid();
-
-					for (uint j = 0; j < (uint)J_MESHGEOMETRY_TYPE::COUNT; ++j)
-					{
-						const uint vecCount = (uint)objectLayer[rIndex][j].size();
-						for (uint k = 0; k < vecCount; ++k)
-						{
-							if (guid == objectLayer[rIndex][j][k]->GetGuid())
-							{
-								objectLayer[rIndex][j].erase(objectLayer[rIndex][j].begin() + k);
-								break;
-							}
-						}
-					}
-					//objectLayer[rIndex][mIndex].push_back(jOwner);
-					if (spatialStructure != nullptr)
-						spatialStructure->RemoveGameObject(jOwner);
-				}
-				SetBackSideComponentDirty(*cashVec[i]);
-				cashVec.erase(cashVec.begin() + i);
-				JSceneManager::Instance().UpdateScene(this, compType);
-				return true;
+			{ 
+				hitIndex = i;
+				break; 
 			}
 		}
-		return false;
+
+		if (hitIndex == -1)
+			return false;
+
+		if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
+		{
+			JRenderItem* jRItem = static_cast<JRenderItem*>(&component);
+			JGameObject* jOwner = jRItem->GetOwner();
+
+			const int rIndex = (int)jRItem->GetRenderLayer();
+			const size_t guid = jOwner->GetGuid();
+
+			for (uint j = 0; j < (uint)J_MESHGEOMETRY_TYPE::COUNT; ++j)
+			{
+				const uint vecCount = (uint)objectLayer[rIndex][j].size();
+				for (uint k = 0; k < vecCount; ++k)
+				{
+					if (guid == objectLayer[rIndex][j][k]->GetGuid())
+					{
+						objectLayer[rIndex][j].erase(objectLayer[rIndex][j].begin() + k);
+						break;
+					}
+				}
+			}
+			//objectLayer[rIndex][mIndex].push_back(jOwner);
+			if (spatialStructure != nullptr)
+				spatialStructure->RemoveGameObject(jOwner);
+		}
+
+		SetComponentFrameDirty(compType, hitIndex+ 1);
+		SetComponentFrameOffset(compType, &component, hitIndex + 1, false);
+
+		cashVec.erase(cashVec.begin() + hitIndex);
+		if (JCI::GetCTypeHint(compType).hasFrameDirty)
+			JSceneManager::Instance().UpdateScene(this, compType);
+		return true; 
 	}
-	void JScene::SetAllComponentDirty()noexcept
+	void JScene::SetAllComponentFrameDirty()noexcept
 	{
 		for (auto& data : componentCash)
-			SetComponentDirty(data.first);
+			SetComponentFrameDirty(data.first);
 	}
-	void JScene::SetComponentDirty(const J_COMPONENT_TYPE cType)noexcept
+	void JScene::SetComponentFrameDirty(const J_COMPONENT_TYPE cType, JComponent* stComp, SetCompCondition condiiton)noexcept
 	{
-		if (JCI::GetCTypeHint(cType).isFrameInterface)
+		if (JCI::GetCTypeHint(cType).hasFrameDirty)
+		{
+			if (stComp != nullptr)
+				SetComponentFrameDirty(cType, (uint)JCUtil::GetJIdenIndex(GetComponentCashVec(cType), stComp->GetGuid()), condiiton);
+			else
+				SetComponentFrameDirty(cType, (uint)0, condiiton);
+		};
+	} 
+	void JScene::SetComponentFrameDirty(const J_COMPONENT_TYPE cType, const uint stIndex, SetCompCondition condiiton)noexcept
+	{
+		if (JCI::GetCTypeHint(cType).hasFrameDirty)
 		{
 			auto SetFrameDirtyCallable = JCI::GetSetFrameDirtyCallable(cType);
 			const std::vector<JComponent*>& cashVec = GetComponentCashVec(cType);
 			const uint compCount = (uint)cashVec.size();
-			for (uint i = 0; i < compCount; ++i)
-				SetFrameDirtyCallable(nullptr, *cashVec[i]);
-		}
-	}
-	void JScene::SetBackSideComponentDirty(JComponent& jComp) noexcept
-	{
-		const J_COMPONENT_TYPE cType = jComp.GetComponentType();
-		const std::vector<JComponent*>& cashVec = GetComponentCashVec(cType);
-		const size_t guid = jComp.GetGuid();
-		const uint compCount = (uint)cashVec.size();
-		uint i = 0;
-		for (; i < compCount; ++i)
-		{
-			if (guid == cashVec[i]->GetGuid())
+			 
+			if (condiiton != nullptr)
 			{
-				++i;
-				break;
+				for (uint i = stIndex; i < compCount; ++i)
+				{
+					if (condiiton(*cashVec[i]))
+						SetFrameDirtyCallable(nullptr, *cashVec[i]);
+				}
+			}
+			else
+			{
+				for (uint i = stIndex; i < compCount; ++i)
+					SetFrameDirtyCallable(nullptr, *cashVec[i]);
 			}
 		}
-		for (; i < compCount; ++i)
-		{
-			auto SetFrameDirtyCallable = JCI::GetSetFrameDirtyCallable(cType);
-			SetFrameDirtyCallable(nullptr, *cashVec[i]);
-		}
 	}
-	void JScene::SetBackSideComponentDirty(JComponent& jComp, bool(*condition)(JComponent&))noexcept
+	void JScene::SetComponentFrameOffset(const J_COMPONENT_TYPE cType, JComponent* refComp, const uint stIndex, const bool isCreated)noexcept
 	{
-		const J_COMPONENT_TYPE cType = jComp.GetComponentType();
-		const std::vector<JComponent*>& cashVec = GetComponentCashVec(cType);
-		const size_t guid = jComp.GetGuid();
-		const uint compCount = (uint)cashVec.size();
-		uint i = 0;
-		for (; i < compCount; ++i)
+		if (JCI::GetCTypeHint(cType).hasFrameOffset)
 		{
-			if (guid == cashVec[i]->GetGuid())
-			{
-				++i;
-				break;
-			}
-		}
-		for (; i < compCount; ++i)
-		{
-			auto SetFrameDirtyCallable = JCI::GetSetFrameDirtyCallable(cType);
-			if (condition(*cashVec[i]))
-				SetFrameDirtyCallable(nullptr, *cashVec[i]);
+			auto SetFrameOffsetCallable = JCI::GetSetFrameOffsetCallable(cType);
+			const std::vector<JComponent*>& cashVec = GetComponentCashVec(cType);
+			const uint compCount = (uint)cashVec.size();
+		 
+			for (uint i = stIndex; i < compCount; ++i)
+				SetFrameOffsetCallable(nullptr, *cashVec[i], refComp, isCreated);
 		}
 	}
 	void JScene::ViewCulling()noexcept
@@ -493,30 +482,6 @@ namespace JinEngine
 			//Caution: Has Bug
 			//Core::JCullingFrustum cFrustum(worldCamFrustum);
 			//spatialStructure->Culling(cFrustum);
-		}
-	}
-	void JScene::ActivateSpaceSpatial(bool setInitValue)noexcept
-	{
-		if (spatialStructure == nullptr)
-		{
-			spatialStructure = std::make_unique<Core::JSceneSpatialStructure>();
-			if (setInitValue)
-			{
-				if (IsActivated())
-					InitializeSpaceSpatial();
-				else
-					spatialStructure->SetInitTrigger(true);
-			}
-			if (!IsActivated())
-				spatialStructure->DeAcitvate();
-		}
-	}
-	void JScene::DeActivateSpaceSpatial()noexcept
-	{
-		if (spatialStructure != nullptr)
-		{
-			spatialStructure->Clear();
-			spatialStructure.reset();
 		}
 	}
 	std::vector<JGameObject*> JScene::GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept
@@ -582,16 +547,17 @@ namespace JinEngine
 			kdOption.commonOption.innerRoot = root;
 			kdOption.commonOption.debugRoot = debugRoot;
 			spatialStructure->SetKdTreeOption(commonLayer, kdOption);
- 
+
 			Core::JBvhOption bvhDebugOption = spatialStructure->GetBvhOption(debugLayer);
 			bvhDebugOption.commonOption.innerRoot = debugRoot;
 			bvhDebugOption.commonOption.debugRoot = debugRoot;
-			bvhDebugOption.commonOption.isSpaceSpatialActivated = true; 
+			bvhDebugOption.commonOption.isSpaceSpatialActivated = true;
 
 			//bvhDebugOption.commonOption.isDebugActivated = true;
 			//bvhDebugOption.commonOption.isDebugLeafOnly = true;
 
 			spatialStructure->SetBvhOption(debugLayer, bvhDebugOption);
+			spatialStructure->SetInitTrigger(false);
 			/*
 					Core::JKdTreeOption kdDebugOption;
 			kdDebugOption.commonOption.innerRoot = debugRoot;
@@ -654,6 +620,7 @@ namespace JinEngine
 				bvhOption.Store(stream);
 				kdTreeOption.Store(stream);
 			}
+			JFileIOHelper::StoreEnumData(stream, L"UseCaseType:", scene->GetUseCaseType());
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
@@ -676,7 +643,7 @@ namespace JinEngine
 
 		if (newScene == nullptr && loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
 		{
-			JSceneInitData initdata{ pathData.name, metadata.guid,metadata.flag, directory,(uint8)metadata.formatIndex };
+			JSceneInitData initdata{ pathData.name, metadata.guid,metadata.flag, directory, metadata.useCaseType, (uint8)metadata.formatIndex };
 			if (initdata.IsValidLoadData())
 			{
 				Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JScene>(initdata);
@@ -697,12 +664,11 @@ namespace JinEngine
 
 		if (metadata.isMainScene)
 		{
+			newScene->spatialStructure->SetInitTrigger(false);
 			JSceneManager::Instance().TryOpenScene(newScene, false);
 			JSceneManager::Instance().SetMainScene(newScene);
 			if (metadata.isActivatedSpaceSpatial)
 			{
-				newScene->ActivateSpaceSpatial();
-
 				for (uint i = 0; i < (uint)Core::J_SPACE_SPATIAL_LAYER::COUNT; ++i)
 				{
 					const uint occIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::OCTREE;
@@ -738,7 +704,7 @@ namespace JinEngine
 					}
 					metadata.kdTreeOption[i].commonOption.debugRoot = newScene->debugRoot;
 					newScene->SetKdTreeOption((Core::J_SPACE_SPATIAL_LAYER)i, metadata.kdTreeOption[i]);
-				}		 
+				}
 			}
 		}
 		return newScene;
@@ -754,7 +720,7 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, metadata.isActivatedSpaceSpatial);
 
 			for (uint i = 0; i < (uint)Core::J_SPACE_SPATIAL_LAYER::COUNT; ++i)
-			{ 
+			{
 				const uint occIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::OCTREE;
 				const uint bvhIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::BVH;
 				const uint kdIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::KD_TREE;
@@ -763,6 +729,7 @@ namespace JinEngine
 				metadata.bvhOption[i].Load(stream, metadata.hasInnerRoot[bvhIndex][i], metadata.innerRootGuid[bvhIndex][i]);
 				metadata.kdTreeOption[i].Load(stream, metadata.hasInnerRoot[kdIndex][i], metadata.innerRootGuid[kdIndex][i]);
 			}
+			JFileIOHelper::LoadEnumData(stream, metadata.useCaseType);
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
@@ -782,7 +749,7 @@ namespace JinEngine
 
 				newScene->SetValid(true);
 				newScene->CreateDefaultGameObject();
-				StoreObject(newScene); 
+				StoreObject(newScene);
 				newScene->ClearResource();
 				return newScene;
 			}
@@ -799,6 +766,7 @@ namespace JinEngine
 				Core::MakeGuid(),
 				ori->GetFlag(),
 				directory,
+				static_cast<JScene*>(ori)->GetUseCaseType(),
 				GetFormatIndex<JScene>(ori->GetFormat())));
 
 			JScene* newScene = ownerPtr.Get();
@@ -835,8 +803,15 @@ namespace JinEngine
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}
 	JScene::JScene(const JSceneInitData& initdata)
-		:JSceneInterface(initdata), debugRootGuid(Core::MakeGuid())
-	{}
+		:JSceneInterface(initdata), debugRootGuid(Core::MakeGuid()), useCaseType(initdata.useCaseType)
+	{
+		if (useCaseType == J_SCENE_USE_CASE_TYPE::MAIN ||
+			useCaseType == J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW)
+		{
+			spatialStructure = std::make_unique<Core::JSceneSpatialStructure>();
+			spatialStructure->SetInitTrigger(true);
+		}
+	}
 	JScene::~JScene()
 	{}
 }

@@ -319,6 +319,8 @@ namespace JinEngine
 				serializedRootSig->GetBufferPointer(),
 				serializedRootSig->GetBufferSize(),
 				IID_PPV_ARGS(mRootSignature.GetAddressOf())));
+
+			mRootSignature->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof("HZB RootSignature") - 1, "HZB RootSignature");
 		}
 		void JHZBOccCulling::BuildUploadBuffer(ID3D12Device* device, const uint objectCapacity, const uint occlusionCapacity)
 		{ 

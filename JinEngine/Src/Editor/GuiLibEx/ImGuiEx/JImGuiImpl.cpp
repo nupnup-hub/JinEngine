@@ -47,10 +47,10 @@ namespace JinEngine
 		public:
 			ImVec4 colors[ImGuiCol_COUNT];
 		public:
-			bool optWindowPadding;
+			bool optWindowPadding = false;
 		public:
 			std::bitset<3> mouseClick; 
-			bool isDrag;
+			bool isDrag = false;
 		public:
 			bool enablePopup = true;
 			bool enableSelector = true;
@@ -58,25 +58,25 @@ namespace JinEngine
 			static constexpr float minRate = 7.5f;
 		public:
 			//widget Count
-			uint windowCount;
-			uint childWindowCount;
-			uint popupCount;
-			uint textCount;
-			uint checkBoxCount;
-			uint buttonCount;
-			uint imageButtonCount;
-			uint treeNodeCount;
-			uint selectableCount;
-			uint inputDataCount;
-			uint sliderCount;
-			uint tabBarCount;
-			uint tabItemCount;
-			uint tableCount;
-			uint menuBarCount;
-			uint menuCount;
-			uint menuItemCount;
-			uint comboCount;
-			uint textureCount;
+			uint windowCount = 0;
+			uint childWindowCount = 0;
+			uint popupCount = 0;
+			uint textCount = 0;
+			uint checkBoxCount = 0;
+			uint buttonCount = 0;
+			uint imageButtonCount = 0;
+			uint treeNodeCount = 0;
+			uint selectableCount = 0;
+			uint inputDataCount = 0;
+			uint sliderCount = 0;
+			uint tabBarCount = 0;
+			uint tabItemCount = 0;
+			uint tableCount = 0;
+			uint menuBarCount = 0;
+			uint menuCount = 0;
+			uint menuItemCount = 0;
+			uint comboCount = 0;
+			uint textureCount = 0; 
 		public:
 			JImGui()
 				:guid(JCUtil::CalculateGuid(typeid(JImGui).name()))

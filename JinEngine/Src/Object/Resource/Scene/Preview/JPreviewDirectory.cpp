@@ -21,7 +21,8 @@ namespace JinEngine
 			(jDir->GetName() + L"_PreviewScene",
 				Core::MakeGuid(),
 				OBJECT_FLAG_EDITOR_OBJECT,
-				JResourceManager::Instance().GetEditorResourceDirectory()));
+				JResourceManager::Instance().GetEditorResourceDirectory(),
+				J_SCENE_USE_CASE_TYPE::TWO_DIMENSIONAL_PREVIEW));
 
 		JSceneManager::Instance().TryOpenScene(scene, true);
 		previewCamera = scene->GetMainCamera();

@@ -1,5 +1,6 @@
 #pragma once   
 #include"JSceneInterface.h" 
+#include"JSceneType.h"
 #include"../Mesh/JMeshType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"
 #include"../../../Core/SpaceSpatial/JSpaceSpatialType.h"
@@ -38,20 +39,26 @@ namespace JinEngine
 			Core::JOctreeOption octreeOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
 			Core::JBvhOption bvhOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
 			Core::JKdTreeOption kdTreeOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
+			J_SCENE_USE_CASE_TYPE useCaseType;
 		};
 	public:
 		struct JSceneInitData : public JResourceInitData
 		{
 		public:
+			const J_SCENE_USE_CASE_TYPE useCaseType;
+		public:
 			JSceneInitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				JDirectory* directory,
+				const J_SCENE_USE_CASE_TYPE useCaseType,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JScene>(GetAvailableFormat()[0]));
 			JSceneInitData(const std::wstring& name,
 				JDirectory* directory,
+				const J_SCENE_USE_CASE_TYPE useCaseType,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JScene>(GetAvailableFormat()[0]));
 			JSceneInitData(JDirectory* directory,
+				const J_SCENE_USE_CASE_TYPE useCaseType,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JScene>(GetAvailableFormat()[0]));
 		public:
 			J_RESOURCE_TYPE GetResourceType() const noexcept;
@@ -68,6 +75,7 @@ namespace JinEngine
 		bool isAnimatorActivated = false;  
 	private: 
 		const size_t debugRootGuid;
+		const J_SCENE_USE_CASE_TYPE useCaseType;
 	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
@@ -85,6 +93,7 @@ namespace JinEngine
 		uint GetGameObjectCount()const noexcept;
 		uint GetComponetCount(const J_COMPONENT_TYPE cType)const noexcept;
 		uint GetMeshCount()const noexcept;
+		J_SCENE_USE_CASE_TYPE GetUseCaseType()const noexcept;
 
 		bool IsAnimatorActivated()const noexcept; 
 		bool IsMainScene()const noexcept; 
@@ -125,15 +134,13 @@ namespace JinEngine
 		bool RegisterComponent(JComponent& component)noexcept final;
 		bool DeRegisterComponent(JComponent& component)noexcept final;
 	private:
-		void SetAllComponentDirty()noexcept final;
-		void SetComponentDirty(const J_COMPONENT_TYPE cType) noexcept final;
-		void SetBackSideComponentDirty(JComponent& jComp) noexcept final;
-		void SetBackSideComponentDirty(JComponent& jComp, bool(*condition)(JComponent&))noexcept final;
-	private:
+		void SetAllComponentFrameDirty()noexcept final;
+		void SetComponentFrameDirty(const J_COMPONENT_TYPE cType, JComponent* stComp = nullptr, SetCompCondition condiiton = nullptr) noexcept final;
+		void SetComponentFrameDirty(const J_COMPONENT_TYPE cType, const uint stIndex, SetCompCondition condiiton = nullptr)noexcept;
+		void SetComponentFrameOffset(const J_COMPONENT_TYPE cType, JComponent* refComp, const uint stIndex, const bool isCreated)noexcept;
+private:
 		//SceneSpatial
-		void ViewCulling()noexcept final;
-		void ActivateSpaceSpatial(bool setInitValue = false)noexcept final;
-		void DeActivateSpaceSpatial()noexcept final;
+		void ViewCulling()noexcept final; 
 		std::vector<JGameObject*> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept final;
 		Core::JOctreeOption GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept final;
 		Core::JBvhOption GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept final;

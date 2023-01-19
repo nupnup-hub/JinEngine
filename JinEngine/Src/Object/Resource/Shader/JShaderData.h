@@ -23,6 +23,8 @@ namespace JinEngine
 		//Material이외에 오브젝트에서 Pso변경이 필요할시 사용
 		//ex) gameobject select시 outline 
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> extraPso[(int)J_GRAPHIC_EXTRA_PSO_TYPE::COUNT];
+	public:
+		void Clear();
 	};
 
 	struct JComputeShaderData
@@ -43,5 +45,7 @@ namespace JinEngine
 		ID3D12RootSignature* RootSignature = nullptr;	//Constants
 	public:
 		DispatchInfo dispatchInfo;													//Variable
+	public:
+		void Clear();
 	};
 }

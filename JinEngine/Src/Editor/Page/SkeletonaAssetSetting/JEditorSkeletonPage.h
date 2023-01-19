@@ -8,7 +8,7 @@ namespace JinEngine
 	{
 		class JObjectExplorer;
 		class JAvatarEditor;  
-		class JSceneViewer;
+		class JSceneObserver;
 		class JObjectDetail;
 
 		class JEditorSkeletonPage final: public JEditorPage
@@ -16,7 +16,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr< JObjectExplorer> explorer;
 			std::unique_ptr< JAvatarEditor> avatarEdit;
-			std::unique_ptr< JSceneViewer> avatarViewer;
+			std::unique_ptr< JSceneObserver> avatarObserver;
 			std::unique_ptr<JObjectDetail>avatarDetail;
 		private:
 			Core::JUserPtr<JScene> avatarScene;

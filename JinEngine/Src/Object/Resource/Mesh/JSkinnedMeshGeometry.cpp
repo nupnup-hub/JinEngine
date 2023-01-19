@@ -79,7 +79,9 @@ namespace JinEngine
 					JFileIOHelper::StoreXMFloat3(stream, L"T:", vertices.tangentU);
 					JFileIOHelper::StoreXMFloat3(stream, L"W:", vertices.jointWeight);
 					JFileIOHelper::StoreXMFloat4(stream, L"I", XMFLOAT4(vertices.jointIndex[0],
-						vertices.jointIndex[1], vertices.jointIndex[2], vertices.jointIndex[3]));
+						vertices.jointIndex[1],
+						vertices.jointIndex[2], 
+						vertices.jointIndex[3]));
 				}
 				JFileIOHelper::StoreAtomicDataVec(stream, L"Index:", skinnedData->GetIndexVector(), 6);
 
@@ -99,11 +101,12 @@ namespace JinEngine
 			for (uint i = 0; i < submeshCount; ++i)
 				JFileIOHelper::StoreHasObjectIden(stream, GetSubmeshMaterial(i));
 
+			JFileIOHelper::StoreHasObjectIden(stream, skinnedMeshs->GetSkeletonAsset().Get());
+			/*
 			const Core::JUserPtr<JSkeletonAsset> sUser = skinnedMeshs->GetSkeletonAsset();
 			JSkeleton* skeleton = sUser->GetSkeleton();
 			const uint jointCount = skeleton->GetJointCount();
 
-			JFileIOHelper::StoreHasObjectIden(stream, skinnedMeshs->GetSkeletonAsset().Get());
 			stream << skeletonSymbol << '\n';
 			JFileIOHelper::StoreAtomicData(stream, L"JointCount:", jointCount);
 
@@ -115,6 +118,7 @@ namespace JinEngine
 				JFileIOHelper::StoreAtomicData(stream, L"Length:", joint.length);
 				JFileIOHelper::StoreXMFloat4x4(stream, L"JointBindPose:", joint.inbindPose);
 			}
+			*/
 			stream.close();
 			return true;
 		}
@@ -208,6 +212,8 @@ namespace JinEngine
 	}
 	Core::JOwnerPtr<JSkeleton> JSkinnedMeshGeometry::ReadSkeletonData()
 	{
+		return Core::JOwnerPtr<JSkeleton>{};
+	 /*
 		std::wifstream stream;
 		stream.open(GetPath(), std::ios::in | std::ios::binary);
 		if (stream.is_open())
@@ -233,22 +239,26 @@ namespace JinEngine
 		}
 		else
 			return Core::JOwnerPtr<JSkeleton>{};
+	 */
 	}
 	bool JSkinnedMeshGeometry::ImportMesh(JMeshGroup& meshGroup)
 	{
 		if (meshGroup.GetMeshGroupType() != J_MESHGEOMETRY_TYPE::SKINNED)
 			return false;
 
-		const JSkinnedMeshGroup* skinnedGroup = static_cast<const JSkinnedMeshGroup*>(&meshGroup);
+		JSkinnedMeshGroup* skinnedGroup = static_cast<JSkinnedMeshGroup*>(&meshGroup);
 		Core::JUserPtr<JSkeletonAsset> user = skinnedGroup->GetSkeletonAsset();
 		if (user.IsValid())
 			SetSkeletonAsset(skinnedGroup->GetSkeletonAsset().Get());
-
+		 
 		const uint meshCount = meshGroup.GetMeshDataCount();
 		for (uint i = 0; i < meshCount; ++i)
 		{
 			const std::wstring materialName = L"m" + meshGroup.GetMeshData(i)->GetName();
-			JMaterial* newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(materialName, GetDirectory()));
+			JMaterial* newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(materialName, 
+				Core::MakeGuid(),
+				GetFlag(),
+				GetDirectory()));
 			newMaterial->SetLight(true);
 			newMaterial->SetShadow(true);
 			meshGroup.GetMeshData(i)->SetMaterial(Core::GetUserPtr(newMaterial));
@@ -257,7 +267,7 @@ namespace JinEngine
 		if (StuffSubMesh(meshGroup) && StoreObject(this) == Core::J_FILE_IO_RESULT::SUCCESS)
 		{
 			bool res = WriteMeshData(meshGroup);
-			Clear();
+			ClearGpuBuffer();
 			//Resource 할당은 Activated상태에서 이루어진다
 			//Import는 데이터 변환과 메타데이터 저장을 위함
 			return res;

@@ -26,7 +26,7 @@ namespace JinEngine
 	private:
 		friend class Editor::JEditorPreviewImpl;
 	public:
-		constexpr static int initMaxCapacity = 50;
+		constexpr static int initMaxCapacity = 75;
 	private:    
 		const size_t guid;
 		uint maxCapacity;  

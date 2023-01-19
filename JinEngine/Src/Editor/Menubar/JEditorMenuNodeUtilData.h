@@ -6,6 +6,7 @@ namespace JinEngine
 		struct JEditorMenuNodeUtilData
 		{
 		public:
+			bool isUse = false;
 			bool isOpen = false;
 			int selectedIndex = 0;
 		};

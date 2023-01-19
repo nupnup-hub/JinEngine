@@ -251,9 +251,19 @@ namespace JinEngine
 	void JShader::DoDeActivate()noexcept
 	{
 		JResourceObject::DoDeActivate();
-		gShaderData[0].reset();
-		gShaderData[1].reset();
-		cShaderData.reset();
+		for (int i = 0; i < SHADER_VERTEX_COUNT; ++i)
+		{
+			if (gShaderData[i] != nullptr)
+			{
+				gShaderData[i]->Clear();
+				gShaderData[i].reset();
+			}
+		}
+		if (cShaderData != nullptr)
+		{
+			cShaderData->Clear();
+			cShaderData.reset();
+		}
 		SetValid(false);
 	}
 	bool JShader::Destroy(const bool isForced)

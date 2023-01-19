@@ -1,6 +1,7 @@
 #include"JAvatarEditor.h" 
 #include"../../JEditorAttribute.h" 
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
+#include"../../../Utility/JEditorLineCalculator.h"
 #include"../../../../Object/GameObject/JGameObject.h" 
 #include"../../../../Object/Resource/Skeleton/JSkeleton.h"
 #include"../../../../Object/Resource/Skeleton/JSkeletonAsset.h"
@@ -37,25 +38,30 @@ namespace JinEngine
 		void JAvatarEditor::UpdateWindow()
 		{
 			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			UpdateDocking();
 			if (IsActivated() && targetSkeleton.IsValid())
 			{
-				UpdateDocking(); 
 				UpdateMouseClick();
-
 				preBtnColor = JImGuiImpl::GetColor(ImGuiCol_Button);
 				BuildAvatarEdit();
 			}
 			CloseWindow();
 		}
 		void JAvatarEditor::BuildAvatarEdit()
-		{
-			JVector2<float> btnSize{ (float)JImGuiImpl::GetWindowSize().x, (float)JImGuiImpl::GetAlphabetSize().y };
-			if (JImGuiImpl::Button("Make JAvatar", btnSize))
+		{ 		 
+			const JVector2<float> wndSize = ImGui::GetWindowSize();
+			const float xPaddingRate = 0.025f;
+			const float xPadding = wndSize.x * xPaddingRate;
+
+			const float MakeBtnWidth = wndSize.x * 0.25f;
+			const float MakeBtnPos = xPadding + wndSize.x * 0.5f - MakeBtnWidth * 0.5f;
+			ImGui::SetCursorPosX(MakeBtnPos);
+			if (JImGuiImpl::Button("Make", ImVec2(MakeBtnWidth, 0)))
 			{  
 				Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Make Avatar",
 					std::make_unique<MakeAvatarF::CompletelyBind>(makeAvatarFunctor),
 					std::make_unique<ClearAvatarF::CompletelyBind>(clearAvatarFunctor)));
-			}
+			} 
 			if (hasAvatar)
 			{
 				JImGuiImpl::BeginTabBar("AvatarSetting");
@@ -70,22 +76,33 @@ namespace JinEngine
 					}
 				}
 				JImGuiImpl::EndTabBar();
+
 				int index = 0;
 				for (index = 0; index < tabs.size(); ++index)
 				{
 					if (tabs[index])
 						break;
 				}
+ 
+				//name explorer button  
+				//const float btnHeight = JImGuiImpl::GetAlphabetSize().y + ImGui::GetStyle().FramePadding.y * 5.0f;
+				const float btnHeight = ImGui::GetFrameHeight() * 1.2f;
+				const JVector2<float> listSize = wndSize - JVector2<float>(xPadding * 2, btnHeight + ImGui::GetCursorPosY());
+				
+				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+				ImGui::BeginListBox(("##AvatarEditor" + GetName()).c_str(), listSize);
+				const float rate[3] = {listSize.x * 0.4f, listSize.x * 0.4f, listSize.x * 0.05f };
+				JEditorLineCalculator<3> lineCal(rate);
+				lineCal.LabelOnScreen("Name");
+				lineCal.LabelOnScreen("Part");
+				lineCal.LabelOnScreen("Erase");
+				ImGui::Separator();
 
-				int spaceOffset = 25;
 				for (int i = 0; i < JAvatar::jointGuide[index].size(); ++i)
 				{
-					JImGuiImpl::Text(JAvatar::jointGuide[index][i].guideName);
-					int textSize = (int)JAvatar::jointGuide[index][i].guideName.size();
-
-					ImGui::SameLine();
-					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (spaceOffset - textSize) * JImGuiImpl::GetAlphabetSize().x);
-
+					lineCal.SetNextContentsPosition();
+					JImGuiImpl::Text(JAvatar::jointGuide[index][i].guideName); 
+ 
 					int jointRefIndex = JAvatar::jointGuide[index][i].index;
 					int nowRefValue = targetAvatar.jointReference[jointRefIndex];
 
@@ -98,7 +115,8 @@ namespace JinEngine
 					if (!isValidJointRef[jointRefIndex])
 						JImGuiImpl::SetColor(ImVec4(failColor.x, failColor.y, failColor.z, failColor.w), ImGuiCol_Button);
 
-					if (JImGuiImpl::Button((nowRefJointName).c_str(), JVector2<float>(200, 20)))
+					lineCal.SetNextContentsPosition();
+					if (JImGuiImpl::Button((nowRefJointName).c_str(), ImVec2(rate[1], 0)))
 					{
 						int doJointRefIndex = jointRefIndex;
 						int undoJointRefIndex = jointRefIndex;
@@ -113,9 +131,9 @@ namespace JinEngine
 							std::make_unique<OpenJointSelectorF::CompletelyBind>(openJointSelectorFunctor, std::move(doJointRefIndex)),
 							std::make_unique<OpenJointSelectorF::CompletelyBind>(openJointSelectorFunctor, std::move(undoJointRefIndex))));
 					}
-
-					ImGui::SameLine();
-					if (JImGuiImpl::Button(("##" + nowRefJointName + "erase").c_str(), JVector2<float>(20, 20)))
+					 
+					lineCal.SetNextContentsPosition();
+					if (JImGuiImpl::Button(("##" + nowRefJointName + "erase").c_str(), ImVec2(rate[2], 0)))
 					{
 						int doJointRefIndex = jointRefIndex;
 						int doJointIndex = JSkeletonFixedData::incorrectJointIndex;
@@ -130,8 +148,10 @@ namespace JinEngine
 					if (!isValidJointRef[jointRefIndex])
 						JImGuiImpl::SetColor(preBtnColor, ImGuiCol_Button);
 				}
-
-				if (JImGuiImpl::Button("Auto", JVector2<float>(75, 20)))
+				ImGui::EndListBox();
+				 
+				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+				if (JImGuiImpl::Button("Auto", JVector2<float>(ImGui::CalcTextSize("_Auto_").x, 0)))
 				{
 					std::vector<uint8> preJointRef = targetAvatar.jointReference;
 					Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Auto Generate Joint Reference",
@@ -139,8 +159,12 @@ namespace JinEngine
 						std::make_unique<SetAllJointRefByVecF::CompletelyBind>(setAllJointRefByVecFunctor, std::move(preJointRef))));
 				}
 
+				const float btnPaddingRate = 0.0025f;
+				const float btnPadding = wndSize.x * btnPaddingRate;
+
 				ImGui::SameLine();
-				if (JImGuiImpl::Button("Save", JVector2<float>(75, 20)))
+				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + btnPadding);
+				if (JImGuiImpl::Button("Save", JVector2<float>(ImGui::CalcTextSize("_Save_").x, 0)))
 				{
 					if (CheckAllJoint())
 					{
@@ -150,7 +174,8 @@ namespace JinEngine
 				}
 
 				ImGui::SameLine();
-				if (JImGuiImpl::Button("Clear", JVector2<float>(75, 20)))
+				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + btnPadding);
+				if (JImGuiImpl::Button("Clear", JVector2<float>(ImGui::CalcTextSize("_Clear_").x, 0)))
 				{
 					std::vector<uint8> preJointRef = targetAvatar.jointReference;
 					Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Clear Joint Reference",

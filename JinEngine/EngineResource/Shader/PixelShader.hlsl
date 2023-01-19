@@ -46,7 +46,7 @@ float4 PS(VertexOut pin) : SV_Target
 	float4 normalMapSample = textureMaps[normalMapIndex].Sample(samAnisotropicWrap, pin.TexC);
 	normalW = NormalSampleToWorldSpace(normalMapSample.rgb, normalW, pin.TangentW);
 #endif
-
+	 
 	float3 toEyeW = normalize(camEyePosW - pin.PosW);
 	float4 ambient = sceneAmbientLight * albedoColor;
 
@@ -74,9 +74,8 @@ float4 PS(VertexOut pin) : SV_Target
 #endif
 
 #ifdef SHADOW
-	float shadowFactor = 0;
-	int shadowIndex = 0;
-	for (int i = shadwMapStIndex; i < shadowMapEdIndex; ++i)
+	float shadowFactor = 0; 
+	for (uint i = shadwMapStIndex; i < shadowMapEdIndex; ++i)
 	{
 		float4 shadowPosH = mul(float4(pin.PosW, 1.0f), smLight[i].shadowTransform);
 		shadowFactor = CalcShadowFactor(shadowPosH, smLight[i].shadowMapIndex);
@@ -84,19 +83,11 @@ float4 PS(VertexOut pin) : SV_Target
 	}
 #endif
 
+	float3 reflectLight = reflect(-toEyeW, normalW);
+	//float4 reflectionColor = cubeMap[0].Sample(samLinearWrap, reflectLight);
+	float3 fresnelFactor = SchlickFresnel(fresnelR0, normalW, reflectLight);
 	float4 litColor = albedoColor + directLight;
-	//float4 litColor = albedoColor;
-
-#ifdef NORMAL_MAP
-	float3 reflectLight = reflect(-toEyeW, normalW);
-	float4 reflectionColor = cubeMap.Sample(samLinearWrap, reflectLight);
-	float3 fresnelFactor = SchlickFresnel(fresnelR0, normalW, reflectLight);
-	litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
-#else
-	float3 reflectLight = reflect(-toEyeW, normalW);
-	float3 fresnelFactor = SchlickFresnel(fresnelR0, normalW, reflectLight);
 	litColor.rgb += shininess * fresnelFactor;
-#endif
 
 	litColor.a = albedoColor.a;
 	return litColor;

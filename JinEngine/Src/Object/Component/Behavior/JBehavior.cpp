@@ -54,7 +54,7 @@ namespace JinEngine
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JBehavior>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JBehavior>(Core::MakeGuid(), owner->GetFlag(), owner);
 			JBehavior* newComp = ownerPtr.Get();
 			if (AddInstance(std::move(ownerPtr)))
 				return newComp;
@@ -63,7 +63,7 @@ namespace JinEngine
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JBehavior>(guid, objFlag, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JBehavior>(guid, Core::AddSQValueEnum(owner->GetFlag(), objFlag), owner);
 			JBehavior* newComp = ownerPtr.Get();
 			if (AddInstance(std::move(ownerPtr)))
 				return newComp;

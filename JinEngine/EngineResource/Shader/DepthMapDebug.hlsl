@@ -7,7 +7,7 @@ SamplerState samLinearWrap	: register(s0);
 cbuffer cbSettings : register(b0)
 {
 	uint width;
-	uint height; 
+	uint height;
 	float camNear;
 	float camFar;
 };
@@ -18,7 +18,7 @@ group 1, 512, 1
 thread 512, 1, 1
 */
 [numthreads(512, 1, 1)]
-void LinearMap(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+void LinearMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
 {
 	if (width <= dispatchThreadID.x || height <= dispatchThreadID.y)
 		return;
@@ -45,7 +45,7 @@ void LinearMap(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV
 } 
 
 [numthreads(512, 1, 1)]
-void NonLinearMap(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : SV_DispatchThreadID)
+void NonLinearMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID : SV_DispatchThreadID)
 {
 	if (width <= dispatchThreadID.x || height <= dispatchThreadID.y)
 		return;

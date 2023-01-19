@@ -87,7 +87,7 @@ namespace JinEngine
 			if (IsActivated() && !onShadow)
 			{
 				CreateShadowMap();
-				GetOwner()->GetOwnerScene()->AppInterface()->SetBackSideComponentDirty(*this, IsShadow);
+				GetOwner()->GetOwnerScene()->AppInterface()->SetComponentFrameDirty(GetComponentType(), this, IsShadow);
 				SetFrameDirty();
 				onShadow = value;
 			}
@@ -97,7 +97,7 @@ namespace JinEngine
 			if (onShadow)
 			{
 				DestroyShadowMap();
-				GetOwner()->GetOwnerScene()->AppInterface()->SetBackSideComponentDirty(*this, IsShadow);
+				GetOwner()->GetOwnerScene()->AppInterface()->SetComponentFrameDirty(GetComponentType(), this, IsShadow);
 				SetFrameDirty();
 				onShadow = value;
 			}
@@ -304,7 +304,7 @@ namespace JinEngine
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(Core::MakeGuid(), OBJECT_FLAG_NONE, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(Core::MakeGuid(), owner->GetFlag(), owner);
 			JLight* newComp = ownerPtr.Get();
 			if (AddInstance(std::move(ownerPtr)))
 				return newComp;
@@ -313,7 +313,7 @@ namespace JinEngine
 		};
 		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
 		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(guid, objFlag, owner);
+			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JLight>(guid, Core::AddSQValueEnum(owner->GetFlag(), objFlag), owner);
 			JLight* newComp = ownerPtr.Get();
 			if (AddInstance(std::move(ownerPtr)))
 				return newComp;
@@ -353,7 +353,7 @@ namespace JinEngine
 
 		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
 		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
-		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
+		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, nullptr};
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}

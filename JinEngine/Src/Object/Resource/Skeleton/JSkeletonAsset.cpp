@@ -67,7 +67,7 @@ namespace JinEngine
 	}
 	std::vector<std::wstring> JSkeletonAsset::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::wstring> format{ L".skel" };
+		static std::vector<std::wstring> format{ L".skel", L".fbx" };
 		return format;
 	}
 	JSkeleton* JSkeletonAsset::GetSkeleton()noexcept
@@ -277,6 +277,7 @@ namespace JinEngine
 		{
 			skeleton.reset();
 			avatar.reset();
+			SetValid(false);
 		}
 	}
 	bool JSkeletonAsset::WriteSkeletonAssetData()
@@ -346,13 +347,7 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT res = StoreMetadata(stream, skeletonAsset);
 		stream.close();
 
-		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
-			return res;
-
-		if (skeletonAsset->WriteSkeletonAssetData())
-			return Core::J_FILE_IO_RESULT::SUCCESS;
-		else
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+		return res; 
 	}
 	Core::J_FILE_IO_RESULT JSkeletonAsset::StoreMetadata(std::wofstream& stream, JSkeletonAsset* skeletonAsset)
 	{
@@ -449,8 +444,10 @@ namespace JinEngine
 				JSkeletonAsset* newSkeletonAsset = ownerPtr.Get();
 				if (AddInstance(std::move(ownerPtr)))
 				{
-					AddInstance(std::move(ownerPtr));
+					newSkeletonAsset->WriteSkeletonAssetData();
 					StoreObject(newSkeletonAsset);
+					newSkeletonAsset->SetValid(true);
+					newSkeletonAsset->ClearResource();
 					return newSkeletonAsset;
 				}
 			}
@@ -491,8 +488,7 @@ namespace JinEngine
 	JSkeletonAsset::JSkeletonAsset(JSkeletonInitData& initdata)
 		:JSkeletonAssetInterface(initdata)
 	{
-		if (skeleton != nullptr)
-			skeleton = std::move(initdata.skeleton);
+		skeleton = std::move(initdata.skeleton);
 	}
 	JSkeletonAsset::~JSkeletonAsset() {}
 }

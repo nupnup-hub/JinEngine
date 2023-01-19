@@ -8,21 +8,20 @@
 
 namespace JinEngine
 {
-	JCamera* JComponentFactoryUtility::CreateCamera(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner, bool isMainCam)
+	JCamera* JComponentFactoryUtility::CreateCamera(const size_t guid, JGameObject& owner, bool isMainCam)
 	{   
-		JCamera* newCamera = JCFI<JCamera>::Create(guid, flag, owner);
+		JCamera* newCamera = JCFI<JCamera>::Create(guid, owner);
 		if (isMainCam)
 			newCamera->SetMainCamera(true);
 		return newCamera;
 	}
-	JLight* JComponentFactoryUtility::CreateLight(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner, J_LIGHT_TYPE type)
+	JLight* JComponentFactoryUtility::CreateLight(const size_t guid, JGameObject& owner, J_LIGHT_TYPE type)
 	{ 
-		JLight* newLight = JCFI<JLight>::Create(guid, flag, owner);
+		JLight* newLight = JCFI<JLight>::Create(guid, owner);
 		newLight->SetLightType(type);
 		return newLight;
 	}
 	JRenderItem* JComponentFactoryUtility::CreateRenderItem(const size_t guid,
-		const J_OBJECT_FLAG flag,
 		JGameObject& owner,
 		JMeshGeometry* mesh,  
 		const D3D12_PRIMITIVE_TOPOLOGY primitiveType,
@@ -33,7 +32,7 @@ namespace JinEngine
 			return nullptr;
 
 		//Has dependency into order
-		JRenderItem* newRenderItem = JCFI<JRenderItem>::Create(guid, flag, owner);
+		JRenderItem* newRenderItem = JCFI<JRenderItem>::Create(guid, owner);
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
 		newRenderItem->SetSpaceSpatialMask(spaceSpatialMask);
@@ -42,7 +41,6 @@ namespace JinEngine
 		return newRenderItem;
 	}
 	JRenderItem* JComponentFactoryUtility::CreateRenderItem(const size_t guid,
-		const J_OBJECT_FLAG flag,
 		JGameObject& owner,
 		JMeshGeometry* mesh,
 		std::vector<JMaterial*> mat,
@@ -54,7 +52,7 @@ namespace JinEngine
 			return nullptr;
 
 		//Has dependency into order
-		JRenderItem* newRenderItem = JCFI<JRenderItem>::Create(guid, flag, owner);
+		JRenderItem* newRenderItem = JCFI<JRenderItem>::Create(guid, owner);
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
 		newRenderItem->SetSpaceSpatialMask(spaceSpatialMask);

@@ -43,9 +43,9 @@ namespace JinEngine
 			bool RegisterEventListener(std::vector<J_EDITOR_EVENT>& evType);
 			void DeRegisterEventListener(const J_EDITOR_EVENT evType);
 			void DeRegisterListener();
-
+		protected:
 			void RequestOpenPage(const JEditorOpenPageEvStruct& evStruct);
-			void RequestClosePage(const JEditorClosePageEvStruct& evStruct);
+			void RequestClosePage(const JEditorClosePageEvStruct& evStruct); 
 			void RequestSelectObject(const JEditorSelectObjectEvStruct& evStruct);
 			void RequestDeSelectObject(const JEditorSelectObjectEvStruct& evStruct); 
 		protected:

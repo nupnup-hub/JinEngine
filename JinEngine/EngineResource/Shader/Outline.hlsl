@@ -86,7 +86,7 @@ float4 PS(VertexOut pin) : SV_Target
 		gx += rate * xFilter[i];
 		gy += rate * yFilter[i];
 	}
-
+	 
 	const float colorDist = sqrt(gx * gx + gy * gy);
 	if (colorDist >= threshold)
 		return colors[finalColorIndex];

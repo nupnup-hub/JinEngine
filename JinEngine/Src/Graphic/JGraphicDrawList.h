@@ -55,20 +55,20 @@ namespace JinEngine
 				const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
 				const bool isAllowOcclusionCulling;
 			public:
-				uint objUpdateCount;
-				uint aniUpdateCount;
-				uint camUpdateCount;
-				uint lightUpdateCount; 
+				uint objUpdateCount = 0;
+				uint aniUpdateCount = 0;
+				uint camUpdateCount = 0;
+				uint lightUpdateCount = 0;
 			public:
 				//frame dirty = gNumFrameDirty
-				uint hotObjUpdateCount;
-				uint hotAniUpdateCount;
-				uint hotCamUpdateCount;
-				uint hotLitghtUpdateCount; 
+				uint hotObjUpdateCount = 0;
+				uint hotAniUpdateCount = 0;
+				uint hotCamUpdateCount = 0;
+				uint hotLitghtUpdateCount = 0;
 			public:
-				bool hasSceneUpdate;
-				bool hasShadowUpdate;
-				bool hasOcclusionUpdate; 
+				bool hasSceneUpdate = false;
+				bool hasShadowUpdate = false;
+				bool hasOcclusionUpdate = false;
 			public:
 				void UpdateStart();
 				void UpdateEnd();

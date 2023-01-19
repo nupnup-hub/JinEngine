@@ -30,6 +30,8 @@ namespace JinEngine
 			public:
 				Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
 				std::unique_ptr<JGraphicResourceHandle> handle = nullptr;
+			public:
+				void Clear();
 			};
 			struct ResourceViewInfo
 			{

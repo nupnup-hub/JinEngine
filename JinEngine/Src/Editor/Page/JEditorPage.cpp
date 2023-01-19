@@ -100,10 +100,10 @@ namespace JinEngine
 			}
 
 			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING))
-			{
+			{ 
 				bool res = false;
 				res = JImGuiImpl::BeginWindow(GetName().c_str(), &isPageOpen, (ImGuiWindowFlags)windowFlag);
-				if (!res)
+				if (!isPageOpen)
 				{
 					if (closeConfirmPopupWindow == nullptr || closeConfirmPopupWindow->IsIgnoreConfirm())
 					{
@@ -421,22 +421,23 @@ namespace JinEngine
 			{
 				bool reqOpenObj = JEditorPageShareData::HasValidOpenPageData(GetPageType());
 				bool hasOpenObj = openObj != nullptr && openObj->GetTypeInfo().IsChildOf(JObject::StaticTypeInfo());
-				if (hasOpenObj)
-				{
-					auto userObj = Core::JUserPtr<JObject>::ConvertChildType(Core::GetUserPtr(openObj->TypeName(), openObj->GetGuid()));
-					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE,
-						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), userObj)));
-				}
-				else if (reqOpenObj)
+				if (reqOpenObj)
 				{
 					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE,
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), Core::JUserPtr<JObject>())));
+				}
+				else if (hasOpenObj)
+				{
+					auto idenObj = Core::GetUserPtr(openObj->GetTypeInfo().Name(), openObj->GetGuid());
+					auto userObj = Core::JUserPtr<JObject>::ConvertChildType(std::move(idenObj));
+					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), userObj)));
 				}
 			}
 			if (active)
 			{
 				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::ACTIVATE_PAGE,
-					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(this)));
+					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(GetPageType())));
 			}
 			if (isFocus)
 			{

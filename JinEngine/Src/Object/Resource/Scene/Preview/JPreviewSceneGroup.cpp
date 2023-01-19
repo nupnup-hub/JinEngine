@@ -36,7 +36,7 @@ namespace JinEngine
 		maxCapacity = value;
 	}
 	void JPreviewSceneGroup::Clear()noexcept
-	{
+	{ 
 		const uint previewCount = (uint)previewSceneList.size();
 		for (uint i = 0; i < previewCount; ++i)
 		{
@@ -51,7 +51,7 @@ namespace JinEngine
 		if (!jObj.IsValid())
 			return nullptr;
 
-		if (previewSceneList.size() == maxCapacity)
+		if (previewSceneList.size() >= maxCapacity)
 			return nullptr;
 
 		JPreviewScene* res = nullptr;

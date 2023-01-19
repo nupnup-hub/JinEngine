@@ -48,7 +48,10 @@ namespace JinEngine
 			static constexpr uint optionTypeSubTypeCount = 3;
 		}
 		
-		JSceneObserver::JSceneObserver(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType)
+		JSceneObserver::JSceneObserver(const std::string& name, 
+			std::unique_ptr<JEditorAttribute> attribute,
+			const J_EDITOR_PAGE_TYPE pageType,
+			const std::vector< J_OBSERVER_SETTING_TYPE> useSettingType)
 			:JEditorWindow(name, std::move(attribute), pageType)
 		{
 			editorCamCtrl = std::make_unique<JEditorCameraControl>();
@@ -90,11 +93,29 @@ namespace JinEngine
 			menubar->AddNode(std::move(viewNode));
 			menubar->AddNode(std::move(editorToolNode));
 
+			const uint useSettingCount = (uint)useSettingType.size();
+			for (uint i = 0; i < useSettingCount; ++i)
+			{ 
+				int useIndex = (int)useSettingType[i];
+				int parentIndex = 0;
+				for (uint i = 0; i < optionTypeSubTypeCount; ++i)
+				{
+					if (useIndex >= statIndex[i] && useIndex < endIndex[i])
+					{
+						parentIndex = i;
+						break;
+					}
+				}
+				CreateMenuLeafNode(optionParent[parentIndex], (J_OBSERVER_SETTING_TYPE)useIndex);
+				nodeUtilData[useIndex].isUse = true;
+			}
+			/*
 			for (uint i = 0; i < optionTypeSubTypeCount; ++i)
 			{
 				for (uint j = statIndex[i]; j < endIndex[i]; ++j)
 					CreateMenuLeafNode(optionParent[i], (J_OBSERVER_SETTING_TYPE)j);
 			}
+			*/
 
 			auto menubarIconLam = [](JSceneObserver* ob)
 			{
@@ -153,8 +174,11 @@ namespace JinEngine
 		{
 			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar);
 			UpdateDocking();
-			if (IsActivated() && scene.IsValid() && cameraObj.IsValid())
+			if (IsActivated() && scene.IsValid())
 			{
+				if (!isCreateHelperGameObj)
+					CreateHelperGameObject();
+
 				UpdateMouseClick();
 				if (IsFocus())
 				{
@@ -200,47 +224,47 @@ namespace JinEngine
 			std::string name;
 			switch (type)
 			{
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL:
 			{
 				name = "Space Sptail";
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::VIEW_SETTING_SPACE_SPATIAL_TREE:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_SETTING_SPACE_SPATIAL_TREE:
 			{
 				name = "Space Sptail Tree";
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::VIEW_SHADOW_VIEWER:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_SHADOW_VIEWER:
 			{
 				name = "Shadow Map";
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER:
 			{
 				name = "Occlusion Map";
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_CAM_FRUSTUM:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_CAM_FRUSTUM:
 			{
 				name = "Cam Frustum";
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
 			{
 				name = "Position Arrow";
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
 			{
 				name = "Rotation Arrow";
 				break;
 			} 
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
 			{
 				name = "Scale Arrow";
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
 			{
 				name = "Make Debug Shape";
 				break;
@@ -272,7 +296,7 @@ namespace JinEngine
 		{
 			switch (type)
 			{
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_CAM_FRUSTUM:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_CAM_FRUSTUM:
 			{
 				if (!mainCamFrustum.IsValid())
 					MakeMainCamFrustum();
@@ -280,22 +304,22 @@ namespace JinEngine
 					JObject::BeginDestroy(mainCamFrustum.Release());
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
 			{
 				ActivateToolType(ConvertSettingToToolType(type));
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
 			{
 				ActivateToolType(ConvertSettingToToolType(type));
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
 			{
 				ActivateToolType(ConvertSettingToToolType(type));
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
 			{
 				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 6, 1, 6);
 				nodeUtilData[(int)type].isOpen = false;
@@ -309,23 +333,23 @@ namespace JinEngine
 		{
 			switch (type)
 			{
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_CAM_FRUSTUM:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_CAM_FRUSTUM:
 			{
 				if (mainCamFrustum.IsValid())
 					JObject::BeginDestroy(mainCamFrustum.Release());
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
 			{
 				DeActivateToolType(ConvertSettingToToolType(type));
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
 			{
 				DeActivateToolType(ConvertSettingToToolType(type));
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
 			{
 				DeActivateToolType(ConvertSettingToToolType(type));
 				break;
@@ -338,27 +362,27 @@ namespace JinEngine
 		{
 			switch (type)
 			{
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL:
 			{
 				SceneSpaceSpatialOptionOnScreen();
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::VIEW_SETTING_SPACE_SPATIAL_TREE:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_SETTING_SPACE_SPATIAL_TREE:
 			{
 				DebugTreeOnScreen();
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::VIEW_SHADOW_VIEWER:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_SHADOW_VIEWER:
 			{
 				ShadowMapViewerOnScreen();
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER:
 			{
 				OcclusionResultOnScreen();
 				break;
 			}
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_CAM_FRUSTUM:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_CAM_FRUSTUM:
 			{
 				UpdateMainCamFrustum();
 				break;
@@ -591,17 +615,17 @@ namespace JinEngine
 		{
 			switch (type)
 			{
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
 				return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::POSITION_ARROW;
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
 				return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::ROTATION_ARROW;
-			case JinEngine::Editor::JSceneObserver::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
+			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
 				return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::SCALE_ARROW;
 			default:
 				return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::NONE;
 			} 
 		}
-		JSceneObserver::J_OBSERVER_SETTING_TYPE JSceneObserver::ConvertToolToSettingType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)const noexcept
+		J_OBSERVER_SETTING_TYPE JSceneObserver::ConvertToolToSettingType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)const noexcept
 		{
 			switch (type)
 			{ 
@@ -615,21 +639,50 @@ namespace JinEngine
 				return J_OBSERVER_SETTING_TYPE::COUNT;		//Invalid
 			}
 		}
+		void JSceneObserver::CreateHelperGameObject()
+		{
+			JGameObject* camObj = JGFU::CreateCamera(*scene->GetRootGameObject(), OBJECT_FLAG_UNIQUE_EDITOR_OBJECT, false, editorCameraName);
+			camObj->SetName(L"Observer");
+			camObj->GetTransform()->SetPosition(lastCamPos.ConvertXMF());
+			camObj->GetTransform()->SetRotation(lastCamRot.ConvertXMF());
+			cameraObj = Core::GetUserPtr(camObj);
+			cameraComp = GetUserPtr(cameraObj->GetComponent<JCamera>());
+			cameraComp->StateInterface()->SetCameraState(J_CAMERA_STATE::RENDER);
+
+			if (nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS].isUse)
+				positionTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
+			if (nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT].isUse)
+				rotationTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
+			if (nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE].isUse)
+				scaleTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
+
+			coordGrid->MakeCoordGrid(scene->GetDebugRootGameObject());
+			menubar->ActivateOpenNode(true);
+			isCreateHelperGameObj = true;
+		}
+		void JSceneObserver::DestroyHelperGameObject()
+		{
+			if (cameraObj.IsValid())
+			{
+				lastCamPos = cameraComp->GetTransform()->GetPosition();
+				lastCamRot = cameraComp->GetTransform()->GetRotation();
+				JObject::BeginDestroy(cameraObj.Release());
+			}
+			coordGrid->Clear();
+			menubar->DeActivateOpenNode(true);
+			isCreateHelperGameObj = false;
+		}
 		void JSceneObserver::DoSetOpen()noexcept
 		{
 			JEditorWindow::DoSetOpen();
-
 			positionTool = std::make_unique<JEditorTransformTool>(J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::POSITION_ARROW,
-				J_DEFAULT_SHAPE::DEFAULT_SHAPE_POSITION_ARROW, 1 / 16);
-			positionTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
+				J_DEFAULT_SHAPE::DEFAULT_SHAPE_POSITION_ARROW, 1 / 16); 
 
 			rotationTool = std::make_unique<JEditorTransformTool>(J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::ROTATION_ARROW,
 				J_DEFAULT_SHAPE::DEFAULT_SHAPE_CIRCLE, 1 / 16);
-			rotationTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
-			 
+
 			scaleTool = std::make_unique<JEditorTransformTool>(J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::SCALE_ARROW,
-				J_DEFAULT_SHAPE::DEFAULT_SHAPE_SCALE_ARROW, 1 / 16);
-			scaleTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
+				J_DEFAULT_SHAPE::DEFAULT_SHAPE_SCALE_ARROW, 1 / 16);	 
 
 			toolVec.resize(toolCount);
 			toolVec[0] = positionTool.get();
@@ -648,30 +701,12 @@ namespace JinEngine
 		{
 			JEditorWindow::DoActivate();
 			if (scene.IsValid())
-			{
-				JGameObject* camObj = JGFU::CreateCamera(*scene->GetRootGameObject(), OBJECT_FLAG_UNIQUE_EDITOR_OBJECT, false, editorCameraName);
-				camObj->SetName(L"Observer");
-				camObj->GetTransform()->SetPosition(lastCamPos.ConvertXMF());
-				camObj->GetTransform()->SetRotation(lastCamRot.ConvertXMF());
-				cameraObj = Core::GetUserPtr(camObj);
-				cameraComp = GetUserPtr(cameraObj->GetComponent<JCamera>());
-				cameraComp->StateInterface()->SetCameraState(J_CAMERA_STATE::RENDER);
-
-				coordGrid->MakeCoordGrid(scene->GetDebugRootGameObject());
-				menubar->ActivateOpenNode(true);
-			}
+				CreateHelperGameObject();
 		}
 		void JSceneObserver::DoDeActivate()noexcept
 		{
 			JEditorWindow::DoDeActivate();
-			if (cameraObj.IsValid())
-			{ 
-				lastCamPos = cameraComp->GetTransform()->GetPosition();
-				lastCamRot = cameraComp->GetTransform()->GetRotation();
-				JObject::BeginDestroy(cameraObj.Release());
-			} 
-			coordGrid->Clear();
-			menubar->DeActivateOpenNode(true);
+			DestroyHelperGameObject();
 		}
 		void JSceneObserver::StoreEditorWindow(std::wofstream& stream)
 		{

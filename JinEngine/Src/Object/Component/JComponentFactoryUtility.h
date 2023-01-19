@@ -20,17 +20,15 @@ namespace JinEngine
 	class JComponentFactoryUtility
 	{
 	public:
-		static JCamera* CreateCamera(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner, bool isMainCam);
-		static JLight* CreateLight(const size_t guid, const J_OBJECT_FLAG flag, JGameObject& owner, J_LIGHT_TYPE type);
+		static JCamera* CreateCamera(const size_t guid, JGameObject& owner, bool isMainCam);
+		static JLight* CreateLight(const size_t guid, JGameObject& owner, J_LIGHT_TYPE type);
 		static JRenderItem* CreateRenderItem(const size_t guid,
-			const J_OBJECT_FLAG flag,
 			JGameObject& owner,
 			JMeshGeometry* mesh, 
 			const D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 			const J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT,
 			const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask = SPACE_SPATIAL_ALLOW_ALL);
 		static JRenderItem* CreateRenderItem(const size_t guid,
-			const J_OBJECT_FLAG flag,
 			JGameObject& owner,
 			JMeshGeometry* mesh,
 			std::vector<JMaterial*> mat,

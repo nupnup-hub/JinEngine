@@ -49,7 +49,7 @@ namespace JinEngine
 			std::vector<JTypeInfo*> GetDerivedTypeInfo(const JTypeInfo& baseType)const noexcept;
 		public:
 			//Debug
-			void SearchIntance();
+			void SearchInstance();
 		};
 		using JReflectionInfo = JSingletonHolder<JReflectionInfoImpl>;
 	}
