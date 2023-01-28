@@ -3,7 +3,7 @@
 #include"../../../Object/GameObject/JGameObjectFactoryUtility.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../Object/Component/Transform/JTransform.h" 
-#include"../../../Editor/Utility/JEditorBinaryTreeView.h"
+#include"../../../Editor/Utility/JEditorViewStructure.h"
 #include"../../../Utility/JCommonUtility.h"
  
 using namespace DirectX;
@@ -394,7 +394,7 @@ namespace JinEngine
 		{
 			if (type == J_BVH_NODE_TYPE::ROOT)
 			{
-				treeView.BuildNode(std::to_string(nodeNumber), "Root");
+				treeView.BuildNode(std::to_string(nodeNumber), nodeNumber, "Root");
 				if (left != nullptr)
 					left->BuildDebugNode(treeView);
 				if (right != nullptr)
@@ -406,17 +406,17 @@ namespace JinEngine
 				left->BuildDebugNode(treeView);
 				right->BuildDebugNode(treeView);
 				if (IsLeftNode())
-					treeView.EndLeft();
+					treeView.BuildEndSplit();
 				else
-					treeView.EndRight();
+					treeView.BuildEndSplit();
 			}
 			else
 			{
-				treeView.BuildNode(std::to_string(nodeNumber), JCUtil::WstrToU8Str(innerGameObject->GetName()));
+				treeView.BuildNode(std::to_string(nodeNumber), nodeNumber, JCUtil::WstrToU8Str(innerGameObject->GetName()));
 				if (IsLeftNode())
-					treeView.EndLeft();
+					treeView.BuildEndSplit();
 				else
-					treeView.EndRight();
+					treeView.BuildEndSplit();
 			}
 		}
 	}

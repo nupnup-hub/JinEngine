@@ -27,15 +27,27 @@ namespace JinEngine
 			: x(xm.x), y(xm.y)
 		{} 
 		JVector2(const ImVec2& v);
-
 		JVector2(const JVector2&) = default;
 		JVector2& operator=(const JVector2& rhs) = default;
 		JVector2& operator=(const ImVec2& rhs);
-
 		JVector2(JVector2&&) = default;
 		JVector2& operator=(JVector2&&) = default;
 	public:
-		JVector2 operator+(const JVector2& rhs)
+		template<typename U, std::enable_if_t<std::is_convertible_v<T, U>, int> = 0>
+		JVector2(const JVector2<U>& rhs)
+		{
+			x = rhs.x;
+			y = rhs.y;
+		}
+		template<typename U, std::enable_if_t<std::is_convertible_v<T, U>, int> = 0>
+		JVector2& operator=(const JVector2<U>& rhs)
+		{
+			x = rhs.x;
+			y = rhs.y;
+			return *this;
+		}
+	public:
+		JVector2 operator+(const JVector2& rhs)const
 		{
 			return JVector2(x + rhs.x, y + rhs.y);
 		}
@@ -43,9 +55,13 @@ namespace JinEngine
 		{
 			return JVector2(x - rhs.x, y - rhs.y);
 		}
-		JVector2 operator*(float rhs)
+		JVector2 operator*(float rhs)const
 		{
 			return JVector2(x * rhs, y * rhs);
+		}
+		JVector2 operator/(float rhs)const
+		{
+			return JVector2(x / rhs, y / rhs);
 		}
 		void operator*=(float rhs)
 		{
@@ -241,7 +257,7 @@ namespace JinEngine
 		{
 			return JVector4(x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w);
 		}
-		JVector4 operator*(float rhs)
+		JVector4 operator*(float rhs)const
 		{
 			return JVector4(x * rhs, y * rhs, z * rhs, w * rhs);
 		}

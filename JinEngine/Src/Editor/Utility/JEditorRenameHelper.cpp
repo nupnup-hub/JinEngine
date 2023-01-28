@@ -20,16 +20,37 @@ namespace JinEngine
 		}
 		void JEditorRenameHelper::Update(const std::string& uniqueLabel, const bool doIdent)
 		{	 
+			DoUpdate(uniqueLabel, doIdent);
+		}
+		void JEditorRenameHelper::Update(const std::string& uniqueLabel, const JVector2<float>& size, const bool doIdent)
+		{
+			DoUpdate(uniqueLabel, doIdent, size, true);
+		}
+		void JEditorRenameHelper::DoUpdate(const std::string& uniqueLabel, const bool doIdent, const JVector2<float>& size, const bool isMultiline)
+		{
 			if (!IsActivated())
 				return;
 
-			const ImVec2 itemPos = ImGui::GetCursorPos() + ImGui::GetWindowPos();
-			if (JImGuiImpl::InputTextSetT(uniqueLabel, renameBuff.get(),
-				"New name...",
-				ImGuiInputTextFlags_EnterReturnsTrue,
-				*renameF, Core::JUserPtr{ renameTar }))
-			{
-				Clear();
+			const JVector2<float> itemPos = ImGui::GetCursorPos() + ImGui::GetWindowPos();
+			if (isMultiline)
+			{ 
+				if (JImGuiImpl::InputMultiLineTextSetT(uniqueLabel, renameBuff.get(),
+					size,
+					ImGuiInputTextFlags_EnterReturnsTrue,
+					*renameF, Core::JUserPtr{ renameTar }))
+				{
+					Clear();
+				}
+			}
+			else
+			{ 
+				if (JImGuiImpl::InputTextSetT(uniqueLabel, renameBuff.get(),
+					"New name...",
+					ImGuiInputTextFlags_EnterReturnsTrue,
+					*renameF, Core::JUserPtr{ renameTar }))
+				{
+					Clear();
+				}
 			}
 
 			if (doIdent)
@@ -55,6 +76,12 @@ namespace JinEngine
 		bool JEditorRenameHelper::IsRenameTar(const size_t guid)const noexcept
 		{
 			return renameTar.IsValid() ? renameTar->GetGuid() == guid : false;
+		}
+		void JEditorRenameHelper::SetBuffSize(const uint newBuffSize)noexcept
+		{ 
+			renameBuff->SetCapacity(newBuffSize);
+			if (IsActivated())
+				renameBuff->SetBuff(JCUtil::WstrToU8Str(renameTar->GetName()));
 		}
 	}
 }

@@ -3,7 +3,7 @@
 #include"../../../Object/GameObject/JGameObjectFactoryUtility.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../Object/Component/Transform/JTransform.h" 
-#include"../../../Editor/Utility/JEditorBinaryTreeView.h"
+#include"../../../Editor/Utility/JEditorViewStructure.h"
 #include"../../../Utility/JCommonUtility.h" 
 #include"../../../Utility/JVectorExtend.h" 
 #include"../../../Utility/JMathHelper.h"
@@ -574,7 +574,7 @@ namespace JinEngine
 		{
 			if (nodeType == J_KDTREE_NODE_TYPE::ROOT)
 			{
-				treeView.BuildNode(std::to_string(nodeNumber), "Root");
+				treeView.BuildNode(std::to_string(nodeNumber), Core::MakeGuid(), "Root");
 				if (left != nullptr)
 					left->BuildDebugNode(treeView);
 				if (right != nullptr)
@@ -586,20 +586,20 @@ namespace JinEngine
 				left->BuildDebugNode(treeView);
 				right->BuildDebugNode(treeView);
 				if (IsLeftNode())
-					treeView.EndLeft();
+					treeView.BuildEndSplit();
 				else
-					treeView.EndRight();
+					treeView.BuildEndSplit();
 			}
 			else
 			{
 				std::wstring info;
 				for (const auto& data : innerGameObject)
 					info += data->GetName() + L"\n";
-				treeView.BuildNode(std::to_string(nodeNumber), JCUtil::WstrToU8Str(info));
+				treeView.BuildNode(std::to_string(nodeNumber), Core::MakeGuid(), JCUtil::WstrToU8Str(info));
 				if (IsLeftNode())
-					treeView.EndLeft();
+					treeView.BuildEndSplit();
 				else
-					treeView.EndRight();
+					treeView.BuildEndSplit();
 			}
 		}
 		//void JKdTreeNode::AddLog(const std::string& newNodeLog)noexcept

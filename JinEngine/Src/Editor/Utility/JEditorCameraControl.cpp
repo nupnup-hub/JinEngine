@@ -6,12 +6,15 @@
 #include"../../Window/JWindows.h"
 #include<DirectXMath.h> 
 
+using namespace DirectX;
 namespace JinEngine
 {
-	using namespace DirectX;
-
 	namespace Editor
 	{
+		namespace Constants
+		{
+			static constexpr float camDeltaFactor = 5.0f;
+		}
 		JEditorCameraControl::JEditorCameraControl()
 		{
 			preMousePos.x = 0;
@@ -33,8 +36,8 @@ namespace JinEngine
 			if (ImGui::IsMouseDown(1))
 			{
 				// Make each pixel correspond to a quarter of a degree.
-				float dx = XMConvertToRadians(x - preMousePos.x) * 7.5f;
-				float dy = XMConvertToRadians(y - preMousePos.y) * 7.5f;
+				float dx = XMConvertToRadians(x - preMousePos.x) * Constants::camDeltaFactor;
+				float dy = XMConvertToRadians(y - preMousePos.y) * Constants::camDeltaFactor;
 				XMFLOAT3 newRot = sceneCamera->GetTransform()->GetRotation();
 				newRot.y += dx;
 				newRot.x += dy;

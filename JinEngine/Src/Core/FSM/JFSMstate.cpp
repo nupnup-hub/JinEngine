@@ -145,7 +145,7 @@ namespace JinEngine
 			return ownerDiagram->RemoveState(this);
 		}
 		JFSMstate::JFSMstate(const JFSMstateInitData& initData)
-			:JFSMInterface(ownerDiagram->GetUniqueStateName(initData.name), initData.guid), ownerDiagram(initData.ownerDiagram.Get())
+			:JFSMInterface(initData.name, initData.guid), ownerDiagram(initData.ownerDiagram.Get())
 		{}
 		JFSMstate::~JFSMstate() {}
 	}

@@ -78,7 +78,7 @@ namespace JinEngine
 		if (mesh != nullptr)
 		{
 			DirectX::BoundingBox res;
-			mesh->GetBoundingBox().Transform(res, GetOwner()->GetTransform()->GetWorld());
+			mesh->GetBoundingBox().Transform(res, GetOwner()->GetTransform()->GetWorldMatrix());
 			return res;
 		}
 		else
@@ -89,7 +89,7 @@ namespace JinEngine
 		if (mesh != nullptr)
 		{
 			JTransform* ownerTransform = GetOwner()->GetTransform();
-			XMMATRIX worldM = ownerTransform->GetWorld();
+			XMMATRIX worldM = ownerTransform->GetWorldMatrix();
 			XMVECTOR s;
 			XMVECTOR q;
 			XMVECTOR t;
@@ -247,7 +247,7 @@ namespace JinEngine
 	void JRenderItem::UpdateFrame(Graphic::JObjectConstants& constant, const uint submeshIndex)
 	{
 		JTransform* transform = GetOwner()->GetTransform();
-		XMStoreFloat4x4(&constant.World, XMMatrixTranspose(transform->GetWorld()));
+		XMStoreFloat4x4(&constant.World, XMMatrixTranspose(transform->GetWorldMatrix()));
 		XMStoreFloat4x4(&constant.TexTransform, XMMatrixTranspose(XMLoadFloat4x4(&textureTransform)));
 		constant.MaterialIndex = CallGetFrameBuffOffset(*GetValidMaterial(submeshIndex));
 	}
@@ -277,7 +277,7 @@ namespace JinEngine
 		const XMVECTOR t = XMLoadFloat3(&bboxPos);
 
 		const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-		const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), GetOwner()->GetParent()->GetTransform()->GetWorld());
+		const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), GetOwner()->GetParent()->GetTransform()->GetWorldMatrix());
 
 		XMStoreFloat4x4(&constant.boundWorld, XMMatrixTranspose(worldM));
 	}

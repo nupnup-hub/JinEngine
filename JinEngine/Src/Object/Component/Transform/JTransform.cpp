@@ -42,9 +42,13 @@ namespace JinEngine
 		XMMatrixDecompose(&s, &q, &t, XMLoadFloat4x4(&world));
 		return q;
 	}
-	XMMATRIX JTransform::GetWorld()const noexcept
+	XMMATRIX JTransform::GetWorldMatrix()const noexcept
 	{
 		return XMLoadFloat4x4(&world);
+	}
+	DirectX::XMFLOAT4X4 JTransform::GetWorld4x4f()const noexcept
+	{
+		return world;
 	}
 	XMMATRIX JTransform::GetLocal()const noexcept
 	{

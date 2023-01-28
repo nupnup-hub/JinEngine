@@ -106,10 +106,6 @@ namespace JinEngine
 			if (aniFsm->GetStateType() == J_ANIMATION_STATE_TYPE::CLIP)
 				static_cast<JAnimationFSMstateClip*>(state)->SetClip(clip);
 		}
-		void JAnimationFSMdiagram::Clear()noexcept
-		{
-			JFSMdiagram::Clear();
-		}
 		void JAnimationFSMdiagram::StuffFinalTransform(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns)noexcept
 		{
 			uint size = (uint)srcSkeletonAsset->GetSkeleton()->GetJointCount();
@@ -205,16 +201,16 @@ namespace JinEngine
 		 
 			for (uint i = 0; i < stateCount; ++i)
 			{
-				JAnimationFSMstate* fsmState = GetState(i);
+				JAnimationFSMstate* fsmState = GetStateByIndex(i);
 				JFileIOHelper::StoreHasObjectIden(stream, fsmState);
 				JFileIOHelper::StoreEnumData(stream, L"StateType:", fsmState->GetStateType());
 			}
 			for (uint i = 0; i < stateCount; ++i)
-				GetState(i)->StreamInterface()->StoreData(stream);
+				GetStateByIndex(i)->StreamInterface()->StoreData(stream);
 
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
-		JAnimationFSMdiagram* JAnimationFSMdiagram::LoadData(std::wifstream& stream, JUserPtr<IJFSMdiagramOwner> fsmOwner)
+		JAnimationFSMdiagram* JAnimationFSMdiagram::LoadData(std::wifstream& stream, JFSMdiagramOwnerInterface* fsmOwner)
 		{
 			if (!stream.is_open())
 				return nullptr;
@@ -225,7 +221,7 @@ namespace JinEngine
 
 			JFileIOHelper::LoadFsmObjectIden(stream, name, guid, type);
   
-			JAnimationFSMdiagram* newDiagram = JFDFI<JAnimationFSMdiagram>::Create(JPtrUtil::MakeOwnerPtr<InitData>(name, guid, fsmOwner));
+			JAnimationFSMdiagram* newDiagram = JFFI<JAnimationFSMdiagram>::Create(JPtrUtil::MakeOwnerPtr<InitData>(name, guid, fsmOwner));
 			JUserPtr<JAnimationFSMdiagram> diagramUser = Core::GetUserPtr(newDiagram);
 			uint stateCount = 0;
 			JFileIOHelper::LoadAtomicData(stream, stateCount);
@@ -238,29 +234,30 @@ namespace JinEngine
 				JFileIOHelper::LoadEnumData(stream, stateType);
 
 				if (stateType == J_ANIMATION_STATE_TYPE::CLIP)
-					newState = JFSFI<JAnimationFSMstateClip>::Create(JPtrUtil::MakeOwnerPtr<JFSMstate::InitData>(name, guid, diagramUser));
+					newState = JFFI<JAnimationFSMstateClip>::Create(JPtrUtil::MakeOwnerPtr<JFSMstate::InitData>(name, guid, diagramUser));
 				else if (stateType == J_ANIMATION_STATE_TYPE::BLEND_TREE)
 					;//¹Ì±¸Çö 
 			} 
 			for (uint i = 0; i < stateCount; ++i)
-				newDiagram->GetState(i)->StreamInterface()->LoadData(stream, *newDiagram->GetStroageUser());
+				newDiagram->GetStateByIndex(i)->StreamInterface()->LoadData(stream, *newDiagram->GetStroageUser());
 			
 			return newDiagram;
 		}
 		void JAnimationFSMdiagram::RegisterJFunc()
-		{
-			auto createDiagramLam = [](JOwnerPtr<JFSMdiagramInitData> initData)-> JFSMdiagram*
+		{ 
+			auto createDiagramLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
 			{
-				if (initData.IsValid())
+				if (initData.IsValid() && initData->GetFSMobjType() == J_FSM_OBJECT_TYPE::DIAGRAM)
 				{
-					JOwnerPtr<JAnimationFSMdiagram> ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationFSMdiagram>(*initData.Get());
+					JFSMdiagramInitData* digramInitData = static_cast<JFSMdiagramInitData*>(initData.Get());
+					JOwnerPtr<JAnimationFSMdiagram> ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationFSMdiagram>(*digramInitData);
 					JAnimationFSMdiagram* newDiagram = ownerPtr.Get();
 					if (AddInstance(std::move(ownerPtr)))
 						return newDiagram;
 				}
 				return nullptr;
 			};
-			JFDFI< JAnimationFSMdiagram>::RegisterDiagram(createDiagramLam);
+			JFFI<JAnimationFSMdiagram>::Register(createDiagramLam);
 		}
 		JAnimationFSMdiagram::JAnimationFSMdiagram(const JFSMdiagramInitData& initData)
 			:JFSMdiagram(initData)

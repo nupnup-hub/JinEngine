@@ -230,7 +230,7 @@ namespace JinEngine
 		return vbv;
 	}
 	D3D12_INDEX_BUFFER_VIEW JMeshGeometry::IndexBufferView()const
-	{ 
+	{
 		D3D12_INDEX_BUFFER_VIEW ibv;
 		ibv.BufferLocation = indexBufferGPU->GetGPUVirtualAddress();
 		ibv.Format = indexFormat;
@@ -467,26 +467,10 @@ namespace JinEngine
 	}
 	void JMeshGeometry::ClearGpuBuffer()
 	{
-		if (vertexBufferUploader != nullptr)
-		{
-			vertexBufferUploader->Release();
-			vertexBufferUploader.Reset();
-		}
-		if (indexBufferUploader != nullptr)
-		{
-			indexBufferUploader->Release();
-			indexBufferUploader.Reset();
-		}
-		if (vertexBufferGPU != nullptr)
-		{
-			vertexBufferGPU->Release();
-			vertexBufferGPU.Reset();
-		}
-		if (indexBufferGPU != nullptr)
-		{
-			indexBufferGPU->Release();
-			indexBufferGPU.Reset();
-		}
+		vertexBufferUploader.Reset();
+		indexBufferUploader.Reset();
+		vertexBufferGPU.Reset();
+		indexBufferGPU.Reset();
 	}
 	void JMeshGeometry::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 	{
@@ -503,7 +487,7 @@ namespace JinEngine
 			{
 				JMaterial* preMat = submeshes[i].GetMaterial();
 				if (preMat->GetGuid() == tarGuid)
-				{ 
+				{
 					if (defaultMat != nullptr)
 					{
 						submeshes[i].SetMaterial(defaultMat);
@@ -521,7 +505,7 @@ namespace JinEngine
 		return StoreObject(this);
 	}
 	Core::J_FILE_IO_RESULT JMeshGeometry::StoreObject(JMeshGeometry* mesh)
-	{ 
+	{
 		if (mesh == nullptr)
 			return Core::J_FILE_IO_RESULT::FAIL_NULL_OBJECT;
 
@@ -552,7 +536,7 @@ namespace JinEngine
 	{
 		if (directory == nullptr)
 			return nullptr;
-		 
+
 		std::wifstream stream;
 		stream.open(pathData.engineMetaFileWPath, std::ios::in | std::ios::binary);
 		JMeshMetadata metadata;
@@ -613,7 +597,7 @@ namespace JinEngine
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JMeshGeometry::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
-		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::MATERIAL, J_RESOURCE_TYPE::SKELETON}, true, false};
+		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::MATERIAL, J_RESOURCE_TYPE::SKELETON}, true, false };
 		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
@@ -635,11 +619,11 @@ namespace JinEngine
 			return resVec;
 		};
 		auto fbxMeshImportC = [](JDirectory* dir, const Core::JFileImportHelpData importPathData) -> std::vector<JResourceObject*>
-		{ 
-			std::vector<JResourceObject*> res; 
+		{
+			std::vector<JResourceObject*> res;
 			using FbxFileTypeInfo = Core::JFbxFileLoaderImpl::FbxFileTypeInfo;
 			FbxFileTypeInfo info = Core::JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
-			
+
 			JMeshGeometry* newMesh = nullptr;
 			JSkeletonAsset* newSkeleton = nullptr;
 			if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
@@ -671,7 +655,7 @@ namespace JinEngine
 					res.push_back(newMesh);
 				}
 				if (newSkeleton != nullptr)
-					res.push_back(newSkeleton);				 
+					res.push_back(newSkeleton);
 			}
 			else
 			{
@@ -692,7 +676,7 @@ namespace JinEngine
 				}
 			}
 			if (newMesh != nullptr)
-			{		 
+			{
 				const uint subMeshCount = (uint)newMesh->GetTotalSubmeshCount();
 				for (uint i = 0; i < subMeshCount; ++i)
 					res.push_back(newMesh->GetSubmeshMaterial(i));
@@ -713,7 +697,7 @@ namespace JinEngine
 					dir,
 					importPathData.oriFileWPath,
 					Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGroup>(std::move(objMeshData.meshGroup))));
-			}	
+			}
 			if (newMesh != nullptr)
 			{
 				res.push_back(newMesh);

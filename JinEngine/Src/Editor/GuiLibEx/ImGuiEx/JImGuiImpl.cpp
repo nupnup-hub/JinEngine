@@ -40,7 +40,7 @@ namespace JinEngine
 			JVector2<int> alphabetSize;
 			JVector2<int> textSizeOffset;
 		public:
-			uint textBufRange = 50;
+			uint textBufRange = 100;
 		public:
 			FontMap fontMap;
 			J_EDITOR_FONT_TYPE fontType;
@@ -106,8 +106,7 @@ namespace JinEngine
 				style.TabBorderSize = 1;
 
 				style.FrameRounding = 6;
-				style.GrabRounding = 6;
-				//ImGuiStyle& style = ImGui::GetStyle();
+				style.GrabRounding = 6; 
 				//style.FrameBorderSize = 1; 
 				ImGui_ImplWin32_Init(JWindow::Instance().HandleInterface()->GetHandle());
 				JGraphic::Instance().EditorInterface()->SetImGuiBackEnd();
@@ -458,10 +457,7 @@ namespace JinEngine
 			if(p_open)
 				return ImGui::Begin(name.c_str(), p_open, flags);
 			else
-			{
-				bool openKey = true;
-				return ImGui::Begin(name.c_str(), &openKey, flags);
-			}
+				return ImGui::Begin(name.c_str(), 0, flags);
 		}
 		void JImGuiImpl::EndWindow()
 		{
@@ -535,6 +531,14 @@ namespace JinEngine
 				isInputEnd = ImGui::InputTextWithHint(name.c_str(), hint.c_str(), &buff[0], buff.size(), flags, txtCallback, userData);
 			else
 				isInputEnd = ImGui::InputText(name.c_str(), &buff[0], buff.size(), flags, txtCallback, userData);
+			if (isInputEnd)
+				result = JCUtil::EraseSideChar(buff, '\0');
+			return isInputEnd;
+		}
+		bool JImGuiImpl::InputMultiLineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
+		{ 
+			++jImgui->inputDataCount;
+			bool isInputEnd = ImGui::InputTextMultiline(name.c_str(), &buff[0], buff.size(), size, flags, txtCallback, userData);
 			if (isInputEnd)
 				result = JCUtil::EraseSideChar(buff, '\0');
 			return isInputEnd;

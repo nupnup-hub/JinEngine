@@ -1,27 +1,20 @@
-#include"JFbxFileLoader.h"    
+#include"JFbxFileLoader.h" 
+#include"../../Guid/GuidCreator.h"
+#include"../../Geometry/JDirectXCollisionEx.h"
 #include"../../../Object/Resource/Skeleton/JSkeleton.h"
 #include"../../../Object/Resource/AnimationClip/JAnimationClip.h"
 #include"../../../Utility/JMathHelper.h" 
 #include"../../../Utility/JCommonUtility.h"
-#include"../../Geometry/JDirectXCollisionEx.h"
-#include"../../Guid/GuidCreator.h"
+ 
 
+//#include"../../File/JFileIOHelper.h"
 using namespace DirectX;
 namespace JinEngine
 {
 	namespace Core
-	{
-		//return (2.0f * camNear) / (camNear + camFar - v * (camFar - camNear));
+	{ 
 		namespace Constants
-		{
-			static float GetVPositionResizeRate(const float length)noexcept
-			{
-				static constexpr float preSizeRange = 10000;
-				static constexpr float resizeRange = 100;
-				static constexpr float divFactor = resizeRange / preSizeRange;
-				//return ((length + resizeRange) * divFactor) / length;
-				return 0.1f;
-			}
+		{ 
 		}
 
 		JFbxFileLoaderImpl::~JFbxFileLoaderImpl()
@@ -53,9 +46,13 @@ namespace JinEngine
 			if (importer->Import(scene))
 			{
 				//++num;
-				auto& settings = scene->GetGlobalSettings();
-				resizeRate = 0.1f / settings.GetSystemUnit().GetScaleFactor();
-
+				FbxGlobalSettings& settings = scene->GetGlobalSettings();
+				resizeRate = 0.01f / settings.GetSystemUnit().GetMultiplier();
+				//settings.SetSystemUnit(FbxSystemUnit::cm);
+				//settings.GetSystemUnit().ConvertScene(scene);
+				//resizeRate = 0.01f;
+				//resizeRate = 0.1f / settings.GetSystemUnit().GetScaleFactor();
+	 
 				//settings.GetSystemUnit().GetScaleFactor()
 				// 씬 내에서 삼각형화 할 수 있는 모든 노드를 삼각형화 시킨다.
 				FbxNode* rootNode = scene->GetRootNode();
@@ -106,9 +103,12 @@ namespace JinEngine
 			//fbx file 내용을 scene으로 가져온다
 			if (importer->Import(scene))
 			{ 
-				auto& settings = scene->GetGlobalSettings(); 
-				resizeRate = 0.1f / settings.GetSystemUnit().GetScaleFactor();
-
+				FbxGlobalSettings& settings = scene->GetGlobalSettings();
+				resizeRate = 0.01f / settings.GetSystemUnit().GetMultiplier();
+				//settings.SetSystemUnit(FbxSystemUnit::cm);
+				//settings.GetSystemUnit().ConvertScene(scene);
+				//resizeRate = 0.01f;
+ 
 				//++num; 
 				// 씬 내에서 삼각형화 할 수 있는 모든 노드를 삼각형화 시킨다.
 				FbxNode* rootNode = scene->GetRootNode();

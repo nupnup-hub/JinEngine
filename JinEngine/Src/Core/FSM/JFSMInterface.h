@@ -10,7 +10,7 @@ namespace JinEngine
 		class JFSMInterface : public JIdentifier
 		{
 			REGISTER_CLASS(JFSMInterface)
-		protected:
+		public:
 			struct JFSMIdentifierInitData
 			{
 			public:
@@ -18,12 +18,15 @@ namespace JinEngine
 				size_t guid;
 			public:
 				JFSMIdentifierInitData(const std::wstring& name, const size_t guid);
+				virtual ~JFSMIdentifierInitData() = default;
+			public:
+				virtual J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept = 0;
 			};
 		public:
 			virtual J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept = 0;
-		public:
-			void Destroy();
-		protected:
+		public: 
+			static void Destroy(JFSMInterface* fsmInterface);
+		private: 
 			virtual void Clear() = 0;
 		protected:
 			JFSMInterface(const std::wstring& name, const size_t guid);

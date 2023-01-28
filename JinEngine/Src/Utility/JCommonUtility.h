@@ -14,6 +14,13 @@ namespace JinEngine
 	class JCommonUtility
 	{
 	public:
+		enum class J_TEXT_ORDER_TYPE
+		{
+			RIGHT,
+			LEFT,
+			MIDDLE
+		};
+	public:
 		static constexpr int searchFail = -1;
 	public:
 		static int GetPathLastBackSlash(const std::wstring& path)noexcept;
@@ -41,11 +48,14 @@ namespace JinEngine
 		static std::string EraseSideChar(const std::string& str, const char ch)noexcept;
 		static std::wstring EraseSideWChar(const std::wstring& wstr, const wchar_t ch)noexcept;
 
-		static std::wstring ComporessWstring(const std::wstring& wstr, const uint lange)noexcept;
-		static std::string ComporessString(const std::string& str, const uint lange)noexcept;
+		static std::wstring CompressWstring(const std::wstring& wstr, const uint length)noexcept;
+		static std::string CompressString(const std::string& str, const uint length)noexcept;
 
-		static std::wstring ComporessWstirngPath(const std::wstring& path, const uint maxLange)noexcept;
-		static std::string ComporessStringPath(const std::string& path, const uint maxLange)noexcept;
+		static std::wstring CompressWstirngPath(const std::wstring& path, const uint length)noexcept;
+		static std::string CompressStringPath(const std::string& path, const uint length)noexcept;
+
+		static std::wstring InsertSpace(const std::wstring& src, const uint spacePerLength, _Out_ int& lastSpaceIndex)noexcept;
+		static std::wstring OrderTexture(const std::wstring& src, const uint spacePerLength, const J_TEXT_ORDER_TYPE type)noexcept;
 
 		static bool IsNumber(const char ch)noexcept;
 		static bool IsNumber(const wchar_t ch)noexcept;

@@ -36,7 +36,7 @@ namespace JinEngine
 				isEnumClass(isEnumClass),
 				isTwoSqureEnum(IsTwoSqureEnum())
 			{}
-		private:
+		private: 
 			EnumNameMap CreateEnumMap()noexcept;
 			EnumElementVec CreateEnumVec()noexcept;
 		private:

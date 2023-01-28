@@ -3,7 +3,7 @@
 #include"../../Geometry/JDirectXCollisionEx.h"
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
-#include"../../../Editor/Utility/JEditorBinaryTreeView.h"
+#include"../../../Editor/Utility/JEditorViewStructure.h"
 #include <algorithm>
 
 namespace JinEngine
@@ -570,7 +570,8 @@ namespace JinEngine
 			if (root == nullptr)
 				return;
 
-			treeView.Initialize(allNodes.size());
+			treeView.Clear();
+			treeView.SetGridSize(2500);
 			root->BuildDebugNode(treeView);
 		}
 	}

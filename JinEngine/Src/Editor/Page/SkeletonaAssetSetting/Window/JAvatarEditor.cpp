@@ -56,7 +56,7 @@ namespace JinEngine
 			const float MakeBtnWidth = wndSize.x * 0.25f;
 			const float MakeBtnPos = xPadding + wndSize.x * 0.5f - MakeBtnWidth * 0.5f;
 			ImGui::SetCursorPosX(MakeBtnPos);
-			if (JImGuiImpl::Button("Make", ImVec2(MakeBtnWidth, 0)))
+			if (JImGuiImpl::Button("Make", JVector2<float>(MakeBtnWidth, 0)))
 			{  
 				Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Make Avatar",
 					std::make_unique<MakeAvatarF::CompletelyBind>(makeAvatarFunctor),
@@ -92,7 +92,7 @@ namespace JinEngine
 				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
 				ImGui::BeginListBox(("##AvatarEditor" + GetName()).c_str(), listSize);
 				const float rate[3] = {listSize.x * 0.4f, listSize.x * 0.4f, listSize.x * 0.05f };
-				JEditorLineCalculator<3> lineCal(rate);
+				JEditorStaticLineCalculator<3> lineCal(rate);
 				lineCal.LabelOnScreen("Name");
 				lineCal.LabelOnScreen("Part");
 				lineCal.LabelOnScreen("Erase");
@@ -116,7 +116,7 @@ namespace JinEngine
 						JImGuiImpl::SetColor(ImVec4(failColor.x, failColor.y, failColor.z, failColor.w), ImGuiCol_Button);
 
 					lineCal.SetNextContentsPosition();
-					if (JImGuiImpl::Button((nowRefJointName).c_str(), ImVec2(rate[1], 0)))
+					if (JImGuiImpl::Button((nowRefJointName).c_str(), JVector2<float>(rate[1], 0)))
 					{
 						int doJointRefIndex = jointRefIndex;
 						int undoJointRefIndex = jointRefIndex;
@@ -133,7 +133,7 @@ namespace JinEngine
 					}
 					 
 					lineCal.SetNextContentsPosition();
-					if (JImGuiImpl::Button(("##" + nowRefJointName + "erase").c_str(), ImVec2(rate[2], 0)))
+					if (JImGuiImpl::Button(("##" + nowRefJointName + "erase").c_str(), JVector2<float>(rate[2], 0)))
 					{
 						int doJointRefIndex = jointRefIndex;
 						int doJointIndex = JSkeletonFixedData::incorrectJointIndex;
@@ -359,13 +359,13 @@ namespace JinEngine
 			ImGuiContext& g = *GImGui;
 
 			ImGuiStyle& style = ImGui::GetStyle();
-			const ImVec2 padding = style.FramePadding;
-			const ImVec2 label_size = ImGui::CalcTextSize(name.c_str(), NULL, false);
+			const JVector2<float> padding = style.FramePadding;
+			const JVector2<float> label_size = ImGui::CalcTextSize(name.c_str(), NULL, false);
 
 			const float text_offset_x = g.FontSize + padding.x * 3;
 			const float text_offset_y = ImMax(padding.y, window->DC.CurrLineTextBaseOffset);
 			const float text_width = g.FontSize + (label_size.x > 0.0f ? label_size.x + padding.x * 2 : 0.0f);
-			ImVec2 text_pos(window->DC.CursorPos.x + text_offset_x, window->DC.CursorPos.y + text_offset_y);
+			JVector2<float> text_pos(window->DC.CursorPos.x + text_offset_x, window->DC.CursorPos.y + text_offset_y);
 			const float arrow_hit_x1 = (text_pos.x - text_offset_x) - style.TouchExtraPadding.x;
 			const float arrow_hit_x2 = (text_pos.x - text_offset_x) + (g.FontSize + padding.x * 2.0f) + style.TouchExtraPadding.x;
 

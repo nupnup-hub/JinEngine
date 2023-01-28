@@ -55,7 +55,7 @@ namespace JinEngine
 			sceneObserver = std::make_unique<JSceneObserver>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType(), Constants::GetAllObserverSetting());
 			sceneViewer = std::make_unique<JSceneViewer>(openInfo[4].GetName(), openInfo[4].MakeAttribute(), GetPageType());
 			logViewer = std::make_unique<JLogViewer>(openInfo[5].GetName(), openInfo[5].MakeAttribute(), GetPageType());
-			animationControllerEditor = std::make_unique<JAnimationControllerEditor>(openInfo[6].GetName(), openInfo[6].MakeAttribute(), GetPageType());
+			animationControllerEditor = std::make_unique<JAnimationControllerEditor>(openInfo[6].GetName(), openInfo[6].MakeAttribute(), GetPageType(), hasMetadata);
 			graphicResourceWatcher = std::make_unique<JGraphicResourceWatcher>(openInfo[7].GetName(), openInfo[7].MakeAttribute(), GetPageType());
 			stringConvertTest = std::make_unique<JStringConvertTest>(openInfo[8].GetName(), openInfo[8].MakeAttribute(), GetPageType());
 			appElapseTime = std::make_unique<JAppElapsedTime>(openInfo[9].GetName(), openInfo[9].MakeAttribute(), GetPageType());
@@ -134,7 +134,7 @@ namespace JinEngine
 				ImGui::SetCursorPosX(wndSize.x * 0.075f); 
 				ImGui::BeginListBox("##ModifiedResource_ProjectMainPage", ImVec2(listWidth, listHeight));
 
-				JEditorLineCalculator<columnCount> lineCal(rate);
+				JEditorStaticLineCalculator<columnCount> lineCal(rate);
 				for (uint i = 0; i < columnCount; ++i)
 					lineCal.LabelOnScreen(label[i]);
 				ImGui::Separator();
@@ -148,13 +148,13 @@ namespace JinEngine
 					const std::string path = JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj)->GetFolderPath());
 					 
 					lineCal.SetNextContentsPosition();
-					JImGuiImpl::Text(JCUtil::ComporessString(name, lineCal.GetItemRangeMax() / alphabetWidth));
+					JImGuiImpl::Text(JCUtil::CompressString(name, lineCal.GetItemRangeMax() / alphabetWidth));
 
 					lineCal.SetNextContentsPosition();
-					JImGuiImpl::Text(JCUtil::ComporessStringPath(path, lineCal.GetItemRangeMax() / alphabetWidth));
+					JImGuiImpl::Text(JCUtil::CompressStringPath(path, lineCal.GetItemRangeMax() / alphabetWidth));
 
 					lineCal.SetNextContentsPosition();
-					JImGuiImpl::Text(JCUtil::ComporessString(obj->GetTypeInfo().NameWithOutPrefix(), lineCal.GetItemRangeMax() / alphabetWidth));
+					JImGuiImpl::Text(JCUtil::CompressString(obj->GetTypeInfo().NameWithOutPrefix(), lineCal.GetItemRangeMax() / alphabetWidth));
 
 					lineCal.SetNextContentsPosition();
 					JImGuiImpl::CheckBox("##ModifiedResource_CheckBox" + name, data->isStore);

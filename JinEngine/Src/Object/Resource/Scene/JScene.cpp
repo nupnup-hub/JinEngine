@@ -476,7 +476,7 @@ namespace JinEngine
 		{
 			//DirectX::BoundingFrustum camFrustum = mainCamera->GetBoundingFrustum();
 			//DirectX::BoundingFrustum worldCamFrustum;
-			//camFrustum.Transform(worldCamFrustum, mainCamera->GetTransform()->GetWorld());
+			//camFrustum.Transform(worldCamFrustum, mainCamera->GetTransform()->GetWorldMatrix());
 			spatialStructure->Culling(mainCamera->GetBoundingFrustum());
 
 			//Caution: Has Bug

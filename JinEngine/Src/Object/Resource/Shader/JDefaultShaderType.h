@@ -7,7 +7,7 @@ namespace JinEngine
 {
 	enum class J_DEFAULT_GRAPHIC_SHADER
 	{
-		DEFAULT_SHADER,
+		DEFAULT_SHADER,			
 		DEFAULT_LIGHT_SHADER,
 		DEFAULT_ALBEDOMAP_SHADER,
 		DEFAULT_STANDARD_SHADER,
@@ -27,7 +27,7 @@ namespace JinEngine
 		DEFUALT_HZB_OCCLUSION_SHADER,
 		COUNTER,
 	};
-	struct JDefaultShader
+	class JDefaultShader
 	{
 	public:
 		static J_GRAPHIC_SHADER_FUNCTION GetShaderFunction(const J_DEFAULT_GRAPHIC_SHADER sType)

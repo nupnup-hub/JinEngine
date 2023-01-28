@@ -104,7 +104,7 @@ namespace JinEngine
 
 			CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, (uint)samDesc.size(), samDesc.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
-			// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+			// create a root signature with a single slot which points to a descriptor length consisting of a single constant buffer
 			ComPtr<ID3DBlob> serializedRootSig = nullptr;
 			ComPtr<ID3DBlob> errorBlob = nullptr;
 			HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,

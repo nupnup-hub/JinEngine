@@ -7,9 +7,8 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JFSMconditionStorage;
-		class IJFSMconditionStorageOwner;
-		class IJFSMconditionOwner;
+		class JFSMconditionStorage; 
+		class IJFSMconditionOwnerInterface;
 		 
 		class JFSMcondition : public JFSMInterface
 		{
@@ -21,20 +20,19 @@ namespace JinEngine
 			{
 			public:
 				J_FSMCONDITION_VALUE_TYPE valueType;
-				IJFSMconditionOwner* conditionOwner = nullptr;
-				IJFSMconditionStorageOwner* storageOwner = nullptr;
+				IJFSMconditionOwnerInterface* conditionOwner = nullptr; 
 			public:
-				JFSMconditionInitData(const std::wstring& name, const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType, IJFSMconditionOwner* ownerStorage);
-				JFSMconditionInitData(const size_t guid, IJFSMconditionStorageOwner* storageOwner);
+				JFSMconditionInitData(const std::wstring& name, const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType, IJFSMconditionOwnerInterface* ownerStorage);
+				JFSMconditionInitData(const size_t guid, IJFSMconditionOwnerInterface* conditionOwner);
 			public:
 				bool IsValid() noexcept;
-				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept;
+				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
 			};
 			using InitData = JFSMconditionInitData;
 		private: 
 			float value = 0;
-			J_FSMCONDITION_VALUE_TYPE valueType;
-			IJFSMconditionOwner* conditionOwner;
+			J_FSMCONDITION_VALUE_TYPE valueType = J_FSMCONDITION_VALUE_TYPE::BOOL;
+			IJFSMconditionOwnerInterface* conditionOwner = nullptr;
 		public:
 			void Initialize()noexcept;  
 		public:

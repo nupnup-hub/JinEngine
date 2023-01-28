@@ -9,7 +9,7 @@ namespace JinEngine
 	class JSkeletonAsset;  
 	namespace Core
 	{
-		__interface IJFSMconditionStorageUser;
+		__interface JFSMconditionStorageUserAccess;
 		struct JAnimationShareData;
 		struct JAnimationTime;
 		class JAnimationFSMtransition;
@@ -20,7 +20,7 @@ namespace JinEngine
 			friend class JAnimationFSMdiagram;
 		private:
 			virtual J_FILE_IO_RESULT StoreData(std::wofstream& stream) = 0;
-			virtual J_FILE_IO_RESULT LoadData(std::wifstream& stream, IJFSMconditionStorageUser& iConditionUser) = 0;
+			virtual J_FILE_IO_RESULT LoadData(std::wifstream& stream, JFSMconditionStorageUserAccess& iConditionUser) = 0;
 		};
 
 		class JAnimationFSMstate : public JFSMstate, 
@@ -50,7 +50,7 @@ namespace JinEngine
 			JAnimationFSMstateStreamInteface* StreamInterface();
 		protected:
 			J_FILE_IO_RESULT StoreData(std::wofstream& stream) override; 
-			J_FILE_IO_RESULT LoadData(std::wifstream& stream, IJFSMconditionStorageUser& iConditionUser)override;
+			J_FILE_IO_RESULT LoadData(std::wifstream& stream, JFSMconditionStorageUserAccess& iConditionUser)override;
 		protected:
 			JAnimationFSMstate(const JFSMstateInitData& initData);
 			~JAnimationFSMstate();

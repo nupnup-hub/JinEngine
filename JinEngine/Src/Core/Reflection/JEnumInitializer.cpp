@@ -7,16 +7,62 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		void DecomposeEnumStr(std::string& ori, std::string& enumName, int& value)
+		void DecomposeEnumStr(const EnumNameMap& map,
+			std::string& ori, 
+			std::string& enumName,
+			int& value, 
+			int preValue)
 		{
+			auto findEnumValueLam = [](const EnumNameMap& map, const std::string& str) ->size_t
+			{
+				for (const auto& data : map)
+				{
+					if (data.second == str)
+						return data.first;
+				}
+				return 0;
+			};
+
 			int commaIndex = ori.find_first_of('@');
 			if (commaIndex != -1)
 			{
 				enumName = ori.substr(0, commaIndex);
 				int equalIndex = (int)enumName.find_first_of('=');
-				if (equalIndex == -1)
-					++value;
-				else
+				int orIndex = (int)enumName.find_first_of('|');
+				orIndex = -1;
+				if (orIndex != -1)
+				{
+					std::string copyEnum = enumName.substr(equalIndex + 1);
+					std::vector<int> orIndexVec{ equalIndex };
+					orIndex -= equalIndex;
+					while (orIndex != -1)
+					{
+						orIndexVec.push_back(orIndex);
+						copyEnum = copyEnum.substr(orIndex + 1);
+						orIndex = (int)copyEnum.find_first_of('|'); 
+					}
+
+					copyEnum = enumName;
+					size_t sum = 0;
+					const uint orCount = (uint)orIndexVec.size();
+					for (uint i = 0; i < orCount; ++i)
+					{				
+						if (i == orCount - 1)
+						{
+							std::string indexValue = JCUtil::EraseChar(copyEnum.substr(orIndexVec[i] + 1), ' ');
+							sum += findEnumValueLam(map, indexValue);
+						}
+						else
+						{
+							std::string indexValue = JCUtil::EraseChar(copyEnum.substr(orIndexVec[i] + 1, orIndexVec[i + 1] - 1), ' ');
+							sum += findEnumValueLam(map, indexValue);
+							copyEnum = copyEnum.substr(orIndexVec[i] + 1);						 
+						} 
+					}
+					value = sum;
+					enumName = enumName.substr(0, equalIndex);
+				}
+				else if(equalIndex != -1)
 				{
 					int shiftIndex = (int)enumName.find_first_of("<<");
 					if (shiftIndex != -1)
@@ -28,7 +74,9 @@ namespace JinEngine
 					else
 						value = JCUtil::StringToInt(JCUtil::EraseSideChar(enumName.substr(equalIndex + 1), ' '));
 					enumName = enumName.substr(0, equalIndex);
-				}
+				} 
+				else 
+					value = preValue + 1;
 				ori = ori.substr(commaIndex + 1);
 			}
 			else
@@ -42,6 +90,7 @@ namespace JinEngine
 					enumName = ori.substr(0, equalIndex);
 				}
 			}
+			enumName = JCUtil::EraseSideChar(enumName, ' ');
 		}
 
 		bool IsTwoSqure(const int oriValue)
@@ -66,10 +115,11 @@ namespace JinEngine
 
 			std::string enumName;
 			int value = 0;
-
+			int preValue = -1;
 			for (size_t i = 0; i < enumSize; ++i)
 			{
-				DecomposeEnumStr(elementCopy, enumName, value); 
+				DecomposeEnumStr(map, elementCopy, enumName, value, preValue);
+				preValue = value;
 				map.emplace(value, enumName);
 			}
 			return map;
@@ -77,15 +127,19 @@ namespace JinEngine
 
 		EnumElementVec JEnumInitializer::CreateEnumVec()noexcept
 		{
+			EnumNameMap map;
 			EnumElementVec vec;
 			std::string elementCopy = element;
 
 			std::string enumName;
 			int value = 0;
+			int preValue = -1;
 			for (size_t i = 0; i < enumSize; ++i)
 			{
-				DecomposeEnumStr(elementCopy, enumName, value);
+				DecomposeEnumStr(map, elementCopy, enumName, value, preValue);
+				preValue = value;
 				vec.push_back(value);
+				map.emplace(value, enumName);
 			}
 			return vec;
 		}

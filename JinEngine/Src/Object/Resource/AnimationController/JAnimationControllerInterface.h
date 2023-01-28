@@ -7,8 +7,7 @@ namespace JinEngine
 {
 	class JAnimationControllerInterface : public JResourceObject, 
 		public JClearableInterface,
-		public Core::IJFSMdiagramOwner,
-		public Core::IJFSMconditionStorageOwner
+		public Core::JFSMdiagramOwnerInterface
 	{
 	protected:
 		JAnimationControllerInterface(const JResourceObject::JResourceInitData& initdata);

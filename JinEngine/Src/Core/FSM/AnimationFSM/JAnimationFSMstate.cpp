@@ -78,7 +78,7 @@ namespace JinEngine
 			}
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
-		J_FILE_IO_RESULT JAnimationFSMstate::LoadData(std::wifstream& stream, IJFSMconditionStorageUser& iFSMconditionStorage)
+		J_FILE_IO_RESULT JAnimationFSMstate::LoadData(std::wifstream& stream, JFSMconditionStorageUserAccess& iFSMconditionStorage)
 		{
 			if (!stream.is_open())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;

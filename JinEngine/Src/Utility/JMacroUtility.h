@@ -101,5 +101,31 @@ namespace JinEngine
 
 #define J_MAKE_FRIEND(...) J_IDENTITY(CALL_DEFINE(J_FRIEND, MAP_HELPER, __VA_ARGS__))  
 
+
+#define J_SIMPLE_GET_SET(typeName, dataName, methodName)		\
+                                                                \
+		typeName Get##methodName()const noexcept			    \
+		{												\
+			return dataName;							\
+		}												\
+														\
+		void Set##methodName(const typeName& newData)noexcept\
+		{												\
+			dataName = newData;							\
+		}                                               \
+                                                        \
+
+ #define J_SIMPLE_P_GET_SET(typeName, dataName, methodName)		\
+                                                                \
+		typeName Get##methodName()const noexcept			    \
+		{												\
+			return dataName;							\
+		}												\
+														\
+		void Set##methodName(typeName newData)noexcept\
+		{												\
+			dataName = newData;							\
+		}                                               \
+
     }
 }

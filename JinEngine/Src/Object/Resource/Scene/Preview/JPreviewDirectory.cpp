@@ -2,7 +2,8 @@
 #include"../JScene.h"  
 #include"../JSceneManager.h"
 #include"../../Texture/JTexture.h"
-#include"../../Material/JMaterial.h" 
+#include"../../Material/JMaterial.h"
+#include"../../Material/JDefaultMaterialSetting.h"
 #include"../../Mesh/JMeshGeometry.h"
 #include"../../JResourceObjectFactory.h"
 #include"../../../Directory/JDirectory.h"
@@ -71,8 +72,7 @@ namespace JinEngine
 
 		J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
 		textureMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(matName, Core::MakeGuid(), flag, dir));
-		textureMaterial->SetAlbedoMap(texture);
-		textureMaterial->SetAlbedoOnly(true);
+		JDefaultMaterialSetting::SetAlbedoMapOnly(textureMaterial, texture);
 
 		JGameObject* shapeObj = JGFU::CreateShape(*scene->GetRootGameObject(), flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
 		JRenderItem* renderItem = shapeObj->GetRenderItem();

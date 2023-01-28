@@ -13,9 +13,10 @@ namespace JinEngine
 	{
 		namespace Constants
 		{
-			static constexpr int gridFactor = 1028;
+			static constexpr int gridFactor = 1280;
 			static constexpr int gridLineCount = 128;
 			static constexpr int step = gridFactor / gridLineCount;
+			static constexpr float zoomRateRange = 75;
 		}
 
 		void JEditorGuiCoordGrid::Clear()
@@ -24,10 +25,10 @@ namespace JinEngine
 		}
 		void JEditorGuiCoordGrid::Update()
 		{
-			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
-			{
-				if (ImGui::IsMouseDown(1) || (ImGui::IsMouseDown(0) && !ImGui::IsItemClicked()))
-				{
+			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_DockHierarchy))
+			{ 
+				if (ImGui::IsMouseDown(2))
+				{ 
 					const float halfCanvas = gridSize * 0.5f;
 					mouseOffset = mouseOffset + (ImGui::GetMousePos() - preMousePos);
 					mouseOffset.x = std::clamp(mouseOffset.x, -halfCanvas, halfCanvas);
@@ -38,6 +39,7 @@ namespace JinEngine
 			}
 			preMousePos = ImGui::GetMousePos();
 			preWheelPos = ImGui::GetIO().MouseWheel;
+			ImGui::Text((std::to_string(mouseOffset.x) + "_" + std::to_string(mouseOffset.y)).c_str());
 		}
 		void JEditorGuiCoordGrid::Draw()
 		{
@@ -71,14 +73,17 @@ namespace JinEngine
 		void JEditorGuiCoordGrid::SetGridSize(const float newGridSize)noexcept
 		{
 			gridSize = newGridSize;
+			const float halfCanvas = gridSize * 0.5f; 
+			mouseOffset.x = std::clamp(mouseOffset.x, -halfCanvas, halfCanvas);
+			mouseOffset.y = std::clamp(mouseOffset.y, -halfCanvas, halfCanvas);
 		}
-		void JEditorGuiCoordGrid::SetMinZoom(const int newMaxZoom)noexcept
+		void JEditorGuiCoordGrid::SetMaxZoomRate(const float newMaxZoom)noexcept
 		{
-			maxZoom = newMaxZoom;
+			maxZoom = std::clamp(newMaxZoom, 0.0f, Constants::zoomRateRange);
 		}
-		void JEditorGuiCoordGrid::SetMaxZoom(const int newMinZoom)noexcept
+		void JEditorGuiCoordGrid::SetMinZoomRate(const float newMinZoom)noexcept
 		{
-			minZoom = newMinZoom;
+			minZoom = std::clamp(-newMinZoom, -Constants::zoomRateRange, 0.0f);
 		}
 		 
 		void JEditorSceneCoordGrid::MakeCoordGrid(JGameObject* parent)

@@ -204,14 +204,14 @@ namespace JinEngine
 		else
 			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_LIGHT));
 	}
-	void JMaterial::SetAlbedoOnly(bool value)noexcept
+	void JMaterial::SetAlbedoMapOnly(bool value)noexcept
 	{
-		if (albedoOnly == value)
+		if (albedoMapOnly == value)
 			return;
 
-		albedoOnly = value;
+		albedoMapOnly = value;
 		SetFrameDirty();
-		if (albedoOnly)
+		if (albedoMapOnly)
 			SetNewFunctionFlag(Core::AddSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
 		else
 			SetNewFunctionFlag(Core::MinusSQValueEnum(shader->GetShaderGFunctionFlag(), SHADER_FUNCTION_ALBEDO_MAP_ONLY));
@@ -347,7 +347,7 @@ namespace JinEngine
 	}
 	bool JMaterial::OnAlbedoOnly()const noexcept
 	{
-		return albedoOnly;
+		return albedoMapOnly;
 	}
 	bool JMaterial::OnNonCulling()const noexcept
 	{
@@ -488,7 +488,7 @@ namespace JinEngine
 		{
 			JFileIOHelper::StoreAtomicData(stream, L"Shadow", shadow);
 			JFileIOHelper::StoreAtomicData(stream, L"Light", light);
-			JFileIOHelper::StoreAtomicData(stream, L"AlbedoOnly", albedoOnly);
+			JFileIOHelper::StoreAtomicData(stream, L"AlbedoOnly", albedoMapOnly);
 			JFileIOHelper::StoreAtomicData(stream, L"NonCulling", nonCulling);
 			JFileIOHelper::StoreAtomicData(stream, L"ShadowMapWrite", isShadowMapWrite);
 			JFileIOHelper::StoreAtomicData(stream, L"BoundingObjDepthTest", isBoundingObjDepthTest);
@@ -568,7 +568,7 @@ namespace JinEngine
 
 			SetShadow(sShadow);
 			SetLight(sLight);
-			SetAlbedoOnly(sAlbedoOnly);
+			SetAlbedoMapOnly(sAlbedoOnly);
 			SetNonCulling(sNonCulling);
 			SetShadowMapWrite(sIsShadowMapWrite);
 			SetBoundingObjectDepthTest(sBoundingObjDepthTest);

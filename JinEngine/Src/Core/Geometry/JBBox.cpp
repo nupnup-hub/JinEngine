@@ -8,6 +8,23 @@ namespace JinEngine
 	namespace Core
 	{ 
 		using namespace DirectX; 
+		 
+		JBBox2D::JBBox2D(const JVector2<float>& min, const JVector2<float>& max)
+			: min(min), max(max)
+		{}
+		bool JBBox2D::Contain(const JVector2<float>& p)
+		{
+			return p.x >= min.x && p.x <= max.x && p.y >= min.y && p.y <= max.y;
+		}
+		JVector2<float> JBBox2D::Extent()const noexcept
+		{
+			return 0.5f * (max - min);
+		}
+		JVector2<float> JBBox2D::Center()const noexcept
+		{
+			return 0.5f * (max + min);
+		}
+
 		JBBox::JBBox(const JVector3<float>& min, const JVector3<float>& max)
 			:min(min), max(max)
 		{

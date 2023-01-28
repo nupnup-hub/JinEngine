@@ -382,11 +382,11 @@ namespace JinEngine
 	}
 	void JShader::GetInitHelper(_Out_ CSInitHelper& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept
 	{
-		auto calThreadDim = [](const uint ori, const uint range, const uint devideFactor, uint& devideCount) -> uint
+		auto calThreadDim = [](const uint ori, const uint length, const uint devideFactor, uint& devideCount) -> uint
 		{
 			devideCount = 0;
 			uint result = ori;
-			while (result > range)
+			while (result > length)
 			{
 				result /= devideFactor;
 				++devideCount;

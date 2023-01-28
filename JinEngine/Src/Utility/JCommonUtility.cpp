@@ -150,27 +150,27 @@ namespace JinEngine
 		}
 		return newWStr;
 	}
-	std::wstring JCUtil::ComporessWstring(const std::wstring& wstr, const uint lange)noexcept
+	std::wstring JCUtil::CompressWstring(const std::wstring& wstr, const uint lange)noexcept
 	{
-		if (wstr.size() >= lange)
+		if (wstr.size() > lange)
 			return wstr.substr(0, lange) + L"...";
 		else
 			return wstr;
 	}
-	std::string JCUtil::ComporessString(const std::string& str, const uint lange)noexcept
+	std::string JCUtil::CompressString(const std::string& str, const uint lange)noexcept
 	{
-		if (str.size() >= lange)
+		if (str.size() > lange)
 			return str.substr(0, lange) + "...";
 		else
 			return str;
 	}
-	std::wstring JCUtil::ComporessWstirngPath(const std::wstring& path, const uint maxLange)noexcept
+	std::wstring JCUtil::CompressWstirngPath(const std::wstring& path, const uint length)noexcept
 	{
-		if (path.size() >= maxLange)
+		if (path.size() > length)
 		{
 			constexpr int preFixLength = 4;
 			std::wstring finalpath = path;
-			while (finalpath.size() + preFixLength >= maxLange)
+			while (finalpath.size() + preFixLength >= length)
 			{
 				int index = finalpath.find_first_of(L'\\');
 				if (index == -1)
@@ -182,13 +182,13 @@ namespace JinEngine
 		else
 			return path;
 	}
-	std::string JCUtil::ComporessStringPath(const std::string& path, const uint maxLange)noexcept
+	std::string JCUtil::CompressStringPath(const std::string& path, const uint length)noexcept
 	{
-		if (path.size() >= maxLange)
+		if (path.size() > length)
 		{ 
 			constexpr int preFixLength = 4;
 			std::string finalpath = path;
-			while (finalpath.size() + preFixLength >= maxLange)
+			while (finalpath.size() + preFixLength >= length)
 			{
 				int index = finalpath.find_first_of('\\');
 				if (index == -1)
@@ -200,6 +200,60 @@ namespace JinEngine
 		else
 			return path;
 	}
+	std::wstring JCUtil::InsertSpace(const std::wstring& src, const uint spacePerLength, _Out_ int& lastSpaceIndex)noexcept
+	{
+		lastSpaceIndex = -1;
+		const uint srcCount = (uint)src.size();
+		if (srcCount <= spacePerLength)
+			return src;
+		else
+		{
+			uint spaceCount = 0;
+			std::wstring result;
+			result.resize(srcCount + ((srcCount - 1) / spacePerLength));
+			for (uint i = 0; i < srcCount; ++i)
+			{
+				if (i > 0 && i == spacePerLength)
+				{
+					lastSpaceIndex = i + spaceCount;
+					result[i + spaceCount] = L'\n';
+					++spaceCount;
+				}
+				result[i + spaceCount] = src[i];
+			}
+			return result;
+		}
+	}
+	std::wstring JCUtil::OrderTexture(const std::wstring& src, const uint spacePerLength, const J_TEXT_ORDER_TYPE type)noexcept
+	{
+		int lastSpaceIndex = 0;
+		if (type == JCommonUtility::J_TEXT_ORDER_TYPE::LEFT)
+			return InsertSpace(src, spacePerLength, lastSpaceIndex);
+
+		std::wstring appliedSpace = InsertSpace(src, spacePerLength, lastSpaceIndex); 
+		int blankCount = spacePerLength - (appliedSpace.size() - (lastSpaceIndex + 1) - 1);
+		if (blankCount < 1)
+			return appliedSpace;
+
+		if (type == JCommonUtility::J_TEXT_ORDER_TYPE::MIDDLE)
+		{ 
+			int halfBlank = (float)blankCount * 0.5f;
+			if (halfBlank < 1)
+				return appliedSpace;
+
+			std::wstring blank;
+			blank.resize(halfBlank, L'_');
+			appliedSpace.insert(lastSpaceIndex + 1, blank);
+			return appliedSpace;
+		}
+		else
+		{
+			std::wstring blank;
+			blank.resize(blankCount, L'_');
+			return appliedSpace + blank;
+		}
+	}
+ 
 	bool JCUtil::IsNumber(const char ch)noexcept
 	{
 		return (ch > 47 && ch < 58);

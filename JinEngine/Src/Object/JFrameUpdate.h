@@ -90,14 +90,14 @@ namespace JinEngine
 #pragma endregion
 
 #pragma region IFrameBuff
-	class JFrameBuffUserInterface;
-	class JFrameBuffManagerInterface;
+	class JFrameBuffUserAccess;
+	class JFrameBuffManagerAccess;
 
 	class IFrameBuff1
 	{
 	private:
-		friend class JFrameBuffUserInterface;
-		friend class JFrameBuffManagerInterface;
+		friend class JFrameBuffUserAccess;
+		friend class JFrameBuffManagerAccess;
 	public:
 		virtual ~IFrameBuff1() = default;
 	protected:
@@ -108,8 +108,8 @@ namespace JinEngine
 	class IFrameBuff2
 	{
 	private:
-		friend class JFrameBuffUserInterface;
-		friend class JFrameBuffManagerInterface;
+		friend class JFrameBuffUserAccess;
+		friend class JFrameBuffManagerAccess;
 	public:
 		virtual ~IFrameBuff2() = default;
 	protected:
@@ -138,10 +138,10 @@ namespace JinEngine
 		void SetSecondFrameBuffOffset(int value)noexcept final;
 	};
 
-	class JFrameBuffUserInterface
+	class JFrameBuffUserAccess
 	{
 	public:
-		virtual ~JFrameBuffUserInterface() = default;
+		virtual ~JFrameBuffUserAccess() = default;
 	protected:
 		int CallGetFrameBuffOffset(IFrameBuff1& iFrameBuff)const noexcept;
 	protected:
@@ -149,7 +149,7 @@ namespace JinEngine
 		int CallGetSecondFrameBuffOffset(IFrameBuff2& iFrameBuff)const noexcept;
 	};
 
-	class JFrameBuffManagerInterface : public JFrameBuffUserInterface
+	class JFrameBuffManagerAccess : public JFrameBuffUserAccess
 	{
 	protected:
 		void CallSetFrameBuffOffset(IFrameBuff1& iFrameBuff, int value)const noexcept;

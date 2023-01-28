@@ -5,6 +5,7 @@
 #include"../../JResourceManager.h" 
 #include"../../JResourceType.h" 
 #include"../../Material/JMaterial.h" 
+#include"../../Material/JDefaultMaterialSetting.h"
 #include"../../Mesh/JMeshGeometry.h"
 #include"../../Texture/JTexture.h"
 #include"../../JResourceObjectFactory.h"
@@ -160,19 +161,11 @@ namespace JinEngine
 		J_DEFAULT_SHAPE shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD;
 		if (texture->GetTextureType() == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 		{
-			//Object Copy로 수정필요
-			textureMaterial->SetSkyMaterial(true);
-			textureMaterial->SetNonCulling(true);
-			textureMaterial->SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::LESS_EQUAL);
-			textureMaterial->SetAlbedoMap(texture);
+			JDefaultMaterialSetting::SetSky(textureMaterial, texture); 
 			shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE;
 		}
 		else
-		{
-			textureMaterial->SetAlbedoMap(texture);
-			textureMaterial->SetAlbedoOnly(true);
-		}
-		 
+			JDefaultMaterialSetting::SetAlbedoMapOnly(textureMaterial, texture); 
 
 		JGameObject* shapeObj = JGFU::CreateShape(*scene->GetRootGameObject(), flag, shapeType);
 		JRenderItem* renderItem = shapeObj->GetRenderItem();
@@ -198,18 +191,29 @@ namespace JinEngine
 		const std::wstring matName = resource->GetName() + L"PreviewMaterial";
 		JDirectory* dir = JResourceManager::Instance().GetEditorResourceDirectory();
 
-		J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
+		const J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
 		textureMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(matName, Core::MakeGuid(), flag, dir));
-		textureMaterial->SetAlbedoMap(texture);
-		textureMaterial->SetAlbedoOnly(true);
 
-		JGameObject* shapeObj = JGFU::CreateShape(*scene->GetRootGameObject(), flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
+		J_DEFAULT_SHAPE shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_EMPTY;
+		if (texture->GetTextureType() == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
+		{
+			JDefaultMaterialSetting::SetSky(textureMaterial, texture);
+			shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE;
+		}
+		else
+		{
+			JDefaultMaterialSetting::SetAlbedoMapOnly(textureMaterial, texture);
+			shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD;
+		}
+
+		JGameObject* shapeObj = JGFU::CreateShape(*scene->GetRootGameObject(), flag, shapeType);
 		JRenderItem* renderItem = shapeObj->GetRenderItem();
 		renderItem->SetMaterial(0, textureMaterial);
+
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
-		AdjustCamera(scene, previewCamera, center, radius, true);
+		AdjustCamera(scene, previewCamera, center, radius, shapeType == J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
 		return true;
 	}
 }

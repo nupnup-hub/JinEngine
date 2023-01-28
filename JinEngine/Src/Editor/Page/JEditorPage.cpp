@@ -429,7 +429,7 @@ namespace JinEngine
 				else if (hasOpenObj)
 				{
 					auto idenObj = Core::GetUserPtr(openObj->GetTypeInfo().Name(), openObj->GetGuid());
-					auto userObj = Core::JUserPtr<JObject>::ConvertChildType(std::move(idenObj));
+					auto userObj = Core::JUserPtr<JObject>::ConvertChildUser(std::move(idenObj));
 					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE,
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), userObj)));
 				}
@@ -447,7 +447,7 @@ namespace JinEngine
 
 			if (selectObj != nullptr && selectObj->GetTypeInfo().IsChildOf(JObject::StaticTypeInfo()))
 			{
-				auto userObj = Core::JUserPtr<JObject>::ConvertChildType(Core::GetUserPtr(selectObj->TypeName(), selectObj->GetGuid()));
+				auto userObj = Core::JUserPtr<JObject>::ConvertChildUser(Core::GetUserPtr(selectObj->GetTypeInfo().Name(), selectObj->GetGuid()));
 				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::SELECT_OBJECT,
 					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorSelectObjectEvStruct>(GetPageType(), userObj)));
 			}

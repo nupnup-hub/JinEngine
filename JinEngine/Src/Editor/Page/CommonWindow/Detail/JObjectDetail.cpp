@@ -42,13 +42,13 @@ namespace JinEngine
 			switch (preSelected->GetObjectType())
 			{
 			case J_OBJECT_TYPE::GAME_OBJECT:
-				GameObjectDetailOnScreen(Core::JUserPtr<JGameObject>::ConvertChildType(std::move(nowSelected)));
+				GameObjectDetailOnScreen(Core::JUserPtr<JGameObject>::ConvertChildUser(std::move(nowSelected)));
 				break;
 			case J_OBJECT_TYPE::RESOURCE_OBJECT:
-				ResourceObjectDetailOnScreen(Core::JUserPtr<JResourceObject>::ConvertChildType(std::move(nowSelected)));
+				ResourceObjectDetailOnScreen(Core::JUserPtr<JResourceObject>::ConvertChildUser(std::move(nowSelected)));
 				break;
 			case J_OBJECT_TYPE::DIRECTORY_OBJECT:
-				DirectoryObjectDetailOnScreen(Core::JUserPtr<JDirectory>::ConvertChildType(std::move(nowSelected)));
+				DirectoryObjectDetailOnScreen(Core::JUserPtr<JDirectory>::ConvertChildUser(std::move(nowSelected)));
 				break;
 			default:
 				break;

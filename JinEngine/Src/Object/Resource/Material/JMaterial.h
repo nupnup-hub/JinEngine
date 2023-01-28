@@ -57,8 +57,8 @@ namespace JinEngine
 		bool shadow = false;
 		REGISTER_PROPERTY_EX(light, OnLight, SetLight, GUI_CHECKBOX())
 		bool light = false;
-		REGISTER_PROPERTY_EX(albedoOnly, OnAlbedoOnly, SetAlbedoOnly, GUI_CHECKBOX())
-		bool albedoOnly = false;
+		REGISTER_PROPERTY_EX(albedoMapOnly, OnAlbedoOnly, SetAlbedoMapOnly, GUI_CHECKBOX())
+		bool albedoMapOnly = false;
 		bool nonCulling = false;
 		//Draw ShadowMap by depth test
 		bool isShadowMapWrite = false;
@@ -109,7 +109,7 @@ namespace JinEngine
 		void SetAmbientOcclusionMap(JTexture* texture) noexcept;
 		void SetShadow(bool value)noexcept;
 		void SetLight(bool value)noexcept;
-		void SetAlbedoOnly(bool value)noexcept;
+		void SetAlbedoMapOnly(bool value)noexcept;
 		void SetNonCulling(bool value)noexcept;
 		void SetShadowMapWrite(bool value)noexcept;
 		void SetBoundingObjectDepthTest(bool value)noexcept;

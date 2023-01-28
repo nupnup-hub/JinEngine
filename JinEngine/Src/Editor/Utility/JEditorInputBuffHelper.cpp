@@ -24,6 +24,13 @@ namespace JinEngine
 		{
 			return capacity;
 		}
+		void JEditorInputBuffHelper::SetCapacity(const int newCapacity)noexcept
+		{ 
+			capacity = newCapacity;
+			buff.resize(newCapacity);
+			if (result.size() > newCapacity)
+				result.resize(newCapacity);
+		}
 		void JEditorInputBuffHelper::SetBuff(const std::string& value)noexcept
 		{
 			buff = value;

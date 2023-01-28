@@ -5,7 +5,7 @@
 #include"../../../Utility/JVector.h"
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
-#include"../../../Editor/Utility/JEditorBinaryTreeView.h"
+#include"../../../Editor/Utility/JEditorViewStructure.h"
 #include<algorithm>
 
 //Debug
@@ -642,7 +642,8 @@ namespace JinEngine
 		}
 		void JKdTree::BuildDebugTree(Editor::JEditorBinaryTreeView& treeView)
 		{
-			treeView.Initialize(allNodes.size());
+			treeView.Clear();
+			treeView.SetGridSize(20000);
 			if (root != nullptr)
 				root->BuildDebugNode(treeView);
 		}

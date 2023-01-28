@@ -87,25 +87,7 @@ namespace JinEngine
 	uint JAnimationController::GetConditionCount()const noexcept
 	{
 		return conditionStorage->GetConditionCount();
-	}
-	std::wstring JAnimationController::GetDiagramName(const size_t diagramGuid) noexcept
-	{
-		JAnimationFSMdiagram* diagarm = FindDiagram(diagramGuid);
-		return diagarm != nullptr ? diagarm->GetName() : L"Nullptr";
-	}
-	std::wstring JAnimationController::GetUniqueDiagramName(const std::wstring& initName)noexcept
-	{
-		return JCUtil::MakeUniqueName(fsmDiagram, initName);
-	}
-	std::wstring JAnimationController::GetUniqueStateName(const size_t diagramGuid, const std::wstring& initName)noexcept
-	{
-		JAnimationFSMdiagram* diagarm = FindDiagram(diagramGuid);
-		return diagarm->GetUniqueStateName(initName);
-	}
-	std::wstring JAnimationController::GetUniqueConditionName(const std::wstring& initName)noexcept
-	{
-		return conditionStorage->GetConditionUniqueName(initName);
-	}
+	}  
 	Core::JAnimationFSMdiagram* JAnimationController::GetDiagram(const size_t guid)noexcept
 	{
 		int index = JCUtil::GetJIdenIndex(fsmDiagram, guid);
@@ -140,18 +122,32 @@ namespace JinEngine
 	{
 		return conditionStorage->GetConditionCount() < conditionStorage->maxNumberOffCondition;
 	}
-	bool JAnimationController::CanCreateState(const uint diagramIndex)const noexcept
+	bool JAnimationController::CanCreateState(Core::JAnimationFSMdiagram* diagram)const noexcept
+	{ 
+		return diagram && diagram->CanCreateState();
+	}
+	Core::JAnimationFSMdiagram* JAnimationController::CreateFSMDiagram(const size_t guid)noexcept
 	{
-		if (fsmDiagram.size() <= diagramIndex)
-			return false;
+		if (!CanCreateDiagram())
+			return nullptr;
+		 
+		return Core::JFFI<Core::JAnimationFSMdiagram>::Create(Core::JPtrUtil::MakeOwnerPtr<Core::JFSMdiagram::InitData>(guid, this));
+	}
+	Core::JFSMcondition* JAnimationController::CreateFSMCondition(const size_t guid)noexcept
+	{
+		if (!CanCreateCondition())
+			return nullptr;
 
-		return fsmDiagram[diagramIndex]->CanCreateState();
+		return Core::JFFI<Core::JFSMcondition>::Create(Core::JPtrUtil::MakeOwnerPtr<Core::JFSMcondition::InitData>(guid, conditionStorage.get()));
 	}
-	Core::IJFSMconditionOwner* JAnimationController::GetConditionOwner()noexcept
+	Core::JAnimationFSMstate* JAnimationController::CreateFSMClip(const size_t guid, Core::JAnimationFSMdiagram* diagram)noexcept
 	{
-		return conditionStorage.get();
+		if (!CanCreateState(diagram))
+			return nullptr;
+		 
+		return Core::JFFI<Core::JAnimationFSMstateClip>::Create(Core::JPtrUtil::MakeOwnerPtr<Core::JFSMstate::InitData>(guid, Core::GetUserPtr(diagram)));
 	}
-	Core::IJFSMconditionStorageUser* JAnimationController::GetConditionStorageUser()noexcept
+	Core::JFSMconditionStorageUserAccess* JAnimationController::GetConditionStorageUser()noexcept
 	{
 		return conditionStorage.get();
 	}
@@ -162,6 +158,7 @@ namespace JinEngine
 			int index = JCUtil::GetJIdenIndex(fsmDiagram, diagram->GetGuid());
 			if (index == -1 && diagram->GetTypeInfo().IsA(JAnimationFSMdiagram::StaticTypeInfo()))
 			{
+				diagram->SetName(JCUtil::MakeUniqueName(fsmDiagram, diagram->GetName()));
 				fsmDiagram.push_back(static_cast<JAnimationFSMdiagram*>(diagram));
 				return true;
 			}
@@ -220,8 +217,13 @@ namespace JinEngine
 	{
 		if (IsValid())
 		{
-			conditionStorage.reset();
+			std::vector<Core::JAnimationFSMdiagram*> copy = fsmDiagram;
+			const uint fsmCount = GetDiagramCount();
+			for (uint i = 0; i < fsmCount; ++i)
+				JFSMInterface::Destroy(copy[i]);
+
 			fsmDiagram.clear();
+			conditionStorage->Clear(); 
 			SetValid(false);
 		}
 	}
@@ -257,7 +259,7 @@ namespace JinEngine
 			uint diagramCount = 0;
 			JFileIOHelper::LoadAtomicData(stream, diagramCount);
 			for (uint i = 0; i < diagramCount; ++i)
-				JAnimationFSMdiagram::LoadData(stream, Core::GetUserPtr(this));
+				JAnimationFSMdiagram::LoadData(stream, this);
 
 			stream.close();
 			return true;
@@ -279,7 +281,7 @@ namespace JinEngine
 		if (cont == nullptr)
 			return Core::J_FILE_IO_RESULT::FAIL_NULL_OBJECT;
 
-		if (((int)cont->GetFlag() & OBJECT_FLAG_DO_NOT_SAVE) > 0)
+		if (cont->HasFlag(OBJECT_FLAG_DO_NOT_SAVE))
 			return Core::J_FILE_IO_RESULT::FAIL_DO_NOT_SAVE_DATA;
 
 		std::wofstream stream;
@@ -321,22 +323,8 @@ namespace JinEngine
 					return nullptr;
 			}
 		}
-
-		if (newCont == nullptr)
-			return nullptr;
-
-		if (newCont->IsValid())
-			return newCont;
-		else if (newCont->ReadAnimationControllerData())
-		{
-			newCont->SetValid(true);
-			return newCont;
-		}
-		else
-		{ 
-			JObject::BegineForcedDestroy(newCont);
-			return nullptr;
-		}
+		 
+		return newCont;
 	}
 	void JAnimationController::RegisterJFunc()
 	{
@@ -349,7 +337,11 @@ namespace JinEngine
 				JAnimationController* newAniCont = ownerPtr.Get();
 				if (AddInstance(std::move(ownerPtr)))
 				{
-					StoreObject(newAniCont);
+					Core::JAnimationFSMdiagram*  baseDiagram = newAniCont->CreateFSMDiagram(Core::MakeGuid());
+					baseDiagram->SetName(L"BaseLayer");
+					StoreObject(newAniCont);				 
+					newAniCont->SetValid(true);
+					newAniCont->ClearResource();
 					return newAniCont;
 				}		 
 			}
@@ -391,10 +383,10 @@ namespace JinEngine
 	}
 	JAnimationController::JAnimationController(const JAnimationControllerInitData& initdata)
 		:JAnimationControllerInterface(initdata)
-	{
-		conditionStorage = std::make_unique<Core::JFSMconditionStorage>();
-		Core::JFDFI< JAnimationFSMdiagram>::Create(Core::JPtrUtil::MakeOwnerPtr<JFSMdiagram::InitData>
-			(L"BaseLayer", Core::MakeGuid(), Core::GetUserPtr(this)));
+	{ 
+		conditionStorage = std::make_unique<Core::JFSMconditionStorage>(); 
 	}
-	JAnimationController::~JAnimationController() {}
+	JAnimationController::~JAnimationController()
+	{ 
+	}
 }

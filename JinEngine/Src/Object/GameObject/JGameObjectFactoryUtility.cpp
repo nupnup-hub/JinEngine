@@ -34,7 +34,7 @@ namespace JinEngine
 	}
 	JGameObject* JGameObjectFactoryUtility::CreateModel(JGameObject& parent, const size_t guid, const J_OBJECT_FLAG flag, JMeshGeometry* mesh)
 	{
-		JGameObject* newGameObj = JGFI::Create(JObject::GetDefaultName<JGameObject>(), guid, flag, parent);
+		JGameObject* newGameObj = JGFI::Create(mesh->GetName(), guid, flag, parent);
 		JCFU::CreateRenderItem(Core::MakeGuid(), *newGameObj, mesh);
 		return newGameObj;
 	}

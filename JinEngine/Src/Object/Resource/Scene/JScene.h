@@ -191,7 +191,7 @@ private:
 				if (allObjects[i]->IsObjectConstantDirtied())
 				{
 					const XMFLOAT4X4 fTexTransform = renderItem->GetTextransform();
-					const XMMATRIX world = allObjects[i]->GetTransform()->GetWorld();
+					const XMMATRIX world = allObjects[i]->GetTransform()->GetWorldMatrix();
 					const XMMATRIX texTransform = XMLoadFloat4x4(&fTexTransform);
 
 					JObjectConstants objConstants;

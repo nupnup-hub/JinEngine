@@ -62,7 +62,7 @@ namespace JinEngine
 				void OffHoveredColor()noexcept;
 			};
 		private:
-			using UpdateTransformT = Core::JStaticCallableType<void, JEditorTransformTool*, JGameObject*>;
+			using UpdateTransformT = Core::JStaticCallableType<void, JEditorTransformTool*, JGameObject*, JCamera*>;
 		private:
 			const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType;
 			const J_DEFAULT_SHAPE shape;
@@ -94,13 +94,13 @@ namespace JinEngine
 		public:
 			void Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam)final;
 		private: 
-			void UpdateArrowPosition(JGameObject* selected, Core::JUserPtr<JCamera> cam);
-			void UpdateArrowDragging(JGameObject* selected, Core::JUserPtr<JCamera> cam);
+			void UpdateArrowPosition(JGameObject* selected, JCamera* cam);
+			void UpdateArrowDragging(JGameObject* selected, JCamera* cam);
 		private:
 			static UpdateTransformT::Ptr GetUpdateTransformPtr(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType)noexcept;
-			static void UpdateSelectedPosition(JEditorTransformTool* tool, JGameObject* selected)noexcept;
-			static void UpdateSelectedRotation(JEditorTransformTool* tool, JGameObject* selected)noexcept;
-			static void UpdateSelectedScale(JEditorTransformTool* tool, JGameObject* selected)noexcept;
+			static void UpdateSelectedPosition(JEditorTransformTool* tool, JGameObject* selected, JCamera* cam)noexcept;
+			static void UpdateSelectedRotation(JEditorTransformTool* tool, JGameObject* selected, JCamera* cam)noexcept;
+			static void UpdateSelectedScale(JEditorTransformTool* tool, JGameObject* selected, JCamera* cam)noexcept;
 		public:
 			void ActivateTool()noexcept;
 			void DeActivateTool()noexcept;

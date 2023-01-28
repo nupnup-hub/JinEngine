@@ -12,17 +12,15 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JFSMcondition;
-		class JFSMconditionWrap;
+		class JFSMcondition;  
 		class JFSMtransition;
 		class JFSMstate;
+		class JFSMdiagramOwnerInterface;
 
-		class JFSMstateOwner
+		class JFSMstateOwnerInterface
 		{
 		private:
-			friend class JFSMstate;
-		public:
-			virtual std::wstring GetUniqueStateName(const std::wstring& initName)const noexcept = 0;
+			friend class JFSMstate; 
 		private:
 			virtual bool IsValidCondition(JFSMcondition* condition) noexcept = 0; 
 			virtual bool IsDiagramState(const size_t guid)noexcept = 0;
@@ -32,36 +30,35 @@ namespace JinEngine
 		};
 
 		class JFSMdiagram : public JFSMInterface, 
-			public JFSMstateOwner,
-			public IJFSMconditionStorage
+			public JFSMstateOwnerInterface,
+			public JFSMconditionStorageUserInterface
 		{
 			REGISTER_CLASS(JFSMdiagram)
 		public:
 			struct JFSMdiagramInitData : public JFSMIdentifierInitData
 			{
 			public:
-				JUserPtr<IJFSMdiagramOwner> diagramOwner;
+				JFSMdiagramOwnerInterface* diagramOwner = nullptr;
 			public:
-				JFSMdiagramInitData(const std::wstring& name, const size_t guid, JUserPtr<IJFSMdiagramOwner> diagramOwner);
-				JFSMdiagramInitData(const size_t guid, JUserPtr<IJFSMdiagramOwner> diagramOwner);
-				JFSMdiagramInitData(JUserPtr<IJFSMdiagramOwner> diagramOwner);
+				JFSMdiagramInitData(const std::wstring& name, const size_t guid, JFSMdiagramOwnerInterface* diagramOwner);
+				JFSMdiagramInitData(const size_t guid, JFSMdiagramOwnerInterface* diagramOwner);
+				JFSMdiagramInitData(JFSMdiagramOwnerInterface* diagramOwner);
 			public:
 				bool IsValid() noexcept;
-				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept;
+				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
 			}; 
 			using InitData = JFSMdiagramInitData;
 		public:
 			static constexpr uint maxNumberOffState = 100;
 		private:
 			//vector + unorered map => 64bit overhead 
-			IJFSMdiagramOwner* diagramOwner;
+			JFSMdiagramOwnerInterface* diagramOwner;
 			std::vector<JFSMstate*> stateVec;
 			std::unordered_map<size_t, JFSMstate*> stateMap;
 			JFSMstate* initState = nullptr;
 			size_t nowStateGuid; 
 		public:
-			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
-			std::wstring GetUniqueStateName(const std::wstring& initName)const noexcept final;
+			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final; 
 			uint GetStateCount()const noexcept;
 		protected:
 			void Initialize()noexcept;
@@ -69,7 +66,7 @@ namespace JinEngine
 			JFSMstate* GetState(const size_t guid)noexcept; 
 			JFSMstate* GetStateByIndex(const uint index)noexcept;  
 			std::vector<JFSMstate*>& GetStateVec()noexcept;
-			IJFSMconditionStorageUser* GetStroageUser()noexcept;
+			JFSMconditionStorageUserAccess* GetStroageUser()noexcept;
 		private:
 			bool IsValidCondition(JFSMcondition* condition) noexcept final;
 			bool IsDiagramState(const size_t guid)noexcept final;
@@ -79,7 +76,7 @@ namespace JinEngine
 		private:
 			bool RegisterCashData()noexcept;
 			bool DeRegisterCashData()noexcept;
-		protected:
+		private:
 			void Clear()noexcept override; 
 		private:
 			void NotifyRemoveCondition(JFSMcondition* condition)noexcept final;

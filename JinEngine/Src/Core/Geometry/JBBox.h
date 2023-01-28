@@ -8,6 +8,19 @@ namespace JinEngine
 {
 	namespace Core
 	{
+		class JBBox2D
+		{
+		public:
+			JVector2<float> min;
+			JVector2<float> max;
+		public: 
+			JBBox2D(const JVector2<float>& min, const JVector2<float>& max);
+		public:
+			bool Contain(const JVector2<float>& p);
+			JVector2<float> Extent()const noexcept;
+			JVector2<float> Center()const noexcept;
+		};
+
 		class JBBox
 		{
 		public:
@@ -19,7 +32,7 @@ namespace JinEngine
 		public:
 			JBBox(const JVector3<float>& min = JVector3<float>(0,0,0), const JVector3<float>& max = JVector3<float>(0, 0, 0));
 			JBBox(const DirectX::XMFLOAT3& min, const DirectX::XMFLOAT3& max);
-			JBBox(const DirectX::BoundingBox& boundBox);
+			JBBox(const DirectX::BoundingBox& boundBox);		 
 			~JBBox();
 			JBBox(const JBBox& rhs) = default;
 			JBBox& operator=(const JBBox& rhs) = default;

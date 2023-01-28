@@ -1,10 +1,11 @@
 #pragma once
 #include"../../JEditorWindow.h"   
 #include"../../../Utility/JEditorInputBuffHelper.h"
+#include"../../../../Object/Resource/JResourceUserInterface.h"
 #include"../../../../Core/Event/JEventListener.h" 
 #include"../../../../Core/FSM/AnimationFSM/JAnimationStateType.h"
 #include"../../../../Core/FSM/JFSMconditionValueType.h"
-#include "../../../../Core/FSM/JFSMInterface.h"
+#include"../../../../Core/FSM/JFSMInterface.h"
 #include"../../../../Core/Undo/JTransition.h"
 #include<unordered_map>
 #include<vector>
@@ -14,6 +15,7 @@
 namespace JinEngine
 {
 	class JAnimationController;
+	class JObject;
 	namespace Core
 	{
 		class JFSMcondition;
@@ -23,62 +25,65 @@ namespace JinEngine
 	{
 		class JEditorString;
 		class JEditorPopupMenu;
-		class JAnimationControllerEditor final : public JEditorWindow
-		{ 
+		class JEditorGraphView;
+		class JAnimationControllerEditor final : public JEditorWindow,
+			public JResourceUserInterface
+		{
 		private:
 			static constexpr int invalidIndex = -1;
 		private:
 			Core::JUserPtr<JAnimationController> aniCont;
-			int diagramIndex = invalidIndex;
-			int conditionIndex = invalidIndex;
-			int stateIndex = invalidIndex;
+			int selectedDiagramIndex = invalidIndex;
+			int selectedConditionIndex = invalidIndex;
+			int selectedStateIndex = invalidIndex;
 		private:
-			static constexpr uint stateShapeWidth = 100;
-			static constexpr uint stateShapeHeight = 150; 
-			static constexpr uint selectableBufLength = 100;
-			static constexpr uint frameThickness = 3;
-
-			bool diagramListSelectable[selectableBufLength];
-			bool conditionListSelectable[selectableBufLength];
-			bool diagramViewSelectable[selectableBufLength];
-
 			float preMousePosX = 0;
 			float preMousePosY = 0;
 		private:
+			bool reqInitDockNode = false;
+		private:
 			std::unique_ptr<JEditorString> editorString;
-			const std::string diagramListName;
-			const std::string conditionListName;
-			const std::string diagramViewName;
 			std::unique_ptr<JEditorInputBuffHelper> inputBuff;
+			std::unique_ptr<JEditorGraphView> stateGraph;
 		private:
 			std::unique_ptr<JEditorPopupMenu>diagramListPopup;
 			std::unique_ptr<JEditorPopupMenu>conditionListPopup;
 			std::unique_ptr<JEditorPopupMenu>diagramViewPopup;
 		private:
+			using AniContUserPtr = Core::JUserPtr<JAnimationController>;
+		private:
 			using DataHandleStructure = Core::JDataHandleStructure<Core::JTransition::GetMaxTaskCapacity(), Core::JIdentifier>;
-			using CreateDiagramFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, Core::JUserPtr<JAnimationController>, const size_t>;
-			using CreateDiagramBind = Core::JBindHandle<CreateDiagramFunctor, const Core::EmptyType&, const Core::EmptyType&, Core::JUserPtr<JAnimationController>, const size_t>;
+			using RegisterEv = Core::JMFunctorType<JAnimationControllerEditor, void>;
+			using DiagramHandleFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, AniContUserPtr, const size_t>;
+			using DiagramHandleBind = Core::JBindHandle<DiagramHandleFunctor, const Core::EmptyType&, const Core::EmptyType&, AniContUserPtr, const size_t>;
 
-			using CreateConditionFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, Core::JUserPtr<JAnimationController>, size_t>;
-			using CreateConditionBind = Core::JBindHandle<CreateConditionFunctor, const Core::EmptyType&, const Core::EmptyType&, Core::JUserPtr<JAnimationController>, const size_t>;
-			
-			using CreateStateFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, Core::JUserPtr<JAnimationController>, const size_t, const size_t>;
-			using CreateStateBind = Core::JBindHandle<CreateStateFunctor, const Core::EmptyType&, const Core::EmptyType&, Core::JUserPtr<JAnimationController>, const size_t, const size_t>;
+			using ConditionHandleFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, AniContUserPtr, size_t>;
+			using ConditionHandleBind = Core::JBindHandle<ConditionHandleFunctor, const Core::EmptyType&, const Core::EmptyType&, AniContUserPtr, const size_t>;
+
+			using StateHandleFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, AniContUserPtr, const size_t, const size_t>;
+			using StateHandleBind = Core::JBindHandle<StateHandleFunctor, const Core::EmptyType&, const Core::EmptyType&, AniContUserPtr, const size_t, const size_t>;
 		private:
 			//Condition
-			using SetConditionTypeFunctor = Core::JFunctor<void, const Core::J_FSMCONDITION_VALUE_TYPE, Core::JUserPtr<JAnimationController>, size_t>;
-			using SetConditionNameFunctor = Core::JFunctor<void, const std::string, Core::JUserPtr<JAnimationController>, size_t>;
-			using SetConditionBooleanValueFunctor = Core::JFunctor<void, const bool, Core::JUserPtr<JAnimationController>, size_t>;
-			using SetConditionIntValueFunctor = Core::JFunctor<void, const int, Core::JUserPtr<JAnimationController>, size_t>;
-			using SetConditionFloatValueFunctor = Core::JFunctor<void, const float, Core::JUserPtr<JAnimationController>, size_t>;
+			using SetConditionTypeFunctor = Core::JFunctor<void, const Core::J_FSMCONDITION_VALUE_TYPE, AniContUserPtr, size_t>;
+			using SetConditionNameFunctor = Core::JFunctor<void, const std::string, AniContUserPtr, size_t>;
+			using SetConditionBooleanValueFunctor = Core::JFunctor<void, const bool, AniContUserPtr, size_t>;
+			using SetConditionIntValueFunctor = Core::JFunctor<void, const int, AniContUserPtr, size_t>;
+			using SetConditionFloatValueFunctor = Core::JFunctor<void, const float, AniContUserPtr, size_t>;
 		private:
 			DataHandleStructure fsmdata;
-			std::tuple<size_t, std::unique_ptr<CreateDiagramFunctor>> createDiagramT;
-			std::tuple<size_t, std::unique_ptr<CreateDiagramFunctor>> destroyDiagramT;
-			std::tuple<size_t, std::unique_ptr<CreateConditionFunctor>> createConditionT;
-			std::tuple<size_t, std::unique_ptr<CreateConditionFunctor>> destroyConditionT;
-			std::tuple<size_t, std::unique_ptr<CreateStateFunctor>> createStateT;
-			std::tuple<size_t, std::unique_ptr<CreateStateFunctor>> destroyStateT;
+			std::unique_ptr<RegisterEv::Functor> regCreateDiagramEvF;
+			std::unique_ptr<RegisterEv::Functor> regDestroyDiagramEvF;
+			std::unique_ptr<RegisterEv::Functor> regCreateConditionEvF;
+			std::unique_ptr<RegisterEv::Functor> regDestroyConditionEvF;
+			std::unique_ptr<RegisterEv::Functor> regCreateStateEvF;
+			std::unique_ptr<RegisterEv::Functor> regDestroyStateEvF;
+
+			std::unique_ptr<DiagramHandleFunctor> createDiagramF;
+			std::unique_ptr<DiagramHandleFunctor> destroyDiagramF;
+			std::unique_ptr<ConditionHandleFunctor> createConditionF;
+			std::unique_ptr<ConditionHandleFunctor> destroyConditionF;
+			std::unique_ptr<StateHandleFunctor> createStateF;
+			std::unique_ptr<StateHandleFunctor> destroyStateF;
 
 			std::unique_ptr<SetConditionTypeFunctor> setConditionTypeF;
 			std::unique_ptr<SetConditionNameFunctor> setConditionNameF;
@@ -86,35 +91,51 @@ namespace JinEngine
 			std::unique_ptr<SetConditionIntValueFunctor> setConditionIntF;
 			std::unique_ptr<SetConditionFloatValueFunctor> setConditionFloatF;
 		public:
-			JAnimationControllerEditor(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
+			JAnimationControllerEditor(const std::string& name,
+				std::unique_ptr<JEditorAttribute> attribute, 
+				const J_EDITOR_PAGE_TYPE ownerPageType, 
+				const bool hasMetadata);
 			~JAnimationControllerEditor();
 			JAnimationControllerEditor(const JAnimationControllerEditor& rhs) = delete;
 			JAnimationControllerEditor& operator=(const JAnimationControllerEditor& rhs) = delete;
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		private:
+			void SetAnimationController(Core::JUserPtr<JObject> newAniCont);
+		private:
 			void RegisterDiagramFunc();
 			void RegisterConditionFunc();
 			void RegisterStateFunc();
-		public: 
+		public:
 			void UpdateWindow()final;
 		private:
 			void BuildDiagramList();
-			void BuildDiagramListPopup();
 			void BuildConditionList();
-			void BuildConditionListPopup();
-			void BuildDiagramView(float cursorPosY);
-			void BuildDiagramViewPopup();
+			void BuildDiagramView();
+			void BuildDockNode();
 		private:
-			void CloseAllPopup()noexcept;
-			void ClearSelectableBuff(bool* selectableBuf)noexcept;
+			void CloseAllPopup()noexcept; 
+			void ClearSelectedIndex()noexcept;
 		private:
-			void ClearCash()noexcept;
+			void RegisterCreateDiagramEv();
+			void RegisterDestroyDiagramEv();
+			void RegisterCreateConditionEv();
+			void RegisterDestroyConditionEv();
+			void RegisterCreateStateEv();
+			void RegisterDestroyStateEv();
+		private:
+			void CreateDiagram(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t guid);
+			void DestroyDiagram(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t guid);
+			void CreateCondition(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t guid);
+			void DestroyCondition(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t guid);
+			void CreateState(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniContconst, const size_t diagramGuid, const size_t stateGuid);
+			void DestroyState(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t diagramGuid, const size_t stateGuid);
 		protected:
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;
 		private:
 			void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct) final;
+			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 		};
 	}
 }

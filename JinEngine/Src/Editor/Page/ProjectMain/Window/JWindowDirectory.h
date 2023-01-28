@@ -24,8 +24,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorString;
-		class JEditorPopupMenu;
-		class JEditorWidgetPosCalculator;
+		class JEditorPopupMenu; 
 		class JEditorSearchBarHelper;
 
 		class JWindowDirectory final : public JEditorWindow, 
@@ -55,8 +54,7 @@ namespace JinEngine
 			std::unique_ptr<JEditorRenameHelper> renameHelper;
 			//not use
 			//std::unique_ptr<JEditorPopupMenu>directoryViewPopup;
-			std::unique_ptr<JEditorPopupMenu>fileviewPopup;
-			std::unique_ptr<JEditorWidgetPosCalculator> editorPositionCal;
+			std::unique_ptr<JEditorPopupMenu>fileviewPopup; 
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
 		private:
 			std::unique_ptr<CreateObjectF::Functor> createResourceF;
@@ -77,6 +75,7 @@ namespace JinEngine
 			float btnIconMinSize;
 			float btnIconSize = 0;
 			size_t selectorIconSlidebarId; 
+			JVector2<float> fileTitleBarSize;
 		private:
 			float childWindowHeight = 0; 
 			std::wstring importFilePath; 

@@ -34,7 +34,8 @@ namespace JinEngine
 
 		DirectX::XMVECTOR GetWorldQuaternion()const noexcept;
 
-		DirectX::XMMATRIX GetWorld()const noexcept;
+		DirectX::XMMATRIX GetWorldMatrix()const noexcept;
+		DirectX::XMFLOAT4X4 GetWorld4x4f()const noexcept;
 		DirectX::XMMATRIX GetLocal()const noexcept;
 		DirectX::XMVECTOR GetRight()const noexcept;
 		DirectX::XMVECTOR GetUp()const noexcept;

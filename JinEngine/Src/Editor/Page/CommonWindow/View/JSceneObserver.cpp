@@ -3,7 +3,8 @@
 #include"../../JEditorAttribute.h" 
 #include"../../../Menubar/JEditorMenuBar.h"
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../../../Utility/JEditorBinaryTreeView.h"
+#include"../../../Utility/JEditorViewStructure.h"
+#include"../../../Utility/JEditorCoordGrid.h"
 #include"../../../Utility/JEditorGameObjectSurpportTool.h"
 #include"../../../Utility/JEditorCameraControl.h" 
 #include"../../../../Core/File/JFileIOHelper.h"
@@ -216,6 +217,9 @@ namespace JinEngine
 				} 
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
 				JImGuiImpl::Image(*cameraComp.Get(), ImGui::GetWindowSize());
+
+				lastCamPos = cameraComp->GetTransform()->GetPosition();
+				lastCamRot = cameraComp->GetTransform()->GetRotation();
 			}
 			CloseWindow();
 		}
@@ -499,7 +503,11 @@ namespace JinEngine
 				JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
 				editorBTreeView->Clear();
 				iSceneSpace->BuildDebugTree(type, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, *editorBTreeView);
-				editorBTreeView->TreeOnScreen(Core::GetName(type), treeData->isOpen);
+				if(editorBTreeView->BeginView(Core::GetName(type) + +"##DebugTreeView", &treeData->isOpen, ImGuiWindowFlags_NoDocking))
+				{
+					editorBTreeView->OnScreen();
+					editorBTreeView->EndView();
+				}
 			}
 		}
 		void JSceneObserver::ShadowMapViewerOnScreen()
@@ -663,11 +671,7 @@ namespace JinEngine
 		void JSceneObserver::DestroyHelperGameObject()
 		{
 			if (cameraObj.IsValid())
-			{
-				lastCamPos = cameraComp->GetTransform()->GetPosition();
-				lastCamRot = cameraComp->GetTransform()->GetRotation();
 				JObject::BeginDestroy(cameraObj.Release());
-			}
 			coordGrid->Clear();
 			menubar->DeActivateOpenNode(true);
 			isCreateHelperGameObj = false;

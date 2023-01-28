@@ -1,5 +1,5 @@
 #pragma once
-#include<string>
+#include<string>  
 namespace JinEngine
 {
 	namespace Editor
@@ -9,7 +9,8 @@ namespace JinEngine
 		public:
 			std::string buff;
 			std::string result;
-			const int capacity;
+		private:
+			int capacity; 
 		public:
 			JEditorInputBuffHelper(const int capacity);
 		public:
@@ -18,7 +19,8 @@ namespace JinEngine
 			//Get valid value in buff
 			std::string GetResult()const noexcept;
 			int GetCapactiy()const noexcept;
-			void SetBuff(const std::string& value)noexcept;
+			void SetCapacity(const int newCapacity)noexcept;
+			void SetBuff(const std::string& value)noexcept; 
 		};
 	}
 }

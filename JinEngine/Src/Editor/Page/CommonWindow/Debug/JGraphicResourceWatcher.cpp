@@ -39,7 +39,7 @@ namespace JinEngine
 					ImGui::Text(("Resource Count:" + std::to_string(desc.count)).c_str());
 					for (uint j = 0; j < (uint)Graphic::J_GRAPHIC_BIND_TYPE::COUNT; ++j)
 					{
-						ImGui::Text(bNameVec[i].c_str());
+						ImGui::Text(bNameVec[j].c_str());
 						ImGui::Text(("View Count:" + std::to_string(desc.viewInfo[j].count)).c_str());
 						ImGui::Text(("View Capacity:" + std::to_string(desc.viewInfo[j].capacity)).c_str());
 						ImGui::Text(("View Offset:" + std::to_string(desc.viewInfo[j].offset)).c_str());

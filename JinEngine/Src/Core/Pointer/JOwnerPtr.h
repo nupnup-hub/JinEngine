@@ -153,7 +153,7 @@ namespace JinEngine
 			}
 		public:
 			template<typename BaseType>
-			static JOwnerPtr ConvertChildType(JOwnerPtr<BaseType>&& base)
+			static JOwnerPtr ConvertChildUser(JOwnerPtr<BaseType>&& base)
 			{
 				if constexpr (!std::is_base_of_v<JIdentifier, BaseType> || !std::is_base_of_v<JIdentifier, T>)
 					return false;
@@ -284,15 +284,15 @@ namespace JinEngine
 			//For JIdentifier
 			//Connect base user ... is same downcast base to t
 			template<typename ChildType>
-			static JUserPtr<T> ConvertChildType(JUserPtr<ChildType>&& child)
+			static JUserPtr<T> ConvertChildUser(JUserPtr<ChildType>&& child)
 			{
 				if constexpr (!std::is_base_of_v<JIdentifier, ChildType> || !std::is_base_of_v<JIdentifier, T>)
-					return false;
+					return JUserPtr<T>{};
 
 				if(!child.IsValid())
 					return JUserPtr<T>{};
 
-				if (child.Get()->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
 				{
 					JUserPtr<T> newUser; 
 					newUser.UserConnect(child);
@@ -311,7 +311,7 @@ namespace JinEngine
 				if (!child.IsValid())
 					return false;
 
-				if (child.Get()->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
 				{
 					UserDisConnect();
 					UserConnect(child);

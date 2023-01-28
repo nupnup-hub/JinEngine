@@ -23,7 +23,7 @@ namespace JinEngine
 		COUNTER
 	};
 
-	struct JDefaultMateiral
+	class JDefaultMateiral
 	{
 	public:
 		static constexpr int debugTypeSt = (int)J_DEFAULT_MATERIAL::DEBUG_LINE_RED;

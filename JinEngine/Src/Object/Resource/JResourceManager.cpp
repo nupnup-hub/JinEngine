@@ -12,6 +12,7 @@
 #include"Mesh/JSkinnedMeshGeometry.h"
 #include"Mesh/JDefaultGeometryGenerator.h"
 #include"Material/JMaterial.h"  
+#include"Material/JDefaultMaterialSetting.h"
 #include"Texture/JTexture.h" 
 #include"Texture/JDefaulTextureType.h"   
 #include"Scene/JScene.h" 
@@ -554,10 +555,7 @@ namespace JinEngine
 		{
 			JMaterial* newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 				(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), ownerDir));
-			newMaterial->SetDebugMaterial(true);
-			if (isLine)
-				newMaterial->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE);
-			newMaterial->SetAlbedoColor(color);
+			JDefaultMaterialSetting::SetDebug(newMaterial, isLine, color);
 			((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 			return newMaterial;
 		};
@@ -584,8 +582,7 @@ namespace JinEngine
 				{
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, flag, matDir));
-					newMaterial->SetShadow(true);
-					newMaterial->SetLight(true);
+					JDefaultMaterialSetting::SetStandard(newMaterial); 
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
 				}
@@ -593,10 +590,7 @@ namespace JinEngine
 				{
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, flag, matDir));
-					newMaterial->SetSkyMaterial(true);
-					newMaterial->SetNonCulling(true);
-					newMaterial->SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::LESS_EQUAL);
-					newMaterial->SetAlbedoMap(GetDefaultTexture(J_DEFAULT_TEXTURE::DEFAULT_SKY));
+					JDefaultMaterialSetting::SetSky(newMaterial, GetDefaultTexture(J_DEFAULT_TEXTURE::DEFAULT_SKY));
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
 				}
@@ -604,8 +598,7 @@ namespace JinEngine
 				{
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), matDir));
-					newMaterial->SetShadowMapWrite(true);
-					newMaterial->SetAlphaClip(true);
+					JDefaultMaterialSetting::SetShadowMap(newMaterial);
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
 				}

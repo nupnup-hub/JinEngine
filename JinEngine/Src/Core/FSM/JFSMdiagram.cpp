@@ -10,18 +10,18 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		JFSMdiagram::JFSMdiagramInitData::JFSMdiagramInitData(const std::wstring& name, const size_t guid, JUserPtr<IJFSMdiagramOwner> diagramOwner)
+		JFSMdiagram::JFSMdiagramInitData::JFSMdiagramInitData(const std::wstring& name, const size_t guid, JFSMdiagramOwnerInterface* diagramOwner)
 			:JFSMIdentifierInitData(name, guid), diagramOwner(diagramOwner)
 		{}
-		JFSMdiagram::JFSMdiagramInitData::JFSMdiagramInitData(const size_t guid, JUserPtr<IJFSMdiagramOwner> diagramOwner)
+		JFSMdiagram::JFSMdiagramInitData::JFSMdiagramInitData(const size_t guid, JFSMdiagramOwnerInterface* diagramOwner)
 			: JFSMIdentifierInitData(JIdentifier::GetDefaultName<JFSMdiagram>(), guid), diagramOwner(diagramOwner)
 		{}
-		JFSMdiagram::JFSMdiagramInitData::JFSMdiagramInitData(JUserPtr<IJFSMdiagramOwner> diagramOwner)
+		JFSMdiagram::JFSMdiagramInitData::JFSMdiagramInitData(JFSMdiagramOwnerInterface* diagramOwner)
 			: JFSMIdentifierInitData(JIdentifier::GetDefaultName<JFSMdiagram>(), MakeGuid()), diagramOwner(diagramOwner)
 		{}
 		bool JFSMdiagram::JFSMdiagramInitData::IsValid() noexcept
 		{
-			return diagramOwner.IsValid();
+			return diagramOwner != nullptr;
 		}
 		J_FSM_OBJECT_TYPE JFSMdiagram::JFSMdiagramInitData::GetFSMobjType()const noexcept
 		{
@@ -31,11 +31,7 @@ namespace JinEngine
 		J_FSM_OBJECT_TYPE JFSMdiagram::GetFSMobjType()const noexcept
 		{
 			return J_FSM_OBJECT_TYPE::DIAGRAM;
-		}
-		std::wstring JFSMdiagram::GetUniqueStateName(const std::wstring& initName)const noexcept
-		{
-			return JCUtil::MakeUniqueName(stateVec, initName);
-		}
+		} 
 		uint JFSMdiagram::GetStateCount()const noexcept
 		{
 			return (uint)stateVec.size();
@@ -74,7 +70,7 @@ namespace JinEngine
 		{
 			return stateVec;
 		}
-		IJFSMconditionStorageUser* JFSMdiagram::GetStroageUser()noexcept
+		JFSMconditionStorageUserAccess* JFSMdiagram::GetStroageUser()noexcept
 		{
 			return diagramOwner->GetConditionStorageUser();
 		}
@@ -100,6 +96,7 @@ namespace JinEngine
 				initState = newState;
 				nowStateGuid = newState->GetGuid();
 			}
+			newState->SetName(JCUtil::MakeUniqueName(stateVec, newState->GetName()));
 			stateMap.emplace(newState->GetGuid(), newState);
 			stateVec.push_back(newState);
 
@@ -141,10 +138,12 @@ namespace JinEngine
 		}
 		void JFSMdiagram::Clear()noexcept
 		{
-			stateMap.clear();
-			const uint stateVecCount = (uint)stateVec.size();
+			std::vector<JFSMstate*> copy = stateVec;
+			const uint stateVecCount = (uint)copy.size();
 			for (uint i = 0; i < stateVecCount; ++i)
-				stateVec[i]->Destroy();
+				JFSMInterface::Destroy(copy[i]);
+
+			stateMap.clear();
 			stateVec.clear();
 		}
 		void JFSMdiagram::NotifyRemoveCondition(JFSMcondition* condition)noexcept
@@ -157,8 +156,8 @@ namespace JinEngine
 				stateVec[i]->RemoveCondition(condition->GetGuid());
 		}
 		JFSMdiagram::JFSMdiagram(const JFSMdiagramInitData& initData)
-			:JFSMInterface(initData.diagramOwner->GetUniqueDiagramName(initData.name), initData.guid),
-			diagramOwner(initData.diagramOwner.Get())
+			:JFSMInterface(initData.name, initData.guid),
+			diagramOwner(initData.diagramOwner)
 		{
 			diagramOwner->GetConditionStorageUser()->AddUser(this, GetGuid());
 		}

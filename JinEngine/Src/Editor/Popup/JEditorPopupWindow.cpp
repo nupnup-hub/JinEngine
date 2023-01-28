@@ -126,18 +126,18 @@ namespace JinEngine
 					finalDesc += desc.substr(descCount - modCount, modCount);
 			}
 
-			ImVec2 pos = ImVec2(pagePos.x + (pageSize.x / 2) - ((widthFactor * 0.5f)),
+			JVector2<float> pos = JVector2<float>(pagePos.x + (pageSize.x / 2) - ((widthFactor * 0.5f)),
 				pagePos.y + (pageSize.y * 0.5f) - ((heightFactor * 0.5f)));
 
 			ImGui::SetNextWindowPos(pos);
-			ImGui::SetNextWindowSize(ImVec2(widthFactor, heightFactor));
+			ImGui::SetNextWindowSize(JVector2<float>(widthFactor, heightFactor));
 			ImGuiWindowFlags flag = ImGuiWindowFlags_AlwaysAutoResize |
 				ImGuiWindowFlags_NoDocking |
 				ImGuiWindowFlags_NoMove |
 				ImGuiWindowFlags_NoTitleBar |
 				ImGuiWindowFlags_NoScrollbar;
 
-			JImGuiImpl::BeginWindow("##CloseConfirmPopup" + uniqueLabel, nullptr, flag);
+			JImGuiImpl::BeginWindow("##CloseConfirmPopup" + uniqueLabel, 0, flag);
 			JVector2<float> textLength = ImGui::CalcTextSize("Close JinEngine!");
 
 			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::SEMI_BOLD);
@@ -218,18 +218,18 @@ namespace JinEngine
 					finalDesc += desc.substr(descCount - modCount, modCount);
 			}
 
-			ImVec2 pos = ImVec2(pagePos.x + (pageSize.x / 2)  - ((widthFactor * 0.5f)),
+			JVector2<float> pos = JVector2<float>(pagePos.x + (pageSize.x / 2)  - ((widthFactor * 0.5f)),
 				pagePos.y + (pageSize.y * 0.5f) -((heightFactor * 0.5f)));
 			  
 			ImGui::SetNextWindowPos(pos);
-			ImGui::SetNextWindowSize(ImVec2(widthFactor, heightFactor));
+			ImGui::SetNextWindowSize(JVector2<float>(widthFactor, heightFactor));
 			ImGuiWindowFlags flag = ImGuiWindowFlags_AlwaysAutoResize |
 				ImGuiWindowFlags_NoDocking |
 				ImGuiWindowFlags_NoMove |
 				ImGuiWindowFlags_NoTitleBar |
 				ImGuiWindowFlags_NoScrollbar;
 			 
-			JImGuiImpl::BeginWindow("##CloseConfirmPopup" + uniqueLabel, nullptr, flag);
+			JImGuiImpl::BeginWindow("##CloseConfirmPopup" + uniqueLabel, 0, flag);
 			JVector2<float> textLength = ImGui::CalcTextSize("Close JinEngine!");
 
 			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::SEMI_BOLD);

@@ -44,15 +44,14 @@ namespace JinEngine
 			JAnimationFSMstate* GetStateByIndex(const uint index)noexcept;
 			const std::vector<JFSMstate*>& GetStateVec()noexcept;
 			 
-			void SetClip(const size_t stateGuid, JAnimationClip* clip)noexcept; 
-			void Clear()noexcept;
+			void SetClip(const size_t stateGuid, JAnimationClip* clip)noexcept;
 		private:
 			void StuffFinalTransform(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns)noexcept;
 			void CrossFading(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns)noexcept;
 			void PreprocessSkeletonBindPose(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset)noexcept;
 		private:
 			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
-			static JAnimationFSMdiagram* LoadData(std::wifstream& stream, JUserPtr<IJFSMdiagramOwner> fsmOwner);
+			static JAnimationFSMdiagram* LoadData(std::wifstream& stream, JFSMdiagramOwnerInterface* fsmOwner);
 		private:
 			static void RegisterJFunc();
 		private:

@@ -5,7 +5,7 @@ namespace JinEngine
 {
 	namespace Core
 	{ 
-		__interface IJFSMconditionStorageUser;
+		__interface JFSMconditionStorageUserAccess;
 		class JAnimationFSMstate;
 
 		class JAnimationFSMtransition final : public JFSMtransition
@@ -37,7 +37,7 @@ namespace JinEngine
 			void Initialize()noexcept override;
 		private:
 			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
-			J_FILE_IO_RESULT LoadData(std::wifstream& stream, IJFSMconditionStorageUser& IConditionUser);
+			J_FILE_IO_RESULT LoadData(std::wifstream& stream, JFSMconditionStorageUserAccess& IConditionUser);
 		private:
 			JAnimationFSMtransition(const size_t outputStateGuid);  
 			~JAnimationFSMtransition();

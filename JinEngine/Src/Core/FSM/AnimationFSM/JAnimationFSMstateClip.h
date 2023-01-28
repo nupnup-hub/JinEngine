@@ -28,7 +28,7 @@ namespace JinEngine
 			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 		private:
 			J_FILE_IO_RESULT StoreData(std::wofstream& stream)final;
-			J_FILE_IO_RESULT LoadData(std::wifstream& stream, IJFSMconditionStorageUser& iConditionUser)final;
+			J_FILE_IO_RESULT LoadData(std::wifstream& stream, JFSMconditionStorageUserAccess& iConditionUser)final;
 		private:
 			static void RegisterJFunc();
 		private:

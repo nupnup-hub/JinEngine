@@ -62,7 +62,7 @@ namespace JinEngine
 
 		class JGraphicImpl final : public JGraphicApplicationIterface,
 			public JGraphicResourceUserInterface,
-			public JFrameBuffManagerInterface,
+			public JFrameBuffManagerAccess,
 			public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>
 		{
 		private:

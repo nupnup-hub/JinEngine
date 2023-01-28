@@ -11,7 +11,7 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		JFSMconditionStorage::StorageUser::StorageUser(IJFSMconditionStorage* ptr, const size_t guid)
+		JFSMconditionStorage::StorageUser::StorageUser(JFSMconditionStorageUserInterface* ptr, const size_t guid)
 			:ptr(ptr),guid(guid)
 		{}
 		size_t JFSMconditionStorage::StorageUser::GetUserGuid()const noexcept
@@ -22,6 +22,10 @@ namespace JinEngine
 		JFSMconditionStorage::JFSMconditionStorage()
 			:guid(MakeGuid())
 		{}
+		JFSMconditionStorage::~JFSMconditionStorage()
+		{
+			
+		}
 		size_t JFSMconditionStorage::GetStorageGuid()const noexcept
 		{
 			return guid;
@@ -52,30 +56,29 @@ namespace JinEngine
 				return nullptr;
 			return conditionVec[index];
 		}
-		bool JFSMconditionStorage::AddUser(IJFSMconditionStorage* newUser, const size_t guid)noexcept
+		bool JFSMconditionStorage::AddUser(JFSMconditionStorageUserInterface* newUser, const size_t guid)noexcept
 		{
 			if (newUser != nullptr)
 			{
-				int index = JCUtil::GetJIdenIndex(strorageUser, guid, &StorageUser::GetUserGuid);
+				int index = JCUtil::GetJIdenIndex(storageUser, guid, &StorageUser::GetUserGuid);
 				if (index == -1)
 				{
-					strorageUser.push_back(std::make_unique< StorageUser>(newUser, guid));
+					storageUser.push_back(std::make_unique< StorageUser>(newUser, guid));
 					return true;
 				}
 			}
 			return false;
 		}
-		bool JFSMconditionStorage::RemoveUser(IJFSMconditionStorage* newUser, const size_t guid)noexcept
+		bool JFSMconditionStorage::RemoveUser(JFSMconditionStorageUserInterface* newUser, const size_t guid)noexcept
 		{
 			if (newUser != nullptr)
 			{
-				int index = JCUtil::GetJIdenIndex(strorageUser, guid, &StorageUser::GetUserGuid);
+				int index = JCUtil::GetJIdenIndex(storageUser, guid, &StorageUser::GetUserGuid);
 				if (index != -1)
 				{
-					strorageUser.erase(strorageUser.begin() + index);
+					storageUser.erase(storageUser.begin() + index);
 					return true;
 				}
-
 			}
 			return false;
 		}
@@ -84,6 +87,7 @@ namespace JinEngine
 			if (fsmCondition == nullptr || conditionCashMap.find(fsmCondition->GetGuid()) != conditionCashMap.end())
 				return false;
 
+			fsmCondition->SetName(GetConditionUniqueName(fsmCondition->GetName()));
 			conditionVec.emplace_back(fsmCondition);
 			conditionCashMap.emplace(fsmCondition->GetGuid(), fsmCondition);
 			return true;
@@ -93,13 +97,24 @@ namespace JinEngine
 			if (fsmCondition == nullptr)
 				return false;
 
-			const uint userCount = (uint)strorageUser.size();
+			const uint userCount = (uint)storageUser.size();
 			for (uint i = 0; i < userCount; ++i)
-				strorageUser[i]->ptr->NotifyRemoveCondition(fsmCondition);
+				storageUser[i]->ptr->NotifyRemoveCondition(fsmCondition);
 
 			conditionCashMap.erase(fsmCondition->GetGuid());
-			conditionVec.erase(conditionVec.begin() + JCUtil::GetJIdenIndex(conditionVec, guid));
+			conditionVec.erase(conditionVec.begin() + JCUtil::GetJIdenIndex(conditionVec, fsmCondition->GetGuid()));
 			return true;
+		}
+		void JFSMconditionStorage::Clear()
+		{
+			std::vector<JFSMcondition*> copy = conditionVec; 
+			const uint conditionCount = (uint)copy.size();
+			for (uint i = 0; i < conditionCount; ++i)
+				JFSMInterface::Destroy(copy[i]);
+
+			storageUser.clear();
+			conditionCashMap.clear();
+			conditionVec.clear();
 		}
 		J_FILE_IO_RESULT JFSMconditionStorage::StoreData(std::wofstream& stream)
 		{
@@ -137,7 +152,7 @@ namespace JinEngine
 				JFileIOHelper::LoadEnumData(stream, valueType);
 				JFileIOHelper::LoadAtomicData(stream, value);
 
-				JFCFI<JFSMcondition>::Create(JPtrUtil::MakeOwnerPtr<JFSMconditionInitData>(name, guid, valueType, this));
+				JFFI<JFSMcondition>::Create(JPtrUtil::MakeOwnerPtr<JFSMcondition::InitData>(name, guid, valueType, this));
 			}
 
 			return J_FILE_IO_RESULT::SUCCESS;

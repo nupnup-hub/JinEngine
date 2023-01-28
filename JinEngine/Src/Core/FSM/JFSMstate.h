@@ -13,7 +13,7 @@ namespace JinEngine
 		class JFSMconditionWrap;
 		class JFSMtransition; 
 		class JFSMdiagram; 
-		class JFSMstateOwner;
+		class JFSMstateOwnerInterface;
 
 		class JFSMstate : public JFSMInterface
 		{
@@ -30,7 +30,7 @@ namespace JinEngine
 				JFSMstateInitData(const size_t guid, JUserPtr<JFSMdiagram> ownerDiagram);
 			public:
 				bool IsValid() noexcept;
-				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept;
+				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
 			};
 			using InitData = JFSMstateInitData;
 		public:
@@ -38,7 +38,7 @@ namespace JinEngine
 		private:
 			std::vector<std::unique_ptr<JFSMtransition>> transition;
 			bool decidedNextState = false;
-			JFSMstateOwner* ownerDiagram;
+			JFSMstateOwnerInterface* ownerDiagram;
 		public:
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
 			uint GetTransitionCount()const noexcept;

@@ -1,20 +1,20 @@
-#pragma once
-#include"../../Utility/JCommonUtility.h"
+#pragma once 
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+
 
 namespace JinEngine
 {
 	namespace Editor
 	{
 		template<int columnCount>
-		class JEditorLineCalculator
+		class JEditorStaticLineCalculator
 		{
 		private:
 			float contentsWidth[columnCount];
 			float contentsStart[columnCount];
 			int nowIndex = 0;
 		public:
-			JEditorLineCalculator(const float(&width)[columnCount])
+			JEditorStaticLineCalculator(const float(&width)[columnCount])
 			{
 				for(uint i = 0; i < columnCount; ++i)
 					contentsWidth[i] = width[i];
@@ -51,6 +51,136 @@ namespace JinEngine
 				if (nowIndex >= columnCount)
 					nowIndex = 0;
 			}
+		};
+
+		template<int contentsCount>
+		class JEditorDynamicLineCalculator
+		{
+		private:
+			JVector2<float> padding = JVector2<float>(0, 0);
+			JVector2<float> spacing = JVector2<float>(0, 0);
+		private:
+			JVector2<float> canvasSize; 
+			JVector2<float> contentsSize;
+			JVector2<float> innerPadding[contentsCount];
+			JVector2<float> contentsStartCursor;
+		private:
+			float innerHeight[contentsCount];
+			uint innerHeightOffset[contentsCount];
+			uint columnMaxCount = 0;
+			uint columnCount = 0;
+			uint rowCount = 0;
+		private:
+			uint innerRowCount = 0;
+		public:
+			JVector2<float> GetContentsSize()const noexcept
+			{
+				return contentsSize;
+			}
+			JVector2<float> GetValidContentsSize()const noexcept
+			{
+				JVector2<float> validSize = contentsSize;
+				validSize.y = innerHeight[innerRowCount];
+				validSize = validSize - (innerPadding[innerRowCount] * 2);
+				 
+				return validSize;
+			}
+		public:
+			void Update(const JVector2<float>& newCanvasSize,
+				const JVector2<float>& newContentsSize,
+				const JVector2<float>& newPadding,
+				const JVector2<float>& newSpacing,
+				const float(&iHeight)[contentsCount],
+				const JVector2<float>(&iPadding)[contentsCount])noexcept
+			{
+				padding = newPadding;
+				spacing = newSpacing;
+				canvasSize = newCanvasSize;
+				contentsSize = newContentsSize;
+				 
+				for (uint i = 0; i < contentsCount; ++i)
+				{
+					innerHeight[i] = iHeight[i];
+					innerPadding[i] = iPadding[i]; 
+				}
+
+				uint sum = 0;
+				for (uint i = 0; i < contentsCount; ++i)
+				{
+					innerHeightOffset[i] = sum;
+					sum += innerHeight[i];
+				}
+
+				float leftWidth = (canvasSize.x - (padding.x * 2));
+				float contentsWidth = contentsSize.x + spacing.x;
+				while (leftWidth >= contentsSize.x)
+				{
+					++columnMaxCount;
+					leftWidth -= contentsWidth;
+				}
+				 
+				columnCount = rowCount = innerRowCount = 0;
+				contentsStartCursor = ImGui::GetCursorPos() + padding;			 
+			}
+		public:
+			float GetCursorPosX()
+			{
+				return contentsStartCursor.x + columnCount * spacing.x + columnCount * contentsSize.x + innerPadding[innerRowCount].x;
+			}
+			float GetCursorPosY()
+			{
+				return contentsStartCursor.y + rowCount * spacing.y + rowCount * contentsSize.y + innerPadding[innerRowCount].y + innerHeightOffset[innerRowCount];
+			}
+			void SetNextContentsPosition()
+			{
+				ImGui::SetCursorPos(JVector2<float>(GetCursorPosX(), GetCursorPosY()));
+				Next();
+			}
+		private:
+			void Next()
+			{
+				++innerRowCount;
+				if (innerRowCount >= contentsCount)
+				{
+					innerRowCount = 0;
+					++columnCount;
+					if (columnCount >= columnMaxCount)
+					{
+						columnCount = 0;
+						++rowCount;
+					}
+				}				
+			}
+		};
+
+		class JEditorTextLineCalculator
+		{
+		private:
+			enum class ALIGNED_DIR
+			{
+				LEFT = 0,
+				MIDDLE = 1,
+				RIGHT = 2
+			};
+		private:
+			std::string text;
+			int linePerAlpabet = 0;
+			float lineLength = 0; 
+		private:
+			bool useLocalCursor = true;
+		private:
+			JVector2<float> size;
+			JVector2<float> cursorPos;  
+		public:
+			void Update(const std::string& text, const JVector2<float>& size, const JVector2<float>& cursorPos, const bool useLocalCursor = true);
+			void LeftAligned();
+			void MiddleAligned();
+			void RightAligned();
+		private:
+			void Aligned(const ALIGNED_DIR dir);
+		private:
+			uint CalTextLengthRange(const std::string& calText, const float length)const;
+			uint CalTextAreaRange(const std::string& calText, const float area)const;
 		};
 	}
 }

@@ -7,12 +7,12 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		JFSMcondition::JFSMconditionInitData::JFSMconditionInitData(const std::wstring& name, const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType, IJFSMconditionOwner* conditionOwner)
+		JFSMcondition::JFSMconditionInitData::JFSMconditionInitData(const std::wstring& name, const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType, IJFSMconditionOwnerInterface* conditionOwner)
 			:JFSMIdentifierInitData(name, guid), valueType(valueType), conditionOwner(conditionOwner)
 		{}
-		JFSMcondition::JFSMconditionInitData::JFSMconditionInitData(const size_t guid, IJFSMconditionStorageOwner* storageOwner)
-			: JFSMIdentifierInitData(JIdentifier::GetDefaultName<JFSMcondition>(), guid), valueType(J_FSMCONDITION_VALUE_TYPE::BOOL), storageOwner(storageOwner)
-		{}
+		JFSMcondition::JFSMconditionInitData::JFSMconditionInitData(const size_t guid, IJFSMconditionOwnerInterface* conditionOwner)
+			: JFSMIdentifierInitData(JIdentifier::GetDefaultName<JFSMcondition>(), guid), valueType(J_FSMCONDITION_VALUE_TYPE::BOOL), conditionOwner(conditionOwner)
+		{} 
 		bool JFSMcondition::JFSMconditionInitData::IsValid() noexcept
 		{
 			return conditionOwner != nullptr;
@@ -54,32 +54,33 @@ namespace JinEngine
 			return conditionOwner->AddCondition(this);
 		}
 		bool JFSMcondition::DeRegisterCashData()noexcept
-		{
+		{ 
 			return conditionOwner->RemoveCondition(this);
 		}
 		void JFSMcondition::RegisterJFunc()
-		{
-			auto createConditionLam = [](JOwnerPtr<JFSMconditionInitData> initData)-> JFSMcondition*
-			{
-				if (initData.IsValid())
+		{			 
+			auto createConditionLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
+			{ 
+				if (initData.IsValid() && initData->GetFSMobjType() == J_FSM_OBJECT_TYPE::CONDITION)
 				{
-					JOwnerPtr<JFSMcondition> ownerPtr = JPtrUtil::MakeOwnerPtr<JFSMcondition>(*initData.Get());
+					JFSMconditionInitData* condInitData = static_cast<JFSMconditionInitData*>(initData.Get());
+					JOwnerPtr<JFSMcondition> ownerPtr = JPtrUtil::MakeOwnerPtr<JFSMcondition>(*condInitData);
 					JFSMcondition* newCond = ownerPtr.Get();
 					if (AddInstance(std::move(ownerPtr)))
 						return newCond;
 				}
 				return nullptr;
 			};
-			JFCFI<JFSMcondition>::RegisterCondition(createConditionLam);
+			JFFI<JFSMcondition>::Register(createConditionLam);
 		}
 		JFSMcondition::JFSMcondition(const JFSMconditionInitData& initData)
-			:JFSMInterface(initData.name, initData.guid), valueType(initData.valueType), conditionOwner(initData.conditionOwner)
+			:JFSMInterface(initData.name, initData.guid), valueType(initData.valueType)
 		{
-			if (initData.conditionOwner)
-				conditionOwner = initData.conditionOwner;
-			else
-				conditionOwner = initData.storageOwner->GetConditionOwner();
+			conditionOwner = initData.conditionOwner;
 		}
-		JFSMcondition::~JFSMcondition() {}
+		JFSMcondition::~JFSMcondition() 
+		{
+			conditionOwner = nullptr;
+		}
 	}
 }

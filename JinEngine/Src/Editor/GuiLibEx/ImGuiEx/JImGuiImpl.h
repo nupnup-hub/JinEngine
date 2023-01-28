@@ -124,6 +124,7 @@ namespace JinEngine
 			static bool BeginPopup(const std::string& name, ImGuiPopupFlags flags = 0);
 			static void EndPopup();
 			static void Text(const std::string& text);
+			static void OrderedText(const std::string& text);
 			static bool CheckBox(const std::string& checkName, bool& v);
 			static bool Button(const std::string& btnName, const JVector2<float>& jVec2 = { 0,0 });
 			static bool TreeNodeEx(const std::string& nodeName, ImGuiTreeNodeFlags flags);
@@ -132,6 +133,7 @@ namespace JinEngine
 			static bool Selectable(const std::string& name, bool selected, ImGuiSelectableFlags flags = 0, const JVector2<float>& sizeArg = { 0,0 });
 			static bool InputText(const std::string& name, std::string& buff, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback txtCallback = 0, void* userData = 0);
 			static bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback txtCallback = 0, void* userData = 0);
+			static bool InputMultiLineText(const std::string& name, std::string& buff, std::string& result,const JVector2<float>& size, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback txtCallback = 0, void* userData = 0);
 			static bool InputInt(const std::string& name, int* value, ImGuiInputTextFlags flags = 0, int step = 1, int stepFast = 100);
 			static bool InputFloat(const std::string& name, float* value, ImGuiInputTextFlags flags = 0, const char* format = "%.2f", float step = 0.0f, float stepFast = 0.0f);
 		public:
@@ -217,7 +219,7 @@ namespace JinEngine
 			// 
 			static void ComboSet(const std::string& uniqueLabel, int& selectedIndex, const std::vector<std::string>& strVec)
 			{
-				if (JImGuiImpl::BeginCombo(uniqueLabel.c_str(), strVec[selectedIndex].c_str(), ImGuiComboFlags_HeightLarge))
+				if (JImGuiImpl::BeginCombo(uniqueLabel, strVec[selectedIndex].c_str(), ImGuiComboFlags_HeightLarge))
 				{
 					const uint count = (uint)strVec.size();
 					for (uint i = 0; i < count; i++)
@@ -236,7 +238,7 @@ namespace JinEngine
 			template<typename Object, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Object>, int> = 0>
 			static void ComboSet(const std::string& uniqueLabel, int& selectedIndex, const std::vector<Object*>& objVec)
 			{ 
-				if (JImGuiImpl::BeginCombo(uniqueLabel.c_str(), JCUtil::WstrToU8Str(objVec[selectedIndex]->GetName()).c_str(), ImGuiComboFlags_HeightLarge))
+				if (JImGuiImpl::BeginCombo(uniqueLabel, JCUtil::WstrToU8Str(objVec[selectedIndex]->GetName()).c_str(), ImGuiComboFlags_HeightLarge))
 				{ 
 					const uint count = (uint)objVec.size();
 					for (uint i = 0; i < count; i++)
@@ -254,7 +256,7 @@ namespace JinEngine
 			static void ComboEnumSet(const std::string& uniqueLabel, int& selectedIndex)
 			{
 				Core::JEnumInfo* enumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(EnumType).name());
-				if (JImGuiImpl::BeginCombo(uniqueLabel.c_str(), enumInfo->ElementName(enumInfo->EnumValue(selectedIndex)).c_str(), ImGuiComboFlags_HeightLarge))
+				if (JImGuiImpl::BeginCombo(uniqueLabel, enumInfo->ElementName(enumInfo->EnumValue(selectedIndex)).c_str(), ImGuiComboFlags_HeightLarge))
 				{
 					const uint enumCount = enumInfo->GetEnumCount();
 					for (uint i = 0; i < enumCount; i++)
@@ -274,7 +276,7 @@ namespace JinEngine
 			static bool CheckBoxSetT(const std::string& uniqueLabel, const bool preValue, Core::JFunctor<void, const bool, Param...>& commitFunctor, Param... var)
 			{
 				bool nowValue = preValue;
-				if (JImGuiImpl::CheckBox(("##CheckBox" + uniqueLabel).c_str(), nowValue))
+				if (JImGuiImpl::CheckBox("##CheckBox" + uniqueLabel, nowValue))
 				{
 					using Functor = Core::JFunctor<void, const bool, Param...>;
 					using Binder = Core::JBindHandle<Functor, const bool, Param...>;
@@ -282,9 +284,13 @@ namespace JinEngine
 					bool dovalue = nowValue;
 					bool undovalue = preValue;
 
-					Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(uniqueLabel + " checkbox set value: " + std::to_string(nowValue),
-						std::make_unique<Binder>(commitFunctor, std::move(dovalue), std::forward<Param>(var)...),
-						std::make_unique<Binder>(commitFunctor, std::move(undovalue), std::forward<Param>(var)...)));
+					ExecuteWidgetSet<Binder>(uniqueLabel + " checkbox set value: " + std::to_string(nowValue),
+						commitFunctor,
+						dovalue,
+						undovalue,
+						std::make_tuple(var...),
+						std::make_tuple(var...),
+						std::make_index_sequence<sizeof...(Param)>());
 					return true;
 				}
 				return false;
@@ -293,7 +299,7 @@ namespace JinEngine
 			static bool InputIntSetT(const std::string& uniqueLabel, const int preValue, Core::JFunctor<void, const int, Param...>& commitFunctor, Param... var)
 			{
 				int nowValue = preValue; 
-				if (JImGuiImpl::InputInt(("##InputInt" + uniqueLabel).c_str(), &nowValue))
+				if (JImGuiImpl::InputInt("##InputInt" + uniqueLabel, &nowValue))
 				{
 					if (nowValue != preValue)
 					{
@@ -303,9 +309,13 @@ namespace JinEngine
 						int dovalue = nowValue;
 						int undovalue = preValue;
 
-						Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(uniqueLabel + " input int set value: " + std::to_string(nowValue),
-							std::make_unique<Binder>(commitFunctor, std::move(dovalue), std::forward<Param>(var)...),
-							std::make_unique<Binder>(commitFunctor, std::move(undovalue), std::forward<Param>(var)...)));
+						ExecuteWidgetSet<Binder>(uniqueLabel + " input int set value: " + std::to_string(nowValue),
+							commitFunctor,
+							dovalue,
+							undovalue,
+							std::make_tuple(var...),
+							std::make_tuple(var...),
+							std::make_index_sequence<sizeof...(Param)>());						 
 						return true;
 					}
 				}
@@ -315,7 +325,7 @@ namespace JinEngine
 			static bool InputFloatSetT(const std::string& uniqueLabel, const float preValue, Core::JFunctor<void, const float, Param...>& commitFunctor, Param... var)
 			{
 				float nowValue = preValue;
-				if (JImGuiImpl::InputFloat(("##IntputFloat" + uniqueLabel).c_str(), &nowValue))
+				if (JImGuiImpl::InputFloat("##IntputFloat" + uniqueLabel, &nowValue))
 				{
 					if (nowValue != preValue)
 					{
@@ -325,9 +335,13 @@ namespace JinEngine
 						float dovalue = nowValue;
 						float undovalue = preValue;
 
-						Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(uniqueLabel + " input float set value: " + std::to_string(nowValue),
-							std::make_unique<Binder>(commitFunctor, std::move(dovalue), std::forward<Param>(var)...),
-							std::make_unique<Binder>(commitFunctor, std::move(undovalue), std::forward<Param>(var)...)));
+						ExecuteWidgetSet<Binder>(uniqueLabel + " input float set value: " + std::to_string(nowValue),
+							commitFunctor,
+							dovalue,
+							undovalue,
+							std::make_tuple(var...),
+							std::make_tuple(var...),
+							std::make_index_sequence<sizeof...(Param)>());
 						return true;
 					}
 				}
@@ -341,7 +355,7 @@ namespace JinEngine
 				Core::JFunctor<void, const std::string, Param...>& commitFunctor, Param... var)
 			{
 				std::string preValue = helper->buff;
-				if (JImGuiImpl::InputText(("##InputText" + uniqueLabel).c_str(), helper->buff, helper->result, hint, flags))
+				if (JImGuiImpl::InputText("##InputText" + uniqueLabel, helper->buff, helper->result, hint, flags))
 				{
 					std::string dovalue = helper->result;
 					std::string undovalue = JCUtil::EraseSideChar(preValue, '\0');
@@ -363,12 +377,42 @@ namespace JinEngine
 				}
 				return false;
 			}
+			template<typename ...Param>
+			static bool InputMultiLineTextSetT(const std::string& uniqueLabel,
+				JEditorInputBuffHelper* helper,
+				const JVector2<float>& size,
+				ImGuiInputTextFlags flags,
+				Core::JFunctor<void, const std::string, Param...>& commitFunctor, Param... var)
+			{
+				std::string preValue = helper->buff;
+				if (JImGuiImpl::InputMultiLineText("##InputText" + uniqueLabel, helper->buff, helper->result, size, flags))
+				{
+					std::string dovalue = helper->result;
+					std::string undovalue = JCUtil::EraseSideChar(preValue, '\0');
+
+					using Functor = Core::JFunctor<void, const std::string, Param...>;
+					using Binder = Core::JBindHandle<Functor, const std::string, Param...>;
+
+					ExecuteWidgetSet<Binder>(uniqueLabel + " input text set value: " + dovalue,
+						commitFunctor,
+						dovalue,
+						undovalue,
+						std::make_tuple(var...),
+						std::make_tuple(var...),
+						std::make_index_sequence<sizeof...(Param)>());
+					//Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(uniqueLabel + " input text set value: " + dovalue,
+					//	std::make_unique<Binder>(commitFunctor, std::move(dovalue), DecomposeTuple<>(doParamT)...),
+					//	std::make_unique<Binder>(commitFunctor, std::move(undovalue), DecomposeTuple<>(undoParamT)...)));
+					return true;
+				}
+				return false;
+			}
 			template<typename EnumType, typename ...Param>
-			static void ComoboEnumSetT(const std::string& uniqueLabel, const EnumType preValue, Core::JFunctor<void, const EnumType, Param...>& clickFunctor, Param... var)
+			static void ComoboEnumSetT(const std::string& uniqueLabel, const EnumType preValue, Core::JFunctor<void, const EnumType, Param...>& commitFunctor, Param... var)
 			{
 				const std::string enumName = Core::GetName<EnumType>();
 				const std::string preValueName = Core::GetName(preValue);
-				if (JImGuiImpl::BeginCombo(("##EnumCombo" + enumName + uniqueLabel).c_str(), preValueName.c_str()))
+				if (JImGuiImpl::BeginCombo("##EnumCombo" + enumName + uniqueLabel, preValueName.c_str()))
 				{
 					for (uint i = 0; i < (int)EnumType::COUNT; ++i)
 					{ 
@@ -381,9 +425,13 @@ namespace JinEngine
 							EnumType dovalue = (EnumType)i;
 							EnumType undovalue = preValue;
 
-							Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(enumName + "::" + valueStr,
-								std::make_unique<Binder>(clickFunctor, std::move(dovalue), std::forward<Param>(var)...),
-								std::make_unique<Binder>(clickFunctor, std::move(undovalue), std::forward<Param>(var)...)));
+							ExecuteWidgetSet<Binder>(enumName + "::" + valueStr,
+								commitFunctor,
+								dovalue,
+								undovalue,
+								std::make_tuple(var...),
+								std::make_tuple(var...),
+								std::make_index_sequence<sizeof...(Param)>()); 
 						}
 					}
 					JImGuiImpl::EndCombo();
@@ -395,7 +443,7 @@ namespace JinEngine
 			{
 				using ParamType = std::tuple_element_t<ParamIndex, Tuple>;
 				return std::forward<ParamType>(std::get<ParamIndex>(tuple));
-			}
+			}			 
 			template<typename Binder, typename Functor, typename Value, typename ParamTuple, size_t ...Is>
 			static void ExecuteWidgetSet(const std::string& taskName,
 				Functor& functor, 

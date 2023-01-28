@@ -132,7 +132,7 @@ namespace JinEngine
 		public JSceneCompInterface,
 		public JSceneGameObjInterface,
 		public JSceneCashInterface,
-		public JFrameBuffManagerInterface,
+		public JFrameBuffManagerAccess,
 		public JClearableInterface
 	{
 	protected:

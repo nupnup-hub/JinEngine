@@ -13,7 +13,10 @@ namespace JinEngine
 	namespace Core
 	{
 		class JAnimationFSMdiagram; 
+		class JAnimationFSMstate;
+
 		class JFSMconditionStorage; 
+		class IJFSMconditionOwnerInterface;
 		class JFSMcondition;
 		struct JAnimationTime;
 	}
@@ -65,11 +68,7 @@ namespace JinEngine
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 	public:
 		uint GetDiagramCount()const noexcept; 
-		uint GetConditionCount()const noexcept; 
-		std::wstring GetDiagramName(const size_t diagramGuid)noexcept; 
-		std::wstring GetUniqueDiagramName(const std::wstring& initName)noexcept final;
-		std::wstring GetUniqueStateName(const size_t diagramGuid, const std::wstring& initName)noexcept;
-		std::wstring GetUniqueConditionName(const std::wstring& initName)noexcept;
+		uint GetConditionCount()const noexcept;   
 
 		Core::JAnimationFSMdiagram* GetDiagram(const size_t guid)noexcept;
 		Core::JAnimationFSMdiagram* GetDiagramByIndex(const uint index)noexcept;
@@ -79,11 +78,13 @@ namespace JinEngine
 
 		bool CanCreateDiagram()const noexcept;
 		bool CanCreateCondition()const noexcept;
-		bool CanCreateState(const uint diagramIndex)const noexcept;
-	private:
-		Core::IJFSMconditionOwner* GetConditionOwner()noexcept final;
+		bool CanCreateState(Core::JAnimationFSMdiagram* diagram)const noexcept;
+	public:
+		Core::JAnimationFSMdiagram* CreateFSMDiagram(const size_t guid)noexcept;
+		Core::JFSMcondition* CreateFSMCondition(const size_t guid)noexcept;
+		Core::JAnimationFSMstate* CreateFSMClip(const size_t guid, Core::JAnimationFSMdiagram* diagram)noexcept;
 	private: 
-		Core::IJFSMconditionStorageUser* GetConditionStorageUser() noexcept final;
+		Core::JFSMconditionStorageUserAccess* GetConditionStorageUser() noexcept final;
 		bool AddDiagram(Core::JFSMdiagram* diagram) noexcept final;
 		bool RemoveDiagram(Core::JFSMdiagram* diagram) noexcept final;
 	private:

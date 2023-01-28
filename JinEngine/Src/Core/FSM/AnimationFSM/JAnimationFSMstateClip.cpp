@@ -85,7 +85,7 @@ namespace JinEngine
 			JFileIOHelper::StoreHasObjectIden(stream, clip);
 			return res;
 		}
-		J_FILE_IO_RESULT JAnimationFSMstateClip::LoadData(std::wifstream& stream, IJFSMconditionStorageUser& iConditionUser)
+		J_FILE_IO_RESULT JAnimationFSMstateClip::LoadData(std::wifstream& stream, JFSMconditionStorageUserAccess& iConditionUser)
 		{
 			if (!stream.is_open())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -99,18 +99,19 @@ namespace JinEngine
 		}
 		void JAnimationFSMstateClip::RegisterJFunc()
 		{
-			auto createStateLam = [](JOwnerPtr<JFSMstateInitData> initData)-> JFSMstate*
+			auto createStateLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
 			{
-				if (initData.IsValid())
+				if (initData.IsValid() && initData->GetFSMobjType() == J_FSM_OBJECT_TYPE::STATE)
 				{
-					JOwnerPtr<JAnimationFSMstateClip> ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationFSMstateClip>(*initData.Get());
+					JFSMstateInitData* stateInitData = static_cast<JFSMstateInitData*>(initData.Get());
+					JOwnerPtr<JAnimationFSMstateClip> ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationFSMstateClip>(*stateInitData);
 					JAnimationFSMstateClip* newState = ownerPtr.Get();
 					if (AddInstance(std::move(ownerPtr)))
 						return newState;
 				}
 				return nullptr;
 			};
-			JFSFI<JAnimationFSMstateClip>::RegisterState(createStateLam);
+			JFFI<JAnimationFSMstateClip>::Register(createStateLam);
 		}
 		JAnimationFSMstateClip::JAnimationFSMstateClip(const JFSMstateInitData& initData)
 			:JAnimationFSMstate(initData)

@@ -1,6 +1,7 @@
 #include"JStaticMeshGeometry.h"
 #include"../JResourceObjectFactory.h" 
 #include"../Material/JMaterial.h"
+#include"../Material/JDefaultMaterialSetting.h"
 #include"../../Directory/JDirectory.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Core/File/JFileConstant.h"
@@ -164,8 +165,7 @@ namespace JinEngine
 				Core::MakeGuid(),
 				GetFlag(),
 				GetDirectory()));
-			newMaterial->SetLight(true);
-			newMaterial->SetShadow(true); 
+			JDefaultMaterialSetting::SetStandard(newMaterial); 
 			meshGroup.GetMeshData(i)->SetMaterial(Core::GetUserPtr(newMaterial));
 		}
 

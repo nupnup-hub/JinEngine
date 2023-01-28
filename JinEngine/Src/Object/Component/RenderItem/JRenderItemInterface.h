@@ -20,7 +20,7 @@ namespace JinEngine
 
 	class JRenderItemInterface : public JComponent,
 		public JFrameUpdate<IRitemFrameUpdate, JFrameDirtyListener, FrameUpdate::dobuleBuff>,
-		public JFrameBuffUserInterface,
+		public JFrameBuffUserAccess,
 		public JResourceUserInterface
 	{
 	protected:

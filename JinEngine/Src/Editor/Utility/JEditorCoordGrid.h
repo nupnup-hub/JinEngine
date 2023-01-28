@@ -27,8 +27,8 @@ namespace JinEngine
 			float GetGridSize()const noexcept;
 			float GetZoomRate()const noexcept;
 			void SetGridSize(const float newGridSize)noexcept;
-			void SetMinZoom(const int newMaxZoomRate)noexcept;
-			void SetMaxZoom(const int newMinZoomRate)noexcept;
+			void SetMaxZoomRate(const float newMaxZoomRate)noexcept;
+			void SetMinZoomRate(const float newMinZoomRate)noexcept;
 		};
 
 		class JEditorSceneCoordGrid

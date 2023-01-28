@@ -319,7 +319,7 @@ namespace JinEngine
 			auto ownerIden = Core::JIdentifier::ReleaseInstance<JGameObject>(guid);
 			if (ownerIden.IsValid())
 			{
-				auto owneGobj = Core::JOwnerPtr<JGameObject>::ConvertChildType(std::move(ownerIden));
+				auto owneGobj = Core::JOwnerPtr<JGameObject>::ConvertChildUser(std::move(ownerIden));
 				SetModifiedBit(Core::GetUserPtr(owneGobj->GetOwnerScene()), true);
 
 				Core::JDataHandle newHandle = dS.Add(std::move(owneGobj));

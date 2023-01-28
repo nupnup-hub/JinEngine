@@ -22,7 +22,7 @@ namespace JinEngine
 		COUNT,
 	};
 
-	struct JDefaultShape
+	class JDefaultShape
 	{ 
 	public:
 		static constexpr int debugTypeSt = (int)J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE;

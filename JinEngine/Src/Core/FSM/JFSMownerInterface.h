@@ -4,32 +4,19 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JFSMdiagram; 
-		class JFSMcondition;
+		class JFSMdiagram;  		 
+		__interface JFSMconditionStorageUserAccess;
 
-		class IJFSMconditionOwner;
-		__interface IJFSMconditionStorageUser;
-
-		class IJFSMdiagramOwner
+		class JFSMdiagramOwnerInterface
 		{
 		private:
 			friend class JFSMdiagram;
 		protected:
-			virtual ~IJFSMdiagramOwner() = default;
-		public:
-			virtual std::wstring GetUniqueDiagramName(const std::wstring& name)noexcept = 0;
+			virtual ~JFSMdiagramOwnerInterface() = default; 
 		private: 
-			virtual IJFSMconditionStorageUser* GetConditionStorageUser()noexcept = 0;
+			virtual JFSMconditionStorageUserAccess* GetConditionStorageUser()noexcept = 0;
 			virtual bool AddDiagram(JFSMdiagram* diagram)noexcept = 0;
 			virtual bool RemoveDiagram(JFSMdiagram* diagram)noexcept = 0;
-		};
-
-		class IJFSMconditionStorageOwner
-		{
-		private:
-			friend class JFSMcondition;
-		private:
-			virtual IJFSMconditionOwner* GetConditionOwner()noexcept = 0;
 		};
 	}
 }

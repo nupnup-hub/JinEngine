@@ -6,9 +6,9 @@
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
 #include"../../../String/JEditorString.h"
 #include"../../../Popup/JEditorPopupMenu.h"
-#include"../../../Popup/JEditorPopupNode.h" 
-#include"../../../Utility/JEditorWidgetPosCalculator.h"
+#include"../../../Popup/JEditorPopupNode.h"  
 #include"../../../Utility/JEditorSearchBarHelper.h"
+#include"../../../Utility/JEditorLineCalculator.h"
 #include"../../../../Utility/JCommonUtility.h"   
 #include"../../../../Utility/JMathHelper.h"   
 #include"../../../../Core/Guid/GuidCreator.h" 
@@ -42,7 +42,7 @@ namespace JinEngine
 		{
 			const std::string directoryViewName = "DirectoryView";
 			const std::string fileViewName = "FileView";
-			const std::wstring newDirectoryName = L"New Directory";
+			const std::wstring newDirectoryName = L"New Directory"; 
 		}
 
 		static int DirectoryLevelFinder(const std::string& path, std::wstring& copyTarget)
@@ -64,7 +64,7 @@ namespace JinEngine
 		{
 			//JEditorString Init
 			editorString = std::make_unique<JEditorString>();
-			editorPositionCal = std::make_unique<JEditorWidgetPosCalculator>();
+			renameHelper = std::make_unique<JEditorRenameHelper>(); 
 			searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
 
 			selectorIconSlidebarId = Core::MakeGuid();
@@ -133,7 +133,7 @@ namespace JinEngine
 			editorString->AddString(renameFileNode->GetNodeId(), { "Rename" , u8"ªı ¿Ã∏ß" });
 
 			auto createImportedResourceFLam = [](JWindowDirectory* wndDir, std::vector<JResourceObject*> rVec)
-			{  
+			{
 				const uint resCount = (uint)rVec.size();
 				for (uint i = 0; i < resCount; ++i)
 				{
@@ -144,7 +144,7 @@ namespace JinEngine
 					}
 				}
 			};
-			auto renameLam = [](JWindowDirectory* wndDir) 
+			auto renameLam = [](JWindowDirectory* wndDir)
 			{
 				wndDir->renameHelper->Activate(wndDir->selectedObj);
 				wndDir->SetModifiedBit(wndDir->selectedObj, true);
@@ -207,7 +207,7 @@ namespace JinEngine
 			{
 				selectedObj = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
 				UpdateMouseClick();
-				 
+
 				ImGui::SetCursorPosX(ImGui::GetWindowSize().x * 0.7f);
 				searchBarHelper->UpdateSearchBar(GetName(), false);
 				const bool hasData = searchBarHelper->HasInputData();
@@ -225,18 +225,19 @@ namespace JinEngine
 						CreateAllDirectoryPreview(root.Get(), true, JCUtil::U8StrToWstr(searchBarHelper->GetInputData()));
 					}
 				}
-					 
-				childWindowHeight = ImGui::GetWindowSize().y - ImGui::GetCursorPosY() - ImGui::GetFrameHeight() * 1.2f; 
+
+				childWindowHeight = ImGui::GetWindowSize().y - ImGui::GetCursorPosY() - ImGui::GetFrameHeight() * 1.2f;
+				btnIconMaxSize = JImGuiImpl::GetDisplaySize().x * selectorIconMaxRate;
+				btnIconMinSize = JImGuiImpl::GetDisplaySize().x * selectorIconMinRate;
+				btnIconSize = JMathHelper::Clamp<float>(btnIconSize, btnIconMinSize, btnIconMaxSize);
+				fileTitleBarSize = JVector2<float>(btnIconSize, btnIconMinSize);
+
 				BuildDirectoryView();
 				float preFramePaddingY = ImGui::GetStyle().FramePadding.y;
 				ImGui::GetStyle().FramePadding.y = 0;
 
 				ImGui::SetCursorPosX(JImGuiImpl::GetSliderPosX());
 				ImGui::SetNextItemWidth(JImGuiImpl::GetSliderWidth());
-				 
-				btnIconMaxSize = JImGuiImpl::GetDisplaySize().x * selectorIconMaxRate;
-				btnIconMinSize = JImGuiImpl::GetDisplaySize().x * selectorIconMinRate;
-				btnIconSize = JMathHelper::Clamp<float>(btnIconSize, btnIconMinSize, btnIconMaxSize);
 				JImGuiImpl::SliderFloat("##" + GetName() + "_SizeSlider", &btnIconSize, btnIconMinSize, btnIconMaxSize, "", ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_NoInput);
 				if (ImGui::IsItemActive() || ImGui::IsItemHovered())
 					ImGui::SetTooltip("%.1f", btnIconSize);
@@ -247,7 +248,7 @@ namespace JinEngine
 		void JWindowDirectory::BuildDirectoryView()
 		{
 			//editorString->GetString(selectorIconSlidebarId)
-			ImVec2 windowSize = ImGui::GetWindowSize(); 
+			ImVec2 windowSize = ImGui::GetWindowSize();
 			JImGuiImpl::BeginChildWindow(Constants::directoryViewName.c_str(),
 				JVector2<float>(windowSize.x * 0.2f, childWindowHeight),
 				true,
@@ -258,7 +259,7 @@ namespace JinEngine
 				SetTreeNodeColor(0.2f);
 			JDirectory* clickedDir = DirectoryViewOnScreen(root.Get(), canSelect);
 			lastUpdateOpenNewDir = false;
-			 
+
 			if (openNewDirB != nullptr)
 			{
 				openNewDirB->InvokeCompletelyBind();
@@ -280,7 +281,7 @@ namespace JinEngine
 		}
 		void JWindowDirectory::BuildFileView()
 		{
-			ImVec2 windowSize = ImGui::GetWindowSize(); 
+			ImVec2 windowSize = ImGui::GetWindowSize();
 			JImGuiImpl::BeginChildWindow(Constants::fileViewName.c_str(),
 				JVector2<float>(windowSize.x * 0.8f, childWindowHeight),
 				true,
@@ -304,7 +305,7 @@ namespace JinEngine
 			JDirectory* clickedDir = nullptr;
 			if (lastUpdateOpenNewDir && opendDirctory->IsParent(directory))
 				ImGui::SetNextItemOpen(true);
- 
+
 			bool isNodeOpen = JImGuiImpl::TreeNodeEx(JCUtil::WstrToU8Str(directory->GetName()).c_str(), baseFlags);
 			if (isSelected && canSelect)
 				SetTreeNodeColor(-JImGuiImpl::GetTreeDeepFactor());
@@ -329,7 +330,18 @@ namespace JinEngine
 		}
 		void JWindowDirectory::FileViewOnScreen()
 		{
-			editorPositionCal->Update(ImGui::GetWindowWidth() * 0.75f, ImGui::GetWindowHeight(), btnIconSize, btnIconSize);
+			const JVector2<float> windowSize = ImGui::GetWindowSize();
+			const JVector2<float> contentsSize = JVector2<float>(btnIconSize, btnIconSize + fileTitleBarSize.y);
+			const JVector2<float> padding = windowSize * 0.02f;
+			const JVector2<float> spacing = windowSize * 0.02f;
+
+			const float innerHeight[2] = { btnIconSize, fileTitleBarSize.y };
+			const JVector2<float> innerPadding[2] = { JVector2<float>(0, 0), contentsSize * 0.05f};
+
+			JEditorDynamicLineCalculator<2> lineCal;
+			lineCal.Update(windowSize, contentsSize, padding, spacing, innerHeight, innerPadding);
+			JEditorTextLineCalculator textLineCal;
+
 			bool hasInvaildScene = false;
 			const uint count = GetPreviewSceneCount();
 			for (uint i = 0; i < count; ++i)
@@ -355,13 +367,17 @@ namespace JinEngine
 						SetButtonColor(JImGuiImpl::GetButtonDeepFactor());
 					}
 
+					lineCal.SetNextContentsPosition();
 					const J_OBJECT_TYPE objType = nowObject->GetObjectType();
 					if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)
 						ResourceFileViewOnScreen(nowPreviewScene, static_cast<JResourceObject*>(nowObject.Get()));
 					else if (objType == J_OBJECT_TYPE::DIRECTORY_OBJECT)
 						DirectoryFileViewOnScreen(nowPreviewScene, static_cast<JDirectory*>(nowObject.Get()));
 					else
+					{
+						lineCal.SetNextContentsPosition();
 						continue;
+					}
 
 					if (isSelected)
 						SetButtonColor(-JImGuiImpl::GetButtonDeepFactor());
@@ -377,15 +393,28 @@ namespace JinEngine
 
 					std::wstring name;
 					if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)
-						name = static_cast<JResourceObject*>(nowObject.Get())->GetFullName();
+						name = static_cast<JResourceObject*>(nowObject.Get())->GetName();
 					else if (objType == J_OBJECT_TYPE::DIRECTORY_OBJECT)
 						name = static_cast<JDirectory*>(nowObject.Get())->GetName();
 
-					editorPositionCal->TitleText(name);
-					editorPositionCal->Next();
+					JVector2<float> validContentsSize = lineCal.GetValidContentsSize();
+					const bool isRenameActivaetd = renameHelper->IsActivated() && renameHelper->IsRenameTar(nowObject->GetGuid());
+					if (isRenameActivaetd)
+					{
+						lineCal.SetNextContentsPosition();
+						renameHelper->Update(GetName(), validContentsSize, false);
+					}
+					else
+					{
+						const JVector2<float> alphaSize = JImGuiImpl::GetAlphabetSize();
+						const JVector2<float> cursorPos = JVector2<float>(lineCal.GetCursorPosX(), lineCal.GetCursorPosY());
+
+						textLineCal.Update(JCUtil::WstrToU8Str(name), validContentsSize, cursorPos);
+						lineCal.SetNextContentsPosition();
+						textLineCal.MiddleAligned();
+					}
 				}
 			}
-
 			if (hasInvaildScene)
 				DestroyInvalidPreviewScene();
 			//ImGuiManager::SetColorToDefault(ImGuiCol_Header);
@@ -394,13 +423,14 @@ namespace JinEngine
 		{
 			bool isSelected = false;
 			if (selectedObj.IsValid() && selectedObj->GetGuid() == jRobj->GetGuid())
-			{ 
+			{
 				isSelected = true;
 				SetButtonColor(JImGuiImpl::GetButtonDeepFactor());
 			}
-			ImGui::SetCursorPos(ImVec2(editorPositionCal->GetPositionX(), editorPositionCal->GetPositionY()));
 
-			if (JImGuiImpl::ImageButton(*nowPreviewScene->GetPreviewCamera().Get(), JVector2<float>(btnIconSize, btnIconSize)))
+			ImVec2 preCursor = ImGui::GetCursorPos();
+			const std::string unqName = "##" + JCUtil::WstrToU8Str(nowPreviewScene->GetJObject()->GetName()) + GetName() + "Resource_Selectable";
+			if (JImGuiImpl::Selectable(unqName, false, ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowItemOverlap, JVector2<float>(btnIconSize, btnIconSize + fileTitleBarSize.y)))
 			{
 				const J_RESOURCE_TYPE resourceType = jRobj->GetResourceType();
 				if (resourceType == J_RESOURCE_TYPE::SKELETON)
@@ -417,6 +447,9 @@ namespace JinEngine
 				else
 					RequestSelectObject(JEditorSelectObjectEvStruct{ GetOwnerPageType(), Core::GetUserPtr(jRobj) });
 			}
+			ImGui::SetCursorPos(preCursor);
+			JImGuiImpl::Image(*nowPreviewScene->GetPreviewCamera().Get(), JVector2<float>(btnIconSize, btnIconSize));
+
 			if (isSelected)
 				SetButtonColor(-JImGuiImpl::GetButtonDeepFactor());
 		}
@@ -431,11 +464,10 @@ namespace JinEngine
 			//bool isDoubleClick = false;
 			///if (ImGui::GetMouseClickedCount(0) >= 2)
 			//	isDoubleClick = true;
-			 
-			ImGui::SetCursorPos(ImVec2(editorPositionCal->GetPositionX(), editorPositionCal->GetPositionY()));
+
 			ImVec2 preCursor = ImGui::GetCursorPos();
-			const std::string unqName ="##"+ JCUtil::WstrToU8Str(nowPreviewScene->GetJObject()->GetName()) + GetName() + "_Selectable";
-			if (JImGuiImpl::Selectable(unqName, false, ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowItemOverlap, JVector2<float>(btnIconSize, btnIconSize)))
+			const std::string unqName = "##" + JCUtil::WstrToU8Str(nowPreviewScene->GetJObject()->GetName()) + GetName() + "Directory_Selectable";
+			if (JImGuiImpl::Selectable(unqName, false, ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowItemOverlap, JVector2<float>(btnIconSize, btnIconSize + fileTitleBarSize.y)))
 			{
 				if (ImGui::GetMouseClickedCount(0) >= 2)
 					openNewDirB = std::make_unique<OpenNewDirectoryF::CompletelyBind>(*openNewDirF, Core::GetUserPtr(jDir));
@@ -446,7 +478,7 @@ namespace JinEngine
 				SetButtonColor(-JImGuiImpl::GetButtonDeepFactor());
 		}
 		void JWindowDirectory::ImportFile()
-		{ 
+		{
 			if (JWindow::Instance().SelectFile(importFilePath, L"please, select resource file"))
 			{
 				Core::JFileImportHelpData pathData{ importFilePath };
@@ -458,7 +490,7 @@ namespace JinEngine
 						size_t fileSize = std::filesystem::file_size(p);
 						if (JWindow::Instance().HasStorageSpace(opendDirctory->GetPath(), fileSize))
 						{
-							std::vector<JResourceObject*> res = JResourceImporter::Instance().ImportResource(opendDirctory.Get(), pathData);		 
+							std::vector<JResourceObject*> res = JResourceImporter::Instance().ImportResource(opendDirctory.Get(), pathData);
 							auto createImpR = std::make_unique<CreateImportedResourceF::CompletelyBind>(*createImportedResourceF,
 								this,
 								std::move(res));
@@ -469,18 +501,18 @@ namespace JinEngine
 					else
 						MessageBox(0, L"Is not valid format", 0, 0);
 				}
-			} 
+			}
 			importFilePath.clear();
-		} 
+		}
 		void JWindowDirectory::OpenNewDirectory(Core::JUserPtr<JDirectory> newOpendDirectory)
-		{		
+		{
 			if (!newOpendDirectory.IsValid())
 				return;
 
 			//window->DC.StateStorage->SetInt(id, is_open);
 			ClearPreviewGroup();
 			CreateOpendDirectoryPreview(newOpendDirectory.Get(), false);
-			
+
 			if (opendDirctory.IsValid())
 				opendDirctory->OCInterface()->CloseDirectory();
 			opendDirctory = newOpendDirectory;
@@ -536,8 +568,8 @@ namespace JinEngine
 		}
 		void JWindowDirectory::RegisterCreateResourceObjectEv(J_RESOURCE_TYPE shapeType)
 		{
-			std::unique_ptr<CreateObjectF::CompletelyBind> createB = std::make_unique<CreateObjectF::CompletelyBind>(*createResourceF, 
-				Core::JUserPtr{ opendDirctory},
+			std::unique_ptr<CreateObjectF::CompletelyBind> createB = std::make_unique<CreateObjectF::CompletelyBind>(*createResourceF,
+				Core::JUserPtr{ opendDirctory },
 				std::move(shapeType));
 			auto evStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(createB), GetOwnerPageType());
 			AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
@@ -656,7 +688,7 @@ namespace JinEngine
 		{
 			JEditorWindow::DoDeActivate();
 			DeRegisterListener();
-			ClearPreviewGroup(); 
+			ClearPreviewGroup();
 		}
 		void JWindowDirectory::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{
