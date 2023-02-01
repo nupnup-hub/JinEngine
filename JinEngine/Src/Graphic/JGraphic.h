@@ -130,8 +130,8 @@ namespace JinEngine
 			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorHandle(const J_GRAPHIC_BIND_TYPE bType, int index)const noexcept final;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(const J_GRAPHIC_BIND_TYPE bType, int index)const noexcept final;
 		private:
-			JGraphicResourceHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
-			JGraphicResourceHandle* CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)final;
+			JGraphicResourceHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer, const std::wstring& path, const std::wstring& oriFormat)final;
+			JGraphicResourceHandle* CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer, const std::wstring& path, const std::wstring& oriFormat)final;
 			JGraphicResourceHandle* CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			JGraphicResourceHandle* CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0)final;
 			bool DestroyGraphicTextureResource(JGraphicResourceHandle** handle)final;

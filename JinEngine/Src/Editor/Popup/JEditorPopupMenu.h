@@ -10,7 +10,7 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		class JEditorString;
+		class JEditorStringMap;
 		class JEditorPopupNode;
 		class JEditorPopupMenu
 		{
@@ -28,7 +28,7 @@ namespace JinEngine
 			void Update();
 		public:
 			void AddPopupNode(std::unique_ptr<JEditorPopupNode> child)noexcept;
-			void ExecutePopup(_In_ JEditorString* editorString)noexcept;
+			void ExecutePopup(_In_ JEditorStringMap* editorString)noexcept;
 		public:
 			void SetOpen(bool value)noexcept;
 		public:

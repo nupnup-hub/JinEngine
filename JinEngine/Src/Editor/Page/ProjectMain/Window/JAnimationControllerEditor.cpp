@@ -2,8 +2,8 @@
 #include"../../JEditorAttribute.h"
 #include"../../JEditorPageShareData.h"
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
-#include"../../../String/JEditorString.h"
-#include"../../../Utility/JEditorViewStructure.h"
+#include"../../../String/JEditorStringMap.h"
+#include"../../../EditTool/JEditorViewStructure.h"
 #include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"
 #include"../../../Diagram/JEditorDiagramNode.h" 
@@ -16,9 +16,11 @@
 #include"../../../../Core/FSM/AnimationFSM/JAnimationFSMdiagram.h"
 #include"../../../../Core/FSM/AnimationFSM/JAnimationFSMstate.h"
 #include"../../../../Core/FSM/AnimationFSM/JAnimationFSMstateClip.h"
+#include"../../../../Core/FSM/AnimationFSM/JAnimationFSMtransition.h"
 #include"../../../../Core/FSM/JFSMcondition.h"
 #include"../../../../Core/Reflection/JTypeTemplate.h"
 #include"../../../../Core/Guid/GuidCreator.h"
+#include"../../../../Application/JApplicationVariable.h"
 #include"../../../../Utility/JCommonUtility.h"
 
 namespace JinEngine
@@ -63,6 +65,10 @@ namespace JinEngine
 			{
 				return "DiagramView##" + uniqueLabel;
 			}
+			static std::wstring ViewGraphPath()noexcept
+			{
+				return JApplicationVariable::GetProjectEditorResourcePath() + L"\\AniContViewGraph.txt";
+			}
 		}
 
 		JAnimationControllerEditor::JAnimationControllerEditor(const std::string& name,
@@ -71,7 +77,7 @@ namespace JinEngine
 			const bool hasMetadata)
 			:JEditorWindow(name, std::move(attribute), ownerPageType), reqInitDockNode(!hasMetadata)
 		{
-			editorString = std::make_unique<JEditorString>();
+			editorString = std::make_unique<JEditorStringMap>();
 			inputBuff = std::make_unique<JEditorInputBuffHelper>(JImGuiImpl::GetTextBuffRange());
 			stateGraph = std::make_unique<JEditorGraphView>();
 			stateGraph->GetGrid()->SetMinZoomRate(50);
@@ -79,8 +85,19 @@ namespace JinEngine
 			RegisterDiagramFunc();
 			RegisterConditionFunc();
 			RegisterStateFunc();
+
+			stateGraph->LoadData(Constants::ViewGraphPath());
+
+			uint count = 0;
+			auto handle = JResourceManager::Instance().GetResourceVectorHandle<JAnimationController>(count);
+			for (uint i = 0; i < count; ++i)
+				RegisterViewGraphGroup(static_cast<JAnimationController*>(*(handle + i)));
 		}
-		JAnimationControllerEditor::~JAnimationControllerEditor() {};
+		JAnimationControllerEditor::~JAnimationControllerEditor()
+		{
+			SetAnimationController(Core::JUserPtr< JObject>{});
+			stateGraph->StoreData(Constants::ViewGraphPath());
+		};
 
 		J_EDITOR_WINDOW_TYPE JAnimationControllerEditor::GetWindowType()const noexcept
 		{
@@ -101,13 +118,20 @@ namespace JinEngine
 				CallOnResourceReference(aniCont.Get());
 				if (aniCont->GetDiagramCount() > 0)
 					selectedDiagramIndex = 0;
+
+				if (!stateGraph->HasGroupData(aniCont->GetGuid()))
+					RegisterViewGraphGroup(aniCont.Get());
 			}
-			else if (!newAniCont.IsValid() && aniCont.IsValid())
+			else if (!newAniCont.IsValid() && HasAnimationController())
 			{
 				// Set Nullptr
 				CallOffResourceReference(aniCont.Get());
 				aniCont.Clear();
 			}
+		}
+		bool JAnimationControllerEditor::HasAnimationController()const noexcept
+		{
+			return aniCont.IsValid();
 		}
 		void JAnimationControllerEditor::RegisterDiagramFunc()
 		{
@@ -123,13 +147,13 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Destroy Diagram", J_EDITOR_POPUP_NODE_TYPE::LEAF, diagramListRootNode.get());
 			editorString->AddString(destroyDigamraNode->GetNodeId(), { "Destroy Diagram" , u8"애니메이션 다이어그램 삭제" });
 
-			regCreateDiagramEvF = std::make_unique<RegisterEv::Functor>(&JAnimationControllerEditor::RegisterCreateDiagramEv, this);
-			regDestroyDiagramEvF = std::make_unique<RegisterEv::Functor>(&JAnimationControllerEditor::RegisterDestroyDiagramEv, this);
+			regCreateDiagramEvF = std::make_unique<RegisterEvF::Functor>(&JAnimationControllerEditor::RegisterCreateDiagramEv, this);
+			regDestroyDiagramEvF = std::make_unique<RegisterEvF::Functor>(&JAnimationControllerEditor::RegisterDestroyDiagramEv, this);
 			createDiagramF = std::make_unique<DiagramHandleFunctor>(&JAnimationControllerEditor::CreateDiagram, this);
 			destroyDiagramF = std::make_unique<DiagramHandleFunctor>(&JAnimationControllerEditor::DestroyDiagram, this);
 
-			createNewDiagramNode->RegisterSelectBind(std::make_unique< RegisterEv::CompletelyBind>(*regCreateDiagramEvF));
-			destroyDigamraNode->RegisterSelectBind(std::make_unique< RegisterEv::CompletelyBind>(*regDestroyDiagramEvF));
+			createNewDiagramNode->RegisterSelectBind(std::make_unique< RegisterEvF::CompletelyBind>(*regCreateDiagramEvF));
+			destroyDigamraNode->RegisterSelectBind(std::make_unique< RegisterEvF::CompletelyBind>(*regDestroyDiagramEvF));
 
 			diagramListPopup = std::make_unique<JEditorPopupMenu>(Constants::DiagramListName(GetName()), std::move(diagramListRootNode));
 			diagramListPopup->AddPopupNode(std::move(createNewDiagramNode));
@@ -149,13 +173,13 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Destroy Condition", J_EDITOR_POPUP_NODE_TYPE::LEAF, conditionListRootNode.get());
 			editorString->AddString(destroyConditionNode->GetNodeId(), { "Destroy Condition" , u8"애니메이션 패러미터 삭제" });
 
-			regCreateConditionEvF = std::make_unique<RegisterEv::Functor>(&JAnimationControllerEditor::RegisterCreateConditionEv, this);
-			regDestroyConditionEvF = std::make_unique<RegisterEv::Functor>(&JAnimationControllerEditor::RegisterDestroyConditionEv, this);
+			regCreateConditionEvF = std::make_unique<RegisterEvF::Functor>(&JAnimationControllerEditor::RegisterCreateConditionEv, this);
+			regDestroyConditionEvF = std::make_unique<RegisterEvF::Functor>(&JAnimationControllerEditor::RegisterDestroyConditionEv, this);
 			createConditionF = std::make_unique<ConditionHandleFunctor>(&JAnimationControllerEditor::CreateCondition, this);
 			destroyConditionF = std::make_unique<ConditionHandleFunctor>(&JAnimationControllerEditor::DestroyCondition, this);
 
-			createNewConditionNode->RegisterSelectBind(std::make_unique<RegisterEv::CompletelyBind>(*regCreateConditionEvF));
-			destroyConditionNode->RegisterSelectBind(std::make_unique<RegisterEv::CompletelyBind>(*regDestroyConditionEvF));
+			createNewConditionNode->RegisterSelectBind(std::make_unique<RegisterEvF::CompletelyBind>(*regCreateConditionEvF));
+			destroyConditionNode->RegisterSelectBind(std::make_unique<RegisterEvF::CompletelyBind>(*regDestroyConditionEvF));
 
 			conditionListPopup = std::make_unique<JEditorPopupMenu>(Constants::ConditionListName(GetName()), std::move(conditionListRootNode));
 			conditionListPopup->AddPopupNode(std::move(createNewConditionNode));
@@ -202,28 +226,62 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Destroy State", J_EDITOR_POPUP_NODE_TYPE::LEAF, diagramViewRootNode.get());
 			editorString->AddString(destroyStateNode->GetNodeId(), { "Destroy Animation State" , u8"애니메이션 상태 삭제" });
 
-			regCreateStateEvF = std::make_unique<RegisterEv::Functor>(&JAnimationControllerEditor::RegisterCreateStateEv, this);
-			regDestroyStateEvF = std::make_unique<RegisterEv::Functor>(&JAnimationControllerEditor::RegisterDestroyStateEv, this);
+			std::unique_ptr<JEditorPopupNode> addTransitionNode =
+				std::make_unique<JEditorPopupNode>("Add Transition", J_EDITOR_POPUP_NODE_TYPE::LEAF, diagramViewRootNode.get());
+			editorString->AddString(addTransitionNode->GetNodeId(), { "Add Transition" , u8"트랜지션 추가" });
+
+			regCreateStateEvF = std::make_unique<RegisterEvF::Functor>(&JAnimationControllerEditor::RegisterCreateStateEv, this);
+			regDestroyStateEvF = std::make_unique<RegisterEvF::Functor>(&JAnimationControllerEditor::RegisterDestroyStateEv, this);
 			createStateF = std::make_unique<StateHandleFunctor>(&JAnimationControllerEditor::CreateState, this);
 			destroyStateF = std::make_unique<StateHandleFunctor>(&JAnimationControllerEditor::DestroyState, this);
 
-			createNewCilpStateNode->RegisterSelectBind(std::make_unique<RegisterEv::CompletelyBind>(*regCreateStateEvF));
-			destroyStateNode->RegisterSelectBind(std::make_unique<RegisterEv::CompletelyBind>(*regDestroyStateEvF));
+			createNewCilpStateNode->RegisterSelectBind(std::make_unique<RegisterEvF::CompletelyBind>(*regCreateStateEvF));
+			destroyStateNode->RegisterSelectBind(std::make_unique<RegisterEvF::CompletelyBind>(*regDestroyStateEvF));
+			 
+			auto tryConnectStateTransLam = [](JAnimationControllerEditor* aniContEdit) 
+			{ 
+				using bType = ConnectStateTrasitionF::CompletelyBind; 
+				aniContEdit->stateGraph->SetConnectNodeMode(std::make_unique<bType>(*aniContEdit->connectStateTransF, std::move(aniContEdit)));
+			};
+			auto connectStateTransLam = [](JAnimationControllerEditor* aniContEdit)
+			{
+				const size_t fromGuid = aniContEdit->stateGraph->GetConnectFromGuid();
+				const size_t toGuid = aniContEdit->stateGraph->GetConnectToGuid();
+
+				if (aniContEdit->selectedDiagramIndex == -1)
+					return;
+
+				Core::JAnimationFSMdiagram* diagram = aniContEdit->aniCont->GetDiagramByIndex(aniContEdit->selectedDiagramIndex);
+				diagram->GetState(fromGuid)->AddTransition(diagram->GetState(toGuid));
+			};
+
+			tryConnectStateTransF = std::make_unique<TryConnectStateTransitionF::Functor>(tryConnectStateTransLam);
+			connectStateTransF = std::make_unique<ConnectStateTrasitionF::Functor>(connectStateTransLam);
+			
+			addTransitionNode->RegisterSelectBind(std::make_unique<TryConnectStateTransitionF::CompletelyBind>(*tryConnectStateTransF, this));
 
 			diagramViewPopup = std::make_unique< JEditorPopupMenu>(Constants::DiagramViewName(GetName()), std::move(diagramViewRootNode));
 			diagramViewPopup->AddPopupNode(std::move(createNewCilpStateNode));
 			diagramViewPopup->AddPopupNode(std::move(destroyStateNode));
+			diagramViewPopup->AddPopupNode(std::move(addTransitionNode));
+		}
+		void JAnimationControllerEditor::RegisterViewGraphGroup(JAnimationController* aniCont)
+		{
+			auto isValidGroupLam = [](const size_t guid) {return Core::GetUserPtr<JAnimationController>(guid).IsValid(); };
+			if (aniCont != nullptr)
+				stateGraph->RegisterGroup(aniCont->GetGuid(), isValidGroupLam);
 		}
 		void JAnimationControllerEditor::UpdateWindow()
 		{
-			const bool canOpenWindow = IsActivated() && aniCont.IsValid();
-			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
-			if (canOpenWindow)
-				windowFlag |= ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBackground;
+			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoScrollbar |
+				ImGuiWindowFlags_NoCollapse |
+				ImGuiWindowFlags_NoNavInputs |
+				ImGuiWindowFlags_NoNavFocus |
+				ImGuiWindowFlags_NoBackground;
 
 			EnterWindow(windowFlag);
 			UpdateDocking();
-			if (canOpenWindow)
+			if (IsActivated())
 			{
 				if (reqInitDockNode)
 				{
@@ -234,7 +292,7 @@ namespace JinEngine
 				ImGui::DockSpace(dockspace_id);
 			}
 			CloseWindow();
-			if (canOpenWindow)
+			if (IsActivated())
 			{
 				UpdateMouseClick();
 				BuildDiagramList();
@@ -259,7 +317,7 @@ namespace JinEngine
 			JImGuiImpl::Text("DiagramList");
 
 			ImGuiTableFlags flag = ImGuiTableFlags_Borders | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-			if (JImGuiImpl::BeginTable("##DiagramListTable" + GetName(), 1, flag))
+			if (HasAnimationController() && JImGuiImpl::BeginTable("##DiagramListTable" + GetName(), 1, flag))
 			{
 				JImGuiImpl::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
 				JImGuiImpl::TableHeadersRow();
@@ -280,9 +338,12 @@ namespace JinEngine
 				}
 				JImGuiImpl::EndTable();
 			}
-			if (diagramListPopup->IsOpen())
-				diagramListPopup->ExecutePopup(editorString.get());
-			diagramListPopup->Update();
+			if (HasAnimationController())
+			{
+				if (diagramListPopup->IsOpen())
+					diagramListPopup->ExecutePopup(editorString.get());
+				diagramListPopup->Update();
+			}
 			JImGuiImpl::EndWindow();
 		}
 		void JAnimationControllerEditor::BuildConditionList()
@@ -297,14 +358,14 @@ namespace JinEngine
 				ImGuiTableFlags_ContextMenuInBody |
 				ImGuiTableFlags_Resizable;
 
-			const uint conditionCount = aniCont->GetConditionCount();
-			if (JImGuiImpl::BeginTable("##ConditionList_Table" + GetName(), 4, flag))
+			if (HasAnimationController() && JImGuiImpl::BeginTable("##ConditionList_Table" + GetName(), 4, flag))
 			{
 				JImGuiImpl::TableSetupColumn("", ImGuiTableColumnFlags_DefaultHide, 0.005f);
 				JImGuiImpl::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 0.445f);
 				JImGuiImpl::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch, 0.275f);
 				JImGuiImpl::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 0.275f);
 				JImGuiImpl::TableHeadersRow();
+				const uint conditionCount = aniCont->GetConditionCount();
 				for (uint i = 0; i < conditionCount; ++i)
 				{
 					Core::JFSMcondition* nowCondition = aniCont->GetConditionByIndex(i);
@@ -364,9 +425,12 @@ namespace JinEngine
 				}
 				JImGuiImpl::EndTable();
 			}
-			if (conditionListPopup->IsOpen())
-				conditionListPopup->ExecutePopup(editorString.get());
-			conditionListPopup->Update();
+			if (HasAnimationController())
+			{
+				if (conditionListPopup->IsOpen())
+					conditionListPopup->ExecutePopup(editorString.get());
+				conditionListPopup->Update();
+			}
 			JImGuiImpl::EndWindow();
 		}
 		void JAnimationControllerEditor::BuildDiagramView()
@@ -376,25 +440,33 @@ namespace JinEngine
 			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove;
 			if (stateGraph->BeginView(Constants::DiagramViewName(GetName()), nullptr, windowFlag))
 			{
-				Core::JAnimationFSMdiagram* diagram = aniCont->GetDiagramByIndex(selectedDiagramIndex);
-				const uint stateCount = diagram->GetStateCount();
-				for (uint i = 0; i < stateCount; ++i)
+				if (HasAnimationController())
 				{
-					std::string infoText = "123456789ABCDEFGHIJKLNMOPQRSTUVWXYZ";
-					Core::JAnimationFSMstate* state = diagram->GetStateByIndex(i);
-					stateGraph->BuildNode(JCUtil::WstrToU8Str(state->GetName()), state->GetGuid(), infoText);
+					Core::JAnimationFSMdiagram* diagram = aniCont->GetDiagramByIndex(selectedDiagramIndex);
+					const uint stateCount = diagram->GetStateCount();
+					for (uint i = 0; i < stateCount; ++i)
+					{ 
+						Core::JAnimationFSMstate* state = diagram->GetStateByIndex(i);
+						stateGraph->BuildNode(JCUtil::WstrToU8Str(state->GetName()), state->GetGuid(), aniCont->GetGuid());
+					}
+					for (uint i = 0; i < stateCount; ++i)
+					{
+						Core::JAnimationFSMstate* state = diagram->GetStateByIndex(i);
+						const size_t fromGuid = state->GetGuid();
+						const uint transitionCount = state->GetTransitionCount();
+						for (uint j = 0; j < transitionCount; ++j)
+							stateGraph->ConnectNode(fromGuid, state->GetTransition(j)->GetOutputStateGuid());
+					}
+					JImGuiImpl::Text(JCUtil::WstrToU8Str(aniCont->GetDiagramByIndex(selectedDiagramIndex)->GetName()).c_str());
+					stateGraph->OnScreen(aniCont->GetGuid());
+					if (diagramViewPopup->IsOpen())
+						diagramViewPopup->ExecutePopup(editorString.get());
+					diagramViewPopup->Update();
 				}
-
-				JImGuiImpl::Text(JCUtil::WstrToU8Str(aniCont->GetDiagramByIndex(selectedDiagramIndex)->GetName()).c_str());			 
-				stateGraph->OnScreen();
-
-				if (diagramViewPopup->IsOpen())
-					diagramViewPopup->ExecutePopup(editorString.get());
-				diagramViewPopup->Update();
+				else
+					stateGraph->OnScreen();
 				stateGraph->EndView();
 			}
-
-
 			//미구현
 			/*std::vector<Core::JAnimationFSMtransition*>& transitionIter = stateVec[i]->GetTransitionVector();
 			const uint transtionCount = (uint)transitionIter.size();
@@ -531,6 +603,7 @@ namespace JinEngine
 					Core::JIdentifier::AddInstance(Core::JOwnerPtr<Core::JAnimationFSMdiagram>::ConvertChildUser(std::move(owner)));
 				else
 					aniCont->CreateFSMDiagram(guid);
+				SetModifiedBit(aniCont, true);
 			}
 		}
 		void JAnimationControllerEditor::DestroyDiagram(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t guid)
@@ -542,6 +615,7 @@ namespace JinEngine
 				{
 					Core::JDataHandle newHandle = dS.Add(Core::JIdentifier::ReleaseInstance<Core::JAnimationFSMdiagram>(diagramPtr->GetGuid()));
 					dS.TransitionHandle(newHandle, dH);
+					SetModifiedBit(aniCont, true);
 				}
 			}
 		}
@@ -554,6 +628,7 @@ namespace JinEngine
 					Core::JIdentifier::AddInstance(Core::JOwnerPtr<Core::JFSMcondition>::ConvertChildUser(std::move(owner)));
 				else
 					aniCont->CreateFSMCondition(guid);
+				SetModifiedBit(aniCont, true);
 			}
 		}
 		void JAnimationControllerEditor::DestroyCondition(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t guid)
@@ -565,6 +640,7 @@ namespace JinEngine
 				{
 					Core::JDataHandle newHandle = dS.Add(Core::JIdentifier::ReleaseInstance<Core::JFSMcondition>(conditionPtr->GetGuid()));
 					dS.TransitionHandle(newHandle, dH);
+					SetModifiedBit(aniCont, true);
 				}
 			}
 		}
@@ -582,9 +658,8 @@ namespace JinEngine
 						;//AddInstance(Core::JOwnerPtr<Core::JAnimationBlend>::ConvertChildUser(std::move(owner)));
 				}
 				else
-				{
-					aniCont->CreateFSMClip(stateGuid, aniCont->GetDiagram(diagramGuid));
-				}
+					aniCont->CreateFSMClip(stateGuid, aniCont->GetDiagram(diagramGuid));				 
+				SetModifiedBit(aniCont, true);
 			}
 		}
 		void JAnimationControllerEditor::DestroyState(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t diagramGuid, const size_t stateGuid)
@@ -609,6 +684,7 @@ namespace JinEngine
 							//	dataStructure.TransitionHandle(newHandle, dataHandle);
 						}
 					}
+					SetModifiedBit(aniCont, true);
 				}
 			}
 		}
@@ -630,8 +706,6 @@ namespace JinEngine
 		void JAnimationControllerEditor::DoDeActivate()noexcept
 		{
 			JEditorWindow::DoDeActivate();
-			SetAnimationController(Core::JUserPtr<JObject>{});
-
 			JResourceUserInterface::RemoveListener(*JResourceManager::Instance().EvInterface(), GetGuid());
 			DeRegisterListener();
 		}

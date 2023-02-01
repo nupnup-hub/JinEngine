@@ -604,47 +604,52 @@ namespace JinEngine
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_RED:
 				{
-					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f), false);
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.1f, 0.1f, 0.8f), false);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_GREEN:
 				{
-					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f), false);
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.75f, 0.1f, 0.8f), false);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_BLUE:
 				{
-					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f), false);
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.1f, 0.75f, 0.8f), false);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_YELLOW:
 				{
-					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f), false);
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.75f, 0.05f, 0.8f), false);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_LINE_RED:
 				{
-					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.1f, 0.1f, 0.6f), true);
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.1f, 0.1f, 0.8f), true);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN:
 				{
-					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.75f, 0.1f, 0.6f), true);
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.75f, 0.1f, 0.8f), true);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_LINE_BLUE:
 				{
-					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.1f, 0.75f, 0.6f), true);
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.1f, 0.75f, 0.8f), true);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW:
 				{
-					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.75f, 0.05f, 0.6f), true);
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.75f, 0.05f, 0.8f), true);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEBUG_LINE_GRAY:
 				{
-					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.25f, 0.25f, 0.25f, 0.6f), true);
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.325f, 0.325f, 0.325f, 0.8f), true);
+					break;
+				}
+				case J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK:
+				{
+					newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.015f, 0.015f, 0.015f, 0.8f), true);
 					break;
 				}
 				case J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST:

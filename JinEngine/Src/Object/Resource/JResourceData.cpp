@@ -32,6 +32,8 @@ namespace JinEngine
 		J_DEFAULT_TEXTURE::POSITION_ARROW,
 		J_DEFAULT_TEXTURE::ROTATION_ARROW,
 		J_DEFAULT_TEXTURE::SCALE_ARROW,
+		J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON,
+		J_DEFAULT_TEXTURE::COORD_GRID_ICON
 	}; 
 	//const uint JResourceData::editorTextureCapacity = (uint)textureNames.size(); 
 	JResourceData::JResourceData()

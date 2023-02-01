@@ -19,15 +19,17 @@ namespace JinEngine
 			Core::JUserPtr<JObject> renameTar;
 			std::unique_ptr <JEditorInputBuffHelper> renameBuff;
 			std::unique_ptr<RenameF> renameF;
+		private:
+			std::string uniqueLabel; 
 		public:
 			JEditorRenameHelper();
 		public:
 			void Clear()noexcept;
 		public:
-			void Update(const std::string& uniqueLabel, const bool doIdent);
-			void Update(const std::string& uniqueLabel, const JVector2<float>& size, const bool doIdent);
+			void Update(const bool doIdent);
+			void UpdateMultiline(const JVector2<float>& size, const bool doIdent);
 		private:
-			void DoUpdate(const std::string& uniqueLabel, const bool doIdent, const JVector2<float>& size = JVector2<float>(0, 0), const bool isMultiline = false);
+			void DoUpdate(const bool doIdent, const JVector2<float>& size = JVector2<float>(0, 0), const bool isMultiline = false);
 		public:
 			void Activate(Core::JUserPtr<JObject> newRenameTar)noexcept;
 		public:

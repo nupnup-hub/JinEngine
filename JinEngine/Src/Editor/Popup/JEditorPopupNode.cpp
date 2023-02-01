@@ -1,5 +1,5 @@
 #include"JEditorPopupNode.h" 
-#include"../String/JEditorString.h" 
+#include"../String/JEditorStringMap.h" 
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../Core/Guid/GuidCreator.h"
 
@@ -25,7 +25,7 @@ namespace JinEngine
 				parent->children.push_back(this); 
 		}
 		JEditorPopupNode::~JEditorPopupNode() {}
-		JEditorPopupNode* JEditorPopupNode::PopupOnScreen(_In_ JEditorString* editorString)
+		JEditorPopupNode* JEditorPopupNode::PopupOnScreen(_In_ JEditorStringMap* editorString)
 		{
 			JEditorPopupNode* selected = nullptr;
 			const uint childrenCount = (uint)children.size();
@@ -102,7 +102,7 @@ namespace JinEngine
 			}
 			return selected;
 		}
-		void JEditorPopupNode::PrintTooltip(_In_ JEditorString* editorString)noexcept
+		void JEditorPopupNode::PrintTooltip(_In_ JEditorStringMap* editorString)noexcept
 		{
 			if (hasTooltip)
 			{

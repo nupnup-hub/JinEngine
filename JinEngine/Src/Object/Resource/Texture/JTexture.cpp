@@ -6,9 +6,7 @@
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphic.h" 
-#include"../../../Application/JApplicationVariable.h"
-#include"../../../../Lib/LoadTextureFromFile.h"
-#include"../../../../Lib/DirectX/DDSTextureLoader.h" 
+#include"../../../Application/JApplicationVariable.h" 
 #include<memory>
 #include<fstream>
 #include<io.h>
@@ -132,20 +130,14 @@ namespace JinEngine
 		if (!HasTxtHandle())
 		{ 
 			if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
-			{
+			{ 
 				if (Create2DTexture(uploadBuffer, GetPath(), GetFormat()))
-				{
-					//uploadBuffer.Reset();
 					return true;
-				}
 			}
 			else if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 			{ 
 				if (CreateCubeMap(uploadBuffer, GetPath(), GetFormat()))
-				{
-					//uploadBuffer.Reset();
 					return true;
-				}
 			}
 		}
 		return false;

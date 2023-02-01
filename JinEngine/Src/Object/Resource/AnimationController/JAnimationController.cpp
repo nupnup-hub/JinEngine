@@ -337,7 +337,7 @@ namespace JinEngine
 				JAnimationController* newAniCont = ownerPtr.Get();
 				if (AddInstance(std::move(ownerPtr)))
 				{
-					Core::JAnimationFSMdiagram*  baseDiagram = newAniCont->CreateFSMDiagram(Core::MakeGuid());
+					Core::JAnimationFSMdiagram* baseDiagram = newAniCont->CreateFSMDiagram(Core::MakeGuid());
 					baseDiagram->SetName(L"BaseLayer");
 					StoreObject(newAniCont);				 
 					newAniCont->SetValid(true);

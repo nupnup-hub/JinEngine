@@ -4,11 +4,11 @@
 
 #include"../../../Event/JEditorEvent.h"
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
-#include"../../../String/JEditorString.h"
+#include"../../../String/JEditorStringMap.h"
 #include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"  
-#include"../../../Utility/JEditorSearchBarHelper.h"
-#include"../../../Utility/JEditorLineCalculator.h"
+#include"../../../Helpers/JEditorSearchBarHelper.h"
+#include"../../../Align/JEditorAlignCalculator.h"
 #include"../../../../Utility/JCommonUtility.h"   
 #include"../../../../Utility/JMathHelper.h"   
 #include"../../../../Core/Guid/GuidCreator.h" 
@@ -42,7 +42,7 @@ namespace JinEngine
 		{
 			const std::string directoryViewName = "DirectoryView";
 			const std::string fileViewName = "FileView";
-			const std::wstring newDirectoryName = L"New Directory"; 
+			const std::wstring newDirectoryName = L"New Directory";
 		}
 
 		static int DirectoryLevelFinder(const std::string& path, std::wstring& copyTarget)
@@ -62,9 +62,9 @@ namespace JinEngine
 		JWindowDirectory::JWindowDirectory(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType)
 			:JEditorWindow(name, std::move(attribute), ownerPageType)
 		{
-			//JEditorString Init
-			editorString = std::make_unique<JEditorString>();
-			renameHelper = std::make_unique<JEditorRenameHelper>(); 
+			//JEditorStringMap Init
+			editorString = std::make_unique<JEditorStringMap>();
+			renameHelper = std::make_unique<JEditorRenameHelper>();
 			searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
 
 			selectorIconSlidebarId = Core::MakeGuid();
@@ -230,7 +230,8 @@ namespace JinEngine
 				btnIconMaxSize = JImGuiImpl::GetDisplaySize().x * selectorIconMaxRate;
 				btnIconMinSize = JImGuiImpl::GetDisplaySize().x * selectorIconMinRate;
 				btnIconSize = JMathHelper::Clamp<float>(btnIconSize, btnIconMinSize, btnIconMaxSize);
-				fileTitleBarSize = JVector2<float>(btnIconSize, btnIconMinSize);
+				const float fontSize = ImGui::GetCurrentContext()->FontSize;
+				fileTitleBarSize = JVector2<float>(btnIconSize, fontSize * (btnIconMinSize / fontSize) + ImGui::GetWindowSize().y * 0.005f);
 
 				BuildDirectoryView();
 				float preFramePaddingY = ImGui::GetStyle().FramePadding.y;
@@ -332,15 +333,15 @@ namespace JinEngine
 		{
 			const JVector2<float> windowSize = ImGui::GetWindowSize();
 			const JVector2<float> contentsSize = JVector2<float>(btnIconSize, btnIconSize + fileTitleBarSize.y);
-			const JVector2<float> padding = windowSize * 0.02f;
-			const JVector2<float> spacing = windowSize * 0.02f;
+			const JVector2<float> padding = windowSize * 0.015f;
+			const JVector2<float> spacing = windowSize * 0.015f;
 
 			const float innerHeight[2] = { btnIconSize, fileTitleBarSize.y };
-			const JVector2<float> innerPadding[2] = { JVector2<float>(0, 0), contentsSize * 0.05f};
+			const JVector2<float> innerPadding[2] = { JVector2<float>(0, 0), contentsSize * 0.075f };
 
-			JEditorDynamicLineCalculator<2> lineCal;
-			lineCal.Update(windowSize, contentsSize, padding, spacing, innerHeight, innerPadding);
-			JEditorTextLineCalculator textLineCal;
+			JEditorDynamicAlignCalculator<2> widgetAlignCal;
+			widgetAlignCal.Update(windowSize, contentsSize, padding, spacing, innerHeight, innerPadding);
+			JEditorTextAlignCalculator textAlignCal;
 
 			bool hasInvaildScene = false;
 			const uint count = GetPreviewSceneCount();
@@ -359,28 +360,71 @@ namespace JinEngine
 					const J_OBJECT_FLAG flag = nowObject->GetFlag();
 					if ((flag & OBJECT_FLAG_HIDDEN) > 0)
 						continue;
-
-					bool isSelected = false;
-					if (selectedObj.IsValid() && selectedObj->GetGuid() == nowObject->GetGuid())
-					{
-						isSelected = true;
-						SetButtonColor(JImGuiImpl::GetButtonDeepFactor());
-					}
-
-					lineCal.SetNextContentsPosition();
+ 
 					const J_OBJECT_TYPE objType = nowObject->GetObjectType();
-					if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)
-						ResourceFileViewOnScreen(nowPreviewScene, static_cast<JResourceObject*>(nowObject.Get()));
-					else if (objType == J_OBJECT_TYPE::DIRECTORY_OBJECT)
-						DirectoryFileViewOnScreen(nowPreviewScene, static_cast<JDirectory*>(nowObject.Get()));
-					else
-					{
-						lineCal.SetNextContentsPosition();
+					const bool isValidType = objType == J_OBJECT_TYPE::RESOURCE_OBJECT || objType == J_OBJECT_TYPE::DIRECTORY_OBJECT;
+					if (!isValidType)
 						continue;
-					}
-
+ 
+					ImU32 selectColor = IM_COL32(0, 0, 0, 0);
+					bool isSelected = selectedObj.IsValid() && selectedObj->GetGuid() == nowObject->GetGuid();
 					if (isSelected)
-						SetButtonColor(-JImGuiImpl::GetButtonDeepFactor());
+						selectColor = IM_COL32(25, 25, 25, 0);
+
+					JVector2<float> iconSize = widgetAlignCal.GetNowContentsSize(false);
+					widgetAlignCal.SetNextContentsPosition(); 
+					JImGuiImpl::DrawRectFrame(ImGui::GetCurrentWindow()->DC.CursorPos,
+						widgetAlignCal.GetTotalContentsSize(), 
+						5,
+						IM_COL32(175, 175, 185, 255) + selectColor,
+						true);
+
+					JImGuiImpl::DrawRectFilledMultiColor(ImGui::GetCurrentWindow()->DC.CursorPos,
+						widgetAlignCal.GetTotalContentsSize(),
+						IM_COL32(95, 95, 115, 255) + selectColor,
+						IM_COL32(25, 25, 25, 0),
+						true);
+
+					JVector2<float> preWorldCursorPos = ImGui::GetCurrentWindow()->DC.CursorPos;			
+					ImVec2 preCursor = ImGui::GetCursorPos();
+					const std::string unqName = "##" + std::to_string(nowObject->GetGuid()) + "_Selectable";
+					if (JImGuiImpl::Selectable(unqName, false, ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowItemOverlap, JVector2<float>(btnIconSize, btnIconSize + fileTitleBarSize.y)))
+					{
+						if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)
+						{
+							JResourceObject* jRobj = static_cast<JResourceObject*>(nowObject.Get());
+							const J_RESOURCE_TYPE resourceType = jRobj->GetResourceType();
+							if (resourceType == J_RESOURCE_TYPE::SKELETON)
+							{
+								AddEventNotification(*JEditorEvent::EvInterface(),
+									GetGuid(),
+									J_EDITOR_EVENT::OPEN_PAGE,
+									JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(J_EDITOR_PAGE_TYPE::SKELETON_SETTING, Core::GetUserPtr(jRobj))));
+								AddEventNotification(*JEditorEvent::EvInterface(),
+									GetGuid(),
+									J_EDITOR_EVENT::ACTIVATE_PAGE,
+									JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(J_EDITOR_PAGE_TYPE::SKELETON_SETTING)));
+							}
+							else
+								RequestSelectObject(JEditorSelectObjectEvStruct{ GetOwnerPageType(), Core::GetUserPtr(jRobj) });
+						}
+						else
+						{
+							JDirectory* jDir = static_cast<JDirectory*>(nowObject.Get());
+							if (ImGui::GetMouseClickedCount(0) >= 2)
+								openNewDirB = std::make_unique<OpenNewDirectoryF::CompletelyBind>(*openNewDirF, Core::GetUserPtr(jDir));
+						}				 
+					}
+					ImGui::SetCursorPos(preCursor);
+					if (nowPreviewScene->UseQuadShape())
+					{
+						JImGuiImpl::DrawRectFilledMultiColor(preWorldCursorPos,
+							iconSize,
+							IM_COL32(55, 55, 95, 255) + selectColor,
+							IM_COL32(25, 25, 25, 0),
+							true);
+					}
+					JImGuiImpl::Image(*nowPreviewScene->GetPreviewCamera().Get(), JVector2<float>(btnIconSize, btnIconSize));
 
 					if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
 					{
@@ -397,85 +441,35 @@ namespace JinEngine
 					else if (objType == J_OBJECT_TYPE::DIRECTORY_OBJECT)
 						name = static_cast<JDirectory*>(nowObject.Get())->GetName();
 
-					JVector2<float> validContentsSize = lineCal.GetValidContentsSize();
+					JVector2<float> multilineSize = widgetAlignCal.GetNowContentsSize();
 					const bool isRenameActivaetd = renameHelper->IsActivated() && renameHelper->IsRenameTar(nowObject->GetGuid());
+					
+					textAlignCal.Update(JCUtil::WstrToU8Str(name), multilineSize, true);
+					widgetAlignCal.SetNextContentsPosition();
 					if (isRenameActivaetd)
 					{
-						lineCal.SetNextContentsPosition();
-						renameHelper->Update(GetName(), validContentsSize, false);
+						renameCursorPos = ImGui::GetCursorPos();
+						renameRectSize = multilineSize;
 					}
 					else
 					{
-						const JVector2<float> alphaSize = JImGuiImpl::GetAlphabetSize();
-						const JVector2<float> cursorPos = JVector2<float>(lineCal.GetCursorPosX(), lineCal.GetCursorPosY());
-
-						textLineCal.Update(JCUtil::WstrToU8Str(name), validContentsSize, cursorPos);
-						lineCal.SetNextContentsPosition();
-						textLineCal.MiddleAligned();
+						JImGuiImpl::DrawRectFilledMultiColor(ImGui::GetCurrentWindow()->DC.CursorPos,
+							multilineSize,
+							IM_COL32(125, 125, 145, 255) + selectColor,
+							IM_COL32(25, 25, 25, 0),
+							true);
+						JImGuiImpl::Text(textAlignCal.MiddleAligned());
 					}
 				}
 			}
 			if (hasInvaildScene)
 				DestroyInvalidPreviewScene();
-			//ImGuiManager::SetColorToDefault(ImGuiCol_Header);
-		}
-		void JWindowDirectory::ResourceFileViewOnScreen(JPreviewScene* nowPreviewScene, JResourceObject* jRobj)
-		{
-			bool isSelected = false;
-			if (selectedObj.IsValid() && selectedObj->GetGuid() == jRobj->GetGuid())
-			{
-				isSelected = true;
-				SetButtonColor(JImGuiImpl::GetButtonDeepFactor());
-			}
 
-			ImVec2 preCursor = ImGui::GetCursorPos();
-			const std::string unqName = "##" + JCUtil::WstrToU8Str(nowPreviewScene->GetJObject()->GetName()) + GetName() + "Resource_Selectable";
-			if (JImGuiImpl::Selectable(unqName, false, ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowItemOverlap, JVector2<float>(btnIconSize, btnIconSize + fileTitleBarSize.y)))
+			if (renameHelper->IsActivated())
 			{
-				const J_RESOURCE_TYPE resourceType = jRobj->GetResourceType();
-				if (resourceType == J_RESOURCE_TYPE::SKELETON)
-				{
-					AddEventNotification(*JEditorEvent::EvInterface(),
-						GetGuid(),
-						J_EDITOR_EVENT::OPEN_PAGE,
-						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(J_EDITOR_PAGE_TYPE::SKELETON_SETTING, Core::GetUserPtr(jRobj))));
-					AddEventNotification(*JEditorEvent::EvInterface(),
-						GetGuid(),
-						J_EDITOR_EVENT::ACTIVATE_PAGE,
-						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(J_EDITOR_PAGE_TYPE::SKELETON_SETTING)));
-				}
-				else
-					RequestSelectObject(JEditorSelectObjectEvStruct{ GetOwnerPageType(), Core::GetUserPtr(jRobj) });
-			}
-			ImGui::SetCursorPos(preCursor);
-			JImGuiImpl::Image(*nowPreviewScene->GetPreviewCamera().Get(), JVector2<float>(btnIconSize, btnIconSize));
-
-			if (isSelected)
-				SetButtonColor(-JImGuiImpl::GetButtonDeepFactor());
-		}
-		void JWindowDirectory::DirectoryFileViewOnScreen(JPreviewScene* nowPreviewScene, JDirectory* jDir)
-		{
-			bool isSelected = false;
-			if (selectedObj.IsValid() && selectedObj->GetGuid() == jDir->GetGuid())
-			{
-				isSelected = true;
-				SetButtonColor(JImGuiImpl::GetButtonDeepFactor());
-			}
-			//bool isDoubleClick = false;
-			///if (ImGui::GetMouseClickedCount(0) >= 2)
-			//	isDoubleClick = true;
-
-			ImVec2 preCursor = ImGui::GetCursorPos();
-			const std::string unqName = "##" + JCUtil::WstrToU8Str(nowPreviewScene->GetJObject()->GetName()) + GetName() + "Directory_Selectable";
-			if (JImGuiImpl::Selectable(unqName, false, ImGuiSelectableFlags_AllowDoubleClick | ImGuiSelectableFlags_AllowItemOverlap, JVector2<float>(btnIconSize, btnIconSize + fileTitleBarSize.y)))
-			{
-				if (ImGui::GetMouseClickedCount(0) >= 2)
-					openNewDirB = std::make_unique<OpenNewDirectoryF::CompletelyBind>(*openNewDirF, Core::GetUserPtr(jDir));
-			}
-			ImGui::SetCursorPos(preCursor);
-			JImGuiImpl::Image(*nowPreviewScene->GetPreviewCamera().Get(), JVector2<float>(btnIconSize, btnIconSize));
-			if (isSelected)
-				SetButtonColor(-JImGuiImpl::GetButtonDeepFactor());
+				ImGui::SetCursorPos(renameCursorPos);
+				renameHelper->UpdateMultiline(renameRectSize, false);
+			} 
 		}
 		void JWindowDirectory::ImportFile()
 		{
@@ -688,7 +682,7 @@ namespace JinEngine
 		{
 			JEditorWindow::DoDeActivate();
 			DeRegisterListener();
-			ClearPreviewGroup();
+			ClearPreviewGroup(); 
 		}
 		void JWindowDirectory::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{

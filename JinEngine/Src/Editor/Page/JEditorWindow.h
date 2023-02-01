@@ -36,6 +36,7 @@ namespace JinEngine
 			void UpdateMouseClick();
 			void UpdateDocking();
 		protected:
+			void SetSelectableColor(const float factor)noexcept;
 			void SetButtonColor(const float factor)noexcept; 
 			void SetTreeNodeColor(const float factor)noexcept; 
 		protected:

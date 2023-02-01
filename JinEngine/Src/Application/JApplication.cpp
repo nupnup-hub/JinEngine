@@ -62,7 +62,10 @@ namespace JinEngine
 				JGraphic::Instance().AppInterface()->EndFrame();
 
 				if (JApplicationProject::CanStartProject())
+				{
+					JGraphic::Instance().AppInterface()->UpdateWait();
 					JWindow::Instance().AppInterface()->CloseWindow();
+				}
 			}
 		}
 		void JApplication::RunEngine()
@@ -104,7 +107,10 @@ namespace JinEngine
 				Core::JDebugTimer::RecordTime(guid);
 				JApplicationVariable::ExecuteAppCommand();
 				if (JApplicationProject::CanEndProject())
+				{
+					JGraphic::Instance().AppInterface()->UpdateWait();
 					JWindow::Instance().AppInterface()->CloseWindow();
+				}
 			}
 		}
 		void JApplication::CalculateFrame()

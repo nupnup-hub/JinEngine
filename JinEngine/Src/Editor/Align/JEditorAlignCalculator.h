@@ -1,4 +1,5 @@
 #pragma once 
+#include"JEditorAlignType.h"
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 
 
@@ -6,15 +7,16 @@ namespace JinEngine
 {
 	namespace Editor
 	{
+		//Use local cursor
 		template<int columnCount>
-		class JEditorStaticLineCalculator
+		class JEditorStaticAlignCalculator
 		{
 		private:
 			float contentsWidth[columnCount];
 			float contentsStart[columnCount];
 			int nowIndex = 0;
 		public:
-			JEditorStaticLineCalculator(const float(&width)[columnCount])
+			JEditorStaticAlignCalculator(const float(&width)[columnCount])
 			{
 				for(uint i = 0; i < columnCount; ++i)
 					contentsWidth[i] = width[i];
@@ -44,7 +46,7 @@ namespace JinEngine
 				ImGui::SetCursorPosX(contentsStart[nowIndex]);
 				Next();
 			}
-		public:
+		private:
 			void Next()
 			{
 				++nowIndex;
@@ -53,8 +55,9 @@ namespace JinEngine
 			}
 		};
 
+		//Use local cursor
 		template<int contentsCount>
-		class JEditorDynamicLineCalculator
+		class JEditorDynamicAlignCalculator
 		{
 		private:
 			JVector2<float> padding = JVector2<float>(0, 0);
@@ -73,15 +76,16 @@ namespace JinEngine
 		private:
 			uint innerRowCount = 0;
 		public:
-			JVector2<float> GetContentsSize()const noexcept
+			JVector2<float> GetTotalContentsSize()const noexcept
 			{
 				return contentsSize;
 			}
-			JVector2<float> GetValidContentsSize()const noexcept
+			JVector2<float> GetNowContentsSize(const bool applyPadding = true)const noexcept
 			{
 				JVector2<float> validSize = contentsSize;
 				validSize.y = innerHeight[innerRowCount];
-				validSize = validSize - (innerPadding[innerRowCount] * 2);
+				if(applyPadding)
+					validSize = validSize - (innerPadding[innerRowCount] * 2);
 				 
 				return validSize;
 			}
@@ -153,34 +157,36 @@ namespace JinEngine
 			}
 		};
 
-		class JEditorTextLineCalculator
+		class JEditorTextAlignCalculator
 		{
 		private:
-			enum class ALIGNED_DIR
-			{
-				LEFT = 0,
-				MIDDLE = 1,
-				RIGHT = 2
-			};
-		private:
 			std::string text;
-			int linePerAlpabet = 0;
-			float lineLength = 0; 
-		private:
-			bool useLocalCursor = true;
-		private:
 			JVector2<float> size;
-			JVector2<float> cursorPos;  
+			bool useCompress = true;
+			int linePerAlpabet = 0;
+			float lineLength = 0;  
 		public:
-			void Update(const std::string& text, const JVector2<float>& size, const JVector2<float>& cursorPos, const bool useLocalCursor = true);
-			void LeftAligned();
-			void MiddleAligned();
-			void RightAligned();
-		private:
-			void Aligned(const ALIGNED_DIR dir);
+			void Update(const std::string& text, const JVector2<float>& size, const bool useCompress);
+		public:
+			std::string LeftAligned();
+			std::string MiddleAligned();
+			std::string RightAligned();
+		public:
+			std::string Aligned(const J_EDITOR_ALIGN_TYPE dir);
 		private:
 			uint CalTextLengthRange(const std::string& calText, const float length)const;
 			uint CalTextAreaRange(const std::string& calText, const float area)const;
+		};
+		 
+		class JEditorCursorPosCalculator
+		{
+		public: 
+			//left align
+			void SetMiddline(const JVector2<float>& pos,
+				const JVector2<float>& size,
+				const JVector2<float>& constentsSize,
+				const JVector2<float>& padding,
+				const bool useWorldCursor);
 		};
 	}
 }

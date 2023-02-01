@@ -3,9 +3,9 @@
 #include"../../../Object/GameObject/JGameObjectFactoryUtility.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../Object/Component/Transform/JTransform.h" 
-#include"../../../Editor/Utility/JEditorViewStructure.h"
+#include"../../../Editor/EditTool/JEditorViewStructure.h"
 #include"../../../Utility/JCommonUtility.h"
- 
+
 using namespace DirectX;
 namespace JinEngine
 {
@@ -394,7 +394,7 @@ namespace JinEngine
 		{
 			if (type == J_BVH_NODE_TYPE::ROOT)
 			{
-				treeView.BuildNode(std::to_string(nodeNumber), nodeNumber, "Root");
+				treeView.BuildNode(std::to_string(nodeNumber), nodeNumber, treeView.GetDefaultGroupGuid(), "Root");
 				if (left != nullptr)
 					left->BuildDebugNode(treeView);
 				if (right != nullptr)
@@ -402,7 +402,7 @@ namespace JinEngine
 			}
 			else if (type == J_BVH_NODE_TYPE::NODE)
 			{
-				treeView.BuildNode(std::to_string(nodeNumber));
+				treeView.BuildNode(std::to_string(nodeNumber), nodeNumber);
 				left->BuildDebugNode(treeView);
 				right->BuildDebugNode(treeView);
 				if (IsLeftNode())
@@ -412,7 +412,10 @@ namespace JinEngine
 			}
 			else
 			{
-				treeView.BuildNode(std::to_string(nodeNumber), nodeNumber, JCUtil::WstrToU8Str(innerGameObject->GetName()));
+				treeView.BuildNode(std::to_string(nodeNumber),
+					nodeNumber,
+					treeView.GetDefaultGroupGuid(),
+					"InnerGameObject: " + JCUtil::WstrToU8Str(innerGameObject->GetName()));
 				if (IsLeftNode())
 					treeView.BuildEndSplit();
 				else

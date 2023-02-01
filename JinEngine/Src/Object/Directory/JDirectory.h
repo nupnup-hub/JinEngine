@@ -28,7 +28,7 @@ namespace JinEngine
 		JFile* GetFile(const std::wstring name)noexcept;
 		JFile* GetRecentFile()noexcept;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
-		void SetName(const std::wstring& name)noexcept final;
+		void SetName(const std::wstring& newName)noexcept final;
 
 		bool HasChild(const std::wstring& name)const noexcept;
 		bool HasFile(const std::wstring& name)const noexcept;
@@ -37,6 +37,7 @@ namespace JinEngine
 
 		JDirectory* SearchDirectory(const std::wstring& path)noexcept;
 		std::wstring MakeUniqueFileName(const std::wstring& name)noexcept;
+		std::wstring MakeUniqueFileName(const std::wstring& name, const size_t fileGuid)noexcept;
 	public:
 		JDirectoryOCInterface* OCInterface() final;
 	private:

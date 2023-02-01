@@ -3,10 +3,10 @@
 #include"../../JEditorPageShareData.h"
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../../Event/JEditorEvent.h"
-#include"../../../String/JEditorString.h"
+#include"../../../String/JEditorStringMap.h"
 #include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"   
-#include"../../../Utility/JEditorSearchBarHelper.h"
+#include"../../../Helpers/JEditorSearchBarHelper.h"
 #include"../../../../Utility/JCommonUtility.h"    
 #include"../../../../Object/Component/JComponentFactoryUtility.h"
 #include"../../../../Object/GameObject/JGameObject.h"  
@@ -26,7 +26,7 @@ namespace JinEngine
 		JObjectExplorer::JObjectExplorer(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType)
 			:JEditorWindow(name, std::move(attribute), pageType)
 		{
-			editorString = std::make_unique<JEditorString>();
+			editorString = std::make_unique<JEditorStringMap>();
 			renameHelper = std::make_unique<JEditorRenameHelper>();
 			searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
 
@@ -172,7 +172,7 @@ namespace JinEngine
 				if (isRenameActivaetd)
 				{
 					isNodeOpen = ImGui::TreeNodeBehaviorIsOpen(ImGui::GetCurrentWindow()->GetID((name + "##TreeNode").c_str()), baseFlags);
-					renameHelper->Update(GetName(), isNodeOpen);
+					renameHelper->Update(isNodeOpen);
 				}
 				else
 				{

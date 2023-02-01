@@ -3,7 +3,7 @@
 #include"../../Geometry/JDirectXCollisionEx.h"
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
-#include"../../../Editor/Utility/JEditorViewStructure.h"
+#include"../../../Editor/EditTool/JEditorViewStructure.h"
 #include <algorithm>
 
 namespace JinEngine
@@ -267,8 +267,8 @@ namespace JinEngine
 				constexpr int bucketCount = 12;
 				BucketInfo buckets[bucketCount];
 
-				float centroidMinDim = centroidBound.min[dim];
-				float centroidMaxDim = centroidBound.max[dim];
+				float centroidMinDim = centroidBound.minP[dim];
+				float centroidMaxDim = centroidBound.maxP[dim];
 				float centroidSub = centroidMaxDim - centroidMinDim;
 
 				switch (splitType)

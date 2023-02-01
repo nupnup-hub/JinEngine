@@ -56,6 +56,9 @@ namespace JinEngine
 	}
 	void JResourceObject::SetName(const std::wstring& newName)noexcept
 	{
+		if (newName == GetName())
+			return;
+
 		const std::wstring preMetaPath = GetMetafilePath();
 		const std::wstring prePath = GetPath();
 

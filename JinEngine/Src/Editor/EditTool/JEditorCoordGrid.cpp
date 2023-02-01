@@ -13,7 +13,7 @@ namespace JinEngine
 	{
 		namespace Constants
 		{
-			static constexpr int gridFactor = 1280;
+			static constexpr int gridFactor = 2048;
 			static constexpr int gridLineCount = 128;
 			static constexpr int step = gridFactor / gridLineCount;
 			static constexpr float zoomRateRange = 75;
@@ -62,7 +62,7 @@ namespace JinEngine
 		{
 			return mouseOffset;
 		}
-		float JEditorGuiCoordGrid::GetGridSize()const noexcept
+		uint JEditorGuiCoordGrid::GetGridSize()const noexcept
 		{
 			return gridSize;
 		}
@@ -70,7 +70,7 @@ namespace JinEngine
 		{
 			return (100 + zoom) / 100;
 		}
-		void JEditorGuiCoordGrid::SetGridSize(const float newGridSize)noexcept
+		void JEditorGuiCoordGrid::SetGridSize(const uint newGridSize)noexcept
 		{
 			gridSize = newGridSize;
 			const float halfCanvas = gridSize * 0.5f; 
@@ -97,24 +97,24 @@ namespace JinEngine
 				JGameObject* newLine = JGFU::CreateDebugLineShape(*coordGrid,
 					OBJECT_FLAG_EDITOR_OBJECT, 
 					J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE, 
-					J_DEFAULT_MATERIAL::DEBUG_LINE_GRAY,
+					J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK,
 					false);
 				JTransform* transform = newLine->GetTransform();
 				transform->SetRotation(DirectX::XMFLOAT3(90, 0, 0));
 				transform->SetPosition(DirectX::XMFLOAT3(posFactor + (i * Constants::step), 0, 0));
-				transform->SetScale(DirectX::XMFLOAT3(0, 1000, 0));
+				transform->SetScale(DirectX::XMFLOAT3(0, 2000, 0));
 			}
 			for (int i = 0; i < Constants::gridLineCount; ++i)
 			{
 				JGameObject* newLine = JGFU::CreateDebugLineShape(*coordGrid,
 					OBJECT_FLAG_EDITOR_OBJECT, 
 					J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE,
-					J_DEFAULT_MATERIAL::DEBUG_LINE_GRAY,
+					J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK,
 					false);
 				JTransform* transform = newLine->GetTransform();
 				transform->SetRotation(DirectX::XMFLOAT3(0, 0, 90));
 				transform->SetPosition(DirectX::XMFLOAT3(0, 0, posFactor + (i * Constants::step)));
-				transform->SetScale(DirectX::XMFLOAT3(0, 1000, 0));
+				transform->SetScale(DirectX::XMFLOAT3(0, 2000, 0));
 			}
 		}
 		void JEditorSceneCoordGrid::Clear()
@@ -133,14 +133,18 @@ namespace JinEngine
 			JTransform* transform = coordGrid->GetTransform();
 			const JVector3<float> nowPos = transform->GetPosition();
 			
-			const int xPreMovedFactor = nowPos.x / Constants::step;
-			const int zPreMovedFactor = nowPos.z / Constants::step;
+			const int xPreMovedFactor = (int)(nowPos.x / Constants::step);
+			const int zPreMovedFactor = (int)(nowPos.z / Constants::step);
 
 			if (xNowMovedFactor != xPreMovedFactor || zNowMovedFactor != zPreMovedFactor)
 			{
-				transform->SetPosition(DirectX::XMFLOAT3(xNowMovedFactor * Constants::step, 0,
-					zNowMovedFactor * Constants::step));
+				transform->SetPosition(DirectX::XMFLOAT3((float)(xNowMovedFactor * Constants::step), 0.0f,
+					(float)(zNowMovedFactor * Constants::step)));
 			}
+		}
+		bool JEditorSceneCoordGrid::HasCoordGrid()const noexcept
+		{
+			return coordGrid.IsValid();
 		}
 	}
 }

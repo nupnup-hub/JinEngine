@@ -2,12 +2,10 @@
 #include"JSceneObserverSettingType.h"
 #include"../../JEditorWindow.h"
 #include"../../../Menubar/JEditorMenuNodeUtilData.h"
-#include"../../../Utility/JEditorGameObjectSurpportToolType.h" 
+#include"../../../EditTool/JEditorGameObjectSurpportToolType.h" 
 #include"../../../Interface/JEditorObjectInterface.h"
 #include"../../../../Utility/JVector.h"
 #include"../../../../Core/SpaceSpatial/JSpaceSpatialType.h"
-
-//Debug
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
 namespace JinEngine
 {
@@ -17,7 +15,7 @@ namespace JinEngine
 	class JGameObject;
 	namespace Core
 	{
-		struct JSpaceSpatialOption;
+		class JSpaceSpatialOption;
 	}
 	namespace Editor
 	{
@@ -27,23 +25,27 @@ namespace JinEngine
 		class JEditorTransformTool;
 		class JEditorMenuBar;
 		class JEditorMenuNode; 
+		class JEditorStringMap;
 		class JSceneObserver final : public JEditorWindow, public JEditorObjectHandlerInterface
 		{    
 		private:
-			using OpenMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
+			using SelectMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 			using ActivateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 			using DeActivateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 			using UpdateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 		private:
-			using MenuIconT = typename Core::JSFunctorType<void, JSceneObserver*>;
+			using MenuSwitchIconPreesF = typename Core::JSFunctorType<void, JSceneObserver*>;
+		private:
+			static constexpr uint menuSwitchIconCount = 5;
 		private: 
 			std::unique_ptr<JEditorMenuBar> menubar;
+			std::unique_ptr< JEditorStringMap> editStrMap;
 			JEditorMenuNodeUtilData nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::COUNT];
-			std::unique_ptr<OpenMenuNodeT::Functor>openNodeFunctor;
+			std::unique_ptr<SelectMenuNodeT::Functor>selectNodeFunctor;
 			std::unique_ptr<ActivateMenuNodeT::Functor>activateNodeFunctor;
 			std::unique_ptr<DeActivateMenuNodeT::Functor>deActivateNodeFunctor;
 			std::unique_ptr<UpdateMenuNodeT::Functor>updateNodeFunctor;
-			std::unique_ptr<MenuIconT::Functor> menuIconFunctor;
+			std::unique_ptr<MenuSwitchIconPreesF::Functor> switchIconPressFunctorVec[menuSwitchIconCount];
 		private:
 			Core::JUserPtr<JScene> scene;
 			Core::JUserPtr<JGameObject> cameraObj;
@@ -76,6 +78,9 @@ namespace JinEngine
 			~JSceneObserver();
 			JSceneObserver(const JSceneObserver& rhs) = delete;
 			JSceneObserver& operator=(const JSceneObserver& rhs) = delete;
+		private:
+			void BuildMenuBar(const std::vector< J_OBSERVER_SETTING_TYPE> useSettingType);
+			void BuildMenuIcon();
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
@@ -83,7 +88,7 @@ namespace JinEngine
 			void UpdateWindow()final;
 		private:
 			void CreateMenuLeafNode(JEditorMenuNode* parent, J_OBSERVER_SETTING_TYPE type)noexcept;
-			void OpenObserverSettingNode(const J_OBSERVER_SETTING_TYPE type)noexcept;
+			void SelectObserverSettingNode(const J_OBSERVER_SETTING_TYPE type)noexcept;
 			void ActivateObserverSetting(const J_OBSERVER_SETTING_TYPE type)noexcept;
 			void DeActivateObserverSetting(const J_OBSERVER_SETTING_TYPE type)noexcept;
 			void UpdateObserverSetting(const J_OBSERVER_SETTING_TYPE type)noexcept;

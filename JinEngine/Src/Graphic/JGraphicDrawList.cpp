@@ -48,6 +48,11 @@ namespace JinEngine
 		{
 
 		}
+		JGraphicDrawTarget::UpdateInfo::~UpdateInfo()
+		{
+			observationFrame.Clear();
+		}
+
 		void JGraphicDrawTarget::UpdateInfo::UpdateStart()
 		{
 			objUpdateCount = aniUpdateCount = camUpdateCount = lightUpdateCount =

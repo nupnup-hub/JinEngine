@@ -13,7 +13,7 @@ namespace JinEngine
 			JVector2<float> preMousePos = JVector2<float>(0, 0);
 			JVector2<float> mouseOffset = JVector2<float>(0, 0);
 			float preWheelPos = 0;
-			float gridSize = 0;
+			uint gridSize = 0;
 			float zoom = 0;
 			float minZoom = -75;
 			float maxZoom = 75;
@@ -24,9 +24,9 @@ namespace JinEngine
 			void Draw();
 		public:			
 			JVector2<float> GetMouseOffset()const noexcept;
-			float GetGridSize()const noexcept;
+			uint GetGridSize()const noexcept;
 			float GetZoomRate()const noexcept;
-			void SetGridSize(const float newGridSize)noexcept;
+			void SetGridSize(const uint newGridSize)noexcept;
 			void SetMaxZoomRate(const float newMaxZoomRate)noexcept;
 			void SetMinZoomRate(const float newMinZoomRate)noexcept;
 		};
@@ -40,6 +40,8 @@ namespace JinEngine
 			void Clear();
 		public: 
 			void Update(const JVector2<float> xzMoveOffset);
+		public:
+			bool HasCoordGrid()const noexcept;
 		};
 	}
 }

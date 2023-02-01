@@ -5,7 +5,7 @@
 #include"../JEditorAttribute.h" 
 #include"../JEditorPageShareData.h"
 #include"../SimpleWindow/JGraphicOptionSetting.h" 
-#include"../../Utility/JEditorLineCalculator.h"
+#include"../../Align/JEditorAlignCalculator.h"
 #include"../../Popup/JEditorPopupWindow.h"
 #include"../CommonWindow/Debug/JStringConvertTest.h" 
 #include"../CommonWindow/View/JSceneViewer.h"
@@ -100,10 +100,10 @@ namespace JinEngine
 					JApplicationProject::ConfirmCloseProject();
 				}
 			};
-			auto confirmFunc = [](JEditorPage* page)
-			{
+			auto confirmFunc = [](JProjectMainPage* page)
+			{				
 				page->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
-				JApplicationProject::ConfirmCloseProject();
+				JApplicationProject::ConfirmCloseProject(); 
 			};
 			auto cancelFunc = [](JEditorPage* page) 
 			{
@@ -134,12 +134,12 @@ namespace JinEngine
 				ImGui::SetCursorPosX(wndSize.x * 0.075f); 
 				ImGui::BeginListBox("##ModifiedResource_ProjectMainPage", ImVec2(listWidth, listHeight));
 
-				JEditorStaticLineCalculator<columnCount> lineCal(rate);
+				JEditorStaticAlignCalculator<columnCount> alignCal(rate);
 				for (uint i = 0; i < columnCount; ++i)
-					lineCal.LabelOnScreen(label[i]);
+					alignCal.LabelOnScreen(label[i]);
 				ImGui::Separator();
 
-				const float alphabetWidth = JImGuiImpl::GetAlphabetSize().x;
+				const int alphabetWidth = JImGuiImpl::GetAlphabetSize().x;
 				auto modVec = mainPage->GetModifiedObjectInfoVec();
 				for (auto& data : modVec)
 				{
@@ -147,16 +147,16 @@ namespace JinEngine
 					const std::string name = JCUtil::WstrToU8Str(obj->GetName());
 					const std::string path = JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj)->GetFolderPath());
 					 
-					lineCal.SetNextContentsPosition();
-					JImGuiImpl::Text(JCUtil::CompressString(name, lineCal.GetItemRangeMax() / alphabetWidth));
+					alignCal.SetNextContentsPosition();
+					JImGuiImpl::Text(JCUtil::CompressString(name, alignCal.GetItemRangeMax() / alphabetWidth));
 
-					lineCal.SetNextContentsPosition();
-					JImGuiImpl::Text(JCUtil::CompressStringPath(path, lineCal.GetItemRangeMax() / alphabetWidth));
+					alignCal.SetNextContentsPosition();
+					JImGuiImpl::Text(JCUtil::CompressStringPath(path, alignCal.GetItemRangeMax() / alphabetWidth));
 
-					lineCal.SetNextContentsPosition();
-					JImGuiImpl::Text(JCUtil::CompressString(obj->GetTypeInfo().NameWithOutPrefix(), lineCal.GetItemRangeMax() / alphabetWidth));
+					alignCal.SetNextContentsPosition();
+					JImGuiImpl::Text(JCUtil::CompressString(obj->GetTypeInfo().NameWithOutPrefix(), alignCal.GetItemRangeMax() / alphabetWidth));
 
-					lineCal.SetNextContentsPosition();
+					alignCal.SetNextContentsPosition();
 					JImGuiImpl::CheckBox("##ModifiedResource_CheckBox" + name, data->isStore);
 				}
 				ImGui::EndListBox();
@@ -182,9 +182,9 @@ namespace JinEngine
 		}
 		JProjectMainPage::~JProjectMainPage()
 		{
-			JEditorPageShareData::UnRegisterPage(GetPageType()); 
-			(*storeProjectF)(); 
+			(*storeProjectF)();
 			ClearModifiedInfoStructure();
+			JEditorPageShareData::UnRegisterPage(GetPageType()); 
 		}
 		J_EDITOR_PAGE_TYPE JProjectMainPage::GetPageType()const noexcept
 		{

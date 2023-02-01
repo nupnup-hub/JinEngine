@@ -1,6 +1,6 @@
 #pragma once
 #include"../../JEditorWindow.h"  
-#include"../../../Utility/JEditorRenameHelper.h"
+#include"../../../Helpers/JEditorRenameHelper.h"
 #include"../../../Interface/JEditorObjectInterface.h"
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
@@ -14,7 +14,7 @@ namespace JinEngine
 	class JMeshGeometry;
 	namespace Editor
 	{
-		class JEditorString;
+		class JEditorStringMap;
 		class JEditorPopupMenu;
 		class JEditorSearchBarHelper;
 		class JObjectExplorer final : public JEditorWindow, public JEditorObjectHandlerInterface
@@ -23,7 +23,7 @@ namespace JinEngine
 			Core::JUserPtr<JGameObject> root;
 			Core::JUserPtr<JGameObject> selectedObject;  
 
-			std::unique_ptr<JEditorString>editorString;
+			std::unique_ptr<JEditorStringMap>editorString;
 			std::unique_ptr<JEditorRenameHelper>renameHelper;
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
 			std::unique_ptr<JEditorPopupMenu>explorerPopup; 

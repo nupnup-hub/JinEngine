@@ -56,7 +56,7 @@ namespace JinEngine
 		{
 			std::string windowName = GetName();
 
-			if (IsFocus() && IsActivated() && JImGuiImpl::IsMouseInRect())
+			if (IsFocus() && IsActivated() && JImGuiImpl::IsMouseInRect(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
 			{
 				if (JImGuiImpl::IsLeftMouseClicked())
 				{
@@ -116,6 +116,12 @@ namespace JinEngine
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActWindowEvStruct>(this, ownerPageType)));
 				}
 			}
+		}
+		void JEditorWindow::SetSelectableColor(const float factor)noexcept
+		{
+			JImGuiImpl::SetColorToDeep(ImGuiCol_Header, factor);
+			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderHovered, factor);
+			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderActive, factor);
 		}
 		void JEditorWindow::SetButtonColor(const float factor)noexcept
 		{

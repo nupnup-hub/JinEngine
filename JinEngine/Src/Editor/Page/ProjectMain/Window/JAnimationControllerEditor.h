@@ -1,6 +1,7 @@
 #pragma once
 #include"../../JEditorWindow.h"   
-#include"../../../Utility/JEditorInputBuffHelper.h"
+#include"../../../Interface/JEditorObjectInterface.h"
+#include"../../../Helpers/JEditorInputBuffHelper.h"
 #include"../../../../Object/Resource/JResourceUserInterface.h"
 #include"../../../../Core/Event/JEventListener.h" 
 #include"../../../../Core/FSM/AnimationFSM/JAnimationStateType.h"
@@ -23,11 +24,12 @@ namespace JinEngine
 	}
 	namespace Editor
 	{
-		class JEditorString;
+		class JEditorStringMap;
 		class JEditorPopupMenu;
 		class JEditorGraphView;
 		class JAnimationControllerEditor final : public JEditorWindow,
-			public JResourceUserInterface
+			public JResourceUserInterface,
+			public JEditorObjectHandlerInterface
 		{
 		private:
 			static constexpr int invalidIndex = -1;
@@ -42,7 +44,7 @@ namespace JinEngine
 		private:
 			bool reqInitDockNode = false;
 		private:
-			std::unique_ptr<JEditorString> editorString;
+			std::unique_ptr<JEditorStringMap> editorString;
 			std::unique_ptr<JEditorInputBuffHelper> inputBuff;
 			std::unique_ptr<JEditorGraphView> stateGraph;
 		private:
@@ -53,7 +55,7 @@ namespace JinEngine
 			using AniContUserPtr = Core::JUserPtr<JAnimationController>;
 		private:
 			using DataHandleStructure = Core::JDataHandleStructure<Core::JTransition::GetMaxTaskCapacity(), Core::JIdentifier>;
-			using RegisterEv = Core::JMFunctorType<JAnimationControllerEditor, void>;
+			using RegisterEvF = Core::JMFunctorType<JAnimationControllerEditor, void>;
 			using DiagramHandleFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, AniContUserPtr, const size_t>;
 			using DiagramHandleBind = Core::JBindHandle<DiagramHandleFunctor, const Core::EmptyType&, const Core::EmptyType&, AniContUserPtr, const size_t>;
 
@@ -69,14 +71,17 @@ namespace JinEngine
 			using SetConditionBooleanValueFunctor = Core::JFunctor<void, const bool, AniContUserPtr, size_t>;
 			using SetConditionIntValueFunctor = Core::JFunctor<void, const int, AniContUserPtr, size_t>;
 			using SetConditionFloatValueFunctor = Core::JFunctor<void, const float, AniContUserPtr, size_t>;
+			//State
+			using TryConnectStateTransitionF = Core::JSFunctorType<void, JAnimationControllerEditor*>;
+			using ConnectStateTrasitionF = Core::JSFunctorType<void, JAnimationControllerEditor*>;
 		private:
 			DataHandleStructure fsmdata;
-			std::unique_ptr<RegisterEv::Functor> regCreateDiagramEvF;
-			std::unique_ptr<RegisterEv::Functor> regDestroyDiagramEvF;
-			std::unique_ptr<RegisterEv::Functor> regCreateConditionEvF;
-			std::unique_ptr<RegisterEv::Functor> regDestroyConditionEvF;
-			std::unique_ptr<RegisterEv::Functor> regCreateStateEvF;
-			std::unique_ptr<RegisterEv::Functor> regDestroyStateEvF;
+			std::unique_ptr<RegisterEvF::Functor> regCreateDiagramEvF;
+			std::unique_ptr<RegisterEvF::Functor> regDestroyDiagramEvF;
+			std::unique_ptr<RegisterEvF::Functor> regCreateConditionEvF;
+			std::unique_ptr<RegisterEvF::Functor> regDestroyConditionEvF;
+			std::unique_ptr<RegisterEvF::Functor> regCreateStateEvF;
+			std::unique_ptr<RegisterEvF::Functor> regDestroyStateEvF;
 
 			std::unique_ptr<DiagramHandleFunctor> createDiagramF;
 			std::unique_ptr<DiagramHandleFunctor> destroyDiagramF;
@@ -90,6 +95,9 @@ namespace JinEngine
 			std::unique_ptr<SetConditionBooleanValueFunctor> setConditionBoolF;
 			std::unique_ptr<SetConditionIntValueFunctor> setConditionIntF;
 			std::unique_ptr<SetConditionFloatValueFunctor> setConditionFloatF;
+
+			std::unique_ptr<TryConnectStateTransitionF::Functor> tryConnectStateTransF;
+			std::unique_ptr<ConnectStateTrasitionF::Functor> connectStateTransF;
 		public:
 			JAnimationControllerEditor(const std::string& name,
 				std::unique_ptr<JEditorAttribute> attribute, 
@@ -103,9 +111,12 @@ namespace JinEngine
 		private:
 			void SetAnimationController(Core::JUserPtr<JObject> newAniCont);
 		private:
+			bool HasAnimationController()const noexcept;
+		private:
 			void RegisterDiagramFunc();
 			void RegisterConditionFunc();
 			void RegisterStateFunc();
+			void RegisterViewGraphGroup(JAnimationController* aniCont);
 		public:
 			void UpdateWindow()final;
 		private:

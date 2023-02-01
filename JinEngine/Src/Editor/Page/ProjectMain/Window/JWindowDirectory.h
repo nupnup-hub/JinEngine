@@ -1,7 +1,7 @@
 #pragma once
 #include"../../JEditorWindow.h"     
 #include"../../WindowInterface/JEditorPreviewInterface.h"
-#include"../../../Utility/JEditorRenameHelper.h"
+#include"../../../Helpers/JEditorRenameHelper.h"
 #include"../../../Interface/JEditorObjectInterface.h"
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/JResourceType.h"
@@ -23,7 +23,7 @@ namespace JinEngine
 
 	namespace Editor
 	{
-		class JEditorString;
+		class JEditorStringMap;
 		class JEditorPopupMenu; 
 		class JEditorSearchBarHelper;
 
@@ -50,7 +50,7 @@ namespace JinEngine
 			Core::JUserPtr<JObject> selectedObj;  
 			bool lastUpdateOpenNewDir = false;
 		private:
-			std::unique_ptr<JEditorString> editorString;
+			std::unique_ptr<JEditorStringMap> editorString;
 			std::unique_ptr<JEditorRenameHelper> renameHelper;
 			//not use
 			//std::unique_ptr<JEditorPopupMenu>directoryViewPopup;
@@ -75,7 +75,9 @@ namespace JinEngine
 			float btnIconMinSize;
 			float btnIconSize = 0;
 			size_t selectorIconSlidebarId; 
-			JVector2<float> fileTitleBarSize;
+			JVector2<float> fileTitleBarSize; 
+			JVector2<float> renameCursorPos;
+			JVector2<float> renameRectSize;
 		private:
 			float childWindowHeight = 0; 
 			std::wstring importFilePath; 
@@ -96,9 +98,7 @@ namespace JinEngine
 			void BuildFileView();
 			//Ret is NewOpend Directory
 			JDirectory* DirectoryViewOnScreen(JDirectory* directory, const bool canSelect);
-			void FileViewOnScreen(); 
-			void ResourceFileViewOnScreen(JPreviewScene* nowPreviewScene, JResourceObject* jRobj);
-			void DirectoryFileViewOnScreen(JPreviewScene* nowPreviewScene, JDirectory* jDir);
+			void FileViewOnScreen();  
 			void ImportFile(); 
 		private:
 			void OpenNewDirectory(Core::JUserPtr<JDirectory> newOpendDirectory);

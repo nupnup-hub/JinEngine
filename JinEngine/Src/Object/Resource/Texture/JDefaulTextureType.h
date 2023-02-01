@@ -24,6 +24,8 @@ namespace JinEngine
 		POSITION_ARROW,
 		ROTATION_ARROW,
 		SCALE_ARROW,
+		VIEW_FRUSTUM_ICON,
+		COORD_GRID_ICON,
 		PROJECT_SELECTOR_BACKGROUND
 	};
 
@@ -36,30 +38,6 @@ namespace JinEngine
 			{
 			case JinEngine::J_DEFAULT_TEXTURE::NONE:
 				return true;
-			case JinEngine::J_DEFAULT_TEXTURE::DIRECTORY:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::TEXT:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::SCRIPT:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::SHADER:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::SEARCH_FOLDER_ICON:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::SCENE:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::BASIC_MATERIAL_ALBEDO_MAP:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::BASIC_MATERIAL_NORMAL_MAP:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::DEFAULT_SKY:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::SKELETON:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::ANIMATION_CLIP:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::ANIMATION_CONTROLLER:
-				return false;
 			case JinEngine::J_DEFAULT_TEXTURE::MISSING:
 				return true;
 			case JinEngine::J_DEFAULT_TEXTURE::POSITION_ARROW:
@@ -68,8 +46,10 @@ namespace JinEngine
 				return true;
 			case JinEngine::J_DEFAULT_TEXTURE::SCALE_ARROW:
 				return true;
-			case JinEngine::J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND:
-				return false;
+			case JinEngine::J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON:
+				return true;
+			case JinEngine::J_DEFAULT_TEXTURE::COORD_GRID_ICON:
+				return true;
 			default:
 				return false;
 			}
@@ -112,6 +92,10 @@ namespace JinEngine
 				return L"RotationArrow.png";
 			case JinEngine::J_DEFAULT_TEXTURE::SCALE_ARROW:
 				return L"ScaleArrow.png";
+			case JinEngine::J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON:
+				return L"Viewfrustum.png";
+			case JinEngine::J_DEFAULT_TEXTURE::COORD_GRID_ICON:
+				return L"CoordGrid.png";
 			case JinEngine::J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND:
 				return L"Shiro_Background.jpg";
 			default:

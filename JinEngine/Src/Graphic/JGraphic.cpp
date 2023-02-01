@@ -45,8 +45,7 @@
 #include"../Application/JApplicationVariable.h"
 #include"../Utility/JCommonUtility.h"
 #include"../Core/Exception/JExceptionMacro.h"	
-#include"../Editor/GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../../Lib/DirectX/DDSTextureLoader.h" 
+#include"../Editor/GuiLibEx/ImGuiEx/JImGuiImpl.h" 
 #include"../../Lib/imgui/imgui_impl_dx12.h"
 #include"../../Lib/imgui/imgui_impl_win32.h"
 
@@ -106,7 +105,7 @@ namespace JinEngine
 			return option;
 		}
 		void JGraphicImpl::SetGraphicOption(JGraphicOption newGraphicOption)noexcept
-		{
+		{ 
 			if (newGraphicOption.isHDOcclusionAcitvated && newGraphicOption.isHZBOcclusionActivated)
 			{
 				if (!option.isHDOcclusionAcitvated)
@@ -142,7 +141,7 @@ namespace JinEngine
 			return this;
 		}
 		JGraphicApplicationIterface* JGraphicImpl::AppInterface()noexcept
-		{
+		{ 
 			return this;
 		}
 		void JGraphicImpl::OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)
@@ -196,33 +195,33 @@ namespace JinEngine
 				return CD3DX12_GPU_DESCRIPTOR_HANDLE();
 			}
 		}
-		JGraphicResourceHandle* JGraphicImpl::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)
+		JGraphicResourceHandle* JGraphicImpl::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer, const std::wstring& path, const std::wstring& oriFormat)
 		{
 			if (!stCommand)
 			{
 				FlushCommandQueue();
 				StartCommand();
-				JGraphicResourceHandle* handle = graphicResource->Create2DTexture(uploadHeap, path, oriFormat, d3dDevice.Get(), commandList.Get());
+				JGraphicResourceHandle* handle = graphicResource->Create2DTexture(uploadBuffer, path, oriFormat, d3dDevice.Get(), commandList.Get());
 				EndCommand();
 				FlushCommandQueue();
-				return handle;
+				return handle; 
 			}
 			else
-				return graphicResource->Create2DTexture(uploadHeap, path, oriFormat, d3dDevice.Get(), commandList.Get());
+				return graphicResource->Create2DTexture(uploadBuffer, path, oriFormat, d3dDevice.Get(), commandList.Get());
 		}
-		JGraphicResourceHandle* JGraphicImpl::CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat)
+		JGraphicResourceHandle* JGraphicImpl::CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer, const std::wstring& path, const std::wstring& oriFormat)
 		{
 			if (!stCommand)
 			{
 				FlushCommandQueue();
 				StartCommand();
-				JGraphicResourceHandle* handle = graphicResource->CreateCubeMap(uploadHeap, path, oriFormat, d3dDevice.Get(), commandList.Get());
+				JGraphicResourceHandle* handle = graphicResource->CreateCubeMap(uploadBuffer, path, oriFormat, d3dDevice.Get(), commandList.Get());
 				EndCommand();
 				FlushCommandQueue();
 				return handle;
 			}
 			else
-				return graphicResource->CreateCubeMap(uploadHeap, path, oriFormat, d3dDevice.Get(), commandList.Get());
+				return graphicResource->CreateCubeMap(uploadBuffer, path, oriFormat, d3dDevice.Get(), commandList.Get());
 		}
 		JGraphicResourceHandle* JGraphicImpl::CreateRenderTargetTexture(uint textureWidth, uint textureHeight)
 		{

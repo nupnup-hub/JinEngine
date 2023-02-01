@@ -7,9 +7,15 @@
 #include"../../Core/Func/Callable/JCallable.h"
 
 namespace JinEngine
-{
+{ 
+	namespace Graphic
+	{
+		class JGraphicResourceHandleInterface;
+	}
+
 	namespace Editor
 	{  
+		class JEditorStringMap;
 		class JEditorMenuNode
 		{
 		private:
@@ -52,6 +58,37 @@ namespace JinEngine
 		};
 		class JEditorMenuBar
 		{
+		public:
+			class ExtraWidget
+			{
+			private:  
+				const size_t guid; 
+			public:
+				ExtraWidget(const size_t guid);
+				virtual ~ExtraWidget() = default;
+			public:
+				virtual void Update(const JEditorStringMap* tooltipMap) = 0;
+			public: 
+				std::string GetUniqueLabel()const noexcept; 
+				J_SIMPLE_GET(size_t, guid, Guid)
+			};
+			class SwitchIcon : public ExtraWidget
+			{
+			public:
+				using GetGResourceF = Core::JSFunctorType<Graphic::JGraphicResourceHandleInterface*>;
+			private:
+				bool* isActivatedPtr;
+			private:
+				std::unique_ptr<GetGResourceF::Functor> getGResourceFunctor;
+				std::unique_ptr<Core::JBindHandleBase> pressBind;
+			public:
+				SwitchIcon(const size_t guid,
+					bool* isActivatedPtr,
+					std::unique_ptr<GetGResourceF::Functor>&& newGetGResourceFunctor,
+					std::unique_ptr<Core::JBindHandleBase>&& newPressBind);
+			public:
+				void Update(const JEditorStringMap* tooltipMap)final;
+			};
 		private:
 			using LoopNodePtr = Core::JStaticCallableType<void, JEditorMenuNode*>::Ptr;
 		private:
@@ -60,7 +97,7 @@ namespace JinEngine
 			std::vector<std::unique_ptr<JEditorMenuNode>> allNode;
 			std::vector<JEditorMenuNode*> leafNode;
 		private:
-			std::unique_ptr<Core::JBindHandleBase> extraWidgetBind;
+			std::vector< std::unique_ptr<ExtraWidget>> extraWidgetVec; 
 		private:
 			const bool isMainMenu = false;
 		public:
@@ -71,11 +108,12 @@ namespace JinEngine
 			JEditorMenuNode* GetSelectedNode()noexcept;
 		public:
 			void AddNode(std::unique_ptr<JEditorMenuNode> newNode)noexcept;
-			void RegisterExtraWidgetBind(std::unique_ptr<Core::JBindHandleBase> newExtraWidgetBind)noexcept;
+			void RegisterExtraWidget(std::unique_ptr<ExtraWidget>&& extraWidget)noexcept;
 		public:
-			void Update(const bool leafNodeOnly);
+			void Update(const bool leafNodeOnly, const JEditorStringMap* tooltipMap = nullptr);
 		private:
-			bool UpdateMenuBar();
+			bool UpdateMenuBar(const JEditorStringMap* tooltipMap);
+			void UpdateExtraWidget(const JEditorStringMap* tooltipMap);
 			void LoopNode(JEditorMenuNode* node);
 			void LoopNode(JEditorMenuNode* node, LoopNodePtr ptr);
 		public:

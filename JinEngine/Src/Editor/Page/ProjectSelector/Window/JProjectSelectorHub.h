@@ -1,6 +1,6 @@
 #pragma once
 #include"../../JEditorWindow.h"
-#include"../../../Utility/JEditorInputBuffHelper.h"
+#include"../../../Helpers/JEditorInputBuffHelper.h"
 #include"../../../../Object/Resource/JResourceUserInterface.h"
 #include<string>
 

@@ -18,7 +18,7 @@
 #include"../Window/JWindows.h"
 #include<fstream>  
 #include<io.h>   
-
+ 
 //수정필요
 //Dock Split시 이전에 Focus하고있던 Window가 offFocus되지않음
 
@@ -46,9 +46,9 @@ namespace JinEngine
 			}
 
 			JEditorEvent::Clear();
-			JEditorPageShareData::Clear();
 			JImGuiImpl::Clear();
 			Core::JTransition::Clear();
+			JEditorPageShareData::Clear();
 
 			editorPageMap.clear();
 			opendEditorPage.clear();
@@ -254,7 +254,12 @@ namespace JinEngine
 		{
 			auto page = editorPageMap.find(evStruct->pageType);
 			if (page != editorPageMap.end())
-				page->second->OpenPopupWindow(evStruct->popupWindow);
+			{
+				if(evStruct->popupWindow != nullptr)
+					page->second->OpenPopupWindow(evStruct->popupWindow);
+				else
+					page->second->OpenPopupWindow(evStruct->popupType);
+			}
 		}
 		void JEditorManager::ClosePopupWindow(JEditorClosePopupWindowEvStruct* evStruct)
 		{
@@ -268,8 +273,12 @@ namespace JinEngine
 		}
 		void JEditorManager::PressMainWindowCloseButton()noexcept
 		{
-			auto data = editorPageMap.find(J_EDITOR_PAGE_TYPE::PROJECT_MAIN);
-			data->second->OpenPopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
+			auto data = editorPageMap.find(J_EDITOR_PAGE_TYPE::PROJECT_MAIN)->second;
+			AddEventNotification(*JEditorEvent::EvInterface(),
+				data->GetGuid(),
+				J_EDITOR_EVENT::OPEN_POPUP_WINDOW,
+				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPopupWindowEvStruct>(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM, J_EDITOR_PAGE_TYPE::PROJECT_MAIN)));
+			//data->second->OpenPopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
 		}
 		void JEditorManager::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{   

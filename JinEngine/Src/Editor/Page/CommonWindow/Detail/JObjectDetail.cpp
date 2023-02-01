@@ -1,7 +1,7 @@
 #include"JObjectDetail.h"   
 #include"../../JEditorPageShareData.h"
 #include"../../JEditorAttribute.h"
-#include"../../../Utility/JReflectionGuiWidgetHelper.h"  
+#include"../../../Helpers/JReflectionGuiWidgetHelper.h"  
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../../../Object/GameObject/JGameObject.h"
 #include"../../../../Object/Resource/JResourceObject.h"
@@ -139,6 +139,7 @@ namespace JinEngine
 		{
 			JEditorWindow::DoActivate(); 
 			RegisterEventListener(J_EDITOR_EVENT::SELECT_OBJECT);
+			preSelected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
 		}
 		void JObjectDetail::DoDeActivate()noexcept
 		{

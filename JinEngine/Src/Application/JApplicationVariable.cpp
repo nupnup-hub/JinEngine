@@ -320,9 +320,9 @@ namespace JinEngine
 		}
 		void JApplicationProject::CancelCloseProject()noexcept
 		{
-			Private::loadOtherProjectOnce = false;
 			if (Private::loadOtherProjectOnce)
 				Private::nextProjectInfo.reset();
+			Private::loadOtherProjectOnce = false;
 		}
 		void JApplicationProject::ConfirmCloseProject()noexcept
 		{

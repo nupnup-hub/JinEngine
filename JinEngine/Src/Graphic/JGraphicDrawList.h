@@ -74,6 +74,7 @@ namespace JinEngine
 				void UpdateEnd();
 			public:
 				UpdateInfo(Core::JUserPtr<IFrameDirty> observationFrame, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling);
+				~UpdateInfo();
 			};
 		private:
 			friend class JGraphicDrawList;

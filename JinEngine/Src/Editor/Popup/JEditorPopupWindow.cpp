@@ -153,8 +153,8 @@ namespace JinEngine
 			ImGui::SetCursorPosY(heightFactor - innerYPadding - textLength.y);
 			if (JImGuiImpl::Button("Confirm##CloseConfirmPopup"))
 				SetConfirm(true); 
-			JImGuiImpl::EndWindow();
 			JImGuiImpl::PopFont();
+			JImGuiImpl::EndWindow();
 		}
 		bool JEditorCautionPopup::IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept
 		{
@@ -253,8 +253,8 @@ namespace JinEngine
 			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + textLength.x);
 			if (JImGuiImpl::Button("Cancel##CloseConfirmPopup"))
 				SetCancel(true);
-			JImGuiImpl::EndWindow();
 			JImGuiImpl::PopFont();
+			JImGuiImpl::EndWindow();
 		}
 		bool JEditorCloseConfirmPopup::IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept
 		{

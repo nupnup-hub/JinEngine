@@ -76,6 +76,9 @@ namespace JinEngine
 	}
 	void JGameObject::SetName(const std::wstring& newName)noexcept
 	{
+		if (newName == GetName())
+			return;
+
 		if (parent != nullptr)
 			JObject::SetName(JCUtil::MakeUniqueName(parent->children, newName));
 	}

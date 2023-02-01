@@ -126,12 +126,12 @@ namespace JinEngine
 				const uint viewHeight); 
 			void CreateOcclusionQueryResource(ID3D12Device* device);
 			void CreateOcclusionHZBResource(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const uint occWidth, const uint occHeight);
-			JGraphicResourceHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
+			JGraphicResourceHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 				const std::wstring& path,
 				const std::wstring& oriFormat,
 				ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList);
-			JGraphicResourceHandle* CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
+			JGraphicResourceHandle* CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 				const std::wstring& path,
 				const std::wstring& oriFormat,
 				ID3D12Device* device,

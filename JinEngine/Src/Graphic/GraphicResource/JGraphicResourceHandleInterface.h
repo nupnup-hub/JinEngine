@@ -38,8 +38,8 @@ namespace JinEngine
 		private:
 			Graphic::JGraphicResourceHandle* handle = nullptr;
 		protected:
-			bool Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat);
-			bool CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat);
+			bool Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer, const std::wstring& path, const std::wstring& oriFormat);
+			bool CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer, const std::wstring& path, const std::wstring& oriFormat);
 			bool CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0);
 			bool CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0);
 			bool DestroyTxtHandle();

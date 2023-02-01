@@ -1,7 +1,7 @@
 #include"JSceneViewer.h"  
 #include"../../JEditorAttribute.h"    
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../../../Utility/JEditorCameraControl.h" 
+#include"../../../EditTool/JEditorCameraControl.h" 
 #include"../../../../Object/Component/Camera/JCamera.h" 
 #include"../../../../Object/Resource/Scene/JScene.h" 
 

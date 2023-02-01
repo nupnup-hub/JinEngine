@@ -13,7 +13,7 @@ namespace JinEngine
 		{
 			REGISTER_CLASS(JAnimationFSMstateClip)
 		private:
-			JAnimationClip* clip;
+			JAnimationClip* clip = nullptr;
 		public:
 			void Initialize()noexcept final;
 			J_ANIMATION_STATE_TYPE GetStateType()const noexcept final;

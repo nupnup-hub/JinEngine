@@ -8,30 +8,33 @@ namespace JinEngine
 {
 	namespace Core
 	{
+		class JRay2D;
 		class JBBox2D
 		{
 		public:
-			JVector2<float> min;
-			JVector2<float> max;
+			JVector2<float> minP;
+			JVector2<float> maxP;
 		public: 
-			JBBox2D(const JVector2<float>& min, const JVector2<float>& max);
+			JBBox2D(const JVector2<float>& minP, const JVector2<float>& maxP);
 		public:
-			bool Contain(const JVector2<float>& p);
+			bool Contain(const JVector2<float>& p)const noexcept;
+			bool Intersect(const JRay2D& ray, JVector2<float>* hitPoint = nullptr)const noexcept; 
 			JVector2<float> Extent()const noexcept;
 			JVector2<float> Center()const noexcept;
+			JVector2<float> DistanceVector()const noexcept;
 		};
 
 		class JBBox
 		{
 		public:
-			//DirectX::XMFLOAT3 min;
-			//DirectX::XMFLOAT3 max;
+			//DirectX::XMFLOAT3 minP;
+			//DirectX::XMFLOAT3 maxP;
 		public:
-			JVector3<float> min;
-			JVector3<float> max;
+			JVector3<float> minP;
+			JVector3<float> maxP;
 		public:
-			JBBox(const JVector3<float>& min = JVector3<float>(0,0,0), const JVector3<float>& max = JVector3<float>(0, 0, 0));
-			JBBox(const DirectX::XMFLOAT3& min, const DirectX::XMFLOAT3& max);
+			JBBox(const JVector3<float>& minP = JVector3<float>(0,0,0), const JVector3<float>& maxP = JVector3<float>(0, 0, 0));
+			JBBox(const DirectX::XMFLOAT3& minP, const DirectX::XMFLOAT3& maxP);
 			JBBox(const DirectX::BoundingBox& boundBox);		 
 			~JBBox();
 			JBBox(const JBBox& rhs) = default;

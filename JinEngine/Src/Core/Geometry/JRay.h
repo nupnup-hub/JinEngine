@@ -5,6 +5,21 @@ namespace JinEngine
 {
 	namespace Core
 	{
+		class JRay2D
+		{
+		public:
+			JVector2<float> p;
+			JVector2<float> dir;
+			float time;
+			float maxTime;
+		public:
+			JRay2D(const DirectX::XMVECTOR pV, const DirectX::XMVECTOR dirV, float time = 0, float maxTime = FLT_MAX);
+			JRay2D(const JVector2<float>& p, const JVector2<float>& dir, float time = 0, float maxTime = FLT_MAX);
+		public:
+			DirectX::XMVECTOR GetPosV()const noexcept;
+			DirectX::XMVECTOR GetDirV()const noexcept;
+		};
+
 		class JRay
 		{ 
 		public:

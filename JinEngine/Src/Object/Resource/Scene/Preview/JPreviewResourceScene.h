@@ -8,9 +8,6 @@ namespace JinEngine
 	class JResourceObject; 
 	class JPreviewResourceScene : public JPreviewScene
 	{
-	private: 
-		JScene* scene = nullptr;
-		JMaterial* textureMaterial = nullptr;
 	public: 
 		JPreviewResourceScene(_In_ Core::JUserPtr<JResourceObject> resource, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag);
 		~JPreviewResourceScene();
@@ -18,9 +15,6 @@ namespace JinEngine
 		JPreviewResourceScene& operator=(JPreviewResourceScene && rhs) = default;
 	public:
 		bool Initialze()noexcept; 
-		void Clear()noexcept final; 
-	protected:
-		JScene* GetScene()noexcept final;
 	private:
 		bool MakeMeshPreviewScene()noexcept;
 		bool MakeMaterialPreviewScene()noexcept;

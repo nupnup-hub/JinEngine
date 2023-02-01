@@ -4,6 +4,7 @@
 #include"../../../../Core/JDataType.h"
 #include"../../../../Graphic/JGraphicConstants.h" 
 #include"../../../../Core/Pointer/JOwnerPtr.h"
+#include"../../../../Utility/JMacroUtility.h"
 #include<memory>
 #include<string>
 #include<vector>
@@ -14,16 +15,24 @@ namespace JinEngine
 	class JObject;
 	class JMaterial;
 	class JScene;
-	class JCamera; 
+	class JCamera;  
+
 	class JPreviewScene
 	{ 
+	private:
 		friend class JPreviewSceneGroup;
-	protected: 
+	private:
 		const size_t guid;
+	private:
 		Core::JUserPtr<JObject> jobject;
-		JCamera* previewCamera = nullptr;
+		JScene* scene = nullptr;
+		JMaterial* textureMaterial = nullptr;
+		JCamera* camera = nullptr;
+	private:
 		J_PREVIEW_DIMENSION previewDimension; 
 		J_PREVIEW_FLAG previewFlag;  
+	private:
+		bool useQuadShape = false;
 	public:
 		JPreviewScene(Core::JUserPtr<JObject> jobject, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag);
 		~JPreviewScene();
@@ -34,35 +43,32 @@ namespace JinEngine
 		Core::JUserPtr<JObject> GetJObject()noexcept;
 		Core::JUserPtr<JCamera> GetPreviewCamera()noexcept;
 		J_PREVIEW_DIMENSION GetPreviewDimension()const noexcept; 
-	public:
-		virtual void Clear()noexcept = 0;
 	protected:
-		virtual JScene* GetScene()noexcept = 0;  
-		void AdjustCamera(_In_ JScene* scene,
-			_Inout_ JCamera* camera,
-			_In_ const DirectX::XMFLOAT3& objCenter, 
+		void SetUseQuadShapeTrigger(const bool value)noexcept;
+		J_SIMPLE_P_GET_SET(JScene, scene, Scene);
+		J_SIMPLE_P_GET_SET(JMaterial, textureMaterial, TextureMaterial); 
+	public:
+		//Draw quad shape for texture rendering
+		bool UseQuadShape()const noexcept;
+	public:
+		void Clear()noexcept;
+	protected:
+		void TryOpenScene(Core::JUserPtr<JMaterial> observationFram)noexcept;
+		void TryOpenScene()noexcept;
+		void AdjustCamera(_In_ const DirectX::XMFLOAT3& objCenter, 
 			const float objRadius, 
-			bool isQuad = false,
 			const DirectX::XMFLOAT3 additionalPos = DirectX::XMFLOAT3(0,0,0))noexcept;
 	private:
-		void Adjust2DTextureCamera(_In_ JScene* scene,
-			_Inout_ JCamera* camera,
-			const DirectX::XMFLOAT3& objCenter,
+		void Adjust2DTextureCamera(const DirectX::XMFLOAT3& objCenter,
 			const float objRadius,
 			const DirectX::XMFLOAT3 additionalPos)noexcept;
-		void Adjust2DOtherCamera(_In_ JScene* scene, 
-			_Inout_ JCamera* camera,
-			const DirectX::XMFLOAT3& objCenter,
+		void Adjust2DOtherCamera(const DirectX::XMFLOAT3& objCenter,
 			const float objRadius,
 			const DirectX::XMFLOAT3 additionalPos)noexcept;
-		void Adjust3DFixedCamera(_In_ JScene* scene, 
-			JCamera* camera, 
-			const DirectX::XMFLOAT3& objCenter,
+		void Adjust3DFixedCamera(const DirectX::XMFLOAT3& objCenter,
 			const float objRadius,
 			const DirectX::XMFLOAT3 additionalPos)noexcept;
-		void Adjust3DNonFixedCamera(_In_ JScene* scene,
-			_Inout_ JCamera* camera,
-			const DirectX::XMFLOAT3& objCenter, 
+		void Adjust3DNonFixedCamera(const DirectX::XMFLOAT3& objCenter, 
 			const float objRadius,
 			const DirectX::XMFLOAT3 additionalPos)noexcept; 
 	};

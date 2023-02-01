@@ -6,15 +6,15 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		class JEditorString
+		class JEditorStringMap
 		{
 		private:
 			std::unordered_map<size_t, std::vector<std::string>> strMap;
 		public:
 			//Add String
 			//0.. English 1.. Korean
-			bool AddString(const size_t key, const std::vector<std::string>& strVec);
-			const std::string GetString(const size_t key);
+			bool AddString(const size_t key, const std::vector<std::string>& strVec)noexcept;
+			const std::string GetString(const size_t key)const noexcept;
 		};
 	}
 }

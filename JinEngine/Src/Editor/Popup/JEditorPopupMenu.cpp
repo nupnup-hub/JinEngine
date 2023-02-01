@@ -35,7 +35,7 @@ namespace JinEngine
 			if (child != nullptr)
 				allPopupNode.push_back(std::move(child));
 		}
-		void JEditorPopupMenu::ExecutePopup(_In_ JEditorString* editorString)noexcept
+		void JEditorPopupMenu::ExecutePopup(_In_ JEditorStringMap* editorString)noexcept
 		{
 			if (isOpen)
 			{

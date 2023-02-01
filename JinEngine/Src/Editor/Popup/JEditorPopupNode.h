@@ -10,7 +10,7 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		class JEditorString;
+		class JEditorStringMap;
 		class JEditorPopupNode
 		{
 		private:
@@ -43,8 +43,8 @@ namespace JinEngine
 			void RegisterSelectBind(std::unique_ptr<Core::JBindHandleBase>&& newSelectBind)noexcept;
 			void InvokeSelectBind()noexcept;
 		public:
-			JEditorPopupNode* PopupOnScreen(_In_ JEditorString* editorString);
-			void PrintTooltip(_In_ JEditorString* editorString)noexcept;
+			JEditorPopupNode* PopupOnScreen(_In_ JEditorStringMap* editorString);
+			void PrintTooltip(_In_ JEditorStringMap* editorString)noexcept;
 		public:
 			size_t GetNodeId()const noexcept;
 			size_t GetTooltipId()const noexcept;

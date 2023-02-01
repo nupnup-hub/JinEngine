@@ -7,7 +7,6 @@
 #include"../../Core/Exception/JExceptionMacro.h"
 
 #include<DirectXColors.h>
-
 //Debug
 //#include<fstream>
 //#include"../../Core/File/JFileIOHelper.h"
@@ -309,7 +308,6 @@ namespace JinEngine
 			std::wstring fName = name + L"_" +std::to_wstring(index);
 			SetPrivateData(resource, fName);
 		}
-
 		void JGraphicResourceManager::Resource::Clear()
 		{ 
 			resource->Release();
@@ -881,41 +879,34 @@ namespace JinEngine
 
 			BindOcclusionHZBDebug(device, resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP].size() - 1);
 		}
-		JGraphicResourceHandle* JGraphicResourceManager::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
+		JGraphicResourceHandle* JGraphicResourceManager::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 			const std::wstring& path,
 			const std::wstring& oriFormat,
 			ID3D12Device* device,
 			ID3D12GraphicsCommandList* commandList)
-		{
+		{  
 			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D];
 			if (!desc.HasSpace() || !desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace())
 				return nullptr;
 
 			Resource newResource;
 			uint heapIndex = GetHeapIndex(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D, J_GRAPHIC_BIND_TYPE::SRV);
-			size_t width = 0;
-			size_t height = 0;
-			bool res = false;
-
+			bool res = false; 
 			if (oriFormat == L".dds")
 			{
 				res = DirectX::CreateDDSTextureFromFile12(device,
 					commandList,
 					path.c_str(),
 					newResource.resource,
-					uploadHeap,
-					width,
-					height) == S_OK;
+					uploadBuffer) == S_OK;
 			}
 			else
-			{
+			{  
 				res = LoadTextureFromFile(JCUtil::WstrToU8Str(path).c_str(),
 					device,
 					GetCpuSrvDescriptorHandle(heapIndex),
 					newResource.resource,
-					uploadHeap,
-					width,
-					height);
+					uploadBuffer);
 			}
 			if (res)
 			{
@@ -924,7 +915,9 @@ namespace JinEngine
 				std::wstring format;
 				JCUtil::DecomposeFilePath(path, folder, name, format);
 				SetPrivateData(newResource.resource.Get(), name + format, desc.count);
-				newResource.handle = std::make_unique<JGraphicResourceHandle>(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D, (uint)width, (uint)height);
+				newResource.handle = std::make_unique<JGraphicResourceHandle>(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D, 
+					newResource.resource->GetDesc().Width,
+					newResource.resource->GetDesc().Height);
 				newResource.handle->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].size());
 				resource[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].push_back(std::move(newResource));
 				++desc.count;
@@ -936,7 +929,7 @@ namespace JinEngine
 			else
 				return nullptr;
 		}
-		JGraphicResourceHandle* JGraphicResourceManager::CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap,
+		JGraphicResourceHandle* JGraphicResourceManager::CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 			const std::wstring& path,
 			const std::wstring& oriFormat,
 			ID3D12Device* device,
@@ -948,30 +941,18 @@ namespace JinEngine
 
 			Resource newResource;
 			uint heapIndex = GetHeapIndex(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE, J_GRAPHIC_BIND_TYPE::SRV);
-			size_t width = 0;
-			size_t height = 0;
 			bool res = false;
 
 			if (oriFormat == L".dds")
-			{
+			{ 
 				res = DirectX::CreateDDSTextureFromFile12(device,
 					commandList,
 					path.c_str(),
 					newResource.resource,
-					uploadHeap,
-					width,
-					height) == S_OK;
+					uploadBuffer) == S_OK;
 			}
 			else
-			{
-				res = LoadCubemapFromFile(JCUtil::WstrToU8Str(path).c_str(),
-					device,
-					GetCpuSrvDescriptorHandle(heapIndex),
-					newResource.resource,
-					uploadHeap,
-					width,
-					height);
-			}
+				assert(L"InValid cube map format");
 			if (res)
 			{
 				std::wstring folder;
@@ -979,7 +960,9 @@ namespace JinEngine
 				std::wstring format;
 				JCUtil::DecomposeFilePath(path, folder, name, format);
 				SetPrivateData(newResource.resource.Get(), name + format, desc.count);
-				newResource.handle = std::make_unique<JGraphicResourceHandle>(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE, (uint)width, (uint)height);
+				newResource.handle = std::make_unique<JGraphicResourceHandle>(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE, 
+					newResource.resource->GetDesc().Width, 
+					newResource.resource->GetDesc().Height);
 				newResource.handle->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].size());
 				resource[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].push_back(std::move(newResource));
 				++desc.count;
@@ -1536,7 +1519,10 @@ namespace JinEngine
 			ThrowIfFailedHr(device->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&occlusionQueryHeap)));
 			SetPrivateData(occlusionQueryHeap.Get(), L"Occlusion Query Heap");
 		}
-		JGraphicResourceManager::JGraphicResourceManager() {}
+		JGraphicResourceManager::JGraphicResourceManager() 
+		{
+
+		}
 		JGraphicResourceManager::~JGraphicResourceManager() {}
 	}
 }

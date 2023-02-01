@@ -1,9 +1,11 @@
 #include"JPreviewScene.h"  
-#include"../Jscene.h" 
-#include"../../../../Core/Guid/GuidCreator.h"
+#include"../JScene.h" 
+#include"../JSceneManager.h"
+#include"../../Material/JMaterial.h"
 #include"../../../GameObject/JGameObject.h"
 #include"../../../Component/Camera/JCamera.h" 
 #include"../../../Component/Transform/JTransform.h" 
+#include"../../../../Core/Guid/GuidCreator.h"
 #include"../../../../Utility/JCommonUtility.h"
 
 namespace JinEngine
@@ -22,37 +24,68 @@ namespace JinEngine
 	}
 	Core::JUserPtr<JCamera> JPreviewScene::GetPreviewCamera()noexcept
 	{
-		return Core::GetUserPtr(previewCamera);
+		return Core::GetUserPtr(camera);
 	}
 	J_PREVIEW_DIMENSION JPreviewScene::GetPreviewDimension()const noexcept
 	{
 		return previewDimension;
 	}
-	void JPreviewScene::AdjustCamera(_In_ JScene* scene,
-		_Inout_ JCamera* camera,
-		_In_ const DirectX::XMFLOAT3& objCenter,
-		const float objRadius,
-		bool isQuad,
-		const DirectX::XMFLOAT3 additionalPos)noexcept
+	void JPreviewScene::SetUseQuadShapeTrigger(const bool value)noexcept
 	{
+		useQuadShape = value;
+	}
+	bool JPreviewScene::UseQuadShape()const noexcept
+	{
+		return useQuadShape;
+	}
+	void JPreviewScene::Clear()noexcept
+	{
+		camera = nullptr;
+		jobject.Clear();
+
+		if (textureMaterial != nullptr)
+		{
+			JObject::BeginDestroy(textureMaterial);
+			textureMaterial = nullptr;
+		}
+
+		if (scene != nullptr)
+		{
+			JSceneManager::Instance().TryCloseScene(scene);
+			JObject::BeginDestroy(scene);
+			scene = nullptr;
+		}
+	}
+	void JPreviewScene::TryOpenScene(Core::JUserPtr<JMaterial> observationFram)noexcept
+	{
+		JSceneManager::Instance().TryOpenScene(scene, true, Core::GetUserPtr(observationFram.Get()));
+		camera = scene->GetMainCamera();
+	}
+	void JPreviewScene::TryOpenScene()noexcept
+	{
+		JSceneManager::Instance().TryOpenScene(scene, true);
+		camera = scene->GetMainCamera();
+	}
+	void JPreviewScene::AdjustCamera(_In_ const DirectX::XMFLOAT3& objCenter,
+		const float objRadius,
+		const DirectX::XMFLOAT3 additionalPos)noexcept
+	{ 
 		if (previewDimension == J_PREVIEW_DIMENSION::TWO_DIMENTIONAL)
 		{
-			if (isQuad)
-				Adjust2DTextureCamera(scene, camera, objCenter, objRadius, additionalPos);
+			if (useQuadShape)
+				Adjust2DTextureCamera(objCenter, objRadius, additionalPos);
 			else
-				Adjust2DOtherCamera(scene, camera, objCenter, objRadius, additionalPos);
+				Adjust2DOtherCamera(objCenter, objRadius, additionalPos);
 		}
 		else
 		{
 			if (((int)previewFlag & (int)J_PREVIEW_FLAG::NON_FIXED) > 0)
-				Adjust3DNonFixedCamera(scene, camera, objCenter, objRadius, additionalPos);
+				Adjust3DNonFixedCamera(objCenter, objRadius, additionalPos);
 			else
-				Adjust3DFixedCamera(scene, camera, objCenter, objRadius, additionalPos);
+				Adjust3DFixedCamera(objCenter, objRadius, additionalPos);
 		}
 	}
-	void JPreviewScene::Adjust2DTextureCamera(_In_ JScene* scene,
-		_Inout_ JCamera* camera,
-		_In_ const DirectX::XMFLOAT3& objCenter,
+	void JPreviewScene::Adjust2DTextureCamera(_In_ const DirectX::XMFLOAT3& objCenter,
 		const float objRadius,
 		const DirectX::XMFLOAT3 additionalPos)noexcept
 	{
@@ -62,9 +95,7 @@ namespace JinEngine
 		camera->SetViewSize((int)(objRadius), (int)(objRadius));
 		camera->GetTransform()->LookAt(objCenter);
 	}
-	void JPreviewScene::Adjust2DOtherCamera(_In_ JScene* scene,
-		_Inout_ JCamera* camera,
-		_In_ const DirectX::XMFLOAT3& objCenter,
+	void JPreviewScene::Adjust2DOtherCamera(_In_ const DirectX::XMFLOAT3& objCenter,
 		const float objRadius,
 		const DirectX::XMFLOAT3 additionalPos)noexcept
 	{
@@ -74,9 +105,7 @@ namespace JinEngine
 		camera->SetViewSize((int)(objRadius * 1.325f), (int)(objRadius * 1.325f));
 		camera->GetTransform()->LookAt(objCenter);
 	}
-	void JPreviewScene::Adjust3DFixedCamera(_In_ JScene* scene,
-		_Inout_ JCamera* camera,
-		_In_ const DirectX::XMFLOAT3& objCenter,
+	void JPreviewScene::Adjust3DFixedCamera(_In_ const DirectX::XMFLOAT3& objCenter,
 		const float objRadius,
 		const DirectX::XMFLOAT3 additionalPos)noexcept
 	{
@@ -87,9 +116,7 @@ namespace JinEngine
 		camera->GetTransform()->SetPosition(camNewPos); 
 		camera->GetTransform()->LookAt(objCenter);
 	}
-	void JPreviewScene::Adjust3DNonFixedCamera(_In_ JScene* scene,
-		_Inout_ JCamera* camera,
-		_In_ const DirectX::XMFLOAT3& objCenter,
+	void JPreviewScene::Adjust3DNonFixedCamera(_In_ const DirectX::XMFLOAT3& objCenter,
 		const float objRadius,
 		const DirectX::XMFLOAT3 additionalPos)noexcept
 	{

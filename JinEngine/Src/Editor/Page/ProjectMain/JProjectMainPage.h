@@ -27,7 +27,7 @@ namespace JinEngine
 			using LoadProjectF = Core::JSFunctorType<void>;
 		private:
 			using ClosePopupOpenF = Core::JSFunctorType<void, JProjectMainPage*>;
-			using ClosePopupConfirmF = Core::JSFunctorType<void, JEditorPage*>; 
+			using ClosePopupConfirmF = Core::JSFunctorType<void, JProjectMainPage*>;
 			using ClosePopupCancelF = Core::JSFunctorType<void, JEditorPage*>;
 			using ClosePopupContentsF = Core::JSFunctorType<void, JProjectMainPage*>;
 		private:

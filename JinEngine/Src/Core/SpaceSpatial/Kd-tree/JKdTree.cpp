@@ -5,7 +5,7 @@
 #include"../../../Utility/JVector.h"
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
-#include"../../../Editor/Utility/JEditorViewStructure.h"
+#include"../../../Editor/EditTool/JEditorViewStructure.h"
 #include<algorithm>
 
 //Debug
@@ -414,8 +414,8 @@ namespace JinEngine
 			JBBox bounds1 = nodeBounds;
 
 			float tSplit = edge[bestDim][bestOffset].p;
-			bounds0.max[bestDim] = tSplit;
-			bounds1.min[bestDim] = tSplit;
+			bounds0.maxP[bestDim] = tSplit;
+			bounds1.minP[bestDim] = tSplit;
 
 			int n0 = 0;
 			int n1 = 0;
@@ -468,8 +468,8 @@ namespace JinEngine
 			for (uint i = 0; i < nObject; ++i)
 			{
 				const JBBox bbox = objList[objIndexList[i]]->GetRenderItem()->GetBoundingBox();
-				edge[i * 2] = BoundEdge(bbox.min[dim], objIndexList[i], J_BOUND_EDGE_TYPE::START);
-				edge[i * 2 + 1] = BoundEdge(bbox.max[dim], objIndexList[i], J_BOUND_EDGE_TYPE::END);
+				edge[i * 2] = BoundEdge(bbox.minP[dim], objIndexList[i], J_BOUND_EDGE_TYPE::START);
+				edge[i * 2 + 1] = BoundEdge(bbox.maxP[dim], objIndexList[i], J_BOUND_EDGE_TYPE::END);
 			}
 
 			//거리가 가까운 순으로 정렬
@@ -495,8 +495,8 @@ namespace JinEngine
 				uint nBelow = 0;
 				uint nAbove = nObject;
 
-				float pMinP = nodeBounds.min[dim];
-				float pMaxP = nodeBounds.max[dim];
+				float pMinP = nodeBounds.minP[dim];
+				float pMaxP = nodeBounds.maxP[dim];
 
 				JVector3<float> pBBDistance = nodeBounds.DistanceVector();
 

@@ -202,7 +202,7 @@ namespace JinEngine
 			for (uint i = 0; i < stateCount; ++i)
 			{
 				JAnimationFSMstate* fsmState = GetStateByIndex(i);
-				JFileIOHelper::StoreHasObjectIden(stream, fsmState);
+				JFileIOHelper::StoreFsmObjectIden(stream, fsmState);
 				JFileIOHelper::StoreEnumData(stream, L"StateType:", fsmState->GetStateType());
 			}
 			for (uint i = 0; i < stateCount; ++i)

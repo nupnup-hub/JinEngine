@@ -117,15 +117,28 @@ namespace JinEngine
 
  #define J_SIMPLE_P_GET_SET(typeName, dataName, methodName)		\
                                                                 \
-		typeName Get##methodName()const noexcept			    \
+		typeName* Get##methodName()const noexcept			    \
 		{												\
 			return dataName;							\
 		}												\
 														\
-		void Set##methodName(typeName newData)noexcept\
+		void Set##methodName(typeName* newData)noexcept\
 		{												\
 			dataName = newData;							\
 		}                                               \
+
+#define  J_SIMPLE_GET(typeName, dataName, methodName)	\
+		typeName Get##methodName()const noexcept		\
+		{												\
+			return dataName;							\
+		}												\
+
+#define  J_SIMPLE_P_GET(typeName, dataName, methodName)	\
+		typeName* Get##methodName()const noexcept		\
+		{												\
+			return dataName;							\
+		}												\
+
 
     }
 }

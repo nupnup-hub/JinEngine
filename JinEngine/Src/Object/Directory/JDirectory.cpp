@@ -80,10 +80,13 @@ namespace JinEngine
 	{
 		return J_OBJECT_TYPE::DIRECTORY_OBJECT;
 	}
-	void JDirectory::SetName(const std::wstring& name)noexcept
+	void JDirectory::SetName(const std::wstring& newName)noexcept
 	{
+		if (newName == GetName())
+			return;
+
 		const std::wstring prePath = GetMetafilePath();
-		JObject::SetName(MakeUniqueFileName(name));
+		JObject::SetName(MakeUniqueFileName(newName));
 		const std::wstring newPath = GetMetafilePath();
 		_wrename(prePath.c_str(), newPath.c_str());
 	}
@@ -136,6 +139,10 @@ namespace JinEngine
 		return res;
 	}
 	std::wstring JDirectory::MakeUniqueFileName(const std::wstring& name)noexcept
+	{
+		return JCUtil::MakeUniqueName(JCUtil::MakeUniqueName(fileList, name, &JFile::GetName), GetName());
+	}
+	std::wstring JDirectory::MakeUniqueFileName(const std::wstring& name, const size_t fileGuid)noexcept
 	{
 		return JCUtil::MakeUniqueName(JCUtil::MakeUniqueName(fileList, name, &JFile::GetName), GetName());
 	}

@@ -53,6 +53,7 @@ namespace JinEngine
 		static DirectX::XMFLOAT3 Vector4Cross(const DirectX::XMFLOAT4& a, const DirectX::XMFLOAT4& b)noexcept;
 		static DirectX::XMFLOAT3 Vector3Plus(const DirectX::XMFLOAT3& a, const DirectX::XMFLOAT3& b)noexcept;
 		static DirectX::XMFLOAT4 Vector4Plus(const DirectX::XMFLOAT4& a, const DirectX::XMFLOAT4& b)noexcept;
+		static DirectX::XMFLOAT2 Vector2Normalize(const DirectX::XMFLOAT2& src)noexcept;
 		static DirectX::XMFLOAT3 Vector3Normalize(const DirectX::XMFLOAT3& src)noexcept;
 		static DirectX::XMFLOAT4 Vector4Normalize(const DirectX::XMFLOAT4& src)noexcept;
 		static float Vector3Length(const DirectX::XMFLOAT3& src)noexcept;

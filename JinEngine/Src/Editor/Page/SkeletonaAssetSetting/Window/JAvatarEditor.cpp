@@ -1,7 +1,7 @@
 #include"JAvatarEditor.h" 
 #include"../../JEditorAttribute.h" 
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
-#include"../../../Utility/JEditorLineCalculator.h"
+#include"../../../Align/JEditorAlignCalculator.h"
 #include"../../../../Object/GameObject/JGameObject.h" 
 #include"../../../../Object/Resource/Skeleton/JSkeleton.h"
 #include"../../../../Object/Resource/Skeleton/JSkeletonAsset.h"
@@ -92,15 +92,15 @@ namespace JinEngine
 				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
 				ImGui::BeginListBox(("##AvatarEditor" + GetName()).c_str(), listSize);
 				const float rate[3] = {listSize.x * 0.4f, listSize.x * 0.4f, listSize.x * 0.05f };
-				JEditorStaticLineCalculator<3> lineCal(rate);
-				lineCal.LabelOnScreen("Name");
-				lineCal.LabelOnScreen("Part");
-				lineCal.LabelOnScreen("Erase");
+				JEditorStaticAlignCalculator<3> alignCal(rate);
+				alignCal.LabelOnScreen("Name");
+				alignCal.LabelOnScreen("Part");
+				alignCal.LabelOnScreen("Erase");
 				ImGui::Separator();
 
 				for (int i = 0; i < JAvatar::jointGuide[index].size(); ++i)
 				{
-					lineCal.SetNextContentsPosition();
+					alignCal.SetNextContentsPosition();
 					JImGuiImpl::Text(JAvatar::jointGuide[index][i].guideName); 
  
 					int jointRefIndex = JAvatar::jointGuide[index][i].index;
@@ -115,7 +115,7 @@ namespace JinEngine
 					if (!isValidJointRef[jointRefIndex])
 						JImGuiImpl::SetColor(ImVec4(failColor.x, failColor.y, failColor.z, failColor.w), ImGuiCol_Button);
 
-					lineCal.SetNextContentsPosition();
+					alignCal.SetNextContentsPosition();
 					if (JImGuiImpl::Button((nowRefJointName).c_str(), JVector2<float>(rate[1], 0)))
 					{
 						int doJointRefIndex = jointRefIndex;
@@ -132,7 +132,7 @@ namespace JinEngine
 							std::make_unique<OpenJointSelectorF::CompletelyBind>(openJointSelectorFunctor, std::move(undoJointRefIndex))));
 					}
 					 
-					lineCal.SetNextContentsPosition();
+					alignCal.SetNextContentsPosition();
 					if (JImGuiImpl::Button(("##" + nowRefJointName + "erase").c_str(), JVector2<float>(rate[2], 0)))
 					{
 						int doJointRefIndex = jointRefIndex;

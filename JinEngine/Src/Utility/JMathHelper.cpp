@@ -214,6 +214,13 @@ namespace JinEngine
 	{
 		return DirectX::XMFLOAT4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
 	}
+	DirectX::XMFLOAT2 JMathHelper::Vector2Normalize(const DirectX::XMFLOAT2& src)noexcept
+	{
+		XMVECTOR normalV = XMVector2Normalize(XMLoadFloat2(&src));
+		DirectX::XMFLOAT2 res;
+		XMStoreFloat2(&res, normalV);
+		return res;
+	}
 	DirectX::XMFLOAT3 JMathHelper::Vector3Normalize(const DirectX::XMFLOAT3& src)noexcept
 	{
 		XMVECTOR normalV = XMVector3Normalize(XMLoadFloat3(&src));

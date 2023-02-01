@@ -1,11 +1,11 @@
-#include"JEditorString.h" 
+#include"JEditorStringMap.h" 
 #include"../../Application/JApplicationVariable.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		bool JEditorString::AddString(const size_t key, const std::vector<std::string>& strVec)
+		bool JEditorStringMap::AddString(const size_t key, const std::vector<std::string>& strVec)noexcept
 		{
 			if (strVec.size() != (int)Core::J_LANGUAGE_TYPE::COUNT)
 				return false;
@@ -16,13 +16,13 @@ namespace JinEngine
 			strMap.emplace(key, strVec);
 			return true;
 		}
-		const std::string JEditorString::GetString(const size_t key)
+		const std::string JEditorStringMap::GetString(const size_t key)const noexcept
 		{
 			auto data = strMap.find(key);
 			if (data != strMap.end())
 				return data->second[(int)JApplicationVariable::GetEngineLanguageType()];
 			else
-				return "String is not found";
+				return "";
 		}
 	}
 }

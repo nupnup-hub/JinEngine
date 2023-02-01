@@ -1,37 +1,49 @@
 #include"JBBox.h"
+#include"JRay.h"
 #include"JDirectXCollisionEx.h"
 #include"../../Utility/JVectorExtend.h"
-#include"../../Utility/JMathHelper.h"
-
+#include"../../Utility/JMathHelper.h"   
 namespace JinEngine
 {
 	namespace Core
 	{ 
 		using namespace DirectX; 
 		 
-		JBBox2D::JBBox2D(const JVector2<float>& min, const JVector2<float>& max)
-			: min(min), max(max)
+		JBBox2D::JBBox2D(const JVector2<float>& minP, const JVector2<float>& maxP)
+			: minP(minP), maxP(maxP)
 		{}
-		bool JBBox2D::Contain(const JVector2<float>& p)
+		bool JBBox2D::Contain(const JVector2<float>& p)const noexcept
 		{
-			return p.x >= min.x && p.x <= max.x && p.y >= min.y && p.y <= max.y;
+			return p.x >= minP.x && p.x <= maxP.x && p.y >= minP.y && p.y <= maxP.y;
+		}
+		bool JBBox2D::Intersect(const JRay2D& ray, JVector2<float>* hitPoint)const noexcept
+		{
+			const JVector2<float> t = (maxP - ray.p) / ray.dir;
+			const JVector2<float> pt = ray.p + t * ray.dir;
+			if (hitPoint != nullptr)
+				*hitPoint = pt;
+			return minP.x <= pt.x && pt.x <= maxP.x && minP.y <= pt.y && pt.y <= maxP.y;
 		}
 		JVector2<float> JBBox2D::Extent()const noexcept
 		{
-			return 0.5f * (max - min);
+			return 0.5f * (maxP - minP);
 		}
 		JVector2<float> JBBox2D::Center()const noexcept
 		{
-			return 0.5f * (max + min);
+			return 0.5f * (maxP + minP);
+		}
+		JVector2<float> JBBox2D::DistanceVector()const noexcept
+		{
+			return maxP - minP;
 		}
 
-		JBBox::JBBox(const JVector3<float>& min, const JVector3<float>& max)
-			:min(min), max(max)
+		JBBox::JBBox(const JVector3<float>& minP, const JVector3<float>& maxP)
+			:minP(minP), maxP(maxP)
 		{
 
 		}
-		JBBox::JBBox(const DirectX::XMFLOAT3& min, const DirectX::XMFLOAT3& max)
-			:min(min), max(max)
+		JBBox::JBBox(const DirectX::XMFLOAT3& minP, const DirectX::XMFLOAT3& maxP)
+			:minP(minP), maxP(maxP)
 		{}
 		JBBox::JBBox(const DirectX::BoundingBox& boundBox)
 		{
@@ -39,8 +51,8 @@ namespace JinEngine
 			DirectX::XMFLOAT3 xmMax;
 			JDirectXCollisionEx::BoundingBoxMinMax(boundBox, xmMin, xmMax);
 
-			min = xmMin;
-			max = xmMax;
+			minP = xmMin;
+			maxP = xmMax;
 		}
 		JBBox::~JBBox() {}
 		DirectX::BoundingBox JBBox::Convert()const noexcept
@@ -49,19 +61,19 @@ namespace JinEngine
 		}
 		JVector3<float> JBBox::Extent()const noexcept
 		{
-			return 0.5f * (max - min);
+			return 0.5f * (maxP - minP);
 		}
 		JVector3<float> JBBox::Center()const noexcept
 		{
-			return 0.5f * (max + min);
+			return 0.5f * (maxP + minP);
 		}
 		JVector3<float> JBBox::DistanceVector()const noexcept
 		{  
-			return max - min;
+			return maxP - minP;
 		}
 		float JBBox::Surface()const noexcept
 		{
-			JVector3<float> f = max - min;
+			JVector3<float> f = maxP - minP;
 			return 2.f * (f.x * f.y + f.x * f.z + f.y * f.z);
 		}
 		uint JBBox::MaxDimension()const noexcept
@@ -76,33 +88,33 @@ namespace JinEngine
 		}
 		JBBox JBBox::Union(_In_ const JBBox& box, _In_ const DirectX::XMFLOAT3& point)noexcept
 		{
-			JVector3<float> min;
-			JVector3<float> max;
+			JVector3<float> minP;
+			JVector3<float> maxP;
 
-			min.x = JMathHelper::Min(box.min.x, point.x);
-			min.y = JMathHelper::Min(box.min.y, point.y);
-			min.z = JMathHelper::Min(box.min.z, point.z);
+			minP.x = JMathHelper::Min(box.minP.x, point.x);
+			minP.y = JMathHelper::Min(box.minP.y, point.y);
+			minP.z = JMathHelper::Min(box.minP.z, point.z);
 
-			max.x = JMathHelper::Max(box.max.x, point.x);
-			max.y = JMathHelper::Max(box.max.y, point.y);
-			max.z = JMathHelper::Max(box.max.z, point.z);
+			maxP.x = JMathHelper::Max(box.maxP.x, point.x);
+			maxP.y = JMathHelper::Max(box.maxP.y, point.y);
+			maxP.z = JMathHelper::Max(box.maxP.z, point.z);
 
-			return JBBox(min, max);
+			return JBBox(minP, maxP);
 		}
 		JBBox JBBox::Union(_In_ const JBBox& b1, _In_ const JBBox& b2)noexcept
 		{
-			JVector3<float> min;
-			JVector3<float> max;
+			JVector3<float> minP;
+			JVector3<float> maxP;
 
-			min.x = JMathHelper::Min(b1.min.x, b2.min.x);
-			min.y = JMathHelper::Min(b1.min.y, b2.min.y);
-			min.z = JMathHelper::Min(b1.min.z, b2.min.z);
+			minP.x = JMathHelper::Min(b1.minP.x, b2.minP.x);
+			minP.y = JMathHelper::Min(b1.minP.y, b2.minP.y);
+			minP.z = JMathHelper::Min(b1.minP.z, b2.minP.z);
 
-			max.x = JMathHelper::Max(b1.max.x, b2.max.x);
-			max.y = JMathHelper::Max(b1.max.y, b2.max.y);
-			max.z = JMathHelper::Max(b1.max.z, b2.max.z);
+			maxP.x = JMathHelper::Max(b1.maxP.x, b2.maxP.x);
+			maxP.y = JMathHelper::Max(b1.maxP.y, b2.maxP.y);
+			maxP.z = JMathHelper::Max(b1.maxP.z, b2.maxP.z);
 
-			return JBBox(min, max);
+			return JBBox(minP, maxP);
 		}
 		JBBox JBBox::InfBBox()noexcept
 		{

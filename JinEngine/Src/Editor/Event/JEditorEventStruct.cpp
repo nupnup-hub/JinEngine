@@ -195,9 +195,13 @@ namespace JinEngine
 		JEditorOpenPopupWindowEvStruct::JEditorOpenPopupWindowEvStruct(JEditorPopupWindow* popupWindow, const J_EDITOR_PAGE_TYPE pageType)
 			:JEditorEvStruct(pageType), popupWindow(popupWindow)
 		{}
+		JEditorOpenPopupWindowEvStruct::JEditorOpenPopupWindowEvStruct(const J_EDITOR_POPUP_WINDOW_TYPE popupType, const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorEvStruct(pageType), popupType(popupType)
+		{}
+
 		bool JEditorOpenPopupWindowEvStruct::PassDefectInspection()const noexcept
 		{
-			return popupWindow != nullptr;
+			return true;
 		}
 		J_EDITOR_EVENT JEditorOpenPopupWindowEvStruct::GetEventType()const noexcept
 		{
@@ -215,9 +219,12 @@ namespace JinEngine
 		JEditorClosePopupWindowEvStruct::JEditorClosePopupWindowEvStruct(JEditorPopupWindow* popupWindow, const J_EDITOR_PAGE_TYPE pageType)
 			:JEditorEvStruct(pageType), popupWindow(popupWindow)
 		{}
+		JEditorClosePopupWindowEvStruct::JEditorClosePopupWindowEvStruct(const J_EDITOR_POPUP_WINDOW_TYPE popupType, const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorEvStruct(pageType), popupType(popupType)
+		{}
 		bool JEditorClosePopupWindowEvStruct::PassDefectInspection()const noexcept
 		{
-			return popupWindow != nullptr;
+			return true;
 		}
 		J_EDITOR_EVENT JEditorClosePopupWindowEvStruct::GetEventType()const noexcept
 		{
