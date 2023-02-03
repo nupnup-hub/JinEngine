@@ -7,7 +7,9 @@
 #include"../Core/Platform/JPlatformInfo.h"
 #include"../Core/Func/Functor/JFunctor.h"
 #include"../Core/File/JFileIOResult.h"
-
+#include"../Core/Time/JRealTime.h"
+#include"../Utility/JMacroUtility.h"
+ 
 namespace JinEngine
 {
 	namespace Editor
@@ -39,6 +41,7 @@ namespace JinEngine
 			static std::wstring GetEnginePath()noexcept; 
 			static std::wstring GetEngineResourcePath();
 			static std::wstring GetEngineDefaultResourcePath()noexcept;
+			static std::wstring GetEngineProjectLastRsPath()noexcept; 
 			static std::wstring GetEngineInfoPath()noexcept;
 			static std::wstring GetEngineProjectListFilePath()noexcept; 
 			static std::wstring GetShaderPath()noexcept;
@@ -81,42 +84,76 @@ namespace JinEngine
 		private:
 			friend class JApplication;
 			friend class Editor::JProjectMainPage;
-			friend class Editor::JProjectSelectorHub; 
+			friend class Editor::JProjectSelectorHub;
+		private:
+			using JTime = Core::JRealTime::JTime;
 		public:
 			class JProjectInfo
 			{
 			private:
+				const size_t guid;
+			private:
 				std::wstring name;
 				std::wstring path;
 				std::wstring version;
+				JTime createdTime;
+				JTime lastUpdateTime;
 			public:
-				JProjectInfo(const std::wstring& name, const std::wstring& path, std::wstring  version);
+				JProjectInfo(const size_t guid,
+					const std::wstring& name,
+					const std::wstring& path, 
+					const std::wstring& version, 
+					const JTime& createdTime,
+					const JTime& lastUpdateTime);
 			public:
-				std::wstring GetName()const noexcept;
-				std::wstring GetPath()const noexcept;
-				std::wstring GetVersion()const noexcept;
+				J_SIMPLE_GET(size_t, guid, Guid)
+				J_SIMPLE_GET(std::wstring, name, Name)
+				J_SIMPLE_GET(std::wstring, path, Path)
+				J_SIMPLE_GET(std::wstring, version, Version)
+				J_SIMPLE_GET(JTime, lastUpdateTime, LastUpdateTime)
+				J_SIMPLE_GET(JTime, createdTime, CreatedTime) 
+				std::unique_ptr<JProjectInfo> GetUnique()const noexcept;
+				std::wstring lastRsPath()const noexcept;
 			};
+		public:
+			static JProjectInfo* GetOpenProjectInfo()noexcept;
 		private:
 			static uint GetProjectInfoCount()noexcept;
 			static JProjectInfo* GetProjectInfo(uint index)noexcept;
+			static JProjectInfo* GetProjectInfo(const std::wstring& projectPath)noexcept; 
 		private:
 			static void SetNextProjectInfo(std::unique_ptr<JProjectInfo>&& nextProjectInfo)noexcept;
+			static void SetProjectFolderPath(const std::wstring& projectName, const std::wstring& projectPath);
 		private:
+			//Load Project order
+			//1. TryLoadOtherProject()
+			//2. End window proccess
+			//3. End Project order
 			static void TryLoadOtherProject()noexcept;
 			static void TryCloseProject()noexcept;
 			static void CancelCloseProject()noexcept;
+			//End Project order
+			//1. TryCloseProject()
+			//2.0 CancelCloseProject()	-> cancel close project
+			//2.1 Call ConfirmCloseProject() -> close project
+			//2.2 if set load trigger ->	restart new project
 			static void ConfirmCloseProject()noexcept;
-		private:
-			static std::unique_ptr<JProjectInfo> MakeProjectInfo(const std::wstring& projectPath);
-			static void MakeProjectFolderPath(const std::wstring& projectName, const std::wstring& projectPath);
+		private: 
+			static std::unique_ptr<JProjectInfo> MakeProjectInfo(const std::wstring& projectPath)noexcept;
+			static std::unique_ptr<JProjectInfo> MakeProjectInfo(const std::wstring& projectPath, const std::string& pVersion)noexcept;
 			static bool MakeProjectFolder();
 			static bool MakeProjectVersionFile(const std::string& pVersion);
-			static bool StartNewProject();
+			//Start project order
+			//1. SetNextProjectInfo()
+			//2. SetStartNewProjectTrigger()
+			//3. Call Intiailize()
+			static bool SetStartNewProjectTrigger();
 			static bool Initialize();
 		private:
 			static bool IsValidVersion(const std::string& pVersion); 
+			static bool IsValidPath(const std::wstring& projectPath)noexcept;
 			static bool CanStartProject()noexcept; 
-			static bool CanEndProject()noexcept;
+			static bool CanEndProject()noexcept; 
 		private:
 			static Core::J_FILE_IO_RESULT StoreProjectVersion(const std::string& pVersion);
 			static Core::J_FILE_IO_RESULT LoadProejctVersion(_Out_ std::string& pVersion);

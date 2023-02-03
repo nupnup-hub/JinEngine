@@ -1,8 +1,7 @@
 #include"JSceneObserver.h" 
 #include"../../JEditorPageShareData.h"
 #include"../../JEditorAttribute.h" 
-#include"../../../Menubar/JEditorMenuBar.h"
-#include"../../../String/JEditorStringMap.h"
+#include"../../../Menubar/JEditorMenuBar.h" 
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../../EditTool/JEditorViewStructure.h"
 #include"../../../EditTool/JEditorCoordGrid.h"
@@ -45,8 +44,7 @@ namespace JinEngine
 			const J_EDITOR_PAGE_TYPE pageType,
 			const std::vector<J_OBSERVER_SETTING_TYPE> useSettingType)
 			:JEditorWindow(name, std::move(attribute), pageType)
-		{
-			editStrMap = std::make_unique<JEditorStringMap>();
+		{ 
 			editorCamCtrl = std::make_unique<JEditorCameraControl>();
 			coordGrid = std::make_unique<JEditorSceneCoordGrid>();
 			editorBTreeView = std::make_unique<JEditorBinaryTreeView>();
@@ -125,12 +123,6 @@ namespace JinEngine
 			{
 				Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid()
 			};
-			editStrMap->AddString(switchIconGuid[0], { "gameObject position control" , u8"위치 조정" });
-			editStrMap->AddString(switchIconGuid[1], { "gameObject rotation control" , u8"회전 조정" });
-			editStrMap->AddString(switchIconGuid[2], { "gameObject scale control" , u8"크기 조정" });
-			editStrMap->AddString(switchIconGuid[3], { "Main camera view frustum" , u8"메인 카메라 절두체" });
-			editStrMap->AddString(switchIconGuid[4], { "Scene coord grid" , u8"씬 그리드" });
-
 			bool* actPtrVec[menuSwitchIconCount]
 			{
 				&nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS].isOpen,
@@ -168,6 +160,12 @@ namespace JinEngine
 					std::make_unique<GetGResourceFunctor>(getGLamVec[i]),
 					std::make_unique< MenuSwitchIconPreesF::CompletelyBind>(*switchIconPressFunctorVec[i], this)));
 			}
+
+			menubar->RegisterEditorString(switchIconGuid[0], { "gameObject position control" , u8"위치 조정" });
+			menubar->RegisterEditorString(switchIconGuid[1], { "gameObject rotation control" , u8"회전 조정" });
+			menubar->RegisterEditorString(switchIconGuid[2], { "gameObject scale control" , u8"크기 조정" });
+			menubar->RegisterEditorString(switchIconGuid[3], { "Main camera view frustum" , u8"메인 카메라 절두체" });
+			menubar->RegisterEditorString(switchIconGuid[4], { "Scene coord grid" , u8"씬 그리드" });
 		}
 		J_EDITOR_WINDOW_TYPE JSceneObserver::GetWindowType()const noexcept
 		{
@@ -214,7 +212,7 @@ namespace JinEngine
 
 				JTransform* camTransform = cameraObj->GetTransform();
 				coordGrid->Update(JVector2<float>(camTransform->GetPosition().x, camTransform->GetPosition().z));
-				menubar->Update(true, editStrMap.get());
+				menubar->Update(true);
 				//Warning!
 				//Has order dependency for ImGui::CursorPos 
 				for (uint i = 0; i < toolCount; ++i)

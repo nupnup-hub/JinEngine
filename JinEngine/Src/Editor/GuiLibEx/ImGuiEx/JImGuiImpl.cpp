@@ -344,6 +344,14 @@ namespace JinEngine
 			ImGuiStyle& style = ImGui::GetStyle();
 			return style.Colors[flag];
 		}
+		ImU32 JImGuiImpl::GetUColor(ImGuiCol_ flag)noexcept
+		{
+			ImGuiStyle& style = ImGui::GetStyle();
+			return IM_COL32(style.Colors[flag].x * 255, 
+				style.Colors[flag].y * 255,
+				style.Colors[flag].z * 255,
+				style.Colors[flag].w * 255);
+		}
 		void JImGuiImpl::SetColorToDeep(ImGuiCol_ flag, float factor)noexcept
 		{
 			ImGuiStyle& style = ImGui::GetStyle();
@@ -398,6 +406,12 @@ namespace JinEngine
 		JVector2<float> JImGuiImpl::GetGuiWindowSize()noexcept
 		{
 			return ImGui::GetWindowSize();
+		}
+		JVector2<int> JImGuiImpl::GetGuiWidnowContentsSize()noexcept
+		{
+			const JVector2<float> windowPaddig = ImGui::GetStyle().WindowPadding;
+			const float windowBorder = ImGui::GetStyle().WindowBorderSize;
+			return ImGui::GetWindowSize() - (windowPaddig * 2) - JVector2<float>(windowBorder * 2, windowBorder * 2);
 		}
 		JVector2<float> JImGuiImpl::GetLocalCursorPos()noexcept
 		{
@@ -624,17 +638,25 @@ namespace JinEngine
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::IMAGE);
 			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, size, uv0, uv1, tintCol, borderCol);
 		}
-		bool JImGuiImpl::ImageButton(Graphic::JGraphicResourceHandleInterface& handle,
+		bool JImGuiImpl::ImageButton(const std::string name,
+			Graphic::JGraphicResourceHandleInterface& handle,
 			const JVector2<float>& size,
 			const JVector2<float>& uv0,
 			const JVector2<float>& uv1,
-			int framePadding,
+			float framePadding,
 			const JVector4<float>& bgCol,
 			const JVector4<float>& tintCol)
-		{
+		{ 
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::IMAGE);
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::BUTTON);
-			return ImGui::ImageButton((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, size, uv0, uv1, framePadding, bgCol, tintCol);
+
+			const ImVec2 padding = (framePadding >= 0) ? ImVec2((float)framePadding, (float)framePadding) : ImGui::GetStyle().FramePadding;
+			return ImGui::ImageButtonEx(ImGui::GetCurrentWindow()->GetID(name.c_str()),
+				(ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, 
+				size, 
+				uv0, uv1,
+				padding,
+				bgCol, tintCol);
 		}
 		void JImGuiImpl::AddImage(Graphic::JGraphicResourceHandleInterface& handle,
 			const JVector2<float>& pMin,
@@ -723,25 +745,27 @@ namespace JinEngine
 			if (useRestoreCursorPos)
 				ImGui::SetCursorPos(nowCursor);
 		}
-		void JImGuiImpl::DrawToolTipBox(const std::string& tooltip, const JVector2<float>& pos, const JVector2<float>& padding, const bool useRestoreCursorPos)
-		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::DRAW);
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TEXT);
-			 
+		void JImGuiImpl::DrawToolTipBox(const std::string& uniqueLabel, const std::string& tooltip, const JVector2<float>& pos, const JVector2<float>& padding, const bool useRestoreCursorPos)
+		{ 		 
 			const JVector2<float> nowCursor = ImGui::GetCursorPos();
 			const JVector2<float> boxSize = ImGui::CalcTextSize(tooltip.c_str()) + (padding * 2);
 			ImGui::SetNextWindowPos(pos);
 			ImGui::SetNextWindowSize(boxSize);
-			ImGui::Begin(("##ToolTip" + tooltip).c_str(), 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-			 			 
-			//JImGuiImpl::DrawRectFilledMultiColor(pos, boxSize, IM_COL32(65, 65, 65, 115), IM_COL32(25, 25, 25, 0), true);
+			JImGuiImpl::BeginWindow(uniqueLabel, 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+			 			  
 			ImGui::SetCursorScreenPos(pos + padding);
 			JImGuiImpl::Text(tooltip);
-			ImGui::End();
+			JImGuiImpl::EndWindow();
 			if (useRestoreCursorPos)
 				ImGui::SetCursorPos(nowCursor);
 		}
-		void JImGuiImpl::DrawToolTipBox(const std::string& tooltip, const JVector2<float>& pos, const float maxWidth, const JVector2<float>& padding, const J_EDITOR_ALIGN_TYPE alignType, const bool useRestoreCursorPos)
+		void JImGuiImpl::DrawToolTipBox(const std::string& uniqueLabel,
+			const std::string& tooltip,
+			const JVector2<float>& pos,
+			const float maxWidth,
+			const JVector2<float>& padding,
+			const J_EDITOR_ALIGN_TYPE alignType,
+			const bool useRestoreCursorPos)
 		{
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::DRAW);
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TEXT);
@@ -754,12 +778,11 @@ namespace JinEngine
 			const JVector2<float> boxSize = ImGui::CalcTextSize(alignedTooltip.c_str()) + (padding * 2);
 			ImGui::SetNextWindowPos(pos);
 			ImGui::SetNextWindowSize(boxSize);
-			ImGui::Begin(("##ToolTip" + tooltip).c_str(), 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-
-			//JImGuiImpl::DrawRectFilledMultiColor(pos, boxSize, IM_COL32(65, 65, 65, 115), IM_COL32(25, 25, 25, 0), true);
+			JImGuiImpl::BeginWindow(uniqueLabel, 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+			 
 			ImGui::SetCursorScreenPos(pos + padding);
 			JImGuiImpl::Text(alignedTooltip);
-			ImGui::End();
+			JImGuiImpl::EndWindow();
 			if (useRestoreCursorPos)
 				ImGui::SetCursorPos(nowCursor);
 		}

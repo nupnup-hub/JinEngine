@@ -12,7 +12,7 @@ namespace JinEngine
 			public JResourceUserInterface
 		{ 
 		private:
-			std::unique_ptr< JProjectSelectorHub> projectHub;
+			std::unique_ptr<JProjectSelectorHub> projectHub;
 			Core::JUserPtr<JTexture> backgroundTexture; 
 		public:
 			JProjectSelectorPage();

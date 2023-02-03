@@ -7,12 +7,15 @@
 
 namespace JinEngine
 {
-	Core::J_FILE_IO_RESULT JFileIOHelper::StoreJString(std::wofstream& stream, const std::wstring& guide, const std::wstring& str)
+	Core::J_FILE_IO_RESULT JFileIOHelper::StoreJString(std::wofstream& stream, const std::wstring& guide, const std::wstring& str, const bool useChangeLine)
 	{
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		stream << guide << " " << str << '\n';
+		if(useChangeLine)
+			stream << guide << " " << str << '\n';
+		else
+			stream << guide << " " << str << '\n';
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadJString(std::wifstream& stream, std::wstring& str)

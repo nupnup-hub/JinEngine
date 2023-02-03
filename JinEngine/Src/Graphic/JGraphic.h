@@ -208,6 +208,8 @@ namespace JinEngine
 			void StoreData(); 
 			void LoadData();
 		private:
+			void WriteLastRsTexture()final;
+		private:
 			JGraphicImpl();
 			~JGraphicImpl();
 		};

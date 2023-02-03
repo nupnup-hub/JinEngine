@@ -1,6 +1,5 @@
 #pragma once
-#include"../../JEditorWindow.h"
-#include"../../../Helpers/JEditorInputBuffHelper.h"
+#include"../../JEditorWindow.h" 
 #include"../../../../Object/Resource/JResourceUserInterface.h"
 #include<string>
 
@@ -9,31 +8,17 @@ namespace JinEngine
 	class JTexture;
 	namespace Editor
 	{
+		class SelectorValues;
 		class JProjectSelectorHub : public JEditorWindow ,
 			public JResourceUserInterface
 		{ 
-		private:
-			struct MenuListValues
-			{
-			public:
-				std::unique_ptr< JEditorInputBuffHelper> nameHelper;
-				std::unique_ptr< JEditorInputBuffHelper> pathHelper;
-				bool newProjectWinow = false;
-				bool newProjectButton = false;
-				bool loadProjectButton = false;
-			public:
-				static constexpr uint maxNameRange = 50;
-				static constexpr uint maxPathRange = 260;
-			public:
-				MenuListValues();
-			public:
-				void OpenCreateProjectMenu();
-			};
 		private: 
 			Core::JUserPtr<JTexture> serachIconTexture;
 			Core::JUserPtr<JTexture> backgroundTexture;
 		private:
-			MenuListValues menuListValues;
+			std::vector<Core::JUserPtr<JTexture>> lastRSVec;
+		private:
+			std::unique_ptr<SelectorValues> selectorValues;
 			float optionListCusorY;
 			static constexpr uint necessaryCapacityMB = 200;
 		private:
@@ -50,10 +35,12 @@ namespace JinEngine
 			void UpdateWindow()final;
 		private:
 			void TitleOnScreen();
-			void MenuListOnScreen();
-			void ProjectListOnScreen();
+			void ProjectListOnScreen(); 
+			void ProjectDetailOnScreen();
+			void GuideButtonOnScreen();
 			void CreateNewProjectOnScreen();
-			void CreateNewProjectFolderes();   
+			void LoadProjectOnScreen();
+			void SetStartProjectProccess();
 		private:
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;

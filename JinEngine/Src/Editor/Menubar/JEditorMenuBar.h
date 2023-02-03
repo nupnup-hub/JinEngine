@@ -97,7 +97,8 @@ namespace JinEngine
 			std::vector<std::unique_ptr<JEditorMenuNode>> allNode;
 			std::vector<JEditorMenuNode*> leafNode;
 		private:
-			std::vector< std::unique_ptr<ExtraWidget>> extraWidgetVec; 
+			std::vector<std::unique_ptr<ExtraWidget>> extraWidgetVec; 
+			std::unique_ptr<JEditorStringMap> editStrMap;
 		private:
 			const bool isMainMenu = false;
 		public:
@@ -109,11 +110,14 @@ namespace JinEngine
 		public:
 			void AddNode(std::unique_ptr<JEditorMenuNode> newNode)noexcept;
 			void RegisterExtraWidget(std::unique_ptr<ExtraWidget>&& extraWidget)noexcept;
+			//언어별 문자등록
+			//주로 extraWidget에서 사용
+			bool RegisterEditorString(const size_t guid, const std::vector<std::string>& strVec)noexcept;
 		public:
-			void Update(const bool leafNodeOnly, const JEditorStringMap* tooltipMap = nullptr);
+			void Update(const bool leafNodeOnly);
 		private:
-			bool UpdateMenuBar(const JEditorStringMap* tooltipMap);
-			void UpdateExtraWidget(const JEditorStringMap* tooltipMap);
+			bool UpdateMenuBar();
+			void UpdateExtraWidget();
 			void LoopNode(JEditorMenuNode* node);
 			void LoopNode(JEditorMenuNode* node, LoopNodePtr ptr);
 		public:

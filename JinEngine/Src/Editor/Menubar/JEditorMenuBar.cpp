@@ -138,7 +138,7 @@ namespace JinEngine
 				{
 					const JVector2<float> padding = ImGui::GetWindowSize() * Constants::tooltipInnerPaddingRate;
 					const JVector2<float> windowPos = switchPos + padding + iconSize;			 
-					JImGuiImpl::DrawToolTipBox(tooltip.c_str(), windowPos, padding, true);
+					JImGuiImpl::DrawToolTipBox(GetUniqueLabel() + "_ToolTip", tooltip.c_str(), windowPos, padding, true);
 				}
 			}  
 		}
@@ -146,6 +146,7 @@ namespace JinEngine
 		JEditorMenuBar::JEditorMenuBar(std::unique_ptr<JEditorMenuNode> newRoot, const bool isMainMenu)
 			:rootNode(newRoot.get()), isMainMenu(isMainMenu)
 		{
+			editStrMap = std::make_unique<JEditorStringMap>();
 			allNode.push_back(std::move(newRoot));
 		}
 		JEditorMenuBar::~JEditorMenuBar() {}
@@ -167,9 +168,13 @@ namespace JinEngine
 		{
 			extraWidgetVec.push_back(std::move(newExtraWidget));
 		}
-		void JEditorMenuBar::Update(const bool leafNodeOnly, const JEditorStringMap* tooltipMap)
+		bool JEditorMenuBar::RegisterEditorString(const size_t guid, const std::vector<std::string>& strVec)noexcept
 		{
-			bool isSelected = UpdateMenuBar(tooltipMap);
+			return editStrMap->AddString(guid, strVec);
+		}
+		void JEditorMenuBar::Update(const bool leafNodeOnly)
+		{
+			bool isSelected = UpdateMenuBar();
 			if (isSelected)
 				GetSelectedNode()->ExecuteOpenBind();
 
@@ -185,7 +190,7 @@ namespace JinEngine
 			else
 				LoopNode(rootNode, [](JEditorMenuNode* node) {if (node->IsOpendNode())node->ExecuteUpdateBind(); });
 		}
-		bool JEditorMenuBar::UpdateMenuBar(const JEditorStringMap* tooltipMap)
+		bool JEditorMenuBar::UpdateMenuBar()
 		{
 			selectedNode = nullptr;
 			if (isMainMenu)
@@ -193,7 +198,7 @@ namespace JinEngine
 				if (JImGuiImpl::BeginMainMenuBar())
 				{
 					LoopNode(rootNode);
-					UpdateExtraWidget(tooltipMap);
+					UpdateExtraWidget();
 					JImGuiImpl::EndMainMenuBar();
 				}
 			}
@@ -202,17 +207,17 @@ namespace JinEngine
 				if (JImGuiImpl::BeginMenuBar())
 				{
 					LoopNode(rootNode);
-					UpdateExtraWidget(tooltipMap);
+					UpdateExtraWidget();
 					JImGuiImpl::EndMenuBar();
 				}
 			}
 			return selectedNode != nullptr;
 		}
-		void JEditorMenuBar::UpdateExtraWidget(const JEditorStringMap* tooltipMap)
+		void JEditorMenuBar::UpdateExtraWidget()
 		{
 			const uint extraWidgetCount = extraWidgetVec.size();
 			for (uint i = 0; i < extraWidgetCount; ++i)
-				extraWidgetVec[i]->Update(tooltipMap);
+				extraWidgetVec[i]->Update(editStrMap.get());
 		}
 		void JEditorMenuBar::LoopNode(JEditorMenuNode* node)
 		{

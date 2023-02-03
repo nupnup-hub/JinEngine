@@ -11,7 +11,7 @@
 namespace JinEngine
 {
 	namespace Application
-	{ 
+	{
 		namespace Private
 		{
 			//engine path
@@ -19,6 +19,7 @@ namespace JinEngine
 			static std::wstring enginePath;
 			static std::wstring engineEngineResourcePath;
 			static std::wstring engineDefaultResourcePath;
+			static std::wstring engineProjectLastRsPath;
 			static std::wstring engineInfoPath;
 
 			static std::wstring engineProjectListFilePath;
@@ -60,6 +61,43 @@ namespace JinEngine
 			};
 			using TimeVec = std::vector<std::tuple<std::string, float>>;
 			static TimeVec appTime;
+
+			static void StoreJTime(std::wofstream& stream, const std::wstring& guide, const Core::JRealTime::JTime& time)
+			{
+				if (!stream.is_open())
+					return;
+
+				JFileIOHelper::StoreJString(stream, guide, L"");
+				JFileIOHelper::StoreAtomicData(stream, L"Year", time.year, false);
+				JFileIOHelper::StoreAtomicData(stream, L"Month", time.month, false);
+				JFileIOHelper::StoreAtomicData(stream, L"Day", time.day, false);
+				JFileIOHelper::StoreAtomicData(stream, L"Hour", time.hour, false);
+				JFileIOHelper::StoreAtomicData(stream, L"Minute", time.minute, false);
+				JFileIOHelper::StoreAtomicData(stream, L"Sec", time.sec);
+			}
+			static const Core::JRealTime::JTime LoadJTime(std::wifstream& stream)
+			{
+				if (!stream.is_open())
+					return Core::JRealTime::JTime(0, 0, 0, 0, 0, 0);
+
+				std::wstring guide;
+				int year = 0;
+				int month = 0;
+				int day = 0;
+				int hour = 0;
+				int minute = 0;
+				int sec = 0;
+
+				JFileIOHelper::LoadJString(stream, guide);
+				JFileIOHelper::LoadAtomicData(stream, year);
+				JFileIOHelper::LoadAtomicData(stream, month);
+				JFileIOHelper::LoadAtomicData(stream, day);
+				JFileIOHelper::LoadAtomicData(stream, hour);
+				JFileIOHelper::LoadAtomicData(stream, minute);
+				JFileIOHelper::LoadAtomicData(stream, sec);
+
+				return Core::JRealTime::JTime(year, month, day, hour, minute, sec);
+			}
 		}
 
 		//versionList
@@ -92,6 +130,10 @@ namespace JinEngine
 		std::wstring JApplicationVariable::GetEngineDefaultResourcePath()noexcept
 		{
 			return Private::engineDefaultResourcePath;
+		}
+		std::wstring JApplicationVariable::GetEngineProjectLastRsPath()noexcept
+		{
+			return Private::engineProjectLastRsPath;
 		}
 		std::wstring JApplicationVariable::GetEngineInfoPath()noexcept
 		{
@@ -219,10 +261,11 @@ namespace JinEngine
 			Private::enginePath.erase(Private::enginePath.begin() + index, Private::enginePath.end());
 			index = Private::enginePath.find_last_of(L"\\");
 			Private::enginePath.erase(Private::enginePath.begin() + index, Private::enginePath.end());
-			 
+
 			Private::enginePath = Private::enginePath + L"\\JinEngine";
 			Private::engineEngineResourcePath = Private::enginePath + L"\\EngineResource";
 			Private::engineDefaultResourcePath = Private::engineEngineResourcePath + L"\\DefaultResource";
+			Private::engineProjectLastRsPath = Private::engineEngineResourcePath + L"\\ProjectRenderResult";
 			Private::engineInfoPath = Private::enginePath + L"\\EngineInfo";
 			Private::engineProjectListFilePath = Private::engineInfoPath + L"\\ProejctList.txt";
 			Private::shaderPath = Private::engineEngineResourcePath + L"\\Shader";
@@ -232,6 +275,7 @@ namespace JinEngine
 				Private::enginePath,
 				Private::engineEngineResourcePath,
 				Private::engineDefaultResourcePath,
+				Private::engineProjectLastRsPath,
 				Private::engineInfoPath,
 				Private::shaderPath,
 			};
@@ -282,22 +326,37 @@ namespace JinEngine
 			static bool loadOtherProjectOnce = false;
 		}
 
-		JApplicationProject::JProjectInfo::JProjectInfo(const std::wstring& name,
+		JApplicationProject::JProjectInfo::JProjectInfo(const size_t guid,
+			const std::wstring& name,
 			const std::wstring& path,
-			std::wstring version)
-			:name(name), path(path), version(version)
+			const std::wstring& version,
+			const JTime& createdTime,
+			const JTime& lastUpdateTime)
+			:guid(guid),
+			name(name),
+			path(path),
+			version(version),
+			createdTime(createdTime),
+			lastUpdateTime(lastUpdateTime)
 		{}
-		std::wstring JApplicationProject::JProjectInfo::GetName()const noexcept
+		std::unique_ptr<JApplicationProject::JProjectInfo> JApplicationProject::JProjectInfo::GetUnique()const noexcept
 		{
-			return name;
+			return std::make_unique<JApplicationProject::JProjectInfo>(guid,
+				name,
+				path,
+				version,
+				lastUpdateTime,
+				createdTime);
 		}
-		std::wstring JApplicationProject::JProjectInfo::GetPath()const noexcept
-		{
-			return path;
+		std::wstring JApplicationProject::JProjectInfo::lastRsPath()const noexcept
+		{ 
+			return  JApplicationVariable::GetEngineProjectLastRsPath() + L"\\" + std::to_wstring(GetGuid()) + L".png";
 		}
-		std::wstring JApplicationProject::JProjectInfo::GetVersion()const noexcept
+
+
+		JApplicationProject::JProjectInfo* JApplicationProject::GetOpenProjectInfo()noexcept
 		{
-			return version;
+			return GetProjectInfo(Private::activatedProjectPath);
 		}
 		uint JApplicationProject::GetProjectInfoCount()noexcept
 		{
@@ -307,63 +366,27 @@ namespace JinEngine
 		{
 			return Private::projectList[index].get();
 		}
-		void JApplicationProject::SetNextProjectInfo(std::unique_ptr<JProjectInfo>&& nextProjectInfo)noexcept
+		JApplicationProject::JProjectInfo* JApplicationProject::GetProjectInfo(const std::wstring& projectPath)noexcept
 		{
-			Private::nextProjectInfo = std::move(nextProjectInfo);
-		}
-		void JApplicationProject::TryLoadOtherProject()noexcept
-		{
-			Private::loadOtherProjectOnce = true;
-		}
-		void JApplicationProject::TryCloseProject()noexcept
-		{
-		}
-		void JApplicationProject::CancelCloseProject()noexcept
-		{
-			if (Private::loadOtherProjectOnce)
-				Private::nextProjectInfo.reset();
-			Private::loadOtherProjectOnce = false;
-		}
-		void JApplicationProject::ConfirmCloseProject()noexcept
-		{
-			Private::endProject = true;
-			if (Private::loadOtherProjectOnce)
-			{
-				Private::loadOtherProjectOnce = false;
-				StartNewProject();
-			}
-		}
-		std::unique_ptr<JApplicationProject::JProjectInfo> JApplicationProject::MakeProjectInfo(const std::wstring& projectPath)
-		{
-			bool isValid = false;
 			const uint projectCount = (uint)Private::projectList.size();
 			for (uint i = 0; i < projectCount; ++i)
 			{
 				if (Private::projectList[i]->GetPath() == projectPath)
-				{
-					return std::make_unique<JProjectInfo>(Private::projectList[i]->GetName(), \
-						Private::projectList[i]->GetPath(),
-						Private::projectList[i]->GetVersion());
-				}
-			}
-
-			std::wstring projectVersionFilePath = projectPath + L"\\" + L"ProjectSetting" + L"\\" + L"ProjectVersion.txt";
-			if (_waccess(projectVersionFilePath.c_str(), 00) != -1)
-			{
-				std::wstring name;
-				std::wstring folderPath;
-				JCUtil::DecomposeFolderPath(projectPath, folderPath, name);
-				std::string version;
-				Core::J_FILE_IO_RESULT res = LoadProejctVersion(version);
-				if (res != Core::J_FILE_IO_RESULT::SUCCESS)
-					return std::make_unique<JProjectInfo>(name, projectPath, JCUtil::U8StrToWstr(version));
+					return Private::projectList[i].get();
 			}
 			return nullptr;
 		}
-		void JApplicationProject::MakeProjectFolderPath(const std::wstring& projectName, const std::wstring& projectPath)
+		void JApplicationProject::SetNextProjectInfo(std::unique_ptr<JProjectInfo>&& nextProjectInfo)noexcept
 		{
-			Private::activatedProjectName = JCUtil::EraseSideWChar(projectName, L' ');
-			Private::activatedProjectPath = JCUtil::EraseSideWChar(projectPath, L' ');
+			Private::nextProjectInfo = std::move(nextProjectInfo);
+		}
+		void JApplicationProject::SetProjectFolderPath(const std::wstring& projectName, const std::wstring& projectPath)
+		{
+			//Private::activatedProjectName = JCUtil::EraseSideWChar(projectName, L' ');
+			//Private::activatedProjectPath = JCUtil::EraseSideWChar(projectPath, L' ');
+
+			Private::activatedProjectName = projectName;
+			Private::activatedProjectPath = projectPath;
 
 			Private::contentPath = Private::activatedProjectPath + L"\\" + L"Content";
 			Private::projectSettingPath = Private::activatedProjectPath + L"\\" + L"ProjectSetting";
@@ -394,6 +417,52 @@ namespace JinEngine
 				Private::resourceFolderPath,
 			};
 		}
+		void JApplicationProject::TryLoadOtherProject()noexcept
+		{
+			Private::loadOtherProjectOnce = true;
+		}
+		void JApplicationProject::TryCloseProject()noexcept
+		{
+		}
+		void JApplicationProject::CancelCloseProject()noexcept
+		{
+			if (Private::loadOtherProjectOnce)
+				Private::nextProjectInfo.reset();
+			Private::loadOtherProjectOnce = false;
+		}
+		void JApplicationProject::ConfirmCloseProject()noexcept
+		{
+			Private::endProject = true;
+			if (Private::loadOtherProjectOnce)
+			{
+				Private::loadOtherProjectOnce = false;
+				SetStartNewProjectTrigger();
+			}
+		}
+		std::unique_ptr<JApplicationProject::JProjectInfo> JApplicationProject::MakeProjectInfo(const std::wstring& projectPath)noexcept
+		{
+			std::wstring name;
+			std::wstring folderPath;
+			JCUtil::DecomposeFolderPath(projectPath, folderPath, name);
+			std::string version;
+			Core::J_FILE_IO_RESULT res = LoadProejctVersion(version);
+			if (!IsValidVersion(version))
+				return nullptr;
+
+			JTime time = Core::JRealTime::GetNowTime();
+			return std::make_unique<JProjectInfo>(Core::MakeGuid(), name, projectPath, JCUtil::U8StrToWstr(version), time, time);
+		}
+		std::unique_ptr<JApplicationProject::JProjectInfo> JApplicationProject::MakeProjectInfo(const std::wstring& projectPath, const std::string& pVersion)noexcept
+		{
+			if (!IsValidVersion(pVersion))
+				return nullptr;
+
+			std::wstring name;
+			std::wstring folderPath;
+			JCUtil::DecomposeFolderPath(projectPath, folderPath, name);
+			JTime time = Core::JRealTime::GetNowTime();
+			return std::make_unique<JProjectInfo>(Core::MakeGuid(), name, projectPath, JCUtil::U8StrToWstr(pVersion), time, time);
+		}
 		bool JApplicationProject::MakeProjectFolder()
 		{
 			uint folderCount = (uint)Private::projectFolderPath.size();
@@ -419,7 +488,7 @@ namespace JinEngine
 					return true;
 			}
 		}
-		bool JApplicationProject::StartNewProject()
+		bool JApplicationProject::SetStartNewProjectTrigger()
 		{
 			if (Private::nextProjectInfo == nullptr)
 				return false;
@@ -429,31 +498,43 @@ namespace JinEngine
 		bool JApplicationProject::Initialize()
 		{
 			const uint projectListCount = (uint)Private::projectList.size();
-			bool hasProject = false;
-			for (uint i = 0; i < projectListCount; ++i)
-			{
-				if (Private::projectList[i]->GetPath() == Private::nextProjectInfo->GetPath())
-				{
-					hasProject = true;
-					break;
-				}
-			}
-			if (!hasProject)
-			{
-				Private::projectList.emplace_back(std::make_unique<JProjectInfo>(Private::nextProjectInfo->GetName(),
-					Private::nextProjectInfo->GetPath(),
-					Private::nextProjectInfo->GetVersion()));
-				StoreProjectList();
-			}
 			//dependency order
-			MakeProjectFolderPath(Private::nextProjectInfo->GetName(), Private::nextProjectInfo->GetPath());
+			SetProjectFolderPath(Private::nextProjectInfo->GetName(), Private::nextProjectInfo->GetPath());
 			bool res00 = MakeProjectFolder();
 			bool res01 = MakeProjectVersionFile(JCUtil::WstrToU8Str(Private::nextProjectInfo->GetVersion()));
-			Private::nextProjectInfo.reset();
+			if (res00 && res01)
+			{
+				const bool hasProject = GetProjectInfo(Private::nextProjectInfo->GetPath()) != nullptr;
+				std::unique_ptr<JProjectInfo> updatedInfo = std::make_unique<JProjectInfo>(Private::nextProjectInfo->GetGuid(),
+					Private::nextProjectInfo->GetName(),
+					Private::nextProjectInfo->GetPath(),
+					Private::nextProjectInfo->GetVersion(),
+					Private::nextProjectInfo->GetCreatedTime(),
+					Core::JRealTime::GetNowTime());
+
+				if (!hasProject)
+				{
+					Private::projectList.emplace_back(std::move(updatedInfo));
+					StoreProjectList();
+				}
+				else
+				{
+					const std::wstring startProjectPath = Private::nextProjectInfo->GetPath();
+					const uint projectCount = (uint)Private::projectList.size();
+					for (uint i = 0; i < projectCount; ++i)
+					{
+						if (Private::projectList[i]->GetPath() == startProjectPath)
+						{
+							Private::projectList[i] = std::move(updatedInfo);
+							break;
+						}
+					}
+				} 
+				JApplicationVariable::SetApplicationState(J_APPLICATION_STATE::EDIT_GAME);
+			}
 			Private::startProjectOnce = false;
 			Private::endProject = false;
-			if (res00 && res01)
-				JApplicationVariable::SetApplicationState(J_APPLICATION_STATE::EDIT_GAME);
+			Private::nextProjectInfo.reset();
 			return res00 && res01;
 		}
 		bool JApplicationProject::IsValidVersion(const std::string& pVersion)
@@ -469,6 +550,11 @@ namespace JinEngine
 				}
 			}
 			return isValidVersion;
+		}
+		bool JApplicationProject::IsValidPath(const std::wstring& projectPath)noexcept
+		{
+			const std::wstring projectVersionFilePath = projectPath + L"\\" + L"ProjectSetting" + L"\\" + L"ProjectVersion.txt";
+			return _waccess(projectVersionFilePath.c_str(), 00) != -1;
 		}
 		bool JApplicationProject::CanStartProject()noexcept
 		{
@@ -526,9 +612,14 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"ProjectCount:", (uint)Private::projectList.size());
 			for (const auto& data : Private::projectList)
 			{
+				JFileIOHelper::StoreAtomicData(stream, L"Guid:", data->GetGuid());
 				JFileIOHelper::StoreJString(stream, L"Name:", data->GetName());
 				JFileIOHelper::StoreJString(stream, L"Path:", data->GetPath());
 				JFileIOHelper::StoreJString(stream, L"Version:", data->GetVersion());
+				 
+				Private::StoreJTime(stream, L"CreatedTime:", data->GetCreatedTime()); 
+				Private::StoreJTime(stream, L"LastUpdatedTime:", data->GetLastUpdateTime());
+				JFileIOHelper::InputSpace(stream, 1);
 			}
 			stream.close();
 		}
@@ -540,10 +631,10 @@ namespace JinEngine
 			stream.open(dirPath, std::ios::in | std::ios::binary);
 
 			uint projectCount;
+			size_t guid;
 			std::wstring name;
 			std::wstring path;
-			std::wstring version;
-
+			std::wstring version; 
 			JFileIOHelper::LoadAtomicData(stream, projectCount);
 			if (stream.is_open())
 			{
@@ -552,11 +643,14 @@ namespace JinEngine
 
 				for (uint i = 0; i < projectCount; ++i)
 				{
+					JFileIOHelper::LoadAtomicData(stream, guid);
 					JFileIOHelper::LoadJString(stream, name);
 					JFileIOHelper::LoadJString(stream, path);
 					JFileIOHelper::LoadJString(stream, version);
+					JTime createTime = Private::LoadJTime(stream);
+					JTime lastUpdateTime = Private::LoadJTime(stream);
 					if (_waccess(path.c_str(), 00) == 0)
-						Private::projectList.emplace_back(std::make_unique<JProjectInfo>(name, path, version));
+						Private::projectList.emplace_back(std::make_unique<JProjectInfo>(guid, name, path, version, createTime, lastUpdateTime));
 				}
 			}
 		}

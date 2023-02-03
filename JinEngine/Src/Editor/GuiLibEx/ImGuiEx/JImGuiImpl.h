@@ -98,6 +98,7 @@ namespace JinEngine
 			static float GetButtonDeepFactor()noexcept;
 			static float GetTreeDeepFactor()noexcept;
 			static ImVec4 GetColor(ImGuiCol_ flag)noexcept;
+			static ImU32 GetUColor(ImGuiCol_ flag)noexcept;
 			static void SetColorToDeep(ImGuiCol_ flag, float factor)noexcept;
 			static void SetColor(const ImVec4& color, ImGuiCol_ flag)noexcept;
 			//Set widget color to default
@@ -113,6 +114,7 @@ namespace JinEngine
 			static JVector2<int> GetClientWindowSize()noexcept;
 			static JVector2<float> GetGuiWindowPos()noexcept;
 			static JVector2<float> GetGuiWindowSize()noexcept;
+			static JVector2<int> GetGuiWidnowContentsSize()noexcept;
 			static JVector2<float> GetLocalCursorPos()noexcept;
 			static JVector2<float> GetWorldCursorPos()noexcept;
 		public:
@@ -172,11 +174,12 @@ namespace JinEngine
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
 				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1),
 				const JVector4<float>& borderCol = JVector4<float>(0, 0, 0, 0));
-			static bool ImageButton(Graphic::JGraphicResourceHandleInterface& handle,
+			static bool ImageButton(const std::string name,
+				Graphic::JGraphicResourceHandleInterface& handle,
 				const JVector2<float>& size,
 				const JVector2<float>& uv0 = JVector2<float>(0, 0),
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
-				int framePadding = -1,
+				float framePadding = -1,
 				const JVector4<float>& bgCol = JVector4<float>(0, 0, 0, 0),
 				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1));
 			static void AddImage(Graphic::JGraphicResourceHandleInterface& handle,
@@ -202,8 +205,14 @@ namespace JinEngine
 			static void DrawRectFilledMultiColor(const JVector2<float>& pos, const JVector2<float>& size, const ImU32 color, const ImU32 colorDelta, const bool useRestoreCursorPos)noexcept;
 			static void DrawRectFilledColor(const JVector2<float>& pos, const JVector2<float>& size, const ImU32 color, const bool useRestoreCursorPos)noexcept;
 			static void DrawRectFrame(const JVector2<float>& pos, const JVector2<float>& size, const float thickness, const ImU32 color, const bool useRestoreCursorPos)noexcept;
-			static void DrawToolTipBox(const std::string& tooltip, const JVector2<float>& pos, const JVector2<float>& padding, const bool useRestoreCursorPos);
-			static void DrawToolTipBox(const std::string& tooltip, const JVector2<float>& pos,  const float maxWidth, const JVector2<float>& padding, const J_EDITOR_ALIGN_TYPE alignType, const bool useRestoreCursorPos);
+			static void DrawToolTipBox(const std::string& uniqueLabel, const std::string& tooltip, const JVector2<float>& pos, const JVector2<float>& padding, const bool useRestoreCursorPos);
+			static void DrawToolTipBox(const std::string& uniqueLabel, 
+				const std::string& tooltip,
+				const JVector2<float>& pos, 
+				const float maxWidth, 
+				const JVector2<float>& padding,
+				const J_EDITOR_ALIGN_TYPE alignType, 
+				const bool useRestoreCursorPos);
 			//Widget End
 		public:
 			static bool IsLeftMouseClicked()noexcept;

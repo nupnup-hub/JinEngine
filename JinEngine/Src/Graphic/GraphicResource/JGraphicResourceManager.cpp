@@ -1,11 +1,10 @@
 #include"JGraphicResourceManager.h"   
 #include"JGraphicResourceHandle.h"
 
-#include"../../../Lib/LoadTextureFromFile.h"
-#include"../../../Lib/DirectX/DDSTextureLoader.h" 
+#include"../../Utility/JLoadTextureFromFile.h"
 #include"../../Utility/JCommonUtility.h"
 #include"../../Core/Exception/JExceptionMacro.h"
-
+#include"../../../Lib/DirectX/DDSTextureLoader.h" 
 #include<DirectXColors.h>
 //Debug
 //#include<fstream>
@@ -995,6 +994,7 @@ namespace JinEngine
 			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 			resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 
+			//DXGI_FORMAT_R8G8B8A8_UNORM
 			CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 			CD3DX12_CLEAR_VALUE optClear(backBufferFormat, GetBackBufferClearColor());
 			ThrowIfFailedG(device->CreateCommittedResource(

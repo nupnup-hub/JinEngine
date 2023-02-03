@@ -160,20 +160,25 @@ namespace JinEngine
 		}
 		void JApplication::LoadProject()
 		{
-			std::wstring dirpath;
-			if (JWindow::Instance().SelectDirectory(dirpath, L"please, select project root directory"))
+			std::wstring dirPath;
+			if (JWindow::Instance().SelectDirectory(dirPath, L"please, select project root directory"))
 			{
-				if (dirpath == JApplicationVariable::GetActivatedProjectPath())
+				if (dirPath == JApplicationVariable::GetActivatedProjectPath())
 					return;
 
-				std::unique_ptr<JApplicationProject::JProjectInfo> pInfo = JApplicationProject::MakeProjectInfo(dirpath);
+				std::unique_ptr<JApplicationProject::JProjectInfo> pInfo;
+				JApplicationProject::JProjectInfo* existingInfo = JApplicationProject::GetProjectInfo(dirPath);
+				if (existingInfo != nullptr)
+					pInfo = existingInfo->GetUnique();
+				else
+					pInfo = JApplicationProject::MakeProjectInfo(dirPath);
 				if (pInfo != nullptr)
 				{
 					JApplicationProject::TryLoadOtherProject();
 					JApplicationProject::SetNextProjectInfo(std::move(pInfo));
 					CloseApp();
 					//JWindow::Instance().AppInterface()->CloseWindow();
-					//if (!JApplicationProject::StartNewProject())
+					//if (!JApplicationProject::SetStartNewProjectTrigger())
 					//	MessageBox(0, L"Fail start project", 0, 0);
 				}
 				else
@@ -197,6 +202,7 @@ namespace JinEngine
 				else if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
 				{
 					JGraphic::Instance().AppInterface()->FlushCommandQueue();
+					JGraphic::Instance().AppInterface()->WriteLastRsTexture();
 					editorManager.StorePage();
 					editorManager.Clear();
 					JResourceManager::Instance().AppInterface()->Terminate(); 

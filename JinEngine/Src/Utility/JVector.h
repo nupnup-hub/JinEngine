@@ -20,6 +20,9 @@ namespace JinEngine
 		T y;
 	public:
 		JVector2() = default;
+		JVector2(T x)
+			: x(x), y(x)
+		{}
 		JVector2(T x, T y)
 			: x(x), y(y)
 		{}
@@ -154,6 +157,9 @@ namespace JinEngine
 		mutable T z;
 	public:
 		JVector3() = default;
+		JVector3(T x)
+			: x(x), y(x), z(x)
+		{}
 		JVector3(T x, T y, T z)
 			: x(x), y(y), z(z)
 		{}
@@ -290,6 +296,9 @@ namespace JinEngine
 		T w;
 	public:
 		JVector4() = default;
+		JVector4(T x)
+			: x(x), y(x), z(x), w(x)
+		{}
 		JVector4(T x, T y, T z, T w)
 			: x(x), y(y), z(z), w(w)
 		{}

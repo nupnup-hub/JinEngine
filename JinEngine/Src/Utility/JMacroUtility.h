@@ -139,6 +139,11 @@ namespace JinEngine
 			return dataName;							\
 		}												\
 
+#define  J_SIMPLE_UNIQUE_P_GET(typeName, dataName, methodName)	\
+		typeName* Get##methodName()const noexcept		\
+		{												\
+			return dataName.get();							\
+		}												\
 
     }
 }

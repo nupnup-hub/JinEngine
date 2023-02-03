@@ -24,8 +24,7 @@ namespace JinEngine
 		class JEditorCameraControl;
 		class JEditorTransformTool;
 		class JEditorMenuBar;
-		class JEditorMenuNode; 
-		class JEditorStringMap;
+		class JEditorMenuNode;  
 		class JSceneObserver final : public JEditorWindow, public JEditorObjectHandlerInterface
 		{    
 		private:
@@ -38,8 +37,7 @@ namespace JinEngine
 		private:
 			static constexpr uint menuSwitchIconCount = 5;
 		private: 
-			std::unique_ptr<JEditorMenuBar> menubar;
-			std::unique_ptr< JEditorStringMap> editStrMap;
+			std::unique_ptr<JEditorMenuBar> menubar; 
 			JEditorMenuNodeUtilData nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::COUNT];
 			std::unique_ptr<SelectMenuNodeT::Functor>selectNodeFunctor;
 			std::unique_ptr<ActivateMenuNodeT::Functor>activateNodeFunctor;

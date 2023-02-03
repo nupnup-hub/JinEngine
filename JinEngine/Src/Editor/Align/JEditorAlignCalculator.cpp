@@ -33,14 +33,14 @@ namespace JinEngine
 			const JVector2<float> alphaSize = JImGuiImpl::GetAlphabetSize();
 			const JVector2<float> spaceSize = ImGui::CalcTextSize(" ");
 			std::string srcText = text;
-			std::string result;
+			std::string result = "";
 			const float addtionalXFactor = dir == J_EDITOR_ALIGN_TYPE::LEFT ? 0.0f : (dir == J_EDITOR_ALIGN_TYPE::MID ? 0.5f : 1.0f);
 			int lineCount = 0;
 
 			ImGuiContext& context = *GImGui;
 			while (!srcText.empty())
 			{
-				const uint subStrCount = CalTextLengthRange(srcText, lineLength);
+				uint subStrCount = CalTextLengthRange(srcText, lineLength);
 				std::string subStr = srcText.substr(0, subStrCount);
 				srcText = srcText.substr(subStrCount);
 
@@ -49,9 +49,16 @@ namespace JinEngine
 					const float nextYEndPos = context.FontSize * (lineCount + 2);
 					if (nextYEndPos >= size.y && !srcText.empty())
 					{
-						subStr[subStrCount - 1] = '.';
-						subStr[subStrCount - 2] = '.';
-						subStr[subStrCount - 3] = '.';
+						if (subStrCount > 0)
+						{
+							int swapPerioCount = subStrCount > 2 ? 3 : subStrCount;
+							for (int i = 1; i <= swapPerioCount; ++i)
+								subStr[subStrCount - i] = '.';
+
+							int additionalPeriod = 3 - swapPerioCount;
+							for (int i = 0; i < additionalPeriod; ++i)
+								subStr.push_back('.');
+						}
 						srcText.clear();
 					}
 				}

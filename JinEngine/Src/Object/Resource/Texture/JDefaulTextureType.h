@@ -26,6 +26,7 @@ namespace JinEngine
 		SCALE_ARROW,
 		VIEW_FRUSTUM_ICON,
 		COORD_GRID_ICON,
+		OPTION_SETTING,
 		PROJECT_SELECTOR_BACKGROUND
 	};
 
@@ -49,6 +50,8 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON:
 				return true;
 			case JinEngine::J_DEFAULT_TEXTURE::COORD_GRID_ICON:
+				return true;
+			case JinEngine::J_DEFAULT_TEXTURE::OPTION_SETTING:
 				return true;
 			default:
 				return false;
@@ -96,6 +99,8 @@ namespace JinEngine
 				return L"Viewfrustum.png";
 			case JinEngine::J_DEFAULT_TEXTURE::COORD_GRID_ICON:
 				return L"CoordGrid.png";
+			case JinEngine::J_DEFAULT_TEXTURE::OPTION_SETTING:
+				return L"OptionSetting.png";
 			case JinEngine::J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND:
 				return L"Shiro_Background.jpg";
 			default:

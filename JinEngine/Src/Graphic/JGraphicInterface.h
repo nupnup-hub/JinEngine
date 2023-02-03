@@ -126,6 +126,8 @@ namespace JinEngine
 		private:
 			virtual void DrawScene() = 0;
 			virtual void DrawProjectSelector() = 0;
+		private:
+			virtual void WriteLastRsTexture() = 0;
 		};
 	}
 }

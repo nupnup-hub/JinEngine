@@ -17,12 +17,15 @@ namespace JinEngine
 	{
 	public:
 		template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
-		static Core::J_FILE_IO_RESULT StoreAtomicData(std::wofstream& stream, const std::wstring& guide,  T value)
+		static Core::J_FILE_IO_RESULT StoreAtomicData(std::wofstream& stream, const std::wstring& guide,  T value, const bool useChangeLine = true)
 		{
 			if (!stream.is_open())
 				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-			stream << guide << " " << value << '\n';
+			if (useChangeLine)
+				stream << guide << " " << value << '\n';
+			else
+				stream << guide << " " << value << ' ';
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
@@ -37,12 +40,15 @@ namespace JinEngine
 		}
 
 		template<typename T, std::enable_if_t<std::is_enum_v<T>, int> = 0>
-		static Core::J_FILE_IO_RESULT StoreEnumData(std::wofstream& stream, const std::wstring& guide, T value)
+		static Core::J_FILE_IO_RESULT StoreEnumData(std::wofstream& stream, const std::wstring& guide, T value, const bool useChangeLine = true)
 		{
 			if (!stream.is_open())
 				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-			stream << guide << " " << (int)value << '\n';
+			if (useChangeLine)
+				stream << guide << " " << (int)value << '\n';
+			else
+				stream << guide << " " << (int)value << ' '; 
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		template<typename T, std::enable_if_t<std::is_enum_v<T>, int> = 0>
@@ -98,7 +104,7 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 	public:
-		static Core::J_FILE_IO_RESULT StoreJString(std::wofstream& stream, const std::wstring& guide, const std::wstring& str);
+		static Core::J_FILE_IO_RESULT StoreJString(std::wofstream& stream, const std::wstring& guide, const std::wstring& str, const bool useChangeLine = true);
 		static Core::J_FILE_IO_RESULT LoadJString(std::wifstream& stream, std::wstring& str);
 	public:
 		static Core::J_FILE_IO_RESULT StoreXMFloat2(std::wofstream& stream, const std::wstring& guide, const DirectX::XMFLOAT2& xm2);

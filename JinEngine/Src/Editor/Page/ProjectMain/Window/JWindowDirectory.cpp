@@ -340,7 +340,7 @@ namespace JinEngine
 			const JVector2<float> innerPadding[2] = { JVector2<float>(0, 0), contentsSize * 0.075f };
 
 			JEditorDynamicAlignCalculator<2> widgetAlignCal;
-			widgetAlignCal.Update(windowSize, contentsSize, padding, spacing, innerHeight, innerPadding);
+			widgetAlignCal.Update(windowSize, contentsSize, padding, spacing, innerHeight, innerPadding, ImGui::GetCursorPos());
 			JEditorTextAlignCalculator textAlignCal;
 
 			bool hasInvaildScene = false;

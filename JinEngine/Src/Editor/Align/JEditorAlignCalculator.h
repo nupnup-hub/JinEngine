@@ -56,7 +56,7 @@ namespace JinEngine
 		};
 
 		//Use local cursor
-		template<int contentsCount>
+		template<int innerContentsCount>
 		class JEditorDynamicAlignCalculator
 		{
 		private:
@@ -65,11 +65,11 @@ namespace JinEngine
 		private:
 			JVector2<float> canvasSize; 
 			JVector2<float> contentsSize;
-			JVector2<float> innerPadding[contentsCount];
+			JVector2<float> innerPadding[innerContentsCount];
 			JVector2<float> contentsStartCursor;
 		private:
-			float innerHeight[contentsCount];
-			uint innerHeightOffset[contentsCount];
+			float innerHeight[innerContentsCount];
+			uint innerHeightOffset[innerContentsCount];
 			uint columnMaxCount = 0;
 			uint columnCount = 0;
 			uint rowCount = 0;
@@ -92,40 +92,78 @@ namespace JinEngine
 		public:
 			void Update(const JVector2<float>& newCanvasSize,
 				const JVector2<float>& newContentsSize,
-				const JVector2<float>& newPadding,
-				const JVector2<float>& newSpacing,
-				const float(&iHeight)[contentsCount],
-				const JVector2<float>(&iPadding)[contentsCount])noexcept
+				const JVector2<float>& contentsPadding,
+				const JVector2<float>& contentsSpacing,
+				const float(&iHeight)[innerContentsCount],
+				const JVector2<float>(&iPadding)[innerContentsCount],
+				const JVector2<float>& startPos)noexcept
 			{
-				padding = newPadding;
-				spacing = newSpacing;
+				padding = contentsPadding;
+				spacing = contentsSpacing;
 				canvasSize = newCanvasSize;
 				contentsSize = newContentsSize;
 				 
-				for (uint i = 0; i < contentsCount; ++i)
+				for (uint i = 0; i < innerContentsCount; ++i)
 				{
 					innerHeight[i] = iHeight[i];
 					innerPadding[i] = iPadding[i]; 
 				}
 
 				uint sum = 0;
-				for (uint i = 0; i < contentsCount; ++i)
+				for (uint i = 0; i < innerContentsCount; ++i)
 				{
 					innerHeightOffset[i] = sum;
 					sum += innerHeight[i];
 				}
 
 				float leftWidth = (canvasSize.x - (padding.x * 2));
-				float contentsWidth = contentsSize.x + spacing.x;
+				float contentsWidth = contentsSize.x;
 				while (leftWidth >= contentsSize.x)
 				{
 					++columnMaxCount;
 					leftWidth -= contentsWidth;
+					if (contentsWidth == contentsSize.x)
+						contentsWidth += spacing.x;
 				}
 				 
 				columnCount = rowCount = innerRowCount = 0;
-				contentsStartCursor = ImGui::GetCursorPos() + padding;			 
+				contentsStartCursor = startPos + padding;
 			}
+			void Update(const JVector2<float>& newCanvasSize,
+				const JVector2<float>& contentsPadding,
+				const JVector2<float>& contentsSpacing,
+				const uint columnPerCount,
+				const uint rowPerCount,
+				const float(&iHeightRate)[innerContentsCount],
+				const JVector2<float>(&iPaddingRate)[innerContentsCount],
+				const JVector2<float>& startPos)
+			{
+				padding = contentsPadding;
+				spacing = contentsSpacing;
+				canvasSize = newCanvasSize;
+
+				const float contentWidth = ((canvasSize.x - padding.x * 2) - ((columnPerCount - 1) * contentsSpacing.x)) / columnPerCount;
+				const float contentHeight = ((canvasSize.y - padding.y * 2) - ((rowPerCount - 1) * contentsSpacing.y)) / rowPerCount;
+				contentsSize = JVector2<float>(contentWidth, contentHeight);
+ 
+				for (uint i = 0; i < innerContentsCount; ++i)
+				{
+					innerHeight[i] = iHeightRate[i] * contentsSize.y;
+					innerPadding[i] = iPaddingRate[i] * contentsSize;
+				}
+
+				uint sum = 0;
+				for (uint i = 0; i < innerContentsCount; ++i)
+				{
+					innerHeightOffset[i] = sum;
+					sum += innerHeight[i];
+				}
+				columnMaxCount = columnPerCount;
+				columnCount = rowCount = innerRowCount = 0; 
+ 
+				contentsStartCursor = startPos + padding;
+			}
+
 		public:
 			float GetCursorPosX()
 			{
@@ -144,7 +182,7 @@ namespace JinEngine
 			void Next()
 			{
 				++innerRowCount;
-				if (innerRowCount >= contentsCount)
+				if (innerRowCount >= innerContentsCount)
 				{
 					innerRowCount = 0;
 					++columnCount;
