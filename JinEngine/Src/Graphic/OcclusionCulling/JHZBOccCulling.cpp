@@ -13,7 +13,7 @@
 #include"../../Object/Resource/Mesh/JMeshGeometry.h"
 #include"../../Object/Resource/Material/JMaterial.h"
 #include"../../Utility/JMathHelper.h" 
-#include"../../../Lib/DirectX/d3dx12.h"
+#include"../../../Lib/DirectX/Tk/Src/d3dx12.h"
 
 //Debug
 //#include"../../Core/File/JFileIOHelper.h"

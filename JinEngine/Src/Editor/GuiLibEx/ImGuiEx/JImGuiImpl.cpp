@@ -34,7 +34,7 @@ namespace JinEngine
 				POPUP,
 				TEXT,
 				CHECKBOX,
-				BUTTON, 
+				BUTTON,
 				IMAGE,
 				DRAW,
 				TREE,
@@ -48,7 +48,7 @@ namespace JinEngine
 				MENU,
 				MENU_ITEM,
 				COMBOBOX,
-				SWITCH, 
+				SWITCH,
 				COUNT
 			};
 		}
@@ -347,7 +347,7 @@ namespace JinEngine
 		ImU32 JImGuiImpl::GetUColor(ImGuiCol_ flag)noexcept
 		{
 			ImGuiStyle& style = ImGui::GetStyle();
-			return IM_COL32(style.Colors[flag].x * 255, 
+			return IM_COL32(style.Colors[flag].x * 255,
 				style.Colors[flag].y * 255,
 				style.Colors[flag].z * 255,
 				style.Colors[flag].w * 255);
@@ -383,6 +383,20 @@ namespace JinEngine
 			for (uint i = 0; i < ImGuiCol_COUNT; ++i)
 				style.Colors[i] = Private::jImgui->colors[i];
 		}
+		void JImGuiImpl::ActivateButtonColor()noexcept
+		{
+			JImGuiImpl::SetColorToDefault(ImGuiCol_Text);
+			JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
+			JImGuiImpl::SetColorToDefault(ImGuiCol_ButtonHovered);
+			JImGuiImpl::SetColorToDefault(ImGuiCol_ButtonActive);
+		}
+		void JImGuiImpl::DeActivateButtonColor()noexcept
+		{
+			JImGuiImpl::SetColor(JVector4<float>(0.5f, 0.5f, 0.5f, 1.0f), ImGuiCol_Text);
+			JImGuiImpl::SetColorToDeep(ImGuiCol_Button, 0.2f);
+			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_ButtonHovered);
+			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_ButtonActive);
+		}
 		JVector2<int> JImGuiImpl::GetDisplaySize()noexcept
 		{
 			return Private::jImgui->displaySize;
@@ -411,7 +425,7 @@ namespace JinEngine
 		{
 			const JVector2<float> windowPaddig = ImGui::GetStyle().WindowPadding;
 			const float windowBorder = ImGui::GetStyle().WindowBorderSize;
-			return ImGui::GetWindowSize() - (windowPaddig * 2) - JVector2<float>(windowBorder * 2, windowBorder * 2);
+			return ImGui::GetWindowSize() - (windowPaddig * 2) - JVector2<float>(windowBorder * 2);
 		}
 		JVector2<float> JImGuiImpl::GetLocalCursorPos()noexcept
 		{
@@ -646,14 +660,14 @@ namespace JinEngine
 			float framePadding,
 			const JVector4<float>& bgCol,
 			const JVector4<float>& tintCol)
-		{ 
+		{
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::IMAGE);
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::BUTTON);
 
 			const ImVec2 padding = (framePadding >= 0) ? ImVec2((float)framePadding, (float)framePadding) : ImGui::GetStyle().FramePadding;
 			return ImGui::ImageButtonEx(ImGui::GetCurrentWindow()->GetID(name.c_str()),
-				(ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, 
-				size, 
+				(ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr,
+				size,
 				uv0, uv1,
 				padding,
 				bgCol, tintCol);
@@ -672,42 +686,68 @@ namespace JinEngine
 			else
 				ImGui::GetForegroundDrawList()->AddImage((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, pMin, pMax, uvMin, uvMax, color);
 		}
-		bool JImGuiImpl::Switch(const std::string& name, bool& pSelected, const JVector2<float>& sizeArg)
+		bool JImGuiImpl::ImageSelectable(const std::string name,
+			Graphic::JGraphicResourceHandleInterface& handle,
+			bool& pressed,
+			bool changeValueIfPreesd,
+			const JVector2<float>& size)
+		{
+			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::IMAGE);
+			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SELECTABLE);
+
+			const JVector2<float> preCursor = ImGui::GetCursorPos();
+			const bool isPress = JImGuiImpl::Selectable(name, false, ImGuiSelectableFlags_AllowItemOverlap, size);
+			ImGui::SetCursorPos(preCursor);
+			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, size);
+
+			if (isPress && changeValueIfPreesd)
+				pressed = !pressed;
+
+			return isPress;
+		}
+		bool JImGuiImpl::Switch(const std::string& name,
+			bool& pressed,
+			bool changeValueIfPreesd,
+			const JVector2<float>& sizeArg)
 		{
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SWITCH);
-			if (pSelected)
+			if (pressed)
 				JImGuiImpl::SetColorToDeep(ImGuiCol_Header, -JImGuiImpl::GetButtonDeepFactor());
 			const bool isPress = ImGui::Button(name.c_str(), sizeArg);
-			if (isPress)
-				pSelected = !pSelected;
-			if (pSelected)
+			if (pressed)
 				JImGuiImpl::SetColorToDeep(ImGuiCol_Header, JImGuiImpl::GetButtonDeepFactor());
+			if (isPress && changeValueIfPreesd)
+				pressed = !pressed;
 			return isPress;
 		}
 		bool JImGuiImpl::ImageSwitch(const std::string name,
 			Graphic::JGraphicResourceHandleInterface& handle,
-			bool& pSelected,
+			bool& pressed,
+			bool changeValueIfPreesd,
 			const JVector2<float>& size,
 			const ImU32 bgColor,
 			const ImU32 bgDelta,
 			const ImU32 frameColor,
 			const float frameThickness)
-		{ 
+		{
 			ImU32 finalBgColor = bgColor;
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::IMAGE);
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SWITCH);
-			if (pSelected)
-				finalBgColor -= bgDelta; 
-			 
+			if (pressed)
+				finalBgColor -= bgDelta;
+
 			const JVector2<float> pos = ImGui::GetCurrentWindow()->DC.CursorPos;
 			DrawRectFilledColor(pos, size, finalBgColor, true);
-			if(frameThickness > 0)
+			if (frameThickness > 0)
 				DrawRectFrame(pos, size, frameColor, frameThickness, true);
 
 			const JVector2<float> preCursor = ImGui::GetCursorPos();
 			const bool isPress = JImGuiImpl::Selectable(name, false, ImGuiSelectableFlags_AllowItemOverlap, size);
 			ImGui::SetCursorPos(preCursor);
 			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, size);
+
+			if (isPress && changeValueIfPreesd)
+				pressed = !pressed;
 
 			return isPress;
 		}
@@ -716,7 +756,7 @@ namespace JinEngine
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::DRAW);
 			JVector2<float> nowCursor = ImGui::GetCursorPos();
 			JVector2<float> bboxMin = JVector2<float>(pos.x, pos.y);
-			JVector2<float> bboxMax = pos + size; 
+			JVector2<float> bboxMax = pos + size;
 			ImGui::GetWindowDrawList()->AddRectFilledMultiColor(bboxMin, bboxMax,
 				color + colorDelta,
 				color - colorDelta,
@@ -735,24 +775,33 @@ namespace JinEngine
 			if (useRestoreCursorPos)
 				ImGui::SetCursorPos(nowCursor);
 		}
-		void JImGuiImpl::DrawRectFrame(const JVector2<float>& pos, const JVector2<float>& size, const float thickness, const ImU32 color, const bool useRestoreCursorPos)noexcept
+		void JImGuiImpl::DrawRectFrame(const JVector2<float>& pos,
+			const JVector2<float>& size,
+			const float thickness,
+			const ImU32 color,
+			const bool useRestoreCursorPos)noexcept
 		{
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::DRAW);
 			JVector2<float> nowCursor = ImGui::GetCursorPos();
 			JVector2<float> bboxMin = JVector2<float>(pos.x, pos.y);
 			JVector2<float> bboxMax = pos + size;
+
 			ImGui::GetWindowDrawList()->AddRect(bboxMin, bboxMax, color, 0, 0, thickness);
 			if (useRestoreCursorPos)
 				ImGui::SetCursorPos(nowCursor);
 		}
-		void JImGuiImpl::DrawToolTipBox(const std::string& uniqueLabel, const std::string& tooltip, const JVector2<float>& pos, const JVector2<float>& padding, const bool useRestoreCursorPos)
-		{ 		 
+		void JImGuiImpl::DrawToolTipBox(const std::string& uniqueLabel,
+			const std::string& tooltip,
+			const JVector2<float>& pos,
+			const JVector2<float>& padding,
+			const bool useRestoreCursorPos)
+		{
 			const JVector2<float> nowCursor = ImGui::GetCursorPos();
 			const JVector2<float> boxSize = ImGui::CalcTextSize(tooltip.c_str()) + (padding * 2);
 			ImGui::SetNextWindowPos(pos);
 			ImGui::SetNextWindowSize(boxSize);
 			JImGuiImpl::BeginWindow(uniqueLabel, 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-			 			  
+
 			ImGui::SetCursorScreenPos(pos + padding);
 			JImGuiImpl::Text(tooltip);
 			JImGuiImpl::EndWindow();
@@ -779,7 +828,7 @@ namespace JinEngine
 			ImGui::SetNextWindowPos(pos);
 			ImGui::SetNextWindowSize(boxSize);
 			JImGuiImpl::BeginWindow(uniqueLabel, 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-			 
+
 			ImGui::SetCursorScreenPos(pos + padding);
 			JImGuiImpl::Text(alignedTooltip);
 			JImGuiImpl::EndWindow();

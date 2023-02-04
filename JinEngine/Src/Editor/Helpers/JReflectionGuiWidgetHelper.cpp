@@ -331,7 +331,7 @@ namespace JinEngine
 					ImGui::Separator();
 					JImGuiImpl::Text("Search");
 					ImGui::SameLine();
-					searchBarHelper->UpdateSearchBar(uniqueLabel + "_GuiSelector", false);
+					searchBarHelper->UpdateSearchBar();
 
 					JImGuiImpl::Image(*JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::NONE), JVector2<float>(sizeMin, sizeMin));
 					ImGui::SameLine();

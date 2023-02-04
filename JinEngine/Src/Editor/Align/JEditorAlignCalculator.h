@@ -165,17 +165,21 @@ namespace JinEngine
 			}
 
 		public:
-			float GetCursorPosX()
+			float GetCursorPosX()noexcept
 			{
 				return contentsStartCursor.x + columnCount * spacing.x + columnCount * contentsSize.x + innerPadding[innerRowCount].x;
 			}
-			float GetCursorPosY()
+			float GetCursorPosY()noexcept
 			{
 				return contentsStartCursor.y + rowCount * spacing.y + rowCount * contentsSize.y + innerPadding[innerRowCount].y + innerHeightOffset[innerRowCount];
 			}
+			JVector2<float> GetCursorPos()noexcept
+			{
+				return JVector2<float>(GetCursorPosX(), GetCursorPosY());
+			}
 			void SetNextContentsPosition()
 			{
-				ImGui::SetCursorPos(JVector2<float>(GetCursorPosX(), GetCursorPosY()));
+				ImGui::SetCursorPos(GetCursorPos());
 				Next();
 			}
 		private:

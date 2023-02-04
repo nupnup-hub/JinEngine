@@ -1,6 +1,6 @@
 #include"JGraphicResourceUserInterface.h"
 #include"JGraphicResourceHandleInterface.h"
-#include"../../../Lib/DirectX/d3dx12.h"
+#include"../../../Lib/DirectX/Tk/Src/d3dx12.h"
 
 namespace JinEngine
 {

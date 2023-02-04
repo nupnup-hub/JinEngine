@@ -123,6 +123,7 @@ namespace JinEngine
 			if (JImGuiImpl::ImageSwitch(GetUniqueLabel().c_str(),
 				*((*getGResourceFunctor)()),
 				*isActivatedPtr,
+				false,
 				iconSize,
 				IM_COL32(180, 180, 180, 225),
 				IM_COL32(90, 90, 90, 0)))

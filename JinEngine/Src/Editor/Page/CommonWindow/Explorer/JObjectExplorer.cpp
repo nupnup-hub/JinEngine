@@ -141,7 +141,7 @@ namespace JinEngine
 					selectedObject = Core::GetUserPtr(static_cast<JGameObject*>(selected.Get()));
 
 				UpdateMouseClick();
-				searchBarHelper->UpdateSearchBar(GetName(), false);
+				searchBarHelper->UpdateSearchBar();
 				BuildObjectExplorer();
 			}
 			CloseWindow();

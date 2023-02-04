@@ -13,6 +13,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JEditorInputBuffHelper> inputHelper; 
 		private:
+			const size_t guid;
 			const bool caseSensitive; 
 			bool isUpdateInputData = false;
 		public:
@@ -20,7 +21,7 @@ namespace JinEngine
 		public: 
 			void ClearInputBuffer()noexcept;
 		public:
-			void UpdateSearchBar(const std::string& uniqueLabel, const bool isReadonly);
+			void UpdateSearchBar(const bool isReadonly = false);
 		public:
 			std::string GetInputData()const noexcept;
 		public:

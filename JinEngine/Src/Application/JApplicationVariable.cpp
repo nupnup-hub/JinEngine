@@ -350,7 +350,7 @@ namespace JinEngine
 		}
 		std::wstring JApplicationProject::JProjectInfo::lastRsPath()const noexcept
 		{ 
-			return  JApplicationVariable::GetEngineProjectLastRsPath() + L"\\" + std::to_wstring(GetGuid()) + L".png";
+			return  JApplicationVariable::GetEngineProjectLastRsPath() + L"\\" + std::to_wstring(GetGuid()) + L".dds";
 		}
 
 
@@ -513,10 +513,7 @@ namespace JinEngine
 					Core::JRealTime::GetNowTime());
 
 				if (!hasProject)
-				{
-					Private::projectList.emplace_back(std::move(updatedInfo));
-					StoreProjectList();
-				}
+					Private::projectList.emplace_back(std::move(updatedInfo));				 
 				else
 				{
 					const std::wstring startProjectPath = Private::nextProjectInfo->GetPath();
@@ -530,6 +527,7 @@ namespace JinEngine
 						}
 					}
 				} 
+				StoreProjectList();
 				JApplicationVariable::SetApplicationState(J_APPLICATION_STATE::EDIT_GAME);
 			}
 			Private::startProjectOnce = false;

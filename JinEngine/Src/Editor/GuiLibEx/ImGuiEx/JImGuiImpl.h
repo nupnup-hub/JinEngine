@@ -106,6 +106,8 @@ namespace JinEngine
 			static void SetAllColorToDeep(float factor)noexcept;
 			//Set all widget color to default
 			static void SetAllColorToDefault()noexcept;
+			static void ActivateButtonColor()noexcept;
+			static void DeActivateButtonColor()noexcept;
 		public:
 			//Window 
 			static JVector2<int> GetDisplaySize()noexcept;
@@ -181,7 +183,7 @@ namespace JinEngine
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
 				float framePadding = -1,
 				const JVector4<float>& bgCol = JVector4<float>(0, 0, 0, 0),
-				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1));
+				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1)); 
 			static void AddImage(Graphic::JGraphicResourceHandleInterface& handle,
 				const JVector2<float>& pMin,
 				const JVector2<float>& pMax,
@@ -190,22 +192,39 @@ namespace JinEngine
 				const JVector2<float>& uvMin = JVector2<float>(0, 0),
 				const JVector2<float>& uvMax = JVector2<float>(1, 1));
 		public:
-			//Custom Widget
-			static bool Switch(const std::string& name, bool& pSelected, const JVector2<float>& sizeArg = { 0,0 });
+			//Custom Widget 
+			static bool ImageSelectable(const std::string name,
+				Graphic::JGraphicResourceHandleInterface& handle,
+				bool& pressed,
+				bool changeValueIfPreesd,
+				const JVector2<float>& size);
+			static bool Switch(const std::string& name,
+				bool& pSelected, 
+				bool changeValueIfPreesd,
+				const JVector2<float>& sizeArg = { 0,0 });
 			static bool ImageSwitch(const std::string name,
 				Graphic::JGraphicResourceHandleInterface& handle,
-				bool& pSelected,
+				bool& pressed,
+				bool changeValueIfPreesd,
 				const JVector2<float>& size,
 				const ImU32 bgColor,
 				const ImU32 bgDelta,
-				const ImU32 frameColor = IM_COL32_BLACK,
+				const ImU32 frameColor = JImGuiImpl::GetUColor(ImGuiCol_FrameBg),
 				const float frameThickness = 0.0f);
 		public:
 			//use wolrd cursor pos
 			static void DrawRectFilledMultiColor(const JVector2<float>& pos, const JVector2<float>& size, const ImU32 color, const ImU32 colorDelta, const bool useRestoreCursorPos)noexcept;
 			static void DrawRectFilledColor(const JVector2<float>& pos, const JVector2<float>& size, const ImU32 color, const bool useRestoreCursorPos)noexcept;
-			static void DrawRectFrame(const JVector2<float>& pos, const JVector2<float>& size, const float thickness, const ImU32 color, const bool useRestoreCursorPos)noexcept;
-			static void DrawToolTipBox(const std::string& uniqueLabel, const std::string& tooltip, const JVector2<float>& pos, const JVector2<float>& padding, const bool useRestoreCursorPos);
+			static void DrawRectFrame(const JVector2<float>& pos, 
+				const JVector2<float>& size, 
+				const float thickness, 
+				const ImU32 color, 
+				const bool useRestoreCursorPos)noexcept;
+			static void DrawToolTipBox(const std::string& uniqueLabel,
+				const std::string& tooltip, 
+				const JVector2<float>& pos,
+				const JVector2<float>& padding, 
+				const bool useRestoreCursorPos);
 			static void DrawToolTipBox(const std::string& uniqueLabel, 
 				const std::string& tooltip,
 				const JVector2<float>& pos, 

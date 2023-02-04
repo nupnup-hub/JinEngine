@@ -2,7 +2,7 @@
 #include"JOutlineConstants.h" 
 #include"../Upload/JUploadBuffer.h" 
 #include"../../Object/Resource/Shader/JShaderData.h"  
-#include"../../../Lib/DirectX/d3dx12.h"  
+#include"../../../Lib/DirectX/Tk/Src/d3dx12.h"  
 #include<wrl/client.h>   
 #include<memory>
 #include<dxgiformat.h>

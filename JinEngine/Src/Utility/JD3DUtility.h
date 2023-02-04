@@ -14,7 +14,7 @@
 #include <memory>   
 #include <DirectXMath.h> 
 #include"../Core/JDataType.h"
-#include "../../Lib/DirectX/d3dx12.h" 
+#include "../../Lib/DirectX/Tk/Src/d3dx12.h" 
  
 using Microsoft::WRL::ComPtr;
 

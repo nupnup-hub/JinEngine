@@ -8,7 +8,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		JEditorSearchBarHelper::JEditorSearchBarHelper(const bool caseSensitive)
-			:caseSensitive(caseSensitive)
+			:guid(Core::MakeGuid()), caseSensitive(caseSensitive)
 		{
 			inputHelper = std::make_unique<JEditorInputBuffHelper>(JImGuiImpl::GetTextBuffRange());
 		}
@@ -16,21 +16,25 @@ namespace JinEngine
 		{
 			inputHelper->Clear(); 
 		}
-		void JEditorSearchBarHelper::UpdateSearchBar(const std::string& uniqueLabel, const bool isReadonly)
+		void JEditorSearchBarHelper::UpdateSearchBar(const bool isReadonly)
 		{ 
 			ImGuiInputTextFlags_ flag=  ImGuiInputTextFlags_None;
 			if (isReadonly)
 				flag = ImGuiInputTextFlags_ReadOnly;
 			 
-			uint preCount = (uint)inputHelper->result.size();
-			ImVec2 preFramePadding = ImGui::GetStyle().FramePadding;
+			const uint preCount = (uint)inputHelper->result.size();
+			const JVector2<float> preFramePadding = ImGui::GetStyle().FramePadding;
 			ImGui::GetStyle().FramePadding.y = 0.8f;
-			JImGuiImpl::InputText("##SearchBarHelper" + uniqueLabel, inputHelper->buff, inputHelper->result, "Search...", flag);
+
+			const JVector2<float> prePos = ImGui::GetCursorScreenPos();
+			JImGuiImpl::InputText("##" +std::to_string(guid), inputHelper->buff, inputHelper->result, "Search...", flag);
 			if (inputHelper->result.size() != preCount)
 				isUpdateInputData = true;
 			else
 				isUpdateInputData = false;
-			
+			 
+			const JVector2<float> inputSize = ImGui::GetItemRectSize();
+			JImGuiImpl::DrawRectFrame(prePos, inputSize, 2.0f, JImGuiImpl::GetUColor(ImGuiCol_FrameBg), false);
 			ImGui::GetStyle().FramePadding = preFramePadding;
 		}
 		std::string JEditorSearchBarHelper::GetInputData()const noexcept

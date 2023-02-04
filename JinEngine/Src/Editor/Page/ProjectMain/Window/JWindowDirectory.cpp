@@ -209,7 +209,14 @@ namespace JinEngine
 				UpdateMouseClick();
 
 				ImGui::SetCursorPosX(ImGui::GetWindowSize().x * 0.7f);
-				searchBarHelper->UpdateSearchBar(GetName(), false);
+				searchBarHelper->UpdateSearchBar();
+
+				ImGui::SetCursorPosX(0);
+				JImGuiImpl::DrawRectFilledColor(ImGui::GetCursorScreenPos(),
+					JVector2<float>(ImGui::GetWindowSize().x, 5),
+					JImGuiImpl::GetUColor(ImGuiCol_FrameBg),
+					true);
+
 				const bool hasData = searchBarHelper->HasInputData();
 				const bool isUpdated = searchBarHelper->IsUpdateInputData();
 				if (isUpdated)

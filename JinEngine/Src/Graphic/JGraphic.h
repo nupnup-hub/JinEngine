@@ -17,7 +17,7 @@
 #include"../Core/Func/Callable/JCallable.h"
 #include"../Utility/JVector.h"
 #include"../Window/JWindowEventType.h"
-#include"../../Lib/DirectX/d3dx12.h"
+#include"../../Lib/DirectX/Tk/Src/d3dx12.h"
 
 #include<WindowsX.h>
 #include<wrl/client.h> 

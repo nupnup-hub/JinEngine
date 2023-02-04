@@ -43,12 +43,12 @@
 #include"../Object/Resource/Texture/JTexture.h"
 
 #include"../Application/JApplicationVariable.h"
-#include"../Utility/JCommonUtility.h"
-#include"../Utility/JWriteTexture.h"
+#include"../Utility/JCommonUtility.h" 
 #include"../Core/Exception/JExceptionMacro.h"	
 #include"../Editor/GuiLibEx/ImGuiEx/JImGuiImpl.h" 
 #include"../../Lib/imgui/imgui_impl_dx12.h"
 #include"../../Lib/imgui/imgui_impl_win32.h"
+#include"../../Lib/DirectX/TK/Inc/ScreenGrab.h"
 
 #include<DirectXColors.h>
 #include<functional>
@@ -1907,25 +1907,18 @@ namespace JinEngine
 			SetGraphicOption(newOption);
 		}
 		void JGraphicImpl::WriteLastRsTexture()
-		{
-			/*
+		{ 	
 			if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
 			{
 				// 0 is main camera
-
-				uint* color = nullptr;
-				auto mainCamRs = graphicResource->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);
-				ThrowIfFailedHr(mainCamRs->Map(0, nullptr, reinterpret_cast<void**>(&color)));
-
-				const JVector2<uint> size = JVector2<uint>(mainCamRs->GetDesc().Width, mainCamRs->GetDesc().Height);
+				 
+				auto mainCamRs = graphicResource->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);				 	 
 				JApplicationProject::JProjectInfo* opendInfo = JApplicationProject::GetOpenProjectInfo();
 				if (opendInfo == nullptr)
 					MessageBox(0, L"get open proejct info error", 0, 0);
 
-				WritePngFormatTexture(JCUtil::WstrToU8Str(opendInfo->lastRsPath()).c_str(), size.x, size.y, 4, color, 4);
-				mainCamRs->Unmap(0, nullptr);
+				SaveDDSTextureToFile(commandQueue.Get(), mainCamRs, opendInfo->lastRsPath().c_str());
 			}
-			*/
 		}
 		JGraphicImpl::JGraphicImpl()
 			:guid(JCUtil::CalculateGuid(typeid(JGraphicImpl).name()))

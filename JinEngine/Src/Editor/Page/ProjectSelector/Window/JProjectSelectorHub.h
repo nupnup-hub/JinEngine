@@ -9,6 +9,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class SelectorValues;
+		class JEditorSearchBarHelper;
 		class JProjectSelectorHub : public JEditorWindow ,
 			public JResourceUserInterface
 		{ 
@@ -17,8 +18,9 @@ namespace JinEngine
 			Core::JUserPtr<JTexture> backgroundTexture;
 		private:
 			std::vector<Core::JUserPtr<JTexture>> lastRSVec;
+			std::unique_ptr<JEditorSearchBarHelper> searchHelper;
 		private:
-			std::unique_ptr<SelectorValues> selectorValues;
+			std::unique_ptr<SelectorValues> values;
 			float optionListCusorY;
 			static constexpr uint necessaryCapacityMB = 200;
 		private:
@@ -34,12 +36,15 @@ namespace JinEngine
 		public: 
 			void UpdateWindow()final;
 		private:
+			void UpdateCanvasSize();
 			void TitleOnScreen();
 			void ProjectListOnScreen(); 
 			void ProjectDetailOnScreen();
 			void GuideButtonOnScreen();
 			void CreateNewProjectOnScreen();
 			void LoadProjectOnScreen();
+			void OptionOnScreen();
+		private:
 			void SetStartProjectProccess();
 		private:
 			void DoActivate()noexcept final;

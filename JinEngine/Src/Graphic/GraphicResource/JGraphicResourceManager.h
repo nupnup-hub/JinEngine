@@ -2,7 +2,7 @@
 #include"JGraphicResourceType.h"
 #include"../JGraphicConstants.h"
 #include"../../Core/JDataType.h" 
-#include"../../../Lib/DirectX/d3dx12.h" 
+#include"../../../Lib/DirectX/Tk/Src/d3dx12.h" 
 #include<vector>
 #include<string>
 #include<memory>
