@@ -27,7 +27,10 @@ namespace JinEngine
 			int newProjVersion; 
 			int versionIndex = 0;
 		public:
-			JProjectSelectorHub(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
+			JProjectSelectorHub(const std::string& name, 
+				std::unique_ptr<JEditorAttribute> attribute,
+				const J_EDITOR_PAGE_TYPE ownerPageType,
+				const J_EDITOR_WINDOW_FLAG windowFlag);
 			~JProjectSelectorHub();
 			JProjectSelectorHub(const JProjectSelectorHub& rhs) = delete;
 			JProjectSelectorHub& operator=(const JProjectSelectorHub& rhs) = delete;

@@ -11,7 +11,10 @@ namespace JinEngine
 			bool onSceneLog = false;
 			bool onEditorLog = false;
 		public:
-			JLogViewer(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
+			JLogViewer(const std::string& name, 
+				std::unique_ptr<JEditorAttribute> attribute,
+				const J_EDITOR_PAGE_TYPE ownerPageType,
+				const J_EDITOR_WINDOW_FLAG windowFlag);
 			~JLogViewer() = default;
 			JLogViewer(const JLogViewer& rhs) = delete;
 			JLogViewer& operator=(const JLogViewer& rhs) = delete;

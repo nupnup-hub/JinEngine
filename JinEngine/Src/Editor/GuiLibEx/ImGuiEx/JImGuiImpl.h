@@ -116,9 +116,9 @@ namespace JinEngine
 			static JVector2<int> GetClientWindowSize()noexcept;
 			static JVector2<float> GetGuiWindowPos()noexcept;
 			static JVector2<float> GetGuiWindowSize()noexcept;
-			static JVector2<int> GetGuiWidnowContentsSize()noexcept;
-			static JVector2<float> GetLocalCursorPos()noexcept;
-			static JVector2<float> GetWorldCursorPos()noexcept;
+			static JVector2<int> GetGuiWidnowContentsSize()noexcept;  
+			static ImGuiWindow* GetGuiWindow(const ImGuiID id)noexcept;
+			static ImGuiWindow* GetGuiWindow(const ImGuiID id, _Out_ int& order)noexcept;
 		public:
 			//Widget Start
 			//Passing method for trace to ImGuI widget api calling

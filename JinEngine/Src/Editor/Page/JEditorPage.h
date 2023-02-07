@@ -69,10 +69,12 @@ namespace JinEngine
 			uint GetOpenWindowCount()const noexcept;
 			JEditorWindow* GetOpenWindow(const uint index)const noexcept; 
 			JEditorPopupWindow* GetOpenPopupWindow()const noexcept;
+			std::vector<JEditorWindow*> GetWindowVec()const noexcept;
 		public: 
-			virtual void Initialize() = 0;
+			virtual void Initialize();
+			virtual void Clear();
 			virtual void UpdatePage() = 0;
-			void EnterPage(int windowFlag)noexcept;
+			void EnterPage(int guiWindowFlag)noexcept;
 			void ClosePage()noexcept;  
 		public:
 			virtual bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj) noexcept = 0;

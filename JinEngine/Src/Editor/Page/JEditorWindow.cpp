@@ -1,6 +1,7 @@
 #include"JEditorWindow.h"
 #include"JEditorPageShareData.h"
 #include"JEditorAttribute.h"  
+#include"JEditorWindowDockUpdateHelper.h"
 #include"../Event/JEditorEvent.h" 
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../Core/File/JFileIOHelper.h"
@@ -14,10 +15,24 @@ namespace JinEngine
 {
 	namespace Editor
 	{
+		namespace Private
+		{
+			static void OverrideDockFlag(ImGuiDockNodeFlags flag)
+			{
+				ImGuiWindowClass window_class;
+				window_class.DockNodeFlagsOverrideSet |= flag;
+				ImGui::SetNextWindowClass(&window_class);
+			}
+		}
+
+
 		JEditorWindow::EventFunctor* JEditorWindow::evFunctor;
 
-		JEditorWindow::JEditorWindow(const std::string name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType)
-			:JEditor(name, std::move(attribute)), ownerPageType(ownerPageType)
+		JEditorWindow::JEditorWindow(const std::string name,
+			std::unique_ptr<JEditorAttribute> attribute,
+			const J_EDITOR_PAGE_TYPE ownerPageType,
+			const J_EDITOR_WINDOW_FLAG windowFlag)
+			:JEditor(name, std::move(attribute)), ownerPageType(ownerPageType), windowFlag(windowFlag)
 		{
 			if (evFunctor == nullptr)
 			{
@@ -33,24 +48,61 @@ namespace JinEngine
 				static EventFunctor eventFunctor{ evFuncLam };
 				evFunctor = &eventFunctor;
 			}
+
 		}
 		JEditorWindow::~JEditorWindow() {}
 		J_EDITOR_PAGE_TYPE JEditorWindow::GetOwnerPageType()const noexcept
 		{
 			return ownerPageType;
 		}
-		void JEditorWindow::EnterWindow(int windowFlag)
+		void JEditorWindow::EnterWindow(int guiWindowFlag)
 		{
 			J_EDITOR_PAGE_FLAG pageFlag = JEditorPageShareData::GetPageFlag(ownerPageType);
 			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
-				windowFlag = Core::AddSQValueEnum((ImGuiWindowFlags_)windowFlag, ImGuiWindowFlags_NoInputs);
+				guiWindowFlag = Core::AddSQValueEnum((ImGuiWindowFlags_)guiWindowFlag, ImGuiWindowFlags_NoInputs);
 
-			ImGui::Begin(GetName().c_str(), 0, windowFlag);
+			if (dockUpdateHelper != nullptr)
+			{
+				ImGuiDockNodeFlagsPrivate_ flag = ImGuiDockNodeFlags_NoWindowMenuButton;	 
+				if (dockUpdateHelper->IsLockSplitAcitvated())
+				{  
+					flag = Core::AddSQValueEnum(flag, (ImGuiDockNodeFlagsPrivate_)(ImGuiDockNodeFlags_NoDockingSplitMe |
+						ImGuiDockNodeFlags_NoDockingSplitOther));
+				}
+				if (dockUpdateHelper->IsLockOverAcitvated())
+				{ 
+					flag = Core::AddSQValueEnum(flag, (ImGuiDockNodeFlagsPrivate_)(ImGuiDockNodeFlags_NoDockingOverMe |
+						ImGuiDockNodeFlags_NoDockingOverOther |
+						ImGuiDockNodeFlags_NoDockingOverEmpty));
+				}
+				Private::OverrideDockFlag(flag);
+				if (dockUpdateHelper->IsLastDock() || dockUpdateHelper->IsLastWindow())
+				{
+					guiWindowFlag = Core::AddSQValueEnum((ImGuiWindowFlags_)guiWindowFlag, ImGuiWindowFlags_NoMove);
+					ImGui::Begin(GetName().c_str(), 0, guiWindowFlag);
+				}
+				else
+					ImGui::Begin(GetName().c_str(), &isWindowOpen, guiWindowFlag);
+			} 
+			else
+				ImGui::Begin(GetName().c_str(), &isWindowOpen, guiWindowFlag);
+
+			if (!isWindowOpen)
+			{
+				bool canCloseWindow = dockUpdateHelper != nullptr ? (!dockUpdateHelper->IsLastDock() && !dockUpdateHelper->IsLastWindow()) : true;
+				if (canCloseWindow)
+				{
+					AddEventNotification(*JEditorEvent::EvInterface(),
+						GetGuid(),
+						J_EDITOR_EVENT::CLOSE_WINDOW,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorCloseWindowEvStruct>(GetName(), GetOwnerPageType())));
+				}
+			}
 		}
 		void JEditorWindow::CloseWindow()
 		{
 			ImGui::End();
-			SetLastActivated(IsActivated());
+			SetLastActivated(IsActivated()); 
 		}
 		void JEditorWindow::UpdateMouseClick()
 		{
@@ -90,11 +142,29 @@ namespace JinEngine
 						GetGuid(),
 						J_EDITOR_EVENT::UNFOCUS_WINDOW,
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorUnFocusWindowEvStruct>(this, ownerPageType)));
-				}			 
+				}
 			}
 		}
 		void JEditorWindow::UpdateDocking()
 		{
+			if (!Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SUPROT_DOCK))
+				return;
+
+			if (dockUpdateHelper != nullptr)
+			{ 
+				JEditorWindowDockUpdateHelper::UpdateData updata;
+				updata.page = GetOwnerPageType();
+
+				dockUpdateHelper->Update(updata);
+				if (updata.rollbackBind != nullptr)
+				{ 
+					AddEventNotification(*JEditorEvent::EvInterface(),
+						GetGuid(),
+						J_EDITOR_EVENT::BIND_FUNC,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorBindFuncEvStruct>(std::move(updata.rollbackBind), GetOwnerPageType())));
+				}
+			}
+
 			ImGuiDockNode* dockNode = ImGui::GetWindowDockNode();
 			if (dockNode != nullptr)
 			{
@@ -211,10 +281,33 @@ namespace JinEngine
 		void JEditorWindow::DoSetOpen()noexcept
 		{
 			JEditor::DoSetOpen();
+			if (Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_FLAG::J_EDITOR_WINDOW_SUPROT_DOCK))
+				dockUpdateHelper = std::make_unique<JEditorWindowDockUpdateHelper>(ownerPageType);
+			isWindowOpen = true;
 		}
 		void JEditorWindow::DoSetClose()noexcept
 		{
 			JEditor::DoSetClose();
+			dockUpdateHelper.reset();
+			isWindowOpen = false;
+
+			if (Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SUPROT_DOCK))
+			{
+				ImGuiID id = ImHashStr(GetName().c_str());
+				ImGuiWindow* window = nullptr;
+				ImGuiContext* cont = ImGui::GetCurrentContext();
+				const int wndCount = (int)cont->Windows.size();
+				for (int i = 0; i < wndCount; ++i)
+				{
+					if (cont->Windows[i]->ID == id)
+					{
+						window = cont->Windows[i];
+						break;
+					}
+				}
+				if (window->DockNode != nullptr)
+					window->DockNode->WantCloseTabId = window->ID;
+			}
 		}
 		void JEditorWindow::StoreEditorWindow(std::wofstream& stream)
 		{
@@ -230,13 +323,13 @@ namespace JinEngine
 			bool isOpen;
 			bool activated;
 			bool isLastActivated;
-			bool isFocus; 
+			bool isFocus;
 
 			JFileIOHelper::LoadJString(stream, name);
 			JFileIOHelper::LoadAtomicData(stream, isOpen);
 			JFileIOHelper::LoadAtomicData(stream, activated);
 			JFileIOHelper::LoadAtomicData(stream, isLastActivated);
-			JFileIOHelper::LoadAtomicData(stream, isFocus); 
+			JFileIOHelper::LoadAtomicData(stream, isFocus);
 
 			if (isOpen)
 			{

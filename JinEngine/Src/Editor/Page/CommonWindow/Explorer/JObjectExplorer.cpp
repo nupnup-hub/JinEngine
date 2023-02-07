@@ -6,6 +6,7 @@
 #include"../../../String/JEditorStringMap.h"
 #include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"   
+#include"../../../Helpers/JEditorRenameHelper.h"
 #include"../../../Helpers/JEditorSearchBarHelper.h"
 #include"../../../../Utility/JCommonUtility.h"    
 #include"../../../../Object/Component/JComponentFactoryUtility.h"
@@ -23,8 +24,11 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JObjectExplorer::JObjectExplorer(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorWindow(name, std::move(attribute), pageType)
+		JObjectExplorer::JObjectExplorer(const std::string& name, 
+			std::unique_ptr<JEditorAttribute> attribute, 
+			const J_EDITOR_PAGE_TYPE pageType,
+			const J_EDITOR_WINDOW_FLAG windowFlag)
+			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
 		{
 			editorString = std::make_unique<JEditorStringMap>();
 			renameHelper = std::make_unique<JEditorRenameHelper>();

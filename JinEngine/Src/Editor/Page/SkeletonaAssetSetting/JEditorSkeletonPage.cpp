@@ -6,6 +6,7 @@
 #include"../CommonWindow/Explorer/JObjectExplorer.h"
 #include"../CommonWindow/Detail/JObjectDetail.h"
 #include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
+#include"../../Menubar/JEditorMenuBar.h"
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Object/GameObject/JGameObjectFactory.h"
 #include"../../../Object/Component/JComponentFactoryUtility.h"
@@ -27,7 +28,7 @@ namespace JinEngine
 			:JEditorPage("SkeletonAssetPage",
 				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
 				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, J_EDITOR_PAGE_REQUIRE_INIT_OBJECT)),
-			reqInitDockNode(!hasMetadata)
+			reqInit(!hasMetadata)
 		{
 			const uint memberWindowCount = 4;
 			std::vector<std::string> windowNames
@@ -75,10 +76,13 @@ namespace JinEngine
 				J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE
 			};
 
-			explorer = std::make_unique<JObjectExplorer>(windowNames[0], std::move(windowAttributes[0]), GetPageType());
-			avatarEdit = std::make_unique<JAvatarEditor>(windowNames[1], std::move(windowAttributes[1]), GetPageType());
-			avatarObserver = std::make_unique<JSceneObserver>(windowNames[2], std::move(windowAttributes[2]), GetPageType(), settingType);
-			avatarDetail = std::make_unique<JObjectDetail>(windowNames[3], std::move(windowAttributes[3]), GetPageType());
+			J_EDITOR_WINDOW_FLAG defaultFlag = J_EDITOR_WINDOW_SUPPORT_WINDOW_CLOSING;
+			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(J_EDITOR_WINDOW_SUPROT_DOCK, defaultFlag);
+			
+			explorer = std::make_unique<JObjectExplorer>(windowNames[0], std::move(windowAttributes[0]), GetPageType(), dockFlag);
+			avatarEdit = std::make_unique<JAvatarEditor>(windowNames[1], std::move(windowAttributes[1]), GetPageType(), dockFlag);
+			avatarObserver = std::make_unique<JSceneObserver>(windowNames[2], std::move(windowAttributes[2]), GetPageType(), dockFlag, settingType);
+			avatarDetail = std::make_unique<JObjectDetail>(windowNames[3], std::move(windowAttributes[3]), GetPageType(), dockFlag);
 
 			std::vector<JEditorWindow*> windows
 			{
@@ -87,14 +91,10 @@ namespace JinEngine
 				avatarObserver.get(),
 				avatarDetail.get()
 			};
-			AddWindow(windows);
-			 
-			JEditorPageShareData::RegisterPage(GetPageType(), &JEditorSkeletonPage::GetPageFlag, this);
+			AddWindow(windows);	
 		}
 		JEditorSkeletonPage::~JEditorSkeletonPage()
-		{
-			JEditorPageShareData::UnRegisterPage(GetPageType());
-		}
+		{}
 		J_EDITOR_PAGE_TYPE JEditorSkeletonPage::GetPageType()const noexcept
 		{
 			return J_EDITOR_PAGE_TYPE::SKELETON_SETTING;
@@ -113,10 +113,11 @@ namespace JinEngine
 			currOpWndCount = GetOpenWindowCount();
 			for (uint i = 0; i < currOpWndCount; ++i)
 				GetOpenWindow(i)->SetLastActivated(true);
+			BuildMenuNode();
 		}
 		void JEditorSkeletonPage::Initialize()
 		{
-
+			JEditorPage::Initialize();
 		}
 		void JEditorSkeletonPage::UpdatePage()
 		{
@@ -124,37 +125,25 @@ namespace JinEngine
 			JImGuiImpl::PushFont();
 
 			const ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-			//ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f); 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-   
-			ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x, viewport->WorkSize.y + ImGui::GetFrameHeight()));
-			ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x, viewport->WorkPos.y - ImGui::GetFrameHeight()));
-
-			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_None;
-			//ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoDecoration |
-			//	ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBackground;
-
-			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoNavInputs |
-				ImGuiWindowFlags_NoNavFocus |
-				ImGuiWindowFlags_NoBackground | 
-				ImGuiWindowFlags_NoScrollbar | 
-				ImGuiWindowFlags_NoCollapse | 
-				ImGuiWindowFlags_NoResize | 
-				ImGuiWindowFlags_NoMove;
-
-			//ImGuiWindowFlags windowFlag =
-			//	ImGuiWindowFlags_NoScrollbar | 
-			//	ImGuiWindowFlags_NoCollapse | 
-			//	ImGuiWindowFlags_NoBackground;
-			 
-			EnterPage(windowFlag);
-			if (reqInitDockNode)
+			
+			if (reqInit)
 			{
-				BuildDockNode();
-				reqInitDockNode = false;
+				//ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x, viewport->WorkSize.y + ImGui::GetFrameHeight()), ImGuiCond_Once);
+				//ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x, viewport->WorkPos.y - ImGui::GetFrameHeight()), ImGuiCond_Once);
 			}
+ 
+			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_NoWindowMenuButton;
+			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoNavInputs |
+				ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar |
+				ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
+			
+			EnterPage(guiWindowFlag);
+			if (reqInit)
+				BuildDockNode();
 			UpdateDockSpace(dockspaceFlag);
+			menuBar->Update(true);
 			ClosePage(); 
 			 
 			uint currOpWndCount = GetOpenWindowCount();
@@ -162,6 +151,9 @@ namespace JinEngine
 				GetOpenWindow(i)->UpdateWindow();  
 			JImGuiImpl::PopFont();
 			ImGui::PopStyleVar(2);
+
+			if (reqInit)
+				reqInit = false;
 		}
 		bool JEditorSkeletonPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept
 		{
@@ -245,18 +237,19 @@ namespace JinEngine
 		}
 		void JEditorSkeletonPage::BuildDockNode()
 		{
-			ImGui::Begin(GetName().c_str()); ImGui::End();
+			//ImGui::Begin(GetName().c_str()); ImGui::End();
+			ImGuiViewport* viewport = ImGui::GetMainViewport();
+			ImGuiID dockspaceId = ImGui::GetID(GetDockNodeName().c_str());
+		 
 			ImGui::Begin(explorer->GetName().c_str()); ImGui::End();
 			ImGui::Begin(avatarEdit->GetName().c_str()); ImGui::End();
 			ImGui::Begin(avatarObserver->GetName().c_str()); ImGui::End();
 			ImGui::Begin(avatarDetail->GetName().c_str()); ImGui::End();
 
-			ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGuiID dockspaceId = ImGui::GetID(GetDockNodeName().c_str());
-		 
 			ImGui::DockBuilderRemoveNode(dockspaceId);
-			ImGui::DockBuilderAddNode(dockspaceId);
-			ImGui::DockBuilderSetNodePos(dockspaceId, viewport->Size);
+			ImGui::DockBuilderAddNode(dockspaceId); 
+			ImGui::DockBuilderSetNodePos(dockspaceId, viewport->WorkPos);
+			ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->WorkSize);
 
 			ImGuiID dock_main = dockspaceId;
 			ImGuiID dockAvatarSceneEditor = ImGui::DockBuilderSplitNode(dock_main, ImGuiDir_Right, 1, &dock_main, &dock_main);
@@ -270,6 +263,29 @@ namespace JinEngine
 			ImGui::DockBuilderDockWindow(avatarObserver->GetName().c_str(), dockAvatarSceneEditor);
 			ImGui::DockBuilderDockWindow(avatarDetail->GetName().c_str(), dockAvatarDetail);
 			ImGui::DockBuilderFinish(dockspaceId);
+		}
+		void JEditorSkeletonPage::BuildMenuNode()
+		{
+			std::unique_ptr<JEditorMenuNode> rootNode = std::make_unique<JEditorMenuNode>("Root", true, false);
+
+			// root Child 
+			std::unique_ptr<JEditorMenuNode> windowNode = std::make_unique<JEditorMenuNode>("Window", false, false, nullptr, rootNode.get());
+
+			JEditorMenuNode* windowNodePtr = windowNode.get();
+			menuBar = std::make_unique<JEditorMenuBar>(std::move(rootNode), false);
+			menuBar->AddNode(std::move(windowNode));
+			std::vector<JEditorWindow*> wndVec = GetWindowVec();
+
+			const uint wndCount = (uint)wndVec.size();
+			for (uint i = 0; i < wndCount; ++i)
+			{
+				std::unique_ptr<JEditorMenuNode> newNode = std::make_unique<JEditorMenuNode>(wndVec[i]->GetName(),
+					false, true,
+					wndVec[i]->GetOpenPtr(),
+					windowNodePtr);
+				newNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, wndVec[i]->GetName()));
+				menuBar->AddNode(std::move(newNode));
+			}
 		}
 	}
 }

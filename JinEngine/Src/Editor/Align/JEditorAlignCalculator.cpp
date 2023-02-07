@@ -4,6 +4,57 @@ namespace JinEngine
 {
 	namespace Editor
 	{
+		void JEditorStaticAlignCalculator::Update(const JVector2<float>& canvasSize,
+			const JVector2<float>& contentsSize,
+			const JVector2<float>& padding,
+			const JVector2<float>& spacing,
+			const JVector2<float>& startPos)noexcept
+		{
+			JEditorStaticAlignCalculator::padding = padding;
+			JEditorStaticAlignCalculator::spacing = spacing;
+			JEditorStaticAlignCalculator::canvasSize = canvasSize;
+			JEditorStaticAlignCalculator::contentsSize = contentsSize;
+
+			float leftWidth = (canvasSize.x - (padding.x * 2));
+			float contentsWidth = contentsSize.x;
+			while (leftWidth >= contentsSize.x)
+			{
+				++columnCount;
+				leftWidth -= contentsWidth;
+				if (contentsWidth == contentsSize.x)
+					contentsWidth += spacing.x;
+			}
+
+			columnIndex = rowIndex = 0;
+			contentsStartCursor = startPos + padding;
+		}
+		float JEditorStaticAlignCalculator::GetCursorPosX()const noexcept
+		{
+			return contentsStartCursor.x + columnIndex * spacing.x + columnIndex * contentsSize.x;
+		}
+		float JEditorStaticAlignCalculator::GetCursorPosY()const noexcept
+		{
+			return contentsStartCursor.y + rowIndex * spacing.y + rowIndex * contentsSize.y;
+		}
+		JVector2<float> JEditorStaticAlignCalculator::GetCursorPos()const noexcept
+		{
+			return JVector2<float>(GetCursorPosX(), GetCursorPosY());
+		}
+		void JEditorStaticAlignCalculator::SetNextContentsPosition()noexcept
+		{
+			ImGui::SetCursorPos(GetCursorPos());
+			Next();
+		}
+		void JEditorStaticAlignCalculator::Next()noexcept
+		{
+			++columnIndex;
+			if (columnIndex >= columnCount)
+			{
+				columnIndex = 0;
+				++rowIndex;
+			}
+		}
+
 		void JEditorTextAlignCalculator::Update(const std::string& text, const JVector2<float>& size, const bool useCompress)
 		{
 			const JVector2<float> alphaSize = JImGuiImpl::GetAlphabetSize();

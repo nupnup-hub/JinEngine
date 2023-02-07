@@ -6,6 +6,7 @@
 #include"../../../../Object/Resource/Skeleton/JSkeleton.h"
 #include"../../../../Object/Resource/Skeleton/JSkeletonAsset.h"
 #include"../../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
+#include"../../../../Object/Resource/Skeleton/Avatar/JAvatar.h"
 #include"../../../../Core/Undo/JTransition.h"
 #include"../../../../Utility/JCommonUtility.h"
 #include"../../../../../Lib/imgui/imgui.h"
@@ -14,8 +15,11 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JAvatarEditor::JAvatarEditor(const std::string& name,std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType)
-			:JEditorWindow(name, std::move(attribute), ownerPageType),
+		JAvatarEditor::JAvatarEditor(const std::string& name, 
+			std::unique_ptr<JEditorAttribute> attribute, 
+			const J_EDITOR_PAGE_TYPE ownerPageType,
+			const J_EDITOR_WINDOW_FLAG windowFlag)
+			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag),
 			makeAvatarFunctor(&JAvatarEditor::MakeAvatar, this),
 			clearAvatarFunctor(&JAvatarEditor::ClearAvatar, this),
 			selectTabFunctor(&JAvatarEditor::SelectTab, this),
@@ -24,7 +28,9 @@ namespace JinEngine
 			setAllJointRefByVecFunctor(&JAvatarEditor::SetAllJointReferenceByVec, this),
 			setAllJointRefByAutoFunctor(&JAvatarEditor::SetAllJointReferenceByAuto, this),
 			clearJointRefFunctor(&JAvatarEditor::ClearJointReference, this)
-		{ }
+		{ 
+			targetAvatar = std::make_unique<JAvatar>();
+		}
 		JAvatarEditor::~JAvatarEditor()
 		{ }
 		J_EDITOR_WINDOW_TYPE JAvatarEditor::GetWindowType()const noexcept
@@ -48,20 +54,20 @@ namespace JinEngine
 			CloseWindow();
 		}
 		void JAvatarEditor::BuildAvatarEdit()
-		{ 		 
+		{
 			const JVector2<float> wndSize = ImGui::GetWindowSize();
-			const float xPaddingRate = 0.025f;
+			constexpr float xPaddingRate = 0.025f;
 			const float xPadding = wndSize.x * xPaddingRate;
 
 			const float MakeBtnWidth = wndSize.x * 0.25f;
 			const float MakeBtnPos = xPadding + wndSize.x * 0.5f - MakeBtnWidth * 0.5f;
 			ImGui::SetCursorPosX(MakeBtnPos);
 			if (JImGuiImpl::Button("Make", JVector2<float>(MakeBtnWidth, 0)))
-			{  
+			{
 				Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Make Avatar",
 					std::make_unique<MakeAvatarF::CompletelyBind>(makeAvatarFunctor),
 					std::make_unique<ClearAvatarF::CompletelyBind>(clearAvatarFunctor)));
-			} 
+			}
 			if (hasAvatar)
 			{
 				JImGuiImpl::BeginTabBar("AvatarSetting");
@@ -69,7 +75,7 @@ namespace JinEngine
 				{
 					if (JImGuiImpl::TabItemButton(JAvatar::tabName[i].c_str()))
 					{
-						int doIndex = i; 
+						int doIndex = i;
 						Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Selecte Tab",
 							std::make_unique<SelectTabF::CompletelyBind>(selectTabFunctor, std::move(doIndex)),
 							std::make_unique<SelectTabF::CompletelyBind>(selectTabFunctor, std::move(FindSelectedTab()))));
@@ -83,28 +89,42 @@ namespace JinEngine
 					if (tabs[index])
 						break;
 				}
- 
+
 				//name explorer button  
 				//const float btnHeight = JImGuiImpl::GetAlphabetSize().y + ImGui::GetStyle().FramePadding.y * 5.0f;
 				const float btnHeight = ImGui::GetFrameHeight() * 1.2f;
-				const JVector2<float> listSize = wndSize - JVector2<float>(xPadding * 2, btnHeight + ImGui::GetCursorPosY());
-				
+				const JVector2<float> listSize = wndSize - JVector2<float>(xPadding * 2, ImGui::GetCursorPosY());
+				const JVector2<float> padding = listSize * 0.002f;
+				const JVector2<float> contentsSize = JVector2<float>(listSize.x - padding.x * 2, btnHeight);
+
+				constexpr uint columnCount = 3;
+				const JVector2<float> innerSize[columnCount] =
+				{
+					JVector2<float>{contentsSize.x * 0.45f, contentsSize.y },
+					JVector2<float>{contentsSize.x * 0.45f, contentsSize.y },
+					JVector2<float>{contentsSize.x * 0.1f, contentsSize.y },
+				};
+				const std::string label[columnCount] =
+				{
+					"Name",
+					"Part",
+					"Erase",
+				};
+
 				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
 				ImGui::BeginListBox(("##AvatarEditor" + GetName()).c_str(), listSize);
-				const float rate[3] = {listSize.x * 0.4f, listSize.x * 0.4f, listSize.x * 0.05f };
-				JEditorStaticAlignCalculator<3> alignCal(rate);
-				alignCal.LabelOnScreen("Name");
-				alignCal.LabelOnScreen("Part");
-				alignCal.LabelOnScreen("Erase");
 				ImGui::Separator();
 
+				JEditorDynamicAlignCalculator<columnCount> alignCal;
+				alignCal.Update(listSize, contentsSize, padding, 0, innerSize, J_EDITOR_INNER_ALGIN_TYPE::ROW, ImGui::GetCursorPos());
+				 
 				for (int i = 0; i < JAvatar::jointGuide[index].size(); ++i)
 				{
 					alignCal.SetNextContentsPosition();
-					JImGuiImpl::Text(JAvatar::jointGuide[index][i].guideName); 
- 
+					JImGuiImpl::Text(JAvatar::jointGuide[index][i].guideName);
+
 					int jointRefIndex = JAvatar::jointGuide[index][i].index;
-					int nowRefValue = targetAvatar.jointReference[jointRefIndex];
+					int nowRefValue = targetAvatar->jointReference[jointRefIndex];
 
 					std::string nowRefJointName;
 					if (nowRefValue == JSkeletonFixedData::incorrectJointIndex)
@@ -115,8 +135,9 @@ namespace JinEngine
 					if (!isValidJointRef[jointRefIndex])
 						JImGuiImpl::SetColor(ImVec4(failColor.x, failColor.y, failColor.z, failColor.w), ImGuiCol_Button);
 
+					JVector2<float> nowSize = alignCal.GetInnerContentsSize();
 					alignCal.SetNextContentsPosition();
-					if (JImGuiImpl::Button((nowRefJointName).c_str(), JVector2<float>(rate[1], 0)))
+					if (JImGuiImpl::Button((nowRefJointName).c_str(), nowSize))
 					{
 						int doJointRefIndex = jointRefIndex;
 						int undoJointRefIndex = jointRefIndex;
@@ -131,14 +152,15 @@ namespace JinEngine
 							std::make_unique<OpenJointSelectorF::CompletelyBind>(openJointSelectorFunctor, std::move(doJointRefIndex)),
 							std::make_unique<OpenJointSelectorF::CompletelyBind>(openJointSelectorFunctor, std::move(undoJointRefIndex))));
 					}
-					 
+
+					nowSize = alignCal.GetInnerContentsSize();
 					alignCal.SetNextContentsPosition();
-					if (JImGuiImpl::Button(("##" + nowRefJointName + "erase").c_str(), JVector2<float>(rate[2], 0)))
+					if (JImGuiImpl::Button(("##" + nowRefJointName + "erase").c_str(), nowSize))
 					{
 						int doJointRefIndex = jointRefIndex;
 						int doJointIndex = JSkeletonFixedData::incorrectJointIndex;
 						int undoJointRefIndex = jointRefIndex;
-						int undoJointIndex = targetAvatar.jointReference[jointRefIndex];
+						int undoJointIndex = targetAvatar->jointReference[jointRefIndex];
 
 						Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Erase Joint Reference",
 							std::make_unique<SetJointRefF::CompletelyBind>(setJointRefFunctor, std::move(doJointRefIndex), std::move(doJointIndex)),
@@ -149,11 +171,11 @@ namespace JinEngine
 						JImGuiImpl::SetColor(preBtnColor, ImGuiCol_Button);
 				}
 				ImGui::EndListBox();
-				 
+
 				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
 				if (JImGuiImpl::Button("Auto", JVector2<float>(ImGui::CalcTextSize("_Auto_").x, 0)))
 				{
-					std::vector<uint8> preJointRef = targetAvatar.jointReference;
+					std::vector<uint8> preJointRef = targetAvatar->jointReference;
 					Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Auto Generate Joint Reference",
 						std::make_unique<SetAllJointRefByAutoF::CompletelyBind>(setAllJointRefByAutoFunctor),
 						std::make_unique<SetAllJointRefByVecF::CompletelyBind>(setAllJointRefByVecFunctor, std::move(preJointRef))));
@@ -177,7 +199,7 @@ namespace JinEngine
 				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + btnPadding);
 				if (JImGuiImpl::Button("Clear", JVector2<float>(ImGui::CalcTextSize("_Clear_").x, 0)))
 				{
-					std::vector<uint8> preJointRef = targetAvatar.jointReference;
+					std::vector<uint8> preJointRef = targetAvatar->jointReference;
 					Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Clear Joint Reference",
 						std::make_unique<ClearJointRefF::CompletelyBind>(clearJointRefFunctor),
 						std::make_unique<SetAllJointRefByVecF::CompletelyBind>(setAllJointRefByVecFunctor, std::move(preJointRef))));
@@ -211,7 +233,7 @@ namespace JinEngine
 					int doJointRefIndex = selectJointRefIndex;
 					int doJointIndex = index;
 					int undoJointRefIndex = selectJointRefIndex;
-					int undoJointIndex = targetAvatar.jointReference[selectJointRefIndex];
+					int undoJointIndex = targetAvatar->jointReference[selectJointRefIndex];
 
 					Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Select Joint Reference",
 						std::make_unique<SetJointRefF::CompletelyBind>(setJointRefFunctor, std::move(doJointRefIndex), std::move(doJointIndex)),
@@ -254,13 +276,13 @@ namespace JinEngine
 		}
 		void JAvatarEditor::SetJointReference(const int jointRefIndex, const int jointIndex)
 		{
-			targetAvatar.jointReference[jointRefIndex] = jointIndex;
+			targetAvatar->jointReference[jointRefIndex] = jointIndex;
 			CheckAllJoint();
 		}
 		void JAvatarEditor::SetAllJointReferenceByVec(std::vector<uint8>&& vec)
 		{
 			for (uint i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
-				targetAvatar.jointReference[i] = std::move(vec[i]);
+				targetAvatar->jointReference[i] = std::move(vec[i]);
 			CheckAllJoint();
 		}
 		void JAvatarEditor::SetAllJointReferenceByAuto()
@@ -279,7 +301,7 @@ namespace JinEngine
 						if (JCUtil::StrToWstr(JAvatar::jointGuide[i][j].defaultJointName) == skeleton->GetJointName(k))
 						{
 							int referenceIndex = JAvatar::jointGuide[i][j].index;
-							targetAvatar.jointReference[referenceIndex] = (uint8)k;
+							targetAvatar->jointReference[referenceIndex] = (uint8)k;
 						}
 					}
 				}
@@ -288,10 +310,10 @@ namespace JinEngine
 		}
 		void JAvatarEditor::ClearJointReference()
 		{
-			uint32 referenceSize = (uint32)targetAvatar.jointReference.size();
+			uint32 referenceSize = (uint32)targetAvatar->jointReference.size();
 			for (uint32 i = 0; i < referenceSize; ++i)
 			{
-				targetAvatar.jointReference[i] = JSkeletonFixedData::incorrectJointIndex;
+				targetAvatar->jointReference[i] = JSkeletonFixedData::incorrectJointIndex;
 				isValidJointRef[i] = true;
 			}
 		}
@@ -312,22 +334,22 @@ namespace JinEngine
 		bool JAvatarEditor::CheckAllJoint()noexcept
 		{
 			uint32 maxJoint = (uint32)targetSkeleton->GetSkeleton()->GetJointCount();
-			uint32 referenceSize = (uint32)targetAvatar.jointReference.size();
+			uint32 referenceSize = (uint32)targetAvatar->jointReference.size();
 
 			for (uint32 i = 0; i < referenceSize; ++i)
 			{
-				if (targetAvatar.jointReference[i] == JSkeletonFixedData::incorrectJointIndex)
+				if (targetAvatar->jointReference[i] == JSkeletonFixedData::incorrectJointIndex)
 				{
 					isValidJointRef[i] = true;
 					continue;
 				}
 				uint8 parentSeletIndex = JSkeletonFixedData::incorrectJointIndex;
-				uint8 parentIndex = targetAvatar.jointReferenceParent[i];
+				uint8 parentIndex = targetAvatar->jointReferenceParent[i];
 				while (parentIndex != JSkeletonFixedData::incorrectJointIndex)
 				{
-					if (targetAvatar.jointReference[parentIndex] != JSkeletonFixedData::incorrectJointIndex)
+					if (targetAvatar->jointReference[parentIndex] != JSkeletonFixedData::incorrectJointIndex)
 					{
-						parentSeletIndex = targetAvatar.jointReference[parentIndex];
+						parentSeletIndex = targetAvatar->jointReference[parentIndex];
 						break;
 					}
 					parentIndex = JAvatar::jointReferenceParent[parentIndex];
@@ -337,7 +359,7 @@ namespace JinEngine
 					isValidJointRef[i] = true;
 					continue;
 				}
-				bool res = targetSkeleton->IsRegularChildJointIndex(targetAvatar.jointReference[i], parentSeletIndex);
+				bool res = targetSkeleton->IsRegularChildJointIndex(targetAvatar->jointReference[i], parentSeletIndex);
 
 				if (res)
 					isValidJointRef[i] = true;
@@ -373,7 +395,7 @@ namespace JinEngine
 		}
 		void JAvatarEditor::StoreAvatarData()
 		{
-			targetSkeleton->AvatarInterface()->SetAvatar(&targetAvatar);
+			targetSkeleton->AvatarInterface()->SetAvatar(targetAvatar.get());
 			SetModifiedBit(targetSkeleton, true);
 		}
 		void JAvatarEditor::DoActivate() noexcept
@@ -399,7 +421,7 @@ namespace JinEngine
 				if (targetSkeleton->HasAvatar())
 				{
 					hasAvatar = true;
-					targetSkeleton->AvatarInterface()->CopyAvatarJointIndex(&targetAvatar);
+					targetSkeleton->AvatarInterface()->CopyAvatarJointIndex(targetAvatar.get());
 					CheckAllJoint();
 				}
 			}

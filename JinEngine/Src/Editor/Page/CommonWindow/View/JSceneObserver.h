@@ -7,6 +7,7 @@
 #include"../../../../Utility/JVector.h"
 #include"../../../../Core/SpaceSpatial/JSpaceSpatialType.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
+
 namespace JinEngine
 {
 	class JCamera;
@@ -72,6 +73,7 @@ namespace JinEngine
 			JSceneObserver(const std::string& name,
 				std::unique_ptr<JEditorAttribute> attribute,
 				const J_EDITOR_PAGE_TYPE pageType,
+				const J_EDITOR_WINDOW_FLAG windowFlag,
 				const std::vector< J_OBSERVER_SETTING_TYPE> useSettingType);
 			~JSceneObserver();
 			JSceneObserver(const JSceneObserver& rhs) = delete;

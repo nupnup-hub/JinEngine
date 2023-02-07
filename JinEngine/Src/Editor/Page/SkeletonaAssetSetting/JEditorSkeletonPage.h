@@ -10,7 +10,7 @@ namespace JinEngine
 		class JAvatarEditor;  
 		class JSceneObserver;
 		class JObjectDetail;
-
+		class JEditorMenuBar;
 		class JEditorSkeletonPage final: public JEditorPage
 		{  
 		private:
@@ -19,9 +19,11 @@ namespace JinEngine
 			std::unique_ptr< JSceneObserver> avatarObserver;
 			std::unique_ptr<JObjectDetail>avatarDetail;
 		private:
+			std::unique_ptr<JEditorMenuBar> menuBar;
+		private:
 			Core::JUserPtr<JScene> avatarScene;
 		private:
-			bool reqInitDockNode;
+			bool reqInit;
 		public:
 			JEditorSkeletonPage(bool hasMetadata);
 			~JEditorSkeletonPage();
@@ -42,6 +44,7 @@ namespace JinEngine
 			void LoadPage(std::wifstream& stream)final;
 		private:
 			void BuildDockNode();
+			void BuildMenuNode();
 		};
 	}
 }

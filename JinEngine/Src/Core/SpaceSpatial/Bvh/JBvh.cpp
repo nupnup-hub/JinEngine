@@ -128,14 +128,14 @@ namespace JinEngine
 		}
 		JGameObject* JBvh::IntersectFirst(const JRay& ray)const noexcept
 		{
-			if (root != nullptr)
+			if (allNodes.size() > 1)
 				return root->IntersectFirst(ray.GetPosV(), ray.GetDirV());
 			else
 				return nullptr;
 		}
 		void JBvh::Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JGameObject*>& res)const noexcept
 		{
-			if (root != nullptr)
+			if (allNodes.size() > 1)
 			{ 
 				if (sortType == J_SPACE_SPATIAL_SORT_TYPE::ASCENDING)
 					root->IntersectAscendingSort(ray.GetPosV(), ray.GetDirV(), res);

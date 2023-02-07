@@ -1,6 +1,5 @@
 #pragma once
-#include"../../JEditorWindow.h"  
-#include"../../../Helpers/JEditorRenameHelper.h"
+#include"../../JEditorWindow.h"   
 #include"../../../Interface/JEditorObjectInterface.h"
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
@@ -15,6 +14,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorStringMap;
+		class JEditorRenameHelper;
 		class JEditorPopupMenu;
 		class JEditorSearchBarHelper;
 		class JObjectExplorer final : public JEditorWindow, public JEditorObjectHandlerInterface
@@ -58,7 +58,10 @@ namespace JinEngine
 			std::unique_ptr<RegisterDestroyGEvF::Functor> regDestroyGobjF;
 			std::unique_ptr<RenameF::Functor> renameF;
 		public:
-			JObjectExplorer(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType);
+			JObjectExplorer(const std::string& name, 
+				std::unique_ptr<JEditorAttribute> attribute, 
+				const J_EDITOR_PAGE_TYPE pageType,
+				const J_EDITOR_WINDOW_FLAG windowFlag);
 			~JObjectExplorer();
 			JObjectExplorer(const JObjectExplorer& rhs) = delete;
 			JObjectExplorer& operator=(const JObjectExplorer& rhs) = delete;

@@ -209,7 +209,7 @@ namespace JinEngine
 #pragma region Node
 
 		JEditorNodeBase::JEditorNodeBase(const std::string& name, const size_t guid, const std::string& info)
-			:name(name), guid(guid), info(info)
+			:name(name), guid(guid), info(info + "TEST")
 		{}
 		void JEditorNodeBase::DrawRect(const JEditorViewUpdateHelper* updateHelper)
 		{
@@ -258,32 +258,38 @@ namespace JinEngine
 
 			if (isMouseInRect && !updateHelper->isDragging)
 			{
+				const JVector2<float> alphaSize = JImGuiImpl::GetAlphabetSize();
+				const JVector2<float> nameTextSize = ImGui::CalcTextSize(GetName().c_str());
+				const float blankWidth = ImGui::CalcTextSize(" ").x * Constants::infoBlankCount;
+				const JVector2<float> nameBBoxMin = bbox.Center();
+				const JVector2<float> nameBBoxSize = JVector2<float>(nameTextSize.x + blankWidth, nameTextSize.y + alphaSize.y * 2);
+				 
+				textAlignCal.Update(GetName(), JVector2<float>(nameBBoxSize.x, 0), false);
+				const std::string alignedName = textAlignCal.MiddleAligned(); 
+
 				std::string info = GetInfo();
-				const uint infoSize = (uint)info.size();
-				if (infoSize > 0)
-				{
-					const JVector2<float> alphaSize = JImGuiImpl::GetAlphabetSize();
-					const float infoWidth = ImGui::CalcTextSize(GetName().c_str()).x + alphaSize.x * Constants::infoBlankCount;
-
-					textAlignCal.Update(info, JVector2<float>(infoWidth, 0), false);
-					const std::string alignedInfo = textAlignCal.MiddleAligned();
-
-					textAlignCal.Update(GetName(), JVector2<float>(infoWidth, 0), false);
-					const std::string alignedName = textAlignCal.MiddleAligned();
-
-					JVector2<float> nameBBoxSize = ImGui::CalcTextSize((alignedName + '\n').c_str());
-					JVector2<float> infoBBoxSize = ImGui::CalcTextSize(alignedInfo.c_str());
-					infoBBoxSize.y += alphaSize.y * 2;
-
-					JVector2<float> infoBBoxMin = bbox.Center();
-					JVector2<float> infoBBoxMax = infoBBoxMin + infoBBoxSize + nameBBoxSize;
+				if (info.size() > 0)
+				{		 
+					textAlignCal.Update(info, JVector2<float>(nameBBoxSize.x, 0), false);
+					const std::string alignedInfo = textAlignCal.LeftAligned();
 					 
-					JImGuiImpl::DrawRectFilledMultiColor(infoBBoxMin, infoBBoxSize, GetInfoBoxColor(), vertexDeltaColor, false);
-					ImGui::SetCursorScreenPos(infoBBoxMin); 
-					JImGuiImpl::Text(alignedName + '\n');
-					ImGui::SetCursorScreenPos(infoBBoxMin + JVector2<float>(0, nameBBoxSize.y));
+					const JVector2<float> infoBBoxSize = nameBBoxSize + JVector2<float>(0, ImGui::CalcTextSize(alignedInfo.c_str()).y + alphaSize.y * 2);
+					JImGuiImpl::DrawRectFilledMultiColor(nameBBoxMin, infoBBoxSize, GetInfoBoxColor(), vertexDeltaColor, true);
+					ImGui::SetCursorScreenPos(nameBBoxMin + JVector2<float>(0, alphaSize.y));
+					JImGuiImpl::Text(alignedName);
+					ImGui::SetCursorScreenPos(nameBBoxMin + JVector2<float>(0, nameBBoxSize.y));
+
+					const float fontScale = ImGui::GetIO().FontGlobalScale;
+					ImGui::SetWindowFontScale(fontScale * 0.8f);
 					JImGuiImpl::Text(alignedInfo);
+					ImGui::SetWindowFontScale(fontScale);
 				}
+				else
+				{
+					JImGuiImpl::DrawRectFilledMultiColor(nameBBoxMin, nameBBoxSize, GetInfoBoxColor(), vertexDeltaColor, false);
+					ImGui::SetCursorScreenPos(nameBBoxMin + JVector2<float>(0, alphaSize.y));
+					JImGuiImpl::Text(alignedName);
+				} 
 			}
 
 			JVector2<float> frameSize(Constants::nodeFrameThickness, Constants::nodeFrameThickness);
@@ -685,9 +691,9 @@ namespace JinEngine
 		{
 			return Private::GetGroupData(GetGuid(), groupGuid) != nullptr;
 		}
-		bool JEditorViewBase::BeginView(const std::string& uniqueName, bool* isOpen, int windowFlag)
+		bool JEditorViewBase::BeginView(const std::string& uniqueName, bool* isOpen, int guiWindowFlag)
 		{
-			isLastViewOpen = JImGuiImpl::BeginWindow(uniqueName, isOpen, windowFlag);
+			isLastViewOpen = JImGuiImpl::BeginWindow(uniqueName, isOpen, guiWindowFlag);
 			return isLastViewOpen;
 		}
 		void JEditorViewBase::OnScreen(const size_t groupGuid)

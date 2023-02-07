@@ -33,8 +33,7 @@ namespace JinEngine
 			else
 				isUpdateInputData = false;
 			 
-			const JVector2<float> inputSize = ImGui::GetItemRectSize();
-			JImGuiImpl::DrawRectFrame(prePos, inputSize, 2.0f, JImGuiImpl::GetUColor(ImGuiCol_FrameBg), false);
+			const JVector2<float> inputSize = ImGui::GetItemRectSize(); 
 			ImGui::GetStyle().FramePadding = preFramePadding;
 		}
 		std::string JEditorSearchBarHelper::GetInputData()const noexcept

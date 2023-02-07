@@ -10,8 +10,11 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JGraphicResourceWatcher::JGraphicResourceWatcher(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorWindow(name, std::move(attribute), pageType)
+		JGraphicResourceWatcher::JGraphicResourceWatcher(const std::string& name,
+			std::unique_ptr<JEditorAttribute> attribute, 
+			const J_EDITOR_PAGE_TYPE pageType,
+			const J_EDITOR_WINDOW_FLAG windowFlag)
+			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
 		{}
 		JGraphicResourceWatcher::~JGraphicResourceWatcher() {}
 

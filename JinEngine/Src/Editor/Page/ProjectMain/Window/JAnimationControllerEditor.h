@@ -1,7 +1,6 @@
 #pragma once
 #include"../../JEditorWindow.h"   
 #include"../../../Interface/JEditorObjectInterface.h"
-#include"../../../Helpers/JEditorInputBuffHelper.h"
 #include"../../../../Object/Resource/JResourceUserInterface.h"
 #include"../../../../Core/Event/JEventListener.h" 
 #include"../../../../Core/FSM/AnimationFSM/JAnimationStateType.h"
@@ -25,6 +24,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorStringMap;
+		class JEditorInputBuffHelper;
 		class JEditorPopupMenu;
 		class JEditorGraphView;
 		class JAnimationControllerEditor final : public JEditorWindow,
@@ -102,6 +102,7 @@ namespace JinEngine
 			JAnimationControllerEditor(const std::string& name,
 				std::unique_ptr<JEditorAttribute> attribute, 
 				const J_EDITOR_PAGE_TYPE ownerPageType, 
+				const J_EDITOR_WINDOW_FLAG windowFlag,
 				const bool hasMetadata);
 			~JAnimationControllerEditor();
 			JAnimationControllerEditor(const JAnimationControllerEditor& rhs) = delete;

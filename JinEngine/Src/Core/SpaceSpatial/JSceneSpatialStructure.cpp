@@ -123,7 +123,7 @@ namespace JinEngine
 					data->Culling(camFrustum, cullingCamPos);
 			}
 		}
-		JGameObject* JSceneSpatialStructure::Intersect(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept
+		JGameObject* JSceneSpatialStructure::IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept
 		{
 			return bvh[(int)layer]->IntersectFirst(ray);
 		}

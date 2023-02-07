@@ -42,8 +42,9 @@ namespace JinEngine
 		JSceneObserver::JSceneObserver(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE pageType,
+			const J_EDITOR_WINDOW_FLAG windowFlag,
 			const std::vector<J_OBSERVER_SETTING_TYPE> useSettingType)
-			:JEditorWindow(name, std::move(attribute), pageType)
+			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
 		{ 
 			editorCamCtrl = std::make_unique<JEditorCameraControl>();
 			coordGrid = std::make_unique<JEditorSceneCoordGrid>();
@@ -194,13 +195,15 @@ namespace JinEngine
 						editorCamCtrl->MouseMove(cameraComp.Get(), ImGui::GetMousePos().x, ImGui::GetMousePos().y);
 					editorCamCtrl->KeyboardInput(cameraComp.Get());
 				}
+				JTransform* camTransform = cameraObj->GetTransform();
+				coordGrid->Update(JVector2<float>(camTransform->GetPosition().x, camTransform->GetPosition().z));
+				menubar->Update(true);
 
 				auto selected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
 				const bool isValidObject = selected.IsValid() && selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT;
 				if (ImGui::IsMouseDown(0))
 				{
-					JGameObject* hitObj = nullptr;
-					//JGameObject* hitObj = JEditorGameObjectSurpportTool::SceneIntersect(scene, cameraComp, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
+					JGameObject* hitObj = JEditorGameObjectSurpportTool::SceneIntersect(scene, cameraComp, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, ImGui::GetCursorPos());
 					if (hitObj != nullptr)
 					{
 						const bool canSetSelected = !selected.IsValid() || (selected.IsValid() &&
@@ -209,18 +212,13 @@ namespace JinEngine
 							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(hitObj)));
 					}
 				}
-
-				JTransform* camTransform = cameraObj->GetTransform();
-				coordGrid->Update(JVector2<float>(camTransform->GetPosition().x, camTransform->GetPosition().z));
-				menubar->Update(true);
-				//Warning!
-				//Has order dependency for ImGui::CursorPos 
+				 
 				for (uint i = 0; i < toolCount; ++i)
 				{
 					J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType = toolVec[i]->GetToolType();
 					J_OBSERVER_SETTING_TYPE settingType = ConvertToolToSettingType(toolType);
 					if (toolVec[i]->IsActivated())
-						toolVec[i]->Update(JEditorPageShareData::GetSelectedObj(GetOwnerPageType()), cameraComp);
+						toolVec[i]->Update(JEditorPageShareData::GetSelectedObj(GetOwnerPageType()), cameraComp, ImGui::GetCursorPos());
 				}
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
 				JImGuiImpl::Image(*cameraComp.Get(), ImGui::GetWindowSize());

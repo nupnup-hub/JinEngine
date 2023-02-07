@@ -9,6 +9,7 @@
 #include"Page/ProjectSelector/JProjectSelectorPage.h" 
 #include"GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../Utility/JCommonUtility.h"
+#include"../Core/File/JFileIOHelper.h"
 #include"../Core/File/JFileConstant.h"
 #include"../Application/JApplicationVariable.h" 
 #include"../Object/Resource/Scene/JScene.h"
@@ -30,6 +31,18 @@ namespace JinEngine
 		{
 			const std::wstring editorPageDataFileName = L"EditorData.txt";
 		}
+		namespace Private
+		{
+			static std::wstring GetSrcImGuiSaveDataPath()noexcept 
+			{
+				return Core::JFileConstant::MakeFilePath(JApplicationVariable::GetEnginePath(), L"imgui.ini"); 
+			}
+			static std::wstring GetCopiedImGuiSaveDataPath()noexcept
+			{
+				return Core::JFileConstant::MakeFilePath(JApplicationVariable::GetProjectEditorResourcePath(), L"imgui.ini");;
+			}
+		}
+
 
 		void JEditorManager::Initialize()
 		{
@@ -43,6 +56,7 @@ namespace JinEngine
 			{
 				JEditorClosePageEvStruct evStruct{ editorPage[i]->GetPageType() };
 				ClosePage(&evStruct);
+				editorPage[i]->Clear();
 			}
 
 			JEditorEvent::Clear();
@@ -53,12 +67,16 @@ namespace JinEngine
 			editorPageMap.clear();
 			opendEditorPage.clear();
 			editorPage.clear();
+			 
+			if(JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
+				JFileIOHelper::CopyFile(Private::GetSrcImGuiSaveDataPath(), Private::GetCopiedImGuiSaveDataPath());
 		}
 		void JEditorManager::OpenProjectSelector()
 		{
 			editorPage.push_back(std::make_unique<JProjectSelectorPage>());
 			editorPageMap.emplace(editorPage[0]->GetPageType(), editorPage[0].get());
 
+			editorPage[0]->Initialize();
 			editorPage[0]->SetInitWindow();
 			JEditorOpenPageEvStruct evOpenStruct{ editorPage[0]->GetPageType() };
 			JEditorActPageEvStruct evActStruct{ editorPage[0]->GetPageType()};
@@ -66,13 +84,14 @@ namespace JinEngine
 			ActivatePage(&evActStruct);
 		}
 		void JEditorManager::OpenProject()
-		{
-			const std::wstring imguiTxt = Core::JFileConstant::MakeFilePath(JApplicationVariable::GetEnginePath(), L"imgui.ini");
-			bool hasMetadata = (_waccess(GetMetadataPath().c_str(), 00) != -1);
-			bool hasImguiTxt = (_waccess(imguiTxt.c_str(), 00) != -1);
-			if (!(hasMetadata && hasImguiTxt))
-				_wremove(imguiTxt.c_str());
-
+		{ 
+			const bool hasMetadata = (_waccess(GetMetadataPath().c_str(), 00) != -1);
+			const bool hasImguiTxt = (_waccess(Private::GetCopiedImGuiSaveDataPath().c_str(), 00) != -1);
+			   
+			_wremove(Private::GetSrcImGuiSaveDataPath().c_str());
+			if (hasImguiTxt)
+				JFileIOHelper::CopyFile(Private::GetCopiedImGuiSaveDataPath(), Private::GetSrcImGuiSaveDataPath());
+			 
 			editorPage.push_back(std::make_unique<JProjectMainPage>(hasMetadata));
 			editorPage.push_back(std::make_unique<JEditorSkeletonPage>(hasMetadata));
  

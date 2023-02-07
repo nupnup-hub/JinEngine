@@ -130,10 +130,10 @@ namespace JinEngine
 	{
 		return componentCash.find(cType) != componentCash.end();
 	}
-	JGameObject* JScene::Intersect(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept
+	JGameObject* JScene::IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept
 	{
 		if (spatialStructure != nullptr)
-			return spatialStructure->Intersect(layer, ray);
+			return spatialStructure->IntersectFirst(layer, ray);
 		else
 			return nullptr;
 	}

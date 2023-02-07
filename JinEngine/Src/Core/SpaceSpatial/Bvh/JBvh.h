@@ -23,6 +23,7 @@ namespace JinEngine
 		class JBvh : public JSpaceSpatial
 		{
 		private:
+			//root node allways existing until call unbuld or clear
 			JBvhNode* root = nullptr;
 			std::vector<std::unique_ptr<JBvhNode>> allNodes;
 			std::unordered_map<size_t, JBvhNode*> leafNodeMap;

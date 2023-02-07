@@ -16,7 +16,10 @@ namespace JinEngine
 			std::unique_ptr<JReflectionGuiWidgetHelper> guiHelper;
 			Core::JUserPtr<JObject> preSelected; 
 		public:
-			JObjectDetail(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType);
+			JObjectDetail(const std::string& name, 
+				std::unique_ptr<JEditorAttribute> attribute,
+				const J_EDITOR_PAGE_TYPE pageType,
+				const J_EDITOR_WINDOW_FLAG windowFlag);
 			~JObjectDetail();
 			JObjectDetail(const JObjectDetail& rhs) = delete;
 			JObjectDetail& operator=(const JObjectDetail& rhs) = delete;

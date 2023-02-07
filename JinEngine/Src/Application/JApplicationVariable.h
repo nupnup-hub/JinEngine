@@ -55,7 +55,7 @@ namespace JinEngine
 			static std::wstring GetProjectShaderMetafilePath()noexcept;
 			static std::wstring GetProjectDefaultResourcePath()noexcept;
 			static std::wstring GetProjectEditorResourcePath()noexcept;
-			static std::wstring GetProjectResourceCashPath()noexcept;
+			static std::wstring GetProjectCashPath()noexcept;
 			static std::wstring GetProjectVersionFilePath()noexcept;
 			static std::wstring GetProjectContentScenePath()noexcept;
 			static std::wstring GetProjectContentScriptPath()noexcept;

@@ -271,7 +271,7 @@ namespace JinEngine
 		{
 		public:
 			using Ptr = Ret(Object::*)(Param...); 
-			using CPtr = Ret(Object::*)(Param...)const;
+			using CPtr = Ret(Object::*)(Param...)const; 
 			using Functor = JFunctor<Ret, Param...>;
 			using CompletelyBind = JBindHandle<Functor, Param...>;
 		};

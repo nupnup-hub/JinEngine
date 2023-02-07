@@ -72,7 +72,7 @@ namespace JinEngine
 		public:
 			void Culling(const JCullingFrustum& camFrustum)noexcept;  
 			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
-			JGameObject* Intersect(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
+			JGameObject* IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
 			void UpdateGameObject(JGameObject* gameObject)noexcept;
 		public:
 			void AddGameObject(JGameObject* gameObject)noexcept;

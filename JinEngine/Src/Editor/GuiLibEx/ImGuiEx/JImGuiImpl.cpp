@@ -177,7 +177,7 @@ namespace JinEngine
 				colors[ImGuiCol_WindowBg] = ImVec4(0.185f, 0.185f, 0.185f, 1.00f);
 				colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
 				colors[ImGuiCol_PopupBg] = ImVec4(0.145f, 0.145f, 0.145f, 0.92f);
-				colors[ImGuiCol_Border] = ImVec4(0.19f, 0.19f, 0.19f, 0.29f);
+				colors[ImGuiCol_Border] = ImVec4(0.5f, 0.5f, 0.5f, 0.7f);
 				colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.24f);
 				colors[ImGuiCol_FrameBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.54f);
 				colors[ImGuiCol_FrameBgHovered] = ImVec4(0.19f, 0.19f, 0.19f, 0.54f);
@@ -199,8 +199,8 @@ namespace JinEngine
 				colors[ImGuiCol_Header] = ImVec4(0.00f, 0.00f, 0.00f, 0.52f);
 				colors[ImGuiCol_HeaderHovered] = ImVec4(0.00f, 0.00f, 0.00f, 0.36f);
 				colors[ImGuiCol_HeaderActive] = ImVec4(0.20f, 0.22f, 0.23f, 0.33f);
-				colors[ImGuiCol_Separator] = ImVec4(0.28f, 0.28f, 0.28f, 0.29f);
-				colors[ImGuiCol_SeparatorHovered] = ImVec4(0.44f, 0.44f, 0.44f, 0.29f);
+				colors[ImGuiCol_Separator] = ImVec4(0.28f, 0.28f, 0.28f, 1.00f);
+				colors[ImGuiCol_SeparatorHovered] = ImVec4(0.44f, 0.44f, 0.44f, 1.00f);
 				colors[ImGuiCol_SeparatorActive] = ImVec4(0.40f, 0.44f, 0.47f, 1.00f);
 				colors[ImGuiCol_ResizeGrip] = ImVec4(0.28f, 0.28f, 0.28f, 0.29f);
 				colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.44f, 0.44f, 0.44f, 0.29f);
@@ -426,14 +426,32 @@ namespace JinEngine
 			const JVector2<float> windowPaddig = ImGui::GetStyle().WindowPadding;
 			const float windowBorder = ImGui::GetStyle().WindowBorderSize;
 			return ImGui::GetWindowSize() - (windowPaddig * 2) - JVector2<float>(windowBorder * 2);
-		}
-		JVector2<float> JImGuiImpl::GetLocalCursorPos()noexcept
+		} 
+		ImGuiWindow* JImGuiImpl::GetGuiWindow(const ImGuiID id)noexcept
 		{
-			return ImGui::GetCursorPos();
+			ImGuiContext* cont = ImGui::GetCurrentContext();
+			const int wndCount = (int)cont->Windows.size();
+			for (int i = 0; i < wndCount; ++i)
+			{
+				if (cont->Windows[i]->ID == id)
+					return cont->Windows[i];
+			}
+			return nullptr;
 		}
-		JVector2<float> JImGuiImpl::GetWorldCursorPos()noexcept
+		ImGuiWindow* JImGuiImpl::GetGuiWindow(const ImGuiID id, _Out_ int& order)noexcept
 		{
-			return GetLocalCursorPos() + ImGui::GetWindowPos();
+			order = -1;
+			ImGuiContext* cont = ImGui::GetCurrentContext();
+			const int wndCount = (int)cont->Windows.size();
+			for (int i = 0; i < wndCount; ++i)
+			{
+				if (cont->Windows[i]->ID == id)
+				{
+					order = i;
+					return cont->Windows[i];
+				}
+			}
+			return nullptr;
 		}
 		bool JImGuiImpl::BeginWindow(const std::string& name, bool* p_open, ImGuiWindowFlags flags)
 		{

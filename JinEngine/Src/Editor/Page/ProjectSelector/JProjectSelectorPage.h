@@ -20,9 +20,6 @@ namespace JinEngine
 		public:
 			J_EDITOR_PAGE_TYPE GetPageType()const noexcept final;
 			void SetInitWindow() final;
-		public:
-			//hasImguiTxt = imgui widget data .txt file
-			void Initialize()final;
 		public: 
 			void UpdatePage()final;
 		public:

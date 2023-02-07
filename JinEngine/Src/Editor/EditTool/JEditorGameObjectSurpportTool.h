@@ -28,12 +28,13 @@ namespace JinEngine
 		public:
 			virtual ~JEditorGameObjectSurpportTool() = default;
 		public:
-			virtual void Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam) = 0;
+			virtual void Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam, const JVector2<float>& viewLocalPos) = 0;
 		public:
 			virtual	J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE GetToolType()const noexcept = 0; 
 			static JGameObject* SceneIntersect(Core::JUserPtr<JScene> scene,
 				Core::JUserPtr<JCamera> cam,
-				Core::J_SPACE_SPATIAL_LAYER layer) noexcept;
+				Core::J_SPACE_SPATIAL_LAYER layer, 
+				const JVector2<float>& viewLocalPos) noexcept;
 		public:
 			bool IsEditable(JGameObject* obj)const noexcept;
 		};
@@ -92,10 +93,10 @@ namespace JinEngine
 				const float sizeRate);
 			~JEditorTransformTool();
 		public:
-			void Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam)final;
+			void Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam, const JVector2<float>& viewLocalPos)final;
 		private: 
 			void UpdateArrowPosition(JGameObject* selected, JCamera* cam);
-			void UpdateArrowDragging(JGameObject* selected, JCamera* cam);
+			void UpdateArrowDragging(JGameObject* selected, JCamera* cam, const JVector2<float>& viewLocalPos);
 		private:
 			static UpdateTransformT::Ptr GetUpdateTransformPtr(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType)noexcept;
 			static void UpdateSelectedPosition(JEditorTransformTool* tool, JGameObject* selected, JCamera* cam)noexcept;

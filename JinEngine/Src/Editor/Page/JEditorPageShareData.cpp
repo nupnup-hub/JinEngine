@@ -1,7 +1,8 @@
 #include"JEditorPageShareData.h" 
 #include"../Page/JEditorPage.h"
 #include"../../Object/JObject.h"
-#include"../../Object/GameObject/JGameObject.h"
+#include"../../Object/GameObject/JGameObject.h" 
+#include<vector>
 
 namespace JinEngine
 {
@@ -11,13 +12,16 @@ namespace JinEngine
 		class ShareData
 		{
 		public:
+			const uint guiWindowID;
+			const uint dockSpaceID;
+		public:
 			Core::JUserPtr<JObject> openObject;
 			Core::JUserPtr<JObject> selectObj;
 			std::unique_ptr<GetPageFlagF::Functor> getFageFlagF;
-			size_t dragGuid = 0;
+			size_t dragGuid = 0; 
 		public: 
-			ShareData(std::unique_ptr<GetPageFlagF::Functor> getFageFlagF)
-				:getFageFlagF(std::move(getFageFlagF))
+			ShareData(const uint guiWindowID, const uint dockSpaceID, std::unique_ptr<GetPageFlagF::Functor> getFageFlagF)
+				:guiWindowID(guiWindowID), dockSpaceID(dockSpaceID), getFageFlagF(std::move(getFageFlagF))
 			{}
 		};
 
@@ -26,9 +30,9 @@ namespace JinEngine
 			static std::unique_ptr<ShareData> pageData[(int)J_EDITOR_PAGE_TYPE::COUNT]; 
 		}
 
-		void JEditorPageShareData::RegisterPage(const J_EDITOR_PAGE_TYPE pageType, GetPageFlagF::CPtr getFlagPtr, JEditorPage* page)noexcept
-		{
-			pageData[(int)pageType] = std::make_unique<ShareData>(std::make_unique<GetPageFlagF::Functor>(getFlagPtr, page));
+		void JEditorPageShareData::RegisterPage(PageInitData& initData)noexcept
+		{	 
+			pageData[(int)initData.pageType] = std::make_unique<ShareData>(initData.guiWindowID, initData.dockSpaceID, std::move(initData.getPtr));
 		}
 		void JEditorPageShareData::UnRegisterPage(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
@@ -42,6 +46,10 @@ namespace JinEngine
 			pagedata->openObject.Clear();
 			pagedata->selectObj.Clear();
 		}
+		bool JEditorPageShareData::IsRegisteredPage(const J_EDITOR_PAGE_TYPE pageType)noexcept
+		{
+			return pageData[(int)pageType] != nullptr ? true : false;
+		}
 		bool JEditorPageShareData::HasValidOpenPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
 			if (pageData[(int)pageType] == nullptr)
@@ -51,6 +59,14 @@ namespace JinEngine
 				return pageData[(int)pageType]->openObject.IsValid();
 			else
 				return true;
+		}
+		uint JEditorPageShareData::GetPageGuiWindowID(const J_EDITOR_PAGE_TYPE pageType)noexcept
+		{
+			return pageData[(int)pageType]->guiWindowID;
+		}
+		uint JEditorPageShareData::GetPageDockSpaceID(const J_EDITOR_PAGE_TYPE pageType)noexcept
+		{
+			return pageData[(int)pageType]->dockSpaceID;
 		}
 		JEditorOpenPageEvStruct JEditorPageShareData::GetOpendPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{ 

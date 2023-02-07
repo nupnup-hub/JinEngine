@@ -9,8 +9,11 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JAppElapsedTime::JAppElapsedTime(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorWindow(name, std::move(attribute), pageType)
+		JAppElapsedTime::JAppElapsedTime(const std::string& name,
+			std::unique_ptr<JEditorAttribute> attribute, 
+			const J_EDITOR_PAGE_TYPE pageType,
+			const J_EDITOR_WINDOW_FLAG windowFlag)
+			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
 		{ 
 		}
 		JAppElapsedTime::~JAppElapsedTime() {}

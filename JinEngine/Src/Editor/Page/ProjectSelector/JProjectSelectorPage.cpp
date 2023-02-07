@@ -17,7 +17,8 @@ namespace JinEngine
 		{
 			projectHub = std::make_unique<JProjectSelectorHub>("Project Selector",
 				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
-				GetPageType());
+				GetPageType(), 
+				J_EDITOR_WINDOW_NONE);
 
 			std::vector<JEditorWindow*> windows
 			{
@@ -25,12 +26,9 @@ namespace JinEngine
 			};
 
 			AddWindow(windows);
-			JEditorPageShareData::RegisterPage(GetPageType(), &JProjectSelectorPage::GetPageFlag, this);
 		}
 		JProjectSelectorPage::~JProjectSelectorPage()
-		{
-			JEditorPageShareData::UnRegisterPage(GetPageType());
-		}
+		{ }
 		J_EDITOR_PAGE_TYPE JProjectSelectorPage::GetPageType()const noexcept
 		{
 			return J_EDITOR_PAGE_TYPE::PROJECT_SELECTOR;
@@ -47,8 +45,6 @@ namespace JinEngine
 			for (uint i = 0; i < currOpWndCount; ++i)
 				GetOpenWindow(i)->SetLastActivated(true);		 
 		}
-		void JProjectSelectorPage::Initialize()
-		{}
 		void JProjectSelectorPage::UpdatePage()
 		{
 			ImGui::SetWindowFontScale(2);
@@ -61,10 +57,10 @@ namespace JinEngine
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
 			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::BOLD); 
-			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
-			windowFlag |= ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoInputs;
+			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
+			guiWindowFlag |= ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoInputs;
 
-			EnterPage(windowFlag); 
+			EnterPage(guiWindowFlag); 
 			ImGui::PopStyleVar(3);
 
 			//JImGuiImpl::AddImage(*(backgroundTexture.Get()), wPos, wSize, false, IM_COL32(255, 255, 255, 50));

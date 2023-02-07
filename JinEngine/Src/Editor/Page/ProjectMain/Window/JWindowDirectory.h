@@ -1,7 +1,6 @@
 #pragma once
 #include"../../JEditorWindow.h"     
 #include"../../WindowInterface/JEditorPreviewInterface.h"
-#include"../../../Helpers/JEditorRenameHelper.h"
 #include"../../../Interface/JEditorObjectInterface.h"
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/JResourceType.h"
@@ -26,6 +25,7 @@ namespace JinEngine
 		class JEditorStringMap;
 		class JEditorPopupMenu; 
 		class JEditorSearchBarHelper;
+		class JEditorRenameHelper;
 
 		class JWindowDirectory final : public JEditorWindow, 
 			public JEditorPreviewInterface,
@@ -82,7 +82,10 @@ namespace JinEngine
 			float childWindowHeight = 0; 
 			std::wstring importFilePath; 
 		public:
-			JWindowDirectory(const std::string &name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
+			JWindowDirectory(const std::string &name,
+				std::unique_ptr<JEditorAttribute> attribute,
+				const J_EDITOR_PAGE_TYPE ownerPageType,
+				const J_EDITOR_WINDOW_FLAG windowFlag);
 			~JWindowDirectory();
 			JWindowDirectory(const JWindowDirectory& rhs) = delete;
 			JWindowDirectory& operator=(const JWindowDirectory& rhs) = delete;

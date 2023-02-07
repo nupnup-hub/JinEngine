@@ -51,14 +51,35 @@ namespace JinEngine
 				}
 				else
 				{
-					page.AddEventNotification(*JEditorEvent::EvInterface(), page.GetGuid(), J_EDITOR_EVENT::CLOSE_WINDOW,
-						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorCloseWindowEvStruct>(selectedWindow->GetName(), page.GetPageType())));
+					const bool selectedHasDockNode = JImGuiImpl::GetGuiWindow(ImHashStr(selectedWindow->GetName().c_str()))->DockNode;
+					bool canClose = false;
+					if (!selectedHasDockNode)
+						canClose = true;
+					else
+					{
+						uint dockCount = 0;
+						const uint wndCount = (uint)page.opendWindow.size();
+						for (uint i = 0; i < wndCount; ++i)
+						{ 
+							if (JImGuiImpl::GetGuiWindow(ImHashStr(page.opendWindow[i]->GetName().c_str()))->DockNode)
+								++dockCount;
+						}
+						if (dockCount > 1)
+							canClose = true;
+					}
+					if (canClose)
+					{
+						page.AddEventNotification(*JEditorEvent::EvInterface(), page.GetGuid(), J_EDITOR_EVENT::CLOSE_WINDOW,
+							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorCloseWindowEvStruct>(selectedWindow->GetName(), page.GetPageType())));
+					}
+					else
+						*selectedWindow->GetOpenPtr() = true;
 				}
 			};
 
-			auto openSimpleWindowLam = [](bool* isOpen) {*isOpen = !(*isOpen);};
+			auto openSimpleWindowLam = [](bool* isOpen) {*isOpen = !(*isOpen); };
 			openEditorWindowFunctor = std::make_unique<OpenEditorWindowF::Functor>(openEditorWindowLam);
-			openSimpleWindowFunctor = std::make_unique<OpenSimpleWindowF::Functor>(openSimpleWindowLam);			 
+			openSimpleWindowFunctor = std::make_unique<OpenSimpleWindowF::Functor>(openSimpleWindowLam);
 		}
 		JEditorPage::~JEditorPage()
 		{}
@@ -91,8 +112,37 @@ namespace JinEngine
 		{
 			return opendPopupWindow;
 		}
-		void JEditorPage::EnterPage(const int windowFlag)noexcept
+		std::vector<JEditorWindow*> JEditorPage::GetWindowVec()const noexcept
 		{
+			return windows;
+		}
+		void JEditorPage::Initialize()
+		{
+			JEditorPageShareData::PageInitData initData;
+			initData.guiWindowID = ImHashStr(GetName().c_str());
+			initData.dockSpaceID = ImHashStr(GetDockNodeName().c_str());
+			initData.pageType = GetPageType();
+
+			JEditorPageShareData::GetPageFlagF::CPtr ptr = &JEditorPage::GetPageFlag;
+			initData.getPtr = std::make_unique<JEditorPageShareData::GetPageFlagF::Functor>(ptr, this);
+			JEditorPageShareData::RegisterPage(initData);
+		}
+		void JEditorPage::Clear()
+		{
+			JEditorPageShareData::UnRegisterPage(GetPageType());
+		}
+		void JEditorPage::EnterPage(const int guiWindowFlag)noexcept
+		{
+			ImGuiWindowClass window_class;
+			ImGuiDockNodeFlags flag = ImGuiDockNodeFlags_NoDockingSplitMe |
+				ImGuiDockNodeFlags_NoDockingSplitOther |
+				ImGuiDockNodeFlags_NoDockingOverMe |
+				ImGuiDockNodeFlags_NoDockingOverOther |
+				ImGuiDockNodeFlags_NoDockingOverEmpty;
+
+			window_class.DockNodeFlagsOverrideSet = Core::AddSQValue(window_class.DockNodeFlagsOverrideSet, flag);
+			ImGui::SetNextWindowClass(&window_class);
+
 			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
 			{
 				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -100,11 +150,20 @@ namespace JinEngine
 			}
 
 			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING))
-			{ 
+			{
 				bool res = false;
-				res = JImGuiImpl::BeginWindow(GetName().c_str(), &isPageOpen, (ImGuiWindowFlags)windowFlag);
+				res = JImGuiImpl::BeginWindow(GetName().c_str(), &isPageOpen, (ImGuiWindowFlags)guiWindowFlag);
 				if (!isPageOpen)
 				{
+				//	auto lam = [](int a, int b)
+				//	{
+				//		return a + b;
+					//};
+					//using fType = Core::JFunctor<int, int, int>;
+				//	fType funtor(lam);
+				//	Core::JBindHandle<fType, int, Core::EmptyType> b(funtor, 1, Core::EmptyType{});
+					//b.Invoke(3);
+
 					if (closeConfirmPopupWindow == nullptr || closeConfirmPopupWindow->IsIgnoreConfirm())
 					{
 						AddEventNotification(*JEditorEvent::EvInterface(),
@@ -122,13 +181,13 @@ namespace JinEngine
 				}
 			}
 			else
-				ImGui::Begin(GetName().c_str(), 0, (ImGuiWindowFlags)windowFlag);
+				ImGui::Begin(GetName().c_str(), 0, (ImGuiWindowFlags)guiWindowFlag);
 		}
 		void JEditorPage::ClosePage()noexcept
 		{
 			ImGui::End();
 			SetLastActivated(IsActivated());
- 
+
 			if (Core::HasSQValueEnum(GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
 			{
 				ImGui::PopItemFlag();
@@ -201,7 +260,7 @@ namespace JinEngine
 		{
 			if (window == nullptr)
 				return;
- 
+
 			int windowIndex = FindWindowIndex(window, opendWindow.cbegin(), (uint)opendWindow.size());
 			if (windowIndex == -1)
 				return;
@@ -226,7 +285,7 @@ namespace JinEngine
 			focusWindow = nullptr;
 		}
 		void JEditorPage::OpenPopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType,
-			const std::string& desc, 
+			const std::string& desc,
 			std::vector<PopupWndFuncTuple>&& tupleVec)
 		{
 			OpenPopupWindow(FindEditorPopupWindow(popupType), desc, std::move(tupleVec));
@@ -234,7 +293,7 @@ namespace JinEngine
 		void JEditorPage::OpenPopupWindow(JEditorPopupWindow* popupWindow,
 			const std::string& desc,
 			std::vector<PopupWndFuncTuple>&& tupleVec)
-		{ 
+		{
 			if (popupWindow != nullptr && !popupWindow->IsOpen())
 			{
 				SetPageFlag(Core::AddSQValueEnum(GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
@@ -249,13 +308,13 @@ namespace JinEngine
 			}
 		}
 		void JEditorPage::ClosePopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType)
-		{ 
+		{
 			ClosePopupWindow(FindEditorPopupWindow(popupType));
 		}
 		void JEditorPage::ClosePopupWindow(JEditorPopupWindow* popupWindow)
-		{ 
+		{
 			if (popupWindow != nullptr && popupWindow->IsOpen())
-			{				 
+			{
 				SetPageFlag(Core::MinusSQValueEnum(GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
 				popupWindow->SetClose();
 				opendPopupWindow = nullptr;
@@ -380,7 +439,7 @@ namespace JinEngine
 
 			JFileIOHelper::StoreHasObjectIden(stream, JEditorPageShareData::GetOpendPageData(GetPageType()).openSelected.Get());
 			JFileIOHelper::StoreHasObjectIden(stream, JEditorPageShareData::GetSelectedObj(GetPageType()).Get());
-			
+
 			bool hasFocusWindow = focusWindow != nullptr;
 			JFileIOHelper::StoreAtomicData(stream, L"HasFocusWindow:", hasFocusWindow);
 			if (hasFocusWindow)

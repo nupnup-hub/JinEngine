@@ -105,11 +105,11 @@ namespace JinEngine
 		protected:
 			JEditorNodeBase* AddNode(const size_t groupGuid, std::unique_ptr<JEditorNodeBase>&& newNode);
 		public:
-			virtual void BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid = GetDefaultGroupGuid(), const std::string& info = " ")noexcept = 0;
+			virtual void BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid = GetDefaultGroupGuid(), const std::string& info = "")noexcept = 0;
 			void RegisterGroup(const size_t groupGuid, IsValidGroupF::Ptr ptr = nullptr)noexcept; 
 			bool HasGroupData(const size_t groupGuid)const noexcept;
 		public:
-			bool BeginView(const std::string& uniqueName, bool* isOpen, int windowFlag);
+			bool BeginView(const std::string& uniqueName, bool* isOpen, int guiWindowFlag);
 			void OnScreen(const size_t groupGuid = GetDefaultGroupGuid());
 			void EndView(); 
 		protected:
@@ -128,14 +128,14 @@ namespace JinEngine
 		class JEditorBinaryTreeView : public JEditorTreeViewBase
 		{  
 		public: 
-			void BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid = GetDefaultGroupGuid(), const std::string& info = " ")noexcept final;
+			void BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid = GetDefaultGroupGuid(), const std::string& info = "")noexcept final;
 			void BuildEndSplit()noexcept;
 		};
 
 		class JEdtiorTreeView : public JEditorTreeViewBase
 		{
 		public:
-			void BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid = GetDefaultGroupGuid(), const std::string& info = " ")noexcept final;
+			void BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid = GetDefaultGroupGuid(), const std::string& info = "")noexcept final;
 		};
 
 		class JEditorGraphView : public JEditorViewBase
@@ -146,7 +146,7 @@ namespace JinEngine
 			size_t connectToGuid = 0;
 			std::unique_ptr<Core::JBindHandleBase> successBind = nullptr;
 		public:
-			void BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid = GetDefaultGroupGuid(), const std::string& info = " ")noexcept final;
+			void BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid = GetDefaultGroupGuid(), const std::string& info = "")noexcept final;
 			void ConnectNode(const size_t from, const size_t to)noexcept;
 			void SetConnectNodeMode(std::unique_ptr<Core::JBindHandleBase>&& newSuccessBind = nullptr)noexcept;
 		protected:

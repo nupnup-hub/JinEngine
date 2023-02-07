@@ -8,8 +8,11 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JStringConvertTest::JStringConvertTest(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorWindow(name, std::move(attribute), pageType)
+		JStringConvertTest::JStringConvertTest(const std::string& name,
+			std::unique_ptr<JEditorAttribute> attribute, 
+			const J_EDITOR_PAGE_TYPE pageType,
+			const J_EDITOR_WINDOW_FLAG windowFlag)
+			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
 		{
 			buf.resize(255);
 		}

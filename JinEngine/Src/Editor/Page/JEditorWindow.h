@@ -1,7 +1,7 @@
 #pragma once
 #include"JEditor.h"  
 #include"JEditorPageEnum.h"
-#include"JEditorWindowType.h" 
+#include"JEditorWindowEnum.h" 
 #include"JEditorWindowFontType.h" 
 #include"../../Core/Func/Functor/JFunctor.h"
  
@@ -10,6 +10,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorAttribute;
+		class JEditorWindowDockUpdateHelper;
 		class JEditorWindow : public JEditor
 		{ 
 		protected:
@@ -19,8 +20,15 @@ namespace JinEngine
 			static EventFunctor* evFunctor;
 		private: 
 			const J_EDITOR_PAGE_TYPE ownerPageType; 
+			bool isWindowOpen = false;
+			J_EDITOR_WINDOW_FLAG windowFlag;
+		private:
+			std::unique_ptr<JEditorWindowDockUpdateHelper> dockUpdateHelper;
 		public:
-			JEditorWindow(const std::string name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
+			JEditorWindow(const std::string name,
+				std::unique_ptr<JEditorAttribute> attribute, 
+				const J_EDITOR_PAGE_TYPE ownerPageType, 
+				const J_EDITOR_WINDOW_FLAG windowFlag);
 			~JEditorWindow();
 			JEditorWindow(const JEditorWindow& rhs) = delete;
 			JEditorWindow& operator=(const JEditorWindow& rhs) = delete;
@@ -30,7 +38,7 @@ namespace JinEngine
 		public:
 			virtual void UpdateWindow() = 0;
 		protected:
-			void EnterWindow(int windowFlag);
+			void EnterWindow(int guiWindowFlag);
 			void CloseWindow();
 		protected:
 			void UpdateMouseClick();

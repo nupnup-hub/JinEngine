@@ -50,7 +50,8 @@ namespace JinEngine
 		}
 		JGameObject* JEditorGameObjectSurpportTool::SceneIntersect(Core::JUserPtr<JScene> scene, 
 			Core::JUserPtr<JCamera> cam,
-			Core::J_SPACE_SPATIAL_LAYER layer) noexcept
+			Core::J_SPACE_SPATIAL_LAYER layer,
+			const JVector2<float>& viewLocalPos) noexcept
 		{
 			if (!scene.IsValid() || !cam.IsValid())
 				return nullptr;
@@ -60,7 +61,8 @@ namespace JinEngine
 			if (!JImGuiImpl::IsMouseInRect(windowPos, windowSize))
 				return nullptr;
 
-			const JVector2<float> localMousePos = ImGui::GetMousePos() - JImGuiImpl::GetWorldCursorPos();
+			//Editor Window view port size = tab + menu + contents 
+			const JVector2<float> localMousePos = ImGui::GetMousePos() -(ImGui::GetWindowPos() + viewLocalPos);
 			const JVector2<float> camViewSize = JVector2<float>(cam->GetViewWidth(), cam->GetViewHeight());
 			const float widthRate = (float)camViewSize.x / windowSize.x;
 			const float heightRate = (float)camViewSize.y / windowSize.y;
@@ -74,7 +76,7 @@ namespace JinEngine
 			const XMVECTOR rayOri = XMVector3TransformCoord(XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), invView);
 			const XMVECTOR rayDir = XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(vx, vy, 1.0f, 0.0f), invView));
 
-			return scene->Intersect(layer, Core::JRay{ rayOri, rayDir });
+			return scene->IntersectFirst(layer, Core::JRay{ rayOri, rayDir });
 		}
 		void JEditorTransformTool::Arrow::CreateMaterial(const JVector4<float> matColor)
 		{
@@ -181,7 +183,7 @@ namespace JinEngine
 			if (arrowCenterMaterial.IsValid())
 				JObject::BeginDestroy(arrowCenterMaterial.Get());
 		}
-		void JEditorTransformTool::Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam)
+		void JEditorTransformTool::Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam, const JVector2<float>& viewLocalPos)
 		{
 			bool isValid = selected.IsValid() && selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT;
 			if (isValid)
@@ -200,7 +202,7 @@ namespace JinEngine
 
 			JGameObject* gameObject = static_cast<JGameObject*>(selected.Get());
 			UpdateArrowPosition(gameObject, cam.Get());
-			UpdateArrowDragging(gameObject, cam.Get());	 
+			UpdateArrowDragging(gameObject, cam.Get(), viewLocalPos);
 		}
 		void JEditorTransformTool::UpdateArrowPosition(JGameObject* selected, JCamera* cam)
 		{
@@ -256,7 +258,7 @@ namespace JinEngine
 			else
 				transformArrowRoot->GetTransform()->SetPosition(rItem->GetBoundingBox().Center);
 		}
-		void JEditorTransformTool::UpdateArrowDragging(JGameObject* selected, JCamera* cam)
+		void JEditorTransformTool::UpdateArrowDragging(JGameObject* selected, JCamera* cam, const JVector2<float>& viewLocalPos)
 		{
 			const JVector2<float> windowPos  = ImGui::GetWindowPos();
 			const JVector2<float> windowSize = ImGui::GetWindowSize();
@@ -271,7 +273,8 @@ namespace JinEngine
 				 
 				JGameObject* hitObj = SceneIntersect(Core::GetUserPtr(selected->GetOwnerScene()), 
 					Core::GetUserPtr(cam), 
-					Core::J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT);
+					Core::J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT,
+					viewLocalPos);
 				if (hitObj != nullptr)
 				{
 					for (uint i = 0; i < Constants::arrowCount; ++i)

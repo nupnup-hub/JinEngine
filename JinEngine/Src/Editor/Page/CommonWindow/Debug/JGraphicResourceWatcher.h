@@ -8,7 +8,10 @@ namespace JinEngine
 		class JGraphicResourceWatcher final : public JEditorWindow
 		{ 
 		public:
-			JGraphicResourceWatcher(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE pageType);
+			JGraphicResourceWatcher(const std::string& name, 
+				std::unique_ptr<JEditorAttribute> attribute, 
+				const J_EDITOR_PAGE_TYPE pageType,
+				const J_EDITOR_WINDOW_FLAG windowFlag);
 			~JGraphicResourceWatcher();
 			JGraphicResourceWatcher(const JGraphicResourceWatcher& rhs) = delete;
 			JGraphicResourceWatcher& operator=(const JGraphicResourceWatcher& rhs) = delete;

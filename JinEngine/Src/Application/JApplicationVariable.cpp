@@ -38,7 +38,7 @@ namespace JinEngine
 
 			static std::wstring projectDefaultResourcePath;
 			static std::wstring projectEditorResoucePath;
-			static std::wstring projectResourceCashPath;
+			static std::wstring projectCashPath;
 			static std::wstring projectVersionFilePath;
 
 			static std::wstring sceneFolderPath;
@@ -183,9 +183,9 @@ namespace JinEngine
 		{
 			return Private::projectEditorResoucePath;
 		}
-		std::wstring JApplicationVariable::GetProjectResourceCashPath()noexcept
+		std::wstring JApplicationVariable::GetProjectCashPath()noexcept
 		{
-			return Private::projectResourceCashPath;
+			return Private::projectCashPath;
 		}
 		std::wstring JApplicationVariable::GetProjectVersionFilePath()noexcept
 		{
@@ -394,7 +394,7 @@ namespace JinEngine
 			Private::shaderMetafilePath = Private::libraryPath + L"\\" + L"ShaderMetafile";
 			Private::projectDefaultResourcePath = Private::libraryPath + L"\\" + L"DefaultResource";
 			Private::projectEditorResoucePath = Private::projectSettingPath + L"\\" + L"Editor";
-			Private::projectResourceCashPath = Private::projectSettingPath + L"\\" + L"Cash";
+			Private::projectCashPath = Private::projectSettingPath + L"\\" + L"Cash";
 			Private::projectVersionFilePath = Private::projectSettingPath + L"\\" + L"ProjectVersion.txt";
 
 			Private::sceneFolderPath = Private::contentPath + L"\\" + L"Scene";
@@ -411,7 +411,7 @@ namespace JinEngine
 				Private::shaderMetafilePath,
 				Private::projectDefaultResourcePath,
 				Private::projectEditorResoucePath,
-				Private::projectResourceCashPath,
+				Private::projectCashPath,
 				Private::sceneFolderPath,
 				Private::scriptFolderPath,
 				Private::resourceFolderPath,

@@ -9,5 +9,10 @@ namespace JinEngine
 			MID,
 			RIGHT
 		};
+		enum class J_EDITOR_INNER_ALGIN_TYPE
+		{
+			ROW,
+			COLUMN,
+		};
 	}
 }

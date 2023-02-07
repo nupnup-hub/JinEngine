@@ -9,8 +9,11 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JLogViewer::JLogViewer(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType)
-			:JEditorWindow(name, std::move(attribute), ownerPageType)
+		JLogViewer::JLogViewer(const std::string& name,
+			std::unique_ptr<JEditorAttribute> attribute, 
+			const J_EDITOR_PAGE_TYPE ownerPageType,
+			const J_EDITOR_WINDOW_FLAG windowFlag)
+			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag)
 		{}
 		J_EDITOR_WINDOW_TYPE JLogViewer::GetWindowType()const noexcept
 		{

@@ -3,6 +3,7 @@
 #include"../../JEditorPageShareData.h"
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
 #include"../../../String/JEditorStringMap.h"
+#include"../../../Helpers/JEditorInputBuffHelper.h"
 #include"../../../EditTool/JEditorViewStructure.h"
 #include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"
@@ -74,8 +75,9 @@ namespace JinEngine
 		JAnimationControllerEditor::JAnimationControllerEditor(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE ownerPageType,
+			const J_EDITOR_WINDOW_FLAG windowFlag,
 			const bool hasMetadata)
-			:JEditorWindow(name, std::move(attribute), ownerPageType), reqInitDockNode(!hasMetadata)
+			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag), reqInitDockNode(!hasMetadata)
 		{
 			editorString = std::make_unique<JEditorStringMap>();
 			inputBuff = std::make_unique<JEditorInputBuffHelper>(JImGuiImpl::GetTextBuffRange());
@@ -273,13 +275,15 @@ namespace JinEngine
 		}
 		void JAnimationControllerEditor::UpdateWindow()
 		{
-			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoScrollbar |
+			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoScrollbar |
 				ImGuiWindowFlags_NoCollapse |
 				ImGuiWindowFlags_NoNavInputs |
 				ImGuiWindowFlags_NoNavFocus |
 				ImGuiWindowFlags_NoBackground;
 
-			EnterWindow(windowFlag);
+ 
+
+			EnterWindow(guiWindowFlag);
 			UpdateDocking();
 			if (IsActivated())
 			{
@@ -312,8 +316,8 @@ namespace JinEngine
 		}
 		void JAnimationControllerEditor::BuildDiagramList()
 		{
-			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove;
-			JImGuiImpl::BeginWindow(Constants::DiagramListName(GetName()), nullptr, windowFlag);
+			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove;
+			JImGuiImpl::BeginWindow(Constants::DiagramListName(GetName()), nullptr, guiWindowFlag);
 			JImGuiImpl::Text("DiagramList");
 
 			ImGuiTableFlags flag = ImGuiTableFlags_Borders | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
@@ -348,8 +352,8 @@ namespace JinEngine
 		}
 		void JAnimationControllerEditor::BuildConditionList()
 		{
-			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove;
-			JImGuiImpl::BeginWindow(Constants::ConditionListName(GetName()), nullptr, windowFlag);
+			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove;
+			JImGuiImpl::BeginWindow(Constants::ConditionListName(GetName()), nullptr, guiWindowFlag);
 			JImGuiImpl::Text("Condition");
 
 			ImGuiTableFlags flag = ImGuiTableFlags_BordersV |
@@ -437,8 +441,8 @@ namespace JinEngine
 		{
 			stateGraph->Clear();
 			stateGraph->SetGridSize(2000);
-			ImGuiWindowFlags windowFlag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove;
-			if (stateGraph->BeginView(Constants::DiagramViewName(GetName()), nullptr, windowFlag))
+			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove;
+			if (stateGraph->BeginView(Constants::DiagramViewName(GetName()), nullptr, guiWindowFlag))
 			{
 				if (HasAnimationController())
 				{
@@ -477,7 +481,7 @@ namespace JinEngine
 		}
 		void JAnimationControllerEditor::BuildDockNode()
 		{
-			ImGui::Begin(GetName().c_str()); ImGui::End();
+			//ImGui::Begin(GetName().c_str()); ImGui::End();
 			ImGui::Begin(Constants::DiagramListName(GetName()).c_str()); ImGui::End();
 			ImGui::Begin(Constants::ConditionListName(GetName()).c_str()); ImGui::End();
 			ImGui::Begin(Constants::DiagramViewName(GetName()).c_str()); ImGui::End();

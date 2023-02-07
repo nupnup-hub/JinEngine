@@ -1,7 +1,6 @@
 #pragma once 
 #include"../../JEditorWindow.h" 
-#include"../../../Interface/JEditorObjectInterface.h"
-#include"../../../../Object/Resource/Skeleton/Avatar/JAvatar.h"
+#include"../../../Interface/JEditorObjectInterface.h" 
 #include"../../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
 #include"../../../../Utility/JVector.h"
 #include<vector>
@@ -10,6 +9,8 @@
 namespace JinEngine
 {
 	class JGameObject; 
+	class JAvatar;
+	class JSkeletonAsset;
 	namespace Editor
 	{
 		class JAvatarEditor final : public JEditorWindow, public JEditorObjectHandlerInterface
@@ -35,7 +36,7 @@ namespace JinEngine
 			ClearJointRefF::Functor clearJointRefFunctor;
 		private: 
 			Core::JUserPtr<JSkeletonAsset> targetSkeleton; 
-			JAvatar targetAvatar;
+			std::unique_ptr<JAvatar> targetAvatar;
 
 			bool hasAvatar = false;
 			bool isOpenAvatarSetting = false;
@@ -47,7 +48,10 @@ namespace JinEngine
 			const JVector4<float> failColor{ 0.85f, 0.2f, 0.2f, 0.75f };
 			JVector4<float> preBtnColor;
 		public:
-			JAvatarEditor(const std::string& name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_TYPE ownerPageType);
+			JAvatarEditor(const std::string& name,
+				std::unique_ptr<JEditorAttribute> attribute,
+				const J_EDITOR_PAGE_TYPE ownerPageType,
+				const J_EDITOR_WINDOW_FLAG windowFlag);
 			~JAvatarEditor();
 			JAvatarEditor(const JAvatarEditor & rhs) = delete;
 			JAvatarEditor& operator=(const JAvatarEditor & rhs) = delete;

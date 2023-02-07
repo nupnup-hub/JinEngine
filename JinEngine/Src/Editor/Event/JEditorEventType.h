@@ -5,7 +5,7 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		REGISTER_ENUM(J_EDITOR_EVENT, int, MOUSE_CLICK,
+		REGISTER_ENUM_CLASS(J_EDITOR_EVENT, int, MOUSE_CLICK,
 			SELECT_OBJECT,
 			DESELECT_OBJECT,
 			OPEN_PAGE,
@@ -25,9 +25,10 @@ namespace JinEngine
 			OPEN_SCENE,
 			CLOSE_SCENE,
 			BIND_FUNC,				
-			T_BIND_FUNC			//support redo undo
-			);			 
- 
+			T_BIND_FUNC);		
+
+		//T_BIND_FUNC support redo undo
+
 		/*
 		enum class J_EDITOR_EVENT
 		{
