@@ -12,11 +12,11 @@ namespace JinEngine
 	{
 		JProjectSelectorPage::JProjectSelectorPage()
 			: JEditorPage("ProjectSelectorPage",
-				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
+				std::make_unique<JEditorAttribute>(),
 				J_EDITOR_PAGE_NONE)
 		{
 			projectHub = std::make_unique<JProjectSelectorHub>("Project Selector",
-				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
+				std::make_unique<JEditorAttribute>(),
 				GetPageType(), 
 				J_EDITOR_WINDOW_NONE);
 
@@ -24,11 +24,13 @@ namespace JinEngine
 			{
 				projectHub.get()
 			};
-
 			AddWindow(windows);
+			JResourceUserInterface::AddEventListener(*JResourceManager::Instance().EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 		}
 		JProjectSelectorPage::~JProjectSelectorPage()
-		{ }
+		{
+			JResourceUserInterface::RemoveListener(*JResourceManager::Instance().EvInterface(), GetGuid());
+		}
 		J_EDITOR_PAGE_TYPE JProjectSelectorPage::GetPageType()const noexcept
 		{
 			return J_EDITOR_PAGE_TYPE::PROJECT_SELECTOR;
@@ -53,7 +55,7 @@ namespace JinEngine
 			ImGui::SetNextWindowPos(viewport->WorkPos);
 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+			//ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
 			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::BOLD); 
@@ -61,7 +63,7 @@ namespace JinEngine
 			guiWindowFlag |= ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoInputs;
 
 			EnterPage(guiWindowFlag); 
-			ImGui::PopStyleVar(3);
+			ImGui::PopStyleVar(2);
 
 			//JImGuiImpl::AddImage(*(backgroundTexture.Get()), wPos, wSize, false, IM_COL32(255, 255, 255, 50));
 			uint currOpWndCount = GetOpenWindowCount();
@@ -70,7 +72,7 @@ namespace JinEngine
 			ClosePage();
 			ImGui::SetWindowFontScale(1);
 		}
-		bool JProjectSelectorPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj) noexcept
+		bool JProjectSelectorPage::IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj) noexcept
 		{
 			return true;
 		}

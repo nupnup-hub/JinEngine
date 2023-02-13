@@ -28,7 +28,7 @@ namespace JinEngine
 		public:
 			virtual ~JEditorGameObjectSurpportTool() = default;
 		public:
-			virtual void Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam, const JVector2<float>& viewLocalPos) = 0;
+			virtual void Update(Core::JUserPtr<JGameObject> selected, Core::JUserPtr<JCamera> cam, const JVector2<float>& viewLocalPos) = 0;
 		public:
 			virtual	J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE GetToolType()const noexcept = 0; 
 			static JGameObject* SceneIntersect(Core::JUserPtr<JScene> scene,
@@ -93,7 +93,7 @@ namespace JinEngine
 				const float sizeRate);
 			~JEditorTransformTool();
 		public:
-			void Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam, const JVector2<float>& viewLocalPos)final;
+			void Update(Core::JUserPtr<JGameObject> selected, Core::JUserPtr<JCamera> cam, const JVector2<float>& viewLocalPos)final;
 		private: 
 			void UpdateArrowPosition(JGameObject* selected, JCamera* cam);
 			void UpdateArrowDragging(JGameObject* selected, JCamera* cam, const JVector2<float>& viewLocalPos);

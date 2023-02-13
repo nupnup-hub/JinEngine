@@ -25,16 +25,17 @@ namespace JinEngine
 		class JGuiPropertyWidgetHandle
 		{ 
 		private:
-			bool isPrintTitle = true;
+			bool canDisplayPropertyName = true; 
 		public:
 			virtual ~JGuiPropertyWidgetHandle() = default;
 		public:
 			virtual void Initialize(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) = 0;
 			virtual void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) = 0;
 		public:
-			bool IsPrintTitle()const noexcept;
+			std::string GetDisplayPropertyName(Core::JPropertyInfo* pInfo, const std::string& label)const noexcept;
+			void SetDisplayPropertyNameTrigger(bool value)noexcept;  
 		public:
-			void SetPrintTitle(bool value)noexcept; 
+			void DisplayPropertyName(Core::JPropertyInfo* pInfo)const noexcept;
 		};
 
 		class JGuiPropertyGroupHandle

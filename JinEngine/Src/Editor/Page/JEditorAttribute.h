@@ -8,24 +8,15 @@ namespace JinEngine
 		class JEditorAttribute
 		{
 		public:
-			//don't push space in name 
-			const float initPosXRate;
-			const float initPosYRate;
-			const float initWidthRate;
-			const float initHeightRate;
+			//don't push space in name  
 			bool isOpen = false; 
 			bool isFocus = false;
 			bool isActivated = false;
 			bool isLastAct = false;
 		public:
-			JEditorAttribute(float initPosXRate,
-				float initPosYRate,
-				float initWidthRate,
-				float initHeightRate);
+			JEditorAttribute() = default;
 			~JEditorAttribute() = default;
-			JEditorAttribute(const JEditorAttribute&) = default;
-		public:
-			bool IsFullScreenInit()noexcept;
+			JEditorAttribute(const JEditorAttribute&) = default; 
 		};
 	}
 }

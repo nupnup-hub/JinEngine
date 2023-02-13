@@ -26,7 +26,7 @@ namespace JinEngine
 		}
 
 
-		JEditorWindow::EventFunctor* JEditorWindow::evFunctor;
+		JEditorWindow::EventF::Functor* JEditorWindow::evFunctor; 
 
 		JEditorWindow::JEditorWindow(const std::string name,
 			std::unique_ptr<JEditorAttribute> attribute,
@@ -43,12 +43,9 @@ namespace JinEngine
 						evType,
 						&evStruct);
 				};
-				void(*ptr)(JEditorWindow&, J_EDITOR_EVENT, JEditorEvStruct&) = evFuncLam;
-
-				static EventFunctor eventFunctor{ evFuncLam };
+				static EventF::Functor eventFunctor{ evFuncLam };
 				evFunctor = &eventFunctor;
 			}
-
 		}
 		JEditorWindow::~JEditorWindow() {}
 		J_EDITOR_PAGE_TYPE JEditorWindow::GetOwnerPageType()const noexcept
@@ -61,16 +58,16 @@ namespace JinEngine
 			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
 				guiWindowFlag = Core::AddSQValueEnum((ImGuiWindowFlags_)guiWindowFlag, ImGuiWindowFlags_NoInputs);
 
-			if (dockUpdateHelper != nullptr)
+			if (Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SUPROT_DOCK))
 			{
-				ImGuiDockNodeFlagsPrivate_ flag = ImGuiDockNodeFlags_NoWindowMenuButton;	 
+				ImGuiDockNodeFlagsPrivate_ flag = ImGuiDockNodeFlags_NoWindowMenuButton;
 				if (dockUpdateHelper->IsLockSplitAcitvated())
-				{  
+				{
 					flag = Core::AddSQValueEnum(flag, (ImGuiDockNodeFlagsPrivate_)(ImGuiDockNodeFlags_NoDockingSplitMe |
 						ImGuiDockNodeFlags_NoDockingSplitOther));
 				}
 				if (dockUpdateHelper->IsLockOverAcitvated())
-				{ 
+				{
 					flag = Core::AddSQValueEnum(flag, (ImGuiDockNodeFlagsPrivate_)(ImGuiDockNodeFlags_NoDockingOverMe |
 						ImGuiDockNodeFlags_NoDockingOverOther |
 						ImGuiDockNodeFlags_NoDockingOverEmpty));
@@ -83,9 +80,12 @@ namespace JinEngine
 				}
 				else
 					ImGui::Begin(GetName().c_str(), &isWindowOpen, guiWindowFlag);
-			} 
+			}
 			else
+			{  
+				guiWindowFlag = Core::AddSQValue(guiWindowFlag, ImGuiWindowFlags_NoDocking);
 				ImGui::Begin(GetName().c_str(), &isWindowOpen, guiWindowFlag);
+			}
 
 			if (!isWindowOpen)
 			{
@@ -102,7 +102,7 @@ namespace JinEngine
 		void JEditorWindow::CloseWindow()
 		{
 			ImGui::End();
-			SetLastActivated(IsActivated()); 
+			SetLastActivated(IsActivated());
 		}
 		void JEditorWindow::UpdateMouseClick()
 		{
@@ -151,13 +151,13 @@ namespace JinEngine
 				return;
 
 			if (dockUpdateHelper != nullptr)
-			{ 
+			{
 				JEditorWindowDockUpdateHelper::UpdateData updata;
 				updata.page = GetOwnerPageType();
 
 				dockUpdateHelper->Update(updata);
 				if (updata.rollbackBind != nullptr)
-				{ 
+				{
 					AddEventNotification(*JEditorEvent::EvInterface(),
 						GetGuid(),
 						J_EDITOR_EVENT::BIND_FUNC,
@@ -187,23 +187,23 @@ namespace JinEngine
 				}
 			}
 		}
-		void JEditorWindow::SetSelectableColor(const float factor)noexcept
+		void JEditorWindow::SetSelectableColor(const JVector4<float>& factor)noexcept
 		{
-			JImGuiImpl::SetColorToDeep(ImGuiCol_Header, factor);
-			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderHovered, factor);
-			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderActive, factor);
+			JImGuiImpl::SetColorToSoft(ImGuiCol_Header, factor);
+			JImGuiImpl::SetColorToSoft(ImGuiCol_HeaderHovered, factor);
+			JImGuiImpl::SetColorToSoft(ImGuiCol_HeaderActive, factor);
 		}
-		void JEditorWindow::SetButtonColor(const float factor)noexcept
+		void JEditorWindow::SetButtonColor(const JVector4<float>& factor)noexcept
 		{
-			JImGuiImpl::SetColorToDeep(ImGuiCol_Button, factor);
-			JImGuiImpl::SetColorToDeep(ImGuiCol_ButtonHovered, factor);
-			JImGuiImpl::SetColorToDeep(ImGuiCol_ButtonActive, factor);
+			JImGuiImpl::SetColorToSoft(ImGuiCol_Button, factor);
+			JImGuiImpl::SetColorToSoft(ImGuiCol_ButtonHovered, factor);
+			JImGuiImpl::SetColorToSoft(ImGuiCol_ButtonActive, factor);
 		}
-		void JEditorWindow::SetTreeNodeColor(const float factor)noexcept
+		void JEditorWindow::SetTreeNodeColor(const JVector4<float>& factor)noexcept
 		{
-			JImGuiImpl::SetColorToDeep(ImGuiCol_Header, factor);
-			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderHovered, factor);
-			JImGuiImpl::SetColorToDeep(ImGuiCol_HeaderActive, factor);
+			JImGuiImpl::SetColorToSoft(ImGuiCol_Header, factor);
+			JImGuiImpl::SetColorToSoft(ImGuiCol_HeaderHovered, factor);
+			JImGuiImpl::SetColorToSoft(ImGuiCol_HeaderActive, factor);
 		}
 		bool JEditorWindow::RegisterEventListener(const J_EDITOR_EVENT evType)
 		{
@@ -221,14 +221,25 @@ namespace JinEngine
 		{
 			RemoveListener(*JEditorEvent::EvInterface(), GetGuid());
 		}
-		void JEditorWindow::RequestOpenPage(const JEditorOpenPageEvStruct& evStruct)
+		void JEditorWindow::RequestOpenPage(const JEditorOpenPageEvStruct& evStruct, const bool doAct)
 		{
 			JEditorEvStruct* openEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(evStruct));
 			JEditorEvStruct* closeEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePageEvStruct>(evStruct.pageType));
 
-			auto doBinder = std::make_unique<EventFunctorBinder>(*evFunctor, *this, J_EDITOR_EVENT::OPEN_PAGE, *openEvStruct);
-			auto undoBinder = std::make_unique<EventFunctorBinder>(*evFunctor, *this, J_EDITOR_EVENT::CLOSE_PAGE, *closeEvStruct);
-			Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Open Page", std::move(doBinder), std::move(undoBinder)));
+			auto doBinder = std::make_unique<EventF::CompletelyBind>(*evFunctor, *this, J_EDITOR_EVENT::OPEN_PAGE, *openEvStruct);
+			auto undoBinder = std::make_unique<EventF::CompletelyBind>(*evFunctor, *this, J_EDITOR_EVENT::CLOSE_PAGE, *closeEvStruct);
+			if (doAct)
+			{
+				JEditorEvStruct* actEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(evStruct.pageType));
+				std::vector<std::unique_ptr<Core::JBindHandleBase>> postDoVec;
+				postDoVec.push_back(std::make_unique<EventF::CompletelyBind>(*evFunctor, *this, J_EDITOR_EVENT::ACTIVATE_PAGE, *actEvStruct));
+
+				auto task = std::make_unique<Core::JTransitionSetValueTask>("Open Page", std::move(doBinder), std::move(undoBinder));
+				task->RegisterAddtionalProcess(Core::JTransitionTask::ADDITONAL_PROCESS_TYPE::DO_POST, std::move(postDoVec));
+				Core::JTransition::Execute(std::move(task));
+			}
+			else
+				Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Open Page", std::move(doBinder), std::move(undoBinder)));
 		}
 		void JEditorWindow::RequestClosePage(const JEditorClosePageEvStruct& evStruct)
 		{
@@ -237,13 +248,13 @@ namespace JinEngine
 			if (JEditorPageShareData::HasValidOpenPageData(pageType))
 			{
 				JEditorEvStruct* openEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(JEditorPageShareData::GetOpendPageData(pageType)));
-				auto doBinder = std::make_unique<EventFunctorBinder>(*evFunctor, *this, J_EDITOR_EVENT::CLOSE_PAGE, *closeEvStruct);
-				auto undoBinder = std::make_unique<EventFunctorBinder>(*evFunctor, *this, J_EDITOR_EVENT::OPEN_PAGE, *openEvStruct);
+				auto doBinder = std::make_unique<EventF::CompletelyBind>(*evFunctor, *this, J_EDITOR_EVENT::CLOSE_PAGE, *closeEvStruct);
+				auto undoBinder = std::make_unique<EventF::CompletelyBind>(*evFunctor, *this, J_EDITOR_EVENT::OPEN_PAGE, *openEvStruct);
 				Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>("Close Page", std::move(doBinder), std::move(undoBinder)));
 			}
 			else
 			{
-				auto doBinder = EventFunctorBinder{ *evFunctor, *this,  J_EDITOR_EVENT::CLOSE_PAGE, *closeEvStruct };
+				auto doBinder = EventF::CompletelyBind{ *evFunctor, *this,  J_EDITOR_EVENT::CLOSE_PAGE, *closeEvStruct };
 				Core::JTransition::Log("Close Page");
 				doBinder.InvokeCompletelyBind();
 			}
@@ -258,11 +269,11 @@ namespace JinEngine
 				return;
 
 			JEditorEvStruct* selectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorSelectObjectEvStruct>(evStruct));
-			JEditorEvStruct* deSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorDeSelectObjectEvStruct>(evStruct.pageType));
+			JEditorEvStruct* deSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorDeSelectObjectEvStruct>(evStruct.pageType, evStruct.selectObj->GetGuid()));
 
 			const std::string objName = JCUtil::WstrToU8Str(evStruct.selectObj->GetName());
-			auto doBinder = std::make_unique<EventFunctorBinder>(*evFunctor, *this, J_EDITOR_EVENT::SELECT_OBJECT, *selectEvStruct);
-			auto undoBinder = std::make_unique<EventFunctorBinder>(*evFunctor, *this, J_EDITOR_EVENT::DESELECT_OBJECT, *deSelectEvStruct);
+			auto doBinder = std::make_unique<EventF::CompletelyBind>(*evFunctor, *this, J_EDITOR_EVENT::SELECT_OBJECT, *selectEvStruct);
+			auto undoBinder = std::make_unique<EventF::CompletelyBind>(*evFunctor, *this, J_EDITOR_EVENT::DESELECT_OBJECT, *deSelectEvStruct);
 			Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(objName + "Select", std::move(doBinder), std::move(undoBinder)));
 		}
 		void JEditorWindow::RequestDeSelectObject(const JEditorSelectObjectEvStruct& evStruct)
@@ -270,13 +281,27 @@ namespace JinEngine
 			if (!evStruct.PassDefectInspection())
 				return;
 
-			JEditorEvStruct* deSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorDeSelectObjectEvStruct>(evStruct.pageType));
+			JEditorEvStruct* deSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorDeSelectObjectEvStruct>(evStruct.pageType, evStruct.selectObj->GetGuid()));
 			JEditorEvStruct* selectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorSelectObjectEvStruct>(evStruct));
 
 			const std::string objName = JCUtil::WstrToU8Str(evStruct.selectObj->GetName());
-			auto doBinder = std::make_unique<EventFunctorBinder>(*evFunctor, *this, J_EDITOR_EVENT::DESELECT_OBJECT, *deSelectEvStruct);
-			auto undoBinder = std::make_unique<EventFunctorBinder>(*evFunctor, *this, J_EDITOR_EVENT::SELECT_OBJECT, *selectEvStruct);
+			auto doBinder = std::make_unique<EventF::CompletelyBind>(*evFunctor, *this, J_EDITOR_EVENT::DESELECT_OBJECT, *deSelectEvStruct);
+			auto undoBinder = std::make_unique<EventF::CompletelyBind>(*evFunctor, *this, J_EDITOR_EVENT::SELECT_OBJECT, *selectEvStruct);
 			Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(objName + "DeSelect", std::move(doBinder), std::move(undoBinder)));
+		}
+		void JEditorWindow::RequesBind(const std::string& label,
+			std::unique_ptr<Core::JBindHandleBase>&& doHandle,
+			std::unique_ptr<Core::JBindHandleBase>&& undoHandle)
+		{
+			if (doHandle == nullptr || undoHandle == nullptr)
+				return;
+
+			JEditorEvStruct* doStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorBindFuncEvStruct>(std::move(doHandle), GetOwnerPageType()));
+			JEditorEvStruct* undoStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorBindFuncEvStruct>(std::move(undoHandle), GetOwnerPageType()));
+		
+			auto wrappedDoBinder = std::make_unique<EventF::CompletelyBind>(*evFunctor, *this, J_EDITOR_EVENT::BIND_FUNC, *doStruct);
+			auto wrappedUndoBinder = std::make_unique<EventF::CompletelyBind>(*evFunctor, *this, J_EDITOR_EVENT::BIND_FUNC, *undoStruct);
+			Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(label + "Bind", std::move(wrappedDoBinder), std::move(wrappedUndoBinder)));
 		}
 		void JEditorWindow::DoSetOpen()noexcept
 		{

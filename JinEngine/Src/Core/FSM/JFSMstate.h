@@ -8,14 +8,21 @@
 namespace JinEngine
 {
 	namespace Core
-	{
-		class JFSMcondition;
-		class JFSMconditionWrap;
+	{ 
 		class JFSMtransition; 
 		class JFSMdiagram; 
 		class JFSMstateOwnerInterface;
+		__interface JFSMparameterStorageUserAccess;
 
-		class JFSMstate : public JFSMInterface
+		class JFSMtransitionOwnerInterface : public JTypeCashInterface<JFSMtransition>
+		{
+		private:
+			friend class JFSMtransition;
+		private:
+			virtual JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept = 0;
+		};
+
+		class JFSMstate : public JFSMInterface, public JFSMtransitionOwnerInterface
 		{
 			REGISTER_CLASS(JFSMstate)
 		private:
@@ -36,27 +43,26 @@ namespace JinEngine
 		public:
 			static constexpr uint maxNumberOffTransistions = 100;
 		private:
-			std::vector<std::unique_ptr<JFSMtransition>> transition;
+			JFSMstateOwnerInterface* ownerInterface;
+			std::vector<JFSMtransition*> transitionVec;
 			bool decidedNextState = false;
-			JFSMstateOwnerInterface* ownerDiagram;
 		public:
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
 			uint GetTransitionCount()const noexcept;
-		protected:
-			JFSMtransition* GetTransition(uint index)noexcept;
-		protected: 
-			void SetTransitionCondtion(const size_t outputStateGuid, const uint conditionIndex, JFSMcondition* newCondition)noexcept;
-			void SetTransitionCondtionOnValue(const size_t outputStateGuid, const uint conditionIndex, const float onValue)noexcept;
+			JFSMtransition* GetTransition(const size_t guid)noexcept;
+			JFSMtransition* GetTransitionByOutGuid(const size_t outputGuid)noexcept;
+			JFSMtransition* GetTransitionByIndex(uint index)noexcept; 
 		protected:
 			virtual void Initialize()noexcept;
 			void EnterState()noexcept;
-		protected:
-			JFSMtransition* AddTransition(std::unique_ptr<JFSMtransition> newTransition)noexcept;
-			JFSMconditionWrap* AddTransitionCondition(const size_t outputStateGuid, JFSMcondition* condition)noexcept;
-			bool RemoveTransition(const size_t outputStateGuid)noexcept;
-			bool RemoveCondition(const size_t guid)noexcept;
-			bool RemoveTransitionCondition(const size_t outputStateGuid, const size_t conditionGuid)noexcept;
+		protected:  
+			bool RemoveParameter(const size_t guid)noexcept; 
 			void Clear()noexcept override; 
+		private:
+			JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept final;
+		private:
+			bool AddType(JFSMtransition* newTransition)noexcept final;
+			bool RemoveType(JFSMtransition* transition)noexcept final;
 		private:
 			bool RegisterCashData()noexcept final;
 			bool DeRegisterCashData()noexcept final;

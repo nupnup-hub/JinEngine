@@ -27,22 +27,6 @@ namespace JinEngine
 		{
 			return guid;
 		}
-		float JEditor::GetInitPosXRate()const noexcept
-		{
-			return attribute->initPosXRate;
-		}
-		float JEditor::GetInitPosYRate()const noexcept
-		{
-			return attribute->initPosYRate;
-		}
-		float JEditor::GetInitWidthRate()const noexcept
-		{
-			return attribute->initWidthRate;
-		}
-		float JEditor::GetInitHeightRate()const noexcept
-		{
-			return attribute->initHeightRate;
-		}
 		bool* JEditor::GetOpenPtr()const noexcept
 		{
 			return &attribute->isOpen;

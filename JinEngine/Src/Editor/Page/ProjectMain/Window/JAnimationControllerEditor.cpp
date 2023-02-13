@@ -77,7 +77,7 @@ namespace JinEngine
 			const J_EDITOR_PAGE_TYPE ownerPageType,
 			const J_EDITOR_WINDOW_FLAG windowFlag,
 			const bool hasMetadata)
-			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag), reqInitDockNode(!hasMetadata)
+			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag), reqInit(!hasMetadata)
 		{
 			editorString = std::make_unique<JEditorStringMap>();
 			inputBuff = std::make_unique<JEditorInputBuffHelper>(JImGuiImpl::GetTextBuffRange());
@@ -97,7 +97,7 @@ namespace JinEngine
 		}
 		JAnimationControllerEditor::~JAnimationControllerEditor()
 		{
-			SetAnimationController(Core::JUserPtr< JObject>{});
+			SetAnimationController(Core::JUserPtr<JAnimationController>{});
 			stateGraph->StoreData(Constants::ViewGraphPath());
 		};
 
@@ -105,7 +105,7 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::ANIMATION_CONTROLLER_EDITOR;
 		}
-		void JAnimationControllerEditor::SetAnimationController(Core::JUserPtr<JObject> newAniCont)
+		void JAnimationControllerEditor::SetAnimationController(Core::JUserPtr<JAnimationController> newAniCont)
 		{
 			bool isValid = newAniCont.IsValid() &&
 				newAniCont->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT &&
@@ -113,13 +113,16 @@ namespace JinEngine
 
 			if (isValid)
 			{
+				if (aniCont.IsValid() && aniCont->GetGuid() == newAniCont->GetGuid())
+					return;
+
 				// SetValid AniCont
-				ClearSelectedIndex();
+				ClearSelectedFsmObject();
 				CallOffResourceReference(aniCont.Get());
 				aniCont.ConnnectChildUser(newAniCont);
 				CallOnResourceReference(aniCont.Get());
 				if (aniCont->GetDiagramCount() > 0)
-					selectedDiagramIndex = 0;
+					selectedDiagram = Core::GetUserPtr(aniCont->GetDiagramByIndex(0));
 
 				if (!stateGraph->HasGroupData(aniCont->GetGuid()))
 					RegisterViewGraphGroup(aniCont.Get());
@@ -239,10 +242,10 @@ namespace JinEngine
 
 			createNewCilpStateNode->RegisterSelectBind(std::make_unique<RegisterEvF::CompletelyBind>(*regCreateStateEvF));
 			destroyStateNode->RegisterSelectBind(std::make_unique<RegisterEvF::CompletelyBind>(*regDestroyStateEvF));
-			 
-			auto tryConnectStateTransLam = [](JAnimationControllerEditor* aniContEdit) 
-			{ 
-				using bType = ConnectStateTrasitionF::CompletelyBind; 
+
+			auto tryConnectStateTransLam = [](JAnimationControllerEditor* aniContEdit)
+			{
+				using bType = ConnectStateTrasitionF::CompletelyBind;
 				aniContEdit->stateGraph->SetConnectNodeMode(std::make_unique<bType>(*aniContEdit->connectStateTransF, std::move(aniContEdit)));
 			};
 			auto connectStateTransLam = [](JAnimationControllerEditor* aniContEdit)
@@ -250,16 +253,18 @@ namespace JinEngine
 				const size_t fromGuid = aniContEdit->stateGraph->GetConnectFromGuid();
 				const size_t toGuid = aniContEdit->stateGraph->GetConnectToGuid();
 
-				if (aniContEdit->selectedDiagramIndex == -1)
+				if (!aniContEdit->selectedDiagram.IsValid())
 					return;
 
-				Core::JAnimationFSMdiagram* diagram = aniContEdit->aniCont->GetDiagramByIndex(aniContEdit->selectedDiagramIndex);
-				diagram->GetState(fromGuid)->AddTransition(diagram->GetState(toGuid));
+				Core::JAnimationFSMstate* from = aniContEdit->selectedDiagram->GetState(fromGuid);
+				Core::JAnimationFSMstate* to = aniContEdit->selectedDiagram->GetState(toGuid);
+				if (from && to)
+					from->AddTransition(to);
 			};
 
 			tryConnectStateTransF = std::make_unique<TryConnectStateTransitionF::Functor>(tryConnectStateTransLam);
 			connectStateTransF = std::make_unique<ConnectStateTrasitionF::Functor>(connectStateTransLam);
-			
+
 			addTransitionNode->RegisterSelectBind(std::make_unique<TryConnectStateTransitionF::CompletelyBind>(*tryConnectStateTransF, this));
 
 			diagramViewPopup = std::make_unique< JEditorPopupMenu>(Constants::DiagramViewName(GetName()), std::move(diagramViewRootNode));
@@ -281,16 +286,14 @@ namespace JinEngine
 				ImGuiWindowFlags_NoNavFocus |
 				ImGuiWindowFlags_NoBackground;
 
- 
-
 			EnterWindow(guiWindowFlag);
 			UpdateDocking();
 			if (IsActivated())
 			{
-				if (reqInitDockNode)
+				if (reqInit)
 				{
 					BuildDockNode();
-					reqInitDockNode = false;
+					reqInit = false;
 				}
 				ImGuiID dockspace_id = ImGui::GetID(Constants::DockNodeName(GetName()).c_str());
 				ImGui::DockSpace(dockspace_id);
@@ -309,9 +312,6 @@ namespace JinEngine
 				//JImGuiImpl::SetColorToDefault(ImGuiCol_Header);
 				//JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderHovered);
 				//JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderActive);
-
-				preMousePosX = ImGui::GetMousePos().x;
-				preMousePosY = ImGui::GetMousePos().y;
 			}
 		}
 		void JAnimationControllerEditor::BuildDiagramList()
@@ -333,11 +333,11 @@ namespace JinEngine
 					JImGuiImpl::TableNextRow();
 					JImGuiImpl::TableSetColumnIndex(0);
 
-					const bool isSelect = i == selectedDiagramIndex;
+					const bool isSelect = selectedDiagram.IsValid() ? diagramVec[i]->GetGuid() == selectedDiagram->GetGuid() : false;
 					if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(diagramVec[i]->GetName()), &isSelect))
 					{
 						if (!isSelect)
-							selectedDiagramIndex = i;
+							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(diagramVec[i])));
 					}
 				}
 				JImGuiImpl::EndTable();
@@ -378,13 +378,14 @@ namespace JinEngine
 					JImGuiImpl::TableNextRow();
 					JImGuiImpl::TableSetColumnIndex(0);
 
-					const bool isSelect = i == selectedConditionIndex;
+					const bool isSelect = selectedCondition.IsValid() ? nowCondition->GetGuid() == selectedCondition->GetGuid() : false;
 					if (JImGuiImpl::Selectable(("##ConditionName_Selectable" + name).c_str(), &isSelect, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap))
 					{
 						if (!isSelect)
-							selectedConditionIndex = i;
+							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(nowCondition)));
 						inputBuff->SetBuff(name);
 					}
+
 					JImGuiImpl::TableSetColumnIndex(1);
 					ImGui::PushItemWidth(-FLT_MIN);
 					if (isSelect)
@@ -446,23 +447,30 @@ namespace JinEngine
 			{
 				if (HasAnimationController())
 				{
-					Core::JAnimationFSMdiagram* diagram = aniCont->GetDiagramByIndex(selectedDiagramIndex);
-					const uint stateCount = diagram->GetStateCount();
+					const uint stateCount = selectedDiagram->GetStateCount();
 					for (uint i = 0; i < stateCount; ++i)
-					{ 
-						Core::JAnimationFSMstate* state = diagram->GetStateByIndex(i);
+					{
+						Core::JAnimationFSMstate* state = selectedDiagram->GetStateByIndex(i);
 						stateGraph->BuildNode(JCUtil::WstrToU8Str(state->GetName()), state->GetGuid(), aniCont->GetGuid());
 					}
 					for (uint i = 0; i < stateCount; ++i)
 					{
-						Core::JAnimationFSMstate* state = diagram->GetStateByIndex(i);
+						Core::JAnimationFSMstate* state = selectedDiagram->GetStateByIndex(i);
 						const size_t fromGuid = state->GetGuid();
 						const uint transitionCount = state->GetTransitionCount();
 						for (uint j = 0; j < transitionCount; ++j)
 							stateGraph->ConnectNode(fromGuid, state->GetTransition(j)->GetOutputStateGuid());
 					}
-					JImGuiImpl::Text(JCUtil::WstrToU8Str(aniCont->GetDiagramByIndex(selectedDiagramIndex)->GetName()).c_str());
+					JImGuiImpl::Text(JCUtil::WstrToU8Str(selectedDiagram->GetName()).c_str());
 					stateGraph->OnScreen(aniCont->GetGuid());
+					if (stateGraph->IsLastUpdateSeletedNode())
+					{
+						const size_t guid = stateGraph->GetLastUpdateSeletedNodeGuid();
+						Core::JUserPtr<Core::JAnimationFSMstate> newSelected = Core::GetUserPtr(selectedDiagram->GetState(guid));
+						const bool canSeleted = !selectedState.IsValid() || newSelected->GetGuid() != selectedState->GetGuid();
+						if (canSeleted)
+							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), newSelected));
+					}
 					if (diagramViewPopup->IsOpen())
 						diagramViewPopup->ExecutePopup(editorString.get());
 					diagramViewPopup->Update();
@@ -520,14 +528,17 @@ namespace JinEngine
 			conditionListPopup->SetOpen(false);
 			diagramViewPopup->SetOpen(false);
 		}
-		void JAnimationControllerEditor::ClearSelectedIndex()noexcept
+		void JAnimationControllerEditor::ClearSelectedFsmObject()noexcept
 		{
-			selectedDiagramIndex = invalidIndex;
-			selectedConditionIndex = invalidIndex;
-			selectedStateIndex = invalidIndex;
+			selectedDiagram.Clear();
+			selectedCondition.Clear();
+			selectedState.Clear();
 		}
 		void JAnimationControllerEditor::RegisterCreateDiagramEv()
 		{
+			if (!aniCont.IsValid())
+				return;
+
 			using BindT = JAnimationControllerEditor::DiagramHandleBind;
 			size_t guid = Core::MakeGuid();
 			auto cUptr = std::make_unique<BindT>(*createDiagramF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, std::move(guid));
@@ -538,16 +549,21 @@ namespace JinEngine
 		}
 		void JAnimationControllerEditor::RegisterDestroyDiagramEv()
 		{
-			using BindT = JAnimationControllerEditor::DiagramHandleBind;
-			Core::JAnimationFSMdiagram* diagram = aniCont->GetDiagramByIndex(selectedDiagramIndex);
-			auto cUptr = std::make_unique<BindT>(*createDiagramF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, diagram->GetGuid());
-			auto dUptr = std::make_unique<BindT>(*destroyDiagramF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, diagram->GetGuid());
+			if (!aniCont.IsValid() || !selectedDiagram.IsValid() || aniCont->GetDiagramCount() < 2)
+				return;
+
+			using BindT = JAnimationControllerEditor::DiagramHandleBind; ;
+			auto cUptr = std::make_unique<BindT>(*createDiagramF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid());
+			auto dUptr = std::make_unique<BindT>(*destroyDiagramF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid());
 
 			using DestroyTask = Core::JTransitionCreationTask<DataHandleStructure, BindT, BindT>;
 			Core::JTransition::Execute(std::make_unique<DestroyTask>("Destroy Diagram", std::move(dUptr), std::move(cUptr), fsmdata));
 		}
 		void JAnimationControllerEditor::RegisterCreateConditionEv()
 		{
+			if (!aniCont.IsValid())
+				return;
+
 			using BindT = JAnimationControllerEditor::ConditionHandleBind;
 			size_t guid = Core::MakeGuid();
 			auto cUptr = std::make_unique<BindT>(*createConditionF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, std::move(guid));
@@ -558,42 +574,38 @@ namespace JinEngine
 		}
 		void JAnimationControllerEditor::RegisterDestroyConditionEv()
 		{
-			Core::JFSMcondition* cond = aniCont->GetConditionByIndex(selectedConditionIndex);
-			if (!cond)
+			if (!aniCont.IsValid() || !selectedCondition.IsValid())
 				return;
 
 			using BindT = JAnimationControllerEditor::ConditionHandleBind;
 			size_t guid = Core::MakeGuid();
-			auto cUptr = std::make_unique<BindT>(*createConditionF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, cond->GetGuid());
-			auto dUptr = std::make_unique<BindT>(*destroyConditionF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, cond->GetGuid());
+			auto cUptr = std::make_unique<BindT>(*createConditionF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedCondition->GetGuid());
+			auto dUptr = std::make_unique<BindT>(*destroyConditionF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedCondition->GetGuid());
 
 			using DestroyTask = Core::JTransitionCreationTask<DataHandleStructure, BindT, BindT>;
 			Core::JTransition::Execute(std::make_unique<DestroyTask>("Destroy Condition", std::move(dUptr), std::move(cUptr), fsmdata));
 		}
 		void JAnimationControllerEditor::RegisterCreateStateEv()
 		{
-			auto diagram = aniCont->GetDiagramByIndex(selectedDiagramIndex);
-			if (!aniCont->CanCreateState(diagram))
+			if (!aniCont.IsValid())
 				return;
 
 			using BindT = JAnimationControllerEditor::StateHandleBind;
 			size_t guid = Core::MakeGuid();
-			auto cUptr = std::make_unique<BindT>(*createStateF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, diagram->GetGuid(), std::move(guid));
-			auto dUptr = std::make_unique<BindT>(*destroyStateF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, diagram->GetGuid(), std::move(guid));
+			auto cUptr = std::make_unique<BindT>(*createStateF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid(), std::move(guid));
+			auto dUptr = std::make_unique<BindT>(*destroyStateF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid(), std::move(guid));
 
 			using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, BindT, BindT>;
 			Core::JTransition::Execute(std::make_unique<CreationTask>("Create State", std::move(cUptr), std::move(dUptr), fsmdata));
 		}
 		void JAnimationControllerEditor::RegisterDestroyStateEv()
 		{
-			auto diagram = aniCont->GetDiagramByIndex(selectedDiagramIndex);
-			auto state = diagram != nullptr ? diagram->GetStateByIndex(selectedStateIndex) : nullptr;
-			if (!state)
+			if (!aniCont.IsValid() || !selectedState.IsValid())
 				return;
 
 			using BindT = JAnimationControllerEditor::StateHandleBind;
-			auto cUptr = std::make_unique<BindT>(*createStateF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, diagram->GetGuid(), state->GetGuid());
-			auto dUptr = std::make_unique<BindT>(*destroyStateF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, diagram->GetGuid(), state->GetGuid());
+			auto cUptr = std::make_unique<BindT>(*createStateF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid(), selectedState->GetGuid());
+			auto dUptr = std::make_unique<BindT>(*destroyStateF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid(), selectedState->GetGuid());
 
 			using DestroyTask = Core::JTransitionCreationTask<DataHandleStructure, BindT, BindT>;
 			Core::JTransition::Execute(std::make_unique<DestroyTask>("Destroy State", std::move(dUptr), std::move(cUptr), fsmdata));
@@ -604,7 +616,12 @@ namespace JinEngine
 			{
 				Core::JOwnerPtr<Core::JIdentifier> owner = dS.Release(dH);
 				if (owner.IsValid() && Core::Cast<Core::JAnimationFSMdiagram>(owner.Get()))
-					Core::JIdentifier::AddInstance(Core::JOwnerPtr<Core::JAnimationFSMdiagram>::ConvertChildUser(std::move(owner)));
+				{
+					auto diagram = Core::JOwnerPtr<Core::JAnimationFSMdiagram>::ConvertChildUser(std::move(owner));
+					auto ptr = diagram.Get();
+					Core::JIdentifier::AddInstance(std::move(diagram));
+					JEditorPageShareData::SetSelectObj(GetOwnerPageType(), Core::GetUserPtr(ptr));
+				}
 				else
 					aniCont->CreateFSMDiagram(guid);
 				SetModifiedBit(aniCont, true);
@@ -620,6 +637,7 @@ namespace JinEngine
 					Core::JDataHandle newHandle = dS.Add(Core::JIdentifier::ReleaseInstance<Core::JAnimationFSMdiagram>(diagramPtr->GetGuid()));
 					dS.TransitionHandle(newHandle, dH);
 					SetModifiedBit(aniCont, true);
+					JEditorPageShareData::SetSelectObj(GetOwnerPageType(), Core::JUserPtr<Core::JIdentifier>{});
 				}
 			}
 		}
@@ -629,7 +647,12 @@ namespace JinEngine
 			{
 				Core::JOwnerPtr<Core::JIdentifier> owner = dS.Release(dH);
 				if (owner.IsValid() && Core::Cast<Core::JFSMcondition>(owner.Get()))
-					Core::JIdentifier::AddInstance(Core::JOwnerPtr<Core::JFSMcondition>::ConvertChildUser(std::move(owner)));
+				{
+					auto condition = Core::JOwnerPtr<Core::JFSMcondition>::ConvertChildUser(std::move(owner));
+					auto ptr = condition.Get();
+					Core::JIdentifier::AddInstance(std::move(condition));
+					JEditorPageShareData::SetSelectObj(GetOwnerPageType(), Core::GetUserPtr(ptr));
+				}
 				else
 					aniCont->CreateFSMCondition(guid);
 				SetModifiedBit(aniCont, true);
@@ -645,6 +668,7 @@ namespace JinEngine
 					Core::JDataHandle newHandle = dS.Add(Core::JIdentifier::ReleaseInstance<Core::JFSMcondition>(conditionPtr->GetGuid()));
 					dS.TransitionHandle(newHandle, dH);
 					SetModifiedBit(aniCont, true);
+					JEditorPageShareData::SetSelectObj(GetOwnerPageType(), Core::JUserPtr<Core::JIdentifier>{});
 				}
 			}
 		}
@@ -657,12 +681,17 @@ namespace JinEngine
 				{
 					Core::J_ANIMATION_STATE_TYPE sType = Core::Cast<Core::JAnimationFSMstate>(owner.Get())->GetStateType();
 					if (sType == Core::J_ANIMATION_STATE_TYPE::CLIP)
-						Core::JIdentifier::AddInstance(Core::JOwnerPtr<Core::JAnimationFSMstateClip>::ConvertChildUser(std::move(owner)));
+					{
+						auto clip = Core::JOwnerPtr<Core::JAnimationFSMstateClip>::ConvertChildUser(std::move(owner));
+						auto ptr = clip.Get();
+						Core::JIdentifier::AddInstance(std::move(clip));
+						JEditorPageShareData::SetSelectObj(GetOwnerPageType(), Core::GetUserPtr(ptr));
+					}
 					else //¹Ì±¸Çö
 						;//AddInstance(Core::JOwnerPtr<Core::JAnimationBlend>::ConvertChildUser(std::move(owner)));
 				}
 				else
-					aniCont->CreateFSMClip(stateGuid, aniCont->GetDiagram(diagramGuid));				 
+					aniCont->CreateFSMClip(stateGuid, aniCont->GetDiagram(diagramGuid));
 				SetModifiedBit(aniCont, true);
 			}
 		}
@@ -687,6 +716,7 @@ namespace JinEngine
 							//	Core::JDataHandle newHandle = dataStructure.Add(ReleaseInstance<Core::JFSMcondition>(conditionPtr->GetGuid()));
 							//	dataStructure.TransitionHandle(newHandle, dataHandle);
 						}
+						JEditorPageShareData::SetSelectObj(GetOwnerPageType(), Core::JUserPtr<Core::JIdentifier>{});
 					}
 					SetModifiedBit(aniCont, true);
 				}
@@ -701,11 +731,8 @@ namespace JinEngine
 			};
 			RegisterEventListener(enumVec);
 			JResourceUserInterface::AddEventListener(*JResourceManager::Instance().EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
-
-			preMousePosX = ImGui::GetMousePos().x;
-			preMousePosY = ImGui::GetMousePos().y;
-
-			SetAnimationController(JEditorPageShareData::GetSelectedObj(GetOwnerPageType()));
+			auto selected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
+			SetAnimationController(Core::JUserPtr<JAnimationController>::ConvertChildUser(std::move(selected)));
 		}
 		void JAnimationControllerEditor::DoDeActivate()noexcept
 		{
@@ -723,7 +750,14 @@ namespace JinEngine
 			else if (eventType == J_EDITOR_EVENT::SELECT_OBJECT)
 			{
 				JEditorSelectObjectEvStruct* evstruct = static_cast<JEditorSelectObjectEvStruct*>(eventStruct);
-				SetAnimationController(evstruct->selectObj);
+				if (evstruct->selectObj->GetTypeInfo().IsChildOf<Core::JAnimationFSMdiagram>())
+					selectedDiagram.ConnnectChildUser(evstruct->selectObj);
+				else if (evstruct->selectObj->GetTypeInfo().IsChildOf<Core::JFSMcondition>())
+					selectedCondition.ConnnectChildUser(evstruct->selectObj);
+				else if (evstruct->selectObj->GetTypeInfo().IsChildOf<Core::JFSMstate>())
+					selectedState.ConnnectChildUser(evstruct->selectObj);
+				else
+					SetAnimationController(Core::GetUserPtr<JAnimationController>(evstruct->selectObj->GetGuid()));
 			}
 		}
 		void JAnimationControllerEditor::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
@@ -734,7 +768,7 @@ namespace JinEngine
 			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 			{
 				if (aniCont.IsValid() && jRobj->GetGuid() == aniCont->GetGuid())
-					SetAnimationController(Core::JUserPtr<JObject>{});
+					SetAnimationController(Core::JUserPtr<JAnimationController>{});
 			}
 		}
 	}

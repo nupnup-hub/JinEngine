@@ -11,8 +11,7 @@ namespace JinEngine
 		class JObjectDetail;
 		class JSceneViewer;
 		class JSceneObserver;
-		class JLogViewer;
-		class JAnimationControllerEditor;
+		class JLogViewer; 
 		class JGraphicResourceWatcher;
 		class JStringConvertTest;
 		class JAppElapsedTime;
@@ -39,8 +38,7 @@ namespace JinEngine
 			std::unique_ptr<JObjectDetail>objectDetail;
 			std::unique_ptr<JSceneViewer> sceneViewer;
 			std::unique_ptr<JSceneObserver> sceneObserver;
-			std::unique_ptr<JLogViewer> logViewer;
-			std::unique_ptr<JAnimationControllerEditor> animationControllerEditor;
+			std::unique_ptr<JLogViewer> logViewer; 
 			std::unique_ptr<JGraphicResourceWatcher> graphicResourceWatcher;
 			std::unique_ptr<JStringConvertTest> stringConvertTest;
 			std::unique_ptr<JAppElapsedTime> appElapseTime;
@@ -58,7 +56,7 @@ namespace JinEngine
 			std::unique_ptr<ClosePopupCancelF::Functor> closePopupCancelF;
 			std::unique_ptr<ClosePopupContentsF::Functor> closePopupContetnsF;
 		private:
-			bool reqInitDockNode = false; 
+			bool reqInit = false;
 		public:
 			JProjectMainPage(const bool hasMetadata);
 			~JProjectMainPage();
@@ -71,7 +69,7 @@ namespace JinEngine
 			void Initialize()final;
 			void UpdatePage()final;
 		public:
-			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
+			bool IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
 		private:
 			void BuildDockNode();
 			void BuildMenuNode();

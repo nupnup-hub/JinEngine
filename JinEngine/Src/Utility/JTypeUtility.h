@@ -175,7 +175,11 @@ namespace JinEngine
 		using TypeCondition_T = typename TypeCondition<T, res>::Type;
 
 		template<typename T, typename = void>
-		struct StdArrayContainerDetermine : std::false_type {};
+		struct StdArrayContainerDetermine : std::false_type 
+		{
+		public:
+			using ValueType = T;
+		};
 
 		template<typename T>
 		struct StdArrayContainerDetermine<T, std::void_t<typename T::value_type>> : std::true_type

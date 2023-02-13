@@ -1,76 +1,102 @@
 #pragma once
 #include"JFSMInterface.h"
-#include"JFSMconditionValueType.h"
-#include<string>
-#include<algorithm>
-namespace JinEngine 
+#include"JFSMparameter.h"
+
+namespace JinEngine
 {
 	namespace Core
 	{
-		class JFSMconditionStorage; 
-		class IJFSMconditionOwnerInterface;
-		 
+		class JFSMtransition;
+		///class JFSMparameter;
+		class JFSMconditionOwnerInterface;
+
 		class JFSMcondition : public JFSMInterface
 		{
 			REGISTER_CLASS(JFSMcondition)
-		private:
-			friend class JFSMconditionStorage;
 		public:
 			struct JFSMconditionInitData : public JFSMIdentifierInitData
 			{
+			public: 
+				JUserPtr<JFSMtransition> ownerTransition; 
 			public:
-				J_FSMCONDITION_VALUE_TYPE valueType;
-				IJFSMconditionOwnerInterface* conditionOwner = nullptr; 
-			public:
-				JFSMconditionInitData(const std::wstring& name, const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType, IJFSMconditionOwnerInterface* ownerStorage);
-				JFSMconditionInitData(const size_t guid, IJFSMconditionOwnerInterface* conditionOwner);
+				JFSMconditionInitData(const std::wstring& name, const size_t guid, JUserPtr<JFSMtransition> ownerTransition);
+				JFSMconditionInitData(JUserPtr<JFSMtransition> ownerTransition);
 			public:
 				bool IsValid() noexcept;
 				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
 			};
 			using InitData = JFSMconditionInitData;
 		private: 
-			float value = 0;
-			J_FSMCONDITION_VALUE_TYPE valueType = J_FSMCONDITION_VALUE_TYPE::BOOL;
-			IJFSMconditionOwnerInterface* conditionOwner = nullptr;
-		public:
-			void Initialize()noexcept;  
-		public:
+			JFSMconditionOwnerInterface* ownerInterface; 
+			REGISTER_PROPERTY_EX(parameter, GetParameter, SetParameter, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, GetSroageParameter))
+			JFSMparameter* parameter = nullptr;
+			float onValue = 0; 
+		public: 
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
-			float GetValue()const noexcept;
-			J_FSMCONDITION_VALUE_TYPE GetValueType()const noexcept;  
-			void SetValueType(const J_FSMCONDITION_VALUE_TYPE valueType)noexcept;
-			template<typename T>
-			void SetValue(T value)noexcept
-			{
-				if constexpr (std::is_same_v<T, bool>)
-				{
-					if (valueType == J_FSMCONDITION_VALUE_TYPE::BOOL)
-						JFSMcondition::value = value;
-				}
-				else if constexpr (std::is_same_v<T, int>)
-				{
-					if (valueType == J_FSMCONDITION_VALUE_TYPE::INT)
-						JFSMcondition::value = value;
-				}
-				else if constexpr (std::is_same_v<T, float>)
-				{
-					if (valueType == J_FSMCONDITION_VALUE_TYPE::FLOAT)
-						JFSMcondition::value = value;
-				}
-			} 
+			JFSMparameter* GetParameter()const noexcept;
+			float GetOnValue()const noexcept;
+			void SetParameter(JFSMparameter* newParam)noexcept;
+			void SetOnValue(float newValue)noexcept;
+		public:
+			bool HasParameter()const noexcept;
+			bool HasSameParameter(const size_t guid)const noexcept;
+			bool IsSatisfied()const noexcept;
+			bool PassDefectInspection()const noexcept;
 		private:
+			//For editor gui
+			static std::vector<JIdentifier*> GetSroageParameter(JIdentifier* iden)noexcept;
+		private:
+			bool IsValidParameter(JFSMparameter* newParam)const noexcept;
 			void Clear()override;
 		private:
 			bool RegisterCashData()noexcept final;
 			bool DeRegisterCashData()noexcept final;
-		private:
+		private: 
 			static void RegisterJFunc();
-		private:
+		protected:
 			JFSMcondition(const JFSMconditionInitData& initData);
 			~JFSMcondition();
-			JFSMcondition(const JFSMcondition& rhs) = delete;
-			JFSMcondition& operator=(const JFSMcondition& rhs) = delete;
+			JFSMcondition(JFSMcondition&& rhs) = default;
+			JFSMcondition& operator=(JFSMcondition&& rhs) = default;
 		};
+
+		/*
+				JFSMparameterWrap::JFSMparameterWrap(JFSMparameter* condition)
+			:condition(condition), onValue(0)
+		{}
+		JFSMparameter* JFSMparameterWrap::GetParameter()noexcept
+		{
+			return condition;
+		}
+		float JFSMparameterWrap::GetOnValue()const noexcept
+		{
+			J_FSM_PARAMETER_VALUE_TYPE valueType = condition->GetValueType();
+			if (valueType == J_FSM_PARAMETER_VALUE_TYPE::BOOL)
+				return static_cast<bool>(onValue);
+			else if (valueType == J_FSM_PARAMETER_VALUE_TYPE::INT)
+				return static_cast<int>(onValue);
+			else
+				return onValue;
+		}
+		void JFSMparameterWrap::SetCondition(JFSMparameter* newCondition)noexcept
+		{
+			condition = newCondition;
+			SetOnValue(onValue);
+		}
+		void JFSMparameterWrap::SetOnValue(float newValue)noexcept
+		{
+			onValue = newValue;
+		}
+
+		bool JFSMparameterWrap::IsSatisfied()const noexcept
+		{
+			return (PassDefectInspection()) && (condition->GetValue() == onValue);
+		}
+		bool JFSMparameterWrap::PassDefectInspection()const noexcept
+		{
+			return condition != nullptr;
+		}
+
+		*/
 	}
 }

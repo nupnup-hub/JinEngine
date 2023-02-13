@@ -80,7 +80,7 @@ namespace JinEngine
 			JSceneObserver& operator=(const JSceneObserver& rhs) = delete;
 		private:
 			void BuildMenuBar(const std::vector< J_OBSERVER_SETTING_TYPE> useSettingType);
-			void BuildMenuIcon();
+			void BuildMenuIcon(const std::vector<J_OBSERVER_SETTING_TYPE> useSettingType);
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:

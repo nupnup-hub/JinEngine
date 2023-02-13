@@ -45,16 +45,16 @@ namespace JinEngine
 		if(HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !isForced)
 			return false;
 
-		DeActivate();
+		//DeActivate();
 		return true;
 	}
 	bool JComponent::RegisterCashData()noexcept
 	{
-		return owner->CompInterface()->AddComponent(*this);
+		return static_cast<Core::JTypeCashInterface<JComponent>*>(owner)->AddType(this);
 	}
 	bool JComponent::DeRegisterCashData()noexcept
 	{
-		return owner->CompInterface()->RemoveComponent(*this);
+		return static_cast<Core::JTypeCashInterface<JComponent>*>(owner)->RemoveType(this);
 	}
 	JComponent::JComponent(const std::string& cTypeName, const size_t guid, J_OBJECT_FLAG flag, JGameObject* owner)noexcept
 		:JComponentInterface(JCUtil::StrToWstr(cTypeName), guid, flag), owner(owner)

@@ -19,6 +19,7 @@ namespace JinEngine
 	namespace Core
 	{
 		class JFSMcondition;
+		class JAnimationFSMdiagram;
 		class JAnimationFSMstate;
 	}
 	namespace Editor
@@ -35,14 +36,11 @@ namespace JinEngine
 			static constexpr int invalidIndex = -1;
 		private:
 			Core::JUserPtr<JAnimationController> aniCont;
-			int selectedDiagramIndex = invalidIndex;
-			int selectedConditionIndex = invalidIndex;
-			int selectedStateIndex = invalidIndex;
+			Core::JUserPtr<Core::JAnimationFSMdiagram> selectedDiagram;
+			Core::JUserPtr<Core::JFSMcondition> selectedCondition;
+			Core::JUserPtr<Core::JAnimationFSMstate> selectedState;
 		private:
-			float preMousePosX = 0;
-			float preMousePosY = 0;
-		private:
-			bool reqInitDockNode = false;
+			bool reqInit = false;
 		private:
 			std::unique_ptr<JEditorStringMap> editorString;
 			std::unique_ptr<JEditorInputBuffHelper> inputBuff;
@@ -110,7 +108,7 @@ namespace JinEngine
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		private:
-			void SetAnimationController(Core::JUserPtr<JObject> newAniCont);
+			void SetAnimationController(Core::JUserPtr<JAnimationController> newAniCont);
 		private:
 			bool HasAnimationController()const noexcept;
 		private:
@@ -127,7 +125,7 @@ namespace JinEngine
 			void BuildDockNode();
 		private:
 			void CloseAllPopup()noexcept; 
-			void ClearSelectedIndex()noexcept;
+			void ClearSelectedFsmObject()noexcept;
 		private:
 			void RegisterCreateDiagramEv();
 			void RegisterDestroyDiagramEv();

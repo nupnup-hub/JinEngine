@@ -24,8 +24,8 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JObjectExplorer::JObjectExplorer(const std::string& name, 
-			std::unique_ptr<JEditorAttribute> attribute, 
+		JObjectExplorer::JObjectExplorer(const std::string& name,
+			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE pageType,
 			const J_EDITOR_WINDOW_FLAG windowFlag)
 			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
@@ -87,10 +87,10 @@ namespace JinEngine
 				objEx->SetModifiedBit(Core::GetUserPtr(objEx->selectedObject->GetOwnerScene()), true);
 			};
 
-			createF = std::make_unique<CreateGameObjectFunctor>(&JObjectExplorer::CreateGameObject, this);
-			createModelF = std::make_unique<CreateModelFunctor>(&JObjectExplorer::CreateModel, this);
-			destroyF = std::make_unique<DestroyGameObjectFunctor>(&JObjectExplorer::DestroyGameObject, this);
-			undoDestroyF = std::make_unique<UndoDestroyGameObjectFunctor>(&JObjectExplorer::UndoDestroyGameObject, this);
+			createF = std::make_unique<CreateGameObjectF::Functor>(&JObjectExplorer::CreateGameObject, this);
+			createModelF = std::make_unique<CreateModelF::Functor>(&JObjectExplorer::CreateModel, this);
+			destroyF = std::make_unique<DestroyGameObjectF::Functor>(&JObjectExplorer::DestroyGameObject, this);
+			undoDestroyF = std::make_unique<UndoDestroyGameObjectF::Functor>(&JObjectExplorer::UndoDestroyGameObject, this);
 			changeParentF = std::make_unique< ChangeParentF::Functor>(changeParentLam);
 			regCreateGobjF = std::make_unique<RegisterCreateGEvF::Functor>(&JObjectExplorer::RegisterCreateGameObjectEv, this);
 			regDestroyGobjF = std::make_unique<RegisterDestroyGEvF::Functor>(&JObjectExplorer::RegisterDestroyGameObjectEv, this);
@@ -139,9 +139,9 @@ namespace JinEngine
 			if (IsActivated() && root.IsValid())
 			{
 				auto selected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
-				const bool isValidGameObject = selected.IsValid() && selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT;
-				const bool canSetGameObject = !selectedObject.IsValid() || selectedObject->GetGuid() != selected->GetGuid();
-				if (isValidGameObject && canSetGameObject)
+				const bool isValidGameObject = selected.IsValid() && selected->GetTypeInfo().IsChildOf<JGameObject>();
+				const bool canSetGameObject = isValidGameObject && (!selectedObject.IsValid() || selectedObject->GetGuid() != selected->GetGuid());
+				if (canSetGameObject)
 					selectedObject = Core::GetUserPtr(static_cast<JGameObject*>(selected.Get()));
 
 				UpdateMouseClick();
@@ -181,12 +181,12 @@ namespace JinEngine
 				else
 				{
 					if (isSelected)
-						SetTreeNodeColor(JImGuiImpl::GetTreeDeepFactor());
+						SetTreeNodeColor(JImGuiImpl::GetSelectColorFactor());
 					if (isAcivatedSearch)
 						ImGui::SetNextItemOpen(true);
 					isNodeOpen = JImGuiImpl::TreeNodeEx((name + "##TreeNode").c_str(), baseFlags);
 					if (isSelected)
-						SetTreeNodeColor(-JImGuiImpl::GetTreeDeepFactor());
+						SetTreeNodeColor(JImGuiImpl::GetSelectColorFactor() * -1);
 					if (isNodeOpen)
 					{
 						if (ImGui::IsItemClicked(0) || ImGui::IsItemClicked(1))
@@ -204,12 +204,14 @@ namespace JinEngine
 						if (ImGui::BeginDragDropTarget())
 						{
 							auto selected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
-							if (selected.IsValid() && !selected->HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNEDITABLE))
+							if (selected.IsValid() && selected->GetTypeInfo().IsChildOf<JObject>() &&
+								!static_cast<JObject*>(selected.Get())->HasFlag(OBJECT_FLAG_UNEDITABLE))
 							{
+								const J_OBJECT_TYPE objType = static_cast<JObject*>(selected.Get())->GetObjectType();
 								const std::string itemName = JCUtil::WstrToU8Str(selected->GetName());
 								const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(itemName.c_str(), ImGuiDragDropFlags_None);
 
-								if (selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT && !ImGui::IsMouseDragging(0))
+								if (objType == J_OBJECT_TYPE::GAME_OBJECT && !ImGui::IsMouseDragging(0))
 								{
 									Core::JUserPtr<JGameObject> selectedObj;
 									selectedObj.ConnnectChildUser(selected);
@@ -220,7 +222,7 @@ namespace JinEngine
 
 									AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
 								}
-								else if (selected->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT && !ImGui::IsMouseDragging(0))
+								else if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT && !ImGui::IsMouseDragging(0))
 								{
 									Core::JUserPtr<JMeshGeometry> sMesh;
 									sMesh.ConnnectChildUser(selected);
@@ -228,8 +230,8 @@ namespace JinEngine
 									{
 										size_t guid = Core::MakeGuid();
 										//using CreateModelBind = Core::JBindHandle<CreateModelFunctor, Core::JUserPtr<JGameObject>, Core::JUserPtr<JMeshGeometry>, const size_t>;
-										auto doBind = Core::CTaskUptr<CreateModelBind>(*createModelF, Core::GetUserPtr(gObj), Core::JUserPtr{ sMesh }, std::move(guid));
-										auto undoBind = Core::CTaskUptr<DestroyGameObjectBind>(*destroyF, std::move(guid));
+										auto doBind = Core::CTaskUptr<CreateModelF::Bind>(*createModelF, Core::GetUserPtr(gObj), Core::JUserPtr{ sMesh }, std::move(guid));
+										auto undoBind = Core::CTaskUptr<DestroyGameObjectF::Bind>(*destroyF, std::move(guid));
 
 										auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<CreateModelEvStruct>
 											("Create model object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
@@ -266,8 +268,8 @@ namespace JinEngine
 				parent = root;
 
 			size_t guid = Core::MakeGuid();
-			auto doBind = Core::CTaskUptr<CreateGameObjectBind>(*createF, Core::JUserPtr{ parent }, std::move(guid), std::move(shapeType));
-			auto undoBind = Core::CTaskUptr<DestroyGameObjectBind>(*destroyF, std::move(guid));
+			auto doBind = Core::CTaskUptr<CreateGameObjectF::Bind>(*createF, Core::JUserPtr{ parent }, std::move(guid), std::move(shapeType));
+			auto undoBind = Core::CTaskUptr<DestroyGameObjectF::Bind>(*destroyF, std::move(guid));
 
 			auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<CreateGameObjectEvStruct>
 				("Create game object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
@@ -275,8 +277,8 @@ namespace JinEngine
 		}
 		void JObjectExplorer::RegisterDestroyGameObjectEv()
 		{
-			auto doBind = Core::CTaskUptr<DestroyGameObjectBind>(*destroyF, selectedObject->GetGuid());
-			auto undoBind = Core::CTaskUptr<UndoDestroyGameObjectBind>(*undoDestroyF);
+			auto doBind = Core::CTaskUptr<DestroyGameObjectF::Bind>(*destroyF, selectedObject->GetGuid());
+			auto undoBind = Core::CTaskUptr<UndoDestroyGameObjectF::Bind>(*undoDestroyF);
 
 			auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<DestroyGameObjectEvStruct>
 				("Destroy game object", GetOwnerPageType(), std::move(doBind), std::move(undoBind), dataStructure));
@@ -308,7 +310,7 @@ namespace JinEngine
 		{
 			if (dS.IsValidHandle(dH))
 			{
-				auto ownerGobj = dS.Release(dH); 
+				auto ownerGobj = dS.Release(dH);
 				SetModifiedBit(Core::GetUserPtr(ownerGobj->GetOwnerScene()), true);
 				Core::JIdentifier::AddInstance(std::move(ownerGobj));
 			}
@@ -328,6 +330,9 @@ namespace JinEngine
 
 				Core::JDataHandle newHandle = dS.Add(std::move(owneGobj));
 				dS.TransitionHandle(newHandle, dH);
+
+				JEditorDeSelectObjectEvStruct deselectEv{ GetOwnerPageType(), guid };
+				NotifyEvent(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::DESELECT_OBJECT, &deselectEv);
 			}
 		}
 		void JObjectExplorer::UndoDestroyGameObject(DataHandleStructure& dS, Core::JDataHandle& dH)
@@ -335,14 +340,21 @@ namespace JinEngine
 			auto owner = dS.Release(dH);
 			if (owner.IsValid())
 			{
+				JGameObject* ptr = owner.Get();
 				SetModifiedBit(Core::GetUserPtr(owner->GetOwnerScene()), true);
 				Core::JIdentifier::AddInstance(std::move(owner));
+
+				JEditorSelectObjectEvStruct selectEv{ GetOwnerPageType(), Core::GetUserPtr(ptr) };
+				NotifyEvent(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::SELECT_OBJECT, &selectEv);
 			}
 		}
 		void JObjectExplorer::DoActivate()noexcept
 		{
 			JEditorWindow::DoActivate();
-			AddEventListener(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::MOUSE_CLICK);
+			std::vector<J_EDITOR_EVENT> listenEvTypeVec{ J_EDITOR_EVENT::MOUSE_CLICK,
+				J_EDITOR_EVENT::SELECT_OBJECT,
+				J_EDITOR_EVENT::DESELECT_OBJECT };
+			AddEventListener(*JEditorEvent::EvInterface(), GetGuid(), listenEvTypeVec);
 		}
 		void JObjectExplorer::DoDeActivate()noexcept
 		{

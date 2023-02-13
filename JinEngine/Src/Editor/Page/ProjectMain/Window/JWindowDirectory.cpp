@@ -210,8 +210,9 @@ namespace JinEngine
 			if (IsActivated() && opendDirctory.IsValid())
 			{
 				UpdateMouseClick();
-				selectedObj = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
-
+				auto newSelected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
+				selectedObj = Core::JUserPtr<JObject>::ConvertChildUser(std::move(newSelected));
+			 
 				const float yOffset = ImGui::GetStyle().WindowBorderSize + ImGui::GetStyle().WindowPadding.y;
 				const float xOffset = ImGui::GetStyle().WindowBorderSize + ImGui::GetStyle().WindowPadding.x;
 				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + yOffset);
@@ -309,14 +310,14 @@ namespace JinEngine
 
 			bool isSelected = opendDirctory->GetGuid() == directory->GetGuid();
 			if (isSelected && canSelect)
-				SetTreeNodeColor(JImGuiImpl::GetTreeDeepFactor());
+				SetTreeNodeColor(JImGuiImpl::GetSelectColorFactor());
 			JDirectory* clickedDir = nullptr;
 			if (lastUpdateOpenNewDir && opendDirctory->IsParent(directory))
 				ImGui::SetNextItemOpen(true);
 
 			bool isNodeOpen = JImGuiImpl::TreeNodeEx(JCUtil::WstrToU8Str(directory->GetName()).c_str(), baseFlags);
 			if (isSelected && canSelect)
-				SetTreeNodeColor(-JImGuiImpl::GetTreeDeepFactor());
+				SetTreeNodeColor(JImGuiImpl::GetSelectColorFactor() * -1);
 			if (isNodeOpen)
 			{
 				if (ImGui::IsItemClicked(0) && canSelect)
@@ -400,26 +401,20 @@ namespace JinEngine
 						if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)
 						{
 							JResourceObject* jRobj = static_cast<JResourceObject*>(nowObject.Get());
+							RequestSelectObject(JEditorSelectObjectEvStruct{ GetOwnerPageType(), Core::GetUserPtr(jRobj) });
+
 							const J_RESOURCE_TYPE resourceType = jRobj->GetResourceType();
 							if (resourceType == J_RESOURCE_TYPE::SKELETON)
-							{
-								AddEventNotification(*JEditorEvent::EvInterface(),
-									GetGuid(),
-									J_EDITOR_EVENT::OPEN_PAGE,
-									JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(J_EDITOR_PAGE_TYPE::SKELETON_SETTING, Core::GetUserPtr(jRobj))));
-								AddEventNotification(*JEditorEvent::EvInterface(),
-									GetGuid(),
-									J_EDITOR_EVENT::ACTIVATE_PAGE,
-									JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActPageEvStruct>(J_EDITOR_PAGE_TYPE::SKELETON_SETTING)));
-							}
-							else
-								RequestSelectObject(JEditorSelectObjectEvStruct{ GetOwnerPageType(), Core::GetUserPtr(jRobj) });
+								RequestOpenPage(JEditorOpenPageEvStruct{ J_EDITOR_PAGE_TYPE::SKELETON_SETTING, Core::GetUserPtr(jRobj) }, true);
+							else if (resourceType == J_RESOURCE_TYPE::ANIMATION_CONTROLLER)
+								RequestOpenPage(JEditorOpenPageEvStruct{ J_EDITOR_PAGE_TYPE::ANICONT_SETTING, Core::GetUserPtr(jRobj) }, true);
 						}
 						else
 						{
 							JDirectory* jDir = static_cast<JDirectory*>(nowObject.Get());
 							if (ImGui::GetMouseClickedCount(0) >= 2)
 								openNewDirB = std::make_unique<OpenNewDirectoryF::CompletelyBind>(*openNewDirF, Core::GetUserPtr(jDir));
+							RequestSelectObject(JEditorSelectObjectEvStruct{ GetOwnerPageType(), Core::GetUserPtr(jDir) });
 						}
 					}
 					ImGui::SetCursorPos(preCursor);
@@ -591,9 +586,12 @@ namespace JinEngine
 		{
 			if (selectedObj.IsValid())
 			{
+				auto dsEvStruct = std::make_unique<JEditorDeSelectObjectEvStruct>(GetOwnerPageType(), selectedObj->GetGuid());
+				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::DESELECT_OBJECT, JEditorEvent::RegisterEvStruct(std::move(dsEvStruct)));
+
 				std::unique_ptr<DestroyObjectF::CompletelyBind> destroyB = std::make_unique<DestroyObjectF::CompletelyBind>(*destroyObjectF, std::move(selectedObj));
-				auto evStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(destroyB), GetOwnerPageType());
-				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
+				auto bEvStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(destroyB), GetOwnerPageType());
+				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(bEvStruct)));
 			}
 		}
 		void JWindowDirectory::CreateResourceObject(Core::JUserPtr<JDirectory> owner, const J_RESOURCE_TYPE rType)
@@ -682,7 +680,7 @@ namespace JinEngine
 		}
 		void JWindowDirectory::DoActivate()noexcept
 		{
-			JEditorWindow::DoActivate();
+			JEditorWindow::DoActivate(); 
 			RegisterEventListener(J_EDITOR_EVENT::MOUSE_CLICK);
 		}
 		void JWindowDirectory::DoDeActivate()noexcept
@@ -693,8 +691,9 @@ namespace JinEngine
 		}
 		void JWindowDirectory::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{
-			if (senderGuid == GetGuid() || !IsActivated() || !eventStruct->PassDefectInspection())
+			if (senderGuid == GetGuid()  || !IsActivated() || !eventStruct->PassDefectInspection())
 				return;
+			
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)
 			{
 				if (eventStruct->pageType == GetOwnerPageType())

@@ -1,22 +1,21 @@
 #pragma once
+#include"../Identity/JIdentifierInterface.h"
 
 namespace JinEngine
 {
 	namespace Core
 	{
 		class JFSMdiagram;  		 
-		__interface JFSMconditionStorageUserAccess;
+		__interface JFSMparameterStorageUserAccess;
 
-		class JFSMdiagramOwnerInterface
+		class JFSMdiagramOwnerInterface : public JTypeCashInterface<JFSMdiagram>
 		{
 		private:
 			friend class JFSMdiagram;
 		protected:
 			virtual ~JFSMdiagramOwnerInterface() = default; 
 		private: 
-			virtual JFSMconditionStorageUserAccess* GetConditionStorageUser()noexcept = 0;
-			virtual bool AddDiagram(JFSMdiagram* diagram)noexcept = 0;
-			virtual bool RemoveDiagram(JFSMdiagram* diagram)noexcept = 0;
+			virtual JFSMparameterStorageUserAccess* GetConditionStorageUser()noexcept = 0; 
 		};
 	}
 }

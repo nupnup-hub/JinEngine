@@ -156,7 +156,7 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		stream << L"Name: " << obj->GetName() << '\n';
-		stream << L"Guid: " << obj->GetGuid() << '\n';
+		stream << Core::JFileConstant::StreamUncopiableGuidSymbol() << obj->GetGuid() << '\n';
 		stream << L"Type: " << (int)obj->GetFSMobjType() << '\n';
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
@@ -179,6 +179,10 @@ namespace JinEngine
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden)
 	{
+		return StoreHasObjectIden(stream, iden, Core::JFileConstant::StreamHasObjGuidSymbol());
+	}
+	Core::J_FILE_IO_RESULT JFileIOHelper::StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden, const std::wstring& guiSymbol)
+	{
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
@@ -186,14 +190,14 @@ namespace JinEngine
 		{
 			stream << L"HasObject: " << true << '\n';
 			stream << L"Name: " << iden->GetName() << '\n';
-			stream << Core::JFileConstant::StreamHasObjGuidSymbol() << iden->GetGuid() << '\n';
+			stream << guiSymbol << iden->GetGuid() << '\n';
 			stream << L"TypeName: " << JCUtil::StrToWstr(iden->GetTypeInfo().Name()) << '\n';
 		}
 		else
 		{
 			stream << L"HasObject: " << false << '\n';
 			stream << L"Name: " << " " << L"NONE" << '\n';
-			stream << Core::JFileConstant::StreamHasObjGuidSymbol() << 0 << '\n';
+			stream << guiSymbol << 0 << '\n';
 			stream << L"TypeName: " << " " << L"NONE" << '\n';
 		}
 		return Core::J_FILE_IO_RESULT::SUCCESS;

@@ -174,10 +174,6 @@ namespace JinEngine
 
 		return nullptr;
 	}
-	JGameObjectCompInterface* JGameObject::CompInterface()
-	{
-		return this;
-	}
 	JGameObjectEditorInterface* JGameObject::EditorInterface()
 	{
 		return this;
@@ -250,32 +246,32 @@ namespace JinEngine
 	{
 		isSelectedbyEditor = value;
 	}
-	bool JGameObject::AddComponent(JComponent& component)noexcept
+	bool JGameObject::AddType(JComponent* component)noexcept
 	{
-		if (!CanAddComponent(component.GetComponentType()))
+		if (!CanAddComponent(component->GetComponentType()))
 			return false;
 
 		if (IsActivated())
-			component.Activate();
+			component->Activate();
 
-		if (component.GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)
-			animator = static_cast<JAnimator*>(&component);
-		else if (component.GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
-			renderItem = static_cast<JRenderItem*>(&component);
-		else if (component.GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM)
-			transform = static_cast<JTransform*>(&component);
+		if (component->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)
+			animator = static_cast<JAnimator*>(component);
+		else if (component->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
+			renderItem = static_cast<JRenderItem*>(component);
+		else if (component->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM)
+			transform = static_cast<JTransform*>(component);
 
-		JGameObject::component.push_back(&component);
+		JGameObject::component.push_back(component);
 		return true;
 	}
-	bool JGameObject::RemoveComponent(JComponent& component)noexcept
+	bool JGameObject::RemoveType(JComponent* component)noexcept
 	{
-		if (component.IsActivated())
-			component.DeActivate();
+		if (component->IsActivated())
+			component->DeActivate();
 
-		const J_COMPONENT_TYPE cType = component.GetComponentType();
-		const size_t componenetGuid = component.GetGuid();
-		const J_COMPONENT_TYPE componentType = component.GetComponentType();
+		const J_COMPONENT_TYPE cType = component->GetComponentType();
+		const size_t componenetGuid = component->GetGuid();
+		const J_COMPONENT_TYPE componentType = component->GetComponentType();
 
 		int index = -1;
 		const uint componentCount = (uint)JGameObject::component.size();
@@ -290,11 +286,11 @@ namespace JinEngine
 		if (index == -1)
 			return false;
 
-		if (component.GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)
+		if (component->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)
 			animator = nullptr;
-		else if (component.GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
+		else if (component->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
 			renderItem = nullptr;
-		else if (component.GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM)
+		else if (component->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM)
 			transform = nullptr;
 
 		JGameObject::component.erase(JGameObject::component.begin() + index);
@@ -333,7 +329,7 @@ namespace JinEngine
 	{
 		if(parent != nullptr)
 			parent->children.push_back(this);
-		return ownerScene->GameObjInterface()->AddGameObject(*this);
+		return static_cast<Core::JTypeCashInterface<JGameObject>*>(ownerScene)->AddType(this);
 	}
 	bool JGameObject::DeRegisterCashData()noexcept
 	{ 
@@ -350,8 +346,8 @@ namespace JinEngine
 					break;
 				}
 			}
-		}	 
-		return ownerScene->GameObjInterface()->RemoveGameObject(*this);
+		}	  
+		return static_cast<Core::JTypeCashInterface<JGameObject>*>(ownerScene)->RemoveType(this);
 	}
 	Core::J_FILE_IO_RESULT JGameObject::CallStoreGameObject(std::wofstream& stream)
 	{

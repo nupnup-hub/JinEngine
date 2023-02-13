@@ -106,7 +106,7 @@ namespace JinEngine
 				toStream.open(GetPath(), std::ios::binary | std::ios::out);
 
 				std::wstring guide;
-				const std::wstring guidSymbol =Core::JFileConstant::StreamHasObjGuidSymbol();
+				const std::wstring guidSymbol =Core::JFileConstant::StreamUncopiableGuidSymbol();
 				while (getline(fromStream, guide))
 				{
 					if (JCUtil::Contain(guide, guidSymbol))
@@ -167,7 +167,7 @@ namespace JinEngine
 		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !isForced)
 			return false;
 		 
-		JResourceManager::Instance().ResourceStorageInterface()->RemoveResource(*this);
+		//static_cast<Core::JTypeCashInterface<JResourceObject>*>(&JResourceManager::Instance())->RemoveType(this);
 		return true;
 	}
 	void JResourceObject::DeleteRFile()
@@ -177,11 +177,11 @@ namespace JinEngine
 	}
 	bool JResourceObject::RegisterCashData()noexcept
 	{
-		return JResourceManager::Instance().ResourceStorageInterface()->AddResource(*this);
+		return static_cast<Core::JTypeCashInterface<JResourceObject>*>(&JResourceManager::Instance())->AddType(this);
 	}
 	bool JResourceObject::DeRegisterCashData()noexcept
 	{
-		return JResourceManager::Instance().ResourceStorageInterface()->RemoveResource(*this);
+		return static_cast<Core::JTypeCashInterface<JResourceObject>*>(&JResourceManager::Instance())->RemoveType(this);
 	}
 	Core::J_FILE_IO_RESULT JResourceObject::StoreMetadata(std::wofstream& stream, JResourceObject* rObject)
 	{

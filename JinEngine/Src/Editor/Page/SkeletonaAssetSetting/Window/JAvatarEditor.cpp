@@ -112,7 +112,7 @@ namespace JinEngine
 				};
 
 				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
-				ImGui::BeginListBox(("##AvatarEditor" + GetName()).c_str(), listSize);
+				JImGuiImpl::BeginListBox(("##AvatarEditor" + GetName()).c_str(), listSize);
 				ImGui::Separator();
 
 				JEditorDynamicAlignCalculator<columnCount> alignCal;
@@ -170,7 +170,7 @@ namespace JinEngine
 					if (!isValidJointRef[jointRefIndex])
 						JImGuiImpl::SetColor(preBtnColor, ImGuiCol_Button);
 				}
-				ImGui::EndListBox();
+				JImGuiImpl::EndListBox();
 
 				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
 				if (JImGuiImpl::Button("Auto", JVector2<float>(ImGui::CalcTextSize("_Auto_").x, 0)))
@@ -217,14 +217,14 @@ namespace JinEngine
 		{
 			bool isSelected = selectJointIndex == index;
 			if (isSelected)
-				SetTreeNodeColor(JImGuiImpl::GetTreeDeepFactor());
+				SetTreeNodeColor(JImGuiImpl::GetSelectColorFactor());
 
 			std::string name = JCUtil::WstrToU8Str(targetSkeleton->GetJointName(index));
 			bool arrowClick = ArrowClick(name);
 
 			bool res = JImGuiImpl::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_OpenOnArrow);
 			if (isSelected)
-				SetTreeNodeColor(-JImGuiImpl::GetTreeDeepFactor());
+				SetTreeNodeColor(JImGuiImpl::GetSelectColorFactor() * -1);
 
 			if (ImGui::IsItemClicked() && !arrowClick)
 			{

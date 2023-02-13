@@ -29,19 +29,14 @@ namespace JinEngine
 			std::unique_ptr<JEditorPopupMenu>explorerPopup; 
 		private:
 			using DataHandleStructure = Core::JDataHandleStructure<Core::JTransition::GetMaxTaskCapacity(), JGameObject>;
-			using CreateGameObjectFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, Core::JUserPtr<JGameObject>, const size_t, const J_DEFAULT_SHAPE>;
-			using CreateModelFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, Core::JUserPtr<JGameObject>, Core::JUserPtr<JMeshGeometry>, const size_t>;
-			using DestroyGameObjectFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&, const size_t>;
-			using UndoDestroyGameObjectFunctor = Core::JFunctor<void, DataHandleStructure&, Core::JDataHandle&>;
+			using CreateGameObjectF = Core::JTransitionCreationHandleType<DataHandleStructure&, Core::JUserPtr<JGameObject>, const size_t, const J_DEFAULT_SHAPE>;
+			using CreateModelF = Core::JTransitionCreationHandleType<DataHandleStructure&, Core::JUserPtr<JGameObject>, Core::JUserPtr<JMeshGeometry>, const size_t>;
+			using DestroyGameObjectF = Core::JTransitionCreationHandleType<DataHandleStructure&, const size_t>;
+			using UndoDestroyGameObjectF = Core::JTransitionCreationHandleType<DataHandleStructure&>;
 
-			using CreateGameObjectBind = Core::JBindHandle<CreateGameObjectFunctor, const Core::EmptyType&, const Core::EmptyType&, Core::JUserPtr<JGameObject>, const size_t, const J_DEFAULT_SHAPE>;
-			using CreateModelBind = Core::JBindHandle<CreateModelFunctor, const Core::EmptyType&, const Core::EmptyType&, Core::JUserPtr<JGameObject>, Core::JUserPtr<JMeshGeometry>, const size_t>;
-			using DestroyGameObjectBind = Core::JBindHandle<DestroyGameObjectFunctor, const Core::EmptyType&, const Core::EmptyType&, const size_t>;
-			using UndoDestroyGameObjectBind = Core::JBindHandle<UndoDestroyGameObjectFunctor, const Core::EmptyType&, const Core::EmptyType&>;
-
-			using CreateGameObjectEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateGameObjectBind, DestroyGameObjectBind>;
-			using DestroyGameObjectEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, DestroyGameObjectBind, UndoDestroyGameObjectBind>;
-			using CreateModelEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateModelBind, DestroyGameObjectBind>;;
+			using CreateGameObjectEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateGameObjectF::Bind, DestroyGameObjectF::Bind>;
+			using DestroyGameObjectEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, DestroyGameObjectF::Bind, UndoDestroyGameObjectF::Bind>;
+			using CreateModelEvStruct = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateModelF::Bind, DestroyGameObjectF::Bind>;;
 			using ChangeParentF = Core::JSFunctorType<void, JObjectExplorer*, Core::JUserPtr<JGameObject>, Core::JUserPtr<JGameObject>>;
 		
 			using RegisterCreateGEvF = Core::JMFunctorType<JObjectExplorer, void, J_DEFAULT_SHAPE>;
@@ -49,10 +44,10 @@ namespace JinEngine
 			using RenameF = Core::JSFunctorType<void, JObjectExplorer*>;
 		private:
 			DataHandleStructure dataStructure;
-			std::unique_ptr<CreateGameObjectFunctor> createF;
-			std::unique_ptr<CreateModelFunctor> createModelF;
-			std::unique_ptr<DestroyGameObjectFunctor> destroyF;
-			std::unique_ptr<UndoDestroyGameObjectFunctor> undoDestroyF; 
+			std::unique_ptr<CreateGameObjectF::Functor> createF;
+			std::unique_ptr<CreateModelF::Functor> createModelF;
+			std::unique_ptr<DestroyGameObjectF::Functor> destroyF;
+			std::unique_ptr<UndoDestroyGameObjectF::Functor> undoDestroyF;
 			std::unique_ptr<ChangeParentF::Functor> changeParentF;
 			std::unique_ptr<RegisterCreateGEvF::Functor> regCreateGobjF;
 			std::unique_ptr<RegisterDestroyGEvF::Functor> regDestroyGobjF;

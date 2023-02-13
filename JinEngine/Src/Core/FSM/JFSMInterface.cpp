@@ -12,11 +12,14 @@ namespace JinEngine
 		{} 
 		void JFSMInterface::Destroy(JFSMInterface* fsmInterface)
 		{
+			if (fsmInterface == nullptr)
+				return;
+
 			fsmInterface->Clear();
 			fsmInterface->RemoveInstance();
 		}
-		JFSMInterface::JFSMInterface(const std::wstring& name, const size_t guid)
-			:JIdentifier(name, guid)
+		JFSMInterface::JFSMInterface(const JFSMIdentifierInitData& initData)
+			:JIdentifier(initData.name, initData.guid)
 		{}
 	};
 }

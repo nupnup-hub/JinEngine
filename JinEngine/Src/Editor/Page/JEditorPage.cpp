@@ -22,12 +22,8 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JEditorPage::WindowInitInfo::WindowInitInfo(const std::string name,
-			float initWidthRate, float initHeightRate,
-			float initPosXRate, float initPosYRate)
-			:name(name),
-			initWidthRate(initWidthRate), initHeightRate(initHeightRate),
-			initPosXRate(initPosXRate), initPosYRate(initPosYRate)
+		JEditorPage::WindowInitInfo::WindowInitInfo(const std::string name)
+			:name(name)
 		{}
 		std::string JEditorPage::WindowInitInfo::GetName()const noexcept
 		{
@@ -35,7 +31,7 @@ namespace JinEngine
 		}
 		std::unique_ptr<JEditorAttribute> JEditorPage::WindowInitInfo::MakeAttribute()noexcept
 		{
-			return std::make_unique<JEditorAttribute>(initWidthRate, initHeightRate, initPosXRate, initPosYRate);
+			return std::make_unique<JEditorAttribute>();
 		}
 
 		JEditorPage::JEditorPage(const std::string name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_FLAG pageFlag)
@@ -436,8 +432,8 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"Open:", IsOpen());
 			JFileIOHelper::StoreAtomicData(stream, L"Activate:", IsActivated());
 			JFileIOHelper::StoreAtomicData(stream, L"Focus:", IsFocus());
-
-			JFileIOHelper::StoreHasObjectIden(stream, JEditorPageShareData::GetOpendPageData(GetPageType()).openSelected.Get());
+			 
+			JFileIOHelper::StoreHasObjectIden(stream, JEditorPageShareData::GetOpendPageData(GetPageType()).GetOpenSeleted().Get());
 			JFileIOHelper::StoreHasObjectIden(stream, JEditorPageShareData::GetSelectedObj(GetPageType()).Get());
 
 			bool hasFocusWindow = focusWindow != nullptr;

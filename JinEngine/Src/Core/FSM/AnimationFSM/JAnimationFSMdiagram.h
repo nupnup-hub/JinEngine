@@ -20,7 +20,8 @@ namespace JinEngine
 		struct JAnimationShareData;
 		struct JAnimationTime; 
 		class JAnimationFSMstate;
-		class JAnimationFSMtransition;
+		class JAnimationFSMtransition; 
+
 		class JAnimationFSMdiagram final : public JFSMdiagram
 		{
 			REGISTER_CLASS(JAnimationFSMdiagram)
@@ -42,6 +43,7 @@ namespace JinEngine
 
 			JAnimationFSMstate* GetState(const size_t stateGuid)noexcept;
 			JAnimationFSMstate* GetStateByIndex(const uint index)noexcept;
+			JAnimationFSMtransition* GetTransition(const size_t transitionGuid)noexcept;
 			const std::vector<JFSMstate*>& GetStateVec()noexcept;
 			 
 			void SetClip(const size_t stateGuid, JAnimationClip* clip)noexcept;

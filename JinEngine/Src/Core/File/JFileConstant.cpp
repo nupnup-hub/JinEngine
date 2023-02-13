@@ -25,6 +25,10 @@ namespace JinEngine
 		{
 			return L"HasObjGuid: ";
 		}
+		std::wstring JFileConstant::StreamUncopiableGuidSymbol()noexcept
+		{
+			return L"UncopiableObjGuid: ";
+		}
 		std::wstring JFileConstant::StreamEndFixedDataSymbol()noexcept
 		{
 			return L"---End-FinxedData---";

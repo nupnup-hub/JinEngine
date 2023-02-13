@@ -209,30 +209,32 @@ namespace ReflectionData
 			}GuiTable##groupName;																	\
 
 
-#define REGISTER_GUI_TRIGGER_GROUP(groupName, enumName, paramName)																\
+#define REGISTER_GUI_ENUM_CONDITION_GROUP(groupName, enumName, paramName)																\
 																										\
 			inline static struct GuiEnumTrigger##groupName												\
 			{																							\
 			public:																						\
 				GuiEnumTrigger##groupName()																\
 				{																						\
-					JinEngine::Core::JGuiGroupMap::AddGuiGroup(std::make_unique<JinEngine::Core::JGuiEnumTriggerInfo>(#groupName, #enumName, #paramName));	\
+					JinEngine::Core::JGuiGroupMap::AddGuiGroup(std::make_unique<JinEngine::Core::JGuiEnumConditionInfo>(#groupName, #enumName, #paramName));	\
 				}																						\
 			}GuiEnumTrigger##groupName;																	\
 
 		
 		}
+ 
+
+#define GUI_GROUP_COMMON(groupKey) std::make_unique<JinEngine::Core::JGuiGroupMemberInfo>(#groupKey)
+#define GUI_GROUP_ENUM_CONDITION(groupKey, ...) std::make_unique<JinEngine::Core::JGuiEnumConditionGroupMemberInfo<J_COUNT(__VA_ARGS__)>>(#groupKey, __VA_ARGS__)
 
 #define GUI_INPUT(isEnterToReturn, ...)	std::make_unique<JinEngine::Core::JGuiInputInfo>(isEnterToReturn, __VA_ARGS__)
 #define GUI_CHECKBOX(...)	std::make_unique<JinEngine::Core::JGuiCheckBoxInfo>(__VA_ARGS__)
 #define GUI_SLIDER(minValue, maxValue, ...)	std::make_unique<JinEngine::Core::JGuiSliderInfo>(minValue, maxValue, __VA_ARGS__)
 #define GUI_COLOR_PICKER(hasRgbInput, ...)	std::make_unique<JinEngine::Core::JGuiColorPickerInfo>(hasRgbInput, __VA_ARGS__)
-#define GUI_SELECTOR(isImageRtTexture, hasSizeSlider, ...)	std::make_unique<JinEngine::Core::JGuiSelectorInfo>(isImageRtTexture, hasSizeSlider, __VA_ARGS__)
+#define GUI_SELECTOR(imageLevel, hasSizeSlider, ...)	std::make_unique<JinEngine::Core::JGuiSelectorInfo>(imageLevel, hasSizeSlider, __VA_ARGS__)
 #define GUI_READONLY_TEXT(...)	std::make_unique<JinEngine::Core::JGuiReadOnlyTextInfo>(__VA_ARGS__) 
 #define GUI_ENUM_COMBO(enumName, ...) std::make_unique<JinEngine::Core::JGuiEnumComboBoxInfo>(#enumName, __VA_ARGS__) 
-
-#define GUI_GROUP_COMMON(groupKey) std::make_unique<JinEngine::Core::JGuiGroupMemberInfo>(#groupKey)
-#define GUI_GROUP_ENUM_TRIGGER(groupKey, ...) std::make_unique<JinEngine::Core::JGuiEnumTriggerGroupMemberInfo<J_COUNT(__VA_ARGS__)>>(#groupKey, __VA_ARGS__)
+#define GUI_LIST(listType, canDisplayElementGui, ...)  std::make_unique<JinEngine::Core::JGuiListInfo>(listType, canDisplayElementGui, __VA_ARGS__) 
 
 
 	}

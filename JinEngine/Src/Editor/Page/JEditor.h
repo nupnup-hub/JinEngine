@@ -23,11 +23,7 @@ namespace JinEngine
 		public: 
 			std::string GetName()const noexcept;
 			std::string GetDockNodeName()const noexcept;
-			size_t GetGuid()const noexcept;
-			float GetInitPosXRate()const noexcept;
-			float GetInitPosYRate()const noexcept;
-			float GetInitWidthRate()const noexcept;
-			float GetInitHeightRate()const noexcept;
+			size_t GetGuid()const noexcept; 
 			bool* GetOpenPtr()const noexcept;  
 
 			void SetName(const std::string& newName)noexcept;

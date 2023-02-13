@@ -45,7 +45,7 @@ namespace JinEngine
 			const J_EDITOR_WINDOW_FLAG windowFlag,
 			const std::vector<J_OBSERVER_SETTING_TYPE> useSettingType)
 			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
-		{ 
+		{
 			editorCamCtrl = std::make_unique<JEditorCameraControl>();
 			coordGrid = std::make_unique<JEditorSceneCoordGrid>();
 			editorBTreeView = std::make_unique<JEditorBinaryTreeView>();
@@ -55,7 +55,7 @@ namespace JinEngine
 			updateNodeFunctor = std::make_unique<UpdateMenuNodeT::Functor>(&JSceneObserver::UpdateObserverSetting, this);
 
 			BuildMenuBar(useSettingType);
-			BuildMenuIcon();
+			BuildMenuIcon(useSettingType);
 		}
 		JSceneObserver::~JSceneObserver()
 		{}
@@ -112,7 +112,7 @@ namespace JinEngine
 				nodeUtilData[useIndex].isUse = true;
 			}
 		}
-		void JSceneObserver::BuildMenuIcon()
+		void JSceneObserver::BuildMenuIcon(const std::vector<J_OBSERVER_SETTING_TYPE> useSettingType)
 		{
 			using SwitchIcon = JEditorMenuBar::SwitchIcon;
 			using GetGResourcePtr = SwitchIcon::GetGResourceF::Ptr;
@@ -124,13 +124,13 @@ namespace JinEngine
 			{
 				Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid()
 			};
-			bool* actPtrVec[menuSwitchIconCount]
+			J_OBSERVER_SETTING_TYPE settingVec[menuSwitchIconCount]
 			{
-				&nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS].isOpen,
-				&nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT].isOpen,
-				&nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE].isOpen,
-				&nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE].isOpen,
-				&nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID].isOpen
+				J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS,
+				J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT,
+				J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE,
+				J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE,
+				J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID
 			};
 
 			GetGResourcePtr getGLamVec[menuSwitchIconCount]
@@ -151,22 +151,38 @@ namespace JinEngine
 				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID); }
 			};
 
-			for (uint i = 0; i < menuSwitchIconCount; ++i)
-				switchIconPressFunctorVec[i] = std::make_unique<MenuSwitchIconPreesF::Functor>(pressPtrVec[i]);
+			std::vector<std::string> guideVec[menuSwitchIconCount]
+			{
+				{ "gameObject position control" , u8"위치 조정" },
+			    { "gameObject rotation control" , u8"회전 조정" },
+				{ "gameObject scale control" , u8"크기 조정" },
+				{ "Main camera view frustum" , u8"메인 카메라 절두체" },
+				{ "Scene coord grid" , u8"씬 그리드" },
+			};
 
+			const uint useCount = (uint)useSettingType.size();
 			for (uint i = 0; i < menuSwitchIconCount; ++i)
 			{
+				bool isUse = false;
+				for (uint j = 0; j < useCount; ++j)
+				{
+					if (useSettingType[j] == settingVec[i])
+					{
+						isUse = true;
+						break;
+					}
+				}
+				if(!isUse)
+					continue;
+				 
+				switchIconPressFunctorVec[i] = std::make_unique<MenuSwitchIconPreesF::Functor>(pressPtrVec[i]);
 				menubar->RegisterExtraWidget(std::make_unique<SwitchIcon>(switchIconGuid[i],
-					actPtrVec[i],
+					&nodeUtilData[(int)settingVec[i]].isOpen,
 					std::make_unique<GetGResourceFunctor>(getGLamVec[i]),
 					std::make_unique< MenuSwitchIconPreesF::CompletelyBind>(*switchIconPressFunctorVec[i], this)));
-			}
 
-			menubar->RegisterEditorString(switchIconGuid[0], { "gameObject position control" , u8"위치 조정" });
-			menubar->RegisterEditorString(switchIconGuid[1], { "gameObject rotation control" , u8"회전 조정" });
-			menubar->RegisterEditorString(switchIconGuid[2], { "gameObject scale control" , u8"크기 조정" });
-			menubar->RegisterEditorString(switchIconGuid[3], { "Main camera view frustum" , u8"메인 카메라 절두체" });
-			menubar->RegisterEditorString(switchIconGuid[4], { "Scene coord grid" , u8"씬 그리드" });
+				menubar->RegisterEditorString(switchIconGuid[i], guideVec[i]);
+			}
 		}
 		J_EDITOR_WINDOW_TYPE JSceneObserver::GetWindowType()const noexcept
 		{
@@ -200,7 +216,6 @@ namespace JinEngine
 				menubar->Update(true);
 
 				auto selected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
-				const bool isValidObject = selected.IsValid() && selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT;
 				if (ImGui::IsMouseDown(0))
 				{
 					JGameObject* hitObj = JEditorGameObjectSurpportTool::SceneIntersect(scene, cameraComp, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, ImGui::GetCursorPos());
@@ -212,13 +227,14 @@ namespace JinEngine
 							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(hitObj)));
 					}
 				}
-				 
+
+				Core::JUserPtr<JGameObject> gUser = Core::JUserPtr<JGameObject>::ConvertChildUser(std::move(selected));
 				for (uint i = 0; i < toolCount; ++i)
 				{
 					J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType = toolVec[i]->GetToolType();
 					J_OBSERVER_SETTING_TYPE settingType = ConvertToolToSettingType(toolType);
 					if (toolVec[i]->IsActivated())
-						toolVec[i]->Update(JEditorPageShareData::GetSelectedObj(GetOwnerPageType()), cameraComp, ImGui::GetCursorPos());
+						toolVec[i]->Update(gUser, cameraComp, ImGui::GetCursorPos());
 				}
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
 				JImGuiImpl::Image(*cameraComp.Get(), ImGui::GetWindowSize());
@@ -523,7 +539,7 @@ namespace JinEngine
 			{
 				Core::J_SPACE_SPATIAL_TYPE type = (Core::J_SPACE_SPATIAL_TYPE)spaceData->selectedIndex;
 				JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
-				editorBTreeView->Clear();
+				editorBTreeView->ClearNode();
 				iSceneSpace->BuildDebugTree(type, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, *editorBTreeView);
 				if (editorBTreeView->BeginView(Core::GetName(type) + +"##DebugTreeView", &treeData->isOpen, ImGuiWindowFlags_NoDocking))
 				{

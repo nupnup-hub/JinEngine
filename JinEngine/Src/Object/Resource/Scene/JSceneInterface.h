@@ -45,19 +45,6 @@ namespace JinEngine
 		virtual const std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)const noexcept = 0;
 	};
 
-	class JSceneGameObjInterface
-	{
-	private:
-		friend class JGameObject;
-	protected:
-		virtual ~JSceneGameObjInterface() = default;
-	public:
-		virtual JSceneGameObjInterface* GameObjInterface() = 0;
-	private:
-		virtual bool AddGameObject(JGameObject& gameObj)noexcept = 0;
-		virtual bool RemoveGameObject(JGameObject& gameObj)noexcept = 0;
-	};
-
 	class JSceneCompInterface
 	{
 	private:
@@ -126,11 +113,11 @@ namespace JinEngine
 	};
 
 	class JSceneInterface :public JResourceObject,
+		public Core::JTypeCashInterface<JGameObject>,
 		public JSceneSpaceSpatialInterface, 
 		public JSceneFrameInterface,
 		public JSceneRegisterInterface,
 		public JSceneCompInterface,
-		public JSceneGameObjInterface,
 		public JSceneCashInterface,
 		public JFrameBuffManagerAccess,
 		public JClearableInterface

@@ -26,7 +26,7 @@ namespace JinEngine
 			return J_EDITOR_EVENT::MOUSE_CLICK;
 		}
 
-		JEditorSelectObjectEvStruct::JEditorSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> selectObj)
+		JEditorSelectObjectEvStruct::JEditorSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> selectObj)
 			:JEditorEvStruct(pageType), selectObj(selectObj)
 		{}
 		bool JEditorSelectObjectEvStruct::PassDefectInspection()const noexcept
@@ -38,8 +38,8 @@ namespace JinEngine
 			return J_EDITOR_EVENT::SELECT_OBJECT;
 		}
 
-		JEditorDeSelectObjectEvStruct::JEditorDeSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorEvStruct(pageType)
+		JEditorDeSelectObjectEvStruct::JEditorDeSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const size_t guid)
+			:JEditorEvStruct(pageType), guid(guid)
 		{}
 		bool JEditorDeSelectObjectEvStruct::PassDefectInspection()const noexcept
 		{
@@ -50,8 +50,11 @@ namespace JinEngine
 			return J_EDITOR_EVENT::DESELECT_OBJECT;
 		}
 
-		JEditorOpenPageEvStruct::JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> openSelected)
-			:JEditorEvStruct(pageType), openSelected(openSelected)
+		JEditorOpenPageEvStruct::JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> openSelected)
+			:JEditorEvStruct(pageType),
+			typeName(openSelected.IsValid() ? openSelected->GetTypeInfo().Name() : ""),
+			openSeletedGuid(openSelected.IsValid() ? openSelected->GetGuid() : 0),
+			hasOpenSeleted(openSelected.IsValid())
 		{}
 		bool JEditorOpenPageEvStruct::PassDefectInspection()const noexcept
 		{
@@ -60,6 +63,10 @@ namespace JinEngine
 		J_EDITOR_EVENT JEditorOpenPageEvStruct::GetEventType()const noexcept
 		{
 			return J_EDITOR_EVENT::OPEN_PAGE;
+		}
+		Core::JUserPtr<Core::JIdentifier> JEditorOpenPageEvStruct::GetOpenSeleted()const noexcept
+		{
+			return  hasOpenSeleted ? Core::GetUserPtr(typeName, openSeletedGuid) : Core::JUserPtr<Core::JIdentifier>();
 		}
 
 		JEditorClosePageEvStruct::JEditorClosePageEvStruct(const J_EDITOR_PAGE_TYPE pageType)
@@ -196,7 +203,7 @@ namespace JinEngine
 			:JEditorEvStruct(pageType), popupWindow(popupWindow)
 		{}
 		JEditorOpenPopupWindowEvStruct::JEditorOpenPopupWindowEvStruct(const J_EDITOR_POPUP_WINDOW_TYPE popupType, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorEvStruct(pageType), popupType(popupType)
+			: JEditorEvStruct(pageType), popupType(popupType)
 		{}
 
 		bool JEditorOpenPopupWindowEvStruct::PassDefectInspection()const noexcept
@@ -220,7 +227,7 @@ namespace JinEngine
 			:JEditorEvStruct(pageType), popupWindow(popupWindow)
 		{}
 		JEditorClosePopupWindowEvStruct::JEditorClosePopupWindowEvStruct(const J_EDITOR_POPUP_WINDOW_TYPE popupType, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorEvStruct(pageType), popupType(popupType)
+			: JEditorEvStruct(pageType), popupType(popupType)
 		{}
 		bool JEditorClosePopupWindowEvStruct::PassDefectInspection()const noexcept
 		{

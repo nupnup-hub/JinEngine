@@ -1,20 +1,22 @@
 #pragma once
 #include"../../JEditorWindow.h"     
 namespace JinEngine
-{ 
-	class JObject;
+{  
 	class JGameObject;
 	class JResourceObject;
 	class JDirectory; 
-
+	namespace Core
+	{
+		class JIdentifier;
+		class JFSMInterface;
+	}
 	namespace Editor
 	{
 		class JReflectionGuiWidgetHelper;
 		class JObjectDetail final : public JEditorWindow
 		{ 
 		private:
-			std::unique_ptr<JReflectionGuiWidgetHelper> guiHelper;
-			Core::JUserPtr<JObject> preSelected; 
+			std::unique_ptr<JReflectionGuiWidgetHelper> guiHelper; 
 		public:
 			JObjectDetail(const std::string& name, 
 				std::unique_ptr<JEditorAttribute> attribute,
@@ -29,12 +31,11 @@ namespace JinEngine
 			void UpdateWindow()final; 
 		private:
 			void BuildObjectDetail();
-			void GameObjectDetailOnScreen(Core::JUserPtr<JGameObject> gObj);
-			void ResourceObjectDetailOnScreen(Core::JUserPtr<JResourceObject> rObj);
-			void DirectoryObjectDetailOnScreen(Core::JUserPtr<JDirectory> dObj);
+			void GameObjectDetailOnScreen(Core::JUserPtr<JGameObject> gObj); 
+			void ObjectOnScreen(Core::JUserPtr<Core::JIdentifier> fObj);
 		private:
-			void PropertyOnScreen(JObject* obj, Core::JPropertyInfo* pInfo);
-			void MethodOnScreen(JObject* obj, Core::JMethodInfo* mInfo);
+			void PropertyOnScreen(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo);
+			void MethodOnScreen(Core::JIdentifier* obj, Core::JMethodInfo* mInfo);
 		private:
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;

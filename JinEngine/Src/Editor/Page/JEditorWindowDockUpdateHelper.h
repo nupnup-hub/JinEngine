@@ -21,8 +21,7 @@ namespace JinEngine
 		private:
 			const uint pageWndID;
 			const uint dockSpaceID;
-		private:
-			uint lastParentDockNodeID;
+		private: 
 			uint lastDockNodeID; 
 			uint lastDockTabItemCount;
 			uint lastSameTabWindowID;

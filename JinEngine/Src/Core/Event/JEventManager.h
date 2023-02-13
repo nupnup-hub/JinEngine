@@ -121,6 +121,17 @@ namespace JinEngine
 				const uint binderVecCount = (uint)eventBinderVec.size(); 
 				for (uint i = 0; i < binderVecCount; ++i)
 					eventBinderVec[i]->InvokeCompletelyBind();
+
+				uint invokeEndCount = binderVecCount;
+				uint nowVecCount = eventBinderVec.size(); 
+				while (invokeEndCount < nowVecCount)
+				{
+					for (uint i = invokeEndCount; i < nowVecCount; ++i)
+						eventBinderVec[i]->InvokeCompletelyBind();
+					invokeEndCount = nowVecCount;
+					nowVecCount = eventBinderVec.size();
+				}
+
 				eventBinderVec.clear();
 			}
 			void NotifyEvent(const IdentifierType& iden, const EVENTTYPE& eventType, Param... as)final

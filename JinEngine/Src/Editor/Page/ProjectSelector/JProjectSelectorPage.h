@@ -23,7 +23,7 @@ namespace JinEngine
 		public: 
 			void UpdatePage()final;
 		public:
-			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
+			bool IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
 		private:
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;

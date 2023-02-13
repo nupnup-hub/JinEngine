@@ -642,7 +642,7 @@ namespace JinEngine
 		}
 		void JKdTree::BuildDebugTree(Editor::JEditorBinaryTreeView& treeView)
 		{
-			treeView.Clear();
+			treeView.ClearNode();
 			treeView.SetGridSize(20000);
 			if (root != nullptr)
 				root->BuildDebugNode(treeView);

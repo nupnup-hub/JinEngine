@@ -60,7 +60,7 @@ namespace JinEngine
 	}
 	std::wstring JScene::GetFormat()const noexcept
 	{
-		return GetAvailableFormat()[0];
+		return GetAvailableFormat()[GetFormatIndex()];
 	}
 	std::vector<std::wstring> JScene::GetAvailableFormat()noexcept
 	{
@@ -138,10 +138,6 @@ namespace JinEngine
 			return nullptr;
 	}
 	JSceneCashInterface* JScene::CashInterface()
-	{
-		return this;
-	}
-	JSceneGameObjInterface* JScene::GameObjInterface()
 	{
 		return this;
 	}
@@ -276,23 +272,23 @@ namespace JinEngine
 		else
 			return vec->second;
 	}
-	bool JScene::AddGameObject(JGameObject& newGameObject)noexcept
+	bool JScene::AddType(JGameObject* newGameObject)noexcept
 	{
 		if (IsActivated())
-			newGameObject.Activate();
-		allObjects.push_back(&newGameObject);
+			newGameObject->Activate();
+		allObjects.push_back(newGameObject);
 		return true;
 	}
-	bool JScene::RemoveGameObject(JGameObject& gameObj)noexcept
+	bool JScene::RemoveType(JGameObject* gameObj)noexcept
 	{
-		if (gameObj.IsActivated())
-			gameObj.DeActivate();
+		if (gameObj->IsActivated())
+			gameObj->DeActivate();
 
 		//if (spatialStructure != nullptr)
 		//	spatialStructure->RemoveGameObject(&gameObj);
 
 		const uint allObjCount = (uint)allObjects.size();
-		const size_t guid = gameObj.GetGuid();
+		const size_t guid = gameObj->GetGuid();
 		for (uint i = 0; i < allObjCount; ++i)
 		{
 			if (allObjects[i]->GetGuid() == guid)

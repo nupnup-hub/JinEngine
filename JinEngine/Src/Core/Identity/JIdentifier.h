@@ -1,4 +1,5 @@
 #pragma once
+#include"JIdentifierInterface.h"
 #include"../Reflection/JReflection.h"
 #include<string> 
 

@@ -1,9 +1,11 @@
 #pragma once
 #include"../JEditorPage.h" 
+#include"../../../Object/Resource/JResourceUserInterface.h"
 
 namespace JinEngine
 { 
 	class JScene;
+	class JSkeletonAsset;
 	namespace Editor
 	{
 		class JObjectExplorer;
@@ -11,7 +13,7 @@ namespace JinEngine
 		class JSceneObserver;
 		class JObjectDetail;
 		class JEditorMenuBar;
-		class JEditorSkeletonPage final: public JEditorPage
+		class JEditorSkeletonPage final: public JEditorPage, public JResourceUserInterface
 		{  
 		private:
 			std::unique_ptr< JObjectExplorer> explorer;
@@ -21,6 +23,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JEditorMenuBar> menuBar;
 		private:
+			Core::JUserPtr<JSkeletonAsset> skeleotnAsset;
 			Core::JUserPtr<JScene> avatarScene;
 		private:
 			bool reqInit;
@@ -34,17 +37,21 @@ namespace JinEngine
 			void Initialize()final;
 			void UpdatePage()final;
 		public:
-			bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept final;
+			bool IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
 		private:
-			bool StuffSkeletonAssetData(const Core::JUserPtr<JObject>& selectedObj);
+			bool StuffSkeletonAssetData(const Core::JUserPtr<Core::JIdentifier>& selectedObj);
 		protected:
 			void DoSetClose()noexcept final;
+			void DoActivate()noexcept;
+			void DoDeActivate()noexcept;
 		public:
 			void StorePage(std::wofstream& stream)final;
 			void LoadPage(std::wifstream& stream)final;
 		private:
 			void BuildDockNode();
 			void BuildMenuNode();
+		private:
+			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 		};
 	}
 }

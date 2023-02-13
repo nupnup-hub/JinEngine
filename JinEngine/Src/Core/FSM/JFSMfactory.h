@@ -3,7 +3,7 @@
 #include"JFSMInterface.h"
 //#include"JFSMdiagram.h"
 //#include"JFSMstate.h"
-//#include"JFSMcondition.h"
+//#include"JFSMparameter.h"
 #include"../../Core/Singleton/JSingletonHolder.h"
 #include"../../Core/Factory/JFactory.h"
 #include"../../Core/Func/Callable/JCallable.h"

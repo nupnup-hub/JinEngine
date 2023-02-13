@@ -6,6 +6,7 @@
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Utility/JMathHelper.h"
 #include<unordered_map>
+#include<algorithm>
 
 namespace JinEngine
 {
@@ -42,9 +43,13 @@ namespace JinEngine
 		public:
 			JVector2<float> preMousePos;
 		public:
-			mutable size_t selectedGuid = 0;
-			mutable bool hasSelected = false;
+			mutable size_t selectedNodeGuid = 0;
+			mutable bool isSelectedNode = false;
 			mutable bool isDragging = false;
+		public:
+			mutable size_t selectedFromNodeGuid = 0;
+			mutable size_t selectedToNodeGuid = 0;
+			mutable bool isSelectedEdge = false;
 		public:
 			uint8 updateBit = 0;
 			bool hasNewNode = false;
@@ -71,10 +76,36 @@ namespace JinEngine
 				nodeFrameThickness = JVector2<uint>(Constants::nodeFrameThickness, Constants::nodeFrameThickness);
 
 				mouseOffset = newMouseOffset;
-				lineThickness = 2.5f * zoomRate;
+				lineThickness = 5 * zoomRate;
 				maxDepth = newMaxDepth;
 				updateBit = newUpdateBit;
 				JEditorViewUpdateHelper::hasNewNode = hasNewNode;
+			}
+		public:
+			void SelectNode(const size_t guid)const 
+			{
+				selectedNodeGuid = guid;
+				isSelectedNode = true;
+				isDragging = false;
+				DeSelectEdge();
+			}
+			void SelectEdge(const size_t fromGuid, const size_t toGuid)const
+			{
+				selectedFromNodeGuid = fromGuid;
+				selectedToNodeGuid = toGuid;
+				isSelectedEdge = true;
+				DeSelectNode();
+			}
+			void DeSelectNode()const
+			{
+				selectedNodeGuid = 0;
+				isSelectedNode = false;
+			}
+			void DeSelectEdge()const
+			{
+				selectedFromNodeGuid = 0;
+				selectedToNodeGuid = 0;
+				isSelectedEdge = false;
 			}
 		};
 
@@ -217,16 +248,12 @@ namespace JinEngine
 			const JVector2<float> bboxDistance = bbox.DistanceVector();
 			ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-			const bool isSelected = updateHelper->hasSelected && updateHelper->selectedGuid == GetGuid();
+			const bool isSelected = updateHelper->isSelectedNode && updateHelper->selectedNodeGuid == GetGuid();
 			const bool isMouseInRect = bbox.Contain(ImGui::GetMousePos());
 			if (isMouseInRect)
 			{
 				if (ImGui::IsMouseClicked(0) && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_DockHierarchy))
-				{
-					updateHelper->isDragging = false;
-					updateHelper->hasSelected = true;
-					updateHelper->selectedGuid = GetGuid();
-				}
+					updateHelper->SelectNode(GetGuid());
 			}
 
 			ImU32 rectColor = GetRectInnerColor();
@@ -307,6 +334,23 @@ namespace JinEngine
 				}
 			}
 		}
+		void JEditorNodeBase::DrawLine(const JEditorViewUpdateHelper* updateHelper, const JEditorNodeBase* to)
+		{
+			const JVector2<float> fromCenter = GetValidCenter(updateHelper);
+			const JVector2<float> toCenter = to->GetValidCenter(updateHelper);
+
+			const bool isSelected = updateHelper->isSelectedEdge && updateHelper->selectedFromNodeGuid == GetGuid() &&
+				updateHelper->selectedToNodeGuid == to->GetGuid();
+			 
+			ImU32 color = isSelected ? GetSelectedLineColor() : GetLineColor(); 
+			if (JImGuiImpl::IsMouseInLine(fromCenter, toCenter, updateHelper->lineThickness))
+			{
+				color += GetRectHoveredDeltaColor(); 
+				if (ImGui::IsMouseClicked(0) && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_DockHierarchy))
+					updateHelper->SelectEdge(GetGuid(), to->GetGuid());
+			}
+			ImGui::GetWindowDrawList()->AddLine(fromCenter, toCenter, color, updateHelper->lineThickness);			 
+		}
 		void JEditorNodeBase::StoreUpdatedNodeData(const JEditorViewUpdateHelper* updateHelper)noexcept
 		{
 			Private::JEditorNodeStoredData* nodeData = Private::GetNodeData(updateHelper->viewGuid, updateHelper->groupGuid, GetGuid());
@@ -334,11 +378,11 @@ namespace JinEngine
 		{
 			return isNewNode;
 		}
-		JVector2<float> JEditorNodeBase::GetValidCenter(const JEditorViewUpdateHelper* updateHelper)noexcept
+		JVector2<float> JEditorNodeBase::GetValidCenter(const JEditorViewUpdateHelper* updateHelper)const noexcept
 		{
 			return center + updateHelper->mouseOffset;
 		}
-		std::string JEditorNodeBase::GetCompressName(const JEditorViewUpdateHelper* updateHelper)noexcept
+		std::string JEditorNodeBase::GetCompressName(const JEditorViewUpdateHelper* updateHelper)const noexcept
 		{
 			return JCUtil::CompressString(GetName(), updateHelper->nodeSize.x - updateHelper->nodeInnerPaddingSize.x);
 		}
@@ -378,6 +422,10 @@ namespace JinEngine
 		{
 			return IM_COL32(155, 155, 155, 255);
 		}
+		uint JEditorNodeBase::GetSelectedLineColor()const noexcept
+		{
+			return IM_COL32(155, 155, 75, 255);
+		}
 
 		class JEditorTreeNodeBase : public JEditorNodeBase
 		{
@@ -413,22 +461,16 @@ namespace JinEngine
 			{
 				LoadUpdateNodeData(updateHelper);
 				DrawRect(updateHelper);
-				DrawLine(updateHelper);
+				SettingDrawLine(updateHelper);
 				CallChildNode(updateHelper);
 				StoreUpdatedNodeData(updateHelper);
 			}
 		protected:
 			virtual void CallChildNode(const JEditorViewUpdateHelper* updateHelper)noexcept = 0;
-			void DrawLine(const JEditorViewUpdateHelper* updateHelper)final
+			void SettingDrawLine(const JEditorViewUpdateHelper* updateHelper)final
 			{
 				if (!IsRoot())
-				{
-					const JVector2<float> center = GetValidCenter(updateHelper);
-					const JVector2<float> pCenter = parent->GetCenter() + updateHelper->mouseOffset;
-					JVector2<float> lineStart = JVector2<float>(center.x, center.y + updateHelper->nodeHalfSize.y);
-					JVector2<float> lineEnd = JVector2<float>(pCenter.x, pCenter.y + updateHelper->nodeHalfSize.y);
-					ImGui::GetWindowDrawList()->AddLine(lineStart, lineEnd, GetLineColor(), updateHelper->lineThickness);
-				}
+					DrawLine(updateHelper, parent);
 			}
 		protected:
 			uint GetRectInnerColor()const noexcept final
@@ -576,18 +618,15 @@ namespace JinEngine
 			{} 
 		protected:
 			void Initialize(const JEditorViewUpdateHelper* updateHelper)noexcept final
-			{
-				SetCenter(ImGui::GetMousePos());
+			{ 
+				SetCenter(ImGui::GetMousePos() - ImGui::GetCursorScreenPos());
 			}
-			void DrawLine(const JEditorViewUpdateHelper* updateHelper)final
+			void SettingDrawLine(const JEditorViewUpdateHelper* updateHelper)final
 			{ 
 				const JVector2<float> fromCenter = GetValidCenter(updateHelper);
 				const uint edgeCount = (uint)edge.nodes.size();
 				for (uint i = 0; i < edgeCount; ++i)
-				{ 
-					const JVector2<float> toCenter = edge.nodes[i]->GetValidCenter(updateHelper);
-					ImGui::GetWindowDrawList()->AddLine(fromCenter, toCenter, GetLineColor(), updateHelper->lineThickness);
-				}
+					DrawLine(updateHelper, edge.nodes[i]);
 			}
 			bool DoInitializeWhenAddedNewNode()const noexcept final
 			{
@@ -622,12 +661,17 @@ namespace JinEngine
 		{
 			Private::RemoveViewData(GetGuid());
 		}
-		void JEditorViewBase::Clear()
+		void JEditorViewBase::ClearNode()
 		{
 			lastAddedNode = nullptr;
 			nodeMap.clear();
 			allNodes.clear();
 			maxDepth = 0;
+		}
+		void JEditorViewBase::ClearSeletedCash()
+		{
+			updateHelper->DeSelectNode();
+			updateHelper->DeSelectEdge();
 		}
 		size_t JEditorViewBase::GetDefaultGroupGuid()noexcept
 		{
@@ -641,6 +685,23 @@ namespace JinEngine
 		JEditorGuiCoordGrid* JEditorViewBase::GetGrid()const noexcept
 		{
 			return coordGrid.get();
+		}
+		size_t JEditorViewBase::GetLastUpdateSeletedNodeGuid()const noexcept
+		{
+			return lastSelectedNodeGuid;
+		}
+		void JEditorViewBase::GetLastUpdateSelectedEdgeGuid(_Out_ size_t& fromGuid, _Out_ size_t& toGuid)const noexcept
+		{
+			fromGuid = lastSelectedFromNodeGuid;
+			toGuid = lastSelectedToNodeGuid;
+		}
+		bool JEditorViewBase::IsLastUpdateSeletedNode()const noexcept
+		{
+			return isLastSelectedNode;
+		}
+		bool JEditorViewBase::IsLastUpdateSeletedEdge()const noexcept
+		{
+			return isLastSelectedEdge;
 		}
 		void JEditorViewBase::SetGridSize(const uint gridSize)noexcept
 		{
@@ -661,7 +722,7 @@ namespace JinEngine
 		}
 		JEditorNodeBase* JEditorViewBase::GetLastSelectedNode()noexcept
 		{ 
-			return nodeMap.find(lastSelectedGuid)->second;
+			return nodeMap.find(lastSelectedNodeGuid)->second;
 		}
 		JEditorNodeBase* JEditorViewBase::AddNode(const size_t groupGuid, std::unique_ptr<JEditorNodeBase>&& newNode)
 		{
@@ -698,7 +759,7 @@ namespace JinEngine
 		}
 		void JEditorViewBase::OnScreen(const size_t groupGuid)
 		{
-			if (isLastViewOpen)
+			if (isLastViewOpen || !useViewWindow)
 			{
 				JEditorGuiCoordGrid* grid = GetGrid();
 				if (JImGuiImpl::Button("Look Mid"))
@@ -712,29 +773,49 @@ namespace JinEngine
 					updateBit = (updateBit + 1) % 2;
 					const float zoomRate = grid->GetZoomRate();
 					updateHelper->UpdateData(groupGuid,
-						grid->GetMouseOffset(),
+						grid->GetMouseOffset() + ImGui::GetCursorScreenPos(),
 						zoomRate,
 						GetMaxDepth(),
 						updateBit,
 						hasNewNode);
 
 					const uint allNodeCount = GetNodeCount();
-					NodeOnScreen(updateHelper.get());
+					NodeOnScreen(updateHelper.get()); 
 
 					Private::EraseUnusedData(GetGuid(), groupGuid, updateBit);
 					updateHelper->preMousePos = ImGui::GetMousePos();
 
-					const bool canChangeSelectedNode = updateHelper->hasSelected && (lastSelectedGuid != updateHelper->selectedGuid);
+					const bool canChangeSelectedNode = updateHelper->isSelectedNode && (lastSelectedNodeGuid != updateHelper->selectedNodeGuid);
+					const bool canChangeSelectedEdge = updateHelper->isSelectedEdge && (lastSelectedFromNodeGuid != updateHelper->selectedFromNodeGuid)
+						&& (lastSelectedToNodeGuid != updateHelper->selectedToNodeGuid);
+					
 					if (canChangeSelectedNode)
 					{
-						JEditorNodeBase* newSelected = GetNode(updateHelper->selectedGuid);
+						JEditorNodeBase* newSelected = GetNode(updateHelper->selectedNodeGuid);
 						if (newSelected == nullptr)
-						{
-							updateHelper->hasSelected = false;
-							updateHelper->selectedGuid = 0;
-						}
+							updateHelper->DeSelectNode();
 						else
-							lastSelectedGuid = updateHelper->selectedGuid;
+						{
+							isLastSelectedNode = true;
+							isLastSelectedEdge = false;
+							lastSelectedNodeGuid = updateHelper->selectedNodeGuid;
+							lastSelectedFromNodeGuid = lastSelectedToNodeGuid = 0;
+						}
+					}
+					else if (canChangeSelectedEdge)
+					{
+						JEditorNodeBase* fromSelected = GetNode(updateHelper->selectedFromNodeGuid);
+						JEditorNodeBase* toSelected = GetNode(updateHelper->selectedToNodeGuid);
+						if (fromSelected == nullptr || toSelected == nullptr)
+							updateHelper->DeSelectEdge();
+						else
+						{
+							isLastSelectedNode = false;
+							isLastSelectedEdge = true;
+							lastSelectedNodeGuid = 0;
+							lastSelectedFromNodeGuid = updateHelper->selectedFromNodeGuid;
+							lastSelectedToNodeGuid = updateHelper->selectedToNodeGuid;
+						}
 					}
 					hasNewNode = false;
 				}
@@ -743,6 +824,10 @@ namespace JinEngine
 		void JEditorViewBase::EndView()
 		{
 			JImGuiImpl::EndWindow();
+		}
+		void JEditorViewBase::UseBeginViewWindow(const bool value)noexcept
+		{
+			useViewWindow = value;
 		}
 		void JEditorViewBase::StoreData(const std::wstring& path)
 		{
@@ -866,7 +951,7 @@ namespace JinEngine
 			for (uint i = 0; i < allNodeCount; ++i)
 				GetNodeByIndex(i)->LoadUpdateNodeData(updateHelper);
 			for (uint i = 0; i < allNodeCount; ++i)
-				GetNodeByIndex(i)->DrawLine(updateHelper);
+				GetNodeByIndex(i)->SettingDrawLine(updateHelper);
 			for (uint i = 0; i < allNodeCount; ++i)
 			{  
 				GetNodeByIndex(i)->DrawRect(updateHelper);
@@ -885,9 +970,9 @@ namespace JinEngine
 
 				if (ImGui::IsMouseDown(0) || ImGui::IsMouseDown(1))
 				{
-					if (updateHelper->hasSelected)
+					if (updateHelper->isSelectedNode)
 					{
-						JEditorGraphNode* toNode = static_cast<JEditorGraphNode*>(GetNode(updateHelper->selectedGuid));
+						JEditorGraphNode* toNode = static_cast<JEditorGraphNode*>(GetNode(updateHelper->selectedNodeGuid));
 						if (toNode != nullptr)
 						{
 							connectToGuid = toNode->GetGuid();

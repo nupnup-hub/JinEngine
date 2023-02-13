@@ -6,7 +6,10 @@
 
 namespace JinEngine
 { 
-	class JObject;
+	namespace Core
+	{
+		class JIdentifier;
+	}
 	namespace Editor
 	{ 
 		class JEditorAttribute; 
@@ -18,17 +21,11 @@ namespace JinEngine
 			struct WindowInitInfo
 			{
 			public:
-				std::string name;
-				float initWidthRate;
-				float initHeightRate;
-				float initPosXRate;
-				float initPosYRate;
+				std::string name; 
 				bool isOpen;
 				bool isLastAct;
 			public:
-				WindowInitInfo(const std::string name,
-					float initWidthRate, float initHeightRate,
-					float initPosXRate, float initPosYRate);
+				WindowInitInfo(const std::string name);
 			public:
 				std::string GetName()const noexcept;
 				std::unique_ptr<JEditorAttribute> MakeAttribute()noexcept;
@@ -77,7 +74,7 @@ namespace JinEngine
 			void EnterPage(int guiWindowFlag)noexcept;
 			void ClosePage()noexcept;  
 		public:
-			virtual bool IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj) noexcept = 0;
+			virtual bool IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj) noexcept = 0;
 		public:
 			void OpenWindow(const std::string& windowname)noexcept;
 			void OpenWindow(JEditorWindow* window)noexcept;

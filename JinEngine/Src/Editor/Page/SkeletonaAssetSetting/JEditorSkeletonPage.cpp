@@ -26,11 +26,11 @@ namespace JinEngine
 		//const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, std::unique_ptr<JEditorAttribute> attribute
 		JEditorSkeletonPage::JEditorSkeletonPage(bool hasMetadata)
 			:JEditorPage("SkeletonAssetPage",
-				std::make_unique<JEditorAttribute>(0.0f, 0.0f, 1.0f, 1.0f),
+				std::make_unique<JEditorAttribute>(),
 				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, J_EDITOR_PAGE_REQUIRE_INIT_OBJECT)),
 			reqInit(!hasMetadata)
 		{
-			const uint memberWindowCount = 4;
+			constexpr uint memberWindowCount = 4;
 			std::vector<std::string> windowNames
 			{
 				"Skeleton Explorer##SkeletonAssetPage",
@@ -38,34 +38,9 @@ namespace JinEngine
 				"Avatar Observer##SkeletonAssetPage",
 				"Avatar Detail##SkeletonAssetPage"
 			};
-			std::vector<float> initWidthRateVec
-			{
-				0.25f, 0.25f, 0.55f, 0.2f
-			};
-			std::vector<float> initHeightRateVec
-			{
-				0.5f, 0.5f, 1, 1
-			};
-			std::vector<float> initPosXRateVec
-			{
-				0, 0, 0.25f, 0.7f,
-			};
-			std::vector<float> initPosYRateVec
-			{
-				0, 0.5f, 0, 0
-			};
-			std::vector<bool> openVec
-			{
-				true, true, true, true
-			};;
-			std::vector<std::unique_ptr< JEditorAttribute>> windowAttributes;
+			std::vector<std::unique_ptr<JEditorAttribute>> windowAttributes(memberWindowCount);
 			for (uint i = 0; i < memberWindowCount; ++i)
-			{
-				windowAttributes.push_back(std::make_unique<JEditorAttribute>(initPosXRateVec[i],
-					initPosYRateVec[i],
-					initWidthRateVec[i],
-					initHeightRateVec[i]));
-			}
+				windowAttributes[i] = std::make_unique<JEditorAttribute>();
 
 			//수정필요
 			std::vector<J_OBSERVER_SETTING_TYPE> settingType
@@ -113,11 +88,11 @@ namespace JinEngine
 			currOpWndCount = GetOpenWindowCount();
 			for (uint i = 0; i < currOpWndCount; ++i)
 				GetOpenWindow(i)->SetLastActivated(true);
-			BuildMenuNode();
 		}
 		void JEditorSkeletonPage::Initialize()
 		{
 			JEditorPage::Initialize();
+			BuildMenuNode();
 		}
 		void JEditorSkeletonPage::UpdatePage()
 		{
@@ -139,7 +114,7 @@ namespace JinEngine
 				ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar |
 				ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
 			
-			EnterPage(guiWindowFlag);
+			EnterPage(guiWindowFlag); 
 			if (reqInit)
 				BuildDockNode();
 			UpdateDockSpace(dockspaceFlag);
@@ -155,19 +130,20 @@ namespace JinEngine
 			if (reqInit)
 				reqInit = false;
 		}
-		bool JEditorSkeletonPage::IsValidOpenRequest(const Core::JUserPtr<JObject>& selectedObj)noexcept
+		bool JEditorSkeletonPage::IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept
 		{
 			return StuffSkeletonAssetData(selectedObj);
 		}
-		bool JEditorSkeletonPage::StuffSkeletonAssetData(const Core::JUserPtr<JObject>& selectedObj)
+		bool JEditorSkeletonPage::StuffSkeletonAssetData(const Core::JUserPtr<Core::JIdentifier>& selectedObj)
 		{
 			if (!selectedObj.IsValid())
 				return false;
 
-			Core::JUserPtr<JSkeletonAsset> skeleotnAsset;
-			if (!skeleotnAsset.ConnnectChildUser(selectedObj))
+			Core::JUserPtr<JSkeletonAsset> newSkeletonAsset;
+			if (!newSkeletonAsset.ConnnectChildUser(selectedObj))
 				return false;
 
+			skeleotnAsset = newSkeletonAsset;
 			auto isSameSkelLam = [](JMeshGeometry* mesh, size_t skelHash)
 			{
 				if (mesh->GetMeshGeometryType() == J_MESHGEOMETRY_TYPE::SKINNED)
@@ -215,6 +191,9 @@ namespace JinEngine
 						*skeletonTree[i]);
 				}
 			}
+			if (avatarScene.IsValid())
+				JObject::BeginDestroy(avatarScene.Release());
+
 			avatarScene = Core::GetUserPtr(newScene);
 			explorer->Initialize(Core::GetUserPtr(meshObj));
 			avatarEdit->Initialize(skeleotnAsset);
@@ -226,6 +205,16 @@ namespace JinEngine
 			JEditorPage::DoSetClose();
 			if (avatarScene.IsValid())
 				JObject::BeginDestroy(avatarScene.Release());
+		}
+		void JEditorSkeletonPage::DoActivate()noexcept
+		{
+			JEditorPage::DoActivate();
+			JResourceUserInterface::AddEventListener(*JResourceManager::Instance().EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+		}
+		void JEditorSkeletonPage::DoDeActivate()noexcept
+		{
+			JResourceUserInterface::RemoveListener(*JResourceManager::Instance().EvInterface(), GetGuid());
+			JEditorPage::DoDeActivate();
 		}
 		void JEditorSkeletonPage::StorePage(std::wofstream& stream)
 		{
@@ -285,6 +274,21 @@ namespace JinEngine
 					windowNodePtr);
 				newNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, wndVec[i]->GetName()));
 				menuBar->AddNode(std::move(newNode));
+			}
+		}
+		void JEditorSkeletonPage::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		{
+			if (iden == GetGuid())
+				return;
+
+			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
+			{
+				if (skeleotnAsset.IsValid() && jRobj->GetGuid() == skeleotnAsset->GetGuid())
+				{  
+					skeleotnAsset.Clear();
+					if (avatarScene.IsValid())
+						JObject::BeginDestroy(avatarScene.Release());
+				}
 			}
 		}
 	}

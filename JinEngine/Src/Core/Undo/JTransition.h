@@ -11,6 +11,21 @@ namespace JinEngine
 	{
 		class JTransitionTask
 		{
+		public:
+			enum class ADDITONAL_PROCESS_TYPE
+			{
+				DO_PRE,
+				DO_POST,
+				UNDO_PRE,
+				UNDO_POST
+			};
+		public:
+			using ProcessBindVec = std::vector<std::unique_ptr<JBindHandleBase>>;
+		private:
+			ProcessBindVec preprocessDoVec;
+			ProcessBindVec postprocessDoVec;
+			ProcessBindVec preprocessUndoVec;
+			ProcessBindVec postprocessUndoVec;
 		private: 
 			std::string doTaskName;
 			std::string undoTaskName;
@@ -21,9 +36,13 @@ namespace JinEngine
 			std::string GetDoTaskName()const noexcept;
 			std::string GetUndoTaskName()const noexcept;
 		public:
+			void RegisterAddtionalProcess(const ADDITONAL_PROCESS_TYPE type, ProcessBindVec&& vec);
+		public:
 			virtual void Do() = 0;
 			virtual void Undo() = 0;
-			virtual void Clear() noexcept = 0;
+			virtual void Clear() noexcept;
+		protected:
+			void Process(const ADDITONAL_PROCESS_TYPE type);
 		public:
 			virtual bool IsValid()const noexcept = 0;
 		};
@@ -31,12 +50,12 @@ namespace JinEngine
 		class JTransitionSetValueTask final : public JTransitionTask
 		{
 		private:
-			std::unique_ptr<Core::JBindHandleBase> doBindhanle;
-			std::unique_ptr<Core::JBindHandleBase> undoBindhanle;
+			std::unique_ptr<JBindHandleBase> doBindhandle;
+			std::unique_ptr<JBindHandleBase> undoBindhandle;
 		public: 
 			JTransitionSetValueTask(const std::string& taskName,
-				std::unique_ptr<Core::JBindHandleBase> doBindhanle,
-				std::unique_ptr<Core::JBindHandleBase> undoBindhanle);
+				std::unique_ptr<JBindHandleBase>&& doBindhandle,
+				std::unique_ptr<JBindHandleBase>&& undoBindhandle);
 		public:
 			void Do() final;
 			void Undo() final;
@@ -45,22 +64,22 @@ namespace JinEngine
 			bool IsValid()const noexcept;
 		};
 
-		template<typename DataStructure,  typename doHandle, typename undoHandle>
+		template<typename DataStructure,  typename DoHandle, typename UndoHandle>
 		class JTransitionCreationTask final : public JTransitionTask
 		{
 		private:
-			std::unique_ptr<doHandle> doBindhanle;
-			std::unique_ptr<undoHandle> undoBindhanle;
+			std::unique_ptr<DoHandle> doBindhandle = nullptr;
+			std::unique_ptr<UndoHandle> undoBindhandle = nullptr;
 			DataStructure& dataStructure;
 			JDataHandle dataHandle;
 		public: 
 			JTransitionCreationTask(const std::string& taskName,
-				std::unique_ptr<doHandle> doBindhanle,
-				std::unique_ptr<undoHandle> undoBindhanle,
+				std::unique_ptr<DoHandle> doBindhandle,
+				std::unique_ptr<UndoHandle> undoBindhandle,
 				DataStructure& dataStructure)
 				:JTransitionTask("Do" + taskName, "Undo"+ taskName),
-				doBindhanle(std::move(doBindhanle)),
-				undoBindhanle(std::move(undoBindhanle)),
+				doBindhandle(std::move(doBindhandle)),
+				undoBindhandle(std::move(undoBindhandle)),
 				dataStructure(dataStructure),
 				dataHandle(dataStructure.CreateInvalidHandle())
 			{}
@@ -71,31 +90,45 @@ namespace JinEngine
 		public:
 			void Do() final
 			{
-				doBindhanle->Invoke<DataStructure&, JDataHandle&>(dataStructure, dataHandle);
+				Process(JTransitionTask::ADDITONAL_PROCESS_TYPE::DO_PRE);
+				doBindhandle->Invoke<DataStructure&, JDataHandle&>(dataStructure, dataHandle);
+				Process(JTransitionTask::ADDITONAL_PROCESS_TYPE::DO_POST);
 			}
 			void Undo() final
 			{
-				undoBindhanle->Invoke<DataStructure&, JDataHandle&>(dataStructure, dataHandle);
+				Process(JTransitionTask::ADDITONAL_PROCESS_TYPE::UNDO_PRE);
+				undoBindhandle->Invoke<DataStructure&, JDataHandle&>(dataStructure, dataHandle);
+				Process(JTransitionTask::ADDITONAL_PROCESS_TYPE::UNDO_POST);
 			}
 			void Clear()noexcept final
 			{
-				doBindhanle.reset();
-				undoBindhanle.reset();
+				JTransitionTask::Clear();
+				doBindhandle.reset();
+				undoBindhandle.reset();
 				if (dataHandle.IsValid())
-					dataStructure.Remove(dataHandle);
+					dataStructure.Remove(dataHandle);			 
 			}
 		public:
 			bool IsValid()const noexcept
 			{
-				return doBindhanle != nullptr && undoBindhanle != nullptr;
+				return doBindhandle != nullptr && undoBindhandle != nullptr;
 			}
 		};
+		
+		template<typename DataStructure, typename ...Param>
+		struct JTransitionCreationHandleType
+		{ 
+		public:
+			using Functor = Core::JFunctor<void, DataStructure&, Core::JDataHandle&, Param...>;
+			using Bind = Core::JBindHandle<Functor, const Core::EmptyType&, const Core::EmptyType&, Param...>;
+		};
+ 
 
 		//Make transition create task bind unq
 		template<typename BindType, typename Functor, typename ...Param>
 		static std::unique_ptr<BindType> CTaskUptr(Functor& functor, Param... var)
 		{
-			return std::make_unique<BindType>(functor, Core::empty, Core::empty, std::forward<Param>(var)...);
+			return std::make_unique<BindType>(functor, empty, empty, std::forward<Param>(var)...);
 		}
 
 		class JTransition

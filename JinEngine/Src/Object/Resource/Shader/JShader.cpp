@@ -188,7 +188,7 @@ namespace JinEngine
 	}
 	std::wstring JShader::GetFormat()const noexcept
 	{
-		return GetAvailableFormat()[0];
+		return GetAvailableFormat()[GetFormatIndex()];
 	}
 	std::vector<std::wstring> JShader::GetAvailableFormat()noexcept
 	{

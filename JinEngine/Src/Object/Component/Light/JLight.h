@@ -13,21 +13,21 @@ namespace JinEngine
 	{
 		REGISTER_CLASS(JLight)
 	private:
-		REGISTER_GUI_TRIGGER_GROUP(LightType, J_LIGHT_TYPE, lightType)
-			REGISTER_PROPERTY_EX(lightType, GetLightType, SetLightType, GUI_ENUM_COMBO(J_LIGHT_TYPE))
-			J_LIGHT_TYPE lightType;
+		REGISTER_GUI_ENUM_CONDITION_GROUP(LightType, J_LIGHT_TYPE, lightType)
+		REGISTER_PROPERTY_EX(lightType, GetLightType, SetLightType, GUI_ENUM_COMBO(J_LIGHT_TYPE))
+		J_LIGHT_TYPE lightType;
 	private:
 		REGISTER_PROPERTY_EX(strength, GetStrength, SetStrength, GUI_COLOR_PICKER(false))
-			DirectX::XMFLOAT3 strength = { 0.8f, 0.8f, 0.8f };
-		REGISTER_PROPERTY_EX(falloffStart, GetFalloffStart, SetFalloffStart, GUI_SLIDER(1, 100, true, false, GUI_GROUP_ENUM_TRIGGER(LightType, J_LIGHT_TYPE::POINT, J_LIGHT_TYPE::SPOT)))
-			float falloffStart = 1.0f;
-		REGISTER_PROPERTY_EX(falloffEnd, GetFalloffEnd, SetFalloffEnd, GUI_SLIDER(1, 100, true, false, GUI_GROUP_ENUM_TRIGGER(LightType, J_LIGHT_TYPE::POINT, J_LIGHT_TYPE::SPOT)))
-			float falloffEnd = 10.0f;
-		REGISTER_PROPERTY_EX(spotPower, GetSpotPower, SetSpotPower, GUI_SLIDER(0, 1, true, false, GUI_GROUP_ENUM_TRIGGER(LightType, J_LIGHT_TYPE::POINT)))
-			float spotPower = 0;
+		DirectX::XMFLOAT3 strength = { 0.8f, 0.8f, 0.8f };
+		REGISTER_PROPERTY_EX(falloffStart, GetFalloffStart, SetFalloffStart, GUI_SLIDER(1, 100, true, false, GUI_GROUP_ENUM_CONDITION(LightType, J_LIGHT_TYPE::POINT, J_LIGHT_TYPE::SPOT)))
+		float falloffStart = 1.0f;
+		REGISTER_PROPERTY_EX(falloffEnd, GetFalloffEnd, SetFalloffEnd, GUI_SLIDER(1, 100, true, false, GUI_GROUP_ENUM_CONDITION(LightType, J_LIGHT_TYPE::POINT, J_LIGHT_TYPE::SPOT)))
+		float falloffEnd = 10.0f;
+		REGISTER_PROPERTY_EX(spotPower, GetSpotPower, SetSpotPower, GUI_SLIDER(0, 1, true, false, GUI_GROUP_ENUM_CONDITION(LightType, J_LIGHT_TYPE::POINT)))
+		float spotPower = 0;
 	private:
 		REGISTER_PROPERTY_EX(onShadow, IsShadowActivated, SetShadow, GUI_CHECKBOX())
-			bool onShadow = false;
+		bool onShadow = false;
 		DirectX::XMFLOAT4X4 shadowTransform;
 	public:
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;

@@ -13,6 +13,7 @@
 #include"../../../Core/FSM/AnimationFSM/JAnimationShareData.h"
 #include"../../../Core/Loader/FbxLoader/JFbxFileLoader.h"
 #include"../../../Application/JApplicationVariable.h"
+#include"../../../Utility/JCommonUtility.h"
 
 using namespace DirectX;
 namespace JinEngine
@@ -23,7 +24,7 @@ namespace JinEngine
 		JDirectory* directory,
 		const std::wstring oridataPath,
 		Core::JOwnerPtr<JAnimationData> anidata)
-		:JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JAnimationClip>(oridataPath)),
+		:JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JAnimationClip>(JCUtil::DecomposeFileFormat(oridataPath))),
 		anidata(std::move(anidata))
 	{}
 	JAnimationClip::JAnimationClipInitData::JAnimationClipInitData(const std::wstring& name,
@@ -82,7 +83,7 @@ namespace JinEngine
 	}
 	std::wstring JAnimationClip::GetFormat()const noexcept
 	{
-		return GetAvailableFormat()[0];
+		return GetAvailableFormat()[GetFormatIndex()];
 	}
 	std::vector<std::wstring> JAnimationClip::GetAvailableFormat()noexcept
 	{
@@ -393,7 +394,7 @@ namespace JinEngine
 				jointMax = sampleJointSize;
 		}
 
-		if (JAnimationClip::clipSkeletonAsset->GetSkeleton()->GetJointCount() == sampleSize)
+		if (clipSkeletonAsset && clipSkeletonAsset->GetSkeleton()->GetJointCount() == sampleSize)
 			return true;
 		else
 			return false;
@@ -521,7 +522,7 @@ namespace JinEngine
 		for (uint i = 0; i < count; ++i)
 		{
 			JSkeletonAsset* oldSkeletonAsset = static_cast<JSkeletonAsset*>(*(st + i));
-			if (oldSkeletonAsset->GetSkeleton()->IsSame(oriSkeletoHash))
+			if (oldSkeletonAsset->GetSkeletonHash() == oriSkeletoHash)
 			{
 				SetClipSkeletonAsset(oldSkeletonAsset);
 				break;

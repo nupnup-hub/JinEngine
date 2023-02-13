@@ -226,11 +226,11 @@ namespace JinEngine
 			if (node->IsLeafNode())
 			{
 				if (node->GetParent()->IsRootNode() && node->IsOpendNode())
-					JImGuiImpl::SetColorToDeep(ImGuiCol_Header, -0.15f);
+					JImGuiImpl::SetColorToSoft(ImGuiCol_Header, -0.15f);
 				if (JImGuiImpl::MenuItem(nodeName.c_str(), node->IsOpendNode(), true))
 					selectedNode = node;
 				if (node->GetParent()->IsRootNode())
-					JImGuiImpl::SetColorToDeep(ImGuiCol_Header, 0.15f);
+					JImGuiImpl::SetColorToSoft(ImGuiCol_Header, 0.15f);
 			}
 			else
 			{

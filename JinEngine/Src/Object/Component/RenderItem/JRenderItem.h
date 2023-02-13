@@ -16,9 +16,9 @@ namespace JinEngine
 	{
 		REGISTER_CLASS(JRenderItem)
 	private:
-		REGISTER_PROPERTY_EX(mesh, GetMesh, SetMesh, GUI_SELECTOR(true, true))
+		REGISTER_PROPERTY_EX(mesh, GetMesh, SetMesh, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
 		JMeshGeometry* mesh = nullptr;
-		REGISTER_PROPERTY_EX(material, GetMaterialVec, SetMaterialVec, GUI_SELECTOR(true, true))
+		REGISTER_PROPERTY_EX(material, GetMaterialVec, SetMaterialVec, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
 		std::vector<JMaterial*> material;
 		DirectX::XMFLOAT4X4 textureTransform = JMathHelper::Identity4x4();
 		D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;

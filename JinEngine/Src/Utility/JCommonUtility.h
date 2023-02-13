@@ -220,8 +220,8 @@ namespace JinEngine
 			out << std::fixed << value;
 			return out.str();
 		}	 
-		template<typename Type>
-		static int GetJIdenIndex(std::vector<Type*>& vec, const size_t guid, size_t(Type::*ptr)()const)
+		template<typename Type, typename FuncDeclaredType>
+		static int GetJIdenIndex(std::vector<Type*>& vec, const size_t guid, size_t(FuncDeclaredType::* ptr)()const)
 		{
 			const uint vecCount = (uint)vec.size();
 			for (uint i = 0; i < vecCount; ++i)
@@ -230,9 +230,9 @@ namespace JinEngine
 					return i;
 			}
 			return searchFail;
-		}	 
-		template<typename Type>
-		static int GetJIdenIndex(std::vector<std::unique_ptr<Type>>& vec, const size_t guid, size_t(Type::* ptr)()const)
+		}
+		template<typename Type, typename FuncDeclaredType>
+		static int GetJIdenIndex(std::vector<std::unique_ptr<Type>>& vec, const size_t guid, size_t(FuncDeclaredType::* ptr)()const)
 		{
 			const uint vecCount = (uint)vec.size();
 			for (uint i = 0; i < vecCount; ++i)

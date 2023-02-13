@@ -1,20 +1,35 @@
 #pragma once
+#include"../JDataType.h"   
+#include "../Func/Callable/JCallable.h"
+#include "../Func/Functor/JFunctor.h"
+#include"../../Utility/JTypeUtility.h"
 #include<string>
 #include<vector>
 #include<memory> 
-#include"../JDataType.h"   
-#include "../Func/Callable/JCallable.h"
-#include"../../Utility/JTypeUtility.h"
 
 namespace JinEngine
 {
 	namespace Core
 	{
+		class JIdentifier;
+
 		enum class J_GUI_GROUP_TYPE
 		{
 			NONE,
 			TABLE,
 			ENUM_TRIGGER
+		};
+
+		enum class J_GUI_SELECTOR_IMAGE
+		{
+			NONE,
+			ICON,
+			IMAGE
+		};
+		enum class J_GUI_LIST_TYPE
+		{
+			 STATIC,	
+			 DYNAMIC	// Can Add element
 		};
 
 		using JSupportGuiWidgetType = int;
@@ -25,8 +40,16 @@ namespace JinEngine
 		{
 			static constexpr JSupportGuiWidgetType NotSupportGuiWidget = 0;
 			static JGuiGroupKey InvalidGroupKey = " ";
-		}
 
+			//static constexpr int guiSelectorNoneImage = 0;
+		//	static constexpr int guiSelectorIconImage = 1;
+		//	static constexpr int guiSelectorImage = 2;
+
+			static constexpr int guiStaticList = 0;
+			static constexpr int guiDynamicList = 1;
+		} 
+
+#pragma region Group
 		class JGuiGroupMemberInfo
 		{
 		private:
@@ -38,25 +61,25 @@ namespace JinEngine
 			JGuiGroupKey GetGroupKey()const noexcept;
 		};
 		 
-		class JGuiEnumTriggerGroupMemberInfoHandle : public JGuiGroupMemberInfo
+		class JGuiEnumConditionGroupMemberInfoHandle : public JGuiGroupMemberInfo
 		{
 		public:
-			JGuiEnumTriggerGroupMemberInfoHandle(const JGuiGroupKey groupKey);
-			virtual ~JGuiEnumTriggerGroupMemberInfoHandle() = default;
+			JGuiEnumConditionGroupMemberInfoHandle(const JGuiGroupKey groupKey);
+			virtual ~JGuiEnumConditionGroupMemberInfoHandle() = default;
 		public:
 			virtual bool OnTrigger(const JEnum value)const noexcept = 0;
 		};
 
 		template<int buffCount>
-		class JGuiEnumTriggerGroupMemberInfo : public JGuiEnumTriggerGroupMemberInfoHandle
+		class JGuiEnumConditionGroupMemberInfo : public JGuiEnumConditionGroupMemberInfoHandle
 		{
 		private:
 			//enum need to declare enum not enum class
 			JEnum enumValue[buffCount];
 		public:
 			template<typename ...Param>
-			JGuiEnumTriggerGroupMemberInfo(const JGuiGroupKey groupKey, Param... value)
-				:JGuiEnumTriggerGroupMemberInfoHandle(groupKey)
+			JGuiEnumConditionGroupMemberInfo(const JGuiGroupKey groupKey, Param... value)
+				:JGuiEnumConditionGroupMemberInfoHandle(groupKey)
 			{  
 				int i = 0;
 				((enumValue[i++] = (JEnum)value), ...);
@@ -72,6 +95,83 @@ namespace JinEngine
 				return false;
 			}
 		};
+		 
+		//controll gui extra action
+		//ex) table groupping, display condition, type conditon
+		//scenario
+		//1.. declare group info by GUI_GROUP... macro
+		//2.. memeber gui send JGuiGroupMemberInfo
+		class JGuiGroupInfo
+		{
+		private:
+			const std::string groupName;
+		public:
+			JGuiGroupInfo(const std::string groupName);
+			virtual ~JGuiGroupInfo() = default;
+		public:
+			std::string GetGroupName()const noexcept;
+			virtual J_GUI_GROUP_TYPE GetGuiGroupType()const noexcept = 0;
+		public:
+			virtual void NotifyAddNewMember(JGuiGroupMemberInfo* mInfo) = 0;
+		};
+
+		class JGuiTableInfo : public JGuiGroupInfo
+		{
+		private:
+			const bool isFirstColumnGuide;
+		private:
+			std::vector<std::string> columnGuide;
+			uint columnCount;
+			uint rowCount;
+		public:
+			template<typename ...Param>
+			JGuiTableInfo(const std::string tableName, bool isFirstColumnGuide, Param... var)
+				:JGuiGroupInfo(tableName), isFirstColumnGuide(isFirstColumnGuide)
+			{
+				((columnGuide.push_back(var)), ...);
+				columnCount = (uint)columnGuide.size();
+			}
+		public:
+			bool IsFirstColunmGuide()const noexcept;
+		public:
+			J_GUI_GROUP_TYPE GetGuiGroupType()const noexcept final;
+			std::string GetColumnGuide(const uint index)const noexcept;
+			uint GetColumnCount()const noexcept;
+			uint GetRowCount()const noexcept;
+		public:
+			void NotifyAddNewMember(JGuiGroupMemberInfo* mInfo)final;
+		};
+
+		//Set gui condition 
+		//display gui when parameter is registered enum
+		//enum need to declare enum not enum class
+		//or REGISTER_ENUM, REGISTER_ENUM_CLASS
+		class JGuiEnumConditionInfo : public JGuiGroupInfo
+		{
+		private:
+			const std::string enumName;
+			const std::string parameterName;
+		public:
+			JGuiEnumConditionInfo(const std::string& groupName, const std::string& enumName, const std::string& parameterName);
+		public:
+			J_GUI_GROUP_TYPE GetGuiGroupType()const noexcept final;
+		public:
+			std::string GetEnumName()const noexcept;
+			std::string GetParamName()const noexcept;
+		public:
+			void NotifyAddNewMember(JGuiGroupMemberInfo* mInfo)final;
+		};
+ 
+
+		class JGuiGroupMap
+		{
+		public:
+			static void AddGuiGroup(std::unique_ptr<JGuiGroupInfo>&& rInfo);
+			static JGuiGroupInfo* GetGuiGroupInfo(const JGuiGroupKey& groupKey);
+		};
+#pragma endregion
+
+#pragma region Widget
 
 		class JGuiWidgetInfo
 		{
@@ -146,17 +246,25 @@ namespace JinEngine
 		};
 
 		class JGuiSelectorInfo : public JGuiWidgetInfo
-		{
-		private: 
-			const bool isImageRtTexture;
+		{ 
+		private:
+			using GetElemntVecF = Core::JSFunctorType<std::vector<JIdentifier*>, JIdentifier*>;
+		private:  
+			const J_GUI_SELECTOR_IMAGE imageType;
 			const bool hasSizeSlider;
+		private:
+			std::unique_ptr<GetElemntVecF::Functor> getElementVecFunctor = nullptr;
 		public:
-			JGuiSelectorInfo(const bool isImageRtTexture, const bool hasSizeSlider);
-			JGuiSelectorInfo(const bool isImageRtTexture, const bool hasSizeSlider, std::unique_ptr<JGuiGroupMemberInfo>&& newGroupMemberInfo);
+			JGuiSelectorInfo(const J_GUI_SELECTOR_IMAGE imageType,
+				const bool hasSizeSlider,
+				GetElemntVecF::Ptr getElementVecPtr = nullptr,
+				std::unique_ptr<JGuiGroupMemberInfo>&& newGroupMemberInfo = nullptr);
 		public:
 			JSupportGuiWidgetType GetSupportWidgetType()const noexcept final;
 		public:
-			bool IsImageRtTexture()const noexcept;
+			J_GUI_SELECTOR_IMAGE GetPreviewImageType()const noexcept;
+			GetElemntVecF::Functor* GetElementVecFunctor()const noexcept;
+		public:
 			bool HasSizeSlider()const noexcept;
 		};
 
@@ -183,71 +291,32 @@ namespace JinEngine
 		private:
 			std::string FindEnumFullName(const std::string enumName)const noexcept;
 		};
-		 
-		class JGuiGroupInfo
+	 
+		class JGuiListInfo : public JGuiWidgetInfo
 		{
-		private:
-			const std::string groupName;
-		public:
-			JGuiGroupInfo(const std::string groupName);
-			virtual ~JGuiGroupInfo() = default;
-		public:
-			std::string GetGroupName()const noexcept;
-			virtual J_GUI_GROUP_TYPE GetGuiGroupType()const noexcept = 0;
-		public:
-			virtual void NotifyAddNewMember(JGuiGroupMemberInfo* mInfo) = 0;
-		};
-
-		class JGuiTableInfo : public JGuiGroupInfo
-		{
-		private:
-			const bool isFirstColumnGuide;
-		private: 
-			std::vector<std::string> columnGuide;
-			uint columnCount;
-			uint rowCount;
-		public:
-			template<typename ...Param>
-			JGuiTableInfo(const std::string tableName, bool isFirstColumnGuide, Param... var)
-				:JGuiGroupInfo(tableName), isFirstColumnGuide(isFirstColumnGuide)
-			{
-				((columnGuide.push_back(var)), ...);
-				columnCount = (uint)columnGuide.size();
-			}
-		public:
-			bool IsFirstColunmGuide()const noexcept;
 		public: 
-			J_GUI_GROUP_TYPE GetGuiGroupType()const noexcept final;
-			std::string GetColumnGuide(const uint index)const noexcept;
-			uint GetColumnCount()const noexcept;
-			uint GetRowCount()const noexcept; 
-		public:
-			void NotifyAddNewMember(JGuiGroupMemberInfo* mInfo)final;
-		};
-
-		//enum need to declare enum not enum class
-		//And REGISTER_ENUM
-		class JGuiEnumTriggerInfo : public JGuiGroupInfo
-		{
+			//모든 JIdenfier를 상속받는 object는 Factory에서 생성되며
+			//Instance는 ownerPtr로 typeInfo class에 저장되고 pointer를 반환한다
+			using AddElementF = Core::JSFunctorType<JIdentifier*, JIdentifier*>;
 		private:
-			const std::string enumName;
-			const std::string parameterName; 
+			//0.. static
+			//1.. dynamic can add element
+			const J_GUI_LIST_TYPE listType;
+			const bool canDisplayElementGui; 
+			std::unique_ptr<AddElementF::Functor> addElementF = nullptr;
 		public:
-			JGuiEnumTriggerInfo(const std::string& groupName, const std::string& enumName, const std::string& parameterName);
+			JGuiListInfo(const J_GUI_LIST_TYPE listType,
+				const bool canDisplayElementGui, 
+				AddElementF::Ptr addElementPtr = nullptr,
+				std::unique_ptr<JGuiGroupMemberInfo>&& newGroupMemberInfo = nullptr);
 		public:
-			J_GUI_GROUP_TYPE GetGuiGroupType()const noexcept final;
+			JSupportGuiWidgetType GetSupportWidgetType()const noexcept final;
 		public:
-			std::string GetEnumName()const noexcept;
-			std::string GetParamName()const noexcept;
-		public:
-			void NotifyAddNewMember(JGuiGroupMemberInfo* mInfo)final;
+			J_GUI_LIST_TYPE GetListType()const noexcept;
+			bool CanDisplayElementGui()const noexcept;
+		public: 
+			AddElementF::Functor* GetAddElementFunctor()const noexcept;
 		};
-
-		class JGuiGroupMap
-		{
-		public:
-			static void AddGuiGroup(std::unique_ptr<JGuiGroupInfo>&& rInfo);
-			static JGuiGroupInfo* GetGuiGroupInfo(const JGuiGroupKey& groupKey);
-		};
+#pragma endregion
 	}
 }

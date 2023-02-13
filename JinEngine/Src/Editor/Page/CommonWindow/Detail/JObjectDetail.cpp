@@ -3,6 +3,7 @@
 #include"../../JEditorAttribute.h"
 #include"../../../Helpers/JReflectionGuiWidgetHelper.h"  
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../../../Core/FSM/JFSMInterface.h"
 #include"../../../../Object/GameObject/JGameObject.h"
 #include"../../../../Object/Resource/JResourceObject.h"
 #include"../../../../Object/Directory/JDirectory.h" 
@@ -11,13 +12,13 @@
 namespace JinEngine
 {
 	namespace Editor
-	{
+	{ 
 		JObjectDetail::JObjectDetail(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute, 
 			const J_EDITOR_PAGE_TYPE pageType,
 			const J_EDITOR_WINDOW_FLAG windowFlag)
 			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
-		{
+		{ 
 			guiHelper = std::make_unique< JReflectionGuiWidgetHelper>();
 		}
 		JObjectDetail::~JObjectDetail() {}
@@ -38,24 +39,33 @@ namespace JinEngine
 		}
 		void JObjectDetail::BuildObjectDetail()
 		{
-			if (!preSelected.IsValid())
-				return;
-
-			auto nowSelected = preSelected;
-			switch (preSelected->GetObjectType())
+			auto nowSelected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
+			if (!nowSelected.IsValid())
 			{
-			case J_OBJECT_TYPE::GAME_OBJECT:
-				GameObjectDetailOnScreen(Core::JUserPtr<JGameObject>::ConvertChildUser(std::move(nowSelected)));
-				break;
-			case J_OBJECT_TYPE::RESOURCE_OBJECT:
-				ResourceObjectDetailOnScreen(Core::JUserPtr<JResourceObject>::ConvertChildUser(std::move(nowSelected)));
-				break;
-			case J_OBJECT_TYPE::DIRECTORY_OBJECT:
-				DirectoryObjectDetailOnScreen(Core::JUserPtr<JDirectory>::ConvertChildUser(std::move(nowSelected)));
-				break;
-			default:
-				break;
+				guiHelper->Clear();
+				return;
 			}
+			 
+			Core::JTypeInfo& typeInfo = nowSelected->GetTypeInfo();
+			if (typeInfo.IsChildOf<JObject>())
+			{ 
+				switch (static_cast<JObject*>(nowSelected.Get())->GetObjectType())
+				{
+				case J_OBJECT_TYPE::GAME_OBJECT:
+					GameObjectDetailOnScreen(Core::JUserPtr<JGameObject>::ConvertChildUser(std::move(nowSelected)));
+					break;
+				case J_OBJECT_TYPE::RESOURCE_OBJECT:
+					ObjectOnScreen(nowSelected);
+					break;
+				case J_OBJECT_TYPE::DIRECTORY_OBJECT:
+					ObjectOnScreen(nowSelected);
+					break;
+				default:
+					break;
+				}
+			}
+			else if (typeInfo.IsChildOf<Core::JFSMInterface>())
+				ObjectOnScreen(nowSelected);
 		}
 		void JObjectDetail::GameObjectDetailOnScreen(Core::JUserPtr<JGameObject> gObj)
 		{
@@ -83,28 +93,7 @@ namespace JinEngine
 				ImGui::EndGroup();
 			}
 		}
-		void JObjectDetail::ResourceObjectDetailOnScreen(Core::JUserPtr<JResourceObject> rObj)
-		{
-			ImGui::BeginGroup();
-			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow |
-				ImGuiTreeNodeFlags_SpanAvailWidth |
-				ImGuiTreeNodeFlags_Framed |
-				ImGuiTreeNodeFlags_DefaultOpen;
-			if (JImGuiImpl::TreeNodeEx(Core::ErasePrefixJ(rObj->GetTypeInfo().Name()) + JCUtil::WstrToU8Str(L"##TreeNode" + rObj->GetName()), baseFlags))
-			{
-				JImGuiImpl::TreePop();
-				ImGui::Separator();
-				const auto paramVec = rObj->GetTypeInfo().GetPropertyVec();
-				for (const auto& param : paramVec) 
-					PropertyOnScreen(rObj.Get(), param);
-
-				const auto methodVec = rObj->GetTypeInfo().GetMethodVec();
-				for (const auto& method : methodVec)
-					MethodOnScreen(rObj.Get(), method);
-			}
-			ImGui::EndGroup();
-		}
-		void JObjectDetail::DirectoryObjectDetailOnScreen(Core::JUserPtr<JDirectory> dObj)
+		void JObjectDetail::ObjectOnScreen(Core::JUserPtr<Core::JIdentifier> fObj)
 		{
 			ImGui::BeginGroup();
 			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow |
@@ -112,27 +101,27 @@ namespace JinEngine
 				ImGuiTreeNodeFlags_Framed |
 				ImGuiTreeNodeFlags_DefaultOpen;
 
-			if (JImGuiImpl::TreeNodeEx(Core::ErasePrefixJ(dObj->GetTypeInfo().Name()) + JCUtil::WstrToU8Str(L"##TreeNode" + dObj->GetName()), baseFlags))
-			{
+			if (JImGuiImpl::TreeNodeEx(Core::ErasePrefixJ(fObj->GetTypeInfo().Name()) + JCUtil::WstrToU8Str(L"##TreeNode" + fObj->GetName()), baseFlags))
+			{ 
 				JImGuiImpl::TreePop();
 				ImGui::Separator();
-				const auto paramVec = dObj->GetTypeInfo().GetPropertyVec();
+				const auto paramVec = fObj->GetTypeInfo().GetPropertyVec();
 				for (const auto& param : paramVec)
-					PropertyOnScreen(dObj.Get(), param);
+					PropertyOnScreen(fObj.Get(), param);
 
-				const auto methodVec = dObj->GetTypeInfo().GetMethodVec();
+				const auto methodVec = fObj->GetTypeInfo().GetMethodVec();
 				for (const auto& method : methodVec)
-					MethodOnScreen(dObj.Get(), method);
+					MethodOnScreen(fObj.Get(), method);
 			}
 			ImGui::EndGroup();
 		}
-		void JObjectDetail::PropertyOnScreen(JObject* obj, Core::JPropertyInfo* pInfo)
+		void JObjectDetail::PropertyOnScreen(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
 		{
 			auto optInfo = pInfo->GetOptionInfo();
 			if (optInfo->HasWidgetInfo() && optInfo->GetWidgetInfo()->GetSupportWidgetType() != Core::Constants::NotSupportGuiWidget)
 				guiHelper->UpdatePropertyGuiWidget(obj, pInfo);
 		}
-		void JObjectDetail::MethodOnScreen(JObject* obj, Core::JMethodInfo* mInfo)
+		void JObjectDetail::MethodOnScreen(Core::JIdentifier* obj, Core::JMethodInfo* mInfo)
 		{
 			auto optInfo = mInfo->GetOptionInfo();
 			if (optInfo->HasWidgetInfo() && optInfo->GetWidgetInfo()->GetSupportWidgetType() != Core::Constants::NotSupportGuiWidget)
@@ -141,8 +130,8 @@ namespace JinEngine
 		void JObjectDetail::DoActivate()noexcept
 		{
 			JEditorWindow::DoActivate(); 
-			RegisterEventListener(J_EDITOR_EVENT::SELECT_OBJECT);
-			preSelected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
+			std::vector<J_EDITOR_EVENT> listenEvTypeVec{ J_EDITOR_EVENT::SELECT_OBJECT, J_EDITOR_EVENT::DESELECT_OBJECT };
+			RegisterEventListener(listenEvTypeVec); 
 		}
 		void JObjectDetail::DoDeActivate()noexcept
 		{
@@ -154,16 +143,6 @@ namespace JinEngine
 		{ 
 			if (senderGuid == GetGuid())
 				return;
-			if (eventType == J_EDITOR_EVENT::SELECT_OBJECT)
-			{
-				auto nowSelected = static_cast<JEditorSelectObjectEvStruct*>(eventStruct)->selectObj;
-				if (!preSelected.IsValid() || nowSelected->GetGuid() != preSelected->GetGuid())
-				{
-					guiHelper->Clear();
-					preSelected = nowSelected;
-				}
-
-			}
 		}
 	}
 }

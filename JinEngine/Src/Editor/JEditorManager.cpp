@@ -6,6 +6,7 @@
 #include"Page/JEditorPageShareData.h"
 #include"Page/ProjectMain/JProjectMainPage.h"
 #include"Page/SkeletonaAssetSetting/JEditorSkeletonPage.h"  
+#include"Page/AnimationControllerSetting/JEditorAniContPage.h" 
 #include"Page/ProjectSelector/JProjectSelectorPage.h" 
 #include"GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../Utility/JCommonUtility.h"
@@ -94,7 +95,8 @@ namespace JinEngine
 			 
 			editorPage.push_back(std::make_unique<JProjectMainPage>(hasMetadata));
 			editorPage.push_back(std::make_unique<JEditorSkeletonPage>(hasMetadata));
- 
+			editorPage.push_back(std::make_unique<JEditorAniContPage>(hasMetadata));
+
 			//bool hasImguiTxt = false;
 			//if (_waccess(imguiTxt.c_str(), 00) != -1)
 			//	hasImguiTxt = true;
@@ -118,6 +120,7 @@ namespace JinEngine
 				ActivatePage(&evActStruct);
 			}
 			 
+			//always EditorManager first listener about all event type
 			std::vector<J_EDITOR_EVENT> eventVector = Core::GetEnumElementVec<J_EDITOR_EVENT>();
 			this->AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector);
 
@@ -163,8 +166,8 @@ namespace JinEngine
 			if (page != editorPageMap.end())
 			{
 				if (!page->second->IsOpen())
-				{ 
-					if (page->second->IsValidOpenRequest(evStruct->openSelected))
+				{
+					if (page->second->IsValidOpenRequest(evStruct->GetOpenSeleted()))
 					{
 						JEditorPageShareData::SetPageOpenData(evStruct);
 						page->second->SetOpen();
@@ -225,6 +228,15 @@ namespace JinEngine
 				if (!page->second->IsActivated())
 					page->second->Activate();
 				page->second->SetFocus();
+				 
+				//main page allways index 0
+				int index = JCUtil::GetJIdenIndex(opendEditorPage, page->second->GetGuid(), &JEditorPage::GetGuid);
+				if (index != 0 && opendEditorPage.size() - 1 != index)
+				{
+					opendEditorPage.erase(opendEditorPage.begin() + index);
+					opendEditorPage.push_back(page->second);
+					opendEditorPage.shrink_to_fit();
+				}
 			}
 		}
 		void JEditorManager::UnFocusPage(JEditorUnFocusPageEvStruct* evStruct)
@@ -315,7 +327,9 @@ namespace JinEngine
 			case J_EDITOR_EVENT::DESELECT_OBJECT:
 			{
 				JEditorDeSelectObjectEvStruct* deSelectEvStruct = static_cast<JEditorDeSelectObjectEvStruct*>(eventStruct);
-				JEditorPageShareData::SetSelectObj(deSelectEvStruct->pageType, Core::JUserPtr<JObject>{});
+				auto selected = JEditorPageShareData::GetSelectedObj(deSelectEvStruct->pageType);
+				if(selected.IsValid() && selected->GetGuid() == deSelectEvStruct->guid)
+					JEditorPageShareData::SetSelectObj(deSelectEvStruct->pageType, Core::JUserPtr<JObject>{});
 				break;
 			}
 			case J_EDITOR_EVENT::OPEN_PAGE:

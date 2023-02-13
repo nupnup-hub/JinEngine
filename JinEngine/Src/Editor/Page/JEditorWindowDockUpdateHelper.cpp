@@ -126,10 +126,9 @@ namespace JinEngine
 			ImGuiWindow* curWnd = ImGui::GetCurrentWindow();
 			ImGuiDockNode* dockNode = ImGui::GetWindowDockNode();
 			if (dockNode != nullptr)
-			{
-				lastParentDockNodeID = dockNode->ParentNode->ID;
+			{ 
 				lastDockNodeID = dockNode->ID;
-				lastDockTabItemCount = dockNode->TabBar->Tabs.size();
+				lastDockTabItemCount = dockNode->TabBar ? dockNode->TabBar->Tabs.size() : 0;
 				lastDockNodePos = dockNode->Pos;
 				lastDockNodeSize = dockNode->Size;
 				if (lastDockTabItemCount > 0)
@@ -221,27 +220,31 @@ namespace JinEngine
 			 
 			ImGuiWindow* pageWnd = JImGuiImpl::GetGuiWindow(pageWndID);
 			ImGuiContext* ctx = ImGui::GetCurrentContext();
-			ImGuiDockNode* lastParentDock = (ImGuiDockNode*)(ctx->DockContext.Nodes.GetVoidPtr(lastParentDockNodeID));
-
+		 
 			if (lastDockTabItemCount == 1)
 			{
+				ImGuiDockNode* lastParentDock = ((ImGuiDockNode*)(ctx->DockContext.Nodes.GetVoidPtr(lastDockNodeID)))->ParentNode;
 				ImGuiDir_ dir = ImGuiDir_None;
-				if (lastDockNodePos.x != lastParentDock->Pos.x)
+				float areaSize = 1;
+				if (lastParentDock != nullptr)
 				{
-					if (lastDockNodePos.x > lastParentDock->Pos.x)
-						dir = ImGuiDir_Right;
+					if (lastDockNodePos.x != lastParentDock->Pos.x)
+					{
+						if (lastDockNodePos.x > lastParentDock->Pos.x)
+							dir = ImGuiDir_Right;
+						else
+							dir = ImGuiDir_Left;
+					}
 					else
-						dir = ImGuiDir_Left;
+					{
+						if (lastDockNodePos.y > lastParentDock->Pos.y)
+							dir = ImGuiDir_Down;
+						else
+							dir = ImGuiDir_Up;
+					}
+					areaSize = (lastDockNodeSize.x * lastDockNodeSize.y) / (lastParentDock->Size.x * lastParentDock->Size.y);
 				}
-				else
-				{
-					if (lastDockNodePos.y > lastParentDock->Pos.y)
-						dir = ImGuiDir_Down;
-					else
-						dir = ImGuiDir_Up;
-				}
-				float areaSize = (lastDockNodeSize.x * lastDockNodeSize.y) / (lastParentDock->Size.x * lastParentDock->Size.y);
-
+			 
 				auto splitLam = [](std::string wndName,
 					uint dockSpaceID,
 					uint lastDockNodeID,

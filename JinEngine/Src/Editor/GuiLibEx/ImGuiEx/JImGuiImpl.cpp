@@ -47,8 +47,9 @@ namespace JinEngine
 				MENU_BAR,
 				MENU,
 				MENU_ITEM,
-				COMBOBOX,
+				COMBO_BOX,
 				SWITCH,
+				LIST_BOX,
 				COUNT
 			};
 		}
@@ -331,15 +332,11 @@ namespace JinEngine
 		{
 			ImGui::PopFont();
 		}
-		float JImGuiImpl::GetButtonDeepFactor()noexcept
+		JVector4<float> JImGuiImpl::GetSelectColorFactor()noexcept
 		{
-			return 0.1f;
+			return JVector4<float>(0, 0, 0.15f, 0.15f);
 		}
-		float JImGuiImpl::GetTreeDeepFactor()noexcept
-		{
-			return 0.1f;
-		}
-		ImVec4 JImGuiImpl::GetColor(ImGuiCol_ flag)noexcept
+		JVector4<float> JImGuiImpl::GetColor(ImGuiCol_ flag)noexcept
 		{
 			ImGuiStyle& style = ImGui::GetStyle();
 			return style.Colors[flag];
@@ -352,13 +349,12 @@ namespace JinEngine
 				style.Colors[flag].z * 255,
 				style.Colors[flag].w * 255);
 		}
-		void JImGuiImpl::SetColorToDeep(ImGuiCol_ flag, float factor)noexcept
+		void JImGuiImpl::SetColorToSoft(ImGuiCol_ flag, const JVector4<float>& color)noexcept
 		{
 			ImGuiStyle& style = ImGui::GetStyle();
-			style.Colors[flag] = ImVec4(style.Colors[flag].x - factor, style.Colors[flag].y - factor,
-				style.Colors[flag].z - factor, style.Colors[flag].w - factor);
+			style.Colors[flag] = JVector4<float>(style.Colors[flag]) + color;
 		}
-		void JImGuiImpl::SetColor(const ImVec4& color, ImGuiCol_ flag)noexcept
+		void JImGuiImpl::SetColor(const JVector4<float>& color, ImGuiCol_ flag)noexcept
 		{
 			ImGuiStyle& style = ImGui::GetStyle();
 			style.Colors[flag] = color;
@@ -393,7 +389,7 @@ namespace JinEngine
 		void JImGuiImpl::DeActivateButtonColor()noexcept
 		{
 			JImGuiImpl::SetColor(JVector4<float>(0.5f, 0.5f, 0.5f, 1.0f), ImGuiCol_Text);
-			JImGuiImpl::SetColorToDeep(ImGuiCol_Button, 0.2f);
+			JImGuiImpl::SetColorToSoft(ImGuiCol_Button, 0.2f);
 			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_ButtonHovered);
 			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_ButtonActive);
 		}
@@ -653,12 +649,21 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::BeginCombo(const std::string& name, const char* previewValue, ImGuiComboFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::COMBOBOX);
+			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::COMBO_BOX);
 			return ImGui::BeginCombo(name.c_str(), previewValue, flags);
 		}
 		void JImGuiImpl::EndCombo()
 		{
 			ImGui::EndCombo();
+		}
+		bool JImGuiImpl::BeginListBox(const std::string& name, const JVector2<float> size)
+		{
+			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::LIST_BOX);
+			return ImGui::BeginListBox(name.c_str(), size);
+		}
+		void JImGuiImpl::EndListBox()
+		{
+			ImGui::EndListBox();
 		}
 		void JImGuiImpl::Image(Graphic::JGraphicResourceHandleInterface& handle,
 			const JVector2<float>& size,
@@ -730,10 +735,10 @@ namespace JinEngine
 		{
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SWITCH);
 			if (pressed)
-				JImGuiImpl::SetColorToDeep(ImGuiCol_Header, -JImGuiImpl::GetButtonDeepFactor());
+				JImGuiImpl::SetColorToSoft(ImGuiCol_Header, JImGuiImpl::GetSelectColorFactor());
 			const bool isPress = ImGui::Button(name.c_str(), sizeArg);
 			if (pressed)
-				JImGuiImpl::SetColorToDeep(ImGuiCol_Header, JImGuiImpl::GetButtonDeepFactor());
+				JImGuiImpl::SetColorToSoft(ImGuiCol_Header, JImGuiImpl::GetSelectColorFactor() * -1);
 			if (isPress && changeValueIfPreesd)
 				pressed = !pressed;
 			return isPress;
@@ -871,6 +876,27 @@ namespace JinEngine
 			if (mousePos.x >= position.x && mousePos.x <= position.x + size.x &&
 				mousePos.y >= position.y && mousePos.y <= position.y + size.y)
 				return true;
+			else
+				return false;
+		}
+		bool JImGuiImpl::IsMouseInLine(JVector2<float> st, JVector2<float> ed, const float thickness)noexcept
+		{
+			const ImVec2 mousePos = ImGui::GetMousePos();
+			 
+			const float halfThickness = thickness / 2;
+			const float minX = min(st.x, ed.x);
+			const float maxX = max(st.x, ed.x);
+			const float minY = min(st.y, ed.y);
+			const float maxY = max(st.y, ed.y);
+ 
+			if (minX - halfThickness <= mousePos.x && mousePos.x <= maxX + halfThickness
+				&& minY <= mousePos.y && mousePos.y <= maxY)
+			{
+				const float dy = (maxY - minY) / (maxX - minX); 
+				float maxYRange = (mousePos.x - (minX - halfThickness)) * dy + minY;
+				float minYRange = (mousePos.x - (minX + halfThickness)) * dy + minY;
+				return minYRange <= mousePos.y && mousePos.y <= maxYRange;
+			}
 			else
 				return false;
 		}

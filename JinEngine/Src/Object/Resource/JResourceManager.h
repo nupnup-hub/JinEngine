@@ -6,12 +6,14 @@
 #include"JResourceType.h" 
 #include"JResourceUserInterface.h" 
 #include"JResourceManagerInterface.h"
-#include"JResourceEventType.h" 
+#include"JResourceEventType.h"
+#include"JResourceObject.h"
+
 #include"Material/JDefaultMaterialType.h"
 #include"Mesh/JDefaultShapeType.h"
 #include"Shader/JDefaultShaderType.h"
 #include"Shader/JShaderFunctionEnum.h"
-#include"Texture/JDefaulTextureType.h"  
+#include"Texture/JDefaulTextureType.h"   
 
 #include"../../Core/Singleton/JSingletonHolder.h"
 #include"../../Core/Event/JEventManager.h"
@@ -19,7 +21,7 @@
 #include"../../Core/File/JFileIOResult.h"
 
 namespace JinEngine
-{   
+{  
 	class JMeshGeometry;
 	class JMaterial;
 	class JTexture;
@@ -28,14 +30,17 @@ namespace JinEngine
 	class JResourceData;
 	class JResourceObjectInterface;
 	class JResourceDirtyInterface;
+	class JDirectory; 
 
 	namespace Core
 	{
 		template <typename T> class JCreateUsingNew;
 	}
 
-	class JResourceManagerImpl : public JDirectoryStorageInterface, 
-		public Core::JEventManager<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>
+	class JResourceManagerImpl : public JResourceMangerAppInterface,
+		public Core::JEventManager<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>,
+		public Core::JTypeCashInterface<JDirectory>,
+		public Core::JTypeCashInterface<JResourceObject>
 	{
 		REGISTER_CLASS(JResourceManagerImpl)
 	private:
@@ -113,9 +118,7 @@ namespace JinEngine
 
 		bool HasResource(const J_RESOURCE_TYPE rType, const size_t guid)noexcept;
 	public: 
-		JResourceMangerAppInterface* AppInterface() final;
-		JResourceStorageInterface* ResourceStorageInterface() final;
-		JDirectoryStorageInterface* DirectoryStorageInterface() final;
+		JResourceMangerAppInterface* AppInterface() final; 
 		JEventInterface* EvInterface() final;
 	private:
 		void Initialize()final;
@@ -124,10 +127,10 @@ namespace JinEngine
 		void LoadSelectorResource()final;
 		void LoadProjectResource()final; 
 	private:
-		bool AddResource(JResourceObject& newResource)noexcept final;
-		bool RemoveResource(JResourceObject& resource)noexcept final; 
-		bool AddJDirectory(JDirectory& newDirectory)noexcept final;
-		bool RemoveJDirectory(JDirectory& dir)noexcept final;
+		bool AddType(JResourceObject* newResource)noexcept final;
+		bool RemoveType(JResourceObject* resource)noexcept final;
+		bool AddType(JDirectory* newDirectory)noexcept final;
+		bool RemoveType(JDirectory* dir)noexcept final;
 	private:
 		void DestroyUnusedResource(const J_RESOURCE_TYPE rType, bool isIgnreUndestroyableFlag);
 	private: 

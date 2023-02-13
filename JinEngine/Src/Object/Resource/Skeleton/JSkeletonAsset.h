@@ -49,12 +49,14 @@ namespace JinEngine
 		{
 		public:
 			std::unique_ptr<JAvatar> avatar = nullptr;
-			int skeletonType;
+			JSKELETON_TYPE skeletonType ;
+			size_t skeletonHash = 0;
 		};
 	private:
 		std::unique_ptr<JSkeleton> skeleton = nullptr;
 		std::unique_ptr<JAvatar> avatar = nullptr;
 		JSKELETON_TYPE skeletonType;
+		size_t skeletonHash = 0;
 	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
@@ -67,6 +69,7 @@ namespace JinEngine
 		JSkeleton* GetSkeleton()noexcept;
 		JAvatar* GetAvatar()noexcept;
 		JSKELETON_TYPE GetSkeletonType()const noexcept; 
+		size_t GetSkeletonHash()const noexcept;
 		std::wstring GetJointName(int index)noexcept;
 		std::vector<std::vector<uint8>> GetSkeletonTreeIndexVec()noexcept;
 

@@ -8,6 +8,7 @@ namespace JinEngine
 			PROJECT_SELECTOR = 0,
 			PROJECT_MAIN,
 			SKELETON_SETTING,
+			ANICONT_SETTING,
 			COUNT,
 		};
 

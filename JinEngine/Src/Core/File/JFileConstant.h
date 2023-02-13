@@ -16,6 +16,7 @@ namespace JinEngine
 			//format = L".format"
 			static std::wstring MakeFilePath(const std::wstring& folderPath, const std::wstring& name, const std::wstring& format);
 			static std::wstring StreamHasObjGuidSymbol()noexcept;
+			static std::wstring StreamUncopiableGuidSymbol()noexcept;
 			static std::wstring StreamEndFixedDataSymbol()noexcept;
 		public:
 			template<typename EnumType>

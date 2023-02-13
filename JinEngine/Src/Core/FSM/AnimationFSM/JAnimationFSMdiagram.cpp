@@ -47,7 +47,7 @@ namespace JinEngine
 				{
 					size_t nextStateId = nextTransition->GetOutputStateGuid();
 					nextState = static_cast<JAnimationFSMstate*>(GetState(nextStateId));
-					nextState->Enter(animationTime, animationShareData, srcSkeletonAsset, nextTransition->GetTargetStateOffset());
+					nextState->Enter(animationTime, animationShareData, srcSkeletonAsset, nextTransition->GetTargetStateTimeOffset());
 					blender.Initialize(JGameTimer::Instance().TotalTime(), JGameTimer::Instance().TotalTime() + nextTransition->GetDurationTime());
 				}
 			}
@@ -94,6 +94,17 @@ namespace JinEngine
 		JAnimationFSMstate* JAnimationFSMdiagram::GetStateByIndex(const uint index)noexcept
 		{
 			return static_cast<JAnimationFSMstate*>(JFSMdiagram::GetStateByIndex(index));
+		}
+		JAnimationFSMtransition* JAnimationFSMdiagram::GetTransition(const size_t transitionGuid)noexcept
+		{
+			const std::vector<JFSMstate*>& stateVec = GetStateVec();
+			for (const auto& data : stateVec)
+			{
+				JFSMtransition* transition = data->GetTransition(transitionGuid);
+				if (transition != nullptr)
+					return static_cast<JAnimationFSMtransition*>(transition);
+			}
+			return nullptr;
 		}
 		const std::vector<JFSMstate*>& JAnimationFSMdiagram::GetStateVec()noexcept
 		{
@@ -239,7 +250,7 @@ namespace JinEngine
 					;//¹Ì±¸Çö 
 			} 
 			for (uint i = 0; i < stateCount; ++i)
-				newDiagram->GetStateByIndex(i)->StreamInterface()->LoadData(stream, *newDiagram->GetStroageUser());
+				newDiagram->GetStateByIndex(i)->StreamInterface()->LoadData(stream);
 			
 			return newDiagram;
 		}

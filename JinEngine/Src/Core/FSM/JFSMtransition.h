@@ -1,61 +1,83 @@
 #pragma once 
-#include"JFSMcondition.h"
+#include"JFSMcondition.h" 
+#include"JFSMInterface.h"
 #include"../JDataType.h"
-#include<vector> 
-#include<unordered_map>
+#include<vector>  
 #include<memory>
  
 namespace JinEngine
 {
 	namespace Core
 	{ 
-		class JFSMcondition; 
 		class JFSMstate;
-		class JFSMconditionWrap
+		//class JFSMcondition;
+		class JFSMparameter;
+		class JFSMtransitionOwnerInterface;
+		__interface JFSMparameterStorageUserAccess;
+
+		class JFSMconditionOwnerInterface : public JTypeCashInterface<JFSMcondition>
 		{
 		private:
-			JFSMcondition* condition;
-			float onValue;
-		public:
-			JFSMconditionWrap(JFSMcondition* condition);
-		public:
-			JFSMcondition* GetCondition()noexcept;
-			float GetOnValue()const noexcept;
-			void SetCondition(JFSMcondition* newCondition)noexcept;
-			void SetOnValue(float newValue)noexcept;
-			bool IsSatisfied()const noexcept;
-			bool PassDefectInspection()const noexcept;
+			friend class JFSMcondition;
+		private:
+			virtual JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept = 0; 
 		};
- 
-		class JFSMtransition
+
+		class JFSMtransition : public JFSMInterface, 
+			public JFSMconditionOwnerInterface
 		{
+			REGISTER_CLASS(JFSMtransition)
 		private:
 			friend class JFSMstate;
-			friend std::unique_ptr<JFSMtransition>::deleter_type;
-		protected:
-			using ConditionMap = std::unordered_map<size_t, JFSMcondition&>;
 		public:
-			static constexpr uint maxNumberOffCondition = 25;
+			struct JFSMtransitionInitData : public JFSMIdentifierInitData
+			{
+			public:
+				size_t outputGuid;
+				JUserPtr<JFSMstate> owneState;		 
+			public:
+				JFSMtransitionInitData(const std::wstring& name,
+					const size_t guid,
+					const size_t outputGuid,
+					JUserPtr<JFSMstate> owneState);
+			public:
+				bool IsValid() noexcept;
+				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
+			};
+			using InitData = JFSMtransitionInitData;
+		public:
+			static constexpr uint maxNumberOfCondition = 25;
 			static constexpr float errorOnValue = -100000;
 		private:
-			std::vector<std::unique_ptr<JFSMconditionWrap>>conditionVec;
+			JFSMtransitionOwnerInterface* ownerInterface;
 			const size_t outputStateGuid;
+		protected:
+			std::vector<JFSMcondition*>conditionVec;
 		public:
+			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept;
 			uint GetConditioCount()const noexcept;
 			float GetConditionOnValue(const uint index)const noexcept;
 			size_t GetOutputStateGuid()const noexcept;
+			JFSMcondition* GetConditionByIndex(const uint index)const noexcept;
+			std::vector<JFSMcondition*> GetConditionVec()const noexcept; 
+		public:
 			bool HasSatisfiedCondition()const noexcept;
-		protected: 
-			JFSMcondition* GetConditionByIndex(const uint index)const noexcept; 
-			void SetConditionOnValue(const uint index, const float onValue)noexcept;
-			void SetCondition(const uint oldIndex, JFSMcondition* newCondition)noexcept;
+		private:
+			JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept; 
+		private:
+			bool AddType(JFSMcondition* newCondition)noexcept;
+			bool RemoveType(JFSMcondition* condition)noexcept;		
 		protected:
-			JFSMconditionWrap* AddCondition(JFSMcondition* condition)noexcept;
-			bool PopCondition(const size_t outputStateGuid)noexcept;
+			bool RemoveParameter(const size_t guid)noexcept;
 		protected:
 			virtual void Initialize()noexcept;
+		private:
+			void Clear()override;
+		private:
+			bool RegisterCashData()noexcept final;
+			bool DeRegisterCashData()noexcept final;
 		protected:
-			JFSMtransition(const size_t outputStateGuid);
+			JFSMtransition(const JFSMtransitionInitData& initData);
 			~JFSMtransition();
 			JFSMtransition(JFSMtransition&& rhs) = default;
 			JFSMtransition& operator=(JFSMtransition&& rhs) = default;

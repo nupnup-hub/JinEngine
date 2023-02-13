@@ -56,8 +56,7 @@ namespace JinEngine
 		bool CanAddComponent(const J_COMPONENT_TYPE type)const noexcept;
 		void ChangeParent(JGameObject* newParent)noexcept;
 		JComponent* FindComponent(const size_t guid)const noexcept;
-	public:
-		JGameObjectCompInterface* CompInterface() final;
+	public: 
 		JGameObjectEditorInterface* EditorInterface() final;
 	public:
 		void DoCopy(JObject* ori) final;
@@ -70,8 +69,8 @@ namespace JinEngine
 	private:
 		void SetSelectedByEditorTrigger(const bool value)noexcept final;
 	private:
-		bool AddComponent(JComponent& component)noexcept final;
-		bool RemoveComponent(JComponent& component)noexcept final;
+		bool AddType(JComponent* component)noexcept final;
+		bool RemoveType(JComponent* component)noexcept final;
 	private:
 		bool Destroy(const bool isForced) final;
 		void Clear();

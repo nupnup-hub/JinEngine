@@ -94,13 +94,12 @@ namespace JinEngine
 			static void PushFont()noexcept;
 			static void PopFont()noexcept;
 		public:
-			//Color
-			static float GetButtonDeepFactor()noexcept;
-			static float GetTreeDeepFactor()noexcept;
-			static ImVec4 GetColor(ImGuiCol_ flag)noexcept;
+			//Color 
+			static JVector4<float> GetSelectColorFactor()noexcept;
+			static JVector4<float> GetColor(ImGuiCol_ flag)noexcept;
 			static ImU32 GetUColor(ImGuiCol_ flag)noexcept;
-			static void SetColorToDeep(ImGuiCol_ flag, float factor)noexcept;
-			static void SetColor(const ImVec4& color, ImGuiCol_ flag)noexcept;
+			static void SetColorToSoft(ImGuiCol_ flag, const JVector4<float>& color)noexcept;
+			static void SetColor(const JVector4<float>& color, ImGuiCol_ flag)noexcept;
 			//Set widget color to default
 			static void SetColorToDefault(ImGuiCol_ flag)noexcept;
 			static void SetAllColorToDeep(float factor)noexcept;
@@ -168,6 +167,9 @@ namespace JinEngine
 		public:
 			static bool BeginCombo(const std::string& name, const char* previewValue, ImGuiComboFlags flags = 0);
 			static void EndCombo();
+		public:
+			static bool BeginListBox(const std::string& name, const JVector2<float> size = { 0,0 });
+			static void EndListBox();
 		public:
 			//Image  
 			static void Image(Graphic::JGraphicResourceHandleInterface& handle,
@@ -239,6 +241,7 @@ namespace JinEngine
 			static bool IsMiddleMouseClicked()noexcept;
 			//use world pos
 			static bool IsMouseInRect(const JVector2<float>& position, const JVector2<float>& size)noexcept;
+			static bool IsMouseInLine(JVector2<float> st, JVector2<float> ed, const float thickness)noexcept;
 			//0 = left, 1 = right, 2 = middle
 			static void SetMouseClick(const ImGuiMouseButton btn, const bool value)noexcept;
 		public:

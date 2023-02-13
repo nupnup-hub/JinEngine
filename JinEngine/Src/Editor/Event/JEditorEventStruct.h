@@ -13,7 +13,10 @@
 
 namespace JinEngine
 { 
-	class JObject;
+	namespace Core
+	{
+		class JIdentifier;
+	}
 	namespace Editor
 	{  
 		class JEditorPage;
@@ -46,9 +49,9 @@ namespace JinEngine
 		struct JEditorSelectObjectEvStruct : public JEditorEvStruct
 		{
 		public: 
-			const Core::JUserPtr<JObject> selectObj;
+			const Core::JUserPtr<Core::JIdentifier> selectObj;
 		public:
-			JEditorSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> selectObj);
+			JEditorSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> selectObj);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final; 
@@ -56,7 +59,9 @@ namespace JinEngine
 		struct JEditorDeSelectObjectEvStruct : public JEditorEvStruct
 		{ 
 		public:
-			JEditorDeSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType);
+			const size_t guid;
+		public:
+			JEditorDeSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const size_t guid);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final; 
@@ -65,12 +70,16 @@ namespace JinEngine
 		struct JEditorOpenPageEvStruct : public JEditorEvStruct
 		{
 		public:   
-			const Core::JUserPtr<JObject> openSelected;
+			const std::string typeName;
+			const size_t openSeletedGuid;
+			const bool hasOpenSeleted = false;
 		public: 
-			JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<JObject> openSelected = {});
+			JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> openSelected = {});
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
+		public:
+			Core::JUserPtr<Core::JIdentifier> GetOpenSeleted()const noexcept;
 		};
 		struct JEditorClosePageEvStruct : public JEditorEvStruct
 		{ 
@@ -256,6 +265,13 @@ namespace JinEngine
 		struct JEditorTCreateBindFuncEvStruct : public JEditorTBindFuncEvStruct
 		{
 		public:
+			using ProcessBindVec = typename Core::JTransitionTask::ProcessBindVec;
+		private:
+			ProcessBindVec preprocessDoVec;
+			ProcessBindVec postprocessDoVec;
+			ProcessBindVec preprocessUndoVec;
+			ProcessBindVec postprocessUndoVec;
+		public:
 			std::unique_ptr<doHandle> doBindHandle;
 			std::unique_ptr<undoHandle> undoBindHandle;
 			DataStructure& structure;
@@ -275,13 +291,51 @@ namespace JinEngine
 			{
 				return doBindHandle != nullptr && undoBindHandle != nullptr;
 			}
+		public:
+			void RegisterAddtionalProcess(const Core::JTransitionTask::ADDITONAL_PROCESS_TYPE type, ProcessBindVec&& vec)
+			{
+				if (vec.size() == 0)
+					return;
+
+				switch (type)
+				{
+				case Core::JTransitionTask::ADDITONAL_PROCESS_TYPE::DO_PRE:
+				{
+					preprocessDoVec = std::move(vec);
+					break;
+				}
+				case Core::JTransitionTask::ADDITONAL_PROCESS_TYPE::DO_POST:
+				{
+					postprocessDoVec = std::move(vec);
+					break;
+				}
+				case Core::JTransitionTask::ADDITONAL_PROCESS_TYPE::UNDO_PRE:
+				{
+					preprocessUndoVec = std::move(vec);
+					break;
+				}
+				case Core::JTransitionTask::ADDITONAL_PROCESS_TYPE::UNDO_POST:
+				{
+					postprocessUndoVec = std::move(vec);
+					break;
+				}
+				default:
+					break;
+				}
+			}
 			void Execute() final
 			{
 				using JCreationTask = Core::JTransitionCreationTask< DataStructure, doHandle, undoHandle>;
-				Core::JTransition::Execute(std::make_unique<JCreationTask>(taskName,
+				auto task = std::make_unique<JCreationTask>(taskName,
 					std::move(doBindHandle),
 					std::move(undoBindHandle),
-					structure));
+					structure);
+
+				task->RegisterAddtionalProcess(Core::JTransitionTask::ADDITONAL_PROCESS_TYPE::DO_PRE, std::move(preprocessDoVec));
+				task->RegisterAddtionalProcess(Core::JTransitionTask::ADDITONAL_PROCESS_TYPE::DO_POST, std::move(postprocessDoVec));
+				task->RegisterAddtionalProcess(Core::JTransitionTask::ADDITONAL_PROCESS_TYPE::UNDO_PRE, std::move(preprocessUndoVec));
+				task->RegisterAddtionalProcess(Core::JTransitionTask::ADDITONAL_PROCESS_TYPE::UNDO_POST, std::move(postprocessUndoVec));
+				Core::JTransition::Execute(std::move(task));
 			}
 		};
 	}

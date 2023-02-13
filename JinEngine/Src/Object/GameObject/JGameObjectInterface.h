@@ -22,21 +22,9 @@ namespace JinEngine
 		virtual void SetSelectedByEditorTrigger(const bool value)noexcept = 0;
 	};
 
-	class JGameObjectCompInterface
-	{
-	private:
-		friend class JComponent;
-	protected:
-		virtual ~JGameObjectCompInterface() = default;
-	public:
-		virtual JGameObjectCompInterface* CompInterface() = 0;
-	private:
-		virtual bool AddComponent(JComponent& jComp)noexcept = 0;
-		virtual bool RemoveComponent(JComponent& jComp)noexcept = 0;
-	};
 
 	class JGameObjectInterface : public JObject,
-		public JGameObjectCompInterface,
+		public Core::JTypeCashInterface<JComponent>,
 		public JGameObjectEditorInterface
 	{ 
 	private:

@@ -18,30 +18,106 @@ namespace JinEngine
 		{
 			return undoTaskName;
 		}
+		void JTransitionTask::RegisterAddtionalProcess(const ADDITONAL_PROCESS_TYPE type, ProcessBindVec&& vec)
+		{
+			if (vec.size() == 0)
+				return;
+
+			switch (type)
+			{
+			case ADDITONAL_PROCESS_TYPE::DO_PRE:
+			{
+				preprocessDoVec = std::move(vec);
+				break;
+			}
+			case ADDITONAL_PROCESS_TYPE::DO_POST:
+			{
+				postprocessDoVec = std::move(vec);
+				break;
+			}
+			case ADDITONAL_PROCESS_TYPE::UNDO_PRE:
+			{
+				preprocessUndoVec = std::move(vec);
+				break;
+			}
+			case ADDITONAL_PROCESS_TYPE::UNDO_POST:
+			{
+				postprocessUndoVec = std::move(vec);
+				break;
+			}
+			default:
+				break;
+			}
+		}
+		void JTransitionTask::Clear() noexcept
+		{
+			preprocessDoVec.clear();
+			postprocessDoVec.clear();
+			preprocessUndoVec.clear();
+			postprocessUndoVec.clear();
+		}
+		void JTransitionTask::Process(const ADDITONAL_PROCESS_TYPE type)
+		{
+			std::vector<std::unique_ptr<JBindHandleBase>>* vec = nullptr;
+			switch (type)
+			{
+			case ADDITONAL_PROCESS_TYPE::DO_PRE:
+			{ 
+				vec = &preprocessDoVec;
+				break;
+			}
+			case ADDITONAL_PROCESS_TYPE::DO_POST:
+			{
+				vec = &postprocessDoVec;
+				break;
+			}
+			case ADDITONAL_PROCESS_TYPE::UNDO_PRE:
+			{ 
+				vec = &preprocessUndoVec;
+				break;
+			}
+			case ADDITONAL_PROCESS_TYPE::UNDO_POST:
+			{ 
+				vec = &postprocessUndoVec;
+				break;
+			}
+			default:
+				break;
+			}
+			const uint count = (uint)vec->size();
+			for (uint i = 0; i < count; ++i)
+				(*vec)[i]->InvokeCompletelyBind();
+		}
+
 
 		JTransitionSetValueTask::JTransitionSetValueTask(const std::string& taskName,
-			std::unique_ptr<Core::JBindHandleBase> doBindhanle,
-			std::unique_ptr<Core::JBindHandleBase> undoBindhanle)
-			:JTransitionTask("Do" + taskName, "Undo" + taskName),
-			doBindhanle(std::move(doBindhanle)),
-			undoBindhanle(std::move(undoBindhanle))
+			std::unique_ptr<JBindHandleBase>&& doBindhandle,
+			std::unique_ptr<JBindHandleBase>&& undoBindhandle)
+			: JTransitionTask("Do" + taskName, "Undo" + taskName),
+			doBindhandle(std::move(doBindhandle)),
+			undoBindhandle(std::move(undoBindhandle))
 		{}
 		void JTransitionSetValueTask::Do()
 		{
-			doBindhanle->InvokeCompletelyBind();
+			Process(JTransitionTask::ADDITONAL_PROCESS_TYPE::DO_PRE);
+			doBindhandle->InvokeCompletelyBind();
+			Process(JTransitionTask::ADDITONAL_PROCESS_TYPE::DO_POST);
 		}
 		void JTransitionSetValueTask::Undo()
 		{
-			undoBindhanle->InvokeCompletelyBind();
+			Process(JTransitionTask::ADDITONAL_PROCESS_TYPE::UNDO_PRE);
+			undoBindhandle->InvokeCompletelyBind();
+			Process(JTransitionTask::ADDITONAL_PROCESS_TYPE::UNDO_POST);
 		}
 		void JTransitionSetValueTask::Clear()noexcept
 		{
-			doBindhanle.reset();
-			undoBindhanle.reset();
+			JTransitionTask::Clear();
+			doBindhandle.reset();
+			undoBindhandle.reset();
 		}
 		bool JTransitionSetValueTask::IsValid()const noexcept
 		{
-			return doBindhanle != nullptr && undoBindhanle != nullptr;
+			return doBindhandle != nullptr && undoBindhandle != nullptr;
 		}
 
 		namespace

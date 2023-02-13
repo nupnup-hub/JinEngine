@@ -1,66 +1,99 @@
-#include"JFSMcondition.h" 
-#include"JFSMconditionStorage.h"
-#include"JFSMownerInterface.h" 
+#include"JFSMcondition.h"
+#include"JFSMtransition.h"
 #include"JFSMfactory.h"
+#include"JFSMparameterStorageAccess.h"
+#include"../Guid/GuidCreator.h"
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		JFSMcondition::JFSMconditionInitData::JFSMconditionInitData(const std::wstring& name, const size_t guid, const J_FSMCONDITION_VALUE_TYPE valueType, IJFSMconditionOwnerInterface* conditionOwner)
-			:JFSMIdentifierInitData(name, guid), valueType(valueType), conditionOwner(conditionOwner)
+		JFSMcondition::JFSMconditionInitData::JFSMconditionInitData(const std::wstring& name, 
+			const size_t guid, 
+			JUserPtr<JFSMtransition> ownerTransition)
+			:JFSMIdentifierInitData(name, guid), ownerTransition(ownerTransition)
+		{}	
+		JFSMcondition::JFSMconditionInitData::JFSMconditionInitData(JUserPtr<JFSMtransition> ownerTransition)
+			:JFSMIdentifierInitData(GetDefaultName<JFSMcondition>(), Core::MakeGuid()), ownerTransition(ownerTransition)
 		{}
-		JFSMcondition::JFSMconditionInitData::JFSMconditionInitData(const size_t guid, IJFSMconditionOwnerInterface* conditionOwner)
-			: JFSMIdentifierInitData(JIdentifier::GetDefaultName<JFSMcondition>(), guid), valueType(J_FSMCONDITION_VALUE_TYPE::BOOL), conditionOwner(conditionOwner)
-		{} 
 		bool JFSMcondition::JFSMconditionInitData::IsValid() noexcept
 		{
-			return conditionOwner != nullptr;
+			return true;
 		}
 		J_FSM_OBJECT_TYPE JFSMcondition::JFSMconditionInitData::GetFSMobjType()const noexcept
 		{
 			return J_FSM_OBJECT_TYPE::CONDITION;
 		}
 
-		void JFSMcondition::Initialize()noexcept
-		{
-			value = 0;
-		}
 		J_FSM_OBJECT_TYPE JFSMcondition::GetFSMobjType()const noexcept
 		{
 			return J_FSM_OBJECT_TYPE::CONDITION;
 		}
-		float JFSMcondition::GetValue()const noexcept
+		JFSMparameter* JFSMcondition::GetParameter()const noexcept
 		{
-			if (valueType == J_FSMCONDITION_VALUE_TYPE::BOOL)
-				return static_cast<bool>(value);
-			else if (valueType == J_FSMCONDITION_VALUE_TYPE::INT)
-				return static_cast<int>(value);
-			else
-				return value;
+			return parameter;
 		}
-		J_FSMCONDITION_VALUE_TYPE JFSMcondition::GetValueType()const noexcept
+		float JFSMcondition::GetOnValue()const noexcept
 		{
-			return valueType;
+			return onValue;
+		}
+		void JFSMcondition::SetParameter(JFSMparameter* newParam)noexcept
+		{
+			if (newParam == nullptr || IsValidParameter(newParam))
+				parameter = newParam; 
+
+			if (parameter == nullptr)
+				onValue = 0;
+		}
+		void JFSMcondition::SetOnValue(float newValue)noexcept
+		{
+			if (HasParameter())
+				onValue = newValue;
+		}
+		bool JFSMcondition::HasParameter()const noexcept
+		{
+			return parameter != nullptr;
+		}
+		bool JFSMcondition::HasSameParameter(const size_t guid)const noexcept
+		{
+			return HasParameter() ? parameter->GetGuid() == guid : false;
+		}
+		bool JFSMcondition::IsSatisfied()const noexcept
+		{
+			return (PassDefectInspection()) && (parameter->GetValue() == onValue);
+		}
+		bool JFSMcondition::PassDefectInspection()const noexcept
+		{
+			return parameter != nullptr;
+		}
+		std::vector<JIdentifier*> JFSMcondition::GetSroageParameter(JIdentifier* iden)noexcept
+		{
+			if (!iden->GetTypeInfo().IsChildOf< JFSMcondition>())
+				return std::vector<JIdentifier*>{};
+			std::vector<JFSMparameter*> paramVec = static_cast<JFSMcondition*>(iden)->ownerInterface->GetParamStorageInterface()->GetParameterVec();		 
+			return std::vector<JIdentifier*>(paramVec.begin(), paramVec.end());
+		}
+		bool JFSMcondition::IsValidParameter(JFSMparameter* newParam)const noexcept
+		{
+			sizeof(JFSMcondition);
+			return newParam ? ownerInterface->GetParamStorageInterface()->GetParameter(newParam->GetGuid()) : false;
 		} 
-		void JFSMcondition::SetValueType(const J_FSMCONDITION_VALUE_TYPE valueType)noexcept
+		void JFSMcondition::Clear()
 		{
-			JFSMcondition::valueType = valueType;
-			SetValue(value);
+			parameter = nullptr;
 		}
-		void JFSMcondition::Clear(){}
 		bool JFSMcondition::RegisterCashData()noexcept
 		{
-			return conditionOwner->AddCondition(this);
+			return ownerInterface->AddType(this);
 		}
 		bool JFSMcondition::DeRegisterCashData()noexcept
-		{ 
-			return conditionOwner->RemoveCondition(this);
+		{
+			return ownerInterface->RemoveType(this);
 		}
 		void JFSMcondition::RegisterJFunc()
-		{			 
-			auto createConditionLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
-			{ 
+		{
+			auto createCondLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
+			{
 				if (initData.IsValid() && initData->GetFSMobjType() == J_FSM_OBJECT_TYPE::CONDITION)
 				{
 					JFSMconditionInitData* condInitData = static_cast<JFSMconditionInitData*>(initData.Get());
@@ -71,16 +104,13 @@ namespace JinEngine
 				}
 				return nullptr;
 			};
-			JFFI<JFSMcondition>::Register(createConditionLam);
+			JFFI<JFSMcondition>::Register(createCondLam);
 		}
 		JFSMcondition::JFSMcondition(const JFSMconditionInitData& initData)
-			:JFSMInterface(initData.name, initData.guid), valueType(initData.valueType)
+			:JFSMInterface(initData), ownerInterface(initData.ownerTransition.Get())
 		{
-			conditionOwner = initData.conditionOwner;
+
 		}
-		JFSMcondition::~JFSMcondition() 
-		{
-			conditionOwner = nullptr;
-		}
+		JFSMcondition::~JFSMcondition(){}
 	}
 }

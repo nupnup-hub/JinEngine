@@ -8,6 +8,7 @@ namespace JinEngine
 {
 	namespace Core
 	{
+#pragma region Group
 		JGuiGroupMemberInfo::JGuiGroupMemberInfo(const JGuiGroupKey groupKey)
 			:groupKey(groupKey)
 		{}
@@ -15,17 +16,87 @@ namespace JinEngine
 		{
 			return groupKey;
 		}
-		JGuiEnumTriggerGroupMemberInfoHandle::JGuiEnumTriggerGroupMemberInfoHandle(const JGuiGroupKey groupKey)
+		JGuiEnumConditionGroupMemberInfoHandle::JGuiEnumConditionGroupMemberInfoHandle(const JGuiGroupKey groupKey)
 			:JGuiGroupMemberInfo(groupKey)
 		{}
 
+		JGuiGroupInfo::JGuiGroupInfo(const std::string groupName)
+			: groupName(groupName)
+		{}
+		std::string JGuiGroupInfo::GetGroupName()const noexcept
+		{
+			return groupName;
+		}
+		bool JGuiTableInfo::IsFirstColunmGuide()const noexcept
+		{
+			return isFirstColumnGuide;
+		}
+		J_GUI_GROUP_TYPE JGuiTableInfo::GetGuiGroupType()const noexcept
+		{
+			return J_GUI_GROUP_TYPE::TABLE;
+		}
+		std::string JGuiTableInfo::GetColumnGuide(const uint index)const noexcept
+		{
+			return columnGuide[index];
+		}
+		uint JGuiTableInfo::GetColumnCount()const noexcept
+		{
+			return columnCount;
+		}
+		uint JGuiTableInfo::GetRowCount()const noexcept
+		{
+			return rowCount;
+		}
+		void JGuiTableInfo::NotifyAddNewMember(JGuiGroupMemberInfo* mInfo)
+		{
+			if (mInfo != nullptr && mInfo->GetGroupKey() == GetGroupName())
+				++rowCount;
+		}
+
+		JGuiEnumConditionInfo::JGuiEnumConditionInfo(const std::string& groupName, const std::string& enumName, const std::string& parameterName)
+			:JGuiGroupInfo(groupName), enumName(enumName), parameterName(parameterName)
+		{}
+		J_GUI_GROUP_TYPE JGuiEnumConditionInfo::GetGuiGroupType()const noexcept
+		{
+			return J_GUI_GROUP_TYPE::ENUM_TRIGGER;
+		}
+		std::string JGuiEnumConditionInfo::GetEnumName()const noexcept
+		{
+			return enumName;
+		}
+		std::string JGuiEnumConditionInfo::GetParamName()const noexcept
+		{
+			return parameterName;
+		}
+		void JGuiEnumConditionInfo::NotifyAddNewMember(JGuiGroupMemberInfo* mInfo) {}
+
+		namespace
+		{
+			static std::unordered_map<std::string, std::unique_ptr<JGuiGroupInfo>> groupInfoMap;
+		}
+
+		void JGuiGroupMap::AddGuiGroup(std::unique_ptr<JGuiGroupInfo>&& rInfo)
+		{
+			groupInfoMap.emplace(rInfo->GetGroupName(), std::move(rInfo));
+		}
+		JGuiGroupInfo* JGuiGroupMap::GetGuiGroupInfo(const JGuiGroupKey& groupKey)
+		{
+			auto data = groupInfoMap.find(groupKey);
+			return data != groupInfoMap.end() ? data->second.get() : nullptr;
+		}
+#pragma endregion
+
+#pragma region Widget
 		JGuiWidgetInfo::JGuiWidgetInfo(std::unique_ptr<JGuiGroupMemberInfo>&& newGroupMemberInfo)
 		{
-			JGuiGroupInfo* groupInfo = JGuiGroupMap::GetGuiGroupInfo(newGroupMemberInfo->GetGroupKey());
-			if (groupInfo != nullptr)
+			if (newGroupMemberInfo != nullptr)
 			{
-				groupMemberInfo = std::move(newGroupMemberInfo);
-				groupInfo->NotifyAddNewMember(groupMemberInfo.get());
+				JGuiGroupInfo* groupInfo = JGuiGroupMap::GetGuiGroupInfo(newGroupMemberInfo->GetGroupKey());
+				if (groupInfo != nullptr)
+				{
+					groupMemberInfo = std::move(newGroupMemberInfo);
+					groupInfo->NotifyAddNewMember(groupMemberInfo.get());
+				}
 			}
 		}
 		bool JGuiWidgetInfo::IsMemberWidget()const noexcept
@@ -71,7 +142,7 @@ namespace JinEngine
 			isVertical(isVertical)
 		{}
 		JGuiSliderInfo::JGuiSliderInfo(float minValue, float maxValue, bool isSupportInput, bool isVertical, std::unique_ptr<JGuiGroupMemberInfo>&& newGroupMemberInfo)
-			:JGuiWidgetInfo(std::move(newGroupMemberInfo)),
+			: JGuiWidgetInfo(std::move(newGroupMemberInfo)),
 			minValue(minValue),
 			maxValue(maxValue),
 			isSupportInput(isSupportInput),
@@ -113,19 +184,28 @@ namespace JinEngine
 			return hasRgbInput;
 		}
 
-		JGuiSelectorInfo::JGuiSelectorInfo(const bool isImageRtTexture, const bool hasSizeSlider)
-			:isImageRtTexture(isImageRtTexture), hasSizeSlider(hasSizeSlider)
-		{}
-		JGuiSelectorInfo::JGuiSelectorInfo(const bool isImageRtTexture, const bool hasSizeSlider, std::unique_ptr<JGuiGroupMemberInfo>&& newGroupMemberInfo)
-			: JGuiWidgetInfo(std::move(newGroupMemberInfo)), isImageRtTexture(isImageRtTexture), hasSizeSlider(hasSizeSlider)
-		{}
+		JGuiSelectorInfo::JGuiSelectorInfo(const J_GUI_SELECTOR_IMAGE imageType,
+			const bool hasSizeSlider,
+			GetElemntVecF::Ptr getElementVecPtr,
+			std::unique_ptr<JGuiGroupMemberInfo>&& newGroupMemberInfo)
+			:JGuiWidgetInfo(std::move(newGroupMemberInfo)),
+			imageType(imageType), 
+			hasSizeSlider(hasSizeSlider)
+		{
+			if (getElementVecPtr != nullptr)
+				getElementVecFunctor = std::make_unique<GetElemntVecF::Functor>(getElementVecPtr);
+		}
 		JSupportGuiWidgetType JGuiSelectorInfo::GetSupportWidgetType()const noexcept
 		{
 			return Editor::J_GUI_WIDGET_SELECTOR;
 		}
-		bool JGuiSelectorInfo::IsImageRtTexture()const noexcept
+		J_GUI_SELECTOR_IMAGE JGuiSelectorInfo::GetPreviewImageType()const noexcept
 		{
-			return isImageRtTexture;
+			return imageType;
+		}
+		JGuiSelectorInfo::GetElemntVecF::Functor* JGuiSelectorInfo::GetElementVecFunctor()const noexcept
+		{
+			return getElementVecFunctor.get();
 		}
 		bool JGuiSelectorInfo::HasSizeSlider()const noexcept
 		{
@@ -141,12 +221,12 @@ namespace JinEngine
 		}
 
 		JGuiEnumComboBoxInfo::JGuiEnumComboBoxInfo(const std::string enumName)
-			:enumFullName(FindEnumFullName(enumName))
+			: enumFullName(FindEnumFullName(enumName))
 		{
 
 		}
 		JGuiEnumComboBoxInfo::JGuiEnumComboBoxInfo(const std::string enumName, std::unique_ptr<JGuiGroupMemberInfo>&& newGroupMemberInfo)
-			:JGuiWidgetInfo(std::move(newGroupMemberInfo)), enumFullName(FindEnumFullName(enumName))
+			: JGuiWidgetInfo(std::move(newGroupMemberInfo)), enumFullName(FindEnumFullName(enumName))
 		{
 
 		}
@@ -155,7 +235,7 @@ namespace JinEngine
 			return Editor::J_GUI_WIDGET_ENUM_COMBO;
 		}
 		std::string JGuiEnumComboBoxInfo::GetEnumFullName()const noexcept
-		{ 
+		{
 			return enumFullName;
 		}
 		std::string JGuiEnumComboBoxInfo::FindEnumFullName(const std::string enumName)const noexcept
@@ -163,69 +243,34 @@ namespace JinEngine
 			return JReflectionInfo::Instance().FindEnumInfo(enumName)->FullName();
 		}
 
-		JGuiGroupInfo::JGuiGroupInfo(const std::string groupName)
-			:groupName(groupName)
-		{}
-		std::string JGuiGroupInfo::GetGroupName()const noexcept
-		{
-			return groupName;
-		}	
-		bool JGuiTableInfo::IsFirstColunmGuide()const noexcept
-		{
-			return isFirstColumnGuide;
+		JGuiListInfo::JGuiListInfo(const J_GUI_LIST_TYPE listType,
+			const bool canDisplayElementGui, 
+			AddElementF::Ptr addElementPtr,
+			std::unique_ptr<JGuiGroupMemberInfo>&& newGroupMemberInfo)
+			:JGuiWidgetInfo(std::move(newGroupMemberInfo)), 
+			listType(listType), 
+			canDisplayElementGui(canDisplayElementGui)
+		{ 
+			if (addElementPtr != nullptr)
+				addElementF = std::make_unique<AddElementF::Functor>(addElementPtr);
 		}
-		J_GUI_GROUP_TYPE JGuiTableInfo::GetGuiGroupType()const noexcept
+		JSupportGuiWidgetType JGuiListInfo::GetSupportWidgetType()const noexcept
 		{
-			return J_GUI_GROUP_TYPE::TABLE;
+			return Editor::J_GUI_WIDGET_LIST;
 		}
-		std::string JGuiTableInfo::GetColumnGuide(const uint index)const noexcept
+		J_GUI_LIST_TYPE JGuiListInfo::GetListType()const noexcept
 		{
-			return columnGuide[index];
+			return listType;
 		}
-		uint JGuiTableInfo::GetColumnCount()const noexcept
+		bool JGuiListInfo::CanDisplayElementGui()const noexcept
 		{
-			return columnCount;
-		}
-		uint JGuiTableInfo::GetRowCount()const noexcept
-		{
-			return rowCount;
-		}
-		void JGuiTableInfo::NotifyAddNewMember(JGuiGroupMemberInfo* mInfo)
-		{
-			if (mInfo != nullptr && mInfo->GetGroupKey() == GetGroupName())
-				++rowCount;
+			return canDisplayElementGui;
 		} 
+		JGuiListInfo::AddElementF::Functor* JGuiListInfo::GetAddElementFunctor()const noexcept
+		{
+			return addElementF.get();
+		}
+#pragma endregion
 
-		JGuiEnumTriggerInfo::JGuiEnumTriggerInfo(const std::string& groupName, const std::string& enumName, const std::string& parameterName)
-			:JGuiGroupInfo(groupName), enumName(enumName), parameterName(parameterName)
-		{}
-		J_GUI_GROUP_TYPE JGuiEnumTriggerInfo::GetGuiGroupType()const noexcept
-		{
-			return J_GUI_GROUP_TYPE::ENUM_TRIGGER;
-		}
-		std::string JGuiEnumTriggerInfo::GetEnumName()const noexcept
-		{
-			return enumName;
-		}
-		std::string JGuiEnumTriggerInfo::GetParamName()const noexcept
-		{
-			return parameterName;
-		}
-		void JGuiEnumTriggerInfo::NotifyAddNewMember(JGuiGroupMemberInfo* mInfo){}
-
-		namespace
-		{
-			static std::unordered_map<std::string, std::unique_ptr<JGuiGroupInfo>> groupInfoMap;
-		}
-
-		void JGuiGroupMap::AddGuiGroup(std::unique_ptr<JGuiGroupInfo>&& rInfo)
-		{
-			groupInfoMap.emplace(rInfo->GetGroupName(), std::move(rInfo));
-		}
-		JGuiGroupInfo* JGuiGroupMap::GetGuiGroupInfo(const JGuiGroupKey& groupKey)
-		{
-			auto data = groupInfoMap.find(groupKey);
-			return data != groupInfoMap.end() ? data->second.get() : nullptr;
-		}
 	}
 }

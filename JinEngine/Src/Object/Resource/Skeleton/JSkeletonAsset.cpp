@@ -63,7 +63,7 @@ namespace JinEngine
 	}
 	std::wstring JSkeletonAsset::GetFormat()const noexcept
 	{
-		return GetAvailableFormat()[0];
+		return GetAvailableFormat()[GetFormatIndex()];
 	}
 	std::vector<std::wstring> JSkeletonAsset::GetAvailableFormat()noexcept
 	{
@@ -81,6 +81,10 @@ namespace JinEngine
 	JSKELETON_TYPE JSkeletonAsset::GetSkeletonType()const noexcept
 	{
 		return skeletonType;
+	}
+	size_t JSkeletonAsset::GetSkeletonHash()const noexcept
+	{
+		return skeletonHash;
 	}
 	std::wstring JSkeletonAsset::GetJointName(int index)noexcept
 	{
@@ -245,6 +249,8 @@ namespace JinEngine
 	void JSkeletonAsset::SetSkeleton(std::unique_ptr<JSkeleton> skeleton)
 	{
 		JSkeletonAsset::skeleton = std::move(skeleton);
+		if(JSkeletonAsset::skeleton != nullptr)
+			skeletonHash = JSkeletonAsset::skeleton->GetHash();
 	}
 	void JSkeletonAsset::DoCopy(JObject* ori)
 	{
@@ -367,6 +373,7 @@ namespace JinEngine
 					JFileIOHelper::StoreAtomicData(stream, std::to_wstring(i) + L"Index:", avatar->jointReference[i]);
 			}
 			JFileIOHelper::StoreEnumData(stream, L"SkeletonType:", skeletonAsset->GetSkeletonType());
+			JFileIOHelper::StoreAtomicData(stream, L"SkeletonHash:", skeletonAsset->GetSkeletonHash());
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		else
@@ -403,6 +410,7 @@ namespace JinEngine
 			if(metadata.avatar != nullptr)
 				newSkeletonAsset->SetAvatar(metadata.avatar.get());
 			newSkeletonAsset->SetSkeletonType((JSKELETON_TYPE)metadata.skeletonType);
+			newSkeletonAsset->skeletonHash = metadata.skeletonHash;
 		}
 		return newSkeletonAsset;
 	}
@@ -426,7 +434,8 @@ namespace JinEngine
 					metadata.avatar->jointReference[i] = (uint8)index;
 				}
 			} 
-			JFileIOHelper::LoadEnumData(stream, skeletonType);
+			JFileIOHelper::LoadEnumData(stream, metadata.skeletonType);
+			JFileIOHelper::LoadAtomicData(stream, metadata.skeletonHash);
 			//SetSkeletonType((JSKELETON_TYPE)skeletonType);
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
@@ -488,7 +497,7 @@ namespace JinEngine
 	JSkeletonAsset::JSkeletonAsset(JSkeletonInitData& initdata)
 		:JSkeletonAssetInterface(initdata)
 	{
-		skeleton = std::move(initdata.skeleton);
+		SetSkeleton(std::move(initdata.skeleton)); 
 	}
 	JSkeletonAsset::~JSkeletonAsset() {}
 }

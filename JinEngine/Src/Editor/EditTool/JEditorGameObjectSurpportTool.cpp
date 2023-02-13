@@ -183,9 +183,9 @@ namespace JinEngine
 			if (arrowCenterMaterial.IsValid())
 				JObject::BeginDestroy(arrowCenterMaterial.Get());
 		}
-		void JEditorTransformTool::Update(Core::JUserPtr<JObject> selected, Core::JUserPtr<JCamera> cam, const JVector2<float>& viewLocalPos)
+		void JEditorTransformTool::Update(Core::JUserPtr<JGameObject> selected, Core::JUserPtr<JCamera> cam, const JVector2<float>& viewLocalPos)
 		{
-			bool isValid = selected.IsValid() && selected->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT;
+			bool isValid = selected.IsValid();
 			if (isValid)
 			{
 				if (!IsValid())

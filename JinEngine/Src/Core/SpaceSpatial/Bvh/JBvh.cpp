@@ -570,7 +570,7 @@ namespace JinEngine
 			if (root == nullptr)
 				return;
 
-			treeView.Clear();
+			treeView.ClearNode();
 			treeView.SetGridSize(2500);
 			root->BuildDebugNode(treeView);
 		}

@@ -17,7 +17,7 @@ namespace JinEngine
 	{
 	public:
 		template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
-		static Core::J_FILE_IO_RESULT StoreAtomicData(std::wofstream& stream, const std::wstring& guide,  T value, const bool useChangeLine = true)
+		static Core::J_FILE_IO_RESULT StoreAtomicData(std::wofstream& stream, const std::wstring& guide, T value, const bool useChangeLine = true)
 		{
 			if (!stream.is_open())
 				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -34,7 +34,7 @@ namespace JinEngine
 			if (!stream.is_open())
 				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-			std::wstring guide; 
+			std::wstring guide;
 			stream >> guide >> value;
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
@@ -48,7 +48,7 @@ namespace JinEngine
 			if (useChangeLine)
 				stream << guide << " " << (int)value << '\n';
 			else
-				stream << guide << " " << (int)value << ' '; 
+				stream << guide << " " << (int)value << ' ';
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 		template<typename T, std::enable_if_t<std::is_enum_v<T>, int> = 0>
@@ -69,9 +69,9 @@ namespace JinEngine
 		{
 			if (!stream.is_open())
 				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-			
+
 			stream << guide << '\n';
-			stream<< L"SpaceOffset: " << spaceoffset << '\n';
+			stream << L"SpaceOffset: " << spaceoffset << '\n';
 			stream << L"VecCount: " << vec.size() << '\n';
 
 			int vecCount = (int)vec.size();
@@ -94,9 +94,9 @@ namespace JinEngine
 			int spaceOffset = 0;
 			int vecCount = 0;
 			stream >> guide;
-			stream >> guide >> spaceOffset; 
-			stream >> guide >> vecCount; 
-		 
+			stream >> guide >> spaceOffset;
+			stream >> guide >> vecCount;
+
 			vec.resize(vecCount);
 			for (int i = 0; i < vecCount; ++i)
 				stream >> vec[i];
@@ -124,13 +124,14 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT LoadFsmObjectIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ Core::J_FSM_OBJECT_TYPE& oType);
 	public:
 		static Core::J_FILE_IO_RESULT StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden);
+		static Core::J_FILE_IO_RESULT StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden, const std::wstring& guiSymbol);
 		static Core::JIdentifier* LoadHasObjectIden(std::wifstream& stream);
 	public:
 		static Core::J_FILE_IO_RESULT CopyFile(const std::wstring& src, const std::wstring& dest);
 	public:
 		//skip file using getline until symbol
 		//if fail stream is close
-		static bool SkipLine(std::wifstream& stream, const std::wstring& symbol); 
+		static bool SkipLine(std::wifstream& stream, const std::wstring& symbol);
 		//skip file using stream until symbol
 		//if fail stream is close
 		static bool SkipSentence(std::wifstream& stream, const std::wstring& symbol);

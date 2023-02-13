@@ -7,7 +7,9 @@ namespace JinEngine
 		{
 			DIAGRAM,
 			STATE,
-			CONDITION,
+			PARAMETER,
+			TRANSITION,
+			CONDITION
 		};
 	}
 }

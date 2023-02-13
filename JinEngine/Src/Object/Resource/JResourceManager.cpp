@@ -333,14 +333,6 @@ namespace JinEngine
 	{
 		return this;
 	}
-	JResourceStorageInterface* JResourceManagerImpl::ResourceStorageInterface()
-	{
-		return this;
-	}
-	JDirectoryStorageInterface* JResourceManagerImpl::DirectoryStorageInterface()
-	{
-		return this;
-	}
 	JResourceManagerImpl::JEventInterface* JResourceManagerImpl::EvInterface()
 	{
 		return this;
@@ -431,24 +423,24 @@ namespace JinEngine
 		}
 		DestroyUnusedResource(J_RESOURCE_TYPE::SHADER, false);
 	}
-	bool JResourceManagerImpl::AddResource(JResourceObject& newResource)noexcept
+	bool JResourceManagerImpl::AddType(JResourceObject* newResource)noexcept
 	{
-		return rStorage.find(newResource.GetResourceType())->second.AddResource(&newResource);
+		return rStorage.find(newResource->GetResourceType())->second.AddResource(newResource);
 	}
-	bool JResourceManagerImpl::RemoveResource(JResourceObject& resource)noexcept
+	bool JResourceManagerImpl::RemoveType(JResourceObject* resource)noexcept
 	{
-		if (resource.IsActivated())
-			NotifyEvent(resource.GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE, &resource);
+		if (resource->IsActivated())
+			NotifyEvent(resource->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE, resource);
 
-		return rStorage.find(resource.GetResourceType())->second.RemoveResource(resource);
+		return rStorage.find(resource->GetResourceType())->second.RemoveResource(*resource);
 	}
-	bool JResourceManagerImpl::AddJDirectory(JDirectory& newDirectory)noexcept
+	bool JResourceManagerImpl::AddType(JDirectory* newDirectory)noexcept
 	{ 
-		return dStorage.Add(&newDirectory);
+		return dStorage.Add(newDirectory);
 	}
-	bool JResourceManagerImpl::RemoveJDirectory(JDirectory& dir)noexcept
+	bool JResourceManagerImpl::RemoveType(JDirectory* dir)noexcept
 	{
-		return dStorage.Remove(&dir);
+		return dStorage.Remove(dir);
 	}
 	void JResourceManagerImpl::DestroyUnusedResource(const J_RESOURCE_TYPE rType, bool isIgnreUndestroyableFlag)
 	{

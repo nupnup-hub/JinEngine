@@ -19,7 +19,11 @@
 #include"../../Object/Resource/JResourceObject.h" 
 #include"../../Object/Component/Camera/JCamera.h"
 #include"../../Object/Component/RenderItem/JRenderItem.h"
+
 #include"../../Core/Identity/JIdentifier.h"
+#include"../../Core/FSM/JFSMInterface.h"
+#include"../../Core/FSM/JFSMtransition.h"
+#include"../../Core/FSM/JFSMparameter.h"
 #include"../../Core/Reflection/JPropertyInfo.h"
 #include"../../Utility/JVector.h" 
 #include"../../Utility/JCommonUtility.h"
@@ -28,18 +32,11 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		bool JGuiPropertyWidgetHandle::IsPrintTitle()const noexcept
-		{
-			return isPrintTitle;
-		}
-		void JGuiPropertyWidgetHandle::SetPrintTitle(bool value)noexcept
-		{
-			isPrintTitle = value;
-		}
-
 		static bool IsEditableObject(Core::JIdentifier* obj)
 		{
 			if (obj->GetTypeInfo().IsChildOf<JObject>() && !static_cast<JObject*>(obj)->HasFlag(OBJECT_FLAG_UNEDITABLE))
+				return true;
+			else if (obj->GetTypeInfo().IsChildOf<Core::JFSMInterface>())
 				return true;
 			else
 				return false;
@@ -47,12 +44,120 @@ namespace JinEngine
 		static std::string GetUniqueLabel(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
 		{
 			return pInfo->Name() + std::to_string(obj->GetGuid());
-		}
+		}	
+	 
+		//forward declaration
+		static std::unique_ptr<JGuiPropertyWidgetHandle> MakePropertyHandle(Core::JPropertyInfo* pInfo);
+
+	 
 #pragma region Property
-		 
+
+		std::string JGuiPropertyWidgetHandle::GetDisplayPropertyName(Core::JPropertyInfo* pInfo, const std::string& label)const noexcept
+		{
+			if (canDisplayPropertyName)
+				return pInfo->Name() + "##" + label;
+			else
+				return "##" + pInfo->Name() + label;
+		}
+		void JGuiPropertyWidgetHandle::SetDisplayPropertyNameTrigger(bool value)noexcept
+		{
+			canDisplayPropertyName = value;
+		}
+		void JGuiPropertyWidgetHandle::DisplayPropertyName(Core::JPropertyInfo* pInfo)const noexcept
+		{
+			if (canDisplayPropertyName)
+				JImGuiImpl::Text(pInfo->Name());
+		}
+
+		//GuiTable 
+		//For gui widget grouping
+		class JGuiTableHandle : public JGuiPropertyGroupHandle
+		{
+		private:
+			bool isOpen = false;
+			uint rowIndex = 0;
+			Core::JGuiFlag flag = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersV |
+				ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody;
+		private:
+			static const ImGuiTableColumnFlags_ columnDefaultFlag = ImGuiTableColumnFlags_WidthStretch;
+		public:
+			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo, JGuiPropertyWidgetHandle* widgetHandle)final
+			{
+				Core::JGuiGroupInfo* groupInfo = Core::JGuiGroupMap::GetGuiGroupInfo(pInfo->GetOptionInfo()->GetWidgetInfo()->GetGroupKey());
+				if (groupInfo == nullptr || groupInfo->GetGuiGroupType() != Core::J_GUI_GROUP_TYPE::TABLE)
+					return;
+
+				Core::JGuiTableInfo* tableInfo = static_cast<Core::JGuiTableInfo*>(groupInfo);
+				if (rowIndex == 0)
+					Begin(pInfo, tableInfo);
+
+				if (isOpen)
+				{
+					widgetHandle->SetDisplayPropertyNameTrigger(false);
+					uint i = 0;
+					JImGuiImpl::TableNextRow();
+					if (tableInfo->IsFirstColunmGuide())
+					{
+						JImGuiImpl::TableSetColumnIndex(0);
+						JImGuiImpl::Text(pInfo->Name());
+						++i;
+					}
+
+					const uint columnCount = tableInfo->GetColumnCount();
+					for (; i < columnCount; ++i)
+					{
+						JImGuiImpl::TableSetColumnIndex(i);
+						widgetHandle->Update(obj, pInfo);
+					}
+					++rowIndex;
+					if (tableInfo->GetRowCount() == rowIndex)
+						End();
+					widgetHandle->SetDisplayPropertyNameTrigger(true);
+				}
+			}
+		private:
+			void Begin(Core::JPropertyInfo* pInfo, Core::JGuiTableInfo* tableInfo)
+			{
+				const uint columnCount = tableInfo->GetColumnCount();
+				isOpen = JImGuiImpl::BeginTable("##GuiTable" + tableInfo->GetGroupName(), columnCount, flag);
+				if (isOpen)
+				{
+					for (uint i = 0; i < columnCount; ++i)
+						JImGuiImpl::TableSetupColumn(tableInfo->GetColumnGuide(i), columnDefaultFlag);
+					JImGuiImpl::TableHeadersRow();
+				}
+			}
+			void End()
+			{
+				JImGuiImpl::EndTable();
+				isOpen = false;
+				rowIndex = 0;
+			}
+		};
+		class JGuiEnumTriggerHandle : public JGuiPropertyGroupHandle
+		{
+		public:
+			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo, JGuiPropertyWidgetHandle* widgetHandle)final
+			{
+				Core::JGuiWidgetInfo* widgetInfo = pInfo->GetOptionInfo()->GetWidgetInfo();
+				Core::JGuiGroupInfo* groupInfo = Core::JGuiGroupMap::GetGuiGroupInfo(widgetInfo->GetGroupKey());
+				if (groupInfo == nullptr || groupInfo->GetGuiGroupType() != Core::J_GUI_GROUP_TYPE::ENUM_TRIGGER)
+					return;
+
+				Core::JGuiEnumConditionInfo* enumConditionInfo = static_cast<Core::JGuiEnumConditionInfo*>(groupInfo);
+				Core::JPropertyInfo* propertyInfo = pInfo->GetTypeInfo()->GetProperty(enumConditionInfo->GetParamName());
+				if (propertyInfo == nullptr || propertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+					return;
+
+				Core::JGuiEnumConditionGroupMemberInfoHandle* memberHandle = static_cast<Core::JGuiEnumConditionGroupMemberInfoHandle*>(widgetInfo->GetGroupMemberInfo());
+				if (memberHandle->OnTrigger(propertyInfo->UnsafeGet<Core::JEnum>(obj)))
+					widgetHandle->Update(obj, pInfo);
+			}
+		};
+
 		class JGuiPropertySetInterface : public JEditorObjectHandlerInterface
 		{
-		public: 
+		public:
 			template<typename T>
 			void SetPropertyValue(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo, const T& value)
 			{
@@ -76,7 +181,7 @@ namespace JinEngine
 		//Property
 		//int, float, string, vector
 		template<typename T>
-		class JGuiInputHandle : public JGuiPropertyWidgetHandle, 
+		class JGuiInputHandle : public JGuiPropertyWidgetHandle,
 			public JGuiPropertySetInterface
 		{
 		private:
@@ -140,11 +245,9 @@ namespace JinEngine
 			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)final
 			{
 				buff = pInfo->Get<T>(obj);
-				if (IsPrintTitle())
-					JImGuiImpl::Text(pInfo->Name());
+				SetDisplayPropertyNameTrigger(pInfo); 
 
-				bool res = false; 
-
+				bool res = false;
 				if constexpr (std::is_same_v<T, DirectX::XMINT2> ||
 					std::is_same_v<T, DirectX::XMFLOAT2> ||
 					std::is_same_v<T, JVector2<ValueType>>)
@@ -205,16 +308,21 @@ namespace JinEngine
 					return false;
 			}
 		};
-		//Select JObject 
+		//Select JObject
 		class JGuiSelectorHandleHelper : public JGuiPropertyWidgetHandle, public JEditorPreviewInterface
-		{ 
+		{
+		private:
+			using GetElemntVecF = Core::JSFunctorType<std::vector<Core::JIdentifier*>, Core::JIdentifier*>;
 		private:
 			std::vector<JPreviewScene*> selectorPreviewVec;
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
 		private:
+			Core::J_GUI_SELECTOR_IMAGE imageType;
 			float sizeMin = 0;
 			float sizeMax = 0;
 			float sizeFactor = 0;
+		private:
+			GetElemntVecF::Functor* getElemenVecFunctor = nullptr;
 		private:
 			bool isFirstOpen = true;
 			bool isSelected = false;
@@ -235,18 +343,26 @@ namespace JinEngine
 			{
 				Core::JGuiSelectorInfo* inputInfo = static_cast<Core::JGuiSelectorInfo*>(pInfo->GetOptionInfo()->GetWidgetInfo());
 				hasSizeSlider = inputInfo->HasSizeSlider();
-				if (inputInfo->IsImageRtTexture())
+				imageType = inputInfo->GetPreviewImageType(); 
+				if (!pInfo->GetTypeInfo()->IsChildOf<JObject>())
+					imageType = Core::J_GUI_SELECTOR_IMAGE::NONE;
+
+				getElemenVecFunctor = inputInfo->GetElementVecFunctor();
+				if (imageType == Core::J_GUI_SELECTOR_IMAGE::NONE)
 				{
-					isRtTexture = true;
-					sizeMin = (JImGuiImpl::GetClientWindowSize().x * 0.035f);
-					sizeMax = (JImGuiImpl::GetClientWindowSize().x * 0.07f);
+					sizeMin = JImGuiImpl::GetAlphabetSize().y;
+					sizeMax = JImGuiImpl::GetAlphabetSize().y;
+					hasSizeSlider = false;
+				}
+				else if(imageType == Core::J_GUI_SELECTOR_IMAGE::ICON)
+				{
+					sizeMin = (JImGuiImpl::GetClientWindowSize().x * 0.01f);
+					sizeMax = (JImGuiImpl::GetClientWindowSize().x * 0.02f);
 				}
 				else
 				{
-					isRtTexture = false;
-					hasSizeSlider = false;
-					sizeMin = (JImGuiImpl::GetAlphabetSize().x);
-					sizeMax = (JImGuiImpl::GetAlphabetSize().x * 2);
+					sizeMin = (JImGuiImpl::GetClientWindowSize().x * 0.035f);
+					sizeMax = (JImGuiImpl::GetClientWindowSize().x * 0.07f);
 				}
 				sizeFactor = sizeMin;
 			}
@@ -254,7 +370,7 @@ namespace JinEngine
 			void Begin(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
 			{
 				if (isSelected)
-				{ 
+				{
 					SetSelectObject(obj, pInfo);
 					ClearPreviewGroup();
 					selectorPreviewVec.clear();
@@ -263,7 +379,7 @@ namespace JinEngine
 				}
 
 				if (isClosePopup)
-				{ 
+				{
 					ClearPreviewGroup();
 					selectorPreviewVec.clear();
 					CreateSelectorPreviewList();
@@ -271,8 +387,11 @@ namespace JinEngine
 				}
 			}
 		protected:
-			void SelectorPreviewOnScreen(JPreviewScene* previewScene, Core::JPropertyInfo* pInfo)
+			void SelectedPreviewOnScreen(JPreviewScene* previewScene, Core::JPropertyInfo* pInfo)
 			{
+				if (!CanCreatePreviewImage())
+					return;
+
 				if (previewScene != nullptr)
 				{
 					JImGuiImpl::Image(*previewScene->GetPreviewCamera().Get(), JVector2<float>(sizeMin, sizeMin));
@@ -287,7 +406,7 @@ namespace JinEngine
 			template<typename ValueType, typename PointerRef>
 			bool SelectorOnScreen(PointerRef selectedObj,
 				Core::JIdentifier* obj,
-				Core::JPropertyInfo* pInfo, 
+				Core::JPropertyInfo* pInfo,
 				const std::string& uniqueLabel)
 			{
 				std::string name = "None";
@@ -333,35 +452,11 @@ namespace JinEngine
 					ImGui::SameLine();
 					searchBarHelper->UpdateSearchBar();
 
-					JImGuiImpl::Image(*JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::NONE), JVector2<float>(sizeMin, sizeMin));
-					ImGui::SameLine();
-					if (JImGuiImpl::Selectable("None##" + uniqueLabel, nullptr, 0, JVector2<float>(0, sizeFactor)))
-					{
-						(*selectedObj) = nullptr;
-						isSelected = true;
-						ImGui::CloseCurrentPopup();
-					}
-
-					const uint previweSceneCount = (uint)selectorPreviewVec.size();
-					for (uint i = 0; i < previweSceneCount; ++i)
-					{
-						Core::JUserPtr<JObject> previewObj = selectorPreviewVec[i]->GetJObject();
-						if (!searchBarHelper->CanSrcNameOnScreen(previewObj->GetName()))
-							continue;
-
-						JImGuiImpl::Image(*selectorPreviewVec[i]->GetPreviewCamera().Get(), JVector2<float>(sizeFactor, sizeFactor));
-						ImGui::SameLine();
-						if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(previewObj.Get()->GetName()) + "##" + uniqueLabel,
-							nullptr,
-							0,
-							JVector2<float>(0, sizeFactor)))
-						{
-							(*selectedObj) = static_cast<ValueType*>(previewObj.Get());
-							isSelected = true;
-							ImGui::CloseCurrentPopup();
-						}
-					}
-
+					if (CanCreatePreviewImage())
+						ImageSelectorOnScreen<ValueType>(selectedObj, uniqueLabel);
+					else
+						SimpleSelectorOnScreen<ValueType>(obj, selectedObj, uniqueLabel);
+					 
 					ImGui::EndGroup();
 					JImGuiImpl::EndCombo();
 					return true;
@@ -369,18 +464,108 @@ namespace JinEngine
 				else
 					return false;
 			}
+		private:
+			template<typename ValueType, typename PointerRef>
+			void ImageSelectorOnScreen(PointerRef selectedObj, const std::string& uniqueLabel)
+			{
+				JImGuiImpl::Image(*JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::NONE), JVector2<float>(sizeMin, sizeMin));
+				ImGui::SameLine();
+				if (JImGuiImpl::Selectable("None##" + uniqueLabel, nullptr, 0, JVector2<float>(0, sizeFactor)))
+				{
+					(*selectedObj) = nullptr;
+					isSelected = true;
+					ImGui::CloseCurrentPopup();
+				}
+
+				const uint previweSceneCount = (uint)selectorPreviewVec.size();
+				for (uint i = 0; i < previweSceneCount; ++i)
+				{
+					Core::JUserPtr<Core::JIdentifier> previewObj = selectorPreviewVec[i]->GetJObject();
+					if (!searchBarHelper->CanSrcNameOnScreen(previewObj->GetName()))
+						continue;
+
+					JImGuiImpl::Image(*selectorPreviewVec[i]->GetPreviewCamera().Get(), JVector2<float>(sizeFactor, sizeFactor));
+					ImGui::SameLine();
+					if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(previewObj.Get()->GetName()) + "##" + uniqueLabel,
+						nullptr,
+						0,
+						JVector2<float>(0, sizeFactor)))
+					{
+						(*selectedObj) = static_cast<ValueType*>(previewObj.Get());
+						isSelected = true;
+						ImGui::CloseCurrentPopup();
+					}
+				}
+			}
+			template<typename ValueType, typename PointerRef>
+			void SimpleSelectorOnScreen(Core::JIdentifier* obj, PointerRef selectedObj, const std::string& uniqueLabel)
+			{ 
+				if (JImGuiImpl::Selectable("None##" + uniqueLabel))
+				{
+					(*selectedObj) = nullptr;
+					isSelected = true;
+					ImGui::CloseCurrentPopup();
+				}
+				if constexpr (std::is_base_of_v<JResourceObject, ValueType>)
+				{
+					uint count = 0;
+					std::vector<JResourceObject*>::const_iterator cBegin = JResourceManager::Instance().GetResourceVectorHandle<ValueType>(count);
+					for (uint i = 0; i < count; ++i)
+					{
+						JResourceObject* rObj = *(cBegin + i);
+						if (rObj->HasFlag(OBJECT_FLAG_HIDDEN) || !searchBarHelper->CanSrcNameOnScreen(rObj->GetName()))
+							continue;
+
+						if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(rObj->GetName()) + "##" + uniqueLabel))
+						{
+							(*selectedObj) = static_cast<ValueType*>(rObj);
+							isSelected = true;
+							ImGui::CloseCurrentPopup();
+						}
+					}
+				}
+				else
+				{
+					if (getElemenVecFunctor == nullptr)
+						return;
+
+					std::vector<Core::JIdentifier*> elementVec = (*getElemenVecFunctor)(obj);
+					const uint elementCount = (uint)elementVec.size();
+					for (uint i = 0; i < elementCount; ++i)
+					{
+						if(elementVec[i]->GetTypeInfo().IsChildOf<JObject>() && static_cast<JObject*>(elementVec[i])->HasFlag(OBJECT_FLAG_HIDDEN))
+							continue;
+
+						if (!searchBarHelper->CanSrcNameOnScreen(elementVec[i]->GetName()))
+							continue;
+
+						if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(elementVec[i]->GetName()) + "##" + uniqueLabel))
+						{
+							(*selectedObj) = static_cast<ValueType*>(elementVec[i]);
+							isSelected = true;
+							ImGui::CloseCurrentPopup();
+						}
+					}
+				}
+			}
 		protected:
 			virtual void CreateSelectorPreviewList() = 0;
 			template<typename ValueType>
 			void CreateSelectorList()
 			{
-				uint count = 0;
-				std::vector<JResourceObject*>::const_iterator cBegin = JResourceManager::Instance().GetResourceVectorHandle<ValueType>(count);
-				for (uint i = 0; i < count; ++i)
+				if (!CanCreatePreviewImage())
+					return;
+
+				if constexpr(std::is_base_of_v<JResourceObject, ValueType>)
 				{
-					JResourceObject* rObj = *(cBegin + i);
-					if (!rObj->HasFlag(OBJECT_FLAG_HIDDEN))
-						selectorPreviewVec.push_back(CreatePreviewScene(Core::GetUserPtr(rObj)));
+					uint count = 0;
+					std::vector<JResourceObject*>::const_iterator cBegin = JResourceManager::Instance().GetResourceVectorHandle<ValueType>(count);
+					for (uint i = 0; i < count; ++i)
+					{
+						JResourceObject* rObj = *(cBegin + i);
+						if (!rObj->HasFlag(OBJECT_FLAG_HIDDEN))
+							selectorPreviewVec.push_back(CreatePreviewScene(Core::GetUserPtr(rObj)));
+					}
 				}
 			}
 		protected:
@@ -388,11 +573,15 @@ namespace JinEngine
 			{
 				return isFirstOpen;
 			}
+			bool CanCreatePreviewImage()const
+			{
+				return imageType != Core::J_GUI_SELECTOR_IMAGE::NONE;
+			}
 		protected:
 			uint GetPreviewCount()const noexcept
 			{
 				return (uint)selectorPreviewVec.size();
-			}
+			} 
 			void SetFirstTrigger(bool value)noexcept
 			{
 				isFirstOpen = value;
@@ -422,26 +611,30 @@ namespace JinEngine
 			}
 			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
 			{
-				JImGuiImpl::Text(pInfo->Name());
+				SetDisplayPropertyNameTrigger(pInfo);
 				Begin(obj, pInfo);
-				SelectorPreviewOnScreen(selectedPreview, pInfo);
+				if (CanCreatePreviewImage())
+					SelectedPreviewOnScreen(selectedPreview, pInfo);
 				bool isOpen = SelectorOnScreen<ValueType>(&selectedObj, obj, pInfo, GetUniqueLabel(obj, pInfo));
 				if (!isOpen)
 				{
-					SetFirstTrigger(true); 
+					SetFirstTrigger(true);
 					if (GetPreviewCount() > 0)
 						SetCloseTrigger(true);
 				}
 			}
 		protected:
 			void SetSelectObject(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
-			{ 
-				SetPropertyValue(obj, pInfo, selectedObj); 
+			{
+				SetPropertyValue(obj, pInfo, selectedObj);
 			}
 		private:
 			void CreateSelectorPreviewList()
 			{
-				selectedPreview = CreatePreviewScene(Core::GetUserPtr<JResourceObject>(selectedObj));
+				if (!CanCreatePreviewImage())
+					return;
+				if constexpr (std::is_base_of_v<JObject, ValueType>)
+					selectedPreview = CreatePreviewScene(Core::GetUserPtr(selectedObj));
 			}
 		};
 		template<typename T>
@@ -467,21 +660,22 @@ namespace JinEngine
 			}
 			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
 			{
-				const bool isRenderItemMaterial = obj->GetTypeInfo().IsA<JRenderItem>() && 
+				const bool isRenderItemMaterial = obj->GetTypeInfo().IsA<JRenderItem>() &&
 					std::is_base_of_v<JMaterial, ValueType>;
 
-				JImGuiImpl::Text(pInfo->Name());
+				SetDisplayPropertyNameTrigger(pInfo);
 				Begin(obj, pInfo);
 				for (uint i = 0; i < containerCount; ++i)
 				{
 					const std::string uniqueLabel = GetUniqueLabel(obj, pInfo) + "_" + std::to_string(i);
 					if (isRenderItemMaterial)
 					{
-						JRenderItem* rItem = static_cast<JRenderItem*>(obj); 
+						JRenderItem* rItem = static_cast<JRenderItem*>(obj);
 						JImGuiImpl::Text(JCUtil::WstrToU8Str(rItem->GetMesh()->GetSubMeshName(i)));
 					}
-					
-					SelectorPreviewOnScreen(selectedPreview[i], pInfo);
+
+					if (CanCreatePreviewImage())
+						SelectedPreviewOnScreen(selectedPreview[i], pInfo);
 					bool res = SelectorOnScreen<ValueType>(&container[i], obj, pInfo, uniqueLabel);
 					if (res)
 						selectedIndex = i;
@@ -500,14 +694,19 @@ namespace JinEngine
 		protected:
 			void SetSelectObject(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
 			{
-				SetPropertyValue(obj, pInfo, container); 
+				SetPropertyValue(obj, pInfo, container);
 			}
 		private:
 			void CreateSelectorPreviewList()
 			{
-				selectedPreview.resize(containerCount);
-				for (uint i = 0; i < containerCount; ++i)
-					selectedPreview[i] = CreatePreviewScene(Core::GetUserPtr<JResourceObject>(container[i]));
+				if (!CanCreatePreviewImage())
+					return;
+				if constexpr (std::is_base_of_v<JObject, ValueType>)
+				{
+					selectedPreview.resize(containerCount);
+					for (uint i = 0; i < containerCount; ++i)
+						selectedPreview[i] = CreatePreviewScene(Core::GetUserPtr<JResourceObject>(container[i]));
+				}			 
 			}
 		};
 		//bool
@@ -526,9 +725,9 @@ namespace JinEngine
 			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)final
 			{
 				if (pInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
-					return;
+					return; 
 
-				if (JImGuiImpl::CheckBox(pInfo->Name() + "##GuiCheckbox" + GetUniqueLabel(obj, pInfo), value))
+				if (JImGuiImpl::CheckBox(GetDisplayPropertyName(pInfo, "GuiCheckbox" + GetUniqueLabel(obj, pInfo)), value))
 					SetPropertyValue(obj, pInfo, value);
 			}
 		};
@@ -558,7 +757,7 @@ namespace JinEngine
 			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)final
 			{
 				value = pInfo->Get<T>(obj);
-				JImGuiImpl::Text(pInfo->Name());
+				DisplayPropertyName(pInfo);
 				ImGui::SameLine();
 				if (isSupportInput)
 				{
@@ -628,9 +827,8 @@ namespace JinEngine
 			}
 			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)final
 			{
-				colorV = pInfo->Get<T>(obj);
-				JImGuiImpl::Text(pInfo->Name());
-
+				colorV = pInfo->Get<T>(obj);			 
+				DisplayPropertyName(pInfo);
 				if constexpr (Core::JVectorDetermine<T>::value)
 				{
 					if constexpr (T::GetDigitCount() == 3)
@@ -652,7 +850,7 @@ namespace JinEngine
 						if (ImGui::ColorPicker3(("##GuiColorPicker" + GetUniqueLabel(obj, pInfo)).c_str(), (float*)&colorV, flag))
 						{
 							if constexpr (std::is_same_v<T, DirectX::XMFLOAT3>)
-								SetPropertyValue(obj, pInfo, DirectX::XMFLOAT3(colorV.x, colorV.y, colorV.z));							 
+								SetPropertyValue(obj, pInfo, DirectX::XMFLOAT3(colorV.x, colorV.y, colorV.z));
 						}
 					}
 					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
@@ -676,7 +874,7 @@ namespace JinEngine
 			void Initialize(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final {}
 			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
 			{
-				JImGuiImpl::Text(pInfo->Name());
+				DisplayPropertyName(pInfo);
 				ImGui::SameLine();
 
 				T value = pInfo->Get<T>(obj);
@@ -748,7 +946,7 @@ namespace JinEngine
 		{
 		public:
 			void Initialize(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
-			{ 
+			{
 			}
 			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
 			{
@@ -766,7 +964,7 @@ namespace JinEngine
 					if (JImGuiImpl::BeginCombo(comboLabel, enumInfo->ElementName(enumValue).c_str(), ImGuiComboFlags_HeightLarge))
 					{
 						uint enumCount = enumInfo->GetEnumCount();
-						for(uint i = 0; i < enumCount; ++i)
+						for (uint i = 0; i < enumCount; ++i)
 						{
 							const bool isSelected = (selectedIndex == i);
 							if (JImGuiImpl::Selectable(enumInfo->ElementName(enumInfo->EnumValue(i)), isSelected))
@@ -786,92 +984,75 @@ namespace JinEngine
 			}
 		};
 
-		//GuiTable 
-		class JGuiTableHandle : public JGuiPropertyGroupHandle
-		{
+		//list is array  type
+		template<typename T>
+		class JGuiListHandle : public JGuiPropertyWidgetHandle, public JGuiPropertySetInterface
+		{ 
 		private:
-			bool isOpen = false;
-			uint rowIndex = 0;
-			Core::JGuiFlag flag = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersV |
-				ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody;
+			using ValueType = Core::RemoveAll_T<typename Core::StdArrayContainerDetermine<T>::ValueType>;
 		private:
-			static const ImGuiTableColumnFlags_ columnDefaultFlag = ImGuiTableColumnFlags_WidthStretch;
+			T container;  
+		private:
+			int openIndex = -1;
+		private: 
+			//모든 JIdenfier를 상속받는 object는 Factory에서 생성되며
+			//Instance는 ownerPtr로 typeInfo class에 저장되고 pointer를 반환한다
+			using AddElementF = Core::JSFunctorType<Core::JIdentifier*, Core::JIdentifier*>;
+		private:
+			Core::J_GUI_LIST_TYPE listType;
+			bool canDisplayElementGui; 
+			AddElementF::Functor* addElementF = nullptr;
 		public:
-			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo, JGuiPropertyWidgetHandle* widgetHandle)final
+			void Initialize(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
 			{
-				Core::JGuiGroupInfo* groupInfo = Core::JGuiGroupMap::GetGuiGroupInfo(pInfo->GetOptionInfo()->GetWidgetInfo()->GetGroupKey());
-				if (groupInfo == nullptr || groupInfo->GetGuiGroupType() != Core::J_GUI_GROUP_TYPE::TABLE)
-					return;
-
-				Core::JGuiTableInfo* tableInfo = static_cast<Core::JGuiTableInfo*>(groupInfo);
-				if (rowIndex == 0)
-					Begin(pInfo, tableInfo);
-
-				if (isOpen)
+				Core::JGuiListInfo* lsitInfo = static_cast<Core::JGuiListInfo*>(pInfo->GetOptionInfo()->GetWidgetInfo());
+				listType = lsitInfo->GetListType();
+				canDisplayElementGui = lsitInfo->CanDisplayElementGui(); 
+				addElementF = lsitInfo->GetAddElementFunctor(); 
+			}
+			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo) final
+			{
+				container = pInfo->Get<T>(obj);
+				DisplayPropertyName(pInfo);
+				ImGui::BeginGroup();
+				ImGui::SetNextWindowSize(JImGuiImpl::GetClientWindowSize() * 0.3f);
+				const std::string listLabel = "##GulList" + GetUniqueLabel(obj, pInfo);
+				if (JImGuiImpl::BeginListBox(listLabel))
 				{
-					uint i = 0;
-					JImGuiImpl::TableNextRow();
-					if (tableInfo->IsFirstColunmGuide())
+					const uint containerCount = (uint)container.size();		
+					for (uint i = 0; i < containerCount; ++i)
 					{
-						JImGuiImpl::TableSetColumnIndex(0);
-						JImGuiImpl::Text(pInfo->Name());
-						widgetHandle->SetPrintTitle(false);
-						++i;
+						JImGuiImpl::Text(JCUtil::WstrToU8Str(container[i]->GetName()));
+						if (canDisplayElementGui)
+						{
+							const Core::PropertyVec paramVec = container[i]->GetTypeInfo().GetPropertyVec();
+							for (const auto& parameter : paramVec)
+							{
+								ImGui::SameLine();
+								auto widget = MakePropertyHandle(parameter);
+								if (widget != nullptr)
+								{
+									widget->SetDisplayPropertyNameTrigger(false);
+									widget->Initialize(container[i], parameter);
+									widget->Update(container[i], parameter);
+								} 
+							} 
+						}
 					}
-
-					const uint columnCount = tableInfo->GetColumnCount();
-					for (; i < columnCount; ++i)
-					{
-						JImGuiImpl::TableSetColumnIndex(i);
-						widgetHandle->Update(obj, pInfo);
-					}
-					++rowIndex;
-					if (tableInfo->GetRowCount() == rowIndex)
-						End();
+					JImGuiImpl::EndListBox();
 				}
-			}
-		private:
-			void Begin(Core::JPropertyInfo* pInfo, Core::JGuiTableInfo* tableInfo)
-			{
-				const uint columnCount = tableInfo->GetColumnCount();
-				isOpen = JImGuiImpl::BeginTable("##GuiTable" + tableInfo->GetGroupName(), columnCount, flag);
-				if (isOpen)
+			 
+				if (listType == Core::J_GUI_LIST_TYPE::DYNAMIC)
 				{
-					for (uint i = 0; i < columnCount; ++i)
-						JImGuiImpl::TableSetupColumn(tableInfo->GetColumnGuide(i), columnDefaultFlag);
-					JImGuiImpl::TableHeadersRow();
+					if (JImGuiImpl::Button("Add New Object"))
+						(*addElementF)(obj);
 				}
-			}
-			void End()
-			{
-				JImGuiImpl::EndTable();
-				isOpen = false;
-				rowIndex = 0;
-			}
-		};
-		class JGuiEnumTriggerHandle : public JGuiPropertyGroupHandle
-		{
-		public:
-			void Update(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo, JGuiPropertyWidgetHandle* widgetHandle)final
-			{
-				Core::JGuiWidgetInfo* widgetInfo = pInfo->GetOptionInfo()->GetWidgetInfo();
-				Core::JGuiGroupInfo* groupInfo = Core::JGuiGroupMap::GetGuiGroupInfo(widgetInfo->GetGroupKey());
-				if (groupInfo == nullptr || groupInfo->GetGuiGroupType() != Core::J_GUI_GROUP_TYPE::ENUM_TRIGGER)
-					return;
-
-				Core::JGuiEnumTriggerInfo* enumTriggerInfo = static_cast<Core::JGuiEnumTriggerInfo*>(groupInfo);
-				Core::JPropertyInfo* propertyInfo = pInfo->GetTypeInfo()->GetProperty(enumTriggerInfo->GetParamName());
-				if (propertyInfo == nullptr || propertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
-					return;
-				 
-				Core::JGuiEnumTriggerGroupMemberInfoHandle* memberHandle = static_cast<Core::JGuiEnumTriggerGroupMemberInfoHandle*>(widgetInfo->GetGroupMemberInfo());
-				if (memberHandle->OnTrigger(propertyInfo->UnsafeGet<Core::JEnum>(obj)))
-					widgetHandle->Update(obj, pInfo);
+				ImGui::EndGroup();
 			}
 		};
 #pragma endregion
-
 #pragma region Method
+ 
 		template<typename T>
 		class JGuiGetMethod : public JGuiMethodWidgetHandle
 		{
@@ -952,6 +1133,344 @@ namespace JinEngine
 		};
 #pragma endregion
 
+		static std::unique_ptr<JGuiPropertyWidgetHandle> MakePropertyHandle(Core::JPropertyInfo* pInfo)
+		{
+			Core::JPropertyOptionInfo* opInfo = pInfo->GetOptionInfo();
+			Core::JParameterHint pHint = pInfo->GetHint();
+			Core::J_PARAMETER_TYPE pType = pHint.jDataEnum;
+
+			switch (opInfo->GetWidgetInfo()->GetSupportWidgetType())
+			{
+			case J_GUI_WIDGET_INPUT:
+			{
+				if (pType == Core::J_PARAMETER_TYPE::Int)
+					return std::make_unique<JGuiInputHandle<int>>();
+				else if (pType == Core::J_PARAMETER_TYPE::Float)
+					return std::make_unique<JGuiInputHandle<float>>();
+				else if (pType == Core::J_PARAMETER_TYPE::String)
+					return std::make_unique<JGuiInputHandle<std::string>>();
+				else if (pType == Core::J_PARAMETER_TYPE::JVector2)
+				{
+					if (typeid(JVector2<int>).name() == pHint.name || typeid(JVector2<uint>).name() == pHint.name)
+						return std::make_unique<JGuiInputHandle<JVector2<int>>>();
+					else if (typeid(JVector2<float>).name() == pHint.name)
+						return std::make_unique<JGuiInputHandle<JVector2<float>>>();
+					else if (typeid(JVector2<std::string>).name() == pHint.name)
+						return std::make_unique<JGuiInputHandle<JVector2<std::string>>>();
+				}
+				else if (pType == Core::J_PARAMETER_TYPE::JVector3)
+				{
+					if (typeid(JVector3<int>).name() == pHint.name || typeid(JVector3<uint>).name() == pHint.name)
+						return std::make_unique<JGuiInputHandle<JVector3<int>>>();
+					else if (typeid(JVector3<float>).name() == pHint.name)
+						return std::make_unique<JGuiInputHandle<JVector3<float>>>();
+					else if (typeid(JVector3<std::string>).name() == pHint.name)
+						return std::make_unique<JGuiInputHandle<JVector3<std::string>>>();
+				}
+				else if (pType == Core::J_PARAMETER_TYPE::JVector4)
+				{
+					if (typeid(JVector4<int>).name() == pHint.name || typeid(JVector4<uint>).name() == pHint.name)
+						return std::make_unique<JGuiInputHandle<JVector4<int>>>();
+					else if (typeid(JVector4<float>).name() == pHint.name)
+						return std::make_unique<JGuiInputHandle<JVector4<float>>>();
+					else if (typeid(JVector4<std::string>).name() == pHint.name)
+						return std::make_unique<JGuiInputHandle<JVector4<std::string>>>();
+				}
+				else if (pType == Core::J_PARAMETER_TYPE::XMInt2)
+					return std::make_unique<JGuiInputHandle<DirectX::XMINT2>>();
+				else if (pType == Core::J_PARAMETER_TYPE::XMInt3)
+					return std::make_unique<JGuiInputHandle<DirectX::XMINT3>>();
+				else if (pType == Core::J_PARAMETER_TYPE::XMInt4)
+					return std::make_unique<JGuiInputHandle<DirectX::XMINT4>>();
+				else if (pType == Core::J_PARAMETER_TYPE::XMFloat2)
+					return std::make_unique<JGuiInputHandle<DirectX::XMFLOAT2>>();
+				else if (pType == Core::J_PARAMETER_TYPE::XMFloat3)
+					return std::make_unique<JGuiInputHandle<DirectX::XMFLOAT3>>();
+				else if (pType == Core::J_PARAMETER_TYPE::XMFloat4)
+					return std::make_unique<JGuiInputHandle<DirectX::XMFLOAT4>>();
+				break;
+			}
+			case J_GUI_WIDGET_CHECKBOX:
+			{
+				if (pType == Core::J_PARAMETER_TYPE::Bool)
+					return std::make_unique<JGuiCheckBoxHandle>();
+				break;
+			}
+			case J_GUI_WIDGET_SLIDER:
+			{
+				if (pType == Core::J_PARAMETER_TYPE::Int)
+					return std::make_unique<JGuiSliderHandle<int>>();
+				else if (pType == Core::J_PARAMETER_TYPE::Float)
+					return std::make_unique<JGuiSliderHandle<float>>();
+				break;
+			}
+			case J_GUI_WIDGET_COLOR_PICKER:
+			{
+				if (pType == Core::J_PARAMETER_TYPE::XMFloat4)
+					return std::make_unique<JGuiColorPickerHandle<DirectX::XMFLOAT4>>();
+				else if (pType == Core::J_PARAMETER_TYPE::JVector4)
+					return std::make_unique<JGuiColorPickerHandle<JVector4<float>>>();
+				else if (pType == Core::J_PARAMETER_TYPE::XMFloat3)
+					return std::make_unique<JGuiColorPickerHandle<DirectX::XMFLOAT3>>();
+				else if (pType == Core::J_PARAMETER_TYPE::JVector3)
+					return std::make_unique<JGuiColorPickerHandle<JVector3<float>>>();
+				break;
+			}
+			case J_GUI_WIDGET_SELECTOR:
+			{
+				Core::JTypeInfo* typeinfo = nullptr;
+				bool isVector = false;
+				if (pType == Core::J_PARAMETER_TYPE::STD_VECTOR)
+					isVector = true;
+
+				//if success isA casting
+				//exe downcast
+				typeinfo = Core::JReflectionInfo::Instance().FindTypeInfo(pHint.valueTypeFullName);
+				if (typeinfo != nullptr)
+				{
+					if (typeinfo->IsA<JAnimationClip>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiMultiSelectorHandle<std::vector<JAnimationClip*>>>();
+						else
+							return std::make_unique<JGuiSingleSelectorHandle<JAnimationClip*>>();
+					}
+					else if (typeinfo->IsA<JAnimationController>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiMultiSelectorHandle<std::vector<JAnimationController*>>>();
+						else
+							return std::make_unique<JGuiSingleSelectorHandle<JAnimationController*>>();
+					}
+					else if (typeinfo->IsA<JMaterial>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiMultiSelectorHandle<std::vector<JMaterial*>>>();
+						else
+							return std::make_unique<JGuiSingleSelectorHandle<JMaterial*>>();
+					}
+					else if (typeinfo->IsA<JMeshGeometry>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiMultiSelectorHandle<std::vector<JMeshGeometry*>>>();
+						else
+							return std::make_unique<JGuiSingleSelectorHandle<JMeshGeometry*>>();
+					}
+					else if (typeinfo->IsA<JStaticMeshGeometry>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiMultiSelectorHandle<std::vector<JStaticMeshGeometry*>>>();
+						else
+							return std::make_unique<JGuiSingleSelectorHandle<JStaticMeshGeometry*>>();
+					}
+					else if (typeinfo->IsA<JSkinnedMeshGeometry>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiMultiSelectorHandle<std::vector<JSkinnedMeshGeometry*>>>();
+						else
+							return std::make_unique<JGuiSingleSelectorHandle<JSkinnedMeshGeometry*>>();
+					}
+					else if (typeinfo->IsA<JScene>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiMultiSelectorHandle<std::vector<JScene*>>>();
+						else
+							return std::make_unique<JGuiSingleSelectorHandle<JScene*>>();
+					}
+					else if (typeinfo->IsA<JShader>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiMultiSelectorHandle<std::vector<JShader*>>>();
+						else
+							return std::make_unique<JGuiSingleSelectorHandle<JShader*>>();
+					}
+					else if (typeinfo->IsA<JSkeletonAsset>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiMultiSelectorHandle<std::vector<JSkeletonAsset*>>>();
+						else
+							return std::make_unique<JGuiSingleSelectorHandle<JSkeletonAsset*>>();
+					}
+					else if (typeinfo->IsA<JTexture>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiMultiSelectorHandle<std::vector<JTexture*>>>();
+						else
+							return std::make_unique<JGuiSingleSelectorHandle<JTexture*>>();
+					}
+					else if (typeinfo->IsA<Core::JFSMparameter>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiMultiSelectorHandle<std::vector<Core::JFSMparameter*>>>();
+						else
+							return std::make_unique<JGuiSingleSelectorHandle<Core::JFSMparameter*>>();
+					}
+				}
+				break;
+			}
+			case J_GUI_WIDGET_READONLY_TEXT:
+			{	if (pType == Core::J_PARAMETER_TYPE::Int)
+				return std::make_unique<JGuiReadOnlyTextHandle<int>>();
+			else if (pType == Core::J_PARAMETER_TYPE::Float)
+				return std::make_unique<JGuiReadOnlyTextHandle<float>>();
+			else if (pType == Core::J_PARAMETER_TYPE::String)
+				return std::make_unique<JGuiReadOnlyTextHandle<std::string>>();
+			else if (pType == Core::J_PARAMETER_TYPE::JVector2)
+			{
+				if (typeid(JVector2<int>).name() == pHint.name || typeid(JVector2<uint>).name() == pHint.name)
+					return std::make_unique<JGuiReadOnlyTextHandle<JVector2<int>>>();
+				else if (typeid(JVector2<float>).name() == pHint.name)
+					return std::make_unique<JGuiReadOnlyTextHandle<JVector2<float>>>();
+				else if (typeid(JVector2<std::string>).name() == pHint.name)
+					return std::make_unique<JGuiReadOnlyTextHandle<JVector2<std::string>>>();
+			}
+			else if (pType == Core::J_PARAMETER_TYPE::JVector3)
+			{
+				if (typeid(JVector3<int>).name() == pHint.name || typeid(JVector3<uint>).name() == pHint.name)
+					return std::make_unique<JGuiReadOnlyTextHandle<JVector3<int>>>();
+				else if (typeid(JVector3<float>).name() == pHint.name)
+					return std::make_unique<JGuiReadOnlyTextHandle<JVector3<float>>>();
+				else if (typeid(JVector3<std::string>).name() == pHint.name)
+					return std::make_unique<JGuiReadOnlyTextHandle<JVector3<std::string>>>();
+			}
+			else if (pType == Core::J_PARAMETER_TYPE::JVector4)
+			{
+				if (typeid(JVector4<int>).name() == pHint.name || typeid(JVector4<uint>).name() == pHint.name)
+					return std::make_unique<JGuiReadOnlyTextHandle<JVector4<int>>>();
+				else if (typeid(JVector4<float>).name() == pHint.name)
+					return std::make_unique<JGuiReadOnlyTextHandle<JVector4<float>>>();
+				else if (typeid(JVector4<std::string>).name() == pHint.name)
+					return std::make_unique<JGuiReadOnlyTextHandle<JVector4<std::string>>>();
+			}
+			else if (pType == Core::J_PARAMETER_TYPE::XMInt2)
+				return std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMINT2>>();
+			else if (pType == Core::J_PARAMETER_TYPE::XMInt3)
+				return std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMINT3>>();
+			else if (pType == Core::J_PARAMETER_TYPE::XMInt4)
+				return std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMINT4>>();
+			else if (pType == Core::J_PARAMETER_TYPE::XMFloat2)
+				return std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMFLOAT2>>();
+			else if (pType == Core::J_PARAMETER_TYPE::XMFloat3)
+				return std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMFLOAT3>>();
+			else if (pType == Core::J_PARAMETER_TYPE::XMFloat4)
+				return std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMFLOAT4>>();
+			break;
+			break;
+			}
+			case J_GUI_WIDGET_ENUM_COMBO:
+			{
+				if (pType == Core::J_PARAMETER_TYPE::Enum)
+					return std::make_unique<JGuiEnumComboBoxHandle>();
+				break;
+			}
+			case J_GUI_WIDGET_LIST:
+			{
+				Core::JTypeInfo* typeinfo = nullptr;
+				if (pType != Core::J_PARAMETER_TYPE::STD_VECTOR)
+					break;
+
+				//if success isA casting
+				//exe downcast
+				typeinfo = Core::JReflectionInfo::Instance().FindTypeInfo(pHint.valueTypeFullName);
+				if (typeinfo != nullptr)
+				{
+					if (typeinfo->IsA<JAnimationClip>())
+						return std::make_unique<JGuiListHandle<std::vector<JAnimationClip*>>>();
+					else if (typeinfo->IsA<JAnimationController>())
+						return std::make_unique<JGuiListHandle<std::vector<JAnimationController*>>>();
+					else if (typeinfo->IsA<JMaterial>())
+						return std::make_unique<JGuiListHandle<std::vector<JMaterial*>>>();
+					else if (typeinfo->IsA<JMeshGeometry>())
+						return std::make_unique<JGuiListHandle<std::vector<JMeshGeometry*>>>();
+					else if (typeinfo->IsA<JStaticMeshGeometry>())
+						return std::make_unique<JGuiListHandle<std::vector<JStaticMeshGeometry*>>>();
+					else if (typeinfo->IsA<JSkinnedMeshGeometry>())
+						return std::make_unique<JGuiListHandle<std::vector<JSkinnedMeshGeometry*>>>();
+					else if (typeinfo->IsA<JScene>())
+						return std::make_unique<JGuiListHandle<std::vector<JScene*>>>();
+					else if (typeinfo->IsA<JShader>())
+						return std::make_unique<JGuiListHandle<std::vector<JShader*>>>();
+					else if (typeinfo->IsA<JSkeletonAsset>())
+						return std::make_unique<JGuiListHandle<std::vector<JSkeletonAsset*>>>();
+					else if (typeinfo->IsA<JTexture>())
+						return std::make_unique<JGuiListHandle<std::vector<JTexture*>>>();
+					else if (typeinfo->IsA<Core::JFSMcondition>())
+						return std::make_unique<JGuiListHandle<std::vector<Core::JFSMcondition*>>>();
+
+					/*else if (typeinfo->IsA<JResourceObject>())
+					{
+						if (isVector)
+							return std::make_unique<JGuiSelectorHandle<std::vector<JResourceObject*>>>();
+						else
+							return std::make_unique<JGuiSelectorHandle<JResourceObject*>>();
+					}*/
+				}
+				break;
+			}
+			default:
+				return nullptr;
+			}
+		}
+		static std::unique_ptr<JGuiMethodWidgetHandle> MakeMethodHandle(Core::JMethodInfo* mInfo)
+		{
+			Core::JMethodOptionInfo* opInfo = mInfo->GetOptionInfo();
+			Core::JParameterHint pHint = mInfo->ReturnHint();
+			Core::J_PARAMETER_TYPE pType = pHint.jDataEnum;
+			switch (opInfo->GetWidgetInfo()->GetSupportWidgetType())
+			{
+			case J_GUI_WIDGET_READONLY_TEXT:
+			{	if (pType == Core::J_PARAMETER_TYPE::Int)
+				return std::make_unique<JGuiGetMethod<int>>();
+			else if (pType == Core::J_PARAMETER_TYPE::Float)
+				return std::make_unique<JGuiGetMethod<float>>();
+			else if (pType == Core::J_PARAMETER_TYPE::String)
+				return std::make_unique<JGuiGetMethod<std::string>>();
+			else if (pType == Core::J_PARAMETER_TYPE::JVector2)
+			{
+				if (typeid(JVector2<int>).name() == pHint.name || typeid(JVector2<uint>).name() == pHint.name)
+					return std::make_unique<JGuiGetMethod<JVector2<int>>>();
+				else if (typeid(JVector2<float>).name() == pHint.name)
+					return std::make_unique<JGuiGetMethod<JVector2<float>>>();
+				else if (typeid(JVector2<std::string>).name() == pHint.name)
+					return std::make_unique<JGuiGetMethod<JVector2<std::string>>>();
+			}
+			else if (pType == Core::J_PARAMETER_TYPE::JVector3)
+			{
+				if (typeid(JVector3<int>).name() == pHint.name || typeid(JVector3<uint>).name() == pHint.name)
+					return std::make_unique<JGuiGetMethod<JVector3<int>>>();
+				else if (typeid(JVector3<float>).name() == pHint.name)
+					return std::make_unique<JGuiGetMethod<JVector3<float>>>();
+				else if (typeid(JVector3<std::string>).name() == pHint.name)
+					return std::make_unique<JGuiGetMethod<JVector3<std::string>>>();
+			}
+			else if (pType == Core::J_PARAMETER_TYPE::JVector4)
+			{
+				if (typeid(JVector4<int>).name() == pHint.name || typeid(JVector4<uint>).name() == pHint.name)
+					return std::make_unique<JGuiGetMethod<JVector4<int>>>();
+				else if (typeid(JVector4<float>).name() == pHint.name)
+					return std::make_unique<JGuiGetMethod<JVector4<float>>>();
+				else if (typeid(JVector4<std::string>).name() == pHint.name)
+					return std::make_unique<JGuiGetMethod<JVector4<std::string>>>();
+			}
+			else if (pType == Core::J_PARAMETER_TYPE::XMInt2)
+				return std::make_unique<JGuiGetMethod<DirectX::XMINT2>>();
+			else if (pType == Core::J_PARAMETER_TYPE::XMInt3)
+				return std::make_unique<JGuiGetMethod<DirectX::XMINT3>>();
+			else if (pType == Core::J_PARAMETER_TYPE::XMInt4)
+				return std::make_unique<JGuiGetMethod<DirectX::XMINT4>>();
+			else if (pType == Core::J_PARAMETER_TYPE::XMFloat2)
+				return std::make_unique<JGuiGetMethod<DirectX::XMFLOAT2>>();
+			else if (pType == Core::J_PARAMETER_TYPE::XMFloat3)
+				return  std::make_unique<JGuiGetMethod<DirectX::XMFLOAT3>>();
+			else if (pType == Core::J_PARAMETER_TYPE::XMFloat4)
+				return std::make_unique<JGuiGetMethod<DirectX::XMFLOAT4>>();
+			break;
+			}
+			default:
+				return nullptr;
+			}
+		}
+
 		void JReflectionGuiWidgetHelper::UpdatePropertyGuiWidget(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
 		{
 			if (obj == nullptr)
@@ -960,237 +1479,9 @@ namespace JinEngine
 			auto widgetHandle = guiPWidgetHandleMap.find(pInfo->Name());
 			if (widgetHandle == guiPWidgetHandleMap.end())
 			{
-				Core::JPropertyOptionInfo* opInfo = pInfo->GetOptionInfo();
-				Core::JParameterHint pHint = pInfo->GetHint();
-				Core::J_PARAMETER_TYPE pType = pHint.jDataEnum;
-
-				switch (opInfo->GetWidgetInfo()->GetSupportWidgetType())
-				{
-				case J_GUI_WIDGET_INPUT:
-				{
-					if (pType == Core::J_PARAMETER_TYPE::Int)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<int>>());
-					else if (pType == Core::J_PARAMETER_TYPE::Float)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<float>>());
-					else if (pType == Core::J_PARAMETER_TYPE::String)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<std::string>>());
-					else if (pType == Core::J_PARAMETER_TYPE::JVector2)
-					{
-						if (typeid(JVector2<int>).name() == pHint.name || typeid(JVector2<uint>).name() == pHint.name)
-							guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<JVector2<int>>>());
-						else if (typeid(JVector2<float>).name() == pHint.name)
-							guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<JVector2<float>>>());
-						else if (typeid(JVector2<std::string>).name() == pHint.name)
-							guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<JVector2<std::string>>>());
-					}
-					else if (pType == Core::J_PARAMETER_TYPE::JVector3)
-					{
-						if (typeid(JVector3<int>).name() == pHint.name || typeid(JVector3<uint>).name() == pHint.name)
-							guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<JVector3<int>>>());
-						else if (typeid(JVector3<float>).name() == pHint.name)
-							guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<JVector3<float>>>());
-						else if (typeid(JVector3<std::string>).name() == pHint.name)
-							guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<JVector3<std::string>>>());
-					}
-					else if (pType == Core::J_PARAMETER_TYPE::JVector4)
-					{
-						if (typeid(JVector4<int>).name() == pHint.name || typeid(JVector4<uint>).name() == pHint.name)
-							guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<JVector4<int>>>());
-						else if (typeid(JVector4<float>).name() == pHint.name)
-							guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<JVector4<float>>>());
-						else if (typeid(JVector4<std::string>).name() == pHint.name)
-							guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<JVector4<std::string>>>());
-					}
-					else if (pType == Core::J_PARAMETER_TYPE::XMInt2)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<DirectX::XMINT2>>());
-					else if (pType == Core::J_PARAMETER_TYPE::XMInt3)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<DirectX::XMINT3>>());
-					else if (pType == Core::J_PARAMETER_TYPE::XMInt4)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<DirectX::XMINT4>>());
-					else if (pType == Core::J_PARAMETER_TYPE::XMFloat2)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<DirectX::XMFLOAT2>>());
-					else if (pType == Core::J_PARAMETER_TYPE::XMFloat3)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<DirectX::XMFLOAT3>>());
-					else if (pType == Core::J_PARAMETER_TYPE::XMFloat4)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiInputHandle<DirectX::XMFLOAT4>>());
-					break;
-				}
-				case J_GUI_WIDGET_CHECKBOX:
-				{
-					if (pType == Core::J_PARAMETER_TYPE::Bool)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiCheckBoxHandle>());
-					break;
-				}
-				case J_GUI_WIDGET_SLIDER:
-				{
-					if (pType == Core::J_PARAMETER_TYPE::Int)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSliderHandle<int>>());
-					else if (pType == Core::J_PARAMETER_TYPE::Float)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSliderHandle<float>>());
-					break;
-				}
-				case J_GUI_WIDGET_COLOR_PICKER:
-				{
-					if (pType == Core::J_PARAMETER_TYPE::XMFloat4)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiColorPickerHandle<DirectX::XMFLOAT4>>());
-					else if (pType == Core::J_PARAMETER_TYPE::JVector4)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiColorPickerHandle<JVector4<float>>>());
-					else if (pType == Core::J_PARAMETER_TYPE::XMFloat3)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiColorPickerHandle<DirectX::XMFLOAT3>>());
-					else if (pType == Core::J_PARAMETER_TYPE::JVector3)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiColorPickerHandle<JVector3<float>>>());
-					break;
-				}
-				case J_GUI_WIDGET_SELECTOR:
-				{
-					Core::JTypeInfo* typeinfo = nullptr;
-					bool isVector = false;
-					if (pType == Core::J_PARAMETER_TYPE::STD_VECTOR)
-						isVector = true;
-
-					//if success isA casting
-					//exe downcast
-					typeinfo = Core::JReflectionInfo::Instance().FindTypeInfo(pHint.valueTypeFullName);
-					if (typeinfo != nullptr)
-					{
-						if (typeinfo->IsA<JAnimationClip>())
-						{
-							if (isVector)
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiMultiSelectorHandle<std::vector<JAnimationClip*>>>());
-							else
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSingleSelectorHandle<JAnimationClip*>>());
-						}
-						else if (typeinfo->IsA<JAnimationController>())
-						{
-							if (isVector)
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiMultiSelectorHandle<std::vector<JAnimationController*>>>());
-							else
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSingleSelectorHandle<JAnimationController*>>());
-						}
-						else if (typeinfo->IsA<JMaterial>())
-						{
-							if (isVector)
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiMultiSelectorHandle<std::vector<JMaterial*>>>());
-							else
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSingleSelectorHandle<JMaterial*>>());
-						}
-						else if (typeinfo->IsA<JMeshGeometry>())
-						{
-							if (isVector)
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiMultiSelectorHandle<std::vector<JMeshGeometry*>>>());
-							else
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSingleSelectorHandle<JMeshGeometry*>>());
-						}
-						else if (typeinfo->IsA<JStaticMeshGeometry>())
-						{
-							if (isVector)
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiMultiSelectorHandle<std::vector<JStaticMeshGeometry*>>>());
-							else
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSingleSelectorHandle<JStaticMeshGeometry*>>());
-						}
-						else if (typeinfo->IsA<JSkinnedMeshGeometry>())
-						{
-							if (isVector)
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiMultiSelectorHandle<std::vector<JSkinnedMeshGeometry*>>>());
-							else
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSingleSelectorHandle<JSkinnedMeshGeometry*>>());
-						}
-						else if (typeinfo->IsA<JScene>())
-						{
-							if (isVector)
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiMultiSelectorHandle<std::vector<JScene*>>>());
-							else
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSingleSelectorHandle<JScene*>>());
-						}
-						else if (typeinfo->IsA<JShader>())
-						{
-							if (isVector)
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiMultiSelectorHandle<std::vector<JShader*>>>());
-							else
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSingleSelectorHandle<JShader*>>());
-						}
-						else if (typeinfo->IsA<JSkeletonAsset>())
-						{
-							if (isVector)
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiMultiSelectorHandle<std::vector<JSkeletonAsset*>>>());
-							else
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSingleSelectorHandle<JSkeletonAsset*>>());
-						}
-						else if (typeinfo->IsA<JTexture>())
-						{
-							if (isVector)
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiMultiSelectorHandle<std::vector<JTexture*>>>());
-							else
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSingleSelectorHandle<JTexture*>>());
-						}
-						/*else if (typeinfo->IsA<JResourceObject>())
-						{
-							if (isVector)
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSelectorHandle<std::vector<JResourceObject*>>>());
-							else
-								guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiSelectorHandle<JResourceObject*>>());
-						}*/
-					}
-					break;
-				}
-				case J_GUI_WIDGET_READONLY_TEXT:
-				{	if (pType == Core::J_PARAMETER_TYPE::Int)
-					guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<int>>());
-				else if (pType == Core::J_PARAMETER_TYPE::Float)
-					guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<float>>());
-				else if (pType == Core::J_PARAMETER_TYPE::String)
-					guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<std::string>>());
-				else if (pType == Core::J_PARAMETER_TYPE::JVector2)
-				{
-					if (typeid(JVector2<int>).name() == pHint.name || typeid(JVector2<uint>).name() == pHint.name)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<JVector2<int>>>());
-					else if (typeid(JVector2<float>).name() == pHint.name)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<JVector2<float>>>());
-					else if (typeid(JVector2<std::string>).name() == pHint.name)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<JVector2<std::string>>>());
-				}
-				else if (pType == Core::J_PARAMETER_TYPE::JVector3)
-				{
-					if (typeid(JVector3<int>).name() == pHint.name || typeid(JVector3<uint>).name() == pHint.name)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<JVector3<int>>>());
-					else if (typeid(JVector3<float>).name() == pHint.name)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<JVector3<float>>>());
-					else if (typeid(JVector3<std::string>).name() == pHint.name)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<JVector3<std::string>>>());
-				}
-				else if (pType == Core::J_PARAMETER_TYPE::JVector4)
-				{
-					if (typeid(JVector4<int>).name() == pHint.name || typeid(JVector4<uint>).name() == pHint.name)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<JVector4<int>>>());
-					else if (typeid(JVector4<float>).name() == pHint.name)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<JVector4<float>>>());
-					else if (typeid(JVector4<std::string>).name() == pHint.name)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<JVector4<std::string>>>());
-				}
-				else if (pType == Core::J_PARAMETER_TYPE::XMInt2)
-					guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMINT2>>());
-				else if (pType == Core::J_PARAMETER_TYPE::XMInt3)
-					guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMINT3>>());
-				else if (pType == Core::J_PARAMETER_TYPE::XMInt4)
-					guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMINT4>>());
-				else if (pType == Core::J_PARAMETER_TYPE::XMFloat2)
-					guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMFLOAT2>>());
-				else if (pType == Core::J_PARAMETER_TYPE::XMFloat3)
-					guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMFLOAT3>>());
-				else if (pType == Core::J_PARAMETER_TYPE::XMFloat4)
-					guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiReadOnlyTextHandle<DirectX::XMFLOAT4>>());
-				break;
-				break;
-				}
-				case J_GUI_WIDGET_ENUM_COMBO:
-				{
-					if (pType == Core::J_PARAMETER_TYPE::Enum)
-						guiPWidgetHandleMap.emplace(pInfo->Name(), std::make_unique<JGuiEnumComboBoxHandle>());
-					break;
-				}
-				default:
-					break;
-				}
+				std::unique_ptr<JGuiPropertyWidgetHandle> widgetHandle = MakePropertyHandle(pInfo);
+				if (widgetHandle != nullptr)
+					guiPWidgetHandleMap.emplace(pInfo->Name(), std::move(widgetHandle));
 			}
 			if (widgetHandle == guiPWidgetHandleMap.end())
 			{
@@ -1234,63 +1525,9 @@ namespace JinEngine
 			auto widgetHandle = guiMWidgetHandleMap.find(mInfo->Name());
 			if (widgetHandle == guiMWidgetHandleMap.end())
 			{
-				Core::JMethodOptionInfo* opInfo = mInfo->GetOptionInfo();
-				Core::JParameterHint pHint = mInfo->ReturnHint();
-				Core::J_PARAMETER_TYPE pType = pHint.jDataEnum;
-				switch (opInfo->GetWidgetInfo()->GetSupportWidgetType())
-				{
-				case J_GUI_WIDGET_READONLY_TEXT:
-				{	if (pType == Core::J_PARAMETER_TYPE::Int)
-					guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<int>>());
-				else if (pType == Core::J_PARAMETER_TYPE::Float)
-					guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<float>>());
-				else if (pType == Core::J_PARAMETER_TYPE::String)
-					guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<std::string>>());
-				else if (pType == Core::J_PARAMETER_TYPE::JVector2)
-				{
-					if (typeid(JVector2<int>).name() == pHint.name || typeid(JVector2<uint>).name() == pHint.name)
-						guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<JVector2<int>>>());
-					else if (typeid(JVector2<float>).name() == pHint.name)
-						guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<JVector2<float>>>());
-					else if (typeid(JVector2<std::string>).name() == pHint.name)
-						guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<JVector2<std::string>>>());
-				}
-				else if (pType == Core::J_PARAMETER_TYPE::JVector3)
-				{
-					if (typeid(JVector3<int>).name() == pHint.name || typeid(JVector3<uint>).name() == pHint.name)
-						guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<JVector3<int>>>());
-					else if (typeid(JVector3<float>).name() == pHint.name)
-						guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<JVector3<float>>>());
-					else if (typeid(JVector3<std::string>).name() == pHint.name)
-						guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<JVector3<std::string>>>());
-				}
-				else if (pType == Core::J_PARAMETER_TYPE::JVector4)
-				{
-					if (typeid(JVector4<int>).name() == pHint.name || typeid(JVector4<uint>).name() == pHint.name)
-						guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<JVector4<int>>>());
-					else if (typeid(JVector4<float>).name() == pHint.name)
-						guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<JVector4<float>>>());
-					else if (typeid(JVector4<std::string>).name() == pHint.name)
-						guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<JVector4<std::string>>>());
-				}
-				else if (pType == Core::J_PARAMETER_TYPE::XMInt2)
-					guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<DirectX::XMINT2>>());
-				else if (pType == Core::J_PARAMETER_TYPE::XMInt3)
-					guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<DirectX::XMINT3>>());
-				else if (pType == Core::J_PARAMETER_TYPE::XMInt4)
-					guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<DirectX::XMINT4>>());
-				else if (pType == Core::J_PARAMETER_TYPE::XMFloat2)
-					guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<DirectX::XMFLOAT2>>());
-				else if (pType == Core::J_PARAMETER_TYPE::XMFloat3)
-					guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<DirectX::XMFLOAT3>>());
-				else if (pType == Core::J_PARAMETER_TYPE::XMFloat4)
-					guiMWidgetHandleMap.emplace(mInfo->Name(), std::make_unique<JGuiGetMethod<DirectX::XMFLOAT4>>());
-				break;
-				break;
-				}
-				default:
-					break;
-				}
+				std::unique_ptr<JGuiMethodWidgetHandle> widgetHandle = MakeMethodHandle(mInfo);
+				if (widgetHandle != nullptr)
+					guiMWidgetHandleMap.emplace(mInfo->Name(), std::move(widgetHandle));
 			}
 			if (widgetHandle == guiMWidgetHandleMap.end())
 			{

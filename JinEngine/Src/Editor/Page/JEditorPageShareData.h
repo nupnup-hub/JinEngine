@@ -34,11 +34,11 @@ namespace JinEngine
 			static uint GetPageGuiWindowID(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 			static uint GetPageDockSpaceID(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 			static JEditorOpenPageEvStruct GetOpendPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept;
-			static Core::JUserPtr<JObject> GetSelectedObj(const J_EDITOR_PAGE_TYPE pageType)noexcept;
+			static Core::JUserPtr<Core::JIdentifier> GetSelectedObj(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 			static J_EDITOR_PAGE_FLAG GetPageFlag(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 			static size_t* GetDragGuidPtr(const J_EDITOR_PAGE_TYPE pageType)noexcept; 
 			static void SetPageOpenData(JEditorOpenPageEvStruct* evStruct)noexcept;
-			static void SetSelectObj(const J_EDITOR_PAGE_TYPE pageType, const Core::JUserPtr<JObject>& selectObj)noexcept;
+			static void SetSelectObj(const J_EDITOR_PAGE_TYPE pageType, const Core::JUserPtr<Core::JIdentifier>& selectObj)noexcept;
 		public:
 			static void Clear()noexcept;
 		private:

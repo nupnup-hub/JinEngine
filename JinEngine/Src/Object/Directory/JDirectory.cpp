@@ -188,7 +188,7 @@ namespace JinEngine
 			return false;
 		 
 		Clear();
-		JResourceManager::Instance().DirectoryStorageInterface()->RemoveJDirectory(*this);
+		//JResourceManager::Instance().DirectoryStorageInterface()->RemoveJDirectory(*this);
 		return true;
 	}
 	void JDirectory::Clear()
@@ -232,7 +232,7 @@ namespace JinEngine
 	{
 		if (parent != nullptr)
 			parent->children.push_back(this);
-		return JResourceManager::Instance().DirectoryStorageInterface()->AddJDirectory(*this);
+		return static_cast<Core::JTypeCashInterface<JDirectory>*>(&JResourceManager::Instance())->AddType(this);
 	}
 	bool JDirectory::DeRegisterCashData()noexcept
 	{
@@ -250,7 +250,7 @@ namespace JinEngine
 				}
 			}
 		}
-		return JResourceManager::Instance().DirectoryStorageInterface()->RemoveJDirectory(*this);
+		return static_cast<Core::JTypeCashInterface<JDirectory>*>(&JResourceManager::Instance())->RemoveType(this);
 	}
 	Core::J_FILE_IO_RESULT JDirectory::StoreObject(JDirectory* dir)
 	{

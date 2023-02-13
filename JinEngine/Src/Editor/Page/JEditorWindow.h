@@ -14,16 +14,15 @@ namespace JinEngine
 		class JEditorWindow : public JEditor
 		{ 
 		protected:
-			using EventFunctor = Core::JFunctor<void, JEditorWindow&, J_EDITOR_EVENT, JEditorEvStruct&>;
-			using EventFunctorBinder = Core::JBindHandle <EventFunctor, JEditorWindow&, J_EDITOR_EVENT, JEditorEvStruct&>;
+			using EventF= Core::JSFunctorType<void, JEditorWindow&, J_EDITOR_EVENT, JEditorEvStruct&>; 
 		private:
-			static EventFunctor* evFunctor;
+			static EventF::Functor* evFunctor;
 		private: 
 			const J_EDITOR_PAGE_TYPE ownerPageType; 
 			bool isWindowOpen = false;
 			J_EDITOR_WINDOW_FLAG windowFlag;
 		private:
-			std::unique_ptr<JEditorWindowDockUpdateHelper> dockUpdateHelper;
+			std::unique_ptr<JEditorWindowDockUpdateHelper> dockUpdateHelper = nullptr;
 		public:
 			JEditorWindow(const std::string name,
 				std::unique_ptr<JEditorAttribute> attribute, 
@@ -42,21 +41,24 @@ namespace JinEngine
 			void CloseWindow();
 		protected:
 			void UpdateMouseClick();
-			void UpdateDocking();
+			void UpdateDocking(); 
 		protected:
-			void SetSelectableColor(const float factor)noexcept;
-			void SetButtonColor(const float factor)noexcept; 
-			void SetTreeNodeColor(const float factor)noexcept; 
+			void SetSelectableColor(const JVector4<float>& factor)noexcept;
+			void SetButtonColor(const JVector4<float>& factor)noexcept;
+			void SetTreeNodeColor(const JVector4<float>& factor)noexcept; 
 		protected:
 			bool RegisterEventListener(const J_EDITOR_EVENT evType);
 			bool RegisterEventListener(std::vector<J_EDITOR_EVENT>& evType);
 			void DeRegisterEventListener(const J_EDITOR_EVENT evType);
 			void DeRegisterListener();
 		protected:
-			void RequestOpenPage(const JEditorOpenPageEvStruct& evStruct);
+			void RequestOpenPage(const JEditorOpenPageEvStruct& evStruct, const bool doAct);
 			void RequestClosePage(const JEditorClosePageEvStruct& evStruct); 
 			void RequestSelectObject(const JEditorSelectObjectEvStruct& evStruct);
 			void RequestDeSelectObject(const JEditorSelectObjectEvStruct& evStruct); 
+			void RequesBind(const std::string& label, 
+				std::unique_ptr<Core::JBindHandleBase>&& doHandle, 
+				std::unique_ptr<Core::JBindHandleBase>&& undoHandle);
 		protected:
 			void DoSetOpen()noexcept override;
 			void DoSetClose()noexcept override;

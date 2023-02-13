@@ -103,8 +103,7 @@ namespace JinEngine
 		//Intersect by scene space spatial
 		JGameObject* IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
 	public:
-		JSceneCashInterface* CashInterface() final;
-		JSceneGameObjInterface* GameObjInterface() final;
+		JSceneCashInterface* CashInterface() final; 
 		JSceneCompInterface* CompInterface()final;
 		JSceneRegisterInterface* RegisterInterface() final;
 		JSceneFrameInterface* AppInterface() final;
@@ -124,8 +123,8 @@ namespace JinEngine
 		const std::vector<JGameObject*>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept final;
 		const std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)const noexcept final;
 	private:
-		bool AddGameObject(JGameObject& newGameObject)noexcept final;
-		bool RemoveGameObject(JGameObject& gameObj)noexcept final;
+		bool AddType(JGameObject* newGameObject)noexcept final;
+		bool RemoveType(JGameObject* gameObj)noexcept final;
 	private:
 		void SetAnimation()noexcept final;
 		void SetMainCamera(JCamera* mainCam)noexcept final;

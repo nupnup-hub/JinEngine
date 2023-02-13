@@ -1,6 +1,6 @@
 #include"JEditorPageShareData.h" 
 #include"../Page/JEditorPage.h"
-#include"../../Object/JObject.h"
+#include"../../Core/Identity/JIdentifier.h"
 #include"../../Object/GameObject/JGameObject.h" 
 #include<vector>
 
@@ -15,8 +15,8 @@ namespace JinEngine
 			const uint guiWindowID;
 			const uint dockSpaceID;
 		public:
-			Core::JUserPtr<JObject> openObject;
-			Core::JUserPtr<JObject> selectObj;
+			Core::JUserPtr<Core::JIdentifier> openObject;
+			Core::JUserPtr<Core::JIdentifier> selectObj;
 			std::unique_ptr<GetPageFlagF::Functor> getFageFlagF;
 			size_t dragGuid = 0; 
 		public: 
@@ -41,7 +41,7 @@ namespace JinEngine
 		void JEditorPageShareData::ClearPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
 			auto pagedata = pageData[(int)pageType].get();
-			if (pagedata->selectObj.IsValid() && pagedata->selectObj->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT)
+			if (pagedata->selectObj.IsValid() && pagedata->selectObj->GetTypeInfo().IsA<JGameObject>())
 				SetSelectedGameObjectTrigger(static_cast<JGameObject*>(pagedata->selectObj.Get()), false);
 			pagedata->openObject.Clear();
 			pagedata->selectObj.Clear();
@@ -72,7 +72,7 @@ namespace JinEngine
 		{ 
 			return JEditorOpenPageEvStruct{ pageType, pageData[(int)pageType]->openObject };
 		}
-		Core::JUserPtr<JObject> JEditorPageShareData::GetSelectedObj(const J_EDITOR_PAGE_TYPE pageType)noexcept
+		Core::JUserPtr<Core::JIdentifier> JEditorPageShareData::GetSelectedObj(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
 			return pageData[(int)pageType]->selectObj;
 		}
@@ -86,15 +86,15 @@ namespace JinEngine
 		}
 		void JEditorPageShareData::SetPageOpenData(JEditorOpenPageEvStruct* evStruct)noexcept
 		{ 
-			pageData[(int)evStruct->pageType]->openObject = evStruct->openSelected;
+			pageData[(int)evStruct->pageType]->openObject = evStruct->GetOpenSeleted();
 		}
-		void JEditorPageShareData::SetSelectObj(const J_EDITOR_PAGE_TYPE pageType, const Core::JUserPtr<JObject>& selectObj)noexcept
+		void JEditorPageShareData::SetSelectObj(const J_EDITOR_PAGE_TYPE pageType, const Core::JUserPtr<Core::JIdentifier>& selectObj)noexcept
 		{ 
 			auto page = pageData[(int)pageType].get();
-			if (page->selectObj.IsValid() && page->selectObj->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT)
+			if (page->selectObj.IsValid() && page->selectObj->GetTypeInfo().IsA<JGameObject>())
 				SetSelectedGameObjectTrigger(static_cast<JGameObject*>(page->selectObj.Get()), false);
 			page->selectObj = selectObj;
-			if (page->selectObj.IsValid() && page->selectObj->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT)
+			if (page->selectObj.IsValid() && page->selectObj->GetTypeInfo().IsA<JGameObject>())
 				SetSelectedGameObjectTrigger(static_cast<JGameObject*>(page->selectObj.Get()), true);
 		}
 		void JEditorPageShareData::Clear()noexcept

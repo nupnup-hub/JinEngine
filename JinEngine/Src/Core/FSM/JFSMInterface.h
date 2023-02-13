@@ -29,7 +29,7 @@ namespace JinEngine
 		private: 
 			virtual void Clear() = 0;
 		protected:
-			JFSMInterface(const std::wstring& name, const size_t guid);
+			JFSMInterface(const JFSMIdentifierInitData& initData);
 		};
 	}
 }

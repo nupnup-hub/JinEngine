@@ -4,8 +4,7 @@
 #include"JAnimationFSMtransition.h" 
 #include"../JFSMfactory.h" 
 #include"../../Time/JGameTimer.h" 
-#include"../../File/JFileIOHelper.h"
-#include"../../../Object/Resource/AnimationClip/JAnimationClip.h"
+#include"../../File/JFileIOHelper.h" 
 #include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"
 #include"../../../Object/Resource/JResourceManager.h"
 #include<fstream>
@@ -54,6 +53,10 @@ namespace JinEngine
 			if (clip != nullptr)
 				skeletonVec.push_back(clip->GetClipSkeletonAsset());
 		}
+		JAnimationClip* JAnimationFSMstateClip::GetClip()const noexcept
+		{
+			return clip;
+		}
 		void JAnimationFSMstateClip::SetClip(JAnimationClip* newClip)noexcept
 		{
 			CallOffResourceReference(clip);
@@ -85,12 +88,12 @@ namespace JinEngine
 			JFileIOHelper::StoreHasObjectIden(stream, clip);
 			return res;
 		}
-		J_FILE_IO_RESULT JAnimationFSMstateClip::LoadData(std::wifstream& stream, JFSMconditionStorageUserAccess& iConditionUser)
+		J_FILE_IO_RESULT JAnimationFSMstateClip::LoadData(std::wifstream& stream)
 		{
 			if (!stream.is_open())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-			J_FILE_IO_RESULT res = JAnimationFSMstate::LoadData(stream, iConditionUser);
+			J_FILE_IO_RESULT res = JAnimationFSMstate::LoadData(stream);
 			Core::JIdentifier* clip = JFileIOHelper::LoadHasObjectIden(stream);
 			if (clip != nullptr && clip->GetTypeInfo().IsA(JAnimationClip::StaticTypeInfo()))
 				SetClip(static_cast<JAnimationClip*>(clip));
@@ -99,7 +102,7 @@ namespace JinEngine
 		}
 		void JAnimationFSMstateClip::RegisterJFunc()
 		{
-			auto createStateLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
+			auto createClipLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
 			{
 				if (initData.IsValid() && initData->GetFSMobjType() == J_FSM_OBJECT_TYPE::STATE)
 				{
@@ -111,7 +114,7 @@ namespace JinEngine
 				}
 				return nullptr;
 			};
-			JFFI<JAnimationFSMstateClip>::Register(createStateLam);
+			JFFI<JAnimationFSMstateClip>::Register(createClipLam);
 		}
 		JAnimationFSMstateClip::JAnimationFSMstateClip(const JFSMstateInitData& initData)
 			:JAnimationFSMstate(initData)

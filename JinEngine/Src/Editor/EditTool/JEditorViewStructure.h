@@ -32,9 +32,11 @@ namespace JinEngine
 			virtual ~JEditorNodeBase() = default;
 		public:   
 			void DrawRect(const JEditorViewUpdateHelper* updateHelper);
-			virtual void DrawLine(const JEditorViewUpdateHelper* updateHelper) = 0; 
+			void DrawLine(const JEditorViewUpdateHelper* updateHelper, const JEditorNodeBase* to);
 			void StoreUpdatedNodeData(const JEditorViewUpdateHelper* updateHelper)noexcept;
 			void LoadUpdateNodeData(const JEditorViewUpdateHelper* updateHelper)noexcept;
+		public:
+			virtual void SettingDrawLine(const JEditorViewUpdateHelper* updateHelper) = 0;
 		protected:
 			virtual void Initialize(const JEditorViewUpdateHelper* updateHelper)noexcept = 0;
 			virtual bool DoInitializeWhenAddedNewNode()const noexcept = 0; 
@@ -43,8 +45,8 @@ namespace JinEngine
 			bool IsNewNode()const noexcept;
 		public:
 			//Apply mouse offset
-			JVector2<float> GetValidCenter(const JEditorViewUpdateHelper* updateHelper)noexcept;
-			std::string GetCompressName(const JEditorViewUpdateHelper* updateHelper)noexcept;
+			JVector2<float> GetValidCenter(const JEditorViewUpdateHelper* updateHelper)const noexcept;
+			std::string GetCompressName(const JEditorViewUpdateHelper* updateHelper)const noexcept;
 			void SetNewNodeTrigger(const bool value)noexcept;
 		public:
 			J_SIMPLE_GET_SET(std::string, name, Name)
@@ -61,6 +63,7 @@ namespace JinEngine
 			uint GetTextColor()const noexcept;
 			uint GetInfoBoxColor()const noexcept;
 			uint GetLineColor()const noexcept;
+			uint GetSelectedLineColor()const noexcept;
 		};
 		 
 		class JEditorViewBase
@@ -73,7 +76,13 @@ namespace JinEngine
 			std::vector<std::unique_ptr<JEditorNodeBase>> allNodes;
 			std::unordered_map<size_t, JEditorNodeBase*> nodeMap;
 			JEditorNodeBase* lastAddedNode = nullptr;
-			size_t lastSelectedGuid = 0;
+		private:
+			size_t lastSelectedNodeGuid = 0;
+			bool isLastSelectedNode = false;
+		private:
+			size_t lastSelectedFromNodeGuid = 0;
+			size_t lastSelectedToNodeGuid = 0;
+			bool isLastSelectedEdge = false;
 		private:
 			std::unique_ptr<JEditorGuiCoordGrid> coordGrid;
 			std::unique_ptr<JEditorViewUpdateHelper> updateHelper;
@@ -81,25 +90,31 @@ namespace JinEngine
 			uint maxDepth = 0;
 			bool isLastViewOpen = false;
 			bool hasNewNode = false;
+			bool useViewWindow = true;
 		private:
 			uint8 updateBit = 0;
 		public:
 			JEditorViewBase();
-			~JEditorViewBase();
+			virtual ~JEditorViewBase();
 		public:
-			void Clear();
+			void ClearNode();
+			void ClearSeletedCash();
 		public: 
 			static size_t GetDefaultGroupGuid()noexcept;
 			uint GetNodeCount()const noexcept; 
 			JEditorGuiCoordGrid* GetGrid()const noexcept; 
+			size_t GetLastUpdateSeletedNodeGuid()const noexcept;
+			void GetLastUpdateSelectedEdgeGuid(_Out_ size_t& fromGuid, _Out_ size_t& toGuid)const noexcept;
+			bool IsLastUpdateSeletedNode()const noexcept;
+			bool IsLastUpdateSeletedEdge()const noexcept;
 			void SetGridSize(const uint gridSize)noexcept; 
 		protected:
 			JEditorNodeBase* GetRootNode()const noexcept; 
 			JEditorNodeBase* GetNode(const size_t guid) noexcept;
 			JEditorNodeBase* GetNodeByIndex(const uint index)const noexcept;
 			JEditorNodeBase* GetLastSelectedNode()noexcept;
-			J_SIMPLE_P_GET_SET(JEditorNodeBase, lastAddedNode, LastAddedNode)
 		public:
+			J_SIMPLE_P_GET_SET(JEditorNodeBase, lastAddedNode, LastAddedNode)
 			J_SIMPLE_GET(size_t, guid, Guid)
 			J_SIMPLE_GET_SET(uint, maxDepth, MaxDepth)
 		protected:
@@ -112,6 +127,7 @@ namespace JinEngine
 			bool BeginView(const std::string& uniqueName, bool* isOpen, int guiWindowFlag);
 			void OnScreen(const size_t groupGuid = GetDefaultGroupGuid());
 			void EndView(); 
+			void UseBeginViewWindow(const bool value)noexcept;
 		protected:
 			virtual void NodeOnScreen(const JEditorViewUpdateHelper* updateHelper)noexcept = 0;
 		public:
@@ -145,6 +161,12 @@ namespace JinEngine
 			size_t connectFromGuid = 0; 
 			size_t connectToGuid = 0;
 			std::unique_ptr<Core::JBindHandleBase> successBind = nullptr;
+		private:
+			JEditorNodeBase* fromSeletedEdge = nullptr;
+			JEditorNodeBase* toSeletedEdge = nullptr;
+		public:
+			JEditorGraphView() = default;
+			~JEditorGraphView() = default;
 		public:
 			void BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid = GetDefaultGroupGuid(), const std::string& info = "")noexcept final;
 			void ConnectNode(const size_t from, const size_t to)noexcept;
