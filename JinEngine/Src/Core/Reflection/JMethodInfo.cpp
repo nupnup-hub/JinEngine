@@ -1,4 +1,5 @@
 #include"JMethodInfo.h"
+#include"JGuiWidgetInfoHandleBase.h"
 
 namespace JinEngine
 {
@@ -24,7 +25,7 @@ namespace JinEngine
 		{
 			return (uint)parameterHint.size();
 		}
-		JParameterHint JMethodInfo::ReturnHint()const noexcept
+		JParameterHint JMethodInfo::GetReturnHint()const noexcept
 		{
 			return returnHint;
 		}

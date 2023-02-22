@@ -10,7 +10,7 @@ namespace JinEngine
 	namespace Editor
 	{ 
 		class JAnimationDiagramList;
-		class JAnimationConditionList;
+		class JAnimationParameterList;
 		class JAnimationStateView;
 		class JSceneObserver;
 		class JObjectDetail;
@@ -22,7 +22,7 @@ namespace JinEngine
 			Core::JUserPtr<JScene> aniPreviweScene;
 		private:
 			std::unique_ptr<JAnimationDiagramList>diagramList;
-			std::unique_ptr<JAnimationConditionList>conditionList;
+			std::unique_ptr<JAnimationParameterList>conditionList;
 			std::unique_ptr<JAnimationStateView>stateView; 
 			std::unique_ptr<JSceneObserver> aniContObserver;
 			std::unique_ptr<JObjectDetail> aniContDetail;

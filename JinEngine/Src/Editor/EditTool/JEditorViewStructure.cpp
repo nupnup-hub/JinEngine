@@ -343,7 +343,7 @@ namespace JinEngine
 				updateHelper->selectedToNodeGuid == to->GetGuid();
 			 
 			ImU32 color = isSelected ? GetSelectedLineColor() : GetLineColor(); 
-			if (JImGuiImpl::IsMouseInLine(fromCenter, toCenter, updateHelper->lineThickness))
+			if (JImGuiImpl::IsMouseInLine(fromCenter, toCenter, updateHelper->lineThickness * 2))
 			{
 				color += GetRectHoveredDeltaColor(); 
 				if (ImGui::IsMouseClicked(0) && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_DockHierarchy))
@@ -672,6 +672,8 @@ namespace JinEngine
 		{
 			updateHelper->DeSelectNode();
 			updateHelper->DeSelectEdge();
+			isLastSelectedNode = isLastSelectedEdge = false;
+			lastSelectedNodeGuid = lastSelectedFromNodeGuid = lastSelectedToNodeGuid = 0;
 		}
 		size_t JEditorViewBase::GetDefaultGroupGuid()noexcept
 		{

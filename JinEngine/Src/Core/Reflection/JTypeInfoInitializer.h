@@ -21,7 +21,7 @@ namespace JinEngine
 			{};
 		}
 
-		class JTypeInfo;
+		class JTypeInfo;  
 		template<typename Type>
 		class JTypeInfoInitializer
 		{
@@ -31,7 +31,7 @@ namespace JinEngine
 			std::string name;
 			std::string fullName;
 			size_t hashCode;
-			JTypeInfo* parent;
+			JTypeInfo* parent;  
 		public:
 			JTypeInfoInitializer(const std::string& name)
 				:name(name)
@@ -42,7 +42,15 @@ namespace JinEngine
 					parent = nullptr;
 				else
 					parent = &Type::ParentType::StaticTypeInfo();
+			} 
+		};
 
+		template<typename Type>
+		class JTypeInfoCallOnece
+		{
+		public:
+			JTypeInfoCallOnece()
+			{
 				if constexpr (HasEngineDefinedRegister<Type>::value)
 					Type::RegisterJFunc();
 			}

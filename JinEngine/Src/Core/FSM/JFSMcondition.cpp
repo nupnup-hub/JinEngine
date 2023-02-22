@@ -26,7 +26,7 @@ namespace JinEngine
 		}
 
 		J_FSM_OBJECT_TYPE JFSMcondition::GetFSMobjType()const noexcept
-		{
+		{ 
 			return J_FSM_OBJECT_TYPE::CONDITION;
 		}
 		JFSMparameter* JFSMcondition::GetParameter()const noexcept
@@ -34,8 +34,11 @@ namespace JinEngine
 			return parameter;
 		}
 		float JFSMcondition::GetOnValue()const noexcept
-		{
-			return onValue;
+		{ 
+			if (HasParameter())
+				return TypeValue(parameter->GetParamType(), onValue);
+			else
+				return 0;
 		}
 		void JFSMcondition::SetParameter(JFSMparameter* newParam)noexcept
 		{
@@ -48,7 +51,7 @@ namespace JinEngine
 		void JFSMcondition::SetOnValue(float newValue)noexcept
 		{
 			if (HasParameter())
-				onValue = newValue;
+				onValue = TypeValue(parameter->GetParamType(), newValue);
 		}
 		bool JFSMcondition::HasParameter()const noexcept
 		{
@@ -60,7 +63,7 @@ namespace JinEngine
 		}
 		bool JFSMcondition::IsSatisfied()const noexcept
 		{
-			return (PassDefectInspection()) && (parameter->GetValue() == onValue);
+			return (PassDefectInspection()) && (parameter->GetValue() == GetOnValue());
 		}
 		bool JFSMcondition::PassDefectInspection()const noexcept
 		{

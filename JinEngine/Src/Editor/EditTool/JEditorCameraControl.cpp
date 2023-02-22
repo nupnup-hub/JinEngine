@@ -48,7 +48,7 @@ namespace JinEngine
 		}
 		void JEditorCameraControl::KeyboardInput(JCamera* sceneCamera)
 		{
-			const float dt = JGameTimer::Instance().DeltaTime();
+			const float dt = JEngineTimer::Data().DeltaTime();
 			bool isChanged = false;
 			JTransform* camTransform = sceneCamera->GetTransform();
 			XMFLOAT3 oldPosF = camTransform->GetPosition();

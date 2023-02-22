@@ -146,7 +146,7 @@ namespace JinEngine
 					JEditorPageShareData::SetSelectObj(GetOwnerPageType(), Core::GetUserPtr(ptr));
 				}
 				else
-					aniCont->CreateFSMDiagram(guid);
+					aniCont->CreateFSMdiagram(guid);
 				SetModifiedBit(aniCont, true);
 			}
 		}
@@ -163,7 +163,7 @@ namespace JinEngine
 					JEditorPageShareData::SetSelectObj(GetOwnerPageType(), Core::GetUserPtr(ptr));
 				}
 				else
-					aniCont->CreateFSMDiagram(guid);
+					aniCont->CreateFSMdiagram(guid);
 				SetModifiedBit(aniCont, true);
 			}
 		}

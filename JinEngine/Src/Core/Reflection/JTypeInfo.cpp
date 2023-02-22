@@ -1,4 +1,4 @@
-#include"JTypeInfo.h"  
+#include"JTypeInfo.h"    
 #include"JPropertyInfo.h"    
 #include"JMethodInfo.h"
 #include"../Pointer/JOwnerPtr.h"
@@ -28,7 +28,11 @@ namespace JinEngine
 		{
 			return memberData != nullptr ? memberData->methodInfoVec : MethodVec{};
 		}
-		JPropertyInfo* JTypeInfo::GetProperty(const std::string& name)
+		JTypeInfo* JTypeInfo::GetParent()const noexcept
+		{
+			return parent;
+		}
+		JPropertyInfo* JTypeInfo::GetProperty(const std::string& name)const noexcept
 		{
 			if (memberData != nullptr)
 			{
@@ -38,7 +42,7 @@ namespace JinEngine
 			else
 				return nullptr;
 		}
-		JMethodInfo* JTypeInfo::GetMethod(const std::string& name)
+		JMethodInfo* JTypeInfo::GetMethod(const std::string& name)const noexcept
 		{
 			if (memberData != nullptr)
 			{
@@ -47,6 +51,10 @@ namespace JinEngine
 			}
 			else
 				return nullptr;
+		}
+		JTypeInfoOption* JTypeInfo::GetOption() noexcept
+		{
+			return &option;
 		}
 		bool JTypeInfo::IsA(const JTypeInfo& tar)const noexcept
 		{

@@ -19,7 +19,7 @@ namespace JinEngine
 			REGISTER_CLASS(IPropertyHandler)
 		public:
 			virtual T Get(void* object)const = 0;
-			virtual void Set(void* object, const T& value) = 0;
+			virtual void Set(void* object, const T value) = 0;
 		};
 
 		template<typename Type, typename Field>
@@ -38,7 +38,7 @@ namespace JinEngine
 			{
 				return *ptr;
 			}
-			void Set([[maybe_unused]] void* object, const Field& value)final
+			void Set([[maybe_unused]] void* object, const Field value)final
 			{
 				*ptr = value;
 			}
@@ -60,7 +60,7 @@ namespace JinEngine
 			{ 
 				return static_cast<Type*>(object)->*ptr;
 			}
-			void Set(void* object, const Field& value)final
+			void Set(void* object, const Field value)final
 			{
 				static_cast<Type*>(object)->*ptr = value;
 			}
@@ -81,7 +81,7 @@ namespace JinEngine
 			{
 				return (*gPtr)();
 			}
-			void Set([[maybe_unused]] void* object, const Field& value)final
+			void Set([[maybe_unused]] void* object, const Field value)final
 			{
 				(*sPtr)(value);
 			}
@@ -104,7 +104,7 @@ namespace JinEngine
 			{ 
 				return (static_cast<Type*>(object)->*gPtr)();
 			}
-			void Set(void* object, const Field& value)final
+			void Set(void* object, const Field value)final
 			{ 
 				(static_cast<Type*>(object)->*sPtr)(value);
 			}

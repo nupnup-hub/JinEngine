@@ -48,13 +48,13 @@ namespace JinEngine
 					size_t nextStateId = nextTransition->GetOutputStateGuid();
 					nextState = static_cast<JAnimationFSMstate*>(GetState(nextStateId));
 					nextState->Enter(animationTime, animationShareData, srcSkeletonAsset, nextTransition->GetTargetStateTimeOffset());
-					blender.Initialize(JGameTimer::Instance().TotalTime(), JGameTimer::Instance().TotalTime() + nextTransition->GetDurationTime());
+					blender.Initialize(JEngineTimer::Data().TotalTime(), JEngineTimer::Data().TotalTime() + nextTransition->GetDurationTime());
 				}
 			}
 
 			if (nextState != nullptr)
 			{
-				if (blender.IsBlenderEnd(JGameTimer::Instance().TotalTime()))
+				if (blender.IsBlenderEnd(JEngineTimer::Data().TotalTime()))
 				{
 					nowState = nextState;
 					nextState = nullptr;
@@ -130,7 +130,7 @@ namespace JinEngine
 		}
 		void JAnimationFSMdiagram::CrossFading(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns)noexcept
 		{
-			float rate = blender.GetBlnederValue(JGameTimer::Instance().TotalTime());
+			float rate = blender.GetBlnederValue(JEngineTimer::Data().TotalTime());
 			XMVECTOR stS;
 			XMVECTOR stQ;
 			XMVECTOR stT;

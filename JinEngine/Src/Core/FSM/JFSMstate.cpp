@@ -77,9 +77,12 @@ namespace JinEngine
 		}
 		void JFSMstate::Clear()noexcept
 		{
-			const uint transitionSize = (uint)transitionVec.size();
+			std::vector<JFSMtransition*> copy = transitionVec;
+			const uint transitionSize = (uint)copy.size();
+			//for (uint i = 0; i < transitionSize; ++i)
+			//	copy[i]->Clear();
 			for (uint i = 0; i < transitionSize; ++i)
-				JFSMInterface::Destroy(transitionVec[i]);
+				JFSMInterface::Destroy(copy[i]);
 			transitionVec.clear();
 		}
 		JFSMparameterStorageUserAccess* JFSMstate::GetParamStorageInterface()const noexcept

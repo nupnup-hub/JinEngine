@@ -69,18 +69,6 @@ namespace JinEngine
 		{
 			JFSMtransition::Initialize();
 		}
-		JIdentifier* JAnimationFSMtransition::AddCondition(JIdentifier* iden)noexcept
-		{
-			if (!iden->GetTypeInfo().IsChildOf< JFSMtransition>())
-				return nullptr;
-
-			using InitData = JFSMcondition::InitData;
-			return JFFI<JFSMcondition>::Create(JPtrUtil::MakeOwnerPtr<InitData>(GetUserPtr<JFSMtransition>(iden)));
-		}
-		void JAnimationFSMtransition::SetConditionVec(std::vector<JFSMcondition*> vec)noexcept
-		{
-			conditionVec = vec;
-		}
 		J_FILE_IO_RESULT JAnimationFSMtransition::StoreData(std::wofstream& stream)
 		{
 			if (!stream.is_open())
@@ -115,8 +103,7 @@ namespace JinEngine
 			{
 				std::wstring condName;
 				size_t condGuid;
-				J_FSM_OBJECT_TYPE fsmType;
-				size_t paramGuid;
+				J_FSM_OBJECT_TYPE fsmType; 
 				float onValue;
 
 				JFileIOHelper::LoadFsmObjectIden(stream, condName, condGuid, fsmType);
@@ -165,6 +152,8 @@ namespace JinEngine
 				return nullptr;
 			};
 			JFFI<JAnimationFSMtransition>::Register(createTransitionLam);
+
+			SET_GUI_FLAG(J_GUI_OPTION_DISPLAY_PARENT);
 		}
 		JAnimationFSMtransition::JAnimationFSMtransition(const JFSMtransitionInitData& initData)
 			:JFSMtransition(initData)

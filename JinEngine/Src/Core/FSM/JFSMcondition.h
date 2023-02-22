@@ -13,6 +13,8 @@ namespace JinEngine
 		class JFSMcondition : public JFSMInterface
 		{
 			REGISTER_CLASS(JFSMcondition)
+		private:
+			friend class JFSMtransition;
 		public:
 			struct JFSMconditionInitData : public JFSMIdentifierInitData
 			{
@@ -27,9 +29,13 @@ namespace JinEngine
 			};
 			using InitData = JFSMconditionInitData;
 		private: 
-			JFSMconditionOwnerInterface* ownerInterface; 
+			JFSMconditionOwnerInterface* ownerInterface;  
 			REGISTER_PROPERTY_EX(parameter, GetParameter, SetParameter, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, GetSroageParameter))
 			JFSMparameter* parameter = nullptr;
+			REGISTER_PROPERTY_EX(onValue, GetOnValue, SetOnValue,
+					GUI_CHECKBOX(GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::BOOL)),
+					GUI_FIXED_INPUT(false, Core::J_PARAMETER_TYPE::Int, GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::INT)),
+					GUI_FIXED_INPUT(false, Core::J_PARAMETER_TYPE::Float, GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::FLOAT)))
 			float onValue = 0; 
 		public: 
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
@@ -70,7 +76,7 @@ namespace JinEngine
 		}
 		float JFSMparameterWrap::GetOnValue()const noexcept
 		{
-			J_FSM_PARAMETER_VALUE_TYPE valueType = condition->GetValueType();
+			J_FSM_PARAMETER_VALUE_TYPE valueType = condition->GetParamType();
 			if (valueType == J_FSM_PARAMETER_VALUE_TYPE::BOOL)
 				return static_cast<bool>(onValue);
 			else if (valueType == J_FSM_PARAMETER_VALUE_TYPE::INT)

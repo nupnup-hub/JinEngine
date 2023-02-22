@@ -144,7 +144,11 @@ namespace JinEngine
 						selectedTransition.ConnnectChildUser(selected);
 						selectedState.Clear();
 					}
+					else
+						ClearSelectedObject();
 				}
+				else
+					ClearSelectedObject();
  
 				UpdateMouseClick();
 				BuildDiagramView();
@@ -199,6 +203,12 @@ namespace JinEngine
 			const bool canSeleted = !preSelected.IsValid() || (newSelected.IsValid() && newSelected->GetGuid() != preSelected->GetGuid());
 			if (canSeleted)
 				RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), newSelected));
+		}
+		void JAnimationStateView::ClearSelectedObject()
+		{
+			selectedTransition.Clear();
+			selectedState.Clear();
+			stateGraph->ClearSeletedCash();
 		}
 		void JAnimationStateView::RegisterViewGraphGroup(JAnimationController* aniCont)
 		{
@@ -280,7 +290,7 @@ namespace JinEngine
 						;//AddInstance(Core::JOwnerPtr<Core::JAnimationBlend>::ConvertChildUser(std::move(owner)));
 				}
 				else
-					aniCont->CreateFSMClip(aniCont->GetDiagram(diagramGuid), stateGuid);
+					aniCont->CreateFSMclip(aniCont->GetDiagram(diagramGuid), stateGuid);
 				SetModifiedBit(aniCont, true);
 			}
 		}
@@ -323,7 +333,7 @@ namespace JinEngine
 				else
 				{
 					auto diagram = aniCont->GetDiagram(diagramGuid);
-					aniCont->CreateFsmTransition(diagram, diagram->GetState(stateGuid), diagram->GetState(outGuid));
+					aniCont->CreateFsmtransition(diagram, diagram->GetState(stateGuid), diagram->GetState(outGuid));
 				}
 				SetModifiedBit(aniCont, true);
 			}
@@ -393,10 +403,10 @@ namespace JinEngine
 				{
 					if (!selectedDiagram.IsValid() || selectedDiagram->GetGuid() != evstruct->selectObj->GetGuid())
 					{
-						stateGraph->ClearSeletedCash();
+						ClearSelectedObject();
 						selectedDiagram.ConnnectChildUser(evstruct->selectObj);
 					}
-				}
+				}		 
 			}
 		}
 	}

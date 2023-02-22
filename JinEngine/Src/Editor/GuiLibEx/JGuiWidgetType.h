@@ -14,7 +14,7 @@ namespace JinEngine
 			J_GUI_WIDGET_SELECTOR, 
 			J_GUI_WIDGET_READONLY_TEXT,
 			J_GUI_WIDGET_ENUM_COMBO,
-			J_GUI_WIDGET_LIST,
+			J_GUI_WIDGET_LIST
 			//METHOD,	// ¹Ì±¸Çö
 		}; 
 	}

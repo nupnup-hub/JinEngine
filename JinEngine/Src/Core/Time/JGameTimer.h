@@ -1,8 +1,7 @@
 #pragma once
 #include<time.h>
 #include<memory>
-#include"../JDataType.h"
-#include"../Singleton/JSingletonHolder.h"
+#include"../JDataType.h" 
 
 namespace JinEngine
 {
@@ -12,13 +11,11 @@ namespace JinEngine
 	}
 
 	namespace Core
-	{
-		template<typename T>class JCreateUsingNew;
-		class JGameTimerImpl
+	{ 
+		class JGameTimer
 		{
 		private:
-			friend class Application::JApplication; 
-			template<typename T>friend class JCreateUsingNew;
+			friend class Application::JApplication;  
 		private: 
 			double mSecondsPercount;
 			double mDeltaTime;
@@ -29,19 +26,33 @@ namespace JinEngine
 			int64 mStopTime;
 			int64 mPrevTime;
 			int64 mCurrTime;
-
 			bool mStopped;
+		private:
+			const size_t guid;
+		public:
+			JGameTimer();
+			~JGameTimer();
 		public: 
 			float TotalTime()const noexcept;
 			float DeltaTime()const noexcept;
-		private:
-			JGameTimerImpl();
-			~JGameTimerImpl();
+		public:
 			void Start() noexcept;
 			void Stop() noexcept;
 			void Reset() noexcept;
-			void Tick() noexcept;
+		private: 
+			static void TickAllTimer();
 		}; 
 	}
-	using JGameTimer = Core::JSingletonHolder<Core::JGameTimerImpl>;
+
+
+	static struct JEngineTimer
+	{
+	public:
+		static Core::JGameTimer& Data()
+		{
+			static Core::JGameTimer timer;
+			return timer;
+		}
+	};
+
 }

@@ -51,7 +51,6 @@ namespace JinEngine
 		private:
 			JFSMtransitionOwnerInterface* ownerInterface;
 			const size_t outputStateGuid;
-		protected:
 			std::vector<JFSMcondition*>conditionVec;
 		public:
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept;
@@ -59,15 +58,21 @@ namespace JinEngine
 			float GetConditionOnValue(const uint index)const noexcept;
 			size_t GetOutputStateGuid()const noexcept;
 			JFSMcondition* GetConditionByIndex(const uint index)const noexcept;
+			REGISTER_METHOD(GetConditionVec)
 			std::vector<JFSMcondition*> GetConditionVec()const noexcept; 
+		protected:
+			//For editor gui
+			REGISTER_METHOD(SetConditionVec)
+			void SetConditionVec(std::vector<JFSMcondition*> vec)noexcept;
+		private:
+			JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept; 
 		public:
 			bool HasSatisfiedCondition()const noexcept;
 		private:
-			JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept; 
-		private:
 			bool AddType(JFSMcondition* newCondition)noexcept;
 			bool RemoveType(JFSMcondition* condition)noexcept;		
-		protected:
+		protected: 
+			static JIdentifier* CreateCondition(JIdentifier* iden)noexcept;
 			bool RemoveParameter(const size_t guid)noexcept;
 		protected:
 			virtual void Initialize()noexcept;

@@ -31,6 +31,7 @@ namespace JinEngine
 		class JSceneObserver;
 		class JEditorBinaryTreeView;
 	}
+
 	class JSceneCashInterface
 	{
 	private:
@@ -44,6 +45,18 @@ namespace JinEngine
 		virtual const std::vector<JGameObject*>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept = 0;
 		virtual const std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)const noexcept = 0;
 	};
+	class JSceneTimeInterface
+	{
+	private: 
+		friend class Editor::JSceneObserver; //Debug
+	protected:
+		virtual ~JSceneTimeInterface() = default;
+	public:
+		virtual JSceneTimeInterface* TimeInterface() = 0;
+	private:
+		virtual void ActivateSceneTime()noexcept = 0;
+		virtual void DeActivateSceneTime()noexcept = 0;
+	};
 
 	class JSceneCompInterface
 	{
@@ -55,8 +68,7 @@ namespace JinEngine
 	public:
 		virtual JSceneCompInterface* CompInterface() = 0;
 	private:
-		virtual void SetMainCamera(JCamera* camera)noexcept = 0;
-		virtual void SetAnimation()noexcept = 0;
+		virtual void SetMainCamera(JCamera* camera)noexcept = 0; 
 		virtual void UpdateTransform(JGameObject* owner)noexcept = 0;
 	};
 
@@ -119,6 +131,7 @@ namespace JinEngine
 		public JSceneRegisterInterface,
 		public JSceneCompInterface,
 		public JSceneCashInterface,
+		public JSceneTimeInterface,
 		public JFrameBuffManagerAccess,
 		public JClearableInterface
 	{

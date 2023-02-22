@@ -15,7 +15,7 @@ namespace JinEngine
 		protected:
 			virtual ~JFSMdiagramOwnerInterface() = default; 
 		private: 
-			virtual JFSMparameterStorageUserAccess* GetConditionStorageUser()noexcept = 0; 
+			virtual JFSMparameterStorageUserAccess* GetParameterStorageUser()noexcept = 0; 
 		};
 	}
 }

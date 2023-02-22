@@ -72,7 +72,7 @@ namespace JinEngine
 		}
 		JFSMparameterStorageUserAccess* JFSMdiagram::GetParamStorageInterface()const noexcept
 		{
-			return ownerInterface->GetConditionStorageUser();
+			return ownerInterface->GetParameterStorageUser();
 		}
 		bool JFSMdiagram::IsDiagramState(const size_t guid)const noexcept
 		{
@@ -154,11 +154,11 @@ namespace JinEngine
 			:JFSMInterface(initData),
 			ownerInterface(initData.ownerInterface)
 		{
-			ownerInterface->GetConditionStorageUser()->AddUser(this, GetGuid());
+			ownerInterface->GetParameterStorageUser()->AddUser(this, GetGuid());
 		}
 		JFSMdiagram::~JFSMdiagram()
 		{
-			ownerInterface->GetConditionStorageUser()->RemoveUser(this, GetGuid());
+			ownerInterface->GetParameterStorageUser()->RemoveUser(this, GetGuid());
 		}
 	}
 }

@@ -1,4 +1,5 @@
 #include"JPropertyInfo.h"  
+#include"JGuiWidgetInfoHandleBase.h"
 
 namespace JinEngine
 {

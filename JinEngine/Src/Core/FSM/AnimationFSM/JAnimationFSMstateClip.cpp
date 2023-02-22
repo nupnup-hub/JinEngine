@@ -23,7 +23,7 @@ namespace JinEngine
 		}
 		void JAnimationFSMstateClip::Enter(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const float timeOffset)noexcept
 		{
-			clip->ClipEnter(animationTime, animationShareData, srcSkeletonAsset, JGameTimer::Instance().TotalTime(), timeOffset);
+			clip->ClipEnter(animationTime, animationShareData, srcSkeletonAsset, JEngineTimer::Data().TotalTime(), timeOffset);
 		}
 		void JAnimationFSMstateClip::Update(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const uint updateNumber)noexcept
 		{
@@ -34,8 +34,8 @@ namespace JinEngine
 					animationShareData,
 					srcSkeletonAsset,
 					animationShareData.localTransform[updateNumber],
-					JGameTimer::Instance().TotalTime(),
-					JGameTimer::Instance().DeltaTime());
+					JEngineTimer::Data().TotalTime(),
+					JEngineTimer::Data().DeltaTime());
 
 				size_t clipGuid = clip->GetClipSkeletonAsset()->GetGuid();
 				animationShareData.skeletonBlendRate[updateNumber][clipGuid] = 1;

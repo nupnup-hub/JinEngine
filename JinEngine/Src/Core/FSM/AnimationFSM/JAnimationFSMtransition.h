@@ -8,7 +8,7 @@ namespace JinEngine
 		class JAnimationFSMstate;
 		class JAnimationFSMtransition final : public JFSMtransition
 		{
-			REGISTER_CLASS(JAnimationFSMtransition)
+			REGISTER_CLASS(JAnimationFSMtransition) 
 		private:
 			friend class JAnimationFSMstate;  
 		private:
@@ -22,7 +22,8 @@ namespace JinEngine
 			float durationTime = 0.4f;
 			REGISTER_PROPERTY_EX(targetStateTimeOffset, GetTargetStateTimeOffset, SetTargetStateTimeOffset, GUI_SLIDER(0.0f, 1.0f))
 			float targetStateTimeOffset = 0;
-			REGISTER_PROPERTY_EX(conditionVec, GetConditionVec, SetConditionVec, GUI_LIST(J_GUI_LIST_TYPE::DYNAMIC, true, AddCondition))
+		public:
+			REGISTER_PARENT_METHOD_GUI_WIDGET(JFSMtransition, Condition, GetConditionVec, SetConditionVec, GUI_LIST(J_GUI_LIST_TYPE::DYNAMIC, true, CreateCondition))
 		public:		
 			bool IsWaitExitTime()noexcept;
 			bool IsFrozen()noexcept;
@@ -39,10 +40,6 @@ namespace JinEngine
 			bool IsSatisfiedOption(const float normalizedTime)noexcept;
 		public:
 			void Initialize()noexcept override;
-		private:
-			//For editor gui
-			static JIdentifier* AddCondition(JIdentifier* iden)noexcept;
-			void SetConditionVec(std::vector<JFSMcondition*> vec)noexcept;
 		private:
 			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
 			J_FILE_IO_RESULT LoadData(std::wifstream& stream);

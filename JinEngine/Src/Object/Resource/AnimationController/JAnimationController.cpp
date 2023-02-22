@@ -118,7 +118,7 @@ namespace JinEngine
 	{
 		return fsmDiagram.size() < diagramMaxCount;
 	}
-	bool JAnimationController::CanCreateCondition()const noexcept
+	bool JAnimationController::CanCreateParameter()const noexcept
 	{
 		return paramStorage->GetParameterCount() < paramStorage->maxNumberOfParameter;
 	}
@@ -126,21 +126,21 @@ namespace JinEngine
 	{ 
 		return diagram && diagram->CanCreateState();
 	}
-	Core::JAnimationFSMdiagram* JAnimationController::CreateFSMDiagram(const size_t guid)noexcept
+	Core::JAnimationFSMdiagram* JAnimationController::CreateFSMdiagram(const size_t guid)noexcept
 	{
 		if (!CanCreateDiagram())
 			return nullptr;
 		 
 		return Core::JFFI<Core::JAnimationFSMdiagram>::Create(Core::JPtrUtil::MakeOwnerPtr<Core::JFSMdiagram::InitData>(guid, this));
 	}
-	Core::JFSMparameter* JAnimationController::CreateFSMCondition(const size_t guid)noexcept
+	Core::JFSMparameter* JAnimationController::CreateFSMparameter(const size_t guid)noexcept
 	{
-		if (!CanCreateCondition())
+		if (!CanCreateParameter())
 			return nullptr;
 
 		return Core::JFFI<Core::JFSMparameter>::Create(Core::JPtrUtil::MakeOwnerPtr<Core::JFSMparameter::InitData>(guid, paramStorage.get()));
 	}
-	Core::JAnimationFSMstate* JAnimationController::CreateFSMClip(Core::JAnimationFSMdiagram* diagram, const size_t guid)noexcept
+	Core::JAnimationFSMstate* JAnimationController::CreateFSMclip(Core::JAnimationFSMdiagram* diagram, const size_t guid)noexcept
 	{
 		if (!CanCreateState(diagram))
 			return nullptr;
@@ -150,7 +150,7 @@ namespace JinEngine
 
 		return Core::JFFI<Core::JAnimationFSMstateClip>::Create(Core::JPtrUtil::MakeOwnerPtr<Core::JFSMstate::InitData>(guid, Core::GetUserPtr(diagram)));
 	}
-	Core::JAnimationFSMtransition* JAnimationController::CreateFsmTransition(Core::JAnimationFSMdiagram* diagram,
+	Core::JAnimationFSMtransition* JAnimationController::CreateFsmtransition(Core::JAnimationFSMdiagram* diagram,
 		Core::JAnimationFSMstate* from,
 		Core::JAnimationFSMstate* to,
 		const size_t guid)noexcept
@@ -197,7 +197,7 @@ namespace JinEngine
 		}
 		return false;
 	}
-	Core::JFSMparameterStorageUserAccess* JAnimationController::GetConditionStorageUser()noexcept
+	Core::JFSMparameterStorageUserAccess* JAnimationController::GetParameterStorageUser()noexcept
 	{
 		return paramStorage.get();
 	}
@@ -360,7 +360,7 @@ namespace JinEngine
 				JAnimationController* newAniCont = ownerPtr.Get();
 				if (AddInstance(std::move(ownerPtr)))
 				{
-					Core::JAnimationFSMdiagram* baseDiagram = newAniCont->CreateFSMDiagram(Core::MakeGuid());
+					Core::JAnimationFSMdiagram* baseDiagram = newAniCont->CreateFSMdiagram(Core::MakeGuid());
 					baseDiagram->SetName(L"BaseLayer");
 					StoreObject(newAniCont);				 
 					newAniCont->SetValid(true);

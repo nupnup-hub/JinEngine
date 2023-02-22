@@ -73,6 +73,7 @@ namespace JinEngine
 			void BuildDiagramView();
 		private:
 			void SetSelecteObject(Core::JUserPtr<Core::JIdentifier> preSelected, Core::JUserPtr<Core::JIdentifier> newSelected);
+			void ClearSelectedObject();
 		private:
 			void RegisterViewGraphGroup(JAnimationController* newAnicont);
 			void RegisterCreateStateEv();

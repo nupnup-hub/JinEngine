@@ -53,6 +53,14 @@ namespace JinEngine
 		{
 			return conditionVec;
 		}
+		void JFSMtransition::SetConditionVec(std::vector<JFSMcondition*> vec)noexcept
+		{
+			conditionVec = vec;
+		}
+		JFSMparameterStorageUserAccess* JFSMtransition::GetParamStorageInterface()const noexcept
+		{
+			return ownerInterface->GetParamStorageInterface();
+		}
 		bool JFSMtransition::HasSatisfiedCondition()const noexcept
 		{
 			const uint condVecSize = (uint)conditionVec.size();
@@ -66,10 +74,6 @@ namespace JinEngine
 					return true;
 			}
 			return false;
-		}
-		JFSMparameterStorageUserAccess* JFSMtransition::GetParamStorageInterface()const noexcept
-		{
-			return ownerInterface->GetParamStorageInterface();
 		}
 		bool JFSMtransition::AddType(JFSMcondition* newCondition)noexcept
 		{
@@ -97,6 +101,14 @@ namespace JinEngine
 			}
 			return true;
 		}
+		JIdentifier* JFSMtransition::CreateCondition(JIdentifier* iden)noexcept
+		{
+			if (!iden->GetTypeInfo().IsChildOf< JFSMtransition>())
+				return nullptr;
+
+			using InitData = JFSMcondition::InitData;
+			return JFFI<JFSMcondition>::Create(JPtrUtil::MakeOwnerPtr<InitData>(GetUserPtr<JFSMtransition>(iden)));
+		}
 		bool JFSMtransition::RemoveParameter(const size_t guid)noexcept
 		{
 			const uint conditionVecSize = (uint)conditionVec.size();
@@ -115,9 +127,12 @@ namespace JinEngine
 		}
 		void JFSMtransition::Clear()
 		{
-			const uint conditionVecSize = (uint)conditionVec.size();
+			std::vector<JFSMcondition*> copy = conditionVec;
+			const uint conditionVecSize = (uint)copy.size();
+			//for (uint i = 0; i < conditionVecSize; ++i)
+			//	copy[i]->Clear();
 			for (uint i = 0; i < conditionVecSize; ++i)
-				Destroy(conditionVec[i]);
+				Destroy(copy[i]);
 			conditionVec.clear();
 		}
 		bool JFSMtransition::RegisterCashData()noexcept

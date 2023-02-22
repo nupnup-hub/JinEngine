@@ -1,15 +1,18 @@
 #pragma once 
-#include"JPropertyInfo.h"  
+#include"JPropertyInfo.h"   
 
 namespace JinEngine
 {
 	namespace Core
 	{
+		class JGuiWidgetInfo;
+		template<typename Type> class JPropertyGuiWidgetInfoHandle;
+
 		template<typename Type, typename Field, typename Pointer, Pointer ptr>
 		class JPropertyInfoRegister
 		{
 		public:
-			JPropertyInfoRegister(const std::string& name)
+			 JPropertyInfoRegister(const std::string& name)
 			{
 				static JPropertyOptionInfo optInfo{};
 				if constexpr (std::is_member_pointer_v<Pointer>)
@@ -35,9 +38,10 @@ namespace JinEngine
 					}
 				}
 			}
-			JPropertyInfoRegister(const std::string& name, std::unique_ptr<JGuiWidgetInfo>&& widgetInfo)
+			template<typename ...Widget>
+			JPropertyInfoRegister(const std::string& name, Widget&&... var)
 			{
-				static JPropertyOptionInfo optInfo{ std::move(widgetInfo) };
+				static JPropertyOptionInfo optInfo{};
 				if constexpr (std::is_member_pointer_v<Pointer>)
 				{
 					static JMemberPropertyHandler<Type, Field> handler{ ptr };
@@ -46,6 +50,7 @@ namespace JinEngine
 					if (!init)
 					{
 						Type::StaticTypeInfo().AddPropertyInfo(&jPropertyInfo);
+						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(std::make_unique<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
 						init = true;
 					}
 				}
@@ -57,13 +62,20 @@ namespace JinEngine
 					if (!init)
 					{
 						Type::StaticTypeInfo().AddPropertyInfo(&jPropertyInfo);
+						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(std::make_unique<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
 						init = true;
 					}
 				}
 			}
+		};
+
+		template<typename Type, typename Field, typename Pointer, Pointer ptr>
+		class JPropertyExInfoRegister
+		{
+		public:
 			template<typename GetPointer, typename SetPointer>
-			JPropertyInfoRegister(const std::string& name, GetPointer getPtr, SetPointer setPtr)
-			{ 
+			JPropertyExInfoRegister(const std::string& name, GetPointer getPtr, SetPointer setPtr)
+			{
 				static JPropertyOptionInfo optInfo{};
 				if constexpr (std::is_member_pointer_v<Pointer>)
 				{
@@ -89,10 +101,10 @@ namespace JinEngine
 				}
 
 			}
-			template<typename GetPointer, typename SetPointer>
-			JPropertyInfoRegister(const std::string& name, GetPointer getPtr, SetPointer setPtr, std::unique_ptr<JGuiWidgetInfo>&& widgetInfo)
-			{ 
-				static JPropertyOptionInfo optInfo{ std::move(widgetInfo) };
+			template<typename GetPointer, typename SetPointer, typename ...Widget>
+			JPropertyExInfoRegister(const std::string& name, GetPointer getPtr, SetPointer setPtr, Widget&&... var)
+			{
+				static JPropertyOptionInfo optInfo{};
 				if constexpr (std::is_member_pointer_v<Pointer>)
 				{
 					static JMemberIndirectPropertyHandler<Type, Field, decltype(getPtr), decltype(setPtr)> handler{ getPtr, setPtr };
@@ -101,6 +113,7 @@ namespace JinEngine
 					if (!init)
 					{
 						Type::StaticTypeInfo().AddPropertyInfo(&jPropertyInfo);
+						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(std::make_unique<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
 						init = true;
 					}
 				}
@@ -112,6 +125,7 @@ namespace JinEngine
 					if (!init)
 					{
 						Type::StaticTypeInfo().AddPropertyInfo(&jPropertyInfo);
+						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(std::make_unique<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
 						init = true;
 					}
 				}

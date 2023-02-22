@@ -1,7 +1,7 @@
 #include"JRenderItem.h" 
 #include"../JComponentFactory.h"
 #include"../Transform/JTransform.h"
-#include"../../GameObject/JGameObject.h" 
+#include"../../GameObject/JGameObject.h"
 #include"../../Resource/JResourceManager.h" 
 #include"../../Resource/Shader/JShaderFunctionEnum.h"  
 #include"../../../Core/File/JFileIOHelper.h"
@@ -58,7 +58,7 @@ namespace JinEngine
 		return renderLayer;
 	}
 	J_RENDERITEM_SPACE_SPATIAL_MASK JRenderItem::GetSpaceSpatialMask()const noexcept
-	{
+	{ 
 		return spaceSpatialMask;
 	}
 	uint JRenderItem::GetVertexTotalCount()const noexcept

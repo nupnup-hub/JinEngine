@@ -19,7 +19,7 @@ namespace JinEngine
 			const J_EDITOR_WINDOW_FLAG windowFlag)
 			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
 		{ 
-			guiHelper = std::make_unique< JReflectionGuiWidgetHelper>();
+			guiHelper = std::make_unique<JReflectionGuiWidgetHelper>();
 		}
 		JObjectDetail::~JObjectDetail() {}
 		J_EDITOR_WINDOW_TYPE JObjectDetail::GetWindowType()const noexcept
@@ -82,6 +82,10 @@ namespace JinEngine
 				{
 					JImGuiImpl::TreePop();
 					ImGui::Separator();
+					guiHelper->UpdateGuiWidget(comp, &comp->GetTypeInfo());
+
+					/*
+
 					const auto paramVec = comp->GetTypeInfo().GetPropertyVec();
 					for (const auto& param : paramVec)
 						PropertyOnScreen(comp, param);
@@ -89,6 +93,7 @@ namespace JinEngine
 					const auto methodVec = comp->GetTypeInfo().GetMethodVec();
 					for (const auto& method : methodVec)
 						MethodOnScreen(comp, method);
+					*/
 				}
 				ImGui::EndGroup();
 			}
@@ -105,27 +110,9 @@ namespace JinEngine
 			{ 
 				JImGuiImpl::TreePop();
 				ImGui::Separator();
-				const auto paramVec = fObj->GetTypeInfo().GetPropertyVec();
-				for (const auto& param : paramVec)
-					PropertyOnScreen(fObj.Get(), param);
-
-				const auto methodVec = fObj->GetTypeInfo().GetMethodVec();
-				for (const auto& method : methodVec)
-					MethodOnScreen(fObj.Get(), method);
+				guiHelper->UpdateGuiWidget(fObj.Get(), &fObj->GetTypeInfo());
 			}
 			ImGui::EndGroup();
-		}
-		void JObjectDetail::PropertyOnScreen(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
-		{
-			auto optInfo = pInfo->GetOptionInfo();
-			if (optInfo->HasWidgetInfo() && optInfo->GetWidgetInfo()->GetSupportWidgetType() != Core::Constants::NotSupportGuiWidget)
-				guiHelper->UpdatePropertyGuiWidget(obj, pInfo);
-		}
-		void JObjectDetail::MethodOnScreen(Core::JIdentifier* obj, Core::JMethodInfo* mInfo)
-		{
-			auto optInfo = mInfo->GetOptionInfo();
-			if (optInfo->HasWidgetInfo() && optInfo->GetWidgetInfo()->GetSupportWidgetType() != Core::Constants::NotSupportGuiWidget)
-				guiHelper->UpdateMethodGuiWidget(obj, mInfo);
 		}
 		void JObjectDetail::DoActivate()noexcept
 		{

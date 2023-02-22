@@ -1,6 +1,6 @@
 #include"JEditorAniContPage.h"   
 #include"Window/JAnimationDiagramList.h"
-#include"Window/JAnimationConditionList.h"
+#include"Window/JAnimationParameterList.h"
 #include"Window/JAnimationStateView.h"
 #include"../JEditorPageShareData.h"
 #include"../JEditorAttribute.h"  
@@ -48,7 +48,7 @@ namespace JinEngine
 			std::vector<J_OBSERVER_SETTING_TYPE> settingType{};
 
 			diagramList = std::make_unique<JAnimationDiagramList>(windowNames[0], std::move(windowAttributes[0]), GetPageType(), dockFlag);
-			conditionList = std::make_unique<JAnimationConditionList>(windowNames[1], std::move(windowAttributes[1]), GetPageType(), dockFlag);
+			conditionList = std::make_unique<JAnimationParameterList>(windowNames[1], std::move(windowAttributes[1]), GetPageType(), dockFlag);
 			stateView = std::make_unique<JAnimationStateView>(windowNames[2], std::move(windowAttributes[2]), GetPageType(), dockFlag);
 			aniContObserver = std::make_unique<JSceneObserver>(windowNames[3], std::move(windowAttributes[3]), GetPageType(), dockFlag, settingType);
 			aniContDetail = std::make_unique<JObjectDetail>(windowNames[4], std::move(windowAttributes[4]), GetPageType(), dockFlag);

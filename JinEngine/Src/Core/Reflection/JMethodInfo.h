@@ -33,9 +33,29 @@ namespace JinEngine
 			std::string ReturnFieldName()const noexcept; 
 			std::string ParameterFieldName()const noexcept;
 			uint ParameterCount()const noexcept;
-			JParameterHint ReturnHint()const noexcept;
+			JParameterHint GetReturnHint()const noexcept;
 			JTypeInfo* GetTypeInfo()const noexcept;
 			JMethodOptionInfo* GetOptionInfo()const noexcept;
+		public:
+			template<typename T>
+			bool IsConvertibleRet()
+			{
+				return returnHint.IsConvertible<T>();
+			}
+			template<typename T>
+			bool IsConvertibleParam(const size_t index)
+			{  
+				//(IsConvertibleRet<Param>() && ...);
+				return parameterHint[index].IsConvertible<T>();
+			}
+			template<typename ...Param>
+			bool IsConvertibleParam()
+			{
+				if (sizeof...(Param) != parameterHint.size())
+					return false;
+
+				return IsConvertible<Param...>(parameterHint, std::make_index_sequence<sizeof...(Param)>());
+			}
 		public:
 			template<typename Ret, typename ...Param>
 			Ret Invoke(void* object, Param&&... var)

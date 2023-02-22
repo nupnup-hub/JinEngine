@@ -1,18 +1,54 @@
 //***************************************************************************************
-// JGameTimerImpl.cpp by Frank Luna (C) 2011 All Rights Reserved.
+// JGameTimer.cpp by Frank Luna (C) 2011 All Rights Reserved.
 //***************************************************************************************
 #include "JGameTimer.h"
+#include"../Guid/GuidCreator.h"
 #include <windows.h>
 #include<string>
 #include <chrono>  
+#include<vector>
 
 namespace JinEngine
 {
 	namespace Core
 	{
+		static struct TimerCashVecData
+		{
+		private:
+			using TimerCashVec = std::vector<JGameTimer*>;
+		public:
+			static TimerCashVec& Data()
+			{
+				static TimerCashVec vec;
+				return vec;
+			}
+		};
+
+		JGameTimer::JGameTimer()
+			: mSecondsPercount(0.0), mDeltaTime(-1.0), mBaseTime(0),
+			mPausedTime(0), mPrevTime(0), mCurrTime(0), mStopped(false), guid(MakeGuid())
+		{
+			TimerCashVecData::Data().push_back(this);
+			__int64 countsPerSec;
+			QueryPerformanceFrequency((LARGE_INTEGER*)&countsPerSec);
+			mSecondsPercount = 1.0 / (double)countsPerSec;
+		}
+
+		JGameTimer::~JGameTimer()
+		{
+			const uint count = (uint)TimerCashVecData::Data().size();
+			for (uint i = 0; i < count; ++i)
+			{
+				if (TimerCashVecData::Data()[i]->guid == guid)
+				{
+					TimerCashVecData::Data().erase(TimerCashVecData::Data().begin() + i);
+					break;
+				}
+			}
+		}
 		// Returns the total time elapsed since Reset() was called, NOT counting any
 		// time when the clock is stopped.
-		float JGameTimerImpl::TotalTime()const noexcept
+		float JGameTimer::TotalTime()const noexcept
 		{
 			// If we are stopped, do not count the time that has passed since we stopped.
 			// Moreover, if we previously already had a pause, the distance 
@@ -44,33 +80,12 @@ namespace JinEngine
 			}
 		}
 
-		float JGameTimerImpl::DeltaTime()const noexcept
+		float JGameTimer::DeltaTime()const noexcept
 		{
 			return (float)mDeltaTime;
 		}
 
-		void JGameTimerImpl::Reset() noexcept
-		{
-			__int64 currTime;
-			QueryPerformanceCounter((LARGE_INTEGER*)&currTime);
-
-			mBaseTime = currTime;
-			mPrevTime = currTime;
-			mStopTime = 0;
-			mStopped = false;
-		}
-
-		JGameTimerImpl::JGameTimerImpl()
-			: mSecondsPercount(0.0), mDeltaTime(-1.0), mBaseTime(0),
-			mPausedTime(0), mPrevTime(0), mCurrTime(0), mStopped(false)
-		{
-			__int64 countsPerSec;
-			QueryPerformanceFrequency((LARGE_INTEGER*)&countsPerSec);
-			mSecondsPercount = 1.0 / (double)countsPerSec;
-		}
-
-		JGameTimerImpl::~JGameTimerImpl() {}
-		void JGameTimerImpl::Start() noexcept
+		void JGameTimer::Start() noexcept
 		{
 			int64 startTime;
 			QueryPerformanceCounter((LARGE_INTEGER*)&startTime);
@@ -92,7 +107,7 @@ namespace JinEngine
 			}
 		}
 
-		void JGameTimerImpl::Stop() noexcept
+		void JGameTimer::Stop() noexcept
 		{
 			if (!mStopped)
 			{
@@ -103,32 +118,43 @@ namespace JinEngine
 				mStopped = true;
 			}
 		}
-
-		void JGameTimerImpl::Tick() noexcept
+		void JGameTimer::Reset() noexcept
 		{
-			if (mStopped)
-			{
-				mDeltaTime = 0.0;
-				return;
-			}
-
-			int64 currTime;
+			__int64 currTime;
 			QueryPerformanceCounter((LARGE_INTEGER*)&currTime);
-			mCurrTime = currTime;
 
-			// Time difference between this frame and the previous.
-			mDeltaTime = (mCurrTime - mPrevTime) * mSecondsPercount;
-
-			// Prepare for next frame.
-			mPrevTime = mCurrTime;
-
-			// Force nonnegative.  The DXSDK's CDXUTGameTimer mentions that if the 
-			// libcessor goes into a power save mode or we get shuffled to another
-			// libcessor, then mDeltaTime can be negative.
-			if (mDeltaTime < 0.0)
+			mBaseTime = currTime;
+			mPrevTime = currTime;
+			mStopTime = 0;
+			mStopped = false;
+		}
+		void JGameTimer::TickAllTimer()
+		{
+			auto tickLam = [](JGameTimer* timer)
 			{
-				mDeltaTime = 0.0;
-			}
-		}		 
+				if (timer->mStopped)
+				{
+					timer->mDeltaTime = 0.0;
+					return;
+				}
+				int64 currTime;
+				QueryPerformanceCounter((LARGE_INTEGER*)&currTime);
+				timer->mCurrTime = currTime;
+				// Time difference between this frame and the previous.
+				timer->mDeltaTime = (timer->mCurrTime - timer->mPrevTime) * timer->mSecondsPercount;
+				// Prepare for next frame.
+				timer->mPrevTime = timer->mCurrTime;
+
+				// Force nonnegative.  The DXSDK's CDXUTGameTimer mentions that if the 
+				// libcessor goes into a power save mode or we get shuffled to another
+				// libcessor, then mDeltaTime can be negative.
+				if (timer->mDeltaTime < 0.0)
+					timer->mDeltaTime = 0.0;
+			};
+
+			const uint count = (uint)TimerCashVecData::Data().size();
+			for (uint i = 0; i < count; ++i)
+				tickLam(TimerCashVecData::Data()[i]);
+		}
 	}
 }

@@ -813,8 +813,8 @@ namespace JinEngine
 		{
 			JPassConstants passContants;
 			passContants.ambientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
-			passContants.totalTime = JGameTimer::Instance().TotalTime();
-			passContants.deltaTime = JGameTimer::Instance().DeltaTime();
+			passContants.totalTime = JEngineTimer::Data().TotalTime();
+			passContants.deltaTime = JEngineTimer::Data().DeltaTime();
 
 			auto currPassCB = currFrameResource->passCB.get();
 			currPassCB->CopyData(updateHelper.uData[(int)J_UPLOAD_RESOURCE_TYPE::PASS].offset, passContants);
@@ -831,7 +831,7 @@ namespace JinEngine
 			const uint offset = updateHelper.uData[(int)J_UPLOAD_RESOURCE_TYPE::ANIMATION].offset;
 			const bool forcedSetFrameDirty = updateHelper.uData[(int)J_UPLOAD_RESOURCE_TYPE::ANIMATION].setFrameDirty;
 
-			if (scene->IsAnimatorActivated())
+			if (scene->IsActivatedSceneTime())
 			{
 				for (uint i = 0; i < animatorCount; ++i)
 				{
@@ -1137,7 +1137,7 @@ namespace JinEngine
 			const std::vector<JGameObject*>& objVec04 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_UI, J_MESHGEOMETRY_TYPE::STATIC);
 
 			DrawGameObject(commandList.Get(), objVec00, helper, DrawCondition(option, helper, false, true, helper.allowDrawDebug));
-			DrawGameObject(commandList.Get(), objVec01, helper, DrawCondition(option, helper, helper.scene->IsAnimatorActivated(), true, helper.allowDrawDebug));
+			DrawGameObject(commandList.Get(), objVec01, helper, DrawCondition(option, helper, helper.scene->IsActivatedSceneTime(), true, helper.allowDrawDebug));
 			if (option.IsHDOccActivated())
 				commandList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
 			if (helper.allowDrawDebug)
@@ -1187,7 +1187,7 @@ namespace JinEngine
 			const std::vector<JGameObject*>& objVec01 = iCash->GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
 
 			DrawShadowMapGameObject(commandList.Get(), objVec00, helper, DrawCondition(option, helper, false, false, false));
-			DrawShadowMapGameObject(commandList.Get(), objVec01, helper, DrawCondition(option, helper, helper.scene->IsAnimatorActivated(), false, false));
+			DrawShadowMapGameObject(commandList.Get(), objVec01, helper, DrawCondition(option, helper, helper.scene->IsActivatedSceneTime(), false, false));
 
 			ResourceTransition(shdowMapResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ);
 		}

@@ -1,5 +1,5 @@
 #pragma once
-#include"JTypeInfo.h"
+#include"JTypeInfo.h" 
 #include"JTypeInfoInitializer.h"
 
 namespace JinEngine
@@ -11,8 +11,8 @@ namespace JinEngine
 		{
 		public:
 			JTypeInfoRegister(const std::string& name)
-			{
-				static JTypeInfo typeInfo{ JTypeInfoInitializer<Type>(name)};
+			{ 
+				static JTypeInfo typeInfo{ JTypeInfoInitializer<Type>(name)}; 
 			}
 		};
 	}

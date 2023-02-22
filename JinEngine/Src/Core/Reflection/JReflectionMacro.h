@@ -39,6 +39,9 @@ namespace JinEngine
 
 		}
 
+#pragma region Register 
+
+		//Has order dependecy
 #define REGISTER_CLASS(typeName, ...)																	\
 																										\
 		public:																							\
@@ -49,12 +52,14 @@ namespace JinEngine
 		protected:																						\
 			using JTypeInfo = JinEngine::Core::JTypeInfo;										\
 			using JTypeInfoInitializer = JinEngine::Core::JTypeInfoInitializer<typeName>;		\
+			using JTypeInfoCallOnece = JinEngine::Core::JTypeInfoCallOnece<typeName>;			\
 			using JTypeInfoRegister = JinEngine::Core::JTypeInfoRegister<typeName>;				\
 			using JReflectionInfo = JinEngine::Core::JReflectionInfo;							\
 			using JPtrUtil = JinEngine::Core::JPtrUtil;											\
 																								\
 		private:																				\
 			friend class JTypeInfoInitializer;													\
+			friend class JTypeInfoCallOnece;													\
 			template<typename T> friend class JinEngine::Core::JOwnerPtr;						\
 			friend class JPtrUtil;																\
 																								\
@@ -72,6 +77,13 @@ namespace JinEngine
 																								\
 		private:																				\
 			inline static JTypeInfo& typeInfo = StaticTypeInfo();								\
+		private:																				\
+			inline static struct typeName##CallOnce												\
+			{																					\
+			public:																				\
+				typeName##CallOnce(){ static JTypeInfoCallOnece once{};	}							\
+			}typeName##CallOnce;																\
+																								\
 																								\
 																								\
 
@@ -100,14 +112,14 @@ namespace JinEngine
 
 #define REGISTER_PROPERTY_EX(propertyName, getName, setName, ...)														\
 			template<typename Class, typename Field, typename Pointer, Pointer ptr>					\
-			class JinEngine::Core::JPropertyInfoRegister;												\
+			class JinEngine::Core::JPropertyExInfoRegister;												\
 																									\
 			inline static struct propertyName##PropertyStruct										\
 			{																						\
 				public:																				\
 					propertyName##PropertyStruct()													\
 					{																				\
-						static JinEngine::Core::JPropertyInfoRegister<ThisType,							\
+						static JinEngine::Core::JPropertyExInfoRegister<ThisType,							\
 						decltype(propertyName),														\
 						decltype(&ThisType::propertyName),											\
 						&ThisType::propertyName> jPropertyRegister{#propertyName, &ThisType::getName, &ThisType::setName, __VA_ARGS__};					\
@@ -149,12 +161,63 @@ namespace JinEngine
 					}																					\
 			} J_MERGE_NAME(methodName, __VA_ARGS__);													\
 	
-		}
 
+#define REGISTER_METHOD_READONLY_GUI_WIDGET(displayName, getName, ...)												\
+			template<typename Class,  typename GetPointer, GetPointer getPtr>							\
+			class JinEngine::Core::JMethodReadOnlyGuiWidgetRegister;											\
+																										\
+			inline static struct J_MERGE_NAME(displayName, getName)										\
+			{																							\
+				public:																					\
+					J_MERGE_NAME(displayName, getName)()												\
+					{																					\
+						static JinEngine::Core::JMethodReadOnlyGuiWidgetRegister<ThisType,				\
+						decltype(&ThisType::getName),													\
+						&ThisType::getName>																\
+						jMethodGuiRegisterHelper{J_STRINGIZE(displayName), J_STRINGIZE(getName), __VA_ARGS__};					\
+					}																					\
+			} J_MERGE_NAME(displayName, getName);														\
+
+
+#define REGISTER_METHOD_GUI_WIDGET(displayName, getName, setName, ...)												\
+			template<typename Class,  typename GetPointer, GetPointer getPtr>							\
+			class JinEngine::Core::JMethodGuiWidgetRegister;											\
+																										\
+			inline static struct J_MERGE_NAME(J_MERGE_NAME(displayName, getName), setName)				\
+			{																							\
+				public:																					\
+					J_MERGE_NAME(J_MERGE_NAME(displayName, getName),setName)()							\
+					{																					\
+						static JinEngine::Core::JMethodGuiWidgetRegister<ThisType,						\
+						decltype(&ThisType::getName), 													\
+						&ThisType::getName>																\
+						jMethodGuiRegisterHelper{J_STRINGIZE(displayName),J_STRINGIZE(getName), J_STRINGIZE(setName), __VA_ARGS__};\
+					}																					\
+			} J_MERGE_NAME(J_MERGE_NAME(displayName, getName),setName);									\
+
+
+#define REGISTER_PARENT_METHOD_GUI_WIDGET(parentType, displayName, getName, setName, ...)				\
+			template<typename Class,  typename GetPointer, GetPointer getPtr>							\
+			class JinEngine::Core::JMethodGuiWidgetRegister;											\
+																										\
+			inline static struct J_MERGE_NAME(J_MERGE_NAME(displayName, getName), setName)				\
+			{																							\
+				public:																					\
+					J_MERGE_NAME(J_MERGE_NAME(displayName, getName), setName)()							\
+					{																					\
+						static JinEngine::Core::JMethodGuiWidgetRegister<parentType,						\
+						decltype(&parentType::getName), 													\
+						&parentType::getName>																\
+						jMethodGuiRegisterHelper{J_STRINGIZE(displayName),J_STRINGIZE(getName), J_STRINGIZE(setName), __VA_ARGS__};\
+					}																					\
+			} J_MERGE_NAME(J_MERGE_NAME(displayName, getName),setName);									\
+
+
+		}
 
 		//enum class n {...., Count}
 		//Added Count and Count name don't registeted
-#define REGISTER_ENUM_CLASS(enumName, dataType, ...)													\
+	#define REGISTER_ENUM_CLASS(enumName, dataType, ...)													\
 			enum class enumName : dataType	{J_MAKE_ENUM_ELEMENT(__VA_ARGS__), COUNT};					\
 																										\
 			namespace ReflectionData																	\
@@ -197,37 +260,42 @@ namespace JinEngine
 namespace ReflectionData
 		{
 
-#define REGISTER_GUI_TABLE_GROUP(groupName, ...)																\
+#define REGISTER_GUI_TABLE_GROUP(tableName, ...)																\
 																										\
-			inline static struct GuiTable##groupName													\
+			inline static struct GuiTable##tableName													\
 			{																							\
 			public:																					\
-				GuiTable##groupName()																\
+				GuiTable##tableName()																\
 				{																					\
-					JinEngine::Core::JGuiGroupMap::AddGuiGroup(std::make_unique<JinEngine::Core::JGuiTableInfo>(#groupName, __VA_ARGS__));	\
+					JinEngine::Core::JGuiExtraFunctionInfoMap::AddExtraFunctionInfo(std::make_unique<JinEngine::Core::JGuiTableInfo>(#tableName, __VA_ARGS__));	\
 				}																					\
-			}GuiTable##groupName;																	\
+			}GuiTable##tableName;																	\
 
 
-#define REGISTER_GUI_ENUM_CONDITION_GROUP(groupName, enumName, paramName)																\
+#define REGISTER_GUI_ENUM_CONDITION(conditioName, enumName, paramName)																\
 																										\
-			inline static struct GuiEnumTrigger##groupName												\
+			inline static struct GuiEnumCondition##conditioName												\
 			{																							\
 			public:																						\
-				GuiEnumTrigger##groupName()																\
+				GuiEnumCondition##conditioName()																\
 				{																						\
-					JinEngine::Core::JGuiGroupMap::AddGuiGroup(std::make_unique<JinEngine::Core::JGuiEnumConditionInfo>(#groupName, #enumName, #paramName));	\
+					JinEngine::Core::JGuiExtraFunctionInfoMap::AddExtraFunctionInfo(std::make_unique<JinEngine::Core::JGuiEnumConditionInfo>(#conditioName, #enumName, #paramName));	\
 				}																						\
-			}GuiEnumTrigger##groupName;																	\
-
+			}GuiEnumCondition##conditioName;																	\
 		
 		}
- 
 
-#define GUI_GROUP_COMMON(groupKey) std::make_unique<JinEngine::Core::JGuiGroupMemberInfo>(#groupKey)
-#define GUI_GROUP_ENUM_CONDITION(groupKey, ...) std::make_unique<JinEngine::Core::JGuiEnumConditionGroupMemberInfo<J_COUNT(__VA_ARGS__)>>(#groupKey, __VA_ARGS__)
+#pragma endregion
 
-#define GUI_INPUT(isEnterToReturn, ...)	std::make_unique<JinEngine::Core::JGuiInputInfo>(isEnterToReturn, __VA_ARGS__)
+#pragma region Create GUI
+
+
+#define GUI_TABLE_GROUP_USER(tableName, useColumnCount, canAddRowCount) std::make_unique<JinEngine::Core::JGuiTableUserInfo>(#tableName, useColumnCount, canAddRowCount)
+#define GUI_ENUM_CONDITION_USER(conditionName, ...) std::make_unique<JinEngine::Core::JGuiEnumConditionUserInfo<J_COUNT(__VA_ARGS__)>>(#conditionName,  __VA_ARGS__)
+#define GUI_ENUM_CONDITION_REF_USER(conditionName, ownerTypeParameterName, ...) std::make_unique<JinEngine::Core::JGuiEnumConditionRefUserInfo<J_COUNT(__VA_ARGS__)>>(#conditionName, #ownerTypeParameterName, __VA_ARGS__)
+
+#define GUI_INPUT(isEnterToReturn, ...)	std::make_unique<JinEngine::Core::JGuiInputInfo>(isEnterToReturn, JinEngine::Core::J_PARAMETER_TYPE::UnKnown, __VA_ARGS__)
+#define GUI_FIXED_INPUT(isEnterToReturn, fixedType, ...)	std::make_unique<JinEngine::Core::JGuiInputInfo>(isEnterToReturn, fixedType, __VA_ARGS__)
 #define GUI_CHECKBOX(...)	std::make_unique<JinEngine::Core::JGuiCheckBoxInfo>(__VA_ARGS__)
 #define GUI_SLIDER(minValue, maxValue, ...)	std::make_unique<JinEngine::Core::JGuiSliderInfo>(minValue, maxValue, __VA_ARGS__)
 #define GUI_COLOR_PICKER(hasRgbInput, ...)	std::make_unique<JinEngine::Core::JGuiColorPickerInfo>(hasRgbInput, __VA_ARGS__)
@@ -235,6 +303,14 @@ namespace ReflectionData
 #define GUI_READONLY_TEXT(...)	std::make_unique<JinEngine::Core::JGuiReadOnlyTextInfo>(__VA_ARGS__) 
 #define GUI_ENUM_COMBO(enumName, ...) std::make_unique<JinEngine::Core::JGuiEnumComboBoxInfo>(#enumName, __VA_ARGS__) 
 #define GUI_LIST(listType, canDisplayElementGui, ...)  std::make_unique<JinEngine::Core::JGuiListInfo>(listType, canDisplayElementGui, __VA_ARGS__) 
+
+#pragma endregion
+
+#pragma region OPTION
+
+#define SET_GUI_FLAG(flag) StaticTypeInfo().GetOption()->SetGuiWidgetFlag(flag)
+
+#pragma endregion
 
 
 	}

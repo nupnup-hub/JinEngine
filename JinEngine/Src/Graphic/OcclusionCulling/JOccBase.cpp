@@ -7,7 +7,7 @@ namespace JinEngine
 	{
 		void JOccBase::UpdateTimer()noexcept
 		{
-			const float totalTime = JGameTimer::Instance().TotalTime();
+			const float totalTime = JEngineTimer::Data().TotalTime();
 			if (totalTime > lastUpdateTime + updateFrequency)
 			{
 				canOcclusionCullingStart = true;

@@ -43,16 +43,16 @@ namespace JinEngine
 			editorManager.Initialize();
 			editorManager.OpenProjectSelector();
 
-			JGameTimer::Instance().Start();
-			JGameTimer::Instance().Reset();
-			JGameTimer::Instance().Tick();  
+			JEngineTimer::Data().Start();
+			JEngineTimer::Data().Reset();
+			Core::JGameTimer::TickAllTimer();
 			while (true)
 			{
 				std::optional<int> encode = JWindow::Instance().AppInterface()->ProcessMessages();
 				if (encode.has_value())
 					break;
 
-				JGameTimer::Instance().Tick();
+				Core::JGameTimer::TickAllTimer();
 				CalculateFrame();
 
 				JGraphic::Instance().AppInterface()->UpdateWait();
@@ -83,9 +83,9 @@ namespace JinEngine
 			editorManager.Initialize();
 			editorManager.OpenProject();
 
-			JGameTimer::Instance().Start();
-			JGameTimer::Instance().Reset();
-			JGameTimer::Instance().Tick();
+			JEngineTimer::Data().Start();
+			JEngineTimer::Data().Reset();
+			Core::JGameTimer::TickAllTimer();
 			 
 			while (true)
 			{
@@ -93,7 +93,7 @@ namespace JinEngine
 				if (encode.has_value())
 					break;
 
-				JGameTimer::Instance().Tick();
+				Core::JGameTimer::TickAllTimer();
 				CalculateFrame();
 				Core::JDebugTimer::StartGameTimer();
 				JGraphic::Instance().AppInterface()->UpdateWait();
@@ -116,7 +116,7 @@ namespace JinEngine
 		void JApplication::CalculateFrame()
 		{ 
 			frameCnt++;
-			if ((JGameTimer::Instance().TotalTime() - timeElapsed) >= 1.0f)
+			if ((JEngineTimer::Data().TotalTime() - timeElapsed) >= 1.0f)
 			{
 				float fps = (float)frameCnt; // fps = frameCnt / 1
 				float mspf = 1000.0f / fps;

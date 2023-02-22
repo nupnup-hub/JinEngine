@@ -217,6 +217,7 @@ namespace JinEngine
 
 		template<typename T>
 		struct JTypeInfoDetermine<T, std::void_t<typename T::ThisType>> : std::true_type {};
+ 
 #pragma endregion
 
 #pragma region Param
@@ -239,6 +240,53 @@ namespace JinEngine
 		template<typename T>
 		static constexpr bool IsRefernce_V = std::is_reference_v<T>;
 #pragma endregion
+
+#pragma region Method
+
+		//add 2^n value enum 
+		static int AddSQValue(const int ori, const int addValue)
+		{
+			return (ori | (addValue ^ (addValue & ori)));
+		}
+		template<typename enumType>
+		auto AddSQValueEnum(const enumType ori, const enumType addValue) ->
+			TypeCondition_T<enumType, std::is_enum_v< enumType>&& std::is_constructible_v<int, enumType>>
+		{
+			return (enumType)AddSQValue((int)ori, (int)addValue);
+			//return (enumType)((int)ori | ((int)addValue ^ ((int)addValue & (int)ori)));
+		}
+		template<typename enumType, typename ...Param>
+		auto AddSQValueEnum(enumType ori, Param... var) ->
+			TypeCondition_T<enumType, std::is_enum_v< enumType>&& std::is_constructible_v<int, enumType>>
+		{
+			auto addSQValueEnumLam = [](enumType& ori, enumType addValue)
+			{
+				ori = AddSQValueEnum(ori, addValue);
+			};
+			((addSQValueEnumLam(ori, var)), ...);
+			return ori;
+		}
+
+		static int MinusSQValue(const int ori, const int minusValue)
+		{
+			return (ori ^ (minusValue & ori));
+		}
+		//minus 2^n value enum
+		template<typename enumType>
+		auto MinusSQValueEnum(const enumType ori, const enumType minusValue) ->
+			TypeCondition_T<enumType, std::is_enum_v< enumType>&& std::is_constructible_v<int, enumType>>
+		{
+			return (enumType)(MinusSQValue((int)ori, (int)minusValue));
+		}
+		//has 2^n value enum
+		template<typename enumType, std::enable_if_t<std::is_enum_v<enumType>, int> = 0>
+		bool HasSQValueEnum(const enumType ori, const enumType tar)
+		{
+			return (((int)ori & (int)tar) > 0);
+		}
+
+#pragma endregion
+
 
 	}
 }

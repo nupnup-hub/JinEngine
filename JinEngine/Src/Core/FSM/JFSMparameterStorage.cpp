@@ -131,7 +131,7 @@ namespace JinEngine
 			for (uint i = 0; i < conditionCount; ++i)
 			{
 				JFileIOHelper::StoreFsmObjectIden(stream, parameterVec[i]);
-				JFileIOHelper::StoreEnumData(stream, L"ValueType:", parameterVec[i]->GetValueType());
+				JFileIOHelper::StoreEnumData(stream, L"ValueType:", parameterVec[i]->GetParamType());
 				JFileIOHelper::StoreAtomicData(stream, L"Value:", parameterVec[i]->GetValue());
 			}
 			return J_FILE_IO_RESULT::SUCCESS;

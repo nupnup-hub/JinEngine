@@ -1,5 +1,6 @@
 #pragma once   
-#include"JTypeInfoInitializer.h"
+#include"JTypeInfoInitializer.h" 
+#include"JTypeInfoOption.h"
 #include"JReflectionInfo.h" 
 #include"../JDataType.h"
 #include<unordered_map>  
@@ -13,7 +14,7 @@ namespace JinEngine
 	{
 		class JIdentifier;
 		class JPropertyInfo;
-		class JMethodInfo;
+		class JMethodInfo;  
 		template<typename T> class JOwnerPtr;
 		template<typename T> class JUserPtr;
 
@@ -42,6 +43,7 @@ namespace JinEngine
 			MethodMap methodInfoMap;
 		};
  
+		class JTypeInfoOption;
 		class JTypeInfo 
 		{
 		private: 
@@ -49,6 +51,7 @@ namespace JinEngine
 			friend class JReflectionInfoImpl;
 			template<typename Type> friend class JTypeInfoRegister;
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyInfoRegister;
+			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyExInfoRegister;
 			template<typename Type, typename Pointer, Pointer ptr> friend class JMethodInfoRegister;
 		private:
 			//name is class Name except namespace and class
@@ -57,6 +60,7 @@ namespace JinEngine
 			const std::string fullName;
 			const size_t hashCode;
 			JTypeInfo* parent;
+			JTypeInfoOption option;
 			std::unique_ptr<JTypeInstanceData> instanceData;
 			std::unique_ptr<JTypeMemberData> memberData;
 		public:
@@ -69,8 +73,10 @@ namespace JinEngine
 		public:
 			const PropertyVec GetPropertyVec()const noexcept;
 			const MethodVec GetMethodVec()const noexcept;
-			JPropertyInfo* GetProperty(const std::string& name);
-			JMethodInfo* GetMethod(const std::string& name);
+			JTypeInfo* GetParent()const noexcept;
+			JPropertyInfo* GetProperty(const std::string& name)const noexcept;
+			JMethodInfo* GetMethod(const std::string& name)const noexcept;
+			JTypeInfoOption* GetOption()noexcept;
 		public:
 			bool IsA(const JTypeInfo& tar)const noexcept;
 			bool IsChildOf(const JTypeInfo& parentCandidate)const noexcept;
@@ -104,7 +110,7 @@ namespace JinEngine
 			JOwnerPtr<JTypeInstance> ReleaseInstance(IdentifierType iden)noexcept;
 		private:
 			bool AddPropertyInfo(JPropertyInfo* newProperty);
-			bool AddMethodInfo(JMethodInfo* newMethod);
+			bool AddMethodInfo(JMethodInfo* newMethod); 
 		private:
 			template<typename Type>
 			JTypeInfo(const JTypeInfoInitializer<Type>& initializer)
@@ -117,6 +123,7 @@ namespace JinEngine
 					instanceData = std::make_unique<JTypeInstanceData>();
 
 				JReflectionInfo::Instance().AddType(this);
+				//option = std::make_unique<JTypeInfoOption>();
 			} 
 		};
 	}

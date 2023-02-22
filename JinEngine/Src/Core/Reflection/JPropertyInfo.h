@@ -12,12 +12,13 @@ namespace JinEngine
 		class JTypeInfo;
 		class JMethodInfo;
 		template<typename Type, typename Field, typename Pointer, Pointer ptr> class JPropertyInfoRegister;
-
+		template<typename Type, typename Field, typename Pointer, Pointer ptr> class JPropertyExInfoRegister;
 		class JPropertyInfo
 		{
 		private:
 			friend class JTypeInfo;
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyInfoRegister;
+			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyExInfoRegister;
 		private:
 			const std::string name;
 			const JParameterHint fieldHint;
@@ -46,7 +47,7 @@ namespace JinEngine
 				return static_cast<IPropertyHandler<Field>*>(handle)->Get(object);
 			}
 			template<typename Field>
-			void Set(void* object, const Field& value)
+			void Set(void* object, const Field value)
 			{
 				if (handle->GetTypeInfo().IsChildOf<IPropertyHandler<Field>>())
 					static_cast<IPropertyHandler<Field>*>(handle)->Set(object, value);
@@ -55,7 +56,7 @@ namespace JinEngine
 			}
 			//For enum property
 			template<typename Field>
-			void UnsafeSet(void* object, const Field& value)
+			void UnsafeSet(void* object, const Field value)
 			{
 				static_cast<IPropertyHandler<Field>*>(handle)->Set(object, value);
 			}

@@ -79,20 +79,20 @@ namespace JinEngine
 		Core::JFSMparameter* GetParameterByIndex(const uint index)noexcept;
 
 		bool CanCreateDiagram()const noexcept;
-		bool CanCreateCondition()const noexcept;
+		bool CanCreateParameter()const noexcept;
 		bool CanCreateState(Core::JAnimationFSMdiagram* diagram)const noexcept;
 	public:
-		Core::JAnimationFSMdiagram* CreateFSMDiagram(const size_t guid = Core::MakeGuid())noexcept;
-		Core::JFSMparameter* CreateFSMCondition(const size_t guid = Core::MakeGuid())noexcept;
-		Core::JAnimationFSMstate* CreateFSMClip(Core::JAnimationFSMdiagram* diagram, const size_t guid = Core::MakeGuid())noexcept;
-		Core::JAnimationFSMtransition* CreateFsmTransition(Core::JAnimationFSMdiagram* diagram,
+		Core::JAnimationFSMdiagram* CreateFSMdiagram(const size_t guid = Core::MakeGuid())noexcept;
+		Core::JFSMparameter* CreateFSMparameter(const size_t guid = Core::MakeGuid())noexcept;
+		Core::JAnimationFSMstate* CreateFSMclip(Core::JAnimationFSMdiagram* diagram, const size_t guid = Core::MakeGuid())noexcept;
+		Core::JAnimationFSMtransition* CreateFsmtransition(Core::JAnimationFSMdiagram* diagram,
 			Core::JAnimationFSMstate* from, 
 			Core::JAnimationFSMstate* to,
 			const size_t guid = Core::MakeGuid())noexcept;
 	private:  
 		bool AddType(Core::JFSMdiagram* diagram) noexcept final;
 		bool RemoveType(Core::JFSMdiagram* diagram) noexcept final;
-		Core::JFSMparameterStorageUserAccess* GetConditionStorageUser()noexcept;
+		Core::JFSMparameterStorageUserAccess* GetParameterStorageUser()noexcept;
 	private:
 		Core::JAnimationFSMdiagram* FindDiagram(const size_t guid) noexcept;
 	private:

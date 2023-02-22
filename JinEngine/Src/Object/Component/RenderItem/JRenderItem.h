@@ -40,9 +40,10 @@ namespace JinEngine
 		D3D12_PRIMITIVE_TOPOLOGY GetPrimitiveType()const noexcept;
 		J_RENDER_LAYER GetRenderLayer()const noexcept;
 		J_RENDERITEM_SPACE_SPATIAL_MASK GetSpaceSpatialMask()const noexcept;
-		REGISTER_METHOD(GetVertexTotalCount, GUI_READONLY_TEXT())
+		REGISTER_METHOD(GetVertexTotalCount)
+		REGISTER_METHOD_READONLY_GUI_WIDGET(VertexTotalCount, GetVertexTotalCount, GUI_READONLY_TEXT())
 		uint GetVertexTotalCount()const noexcept;
-		REGISTER_METHOD(GetIndexTotalCount, GUI_READONLY_TEXT())
+		REGISTER_METHOD(GetIndexTotalCount)
 		uint GetIndexTotalCount()const noexcept;
 		uint GetSubmeshCount()const noexcept;
 		//apply scale rotation tranlation 

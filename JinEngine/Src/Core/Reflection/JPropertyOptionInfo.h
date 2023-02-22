@@ -1,11 +1,11 @@
-#pragma once
-#include"JReflectionGuiInfo.h" 
+#pragma once 
 
 namespace JinEngine
 {
 	namespace Core
 	{
 		template<typename Type, typename Field, typename Pointer, Pointer ptr> class JPropertyInfoRegister;
+		template<typename Type, typename Field, typename Pointer, Pointer ptr> class JPropertyExInfoRegister;
 		class JPropertyInfo;
 
 		class JPropertyOptionInfo
@@ -13,17 +13,10 @@ namespace JinEngine
 		private:
 			friend class JPropertyInfo;
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyInfoRegister;
+			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyExInfoRegister;
 			friend std::unique_ptr<JPropertyOptionInfo>::deleter_type;
 		private:
-			std::unique_ptr<JGuiWidgetInfo> widgetInfo = nullptr;
-		private:
-			JPropertyOptionInfo() = default;
-			JPropertyOptionInfo(std::unique_ptr<JGuiWidgetInfo>&& widgetInfo);
-		public:
-			JGuiWidgetInfo* GetWidgetInfo()const noexcept;
-		public:
-			bool HasWidgetInfo()const noexcept;
-			bool IsGroupMember()const noexcept;		
+			JPropertyOptionInfo() = default; 
 		};
 	}
 }

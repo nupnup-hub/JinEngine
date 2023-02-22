@@ -114,9 +114,9 @@ namespace JinEngine
 	{
 		return useCaseType;
 	}
-	bool JScene::IsAnimatorActivated()const noexcept
+	bool JScene::IsActivatedSceneTime()const noexcept
 	{
-		return isAnimatorActivated;
+		return sceneTimer != nullptr;
 	}
 	bool JScene::IsMainScene()const noexcept
 	{
@@ -138,6 +138,10 @@ namespace JinEngine
 			return nullptr;
 	}
 	JSceneCashInterface* JScene::CashInterface()
+	{
+		return this;
+	}
+	JSceneTimeInterface* JScene::TimeInterface()
 	{
 		return this;
 	}
@@ -299,16 +303,21 @@ namespace JinEngine
 		}
 		return false;
 	}
-	void JScene::SetAnimation()noexcept
+	void JScene::ActivateSceneTime()noexcept
 	{
-		isAnimatorActivated = !isAnimatorActivated;
-		if (isAnimatorActivated)
+		if (sceneTimer == nullptr)
 		{
+			sceneTimer = std::make_unique<Core::JGameTimer>();
+			 
 			const std::vector<JComponent*>& cashVec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR);
 			const uint compCount = (uint)cashVec.size();
 			for (uint i = 0; i < compCount; ++i)
 				static_cast<JAnimator*>(cashVec[i])->OnAnimation();
 		}
+	}
+	void JScene::DeActivateSceneTime()noexcept
+	{
+		sceneTimer.reset();
 	}
 	void JScene::SetMainCamera(JCamera* mainCam)noexcept
 	{

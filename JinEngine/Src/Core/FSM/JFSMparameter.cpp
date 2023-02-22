@@ -7,11 +7,11 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		JFSMparameter::JFSMparameterInitData::JFSMparameterInitData(const std::wstring& name, const size_t guid, const J_FSM_PARAMETER_VALUE_TYPE valueType, IJFSMparameterStorageInterface* paramStorage)
-			:JFSMIdentifierInitData(name, guid), valueType(valueType), paramStorage(paramStorage)
+		JFSMparameter::JFSMparameterInitData::JFSMparameterInitData(const std::wstring& name, const size_t guid, const J_FSM_PARAMETER_VALUE_TYPE paramType, IJFSMparameterStorageInterface* paramStorage)
+			:JFSMIdentifierInitData(name, guid), paramType(paramType), paramStorage(paramStorage)
 		{}
 		JFSMparameter::JFSMparameterInitData::JFSMparameterInitData(const size_t guid, IJFSMparameterStorageInterface* paramStorage)
-			: JFSMIdentifierInitData(JIdentifier::GetDefaultName<JFSMparameter>(), guid), valueType(J_FSM_PARAMETER_VALUE_TYPE::BOOL), paramStorage(paramStorage)
+			: JFSMIdentifierInitData(JIdentifier::GetDefaultName<JFSMparameter>(), guid), paramType(J_FSM_PARAMETER_VALUE_TYPE::BOOL), paramStorage(paramStorage)
 		{} 
 		bool JFSMparameter::JFSMparameterInitData::IsValid() noexcept
 		{
@@ -27,25 +27,20 @@ namespace JinEngine
 			value = 0;
 		}
 		J_FSM_OBJECT_TYPE JFSMparameter::GetFSMobjType()const noexcept
-		{
+		{ 
 			return J_FSM_OBJECT_TYPE::PARAMETER;
 		}
 		float JFSMparameter::GetValue()const noexcept
 		{
-			if (valueType == J_FSM_PARAMETER_VALUE_TYPE::BOOL)
-				return static_cast<bool>(value);
-			else if (valueType == J_FSM_PARAMETER_VALUE_TYPE::INT)
-				return static_cast<int>(value);
-			else
-				return value;
+			return TypeValue(paramType, value);
 		}
-		J_FSM_PARAMETER_VALUE_TYPE JFSMparameter::GetValueType()const noexcept
+		J_FSM_PARAMETER_VALUE_TYPE JFSMparameter::GetParamType()const noexcept
 		{
-			return valueType;
+			return paramType;
 		} 
-		void JFSMparameter::SetValueType(const J_FSM_PARAMETER_VALUE_TYPE valueType)noexcept
+		void JFSMparameter::SetParamType(const J_FSM_PARAMETER_VALUE_TYPE paramType)noexcept
 		{
-			JFSMparameter::valueType = valueType;
+			JFSMparameter::paramType = paramType;
 			SetValue(value);
 		}
 		void JFSMparameter::Clear(){}
@@ -74,7 +69,7 @@ namespace JinEngine
 			JFFI<JFSMparameter>::Register(createParamLam);
 		}
 		JFSMparameter::JFSMparameter(const JFSMparameterInitData& initData)
-			:JFSMInterface(initData), valueType(initData.valueType)
+			:JFSMInterface(initData), paramType(initData.paramType)
 		{
 			paramStorage = initData.paramStorage;
 		}

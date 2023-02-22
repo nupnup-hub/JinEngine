@@ -22,16 +22,17 @@ namespace JinEngine
 	{
 		class JRay;
 		class JSceneSpatialStructure;
+		class JGameTimer;
 	}
 	class JScene : public JSceneInterface
 	{
 		REGISTER_CLASS(JScene)
 	protected:
-		struct JSceneMetadata final: public JResourceMetaData
+		struct JSceneMetadata final : public JResourceMetaData
 		{
 		public:
 			bool isOpen = false;
-			bool isMainScene = false;	 
+			bool isMainScene = false;
 			//space spatial trigger
 			bool isActivatedSpaceSpatial;
 			bool hasInnerRoot[(uint)Core::J_SPACE_SPATIAL_TYPE::COUNT][(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
@@ -72,10 +73,11 @@ namespace JinEngine
 		std::vector<JGameObject*> objectLayer[(int)J_RENDER_LAYER::COUNT][(int)J_MESHGEOMETRY_TYPE::COUNT];
 		std::unordered_map<J_COMPONENT_TYPE, std::vector<JComponent*>> componentCash;
 		JCamera* mainCamera = nullptr;
-		bool isAnimatorActivated = false;  
-	private: 
+	private:
 		const size_t debugRootGuid;
 		const J_SCENE_USE_CASE_TYPE useCaseType;
+	private:
+		std::unique_ptr<Core::JGameTimer> sceneTimer;
 	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
@@ -95,15 +97,16 @@ namespace JinEngine
 		uint GetMeshCount()const noexcept;
 		J_SCENE_USE_CASE_TYPE GetUseCaseType()const noexcept;
 
-		bool IsAnimatorActivated()const noexcept; 
-		bool IsMainScene()const noexcept; 
+		bool IsActivatedSceneTime()const noexcept;
+		bool IsMainScene()const noexcept;
 		bool IsSpaceSpatialActivated()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
 	public:
 		//Intersect by scene space spatial
 		JGameObject* IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
 	public:
-		JSceneCashInterface* CashInterface() final; 
+		JSceneCashInterface* CashInterface() final;
+		JSceneTimeInterface* TimeInterface() final;
 		JSceneCompInterface* CompInterface()final;
 		JSceneRegisterInterface* RegisterInterface() final;
 		JSceneFrameInterface* AppInterface() final;
@@ -126,7 +129,9 @@ namespace JinEngine
 		bool AddType(JGameObject* newGameObject)noexcept final;
 		bool RemoveType(JGameObject* gameObj)noexcept final;
 	private:
-		void SetAnimation()noexcept final;
+		void ActivateSceneTime()noexcept final;
+		void DeActivateSceneTime()noexcept final;
+	private:
 		void SetMainCamera(JCamera* mainCam)noexcept final;
 		void UpdateTransform(JGameObject* owner)noexcept final;
 	private:
@@ -137,9 +142,9 @@ namespace JinEngine
 		void SetComponentFrameDirty(const J_COMPONENT_TYPE cType, JComponent* stComp = nullptr, SetCompCondition condiiton = nullptr) noexcept final;
 		void SetComponentFrameDirty(const J_COMPONENT_TYPE cType, const uint stIndex, SetCompCondition condiiton = nullptr)noexcept;
 		void SetComponentFrameOffset(const J_COMPONENT_TYPE cType, JComponent* refComp, const uint stIndex, const bool isCreated)noexcept;
-private:
+	private:
 		//SceneSpatial
-		void ViewCulling()noexcept final; 
+		void ViewCulling()noexcept final;
 		std::vector<JGameObject*> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept final;
 		Core::JOctreeOption GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept final;
 		Core::JBvhOption GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept final;
@@ -151,7 +156,7 @@ private:
 		void InitializeSpaceSpatial()noexcept;
 	private:
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
-		static Core::J_FILE_IO_RESULT StoreObject(JScene* scene); 
+		static Core::J_FILE_IO_RESULT StoreObject(JScene* scene);
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JScene* scene);
 		static JScene* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
 		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, JSceneMetadata& metadata);
