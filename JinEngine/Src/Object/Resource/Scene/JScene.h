@@ -61,8 +61,6 @@ namespace JinEngine
 			JSceneInitData(JDirectory* directory,
 				const J_SCENE_USE_CASE_TYPE useCaseType,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JScene>(GetAvailableFormat()[0]));
-		public:
-			J_RESOURCE_TYPE GetResourceType() const noexcept;
 		};
 		using InitData = JSceneInitData;
 	private:
@@ -98,6 +96,7 @@ namespace JinEngine
 		J_SCENE_USE_CASE_TYPE GetUseCaseType()const noexcept;
 
 		bool IsActivatedSceneTime()const noexcept;
+		bool IsPauseSceneTime()const noexcept;
 		bool IsMainScene()const noexcept;
 		bool IsSpaceSpatialActivated()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
@@ -130,6 +129,7 @@ namespace JinEngine
 		bool RemoveType(JGameObject* gameObj)noexcept final;
 	private:
 		void ActivateSceneTime()noexcept final;
+		void PlaySceneTimer(const bool value)noexcept final;
 		void DeActivateSceneTime()noexcept final;
 	private:
 		void SetMainCamera(JCamera* mainCam)noexcept final;

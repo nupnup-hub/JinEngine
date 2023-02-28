@@ -1,6 +1,7 @@
 #include"JAnimationFSMstate.h" 
 #include"JAnimationFSMtransition.h" 
 #include"JAnimationTime.h"    
+#include"JAnimationUpdateData.h"
 #include"../JFSMfactory.h"
 #include"../../File/JFileIOHelper.h"
 #include"../../File/JFileConstant.h" 
@@ -28,17 +29,24 @@ namespace JinEngine
 		{
 			pos = newPos;
 		}
-		JAnimationFSMtransition* JAnimationFSMstate::FindNextStateTransition(JAnimationTime& animationTime)noexcept
+		JAnimationFSMtransition* JAnimationFSMstate::FindNextStateTransition(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 		{
+			JAnimationTime& animationTime = updateData->diagramData[layerNumber].animationTimes[updateNumber];
 			const uint transitionCount = GetTransitionCount();
 			bool hasTransition = false; 
 			for (uint index = 0; index < transitionCount; ++index)
 			{
 				JAnimationFSMtransition* nowTransition = static_cast<JAnimationFSMtransition*>(GetTransitionByIndex(index));
-				if (nowTransition->IsSatisfiedOption(animationTime.normalizedTime) && nowTransition->HasSatisfiedCondition())
+				if (nowTransition->IsSatisfiedOption(animationTime.normalizedTime))
 				{
-					hasTransition = true;
-					return nowTransition;
+					const uint conditionCount = nowTransition->GetConditioCount();
+					for (uint j = 0; j < conditionCount; ++j)
+					{
+						JFSMcondition* cond = nowTransition->GetConditionByIndex(j);
+						const float nowValue = updateData->GetParameterValue(cond->GetParameter()->GetName());
+						if (nowValue == cond->GetOnValue())
+							return nowTransition;
+					}
 				}
 			}
 			return nullptr;

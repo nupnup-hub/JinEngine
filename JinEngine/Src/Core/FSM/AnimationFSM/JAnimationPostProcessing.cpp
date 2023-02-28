@@ -1,5 +1,5 @@
 #include"JAnimationPostProcessing.h"
-#include"JAnimationShareData.h"
+#include"JAnimationUpdateData.h"
 #include"../../../Utility/JMathHelper.h"
 #include"../../../Object/Resource/Skeleton/JSkeleton.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonAsset.h" 
@@ -12,7 +12,7 @@ namespace JinEngine
 	using namespace DirectX;
 	namespace Core
 	{
-		bool JAnimationPostProcessing::CalculateBindPoseIK(JAnimationShareData& animationShareData,
+		bool JAnimationPostProcessing::CalculateBindPoseIK(JAnimationUpdateData* updateData,
 			JSkeletonAsset* srcSkeletonAsset,
 			JSkeletonAsset* tarSkeletonAsset,
 			const J_AVATAR_JOINT start,
@@ -38,13 +38,13 @@ namespace JinEngine
 			const uint8 tarStIndex = tarAvatar->jointReference[tarStRefIndex];
 
 			XMFLOAT3 endEffectorf = targetTranslation[tarStIndex];
-			StuffBindPoseData(animationShareData, srcSkeletonAsset, endEffectorf, animationShareData.ikCount[ikNumber], ikNumber, srcStRefIndex, srcRootRefIndex, bindPose);
-			animationShareData.SetIKRate(ikNumber);
-			bool res = FindBindPoseIKValue(animationShareData, srcSkeletonAsset, endEffectorf, ikNumber, animationShareData.ikCount[ikNumber], JAnimationFixedData::defualtBindPoseIkLoopCount);
+			StuffBindPoseData(updateData, srcSkeletonAsset, endEffectorf, updateData->ikCount[ikNumber], ikNumber, srcStRefIndex, srcRootRefIndex, bindPose);
+			updateData->SetIKRate(ikNumber);
+			bool res = FindBindPoseIKValue(updateData, srcSkeletonAsset, endEffectorf, ikNumber, updateData->ikCount[ikNumber], JAnimationFixedData::defualtBindPoseIkLoopCount);
 
 			return res;
 		}
-		void JAnimationPostProcessing::StuffBindPoseData(JAnimationShareData& animationShareData,
+		void JAnimationPostProcessing::StuffBindPoseData(JAnimationUpdateData* updateData,
 			JSkeletonAsset* srcSkeletonAsset,
 			DirectX::XMFLOAT3& effectorWorld,
 			uint& ikCount,
@@ -71,17 +71,17 @@ namespace JinEngine
 				const XMMATRIX srcInitWM = XMLoadFloat4x4(&bindPose[nowJointIndex]);
 				const XMMATRIX srcInitLM = XMMatrixMultiply(srcInitWM, XMMatrixInverse(nullptr, rootM));
 
-				XMStoreFloat4x4(&animationShareData.ikJoint[ikNumber][ikCount].movedTransform, srcInitLM);
-				XMStoreFloat4x4(&animationShareData.ikJoint[ikNumber][ikCount].initTransform, srcInitLM);
-				animationShareData.ikJoint[ikNumber][ikCount].jointIndex = nowJointIndex;
-				animationShareData.ikJoint[ikNumber][ikCount].jointRefIndex = nowJointRefIndex;
+				XMStoreFloat4x4(&updateData->ikJoint[ikNumber][ikCount].movedTransform, srcInitLM);
+				XMStoreFloat4x4(&updateData->ikJoint[ikNumber][ikCount].initTransform, srcInitLM);
+				updateData->ikJoint[ikNumber][ikCount].jointIndex = nowJointIndex;
+				updateData->ikJoint[ikNumber][ikCount].jointRefIndex = nowJointRefIndex;
 				nowJointRefIndex = srcAvatar->jointReferenceParent[nowJointRefIndex];
 				++ikCount;
 			}
 
-			animationShareData.ikJoint[ikNumber][ikCount].jointIndex = JSkeletonFixedData::incorrectJointIndex;
-			animationShareData.ikJoint[ikNumber][ikCount].movedTransform = identityM;
-			animationShareData.ikJoint[ikNumber][ikCount].initTransform = identityM;
+			updateData->ikJoint[ikNumber][ikCount].jointIndex = JSkeletonFixedData::incorrectJointIndex;
+			updateData->ikJoint[ikNumber][ikCount].movedTransform = identityM;
+			updateData->ikJoint[ikNumber][ikCount].initTransform = identityM;
 
 			const XMVECTOR effectorWorldT = XMLoadFloat3(&effectorWorld);
 			const XMMATRIX effectorWorldM = XMMatrixTranslationFromVector(effectorWorldT);
@@ -93,7 +93,7 @@ namespace JinEngine
 
 			XMStoreFloat3(&effectorWorld, effectorWorldModT);
 		}
-		bool JAnimationPostProcessing::FindBindPoseIKValue(JAnimationShareData& animationShareData,
+		bool JAnimationPostProcessing::FindBindPoseIKValue(JAnimationUpdateData* updateData,
 			JSkeletonAsset* srcSkeletonAsset,
 			const DirectX::XMFLOAT3& effectorWorld,
 			const uint ikNumber,
@@ -110,14 +110,14 @@ namespace JinEngine
 			const XMVECTOR effectorWT = XMLoadFloat3(&effectorWorld);
 			const XMVECTOR identityQ = XMVectorSet(0, 0, 0, 1);
 
-			//animationShareData.ikJoint[ikNumber]
+			//updateData->ikJoint[ikNumber]
 			for (uint i = 0; i < loopCount; ++i)
 			{
 				for (uint j = 1; j < ikCount; ++j)
 				{
-					const XMMATRIX endWorldM = XMLoadFloat4x4(&animationShareData.ikJoint[ikNumber][0].movedTransform);
-					const XMMATRIX movedWorldM = XMLoadFloat4x4(&animationShareData.ikJoint[ikNumber][j].movedTransform);
-					const XMMATRIX movedWorldParentM = XMLoadFloat4x4(&animationShareData.ikJoint[ikNumber][j + 1].movedTransform);
+					const XMMATRIX endWorldM = XMLoadFloat4x4(&updateData->ikJoint[ikNumber][0].movedTransform);
+					const XMMATRIX movedWorldM = XMLoadFloat4x4(&updateData->ikJoint[ikNumber][j].movedTransform);
+					const XMMATRIX movedWorldParentM = XMLoadFloat4x4(&updateData->ikJoint[ikNumber][j + 1].movedTransform);
 					const XMMATRIX movedLocalM = XMMatrixMultiply(movedWorldM, XMMatrixInverse(nullptr, movedWorldParentM));
 
 					XMVECTOR endWorldS;
@@ -165,29 +165,29 @@ namespace JinEngine
 					//const XMVECTOR movedWorldModQ = XMQuaternionMultiply(movedLocalModQ, movedWorldParentQ);
 					const XMVECTOR movedWorldModQ = XMQuaternionMultiply(movedWorldQ, constrainedQ);
 					const XMMATRIX movedWorldModM = XMMatrixAffineTransformation(movedWorldS, identityQ, movedWorldModQ, movedWorldT);
-					XMStoreFloat4x4(&animationShareData.ikJoint[ikNumber][j].movedTransform, movedWorldModM);
+					XMStoreFloat4x4(&updateData->ikJoint[ikNumber][j].movedTransform, movedWorldModM);
 
 					XMMATRIX preMovedWorldParentM = movedWorldM;
 					for (int k = ((int)j) - 1; k >= 0; --k)
 					{
-						const XMMATRIX movedWorldParentModM = XMLoadFloat4x4(&animationShareData.ikJoint[ikNumber][k + 1].movedTransform);
-						const XMMATRIX movedWorldChildM = XMLoadFloat4x4(&animationShareData.ikJoint[ikNumber][k].movedTransform);
+						const XMMATRIX movedWorldParentModM = XMLoadFloat4x4(&updateData->ikJoint[ikNumber][k + 1].movedTransform);
+						const XMMATRIX movedWorldChildM = XMLoadFloat4x4(&updateData->ikJoint[ikNumber][k].movedTransform);
 						const XMMATRIX movedLocalChildM = XMMatrixMultiply(movedWorldChildM, XMMatrixInverse(nullptr, preMovedWorldParentM));
 						const XMMATRIX movedWorldChildModM = XMMatrixMultiply(movedLocalChildM, movedWorldParentModM);
-						XMStoreFloat4x4(&animationShareData.ikJoint[ikNumber][k].movedTransform, movedWorldChildModM);
+						XMStoreFloat4x4(&updateData->ikJoint[ikNumber][k].movedTransform, movedWorldChildModM);
 						preMovedWorldParentM = movedWorldChildM;
 					}
 				}
 			}
 
-			const uint8 rootIndex = animationShareData.ikJoint[ikNumber][ikCount - 1].jointIndex;
+			const uint8 rootIndex = updateData->ikJoint[ikNumber][ikCount - 1].jointIndex;
 			const XMMATRIX rootWorldM = srcSkeleton->GetBindPose(rootIndex);
 
 			for (uint j = 0; j < ikCount; ++j)
 			{
-				const XMMATRIX movedWorldM = XMLoadFloat4x4(&animationShareData.ikJoint[ikNumber][j].movedTransform);
+				const XMMATRIX movedWorldM = XMLoadFloat4x4(&updateData->ikJoint[ikNumber][j].movedTransform);
 				const XMMATRIX finalM = XMMatrixMultiply(movedWorldM, rootWorldM);
-				XMStoreFloat4x4(&animationShareData.ikJoint[ikNumber][j].movedTransform, finalM);
+				XMStoreFloat4x4(&updateData->ikJoint[ikNumber][j].movedTransform, finalM);
 			}
 			return true;
 		}

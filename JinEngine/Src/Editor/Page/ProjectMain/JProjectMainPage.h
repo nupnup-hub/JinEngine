@@ -55,10 +55,8 @@ namespace JinEngine
 			std::unique_ptr<ClosePopupConfirmF::Functor> closePopupConfirmF; 
 			std::unique_ptr<ClosePopupCancelF::Functor> closePopupCancelF;
 			std::unique_ptr<ClosePopupContentsF::Functor> closePopupContetnsF;
-		private:
-			bool reqInit = false;
 		public:
-			JProjectMainPage(const bool hasMetadata);
+			JProjectMainPage();
 			~JProjectMainPage();
 			JProjectMainPage(const JProjectMainPage& rhs) = delete;
 			JProjectMainPage& operator=(const JProjectMainPage& rhs) = delete;

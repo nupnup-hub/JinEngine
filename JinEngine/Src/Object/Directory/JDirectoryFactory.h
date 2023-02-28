@@ -36,10 +36,11 @@ namespace JinEngine
 		using InitCallable = Core::JStaticCallable<JDirectory*, const std::wstring&, const size_t, const J_OBJECT_FLAG, JDirectory*>;
 		using LoadCallable = Core::JStaticCallable<JDirectory*, JDirectory*, const Core::JAssetFileLoadPathData&>;
 		using CopyCallable = Core::JStaticCallable<JDirectory*, JDirectory*, JDirectory*>;
-	private:
+	public:
 		static JDirectory* Create(JDirectory& parent);
-		static JDirectory* CreateRoot(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag);
 		static JDirectory* Create(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& parent);
+	private:
+		static JDirectory* CreateRoot(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag);
 		static JDirectory* Load(JDirectory& parent, const Core::JAssetFileLoadPathData& pathData);
 		static JDirectory* LoadRoot(const Core::JAssetFileLoadPathData& pathData);
 		static JDirectory* Copy(JDirectory& ori, JDirectory& parent);

@@ -1,8 +1,7 @@
 #pragma once 
 #include<memory>
 #include"JAnimationControllerInterface.h" 
-#include"../../../Core/FSM/JFSMparameterValueType.h" 
-#include"../../../Core/FSM/AnimationFSM/JAnimationShareData.h" 
+#include"../../../Core/FSM/JFSMparameterValueType.h"  
 #include"../../../Core/Guid/GuidCreator.h"
 
 namespace JinEngine
@@ -47,19 +46,11 @@ namespace JinEngine
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
 			JAnimationControllerInitData(JDirectory* directory,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
-		public:
-			J_RESOURCE_TYPE GetResourceType() const noexcept;
 		};
 		using InitData = JAnimationControllerInitData;
-	public:
-		static constexpr uint diagramMaxCount = 8; 
 	private:
 		std::unique_ptr<Core::JFSMparameterStorage> paramStorage;
 		std::vector<Core::JAnimationFSMdiagram*> fsmDiagram;
-		Core::JAnimationShareData animationShaderData;
-	public:
-		void Initialize(std::vector<Core::JAnimationTime>& animationtimes, JSkeletonAsset* modelSkeleton)noexcept;
-		void Update(std::vector<Core::JAnimationTime>& animationtimes, JSkeletonAsset* modelSkeleton, Graphic::JAnimationConstants& animationConstatns)noexcept;
 	public:
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
@@ -93,8 +84,12 @@ namespace JinEngine
 		bool AddType(Core::JFSMdiagram* diagram) noexcept final;
 		bool RemoveType(Core::JFSMdiagram* diagram) noexcept final;
 		Core::JFSMparameterStorageUserAccess* GetParameterStorageUser()noexcept;
-	private:
 		Core::JAnimationFSMdiagram* FindDiagram(const size_t guid) noexcept;
+	public:
+		JAnimationControllerFrameUpdateInterface* FrameUpdateInterface();
+	private:
+		void Initialize(Core::JAnimationUpdateData* updateData)noexcept final;
+		void Update(Core::JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept final;
 	private:
 		void DoCopy(JObject* ori) final;
 	protected:

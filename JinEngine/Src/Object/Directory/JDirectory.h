@@ -3,8 +3,9 @@
 #include<vector> 
 #include<memory>
 #include"JDirectoryInterface.h"
+#include"../Resource/JResourceType.h"
 #include"../../Core/File/JFilePathData.h"
-
+ 
 namespace JinEngine
 {
 	class JFile;
@@ -19,7 +20,8 @@ namespace JinEngine
 	public:
 		JDirectory* GetParent()noexcept;
 		JDirectory* GetChildDirctory(const uint index)noexcept;
-		JDirectory* GetChildDirctory(const std::wstring& path)noexcept;
+		JDirectory* GetChildDirctoryByName(const std::wstring& name)noexcept;
+		JDirectory* GetChildDirctoryByPath(const std::wstring& path)noexcept;
 		uint GetChildernDirctoryCount()const noexcept;
 		uint GetFileCount()const noexcept; 
 		std::wstring GetPath()const noexcept;  
@@ -36,10 +38,10 @@ namespace JinEngine
 		bool IsOpen()const noexcept;
 
 		JDirectory* SearchDirectory(const std::wstring& path)noexcept;
-		std::wstring MakeUniqueFileName(const std::wstring& name)noexcept;
-		std::wstring MakeUniqueFileName(const std::wstring& name, const size_t fileGuid)noexcept;
+		std::wstring MakeUniqueFileName(const std::wstring& name, const J_RESOURCE_TYPE rType)const noexcept;
 	public:
 		JDirectoryOCInterface* OCInterface() final;
+		JDirectoryEditorInterface* EditorInterface() final;
 	private:
 		void DoCopy(JObject* ori) final;  
 	private:
@@ -51,6 +53,10 @@ namespace JinEngine
 	private:
 		void OpenDirectory()noexcept final;
 		void CloseDirectory()noexcept final;
+	private:
+		void SetParent(JDirectory* dir)noexcept final;  
+	private:
+		void DeleteDirectory()noexcept final;
 	private:
 		//Create or exist dir is true
 		static bool CreateDirectoryFile(const std::wstring& path);

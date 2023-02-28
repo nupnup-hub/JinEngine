@@ -24,11 +24,10 @@ namespace JinEngine
 	namespace Editor
 	{
 		//const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, std::unique_ptr<JEditorAttribute> attribute
-		JEditorSkeletonPage::JEditorSkeletonPage(bool hasMetadata)
+		JEditorSkeletonPage::JEditorSkeletonPage()
 			:JEditorPage("SkeletonAssetPage",
 				std::make_unique<JEditorAttribute>(),
-				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, J_EDITOR_PAGE_REQUIRE_INIT_OBJECT)),
-			reqInit(!hasMetadata)
+				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, J_EDITOR_PAGE_REQUIRE_INIT_OBJECT))
 		{
 			constexpr uint memberWindowCount = 4;
 			std::vector<std::string> windowNames
@@ -102,11 +101,12 @@ namespace JinEngine
 			const ImGuiViewport* viewport = ImGui::GetMainViewport();
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f); 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-			
-			if (reqInit)
+
+			if (setWndOptionOnce)
 			{
-				//ImGui::SetNextWindowSize(ImVec2(viewport->WorkSize.x, viewport->WorkSize.y + ImGui::GetFrameHeight()), ImGuiCond_Once);
-				//ImGui::SetNextWindowPos(ImVec2(viewport->WorkPos.x, viewport->WorkPos.y - ImGui::GetFrameHeight()), ImGuiCond_Once);
+				ImGui::SetNextWindowSize(viewport->WorkSize, ImGuiCond_Once);
+				ImGui::SetNextWindowPos(viewport->WorkPos, ImGuiCond_Once);
+				setWndOptionOnce = false;
 			}
  
 			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_NoWindowMenuButton;
@@ -115,9 +115,13 @@ namespace JinEngine
 				ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
 			
 			EnterPage(guiWindowFlag); 
-			if (reqInit)
+			if (HasDockNodeSpace())
+				UpdateDockSpace(dockspaceFlag);
+			else
+			{
 				BuildDockNode();
-			UpdateDockSpace(dockspaceFlag);
+				setWndOptionOnce = true;
+			}
 			menuBar->Update(true);
 			ClosePage(); 
 			 
@@ -125,10 +129,7 @@ namespace JinEngine
 			for (uint i = 0; i < currOpWndCount; ++i)
 				GetOpenWindow(i)->UpdateWindow();  
 			JImGuiImpl::PopFont();
-			ImGui::PopStyleVar(2);
-
-			if (reqInit)
-				reqInit = false;
+			ImGui::PopStyleVar(2); 
 		}
 		bool JEditorSkeletonPage::IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept
 		{

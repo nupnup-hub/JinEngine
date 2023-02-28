@@ -2,6 +2,7 @@
 #include<vector>  
 #include"JAnimationData.h"
 #include"JAnimationClipInterface.h"
+#include"../Skeleton/JSkeletonAsset.h"
 
 namespace JinEngine
 {
@@ -9,7 +10,7 @@ namespace JinEngine
 	namespace Core
 	{
 		struct JAnimationTime;
-		struct JAnimationShareData;
+		class JAnimationUpdateData;
 		struct JFbxAnimationData;
 		class JFbxFileLoaderImpl;
 	}
@@ -39,16 +40,15 @@ namespace JinEngine
 				const std::wstring oridataPath,
 				Core::JOwnerPtr<JAnimationData> anidata);
 		public:
-			bool IsValidCreateData()final;
-			J_RESOURCE_TYPE GetResourceType() const noexcept;
+			bool IsValidCreateData()final; 
 		};
 		using InitData = JAnimationClipInitData;
 	private:
 		struct JAnimationClipMetadata final : public JResourceMetaData
 		{
 		public:
-			JSkeletonAsset* clipSkeletonAsset = nullptr;
-			float framePerSecond;
+			JSkeletonAsset* clipSkeletonAsset = nullptr; 
+			float updateFramePerSecond;
 			bool isLooping = false; 
 		};
 	private:
@@ -58,14 +58,18 @@ namespace JinEngine
 		std::vector<JAnimationSample>animationSample;
 		size_t oriSkeletoHash;
 		//
+		REGISTER_PROPERTY_EX(clipSkeletonAsset, GetClipSkeletonAsset, SetClipSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
 		JSkeletonAsset* clipSkeletonAsset = nullptr;
 		uint32 clipLength;
-		float framePerSecond;
+		float clipFramePerSecond;
+		REGISTER_PROPERTY_EX(updateFramePerSecond, GetUpdateFPS, SetUpdateFPS, GUI_SLIDER(30, 120))
+		float updateFramePerSecond; 
+		REGISTER_PROPERTY_EX(isLooping, IsLoop, SetLoop, GUI_CHECKBOX())
 		bool isLooping = false;
 		bool matchClipSkeleton = false;
 	public:  
 		JSkeletonAsset* GetClipSkeletonAsset()noexcept;
-		float GetFramePerSecond()const noexcept;
+		float GetUpdateFPS()const noexcept;
 		bool IsLoop()const noexcept;
 		uint GetSampleCount()const noexcept;
 		uint GetSampleKeyCount(const uint sampleIndex)const noexcept;
@@ -78,16 +82,16 @@ namespace JinEngine
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 
 		void SetClipSkeletonAsset(JSkeletonAsset* clipSkeletonAsset)noexcept;
-		void SetFramePerSpeed(float value)noexcept;
+		void SetUpdateFPS(float value)noexcept;
 		void SetLoop(bool value)noexcept;
 	public:
 		bool IsSameSkeleton(JSkeletonAsset* srcSkeletonAsset)noexcept;
-		void ClipEnter(Core::JAnimationTime& animationTime, Core::JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const float nowTime, const float timeOffset)noexcept;
-		void ClipClose()noexcept;
-		void Update(Core::JAnimationTime& animationTime, Core::JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& localTransform, float nowTime, float deltaTime)noexcept;  
+		void ClipEnter(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber, const float timeOffset)noexcept;
+		void ClipClose()noexcept; 
+		void Update(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept;
 	private:
 		uint GetAnimationSampleJointIndex(const uint sampleIndex, const float localTime)noexcept;
-		void UpdateUsingAvatar(Core::JAnimationTime& animationTime, Core::JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& localTransform)noexcept;
+		void UpdateUsingAvatar(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept;
 		bool IsMatchSkeleton()const noexcept;
 	private:
 		void DoCopy(JObject* ori) final;

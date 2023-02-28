@@ -119,12 +119,11 @@ namespace JinEngine
 			if (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
 				if (wcscmp(findFileData.cFileName, L".") && wcscmp(findFileData.cFileName, L".."))
-				{ 
+				{
+					JDirectory* next = nullptr;
 					if (!parentDir->HasChild(findFileData.cFileName))
 					{
-						JDirectory* next = nullptr;
-						Core::JAssetFileLoadPathData pathData{Core::JFileConstant::MakeFilePath(parentDir->GetPath(),  findFileData.cFileName) };						
-						
+						Core::JAssetFileLoadPathData pathData{ Core::JFileConstant::MakeFilePath(parentDir->GetPath(),  findFileData.cFileName) };
 						if (searchDefaultFolder)
 						{
 							if (JApplicationVariable::IsDefaultFolder(pathData.engineFileWPath))
@@ -144,9 +143,11 @@ namespace JinEngine
 							else
 								next = JDFI::Create(pathData.name, Core::MakeGuid(), dirFlag, *parentDir);
 						}
-						if(next != nullptr)
-							SearchDirectory(next, searchDefaultFolder, dirFlag);
 					}
+					else
+						next = parentDir->GetChildDirctoryByName(findFileData.cFileName);
+					if (next != nullptr)
+						SearchDirectory(next, searchDefaultFolder, dirFlag);
 				}
 			}
 			bResult = FindNextFile(hFindFile, &findFileData);

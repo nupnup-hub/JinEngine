@@ -19,17 +19,17 @@ namespace JinEngine
 		{
 			return isFrozen;
 		}
-		float JAnimationFSMtransition::GetExitGameTimerate()noexcept
+		float JAnimationFSMtransition::GetExitTimeRate()noexcept
 		{
-			return exitGameTimerate;
+			return exitTimeRate;
 		}
 		float JAnimationFSMtransition::GetDurationTime()noexcept
 		{
 			return durationTime;
 		}
-		float JAnimationFSMtransition::GetTargetStateTimeOffset()noexcept
+		float JAnimationFSMtransition::GetTargetStartTimeRate()noexcept
 		{
-			return targetStateTimeOffset;
+			return targetStartTimeRate;
 		}
 
 		void JAnimationFSMtransition::SetIsWaitExitTime(const bool value)noexcept
@@ -40,23 +40,23 @@ namespace JinEngine
 		{
 			isFrozen = value;
 		}
-		void JAnimationFSMtransition::SetExitGameTimerate(const float value)noexcept
+		void JAnimationFSMtransition::SetExitTimeRate(const float value)noexcept
 		{
-			exitGameTimerate = value;
+			exitTimeRate = value;
 		}
 		void JAnimationFSMtransition::SetDurationTime(const float value)noexcept
 		{
 			durationTime = value;
 		}
-		void JAnimationFSMtransition::SetTargetStateTimeOffset(const float value)noexcept
+		void JAnimationFSMtransition::SetTargetStartTimeRate(const float value)noexcept
 		{
-			targetStateTimeOffset = value;
+			targetStartTimeRate = value;
 		}
 		bool JAnimationFSMtransition::IsSatisfiedOption(const float normalizedTime)noexcept
 		{
 			if (isWaitExitTime)
 			{
-				if (normalizedTime >= exitGameTimerate)
+				if (normalizedTime >= exitTimeRate)
 					return true;
 				else
 					return false;
@@ -85,9 +85,9 @@ namespace JinEngine
 			}
 			JFileIOHelper::StoreAtomicData(stream, L"IsWaitExitTime:", isWaitExitTime);
 			JFileIOHelper::StoreAtomicData(stream, L"IsFrozen:", isFrozen);
-			JFileIOHelper::StoreAtomicData(stream, L"ExitGameTimerate:", exitGameTimerate);
+			JFileIOHelper::StoreAtomicData(stream, L"ExitGameTimerate:", exitTimeRate);
 			JFileIOHelper::StoreAtomicData(stream, L"DurationTime:", durationTime);
-			JFileIOHelper::StoreAtomicData(stream, L"TargetStateOffset:", targetStateTimeOffset);
+			JFileIOHelper::StoreAtomicData(stream, L"TargetStateOffset:", targetStartTimeRate);
 
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
@@ -119,21 +119,21 @@ namespace JinEngine
 
 			bool isWaitExitTime = false;
 			bool isFrozen = false;
-			float exitGameTimerate = 0;
+			float exitTimeRate = 0;
 			float durationTime =0;
-			float targetStateTimeOffset = 0;
+			float targetStartTimeRate = 0;
 
 			JFileIOHelper::LoadAtomicData(stream, isWaitExitTime);
 			JFileIOHelper::LoadAtomicData(stream, isFrozen);
-			JFileIOHelper::LoadAtomicData(stream, exitGameTimerate);
+			JFileIOHelper::LoadAtomicData(stream, exitTimeRate);
 			JFileIOHelper::LoadAtomicData(stream, durationTime);
-			JFileIOHelper::LoadAtomicData(stream, targetStateTimeOffset);
+			JFileIOHelper::LoadAtomicData(stream, targetStartTimeRate);
 
 			SetIsWaitExitTime(isWaitExitTime);
 			SetIsFrozen(isFrozen);
-			SetExitGameTimerate(exitGameTimerate);
+			SetExitTimeRate(exitTimeRate);
 			SetDurationTime(durationTime);
-			SetTargetStateTimeOffset(targetStateTimeOffset);
+			SetTargetStartTimeRate(targetStartTimeRate);
 
 			return J_FILE_IO_RESULT::SUCCESS;
 		}

@@ -17,7 +17,7 @@ namespace JinEngine
 		{
 		protected:
 			void SetModifiedBit(Core::JUserPtr<Core::JIdentifier> obj, const bool value)noexcept;
-			void RemoveModifiedInfo(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
+			void SetRemoveBit(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
 		private:
 			Core::JUserPtr<Core::JIdentifier> GetValidModifiedUser(Core::JUserPtr<Core::JIdentifier> obj)const noexcept;
 		};
@@ -29,6 +29,8 @@ namespace JinEngine
 		{
 		public:
 			JModifiedObjectInfoVector::ObjectVector& GetModifiedObjectInfoVec()noexcept;
+		public:
+			void DestroyHasRemoveBitInfo()noexcept;
 		public:
 			void ClearModifiedInfoStructure()noexcept;
 		};

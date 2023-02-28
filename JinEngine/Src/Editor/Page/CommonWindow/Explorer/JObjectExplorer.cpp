@@ -204,8 +204,8 @@ namespace JinEngine
 						if (ImGui::BeginDragDropTarget())
 						{
 							auto selected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
-							if (selected.IsValid() && selected->GetTypeInfo().IsChildOf<JObject>() &&
-								!static_cast<JObject*>(selected.Get())->HasFlag(OBJECT_FLAG_UNEDITABLE))
+							bool isValid = selected.IsValid() && selected->GetTypeInfo().IsChildOf<JObject>() && !static_cast<JObject*>(selected.Get())->HasFlag(OBJECT_FLAG_UNEDITABLE);
+							if (isValid)
 							{
 								const J_OBJECT_TYPE objType = static_cast<JObject*>(selected.Get())->GetObjectType();
 								const std::string itemName = JCUtil::WstrToU8Str(selected->GetName());

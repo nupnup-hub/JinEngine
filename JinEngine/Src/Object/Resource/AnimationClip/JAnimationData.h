@@ -13,6 +13,7 @@ namespace JinEngine
 	struct JAnimationData
 	{
 	public:
+		//total count is same as base skeletonAsset joint
 		std::vector<JAnimationSample>animationSample;
 		size_t skeletonHash;
 		uint32 clipLength;

@@ -306,8 +306,8 @@ namespace JinEngine
 	}
 	void JGameObject::Clear()
 	{
-		DeActivate();
-
+		if (IsActivated())
+			DeActivate();
 		std::vector<JGameObject*> gCopy = children;
 		const uint childrenCount = (uint)gCopy.size();
 		for (uint i = 0; i < childrenCount; ++i)

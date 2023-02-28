@@ -198,9 +198,9 @@ namespace JinEngine
 				if (hasSkeleton)
 				{ 
 					result = (J_FBXRESULT)((int)result | (int)J_FBXRESULT::HAS_SKELETON);
-					std::string totalName;
+					std::wstring totalName;
 					for (uint i = 0; i < fbxSkeleton.jointCount; ++i)
-						totalName += fbxSkeleton.joint[i].name;
+						totalName += JCUtil::U8StrToWstr(fbxSkeleton.joint[i].name);
 					jfbxAniData.skeletonHash = JCUtil::CalculateGuid(totalName);
 				}
 				fbxSkeleton.joint.clear();
@@ -873,7 +873,7 @@ namespace JinEngine
 			FbxTakeInfo* takeInfo = scene->GetTakeInfo(animStackName);
 			FbxTime animationStart = takeInfo->mLocalTimeSpan.GetStart();
 			FbxTime animationEnd = takeInfo->mLocalTimeSpan.GetStop();
-			size_t animationLength = animationEnd.GetFrameCount(FbxTime::eFrames24) - animationStart.GetFrameCount(FbxTime::eFrames24) + 1;
+			size_t animationLength = animationEnd.GetFrameCount(FbxTime::eFrames30) - animationStart.GetFrameCount(FbxTime::eFrames30) + 1;
 			FbxAMatrix geometryTransform = GetGeometryTransformation(node);
 			FbxAMatrix InvBoneInitPoseGlobalTransform;
 			FbxAMatrix matBeforeMatrix;
@@ -882,7 +882,7 @@ namespace JinEngine
 			XMFLOAT4X4 xmMatrix;
 
 			fbxAniData.clipLength = (uint)animationLength;
-			fbxAniData.framePerSecond = 24;
+			fbxAniData.framePerSecond = 30;
 			fbxAniData.animationSample.resize(skeleton.jointCount);
 
 			for (uint i = 0; i < skeleton.jointCount; ++i)
@@ -890,11 +890,11 @@ namespace JinEngine
 				std::string pName = skeleton.joint[i].name;
 				matBeforeMatrix.SetIdentity();
 
-				for (FbxLongLong j = animationStart.GetFrameCount(FbxTime::eFrames24);
-					j <= animationEnd.GetFrameCount(FbxTime::eFrames24); ++j)
+				for (FbxLongLong j = animationStart.GetFrameCount(FbxTime::eFrames30);
+					j <= animationEnd.GetFrameCount(FbxTime::eFrames30); ++j)
 				{
 					FbxTime currTime;
-					currTime.SetFrame(j, FbxTime::eFrames24);
+					currTime.SetFrame(j, FbxTime::eFrames30);
 
 					//InvBoneInitPoseGlobalTransform = skeleton.joint[0].node->EvaluateGlobalTransform(currTime) *
 					//	geometryTransform; 

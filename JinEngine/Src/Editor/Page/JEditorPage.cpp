@@ -112,6 +112,10 @@ namespace JinEngine
 		{
 			return windows;
 		}
+		bool JEditorPage::HasDockNodeSpace()const noexcept
+		{ 
+			return (ImGuiDockNode*)ImGui::GetCurrentContext()->DockContext.Nodes.GetVoidPtr(ImGui::GetID(GetDockNodeName().c_str()));
+		}
 		void JEditorPage::Initialize()
 		{
 			JEditorPageShareData::PageInitData initData;
@@ -325,9 +329,9 @@ namespace JinEngine
 			return openSimpleWindowFunctor.get();
 		}
 		void JEditorPage::UpdateDockSpace(const int dockspaceFlag)
-		{
+		{ 
 			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_SUPPORT_DOCK))
-			{
+			{ 
 				ImGuiID dockspace_id = ImGui::GetID(GetDockNodeName().c_str());
 				ImGui::DockSpace(dockspace_id, ImGui::GetMainViewport()->WorkSize, dockspaceFlag);
 			}

@@ -18,7 +18,7 @@ namespace JinEngine
 		virtual ~JGameObjectEditorInterface() = default;
 	public:
 		virtual JGameObjectEditorInterface* EditorInterface() = 0;
-	public:
+	private:
 		virtual void SetSelectedByEditorTrigger(const bool value)noexcept = 0;
 	};
 

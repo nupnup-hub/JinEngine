@@ -1,5 +1,7 @@
 #pragma once
 #include"../../JEditorWindow.h"     
+#include"../../../Interface/JEditorObjectInterface.h"
+
 namespace JinEngine
 {  
 	class JGameObject;
@@ -13,10 +15,15 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JReflectionGuiWidgetHelper;
-		class JObjectDetail final : public JEditorWindow
+		class JEditorSearchBarHelper;
+
+		class JObjectDetail final : public JEditorWindow,
+			public JEditorObjectHandlerInterface
 		{ 
 		private:
 			std::unique_ptr<JReflectionGuiWidgetHelper> guiHelper; 
+			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
+			bool isPressAddGameObject = false;
 		public:
 			JObjectDetail(const std::string& name, 
 				std::unique_ptr<JEditorAttribute> attribute,

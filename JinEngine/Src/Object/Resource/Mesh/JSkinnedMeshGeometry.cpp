@@ -6,6 +6,7 @@
 #include"../Material/JMaterial.h"
 #include"../Material/JDefaultMaterialSetting.h"
 #include"../../Directory/JDirectory.h" 
+#include"../../Directory/JDirectoryFactory.h" 
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Core/File/JFileConstant.h"  
 #include"../../../Core/File/JFileIOHelper.h"
@@ -251,7 +252,10 @@ namespace JinEngine
 		Core::JUserPtr<JSkeletonAsset> user = skinnedGroup->GetSkeletonAsset();
 		if (user.IsValid())
 			SetSkeletonAsset(skinnedGroup->GetSkeletonAsset().Get());
-		 
+		  
+		JDirectory* dir = GetDirectory();
+		JDirectory* matDir = JDFI::Create(L"Material", Core::MakeGuid(), OBJECT_FLAG_NONE, *dir);
+
 		const uint meshCount = meshGroup.GetMeshDataCount();
 		for (uint i = 0; i < meshCount; ++i)
 		{
@@ -259,7 +263,7 @@ namespace JinEngine
 			JMaterial* newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(materialName, 
 				Core::MakeGuid(),
 				GetFlag(),
-				GetDirectory()));
+				matDir));
 			JDefaultMaterialSetting::SetStandard(newMaterial);
 			meshGroup.GetMeshData(i)->SetMaterial(Core::GetUserPtr(newMaterial));
 		}

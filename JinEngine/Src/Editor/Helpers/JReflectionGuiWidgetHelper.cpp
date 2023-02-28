@@ -1,6 +1,7 @@
 #include"JReflectionGuiWidgetHelper.h"
 #include"JEditorSearchBarHelper.h"
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../Page/JEditorPageShareData.h"
 #include"../Page/WindowInterface/JEditorPreviewInterface.h"
 
 #include"../../Object/Resource/AnimationClip/JAnimationClip.h"
@@ -59,12 +60,18 @@ namespace JinEngine
 				std::unordered_map<std::string, std::unique_ptr<JGuiWidgetDisplayHandle>> guiWidgetHandleMap;
 				std::unordered_map<std::string, std::unique_ptr<JGuiWidgetGroupHandle>> guiGroupHandleMap;
 			public:
+				const J_EDITOR_PAGE_TYPE ownerPageType;
+			public:
 				bool allowDisplayParent = true;
 				bool allowDisplayName = true;
 				bool allowSameLine = false;
 			public:
 				//Inner
 				bool isActivatedTable;
+			public:
+				UserData(const J_EDITOR_PAGE_TYPE ownerPageType)
+					:ownerPageType(ownerPageType)
+				{}
 			public:
 				void InitOptionValue()
 				{
@@ -155,32 +162,42 @@ namespace JinEngine
 		{
 		public:
 			template<typename T>
-			void SetValue(Core::JIdentifier* obj, Core::JGuiWidgetInfoHandleBase* handleBase, T&& value)
+			void SetValue(UpdateData& updateData, UserData* userData, T&& value)
 			{
-				if (!IsEditableObject(obj))
+				if (!IsEditableObject(updateData.obj))
 					return;
 
-				static_cast<Core::JGuiWidgetInfoHandle<T>*>(handleBase)->Set(obj, std::forward<T>(value));
-				SetModifiedBit(Core::GetUserPtr(obj), true);
+				static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->Set(updateData.obj, std::forward<T>(value));
+				
+				//JObject is selectable object
+				//others is subresource for JObject 
+				//ex) FSM object for animationController and it is pageOpenResource
+				if (!updateData.obj->GetTypeInfo().IsChildOf<JObject>())
+					SetModifiedBit(JEditorPageShareData::GetOpendPageData(userData->ownerPageType).GetOpenSeleted(), true);
+				else
+					SetModifiedBit(Core::GetUserPtr(updateData.obj), true);
 			}
 			template<typename T>
-			void UnsafeSetValue(Core::JIdentifier* obj, Core::JGuiWidgetInfoHandleBase* handleBase, T&& value)
+			void UnsafeSetValue(UpdateData& updateData, UserData* userData, T&& value)
 			{
-				if (!IsEditableObject(obj))
+				if (!IsEditableObject(updateData.obj))
 					return;
 
-				static_cast<Core::JGuiWidgetInfoHandle<T>*>(handleBase)->UnsafeSet(obj, std::forward<T>(value));
-				SetModifiedBit(Core::GetUserPtr(obj), true);
+				static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->UnsafeSet(updateData.obj, std::forward<T>(value));
+				if (!updateData.obj->GetTypeInfo().IsChildOf<JObject>())
+					SetModifiedBit(JEditorPageShareData::GetOpendPageData(userData->ownerPageType).GetOpenSeleted(), true);
+				else
+					SetModifiedBit(Core::GetUserPtr(updateData.obj), true);
 			}
 			template<typename T>
-			T GetValue(Core::JIdentifier* obj, Core::JGuiWidgetInfoHandleBase* handleBase)
+			T GetValue(UpdateData& updateData)
 			{
-				return static_cast<Core::JGuiWidgetInfoHandle<T>*>(handleBase)->Get(obj);
+				return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->Get(updateData.obj);
 			}
 			template<typename T>
-			T UnsafeGetValue(Core::JIdentifier* obj, Core::JGuiWidgetInfoHandleBase* handleBase)
+			T UnsafeGetValue(UpdateData& updateData)
 			{
-				return 	static_cast<Core::JGuiWidgetInfoHandle<T>*>(handleBase)->UnsafeGet(obj);
+				return 	static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->UnsafeGet(updateData.obj);
 			}
 			template<typename T>
 			T UnsafeGetValue(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
@@ -440,7 +457,7 @@ namespace JinEngine
 			}
 			void Update(UpdateData& updateData, UserData* userData)final
 			{
-				buff = GetValue<T>(updateData.obj, updateData.handleBase);
+				buff = GetValue<T>(updateData);
 				TrySameLine(userData);
 				DisplayName(updateData, userData);
 				TrySameLine(userData);
@@ -485,9 +502,9 @@ namespace JinEngine
 				if (res)
 				{
 					if constexpr (std::is_same_v<T, std::string >)
-						SetValue(updateData.obj, updateData.handleBase, JCUtil::EraseSideChar(buff, '\0'));
+						SetValue(updateData, userData, JCUtil::EraseSideChar(buff, '\0'));
 					else
-						SetValue(updateData.obj, updateData.handleBase, buff);
+						SetValue(updateData, userData, buff);
 				}
 				++exeCount;
 				if (exeCount == exeMaxCount)
@@ -604,11 +621,11 @@ namespace JinEngine
 				sizeFactor = sizeMin;
 			}
 		protected:
-			void Begin(UpdateData& updateData)
+			void Begin(UpdateData& updateData, UserData* userData)
 			{
 				if (isSelected)
 				{
-					SetSelectObject(updateData);
+					SetSelectObject(updateData, userData);
 					ClearPreviewGroup();
 					selectorPreviewVec.clear();
 					CreateSelectorPreviewList();
@@ -825,7 +842,7 @@ namespace JinEngine
 				isClosePopup = value;
 			}
 		protected:
-			virtual void SetSelectObject(UpdateData& updateData) = 0;
+			virtual void SetSelectObject(UpdateData& updateData, UserData* userData) = 0;
 		};
 		//T is JResourceObject derive class
 		template<typename T>
@@ -842,14 +859,14 @@ namespace JinEngine
 			void Initialize(UpdateData& updateData, UserData* userData) final
 			{
 				JGuiSelectorHandleHelper::Initialize(updateData, userData);
-				selectedObj = GetValue<T>(updateData.obj, updateData.handleBase);
+				selectedObj = GetValue<T>(updateData);
 				CreateSelectorPreviewList();
 			}
 			void Update(UpdateData& updateData, UserData* userData) final
 			{
 				TrySameLine(userData);
 				DisplayName(updateData, userData);
-				Begin(updateData);
+				Begin(updateData, userData);
 				if (CanCreatePreviewImage())
 					SelectedPreviewOnScreen(selectedPreview);
 				TrySameLine(userData);
@@ -862,9 +879,9 @@ namespace JinEngine
 				}
 			}
 		protected:
-			void SetSelectObject(UpdateData& updateData) final
+			void SetSelectObject(UpdateData& updateData, UserData* userData) final
 			{
-				SetValue(updateData.obj, updateData.handleBase, selectedObj);
+				SetValue(updateData, userData, selectedObj);
 			}
 		private:
 			void CreateSelectorPreviewList()
@@ -891,7 +908,7 @@ namespace JinEngine
 			{
 				JGuiSelectorHandleHelper::Initialize(updateData, userData);
 
-				container = GetValue<T>(updateData.obj, updateData.handleBase);
+				container = GetValue<T>(updateData);
 				containerCount = (uint)container.size();
 
 				CreateSelectorPreviewList();
@@ -901,7 +918,7 @@ namespace JinEngine
 				const bool isRenderItemMaterial = updateData.obj->GetTypeInfo().IsA<JRenderItem>() && std::is_base_of_v<JMaterial, ValueType>;
 				TrySameLine(userData);
 				DisplayName(updateData, userData);
-				Begin(updateData);
+				Begin(updateData, userData);
 				for (uint i = 0; i < containerCount; ++i)
 				{
 					const std::string uniqueLabel = MakeUniqueLabel(updateData) + "_" + std::to_string(i);
@@ -930,9 +947,9 @@ namespace JinEngine
 				}
 			}
 		protected:
-			void SetSelectObject(UpdateData& updateData) final
+			void SetSelectObject(UpdateData& updateData, UserData* userData) final
 			{
-				SetValue(updateData.obj, updateData.handleBase, container);
+				SetValue(updateData, userData, container);
 			}
 		private:
 			void CreateSelectorPreviewList()
@@ -959,10 +976,10 @@ namespace JinEngine
 				if (!IsConveribleParam(updateData.handleBase->GetFieldHint()))
 					return;
 
-				value = GetValue<bool>(updateData.obj, updateData.handleBase);
+				value = GetValue<bool>(updateData);
 				TrySameLine(userData);
 				if (JImGuiImpl::CheckBox(GetDisplayName("GuiCheckbox" + MakeUniqueLabel(updateData), updateData, userData), value))
-					SetValue(updateData.obj, updateData.handleBase, value);
+					SetValue(updateData, userData, value);
 			}
 		public:
 			static bool IsConveribleParam(const Core::JParameterHint hint)
@@ -997,7 +1014,7 @@ namespace JinEngine
 			}
 			void Update(UpdateData& updateData, UserData* userData)final
 			{
-				value = GetValue<T>(updateData.obj, updateData.handleBase);
+				value = GetValue<T>(updateData);
 				DisplayName(updateData, userData);
 				ImGui::SameLine();
 				if (isSupportInput)
@@ -1006,12 +1023,12 @@ namespace JinEngine
 					if constexpr (std::is_integral_v<T>)
 					{
 						if (JImGuiImpl::InputInt("##GuiSliderIntInput" + MakeUniqueLabel(updateData), &value))
-							SetValue(updateData.obj, updateData.handleBase, value);
+							SetValue(updateData, userData, value);
 					}
 					else
 					{
 						if (JImGuiImpl::InputFloat("##GuiSliderFloatInput" + MakeUniqueLabel(updateData), &value, 0, "%.1f"))
-							SetValue(updateData.obj, updateData.handleBase, value);
+							SetValue(updateData, userData, value);
 					}
 					ImGui::SameLine();
 				}
@@ -1022,12 +1039,12 @@ namespace JinEngine
 					if constexpr (std::is_integral_v<T>)
 					{
 						if (JImGuiImpl::VSliderInt("##GuiIntVSlider" + MakeUniqueLabel(updateData), vSliderSize, &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							SetValue(updateData.obj, updateData.handleBase, value);
+							SetValue(updateData, userData, value);
 					}
 					else
 					{
 						if (JImGuiImpl::VSliderFloat("##GuiFloatVSlider" + MakeUniqueLabel(updateData), vSliderSize, &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							SetValue(updateData.obj, updateData.handleBase, value);
+							SetValue(updateData, userData, value);
 					}
 				}
 				else
@@ -1036,12 +1053,12 @@ namespace JinEngine
 					if constexpr (std::is_integral_v<T>)
 					{
 						if (JImGuiImpl::SliderInt("##GuiIntSlider" + MakeUniqueLabel(updateData), &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							SetValue(updateData.obj, updateData.handleBase, value);
+							SetValue(updateData, userData, value);
 					}
 					else
 					{
 						if (JImGuiImpl::SliderFloat("##GuiFloatSlider" + MakeUniqueLabel(updateData), &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							SetValue(updateData.obj, updateData.handleBase, value);
+							SetValue(updateData, userData, value);
 					}
 				}
 
@@ -1068,7 +1085,7 @@ namespace JinEngine
 			}
 			void Update(UpdateData& updateData, UserData* userData)final
 			{
-				colorV = GetValue<T>(updateData.obj, updateData.handleBase);
+				colorV = GetValue<T>(updateData);
 				TrySameLine(userData);
 				DisplayName(updateData, userData);
 				TrySameLine(userData);
@@ -1077,12 +1094,12 @@ namespace JinEngine
 					if constexpr (T::GetDigitCount() == 3)
 					{
 						if (ImGui::ColorPicker3(("##GuiColorPicker" + MakeUniqueLabel(updateData)).c_str(), (float*)&colorV, flag))
-							SetValue(updateData.obj, updateData.handleBase, colorV);
+							SetValue(updateData, userData, colorV);
 					}
 					else if constexpr (T::GetDigitCount() == 4)
 					{
 						if (ImGui::ColorPicker4(("##GuiColorPicker" + MakeUniqueLabel(updateData)).c_str(), (float*)&colorV, flag))
-							SetValue(updateData.obj, updateData.handleBase, colorV);
+							SetValue(updateData, userData, colorV);
 					}
 
 				}
@@ -1093,7 +1110,7 @@ namespace JinEngine
 						if (ImGui::ColorPicker3(("##GuiColorPicker" + MakeUniqueLabel(updateData)).c_str(), (float*)&colorV, flag))
 						{
 							if constexpr (std::is_same_v<T, DirectX::XMFLOAT3>)
-								SetValue(updateData.obj, updateData.handleBase, DirectX::XMFLOAT3(colorV.x, colorV.y, colorV.z));
+								SetValue(updateData, userData, DirectX::XMFLOAT3(colorV.x, colorV.y, colorV.z));
 						}
 					}
 					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
@@ -1101,7 +1118,7 @@ namespace JinEngine
 						if (ImGui::ColorPicker4(("##GuiColorPicker" + MakeUniqueLabel(updateData)).c_str(), (float*)&colorV, flag))
 						{
 							if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
-								SetValue(updateData.obj, updateData.handleBase, DirectX::XMFLOAT4(colorV.x, colorV.y, colorV.z, colorV.w));
+								SetValue(updateData, userData, DirectX::XMFLOAT4(colorV.x, colorV.y, colorV.z, colorV.w));
 						}
 					}
 				}
@@ -1120,7 +1137,7 @@ namespace JinEngine
 				TrySameLine(userData);
 				DisplayName(updateData, userData);
 				ImGui::SameLine();
-				T value = GetValue<T>(updateData.obj, updateData.handleBase);
+				T value = GetValue<T>(updateData);
 				if constexpr (std::is_same_v< ValueType, std::string>)
 				{
 					if constexpr (std::is_same_v<T, JVector2<ValueType>>)
@@ -1197,7 +1214,7 @@ namespace JinEngine
 					if (enumInfo == nullptr)
 						return;
 
-					Core::JEnum enumValue = UnsafeGetValue<Core::JEnum>(updateData.obj, updateData.handleBase);
+					Core::JEnum enumValue = UnsafeGetValue<Core::JEnum>(updateData);
 					int selectedIndex = enumInfo->GetEnumIndex(enumValue);
 
 					TrySameLine(userData);
@@ -1211,7 +1228,7 @@ namespace JinEngine
 							if (JImGuiImpl::Selectable(enumInfo->ElementName(enumInfo->EnumValue(i)), isSelected))
 							{
 								if (selectedIndex != i)
-									UnsafeSetValue<Core::JEnum>(updateData.obj, updateData.handleBase, enumInfo->EnumValue(i));
+									UnsafeSetValue<Core::JEnum>(updateData, userData, enumInfo->EnumValue(i));
 								selectedIndex = i;
 							}
 
@@ -1252,7 +1269,7 @@ namespace JinEngine
 			}
 			void Update(UpdateData& updateData, UserData* userData) final
 			{
-				container = GetValue<T>(updateData.obj, updateData.handleBase);
+				container = GetValue<T>(updateData);
 				TrySameLine(userData);
 				DisplayName(updateData, userData);
 				TrySameLine(userData);
@@ -1719,10 +1736,10 @@ namespace JinEngine
 			}
 		}
 
-		JReflectionGuiWidgetHelper::JReflectionGuiWidgetHelper()
-			:guid(Core::MakeGuid())
+		JReflectionGuiWidgetHelper::JReflectionGuiWidgetHelper(const J_EDITOR_PAGE_TYPE ownerPageType)
+			:guid(Core::MakeGuid()), ownerPageType(ownerPageType)
 		{
-			PrivateDataMap::Data().emplace(guid, std::make_unique<UserData>());
+			PrivateDataMap::Data().emplace(guid, std::make_unique<UserData>(ownerPageType));
 		}
 		JReflectionGuiWidgetHelper::~JReflectionGuiWidgetHelper()
 		{

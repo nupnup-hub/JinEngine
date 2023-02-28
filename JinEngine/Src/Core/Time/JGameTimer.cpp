@@ -22,10 +22,10 @@ namespace JinEngine
 				static TimerCashVec vec;
 				return vec;
 			}
-		};
+		}TimerCashVecData;
 
 		JGameTimer::JGameTimer()
-			: mSecondsPercount(0.0), mDeltaTime(-1.0), mBaseTime(0),
+			: mSecondsPercount(0.0), mDeltaTime(0.0), mBaseTime(0),
 			mPausedTime(0), mPrevTime(0), mCurrTime(0), mStopped(false), guid(MakeGuid())
 		{
 			TimerCashVecData::Data().push_back(this);
@@ -33,7 +33,6 @@ namespace JinEngine
 			QueryPerformanceFrequency((LARGE_INTEGER*)&countsPerSec);
 			mSecondsPercount = 1.0 / (double)countsPerSec;
 		}
-
 		JGameTimer::~JGameTimer()
 		{
 			const uint count = (uint)TimerCashVecData::Data().size();
@@ -79,12 +78,10 @@ namespace JinEngine
 				return (float)(((mCurrTime - mPausedTime) - mBaseTime) * mSecondsPercount);
 			}
 		}
-
 		float JGameTimer::DeltaTime()const noexcept
 		{
 			return (float)mDeltaTime;
 		}
-
 		void JGameTimer::Start() noexcept
 		{
 			int64 startTime;
@@ -123,10 +120,15 @@ namespace JinEngine
 			__int64 currTime;
 			QueryPerformanceCounter((LARGE_INTEGER*)&currTime);
 
+			mCurrTime = currTime;
 			mBaseTime = currTime;
 			mPrevTime = currTime;
 			mStopTime = 0;
 			mStopped = false;
+		}
+		bool JGameTimer::IsStop()const noexcept
+		{
+			return mStopped;
 		}
 		void JGameTimer::TickAllTimer()
 		{
@@ -148,8 +150,8 @@ namespace JinEngine
 				// Force nonnegative.  The DXSDK's CDXUTGameTimer mentions that if the 
 				// libcessor goes into a power save mode or we get shuffled to another
 				// libcessor, then mDeltaTime can be negative.
-				if (timer->mDeltaTime < 0.0)
-					timer->mDeltaTime = 0.0;
+				if (timer->mDeltaTime < 0.0f)
+					timer->mDeltaTime = 0.0f;
 			};
 
 			const uint count = (uint)TimerCashVecData::Data().size();

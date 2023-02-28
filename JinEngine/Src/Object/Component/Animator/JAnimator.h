@@ -1,6 +1,7 @@
 #pragma once
 #include"JAnimatorInterface.h"
-#include"../../../Core/FSM/AnimationFSM/JAnimationTime.h"
+#include"../../Resource/Skeleton/JSkeletonAsset.h"
+#include"../../Resource/AnimationController/JAnimationController.h"
 #include<memory>
 #include<vector>
 #include<DirectXMath.h>
@@ -10,13 +11,22 @@ namespace JinEngine
 	class JSkeletonAsset; 
 	class JAnimationController; 
 
+	namespace Core
+	{
+		class JAnimationUpdateData;
+	}
 	class JAnimator final : public JAnimatorInterface
 	{
 		REGISTER_CLASS(JAnimator)
 	private: 
-		JSkeletonAsset* skeletonAsset;
-		JAnimationController* animationController;
-		std::vector<Core::JAnimationTime>animationTimes; 
+		REGISTER_PROPERTY_EX(skeletonAsset, GetSkeletonAsset, SetSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
+		JSkeletonAsset* skeletonAsset = nullptr;
+		REGISTER_PROPERTY_EX(animationController, GetAnimatorController, SetAnimatorController, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
+		JAnimationController* animationController = nullptr;
+		Core::JGameTimer* userTimer = nullptr;
+		std::unique_ptr<Core::JAnimationUpdateData> animationUpdateData;
+	private:
+		bool reqSettingAniData = false;
 	public:
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
@@ -29,11 +39,19 @@ namespace JinEngine
 
 		void SetSkeletonAsset(JSkeletonAsset* newSkeletonAsset)noexcept;
 		void SetAnimatorController(JAnimationController* newAnimationController)noexcept;
-
+		void SetParameterValue(const std::wstring& paramName, const float value)noexcept;
+	public:
 		bool IsAvailableOverlap()const noexcept final; 
 		bool PassDefectInspection()const noexcept final; 
-
-		void OnAnimation()noexcept;
+	public:
+		JAnimatorFrameUpdateTriggerInterface* UpdateTriggerInterface();
+	private:
+		void OnAnimationUpdate(Core::JGameTimer* sceneTimer)noexcept final;
+		void OffAnimationUpdate()noexcept final;
+		void SettingAnimationUpdateData()noexcept;
+		void ClearAnimationUpdateData()noexcept;
+	private:
+		bool CanUpdateAnimation()const noexcept;
 	private:
 		void DoCopy(JObject* ori) final;
 	protected:

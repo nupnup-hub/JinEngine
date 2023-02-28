@@ -73,7 +73,9 @@ namespace JinEngine
 		static void DecomposeFileName(const std::wstring& oriname, std::wstring& name, std::wstring& format);
 		static std::wstring DecomposeFileFormat(const std::wstring& path)noexcept;
 
+		//Unuse
 		static void MakeFileName(std::wstring& name, const std::wstring& format, const std::wstring& folderPath) noexcept;
+		//Unuse
 		static void MakeFileName(std::string& name, const std::string& format, const std::string& folderPath) noexcept;
 
 		static bool IsOverlappedFilepath(const std::wstring& name, const std::wstring& folderPath) noexcept; 
@@ -265,17 +267,29 @@ namespace JinEngine
 			return searchFail;
 		}
 		template<typename Type, typename ...Param>
-		static int GetJIndex(const std::vector<Type*>& vec, bool(*ptr)(Type*, Param...), Param... var)
+		static int GetJIndex(const std::vector<Type*>& vec, bool(*condFunc)(Type*, Param...), Param... var)
 		{
 			const uint vecCount = (uint)vec.size();
 			for (uint i = 0; i < vecCount; ++i)
 			{
-				if (ptr(vec[i], std::forward<Param>(var)...))
+				if (condFunc(vec[i], std::forward<Param>(var)...))
 					return i;
 			}
 			return searchFail;
 		}
  
+		template<typename Type, typename ...Param>
+		static std::vector<Type*> GetPassConditionElement(const std::vector<Type*>& vec, bool(*condPtr)(Type*, Param...), Param... var)
+		{
+			std::vector<Type*> result;			
+			const uint vecCount = (uint)vec.size();
+			for (uint i = 0; i < vecCount; ++i)
+			{
+				if (condPtr(vec[i], std::forward<Param>(var)...))
+					result.push_back(vec[i]);
+			}
+			return result;
+		}
 	};
 
 	using JCUtil = JCommonUtility;

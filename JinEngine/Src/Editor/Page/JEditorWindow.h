@@ -58,7 +58,7 @@ namespace JinEngine
 			void RequestDeSelectObject(const JEditorSelectObjectEvStruct& evStruct); 
 			void RequesBind(const std::string& label, 
 				std::unique_ptr<Core::JBindHandleBase>&& doHandle, 
-				std::unique_ptr<Core::JBindHandleBase>&& undoHandle);
+				std::unique_ptr<Core::JBindHandleBase>&& undoHandle); 
 		protected:
 			void DoSetOpen()noexcept override;
 			void DoSetClose()noexcept override;

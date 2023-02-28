@@ -6,6 +6,7 @@ namespace JinEngine
 	struct JointPose
 	{
 	public: 
+		//World values
 		DirectX::XMFLOAT4 RotationQuat = { 0,0,0,0 };
 		DirectX::XMFLOAT3 Translation = { 0,0,0 };
 		DirectX::XMFLOAT3 Scale = {1,1,1 };  

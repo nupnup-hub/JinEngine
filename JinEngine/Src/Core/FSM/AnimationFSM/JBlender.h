@@ -10,10 +10,15 @@ namespace JinEngine
 			float startTime;
 			float endTime;
 			static constexpr float maxValue = 0.999f;
+		private:
+			bool isActivated = false;
 		public:
 			void Initialize(const float startTime, const float endTime)noexcept;
-			float GetBlnederValue(const float nowTime)noexcept;
-			bool IsBlenderEnd(const float nowTime)noexcept;
+			void Clear()noexcept;
+		public:
+			float GetBlnederValue(const float nowTime)const noexcept;
+			bool IsBlenderEnd(const float nowTime)const noexcept;
+			bool IsActivated()const noexcept;
 		};
 	}
 }

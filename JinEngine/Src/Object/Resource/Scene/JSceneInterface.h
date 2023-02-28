@@ -55,6 +55,7 @@ namespace JinEngine
 		virtual JSceneTimeInterface* TimeInterface() = 0;
 	private:
 		virtual void ActivateSceneTime()noexcept = 0;
+		virtual void PlaySceneTimer(const bool value)noexcept = 0;
 		virtual void DeActivateSceneTime()noexcept = 0;
 	};
 

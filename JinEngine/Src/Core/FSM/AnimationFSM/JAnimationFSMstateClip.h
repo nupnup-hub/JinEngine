@@ -19,13 +19,15 @@ namespace JinEngine
 			void Initialize()noexcept final;
 			J_ANIMATION_STATE_TYPE GetStateType()const noexcept final;
 		public:
-			void Enter(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const float timeOffset)noexcept override;
-			void Update(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const uint updateNumber)noexcept override;
-			void Close(JAnimationShareData& animationShareData)noexcept override;
+			void Enter(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept final;
+			void Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept final;
+			void Close(JAnimationUpdateData* updateData)noexcept final;
 		public:
-			void GetRegisteredSkeleton(std::vector<JSkeletonAsset*>& skeletonVec)noexcept override;
+			void GetRegisteredSkeleton(std::vector<JSkeletonAsset*>& skeletonVec)noexcept final;
 			JAnimationClip* GetClip()const noexcept;
 			void SetClip(JAnimationClip* newClip)noexcept;
+		public:
+			bool CanLoop()const noexcept final;
 		protected:
 			void Clear()noexcept final;
 		private:

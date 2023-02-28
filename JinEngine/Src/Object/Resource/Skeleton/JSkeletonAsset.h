@@ -41,7 +41,6 @@ namespace JinEngine
 			//For create new object
 			//except load
 			bool IsValidCreateData()final; 
-			J_RESOURCE_TYPE GetResourceType() const noexcept;
 		};
 		using InitData = JSkeletonInitData;
 	private:

@@ -93,9 +93,9 @@ namespace JinEngine
 			if (hasImguiTxt)
 				JFileIOHelper::CopyFile(Private::GetCopiedImGuiSaveDataPath(), Private::GetSrcImGuiSaveDataPath());
 			 
-			editorPage.push_back(std::make_unique<JProjectMainPage>(hasMetadata));
-			editorPage.push_back(std::make_unique<JEditorSkeletonPage>(hasMetadata));
-			editorPage.push_back(std::make_unique<JEditorAniContPage>(hasMetadata));
+			editorPage.push_back(std::make_unique<JProjectMainPage>());
+			editorPage.push_back(std::make_unique<JEditorSkeletonPage>());
+			editorPage.push_back(std::make_unique<JEditorAniContPage>());
 
 			//bool hasImguiTxt = false;
 			//if (_waccess(imguiTxt.c_str(), 00) != -1)

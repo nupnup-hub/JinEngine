@@ -67,6 +67,8 @@ namespace JinEngine
 			JEditorWindow* GetOpenWindow(const uint index)const noexcept; 
 			JEditorPopupWindow* GetOpenPopupWindow()const noexcept;
 			std::vector<JEditorWindow*> GetWindowVec()const noexcept;
+		protected:
+			bool HasDockNodeSpace()const noexcept;
 		public: 
 			virtual void Initialize();
 			virtual void Clear();

@@ -37,7 +37,7 @@ namespace JinEngine
 		return obj->EndDestroy(true);
 	}
 	bool JObject::EndDestroy(const bool isForced)
-	{ 
+	{
 		if (Destroy(isForced))
 		{
 			RemoveInstance();

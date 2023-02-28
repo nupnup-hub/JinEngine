@@ -17,7 +17,7 @@ namespace JinEngine
 		{
 			if (!newName.empty())
 				name = newName;
-		}
+		} 
 		bool JIdentifier::RemoveInstance()noexcept
 		{
 			DeRegisterCashData();

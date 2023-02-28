@@ -27,6 +27,8 @@ namespace JinEngine
 		VIEW_FRUSTUM_ICON,
 		COORD_GRID_ICON,
 		OPTION_SETTING,
+		PLAY_SCENE_TIME,
+		PAUSE_SCENE_TIME,
 		PROJECT_SELECTOR_BACKGROUND
 	};
 
@@ -52,6 +54,10 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_TEXTURE::COORD_GRID_ICON:
 				return true;
 			case JinEngine::J_DEFAULT_TEXTURE::OPTION_SETTING:
+				return true;
+			case JinEngine::J_DEFAULT_TEXTURE::PLAY_SCENE_TIME:
+				return true;
+			case JinEngine::J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME:
 				return true;
 			default:
 				return false;
@@ -101,6 +107,10 @@ namespace JinEngine
 				return L"CoordGrid.png";
 			case JinEngine::J_DEFAULT_TEXTURE::OPTION_SETTING:
 				return L"OptionSetting.png";
+			case JinEngine::J_DEFAULT_TEXTURE::PLAY_SCENE_TIME:
+				return L"PlaySceneTime.png";
+			case JinEngine::J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME:
+				return L"PauseSceneTime.png";
 			case JinEngine::J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND:
 				return L"Shiro_Background.jpg";
 			default:

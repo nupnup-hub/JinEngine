@@ -106,7 +106,7 @@ namespace JinEngine
 			return option;
 		}
 		void JGraphicImpl::SetGraphicOption(JGraphicOption newGraphicOption)noexcept
-		{ 
+		{
 			if (newGraphicOption.isHDOcclusionAcitvated && newGraphicOption.isHZBOcclusionActivated)
 			{
 				if (!option.isHDOcclusionAcitvated)
@@ -142,7 +142,7 @@ namespace JinEngine
 			return this;
 		}
 		JGraphicApplicationIterface* JGraphicImpl::AppInterface()noexcept
-		{ 
+		{
 			return this;
 		}
 		void JGraphicImpl::OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)
@@ -205,7 +205,7 @@ namespace JinEngine
 				JGraphicResourceHandle* handle = graphicResource->Create2DTexture(uploadBuffer, path, oriFormat, d3dDevice.Get(), commandList.Get());
 				EndCommand();
 				FlushCommandQueue();
-				return handle; 
+				return handle;
 			}
 			else
 				return graphicResource->Create2DTexture(uploadBuffer, path, oriFormat, d3dDevice.Get(), commandList.Get());
@@ -834,21 +834,11 @@ namespace JinEngine
 			if (scene->IsActivatedSceneTime())
 			{
 				for (uint i = 0; i < animatorCount; ++i)
-				{
-					JAnimator* animator = static_cast<JAnimator*>(jAvec[i]);
-					IFrameDirty* aFrameDirty = animator;
-					if (forcedSetFrameDirty)
-						aFrameDirty->SetFrameDirty();
-					if (aFrameDirty->IsFrameDirted())
-					{
-						JAnimator::IFrameBase1* aFrameBase1 = animator;
-						aFrameBase1->UpdateFrame(animationConstatns);
-						currSkinnedCB->CopyData(offset + i, animationConstatns);
-						if (aFrameDirty->GetFrameDirty() == Constants::gNumFrameResources)
-							++hotUpdateCount;
-						++updateCount;
-						animator->CallUpdateEnd();
-					}
+				{ 
+					JAnimator::IFrameBase1* aFrameBase1 = static_cast<JAnimator*>(jAvec[i]);
+					aFrameBase1->UpdateFrame(animationConstatns);
+					currSkinnedCB->CopyData(offset + i, animationConstatns);
+					++updateCount;
 				}
 			}
 			updateHelper.uData[(int)J_UPLOAD_RESOURCE_TYPE::ANIMATION].offset += animatorCount;
@@ -975,7 +965,7 @@ namespace JinEngine
 				g->commandList->SetGraphicsRootDescriptorTable(11, g->graphicResource->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D));
 				g->commandList->SetGraphicsRootDescriptorTable(12, g->graphicResource->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP));
 			};
-			
+
 			auto cmdListAlloc = currFrameResource->cmdListAlloc;
 			ThrowIfFailedHr(cmdListAlloc->Reset());
 			ThrowIfFailedHr(commandList->Reset(cmdListAlloc.Get(), nullptr));
@@ -1300,7 +1290,7 @@ namespace JinEngine
 					const bool onSkinned = animator != nullptr && condition.allowAnimation;
 					const J_MESHGEOMETRY_TYPE meshType = onSkinned ? J_MESHGEOMETRY_TYPE::SKINNED : J_MESHGEOMETRY_TYPE::STATIC;
 					const J_SHADER_VERTEX_LAYOUT shaderLayout = JShaderType::ConvertToVertexLayout(meshType);
-					 
+
 					if (condition.allowDebugOutline && gameObject[i]->IsSelectedbyEditor())
 						commandList->SetPipelineState(shader->GetGraphicExtraPso(shaderLayout, J_GRAPHIC_EXTRA_PSO_TYPE::STENCIL_WRITE_ALWAYS));
 					else
@@ -1310,7 +1300,7 @@ namespace JinEngine
 					D3D12_GPU_VIRTUAL_ADDRESS objectCBAddress = objectCB->GetGPUVirtualAddress() + finalObjMeshOffset * objectCBByteSize;
 					commandList->SetGraphicsRootConstantBufferView(0, objectCBAddress);
 					if (onSkinned)
-					{ 
+					{
 						D3D12_GPU_VIRTUAL_ADDRESS skinObjCBAddress = skinCB->GetGPUVirtualAddress() + (helper.aniOffset + i) * skinCBByteSize;
 						commandList->SetGraphicsRootConstantBufferView(1, skinObjCBAddress);
 					}
@@ -1329,7 +1319,7 @@ namespace JinEngine
 			const DrawCondition& condition)
 		{
 			JShader* shadowShader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SHADOW_MAP_SHADER);
-		 
+
 			uint objectCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JObjectConstants));
 			uint skinCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JAnimationConstants));
 
@@ -1367,7 +1357,7 @@ namespace JinEngine
 					D3D12_GPU_VIRTUAL_ADDRESS objectCBAddress = objectCB->GetGPUVirtualAddress() + finalObjMeshOffset * objectCBByteSize;
 					commandList->SetGraphicsRootConstantBufferView(0, objectCBAddress);
 					if (onSkinned)
-					{ 
+					{
 						D3D12_GPU_VIRTUAL_ADDRESS skinObjCBAddress = skinCB->GetGPUVirtualAddress() + (helper.aniOffset + i) * skinCBByteSize;
 						commandList->SetGraphicsRootConstantBufferView(1, skinObjCBAddress);
 					}
@@ -1412,7 +1402,7 @@ namespace JinEngine
 				//수정필요
 				//if (JMathHelper::Vector3Length(gameObject[i]->GetTransform()->GetScale()) < 5)
 				//	continue;
- 
+
 				commandList->SetPipelineState(shader->GetGraphicPso(JShaderType::ConvertToVertexLayout(J_MESHGEOMETRY_TYPE::STATIC)));
 				const uint index = helper.objectRitemOffset + CallGetSecondFrameBuffOffset(*renderItem);
 				D3D12_GPU_VIRTUAL_ADDRESS boundingObjectCBAddress = boundingObjectCB->GetGPUVirtualAddress() + index * boundingObjectCBByteSize;
@@ -1907,12 +1897,12 @@ namespace JinEngine
 			SetGraphicOption(newOption);
 		}
 		void JGraphicImpl::WriteLastRsTexture()
-		{ 	
+		{
 			if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
 			{
 				// 0 is main camera
-				 
-				auto mainCamRs = graphicResource->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);				 	 
+
+				auto mainCamRs = graphicResource->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);
 				JApplicationProject::JProjectInfo* opendInfo = JApplicationProject::GetOpenProjectInfo();
 				if (opendInfo == nullptr)
 					MessageBox(0, L"get open proejct info error", 0, 0);
@@ -2086,5 +2076,5 @@ namespace JinEngine
 		}
 		JGraphicImpl::~JGraphicImpl()
 		{}
-	}
-}
+			}
+		}

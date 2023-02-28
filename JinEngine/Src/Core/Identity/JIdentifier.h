@@ -18,7 +18,7 @@ namespace JinEngine
 		public:
 			std::wstring GetName() const noexcept;
 			size_t GetGuid()const noexcept;
-			virtual void SetName(const std::wstring& newName)noexcept;
+			virtual void SetName(const std::wstring& newName)noexcept; 
 		public:
 			template<typename T>
 			static std::wstring GetDefaultName()noexcept

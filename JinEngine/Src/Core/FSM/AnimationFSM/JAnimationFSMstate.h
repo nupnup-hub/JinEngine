@@ -9,9 +9,10 @@ namespace JinEngine
 	class JSkeletonAsset;  
 	namespace Core
 	{ 
-		struct JAnimationShareData;
+		class JAnimationUpdateData;
 		struct JAnimationTime;
 		class JAnimationFSMtransition;
+		class JGameTimer;
 
 		class JAnimationFSMstateStreamInteface
 		{
@@ -30,16 +31,18 @@ namespace JinEngine
 			JVector2<float> pos;
 		public:
 			virtual J_ANIMATION_STATE_TYPE GetStateType()const noexcept = 0;
-			virtual void Enter(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const float timeOffset)noexcept = 0;
-			virtual void Update(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const uint updateNumber)noexcept = 0;
-			virtual void Close(JAnimationShareData& animationShareData)noexcept = 0;
+			virtual void Enter(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept = 0;
+			virtual void Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept = 0;
+			virtual void Close(JAnimationUpdateData* updateData)noexcept = 0;
 			virtual void GetRegisteredSkeleton(std::vector<JSkeletonAsset*>& skeletonVec)noexcept = 0;
 		public: 
 			JVector2<float> GetPos()const noexcept;
 			JAnimationFSMtransition* GetTransitionByIndex(uint index)noexcept;
 			void SetPos(const JVector2<float>& newPos);
+		public:
+			virtual bool CanLoop()const noexcept = 0;
 		public:   
-			JAnimationFSMtransition* FindNextStateTransition(JAnimationTime& animationTime)noexcept;
+			JAnimationFSMtransition* FindNextStateTransition(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept;
 		public:
 			JAnimationFSMstateStreamInteface* StreamInterface();
 		protected:

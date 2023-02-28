@@ -36,7 +36,7 @@ namespace JinEngine
 		private:
 			using MenuSwitchIconPreesF = typename Core::JSFunctorType<void, JSceneObserver*>;
 		private:
-			static constexpr uint menuSwitchIconCount = 5;
+			static constexpr uint menuSwitchIconCount = 7;
 		private: 
 			std::unique_ptr<JEditorMenuBar> menubar; 
 			JEditorMenuNodeUtilData nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::COUNT];
@@ -106,8 +106,8 @@ namespace JinEngine
 			void UpdateMainCamFrustum()noexcept;
 			void MakeMainCamFrustum()noexcept; 
 		private:
-			void ActivateToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type);
-			void DeActivateToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type);
+			void ActivateTransformToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type);
+			void DeActivateTransformToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type);
 			J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE ConvertSettingToToolType(const J_OBSERVER_SETTING_TYPE type)const noexcept;
 			J_OBSERVER_SETTING_TYPE ConvertToolToSettingType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)const noexcept;
 		private:

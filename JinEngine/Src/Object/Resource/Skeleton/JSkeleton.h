@@ -24,7 +24,6 @@ namespace JinEngine
 		void GetBindTQS(int index, DirectX::XMFLOAT3& outT, DirectX::XMFLOAT4& outQ, DirectX::XMFLOAT3& outS)const noexcept;
 		DirectX::XMVECTOR GetBindT(int index)const noexcept;
 		float GetJointLength(int index)const noexcept;
-
 	public:
 		bool IsSame(const JSkeleton& skeleton)const noexcept;
 		bool IsSame(const size_t skletonHash)const noexcept;

@@ -64,13 +64,13 @@ namespace JinEngine
 	{
 		return JDF::Instance().Create(parent);
 	} 
-	JDirectory* JDirectoryFactoryImpl::CreateRoot(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag)
-	{
-		return JDF::Instance().CreateRoot(name, guid, flag);
-	}
 	JDirectory* JDirectoryFactoryImpl::Create(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory& parent)
 	{
 		return JDF::Instance().Create(name, guid, flag, parent);
+	}
+	JDirectory* JDirectoryFactoryImpl::CreateRoot(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag)
+	{
+		return JDF::Instance().CreateRoot(name, guid, flag);
 	}
 	JDirectory* JDirectoryFactoryImpl::Load(JDirectory& parent, const Core::JAssetFileLoadPathData& pathData)
 	{

@@ -10,7 +10,7 @@ namespace JinEngine
 	class JSkeletonAsset;
 	namespace Core
 	{
-		struct JAnimationShareData;
+		class JAnimationUpdateData;
 		class JAnimationPostProcessing
 		{
 		private:
@@ -18,7 +18,7 @@ namespace JinEngine
 			static constexpr float minDistance = 0.1f;
 			static constexpr int vectorSize = 20;
 		public:
-			static bool CalculateBindPoseIK(JAnimationShareData& animationShareData,
+			static bool CalculateBindPoseIK(JAnimationUpdateData* updateData,
 				JSkeletonAsset* srcSkeletonAsset,
 				JSkeletonAsset* tarSkeletonAsset,
 				const J_AVATAR_JOINT start,
@@ -27,7 +27,7 @@ namespace JinEngine
 				const std::vector<DirectX::XMFLOAT3>& targetTranslation,
 				const std::vector<DirectX::XMFLOAT4X4>& bindPose)noexcept;
 		private:
-			static void StuffBindPoseData(JAnimationShareData& animationShareData,
+			static void StuffBindPoseData(JAnimationUpdateData* updateData,
 				JSkeletonAsset* srcSkeleton,
 				DirectX::XMFLOAT3& effectorWorld,
 				uint& ikCount,
@@ -35,7 +35,7 @@ namespace JinEngine
 				const uint8 startJointRefIndex,
 				const uint8 rootJointRefIndex,
 				const std::vector<DirectX::XMFLOAT4X4>& bindPose)noexcept;
-			static bool FindBindPoseIKValue(JAnimationShareData& animationShareData,
+			static bool FindBindPoseIKValue(JAnimationUpdateData* updateData,
 				JSkeletonAsset* srcSkeleton,
 				const DirectX::XMFLOAT3& effectorWorld,
 				const uint ikNumber,

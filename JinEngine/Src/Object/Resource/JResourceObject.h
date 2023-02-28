@@ -27,6 +27,7 @@ namespace JinEngine
 			const size_t guid;
 			const J_OBJECT_FLAG flag;
 			const uint8 formatIndex;
+			const J_RESOURCE_TYPE rType;
 		private:
 			JDirectory* directory;
 		public:
@@ -34,17 +35,19 @@ namespace JinEngine
 				const size_t guid, 
 				const J_OBJECT_FLAG flag,
 				JDirectory* directory,
-				const uint8 formatIndex);
+				const uint8 formatIndex,
+				const J_RESOURCE_TYPE rType);
 			JResourceInitData(const std::wstring& name,
 				JDirectory* directory,
-				const uint8 formatIndex);
+				const uint8 formatIndex,
+				const J_RESOURCE_TYPE rType);
 			virtual ~JResourceInitData() = default;
 		public:
 			JDirectory* GetDirectory()const noexcept;
 		public:
 			virtual bool IsValidCreateData();
 			virtual bool IsValidLoadData();
-			virtual J_RESOURCE_TYPE GetResourceType() const noexcept = 0;
+			J_RESOURCE_TYPE GetResourceType() const noexcept;
 		};
 	private:
 		//0 is default Resource format 
@@ -63,7 +66,7 @@ namespace JinEngine
 		void SetName(const std::wstring& newName)noexcept final;
 	protected:
 		uint8 GetFormatIndex()const noexcept;
-		JDirectory* GetDirectory()noexcept; 
+		JDirectory* GetDirectory()const noexcept final;
 		bool HasFile()const noexcept;
 		bool HasMetafile()const noexcept;
 	protected:
@@ -79,6 +82,7 @@ namespace JinEngine
 	protected:
 		bool Destroy(const bool isForced)override;
 		void DeleteRFile()final;
+		void MoveRFile(JDirectory* newDir)final;
 	private:
 		bool RegisterCashData()noexcept final;
 		bool DeRegisterCashData()noexcept final;

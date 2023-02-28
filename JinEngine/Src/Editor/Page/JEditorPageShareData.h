@@ -29,6 +29,7 @@ namespace JinEngine
 			static void ClearPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 		public:
 			static bool IsRegisteredPage(const J_EDITOR_PAGE_TYPE pageType)noexcept;
+			static bool IsEditableSelectedObject(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 			static bool HasValidOpenPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 		public:
 			static uint GetPageGuiWindowID(const J_EDITOR_PAGE_TYPE pageType)noexcept;

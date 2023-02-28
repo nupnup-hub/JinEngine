@@ -27,11 +27,11 @@ namespace JinEngine
 			std::unique_ptr<JSceneObserver> aniContObserver;
 			std::unique_ptr<JObjectDetail> aniContDetail;
 		private:
-			std::unique_ptr<JEditorMenuBar> menuBar;
+			std::unique_ptr<JEditorMenuBar> menuBar; 
 		private:
-			bool reqInit;
+			bool setWndOptionOnce = false;
 		public:
-			JEditorAniContPage(bool hasMetadata);
+			JEditorAniContPage();
 			~JEditorAniContPage();
 		public:
 			J_EDITOR_PAGE_TYPE GetPageType()const noexcept final;

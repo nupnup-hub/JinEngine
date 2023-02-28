@@ -10,38 +10,38 @@ namespace JinEngine
 	namespace Core
 	{
 		struct JAnimationAdditionalBind;
-		struct JAnimationShareData;
+		class JAnimationUpdateData;
 		class JAnimationPostProcessing;
 		class JAnimationRetargeting
 		{
 		public:
-			static bool CalculateAdditionalBindPose(JAnimationShareData& animationShareData,
+			static bool CalculateAdditionalBindPose(JAnimationUpdateData* updateData,
 				JSkeletonAsset* srcSkeletonAsset,
 				JSkeletonAsset* tarSkeletonAsset,
 				std::vector<JAnimationAdditionalBind>& additionalBind)noexcept;
 		private:
-			static void StuffTargetTranslation(JAnimationShareData& animationShareData,
+			static void StuffTargetTranslation(JAnimationUpdateData* updateData,
 				JSkeletonAsset* srcSkeletonAsset,
 				JSkeletonAsset* tarSkeletonAsset,
 				std::vector<DirectX::XMFLOAT3>& bindTargetLocalT,
 				std::vector<DirectX::XMFLOAT3>& bindTargetWorldT)noexcept;
-			static void ReBuildTargetTranslation(JAnimationShareData& animationShareData,
+			static void ReBuildTargetTranslation(JAnimationUpdateData* updateData,
 				JSkeletonAsset* srcSkeletonAsset,
 				JSkeletonAsset* tarSkeletonAsset,
 				std::vector<DirectX::XMFLOAT3>& bindTargetLocalT,
 				std::vector<DirectX::XMFLOAT3>& bindTargetWorldT,
 				uint8 index)noexcept;
-			static void GetBindPoseAdditionalTransform(JAnimationShareData& animationShareData,
+			static void GetBindPoseAdditionalTransform(JAnimationUpdateData* updateData,
 				JSkeletonAsset* srcSkeletonAsset,
 				JSkeletonAsset* tarSkeletonAsset,
 				const std::vector<DirectX::XMFLOAT3>& tarModTranslation,
 				std::vector<JAnimationAdditionalBind>& additionalBind)noexcept;
-			static void StuffBindPoseIKResult(JAnimationShareData& animationShareData,
+			static void StuffBindPoseIKResult(JAnimationUpdateData* updateData,
 				JSkeletonAsset* srcSkeletonAsset,
 				JSkeletonAsset* tarSkeletonAsset,
 				std::vector<JAnimationAdditionalBind>& additionalBind,
 				std::vector<DirectX::XMFLOAT4X4>& modBindPose)noexcept;
-			static void AdjustJoint(JAnimationShareData& animationShareData,
+			static void AdjustJoint(JAnimationUpdateData* updateData,
 				JSkeletonAsset* srcSkeletonAsset,
 				JSkeletonAsset* tarSkeletonAsset,
 				std::vector<DirectX::XMFLOAT4X4>& modBindPose)noexcept;
@@ -64,12 +64,12 @@ namespace JinEngine
 				std::vector<DirectX::XMFLOAT4X4>& bindPose,
 				const DirectX::XMMATRIX preParentBindPose,
 				const uint8 index);
-			static void DebugQGapPrint00(JAnimationShareData& animationShareData,
+			static void DebugQGapPrint00(JAnimationUpdateData* updateData,
 				JSkeletonAsset* srcSkeletonAsset,
 				JSkeletonAsset* tarSkeletonAsset,
 				std::vector<JAnimationAdditionalBind>& additionalBind,
 				std::vector<DirectX::XMFLOAT4X4>& modBindPose)noexcept;
-			static void DebugQGapPrint01(JAnimationShareData& animationShareData,
+			static void DebugQGapPrint01(JAnimationUpdateData* updateData,
 				JSkeletonAsset* srcSkeletonAsset,
 				JSkeletonAsset* tarSkeletonAsset,
 				std::vector<JAnimationAdditionalBind>& additionalBind,

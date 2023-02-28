@@ -2,8 +2,10 @@
 #include"../../JEditorPageShareData.h"
 #include"../../JEditorAttribute.h"
 #include"../../../Helpers/JReflectionGuiWidgetHelper.h"  
+#include"../../../Helpers/JEditorSearchBarHelper.h"  
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../../../Core/FSM/JFSMInterface.h"
+#include"../../../../Object/Component/JComponentFactory.h"
 #include"../../../../Object/GameObject/JGameObject.h"
 #include"../../../../Object/Resource/JResourceObject.h"
 #include"../../../../Object/Directory/JDirectory.h" 
@@ -19,7 +21,8 @@ namespace JinEngine
 			const J_EDITOR_WINDOW_FLAG windowFlag)
 			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
 		{ 
-			guiHelper = std::make_unique<JReflectionGuiWidgetHelper>();
+			guiHelper = std::make_unique<JReflectionGuiWidgetHelper>(pageType);
+			searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
 		}
 		JObjectDetail::~JObjectDetail() {}
 		J_EDITOR_WINDOW_TYPE JObjectDetail::GetWindowType()const noexcept
@@ -43,6 +46,8 @@ namespace JinEngine
 			if (!nowSelected.IsValid())
 			{
 				guiHelper->Clear();
+				searchBarHelper->ClearInputBuffer();
+				isPressAddGameObject = false;
 				return;
 			}
 			 
@@ -78,24 +83,44 @@ namespace JinEngine
 			for (const auto& comp : compVec)
 			{
 				ImGui::BeginGroup();
+				ImGui::Separator();
 				if (JImGuiImpl::TreeNodeEx(JCUtil::WstrToU8Str(Core::ErasePrefixJW(comp->GetName()) + L"##TreeNode" + gObj->GetName()), baseFlags))
 				{
 					JImGuiImpl::TreePop();
-					ImGui::Separator();
 					guiHelper->UpdateGuiWidget(comp, &comp->GetTypeInfo());
-
-					/*
-
-					const auto paramVec = comp->GetTypeInfo().GetPropertyVec();
-					for (const auto& param : paramVec)
-						PropertyOnScreen(comp, param);
-
-					const auto methodVec = comp->GetTypeInfo().GetMethodVec();
-					for (const auto& method : methodVec)
-						MethodOnScreen(comp, method);
-					*/
 				}
 				ImGui::EndGroup();
+			}
+
+			if (JImGuiImpl::Button("AddComponent"))
+				ImGui::OpenPopup("##AddComponentPopup");
+
+			if (ImGui::BeginPopup("##AddComponentPopup"))
+			{    
+				//ImGui::BeginGroup();
+				JImGuiImpl::Text("Search");
+				ImGui::SameLine();
+				searchBarHelper->UpdateSearchBar();
+
+				std::vector<Core::JTypeInfo*> derivedTypeInfo = Core::JReflectionInfo::Instance().GetDerivedTypeInfo(JComponent::StaticTypeInfo());
+				for (const auto& compType : derivedTypeInfo)
+				{
+					if (!searchBarHelper->CanSrcNameOnScreen(compType->NameWithOutPrefix()))
+						continue;
+
+					if (JImGuiImpl::Selectable(compType->NameWithOutPrefix()))
+					{
+						JCFIB::CreateByName(compType->Name(), *gObj.Get());
+						SetModifiedBit(gObj, true);
+						isPressAddGameObject = false;
+					}
+				}
+
+				bool clickAnyMouse = ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1) || ImGui::IsMouseClicked(2);
+				if (clickAnyMouse && !JImGuiImpl::IsMouseInRect(ImGui::GetWindowPos(), ImGui::GetWindowSize()))
+					isPressAddGameObject = false;
+				//ImGui::EndGroup();
+				ImGui::EndPopup();
 			}
 		}
 		void JObjectDetail::ObjectOnScreen(Core::JUserPtr<Core::JIdentifier> fObj)
@@ -106,10 +131,10 @@ namespace JinEngine
 				ImGuiTreeNodeFlags_Framed |
 				ImGuiTreeNodeFlags_DefaultOpen;
 
+			ImGui::Separator();
 			if (JImGuiImpl::TreeNodeEx(Core::ErasePrefixJ(fObj->GetTypeInfo().Name()) + JCUtil::WstrToU8Str(L"##TreeNode" + fObj->GetName()), baseFlags))
 			{ 
 				JImGuiImpl::TreePop();
-				ImGui::Separator();
 				guiHelper->UpdateGuiWidget(fObj.Get(), &fObj->GetTypeInfo());
 			}
 			ImGui::EndGroup();
@@ -124,6 +149,8 @@ namespace JinEngine
 		{
 			JEditorWindow::DoDeActivate();
 			guiHelper->Clear();
+			searchBarHelper->ClearInputBuffer();
+			isPressAddGameObject = false;
 			DeRegisterListener();
 		}
 		void JObjectDetail::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)

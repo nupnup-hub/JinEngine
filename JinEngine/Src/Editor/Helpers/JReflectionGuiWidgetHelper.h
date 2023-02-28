@@ -1,6 +1,7 @@
 #pragma once
 #include"../GuiLibEx/JGuiWidgetType.h"
 #include"../Interface/JEditorObjectInterface.h"
+#include"../../Editor/Page/JEditorPageEnum.h"
 #include"../../Core/JDataType.h" 
 #include"../../Core/Reflection/JGuiWidgetInfo.h"
 #include<vector>
@@ -24,8 +25,9 @@ namespace JinEngine
 		{
 		private:
 			const size_t guid;
+			const J_EDITOR_PAGE_TYPE ownerPageType;
 		public:
-			JReflectionGuiWidgetHelper();
+			JReflectionGuiWidgetHelper(const J_EDITOR_PAGE_TYPE ownerPageType);
 			~JReflectionGuiWidgetHelper();
 		public:
 			void UpdateGuiWidget(Core::JIdentifier* obj, Core::JTypeInfo* typeInfo); 

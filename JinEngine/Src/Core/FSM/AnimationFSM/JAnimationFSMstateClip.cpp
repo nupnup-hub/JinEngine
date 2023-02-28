@@ -1,6 +1,6 @@
 #include"JAnimationFSMstateClip.h" 
 #include"JAnimationTime.h"
-#include"JAnimationShareData.h"
+#include"JAnimationUpdateData.h"
 #include"JAnimationFSMtransition.h" 
 #include"../JFSMfactory.h" 
 #include"../../Time/JGameTimer.h" 
@@ -20,31 +20,29 @@ namespace JinEngine
 		J_ANIMATION_STATE_TYPE JAnimationFSMstateClip::GetStateType()const noexcept
 		{
 			return J_ANIMATION_STATE_TYPE::CLIP;
-		}
-		void JAnimationFSMstateClip::Enter(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const float timeOffset)noexcept
+		} 
+		void JAnimationFSMstateClip::Enter(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 		{
-			clip->ClipEnter(animationTime, animationShareData, srcSkeletonAsset, JEngineTimer::Data().TotalTime(), timeOffset);
-		}
-		void JAnimationFSMstateClip::Update(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, const uint updateNumber)noexcept
-		{
-			animationShareData.ClearSkeletonBlendRate(updateNumber);
-			if (clip != nullptr)
-			{
-				clip->Update(animationTime,
-					animationShareData,
-					srcSkeletonAsset,
-					animationShareData.localTransform[updateNumber],
-					JEngineTimer::Data().TotalTime(),
-					JEngineTimer::Data().DeltaTime());
+			JAnimationFSMtransition* nowTransition = updateData->diagramData[layerNumber].nowTransition;
+			const float timeOffset = nowTransition ? nowTransition->GetTargetStartTimeRate() : 0;
 
+			if (clip != nullptr && clip->GetClipSkeletonAsset())
+				clip->ClipEnter(updateData, layerNumber, updateNumber, timeOffset);
+		}
+		void JAnimationFSMstateClip::Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+		{
+			updateData->ClearSkeletonBlendRate(updateNumber);
+			if (clip != nullptr && clip->GetClipSkeletonAsset())
+			{ 
+				clip->Update(updateData, layerNumber, updateNumber);
 				size_t clipGuid = clip->GetClipSkeletonAsset()->GetGuid();
-				animationShareData.skeletonBlendRate[updateNumber][clipGuid] = 1;
-				animationShareData.lastState[updateNumber] = GetStateType();
+				updateData->skeletonBlendRate[updateNumber][clipGuid] = 1;
+				updateData->lastState[updateNumber] = GetStateType();
 			}
 			else
-				animationShareData.StuffIdentity(updateNumber);
+				updateData->StuffIdentity(layerNumber, updateNumber);
 		}
-		void JAnimationFSMstateClip::Close(JAnimationShareData& animationShareData)noexcept
+		void JAnimationFSMstateClip::Close(JAnimationUpdateData* updateData)noexcept
 		{
 			clip->ClipClose();
 		}
@@ -62,6 +60,10 @@ namespace JinEngine
 			CallOffResourceReference(clip);
 			clip = newClip;
 			CallOnResourceReference(clip);
+		}
+		bool JAnimationFSMstateClip::CanLoop()const noexcept
+		{
+			return clip->IsLoop();
 		}
 		void JAnimationFSMstateClip::Clear()noexcept
 		{

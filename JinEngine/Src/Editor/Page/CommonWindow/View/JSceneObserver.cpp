@@ -122,7 +122,8 @@ namespace JinEngine
 
 			size_t switchIconGuid[menuSwitchIconCount]
 			{
-				Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid()
+				Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid(),
+				Core::MakeGuid(),Core::MakeGuid(),Core::MakeGuid()
 			};
 			J_OBSERVER_SETTING_TYPE settingVec[menuSwitchIconCount]
 			{
@@ -130,7 +131,9 @@ namespace JinEngine
 				J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT,
 				J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE,
 				J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE,
-				J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID
+				J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID,
+				J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME,
+				J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME
 			};
 
 			GetGResourcePtr getGLamVec[menuSwitchIconCount]
@@ -139,7 +142,9 @@ namespace JinEngine
 				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::ROTATION_ARROW); },
 				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SCALE_ARROW); },
 				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON); },
-				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::COORD_GRID_ICON); }
+				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::COORD_GRID_ICON); },
+				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PLAY_SCENE_TIME); },
+				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME); }
 			};
 
 			MenuSwitchIconPreesF::Ptr pressPtrVec[menuSwitchIconCount] =
@@ -148,7 +153,9 @@ namespace JinEngine
 				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT); },
 				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE); },
 				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE); },
-				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID); }
+				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID); },
+				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME); },
+				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME); }
 			};
 
 			std::vector<std::string> guideVec[menuSwitchIconCount]
@@ -158,6 +165,8 @@ namespace JinEngine
 				{ "gameObject scale control" , u8"크기 조정" },
 				{ "Main camera view frustum" , u8"메인 카메라 절두체" },
 				{ "Scene coord grid" , u8"씬 그리드" },
+				{ "Play" , u8"재생" },
+				{ "Pause" , u8"정지" },
 			};
 
 			const uint useCount = (uint)useSettingType.size();
@@ -249,52 +258,52 @@ namespace JinEngine
 			std::string name;
 			switch (type)
 			{
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL:
+			case J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL:
 			{
 				name = "Space Sptail";
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_SETTING_SPACE_SPATIAL_TREE:
+			case J_OBSERVER_SETTING_TYPE::VIEW_SETTING_SPACE_SPATIAL_TREE:
 			{
 				name = "Space Sptail Tree";
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_SHADOW_VIEWER:
+			case J_OBSERVER_SETTING_TYPE::VIEW_SHADOW_VIEWER:
 			{
 				name = "Shadow Map";
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER:
+			case J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER:
 			{
 				name = "Occlusion Map";
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID:
+			case J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID:
 			{
 				name = "Scene Coord Grid";
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE:
+			case J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE:
 			{
 				name = "Cam Frustum";
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
 			{
 				name = "Position Arrow";
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
 			{
 				name = "Rotation Arrow";
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
 			{
 				name = "Scale Arrow";
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
+			case J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
 			{
 				name = "Make Debug Shape";
 				break;
@@ -326,13 +335,13 @@ namespace JinEngine
 		{
 			switch (type)
 			{
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID:
+			case J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID:
 			{
 				if (!coordGrid->HasCoordGrid())
 					coordGrid->MakeCoordGrid(scene->GetDebugRootGameObject());
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE:
+			case J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE:
 			{
 				if (!mainCamFrustum.IsValid())
 					MakeMainCamFrustum();
@@ -340,25 +349,39 @@ namespace JinEngine
 					JObject::BeginDestroy(mainCamFrustum.Release());
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
 			{
-				ActivateToolType(ConvertSettingToToolType(type));
+				ActivateTransformToolType(ConvertSettingToToolType(type));
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
 			{
-				ActivateToolType(ConvertSettingToToolType(type));
+				ActivateTransformToolType(ConvertSettingToToolType(type));
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
 			{
-				ActivateToolType(ConvertSettingToToolType(type));
+				ActivateTransformToolType(ConvertSettingToToolType(type));
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
+			case J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
 			{
 				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 6, 1, 6);
 				nodeUtilData[(int)type].isOpen = false;
+				break;
+			}
+			case J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME:
+			{
+				scene->TimeInterface()->ActivateSceneTime();
+				nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME].isOpen = false;
+				break;
+			}
+			case J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME:
+			{
+				if(scene->IsActivatedSceneTime() && !scene->IsPauseSceneTime())
+					scene->TimeInterface()->PlaySceneTimer(false);
+				else
+					nodeUtilData[(int)type].isOpen = false;
 				break;
 			}
 			default:
@@ -369,31 +392,45 @@ namespace JinEngine
 		{
 			switch (type)
 			{
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID:
+			case J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID:
 			{
 				if (coordGrid->HasCoordGrid())
 					coordGrid->Clear();
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE:
+			case J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE:
 			{
 				if (mainCamFrustum.IsValid())
 					JObject::BeginDestroy(mainCamFrustum.Release());
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
 			{
-				DeActivateToolType(ConvertSettingToToolType(type));
+				DeActivateTransformToolType(ConvertSettingToToolType(type));
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
 			{
-				DeActivateToolType(ConvertSettingToToolType(type));
+				DeActivateTransformToolType(ConvertSettingToToolType(type));
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
 			{
-				DeActivateToolType(ConvertSettingToToolType(type));
+				DeActivateTransformToolType(ConvertSettingToToolType(type));
+				break;
+			}
+			case J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME:
+			{
+				scene->TimeInterface()->DeActivateSceneTime();
+				nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME].isOpen = false;
+				break;
+			}
+			case J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME:
+			{
+				if (scene->IsActivatedSceneTime() && scene->IsPauseSceneTime())
+					scene->TimeInterface()->PlaySceneTimer(true);
+				else
+					nodeUtilData[(int)type].isOpen = true;
 				break;
 			}
 			default:
@@ -404,27 +441,27 @@ namespace JinEngine
 		{
 			switch (type)
 			{
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL:
+			case J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL:
 			{
 				SceneSpaceSpatialOptionOnScreen();
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_SETTING_SPACE_SPATIAL_TREE:
+			case J_OBSERVER_SETTING_TYPE::VIEW_SETTING_SPACE_SPATIAL_TREE:
 			{
 				DebugTreeOnScreen();
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_SHADOW_VIEWER:
+			case J_OBSERVER_SETTING_TYPE::VIEW_SHADOW_VIEWER:
 			{
 				ShadowMapViewerOnScreen();
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER:
+			case J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER:
 			{
 				OcclusionResultOnScreen();
 				break;
 			}
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE:
+			case J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE:
 			{
 				UpdateMainCamFrustum();
 				break;
@@ -627,12 +664,12 @@ namespace JinEngine
 				J_DEFAULT_MATERIAL::DEBUG_LINE_RED,
 				true));
 		}
-		void JSceneObserver::ActivateToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)
+		void JSceneObserver::ActivateTransformToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)
 		{
 			if (lastActivatedToolType != J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::NONE)
 			{
 				nodeUtilData[(int)ConvertToolToSettingType(lastActivatedToolType)].isOpen = false;
-				DeActivateToolType(lastActivatedToolType);
+				DeActivateTransformToolType(lastActivatedToolType);
 			}
 
 			for (uint i = 0; i < toolCount; ++i)
@@ -645,7 +682,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JSceneObserver::DeActivateToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)
+		void JSceneObserver::DeActivateTransformToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)
 		{
 			for (uint i = 0; i < toolCount; ++i)
 			{
@@ -661,11 +698,11 @@ namespace JinEngine
 		{
 			switch (type)
 			{
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
 				return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::POSITION_ARROW;
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
 				return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::ROTATION_ARROW;
-			case JinEngine::Editor::J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
+			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
 				return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::SCALE_ARROW;
 			default:
 				return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::NONE;
@@ -675,11 +712,11 @@ namespace JinEngine
 		{
 			switch (type)
 			{
-			case JinEngine::Editor::J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::POSITION_ARROW:
+			case J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::POSITION_ARROW:
 				return J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS;
-			case JinEngine::Editor::J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::ROTATION_ARROW:
+			case J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::ROTATION_ARROW:
 				return J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT;
-			case JinEngine::Editor::J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::SCALE_ARROW:
+			case J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::SCALE_ARROW:
 				return J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE;
 			default:
 				return J_OBSERVER_SETTING_TYPE::COUNT;		//Invalid
@@ -701,6 +738,10 @@ namespace JinEngine
 				rotationTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
 			if (nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE].isUse)
 				scaleTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
+			 
+			//자동으로 activate 불가능
+			nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME].isOpen = false;
+			nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME].isOpen = false;
 
 			menubar->ActivateOpenNode(true);
 			isCreateHelperGameObj = true;

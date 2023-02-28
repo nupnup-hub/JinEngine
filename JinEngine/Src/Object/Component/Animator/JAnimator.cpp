@@ -5,6 +5,9 @@
 #include"../../Resource/Skeleton/JSkeletonFixedData.h"
 #include"../../Resource/JResourceManager.h" 
 #include"../../GameObject/JGameObject.h" 
+#include"../../../Core/FSM/JFSMparameter.h"
+#include"../../../Core/FSM/AnimationFSM/JAnimationTime.h"
+#include"../../../Core/FSM/AnimationFSM/JAnimationUpdateData.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Core/File/JFileConstant.h"
@@ -35,8 +38,7 @@ namespace JinEngine
 		if (IsActivated())
 			CallOnResourceReference(skeletonAsset);
 
-		ReRegisterComponent();
-		SetFrameDirty();
+		ReRegisterComponent(); 
 	}
 	void JAnimator::SetAnimatorController(JAnimationController* newAnimationController)noexcept
 	{
@@ -46,8 +48,20 @@ namespace JinEngine
 		if (IsActivated())
 			CallOnResourceReference(animationController);
 
-		ReRegisterComponent();
-		SetFrameDirty();
+		ReRegisterComponent(); 
+		
+		//act scene timer
+		if (userTimer && IsActivated())
+		{
+			ClearAnimationUpdateData();
+			reqSettingAniData = true;
+			SettingAnimationUpdateData();
+		}
+	}
+	void JAnimator::SetParameterValue(const std::wstring& paramName, const float value)noexcept
+	{
+		if (animationUpdateData != nullptr)
+			animationUpdateData->SetParameterValue(paramName, value);
 	}
 	bool JAnimator::IsAvailableOverlap()const noexcept
 	{
@@ -60,38 +74,80 @@ namespace JinEngine
 		else
 			return false;
 	}
-	void JAnimator::OnAnimation()noexcept
+	JAnimatorFrameUpdateTriggerInterface* JAnimator::UpdateTriggerInterface()
 	{
-		if (animationController != nullptr)
-			animationController->Initialize(animationTimes, skeletonAsset);
+		return this;
+	}
+	void JAnimator::OnAnimationUpdate(Core::JGameTimer* sceneTimer)noexcept
+	{
+		reqSettingAniData = true;
+		userTimer = sceneTimer;
+		SettingAnimationUpdateData();
+	}
+	void JAnimator::OffAnimationUpdate()noexcept
+	{
+		reqSettingAniData = false;
+		userTimer = nullptr;
+		ClearAnimationUpdateData();
+	}
+	void JAnimator::SettingAnimationUpdateData()noexcept
+	{
+		if (reqSettingAniData && IsActivated() && animationController)
+		{
+			animationUpdateData = std::make_unique<Core::JAnimationUpdateData>();
+			animationUpdateData->Initialize();
+			animationUpdateData->timer = userTimer;
+			animationUpdateData->modelSkeleton = skeletonAsset;
+		 
+			const uint paramCount = animationController->GetParameterCount();
+			for (uint i = 0; i < paramCount; ++i)
+			{
+				Core::JFSMparameter* param = animationController->GetParameterByIndex(i);
+				animationUpdateData->RegisterParameter(param->GetName(), param->GetValue());
+			}
+
+			animationController->FrameUpdateInterface()->Initialize(animationUpdateData.get());
+			reqSettingAniData = false;
+		}
+	}
+	void JAnimator::ClearAnimationUpdateData()noexcept
+	{
+		animationUpdateData.reset();
+	}
+	bool JAnimator::CanUpdateAnimation()const noexcept
+	{
+		return animationController != nullptr && userTimer != nullptr;
 	}
 	void JAnimator::DoCopy(JObject* ori)
 	{
 		JAnimator* oriAni = static_cast<JAnimator*>(ori);
 		SetSkeletonAsset(oriAni->skeletonAsset);
-		SetAnimatorController(oriAni->animationController);
-		SetFrameDirty();
+		SetAnimatorController(oriAni->animationController); 
 	}
 	void JAnimator::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
-		RegisterComponent();
-		SetFrameDirty();
+		RegisterComponent(); 
 		CallOnResourceReference(skeletonAsset);
 		CallOnResourceReference(animationController);
+		SettingAnimationUpdateData();
 	}
 	void JAnimator::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
-		DeRegisterComponent();
-		OffFrameDirty();
+		DeRegisterComponent(); 
 		CallOffResourceReference(skeletonAsset);
 		CallOffResourceReference(animationController);
+		ClearAnimationUpdateData();
 	}
 	void JAnimator::UpdateFrame(Graphic::JAnimationConstants& constant)
 	{
 		if (animationController != nullptr)
-			animationController->Update(animationTimes, skeletonAsset, constant);
+		{
+			animationUpdateData->timer = userTimer;
+			animationUpdateData->modelSkeleton = skeletonAsset;
+			animationController->FrameUpdateInterface()->Update(animationUpdateData.get(), constant);
+		}
 	}
 	void JAnimator::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 	{
@@ -202,19 +258,18 @@ namespace JinEngine
 		bool(*ptr)() = isAvailableoverlapLam;
 		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 
-		static auto setFrameLam = [](JComponent& component) {static_cast<JAnimator*>(&component)->SetFrameDirty(); };
-		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
+		//static auto setFrameLam = [](JComponent& component) {static_cast<JAnimator*>(&component)->SetFrameDirty(); };
+		//static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
 		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
 		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable, isAvailableOverlapCallable };
-		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, nullptr };
+		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ nullptr, nullptr };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 	}
 	JAnimator::JAnimator(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)
 		:JAnimatorInterface(TypeName(), guid, objFlag, owner)
-	{
-		animationTimes.resize(JAnimationController::diagramMaxCount);
+	{ 
 		AddEventListener(*JResourceManager::Instance().EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 	}
 	JAnimator::~JAnimator()

@@ -19,14 +19,14 @@ namespace JinEngine
 		JDirectory* directory,
 		const uint8 formatIndex,
 		std::unique_ptr<JSkeleton> skeleton)
-		:JResourceInitData(name, guid, flag, directory, formatIndex),
+		:JResourceInitData(name, guid, flag, directory, formatIndex, J_RESOURCE_TYPE::SKELETON),
 		skeleton(std::move(skeleton))
 	{}
 	JSkeletonAsset::JSkeletonInitData::JSkeletonInitData(const std::wstring& name,
 		JDirectory* directory,
 		const uint8 formatIndex,
 		std::unique_ptr<JSkeleton> skeleton)
-		: JResourceInitData(name, guid, flag, directory, formatIndex),
+		: JResourceInitData(name, guid, flag, directory, formatIndex, J_RESOURCE_TYPE::SKELETON),
 		skeleton(std::move(skeleton))
 	{}
 	JSkeletonAsset::JSkeletonInitData::JSkeletonInitData(const std::wstring& name,
@@ -35,14 +35,14 @@ namespace JinEngine
 		JDirectory* directory,
 		const std::wstring& oriPath,
 		std::unique_ptr<JSkeleton> skeleton)
-		: JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JSkeletonAsset>(JCUtil::DecomposeFileFormat(oriPath))),
+		: JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JSkeletonAsset>(JCUtil::DecomposeFileFormat(oriPath)), J_RESOURCE_TYPE::SKELETON),
 		skeleton(std::move(skeleton))
 	{}
 	JSkeletonAsset::JSkeletonInitData::JSkeletonInitData(const std::wstring& name,
 		JDirectory* directory,
 		const std::wstring& oriPath,
 		std::unique_ptr<JSkeleton> skeleton)
-		: JResourceInitData(name, directory, JResourceObject::GetFormatIndex<JSkeletonAsset>(JCUtil::DecomposeFileFormat(oriPath))),
+		: JResourceInitData(name, directory, JResourceObject::GetFormatIndex<JSkeletonAsset>(JCUtil::DecomposeFileFormat(oriPath)), J_RESOURCE_TYPE::SKELETON),
 		skeleton(std::move(skeleton))
 	{}
 	bool JSkeletonAsset::JSkeletonInitData::IsValidCreateData()
@@ -51,10 +51,6 @@ namespace JinEngine
 			return true;
 		else
 			return false;
-	}
-	J_RESOURCE_TYPE JSkeletonAsset::JSkeletonInitData::GetResourceType() const noexcept
-	{
-		return J_RESOURCE_TYPE::SKELETON;
 	}
 
 	J_RESOURCE_TYPE JSkeletonAsset::GetResourceType()const noexcept

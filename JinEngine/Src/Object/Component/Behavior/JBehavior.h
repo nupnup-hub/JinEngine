@@ -7,6 +7,7 @@ namespace JinEngine
 	class JGameObject;
 
 	//미구현
+	//하위 클래스 생성자 factory에 등록필요
 	class JBehavior final : public JComponent
 	{
 		REGISTER_CLASS(JBehavior)

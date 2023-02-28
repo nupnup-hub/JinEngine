@@ -1,5 +1,6 @@
 #pragma once
 #include"../Graphic/JGraphicConstants.h"  
+#include"../Core/Empty/EmptyType.h"
 #include"../Core/JDataType.h"
 #include"../Core/Guid/GuidCreator.h"
 #include<vector>
@@ -304,5 +305,28 @@ namespace JinEngine
 		{
 			FrameDirty::MinusFrameDirty();
 		}
+	};
+
+	template<typename FrameUpdate>
+	class JFrameUpdate<FrameUpdate, Core::EmptyType, 2> : public FrameUpdate, public JFrameBuff2
+	{
+	protected:
+		void UpdateEnd()override
+		{}
+	};
+	template<typename FrameUpdate>
+	class JFrameUpdate<FrameUpdate, Core::EmptyType, 1> : public FrameUpdate, public JFrameBuff1
+	{
+	protected:
+		void UpdateEnd()override
+		{}
+	};
+
+	template<typename FrameUpdate>
+	class JFrameUpdate<FrameUpdate, Core::EmptyType, 0> : public FrameUpdate
+	{
+	protected:
+		void UpdateEnd()override
+		{}
 	};
 }

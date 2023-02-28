@@ -22,11 +22,27 @@ namespace JinEngine
 		virtual void CloseDirectory()noexcept = 0;
 	};
 
-	class JDirectoryInterface :public JObject,
-		public JDirectoryOCInterface
+	class JDirectory;
+	class JFile;
+	class JDirectoryEditorInterface
 	{
 	private:
+		friend class Editor::JWindowDirectory;
 		friend class JResourceManagerImpl;
+	protected:
+		virtual ~JDirectoryEditorInterface() = default;
+	public:
+		virtual JDirectoryEditorInterface* EditorInterface() = 0;
+	private:
+		virtual void SetParent(JDirectory* dir)noexcept = 0; 
+	private:
+		virtual void DeleteDirectory()noexcept = 0;
+	};
+
+	class JDirectoryInterface :public JObject,
+		public JDirectoryOCInterface,
+		public JDirectoryEditorInterface
+	{ 
 	protected:
 		JDirectoryInterface(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag);
 	};

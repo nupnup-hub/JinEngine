@@ -35,24 +35,20 @@ namespace JinEngine
 		JDirectory* directory,
 		const J_SCENE_USE_CASE_TYPE useCaseType,
 		const uint8 formatIndex)
-		:JResourceInitData(name, guid, flag, directory, formatIndex), useCaseType(useCaseType)
+		:JResourceInitData(name, guid, flag, directory, formatIndex, J_RESOURCE_TYPE::SCENE), useCaseType(useCaseType)
 	{}
 	JScene::JSceneInitData::JSceneInitData(const std::wstring& name,
 		JDirectory* directory,
 		const J_SCENE_USE_CASE_TYPE useCaseType,
 		const uint8 formatIndex)
-		: JResourceInitData(name, directory, formatIndex), useCaseType(useCaseType)
+		: JResourceInitData(name, directory, formatIndex, J_RESOURCE_TYPE::SCENE), useCaseType(useCaseType)
 	{}
 	JScene::JSceneInitData::JSceneInitData(JDirectory* directory,
 		const J_SCENE_USE_CASE_TYPE useCaseType,
 		const uint8 formatIndex)
-		: JResourceInitData(JResourceObject::GetDefaultName<JScene>(), directory, formatIndex),
+		: JResourceInitData(JResourceObject::GetDefaultName<JScene>(), directory, formatIndex, J_RESOURCE_TYPE::SCENE),
 		useCaseType(useCaseType)
 	{}
-	J_RESOURCE_TYPE JScene::JSceneInitData::GetResourceType() const noexcept
-	{
-		return J_RESOURCE_TYPE::SCENE;
-	}
 
 	J_RESOURCE_TYPE JScene::GetResourceType()const noexcept
 	{
@@ -117,6 +113,10 @@ namespace JinEngine
 	bool JScene::IsActivatedSceneTime()const noexcept
 	{
 		return sceneTimer != nullptr;
+	}
+	bool JScene::IsPauseSceneTime()const noexcept
+	{
+		return sceneTimer != nullptr ? sceneTimer->IsStop() : true;
 	}
 	bool JScene::IsMainScene()const noexcept
 	{
@@ -308,15 +308,30 @@ namespace JinEngine
 		if (sceneTimer == nullptr)
 		{
 			sceneTimer = std::make_unique<Core::JGameTimer>();
-			 
+			sceneTimer->Start();
+			sceneTimer->Reset();
 			const std::vector<JComponent*>& cashVec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR);
 			const uint compCount = (uint)cashVec.size();
 			for (uint i = 0; i < compCount; ++i)
-				static_cast<JAnimator*>(cashVec[i])->OnAnimation();
+				static_cast<JAnimator*>(cashVec[i])->UpdateTriggerInterface()->OnAnimationUpdate(sceneTimer.get());
+		}
+	}
+	void JScene::PlaySceneTimer(const bool value)noexcept
+	{
+		if (sceneTimer == nullptr)
+		{
+			if (value)
+				sceneTimer->Start();
+			else
+				sceneTimer->Stop();
 		}
 	}
 	void JScene::DeActivateSceneTime()noexcept
 	{
+		const std::vector<JComponent*>& cashVec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR);
+		const uint compCount = (uint)cashVec.size();
+		for (uint i = 0; i < compCount; ++i)
+			static_cast<JAnimator*>(cashVec[i])->UpdateTriggerInterface()->OffAnimationUpdate();
 		sceneTimer.reset();
 	}
 	void JScene::SetMainCamera(JCamera* mainCam)noexcept
@@ -445,6 +460,9 @@ namespace JinEngine
 		if (JCI::GetCTypeHint(cType).hasFrameDirty)
 		{
 			auto SetFrameDirtyCallable = JCI::GetSetFrameDirtyCallable(cType);
+			if (SetFrameDirtyCallable == nullptr)
+				return;
+
 			const std::vector<JComponent*>& cashVec = GetComponentCashVec(cType);
 			const uint compCount = (uint)cashVec.size();
 			 
@@ -453,13 +471,13 @@ namespace JinEngine
 				for (uint i = stIndex; i < compCount; ++i)
 				{
 					if (condiiton(*cashVec[i]))
-						SetFrameDirtyCallable(nullptr, *cashVec[i]);
+						(*SetFrameDirtyCallable)(nullptr, *cashVec[i]);
 				}
 			}
 			else
 			{
 				for (uint i = stIndex; i < compCount; ++i)
-					SetFrameDirtyCallable(nullptr, *cashVec[i]);
+					(*SetFrameDirtyCallable)(nullptr, *cashVec[i]);
 			}
 		}
 	}
@@ -472,7 +490,7 @@ namespace JinEngine
 			const uint compCount = (uint)cashVec.size();
 		 
 			for (uint i = stIndex; i < compCount; ++i)
-				SetFrameOffsetCallable(nullptr, *cashVec[i], refComp, isCreated);
+				(*SetFrameOffsetCallable)(nullptr, *cashVec[i], refComp, isCreated);
 		}
 	}
 	void JScene::ViewCulling()noexcept

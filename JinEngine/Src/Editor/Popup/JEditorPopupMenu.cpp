@@ -15,6 +15,7 @@ namespace JinEngine
 		JEditorPopupMenu::~JEditorPopupMenu() {}
 		void JEditorPopupMenu::Update()
 		{
+			isLastSelected = false;
 			if (IsOpen())
 			{
 				if (JImGuiImpl::IsRightMouseClicked())
@@ -36,7 +37,7 @@ namespace JinEngine
 				allPopupNode.push_back(std::move(child));
 		}
 		void JEditorPopupMenu::ExecutePopup(_In_ JEditorStringMap* editorString)noexcept
-		{
+		{ 
 			if (isOpen)
 			{
 				ImGui::OpenPopup(name.c_str());
@@ -50,6 +51,7 @@ namespace JinEngine
 					{
 						selected->InvokeSelectBind();
 						SetOpen(false);
+						isLastSelected = true;
 					}
 				}
 			}
@@ -62,7 +64,7 @@ namespace JinEngine
 		{
 			return isOpen;
 		}
-		bool JEditorPopupMenu::IsMouseInPopup()noexcept
+		bool JEditorPopupMenu::IsMouseInPopup()const noexcept
 		{
 			if (!IsOpen())
 				return false;
@@ -87,6 +89,10 @@ namespace JinEngine
 				}
 				return false;
 			}
+		}
+		bool JEditorPopupMenu::IsLastSelected()const noexcept
+		{
+			return isLastSelected;
 		}
 	}
 }

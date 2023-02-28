@@ -17,22 +17,17 @@ namespace JinEngine
 		const J_OBJECT_FLAG flag,
 		JDirectory* directory,
 		const uint8 formatIndex)
-		:JResourceInitData(name, guid, flag, directory, formatIndex)
+		:JResourceInitData(name, guid, flag, directory, formatIndex, J_RESOURCE_TYPE::MATERIAL)
 	{}
 	JMaterial::JMaterialInitData::JMaterialInitData(const std::wstring& name,
 		JDirectory* directory,
 		const uint8 formatIndex)
-		: JResourceInitData(name, directory, formatIndex)
+		: JResourceInitData(name, directory, formatIndex, J_RESOURCE_TYPE::MATERIAL)
 	{}
 	JMaterial::JMaterialInitData::JMaterialInitData(JDirectory* directory,
 		const uint8 formatIndex)
-		: JResourceInitData(GetDefaultName<JMaterial>(), directory, formatIndex)
+		: JResourceInitData(GetDefaultName<JMaterial>(), directory, formatIndex, J_RESOURCE_TYPE::MATERIAL)
 	{}
-
-	J_RESOURCE_TYPE JMaterial::JMaterialInitData::GetResourceType() const noexcept
-	{
-		return J_RESOURCE_TYPE::MATERIAL;
-	}
 
 	J_RESOURCE_TYPE JMaterial::GetResourceType()const noexcept
 	{

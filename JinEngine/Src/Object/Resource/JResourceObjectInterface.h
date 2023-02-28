@@ -8,18 +8,21 @@
 #include<unordered_map>
 #
 namespace JinEngine
-{
-	class JResourceIO;
+{ 
 	class JResourceManagerImpl;
 	class JResourceObject; 
+	class JDirectory;
 
+	namespace Editor
+	{
+		class JWindowDirectory;
+	}
 	class JResourceObjectInterface : public JObject,  
 		public JReferenceInterface, 
 		public Core::JValidInterface
 	{
-	private:
-		friend class JDirectory;
-		friend class JResourceIO;
+	private: 
+		friend class Editor::JWindowDirectory;
 		friend class JResourceManagerImpl; 
 	protected:
 		using GetTypeNameCallable = Core::JStaticCallable<std::string>;
@@ -97,6 +100,7 @@ namespace JinEngine
 	protected:
 		static SetFrameDirtyCallable GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type);
 		static SetFrameBuffIndexCallable GetSetFrameBuffIndexCallable(const J_RESOURCE_TYPE type);
+	public:
 		static const RTypeHint GetRTypeHint(const J_RESOURCE_TYPE type)noexcept;
 		static const std::vector<RTypeHint> GetRTypeHintVec(const J_RESOURCE_ALIGN_TYPE alignType)noexcept;
 	private:
@@ -106,8 +110,11 @@ namespace JinEngine
 		static bool NameOrder(const RTypeHint& a, const RTypeHint& b)noexcept;
 	protected:
 		virtual Core::J_FILE_IO_RESULT CallStoreResource() = 0;
+	protected:
+		virtual JDirectory* GetDirectory()const noexcept = 0;
 	private:
 		virtual void DeleteRFile() = 0;
+		virtual void MoveRFile(JDirectory* newDir) = 0;
 	protected:
 		static void RegisterTypeInfo(const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypeInterfaceFunc& rTypeIFunc);
 	protected:

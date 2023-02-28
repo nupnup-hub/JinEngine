@@ -1,5 +1,5 @@
 #include"JAnimationFSMdiagram.h"
-#include"JAnimationShareData.h"
+#include"JAnimationUpdateData.h"
 #include"JAnimationFSMstateClip.h" 
 #include"JAnimationFSMtransition.h" 
 #include"JAnimationTime.h" 
@@ -20,64 +20,73 @@ namespace JinEngine
 	using namespace DirectX;
 	namespace Core
 	{
-		void JAnimationFSMdiagram::Initialize(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset)noexcept
+		using JDiagramData = JAnimationUpdateData::DiagramData;
+		void JAnimationFSMdiagram::Initialize(JAnimationUpdateData* updateData, const uint layerNumber)noexcept
 		{
 			JFSMdiagram::Initialize();
 			JFSMstate* state = GetNowState();
+			
+			JDiagramData& diagramData = updateData->diagramData[layerNumber];
 			if (state != nullptr)
-				nowState = static_cast<JAnimationFSMstate*>(GetNowState());
+				diagramData.nowState = static_cast<JAnimationFSMstate*>(GetNowState());
 			else
-				nowState = nullptr;
-			nextState = nullptr;
-			nextTransition = nullptr;
+				diagramData.nowState = nullptr;
+			diagramData.nextState = nullptr;
+			diagramData.preTransition = nullptr;
+			diagramData.nowTransition = nullptr;
 
-			PreprocessSkeletonBindPose(animationShareData, srcSkeletonAsset);
+			PreprocessSkeletonBindPose(updateData);
 		}
-		void JAnimationFSMdiagram::Enter(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset)
+		void JAnimationFSMdiagram::Enter(JAnimationUpdateData* updateData, const uint layerNumber)
 		{
-			if (nowState != nullptr)
-				nowState->Enter(animationTime, animationShareData, srcSkeletonAsset, 0);
+			JDiagramData& diagramData = updateData->diagramData[layerNumber];
+			if (diagramData.nowState != nullptr)
+				diagramData.nowState->Enter(updateData, layerNumber, 0);
 		}
-		void JAnimationFSMdiagram::Update(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept
-		{
-			if (nextState == nullptr)
+		void JAnimationFSMdiagram::Update(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept
+		{ 
+			JDiagramData& diagramData = updateData->diagramData[layerNumber];
+			if (diagramData.nextState == nullptr)
 			{
-				nextTransition = nowState->FindNextStateTransition(animationTime);
-				if (nextTransition != nullptr)
+				diagramData.nowTransition = diagramData.nowState->FindNextStateTransition(updateData, layerNumber, 0);
+				if (diagramData.nowTransition != nullptr)
 				{
-					size_t nextStateId = nextTransition->GetOutputStateGuid();
-					nextState = static_cast<JAnimationFSMstate*>(GetState(nextStateId));
-					nextState->Enter(animationTime, animationShareData, srcSkeletonAsset, nextTransition->GetTargetStateTimeOffset());
-					blender.Initialize(JEngineTimer::Data().TotalTime(), JEngineTimer::Data().TotalTime() + nextTransition->GetDurationTime());
+					size_t nextStateId = diagramData.nowTransition->GetOutputStateGuid();
+					diagramData.nextState = static_cast<JAnimationFSMstate*>(GetState(nextStateId));
+					 
+					diagramData.nextState->Enter(updateData, layerNumber, 1);
+					diagramData.blender.Initialize(updateData->timer->TotalTime(), updateData->timer->TotalTime() + diagramData.nowTransition->GetDurationTime());
 				}
 			}
 
-			if (nextState != nullptr)
+			if (diagramData.blender.IsActivated())
+			{ 
+				if (diagramData.blender.IsBlenderEnd(updateData->timer->TotalTime()))
+				{
+					diagramData.preTransition = diagramData.nowTransition;
+					diagramData.nowState = diagramData.nextState;
+					diagramData.nowTransition = nullptr;
+					diagramData.nextState = nullptr;
+					diagramData.animationTimes[0] = diagramData.animationTimes[1];
+					diagramData.blender.Clear();
+				}
+			}
+
+			if (diagramData.nextState != nullptr)
 			{
-				if (blender.IsBlenderEnd(JEngineTimer::Data().TotalTime()))
-				{
-					nowState = nextState;
-					nextState = nullptr;
-					nextTransition = nullptr;
-					nowState->Update(animationTime, animationShareData, srcSkeletonAsset, 0);
-					StuffFinalTransform(animationShareData, srcSkeletonAsset, animationConstatns);
-				}
-				else
-				{
-					nowState->Update(animationTime, animationShareData, srcSkeletonAsset, 0);
-					nextState->Update(animationTime, animationShareData, srcSkeletonAsset, 1);
-					CrossFading(animationShareData, srcSkeletonAsset, animationConstatns);
-				}
+				diagramData.nowState->Update(updateData, layerNumber, 0);
+				diagramData.nextState->Update(updateData, layerNumber, 1);
+				CrossFading(updateData, animationConstatns, layerNumber);
 			}
 			else
 			{
-				nowState->Update(animationTime, animationShareData, srcSkeletonAsset, 0);
-				StuffFinalTransform(animationShareData, srcSkeletonAsset, animationConstatns);
+				diagramData.nowState->Update(updateData, layerNumber, 0);
+				StuffFinalTransform(updateData, animationConstatns, layerNumber);
 			}
-		}
-		bool JAnimationFSMdiagram::HasNowState()const noexcept
-		{
-			return nowState != nullptr;
+
+			const bool canLoop = diagramData.animationTimes[0].IsOverEndTime() && diagramData.nowState->CanLoop();
+			if (canLoop)
+				diagramData.nowState->Enter(updateData, layerNumber, 0);
 		}
 		bool JAnimationFSMdiagram::CanCreateState()const noexcept
 		{
@@ -117,20 +126,24 @@ namespace JinEngine
 			if (aniFsm->GetStateType() == J_ANIMATION_STATE_TYPE::CLIP)
 				static_cast<JAnimationFSMstateClip*>(state)->SetClip(clip);
 		}
-		void JAnimationFSMdiagram::StuffFinalTransform(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns)noexcept
+		void JAnimationFSMdiagram::StuffFinalTransform(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept
 		{
-			uint size = (uint)srcSkeletonAsset->GetSkeleton()->GetJointCount();
-			JSkeleton* skeleton = srcSkeletonAsset->GetSkeleton();
-			size_t srcGuid = srcSkeletonAsset->GetGuid();
+			JDiagramData& diagramData = updateData->diagramData[layerNumber];
+			uint size = (uint)updateData->modelSkeleton->GetSkeleton()->GetJointCount();
+			JSkeleton* skeleton = updateData->modelSkeleton->GetSkeleton();
+			size_t srcGuid = updateData->modelSkeleton->GetGuid();
 			XMVECTOR zero = XMVectorSet(0, 0, 0, 1);
 
 			for (uint i = 0; i < size; ++i)
 				XMStoreFloat4x4(&animationConstatns.boneTransforms[i], XMMatrixTranspose(XMMatrixMultiply(skeleton->GetInBindPose(i),
-					XMLoadFloat4x4(&animationShareData.localTransform[0][i]))));
+					XMLoadFloat4x4(&diagramData.worldTransform[0][i]))));
 		}
-		void JAnimationFSMdiagram::CrossFading(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns)noexcept
+		void JAnimationFSMdiagram::CrossFading(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept
 		{
-			float rate = blender.GetBlnederValue(JEngineTimer::Data().TotalTime());
+			JDiagramData& diagramData = updateData->diagramData[layerNumber];
+			float rate = diagramData.blender.GetBlnederValue(updateData->timer->TotalTime());
+			if (rate > 1.0f)
+				MessageBox(0, L"Over", std::to_wstring(rate).c_str(), 0);
 			XMVECTOR stS;
 			XMVECTOR stQ;
 			XMVECTOR stT;
@@ -144,14 +157,14 @@ namespace JinEngine
 
 			XMVECTOR zero = XMVectorSet(0, 0, 0, 1);
 
-			JSkeleton* skeleton = srcSkeletonAsset->GetSkeleton();
-			size_t srcGuid = srcSkeletonAsset->GetGuid();
-			uint size = (uint)srcSkeletonAsset->GetSkeleton()->GetJointCount();
+			JSkeleton* skeleton = updateData->modelSkeleton->GetSkeleton();
+			size_t srcGuid = updateData->modelSkeleton->GetGuid();
+			uint size = (uint)updateData->modelSkeleton->GetSkeleton()->GetJointCount();
 
 			for (uint i = 0; i < size; ++i)
 			{
-				XMMATRIX finalStM = XMLoadFloat4x4(&animationShareData.localTransform[0][i]);
-				XMMATRIX finalEdM = XMLoadFloat4x4(&animationShareData.localTransform[1][i]);
+				XMMATRIX finalStM = XMLoadFloat4x4(&diagramData.worldTransform[0][i]);
+				XMMATRIX finalEdM = XMLoadFloat4x4(&diagramData.worldTransform[1][i]);
 
 				XMMatrixDecompose(&stS, &stQ, &stT, finalStM);
 				XMMatrixDecompose(&edS, &edQ, &edT, finalEdM);
@@ -164,16 +177,16 @@ namespace JinEngine
 				//XMStoreFloat4x4(&finalTransform[i], XMMatrixTranspose(XMMatrixMultiply(skeleton->GetInBindPose(i), skeleton->GetBindPose(i))));
 			}
 		}
-		void JAnimationFSMdiagram::PreprocessSkeletonBindPose(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset)noexcept
+		void JAnimationFSMdiagram::PreprocessSkeletonBindPose(JAnimationUpdateData* updateData)noexcept
 		{
 			std::vector<JSkeletonAsset*> skeletonVec;
 			uint stateSize = GetStateCount();
-			size_t srcGuid = srcSkeletonAsset->GetGuid();
+			size_t srcGuid = updateData->modelSkeleton->GetGuid();
 
-			if (animationShareData.skeletonBlendRate[0].find(srcGuid) == animationShareData.skeletonBlendRate[0].end())
-				animationShareData.skeletonBlendRate[0].emplace(srcGuid, 0.0f);
-			if (animationShareData.skeletonBlendRate[1].find(srcGuid) == animationShareData.skeletonBlendRate[0].end())
-				animationShareData.skeletonBlendRate[1].emplace(srcGuid, 0.0f);
+			if (updateData->skeletonBlendRate[0].find(srcGuid) == updateData->skeletonBlendRate[0].end())
+				updateData->skeletonBlendRate[0].emplace(srcGuid, 0.0f);
+			if (updateData->skeletonBlendRate[1].find(srcGuid) == updateData->skeletonBlendRate[0].end())
+				updateData->skeletonBlendRate[1].emplace(srcGuid, 0.0f);
 
 			for (uint i = 0; i < stateSize; ++i)
 			{
@@ -188,13 +201,13 @@ namespace JinEngine
 				if (skeletonVec[i] != nullptr)
 				{
 					size_t tarGuid = skeletonVec[i]->GetGuid();
-					if (tarGuid != srcGuid && animationShareData.additionalBind.find(tarGuid) == animationShareData.additionalBind.end())
+					if (tarGuid != srcGuid && updateData->additionalBind.find(tarGuid) == updateData->additionalBind.end())
 					{
 						std::vector<JAnimationAdditionalBind> additionalBind(JSkeletonFixedData::maxAvatarJointCount);
 						additionalBind.reserve(JSkeletonFixedData::maxAvatarJointCount);
-						JAnimationRetargeting::CalculateAdditionalBindPose(animationShareData, srcSkeletonAsset, skeletonVec[i], additionalBind);
-						animationShareData.additionalBind.emplace(skeletonVec[i]->GetGuid(), additionalBind);
-						animationShareData.skeletonBlendRate->emplace(skeletonVec[i]->GetGuid(), 0.0f);
+						JAnimationRetargeting::CalculateAdditionalBindPose(updateData, updateData->modelSkeleton, skeletonVec[i], additionalBind);
+						updateData->additionalBind.emplace(skeletonVec[i]->GetGuid(), additionalBind);
+						updateData->skeletonBlendRate->emplace(skeletonVec[i]->GetGuid(), 0.0f);
 					}
 				}
 			}

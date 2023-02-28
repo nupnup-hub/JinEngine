@@ -36,8 +36,7 @@ namespace JinEngine
 				const std::wstring oridataPath,
 				Core::JOwnerPtr<JMeshGroup> meshGroup = nullptr);
 		public:
-			bool IsValidCreateData()final;
-			J_RESOURCE_TYPE GetResourceType() const noexcept;
+			bool IsValidCreateData()final; 
 		};
 		using InitData = JMeshInitData;
 	private:

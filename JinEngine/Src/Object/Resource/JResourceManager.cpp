@@ -52,6 +52,11 @@ namespace JinEngine
 			{
 				return GetModifiedObjectInfoVec();
 			}
+		public:
+			void EndStore()
+			{
+				DestroyHasRemoveBitInfo();
+			}
 		};
 	}
 	//ResourceStorage
@@ -187,9 +192,6 @@ namespace JinEngine
 	{
 		if (dir == nullptr)
 			return false;
-
-		if (dir->IsActivated())
-			dir->DeActivate();
 
 		static auto equalLam = [](JDirectory* a, JDirectory* b) {return a->GetGuid() == b->GetGuid(); };
 
@@ -372,17 +374,34 @@ namespace JinEngine
 		rStorage.clear();
 	}
 	void JResourceManagerImpl::StoreProjectResource()
-	{ 
+	{
 		auto modInfo = Private::JModifiedObjectInfoReader{}.GetVector();
 		for (const auto& data : modInfo)
 		{
-			Core::JIdentifier* obj = Core::GetRawPtr(data->typeName, data->guid);
-			if (data->isModified && data->isStore && obj->GetTypeInfo().IsChildOf<JResourceObject>())
+			if (data->isModified && data->isStore)
 			{
-				static_cast<JResourceObjectInterface*>(obj)->CallStoreResource();
-				data->isModified = false;
+				if (data->isRemoved)
+				{
+					Core::JTypeInfo* info = Core::JReflectionInfo::Instance().GetTypeInfo(data->typeName);
+					if (info->IsChildOf<JResourceObject>() || info->IsChildOf<JDirectory>())
+					{
+						_wremove(data->lastObjPath.c_str());
+						_wremove(data->lastObjMetaPath.c_str());
+					}
+				}
+				else
+				{
+					Core::JIdentifier* obj = Core::GetRawPtr(data->typeName, data->guid);
+					if (obj->GetTypeInfo().IsChildOf<JResourceObject>())
+					{
+						static_cast<JResourceObjectInterface*>(obj)->CallStoreResource();
+						data->isModified = false;
+					}				 
+				}
 			}
-		} 
+			data->isModified = false;
+		}
+		Private::JModifiedObjectInfoReader{}.EndStore();
 	}
 	void JResourceManagerImpl::LoadSelectorResource()
 	{
@@ -394,7 +413,7 @@ namespace JinEngine
 		CreateDefaultTexture(resourceData->selectorTextureType);
 	}
 	void JResourceManagerImpl::LoadProjectResource()
-	{ 
+	{
 		resourceData->Initialize();
 		J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
 		engineRootDir = JDFI::CreateRoot(JApplicationVariable::GetEnginePath(), Core::MakeGuid(), rootFlag);
@@ -415,10 +434,10 @@ namespace JinEngine
 		if (JSceneManager::Instance().GetOpendSceneCount() == 0)
 		{
 			JDirectory* projectContentsDir = GetDirectory(JApplicationVariable::GetProjectContentPath());
-			JDirectory* defaultSceneDir = projectContentsDir->GetChildDirctory(JApplicationVariable::GetProjectContentScenePath());
+			JDirectory* defaultSceneDir = projectContentsDir->GetChildDirctoryByPath(JApplicationVariable::GetProjectContentScenePath());
 			JScene* newScene = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(defaultSceneDir, J_SCENE_USE_CASE_TYPE::MAIN));
 			JSceneManager::Instance().TryOpenScene(newScene, false);
-			JSceneManager::Instance().SetMainScene(newScene); 
+			JSceneManager::Instance().SetMainScene(newScene);
 			static_cast<JResourceObjectInterface*>(newScene)->CallStoreResource();
 		}
 		DestroyUnusedResource(J_RESOURCE_TYPE::SHADER, false);
@@ -435,7 +454,7 @@ namespace JinEngine
 		return rStorage.find(resource->GetResourceType())->second.RemoveResource(*resource);
 	}
 	bool JResourceManagerImpl::AddType(JDirectory* newDirectory)noexcept
-	{ 
+	{
 		return dStorage.Add(newDirectory);
 	}
 	bool JResourceManagerImpl::RemoveType(JDirectory* dir)noexcept
@@ -471,7 +490,7 @@ namespace JinEngine
 		//1 is imgui preserved 
 		for (uint i = 0; i < textureCount; ++i)
 		{
-			const J_OBJECT_FLAG objFlag = JDefaultTexture::GetFlag(textureType[i]);	
+			const J_OBJECT_FLAG objFlag = JDefaultTexture::GetFlag(textureType[i]);
 			const bool isUse = JDefaultTexture::IsDefaultUse(textureType[i]);
 			std::wstring foldernam;
 			std::wstring name;
@@ -574,7 +593,7 @@ namespace JinEngine
 				{
 					newMaterial = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>
 						(name, guid, flag, matDir));
-					JDefaultMaterialSetting::SetStandard(newMaterial); 
+					JDefaultMaterialSetting::SetStandard(newMaterial);
 					((JResourceObjectInterface*)newMaterial)->CallStoreResource();
 					break;
 				}
@@ -816,4 +835,3 @@ namespace JinEngine
 
 	}
 }
- 

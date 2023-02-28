@@ -14,13 +14,25 @@ namespace JinEngine
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
 		JDirectory* directory,
-		const uint8 formatIndex)
-		:name(directory->MakeUniqueFileName(name)), guid(guid), flag(flag), directory(directory), formatIndex(formatIndex)
+		const uint8 formatIndex,
+		const J_RESOURCE_TYPE rType)
+		:name(directory->MakeUniqueFileName(name, rType)),
+		guid(guid), 
+		flag(flag),
+		directory(directory), 
+		formatIndex(formatIndex),
+		rType(rType)
 	{ }
 	JResourceObject::JResourceInitData::JResourceInitData(const std::wstring& name,
 		JDirectory* directory,
-		const uint8 formatIndex)
-		:name(directory->MakeUniqueFileName(name)), guid(Core::MakeGuid()), flag(OBJECT_FLAG_NONE), directory(directory), formatIndex(formatIndex)
+		const uint8 formatIndex,
+		const J_RESOURCE_TYPE rType)
+		:name(directory->MakeUniqueFileName(name, rType)),
+		guid(Core::MakeGuid()), 
+		flag(OBJECT_FLAG_NONE), 
+		directory(directory), 
+		formatIndex(formatIndex),
+		rType(rType)
 	{}
 	JDirectory* JResourceObject::JResourceInitData::GetDirectory()const noexcept
 	{
@@ -34,6 +46,11 @@ namespace JinEngine
 	{
 		return formatIndex != JResourceObject::GetInvalidFormatIndex();
 	}
+	J_RESOURCE_TYPE JResourceObject::JResourceInitData::GetResourceType() const noexcept
+	{
+		return rType;
+	}
+
 	std::wstring JResourceObject::GetFullName()const noexcept
 	{
 		return GetName() + GetFormat();
@@ -62,7 +79,7 @@ namespace JinEngine
 		const std::wstring preMetaPath = GetMetafilePath();
 		const std::wstring prePath = GetPath();
 
-		JObject::SetName(directory->MakeUniqueFileName(newName));
+		JObject::SetName(directory->MakeUniqueFileName(newName, GetResourceType()));
 
 		const std::wstring newMetaPath = GetMetafilePath();
 		const std::wstring newPath = GetPath();
@@ -74,7 +91,7 @@ namespace JinEngine
 	{
 		return formatIndex;
 	}
-	JDirectory* JResourceObject::GetDirectory()noexcept
+	JDirectory* JResourceObject::GetDirectory()const noexcept
 	{
 		return directory;
 	}
@@ -166,7 +183,9 @@ namespace JinEngine
 	{ 
 		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !isForced)
 			return false;
-		 
+
+		//if (IsActivated())
+		//	DeActivate();
 		//static_cast<Core::JTypeCashInterface<JResourceObject>*>(&JResourceManager::Instance())->RemoveType(this);
 		return true;
 	}
@@ -174,6 +193,26 @@ namespace JinEngine
 	{ 
 		_wremove(GetPath().c_str());
 		_wremove(GetMetafilePath().c_str()); 
+	}
+	void JResourceObject::MoveRFile(JDirectory* newDir)
+	{
+		if (newDir == nullptr || newDir->GetGuid() == directory->GetGuid())
+			return;
+		 
+		const std::wstring prePath = GetPath();
+		const std::wstring preMethPath = GetMetafilePath();
+		JFFI::Destroy(*directory, *this);
+		directory = newDir; 
+		JFFI::Create(*directory, *this);
+		const std::wstring name = directory->MakeUniqueFileName(GetName(), GetResourceType());
+		if (name != GetName())
+			SetName(name);
+
+		const std::wstring newPath = GetPath();
+		const std::wstring newMetaPath = GetMetafilePath();
+
+		MoveFileExW(prePath.c_str(), newPath.c_str(), MOVEFILE_WRITE_THROUGH);
+		MoveFileExW(preMethPath.c_str(), newMetaPath.c_str(), MOVEFILE_WRITE_THROUGH);	 
 	}
 	bool JResourceObject::RegisterCashData()noexcept
 	{

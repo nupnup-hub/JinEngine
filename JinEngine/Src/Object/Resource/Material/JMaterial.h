@@ -33,8 +33,6 @@ namespace JinEngine
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0]));
 			JMaterialInitData(JDirectory* directory,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0]));
-		public:
-			J_RESOURCE_TYPE GetResourceType() const noexcept;
 		};
 		using InitData = JMaterialInitData;
 	private:

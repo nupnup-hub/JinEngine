@@ -26,9 +26,9 @@ namespace JinEngine
 			Core::JUserPtr<JSkeletonAsset> skeleotnAsset;
 			Core::JUserPtr<JScene> avatarScene;
 		private:
-			bool reqInit;
+			bool setWndOptionOnce = false;
 		public:
-			JEditorSkeletonPage(bool hasMetadata);
+			JEditorSkeletonPage();
 			~JEditorSkeletonPage();
 		public:
 			J_EDITOR_PAGE_TYPE GetPageType()const noexcept final;

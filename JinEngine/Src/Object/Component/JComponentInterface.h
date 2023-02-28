@@ -60,8 +60,8 @@ namespace JinEngine
 		public:
 			void CallSetFrameDirty(JComponent& jComp);
 			void CallSetFrameOffset(JComponent& jComp, JComponent* refComp, bool isCreated);
-			SetFrameDirtyCallable GetSetFrameDirtyCallable();
-			SetFrameOffsetCallable GetSetFrameOffsetCallable();
+			SetFrameDirtyCallable* GetSetFrameDirtyCallable();
+			SetFrameOffsetCallable* GetSetFrameOffsetCallable();
 		};
 	public:
 		static CTypeHint GetCTypeHint(const J_COMPONENT_TYPE cType);
@@ -77,8 +77,8 @@ namespace JinEngine
 	protected:
 		static void CallSetFrameDirty(JComponent& jComp);
 		static void CallSetFrameOffset(JComponent& jComp, JComponent* refComp, bool isCreated);
-		static SetFrameDirtyCallable GetSetFrameDirtyCallable(const J_COMPONENT_TYPE cType);
-		static SetFrameOffsetCallable GetSetFrameOffsetCallable(const J_COMPONENT_TYPE cType);
+		static SetFrameDirtyCallable* GetSetFrameDirtyCallable(const J_COMPONENT_TYPE cType);
+		static SetFrameOffsetCallable* GetSetFrameOffsetCallable(const J_COMPONENT_TYPE cType);
 	protected:
 		static bool NameOrder(const CTypeHint& a, const CTypeHint& b)noexcept;
 	protected:

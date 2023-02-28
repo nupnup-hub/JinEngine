@@ -17,28 +17,22 @@ namespace JinEngine
 
 	namespace Core
 	{
-		struct JAnimationShareData;
+		class JAnimationUpdateData;
 		struct JAnimationTime; 
 		class JAnimationFSMstate;
 		class JAnimationFSMtransition; 
+		class JGameTimer;
 
 		class JAnimationFSMdiagram final : public JFSMdiagram
 		{
 			REGISTER_CLASS(JAnimationFSMdiagram)
 		private:
 			friend class JAnimationController;
-		private:  
-			JAnimationFSMstate* nowState;
-			JAnimationFSMstate* nextState;
-			JAnimationFSMtransition* nextTransition;
-			JBlender blender;
-			float weight;
 		public:
-			void Initialize(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset)noexcept;
-			void Enter(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset);
-			void Update(JAnimationTime& animationTime, JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;
-		public:
-			bool HasNowState()const noexcept;
+			void Initialize(JAnimationUpdateData* updateData, const uint layerNumber)noexcept;
+			void Enter(JAnimationUpdateData* updateData, const uint layerNumber);
+			void Update(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;
+		public: 
 			bool CanCreateState()const noexcept;
 
 			JAnimationFSMstate* GetState(const size_t stateGuid)noexcept;
@@ -48,9 +42,9 @@ namespace JinEngine
 			 
 			void SetClip(const size_t stateGuid, JAnimationClip* clip)noexcept;
 		private:
-			void StuffFinalTransform(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns)noexcept;
-			void CrossFading(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset, Graphic::JAnimationConstants& animationConstatns)noexcept;
-			void PreprocessSkeletonBindPose(JAnimationShareData& animationShareData, JSkeletonAsset* srcSkeletonAsset)noexcept;
+			void StuffFinalTransform(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;
+			void CrossFading(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;
+			void PreprocessSkeletonBindPose(JAnimationUpdateData* updateData)noexcept;
 		private:
 			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
 			static JAnimationFSMdiagram* LoadData(std::wifstream& stream, JFSMdiagramOwnerInterface* fsmOwner);

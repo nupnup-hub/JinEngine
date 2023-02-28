@@ -44,8 +44,6 @@ namespace JinEngine
 			JShaderInitdata(const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag, 
 				const JShaderGraphicPsoCondition newGraphicPSO = JShaderGraphicPsoCondition(),
 				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
-		public:
-			J_RESOURCE_TYPE GetResourceType() const noexcept;
 		private:
 			static std::wstring MakeName(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, 
 				const JShaderGraphicPsoCondition& graphicPSO,

@@ -7,6 +7,7 @@
 #include"../JResourceImporter.h"
 #include"../Material/JMaterial.h"
 #include"../../Directory/JDirectory.h"
+#include"../../Directory/JDirectoryFactory.h" 
 #include"../../../Application/JApplicationVariable.h" 
 #include"../../../Core/Exception/JExceptionMacro.h" 
 #include"../../../Core/File/JFileConstant.h"
@@ -31,7 +32,7 @@ namespace JinEngine
 		JDirectory* directory,
 		const std::wstring oridataPath,
 		Core::JOwnerPtr<JMeshGroup> meshGroup)
-		:JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JMeshGeometry>(JCUtil::DecomposeFileFormat(oridataPath))),
+		:JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JMeshGeometry>(JCUtil::DecomposeFileFormat(oridataPath)), J_RESOURCE_TYPE::MESH),
 		meshGroup(std::move(meshGroup))
 	{}
 	JMeshGeometry::JMeshInitData::JMeshInitData(const std::wstring& name,
@@ -40,14 +41,14 @@ namespace JinEngine
 		JDirectory* directory,
 		const uint8 formatIndex,
 		Core::JOwnerPtr<JMeshGroup> meshGroup)
-		: JResourceInitData(name, guid, flag, directory, formatIndex),
+		: JResourceInitData(name, guid, flag, directory, formatIndex, J_RESOURCE_TYPE::MESH),
 		meshGroup(std::move(meshGroup))
 	{}
 	JMeshGeometry::JMeshInitData::JMeshInitData(const std::wstring& name,
 		JDirectory* directory,
 		const std::wstring oridataPath,
 		Core::JOwnerPtr<JMeshGroup> meshGroup)
-		: JResourceInitData(name, directory, JResourceObject::GetFormatIndex<JMeshGeometry>(JCUtil::DecomposeFileFormat(oridataPath))),
+		: JResourceInitData(name, directory, JResourceObject::GetFormatIndex<JMeshGeometry>(JCUtil::DecomposeFileFormat(oridataPath)), J_RESOURCE_TYPE::MESH),
 		meshGroup(std::move(meshGroup))
 	{}
 	bool JMeshGeometry::JMeshInitData::IsValidCreateData()
@@ -56,10 +57,6 @@ namespace JinEngine
 			return true;
 		else
 			return false;
-	}
-	J_RESOURCE_TYPE JMeshGeometry::JMeshInitData::GetResourceType() const noexcept
-	{
-		return J_RESOURCE_TYPE::MESH;
 	}
 
 	JMeshGeometry::SubmeshGeometry::SubmeshGeometry(const std::wstring name, const size_t guid)
@@ -634,12 +631,22 @@ namespace JinEngine
 				if (loadRes == Core::J_FBXRESULT::FAIL)
 					return { nullptr };
 
+				JDirectory* fileDir = dir->GetChildDirctoryByName(importPathData.name);
+				if (fileDir == nullptr)
+					fileDir = JDFI::Create(importPathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, *dir);
+				else
+				{
+					//if exist same name directory
+					//make sub dir named model
+					fileDir = JDFI::Create(L"Model", Core::MakeGuid(), OBJECT_FLAG_NONE, *fileDir);
+				}
+
 				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
 				{
 					newSkeleton = JRFI<JSkeletonAsset>::Create(Core::JPtrUtil::MakeOwnerPtr<JSkeletonAsset::InitData>(importPathData.name + L"Skel",
 						Core::MakeGuid(),
 						importPathData.flag,
-						dir,
+						fileDir,
 						importPathData.oriFileWPath,
 						std::make_unique<JSkeleton>(std::move(joint))));
 					skinnedGroup.SetSkeletonAsset(Core::GetUserPtr(newSkeleton));
@@ -649,7 +656,7 @@ namespace JinEngine
 					newMesh = JRFI<JSkinnedMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
 						Core::MakeGuid(),
 						importPathData.flag,
-						dir,
+						fileDir,
 						importPathData.oriFileWPath,
 						Core::JPtrUtil::MakeOwnerPtr<JSkinnedMeshGroup>(std::move(skinnedGroup))));
 					res.push_back(newMesh);
@@ -664,12 +671,18 @@ namespace JinEngine
 				if (loadRes == Core::J_FBXRESULT::FAIL)
 					return { nullptr };
 
+				JDirectory* fileDir = dir->GetChildDirctoryByName(importPathData.name);
+				if (fileDir == nullptr)
+					fileDir = JDFI::Create(importPathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, *dir);
+				else
+					fileDir = JDFI::Create(L"Model", Core::MakeGuid(), OBJECT_FLAG_NONE, *fileDir);
+
 				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
 				{
 					newMesh = JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
 						Core::MakeGuid(),
 						importPathData.flag,
-						dir,
+						fileDir,
 						importPathData.oriFileWPath,
 						Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGroup>(std::move(staticMeshGroup))));
 					res.push_back(newMesh);
@@ -691,10 +704,16 @@ namespace JinEngine
 			JMeshGeometry* newMesh = nullptr;
 			if (JObjFileLoader::Instance().LoadObjFile(importPathData, objMeshData, objMatData))
 			{
+				JDirectory* fileDir = dir->GetChildDirctoryByName(importPathData.name);
+				if (fileDir == nullptr)
+					fileDir = JDFI::Create(importPathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, *dir);
+				else
+					fileDir = JDFI::Create(L"Model", Core::MakeGuid(), OBJECT_FLAG_NONE, *fileDir);
+
 				newMesh = JRFI<JStaticMeshGeometry>::Create(Core::JPtrUtil::MakeOwnerPtr<InitData>(importPathData.name,
 					Core::MakeGuid(),
 					importPathData.flag,
-					dir,
+					fileDir,
 					importPathData.oriFileWPath,
 					Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGroup>(std::move(objMeshData.meshGroup))));
 			}

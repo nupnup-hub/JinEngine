@@ -7,6 +7,7 @@
 #include"../../../Core/FSM/AnimationFSM/JAnimationFSMstate.h" 
 #include"../../../Core/FSM/AnimationFSM/JAnimationTime.h" 
 #include"../../../Core/FSM/AnimationFSM/JAnimationFSMtransition.h"
+#include"../../../Core/FSM/AnimationFSM/JAnimationUpdateData.h"
 #include"../../../Core/FSM/JFSMfactory.h"
 #include"../../../Core/FSM/JFSMstate.h" 
 #include"../../../Core/FSM/JFSMparameter.h" 
@@ -16,6 +17,7 @@
 #include"../../../Application/JApplicationVariable.h"
 #include"../../../Editor/Diagram/JEditorDiagram.h" 
 #include"../../../Editor/Diagram/JEditorDiagramNode.h" 
+#include"../../../Graphic/FrameResource/JAnimationConstants.h"
 #include"../../../Utility/JCommonUtility.h"
 
 //수정필요 
@@ -33,40 +35,15 @@ namespace JinEngine
 		const J_OBJECT_FLAG flag,
 		JDirectory* directory,
 		const uint8 formatIndex)
-		:JResourceInitData(name, guid, flag, directory, formatIndex)
+		:JResourceInitData(name, guid, flag, directory, formatIndex, J_RESOURCE_TYPE::ANIMATION_CONTROLLER)
 	{}
 	JAnimationController::JAnimationControllerInitData::JAnimationControllerInitData(const std::wstring& name, JDirectory* directory, const uint8 formatIndex)
-		: JResourceInitData(name, directory, formatIndex)
+		: JResourceInitData(name, directory, formatIndex, J_RESOURCE_TYPE::ANIMATION_CONTROLLER)
 	{}
 	JAnimationController::JAnimationControllerInitData::JAnimationControllerInitData(JDirectory* directory, const uint8 formatIndex)
-		: JResourceInitData(GetDefaultName<JAnimationController>(), directory, formatIndex)
+		: JResourceInitData(GetDefaultName<JAnimationController>(), directory, formatIndex, J_RESOURCE_TYPE::ANIMATION_CONTROLLER)
 	{}
 
-	J_RESOURCE_TYPE JAnimationController::JAnimationControllerInitData::GetResourceType() const noexcept
-	{
-		return J_RESOURCE_TYPE::ANIMATION_CONTROLLER;
-	}
-
-	void JAnimationController::Initialize(std::vector<JAnimationTime>& animationtimes, JSkeletonAsset* srcSkeletonAsset)noexcept
-	{
-		animationShaderData.Initialize();
-
-		uint layerSize = (uint)fsmDiagram.size();
-		for (uint i = 0; i < layerSize; ++i)
-		{
-			fsmDiagram[i]->Initialize(animationShaderData, srcSkeletonAsset);
-			fsmDiagram[i]->Enter(animationtimes[i], animationShaderData, srcSkeletonAsset);
-		}
-	}
-	void JAnimationController::Update(std::vector<JAnimationTime>& animationtimes, JSkeletonAsset* modelSkeleton, JAnimationConstants& animationConstatns)noexcept
-	{
-		uint layerSize = (uint)fsmDiagram.size();
-		for (uint i = 0; i < layerSize; ++i)
-		{
-			if (fsmDiagram[i]->HasNowState())
-				fsmDiagram[i]->Update(animationtimes[i], animationShaderData, modelSkeleton, animationConstatns, i);
-		}
-	}
 	J_RESOURCE_TYPE JAnimationController::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
@@ -116,7 +93,7 @@ namespace JinEngine
 	}
 	bool JAnimationController::CanCreateDiagram()const noexcept
 	{
-		return fsmDiagram.size() < diagramMaxCount;
+		return fsmDiagram.size() < JAnimationFixedData::fsmDiagramMaxCount;
 	}
 	bool JAnimationController::CanCreateParameter()const noexcept
 	{
@@ -210,6 +187,34 @@ namespace JinEngine
 				return fsmDiagram[i];
 		}
 		return nullptr;
+	}
+	JAnimationControllerFrameUpdateInterface* JAnimationController::FrameUpdateInterface()
+	{
+		return this;
+	}
+	void JAnimationController::Initialize(Core::JAnimationUpdateData* updateData)noexcept
+	{ 
+		uint layerSize = (uint)fsmDiagram.size();
+		for (uint i = 0; i < layerSize; ++i)
+		{
+			fsmDiagram[i]->Initialize(updateData, i);
+			fsmDiagram[i]->Enter(updateData, i);
+		}
+	}
+	void JAnimationController::Update(Core::JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept
+	{
+		bool hasValidValue = false;
+		uint layerSize = (uint)fsmDiagram.size();
+		for (uint i = 0; i < layerSize; ++i)
+		{
+			if (fsmDiagram[i]->GetStateCount() > 0)
+			{
+				fsmDiagram[i]->Update(updateData, constant, i);
+				hasValidValue = true;
+			}
+		}
+		if (!hasValidValue)
+			constant.StuffIdentity();
 	}
 	void JAnimationController::DoCopy(JObject* ori)
 	{

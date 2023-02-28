@@ -25,7 +25,17 @@ namespace JinEngine
 		else
 			return children[index];
 	}
-	JDirectory* JDirectory::GetChildDirctory(const std::wstring& path)noexcept
+	JDirectory* JDirectory::GetChildDirctoryByName(const std::wstring& name)noexcept
+	{ 
+		const uint childCount = (uint)children.size();
+		for (uint i = 0; i < childCount; ++i)
+		{
+			if (children[i]->GetName() == name)
+				return children[i];
+		}
+		return nullptr;
+	}
+	JDirectory* JDirectory::GetChildDirctoryByPath(const std::wstring& path)noexcept
 	{
 		std::wstring thisPath = GetPath();
 		const uint childCount = (uint)children.size();
@@ -86,7 +96,10 @@ namespace JinEngine
 			return;
 
 		const std::wstring prePath = GetMetafilePath();
-		JObject::SetName(MakeUniqueFileName(newName));
+		if(parent != nullptr)
+			JObject::SetName(JCUtil::MakeUniqueName(parent->children, newName));
+		else
+			JObject::SetName(newName);
 		const std::wstring newPath = GetMetafilePath();
 		_wrename(prePath.c_str(), newPath.c_str());
 	}
@@ -125,7 +138,7 @@ namespace JinEngine
 	}
 	JDirectory* JDirectory::SearchDirectory(const std::wstring& path)noexcept
 	{
-		JDirectory* res = GetChildDirctory(path);
+		JDirectory* res = GetChildDirctoryByPath(path);
 		if (res == nullptr)
 		{
 			const uint childCount = (uint)children.size();
@@ -138,15 +151,23 @@ namespace JinEngine
 		}
 		return res;
 	}
-	std::wstring JDirectory::MakeUniqueFileName(const std::wstring& name)noexcept
+	std::wstring JDirectory::MakeUniqueFileName(const std::wstring& name, const J_RESOURCE_TYPE rType)const noexcept
 	{
-		return JCUtil::MakeUniqueName(JCUtil::MakeUniqueName(fileList, name, &JFile::GetName), GetName());
+		auto conditionLam = [](JFile* file, std::wstring name, J_RESOURCE_TYPE rType)
+		{
+			return file->GetName() == name && file->GetResource()->GetResourceType() == rType;
+		};		 
+		bool(*ptr)(JFile*, std::wstring, J_RESOURCE_TYPE) = conditionLam;
+
+		std::vector<JFile*> overlappedFile = JCUtil::GetPassConditionElement(fileList, ptr, name, rType);
+		return JCUtil::MakeUniqueName(overlappedFile, name, &JFile::GetName);
 	}
-	std::wstring JDirectory::MakeUniqueFileName(const std::wstring& name, const size_t fileGuid)noexcept
-	{
-		return JCUtil::MakeUniqueName(JCUtil::MakeUniqueName(fileList, name, &JFile::GetName), GetName());
-	}
+
 	JDirectoryOCInterface* JDirectory::OCInterface()
+	{
+		return this;
+	}
+	JDirectoryEditorInterface* JDirectory::EditorInterface()
 	{
 		return this;
 	}
@@ -187,6 +208,8 @@ namespace JinEngine
 		if (HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !isForced)
 			return false;
 		 
+		if (IsActivated())
+			DeActivate();
 		Clear();
 		//JResourceManager::Instance().DirectoryStorageInterface()->RemoveJDirectory(*this);
 		return true;
@@ -213,6 +236,27 @@ namespace JinEngine
 	void JDirectory::CloseDirectory()noexcept
 	{
 		DeActivate();
+	}
+	void JDirectory::SetParent(JDirectory* dir)noexcept
+	{
+		//root node can't set parent
+		if (parent == nullptr)
+			return;
+
+		const std::wstring prePath = GetPath();
+		int preIndex = JCUtil::GetJIdenIndex(parent->children, GetGuid());
+		parent->children.erase(parent->children.begin() + preIndex);
+
+		dir->children.push_back(this);
+		parent = dir;
+
+		SetName(JCUtil::MakeUniqueName(parent->children, GetName()));
+		const std::wstring newPath = GetPath();
+		MoveFileExW(prePath.c_str(), newPath.c_str(), MOVEFILE_WRITE_THROUGH);
+	}
+	void JDirectory::DeleteDirectory()noexcept
+	{
+		DeleteDirectoryFile(GetPath());
 	}
 	bool JDirectory::CreateDirectoryFile(const std::wstring& path)
 	{

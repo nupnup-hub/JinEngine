@@ -203,6 +203,7 @@ namespace JinEngine
 			{
 				return contentsSize;
 			}
+			//Has order dependency
 			JVector2<float> GetInnerContentsSize()const noexcept
 			{
 				return innerSize[innerIndex];
@@ -215,6 +216,7 @@ namespace JinEngine
 			{
 				return contentsStartCursor.y + rowIndex * contentsSpacing.y + rowIndex * contentsSize.y + innerPosOffset[innerIndex].y;
 			}
+			//Has order dependency
 			JVector2<float> GetCursorPos()noexcept
 			{
 				return JVector2<float>(GetCursorPosX(), GetCursorPosY());

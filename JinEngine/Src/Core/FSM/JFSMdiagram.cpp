@@ -116,6 +116,12 @@ namespace JinEngine
 					for (uint i = 0; i < stateCount; ++i)
 						Destroy(stateVec[i]->GetTransitionByOutGuid(state->GetGuid()));
 
+					if (guid == nowStateGuid)
+					{
+						nowStateGuid = 0;
+						if (stateVec.size() > 0)
+							nowStateGuid = stateVec[0]->GetGuid();
+					}
 					return true;
 				}
 				else

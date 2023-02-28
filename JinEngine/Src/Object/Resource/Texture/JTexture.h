@@ -28,8 +28,7 @@ namespace JinEngine
 				JDirectory* directory,
 				const std::wstring oridataPath);
 		public:
-			bool IsValidCreateData()final;
-			J_RESOURCE_TYPE GetResourceType() const noexcept;
+			bool IsValidCreateData()final; 
 		};
 		using InitData = JTextureInitData;
 	private:

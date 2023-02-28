@@ -780,11 +780,14 @@ namespace JinEngine
 			JVector2<float> nowCursor = ImGui::GetCursorPos();
 			JVector2<float> bboxMin = JVector2<float>(pos.x, pos.y);
 			JVector2<float> bboxMax = pos + size;
+
+			const ImU32 addCol = color + colorDelta;
+			const ImU32 minCol = color - colorDelta;
 			ImGui::GetWindowDrawList()->AddRectFilledMultiColor(bboxMin, bboxMax,
-				color + colorDelta,
-				color - colorDelta,
-				color + colorDelta,
-				color - colorDelta);
+				addCol < color ? color : addCol,
+				minCol > color ? color : minCol,
+				addCol < color ? color : addCol,
+				minCol > color ? color : minCol);
 			if (useRestoreCursorPos)
 				ImGui::SetCursorPos(nowCursor);
 		}

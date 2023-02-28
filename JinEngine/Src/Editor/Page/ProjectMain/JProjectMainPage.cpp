@@ -27,11 +27,10 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JProjectMainPage::JProjectMainPage(const bool hasMetadata)
+		JProjectMainPage::JProjectMainPage()
 			:JEditorPage("JEngine#MainPage",
 				std::make_unique<JEditorAttribute>(),
-				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK)),
-			reqInit(!hasMetadata)
+				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK))
 		{  
 			storeProjectF = std::make_unique<StoreProjectF::Functor>(&JApplicationProject::StoreProject);
 			loadProjectF = std::make_unique<LoadProjectF::Functor>(&JApplicationProject::LoadProject);
@@ -150,13 +149,20 @@ namespace JinEngine
 				auto modVec = mainPage->GetModifiedObjectInfoVec();
 				for (auto& data : modVec)
 				{
-					Core::JIdentifier* obj = Core::GetRawPtr(data->typeName, data->guid);
-					const std::string strArr[textCount]
+					std::string strArr[textCount]{ "","","" };
+					if (data->isRemoved)
 					{
-						 JCUtil::WstrToU8Str(obj->GetName()),
-						 JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj)->GetFolderPath()),
-						 obj->GetTypeInfo().NameWithOutPrefix()
-					};
+						strArr[0] = JCUtil::WstrToU8Str(data->lastObjName);
+						strArr[1] = JCUtil::WstrToU8Str(data->lastObjPath);
+						strArr[2] = Core::JReflectionInfo::Instance().GetTypeInfo(data->typeName)->NameWithOutPrefix();
+					}
+					else
+					{
+						Core::JIdentifier* obj = Core::GetRawPtr(data->typeName, data->guid);
+						strArr[0] = JCUtil::WstrToU8Str(obj->GetName());
+						strArr[1] = JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj)->GetPath());
+						strArr[2] = obj->GetTypeInfo().NameWithOutPrefix();
+					}  
 					 
 					for (uint j = 0; j < textCount; ++j)
 					{
@@ -244,12 +250,10 @@ namespace JinEngine
 			//	dockspaceFlag &= ~ImGuiDockNodeFlags_PassthruCentralNode;
 
 			EnterPage(guiWindowFlag);
-			if (reqInit)
-			{
+			if (HasDockNodeSpace())
+				UpdateDockSpace(dockspaceFlag);
+			else
 				BuildDockNode();
-				reqInit = false;
-			} 
-			UpdateDockSpace(dockspaceFlag);
 			menuBar->Update(true);  
 			ClosePage();
 

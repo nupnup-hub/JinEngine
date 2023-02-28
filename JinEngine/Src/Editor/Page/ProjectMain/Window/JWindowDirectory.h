@@ -2,6 +2,7 @@
 #include"../../JEditorWindow.h"     
 #include"../../WindowInterface/JEditorPreviewInterface.h"
 #include"../../../Interface/JEditorObjectInterface.h"
+#include"../../../Interface/JEditorMultiSelectable.h"
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/JResourceType.h"
 #include"../../../../Core/Func/Callable/JCallable.h"
@@ -29,7 +30,8 @@ namespace JinEngine
 
 		class JWindowDirectory final : public JEditorWindow, 
 			public JEditorPreviewInterface,
-			public JEditorObjectHandlerInterface
+			public JEditorObjectHandlerInterface,
+			public JEditorMultiSelectable
 		{ 
 		private:
 			//Create Resource & Directory
@@ -40,6 +42,7 @@ namespace JinEngine
 			using ImportResourceF = Core::JMFunctorType<JWindowDirectory, void>;
 			using CreateImportedResourceF = Core::JSFunctorType<void, JWindowDirectory*, std::vector<JResourceObject*>>;
 			using RenameF = Core::JSFunctorType<void, JWindowDirectory*>;
+			using MoveFIleF = Core::JMFunctorType<JWindowDirectory, void, JDirectory*, JObject*>;
 
 			using RegisterCreateREvF = Core::JMFunctorType<JWindowDirectory, void, J_RESOURCE_TYPE>;
 			using RegisterCreateDEvF = Core::JMFunctorType<JWindowDirectory, void>;
@@ -65,6 +68,7 @@ namespace JinEngine
 			std::unique_ptr<ImportResourceF::Functor> importResourceF;
 			std::unique_ptr<CreateImportedResourceF::Functor> createImportedResourceF;
 			std::unique_ptr<RenameF::Functor> renameF;
+			std::unique_ptr<MoveFIleF::Functor> moveFileF; 
 			std::unique_ptr<RegisterCreateREvF::Functor> regCreateRobjF;
 			std::unique_ptr<RegisterCreateDEvF::Functor> regCreateDirF;
 			std::unique_ptr<RegisterDestroyEvF::Functor> regDestroyObjF;
@@ -105,7 +109,7 @@ namespace JinEngine
 			void ImportFile(); 
 		private:
 			void OpenNewDirectory(Core::JUserPtr<JDirectory> newOpendDirectory);
-			void CreateOpendDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask = L"");
+			void CreateDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask = L"");
 			//Only create file preview not directory
 			void CreateAllDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask = L"");
 		private:
@@ -115,6 +119,9 @@ namespace JinEngine
 			void CreateResourceObject(Core::JUserPtr<JDirectory> owner, const J_RESOURCE_TYPE rType);
 			void CreateDirectory(Core::JUserPtr<JDirectory> parent);
 			void DestroyObject(Core::JUserPtr<JObject> obj);
+		private:
+			void RequestMoveFile(JDirectory* to, JObject* obj);
+			void MoveFile(JDirectory* to, JObject* obj);
 		protected:
 			void DoSetFocus()noexcept final;
 			void DoSetUnFocus()noexcept final;

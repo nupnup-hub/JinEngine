@@ -45,7 +45,8 @@ namespace JinEngine
 		if(HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) && !isForced)
 			return false;
 
-		//DeActivate();
+		if (IsActivated())
+			DeActivate(); 
 		return true;
 	}
 	bool JComponent::RegisterCashData()noexcept

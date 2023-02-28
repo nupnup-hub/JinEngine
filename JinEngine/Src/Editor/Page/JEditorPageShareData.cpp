@@ -50,6 +50,12 @@ namespace JinEngine
 		{
 			return pageData[(int)pageType] != nullptr ? true : false;
 		}
+		bool JEditorPageShareData::IsEditableSelectedObject(const J_EDITOR_PAGE_TYPE pageType)noexcept
+		{ 
+			return pageData[(int)pageType]->selectObj.IsValid() &&
+				pageData[(int)pageType]->selectObj->GetTypeInfo().IsChildOf<JObject>() &&
+				!static_cast<JObject*>(pageData[(int)pageType]->selectObj.Get())->HasFlag(OBJECT_FLAG_UNEDITABLE);
+		}
 		bool JEditorPageShareData::HasValidOpenPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
 			if (pageData[(int)pageType] == nullptr)

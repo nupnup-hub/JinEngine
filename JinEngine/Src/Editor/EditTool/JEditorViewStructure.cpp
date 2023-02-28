@@ -21,6 +21,8 @@ namespace JinEngine
 			static constexpr uint infoBlankCount = 8;
 			static constexpr uint initGridSize = 1000;
 			static constexpr uint nodeFrameThickness = 1;
+			static constexpr uint lineThicknessFactor = 5;
+			static constexpr uint triangleLengthFactor = 10; 
 		}
 
 		struct JEditorViewUpdateHelper
@@ -40,6 +42,8 @@ namespace JinEngine
 		public:
 			float lineThickness = 0;
 			uint maxDepth = 0;
+		public:
+			float triangleLength = 0;
 		public:
 			JVector2<float> preMousePos;
 		public:
@@ -76,8 +80,9 @@ namespace JinEngine
 				nodeFrameThickness = JVector2<uint>(Constants::nodeFrameThickness, Constants::nodeFrameThickness);
 
 				mouseOffset = newMouseOffset;
-				lineThickness = 5 * zoomRate;
+				lineThickness = Constants::lineThicknessFactor * zoomRate;
 				maxDepth = newMaxDepth;
+				triangleLength = Constants::triangleLengthFactor * zoomRate;
 				updateBit = newUpdateBit;
 				JEditorViewUpdateHelper::hasNewNode = hasNewNode;
 			}
@@ -349,7 +354,20 @@ namespace JinEngine
 				if (ImGui::IsMouseClicked(0) && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_DockHierarchy))
 					updateHelper->SelectEdge(GetGuid(), to->GetGuid());
 			}
-			ImGui::GetWindowDrawList()->AddLine(fromCenter, toCenter, color, updateHelper->lineThickness);			 
+			ImGui::GetWindowDrawList()->AddLine(fromCenter, toCenter, color, updateHelper->lineThickness);
+			 
+			const JVector2<float> lineCenter = fromCenter + ((toCenter - fromCenter) * 0.5f);
+			const JVector2<float> dir = JMathHelper::Vector2Normalize((toCenter - fromCenter).ConvertXMF());
+			JVector2<float> bottomDir;
+			bottomDir.x = dir.x * std::cos(90 * JMathHelper::DegToRad) + dir.y * std::sin(90 * JMathHelper::DegToRad);
+			bottomDir.y = dir.x * std::sin(-90 * JMathHelper::DegToRad) + dir.y * std::cos(90 * JMathHelper::DegToRad);
+			
+			const JVector2<float> xFactor = bottomDir * updateHelper->triangleLength;
+			const JVector2<float> yFactor = dir * updateHelper->triangleLength;
+			ImGui::GetWindowDrawList()->AddTriangleFilled(lineCenter + yFactor,
+				lineCenter - yFactor + xFactor,
+				lineCenter - yFactor - xFactor,
+				GetLineColor());
 		}
 		void JEditorNodeBase::StoreUpdatedNodeData(const JEditorViewUpdateHelper* updateHelper)noexcept
 		{

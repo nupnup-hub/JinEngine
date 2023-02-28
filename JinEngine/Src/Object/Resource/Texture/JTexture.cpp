@@ -18,7 +18,7 @@ namespace JinEngine
 		const J_OBJECT_FLAG flag,
 		JDirectory* directory,
 		const std::wstring oridataPath)
-		:JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JTexture>(JCUtil::DecomposeFileFormat(oridataPath))),
+		:JResourceInitData(name, guid, flag, directory, JResourceObject::GetFormatIndex<JTexture>(JCUtil::DecomposeFileFormat(oridataPath)), J_RESOURCE_TYPE::TEXTURE),
 		oridataPath(oridataPath)
 	{ 
 	}
@@ -27,12 +27,12 @@ namespace JinEngine
 		const J_OBJECT_FLAG flag,
 		JDirectory* directory,
 		const uint8 formatIndex)
-		: JResourceInitData(name, guid, flag, directory, formatIndex), oridataPath(oridataPath)
+		: JResourceInitData(name, guid, flag, directory, formatIndex, J_RESOURCE_TYPE::TEXTURE), oridataPath(oridataPath)
 	{ }
 	JTexture::JTextureInitData::JTextureInitData(const std::wstring& name,
 		JDirectory* directory,
 		const std::wstring oridataPath)
-		: JResourceInitData(name, directory, JResourceObject::GetFormatIndex<JTexture>(JCUtil::DecomposeFileFormat(oridataPath))),
+		: JResourceInitData(name, directory, JResourceObject::GetFormatIndex<JTexture>(JCUtil::DecomposeFileFormat(oridataPath)), J_RESOURCE_TYPE::TEXTURE),
 		oridataPath(oridataPath)
 	{ }
 
@@ -42,11 +42,7 @@ namespace JinEngine
 			return true;
 		else
 			return false;
-	}
-	J_RESOURCE_TYPE JTexture::JTextureInitData::GetResourceType() const noexcept
-	{
-		return J_RESOURCE_TYPE::TEXTURE;
-	}
+	} 
 
 	J_RESOURCE_TYPE JTexture::GetResourceType()const noexcept
 	{

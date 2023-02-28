@@ -9,8 +9,15 @@ namespace JinEngine
 		{
 			JBlender::startTime = startTime;
 			JBlender::endTime = endTime;
+			isActivated = true;
 		}
-		float JBlender::GetBlnederValue(const float nowTime)noexcept
+		void JBlender::Clear()noexcept
+		{
+			startTime = 0;
+			endTime = 0;
+			isActivated = false;
+		}
+		float JBlender::GetBlnederValue(const float nowTime)const noexcept
 		{
 			float u = (nowTime - startTime) / (endTime - startTime);
 			float v = 1 - u;
@@ -19,12 +26,16 @@ namespace JinEngine
 			//return  b < maxValue ? b : 1;
 			return b;
 		}
-		bool JBlender::IsBlenderEnd(const float nowTime)noexcept
+		bool JBlender::IsBlenderEnd(const float nowTime)const noexcept
 		{
 			float u = (nowTime - startTime) / (endTime - startTime);
 			float v = 1 - u;
 
 			return v <= 0;
+		}
+		bool JBlender::IsActivated()const noexcept
+		{
+			return isActivated;
 		}
 	}
 }

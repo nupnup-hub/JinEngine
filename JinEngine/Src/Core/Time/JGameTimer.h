@@ -17,16 +17,16 @@ namespace JinEngine
 		private:
 			friend class Application::JApplication;  
 		private: 
-			double mSecondsPercount;
-			double mDeltaTime;
-			double mFixedTime;
+			double mSecondsPercount = 0;
+			double mDeltaTime = 0;
+			double mFixedTime = 0;
 
-			int64 mBaseTime;
-			int64 mPausedTime;
-			int64 mStopTime;
-			int64 mPrevTime;
-			int64 mCurrTime;
-			bool mStopped;
+			int64 mBaseTime = 0;
+			int64 mPausedTime = 0;
+			int64 mStopTime = 0;
+			int64 mPrevTime = 0;
+			int64 mCurrTime = 0;
+			bool mStopped = false;
 		private:
 			const size_t guid;
 		public:
@@ -39,6 +39,8 @@ namespace JinEngine
 			void Start() noexcept;
 			void Stop() noexcept;
 			void Reset() noexcept;
+		public:
+			bool IsStop()const noexcept;
 		private: 
 			static void TickAllTimer();
 		}; 

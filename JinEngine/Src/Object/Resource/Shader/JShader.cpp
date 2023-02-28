@@ -79,16 +79,16 @@ namespace JinEngine
 		static const std::string hzbSamplingCountSymbol = "DOWN_SAMPLING_COUNT";
 		static const std::string hzbOcclusionQueryCountSymbol = "OCCLUSION_QUERY_COUNT";
 
-		static std::string hzbSamplingCount;
-		static std::string hzbOcclusionQueryCount;
+		static std::string hzbSamplingCount = "";
+		static std::string hzbOcclusionQueryCount = "";
 
 		static std::unordered_map <J_COMPUTE_SHADER_FUNCTION, std::vector<std::string>> computeShaderThreadDim;
 	
 		using EqualGShaderT = Core::JStaticCallableType<bool, const J_GRAPHIC_SHADER_FUNCTION, const JShaderGraphicPsoCondition&, JShader*>;
-		static std::unique_ptr<EqualGShaderT::Callable> equalGShader;
+		static std::unique_ptr<EqualGShaderT::Callable> equalGShader = nullptr;
 
 		using EqualCShaderT = Core::JStaticCallableType<bool, const J_COMPUTE_SHADER_FUNCTION, JShader*>;
-		static std::unique_ptr<EqualCShaderT::Callable> equalCShader;
+		static std::unique_ptr<EqualCShaderT::Callable> equalCShader = nullptr;
 	}
 	 
 	static JShader* FindOverlapShader(const J_GRAPHIC_SHADER_FUNCTION newFunc, const JShaderGraphicPsoCondition& graphicPSO)
@@ -129,7 +129,8 @@ namespace JinEngine
 			guid,
 			Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE),
 			GetShaderDirectory(),
-			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
+			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0]),
+			J_RESOURCE_TYPE::SHADER),
 		gShaderFunctionFlag(newGShaderFunctionFlag),
 		cShaderFunctionFlag(newCShaderFunctionFlag),
 		graphicPSO(newGraphicPSO)
@@ -145,7 +146,8 @@ namespace JinEngine
 			Core::MakeGuid(),
 			Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE),
 			GetShaderDirectory(),
-			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
+			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0]),
+			J_RESOURCE_TYPE::SHADER),
 		gShaderFunctionFlag(newGShaderFunctionFlag),
 		cShaderFunctionFlag(newCShaderFunctionFlag),
 		graphicPSO(newGraphicPSO)
@@ -160,7 +162,8 @@ namespace JinEngine
 			Core::MakeGuid(),
 			OBJECT_FLAG_UNEDITABLE,
 			GetShaderDirectory(),
-			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0])),
+			JResourceObject::GetFormatIndex<JShader>(GetAvailableFormat()[0]),
+			J_RESOURCE_TYPE::SHADER),
 		gShaderFunctionFlag(newGShaderFunctionFlag),
 		cShaderFunctionFlag(newCShaderFunctionFlag),
 		graphicPSO(newGraphicPSO)
@@ -168,10 +171,7 @@ namespace JinEngine
 		if (cShaderFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
 			gShaderFunctionFlag = SHADER_FUNCTION_NONE;
 	}
-	J_RESOURCE_TYPE JShader::JShaderInitdata::GetResourceType() const noexcept
-	{
-		return J_RESOURCE_TYPE::SHADER;
-	}
+
 	std::wstring JShader::JShaderInitdata::MakeName(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
 		const JShaderGraphicPsoCondition& graphicPSO,
 		const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept

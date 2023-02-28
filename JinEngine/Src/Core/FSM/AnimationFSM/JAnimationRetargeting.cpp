@@ -1,5 +1,5 @@
 #include"JAnimationRetargeting.h"
-#include"JAnimationShareData.h"
+#include"JAnimationUpdateData.h"
 #include"JAnimationPostProcessing.h"
 #include"../../../Utility/JMathHelper.h"
 #include"../../../Utility/JCommonUtility.h"
@@ -13,7 +13,7 @@ namespace JinEngine
 	using namespace DirectX;
 	namespace Core
 	{
-		bool JAnimationRetargeting::CalculateAdditionalBindPose(JAnimationShareData& animationShareData,
+		bool JAnimationRetargeting::CalculateAdditionalBindPose(JAnimationUpdateData* updateData,
 			JSkeletonAsset* srcSkeletonAsset,
 			JSkeletonAsset* tarSkeletonAsset,
 			std::vector<JAnimationAdditionalBind>& additionalBind)noexcept
@@ -32,12 +32,12 @@ namespace JinEngine
 			const uint8 srcJointCount = srcSkeleton->GetJointCount();
 			const uint8 tarJointCount = tarSkeleton->GetJointCount();
 
-			StuffTargetTranslation(animationShareData, srcSkeletonAsset, tarSkeletonAsset, bindTarLocalT, bindTarWorldT);
-			ReBuildTargetTranslation(animationShareData, srcSkeletonAsset, tarSkeletonAsset, bindTarLocalT, bindTarWorldT, 0);
-			GetBindPoseAdditionalTransform(animationShareData, srcSkeletonAsset, tarSkeletonAsset, bindTarWorldT, additionalBind);
+			StuffTargetTranslation(updateData, srcSkeletonAsset, tarSkeletonAsset, bindTarLocalT, bindTarWorldT);
+			ReBuildTargetTranslation(updateData, srcSkeletonAsset, tarSkeletonAsset, bindTarLocalT, bindTarWorldT, 0);
+			GetBindPoseAdditionalTransform(updateData, srcSkeletonAsset, tarSkeletonAsset, bindTarWorldT, additionalBind);
 			return true;
 		}
-		void JAnimationRetargeting::StuffTargetTranslation(JAnimationShareData& animationShareData,
+		void JAnimationRetargeting::StuffTargetTranslation(JAnimationUpdateData* updateData,
 			JSkeletonAsset* srcSkeletonAsset,
 			JSkeletonAsset* tarSkeletonAsset,
 			std::vector<DirectX::XMFLOAT3>& bindTargetLocalT,
@@ -116,7 +116,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JAnimationRetargeting::ReBuildTargetTranslation(JAnimationShareData& animationShareData,
+		void JAnimationRetargeting::ReBuildTargetTranslation(JAnimationUpdateData* updateData,
 			JSkeletonAsset* srcSkeletonAsset,
 			JSkeletonAsset* tarSkeletonAsset,
 			std::vector<DirectX::XMFLOAT3>& bindTargetLocalT,
@@ -150,10 +150,10 @@ namespace JinEngine
 				const XMVECTOR childWorld = XMVectorAdd(childLocal, parentWorld);
 				XMStoreFloat3(&bindTargetWorldT[tarChildIndex], childWorld);
 
-				ReBuildTargetTranslation(animationShareData, srcSkeletonAsset, tarSkeletonAsset, bindTargetLocalT, bindTargetWorldT, childRefIndex);
+				ReBuildTargetTranslation(updateData, srcSkeletonAsset, tarSkeletonAsset, bindTargetLocalT, bindTargetWorldT, childRefIndex);
 			}
 		}
-		void JAnimationRetargeting::GetBindPoseAdditionalTransform(JAnimationShareData& animationShareData,
+		void JAnimationRetargeting::GetBindPoseAdditionalTransform(JAnimationUpdateData* updateData,
 			JSkeletonAsset* srcSkeletonAsset,
 			JSkeletonAsset* tarSkeletonAsset,
 			const std::vector<DirectX::XMFLOAT3>& tarModTranslation,
@@ -176,15 +176,15 @@ namespace JinEngine
 			for (uint i = 0; i < jointCount; ++i)
 				XMStoreFloat4x4(&bindPose[i], srcSkeleton->GetBindPose(i));
 
-			animationShareData.EnterCalculateIK();
-			JAnimationPostProcessing::CalculateBindPoseIK(animationShareData, srcSkeletonAsset, tarSkeletonAsset, J_AVATAR_JOINT::LEFT_HAND, J_AVATAR_JOINT::LEFT_SHOULDER, 0, tarModTranslation, bindPose);
-			JAnimationPostProcessing::CalculateBindPoseIK(animationShareData, srcSkeletonAsset, tarSkeletonAsset, J_AVATAR_JOINT::RIGHT_HAND, J_AVATAR_JOINT::RIGHT_SHOULDER, 1, tarModTranslation, bindPose);
-			JAnimationPostProcessing::CalculateBindPoseIK(animationShareData, srcSkeletonAsset, tarSkeletonAsset, J_AVATAR_JOINT::LEFT_LOWER_LEG, J_AVATAR_JOINT::LEFT_UPPER_LEG, 2, tarModTranslation, bindPose);
-			JAnimationPostProcessing::CalculateBindPoseIK(animationShareData, srcSkeletonAsset, tarSkeletonAsset, J_AVATAR_JOINT::RIGHT_LOWER_LEG, J_AVATAR_JOINT::RIGHT_UPPER_LEG, 3, tarModTranslation, bindPose);
-			StuffBindPoseIKResult(animationShareData, srcSkeletonAsset, tarSkeletonAsset, additionalBind, bindPose);
+			updateData->EnterCalculateIK();
+			JAnimationPostProcessing::CalculateBindPoseIK(updateData, srcSkeletonAsset, tarSkeletonAsset, J_AVATAR_JOINT::LEFT_HAND, J_AVATAR_JOINT::LEFT_SHOULDER, 0, tarModTranslation, bindPose);
+			JAnimationPostProcessing::CalculateBindPoseIK(updateData, srcSkeletonAsset, tarSkeletonAsset, J_AVATAR_JOINT::RIGHT_HAND, J_AVATAR_JOINT::RIGHT_SHOULDER, 1, tarModTranslation, bindPose);
+			JAnimationPostProcessing::CalculateBindPoseIK(updateData, srcSkeletonAsset, tarSkeletonAsset, J_AVATAR_JOINT::LEFT_LOWER_LEG, J_AVATAR_JOINT::LEFT_UPPER_LEG, 2, tarModTranslation, bindPose);
+			JAnimationPostProcessing::CalculateBindPoseIK(updateData, srcSkeletonAsset, tarSkeletonAsset, J_AVATAR_JOINT::RIGHT_LOWER_LEG, J_AVATAR_JOINT::RIGHT_UPPER_LEG, 3, tarModTranslation, bindPose);
+			StuffBindPoseIKResult(updateData, srcSkeletonAsset, tarSkeletonAsset, additionalBind, bindPose);
 
-			AdjustJoint(animationShareData, srcSkeletonAsset, tarSkeletonAsset, bindPose);
-			//StuffBindPoseIKResult(animationShareData, srcSkeletonAsset, tarSkeletonAsset, additionalBind, bindPose);
+			AdjustJoint(updateData, srcSkeletonAsset, tarSkeletonAsset, bindPose);
+			//StuffBindPoseIKResult(updateData, srcSkeletonAsset, tarSkeletonAsset, additionalBind, bindPose);
 
 			for (uint i = 1; i < JSkeletonFixedData::avatarBoneIndexCount; ++i)
 			{
@@ -201,7 +201,7 @@ namespace JinEngine
 				XMStoreFloat4x4(&additionalBind[i].transform, toModM);
 			}
 		}
-		void JAnimationRetargeting::StuffBindPoseIKResult(JAnimationShareData& animationShareData,
+		void JAnimationRetargeting::StuffBindPoseIKResult(JAnimationUpdateData* updateData,
 			JSkeletonAsset* srcSkeletonAsset,
 			JSkeletonAsset* tarSkeletonAsset,
 			std::vector<JAnimationAdditionalBind>& additionalBind,
@@ -216,13 +216,13 @@ namespace JinEngine
 
 			for (uint i = 0; i < JAnimationFixedData::defaultIKSlotCount; ++i)
 			{
-				if (animationShareData.ikCount[i] > 0)
+				if (updateData->ikCount[i] > 0)
 				{
-					for (uint j = 0; j < animationShareData.ikCount[i]; ++j)
+					for (uint j = 0; j < updateData->ikCount[i]; ++j)
 					{
-						const uint8 jointIndex = animationShareData.ikJoint[i][j].jointIndex;
-						const uint8 jointRefIndex = animationShareData.ikJoint[i][j].jointRefIndex;
-						const XMMATRIX modM = XMLoadFloat4x4(&animationShareData.ikJoint[i][j].movedTransform);
+						const uint8 jointIndex = updateData->ikJoint[i][j].jointIndex;
+						const uint8 jointRefIndex = updateData->ikJoint[i][j].jointRefIndex;
+						const XMMATRIX modM = XMLoadFloat4x4(&updateData->ikJoint[i][j].movedTransform);
 						const XMMATRIX srcM = srcSkeleton->GetBindPose(jointIndex);
 						const XMMATRIX toModM = XMMatrixMultiply(modM, XMMatrixInverse(nullptr, srcM));
 						XMStoreFloat4x4(&additionalBind[jointRefIndex].transform, toModM);
@@ -261,7 +261,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JAnimationRetargeting::AdjustJoint(JAnimationShareData& animationShareData,
+		void JAnimationRetargeting::AdjustJoint(JAnimationUpdateData* updateData,
 			JSkeletonAsset* srcSkeletonAsset,
 			JSkeletonAsset* tarSkeletonAsset,
 			std::vector<DirectX::XMFLOAT4X4>& modBindPose)noexcept
@@ -581,7 +581,7 @@ namespace JinEngine
 			}*/
 		}
 
-		void JAnimationRetargeting::DebugQGapPrint00(JAnimationShareData& animationShareData,
+		void JAnimationRetargeting::DebugQGapPrint00(JAnimationUpdateData* updateData,
 			JSkeletonAsset* srcSkeletonAsset,
 			JSkeletonAsset* tarSkeletonAsset,
 			std::vector<JAnimationAdditionalBind>& additionalBind,
@@ -692,7 +692,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JAnimationRetargeting::DebugQGapPrint01(JAnimationShareData& animationShareData,
+		void JAnimationRetargeting::DebugQGapPrint01(JAnimationUpdateData* updateData,
 			JSkeletonAsset* srcSkeletonAsset,
 			JSkeletonAsset* tarSkeletonAsset,
 			std::vector<JAnimationAdditionalBind>& additionalBind,
@@ -776,7 +776,7 @@ namespace JinEngine
 					additionalBind[i].isIKModified = true;
 				}
 			}
-			//StuffAdjustResult(animationShareData, srcSkeletonAsset, tarSkeletonAsset, additionalBind, bindPose);
+			//StuffAdjustResult(updateData, srcSkeletonAsset, tarSkeletonAsset, additionalBind, bindPose);
 		}
 	}
 }
