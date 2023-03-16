@@ -40,8 +40,8 @@ namespace JinEngine
 			JResourceInitData(const std::wstring& name,
 				JDirectory* directory,
 				const uint8 formatIndex,
-				const J_RESOURCE_TYPE rType);
-			virtual ~JResourceInitData() = default;
+				const J_RESOURCE_TYPE rType); 
+			virtual ~JResourceInitData() = default; 
 		public:
 			JDirectory* GetDirectory()const noexcept;
 		public:

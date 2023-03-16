@@ -12,7 +12,11 @@ namespace JinEngine
 	{
 		class JEditorAttribute;  
 		class JEditor : public Core::JEventListener<size_t, J_EDITOR_EVENT, JEditorEvStruct*>
-		{  
+		{
+		public:
+			using EventF = Core::JSFunctorType<void, JEditor&, J_EDITOR_EVENT, JEditorEvStruct&>;
+		protected:
+			using ClearTaskF = Core::JSFunctorType<void, std::vector<size_t>>;
 		private: 
 			std::string name;
 			size_t guid;
@@ -20,30 +24,36 @@ namespace JinEngine
 		public:
 			JEditor(const std::string& name, std::unique_ptr<JEditorAttribute> attribute);
 			virtual ~JEditor();
+		public:
+			bool IsOpen()const noexcept;
+			bool IsFocus()const noexcept;
+			bool IsActivated()const noexcept;
+			bool IsLastActivated()const noexcept;
 		public: 
 			std::string GetName()const noexcept;
 			std::string GetDockNodeName()const noexcept;
 			size_t GetGuid()const noexcept; 
 			bool* GetOpenPtr()const noexcept;  
-
-			void SetName(const std::string& newName)noexcept;
+			EventF::Functor* GetEvFunctor()noexcept;
+		protected:
+			ClearTaskF::Functor* GetClearTaskFunctor()noexcept;
 		public:
-			bool IsOpen()const noexcept; 
-			bool IsFocus()const noexcept;
-			bool IsActivated()const noexcept;
-			bool IsLastActivated()const noexcept;
+			void SetName(const std::string& newName)noexcept;
+		protected:
+			//Support undo redo
+			void RequestOpenPage(const JEditorOpenPageEvStruct& evStruct, const bool doAct);
+			void RequestClosePage(const JEditorClosePageEvStruct& evStruct, const bool isAct);
 		public:
 			void SetOpen()noexcept;
-			void SetClose()noexcept; 
+			void SetClose()noexcept;
 			void SetFocus()noexcept;
 			void SetUnFocus()noexcept;
 			void Activate()noexcept;
 			void DeActivate()noexcept;
-		public:
 			void SetLastActivated(bool value)noexcept;
 		protected:
 			virtual void DoSetOpen()noexcept;
-			virtual void DoSetClose()noexcept; 
+			virtual void DoSetClose()noexcept;
 			virtual void DoSetFocus()noexcept;
 			virtual void DoSetUnFocus()noexcept;
 			virtual void DoActivate()noexcept;

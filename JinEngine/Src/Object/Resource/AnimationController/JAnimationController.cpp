@@ -40,6 +40,11 @@ namespace JinEngine
 	JAnimationController::JAnimationControllerInitData::JAnimationControllerInitData(const std::wstring& name, JDirectory* directory, const uint8 formatIndex)
 		: JResourceInitData(name, directory, formatIndex, J_RESOURCE_TYPE::ANIMATION_CONTROLLER)
 	{}
+	JAnimationController::JAnimationControllerInitData::JAnimationControllerInitData(const size_t guid,
+		JDirectory* directory,
+		const uint8 formatIndex)
+		: JResourceInitData(GetDefaultName<JAnimationController>(), guid, OBJECT_FLAG_NONE, directory, formatIndex, J_RESOURCE_TYPE::ANIMATION_CONTROLLER)
+	{}
 	JAnimationController::JAnimationControllerInitData::JAnimationControllerInitData(JDirectory* directory, const uint8 formatIndex)
 		: JResourceInitData(GetDefaultName<JAnimationController>(), directory, formatIndex, J_RESOURCE_TYPE::ANIMATION_CONTROLLER)
 	{}
@@ -248,7 +253,7 @@ namespace JinEngine
 			std::vector<Core::JAnimationFSMdiagram*> copy = fsmDiagram;
 			const uint fsmCount = GetDiagramCount();
 			for (uint i = 0; i < fsmCount; ++i)
-				JFSMInterface::Destroy(copy[i]);
+				JFSMInterface::BeginDestroy(copy[i]);
 
 			fsmDiagram.clear();
 			paramStorage->Clear(); 

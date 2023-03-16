@@ -51,7 +51,7 @@ namespace JinEngine
 		private:
 			std::wstring name;
 			size_t guid;
-			JMaterial* material;
+			Core::JUserPtr<JMaterial> material;
 		private:
 			uint vertexCount = 0;
 			uint vertexStrat = 0; 
@@ -67,7 +67,7 @@ namespace JinEngine
 			~SubmeshGeometry();
 		public:
 			std::wstring GetName()const noexcept;
-			JMaterial* GetMaterial()const noexcept; 
+			Core::JUserPtr<JMaterial> GetMaterial()const noexcept;
 			uint GetVertexCount()const noexcept;
 			uint GetVertexStart()const noexcept; 
 			uint GetIndexCount()const noexcept;
@@ -80,7 +80,7 @@ namespace JinEngine
 			float GetBoundingSphereRadius()const noexcept;
 		public:
 			void SetMesh(const JMeshData& meshData, const uint vertexSt, const uint indexSt);
-			void SetMaterial(JMaterial* newMaterial)noexcept;
+			void SetMaterial(Core::JUserPtr<JMaterial> newMaterial)noexcept;
 		public:
 			bool HasUV()const noexcept;
 			bool HasNormal()const noexcept;
@@ -125,7 +125,7 @@ namespace JinEngine
 		uint GetSubmeshBaseVertexLocation(const uint index)const noexcept;
 		uint GetSubmeshStartIndexLocation(const uint index)const noexcept;
 		std::wstring GetSubMeshName(const uint index)const noexcept;
-		JMaterial* GetSubmeshMaterial(const uint index)const noexcept; 
+		Core::JUserPtr<JMaterial> GetSubmeshMaterial(const uint index)const noexcept;
 		DirectX::BoundingBox GetBoundingBox()const noexcept;
 		DirectX::XMFLOAT3 GetBoundingBoxCenter()const noexcept;
 		DirectX::XMFLOAT3 GetBoundingBoxExtent()const noexcept;

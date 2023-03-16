@@ -23,7 +23,7 @@ namespace JinEngine
 			//Completely Bind
 			std::unique_ptr<Core::JBindHandleBase> confirmBind;
 			std::unique_ptr<Core::JBindHandleBase> openBind;
-			std::unique_ptr<Core::JBindHandleBase> closeBind;
+			std::unique_ptr<Core::JBindHandleBase> closeBind; 
 		private:
 			std::string desc;
 		public:
@@ -31,6 +31,8 @@ namespace JinEngine
 			~JEditorPopupWindow() = default;
 		public:
 			virtual void RegisterBind(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type, std::unique_ptr<Core::JBindHandleBase>&& bind)noexcept;
+			void RegisterPostCloseProccess(std::unique_ptr<Core::JBindHandleBase>&& bind);
+		public:
 			virtual void Update(const std::string& uniqueLabel, const JVector2<float> pagePos, const JVector2<float> pageSize) = 0;
 		public:
 			bool IsOpen()const noexcept;
@@ -70,6 +72,7 @@ namespace JinEngine
 			bool isPressCancel = false;
 		public:
 			void RegisterBind(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type, std::unique_ptr<Core::JBindHandleBase>&& bind)noexcept final;
+		public:
 			void Update(const std::string& uniqueLabel, const JVector2<float> pagePos, const JVector2<float> pageSize) final;
 		public:
 			bool IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept final;

@@ -51,7 +51,7 @@ namespace JinEngine
 			};
 
 			J_EDITOR_WINDOW_FLAG defaultFlag = J_EDITOR_WINDOW_SUPPORT_WINDOW_CLOSING;
-			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(J_EDITOR_WINDOW_SUPROT_DOCK, defaultFlag);
+			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(defaultFlag, J_EDITOR_WINDOW_SUPROT_DOCK);
 			
 			explorer = std::make_unique<JObjectExplorer>(windowNames[0], std::move(windowAttributes[0]), GetPageType(), dockFlag);
 			avatarEdit = std::make_unique<JAvatarEditor>(windowNames[1], std::move(windowAttributes[1]), GetPageType(), dockFlag);
@@ -150,13 +150,13 @@ namespace JinEngine
 				if (mesh->GetMeshGeometryType() == J_MESHGEOMETRY_TYPE::SKINNED)
 				{
 					JSkinnedMeshGeometry* skinnedMesh = static_cast<JSkinnedMeshGeometry*>(mesh);
-					return skinnedMesh->GetSkeletonAsset()->GetSkeleton()->GetHash() == skelHash;
+					return skinnedMesh->IsActivated() && skinnedMesh->GetSkeletonAsset()->GetSkeletonHash()== skelHash;
 				}
 				else
 					return false;
 			};
 			using IsSameSkelFunctor = Core::JFunctor<bool, JMeshGeometry*, size_t>;
-			JMeshGeometry* mesh = JResourceManager::Instance().GetResourceByCondition<JMeshGeometry, size_t>(IsSameSkelFunctor{ isSameSkelLam }, skeleotnAsset->GetSkeleton()->GetHash());
+			JMeshGeometry* mesh = JResourceManager::Instance().GetResourceByCondition<JMeshGeometry, size_t>(IsSameSkelFunctor{ isSameSkelLam }, skeleotnAsset->GetSkeletonHash());
 
 			if (mesh == nullptr)
 				return false;

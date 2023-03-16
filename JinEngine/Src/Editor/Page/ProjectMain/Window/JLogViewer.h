@@ -1,15 +1,21 @@
 #pragma once
 #include"../../JEditorWindow.h" 
- 
+#include"../../../Helpers/JEditorTabBarHelper.h"
+
 namespace JinEngine
 { 
+	namespace Core
+	{
+		class JLogBase;
+	}
 	namespace Editor
 	{
+		template<int itemCount> class JEditorTabBarHelper;
 		class JLogViewer final : public JEditorWindow
-		{ 
+		{  
 		private:
-			bool onSceneLog = false;
-			bool onEditorLog = false;
+			static constexpr uint tabItemCount = 3;
+			std::unique_ptr<JEditorTabBarHelper<tabItemCount>> tabBarHelper;
 		public:
 			JLogViewer(const std::string& name, 
 				std::unique_ptr<JEditorAttribute> attribute,
@@ -27,8 +33,9 @@ namespace JinEngine
 			void BuildLogViewer();
 		private:
 			//¹Ì±¸Çö
-			void SceneLogOnScreen();
-			void EditorLogOnScreen();
+			std::vector<Core::JLogBase*> GetAllLog();
+			std::vector<Core::JLogBase*> GetUserLog();
+			std::vector<Core::JLogBase*> GetTransitionLog();
 		};
 	}
 }

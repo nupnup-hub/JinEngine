@@ -114,7 +114,7 @@ namespace JinEngine
 			std::vector<JFSMparameter*> copy = parameterVec; 
 			const uint conditionCount = (uint)copy.size();
 			for (uint i = 0; i < conditionCount; ++i)
-				JFSMInterface::Destroy(copy[i]);
+				JFSMparameter::BeginDestroy(copy[i]);
 
 			storageUser.clear();
 			parameterCashMap.clear();

@@ -24,9 +24,9 @@ namespace JinEngine
 			};
 		public:
 			virtual J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept = 0;
-		public: 
-			static void Destroy(JFSMInterface* fsmInterface);
 		private: 
+			bool DoBeginDestroy() final;
+			bool Destroy();
 			virtual void Clear() = 0;
 		protected:
 			JFSMInterface(const JFSMIdentifierInitData& initData);

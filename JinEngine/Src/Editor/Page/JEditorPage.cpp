@@ -123,8 +123,11 @@ namespace JinEngine
 			initData.dockSpaceID = ImHashStr(GetDockNodeName().c_str());
 			initData.pageType = GetPageType();
 
-			JEditorPageShareData::GetPageFlagF::CPtr ptr = &JEditorPage::GetPageFlag;
-			initData.getPtr = std::make_unique<JEditorPageShareData::GetPageFlagF::Functor>(ptr, this);
+			JEditorPageShareData::GetPageNameF::CPtr getNamePtr = &JEditorPage::GetName;
+			JEditorPageShareData::GetPageFlagF::CPtr getFlagPtr = &JEditorPage::GetPageFlag;
+
+			initData.getNamePtr = std::make_unique<JEditorPageShareData::GetPageNameF::Functor>(getNamePtr, this);
+			initData.getFlagPtr = std::make_unique<JEditorPageShareData::GetPageFlagF::Functor>(getFlagPtr, this);
 			JEditorPageShareData::RegisterPage(initData);
 		}
 		void JEditorPage::Clear()
@@ -146,7 +149,10 @@ namespace JinEngine
 			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
 			{
 				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+				ImGui::PushItemFlag(ImGuiItemFlags_NoNav, true);
 				ImGui::PushItemFlag(ImGuiItemFlags_ReadOnly, true);
+				ImGui::PushItemFlag(ImGuiItemFlags_Inputable, false); 
+				JImGuiImpl::SetAllColorToSoft(JVector4<float>(0.2f, 0.2f, 0.2f, 0));
 			}
 
 			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING))
@@ -155,22 +161,8 @@ namespace JinEngine
 				res = JImGuiImpl::BeginWindow(GetName().c_str(), &isPageOpen, (ImGuiWindowFlags)guiWindowFlag);
 				if (!isPageOpen)
 				{
-				//	auto lam = [](int a, int b)
-				//	{
-				//		return a + b;
-					//};
-					//using fType = Core::JFunctor<int, int, int>;
-				//	fType funtor(lam);
-				//	Core::JBindHandle<fType, int, Core::EmptyType> b(funtor, 1, Core::EmptyType{});
-					//b.Invoke(3);
-
 					if (closeConfirmPopupWindow == nullptr || closeConfirmPopupWindow->IsIgnoreConfirm())
-					{
-						AddEventNotification(*JEditorEvent::EvInterface(),
-							GetGuid(),
-							J_EDITOR_EVENT::CLOSE_PAGE,
-							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePageEvStruct>(GetPageType())));
-					}
+						RequestClosePage(JEditorClosePageEvStruct(GetPageType()), IsActivated());
 					else
 					{
 						AddEventNotification(*JEditorEvent::EvInterface(),
@@ -188,10 +180,13 @@ namespace JinEngine
 			ImGui::End();
 			SetLastActivated(IsActivated());
 
-			if (Core::HasSQValueEnum(GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
+			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
 			{
 				ImGui::PopItemFlag();
 				ImGui::PopItemFlag();
+				ImGui::PopItemFlag();
+				ImGui::PopItemFlag(); 
+				JImGuiImpl::SetAllColorToSoft(JVector4<float>(-0.2f, -0.2f, -0.2f, 0));
 			}
 		}
 		void JEditorPage::OpenWindow(const std::string& windowname)noexcept
@@ -257,7 +252,7 @@ namespace JinEngine
 			window->DeActivate();
 		}
 		void JEditorPage::FocusWindow(JEditorWindow* window)noexcept
-		{
+		{		 
 			if (window == nullptr)
 				return;
 
@@ -296,7 +291,7 @@ namespace JinEngine
 		{
 			if (popupWindow != nullptr && !popupWindow->IsOpen())
 			{
-				SetPageFlag(Core::AddSQValueEnum(GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
+				//SetPageFlag(Core::AddSQValueEnum(GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
 				if (opendPopupWindow != nullptr)
 					ClosePopupWindow(opendPopupWindow->GetPopupType());
 				opendPopupWindow = popupWindow;
@@ -315,7 +310,7 @@ namespace JinEngine
 		{
 			if (popupWindow != nullptr && popupWindow->IsOpen())
 			{
-				SetPageFlag(Core::MinusSQValueEnum(GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
+				//SetPageFlag(Core::MinusSQValueEnum(GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
 				popupWindow->SetClose();
 				opendPopupWindow = nullptr;
 			}
@@ -438,8 +433,7 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"Focus:", IsFocus());
 			 
 			JFileIOHelper::StoreHasObjectIden(stream, JEditorPageShareData::GetOpendPageData(GetPageType()).GetOpenSeleted().Get());
-			JFileIOHelper::StoreHasObjectIden(stream, JEditorPageShareData::GetSelectedObj(GetPageType()).Get());
-
+ 
 			bool hasFocusWindow = focusWindow != nullptr;
 			JFileIOHelper::StoreAtomicData(stream, L"HasFocusWindow:", hasFocusWindow);
 			if (hasFocusWindow)
@@ -460,6 +454,7 @@ namespace JinEngine
 			bool isOpen;
 			bool active;
 			bool isFocus;
+			Core::JIdentifier* openObj = nullptr; 
 			bool hasFocusWindow;
 			std::wstring focusWindowName;
 			int windowCount;
@@ -469,9 +464,7 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, isOpen);
 			JFileIOHelper::LoadAtomicData(stream, active);
 			JFileIOHelper::LoadAtomicData(stream, isFocus);
-
-			Core::JIdentifier* openObj = JFileIOHelper::LoadHasObjectIden(stream);
-			Core::JIdentifier* selectObj = JFileIOHelper::LoadHasObjectIden(stream);
+			openObj = JFileIOHelper::LoadHasObjectIden(stream); 
 			JFileIOHelper::LoadAtomicData(stream, hasFocusWindow);
 			JFileIOHelper::LoadJString(stream, focusWindowName);
 			JFileIOHelper::LoadAtomicData(stream, windowCount);
@@ -488,7 +481,7 @@ namespace JinEngine
 				else if (hasOpenObj)
 				{
 					auto idenObj = Core::GetUserPtr(openObj->GetTypeInfo().Name(), openObj->GetGuid());
-					auto userObj = Core::JUserPtr<JObject>::ConvertChildUser(std::move(idenObj));
+					auto userObj = Core::JUserPtr<JObject>::ConvertChildUser(idenObj);
 					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE,
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), userObj)));
 				}
@@ -502,13 +495,6 @@ namespace JinEngine
 			{
 				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::FOCUS_PAGE,
 					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorFocusPageEvStruct>(this)));
-			}
-
-			if (selectObj != nullptr && selectObj->GetTypeInfo().IsChildOf(JObject::StaticTypeInfo()))
-			{
-				auto userObj = Core::JUserPtr<JObject>::ConvertChildUser(Core::GetUserPtr(selectObj->GetTypeInfo().Name(), selectObj->GetGuid()));
-				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::SELECT_OBJECT,
-					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorSelectObjectEvStruct>(GetPageType(), userObj)));
 			}
 
 			for (uint i = 0; i < windowCount; ++i)

@@ -24,6 +24,11 @@ namespace JinEngine
 		const uint8 formatIndex)
 		: JResourceInitData(name, directory, formatIndex, J_RESOURCE_TYPE::MATERIAL)
 	{}
+	JMaterial::JMaterialInitData::JMaterialInitData(const size_t guid,
+		JDirectory* directory,
+		const uint8 formatIndex)
+		: JResourceInitData(GetDefaultName<JMaterial>(), guid, OBJECT_FLAG_NONE, directory, formatIndex, J_RESOURCE_TYPE::MATERIAL)
+	{}
 	JMaterial::JMaterialInitData::JMaterialInitData(JDirectory* directory,
 		const uint8 formatIndex)
 		: JResourceInitData(GetDefaultName<JMaterial>(), directory, formatIndex, J_RESOURCE_TYPE::MATERIAL)
@@ -62,23 +67,23 @@ namespace JinEngine
 	{
 		return matTransform;
 	}
-	JTexture* JMaterial::GetAlbedoMap() const noexcept
+	Core::JUserPtr<JTexture> JMaterial::GetAlbedoMap() const noexcept
 	{
 		return albedoMap;
 	}
-	JTexture* JMaterial::GetNormalMap() const noexcept
+	Core::JUserPtr<JTexture> JMaterial::GetNormalMap() const noexcept
 	{
 		return normalMap;
 	}
-	JTexture* JMaterial::GetHeightMap() const noexcept
+	Core::JUserPtr<JTexture> JMaterial::GetHeightMap() const noexcept
 	{
 		return heightMap;
 	}
-	JTexture* JMaterial::GetRoughnessMap() const noexcept
+	Core::JUserPtr<JTexture> JMaterial::GetRoughnessMap() const noexcept
 	{
 		return roughnessMap;
 	}
-	JTexture* JMaterial::GetAmbientOcclusionMap() const noexcept
+	Core::JUserPtr<JTexture> JMaterial::GetAmbientOcclusionMap() const noexcept
 	{
 		return ambientOcclusionMap;
 	}
@@ -110,68 +115,68 @@ namespace JinEngine
 		matTransform = value;
 		SetFrameDirty();
 	}
-	void JMaterial::SetAlbedoMap(JTexture* texture) noexcept
+	void JMaterial::SetAlbedoMap(Core::JUserPtr<JTexture> texture) noexcept
 	{
-		JTexture* be = albedoMap;
-		JTexture* af = texture;
+		JTexture* be = albedoMap.Get();
+		JTexture* af = texture.Get();
 
 		if (IsActivated())
-			CallOffResourceReference(albedoMap);
+			CallOffResourceReference(albedoMap.Get());
 		albedoMap = texture;
 		if (IsActivated())
-			CallOnResourceReference(albedoMap);
+			CallOnResourceReference(albedoMap.Get());
 		SetFrameDirty();
 		TextureChange(be, af, SHADER_FUNCTION_ALBEDO_MAP);
 	}
-	void JMaterial::SetNormalMap(JTexture* texture) noexcept
+	void JMaterial::SetNormalMap(Core::JUserPtr<JTexture> texture) noexcept
 	{
-		JTexture* be = normalMap;
-		JTexture* af = texture;
+		JTexture* be = normalMap.Get();
+		JTexture* af = texture.Get();
 
 		if (IsActivated())
-			CallOffResourceReference(normalMap);
+			CallOffResourceReference(normalMap.Get());
 		normalMap = texture;
 		if (IsActivated())
-			CallOnResourceReference(normalMap);
+			CallOnResourceReference(normalMap.Get());
 		SetFrameDirty();
 		TextureChange(be, af, SHADER_FUNCTION_NORMAL_MAP);
 	}
-	void JMaterial::SetHeightMap(JTexture* texture) noexcept
+	void JMaterial::SetHeightMap(Core::JUserPtr<JTexture> texture) noexcept
 	{
-		JTexture* be = heightMap;
-		JTexture* af = texture;
+		JTexture* be = heightMap.Get();
+		JTexture* af = texture.Get();
 
 		if (IsActivated())
-			CallOffResourceReference(heightMap);
+			CallOffResourceReference(heightMap.Get());
 		heightMap = texture;
 		if (IsActivated())
-			CallOnResourceReference(heightMap);
+			CallOnResourceReference(heightMap.Get());
 		SetFrameDirty();
 		TextureChange(be, af, SHADER_FUNCTION_HEIGHT_MAP);
 	}
-	void JMaterial::SetRoughnessMap(JTexture* texture) noexcept
+	void JMaterial::SetRoughnessMap(Core::JUserPtr<JTexture> texture) noexcept
 	{
-		JTexture* be = roughnessMap;
-		JTexture* af = texture;
+		JTexture* be = roughnessMap.Get();
+		JTexture* af = texture.Get();
 
 		if (IsActivated())
-			CallOffResourceReference(roughnessMap);
+			CallOffResourceReference(roughnessMap.Get());
 		roughnessMap = texture;
 		if (IsActivated())
-			CallOnResourceReference(roughnessMap);
+			CallOnResourceReference(roughnessMap.Get());
 		SetFrameDirty();
 		TextureChange(be, af, SHADER_FUNCTION_ROUGHNESS_MAP);
 	}
-	void JMaterial::SetAmbientOcclusionMap(JTexture* texture) noexcept
+	void JMaterial::SetAmbientOcclusionMap(Core::JUserPtr<JTexture> texture) noexcept
 	{
-		JTexture* be = ambientOcclusionMap;
-		JTexture* af = texture;
+		JTexture* be = ambientOcclusionMap.Get();
+		JTexture* af = texture.Get();
 
 		if (IsActivated())
-			CallOffResourceReference(ambientOcclusionMap);
+			CallOffResourceReference(ambientOcclusionMap.Get());
 		ambientOcclusionMap = texture;
 		if (IsActivated())
-			CallOnResourceReference(ambientOcclusionMap);
+			CallOnResourceReference(ambientOcclusionMap.Get());
 		SetFrameDirty();
 		TextureChange(be, af, SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP);
 	}
@@ -366,37 +371,37 @@ namespace JinEngine
 	}
 	bool JMaterial::HasAlbedoMapTexture() const noexcept
 	{
-		return albedoMap != nullptr;
+		return albedoMap.IsValid();
 	}
 	bool JMaterial::HasNormalMapTexture() const noexcept
 	{
-		return normalMap != nullptr;
+		return normalMap.IsValid();
 	}
 	bool JMaterial::HasHeightMapTexture() const noexcept
 	{
-		return heightMap != nullptr;
+		return heightMap.IsValid();
 	}
 	bool JMaterial::HasRoughnessMapTexture() const noexcept
 	{
-		return roughnessMap != nullptr;
+		return roughnessMap.IsValid();
 	}
 	bool JMaterial::JMaterial::HasAmbientOcclusionMapTexture() const noexcept
 	{
-		return ambientOcclusionMap != nullptr;
+		return ambientOcclusionMap.IsValid();
 	}
 	void JMaterial::PopTexture(JTexture* texture)noexcept
 	{
 		const size_t tarGuid = texture->GetGuid();
 		if (HasAlbedoMapTexture() && albedoMap->GetGuid() == tarGuid)
-			SetAlbedoMap(nullptr);
+			SetAlbedoMap(Core::JUserPtr< JTexture>{});
 		if (HasNormalMapTexture() && normalMap->GetGuid() == tarGuid)
-			SetNormalMap(nullptr);
+			SetNormalMap(Core::JUserPtr< JTexture>{});
 		if (HasHeightMapTexture() && heightMap->GetGuid() == tarGuid)
-			SetHeightMap(nullptr);
+			SetHeightMap(Core::JUserPtr< JTexture>{});
 		if (HasRoughnessMapTexture() && roughnessMap->GetGuid() == tarGuid)
-			SetRoughnessMap(nullptr);
+			SetRoughnessMap(Core::JUserPtr< JTexture>{});
 		if (HasAmbientOcclusionMapTexture() && ambientOcclusionMap->GetGuid() == tarGuid)
-			SetAmbientOcclusionMap(nullptr);
+			SetAmbientOcclusionMap(Core::JUserPtr< JTexture>{});
 	}
 	void JMaterial::TextureChange(JTexture* be, JTexture* af, const J_GRAPHIC_SHADER_FUNCTION func)noexcept
 	{
@@ -435,15 +440,15 @@ namespace JinEngine
 		constant.Metalic = metallic;
 		constant.Roughness = roughness;
 		XMStoreFloat4x4(&constant.MatTransform, XMMatrixTranspose(XMLoadFloat4x4(&matTransform)));
-		if (albedoMap != nullptr)
+		if (albedoMap.IsValid())
 			constant.AlbedoMapIndex = CallGetResourceArrayIndex(*albedoMap);
-		if (normalMap != nullptr)
+		if (normalMap.IsValid())
 			constant.NormalMapIndex = CallGetResourceArrayIndex(*normalMap);
-		if (heightMap != nullptr)
+		if (heightMap.IsValid())
 			constant.HeightMapIndex = CallGetResourceArrayIndex(*heightMap);
-		if (roughnessMap != nullptr)
+		if (roughnessMap.IsValid())
 			constant.RoughnessMapIndex = CallGetResourceArrayIndex(*roughnessMap);
-		if (ambientOcclusionMap != nullptr)
+		if (ambientOcclusionMap.IsValid())
 			constant.AmbientOcclusionMapIndex = CallGetResourceArrayIndex(*ambientOcclusionMap);
 	}
 	void JMaterial::DoCopy(JObject* ori)
@@ -457,22 +462,22 @@ namespace JinEngine
 		JResourceObject::DoActivate();
 		SetValid(true);
 		SetFrameDirty();
-		CallOnResourceReference(albedoMap);
-		CallOnResourceReference(normalMap);
-		CallOnResourceReference(heightMap);
-		CallOnResourceReference(roughnessMap);
-		CallOnResourceReference(ambientOcclusionMap);
+		CallOnResourceReference(albedoMap.Get());
+		CallOnResourceReference(normalMap.Get());
+		CallOnResourceReference(heightMap.Get());
+		CallOnResourceReference(roughnessMap.Get());
+		CallOnResourceReference(ambientOcclusionMap.Get());
 	}
 	void JMaterial::DoDeActivate()noexcept
 	{ 
 		JResourceObject::DoDeActivate();
 		SetValid(false);
 		OffFrameDirty();
-		CallOffResourceReference(albedoMap);
-		CallOffResourceReference(normalMap);
-		CallOffResourceReference(heightMap);
-		CallOffResourceReference(roughnessMap);
-		CallOffResourceReference(ambientOcclusionMap);
+		CallOffResourceReference(albedoMap.Get());
+		CallOffResourceReference(normalMap.Get());
+		CallOffResourceReference(heightMap.Get());
+		CallOffResourceReference(roughnessMap.Get());
+		CallOffResourceReference(ambientOcclusionMap.Get());
 	}
 	bool JMaterial::WriteMaterialData()
 	{
@@ -500,11 +505,11 @@ namespace JinEngine
 			JFileIOHelper::StoreXMFloat4(stream, L"AlbedoColor", albedoColor);
 			JFileIOHelper::StoreXMFloat4x4(stream, L"Matransform", matTransform);
 
-			JFileIOHelper::StoreHasObjectIden(stream, albedoMap);
-			JFileIOHelper::StoreHasObjectIden(stream, normalMap);
-			JFileIOHelper::StoreHasObjectIden(stream, heightMap);
-			JFileIOHelper::StoreHasObjectIden(stream, roughnessMap);
-			JFileIOHelper::StoreHasObjectIden(stream, ambientOcclusionMap);
+			JFileIOHelper::StoreHasObjectIden(stream, albedoMap.Get());
+			JFileIOHelper::StoreHasObjectIden(stream, normalMap.Get());
+			JFileIOHelper::StoreHasObjectIden(stream, heightMap.Get());
+			JFileIOHelper::StoreHasObjectIden(stream, roughnessMap.Get());
+			JFileIOHelper::StoreHasObjectIden(stream, ambientOcclusionMap.Get());
 
 			stream.close();
 			return true;
@@ -580,15 +585,15 @@ namespace JinEngine
 			SetMatTransform(sMatTransform);
 
 			if (sAlbedoMap != nullptr && sAlbedoMap->GetTypeInfo().IsA(JTexture::StaticTypeInfo()))
-				SetAlbedoMap(static_cast<JTexture*>(sAlbedoMap));
+				SetAlbedoMap(Core::GetUserPtr<JTexture>(sAlbedoMap));
 			if (sNormalMap != nullptr && sNormalMap->GetTypeInfo().IsA(JTexture::StaticTypeInfo()))
-				SetNormalMap(static_cast<JTexture*>(sNormalMap));
+				SetNormalMap(Core::GetUserPtr<JTexture>(sNormalMap));
 			if (sHeightMap != nullptr && sHeightMap->GetTypeInfo().IsA(JTexture::StaticTypeInfo()))
-				SetHeightMap(static_cast<JTexture*>(sHeightMap));
+				SetHeightMap(Core::GetUserPtr<JTexture>(sHeightMap));
 			if (sRoughnessMap != nullptr && sRoughnessMap->GetTypeInfo().IsA(JTexture::StaticTypeInfo()))
-				SetRoughnessMap(static_cast<JTexture*>(sRoughnessMap));
+				SetRoughnessMap(Core::GetUserPtr<JTexture>(sRoughnessMap));
 			if (sAmbientOcclusionMap != nullptr && sAmbientOcclusionMap->GetTypeInfo().IsA(JTexture::StaticTypeInfo()))
-				SetAmbientOcclusionMap(static_cast<JTexture*>(sAmbientOcclusionMap));
+				SetAmbientOcclusionMap(Core::GetUserPtr<JTexture>(sAmbientOcclusionMap));
 			return true;
 		}
 		else
@@ -602,16 +607,16 @@ namespace JinEngine
 		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 		{
 			const size_t objGuid = jRobj->GetGuid();
-			if (albedoMap != nullptr && albedoMap->GetGuid() == objGuid)
-				SetAlbedoMap(nullptr);
-			if (normalMap != nullptr && normalMap->GetGuid() == objGuid)
-				SetNormalMap(nullptr);
-			if (heightMap != nullptr && heightMap->GetGuid() == objGuid)
-				SetHeightMap(nullptr);
-			if (roughnessMap != nullptr && roughnessMap->GetGuid() == objGuid)
-				SetRoughnessMap(nullptr);
-			if (ambientOcclusionMap != nullptr && ambientOcclusionMap->GetGuid() == objGuid)
-				SetAmbientOcclusionMap(nullptr);
+			if (albedoMap.IsValid() && albedoMap->GetGuid() == objGuid)
+				SetAlbedoMap(Core::JUserPtr<JTexture>{});
+			if (normalMap.IsValid() && normalMap->GetGuid() == objGuid)
+				SetNormalMap(Core::JUserPtr<JTexture>{});
+			if (heightMap.IsValid() && heightMap->GetGuid() == objGuid)
+				SetHeightMap(Core::JUserPtr<JTexture>{});
+			if (roughnessMap.IsValid() && roughnessMap->GetGuid() == objGuid)
+				SetRoughnessMap(Core::JUserPtr<JTexture>{});
+			if (ambientOcclusionMap.IsValid() && ambientOcclusionMap->GetGuid() == objGuid)
+				SetAmbientOcclusionMap(Core::JUserPtr<JTexture>{});
 
 			if (shader != nullptr && shader->GetGuid() == objGuid)
 				SetShader(nullptr);

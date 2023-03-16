@@ -3,6 +3,7 @@
 #include"../../JEditorAttribute.h" 
 #include"../../../Menubar/JEditorMenuBar.h" 
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../../Event/JEditorEvent.h"
 #include"../../../EditTool/JEditorViewStructure.h"
 #include"../../../EditTool/JEditorCoordGrid.h"
 #include"../../../EditTool/JEditorGameObjectSurpportTool.h"
@@ -223,27 +224,24 @@ namespace JinEngine
 				JTransform* camTransform = cameraObj->GetTransform();
 				coordGrid->Update(JVector2<float>(camTransform->GetPosition().x, camTransform->GetPosition().z));
 				menubar->Update(true);
-
-				auto selected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
-				if (ImGui::IsMouseDown(0))
+				 
+				if (ImGui::IsMouseClicked(0))
 				{
 					JGameObject* hitObj = JEditorGameObjectSurpportTool::SceneIntersect(scene, cameraComp, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, ImGui::GetCursorPos());
 					if (hitObj != nullptr)
-					{
-						const bool canSetSelected = !selected.IsValid() || (selected.IsValid() &&
-							selected->GetGuid() != hitObj->GetGuid());
-						if (canSetSelected)
-							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(hitObj)));
+					{ 
+						RequestPushSelectObject(Core::GetUserPtr(static_cast<JGameObject*>(hitObj)));
+						//SetSelectedGameObjectTrigger(static_cast<JGameObject*>(hitObj), true); 
+						SetContentsClick(true);
 					}
 				}
-
-				Core::JUserPtr<JGameObject> gUser = Core::JUserPtr<JGameObject>::ConvertChildUser(std::move(selected));
+			  
 				for (uint i = 0; i < toolCount; ++i)
 				{
 					J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType = toolVec[i]->GetToolType();
 					J_OBSERVER_SETTING_TYPE settingType = ConvertToolToSettingType(toolType);
 					if (toolVec[i]->IsActivated())
-						toolVec[i]->Update(gUser, cameraComp, ImGui::GetCursorPos());
+						toolVec[i]->Update(selectedGobj, cameraComp, ImGui::GetCursorPos());
 				}
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
 				JImGuiImpl::Image(*cameraComp.Get(), ImGui::GetWindowSize());
@@ -783,11 +781,14 @@ namespace JinEngine
 			JEditorWindow::DoActivate();
 			if (scene.IsValid())
 				CreateHelperGameObject();
+			std::vector<J_EDITOR_EVENT> listenEvTypeVec{ J_EDITOR_EVENT::PUSH_SELECT_OBJECT };
+			AddEventListener(*JEditorEvent::EvInterface(), GetGuid(), listenEvTypeVec);
 		}
 		void JSceneObserver::DoDeActivate()noexcept
 		{
 			JEditorWindow::DoDeActivate();
 			DestroyHelperGameObject();
+			RemoveListener(*JEditorEvent::EvInterface(), GetGuid());
 		}
 		void JSceneObserver::StoreEditorWindow(std::wofstream& stream)
 		{
@@ -834,6 +835,20 @@ namespace JinEngine
 						cube->GetTransform()->SetRotation(DirectX::XMFLOAT3(45, 45, 0));
 						cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(16 * i, 16 * j, 16 * k));
 					}
+				}
+			}
+		}
+		void JSceneObserver::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
+		{
+			JEditorWindow::OnEvent(senderGuid, eventType, eventStruct);		 
+			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT)
+			{
+				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStruct);
+				Core::JUserPtr< Core::JIdentifier> gameObj = evstruct->GetLastMatchedTypeObject(JGameObject::StaticTypeInfo());
+				if (gameObj.IsValid())
+				{
+					if (!selectedGobj.IsValid() || selectedGobj->GetGuid() != gameObj->GetGuid())
+						selectedGobj.ConnnectChildUser(std::move(gameObj));
 				}
 			}
 		}

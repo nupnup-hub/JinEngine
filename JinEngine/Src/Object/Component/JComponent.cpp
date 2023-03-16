@@ -51,17 +51,19 @@ namespace JinEngine
 	}
 	bool JComponent::RegisterCashData()noexcept
 	{
+		//For editor redo undo
+		if (owner == nullptr && ownerInfo != nullptr)
+			owner = static_cast<JGameObject*>(Core::GetRawPtr(*ownerInfo));
 		return static_cast<Core::JTypeCashInterface<JComponent>*>(owner)->AddType(this);
 	}
 	bool JComponent::DeRegisterCashData()noexcept
 	{
+		ownerInfo = std::make_unique<Core::JTypeInstanceSearchHint>(Core::GetUserPtr(owner));
 		return static_cast<Core::JTypeCashInterface<JComponent>*>(owner)->RemoveType(this);
 	}
 	JComponent::JComponent(const std::string& cTypeName, const size_t guid, J_OBJECT_FLAG flag, JGameObject* owner)noexcept
 		:JComponentInterface(JCUtil::StrToWstr(cTypeName), guid, flag), owner(owner)
-	{
-	}
+	{ }
 	JComponent::~JComponent()
-	{
-	}
+	{}
 }

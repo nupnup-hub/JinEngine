@@ -20,9 +20,9 @@ namespace JinEngine
 		REGISTER_CLASS(JAnimator)
 	private: 
 		REGISTER_PROPERTY_EX(skeletonAsset, GetSkeletonAsset, SetSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
-		JSkeletonAsset* skeletonAsset = nullptr;
+		Core::JUserPtr<JSkeletonAsset> skeletonAsset;
 		REGISTER_PROPERTY_EX(animationController, GetAnimatorController, SetAnimatorController, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
-		JAnimationController* animationController = nullptr;
+		Core::JUserPtr<JAnimationController> animationController;
 		Core::JGameTimer* userTimer = nullptr;
 		std::unique_ptr<Core::JAnimationUpdateData> animationUpdateData;
 	private:
@@ -34,11 +34,11 @@ namespace JinEngine
 			return J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR;
 		}
 	public:
-		JSkeletonAsset* GetSkeletonAsset()noexcept;
-		JAnimationController* GetAnimatorController()const noexcept; 
+		Core::JUserPtr<JSkeletonAsset>GetSkeletonAsset()noexcept;
+		Core::JUserPtr<JAnimationController> GetAnimatorController()const noexcept;
 
-		void SetSkeletonAsset(JSkeletonAsset* newSkeletonAsset)noexcept;
-		void SetAnimatorController(JAnimationController* newAnimationController)noexcept;
+		void SetSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept;
+		void SetAnimatorController(Core::JUserPtr<JAnimationController> newAnimationController)noexcept;
 		void SetParameterValue(const std::wstring& paramName, const float value)noexcept;
 	public:
 		bool IsAvailableOverlap()const noexcept final; 

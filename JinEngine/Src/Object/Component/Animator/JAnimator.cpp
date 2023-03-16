@@ -22,31 +22,31 @@ namespace JinEngine
 	{
 		return GetStaticComponentType();
 	}
-	JSkeletonAsset* JAnimator::GetSkeletonAsset()noexcept
+	Core::JUserPtr<JSkeletonAsset> JAnimator::GetSkeletonAsset()noexcept
 	{
 		return skeletonAsset;
 	}
-	JAnimationController* JAnimator::GetAnimatorController()const noexcept
+	Core::JUserPtr<JAnimationController> JAnimator::GetAnimatorController()const noexcept
 	{
 		return animationController;
 	}
-	void JAnimator::SetSkeletonAsset(JSkeletonAsset* newSkeletonAsset)noexcept
+	void JAnimator::SetSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept
 	{
 		if(IsActivated())
-			CallOffResourceReference(skeletonAsset);
+			CallOffResourceReference(skeletonAsset.Get());
 		skeletonAsset = newSkeletonAsset;
 		if (IsActivated())
-			CallOnResourceReference(skeletonAsset);
+			CallOnResourceReference(skeletonAsset.Get());
 
 		ReRegisterComponent(); 
 	}
-	void JAnimator::SetAnimatorController(JAnimationController* newAnimationController)noexcept
+	void JAnimator::SetAnimatorController(Core::JUserPtr<JAnimationController> newAnimationController)noexcept
 	{
 		if (IsActivated())
-			CallOffResourceReference(animationController);
+			CallOffResourceReference(animationController.Get());
 		animationController = newAnimationController;
 		if (IsActivated())
-			CallOnResourceReference(animationController);
+			CallOnResourceReference(animationController.Get());
 
 		ReRegisterComponent(); 
 		
@@ -69,7 +69,7 @@ namespace JinEngine
 	}
 	bool JAnimator::PassDefectInspection()const noexcept
 	{
-		if (JComponent::PassDefectInspection() && skeletonAsset != nullptr && animationController != nullptr)
+		if (JComponent::PassDefectInspection() && skeletonAsset.IsValid() && animationController.IsValid())
 			return true;
 		else
 			return false;
@@ -92,12 +92,12 @@ namespace JinEngine
 	}
 	void JAnimator::SettingAnimationUpdateData()noexcept
 	{
-		if (reqSettingAniData && IsActivated() && animationController)
+		if (reqSettingAniData && IsActivated() && animationController.IsValid())
 		{
 			animationUpdateData = std::make_unique<Core::JAnimationUpdateData>();
 			animationUpdateData->Initialize();
 			animationUpdateData->timer = userTimer;
-			animationUpdateData->modelSkeleton = skeletonAsset;
+			animationUpdateData->modelSkeleton = skeletonAsset.Get();
 		 
 			const uint paramCount = animationController->GetParameterCount();
 			for (uint i = 0; i < paramCount; ++i)
@@ -116,7 +116,7 @@ namespace JinEngine
 	}
 	bool JAnimator::CanUpdateAnimation()const noexcept
 	{
-		return animationController != nullptr && userTimer != nullptr;
+		return animationController.IsValid() && userTimer != nullptr;
 	}
 	void JAnimator::DoCopy(JObject* ori)
 	{
@@ -128,24 +128,28 @@ namespace JinEngine
 	{
 		JComponent::DoActivate();
 		RegisterComponent(); 
-		CallOnResourceReference(skeletonAsset);
-		CallOnResourceReference(animationController);
+		if(skeletonAsset.IsValid())
+			CallOnResourceReference(skeletonAsset.Get());
+		if (animationController.IsValid())
+			CallOnResourceReference(animationController.Get());
 		SettingAnimationUpdateData();
 	}
 	void JAnimator::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
 		DeRegisterComponent(); 
-		CallOffResourceReference(skeletonAsset);
-		CallOffResourceReference(animationController);
+		if (skeletonAsset.IsValid())
+			CallOffResourceReference(skeletonAsset.Get());
+		if (animationController.IsValid())
+			CallOffResourceReference(animationController.Get());
 		ClearAnimationUpdateData();
 	}
 	void JAnimator::UpdateFrame(Graphic::JAnimationConstants& constant)
 	{
-		if (animationController != nullptr)
+		if (animationController.IsValid())
 		{
 			animationUpdateData->timer = userTimer;
-			animationUpdateData->modelSkeleton = skeletonAsset;
+			animationUpdateData->modelSkeleton = skeletonAsset.Get();
 			animationController->FrameUpdateInterface()->Update(animationUpdateData.get(), constant);
 		}
 	}
@@ -156,10 +160,10 @@ namespace JinEngine
 
 		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 		{
-			if (skeletonAsset != nullptr && skeletonAsset->GetGuid() == jRobj->GetGuid())
-				SetSkeletonAsset(nullptr);
-			else if (animationController != nullptr && animationController->GetGuid() == jRobj->GetGuid())
-				SetAnimatorController(nullptr);
+			if (skeletonAsset.IsValid() && skeletonAsset->GetGuid() == jRobj->GetGuid())
+				SetSkeletonAsset(Core::JUserPtr<JSkeletonAsset>{});
+			else if (animationController.IsValid() && animationController->GetGuid() == jRobj->GetGuid())
+				SetAnimatorController(Core::JUserPtr<JAnimationController>{});
 		}
 	}
 	Core::J_FILE_IO_RESULT JAnimator::CallStoreComponent(std::wofstream& stream)
@@ -178,8 +182,8 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		  
 		JFileIOHelper::StoreObjectIden(stream, animator);
-		JFileIOHelper::StoreHasObjectIden(stream ,animator->GetAnimatorController());
-		JFileIOHelper::StoreHasObjectIden(stream, animator->GetSkeletonAsset());
+		JFileIOHelper::StoreHasObjectIden(stream ,animator->GetAnimatorController().Get());
+		JFileIOHelper::StoreHasObjectIden(stream, animator->GetSkeletonAsset().Get());
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -205,9 +209,9 @@ namespace JinEngine
 			return nullptr;
 
 		if (aniCont != nullptr && aniCont->GetTypeInfo().IsA(JAnimationController::StaticTypeInfo()))
-			newAnimator->SetAnimatorController(static_cast<JAnimationController*>(aniCont));
+			newAnimator->SetAnimatorController(Core::GetUserPtr<JAnimationController>(aniCont));
 		if (skeletonAsset != nullptr && skeletonAsset->GetTypeInfo().IsA(JSkeletonAsset::StaticTypeInfo()))
-			newAnimator->SetSkeletonAsset(static_cast<JSkeletonAsset*>(skeletonAsset));
+			newAnimator->SetSkeletonAsset(Core::GetUserPtr<JSkeletonAsset>(skeletonAsset));
 		return newAnimator;
 	}
 	void JAnimator::RegisterJFunc()

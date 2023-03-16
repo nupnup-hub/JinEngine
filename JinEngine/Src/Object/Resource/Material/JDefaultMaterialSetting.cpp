@@ -13,7 +13,7 @@ namespace JinEngine
 		mat->SetSkyMaterial(true);
 		mat->SetNonCulling(true);
 		mat->SetDepthCompareFunc(J_SHADER_DEPTH_COMPARISON_FUNC::LESS_EQUAL);
-		mat->SetAlbedoMap(texture);
+		mat->SetAlbedoMap(Core::GetUserPtr(texture));
 	}
 	void JDefaultMaterialSetting::SetShadowMap(JMaterial* mat)
 	{
@@ -29,7 +29,7 @@ namespace JinEngine
 	}
 	void JDefaultMaterialSetting::SetAlbedoMapOnly(JMaterial* mat, JTexture* texture)
 	{
-		mat->SetAlbedoMap(texture);
+		mat->SetAlbedoMap(Core::GetUserPtr(texture));
 		mat->SetAlbedoMapOnly(true);
 	}
 }

@@ -49,7 +49,7 @@ namespace JinEngine
 			static constexpr uint maxNumberOfCondition = 25;
 			static constexpr float errorOnValue = -100000;
 		private:
-			JFSMtransitionOwnerInterface* ownerInterface;
+			JFSMtransitionOwnerInterface* ownerInterface; 
 			const size_t outputStateGuid;
 			std::vector<JFSMcondition*>conditionVec;
 		public:
@@ -66,7 +66,8 @@ namespace JinEngine
 			void SetConditionVec(std::vector<JFSMcondition*> vec)noexcept;
 		private:
 			JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept; 
-		public:
+		public: 
+			bool IsSameDiagram(const size_t diagramGuid)const noexcept;
 			bool HasSatisfiedCondition()const noexcept;
 		private:
 			bool AddType(JFSMcondition* newCondition)noexcept;

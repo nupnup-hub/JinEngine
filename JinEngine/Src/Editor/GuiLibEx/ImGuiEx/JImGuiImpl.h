@@ -1,6 +1,7 @@
 #pragma once 
 #include<string>  
 #include<bitset>
+#include"../../Interface/JEditorTransitionInterface.h"
 #include"../../Align/JEditorAlignType.h"
 #include"../../Page/JEditorWindowFontType.h"
 #include"../../Helpers/JEditorInputBuffHelper.h"
@@ -10,7 +11,6 @@
 #include"../../../Core/Empty/EmptyBase.h"
 #include"../../../Core/Reflection/JReflection.h"
 #include"../../../Core/Func/Functor/JFunctor.h"
-#include"../../../Core/Undo/JTransition.h"
 #include"../../../../Lib/imgui/imgui.h"
 #include"../../../../Lib/imgui/imgui_internal.h"
 
@@ -96,13 +96,15 @@ namespace JinEngine
 		public:
 			//Color 
 			static JVector4<float> GetSelectColorFactor()noexcept;
+			static JVector4<float> GetOffFocusSelectedColorFactor()noexcept;
 			static JVector4<float> GetColor(ImGuiCol_ flag)noexcept;
 			static ImU32 GetUColor(ImGuiCol_ flag)noexcept;
+			static ImU32 ConvertUColor(const JVector4<float>& color)noexcept;
 			static void SetColorToSoft(ImGuiCol_ flag, const JVector4<float>& color)noexcept;
 			static void SetColor(const JVector4<float>& color, ImGuiCol_ flag)noexcept;
 			//Set widget color to default
-			static void SetColorToDefault(ImGuiCol_ flag)noexcept;
-			static void SetAllColorToDeep(float factor)noexcept;
+			static void SetColorToDefault(ImGuiCol_ flag)noexcept; 
+			static void SetAllColorToSoft(const JVector4<float> factor)noexcept;
 			//Set all widget color to default
 			static void SetAllColorToDefault()noexcept;
 			static void ActivateButtonColor()noexcept;
@@ -147,6 +149,8 @@ namespace JinEngine
 		public:
 			static bool BeginTabBar(const std::string& name, const ImGuiTabBarFlags flags = 0);
 			static void EndTabBar();
+			static bool BeginTabItem(const std::string& name, bool* p_open = NULL, ImGuiTabItemFlags flags = 0);
+			static void EndTabItem();
 			static bool TabItemButton(const std::string& name, const ImGuiTabItemFlags flags = 0);
 		public:
 			static bool BeginTable(const std::string& name, int columnCount, ImGuiTableFlags flags = 0, const JVector2<float> outerSize = { 0,0 }, float innerWidth = 0);
@@ -199,7 +203,8 @@ namespace JinEngine
 				Graphic::JGraphicResourceHandleInterface& handle,
 				bool& pressed,
 				bool changeValueIfPreesd,
-				const JVector2<float>& size);
+				const JVector2<float>& size,
+				const bool useRestoreCursorPos);
 			static bool Switch(const std::string& name,
 				bool& pSelected, 
 				bool changeValueIfPreesd,
@@ -239,6 +244,7 @@ namespace JinEngine
 			static bool IsLeftMouseClicked()noexcept;
 			static bool IsRightMouseClicked()noexcept;
 			static bool IsMiddleMouseClicked()noexcept;
+			static bool AnyMouseClicked(const bool containLeft = true, const bool containRight = true, const bool containMiddle = true)noexcept;
 			//use world pos
 			static bool IsMouseInRect(const JVector2<float>& position, const JVector2<float>& size)noexcept;
 			static bool IsMouseInLine(JVector2<float> st, JVector2<float> ed, const float thickness)noexcept;
@@ -247,8 +253,9 @@ namespace JinEngine
 		public:
 			//util 
 			static float GetSliderPosX(bool hasScrollbar = false)noexcept;
-			static float GetSliderWidth()noexcept;
+			static float GetSliderWidth()noexcept; 
 			static void SetTooltip(const std::string& message)noexcept;
+			static JVector2<float> GetRestWindowSpace()noexcept;
 		public:
 			//Option
 			static float GetFrameRounding()noexcept;
@@ -267,7 +274,7 @@ namespace JinEngine
 		public:
 			//Widget Set  
 			// 
-			static void ComboSet(const std::string& uniqueLabel, int& selectedIndex, const std::vector<std::string>& strVec)
+			static void ComboSet( const std::string& uniqueLabel,int& selectedIndex, const std::vector<std::string>& strVec)
 			{
 				if (JImGuiImpl::BeginCombo(uniqueLabel, strVec[selectedIndex].c_str(), ImGuiComboFlags_HeightLarge))
 				{
@@ -323,7 +330,7 @@ namespace JinEngine
 			//Widget Set
 			//Support Redo undo transition
 			template<typename ...Param>
-			static bool CheckBoxSetT(const std::string& uniqueLabel, const bool preValue, Core::JFunctor<void, const bool, Param...>& commitFunctor, Param... var)
+			static bool CheckBoxSetT(const std::string& objName, const std::string& uniqueLabel, const bool preValue, Core::JFunctor<void, const bool, Param...>& commitFunctor, Param... var)
 			{
 				bool nowValue = preValue;
 				if (JImGuiImpl::CheckBox("##CheckBox" + uniqueLabel, nowValue))
@@ -334,7 +341,8 @@ namespace JinEngine
 					bool dovalue = nowValue;
 					bool undovalue = preValue;
 
-					ExecuteWidgetSet<Binder>(uniqueLabel + " checkbox set value: " + std::to_string(nowValue),
+					ExecuteWidgetSet<Binder>("Checkbox set value",
+						"object name: " + objName + " value:"+ std::to_string(preValue) + " To" + std::to_string(nowValue),
 						commitFunctor,
 						dovalue,
 						undovalue,
@@ -346,7 +354,7 @@ namespace JinEngine
 				return false;
 			}
 			template<typename ...Param>
-			static bool InputIntSetT(const std::string& uniqueLabel, const int preValue, Core::JFunctor<void, const int, Param...>& commitFunctor, Param... var)
+			static bool InputIntSetT(const std::string& objName, const std::string& uniqueLabel, const int preValue, Core::JFunctor<void, const int, Param...>& commitFunctor, Param... var)
 			{
 				int nowValue = preValue;
 				if (JImGuiImpl::InputInt("##InputInt" + uniqueLabel, &nowValue))
@@ -359,7 +367,8 @@ namespace JinEngine
 						int dovalue = nowValue;
 						int undovalue = preValue;
 
-						ExecuteWidgetSet<Binder>(uniqueLabel + " input int set value: " + std::to_string(nowValue),
+						ExecuteWidgetSet<Binder>("Input int set value",
+							"object name: " + objName + " value:" + std::to_string(preValue) + " To" + std::to_string(nowValue),
 							commitFunctor,
 							dovalue,
 							undovalue,
@@ -372,7 +381,7 @@ namespace JinEngine
 				return false;
 			}
 			template<typename ...Param>
-			static bool InputFloatSetT(const std::string& uniqueLabel, const float preValue, Core::JFunctor<void, const float, Param...>& commitFunctor, Param... var)
+			static bool InputFloatSetT(const std::string& objName, const std::string& uniqueLabel, const float preValue, Core::JFunctor<void, const float, Param...>& commitFunctor, Param... var)
 			{
 				float nowValue = preValue;
 				if (JImGuiImpl::InputFloat("##IntputFloat" + uniqueLabel, &nowValue))
@@ -385,7 +394,8 @@ namespace JinEngine
 						float dovalue = nowValue;
 						float undovalue = preValue;
 
-						ExecuteWidgetSet<Binder>(uniqueLabel + " input float set value: " + std::to_string(nowValue),
+						ExecuteWidgetSet<Binder>("Input float set value:",
+							"object name: " + objName + " value:" + std::to_string(preValue) + " To" + std::to_string(nowValue),
 							commitFunctor,
 							dovalue,
 							undovalue,
@@ -398,7 +408,8 @@ namespace JinEngine
 				return false;
 			}
 			template<typename ...Param>
-			static bool InputTextSetT(const std::string& uniqueLabel,
+			static bool InputTextSetT(const std::string& objName, 
+				const std::string& uniqueLabel,
 				JEditorInputBuffHelper* helper,
 				const std::string& hint,
 				ImGuiInputTextFlags flags,
@@ -413,7 +424,8 @@ namespace JinEngine
 					using Functor = Core::JFunctor<void, const std::string, Param...>;
 					using Binder = Core::JBindHandle<Functor, const std::string, Param...>;
 
-					ExecuteWidgetSet<Binder>(uniqueLabel + " input text set value: " + dovalue,
+					ExecuteWidgetSet<Binder>("Input text set value",
+						"object name: " + objName + " value:" + preValue + " To" + dovalue,
 						commitFunctor,
 						dovalue,
 						undovalue,
@@ -428,7 +440,8 @@ namespace JinEngine
 				return false;
 			}
 			template<typename ...Param>
-			static bool InputMultilineTextSetT(const std::string& uniqueLabel,
+			static bool InputMultilineTextSetT(const std::string& objName, 
+				const std::string& uniqueLabel,
 				JEditorInputBuffHelper* helper,
 				const JVector2<float>& size,
 				ImGuiInputTextFlags flags,
@@ -464,7 +477,8 @@ namespace JinEngine
 					using Functor = Core::JFunctor<void, const std::string, Param...>;
 					using Binder = Core::JBindHandle<Functor, const std::string, Param...>;
 
-					ExecuteWidgetSet<Binder>(uniqueLabel + " input multiline text set value: " + dovalue,
+					ExecuteWidgetSet<Binder>("Input multiline text set value: ",
+						"object name: " + objName + " value:" + preValue + " To" + dovalue,
 						commitFunctor,
 						dovalue,
 						undovalue,
@@ -479,7 +493,11 @@ namespace JinEngine
 				return false;
 			}
 			template<typename EnumType, typename ...Param>
-			static void ComoboEnumSetT(const std::string& uniqueLabel, const EnumType preValue, Core::JFunctor<void, const EnumType, Param...>& commitFunctor, Param... var)
+			static void ComoboEnumSetT(const std::string& objName, 
+				const std::string& uniqueLabel,
+				const EnumType preValue, 
+				Core::JFunctor<void, const EnumType, Param...>& commitFunctor, 
+				Param... var)
 			{
 				const std::string enumName = Core::GetName<EnumType>();
 				const std::string preValueName = Core::GetName(preValue);
@@ -496,7 +514,8 @@ namespace JinEngine
 							EnumType dovalue = (EnumType)i;
 							EnumType undovalue = preValue;
 
-							ExecuteWidgetSet<Binder>(enumName + "::" + valueStr,
+							ExecuteWidgetSet<Binder>("Enum combo box setvalue",
+								"object name: " + objName + " value:" + preValueName + " to" + Core::GetName(dovalue),
 								commitFunctor,
 								dovalue,
 								undovalue,
@@ -517,6 +536,7 @@ namespace JinEngine
 			}
 			template<typename Binder, typename Functor, typename Value, typename ParamTuple, size_t ...Is>
 			static void ExecuteWidgetSet(const std::string& taskName,
+				const std::string& taskDesc,
 				Functor& functor,
 				Value doValue,
 				Value undoValue,
@@ -524,7 +544,8 @@ namespace JinEngine
 				ParamTuple t2,
 				std::index_sequence<Is...>)
 			{
-				Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(taskName,
+				JEditorTransition::Instance().Execute(std::make_unique<Core::JTransitionSetValueTask>(taskName,
+					taskDesc,
 					std::make_unique<Binder>(functor, std::move(doValue), DecomposeTuple<Is>(t1)...),
 					std::make_unique<Binder>(functor, std::move(undoValue), DecomposeTuple<Is>(t2)...)));
 			}

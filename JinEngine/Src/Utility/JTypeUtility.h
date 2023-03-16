@@ -1,6 +1,12 @@
 #pragma once
 #include<type_traits> 
+#include<vector>
+#include<deque>
+#include<map>
+#include<unordered_map>
+#include"../Core/Pointer/JOwnerPtr.h"
 #include"../Core/JDataType.h"  
+#include"../Utility/JVector.h"
 
 namespace JinEngine
 {
@@ -175,23 +181,58 @@ namespace JinEngine
 		using TypeCondition_T = typename TypeCondition<T, res>::Type;
 
 		template<typename T, typename = void>
-		struct StdArrayContainerDetermine : std::false_type 
-		{
-		public:
-			using ValueType = T;
-		};
+		struct StdStructureDetermine : std::false_type {using ValueType = T;};
+		template<typename T>
+		struct StdStructureDetermine<T, std::void_t<typename typename T::value_type>> : std::true_type { using ValueType = typename T::value_type; };
+
+		template<typename T, typename = void>
+		struct StdVectorDetermine : std::bool_constant<false>{ using ValueType = T; };
 
 		template<typename T>
-		struct StdArrayContainerDetermine<T, std::void_t<typename T::value_type>> : std::true_type
+		struct StdVectorDetermine<T, std::void_t<typename T::value_type>>
+			: std::bool_constant<std::is_same_v<std::vector<typename T::value_type>, T>>
+		{
+			using ValueType = typename T::value_type;
+		};
+
+		template<typename T, typename = void>
+		struct StdDequeDetermine : std::bool_constant<false> { using ValueType = T; };
+
+		template<typename T>
+		struct StdDequeDetermine<T, std::void_t<typename T::value_type>>
+			: std::bool_constant<std::is_same_v<std::deque<typename T::value_type>, T>>
+		{
+			using ValueType = typename T::value_type;
+		};
+
+		template<typename T, typename = void>
+		struct StdArrayDetermine : std::bool_constant<false>{ using ValueType = T; };
+
+		template<typename T>
+		struct StdArrayDetermine<T, std::void_t<typename T::value_type>>
+			: std::bool_constant<StdVectorDetermine<T>::value || StdDequeDetermine<T>::value>
+		{ 
+			using ValueType = typename T::value_type;
+		};
+
+		template<typename T, typename = void, typename = void>
+		struct StdMapDetermine : std::bool_constant<false> {};
+
+		template<typename T>
+		struct StdMapDetermine<T, std::void_t<typename T::key_type>, std::void_t<typename T::value_type>>
+			: std::bool_constant<std::is_same_v<std::map<typename T::key_type, typename T::value_type>, T>>
 		{
 		public:
 			using ValueType = typename T::value_type;
+			using KeyType = typename T::key_type;
 		};
+
 		template<typename T, typename = void, typename = void>
-		struct StdMapDetermine : std::false_type {};
+		struct StdUnorderedMapDetermine : std::bool_constant<false> {};
 
 		template<typename T>
-		struct StdMapDetermine<T, std::void_t<typename T::key_type>, std::void_t<typename T::value_type>> : std::true_type
+		struct StdUnorderedMapDetermine<T, std::void_t<typename T::key_type>, std::void_t<typename T::value_type>>
+			: std::bool_constant<std::is_same_v<std::unordered_map<typename T::key_type, typename T::value_type>, T>>
 		{
 		public:
 			using ValueType = typename T::value_type;
@@ -199,14 +240,13 @@ namespace JinEngine
 		};
 
 		template<typename T, typename = void>
-		struct JVectorDetermine : std::false_type
-		{
-		public:
-			using ValueType = T;
-		};
+		struct JVectorDetermine : std::bool_constant<false>{ using ValueType = T; };
 
 		template<typename T>
-		struct JVectorDetermine<T, std::void_t<typename T::ValueType>> : std::true_type
+		struct JVectorDetermine<T, std::void_t<typename T::ValueType>> 
+			: std::bool_constant <std::is_same_v<JVector2<typename T::ValueType>, T> || 
+			std::is_same_v<JVector3<typename T::ValueType>, T> ||
+			std::is_same_v<JVector4<typename T::ValueType>, T>>
 		{
 		public:
 			using ValueType = typename T::ValueType;
@@ -218,6 +258,54 @@ namespace JinEngine
 		template<typename T>
 		struct JTypeInfoDetermine<T, std::void_t<typename T::ThisType>> : std::true_type {};
  
+		template<typename T, typename = void>
+		struct JUserPtrDetermine : std::bool_constant<false> { using ElementType = T; };
+
+		//std::is_base_of_v<JPtrBase<JUserPtrDetermine<valueType>::ElementType>, T
+		template<typename T>
+		struct JUserPtrDetermine<T, std::void_t<typename T::ElementType>> 
+			: std::bool_constant<std::is_same_v<JUserPtr<typename T::ElementType>, T>>
+		{ 
+			using ElementType = typename T::ElementType;
+		};
+
+		template<typename T>
+		struct StdStructureLastDimValueType
+		{
+		private:
+			template<typename T, bool isLastDim>
+			struct LastDimDetermin
+			{
+			public:
+				using ValueType = typename LastDimDetermin<typename StdStructureDetermine<T>::ValueType,
+					StdStructureDetermine<T>::value>::ValueType;
+			};
+			template<typename T>
+			struct LastDimDetermin<T, false>
+			{
+			public:
+				using ValueType = T;
+			};
+		public:
+			using ValueType = typename LastDimDetermin<typename StdStructureDetermine<T>::ValueType, 
+				StdStructureDetermine<T>::value>::ValueType;
+		};
+ 
+		template<typename T, bool isUserPointer>
+		struct JTypeVariableType;
+
+		template<typename T>
+		struct JTypeVariableType<T, false>{ public: using Type = T; };
+		template<typename T>
+		struct JTypeVariableType<T, true> { public: using Type = JUserPtr<T>; };
+
+		template<typename T, bool isUserPointer, bool isVector>
+		struct JStdVectorVariableType;
+		template<typename T, bool isUserPointer>
+		struct JStdVectorVariableType<T, isUserPointer, false> { public: using Type = typename JTypeVariableType<T, isUserPointer>::Type; };
+		template<typename T, bool isUserPointer>
+		struct JStdVectorVariableType<T, isUserPointer, true> { public: using Type = typename std::vector<typename JTypeVariableType<T, isUserPointer>::Type>; };
+		 
 #pragma endregion
 
 #pragma region Param

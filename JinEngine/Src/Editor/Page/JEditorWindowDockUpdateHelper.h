@@ -23,6 +23,10 @@ namespace JinEngine
 			const uint dockSpaceID;
 		private: 
 			uint lastDockNodeID; 
+			uint lastParentNodeID;
+			bool hasLastParentNode;
+			int lastDockNodeSplitDir;
+			float lastDockNodeArea;
 			uint lastDockTabItemCount;
 			uint lastSameTabWindowID;
 			JVector2<float> lastDockNodePos;

@@ -3,7 +3,7 @@
 #include"../../JEditorWindow.h"
 #include"../../../Menubar/JEditorMenuNodeUtilData.h"
 #include"../../../EditTool/JEditorGameObjectSurpportToolType.h" 
-#include"../../../Interface/JEditorObjectInterface.h"
+#include"../../../Interface/JEditorObjectHandleInterface.h"
 #include"../../../../Utility/JVector.h"
 #include"../../../../Core/SpaceSpatial/JSpaceSpatialType.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
@@ -50,6 +50,7 @@ namespace JinEngine
 			Core::JUserPtr<JGameObject> cameraObj;
 			Core::JUserPtr<JCamera> cameraComp;
 			Core::JUserPtr<JGameObject> mainCamFrustum; 
+			Core::JUserPtr<JGameObject> selectedGobj;
 		private:
 			std::unique_ptr<JEditorSceneCoordGrid> coordGrid;
 		private:
@@ -125,6 +126,8 @@ namespace JinEngine
 			void CreateShapeGroup(const J_DEFAULT_SHAPE& shape, const uint xDim, const uint yDim, const uint zDim);
 			//void CreateDebugMaterial()noexcept;
 			//void DestroyDebugMaterial()noexcept;
+		private:
+			void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct) final;
 		};
 	}
 }

@@ -20,6 +20,7 @@ namespace JinEngine
 			friend class JFSMtransition;
 		private:
 			virtual JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept = 0;
+			virtual bool IsSameDiagram(const size_t diagramGuid)const noexcept = 0;
 		};
 
 		class JFSMstate : public JFSMInterface, public JFSMtransitionOwnerInterface
@@ -60,6 +61,7 @@ namespace JinEngine
 			void Clear()noexcept override; 
 		private:
 			JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept final;
+			bool IsSameDiagram(const size_t diagramGuid)const noexcept final;
 		private:
 			bool AddType(JFSMtransition* newTransition)noexcept final;
 			bool RemoveType(JFSMtransition* transition)noexcept final;

@@ -10,13 +10,15 @@ namespace JinEngine
 		JFSMInterface::JFSMIdentifierInitData::JFSMIdentifierInitData(const std::wstring& name, const size_t guid)
 			:name(name), guid(guid)
 		{} 
-		void JFSMInterface::Destroy(JFSMInterface* fsmInterface)
+		bool JFSMInterface::DoBeginDestroy()
 		{
-			if (fsmInterface == nullptr)
-				return;
-
-			fsmInterface->Clear();
-			fsmInterface->RemoveInstance();
+			return Destroy();
+		}
+		bool JFSMInterface::Destroy()
+		{
+			Clear();
+			RemoveInstance();
+			return true;
 		}
 		JFSMInterface::JFSMInterface(const JFSMIdentifierInitData& initData)
 			:JIdentifier(initData.name, initData.guid)

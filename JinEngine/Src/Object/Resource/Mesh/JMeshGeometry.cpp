@@ -69,7 +69,7 @@ namespace JinEngine
 	{
 		return name;
 	}
-	JMaterial* JMeshGeometry::SubmeshGeometry::GetMaterial()const noexcept
+	Core::JUserPtr<JMaterial> JMeshGeometry::SubmeshGeometry::GetMaterial()const noexcept
 	{
 		return material;
 	}
@@ -117,9 +117,9 @@ namespace JinEngine
 	{
 		Core::JUserPtr<JMaterial> meshMaterial = meshData.GetMaterial();
 		if (meshMaterial.IsValid())
-			material = meshMaterial.Get();
+			material = meshMaterial;
 		else
-			material = JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_STANDARD);
+			material = Core::GetUserPtr(JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_STANDARD));
 
 		vertexStrat = vertexSt;
 		vertexCount = meshData.GetVertexCount();
@@ -133,7 +133,7 @@ namespace JinEngine
 		hasUV = meshData.HasUV();
 		type = meshData.GetMeshType();
 	}
-	void JMeshGeometry::SubmeshGeometry::SetMaterial(JMaterial* newMaterial)noexcept
+	void JMeshGeometry::SubmeshGeometry::SetMaterial(Core::JUserPtr<JMaterial> newMaterial)noexcept
 	{
 		material = newMaterial;
 	}
@@ -190,9 +190,9 @@ namespace JinEngine
 	{
 		return submeshes.size() > index ? submeshes[index].GetName() : L"InValidAccess";
 	}
-	JMaterial* JMeshGeometry::GetSubmeshMaterial(const uint index)const noexcept
+	Core::JUserPtr<JMaterial> JMeshGeometry::GetSubmeshMaterial(const uint index)const noexcept
 	{
-		return submeshes.size() > index ? submeshes[index].GetMaterial() : nullptr;
+		return submeshes.size() > index ? submeshes[index].GetMaterial() : Core::JUserPtr<JMaterial>{};
 	}
 	DirectX::BoundingBox JMeshGeometry::GetBoundingBox()const noexcept
 	{
@@ -425,7 +425,7 @@ namespace JinEngine
 		if (IsActivated())
 		{
 			for (uint i = 0; i < submeshCount; ++i)
-				CallOnResourceReference(submeshes[i].GetMaterial());
+				CallOnResourceReference(submeshes[i].GetMaterial().Get());
 		}
 		CalculateMeshBound();
 		return true;
@@ -441,7 +441,7 @@ namespace JinEngine
 					SetValid(true);
 					const uint submeshCount = GetTotalSubmeshCount();
 					for (uint i = 0; i < submeshCount; ++i)
-						CallOnResourceReference(submeshes[i].GetMaterial());
+						CallOnResourceReference(submeshes[i].GetMaterial().Get());
 				}
 			}
 		}
@@ -456,10 +456,7 @@ namespace JinEngine
 			SetValid(false);
 			const uint subMeshCount = (uint)submeshes.size();
 			for (uint i = 0; i < subMeshCount; ++i)
-			{
-				if (submeshes[i].GetMaterial() != nullptr)
-					CallOffResourceReference(submeshes[i].GetMaterial());
-			}
+				CallOffResourceReference(submeshes[i].GetMaterial().Get());
 		}
 	}
 	void JMeshGeometry::ClearGpuBuffer()
@@ -482,17 +479,17 @@ namespace JinEngine
 			const uint subMeshCount = (uint)submeshes.size();
 			for (uint i = 0; i < subMeshCount; ++i)
 			{
-				JMaterial* preMat = submeshes[i].GetMaterial();
+				JMaterial* preMat = submeshes[i].GetMaterial().Get();
 				if (preMat->GetGuid() == tarGuid)
 				{
 					if (defaultMat != nullptr)
 					{
-						submeshes[i].SetMaterial(defaultMat);
+						submeshes[i].SetMaterial(Core::GetUserPtr(defaultMat));
 						if (IsActivated())
 							CallOnResourceReference(defaultMat);
 					}
 					else
-						submeshes[i].SetMaterial(nullptr);
+						submeshes[i].SetMaterial(Core::JUserPtr<JMaterial>{});
 				}
 			}
 		}
@@ -692,7 +689,7 @@ namespace JinEngine
 			{
 				const uint subMeshCount = (uint)newMesh->GetTotalSubmeshCount();
 				for (uint i = 0; i < subMeshCount; ++i)
-					res.push_back(newMesh->GetSubmeshMaterial(i));
+					res.push_back(newMesh->GetSubmeshMaterial(i).Get());
 			}
 			return res;
 		};
@@ -722,7 +719,7 @@ namespace JinEngine
 				res.push_back(newMesh);
 				const uint subMeshCount = (uint)newMesh->GetTotalSubmeshCount();
 				for (uint i = 0; i < subMeshCount; ++i)
-					res.push_back(newMesh->GetSubmeshMaterial(i));
+					res.push_back(newMesh->GetSubmeshMaterial(i).Get());
 			}
 			return res;
 		};

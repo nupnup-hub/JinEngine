@@ -109,7 +109,7 @@ namespace JinEngine
 				else if (res == J_CULLING_RESULT::DISJOINT)
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
 			}
-		} 
+		}
 		void JBvh::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
 		{
 			if (allNodes.size() > 1)
@@ -131,12 +131,21 @@ namespace JinEngine
 			if (allNodes.size() > 1)
 				return root->IntersectFirst(ray.GetPosV(), ray.GetDirV());
 			else
-				return nullptr;
+			{
+				if (innerGameObjectCandidate != nullptr)
+				{
+					float leftDist = FLT_MAX;
+					bool isIntersect = innerGameObjectCandidate->GetRenderItem()->GetBoundingBox().Intersects(ray.GetPosV(), ray.GetDirV(), leftDist);
+					return isIntersect ? innerGameObjectCandidate : nullptr;
+				}
+				else
+					return nullptr;
+			}
 		}
 		void JBvh::Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JGameObject*>& res)const noexcept
 		{
 			if (allNodes.size() > 1)
-			{ 
+			{
 				if (sortType == J_SPACE_SPATIAL_SORT_TYPE::ASCENDING)
 					root->IntersectAscendingSort(ray.GetPosV(), ray.GetDirV(), res);
 				else if (sortType == J_SPACE_SPATIAL_SORT_TYPE::DESCENDING)
@@ -144,9 +153,15 @@ namespace JinEngine
 				else
 					root->Intersect(ray.GetPosV(), ray.GetDirV(), res);
 			}
+			else if (innerGameObjectCandidate != nullptr)
+			{
+				float leftDist = FLT_MAX;
+				if (innerGameObjectCandidate->GetRenderItem()->GetBoundingBox().Intersects(ray.GetPosV(), ray.GetDirV(), leftDist))
+					res.push_back(innerGameObjectCandidate);
+			}
 		}
 		void JBvh::UpdateGameObject(JGameObject* gameObject)noexcept
-		{ 
+		{
 			auto leafNode = leafNodeMap.find(gameObject->GetGuid());
 			if (leafNode != leafNodeMap.end())
 			{
@@ -164,7 +179,7 @@ namespace JinEngine
 			}
 		}
 		void JBvh::AddGameObject(JGameObject* newGameObject)noexcept
-		{  
+		{
 			JBvhNode* containNode = root->GetContainNodeToLeaf(newGameObject->GetRenderItem()->GetBoundingBox());
 			if (containNode != nullptr)
 				ReBuildBvh(containNode->GetNodeNumber(), newGameObject);
@@ -330,7 +345,7 @@ namespace JinEngine
 
 				float minCost = cost[0];
 				int minCostSplitBucket = 0;
-				 
+
 				for (int i = 1; i < bucketCount - 1; ++i)
 				{
 					if (cost[i] < minCost)
@@ -352,7 +367,7 @@ namespace JinEngine
 				int mid = (int)(pmid - &objectList[0]);
 				if (mid == end)
 					mid = (start + end) / 2;
-				 
+
 				JBBox leftBv = JBBox::InfBBox();
 				JBBox rightBv = JBBox::InfBBox();
 				for (int i = start; i < mid; ++i)

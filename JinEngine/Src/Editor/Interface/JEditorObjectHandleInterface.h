@@ -14,12 +14,12 @@ namespace JinEngine
 	namespace Editor
 	{		
 		class JEditorObjectHandlerInterface
-		{
+		{ 
 		protected:
-			void SetModifiedBit(Core::JUserPtr<Core::JIdentifier> obj, const bool value)noexcept;
-			void SetRemoveBit(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
+			static void SetModifiedBit(Core::JUserPtr<Core::JIdentifier> obj, const bool value)noexcept;
+			static void SetRemoveBit(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
 		private:
-			Core::JUserPtr<Core::JIdentifier> GetValidModifiedUser(Core::JUserPtr<Core::JIdentifier> obj)const noexcept;
+			static Core::JUserPtr<Core::JIdentifier> GetValidModifiedUser(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
 		};
 
 		using JModifiedObjectInfoVector = Core::JVectorPointerStorage<JModifiedObjectInfo>;
@@ -34,5 +34,6 @@ namespace JinEngine
 		public:
 			void ClearModifiedInfoStructure()noexcept;
 		};
+
 	}
 }

@@ -17,9 +17,9 @@ namespace JinEngine
 		REGISTER_CLASS(JRenderItem)
 	private:
 		REGISTER_PROPERTY_EX(mesh, GetMesh, SetMesh, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		JMeshGeometry* mesh = nullptr;
+		Core::JUserPtr<JMeshGeometry> mesh;
 		REGISTER_PROPERTY_EX(material, GetMaterialVec, SetMaterialVec, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		std::vector<JMaterial*> material;
+		std::vector<Core::JUserPtr<JMaterial>> material;
 		DirectX::XMFLOAT4X4 textureTransform = JMathHelper::Identity4x4();
 		D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT;
@@ -33,9 +33,9 @@ namespace JinEngine
 			return J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM;
 		}
 	public:
-		JMeshGeometry* GetMesh()const noexcept;
-		JMaterial* GetValidMaterial(int index)const noexcept;
-		std::vector<JMaterial*> GetMaterialVec()const noexcept;
+		Core::JUserPtr<JMeshGeometry> GetMesh()const noexcept;
+		Core::JUserPtr<JMaterial> GetValidMaterial(int index)const noexcept;
+		std::vector<Core::JUserPtr<JMaterial>> GetMaterialVec()const noexcept;
 		DirectX::XMFLOAT4X4 GetTextransform()const noexcept;
 		D3D12_PRIMITIVE_TOPOLOGY GetPrimitiveType()const noexcept;
 		J_RENDER_LAYER GetRenderLayer()const noexcept;
@@ -51,9 +51,9 @@ namespace JinEngine
 		//apply scale tranlation  
 		DirectX::BoundingSphere GetBoundingSphere()noexcept;
 
-		void SetMesh(JMeshGeometry* newMesh)noexcept;
-		void SetMaterial(int index, JMaterial* newMaterial)noexcept;
-		void SetMaterialVec(const std::vector<JMaterial*>& newVec)noexcept;
+		void SetMesh(Core::JUserPtr<JMeshGeometry> newMesh)noexcept;
+		void SetMaterial(int index, Core::JUserPtr<JMaterial> newMaterial)noexcept;
+		void SetMaterialVec(const std::vector<Core::JUserPtr<JMaterial>> newVec)noexcept;
 		void SetTextureTransform(const DirectX::XMFLOAT4X4& textureTransform)noexcept;
 		void SetPrimitiveType(const D3D12_PRIMITIVE_TOPOLOGY primitiveType)noexcept;
 		void SetRenderLayer(const J_RENDER_LAYER renderLayer)noexcept;

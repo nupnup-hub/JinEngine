@@ -19,7 +19,8 @@ namespace JinEngine
 			JEditorPopupNode* popupRoot;
 			std::vector<std::unique_ptr<JEditorPopupNode>>allPopupNode;
 			bool isOpen;
-			bool isLastSelected = false;
+			bool isPopupContentsClicked = false;
+			bool isLeafPopupContentsClicked = false;
 		public:
 			JEditorPopupMenu(const std::string& name, std::unique_ptr<JEditorPopupNode> popupRoot);
 			~JEditorPopupMenu(); 
@@ -36,7 +37,8 @@ namespace JinEngine
 			bool IsOpen()const noexcept;
 			bool IsMouseInPopup()const noexcept;
 			//It is valid until call update
-			bool IsLastSelected()const noexcept;
+			bool IsPopupContentsClicked()const noexcept;
+			bool IsLeafPopupContentsClicked()const noexcept;
 		};
 	}
 }

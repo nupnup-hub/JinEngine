@@ -1,8 +1,10 @@
 #include"JReflectionGuiWidgetHelper.h"
 #include"JEditorSearchBarHelper.h"
+#include"../Event/JEditorEvent.h"
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../Page/JEditorPageShareData.h"
 #include"../Page/WindowInterface/JEditorPreviewInterface.h"
+#include"../Page/JEditorWindow.h"
 
 #include"../../Object/Resource/AnimationClip/JAnimationClip.h"
 #include"../../Object/Resource/AnimationController/JAnimationController.h"
@@ -60,7 +62,7 @@ namespace JinEngine
 				std::unordered_map<std::string, std::unique_ptr<JGuiWidgetDisplayHandle>> guiWidgetHandleMap;
 				std::unordered_map<std::string, std::unique_ptr<JGuiWidgetGroupHandle>> guiGroupHandleMap;
 			public:
-				const J_EDITOR_PAGE_TYPE ownerPageType;
+				JEditorWindow* editorWnd;
 			public:
 				bool allowDisplayParent = true;
 				bool allowDisplayName = true;
@@ -69,8 +71,8 @@ namespace JinEngine
 				//Inner
 				bool isActivatedTable;
 			public:
-				UserData(const J_EDITOR_PAGE_TYPE ownerPageType)
-					:ownerPageType(ownerPageType)
+				UserData(JEditorWindow* editorWnd)
+					:editorWnd(editorWnd)
 				{}
 			public:
 				void InitOptionValue()
@@ -95,7 +97,7 @@ namespace JinEngine
 					return privateDataMap;
 				}
 			};
-			 
+
 			static bool IsEditableObject(Core::JIdentifier* obj)
 			{
 				if (obj->GetTypeInfo().IsChildOf<JObject>() && !static_cast<JObject*>(obj)->HasFlag(OBJECT_FLAG_UNEDITABLE))
@@ -121,7 +123,7 @@ namespace JinEngine
 				return widgetInfo->GetExtraFunctionUserInfo(type);
 			}
 			//forward declaration 
-			static std::unique_ptr<JGuiWidgetDisplayHandle> MakeDisplayHandle(Core::JParameterHint pHint, Core::JGuiWidgetInfo* widgetInfo);
+			static std::unique_ptr<JGuiWidgetDisplayHandle> MakeGuiHandle(Core::JParameterHint pHint, Core::JGuiWidgetInfo* widgetInfo);
 			static std::unique_ptr<JGuiWidgetGroupHandle> MakeExtraGroupHandle(Core::JGuiWidgetInfo* widgetInfo);
 			static std::unique_ptr<JGuiConditionHandle> MakeExtraConditionHandle(Core::JGuiWidgetInfo* widgetInfo);
 			static void SettingDisplayTypeInfo(Core::JIdentifier* obj, Core::JTypeInfo* typeInfo, UserData* userData);
@@ -162,53 +164,124 @@ namespace JinEngine
 		{
 		public:
 			template<typename T>
-			void SetValue(UpdateData& updateData, UserData* userData, T&& value)
-			{
-				if (!IsEditableObject(updateData.obj))
-					return;
-
-				static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->Set(updateData.obj, std::forward<T>(value));
-				
-				//JObject is selectable object
-				//others is subresource for JObject 
-				//ex) FSM object for animationController and it is pageOpenResource
-				if (!updateData.obj->GetTypeInfo().IsChildOf<JObject>())
-					SetModifiedBit(JEditorPageShareData::GetOpendPageData(userData->ownerPageType).GetOpenSeleted(), true);
-				else
-					SetModifiedBit(Core::GetUserPtr(updateData.obj), true);
-			}
-			template<typename T>
-			void UnsafeSetValue(UpdateData& updateData, UserData* userData, T&& value)
-			{
-				if (!IsEditableObject(updateData.obj))
-					return;
-
-				static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->UnsafeSet(updateData.obj, std::forward<T>(value));
-				if (!updateData.obj->GetTypeInfo().IsChildOf<JObject>())
-					SetModifiedBit(JEditorPageShareData::GetOpendPageData(userData->ownerPageType).GetOpenSeleted(), true);
-				else
-					SetModifiedBit(Core::GetUserPtr(updateData.obj), true);
-			}
-			template<typename T>
-			T GetValue(UpdateData& updateData)
+			static T GetValue(UpdateData& updateData)
 			{
 				return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->Get(updateData.obj);
 			}
 			template<typename T>
-			T UnsafeGetValue(UpdateData& updateData)
+			static T GetValue(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
 			{
-				return 	static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->UnsafeGet(updateData.obj);
+				return pInfo->Get<T>(obj);
 			}
 			template<typename T>
-			T UnsafeGetValue(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
+			static T UnsafeGetValue(UpdateData& updateData)
+			{
+				return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->UnsafeGet(updateData.obj);
+			}
+			template<typename T>
+			static T UnsafeGetValue(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo)
 			{
 				return pInfo->UnsafeGet<T>(obj);
 			}
-		};
+		public:
+			template<typename T>
+			static void SetValue(Core::JGuiWidgetInfoHandle<T>* handle,
+				Core::JTypeInstanceSearchHint objHint,
+				Core::JTypeInstanceSearchHint modObjHint,
+				T value)
+			{
+				Core::JIdentifier* iden = Core::GetRawPtr(objHint);
+				Core::JIdentifier* modifiedIden = Core::GetRawPtr(modObjHint);
+				if (iden == nullptr || modifiedIden == nullptr)
+					return;
+
+				if (!IsEditableObject(iden))
+					return;
+
+				handle->Set(iden, std::forward<T>(value));
+
+				//JObject is selectable object
+				//others is subresource for JObject 
+				//ex) FSM object for animationController and it is pageOpenResource
+				SetModifiedBit(Core::GetUserPtr(modifiedIden), true);
+			}
+			template<typename T>
+			static void UnsafeSetValue(Core::JGuiWidgetInfoHandle<T>* handle,
+				Core::JTypeInstanceSearchHint objHint,
+				Core::JTypeInstanceSearchHint modObjHint,
+				T value)
+			{
+				Core::JIdentifier* iden = Core::GetRawPtr(objHint);
+				Core::JIdentifier* modifiedIden = Core::GetRawPtr(modObjHint);
+				if (iden == nullptr || modifiedIden == nullptr)
+					return;
+
+				if (!IsEditableObject(iden))
+					return;
+
+				handle->UnsafeSet(iden, std::forward<T>(value));
+
+				//JObject is selectable object
+				//others is subresource for JObject 
+				//ex) FSM object for animationController and it is pageOpenResource
+				SetModifiedBit(Core::GetUserPtr(modifiedIden), true);
+			}
+		protected:
+			template<typename T>
+			void RequestSetValue(UpdateData& updateData, UserData* userData, T value, bool isUnsafe = false)
+			{
+				using FType = typename Core::JSFunctorType<void,
+					Core::JGuiWidgetInfoHandle<T>*,
+					Core::JTypeInstanceSearchHint,
+					Core::JTypeInstanceSearchHint,
+					T>;
+
+				typename FType::Ptr fPtr;
+				if (isUnsafe)
+					fPtr = &UnsafeSetValue;
+				else
+					fPtr = &SetValue;
+
+				std::unique_ptr<FType::Functor> doFunctor = std::make_unique<FType::Functor>(fPtr);
+				std::unique_ptr<FType::Functor> undoFunctor = std::make_unique<FType::Functor>(fPtr);
+
+				Core::JUserPtr<Core::JIdentifier> modObj;
+				if (!updateData.obj->GetTypeInfo().IsChildOf<JObject>())
+					modObj = JEditorPageShareData::GetOpendPageData(userData->editorWnd->GetOwnerPageType()).GetOpenSeleted();
+				else
+					modObj = Core::GetUserPtr(updateData.obj);
+
+				Core::JGuiWidgetInfoHandle<T>* doHandle = static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase);
+				Core::JGuiWidgetInfoHandle<T>* undoHandle = static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase);
+
+				std::unique_ptr<typename FType::CompletelyBind> doBind = std::make_unique<typename FType::CompletelyBind>(std::move(doFunctor),
+					std::move(doHandle),
+					Core::JTypeInstanceSearchHint(Core::GetUserPtr(updateData.obj)),
+					Core::JTypeInstanceSearchHint(modObj),
+					std::move(value));
+
+				std::unique_ptr<typename FType::CompletelyBind> undoBind = std::make_unique<typename FType::CompletelyBind>(std::move(undoFunctor),
+					std::move(undoHandle),
+					Core::JTypeInstanceSearchHint(Core::GetUserPtr(updateData.obj)),
+					Core::JTypeInstanceSearchHint(modObj),
+					GetValue<T>(updateData));
+ 
+				std::string taskName = "Set " + updateData.handleBase->GetName() + " value";
+				std::string taskDesc = "type name: " + updateData.obj->GetTypeInfo().NameWithOutPrefix() ;
+				if (!updateData.obj->GetTypeInfo().IsChildOf<JComponent>())
+					taskDesc += "\nobject name: " + JCUtil::WstrToU8Str(updateData.obj->GetName());
+
+				size_t guid;
+				auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorTSetBindFuncEvStruct>
+					(taskName, taskDesc, userData->editorWnd->GetOwnerPageType(), std::move(doBind), std::move(undoBind)), guid);
+
+				(*userData->editorWnd->GetEvFunctor())(*userData->editorWnd, J_EDITOR_EVENT::T_BIND_FUNC, *evStruct);
+			}
+		}; 
 
 		class JGuiWidgetGroupHandle
 		{
-		public: 
+		public:
 			virtual void Update(JGuiWidgetDisplayHandle* widgetHandle, UpdateData& updateData, UserData* userData, const bool displayWidget) = 0;
 		};
 		//GuiTable 
@@ -217,12 +290,12 @@ namespace JinEngine
 		{
 		private:
 			using SuccessUpdateCount = int;
-		private: 
+		private:
 			std::unordered_map<std::string, SuccessUpdateCount> handleResult;
 		private:
 			bool isOpen = false;
 			uint rowIndex = 0;
-			uint columnIndex = 0; 
+			uint columnIndex = 0;
 			Core::JGuiFlag flag = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersV |
 				ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody;
 		private:
@@ -237,7 +310,7 @@ namespace JinEngine
 				Core::JGuiExtraFunctionInfo* extraInfo = Core::JGuiExtraFunctionInfoMap::GetExtraFunctionInfo(extraUserInfo->GetRefInfoMapName());
 				if (extraInfo == nullptr || static_cast<Core::JGuiGroupInfo*>(extraInfo)->GetGroupType() != Core::J_GUI_EXTRA_GROUP_TYPE::TABLE)
 					return;
-				
+
 				Core::JGuiTableUserInfo* tableUserInfo = static_cast<Core::JGuiTableUserInfo*>(extraUserInfo);
 				Core::JGuiTableInfo* tableInfo = static_cast<Core::JGuiTableInfo*>(extraInfo);
 
@@ -250,7 +323,7 @@ namespace JinEngine
 
 				const bool canUpdate = result->second < tableUserInfo->GetUseColumnCount();
 				if (canUpdate && canDisplayWidget)
-				{ 
+				{
 					DoUpdate(tableInfo, tableUserInfo, widgetHandle, updateData, userData);
 					++result->second;
 				}
@@ -275,7 +348,7 @@ namespace JinEngine
 		private:
 			void Begin(Core::JGuiTableInfo* tableInfo)
 			{
-				const uint columnCount = tableInfo->GetColumnCount(); 
+				const uint columnCount = tableInfo->GetColumnCount();
 				isOpen = JImGuiImpl::BeginTable("##GuiTable" + tableInfo->GetName(), columnCount, flag);
 				if (isOpen)
 				{
@@ -335,7 +408,7 @@ namespace JinEngine
 				rowIndex = 0;
 				columnIndex = 0;
 			}
-		}; 
+		};
 		class JGuiConditionHandle
 		{
 		public:
@@ -359,7 +432,7 @@ namespace JinEngine
 			static bool PassEnumCondition(UpdateData& updateData,
 				Core::JGuiExtraFunctionUserInfo* extraUser,
 				Core::JGuiConditionInfo* conditionInfo)
-			{ 
+			{
 				Core::JIdentifier* enumOwner = nullptr;
 				Core::JPropertyInfo* enumPropertyInfo = nullptr;
 
@@ -371,13 +444,13 @@ namespace JinEngine
 					enumOwner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JIdentifier*>(updateData.obj, refPropertyInfo);
 					if (enumOwner == nullptr)
 						return false;
-					  
+
 					enumPropertyInfo = enumOwner->GetTypeInfo().GetProperty(enumCondInfo->GetParamName());
 				}
 				else
 				{
-					enumOwner = updateData.obj;			 
-					enumPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(enumCondInfo->GetParamName());				 
+					enumOwner = updateData.obj;
+					enumPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(enumCondInfo->GetParamName());
 				}
 				if (enumOwner == nullptr || enumPropertyInfo == nullptr)
 					return false;
@@ -385,7 +458,7 @@ namespace JinEngine
 				if (enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
 					return false;
 
-				if (enumCondUser->OnTrigger(JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo)))		 
+				if (enumCondUser->OnTrigger(JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo)))
 					return true;
 				else
 					return false;
@@ -466,9 +539,9 @@ namespace JinEngine
 				bool res = false;
 				constexpr bool canUseFixed = std::is_integral_v<T> || std::is_floating_point_v<T>;
 				if constexpr (!canUseFixed)
-					ClassifyInputType(updateData);
+					res = ClassifyInputType(updateData);
 				else if (!inputInfo->HasValidFixedParameter())
-					ClassifyInputType(updateData);
+					res = ClassifyInputType(updateData);
 				else
 				{
 					Core::J_PARAMETER_TYPE fixedParam = inputInfo->GetFixedParameter();
@@ -502,9 +575,9 @@ namespace JinEngine
 				if (res)
 				{
 					if constexpr (std::is_same_v<T, std::string >)
-						SetValue(updateData, userData, JCUtil::EraseSideChar(buff, '\0'));
+						RequestSetValue<T>(updateData, userData, JCUtil::EraseSideChar(buff, '\0'));
 					else
-						SetValue(updateData, userData, buff);
+						RequestSetValue<T>(updateData, userData, buff);
 				}
 				++exeCount;
 				if (exeCount == exeMaxCount)
@@ -623,32 +696,46 @@ namespace JinEngine
 		protected:
 			void Begin(UpdateData& updateData, UserData* userData)
 			{
-				if (isSelected)
-				{
-					SetSelectObject(updateData, userData);
-					ClearPreviewGroup();
-					selectorPreviewVec.clear();
-					CreateSelectorPreviewList();
-					isSelected = false;
-				}
-
+				UpdateValue(updateData);
 				if (isClosePopup)
 				{
 					ClearPreviewGroup();
-					selectorPreviewVec.clear();
-					CreateSelectorPreviewList();
+					ClearSelectorPreviewList();
+					selectorPreviewVec.clear(); 
 					isClosePopup = false;
 				}
+				CreateSelectorPreviewList();			 
+			} 
+			void End(UpdateData& updateData, UserData* userData)
+			{
+				if (isSelected)
+				{
+					SetSelectObject(updateData, userData);
+					isSelected = false;
+				}
 			}
+			virtual void UpdateValue(UpdateData& updateData) = 0;
 		protected:
-			void SelectedPreviewOnScreen(JPreviewScene* previewScene)
+			void SelectedPreviewOnScreen(JPreviewScene** previewScene, JObject* previewObject)
 			{
 				if (!CanCreatePreviewImage())
 					return;
+				 
+			    bool hasPreviewScene = previewScene != nullptr && (*previewScene) != nullptr;
+				bool hasPreviewObject = previewObject != nullptr;
+				bool isNone = !hasPreviewScene && !hasPreviewObject;
 
-				if (previewScene != nullptr)
+				bool isMatch = (hasPreviewScene && hasPreviewObject) &&(*previewScene)->GetJObject()->GetGuid() == previewObject->GetGuid();
+				if (!isMatch && !isNone)
 				{
-					JImGuiImpl::Image(*previewScene->GetPreviewCamera().Get(), JVector2<float>(sizeMin, sizeMin));
+					DestroyPreviewScene(*previewScene);
+					*previewScene = CreatePreviewScene(Core::GetUserPtr(previewObject));
+					hasPreviewScene = previewScene != nullptr && (*previewScene) != nullptr;
+				}
+
+				if (hasPreviewScene && hasPreviewObject)
+				{
+					JImGuiImpl::Image(*(*previewScene)->GetPreviewCamera().Get(), JVector2<float>(sizeMin, sizeMin));
 					ImGui::SameLine();
 				}
 				else
@@ -657,12 +744,25 @@ namespace JinEngine
 					ImGui::SameLine();
 				}
 			}
+			void SelectedPreviewOnScreen(JPreviewScene** previewScene, Core::JUserPtr<JObject> previewObject)
+			{
+				SelectedPreviewOnScreen(previewScene, previewObject.Get());
+			}
 			template<typename ValueType, typename PointerRef>
 			bool SelectorOnScreen(PointerRef selectedObj, UpdateData& updateData, const std::string& uniqueLabel)
 			{
 				std::string name = "None";
-				if (selectedObj != nullptr && (*selectedObj) != nullptr)
-					name = JCUtil::WstrToU8Str((*selectedObj)->GetName());
+				if constexpr (Core::JUserPtrDetermine<Core::RemoveAll_T<PointerRef>>::value)
+				{
+					if ((*selectedObj).IsValid())
+						name = JCUtil::WstrToU8Str((*selectedObj)->GetName());
+				}
+				else
+				{
+					if (selectedObj != nullptr && (*selectedObj) != nullptr)
+						name = JCUtil::WstrToU8Str((*selectedObj)->GetName());
+				}
+
 
 				ImGui::SetNextWindowSize(JImGuiImpl::GetClientWindowSize() * 0.3f);
 				const std::string comboLabel = "##PreviewSelector" + uniqueLabel;
@@ -800,7 +900,9 @@ namespace JinEngine
 				}
 			}
 		protected:
+			//Create PreviewList and reCreate unmatch preview
 			virtual void CreateSelectorPreviewList() = 0;
+			virtual void ClearSelectorPreviewList() = 0;
 			template<typename ValueType>
 			void CreateSelectorList()
 			{
@@ -823,7 +925,7 @@ namespace JinEngine
 			bool IsFirstOpen()const noexcept
 			{
 				return isFirstOpen;
-			}
+			} 
 			bool CanCreatePreviewImage()const
 			{
 				return imageType != Core::J_GUI_SELECTOR_IMAGE::NONE;
@@ -833,6 +935,7 @@ namespace JinEngine
 			{
 				return (uint)selectorPreviewVec.size();
 			}
+		protected:
 			void SetFirstTrigger(bool value)noexcept
 			{
 				isFirstOpen = value;
@@ -841,7 +944,6 @@ namespace JinEngine
 			{
 				isClosePopup = value;
 			}
-		protected:
 			virtual void SetSelectObject(UpdateData& updateData, UserData* userData) = 0;
 		};
 		//T is JResourceObject derive class
@@ -849,7 +951,8 @@ namespace JinEngine
 		class JGuiSingleSelectorHandle : public JGuiSelectorHandleHelper, public JGuiObjectValueInterface
 		{
 		private:
-			using ValueType = Core::RemoveAll_T<T>;
+			static constexpr bool isUser = Core::JUserPtrDetermine<typename Core::RemoveAll_T<T>>::value;
+			using ValueType = typename Core::JUserPtrDetermine<typename Core::RemoveAll_T<T>>::ElementType;
 		private:
 			size_t guid = Core::MakeGuid();
 		private:
@@ -859,7 +962,7 @@ namespace JinEngine
 			void Initialize(UpdateData& updateData, UserData* userData) final
 			{
 				JGuiSelectorHandleHelper::Initialize(updateData, userData);
-				selectedObj = GetValue<T>(updateData);
+				UpdateValue(updateData);
 				CreateSelectorPreviewList();
 			}
 			void Update(UpdateData& updateData, UserData* userData) final
@@ -867,36 +970,80 @@ namespace JinEngine
 				TrySameLine(userData);
 				DisplayName(updateData, userData);
 				Begin(updateData, userData);
-				if (CanCreatePreviewImage())
-					SelectedPreviewOnScreen(selectedPreview);
+				if constexpr (std::is_base_of_v<JObject, ValueType>)
+					SelectedPreviewOnScreen(&selectedPreview, selectedObj);
 				TrySameLine(userData);
-				bool isOpen = SelectorOnScreen<ValueType>(&selectedObj, updateData, MakeUniqueLabel(updateData));
+				bool isOpen = false;
+				if constexpr(isUser)
+				{
+					ValueType* ptr = selectedObj.Get();
+					isOpen = SelectorOnScreen<ValueType>(&ptr, updateData, MakeUniqueLabel(updateData));
+					selectedObj = Core::GetUserPtr(ptr);
+				}
+				else
+					isOpen = SelectorOnScreen<ValueType>(&selectedObj, updateData, MakeUniqueLabel(updateData));		 
 				if (!isOpen)
 				{
 					SetFirstTrigger(true);
 					if (GetPreviewCount() > 0)
 						SetCloseTrigger(true);
 				}
+				End(updateData, userData);
+			}
+			void UpdateValue(UpdateData& updateData)final
+			{
+				selectedObj = GetValue<T>(updateData);
 			}
 		protected:
 			void SetSelectObject(UpdateData& updateData, UserData* userData) final
 			{
-				SetValue(updateData, userData, selectedObj);
+				RequestSetValue(updateData, userData, selectedObj);
 			}
 		private:
 			void CreateSelectorPreviewList()
 			{
 				if (!CanCreatePreviewImage())
 					return;
+
 				if constexpr (std::is_base_of_v<JObject, ValueType>)
-					selectedPreview = CreatePreviewScene(Core::GetUserPtr(selectedObj));
+				{
+					if (selectedPreview != nullptr)
+					{
+						if (selectedObj == nullptr)
+						{
+							DestroyPreviewScene(selectedPreview);
+							selectedPreview = nullptr;
+							return;
+						}
+						else if (selectedObj->GetGuid() != selectedPreview->GetJObject()->GetGuid())
+						{
+							DestroyPreviewScene(selectedPreview);
+							selectedPreview = nullptr;
+						}
+						else
+							return;
+					}
+
+					if (selectedObj == nullptr)
+						return;
+
+					if constexpr (isUser)
+						selectedPreview = CreatePreviewScene(selectedObj);
+					else
+						selectedPreview = CreatePreviewScene(Core::GetUserPtr(selectedObj));
+				}
+			} 
+			void ClearSelectorPreviewList()
+			{
+				selectedPreview = nullptr;
 			}
 		};
 		template<typename T>
 		class JGuiMultiSelectorHandle : public JGuiSelectorHandleHelper, public JGuiObjectValueInterface
 		{
 		private:
-			using ValueType = Core::RemoveAll_T<typename Core::StdArrayContainerDetermine<T>::ValueType>;
+			static constexpr bool isUser = Core::JUserPtrDetermine<Core::RemoveAll_T<typename Core::StdArrayDetermine<T>::ValueType>>::value;
+			using ValueType = typename Core::JUserPtrDetermine<Core::RemoveAll_T<typename Core::StdArrayDetermine<T>::ValueType>>::ElementType;
 		private:
 			T container;
 			std::vector<JPreviewScene*> selectedPreview;
@@ -907,10 +1054,7 @@ namespace JinEngine
 			void Initialize(UpdateData& updateData, UserData* userData) final
 			{
 				JGuiSelectorHandleHelper::Initialize(updateData, userData);
-
-				container = GetValue<T>(updateData);
-				containerCount = (uint)container.size();
-
+				UpdateValue(updateData);
 				CreateSelectorPreviewList();
 			}
 			void Update(UpdateData& updateData, UserData* userData) final
@@ -928,11 +1072,21 @@ namespace JinEngine
 						JImGuiImpl::Text(JCUtil::WstrToU8Str(rItem->GetMesh()->GetSubMeshName(i)));
 					}
 
-					if (CanCreatePreviewImage())
-						SelectedPreviewOnScreen(selectedPreview[i]);
+					if constexpr (std::is_base_of_v<JObject, ValueType>)
+						SelectedPreviewOnScreen(&selectedPreview[i], container[i]); 
 					TrySameLine(userData);
-					bool res = SelectorOnScreen<ValueType>(&container[i], updateData, uniqueLabel);
-					if (res)
+
+					bool isOpen = false;
+					if constexpr (isUser)
+					{
+						ValueType* ptr = container[i].Get();
+						isOpen = SelectorOnScreen<ValueType>(&ptr, updateData, MakeUniqueLabel(updateData));
+						container[i] = Core::GetUserPtr(ptr);
+					}
+					else
+						isOpen = SelectorOnScreen<ValueType>(&container[i], updateData, uniqueLabel);
+					 
+					if (isOpen)
 						selectedIndex = i;
 					else
 					{
@@ -945,47 +1099,81 @@ namespace JinEngine
 						}
 					}
 				}
+				End(updateData, userData);
+			}
+			void UpdateValue(UpdateData& updateData)final
+			{
+				container = GetValue<T>(updateData);
+				containerCount = (uint)container.size();
 			}
 		protected:
 			void SetSelectObject(UpdateData& updateData, UserData* userData) final
 			{
-				SetValue(updateData, userData, container);
+				RequestSetValue<T>(updateData, userData, container);
 			}
 		private:
 			void CreateSelectorPreviewList()
 			{
 				if (!CanCreatePreviewImage())
 					return;
+
 				if constexpr (std::is_base_of_v<JObject, ValueType>)
 				{
 					selectedPreview.resize(containerCount);
 					for (uint i = 0; i < containerCount; ++i)
-						selectedPreview[i] = CreatePreviewScene(Core::GetUserPtr<JResourceObject>(container[i]));
+					{
+						if (selectedPreview[i] != nullptr)
+						{
+							if (container[i] == nullptr)
+							{
+								DestroyPreviewScene(selectedPreview[i]);
+								selectedPreview[i] = nullptr;
+								return;
+							}
+							else if (container[i]->GetGuid() != selectedPreview[i]->GetJObject()->GetGuid())
+							{
+								DestroyPreviewScene(selectedPreview[i]);
+								selectedPreview[i] = nullptr;
+							}
+							else
+								continue;
+						}
+
+						if constexpr (isUser)
+							selectedPreview[i] = CreatePreviewScene(container[i]);
+						else
+							selectedPreview[i] = CreatePreviewScene(Core::GetUserPtr<JResourceObject>(container[i]));
+					}
 				}
 			}
+			void ClearSelectorPreviewList()
+			{
+				selectedPreview.clear();
+			}
 		};
+
 		//bool
 		class JGuiCheckBoxHandle : public JGuiWidgetDisplayHandle, public JGuiObjectValueInterface
 		{
 		private:
 			bool value = false;
 		public:
-			void Initialize(UpdateData& updateData, UserData* userData)final{}
+			void Initialize(UpdateData& updateData, UserData* userData)final {}
 			void Update(UpdateData& updateData, UserData* userData)final
-			{ 
+			{
 				if (!IsConveribleParam(updateData.handleBase->GetFieldHint()))
 					return;
 
 				value = GetValue<bool>(updateData);
 				TrySameLine(userData);
 				if (JImGuiImpl::CheckBox(GetDisplayName("GuiCheckbox" + MakeUniqueLabel(updateData), updateData, userData), value))
-					SetValue(updateData, userData, value);
+					RequestSetValue<bool>(updateData, userData, value);
 			}
 		public:
 			static bool IsConveribleParam(const Core::JParameterHint hint)
 			{
 				return hint.jDataEnum == Core::J_PARAMETER_TYPE::Bool ||
-					hint.jDataEnum == Core::J_PARAMETER_TYPE::Int || 
+					hint.jDataEnum == Core::J_PARAMETER_TYPE::Int ||
 					hint.jDataEnum == Core::J_PARAMETER_TYPE::Float;
 			}
 		};
@@ -1023,12 +1211,12 @@ namespace JinEngine
 					if constexpr (std::is_integral_v<T>)
 					{
 						if (JImGuiImpl::InputInt("##GuiSliderIntInput" + MakeUniqueLabel(updateData), &value))
-							SetValue(updateData, userData, value);
+							RequestSetValue<T>(updateData, userData, value);
 					}
 					else
 					{
 						if (JImGuiImpl::InputFloat("##GuiSliderFloatInput" + MakeUniqueLabel(updateData), &value, 0, "%.1f"))
-							SetValue(updateData, userData, value);
+							RequestSetValue<T>(updateData, userData, value);
 					}
 					ImGui::SameLine();
 				}
@@ -1039,12 +1227,12 @@ namespace JinEngine
 					if constexpr (std::is_integral_v<T>)
 					{
 						if (JImGuiImpl::VSliderInt("##GuiIntVSlider" + MakeUniqueLabel(updateData), vSliderSize, &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							SetValue(updateData, userData, value);
+							RequestSetValue<T>(updateData, userData, value);
 					}
 					else
 					{
 						if (JImGuiImpl::VSliderFloat("##GuiFloatVSlider" + MakeUniqueLabel(updateData), vSliderSize, &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							SetValue(updateData, userData, value);
+							RequestSetValue<T>(updateData, userData, value);
 					}
 				}
 				else
@@ -1053,12 +1241,12 @@ namespace JinEngine
 					if constexpr (std::is_integral_v<T>)
 					{
 						if (JImGuiImpl::SliderInt("##GuiIntSlider" + MakeUniqueLabel(updateData), &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							SetValue(updateData, userData, value);
+							RequestSetValue<T>(updateData, userData, value);
 					}
 					else
 					{
 						if (JImGuiImpl::SliderFloat("##GuiFloatSlider" + MakeUniqueLabel(updateData), &value, minValue, maxValue, "", ImGuiSliderFlags_AlwaysClamp))
-							SetValue(updateData, userData, value);
+							RequestSetValue<T>(updateData, userData, value);
 					}
 				}
 
@@ -1094,12 +1282,12 @@ namespace JinEngine
 					if constexpr (T::GetDigitCount() == 3)
 					{
 						if (ImGui::ColorPicker3(("##GuiColorPicker" + MakeUniqueLabel(updateData)).c_str(), (float*)&colorV, flag))
-							SetValue(updateData, userData, colorV);
+							RequestSetValue<T>(updateData, userData, colorV);
 					}
 					else if constexpr (T::GetDigitCount() == 4)
 					{
 						if (ImGui::ColorPicker4(("##GuiColorPicker" + MakeUniqueLabel(updateData)).c_str(), (float*)&colorV, flag))
-							SetValue(updateData, userData, colorV);
+							RequestSetValue<T>(updateData, userData, colorV);
 					}
 
 				}
@@ -1110,7 +1298,7 @@ namespace JinEngine
 						if (ImGui::ColorPicker3(("##GuiColorPicker" + MakeUniqueLabel(updateData)).c_str(), (float*)&colorV, flag))
 						{
 							if constexpr (std::is_same_v<T, DirectX::XMFLOAT3>)
-								SetValue(updateData, userData, DirectX::XMFLOAT3(colorV.x, colorV.y, colorV.z));
+								RequestSetValue<T>(updateData, userData, DirectX::XMFLOAT3(colorV.x, colorV.y, colorV.z));
 						}
 					}
 					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
@@ -1118,7 +1306,7 @@ namespace JinEngine
 						if (ImGui::ColorPicker4(("##GuiColorPicker" + MakeUniqueLabel(updateData)).c_str(), (float*)&colorV, flag))
 						{
 							if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
-								SetValue(updateData, userData, DirectX::XMFLOAT4(colorV.x, colorV.y, colorV.z, colorV.w));
+								RequestSetValue<T>(updateData, userData, DirectX::XMFLOAT4(colorV.x, colorV.y, colorV.z, colorV.w));
 						}
 					}
 				}
@@ -1228,7 +1416,7 @@ namespace JinEngine
 							if (JImGuiImpl::Selectable(enumInfo->ElementName(enumInfo->EnumValue(i)), isSelected))
 							{
 								if (selectedIndex != i)
-									UnsafeSetValue<Core::JEnum>(updateData, userData, enumInfo->EnumValue(i));
+									RequestSetValue<Core::JEnum>(updateData, userData, enumInfo->EnumValue(i), true);
 								selectedIndex = i;
 							}
 
@@ -1245,8 +1433,8 @@ namespace JinEngine
 		template<typename T>
 		class JGuiListHandle : public JGuiWidgetDisplayHandle, public JGuiObjectValueInterface
 		{
-		private:
-			using ValueType = Core::RemoveAll_T<typename Core::StdArrayContainerDetermine<T>::ValueType>;
+		public:
+			using ValueType = typename Core::JUserPtrDetermine<Core::RemoveAll_T<typename Core::StdArrayDetermine<T>::ValueType>>::ElementType;
 		private:
 			T container;
 		private:
@@ -1274,7 +1462,7 @@ namespace JinEngine
 				DisplayName(updateData, userData);
 				TrySameLine(userData);
 				ImGui::BeginGroup();
-				ImGui::SetNextWindowSize(JImGuiImpl::GetClientWindowSize() * 0.3f); 
+				ImGui::SetNextWindowSize(JImGuiImpl::GetClientWindowSize() * 0.3f);
 				const uint containerCount = (uint)container.size();
 				if (JImGuiImpl::BeginListBox("##GulList" + MakeUniqueLabel(updateData)))
 				{
@@ -1286,12 +1474,12 @@ namespace JinEngine
 					Core::JTypeInfoOption* option = typeInfo->GetOption();
 					uint rowMax = containerCount;
 					uint columnMax = option->GetGuiWidgetInfoHandleCount();
-		 
+
 					JImGuiImpl::BeginTable("##GuiListTable" + MakeUniqueLabel(updateData), columnMax, flag);
 					for (uint i = 0; i < columnMax; ++i)
 						JImGuiImpl::TableSetupColumn(option->GetGuiWidgetInfoHandle(i)->GetName(), columnDefaultFlag);
 					JImGuiImpl::TableHeadersRow();
-					
+
 					if (rowMax > 0)
 					{
 						JImGuiImpl::TableNextRow();
@@ -1309,7 +1497,7 @@ namespace JinEngine
 							if (i + 1 < containerCount)
 								JImGuiImpl::TableNextRow();
 						}
-					}	
+					}
 					JImGuiImpl::EndTable();
 					JImGuiImpl::EndListBox();
 				}
@@ -1326,9 +1514,77 @@ namespace JinEngine
 
 		namespace
 		{
-			static std::unique_ptr<JGuiWidgetDisplayHandle> MakeDisplayHandle(Core::JParameterHint pHint, Core::JGuiWidgetInfo* widgetInfo)
+
+			template<typename T, bool isVector, bool isRawPointer, bool isUserPointer>
+			struct JGuiSelectorHandleType;
+			template<typename T, bool isRawPointer, bool isUserPointer>
+			struct JGuiSelectorHandleType<T, false, isRawPointer, isUserPointer>
+			{
+			public:
+				using Type = JGuiSingleSelectorHandle<std::conditional_t<isRawPointer, T*,
+					std::conditional_t<isUserPointer,
+					Core::JUserPtr<T>,
+					T>>>;
+			};
+			template<typename T, bool isRawPointer, bool isUserPointer>
+			struct JGuiSelectorHandleType<T, true, isRawPointer, isUserPointer>
+			{
+			public:
+				using Type = JGuiMultiSelectorHandle<std::conditional_t<isRawPointer, std::vector<T*>,
+					std::conditional_t<isUserPointer,
+					std::vector<Core::JUserPtr<T>>,
+					std::vector<T>>>>;
+			};
+
+			template<typename T, bool isVector, bool isRawPointer, bool isUserPointer>
+			struct JGuiHandleType
+			{
+			public:
+				using Type = std::conditional_t<isVector,
+					std::conditional_t<isRawPointer, std::vector<T*>, std::conditional_t<isUserPointer, std::vector<Core::JUserPtr<T>>, std::vector<T>>>,
+					std::conditional_t<isRawPointer, T*, std::conditional_t<isUserPointer, Core::JUserPtr<T>, T>>>;
+			};
+
+			template<typename T>
+			static std::unique_ptr<JGuiWidgetDisplayHandle> DoMakeGuiSelectorHandle(const bool isVector, const bool isRawPtr, const bool isUser)
+			{
+				if (isVector)
+				{
+					if (isRawPtr)
+						return std::make_unique<JGuiSelectorHandleType<T, true, true, false>::Type>();
+					else
+						return std::make_unique<JGuiSelectorHandleType<T, true, false, true>::Type>();
+				}
+				else
+				{
+					if (isRawPtr)
+						return std::make_unique<JGuiSelectorHandleType<T, false, true, false>::Type>();
+					else
+						return std::make_unique<JGuiSelectorHandleType<T, false, false, true>::Type>();
+				}
+			}
+
+			template<typename T>
+			static std::unique_ptr<JGuiWidgetDisplayHandle> DoMakeListGuiHandle(const bool isVector, const bool isRawPtr, const bool isUser)
+			{
+				if (isVector)
+				{
+					if (isRawPtr)
+						return std::make_unique<JGuiListHandle<JGuiHandleType<T, true, true, false>::Type>>();
+					else
+						return std::make_unique<JGuiListHandle<JGuiHandleType<T, true, false, true>::Type>>();
+				}
+				else
+					return nullptr;
+			}
+
+			static std::unique_ptr<JGuiWidgetDisplayHandle> MakeGuiHandle(Core::JParameterHint pHint, Core::JGuiWidgetInfo* widgetInfo)
 			{
 				Core::J_PARAMETER_TYPE pType = pHint.jDataEnum;
+				bool isVector = pType == Core::J_PARAMETER_TYPE::STD_VECTOR;
+				bool isUser = pType == Core::J_PARAMETER_TYPE::USER_PTR;
+				bool isRawPtr = pHint.isPtr;
+
 				switch (widgetInfo->GetSupportWidgetType())
 				{
 				case J_GUI_WIDGET_INPUT:
@@ -1409,92 +1665,33 @@ namespace JinEngine
 				case J_GUI_WIDGET_SELECTOR:
 				{
 					Core::JTypeInfo* typeinfo = nullptr;
-					bool isVector = false;
-					if (pType == Core::J_PARAMETER_TYPE::STD_VECTOR)
-						isVector = true;
-
 					//if success isA casting
 					//exe downcast
 					typeinfo = Core::JReflectionInfo::Instance().FindTypeInfo(pHint.valueTypeFullName);
 					if (typeinfo != nullptr)
 					{
 						if (typeinfo->IsA<JAnimationClip>())
-						{
-							if (isVector)
-								return std::make_unique<JGuiMultiSelectorHandle<std::vector<JAnimationClip*>>>();
-							else
-								return std::make_unique<JGuiSingleSelectorHandle<JAnimationClip*>>();
-						}
+							return DoMakeGuiSelectorHandle<JAnimationClip>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JAnimationController>())
-						{
-							if (isVector)
-								return std::make_unique<JGuiMultiSelectorHandle<std::vector<JAnimationController*>>>();
-							else
-								return std::make_unique<JGuiSingleSelectorHandle<JAnimationController*>>();
-						}
+							return DoMakeGuiSelectorHandle<JAnimationController>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JMaterial>())
-						{
-							if (isVector)
-								return std::make_unique<JGuiMultiSelectorHandle<std::vector<JMaterial*>>>();
-							else
-								return std::make_unique<JGuiSingleSelectorHandle<JMaterial*>>();
-						}
+							return DoMakeGuiSelectorHandle<JMaterial>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JMeshGeometry>())
-						{
-							if (isVector)
-								return std::make_unique<JGuiMultiSelectorHandle<std::vector<JMeshGeometry*>>>();
-							else
-								return std::make_unique<JGuiSingleSelectorHandle<JMeshGeometry*>>();
-						}
+							return DoMakeGuiSelectorHandle<JMeshGeometry>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JStaticMeshGeometry>())
-						{
-							if (isVector)
-								return std::make_unique<JGuiMultiSelectorHandle<std::vector<JStaticMeshGeometry*>>>();
-							else
-								return std::make_unique<JGuiSingleSelectorHandle<JStaticMeshGeometry*>>();
-						}
+							return DoMakeGuiSelectorHandle<JStaticMeshGeometry>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JSkinnedMeshGeometry>())
-						{
-							if (isVector)
-								return std::make_unique<JGuiMultiSelectorHandle<std::vector<JSkinnedMeshGeometry*>>>();
-							else
-								return std::make_unique<JGuiSingleSelectorHandle<JSkinnedMeshGeometry*>>();
-						}
+							return DoMakeGuiSelectorHandle<JSkinnedMeshGeometry>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JScene>())
-						{
-							if (isVector)
-								return std::make_unique<JGuiMultiSelectorHandle<std::vector<JScene*>>>();
-							else
-								return std::make_unique<JGuiSingleSelectorHandle<JScene*>>();
-						}
+							return DoMakeGuiSelectorHandle<JScene>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JShader>())
-						{
-							if (isVector)
-								return std::make_unique<JGuiMultiSelectorHandle<std::vector<JShader*>>>();
-							else
-								return std::make_unique<JGuiSingleSelectorHandle<JShader*>>();
-						}
+							return DoMakeGuiSelectorHandle<JShader>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JSkeletonAsset>())
-						{
-							if (isVector)
-								return std::make_unique<JGuiMultiSelectorHandle<std::vector<JSkeletonAsset*>>>();
-							else
-								return std::make_unique<JGuiSingleSelectorHandle<JSkeletonAsset*>>();
-						}
+							return DoMakeGuiSelectorHandle<JSkeletonAsset>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JTexture>())
-						{
-							if (isVector)
-								return std::make_unique<JGuiMultiSelectorHandle<std::vector<JTexture*>>>();
-							else
-								return std::make_unique<JGuiSingleSelectorHandle<JTexture*>>();
-						}
+							return DoMakeGuiSelectorHandle<JTexture>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<Core::JFSMparameter>())
-						{
-							if (isVector)
-								return std::make_unique<JGuiMultiSelectorHandle<std::vector<Core::JFSMparameter*>>>();
-							else
-								return std::make_unique<JGuiSingleSelectorHandle<Core::JFSMparameter*>>();
-						}
+							return DoMakeGuiSelectorHandle<Core::JFSMparameter>(isVector, isRawPtr, isUser);
 					}
 					break;
 				}
@@ -1564,28 +1761,28 @@ namespace JinEngine
 					if (typeinfo != nullptr)
 					{
 						if (typeinfo->IsA<JAnimationClip>())
-							return std::make_unique<JGuiListHandle<std::vector<JAnimationClip*>>>();
+							return DoMakeListGuiHandle<JAnimationClip>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JAnimationController>())
-							return std::make_unique<JGuiListHandle<std::vector<JAnimationController*>>>();
+							return DoMakeListGuiHandle<JAnimationController>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JMaterial>())
-							return std::make_unique<JGuiListHandle<std::vector<JMaterial*>>>();
+							return DoMakeListGuiHandle<JMaterial>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JMeshGeometry>())
-							return std::make_unique<JGuiListHandle<std::vector<JMeshGeometry*>>>();
+							return DoMakeListGuiHandle<JMeshGeometry>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JStaticMeshGeometry>())
-							return std::make_unique<JGuiListHandle<std::vector<JStaticMeshGeometry*>>>();
+							return DoMakeListGuiHandle<JStaticMeshGeometry>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JSkinnedMeshGeometry>())
-							return std::make_unique<JGuiListHandle<std::vector<JSkinnedMeshGeometry*>>>();
+							return DoMakeListGuiHandle<JSkinnedMeshGeometry>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JScene>())
-							return std::make_unique<JGuiListHandle<std::vector<JScene*>>>();
+							return DoMakeListGuiHandle<JScene>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JShader>())
-							return std::make_unique<JGuiListHandle<std::vector<JShader*>>>();
+							return DoMakeListGuiHandle<JShader>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JSkeletonAsset>())
-							return std::make_unique<JGuiListHandle<std::vector<JSkeletonAsset*>>>();
+							return DoMakeListGuiHandle<JSkeletonAsset>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<JTexture>())
-							return std::make_unique<JGuiListHandle<std::vector<JTexture*>>>();
+							return DoMakeListGuiHandle<JTexture>(isVector, isRawPtr, isUser);
 						else if (typeinfo->IsA<Core::JFSMcondition>())
-							return std::make_unique<JGuiListHandle<std::vector<Core::JFSMcondition*>>>();
-
+							return DoMakeListGuiHandle<Core::JFSMcondition>(isVector, isRawPtr, isUser);
+						 
 						/*else if (typeinfo->IsA<JResourceObject>())
 						{
 							if (isVector)
@@ -1656,6 +1853,10 @@ namespace JinEngine
 				else
 					SettingUserData(obj, typeInfo, userData);
 			}
+			static void SettingDisplayTypeInfo(Core::JUserPtr<Core::JIdentifier> obj, Core::JTypeInfo* typeInfo, UserData* userData)
+			{
+				SettingDisplayTypeInfo(obj.Get(), typeInfo, userData);
+			}
 			static void SettingUserData(Core::JIdentifier* obj, Core::JTypeInfo* typeInfo, UserData* userData)
 			{
 				Core::JTypeInfoOption* typeOption = typeInfo->GetOption();
@@ -1676,6 +1877,10 @@ namespace JinEngine
 					}
 				}
 			}
+			static void SettingUserData(Core::JUserPtr<Core::JIdentifier> obj, Core::JTypeInfo* typeInfo, UserData* userData)
+			{
+				SettingUserData(obj.Get(), typeInfo, userData);
+			}
 			static void DisplayWidget(UpdateData& updateData, UserData* userData)
 			{
 				if (updateData.GetWidgetInfo()->GetSupportWidgetType() == Core::Constants::NotSupportGuiWidget)
@@ -1685,7 +1890,7 @@ namespace JinEngine
 				auto widgetHandle = userData->guiWidgetHandleMap.find(widgetMapKey);
 				if (widgetHandle == userData->guiWidgetHandleMap.end())
 				{
-					std::unique_ptr<JGuiWidgetDisplayHandle> newHandle = MakeDisplayHandle(updateData.handleBase->GetFieldHint(), updateData.GetWidgetInfo());
+					std::unique_ptr<JGuiWidgetDisplayHandle> newHandle = MakeGuiHandle(updateData.handleBase->GetFieldHint(), updateData.GetWidgetInfo());
 					if (newHandle != nullptr)
 					{
 						userData->guiWidgetHandleMap.emplace(widgetMapKey, std::move(newHandle));
@@ -1736,10 +1941,10 @@ namespace JinEngine
 			}
 		}
 
-		JReflectionGuiWidgetHelper::JReflectionGuiWidgetHelper(const J_EDITOR_PAGE_TYPE ownerPageType)
-			:guid(Core::MakeGuid()), ownerPageType(ownerPageType)
+		JReflectionGuiWidgetHelper::JReflectionGuiWidgetHelper(JEditorWindow* ownerWnd)
+			:guid(Core::MakeGuid()), ownerWnd(ownerWnd)
 		{
-			PrivateDataMap::Data().emplace(guid, std::make_unique<UserData>(ownerPageType));
+			PrivateDataMap::Data().emplace(guid, std::make_unique<UserData>(ownerWnd));
 		}
 		JReflectionGuiWidgetHelper::~JReflectionGuiWidgetHelper()
 		{

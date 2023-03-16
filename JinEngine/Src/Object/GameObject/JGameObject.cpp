@@ -157,7 +157,7 @@ namespace JinEngine
 		parent = newParent;
 		SetName(JCUtil::MakeUniqueName(parent->children, GetName()));
 		newParent->children.push_back(this); 
-		static_cast<JTransformGameObjectInterface*>(transform)->ChangeParent();
+		static_cast<JTransformGameObjectInterface*>(transform)->ChangeParent(); 
 	}
 	JComponent* JGameObject::FindComponent(const size_t guid)const noexcept
 	{
@@ -329,12 +329,21 @@ namespace JinEngine
 	{
 		if(parent != nullptr)
 			parent->children.push_back(this);
+		else if(parentInfo != nullptr)
+		{
+			auto pIden = Core::GetRawPtr(*parentInfo);
+			parent = pIden != nullptr? static_cast<JGameObject*>(pIden) : nullptr;
+			if (parent != nullptr)
+				parent->children.push_back(this);
+		}
+
 		return static_cast<Core::JTypeCashInterface<JGameObject>*>(ownerScene)->AddType(this);
 	}
 	bool JGameObject::DeRegisterCashData()noexcept
 	{ 
 		if (parent != nullptr)
 		{
+			parentInfo = std::make_unique<Core::JTypeInstanceSearchHint>(Core::GetUserPtr(parent));
 			const size_t guid = GetGuid();
 			const uint pChildrenCount = (uint)parent->children.size();
 			for (uint i = 0; i < pChildrenCount; ++i)
@@ -354,7 +363,7 @@ namespace JinEngine
 		return StoreObject(stream, this);
 	}
 	Core::J_FILE_IO_RESULT JGameObject::StoreObject(std::wofstream& stream, JGameObject* gameObject)
-	{
+	{ 
 		if (gameObject == nullptr)
 			return Core::J_FILE_IO_RESULT::FAIL_NULL_OBJECT;
 
@@ -473,7 +482,7 @@ namespace JinEngine
 	{
 		//parent == nullptr = root
 		if (parent != nullptr)
-			JGameObject::ownerScene = parent->ownerScene;
+			JGameObject::ownerScene = parent->ownerScene; 
 		else
 			JGameObject::ownerScene = ownerScene;
 	}

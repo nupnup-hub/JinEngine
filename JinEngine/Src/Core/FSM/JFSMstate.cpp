@@ -82,12 +82,16 @@ namespace JinEngine
 			//for (uint i = 0; i < transitionSize; ++i)
 			//	copy[i]->Clear();
 			for (uint i = 0; i < transitionSize; ++i)
-				JFSMInterface::Destroy(copy[i]);
+				JFSMInterface::BeginDestroy(copy[i]);
 			transitionVec.clear();
 		}
 		JFSMparameterStorageUserAccess* JFSMstate::GetParamStorageInterface()const noexcept
 		{
 			return ownerInterface->GetParamStorageInterface();
+		}
+		bool JFSMstate::IsSameDiagram(const size_t diagramGuid)const noexcept
+		{
+			return ownerInterface->IsSameDiagram(diagramGuid);
 		}
 		bool JFSMstate::AddType(JFSMtransition* newTransition)noexcept
 		{

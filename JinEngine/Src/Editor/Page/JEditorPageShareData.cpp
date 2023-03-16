@@ -1,13 +1,15 @@
 #include"JEditorPageShareData.h" 
-#include"../Page/JEditorPage.h"
+#include"../Page/JEditorPage.h" 
 #include"../../Core/Identity/JIdentifier.h"
-#include"../../Object/GameObject/JGameObject.h" 
+#include"../../Utility/JCommonUtility.h"
 #include<vector>
+#include<unordered_map>
 
 namespace JinEngine
 {
 	namespace Editor
 	{
+		using GetPageNameF = typename JEditorPageShareData::GetPageNameF;
 		using GetPageFlagF = typename JEditorPageShareData::GetPageFlagF;
 		class ShareData
 		{
@@ -16,12 +18,19 @@ namespace JinEngine
 			const uint dockSpaceID;
 		public:
 			Core::JUserPtr<Core::JIdentifier> openObject;
-			Core::JUserPtr<Core::JIdentifier> selectObj;
-			std::unique_ptr<GetPageFlagF::Functor> getFageFlagF;
-			size_t dragGuid = 0; 
+			std::unique_ptr<GetPageNameF::Functor> getPageNameF;
+			std::unique_ptr<GetPageFlagF::Functor> getPageFlagF; 
+		public:
+			std::unique_ptr<Core::JTypeInstanceSearchHint> draggingHint;
 		public: 
-			ShareData(const uint guiWindowID, const uint dockSpaceID, std::unique_ptr<GetPageFlagF::Functor> getFageFlagF)
-				:guiWindowID(guiWindowID), dockSpaceID(dockSpaceID), getFageFlagF(std::move(getFageFlagF))
+			ShareData(const uint guiWindowID,
+				const uint dockSpaceID, 
+				std::unique_ptr<GetPageNameF::Functor> getPageNameF,
+				std::unique_ptr<GetPageFlagF::Functor> getPageFlagF)
+				:guiWindowID(guiWindowID), 
+				dockSpaceID(dockSpaceID),
+				getPageNameF(std::move(getPageNameF)),
+				getPageFlagF(std::move(getPageFlagF))
 			{}
 		};
 
@@ -30,9 +39,16 @@ namespace JinEngine
 			static std::unique_ptr<ShareData> pageData[(int)J_EDITOR_PAGE_TYPE::COUNT]; 
 		}
 
+		JEditorSelectedObjInfo::JEditorSelectedObjInfo(J_EDITOR_WINDOW_TYPE selectedWnd, Core::JUserPtr<Core::JIdentifier> selectedObj)
+			:selectedWnd(selectedWnd), selectedObj(selectedObj)
+		{}
+
 		void JEditorPageShareData::RegisterPage(PageInitData& initData)noexcept
 		{	 
-			pageData[(int)initData.pageType] = std::make_unique<ShareData>(initData.guiWindowID, initData.dockSpaceID, std::move(initData.getPtr));
+			pageData[(int)initData.pageType] = std::make_unique<ShareData>(initData.guiWindowID,
+				initData.dockSpaceID, 
+				std::move(initData.getNamePtr),
+				std::move(initData.getFlagPtr));
 		}
 		void JEditorPageShareData::UnRegisterPage(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
@@ -40,21 +56,12 @@ namespace JinEngine
 		}
 		void JEditorPageShareData::ClearPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
-			auto pagedata = pageData[(int)pageType].get();
-			if (pagedata->selectObj.IsValid() && pagedata->selectObj->GetTypeInfo().IsA<JGameObject>())
-				SetSelectedGameObjectTrigger(static_cast<JGameObject*>(pagedata->selectObj.Get()), false);
-			pagedata->openObject.Clear();
-			pagedata->selectObj.Clear();
+			auto pagedata = pageData[(int)pageType].get(); 
+			pagedata->openObject.Clear(); 
 		}
 		bool JEditorPageShareData::IsRegisteredPage(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
 			return pageData[(int)pageType] != nullptr ? true : false;
-		}
-		bool JEditorPageShareData::IsEditableSelectedObject(const J_EDITOR_PAGE_TYPE pageType)noexcept
-		{ 
-			return pageData[(int)pageType]->selectObj.IsValid() &&
-				pageData[(int)pageType]->selectObj->GetTypeInfo().IsChildOf<JObject>() &&
-				!static_cast<JObject*>(pageData[(int)pageType]->selectObj.Get())->HasFlag(OBJECT_FLAG_UNEDITABLE);
 		}
 		bool JEditorPageShareData::HasValidOpenPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
@@ -78,43 +85,31 @@ namespace JinEngine
 		{ 
 			return JEditorOpenPageEvStruct{ pageType, pageData[(int)pageType]->openObject };
 		}
-		Core::JUserPtr<Core::JIdentifier> JEditorPageShareData::GetSelectedObj(const J_EDITOR_PAGE_TYPE pageType)noexcept
+		std::string JEditorPageShareData::GetPageName(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
-			return pageData[(int)pageType]->selectObj;
+			return (*pageData[(int)pageType]->getPageNameF)();
 		}
 		J_EDITOR_PAGE_FLAG JEditorPageShareData::GetPageFlag(const J_EDITOR_PAGE_TYPE pageType)noexcept
 		{
-			return (*pageData[(int)pageType]->getFageFlagF)();
-		}
-		size_t* JEditorPageShareData::GetDragGuidPtr(const J_EDITOR_PAGE_TYPE pageType)noexcept
-		{
-			return &(pageData[(int)pageType]->dragGuid);
+			return (*pageData[(int)pageType]->getPageFlagF)();
 		}
 		void JEditorPageShareData::SetPageOpenData(JEditorOpenPageEvStruct* evStruct)noexcept
 		{ 
 			pageData[(int)evStruct->pageType]->openObject = evStruct->GetOpenSeleted();
-		}
-		void JEditorPageShareData::SetSelectObj(const J_EDITOR_PAGE_TYPE pageType, const Core::JUserPtr<Core::JIdentifier>& selectObj)noexcept
+		} 
+		Core::JTypeInstanceSearchHint* JEditorPageShareData::RegisterDraggingHint(const J_EDITOR_PAGE_TYPE pageType, Core::JIdentifier* iden)noexcept
 		{ 
-			auto page = pageData[(int)pageType].get();
-			if (page->selectObj.IsValid() && page->selectObj->GetTypeInfo().IsA<JGameObject>())
-				SetSelectedGameObjectTrigger(static_cast<JGameObject*>(page->selectObj.Get()), false);
-			page->selectObj = selectObj;
-			if (page->selectObj.IsValid() && page->selectObj->GetTypeInfo().IsA<JGameObject>())
-				SetSelectedGameObjectTrigger(static_cast<JGameObject*>(page->selectObj.Get()), true);
+			pageData[(int)pageType]->draggingHint = std::make_unique<Core::JTypeInstanceSearchHint>(Core::GetUserPtr(iden));
+			return pageData[(int)pageType]->draggingHint.get();
+		}
+		void JEditorPageShareData::DeRegisterDraggingHint(const J_EDITOR_PAGE_TYPE pageType)noexcept
+		{
+			pageData[(int)pageType]->draggingHint.reset();
 		}
 		void JEditorPageShareData::Clear()noexcept
 		{
 			for (uint i = 0; i < (int)J_EDITOR_PAGE_TYPE::COUNT; ++i)
-				pageData[i].reset(); 
-		}
-		void JEditorPageShareData::SetSelectedGameObjectTrigger(JGameObject* gObj, const bool triggerValue)
-		{
-			const uint childrenCount = gObj->GetChildrenCount();
-			for (uint i = 0; i < childrenCount; ++i)
-				SetSelectedGameObjectTrigger(gObj->GetChild(i), triggerValue);
-
-			gObj->EditorInterface()->SetSelectedByEditorTrigger(triggerValue);
+				pageData[i].reset();
 		}
 	}
 }

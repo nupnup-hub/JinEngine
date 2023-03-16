@@ -36,7 +36,7 @@ namespace JinEngine
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
 		newRenderItem->SetSpaceSpatialMask(spaceSpatialMask);
-		newRenderItem->SetMesh(mesh);
+		newRenderItem->SetMesh(Core::GetUserPtr(mesh));
 
 		return newRenderItem;
 	}
@@ -56,13 +56,13 @@ namespace JinEngine
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
 		newRenderItem->SetSpaceSpatialMask(spaceSpatialMask);
-		newRenderItem->SetMesh(mesh);
+		newRenderItem->SetMesh(Core::GetUserPtr(mesh));
 		 
 		const int matCount = (uint)mat.size();
 		for (uint i = 0; i < matCount; ++i)
 		{
 			if (mat[i] != nullptr)
-				newRenderItem->SetMaterial(i, mat[i]);
+				newRenderItem->SetMaterial(i, Core::GetUserPtr(mat[i]));
 		}
 		return newRenderItem;
 	}

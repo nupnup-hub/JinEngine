@@ -14,7 +14,7 @@ namespace JinEngine
 			REGISTER_CLASS(JAnimationFSMstateClip)
 		private:
 			REGISTER_PROPERTY_EX(clip, GetClip, SetClip, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::ICON, true))
-			JAnimationClip* clip = nullptr;
+			Core::JUserPtr<JAnimationClip> clip;
 		public:
 			void Initialize()noexcept final;
 			J_ANIMATION_STATE_TYPE GetStateType()const noexcept final;
@@ -24,8 +24,8 @@ namespace JinEngine
 			void Close(JAnimationUpdateData* updateData)noexcept final;
 		public:
 			void GetRegisteredSkeleton(std::vector<JSkeletonAsset*>& skeletonVec)noexcept final;
-			JAnimationClip* GetClip()const noexcept;
-			void SetClip(JAnimationClip* newClip)noexcept;
+			Core::JUserPtr<JAnimationClip> GetClip()const noexcept;
+			void SetClip(Core::JUserPtr<JAnimationClip> newClip)noexcept;
 		public:
 			bool CanLoop()const noexcept final;
 		protected:

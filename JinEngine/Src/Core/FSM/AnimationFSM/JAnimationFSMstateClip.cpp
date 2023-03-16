@@ -26,13 +26,13 @@ namespace JinEngine
 			JAnimationFSMtransition* nowTransition = updateData->diagramData[layerNumber].nowTransition;
 			const float timeOffset = nowTransition ? nowTransition->GetTargetStartTimeRate() : 0;
 
-			if (clip != nullptr && clip->GetClipSkeletonAsset())
+			if (clip.IsValid() && clip->GetClipSkeletonAsset().IsValid())
 				clip->ClipEnter(updateData, layerNumber, updateNumber, timeOffset);
 		}
 		void JAnimationFSMstateClip::Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 		{
 			updateData->ClearSkeletonBlendRate(updateNumber);
-			if (clip != nullptr && clip->GetClipSkeletonAsset())
+			if (clip.IsValid() && clip->GetClipSkeletonAsset().IsValid())
 			{ 
 				clip->Update(updateData, layerNumber, updateNumber);
 				size_t clipGuid = clip->GetClipSkeletonAsset()->GetGuid();
@@ -48,18 +48,20 @@ namespace JinEngine
 		}
 		void JAnimationFSMstateClip::GetRegisteredSkeleton(std::vector<JSkeletonAsset*>& skeletonVec)noexcept
 		{
-			if (clip != nullptr)
-				skeletonVec.push_back(clip->GetClipSkeletonAsset());
+			if (clip.IsValid())
+				skeletonVec.push_back(clip->GetClipSkeletonAsset().Get());
 		}
-		JAnimationClip* JAnimationFSMstateClip::GetClip()const noexcept
+		Core::JUserPtr<JAnimationClip> JAnimationFSMstateClip::GetClip()const noexcept
 		{
 			return clip;
 		}
-		void JAnimationFSMstateClip::SetClip(JAnimationClip* newClip)noexcept
+		void JAnimationFSMstateClip::SetClip(Core::JUserPtr<JAnimationClip> newClip)noexcept
 		{
-			CallOffResourceReference(clip);
+			if(clip.IsValid())
+				CallOffResourceReference(clip.Get());
 			clip = newClip;
-			CallOnResourceReference(clip);
+			if (clip.IsValid())
+				CallOnResourceReference(clip.Get());
 		}
 		bool JAnimationFSMstateClip::CanLoop()const noexcept
 		{
@@ -68,7 +70,7 @@ namespace JinEngine
 		void JAnimationFSMstateClip::Clear()noexcept
 		{
 			JFSMstate::Clear();
-			SetClip(nullptr);
+			SetClip(Core::JUserPtr<JAnimationClip>{});
 		}
 		void JAnimationFSMstateClip::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 		{
@@ -77,8 +79,8 @@ namespace JinEngine
 
 			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 			{
-				if (clip != nullptr && jRobj->GetGuid() == clip->GetGuid())
-					SetClip(nullptr);
+				if (clip.IsValid() && jRobj->GetGuid() == clip->GetGuid())
+					SetClip(Core::JUserPtr<JAnimationClip>{});
 			}
 		}
 		J_FILE_IO_RESULT JAnimationFSMstateClip::StoreData(std::wofstream& stream)
@@ -87,7 +89,7 @@ namespace JinEngine
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 			J_FILE_IO_RESULT res = JAnimationFSMstate::StoreData(stream);
-			JFileIOHelper::StoreHasObjectIden(stream, clip);
+			JFileIOHelper::StoreHasObjectIden(stream, clip.Get());
 			return res;
 		}
 		J_FILE_IO_RESULT JAnimationFSMstateClip::LoadData(std::wifstream& stream)
@@ -98,7 +100,7 @@ namespace JinEngine
 			J_FILE_IO_RESULT res = JAnimationFSMstate::LoadData(stream);
 			Core::JIdentifier* clip = JFileIOHelper::LoadHasObjectIden(stream);
 			if (clip != nullptr && clip->GetTypeInfo().IsA(JAnimationClip::StaticTypeInfo()))
-				SetClip(static_cast<JAnimationClip*>(clip));
+				SetClip(Core::GetUserPtr<JAnimationClip>(clip));
 
 			return res;
 		}

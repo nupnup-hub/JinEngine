@@ -25,23 +25,23 @@ namespace JinEngine
 	{
 		return GetStaticComponentType();
 	}
-	JMeshGeometry* JRenderItem::GetMesh()const noexcept
+	Core::JUserPtr<JMeshGeometry> JRenderItem::GetMesh()const noexcept
 	{
 		return mesh;
 	}
-	JMaterial* JRenderItem::GetValidMaterial(int index)const noexcept
+	Core::JUserPtr<JMaterial> JRenderItem::GetValidMaterial(int index)const noexcept
 	{
 		if (material.size() <= index)
-			return nullptr;
+			return Core::JUserPtr<JMaterial>{};
 		else
 		{
-			if (material[index] != nullptr)
+			if (material[index].IsValid())
 				return material[index];
 			else
 				return mesh->GetSubmeshMaterial(index);
 		}
 	}
-	std::vector<JMaterial*> JRenderItem::GetMaterialVec()const noexcept
+	std::vector<Core::JUserPtr<JMaterial>> JRenderItem::GetMaterialVec()const noexcept
 	{
 		return material;
 	}
@@ -63,19 +63,19 @@ namespace JinEngine
 	}
 	uint JRenderItem::GetVertexTotalCount()const noexcept
 	{
-		return mesh != nullptr ? mesh->GetTotalVertexCount() : 0;
+		return mesh.IsValid() ? mesh->GetTotalVertexCount() : 0;
 	}
 	uint JRenderItem::GetIndexTotalCount()const noexcept
 	{
-		return mesh != nullptr ? mesh->GetTotalIndexCount() : 0;
+		return mesh.IsValid() ? mesh->GetTotalIndexCount() : 0;
 	}
 	uint JRenderItem::GetSubmeshCount()const noexcept
 	{
-		return mesh != nullptr ? mesh->GetTotalSubmeshCount() : 0;
+		return mesh.IsValid() ? mesh->GetTotalSubmeshCount() : 0;
 	}
 	DirectX::BoundingBox JRenderItem::GetBoundingBox()noexcept
 	{
-		if (mesh != nullptr)
+		if (mesh.IsValid())
 		{
 			DirectX::BoundingBox res;
 			mesh->GetBoundingBox().Transform(res, GetOwner()->GetTransform()->GetWorldMatrix());
@@ -86,7 +86,7 @@ namespace JinEngine
 	}
 	DirectX::BoundingSphere JRenderItem::GetBoundingSphere()noexcept
 	{
-		if (mesh != nullptr)
+		if (mesh.IsValid())
 		{
 			JTransform* ownerTransform = GetOwner()->GetTransform();
 			XMMATRIX worldM = ownerTransform->GetWorldMatrix();
@@ -122,17 +122,16 @@ namespace JinEngine
 		else
 			return DirectX::BoundingSphere();
 	}
-	void JRenderItem::SetMesh(JMeshGeometry* newMesh)noexcept
-	{
-		JMeshGeometry* preMesh = mesh;
+	void JRenderItem::SetMesh(Core::JUserPtr<JMeshGeometry> newMesh)noexcept
+	{ 
 		if (IsActivated())
-			CallOffResourceReference(mesh);
+			CallOffResourceReference(mesh.Get());
 		mesh = newMesh;
 		if (IsActivated())
-			CallOnResourceReference(mesh);
+			CallOnResourceReference(mesh.Get());
 
 		//material.clear();
-		if (mesh != nullptr)
+		if (mesh.IsValid())
 			material.resize(mesh->GetTotalSubmeshCount());
 
 		if (IsActivated())
@@ -143,20 +142,20 @@ namespace JinEngine
 		//	RegisterComponent();
 		SetFrameDirty();
 	}
-	void JRenderItem::SetMaterial(int index, JMaterial* newMaterial)noexcept
+	void JRenderItem::SetMaterial(int index, Core::JUserPtr<JMaterial> newMaterial)noexcept
 	{
 		if (material.size() <= index)
 			return;
 
-		if (IsActivated())
-			CallOffResourceReference(material[index]);
+		if (IsActivated() && material[index].IsValid())
+			CallOffResourceReference(material[index].Get());
 		material[index] = newMaterial;
-		if (IsActivated())
-			CallOnResourceReference(material[index]);
+		if (IsActivated() && material[index].IsValid())
+			CallOnResourceReference(material[index].Get());
 		SetFrameDirty();
-	}
-	void JRenderItem::SetMaterialVec(const std::vector<JMaterial*>& newVec)noexcept
-	{
+	} 
+	void JRenderItem::SetMaterialVec(const std::vector< Core::JUserPtr<JMaterial>> newVec)noexcept
+	{  
 		const uint vecCount = (uint)newVec.size();
 		for (uint i = 0; i < vecCount; ++i)
 			SetMaterial(i, newVec[i]);
@@ -208,7 +207,7 @@ namespace JinEngine
 	}
 	bool JRenderItem::PassDefectInspection()const noexcept
 	{
-		if (JComponent::PassDefectInspection() && mesh != nullptr)
+		if (JComponent::PassDefectInspection() && mesh.IsValid())
 			return true;
 		else
 			return false;
@@ -227,22 +226,22 @@ namespace JinEngine
 		JComponent::DoActivate();
 		RegisterComponent();
 		SetFrameDirty();
-		CallOnResourceReference(mesh);
-		if (mesh != nullptr)
+		CallOnResourceReference(mesh.Get());
+		if (mesh.IsValid())
 			material.resize(mesh->GetTotalSubmeshCount());
 		const uint matCount = (uint)material.size();
 		for (uint i = 0; i < matCount; ++i)
-			CallOnResourceReference(material[i]);
+			CallOnResourceReference(material[i].Get());
 	}
 	void JRenderItem::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
 		DeRegisterComponent();
 		OffFrameDirty();
-		CallOffResourceReference(mesh);
+		CallOffResourceReference(mesh.Get());
 		const uint matCount = (uint)material.size();
 		for (uint i = 0; i < matCount; ++i)
-			CallOffResourceReference(material[i]);
+			CallOffResourceReference(material[i].Get());
 	}
 	void JRenderItem::UpdateFrame(Graphic::JObjectConstants& constant, const uint submeshIndex)
 	{
@@ -288,15 +287,15 @@ namespace JinEngine
 
 		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 		{
-			if (mesh != nullptr && mesh->GetGuid() == jRobj->GetGuid())
-				SetMesh(nullptr);
+			if (mesh.IsValid() && mesh->GetGuid() == jRobj->GetGuid())
+				SetMesh(Core::JUserPtr<JMeshGeometry>{});
 			else
 			{
 				const uint matCount = (uint)material.size();
 				for (uint i = 0; i < matCount; ++i)
 				{
-					if (material[i] != nullptr && material[i]->GetGuid() == jRobj->GetGuid())
-						SetMaterial(i, nullptr);
+					if (material[i].IsValid() && material[i]->GetGuid() == jRobj->GetGuid())
+						SetMaterial(i, Core::JUserPtr<JMaterial>{});
 				}
 			}
 		}
@@ -317,14 +316,14 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		JFileIOHelper::StoreObjectIden(stream, renderItem);
-		JFileIOHelper::StoreHasObjectIden(stream, renderItem->mesh);
+		JFileIOHelper::StoreHasObjectIden(stream, renderItem->mesh.Get());
 		JFileIOHelper::StoreEnumData(stream, L"PrimitiveType:", renderItem->primitiveType);
 		JFileIOHelper::StoreEnumData(stream, L"RenderLayer:", renderItem->renderLayer);
 		JFileIOHelper::StoreEnumData(stream, L"SpaceSpatialMask:", renderItem->spaceSpatialMask);
 		JFileIOHelper::StoreAtomicData(stream, L"MaterialCount:", renderItem->material.size());
 
 		for (uint i = 0; i < renderItem->material.size(); ++i)
-			JFileIOHelper::StoreHasObjectIden(stream, renderItem->material[i]);
+			JFileIOHelper::StoreHasObjectIden(stream, renderItem->material[i].Get());
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -362,7 +361,7 @@ namespace JinEngine
 			return nullptr;
 
 		if (mesh != nullptr && mesh->GetTypeInfo().IsChildOf(JMeshGeometry::StaticTypeInfo()))
-			newRenderItem->SetMesh(static_cast<JMeshGeometry*>(mesh));
+			newRenderItem->SetMesh(Core::GetUserPtr<JMeshGeometry>(mesh));
 
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
@@ -371,7 +370,7 @@ namespace JinEngine
 		for (uint i = 0; i < materialCount; ++i)
 		{
 			if (materialVec[i] != nullptr && materialVec[i]->GetTypeInfo().IsA(JMaterial::StaticTypeInfo()))
-				newRenderItem->SetMaterial(i, static_cast<JMaterial*>(materialVec[i]));
+				newRenderItem->SetMaterial(i, Core::GetUserPtr<JMaterial>(materialVec[i]));
 		}
 		return newRenderItem;
 	}

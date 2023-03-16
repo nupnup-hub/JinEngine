@@ -1,6 +1,6 @@
 #pragma once 
 #include "../JDataType.h"
-#include<type_traits> 
+#include<type_traits>  
 
 namespace JinEngine
 {  
@@ -75,6 +75,8 @@ namespace JinEngine
 		template<typename T>
 		class JOwnerPtr final : public JPtrBase<T>
 		{
+		public:
+			using ElementType = T;
 		private:
 			template<typename T> friend class JOwnerPtr;
 		private:
@@ -206,6 +208,8 @@ namespace JinEngine
 		template<typename T>
 		class JUserPtr final : public JPtrBase<T>
 		{
+		public:
+			using ElementType = T;
 		private:
 			template<typename T> friend class JUserPtr;
 		private:
@@ -236,7 +240,7 @@ namespace JinEngine
 			{
 				UserDisConnect();
 				UserConnect(rhs);
-				rhs.UserDisConnect();
+				//rhs.UserDisConnect();
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
 			JUserPtr& operator=(JUserPtr<NewType>& rhs)
@@ -250,12 +254,40 @@ namespace JinEngine
 			{
 				UserDisConnect();
 				UserConnect(rhs);
-				rhs.UserDisConnect();
+				//rhs.UserDisConnect();
+				return *this;
+			}
+			JUserPtr& operator=(nullptr_t) 
+			{
+				UserDisConnect();
 				return *this;
 			}
 			~JUserPtr()
 			{
 				Clear();
+			}
+			template<typename OtherType>
+			bool operator==(JUserPtr<OtherType> rhs)
+			{
+				return Get() != rhs.Get();
+			}
+			template<typename OtherType>
+			bool operator!=(JUserPtr<OtherType> rhs)
+			{
+				return !(Get() == rhs.Get());
+			}
+			template<typename OtherType>
+			bool operator!=(OtherType* rhs)
+			{
+				return !(Get() == rhs);
+			} 
+			bool operator==(nullptr_t)
+			{
+				return !PtrBase::IsValid();
+			}
+			bool operator!=(nullptr_t)
+			{
+				return PtrBase::IsValid();
 			}
 			T* operator->() const noexcept
 			{
@@ -284,7 +316,7 @@ namespace JinEngine
 			//For JIdentifier
 			//Connect base user ... is same downcast base to t
 			template<typename ChildType>
-			static JUserPtr<T> ConvertChildUser(JUserPtr<ChildType>&& child)
+			static JUserPtr<T> ConvertChildUser(JUserPtr<ChildType> child)
 			{
 				if constexpr (!std::is_base_of_v<JIdentifier, ChildType> || !std::is_base_of_v<JIdentifier, T>)
 					return JUserPtr<T>{};
@@ -301,7 +333,8 @@ namespace JinEngine
 				}
 				else
 					return JUserPtr<T>{};
-			}
+			}		
+
 			template<typename ChildType>
 			bool ConnnectChildUser(const JUserPtr<ChildType>& child)
 			{			  

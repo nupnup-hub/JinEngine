@@ -31,6 +31,7 @@ namespace JinEngine
 		JScene* ownerScene = nullptr; 
 	private:
 		//For Editor
+		std::unique_ptr<Core::JTypeInstanceSearchHint> parentInfo;			//For editor redo undo
 		bool isSelectedbyEditor = false;
 	public:
 		JAnimator* GetAnimator()const noexcept;

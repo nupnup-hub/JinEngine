@@ -4,8 +4,6 @@
 #include"../JEditorAttribute.h" 
 #include"../JEditorPageShareData.h"
 #include"../SimpleWindow/JGraphicOptionSetting.h" 
-#include"../../Align/JEditorAlignCalculator.h"
-#include"../../Popup/JEditorPopupWindow.h"
 #include"../CommonWindow/Debug/JStringConvertTest.h" 
 #include"../CommonWindow/View/JSceneViewer.h"
 #include"../CommonWindow/View/JSceneObserver.h"
@@ -13,6 +11,9 @@
 #include"../CommonWindow/Explorer/JObjectExplorer.h"
 #include"../CommonWindow/Debug/JGraphicResourceWatcher.h"
 #include"../CommonWindow/Debug/JAppElapsedTime.h"
+#include"../../Align/JEditorAlignCalculator.h"
+#include"../../Popup/JEditorPopupWindow.h"
+#include"../../Event/JEditorEvent.h"
 #include"../../Menubar/JEditorMenuBar.h" 
 #include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
 #include"../../../Object/GameObject/JGameObject.h"
@@ -47,12 +48,14 @@ namespace JinEngine
 			openInfo.emplace_back("App Elapsed Time##JEngine");
 			 
 			J_EDITOR_WINDOW_FLAG defaultFlag = J_EDITOR_WINDOW_SUPPORT_WINDOW_CLOSING;
-			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(J_EDITOR_WINDOW_SUPROT_DOCK, defaultFlag);
-			 
-			windowDirectory = std::make_unique<JWindowDirectory>(openInfo[0].GetName(), openInfo[0].MakeAttribute(), GetPageType(), dockFlag);
-			objectExplorer = std::make_unique<JObjectExplorer>(openInfo[1].GetName(), openInfo[1].MakeAttribute(), GetPageType(), dockFlag);
+			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(defaultFlag, J_EDITOR_WINDOW_SUPROT_DOCK);
+			J_EDITOR_WINDOW_FLAG canSelectFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SELECT);
+			J_EDITOR_WINDOW_FLAG selectGObjWindowFlag = Core::AddSQValueEnum(canSelectFlag, J_EDITOR_WINDOW_LISTEN_OTHER_WINDOW_SELECT);
+
+			windowDirectory = std::make_unique<JWindowDirectory>(openInfo[0].GetName(), openInfo[0].MakeAttribute(), GetPageType(), Core::AddSQValueEnum(J_EDITOR_WINDOW_SUPPORT_POPUP, canSelectFlag));
+			objectExplorer = std::make_unique<JObjectExplorer>(openInfo[1].GetName(), openInfo[1].MakeAttribute(), GetPageType(), Core::AddSQValueEnum(J_EDITOR_WINDOW_SUPPORT_POPUP, selectGObjWindowFlag));
 			objectDetail = std::make_unique<JObjectDetail>(openInfo[2].GetName(), openInfo[2].MakeAttribute(), GetPageType(), dockFlag);
-			sceneObserver = std::make_unique<JSceneObserver>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType(), dockFlag, Constants::GetAllObserverSetting());
+			sceneObserver = std::make_unique<JSceneObserver>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType(), Core::AddSQValueEnum(J_EDITOR_WINDOW_SUPPORT_POPUP, selectGObjWindowFlag), Constants::GetAllObserverSetting());
 			sceneViewer = std::make_unique<JSceneViewer>(openInfo[4].GetName(), openInfo[4].MakeAttribute(), GetPageType(), dockFlag);
 			logViewer = std::make_unique<JLogViewer>(openInfo[5].GetName(), openInfo[5].MakeAttribute(), GetPageType(), dockFlag);
 			graphicResourceWatcher = std::make_unique<JGraphicResourceWatcher>(openInfo[6].GetName(), openInfo[6].MakeAttribute(), GetPageType(), defaultFlag);
@@ -94,20 +97,11 @@ namespace JinEngine
 				}			
 				if (!hasMoified)
 				{
-					mainPage->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
-					JApplicationProject::ConfirmCloseProject();
+					mainPage->RequestCloseConfirmPopup(false);					
 				}
 			};
-			auto confirmFunc = [](JProjectMainPage* page)
-			{				
-				page->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
-				JApplicationProject::ConfirmCloseProject(); 
-			};
-			auto cancelFunc = [](JEditorPage* page) 
-			{
-				page->ClosePopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
-				JApplicationProject::CancelCloseProject();
-			};
+			auto confirmFunc = [](JProjectMainPage* page){page->RequestCloseConfirmPopup(false);};
+			auto cancelFunc = [](JProjectMainPage* page){page->RequestCloseConfirmPopup(true);};
 			auto conetnsFunc = [](JProjectMainPage* mainPage)
 			{
 				constexpr uint columnCount = 4;
@@ -275,6 +269,24 @@ namespace JinEngine
 		bool JProjectMainPage::IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept
 		{
 			return true;
+		}
+		void JProjectMainPage::RequestCloseConfirmPopup(const bool isCancel)
+		{			 
+			AddEventNotification(*JEditorEvent::EvInterface(),
+				GetGuid(),
+				J_EDITOR_EVENT::CLOSE_POPUP_WINDOW,
+				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePopupWindowEvStruct>(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM, GetPageType())));
+
+			auto confirmLam = []() {JApplicationProject::ConfirmCloseProject(); };
+			auto cancelLam = []() {JApplicationProject::CancelCloseProject(); };
+			using CloseF = Core::JSFunctorType<void>;
+			std::unique_ptr<CloseF::CompletelyBind> closePopupB;
+			if(isCancel)
+				closePopupB = std::make_unique<CloseF::CompletelyBind>(std::make_unique<CloseF::Functor>(cancelLam));
+			else
+				closePopupB = std::make_unique<CloseF::CompletelyBind>(std::make_unique<CloseF::Functor>(confirmLam));
+			
+			closePopup->RegisterBind(J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CLOSE_POPUP, std::move(closePopupB));
 		}
 		void JProjectMainPage::BuildDockNode()
 		{

@@ -44,6 +44,9 @@ namespace JinEngine
 			JAnimationControllerInitData(const std::wstring& name,
 				JDirectory* directory,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
+			JAnimationControllerInitData(const size_t guid,
+				JDirectory* directory,
+				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
 			JAnimationControllerInitData(JDirectory* directory,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
 		};

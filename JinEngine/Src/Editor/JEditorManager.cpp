@@ -2,6 +2,7 @@
 #include"Event/JEditorEventStruct.h"
 #include"Event/JEditorEvent.h"
 #include"Menubar/JEditorMenuBar.h"
+#include"Interface/JEditorTransitionInterface.h"
 #include"Page/JEditorWindow.h"  
 #include"Page/JEditorPageShareData.h"
 #include"Page/ProjectMain/JProjectMainPage.h"
@@ -15,8 +16,7 @@
 #include"../Application/JApplicationVariable.h" 
 #include"../Object/Resource/Scene/JScene.h"
 #include"../Object/Resource/Scene/JSceneManager.h"
-#include"../Object/Resource/JResourceManager.h"
-#include"../Core/Undo/JTransition.h"
+#include"../Object/Resource/JResourceManager.h" 
 #include"../Window/JWindows.h"
 #include<fstream>  
 #include<io.h>   
@@ -60,10 +60,10 @@ namespace JinEngine
 				editorPage[i]->Clear();
 			}
 
+			JEditorPageShareData::Clear();
+			JEditorTransition::Instance().Clear();
 			JEditorEvent::Clear();
 			JImGuiImpl::Clear();
-			Core::JTransition::Clear();
-			JEditorPageShareData::Clear();
 
 			editorPageMap.clear();
 			opendEditorPage.clear();
@@ -83,6 +83,11 @@ namespace JinEngine
 			JEditorActPageEvStruct evActStruct{ editorPage[0]->GetPageType()};
 			OpenPage(&evOpenStruct);
 			ActivatePage(&evActStruct);
+
+			std::vector<J_EDITOR_EVENT> eventVector = Core::GetEnumElementVec<J_EDITOR_EVENT>();
+			AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector);
+
+			JEditorTransition::Instance().Initialize();
 		}
 		void JEditorManager::OpenProject()
 		{ 
@@ -124,12 +129,19 @@ namespace JinEngine
 			std::vector<J_EDITOR_EVENT> eventVector = Core::GetEnumElementVec<J_EDITOR_EVENT>();
 			this->AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector);
 
-			Core::JTransition::Initialize();
+			JEditorTransition::Instance().Initialize();
 		} 
 		void JEditorManager::Update()
-		{ 
-			JImGuiImpl::SetAlphabetSize();
+		{
+			if (ImGui::GetIO().KeyCtrl)
+			{
+				if (ImGui::IsKeyPressedMap(ImGuiKey_Z, false))
+					JEditorTransition::Instance().Undo();
+				else if (ImGui::IsKeyPressedMap(ImGuiKey_Y, false))
+					JEditorTransition::Instance().Redo();
+			}
 			JEditorEvent::ExecuteEvent();
+			JImGuiImpl::SetAlphabetSize();
 			JImGuiImpl::StartEditorUpdate();
 			JImGuiImpl::MouseUpdate();
 
@@ -270,7 +282,7 @@ namespace JinEngine
 				page->second->DeActivateWindow(evStruct->deActWindow);
 		}
 		void JEditorManager::FocusWindow(JEditorFocusWindowEvStruct* evStruct)
-		{
+		{ 
 			auto page = editorPageMap.find(evStruct->pageType);
 			if (page != editorPageMap.end())
 				page->second->FocusWindow(evStruct->focusWindow);
@@ -286,6 +298,9 @@ namespace JinEngine
 			auto page = editorPageMap.find(evStruct->pageType);
 			if (page != editorPageMap.end())
 			{
+				JEditorTransition::Instance().SetLock(true);
+				for (auto& data : editorPageMap)
+					data.second->SetPageFlag(Core::AddSQValueEnum(data.second->GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
 				if(evStruct->popupWindow != nullptr)
 					page->second->OpenPopupWindow(evStruct->popupWindow);
 				else
@@ -296,7 +311,15 @@ namespace JinEngine
 		{
 			auto page = editorPageMap.find(evStruct->pageType);
 			if (page != editorPageMap.end())
-				page->second->ClosePopupWindow(evStruct->popupWindow);
+			{
+				if (evStruct->popupWindow != nullptr)
+					page->second->ClosePopupWindow(evStruct->popupWindow);
+				else
+					page->second->ClosePopupWindow(evStruct->popupType);				 
+				for (auto& data : editorPageMap)
+					data.second->SetPageFlag(Core::MinusSQValueEnum(data.second->GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
+				JEditorTransition::Instance().SetLock(false);
+			}
 		}
 		std::wstring JEditorManager::GetMetadataPath()const noexcept
 		{
@@ -318,18 +341,10 @@ namespace JinEngine
  
 			switch (eventType)
 			{
-			case J_EDITOR_EVENT::SELECT_OBJECT:
+			case J_EDITOR_EVENT::CLEAR_SELECT_OBJECT:
 			{
-				JEditorSelectObjectEvStruct* selectEvStruct = static_cast<JEditorSelectObjectEvStruct*>(eventStruct);
-				JEditorPageShareData::SetSelectObj(selectEvStruct->pageType, selectEvStruct->selectObj);
-				break;
-			}
-			case J_EDITOR_EVENT::DESELECT_OBJECT:
-			{
-				JEditorDeSelectObjectEvStruct* deSelectEvStruct = static_cast<JEditorDeSelectObjectEvStruct*>(eventStruct);
-				auto selected = JEditorPageShareData::GetSelectedObj(deSelectEvStruct->pageType);
-				if(selected.IsValid() && selected->GetGuid() == deSelectEvStruct->guid)
-					JEditorPageShareData::SetSelectObj(deSelectEvStruct->pageType, Core::JUserPtr<JObject>{});
+				JEditorClearSelectObjectEvStruct* clearEvStruct = static_cast<JEditorClearSelectObjectEvStruct*>(eventStruct);
+				JEditorPageShareData::ClearPageData(clearEvStruct->pageType);
 				break;
 			}
 			case J_EDITOR_EVENT::OPEN_PAGE:

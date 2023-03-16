@@ -119,7 +119,7 @@ namespace JinEngine
 		{
 			return JFSMdiagram::GetStateVec();
 		}
-		void JAnimationFSMdiagram::SetClip(const size_t stateGuid, JAnimationClip* clip)noexcept
+		void JAnimationFSMdiagram::SetClip(const size_t stateGuid, Core::JUserPtr<JAnimationClip> clip)noexcept
 		{
 			JFSMstate* state = GetState(stateGuid);
 			JAnimationFSMstate* aniFsm = static_cast<JAnimationFSMstate*>(state);

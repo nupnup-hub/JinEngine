@@ -415,8 +415,16 @@ namespace JinEngine
 						return J_PARAMETER_TYPE::XMFloat3;
 					else if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
 						return J_PARAMETER_TYPE::XMFloat4;
-					else if constexpr (StdArrayContainerDetermine<T>::value)
+					else if constexpr (JUserPtrDetermine<T>::value)
+						return  J_PARAMETER_TYPE::USER_PTR;
+					else if constexpr (StdVectorDetermine<T>::value)
 						return  J_PARAMETER_TYPE::STD_VECTOR;
+					else if constexpr (StdDequeDetermine<T>::value)
+						return  J_PARAMETER_TYPE::STD_DEQUE;
+					else if constexpr (StdMapDetermine<T>::value)
+						return  J_PARAMETER_TYPE::STD_MAP;
+					else if constexpr (StdUnorderedMapDetermine<T>::value)
+						return  J_PARAMETER_TYPE::STD_UNORDERED_MAP;
 					else
 						return J_PARAMETER_TYPE::Class;
 				}
@@ -634,19 +642,38 @@ namespace JinEngine
 
 			if constexpr (std::is_rvalue_reference_v<T>)
 				isRref = true;
-
+ 
 			using valueType = RemoveAll_T<T>; 
 			jDataEnum = GetParameterType<valueType>();
 			std::string valueTypeFullName;
 			if constexpr (JVectorDetermine<valueType>::value)
 				valueTypeFullName = typeid(RemoveAll_T<JVectorDetermine<valueType>::ValueType>).name();
-			else if constexpr (StdArrayContainerDetermine<valueType>::value)
-				valueTypeFullName = typeid(RemoveAll_T < StdArrayContainerDetermine<valueType>::ValueType>).name();
+			else if constexpr (StdArrayDetermine<valueType>::value)
+			{  
+				if constexpr (JUserPtrDetermine<StdStructureLastDimValueType<valueType>::ValueType>::value)
+					valueTypeFullName = typeid(RemoveAll_T <JUserPtrDetermine<StdStructureLastDimValueType<valueType>::ValueType>::ElementType>).name();
+				else
+					valueTypeFullName = typeid(RemoveAll_T <StdStructureLastDimValueType<valueType>::ValueType>).name();
+			}
 			else if constexpr (StdMapDetermine<valueType>::value)
-				valueTypeFullName = typeid(RemoveAll_T < StdMapDetermine<valueType>::ValueType>).name();
+			{
+				if constexpr (JUserPtrDetermine<StdStructureLastDimValueType<valueType>::ValueType>::value)
+					valueTypeFullName = typeid(RemoveAll_T <JUserPtrDetermine<StdStructureLastDimValueType<valueType>::ValueType>::ElementType>).name();
+				else
+					valueTypeFullName = typeid(RemoveAll_T <StdStructureLastDimValueType<valueType>::ValueType>).name();
+			}
+			else if constexpr (StdUnorderedMapDetermine<valueType>::value)
+			{
+				if constexpr (JUserPtrDetermine<StdStructureLastDimValueType<valueType>::ValueType>::value)
+					valueTypeFullName = typeid(RemoveAll_T <JUserPtrDetermine<StdStructureLastDimValueType<valueType>::ValueType>::ElementType>).name();
+				else
+					valueTypeFullName = typeid(RemoveAll_T <StdStructureLastDimValueType<valueType>::ValueType>).name();
+			}
+			else if constexpr(JUserPtrDetermine<valueType>::value)
+				valueTypeFullName = typeid(JUserPtrDetermine<valueType>::ElementType).name();
 			else
 				valueTypeFullName = typeid(valueType).name();
-
+			 
 			return JParameterHint(name, valueTypeFullName, isConst, isPtr, isArray, isLref, isRref, dimension, jDataEnum, arrLastDimCount);
 		}
 

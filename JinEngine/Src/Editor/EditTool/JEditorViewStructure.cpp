@@ -22,8 +22,41 @@ namespace JinEngine
 			static constexpr uint initGridSize = 1000;
 			static constexpr uint nodeFrameThickness = 1;
 			static constexpr uint lineThicknessFactor = 5;
-			static constexpr uint triangleLengthFactor = 10; 
+			static constexpr uint triangleLengthFactor = 10;
 		}
+
+		enum class LAST_HINT_TYPE
+		{
+			HOVERED,
+			SELECTED,
+			COUNT
+		};
+		struct LastNodeHint
+		{
+		public:
+			size_t guid = 0;
+			bool condition = false;
+		public:
+			void Clear()
+			{
+				guid = 0;
+				condition = false;
+			}
+		};
+		struct LastEdgeHint
+		{
+		public:
+			size_t fromGuid = 0;
+			size_t toGuid = 0;
+			bool condition = false;
+		public:
+			void Clear()
+			{
+				fromGuid = 0;
+				toGuid = 0;
+				condition = false;
+			}
+		};
 
 		struct JEditorViewUpdateHelper
 		{
@@ -47,13 +80,10 @@ namespace JinEngine
 		public:
 			JVector2<float> preMousePos;
 		public:
-			mutable size_t selectedNodeGuid = 0;
-			mutable bool isSelectedNode = false;
-			mutable bool isDragging = false;
+			mutable	LastNodeHint lastNodeHint[(int)LAST_HINT_TYPE::COUNT];
+			mutable LastEdgeHint lastEdgeHint[(int)LAST_HINT_TYPE::COUNT];
 		public:
-			mutable size_t selectedFromNodeGuid = 0;
-			mutable size_t selectedToNodeGuid = 0;
-			mutable bool isSelectedEdge = false;
+			mutable bool isDragging = false;
 		public:
 			uint8 updateBit = 0;
 			bool hasNewNode = false;
@@ -85,32 +115,37 @@ namespace JinEngine
 				triangleLength = Constants::triangleLengthFactor * zoomRate;
 				updateBit = newUpdateBit;
 				JEditorViewUpdateHelper::hasNewNode = hasNewNode;
+
+				ClearLastHint();
 			}
 		public:
-			void SelectNode(const size_t guid)const 
+			void UpdateLastNodeHint(const LAST_HINT_TYPE type, const size_t guid)const
 			{
-				selectedNodeGuid = guid;
-				isSelectedNode = true;
-				isDragging = false;
-				DeSelectEdge();
+				lastNodeHint[(uint)type].guid = guid;
+				lastNodeHint[(uint)type].condition = true;
+				isDragging = false; 
 			}
-			void SelectEdge(const size_t fromGuid, const size_t toGuid)const
+			void UpdateLastEdgeHint(const LAST_HINT_TYPE type, const size_t fromGuid, const size_t toGuid)const
 			{
-				selectedFromNodeGuid = fromGuid;
-				selectedToNodeGuid = toGuid;
-				isSelectedEdge = true;
-				DeSelectNode();
+				lastEdgeHint[(uint)type].fromGuid = fromGuid;
+				lastEdgeHint[(uint)type].toGuid = toGuid;
+				lastEdgeHint[(uint)type].condition = true;
 			}
-			void DeSelectNode()const
+			void ClearLastNodeHint(const LAST_HINT_TYPE type)const
 			{
-				selectedNodeGuid = 0;
-				isSelectedNode = false;
+				lastNodeHint[(uint)type].Clear();
 			}
-			void DeSelectEdge()const
+			void ClaerLastEdgeHint(const LAST_HINT_TYPE type)const
 			{
-				selectedFromNodeGuid = 0;
-				selectedToNodeGuid = 0;
-				isSelectedEdge = false;
+				lastEdgeHint[(uint)type].Clear();
+			}
+			void ClearLastHint()
+			{
+				for (uint i = 0; i < (uint)LAST_HINT_TYPE::COUNT; ++i)
+				{
+					lastNodeHint[i].Clear();
+					lastEdgeHint[i].Clear();
+				}
 			}
 		};
 
@@ -244,26 +279,26 @@ namespace JinEngine
 
 #pragma region Node
 
-		JEditorNodeBase::JEditorNodeBase(const std::string& name, const size_t guid, const std::string& info)
-			:name(name), guid(guid), info(info + "TEST")
+		JEditorNodeBase::JEditorNodeBase(const std::string& name, const size_t guid, const std::string& info, const bool isSelectedNode)
+			:name(name), guid(guid), info(info), isSelected(isSelectedNode)
 		{}
 		void JEditorNodeBase::DrawRect(const JEditorViewUpdateHelper* updateHelper)
 		{
 			const Core::JBBox2D bbox = Private::GetBBox2D(this, updateHelper);
 			const JVector2<float> bboxDistance = bbox.DistanceVector();
 			ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-			const bool isSelected = updateHelper->isSelectedNode && updateHelper->selectedNodeGuid == GetGuid();
+			 
 			const bool isMouseInRect = bbox.Contain(ImGui::GetMousePos());
 			if (isMouseInRect)
 			{
+				updateHelper->UpdateLastNodeHint(LAST_HINT_TYPE::HOVERED, GetGuid());
 				if (ImGui::IsMouseClicked(0) && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_DockHierarchy))
-					updateHelper->SelectNode(GetGuid());
+					updateHelper->UpdateLastNodeHint(LAST_HINT_TYPE::SELECTED, GetGuid());
 			}
 
 			ImU32 rectColor = GetRectInnerColor();
 			if (isMouseInRect)
-				rectColor += GetRectHoveredDeltaColor(); 
+				rectColor += GetRectHoveredDeltaColor();
 			if (updateHelper->isDragging && isSelected)
 				rectColor -= GetRectDraggingDeltaColor();
 
@@ -295,16 +330,16 @@ namespace JinEngine
 				const float blankWidth = ImGui::CalcTextSize(" ").x * Constants::infoBlankCount;
 				const JVector2<float> nameBBoxMin = bbox.Center();
 				const JVector2<float> nameBBoxSize = JVector2<float>(nameTextSize.x + blankWidth, nameTextSize.y + alphaSize.y * 2);
-				 
+
 				textAlignCal.Update(GetName(), JVector2<float>(nameBBoxSize.x, 0), false);
-				const std::string alignedName = textAlignCal.MiddleAligned(); 
+				const std::string alignedName = textAlignCal.MiddleAligned();
 
 				std::string info = GetInfo();
 				if (info.size() > 0)
-				{		 
+				{
 					textAlignCal.Update(info, JVector2<float>(nameBBoxSize.x, 0), false);
 					const std::string alignedInfo = textAlignCal.LeftAligned();
-					 
+
 					const JVector2<float> infoBBoxSize = nameBBoxSize + JVector2<float>(0, ImGui::CalcTextSize(alignedInfo.c_str()).y + alphaSize.y * 2);
 					JImGuiImpl::DrawRectFilledMultiColor(nameBBoxMin, infoBBoxSize, GetInfoBoxColor(), vertexDeltaColor, true);
 					ImGui::SetCursorScreenPos(nameBBoxMin + JVector2<float>(0, alphaSize.y));
@@ -321,47 +356,45 @@ namespace JinEngine
 					JImGuiImpl::DrawRectFilledMultiColor(nameBBoxMin, nameBBoxSize, GetInfoBoxColor(), vertexDeltaColor, false);
 					ImGui::SetCursorScreenPos(nameBBoxMin + JVector2<float>(0, alphaSize.y));
 					JImGuiImpl::Text(alignedName);
-				} 
+				}
 			}
 
 			JVector2<float> frameSize(Constants::nodeFrameThickness, Constants::nodeFrameThickness);
 			if (isSelected)
 			{
 				if (ImGui::IsMouseDown(0) && isMouseInRect)
-					updateHelper->isDragging = true;
+					updateHelper->isDragging = true;	 
+			}
 
-				if (updateHelper->isDragging)
-				{
-					if (!ImGui::IsMouseDragging(0))
-						updateHelper->isDragging = false;
-					else
-						SetCenter(GetCenter() + (ImGui::GetMousePos() - updateHelper->preMousePos));
-				}
+			if (updateHelper->isDragging)
+			{
+				if (!ImGui::IsMouseDragging(0))
+					updateHelper->isDragging = false;
+				else if(isSelected)
+					SetCenter(GetCenter() + (ImGui::GetMousePos() - updateHelper->preMousePos));
 			}
 		}
-		void JEditorNodeBase::DrawLine(const JEditorViewUpdateHelper* updateHelper, const JEditorNodeBase* to)
+		void JEditorNodeBase::DrawLine(const JEditorViewUpdateHelper* updateHelper, const JEditorNodeBase* to, const bool isSelecetdEdge)
 		{
 			const JVector2<float> fromCenter = GetValidCenter(updateHelper);
 			const JVector2<float> toCenter = to->GetValidCenter(updateHelper);
-
-			const bool isSelected = updateHelper->isSelectedEdge && updateHelper->selectedFromNodeGuid == GetGuid() &&
-				updateHelper->selectedToNodeGuid == to->GetGuid();
-			 
-			ImU32 color = isSelected ? GetSelectedLineColor() : GetLineColor(); 
+ 
+			ImU32 color = isSelecetdEdge ? GetSelectedLineColor() : GetLineColor();
 			if (JImGuiImpl::IsMouseInLine(fromCenter, toCenter, updateHelper->lineThickness * 2))
 			{
-				color += GetRectHoveredDeltaColor(); 
+				color += GetRectHoveredDeltaColor();
+				updateHelper->UpdateLastEdgeHint(LAST_HINT_TYPE::HOVERED, GetGuid(), to->GetGuid());
 				if (ImGui::IsMouseClicked(0) && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_DockHierarchy))
-					updateHelper->SelectEdge(GetGuid(), to->GetGuid());
+					updateHelper->UpdateLastEdgeHint(LAST_HINT_TYPE::SELECTED, GetGuid(), to->GetGuid());
 			}
 			ImGui::GetWindowDrawList()->AddLine(fromCenter, toCenter, color, updateHelper->lineThickness);
-			 
+
 			const JVector2<float> lineCenter = fromCenter + ((toCenter - fromCenter) * 0.5f);
 			const JVector2<float> dir = JMathHelper::Vector2Normalize((toCenter - fromCenter).ConvertXMF());
 			JVector2<float> bottomDir;
 			bottomDir.x = dir.x * std::cos(90 * JMathHelper::DegToRad) + dir.y * std::sin(90 * JMathHelper::DegToRad);
 			bottomDir.y = dir.x * std::sin(-90 * JMathHelper::DegToRad) + dir.y * std::cos(90 * JMathHelper::DegToRad);
-			
+
 			const JVector2<float> xFactor = bottomDir * updateHelper->triangleLength;
 			const JVector2<float> yFactor = dir * updateHelper->triangleLength;
 			ImGui::GetWindowDrawList()->AddTriangleFilled(lineCenter + yFactor,
@@ -449,9 +482,16 @@ namespace JinEngine
 		{
 		private:
 			JEditorTreeNodeBase* parent = nullptr;
+		private:
+			bool isSelectedParentEdge = false;
 		public:
-			JEditorTreeNodeBase(const std::string& name, const size_t guid, const std::string& info, JEditorTreeNodeBase* parent)
-				:JEditorNodeBase(name, guid, info), parent(parent)
+			JEditorTreeNodeBase(const std::string& name,
+				const size_t guid, 
+				const std::string& info,
+				const bool isSelectedNode,
+				const bool isSelectedParentEdge,
+				JEditorTreeNodeBase* parent)
+				:JEditorNodeBase(name, guid, info, isSelectedNode), isSelectedParentEdge(isSelectedParentEdge), parent(parent)
 			{}
 		public:
 			JEditorTreeNodeBase* GetParent()const noexcept
@@ -488,7 +528,7 @@ namespace JinEngine
 			void SettingDrawLine(const JEditorViewUpdateHelper* updateHelper)final
 			{
 				if (!IsRoot())
-					DrawLine(updateHelper, parent);
+					DrawLine(updateHelper, parent, isSelectedParentEdge);
 			}
 		protected:
 			uint GetRectInnerColor()const noexcept final
@@ -509,8 +549,13 @@ namespace JinEngine
 		private:
 			bool isLeft = false;
 		public:
-			JEditorBinaryNode(const std::string& name, const size_t guid, const std::string& info, JEditorBinaryNode* parent)
-				:JEditorTreeNodeBase(name, guid, info, parent)
+			JEditorBinaryNode(const std::string& name, 
+				const size_t guid, 
+				const std::string& info,
+				const bool isSelectedNode,
+				const bool isSelectedParentEdge,
+				JEditorBinaryNode* parent)
+				:JEditorTreeNodeBase(name, guid, info, isSelectedNode, isSelectedParentEdge, parent)
 			{
 				if (parent != nullptr)
 				{
@@ -576,8 +621,13 @@ namespace JinEngine
 			std::vector<JEditorTreeNode*> children;
 			uint childNumber = 0;
 		public:
-			JEditorTreeNode(const std::string& name, const size_t guid, const std::string& info, JEditorTreeNode* parent)
-				:JEditorTreeNodeBase(name, guid, info, parent)
+			JEditorTreeNode(const std::string& name, 
+				const size_t guid, 
+				const std::string& info,
+				const bool isSelectedNode,
+				const bool isSelectedParentEdge,
+				JEditorTreeNode* parent)
+				:JEditorTreeNodeBase(name, guid, info, isSelectedNode, isSelectedParentEdge, parent)
 			{
 				if (parent != nullptr)
 				{
@@ -624,38 +674,47 @@ namespace JinEngine
 			struct JEditprGraphEdge
 			{
 			public:
-				std::vector<JEditorGraphNode*> nodes;
+				JEditorGraphNode* node;
+				bool isSelected;
+			public:
+				JEditprGraphEdge(JEditorGraphNode* node, bool isSelected)
+					:node(node), isSelected(isSelected)
+				{}
 			};
 		private:
-			JEditprGraphEdge edge;
+			std::vector<JEditprGraphEdge> edge;
 			const bool isStartNode = false;
 			bool isOnScreenThisFrame = false;
 		public:
-			JEditorGraphNode(const std::string& name, const size_t guid, const std::string& info, const bool isStartNode)
-				:JEditorNodeBase(name, guid, info), isStartNode(isStartNode)
-			{} 
+			JEditorGraphNode(const std::string& name, 
+				const size_t guid,
+				const std::string& info,
+				const bool isSelectedNode,
+				const bool isStartNode)
+				:JEditorNodeBase(name, guid, info, isSelectedNode), isStartNode(isStartNode)
+			{}
 		protected:
 			void Initialize(const JEditorViewUpdateHelper* updateHelper)noexcept final
-			{ 
+			{
 				SetCenter(ImGui::GetMousePos() - ImGui::GetCursorScreenPos());
 			}
 			void SettingDrawLine(const JEditorViewUpdateHelper* updateHelper)final
-			{ 
+			{
 				const JVector2<float> fromCenter = GetValidCenter(updateHelper);
-				const uint edgeCount = (uint)edge.nodes.size();
+				const uint edgeCount = (uint)edge.size();
 				for (uint i = 0; i < edgeCount; ++i)
-					DrawLine(updateHelper, edge.nodes[i]);
+					DrawLine(updateHelper, edge[i].node, edge[i].isSelected);
 			}
 			bool DoInitializeWhenAddedNewNode()const noexcept final
 			{
 				return false;
 			}
 		public:
-			void ConnectNode(JEditorGraphNode* otherNode)
+			void ConnectNode(JEditorGraphNode* otherNode, const bool isSelected)
 			{
 				if (otherNode == nullptr || IsSame(otherNode))
 					return;
-				edge.nodes.push_back(otherNode);
+				edge.push_back(JEditprGraphEdge(otherNode, isSelected));
 			}
 		protected:
 			uint GetRectInnerColor()const noexcept final
@@ -686,13 +745,6 @@ namespace JinEngine
 			allNodes.clear();
 			maxDepth = 0;
 		}
-		void JEditorViewBase::ClearSeletedCash()
-		{
-			updateHelper->DeSelectNode();
-			updateHelper->DeSelectEdge();
-			isLastSelectedNode = isLastSelectedEdge = false;
-			lastSelectedNodeGuid = lastSelectedFromNodeGuid = lastSelectedToNodeGuid = 0;
-		}
 		size_t JEditorViewBase::GetDefaultGroupGuid()noexcept
 		{
 			static size_t guid = Core::MakeGuid();
@@ -706,22 +758,39 @@ namespace JinEngine
 		{
 			return coordGrid.get();
 		}
+		size_t JEditorViewBase::GetLastUpdateHoveredNodeGuid()const noexcept
+		{
+			return updateHelper->lastNodeHint[(uint)LAST_HINT_TYPE::HOVERED].guid;
+		}
 		size_t JEditorViewBase::GetLastUpdateSeletedNodeGuid()const noexcept
 		{
-			return lastSelectedNodeGuid;
+			return updateHelper->lastNodeHint[(uint)LAST_HINT_TYPE::SELECTED].guid;
+		}
+		void JEditorViewBase::GetLastUpdateHoveredEdgeGuid(_Out_ size_t& fromGuid, _Out_ size_t& toGuid)const noexcept
+		{
+			fromGuid = updateHelper->lastEdgeHint[(uint)LAST_HINT_TYPE::HOVERED].fromGuid;
+			toGuid = updateHelper->lastEdgeHint[(uint)LAST_HINT_TYPE::HOVERED].toGuid;
 		}
 		void JEditorViewBase::GetLastUpdateSelectedEdgeGuid(_Out_ size_t& fromGuid, _Out_ size_t& toGuid)const noexcept
 		{
-			fromGuid = lastSelectedFromNodeGuid;
-			toGuid = lastSelectedToNodeGuid;
+			fromGuid = updateHelper->lastEdgeHint[(uint)LAST_HINT_TYPE::SELECTED].fromGuid;
+			toGuid = updateHelper->lastEdgeHint[(uint)LAST_HINT_TYPE::SELECTED].toGuid;
+		}
+		bool JEditorViewBase::IsLastUpdateHoveredNode()const noexcept
+		{
+			return updateHelper->lastNodeHint[(uint)LAST_HINT_TYPE::HOVERED].condition;
+		}
+		bool JEditorViewBase::IsLastUpdateHoveredEdge()const noexcept
+		{
+			return updateHelper->lastEdgeHint[(uint)LAST_HINT_TYPE::HOVERED].condition;
 		}
 		bool JEditorViewBase::IsLastUpdateSeletedNode()const noexcept
 		{
-			return isLastSelectedNode;
+			return updateHelper->lastNodeHint[(uint)LAST_HINT_TYPE::SELECTED].condition;
 		}
 		bool JEditorViewBase::IsLastUpdateSeletedEdge()const noexcept
 		{
-			return isLastSelectedEdge;
+			return updateHelper->lastEdgeHint[(uint)LAST_HINT_TYPE::SELECTED].condition;
 		}
 		void JEditorViewBase::SetGridSize(const uint gridSize)noexcept
 		{
@@ -741,8 +810,11 @@ namespace JinEngine
 			return allNodes[index].get();
 		}
 		JEditorNodeBase* JEditorViewBase::GetLastSelectedNode()noexcept
-		{ 
-			return nodeMap.find(lastSelectedNodeGuid)->second;
+		{
+			if (IsLastUpdateSeletedNode())
+				return nodeMap.find(GetLastUpdateSeletedNodeGuid())->second;
+			else
+				return nullptr;
 		}
 		JEditorNodeBase* JEditorViewBase::AddNode(const size_t groupGuid, std::unique_ptr<JEditorNodeBase>&& newNode)
 		{
@@ -800,43 +872,10 @@ namespace JinEngine
 						hasNewNode);
 
 					const uint allNodeCount = GetNodeCount();
-					NodeOnScreen(updateHelper.get()); 
+					NodeOnScreen(updateHelper.get());
 
 					Private::EraseUnusedData(GetGuid(), groupGuid, updateBit);
 					updateHelper->preMousePos = ImGui::GetMousePos();
-
-					const bool canChangeSelectedNode = updateHelper->isSelectedNode && (lastSelectedNodeGuid != updateHelper->selectedNodeGuid);
-					const bool canChangeSelectedEdge = updateHelper->isSelectedEdge && (lastSelectedFromNodeGuid != updateHelper->selectedFromNodeGuid)
-						&& (lastSelectedToNodeGuid != updateHelper->selectedToNodeGuid);
-					
-					if (canChangeSelectedNode)
-					{
-						JEditorNodeBase* newSelected = GetNode(updateHelper->selectedNodeGuid);
-						if (newSelected == nullptr)
-							updateHelper->DeSelectNode();
-						else
-						{
-							isLastSelectedNode = true;
-							isLastSelectedEdge = false;
-							lastSelectedNodeGuid = updateHelper->selectedNodeGuid;
-							lastSelectedFromNodeGuid = lastSelectedToNodeGuid = 0;
-						}
-					}
-					else if (canChangeSelectedEdge)
-					{
-						JEditorNodeBase* fromSelected = GetNode(updateHelper->selectedFromNodeGuid);
-						JEditorNodeBase* toSelected = GetNode(updateHelper->selectedToNodeGuid);
-						if (fromSelected == nullptr || toSelected == nullptr)
-							updateHelper->DeSelectEdge();
-						else
-						{
-							isLastSelectedNode = false;
-							isLastSelectedEdge = true;
-							lastSelectedNodeGuid = 0;
-							lastSelectedFromNodeGuid = updateHelper->selectedFromNodeGuid;
-							lastSelectedToNodeGuid = updateHelper->selectedToNodeGuid;
-						}
-					}
 					hasNewNode = false;
 				}
 			}
@@ -915,9 +954,14 @@ namespace JinEngine
 		{
 			static_cast<JEditorTreeNodeBase*>(GetRootNode())->NodeOnScreen(updateHelper);
 		}
-		void JEditorBinaryTreeView::BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid, const std::string& info)noexcept
+		void JEditorBinaryTreeView::BuildNode(const std::string& name,
+			const size_t nodeGuid,
+			const size_t groupGuid,
+			const std::string& info,
+			const bool isSelectedNode,
+			const bool isSelectedParentEdge)noexcept
 		{
-			AddNode(groupGuid, std::make_unique<JEditorBinaryNode>(name, nodeGuid, info, static_cast<JEditorBinaryNode*>(GetLastAddedNode())));
+			AddNode(groupGuid, std::make_unique<JEditorBinaryNode>(name, nodeGuid, info, isSelectedNode, isSelectedParentEdge, static_cast<JEditorBinaryNode*>(GetLastAddedNode())));
 		}
 		void JEditorBinaryTreeView::BuildEndSplit()noexcept
 		{
@@ -927,29 +971,45 @@ namespace JinEngine
 			if (depth > GetMaxDepth())
 				SetMaxDepth(depth);
 		}
-		void JEdtiorTreeView::BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid, const std::string& info)noexcept
+		void JEdtiorTreeView::BuildNode(const std::string& name,
+			const size_t nodeGuid,
+			const size_t groupGuid,
+			const std::string& info,
+			const bool isSelectedNode,
+			const bool isSelectedParentEdge)noexcept
 		{
-			JEditorNodeBase* newNode = AddNode(groupGuid, std::make_unique<JEditorTreeNode>(name, nodeGuid, info, static_cast<JEditorTreeNode*>(GetLastAddedNode())));
+			JEditorNodeBase* newNode = AddNode(groupGuid, std::make_unique<JEditorTreeNode>(name, nodeGuid, info, isSelectedNode, isSelectedParentEdge, static_cast<JEditorTreeNode*>(GetLastAddedNode())));
 			const uint gridSize = GetGrid()->GetGridSize();
 			newNode->SetCenter(JVector2<float>(gridSize / 2.0f, gridSize / 2.0f));
 		}
 
-		void JEditorGraphView::BuildNode(const std::string& name, const size_t nodeGuid, const size_t groupGuid, const std::string& info)noexcept
+		void JEditorGraphView::BuildNode(const std::string& name,
+			const size_t nodeGuid, 
+			const size_t groupGuid,
+			const std::string& info,
+			const bool isSelectedNode)noexcept
 		{
-			JEditorNodeBase* newNode = AddNode(groupGuid, std::make_unique<JEditorGraphNode>(name, nodeGuid, info, GetNodeCount() == 0));
+			JEditorNodeBase* newNode = AddNode(groupGuid, std::make_unique<JEditorGraphNode>(name, nodeGuid, info, isSelectedNode, GetNodeCount() == 0));
 			const uint gridSize = GetGrid()->GetGridSize();
 			newNode->SetCenter(JVector2<float>(gridSize / 2.0f, gridSize / 2.0f));
 		}
-		void JEditorGraphView::ConnectNode(const size_t from, const size_t to)noexcept
+		void JEditorGraphView::BuildNode(const std::string& name,
+			const size_t nodeGuid,
+			const size_t groupGuid,
+			const bool isSelectedNode)noexcept
+		{
+			BuildNode(name, nodeGuid, groupGuid, "", isSelectedNode);
+		}
+		void JEditorGraphView::ConnectNode(const size_t from, const size_t to, const bool isSelected)noexcept
 		{
 			JEditorGraphNode* fromNode = static_cast<JEditorGraphNode*>(GetNode(from));
 			JEditorGraphNode* toNode = static_cast<JEditorGraphNode*>(GetNode(to));
 			if (fromNode != nullptr && toNode != nullptr)
-				fromNode->ConnectNode(toNode);
+				fromNode->ConnectNode(toNode, isSelected);
 		}
-		void JEditorGraphView::SetConnectNodeMode(std::unique_ptr<Core::JBindHandleBase>&& newSuccessBind)noexcept
+		void JEditorGraphView::SetConnectNodeMode(const size_t from, std::unique_ptr<Core::JBindHandleBase>&& newSuccessBind)noexcept
 		{
-			JEditorNodeBase* selecetd = GetLastSelectedNode();
+			JEditorNodeBase* selecetd = GetNode(from);
 			if (selecetd == nullptr)
 				return;
 
@@ -973,7 +1033,7 @@ namespace JinEngine
 			for (uint i = 0; i < allNodeCount; ++i)
 				GetNodeByIndex(i)->SettingDrawLine(updateHelper);
 			for (uint i = 0; i < allNodeCount; ++i)
-			{  
+			{
 				GetNodeByIndex(i)->DrawRect(updateHelper);
 				GetNodeByIndex(i)->StoreUpdatedNodeData(updateHelper);
 			}
@@ -982,21 +1042,24 @@ namespace JinEngine
 			{
 				JEditorGraphNode* fromNode = static_cast<JEditorGraphNode*>(GetNode(connectFromGuid));
 				if (fromNode == nullptr)
-					SetConnectNodeMode();
-				 
+				{
+					OffConnectNodeMode();
+					return;
+				}
+
 				JVector2<float> lineStart = fromNode->GetValidCenter(updateHelper);
 				JVector2<float> lineEnd = ImGui::GetMousePos();
 				ImGui::GetWindowDrawList()->AddLine(lineStart, lineEnd, IM_COL32(85, 85, 175, 255), updateHelper->lineThickness);
 
 				if (ImGui::IsMouseDown(0) || ImGui::IsMouseDown(1))
 				{
-					if (updateHelper->isSelectedNode)
+					if (IsLastUpdateSeletedNode())
 					{
-						JEditorGraphNode* toNode = static_cast<JEditorGraphNode*>(GetNode(updateHelper->selectedNodeGuid));
+						JEditorGraphNode* toNode = static_cast<JEditorGraphNode*>(GetLastSelectedNode());
 						if (toNode != nullptr)
 						{
 							connectToGuid = toNode->GetGuid();
-							fromNode->ConnectNode(toNode);
+							fromNode->ConnectNode(toNode, false);
 							if (successBind != nullptr)
 								successBind->InvokeCompletelyBind();
 						}

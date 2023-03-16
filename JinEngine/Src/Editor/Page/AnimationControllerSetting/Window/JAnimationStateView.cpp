@@ -2,8 +2,9 @@
 #include"../../JEditorAttribute.h"
 #include"../../JEditorPageShareData.h" 
 #include"../../../Event/JEditorEvent.h"
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
 #include"../../../Popup/JEditorPopupNode.h"
+#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
+#include"../../../Interface/JEditorObjectCreationInterface.h"
 #include"../../../../Core/Reflection/JTypeTemplate.h"
 #include"../../../../Core/FSM/JFSMfactory.h"
 #include"../../../../Core/FSM/AnimationFSM/JAnimationStateType.h"
@@ -35,6 +36,53 @@ namespace JinEngine
 			}
 		}
 
+		class JAnimationStateViewCreationImpl
+		{
+		private:
+			using ClipCreationInterface = JEditorCreationRequestor<JEditorObjectCreateInterface<>>;
+			using TransitionCreationInteface = JEditorCreationRequestor<JEditorObjectCreateInterface<size_t, size_t>>;
+			using DestructionInterface = JEditorDestructionRequestor;
+		public:
+			using ClipCanCreateF = ClipCreationInterface::CreateInteface::CanCreateF;
+			using ClipCreateF = ClipCreationInterface::CreateInteface::ObjectCreateF;
+			using TransitionCanCreateF = TransitionCreationInteface::CreateInteface::CanCreateF;
+			using TransitionCreateF = TransitionCreationInteface::CreateInteface::ObjectCreateF;
+		public:
+			using DataHandleStructure = ClipCreationInterface::DataHandleStructure;
+			using NotifyPtr = ClipCreationInterface::NotifyPtr;
+		public:
+			DataHandleStructure dS;
+		public:
+			ClipCreationInterface clip;
+			TransitionCreationInteface transition;
+			DestructionInterface destructuion;
+		public:
+			using RequestEvF = Core::JSFunctorType<void, JAnimationStateView*>;
+			using TryConnectStateTransitionF = Core::JSFunctorType<void, JAnimationStateView*>;
+			using ConnectStateTrasitionF = Core::JSFunctorType<void, JAnimationStateView*>;
+		public:
+			std::unique_ptr<RequestEvF::Functor> reqCreateStateEvF;
+			std::unique_ptr<TryConnectStateTransitionF::Functor> tryConnectStateTransF;
+			std::unique_ptr<ConnectStateTrasitionF::Functor> connectStateTransF;
+			std::unique_ptr<RequestEvF::Functor> reqDestroyEvF;
+		public:
+			JAnimationStateViewCreationImpl(RequestEvF::Ptr reqCreateStateEvPtr,
+				TryConnectStateTransitionF::Ptr tryConnectStateTransPtr,
+				ConnectStateTrasitionF::Ptr connectStateTransPtr,
+				RequestEvF::Ptr reqDestroyEvPtr)
+			{
+				reqCreateStateEvF = std::make_unique<RequestEvF::Functor>(reqCreateStateEvPtr);
+				tryConnectStateTransF = std::make_unique<TryConnectStateTransitionF::Functor>(tryConnectStateTransPtr);
+				connectStateTransF = std::make_unique<ConnectStateTrasitionF::Functor>(connectStateTransPtr);
+
+				reqDestroyEvF = std::make_unique<RequestEvF::Functor>(reqDestroyEvPtr);
+			}
+			~JAnimationStateViewCreationImpl()
+			{
+				dS.Clear();
+			}
+		};
+
 		JAnimationStateView::JAnimationStateView(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE ownerPageType,
@@ -53,6 +101,7 @@ namespace JinEngine
 			for (uint i = 0; i < count; ++i)
 				RegisterViewGraphGroup(static_cast<JAnimationController*>(*(handle + i)));
 
+			InitializeCreationImpl();
 			//Diagram View Popup
 			std::unique_ptr<JEditorPopupNode> stateViewRootNode =
 				std::make_unique<JEditorPopupNode>("Animation Controller Editor State View Popup Root", J_EDITOR_POPUP_NODE_TYPE::ROOT, nullptr);
@@ -61,59 +110,154 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Create New State", J_EDITOR_POPUP_NODE_TYPE::LEAF, stateViewRootNode.get());
 			editorString->AddString(createNewCilpStateNode->GetNodeId(), { "Create New Animation Clip" , u8"애니메이션 클립 생성" });
 
-			std::unique_ptr<JEditorPopupNode> destroyStateNode =
-				std::make_unique<JEditorPopupNode>("Destroy State", J_EDITOR_POPUP_NODE_TYPE::LEAF, stateViewRootNode.get());
-			editorString->AddString(destroyStateNode->GetNodeId(), { "Destroy Animation State" , u8"애니메이션 상태 삭제" });
+			std::unique_ptr<JEditorPopupNode> createTransitionNode =
+				std::make_unique<JEditorPopupNode>("Create Transition", J_EDITOR_POPUP_NODE_TYPE::LEAF, stateViewRootNode.get());
+			editorString->AddString(createTransitionNode->GetNodeId(), { "Create Transition" , u8"트랜지션 추가" });
 
-			std::unique_ptr<JEditorPopupNode> addTransitionNode =
-				std::make_unique<JEditorPopupNode>("Add Transition", J_EDITOR_POPUP_NODE_TYPE::LEAF, stateViewRootNode.get());
-			editorString->AddString(addTransitionNode->GetNodeId(), { "Add Transition" , u8"트랜지션 추가" });
+			std::unique_ptr<JEditorPopupNode> destroyNode =
+				std::make_unique<JEditorPopupNode>("Destroy", J_EDITOR_POPUP_NODE_TYPE::LEAF, stateViewRootNode.get());
+			editorString->AddString(destroyNode->GetNodeId(), { "Destroy" , u8"삭제" });
 
-			std::unique_ptr<JEditorPopupNode> destroyTransitionNode =
-				std::make_unique<JEditorPopupNode>("Add Transition", J_EDITOR_POPUP_NODE_TYPE::LEAF, stateViewRootNode.get());
-			editorString->AddString(destroyTransitionNode->GetNodeId(), { "Destroy Transition" , u8"트랜지션 삭제" });
+			//createNewCilpStateNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
 
-			regCreateStateEvF = std::make_unique<RegisterEvF::Functor>(&JAnimationStateView::RegisterCreateStateEv, this);
-			regDestroyStateEvF = std::make_unique<RegisterEvF::Functor>(&JAnimationStateView::RegisterDestroyStateEv, this); 
-			regDestroyTransitionEvF = std::make_unique<RegisterEvF::Functor>(&JAnimationStateView::RegisterDestroyTransitionEv, this);
+			using RequestEvF = JAnimationStateViewCreationImpl::RequestEvF;
+			using TryConnectStateTransitionF = JAnimationStateViewCreationImpl::TryConnectStateTransitionF;
 
-			createStateF = std::make_unique<CreateStateF::Functor>(&JAnimationStateView::CreateState, this);
-			destroyStateF = std::make_unique<CreateStateF::Functor>(&JAnimationStateView::DestroyState, this);
-			createTransitionF = std::make_unique<CreateTransitionF::Functor>(&JAnimationStateView::CreateTranstion, this);
-			destroyTransitionF = std::make_unique<DestroyTransitionF::Functor>(&JAnimationStateView::DestroyTransition, this);
-			undoDestroyF = std::make_unique<UndoDestroyF::Functor>(&JAnimationStateView::UndoDestroy, this);
-			
-			auto tryConnectStateTransLam = [](JAnimationStateView* stateView)
-			{
-				using bType = ConnectStateTrasitionF::CompletelyBind;
-				if (stateView->stateGraph->IsLastUpdateSeletedNode())
-					stateView->stateGraph->SetConnectNodeMode(std::make_unique<bType>(*stateView->connectStateTransF, std::move(stateView)));
-			};
-			auto connectStateTransLam = [](JAnimationStateView* stateView)
-			{
-				const size_t fromGuid = stateView->stateGraph->GetConnectFromGuid();
-				const size_t toGuid = stateView->stateGraph->GetConnectToGuid();
-
-				stateView->RegisterCreateTransitionEv(stateView->stateGraph->GetConnectFromGuid(),
-					stateView->stateGraph->GetConnectToGuid());
-			};
-			tryConnectStateTransF = std::make_unique<TryConnectStateTransitionF::Functor>(tryConnectStateTransLam);
-			connectStateTransF = std::make_unique<ConnectStateTrasitionF::Functor>(connectStateTransLam);
-
-			createNewCilpStateNode->RegisterSelectBind(std::make_unique<RegisterEvF::CompletelyBind>(*regCreateStateEvF));
-			destroyStateNode->RegisterSelectBind(std::make_unique<RegisterEvF::CompletelyBind>(*regDestroyStateEvF));
-			addTransitionNode->RegisterSelectBind(std::make_unique<TryConnectStateTransitionF::CompletelyBind>(*tryConnectStateTransF, this));
-			destroyTransitionNode->RegisterSelectBind(std::make_unique<RegisterEvF::CompletelyBind>(*regDestroyTransitionEvF));
+			createNewCilpStateNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creationImpl->reqCreateStateEvF, this));
+			createTransitionNode->RegisterSelectBind(std::make_unique<TryConnectStateTransitionF::CompletelyBind>(*creationImpl->tryConnectStateTransF, this));
+			createTransitionNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
+			destroyNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creationImpl->reqDestroyEvF, this));
+			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 
 			statePopup = std::make_unique< JEditorPopupMenu>(Constants::StateViewName(GetName()), std::move(stateViewRootNode));
 			statePopup->AddPopupNode(std::move(createNewCilpStateNode));
-			statePopup->AddPopupNode(std::move(destroyStateNode));
-			statePopup->AddPopupNode(std::move(addTransitionNode));
-			statePopup->AddPopupNode(std::move(destroyTransitionNode));
+			statePopup->AddPopupNode(std::move(createTransitionNode));
+			statePopup->AddPopupNode(std::move(destroyNode));
 		}
 		JAnimationStateView::~JAnimationStateView()
 		{
 			stateGraph->StoreData(Constants::ViewGraphPath());
+			creationImpl.reset();
+		}
+		void JAnimationStateView::InitializeCreationImpl()
+		{
+			if (creationImpl != nullptr)
+				return;
+
+			auto requestCreateStateLam = [](JAnimationStateView* stateView)
+			{
+				if (!stateView->aniCont.IsValid() || !stateView->selectedDiagram.IsValid())
+					return;
+
+				JEditorCreationHint creationHint = JEditorCreationHint(stateView,
+					true, false, false, true, false,
+					Core::JTypeInstanceSearchHint(stateView->aniCont),
+					Core::JTypeInstanceSearchHint(stateView->selectedDiagram),
+					&JEditorWindow::NotifyEvent);
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, stateView->GetClearTaskFunctor());
+
+				JAnimationStateViewCreationImpl* impl = stateView->creationImpl.get();
+				impl->clip.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint);
+			};
+			auto tryConnectStateTransLam = [](JAnimationStateView* stateView)
+			{
+				using bType = JAnimationStateViewCreationImpl::ConnectStateTrasitionF::CompletelyBind;
+				auto selectedVec = stateView->GetSelectedObjectVec();
+				if (stateView->aniCont.IsValid() && selectedVec[0].IsValid() &&
+					selectedVec[0]->GetTypeInfo().IsChildOf<Core::JAnimationFSMstate>())
+				{
+					stateView->stateGraph->SetConnectNodeMode(selectedVec[0]->GetGuid(),
+						std::make_unique<bType>(*stateView->creationImpl->connectStateTransF, std::move(stateView)));
+				}
+			};
+			auto connectStateTransLam = [](JAnimationStateView* stateView)
+			{
+				if (!stateView->aniCont.IsValid() || !stateView->selectedDiagram.IsValid())
+					return;
+
+				size_t fromGuid = stateView->stateGraph->GetConnectFromGuid();
+				size_t toGuid = stateView->stateGraph->GetConnectToGuid();
+
+				JEditorCreationHint creationHint = JEditorCreationHint(stateView,
+					true, false, false, true, false,
+					Core::JTypeInstanceSearchHint(stateView->aniCont),
+					Core::JTypeInstanceSearchHint(stateView->selectedDiagram),
+					&JEditorWindow::NotifyEvent);
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, stateView->GetClearTaskFunctor());
+
+				JAnimationStateViewCreationImpl* impl = stateView->creationImpl.get();
+				impl->transition.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, std::move(fromGuid), std::move(toGuid));
+			};
+			auto requestDestroyLam = [](JAnimationStateView* stateView)
+			{
+				if (!stateView->aniCont.IsValid() || !stateView->selectedDiagram.IsValid())
+					return;
+
+				std::vector<Core::JUserPtr<Core::JIdentifier>> objVec = stateView->GetSelectedObjectVec();
+				if (objVec.size() == 0)
+					return;
+
+				JEditorCreationHint creationHint = JEditorCreationHint(stateView,
+					true, false, false, false, true,
+					Core::JTypeInstanceSearchHint(stateView->aniCont),
+					Core::JTypeInstanceSearchHint(stateView->selectedDiagram),
+					&JEditorWindow::NotifyEvent);
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, stateView->GetClearTaskFunctor());
+
+				JAnimationStateViewCreationImpl* impl = stateView->creationImpl.get();
+				impl->destructuion.RequestDestroyObject(impl->dS, true, creationHint, objVec, requestHint);
+			};
+
+			creationImpl = std::make_unique<JAnimationStateViewCreationImpl>(requestCreateStateLam,
+				tryConnectStateTransLam, connectStateTransLam, requestDestroyLam);
+
+			auto canCreateClipLam = [](const size_t guid, const JEditorCreationHint& creationHint)
+			{
+				auto openSelectedPtr = Core::GetRawPtr(creationHint.openDataHint);
+				auto ownerPtr = Core::GetRawPtr(creationHint.ownerDataHint);
+				if (openSelectedPtr == nullptr || ownerPtr == nullptr)
+					return false;
+
+				if (openSelectedPtr->GetTypeInfo().IsChildOf<JAnimationController>() && ownerPtr->GetTypeInfo().IsChildOf<Core::JAnimationFSMdiagram>())
+					return static_cast<JAnimationController*>(openSelectedPtr)->CanCreateState(static_cast<Core::JAnimationFSMdiagram*>(ownerPtr));
+				else
+					return false;
+			};
+			auto creatClipLam = [](const size_t guid, const JEditorCreationHint& creationHint)
+			{
+				JAnimationController* aniCont = static_cast<JAnimationController*>(Core::GetRawPtr(creationHint.openDataHint));
+				Core::JAnimationFSMdiagram* ownerDiagaram = static_cast<Core::JAnimationFSMdiagram*>(Core::GetRawPtr(creationHint.ownerDataHint));
+				aniCont->CreateFSMclip(ownerDiagaram, guid);
+			};
+
+			auto canCreateTransitionLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t fromStateGuid, const size_t toStateGuid)
+			{
+				auto openSelectedPtr = Core::GetRawPtr(creationHint.openDataHint);
+				auto ownerPtr = Core::GetRawPtr(creationHint.ownerDataHint);
+				if (openSelectedPtr == nullptr || ownerPtr == nullptr)
+					return false;
+
+				auto fromStatePtr = Core::SearchRawPtr(Core::JAnimationFSMstate::StaticTypeInfo(), fromStateGuid);
+				auto toStatePtr = Core::SearchRawPtr(Core::JAnimationFSMstate::StaticTypeInfo(), toStateGuid);
+				if (fromStatePtr != nullptr && toStatePtr != nullptr && openSelectedPtr->GetTypeInfo().IsChildOf<JAnimationController>() && ownerPtr->GetTypeInfo().IsChildOf<Core::JAnimationFSMdiagram>())
+					return true;
+				else
+					return false;
+			};
+			auto createTransitionLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t fromStateGuid, const size_t toStateGuid)
+			{
+				JAnimationController* aniCont = static_cast<JAnimationController*>(Core::GetRawPtr(creationHint.openDataHint));
+				Core::JAnimationFSMdiagram* ownerDiagaram = static_cast<Core::JAnimationFSMdiagram*>(Core::GetRawPtr(creationHint.ownerDataHint));
+				Core::JAnimationFSMstate* fromState = static_cast<Core::JAnimationFSMstate*>(Core::SearchRawPtr(Core::JAnimationFSMstate::StaticTypeInfo(), fromStateGuid));
+				Core::JAnimationFSMstate* toState = static_cast<Core::JAnimationFSMstate*>(Core::SearchRawPtr(Core::JAnimationFSMstate::StaticTypeInfo(), toStateGuid));
+
+				aniCont->CreateFsmtransition(ownerDiagaram, fromState, toState, guid);
+			};
+
+			creationImpl->clip.GetCreationInterface()->RegisterCanCreationF(canCreateClipLam);
+			creationImpl->clip.GetCreationInterface()->RegisterObjectCreationF(creatClipLam);
+			creationImpl->transition.GetCreationInterface()->RegisterCanCreationF(canCreateTransitionLam);
+			creationImpl->transition.GetCreationInterface()->RegisterObjectCreationF(createTransitionLam);
 		}
 		J_EDITOR_WINDOW_TYPE JAnimationStateView::GetWindowType()const noexcept
 		{
@@ -130,26 +274,6 @@ namespace JinEngine
 			UpdateDocking();
 			if (IsActivated())
 			{
-				auto selected = JEditorPageShareData::GetSelectedObj(GetOwnerPageType());
-				const bool isValidGameObject = selected.IsValid() && selected->GetTypeInfo().IsChildOf<Core::JFSMInterface>();
-				if (isValidGameObject)
-				{
-					if (selected->GetTypeInfo().IsChildOf<Core::JAnimationFSMstate>())
-					{
-						selectedState.ConnnectChildUser(selected);
-						selectedTransition.Clear();
-					}
-					else if (selected->GetTypeInfo().IsChildOf<Core::JAnimationFSMtransition>())
-					{
-						selectedTransition.ConnnectChildUser(selected);
-						selectedState.Clear();
-					}
-					else
-						ClearSelectedObject();
-				}
-				else
-					ClearSelectedObject();
- 
 				UpdateMouseClick();
 				BuildDiagramView();
 			}
@@ -157,6 +281,7 @@ namespace JinEngine
 		}
 		void JAnimationStateView::BuildDiagramView()
 		{
+			bool isHoveredContents = false;
 			stateGraph->ClearNode();
 			stateGraph->SetGridSize(2000);
 			if (aniCont.IsValid() && selectedDiagram.IsValid())
@@ -165,7 +290,10 @@ namespace JinEngine
 				for (uint i = 0; i < stateCount; ++i)
 				{
 					Core::JAnimationFSMstate* state = selectedDiagram->GetStateByIndex(i);
-					stateGraph->BuildNode(JCUtil::WstrToU8Str(state->GetName()), state->GetGuid(), aniCont->GetGuid());
+					stateGraph->BuildNode(JCUtil::WstrToU8Str(state->GetName()),
+						state->GetGuid(),
+						aniCont->GetGuid(),
+						IsSelectedObject(state->GetGuid()));
 				}
 				for (uint i = 0; i < stateCount; ++i)
 				{
@@ -173,14 +301,32 @@ namespace JinEngine
 					const size_t fromGuid = state->GetGuid();
 					const uint transitionCount = state->GetTransitionCount();
 					for (uint j = 0; j < transitionCount; ++j)
-						stateGraph->ConnectNode(fromGuid, state->GetTransitionByIndex(j)->GetOutputStateGuid());
+					{
+						Core::JAnimationFSMtransition* trans = state->GetTransitionByIndex(j);
+						stateGraph->ConnectNode(fromGuid,
+							trans->GetOutputStateGuid(),
+							IsSelectedObject(trans->GetGuid()));
+					}
 				}
 				JImGuiImpl::Text(JCUtil::WstrToU8Str(selectedDiagram->GetName()).c_str());
 				stateGraph->OnScreen(aniCont->GetGuid());
+				if (stateGraph->IsLastUpdateHoveredNode())
+				{
+					isHoveredContents = true;
+					SetHoveredObject(Core::GetUserPtr(selectedDiagram->GetState(stateGraph->GetLastUpdateHoveredNodeGuid())));
+				}
+				else if(stateGraph->IsLastUpdateHoveredEdge())
+				{
+					isHoveredContents = true;
+					size_t fromGuid;
+					size_t toGuid;
+					stateGraph->GetLastUpdateHoveredEdgeGuid(fromGuid, toGuid); 
+					SetHoveredObject(Core::GetUserPtr(selectedDiagram->GetState(fromGuid)->GetTransitionByOutGuid(toGuid)));
+				}
 				if (stateGraph->IsLastUpdateSeletedNode())
 				{
 					const size_t guid = stateGraph->GetLastUpdateSeletedNodeGuid();
-					SetSelecteObject(selectedState, Core::GetUserPtr(selectedDiagram->GetState(guid)));
+					SetSelecteObject(Core::GetUserPtr(selectedDiagram->GetState(guid)));
 				}
 				else if (stateGraph->IsLastUpdateSeletedEdge())
 				{
@@ -188,27 +334,20 @@ namespace JinEngine
 					size_t toGuid;
 					stateGraph->GetLastUpdateSelectedEdgeGuid(fromGuid, toGuid);
 					Core::JFSMtransition* tPtr = selectedDiagram->GetState(fromGuid)->GetTransitionByOutGuid(toGuid);
-					SetSelecteObject(selectedTransition, Core::GetUserPtr<Core::JAnimationFSMtransition>(tPtr));
-				}
+					SetSelecteObject(Core::GetUserPtr<Core::JAnimationFSMtransition>(tPtr));
+				} 
+				if(isHoveredContents && ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1))
+					SetContentsClick(true);
 
-				if (statePopup->IsOpen())
-					statePopup->ExecutePopup(editorString.get());
-				statePopup->Update();
+				UpdatePopup(PopupSetting(statePopup.get(), editorString.get()));
 			}
 			else
 				stateGraph->OnScreen();
 		}
-		void JAnimationStateView::SetSelecteObject(Core::JUserPtr<Core::JIdentifier> preSelected, Core::JUserPtr<Core::JIdentifier> newSelected)
+		void JAnimationStateView::SetSelecteObject(Core::JUserPtr<Core::JIdentifier> newSelected)
 		{
-			const bool canSeleted = !preSelected.IsValid() || (newSelected.IsValid() && newSelected->GetGuid() != preSelected->GetGuid());
-			if (canSeleted)
-				RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), newSelected));
-		}
-		void JAnimationStateView::ClearSelectedObject()
-		{
-			selectedTransition.Clear();
-			selectedState.Clear();
-			stateGraph->ClearSeletedCash();
+			RequestPushSelectObject(newSelected);
+			SetContentsClick(true);
 		}
 		void JAnimationStateView::RegisterViewGraphGroup(JAnimationController* aniCont)
 		{
@@ -216,171 +355,17 @@ namespace JinEngine
 			if (aniCont != nullptr)
 				stateGraph->RegisterGroup(aniCont->GetGuid(), isValidGroupLam);
 		}
-		void JAnimationStateView::RegisterCreateStateEv()
-		{
-			if (!aniCont.IsValid())
-				return;
-
-			using BindT = JAnimationStateView::CreateStateF::Bind;
-			size_t guid = Core::MakeGuid();
-			auto doBind = std::make_unique<BindT>(*createStateF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid(), std::move(guid));
-			auto undoBind = std::make_unique<BindT>(*destroyStateF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid(), std::move(guid));
-
-			using CreaetStateTEv = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateStateF::Bind, CreateStateF::Bind>;
-			auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<CreaetStateTEv>
-				("Create Animation Fsm State", GetOwnerPageType(), std::move(doBind), std::move(undoBind), fsmdata));
-			AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
-		}
-		void JAnimationStateView::RegisterDestroyStateEv()
-		{
-			if (!aniCont.IsValid() || !selectedState.IsValid())
-				return;
-			 
-			auto doBind = std::make_unique<CreateStateF::Bind>(*createStateF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid(), selectedState->GetGuid());
-			auto undoBind = std::make_unique<UndoDestroyF::Bind>(*undoDestroyF, Core::empty, Core::empty, Core::JUserPtr{ aniCont });
-
-			using DestroyStateTEv = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateStateF::Bind, UndoDestroyF::Bind>;
-			auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<DestroyStateTEv>
-				("Destroy Animation Fsm State", GetOwnerPageType(), std::move(doBind), std::move(undoBind), fsmdata));
-			AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
-		}
-		void JAnimationStateView::RegisterCreateTransitionEv(const size_t inGuid, const size_t outGuid)
-		{
-			if (!aniCont.IsValid())
-				return;
-			 
-			size_t guid = Core::MakeGuid();
-			auto doBind = std::make_unique<CreateTransitionF::Bind>(*createTransitionF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid(), std::move(inGuid), std::move(outGuid));
-			auto undoBind = std::make_unique<DestroyTransitionF::Bind>(*destroyTransitionF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid());
-
-			using CreateTransitionTEv = JEditorTCreateBindFuncEvStruct<DataHandleStructure, CreateTransitionF::Bind, DestroyTransitionF::Bind>;
-			auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<CreateTransitionTEv>
-				("Create Animation Fsm State", GetOwnerPageType(), std::move(doBind), std::move(undoBind), fsmdata));
-			AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
-		}
-		void JAnimationStateView::RegisterDestroyTransitionEv()
-		{
-			if (!aniCont.IsValid() || !selectedTransition.IsValid())
-				return;
-
-			auto doBind = std::make_unique<DestroyTransitionF::Bind>(*destroyTransitionF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid());
-			auto undoBind = std::make_unique<UndoDestroyF::Bind>(*undoDestroyF, Core::empty, Core::empty, Core::JUserPtr{ aniCont });
-
-			using DestroyTransitionTEv = JEditorTCreateBindFuncEvStruct<DataHandleStructure, DestroyTransitionF::Bind, UndoDestroyF::Bind>;
-			auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<DestroyTransitionTEv>
-				("Destroy Animation Fsm State", GetOwnerPageType(), std::move(doBind), std::move(undoBind), fsmdata));
-			AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
-		}
-		void JAnimationStateView::CreateState(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t diagramGuid, const size_t stateGuid)
-		{
-			if (aniCont.IsValid())
-			{
-				Core::JOwnerPtr<Core::JIdentifier> owner = dS.Release(dH);
-				if (owner.IsValid() && Core::Cast<Core::JAnimationFSMstate>(owner.Get()))
-				{
-					Core::J_ANIMATION_STATE_TYPE sType = Core::Cast<Core::JAnimationFSMstate>(owner.Get())->GetStateType();
-					if (sType == Core::J_ANIMATION_STATE_TYPE::CLIP)
-					{
-						auto clip = Core::JOwnerPtr<Core::JAnimationFSMstateClip>::ConvertChildUser(std::move(owner));
-						auto ptr = clip.Get();
-						Core::JIdentifier::AddInstance(std::move(clip));
-						JEditorPageShareData::SetSelectObj(GetOwnerPageType(), Core::GetUserPtr(ptr));
-					}
-					else //미구현
-						;//AddInstance(Core::JOwnerPtr<Core::JAnimationBlend>::ConvertChildUser(std::move(owner)));
-				}
-				else
-					aniCont->CreateFSMclip(aniCont->GetDiagram(diagramGuid), stateGuid);
-				SetModifiedBit(aniCont, true);
-			}
-		}
-		void JAnimationStateView::DestroyState(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t diagramGuid, const size_t stateGuid)
-		{
-			if (aniCont.IsValid())
-			{
-				auto diagramPtr = aniCont->GetDiagram(diagramGuid);
-				if (diagramPtr != nullptr)
-				{
-					auto statePtr = diagramPtr->GetState(stateGuid);
-					if (statePtr != nullptr)
-					{ 
-						if (statePtr->GetStateType() == Core::J_ANIMATION_STATE_TYPE::CLIP)
-						{
-							Core::JDataHandle newHandle = dS.Add(Core::JIdentifier::ReleaseInstance<Core::JAnimationFSMstateClip>(statePtr->GetGuid()));
-							dS.TransitionHandle(newHandle, dH);
-						}
-						else
-						{
-							//미구현
-							//	Core::JDataHandle newHandle = dataStructure.Add(ReleaseInstance<Core::JFSMparameter>(conditionPtr->GetGuid()));
-							//	dataStructure.TransitionHandle(newHandle, dataHandle);
-						}
-						JEditorDeSelectObjectEvStruct deselectEv{ GetOwnerPageType(), stateGuid };
-						NotifyEvent(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::DESELECT_OBJECT, &deselectEv);
-					}
-					SetModifiedBit(aniCont, true);
-				}
-			}
-		}
-		void JAnimationStateView::CreateTranstion(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t diagramGuid, const size_t stateGuid, const size_t outGuid)
-		{
-			if (aniCont.IsValid())
-			{
-				auto diagramPtr = aniCont->GetDiagram(diagramGuid);
-				Core::JOwnerPtr<Core::JIdentifier> owner = dS.Release(dH);
-				if (owner.IsValid() && Core::Cast<Core::JAnimationFSMtransition>(owner.Get()))
-					Core::JIdentifier::AddInstance(std::move(owner));
-				else
-				{
-					auto diagram = aniCont->GetDiagram(diagramGuid);
-					aniCont->CreateFsmtransition(diagram, diagram->GetState(stateGuid), diagram->GetState(outGuid));
-				}
-				SetModifiedBit(aniCont, true);
-			}
-		}
-		void JAnimationStateView::DestroyTransition(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t diagramGuid)
-		{
-			if (aniCont.IsValid())
-			{
-				auto diagramPtr = aniCont->GetDiagram(diagramGuid);
-				if (diagramPtr != nullptr && selectedTransition.IsValid())
-				{
-					const size_t guid = selectedTransition->GetGuid();
-					Core::JDataHandle newHandle = dS.Add(Core::JIdentifier::ReleaseInstance<Core::JAnimationFSMtransition>(guid));
-					dS.TransitionHandle(newHandle, dH);
-
-					JEditorDeSelectObjectEvStruct deselectEv{ GetOwnerPageType(), guid };
-					NotifyEvent(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::DESELECT_OBJECT, &deselectEv);
-					SetModifiedBit(aniCont, true);
-				}
-			}
-		}
-		void JAnimationStateView::UndoDestroy(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont)
-		{
-			auto owner = dS.Release(dH);
-			if (owner.IsValid())
-			{
-				Core::JIdentifier* ptr = owner.Get();
-				SetModifiedBit(aniCont, true);
-				Core::JIdentifier::AddInstance(std::move(owner));
-
-				JEditorSelectObjectEvStruct selectEv{ GetOwnerPageType(), Core::GetUserPtr(ptr) };
-				NotifyEvent(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::SELECT_OBJECT, &selectEv);
-			}
-		}
 		void JAnimationStateView::DoSetClose()noexcept
 		{
 			aniCont.Clear();
 			selectedDiagram.Clear();
-			selectedState.Clear();
-			selectedTransition.Clear();
 		}
 		void JAnimationStateView::DoActivate()noexcept
 		{
 			JEditorWindow::DoActivate();
 			std::vector<J_EDITOR_EVENT> enumVec
 			{
-				J_EDITOR_EVENT::MOUSE_CLICK, J_EDITOR_EVENT::SELECT_OBJECT
+				J_EDITOR_EVENT::MOUSE_CLICK, J_EDITOR_EVENT::PUSH_SELECT_OBJECT
 			};
 			RegisterEventListener(enumVec);
 		}
@@ -391,22 +376,21 @@ namespace JinEngine
 		}
 		void JAnimationStateView::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* ev)
 		{
+			JEditorWindow::OnEvent(senderGuid, eventType, ev);
 			if (senderGuid == GetGuid())
 				return;
 
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)
 				statePopup->SetOpen(false);
-			else if (eventType == J_EDITOR_EVENT::SELECT_OBJECT)
+			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT)
 			{
-				JEditorSelectObjectEvStruct* evstruct = static_cast<JEditorSelectObjectEvStruct*>(ev);
-				if (evstruct->selectObj->GetTypeInfo().IsChildOf<Core::JAnimationFSMdiagram>())
+				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(ev);
+				Core::JUserPtr< Core::JIdentifier> diagram = evstruct->GetFirstMatchedTypeObject(Core::JAnimationFSMdiagram::StaticTypeInfo());
+				if (diagram.IsValid())
 				{
-					if (!selectedDiagram.IsValid() || selectedDiagram->GetGuid() != evstruct->selectObj->GetGuid())
-					{
-						ClearSelectedObject();
-						selectedDiagram.ConnnectChildUser(evstruct->selectObj);
-					}
-				}		 
+					if (!selectedDiagram.IsValid() || selectedDiagram->GetGuid() != diagram->GetGuid())
+						selectedDiagram.ConnnectChildUser(diagram);
+				}
 			}
 		}
 	}

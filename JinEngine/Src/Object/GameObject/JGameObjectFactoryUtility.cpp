@@ -48,7 +48,8 @@ namespace JinEngine
 			D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 			J_RENDER_LAYER::SKY);
 
-		newRItem->SetMaterial(0, JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_SKY));
+		JMaterial* mat = JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_SKY);
+		newRItem->SetMaterial(0, Core::GetUserPtr(mat));
 		return newGameObj;
 	}
 	JGameObject* JGameObjectFactoryUtility::CreateCamera(JGameObject& parent, const J_OBJECT_FLAG flag, bool isMainCamera, const std::wstring name)
@@ -79,7 +80,7 @@ namespace JinEngine
 			D3D11_PRIMITIVE_TOPOLOGY_LINELIST,
 			layer,
 			SPACE_SPATIAL_NOT_ALLOW_ALL);
-		newRItem->SetMaterial(0, JResourceManager::Instance().GetDefaultMaterial(matType));
+		newRItem->SetMaterial(0, Core::GetUserPtr(JResourceManager::Instance().GetDefaultMaterial(matType)));
 		return newGameObj;
 	}
 }

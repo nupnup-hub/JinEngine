@@ -1,6 +1,6 @@
 #pragma once 
 #include"../../JEditorWindow.h" 
-#include"../../../Interface/JEditorObjectInterface.h" 
+#include"../../../Interface/JEditorObjectHandleInterface.h" 
 #include"../../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
 #include"../../../../Utility/JVector.h"
 #include<vector>

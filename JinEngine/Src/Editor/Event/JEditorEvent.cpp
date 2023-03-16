@@ -8,7 +8,18 @@ namespace JinEngine
 		class JEditorEventManager : public Core::JEventManager<size_t, J_EDITOR_EVENT, JEditorEvStruct*>
 		{
 		public:
-			std::deque<std::unique_ptr<JEditorEvStruct>> evQueue;
+			struct EvStructInfo
+			{
+			public:
+				std::unique_ptr<JEditorEvStruct> evStruct;
+				bool canDestroy = true;
+			public:
+				EvStructInfo(std::unique_ptr<JEditorEvStruct> evStruct, bool canDestroy)
+					:evStruct(std::move(evStruct)), canDestroy(canDestroy)
+				{}
+			};
+		public:
+			std::unordered_map<size_t, EvStructInfo> evDataMap;
 		public:
 			JEditorEventManager()
 				:JEventManager([](const size_t& a, const size_t& b) {return a == b; })
@@ -41,22 +52,35 @@ namespace JinEngine
 		void JEditorEvent::ExecuteEvent()noexcept
 		{
 			evM->OnEvnet();
-			ClearEvStructQueue();
+			ClearInvalidEvStructData();
 		}
 		JEditorEvStruct* JEditorEvent::RegisterEvStruct(std::unique_ptr<JEditorEvStruct> evStruct)noexcept
 		{
+			size_t temp = 0;
+			return RegisterEvStruct(std::move(evStruct), temp, true);
+		}
+		JEditorEvStruct* JEditorEvent::RegisterEvStruct(std::unique_ptr<JEditorEvStruct> evStruct, _Out_ size_t& key, bool canRemvoe)noexcept
+		{
 			if (evStruct != nullptr)
 			{
+				key = Core::MakeGuid();
 				JEditorEvStruct* ptr = evStruct.get();
-				evM->evQueue.push_back(std::move(evStruct));
+				evM->evDataMap.emplace(key, JEditorEventManager::EvStructInfo(std::move(evStruct), canRemvoe));
 				return ptr;
 			}
 			else
 				return nullptr;
 		}
-		void JEditorEvent::ClearEvStructQueue()noexcept
+		void JEditorEvent::ClearInvalidEvStructData()noexcept
 		{
-			evM->evQueue.clear();
+			std::vector<size_t> invalidVec;
+			for (auto& data : evM->evDataMap)
+			{
+				if (data.second.canDestroy)
+					invalidVec.push_back(data.first);
+			}
+			for (auto& data : invalidVec)
+				evM->evDataMap.erase(data);
 		}
 		void JEditorEvent::Initialize()noexcept
 		{
@@ -67,9 +91,15 @@ namespace JinEngine
 		{
 			if (evM != nullptr)
 			{
-				ClearEvStructQueue();
+				ClearInvalidEvStructData();
 				evM.reset();
 			}
+		}
+		void JEditorEvent::SetCanDestroyBit(const size_t guid, const bool value)noexcept
+		{
+			auto data = evM->evDataMap.find(guid);
+			if (data != evM->evDataMap.end())
+				data->second.canDestroy = value;
 		}
 	}
 }

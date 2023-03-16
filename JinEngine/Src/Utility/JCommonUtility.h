@@ -277,7 +277,18 @@ namespace JinEngine
 			}
 			return searchFail;
 		}
- 
+		template<typename Type, typename ...Param>
+		static int GetJIndex(const std::vector<Type>& vec, bool(*condFunc)(Type&, Param...), Param... var)
+		{
+			const uint vecCount = (uint)vec.size();
+			for (uint i = 0; i < vecCount; ++i)
+			{
+				if (condFunc(vec[i], std::forward<Param>(var)...))
+					return i;
+			}
+			return searchFail;
+		}
+
 		template<typename Type, typename ...Param>
 		static std::vector<Type*> GetPassConditionElement(const std::vector<Type*>& vec, bool(*condPtr)(Type*, Param...), Param... var)
 		{

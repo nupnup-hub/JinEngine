@@ -21,7 +21,8 @@ namespace JinEngine
 			friend class JFSMstate; 
 		private:
 			virtual JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept = 0;
-			virtual bool IsDiagramState(const size_t guid)const noexcept = 0;
+			virtual bool IsDiagramState(const size_t stateGuid)const noexcept = 0;
+			virtual bool IsSameDiagram(const size_t diagramGuid)const noexcept = 0;
 		};
 
 		class JFSMdiagram : public JFSMInterface, 
@@ -63,7 +64,8 @@ namespace JinEngine
 			std::vector<JFSMstate*>& GetStateVec()noexcept;
 		private:
 			JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept final;
-			bool IsDiagramState(const size_t guid)const noexcept final;
+			bool IsDiagramState(const size_t stateGuid)const noexcept final;
+			bool IsSameDiagram(const size_t diagramGuid)const noexcept final;
 		private:
 			bool AddType(JFSMstate* newState)noexcept final;
 			bool RemoveType(JFSMstate* state)noexcept final;

@@ -59,7 +59,7 @@ namespace JinEngine
 		size_t oriSkeletoHash;
 		//
 		REGISTER_PROPERTY_EX(clipSkeletonAsset, GetClipSkeletonAsset, SetClipSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
-		JSkeletonAsset* clipSkeletonAsset = nullptr;
+		Core::JUserPtr<JSkeletonAsset> clipSkeletonAsset;
 		uint32 clipLength;
 		float clipFramePerSecond;
 		REGISTER_PROPERTY_EX(updateFramePerSecond, GetUpdateFPS, SetUpdateFPS, GUI_SLIDER(30, 120))
@@ -68,7 +68,7 @@ namespace JinEngine
 		bool isLooping = false;
 		bool matchClipSkeleton = false;
 	public:  
-		JSkeletonAsset* GetClipSkeletonAsset()noexcept;
+		Core::JUserPtr<JSkeletonAsset> GetClipSkeletonAsset()noexcept;
 		float GetUpdateFPS()const noexcept;
 		bool IsLoop()const noexcept;
 		uint GetSampleCount()const noexcept;
@@ -81,7 +81,7 @@ namespace JinEngine
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 
-		void SetClipSkeletonAsset(JSkeletonAsset* clipSkeletonAsset)noexcept;
+		void SetClipSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newClipSkeletonAsset)noexcept;
 		void SetUpdateFPS(float value)noexcept;
 		void SetLoop(bool value)noexcept;
 	public:

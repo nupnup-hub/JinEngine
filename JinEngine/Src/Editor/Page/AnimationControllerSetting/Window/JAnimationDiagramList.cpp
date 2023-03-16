@@ -1,6 +1,7 @@
 #include"JAnimationDiagramList.h"
 #include"../../JEditorAttribute.h"
 #include"../../JEditorPageShareData.h" 
+#include"../../../Interface/JEditorObjectCreationInterface.h"
 #include"../../../Event/JEditorEvent.h"
 #include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"
@@ -25,7 +26,9 @@ namespace JinEngine
 				return "DiagramList##" + uniqueLabel;
 			}
 		}
-
+		 
+		DEFAULT_REQUESTORIMPL(JAnimationDiagramListCreationImpl, JAnimationDiagramList)
+ 
 		JAnimationDiagramList::JAnimationDiagramList(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE ownerPageType,
@@ -33,7 +36,7 @@ namespace JinEngine
 			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag)
 		{
 			editorString = std::make_unique<JEditorStringMap>();
-
+			InitializeCreationImpl();
 			//Diagram List Popup
 			std::unique_ptr<JEditorPopupNode> diagramListRootNode =
 				std::make_unique<JEditorPopupNode>("Animation Controller Editor Diagram List Popup Root", J_EDITOR_POPUP_NODE_TYPE::ROOT, nullptr);
@@ -46,17 +49,78 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Destroy Diagram", J_EDITOR_POPUP_NODE_TYPE::LEAF, diagramListRootNode.get());
 			editorString->AddString(destroyDigamraNode->GetNodeId(), { "Destroy Diagram" , u8"애니메이션 다이어그램 삭제" });
 
-			regCreateDiagramEvF = std::make_unique<RegisterEvF::Functor>(&JAnimationDiagramList::RegisterCreateDiagramEv, this);
-			regDestroyDiagramEvF = std::make_unique<RegisterEvF::Functor>(&JAnimationDiagramList::RegisterDestroyDiagramEv, this);
-			createDiagramF = std::make_unique<DiagramCreationFunctor>(&JAnimationDiagramList::CreateDiagram, this);
-			destroyDiagramF = std::make_unique<DiagramCreationFunctor>(&JAnimationDiagramList::DestroyDiagram, this);
-
-			createNewDiagramNode->RegisterSelectBind(std::make_unique< RegisterEvF::CompletelyBind>(*regCreateDiagramEvF));
-			destroyDigamraNode->RegisterSelectBind(std::make_unique< RegisterEvF::CompletelyBind>(*regDestroyDiagramEvF));
-
+			using RequestEvF = JAnimationDiagramListCreationImpl::RequestEvF;
+			createNewDiagramNode->RegisterSelectBind(std::make_unique< RequestEvF::CompletelyBind>(*creationImpl->reqCreateStateEvF, this));
+			destroyDigamraNode->RegisterSelectBind(std::make_unique< RequestEvF::CompletelyBind>(*creationImpl->reqDestroyEvF, this));
+			destroyDigamraNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
+			 
 			diagramListPopup = std::make_unique<JEditorPopupMenu>(Constants::DiagramListName(GetName()), std::move(diagramListRootNode));
 			diagramListPopup->AddPopupNode(std::move(createNewDiagramNode));
 			diagramListPopup->AddPopupNode(std::move(destroyDigamraNode));
+		}
+		JAnimationDiagramList::~JAnimationDiagramList()
+		{
+			creationImpl.reset();
+		}
+		void JAnimationDiagramList::InitializeCreationImpl()
+		{
+			if (creationImpl != nullptr)
+				return;
+
+			auto requestCreateLam = [](JAnimationDiagramList* diagramList)
+			{
+				if (!diagramList->aniCont.IsValid())
+					return;
+
+				JEditorCreationHint creationHint = JEditorCreationHint(diagramList,
+					true, false, false, true, false,
+					Core::JTypeInstanceSearchHint(diagramList->aniCont),
+					Core::JTypeInstanceSearchHint(),
+					&JEditorWindow::NotifyEvent);
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, diagramList->GetClearTaskFunctor());
+
+				JAnimationDiagramListCreationImpl* impl = diagramList->creationImpl.get();
+				impl->creation.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint);
+			};
+			auto requestDestroyLam = [](JAnimationDiagramList* diagramList)
+			{
+				if (!diagramList->aniCont.IsValid())
+					return;
+
+				std::vector<Core::JUserPtr<Core::JIdentifier>> objVec = diagramList->GetSelectedObjectVec();
+				if (objVec.size() == 0)
+					return;
+
+				JEditorCreationHint creationHint = JEditorCreationHint(diagramList,
+					true, false, false, false, true,
+					Core::JTypeInstanceSearchHint(diagramList->aniCont),
+					Core::JTypeInstanceSearchHint(),
+					&JEditorWindow::NotifyEvent);
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, diagramList->GetClearTaskFunctor());
+
+				JAnimationDiagramListCreationImpl* impl = diagramList->creationImpl.get();
+				impl->destructuion.RequestDestroyObject(impl->dS, true, creationHint, objVec, requestHint);
+			};
+			creationImpl = std::make_unique<JAnimationDiagramListCreationImpl>(requestCreateLam, requestDestroyLam);
+
+			auto canCreateDiagramLam = [](const size_t guid, const JEditorCreationHint& creationHint)
+			{
+				auto openSelectedPtr = Core::GetRawPtr(creationHint.openDataHint);
+				if (openSelectedPtr == nullptr)
+					return false;
+
+				if (openSelectedPtr->GetTypeInfo().IsChildOf<JAnimationController>())
+					return static_cast<JAnimationController*>(Core::GetRawPtr(creationHint.openDataHint))->CanCreateDiagram();
+				else
+					return false;
+			};
+			auto createDiagramLam = [](const size_t guid, const JEditorCreationHint& creationHint)
+			{
+				static_cast<JAnimationController*>(Core::GetRawPtr(creationHint.openDataHint))->CreateFSMdiagram(guid);
+			};
+			 
+			creationImpl->creation.GetCreationInterface()->RegisterCanCreationF(canCreateDiagramLam);
+			creationImpl->creation.GetCreationInterface()->RegisterObjectCreationF(createDiagramLam);
 		}
 		J_EDITOR_WINDOW_TYPE JAnimationDiagramList::GetWindowType()const noexcept
 		{
@@ -92,85 +156,58 @@ namespace JinEngine
 					JImGuiImpl::TableNextRow();
 					JImGuiImpl::TableSetColumnIndex(0);
 
-					const bool isSelect = selectedDiagram.IsValid() ? diagramVec[i]->GetGuid() == selectedDiagram->GetGuid() : false;
+					const bool isSelect = IsSelectedObject(diagramVec[i]->GetGuid()); 
+					const JVector2<float> preCursorPos = ImGui::GetCursorScreenPos();
+					if (isSelect)
+						SetTreeNodeColor(GetSelectedColorFactor());
+					 
 					if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(diagramVec[i]->GetName()), &isSelect))
-					{
-						if (!isSelect)
-							RequestSelectObject(JEditorSelectObjectEvStruct(GetOwnerPageType(), Core::GetUserPtr(diagramVec[i])));
+					{ 
+						RequestPushSelectObject(Core::GetUserPtr(diagramVec[i]));
+						SetContentsClick(true);
 					}
+					if (isSelect)
+						SetTreeNodeColor(GetSelectedColorFactor() * -1);
+
+					if (JImGuiImpl::IsMouseInRect(preCursorPos, ImGui::GetItemRectSize()))
+					{
+						SetHoveredObject(Core::GetUserPtr(diagramVec[i]));
+						if (ImGui::IsMouseClicked(1))
+							SetContentsClick(true);
+					}
+			 
 				}
 				JImGuiImpl::EndTable();
 			}
 			if (aniCont.IsValid())
+				UpdatePopup(PopupSetting(diagramListPopup.get(), editorString.get())); 
+		}
+		void JAnimationDiagramList::DoActivate()noexcept
+		{
+			JEditorWindow::DoActivate();
+			std::vector<J_EDITOR_EVENT> enumVec
 			{
-				if (diagramListPopup->IsOpen())
-					diagramListPopup->ExecutePopup(editorString.get());
-				diagramListPopup->Update();
-			} 
+				J_EDITOR_EVENT::MOUSE_CLICK
+			};
+			RegisterEventListener(enumVec);
 		}
-		void JAnimationDiagramList::RegisterCreateDiagramEv()
+		void JAnimationDiagramList::DoDeActivate()noexcept
 		{
-			if (!aniCont.IsValid())
-				return;
-
-			using BindT = JAnimationDiagramList::DiagramCreationBind;
-			size_t guid = Core::MakeGuid();
-			auto cUptr = std::make_unique<BindT>(*createDiagramF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, std::move(guid));
-			auto dUptr = std::make_unique<BindT>(*destroyDiagramF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, std::move(guid));
-
-			using CreationTask = Core::JTransitionCreationTask<DataHandleStructure, BindT, BindT>;
-			Core::JTransition::Execute(std::make_unique<CreationTask>("Create Diagram", std::move(cUptr), std::move(dUptr), fsmdata));
-		}
-		void JAnimationDiagramList::RegisterDestroyDiagramEv()
-		{
-			if (!aniCont.IsValid() || !selectedDiagram.IsValid() || aniCont->GetDiagramCount() < 2)
-				return;
-
-			using BindT = JAnimationDiagramList::DiagramCreationBind;
-			auto cUptr = std::make_unique<BindT>(*createDiagramF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid());
-			auto dUptr = std::make_unique<BindT>(*destroyDiagramF, Core::empty, Core::empty, Core::JUserPtr{ aniCont }, selectedDiagram->GetGuid());
-
-			using DestroyTask = Core::JTransitionCreationTask<DataHandleStructure, BindT, BindT>;
-			Core::JTransition::Execute(std::make_unique<DestroyTask>("Destroy Diagram", std::move(dUptr), std::move(cUptr), fsmdata));
-		}
-		void JAnimationDiagramList::CreateDiagram(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t guid)
-		{
-			if (aniCont.IsValid())
-			{
-				Core::JOwnerPtr<Core::JIdentifier> owner = dS.Release(dH);
-				if (owner.IsValid() && Core::Cast<Core::JAnimationFSMdiagram>(owner.Get()))
-				{
-					auto diagram = Core::JOwnerPtr<Core::JAnimationFSMdiagram>::ConvertChildUser(std::move(owner));
-					auto ptr = diagram.Get();
-					Core::JIdentifier::AddInstance(std::move(diagram));
-					JEditorPageShareData::SetSelectObj(GetOwnerPageType(), Core::GetUserPtr(ptr));
-				}
-				else
-					aniCont->CreateFSMdiagram(guid);
-				SetModifiedBit(aniCont, true);
-			}
-		}
-		void JAnimationDiagramList::DestroyDiagram(DataHandleStructure& dS, Core::JDataHandle& dH, AniContUserPtr aniCont, const size_t guid)
-		{
-			if (aniCont.IsValid())
-			{
-				Core::JOwnerPtr<Core::JIdentifier> owner = dS.Release(dH);
-				if (owner.IsValid() && Core::Cast<Core::JAnimationFSMdiagram>(owner.Get()))
-				{
-					auto diagram = Core::JOwnerPtr<Core::JAnimationFSMdiagram>::ConvertChildUser(std::move(owner));
-					auto ptr = diagram.Get();
-					Core::JIdentifier::AddInstance(std::move(diagram));
-					JEditorPageShareData::SetSelectObj(GetOwnerPageType(), Core::GetUserPtr(ptr));
-				}
-				else
-					aniCont->CreateFSMdiagram(guid);
-				SetModifiedBit(aniCont, true);
-			}
+			JEditorWindow::DoDeActivate();
+			DeRegisterListener();
 		}
 		void JAnimationDiagramList::DoSetClose()noexcept
 		{
-			aniCont.Clear();
-			selectedDiagram.Clear(); 
+			aniCont.Clear(); 
+		}
+		void JAnimationDiagramList::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* ev)
+		{
+			JEditorWindow::OnEvent(senderGuid, eventType, ev);
+			if (senderGuid == GetGuid())
+				return;
+
+			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)
+				diagramListPopup->SetOpen(false);
 		}
 	}
 }

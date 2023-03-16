@@ -16,7 +16,8 @@ namespace JinEngine
 		public:
 			static constexpr uint maxNameOfLength = 100;
 		public:
-			std::wstring GetName() const noexcept;
+			std::wstring GetName() const noexcept; 
+			std::wstring GetNameWithType()const noexcept;
 			size_t GetGuid()const noexcept;
 			virtual void SetName(const std::wstring& newName)noexcept; 
 		public:
@@ -32,7 +33,7 @@ namespace JinEngine
 				if (ptr.IsValid() && static_cast<JIdentifier*>(ptr.Get())->RegisterCashData())
 				{ 
 					const size_t guid = ptr->GetGuid(); 
-					if (T::StaticTypeInfo().AddInstance(guid, std::move(ptr)))
+					if (ptr->GetTypeInfo().AddInstance(guid, std::move(ptr)))
 						return true;
 					else
 					{
@@ -52,6 +53,22 @@ namespace JinEngine
 					ownerPtr->DeRegisterCashData();
 				return ownerPtr;
 			}
+			static Core::JOwnerPtr<JIdentifier> ReleaseInstance(Core::JIdentifier* rawPtr)noexcept
+			{ 
+				if (rawPtr != nullptr)
+				{
+					auto ownerPtr = rawPtr->GetTypeInfo().ReleaseInstance(rawPtr->GetGuid());
+					if (ownerPtr.IsValid())
+						ownerPtr->DeRegisterCashData();
+					return ownerPtr;
+				}
+				else
+					return  Core::JOwnerPtr<JIdentifier>{};			 
+			}
+		public:
+			static bool BeginDestroy(JIdentifier* iden);
+		protected:
+			virtual bool DoBeginDestroy() = 0;
 		private:
 			virtual bool RegisterCashData()noexcept = 0;
 			virtual bool DeRegisterCashData()noexcept = 0;
@@ -59,5 +76,6 @@ namespace JinEngine
 			JIdentifier(const std::wstring& name, const size_t guid);
 			virtual ~JIdentifier();
 		};
+
 	}
 }

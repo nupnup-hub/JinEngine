@@ -28,9 +28,9 @@ namespace JinEngine
 		else
 			return false;
 	}
-	bool JObject::BeginDestroy(JObject* obj)
+	bool JObject::DoBeginDestroy() noexcept
 	{
-		return obj->EndDestroy(false);
+		return EndDestroy(false);
 	}
 	bool JObject::BegineForcedDestroy(JObject* obj)
 	{  

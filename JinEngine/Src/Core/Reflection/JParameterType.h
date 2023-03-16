@@ -24,6 +24,10 @@ namespace JinEngine
 			XMFloat4,
 			STD_VECTOR,	//Reflection support std::vector<T> T = AtomicType..
 						// std::vector<Class<T>> is not support gui
+			STD_DEQUE,
+			STD_MAP,
+			STD_UNORDERED_MAP,
+			USER_PTR,
 			Class,
 			Enum,
 		};

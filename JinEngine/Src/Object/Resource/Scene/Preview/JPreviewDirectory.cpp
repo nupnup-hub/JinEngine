@@ -54,7 +54,7 @@ namespace JinEngine
 		JGameObject* shapeObj = JGFU::CreateShape(*GetScene()->GetRootGameObject(), flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
 		JRenderItem* renderItem = shapeObj->GetRenderItem();
 
-		renderItem->SetMaterial(0, newTextureMat);
+		renderItem->SetMaterial(0, Core::GetUserPtr(newTextureMat));
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 

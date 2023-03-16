@@ -65,15 +65,16 @@ namespace JinEngine
 			}
 			case J_EDITOR_POPUP_NODE_TYPE::LEAF:
 			{
+				bool isEnable = enableBind != nullptr ? enableBind->Invoke() : true;
 				if (hasShortCut)
 				{
-					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), editorString->GetString(shortCutId).c_str(), false))
+					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), editorString->GetString(shortCutId).c_str(), false, isEnable))
 						selected = this;
 					PrintTooltip(editorString);
 				}
 				else
 				{
-					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str()))
+					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), 0, false, isEnable))
 						selected = this;
 					PrintTooltip(editorString);
 				}
@@ -81,15 +82,16 @@ namespace JinEngine
 			}
 			case J_EDITOR_POPUP_NODE_TYPE::LEAF_TOGGLE:
 			{
+				bool isEnable = enableBind != nullptr ? enableBind->Invoke() : true;
 				if (hasShortCut)
 				{
-					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), editorString->GetString(shortCutId).c_str(), &isActivated))
+					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), editorString->GetString(shortCutId).c_str(), &isActivated, isEnable))
 						selected = this;
 					PrintTooltip(editorString);
 				}
 				else
 				{
-					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), "", &isActivated))
+					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), "", &isActivated, isEnable))
 						selected = this;
 					PrintTooltip(editorString);
 				}
@@ -113,6 +115,10 @@ namespace JinEngine
 		void JEditorPopupNode::RegisterSelectBind(std::unique_ptr<Core::JBindHandleBase>&& newSelectBind)noexcept
 		{
 			selectBind = std::move(newSelectBind);
+		}
+		void JEditorPopupNode::RegisterEnableBind(std::unique_ptr<EnableF::CompletelyBind>&& newEnableBind)noexcept
+		{
+			enableBind = std::move(newEnableBind);
 		}
 		void JEditorPopupNode::InvokeSelectBind()noexcept
 		{

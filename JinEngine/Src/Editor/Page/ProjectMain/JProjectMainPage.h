@@ -1,6 +1,6 @@
 #pragma once  
 #include"../JEditorPage.h"  
-#include"../../Interface/JEditorObjectInterface.h"
+#include"../../Interface/JEditorObjectHandleInterface.h"
 
 namespace JinEngine
 {
@@ -27,8 +27,9 @@ namespace JinEngine
 		private:
 			using ClosePopupOpenF = Core::JSFunctorType<void, JProjectMainPage*>;
 			using ClosePopupConfirmF = Core::JSFunctorType<void, JProjectMainPage*>;
-			using ClosePopupCancelF = Core::JSFunctorType<void, JEditorPage*>;
+			using ClosePopupCancelF = Core::JSFunctorType<void, JProjectMainPage*>;
 			using ClosePopupContentsF = Core::JSFunctorType<void, JProjectMainPage*>;
+			using ClosePopupCloseF = Core::JSFunctorType<void>;
 		private:
 			std::unique_ptr<JEditorMenuBar> menuBar = nullptr;
 		private:
@@ -68,6 +69,8 @@ namespace JinEngine
 			void UpdatePage()final;
 		public:
 			bool IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
+		private:
+			void RequestCloseConfirmPopup(const bool isCancel);
 		private:
 			void BuildDockNode();
 			void BuildMenuNode();

@@ -69,7 +69,7 @@ namespace JinEngine
 			//except prefix J 
 			std::string NameWithOutPrefix()const noexcept;
 			//typeid name
-			std::string FullName()const noexcept;
+			std::string FullName()const noexcept; 
 		public:
 			const PropertyVec GetPropertyVec()const noexcept;
 			const MethodVec GetMethodVec()const noexcept;
@@ -77,6 +77,7 @@ namespace JinEngine
 			JPropertyInfo* GetProperty(const std::string& name)const noexcept;
 			JMethodInfo* GetMethod(const std::string& name)const noexcept;
 			JTypeInfoOption* GetOption()noexcept;
+			uint GetInstanceCount()const noexcept;
 		public:
 			bool IsA(const JTypeInfo& tar)const noexcept;
 			bool IsChildOf(const JTypeInfo& parentCandidate)const noexcept;
@@ -125,6 +126,18 @@ namespace JinEngine
 				JReflectionInfo::Instance().AddType(this);
 				//option = std::make_unique<JTypeInfoOption>();
 			} 
+		};
+
+		struct JTypeInstanceSearchHint
+		{
+		public:
+			const std::string typeName;
+			const size_t guid;
+			const bool isValid;
+		public:
+			JTypeInstanceSearchHint();
+			JTypeInstanceSearchHint(const JTypeInfo& info, const size_t guid);
+			JTypeInstanceSearchHint(Core::JUserPtr<JIdentifier> iden); 
 		};
 	}
 }

@@ -26,28 +26,83 @@ namespace JinEngine
 			return J_EDITOR_EVENT::MOUSE_CLICK;
 		}
 
-		JEditorSelectObjectEvStruct::JEditorSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> selectObj)
-			:JEditorEvStruct(pageType), selectObj(selectObj)
-		{}
-		bool JEditorSelectObjectEvStruct::PassDefectInspection()const noexcept
+		JEditorPushSelectObjectEvStruct::JEditorPushSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType,
+			const J_EDITOR_WINDOW_TYPE wndType,
+			Core::JUserPtr<Core::JIdentifier> selectObj)
+			:JEditorEvStruct(pageType), wndType(wndType)
 		{
-			return selectObj.IsValid();
+			selectObjVec.push_back(selectObj);
 		}
-		J_EDITOR_EVENT JEditorSelectObjectEvStruct::GetEventType()const noexcept
+		JEditorPushSelectObjectEvStruct::JEditorPushSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType,
+			const J_EDITOR_WINDOW_TYPE wndType,
+			const std::vector<Core::JUserPtr<Core::JIdentifier>> selectObj)
+			: JEditorEvStruct(pageType), wndType(wndType), selectObjVec(selectObj)
+		{}
+		bool JEditorPushSelectObjectEvStruct::PassDefectInspection()const noexcept
 		{
-			return J_EDITOR_EVENT::SELECT_OBJECT;
+			return selectObjVec.size() > 0;
+		}
+		J_EDITOR_EVENT JEditorPushSelectObjectEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::PUSH_SELECT_OBJECT;
+		}
+		Core::JUserPtr<Core::JIdentifier> JEditorPushSelectObjectEvStruct::GetFirstMatchedTypeObject(const Core::JTypeInfo& typeInfo)const noexcept
+		{
+			const uint count = (uint)selectObjVec.size();
+			for (uint i = 0; i < count; ++i)
+			{
+				if (selectObjVec[i]->GetTypeInfo().IsChildOf(typeInfo))
+					return selectObjVec[i];
+			}
+			return Core::JUserPtr<Core::JIdentifier>{};
+		}
+		Core::JUserPtr<Core::JIdentifier> JEditorPushSelectObjectEvStruct::GetLastMatchedTypeObject(const Core::JTypeInfo& typeInfo)const noexcept
+		{
+			const int count = (int)selectObjVec.size();
+			for (int i = count - 1; i >= 0; --i)
+			{
+				if (selectObjVec[i]->GetTypeInfo().IsChildOf(typeInfo))
+					return selectObjVec[i];
+			}
+			return Core::JUserPtr<Core::JIdentifier>{};
 		}
 
-		JEditorDeSelectObjectEvStruct::JEditorDeSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const size_t guid)
-			:JEditorEvStruct(pageType), guid(guid)
-		{}
-		bool JEditorDeSelectObjectEvStruct::PassDefectInspection()const noexcept
+		JEditorPopSelectObjectEvStruct::JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> selectObj)
+			:JEditorEvStruct(pageType)
 		{
-			return JEditorPageShareData::GetSelectedObj(pageType).IsValid();
+			selectObjVec.push_back(selectObj);
 		}
-		J_EDITOR_EVENT JEditorDeSelectObjectEvStruct::GetEventType()const noexcept
+		JEditorPopSelectObjectEvStruct::JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const std::vector<Core::JUserPtr<Core::JIdentifier>> selectObj)
+			: JEditorEvStruct(pageType), selectObjVec(selectObj)
+		{}
+		bool JEditorPopSelectObjectEvStruct::PassDefectInspection()const noexcept
 		{
-			return J_EDITOR_EVENT::DESELECT_OBJECT;
+			return selectObjVec.size() > 0;
+		}
+		J_EDITOR_EVENT JEditorPopSelectObjectEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::POP_SELECT_OBJECT;
+		}
+		bool JEditorPopSelectObjectEvStruct::IsPopTarget(const size_t guid)const noexcept
+		{
+			for (const auto& data : selectObjVec)
+			{
+				if (data->GetGuid() == guid)
+					return true;
+			}
+			return false;
+		}
+
+		JEditorClearSelectObjectEvStruct::JEditorClearSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorEvStruct(pageType)
+		{}
+		bool JEditorClearSelectObjectEvStruct::PassDefectInspection()const noexcept
+		{
+			return true;
+		}
+		J_EDITOR_EVENT JEditorClearSelectObjectEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::CLEAR_SELECT_OBJECT;
 		}
 
 		JEditorOpenPageEvStruct::JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> openSelected)
@@ -249,13 +304,19 @@ namespace JinEngine
 		{
 			return J_EDITOR_EVENT::BIND_FUNC;
 		}
-		void JEditorBindFuncEvStruct::Execute()
+		void JEditorBindFuncEvStruct::SetLog(std::unique_ptr<Core::JLogBase>newLog)
 		{
+			log = std::move(newLog);
+		}
+		void JEditorBindFuncEvStruct::Execute()
+		{  
+			if (log != nullptr)
+				JEditorTransition::Instance().Log(*log);
 			bindHandle->InvokeCompletelyBind();
 		}
 
-		JEditorTBindFuncEvStruct::JEditorTBindFuncEvStruct(const std::string& taskName, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorEvStruct(pageType)
+		JEditorTBindFuncEvStruct::JEditorTBindFuncEvStruct(const std::string& taskName, const std::string& taskDesc, const J_EDITOR_PAGE_TYPE pageType)
+			:JEditorEvStruct(pageType), taskName(taskName), taskDesc(taskDesc)
 		{}
 		J_EDITOR_EVENT JEditorTBindFuncEvStruct::GetEventType()const noexcept
 		{
@@ -263,10 +324,11 @@ namespace JinEngine
 		}
 
 		JEditorTSetBindFuncEvStruct::JEditorTSetBindFuncEvStruct(const std::string& taskName,
+			const std::string& taskDesc,
 			const J_EDITOR_PAGE_TYPE pageType,
 			std::unique_ptr<Core::JBindHandleBase> doBindHandle,
 			std::unique_ptr<Core::JBindHandleBase> undoBindHandle)
-			:JEditorTBindFuncEvStruct(taskName, pageType),
+			:JEditorTBindFuncEvStruct(taskName, taskDesc, pageType),
 			doBindHandle(std::move(doBindHandle)),
 			undoBindHandle(std::move(undoBindHandle))
 		{}
@@ -276,7 +338,7 @@ namespace JinEngine
 		}
 		void JEditorTSetBindFuncEvStruct::Execute()
 		{
-			Core::JTransition::Execute(std::make_unique<Core::JTransitionSetValueTask>(taskName,
+			JEditorTransition::Instance().Execute(std::make_unique<Core::JTransitionSetValueTask>(taskName, taskDesc,
 				std::move(doBindHandle), std::move(undoBindHandle)));
 		}
 	}

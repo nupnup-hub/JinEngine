@@ -1,5 +1,5 @@
 #include"JIdentifier.h"
-
+#include"../../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
@@ -8,6 +8,10 @@ namespace JinEngine
 		std::wstring JIdentifier::GetName() const noexcept
 		{
 			return name;
+		} 
+		std::wstring JIdentifier::GetNameWithType()const noexcept
+		{
+			return L"Type: " + JCUtil::U8StrToWstr(GetTypeInfo().NameWithOutPrefix()) + L"\nName: " + GetName();
 		}
 		size_t JIdentifier::GetGuid()const noexcept
 		{
@@ -22,6 +26,12 @@ namespace JinEngine
 		{
 			DeRegisterCashData();
 			return GetTypeInfo().RemoveInstance(GetGuid());
+		}
+		bool JIdentifier::BeginDestroy(JIdentifier* iden)
+		{
+			if (iden == nullptr)
+				return false;
+			return iden->DoBeginDestroy();
 		}
 		JIdentifier::JIdentifier(const std::wstring& name, const size_t guid)
 			:name(name),guid(guid)

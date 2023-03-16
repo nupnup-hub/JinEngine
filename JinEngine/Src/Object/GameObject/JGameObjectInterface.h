@@ -7,13 +7,13 @@ namespace JinEngine
 	class JScene;
 	namespace Editor
 	{
-		class JEditorPageShareData;
+		class JEditorWindow;
 	}
 
 	class JGameObjectEditorInterface
 	{
 	private:
-		friend class Editor::JEditorPageShareData;
+		friend class Editor::JEditorWindow;
 	protected:
 		virtual ~JGameObjectEditorInterface() = default;
 	public:

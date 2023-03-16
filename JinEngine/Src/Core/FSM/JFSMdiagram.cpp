@@ -74,10 +74,14 @@ namespace JinEngine
 		{
 			return ownerInterface->GetParameterStorageUser();
 		}
-		bool JFSMdiagram::IsDiagramState(const size_t guid)const noexcept
+		bool JFSMdiagram::IsDiagramState(const size_t stateGuid)const noexcept
 		{
-			return GetState(guid) != nullptr;
+			return GetState(stateGuid) != nullptr;
 		}
+		bool JFSMdiagram::IsSameDiagram(const size_t diagramGuid)const noexcept
+		{
+			return GetGuid() == diagramGuid;
+		} 
 		bool JFSMdiagram::AddType(JFSMstate* newState)noexcept
 		{
 			if (newState == nullptr)
@@ -114,7 +118,7 @@ namespace JinEngine
 					stateVec.erase(stateVec.begin() + index);
 					const uint stateCount = (uint)stateVec.size();
 					for (uint i = 0; i < stateCount; ++i)
-						Destroy(stateVec[i]->GetTransitionByOutGuid(state->GetGuid()));
+						JFSMInterface::BeginDestroy(stateVec[i]->GetTransitionByOutGuid(state->GetGuid()));
 
 					if (guid == nowStateGuid)
 					{
@@ -145,7 +149,7 @@ namespace JinEngine
 			//for (uint i = 0; i < stateVecCount; ++i)
 			//	copy[i]->Clear(); 
 			for (uint i = 0; i < stateVecCount; ++i)
-				JFSMInterface::Destroy(copy[i]);
+				JFSMInterface::BeginDestroy(copy[i]);
 			initState = nullptr;
 			stateMap.clear();
 			stateVec.clear();

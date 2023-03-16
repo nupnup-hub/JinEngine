@@ -13,6 +13,9 @@ namespace JinEngine
 	private:
 		JGameObject* owner = nullptr;
 	private:
+		//For editor redo undo
+		std::unique_ptr<Core::JTypeInstanceSearchHint> ownerInfo;
+	private:
 		using JObject::SetName;
 	public:
 		J_OBJECT_TYPE GetObjectType()const noexcept final;

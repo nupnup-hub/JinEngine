@@ -175,18 +175,18 @@ namespace JinEngine
 			{
 				colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 				colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-				colors[ImGuiCol_WindowBg] = ImVec4(0.185f, 0.185f, 0.185f, 1.00f);
-				colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-				colors[ImGuiCol_PopupBg] = ImVec4(0.145f, 0.145f, 0.145f, 0.92f);
+				colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.12f, 1.00f);
+				colors[ImGuiCol_ChildBg] = ImVec4(0.1f, 0.1f, 0.12f, 0.00f);
+				colors[ImGuiCol_PopupBg] = ImVec4(0.1f, 0.1f, 0.12f, 1.00f);
 				colors[ImGuiCol_Border] = ImVec4(0.5f, 0.5f, 0.5f, 0.7f);
 				colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.24f);
-				colors[ImGuiCol_FrameBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.54f);
-				colors[ImGuiCol_FrameBgHovered] = ImVec4(0.19f, 0.19f, 0.19f, 0.54f);
-				colors[ImGuiCol_FrameBgActive] = ImVec4(0.20f, 0.22f, 0.23f, 1.00f);
-				colors[ImGuiCol_TitleBg] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
-				colors[ImGuiCol_TitleBgActive] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
-				colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
-				colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+				colors[ImGuiCol_FrameBg] = ImVec4(0.15f, 0.15f, 0.17f, 0.54f);
+				colors[ImGuiCol_FrameBgHovered] = ImVec4(0.25f, 0.25f, 0.28f, 0.54f);
+				colors[ImGuiCol_FrameBgActive] = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
+				colors[ImGuiCol_TitleBg] = ImVec4(0.15f, 0.15f, 0.17f, 1.00f);
+				colors[ImGuiCol_TitleBgActive] = ImVec4(0.2f, 0.2f, 0.225f, 1.00f);
+				colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.125f, 0.125f, 0.125f, 1.00f);
+				colors[ImGuiCol_MenuBarBg] = ImVec4(0.15f, 0.15f, 0.17f, 1.00f);
 				colors[ImGuiCol_ScrollbarBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.54f);
 				colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.34f, 0.34f, 0.34f, 0.54f);
 				colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.40f, 0.40f, 0.40f, 0.54f);
@@ -197,20 +197,20 @@ namespace JinEngine
 				colors[ImGuiCol_Button] = ImVec4(0.05f, 0.05f, 0.05f, 0.54f);
 				colors[ImGuiCol_ButtonHovered] = ImVec4(0.19f, 0.19f, 0.19f, 0.54f);
 				colors[ImGuiCol_ButtonActive] = ImVec4(0.20f, 0.22f, 0.23f, 1.00f);
-				colors[ImGuiCol_Header] = ImVec4(0.00f, 0.00f, 0.00f, 0.52f);
-				colors[ImGuiCol_HeaderHovered] = ImVec4(0.00f, 0.00f, 0.00f, 0.36f);
-				colors[ImGuiCol_HeaderActive] = ImVec4(0.20f, 0.22f, 0.23f, 0.33f);
+				colors[ImGuiCol_Header] = ImVec4(0.15f, 0.15f, 0.17f, 0.54f);
+				colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.25f, 0.28f, 0.54f);
+				colors[ImGuiCol_HeaderActive] = ImVec4(0.35f, 0.35f, 0.4f, 1.00f);
 				colors[ImGuiCol_Separator] = ImVec4(0.28f, 0.28f, 0.28f, 1.00f);
 				colors[ImGuiCol_SeparatorHovered] = ImVec4(0.44f, 0.44f, 0.44f, 1.00f);
 				colors[ImGuiCol_SeparatorActive] = ImVec4(0.40f, 0.44f, 0.47f, 1.00f);
 				colors[ImGuiCol_ResizeGrip] = ImVec4(0.28f, 0.28f, 0.28f, 0.29f);
 				colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.44f, 0.44f, 0.44f, 0.29f);
 				colors[ImGuiCol_ResizeGripActive] = ImVec4(0.40f, 0.44f, 0.47f, 1.00f);
-				colors[ImGuiCol_Tab] = ImVec4(0.00f, 0.00f, 0.00f, 0.52f);
-				colors[ImGuiCol_TabHovered] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
-				colors[ImGuiCol_TabActive] = ImVec4(0.20f, 0.20f, 0.20f, 0.36f);
-				colors[ImGuiCol_TabUnfocused] = ImVec4(0.00f, 0.00f, 0.00f, 0.52f);
-				colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+				colors[ImGuiCol_Tab] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+				colors[ImGuiCol_TabHovered] = ImVec4(0.14f, 0.14f, 0.25f, 1.00f);
+				colors[ImGuiCol_TabActive] = ImVec4(0.14f, 0.14f, 0.25f, 1.00f);
+				colors[ImGuiCol_TabUnfocused] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+				colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
 				colors[ImGuiCol_DockingPreview] = ImVec4(0.33f, 0.67f, 0.86f, 1.00f);
 				colors[ImGuiCol_DockingEmptyBg] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
 				colors[ImGuiCol_PlotLines] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
@@ -336,6 +336,10 @@ namespace JinEngine
 		{
 			return JVector4<float>(0, 0, 0.15f, 0.15f);
 		}
+		JVector4<float> JImGuiImpl::GetOffFocusSelectedColorFactor()noexcept
+		{
+			return JVector4<float>(0.2f, 0.2f, 0.2f, 0.2f);
+		}
 		JVector4<float> JImGuiImpl::GetColor(ImGuiCol_ flag)noexcept
 		{
 			ImGuiStyle& style = ImGui::GetStyle();
@@ -344,10 +348,14 @@ namespace JinEngine
 		ImU32 JImGuiImpl::GetUColor(ImGuiCol_ flag)noexcept
 		{
 			ImGuiStyle& style = ImGui::GetStyle();
-			return IM_COL32(style.Colors[flag].x * 255,
-				style.Colors[flag].y * 255,
-				style.Colors[flag].z * 255,
-				style.Colors[flag].w * 255);
+			return ConvertUColor(style.Colors[flag]);
+		}
+		ImU32 JImGuiImpl::ConvertUColor(const JVector4<float>& color)noexcept
+		{
+			return IM_COL32((color.x > 1 ? 1 : color.x) * 255,
+				(color.y > 1 ? 1 : color.y) * 255,
+				(color.z > 1 ? 1 : color.z) * 255,
+				(color.w > 1 ? 1 : color.w) * 255);
 		}
 		void JImGuiImpl::SetColorToSoft(ImGuiCol_ flag, const JVector4<float>& color)noexcept
 		{
@@ -364,14 +372,11 @@ namespace JinEngine
 			ImGuiStyle& style = ImGui::GetStyle();
 			style.Colors[flag] = Private::jImgui->colors[flag];
 		}
-		void JImGuiImpl::SetAllColorToDeep(float factor)noexcept
+		void JImGuiImpl::SetAllColorToSoft(const JVector4<float> factor)noexcept
 		{
 			ImGuiStyle& style = ImGui::GetStyle();
 			for (uint i = 0; i < ImGuiCol_COUNT; ++i)
-			{
-				style.Colors[i] = ImVec4(style.Colors[i].x - factor, style.Colors[i].y - factor,
-					style.Colors[i].z - factor, style.Colors[i].w - factor);
-			}
+				style.Colors[i] = (JVector4<float>)style.Colors[i] + factor;
 		}
 		void JImGuiImpl::SetAllColorToDefault()noexcept
 		{
@@ -422,7 +427,7 @@ namespace JinEngine
 			const JVector2<float> windowPaddig = ImGui::GetStyle().WindowPadding;
 			const float windowBorder = ImGui::GetStyle().WindowBorderSize;
 			return ImGui::GetWindowSize() - (windowPaddig * 2) - JVector2<float>(windowBorder * 2);
-		} 
+		}
 		ImGuiWindow* JImGuiImpl::GetGuiWindow(const ImGuiID id)noexcept
 		{
 			ImGuiContext* cont = ImGui::GetCurrentContext();
@@ -580,6 +585,20 @@ namespace JinEngine
 		{
 			ImGui::EndTabBar();
 		}
+		bool JImGuiImpl::BeginTabItem(const std::string& name, bool* p_open, ImGuiTabItemFlags flags)
+		{
+			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TAB_ITEM);
+			return ImGui::BeginTabItem(name.c_str(), p_open, flags);
+		}
+		void JImGuiImpl::EndTabItem()
+		{
+			ImGui::EndTabItem();
+		}
+		bool JImGuiImpl::TabItemButton(const std::string& name, const ImGuiTabItemFlags flags)
+		{
+			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TAB_ITEM);
+			return ImGui::TabItemButton(name.c_str(), flags);
+		}
 		bool JImGuiImpl::BeginTable(const std::string& name, int columnCount, ImGuiTableFlags flags, const JVector2<float> outerSize, float innerWidth)
 		{
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TABLE);
@@ -604,11 +623,6 @@ namespace JinEngine
 		void JImGuiImpl::TableSetColumnIndex(int index)
 		{
 			ImGui::TableSetColumnIndex(index);
-		}
-		bool JImGuiImpl::TabItemButton(const std::string& name, const ImGuiTabItemFlags flags)
-		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TAB_ITEM);
-			return ImGui::TabItemButton(name.c_str(), flags);
 		}
 		bool JImGuiImpl::BeginMainMenuBar()
 		{
@@ -713,7 +727,8 @@ namespace JinEngine
 			Graphic::JGraphicResourceHandleInterface& handle,
 			bool& pressed,
 			bool changeValueIfPreesd,
-			const JVector2<float>& size)
+			const JVector2<float>& size,
+			const bool useRestoreCursorPos)
 		{
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::IMAGE);
 			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SELECTABLE);
@@ -726,6 +741,8 @@ namespace JinEngine
 			if (isPress && changeValueIfPreesd)
 				pressed = !pressed;
 
+			if (useRestoreCursorPos)
+				ImGui::SetCursorPos(preCursor);
 			return isPress;
 		}
 		bool JImGuiImpl::Switch(const std::string& name,
@@ -873,6 +890,17 @@ namespace JinEngine
 		{
 			return Private::jImgui->mouseClick[2];
 		}
+		bool JImGuiImpl::AnyMouseClicked(const bool containLeft, const bool containRight, const bool containMiddle)noexcept
+		{
+			bool isClicked = false;
+			if (containLeft)
+				isClicked |= Private::jImgui->mouseClick[0];
+			if (containRight)
+				isClicked |= Private::jImgui->mouseClick[1];
+			if (containMiddle)
+				isClicked |= Private::jImgui->mouseClick[2];
+			return isClicked;
+		}
 		bool JImGuiImpl::IsMouseInRect(const JVector2<float>& position, const JVector2<float>& size)noexcept
 		{
 			ImVec2 mousePos = ImGui::GetMousePos();
@@ -926,6 +954,10 @@ namespace JinEngine
 		{
 			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 				ImGui::SetTooltip(message.c_str());
+		}
+		JVector2<float> JImGuiImpl::GetRestWindowSpace()noexcept
+		{
+			return ImGui::GetWindowSize() - (ImGui::GetCursorScreenPos() - ImGui::GetWindowPos());
 		}
 		float JImGuiImpl::GetFrameRounding()noexcept
 		{

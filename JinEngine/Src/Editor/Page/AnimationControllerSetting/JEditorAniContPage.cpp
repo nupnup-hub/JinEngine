@@ -42,13 +42,14 @@ namespace JinEngine
 				windowAttributes[i] = std::make_unique<JEditorAttribute>();
 
 			J_EDITOR_WINDOW_FLAG defaultFlag = J_EDITOR_WINDOW_SUPPORT_WINDOW_CLOSING;
-			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(J_EDITOR_WINDOW_SUPROT_DOCK, defaultFlag);
- 
+			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(defaultFlag, J_EDITOR_WINDOW_SUPROT_DOCK);
+			J_EDITOR_WINDOW_FLAG listFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SELECT, J_EDITOR_WINDOW_SUPPORT_POPUP);
+		 
 			std::vector<J_OBSERVER_SETTING_TYPE> settingType{};
 
-			diagramList = std::make_unique<JAnimationDiagramList>(windowNames[0], std::move(windowAttributes[0]), GetPageType(), dockFlag);
-			conditionList = std::make_unique<JAnimationParameterList>(windowNames[1], std::move(windowAttributes[1]), GetPageType(), dockFlag);
-			stateView = std::make_unique<JAnimationStateView>(windowNames[2], std::move(windowAttributes[2]), GetPageType(), dockFlag);
+			diagramList = std::make_unique<JAnimationDiagramList>(windowNames[0], std::move(windowAttributes[0]), GetPageType(), listFlag);
+			conditionList = std::make_unique<JAnimationParameterList>(windowNames[1], std::move(windowAttributes[1]), GetPageType(), listFlag);
+			stateView = std::make_unique<JAnimationStateView>(windowNames[2], std::move(windowAttributes[2]), GetPageType(), listFlag);
 			aniContObserver = std::make_unique<JSceneObserver>(windowNames[3], std::move(windowAttributes[3]), GetPageType(), dockFlag, settingType);
 			aniContDetail = std::make_unique<JObjectDetail>(windowNames[4], std::move(windowAttributes[4]), GetPageType(), dockFlag);
 
@@ -182,8 +183,9 @@ namespace JinEngine
 			JEditorPage::DoActivate(); 
 			JEditor::AddEventNotification(*JEditorEvent::EvInterface(), 
 				GetGuid(), 
-				J_EDITOR_EVENT::SELECT_OBJECT,
-				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorSelectObjectEvStruct>(GetPageType(),
+				J_EDITOR_EVENT::PUSH_SELECT_OBJECT,
+				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetPageType(),
+					J_EDITOR_WINDOW_TYPE::TEST_WINDOW,
 					Core::GetUserPtr(aniCont->GetDiagramByIndex(0)))));
 
 			JResourceUserInterface::AddEventListener(*JResourceManager::Instance().EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);

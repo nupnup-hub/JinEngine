@@ -1,6 +1,5 @@
 #pragma once
-#include"../JEditorPage.h" 
-#include"../../Interface/JEditorObjectInterface.h"
+#include"../JEditorPage.h"  
 #include"../../../Object/Resource/JResourceUserInterface.h"
 
 namespace JinEngine

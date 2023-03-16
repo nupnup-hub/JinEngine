@@ -118,8 +118,10 @@ namespace JinEngine
 			using OriParamList = typename OriFunctor::ParamList;
 			using DecayParamList = typename OriFunctor::DecayParamList;
 		private:
-			OriFunctor& oriFunctor;
+			OriFunctor* rawFunctor = nullptr;
+			std::unique_ptr<OriFunctor> unqFunctor = nullptr;
 			BindTuple bindTuple;
+		private:
 		private:
 			//	res: a condition of bindtuple match element type
 			//		true : is bindtuple element
@@ -162,7 +164,10 @@ namespace JinEngine
 			};
 		public:
 			JBindHandle(OriFunctor& oriFunctor, BindParam&&... var)
-				:oriFunctor(oriFunctor), bindTuple(std::forward<BindParam>(var)...)
+				:rawFunctor(&oriFunctor), bindTuple(std::forward<BindParam>(var)...)
+			{}
+			JBindHandle(std::unique_ptr<OriFunctor>&& unqFunctor, BindParam&&... var)
+				:unqFunctor(std::move(unqFunctor)), bindTuple(std::forward<BindParam>(var)...)
 			{}
 			~JBindHandle() {}
 			//JBindHandle(const JBindHandle& rhs) = default;
@@ -199,7 +204,10 @@ namespace JinEngine
 			template<size_t ...Is, typename PassTuple>
 			auto CallFunc(std::index_sequence<Is...>, PassTuple& passTuple)
 			{
-				return oriFunctor(GetParam<Is>(passTuple)...);
+				if(rawFunctor != nullptr)
+					return (*rawFunctor)(GetParam<Is>(passTuple)...);
+				else
+					return (*unqFunctor)(GetParam<Is>(passTuple)...);
 			}
 			template<size_t ...Is>
 			void CallFunc(std::index_sequence<Is...>)
@@ -207,9 +215,19 @@ namespace JinEngine
 				constexpr int bindParamCount = sizeof...(BindParam);
 				constexpr int seqIndex = bindParamCount - 1;
 				if constexpr (bindParamCount == 0)
-					oriFunctor(GetParam<Is>()...);
+				{
+					if (rawFunctor != nullptr)
+						(*rawFunctor)(GetParam<Is>()...);
+					else
+						(*unqFunctor)(GetParam<Is>()...);
+				}
 				else if constexpr (ParamSequence<BindTuple, seqIndex>::isCompletely)
-					oriFunctor(GetParam<Is>()...);
+				{
+					if (rawFunctor != nullptr)
+						(*rawFunctor)(GetParam<Is>()...);
+					else
+						(*unqFunctor)(GetParam<Is>()...);
+				}
 			}
 		public:
 			template<typename ...PassP>
@@ -251,6 +269,17 @@ namespace JinEngine
 		JBindHandle<JFunctor<Ret, Param...>, BindParam...> Bind(JFunctor<Ret, Param...>& functor, BindParam&&... bindVar)
 		{
 			return JBindHandle<JFunctor<Ret, Param...>, BindParam...>(functor, std::forward<BindParam>(bindVar)...);
+		}
+		template<typename Ret, typename ...Param, typename ...BindParam>
+		JBindHandle<JFunctor<Ret, Param...>, BindParam...> Bind(std::unique_ptr< JFunctor<Ret, Param...>>&& unqFunctor, BindParam&&... bindVar)
+		{
+			return JBindHandle<JFunctor<Ret, Param...>, BindParam...>(std::move(unqFunctor), std::forward<BindParam>(bindVar)...);
+		}
+
+		template<typename Ret, typename ...Param, typename ...BindParam>
+		std::unique_ptr<JBindHandle<JFunctor<Ret, Param...>, BindParam...>> UniqueBind(std::unique_ptr< JFunctor<Ret, Param...>>&& unqFunctor, BindParam&&... bindVar)
+		{
+			return  std::make_unique<JBindHandle<JFunctor<Ret, Param...>, BindParam...>>(std::move(unqFunctor), std::forward<BindParam>(bindVar)...);
 		}
 		template<typename Ret, typename ...Param, typename ...BindParam>
 		std::unique_ptr<JBindHandle<JFunctor<Ret, Param...>, BindParam...>> UniqueBind(JFunctor<Ret, Param...>& functor, BindParam&&... bindVar)

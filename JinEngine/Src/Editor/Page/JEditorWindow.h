@@ -7,22 +7,51 @@
  
 namespace JinEngine
 {
+	class JGameObject;
 	namespace Editor
 	{
+		class JEditorPopupMenu;
+		class JEditorStringMap;
 		class JEditorAttribute;
 		class JEditorWindowDockUpdateHelper;
+
 		class JEditorWindow : public JEditor
 		{ 
 		protected:
-			using EventF= Core::JSFunctorType<void, JEditorWindow&, J_EDITOR_EVENT, JEditorEvStruct&>; 
-		private:
-			static EventF::Functor* evFunctor;
+			struct PopupSetting
+			{
+			public:
+				JEditorPopupMenu* popupMenu;
+				JEditorStringMap* stringMap;
+				bool canOpenPopup; 
+			public:
+				PopupSetting(JEditorPopupMenu* popupMenu,
+					JEditorStringMap* stringMap,
+					bool canOpenPopup = true);
+			public:
+				bool IsValid()const noexcept;
+			};
+			struct PopupResult
+			{
+			public:
+				bool isOpen = false;
+				bool isMouseInPopup = false;
+				bool isPopupContentsClicked = false;
+				bool isLeafPopupContentsClicked = false;
+			};
+		protected:			 
+			using PassSelectedOneF = Core::JSFunctorType<bool, JEditorWindow*>;
+			using PassSelectedAboveOneF = Core::JSFunctorType<bool, JEditorWindow*>;
 		private: 
 			const J_EDITOR_PAGE_TYPE ownerPageType; 
 			bool isWindowOpen = false;
 			J_EDITOR_WINDOW_FLAG windowFlag;
 		private:
 			std::unique_ptr<JEditorWindowDockUpdateHelper> dockUpdateHelper = nullptr;
+		private:
+			Core::JUserPtr<Core::JIdentifier> hoveredObj;
+			std::unordered_map<size_t, Core::JUserPtr<Core::JIdentifier>> selectedObjMap;
+			bool isContentsClick = false;
 		public:
 			JEditorWindow(const std::string name,
 				std::unique_ptr<JEditorAttribute> attribute, 
@@ -42,29 +71,56 @@ namespace JinEngine
 		protected:
 			void UpdateMouseClick();
 			void UpdateDocking(); 
+			void UpdatePopup(const PopupSetting setting);
+			void UpdatePopup(const PopupSetting setting, _Out_ PopupResult& result);
 		protected:
-			void SetSelectableColor(const JVector4<float>& factor)noexcept;
+			bool IsSelectedObject(const size_t guid)const noexcept;
+			bool CanUseSelectedMap()const noexcept;
+			bool CanUsePopup()const noexcept; 
+		protected: 
+			PassSelectedOneF::Functor* GetPassSelectedOneFunctor()noexcept;
+			PassSelectedAboveOneF::Functor* GetPassSelectedAboveOneFunctor()noexcept;
+			Core::JUserPtr<Core::JIdentifier> GetHoveredObject()const noexcept;
+			uint GetSelectedObjectCount()const noexcept;
+			std::vector<Core::JUserPtr<Core::JIdentifier>> GetSelectedObjectVec()const noexcept;
+			JVector4<float> GetSelectedColorFactor()const noexcept;
+		protected:
 			void SetButtonColor(const JVector4<float>& factor)noexcept;
 			void SetTreeNodeColor(const JVector4<float>& factor)noexcept; 
+			void SetTreeNodeColorToDefault()noexcept;
+			void SetHoveredObject(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
+			void SetSelectedGameObjectTrigger(JGameObject* gObj, const bool triggerValue)noexcept; 
+			void SetContentsClick(const bool value)noexcept;
+		protected:
+			void PushSelectedObject(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
 		protected:
 			bool RegisterEventListener(const J_EDITOR_EVENT evType);
 			bool RegisterEventListener(std::vector<J_EDITOR_EVENT>& evType);
 			void DeRegisterEventListener(const J_EDITOR_EVENT evType);
 			void DeRegisterListener();
 		protected:
-			void RequestOpenPage(const JEditorOpenPageEvStruct& evStruct, const bool doAct);
-			void RequestClosePage(const JEditorClosePageEvStruct& evStruct); 
-			void RequestSelectObject(const JEditorSelectObjectEvStruct& evStruct);
-			void RequestDeSelectObject(const JEditorSelectObjectEvStruct& evStruct); 
-			void RequesBind(const std::string& label, 
+			//Support undo redo 
+			void RequestPushSelectObject(const Core::JUserPtr<Core::JIdentifier>& selectObj);
+			void RequestPushSelectObject(const std::vector<Core::JUserPtr<Core::JIdentifier>>& selectObjVec);
+			void RequestPopSelectObject(const JEditorPopSelectObjectEvStruct& evStruct);
+			void RequesBind(const std::string& desc,
 				std::unique_ptr<Core::JBindHandleBase>&& doHandle, 
 				std::unique_ptr<Core::JBindHandleBase>&& undoHandle); 
 		protected:
+			void ClearSelectedObject();
+		protected:
+			void TryBeginDragging(const Core::JUserPtr<Core::JIdentifier> selectObj);
+			Core::JUserPtr<Core::JIdentifier> TryGetDraggingTarget();
+		protected:
 			void DoSetOpen()noexcept override;
 			void DoSetClose()noexcept override;
+			void DoActivate()noexcept override;
+			void DoDeActivate()noexcept override;
 		public:
 			virtual void StoreEditorWindow(std::wofstream& stream);
 			virtual void LoadEditorWindow(std::wifstream& stream);
+		protected:
+			void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct) override;
 		};
 	}
 }

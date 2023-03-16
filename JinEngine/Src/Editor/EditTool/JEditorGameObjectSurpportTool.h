@@ -1,6 +1,6 @@
 #pragma once
 #include"JEditorGameObjectSurpportToolType.h"
-#include"../Interface/JEditorObjectInterface.h"
+#include"../Interface/JEditorObjectHandleInterface.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
 #include"../../Core/Func/Callable/JCallable.h" 
 #include"../../Core/Interface/JActivatedInterface.h"

@@ -1270,7 +1270,7 @@ namespace JinEngine
 				if (condition.allowHZBOcclusionCulling && hzbOccHelper->IsCulled(finalObjRitemOffset))
 					continue;
 
-				JMeshGeometry* mesh = renderItem->GetMesh();
+				JMeshGeometry* mesh = renderItem->GetMesh().Get();
 				const D3D12_VERTEX_BUFFER_VIEW vertexPtr = mesh->VertexBufferView();
 				const D3D12_INDEX_BUFFER_VIEW indexPtr = mesh->IndexBufferView();
 
@@ -1337,7 +1337,7 @@ namespace JinEngine
 				if (condition.allowHZBOcclusionCulling && hzbOccHelper->IsCulled(finalObjRitemOffset))
 					continue;
 
-				JMeshGeometry* mesh = renderItem->GetMesh();
+				JMeshGeometry* mesh = renderItem->GetMesh().Get();
 				const D3D12_VERTEX_BUFFER_VIEW vertexPtr = mesh->VertexBufferView();
 				const D3D12_INDEX_BUFFER_VIEW indexPtr = mesh->IndexBufferView();
 

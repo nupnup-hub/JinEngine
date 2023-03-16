@@ -43,6 +43,12 @@ namespace JinEngine
 		const uint8 formatIndex)
 		: JResourceInitData(name, directory, formatIndex, J_RESOURCE_TYPE::SCENE), useCaseType(useCaseType)
 	{}
+	JScene::JSceneInitData::JSceneInitData(const size_t guid,
+		JDirectory* directory,
+		const J_SCENE_USE_CASE_TYPE useCaseType,
+		const uint8 formatIndex)
+		: JResourceInitData(JResourceObject::GetDefaultName<JScene>(), guid, OBJECT_FLAG_NONE, directory, formatIndex, J_RESOURCE_TYPE::SCENE), useCaseType(useCaseType)
+	{}
 	JScene::JSceneInitData::JSceneInitData(JDirectory* directory,
 		const J_SCENE_USE_CASE_TYPE useCaseType,
 		const uint8 formatIndex)

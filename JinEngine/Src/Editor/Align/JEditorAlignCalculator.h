@@ -151,9 +151,9 @@ namespace JinEngine
 					if (contentsWidth == contentsSize.x)
 						contentsWidth += contentsSpacing.x;
 				}
-
-				columnIndex = rowIndex = innerIndex = 0;
+				 
 				contentsStartCursor = startPos + contentsPadding;
+				SetFirstContentsPosition();
 			}
 			void Update(const JVector2<float>& canvasSize,
 				const JVector2<float>& contentsPadding,
@@ -195,8 +195,8 @@ namespace JinEngine
 					}
 				}
 				columnCount = columnPerCount;
-				columnIndex = rowIndex = innerIndex = 0;
 				contentsStartCursor = startPos + contentsPadding;
+				SetFirstContentsPosition();
 			}
 		public:
 			JVector2<float> GetTotalContentsSize()const noexcept
@@ -225,6 +225,10 @@ namespace JinEngine
 			{
 				ImGui::SetCursorPos(GetCursorPos());
 				Next();
+			}
+			void SetFirstContentsPosition()
+			{
+				columnIndex = rowIndex = innerIndex = 0;
 			}
 		private:
 			void Next()

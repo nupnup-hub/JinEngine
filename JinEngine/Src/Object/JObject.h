@@ -30,9 +30,8 @@ namespace JinEngine
 		virtual bool Copy(JObject* ori); 
 	private:
 		virtual void DoCopy(JObject* ori) = 0;
-	public:
-		static bool BeginDestroy(JObject* obj);
 	protected:
+		bool DoBeginDestroy() noexcept final;
 		static bool BegineForcedDestroy(JObject* obj);
 	protected:
 		virtual bool Destroy(const bool isForced) = 0;

@@ -14,12 +14,16 @@ namespace JinEngine
 		}
 		std::string JTypeInfo::NameWithOutPrefix()const noexcept
 		{
-			return name.substr(1);
+			if (name[0] == 'J')
+				return name.substr(1);
+			else
+				return name;
 		}
 		std::string JTypeInfo::FullName()const noexcept
 		{
 			return fullName;
-		}
+		} 
+
 		const PropertyVec JTypeInfo::GetPropertyVec()const noexcept
 		{ 
 			return memberData != nullptr ? memberData->propertyInfoVec : PropertyVec{};
@@ -55,6 +59,10 @@ namespace JinEngine
 		JTypeInfoOption* JTypeInfo::GetOption() noexcept
 		{
 			return &option;
+		}
+		uint JTypeInfo::GetInstanceCount()const noexcept
+		{
+			return instanceData != nullptr ? (uint)instanceData->classInstanceVec.size() : 0;
 		}
 		bool JTypeInfo::IsA(const JTypeInfo& tar)const noexcept
 		{
@@ -175,5 +183,17 @@ namespace JinEngine
 			else
 				return false;
 		}
+
+		JTypeInstanceSearchHint::JTypeInstanceSearchHint()
+			:typeName("Invalid"), guid(0), isValid(false)
+		{}
+		JTypeInstanceSearchHint::JTypeInstanceSearchHint(const JTypeInfo& info, const size_t guid)
+			:typeName(info.Name()), guid(guid), isValid(true)
+		{}
+		JTypeInstanceSearchHint::JTypeInstanceSearchHint(Core::JUserPtr<JIdentifier> iden)
+			: typeName(iden.IsValid() ? iden->GetTypeInfo().Name() : "InValid"), 
+			guid(iden.IsValid() ? iden->GetGuid() : 0),
+			isValid(iden.IsValid() ? true : false)
+		{}
 	}
 }

@@ -15,9 +15,11 @@ namespace JinEngine
 			typename ...Param>
 			class JEventInterface
 		{
-		protected:
+		public:
 			using Listener = JEventListener<IdentifierType, EVENTTYPE, Param...>;
 			using OnEventPtr = void(Listener::*)(const IdentifierType&, const EVENTTYPE&, Param...);
+			using NotifyF = JMFunctorType<Listener, void, const IdentifierType&, const EVENTTYPE&, Param...>;
+			using AddEventNotificationF = JMFunctorType<Listener, void, IdentifierType, EVENTTYPE, Param...>;
 		private:
 			friend Listener;
 		public:

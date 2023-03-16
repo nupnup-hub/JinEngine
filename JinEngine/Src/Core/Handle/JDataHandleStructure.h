@@ -28,8 +28,14 @@ namespace JinEngine
 			const size_t structureGuid;
 		public:
 			~JDataHandle() = default;
-			JDataHandle(JDataHandle&& rhs) = default;
-			JDataHandle& operator=(JDataHandle && rhs) = default;
+			JDataHandle(const JDataHandle& rhs) = delete;
+			JDataHandle& operator=(const JDataHandle & rhs) = delete;
+			JDataHandle& operator=(JDataHandle && rhs) = delete;
+			JDataHandle(JDataHandle&& rhs)
+				:index(rhs.index), validNumber(rhs.validNumber), structureGuid(structureGuid)
+			{
+				rhs.Clear();
+			}
 		private:
 			JDataHandle(const int index, const size_t validNumber, const size_t structureGuid)
 				:index(index), validNumber(validNumber), structureGuid(structureGuid)
@@ -41,6 +47,12 @@ namespace JinEngine
 			bool IsValid()const noexcept
 			{
 				return index != Handle::invalidNumber;
+			}
+		private:
+			void Clear()
+			{
+				index = Handle::invalidNumber;
+				validNumber = Handle::invalidNumber; 
 			}
 		};
 
@@ -97,7 +109,7 @@ namespace JinEngine
 				data[validIndex] = std::move(type);
 				return SuccessProcess();
 			}
-			bool Remove(const JDataHandle& handle)noexcept
+			bool Remove(JDataHandle& handle)noexcept
 			{
 				if (!IsValidHandle(handle))
 					return false;
@@ -108,9 +120,10 @@ namespace JinEngine
 				if constexpr (std::is_base_of_v<JObject, Type>)
 					JObject::BeginDestroy(data[handle.index].Get());
 				data[handle.index].Clear();
+				handle.Clear();
 				return true;
 			}
-			JOwnerPtr<Type> Release(const JDataHandle& handle)noexcept
+			JOwnerPtr<Type> Release(JDataHandle& handle)noexcept
 			{
 				if (!IsValidHandle(handle))
 					return JOwnerPtr<Type>{};
@@ -118,8 +131,9 @@ namespace JinEngine
 				validIndex = handle.index;
 				arrState[handle.index] = Handle::empty;
 				arrNumber[handle.index] = 0;
-
-				return std::move(data[handle.index]);
+				const int index = handle.index;
+				handle.Clear();
+				return std::move(data[index]);
 			}
 			void Clear()
 			{
@@ -141,6 +155,16 @@ namespace JinEngine
 			JDataHandle CreateInvalidHandle()const noexcept
 			{
 				return JDataHandle{ guid };
+			}
+			void PushInvalidHandle(std::vector<JDataHandle>& handleVec)const noexcept
+			{
+				handleVec.push_back(CreateInvalidHandle());
+			}
+			void PushValidHandle(JDataHandle& from, std::vector<JDataHandle>& to)
+			{ 
+				JDataHandle newHandle = CreateInvalidHandle();
+				TransitionHandle(from, newHandle);
+				to.push_back(std::move(newHandle));
 			}
 			void TransitionHandle(JDataHandle& from, JDataHandle& to)
 			{

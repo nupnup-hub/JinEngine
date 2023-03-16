@@ -78,7 +78,31 @@ namespace JinEngine
 		{
 			return JReflectionInfo::Instance().GetTypeInfo(typeName)->GetInstanceRawPtr(guid);
 		}
-			
+		static JIdentifier* GetRawPtr(const JTypeInstanceSearchHint& hint)
+		{
+			if (!hint.isValid)
+				return nullptr;
+
+			return JReflectionInfo::Instance().GetTypeInfo(hint.typeName)->GetInstanceRawPtr(hint.guid);
+		}
+
+		static JIdentifier* SearchRawPtr(Core::JTypeInfo& baseTypeInfo, const size_t guid)
+		{
+			std::vector<Core::JTypeInfo*> derivedInfoVec = JReflectionInfo::Instance().GetDerivedTypeInfo(baseTypeInfo);
+			for (const auto& data : derivedInfoVec)
+			{
+				auto rawPtr = data->GetInstanceRawPtr(guid);
+				if (rawPtr != nullptr)
+					return rawPtr;
+			}
+			return nullptr;
+		}
+		static JIdentifier* SearchRawPtr(const std::string& baseTypeName, const size_t guid)
+		{ 
+			return SearchRawPtr(*JReflectionInfo::Instance().GetTypeInfo(baseTypeName), guid);
+		}
+
+
 		template<typename T>
 		JUserPtr<T> GetUserPtr(const size_t guid)
 		{
@@ -130,6 +154,28 @@ namespace JinEngine
 		static JUserPtr<JIdentifier> GetUserPtr(const std::string& typeName, const size_t guid)
 		{ 
 			return JReflectionInfo::Instance().GetTypeInfo(typeName)->GetInstanceUserPtr(guid);
+		}
+		static JUserPtr<JIdentifier> GetUserPtr(const JTypeInstanceSearchHint& hint)
+		{
+			if (!hint.isValid)
+				return JUserPtr<JIdentifier>{};
+
+			return JReflectionInfo::Instance().GetTypeInfo(hint.typeName)->GetInstanceUserPtr(hint.guid);
+		}
+		static JUserPtr<JIdentifier> SearchUserPtr(Core::JTypeInfo& baseTypeInfo, const size_t guid)
+		{
+			std::vector<Core::JTypeInfo*> derivedInfoVec = JReflectionInfo::Instance().GetDerivedTypeInfo(baseTypeInfo);
+			for (const auto& data : derivedInfoVec)
+			{
+				auto userPtr = data->GetInstanceUserPtr(guid);
+				if (userPtr.IsValid())
+					return userPtr;
+			}
+			return JUserPtr<JIdentifier>{};
+		}
+		static JUserPtr<JIdentifier> SearchUserPtr(const std::string& baseTypeName, const size_t guid)
+		{
+			return SearchUserPtr(*JReflectionInfo::Instance().GetTypeInfo(baseTypeName), guid);
 		}
 
 		template<typename enumType>

@@ -26,7 +26,7 @@ namespace JinEngine
 			static const std::string title = "JinEngine";
 			static const JVector2<float> canvasSpacing = JVector2<float>(0.0125f, 0.025f);
 			static constexpr float paddingRate = 0.025f;
-			static constexpr float frameThickness = 2;
+			static constexpr float frameThickness = 5;
 
 			//text and icon rate
 			static constexpr float iconSizeRate = 0.75f;
@@ -165,7 +165,7 @@ namespace JinEngine
 		public:
 			ImU32 GetCanvasColor()const noexcept
 			{
-				return IM_COL32(85, 85, 85, 200);
+				return JImGuiImpl::ConvertUColor(JImGuiImpl::GetColor(ImGuiCol_Header) + JImGuiImpl::GetOffFocusSelectedColorFactor());
 			}
 			ImU32 GetCanvasDeltaColor()const noexcept
 			{
@@ -173,7 +173,11 @@ namespace JinEngine
 			}
 			ImU32 GetFrameColor()const noexcept
 			{
-				return JImGuiImpl::GetUColor(ImGuiCol_Border);
+				return JImGuiImpl::GetUColor(ImGuiCol_Separator);
+			}
+			JVector4<float> GetFrameColorV4()const noexcept
+			{
+				return JImGuiImpl::GetColor(ImGuiCol_Separator);
 			}
 		public:
 			J_SIMPLE_GET_SET(JVector2<float>, totalCanvasSize, TotalCanvasSize);
@@ -216,6 +220,7 @@ namespace JinEngine
 			{
 				//JImGuiImpl::AddImage(*backgroundTexture.Get(), viewport->WorkPos, viewport->WorkSize, false, IM_COL32(255, 255, 255, 50));
 				JImGuiImpl::PushFont();
+				UpdateMouseClick();
 				UpdateCanvasSize();
 				TitleOnScreen();
 				ProjectListOnScreen();
@@ -372,15 +377,16 @@ namespace JinEngine
 				values->GetFrameColor(),
 				true);
 
-			JImGuiImpl::BeginChildWindow("##ProjectList", values->GetCanvasSize(J_PS_CANVAS::PROJECT_LIST));
+			JImGuiImpl::BeginChildWindow("##ProjectList", values->GetCanvasSize(J_PS_CANVAS::PROJECT_LIST));		
 			searchHelper->UpdateSearchBar();
 			 
 			const JVector2<float> contentsPadding = values->GetTotalCanvasSize() * JVector2<float>(Constants::pListPaddingRate, Constants::pListPaddingRate * 0.5f);
 			const JVector2<float> contentsSpacing = values->GetTotalCanvasSize() * Constants::pListSpacingRate;
-
+			float hoveredFrameThickness = (contentsSpacing.x > contentsSpacing.y ? contentsSpacing.x : contentsSpacing.y) * 2;
+			 
 			JEditorDynamicAlignCalculator<2> widgetAlignCal; 
 			widgetAlignCal.Update(values->GetCanvasSize(J_PS_CANVAS::PROJECT_LIST),
-				contentsPadding,
+				contentsPadding + (contentsSpacing * 0.5f),
 				contentsSpacing,
 				Constants::pListPerColumn,
 				Constants::pListPerRow,
@@ -388,6 +394,13 @@ namespace JinEngine
 				{ 0, 0 },
 				J_EDITOR_INNER_ALGIN_TYPE::COLUMN,
 				JVector2<float>(0, ImGui::GetCursorPosY()));
+
+			const JVector4<float> preHeaderCol = JImGuiImpl::GetColor(ImGuiCol_Header);
+			const JVector4<float> preHeaderHovCol = JImGuiImpl::GetColor(ImGuiCol_HeaderHovered);
+			const JVector4<float> preHeaderActCol = JImGuiImpl::GetColor(ImGuiCol_HeaderActive);
+			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_Header);
+			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_HeaderHovered);
+			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_HeaderActive);
 
 			JEditorTextAlignCalculator txtAlignCal;
 			const uint projectListCount = JApplicationProject::GetProjectInfoCount();
@@ -400,11 +413,27 @@ namespace JinEngine
 				JVector2<float> nowSize = widgetAlignCal.GetInnerContentsSize();
 				widgetAlignCal.SetNextContentsPosition();
 				bool isSelected = i == values->GetSelectedIndex();
+				bool isHovered = JImGuiImpl::IsMouseInRect(ImGui::GetCursorScreenPos(), nowSize);
+
+				JVector4<float> addedFrameColor = 0;
+				if (isSelected)
+					addedFrameColor = GetSelectedColorFactor();
+				if (isHovered)
+					addedFrameColor = JImGuiImpl::GetSelectColorFactor();
+
+				const float contetentsFrameThickness = (isSelected || isHovered) ? hoveredFrameThickness : Constants::frameThickness;
+				JImGuiImpl::DrawRectFrame(ImGui::GetCursorScreenPos(),
+					nowSize,
+					contetentsFrameThickness,
+					JImGuiImpl::ConvertUColor(values->GetFrameColorV4() + addedFrameColor),
+					true);
+
 				if (JImGuiImpl::ImageSelectable(JCUtil::WstrToU8Str(info->GetName()), *lastRSVec[i],
 					isSelected, false,
-					nowSize))
+					nowSize,
+					true))
 					values->SetSelectedIndex(i);
-
+				 
 				nowSize = widgetAlignCal.GetInnerContentsSize();
 				widgetAlignCal.SetNextContentsPosition();
 
@@ -413,6 +442,10 @@ namespace JinEngine
 			}
 			JImGuiImpl::EndChildWindow();
 			ImGui::SetWindowFontScale(1);
+
+			JImGuiImpl::SetColor(preHeaderCol, ImGuiCol_Header);
+			JImGuiImpl::SetColor(preHeaderHovCol, ImGuiCol_HeaderHovered);
+			JImGuiImpl::SetColor(preHeaderActCol, ImGuiCol_HeaderActive);
 			//const JVector2<float>
 		}
 		void JProjectSelectorHub::ProjectDetailOnScreen()
@@ -581,7 +614,7 @@ namespace JinEngine
 			{
 				JImGuiImpl::DrawRectFilledColor(ImGui::GetCursorScreenPos(),
 					btnSize,
-					IM_COL32(42.5f, 42.5f, 42.5f, 200),
+					JImGuiImpl::GetUColor(ImGuiCol_Button),
 					true);
 			}
 			else

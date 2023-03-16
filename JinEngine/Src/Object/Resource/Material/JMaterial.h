@@ -30,6 +30,9 @@ namespace JinEngine
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0]));
 			JMaterialInitData(const std::wstring& name,
 				JDirectory* directory,
+				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0])); 
+			JMaterialInitData(const size_t guid,
+				JDirectory* directory,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0]));
 			JMaterialInitData(JDirectory* directory,
 				const uint8 formatIndex = JResourceObject::GetFormatIndex<JMaterial>(GetAvailableFormat()[0]));
@@ -39,15 +42,15 @@ namespace JinEngine
 		JShader* shader = nullptr;
 	private:
 		REGISTER_PROPERTY_EX(albedoMap, GetAlbedoMap, SetAlbedoMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		JTexture* albedoMap = nullptr;
+		Core::JUserPtr<JTexture> albedoMap;
 		REGISTER_PROPERTY_EX(normalMap, GetNormalMap, SetNormalMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		JTexture* normalMap = nullptr;
+		Core::JUserPtr<JTexture> normalMap;
 		REGISTER_PROPERTY_EX(heightMap, GetHeightMap, SetHeightMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		JTexture* heightMap = nullptr;
+		Core::JUserPtr<JTexture> heightMap;
 		REGISTER_PROPERTY_EX(roughnessMap, GetRoughnessMap, SetRoughnessMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		JTexture* roughnessMap = nullptr;
+		Core::JUserPtr<JTexture>roughnessMap;
 		REGISTER_PROPERTY_EX(ambientOcclusionMap, GetAmbientOcclusionMap, SetAmbientOcclusionMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		JTexture* ambientOcclusionMap = nullptr;
+		Core::JUserPtr<JTexture> ambientOcclusionMap;
 
 		//수정필요
 		//isDebug
@@ -88,11 +91,11 @@ namespace JinEngine
 		float GetRoughness() const noexcept;
 		DirectX::XMFLOAT4 GetAlbedoColor() const noexcept;
 		DirectX::XMFLOAT4X4 GetMatTransform() const noexcept;
-		JTexture* GetAlbedoMap() const noexcept;
-		JTexture* GetNormalMap() const noexcept;
-		JTexture* GetHeightMap() const noexcept;
-		JTexture* GetRoughnessMap() const noexcept;
-		JTexture* GetAmbientOcclusionMap() const noexcept;
+		Core::JUserPtr<JTexture> GetAlbedoMap() const noexcept;
+		Core::JUserPtr<JTexture> GetNormalMap() const noexcept;
+		Core::JUserPtr<JTexture> GetHeightMap() const noexcept;
+		Core::JUserPtr<JTexture> GetRoughnessMap() const noexcept;
+		Core::JUserPtr<JTexture> GetAmbientOcclusionMap() const noexcept;
 		J_SHADER_PRIMITIVE_TYPE GetPrimitiveType()const noexcept;
 		J_SHADER_DEPTH_COMPARISON_FUNC GetDepthCompasionFunc()const noexcept;
 
@@ -100,11 +103,11 @@ namespace JinEngine
 		void SetRoughness(float value) noexcept;
 		void SetAlbedoColor(const DirectX::XMFLOAT4& value) noexcept;
 		void SetMatTransform(const DirectX::XMFLOAT4X4& value) noexcept;
-		void SetAlbedoMap(JTexture* texture) noexcept;
-		void SetNormalMap(JTexture* texture) noexcept;
-		void SetHeightMap(JTexture* texture) noexcept;
-		void SetRoughnessMap(JTexture* texture) noexcept;
-		void SetAmbientOcclusionMap(JTexture* texture) noexcept;
+		void SetAlbedoMap(Core::JUserPtr<JTexture> texture) noexcept;
+		void SetNormalMap(Core::JUserPtr<JTexture>texture) noexcept;
+		void SetHeightMap(Core::JUserPtr<JTexture> texture) noexcept;
+		void SetRoughnessMap(Core::JUserPtr<JTexture> texture) noexcept;
+		void SetAmbientOcclusionMap(Core::JUserPtr<JTexture> texture) noexcept;
 		void SetShadow(bool value)noexcept;
 		void SetLight(bool value)noexcept;
 		void SetAlbedoMapOnly(bool value)noexcept;

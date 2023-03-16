@@ -40,7 +40,7 @@ namespace JinEngine
 			JAnimationFSMtransition* GetTransition(const size_t transitionGuid)noexcept;
 			const std::vector<JFSMstate*>& GetStateVec()noexcept;
 			 
-			void SetClip(const size_t stateGuid, JAnimationClip* clip)noexcept;
+			void SetClip(const size_t stateGuid, Core::JUserPtr<JAnimationClip> clip)noexcept;
 		private:
 			void StuffFinalTransform(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;
 			void CrossFading(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;

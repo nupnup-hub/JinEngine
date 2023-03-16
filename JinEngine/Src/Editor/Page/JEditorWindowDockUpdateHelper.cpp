@@ -128,9 +128,37 @@ namespace JinEngine
 			if (dockNode != nullptr)
 			{ 
 				lastDockNodeID = dockNode->ID;
+				lastParentNodeID = dockNode->ParentNode ? dockNode->ParentNode->ID : -1;
 				lastDockTabItemCount = dockNode->TabBar ? dockNode->TabBar->Tabs.size() : 0;
 				lastDockNodePos = dockNode->Pos;
 				lastDockNodeSize = dockNode->Size;
+
+				if (lastParentNodeID != -1)
+				{
+					ImGuiDockNode* lastParentDock = dockNode->ParentNode;
+					if (lastDockNodePos.x != lastParentDock->Pos.x)
+					{
+						if (lastDockNodePos.x > lastParentDock->Pos.x)
+							lastDockNodeSplitDir = ImGuiDir_Right;
+						else
+							lastDockNodeSplitDir = ImGuiDir_Left;
+					}
+					else
+					{
+						if (lastDockNodePos.y > lastParentDock->Pos.y)
+							lastDockNodeSplitDir = ImGuiDir_Down;
+						else
+							lastDockNodeSplitDir = ImGuiDir_Up;
+					}
+					lastDockNodeArea = (lastDockNodeSize.x * lastDockNodeSize.y) / (lastParentDock->Size.x * lastParentDock->Size.y);
+					hasLastParentNode = true;
+				}
+				else
+				{
+					lastDockNodeSplitDir = ImGuiDir_Up;
+					lastDockNodeArea = 1;
+					hasLastParentNode = false;
+				}
 				if (lastDockTabItemCount > 0)
 				{
 					for (const auto& data : dockNode->TabBar->Tabs)
@@ -223,30 +251,8 @@ namespace JinEngine
 		 
 			if (lastDockTabItemCount == 1)
 			{
-				ImGuiDockNode* lastParentDock = ((ImGuiDockNode*)(ctx->DockContext.Nodes.GetVoidPtr(lastDockNodeID)))->ParentNode;
-				ImGuiDir_ dir = ImGuiDir_None;
-				float areaSize = 1;
-				if (lastParentDock != nullptr)
-				{
-					if (lastDockNodePos.x != lastParentDock->Pos.x)
-					{
-						if (lastDockNodePos.x > lastParentDock->Pos.x)
-							dir = ImGuiDir_Right;
-						else
-							dir = ImGuiDir_Left;
-					}
-					else
-					{
-						if (lastDockNodePos.y > lastParentDock->Pos.y)
-							dir = ImGuiDir_Down;
-						else
-							dir = ImGuiDir_Up;
-					}
-					areaSize = (lastDockNodeSize.x * lastDockNodeSize.y) / (lastParentDock->Size.x * lastParentDock->Size.y);
-				}
-			 
 				auto splitLam = [](std::string wndName,
-					uint dockSpaceID,
+					ImGuiID dockSpaceID,
 					uint lastDockNodeID,
 					ImGuiID lastParentDockID,
 					ImGuiDir_ dir,
@@ -257,17 +263,17 @@ namespace JinEngine
 					ImGui::DockBuilderDockWindow(wndName.c_str(), lastDockNodeID);
 					ImGui::DockBuilderFinish(dockSpaceID);
 				};
-				using splitLamF = Core::JSFunctorType<void, std::string, uint, uint, ImGuiID, ImGuiDir_, float>;
+				using splitLamF = Core::JSFunctorType<void, std::string, ImGuiID, uint, ImGuiID, ImGuiDir_, float>;
 				static splitLamF::Functor functor(splitLam);
 
-				uint spaceID = dockSpaceID;
+				ImGuiID spaceID = dockSpaceID;
 				updataData.rollbackBind = std::make_unique< splitLamF::CompletelyBind>(functor,
 					std::string(curWnd->Name),
 					std::move(spaceID),
 					std::move(lastDockNodeID),
-					std::move(lastParentDock->ID),
-					std::move(dir),
-					std::move(areaSize));
+					std::move(hasLastParentNode ? (ImGuiID)lastParentNodeID : spaceID),
+					std::move((ImGuiDir_)lastDockNodeSplitDir),
+					std::move(lastDockNodeArea));
 			}
 			else
 			{

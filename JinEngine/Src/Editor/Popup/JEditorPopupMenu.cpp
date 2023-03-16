@@ -15,13 +15,17 @@ namespace JinEngine
 		JEditorPopupMenu::~JEditorPopupMenu() {}
 		void JEditorPopupMenu::Update()
 		{
-			isLastSelected = false;
+			isLeafPopupContentsClicked = false;
+			isPopupContentsClicked = false;
 			if (IsOpen())
 			{
 				if (JImGuiImpl::IsRightMouseClicked())
 					SetOpen(false);
 				else if (JImGuiImpl::IsLeftMouseClicked() && !IsMouseInPopup())
 					SetOpen(false);
+
+				if (JImGuiImpl::AnyMouseClicked(true, true, false) && IsMouseInPopup())
+					isPopupContentsClicked = true;
 			}
 			else
 			{ 
@@ -51,7 +55,7 @@ namespace JinEngine
 					{
 						selected->InvokeSelectBind();
 						SetOpen(false);
-						isLastSelected = true;
+						isLeafPopupContentsClicked = true;
 					}
 				}
 			}
@@ -90,9 +94,13 @@ namespace JinEngine
 				return false;
 			}
 		}
-		bool JEditorPopupMenu::IsLastSelected()const noexcept
+		bool JEditorPopupMenu::IsPopupContentsClicked()const noexcept
 		{
-			return isLastSelected;
+			return isPopupContentsClicked;
+		}
+		bool JEditorPopupMenu::IsLeafPopupContentsClicked()const noexcept
+		{
+			return isLeafPopupContentsClicked;
 		}
 	}
 }

@@ -52,7 +52,7 @@ namespace JinEngine
 			return false;
 	}
 
-	JSkeletonAsset* JAnimationClip::GetClipSkeletonAsset()noexcept
+	Core::JUserPtr<JSkeletonAsset> JAnimationClip::GetClipSkeletonAsset()noexcept
 	{
 		return clipSkeletonAsset;
 	}
@@ -88,13 +88,13 @@ namespace JinEngine
 		static std::vector<std::wstring> format{ L".fbx" };
 		return format;
 	}
-	void JAnimationClip::SetClipSkeletonAsset(JSkeletonAsset* clipSkeletonAsset)noexcept
+	void JAnimationClip::SetClipSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newClipSkeletonAsset)noexcept
 	{
 		if (IsActivated())
-			CallOffResourceReference(JAnimationClip::clipSkeletonAsset);
-		JAnimationClip::clipSkeletonAsset = clipSkeletonAsset;
+			CallOffResourceReference(clipSkeletonAsset.Get());
+		clipSkeletonAsset = newClipSkeletonAsset;
 		if (IsActivated())
-			CallOnResourceReference(JAnimationClip::clipSkeletonAsset);
+			CallOnResourceReference(clipSkeletonAsset.Get());
 		if (IsActivated())
 			matchClipSkeleton = IsMatchSkeleton();
 	}
@@ -391,7 +391,7 @@ namespace JinEngine
 	}
 	bool JAnimationClip::IsMatchSkeleton()const noexcept
 	{
-		if (clipSkeletonAsset && clipSkeletonAsset->GetSkeleton()->GetJointCount() == animationSample.size())
+		if (clipSkeletonAsset.IsValid() && clipSkeletonAsset->GetSkeleton()->GetJointCount() == animationSample.size())
 			return true;
 		else
 			return false;
@@ -411,14 +411,14 @@ namespace JinEngine
 	{
 		JResourceObject::DoActivate();
 		StuffResource();
-		CallOnResourceReference(JAnimationClip::clipSkeletonAsset);
+		CallOnResourceReference(clipSkeletonAsset.Get());
 		matchClipSkeleton = IsMatchSkeleton();
 	}
 	void JAnimationClip::DoDeActivate()noexcept
 	{
 		JResourceObject::DoDeActivate();
 		ClearResource();
-		CallOffResourceReference(JAnimationClip::clipSkeletonAsset);
+		CallOffResourceReference(clipSkeletonAsset.Get());
 	}
 	void JAnimationClip::StuffResource()
 	{
@@ -438,7 +438,7 @@ namespace JinEngine
 	}
 	bool JAnimationClip::IsValid()const noexcept
 	{
-		return Core::JValidInterface::IsValid() && (clipSkeletonAsset != nullptr);
+		return Core::JValidInterface::IsValid() && (clipSkeletonAsset.IsValid());
 	}
 	bool JAnimationClip::WriteClipData()
 	{
@@ -506,8 +506,8 @@ namespace JinEngine
 
 		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 		{
-			if (clipSkeletonAsset != nullptr && clipSkeletonAsset->GetGuid() == jRobj->GetGuid())
-				SetClipSkeletonAsset(nullptr);
+			if (clipSkeletonAsset.IsValid() && clipSkeletonAsset->GetGuid() == jRobj->GetGuid())
+				SetClipSkeletonAsset(Core::JUserPtr<JSkeletonAsset>{});
 		}
 	}
 	bool JAnimationClip::ImportAnimationClip(const JAnimationData& jfbxAniData)
@@ -525,7 +525,7 @@ namespace JinEngine
 			JSkeletonAsset* oldSkeletonAsset = static_cast<JSkeletonAsset*>(*(st + i));
 			if (oldSkeletonAsset->GetSkeletonHash() == oriSkeletoHash)
 			{
-				SetClipSkeletonAsset(oldSkeletonAsset);
+				SetClipSkeletonAsset(Core::GetUserPtr(oldSkeletonAsset));
 				break;
 			}
 		}
@@ -564,7 +564,7 @@ namespace JinEngine
 			if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 				return res;
 
-			JFileIOHelper::StoreHasObjectIden(stream, clip->clipSkeletonAsset); 
+			JFileIOHelper::StoreHasObjectIden(stream, clip->clipSkeletonAsset.Get()); 
 			JFileIOHelper::StoreAtomicData(stream, L"updateFramePerSecond", clip->updateFramePerSecond);
 			JFileIOHelper::StoreAtomicData(stream, L"IsLooping", clip->isLooping);
 			return Core::J_FILE_IO_RESULT::SUCCESS;
@@ -602,7 +602,7 @@ namespace JinEngine
 		{
 			newClip->SetLoop(metadata.isLooping); 
 			newClip->SetUpdateFPS(metadata.updateFramePerSecond);
-			newClip->SetClipSkeletonAsset(metadata.clipSkeletonAsset);
+			newClip->SetClipSkeletonAsset(Core::GetUserPtr(metadata.clipSkeletonAsset));
 		}
 		return newClip;
 	}

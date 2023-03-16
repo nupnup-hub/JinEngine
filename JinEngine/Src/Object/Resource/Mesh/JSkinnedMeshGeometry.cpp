@@ -101,7 +101,7 @@ namespace JinEngine
 			const uint submeshCount = GetTotalSubmeshCount();
 			JFileIOHelper::StoreAtomicData(stream, L"SubmeshCount:", submeshCount);
 			for (uint i = 0; i < submeshCount; ++i)
-				JFileIOHelper::StoreHasObjectIden(stream, GetSubmeshMaterial(i));
+				JFileIOHelper::StoreHasObjectIden(stream, GetSubmeshMaterial(i).Get());
 
 			JFileIOHelper::StoreHasObjectIden(stream, skinnedMeshs->GetSkeletonAsset().Get());
 			/*

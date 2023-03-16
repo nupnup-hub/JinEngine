@@ -37,7 +37,7 @@
 #include"../../Graphic/JGraphicDrawList.h" 
 
 #include"../JModifiedObjectInfo.h"
-#include"../../Editor/Interface/JEditorObjectInterface.h"
+#include"../../Editor/Interface/JEditorObjectHandleInterface.h"
 
 using namespace DirectX;
 namespace JinEngine
@@ -51,11 +51,6 @@ namespace JinEngine
 			ModVector& GetVector()
 			{
 				return GetModifiedObjectInfoVec();
-			}
-		public:
-			void EndStore()
-			{
-				DestroyHasRemoveBitInfo();
 			}
 		};
 	}
@@ -401,7 +396,7 @@ namespace JinEngine
 			}
 			data->isModified = false;
 		}
-		Private::JModifiedObjectInfoReader{}.EndStore();
+		Private::JModifiedObjectInfoReader{}.DestroyHasRemoveBitInfo();
 	}
 	void JResourceManagerImpl::LoadSelectorResource()
 	{

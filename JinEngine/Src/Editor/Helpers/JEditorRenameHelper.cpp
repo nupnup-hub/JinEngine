@@ -2,7 +2,7 @@
 #include"JEditorInputBuffHelper.h"
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../Align/JEditorAlignCalculator.h"
-#include"../../Object/JObject.h"
+#include"../../Core/Identity/JIdentifier.h"
 
 namespace JinEngine
 { 
@@ -11,7 +11,7 @@ namespace JinEngine
 		JEditorRenameHelper::JEditorRenameHelper()
 		{
 			renameBuff = std::make_unique<JEditorInputBuffHelper>(JImGuiImpl::GetTextBuffRange());
-			auto renameLam = [](const std::string newName, Core::JUserPtr<JObject> obj)
+			auto renameLam = [](const std::string newName, Core::JUserPtr<Core::JIdentifier> obj)
 			{
 				obj->SetName(JCUtil::U8StrToWstr(JCUtil::EraseChar(newName, '\n')));
 			};
@@ -52,7 +52,9 @@ namespace JinEngine
 				renameBuff->SetBuff(aligned);
 				ImGuiInputTextFlags flag = ImGuiInputTextFlags_NoHorizontalScroll;
 
-				JImGuiImpl::InputMultilineTextSetT(uniqueLabel, renameBuff.get(),
+				JImGuiImpl::InputMultilineTextSetT(JCUtil::WstrToU8Str(renameTar->GetName()),
+					uniqueLabel, 
+					renameBuff.get(),
 					multilineSize,
 					flag,
 					*renameF, Core::JUserPtr{ renameTar });		
@@ -62,7 +64,9 @@ namespace JinEngine
 			}
 			else
 			{ 
-				if (JImGuiImpl::InputTextSetT(uniqueLabel, renameBuff.get(),
+				if (JImGuiImpl::InputTextSetT(JCUtil::WstrToU8Str(renameTar->GetName()), 
+					uniqueLabel, 
+					renameBuff.get(),
 					"New name...",
 					ImGuiInputTextFlags_EnterReturnsTrue,
 					*renameF, Core::JUserPtr{ renameTar }))
@@ -81,7 +85,7 @@ namespace JinEngine
 					Clear();
 			} 
 		}
-		void JEditorRenameHelper::Activate(Core::JUserPtr<JObject> newRenameTar)noexcept
+		void JEditorRenameHelper::Activate(Core::JUserPtr<Core::JIdentifier> newRenameTar)noexcept
 		{
 			renameTar = newRenameTar;
 			if(IsActivated())

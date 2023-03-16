@@ -61,6 +61,10 @@ namespace JinEngine
 		{
 			return ownerInterface->GetParamStorageInterface();
 		}
+		bool JFSMtransition::IsSameDiagram(const size_t diagramGuid)const noexcept
+		{
+			return ownerInterface->IsSameDiagram(diagramGuid);
+		}
 		bool JFSMtransition::HasSatisfiedCondition()const noexcept
 		{
 			const uint condVecSize = (uint)conditionVec.size();
@@ -132,7 +136,7 @@ namespace JinEngine
 			//for (uint i = 0; i < conditionVecSize; ++i)
 			//	copy[i]->Clear();
 			for (uint i = 0; i < conditionVecSize; ++i)
-				Destroy(copy[i]);
+				JFSMInterface::BeginDestroy(copy[i]);
 			conditionVec.clear();
 		}
 		bool JFSMtransition::RegisterCashData()noexcept

@@ -18,10 +18,13 @@ namespace JinEngine
 			static void ExecuteEvent()noexcept;
 		public:
 			static JEditorEvStruct* RegisterEvStruct(std::unique_ptr<JEditorEvStruct> evStruct)noexcept;
-			static void ClearEvStructQueue()noexcept;
+			static JEditorEvStruct* RegisterEvStruct(std::unique_ptr<JEditorEvStruct> evStruct, _Out_ size_t& key, bool canRemvoe = false)noexcept;
+			static void ClearInvalidEvStructData()noexcept;
 		public:
 			static void Initialize()noexcept;
 			static void Clear()noexcept;
+		public:
+			static void SetCanDestroyBit(const size_t guid, const bool value)noexcept;
 		};
 	}
 }

@@ -10,10 +10,20 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorPage;
+		class JEditorSelectedObjInfo
+		{
+		public:
+			J_EDITOR_WINDOW_TYPE selectedWnd;
+			Core::JUserPtr<Core::JIdentifier> selectedObj;
+		public:
+			JEditorSelectedObjInfo(J_EDITOR_WINDOW_TYPE selectedWnd, Core::JUserPtr<Core::JIdentifier> selectedObj);
+		};
+
 		class JEditorPageShareData
 		{
 		public:
-			using GetPageFlagF = Core::JMFunctorType<JEditorPage, J_EDITOR_PAGE_FLAG>;
+			using GetPageNameF = Core::JMFunctorType<JEditorPage, std::string>;
+			using GetPageFlagF = Core::JMFunctorType<JEditorPage, J_EDITOR_PAGE_FLAG>; 
 		public:
 			struct PageInitData
 			{
@@ -21,7 +31,8 @@ namespace JinEngine
 				size_t guiWindowID;
 				size_t dockSpaceID;
 				J_EDITOR_PAGE_TYPE pageType;
-				std::unique_ptr<GetPageFlagF::Functor> getPtr;
+				std::unique_ptr<GetPageNameF::Functor> getNamePtr;
+				std::unique_ptr<GetPageFlagF::Functor> getFlagPtr;
 			};
 	 		public:
 			static void RegisterPage(PageInitData& initData)noexcept;
@@ -29,21 +40,21 @@ namespace JinEngine
 			static void ClearPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 		public:
 			static bool IsRegisteredPage(const J_EDITOR_PAGE_TYPE pageType)noexcept;
-			static bool IsEditableSelectedObject(const J_EDITOR_PAGE_TYPE pageType)noexcept;
+			static bool IsEditableSelectedObject(Core::JUserPtr<Core::JIdentifier> obj)noexcept;  
 			static bool HasValidOpenPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 		public:
 			static uint GetPageGuiWindowID(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 			static uint GetPageDockSpaceID(const J_EDITOR_PAGE_TYPE pageType)noexcept;
-			static JEditorOpenPageEvStruct GetOpendPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept;
-			static Core::JUserPtr<Core::JIdentifier> GetSelectedObj(const J_EDITOR_PAGE_TYPE pageType)noexcept;
-			static J_EDITOR_PAGE_FLAG GetPageFlag(const J_EDITOR_PAGE_TYPE pageType)noexcept;
-			static size_t* GetDragGuidPtr(const J_EDITOR_PAGE_TYPE pageType)noexcept; 
-			static void SetPageOpenData(JEditorOpenPageEvStruct* evStruct)noexcept;
-			static void SetSelectObj(const J_EDITOR_PAGE_TYPE pageType, const Core::JUserPtr<Core::JIdentifier>& selectObj)noexcept;
+			static JEditorOpenPageEvStruct GetOpendPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept;	 
+			static std::string GetPageName(const J_EDITOR_PAGE_TYPE pageType)noexcept;
+			static J_EDITOR_PAGE_FLAG GetPageFlag(const J_EDITOR_PAGE_TYPE pageType)noexcept; 
+			static void SetPageOpenData(JEditorOpenPageEvStruct* evStruct)noexcept;  
 		public:
-			static void Clear()noexcept;
-		private:
-			static void SetSelectedGameObjectTrigger(JGameObject* gObj, const bool triggerValue);
+			//Dragging 
+			static Core::JTypeInstanceSearchHint* RegisterDraggingHint(const J_EDITOR_PAGE_TYPE pageType, Core::JIdentifier* iden)noexcept;
+			static void DeRegisterDraggingHint(const J_EDITOR_PAGE_TYPE pageType)noexcept;
+		public:
+			static void Clear()noexcept; 
 		};
 	}
 }

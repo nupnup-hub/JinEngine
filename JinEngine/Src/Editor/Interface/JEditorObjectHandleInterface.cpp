@@ -1,4 +1,4 @@
-#include"JEditorObjectInterface.h"
+#include"JEditorObjectHandleInterface.h"
 #include"../../Core/Identity/JIdentifier.h"
 #include"../../Object/Component/JComponent.h"
 #include"../../Object/GameObject/JGameObject.h"
@@ -68,7 +68,7 @@ namespace JinEngine
 				data->lastObjMetaPath = static_cast<JDirectory*>(validObj.Get())->GetMetafilePath();
 			}
 		}
-		Core::JUserPtr<Core::JIdentifier> JEditorObjectHandlerInterface::GetValidModifiedUser(Core::JUserPtr<Core::JIdentifier> obj)const noexcept
+		Core::JUserPtr<Core::JIdentifier> JEditorObjectHandlerInterface::GetValidModifiedUser(Core::JUserPtr<Core::JIdentifier> obj)noexcept
 		{			
 			/*
 			Component -> Gameobject -> Scene 으로 변환

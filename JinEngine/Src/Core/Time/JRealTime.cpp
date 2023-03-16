@@ -6,8 +6,16 @@ namespace JinEngine
 	namespace Core
 	{
 		JRealTime::JTime::JTime(const int year, const int month, const int day, const int hour, const int minute, const int sec)
-			:year(year), month(month), day(day), hour(hour), minute(minute), sec(sec)
+			:year(year), month(month), day(day), hour(hour), minute(minute), sec(sec), orderNumber(CalOrderNumer())
 		{}
+		bool JRealTime::JTime::operator>(const JTime& rhs)const noexcept
+		{
+			return orderNumber > rhs.orderNumber;
+		}
+		bool JRealTime::JTime::operator<(const JTime& rhs)const noexcept
+		{
+			return orderNumber < rhs.orderNumber;
+		}
 		std::string JRealTime::JTime::ToString()const noexcept
 		{
 			std::string result = std::to_string(year) + "-";
@@ -37,6 +45,15 @@ namespace JinEngine
 			else
 				result += std::to_string(sec);
 			return result;
+		} 
+		size_t JRealTime::JTime::CalOrderNumer()const noexcept
+		{
+			return (size_t)sec + 
+				((size_t)minute *	100) +
+				((size_t)hour   *	10000) +
+				((size_t)day    *	1000000) +
+				((size_t)month  *	100000000) +
+				((size_t)year   *	10000000000);
 		}
 
 		JRealTime::JTime JRealTime::GetNowTime()noexcept
