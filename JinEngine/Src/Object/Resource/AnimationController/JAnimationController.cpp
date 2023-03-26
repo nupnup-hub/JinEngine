@@ -15,8 +15,7 @@
 #include"../../../Core/File/JFileIOHelper.h" 
 
 #include"../../../Application/JApplicationVariable.h"
-#include"../../../Editor/Diagram/JEditorDiagram.h" 
-#include"../../../Editor/Diagram/JEditorDiagramNode.h" 
+#include"../../../Editor/Diagram/JEditorDiagram.h"  
 #include"../../../Graphic/FrameResource/JAnimationConstants.h"
 #include"../../../Utility/JCommonUtility.h"
 
@@ -359,7 +358,7 @@ namespace JinEngine
 		 
 		return newCont;
 	}
-	void JAnimationController::RegisterJFunc()
+	void JAnimationController::RegisterCallOnce()
 	{
 		auto defaultC = [](Core::JOwnerPtr<JResourceInitData>initdata) ->JResourceObject*
 		{
@@ -405,12 +404,12 @@ namespace JinEngine
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JAnimationController>(format); };
 
-		static GetTypeNameCallable getTypeNameCallable{ &JAnimationController::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JAnimationController::StaticTypeInfo };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JAnimationController::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
 		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, false, false};
-		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+		static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}

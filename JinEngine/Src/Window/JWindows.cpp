@@ -347,7 +347,7 @@ namespace JinEngine
 			case WM_QUIT:
 			{
 				break;
-				return 0;
+				//return 0;
 			}
 			case WM_MDIMAXIMIZE:
 			{ 
@@ -385,16 +385,22 @@ namespace JinEngine
 					((RECT*)lParam)->top = preWindowRect.top;
 					((RECT*)lParam)->bottom = preWindowRect.bottom;
 				}*/
-				return TRUE;
+				break;
+				//return TRUE;
 			}
 			case WM_SIZE:
 			{ 
 				JWindow::Instance().Resize(wParam); 
-				return 0;
+				break;
+				//return 0;
 			}
 			case WM_MOVE: 
 			{ 
 				JWindow::Instance().Move();
+				break;
+			}
+			case WM_SHOWWINDOW:
+			{ 
 				break;
 			}
 			case WM_NCDESTROY:
@@ -422,6 +428,7 @@ namespace JinEngine
 		{
 			GetWindowRect(hwnd, &preWindowRect);
 			GetClientRect(hwnd, &preClinetRect);
+			 
 			NotifyEvent(guid, J_WINDOW_EVENT::WINDOW_MOVE);
 		}
 		void JWindowImpl::RegisterWindowClass()

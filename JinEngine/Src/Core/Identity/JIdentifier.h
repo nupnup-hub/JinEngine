@@ -6,7 +6,7 @@
 namespace JinEngine
 {
 	namespace Core
-	{
+	{ 
 		class JIdentifier
 		{
 			REGISTER_CLASS(JIdentifier)

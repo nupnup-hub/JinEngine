@@ -28,7 +28,8 @@ namespace JinEngine
 			auto data = Private::infoMap.Get(guid);
 			if (data == nullptr)
 			{
-				data = Private::infoMap.Add(std::make_unique<JModifiedObjectInfo>(guid, validObj->GetTypeInfo().Name()), guid);
+				Core::JTypeInfo& typeInfo = validObj->GetTypeInfo();
+				data = Private::infoMap.Add(std::make_unique<JModifiedObjectInfo>(guid, typeInfo.TypeGuid(), typeInfo.Name()), guid);
 				Private::infoVec.Add(data);
 			}
 			data->isModified = value;
@@ -50,7 +51,8 @@ namespace JinEngine
 			auto data = Private::infoMap.Get(guid);
 			if (data == nullptr)
 			{
-				data = Private::infoMap.Add(std::make_unique<JModifiedObjectInfo>(guid, validObj->GetTypeInfo().Name()), guid);
+				Core::JTypeInfo& typeInfo = validObj->GetTypeInfo();
+				data = Private::infoMap.Add(std::make_unique<JModifiedObjectInfo>(guid, typeInfo.TypeGuid(), typeInfo.Name()), guid);
 				Private::infoVec.Add(data);
 			}
 			data->isModified = true;
@@ -101,14 +103,14 @@ namespace JinEngine
 					removeVec.Add(info);
 			}
 
-			auto equalLam = [](JModifiedObjectInfo* a, JModifiedObjectInfo* b) {return a->guid == b->guid; };
+			auto equalLam = [](JModifiedObjectInfo* a, JModifiedObjectInfo* b) {return a->objectGuid == b->objectGuid; };
 			JModifiedObjectInfoVector::EqualPtr equalPtr = equalLam;
 			count = removeVec.Count();
 			for (uint i = 0; i < count; ++i)
 			{
 				auto info = removeVec.Get(i);
 				Private::infoVec.Remove(info, equalLam);
-				Private::infoMap.Remove(info->guid);
+				Private::infoMap.Remove(info->objectGuid);
 			}
 		}
 		void JEditorModifedObjectStructureInterface::ClearModifiedInfoStructure()noexcept

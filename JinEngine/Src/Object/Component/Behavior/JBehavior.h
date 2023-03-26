@@ -28,7 +28,7 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JBehavior* bahavior);
 		static JBehavior* LoadObject(std::wifstream& stream, JGameObject* owner);
-		static void RegisterJFunc();
+		static void RegisterCallOnce();
 	private:
 		JBehavior(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner);
 		~JBehavior();

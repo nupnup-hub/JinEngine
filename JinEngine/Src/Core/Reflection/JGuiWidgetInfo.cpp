@@ -273,10 +273,6 @@ namespace JinEngine
 		{
 			return enumFullName;
 		}
-		std::string JGuiEnumComboBoxInfo::FindEnumFullName(const std::string enumName)const noexcept
-		{
-			return JReflectionInfo::Instance().FindEnumInfo(enumName)->FullName();
-		}
 
 		JGuiListInfo::JGuiListInfo(const J_GUI_LIST_TYPE listType, const bool canDisplayElementGui, CreateElementPtr createElementPtr)
 			:JGuiWidgetInfo(),

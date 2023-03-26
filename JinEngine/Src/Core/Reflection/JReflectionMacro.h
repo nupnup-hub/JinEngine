@@ -52,7 +52,7 @@ namespace JinEngine
 		protected:																						\
 			using JTypeInfo = JinEngine::Core::JTypeInfo;										\
 			using JTypeInfoInitializer = JinEngine::Core::JTypeInfoInitializer<typeName>;		\
-			using JTypeInfoCallOnece = JinEngine::Core::JTypeInfoCallOnece<typeName>;			\
+			using JTypeInfoCallOnece = JinEngine::Core::JTypeInfo::CallOnece<typeName>;		\
 			using JTypeInfoRegister = JinEngine::Core::JTypeInfoRegister<typeName>;				\
 			using JReflectionInfo = JinEngine::Core::JReflectionInfo;							\
 			using JPtrUtil = JinEngine::Core::JPtrUtil;											\
@@ -62,27 +62,97 @@ namespace JinEngine
 			friend class JTypeInfoCallOnece;													\
 			template<typename T> friend class JinEngine::Core::JOwnerPtr;						\
 			friend class JPtrUtil;																\
-																								\
+	 private:																					\
+			inline static struct typeName##TypeInfoInstance										\
+			{																					\
+			public:																				\
+				typeName##TypeInfoInstance(){ static JTypeInfoRegister typeRegister{#typeName};	}\
+			}typeName##TypeInfoInstance;														\
 		public:																					\
 			static JTypeInfo& StaticTypeInfo()													\
 			{																					\
-				static JTypeInfoRegister typeRegister{#typeName};								\
-				return *JReflectionInfo::Instance().GetTypeInfo(#typeName);						\
+				static JTypeInfo& thisTypeInfo = *JReflectionInfo::Instance().GetTypeInfo(typeid(typeName).name());\
+				return thisTypeInfo;															\
 			}																					\
-																								\
 			virtual JTypeInfo& GetTypeInfo()const {return typeInfo;}							\
 			virtual int GetTypeDepth()const {return TypeDepth::value;}							\
 			inline static std::string TypeName() {return #typeName;}							\
 			inline static std::wstring TypeWName() {return L#typeName;}							\
-																								\
 		private:																				\
 			inline static JTypeInfo& typeInfo = StaticTypeInfo();								\
-		private:																				\
-			inline static struct typeName##CallOnce												\
+		public:																					\
+			void* operator new(size_t size)														\
 			{																					\
-			public:																				\
-				typeName##CallOnce(){ static JTypeInfoCallOnece once{};	}							\
-			}typeName##CallOnce;																\
+				if constexpr(std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)			\
+				{																				\
+					auto allocInterface = typeInfo.GetAllocationInterface();					\
+					if (allocInterface != nullptr)												\
+						return allocInterface->Allocate(size);									\
+					else                                                                        \
+					{																			\
+						if (void* ptr = std::malloc(size))										\
+							return ptr;															\
+																								\
+						throw std::bad_alloc{};													\
+					}																			\
+				}																				\
+				else                                                                            \
+				{																				\
+					if (void* ptr = std::malloc(size))											\
+						return ptr;																\
+																								\
+						throw std::bad_alloc{};													\
+				}																				\
+			}																					\
+			void* operator new[](size_t size)													\
+			{																					\
+				if constexpr(std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)			\
+				{																				\
+					auto allocInterface = typeInfo.GetAllocationInterface();					\
+					if (allocInterface != nullptr)												\
+						return allocInterface->Allocate(size);									\
+					else                                                                        \
+					{																			\
+						if (void* ptr = std::malloc(size))										\
+							return ptr;															\
+																								\
+						throw std::bad_alloc{};													\
+					}																			\
+				}																				\
+				else                                                                            \
+				{																				\
+					if (void* ptr = std::malloc(size))											\
+						return ptr;																\
+																								\
+						throw std::bad_alloc{};													\
+				}																				\
+			}																					\
+			void operator delete(void* p)														\
+			{																					\
+				if constexpr(std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)			\
+				{																				\
+					auto allocInterface = typeInfo.GetAllocationInterface();					\
+ 					if (allocInterface != nullptr)												\
+						allocInterface->DeAllocate(p);											\
+					else																		\
+						std::free(p);															\
+				}																				\
+				else																			\
+					std::free(p);																\
+			}																					\
+			void operator delete[](void* p, size_t size)\
+			{																					\
+				if constexpr(std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)			\
+				{																				\
+					auto allocInterface = typeInfo.GetAllocationInterface();					\
+ 					if (allocInterface != nullptr)												\
+						allocInterface->DeAllocate(p, size);									\
+					else																		\
+						std::free(p);															\
+				}																				\
+				else																			\
+					std::free(p);																\
+			}																					\
 																								\
 																								\
 																								\
@@ -301,7 +371,7 @@ namespace ReflectionData
 #define GUI_COLOR_PICKER(hasRgbInput, ...)	std::make_unique<JinEngine::Core::JGuiColorPickerInfo>(hasRgbInput, __VA_ARGS__)
 #define GUI_SELECTOR(imageLevel, hasSizeSlider, ...)	std::make_unique<JinEngine::Core::JGuiSelectorInfo>(imageLevel, hasSizeSlider, __VA_ARGS__)
 #define GUI_READONLY_TEXT(...)	std::make_unique<JinEngine::Core::JGuiReadOnlyTextInfo>(__VA_ARGS__) 
-#define GUI_ENUM_COMBO(enumName, ...) std::make_unique<JinEngine::Core::JGuiEnumComboBoxInfo>(#enumName, __VA_ARGS__) 
+#define GUI_ENUM_COMBO(enumName, ...) std::make_unique<JinEngine::Core::JGuiEnumComboBoxInfo>(typeid(enumName).name(), __VA_ARGS__) 
 #define GUI_LIST(listType, canDisplayElementGui, ...)  std::make_unique<JinEngine::Core::JGuiListInfo>(listType, canDisplayElementGui, __VA_ARGS__) 
 
 #pragma endregion

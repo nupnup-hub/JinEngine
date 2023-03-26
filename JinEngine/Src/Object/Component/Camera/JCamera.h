@@ -96,7 +96,7 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JCamera* camera);
 		static JCamera* LoadObject(std::wifstream& stream, JGameObject* owner);
-		static void RegisterJFunc();
+		static void RegisterCallOnce();
 	private:
 		JCamera(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner);
 		~JCamera();

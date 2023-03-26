@@ -267,7 +267,7 @@ namespace JinEngine
 			
 			return newDiagram;
 		}
-		void JAnimationFSMdiagram::RegisterJFunc()
+		void JAnimationFSMdiagram::RegisterCallOnce()
 		{ 
 			auto createDiagramLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
 			{

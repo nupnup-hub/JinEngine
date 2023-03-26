@@ -15,7 +15,7 @@
 namespace JinEngine
 {
 	JDirectory* JDirectory::GetParent()noexcept
-	{
+	{ 
 		return parent;
 	}
 	JDirectory* JDirectory::GetChildDirctory(const uint index)noexcept
@@ -325,7 +325,7 @@ namespace JinEngine
 		}	
 		return nullptr;
 	}
-	void JDirectory::RegisterJFunc()
+	void JDirectory::RegisterCallOnce()
 	{ 
 		auto defaultC = [](JDirectory* parent) -> JDirectory*
 		{

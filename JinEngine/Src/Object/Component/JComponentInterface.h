@@ -11,8 +11,7 @@ namespace JinEngine
 	private:
 		friend class JGameObject;
 		friend class JScene;
-	protected:
-		using GetTypeNameCallable = Core::JStaticCallable<std::string>;
+	protected: 
 		using GetTypeInfoCallable = Core::JStaticCallable<JTypeInfo&>; 
 		using IsAvailableOverlapCallable = Core::JStaticCallable<bool>;
 	protected:
@@ -32,18 +31,15 @@ namespace JinEngine
 		};
 		struct CTypeCommonFunc
 		{
-		private:
-			GetTypeNameCallable* getTypeName = nullptr;
+		private: 
 			GetTypeInfoCallable* getTypeInfo = nullptr;
 			IsAvailableOverlapCallable* isAvailableOverlapCallable = nullptr;
 		public:
 			CTypeCommonFunc() = default;
-			CTypeCommonFunc(GetTypeNameCallable& getTypeName,
-				GetTypeInfoCallable& getTypeInfo,
+			CTypeCommonFunc(GetTypeInfoCallable& getTypeInfo,
 				IsAvailableOverlapCallable& isAvailableOverlapCallable);
 			~CTypeCommonFunc();
-		public:
-			std::string CallGetTypeName();
+		public: 
 			JTypeInfo& CallGetTypeInfo();
 			bool CallIsAvailableOverlapCallable();
 		};
@@ -68,8 +64,7 @@ namespace JinEngine
 		static std::vector<CTypeHint> GetCTypeHint(const COMPONET_ALIGN_TYPE alignType = COMPONET_ALIGN_TYPE::NONE)noexcept;
 	//Common
 	public:
-		static JTypeInfo& CallGetTypeInfo(const J_COMPONENT_TYPE cType);
-		static std::string CallGetTypeName(const J_COMPONENT_TYPE cType); 	
+		static JTypeInfo& CallGetTypeInfo(const J_COMPONENT_TYPE cType); 
 		static bool CallIsAvailableOverlap(const J_COMPONENT_TYPE cType);
 	private:
 		virtual Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream) = 0;

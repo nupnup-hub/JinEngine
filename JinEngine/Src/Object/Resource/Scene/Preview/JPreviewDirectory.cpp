@@ -50,7 +50,7 @@ namespace JinEngine
 		J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
 		JMaterial* newTextureMat = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(matName, Core::MakeGuid(), flag, dir));
 		JDefaultMaterialSetting::SetAlbedoMapOnly(newTextureMat, texture);
-
+		 
 		JGameObject* shapeObj = JGFU::CreateShape(*GetScene()->GetRootGameObject(), flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
 		JRenderItem* renderItem = shapeObj->GetRenderItem();
 

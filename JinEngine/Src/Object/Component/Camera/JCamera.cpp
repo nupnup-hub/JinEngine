@@ -440,7 +440,7 @@ namespace JinEngine
 			newCamera->SetMainCamera(true);
 		return newCamera;
 	}
-	void JCamera::RegisterJFunc()
+	void JCamera::RegisterCallOnce()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
@@ -483,7 +483,6 @@ namespace JinEngine
 		};
 		JCFI<JCamera>::Register(defaultC, initC, loadC, copyC);
 
-		static GetTypeNameCallable getTypeNameCallable{ &JCamera::TypeName };
 		static GetTypeInfoCallable getTypeInfoCallable{ &JCamera::StaticTypeInfo };
 		bool(*ptr)() = isAvailableoverlapLam;
 		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
@@ -492,7 +491,7 @@ namespace JinEngine
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
 		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable, isAvailableOverlapCallable };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeInfoCallable, isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, nullptr };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);

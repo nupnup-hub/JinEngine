@@ -764,7 +764,7 @@ namespace JinEngine
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	void JScene::RegisterJFunc()
+	void JScene::RegisterCallOnce()
 	{
 		auto defaultC = [](const Core::JOwnerPtr<JResourceInitData> initdata)-> JResourceObject*
 		{
@@ -812,7 +812,7 @@ namespace JinEngine
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JScene>(format); };
 
-		static GetTypeNameCallable getTypeNameCallable{ &JScene::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JScene::StaticTypeInfo };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JScene::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
@@ -827,7 +827,7 @@ namespace JinEngine
 		}
 
 		static RTypeHint rTypeHint{ GetStaticResourceType(), allRType, false, false };
-		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+		static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}

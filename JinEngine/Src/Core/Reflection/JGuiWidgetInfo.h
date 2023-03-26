@@ -439,16 +439,14 @@ namespace JinEngine
 			const std::string enumFullName;
 		public:   
 			template<typename ...Param>
-			JGuiEnumComboBoxInfo(const std::string enumName, Param... var)
+			JGuiEnumComboBoxInfo(const std::string enumFullName, Param... var)
 				: JGuiWidgetInfo(std::forward<Param>(var)...),
-				enumFullName(FindEnumFullName(enumName))
+				enumFullName(enumFullName)
 			{} 
 		public:
 			JSupportGuiWidgetType GetSupportWidgetType()const noexcept final;
 		public:
-			std::string GetEnumFullName()const noexcept;
-		private:
-			std::string FindEnumFullName(const std::string enumName)const noexcept;
+			std::string GetEnumFullName()const noexcept; 
 		};
 	 
 		class JGuiListInfo : public JGuiWidgetInfo

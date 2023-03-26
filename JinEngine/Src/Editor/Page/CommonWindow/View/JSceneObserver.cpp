@@ -837,6 +837,7 @@ namespace JinEngine
 					}
 				}
 			}
+			SetModifiedBit(scene, true);
 		}
 		void JSceneObserver::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{

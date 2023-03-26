@@ -50,7 +50,7 @@ namespace JinEngine
 		//추가필요
 		return nullptr;
 	}
-	void JBehavior::RegisterJFunc()
+	void JBehavior::RegisterCallOnce()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
@@ -93,13 +93,12 @@ namespace JinEngine
 		};
 		JCFI<JBehavior>::Register(defaultC, initC, loadC, copyC);
 
-		static GetTypeNameCallable getTypeNameCallable{ &JBehavior::TypeName };
 		static GetTypeInfoCallable getTypeInfoCallable{ &JBehavior::StaticTypeInfo };
 		bool(*ptr)() = isAvailableoverlapLam;
 		static IsAvailableOverlapCallable isAvailableOverlapCallable{ ptr };
 
 		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), false };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeNameCallable, getTypeInfoCallable, isAvailableOverlapCallable };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeInfoCallable, isAvailableOverlapCallable };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, JCI::CTypeInterfaceFunc{});
 	}

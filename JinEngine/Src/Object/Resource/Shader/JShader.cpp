@@ -614,7 +614,7 @@ namespace JinEngine
 		else
 			return nullptr;
 	}
-	void JShader::RegisterJFunc()
+	void JShader::RegisterCallOnce()
 	{
 		auto defaultC = [](Core::JOwnerPtr<JResourceInitData> initdata) ->JResourceObject*
 		{
@@ -668,12 +668,12 @@ namespace JinEngine
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JShader>(format); };
 
-		static GetTypeNameCallable getTypeNameCallable{ &JShader::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JShader::StaticTypeInfo };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JShader::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
 		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false };
-		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+		static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 

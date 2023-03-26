@@ -158,7 +158,7 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JMaterial* material);
 		static JMaterial* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
-		static void RegisterJFunc();
+		static void RegisterCallOnce();
 	private:
 		JMaterial(const JMaterialInitData& initdata);
 		~JMaterial();

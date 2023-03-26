@@ -238,7 +238,7 @@ namespace JinEngine
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	void JTexture::RegisterJFunc()
+	void JTexture::RegisterCallOnce()
 	{ 
 		auto defaultC = [](Core::JOwnerPtr<JResourceInitData> initdata) -> JResourceObject*
 		{
@@ -282,12 +282,12 @@ namespace JinEngine
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JTexture>(format); };
 
-		static GetTypeNameCallable getTypeNameCallable{ &JTexture::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JTexture::StaticTypeInfo };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JTexture::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
 		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, true, false};
-		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+		static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 
@@ -307,7 +307,7 @@ namespace JinEngine
 		JResourceImporter::Instance().AddFormatInfo(L".bmp", J_RESOURCE_TYPE::TEXTURE, txtImportC);
 	}
 	JTexture::JTexture(const JTextureInitData& initdata)
-		: JTextureInterface(initdata)
-	{}
+		:JTextureInterface(initdata)
+	{ }
 	JTexture::~JTexture() {}
 }

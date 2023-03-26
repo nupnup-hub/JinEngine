@@ -10,18 +10,12 @@ namespace JinEngine
 	{}
 	JCI::CTypeHint::~CTypeHint() {}
 
-	JCI::CTypeCommonFunc::CTypeCommonFunc(GetTypeNameCallable& getTypeName,
-		GetTypeInfoCallable& getTypeInfo,
+	JCI::CTypeCommonFunc::CTypeCommonFunc(GetTypeInfoCallable& getTypeInfo,
 		IsAvailableOverlapCallable& isAvailableOverlapCallable)
-		: getTypeName(&getTypeName), getTypeInfo(&getTypeInfo), isAvailableOverlapCallable(&isAvailableOverlapCallable)
+		:getTypeInfo(&getTypeInfo), isAvailableOverlapCallable(&isAvailableOverlapCallable)
 	{}
 	JCI::CTypeCommonFunc::~CTypeCommonFunc()
-	{
-		getTypeName = nullptr;
-	}
-	std::string JCI::CTypeCommonFunc::CallGetTypeName()
-	{
-		return (*getTypeName)(nullptr);
+	{ 
 	}
 	JinEngine::Core::JTypeInfo& JCI::CTypeCommonFunc::CallGetTypeInfo()
 	{
@@ -100,10 +94,6 @@ namespace JinEngine
 	{
 		return CTypeInfo::Instance().cFuncStorage[(uint)cType].CallGetTypeInfo();
 	}
-	std::string JComponentInterface::CallGetTypeName(const J_COMPONENT_TYPE cType)
-	{
-		return CTypeInfo::Instance().cFuncStorage[(uint)cType].CallGetTypeName();
-	}
 	bool JComponentInterface::CallIsAvailableOverlap(const J_COMPONENT_TYPE cType)
 	{
 		return CTypeInfo::Instance().cFuncStorage[(uint)cType].CallIsAvailableOverlapCallable();
@@ -126,7 +116,7 @@ namespace JinEngine
 	}
 	bool JComponentInterface::NameOrder(const CTypeHint& a, const CTypeHint& b)noexcept
 	{
-		return CTypeInfo::Instance().cFuncStorage[(uint)a.thisType].CallGetTypeName() < CTypeInfo::Instance().cFuncStorage[(uint)b.thisType].CallGetTypeName();
+		return CTypeInfo::Instance().cFuncStorage[(uint)a.thisType].CallGetTypeInfo().Name() < CTypeInfo::Instance().cFuncStorage[(uint)b.thisType].CallGetTypeInfo().Name();
 	}
 	void JComponentInterface::RegisterTypeInfo(const JCI::CTypeHint& cTypeHint, const JCI::CTypeCommonFunc& cTypeCFunc, const JCI::CTypeInterfaceFunc& cTypeIFunc)noexcept
 	{

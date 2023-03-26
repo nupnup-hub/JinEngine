@@ -56,7 +56,7 @@ namespace JinEngine
 			bool RegisterCashData()noexcept final;
 			bool DeRegisterCashData()noexcept final;
 		private:
-			static void RegisterJFunc();
+			static void RegisterCallOnce();
 		private:
 			JFSMparameter(const JFSMparameterInitData& initData);
 			~JFSMparameter();

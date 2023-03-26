@@ -16,15 +16,19 @@ namespace JinEngine
 	{
 		JApplication::JApplication(HINSTANCE hInstance, const char* commandLine)
 			:guid(Core::MakeGuid())
-		{		
+		{
+			Core::JReflectionInfo::Instance().Initialize();
+
 			JApplicationVariable::Initialize();
 			JApplicationVariable::RegisterFunctor(this, &JApplication::StoreProject, &JApplication::LoadProject);
 			
 			using CloseConfirmF = Window::JWindowAppInterface::CloseConfirmF;
-			JWindow::Instance().AppInterface()->Initialize(hInstance, std::make_unique<CloseConfirmF::Functor>(&JApplication::CloseApp, this));
+			JWindow::Instance().AppInterface()->Initialize(hInstance, std::make_unique<CloseConfirmF::Functor>(&JApplication::CloseApp, this));			
 		}
 		JApplication::~JApplication()
-		{}
+		{
+			Core::JReflectionInfo::Instance().Clear();
+		}
 		void JApplication::Run()
 		{
 			RunProjectSelector();
@@ -47,7 +51,7 @@ namespace JinEngine
 			JEngineTimer::Data().Reset();
 			Core::JGameTimer::TickAllTimer();
 			while (true)
-			{
+			{ 
 				std::optional<int> encode = JWindow::Instance().AppInterface()->ProcessMessages();
 				if (encode.has_value())
 					break;

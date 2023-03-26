@@ -104,7 +104,7 @@ namespace JinEngine
 
 			return res;
 		}
-		void JAnimationFSMstateClip::RegisterJFunc()
+		void JAnimationFSMstateClip::RegisterCallOnce()
 		{
 			auto createClipLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
 			{

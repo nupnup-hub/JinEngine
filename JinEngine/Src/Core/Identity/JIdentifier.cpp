@@ -1,5 +1,7 @@
 #include"JIdentifier.h"
 #include"../../Utility/JCommonUtility.h"
+#include"../../Object/GameObject/JGameObject.h"
+#include"../../Object/Resource/Texture/JTexture.h"
 
 namespace JinEngine
 {

@@ -137,7 +137,7 @@ namespace JinEngine
 
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
-		void JAnimationFSMtransition::RegisterJFunc()
+		void JAnimationFSMtransition::RegisterCallOnce()
 		{
 			auto createTransitionLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
 			{

@@ -3,15 +3,17 @@
 #include<vector>
 #include<deque>
 #include<map>
-#include<unordered_map>
-#include"../Core/Pointer/JOwnerPtr.h"
+#include<unordered_map> 
 #include"../Core/JDataType.h"  
+#include"../Core/Pointer/JOwnerPtr.h"
 #include"../Utility/JVector.h"
 
 namespace JinEngine
 {
 	namespace Core
 	{
+
+		//template<typename T>class JUserPtr;
 #pragma region Struct
 		template<class T, class U =
 			typename std::remove_cv<

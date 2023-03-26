@@ -148,11 +148,11 @@ namespace JinEngine
 					{
 						strArr[0] = JCUtil::WstrToU8Str(data->lastObjName);
 						strArr[1] = JCUtil::WstrToU8Str(data->lastObjPath);
-						strArr[2] = Core::JReflectionInfo::Instance().GetTypeInfo(data->typeName)->NameWithOutPrefix();
+						strArr[2] = Core::JReflectionInfo::Instance().GetTypeInfo(data->typeGuid)->NameWithOutPrefix();
 					}
 					else
 					{
-						Core::JIdentifier* obj = Core::GetRawPtr(data->typeName, data->guid);
+						Core::JIdentifier* obj = Core::GetRawPtr(data->typeGuid, data->objectGuid);
 						strArr[0] = JCUtil::WstrToU8Str(obj->GetName());
 						strArr[1] = JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj)->GetPath());
 						strArr[2] = obj->GetTypeInfo().NameWithOutPrefix();

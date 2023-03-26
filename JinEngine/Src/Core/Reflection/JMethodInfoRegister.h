@@ -1,6 +1,6 @@
 #pragma once 
 #include"JMethodInfo.h"    
-//#include"JTypeInfoOption.h"
+//#include"JTypeInfoGuiOption.h"
 //#include"JGuiWidgetInfoHandle.h"
 
 namespace JinEngine

@@ -25,7 +25,7 @@ namespace JinEngine
 		friend class Editor::JWindowDirectory;
 		friend class JResourceManagerImpl; 
 	protected:
-		using GetTypeNameCallable = Core::JStaticCallable<std::string>;
+		using GetTypeInfoCallable = Core::JStaticCallable<Core::JTypeInfo&>;
 		using GetAvailableFormatCallable = Core::JStaticCallable<std::vector<std::wstring>>;
 		using GetFormatIndexCallable = Core::JStaticCallable<uint8, const std::wstring&>; 
 	protected:
@@ -53,17 +53,17 @@ namespace JinEngine
 		class RTypeCommonFunc
 		{
 		private:
-			GetTypeNameCallable* getTypeName;
+			GetTypeInfoCallable* getTypeInfo;
 			GetAvailableFormatCallable* getAvailableFormat;
 			GetFormatIndexCallable* getFormatIndex; 
 		public:
-			RTypeCommonFunc(GetTypeNameCallable& getTypeName,
+			RTypeCommonFunc(GetTypeInfoCallable& getTypeInfo,
 				GetAvailableFormatCallable& getAvailableFormat,
 				GetFormatIndexCallable& getFormatIndex);
 			RTypeCommonFunc() = default;
 			~RTypeCommonFunc();
 		public:
-			std::string CallGetTypeName();
+			Core::JTypeInfo& CallGetTypeInfo();
 			std::vector<std::wstring> CallGetAvailableFormat();
 			uint8 CallFormatIndex(const std::wstring& format);
 		};
@@ -89,7 +89,7 @@ namespace JinEngine
 		//Common 
 		//all resource support
 		static std::vector<std::wstring> CallGetAvailableFormat(const J_RESOURCE_TYPE type);
-		static std::string CallGetTypeName(const J_RESOURCE_TYPE type);
+		static Core::JTypeInfo& CallGetTypeInfo(const J_RESOURCE_TYPE type); 
 		static uint8 CallFormatIndex(const J_RESOURCE_TYPE type, const std::wstring& format);
 		static bool CallIsValidFormat(const J_RESOURCE_TYPE type, const std::wstring& format);
 	protected:	

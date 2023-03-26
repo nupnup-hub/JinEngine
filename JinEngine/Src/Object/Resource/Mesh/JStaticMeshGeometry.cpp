@@ -191,7 +191,7 @@ namespace JinEngine
 			return false;
 		}
 	}
-	void JStaticMeshGeometry::RegisterJFunc()
+	void JStaticMeshGeometry::RegisterCallOnce()
 	{
 		auto defaultC = [](Core::JOwnerPtr<JResourceInitData>initdata) ->JResourceObject*
 		{ 

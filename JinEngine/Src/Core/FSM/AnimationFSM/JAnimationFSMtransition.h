@@ -44,7 +44,7 @@ namespace JinEngine
 			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
 			J_FILE_IO_RESULT LoadData(std::wifstream& stream);
 		private:
-			static void RegisterJFunc();
+			static void RegisterCallOnce();
 		private:
 			JAnimationFSMtransition(const JFSMtransitionInitData& initData);
 			~JAnimationFSMtransition();

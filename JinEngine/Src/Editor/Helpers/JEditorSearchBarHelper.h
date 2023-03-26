@@ -1,6 +1,5 @@
 #pragma once
-#include"JEditorInputBuffHelper.h"
-#include"../../Core/Pointer/JOwnerPtr.h" 
+#include"JEditorInputBuffHelper.h" 
 #include<memory>
 #include<string>
 namespace JinEngine

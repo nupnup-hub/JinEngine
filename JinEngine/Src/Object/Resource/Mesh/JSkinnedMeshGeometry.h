@@ -26,7 +26,7 @@ namespace JinEngine
 	private:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 	private:
-		static void RegisterJFunc();
+		static void RegisterCallOnce();
 	private:
 		JSkinnedMeshGeometry(const JMeshInitData& initdata);
 		~JSkinnedMeshGeometry();

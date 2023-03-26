@@ -67,7 +67,7 @@ namespace JinEngine
 	private:
 		static Core::J_FILE_IO_RESULT StoreObject(JDirectory* dir);
 		static JDirectory* LoadObject(JDirectory* parentDir, const Core::JAssetFileLoadPathData& pathData);
-		static void RegisterJFunc();
+		static void RegisterCallOnce();
 	private:
 		JDirectory(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JDirectory* parentDir);
 		~JDirectory();

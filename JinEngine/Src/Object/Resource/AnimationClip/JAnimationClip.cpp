@@ -80,7 +80,7 @@ namespace JinEngine
 		return GetStaticResourceType();
 	}
 	std::wstring JAnimationClip::GetFormat()const noexcept
-	{
+	{ 
 		return GetAvailableFormat()[GetFormatIndex()];
 	}
 	std::vector<std::wstring> JAnimationClip::GetAvailableFormat()noexcept
@@ -623,7 +623,7 @@ namespace JinEngine
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	void JAnimationClip::RegisterJFunc()
+	void JAnimationClip::RegisterCallOnce()
 	{
 		auto defaultC = [](Core::JOwnerPtr<JResourceInitData>initdata) ->JResourceObject*
 		{
@@ -665,12 +665,12 @@ namespace JinEngine
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JAnimationClip>(format); };
 
-		static GetTypeNameCallable getTypeNameCallable{ &JAnimationClip::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JAnimationClip::StaticTypeInfo };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JAnimationClip::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
 		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SKELETON}, true, false};
-		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+		static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 

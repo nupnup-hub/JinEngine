@@ -8,7 +8,7 @@ namespace JinEngine
 	private:
 		friend class JResourceUserInterface;
 	private:
-		int referenceCount;
+		int referenceCount = 0;
 	protected:
 		virtual ~JReferenceInterface() = default;
 	protected:

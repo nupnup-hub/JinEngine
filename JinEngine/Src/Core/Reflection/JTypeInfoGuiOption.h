@@ -14,7 +14,7 @@ namespace JinEngine
 			J_GUI_OPTION_DISPLAY_PARENT = 1 << 0,
 			J_GUI_OPTION_DISPLAY_PARENT_TO_CHILD = 1 << 1,		//	default is child to parent
 		};
-
+	 
 		//template<typename Type> class JTypeInfoRegister;
 		template<typename Type, typename Field, typename Pointer, Pointer ptr> class JPropertyInfoRegister;
 		template<typename Type, typename Field, typename Pointer, Pointer ptr> class JPropertyExInfoRegister;
@@ -22,7 +22,7 @@ namespace JinEngine
 		template<typename Type, typename GetPointer, GetPointer getPtr>  class JMethodGuiWidgetRegister;
 		class JTypeInfo;
 
-		class JTypeInfoOption
+		class JTypeInfoGuiOption
 		{
 		private:  
 			friend JTypeInfo;
@@ -39,15 +39,15 @@ namespace JinEngine
 			JGuiWidgetInfoHandleBase* GetGuiWidgetInfoHandle(const uint index)const noexcept; 
 			J_GUI_OPTION_FLAG GetGuiWidgetFlag()const noexcept;
 		public:
-			void SetGuiWidgetFlag(const J_GUI_OPTION_FLAG value)noexcept;
+			void SetGuiWidgetFlag(const J_GUI_OPTION_FLAG value)noexcept; 
 		private:
 			void AddGuiWidgetInfoHandle(std::unique_ptr<JGuiWidgetInfoHandleBase>&& handle);
 		private:
-			JTypeInfoOption() = default;
-			~JTypeInfoOption() = default;
+			JTypeInfoGuiOption() = default;
+			~JTypeInfoGuiOption() = default;
 		};
 
-		class JTypeInfoOptionSetting
+		class JTypeInfoGuiOptionSetting
 		{
 		public:
 			static void SetTypeInfoOption(JTypeInfo* typeInfo, const J_GUI_OPTION_FLAG guiOption);

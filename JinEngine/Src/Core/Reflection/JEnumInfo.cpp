@@ -18,6 +18,10 @@ namespace JinEngine
 			auto data = enumElementMap.find(value);
 			return data != enumElementMap.end() ? data->second : "";
 		}
+		size_t JEnumInfo::EnumGuid()const noexcept
+		{
+			return std::hash<std::string>{}(fullName);
+		}
 		int JEnumInfo::EnumValue(const int index)const noexcept
 		{
 			return enumElementVec[index];

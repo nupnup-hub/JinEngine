@@ -114,7 +114,7 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JAnimationClip* clip);
 		static JAnimationClip* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData); 
 		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, JAnimationClipMetadata& metadata);
-		static void RegisterJFunc();
+		static void RegisterCallOnce();
 	private:
 		JAnimationClip(const JAnimationClipInitData& initdata);
 		~JAnimationClip();

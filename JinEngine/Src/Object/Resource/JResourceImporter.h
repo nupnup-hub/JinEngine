@@ -17,8 +17,8 @@ namespace JinEngine
 		template<typename T> class JCreateUsingNew;
 	}
 
-	using ClassifyTypeF = Core::JStaticCallableType<std::vector<J_RESOURCE_TYPE>, const Core::JFileImportHelpData>;
-	using ImportF = Core::JStaticCallableType<std::vector<JResourceObject*>, JDirectory*, const Core::JFileImportHelpData>;
+	using ClassifyResourceTypeF = Core::JStaticCallableType<std::vector<J_RESOURCE_TYPE>, const Core::JFileImportHelpData>;
+	using ImportResourceF = Core::JStaticCallableType<std::vector<JResourceObject*>, JDirectory*, const Core::JFileImportHelpData>;
 
 	class JResourceImporterImpl
 	{
@@ -28,14 +28,14 @@ namespace JinEngine
 		struct FormatInfo
 		{
 		public:
-			std::unique_ptr<ClassifyTypeF::Callable> ClassifyCallable;
-			std::unordered_map<J_RESOURCE_TYPE, ImportF::Callable> ImportCallableMap;
+			std::unique_ptr<ClassifyResourceTypeF::Callable> ClassifyCallable;
+			std::unordered_map<J_RESOURCE_TYPE, ImportResourceF::Callable> ImportCallableMap;
 		};
 	private:
 		std::unordered_map<std::wstring, FormatInfo> formatInfoMap;
 	public:
-		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportF::Ptr ptr)noexcept;
-		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportF::Ptr iptr, ClassifyTypeF::Ptr cptr)noexcept;
+		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportResourceF::Ptr ptr)noexcept;
+		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportResourceF::Ptr iptr, ClassifyResourceTypeF::Ptr cptr)noexcept;
 	public:
 		std::vector<JResourceObject*> ImportResource(JDirectory* dir, const Core::JFileImportHelpData& importPathdata)noexcept;
 	public:

@@ -106,7 +106,7 @@ namespace JinEngine
 		return avatar != nullptr;
 	}
 	bool JSkeletonAsset::IsRegularChildJointIndex(uint8 childIndex, uint8 parentIndex)noexcept
-	{
+	{ 
 		if (childIndex == parentIndex || childIndex < parentIndex)
 			return false;
 
@@ -438,7 +438,7 @@ namespace JinEngine
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	void JSkeletonAsset::RegisterJFunc()
+	void JSkeletonAsset::RegisterCallOnce()
 	{
 		auto defaultC = [](Core::JOwnerPtr<JResourceInitData>initdata) ->JResourceObject*
 		{
@@ -481,12 +481,12 @@ namespace JinEngine
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JSkeletonAsset>(format); };
 
-		static GetTypeNameCallable getTypeNameCallable{ &JSkeletonAsset::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JSkeletonAsset::StaticTypeInfo };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JSkeletonAsset::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
 		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{}, false, false};
-		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+		static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 	}

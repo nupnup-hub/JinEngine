@@ -300,7 +300,7 @@ namespace JinEngine
 
 		return newLightComponent;
 	}
-	void JLight::RegisterJFunc()
+	void JLight::RegisterCallOnce()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
@@ -342,8 +342,7 @@ namespace JinEngine
 				return nullptr;
 		};
 		JCFI<JLight>::Register(defaultC, initC, loadC, copyC);
-
-		static GetTypeNameCallable getTypeNameCallable{ &JLight::TypeName };
+		 
 		static GetTypeInfoCallable getTypeInfoCallable{ &JLight::StaticTypeInfo };
 		bool(*ptr)() = isAvailableoverlapLam;
 		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
@@ -352,7 +351,7 @@ namespace JinEngine
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
 		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeInfoCallable,isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, nullptr};
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);

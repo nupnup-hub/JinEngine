@@ -25,6 +25,7 @@ namespace JinEngine
 			std::string Name()const noexcept;
 			std::string FullName()const noexcept;
 			std::string ElementName(const int value)const noexcept;
+			size_t EnumGuid()const noexcept;
 			int EnumValue(const int index)const noexcept;
 			uint GetEnumCount()const noexcept;
 			EnumNameMap GetEnumNameMap()const noexcept;

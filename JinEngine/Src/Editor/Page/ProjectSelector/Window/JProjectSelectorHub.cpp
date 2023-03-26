@@ -210,11 +210,11 @@ namespace JinEngine
 		}
 		void JProjectSelectorHub::UpdateWindow()
 		{
-			const ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGui::SetNextWindowSize(viewport->WorkSize);
-			ImGui::SetNextWindowPos(viewport->WorkPos);
+			const ImGuiViewport* viewport = ImGui::GetMainViewport(); 
+			ImGui::SetNextWindowSize(viewport->WorkSize, ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowPos(viewport->WorkPos, ImGuiCond_FirstUseEver);
 
-			int flag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize;
+			int flag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
 			EnterWindow(flag);
 			if (IsActivated())
 			{

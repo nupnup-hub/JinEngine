@@ -17,22 +17,22 @@ namespace JinEngine
 	{}
 	JResourceObjectInterface::RTypeHint::~RTypeHint() {}
 
-	JResourceObjectInterface::RTypeCommonFunc::RTypeCommonFunc(JResourceObjectInterface::GetTypeNameCallable& getTypeName,
+	JResourceObjectInterface::RTypeCommonFunc::RTypeCommonFunc(JResourceObjectInterface::GetTypeInfoCallable& getTypeInfo,
 		JResourceObjectInterface::GetAvailableFormatCallable& getAvailableFormat,
 		JResourceObjectInterface::GetFormatIndexCallable& getFormatIndex)
-		: getTypeName(&getTypeName),
+		: getTypeInfo(&getTypeInfo),
 		getAvailableFormat(&getAvailableFormat),
 		getFormatIndex(&getFormatIndex)
 	{  }
 	JResourceObjectInterface::RTypeCommonFunc::~RTypeCommonFunc()
 	{
-		getTypeName = nullptr;
+		getTypeInfo = nullptr;
 		getAvailableFormat = nullptr;
 		getFormatIndex = nullptr;
 	}
-	std::string JResourceObjectInterface::RTypeCommonFunc::CallGetTypeName()
+	Core::JTypeInfo& JResourceObjectInterface::RTypeCommonFunc::CallGetTypeInfo()
 	{
-		return (*getTypeName)(nullptr);
+		return (*getTypeInfo)(nullptr);
 	}
 	std::vector<std::wstring> JResourceObjectInterface::RTypeCommonFunc::CallGetAvailableFormat()
 	{
@@ -94,9 +94,9 @@ namespace JinEngine
 	{
 		return RTypeInfo::Instance().rFuncStorage[(int)type].CallGetAvailableFormat();
 	}
-	std::string JResourceObjectInterface::CallGetTypeName(const J_RESOURCE_TYPE type)
+	Core::JTypeInfo& JResourceObjectInterface::CallGetTypeInfo(const J_RESOURCE_TYPE type)
 	{
-		return RTypeInfo::Instance().rFuncStorage[(int)type].CallGetTypeName();
+		return RTypeInfo::Instance().rFuncStorage[(int)type].CallGetTypeInfo();
 	}
 	uint8 JResourceObjectInterface::CallFormatIndex(const J_RESOURCE_TYPE type, const std::wstring& format)
 	{
@@ -207,7 +207,7 @@ namespace JinEngine
 	}
 	bool JResourceObjectInterface::NameOrder(const JResourceObjectInterface::RTypeHint& a, const JResourceObjectInterface::RTypeHint& b)noexcept
 	{
-		return RTypeInfo::Instance().rFuncStorage[(int)a.thisType].CallGetTypeName() < RTypeInfo::Instance().rFuncStorage[(int)b.thisType].CallGetTypeName();
+		return RTypeInfo::Instance().rFuncStorage[(int)a.thisType].CallGetTypeInfo().Name() < RTypeInfo::Instance().rFuncStorage[(int)b.thisType].CallGetTypeInfo().Name();
 	}
 	void JResourceObjectInterface::RegisterTypeInfo(const JResourceObjectInterface::RTypeHint& rTypeHint, const JResourceObjectInterface::RTypeCommonFunc& rTypeUtil, const JResourceObjectInterface::RTypeInterfaceFunc& rTypeIFunc)
 	{

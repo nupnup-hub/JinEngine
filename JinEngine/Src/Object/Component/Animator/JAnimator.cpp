@@ -11,6 +11,7 @@
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Core/File/JFileConstant.h"
+#include"../../../Core/Pointer/JOwnerPtr.h"
 #include"../../../Graphic/FrameResource/JAnimationConstants.h"
 #include<fstream>
 
@@ -214,7 +215,7 @@ namespace JinEngine
 			newAnimator->SetSkeletonAsset(Core::GetUserPtr<JSkeletonAsset>(skeletonAsset));
 		return newAnimator;
 	}
-	void JAnimator::RegisterJFunc()
+	void JAnimator::RegisterCallOnce()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
@@ -256,8 +257,7 @@ namespace JinEngine
 				return nullptr;
 		};
 		JCFI<JAnimator>::Register(defaultC, initC, loadC, copyC);
-
-		static GetTypeNameCallable getTypeNameCallable{ &JAnimator::TypeName };
+		 
 		static GetTypeInfoCallable getTypeInfoCallable{ &JAnimator::StaticTypeInfo };
 		bool(*ptr)() = isAvailableoverlapLam;
 		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
@@ -266,7 +266,7 @@ namespace JinEngine
 		//static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
 		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable, isAvailableOverlapCallable };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeInfoCallable, isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ nullptr, nullptr };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);

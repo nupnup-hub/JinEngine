@@ -92,7 +92,7 @@ namespace JinEngine
 		struct JEditorOpenPageEvStruct : public JEditorEvStruct
 		{
 		public:
-			const std::string typeName;
+			const size_t typeGuid;
 			const size_t openSeletedGuid;
 			const bool hasOpenSeleted = false;
 		public:

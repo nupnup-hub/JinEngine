@@ -22,7 +22,7 @@ namespace JinEngine
 	static auto isAvailableoverlapLam = []() {return false; };
 
 	J_COMPONENT_TYPE JRenderItem::GetComponentType()const noexcept
-	{
+	{ 
 		return GetStaticComponentType();
 	}
 	Core::JUserPtr<JMeshGeometry> JRenderItem::GetMesh()const noexcept
@@ -374,7 +374,7 @@ namespace JinEngine
 		}
 		return newRenderItem;
 	}
-	void JRenderItem::RegisterJFunc()
+	void JRenderItem::RegisterCallOnce()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
@@ -416,8 +416,7 @@ namespace JinEngine
 				return nullptr;
 		};
 		JCFI<JRenderItem>::Register(defaultC, initC, loadC, copyC);
-
-		static GetTypeNameCallable getTypeNameCallable{ &JRenderItem::TypeName };
+		 
 		static GetTypeInfoCallable getTypeInfoCallable{ &JRenderItem::StaticTypeInfo };
 		bool(*ptr)() = isAvailableoverlapLam;
 		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
@@ -449,7 +448,7 @@ namespace JinEngine
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameDirtyLam };
 		static SetFrameOffsetCallable setFrameOffsetCallable{ setFrameOffsetLam };
 		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true, true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeInfoCallable,isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, &setFrameOffsetCallable };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);

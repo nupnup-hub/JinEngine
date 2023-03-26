@@ -289,7 +289,7 @@ namespace JinEngine
 		newTransform->SetFrameDirty();
 		return newTransform;
 	}
-	void JTransform::RegisterJFunc()
+	void JTransform::RegisterCallOnce()
 	{
 		auto defaultC = [](JGameObject* owner) -> JComponent*
 		{
@@ -335,8 +335,7 @@ namespace JinEngine
 				return nullptr;
 		};
 		JCFI<JTransform>::Register(defaultC, initC, loadC, copyC);
-
-		static GetTypeNameCallable getTypeNameCallable{ &JTransform::TypeName };
+		 
 		static GetTypeInfoCallable getTypeInfoCallable{ &JTransform::StaticTypeInfo };
 		bool(*ptr)() = isAvailableoverlapLam;
 		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
@@ -345,7 +344,7 @@ namespace JinEngine
 		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
 		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{ getTypeNameCallable, getTypeInfoCallable,isAvailableOverlapCallable };
+		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeInfoCallable,isAvailableOverlapCallable };
 		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, nullptr };
 
 		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);

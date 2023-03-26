@@ -99,7 +99,7 @@ namespace JinEngine
 			};
 
 			static bool IsEditableObject(Core::JIdentifier* obj)
-			{
+			{  
 				if (obj->GetTypeInfo().IsChildOf<JObject>() && !static_cast<JObject*>(obj)->HasFlag(OBJECT_FLAG_UNEDITABLE))
 					return true;
 				else if (obj->GetTypeInfo().IsChildOf<Core::JFSMInterface>())
@@ -1471,7 +1471,7 @@ namespace JinEngine
 					const ImGuiTableColumnFlags_ columnDefaultFlag = ImGuiTableColumnFlags_WidthStretch;
 
 					Core::JTypeInfo* typeInfo = &ValueType::StaticTypeInfo();
-					Core::JTypeInfoOption* option = typeInfo->GetOption();
+					Core::JTypeInfoGuiOption* option = typeInfo->GetOption();
 					uint rowMax = containerCount;
 					uint columnMax = option->GetGuiWidgetInfoHandleCount();
 
@@ -1663,11 +1663,11 @@ namespace JinEngine
 					break;
 				}
 				case J_GUI_WIDGET_SELECTOR:
-				{
+				{  
 					Core::JTypeInfo* typeinfo = nullptr;
 					//if success isA casting
 					//exe downcast
-					typeinfo = Core::JReflectionInfo::Instance().FindTypeInfo(pHint.valueTypeFullName);
+					typeinfo = Core::JReflectionInfo::Instance().GetTypeInfo(pHint.valueTypeFullName);
 					if (typeinfo != nullptr)
 					{
 						if (typeinfo->IsA<JAnimationClip>())
@@ -1757,7 +1757,7 @@ namespace JinEngine
 
 					//if success isA casting
 					//exe downcast
-					typeinfo = Core::JReflectionInfo::Instance().FindTypeInfo(pHint.valueTypeFullName);
+					typeinfo = Core::JReflectionInfo::Instance().GetTypeInfo(pHint.valueTypeFullName);
 					if (typeinfo != nullptr)
 					{
 						if (typeinfo->IsA<JAnimationClip>())
@@ -1821,7 +1821,7 @@ namespace JinEngine
 				if (obj == nullptr)
 					return;
 
-				Core::JTypeInfoOption* typeOption = typeInfo->GetOption();
+				Core::JTypeInfoGuiOption* typeOption = typeInfo->GetOption();
 				const bool canDisplayParent = userData->allowDisplayParent && Core::HasSQValueEnum(typeOption->GetGuiWidgetFlag(), Core::J_GUI_OPTION_DISPLAY_PARENT);
 				const bool isParentToChild = Core::HasSQValueEnum(typeOption->GetGuiWidgetFlag(), Core::J_GUI_OPTION_DISPLAY_PARENT_TO_CHILD);
 				if (canDisplayParent)
@@ -1859,7 +1859,7 @@ namespace JinEngine
 			}
 			static void SettingUserData(Core::JIdentifier* obj, Core::JTypeInfo* typeInfo, UserData* userData)
 			{
-				Core::JTypeInfoOption* typeOption = typeInfo->GetOption();
+				Core::JTypeInfoGuiOption* typeOption = typeInfo->GetOption();
 				const uint widgetHandleCount = typeOption->GetGuiWidgetInfoHandleCount();
 				for (uint i = 0; i < widgetHandleCount; ++i)
 				{

@@ -107,7 +107,7 @@ namespace JinEngine
 
 		JEditorOpenPageEvStruct::JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> openSelected)
 			:JEditorEvStruct(pageType),
-			typeName(openSelected.IsValid() ? openSelected->GetTypeInfo().Name() : ""),
+			typeGuid(openSelected.IsValid() ? openSelected->GetTypeInfo().TypeGuid() : 0),
 			openSeletedGuid(openSelected.IsValid() ? openSelected->GetGuid() : 0),
 			hasOpenSeleted(openSelected.IsValid())
 		{}
@@ -121,7 +121,7 @@ namespace JinEngine
 		}
 		Core::JUserPtr<Core::JIdentifier> JEditorOpenPageEvStruct::GetOpenSeleted()const noexcept
 		{
-			return  hasOpenSeleted ? Core::GetUserPtr(typeName, openSeletedGuid) : Core::JUserPtr<Core::JIdentifier>();
+			return  hasOpenSeleted ? Core::GetUserPtr(typeGuid, openSeletedGuid) : Core::JUserPtr<Core::JIdentifier>();
 		}
 
 		JEditorClosePageEvStruct::JEditorClosePageEvStruct(const J_EDITOR_PAGE_TYPE pageType)

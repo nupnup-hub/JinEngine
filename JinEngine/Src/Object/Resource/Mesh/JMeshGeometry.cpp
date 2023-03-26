@@ -578,7 +578,7 @@ namespace JinEngine
 		else
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
-	void JMeshGeometry::RegisterJFunc()
+	void JMeshGeometry::RegisterCallOnce()
 	{
 		auto loadC = [](JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)-> JResourceObject*
 		{
@@ -587,12 +587,12 @@ namespace JinEngine
 		JRFI<JMeshGeometry>::Register(nullptr, loadC, nullptr);
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JMeshGeometry>(format); };
-		static GetTypeNameCallable getTypeNameCallable{ &JMeshGeometry::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JMeshGeometry::StaticTypeInfo };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JMeshGeometry::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
 		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::MATERIAL, J_RESOURCE_TYPE::SKELETON}, true, false };
-		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+		static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, RTypeInterfaceFunc{});
 
@@ -729,7 +729,7 @@ namespace JinEngine
 	}
 	JMeshGeometry::JMeshGeometry(const JMeshInitData& initdata)
 		: JMeshInterface(initdata)
-	{}
+	{ }
 	JMeshGeometry::~JMeshGeometry()
 	{
 

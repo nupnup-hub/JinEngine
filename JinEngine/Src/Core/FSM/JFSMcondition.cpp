@@ -93,7 +93,7 @@ namespace JinEngine
 		{
 			return ownerInterface->RemoveType(this);
 		}
-		void JFSMcondition::RegisterJFunc()
+		void JFSMcondition::RegisterCallOnce()
 		{
 			auto createCondLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
 			{

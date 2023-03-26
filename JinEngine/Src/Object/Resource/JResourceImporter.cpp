@@ -1,10 +1,11 @@
 #include"JResourceImporter.h"
 #include"../JObject.h" 
 #include"../../Core/File/JFilePathData.h"
+#include"../../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
-	void JResourceImporterImpl::AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportF::Ptr ptr)noexcept
+	void JResourceImporterImpl::AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportResourceF::Ptr ptr)noexcept
 	{
 		auto data = formatInfoMap.find(format);
 		if (data == formatInfoMap.end())
@@ -13,9 +14,9 @@ namespace JinEngine
 			data = formatInfoMap.find(format);
 		}
 		if (data->second.ImportCallableMap.find(rType) == data->second.ImportCallableMap.end())
-			data->second.ImportCallableMap.emplace(rType, ImportF::Callable{ ptr });
+			data->second.ImportCallableMap.emplace(rType, ImportResourceF::Callable{ ptr });
 	}
-	void JResourceImporterImpl::AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportF::Ptr iptr, ClassifyTypeF::Ptr cptr)noexcept
+	void JResourceImporterImpl::AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportResourceF::Ptr iptr, ClassifyResourceTypeF::Ptr cptr)noexcept
 	{
 		auto data = formatInfoMap.find(format);
 		if (data == formatInfoMap.end())
@@ -24,10 +25,10 @@ namespace JinEngine
 			data = formatInfoMap.find(format);
 		}
 		if (data->second.ImportCallableMap.find(rType) == data->second.ImportCallableMap.end())
-			data->second.ImportCallableMap.emplace(rType, ImportF::Callable{ iptr });
+			data->second.ImportCallableMap.emplace(rType, ImportResourceF::Callable{ iptr });
 
 		if (data->second.ClassifyCallable == nullptr)
-			data->second.ClassifyCallable = std::make_unique<ClassifyTypeF::Callable>(cptr);
+			data->second.ClassifyCallable = std::make_unique<ClassifyResourceTypeF::Callable>(cptr);
 	}
 	std::vector<JResourceObject*> JResourceImporterImpl::ImportResource(JDirectory* dir, const Core::JFileImportHelpData& importPathdata)noexcept
 	{

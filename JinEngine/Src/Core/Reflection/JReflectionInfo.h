@@ -6,6 +6,11 @@
 
 namespace JinEngine
 { 
+	namespace Application
+	{
+		class JApplication;
+	}
+
 	namespace Core
 	{
 		class JTypeInfo;
@@ -14,11 +19,13 @@ namespace JinEngine
 		class JReflectionInfoImpl
 		{
 		private:
+			friend class Application::JApplication;
+		private:
 			using TypeVec = std::vector<JTypeInfo*>;
-			using TypeNameMap = std::unordered_map<std::string, JTypeInfo*>; 
+			using TypeNameMap = std::unordered_map<size_t, JTypeInfo*>; 
 		private:
 			using EnumVec = std::vector<JEnumInfo*>;
-			using EnumNameMap = std::unordered_map<std::string, JEnumInfo*>;
+			using EnumNameMap = std::unordered_map<size_t, JEnumInfo*>;
 		private:
 			struct JTypeData
 			{
@@ -34,22 +41,26 @@ namespace JinEngine
 			};
 		private:
 			JTypeData jType;
-			JEnumData jEnum;
+			JEnumData jEnum; 
 		public:  
 			void AddType(JTypeInfo* newType);
 			void AddEnum(JEnumInfo* newEnum);
-			//Get typeInfo by name				.. typeInfo default key is name	because all typeInfo has typename
-			JTypeInfo* GetTypeInfo(const std::string& name)const noexcept; 
+		public:
+			//Get typeInfo by name			.. typeInfo default key is name	because all typeInfo has typename
+			JTypeInfo* GetTypeInfo(const std::string& fullname)const noexcept; 
+			JTypeInfo* GetTypeInfo(const size_t typeGuid)const noexcept;
 			//Get enumInfo by fullname			.. enumInfo default key is fullname( typeid(T).name()) because can't declare typename into enumspace
 			JEnumInfo* GetEnumInfo(const std::string& fullname)const noexcept;
-			//Find typeInfo by fullname
-			JTypeInfo* FindTypeInfo(const std::string& fullname)const noexcept;
-			//Find enumInfo by name
-			JEnumInfo* FindEnumInfo(const std::string& name)const noexcept;
+			JEnumInfo* GetEnumInfo(const size_t enumGuid)const noexcept;
+			std::vector<JTypeInfo*> GetAllTypeInfo()const noexcept;
 			std::vector<JTypeInfo*> GetDerivedTypeInfo(const JTypeInfo& baseType)const noexcept;
 		public:
 			//Debug
 			void SearchInstance();
+		private:
+			//it is valid once
+			void Initialize();
+			void Clear(); 
 		};
 		using JReflectionInfo = JSingletonHolder<JReflectionInfoImpl>;
 	}

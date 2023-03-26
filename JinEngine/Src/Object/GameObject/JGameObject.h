@@ -82,7 +82,7 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT CallStoreGameObject(std::wofstream& stream) final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JGameObject* gameObject);
 		static JGameObject* LoadObject(std::wifstream& stream, JGameObject* parent, JScene* owenerScene);
-		static void RegisterJFunc();
+		static void RegisterCallOnce();
 	private:
 		/*
 		* JGameObject Register Parent and initialize JTransform

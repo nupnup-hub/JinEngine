@@ -300,7 +300,7 @@ namespace JinEngine
 				SetSkeletonAsset(nullptr);
 		}
 	}
-	void JSkinnedMeshGeometry::RegisterJFunc()
+	void JSkinnedMeshGeometry::RegisterCallOnce()
 	{
 		auto defaultC = [](Core::JOwnerPtr<JResourceInitData>initdata) ->JResourceObject*
 		{

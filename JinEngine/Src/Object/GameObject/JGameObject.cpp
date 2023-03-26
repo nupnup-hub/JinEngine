@@ -423,7 +423,7 @@ namespace JinEngine
 
 		return newGameObject;
 	}
-	void JGameObject::RegisterJFunc()
+	void JGameObject::RegisterCallOnce()
 	{
 		auto defaultC = [](JGameObject* parent) -> JGameObject*
 		{

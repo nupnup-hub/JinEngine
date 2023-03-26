@@ -49,7 +49,7 @@ namespace JinEngine
 			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
 			static JAnimationFSMdiagram* LoadData(std::wifstream& stream, JFSMdiagramOwnerInterface* fsmOwner);
 		private:
-			static void RegisterJFunc();
+			static void RegisterCallOnce();
 		private:
 			JAnimationFSMdiagram(const JFSMdiagramInitData& initData);
 			~JAnimationFSMdiagram();

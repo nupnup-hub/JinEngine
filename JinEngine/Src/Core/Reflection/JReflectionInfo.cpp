@@ -2,8 +2,13 @@
 #include"JTypeInfo.h"
 #include"JEnumInfo.h"
 #include"../JDataType.h"
+#include"../../Object/GameObject/JGameObject.h"
+#include"../../Object/Component/JComponent.h"
+#include"../../Object/Resource/JResourceObject.h"
 #include"../../Utility/JCommonUtility.h"
 #include<windows.h>
+#include<set>
+
 namespace JinEngine
 {
 	namespace Core
@@ -11,45 +16,42 @@ namespace JinEngine
 		void JReflectionInfoImpl::AddType(JTypeInfo* newType)
 		{
 			assert(newType != nullptr);
+			if (GetTypeInfo(newType->TypeGuid()) != nullptr)
+				return;
+
 			jType.typeVec.push_back(newType);
-			jType.typeNameMap.emplace(newType->Name(), newType); 
+			jType.typeNameMap.emplace(newType->TypeGuid(), newType); 
 		}
 		void JReflectionInfoImpl::AddEnum(JEnumInfo* newEnum)
 		{
 			assert(newEnum != nullptr);
+			if (GetEnumInfo(newEnum->EnumGuid()) != nullptr)
+				return;
+
 			jEnum.enumVec.push_back(newEnum);
-			jEnum.enumNameMap.emplace(newEnum->FullName(), newEnum); 
+			jEnum.enumNameMap.emplace(newEnum->EnumGuid(), newEnum);
 		}
-		JTypeInfo* JReflectionInfoImpl::GetTypeInfo(const std::string& name)const noexcept
+		JTypeInfo* JReflectionInfoImpl::GetTypeInfo(const std::string& fullname)const noexcept
 		{
-			auto data = jType.typeNameMap.find(name);
-			return data != jType.typeNameMap.end() ? data->second : nullptr;
+			return GetTypeInfo(std::hash<std::string>{}(fullname));
 		} 
+		JTypeInfo* JReflectionInfoImpl::GetTypeInfo(const size_t typeGuid)const noexcept
+		{
+			auto data = jType.typeNameMap.find(typeGuid);
+			return data != jType.typeNameMap.end() ? data->second : nullptr;
+		}
 		JEnumInfo* JReflectionInfoImpl::GetEnumInfo(const std::string& fullname)const noexcept
 		{
-			auto data = jEnum.enumNameMap.find(fullname);
+			return GetEnumInfo(std::hash<std::string>{}(fullname));
+		}
+		JEnumInfo* JReflectionInfoImpl::GetEnumInfo(const size_t enumGuid)const noexcept
+		{
+			auto data = jEnum.enumNameMap.find(enumGuid);
 			return data != jEnum.enumNameMap.end() ? data->second : nullptr;
 		}
-		JTypeInfo* JReflectionInfoImpl::FindTypeInfo(const std::string& fullname)const noexcept
+		std::vector<JTypeInfo*> JReflectionInfoImpl::GetAllTypeInfo()const noexcept
 		{
-			const uint typeCount = (uint)jType.typeVec.size();
-			for (uint i = 0; i < typeCount; ++i)
-			{
-				if (jType.typeVec[i]->FullName() == fullname)
-					return jType.typeVec[i];
-			}
-			return nullptr;
-		}
-		JEnumInfo* JReflectionInfoImpl::FindEnumInfo(const std::string& name)const noexcept
-		{
-			const uint enumCount = (uint)jEnum.enumVec.size();
-			for (uint i = 0; i < enumCount; ++i)
-			{
-				if (jEnum.enumVec[i]->Name() == name)
-					return jEnum.enumVec[i];
-			}
-			return nullptr;
-
+			return jType.typeVec;
 		}
 		std::vector<JTypeInfo*> JReflectionInfoImpl::GetDerivedTypeInfo(const JTypeInfo& baseType)const noexcept
 		{
@@ -69,12 +71,68 @@ namespace JinEngine
 		{
 			const uint typeCount = (uint)jType.typeVec.size();
 			for (uint i = 0; i < typeCount; ++i)
-			{
+			{ 
 				if (jType.typeVec[i]->instanceData != nullptr && jType.typeVec[i]->instanceData->classInstanceVec.size() > 0)
 				{
 					MessageBox(0, std::to_wstring(jType.typeVec[i]->instanceData->classInstanceVec.size()).c_str(), JCUtil::StrToWstr(jType.typeVec[i]->Name()).c_str(), 0);
 				}
 			}
+		}
+		void JReflectionInfoImpl::Initialize()
+		{
+			static bool callOnce = false;
+			if (callOnce)
+				return;
+
+			std::vector<JTypeInfo*> typeVec = GetAllTypeInfo(); 
+			for (auto& data : typeVec)
+				data->ExecuteTypeCallOnece();
+			 
+			std::set<size_t> allocatedType;
+			JGameObject::StaticTypeInfo().RegisterAllocation();
+			allocatedType.emplace(JGameObject::StaticTypeInfo().TypeGuid());
+
+			auto componentTypeVec = GetDerivedTypeInfo(JComponent::StaticTypeInfo());
+			for (auto& data : componentTypeVec)
+			{
+				if (!data->IsAbstractType())
+				{
+					data->RegisterAllocation();
+					allocatedType.emplace(data->TypeGuid());
+				}
+			}
+
+			auto rTypeHintVec = JResourceObject::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
+			for (auto& hint : rTypeHintVec)
+			{ 
+				Core::JTypeInfo& typeInfo = JResourceObject::CallGetTypeInfo(hint.thisType);
+				auto derivedVec = GetDerivedTypeInfo(typeInfo);
+				for (auto& data : derivedVec)
+				{
+					if (!data->IsAbstractType())
+					{
+						data->RegisterAllocation();
+						allocatedType.emplace(data->TypeGuid());
+					}
+				}
+			}
+
+			auto restTypeVec = GetDerivedTypeInfo(JIdentifier::StaticTypeInfo());
+			for (auto& data : restTypeVec)
+			{
+				if (!data->IsAbstractType() && allocatedType.find(data->TypeGuid()) == allocatedType.end())
+				{
+					data->RegisterAllocation();
+					allocatedType.emplace(data->TypeGuid());
+				}
+			}
+			callOnce = true;
+		}
+		void JReflectionInfoImpl::Clear()
+		{
+			auto typeVec = GetDerivedTypeInfo(JIdentifier::StaticTypeInfo());
+			for (auto& data : typeVec)
+				data->DeRegisterAllocation();
 		}
 	}
 }

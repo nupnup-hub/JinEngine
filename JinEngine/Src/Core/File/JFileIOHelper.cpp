@@ -191,14 +191,14 @@ namespace JinEngine
 			stream << L"HasObject: " << true << '\n';
 			stream << L"Name: " << iden->GetName() << '\n';
 			stream << guiSymbol << iden->GetGuid() << '\n';
-			stream << L"TypeName: " << JCUtil::StrToWstr(iden->GetTypeInfo().Name()) << '\n';
+			stream << L"TypeGuid: " << iden->GetTypeInfo().TypeGuid() << '\n';
 		}
 		else
 		{
 			stream << L"HasObject: " << false << '\n';
 			stream << L"Name: " << " " << L"NONE" << '\n';
 			stream << guiSymbol << 0 << '\n';
-			stream << L"TypeName: " << " " << L"NONE" << '\n';
+			stream << L"TypeGuid: " << " " << 0 << '\n';
 		}
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -210,15 +210,15 @@ namespace JinEngine
 		std::wstring guide;
 		std::wstring name;
 		bool hasObject;
-		size_t guid;
-		std::wstring typeWName;
+		size_t objGuid;
+		size_t typeGuid;
 		stream >> guide >> hasObject;
 		stream >> guide; std::getline(stream, name);
-		stream >> guide >> guid;
-		stream >> guide >> typeWName;
+		stream >> guide >> objGuid;
+		stream >> guide >> typeGuid;
 
 		if (hasObject)
-			return Core::GetRawPtr(JCUtil::WstrToU8Str(typeWName), guid);
+			return Core::GetRawPtr(typeGuid, objGuid);
 		else
 			return nullptr;
 	}

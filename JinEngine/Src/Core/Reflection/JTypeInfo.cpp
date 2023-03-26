@@ -1,15 +1,15 @@
 #include"JTypeInfo.h"    
 #include"JPropertyInfo.h"    
-#include"JMethodInfo.h"
+#include"JMethodInfo.h"  
 #include"../Pointer/JOwnerPtr.h"
 #include"../../Object/JObject.h"
-
+ 
 namespace JinEngine
 {
 	namespace Core
-	{
+	{  
 		std::string JTypeInfo::Name()const noexcept
-		{
+		{ 
 			return name;
 		}
 		std::string JTypeInfo::NameWithOutPrefix()const noexcept
@@ -23,6 +23,10 @@ namespace JinEngine
 		{
 			return fullName;
 		} 
+		size_t JTypeInfo::TypeGuid()const noexcept
+		{
+			return std::hash<std::string>{}(fullName);
+		}
 
 		const PropertyVec JTypeInfo::GetPropertyVec()const noexcept
 		{ 
@@ -56,13 +60,57 @@ namespace JinEngine
 			else
 				return nullptr;
 		}
-		JTypeInfoOption* JTypeInfo::GetOption() noexcept
-		{
+		JTypeInfoGuiOption* JTypeInfo::GetOption() noexcept
+		{  
 			return &option;
 		}
 		uint JTypeInfo::GetInstanceCount()const noexcept
 		{
 			return instanceData != nullptr ? (uint)instanceData->classInstanceVec.size() : 0;
+		}
+		JTypeInstance* JTypeInfo::GetInstanceRawPtr(IdentifierType iden)noexcept
+		{
+			if (instanceData == nullptr)
+				return nullptr;
+
+			auto data = instanceData->classInstanceMap.find(iden);
+			return data != instanceData->classInstanceMap.end() ? data->second.Get() : nullptr;
+		}
+		JUserPtr<JTypeInstance> JTypeInfo::GetInstanceUserPtr(IdentifierType iden)noexcept
+		{
+			if (instanceData == nullptr)
+				return JUserPtr<JTypeInstance>{};
+
+			auto data = instanceData->classInstanceMap.find(iden);
+			return data != instanceData->classInstanceMap.end() ? JUserPtr<JTypeInstance>{data->second } : JUserPtr<JTypeInstance>{};
+		}
+	 	JAllocationInterface* JTypeInfo::GetAllocationInterface()noexcept
+		{ 
+			return allocationInterface.get();
+		}
+		bool JTypeInfo::SetAllocationCreator(std::unique_ptr <JTypeAllocationCreatorInterface>&& newCreator)noexcept
+		{
+			if (isRegisteredAllocation || newCreator == nullptr)
+				return false;
+
+			allocationCreator = std::move(newCreator);
+			return true;
+		}
+		bool JTypeInfo::SetAllocationOption(std::unique_ptr<JTypeAllocationOption>&& newOption)noexcept
+		{
+			if (isRegisteredAllocation || allocationInterface != nullptr)
+				return false;
+
+			allocationOption = std::move(newOption);
+			return true;
+		}
+		bool JTypeInfo::IsAbstractType()const noexcept
+		{
+			return isAbstractType;
+		}
+		bool JTypeInfo::IsLeafType()const noexcept
+		{ 
+			return isLeafType;
 		}
 		bool JTypeInfo::IsA(const JTypeInfo& tar)const noexcept
 		{
@@ -82,22 +130,6 @@ namespace JinEngine
 					return true;
 			}
 			return false;
-		}
-		JTypeInstance* JTypeInfo::GetInstanceRawPtr(IdentifierType iden)noexcept
-		{
-			if (instanceData == nullptr)
-				return nullptr;
-
-			auto data = instanceData->classInstanceMap.find(iden);
-			return data != instanceData->classInstanceMap.end() ? data->second.Get() : nullptr;
-		}
-		JUserPtr<JTypeInstance> JTypeInfo::GetInstanceUserPtr(IdentifierType iden)noexcept
-		{
-			if (instanceData == nullptr)
-				return JUserPtr<JTypeInstance>{};
-
-			auto data = instanceData->classInstanceMap.find(iden);
-			return data != instanceData->classInstanceMap.end() ? JUserPtr<JTypeInstance>{data->second } : JUserPtr<JTypeInstance>{};
 		}
 		bool JTypeInfo::AddInstance(IdentifierType iden, JOwnerPtr<JTypeInstance> ptr)noexcept
 		{
@@ -183,16 +215,62 @@ namespace JinEngine
 			else
 				return false;
 		}
+		void JTypeInfo::ExecuteTypeCallOnece()
+		{
+			callOncePtr();
+		}
+		void JTypeInfo::RegisterEngineDefaultAllocationOption()
+		{
+			if (allocationInterface != nullptr || allocationOption != nullptr)
+				return;
 
+			if (isRegisteredAllocation)
+				return;
+
+			J_ALLOCATION_TYPE type;
+			uint blockCount = 10000;
+			uint reservePageCount;
+			size_t pageSize;
+			JAllocationInterface::CalculatePageFitAllocationData(dataSize, blockCount, pageSize, reservePageCount);
+ 
+			if (dataSize >= 1 << 20)
+				allocationOption = std::make_unique<JTypeAllocationOption>(J_ALLOCATION_TYPE::HEAP, dataSize, blockCount);
+			else
+			{
+				//virtual test
+				allocationOption = std::make_unique<JTypeAllocationOption>(J_ALLOCATION_TYPE::HEAP, dataSize, blockCount);
+				//allocationOption = std::make_unique<JTypeAllocationOption>(J_ALLOCATION_TYPE::HEAP, dataSize, blockCount);
+			}		 
+		}
+		void JTypeInfo::RegisterAllocation()
+		{ 
+			if (!isRegisteredAllocation)
+				RegisterEngineDefaultAllocationOption();
+
+			isRegisteredAllocation = true;
+			bool useDefaultAllocation = allocationOption->allocationType == J_ALLOCATION_TYPE::DEFAULT;
+			if (allocationInterface != nullptr || useDefaultAllocation)
+				return;
+
+			allocationInterface = allocationCreator->CreateAlloc(allocationOption.get());
+			allocationInterface->Initialize(allocationOption->allocDataCount, allocationOption->dataSize);
+		}
+		void JTypeInfo::DeRegisterAllocation()
+		{
+			if (allocationInterface != nullptr)
+				allocationInterface->Release();
+			allocationInterface = nullptr;
+			isRegisteredAllocation = false;
+		}
 		JTypeInstanceSearchHint::JTypeInstanceSearchHint()
-			:typeName("Invalid"), guid(0), isValid(false)
+			:typeGuid(0), objectGuid(0), isValid(false)
 		{}
 		JTypeInstanceSearchHint::JTypeInstanceSearchHint(const JTypeInfo& info, const size_t guid)
-			:typeName(info.Name()), guid(guid), isValid(true)
+			: typeGuid(info.TypeGuid()), objectGuid(guid), isValid(true)
 		{}
 		JTypeInstanceSearchHint::JTypeInstanceSearchHint(Core::JUserPtr<JIdentifier> iden)
-			: typeName(iden.IsValid() ? iden->GetTypeInfo().Name() : "InValid"), 
-			guid(iden.IsValid() ? iden->GetGuid() : 0),
+			: typeGuid(iden.IsValid() ? iden->GetTypeInfo().TypeGuid() : 0),
+			objectGuid(iden.IsValid() ? iden->GetGuid() : 0),
 			isValid(iden.IsValid() ? true : false)
 		{}
 	}

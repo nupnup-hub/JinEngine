@@ -108,7 +108,7 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT CallStoreResource()final;
 		static Core::J_FILE_IO_RESULT StoreObject(JAnimationController* animationCont);
 		static JAnimationController* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
-		static void RegisterJFunc();
+		static void RegisterCallOnce();
 	private:
 		JAnimationController(const JAnimationControllerInitData& initdata);
 		~JAnimationController();

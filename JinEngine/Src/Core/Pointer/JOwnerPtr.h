@@ -1,9 +1,9 @@
 #pragma once 
-#include "../JDataType.h"
+#include "../JDataType.h"  
 #include<type_traits>  
 
 namespace JinEngine
-{  
+{
 	namespace Core
 	{
 		class JIdentifier;
@@ -159,7 +159,7 @@ namespace JinEngine
 			{
 				if constexpr (!std::is_base_of_v<JIdentifier, BaseType> || !std::is_base_of_v<JIdentifier, T>)
 					return false;
-				 
+
 				if (!base.IsValid())
 					return JOwnerPtr<T>{};
 
@@ -192,7 +192,10 @@ namespace JinEngine
 			{
 				if (PtrBase::ptr != nullptr)
 				{
-					delete PtrBase::ptr;
+					if constexpr (std::is_base_of_v<JIdentifier, T>)
+						delete PtrBase::ptr;
+					else
+						delete PtrBase::ptr;
 					PtrBase::ptr = nullptr;
 				}
 
@@ -233,7 +236,7 @@ namespace JinEngine
 			JUserPtr(JUserPtr<NewType>& rhs)
 			{
 				UserDisConnect();
-				UserConnect(rhs); 
+				UserConnect(rhs);
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
 			JUserPtr(JUserPtr<NewType>&& rhs)
@@ -246,7 +249,7 @@ namespace JinEngine
 			JUserPtr& operator=(JUserPtr<NewType>& rhs)
 			{
 				UserDisConnect();
-				UserConnect(rhs); 
+				UserConnect(rhs);
 				return *this;
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
@@ -257,7 +260,7 @@ namespace JinEngine
 				//rhs.UserDisConnect();
 				return *this;
 			}
-			JUserPtr& operator=(nullptr_t) 
+			JUserPtr& operator=(nullptr_t)
 			{
 				UserDisConnect();
 				return *this;
@@ -280,7 +283,7 @@ namespace JinEngine
 			bool operator!=(OtherType* rhs)
 			{
 				return !(Get() == rhs);
-			} 
+			}
 			bool operator==(nullptr_t)
 			{
 				return !PtrBase::IsValid();
@@ -321,23 +324,23 @@ namespace JinEngine
 				if constexpr (!std::is_base_of_v<JIdentifier, ChildType> || !std::is_base_of_v<JIdentifier, T>)
 					return JUserPtr<T>{};
 
-				if(!child.IsValid())
+				if (!child.IsValid())
 					return JUserPtr<T>{};
 
 				if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
 				{
-					JUserPtr<T> newUser; 
+					JUserPtr<T> newUser;
 					newUser.UserConnect(child);
 					child.UserDisConnect();
 					return newUser;
 				}
 				else
 					return JUserPtr<T>{};
-			}		
+			}
 
 			template<typename ChildType>
 			bool ConnnectChildUser(const JUserPtr<ChildType>& child)
-			{			  
+			{
 				if constexpr (!std::is_base_of_v<JIdentifier, ChildType> || !std::is_base_of_v<JIdentifier, T>)
 					return false;
 
@@ -359,7 +362,7 @@ namespace JinEngine
 			{
 				PtrBase::ptr = static_cast<T*>(ptrBase.ptr);
 				PtrBase::ptrRef = ptrBase.ptrRef;
-				if(PtrBase::ptrRef != nullptr)
+				if (PtrBase::ptrRef != nullptr)
 					PtrBase::ptrRef->AddUserCount();
 			}
 			void UserDisConnect()noexcept
@@ -373,7 +376,7 @@ namespace JinEngine
 				PtrBase::ptrRef = nullptr;
 			}
 		};
-
+ 
 		class JPtrUtil
 		{
 		public:

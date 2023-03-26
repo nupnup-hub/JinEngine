@@ -690,7 +690,7 @@ namespace JinEngine
 			return nullptr;
 		}
 	}
-	void JMaterial::RegisterJFunc()
+	void JMaterial::RegisterCallOnce()
 	{
 		auto defaultC = [](Core::JOwnerPtr<JResourceInitData>initdata) ->JResourceObject*
 		{
@@ -732,7 +732,7 @@ namespace JinEngine
 
 		auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex<JMaterial>(format); };
 
-		static GetTypeNameCallable getTypeNameCallable{ &JMaterial::TypeName };
+		static GetTypeInfoCallable getTypeInfoCallable{ &JMaterial::StaticTypeInfo };
 		static GetAvailableFormatCallable getAvailableFormatCallable{ &JMaterial::GetAvailableFormat };
 		static GetFormatIndexCallable getFormatIndexCallable{ getFormatIndexLam };
 
@@ -748,7 +748,7 @@ namespace JinEngine
 		static SetFrameBuffIndexCallable setFrameBuffIndexCallable{ setBuffIndexLam };
 
 		static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SHADER}, false, true };
-		static RTypeCommonFunc rTypeCFunc{ getTypeNameCallable, getAvailableFormatCallable, getFormatIndexCallable };
+		static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 		static RTypeInterfaceFunc rTypeiFunc{ &setFrameDirtyCallable, &setFrameBuffIndexCallable };
 
 		RegisterTypeInfo(rTypeHint, rTypeCFunc, rTypeiFunc);

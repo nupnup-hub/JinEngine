@@ -52,7 +52,7 @@ namespace JinEngine
 		{ 
 			return paramStorage->RemoveParameter(this);
 		}
-		void JFSMparameter::RegisterJFunc()
+		void JFSMparameter::RegisterCallOnce()
 		{			 
 			auto createParamLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
 			{ 

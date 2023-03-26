@@ -13,7 +13,7 @@ namespace JinEngine
 		bool ReadMeshData()final;
 		bool ImportMesh(JMeshGroup& meshGroup)final;
 	private:
-		static void RegisterJFunc();
+		static void RegisterCallOnce();
 	private: 
 		JStaticMeshGeometry(const JMeshInitData& initdata);
 		~JStaticMeshGeometry();

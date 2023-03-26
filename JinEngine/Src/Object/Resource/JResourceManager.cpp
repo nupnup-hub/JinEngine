@@ -377,7 +377,7 @@ namespace JinEngine
 			{
 				if (data->isRemoved)
 				{
-					Core::JTypeInfo* info = Core::JReflectionInfo::Instance().GetTypeInfo(data->typeName);
+					Core::JTypeInfo* info = Core::JReflectionInfo::Instance().GetTypeInfo(data->typeGuid);
 					if (info->IsChildOf<JResourceObject>() || info->IsChildOf<JDirectory>())
 					{
 						_wremove(data->lastObjPath.c_str());
@@ -386,7 +386,7 @@ namespace JinEngine
 				}
 				else
 				{
-					Core::JIdentifier* obj = Core::GetRawPtr(data->typeName, data->guid);
+					Core::JIdentifier* obj = Core::GetRawPtr(data->typeGuid, data->objectGuid);
 					if (obj->GetTypeInfo().IsChildOf<JResourceObject>())
 					{
 						static_cast<JResourceObjectInterface*>(obj)->CallStoreResource();

@@ -36,7 +36,7 @@ namespace JinEngine
 			J_FILE_IO_RESULT StoreData(std::wofstream& stream)final;
 			J_FILE_IO_RESULT LoadData(std::wifstream& stream)final;
 		private:
-			static void RegisterJFunc();
+			static void RegisterCallOnce();
 		private:
 			JAnimationFSMstateClip(const JFSMstateInitData& initData);
 			~JAnimationFSMstateClip();

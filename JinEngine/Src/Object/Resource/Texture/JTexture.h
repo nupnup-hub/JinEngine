@@ -71,7 +71,7 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JTexture* texture);
 		static JTexture* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
 		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, JTextureMetadata& metadata);
-		static void RegisterJFunc();
+		static void RegisterCallOnce();
 	private:
 		JTexture(const JTextureInitData& initdata);
 		~JTexture();

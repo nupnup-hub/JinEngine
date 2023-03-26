@@ -183,7 +183,7 @@ namespace JinEngine
 								stream >> storeType;
 								stream.close();
 								if ((J_RESOURCE_TYPE)storeType == rType)
-									JRFIB::LoadByName(JRI::CallGetTypeName((J_RESOURCE_TYPE)rType), *directory, pathData);
+									JRFIB::LoadByName(JRI::CallGetTypeInfo((J_RESOURCE_TYPE)rType).Name(), *directory, pathData);
 							}
 						}
 					}

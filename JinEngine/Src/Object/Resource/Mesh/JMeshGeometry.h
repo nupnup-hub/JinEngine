@@ -166,7 +166,7 @@ namespace JinEngine
 	protected:
 		static void RegisterImportFunc();
 	private:
-		static void RegisterJFunc();
+		static void RegisterCallOnce();
 	protected:
 		JMeshGeometry(const JMeshInitData& initdata);
 		~JMeshGeometry();

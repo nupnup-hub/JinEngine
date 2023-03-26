@@ -480,7 +480,7 @@ namespace JinEngine
 				}
 				else if (hasOpenObj)
 				{
-					auto idenObj = Core::GetUserPtr(openObj->GetTypeInfo().Name(), openObj->GetGuid());
+					auto idenObj = Core::GetUserPtr(openObj->GetTypeInfo().TypeGuid(), openObj->GetGuid());
 					auto userObj = Core::JUserPtr<JObject>::ConvertChildUser(idenObj);
 					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE,
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), userObj)));

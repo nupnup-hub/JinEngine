@@ -6,7 +6,8 @@ namespace JinEngine
 	struct JModifiedObjectInfo
 	{
 	public:
-		const size_t guid;
+		const size_t objectGuid;
+		const size_t typeGuid;
 		const std::string typeName;
 		std::wstring lastObjName;
 		std::wstring lastObjPath;
@@ -15,8 +16,8 @@ namespace JinEngine
 		bool isStore = true;
 		bool isRemoved = false;
 	public:
-		JModifiedObjectInfo(const size_t guid, const std::string& typeName)
-			:guid(guid), typeName(typeName)
+		JModifiedObjectInfo(const size_t objectGuid, const size_t typeGuid, const std::string& typeName)
+			:objectGuid(objectGuid), typeGuid(typeGuid), typeName(typeName)
 		{}
 	};
 }
