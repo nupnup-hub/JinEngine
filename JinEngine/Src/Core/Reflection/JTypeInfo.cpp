@@ -1,9 +1,9 @@
 #include"JTypeInfo.h"    
 #include"JPropertyInfo.h"    
-#include"JMethodInfo.h"  
-#include"../Pointer/JOwnerPtr.h"
+#include"JMethodInfo.h"   
+#include"../Pointer/JOwnerPtr.h" 
 #include"../../Object/JObject.h"
- 
+
 namespace JinEngine
 {
 	namespace Core
@@ -89,19 +89,19 @@ namespace JinEngine
 			return allocationInterface.get();
 		}
 		bool JTypeInfo::SetAllocationCreator(std::unique_ptr <JTypeAllocationCreatorInterface>&& newCreator)noexcept
-		{
-			if (isRegisteredAllocation || newCreator == nullptr)
+		{  
+			if (allocInitInfo == nullptr || newCreator == nullptr)
 				return false;
 
-			allocationCreator = std::move(newCreator);
+			allocInitInfo->creator = std::move(newCreator);
 			return true;
 		}
-		bool JTypeInfo::SetAllocationOption(std::unique_ptr<JTypeAllocationOption>&& newOption)noexcept
-		{
-			if (isRegisteredAllocation || allocationInterface != nullptr)
+		bool JTypeInfo::SetAllocationOption(std::unique_ptr<JAllocationDesc>&& newOption)noexcept
+		{ 
+			if (allocInitInfo == nullptr || allocationInterface != nullptr)
 				return false;
 
-			allocationOption = std::move(newOption);
+			allocInitInfo->option = std::move(newOption);
 			return true;
 		}
 		bool JTypeInfo::IsAbstractType()const noexcept
@@ -221,46 +221,35 @@ namespace JinEngine
 		}
 		void JTypeInfo::RegisterEngineDefaultAllocationOption()
 		{
-			if (allocationInterface != nullptr || allocationOption != nullptr)
+			if (allocationInterface != nullptr || allocInitInfo == nullptr)
 				return;
-
-			if (isRegisteredAllocation)
-				return;
-
-			J_ALLOCATION_TYPE type;
-			uint blockCount = 10000;
-			uint reservePageCount;
-			size_t pageSize;
-			JAllocationInterface::CalculatePageFitAllocationData(dataSize, blockCount, pageSize, reservePageCount);
- 
-			if (dataSize >= 1 << 20)
-				allocationOption = std::make_unique<JTypeAllocationOption>(J_ALLOCATION_TYPE::HEAP, dataSize, blockCount);
-			else
-			{
-				//virtual test
-				allocationOption = std::make_unique<JTypeAllocationOption>(J_ALLOCATION_TYPE::HEAP, dataSize, blockCount);
-				//allocationOption = std::make_unique<JTypeAllocationOption>(J_ALLOCATION_TYPE::HEAP, dataSize, blockCount);
-			}		 
+			   
+			allocInitInfo->option = std::make_unique<JAllocationDesc>();
+			allocInitInfo->option->allocationType = J_ALLOCATION_TYPE::VIRTUAL;
+			allocInitInfo->option->dataCount = 10000;
+			allocInitInfo->option->dataSize = dataSize; 
 		}
 		void JTypeInfo::RegisterAllocation()
 		{ 
-			if (!isRegisteredAllocation)
+			if (allocInitInfo->option == nullptr)
 				RegisterEngineDefaultAllocationOption();
-
-			isRegisteredAllocation = true;
-			bool useDefaultAllocation = allocationOption->allocationType == J_ALLOCATION_TYPE::DEFAULT;
+			 
+			bool useDefaultAllocation = allocInitInfo->option->allocationType == J_ALLOCATION_TYPE::DEFAULT;
 			if (allocationInterface != nullptr || useDefaultAllocation)
 				return;
 
-			allocationInterface = allocationCreator->CreateAlloc(allocationOption.get());
-			allocationInterface->Initialize(allocationOption->allocDataCount, allocationOption->dataSize);
+			if (allocInitInfo->creator == nullptr)
+				allocInitInfo->creator = std::make_unique<JTypeAllocationCreator>();
+			allocationInterface = allocInitInfo->creator->CreateAlloc(allocInitInfo->option.get());
+			allocationInterface->Initialize(*allocInitInfo->option);
+
+			allocInitInfo.reset();
 		}
 		void JTypeInfo::DeRegisterAllocation()
 		{
 			if (allocationInterface != nullptr)
 				allocationInterface->Release();
-			allocationInterface = nullptr;
-			isRegisteredAllocation = false;
+			allocationInterface = nullptr; 
 		}
 		JTypeInstanceSearchHint::JTypeInstanceSearchHint()
 			:typeGuid(0), objectGuid(0), isValid(false)

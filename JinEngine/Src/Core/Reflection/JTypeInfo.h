@@ -1,8 +1,8 @@
 #pragma once   
 #include"JTypeInfoInitializer.h" 
 #include"JTypeInfoGuiOption.h" 
-#include"JReflectionInfo.h" 
-#include"JTypeAllocationOption.h"
+#include"JTypeAllocationCreator.h"
+#include"JReflectionInfo.h"  
 #include"../JDataType.h"
 #include"../Pointer/JOwnerPtr.h"
 #include<unordered_map>  
@@ -44,10 +44,7 @@ namespace JinEngine
 			MethodVec methodInfoVec;
 			MethodMap methodInfoMap;
 		};
-
-		struct JTypeAllocationOption;
-		class JAllocationInterface;
-
+		 
 		class JTypeInfo
 		{
 		private:
@@ -57,6 +54,13 @@ namespace JinEngine
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyInfoRegister;
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyExInfoRegister;
 			template<typename Type, typename Pointer, Pointer ptr> friend class JMethodInfoRegister;
+		private:
+			struct AllocationInitInfo
+			{
+			public:
+				std::unique_ptr<JAllocationDesc> option;
+				std::unique_ptr<JTypeAllocationCreatorInterface> creator;
+			};
 		private: 
 			using CallOnecePtr = void(*)();
 		public:
@@ -101,10 +105,8 @@ namespace JinEngine
 		private:
 			CallOnecePtr callOncePtr = nullptr;
 		private:
-			std::unique_ptr<JTypeAllocationOption> allocationOption;
-			std::unique_ptr<JTypeAllocationCreatorInterface> allocationCreator;
-			std::unique_ptr<JAllocationInterface> allocationInterface;
-			bool isRegisteredAllocation = false;
+			std::unique_ptr<AllocationInitInfo> allocInitInfo; 
+			std::unique_ptr<JAllocationInterface> allocationInterface; 
 		public:
 			//just class name	for display
 			std::string Name()const noexcept;
@@ -130,8 +132,8 @@ namespace JinEngine
 		public:
 			//is valid until create allocation instance
 			//so it has to called until app run
-			bool SetAllocationCreator(std::unique_ptr < JTypeAllocationCreatorInterface>&& newCreator)noexcept;
-			bool SetAllocationOption(std::unique_ptr<JTypeAllocationOption>&& newOption)noexcept;
+			bool SetAllocationCreator(std::unique_ptr <JTypeAllocationCreatorInterface>&& newCreator)noexcept;
+			bool SetAllocationOption(std::unique_ptr<JAllocationDesc>&& newOption)noexcept;
 		public:
 			bool IsAbstractType()const noexcept;
 			bool IsLeafType()const noexcept;
@@ -183,11 +185,11 @@ namespace JinEngine
 				isAbstractType(std::is_abstract_v<Type>)
 			{
 				if (std::is_base_of_v<JTypeInstance, Type>)
-					instanceData = std::make_unique<JTypeInstanceData>();
-				 
+					instanceData = std::make_unique<JTypeInstanceData>();		
+				allocInitInfo = std::make_unique<AllocationInitInfo>();
+
 				JReflectionInfo::Instance().AddType(this);
 				callOncePtr = &CallOnece<Type>::Execute;
-				allocationCreator = std::make_unique<JTypeAllocationCreator<Type>>();
 				if (parent != nullptr)
 					parent->isLeafType = false;
 			}

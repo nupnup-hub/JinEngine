@@ -1,6 +1,7 @@
 #pragma once
 #include"JReflectionMacro.h" 
 #include"JTypeInfoRegister.h" 
+#include"JTypeAllocationCreator.h"
 #include"JPropertyInfoRegister.h"
 #include"JMethodInfoRegister.h"  
 #include"JGuiWidgetInfo.h" 

@@ -1,30 +1,38 @@
 #include"JAllocationInterface.h"
 #include"../Platform/JHardwareInfo.h"
+#include<Windows.h>
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		void JAllocationInterface::CalculatePageFitAllocationData(const size_t blockSize,
-			_Inout_ uint& blockCount,
+		void JAllocationInterface::CalculatePageFitAllocationData(_Inout_ size_t& blockSize,
+			const uint blockCount,
 			_Out_ size_t& pageSize,
-			_Out_ uint& paegCount)
+			_Out_ uint& paegCount,
+			const bool useBlockAlign)
 		{ 
 			using CpuInfo = Core::JHardwareInfoImpl::CpuInfo;
-			CpuInfo cpuInfo = JHardwareInfo::Instance().GetCpuInfo();
+			const CpuInfo cpuInfo = JHardwareInfo::Instance().GetCpuInfo();
 
 			const size_t hPageSize = cpuInfo.pageSize;
 			const size_t hAllocationGranularity = cpuInfo.allocationGranularity;
-			pageSize = hPageSize;
 
+			if (useBlockAlign && blockSize % MEMORY_ALLOCATION_ALIGNMENT)
+				blockSize = (blockSize / MEMORY_ALLOCATION_ALIGNMENT + 1) * MEMORY_ALLOCATION_ALIGNMENT;
+
+			pageSize = hPageSize;
 			//add page size until pageSize is four times bigger than blockByteSize
 			while (pageSize < blockSize)
 				pageSize += hPageSize;
 
 			const size_t totalBlockByte = blockCount * blockSize;
-			paegCount = (totalBlockByte / pageSize) + 1;
-			blockCount = (paegCount * pageSize) / blockSize;
-
+			if (totalBlockByte % pageSize)
+				paegCount = (totalBlockByte / pageSize) + 1;
+			else
+				paegCount = (totalBlockByte / pageSize);
+			/* don't use
+			*
 			size_t totalReserveByte = (paegCount * pageSize);
 			size_t allocPageBoundary = hAllocationGranularity;
 
@@ -36,6 +44,7 @@ namespace JinEngine
 				paegCount += ((allocPageBoundary - totalReserveByte) / pageSize);
 				blockCount = (paegCount * pageSize) / blockSize;
 			}
+			*/
 		}
 
 		void* JDefaultAlloc::DefaultAllocate(const size_t blockSize, const size_t reqSize)

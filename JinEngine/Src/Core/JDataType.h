@@ -12,4 +12,5 @@ namespace JinEngine
 	using int64 = __int64;
 	using ushort = unsigned short;
 	using uchar = unsigned char;
+	using BYTE = unsigned char;
 }

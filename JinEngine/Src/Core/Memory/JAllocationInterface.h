@@ -1,6 +1,7 @@
 #pragma once
 #include<sal.h>
-#include"../JDataType.h"
+#include"../JDataType.h" 
+#include"JAllocationDesc.h"
 
 namespace JinEngine
 {
@@ -11,7 +12,7 @@ namespace JinEngine
 		public:
 			virtual ~JAllocationInterface() = default;
 		public:
-			virtual bool Initialize(const uint blockCount, const size_t blockSize) = 0;
+			virtual bool Initialize(JAllocationDesc newDesc) = 0;
 			virtual void* Allocate(const size_t size) = 0;
 			//virtual void* AllocateArray(const size_t size) = 0;
 			virtual void DeAllocate(void* p) = 0;
@@ -21,10 +22,11 @@ namespace JinEngine
 		public:
 			virtual bool CanAllocate(const uint blockCount)const noexcept = 0;
 		public:
-			static void CalculatePageFitAllocationData(const size_t blockSize,
-				_Inout_ uint& blockCount,
+			static void CalculatePageFitAllocationData(_Inout_ size_t& blockSize,
+				const uint blockCount,
 				_Out_ size_t& pageSize,
-				_Out_ uint& paegCount);
+				_Out_ uint& paegCount,
+				const bool useBlockAlign);
 		};			 
 
 		class JDefaultAlloc : public JAllocationInterface
