@@ -1,8 +1,8 @@
 #include"JEditorCoordGrid.h"
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../../Object/GameObject/JGameObject.h"
-#include"../../Object/GameObject/JGameObjectFactory.h"
-#include"../../Object/GameObject/JGameObjectFactoryUtility.h" 
+#include"../../Core/Identity/JIdenCreator.h"
+#include"../../Object/GameObject/JGameObject.h" 
+#include"../../Object/GameObject/JGameObjectCreator.h" 
 #include"../../Object/Component/Transform/JTransform.h"
 #include"../../Object/Resource/JResourceManager.h"
 #include"../../Object/Resource/Material/JMaterial.h"
@@ -88,13 +88,13 @@ namespace JinEngine
 		 
 		void JEditorSceneCoordGrid::MakeCoordGrid(JGameObject* parent)
 		{ 
-			coordGrid = Core::GetUserPtr(JGFI::Create(L"SceneCoordGridRoot", Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, *parent));
+			coordGrid = Core::GetUserPtr(JICI::Create<JGameObject>(L"SceneCoordGridRoot", Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, parent));
 			float posFactor = (Constants::gridLineCount / 2) * -Constants::step;
 
 			//Line is yUp
 			for (int i = 0; i < Constants::gridLineCount; ++i)
 			{
-				JGameObject* newLine = JGFU::CreateDebugLineShape(*coordGrid,
+				JGameObject* newLine = JGCI::CreateDebugLineShape(coordGrid.Get(),
 					OBJECT_FLAG_EDITOR_OBJECT, 
 					J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE, 
 					J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK,
@@ -106,7 +106,7 @@ namespace JinEngine
 			}
 			for (int i = 0; i < Constants::gridLineCount; ++i)
 			{
-				JGameObject* newLine = JGFU::CreateDebugLineShape(*coordGrid,
+				JGameObject* newLine = JGCI::CreateDebugLineShape(coordGrid.Get(),
 					OBJECT_FLAG_EDITOR_OBJECT, 
 					J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE,
 					J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK,

@@ -3,17 +3,18 @@
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
 #include"../../Object/Component/Camera/JCamera.h"  
 #include"../../Object/Component/Transform/JTransform.h"
-#include"../../Object/Component/RenderItem/JRenderItem.h"
-#include"../../Object/Component/JComponentFactory.h"
-#include"../../Object/GameObject/JGameObject.h" 
-#include"../../Object/GameObject/JGameObjectFactory.h"
-#include"../../Object/GameObject/JGameObjectFactoryUtility.h"   
+#include"../../Object/Component/RenderItem/JRenderItem.h" 
+#include"../../Object/GameObject/JGameObject.h"  
+#include"../../Object/GameObject/JGameObjectCreator.h"   
+#include"../../Object/Resource/Mesh/JMeshGeometry.h" 
+#include"../../Object/Resource/Material/JMaterial.h" 
 #include"../../Object/Resource/Material/JDefaultMaterialType.h" 
 #include"../../Object/Resource/Scene/JScene.h" 
-#include"../../Object/Resource/JResourceManager.h" 
-#include"../../Object/Resource/JResourceObjectFactory.h" 
+#include"../../Object/Resource/JResourceManager.h"  
+#include"../../Core/Identity/JIdenCreator.h"
 #include"../../Core/Geometry/JRay.h"
 #include"../../Core/Geometry/JBBox.h"
+#include"../../Utility/JMathHelper.h"
 
 //Debug
 //#include"../../Debug/JDebugTextOut.h"
@@ -82,11 +83,12 @@ namespace JinEngine
 		{
 			JEditorTransformTool::Arrow::matColor = matColor;
 
-			JDirectory* dir = JResourceManager::Instance().GetEditorResourceDirectory();
-			JMaterial* material = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(L"ArrowMaterial",
+			JDirectory* dir = _JResourceManager::Instance().GetEditorResourceDirectory();
+			JMaterial* material = JICI::Create<JMaterial>(L"ArrowMaterial",
 				Core::MakeGuid(),
 				OBJECT_FLAG_EDITOR_OBJECT,
-				dir));
+				JMaterial::GetDefaultFormatIndex(),
+				dir);
 
 			material->SetAlbedoColor(matColor.ConvertXMF());
 			material->SetDebugMaterial(true);
@@ -101,7 +103,7 @@ namespace JinEngine
 			const JVector3<float> initMovePos)
 		{ 
 			J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
-			JGameObject* newArrow = JGFU::CreateShape(*debugRoot, flag, shape);
+			JGameObject* newArrow = JGCI::CreateShape(debugRoot, flag, shape);
 			JTransform* transform = newArrow->GetTransform();
 
 			transform->SetRotation(initRotation.ConvertXMF());
@@ -144,16 +146,17 @@ namespace JinEngine
 			transformUpdatePtr(GetUpdateTransformPtr(toolType)),
 			hasCenter(toolType != J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::ROTATION_ARROW)
 		{
-			const XMFLOAT3 extents = JResourceManager::Instance().GetDefaultMeshGeometry(shape)->GetBoundingBox().Extents;
+			const XMFLOAT3 extents = _JResourceManager::Instance().GetDefaultMeshGeometry(shape)->GetBoundingBox().Extents;
 			shapeLength = JMathHelper::Vector3Length(extents) * 2;
 
 			if (hasCenter)
 			{
-				JDirectory* dir = JResourceManager::Instance().GetEditorResourceDirectory();
-				JMaterial* material = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(L"ArrowRootMaterial",
+				JDirectory* dir = _JResourceManager::Instance().GetEditorResourceDirectory();
+				JMaterial* material = JICI::Create<JMaterial>(L"ArrowRootMaterial",
 					Core::MakeGuid(),
 					OBJECT_FLAG_EDITOR_OBJECT,
-					dir));
+					JMaterial::GetDefaultFormatIndex(),
+					dir);
 
 				material->SetAlbedoColor(XMFLOAT4(0.85f, 0.85f, 0.85f, 0.7f));
 				material->SetDebugMaterial(true);
@@ -391,7 +394,7 @@ namespace JinEngine
 		void JEditorTransformTool::CreateToolObject()noexcept
 		{  
 			J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
-			JGameObject* newTransformArrowRoot = JGFI::Create(L"Transform Arrow Root", Core::MakeGuid(), flag, *debugRoot);
+			JGameObject* newTransformArrowRoot = JICI::Create<JGameObject>(L"Transform Arrow Root", Core::MakeGuid(), flag, debugRoot.Get());
 
 			//x y z 
 			if (toolType == J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::POSITION_ARROW)
@@ -427,7 +430,7 @@ namespace JinEngine
 
 			if (hasCenter)
 			{
-				JGameObject* newArrowCenter = JGFU::CreateShape(*newTransformArrowRoot, flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE);
+				JGameObject* newArrowCenter = JGCI::CreateShape(newTransformArrowRoot, flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE);
 				JRenderItem* arrowCenterRItem = newArrowCenter->GetRenderItem();
 				arrowCenterRItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_UI);
 				arrowCenterRItem->SetMaterial(0, arrowCenterMaterial);

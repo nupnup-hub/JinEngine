@@ -1,83 +1,58 @@
 #pragma once
-#include"JFSMInterface.h"
-#include"JFSMparameterValueType.h"
-#include"JFSMparameterStorageAccess.h"   
-#include"../JDataType.h" 
-#include<memory>
-#include<string>
-#include<unordered_map>
+#include"JFSMinterface.h"     
+#include<vector>
 
 namespace JinEngine
 {
 	namespace Core
 	{ 
-		class JFSMstate; 
-		class JFSMdiagramOwnerInterface;
-		__interface JFSMparameterStorageUserAccess;
-
-		class JFSMstateOwnerInterface : public JTypeCashInterface<JFSMstate>
+		class JFSMstate;  
+		class JFSMdiagramOwnerInterface; 
+		class JFSMdiagramPrivate;
+		class JFSMdiagram : public JFSMinterface
 		{
-		private:
-			friend class JFSMstate; 
-		private:
-			virtual JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept = 0;
-			virtual bool IsDiagramState(const size_t stateGuid)const noexcept = 0;
-			virtual bool IsSameDiagram(const size_t diagramGuid)const noexcept = 0;
-		};
-
-		class JFSMdiagram : public JFSMInterface, 
-			public JFSMstateOwnerInterface,
-			public JFSMparameterStorageUserInterface
-		{
-			REGISTER_CLASS(JFSMdiagram)
-		public:
-			struct JFSMdiagramInitData : public JFSMIdentifierInitData
+			REGISTER_CLASS_IDENTIFIER_LINE(JFSMdiagram)
+		public: 
+			class InitData : public JFSMinterface::InitData
 			{
+				REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 			public:
 				JFSMdiagramOwnerInterface* ownerInterface = nullptr;
 			public:
-				JFSMdiagramInitData(const std::wstring& name, const size_t guid, JFSMdiagramOwnerInterface* ownerInterface);
-				JFSMdiagramInitData(const size_t guid, JFSMdiagramOwnerInterface* ownerInterface);
-				JFSMdiagramInitData(JFSMdiagramOwnerInterface* ownerInterface);
+				InitData(JFSMdiagramOwnerInterface* ownerInterface);
+				InitData(const std::wstring& name, const size_t guid, JFSMdiagramOwnerInterface* ownerInterface);
 			public:
-				bool IsValid() noexcept;
-				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
-			}; 
-			using InitData = JFSMdiagramInitData;
-		public:
-			static constexpr uint maxNumberOffState = 100;
+				InitData(const JTypeInfo& initTypeInfo, JFSMdiagramOwnerInterface* ownerInterface);
+				InitData(const JTypeInfo& initTypeInfo, const std::wstring& name, const size_t guid, JFSMdiagramOwnerInterface* ownerInterface);
+			public:
+				bool IsValidData()const noexcept override;
+			};  
 		private:
-			//vector + unorered map => 64bit overhead 
-			JFSMdiagramOwnerInterface* ownerInterface;
-			std::vector<JFSMstate*> stateVec;
-			std::unordered_map<size_t, JFSMstate*> stateMap;
-			JFSMstate* initState = nullptr;
-			size_t nowStateGuid; 
+			friend class JFSMdiagramPrivate;
+			class JFSMdiagramImpl;
+		private:
+			std::unique_ptr<JFSMdiagramImpl> impl;
 		public:
+			static constexpr uint GetMaxStateCapacity()noexcept
+			{
+				return 100;
+			}
+			Core::JIdentifierPrivate& GetPrivateInterface()const noexcept override;
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final; 
-			uint GetStateCount()const noexcept;
-		protected:
-			void Initialize()noexcept;
+			uint GetStateCount()const noexcept; 
+		public:
 			JFSMstate* GetNowState()const noexcept;
 			JFSMstate* GetState(const size_t guid)const noexcept;
 			JFSMstate* GetStateByIndex(const uint index)const noexcept;
-			std::vector<JFSMstate*>& GetStateVec()noexcept;
-		private:
-			JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept final;
-			bool IsDiagramState(const size_t stateGuid)const noexcept final;
-			bool IsSameDiagram(const size_t diagramGuid)const noexcept final;
-		private:
-			bool AddType(JFSMstate* newState)noexcept final;
-			bool RemoveType(JFSMstate* state)noexcept final;
-		private:
-			bool RegisterCashData()noexcept;
-			bool DeRegisterCashData()noexcept;
-		private:
-			void Clear()noexcept override; 
-		private:
-			void NotifyRemoveParameter(const size_t guid)noexcept final;
+			std::vector<JFSMstate*> GetStateVec()noexcept;  
+		public:
+			bool CanUseParameter(const size_t paramGuid)const noexcept;
+			bool CanCreateState()const noexcept; 
 		protected:
-			JFSMdiagram(const JFSMdiagramInitData& initData);
+			void Initialize()noexcept;
+			void Clear()noexcept;
+		protected:
+			JFSMdiagram(const InitData& initData);
 			virtual ~JFSMdiagram();
 			JFSMdiagram(const JFSMdiagram& rhs) = delete;
 			JFSMdiagram& operator=(const JFSMdiagram& rhs) = delete;

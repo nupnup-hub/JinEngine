@@ -2,61 +2,41 @@
 
 namespace JinEngine
 {
-	int JFrameBuff1::GetFrameBuffOffset()const noexcept
+	uint JFrameBuff1::GetFrameBuffOffset()const noexcept
 	{
 		return frameBuffOffset;
 	}
-	void JFrameBuff1::SetFrameBuffOffset(int value)noexcept
+	void JFrameBuff1::SetFrameBuffOffset(const uint value)noexcept
 	{
 		frameBuffOffset = value;
 	}
-	int JFrameBuff2::GetFirstFrameBuffOffset()const noexcept
+	uint JFrameBuff2::GetFirstFrameBuffOffset()const noexcept
 	{
 		return frameBuffOffset00;
 	}
-	int JFrameBuff2::GetSecondFrameBuffOffset()const noexcept
+	uint JFrameBuff2::GetSecondFrameBuffOffset()const noexcept
 	{
 		return frameBuffOffset01;
 	}
-	void JFrameBuff2::SetFirstFrameBuffOffset(int value)noexcept
+	void JFrameBuff2::SetFirstFrameBuffOffset(const uint value)noexcept
 	{
 		frameBuffOffset00 = value;
 	}
-	void JFrameBuff2::SetSecondFrameBuffOffset(int value)noexcept
+	void JFrameBuff2::SetSecondFrameBuffOffset(const uint value)noexcept
 	{
 		frameBuffOffset01 = value;
 	}
 
-	int JFrameBuffUserAccess::CallGetFrameBuffOffset(IFrameBuff1& iFrameBuff)const noexcept
-	{
-		return iFrameBuff.GetFrameBuffOffset();
-	}
-	int JFrameBuffUserAccess::CallGetFirstFrameBuffOffset(IFrameBuff2& iFrameBuff)const noexcept
-	{
-		return iFrameBuff.GetFirstFrameBuffOffset();
-	}
-	int JFrameBuffUserAccess::CallGetSecondFrameBuffOffset(IFrameBuff2& iFrameBuff)const noexcept
-	{
-		return iFrameBuff.GetSecondFrameBuffOffset();
-	}
-	void JFrameBuffManagerAccess::CallSetFrameBuffOffset(IFrameBuff1& iFrameBuff, int value)const noexcept
-	{
-		iFrameBuff.SetFrameBuffOffset(value);
-	}
-	void JFrameBuffManagerAccess::CallSetFirstFrameBuffOffset(IFrameBuff2& iFrameBuff, int value)const noexcept
-	{
-		iFrameBuff.SetFirstFrameBuffOffset(value);
-	}
-	void JFrameBuffManagerAccess::CallSetSecondFrameBuffOffset(IFrameBuff2& iFrameBuff, int value)const noexcept
-	{
-		iFrameBuff.SetSecondFrameBuffOffset(value);
-	}
 	void JFrameDirtyTrigger::SetFrameDirty()noexcept {}
 
 
 	bool JFrameDirty::IsFrameDirted()const noexcept
 	{
 		return frameDirty > 0;
+	}
+	int JFrameDirty::GetFrameDirty()noexcept
+	{
+		return frameDirty;
 	}
 	void JFrameDirty::SetFrameDirty()noexcept
 	{
@@ -72,9 +52,4 @@ namespace JinEngine
 	{
 		frameDirty = 0;
 	}
-	int JFrameDirty::GetFrameDirty()noexcept
-	{
-		return frameDirty;
-	}
-
 }

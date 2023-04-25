@@ -1,10 +1,12 @@
 #pragma once   
-#include"JSceneInterface.h" 
+#include"../JResourceObject.h" 
 #include"JSceneType.h"
-#include"../Mesh/JMeshType.h"
+#include"../../Component/JComponentType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"
 #include"../../../Core/SpaceSpatial/JSpaceSpatialType.h"
-#include"../../../Core/Storage/JStorage.h"
+#include"../../../Core/SpaceSpatial/Bvh/JBvhOption.h"
+#include"../../../Core/SpaceSpatial/Octree/JOctreeOption.h"
+#include"../../../Core/SpaceSpatial/Kd-tree/JKdTreeOption.h"
 #include<memory>
 #include<vector>  
 #include<DirectXCollision.h>
@@ -12,24 +14,43 @@
 namespace JinEngine
 {
 	class JComponent;
+	class JCamera;
 	class JGameObject;
-
-	namespace Graphic
-	{
-		class JGraphicImpl;
-	}
+	class JScenePrivate;
 	namespace Core
 	{
-		class JRay;
-		class JSceneSpatialStructure;
-		class JGameTimer;
+		class JRay;  
 	}
-	class JScene : public JSceneInterface
+	class JScene : public JResourceObject
 	{
-		REGISTER_CLASS(JScene)
-	protected:
-		struct JSceneMetadata final : public JResourceMetaData
+		REGISTER_CLASS_IDENTIFIER_LINE(JScene)
+	public: 
+		class InitData final : public JResourceObject::InitData
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
+		public:
+			const J_SCENE_USE_CASE_TYPE useCaseType;
+		public:
+			InitData(const uint8 formatIndex,
+				JDirectory* directory,
+				const J_SCENE_USE_CASE_TYPE useCaseType);
+			InitData(const size_t guid,
+				const uint8 formatIndex,
+				JDirectory* directory,
+				const J_SCENE_USE_CASE_TYPE useCaseType);
+			InitData(const std::wstring& name,
+				const size_t guid,
+				const J_OBJECT_FLAG flag,
+				const uint8 formatIndex,
+				JDirectory* directory,
+				const J_SCENE_USE_CASE_TYPE useCaseType); 
+		};
+	protected: 
+		class LoadMetaData final : public JResourceObject::InitData
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
+		public:
+			J_SCENE_USE_CASE_TYPE useCaseType;
 		public:
 			bool isOpen = false;
 			bool isMainScene = false;
@@ -40,47 +61,16 @@ namespace JinEngine
 			Core::JOctreeOption octreeOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
 			Core::JBvhOption bvhOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
 			Core::JKdTreeOption kdTreeOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
-			J_SCENE_USE_CASE_TYPE useCaseType;
-		};
-	public:
-		struct JSceneInitData : public JResourceInitData
-		{
 		public:
-			const J_SCENE_USE_CASE_TYPE useCaseType;
-		public:
-			JSceneInitData(const std::wstring& name,
-				const size_t guid,
-				const J_OBJECT_FLAG flag,
-				JDirectory* directory,
-				const J_SCENE_USE_CASE_TYPE useCaseType,
-				const uint8 formatIndex = JResourceObject::GetFormatIndex<JScene>(GetAvailableFormat()[0]));
-			JSceneInitData(const std::wstring& name,
-				JDirectory* directory,
-				const J_SCENE_USE_CASE_TYPE useCaseType,
-				const uint8 formatIndex = JResourceObject::GetFormatIndex<JScene>(GetAvailableFormat()[0]));
-			JSceneInitData(const size_t guid,
-				JDirectory* directory,
-				const J_SCENE_USE_CASE_TYPE useCaseType,
-				const uint8 formatIndex = JResourceObject::GetFormatIndex<JScene>(GetAvailableFormat()[0]));
-			JSceneInitData(JDirectory* directory,
-				const J_SCENE_USE_CASE_TYPE useCaseType,
-				const uint8 formatIndex = JResourceObject::GetFormatIndex<JScene>(GetAvailableFormat()[0]));
+			LoadMetaData(JDirectory* directory);
 		};
-		using InitData = JSceneInitData;
 	private:
-		JGameObject* root = nullptr;
-		JGameObject* debugRoot = nullptr;
-		std::unique_ptr<Core::JSceneSpatialStructure> spatialStructure;
-		std::vector<JGameObject*> allObjects;
-		std::vector<JGameObject*> objectLayer[(int)J_RENDER_LAYER::COUNT][(int)J_MESHGEOMETRY_TYPE::COUNT];
-		std::unordered_map<J_COMPONENT_TYPE, std::vector<JComponent*>> componentCash;
-		JCamera* mainCamera = nullptr;
+		friend class JScenePrivate;
+		class JSceneImpl;
 	private:
-		const size_t debugRootGuid;
-		const J_SCENE_USE_CASE_TYPE useCaseType;
-	private:
-		std::unique_ptr<Core::JGameTimer> sceneTimer;
+		std::unique_ptr<JSceneImpl> impl;
 	public:
+		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -89,7 +79,6 @@ namespace JinEngine
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 	public:
-		JGameObject* FindGameObject(const size_t guid)noexcept;
 		JGameObject* GetRootGameObject()noexcept;
 		JGameObject* GetDebugRootGameObject()noexcept;
 		JGameObject* GetGameObject(const uint index)noexcept;
@@ -98,168 +87,33 @@ namespace JinEngine
 		uint GetComponetCount(const J_COMPONENT_TYPE cType)const noexcept;
 		uint GetMeshCount()const noexcept;
 		J_SCENE_USE_CASE_TYPE GetUseCaseType()const noexcept;
-
+		std::vector<JGameObject*> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept;
+		Core::JOctreeOption GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept;
+		Core::JBvhOption GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept;
+		Core::JKdTreeOption GetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept;
+	public:
+		void SetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JOctreeOption& newOption)noexcept;
+		void SetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JBvhOption& newOption)noexcept;
+		void SetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JKdTreeOption& newOption)noexcept;
+	public:
 		bool IsActivatedSceneTime()const noexcept;
 		bool IsPauseSceneTime()const noexcept;
 		bool IsMainScene()const noexcept;
 		bool IsSpaceSpatialActivated()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
 	public:
+		JGameObject* FindGameObject(const size_t guid)noexcept;
 		//Intersect by scene space spatial
 		JGameObject* IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
-	public:
-		JSceneCashInterface* CashInterface() final;
-		JSceneTimeInterface* TimeInterface() final;
-		JSceneCompInterface* CompInterface()final;
-		JSceneRegisterInterface* RegisterInterface() final;
-		JSceneFrameInterface* AppInterface() final;
-		JSceneSpaceSpatialInterface* SpaceSpatialInterface() final;
-	private:
-		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
 	private:
-		void StuffResource() final;
-		void ClearResource() final;
-	private:
-		void CreateDefaultGameObject()noexcept;
-		void CreateDebugRoot()noexcept;
-	private:
-		const std::vector<JGameObject*>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept final;
-		const std::vector<JComponent*>& GetComponentCashVec(const J_COMPONENT_TYPE cType)const noexcept final;
-	private:
-		bool AddType(JGameObject* newGameObject)noexcept final;
-		bool RemoveType(JGameObject* gameObj)noexcept final;
-	private:
-		void ActivateSceneTime()noexcept final;
-		void PlaySceneTimer(const bool value)noexcept final;
-		void DeActivateSceneTime()noexcept final;
-	private:
-		void SetMainCamera(JCamera* mainCam)noexcept final;
-		void UpdateTransform(JGameObject* owner)noexcept final;
-	private:
-		bool RegisterComponent(JComponent& component)noexcept final;
-		bool DeRegisterComponent(JComponent& component)noexcept final;
-	private:
-		void SetAllComponentFrameDirty()noexcept final;
-		void SetComponentFrameDirty(const J_COMPONENT_TYPE cType, JComponent* stComp = nullptr, SetCompCondition condiiton = nullptr) noexcept final;
-		void SetComponentFrameDirty(const J_COMPONENT_TYPE cType, const uint stIndex, SetCompCondition condiiton = nullptr)noexcept;
-		void SetComponentFrameOffset(const J_COMPONENT_TYPE cType, JComponent* refComp, const uint stIndex, const bool isCreated)noexcept;
-	private:
-		//SceneSpatial
-		void ViewCulling()noexcept final;
-		std::vector<JGameObject*> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept final;
-		Core::JOctreeOption GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept final;
-		Core::JBvhOption GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept final;
-		Core::JKdTreeOption GetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept final;
-		void SetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JOctreeOption& newOption)noexcept final;
-		void SetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JBvhOption& newOption)noexcept final;
-		void SetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JKdTreeOption& newOption)noexcept final;
-		void BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, const Core::J_SPACE_SPATIAL_LAYER layer, Editor::JEditorBinaryTreeView& tree)noexcept final;
-		void InitializeSpaceSpatial()noexcept;
-	private:
-		Core::J_FILE_IO_RESULT CallStoreResource()final;
-		static Core::J_FILE_IO_RESULT StoreObject(JScene* scene);
-		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JScene* scene);
-		static JScene* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, const std::wstring& folderPath, JSceneMetadata& metadata);
-		static void RegisterCallOnce();
-	private:
-		JScene(const JSceneInitData& initdata);
+		JScene(const InitData& initData);
 		~JScene();
 	};
 }
 
-/*
+  
 
-		uint StuffObjConstants(_Inout_ JFrameResource* frameResource, uint offset = 0)noexcept;
-		uint StuffPassConstants(_Inout_ JFrameResource* frameResource,
-			_In_ JGameTimer* JGameTimer,
-			const uint width,
-			const uint height,
-			JCamera* camera = nullptr,
-			uint offset = 0)noexcept;
-		uint StuffAnimationConstants(_Inout_ JFrameResource* frameResource,
-			_Inout_ JAnimationConstants* animationConstants,
-			_In_ JGameTimer* JGameTimer,
-			uint offset = 0)noexcept;
-
-
-				uint JScene::StuffObjConstants(_Inout_ JFrameResource* frameResource, uint offset)noexcept
-	{
-		uint updateCount = 0;
-		auto currObjectCB = frameResource->ObjectCB.get();
-		const uint allObjCount = (uint)allObjects.size();
-		for (uint i = 0; i < allObjCount; ++i)
-		{
-			JRenderItem* renderItem = allObjects[i]->GetRenderItem();
-			if (renderItem != nullptr && renderItem->PassDefectInspection())
-			{
-				if (allObjects[i]->IsObjectConstantDirtied())
-				{
-					const XMFLOAT4X4 fTexTransform = renderItem->GetTextransform();
-					const XMMATRIX world = allObjects[i]->GetTransform()->GetWorldMatrix();
-					const XMMATRIX texTransform = XMLoadFloat4x4(&fTexTransform);
-
-					JObjectConstants objConstants;
-					XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
-					XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
-					objConstants.MaterialIndex = renderItem->GetMaterial()->GetMatCBIndex();
-					currObjectCB->CopyData(renderItem->GetObjCBIndex() + offset, objConstants);
-					allObjects[i]->MinusTrnasformDirty();
-					allObjects[i]->MinusRenderItemDirty();
-				}
-			}
-		}
-		return updateCount;
-	}
-	uint JScene::StuffPassConstants(_Inout_ JFrameResource* frameResource,
-		_In_ JGameTimer* timer,
-		const uint width,
-		const uint height,
-		JCamera* camera,
-		uint offset)noexcept
-	{
-		JPassConstants passContants;
-		if (camera == nullptr)
-			camera = GetMainCamera();
-		camera->UpdateViewMatrix();
-		camera->StuffPassConstant(passContants);
-		const uint lightCount = (uint)light.size();
-		for (uint i = 0; i < lightCount; ++i)
-			light[i]->StuffPassConstant(passContants.lights[i]);
-
-		passContants.renderTargetSize = XMFLOAT2((float)width, (float)height);
-		passContants.invRenderTargetSize = XMFLOAT2(1.0f / width, 1.0f / height);
-		passContants.totalTime = timer->TotalTime();
-		passContants.deltaTime = timer->DeltaTime();
-		passContants.ambientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
-
-		auto currPassCB = frameResource->PassCB.get();
-		currPassCB->CopyData(offset, passContants);
-
-		return 1;
-	}
-	uint JScene::StuffAnimationConstants(_Inout_ JFrameResource* frameResource,
-		_Inout_ JAnimationConstants* animationConstants,
-		_In_ JGameTimer* timer,
-		uint offset)noexcept
-	{
-		int updateCount = 0;
-		auto currSkinnedCB = frameResource->SkinnedCB.get();
-		const uint animatorCount = (uint)animators.size();
-
-		for (uint i = 0; i < animatorCount; ++i)
-		{
-			if (!animators[i]->IsActivated())
-				continue;
-
-			animators[i]->Update(timer, animationConstants->boneTransforms);
-			currSkinnedCB->CopyData(animators[i]->GetAnimationCBIndex() + offset, *animationConstants);
-			++updateCount;
-		}
-		return updateCount;
-	}
-
-*/
+ 

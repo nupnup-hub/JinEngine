@@ -1,46 +1,58 @@
 #pragma once
-#include"JTextureInterface.h"
-#include"../../../Graphic/GraphicResource/JGraphicResourceType.h"
-#include<d3d12.h> 
+#include"../JResourceObject.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceType.h" 
+#include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
 
 namespace JinEngine
 {
-	class JTexture final: public JTextureInterface
+	class JTexturePrivate;
+	class JTexture final: public JResourceObject, public Graphic::JGraphicResourceUserAccess
 	{
-		REGISTER_CLASS(JTexture)
-	public:
-		struct JTextureInitData : public JResourceInitData
+		REGISTER_CLASS_IDENTIFIER_LINE(JTexture)
+	public: 
+		class InitData final : public JResourceObject::InitData
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
 			const std::wstring oridataPath;
+			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
 		public:
-			JTextureInitData(const std::wstring& name,
+			InitData(const uint8 formatIndex,
+				JDirectory* directory,
+				const std::wstring oridataPath,
+				Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
+			InitData(const size_t guid,
+				const uint8 formatIndex,
+				JDirectory* directory,
+				const std::wstring oridataPath,
+				Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
+			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
+				const uint8 formatIndex,
 				JDirectory* directory,
-				const std::wstring oridataPath);
-			JTextureInitData(const std::wstring& name,
-				const size_t guid,
-				const J_OBJECT_FLAG flag,
-				JDirectory* directory,
-				const uint8 formatIndex);
-			JTextureInitData(const std::wstring& name,
-				JDirectory* directory,
-				const std::wstring oridataPath);
+				const std::wstring oridataPath,
+				Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 		public:
-			bool IsValidCreateData()final; 
+			bool IsValidData()const noexcept final;
 		};
-		using InitData = JTextureInitData;
-	private:
-		struct JTextureMetadata : public JResourceMetaData
+	protected: 
+		class LoadMetaData final : public JResourceObject::InitData
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
 		public:
 			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
+		public:
+			LoadMetaData(JDirectory* directory);
 		};
-	private: 
-		Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer = nullptr;
-		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
+	private:
+		friend class JTexturePrivate;
+		class JTextureImpl;
+	private:
+		std::unique_ptr<JTextureImpl> impl;
 	public:
+		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -53,28 +65,11 @@ namespace JinEngine
 		uint GetTextureHeight()const noexcept;
 		Graphic::J_GRAPHIC_RESOURCE_TYPE GetTextureType()const noexcept;
 		void SetTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)noexcept;
-	public:
-		JTextureImportInterface* ImportInterface()noexcept final;
-	private:
-		void DoCopy(JObject* ori)final;
 	protected:
 		void DoActivate()noexcept final;
-		void DoDeActivate()noexcept final;
+		void DoDeActivate()noexcept final;  
 	private:
-		void StuffResource() final;
-		void ClearResource() final;
-		bool ReadTextureData();
-		bool ImportTexture(const std::wstring& oriPath) final;
-	private:
-		Core::J_FILE_IO_RESULT CallStoreResource()final;
-		static Core::J_FILE_IO_RESULT StoreObject(JTexture* texture);
-		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JTexture* texture);
-		static JTexture* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, JTextureMetadata& metadata);
-		static void RegisterCallOnce();
-	private:
-		JTexture(const JTextureInitData& initdata);
+		JTexture(const InitData& initData);
 		~JTexture();
 	};
-
 }

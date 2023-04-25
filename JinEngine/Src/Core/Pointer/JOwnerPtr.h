@@ -52,7 +52,15 @@ namespace JinEngine
 			{
 				return *ptr;
 			}
+			T* operator->() const noexcept
+			{
+				return IsValid() ? ptr : nullptr;
+			}
 		public:
+			T* Get()const noexcept
+			{
+				return IsValid() ? ptr : nullptr;
+			}  
 			int GetUserCount()const noexcept
 			{
 				return ptrRef->GetUserCount();
@@ -115,12 +123,20 @@ namespace JinEngine
 			}
 			T* operator->() const noexcept
 			{
-				return PtrBase::ptr;
+				return PtrBase::IsValid() ? PtrBase::ptr : nullptr;
+			}
+			bool operator==(nullptr_t) const noexcept
+			{
+				return !PtrBase::IsValid();
+			}
+			bool operator!=(nullptr_t) const noexcept
+			{
+				return PtrBase::IsValid();
 			}
 		public:
 			T* Get()const noexcept
 			{
-				return PtrBase::ptr;
+				return PtrBase::IsValid() ? PtrBase::ptr : nullptr;
 			}
 			void Reset(T* newPtr)
 			{
@@ -154,6 +170,7 @@ namespace JinEngine
 				OwnerDisConnect();
 			}
 		public:
+			//For JIdentifier
 			template<typename BaseType>
 			static JOwnerPtr ConvertChildUser(JOwnerPtr<BaseType>&& base)
 			{
@@ -219,6 +236,7 @@ namespace JinEngine
 			using PtrBase = JPtrBase<T>;
 		public:
 			JUserPtr() = default;
+			JUserPtr(nullptr_t){}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
 			JUserPtr(const JPtrBase<NewType>& rhs)
 			{
@@ -270,25 +288,25 @@ namespace JinEngine
 				Clear();
 			}
 			template<typename OtherType>
-			bool operator==(JUserPtr<OtherType> rhs)
+			bool operator==(JUserPtr<OtherType> rhs) const noexcept
 			{
 				return Get() != rhs.Get();
 			}
 			template<typename OtherType>
-			bool operator!=(JUserPtr<OtherType> rhs)
+			bool operator!=(JUserPtr<OtherType> rhs) const noexcept
 			{
 				return !(Get() == rhs.Get());
 			}
 			template<typename OtherType>
-			bool operator!=(OtherType* rhs)
+			bool operator!=(OtherType* rhs) const noexcept
 			{
 				return !(Get() == rhs);
 			}
-			bool operator==(nullptr_t)
+			bool operator==(nullptr_t) const noexcept
 			{
 				return !PtrBase::IsValid();
 			}
-			bool operator!=(nullptr_t)
+			bool operator!=(nullptr_t) const noexcept
 			{
 				return PtrBase::IsValid();
 			}
@@ -316,10 +334,30 @@ namespace JinEngine
 				UserDisConnect();
 				return res;
 			}
+
+			//For JIdentifier
+			template<typename ChildType>
+			static JUserPtr<T> CreateChildUser(JPtrBase<ChildType>& child)
+			{
+				if constexpr (!std::is_base_of_v<JIdentifier, ChildType> || !std::is_base_of_v<JIdentifier, T>)
+					return JUserPtr<T>{};
+
+				if (!child.IsValid())
+					return JUserPtr<T>{};
+
+				if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				{
+					JUserPtr<T> newUser;
+					newUser.UserConnect(child); 
+					return newUser;
+				}
+				else
+					return JUserPtr<T>{};
+			}
 			//For JIdentifier
 			//Connect base user ... is same downcast base to t
 			template<typename ChildType>
-			static JUserPtr<T> ConvertChildUser(JUserPtr<ChildType> child)
+			static JUserPtr<T> ConvertChildUser(JUserPtr<ChildType>&& child)
 			{
 				if constexpr (!std::is_base_of_v<JIdentifier, ChildType> || !std::is_base_of_v<JIdentifier, T>)
 					return JUserPtr<T>{};

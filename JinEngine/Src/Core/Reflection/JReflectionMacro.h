@@ -33,26 +33,37 @@ namespace JinEngine
 			template<typename T>
 			struct ParentClass<T, std::void_t<typename T::ThisType>>
 			{
-			public:
+			public: 
 				using Type = typename T::ThisType;
 			};
+
+#define IDEN_IMPL_BASE_CLASS JinEngine::Core::JIdentifierImplBase
+#define IDEN_BASE_CLASS JinEngine::Core::JIdentifier
+
+#define CONVERT_IMPL_BASE_PTR(baseImplName, interfaceName, baseInterfaceName) [](baseInterfaceName* ptr) ->baseImplName* { return static_cast<interfaceName*>(ptr)->impl.get();}
+
 
 		}
 
 #pragma region Register 
 
 		//Has order dependecy
-#define REGISTER_CLASS(typeName, ...)																	\
+		//type register 호출하기전에 선언되어있어야함
+#define REGISTER_CLASS_DEFAULT_ALLOCATOR private: static void InitAllocatorInfo(){}					 
+
+
+					//Has order dependecy
+#define REGISTER_CLASS_DEFINITION_TYPE(typeName, ...)														\
 																										\
 		public:																							\
-			using TypeDepth = 	JinEngine::Core::Depth<typeName>;										\
+			using TypeDepth = JinEngine::Core::Depth<typeName>;											\
 			using ParentType = typename JinEngine::Core::ParentClass<typeName>::Type;					\
 			using ThisType = typeName;																	\
 																										\
 		protected:																						\
 			using JTypeInfo = JinEngine::Core::JTypeInfo;										\
 			using JTypeInfoInitializer = JinEngine::Core::JTypeInfoInitializer<typeName>;		\
-			using JTypeInfoCallOnece = JinEngine::Core::JTypeInfo::CallOnece<typeName>;		\
+			using JTypeInfoCallOnece = JinEngine::Core::JTypeInfo::CallOnece<typeName>;			\
 			using JTypeInfoRegister = JinEngine::Core::JTypeInfoRegister<typeName>;				\
 			using JReflectionInfo = JinEngine::Core::JReflectionInfo;							\
 			using JPtrUtil = JinEngine::Core::JPtrUtil;											\
@@ -62,100 +73,137 @@ namespace JinEngine
 			friend class JTypeInfoCallOnece;													\
 			template<typename T> friend class JinEngine::Core::JOwnerPtr;						\
 			friend class JPtrUtil;																\
-	 private:																					\
+																								\
+
+
+#define REGISTER_IMPL_CLASS_INTERFACE_TYPE	using ThisInterfaceType = ThisType;
+#define REGISTER_INNER_CLASS_OUTER_TYPE	using OuterType = ThisType;
+
+#define REGISTER_CLASS_TYPE_INFO_CREATOR(typeName, ...)											\
+		private:																				\
 			inline static struct typeName##TypeInfoInstance										\
 			{																					\
 			public:																				\
 				typeName##TypeInfoInstance(){ static JTypeInfoRegister typeRegister{#typeName};	}\
 			}typeName##TypeInfoInstance;														\
-		public:																					\
-			static JTypeInfo& StaticTypeInfo()													\
+																								\
+
+
+#define REGISTER_CLASS_TYPE_INFO_CREATOR_IMPL(implName, ...)									\
+		private:																				\
+			inline static struct implName##TypeInfoInstance										\
 			{																					\
-				static JTypeInfo& thisTypeInfo = *JReflectionInfo::Instance().GetTypeInfo(typeid(typeName).name());\
+			public:																				\
+				implName##TypeInfoInstance()													\
+				{																				\
+					static JTypeInfoRegister typeRegister{ #implName,							\
+						typeid(ThisInterfaceType).name(),										\
+						ThisInterfaceType::StaticTypeInfo(),									\
+						CONVERT_IMPL_BASE_PTR(IDEN_IMPL_BASE_CLASS, ThisInterfaceType, IDEN_BASE_CLASS) };\
+				}																				\
+			}implName##TypeInfoInstance;														\
+
+
+#define REGISTER_CLASS_TYPE_FUNC(typeName, ...)													\
+																								\
+		public:																					\
+			static JTypeInfo& StaticTypeInfo()noexcept											\
+			{																					\
+				static JTypeInfo& thisTypeInfo = *JReflectionInfo::Instance().GetTypeInfo(typeid(typeName).name());		\
 				return thisTypeInfo;															\
 			}																					\
-			virtual JTypeInfo& GetTypeInfo()const {return typeInfo;}							\
-			virtual int GetTypeDepth()const {return TypeDepth::value;}							\
-			inline static std::string TypeName() {return #typeName;}							\
-			inline static std::wstring TypeWName() {return L#typeName;}							\
+			virtual JTypeInfo& GetTypeInfo()const noexcept {return typeInfo;}					\
+			virtual int GetTypeDepth()const noexcept{return TypeDepth::value;}					\
+			inline static std::string TypeName()noexcept {return #typeName;}					\
+			inline static std::wstring TypeWName()noexcept {return L#typeName;}					\
 		private:																				\
 			inline static JTypeInfo& typeInfo = StaticTypeInfo();								\
+																								\
+
+
+#define REGISTER_CLASS_ALLOC_FUNC																\
+																								\
 		public:																					\
-			void* operator new(size_t size)														\
+			static void* operator new(size_t size)												\
 			{																					\
-				if constexpr(std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)			\
+				if constexpr (std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)		\
 				{																				\
 					auto allocInterface = typeInfo.GetAllocationInterface();					\
 					if (allocInterface != nullptr)												\
 						return allocInterface->Allocate(size);									\
 					else                                                                        \
-					{																			\
-						if (void* ptr = std::malloc(size))										\
-							return ptr;															\
-																								\
-						throw std::bad_alloc{};													\
-					}																			\
+						return ::operator new(size);											\
 				}																				\
 				else                                                                            \
-				{																				\
-					if (void* ptr = std::malloc(size))											\
-						return ptr;																\
-																								\
-						throw std::bad_alloc{};													\
-				}																				\
+					return ::operator new(size);												\
 			}																					\
-			void* operator new[](size_t size)													\
+			static void* operator new[](size_t size)											\
 			{																					\
-				if constexpr(std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)			\
+				if constexpr (std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)		\
 				{																				\
 					auto allocInterface = typeInfo.GetAllocationInterface();					\
 					if (allocInterface != nullptr)												\
 						return allocInterface->Allocate(size);									\
 					else                                                                        \
-					{																			\
-						if (void* ptr = std::malloc(size))										\
-							return ptr;															\
-																								\
-						throw std::bad_alloc{};													\
-					}																			\
+						return ::operator new(size);											\
 				}																				\
 				else                                                                            \
-				{																				\
-					if (void* ptr = std::malloc(size))											\
-						return ptr;																\
-																								\
-						throw std::bad_alloc{};													\
-				}																				\
+					return ::operator new(size);												\
 			}																					\
-			void operator delete(void* p)														\
+			static void operator delete(void* p)												\
 			{																					\
-				if constexpr(std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)			\
+				if constexpr (std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)		\
 				{																				\
 					auto allocInterface = typeInfo.GetAllocationInterface();					\
- 					if (allocInterface != nullptr)												\
+					if (allocInterface != nullptr)												\
 						allocInterface->DeAllocate(p);											\
 					else																		\
-						std::free(p);															\
+						::operator delete(p);													\
 				}																				\
 				else																			\
-					std::free(p);																\
+					::operator delete(p);														\
 			}																					\
-			void operator delete[](void* p, size_t size)\
+			static void operator delete[](void* p, size_t size)									\
 			{																					\
-				if constexpr(std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)			\
+				if constexpr (std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)		\
 				{																				\
 					auto allocInterface = typeInfo.GetAllocationInterface();					\
- 					if (allocInterface != nullptr)												\
+					if (allocInterface != nullptr)												\
 						allocInterface->DeAllocate(p, size);									\
 					else																		\
-						std::free(p);															\
+						::operator delete(p);													\
 				}																				\
 				else																			\
-					std::free(p);																\
+					::operator delete(p);													    \
 			}																					\
 																								\
-																								\
-																								\
+
+
+
+#define REGISTER_CLASS_IDENTIFIER_LINE(typeName, ...)												\
+		REGISTER_CLASS_DEFINITION_TYPE(typeName, __VA_ARGS__)										\
+		REGISTER_CLASS_DEFAULT_ALLOCATOR															\
+		REGISTER_CLASS_TYPE_INFO_CREATOR(typeName, __VA_ARGS__)										\
+		REGISTER_CLASS_TYPE_FUNC(typeName, __VA_ARGS__)												\
+		REGISTER_CLASS_ALLOC_FUNC															\
+																									
+																								
+#define REGISTER_CLASS_IDENTIFIER_LINE_IMPL(typeName, ...)										\
+		REGISTER_IMPL_CLASS_INTERFACE_TYPE														\
+		REGISTER_CLASS_DEFINITION_TYPE(typeName, __VA_ARGS__)									\
+		REGISTER_CLASS_DEFAULT_ALLOCATOR														\
+		REGISTER_CLASS_TYPE_INFO_CREATOR_IMPL(typeName, __VA_ARGS__)							\
+		REGISTER_CLASS_TYPE_FUNC(typeName, __VA_ARGS__)											\
+		REGISTER_CLASS_ALLOC_FUNC																\
+
+
+#define REGISTER_CLASS_ONLY_USE_TYPEINFO(typeName, ...)													\
+		REGISTER_CLASS_DEFINITION_TYPE(typeName, __VA_ARGS__)											\
+		REGISTER_CLASS_TYPE_INFO_CREATOR(typeName, __VA_ARGS__)											\
+		REGISTER_CLASS_TYPE_FUNC(typeName, __VA_ARGS__)													\
+
+
+#define SEMICOLON ;
 
 		//Parameter
 		//REGISTER_PROPERTY(name, definedGetFunc, definedSetFunc, support editor gui type)

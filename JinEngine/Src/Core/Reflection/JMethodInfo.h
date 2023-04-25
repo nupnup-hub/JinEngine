@@ -13,7 +13,7 @@ namespace JinEngine
 		class JTypeInfo;
 		template<typename Type, typename Pointer, Pointer ptr> class JMethodInfoRegister;
 
-		class JMethodInfo
+		class JMethodInfo final
 		{
 		private:
 			friend class JTypeInfo;

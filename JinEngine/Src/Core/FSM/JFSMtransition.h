@@ -1,6 +1,5 @@
-#pragma once 
-#include"JFSMcondition.h" 
-#include"JFSMInterface.h"
+#pragma once  
+#include"JFSMinterface.h"
 #include"../JDataType.h"
 #include<vector>  
 #include<memory>
@@ -10,80 +9,66 @@ namespace JinEngine
 	namespace Core
 	{ 
 		class JFSMstate;
-		//class JFSMcondition;
-		class JFSMparameter;
-		class JFSMtransitionOwnerInterface;
-		__interface JFSMparameterStorageUserAccess;
+		class JFSMcondition; 
 
-		class JFSMconditionOwnerInterface : public JTypeCashInterface<JFSMcondition>
+		class JFSMtransitionPrivate;
+		class JFSMtransition : public JFSMinterface
 		{
-		private:
-			friend class JFSMcondition;
-		private:
-			virtual JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept = 0; 
-		};
-
-		class JFSMtransition : public JFSMInterface, 
-			public JFSMconditionOwnerInterface
-		{
-			REGISTER_CLASS(JFSMtransition)
-		private:
-			friend class JFSMstate;
-		public:
-			struct JFSMtransitionInitData : public JFSMIdentifierInitData
+			REGISTER_CLASS_IDENTIFIER_LINE(JFSMtransition)
+		public: 
+			class InitData : public JFSMinterface::InitData
 			{
+				REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 			public:
-				size_t outputGuid;
-				JUserPtr<JFSMstate> owneState;		 
+				JUserPtr<JFSMstate> ownerState;
+				JUserPtr<JFSMstate> outState;
 			public:
-				JFSMtransitionInitData(const std::wstring& name,
+				InitData(JUserPtr<JFSMstate> ownerState,JUserPtr<JFSMstate> outState);
+				InitData(const std::wstring& name,
 					const size_t guid,
-					const size_t outputGuid,
-					JUserPtr<JFSMstate> owneState);
+					JUserPtr<JFSMstate> ownerState,
+					JUserPtr<JFSMstate> outState);
 			public:
-				bool IsValid() noexcept;
-				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
+				InitData(const JTypeInfo& initTypeInfo, 
+					JUserPtr<JFSMstate> ownerState,
+					JUserPtr<JFSMstate> outState);
+				InitData(const JTypeInfo& initTypeInfo, 
+					const std::wstring& name,
+					const size_t guid,
+					JUserPtr<JFSMstate> ownerState,
+					JUserPtr<JFSMstate> outState);
+			public:
+				bool IsValidData()const noexcept override;
 			};
-			using InitData = JFSMtransitionInitData;
-		public:
-			static constexpr uint maxNumberOfCondition = 25;
-			static constexpr float errorOnValue = -100000;
 		private:
-			JFSMtransitionOwnerInterface* ownerInterface; 
-			const size_t outputStateGuid;
-			std::vector<JFSMcondition*>conditionVec;
+			friend class JFSMtransitionPrivate;
+			class JFSMtransitionImpl;
+		private:
+			std::unique_ptr<JFSMtransitionImpl> impl;
 		public:
+			static constexpr uint GetMaxConditionCapacity()noexcept
+			{
+				return 50;
+			}
+			Core::JIdentifierPrivate& GetPrivateInterface()const noexcept override;
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept;
+			JFSMstate* GetOwner()const noexcept;
+			JFSMstate* GetOutState()const noexcept;
 			uint GetConditioCount()const noexcept;
 			float GetConditionOnValue(const uint index)const noexcept;
 			size_t GetOutputStateGuid()const noexcept;
 			JFSMcondition* GetConditionByIndex(const uint index)const noexcept;
-			REGISTER_METHOD(GetConditionVec)
-			std::vector<JFSMcondition*> GetConditionVec()const noexcept; 
+			std::vector<JFSMcondition*> GetConditionVec()const noexcept;   
 		protected:
-			//For editor gui
-			REGISTER_METHOD(SetConditionVec)
 			void SetConditionVec(std::vector<JFSMcondition*> vec)noexcept;
-		private:
-			JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept; 
-		public: 
-			bool IsSameDiagram(const size_t diagramGuid)const noexcept;
-			bool HasSatisfiedCondition()const noexcept;
-		private:
-			bool AddType(JFSMcondition* newCondition)noexcept;
-			bool RemoveType(JFSMcondition* condition)noexcept;		
+		public:  
+			bool HasSatisfiedCondition()const noexcept; 
 		protected: 
-			static JIdentifier* CreateCondition(JIdentifier* iden)noexcept;
-			bool RemoveParameter(const size_t guid)noexcept;
+			static JIdentifier* CreateCondition(JIdentifier* iden)noexcept; 
 		protected:
-			virtual void Initialize()noexcept;
-		private:
-			void Clear()override;
-		private:
-			bool RegisterCashData()noexcept final;
-			bool DeRegisterCashData()noexcept final;
+			void Initialize()noexcept;
 		protected:
-			JFSMtransition(const JFSMtransitionInitData& initData);
+			JFSMtransition(const InitData& initData);
 			~JFSMtransition();
 			JFSMtransition(JFSMtransition&& rhs) = default;
 			JFSMtransition& operator=(JFSMtransition&& rhs) = default;

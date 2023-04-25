@@ -12,7 +12,7 @@ namespace JinEngine
 {
 	class JCamera;
 	class JScene;
-	//class JMaterial;
+	class JTexture;
 	class JGameObject;
 	namespace Core
 	{
@@ -59,6 +59,8 @@ namespace JinEngine
 			std::unique_ptr<JEditorTransformTool> positionTool;
 			std::unique_ptr<JEditorTransformTool> rotationTool;
 			std::unique_ptr<JEditorTransformTool> scaleTool;
+		private:
+			std::vector<Core::JUserPtr<JTexture>> iconTexture;
 		private:
 			static constexpr uint toolCount = 3;
 		private:

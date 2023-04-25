@@ -7,10 +7,10 @@
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/Transition/JTransition.h"
-#include"../../Utility/JCommonUtility.h"  
-#include"../../Object/JObject.h"
+#include"../../Utility/JCommonUtility.h"   
 #include"../../Object/GameObject/JGameObject.h" 
-#include"../../Window/JWindows.h"
+#include"../../Object/GameObject/JGameObjectPrivate.h" 
+#include"../../Window/JWindow.h"
 #include<fstream>
 
 namespace JinEngine
@@ -104,7 +104,7 @@ namespace JinEngine
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorCloseWindowEvStruct>(GetName(), GetOwnerPageType())));
 				}
 			}	
-			SetContentsClick(false);
+			SetContentsClick(false); 
 		}
 		void JEditorWindow::CloseWindow()
 		{
@@ -154,8 +154,8 @@ namespace JinEngine
 					NotifyEvent(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::MOUSE_CLICK, rclickEvStruct.get());
 				}
 			}
-
-			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+						 
+			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows || ImGuiFocusedFlags_DockHierarchy))
 			{
 				if (!IsFocus())
 				{
@@ -167,7 +167,9 @@ namespace JinEngine
 			}
 			else
 			{
-				if (IsFocus())
+				//allow window popup or subWidget click
+				const bool isMouseInWindowSubWidget = CanUsePopup() && JImGuiImpl::IsMouseInRect(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize());
+				if (!isMouseInWindowSubWidget && IsFocus())
 				{
 					AddEventNotification(*JEditorEvent::EvInterface(),
 						GetGuid(),
@@ -290,7 +292,7 @@ namespace JinEngine
 		}
 		uint JEditorWindow::GetSelectedObjectCount()const noexcept
 		{
-			return selectedObjMap.size();
+			return (uint)selectedObjMap.size();
 		}
 		std::vector<Core::JUserPtr<Core::JIdentifier>> JEditorWindow::GetSelectedObjectVec()const noexcept
 		{
@@ -337,7 +339,10 @@ namespace JinEngine
 			for (uint i = 0; i < childrenCount; ++i)
 				SetSelectedGameObjectTrigger(gObj->GetChild(i), triggerValue);
 
-			gObj->EditorInterface()->SetSelectedByEditorTrigger(triggerValue);
+			if (triggerValue)
+				JGameObjectPrivate::SelectInterface::Select(gObj);
+			else
+				JGameObjectPrivate::SelectInterface::DeSelect(gObj);
 		}
 		void JEditorWindow::SetContentsClick(const bool value)noexcept
 		{
@@ -378,7 +383,7 @@ namespace JinEngine
 			const J_EDITOR_PAGE_TYPE pageType = GetOwnerPageType();
 			std::vector<Core::JUserPtr<Core::JIdentifier>> newSelectObjVec; 
 
-			const uint newCount = selectObjVec.size();
+			const uint newCount = (uint)selectObjVec.size();
 			for (uint i = 0; i < newCount; ++i)
 			{
 				if(selectObjVec[i].IsValid())
@@ -431,16 +436,7 @@ namespace JinEngine
 			using ProccessVec = std::vector<std::unique_ptr<Core::JBindHandleBase>>;
 			auto task = std::make_unique<Core::JTransitionSetValueTask>("Select ", JCUtil::WstrToU8Str(objName), std::move(doBinder), std::move(undoBinder));
 			task->RegisterClearTask(std::make_unique< ClearTaskF::CompletelyBind>(*GetClearTaskFunctor(), std::move(evGuidVec)));
-			if (!canSelectMulti)
-			{
-				auto preDoBinder = std::make_unique<EventF::CompletelyBind>(*GetEvFunctor(), *this, J_EDITOR_EVENT::CLEAR_SELECT_OBJECT, *clearEvStruct);
-				using ADDITONAL_PROCESS_TYPE = Core::JTransitionTask::ADDITONAL_PROCESS_TYPE;
-				using ProcessBindVec = Core::JTransitionTask::ProcessBindVec;
-				ProcessBindVec processBindVec;
-				processBindVec.push_back(std::move(preDoBinder));
-				task->RegisterAddtionalProcess(ADDITONAL_PROCESS_TYPE::DO_PRE, std::move(processBindVec));
-			}
-			else 
+			if (canSelectMulti)
 			{
 				if (popOverlapSelectedEvStruct != nullptr)
 				{
@@ -451,6 +447,15 @@ namespace JinEngine
 					processBindVec.push_back(std::move(postDoBinder));
 					task->RegisterAddtionalProcess(ADDITONAL_PROCESS_TYPE::DO_POST, std::move(processBindVec));
 				}
+			}
+			else 
+			{
+				auto preDoBinder = std::make_unique<EventF::CompletelyBind>(*GetEvFunctor(), *this, J_EDITOR_EVENT::CLEAR_SELECT_OBJECT, *clearEvStruct);
+				using ADDITONAL_PROCESS_TYPE = Core::JTransitionTask::ADDITONAL_PROCESS_TYPE;
+				using ProcessBindVec = Core::JTransitionTask::ProcessBindVec;
+				ProcessBindVec processBindVec;
+				processBindVec.push_back(std::move(preDoBinder));
+				task->RegisterAddtionalProcess(ADDITONAL_PROCESS_TYPE::DO_PRE, std::move(processBindVec));
 			}
 			JEditorTransition::Instance().Execute(std::move(task));		 
 		}

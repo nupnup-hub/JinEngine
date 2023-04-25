@@ -1,67 +1,45 @@
 #pragma once  
 #include"JShaderFunctionEnum.h" 
 #include"JShaderGraphicPsoCondition.h"
-#include"JShaderData.h" 
-#include"JShaderInterface.h" 
+#include"JShaderData.h"  
 #include"JExtraPsoType.h"
-#include"../Mesh/JMeshType.h" 
-#include<unordered_map> 
-#include<d3d12.h>
-#include<vector>
-#include<memory>
+#include"../JResourceObject.h"
+#include"../Mesh/JMeshType.h"  
+#include<d3d12.h>  
 
 namespace JinEngine
 {
-	class JShader final : public JShaderInterface
+	class JShaderPrivate;
+	class JShader final : public JResourceObject
 	{
-		REGISTER_CLASS(JShader)
-	private:
-		struct CSInitHelper
+		REGISTER_CLASS_IDENTIFIER_LINE(JShader)
+	public: 
+		class InitData final : public JResourceObject::InitData
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
-			std::vector<D3D_SHADER_MACRO> macro;
-			JComputeShaderData::DispatchInfo dispatchInfo;
+			J_GRAPHIC_SHADER_FUNCTION gFunctionFlag = SHADER_FUNCTION_NONE;
+			J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
+			JShaderGraphicPsoCondition graphicPSOCond;
+		public: 
+			InitData(const J_OBJECT_FLAG flag = OBJECT_FLAG_NONE,
+				const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag = SHADER_FUNCTION_NONE,
+				const JShaderGraphicPsoCondition graphicPSOCond = JShaderGraphicPsoCondition(),
+				const J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
+			InitData(const std::wstring& name,
+				const size_t& guid,
+				const J_OBJECT_FLAG flag, 
+				const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag = SHADER_FUNCTION_NONE,
+				const JShaderGraphicPsoCondition graphicPSOCond = JShaderGraphicPsoCondition(),
+				const J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 		};
+	private: 
+		friend class JShaderPrivate;
+		class JShaderImpl;
 	private:
-		using CSInitHelperCallable = Core::JStaticCallable<CSInitHelper>;
+		std::unique_ptr<JShaderImpl> impl;
 	public:
-		struct JShaderInitdata : public JResourceInitData
-		{
-		public:
-			J_GRAPHIC_SHADER_FUNCTION gShaderFunctionFlag = SHADER_FUNCTION_NONE;
-			J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
-			JShaderGraphicPsoCondition graphicPSO;
-		public:
-			JShaderInitdata(const size_t guid,
-				const J_OBJECT_FLAG flag,
-				const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag,
-				const JShaderGraphicPsoCondition newGraphicPSO = JShaderGraphicPsoCondition(),
-				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
-			JShaderInitdata(const J_OBJECT_FLAG flag,
-				const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag,
-				const JShaderGraphicPsoCondition newGraphicPSO = JShaderGraphicPsoCondition(),
-				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
-			JShaderInitdata(const J_GRAPHIC_SHADER_FUNCTION shaderFunctionFlag, 
-				const JShaderGraphicPsoCondition newGraphicPSO = JShaderGraphicPsoCondition(),
-				const J_COMPUTE_SHADER_FUNCTION cShaderFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
-		private:
-			static std::wstring MakeName(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, 
-				const JShaderGraphicPsoCondition& graphicPSO,
-				const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept;
-		};
-		using InitData = JShaderInitdata;
-	private:
-		std::unique_ptr<JGraphicShaderData>gShaderData[SHADER_VERTEX_COUNT]{ nullptr, nullptr };
-		std::unique_ptr<JComputeShaderData> cShaderData = nullptr;
-		J_GRAPHIC_SHADER_FUNCTION gFunctionFlag = SHADER_FUNCTION_NONE;
-		J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE; 
-	private:
-		JShaderGraphicPsoCondition graphicPSO;
-	private:
-		static std::unordered_map<J_GRAPHIC_SHADER_FUNCTION, const D3D_SHADER_MACRO> shaderFuncMacroMap;  
-		static std::unordered_map<J_SHADER_VERTEX_LAYOUT, const D3D_SHADER_MACRO> vertexLayoutMacroMap;
-		static std::unordered_map<J_SHADER_VERTEX_LAYOUT, std::vector<D3D12_INPUT_ELEMENT_DESC>> inputLayout;
-	public:
+		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -79,40 +57,19 @@ namespace JinEngine
 		J_COMPUTE_SHADER_FUNCTION GetShdaerCFunctionFlag()const noexcept;
 		JShaderGraphicPsoCondition GetSubGraphicPso()const noexcept;
 	public:
-		bool IsComputeShader()const noexcept; 
+		bool IsComputeShader()const noexcept;  
+		static bool HasShader(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
+			const JShaderGraphicPsoCondition graphicPSOCond,
+			const J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 	public:
-		JShaderCompileInterface* CompileInterface()noexcept;
-	public:
-		void DoCopy(JObject* ori) final;
+		static JShader* FindShader(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
+			const JShaderGraphicPsoCondition graphicPSOCond,
+			const J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 	protected:
 		void DoActivate()noexcept final;
-		void DoDeActivate()noexcept final;
-	protected:
-		bool Destroy(const bool isForced)final;
+		void DoDeActivate()noexcept final; 
 	private:
-		void SetGraphicShaderFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunctionFlag);
-		void SetComputeShaderFunctionFlag(const J_COMPUTE_SHADER_FUNCTION newFunctionFlag);
-		void RecompileGraphicShader()final;
-		static void CompileShdaer(JShader* shader);
-		static void CompileGraphicShader(JShader* shader);
-		static void CompileGraphicExtraPso(JShader* shader, const J_GRAPHIC_EXTRA_PSO_TYPE type);
-		static void CompileComputeShader(JShader* shader);
-		static void GetMacroVec(_Out_ std::vector<D3D_SHADER_MACRO>& outMacro, const J_SHADER_VERTEX_LAYOUT vertexLayoutFlag, const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag)noexcept;
-		static void GetInitHelper(_Out_ CSInitHelper& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept;
-		static void GetInputLayout(_Out_ std::vector<D3D12_INPUT_ELEMENT_DESC>& outInputLayout, const J_SHADER_VERTEX_LAYOUT vertexLayoutFlag)noexcept;
-	private:
-		//group dim && thread dim is (n, 1, 1) 
-		static void StuffComputeShaderThreadDim(const J_COMPUTE_SHADER_FUNCTION cFunctionFlag, const JVector3<uint> dim);
-		static void OutComputeShaderCommonMacro( _Out_ std::vector<D3D_SHADER_MACRO>& outMacro, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag);
-	private:
-		bool HasShaderData()const noexcept;
-	private:
-		Core::J_FILE_IO_RESULT CallStoreResource()final;
-		static Core::J_FILE_IO_RESULT StoreObject(JShader* shader);
-		static JShader* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
-		static void RegisterCallOnce(); 
-	private:
-		JShader(const JShaderInitdata& initdata);
+		JShader(const InitData& initData);
 		~JShader();
 	};
 }

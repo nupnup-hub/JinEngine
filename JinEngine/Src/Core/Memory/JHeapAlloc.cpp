@@ -25,7 +25,7 @@ namespace JinEngine
 
 			const size_t blockCount = size / desc.dataSize;
 			if (!CanAllocate(blockCount))
-				return DefaultAllocate(desc.dataSize, size);
+				return nullptr;
 
 			void* res = HeapAlloc(heapHandle, 0, size);
 			if (res == nullptr)
@@ -36,31 +36,21 @@ namespace JinEngine
 		}
 		void JHeapAlloc::DeAllocate(void* p)
 		{
-			if (IsOveredReservedCount() && IsDefaultAllocated(p))
-				DefaultDeAllocate(p);
-			else
+			if (HeapFree(heapHandle, 0, p) == NULL)
 			{
-				if (HeapFree(heapHandle, 0, p) == NULL)
-				{ 
-					assert("InValid pointer in heap");
-					return;
-				}
-				--committedBlockCount;
+				assert("InValid pointer in heap");
+				return;
 			}
+			--committedBlockCount;
 		}
 		void JHeapAlloc::DeAllocate(void* p, const size_t size)
 		{
-			if (IsOveredReservedCount() && IsDefaultAllocated(p))
-				DefaultDeAllocate(p, desc.dataSize, size);
-			else
+			if (HeapFree(heapHandle, 0, p) == NULL)
 			{
-				if (HeapFree(heapHandle, 0, p) == NULL)
-				{
-					assert("InValid pointer in heap");
-					return;
-				}
-				committedBlockCount -= (size / desc.dataSize);
+				assert("InValid pointer in heap");
+				return;
 			}
+			committedBlockCount -= (size / desc.dataSize);
 		}
 		void JHeapAlloc::ReleaseUnusePage()
 		{
@@ -76,9 +66,9 @@ namespace JinEngine
 		{
 			return committedBlockCount + blockCount <= reservedBlockCount;
 		}
-		bool JHeapAlloc::IsDefaultAllocated(void* p)const noexcept
+		JAllocInfo JHeapAlloc::GetInformation()const noexcept
 		{
-			return HeapSize(heapHandle, 0, p) > 0;
+			return JAllocInfo{};
 		}
 		/*
 		void JHeapAlloc::CreateHeap(size_t heapSize, size_t maxSize)

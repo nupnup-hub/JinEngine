@@ -1,97 +1,82 @@
 #pragma once
-#include"JResourceObjectInterface.h"
-#include"JResourceType.h" 
-#include"JResourcePathData.h" 
-#include"../../Core/File/JFilePathData.h"
-#include"../../Utility/JTypeUtility.h"
+#include"JResourceObjectType.h"  
+#include"JResourceObjectEventType.h" 
+#include"JReferenceInterface.h"
+#include"../JObject.h"
+#include"../../Core/File/JFilePathData.h" 
+#include"../../Core/Interface/JValidInterface.h"
+#include"../../Core/Event/JEventManager.h"  
 
 namespace JinEngine
 {
 	class JDirectory;
-	class JResourceObject : public JResourceObjectInterface
-	{
-		REGISTER_CLASS(JResourceObject) 
-	protected:
-		struct JResourceMetaData : public JObjectMetaData
-		{
-		public:
-			std::wstring format;
-			int formatIndex; 
-			int rType;
-		};
-	public:
-		struct JResourceInitData
-		{ 
-		public:
-			const std::wstring name;
-			const size_t guid;
-			const J_OBJECT_FLAG flag;
-			const uint8 formatIndex;
-			const J_RESOURCE_TYPE rType;
-		private:
-			JDirectory* directory;
-		public:
-			JResourceInitData(const std::wstring& name,
-				const size_t guid, 
-				const J_OBJECT_FLAG flag,
-				JDirectory* directory,
-				const uint8 formatIndex,
-				const J_RESOURCE_TYPE rType);
-			JResourceInitData(const std::wstring& name,
-				JDirectory* directory,
-				const uint8 formatIndex,
-				const J_RESOURCE_TYPE rType); 
-			virtual ~JResourceInitData() = default; 
-		public:
-			JDirectory* GetDirectory()const noexcept;
-		public:
-			virtual bool IsValidCreateData();
-			virtual bool IsValidLoadData();
-			J_RESOURCE_TYPE GetResourceType() const noexcept;
-		};
-	private:
-		//0 is default Resource format 
-		const uint8 formatIndex; 
-		JDirectory* directory;  
-	public:
-		//Return name + oriFormat
-		std::wstring GetFullName()const noexcept; 
-		std::wstring GetPath()const noexcept;  
-		std::wstring GetMetafilePath()const noexcept;
-		std::wstring GetFolderPath()const noexcept;  
-		J_OBJECT_TYPE GetObjectType()const noexcept final;
+	class JFile;
+	class JResourceObjectPrivate;
+	struct RTypeHint;
+	struct RTypeCommonFunc;
+	struct RTypePrivateFunc;
 
-		virtual J_RESOURCE_TYPE GetResourceType()const noexcept = 0;
-		virtual std::wstring GetFormat()const noexcept = 0; 
-		void SetName(const std::wstring& newName)noexcept final;
-	protected:
-		uint8 GetFormatIndex()const noexcept;
-		JDirectory* GetDirectory()const noexcept final;
-		bool HasFile()const noexcept;
-		bool HasMetafile()const noexcept;
-	protected:
-		bool CopyRFile(JResourceObject& ori, bool setNewInnderGuid = false); 
-	protected:
-		//DoActivate => Load resource file in memory
-		void DoActivate() noexcept override;
-		//DoDeActivate => Unload resource
-		void DoDeActivate()noexcept override;
-	private: 
-		void OnReference()noexcept final;
-		void OffReference()noexcept final;
-	protected:
-		bool Destroy(const bool isForced)override;
-		void DeleteRFile()final;
-		void MoveRFile(JDirectory* newDir)final;
+	class JResourceObject;
+	using JResourceEventManager = Core::JEventManager<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>;
+	using JResourceEventInterface = JResourceEventManager::Interface;
+	class JResourceObject : public JObject, public JReferenceInterface, public Core::JValidInterface
+	{
+		REGISTER_CLASS_IDENTIFIER_LINE(JResourceObject)
+	public: 
+		class InitData : public JObject::InitData
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
+		public: 
+			uint8 formatIndex;
+			J_RESOURCE_TYPE rType;
+			JDirectory* directory;
+		public: 
+			InitData(const JTypeInfo& initTypeInfo, 
+				const uint8 formatIndex, 
+				const J_RESOURCE_TYPE rType, 
+				JDirectory* directory);
+			InitData(const JTypeInfo& initTypeInfo,
+				const size_t guid,
+				const uint8 formatIndex,
+				const J_RESOURCE_TYPE rType,
+				JDirectory* directory);
+			InitData(const JTypeInfo& initTypeInfo, 
+				const std::wstring& name,
+				const size_t& guid,
+				const J_OBJECT_FLAG flag, 
+				const uint8 formatIndex,
+				const J_RESOURCE_TYPE rType,
+				JDirectory* directory);
+		public:
+			bool IsValidData()const noexcept override;
+			J_RESOURCE_TYPE GetResourceType() const noexcept;
+			std::wstring GetFormat()const noexcept;
+		};
+	protected: 
+		class LoadData final : public Core::JDITypeDataBase
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadData)
+		public:
+			JDirectory* directory;
+			const Core::JAssetFileLoadPathData pathData;
+		public:
+			LoadData(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
+			~LoadData();
+		public:
+			bool IsValidData()const noexcept final;
+		};   
+	protected: 
+		class StoreData final : public JObject::StoreData
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(StoreData)  
+		public:
+			StoreData(JResourceObject* jRobj); 
+		};
 	private:
-		bool RegisterCashData()noexcept final;
-		bool DeRegisterCashData()noexcept final;
-	protected:
-		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JResourceObject* rObject);
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, JResourceMetaData& metadata);
-	protected:
-		JResourceObject(const JResourceInitData& initdata);
-		~JResourceObject();
+		friend class JResourceObjectPrivate;
+		class JResourceObjectImpl;
+	private:
+		std::unique_ptr<JResourceObjectImpl> impl;
 	public:
 		static constexpr uint8 GetInvalidFormatIndex()noexcept
 		{
@@ -102,41 +87,47 @@ namespace JinEngine
 			return 0;
 		}
 	public:
-		template<typename T>
-		static auto Convert(JObject* obj) -> typename Core::TypeCondition<T*, std::is_base_of_v<JResourceObject, T>>::Type
+		//Return name + oriFormat
+		std::wstring GetFullName()const noexcept; 
+		std::wstring GetPath()const noexcept;  
+		std::wstring GetMetaFilePath()const noexcept;
+		std::wstring GetFolderPath()const noexcept;  
+		static std::wstring GetDefaultFormat(const J_RESOURCE_TYPE type)noexcept;
+		J_OBJECT_TYPE GetObjectType()const noexcept final;
+		uint8 GetFormatIndex()const noexcept;
+		static uint8 GetFormatIndex(const J_RESOURCE_TYPE type, const std::wstring& format)noexcept;
+		JDirectory* GetDirectory()const noexcept;
+		virtual J_RESOURCE_TYPE GetResourceType()const noexcept = 0;
+		virtual std::wstring GetFormat()const noexcept = 0; 
+	public:
+		void SetName(const std::wstring& newName)noexcept final;
+	protected:
+		bool HasFile()const noexcept;
+		bool HasMetafile()const noexcept; 
+		bool CanMakeFile()const noexcept;	//Can make diskfile && JFile
+		static bool IsResourceFormat(const J_RESOURCE_TYPE type, const std::wstring& format)noexcept;
+	protected:
+		//DoActivate => Load resource file in memory
+		void DoActivate() noexcept override;
+		//DoDeActivate => Unload resource
+		void DoDeActivate()noexcept override;
+	public:
+		static JResourceEventInterface* EvInterface()noexcept;
+	protected:
+		static void RegisterRTypeInfo(const RTypeHint& rTypeHint, const RTypeCommonFunc& rTypeCFunc, const RTypePrivateFunc& rTypePFunc);
+	public:
+		template<typename T, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
+		static std::wstring GetDefaultFormat()noexcept
 		{
-			if (obj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
-			{
-				JResourceObject* jRobj = static_cast<JResourceObject*>(obj);
-				if (jRobj->GetResourceType() == T::GetStaticResourceType())
-					return static_cast<T*>(jRobj);
-			}
-			return nullptr;
+			return GetDefaultFormat(T::GetStaticResourceType());
 		}
-	protected: 
-		template<typename T>
+		template<typename T, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		static uint8 GetFormatIndex(const std::wstring& format)noexcept
 		{
-			std::vector<std::wstring> formatVec = T::GetAvailableFormat();
-			const uint formatVecCount = (uint)formatVec.size();
-			for (uint i = 0; i < formatVecCount; ++i)
-			{
-				if (formatVec[i] == format)
-					return i;
-			}
-			return GetInvalidFormatIndex();
+			return GetFormatIndex(T::GetStaticResourceType(), format);
 		}
-		template<typename T>
-		static bool IsResourceFormat(const std::wstring& format)noexcept
-		{
-			std::vector<std::wstring> formatVec = T::GetAvailableFormat();
-			const uint formatVecCount = (uint)formatVec.size();
-			for (uint i = 0; i < formatVecCount; ++i)
-			{
-				if (formatVec[i] == format)
-					return true;
-			}
-			return false;
-		}
+	protected:
+		JResourceObject(const InitData& initData);
+		~JResourceObject();
 	};
 }

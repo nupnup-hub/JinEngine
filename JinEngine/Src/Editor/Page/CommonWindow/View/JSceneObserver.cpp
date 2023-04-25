@@ -10,20 +10,24 @@
 #include"../../../EditTool/JEditorCameraControl.h" 
 #include"../../../../Core/File/JFileIOHelper.h"
 #include"../../../../Object/Component/Camera/JCamera.h"  
+#include"../../../../Object/Component/Camera/JCameraPrivate.h"  
 #include"../../../../Object/Component/Transform/JTransform.h"
 #include"../../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../../Object/Component/Light/JLight.h" 
 #include"../../../../Object/Resource/Scene/JScene.h"  
+#include"../../../../Object/Resource/Scene/JScenePrivate.h"  
 #include"../../../../Object/Resource/JResourceManager.h"  
 #include"../../../../Object/Resource/Texture/JTexture.h" 
 #include"../../../../Object/GameObject/JGameObject.h"  
-#include"../../../../Object/GameObject/JGameObjectFactoryUtility.h"   
+#include"../../../../Object/GameObject/JGameObjectCreator.h"   
 #include"../../../../Graphic/JGraphic.h"
-#include"../../../../Graphic/GraphicResource/JGraphicResourceHandleInterface.h" 
+#include"../../../../Graphic/JGraphicPrivate.h"
+#include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h" 
+#include"../../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h" 
 #include"../../../../Utility/JCommonUtility.h"
+#include"../../../../../Lib/DirectX/TK/Src/d3dx12.h"
 
 //#include<fstream>
-
 //Debug
 //#include"../../../../Object/Component/RenderItem/JRenderItem.h"
 //#include"../../../../Object/Resource/Material/JMaterial.h"  
@@ -35,6 +39,14 @@ namespace JinEngine
 {
 	namespace Editor
 	{
+		namespace
+		{
+			using SceneTimeInterface = JScenePrivate::TimeInterface; 
+			using SceneDebugInterface = JScenePrivate::DebugInterface;
+			using SceneCashInterface = JScenePrivate::CashInterface;
+			using CameraStateInterface = JCameraPrivate::CameraStateInterface;
+			using GraphicResourceInterface = Graphic::JGraphicPrivate::ResourceInterface;
+		}
 		namespace Constants
 		{
 			static constexpr uint optionTypeSubTypeCount = 3;
@@ -139,13 +151,13 @@ namespace JinEngine
 
 			GetGResourcePtr getGLamVec[menuSwitchIconCount]
 			{
-				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::POSITION_ARROW); },
-				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::ROTATION_ARROW); },
-				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SCALE_ARROW); },
-				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON); },
-				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::COORD_GRID_ICON); },
-				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PLAY_SCENE_TIME); },
-				[]() -> Graphic::JGraphicResourceHandleInterface* {return JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME); }
+				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::POSITION_ARROW).Get(); },
+				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::ROTATION_ARROW).Get(); },
+				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SCALE_ARROW).Get(); },
+				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON).Get(); },
+				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::COORD_GRID_ICON).Get(); },
+				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PLAY_SCENE_TIME).Get(); },
+				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME).Get(); }
 			};
 
 			MenuSwitchIconPreesF::Ptr pressPtrVec[menuSwitchIconCount] =
@@ -224,7 +236,7 @@ namespace JinEngine
 				JTransform* camTransform = cameraObj->GetTransform();
 				coordGrid->Update(JVector2<float>(camTransform->GetPosition().x, camTransform->GetPosition().z));
 				menubar->Update(true);
-				 
+				  
 				if (ImGui::IsMouseClicked(0))
 				{
 					JGameObject* hitObj = JEditorGameObjectSurpportTool::SceneIntersect(scene, cameraComp, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, ImGui::GetCursorPos());
@@ -244,7 +256,7 @@ namespace JinEngine
 						toolVec[i]->Update(selectedGobj, cameraComp, ImGui::GetCursorPos());
 				}
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
-				JImGuiImpl::Image(*cameraComp.Get(), ImGui::GetWindowSize());
+				JImGuiImpl::Image(cameraComp.Get(), ImGui::GetWindowSize());
 
 				lastCamPos = cameraComp->GetTransform()->GetPosition();
 				lastCamRot = cameraComp->GetTransform()->GetRotation();
@@ -370,14 +382,14 @@ namespace JinEngine
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME:
 			{
-				scene->TimeInterface()->ActivateSceneTime();
+				SceneTimeInterface::ActivateSceneTime(scene.Get());
 				nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME].isOpen = false;
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME:
 			{
 				if(scene->IsActivatedSceneTime() && !scene->IsPauseSceneTime())
-					scene->TimeInterface()->PlaySceneTimer(false);
+					SceneTimeInterface::PlaySceneTimer(scene.Get(), false);
 				else
 					nodeUtilData[(int)type].isOpen = false;
 				break;
@@ -419,14 +431,14 @@ namespace JinEngine
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME:
 			{
-				scene->TimeInterface()->DeActivateSceneTime();
+				SceneTimeInterface::DeActivateSceneTime(scene.Get());
 				nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME].isOpen = false;
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME:
 			{
 				if (scene->IsActivatedSceneTime() && scene->IsPauseSceneTime())
-					scene->TimeInterface()->PlaySceneTimer(true);
+					SceneTimeInterface::PlaySceneTimer(scene.Get(), true); 
 				else
 					nodeUtilData[(int)type].isOpen = true;
 				break;
@@ -482,9 +494,8 @@ namespace JinEngine
 			JImGuiImpl::EndWindow();
 		}
 		void JSceneObserver::OctreeOptionOnScreen()
-		{
-			JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
-			Core::JOctreeOption octreeOption = iSceneSpace->GetOctreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
+		{ 
+			Core::JOctreeOption octreeOption = scene->GetOctreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
 			int minSize = octreeOption.minSize;
 			int octreeSizeSquare = octreeOption.octreeSizeSquare;
 
@@ -498,15 +509,14 @@ namespace JinEngine
 			octreeOption.octreeSizeSquare = octreeSizeSquare;
 			if (isChanged)
 			{
-				iSceneSpace->SetOctreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, octreeOption);
+				scene->SetOctreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, octreeOption);
 				SetModifiedBit(scene, true);
 			}
 		}
 		void JSceneObserver::BvhOptionOnScreen()
 		{
-			bool isUpdated = false;
-			JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
-			Core::JBvhOption bvhOption = iSceneSpace->GetBvhOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
+			bool isUpdated = false; 
+			Core::JBvhOption bvhOption = scene->GetBvhOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
 			Core::JEnumInfo* buildEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_BUILD_TYPE).name());
 			Core::JEnumInfo* splitEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_SPLIT_TYPE).name());
 			int buildIndex = buildEnumInfo->GetEnumIndex((int)bvhOption.buildType);
@@ -525,15 +535,14 @@ namespace JinEngine
 			isUpdated |= CommonOptionOnScreen("Bvh", bvhOption.commonOption);
 			if (isUpdated)
 			{
-				iSceneSpace->SetBvhOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, bvhOption);
+				scene->SetBvhOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, bvhOption);
 				SetModifiedBit(scene, true);
 			}
 		}
 		void JSceneObserver::KdTreeOptionOnScreen()
 		{
-			bool isUpdated = false;
-			JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
-			Core::JKdTreeOption kdTreeOption = iSceneSpace->GetKdTreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
+			bool isUpdated = false; 
+			Core::JKdTreeOption kdTreeOption = scene->GetKdTreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
 			Core::JEnumInfo* buildEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_BUILD_TYPE).name());
 			Core::JEnumInfo* splitEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_SPLIT_TYPE).name());
 			int buildIndex = buildEnumInfo->GetEnumIndex((int)kdTreeOption.buildType);
@@ -552,7 +561,7 @@ namespace JinEngine
 			isUpdated |= CommonOptionOnScreen("Kd", kdTreeOption.commonOption);
 			if (isUpdated)
 			{
-				iSceneSpace->SetKdTreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, kdTreeOption);
+				scene->SetKdTreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, kdTreeOption);
 				SetModifiedBit(scene, true);
 			}
 		}
@@ -572,10 +581,9 @@ namespace JinEngine
 
 			if (spaceData->selectedIndex != -1)
 			{
-				Core::J_SPACE_SPATIAL_TYPE type = (Core::J_SPACE_SPATIAL_TYPE)spaceData->selectedIndex;
-				JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
+				Core::J_SPACE_SPATIAL_TYPE type = (Core::J_SPACE_SPATIAL_TYPE)spaceData->selectedIndex; 
 				editorBTreeView->ClearNode();
-				iSceneSpace->BuildDebugTree(type, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, *editorBTreeView);
+				SceneDebugInterface::BuildDebugTree(scene.Get(), type, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, *editorBTreeView);
 				if (editorBTreeView->BeginView(Core::GetName(type) + +"##DebugTreeView", &treeData->isOpen, ImGuiWindowFlags_NoDocking))
 				{
 					editorBTreeView->OnScreen();
@@ -588,7 +596,7 @@ namespace JinEngine
 			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::VIEW_SHADOW_VIEWER];
 			if (JImGuiImpl::BeginWindow("##ShadowMapViewerWindow", &data->isOpen, ImGuiWindowFlags_NoDocking))
 			{
-				const std::vector<JComponent*> litVec = scene->CashInterface()->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+				const std::vector<JComponent*> litVec = SceneCashInterface::GetComponentCashVec(scene.Get(), J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
 				const uint litCount = (uint)litVec.size();
 
 				std::vector<JLight*> shadowLitVec;
@@ -603,7 +611,7 @@ namespace JinEngine
 				if (shadowLitCount > 0)
 				{
 					JImGuiImpl::ComboSet("Light##SceneObserve", data->selectedIndex, shadowLitVec);
-					JImGuiImpl::Image(*shadowLitVec[data->selectedIndex], ImGui::GetWindowSize());
+					JImGuiImpl::Image(shadowLitVec[data->selectedIndex], ImGui::GetWindowSize());
 				}
 				JImGuiImpl::EndWindow();
 			}
@@ -613,7 +621,8 @@ namespace JinEngine
 			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER];
 			if (JImGuiImpl::BeginWindow("##OcclusionResultWindow1", &data->isOpen, ImGuiWindowFlags_NoDocking))
 			{
-				CD3DX12_GPU_DESCRIPTOR_HANDLE mainDsvDebugHandle = JGraphic::Instance().GetGpuDescriptorHandle(
+				 
+				CD3DX12_GPU_DESCRIPTOR_HANDLE mainDsvDebugHandle = GraphicResourceInterface::GetGpuDescriptorHandle(
 					Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0, 0);
 
 				ImGui::Image((ImTextureID)(mainDsvDebugHandle).ptr, ImVec2(400, 200));
@@ -621,7 +630,7 @@ namespace JinEngine
 				Graphic::JGraphicInfo ginfo = JGraphic::Instance().GetGraphicInfo();
 				for (uint i = 0; i < ginfo.occlusionMapCount; ++i)
 				{
-					CD3DX12_GPU_DESCRIPTOR_HANDLE occDebugHandle = JGraphic::Instance().GetGpuDescriptorHandle(
+					CD3DX12_GPU_DESCRIPTOR_HANDLE occDebugHandle = GraphicResourceInterface::GetGpuDescriptorHandle(
 						Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP, Graphic::J_GRAPHIC_BIND_TYPE::UAV, 0, i);
 					ImGui::Image((ImTextureID)(occDebugHandle).ptr, ImVec2(400, 200));
 					if (i == 0 || (i % 3) > 0)
@@ -656,7 +665,7 @@ namespace JinEngine
 		}
 		void JSceneObserver::MakeMainCamFrustum()noexcept
 		{
-			mainCamFrustum = Core::GetUserPtr(JGFU::CreateDebugLineShape(*scene->GetRootGameObject(),
+			mainCamFrustum = Core::GetUserPtr(JGCI::CreateDebugLineShape(scene->GetRootGameObject(),
 				OBJECT_FLAG_EDITOR_OBJECT,
 				J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM,
 				J_DEFAULT_MATERIAL::DEBUG_LINE_RED,
@@ -722,13 +731,13 @@ namespace JinEngine
 		}
 		void JSceneObserver::CreateHelperGameObject()
 		{
-			JGameObject* camObj = JGFU::CreateCamera(*scene->GetRootGameObject(), OBJECT_FLAG_UNIQUE_EDITOR_OBJECT, false, editorCameraName);
+			JGameObject* camObj = JGCI::CreateCamera(scene->GetRootGameObject(), OBJECT_FLAG_UNIQUE_EDITOR_OBJECT, false, editorCameraName);
 			camObj->SetName(L"Observer");
 			camObj->GetTransform()->SetPosition(lastCamPos.ConvertXMF());
 			camObj->GetTransform()->SetRotation(lastCamRot.ConvertXMF());
 			cameraObj = Core::GetUserPtr(camObj);
 			cameraComp = GetUserPtr(cameraObj->GetComponent<JCamera>());
-			cameraComp->StateInterface()->SetCameraState(J_CAMERA_STATE::RENDER);
+			CameraStateInterface::SetCameraState(cameraComp.Get(), J_CAMERA_STATE::RENDER) ;
 
 			if (nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS].isUse)
 				positionTool->SetDebugRoot(GetUserPtr(scene->GetDebugRootGameObject()));
@@ -763,6 +772,11 @@ namespace JinEngine
 			scaleTool = std::make_unique<JEditorTransformTool>(J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::SCALE_ARROW,
 				J_DEFAULT_SHAPE::DEFAULT_SHAPE_SCALE_ARROW, 1 / 16);
 
+			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON));
+			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::COORD_GRID_ICON));
+			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PLAY_SCENE_TIME));
+			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME)); 
+		 
 			toolVec.resize(toolCount);
 			toolVec[0] = positionTool.get();
 			toolVec[1] = rotationTool.get();
@@ -774,6 +788,7 @@ namespace JinEngine
 			positionTool.reset();
 			rotationTool.reset();
 			scaleTool.reset();
+			iconTexture.clear();
 			toolVec.clear();
 		}
 		void JSceneObserver::DoActivate()noexcept
@@ -830,10 +845,10 @@ namespace JinEngine
 				{
 					for (uint k = 0; k < zDim; ++k)
 					{
-						JGameObject* cube = JGFU::CreateShape(*scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
+						JGameObject* cube = JGCI::CreateShape(scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
 						cube->GetTransform()->SetScale(DirectX::XMFLOAT3(8, 8, 8));
 						cube->GetTransform()->SetRotation(DirectX::XMFLOAT3(45, 45, 0));
-						cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(16 * i, 16 * j, 16 * k));
+						cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(16.0f * i, 16.0f * j, 16.0f * k));
 					}
 				}
 			}
@@ -841,8 +856,11 @@ namespace JinEngine
 		}
 		void JSceneObserver::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{
-			JEditorWindow::OnEvent(senderGuid, eventType, eventStruct);		 
-			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT)
+			JEditorWindow::OnEvent(senderGuid, eventType, eventStruct);	
+			if (senderGuid == GetGuid())
+				return;
+
+			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && eventStruct->pageType == GetOwnerPageType())
 			{
 				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStruct);
 				Core::JUserPtr< Core::JIdentifier> gameObj = evstruct->GetLastMatchedTypeObject(JGameObject::StaticTypeInfo());
@@ -861,12 +879,12 @@ namespace JinEngine
 				JMaterial::InitData initData = JMaterial::InitData(L"TestM" + std::to_wstring(i),
 					Core::MakeGuid(),
 					OBJECT_FLAG_EDITOR_OBJECT,
-					JResourceManager::Instance().GetEditorResourceDirectory());
+					_JResourceManager::Instance().GetEditorResourceDirectory());
 
 				debugMaterial[i] = JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(L"TestM" + std::to_wstring(i),
 					Core::MakeGuid(),
 					OBJECT_FLAG_EDITOR_OBJECT,
-					JResourceManager::Instance().GetEditorResourceDirectory()));
+					_JResourceManager::Instance().GetEditorResourceDirectory()));
 				debugMaterial[i]->SetAlbedoColor(color[i].ConvertXMF());
 			}
 		}

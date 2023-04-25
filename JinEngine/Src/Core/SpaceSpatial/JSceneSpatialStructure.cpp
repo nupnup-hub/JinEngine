@@ -199,14 +199,6 @@ namespace JinEngine
 			else
 				optionCash->SetKdTreeOption(layer, option);
 		}
-		void JSceneSpatialStructure::SetInitTrigger(const bool value)noexcept
-		{
-			initTrigger = value;
-		}
-		bool JSceneSpatialStructure::IsInitTriggerActivated()const noexcept
-		{
-			return initTrigger;
-		}
 		void JSceneSpatialStructure::Activate(JGameObject* sceneRoot, JGameObject* sceneDebugRoot)noexcept
 		{
 			if (!activateTrigger)

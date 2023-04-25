@@ -68,11 +68,12 @@ namespace JinEngine
 			using DecayParamList = typename MakeTypelist<std::decay_t<Param>...>::Result;
 		protected:
 			std::unique_ptr<Impl> impl;
-		public:
-			JFunctor(const JFunctor& rhs) = default;
-			JFunctor& operator=(const JFunctor& rhs) = default;
+		public: 
+			JFunctor(const JFunctor& rhs) = delete;
+			JFunctor(JFunctor&& rhs) = default;
+			JFunctor& operator=(const JFunctor& rhs) = delete;	 
+			JFunctor& operator=(JFunctor&& rhs) = default;
 
-			~JFunctor() {};
 			JFunctor(std::unique_ptr<Impl> impl)
 				:impl(std::move(impl))
 			{}
@@ -85,8 +86,10 @@ namespace JinEngine
 			{}
 			template<typename Object>
 			JFunctor(Ret(Object::* ptr)(Param...)const, Object* object)
-				: impl(std::make_unique<MemberFunctionImpl<Ret(Object::*)(Param...)const, Object, Ret, Param...>>(ptr, object))
+				:impl(std::make_unique<MemberFunctionImpl<Ret(Object::*)(Param...)const, Object, Ret, Param...>>(ptr, object))
 			{}
+
+			~JFunctor() {};
 		public:
 			Ret operator()(Param... var)
 			{

@@ -14,7 +14,7 @@ namespace JinEngine
 			template <class> class LifetimePolicy = JDefaultLifetime,
 			template <class> class ThreadingModel = JSingleThread
 			>
-			class JSingletonHolder
+		class JSingletonHolder
 		{
 		public:
 			///  Type of the singleton object

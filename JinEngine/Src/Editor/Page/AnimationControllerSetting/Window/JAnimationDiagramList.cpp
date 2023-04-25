@@ -9,8 +9,7 @@
 #include"../../../String/JEditorStringMap.h"
 #include"../../../Helpers/JEditorInputBuffHelper.h"
 #include"../../../EditTool/JEditorViewStructure.h" 
-#include"../../../../Core/Reflection/JTypeTemplate.h"
-#include"../../../../Core/FSM/JFSMfactory.h" 
+#include"../../../../Core/Reflection/JTypeTemplate.h" 
 #include"../../../../Core/FSM/AnimationFSM/JAnimationStateType.h"
 #include"../../../../Core/FSM/AnimationFSM/JAnimationFSMdiagram.h" 
 #include"../../../../Object/Resource/AnimationController/JAnimationController.h"   
@@ -27,7 +26,7 @@ namespace JinEngine
 			}
 		}
 		 
-		DEFAULT_REQUESTORIMPL(JAnimationDiagramListCreationImpl, JAnimationDiagramList)
+		DEFAULT_CD_REQUESTOR(JAnimationDiagramListCreationImpl, JAnimationDiagramList)
  
 		JAnimationDiagramList::JAnimationDiagramList(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute,
@@ -73,7 +72,7 @@ namespace JinEngine
 					return;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(diagramList,
-					true, false, false, true, false,
+					true, false, false, true,
 					Core::JTypeInstanceSearchHint(diagramList->aniCont),
 					Core::JTypeInstanceSearchHint(),
 					&JEditorWindow::NotifyEvent);
@@ -92,7 +91,7 @@ namespace JinEngine
 					return;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(diagramList,
-					true, false, false, false, true,
+					true, false, false, true,
 					Core::JTypeInstanceSearchHint(diagramList->aniCont),
 					Core::JTypeInstanceSearchHint(),
 					&JEditorWindow::NotifyEvent);
@@ -203,8 +202,9 @@ namespace JinEngine
 		void JAnimationDiagramList::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* ev)
 		{
 			JEditorWindow::OnEvent(senderGuid, eventType, ev);
+
 			if (senderGuid == GetGuid())
-				return;
+				return; 
 
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)
 				diagramListPopup->SetOpen(false);

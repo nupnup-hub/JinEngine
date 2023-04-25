@@ -11,19 +11,19 @@ namespace JinEngine
 		class JFSMparameter;
 		class JFSMdiagram; 
 
-		class IJFSMparameterStorageInterface
+		class JFSMparameterStorageInterface
 		{
 		private:
 			friend class JFSMparameter;
 		public:
-			virtual ~IJFSMparameterStorageInterface() = default;
+			virtual ~JFSMparameterStorageInterface() = default;
 		private:
 			virtual bool AddParameter(JFSMparameter* fsmCondition)noexcept = 0;
 			virtual bool RemoveParameter(JFSMparameter* fsmCondition)noexcept = 0;
 		};
 
 		class JFSMparameterStorage : public JFSMparameterStorageManagerAccess, 
-			public IJFSMparameterStorageInterface
+			public JFSMparameterStorageInterface
 		{
 		public:
 			struct StorageUser
@@ -37,7 +37,7 @@ namespace JinEngine
 				size_t GetUserGuid()const noexcept;
 			};
 		public:
-			static constexpr uint maxNumberOfParameter = 100;
+			static constexpr uint maxNumberOfParameter = 250;
 		private:
 			std::vector<JFSMparameter*> parameterVec;
 			std::unordered_map<size_t, JFSMparameter*> parameterCashMap;

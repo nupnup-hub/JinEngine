@@ -1,15 +1,60 @@
 #pragma once 
-#include"JAnimationFSMstate.h"
-#include"JAnimationTime.h"
-#include"../../../Object/Resource/JResourceUserInterface.h"
-#include"../../../Object/Resource/AnimationClip/JAnimationClip.h"
+#include"JAnimationFSMstate.h" 
 
 namespace JinEngine
 { 
+	class JAnimationClip;
 	namespace Core
 	{
 		struct JAnimationTime;
-		class JAnimationFSMstateClip final : public JAnimationFSMstate, public JResourceUserInterface
+		class JAnimationFSMstateClipPrivate;
+		class JAnimationFSMdiagram;
+		class JAnimationFSMstateClip final : public JAnimationFSMstate
+		{
+			REGISTER_CLASS_IDENTIFIER_LINE(JAnimationFSMstateClip)
+		public: 
+			class InitData : public JAnimationFSMstate::InitData
+			{
+				REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
+			public:
+				InitData(JUserPtr<JAnimationFSMdiagram> ownerDiagram);
+				InitData(const std::wstring& name, const size_t guid, JUserPtr<JAnimationFSMdiagram> ownerDiagram);
+			};
+		private:
+			friend class JAnimationFSMstateClipPrivate;
+			class JAnimationFSMstateClipImpl;
+		private:
+			std::unique_ptr<JAnimationFSMstateClipImpl> impl;
+		public: 
+			Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+			J_ANIMATION_STATE_TYPE GetStateType()const noexcept final; 
+			Core::JUserPtr<JAnimationClip> GetClip()const noexcept;
+		public:
+			void SetClip(Core::JUserPtr<JAnimationClip> newClip)noexcept;
+		public:
+			bool CanLoop()const noexcept final;   
+		private:
+			JAnimationFSMstateClip(const InitData& initData);
+			~JAnimationFSMstateClip();
+			JAnimationFSMstateClip(const JAnimationFSMstateClip& rhs) = delete;
+			JAnimationFSMstateClip& operator=(const JAnimationFSMstateClip& rhs) = delete;
+		};
+	}
+}
+
+/*]
+#pragma once
+#include"JAnimationFSMstate.h"
+#include"JAnimationTime.h"
+#include"../../../Object/Resource/JResourceObjectUserInterface.h"
+#include"../../../Object/Resource/AnimationClip/JAnimationClip.h"
+
+namespace JinEngine
+{
+	namespace Core
+	{
+		struct JAnimationTime;
+		class JAnimationFSMstateClip final : public JAnimationFSMstate, public JResourceObjectUserInterface
 		{
 			REGISTER_CLASS(JAnimationFSMstateClip)
 		private:
@@ -45,3 +90,4 @@ namespace JinEngine
 		};
 	}
 }
+*/

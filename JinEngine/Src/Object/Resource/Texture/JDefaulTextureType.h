@@ -44,21 +44,21 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_TEXTURE::MISSING:
 				return true;
 			case JinEngine::J_DEFAULT_TEXTURE::POSITION_ARROW:
-				return true;
+				return false;
 			case JinEngine::J_DEFAULT_TEXTURE::ROTATION_ARROW:
-				return true;
+				return false;
 			case JinEngine::J_DEFAULT_TEXTURE::SCALE_ARROW:
-				return true;
+				return false;
 			case JinEngine::J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON:
-				return true;
+				return false;
 			case JinEngine::J_DEFAULT_TEXTURE::COORD_GRID_ICON:
-				return true;
+				return false;
 			case JinEngine::J_DEFAULT_TEXTURE::OPTION_SETTING:
-				return true;
+				return false;
 			case JinEngine::J_DEFAULT_TEXTURE::PLAY_SCENE_TIME:
-				return true;
+				return false;
 			case JinEngine::J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME:
-				return true;
+				return false;
 			default:
 				return false;
 			}
@@ -114,7 +114,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND:
 				return L"Shiro_Background.jpg";
 			default:
-				break;
+				return L"Invalid";
 			}
 		}
 		static J_OBJECT_FLAG GetFlag(const J_DEFAULT_TEXTURE& texture)
@@ -132,7 +132,7 @@ namespace JinEngine
 			}
 		}
 	};
-	/*	const std::vector<JResourceData::JDefaultTextureInfo> JResourceData::selectorTextureType
+	/*	const std::vector<JResourceObjectDefualtData::JDefaultTextureInfo> JResourceObjectDefualtData::selectorTextureType
 	{
 		{L"Reserved texture by Imgui", J_DEFAULT_TEXTURE::IMGUI_RESERVED},
 		{L"Missing.jpg", J_DEFAULT_TEXTURE::MISSING},
@@ -140,7 +140,7 @@ namespace JinEngine
 		{L"BlueSearchIcon.png", J_DEFAULT_TEXTURE::SEARCH_FOLDER_ICON},
 		{L"Shiro_Background.jpg", J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND},
 	};
-	const std::vector<JResourceData::JDefaultTextureInfo> JResourceData::projectTextureType
+	const std::vector<JResourceObjectDefualtData::JDefaultTextureInfo> JResourceObjectDefualtData::projectTextureType
 	{
 		{L"Reserved texture by Imgui", J_DEFAULT_TEXTURE::IMGUI_RESERVED},
 		{L"Missing.jpg", J_DEFAULT_TEXTURE::MISSING},

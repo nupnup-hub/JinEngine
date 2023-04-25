@@ -4,9 +4,14 @@
 namespace JinEngine
 {
 	namespace Core
-	{ 
+	{ 		
+		//수정필요
+		//현재 Virtual에 경우 할당량을 초과하면 새로운 Heap주소 할당하고 가상메모리 예약량을 늘리는
+		//방향으로 개선해야함
+		//...가비지 콜렉터 추가후 구현예정
+
 		class JVirtualAllocApiInterface;
-		class JVirtualAlloc : public JDefaultAlloc
+		class JVirtualAlloc : public JAllocationInterface
 		{ 
 		private:
 			using DataPointer = BYTE*;
@@ -60,9 +65,7 @@ namespace JinEngine
 			void ReleaseUnusePage()final;
 			void Release()final;
 		public:
-			bool CanAllocate(const uint blockCount)const noexcept final;
-		protected:
-			bool IsDefaultAllocated(void* p)const noexcept;
+			bool CanAllocate(const uint blockCount)const noexcept final; 
 		private:
 			bool IsOverlapPage(const uint pageIndex)const noexcept;
 		private:
@@ -71,6 +74,7 @@ namespace JinEngine
 			uint GetPageIndex(const uint blockIndex)const noexcept;
 			uint GetCommittedBlockCount()const noexcept;
 			uint GetAllocableBlockCount()const noexcept;
+			JAllocInfo GetInformation()const noexcept final;
 		private:
 			inline DataPointer CalPtrLocation(const uint index)const noexcept
 			{

@@ -1,6 +1,6 @@
 #include"JWindowException.h"
 #include"../../Utility/JCommonUtility.h"
-#include"../../Window/JWindows.h"
+#include"../../Window/JWindowPrivate.h"
 
 namespace JinEngine
 {
@@ -9,7 +9,7 @@ namespace JinEngine
 		JWindowException::JWindowException(int line, const std::string file)
 			:JException(line, JCUtil::StrToWstr(file)), lastError(GetLastError())
 		{ 
-			DWORD dwError = GetDlgItemInt(JWindow::Instance().HandleInterface()->GetHandle(), 1000, NULL, FALSE);
+			DWORD dwError = GetDlgItemInt(Window::JWindowPrivate::HandleInterface::GetHandle(), 1000, NULL, FALSE);
 			HLOCAL hlocal = NULL;
 			DWORD systemLocale = MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL);
 			// Get the error code's textual description

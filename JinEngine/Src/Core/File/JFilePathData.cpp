@@ -10,14 +10,14 @@ namespace JinEngine
 			:engineFileWPath(engineFileWPath)
 		{ 
 			JCUtil::DecomposeFilePath(engineFileWPath, folderPath, name, format);
-			engineMetaFileWPath = folderPath + L"\\" + name + Core::JFileConstant::GetMetafileFormat();
+			engineMetaFileWPath = folderPath + name + Core::JFileConstant::GetMetaFileFormat();
 		}
 		JFileImportHelpData::JFileImportHelpData(const std::wstring& oriPath, const J_OBJECT_FLAG flag)
 			: oriFileWPath(oriPath), oriFilePath(JCUtil::WstrToU8Str(oriPath)), flag(flag)
 		{
 			JCUtil::DecomposeFilePath(oriFileWPath, folderPath, name, format);
-			engineFileWPath = folderPath + L"\\" + name + Core::JFileConstant::GetFileFormat();
-			engineMetaFileWPath = folderPath + L"\\" + name + Core::JFileConstant::GetMetafileFormat();
+			engineFileWPath = folderPath + name + Core::JFileConstant::GetFileFormat();
+			engineMetaFileWPath = folderPath + name + Core::JFileConstant::GetMetaFileFormat();
 			fullName = name + format;
 		}
 	}

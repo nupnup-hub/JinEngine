@@ -1,60 +1,48 @@
 #pragma once 
 #include<memory>
-#include"JAnimationControllerInterface.h" 
-#include"../../../Core/FSM/JFSMparameterValueType.h"  
+#include"../JResourceObject.h"  
 #include"../../../Core/Guid/GuidCreator.h"
 
 namespace JinEngine
 {
-	struct JEditorDiagram;
-	class JSkeletonAsset;
-	class JAnimationClip;
-
 	namespace Core
 	{
 		class JAnimationFSMdiagram; 
 		class JAnimationFSMstate;
-		class JAnimationFSMtransition;
-
-		class JFSMparameterStorage; 
-		class IJFSMparameterStorageInterface;
-		class JFSMparameter;
-		struct JAnimationTime;
+		class JAnimationFSMtransition;		  
+		class JFSMparameter; 
 	}
-	namespace Graphic
+	 
+	class JAnimationControllerPrivate;
+	class JAnimationController final : public JResourceObject
 	{
-		struct JAnimationConstants;
-	}
-
-	//수정필요 & 추가필요
-	//Load & store
-	//Clear& stuff
-	class JAnimationController final : public JAnimationControllerInterface
-	{
-		REGISTER_CLASS(JAnimationController)
-	public:
-		struct JAnimationControllerInitData : JResourceInitData
+		REGISTER_CLASS_IDENTIFIER_LINE(JAnimationController)
+	public: 
+		class InitData final : public JResourceObject::InitData
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData) 
+		private:
+			friend class JAnimationController;
+		private:
+			bool makeDiagram = true;
 		public:
-			JAnimationControllerInitData(const std::wstring& name,
+			InitData(const uint8 formatIndex, JDirectory* directory);
+			InitData(const size_t guid,
+				const uint8 formatIndex,
+				JDirectory* directory);
+			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
-				JDirectory* directory,
-				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
-			JAnimationControllerInitData(const std::wstring& name,
-				JDirectory* directory,
-				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
-			JAnimationControllerInitData(const size_t guid,
-				JDirectory* directory,
-				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
-			JAnimationControllerInitData(JDirectory* directory,
-				const uint8 formatIndex = JResourceObject::GetFormatIndex<JAnimationController>(GetAvailableFormat()[0]));
+				const uint8 formatIndex,
+				JDirectory* directory);  
 		};
-		using InitData = JAnimationControllerInitData;
 	private:
-		std::unique_ptr<Core::JFSMparameterStorage> paramStorage;
-		std::vector<Core::JAnimationFSMdiagram*> fsmDiagram;
+		friend class JAnimationControllerPrivate;
+		class JAnimationControllerImpl;
+	private:
+		std::unique_ptr<JAnimationControllerImpl> impl;
 	public:
+		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -62,19 +50,18 @@ namespace JinEngine
 		}
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
-	public:
 		uint GetDiagramCount()const noexcept; 
 		uint GetParameterCount()const noexcept;   
-
 		Core::JAnimationFSMdiagram* GetDiagram(const size_t guid)noexcept;
 		Core::JAnimationFSMdiagram* GetDiagramByIndex(const uint index)noexcept;
 		const std::vector<Core::JAnimationFSMdiagram*>& GetDiagramVec()noexcept;
 		Core::JFSMparameter* GetParameter(const size_t guid)noexcept;
 		Core::JFSMparameter* GetParameterByIndex(const uint index)noexcept;
-
+	public:
 		bool CanCreateDiagram()const noexcept;
 		bool CanCreateParameter()const noexcept;
 		bool CanCreateState(Core::JAnimationFSMdiagram* diagram)const noexcept;
+		bool IsValid()const noexcept final;
 	public:
 		Core::JAnimationFSMdiagram* CreateFSMdiagram(const size_t guid = Core::MakeGuid())noexcept;
 		Core::JFSMparameter* CreateFSMparameter(const size_t guid = Core::MakeGuid())noexcept;
@@ -82,35 +69,12 @@ namespace JinEngine
 		Core::JAnimationFSMtransition* CreateFsmtransition(Core::JAnimationFSMdiagram* diagram,
 			Core::JAnimationFSMstate* from, 
 			Core::JAnimationFSMstate* to,
-			const size_t guid = Core::MakeGuid())noexcept;
-	private:  
-		bool AddType(Core::JFSMdiagram* diagram) noexcept final;
-		bool RemoveType(Core::JFSMdiagram* diagram) noexcept final;
-		Core::JFSMparameterStorageUserAccess* GetParameterStorageUser()noexcept;
-		Core::JAnimationFSMdiagram* FindDiagram(const size_t guid) noexcept;
-	public:
-		JAnimationControllerFrameUpdateInterface* FrameUpdateInterface();
-	private:
-		void Initialize(Core::JAnimationUpdateData* updateData)noexcept final;
-		void Update(Core::JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept final;
-	private:
-		void DoCopy(JObject* ori) final;
+			const size_t guid = Core::MakeGuid())noexcept;   
 	protected:
 		void DoActivate()noexcept final;
-		void DoDeActivate()noexcept final;
+		void DoDeActivate()noexcept final;  
 	private:
-		void StuffResource() final;
-		void ClearResource() final;
-		bool WriteAnimationControllerData();
-		bool ReadAnimationControllerData();
-		bool IsValid()const noexcept final;
-	private:
-		Core::J_FILE_IO_RESULT CallStoreResource()final;
-		static Core::J_FILE_IO_RESULT StoreObject(JAnimationController* animationCont);
-		static JAnimationController* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
-		static void RegisterCallOnce();
-	private:
-		JAnimationController(const JAnimationControllerInitData& initdata);
+		JAnimationController(const InitData& initData);
 		~JAnimationController();
 	};
 }

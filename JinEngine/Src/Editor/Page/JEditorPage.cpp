@@ -13,7 +13,7 @@
 #include"../../Object/Resource/JResourceManager.h"
 #include"../../Object/Resource/Scene/JScene.h"
 #include"../../Object/GameObject/JGameObject.h"
-#include"../../Window/JWindows.h"
+#include"../../Window/JWindow.h"
 #include"../../Utility/JCommonUtility.h"
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
 #include<fstream> 
@@ -454,7 +454,7 @@ namespace JinEngine
 			bool isOpen;
 			bool active;
 			bool isFocus;
-			Core::JIdentifier* openObj = nullptr; 
+			Core::JUserPtr<Core::JIdentifier> openObj = nullptr;
 			bool hasFocusWindow;
 			std::wstring focusWindowName;
 			int windowCount;
@@ -471,19 +471,17 @@ namespace JinEngine
 
 			if (isOpen)
 			{
-				bool reqOpenObj = JEditorPageShareData::HasValidOpenPageData(GetPageType());
+				bool alreadyHasValidOpenObj = JEditorPageShareData::HasValidOpenPageData(GetPageType());
 				bool hasOpenObj = openObj != nullptr && openObj->GetTypeInfo().IsChildOf(JObject::StaticTypeInfo());
-				if (reqOpenObj)
+				if (alreadyHasValidOpenObj)
 				{
 					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE,
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), Core::JUserPtr<JObject>())));
 				}
 				else if (hasOpenObj)
-				{
-					auto idenObj = Core::GetUserPtr(openObj->GetTypeInfo().TypeGuid(), openObj->GetGuid());
-					auto userObj = Core::JUserPtr<JObject>::ConvertChildUser(idenObj);
+				{ 
 					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE,
-						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), userObj)));
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), openObj)));
 				}
 			}
 			if (active)

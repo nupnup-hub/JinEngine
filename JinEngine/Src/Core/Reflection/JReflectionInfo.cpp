@@ -5,6 +5,7 @@
 #include"../../Object/GameObject/JGameObject.h"
 #include"../../Object/Component/JComponent.h"
 #include"../../Object/Resource/JResourceObject.h"
+#include"../../Object/Resource/JResourceObjectHint.h"
 #include"../../Utility/JCommonUtility.h"
 #include<windows.h>
 #include<set>
@@ -14,7 +15,7 @@ namespace JinEngine
 	namespace Core
 	{
 		void JReflectionInfoImpl::AddType(JTypeInfo* newType)
-		{
+		{ 
 			assert(newType != nullptr);
 			if (GetTypeInfo(newType->TypeGuid()) != nullptr)
 				return;
@@ -32,7 +33,7 @@ namespace JinEngine
 			jEnum.enumNameMap.emplace(newEnum->EnumGuid(), newEnum);
 		}
 		JTypeInfo* JReflectionInfoImpl::GetTypeInfo(const std::string& fullname)const noexcept
-		{
+		{ 
 			return GetTypeInfo(std::hash<std::string>{}(fullname));
 		} 
 		JTypeInfo* JReflectionInfoImpl::GetTypeInfo(const size_t typeGuid)const noexcept
@@ -102,10 +103,10 @@ namespace JinEngine
 				}
 			}
 
-			auto rTypeHintVec = JResourceObject::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
+			auto rTypeHintVec = RTypeCommonCall::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
 			for (auto& hint : rTypeHintVec)
 			{ 
-				Core::JTypeInfo& typeInfo = JResourceObject::CallGetTypeInfo(hint.thisType);
+				Core::JTypeInfo& typeInfo = RTypeCommonCall::CallGetTypeInfo(hint.thisType);
 				auto derivedVec = GetDerivedTypeInfo(typeInfo);
 				for (auto& data : derivedVec)
 				{

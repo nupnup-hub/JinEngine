@@ -16,7 +16,7 @@ namespace JinEngine
 		class JTypeInfo;
 		class JEnumInfo;
 
-		class JReflectionInfoImpl
+		class JReflectionInfoImpl final
 		{
 		private:
 			friend class Application::JApplication;

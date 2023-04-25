@@ -10,7 +10,7 @@ namespace JinEngine
 	namespace Core
 	{
 		class JIdentifier;
-		class JFSMInterface;
+		class JFSMinterface;
 	}
 	namespace Editor
 	{

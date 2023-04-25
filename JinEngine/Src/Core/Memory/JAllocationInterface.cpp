@@ -46,30 +46,5 @@ namespace JinEngine
 			}
 			*/
 		}
-
-		void* JDefaultAlloc::DefaultAllocate(const size_t blockSize, const size_t reqSize)
-		{  
-			if (void* ptr = std::malloc(reqSize))
-			{
-				committedBlockCount += (reqSize / blockSize);
-				return ptr;
-			}
-
-			throw std::bad_alloc{};
-		}
-		void JDefaultAlloc::DefaultDeAllocate(void* p)
-		{
-			std::free(p);
-			--committedBlockCount;
-		}
-		void JDefaultAlloc::DefaultDeAllocate(void* p, const size_t blockSize, const size_t reqSize)
-		{
-			std::free(p);
-			committedBlockCount -= (reqSize / blockSize);
-		}
-		bool JDefaultAlloc::IsOveredReservedCount()const noexcept
-		{
-			return committedBlockCount > 0;
-		}
 	}
 }

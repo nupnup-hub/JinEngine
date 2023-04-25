@@ -79,7 +79,7 @@ namespace JinEngine
 			info.bindingCubeMapCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE].capacity;
 			info.bindingShadowTextureCapacity = bData[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP].capacity;
 		}
-		void JGraphicUpdateHelper::NotifyUpdateFrameCapacity(JGraphicImpl& grpahic)
+		void JGraphicUpdateHelper::NotifyUpdateFrameCapacity(JGraphic& grpahic)
 		{
 			for (uint i = 0; i < (uint)J_UPLOAD_RESOURCE_TYPE::COUNT; ++i)
 			{

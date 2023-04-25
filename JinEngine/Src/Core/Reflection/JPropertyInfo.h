@@ -13,8 +13,8 @@ namespace JinEngine
 		class JMethodInfo;
 		template<typename Type, typename Field, typename Pointer, Pointer ptr> class JPropertyInfoRegister;
 		template<typename Type, typename Field, typename Pointer, Pointer ptr> class JPropertyExInfoRegister;
-		class JPropertyInfo
-		{
+		class JPropertyInfo final
+		{ 
 		private:
 			friend class JTypeInfo;
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyInfoRegister;

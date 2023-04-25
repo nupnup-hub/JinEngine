@@ -1,23 +1,380 @@
-#include"JCamera.h"  
-#include"../JComponentFactory.h"
+#include"JCamera.h"
+#include"JCameraPrivate.h"
+#include"../JComponentHint.h"
 #include"../Transform/JTransform.h"
+#include"../Transform/JTransformPrivate.h"
+#include"../../JFrameUpdate.h"
 #include"../../GameObject/JGameObject.h" 
-#include"../../Resource/Scene/JScene.h"
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../Resource/Scene/JScene.h" 
+#include"../../Resource/Scene/JScenePrivate.h" 
 #include"../../../Core/Guid/GuidCreator.h"  
 #include"../../../Core/File/JFileConstant.h"
-#include"../../../Graphic/FrameResource/JCameraConstants.h" 
-#include"../../../Application/JApplicationVariable.h"
-#include"../../../Application/JApplicationState.h" 
-#include"../../../Window/JWindows.h"
+#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/Identity/JIdentifierImplBase.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
+#include"../../../Graphic/FrameResource/JCameraConstants.h"    
+#include"../../../Window/JWindow.h"
 #include"../../../Utility/JMathHelper.h"
 #include<fstream>
 
 namespace JinEngine
-{
+{ 
 	using namespace DirectX;
-	static auto isAvailableoverlapLam = []() {return false; };
+	namespace
+	{
+		static auto isAvailableoverlapLam = []() {return false; };
+		static JCameraPrivate cPrivate;
+	}
+ 
+	class JCamera::JCameraImpl : public Core::JIdentifierImplBase,
+		public JFrameUpdate<JFrameUpdate1<JFrameUpdateBase<Graphic::JCameraConstants&>>, JFrameDirtyListener, FrameUpdate::nonBuff>,
+		public Graphic::JGraphicResourceInterface
+	{ 
+		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JCameraImpl)
+	public:
+		JCamera* thisCam = nullptr;
+	public:
+		//JTransform* ownerTransform;
+		J_CAMERA_STATE camState = J_CAMERA_STATE::IDEL;
 
+		// Cache frustum properties.
+		REGISTER_PROPERTY_EX(cameraNear, GetNear, SetNear, GUI_SLIDER(0, 1000, true))
+		float cameraNear = 0.0f;
+		REGISTER_PROPERTY_EX(cameraFar, GetFar, SetFar, GUI_SLIDER(0, 1000, true))
+		float cameraFar = 0.0f;
+
+		float cameraAspect = 0.0f;
+		REGISTER_PROPERTY_EX(cameraFov, GetFovYDegree, SetFovDegree, GUI_SLIDER(0, 360, true))
+		float cameraFov = 0.0f;
+		float cameraNearViewHeight = 0.0f;
+		float cameraFarViewHeight = 0.0f;
+
+		int viewWidth;
+		int viewHeight;
+
+		REGISTER_PROPERTY_EX(isOrtho, IsOrthoCamera, SetOrthoCamera, GUI_CHECKBOX())
+		bool isOrtho = false;
+		bool isMainCamera = false;
+
+		// Cache View/Proj matrices.
+		DirectX::XMFLOAT4X4 mView;
+		DirectX::XMFLOAT4X4 mProj;
+		DirectX::BoundingFrustum mCamFrustum;
+	public:
+		//Caution
+		//Impl생성자에서 interface class 참조시 interface class가 함수내에서 impl을 참조할 경우 error
+		//impl이 아직 생성되지 않았으므로
+		JCameraImpl(const InitData& initData, JCamera* thisCam)
+			:thisCam(thisCam)
+		{
+			JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisCam->GetOwner()->GetTransform(), this);
+		}
+		~JCameraImpl()
+		{
+			if (thisCam->GetOwner()->GetTransform() != nullptr)
+				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisCam->GetOwner()->GetTransform(), this);
+		}
+	public:
+		void Initialize()
+		{
+			//CalOrthoLens(1, 1000.0f);
+			cameraFov = 0.25f * JMathHelper::Pi;
+			cameraNear = 1;
+			cameraFar = 1000;
+			mView = JMathHelper::Identity4x4();
+			mProj = JMathHelper::Identity4x4();
+
+			SetViewSize(JWindow::GetClientWidth(), JWindow::GetClientHeight());
+			//ownerTransform->SetPosition(XMFLOAT3(0.0f, 2.0f, -15.0f));
+			CalPerspectiveLens();
+
+			BoundingFrustum::CreateFromMatrix(mCamFrustum, XMLoadFloat4x4(&mProj));
+		}
+	public:  
+		float GetNear()const noexcept
+		{
+			return cameraNear;
+		}
+		float GetFar()const noexcept
+		{
+			return cameraFar;
+		}
+		float GetFovYDegree()const noexcept
+		{
+			return JMathHelper::RadToDeg * cameraFov;
+		} 
+	public:
+		void SetNear(float value)noexcept
+		{
+			cameraNear = value;
+			if (isOrtho)
+				CalOrthoLens();
+			else
+				CalPerspectiveLens();
+		}
+		void SetFar(float value) noexcept
+		{
+			cameraFar = value;
+			if (isOrtho)
+				CalOrthoLens();
+			else
+				CalPerspectiveLens();
+		}
+		void SetFov(float value) noexcept
+		{
+			cameraFov = value;
+			if (!isOrtho)
+				CalPerspectiveLens();
+		}
+		void SetFovDegree(float value) noexcept
+		{
+			cameraFov = value * JMathHelper::DegToRad;
+			if (!isOrtho)
+				CalPerspectiveLens();
+		}
+		void SetViewSize(int width, int height) noexcept
+		{
+			viewWidth = width;
+			viewHeight = height;
+			SetAspect(static_cast<float>(viewWidth) / viewHeight);
+			if (isOrtho)
+				CalOrthoLens();
+			else
+				CalPerspectiveLens();
+		}
+		void SetOrthoCamera(bool value)noexcept
+		{
+			isOrtho = value;
+			if (isOrtho)
+				CalOrthoLens();
+			else
+				CalPerspectiveLens();
+		}
+		void SetMainCamera(bool value)noexcept
+		{
+			if (isMainCamera == value)
+				return;
+
+			if (value)
+			{
+				JCamera* mainCam = thisCam->GetOwner()->GetOwnerScene()->GetMainCamera();
+				if (mainCam != nullptr)
+					mainCam->impl->SetCameraState(J_CAMERA_STATE::IDEL);
+
+				SetCameraState(J_CAMERA_STATE::RENDER);
+				if (thisCam->IsActivated())
+					JScenePrivate::CompSettingInterface::SetMainCamera(thisCam->GetOwner()->GetOwnerScene(), thisCam);
+			}
+			else
+			{
+				if (thisCam->IsActivated())
+					JScenePrivate::CompSettingInterface::SetMainCamera(thisCam->GetOwner()->GetOwnerScene(), nullptr);
+			}
+			isMainCamera = value;
+		}
+		void SetAspect(float value) noexcept
+		{
+			cameraAspect = value;
+			CalPerspectiveLens();
+			if (!isOrtho)
+				CalPerspectiveLens();
+		}
+		void SetCameraState(const J_CAMERA_STATE state)noexcept
+		{
+			if (camState == state)
+				return;
+
+			camState = state;
+			if (camState == J_CAMERA_STATE::RENDER)
+			{
+				if (thisCam->IsActivated() && thisCam->RegisterComponent())
+					CreateRenderTarget();
+			}
+			else
+			{
+				if (thisCam->IsActivated() && thisCam->DeRegisterComponent())
+					DestroyRenderTarget();
+			}
+			SetFrameDirty();
+		}
+	public:
+		bool IsOrthoCamera()const noexcept
+		{
+			return isOrtho;
+		}
+	public:
+		void CalPerspectiveLens() noexcept
+		{
+			cameraNearViewHeight = 2.0f * cameraNear * tanf(0.5f * cameraFov);
+			cameraFarViewHeight = 2.0f * cameraFar * tanf(0.5f * cameraFov);
+
+			const XMMATRIX P = XMMatrixPerspectiveFovLH(cameraFov, cameraAspect, cameraNear, cameraFar);
+			XMStoreFloat4x4(&mProj, P);
+			BoundingFrustum::CreateFromMatrix(mCamFrustum, XMLoadFloat4x4(&mProj));
+			SetFrameDirty();
+		}
+		void CalOrthoLens() noexcept
+		{
+			//XMMatrixOrthographicOffCenterLH
+			const XMMATRIX P = XMMatrixOrthographicLH((float)viewWidth, (float)viewHeight, cameraNear, cameraFar);
+			XMStoreFloat4x4(&mProj, P);
+			BoundingFrustum::CreateFromMatrix(mCamFrustum, XMLoadFloat4x4(&mProj));
+			SetFrameDirty();
+		}
+	public:
+		void CreateRenderTarget()noexcept
+		{
+			//if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
+			CreateRenderTargetTexture();
+			AddDrawRequest(thisCam->GetOwner()->GetOwnerScene(), thisCam);
+		}
+		void DestroyRenderTarget()noexcept
+		{
+			//if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
+			PopDrawRequest(thisCam->GetOwner()->GetOwnerScene(), thisCam);
+			DestroyTexture();
+		}
+	public:
+		void UpdateFrame(Graphic::JCameraConstants& constant)noexcept final
+		{
+			UpdateViewMatrix();
+			const XMMATRIX view = XMLoadFloat4x4(&mView);
+			const XMMATRIX proj = XMLoadFloat4x4(&mProj);
+
+			XMVECTOR viewVec = XMMatrixDeterminant(view);
+			XMVECTOR projVec = XMMatrixDeterminant(proj);
+
+			const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+			const XMMATRIX invView = XMMatrixInverse(&viewVec, view);
+			const XMMATRIX invProj = XMMatrixInverse(&projVec, proj);
+			XMVECTOR viewProjVec = XMMatrixDeterminant(viewProj);
+			const XMMATRIX invViewProj = XMMatrixInverse(&viewProjVec, viewProj);
+
+			XMStoreFloat4x4(&constant.view, XMMatrixTranspose(view));
+			XMStoreFloat4x4(&constant.invView, XMMatrixTranspose(invView));
+			XMStoreFloat4x4(&constant.proj, XMMatrixTranspose(proj));
+			XMStoreFloat4x4(&constant.invProj, XMMatrixTranspose(invProj));
+			XMStoreFloat4x4(&constant.viewProj, XMMatrixTranspose(viewProj));
+			XMStoreFloat4x4(&constant.invViewProj, XMMatrixTranspose(invViewProj));
+
+			constant.renderTargetSize = XMFLOAT2((float)viewWidth, (float)viewHeight);
+			constant.invRenderTargetSize = XMFLOAT2(1.0f / viewWidth, 1.0f / viewHeight);
+			constant.eyePosW = thisCam->GetTransform()->GetPosition();
+			constant.nearZ = cameraNear;
+			constant.farZ = cameraFar;
+		}
+		void UpdateViewMatrix() noexcept
+		{
+			//if (gameObjectDirty->GetTransformDirty() > 0)
+			{
+				JTransform* ownerTransform = thisCam->GetTransform();
+				XMVECTOR R = ownerTransform->GetRight();
+				XMVECTOR U = ownerTransform->GetUp();
+				XMVECTOR L = ownerTransform->GetFront();
+				XMFLOAT3 pos = ownerTransform->GetPosition();
+				XMVECTOR P = XMLoadFloat3(&pos);
+
+				// Fill in the view matrix entries.
+				const float x = -XMVectorGetX(XMVector3Dot(P, R));
+				const float y = -XMVectorGetX(XMVector3Dot(P, U));
+				const float z = -XMVectorGetX(XMVector3Dot(P, L));
+
+				XMFLOAT3 rightVector;
+				XMFLOAT3 upVector;
+				XMFLOAT3 lookVector;
+
+				XMStoreFloat3(&rightVector, R);
+				XMStoreFloat3(&upVector, U);
+				XMStoreFloat3(&lookVector, L);
+
+				mView(0, 0) = rightVector.x;
+				mView(1, 0) = rightVector.y;
+				mView(2, 0) = rightVector.z;
+				mView(3, 0) = x;
+
+				mView(0, 1) = upVector.x;
+				mView(1, 1) = upVector.y;
+				mView(2, 1) = upVector.z;
+				mView(3, 1) = y;
+
+				mView(0, 2) = lookVector.x;
+				mView(1, 2) = lookVector.y;
+				mView(2, 2) = lookVector.z;
+				mView(3, 2) = z;
+
+				mView(0, 3) = 0.0f;
+				mView(1, 3) = 0.0f;
+				mView(2, 3) = 0.0f;
+				mView(3, 3) = 1.0f;
+			}
+		}
+	public:
+		static bool DoCopy(JCamera* from, JCamera* to)
+		{ 
+			to->impl->cameraNear = from->impl->cameraNear;
+			to->impl->cameraFar = from->impl->cameraFar;
+			to->impl->cameraAspect = from->impl->cameraAspect;
+			to->impl->cameraFov = from->impl->cameraFov;
+			to->impl->cameraNearViewHeight = from->impl->cameraNearViewHeight;
+			to->impl->cameraFarViewHeight = from->impl->cameraFarViewHeight;
+			to->impl->isOrtho = from->impl->isOrtho;
+			if (!to->impl->isOrtho)
+				to->impl->CalPerspectiveLens();
+			else
+				to->impl->CalOrthoLens(); 
+			return true;
+		}
+	public:
+		static void RegisterCallOnce()
+		{
+			static GetCTypeInfoCallable getTypeInfoCallable{ &JCamera::StaticTypeInfo };
+			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
+			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
+			auto createInitDataLam = [](JGameObject* parent, InitUnq&& parentClassInitData) -> InitUnq
+			{
+				using CorrectType = JComponent::ParentType::InitData;
+				const bool isValidUnq = parentClassInitData != nullptr && parentClassInitData->GetTypeInfo().IsChildOf(CorrectType::StaticTypeInfo());
+				if (isValidUnq)
+				{
+					CorrectType* ptr = static_cast<CorrectType*>(parentClassInitData.get());
+					return std::make_unique<JCamera::InitData>(ptr->guid, ptr->flag, parent);
+				}
+				else
+					return std::make_unique<JCamera::InitData>(parent);
+			};
+			static CreateInitDataCallable createInitDataCallable{ createInitDataLam };
+
+			static auto setFrameLam = [](JComponent* component) {static_cast<JCamera*>(component)->impl->SetFrameDirty(); };
+			static SetCFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
+
+			static CTypeHint cTypeHint{ GetStaticComponentType(), true };
+			static CTypeCommonFunc cTypeCommonFunc{ getTypeInfoCallable, isAvailableOverlapCallable, createInitDataCallable };
+			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, nullptr };
+
+			JComponent::RegisterCTypeInfo(JCamera::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
+			Core::JIdentifier::RegisterPrivateInterface(JCamera::StaticTypeInfo(), cPrivate);
+		}
+	};
+
+	JCamera::InitData::InitData(JGameObject* owner)
+		:JComponent::InitData(JCamera::StaticTypeInfo(), owner)
+	{}
+	JCamera::InitData::InitData(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner)
+		: JComponent::InitData(JCamera::StaticTypeInfo(), GetDefaultName(JCamera::StaticTypeInfo()), guid, flag, owner)
+	{}
+
+	Core::JIdentifierPrivate& JCamera::GetPrivateInterface()const noexcept
+	{
+		return cPrivate;
+	}
+	JFrameUpdateUserAccess JCamera::GetFrameUserInterface() noexcept
+	{
+		return JFrameUpdateUserAccess(Core::GetUserPtr(this), impl.get());
+	}
+	const Graphic::JGraphicResourceUserInterface JCamera::GraphicResourceUserInterface()const noexcept
+	{
+		return Graphic::JGraphicResourceUserInterface{ impl.get() };
+	}
 	J_COMPONENT_TYPE JCamera::GetComponentType()const noexcept
 	{
 		return GetStaticComponentType();
@@ -28,154 +385,114 @@ namespace JinEngine
 	}
 	XMMATRIX JCamera::GetView()const noexcept
 	{
-		return XMLoadFloat4x4(&mView);
+		return XMLoadFloat4x4(&impl->mView);
 	}
 	XMMATRIX JCamera::GetProj()const noexcept
 	{
-		return XMLoadFloat4x4(&mProj);
+		return XMLoadFloat4x4(&impl->mProj);
 	}
 	XMFLOAT4X4 JCamera::GetView4x4f()const noexcept
 	{
-		return mView;
+		return impl->mView;
 	}
 	XMFLOAT4X4 JCamera::GetProj4x4f()const noexcept
 	{
-		return mProj;
+		return impl->mProj;
 	}
 	DirectX::BoundingFrustum JCamera::GetBoundingFrustum()const noexcept
 	{ 
 		DirectX::BoundingFrustum worldCamFrustum;
-		mCamFrustum.Transform(worldCamFrustum, GetOwner()->GetTransform()->GetWorldMatrix());
+		impl->mCamFrustum.Transform(worldCamFrustum, GetOwner()->GetTransform()->GetWorldMatrix());
 		return worldCamFrustum;
 	}
 	float JCamera::GetNear()const noexcept
 	{
-		return cameraNear;
+		return impl->GetNear();
 	}
 	float JCamera::GetFar()const noexcept
 	{
-		return cameraFar;
+		return impl->GetFar();
 	}
 	float JCamera::GetAspect()const noexcept
 	{
-		return cameraAspect;
+		return impl->cameraAspect;
 	}
 	float JCamera::GetFovY()const noexcept
 	{
-		return cameraFov;
+		return impl->cameraFov;
 	}
 	float JCamera::GetFovYDegree()const noexcept
 	{
-		return JMathHelper::RadToDeg * cameraFov;
+		return impl->GetFovYDegree();
 	}
 	float JCamera::GetFovX()const noexcept
 	{
 		float halfWidth = 0.5f * GetNearViewWidth();
-		return 2.0f * atan(halfWidth / cameraNear);
+		return 2.0f * atan(halfWidth / impl->GetNear());
 	}
 	int JCamera::GetViewWidth()const noexcept
 	{
-		return viewWidth;
+		return impl->viewWidth;
 	}
 	int JCamera::GetViewHeight()const noexcept
 	{
-		return viewHeight;
+		return impl->viewHeight;
 	}
 	float JCamera::GetNearViewWidth()const noexcept
 	{
-		return cameraAspect * cameraNearViewHeight;
+		return impl->cameraAspect * impl->cameraNearViewHeight;
 	}
 	float JCamera::GetNearViewHeight()const noexcept
 	{
-		return cameraNearViewHeight;
+		return impl->cameraNearViewHeight;
 	}
 	float JCamera::GetFarViewWidth()const noexcept
 	{
-		return cameraAspect * cameraFarViewHeight;
+		return impl->cameraAspect * impl->cameraFarViewHeight;
 	}
 	float JCamera::GetFarViewHeight()const noexcept
 	{
-		return cameraFarViewHeight;
+		return impl->cameraFarViewHeight;
 	}
 	J_CAMERA_STATE JCamera::GetCameraState()const noexcept
 	{
-		return camState;
+		return impl->camState;
 	}
 	void JCamera::SetNear(float value)noexcept
 	{
-		cameraNear = value;
-		if (isOrtho)
-			CalOrthoLens();
-		else
-			CalPerspectiveLens();
+		impl->SetNear(value); 
 	}
 	void JCamera::SetFar(float value) noexcept
 	{
-		cameraFar = value;
-		if (isOrtho)
-			CalOrthoLens();
-		else
-			CalPerspectiveLens();
+		impl->SetFar(value); 
 	}
 	void JCamera::SetFov(float value) noexcept
 	{
-		cameraFov = value;
-		if (!isOrtho)
-			CalPerspectiveLens();
+		impl->SetFov(value); 
 	}
 	void JCamera::SetFovDegree(float value) noexcept
 	{
-		cameraFov = value * JMathHelper::DegToRad;
-		if (!isOrtho)
-			CalPerspectiveLens();
+		impl->SetFovDegree(value);
 	}
 	void JCamera::SetViewSize(int width, int height) noexcept
 	{
-		viewWidth = width;
-		viewHeight = height;
-		SetAspect(static_cast<float>(viewWidth) / viewHeight);
-		if (isOrtho)
-			CalOrthoLens();
-		else
-			CalPerspectiveLens();
+		impl->SetViewSize(width, height);
 	}
 	void JCamera::SetOrthoCamera(bool value)noexcept
 	{
-		isOrtho = value;
-		if (isOrtho)
-			CalOrthoLens();
-		else
-			CalPerspectiveLens();
+		impl->SetOrthoCamera(value);
 	}
 	void JCamera::SetMainCamera(bool value)noexcept
 	{
-		if (isMainCamera == value)
-			return;
-
-		if (value)
-		{
-			JCamera* mainCam = GetOwner()->GetOwnerScene()->GetMainCamera();
-			if (mainCam != nullptr)
-				mainCam->SetCameraState(J_CAMERA_STATE::IDEL);
-
-			SetCameraState(J_CAMERA_STATE::RENDER);
-			if(IsActivated())
-				GetOwner()->GetOwnerScene()->CompInterface()->SetMainCamera(this);
-		}
-		else
-		{
-			if (IsActivated())
-				GetOwner()->GetOwnerScene()->CompInterface()->SetMainCamera(nullptr);
-		}
-		isMainCamera = value;
+		impl->SetMainCamera(value);
 	}
 	bool JCamera::IsOrthoCamera()const noexcept
 	{
-		return isOrtho;
+		return impl->isOrtho;
 	}
 	bool JCamera::IsMainCamera()const noexcept
 	{
-		return isMainCamera;
+		return impl->isMainCamera;
 	}
 	bool JCamera::IsAvailableOverlap()const noexcept
 	{
@@ -183,216 +500,72 @@ namespace JinEngine
 	}
 	bool JCamera::PassDefectInspection()const noexcept
 	{
-		if (JComponent::PassDefectInspection() && camState == J_CAMERA_STATE::RENDER)
+		if (JComponent::PassDefectInspection() && impl->camState == J_CAMERA_STATE::RENDER)
 			return true;
 		else
 			return false;
-	}
-	JCameraStateInterface* JCamera::StateInterface()
-	{
-		return this;
-	}
-	void JCamera::DoCopy(JObject* ori)
-	{
-		JCamera* oriCam = static_cast<JCamera*>(ori);
-		cameraNear = oriCam->cameraNear;
-		cameraFar = oriCam->cameraFar;
-		cameraAspect = oriCam->cameraAspect;
-		cameraFov = oriCam->cameraFov;
-		cameraNearViewHeight = oriCam->cameraNearViewHeight;
-		cameraFarViewHeight = oriCam->cameraFarViewHeight;
-		isOrtho = oriCam->isOrtho;
-		if (!isOrtho)
-			CalPerspectiveLens();
-		else
-			CalOrthoLens();
-		SetFrameDirty();
-	}
+	} 
+	 
 	void JCamera::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
-		if (camState == J_CAMERA_STATE::RENDER)
+		if (impl->camState == J_CAMERA_STATE::RENDER)
 		{
 			if (IsMainCamera())
-				GetOwner()->GetOwnerScene()->CompInterface()->SetMainCamera(this);
+				JScenePrivate::CompSettingInterface::SetMainCamera(GetOwner()->GetOwnerScene(), this);
 			if (RegisterComponent())
-				CreateRenderTarget();
+				impl->CreateRenderTarget();
 		}
-		SetFrameDirty();
+		impl->SetFrameDirty();
 	}
 	void JCamera::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
-		if (camState == J_CAMERA_STATE::RENDER)
+		if (impl->camState == J_CAMERA_STATE::RENDER)
 		{
 			if (IsMainCamera())
-				GetOwner()->GetOwnerScene()->CompInterface()->SetMainCamera(nullptr);
+				JScenePrivate::CompSettingInterface::SetMainCamera(GetOwner()->GetOwnerScene(), nullptr);
 			if (DeRegisterComponent())
-				DestroyRenderTarget();
+				impl->DestroyRenderTarget();
 		}
-		OffFrameDirty();
+		impl->OffFrameDirty();
 	}
-	void JCamera::SetAspect(float value) noexcept
+	JCamera::JCamera(const InitData& initData)
+		:JComponent(initData), impl(std::make_unique<JCameraImpl>(initData, this))
 	{
-		cameraAspect = value;
-		CalPerspectiveLens();
-		if (!isOrtho)
-			CalPerspectiveLens();
+		impl->Initialize();
 	}
-	void JCamera::CalPerspectiveLens() noexcept
+	JCamera::~JCamera()
 	{
-		cameraNearViewHeight = 2.0f * cameraNear * tanf(0.5f * cameraFov);
-		cameraFarViewHeight = 2.0f * cameraFar * tanf(0.5f * cameraFov);
-		  
-		const XMMATRIX P = XMMatrixPerspectiveFovLH(cameraFov, cameraAspect, cameraNear, cameraFar);
-		XMStoreFloat4x4(&mProj, P);
-		BoundingFrustum::CreateFromMatrix(mCamFrustum, XMLoadFloat4x4(&mProj));
-		SetFrameDirty();
+		impl.reset();
 	}
-	void JCamera::CalOrthoLens() noexcept
+
+	using CreateInstanceInterface = JCameraPrivate::CreateInstanceInterface;
+	using AssetDataIOInterface = JCameraPrivate::AssetDataIOInterface;
+	using CameraStateInterface = JCameraPrivate::CameraStateInterface;
+	using FrameUpdateInterface = JCameraPrivate::FrameUpdateInterface;
+
+	Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
 	{
-		//XMMatrixOrthographicOffCenterLH
-		const XMMATRIX P = XMMatrixOrthographicLH((float)viewWidth, (float)viewHeight, cameraNear, cameraFar);
-		XMStoreFloat4x4(&mProj, P);
-		BoundingFrustum::CreateFromMatrix(mCamFrustum, XMLoadFloat4x4(&mProj));
-		SetFrameDirty();
+		return Core::JPtrUtil::MakeOwnerPtr<JCamera>(*static_cast<JCamera::InitData*>(initData.get()));
 	}
-	void JCamera::CreateRenderTarget()noexcept
-	{ 
-		//if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
-		CreateRenderTargetTexture();
-		AddDrawRequest(GetOwner()->GetOwnerScene(), this);
-	}
-	void JCamera::DestroyRenderTarget()noexcept
-	{ 
-		//if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
-		PopDrawRequest(GetOwner()->GetOwnerScene(), this);
-		DestroyTxtHandle();
-	}
-	void JCamera::UpdateViewMatrix() noexcept
+	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
-		//if (gameObjectDirty->GetTransformDirty() > 0)
-		{
-			JTransform* ownerTransform = GetTransform();
-			XMVECTOR R = ownerTransform->GetRight();
-			XMVECTOR U = ownerTransform->GetUp();
-			XMVECTOR L = ownerTransform->GetFront();
-			XMFLOAT3 pos = ownerTransform->GetPosition();
-			XMVECTOR P = XMLoadFloat3(&pos);
-
-			// Fill in the view matrix entries.
-			const float x = -XMVectorGetX(XMVector3Dot(P, R));
-			const float y = -XMVectorGetX(XMVector3Dot(P, U));
-			const float z = -XMVectorGetX(XMVector3Dot(P, L));
-
-			XMFLOAT3 rightVector;
-			XMFLOAT3 upVector;
-			XMFLOAT3 lookVector;
-
-			XMStoreFloat3(&rightVector, R);
-			XMStoreFloat3(&upVector, U);
-			XMStoreFloat3(&lookVector, L);
-
-			mView(0, 0) = rightVector.x;
-			mView(1, 0) = rightVector.y;
-			mView(2, 0) = rightVector.z;
-			mView(3, 0) = x;
-
-			mView(0, 1) = upVector.x;
-			mView(1, 1) = upVector.y;
-			mView(2, 1) = upVector.z;
-			mView(3, 1) = y;
-
-			mView(0, 2) = lookVector.x;
-			mView(1, 2) = lookVector.y;
-			mView(2, 2) = lookVector.z;
-			mView(3, 2) = z;
-
-			mView(0, 3) = 0.0f;
-			mView(1, 3) = 0.0f;
-			mView(2, 3) = 0.0f;
-			mView(3, 3) = 1.0f;
-		}
+		const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JCamera::InitData::StaticTypeInfo());
+		return isValidPtr && initData->IsValidData();
 	}
-	void JCamera::UpdateFrame(Graphic::JCameraConstants& constant)
+	bool CreateInstanceInterface::Copy(Core::JIdentifier* from, Core::JIdentifier* to) noexcept
 	{
-		UpdateViewMatrix();
-		const XMMATRIX view = XMLoadFloat4x4(&mView);
-		const XMMATRIX proj = XMLoadFloat4x4(&mProj);
+		const bool canCopy = CanCopy(from, to) && from->GetTypeInfo().IsA(JCamera::StaticTypeInfo());
+		if (!canCopy)
+			return false;
 
-		XMVECTOR viewVec = XMMatrixDeterminant(view);
-		XMVECTOR projVec = XMMatrixDeterminant(proj);
-
-		const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-		const XMMATRIX invView = XMMatrixInverse(&viewVec, view);
-		const XMMATRIX invProj = XMMatrixInverse(&projVec, proj);
-		XMVECTOR viewProjVec = XMMatrixDeterminant(viewProj);
-		const XMMATRIX invViewProj = XMMatrixInverse(&viewProjVec, viewProj);
-
-		XMStoreFloat4x4(&constant.view, XMMatrixTranspose(view));
-		XMStoreFloat4x4(&constant.invView, XMMatrixTranspose(invView));
-		XMStoreFloat4x4(&constant.proj, XMMatrixTranspose(proj));
-		XMStoreFloat4x4(&constant.invProj, XMMatrixTranspose(invProj));
-		XMStoreFloat4x4(&constant.viewProj, XMMatrixTranspose(viewProj));
-		XMStoreFloat4x4(&constant.invViewProj, XMMatrixTranspose(invViewProj));
-
-		constant.renderTargetSize = XMFLOAT2((float)viewWidth, (float)viewHeight);
-		constant.invRenderTargetSize = XMFLOAT2(1.0f / viewWidth, 1.0f / viewHeight);
-		constant.eyePosW = GetTransform()->GetPosition();
-		constant.nearZ = cameraNear;
-		constant.farZ = cameraFar;
+		return JCamera::JCameraImpl::DoCopy(static_cast<JCamera*>(from), static_cast<JCamera*>(to));
 	}
-	void JCamera::SetCameraState(const J_CAMERA_STATE state)noexcept
+
+	Core::JIdentifier* AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
 	{
-		if (camState == state)
-			return;
-
-		camState = state;
-		if (camState == J_CAMERA_STATE::RENDER)
-		{
-			if (IsActivated() && RegisterComponent())
-				CreateRenderTarget();
-		}
-		else
-		{
-			if (IsActivated() && DeRegisterComponent())
-				DestroyRenderTarget();
-		}
-		SetFrameDirty();
-	}
-	Core::J_FILE_IO_RESULT JCamera::CallStoreComponent(std::wofstream& stream)
-	{
-		return StoreObject(stream, this);
-	}
-	Core::J_FILE_IO_RESULT JCamera::StoreObject(std::wofstream& stream, JCamera* camera)
-	{
-		if (camera == nullptr)
-			return Core::J_FILE_IO_RESULT::FAIL_NULL_OBJECT;
-
-		if (((int)camera->GetFlag() & OBJECT_FLAG_DO_NOT_SAVE) > 0)
-			return Core::J_FILE_IO_RESULT::FAIL_DO_NOT_SAVE_DATA;
-
-		if (!stream.is_open())
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
-		JFileIOHelper::StoreObjectIden(stream, camera);
-		JFileIOHelper::StoreEnumData(stream, L"CamState:", camera->camState);
-		JFileIOHelper::StoreXMFloat3(stream, L"Pos:", camera->GetTransform()->GetPosition());
-		JFileIOHelper::StoreAtomicData(stream, L"CamViewWidth:", camera->viewWidth);
-		JFileIOHelper::StoreAtomicData(stream, L"CamViewHeight:", camera->viewHeight);
-		JFileIOHelper::StoreAtomicData(stream, L"CamNear:", camera->cameraNear);
-		JFileIOHelper::StoreAtomicData(stream, L"CamFar:", camera->cameraFar);
-		JFileIOHelper::StoreAtomicData(stream, L"CamFov:", camera->cameraFov);
-		JFileIOHelper::StoreAtomicData(stream, L"IsMainCam:", camera->isMainCamera); 
-
-		return  Core::J_FILE_IO_RESULT::SUCCESS;
-	}
-	JCamera* JCamera::LoadObject(std::wifstream& stream, JGameObject* owner)
-	{
-		if (owner == nullptr)
-			return nullptr;
-
-		if (!stream.is_open() || stream.eof())
+		if (!Core::JDITypeDataBase::IsValidChildData(data, JCamera::LoadData::StaticTypeInfo()))
 			return nullptr;
 
 		std::wstring guide;
@@ -408,6 +581,10 @@ namespace JinEngine
 		float camFov;
 		bool isMainCam;
 
+		auto loadData = static_cast<JCamera::LoadData*>(data);
+		std::wifstream& stream = loadData->stream;
+		JGameObject* owner = loadData->owner;
+
 		JFileIOHelper::LoadObjectIden(stream, guid, flag);
 		JFileIOHelper::LoadEnumData(stream, camState);
 		JFileIOHelper::LoadXMFloat3(stream, pos);
@@ -418,105 +595,85 @@ namespace JinEngine
 		JFileIOHelper::LoadAtomicData(stream, camFov);
 		JFileIOHelper::LoadAtomicData(stream, isMainCam);
 
-		Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JCamera>(guid, flag, owner);
-		JCamera* newCamera = ownerPtr.Get();
-		if (!AddInstance(std::move(ownerPtr)))
-			return nullptr;
-
-		newCamera->cameraFov = camFov;
-		newCamera->cameraNear = cameraNear;
-		newCamera->cameraFar = cameraFar;
-		newCamera->viewWidth = viewWidth;
-		newCamera->viewHeight = viewHeight;
+		auto rawPtr = cPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JCamera::InitData>(guid, flag, owner), &cPrivate);
+		JCamera* newCamera = static_cast<JCamera*>(rawPtr);
+		JCamera::JCameraImpl* impl = newCamera->impl.get();
+		impl->cameraFov = camFov;
+		impl->cameraNear = cameraNear;
+		impl->cameraFar = cameraFar;
+		impl->viewWidth = viewWidth;
+		impl->viewHeight = viewHeight;
 		newCamera->GetTransform()->SetPosition(pos);
 
-		if (newCamera->isOrtho)
-			newCamera->CalOrthoLens();
+		if (impl->isOrtho)
+			impl->CalOrthoLens();
 		else
-			newCamera->CalPerspectiveLens();
+			impl->CalPerspectiveLens();
 
-		newCamera->SetCameraState(camState);
+		impl->SetCameraState(camState);
 		if (isMainCam)
-			newCamera->SetMainCamera(true);
+			impl->SetMainCamera(true);
 		return newCamera;
 	}
-	void JCamera::RegisterCallOnce()
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
 	{
-		auto defaultC = [](JGameObject* owner) -> JComponent*
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JCamera>(Core::MakeGuid(), owner->GetFlag(), owner);
-			JCamera* newComp = ownerPtr.Get();
-			if (AddInstance(std::move(ownerPtr)))
-				return newComp;
-			else
-				return nullptr;
-		};
-		auto initC = [](const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)-> JComponent*
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JCamera>(guid, Core::AddSQValueEnum(owner->GetFlag(), objFlag), owner);
-			JCamera* newComp = ownerPtr.Get();
-			if (AddInstance(std::move(ownerPtr)))
-				return newComp;
-			else
-				return nullptr;
-		};
-		auto loadC = [](std::wifstream& stream, JGameObject* owner) -> JComponent*
-		{
-			return LoadObject(stream, owner);
-		};
-		auto copyC = [](JComponent* ori, JGameObject* owner) -> JComponent*
-		{
-			Core::JOwnerPtr ownerPtr = JPtrUtil::MakeOwnerPtr<JCamera>(Core::MakeGuid(), ori->GetFlag(), owner);
-			JCamera* newComp = ownerPtr.Get();
-			if (AddInstance(std::move(ownerPtr)))
-			{
-				if (newComp->Copy(ori))
-					return newComp;
-				else
-				{
-					BegineForcedDestroy(newComp);
-					return nullptr;
-				}
-			}
-			else
-				return nullptr;
-		};
-		JCFI<JCamera>::Register(defaultC, initC, loadC, copyC);
+		if (!Core::JDITypeDataBase::IsValidChildData(data, JCamera::StoreData::StaticTypeInfo()))
+			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		static GetTypeInfoCallable getTypeInfoCallable{ &JCamera::StaticTypeInfo };
-		bool(*ptr)() = isAvailableoverlapLam;
-		static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
+		auto storeData = static_cast<JCamera::StoreData*>(data);
+		if (!storeData->HasCorrectType(JCamera::StaticTypeInfo()))
+			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		static auto setFrameLam = [](JComponent& component) {static_cast<JCamera*>(&component)->SetFrameDirty(); };
-		static SetFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
+		JCamera* camera = static_cast<JCamera*>(storeData->obj);
+		JCamera::JCameraImpl* impl = camera->impl.get();
+		std::wofstream& stream = storeData->stream;
+		 
+		JFileIOHelper::StoreObjectIden(stream, camera);
+		JFileIOHelper::StoreEnumData(stream, L"CamState:", impl->camState);
+		JFileIOHelper::StoreXMFloat3(stream, L"Pos:", camera->GetTransform()->GetPosition());
+		JFileIOHelper::StoreAtomicData(stream, L"CamViewWidth:", impl->viewWidth);
+		JFileIOHelper::StoreAtomicData(stream, L"CamViewHeight:", impl->viewHeight);
+		JFileIOHelper::StoreAtomicData(stream, L"CamNear:", impl->cameraNear);
+		JFileIOHelper::StoreAtomicData(stream, L"CamFar:", impl->cameraFar);
+		JFileIOHelper::StoreAtomicData(stream, L"CamFov:", impl->cameraFov);
+		JFileIOHelper::StoreAtomicData(stream, L"IsMainCam:", impl->isMainCamera);
 
-		static JCI::CTypeHint cTypeHint{ GetStaticComponentType(), true };
-		static JCI::CTypeCommonFunc cTypeCommonFunc{getTypeInfoCallable, isAvailableOverlapCallable };
-		static JCI::CTypeInterfaceFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, nullptr };
-
-		JCI::RegisterTypeInfo(cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
+		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	JCamera::JCamera(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner)
-		:JCameraInterface(TypeName(), guid, objFlag, owner)
-	{ 
-		RegisterFrameDirtyListener(*GetOwner()->GetTransform());
 
-		cameraFov = 0.25f * JMathHelper::Pi;
-		cameraNear = 1;
-		cameraFar = 1000;
-		mView = JMathHelper::Identity4x4();
-		mProj = JMathHelper::Identity4x4();
-
-		SetViewSize(JWindow::Instance().GetClientWidth(), JWindow::Instance().GetClientHeight());
-		//ownerTransform->SetPosition(XMFLOAT3(0.0f, 2.0f, -15.0f));
-		CalPerspectiveLens();
-
-		BoundingFrustum::CreateFromMatrix(mCamFrustum, XMLoadFloat4x4(&mProj));
-		//CalOrthoLens(1, 1000.0f);
-	}
-	JCamera::~JCamera() 
+	void CameraStateInterface::SetCameraState(JCamera* cam, const J_CAMERA_STATE state)noexcept
 	{
-		if (GetOwner()->GetTransform() != nullptr)
-			DeRegisterFrameDirtyListener(*GetOwner()->GetTransform());
+		cam->impl->SetCameraState(state);
+	}
+
+	bool FrameUpdateInterface::UpdateStart(JCamera* cam, const bool isUpdateForced)noexcept
+	{
+		if (isUpdateForced)
+			cam->impl->SetFrameDirty();
+
+		return cam->impl->IsFrameDirted();
+	}
+	void FrameUpdateInterface::UpdateFrame(JCamera* cam, Graphic::JCameraConstants& constants)noexcept
+	{
+		cam->impl->UpdateFrame(constants);
+	}
+	void FrameUpdateInterface::UpdateEnd(JCamera* cam)noexcept
+	{
+		cam->impl->UpdateEnd();
+	}
+	bool FrameUpdateInterface::IsHotUpdated(JCamera* cam)noexcept
+	{
+		return cam->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources;
+	}
+
+	Core::JIdentifierPrivate::CreateInstanceInterface& JCameraPrivate::GetCreateInstanceInterface()const noexcept
+	{
+		static CreateInstanceInterface pI;
+		return pI;
+	}
+	JComponentPrivate::AssetDataIOInterface& JCameraPrivate::GetAssetDataIOInterface()const noexcept
+	{
+		static AssetDataIOInterface pI;
+		return pI;
 	}
 }

@@ -23,7 +23,7 @@ namespace JinEngine
 				:name(name)
 			{
 				fullName = typeid(Type).name();
-				hashCode = typeid(Type).hash_code();
+				hashCode = std::hash<std::string>{}(fullName);
 				if constexpr (std::is_void_v<Type::ParentType>)
 					parent = nullptr;
 				else

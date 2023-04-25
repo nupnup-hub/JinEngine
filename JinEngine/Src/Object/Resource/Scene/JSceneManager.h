@@ -1,49 +1,40 @@
-#pragma once
-#include<vector> 
-#include"../JResourceUserInterface.h"
+#pragma once 
 #include"../../../Core/Singleton/JSingletonHolder.h"
-#include"../../../Core/JDataType.h"
-#include"../../Component/JComponentType.h"
+#include"../../../Core/JDataType.h" 
+#include"../../../Core/Pointer/JOwnerPtr.h"
 
 namespace JinEngine
 {
 	class JResourceObject;
-	class JScene; 
-	class IFrameDirty;
+	class JScene;
+	class JFrameUpdateUserAccess;
 	namespace Core
 	{
 		template <class T> class JCreateUsingNew;
 	}
 
-	class JSceneManagerImpl : public JResourceUserInterface
+	class JSceneManagerPrivate;
+	class JSceneManager
 	{
 	private:
 		template <class T> friend class Core::JCreateUsingNew;
 	private:
-		//opend Scene  
-		//scene vector[0] is main scene  
-		std::vector<JScene*> opendScene; 
-		JScene* mainScene = nullptr;
-	public:
-		bool TryOpenScene(JScene* scene, bool isPreviewScene, Core::JUserPtr<IFrameDirty> observationFrame = Core::JUserPtr<IFrameDirty>())noexcept;
-		bool TryCloseScene(JScene* scene)noexcept;
-		bool IsOpen(JScene* scene)noexcept;
-		bool IsMainScene(const JScene* scene)const noexcept;
-	public:
-		void UpdateScene(JScene* scene, const J_COMPONENT_TYPE compType);
-	public:
-		uint GetOpendSceneCount()const noexcept; 
-		JScene* GetMainScene()noexcept;
-	public:
-		//Set main scene 
-		//if scene isn't opend return fail
-		void SetMainScene(JScene* scene)noexcept;
+		friend class JSceneManagerPrivate;
+		class JSceneManagerImpl;
 	private:
-		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
+		std::unique_ptr<JSceneManagerImpl> impl;
+	public:
+		uint GetActivatedSceneCount()const noexcept;
+		JScene* GetFirstScene()noexcept;
+	public:
+		bool IsRegistered(JScene* scene)noexcept;
+		bool IsFirstScene(const JScene* scene)const noexcept;
+	public:
+		bool RegisterObservationFrame(JScene* scene, const JFrameUpdateUserAccess& observationFrame);
 	private:
-		JSceneManagerImpl();
-		~JSceneManagerImpl();
+		JSceneManager();
+		~JSceneManager();
 	};
 
-	using JSceneManager = Core::JSingletonHolder<JSceneManagerImpl>;
+	using _JSceneManager = Core::JSingletonHolder<JSceneManager>;
 }

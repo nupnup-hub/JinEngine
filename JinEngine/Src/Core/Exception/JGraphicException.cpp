@@ -1,5 +1,5 @@
 #include"JGraphicException.h"
-#include"../../Graphic/JGraphic.h"
+#include"../../Graphic/JGraphicPrivate.h"
 #include"../../Utility/JCommonUtility.h"
 
 namespace JinEngine
@@ -7,7 +7,7 @@ namespace JinEngine
 	namespace Core
 	{
 		JGraphicException::JGraphicException(int line, const std::string file, HRESULT hr)
-			:JException(line, JCUtil::StrToWstr(file)), hr(hr), gfxHr(JGraphic::Instance().DeviceInterface()->GetDevice()->GetDeviceRemovedReason())
+			:JException(line, JCUtil::StrToWstr(file)), hr(hr), gfxHr(Graphic::JGraphicPrivate::DeviceInterface::GetDevice()->GetDeviceRemovedReason())
 		{
 			std::ostringstream oss;
 			oss << std::hex << gfxHr << std::endl;

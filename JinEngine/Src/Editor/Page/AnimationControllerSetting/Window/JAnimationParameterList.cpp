@@ -9,8 +9,7 @@
 #include"../../../String/JEditorStringMap.h"
 #include"../../../Helpers/JEditorInputBuffHelper.h"
 #include"../../../EditTool/JEditorViewStructure.h" 
-#include"../../../../Core/Reflection/JTypeTemplate.h"
-#include"../../../../Core/FSM/JFSMfactory.h"
+#include"../../../../Core/Reflection/JTypeTemplate.h" 
 #include"../../../../Core/FSM/JFSMparameter.h"
 #include"../../../../Core/FSM/AnimationFSM/JAnimationStateType.h"
 #include"../../../../Core/FSM/AnimationFSM/JAnimationFSMdiagram.h" 
@@ -62,7 +61,7 @@ public:
 	}
 };
 */
-		DEFAULT_REQUESTORIMPL(JAnimationParameterListCreationImpl, JAnimationParameterList)
+		DEFAULT_CD_REQUESTOR(JAnimationParameterListCreationImpl, JAnimationParameterList)
 		using AniContUserPtr = Core::JUserPtr<JAnimationController>;	 
 		class JAnimationParameterListSettingImpl
 		{
@@ -127,7 +126,7 @@ public:
 					return;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(paramList,
-					true, false, false, true, false,
+					true, false, false, true,
 					Core::JTypeInstanceSearchHint(paramList->aniCont),
 					Core::JTypeInstanceSearchHint(),
 					&JEditorWindow::NotifyEvent);
@@ -146,7 +145,7 @@ public:
 					return;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(paramList,
-					true, false, false, false, true,
+					true, false, false, true,
 					Core::JTypeInstanceSearchHint(paramList->aniCont),
 					Core::JTypeInstanceSearchHint(),
 					&JEditorWindow::NotifyEvent);
@@ -331,7 +330,7 @@ public:
 
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK )
 				parameterListPopup->SetOpen(false);
-			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT)
+			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && ev->pageType == GetOwnerPageType())
 			{
 				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(ev);
 				Core::JUserPtr< Core::JIdentifier> diagram = evstruct->GetFirstMatchedTypeObject(Core::JAnimationFSMdiagram::StaticTypeInfo());

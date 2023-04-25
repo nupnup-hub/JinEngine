@@ -53,7 +53,7 @@ namespace JinEngine
 		private:
 			void SetSelecteObject(Core::JUserPtr<Core::JIdentifier> newSelected); 
 		private:
-			void RegisterViewGraphGroup(JAnimationController* newAnicont);	
+			void RegisterViewGraphGroup(JAnimationController* newAnicont)noexcept;
 		protected:
 			void DoSetClose()noexcept final;
 			void DoActivate()noexcept final;

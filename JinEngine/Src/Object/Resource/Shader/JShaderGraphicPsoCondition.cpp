@@ -3,6 +3,14 @@
 
 namespace JinEngine
 {
+	bool JShaderGraphicPsoCondition::operator ==(const JShaderGraphicPsoCondition& rhs)const noexcept
+	{
+		return Equal(rhs);
+	}
+	bool JShaderGraphicPsoCondition::operator !=(const JShaderGraphicPsoCondition& rhs)const noexcept
+	{
+		return !Equal(rhs);
+	}
 	bool JShaderGraphicPsoCondition::Equal(const JShaderGraphicPsoCondition& pso)const noexcept
 	{
 		return primitiveCondition == pso.primitiveCondition &&

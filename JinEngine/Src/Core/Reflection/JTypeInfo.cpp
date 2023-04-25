@@ -3,21 +3,31 @@
 #include"JMethodInfo.h"   
 #include"../Pointer/JOwnerPtr.h" 
 #include"../../Object/JObject.h"
+#include"../../Utility/JCommonUtility.h" 
 
 namespace JinEngine
 {
 	namespace Core
-	{  
+	{   
+		JTypeInfo::ImplTypeInfo::ImplTypeInfo(Core::JTypeInfo& implType, const ConvertImplBasePtr convertPtr)
+			:implType(implType), convertPtr(convertPtr)
+		{}
+
 		std::string JTypeInfo::Name()const noexcept
 		{ 
 			return name;
 		}
-		std::string JTypeInfo::NameWithOutPrefix()const noexcept
+		std::string JTypeInfo::NameWithOutModifier()const noexcept
 		{
-			if (name[0] == 'J')
-				return name.substr(1);
+			std::string withOutName = name;
+			if (withOutName[0] == 'J')
+				withOutName = withOutName.substr(0);
+			
+			int index = withOutName.find("Interface");
+			if (index != std::string::npos)
+				return withOutName.substr(0, index);
 			else
-				return name;
+				return withOutName;
 		}
 		std::string JTypeInfo::FullName()const noexcept
 		{
@@ -25,7 +35,7 @@ namespace JinEngine
 		} 
 		size_t JTypeInfo::TypeGuid()const noexcept
 		{
-			return std::hash<std::string>{}(fullName);
+			return hashCode;
 		}
 
 		const PropertyVec JTypeInfo::GetPropertyVec()const noexcept
@@ -68,7 +78,11 @@ namespace JinEngine
 		{
 			return instanceData != nullptr ? (uint)instanceData->classInstanceVec.size() : 0;
 		}
-		JTypeInstance* JTypeInfo::GetInstanceRawPtr(IdentifierType iden)noexcept
+		int JTypeInfo::GetInstanceIndex(IdentifierType iden)const noexcept
+		{
+			return instanceData != nullptr ? JCUtil::GetJIdenIndex(instanceData->classInstanceVec, iden) : -1;
+ 		}
+		JTypeInstance* JTypeInfo::GetInstanceRawPtr(IdentifierType iden)const noexcept
 		{
 			if (instanceData == nullptr)
 				return nullptr;
@@ -76,7 +90,7 @@ namespace JinEngine
 			auto data = instanceData->classInstanceMap.find(iden);
 			return data != instanceData->classInstanceMap.end() ? data->second.Get() : nullptr;
 		}
-		JUserPtr<JTypeInstance> JTypeInfo::GetInstanceUserPtr(IdentifierType iden)noexcept
+		JUserPtr<JTypeInstance> JTypeInfo::GetInstanceUserPtr(IdentifierType iden)const noexcept
 		{
 			if (instanceData == nullptr)
 				return JUserPtr<JTypeInstance>{};
@@ -84,9 +98,38 @@ namespace JinEngine
 			auto data = instanceData->classInstanceMap.find(iden);
 			return data != instanceData->classInstanceMap.end() ? JUserPtr<JTypeInstance>{data->second } : JUserPtr<JTypeInstance>{};
 		}
-	 	JAllocationInterface* JTypeInfo::GetAllocationInterface()noexcept
+		TypeInstanceVector JTypeInfo::GetInstanceRawPtrVec()const noexcept
+		{
+			if (instanceData == nullptr)
+				return TypeInstanceVector{};
+
+			return instanceData->classInstanceVec;
+		}
+	 	JAllocationInterface* JTypeInfo::GetAllocationInterface()const noexcept
 		{ 
 			return allocationInterface.get();
+		}
+		JAllocInfo JTypeInfo::GetAllocInfo()const noexcept
+		{
+			if (allocationInterface != nullptr)
+				return allocationInterface->GetInformation();
+			else
+			{
+				if (instanceData != nullptr)
+				{
+					JAllocInfo info;
+					info.committedBlockCount = instanceData->classInstanceVec.size();
+					info.oriBlockSize = dataSize;
+					info.allocBlockSize = dataSize;
+					return info;
+				}
+				else
+					return JAllocInfo{};		
+			}
+		}
+		JTypeInfo* JTypeInfo::GetImplTypeInfo()const noexcept
+		{
+			return HasImplTypeInfo() ? &implTypeInfo->implType : nullptr;
 		}
 		bool JTypeInfo::SetAllocationCreator(std::unique_ptr <JTypeAllocationCreatorInterface>&& newCreator)noexcept
 		{  
@@ -130,6 +173,17 @@ namespace JinEngine
 					return true;
 			}
 			return false;
+		}
+		bool JTypeInfo::HasImplTypeInfo()const noexcept
+		{
+			return implTypeInfo != nullptr;
+		}
+		JIdentifierImplBase* JTypeInfo::ConvertImplBase(JIdentifier* iden)const noexcept
+		{
+			if (!HasImplTypeInfo())
+				return nullptr;
+
+			return implTypeInfo->convertPtr(iden);
 		}
 		bool JTypeInfo::AddInstance(IdentifierType iden, JOwnerPtr<JTypeInstance> ptr)noexcept
 		{
@@ -231,6 +285,9 @@ namespace JinEngine
 		}
 		void JTypeInfo::RegisterAllocation()
 		{ 
+			if (isAbstractType || allocInitInfo == nullptr)
+				return;
+
 			if (allocInitInfo->option == nullptr)
 				RegisterEngineDefaultAllocationOption();
 			 
@@ -251,16 +308,21 @@ namespace JinEngine
 				allocationInterface->Release();
 			allocationInterface = nullptr; 
 		}
+		void JTypeInfo::RegisterImplTypeInfo(std::unique_ptr<ImplTypeInfo>&& implTypeInfo)
+		{ 
+			JTypeInfo::implTypeInfo = std::move(implTypeInfo);
+		}
 		JTypeInstanceSearchHint::JTypeInstanceSearchHint()
-			:typeGuid(0), objectGuid(0), isValid(false)
+			:typeGuid(0), objectGuid(0), isValid(false), hasImplType(false)
 		{}
 		JTypeInstanceSearchHint::JTypeInstanceSearchHint(const JTypeInfo& info, const size_t guid)
-			: typeGuid(info.TypeGuid()), objectGuid(guid), isValid(true)
+			: typeGuid(info.TypeGuid()), objectGuid(guid), isValid(true), hasImplType(info.HasImplTypeInfo())
 		{}
 		JTypeInstanceSearchHint::JTypeInstanceSearchHint(Core::JUserPtr<JIdentifier> iden)
 			: typeGuid(iden.IsValid() ? iden->GetTypeInfo().TypeGuid() : 0),
 			objectGuid(iden.IsValid() ? iden->GetGuid() : 0),
-			isValid(iden.IsValid() ? true : false)
+			isValid(iden.IsValid() ? true : false), 
+			hasImplType(iden.IsValid() ? iden->GetTypeInfo().HasImplTypeInfo() : false)
 		{}
 	}
 }

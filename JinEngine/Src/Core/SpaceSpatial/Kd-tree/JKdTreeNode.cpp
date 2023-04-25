@@ -1,6 +1,7 @@
 #include"JKdTreeNode.h" 
+#include"../../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../../Object/GameObject/JGameObject.h" 
-#include"../../../Object/GameObject/JGameObjectFactoryUtility.h"
+#include"../../../Object/GameObject/JGameObjectCreator.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../Object/Component/Transform/JTransform.h" 
 #include"../../../Editor/EditTool/JEditorViewStructure.h"
@@ -38,9 +39,9 @@ namespace JinEngine
 					return;
 
 				if (nodeType != J_KDTREE_NODE_TYPE::LEAF)
-					debugGameObject = JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED, false);
+					debugGameObject = JGCI::CreateDebugLineShape(parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED, false);
 				else
-					debugGameObject = JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN, false);
+					debugGameObject = JGCI::CreateDebugLineShape(parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN, false);
 
 				const float outlineFactor = 0.01f;
 				const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetMesh()->GetBoundingBox();

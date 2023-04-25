@@ -97,8 +97,8 @@ namespace JinEngine
 				return nullptr;
 
 			const uint reqBlockCount = reqSize / allocBlockSize;
-			if (!CanAllocate(reqBlockCount))
-				return DefaultAllocate(allocBlockSize, reqSize);
+			if (!CanAllocate(reqBlockCount))// 수정필요
+				return nullptr;
 
 			if (reqBlockCount == 1)
 			{
@@ -122,25 +122,15 @@ namespace JinEngine
 		}
 		void JVirtualAlloc::DeAllocate(void* p)
 		{
-			if (IsOveredReservedCount() && IsDefaultAllocated(p))
-				DefaultDeAllocate(p);
-			else
-			{
-				assert(p >= pData);
-				UnUseBlock(p);
-			}
+			assert(p >= pData);
+			UnUseBlock(p);
 		}
 		void JVirtualAlloc::DeAllocate(void* p, const size_t size)
 		{
-			if (IsOveredReservedCount() && IsDefaultAllocated(p))
-				DefaultDeAllocate(p, allocBlockSize, size);
-			else
-			{
-				assert(p >= pData);
-				const uint blockCount = size / allocBlockSize;
-				for (uint i = 0; i < blockCount; ++i)
-					UnUseBlock(p);
-			}
+			assert(p >= pData);
+			const uint blockCount = size / allocBlockSize;
+			for (uint i = 0; i < blockCount; ++i)
+				UnUseBlock(p);
 		}
 		void JVirtualAlloc::DeallocateAll()
 		{
@@ -183,10 +173,6 @@ namespace JinEngine
 		bool JVirtualAlloc::CanAllocate(const uint blockCount)const noexcept
 		{
 			return useBlockCount + blockCount <= reservedBlockCount;
-		}
-		bool JVirtualAlloc::IsDefaultAllocated(void* p)const noexcept
-		{ 
-			return p < pData || CalPtrLocation(reservedBlockCount - 1) < p;
 		} 
 		bool JVirtualAlloc::IsOverlapPage(const uint pageIndex)const noexcept
 		{
@@ -229,6 +215,22 @@ namespace JinEngine
 				head = head->next;
 			}
 			return count;
+		}
+		JAllocInfo JVirtualAlloc::GetInformation()const noexcept
+		{
+			JAllocInfo info;
+			info.totalReserveSize = reservedPageCount * pageSize;
+			info.totalCommittedSize = committedPageCount * pageSize;
+			info.reservePageCount = reservedPageCount;
+			info.committedPageCount = committedPageCount;
+			info.reserveBlockCount = reservedBlockCount;
+			info.committedBlockCount = (committedPageCount * pageSize) / allocBlockSize;
+			info.useBlockCount = useBlockCount;
+
+			info.oriBlockSize = oriBlockSize;
+			info.allocBlockSize = allocBlockSize;
+			info.allocType = J_ALLOCATION_TYPE::VIRTUAL;
+			return info;
 		}
 		//Unuse
 		void JVirtualAlloc::CalPageInnerBlockIndex(const uint pageIndex, _Out_ uint& st, _Out_ uint& ed)const noexcept

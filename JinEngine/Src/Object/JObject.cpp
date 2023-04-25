@@ -1,75 +1,74 @@
 #include"JObject.h"
-#include"../Utility/JCommonUtility.h"
-#include"../Core/File/JFileIOHelper.h"
-#include<fstream>
-#include<io.h>
+#include"JObjectPrivate.h" 
+#include"../Core/Identity/JIdentifierImplBase.h"
 
 namespace JinEngine
 {
-	J_OBJECT_FLAG JObject::GetFlag()const noexcept
+	class JObject::JObjectImpl : public Core::JIdentifierImplBase
 	{
-		return flag;
+		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JObjectImpl)
+	public:
+		const J_OBJECT_FLAG flag;
+	public:
+		JObjectImpl(const InitData& initData)
+			:flag(initData.flag)
+		{}
+	};
+
+	JObject::InitData::InitData(const JTypeInfo& initTypeInfo)
+		:Core::JIdentifier::InitData(initTypeInfo)
+	{}
+	JObject::InitData::InitData(const JTypeInfo& initTypeInfo, const size_t guid)
+		: Core::JIdentifier::InitData(initTypeInfo, guid)
+	{}
+	JObject::InitData::InitData(const JTypeInfo& initTypeInfo, const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag)
+		:Core::JIdentifier::InitData(initTypeInfo, name, guid), flag(flag)
+	{}  
+
+	JObject::StoreData::StoreData(JObject* obj)
+		:obj(obj)
+	{}
+	bool JObject::StoreData::IsValidData()const noexcept
+	{
+		return obj != nullptr && !obj->HasFlag(OBJECT_FLAG_DO_NOT_SAVE);
+	}
+	bool JObject::StoreData::HasCorrectType(const JTypeInfo& correctType)const noexcept
+	{
+		return obj != nullptr && obj->GetTypeInfo().IsA(correctType);
+	}
+	bool JObject::StoreData::HasCorrectChildType(const JTypeInfo& correctType)const noexcept
+	{
+		return obj != nullptr && obj->GetTypeInfo().IsChildOf(correctType);
+	}
+
+	J_OBJECT_FLAG JObject::GetFlag()const noexcept
+	{ 
+		return impl->flag;
 	}
 	bool JObject::HasFlag(const J_OBJECT_FLAG flag)const noexcept
-	{	 
+	{
 		return Core::HasSQValueEnum(GetFlag(), flag);
 	}
-	bool JObject::Copy(JObject* ori)
-	{
-		//engine private object has OBJECT_FLAG_COPYABLE flag
-		if (ori->HasFlag(OBJECT_FLAG_UNCOPYABLE) || ori->GetGuid() == GetGuid())
-			return false;
 
-		if (GetTypeInfo().IsA(ori->GetTypeInfo()))
-		{
-			DoCopy(ori);
-			return true;
-		}
-		else
-			return false;
-	}
-	bool JObject::DoBeginDestroy() noexcept
-	{
-		return EndDestroy(false);
-	}
-	bool JObject::BegineForcedDestroy(JObject* obj)
-	{  
-		return obj->EndDestroy(true);
-	}
-	bool JObject::EndDestroy(const bool isForced)
-	{
-		if (Destroy(isForced))
-		{
-			RemoveInstance();
-			return true;
-		}
-		else
-			return false;
-	}
-	Core::J_FILE_IO_RESULT JObject::StoreMetadata(std::wofstream& stream, JObject* object)
-	{
-		if (((int)object->GetFlag() & OBJECT_FLAG_DO_NOT_SAVE) > 0)
-			return Core::J_FILE_IO_RESULT::FAIL_DO_NOT_SAVE_DATA;
-
-		if (!stream.is_open() || stream.eof())
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-	
-		JFileIOHelper::StoreObjectIden(stream, object);
-		return Core::J_FILE_IO_RESULT::SUCCESS;
-	}
-	Core::J_FILE_IO_RESULT JObject::LoadMetadata(std::wifstream& stream, JObjectMetaData& metadata)
-	{
-		if (stream.is_open())
-		{
-			JFileIOHelper::LoadObjectIden(stream, metadata.guid, metadata.flag);
-			return Core::J_FILE_IO_RESULT::SUCCESS;
-		}
-		else
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-	}
-	JObject::JObject(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag)
-		:JIdentifier(name, guid), flag(flag)
+	JObject::JObject(const InitData& initData)
+		:Core::JIdentifier(initData), impl(std::make_unique<JObjectImpl>(initData))
 	{}
 	JObject::~JObject()
-	{}
+	{
+		impl.reset();
+	} 
+
+	using CreateInstanceInterface = JObjectPrivate::CreateInstanceInterface;
+	using DestroyInstanceInterface = JObjectPrivate::DestroyInstanceInterface; 
+
+	bool CreateInstanceInterface::CanCopy(Core::JIdentifier* from, Core::JIdentifier* to)noexcept
+	{
+		return Core::JIdentifierPrivate::CreateInstanceInterface::CanCopy(from, to) &&
+			!static_cast<JObject*>(from)->HasFlag(OBJECT_FLAG_UNCOPYABLE);
+	}
+	bool DestroyInstanceInterface::CanDestroyInstancce(Core::JIdentifier* ptr, const bool isForced)const noexcept
+	{
+		const bool isValidPtr =  Core::JIdentifierPrivate::DestroyInstanceInterface::CanDestroyInstancce(ptr, isForced);
+		return isValidPtr && (!static_cast<JObject*>(ptr)->HasFlag(J_OBJECT_FLAG::OBJECT_FLAG_UNDESTROYABLE) || isForced);
+	}
 }

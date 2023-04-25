@@ -10,6 +10,7 @@ namespace JinEngine
 			bool isValid = false;
 		public:
 			virtual bool IsValid()const noexcept;
+			bool IsValidTriggerOn()const noexcept;
 		protected:
 			void SetValid(bool value);
 		};

@@ -4,6 +4,7 @@
 #include <unordered_map> 
 #include"../Core/JDataType.h"
 #include"../Core/Exception/JExceptionMacro.h" 
+#include"../Core/Func/Callable/JCallable.h"
 
 namespace JinEngine
 {
@@ -41,7 +42,7 @@ namespace JinEngine
 		static std::wstring StrToWstr(const std::string& str)noexcept; 
 		static std::string WstrToU8Str(const std::wstring& wstr)noexcept;
 		static std::wstring U8StrToWstr(const std::string& str)noexcept;
-
+ 
 		static std::string EraseChar(const std::string& str, const char ch)noexcept;
 		static std::wstring EraseWChar(const std::wstring& wstr, const wchar_t ch)noexcept;
 
@@ -87,7 +88,7 @@ namespace JinEngine
 		static void DeleteDirectoryFile(const std::string& path);
 		 
 		static size_t CalculateGuid(const std::string& path)noexcept;
-		static size_t CalculateGuid(const std::wstring& path)noexcept;
+		static size_t CalculateGuid(const std::wstring& path)noexcept; 
 	public:
 		template <class T>
 		static inline void hash_combine(std::size_t& s, const T& v)
@@ -288,6 +289,17 @@ namespace JinEngine
 			}
 			return searchFail;
 		}
+		template<typename Type, typename ...Param>
+		static int GetJIndex(const std::vector<std::unique_ptr<Type>>& vec, bool(*condFunc)(Type*, Param...), Param... var)
+		{
+			const uint vecCount = (uint)vec.size();
+			for (uint i = 0; i < vecCount; ++i)
+			{
+				if (condFunc(vec[i].get(), std::forward<Param>(var)...))
+					return i;
+			}
+			return searchFail;
+		}
 
 		template<typename Type, typename ...Param>
 		static std::vector<Type*> GetPassConditionElement(const std::vector<Type*>& vec, bool(*condPtr)(Type*, Param...), Param... var)
@@ -300,6 +312,46 @@ namespace JinEngine
 					result.push_back(vec[i]);
 			}
 			return result;
+		}
+		template<typename Type, typename ...Param>
+		static std::vector<Type*> GetPassConditionElement(const std::vector<std::unique_ptr<Type>>& vec, bool(*condPtr)(Type*, Param...), Param... var)
+		{
+			std::vector<Type*> result;
+			const uint vecCount = (uint)vec.size();
+			for (uint i = 0; i < vecCount; ++i)
+			{
+				if (condPtr(vec[i].get(), std::forward<Param>(var)...))
+					result.push_back(vec[i].get());
+			}
+			return result;
+		}
+		template<typename Ret, typename T, typename ...Param>
+		static void ApplyFunc(const uint st, Core::JStaticCallable<Ret, T*, Param...> callable, std::vector<T*>& objectVec, Param&&... var)
+		{
+			const uint objectCount = (uint)objectVec.size();
+			for (uint i = st; i < objectCount; ++i)
+				callable(nullptr, objectVec[i], std::forward<Param>(var)...);
+		}
+		template<typename Ret, typename T, typename ...Param>
+		static void ApplyFunc(const uint st, Core::JStaticCallable<Ret, T*, Param...> callable, std::vector<Core::JIdentifier*>& objectVec, Param&&... var)
+		{
+			const uint objectCount = (uint)objectVec.size();
+			for (uint i = st; i < objectCount; ++i)
+				callable(nullptr, static_cast<T*>(objectVec[i]), std::forward<Param>(var)...);
+		}
+		template<typename Ret, typename T, typename ...Param>
+		static void ApplyFuncUseIndex(const uint st, Core::JStaticCallable<Ret, T*, uint, Param...> callable, std::vector<T*>& objectVec, Param&&... var)
+		{
+			const uint objectCount = (uint)objectVec.size();
+			for (uint i = st; i < objectCount; ++i)
+				callable(nullptr, objectVec[i], i, std::forward<Param>(var)...);
+		}
+		template<typename Ret, typename T, typename ...Param>
+		static void ApplyFuncUseIndex(const uint st, Core::JStaticCallable<Ret, T*, uint,  Param...> callable, std::vector<Core::JIdentifier*>& objectVec, Param&&... var)
+		{
+			const uint objectCount = (uint)objectVec.size();
+			for (uint i = st; i < objectCount; ++i)
+				callable(nullptr, static_cast<T*>(objectVec[i]), i, std::forward<Param>(var)...);
 		}
 	};
 

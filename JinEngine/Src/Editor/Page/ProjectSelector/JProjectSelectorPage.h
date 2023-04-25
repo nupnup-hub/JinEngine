@@ -1,16 +1,19 @@
 #pragma once
 #include"../JEditorPage.h"
-#include"../../../Object/Resource/JResourceUserInterface.h"
+#include"../../../Core/Event/JEventListener.h" 
+#include"../../../Object/Resource/JResourceObjectEventType.h"
 
 namespace JinEngine
 {
+	class JResourceObject;
 	class JTexture;
 	namespace Editor
 	{
 		class JProjectSelectorHub; 
-		class JProjectSelectorPage final: public JEditorPage,
-			public JResourceUserInterface
-		{ 
+		class JProjectSelectorPage final: public JEditorPage, public Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>
+		{
+		private:
+			using ResourceEvListener = Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>;
 		private:
 			std::unique_ptr<JProjectSelectorHub> projectHub;
 			Core::JUserPtr<JTexture> backgroundTexture; 

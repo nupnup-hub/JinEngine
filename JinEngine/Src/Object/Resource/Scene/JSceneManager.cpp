@@ -1,101 +1,145 @@
 #include"JSceneManager.h"
-#include"JScene.h"
-#include"../JResourceManager.h"
+#include"JSceneManagerPrivate.h"
+#include"JScene.h" 
+#include"../JResourceObjectUserInterface.h"
+#include"../../Component/JComponentType.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphicDrawList.h"  
+#include"../../../Core/Guid/GuidCreator.h" 
 
 namespace JinEngine
 {
-	static size_t implGuid = Core::MakeGuid();
-
-	bool JSceneManagerImpl::TryOpenScene(JScene* scene, bool isPreviewScene, Core::JUserPtr<IFrameDirty> observationFrame)noexcept
+	class JSceneManager::JSceneManagerImpl : public JResourceObjectUserInterface
 	{
-		if (scene == nullptr)
-			return false;
-
-		if (!IsOpen(scene) && JCUtil::GetJIdenIndex(opendScene, scene->GetGuid()) == -1)
+	public:
+		size_t implGuid = Core::MakeGuid();
+	public:
+		//opend Scene  
+		//scene vector[0] is main scene  
+		std::vector<JScene*> activatedScene;
+	public:
+		JSceneManagerImpl()
+			:JResourceObjectUserInterface(implGuid)
 		{
-			//has dependency
-			//order 1. AddDrawList, 2. activate
-			if (isPreviewScene)
-				Graphic::JGraphicDrawList::AddDrawList(scene, observationFrame, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED, false);
-			else
-				Graphic::JGraphicDrawList::AddDrawList(scene, observationFrame, Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS, true);
-			CallOnResourceReference(scene);
-			opendScene.push_back(scene);
-			return true;
+			AddEventListener(*JResourceObject::EvInterface(), implGuid, J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 		}
-		else
-			return false;
-	}
-	bool JSceneManagerImpl::TryCloseScene(JScene* scene)noexcept
-	{
-		if (scene == nullptr)
-			return false;
-
-		int index = JCUtil::GetJIdenIndex(opendScene, scene->GetGuid());
-		if (index == -1)
-			return false;
-
-		CallOffResourceReference(scene);
-		if (CallGetResourceReferenceCount(*scene) == 0)
+		~JSceneManagerImpl()
 		{
-			if (IsMainScene(scene))
-				SetMainScene(nullptr);
-			opendScene.erase(opendScene.begin() + index);
+			RemoveListener(*JResourceObject::EvInterface(), implGuid);
+		}
+	public:
+		uint GetActivatedSceneCount()const noexcept
+		{
+			return (uint)activatedScene.size();
+		}
+		JScene* GetFirstScene() noexcept
+		{
+			return activatedScene.size() > 0 ? activatedScene[0] : nullptr;
+		}
+	public:
+		bool IsRegistered(JScene* scene) noexcept
+		{
+			return JCUtil::GetJIdenIndex(activatedScene, scene->GetGuid()) != -1;
+		}
+		bool IsFirstScene(const JScene* scene)const noexcept
+		{
+			return activatedScene.size() > 0 ? scene->GetGuid() == activatedScene[0]->GetGuid() : false;
+		}
+	public:
+		void UpdateScene(JScene* scene, const J_COMPONENT_TYPE compType)
+		{
+			Graphic::JGraphicDrawList::UpdateScene(scene, compType);
+		}
+	public:
+		bool RegisterScene(JScene* scene, bool isPreviewScene)noexcept
+		{
+			if (scene == nullptr)
+				return false;
+
+			if (!IsRegistered(scene))
+			{
+				//has dependency
+				//order 1. AddDrawList, 2. activate
+				if (isPreviewScene)
+					Graphic::JGraphicDrawList::AddDrawList(scene, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED, false);
+				else
+					Graphic::JGraphicDrawList::AddDrawList(scene, Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS, true);
+				activatedScene.push_back(scene);
+				return true;
+			}
+			else
+				return false;
+		}
+		bool DeRegisterScene(JScene* scene)noexcept
+		{
+			if (scene == nullptr)
+				return false;
+
+			int index = JCUtil::GetJIdenIndex(activatedScene, scene->GetGuid());
+			if (index == -1)
+				return false;
+
+			activatedScene.erase(activatedScene.begin() + index);
 			Graphic::JGraphicDrawList::PopDrawList(scene);
 			return true;
 		}
-		else
-			return false;
-	}
-	bool JSceneManagerImpl::IsOpen(JScene* scene) noexcept
-	{
-		return CallGetResourceReferenceCount(*scene) != 0;
-	}
-	bool JSceneManagerImpl::IsMainScene(const JScene* scene)const noexcept
-	{
-		return mainScene != nullptr ? scene->GetGuid() == mainScene->GetGuid() : false;
-	}
-	void JSceneManagerImpl::UpdateScene(JScene* scene, const J_COMPONENT_TYPE compType)
-	{
-		Graphic::JGraphicDrawList::UpdateScene(scene, compType);
-	}
-	uint JSceneManagerImpl::GetOpendSceneCount()const noexcept
-	{
-		return (uint)opendScene.size();
-	}
-	JScene* JSceneManagerImpl::GetMainScene() noexcept
-	{
-		return mainScene;
-	}
-	void JSceneManagerImpl::SetMainScene(JScene* scene)noexcept
-	{
-		if (scene == nullptr)
+		bool RegisterObservationFrame(JScene* scene, const JFrameUpdateUserAccess& observationFrame)
 		{
-			mainScene = scene;
-			return;
+			return Graphic::JGraphicDrawList::AddObservationFrame(scene, observationFrame);
 		}
+	public:
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		{
+			if (iden == implGuid)
+				return;
 
-		int index = JCUtil::GetJIdenIndex(opendScene, scene->GetGuid());
-		if (index != -1)
-			mainScene = scene;
-	}
-	void JSceneManagerImpl::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE && jRobj->GetResourceType() == J_RESOURCE_TYPE::SCENE)
+				DeRegisterScene(static_cast<JScene*>(jRobj));
+		}
+	};
+ 
+	uint JSceneManager::GetActivatedSceneCount()const noexcept
 	{
-		if (iden == implGuid)
-			return;
+		return impl->GetActivatedSceneCount();
+	}
+	JScene* JSceneManager::GetFirstScene() noexcept
+	{
+		return impl->GetFirstScene();
+	}
+	bool JSceneManager::IsRegistered(JScene* scene) noexcept
+	{
+		return impl->IsRegistered(scene);
+	}
+	bool JSceneManager::IsFirstScene(const JScene* scene)const noexcept
+	{
+		return impl->IsFirstScene(scene);
+	}
+	bool JSceneManager::RegisterObservationFrame(JScene* scene, const JFrameUpdateUserAccess& observationFrame)
+	{
+		return impl->RegisterObservationFrame(scene, observationFrame);
+	}
 
-		if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE && jRobj->GetResourceType() == J_RESOURCE_TYPE::SCENE)
-			TryCloseScene(static_cast<JScene*>(jRobj));
-	}
-	JSceneManagerImpl::JSceneManagerImpl()
+	JSceneManager::JSceneManager()
+		:impl(std::make_unique<JSceneManagerImpl>())
+	{}
+	JSceneManager::~JSceneManager()
 	{
-		AddEventListener(*JResourceManager::Instance().EvInterface(), implGuid, J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+		impl.reset();
 	}
-	JSceneManagerImpl::~JSceneManagerImpl()
+
+	using SceneAccess = JSceneManagerPrivate::SceneAccess;
+
+	bool SceneAccess::RegisterScene(JScene* scene, bool isPreviewScene)noexcept
 	{
-		RemoveListener(*JResourceManager::Instance().EvInterface(), implGuid);
+		return _JSceneManager::Instance().impl->RegisterScene(scene, isPreviewScene);
+	}
+	bool SceneAccess::DeRegisterScene(JScene* scene)noexcept
+	{
+		return _JSceneManager::Instance().impl->DeRegisterScene(scene);
+	}
+	void SceneAccess::UpdateScene(JScene* scene, const J_COMPONENT_TYPE compType)
+	{
+		_JSceneManager::Instance().impl->UpdateScene(scene, compType);
 	}
 }

@@ -1,31 +1,39 @@
 #include"JImGuiImpl.h" 
 #include"../../Align/JEditorAlignCalculator.h"
-#include"../../../Application/JApplicationVariable.h"
+#include"../../../Application/JApplicationEngine.h"
 
 #include"../../../Core/Identity/JIdentifier.h"
 #include"../../../Core/JDataType.h"  
 #include"../../../Core/Platform/JLanguageType.h"
 
-#include"../../../Window/JWindows.h"
+#include"../../../Window/JWindow.h"
+#include"../../../Window/JWindowPrivate.h"
 #include"../../../Window/JWindowEventType.h" 
 #include"../../../Graphic/JGraphic.h"
-#include"../../../Graphic/GraphicResource/JGraphicResourceHandleInterface.h"
-#include"../../../Graphic/GraphicResource/JGraphicResourceUserInterface.h"
+#include"../../../Graphic/JGraphicPrivate.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"  
+#include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"  
 
 #include"../../../Utility/JCommonUtility.h"
+#include"../../../Utility/JVectorExtend.h"
 #include"../../../../Lib/imgui/imgui_impl_dx12.h"
 #include"../../../../Lib/imgui/imgui_impl_win32.h" 
+#include"../../../../Lib/DirectX/TK/Src/d3dx12.h" 
 #include "../../Icon/IconFontCppHeaders-master/IconsFontAwesome5.h" 
 
 #include<Windows.h> 
 #include<memory>
-#include<deque>
-
+#include<deque> 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		namespace Private
+		namespace
+		{
+			using WindowHandleInterface = Window::JWindowPrivate::HandleInterface;
+			using GraphicEditorInterface = Graphic::JGraphicPrivate::EditorInterface;
+		}
+		namespace 
 		{
 			enum class IMGUI_WIDGET
 			{
@@ -54,13 +62,12 @@ namespace JinEngine
 			};
 		}
 
-		class JImGui : public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>,
-			public Graphic::JGraphicResourceUserInterface
+		class JImGui : public Core::JEventListener<size_t, Window::J_WINDOW_EVENT>
 		{
 		private:
 			using FontMap = std::unordered_map<J_EDITOR_FONT_TYPE, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>>;
 		public:
-			const size_t guid;
+			const size_t guid = JCUtil::CalculateGuid(typeid(JImGui).name());
 		public:
 			JVector2<int> displaySize;
 			JVector2<int> windowSize;
@@ -86,12 +93,12 @@ namespace JinEngine
 		public:
 			static constexpr float minRate = 7.5f;
 		public:
-			uint actWidgetCount[(uint)Private::IMGUI_WIDGET::COUNT];
+			uint actWidgetCount[(uint)IMGUI_WIDGET::COUNT];
 		public:
 			JImGui()
-				:guid(JCUtil::CalculateGuid(typeid(JImGui).name()))
+				:JEventListener(guid)
 			{
-				this->AddEventListener(*JWindow::Instance().EvInterface(), guid, Window::J_WINDOW_EVENT::WINDOW_RESIZE);
+				this->AddEventListener(*JWindow::EvInterface(), guid, Window::J_WINDOW_EVENT::WINDOW_RESIZE);
 
 				IMGUI_CHECKVERSION();
 				ImGui::CreateContext();
@@ -119,8 +126,8 @@ namespace JinEngine
 				style.GrabRounding = 6;
 				*/
 				//style.FrameBorderSize = 1; 
-				ImGui_ImplWin32_Init(JWindow::Instance().HandleInterface()->GetHandle());
-				JGraphic::Instance().EditorInterface()->SetImGuiBackEnd();
+				ImGui_ImplWin32_Init(WindowHandleInterface::GetHandle());
+				GraphicEditorInterface::SetImGuiBackEnd();
 
 				OnResize();
 				ClearActWidgetCount();
@@ -130,37 +137,38 @@ namespace JinEngine
 				ImGui_ImplDX12_Shutdown();
 				ImGui_ImplWin32_Shutdown();
 				ImGui::DestroyContext();
-				RemoveListener(*JWindow::Instance().EvInterface(), guid);
+				RemoveListener(*JWindow::EvInterface(), guid);
 			}
 		public:
 			void ClearActWidgetCount()
 			{
-				for (uint i = 0; i < (uint)Private::IMGUI_WIDGET::COUNT; ++i)
+				for (uint i = 0; i < (uint)IMGUI_WIDGET::COUNT; ++i)
 					actWidgetCount[i] = 0;
 			}
 			uint TotalActWidgetCount()
 			{
 				uint sum = 0;
-				for (uint i = 0; i < (uint)Private::IMGUI_WIDGET::COUNT; ++i)
+				for (uint i = 0; i < (uint)IMGUI_WIDGET::COUNT; ++i)
 					sum += actWidgetCount[i];
 				return sum;
 			}
-			void AddActWidgetCount(const Private::IMGUI_WIDGET type)
+			void AddActWidgetCount(const IMGUI_WIDGET type)
 			{
 				++actWidgetCount[(uint)type];
 			}
 		public:
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGraphicGpuSrvHandle(Graphic::JGraphicResourceHandleInterface& handle)
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGraphicGpuSrvHandle(Graphic::JGraphicResourceUserAccess* gUserAccess)
 			{
-				return CallGetGpuSrvHandle(handle, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0);
+				Graphic::JGraphicResourceUserInterface handleUser = gUserAccess->GraphicResourceUserInterface();  
+				return handleUser.GetGpuHandle(Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0);
 			}
 		private:
 			void OnResize()
 			{
-				displaySize = { JWindow::Instance().GetDisplayWidth() ,  JWindow::Instance().GetDisplayHeight() };
-				windowSize = { JWindow::Instance().GetWindowWidth() ,  JWindow::Instance().GetWindowHeight() };
-				clientSize = { JWindow::Instance().GetClientWidth() ,  JWindow::Instance().GetClientHeight() };
-				clientPos = { JWindow::Instance().GetClientPositionX() ,  JWindow::Instance().GetClientPositionY() };
+				displaySize = { JWindow::GetDisplayWidth() ,  JWindow::GetDisplayHeight() };
+				windowSize = { JWindow::GetWindowWidth() ,  JWindow::GetWindowHeight() };
+				clientSize = { JWindow::GetClientWidth() ,  JWindow::GetClientHeight() };
+				clientPos = { JWindow::GetClientPositionX() ,  JWindow::GetClientPositionY() };
 				minClientSize = { (int)(clientSize.x / minRate),  (int)(clientSize.y / minRate) };
 			}
 			void OnEvent(const size_t& senderGuid, const Window::J_WINDOW_EVENT& eventType)
@@ -259,46 +267,22 @@ namespace JinEngine
 			void LoadFontFile()
 			{
 				ImGuiIO& io = ImGui::GetIO();
-				ImFontConfig config;
+				ImFontConfig config; 
+				config.OversampleH = 2;
 
 				ImFont* defaultFont = io.Fonts->AddFontDefault();
-				ImFont* boldFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\JinEngine\\EngineResource\\Font\\NotoSerifKR-Bold.otf",
-					48,
-					nullptr,
+				ImFont* mediumFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\JinEngine\\EngineResource\\Font\\NotoSansKR-Medium.otf",
+					24,
+					&config,
 					io.Fonts->GetGlyphRangesKorean());
-				ImFont* semiBoldFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\JinEngine\\EngineResource\\Font\\NotoSerifKR-SemiBold.otf",
-					20,
-					nullptr,
-					io.Fonts->GetGlyphRangesKorean());
-				ImFont* regularFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\JinEngine\\EngineResource\\Font\\NotoSerifKR-Regular.otf",
-					20,
-					nullptr,
-					io.Fonts->GetGlyphRangesKorean());
-				ImFont* mediumFont = io.Fonts->AddFontFromFileTTF("D:\\Visual_Studio_src\\JinEngine\\JinEngine\\EngineResource\\Font\\NotoSerifKR-Medium.otf",
-					20,
-					nullptr,
-					io.Fonts->GetGlyphRangesKorean());
-
 				fontMap.clear();
 
-				fontMap.emplace(J_EDITOR_FONT_TYPE::DEFAULT, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
-				fontMap.emplace(J_EDITOR_FONT_TYPE::BOLD, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
-				fontMap.emplace(J_EDITOR_FONT_TYPE::SEMI_BOLD, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
-				fontMap.emplace(J_EDITOR_FONT_TYPE::REGULAR, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
+				fontMap.emplace(J_EDITOR_FONT_TYPE::DEFAULT, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>()); 
 				fontMap.emplace(J_EDITOR_FONT_TYPE::MEDIUM, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
 
 				fontMap.find(J_EDITOR_FONT_TYPE::DEFAULT)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, defaultFont);
 				fontMap.find(J_EDITOR_FONT_TYPE::DEFAULT)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, defaultFont);
-
-				fontMap.find(J_EDITOR_FONT_TYPE::BOLD)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, boldFont);
-				fontMap.find(J_EDITOR_FONT_TYPE::BOLD)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, boldFont);
-
-				fontMap.find(J_EDITOR_FONT_TYPE::SEMI_BOLD)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, semiBoldFont);
-				fontMap.find(J_EDITOR_FONT_TYPE::SEMI_BOLD)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, semiBoldFont);
-
-				fontMap.find(J_EDITOR_FONT_TYPE::REGULAR)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, regularFont);
-				fontMap.find(J_EDITOR_FONT_TYPE::REGULAR)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, regularFont);
-
+  
 				fontMap.find(J_EDITOR_FONT_TYPE::MEDIUM)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, mediumFont);
 				fontMap.find(J_EDITOR_FONT_TYPE::MEDIUM)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, mediumFont);
 			}
@@ -326,7 +310,7 @@ namespace JinEngine
 		}
 		void JImGuiImpl::PushFont()noexcept
 		{
-			ImGui::PushFont(Private::jImgui->fontMap.find(Private::jImgui->fontType)->second.find(JApplicationVariable::GetEngineLanguageType())->second);
+			ImGui::PushFont(Private::jImgui->fontMap.find(Private::jImgui->fontType)->second.find(JApplicationEngine::GetLanguageType())->second);
 		}
 		void JImGuiImpl::PopFont()noexcept
 		{
@@ -394,7 +378,7 @@ namespace JinEngine
 		void JImGuiImpl::DeActivateButtonColor()noexcept
 		{
 			JImGuiImpl::SetColor(JVector4<float>(0.5f, 0.5f, 0.5f, 1.0f), ImGuiCol_Text);
-			JImGuiImpl::SetColorToSoft(ImGuiCol_Button, 0.2f);
+			JImGuiImpl::SetColorToSoft(ImGuiCol_Button, CreateVec4(0.2f));
 			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_ButtonHovered);
 			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_ButtonActive);
 		}
@@ -423,10 +407,10 @@ namespace JinEngine
 			return ImGui::GetWindowSize();
 		}
 		JVector2<int> JImGuiImpl::GetGuiWidnowContentsSize()noexcept
-		{
+		{ 
 			const JVector2<float> windowPaddig = ImGui::GetStyle().WindowPadding;
 			const float windowBorder = ImGui::GetStyle().WindowBorderSize;
-			return ImGui::GetWindowSize() - (windowPaddig * 2) - JVector2<float>(windowBorder * 2);
+			return ImGui::GetWindowSize() - (windowPaddig * 2) - CreateVec2(windowBorder * 2);
 		}
 		ImGuiWindow* JImGuiImpl::GetGuiWindow(const ImGuiID id)noexcept
 		{
@@ -456,7 +440,7 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::BeginWindow(const std::string& name, bool* p_open, ImGuiWindowFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::WINDOW);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::WINDOW);
 			if (p_open)
 				return ImGui::Begin(name.c_str(), p_open, flags);
 			else
@@ -468,7 +452,7 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::BeginChildWindow(const std::string& name, const JVector2<float>& windowSize, bool border, ImGuiWindowFlags extra_flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::CHILD_WINDOW);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::CHILD_WINDOW);
 			return ImGui::BeginChild(name.c_str(), windowSize, border, extra_flags);
 		}
 		void JImGuiImpl::EndChildWindow()
@@ -477,7 +461,7 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::BeginPopup(const std::string& name, ImGuiPopupFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::POPUP);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::POPUP);
 			return ImGui::BeginPopup(name.c_str(), flags);
 		}
 		void JImGuiImpl::EndPopup()
@@ -486,22 +470,22 @@ namespace JinEngine
 		}
 		void JImGuiImpl::Text(const std::string& text)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TEXT);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::TEXT);
 			ImGui::Text(text.c_str());
 		}
 		bool JImGuiImpl::CheckBox(const std::string& checkName, bool& v)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::CHECKBOX);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::CHECKBOX);
 			return ImGui::Checkbox(checkName.c_str(), &v);
 		}
 		bool JImGuiImpl::Button(const std::string& btnName, const JVector2<float>& jVec2)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::BUTTON);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::BUTTON);
 			return ImGui::Button(btnName.c_str(), jVec2);
 		}
 		bool JImGuiImpl::TreeNodeEx(const std::string& nodeName, ImGuiTreeNodeFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TREE);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::TREE);
 			return ImGui::TreeNodeEx(nodeName.c_str(), flags);
 		}
 		void JImGuiImpl::TreePop()
@@ -510,7 +494,7 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::Selectable(const std::string& name, bool* pSelected, ImGuiSelectableFlags flags, const JVector2<float>& sizeArg)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SELECTABLE);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::SELECTABLE);
 			if (pSelected == nullptr)
 				return ImGui::Selectable(name.c_str(), false, flags, sizeArg);
 			else
@@ -518,17 +502,17 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::Selectable(const std::string& name, bool selected, ImGuiSelectableFlags flags, const JVector2<float>& sizeArg)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SELECTABLE);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::SELECTABLE);
 			return ImGui::Selectable(name.c_str(), selected, flags, sizeArg);
 		}
 		bool JImGuiImpl::InputText(const std::string& name, std::string& buff, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::INPUT_DATA);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::INPUT_DATA);
 			return ImGui::InputText(name.c_str(), &buff[0], buff.size(), flags, txtCallback, userData);
 		}
 		bool JImGuiImpl::InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::INPUT_DATA);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::INPUT_DATA);
 			bool isInputEnd = false;
 			if (result.size() == 0)
 				isInputEnd = ImGui::InputTextWithHint(name.c_str(), hint.c_str(), &buff[0], buff.size(), flags, txtCallback, userData);
@@ -540,7 +524,7 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::InputMultilineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, ImGuiInputTextFlags flags, ImGuiInputTextCallback txtCallback, void* userData)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::INPUT_DATA);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::INPUT_DATA);
 			bool isInputEnd = ImGui::InputTextMultiline(name.c_str(), &buff[0], buff.size(), size, flags, txtCallback, userData);
 			if (isInputEnd)
 				result = JCUtil::EraseSideChar(buff, '\0');
@@ -548,37 +532,37 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::InputInt(const std::string& name, int* value, ImGuiInputTextFlags flags, int step, int stepFast)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::INPUT_DATA);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::INPUT_DATA);
 			return ImGui::InputInt(name.c_str(), value, step, stepFast, flags);
 		}
 		bool JImGuiImpl::InputFloat(const std::string& name, float* value, ImGuiInputTextFlags flags, const char* format, float step, float stepFast)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::INPUT_DATA);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::INPUT_DATA);
 			return ImGui::InputFloat(name.c_str(), value, step, stepFast, format, flags);
 		}
 		bool JImGuiImpl::SliderInt(const std::string& name, int* value, int vMin, int vMax, const char* format, ImGuiSliderFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SLIDER);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::SLIDER);
 			return ImGui::SliderInt(name.c_str(), value, vMin, vMax, format, flags);
 		}
 		bool JImGuiImpl::SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format, ImGuiSliderFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SLIDER);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::SLIDER);
 			return ImGui::SliderFloat(name.c_str(), value, vMin, vMax, format, flags);
 		}
 		bool JImGuiImpl::VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, const char* format, ImGuiSliderFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SLIDER);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::SLIDER);
 			return ImGui::VSliderInt(name.c_str(), size, value, vMin, vMax, format, flags);
 		}
 		bool JImGuiImpl::VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format, ImGuiSliderFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SLIDER);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::SLIDER);
 			return ImGui::VSliderFloat(name.c_str(), size, value, vMin, vMax, format, flags);
 		}
 		bool JImGuiImpl::BeginTabBar(const std::string& name, const ImGuiTabBarFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TAB_BAR);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::TAB_BAR);
 			return ImGui::BeginTabBar(name.c_str(), flags);
 		}
 		void JImGuiImpl::EndTabBar()
@@ -587,7 +571,7 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::BeginTabItem(const std::string& name, bool* p_open, ImGuiTabItemFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TAB_ITEM);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::TAB_ITEM);
 			return ImGui::BeginTabItem(name.c_str(), p_open, flags);
 		}
 		void JImGuiImpl::EndTabItem()
@@ -596,12 +580,12 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::TabItemButton(const std::string& name, const ImGuiTabItemFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TAB_ITEM);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::TAB_ITEM);
 			return ImGui::TabItemButton(name.c_str(), flags);
 		}
 		bool JImGuiImpl::BeginTable(const std::string& name, int columnCount, ImGuiTableFlags flags, const JVector2<float> outerSize, float innerWidth)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TABLE);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::TABLE);
 			return ImGui::BeginTable(name.c_str(), columnCount, flags, outerSize, innerWidth);
 		}
 		void JImGuiImpl::EndTable()
@@ -626,7 +610,7 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::BeginMainMenuBar()
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::MENU_BAR);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::MENU_BAR);
 			return ImGui::BeginMainMenuBar();
 		}
 		void JImGuiImpl::EndMainMenuBar()
@@ -635,7 +619,7 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::BeginMenuBar()
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::MENU_BAR);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::MENU_BAR);
 			return ImGui::BeginMenuBar();
 		}
 		void JImGuiImpl::EndMenuBar()
@@ -644,7 +628,7 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::BeginMenu(const std::string& name, bool enable)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::MENU);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::MENU);
 			return ImGui::BeginMenu(name.c_str(), enable);
 		}
 		void JImGuiImpl::EndMenu()
@@ -653,17 +637,17 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::MenuItem(const std::string& name, bool selected, bool enabled)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::MENU_ITEM);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::MENU_ITEM);
 			return ImGui::MenuItem(name.c_str(), NULL, selected, enabled);
 		}
 		bool JImGuiImpl::MenuItem(const std::string& name, const std::string& shortcut, bool selected, bool enabled)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::MENU_ITEM);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::MENU_ITEM);
 			return ImGui::MenuItem(name.c_str(), shortcut.c_str(), selected, enabled);
 		}
 		bool JImGuiImpl::BeginCombo(const std::string& name, const char* previewValue, ImGuiComboFlags flags)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::COMBO_BOX);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::COMBO_BOX);
 			return ImGui::BeginCombo(name.c_str(), previewValue, flags);
 		}
 		void JImGuiImpl::EndCombo()
@@ -672,25 +656,25 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::BeginListBox(const std::string& name, const JVector2<float> size)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::LIST_BOX);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::LIST_BOX);
 			return ImGui::BeginListBox(name.c_str(), size);
 		}
 		void JImGuiImpl::EndListBox()
 		{
 			ImGui::EndListBox();
 		}
-		void JImGuiImpl::Image(Graphic::JGraphicResourceHandleInterface& handle,
+		void JImGuiImpl::Image(	Graphic::JGraphicResourceUserAccess* gUserAccess,
 			const JVector2<float>& size,
 			const JVector2<float>& uv0,
 			const JVector2<float>& uv1,
 			const JVector4<float>& tintCol,
 			const JVector4<float>& borderCol)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::IMAGE);
-			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, size, uv0, uv1, tintCol, borderCol);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::IMAGE);
+			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(gUserAccess).ptr, size, uv0, uv1, tintCol, borderCol);
 		}
 		bool JImGuiImpl::ImageButton(const std::string name,
-			Graphic::JGraphicResourceHandleInterface& handle,
+			Graphic::JGraphicResourceUserAccess* gUserAccess,
 			const JVector2<float>& size,
 			const JVector2<float>& uv0,
 			const JVector2<float>& uv1,
@@ -698,18 +682,18 @@ namespace JinEngine
 			const JVector4<float>& bgCol,
 			const JVector4<float>& tintCol)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::IMAGE);
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::BUTTON);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::IMAGE);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::BUTTON);
 
 			const ImVec2 padding = (framePadding >= 0) ? ImVec2((float)framePadding, (float)framePadding) : ImGui::GetStyle().FramePadding;
 			return ImGui::ImageButtonEx(ImGui::GetCurrentWindow()->GetID(name.c_str()),
-				(ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr,
+				(ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(gUserAccess).ptr,
 				size,
 				uv0, uv1,
 				padding,
 				bgCol, tintCol);
 		}
-		void JImGuiImpl::AddImage(Graphic::JGraphicResourceHandleInterface& handle,
+		void JImGuiImpl::AddImage(Graphic::JGraphicResourceUserAccess* gUserAccess,
 			const JVector2<float>& pMin,
 			const JVector2<float>& pMax,
 			bool isBack,
@@ -717,26 +701,26 @@ namespace JinEngine
 			const JVector2<float>& uvMin,
 			const JVector2<float>& uvMax)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::IMAGE);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::IMAGE);
 			if (isBack)
-				ImGui::GetBackgroundDrawList()->AddImage((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, pMin, pMax, uvMin, uvMax, color);
+				ImGui::GetBackgroundDrawList()->AddImage((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(gUserAccess).ptr, pMin, pMax, uvMin, uvMax, color);
 			else
-				ImGui::GetForegroundDrawList()->AddImage((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, pMin, pMax, uvMin, uvMax, color);
+				ImGui::GetForegroundDrawList()->AddImage((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(gUserAccess).ptr, pMin, pMax, uvMin, uvMax, color);
 		}
 		bool JImGuiImpl::ImageSelectable(const std::string name,
-			Graphic::JGraphicResourceHandleInterface& handle,
+			Graphic::JGraphicResourceUserAccess* gUserAccess,
 			bool& pressed,
 			bool changeValueIfPreesd,
 			const JVector2<float>& size,
 			const bool useRestoreCursorPos)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::IMAGE);
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SELECTABLE);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::IMAGE);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::SELECTABLE);
 
 			const JVector2<float> preCursor = ImGui::GetCursorPos();
-			const bool isPress = JImGuiImpl::Selectable(name, false, ImGuiSelectableFlags_AllowItemOverlap, size);
+			const bool isPress = JImGuiImpl::Selectable("##" + name, false, ImGuiSelectableFlags_AllowItemOverlap, size);
 			ImGui::SetCursorPos(preCursor);
-			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, size);
+			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(gUserAccess).ptr, size);
 
 			if (isPress && changeValueIfPreesd)
 				pressed = !pressed;
@@ -750,7 +734,7 @@ namespace JinEngine
 			bool changeValueIfPreesd,
 			const JVector2<float>& sizeArg)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SWITCH);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::SWITCH);
 			if (pressed)
 				JImGuiImpl::SetColorToSoft(ImGuiCol_Header, JImGuiImpl::GetSelectColorFactor());
 			const bool isPress = ImGui::Button(name.c_str(), sizeArg);
@@ -761,7 +745,7 @@ namespace JinEngine
 			return isPress;
 		}
 		bool JImGuiImpl::ImageSwitch(const std::string name,
-			Graphic::JGraphicResourceHandleInterface& handle,
+			Graphic::JGraphicResourceUserAccess* gUserAccess,
 			bool& pressed,
 			bool changeValueIfPreesd,
 			const JVector2<float>& size,
@@ -769,22 +753,22 @@ namespace JinEngine
 			const ImU32 bgDelta,
 			const ImU32 frameColor,
 			const float frameThickness)
-		{
+		{  
 			ImU32 finalBgColor = bgColor;
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::IMAGE);
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::SWITCH);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::IMAGE);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::SWITCH);
 			if (pressed)
 				finalBgColor -= bgDelta;
 
 			const JVector2<float> pos = ImGui::GetCurrentWindow()->DC.CursorPos;
 			DrawRectFilledColor(pos, size, finalBgColor, true);
 			if (frameThickness > 0)
-				DrawRectFrame(pos, size, frameColor, frameThickness, true);
+				DrawRectFrame(pos, size, frameThickness, frameColor, true);
 
 			const JVector2<float> preCursor = ImGui::GetCursorPos();
 			const bool isPress = JImGuiImpl::Selectable(name, false, ImGuiSelectableFlags_AllowItemOverlap, size);
 			ImGui::SetCursorPos(preCursor);
-			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(handle).ptr, size);
+			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(gUserAccess).ptr, size);
 
 			if (isPress && changeValueIfPreesd)
 				pressed = !pressed;
@@ -793,7 +777,7 @@ namespace JinEngine
 		}
 		void JImGuiImpl::DrawRectFilledMultiColor(const JVector2<float>& pos, const JVector2<float>& size, const ImU32 color, const ImU32 colorDelta, const bool useRestoreCursorPos)noexcept
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::DRAW);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::DRAW);
 			JVector2<float> nowCursor = ImGui::GetCursorPos();
 			JVector2<float> bboxMin = JVector2<float>(pos.x, pos.y);
 			JVector2<float> bboxMax = pos + size;
@@ -810,7 +794,7 @@ namespace JinEngine
 		}
 		void JImGuiImpl::DrawRectFilledColor(const JVector2<float>& pos, const JVector2<float>& size, const ImU32 color, const bool useRestoreCursorPos)noexcept
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::DRAW);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::DRAW);
 			JVector2<float> nowCursor = ImGui::GetCursorPos();
 			JVector2<float> bboxMin = JVector2<float>(pos.x, pos.y);
 			JVector2<float> bboxMax = pos + size;
@@ -824,7 +808,7 @@ namespace JinEngine
 			const ImU32 color,
 			const bool useRestoreCursorPos)noexcept
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::DRAW);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::DRAW);
 			JVector2<float> nowCursor = ImGui::GetCursorPos();
 			JVector2<float> bboxMin = JVector2<float>(pos.x, pos.y);
 			JVector2<float> bboxMax = pos + size;
@@ -843,7 +827,13 @@ namespace JinEngine
 			const JVector2<float> boxSize = ImGui::CalcTextSize(tooltip.c_str()) + (padding * 2);
 			ImGui::SetNextWindowPos(pos);
 			ImGui::SetNextWindowSize(boxSize);
-			JImGuiImpl::BeginWindow(uniqueLabel, 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+			const ImGuiWindowFlags flag = ImGuiWindowFlags_NoTitleBar | 
+				ImGuiWindowFlags_AlwaysAutoResize | 
+				ImGuiWindowFlags_NoNav | 
+				ImGuiWindowFlags_NoSavedSettings | 
+				ImGuiWindowFlags_NoBringToFrontOnFocus | 
+				ImGuiWindowFlags_NoFocusOnAppearing;
+			JImGuiImpl::BeginWindow(uniqueLabel, 0, flag);
 
 			ImGui::SetCursorScreenPos(pos + padding);
 			JImGuiImpl::Text(tooltip);
@@ -859,8 +849,8 @@ namespace JinEngine
 			const J_EDITOR_ALIGN_TYPE alignType,
 			const bool useRestoreCursorPos)
 		{
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::DRAW);
-			Private::jImgui->AddActWidgetCount(Private::IMGUI_WIDGET::TEXT);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::DRAW);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::TEXT);
 
 			const JVector2<float> nowCursor = ImGui::GetCursorPos();
 			JEditorTextAlignCalculator textAlignCal;
@@ -969,7 +959,7 @@ namespace JinEngine
 		}
 		bool JImGuiImpl::IsFullScreen()noexcept
 		{
-			return JWindow::Instance().IsFullScreen();
+			return JWindow::IsFullScreen();
 		}
 		bool JImGuiImpl::IsWindowPadding()noexcept
 		{

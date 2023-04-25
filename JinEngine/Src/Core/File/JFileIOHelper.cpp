@@ -1,8 +1,10 @@
-#include"JFileIOHelper.h"
+#include"JFileIOHelper.h" 
 #include"../../Object/JObject.h"
+#include"../../Object/Resource/JResourceObject.h"
+#include"../../Object/Resource/JResourceManager.h"
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/Identity/JIdentifier.h"
-#include"../../Core/FSM/JFSMInterface.h"
+#include"../../Core/FSM/JFSMinterface.h"
 #include"../../Utility/JCommonUtility.h"
 
 namespace JinEngine
@@ -110,7 +112,8 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		stream << L"Name: " << obj->GetName() << '\n';
-		stream << L"Guid: " << obj->GetGuid() << '\n';
+		stream << Core::JFileConstant::StreamObjGuidSymbol() << obj->GetGuid() << '\n';
+		stream << Core::JFileConstant::StreamTypeGuidSymbol() << obj->GetTypeInfo().TypeGuid() << '\n';
 		stream << L"Flag: " << (int)obj->GetFlag() << '\n';
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -120,13 +123,14 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		std::wstring guide;
-		std::wstring name;
+		std::wstring name; 
 		int flag;
+		size_t typeGuid;
 
-		stream >> guide; std::getline(stream, name);
+		stream >> guide; std::getline(stream, name); 
 		stream >> guide >> oGuid;
+		stream >> guide >> typeGuid;
 		stream >> guide >> flag;
-
 		oFlag = (J_OBJECT_FLAG)flag;
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -137,9 +141,11 @@ namespace JinEngine
 
 		std::wstring guide;
 		int flag;
+		size_t typeGuid;
 
 		stream >> guide; std::getline(stream, oName);
 		stream >> guide >> oGuid;
+		stream >> guide >> typeGuid;
 		stream >> guide >> flag;
 
 		oName = JCUtil::EraseSideWChar(oName, L' ');
@@ -147,7 +153,7 @@ namespace JinEngine
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JFileIOHelper::StoreFsmObjectIden(std::wofstream& stream, Core::JFSMInterface* obj)
+	Core::J_FILE_IO_RESULT JFileIOHelper::StoreFsmObjectIden(std::wofstream& stream, Core::JFSMinterface* obj)
 	{
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -191,21 +197,21 @@ namespace JinEngine
 			stream << L"HasObject: " << true << '\n';
 			stream << L"Name: " << iden->GetName() << '\n';
 			stream << guiSymbol << iden->GetGuid() << '\n';
-			stream << L"TypeGuid: " << iden->GetTypeInfo().TypeGuid() << '\n';
+			stream << Core::JFileConstant::StreamTypeGuidSymbol()<< iden->GetTypeInfo().TypeGuid() << '\n';
 		}
 		else
 		{
 			stream << L"HasObject: " << false << '\n';
 			stream << L"Name: " << " " << L"NONE" << '\n';
 			stream << guiSymbol << 0 << '\n';
-			stream << L"TypeGuid: " << " " << 0 << '\n';
+			stream << Core::JFileConstant::StreamTypeGuidSymbol() << " " << 0 << '\n';
 		}
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::JIdentifier* JFileIOHelper::LoadHasObjectIden(std::wifstream& stream)
+	Core::JUserPtr<Core::JIdentifier> JFileIOHelper::LoadHasObjectIden(std::wifstream& stream)
 	{
 		if (!stream.is_open() || stream.eof())
-			return nullptr;
+			return Core::JUserPtr<Core::JIdentifier>{};
 
 		std::wstring guide;
 		std::wstring name;
@@ -218,27 +224,38 @@ namespace JinEngine
 		stream >> guide >> typeGuid;
 
 		if (hasObject)
-			return Core::GetRawPtr(typeGuid, objGuid);
+		{
+			auto rawPtr = Core::GetRawPtr(typeGuid, objGuid);
+			if (rawPtr == nullptr)
+			{
+				Core::JTypeInfo* typeInfo = Core::JReflectionInfo::Instance().GetTypeInfo(typeGuid);
+				if (typeInfo->IsChildOf<JResourceObject>())
+					return _JResourceManager::Instance().TryGetResourceUser(*typeInfo, objGuid);
+				else
+					return Core::JUserPtr<Core::JIdentifier>{};
+			}
+			else
+				return Core::GetUserPtr(rawPtr);
+		}
 		else
-			return nullptr;
+			return Core::JUserPtr<Core::JIdentifier>{};
 	}
-	Core::J_FILE_IO_RESULT JFileIOHelper::CopyFile(const std::wstring& src, const std::wstring& dest)
+	Core::JTypeInstanceSearchHint JFileIOHelper::LoadHasObjectHint(std::wifstream& stream)
 	{
-		std::wifstream fromStream;
-		fromStream.open(src, std::ios::binary | std::ios::in);
-		std::wofstream toStream;
-		toStream.open(dest, std::ios::binary | std::ios::out);
-
-		if(!fromStream.is_open() || !toStream.is_open())
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+		if (!stream.is_open() || stream.eof())
+			return Core::JUserPtr<Core::JIdentifier>{};
 
 		std::wstring guide;
-		while (getline(fromStream, guide))
-			toStream << guide << '\n';
-		toStream.close();
-		fromStream.close();
+		std::wstring name;
+		bool hasObject;
+		size_t objGuid;
+		size_t typeGuid;
+		stream >> guide >> hasObject;
+		stream >> guide; std::getline(stream, name);
+		stream >> guide >> objGuid;
+		stream >> guide >> typeGuid;
 
-		return Core::J_FILE_IO_RESULT::SUCCESS;
+		return Core::JTypeInstanceSearchHint(*Core::JReflectionInfo::Instance().GetTypeInfo(typeGuid), objGuid);
 	}
 	bool JFileIOHelper::SkipLine(std::wifstream& stream, const std::wstring& symbol)
 	{
@@ -254,9 +271,10 @@ namespace JinEngine
 	bool JFileIOHelper::SkipSentence(std::wifstream& stream, const std::wstring& symbol)
 	{
 		std::wstring guide;
+		std::wstring fSymbol = JCUtil::EraseSideWChar(symbol, L' ');
 		while (stream >> guide)
 		{
-			if (JCUtil::Contain(guide, symbol))
+			if (JCUtil::Contain(guide, fSymbol))
 				return true;
 		}
 		stream.close();
@@ -273,5 +291,81 @@ namespace JinEngine
 			--spaceCount;
 		}
 		return true;
+	}
+	Core::J_FILE_IO_RESULT JFileIOHelper::CopyFile(const std::wstring& from, const std::wstring& to)
+	{
+		std::wifstream fromStream;
+		std::wofstream toStream;
+
+		fromStream.open(from, std::ios::binary | std::ios::in);
+		toStream.open(to, std::ios::binary | std::ios::out);
+
+		if (!fromStream.is_open() || !toStream.is_open())
+		{
+			fromStream.close();
+			toStream.close();
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+		}
+
+		toStream << fromStream.rdbuf();
+		fromStream.close();
+		toStream.close();
+		return Core::J_FILE_IO_RESULT::SUCCESS;
+	}
+	Core::J_FILE_IO_RESULT JFileIOHelper::CombineFile(const std::vector<std::wstring> from, const std::wstring& to)
+	{
+		std::wifstream fromStream;
+		std::wofstream toStream;
+
+		toStream.open(to, std::ios::binary | std::ios::out);
+		const uint fromCount = (uint)from.size();
+		for (uint i = 0; i < fromCount; ++i)
+		{
+			fromStream.open(from[i], std::ios::binary | std::ios::in);
+			if (!fromStream.is_open() || !toStream.is_open())
+			{
+				fromStream.close();
+				toStream.close();
+				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+			}
+
+			std::wstring guide;
+			while (getline(fromStream, guide))
+				toStream << guide << '\n';
+			toStream << Core::JFileConstant::StreamCombineFileEnd() << '\n';
+			fromStream.close();
+		}
+		toStream.close();
+		return Core::J_FILE_IO_RESULT::SUCCESS;
+	}
+	Core::J_FILE_IO_RESULT JFileIOHelper::DevideFile(const std::wstring& from, const std::vector<std::wstring> to)
+	{
+		std::wifstream fromStream;
+		std::wofstream toStream;
+
+		fromStream.open(from, std::ios::binary | std::ios::in);
+		const uint toCount = (uint)to.size();
+		for (uint i = 0; i < toCount; ++i)
+		{
+			toStream.open(to[i], std::ios::binary | std::ios::out);
+			if (!fromStream.is_open() || !toStream.is_open())
+			{
+				fromStream.close();
+				toStream.close();
+				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+			}
+
+			std::wstring guide;
+			std::wstring symbol = Core::JFileConstant::StreamCombineFileEnd();
+			while (getline(fromStream, guide))
+			{
+				if (JCUtil::Contain(guide, symbol))
+					break;
+				toStream << guide << '\n';
+			}		 
+			toStream.close();
+		}
+		fromStream.close();
+		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 }

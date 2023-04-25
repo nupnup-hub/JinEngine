@@ -10,10 +10,9 @@
 #include"../../../Helpers/JEditorRenameHelper.h"
 #include"../../../Helpers/JEditorSearchBarHelper.h"
 #include"../../../../Utility/JCommonUtility.h"    
-#include"../../../../Object/Component/JComponentFactoryUtility.h"
-#include"../../../../Object/GameObject/JGameObject.h"  
-#include"../../../../Object/GameObject/JGameObjectFactory.h"
-#include"../../../../Object/GameObject/JGameObjectFactoryUtility.h"
+#include"../../../../Object/Component/JComponentCreator.h"
+#include"../../../../Object/GameObject/JGameObject.h"   
+#include"../../../../Object/GameObject/JGameObjectCreator.h"
 #include"../../../../Object/Resource/JResourceManager.h"
 #include"../../../../Object/Resource/Scene/JScene.h" 
 #include"../../../../Object/Resource/Mesh/JMeshGeometry.h" 
@@ -179,10 +178,10 @@ namespace JinEngine
 				Core::JUserPtr<JGameObject> parent = explorer->root;
 				auto hovered = explorer->GetHoveredObject();		
 				if(hovered.IsValid())
-					parent.ConvertChildUser(hovered);
+					parent.ConvertChildUser(std::move(hovered));
 
 				JEditorCreationHint creationHint = JEditorCreationHint(explorer,
-					false, true, false, true, false,
+					false, true, false, true,
 					Core::JTypeInstanceSearchHint(),
 					Core::JTypeInstanceSearchHint(Core::GetUserPtr(parent->GetOwnerScene())),
 					&JEditorWindow::NotifyEvent);
@@ -200,7 +199,7 @@ namespace JinEngine
 					parent = explorer->root;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(explorer,
-					false, true, false, true, false,
+					false, true, false, true,
 					Core::JTypeInstanceSearchHint(),
 					Core::JTypeInstanceSearchHint(Core::GetUserPtr(parent->GetOwnerScene())),
 					&JEditorWindow::NotifyEvent);
@@ -219,7 +218,7 @@ namespace JinEngine
 					return;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(explorer,
-					false, true, false, false, true,
+					false, true, false, true,
 					Core::JTypeInstanceSearchHint(),
 					Core::JTypeInstanceSearchHint(Core::GetUserPtr(explorer->root->GetOwnerScene())),
 					&JEditorWindow::NotifyEvent);
@@ -245,7 +244,7 @@ namespace JinEngine
 			auto creationGobjLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t parentGuid, const J_DEFAULT_SHAPE shapeType)
 			{
 				auto parentRawPtr = Core::GetRawPtr(Core::JTypeInstanceSearchHint(JGameObject::StaticTypeInfo(), parentGuid));
-				JGFU::CreateShape(*static_cast<JGameObject*>(parentRawPtr), guid, OBJECT_FLAG_NONE, shapeType);
+				JGCI::CreateShape(static_cast<JGameObject*>(parentRawPtr), guid, OBJECT_FLAG_NONE, shapeType);
 			};
 
 			auto canCreationModelLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t parentGuid, const size_t meshGuid)
@@ -255,7 +254,7 @@ namespace JinEngine
 					return false;
 
 				auto parentRawPtr = Core::GetRawPtr(Core::JTypeInstanceSearchHint(JGameObject::StaticTypeInfo(), parentGuid));
-				auto meshRawPtr = Core::GetRawPtr(Core::JTypeInstanceSearchHint(JMeshGeometry::StaticTypeInfo(), meshGuid));
+				auto meshRawPtr = Core::SearchRawPtr(JMeshGeometry::StaticTypeInfo(), meshGuid);
 				if (ownerPtr->GetTypeInfo().IsChildOf<JScene>() && parentRawPtr != nullptr && meshRawPtr != nullptr)
 					return static_cast<JGameObject*>(parentRawPtr)->GetOwnerScene()->GetGuid() == ownerPtr->GetGuid();
 				else
@@ -264,8 +263,8 @@ namespace JinEngine
 			auto creationModelLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t parentGuid, const size_t meshGuid)
 			{
 				auto parentRawPtr = Core::GetRawPtr(Core::JTypeInstanceSearchHint(JGameObject::StaticTypeInfo(), parentGuid));
-				auto meshRawPtr = Core::GetRawPtr(Core::JTypeInstanceSearchHint(JMeshGeometry::StaticTypeInfo(), meshGuid));
-				JGFU::CreateModel(*static_cast<JGameObject*>(parentRawPtr), guid, OBJECT_FLAG_NONE, static_cast<JMeshGeometry*>(meshRawPtr));
+				auto meshRawPtr = Core::SearchRawPtr(JMeshGeometry::StaticTypeInfo(), meshGuid);
+				JGCI::CreateModel(static_cast<JGameObject*>(parentRawPtr), guid, OBJECT_FLAG_NONE, static_cast<JMeshGeometry*>(meshRawPtr));
 			};
 
 			creationImpl->gameObject.GetCreationInterface()->RegisterCanCreationF(canCreationGobjLam);

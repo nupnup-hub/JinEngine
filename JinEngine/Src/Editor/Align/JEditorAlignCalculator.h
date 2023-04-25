@@ -73,7 +73,7 @@ namespace JinEngine
 					JEditorDynamicAlignCalculator::innerSize[i] = innerSize[i];			 
 				JEditorDynamicAlignCalculator::innerAlignType = innerAlignType;
 
-				JVector2<float> sum = 0;
+				JVector2<float> sum(0, 0);
 				if (innerAlignType == J_EDITOR_INNER_ALGIN_TYPE::ROW)
 				{
 					for (uint i = 0; i < innerCount; ++i)
@@ -123,7 +123,7 @@ namespace JinEngine
 					JEditorDynamicAlignCalculator::innerSize[i] = innerSize[i];			 
 				JEditorDynamicAlignCalculator::innerAlignType = innerAlignType;
 
-				JVector2<float> sum = 0;
+				JVector2<float> sum(0, 0);
 				if (innerAlignType == J_EDITOR_INNER_ALGIN_TYPE::ROW)
 				{
 					for (uint i = 0; i < innerCount; ++i)
@@ -177,7 +177,7 @@ namespace JinEngine
 					innerSize[i] = innerSizeRate[i] * contentsSize.y; 
 				JEditorDynamicAlignCalculator::innerAlignType = innerAlignType;
 
-				JVector2<float> sum = 0;
+				JVector2<float> sum(0, 0);
 				if (innerAlignType == J_EDITOR_INNER_ALGIN_TYPE::ROW)
 				{
 					for (uint i = 0; i < innerCount; ++i)

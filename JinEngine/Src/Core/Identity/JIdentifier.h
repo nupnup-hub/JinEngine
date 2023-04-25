@@ -1,81 +1,64 @@
-#pragma once
-#include"JIdentifierInterface.h"
+#pragma once 
+#include"../JDataType.h"
 #include"../Reflection/JReflection.h"
+#include"../DI/JDIDataBase.h"
 #include<string> 
 
 namespace JinEngine
 {
 	namespace Core
-	{ 
+	{   
+		class JIdentifierPrivate;
 		class JIdentifier
 		{
-			REGISTER_CLASS(JIdentifier)
+			REGISTER_CLASS_IDENTIFIER_LINE(JIdentifier)
+		public:
+			struct InitData : public JDITypeDataBase	// it is same as metaData
+			{
+				REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
+			public:
+				const JTypeInfo& initTypeInfo;
+			public:
+				std::wstring name;
+				size_t guid;
+			public:
+				InitData(const JTypeInfo& initTypeInfo);
+				InitData(const JTypeInfo& initTypeInfo, const size_t guid);
+				InitData(const JTypeInfo& initTypeInfo, const std::wstring& name, const size_t guid);
+			public:
+				const JTypeInfo& InitDataTypeInfo()const noexcept;
+			public:
+				bool IsValidData()const noexcept override;
+			};
 		private:
-			std::wstring name;
-			size_t guid;
+			friend class JIdentifierPrivate;
+			class JIdentifierImpl;
+		private:
+			std::unique_ptr<JIdentifierImpl> impl;
 		public:
-			static constexpr uint maxNameOfLength = 100;
-		public:
-			std::wstring GetName() const noexcept; 
+			std::wstring GetName() const noexcept;
 			std::wstring GetNameWithType()const noexcept;
 			size_t GetGuid()const noexcept;
-			virtual void SetName(const std::wstring& newName)noexcept; 
+			static std::wstring GetDefaultName(const JTypeInfo& info)noexcept;
+			static JIdentifierPrivate* GetPrivateInterface(const size_t typeGuid)noexcept;
+			virtual JIdentifierPrivate& GetPrivateInterface()const noexcept = 0;
 		public:
-			template<typename T>
+			virtual void SetName(const std::wstring& newName)noexcept;
+		public:  
+			static bool BeginCopy(JIdentifier* from, JIdentifier* to);
+			static bool BeginDestroy(JIdentifier* ptr);
+		protected:
+			static bool BeginForcedDestroy(JIdentifier* ptr);
+			static void RegisterPrivateInterface(const JTypeInfo& info, JIdentifierPrivate& p);	//can't register abstract class 
+		public:
+			template<typename T, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, T>, int> = 0>
 			static std::wstring GetDefaultName()noexcept
 			{
-				return L"New" + std::wstring(T::TypeWName()).substr(1);
+				return GetDefaultName(T::StaticTypeInfo());
 			}
-		public:
-			template<typename T, std::enable_if_t<std::is_base_of_v<JIdentifier, T>, int> = 0>
-			static bool AddInstance(Core::JOwnerPtr<T> ptr)noexcept
-			{
-				if (ptr.IsValid() && static_cast<JIdentifier*>(ptr.Get())->RegisterCashData())
-				{ 
-					const size_t guid = ptr->GetGuid(); 
-					if (ptr->GetTypeInfo().AddInstance(guid, std::move(ptr)))
-						return true;
-					else
-					{
-						static_cast<JIdentifier*>(ptr.Get())->DeRegisterCashData();
-						return false;
-					}
-				}
-				else
-					return false;
-			}
-			bool RemoveInstance()noexcept;
-			template<typename T, std::enable_if_t<std::is_base_of_v<JIdentifier, T>, int> = 0>
-			static Core::JOwnerPtr<JIdentifier> ReleaseInstance(const size_t guid)noexcept
-			{
-				auto ownerPtr = T::StaticTypeInfo().ReleaseInstance(guid);
-				if (ownerPtr.IsValid())
-					ownerPtr->DeRegisterCashData();
-				return ownerPtr;
-			}
-			static Core::JOwnerPtr<JIdentifier> ReleaseInstance(Core::JIdentifier* rawPtr)noexcept
-			{ 
-				if (rawPtr != nullptr)
-				{
-					auto ownerPtr = rawPtr->GetTypeInfo().ReleaseInstance(rawPtr->GetGuid());
-					if (ownerPtr.IsValid())
-						ownerPtr->DeRegisterCashData();
-					return ownerPtr;
-				}
-				else
-					return  Core::JOwnerPtr<JIdentifier>{};			 
-			}
-		public:
-			static bool BeginDestroy(JIdentifier* iden);
 		protected:
-			virtual bool DoBeginDestroy() = 0;
-		private:
-			virtual bool RegisterCashData()noexcept = 0;
-			virtual bool DeRegisterCashData()noexcept = 0;
-		protected:
-			JIdentifier(const std::wstring& name, const size_t guid);
+			JIdentifier(const InitData& initData);
 			virtual ~JIdentifier();
 		};
-
 	}
 }

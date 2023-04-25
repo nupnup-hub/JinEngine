@@ -8,6 +8,10 @@ namespace JinEngine
 		{
 			return isValid;
 		}
+		bool JValidInterface::IsValidTriggerOn()const noexcept
+		{
+			return isValid;
+		}
 		void JValidInterface::SetValid(bool value)
 		{
 			isValid = value;

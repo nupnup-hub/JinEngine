@@ -11,7 +11,7 @@
 #include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Core/JDataType.h" 
 #include"../../Core/Pointer/JOwnerPtr.h"
-#include"../../Object/Resource/JResourceType.h"
+#include"../../Object/Resource/JResourceObjectType.h"
 
 namespace JinEngine
 {

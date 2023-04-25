@@ -881,7 +881,7 @@ namespace JinEngine
 			FbxAMatrix currentTransformOffset;
 			XMFLOAT4X4 xmMatrix;
 
-			fbxAniData.clipLength = (uint)animationLength;
+			fbxAniData.length = (uint)animationLength;
 			fbxAniData.framePerSecond = 30;
 			fbxAniData.animationSample.resize(skeleton.jointCount);
 

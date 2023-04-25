@@ -9,6 +9,7 @@
 #include"../../Object/Component/Transform/JTransform.h"
 #include"../../Object/Resource/JResourceManager.h" 
 #include"../../Object/Resource/Shader/JShader.h"
+#include"../../Object/Resource/Shader/JShaderPrivate.h"
 #include"../../Object/Resource/Scene/JScene.h"
 #include"../../Object/Resource/Mesh/JMeshGeometry.h"
 #include"../../Object/Resource/Material/JMaterial.h"
@@ -84,8 +85,8 @@ namespace JinEngine
 				nowHeight /= 2;
 			}
 
-			JShader* shader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_DOWNSAMPLING_SHADER);
-			shader->CompileInterface()->RecompileGraphicShader();
+			JShader* shader = _JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_DOWNSAMPLING_SHADER).Get();
+			JShaderPrivate::CompileInterface::RecompileGraphicShader(shader);
 		}
 		void JHZBOccCulling::UpdateObjectCapacity(ID3D12Device* device, const uint objectCapacity)
 		{
@@ -102,8 +103,8 @@ namespace JinEngine
 			//debugBuffer->Clear();
 			//debugBuffer->Build(device, objectCapacity);
 
-			JShader* shader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_OCCLUSION_SHADER);
-			shader->CompileInterface()->RecompileGraphicShader();
+			JShader* shader = _JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_OCCLUSION_SHADER).Get();
+			JShaderPrivate::CompileInterface::RecompileGraphicShader(shader);
 		}
 		void JHZBOccCulling::UpdateObject(JRenderItem* rItem, const uint buffIndex)
 		{ 
@@ -120,8 +121,8 @@ namespace JinEngine
 			JCamera* mainCam = scene->GetMainCamera();
 			JOcclusionPassConstants passConstatns;
 
-			//static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
-			static const BoundingBox drawBBox = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE)->GetBoundingBox();
+			//static const BoundingBox drawBBox = _JResourceManager::Instance().Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
+			static const BoundingBox drawBBox = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE)->GetBoundingBox();
 			XMStoreFloat4x4(&passConstatns.view, XMMatrixTranspose(mainCam->GetView()));
 			XMStoreFloat4x4(&passConstatns.proj, XMMatrixTranspose(mainCam->GetProj()));
 			XMStoreFloat4x4(&passConstatns.viewProj, XMMatrixTranspose(XMMatrixMultiply(mainCam->GetView(), mainCam->GetProj())));
@@ -153,7 +154,7 @@ namespace JinEngine
 			const uint depthMapInfoCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JDepthMapInfoConstants));
 			commandList->SetComputeRootSignature(mRootSignature.Get());
 
-			JShader* copyShader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_COPY_SHADER);
+			JShader* copyShader = _JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_COPY_SHADER).Get();
 			commandList->SetPipelineState(copyShader->GetComputePso());
 
 			commandList->SetComputeRootDescriptorTable(0, depthMapSrvHandle);
@@ -164,7 +165,7 @@ namespace JinEngine
 			JVector3<uint> cgroupDim = copyShader->GetComputeGroupDim();
 			commandList->Dispatch(cgroupDim.x, cgroupDim.y, cgroupDim.z);
 
-			JShader* downSampleShader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_DOWNSAMPLING_SHADER);
+			JShader* downSampleShader = _JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_DOWNSAMPLING_SHADER).Get();
 			commandList->SetPipelineState(downSampleShader->GetComputePso());
 
 			const uint loopCount = samplingCount - 1;
@@ -195,7 +196,7 @@ namespace JinEngine
 			//Debug
 			//debugBuffer->SetComputeShader(commandList);
 
-			JShader* shader = JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_OCCLUSION_SHADER);
+			JShader* shader = _JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_OCCLUSION_SHADER).Get();
 			commandList->SetPipelineState(shader->GetComputePso());
 
 			JVector3<uint> groupDim = shader->GetComputeGroupDim();

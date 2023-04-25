@@ -4,6 +4,7 @@
 #include"JTypeAllocationCreator.h"
 #include"JReflectionInfo.h"  
 #include"../JDataType.h"
+#include"../JEngineInfo.h"
 #include"../Pointer/JOwnerPtr.h"
 #include<unordered_map>  
 #include<vector>
@@ -14,7 +15,8 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JIdentifier;
+		class JIdentifier; 
+		class JIdentifierImplBase;
 		class JPropertyInfo;
 		class JMethodInfo;
 		//template<typename T> class JOwnerPtr;
@@ -45,10 +47,10 @@ namespace JinEngine
 			MethodMap methodInfoMap;
 		};
 		 
-		class JTypeInfo
+		class JTypeInfo final
 		{
 		private:
-			friend class JIdentifier;
+			friend class JIdentifierPrivate;
 			friend class JReflectionInfoImpl;
 			template<typename Type> friend class JTypeInfoRegister;
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyInfoRegister;
@@ -60,6 +62,16 @@ namespace JinEngine
 			public:
 				std::unique_ptr<JAllocationDesc> option;
 				std::unique_ptr<JTypeAllocationCreatorInterface> creator;
+			};
+			struct ImplTypeInfo
+			{
+			public:
+				using ConvertImplBasePtr = JIdentifierImplBase*(*)(JIdentifier*);
+			public:
+				Core::JTypeInfo& implType;
+				const ConvertImplBasePtr convertPtr;
+			public:
+				ImplTypeInfo(Core::JTypeInfo& implType, const ConvertImplBasePtr convertPtr);
 			};
 		private: 
 			using CallOnecePtr = void(*)();
@@ -74,6 +86,13 @@ namespace JinEngine
 			template<typename T>
 			struct HasEngineDefinedRegister<T, std::void_t<decltype(&T::RegisterCallOnce)>> : std::true_type
 			{};
+			template<typename T, typename = void>
+			struct IsEngineAllocatorUser : std::false_type
+			{};
+			template<typename T>
+			struct IsEngineAllocatorUser<T, std::void_t<decltype(&T::InitAllocatorInfo)>> : std::true_type
+			{};
+
 			template<typename Type>
 			class CallOnece
 			{
@@ -81,12 +100,26 @@ namespace JinEngine
 				static void Execute()
 				{				 
 					if constexpr (HasEngineDefinedRegister<Type>::value)
-					{
+					{ 
 						static bool isValid = true;
 						if(isValid)
 							Type::RegisterCallOnce();
 						isValid = false;
+					}			
+					if constexpr (IsEngineAllocatorUser<Type>::value)
+					{
+						static bool isValid = true;
+						if (isValid)
+							Type::InitAllocatorInfo();
+						isValid = false;
 					}
+				}
+				static constexpr bool IsDefinedInitAllocatorInfo()
+				{
+					if constexpr (IsEngineAllocatorUser<Type>::value)
+						return true;
+					else
+						return false;
 				}
 			};
 		private:
@@ -96,22 +129,25 @@ namespace JinEngine
 			const std::string fullName;
 			const size_t hashCode;
 			const size_t dataSize;
-			const bool isAbstractType;
-			bool isLeafType = true;
-			JTypeInfo* parent;
+			JTypeInfo* parent; 
 			JTypeInfoGuiOption option;
 			std::unique_ptr<JTypeInstanceData> instanceData;
 			std::unique_ptr<JTypeMemberData> memberData;
 		private:
 			CallOnecePtr callOncePtr = nullptr;
 		private:
-			std::unique_ptr<AllocationInitInfo> allocInitInfo; 
+			std::unique_ptr<AllocationInitInfo> allocInitInfo;		//allocation ÇÒ´çÈÄ nullptr 
 			std::unique_ptr<JAllocationInterface> allocationInterface; 
+		private:
+			std::unique_ptr<ImplTypeInfo> implTypeInfo;
+		private:
+			const bool isAbstractType;
+			bool isLeafType = true;
 		public:
 			//just class name	for display
 			std::string Name()const noexcept;
 			//except prefix J 
-			std::string NameWithOutPrefix()const noexcept;
+			std::string NameWithOutModifier()const noexcept;
 			//typeid name	for guid
 			std::string FullName()const noexcept;
 			//created by fullname 
@@ -124,11 +160,45 @@ namespace JinEngine
 			JMethodInfo* GetMethod(const std::string& name)const noexcept;
 			JTypeInfoGuiOption* GetOption()noexcept;
 			uint GetInstanceCount()const noexcept;
+			int GetInstanceIndex(IdentifierType iden)const noexcept;
 		public:
-			JTypeInstance* GetInstanceRawPtr(IdentifierType iden)noexcept;
-			JUserPtr<JTypeInstance> GetInstanceUserPtr(IdentifierType iden)noexcept;
+			JTypeInstance* GetInstanceRawPtr(IdentifierType iden)const noexcept;
+			JUserPtr<JTypeInstance> GetInstanceUserPtr(IdentifierType iden)const noexcept;
+			TypeInstanceVector GetInstanceRawPtrVec()const noexcept;
 		public:
-			JAllocationInterface* GetAllocationInterface()noexcept;
+			template<typename T>
+			T* GetInstanceRawPtr(IdentifierType iden)const noexcept
+			{
+				if (instanceData == nullptr)
+					return nullptr;
+
+				if (IsChildOf(T::StaticTypeInfo()))
+				{
+					auto data = instanceData->classInstanceMap.find(iden);
+					return data != instanceData->classInstanceMap.end() ? static_cast<T*>(data->second.Get()) : nullptr;
+				}
+				else
+					return nullptr;
+			}
+			template<typename T>
+			JUserPtr<T> GetInstanceUserPtr(IdentifierType iden)const noexcept
+			{ 
+				if (instanceData == nullptr)
+					return JUserPtr<T>{};
+
+				if (IsChildOf(T::StaticTypeInfo()))
+				{
+					auto data = instanceData->classInstanceMap.find(iden);
+					return data != instanceData->classInstanceMap.end() ? JUserPtr<T>::CreateChildUser(data->second) : JUserPtr<T>{};
+				}
+				else
+					return JUserPtr<T>{};
+			}
+		public:
+			JAllocationInterface* GetAllocationInterface()const noexcept;
+			JAllocInfo GetAllocInfo()const noexcept;
+		public:
+			JTypeInfo* GetImplTypeInfo()const noexcept;
 		public:
 			//is valid until create allocation instance
 			//so it has to called until app run
@@ -138,15 +208,16 @@ namespace JinEngine
 			bool IsAbstractType()const noexcept;
 			bool IsLeafType()const noexcept;
 			bool IsA(const JTypeInfo& tar)const noexcept;
-			bool IsChildOf(const JTypeInfo& parentCandidate)const noexcept;
+			bool IsChildOf(const JTypeInfo& parentCandidate)const noexcept; 
+			bool HasImplTypeInfo()const noexcept;
 		public:
 			template<typename T>
-			bool IsA()
+			bool IsA()const noexcept
 			{
 				return IsA(T::StaticTypeInfo());
 			}
 			template<typename T>
-			bool IsChildOf()
+			bool IsChildOf()const noexcept
 			{
 				return IsChildOf(T::StaticTypeInfo());
 			}
@@ -160,6 +231,8 @@ namespace JinEngine
 						(instanceData->classInstanceVec[i].Get()->*ptr)(std::forward<Param>(var)...);
 				}
 			}
+		public:
+			JIdentifierImplBase* ConvertImplBase(JIdentifier* iden)const noexcept;
 		private:
 			bool AddInstance(IdentifierType iden, JOwnerPtr<JTypeInstance> ptr)noexcept;
 			bool RemoveInstance(IdentifierType iden)noexcept;
@@ -169,11 +242,14 @@ namespace JinEngine
 			bool AddMethodInfo(JMethodInfo* newMethod);
 		private:
 			void ExecuteTypeCallOnece();
+		private:
 			//if allocation option is nullptr
 			//set default allocation option
 			void RegisterEngineDefaultAllocationOption();
 			void RegisterAllocation();
 			void DeRegisterAllocation();
+		private:
+			void RegisterImplTypeInfo(std::unique_ptr<ImplTypeInfo>&& implTypeInfo);
 		private:
 			template<typename Type>
 			JTypeInfo(const JTypeInfoInitializer<Type>& initializer)
@@ -185,14 +261,17 @@ namespace JinEngine
 				isAbstractType(std::is_abstract_v<Type>)
 			{
 				if (std::is_base_of_v<JTypeInstance, Type>)
-					instanceData = std::make_unique<JTypeInstanceData>();		
-				allocInitInfo = std::make_unique<AllocationInitInfo>();
+					instanceData = std::make_unique<JTypeInstanceData>();		 
 
 				JReflectionInfo::Instance().AddType(this);
+				if constexpr(CallOnece<Type>::IsDefinedInitAllocatorInfo())
+					allocInitInfo = std::make_unique<AllocationInitInfo>();
+
 				callOncePtr = &CallOnece<Type>::Execute;
 				if (parent != nullptr)
 					parent->isLeafType = false;
 			}
+			~JTypeInfo() = default;
 		};
 
 		struct JTypeInstanceSearchHint
@@ -201,6 +280,8 @@ namespace JinEngine
 			const size_t typeGuid;
 			const size_t objectGuid;
 			const bool isValid;
+		public:
+			const bool hasImplType = false;
 		public:
 			JTypeInstanceSearchHint();
 			JTypeInstanceSearchHint(const JTypeInfo& info, const size_t guid);

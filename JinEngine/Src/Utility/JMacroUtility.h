@@ -16,10 +16,12 @@ namespace JinEngine
     _11, _12, _13, _14, _15, _16, _17, _18, _19, _20,                                                     \
     _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, count, ...)                                         \
     count                                                                                                 \
+                                                                                                \
 
 #define J_COUNT(...) \
     J_IDENTITY(J_EVALUATE_COUNT(__VA_ARGS__, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21,    \
     20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))         \
+ 
 
         namespace
         {
@@ -91,11 +93,11 @@ namespace JinEngine
 
 #define CALL_DEFINE(funcMacro, mapHelper, ...)   J_IDENTITY(J_APPLY(mapHelper, J_COUNT(__VA_ARGS__))(funcMacro, __VA_ARGS__)) 
 #define CALL_DEFINE_EX(funcMacro, mapHelper, paramMacro, ...)   J_IDENTITY(J_APPLY(mapHelper, J_COUNT(__VA_ARGS__))(funcMacro, paramMacro(__VA_ARGS__)))
-
-        }
-
+ 
+		}
+		 
 #define J_MERGE_NAME(...) J_IDENTITY(CALL_DEFINE(J_IDENTITY, MAP_MERGE_HELPER, __VA_ARGS__))
-#define J_STRINGIZE(...) J_IDENTITY(CALL_DEFINE(J_TO_STR, MAP_HELPER, __VA_ARGS__))
+#define J_STRINGIZE(...) J_IDENTITY(CALL_DEFINE(J_TO_STR, MAP_HELPER, __VA_ARGS__)) 
 #define J_STRINGIZE_ADD_COMMA(...) J_IDENTITY(CALL_DEFINE(J_TO_STR_ADD_COMMA, MAP_HELPER, __VA_ARGS__))
 #define J_MAKE_ENUM_ELEMENT(...) __VA_ARGS__ 
 

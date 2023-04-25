@@ -5,6 +5,22 @@
 namespace JinEngine
 {
 	template<typename T>
+	static auto CreateVec2(T x) -> JVector2<ValidVectorParameterDetermine_T<T>>
+	{
+		return JVector2<ValidVectorParameterDetermine_T<T>>(x, x);
+	}
+	template<typename T>
+	static auto CreateVec3(T x)-> JVector3<ValidVectorParameterDetermine_T<T>>
+	{
+		return JVector3<ValidVectorParameterDetermine_T<T>>(x, x, x);
+	}
+	template<typename T>
+	static auto CreateVec4(T x)-> JVector4<ValidVectorParameterDetermine_T<T>>
+	{
+		return JVector4<ValidVectorParameterDetermine_T<T>>(x, x, x, x);
+	}
+
+	template<typename T>
 	static JVector2<T> operator*(const JVector2<T>& v, const float f) noexcept
 	{
 		return JVector2<T>(v.x * f, v.y * f);

@@ -13,11 +13,11 @@ namespace JinEngine
 		static float TypeValue(const J_FSM_PARAMETER_VALUE_TYPE type, T value)
 		{
 			if (type == J_FSM_PARAMETER_VALUE_TYPE::BOOL)
-				return (bool)std::clamp(value, (T)0.0f, (T)1.0f);
+				return static_cast<float>(static_cast<bool>(std::clamp(value, (T)0.0f, (T)1.0f)));
 			else if (type == J_FSM_PARAMETER_VALUE_TYPE::INT)
-				return (int)value;
+				return static_cast<float>(static_cast<int>(value));
 			else
-				return (float)value;
+				return static_cast<float>(value);
 		}
 	}
 }

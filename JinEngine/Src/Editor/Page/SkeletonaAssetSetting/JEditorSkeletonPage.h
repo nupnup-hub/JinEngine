@@ -1,11 +1,12 @@
 #pragma once
 #include"../JEditorPage.h" 
-#include"../../../Object/Resource/JResourceUserInterface.h"
+#include"../../../Object/Resource/JResourceObjectEventType.h"
 
 namespace JinEngine
 { 
 	class JScene;
 	class JSkeletonAsset;
+	class JResourceObject;
 	namespace Editor
 	{
 		class JObjectExplorer;
@@ -13,8 +14,10 @@ namespace JinEngine
 		class JSceneObserver;
 		class JObjectDetail;
 		class JEditorMenuBar;
-		class JEditorSkeletonPage final: public JEditorPage, public JResourceUserInterface
-		{  
+		class JEditorSkeletonPage final: public JEditorPage, public Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>
+		{
+		private:
+			using ResourceEvListener = Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>;
 		private:
 			std::unique_ptr< JObjectExplorer> explorer;
 			std::unique_ptr< JAvatarEditor> avatarEdit;

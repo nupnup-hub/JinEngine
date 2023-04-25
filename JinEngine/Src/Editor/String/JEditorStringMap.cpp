@@ -1,5 +1,5 @@
 #include"JEditorStringMap.h" 
-#include"../../Application/JApplicationVariable.h"
+#include"../../Application/JApplicationEngine.h"
 
 namespace JinEngine
 {
@@ -20,7 +20,7 @@ namespace JinEngine
 		{
 			auto data = strMap.find(key);
 			if (data != strMap.end())
-				return data->second[(int)JApplicationVariable::GetEngineLanguageType()];
+				return data->second[(int)JApplicationEngine::GetLanguageType()];
 			else
 				return "";
 		}

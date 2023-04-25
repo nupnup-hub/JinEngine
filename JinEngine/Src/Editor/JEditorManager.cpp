@@ -13,11 +13,12 @@
 #include"../Utility/JCommonUtility.h"
 #include"../Core/File/JFileIOHelper.h"
 #include"../Core/File/JFileConstant.h"
-#include"../Application/JApplicationVariable.h" 
+#include"../Application/JApplicationEngine.h" 
+#include"../Application/JApplicationProject.h" 
 #include"../Object/Resource/Scene/JScene.h"
 #include"../Object/Resource/Scene/JSceneManager.h"
 #include"../Object/Resource/JResourceManager.h" 
-#include"../Window/JWindows.h"
+#include"../Window/JWindow.h"
 #include<fstream>  
 #include<io.h>   
  
@@ -36,11 +37,11 @@ namespace JinEngine
 		{
 			static std::wstring GetSrcImGuiSaveDataPath()noexcept 
 			{
-				return Core::JFileConstant::MakeFilePath(JApplicationVariable::GetEnginePath(), L"imgui.ini"); 
+				return Core::JFileConstant::MakeFilePath(JApplicationProject::EditorSettingPath(), L"imgui.ini"); 
 			}
 			static std::wstring GetCopiedImGuiSaveDataPath()noexcept
 			{
-				return Core::JFileConstant::MakeFilePath(JApplicationVariable::GetProjectEditorResourcePath(), L"imgui.ini");;
+				return Core::JFileConstant::MakeFilePath(JApplicationProject::EditorSettingPath(), L"imgui.ini");;
 			}
 		}
 
@@ -69,7 +70,7 @@ namespace JinEngine
 			opendEditorPage.clear();
 			editorPage.clear();
 			 
-			if(JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
+			if(JApplicationEngine::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
 				JFileIOHelper::CopyFile(Private::GetSrcImGuiSaveDataPath(), Private::GetCopiedImGuiSaveDataPath());
 		}
 		void JEditorManager::OpenProjectSelector()
@@ -85,8 +86,7 @@ namespace JinEngine
 			ActivatePage(&evActStruct);
 
 			std::vector<J_EDITOR_EVENT> eventVector = Core::GetEnumElementVec<J_EDITOR_EVENT>();
-			AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector);
-
+			AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector); 
 			JEditorTransition::Instance().Initialize();
 		}
 		void JEditorManager::OpenProject()
@@ -127,8 +127,7 @@ namespace JinEngine
 			 
 			//always EditorManager first listener about all event type
 			std::vector<J_EDITOR_EVENT> eventVector = Core::GetEnumElementVec<J_EDITOR_EVENT>();
-			this->AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector);
-
+			AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector); 
 			JEditorTransition::Instance().Initialize();
 		} 
 		void JEditorManager::Update()
@@ -144,8 +143,7 @@ namespace JinEngine
 			JImGuiImpl::SetAlphabetSize();
 			JImGuiImpl::StartEditorUpdate();
 			JImGuiImpl::MouseUpdate();
-
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(JWindow::Instance().GetClientSize() * 0.15f));
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(JWindow::GetClientSize() * 0.15f));
 			uint8 pageCount = (uint8)opendEditorPage.size();
 			for (uint8 i = 0; i < pageCount; ++i)
 				opendEditorPage[i]->UpdatePage();
@@ -323,22 +321,29 @@ namespace JinEngine
 		}
 		std::wstring JEditorManager::GetMetadataPath()const noexcept
 		{
-			return Core::JFileConstant::MakeFilePath(JApplicationVariable::GetProjectEditorResourcePath(), Constants::editorPageDataFileName);
+			return Core::JFileConstant::MakeFilePath(JApplicationProject::EditorSettingPath(), Constants::editorPageDataFileName);
 		}
 		void JEditorManager::PressMainWindowCloseButton()noexcept
 		{
 			auto data = editorPageMap.find(J_EDITOR_PAGE_TYPE::PROJECT_MAIN)->second;
 			AddEventNotification(*JEditorEvent::EvInterface(),
-				data->GetGuid(),
+				editorManagerGuid,
 				J_EDITOR_EVENT::OPEN_POPUP_WINDOW,
 				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPopupWindowEvStruct>(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM, J_EDITOR_PAGE_TYPE::PROJECT_MAIN)));
 			//data->second->OpenPopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
 		}
 		void JEditorManager::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{   
-			if (senderGuid == editorManagerGuid || !eventStruct->PassDefectInspection())
+			if (!eventStruct->PassDefectInspection())
 				return;
  
+			if (senderGuid == editorManagerGuid)
+			{
+				if (eventType == J_EDITOR_EVENT::OPEN_POPUP_WINDOW)
+					OpenPopupWindow(static_cast<JEditorOpenPopupWindowEvStruct*>(eventStruct));
+				return;
+			}
+
 			switch (eventType)
 			{
 			case J_EDITOR_EVENT::CLEAR_SELECT_OBJECT:
@@ -434,7 +439,8 @@ namespace JinEngine
 			}
 		} 
 		JEditorManager::JEditorManager()
-			:editorManagerGuid(JCUtil::CalculateGuid("JEditorManager"))
+			:JEventListener(JCUtil::CalculateGuid("JEditorManager")),
+			editorManagerGuid(JCUtil::CalculateGuid("JEditorManager"))
 		{ }
 		JEditorManager::~JEditorManager()
 		{}

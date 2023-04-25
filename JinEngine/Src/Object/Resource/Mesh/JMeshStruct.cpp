@@ -202,7 +202,8 @@ namespace JinEngine
 		indices.resize(newTotalIndexCount);
 		for (uint i = 0; i < addedCount; ++i)
 			indices[i + indexOffset] = meshData.indices[i] + vertexOffset;
-	}
+	} 
+
 	JStaticMeshData::JStaticMeshData(){}
 	JStaticMeshData::JStaticMeshData(const std::wstring& name,
 		const size_t guid,
@@ -271,7 +272,8 @@ namespace JinEngine
 		JMeshData::Merge(mesh);
 		vertices.insert(vertices.end(), mesh.vertices.begin(), mesh.vertices.end());
 		CreateBoundingObject();
-	}
+	} 
+
 	JSkinnedMeshData::JSkinnedMeshData(const std::wstring& name,
 		const size_t guid,
 		std::vector<uint>&& indices,
@@ -318,7 +320,7 @@ namespace JinEngine
 			vertices[i].position = JMathHelper::Vector3Plus(vertices[i].position, offsetPos);
 		JMeshData::AddPositionOffset(offsetPos);
 	}
-
+ 
 	uint JMeshGroup::GetTotalVertexCount()noexcept
 	{
 		const uint meshCount = GetMeshDataCount();

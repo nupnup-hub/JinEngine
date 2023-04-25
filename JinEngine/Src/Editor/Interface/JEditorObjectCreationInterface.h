@@ -46,8 +46,7 @@ namespace JinEngine
 			bool isSetOpenDataBit = false;
 			bool isSetOwnerDataBit = false;
 			bool isSetTargetDataBit = false;
-			bool canSetModBit = false;
-			bool canSetRemoveBit = false;
+			bool canSetModBit = false; 
 		public:
 			const NotifyPtr notifyPtr;
 		public:
@@ -55,8 +54,7 @@ namespace JinEngine
 				bool isSetOpenDataBit,
 				bool isSetOwnerDataBit,
 				bool isSetTargetDataBit,
-				bool canSetModBit,
-				bool canSetRemoveBit,
+				bool canSetModBit, 
 				Core::JTypeInstanceSearchHint openDataHint = Core::JTypeInstanceSearchHint{},
 				Core::JTypeInstanceSearchHint ownerDataHint = Core::JTypeInstanceSearchHint{},
 				NotifyPtr notifyPtr = nullptr);
@@ -76,6 +74,21 @@ namespace JinEngine
 			JEditorRequestHint(AddEventPtr addEventPtr, ClearTaskFunctor* clearTaskFunctor);
 		public:
 			bool IsValid()const noexcept;
+		};
+
+		template<typename ...Param> class JEditorObjectCreateInterface;
+		class JEditorObjectDestroyInterface;
+		class JEditorObjectUndoDestroyInterface;
+		//passing class
+		class JEditorObjectReleaseInterface
+		{
+		private:
+			template<typename ...Param> friend class JEditorObjectCreateInterface;
+			friend class JEditorObjectDestroyInterface;
+			friend class JEditorObjectUndoDestroyInterface;
+		private:
+			static Core::JOwnerPtr<Core::JIdentifier> ReleaseInstance(Core::JIdentifier* ptr);
+			static bool RestoreInstance(Core::JOwnerPtr<Core::JIdentifier>&& instance);
 		};
 
 		template<typename ...Param>
@@ -147,11 +160,14 @@ namespace JinEngine
 				JEditorWindow* editorWnd = creationHint.editorWnd;
 				Core::JOwnerPtr<Core::JIdentifier> data = dS.Release(dH);
 				if (data.IsValid())
-				{ 
+				{  
 					if (editorWnd != nullptr && preProcessF != nullptr)
 						(*preProcessF)(editorWnd);
-					if(!Core::JIdentifier::AddInstance(std::move(data)))
-						JEditorTransition::Instance().Log("Creation fail", "can't add instance");
+					if (!JEditorObjectReleaseInterface::RestoreInstance(std::move(data)))
+					{
+						JEditorTransition::Instance().Log("Creation fail", "can't restore instance");
+						return;
+					}
 					isReleased = true;
 				}
 				else
@@ -190,7 +206,7 @@ namespace JinEngine
 				return (*canCreateF)(std::move(guid), std::move(creationHint), std::forward<Param>(var)...);
 			}
 		private:
-			void CreatePostProccess(const bool canNotify,
+			void CreatePostProccess(const bool isReleased,
 				const size_t guid,
 				const JEditorCreationHint creationHint,
 				Param... var)
@@ -214,7 +230,7 @@ namespace JinEngine
 						SetModifiedBit(Core::GetUserPtr(ptr), true);
 				}
 
-				if (canNotify && editorWnd != nullptr && creationHint.notifyPtr != nullptr)
+				if (isReleased && editorWnd != nullptr && creationHint.notifyPtr != nullptr)
 				{
 					JEditorPushSelectObjectEvStruct selectEv{ editorWnd->GetOwnerPageType(), editorWnd->GetWindowType(), Core::GetUserPtr(ptr) };
 					(editorWnd->*creationHint.notifyPtr)(*JEditorEvent::EvInterface(), editorWnd->GetGuid(), J_EDITOR_EVENT::PUSH_SELECT_OBJECT, &selectEv);
@@ -431,7 +447,7 @@ namespace JinEngine
 		};
 
 
-#define DEFAULT_REQUESTORIMPL(typeName, editorWndName)													\
+#define DEFAULT_CD_REQUESTOR(typeName, editorWndName)													\
 		class typeName																					\
 		{																								\
 		private:																						\

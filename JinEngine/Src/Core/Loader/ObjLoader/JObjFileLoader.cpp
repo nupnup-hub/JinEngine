@@ -4,8 +4,7 @@
 #include"../../File/JFilePathData.h"
 //#include"../../File/JFileIOHelper.h"
 #include"../../../Object/Resource/Mesh/JMeshStruct.h"
-#include"../../../Object/Resource/Mesh/JMeshGeometry.h"
-#include"../../../Object/Resource/JResourcePathData.h" 
+#include"../../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Utility/JMathHelper.h"
 

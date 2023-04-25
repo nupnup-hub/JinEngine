@@ -2,7 +2,7 @@
 #include"Window/JProjectSelectorHub.h"
 #include"../JEditorAttribute.h"
 #include"../JEditorPageShareData.h" 
-#include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
 #include"../../../Object/Resource/JResourceManager.h"
 #include"../../../Object/Resource/Texture/JTexture.h"
 
@@ -13,7 +13,8 @@ namespace JinEngine
 		JProjectSelectorPage::JProjectSelectorPage()
 			: JEditorPage("ProjectSelectorPage",
 				std::make_unique<JEditorAttribute>(),
-				J_EDITOR_PAGE_NONE)
+				J_EDITOR_PAGE_NONE),
+			ResourceEvListener(GetGuid())
 		{
 			projectHub = std::make_unique<JProjectSelectorHub>("Project Selector",
 				std::make_unique<JEditorAttribute>(),
@@ -25,11 +26,11 @@ namespace JinEngine
 				projectHub.get()
 			};
 			AddWindow(windows);
-			JResourceUserInterface::AddEventListener(*JResourceManager::Instance().EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+			ResourceEvListener::AddEventListener(*JResourceObject::EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 		}
 		JProjectSelectorPage::~JProjectSelectorPage()
 		{
-			JResourceUserInterface::RemoveListener(*JResourceManager::Instance().EvInterface(), GetGuid());
+			ResourceEvListener::RemoveListener(*JResourceObject::EvInterface(), GetGuid());
 		}
 		J_EDITOR_PAGE_TYPE JProjectSelectorPage::GetPageType()const noexcept
 		{
@@ -58,7 +59,7 @@ namespace JinEngine
 			//ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
-			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::BOLD); 
+			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM); 
 			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
 			guiWindowFlag |= ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoInputs;
 
@@ -79,13 +80,11 @@ namespace JinEngine
 		void JProjectSelectorPage::DoActivate()noexcept
 		{
 			JEditorPage::DoActivate();
-			backgroundTexture = Core::GetUserPtr(JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::MISSING));
-			CallOnResourceReference(backgroundTexture.Get());
+			backgroundTexture = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::MISSING);
 		}
 		void JProjectSelectorPage::DoDeActivate()noexcept
 		{
 			JEditorPage::DoDeActivate();
-			CallOffResourceReference(backgroundTexture.Get());
 			backgroundTexture.Clear();
 		}
 		void JProjectSelectorPage::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
@@ -96,10 +95,7 @@ namespace JinEngine
 			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 			{
 				if (backgroundTexture.IsValid() && jRobj->GetGuid() == backgroundTexture->GetGuid())
-				{
-					CallOffResourceReference(backgroundTexture.Get());
 					backgroundTexture.Clear();
-				}
 			}
 		}
 	}

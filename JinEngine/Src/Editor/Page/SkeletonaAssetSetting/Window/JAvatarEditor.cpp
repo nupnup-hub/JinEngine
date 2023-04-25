@@ -5,16 +5,22 @@
 #include"../../../../Object/GameObject/JGameObject.h" 
 #include"../../../../Object/Resource/Skeleton/JSkeleton.h"
 #include"../../../../Object/Resource/Skeleton/JSkeletonAsset.h"
+#include"../../../../Object/Resource/Skeleton/JSkeletonAssetPrivate.h"
 #include"../../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
 #include"../../../../Object/Resource/Skeleton/Avatar/JAvatar.h"
 #include"../../../../Core/Transition/JTransition.h"
 #include"../../../../Utility/JCommonUtility.h"
+#include"../../../../Utility/JVectorExtend.h"
 #include"../../../../../Lib/imgui/imgui.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{
+		namespace
+		{
+			using AvatarInterface = JSkeletonAssetPrivate::AvatarInterface;
+		}
 		JAvatarEditor::JAvatarEditor(const std::string& name, 
 			std::unique_ptr<JEditorAttribute> attribute, 
 			const J_EDITOR_PAGE_TYPE ownerPageType,
@@ -124,7 +130,7 @@ namespace JinEngine
 				ImGui::Separator();
 
 				JEditorDynamicAlignCalculator<columnCount> alignCal;
-				alignCal.Update(listSize, contentsSize, listPadding, 0, innerSize, J_EDITOR_INNER_ALGIN_TYPE::ROW, ImGui::GetCursorPos());
+				alignCal.Update(listSize, contentsSize, listPadding, CreateVec2(0), innerSize, J_EDITOR_INNER_ALGIN_TYPE::ROW, ImGui::GetCursorPos());
 				 
 				for (int i = 0; i < columnCount; ++i)
 				{
@@ -414,7 +420,7 @@ namespace JinEngine
 		}
 		void JAvatarEditor::StoreAvatarData()
 		{
-			targetSkeleton->AvatarInterface()->SetAvatar(targetAvatar.get());
+			AvatarInterface::SetAvatar(targetSkeleton.Get(), targetAvatar.get()); 
 			SetModifiedBit(targetSkeleton, true);
 		}
 		void JAvatarEditor::DoActivate() noexcept
@@ -440,7 +446,7 @@ namespace JinEngine
 				if (targetSkeleton->HasAvatar())
 				{
 					hasAvatar = true;
-					targetSkeleton->AvatarInterface()->CopyAvatarJointIndex(targetAvatar.get());
+					AvatarInterface::CopyAvatarJointIndex(targetSkeleton.Get(), targetAvatar.get());
 					CheckAllJoint();
 				}
 			}

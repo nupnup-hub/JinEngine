@@ -55,7 +55,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_GRAPHIC_SHADER::DEFAULT_PREVIEW_TEXTURE_SHADER:
 				return(J_GRAPHIC_SHADER_FUNCTION)(SHADER_FUNCTION_ALBEDO_MAP_ONLY | SHADER_FUNCTION_ALBEDO_MAP);
 			default:
-				break;
+				return SHADER_FUNCTION_NONE;
 			}
 		}
 		static JShaderGraphicPsoCondition GetShaderGraphicPso(const J_DEFAULT_GRAPHIC_SHADER sType)
@@ -114,12 +114,15 @@ namespace JinEngine
 		}
 
 		static bool IsDefaultUse(const J_DEFAULT_GRAPHIC_SHADER cType)
-		{
+		{ 
+			return true;
+		 /*
 			switch (cType)
 			{
 			default:
 				return true;
 			}
+		 */
 		}
 		static bool IsDefaultUse(const J_DEFAULT_COMPUTE_SHADER cType)
 		{

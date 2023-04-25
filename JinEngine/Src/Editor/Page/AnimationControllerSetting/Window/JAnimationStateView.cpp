@@ -5,8 +5,7 @@
 #include"../../../Popup/JEditorPopupNode.h"
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
 #include"../../../Interface/JEditorObjectCreationInterface.h"
-#include"../../../../Core/Reflection/JTypeTemplate.h"
-#include"../../../../Core/FSM/JFSMfactory.h"
+#include"../../../../Core/Reflection/JTypeTemplate.h" 
 #include"../../../../Core/FSM/AnimationFSM/JAnimationStateType.h"
 #include"../../../../Core/FSM/AnimationFSM/JAnimationFSMdiagram.h"
 #include"../../../../Core/FSM/AnimationFSM/JAnimationFSMstate.h"
@@ -14,7 +13,7 @@
 #include"../../../../Core/FSM/AnimationFSM/JAnimationFSMtransition.h"
 #include"../../../../Object/Resource/JResourceManager.h"
 #include"../../../../Object/Resource/AnimationController/JAnimationController.h"  
-#include"../../../../Application/JApplicationVariable.h"
+#include"../../../../Application/JApplicationProject.h"
 
 namespace JinEngine
 {
@@ -32,7 +31,7 @@ namespace JinEngine
 			}
 			static std::wstring ViewGraphPath()noexcept
 			{
-				return JApplicationVariable::GetProjectEditorResourcePath() + L"\\AniContViewGraph.txt";
+				return JApplicationProject::EditorSettingPath() + L"\\AniContViewGraph.txt";
 			}
 		}
 
@@ -97,9 +96,10 @@ namespace JinEngine
 			stateGraph->UseBeginViewWindow(false);
 
 			uint count = 0;
-			auto handle = JResourceManager::Instance().GetResourceVectorHandle<JAnimationController>(count);
-			for (uint i = 0; i < count; ++i)
-				RegisterViewGraphGroup(static_cast<JAnimationController*>(*(handle + i)));
+			 
+			auto rawVec = JAnimationController::StaticTypeInfo().GetInstanceRawPtrVec();
+			for (const auto& data : rawVec)
+				RegisterViewGraphGroup(static_cast<JAnimationController*>(data));
 
 			InitializeCreationImpl();
 			//Diagram View Popup
@@ -150,7 +150,7 @@ namespace JinEngine
 					return;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(stateView,
-					true, false, false, true, false,
+					true, false, false, true,
 					Core::JTypeInstanceSearchHint(stateView->aniCont),
 					Core::JTypeInstanceSearchHint(stateView->selectedDiagram),
 					&JEditorWindow::NotifyEvent);
@@ -179,7 +179,7 @@ namespace JinEngine
 				size_t toGuid = stateView->stateGraph->GetConnectToGuid();
 
 				JEditorCreationHint creationHint = JEditorCreationHint(stateView,
-					true, false, false, true, false,
+					true, false, false, true,
 					Core::JTypeInstanceSearchHint(stateView->aniCont),
 					Core::JTypeInstanceSearchHint(stateView->selectedDiagram),
 					&JEditorWindow::NotifyEvent);
@@ -198,7 +198,7 @@ namespace JinEngine
 					return;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(stateView,
-					true, false, false, false, true,
+					true, false, false, true,
 					Core::JTypeInstanceSearchHint(stateView->aniCont),
 					Core::JTypeInstanceSearchHint(stateView->selectedDiagram),
 					&JEditorWindow::NotifyEvent);
@@ -349,7 +349,7 @@ namespace JinEngine
 			RequestPushSelectObject(newSelected);
 			SetContentsClick(true);
 		}
-		void JAnimationStateView::RegisterViewGraphGroup(JAnimationController* aniCont)
+		void JAnimationStateView::RegisterViewGraphGroup(JAnimationController* aniCont)noexcept
 		{
 			auto isValidGroupLam = [](const size_t guid) {return Core::GetUserPtr<JAnimationController>(guid).IsValid(); };
 			if (aniCont != nullptr)
@@ -382,7 +382,7 @@ namespace JinEngine
 
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)
 				statePopup->SetOpen(false);
-			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT)
+			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && ev->pageType == GetOwnerPageType())
 			{
 				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(ev);
 				Core::JUserPtr< Core::JIdentifier> diagram = evstruct->GetFirstMatchedTypeObject(Core::JAnimationFSMdiagram::StaticTypeInfo());

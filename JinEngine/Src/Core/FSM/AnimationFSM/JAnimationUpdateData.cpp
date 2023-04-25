@@ -90,21 +90,21 @@ namespace JinEngine
 			for (uint i = 0; i < JSkeletonFixedData::maxJointCount; ++i)
 				diagramData[layerNumber].worldTransform[updateNumber][i] = iden;
 		}
-		void JAnimationUpdateData::RegisterParameter(const std::wstring& str, const float value)noexcept
+		void JAnimationUpdateData::RegisterParameter(const size_t guid, const float value)noexcept
 		{
-			paramValueMap.emplace(str, value); 
+			paramValueMap.emplace(guid, value);
 		}
-		float JAnimationUpdateData::GetParameterValue(const std::wstring& str)const noexcept
+		float JAnimationUpdateData::GetParameterValue(const size_t guid)const noexcept
 		{
-			auto data = paramValueMap.find(str);
+			auto data = paramValueMap.find(guid);
 			if (data != paramValueMap.end())
 				return data->second;
 			else
 				return -1;
 		}
-		void JAnimationUpdateData::SetParameterValue(const std::wstring& str, const float value)noexcept
+		void JAnimationUpdateData::SetParameterValue(const size_t guid, const float value)noexcept
 		{
-			auto data = paramValueMap.find(str);
+			auto data = paramValueMap.find(guid);
 			if (data != paramValueMap.end())
 				data->second = value;
 		}

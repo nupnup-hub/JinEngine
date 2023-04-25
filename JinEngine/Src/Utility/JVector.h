@@ -1,29 +1,34 @@
 #pragma once  
 #include<DirectXMath.h> 
 #include<type_traits> 
-#include<functional>  
+#include<functional>   
 #include"../Core/JDataType.h"
-
+ 
 struct ImVec2;
 struct ImVec4;
-
+ 
 namespace JinEngine
 {
+	template<typename T>
+	struct ValidVectorParameterDetermine
+	{
+		using Type = std::conditional_t<std::is_floating_point_v<T> || std::is_integral_v<T>, T, void>;
+	}; 
+	template<typename T>
+	using ValidVectorParameterDetermine_T = typename ValidVectorParameterDetermine<T>::Type;
+
 	struct JVectorBase {};
 	template<typename T>
 	struct JVector2 : public JVectorBase
 	{
 	public:
-		using ValueType = T;
+		using ValueType = typename ValidVectorParameterDetermine_T<T>;
 	public:
-		T x;
-		T y;
+		ValueType x;
+		ValueType y;
 	public:
-		JVector2() = default;
-		JVector2(T x)
-			: x(x), y(x)
-		{}
-		JVector2(T x, T y)
+		JVector2() = default; 
+		JVector2(ValueType x, ValueType y)
 			: x(x), y(y)
 		{}
 		JVector2(const DirectX::XMFLOAT2& xm)
@@ -36,17 +41,17 @@ namespace JinEngine
 		JVector2(JVector2&&) = default;
 		JVector2& operator=(JVector2&&) = default;
 	public:
-		template<typename U, std::enable_if_t<std::is_convertible_v<T, U>, int> = 0>
+		template<typename U, std::enable_if_t<std::is_convertible_v<ValueType, U>, int> = 0>
 		JVector2(const JVector2<U>& rhs)
 		{
-			x = rhs.x;
-			y = rhs.y;
+			x = static_cast<ValueType>(rhs.x);
+			y = static_cast<ValueType>(rhs.y);
 		}
-		template<typename U, std::enable_if_t<std::is_convertible_v<T, U>, int> = 0>
+		template<typename U, std::enable_if_t<std::is_convertible_v<ValueType, U>, int> = 0>
 		JVector2& operator=(const JVector2<U>& rhs)
 		{
-			x = rhs.x;
-			y = rhs.y;
+			x = static_cast<ValueType>(rhs.x);
+			y = static_cast<ValueType>(rhs.y);
 			return *this;
 		}
 	public:
@@ -64,7 +69,7 @@ namespace JinEngine
 		}
 		JVector2 operator*(float rhs)const
 		{
-			return JVector2(x * rhs, y * rhs);
+			return JVector2(static_cast<ValueType>(x * rhs), static_cast<ValueType>(y * rhs));
 		}
 		JVector2 operator/(const JVector2& rhs)const
 		{
@@ -72,7 +77,7 @@ namespace JinEngine
 		}
 		JVector2 operator/(float rhs)const
 		{
-			return JVector2(x / rhs, y / rhs);
+			return JVector2(static_cast<ValueType>(x / rhs), static_cast<ValueType>(y / rhs)); 
 		}
 		void operator+=(const JVector2& rhs)
 		{
@@ -112,7 +117,7 @@ namespace JinEngine
 		{
 			return x == data.x && y == data.y;
 		}
-		T& operator[](const uint index)
+		ValueType& operator[](const uint index)
 		{
 			if (index == 0)
 				return x;
@@ -120,7 +125,7 @@ namespace JinEngine
 				return y;
 			else
 			{
-				assert("JVector3 operator index error");
+				assert("JVector2 operator index error");
 				return x;
 			}
 		}
@@ -145,33 +150,43 @@ namespace JinEngine
 		}
 	};
 
-
 	template<typename T>
 	struct JVector3 : public JVectorBase
 	{
 	public:
-		using ValueType = T;
+		using ValueType = typename ValidVectorParameterDetermine_T<T>;
 	public:
-		mutable T x;
-		mutable T y;
-		mutable T z;
+		mutable ValueType x;
+		mutable ValueType y;
+		mutable ValueType z;
 	public:
-		JVector3() = default;
-		JVector3(T x)
-			: x(x), y(x), z(x)
-		{}
-		JVector3(T x, T y, T z)
+		JVector3() = default; 
+		JVector3(ValueType x, ValueType y, ValueType z)
 			: x(x), y(y), z(z)
 		{}
 		JVector3(const DirectX::XMFLOAT3& xm)
 			: x(xm.x), y(xm.y), z(xm.z)
 		{}
-
 		JVector3(const JVector3&) = default;
 		JVector3& operator=(const JVector3&) = default;
-
 		JVector3(JVector3&&) = default;
 		JVector3& operator=(JVector3&&) = default;
+	public:
+		template<typename U, std::enable_if_t<std::is_convertible_v<ValueType, U>, int> = 0>
+		JVector3(const JVector3<U>& rhs)
+		{
+			x = static_cast<ValueType>(rhs.x);
+			y = static_cast<ValueType>(rhs.y);
+			z = static_cast<ValueType>(rhs.z);
+		}
+		template<typename U, std::enable_if_t<std::is_convertible_v<ValueType, U>, int> = 0>
+		JVector3& operator=(const JVector3<U>& rhs)
+		{
+			x = static_cast<ValueType>(rhs.x);
+			y = static_cast<ValueType>(rhs.y);
+			z = static_cast<ValueType>(rhs.z);
+			return *this;
+		}
 	public:
 		JVector3 operator+(const JVector3& rhs)const
 		{
@@ -187,7 +202,7 @@ namespace JinEngine
 		}
 		JVector3 operator*(float rhs)const
 		{
-			return JVector3(x * rhs, y * rhs, z * rhs);
+			return JVector3(static_cast<ValueType>(x * rhs), static_cast<ValueType>(y * rhs), static_cast<ValueType>(z * rhs));
 		}
 		JVector3 operator/(const JVector3& rhs)const
 		{
@@ -195,7 +210,7 @@ namespace JinEngine
 		}
 		JVector3 operator/(float rhs)const
 		{
-			return JVector3(x / rhs, y / rhs, z / rhs);
+			return JVector3(static_cast<ValueType>(x / rhs), static_cast<ValueType>(y / rhs), static_cast<ValueType>(z / rhs));
 		}
 		void operator+=(const JVector3& rhs)
 		{
@@ -249,7 +264,7 @@ namespace JinEngine
 		{
 			return x < data.x&& y < data.y&& z < data.z;
 		}
-		T& operator[](const uint index) const
+		ValueType& operator[](const uint index) const
 		{
 			if (index == 0)
 				return x;
@@ -288,25 +303,21 @@ namespace JinEngine
 	struct JVector4 : public JVectorBase
 	{
 	public:
-		using ValueType = T;
+		using ValueType = typename ValidVectorParameterDetermine_T<T>;
 	public:
-		T x;
-		T y;
-		T z;
-		T w;
+		ValueType x;
+		ValueType y;
+		ValueType z;
+		ValueType w;
 	public:
-		JVector4() = default;
-		JVector4(T x)
-			: x(x), y(x), z(x), w(x)
-		{}
-		JVector4(T x, T y, T z, T w)
+		JVector4() = default; 
+		JVector4(ValueType x, ValueType y, ValueType z, ValueType w)
 			: x(x), y(y), z(z), w(w)
 		{}
 		JVector4(const DirectX::XMFLOAT4& xm)
 			: x(xm.x), y(xm.y), z(xm.z), w(xm.w)
 		{}
 		JVector4(const ImVec4& v);
-
 		JVector4(const JVector4&) = default;
 		JVector4& operator=(const JVector4&) = default;
 		JVector4& operator=(const DirectX::XMFLOAT4& data)
@@ -318,9 +329,26 @@ namespace JinEngine
 			return *this;
 		}
 		JVector4& operator=(const ImVec4& rhs);
-
 		JVector4(JVector4&&) = default;
 		JVector4& operator=(JVector4&&) = default;
+	public:
+		template<typename U, std::enable_if_t<std::is_convertible_v<ValueType, U>, int> = 0>
+		JVector4(const JVector4<U>& rhs)
+		{
+			x = static_cast<ValueType>(rhs.x);
+			y = static_cast<ValueType>(rhs.y);
+			z = static_cast<ValueType>(rhs.z);
+			w = static_cast<ValueType>(rhs.w);
+		}
+		template<typename U, std::enable_if_t<std::is_convertible_v<ValueType, U>, int> = 0>
+		JVector4& operator=(const JVector4<U>& rhs)
+		{
+			x = static_cast<ValueType>(rhs.x);
+			y = static_cast<ValueType>(rhs.y);
+			z = static_cast<ValueType>(rhs.z);
+			w = static_cast<ValueType>(rhs.w);
+			return *this;
+		}
 	public:
 		JVector4 operator+(const JVector4& rhs)const
 		{
@@ -336,7 +364,7 @@ namespace JinEngine
 		}
 		JVector4 operator*(float rhs)const
 		{
-			return JVector4(x * rhs, y * rhs, z * rhs, w * rhs);
+			return JVector4(static_cast<ValueType>(x * rhs), static_cast<ValueType>(y * rhs), static_cast<ValueType>(z * rhs), static_cast<ValueType>(w * rhs));
 		}
 		JVector4 operator/(const JVector4& rhs)const
 		{
@@ -344,7 +372,7 @@ namespace JinEngine
 		}
 		JVector4 operator/(float rhs)const
 		{
-			return JVector4(x / rhs, y / rhs, z / rhs, w / rhs);
+			return JVector4(static_cast<ValueType>(x / rhs), static_cast<ValueType>(y / rhs), static_cast<ValueType>(z / rhs), static_cast<ValueType>(w / rhs));
 		}
 		void operator+=(const JVector4& rhs)
 		{
@@ -392,7 +420,7 @@ namespace JinEngine
 		{
 			return x != data.x || y != data.y || z != data.z || w != data.w;
 		}
-		T& operator[](const uint index)
+		ValueType& operator[](const uint index)
 		{
 			if (index == 0)
 				return x;
@@ -404,7 +432,7 @@ namespace JinEngine
 				return w;
 			else
 			{
-				assert("JVector3 operator index error");
+				assert("JVector4 operator index error");
 				return x;
 			}
 		}
@@ -421,6 +449,12 @@ namespace JinEngine
 		}
 	};
 
+	template<>
+	struct JVector2<void>;
+	template<>
+	struct JVector3<void>;
+	template<>
+	struct JVector4<void>;
 }
 
 
@@ -428,16 +462,16 @@ namespace std
 {
 	using namespace JinEngine;
 
-	template <class T>
-	static inline void hash_combine(std::size_t& s, const T& v)
+	template <class ValueType>
+	static inline void hash_combine(std::size_t& s, const ValueType& v)
 	{
-		std::hash<T> h;
+		std::hash<ValueType> h;
 		s ^= h(v) + 0x9e3779b9 + (s << 6) + (s >> 2);
 	}
-	template <typename T>
-	struct hash<JVector2<T>> : public JVector2<T>
+	template <typename ValueType>
+	struct hash<JVector2<ValueType>> : public JVector2<ValueType>
 	{
-		std::size_t operator()(const JVector2<T>& k) const
+		std::size_t operator()(const JVector2<ValueType>& k) const
 		{
 			std::size_t res = 0;
 			hash_combine(res, k.x);
@@ -447,10 +481,10 @@ namespace std
 		}
 	};
 
-	template <typename T>
-	struct hash<JVector3<T>> : public JVector3<T>
+	template <typename ValueType>
+	struct hash<JVector3<ValueType>> : public JVector3<ValueType>
 	{
-		std::size_t operator()(const JVector3<T>& k) const
+		std::size_t operator()(const JVector3<ValueType>& k) const
 		{
 			std::size_t res = 0;
 			hash_combine(res, k.x);
@@ -461,10 +495,10 @@ namespace std
 		}
 	};
 
-	template <typename T>
-	struct hash<JVector4<T>> : public JVector4<T>
+	template <typename ValueType>
+	struct hash<JVector4<ValueType>> : public JVector4<ValueType>
 	{
-		std::size_t operator()(const JVector4<T>& k) const
+		std::size_t operator()(const JVector4<ValueType>& k) const
 		{
 			std::size_t res = 0;
 			hash_combine(res, k.x);

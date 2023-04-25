@@ -82,7 +82,7 @@ namespace JinEngine
 			J_ANIMATION_STATE_TYPE lastState[JAnimationFixedData::defaultCrossFadingCount];
 			std::unordered_map<size_t, float> skeletonBlendRate[JAnimationFixedData::defaultCrossFadingCount];
 		public:
-			std::unordered_map<std::wstring, float> paramValueMap; 
+			std::unordered_map<size_t, float> paramValueMap; 
 		public:
 			void Initialize()noexcept;
 			void ClearSkeletonBlendRate(const uint index)noexcept;
@@ -94,9 +94,9 @@ namespace JinEngine
 		public:
 			void StuffIdentity(const uint layerNumber, const uint updateNumber)noexcept;
 		public:
-			void RegisterParameter(const std::wstring& str, const float value)noexcept;
-			float GetParameterValue(const std::wstring& str)const noexcept;
-			void SetParameterValue(const std::wstring& str, const float value)noexcept;
+			void RegisterParameter(const size_t guid, const float value)noexcept;
+			float GetParameterValue(const size_t guid)const noexcept;
+			void SetParameterValue(const size_t guid, const float value)noexcept;
 		};
 	}
 }

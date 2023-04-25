@@ -1,62 +1,55 @@
 #pragma once
-#include"JSkeletonAssetInterface.h"
 #include"JSkeletonType.h"
-#include"../../../Core/JDataType.h" 
-#include<memory>
+#include"../JResourceObject.h" 
 
 namespace JinEngine
 {
 	struct JSkeleton;
 	class JAvatar;
-	class JSkeletonAsset final : public JSkeletonAssetInterface
+	class JSkeletonAssetPrivate;
+	class JSkeletonAsset final : public JResourceObject
 	{
-		REGISTER_CLASS(JSkeletonAsset)
-	public:
-		struct JSkeletonInitData : public JResourceInitData
+		REGISTER_CLASS_IDENTIFIER_LINE(JSkeletonAsset)
+	public: 
+		class InitData final : public JResourceObject::InitData
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
 			std::unique_ptr<JSkeleton> skeleton;
 		public:
-			JSkeletonInitData(const std::wstring& name,
+			InitData(const uint8 formatIndex,
+				JDirectory* directory,
+				std::unique_ptr<JSkeleton>&& skeleton);
+			InitData(const size_t guid,
+				const uint8 formatIndex,
+				JDirectory* directory,
+				std::unique_ptr<JSkeleton>&& skeleton);
+			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
+				const uint8 formatIndex,
 				JDirectory* directory,
-				const uint8 formatIndex = JResourceObject::GetFormatIndex<JSkeletonAsset>(GetAvailableFormat()[0]),
-				std::unique_ptr<JSkeleton> skeleton = nullptr);
-			JSkeletonInitData(const std::wstring& name,
-				JDirectory* directory,
-				const uint8 formatIndex = JResourceObject::GetFormatIndex<JSkeletonAsset>(GetAvailableFormat()[0]),
-				std::unique_ptr<JSkeleton> skeleton = nullptr);
-			JSkeletonInitData(const std::wstring& name,
-				const size_t guid,
-				const J_OBJECT_FLAG flag,
-				JDirectory* directory,
-				const std::wstring& oriPath,
-				std::unique_ptr<JSkeleton> skeleton = nullptr);
-			JSkeletonInitData(const std::wstring& name,
-				JDirectory* directory,
-				const std::wstring& oriPath,
-				std::unique_ptr<JSkeleton> skeleton = nullptr);
+				std::unique_ptr<JSkeleton>&& skeleton);
 		public:
-			//For create new object
-			//except load
-			bool IsValidCreateData()final; 
+			bool IsValidData()const noexcept final;
 		};
-		using InitData = JSkeletonInitData;
-	private:
-		struct JSkeletonAssetMetaData : public JResourceMetaData
+	protected: 
+		class LoadMetaData final : public JResourceObject::InitData
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
 		public:
 			std::unique_ptr<JAvatar> avatar = nullptr;
-			JSKELETON_TYPE skeletonType ;
-			size_t skeletonHash = 0;
+			JSKELETON_TYPE skeletonType; 
+		public:
+			LoadMetaData(JDirectory* directory);
 		};
 	private:
-		std::unique_ptr<JSkeleton> skeleton = nullptr;
-		std::unique_ptr<JAvatar> avatar = nullptr;
-		JSKELETON_TYPE skeletonType;
-		size_t skeletonHash = 0;
+		friend class JSkeletonAssetPrivate;
+		class JSkeletonAssetImpl;
+	private:
+		std::unique_ptr<JSkeletonAssetImpl> impl;
 	public:
+		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -71,35 +64,17 @@ namespace JinEngine
 		size_t GetSkeletonHash()const noexcept;
 		std::wstring GetJointName(int index)noexcept;
 		std::vector<std::vector<uint8>> GetSkeletonTreeIndexVec()noexcept;
-
+	public:
 		void SetSkeletonType(JSKELETON_TYPE skeletonType)noexcept;
+	public:
 		bool HasAvatar()noexcept; 
 		bool IsRegularChildJointIndex(uint8 childIndex, uint8 parentIndex)noexcept; 
-	public:
-		JSkeletonAssetAvatarInterface* AvatarInterface() final; 
-	private:
-		void SetAvatar(JAvatar* avatar)noexcept final;
-		void CopyAvatarJointIndex(JAvatar* target)noexcept final;
-		void SetSkeleton(std::unique_ptr<JSkeleton> skeleton); 
-	private:
-		void DoCopy(JObject* ori);
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
-	private:
-		void StuffResource() final;
-		void ClearResource() final;
-		bool WriteSkeletonAssetData();
-		bool ReadSkeletonAssetData(); 
-	private:
-		Core::J_FILE_IO_RESULT CallStoreResource()final;
-		static Core::J_FILE_IO_RESULT StoreObject(JSkeletonAsset* skeletonAsset);
-		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JSkeletonAsset* skeletonAsset);
-		static JSkeletonAsset* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);	   
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, JSkeletonAssetMetaData& metadata);
-		static void RegisterCallOnce();
 	private:	
-		JSkeletonAsset(JSkeletonInitData& initdata); 
+		JSkeletonAsset(InitData& initData); 
 		~JSkeletonAsset();
 	};
 }
+ 

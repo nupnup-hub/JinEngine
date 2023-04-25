@@ -6,8 +6,8 @@ namespace JinEngine
 {
 	namespace Core
 	{ 
-		//unuse
-		class JHeapAlloc : public JDefaultAlloc
+		//Unuse
+		class JHeapAlloc : public JAllocationInterface
 		{
 		private:
 			using DataPointer = BYTE*; 
@@ -25,9 +25,9 @@ namespace JinEngine
 			void ReleaseUnusePage()final;
 			void Release()final;
 		public:
-			bool CanAllocate(const uint blockCount)const noexcept final;
-		protected:
-			bool IsDefaultAllocated(void* p)const noexcept final;
+			bool CanAllocate(const uint blockCount)const noexcept final; 
+		public:
+			JAllocInfo GetInformation()const noexcept final;
 		};
 	}
 }

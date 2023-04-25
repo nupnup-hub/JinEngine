@@ -25,8 +25,8 @@ namespace JinEngine
 		const size_t guid;
 	private:
 		Core::JUserPtr<JObject> jobject;
-		JScene* scene = nullptr;
-		JMaterial* textureMaterial = nullptr;
+		Core::JUserPtr<JScene> scene;
+		Core::JUserPtr<JMaterial> textureMaterial;
 		JCamera* camera = nullptr;
 	private:
 		J_PREVIEW_DIMENSION previewDimension; 
@@ -43,18 +43,17 @@ namespace JinEngine
 		Core::JUserPtr<JObject> GetJObject()noexcept;
 		Core::JUserPtr<JCamera> GetPreviewCamera()noexcept;
 		J_PREVIEW_DIMENSION GetPreviewDimension()const noexcept; 
+		J_SIMPLE_GET(Core::JUserPtr<JScene>, scene, Scene);
 	protected:
 		void SetUseQuadShapeTrigger(const bool value)noexcept;
-		J_SIMPLE_P_GET_SET(JScene, scene, Scene);
-		J_SIMPLE_P_GET_SET(JMaterial, textureMaterial, TextureMaterial); 
+		void SetScene(Core::JUserPtr<JScene> newScene)noexcept;
+		J_SIMPLE_GET_SET(Core::JUserPtr<JMaterial>, textureMaterial, TextureMaterial);
 	public:
 		//Draw quad shape for texture rendering
 		bool UseQuadShape()const noexcept;
 	public:
 		void Clear()noexcept;
-	protected:
-		void TryOpenScene(Core::JUserPtr<JMaterial> observationFram)noexcept;
-		void TryOpenScene()noexcept;
+	protected: 
 		void AdjustCamera(_In_ const DirectX::XMFLOAT3& objCenter, 
 			const float objRadius, 
 			const DirectX::XMFLOAT3 additionalPos = DirectX::XMFLOAT3(0,0,0))noexcept;

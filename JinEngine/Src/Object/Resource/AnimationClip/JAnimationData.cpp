@@ -1,4 +1,3 @@
-#pragma once
 #include<vector>
 #include"JAnimationData.h"  
 #include"../../../Core/Loader/FbxLoader/JFbxUtility.h"
@@ -9,7 +8,7 @@ namespace JinEngine
 	{
 		animationSample = std::move(jfbxData.animationSample);
 		skeletonHash = jfbxData.skeletonHash;
-		clipLength = jfbxData.clipLength;
+		length = jfbxData.length;
 		framePerSecond = jfbxData.framePerSecond;
 	}
 }

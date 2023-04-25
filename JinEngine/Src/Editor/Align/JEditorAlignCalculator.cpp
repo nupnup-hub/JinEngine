@@ -59,7 +59,7 @@ namespace JinEngine
 		{
 			const JVector2<float> alphaSize = JImGuiImpl::GetAlphabetSize();
 			JEditorTextAlignCalculator::text = JCUtil::EraseChar(text, '\n');
-			linePerAlpabet = size.x / alphaSize.x;
+			linePerAlpabet = static_cast<int>(size.x / alphaSize.x);
 			lineLength = size.x;
 
 			JEditorTextAlignCalculator::size = size;
@@ -118,7 +118,7 @@ namespace JinEngine
 				const float additionalXPos = (lineLength - length) * addtionalXFactor;
 				if (additionalXPos > 0)
 				{
-					int additionalSpace = additionalXPos / spaceSize.x;
+					int additionalSpace = static_cast<int>(additionalXPos / spaceSize.x);
 					subStr.insert(0, std::string(additionalSpace, ' '));
 				}
 

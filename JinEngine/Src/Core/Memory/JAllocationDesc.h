@@ -8,7 +8,7 @@ namespace JinEngine
 		{
 			DEFAULT,
 			VIRTUAL,
-			HEAP,
+			HEAP,	//Unuse
 			CUSTOM
 		};
 

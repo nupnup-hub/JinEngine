@@ -1,4 +1,5 @@
-#include"JFSMInterface.h"
+#include"JFSMinterface.h"
+#include"JFSMinterfacePrivate.h"
 #include"../File/JFileConstant.h"
 #include"../../Utility/JCommonUtility.h"  
 #include<fstream>
@@ -6,22 +7,26 @@
 namespace JinEngine
 {
 	namespace Core
-	{
-		JFSMInterface::JFSMIdentifierInitData::JFSMIdentifierInitData(const std::wstring& name, const size_t guid)
-			:name(name), guid(guid)
-		{} 
-		bool JFSMInterface::DoBeginDestroy()
-		{
-			return Destroy();
-		}
-		bool JFSMInterface::Destroy()
-		{
-			Clear();
-			RemoveInstance();
-			return true;
-		}
-		JFSMInterface::JFSMInterface(const JFSMIdentifierInitData& initData)
-			:JIdentifier(initData.name, initData.guid)
+	{ 
+		JFSMinterface::InitData::InitData(const JTypeInfo& initTypeInfo)
+			:JIdentifier::InitData(initTypeInfo)
 		{}
+		JFSMinterface::InitData::InitData(const JTypeInfo& initTypeInfo, const std::wstring& name, const size_t guid)
+			:JIdentifier::InitData(initTypeInfo, name, guid)
+		{}
+		JFSMinterface::JFSMinterface(const InitData& initData)
+			:JIdentifier(initData)
+		{}
+
+		//fsm object can't copy
+		using CreateInstanceInterface = JFSMinterfacePrivate::CreateInstanceInterface; 
+		bool CreateInstanceInterface::Copy(Core::JIdentifier* from, Core::JIdentifier* to)
+		{
+			return false;
+		}
+		bool CreateInstanceInterface::CanCopy(Core::JIdentifier* from, Core::JIdentifier* to)noexcept
+		{
+			return false;
+		}
 	};
 }

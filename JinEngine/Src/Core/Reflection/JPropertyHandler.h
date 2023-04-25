@@ -8,7 +8,7 @@ namespace JinEngine
 	{
 		class JPropertyHandlerBase
 		{
-			REGISTER_CLASS(JPropertyHandlerBase)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JPropertyHandlerBase)
 		public:
 			virtual ~JPropertyHandlerBase() {}
 		};
@@ -16,7 +16,7 @@ namespace JinEngine
 		template<typename T>
 		class IPropertyHandler : public JPropertyHandlerBase
 		{
-			REGISTER_CLASS(IPropertyHandler)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(IPropertyHandler)
 		public:
 			virtual T Get(void* object)const = 0;
 			virtual void Set(void* object, const T value) = 0;
@@ -25,7 +25,7 @@ namespace JinEngine
 		template<typename Type, typename Field>
 		class JStaticPropertyHandler final : public IPropertyHandler<Field>
 		{
-			REGISTER_CLASS(JStaticPropertyHandler)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JStaticPropertyHandler)
 		private:
 			using Pointer = Field*;
 		private:
@@ -47,7 +47,7 @@ namespace JinEngine
 		template<typename Type, typename Field>
 		class JMemberPropertyHandler final : public IPropertyHandler<Field>
 		{
-			REGISTER_CLASS(JMemberPropertyHandler)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JMemberPropertyHandler)
 		private:
 			using Pointer = Field Type::*;
 		private:
@@ -69,7 +69,7 @@ namespace JinEngine
 		template<typename Type, typename Field, typename GetPointer, typename SetPointer>
 		class JStaticIndirectPropertyHandler final : public IPropertyHandler<Field>
 		{
-			REGISTER_CLASS(JStaticIndirectPropertyHandler)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JStaticIndirectPropertyHandler)
 		private:
 			GetPointer gPtr = nullptr;
 			SetPointer sPtr = nullptr;
@@ -90,7 +90,7 @@ namespace JinEngine
 		template<typename Type, typename Field, typename GetPointer, typename SetPointer>
 		class JMemberIndirectPropertyHandler final : public IPropertyHandler<Field>
 		{
-			REGISTER_CLASS(JMemberIndirectPropertyHandler)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JMemberIndirectPropertyHandler)
 		private:
 			GetPointer gPtr = nullptr;
 			SetPointer sPtr = nullptr;

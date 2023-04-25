@@ -26,7 +26,7 @@ namespace JinEngine
 		struct JFrameResource
 		{
 		private:
-			friend class JGraphicImpl;
+			friend class JGraphic;
 		private:
 			// We cannot reset the allocator until the GPU is done processing the commands.
 			// So each frame needs their own allocator.

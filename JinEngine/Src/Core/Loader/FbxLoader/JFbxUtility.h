@@ -58,7 +58,7 @@ namespace JinEngine
 		public:
 			std::vector<JAnimationSample>animationSample;
 			size_t skeletonHash;
-			uint32 clipLength;
+			uint32 length;
 			float framePerSecond;
 		};
 	}

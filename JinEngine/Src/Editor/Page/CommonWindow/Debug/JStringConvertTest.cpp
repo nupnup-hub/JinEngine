@@ -1,8 +1,7 @@
 #include"JStringConvertTest.h"
 #include"../../JEditorAttribute.h"  
 #include"../../../../Utility/JCommonUtility.h"
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../../../../Core/Identity/JIdentifier.h"
+#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
 
 namespace JinEngine
 {

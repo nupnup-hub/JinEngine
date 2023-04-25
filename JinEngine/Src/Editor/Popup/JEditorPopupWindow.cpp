@@ -140,7 +140,7 @@ namespace JinEngine
 			JImGuiImpl::BeginWindow("##CloseConfirmPopup" + uniqueLabel, 0, flag);
 			JVector2<float> textLength = ImGui::CalcTextSize("Close JinEngine!");
 
-			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::SEMI_BOLD);
+			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM);
 			JImGuiImpl::PushFont();
 			ImGui::SetCursorPosX(ImGui::GetWindowSize().x * 0.5f - (textLength.x * 0.5f));
 			JImGuiImpl::Text("Close JinEngine");
@@ -232,7 +232,7 @@ namespace JinEngine
 			JImGuiImpl::BeginWindow("##CloseConfirmPopup" + uniqueLabel, 0, flag);
 			JVector2<float> textLength = ImGui::CalcTextSize("Close JinEngine!");
 
-			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::SEMI_BOLD);
+			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM);
 			JImGuiImpl::PushFont();
 			ImGui::SetCursorPosX(ImGui::GetWindowSize().x * 0.5f - (textLength.x * 0.5f));
 			JImGuiImpl::Text("Close JinEngine");	

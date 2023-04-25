@@ -103,23 +103,23 @@ namespace JinEngine
 					return -1;
 			}
 			template<typename Ret, typename ...Param>
-			void ApplyFunc(const uint index, JStaticCallable<Ret, Type&, Param...> callable, Param&&... var)
+			void ApplyFunc(const uint index, JStaticCallable<Ret, Type*, Param...> callable, Param&&... var)
 			{
 				if (Get(index) != nullptr)
 				{
 					const uint objectCount = (uint)objectVec.size();
 					for (uint i = index; i < objectCount; ++i)
-						callable(nullptr, *objectVec[i], std::forward<Param>(var)...);
+						callable(nullptr, objectVec[i], std::forward<Param>(var)...);
 				}
 			}
 			template<typename Ret, typename ...Param>
-			void ApplyFuncByIndex(const uint index, JStaticCallable<Ret, Type&, const uint&, Param...> callable, Param&&... var)
+			void ApplyFuncByIndex(const uint index, JStaticCallable<Ret, Type*, const uint&, Param...> callable, Param&&... var)
 			{
 				if (Get(index) != nullptr)
 				{
 					const uint objectCount = (uint)objectVec.size();
 					for (uint i = index; i < objectCount; ++i)
-						callable(nullptr, *objectVec[i], i, std::forward<Param>(var)...);
+						callable(nullptr, objectVec[i], i, std::forward<Param>(var)...);
 				}
 			}
 			void Clear()

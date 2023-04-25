@@ -1,5 +1,5 @@
 #include"JDepthMapDebug.h"
-#include"../../Application/JApplicationVariable.h"
+#include"../../Application/JApplicationEngine.h" 
 #include"../../Core/Exception/JExceptionMacro.h"
 #include"../../Object/Resource/JResourceManager.h"
 #include"../../Object/Resource/Mesh/JMeshGeometry.h" 
@@ -124,7 +124,7 @@ namespace JinEngine
 			cRootSignature->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof("DepthDebug RootSignature") - 1, "DepthDebug RootSignature");
 
 			D3D_SHADER_MACRO macro{ NULL, NULL };
-			std::wstring computeShaderPath = JApplicationVariable::GetShaderPath() + L"\\DepthMapDebug.hlsl";
+			std::wstring computeShaderPath = JApplicationEngine::ShaderPath() + L"\\DepthMapDebug.hlsl";
 
 			linearDepthMapShaderData = std::make_unique<JComputeShaderData>();
 			linearDepthMapShaderData->cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "LinearMap", "cs_5_1");

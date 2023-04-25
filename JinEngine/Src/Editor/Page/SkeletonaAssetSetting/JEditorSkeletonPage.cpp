@@ -7,17 +7,16 @@
 #include"../CommonWindow/Detail/JObjectDetail.h"
 #include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
 #include"../../Menubar/JEditorMenuBar.h"
-#include"../../../Object/GameObject/JGameObject.h"
-#include"../../../Object/GameObject/JGameObjectFactory.h"
-#include"../../../Object/Component/JComponentFactoryUtility.h"
+#include"../../../Object/GameObject/JGameObject.h" 
+#include"../../../Object/Component/JComponentCreator.h"
 #include"../../../Object/Resource/JResourceManager.h"  
 #include"../../../Object/Resource/Mesh/JSkinnedMeshGeometry.h"
 #include"../../../Object/Resource/Scene/JScene.h"
 #include"../../../Object/Resource/Scene/JSceneManager.h"
-#include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"  
-#include"../../../Object/Resource/JResourceObjectFactory.h" 
+#include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"   
 #include"../../../Core/Guid/GuidCreator.h"
-#include"../../../Application/JApplicationVariable.h"
+#include"../../../Core/Identity/JIdenCreator.h"
+#include"../../../Application/JApplicationProject.h"
 
 namespace JinEngine
 {
@@ -27,7 +26,8 @@ namespace JinEngine
 		JEditorSkeletonPage::JEditorSkeletonPage()
 			:JEditorPage("SkeletonAssetPage",
 				std::make_unique<JEditorAttribute>(),
-				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, J_EDITOR_PAGE_REQUIRE_INIT_OBJECT))
+				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, J_EDITOR_PAGE_REQUIRE_INIT_OBJECT)),
+			ResourceEvListener::JEventListener(GetGuid())
 		{
 			constexpr uint memberWindowCount = 4;
 			std::vector<std::string> windowNames
@@ -156,29 +156,29 @@ namespace JinEngine
 					return false;
 			};
 			using IsSameSkelFunctor = Core::JFunctor<bool, JMeshGeometry*, size_t>;
-			JMeshGeometry* mesh = JResourceManager::Instance().GetResourceByCondition<JMeshGeometry, size_t>(IsSameSkelFunctor{ isSameSkelLam }, skeleotnAsset->GetSkeletonHash());
+			JMeshGeometry* mesh = _JResourceManager::Instance().GetResourceByCondition<JMeshGeometry, size_t>(IsSameSkelFunctor{ isSameSkelLam }, skeleotnAsset->GetSkeletonHash());
 
 			if (mesh == nullptr)
 				return false;
 
 			const std::wstring sceneName = skeleotnAsset->GetName() + L"##_EditorScene";
-			JDirectory* dir = JResourceManager::Instance().GetDirectory(JApplicationVariable::GetProjectDefaultResourcePath());
+			JDirectory* dir = _JResourceManager::Instance().GetDirectory(JApplicationProject::DefaultResourcePath());
 
 			const J_OBJECT_FLAG flag = Core::AddSQValueEnum(OBJECT_FLAG_DO_NOT_SAVE, OBJECT_FLAG_UNEDITABLE);
-			JScene* newScene = JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(sceneName,
+			JScene* newScene = JICI::Create<JScene>(sceneName,
 				Core::MakeGuid(),
 				flag,
+				JScene::GetDefaultFormatIndex(),
 				dir,
-				J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW));
-			JSceneManager::Instance().TryOpenScene(newScene, false);
-			 
-			JGameObject* meshObj = JGFI::Create(mesh->GetName(), Core::MakeGuid(), flag, *newScene->GetRootGameObject());
-			JCFU::CreateRenderItem(Core::MakeGuid(), *meshObj, mesh);
+				J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW);
+ 
+			JGameObject* meshObj = JICI::Create<JGameObject>(mesh->GetName(), Core::MakeGuid(), flag, newScene->GetRootGameObject());
+			JCCI::CreateRenderItem(meshObj, mesh);
 
 			std::vector<std::vector<uint8>> skeletonVec = skeleotnAsset->GetSkeletonTreeIndexVec();
 			std::vector<JGameObject*> skeletonTree((uint)skeletonVec.size());
 
-			skeletonTree[0] = JGFI::Create(skeleotnAsset->GetJointName(0), Core::MakeGuid(), flag, *meshObj);
+			skeletonTree[0] = JICI::Create<JGameObject>(skeleotnAsset->GetJointName(0), Core::MakeGuid(), flag, meshObj);
 			const uint jointCount = (uint)skeletonVec.size();
 			for (uint i = 0; i < jointCount; ++i)
 			{
@@ -186,10 +186,10 @@ namespace JinEngine
 				for (uint j = 0; j < childrenCount; ++j)
 				{
 					const uint index = skeletonVec[i][j];
-					skeletonTree[index] = JGFI::Create(skeleotnAsset->GetJointName(index),
+					skeletonTree[index] = JICI::Create<JGameObject>(skeleotnAsset->GetJointName(index),
 						Core::MakeGuid(), 
 						flag,
-						*skeletonTree[i]);
+						skeletonTree[i]);
 				}
 			}
 			if (avatarScene.IsValid())
@@ -210,11 +210,11 @@ namespace JinEngine
 		void JEditorSkeletonPage::DoActivate()noexcept
 		{
 			JEditorPage::DoActivate();
-			JResourceUserInterface::AddEventListener(*JResourceManager::Instance().EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+			ResourceEvListener::AddEventListener(*JResourceObject::EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 		}
 		void JEditorSkeletonPage::DoDeActivate()noexcept
 		{
-			JResourceUserInterface::RemoveListener(*JResourceManager::Instance().EvInterface(), GetGuid());
+			ResourceEvListener::RemoveListener(*JResourceObject::EvInterface(), GetGuid());
 			JEditorPage::DoDeActivate();
 		}
 		void JEditorSkeletonPage::StorePage(std::wofstream& stream)

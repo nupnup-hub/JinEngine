@@ -33,7 +33,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_EMPTY:
 				return false;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE:
-				return false;
+				return true;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_GRID:
 				return false;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE:
@@ -49,11 +49,11 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM:
 				return true;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_POSITION_ARROW:
-				return true;
+				return false;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_CIRCLE:
-				return true;
+				return false;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_SCALE_ARROW:
-				return true;
+				return false;
 			case JinEngine::J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE:
 				return true;
 			default:
@@ -107,12 +107,16 @@ namespace JinEngine
 		}
 		static J_MESHGEOMETRY_TYPE GetMeshType(const J_DEFAULT_SHAPE type)
 		{
+			return J_MESHGEOMETRY_TYPE::STATIC;
+			//수정필요
+			//J_DEFAULT_SHAPE에 Skinned가 추가되면 switch로 바꿔야함
+		/*
 			switch (type)
 			{
 			default:
 				return J_MESHGEOMETRY_TYPE::STATIC;
 			}
+		*/
 		}
-
 	};	 
 }

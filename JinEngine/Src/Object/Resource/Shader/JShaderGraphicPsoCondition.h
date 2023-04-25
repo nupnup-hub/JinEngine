@@ -30,13 +30,16 @@ namespace JinEngine
 	struct JShaderGraphicPsoCondition
 	{
 	public:
-		J_SHADER_PSO_APPLIY_CONDITION primitiveCondition;
-		J_SHADER_PSO_APPLIY_CONDITION depthCompareCondition;
-		J_SHADER_PSO_APPLIY_CONDITION cullModeCondition;
+		J_SHADER_PSO_APPLIY_CONDITION primitiveCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
+		J_SHADER_PSO_APPLIY_CONDITION depthCompareCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
+		J_SHADER_PSO_APPLIY_CONDITION cullModeCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
 	public:
-		J_SHADER_PRIMITIVE_TYPE primitiveType;
-		J_SHADER_DEPTH_COMPARISON_FUNC depthCompareFunc;
+		J_SHADER_PRIMITIVE_TYPE primitiveType = J_SHADER_PRIMITIVE_TYPE::DEFAULT;
+		J_SHADER_DEPTH_COMPARISON_FUNC depthCompareFunc = J_SHADER_DEPTH_COMPARISON_FUNC::DEFAULT;
 		bool isCullModeNone = false;
+	public:
+		bool operator ==(const JShaderGraphicPsoCondition& rhs)const noexcept;
+		bool operator !=(const JShaderGraphicPsoCondition& rhs)const noexcept;
 	public: 
 		bool Equal(const JShaderGraphicPsoCondition& pso)const noexcept;
 		size_t UniqueID()const noexcept;

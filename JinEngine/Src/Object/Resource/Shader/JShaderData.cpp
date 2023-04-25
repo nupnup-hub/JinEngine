@@ -2,6 +2,10 @@
 
 namespace JinEngine
 { 
+	JGraphicShaderData::~JGraphicShaderData()
+	{
+		Clear();
+	}
 	void JGraphicShaderData::Clear()
 	{
 		vs.Reset();
@@ -13,6 +17,11 @@ namespace JinEngine
 		pso.Reset();
 		for (int i = 0; i < (int)J_GRAPHIC_EXTRA_PSO_TYPE::COUNT; ++i)
 			extraPso[i].Reset(); 
+	}
+
+	JComputeShaderData::~JComputeShaderData()
+	{
+		Clear();
 	}
 	void JComputeShaderData::Clear()
 	{

@@ -14,12 +14,12 @@ namespace JinEngine
 		class JLogViewer; 
 		class JGraphicResourceWatcher;
 		class JStringConvertTest;
-		class JAppElapsedTime;
+		class JApplicationWatcher;
 		class JEditorMenuBar;
 		class JGraphicOptionSetting;
 		class JEditorCloseConfirmPopup;
 
-		class JProjectMainPage final : public JEditorPage , public JEditorModifedObjectStructureInterface
+		class JProjectMainPage final : public JEditorPage , public JEditorModifedObjectInterface
 		{
 		private:
 			using StoreProjectF = Core::JSFunctorType<void>;
@@ -42,7 +42,7 @@ namespace JinEngine
 			std::unique_ptr<JLogViewer> logViewer; 
 			std::unique_ptr<JGraphicResourceWatcher> graphicResourceWatcher;
 			std::unique_ptr<JStringConvertTest> stringConvertTest;
-			std::unique_ptr<JAppElapsedTime> appElapseTime;
+			std::unique_ptr<JApplicationWatcher> appWatcher;
 		private:
 			std::unique_ptr<JEditorCloseConfirmPopup> closePopup;
 		private:

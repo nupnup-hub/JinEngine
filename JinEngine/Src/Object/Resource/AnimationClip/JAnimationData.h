@@ -16,9 +16,10 @@ namespace JinEngine
 		//total count is same as base skeletonAsset joint
 		std::vector<JAnimationSample>animationSample;
 		size_t skeletonHash;
-		uint32 clipLength;
+		uint32 length;
 		float framePerSecond;
 	public:
+		JAnimationData() = default;
 		JAnimationData(Core::JFbxAnimationData&& jfbxData);
 	};
 }

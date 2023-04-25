@@ -3,7 +3,7 @@
 #include"../../WindowInterface/JEditorPreviewInterface.h" 
 #include"../../../Interface/JEditorObjectHandleInterface.h"
 #include"../../../../Object/JObjectType.h"
-#include"../../../../Object/Resource/JResourceType.h" 
+#include"../../../../Object/Resource/JResourceObjectType.h" 
 #include<stdlib.h> 
 #include<locale.h> 
 #include<vector>

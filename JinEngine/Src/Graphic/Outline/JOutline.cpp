@@ -2,8 +2,9 @@
 #include"../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../Object/Resource/JResourceManager.h"
 #include"../../Object/Resource/Mesh/JMeshGeometry.h"
+#include"../../Object/Resource/Mesh/JMeshGeometryPrivate.h"
 #include"../../Core/Exception/JExceptionMacro.h"
-#include"../../Application/JApplicationVariable.h"  
+#include"../../Application/JApplicationEngine.h"  
 #include<DirectXMath.h>
 using namespace DirectX;
 namespace JinEngine
@@ -46,10 +47,10 @@ namespace JinEngine
 			commandList->SetGraphicsRootConstantBufferView(2, outlineCB->Resource()->GetGPUVirtualAddress());
 			commandList->SetPipelineState(gShaderData->pso.Get());
 
-			JMeshGeometry* mesh = JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
+			JMeshGeometry* mesh = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD).Get();
 
-			const D3D12_VERTEX_BUFFER_VIEW vertexPtr = mesh->VertexBufferView();
-			const D3D12_INDEX_BUFFER_VIEW indexPtr = mesh->IndexBufferView();
+			const D3D12_VERTEX_BUFFER_VIEW vertexPtr = JMeshGeometryPrivate::BufferViewInterface::VertexBufferView(mesh);
+			const D3D12_INDEX_BUFFER_VIEW indexPtr = JMeshGeometryPrivate::BufferViewInterface::IndexBufferView(mesh);
 
 			commandList->IASetVertexBuffers(0, 1, &vertexPtr);
 			commandList->IASetIndexBuffer(&indexPtr);
@@ -109,7 +110,7 @@ namespace JinEngine
 		void JOutline::BuildPso(ID3D12Device* device, const DXGI_FORMAT& rtvFormat, const DXGI_FORMAT& dsvFormat)
 		{
 			D3D_SHADER_MACRO macro{ NULL, NULL };
-			std::wstring gShaderPath = JApplicationVariable::GetShaderPath() + L"\\Outline.hlsl";
+			std::wstring gShaderPath = JApplicationEngine::ShaderPath() + L"\\Outline.hlsl";
 
 			gShaderData = std::make_unique<JGraphicShaderData>();
 			gShaderData->vs = JD3DUtility::CompileShader(gShaderPath, &macro, "VS", "vs_5_1");

@@ -2,46 +2,53 @@
 #include<stdio.h>
 #include<string> 
 #include"JObjectFlag.h"
-#include"JObjectType.h"
-#include"../Core/JDataType.h"
+#include"JObjectType.h" 
 #include"../Core/File/JFileIOResult.h"
 #include"../Core/Identity/JIdentifier.h"
 #include"../Core/Interface/JActivatedInterface.h"
 
 namespace JinEngine
 { 
-	class JObject : public Core::JIdentifier, public Core::JActivatedInterface
+	class JObjectPrivate;
+	class JObject : public Core::JIdentifier, public Core::JActivatedInterface 
 	{
-		REGISTER_CLASS(JObject)
-	protected:
-		struct JObjectMetaData
+		REGISTER_CLASS_IDENTIFIER_LINE(JObject)
+	public: 
+		class InitData : public Core::JIdentifier::InitData
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
+		public: 
+			J_OBJECT_FLAG flag = OBJECT_FLAG_NONE;
 		public:
-			size_t guid;
-			J_OBJECT_FLAG flag;
+			InitData(const JTypeInfo& initTypeInfo);
+			InitData(const JTypeInfo& initTypeInfo, const size_t guid);
+			InitData(const JTypeInfo& initTypeInfo, const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag); 
 		};
-	private: 
-		const J_OBJECT_FLAG flag; 
-	public:  
-		J_OBJECT_FLAG GetFlag()const noexcept;
-		virtual J_OBJECT_TYPE GetObjectType()const noexcept = 0;  
-		bool HasFlag(const J_OBJECT_FLAG flag)const noexcept;
+	protected: 
+		class StoreData : public Core::JDITypeDataBase
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(StoreData)
+		public: 
+			JObject* obj = nullptr;
+		public:
+			StoreData(JObject* obj);
+		public:
+			bool IsValidData()const noexcept override;
+			bool HasCorrectType(const JTypeInfo& correctType)const noexcept;
+			bool HasCorrectChildType(const JTypeInfo& correctType)const noexcept;
+		};
+	private:
+		friend class JObjectPrivate;
+		class JObjectImpl;
+	private:
+		std::unique_ptr<JObjectImpl> impl;
 	public:
-		virtual bool Copy(JObject* ori); 
-	private:
-		virtual void DoCopy(JObject* ori) = 0;
+		J_OBJECT_FLAG GetFlag()const noexcept;
+		virtual J_OBJECT_TYPE GetObjectType()const noexcept = 0;
+	public:
+		bool HasFlag(const J_OBJECT_FLAG flag)const noexcept;
 	protected:
-		bool DoBeginDestroy() noexcept final;
-		static bool BegineForcedDestroy(JObject* obj);
-	protected:
-		virtual bool Destroy(const bool isForced) = 0;
-	private:
-		bool EndDestroy(const bool isForced);
-	protected:
-		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JObject* object);
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, JObjectMetaData& metadata);
-	protected:
-		JObject(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag = OBJECT_FLAG_NONE);
-		virtual ~JObject();
+		JObject(const InitData& initData);
+		~JObject();
 	};
 }

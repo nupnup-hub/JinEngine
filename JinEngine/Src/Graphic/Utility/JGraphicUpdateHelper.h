@@ -8,16 +8,16 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		class JGraphicImpl;
+		class JGraphic;
 		struct JGraphicUpdateHelper
 		{
 		public:
 			using GetElementCountT = Core::JStaticCallableType<uint>;
-			using NotifyUpdateCapacityT = Core::JStaticCallableType<void, JGraphicImpl&>;
+			using NotifyUpdateCapacityT = Core::JStaticCallableType<void, JGraphic&>;
 		public:
-			using GetTextureCountT = Core::JStaticCallableType<uint, const JGraphicImpl&>;
-			using GetTextureCapacityT = Core::JStaticCallableType<uint, const JGraphicImpl&>;
-			using SetCapacityT = Core::JStaticCallableType<void, JGraphicImpl&>;
+			using GetTextureCountT = Core::JStaticCallableType<uint, const JGraphic&>;
+			using GetTextureCapacityT = Core::JStaticCallableType<uint, const JGraphic&>;
+			using SetCapacityT = Core::JStaticCallableType<void, JGraphic&>;
 		public:
 			struct UploadData
 			{
@@ -55,7 +55,7 @@ namespace JinEngine
 			void RegisterCallable(J_GRAPHIC_RESOURCE_TYPE type, GetTextureCountT::Ptr* getCountPtr, GetTextureCapacityT::Ptr* getCapaPtr, SetCapacityT::Ptr* sPtr);
 			void RegisterListener(J_UPLOAD_RESOURCE_TYPE type, std::unique_ptr<NotifyUpdateCapacityT::Callable>&& listner);
 			void WriteGraphicInfo(JGraphicInfo& info)const noexcept;
-			void NotifyUpdateFrameCapacity(JGraphicImpl& grpahic);
+			void NotifyUpdateFrameCapacity(JGraphic& grpahic);
 			void Clear();
 		};
 

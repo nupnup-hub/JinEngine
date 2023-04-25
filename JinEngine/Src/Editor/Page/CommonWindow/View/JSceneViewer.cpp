@@ -42,7 +42,7 @@ namespace JinEngine
 						editorCamCtrl->MouseMove(mainCamera, ImGui::GetMousePos().x, ImGui::GetMousePos().y);
 					editorCamCtrl->KeyboardInput(mainCamera);
 				}
-				JImGuiImpl::Image(*mainCamera, ImGui::GetWindowSize());
+				JImGuiImpl::Image(mainCamera, ImGui::GetWindowSize());
 				//JImGuiImpl::Image(*mainCamera, ImGui::GetMainViewport()->WorkSize);
 			}
 			CloseWindow();

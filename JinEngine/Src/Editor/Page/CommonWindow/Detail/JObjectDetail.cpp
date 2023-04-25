@@ -4,9 +4,10 @@
 #include"../../../Helpers/JReflectionGuiWidgetHelper.h"  
 #include"../../../Helpers/JEditorSearchBarHelper.h"  
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../../../../Core/FSM/JFSMInterface.h"
-#include"../../../../Object/Component/JComponentFactory.h"
+#include"../../../../Core/FSM/JFSMinterface.h" 
 #include"../../../../Object/GameObject/JGameObject.h"
+#include"../../../../Object/Component/JComponent.h"
+#include"../../../../Object/Component/JComponentCreator.h"
 #include"../../../../Object/Resource/JResourceObject.h"
 #include"../../../../Object/Directory/JDirectory.h" 
 #include"../../../../Utility/JCommonUtility.h"
@@ -63,12 +64,12 @@ namespace JinEngine
 					break;
 				}
 			}
-			else if (typeInfo.IsChildOf<Core::JFSMInterface>())
+			else if (typeInfo.IsChildOf<Core::JFSMinterface>())
 				ObjectOnScreen(selected);
 		}
 		void JObjectDetail::GameObjectDetailOnScreen(Core::JUserPtr<JGameObject> gObj)
 		{
-			auto compVec = gObj->GetComponentVec();
+			auto compVec = gObj->GetAllComponent();
 			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow |
 				ImGuiTreeNodeFlags_SpanAvailWidth |
 				ImGuiTreeNodeFlags_Framed |
@@ -99,12 +100,12 @@ namespace JinEngine
 				std::vector<Core::JTypeInfo*> derivedTypeInfo = Core::JReflectionInfo::Instance().GetDerivedTypeInfo(JComponent::StaticTypeInfo());
 				for (const auto& compType : derivedTypeInfo)
 				{
-					if (!searchBarHelper->CanSrcNameOnScreen(compType->NameWithOutPrefix()))
+					if (!searchBarHelper->CanSrcNameOnScreen(compType->NameWithOutModifier()))
 						continue;
 
-					if (JImGuiImpl::Selectable(compType->NameWithOutPrefix()))
+					if (JImGuiImpl::Selectable(compType->NameWithOutModifier()))
 					{
-						JCFIB::CreateByName(compType->Name(), *gObj.Get());
+						JCCI::CreateComponent(*compType, gObj.Get());
 						SetModifiedBit(gObj, true); 
 					}
 				}
@@ -146,12 +147,12 @@ namespace JinEngine
 			DeRegisterListener();
 		}
 		void JObjectDetail::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
-		{
+		{ 
 			JEditorWindow::OnEvent(senderGuid, eventType, eventStruct);
 			if (senderGuid == GetGuid())
 				return;
-
-			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT)
+		
+			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && eventStruct->pageType == GetOwnerPageType())
 			{
 				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStruct);
 				auto newSelected = evstruct->GetFirstMatchedTypeObject(Core::JIdentifier::StaticTypeInfo());				
@@ -163,7 +164,7 @@ namespace JinEngine
 					searchBarHelper->ClearInputBuffer(); 
 				}
 			}
-			else if (eventType == J_EDITOR_EVENT::POP_SELECT_OBJECT)
+			else if (eventType == J_EDITOR_EVENT::POP_SELECT_OBJECT && eventStruct->pageType == GetOwnerPageType())
 			{
 				if (!selected.IsValid())
 					return;

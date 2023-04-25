@@ -11,7 +11,7 @@ namespace JinEngine
 	{ 
 		class JCallableBase
 		{
-			REGISTER_CLASS(JCallableBase)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JCallableBase)
 		public:
 			virtual ~JCallableBase() {}
 		};
@@ -19,7 +19,7 @@ namespace JinEngine
 		template<typename Ret, typename ...Param>
 		class JCallableInterface : public JCallableBase
 		{
-			REGISTER_CLASS(JCallableInterface) 
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JCallableInterface) 
 		public:
 			virtual Ret operator()(void* object, Param... var) = 0;
 		};
@@ -27,7 +27,7 @@ namespace JinEngine
 		template<typename Ret, typename ...Param>
 		class JStaticCallable final : public JCallableInterface<Ret, Param...>
 		{
-			REGISTER_CLASS(JStaticCallable)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JStaticCallable)
 		public:
 			using Pointer = Ret(*)(Param...); 
 		private:
@@ -45,7 +45,7 @@ namespace JinEngine
 		template<typename Ret, typename ...Param>
 		class JStaticNCallable final : public JCallableInterface<Ret, Param...>
 		{
-			REGISTER_CLASS(JStaticNCallable)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JStaticNCallable)
 		public:
 			using Pointer = Ret(*)(Param...)noexcept;
 		private:
@@ -63,7 +63,7 @@ namespace JinEngine
 		template<typename Type, typename Ret, typename ...Param>
 		class JMemberCallable final : public JCallableInterface<Ret, Param...>
 		{
-			REGISTER_CLASS(JMemberCallable)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JMemberCallable)
 		public: 
 			using Pointer = Ret(Type::*)(Param...); 
 		private:
@@ -81,7 +81,7 @@ namespace JinEngine
 		template<typename Type, typename Ret, typename ...Param>
 		class JMemberNCallable final : public JCallableInterface<Ret, Param...>
 		{
-			REGISTER_CLASS(JMemberNCallable)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JMemberNCallable)
 		public:
 			using Pointer = Ret(Type::*)(Param...)noexcept;
 		private:
@@ -99,7 +99,7 @@ namespace JinEngine
 		template<typename Type, typename Ret, typename ...Param>
 		class JMemberCCallable final : public JCallableInterface<Ret, Param...>
 		{
-			REGISTER_CLASS(JMemberCCallable)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JMemberCCallable)
 		public:
 			using Pointer = Ret(Type::*)(Param...)const;
 		private:
@@ -117,7 +117,7 @@ namespace JinEngine
 		template<typename Type, typename Ret, typename ...Param>
 		class JMemberCNCallable final : public JCallableInterface<Ret, Param...>
 		{
-			REGISTER_CLASS(JMemberCNCallable)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JMemberCNCallable)
 		public:
 			using Pointer = Ret(Type::*)(Param...)const noexcept;
 		private:
@@ -134,7 +134,7 @@ namespace JinEngine
 
 		class JCallableHintBase
 		{
-			REGISTER_CLASS(JCallableHintBase)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JCallableHintBase)
 		public:
 			virtual ~JCallableHintBase() {}
 		};
@@ -142,7 +142,7 @@ namespace JinEngine
 		template<typename Ret, typename ...DecayParam>
 		class JCallableHint final : public JCallableHintBase
 		{
-			REGISTER_CLASS(JCallableHint)
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JCallableHint)
 		public:
 			JCallableHint() = default;
 			~JCallableHint() = default;

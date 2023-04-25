@@ -6,27 +6,27 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		Graphic::J_GRAPHIC_RESOURCE_TYPE JGraphicResourceUserInterface::CallGetGraphicResourceType(JGraphicResourceHandleBaseInterface& gI)const noexcept
+		Graphic::J_GRAPHIC_RESOURCE_TYPE JGraphicResourceUserInterface::CallGetGraphicResourceType(JGraphicResourceHandleUserInterface& gI)const noexcept
 		{
 			return gI.GetGraphicResourceType();
 		}
-		uint JGraphicResourceUserInterface::CallGetResourceWidth(JGraphicResourceHandleBaseInterface& gI)const noexcept
+		uint JGraphicResourceUserInterface::CallGetResourceWidth(JGraphicResourceHandleUserInterface& gI)const noexcept
 		{
 			return gI.GetResourceWidth();
 		}
-		uint JGraphicResourceUserInterface::CallGetResourceHeight(JGraphicResourceHandleBaseInterface& gI)const noexcept
+		uint JGraphicResourceUserInterface::CallGetResourceHeight(JGraphicResourceHandleUserInterface& gI)const noexcept
 		{
 			return gI.GetResourceHeight();
 		}
-		uint JGraphicResourceUserInterface::CallGetResourceArrayIndex(JGraphicResourceHandleBaseInterface& gI)const noexcept
+		uint JGraphicResourceUserInterface::CallGetResourceArrayIndex(JGraphicResourceHandleUserInterface& gI)const noexcept
 		{
 			return gI.GetResourceArrayIndex();
 		}
-		uint JGraphicResourceUserInterface::CallGetHeapIndexStart(JGraphicResourceHandleBaseInterface& gI, const J_GRAPHIC_BIND_TYPE bType)const noexcept
+		uint JGraphicResourceUserInterface::CallGetHeapIndexStart(JGraphicResourceHandleUserInterface& gI, const J_GRAPHIC_BIND_TYPE bType)const noexcept
 		{
 			return gI.GetHeapIndexStart(bType);
 		}
-		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicResourceUserInterface::CallGetGpuSrvHandle(JGraphicResourceHandleBaseInterface& gI, 
+		CD3DX12_GPU_DESCRIPTOR_HANDLE JGraphicResourceUserInterface::CallGetGpuSrvHandle(JGraphicResourceHandleUserInterface& gI, 
 			const J_GRAPHIC_BIND_TYPE bType,
 			const uint index) const noexcept
 		{

@@ -12,17 +12,25 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		static struct TimerCashVecData
+		namespace
 		{
-		private:
-			using TimerCashVec = std::vector<JGameTimer*>;
-		public:
-			static TimerCashVec& Data()
+			static struct TimerCashVecData
 			{
-				static TimerCashVec vec;
-				return vec;
-			}
-		}TimerCashVecData;
+			private:
+				using TimerCashVec = std::vector<JGameTimer*>;
+			public:
+				static TimerCashVec& Data()
+				{
+					static TimerCashVec vec;
+					return vec;
+				}
+			}TimerCashVecData;
+
+			static float fps = 0;
+			static float mspf = 0;
+			static float timeElapsed = 0.0f;
+			static size_t frameCnt = 0;
+		}
 
 		JGameTimer::JGameTimer()
 			: mSecondsPercount(0.0), mDeltaTime(0.0), mBaseTime(0),
@@ -130,7 +138,11 @@ namespace JinEngine
 		{
 			return mStopped;
 		}
-		void JGameTimer::TickAllTimer()
+		float JGameTimer::FramePerSecond()noexcept
+		{
+			return fps;
+		}
+		void JGameTimer::UpdateAllTimer()
 		{
 			auto tickLam = [](JGameTimer* timer)
 			{
@@ -157,6 +169,15 @@ namespace JinEngine
 			const uint count = (uint)TimerCashVecData::Data().size();
 			for (uint i = 0; i < count; ++i)
 				tickLam(TimerCashVecData::Data()[i]);
+ 
+			++frameCnt;
+			if ((JEngineTimer::Data().TotalTime() - timeElapsed) >= 1.0f)
+			{
+				fps = (float)frameCnt; // fps = frameCnt / 1
+				mspf = 1000.0f / fps;			 
+				frameCnt = 0;
+				timeElapsed += 1.0f;
+			}
 		}
 	}
 }

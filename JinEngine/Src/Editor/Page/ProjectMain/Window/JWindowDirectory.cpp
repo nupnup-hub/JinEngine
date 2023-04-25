@@ -14,25 +14,27 @@
 #include"../../../../Utility/JCommonUtility.h"   
 #include"../../../../Utility/JMathHelper.h"   
 #include"../../../../Core/Guid/GuidCreator.h" 
-#include"../../../../Object/Component/Camera/JCamera.h"
-#include"../../../../Object/Directory/JDirectoryFactory.h"
+#include"../../../../Core/Identity/JIdenCreator.h" 
+#include"../../../../Object/Component/Camera/JCamera.h" 
 #include"../../../../Object/Directory/JDirectory.h"
+#include"../../../../Object/Directory/JDirectoryPrivate.h"
 #include"../../../../Object/Directory/JFile.h"
 #include"../../../../Object/Resource/Scene/JScene.h"
 #include"../../../../Object/Resource/AnimationController/JAnimationController.h"
-#include"../../../../Object/Resource/Material/JMaterial.h" 
-#include"../../../../Object/Resource/JResourceObjectFactory.h"
+#include"../../../../Object/Resource/Material/JMaterial.h"  
 #include"../../../../Object/Resource/Scene/Preview/JPreviewScene.h" 
 #include"../../../../Object/Resource/JResourceManager.h" 
-#include"../../../../Object/Resource/JResourceImporter.h" 
-#include"../../../../Window/JWindows.h"
-#include"../../../../Application/JApplicationVariable.h"  
+#include"../../../../Object/Resource/JResourceObjectPrivate.h" 
+#include"../../../../Object/Resource/JResourceObjectImporter.h" 
+#include"../../../../Window/JWindow.h"
+#include"../../../../Application/JApplicationProject.h"  
+#include"../../../../Utility/JVectorExtend.h"
 #include"../../../../../Lib/imgui/imgui.h"
 #include<filesystem>
 
 
 //#include"../../../../Core/File/JFileIOHelper.h"  
-// #include "../../../../Graphic/GraphicResource/JGraphicResourceHandle.h"
+// #include "../../../../Graphic/GraphicResource/JGraphicResourceInfo.h"
 
 namespace JinEngine
 {
@@ -40,6 +42,12 @@ namespace JinEngine
 	class JMaterial;
 	namespace Editor
 	{
+		namespace
+		{
+			using DirActInterface = JDirectoryPrivate::ActivationInterface;
+			using DirRawInterface = JDirectoryPrivate::RawDirectoryInterface;
+			using ResourceFileInterface = JResourceObjectPrivate::FileInterface;
+		}
 		namespace Constants
 		{
 			const std::string directoryViewName = "DirectoryView";
@@ -169,7 +177,7 @@ namespace JinEngine
 					owner = wndDir->root;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(wndDir,
-					false, false, true, true, false,
+					false, false, false, false,
 					Core::JTypeInstanceSearchHint(),
 					Core::JTypeInstanceSearchHint(owner),
 					&JEditorWindow::NotifyEvent);
@@ -188,7 +196,7 @@ namespace JinEngine
 					parent = wndDir->root;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(wndDir,
-					false, false, true, true, false,
+					false, false, false, false,
 					Core::JTypeInstanceSearchHint(),
 					Core::JTypeInstanceSearchHint(),
 					&JEditorWindow::NotifyEvent);
@@ -204,7 +212,7 @@ namespace JinEngine
 					return;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(wndDir,
-					false, false, true, false, true,
+					false, false, false, false,
 					Core::JTypeInstanceSearchHint(),
 					Core::JTypeInstanceSearchHint(),
 					&JEditorWindow::NotifyEvent);
@@ -224,7 +232,11 @@ namespace JinEngine
 			auto destructionPreProccessLam = [](JEditorWindow* wndDir, Core::JIdentifier* resource)
 			{
 				static_cast<JWindowDirectory*>(wndDir)->DestroyPreviewScene(Core::JUserPtr<JObject>::ConvertChildUser(Core::GetUserPtr(resource)));
-			};
+				if (resource->GetTypeInfo().IsChildOf<JResourceObject>())
+					ResourceFileInterface::DeleteFile(static_cast<JResourceObject*>(resource));
+				else if (resource->GetTypeInfo().IsChildOf<JDirectory>())
+					DirRawInterface::DeleteDirectory(static_cast<JDirectory*>(resource)); 
+			}; 
 
 			creationImpl = std::make_unique<JWindowDirectoryCreationImpl>(requestCreateRObjLam, requestCreateDirectoryLam, requestDestroyLam);
 			creationImpl->resourceObj.GetCreationInterface()->RegisterCreatePostProcess(creationRObjPostProccessLam);
@@ -251,17 +263,17 @@ namespace JinEngine
 				{
 				case JinEngine::J_RESOURCE_TYPE::MATERIAL:
 				{
-					JRFI<JMaterial>::Create(Core::JPtrUtil::MakeOwnerPtr<JMaterial::InitData>(guid, ownerDir));
+					JICI::Create<JMaterial>(guid, JResourceObject::GetDefaultFormatIndex(), ownerDir);
 					break;
 				}
 				case JinEngine::J_RESOURCE_TYPE::SCENE:
 				{
-					JRFI<JScene>::Create(Core::JPtrUtil::MakeOwnerPtr<JScene::InitData>(guid, ownerDir, J_SCENE_USE_CASE_TYPE::MAIN));
+					JICI::Create<JScene>(guid, JResourceObject::GetDefaultFormatIndex(), ownerDir, J_SCENE_USE_CASE_TYPE::MAIN);
 					break;
 				}
 				case JinEngine::J_RESOURCE_TYPE::ANIMATION_CONTROLLER:
 				{
-					JRFI<JAnimationController>::Create(Core::JPtrUtil::MakeOwnerPtr<JAnimationController::InitData>(guid, ownerDir));
+					JICI::Create<JAnimationController>(guid, JResourceObject::GetDefaultFormatIndex(), ownerDir);
 					break;
 				}
 				default:
@@ -274,7 +286,7 @@ namespace JinEngine
 			};
 			auto creationDirLam = [](const size_t guid, const JEditorCreationHint& creationHint, Core::JUserPtr<JDirectory> parent)
 			{
-				JDFI::Create(*parent.Get());
+				JICI::Create<JDirectory>(parent.Get());
 			};
 
 			creationImpl->resourceObj.GetCreationInterface()->RegisterCanCreationF(canCreationRobjLam);
@@ -419,8 +431,8 @@ namespace JinEngine
 		}
 		void JWindowDirectory::Initialize()
 		{
-			const std::wstring contentPath = JApplicationVariable::GetProjectContentPath();
-			root = Core::GetUserPtr(JResourceManager::Instance().GetDirectory(contentPath));
+			const std::wstring contentPath = JApplicationProject::ContentsPath();
+			root = Core::GetUserPtr(_JResourceManager::Instance().GetDirectory(contentPath));
 			//searchBarHelper->RegisterDefaultObject(root);
 			OpenNewDirectory(root);
 		}
@@ -557,7 +569,7 @@ namespace JinEngine
 			const JVector2<float> padding = JVector2<float>(windowSize.x * 0.015f, windowSize.y * 0.03f);
 			const JVector2<float> spacing = windowSize * 0.015f;
 
-			const JVector2<float> innerSize[2] = { btnIconSize, fileTitleBarSize * 0.8f };
+			const JVector2<float> innerSize[2] = { CreateVec2(btnIconSize), fileTitleBarSize * 0.8f };
 			const JVector2<float> innerPosition[2] = { JVector2<float>(0, 0), fileTitleBarSize * 0.1f };
 
 			JEditorDynamicAlignCalculator<2> widgetAlignCal;
@@ -683,7 +695,7 @@ namespace JinEngine
 							bgRectDelta,
 							true);
 					}
-					JImGuiImpl::Image(*nowPreviewScene->GetPreviewCamera().Get(), JVector2<float>(btnIconSize, btnIconSize));
+					JImGuiImpl::Image(nowPreviewScene->GetPreviewCamera().Get(), JVector2<float>(btnIconSize, btnIconSize));
 
 					std::wstring name;
 					if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)
@@ -728,20 +740,20 @@ namespace JinEngine
 		}
 		void JWindowDirectory::ImportFile()
 		{
-			if (JWindow::Instance().SelectFile(importFilePath, L"please, select resource file"))
+			if (JWindow::SelectFile(importFilePath, L"please, select resource file"))
 			{
 				Core::JFileImportHelpData pathData{ importFilePath };
 				if (opendDirctory.IsValid())
 				{
-					if (JResourceImporter::Instance().IsValidFormat(pathData.format))
+					if (JResourceObjectImporter::Instance().IsValidFormat(pathData.format))
 					{
 						std::filesystem::path p{ importFilePath };
 						size_t fileSize = std::filesystem::file_size(p);
-						if (JWindow::Instance().HasStorageSpace(opendDirctory->GetPath(), fileSize))
+						if (JWindow::HasStorageSpace(opendDirctory->GetPath(), fileSize))
 						{
 							using CreateImportedResourceF = JWindowDirectorySettingImpl::CreateImportedResourceF;
 
-							std::vector<JResourceObject*> res = JResourceImporter::Instance().ImportResource(opendDirctory.Get(), pathData);
+							std::vector<JResourceObject*> res = JResourceObjectImporter::Instance().ImportResource(opendDirctory.Get(), pathData);
 							auto createImpR = std::make_unique<CreateImportedResourceF::CompletelyBind>(*settingImpl->createImportResourceF,
 								this,
 								std::move(res));
@@ -765,9 +777,9 @@ namespace JinEngine
 			CreateDirectoryPreview(newOpendDirectory.Get(), false);
 
 			if (opendDirctory.IsValid())
-				opendDirctory->OCInterface()->CloseDirectory();
+				DirActInterface::CloseDirectory(opendDirctory.Get());
 			opendDirctory = newOpendDirectory;
-			opendDirctory->OCInterface()->OpenDirectory();
+			DirActInterface::OpenDirectory(opendDirctory.Get());
 			lastUpdateOpenNewDir = true;
 		}
 		void JWindowDirectory::CreateDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask)
@@ -803,7 +815,7 @@ namespace JinEngine
 			const uint fileCount = (uint)directory->GetFileCount();
 			for (uint i = 0; i < fileCount; ++i)
 			{
-				JFile* file = directory->GetFile(i);
+				JFile* file = directory->GetDirectoryFile(i); 
 				if (file == nullptr)
 					continue;
 
@@ -814,8 +826,8 @@ namespace JinEngine
 				{
 					bool hasOverlap = false;
 					for (uint j = 0; j < existPreviewCount; ++j)
-					{
-						if (GetPreviewScene(j)->GetJObject()->GetGuid() == file->GetResource()->GetGuid())
+					{ 
+						if (GetPreviewScene(j)->GetJObject()->GetGuid() == file->GetResourceGuid())
 						{
 							hasOverlap = true;
 							break;
@@ -823,8 +835,8 @@ namespace JinEngine
 					}
 					if (hasOverlap)
 						continue;
-				}
-				CreatePreviewScene(Core::GetUserPtr(file->GetResource()), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
+				} 
+				auto preview = CreatePreviewScene(file->TryGetResourceUser(), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
 			}
 		}
 		void JWindowDirectory::CreateAllDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask)
@@ -832,14 +844,14 @@ namespace JinEngine
 			const uint fileCount = (uint)directory->GetFileCount();
 			for (uint i = 0; i < fileCount; ++i)
 			{
-				JFile* file = directory->GetFile(i);
+				JFile* file = directory->GetDirectoryFile(i);
 				if (file == nullptr)
 					continue;
 
 				if (hasNameMask && !JCUtil::Contain(file->GetName(), mask))
 					continue;
 
-				CreatePreviewScene(Core::GetUserPtr(file->GetResource()), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
+				CreatePreviewScene(file->TryGetResourceUser(), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
 			}
 
 			const uint childCount = directory->GetChildernDirctoryCount();
@@ -867,9 +879,9 @@ namespace JinEngine
 			{
 				taskName = "Move file";
 				taskDesc = JCUtil::WstrToU8Str(L"object name: " + obj->GetName() + L" " +
-					static_cast<JResourceObjectInterface*>(obj)->GetDirectory()->GetName() + L" to " + to->GetName());
+					static_cast<JResourceObject*>(obj)->GetDirectory()->GetName() + L" to " + to->GetName());
 				auto doBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, std::move(to), std::move(obj));
-				auto undoBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, static_cast<JResourceObjectInterface*>(obj)->GetDirectory(), std::move(obj));
+				auto undoBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, static_cast<JResourceObject*>(obj)->GetDirectory(), std::move(obj));
 				auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorTSetBindFuncEvStruct>
 					(taskName, taskDesc, GetOwnerPageType(), std::move(doBind), std::move(undoBind)));
 				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
@@ -878,15 +890,13 @@ namespace JinEngine
 		void JWindowDirectory::MoveFile(JDirectory* to, JObject* obj)
 		{
 			if (obj->GetObjectType() == J_OBJECT_TYPE::DIRECTORY_OBJECT)
-			{
-				JDirectory* dir = static_cast<JDirectory*>(obj);
-				dir->EditorInterface()->SetParent(to);
+			{ 
+				DirRawInterface::MoveDirectory(static_cast<JDirectory*>(obj), to);
 				DestroyPreviewScene(Core::GetUserPtr(obj));
 			}
 			else if (obj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
-			{
-				JResourceObjectInterface* rObjInterface = static_cast<JResourceObject*>(obj);
-				rObjInterface->MoveRFile(to);
+			{ 
+				ResourceFileInterface::MoveFile(static_cast<JResourceObject*>(obj), to); 
 				DestroyPreviewScene(Core::GetUserPtr(obj));
 			}
 		}
@@ -916,7 +926,7 @@ namespace JinEngine
 		void JWindowDirectory::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{
 			JEditorWindow::OnEvent(senderGuid, eventType, eventStruct);
-			if (senderGuid == GetGuid() || !eventStruct->PassDefectInspection())
+			if (senderGuid == GetGuid())
 				return;
 
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)

@@ -1,35 +1,39 @@
 #pragma once 
-#include"JFSMobjectType.h"
-#include"../File/JFileIOResult.h" 
+#include"JFSMobjectType.h" 
 #include"../Identity/JIdentifier.h"
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		class JFSMInterface : public JIdentifier
+		class JFSMinterface : public JIdentifier
 		{
-			REGISTER_CLASS(JFSMInterface)
+			REGISTER_CLASS_IDENTIFIER_LINE(JFSMinterface)
 		public:
-			struct JFSMIdentifierInitData
+			class InitData : public Core::JIdentifier::InitData
 			{
+				REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData) 
 			public:
-				std::wstring name;
-				size_t guid;
+				InitData(const JTypeInfo& initTypeInfo);
+				InitData(const JTypeInfo& initTypeInfo, const std::wstring& name, const size_t guid);
+			};
+		protected: 
+			class StoreData : public Core::JDITypeDataBase
+			{
+				REGISTER_CLASS_ONLY_USE_TYPEINFO(StoreData)
 			public:
-				JFSMIdentifierInitData(const std::wstring& name, const size_t guid);
-				virtual ~JFSMIdentifierInitData() = default;
+				JFSMinterface* fsmObj = nullptr;
 			public:
-				virtual J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept = 0;
+				StoreData(JFSMinterface* fsmObj);
+			public:
+				bool IsValidData()const noexcept override;
+				bool HasCorrectType(const JTypeInfo& correctType)const noexcept;
+				bool HasCorrectChildType(const JTypeInfo& correctType)const noexcept;
 			};
 		public:
 			virtual J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept = 0;
-		private: 
-			bool DoBeginDestroy() final;
-			bool Destroy();
-			virtual void Clear() = 0;
 		protected:
-			JFSMInterface(const JFSMIdentifierInitData& initData);
+			JFSMinterface(const InitData& initData);
 		};
 	}
 }

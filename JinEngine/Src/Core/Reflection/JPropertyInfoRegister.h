@@ -9,7 +9,7 @@ namespace JinEngine
 		template<typename Type> class JPropertyGuiWidgetInfoHandle;
 
 		template<typename Type, typename Field, typename Pointer, Pointer ptr>
-		class JPropertyInfoRegister
+		class JPropertyInfoRegister final
 		{
 		public:
 			 JPropertyInfoRegister(const std::string& name)
@@ -70,7 +70,7 @@ namespace JinEngine
 		};
 
 		template<typename Type, typename Field, typename Pointer, Pointer ptr>
-		class JPropertyExInfoRegister
+		class JPropertyExInfoRegister final
 		{
 		public:
 			template<typename GetPointer, typename SetPointer>

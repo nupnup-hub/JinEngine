@@ -1,47 +1,41 @@
 #pragma once
-#include"JCameraInterface.h" 
+#include"JCameraState.h"
+#include"../JComponent.h" 
+#include"../../JFrameUpdateUserAccess.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
 #include<DirectXCollision.h>
 
 namespace JinEngine
 {
 	class JTransform; 
-	class JCamera final : public JCameraInterface
+	class JCameraPrivate;
+	class JCamera final : public JComponent,
+		public JFrameUpdateUserAccessInterface,
+		public Graphic::JGraphicResourceUserAccess
 	{
-		REGISTER_CLASS(JCamera)
+		REGISTER_CLASS_IDENTIFIER_LINE(JCamera)
+	public: 
+		class InitData final : public JComponent::InitData
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
+		public:
+			InitData(JGameObject* owner);
+			InitData(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
+		};
 	private:
-		//JTransform* ownerTransform;  
-		J_CAMERA_STATE camState = J_CAMERA_STATE::IDEL; 
-
-		// Cache frustum properties.
-		REGISTER_PROPERTY_EX(cameraNear, GetNear, SetNear, GUI_SLIDER(0, 1000, true))
-		float cameraNear = 0.0f;
-		REGISTER_PROPERTY_EX(cameraFar, GetFar, SetFar, GUI_SLIDER(0, 1000, true))
-		float cameraFar = 0.0f; 
-		 
-		float cameraAspect = 0.0f;
-		REGISTER_PROPERTY_EX(cameraFov, GetFovYDegree, SetFovDegree, GUI_SLIDER(0, 360, true))
-		float cameraFov = 0.0f;
-		float cameraNearViewHeight = 0.0f;
-		float cameraFarViewHeight = 0.0f;
-
-		int viewWidth;
-		int viewHeight;
-		 
-		REGISTER_PROPERTY_EX(isOrtho, IsOrthoCamera, SetOrthoCamera, GUI_CHECKBOX())
-		bool isOrtho = false;
-		bool isMainCamera = false; 
-
-		// Cache View/Proj matrices.
-		DirectX::XMFLOAT4X4 mView;
-		DirectX::XMFLOAT4X4 mProj;
-		DirectX::BoundingFrustum mCamFrustum;
+		friend class JCameraPrivate;
+		class JCameraImpl;
+	private:
+		std::unique_ptr<JCameraImpl> impl;
 	public:
+		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+		JFrameUpdateUserAccess GetFrameUserInterface() noexcept final;
+		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
 			return J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
-		}
-	public: 	  
+		} 	  
 		JTransform* GetTransform()noexcept;
 		DirectX::XMMATRIX GetView()const noexcept;
 		DirectX::XMMATRIX GetProj()const noexcept;
@@ -61,7 +55,7 @@ namespace JinEngine
 		float GetFarViewWidth()const noexcept;
 		float GetFarViewHeight()const noexcept;
 		J_CAMERA_STATE GetCameraState()const noexcept; 
-	 
+	public:
 		void SetNear(float value)noexcept;
 		void SetFar(float value) noexcept; 
 		void SetFov(float value) noexcept;
@@ -74,31 +68,11 @@ namespace JinEngine
 		bool IsMainCamera()const noexcept;
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final; 
-	public:
-		JCameraStateInterface* StateInterface() final;
-	private:
-		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 
 	private:
-		void SetAspect(float value) noexcept;
-		void CalPerspectiveLens() noexcept;
-		void CalOrthoLens() noexcept;
-		void CreateRenderTarget()noexcept;
-		void DestroyRenderTarget()noexcept;
-	private:
-		void UpdateViewMatrix()noexcept;
-		void UpdateFrame(Graphic::JCameraConstants& constant)final; 
-	private:
-		void SetCameraState(const J_CAMERA_STATE state)noexcept final;
-	private:
-		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
-		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JCamera* camera);
-		static JCamera* LoadObject(std::wifstream& stream, JGameObject* owner);
-		static void RegisterCallOnce();
-	private:
-		JCamera(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner);
+		JCamera(const InitData& initData);
 		~JCamera();
 	};
 }

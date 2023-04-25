@@ -1,0 +1,69 @@
+#pragma once
+#include"../JResourceObjectPrivate.h" 
+
+namespace JinEngine
+{ 
+	namespace Graphic
+	{
+		struct JMaterialConstants;
+		class JGraphic;
+	} 
+	class JMaterial;
+	class JRenderItem;
+	class JPreviewResourceScene;
+	class JFrameDirtyBase;
+	class JDefaultMaterialSetting;
+
+	class JMaterialPrivate final : public JResourceObjectPrivate
+	{
+	public:
+		class AssetDataIOInterface final : public JResourceObjectPrivate::AssetDataIOInterface
+		{
+		private:
+			Core::JIdentifier* LoadAssetData(Core::JDITypeDataBase* data) final;
+			Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data) final;
+		private:
+			Core::J_FILE_IO_RESULT LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)final;	//use clipMetaData
+			Core::J_FILE_IO_RESULT StoreMetaData(Core::JDITypeDataBase* data)final;	//use storeData	 
+		};
+		class CreateInstanceInterface final : public JResourceObjectPrivate::CreateInstanceInterface
+		{
+		private:
+			friend class AssetDataIOInterface;
+		private:
+			Core::JOwnerPtr<Core::JIdentifier> Create(std::unique_ptr<Core::JDITypeDataBase>&& initData) final;
+			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final;
+		};
+		class FrameUpdateInterface final
+		{
+		private:
+			friend class Graphic::JGraphic;
+		private: 
+			static bool UpdateStart(JMaterial* mat, const bool isUpdateForced)noexcept;
+			static void UpdateFrame(JMaterial* mat, Graphic::JMaterialConstants& constants)noexcept;
+			static void UpdateEnd(JMaterial* mat)noexcept;
+		private:
+			static uint GetCBOffset(JMaterial* mat)noexcept;
+		};
+		class FrameBuffInterface final
+		{
+		private:
+			friend class JRenderItem;
+		private:
+			static uint GetCBOffset(JMaterial* mat)noexcept;
+		};
+		class UpdateShaderInterface
+		{
+		private:
+			friend class JDefaultMaterialSetting;
+		private:
+			static void OnUpdateShaderTrigger(JMaterial* mat)noexcept;
+			static void OffUpdateShaderTrigger(JMaterial* mat)noexcept;
+		private:
+			static void UpdateShader(JMaterial* mat)noexcept;
+		};
+	public:
+		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
+		JResourceObjectPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept final;
+	};
+}

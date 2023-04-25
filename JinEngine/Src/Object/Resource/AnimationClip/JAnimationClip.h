@@ -1,76 +1,64 @@
 #pragma once
 #include<vector>  
 #include"JAnimationData.h"
-#include"JAnimationClipInterface.h"
+#include"../JResourceObject.h"
 #include"../Skeleton/JSkeletonAsset.h"
 
 namespace JinEngine
 {
 	class JSkeletonAsset;
 	namespace Core
-	{
-		struct JAnimationTime;
+	{ 
 		class JAnimationUpdateData;
-		struct JFbxAnimationData;
-		class JFbxFileLoaderImpl;
 	}
-
-	class JAnimationClip final : public JAnimationClipInterface
+	struct JAnimationData;
+	class JAnimationClipPrivate;
+	class JAnimationClip final : public JResourceObject
 	{
-		REGISTER_CLASS(JAnimationClip)
-	public:
-		struct JAnimationClipInitData : JResourceInitData
+		REGISTER_CLASS_IDENTIFIER_LINE(JAnimationClip)
+	public: 
+		class InitData final: public JResourceObject::InitData
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
-			Core::JOwnerPtr<JAnimationData> anidata;
+			std::unique_ptr<JAnimationData> anidata;
 		public:
-			JAnimationClipInitData(const std::wstring& name,
+			InitData(const uint8 formatIndex, 
+				JDirectory* directory,
+				std::unique_ptr<JAnimationData>&& anidata);
+			InitData(const size_t guid,
+				const uint8 formatIndex,
+				JDirectory* directory,
+				std::unique_ptr<JAnimationData>&& anidata);
+			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
+				const uint8 formatIndex, 
 				JDirectory* directory,
-				const std::wstring oridataPath,
-				Core::JOwnerPtr<JAnimationData> anidata);
-			JAnimationClipInitData(const std::wstring& name,
-				const size_t guid,
-				const J_OBJECT_FLAG flag,
-				JDirectory* directory,
-				const uint8 formatIndex);
-			JAnimationClipInitData(const std::wstring& name,
-				JDirectory* directory,
-				const std::wstring oridataPath,
-				Core::JOwnerPtr<JAnimationData> anidata);
+				std::unique_ptr<JAnimationData>&& anidata);
 		public:
-			bool IsValidCreateData()final; 
+			bool IsValidData()const noexcept final; 
 		};
-		using InitData = JAnimationClipInitData;
-	private:
-		struct JAnimationClipMetadata final : public JResourceMetaData
+	protected: 
+		class LoadMetaData final : public JResourceObject::InitData
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
 		public:
-			JSkeletonAsset* clipSkeletonAsset = nullptr; 
-			float updateFramePerSecond;
-			bool isLooping = false; 
+			Core::JUserPtr<JSkeletonAsset> clipSkeletonAsset = nullptr;
+			float updateFramePerSecond = 0;
+			bool isLooping = false;
+		public:
+			LoadMetaData(JDirectory* directory);
 		};
 	private:
-		friend class Core::JFbxFileLoaderImpl;
+		friend class JAnimationClipPrivate;
+		class JAnimationClipImpl;
 	private:
-		//fixed
-		std::vector<JAnimationSample>animationSample;
-		size_t oriSkeletoHash;
-		//
-		REGISTER_PROPERTY_EX(clipSkeletonAsset, GetClipSkeletonAsset, SetClipSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
-		Core::JUserPtr<JSkeletonAsset> clipSkeletonAsset;
-		uint32 clipLength;
-		float clipFramePerSecond;
-		REGISTER_PROPERTY_EX(updateFramePerSecond, GetUpdateFPS, SetUpdateFPS, GUI_SLIDER(30, 120))
-		float updateFramePerSecond; 
-		REGISTER_PROPERTY_EX(isLooping, IsLoop, SetLoop, GUI_CHECKBOX())
-		bool isLooping = false;
-		bool matchClipSkeleton = false;
+		std::unique_ptr<JAnimationClipImpl> impl;
 	public:  
-		Core::JUserPtr<JSkeletonAsset> GetClipSkeletonAsset()noexcept;
+		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+		Core::JUserPtr<JSkeletonAsset> GetClipSkeletonAsset()const noexcept;
 		float GetUpdateFPS()const noexcept;
-		bool IsLoop()const noexcept;
 		uint GetSampleCount()const noexcept;
 		uint GetSampleKeyCount(const uint sampleIndex)const noexcept;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
@@ -80,43 +68,23 @@ namespace JinEngine
 		}
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
-
+	public:
 		void SetClipSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newClipSkeletonAsset)noexcept;
 		void SetUpdateFPS(float value)noexcept;
 		void SetLoop(bool value)noexcept;
 	public:
+		bool IsLoop()const noexcept;
 		bool IsSameSkeleton(JSkeletonAsset* srcSkeletonAsset)noexcept;
+		bool IsValid()const noexcept final;
+	public:
 		void ClipEnter(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber, const float timeOffset)noexcept;
 		void ClipClose()noexcept; 
 		void Update(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept;
-	private:
-		uint GetAnimationSampleJointIndex(const uint sampleIndex, const float localTime)noexcept;
-		void UpdateUsingAvatar(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept;
-		bool IsMatchSkeleton()const noexcept;
-	private:
-		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
 	private:
-		void StuffResource() final;
-		void ClearResource() final;
-		bool IsValid()const noexcept final;
-		bool WriteClipData();
-		bool ReadClipData();  
-	private:
-		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
-	private:
-		bool ImportAnimationClip(const JAnimationData& jfbxAniData);
-	private:
-		Core::J_FILE_IO_RESULT CallStoreResource()final;
-		static Core::J_FILE_IO_RESULT StoreObject(JAnimationClip* clip); 
-		static Core::J_FILE_IO_RESULT StoreMetadata(std::wofstream& stream, JAnimationClip* clip);
-		static JAnimationClip* LoadObject(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData); 
-		static Core::J_FILE_IO_RESULT LoadMetadata(std::wifstream& stream, JAnimationClipMetadata& metadata);
-		static void RegisterCallOnce();
-	private:
-		JAnimationClip(const JAnimationClipInitData& initdata);
+		JAnimationClip(InitData& initData);
 		~JAnimationClip();
 	};
 }

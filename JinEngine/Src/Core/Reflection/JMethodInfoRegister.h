@@ -12,7 +12,7 @@ namespace JinEngine
 		template<typename Type> class JMethodReadOnlyGuiWidgetInfoHandle;
 		//중복된 클래스 생성을 막기위해 Pointer & ptr template에 추가
 		template<typename Type, typename Pointer, Pointer ptr>
-		class JMethodInfoRegister
+		class JMethodInfoRegister final
 		{
 		public:
 			template<typename Ret, typename ...Param>

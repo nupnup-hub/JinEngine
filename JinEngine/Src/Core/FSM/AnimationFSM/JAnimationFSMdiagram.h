@@ -1,8 +1,5 @@
 #pragma once
-#include"../JFSMdiagram.h" 
-#include"JBlender.h" 
-#include"JAnimationPostProcessing.h"
-#include"JAnimationRetargeting.h" 
+#include"../JFSMdiagram.h"  
 
 namespace JinEngine
 {
@@ -16,42 +13,35 @@ namespace JinEngine
 	}
 
 	namespace Core
-	{
-		class JAnimationUpdateData;
-		struct JAnimationTime; 
+	{ 
 		class JAnimationFSMstate;
 		class JAnimationFSMtransition; 
-		class JGameTimer;
-
+		class JAnimationFSMdiagramPrivate;
 		class JAnimationFSMdiagram final : public JFSMdiagram
 		{
-			REGISTER_CLASS(JAnimationFSMdiagram)
-		private:
-			friend class JAnimationController;
-		public:
-			void Initialize(JAnimationUpdateData* updateData, const uint layerNumber)noexcept;
-			void Enter(JAnimationUpdateData* updateData, const uint layerNumber);
-			void Update(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;
+			REGISTER_CLASS_IDENTIFIER_LINE(JAnimationFSMdiagram)
 		public: 
-			bool CanCreateState()const noexcept;
-
+			class InitData : public JFSMdiagram::InitData
+			{
+				REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData) 
+			public:
+				InitData(JFSMdiagramOwnerInterface* ownerInterface);
+				InitData(const std::wstring& name, const size_t guid, JFSMdiagramOwnerInterface* ownerInterface);
+			};
+		private:
+			friend class JAnimationFSMdiagramPrivate;
+			class JAnimationFSMdiagramImpl;
+		private:
+			std::unique_ptr<JAnimationFSMdiagramImpl> impl;
+		public: 
+			Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
 			JAnimationFSMstate* GetState(const size_t stateGuid)noexcept;
 			JAnimationFSMstate* GetStateByIndex(const uint index)noexcept;
-			JAnimationFSMtransition* GetTransition(const size_t transitionGuid)noexcept;
-			const std::vector<JFSMstate*>& GetStateVec()noexcept;
-			 
-			void SetClip(const size_t stateGuid, Core::JUserPtr<JAnimationClip> clip)noexcept;
+			JAnimationFSMtransition* GetTransition(const size_t transitionGuid)noexcept; 
+		public:
+			void SetClip(const size_t stateGuid, Core::JUserPtr<JAnimationClip> clip)noexcept;	 
 		private:
-			void StuffFinalTransform(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;
-			void CrossFading(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;
-			void PreprocessSkeletonBindPose(JAnimationUpdateData* updateData)noexcept;
-		private:
-			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
-			static JAnimationFSMdiagram* LoadData(std::wifstream& stream, JFSMdiagramOwnerInterface* fsmOwner);
-		private:
-			static void RegisterCallOnce();
-		private:
-			JAnimationFSMdiagram(const JFSMdiagramInitData& initData);
+			JAnimationFSMdiagram(const InitData& initData);
 			~JAnimationFSMdiagram();
 		};
 	}

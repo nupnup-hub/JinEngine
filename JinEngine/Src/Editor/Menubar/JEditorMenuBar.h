@@ -9,8 +9,8 @@
 namespace JinEngine
 { 
 	namespace Graphic
-	{
-		class JGraphicResourceHandleInterface;
+	{ 
+		class JGraphicResourceUserAccess;
 	}
 
 	namespace Editor
@@ -75,7 +75,7 @@ namespace JinEngine
 			class SwitchIcon : public ExtraWidget
 			{
 			public:
-				using GetGResourceF = Core::JSFunctorType<Graphic::JGraphicResourceHandleInterface*>;
+				using GetGResourceF = Core::JSFunctorType<Graphic::JGraphicResourceUserAccess*>;
 			private:
 				bool* isActivatedPtr;
 			private:

@@ -21,27 +21,32 @@ namespace JinEngine
 		class JDataHandle
 		{
 		private:
-			template<typename uint Capacity, typename Type> friend class JDataHandleStructure;
+			template<typename uint Capacity, typename Type, bool> friend class JDataHandleStructure;
 		private:
-			int index = Handle::invalidNumber;
-			size_t validNumber = Handle::invalidNumber;
 			const size_t structureGuid;
+			size_t validNumber = Handle::invalidNumber;
+		private:
+			const uint structureIndex = 0;				//for multi dimension structure
+			int index = Handle::invalidNumber; 
 		public:
 			~JDataHandle() = default;
 			JDataHandle(const JDataHandle& rhs) = delete;
-			JDataHandle& operator=(const JDataHandle & rhs) = delete;
-			JDataHandle& operator=(JDataHandle && rhs) = delete;
+			JDataHandle& operator=(const JDataHandle& rhs) = delete;
+			JDataHandle& operator=(JDataHandle&& rhs) = delete;
 			JDataHandle(JDataHandle&& rhs)
-				:index(rhs.index), validNumber(rhs.validNumber), structureGuid(structureGuid)
-			{
-				rhs.Clear();
+				:index(rhs.index),
+				validNumber(rhs.validNumber),
+				structureGuid(rhs.structureGuid),
+				structureIndex(rhs.structureIndex)
+			{ 
+				rhs.Clear();  
 			}
 		private:
-			JDataHandle(const int index, const size_t validNumber, const size_t structureGuid)
-				:index(index), validNumber(validNumber), structureGuid(structureGuid)
+			JDataHandle(const int index, const size_t validNumber, const size_t structureGuid, const uint structureIndex= 0)
+				:index(index), validNumber(validNumber), structureGuid(structureGuid), structureIndex(structureIndex)
 			{}
-			JDataHandle(const size_t structureGuid)
-				:structureGuid(structureGuid)
+			JDataHandle(const size_t structureGuid, const uint structureIndex = 0)
+				:structureGuid(structureGuid), structureIndex(structureIndex)
 			{}
 		public:
 			bool IsValid()const noexcept
@@ -52,15 +57,30 @@ namespace JinEngine
 			void Clear()
 			{
 				index = Handle::invalidNumber;
-				validNumber = Handle::invalidNumber; 
+				validNumber = Handle::invalidNumber;
 			}
 		};
 
-		template<typename uint Capacity, typename Type>
-		class JDataHandleStructure
-		{ 
+		template<typename uint Capacity, typename Type, bool useOwnerPtr = true>
+		class JDataHandleStructure final
+		{
 		private:
-			JOwnerPtr<Type> data[Capacity];
+			template<bool isOwner>
+			struct PointerTypeDetermine
+			{
+			public:
+				using PointerType = std::unique_ptr<Type>;
+			};
+			template<>
+			struct PointerTypeDetermine<true>
+			{
+			public:
+				using PointerType = Core::JOwnerPtr<Type>;
+			};
+		private:
+			using PointerType = typename PointerTypeDetermine< useOwnerPtr>::PointerType;
+		private:
+			PointerType data[Capacity];
 			// 0 is empty, 1 is full
 			std::bitset<Capacity> arrState;
 			//magic Number Arr
@@ -77,32 +97,39 @@ namespace JinEngine
 			{
 				if (Capacity == 0)
 					validIndex = Handle::invalidNumber;
-			}  
-		public:
-			JUserPtr<Type> GetUser(const JDataHandle& handle)const noexcept
-			{
-				if (IsValidHandle(handle))
-					return JUserPtr<Type>{ data[handle.index] };
-				else
-					return JUserPtr<Type>{};
 			}
-		protected:
+		public:
 			Type* Get(const JDataHandle& handle)const noexcept
 			{
 				if (IsValidHandle(handle))
-					return data[handle.index].Get();
+					return Get(handle.index);
 				else
 					return nullptr;
+			}
+		protected:
+			Type* Get(const uint index)const noexcept
+			{
+				if constexpr (useOwnerPtr)
+					return data[index].Get();
+				else 
+					return data[index].get(); 
+			}
+			void ClearData(const uint index)
+			{
+				if constexpr (useOwnerPtr)
+					data[index].Clear();
+				else
+					data[index].reset();
 			}
 		public:
 			JDataHandle Add(Type* type)noexcept
 			{
 				if (!HasValidIndex() || type == nullptr)
 					return CreateInvalidHandle();
-				data[validIndex] = JOwnerPtr<Type>{ type };
+				data[validIndex] = PointerType{ type };
 				return SuccessProcess();
 			}
-			JDataHandle Add(JOwnerPtr<Type> type)noexcept
+			JDataHandle Add(PointerType&& type)noexcept
 			{
 				if (!HasValidIndex() || !type.IsValid())
 					return CreateInvalidHandle();
@@ -118,15 +145,15 @@ namespace JinEngine
 				arrState[handle.index] = Handle::empty;
 				arrNumber[handle.index] = 0;
 				if constexpr (std::is_base_of_v<JObject, Type>)
-					JObject::BeginDestroy(data[handle.index].Get());
-				data[handle.index].Clear();
+					JObject::BeginDestroy(Get(handle.index));
+				ClearData(handle.index);
 				handle.Clear();
 				return true;
 			}
-			JOwnerPtr<Type> Release(JDataHandle& handle)noexcept
+			PointerType Release(JDataHandle& handle)noexcept
 			{
 				if (!IsValidHandle(handle))
-					return JOwnerPtr<Type>{};
+					return PointerType{};
 
 				validIndex = handle.index;
 				arrState[handle.index] = Handle::empty;
@@ -141,10 +168,10 @@ namespace JinEngine
 				{
 					if constexpr (std::is_base_of_v<JObject, Type>)
 					{
-						if(data[i].IsValid())
-							JObject::BeginDestroy(data[i].Get());
+						if (data[i] != nullptr)
+							JObject::BeginDestroy(Get(i));
 					}
-					data[i].Clear();
+					ClearData(i); 
 					arrState[i] = 0;
 					arrNumber[i] = 0;
 				}
@@ -161,7 +188,7 @@ namespace JinEngine
 				handleVec.push_back(CreateInvalidHandle());
 			}
 			void PushValidHandle(JDataHandle& from, std::vector<JDataHandle>& to)
-			{ 
+			{
 				JDataHandle newHandle = CreateInvalidHandle();
 				TransitionHandle(from, newHandle);
 				to.push_back(std::move(newHandle));
@@ -183,7 +210,7 @@ namespace JinEngine
 		public:
 			bool IsValidHandle(const JDataHandle& handle)const noexcept
 			{
-				return (handle.structureGuid == guid && handle.IsValid() && arrState[handle.index]) && 
+				return (handle.structureGuid == guid && handle.IsValid() && arrState[handle.index]) &&
 					arrNumber[handle.index] == handle.validNumber;
 			}
 		private:

@@ -1,73 +1,52 @@
 #pragma once
-#include"JAnimatorInterface.h"
-#include"../../Resource/Skeleton/JSkeletonAsset.h"
-#include"../../Resource/AnimationController/JAnimationController.h"
-#include<memory>
-#include<vector>
-#include<DirectXMath.h>
+#include"../JComponent.h"  
 
 namespace JinEngine
 {  
-	class JSkeletonAsset; 
-	class JAnimationController; 
-
 	namespace Core
 	{
-		class JAnimationUpdateData;
+		class JFSMparameter;
 	}
-	class JAnimator final : public JAnimatorInterface
+	class JSkeletonAsset; 
+	class JAnimationController; 
+	class JAnimatorPrivate;
+	class JAnimator final : public JComponent
 	{
-		REGISTER_CLASS(JAnimator)
-	private: 
-		REGISTER_PROPERTY_EX(skeletonAsset, GetSkeletonAsset, SetSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
-		Core::JUserPtr<JSkeletonAsset> skeletonAsset;
-		REGISTER_PROPERTY_EX(animationController, GetAnimatorController, SetAnimatorController, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
-		Core::JUserPtr<JAnimationController> animationController;
-		Core::JGameTimer* userTimer = nullptr;
-		std::unique_ptr<Core::JAnimationUpdateData> animationUpdateData;
+		REGISTER_CLASS_IDENTIFIER_LINE(JAnimator)
+	public: 
+		class InitData final: public JComponent::InitData
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
+		public:
+			InitData(JGameObject* owner);
+			InitData(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
+		};
 	private:
-		bool reqSettingAniData = false;
+		friend class JAnimatorPrivate;
+		class JAnimatorImpl;
+	private:
+		std::unique_ptr<JAnimatorImpl> impl;
 	public:
+		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
 			return J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR;
 		}
-	public:
-		Core::JUserPtr<JSkeletonAsset>GetSkeletonAsset()noexcept;
+		Core::JUserPtr<JSkeletonAsset>GetSkeletonAsset()const noexcept;
 		Core::JUserPtr<JAnimationController> GetAnimatorController()const noexcept;
-
+	public:
 		void SetSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept;
 		void SetAnimatorController(Core::JUserPtr<JAnimationController> newAnimationController)noexcept;
-		void SetParameterValue(const std::wstring& paramName, const float value)noexcept;
+		void SetParameterValue(Core::JFSMparameter* param, const float value)noexcept; 
 	public:
 		bool IsAvailableOverlap()const noexcept final; 
-		bool PassDefectInspection()const noexcept final; 
-	public:
-		JAnimatorFrameUpdateTriggerInterface* UpdateTriggerInterface();
-	private:
-		void OnAnimationUpdate(Core::JGameTimer* sceneTimer)noexcept final;
-		void OffAnimationUpdate()noexcept final;
-		void SettingAnimationUpdateData()noexcept;
-		void ClearAnimationUpdateData()noexcept;
-	private:
-		bool CanUpdateAnimation()const noexcept;
-	private:
-		void DoCopy(JObject* ori) final;
+		bool PassDefectInspection()const noexcept final;  
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
-	private: 
-		void UpdateFrame(Graphic::JAnimationConstants& constant) final;
 	private:
-		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
-	private:
-		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
-		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JAnimator* animator);
-		static JAnimator* LoadObject(std::wifstream& stream, JGameObject* owner);
-		static void RegisterCallOnce();
-	private:
-		JAnimator(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner);
+		JAnimator(const InitData& initData);
 		~JAnimator();
 	};
 }

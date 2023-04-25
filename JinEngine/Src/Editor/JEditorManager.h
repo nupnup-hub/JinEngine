@@ -5,6 +5,7 @@
 #include"../Application/JApplicationCloseType.h"
 #include"../Core/Event/JEventListener.h"
 #include"../Core/JDataType.h"  
+#include"../Utility/JCommonUtility.h"
 #include<vector>
 #include<unordered_map>
 #include<functional>
@@ -27,7 +28,7 @@ namespace JinEngine
 		private:
 			friend class Application::JApplication;
 		private:
-			const size_t editorManagerGuid; 
+			const size_t editorManagerGuid;
 		private: 
 			std::vector<std::unique_ptr<JEditorPage>> editorPage;
 			std::unordered_map<J_EDITOR_PAGE_TYPE, JEditorPage*> editorPageMap;

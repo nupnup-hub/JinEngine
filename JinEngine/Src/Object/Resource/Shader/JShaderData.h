@@ -24,6 +24,8 @@ namespace JinEngine
 		//ex) gameobject select½Ã outline 
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> extraPso[(int)J_GRAPHIC_EXTRA_PSO_TYPE::COUNT];
 	public:
+		~JGraphicShaderData();
+	public:
 		void Clear();
 	};
 
@@ -45,6 +47,8 @@ namespace JinEngine
 		ID3D12RootSignature* RootSignature = nullptr;	//Constants
 	public:
 		DispatchInfo dispatchInfo;													//Variable
+	public:
+		~JComputeShaderData();
 	public:
 		void Clear();
 	};

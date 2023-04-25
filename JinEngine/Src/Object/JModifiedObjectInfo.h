@@ -8,13 +8,9 @@ namespace JinEngine
 	public:
 		const size_t objectGuid;
 		const size_t typeGuid;
-		const std::string typeName;
-		std::wstring lastObjName;
-		std::wstring lastObjPath;
-		std::wstring lastObjMetaPath;
+		const std::string typeName;;
 		bool isModified = false;
 		bool isStore = true;
-		bool isRemoved = false;
 	public:
 		JModifiedObjectInfo(const size_t objectGuid, const size_t typeGuid, const std::string& typeName)
 			:objectGuid(objectGuid), typeGuid(typeGuid), typeName(typeName)

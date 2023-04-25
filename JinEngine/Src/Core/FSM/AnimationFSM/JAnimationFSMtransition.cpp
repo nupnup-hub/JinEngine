@@ -1,8 +1,10 @@
 #include"JAnimationFSMtransition.h" 
+#include"JAnimationFSMtransitionPrivate.h" 
 #include"../JFSMcondition.h"
 #include"../JFSMparameter.h"
-#include"../JFSMparameterStorageAccess.h"
-#include"../JFSMfactory.h"
+#include"../JFSMparameterStorageAccess.h" 
+#include"../../Identity/JIdenCreator.h"
+#include"../../Identity/JIdentifierImplBase.h"
 #include"../../File/JFileConstant.h" 
 #include"../../File/JFileIOHelper.h"
 #include<fstream>
@@ -11,116 +13,212 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		bool JAnimationFSMtransition::IsWaitExitTime()noexcept
+		namespace
 		{
-			return isWaitExitTime;
+			static JAnimationFSMtransitionPrivate aPrivate;
 		}
-		bool JAnimationFSMtransition::IsFrozen()noexcept
+		 
+		class JAnimationFSMtransition::JAnimationFSMtransitionImpl : public JIdentifierImplBase
 		{
-			return isFrozen;
-		}
-		float JAnimationFSMtransition::GetExitTimeRate()noexcept
-		{
-			return exitTimeRate;
-		}
-		float JAnimationFSMtransition::GetDurationTime()noexcept
-		{
-			return durationTime;
-		}
-		float JAnimationFSMtransition::GetTargetStartTimeRate()noexcept
-		{
-			return targetStartTimeRate;
-		}
+			REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimationFSMtransitionImpl)
+		public:
+			JAnimationFSMtransition* thisTrans = nullptr;
+		public:
+			REGISTER_PROPERTY_EX(exitTimeRate, GetExitTimeRate, SetExitTimeRate, GUI_SLIDER(0.0f, 1.0f))
+			float exitTimeRate = 0.75f;
+			REGISTER_PROPERTY_EX(durationTime, GetDurationTime, SetDurationTime, GUI_SLIDER(0.0f, 100.0f))
+			float durationTime = 0.25f;
+			REGISTER_PROPERTY_EX(targetStartTimeRate, GetTargetStartTimeRate, SetTargetStartTimeRate, GUI_SLIDER(0.0f, 1.0f))
+			float targetStartTimeRate = 0;
+			REGISTER_PROPERTY_EX(isWaitExitTime, IsWaitExitTime, SetIsWaitExitTime, GUI_CHECKBOX())
+			bool isWaitExitTime = true;
+			REGISTER_PROPERTY_EX(isFrozen, IsFrozen, SetIsFrozen, GUI_CHECKBOX())
+			bool isFrozen = false;
+		public:
+			JAnimationFSMtransitionImpl(const InitData& initData, JAnimationFSMtransition* thisTrans)
+				:thisTrans(thisTrans)
+			{ 
+			}
+			~JAnimationFSMtransitionImpl()
+			{}
+		public:
+			float GetExitTimeRate()const noexcept
+			{
+				return exitTimeRate;
+			}
+			float GetDurationTime()const noexcept
+			{
+				return durationTime;
+			}
+			float GetTargetStartTimeRate()const noexcept
+			{
+				return targetStartTimeRate;
+			}
+		public:
+			void SetIsWaitExitTime(const bool value)noexcept
+			{
+				isWaitExitTime = value;
+			}
+			void SetIsFrozen(const bool value)noexcept
+			{
+				isFrozen = value;
+			}
+			void SetExitTimeRate(const float value)noexcept
+			{
+				exitTimeRate = value;
+			}
+			void SetDurationTime(const float value)noexcept
+			{
+				durationTime = value;
+			}
+			void SetTargetStartTimeRate(const float value)noexcept
+			{
+				targetStartTimeRate = value;
+			}
+		public:
+			bool IsWaitExitTime()const noexcept
+			{
+				return isWaitExitTime;
+			}
+			bool IsFrozen()const noexcept
+			{
+				return isFrozen;
+			}
+			bool IsSatisfiedOption(const float normalizedTime)const noexcept
+			{
+				if (isWaitExitTime)
+				{
+					if (normalizedTime >= exitTimeRate)
+						return true;
+					else
+						return false;
+				}
+				else
+					return true;
+			}
+		public:
+			void Initialize()noexcept
+			{
+				thisTrans->Initialize();
+			}
+		public:
+			static void RegisterCallOnce()
+			{
+				SET_GUI_FLAG(J_GUI_OPTION_DISPLAY_PARENT);
+				Core::JIdentifier::RegisterPrivateInterface(JAnimationFSMtransition::StaticTypeInfo(), aPrivate);
+			}
+		};
 
+		JAnimationFSMtransition::InitData::InitData(JUserPtr<JFSMstate> ownerState, JUserPtr<JFSMstate> outState)
+			:JFSMtransition::InitData(JAnimationFSMtransition::StaticTypeInfo(), ownerState, outState)
+		{}
+		JAnimationFSMtransition::InitData::InitData(const std::wstring& name,
+			const size_t guid,
+			JUserPtr<JFSMstate> ownerState,
+			JUserPtr<JFSMstate> outState)
+			:JFSMtransition::InitData(JAnimationFSMtransition::StaticTypeInfo(), name, guid, ownerState, outState)
+		{}
+
+
+		Core::JIdentifierPrivate& JAnimationFSMtransition::GetPrivateInterface()const noexcept
+		{
+			return aPrivate;
+		}
+		float JAnimationFSMtransition::GetExitTimeRate()const noexcept
+		{
+			return impl->GetExitTimeRate();
+		}
+		float JAnimationFSMtransition::GetDurationTime()const noexcept
+		{
+			return impl->GetDurationTime();
+		}
+		float JAnimationFSMtransition::GetTargetStartTimeRate()const noexcept
+		{
+			return impl->GetTargetStartTimeRate();
+		}
 		void JAnimationFSMtransition::SetIsWaitExitTime(const bool value)noexcept
 		{
-			isWaitExitTime = value;
+			impl->SetIsWaitExitTime(value);
 		}
 		void JAnimationFSMtransition::SetIsFrozen(const bool value)noexcept
 		{
-			isFrozen = value;
+			impl->SetIsFrozen(value);
 		}
 		void JAnimationFSMtransition::SetExitTimeRate(const float value)noexcept
 		{
-			exitTimeRate = value;
+			impl->SetExitTimeRate(value);
 		}
 		void JAnimationFSMtransition::SetDurationTime(const float value)noexcept
 		{
-			durationTime = value;
+			impl->SetDurationTime(value);
 		}
 		void JAnimationFSMtransition::SetTargetStartTimeRate(const float value)noexcept
 		{
-			targetStartTimeRate = value;
+			impl->SetTargetStartTimeRate(value);
 		}
-		bool JAnimationFSMtransition::IsSatisfiedOption(const float normalizedTime)noexcept
+		bool JAnimationFSMtransition::IsWaitExitTime()const noexcept
 		{
-			if (isWaitExitTime)
-			{
-				if (normalizedTime >= exitTimeRate)
-					return true;
-				else
-					return false;
-			}
-			else
-				return true;
+			return impl->IsWaitExitTime();
+		}
+		bool JAnimationFSMtransition::IsFrozen()const noexcept
+		{
+			return impl->IsFrozen();
+		}
+		bool JAnimationFSMtransition::IsSatisfiedOption(const float normalizedTime)const noexcept
+		{
+			return impl->IsSatisfiedOption(normalizedTime);
+		}
+		JAnimationFSMtransition::JAnimationFSMtransition(const InitData& initData)
+			:JFSMtransition(initData), impl(std::make_unique<JAnimationFSMtransitionImpl>(initData, this))
+		{}
+		JAnimationFSMtransition::~JAnimationFSMtransition()
+		{
+			impl.reset();
+		}
 
-		}
-		void JAnimationFSMtransition::Initialize()noexcept
-		{
-			JFSMtransition::Initialize();
-		}
-		J_FILE_IO_RESULT JAnimationFSMtransition::StoreData(std::wofstream& stream)
-		{
-			if (!stream.is_open())
-				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-	    
-			JFileIOHelper::StoreAtomicData(stream, L"ConditionCount:", GetConditioCount());
-			const uint conditionCount = GetConditioCount(); 
-			for (uint i = 0; i < conditionCount; ++i)
-			{ 
-				JFSMcondition* cond = GetConditionByIndex(i);
-				JFileIOHelper::StoreFsmObjectIden(stream, cond);
-				JFileIOHelper::StoreHasObjectIden(stream, cond->GetParameter(), Core::JFileConstant::StreamUncopiableGuidSymbol());
-				JFileIOHelper::StoreAtomicData(stream, L"ConditionValue:", GetConditionOnValue(i));
-			}
-			JFileIOHelper::StoreAtomicData(stream, L"IsWaitExitTime:", isWaitExitTime);
-			JFileIOHelper::StoreAtomicData(stream, L"IsFrozen:", isFrozen);
-			JFileIOHelper::StoreAtomicData(stream, L"ExitGameTimerate:", exitTimeRate);
-			JFileIOHelper::StoreAtomicData(stream, L"DurationTime:", durationTime);
-			JFileIOHelper::StoreAtomicData(stream, L"TargetStateOffset:", targetStartTimeRate);
+		using CreateInstanceInterface = JAnimationFSMtransitionPrivate::CreateInstanceInterface; 
+		using AssetDataIOInterface = JAnimationFSMtransitionPrivate::AssetDataIOInterface;
+		using UpdateInterface = JAnimationFSMtransitionPrivate::UpdateInterface;
 
-			return J_FILE_IO_RESULT::SUCCESS;
-		}
-		J_FILE_IO_RESULT JAnimationFSMtransition::LoadData(std::wifstream& stream)
+		JOwnerPtr<JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<JDITypeDataBase>&& initData)
 		{
-			if (!stream.is_open())
+			return JPtrUtil::MakeOwnerPtr<JAnimationFSMtransition>(*static_cast<JAnimationFSMtransition::InitData*>(initData.get()));
+		}
+		bool CreateInstanceInterface::CanCreateInstance(JDITypeDataBase* initData)const noexcept
+		{
+			const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JAnimationFSMtransition::InitData::StaticTypeInfo());
+			return isValidPtr && initData->IsValidData();
+		}
+ 
+		J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetData(std::wifstream& stream, JAnimationFSMtransition* trans)
+		{
+			if (!stream.is_open() || !trans->GetTypeInfo().IsChildOf<JAnimationFSMtransition>())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-  
-			uint conditionCount = 0; 
+
+			uint conditionCount = 0;
 			JFileIOHelper::LoadAtomicData(stream, conditionCount);
 
 			for (uint i = 0; i < conditionCount; ++i)
 			{
 				std::wstring condName;
 				size_t condGuid;
-				J_FSM_OBJECT_TYPE fsmType; 
+				J_FSM_OBJECT_TYPE fsmType;
 				float onValue;
 
 				JFileIOHelper::LoadFsmObjectIden(stream, condName, condGuid, fsmType);
-				JFSMparameter* param = static_cast<JFSMparameter*>(JFileIOHelper::LoadHasObjectIden(stream));
+				Core::JUserPtr<Core::JIdentifier> param = JFileIOHelper::LoadHasObjectIden(stream);
 				JFileIOHelper::LoadAtomicData(stream, onValue);
-				 
-				JFSMcondition* newCondition = JFFI<JFSMcondition>::Create(Core::JPtrUtil::MakeOwnerPtr<JFSMcondition::InitData>
-					(condName, condGuid, Core::GetUserPtr(this)));
-				if (param != nullptr)
-					newCondition->SetParameter(param);
+
+				JFSMcondition* newCondition = JICI::Create<JFSMcondition>(condName, condGuid, Core::GetUserPtr(trans));
+				if (param.IsValid())
+					newCondition->SetParameter(static_cast<JFSMparameter*>(param.Get()));
 				newCondition->SetOnValue(onValue);
 			}
 
 			bool isWaitExitTime = false;
 			bool isFrozen = false;
 			float exitTimeRate = 0;
-			float durationTime =0;
+			float durationTime = 0;
 			float targetStartTimeRate = 0;
 
 			JFileIOHelper::LoadAtomicData(stream, isWaitExitTime);
@@ -129,35 +227,56 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, durationTime);
 			JFileIOHelper::LoadAtomicData(stream, targetStartTimeRate);
 
-			SetIsWaitExitTime(isWaitExitTime);
-			SetIsFrozen(isFrozen);
-			SetExitTimeRate(exitTimeRate);
-			SetDurationTime(durationTime);
-			SetTargetStartTimeRate(targetStartTimeRate);
+			trans->SetIsWaitExitTime(isWaitExitTime);
+			trans->SetIsFrozen(isFrozen);
+			trans->SetExitTimeRate(exitTimeRate);
+			trans->SetDurationTime(durationTime);
+			trans->SetTargetStartTimeRate(targetStartTimeRate);
+			 
+			return J_FILE_IO_RESULT::SUCCESS;
+		}
+		J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(std::wofstream& stream, JAnimationFSMtransition* trans)
+		{
+			if (!stream.is_open() || !trans->GetTypeInfo().IsChildOf<JAnimationFSMtransition>())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+			JFileIOHelper::StoreAtomicData(stream, L"ConditionCount:", trans->GetConditioCount());
+			const uint conditionCount = trans->GetConditioCount();
+			for (uint i = 0; i < conditionCount; ++i)
+			{
+				JFSMcondition* cond = trans->GetConditionByIndex(i);
+				JFileIOHelper::StoreFsmObjectIden(stream, cond);
+				JFileIOHelper::StoreHasObjectIden(stream, cond->GetParameter(), Core::JFileConstant::StreamUncopiableGuidSymbol());
+				JFileIOHelper::StoreAtomicData(stream, L"ConditionValue:", trans->GetConditionOnValue(i));
+			}
+			JFileIOHelper::StoreAtomicData(stream, L"IsWaitExitTime:", trans->IsWaitExitTime());
+			JFileIOHelper::StoreAtomicData(stream, L"IsFrozen:", trans->IsFrozen());
+			JFileIOHelper::StoreAtomicData(stream, L"ExitGameTimerate:", trans->GetExitTimeRate());
+			JFileIOHelper::StoreAtomicData(stream, L"DurationTime:", trans->GetDurationTime());
+			JFileIOHelper::StoreAtomicData(stream, L"TargetStateOffset:", trans->GetTargetStartTimeRate());
 
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
-		void JAnimationFSMtransition::RegisterCallOnce()
-		{
-			auto createTransitionLam = [](JOwnerPtr<JFSMIdentifierInitData> initData)-> JFSMInterface*
-			{
-				if (initData.IsValid() && initData->GetFSMobjType() == J_FSM_OBJECT_TYPE::TRANSITION)
-				{
-					JFSMtransitionInitData* transitionInitData = static_cast<JFSMtransitionInitData*>(initData.Get());
-					JOwnerPtr<JAnimationFSMtransition> ownerPtr = JPtrUtil::MakeOwnerPtr<JAnimationFSMtransition>(*transitionInitData);
-					JAnimationFSMtransition* newTransition = ownerPtr.Get();
-					if (AddInstance(std::move(ownerPtr)))
-						return newTransition;
-				}
-				return nullptr;
-			};
-			JFFI<JAnimationFSMtransition>::Register(createTransitionLam);
 
-			SET_GUI_FLAG(J_GUI_OPTION_DISPLAY_PARENT);
+		void UpdateInterface::Initialize(JFSMtransition* trans)noexcept
+		{ 
+			static_cast<JAnimationFSMtransition*>(trans)->impl->Initialize();
 		}
-		JAnimationFSMtransition::JAnimationFSMtransition(const JFSMtransitionInitData& initData)
-			:JFSMtransition(initData)
-		{}
-		JAnimationFSMtransition::~JAnimationFSMtransition(){}
+
+		Core::JIdentifierPrivate::CreateInstanceInterface& JAnimationFSMtransitionPrivate::GetCreateInstanceInterface()const noexcept
+		{
+			static CreateInstanceInterface pI;
+			return pI;
+		}
+		JAnimationFSMtransitionPrivate::AssetDataIOInterface& JAnimationFSMtransitionPrivate::GetAssetDataIOInterface()const noexcept
+		{
+			static AssetDataIOInterface pI;
+			return pI;
+		}
+		JFSMtransitionPrivate::UpdateInterface& JAnimationFSMtransitionPrivate::GetUpdateInterface()const noexcept
+		{
+			static UpdateInterface pI;
+			return pI;
+		}
 	}
 }

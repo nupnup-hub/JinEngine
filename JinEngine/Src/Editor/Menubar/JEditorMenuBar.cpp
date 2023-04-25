@@ -1,6 +1,7 @@
 #include"JEditorMenuBar.h"   
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../String/JEditorStringMap.h"
+#include"../../Utility/JVectorExtend.h"
 
 namespace JinEngine
 {
@@ -121,7 +122,7 @@ namespace JinEngine
 			const float barHeight = ImGui::GetCurrentWindow()->MenuBarHeight();
 			const JVector2<float> iconSize = JVector2<float>(barHeight, barHeight);
 			if (JImGuiImpl::ImageSwitch(GetUniqueLabel().c_str(),
-				*((*getGResourceFunctor)()),
+				((*getGResourceFunctor)()),
 				*isActivatedPtr,
 				false,
 				iconSize,
@@ -225,12 +226,13 @@ namespace JinEngine
 			std::string nodeName = node->GetNodeName();
 			if (node->IsLeafNode())
 			{
-				if (node->GetParent()->IsRootNode() && node->IsOpendNode())
-					JImGuiImpl::SetColorToSoft(ImGuiCol_Header, -0.15f);
+				bool canToSoftCol = node->GetParent()->IsRootNode() && node->IsOpendNode();
+				if (canToSoftCol)
+					JImGuiImpl::SetColorToSoft(ImGuiCol_Header, CreateVec4(-0.15f));
 				if (JImGuiImpl::MenuItem(nodeName.c_str(), node->IsOpendNode(), true))
 					selectedNode = node;
-				if (node->GetParent()->IsRootNode())
-					JImGuiImpl::SetColorToSoft(ImGuiCol_Header, 0.15f);
+				if (canToSoftCol)
+					JImGuiImpl::SetColorToSoft(ImGuiCol_Header, CreateVec4(0.15f));
 			}
 			else
 			{

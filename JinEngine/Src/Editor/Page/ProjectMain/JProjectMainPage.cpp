@@ -10,7 +10,7 @@
 #include"../CommonWindow/Detail/JObjectDetail.h"
 #include"../CommonWindow/Explorer/JObjectExplorer.h"
 #include"../CommonWindow/Debug/JGraphicResourceWatcher.h"
-#include"../CommonWindow/Debug/JAppElapsedTime.h"
+#include"../CommonWindow/Debug/JApplicationWatcher.h"
 #include"../../Align/JEditorAlignCalculator.h"
 #include"../../Popup/JEditorPopupWindow.h"
 #include"../../Event/JEditorEvent.h"
@@ -18,11 +18,13 @@
 #include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Object/Directory/JDirectory.h"
+#include"../../../Object/Directory/JFile.h"
 #include"../../../Object/Resource/JResourceManager.h"
 #include"../../../Object/Resource/Scene/JScene.h"
-#include"../../../Object/Resource/Scene/JSceneManager.h" 
-#include"../../../Application/JApplicationVariable.h"
-#include"../../../Window/JWindows.h"
+#include"../../../Object/Resource/Scene/JSceneManager.h"  
+#include"../../../Application/JApplicationProjectPrivate.h"
+#include"../../../Utility/JVectorExtend.h"
+#include"../../../Window/JWindow.h"
 
 namespace JinEngine
 {
@@ -33,8 +35,8 @@ namespace JinEngine
 				std::make_unique<JEditorAttribute>(),
 				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK))
 		{  
-			storeProjectF = std::make_unique<StoreProjectF::Functor>(&JApplicationProject::StoreProject);
-			loadProjectF = std::make_unique<LoadProjectF::Functor>(&JApplicationProject::LoadProject);
+			storeProjectF = std::make_unique<StoreProjectF::Functor>(&JApplicationProjectPrivate::IOInterface::StoreProject);
+			loadProjectF = std::make_unique<LoadProjectF::Functor>(&JApplicationProjectPrivate::IOInterface::LoadProject);
 
 			std::vector<WindowInitInfo> openInfo;
 			openInfo.emplace_back("Window Directory##JEngine");
@@ -45,7 +47,7 @@ namespace JinEngine
 			openInfo.emplace_back("Log Viewer##JEngine");
 			openInfo.emplace_back("Graphic Resource Watcher##JEngine");
 			openInfo.emplace_back("String Convert Test##JEngine");
-			openInfo.emplace_back("App Elapsed Time##JEngine");
+			openInfo.emplace_back("Application Watcher##JEngine");
 			 
 			J_EDITOR_WINDOW_FLAG defaultFlag = J_EDITOR_WINDOW_SUPPORT_WINDOW_CLOSING;
 			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(defaultFlag, J_EDITOR_WINDOW_SUPROT_DOCK);
@@ -60,7 +62,7 @@ namespace JinEngine
 			logViewer = std::make_unique<JLogViewer>(openInfo[5].GetName(), openInfo[5].MakeAttribute(), GetPageType(), dockFlag);
 			graphicResourceWatcher = std::make_unique<JGraphicResourceWatcher>(openInfo[6].GetName(), openInfo[6].MakeAttribute(), GetPageType(), defaultFlag);
 			stringConvertTest = std::make_unique<JStringConvertTest>(openInfo[7].GetName(), openInfo[7].MakeAttribute(), GetPageType(), defaultFlag);
-			appElapseTime = std::make_unique<JAppElapsedTime>(openInfo[8].GetName(), openInfo[8].MakeAttribute(), GetPageType(), defaultFlag);
+			appWatcher = std::make_unique<JApplicationWatcher>(openInfo[8].GetName(), openInfo[8].MakeAttribute(), GetPageType(), defaultFlag);
 
 			std::vector<JEditorWindow*> windows
 			{
@@ -72,7 +74,7 @@ namespace JinEngine
 				logViewer.get(), 
 				graphicResourceWatcher.get(),
 				stringConvertTest.get(),
-				appElapseTime.get()
+				appWatcher.get()
 			};
 			AddWindow(windows);
 
@@ -131,7 +133,7 @@ namespace JinEngine
 				ImGui::Separator();
 
 				JEditorDynamicAlignCalculator<4> alignCal;
-				alignCal.Update(listSize, contentsSize, padding, 0, innerSize, J_EDITOR_INNER_ALGIN_TYPE::ROW, ImGui::GetCursorPos());
+				alignCal.Update(listSize, contentsSize, padding, CreateVec2(0), innerSize, J_EDITOR_INNER_ALGIN_TYPE::ROW, ImGui::GetCursorPos());
 
 				for (uint i = 0; i < columnCount; ++i)
 				{
@@ -144,19 +146,23 @@ namespace JinEngine
 				for (auto& data : modVec)
 				{
 					std::string strArr[textCount]{ "","","" };
-					if (data->isRemoved)
+					Core::JIdentifier* obj = Core::GetRawPtr(data->typeGuid, data->objectGuid);
+					if (obj != nullptr)
 					{
-						strArr[0] = JCUtil::WstrToU8Str(data->lastObjName);
-						strArr[1] = JCUtil::WstrToU8Str(data->lastObjPath);
-						strArr[2] = Core::JReflectionInfo::Instance().GetTypeInfo(data->typeGuid)->NameWithOutPrefix();
+						strArr[0] = JCUtil::WstrToU8Str(obj->GetName());
+						strArr[1] = JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj)->GetPath());
+						strArr[2] = obj->GetTypeInfo().NameWithOutModifier();
 					}
 					else
 					{
-						Core::JIdentifier* obj = Core::GetRawPtr(data->typeGuid, data->objectGuid);
-						strArr[0] = JCUtil::WstrToU8Str(obj->GetName());
-						strArr[1] = JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj)->GetPath());
-						strArr[2] = obj->GetTypeInfo().NameWithOutPrefix();
-					}  
+						JFile* file = JDirectory::SearchFile(data->objectGuid);
+						if(file == nullptr)
+							continue;
+
+						strArr[0] = JCUtil::WstrToU8Str(file->GetName());
+						strArr[1] = JCUtil::WstrToU8Str(file->GetPath());
+						strArr[2] = file->GetResourceTypeInfo().NameWithOutModifier();
+					}
 					 
 					for (uint j = 0; j < textCount; ++j)
 					{
@@ -217,9 +223,9 @@ namespace JinEngine
 		{
 			JEditorPage::Initialize();
 			windowDirectory->Initialize();
-			objectExplorer->Initialize(Core::GetUserPtr(JSceneManager::Instance().GetMainScene()->GetRootGameObject()));
-			sceneViewer->Initialize(Core::GetUserPtr(JSceneManager::Instance().GetMainScene()));
-			sceneObserver->Initialize(Core::GetUserPtr(JSceneManager::Instance().GetMainScene()), L"Editor_ObserverCamera");
+			objectExplorer->Initialize(Core::GetUserPtr(_JSceneManager::Instance().GetFirstScene()->GetRootGameObject()));
+			sceneViewer->Initialize(Core::GetUserPtr(_JSceneManager::Instance().GetFirstScene()));
+			sceneObserver->Initialize(Core::GetUserPtr(_JSceneManager::Instance().GetFirstScene()), L"Editor_ObserverCamera");
 			logViewer->Initialize();
 			BuildMenuNode();
 		}
@@ -277,8 +283,8 @@ namespace JinEngine
 				J_EDITOR_EVENT::CLOSE_POPUP_WINDOW,
 				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePopupWindowEvStruct>(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM, GetPageType())));
 
-			auto confirmLam = []() {JApplicationProject::ConfirmCloseProject(); };
-			auto cancelLam = []() {JApplicationProject::CancelCloseProject(); };
+			auto confirmLam = []() {JApplicationProjectPrivate::LifeInterface::ConfirmCloseProject(); };
+			auto cancelLam = []() {JApplicationProjectPrivate::LifeInterface::CancelCloseProject(); };
 			using CloseF = Core::JSFunctorType<void>;
 			std::unique_ptr<CloseF::CompletelyBind> closePopupB;
 			if(isCancel)

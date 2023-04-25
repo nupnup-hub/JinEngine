@@ -1,14 +1,17 @@
 #include"JGraphicDrawList.h"
-#include"GraphicResource/JGraphicResourceHandle.h"
+#include"GraphicResource/JGraphicResourceInfo.h"
 #include"../Object/Resource/Scene/JScene.h" 
+#include"../Object/Resource/Scene/JScenePrivate.h" 
 #include"../Object/Component/JComponent.h" 
 #include"../Object/GameObject/JGameObject.h"
+#include"../Object/JFrameUpdate.h" 
+#include"../Object/JFrameUpdateUserAccess.h"
 
 namespace JinEngine
 {
 	namespace Graphic
 	{
-		JShadowMapDrawRequestor::JShadowMapDrawRequestor(JComponent* jLight, JGraphicResourceHandle* handle)
+		JShadowMapDrawRequestor::JShadowMapDrawRequestor(JComponent* jLight, JGraphicResourceInfo* handle)
 			:jLight(jLight), handle(handle)
 		{}
 		JShadowMapDrawRequestor::~JShadowMapDrawRequestor()
@@ -17,7 +20,7 @@ namespace JinEngine
 			handle = nullptr;
 		}
 
-		JSceneDrawRequestor::JSceneDrawRequestor(JComponent* jCamera, JGraphicResourceHandle* handle)
+		JSceneDrawRequestor::JSceneDrawRequestor(JComponent* jCamera, JGraphicResourceInfo* handle)
 			:jCamera(jCamera), handle(handle)
 		{}
 		JSceneDrawRequestor::~JSceneDrawRequestor()
@@ -43,14 +46,11 @@ namespace JinEngine
 			}
 		}
 
-		JGraphicDrawTarget::UpdateInfo::UpdateInfo(Core::JUserPtr<IFrameDirty> observationFrame, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling)
-			:observationFrame(observationFrame), updateFrequency(updateFrequency), isAllowOcclusionCulling(isAllowOcclusionCulling)
-		{
-
-		}
+		JGraphicDrawTarget::UpdateInfo::UpdateInfo(const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling)
+			:updateFrequency(updateFrequency), isAllowOcclusionCulling(isAllowOcclusionCulling)
+		{}
 		JGraphicDrawTarget::UpdateInfo::~UpdateInfo()
-		{
-			observationFrame.Clear();
+		{ 
 		}
 
 		void JGraphicDrawTarget::UpdateInfo::UpdateStart()
@@ -61,7 +61,7 @@ namespace JinEngine
 			hasSceneUpdate = false;
 			hasOcclusionUpdate = false;
 
-			if (observationFrame.IsValid() && observationFrame->IsFrameDirted())
+			if (observationFrame != nullptr && observationFrame->IsFrameDirted())
 				hasSceneUpdate = true;
 		}
 		void JGraphicDrawTarget::UpdateInfo::UpdateEnd()
@@ -83,17 +83,14 @@ namespace JinEngine
 					hasOcclusionUpdate = true;
 			}
 		}
-		JGraphicDrawTarget::JGraphicDrawTarget(JScene* scene,
-			Core::JUserPtr<IFrameDirty> observationFrame,
-			const J_GRAPHIC_DRAW_FREQUENCY updateFrequency,
-			const bool isAllowOcclusionCulling)
+		JGraphicDrawTarget::JGraphicDrawTarget(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling)
 			: scene(scene)
 		{
-			updateInfo = std::make_unique< UpdateInfo>(observationFrame, updateFrequency, isAllowOcclusionCulling);
+			updateInfo = std::make_unique<UpdateInfo>(updateFrequency, isAllowOcclusionCulling);
 		}
 		JGraphicDrawTarget::~JGraphicDrawTarget() {}
 
-		bool JGraphicDrawList::AddDrawList(JScene* scene, Core::JUserPtr<IFrameDirty> observationFrame, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling)noexcept
+		bool JGraphicDrawList::AddDrawList(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling)noexcept
 		{
 			if (scene == nullptr)
 				return false;
@@ -101,7 +98,7 @@ namespace JinEngine
 			if (HasDrawList(scene))
 				return false;
 
-			std::unique_ptr<JGraphicDrawTarget> newTarget = std::make_unique<JGraphicDrawTarget>(scene, observationFrame, updateFrequency, isAllowOcclusionCulling);
+			std::unique_ptr<JGraphicDrawTarget> newTarget = std::make_unique<JGraphicDrawTarget>(scene, updateFrequency, isAllowOcclusionCulling);
 			drawList.push_back(std::move(newTarget));
 			return true;
 		}
@@ -111,15 +108,22 @@ namespace JinEngine
 				return false;
 
 			int index = GetIndex(scene);
-
 			if (index == -1)
 				return false;
 
 			drawList.erase(drawList.begin() + index);
 			const uint drawListCount = (uint)drawList.size();
 			for (uint i = index; i < drawListCount; ++i)
-				drawList[i]->scene->AppInterface()->SetAllComponentFrameDirty();
+				JScenePrivate::CompFrameInterface::SetAllComponentFrameDirty(drawList[i]->scene);
 
+			return true;
+		}
+		bool JGraphicDrawList::AddObservationFrame(JScene* scene, const JFrameUpdateUserAccess& observationFrame)noexcept
+		{
+			int index = GetIndex(scene);
+			if (index == -1)
+				return false;
+			drawList[index]->updateInfo->observationFrame = std::make_unique<JFrameUpdateUserAccess>(observationFrame);
 			return true;
 		}
 		bool JGraphicDrawList::HasDrawList(JScene* scene)noexcept
@@ -145,9 +149,9 @@ namespace JinEngine
 
 			const uint drawListCount = (uint)drawList.size();
 			for (uint i = index + 1; i < drawListCount; ++i)
-				drawList[i]->scene->AppInterface()->SetComponentFrameDirty(cType);
+				JScenePrivate::CompFrameInterface::SetComponentFrameDirty(drawList[i]->scene, cType);
 		}
-		void JGraphicDrawList::AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicResourceHandle* handle)noexcept
+		void JGraphicDrawList::AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicResourceInfo* handle)noexcept
 		{
 			if (scene == nullptr || jLight == nullptr)
 				return;
@@ -160,7 +164,7 @@ namespace JinEngine
 			drawList[index]->shadowRequestor.emplace_back(std::make_unique<JShadowMapDrawRequestor>(jLight, handle));
 			drawList[index]->updateInfo->hasShadowUpdate = true;
 		}
-		void JGraphicDrawList::AddDrawSceneRequest(JScene* scene, JComponent* jCamera, JGraphicResourceHandle* handle)noexcept
+		void JGraphicDrawList::AddDrawSceneRequest(JScene* scene, JComponent* jCamera, JGraphicResourceInfo* handle)noexcept
 		{
 			if (scene == nullptr || jCamera == nullptr)
 				return;

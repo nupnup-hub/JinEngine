@@ -62,8 +62,7 @@ namespace JinEngine
 		private:
 			JBvhOption debugOptionCash;
 		private:
-			bool activateTrigger = true;
-			bool initTrigger = false; 
+			bool activateTrigger = true; 
 		public:
 			JSceneSpatialStructure();
 			~JSceneSpatialStructure();
@@ -88,9 +87,6 @@ namespace JinEngine
 			void SetBvhOption(const J_SPACE_SPATIAL_LAYER layer, const JBvhOption& option);
 			void SetKdTreeOption(const J_SPACE_SPATIAL_LAYER layer, const JKdTreeOption& option);
 			//void SetDebugKdTreeOption(const JKdTreeOption& option);
-			void SetInitTrigger(const bool value)noexcept; 
-		public:
-			bool IsInitTriggerActivated()const noexcept;
 		public:
 			void Activate(JGameObject* sceneRoot, JGameObject* sceneDebugRoot)noexcept;
 			void DeAcitvate()noexcept;

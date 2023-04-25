@@ -1,203 +1,119 @@
-#pragma once  
-#include"JGameObjectInterface.h" 
-#include"../Component/JComponent.h"
+#pragma once    
+#include"../JObject.h"
+#include"../Component/JComponentType.h"
 #include"../../Utility/JTypeUtility.h"
-#include<type_traits>
-#include<memory>
-#include<vector> 
+#include<vector>
+#include<fstream>
 
 namespace JinEngine
-{ 
-	class JComponent;
+{
+	class JScene;
 	class JAnimator;
-	class JBehavior;
-	class JCamera;
-	class JRenderItem;
 	class JTransform;
-	class JScene; 
-	class JLight;
+	class JRenderItem;
+	class JComponent;
 
-	class JGameObject final : public JGameObjectInterface
+	class JGameObjectPrivate;
+	class JGameObject final : public JObject
 	{
-		REGISTER_CLASS(JGameObject) 
-	private: 
-		std::vector<JGameObject*> children;
-		JGameObject* parent = nullptr;
-		std::vector<JComponent*> component; 
-		std::vector<JBehavior*> behavior;
-		JTransform* transform = nullptr;
-		JAnimator* animator = nullptr;
-		JRenderItem* renderItem = nullptr;
-		JScene* ownerScene = nullptr; 
+		REGISTER_CLASS_IDENTIFIER_LINE(JGameObject)
+	public: 
+		class InitData : public JObject::InitData
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
+		private:
+			friend class JGameObject;
+		public:
+			JGameObject* parent = nullptr;
+			JScene* ownerScene = nullptr;
+		private:
+			bool makeTransform = true;
+		public: 
+			InitData(JGameObject* parent);
+			InitData(JScene* ownerScene);
+			InitData(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* parent, JScene* ownerScene = nullptr);
+		public:
+			bool IsValidData()const noexcept final;
+		};
+	protected: 
+		class LoadData final : public Core::JDITypeDataBase
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadData)
+		public:
+			std::wifstream& stream;
+			JGameObject* parent = nullptr;
+			JScene* ownerScene = nullptr;
+		public:
+			LoadData(JScene* owenerScene, std::wifstream& stream);
+			~LoadData();
+		public:
+			bool IsValidData()const noexcept final;
+		};
+		 
+		class StoreData final : public JObject::StoreData
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(StoreData)
+		public:
+			std::wofstream& stream;
+		public:
+			StoreData(JGameObject* obj, std::wofstream& stream);
+		public:
+			bool IsValidData()const noexcept final;
+		};
 	private:
-		//For Editor
-		std::unique_ptr<Core::JTypeInstanceSearchHint> parentInfo;			//For editor redo undo
-		bool isSelectedbyEditor = false;
+		friend class JGameObjectPrivate;
+		class JGameObjectImpl;
+	private:
+		std::unique_ptr<JGameObjectImpl> impl;
 	public:
+		JScene* GetOwnerScene()const noexcept;
 		JAnimator* GetAnimator()const noexcept;
 		JTransform* GetTransform() const noexcept;
 		JRenderItem* GetRenderItem()const noexcept;
-		std::vector<JComponent*> GetComponentVec()const noexcept;
-		JScene* GetOwnerScene()const noexcept;
-		uint GetChildrenCount()const noexcept;  
-		uint GetComponentCount()const noexcept;
+		JComponent* GetComponent(const J_COMPONENT_TYPE compType)const noexcept; 
+		JComponent* GetComponentWithParent(const J_COMPONENT_TYPE compType)const noexcept;  
+		std::vector<JComponent*> GetComponents(const J_COMPONENT_TYPE compType)const noexcept; 
+		//std::vector<JComponent*> GetExceptedComponents(const J_COMPONENT_TYPE compType)const noexcept; 
+		std::vector<JComponent*> GetComponentsWithParent(const J_COMPONENT_TYPE compType)const noexcept; 
+		std::vector<JComponent*> GetAllComponent()const noexcept;
+		uint GetAllComponentCount()const noexcept;
 		uint GetComponentCount(const J_COMPONENT_TYPE type)const noexcept;
+	public:
+		uint GetChildrenCount()const noexcept;
 		JGameObject* GetParent()const noexcept;
-		JGameObject* GetChild(const uint index)const noexcept; 
+		JGameObject* GetChild(const uint index)const noexcept;
 		std::vector<JGameObject*> GetChildren()const noexcept;
+		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
+	public:
 		void SetName(const std::wstring& newName)noexcept final;
 	public:
 		bool IsRoot()const noexcept;
 		bool IsParentLine(JGameObject* child)const noexcept;
-		bool IsSelectedbyEditor()const noexcept;
+		bool IsSelected()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE type)const noexcept;
 		bool HasRenderItem()const noexcept;
-		bool HasAnimator()const noexcept; 
+		bool HasAnimator()const noexcept;
 		bool CanAddComponent(const J_COMPONENT_TYPE type)const noexcept;
+	public:
 		void ChangeParent(JGameObject* newParent)noexcept;
 		JComponent* FindComponent(const size_t guid)const noexcept;
-	public: 
-		JGameObjectEditorInterface* EditorInterface() final;
-	public:
-		void DoCopy(JObject* ori) final;
-	private:
+	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;
-	private:
-		static bool HasSameName(_In_ JGameObject* parent, _In_ const std::wstring& initName) noexcept;
-		bool IsChild(JGameObject* obj)noexcept;
-	private:
-		void SetSelectedByEditorTrigger(const bool value)noexcept final;
-	private:
-		bool AddType(JComponent* component)noexcept final;
-		bool RemoveType(JComponent* component)noexcept final;
-	private:
-		bool Destroy(const bool isForced) final;
-		void Clear();
-	private:
-		bool RegisterCashData()noexcept final;
-		bool DeRegisterCashData()noexcept final;
-	private:
-		Core::J_FILE_IO_RESULT CallStoreGameObject(std::wofstream& stream) final;
-		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JGameObject* gameObject);
-		static JGameObject* LoadObject(std::wifstream& stream, JGameObject* parent, JScene* owenerScene);
-		static void RegisterCallOnce();
-	private:
-		/*
-		* JGameObject Register Parent and initialize JTransform
-		* Caution! don't register in parentChildren
-		* only ownerScene parameter is valid by root gameobject
-		*/
-		JGameObject(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* parent, JScene* ownerScene = nullptr);
-		~JGameObject();
-#pragma region JComponent Template
 	public:
 		template<typename T>
 		auto GetComponent()const noexcept -> typename Core::TypeCondition<T*, std::is_base_of_v<JComponent, T>>::Type
-		{
-			const uint componentCount = (uint)component.size();
-			if constexpr (std::is_base_of_v<JBehavior, T>)
-			{
-				const std::string componentName = T::TypeName();
-				for (uint i = 0; i < componentCount; ++i)
-				{
-					if (component[i]->TypeName() == componentName)
-						return static_cast<T*>(component[i]);
-				}
-				return nullptr;
-			}
-			else if constexpr (std::is_same_v<JAnimator, T>)
-				return animator;
-			else if constexpr (std::is_same_v<JTransform, T>)
-				return transform;
-			else if constexpr (std::is_same_v<JRenderItem, T>)
-				return renderItem;
-			else
-			{
-				const J_COMPONENT_TYPE componentType = T::GetStaticComponentType();
-				for (uint i = 0; i < componentCount; ++i)
-				{
-					if (component[i]->GetComponentType() == componentType)
-						return static_cast<T*>(component[i]);
-				}
-				return nullptr;
-			}
-		} 
-		template<typename T>
-		auto GetComponents()const noexcept -> std::vector<typename  Core::TypeCondition<T*, std::is_base_of_v<JComponent, T>>::Type>
-		{
-			std::vector<T*> res;
-			const uint componentCount = (uint)component.size();
-			if constexpr (std::is_base_of_v<JBehavior, T>)
-			{
-				const std::string componentName = T::TypeName();
-				for (uint i = 0; i < componentCount; ++i)
-				{
-					if (component[i]->TypeName() == componentName)
-						res.push_back(static_cast<T*>(component[i]));
-				}
-				return res;
-			}
-			else if constexpr (std::is_same_v<JAnimator, T>)
-				return animator;
-			else if constexpr (std::is_same_v<JTransform, T>)
-				return transform;
-			else if constexpr (std::is_same_v<JRenderItem, T>)
-				return renderItem;
-			else
-			{
-				const J_COMPONENT_TYPE componentType = T::GetStaticComponentType();
-				for (uint i = 0; i < componentCount; ++i)
-				{
-					if (component[i]->GetComponentType() == componentType)
-						res.push_back(static_cast<T*>(component[i]));
-				}
-				return res;
-			}
-		}
-		template<typename T>
-		bool IsSameType(const std::string typeName)
-		{
-			return T::TypeName() == typeName;
-		} 
-		template<typename ...ExceptParam>
-		auto GetExceptedComponents()const noexcept -> std::vector<typename Core::TypeCondition<JComponent*, std::is_base_of_v<JComponent, ExceptParam...>>::Type>
-		{
-			std::vector<JComponent*> res;
-			const uint componentCount = (uint)component.size();
-			if constexpr (sizeof...(ExceptParam) == 0 || ((std::is_base_of_v<JBehavior, ExceptParam>) && ...))
-			{
-				res.resize(component.size());
-				for (uint i = 0; i < componentCount; ++i)
-					res[i] = component[i];
-			}
-			else
-			{
-				for (uint i = 0; i < componentCount; ++i)
-				{
-					const std::string componentName = component[i]->TypeName();
-					if (((ExceptParam::TypeName() != componentName) && ...))
-						res.push_back(component[i]);
-				}
-			}
-			return res;
+		{ 
+			return static_cast<T*>(GetComponent(T::GetStaticComponentType()));
 		}
 		template<typename T>
 		auto GetComponentWithParent()const noexcept -> typename Core::TypeCondition<T*, std::is_base_of_v<JComponent, T>>::Type
 		{
-			const JGameObject* nowParent = this;
-			while (nowParent != nullptr)
-			{
-				T* res = nowParent->GetComponent<T>();
-				if (res != nullptr)
-					return res;
-				nowParent = nowParent->parent;
-			}
-			return nullptr;
+			return static_cast<T*>(GetComponentWithParent(T::GetStaticComponentType()));
 		}
-#pragma endregion
-
+	private:
+		JGameObject(const InitData& initData);
+		~JGameObject();
 	};
 }
-

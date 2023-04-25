@@ -1,6 +1,6 @@
 #pragma once
 #include"../Core/JDataType.h"
-#include"../Object/Component/JComponentType.h"
+#include"../Object/Component/JComponentType.h" 
 #include<deque> 
 #include<vector>
 #include<memory>
@@ -9,10 +9,10 @@ namespace JinEngine
 {
 	class JComponent;
 	class JScene; 
-	class JSceneManagerImpl;
+	class JSceneManager;
 	class JLight;
-	class JCamera; 
-	class IFrameDirty;
+	class JCamera;  
+	class JFrameUpdateUserAccess;
 
 	namespace Graphic
 	{
@@ -22,26 +22,27 @@ namespace JinEngine
 			UPDATED
 		};
 
-		class JGraphicResourceHandle;  
+		class JGraphicResourceInfo;  
 		class JGraphicDrawList;
-		class JGraphicResourceHandleInterface;
+		class JGraphicResourceInterface;
+		class JGraphic;
 
 		struct JShadowMapDrawRequestor
 		{
 		public:
 			JComponent* jLight;
-			JGraphicResourceHandle* handle;
+			JGraphicResourceInfo* handle;
 		public:
-			JShadowMapDrawRequestor(JComponent* jLight, JGraphicResourceHandle* handle);
+			JShadowMapDrawRequestor(JComponent* jLight, JGraphicResourceInfo* handle);
 			~JShadowMapDrawRequestor();
 		};
 		struct JSceneDrawRequestor
 		{
 		public:
 			JComponent* jCamera;
-			JGraphicResourceHandle* handle;
+			JGraphicResourceInfo* handle;
 		public:
-			JSceneDrawRequestor(JComponent* jCamera, JGraphicResourceHandle* handle);
+			JSceneDrawRequestor(JComponent* jCamera, JGraphicResourceInfo* handle);
 			~JSceneDrawRequestor();
 		};
 
@@ -51,7 +52,9 @@ namespace JinEngine
 			struct UpdateInfo
 			{
 			private:
-				Core::JUserPtr<IFrameDirty> observationFrame;		// for resource preview scene
+				friend class JGraphicDrawList;
+			private:
+				std::unique_ptr<JFrameUpdateUserAccess> observationFrame;		// for resource preview scene
 				const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
 				const bool isAllowOcclusionCulling;
 			public:
@@ -73,7 +76,7 @@ namespace JinEngine
 				void UpdateStart();
 				void UpdateEnd();
 			public:
-				UpdateInfo(Core::JUserPtr<IFrameDirty> observationFrame, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling);
+				UpdateInfo(const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling);
 				~UpdateInfo();
 			};
 		private:
@@ -84,28 +87,30 @@ namespace JinEngine
 			std::vector<std::unique_ptr<JShadowMapDrawRequestor>> shadowRequestor;
 			std::vector<std::unique_ptr<JSceneDrawRequestor>> sceneRequestor;
 		public:
-			JGraphicDrawTarget(JScene* scene, 
-				Core::JUserPtr<IFrameDirty> observationFrame,
-				const J_GRAPHIC_DRAW_FREQUENCY updateFrequency,
-				const bool isAllowOcclusionCulling);
+			JGraphicDrawTarget(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling);
 			~JGraphicDrawTarget();
 		};
 		 
 		class JGraphicDrawList 
 		{ 
 		private:
-			friend class JGraphicImpl;
-			friend class JGraphicResourceHandleInterface;
-			friend class JSceneManagerImpl;
+			friend class JGraphic;
+			friend class JGraphicResourceInterface;
+			friend class JSceneManager;
 			friend class JScene;
 		private:
-			static bool AddDrawList(JScene* scene, Core::JUserPtr<IFrameDirty> observationFrame, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling)noexcept;
+			//drawList
+			static bool AddDrawList(JScene* scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling)noexcept;
 			static bool PopDrawList(JScene* scene)noexcept;
 			static bool HasDrawList(JScene* scene)noexcept;
 			static void UpdateScene(JScene* scene, const J_COMPONENT_TYPE cType)noexcept;
 		private:
-			static void AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicResourceHandle* handle)noexcept;
-			static void AddDrawSceneRequest(JScene* scene, JComponent* jCamera, JGraphicResourceHandle* handle)noexcept;
+			//option
+			static bool AddObservationFrame(JScene* scene, const JFrameUpdateUserAccess& observationFrame)noexcept;
+		private:
+			//request
+			static void AddDrawShadowRequest(JScene* scene, JComponent* jLight, JGraphicResourceInfo* handle)noexcept;
+			static void AddDrawSceneRequest(JScene* scene, JComponent* jCamera, JGraphicResourceInfo* handle)noexcept;
 			static void PopDrawRequest(JScene* scene, JComponent* jComp)noexcept;
 			static bool HasRequestor(JScene* scene)noexcept;
 		private:

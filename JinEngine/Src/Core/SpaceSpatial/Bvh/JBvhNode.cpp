@@ -1,10 +1,12 @@
 #include"JBvhNode.h" 
+#include"../../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../../Object/GameObject/JGameObject.h" 
-#include"../../../Object/GameObject/JGameObjectFactoryUtility.h"
+#include"../../../Object/GameObject/JGameObjectCreator.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../Object/Component/Transform/JTransform.h" 
 #include"../../../Editor/EditTool/JEditorViewStructure.h"
 #include"../../../Utility/JCommonUtility.h"
+#include"../../../Utility/JMathHelper.h"
 
 using namespace DirectX;
 namespace JinEngine
@@ -33,9 +35,9 @@ namespace JinEngine
 			if (debugGameObject == nullptr)
 			{
 				if (type == J_BVH_NODE_TYPE::LEAF)
-					debugGameObject = JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN, false);
+					debugGameObject = JGCI::CreateDebugLineShape(parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN, false);
 				else
-					debugGameObject = JGFU::CreateDebugLineShape(*parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED, false);
+					debugGameObject = JGCI::CreateDebugLineShape(parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED, false);
 				SetDebugObjectTransform();
 			}
 		}

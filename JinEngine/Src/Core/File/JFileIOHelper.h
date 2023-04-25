@@ -1,18 +1,19 @@
 #pragma once
 #include"../../Core/File/JFileIOResult.h"
 #include"../../Core/FSM/JFSMobjectType.h"
-#include"../../Object/JObjectFlag.h"
+#include"../../Object/JObjectFlag.h"  
 #include<DirectXMath.h>
 #include<fstream>
 
 namespace JinEngine
 {
 	class JObject;
+	class JResourceObject;  
 	namespace Core
 	{
 		class JIdentifier;
-		class JFSMInterface;
-	}
+		class JFSMinterface;
+	} 
 	class JFileIOHelper
 	{
 	public:
@@ -120,14 +121,22 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT LoadObjectIden(std::wifstream& stream, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag);
 		static Core::J_FILE_IO_RESULT LoadObjectIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag);
 	public:
-		static Core::J_FILE_IO_RESULT StoreFsmObjectIden(std::wofstream& stream, Core::JFSMInterface* obj);
+		static Core::J_FILE_IO_RESULT StoreFsmObjectIden(std::wofstream& stream, Core::JFSMinterface* obj);
 		static Core::J_FILE_IO_RESULT LoadFsmObjectIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ Core::J_FSM_OBJECT_TYPE& oType);
 	public:
 		static Core::J_FILE_IO_RESULT StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden);
 		static Core::J_FILE_IO_RESULT StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden, const std::wstring& guiSymbol);
-		static Core::JIdentifier* LoadHasObjectIden(std::wifstream& stream);
-	public:
-		static Core::J_FILE_IO_RESULT CopyFile(const std::wstring& src, const std::wstring& dest);
+		//Warrning
+		//Loading중 다른 오브젝트를 Load할 수 있으므로
+		//Stream에러 발생 할 수있음
+		//LoadHasObjectHint는 Hint만 전달하므로 Stream에러 발생에서 안전함
+		static Core::JUserPtr<Core::JIdentifier> LoadHasObjectIden(std::wifstream& stream);
+		template<typename T>
+		static Core::JUserPtr<T> LoadHasObjectIden(std::wifstream& stream)
+		{  
+			return Core::JUserPtr<T>::ConvertChildUser(LoadHasObjectIden(stream));
+		}
+		static Core::JTypeInstanceSearchHint LoadHasObjectHint(std::wifstream& stream); 
 	public:
 		//skip file using getline until symbol
 		//if fail stream is close
@@ -137,5 +146,11 @@ namespace JinEngine
 		static bool SkipSentence(std::wifstream& stream, const std::wstring& symbol);
 	public:
 		static bool InputSpace(std::wofstream& stream, int spaceCount);
+	public:
+		static Core::J_FILE_IO_RESULT CopyFile(const std::wstring& from, const std::wstring& to);
+		//write to fixed symbol on toFile when end of  fromFile
+		static Core::J_FILE_IO_RESULT CombineFile(const std::vector<std::wstring> from, const std::wstring& to);
+		//read to fixed symbol on fromFile when end of toFile
+		static Core::J_FILE_IO_RESULT DevideFile(const std::wstring& from, const std::vector<std::wstring> to);
 	};
 }

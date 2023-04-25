@@ -11,7 +11,7 @@ namespace JinEngine
 	}
 
 	namespace Core
-	{ 
+	{  
 		class JGameTimer
 		{
 		private:
@@ -41,8 +41,11 @@ namespace JinEngine
 			void Reset() noexcept;
 		public:
 			bool IsStop()const noexcept;
-		private: 
-			static void TickAllTimer();
+		public:
+			//Application update fps
+			static float FramePerSecond()noexcept;
+		private:  
+			static void UpdateAllTimer();
 		}; 
 	}
 
@@ -55,6 +58,6 @@ namespace JinEngine
 			static Core::JGameTimer timer;
 			return timer;
 		}
-	};
+	}JEngineTimer;
 
 }

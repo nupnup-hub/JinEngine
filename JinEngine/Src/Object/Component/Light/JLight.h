@@ -1,35 +1,34 @@
-#pragma once 
-#include"JLightInterface.h"
-#include"JLightType.h"
-#include<memory>
+#pragma once  
+#include"../JComponent.h"
+#include"../../JFrameUpdateUserAccess.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
+#include"JLightType.h" 
 #include<DirectXMath.h>
 
 namespace JinEngine
 {
-	struct JLightConstants;
-	class JGameObject;
-
-	class JLight final :public JLightInterface
+	class JLight final :public JComponent,
+		public JFrameUpdateUserAccessInterface,
+		public Graphic::JGraphicResourceUserAccess
 	{
-		REGISTER_CLASS(JLight)
+		REGISTER_CLASS_IDENTIFIER_LINE(JLight)
+	public: 
+		class InitData final : public JComponent::InitData
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
+		public:
+			InitData(JGameObject* owner);
+			InitData(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
+		};
 	private:
-		REGISTER_GUI_ENUM_CONDITION(LightType, J_LIGHT_TYPE, lightType)
-		REGISTER_PROPERTY_EX(lightType, GetLightType, SetLightType, GUI_ENUM_COMBO(J_LIGHT_TYPE))
-		J_LIGHT_TYPE lightType;
+		friend class JLightPrivate;
+		class JLightImpl;
 	private:
-		REGISTER_PROPERTY_EX(strength, GetStrength, SetStrength, GUI_COLOR_PICKER(false))
-		DirectX::XMFLOAT3 strength = { 0.8f, 0.8f, 0.8f };
-		REGISTER_PROPERTY_EX(falloffStart, GetFalloffStart, SetFalloffStart, GUI_SLIDER(1, 100, true, false, GUI_ENUM_CONDITION_USER(LightType, J_LIGHT_TYPE::POINT, J_LIGHT_TYPE::SPOT)))
-		float falloffStart = 1.0f;
-		REGISTER_PROPERTY_EX(falloffEnd, GetFalloffEnd, SetFalloffEnd, GUI_SLIDER(1, 100, true, false, GUI_ENUM_CONDITION_USER(LightType, J_LIGHT_TYPE::POINT, J_LIGHT_TYPE::SPOT)))
-		float falloffEnd = 10.0f;
-		REGISTER_PROPERTY_EX(spotPower, GetSpotPower, SetSpotPower, GUI_SLIDER(0, 1, true, false, GUI_ENUM_CONDITION_USER(LightType, J_LIGHT_TYPE::POINT)))
-		float spotPower = 0;
-	private:
-		REGISTER_PROPERTY_EX(onShadow, IsShadowActivated, SetShadow, GUI_CHECKBOX())
-		bool onShadow = false;
-		DirectX::XMFLOAT4X4 shadowTransform;
+		std::unique_ptr<JLightImpl> impl;
 	public:
+		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+		JFrameUpdateUserAccess GetFrameUserInterface() noexcept final;
+		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
@@ -42,39 +41,22 @@ namespace JinEngine
 		float GetFalloffStart()const noexcept;
 		float GetFalloffEnd()const noexcept;
 		float GetSpotPower()const noexcept;
-
+	public:
 		void SetLightType(const J_LIGHT_TYPE lightType)noexcept;
 		void SetStrength(const DirectX::XMFLOAT3& strength)noexcept;
 		void SetFalloffStart(const float falloffStart)noexcept;
 		void SetFalloffEnd(const float falloffEnd)noexcept;
 		void SetSpotPower(const float spotPower)noexcept;
 		void SetShadow(const bool value)noexcept;
-
+	public:
 		bool IsShadowActivated()const noexcept;
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final;
-	private:
-		void DoCopy(JObject* ori) final;
 	protected:
 		void DoActivate()noexcept final;
-		void DoDeActivate()noexcept final;
+		void DoDeActivate()noexcept final; 
 	private:
-		void CreateShadowMap()noexcept;
-		void DestroyShadowMap()noexcept;
-	private:
-		DirectX::XMMATRIX CalLightView()const noexcept;
-		DirectX::XMMATRIX CalLightProj()const noexcept;
-		void UpdateShadowTransform()noexcept;
-		void UpdateFrame(Graphic::JLightConstants& lightConstant) final;
-		void UpdateFrame(Graphic::JShadowMapLightConstants& smLightConstant) final;
-		void UpdateFrame(Graphic::JShadowMapConstants& shadowConstant) final;
-	private:
-		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
-		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JLight* light);
-		static JLight* LoadObject(std::wifstream& stream, JGameObject* owner);
-		static void RegisterCallOnce();
-	private:
-		JLight(const size_t guid, const J_OBJECT_FLAG objFlag, JGameObject* owner);
+		JLight(const InitData& initData);
 		~JLight();
 	};
 }

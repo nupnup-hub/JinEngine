@@ -1,17 +1,21 @@
 #include"JEditorObjectCreationInterface.h"  
 #include"../../Object/JObject.h"
-#include"../../Core/FSM/JFSMInterface.h"
+#include"../../Core/Identity/JIdentifierPrivate.h"
+#include"../../Core/FSM/JFSMinterface.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{ 
+		namespace
+		{
+			using ReleaseInterface = JEditorObjectReleaseInterface;
+		}
 		JEditorCreationHint::JEditorCreationHint(JEditorWindow* editorWnd,
 			bool isSetOpenDataBit,
 			bool isSetOwnerDataBit,
 			bool isSetTargetDataBit,
-			bool canSetModBit,
-			bool canSetRemoveBit,
+			bool canSetModBit, 
 			Core::JTypeInstanceSearchHint openDataHint,
 			Core::JTypeInstanceSearchHint ownerDataHint,
 			NotifyPtr notifyPtr)
@@ -19,8 +23,7 @@ namespace JinEngine
 			isSetOpenDataBit(isSetOpenDataBit),
 			isSetOwnerDataBit(isSetOwnerDataBit),
 			isSetTargetDataBit(isSetTargetDataBit),
-			canSetModBit(canSetModBit),
-			canSetRemoveBit(canSetRemoveBit),
+			canSetModBit(canSetModBit), 
 			openDataHint(openDataHint),
 			ownerDataHint(ownerDataHint),
 			notifyPtr(notifyPtr)
@@ -103,7 +106,7 @@ namespace JinEngine
 			DestroyPreProccess(rawPtr, useTransition, creationHint);
 			if (useTransition)
 			{
-				Core::JDataHandle newHandle = dS.Add(Core::JIdentifier::ReleaseInstance(rawPtr));
+				Core::JDataHandle newHandle = dS.Add(ReleaseInterface::ReleaseInstance(rawPtr));
 				dS.TransitionHandle(newHandle, dH);
 			}
 			else
@@ -151,15 +154,15 @@ namespace JinEngine
 			JEditorWindow* editorWnd = creationHint.editorWnd;
 			if (editorWnd != nullptr && preProcessF != nullptr)
 				(*preProcessF)(editorWnd, rawPtr);
-
-			if (creationHint.canSetRemoveBit)
+ 
+			if (creationHint.canSetModBit)
 			{
 				if (creationHint.isSetOpenDataBit)
-					SetRemoveBit(Core::GetUserPtr(creationHint.openDataHint));
+					SetModifiedBit(Core::GetUserPtr(creationHint.openDataHint), true);
 				if (creationHint.isSetOwnerDataBit)
-					SetRemoveBit(Core::GetUserPtr(creationHint.ownerDataHint));
+					SetModifiedBit(Core::GetUserPtr(creationHint.ownerDataHint), true);
 				if (creationHint.isSetTargetDataBit)
-					SetRemoveBit(Core::GetUserPtr(rawPtr));
+					SetModifiedBit(Core::GetUserPtr(rawPtr), true);
 			}
 
 			if (editorWnd != nullptr && creationHint.notifyPtr != nullptr)
@@ -207,7 +210,7 @@ namespace JinEngine
 					if (editorWnd != nullptr && preProcessF != nullptr)
 						(*preProcessF)(editorWnd);
 					Core::JIdentifier* ptr = data.Get();
-					Core::JIdentifier::AddInstance(std::move(data));
+					ReleaseInterface::RestoreInstance(std::move(data));
 					JEditorTransition::Instance().Log(L"Cancel destruction success ", ptr->GetNameWithType());
 
 					if (creationHint.canSetModBit)
@@ -233,6 +236,15 @@ namespace JinEngine
 					JEditorTransition::Instance().Log("Cancel destruction fail", "Invalid release data");
 			}
 			dHVec.clear();
+		}
+
+		Core::JOwnerPtr<Core::JIdentifier> JEditorObjectReleaseInterface::ReleaseInstance(Core::JIdentifier* ptr)
+		{
+			return Core::JIdentifierPrivate::ReleaseInterface::ReleaseInstance(ptr);
+		}
+		bool JEditorObjectReleaseInterface::RestoreInstance(Core::JOwnerPtr<Core::JIdentifier>&& instance)
+		{
+			return Core::JIdentifierPrivate::ReleaseInterface::RestoreInstance(std::move(instance));
 		}
 
 		JEditorObjectDestroyInterface* JEditorDestructionRequestor::GetDestruectionInterface()

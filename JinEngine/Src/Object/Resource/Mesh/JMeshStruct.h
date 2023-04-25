@@ -115,11 +115,12 @@ namespace JinEngine
 	public:
 		void CreateBoundingObject()noexcept;
 	protected:
-		void Merge(const JMeshData& mesh);
+		void Merge(const JMeshData& mesh);  
 	};
 
+	class JMeshGeometry;
 	struct JStaticMeshData : public JMeshData
-	{
+	{ 
 	private:
 		mutable std::vector<JStaticMeshVertex> vertices;
 	public:
@@ -147,11 +148,11 @@ namespace JinEngine
 		void AddVertex(const JStaticMeshVertex& vertex)noexcept;
 		void AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept final;
 	public:
-		void Merge(const JStaticMeshData& mesh)noexcept;
+		void Merge(const JStaticMeshData& mesh)noexcept; 
 	};
 
 	struct JSkinnedMeshData : public JMeshData
-	{
+	{ 
 	private:
 		mutable std::vector<JSkinnedMeshVertex> vertices;
 	public:
@@ -171,7 +172,7 @@ namespace JinEngine
 		void SetVertex(const uint index, const JSkinnedMeshVertex& vertex)const noexcept;
 		void SetVertexPositionScale(const float rate)noexcept final;
 	public:
-		void AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept final;
+		void AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept final; 
 	};
 
 	struct JMeshGroup

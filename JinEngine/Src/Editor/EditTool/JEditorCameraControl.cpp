@@ -3,7 +3,7 @@
 #include"../../Object/Component/Camera/JCamera.h"
 #include"../../Object/Component/Transform/JTransform.h"
 #include"../../Core/Time/JGameTimer.h"  
-#include"../../Window/JWindows.h"
+#include"../../Window/JWindowPrivate.h"
 #include<DirectXMath.h> 
 
 using namespace DirectX;
@@ -25,7 +25,7 @@ namespace JinEngine
 		{
 			preMousePos.x = x;
 			preMousePos.y = y;
-			SetCapture(JWindow::Instance().HandleInterface()->GetHandle());
+			SetCapture(Window::JWindowPrivate::HandleInterface::GetHandle());
 		}
 		void JEditorCameraControl::MouseUp(JCamera* sceneCamera, float x, float y)
 		{

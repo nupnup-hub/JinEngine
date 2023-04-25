@@ -1,22 +1,28 @@
 #pragma once
-#include"../../JEditorWindow.h" 
-#include"../../../../Object/Resource/JResourceUserInterface.h"
+#include"../../JEditorWindow.h"  
+#include"../../../../Core/Event/JEventListener.h"
+#include"../../../../Object/Resource/JResourceObjectEventType.h"
 #include<string>
 
 namespace JinEngine
 {
 	class JTexture;
+	class JResourceObject;
 	namespace Editor
 	{
 		class SelectorValues;
 		class JEditorSearchBarHelper;
 		class JProjectSelectorHub : public JEditorWindow ,
-			public JResourceUserInterface
+			public Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>
 		{ 
+		private:
+			using ResourceEvListener = Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>;
 		private: 
 			Core::JUserPtr<JTexture> serachIconTexture;
+			Core::JUserPtr<JTexture> optionSettingTexture;
 			Core::JUserPtr<JTexture> backgroundTexture;
 		private:
+			//last project rendering scene
 			std::vector<Core::JUserPtr<JTexture>> lastRSVec;
 			std::unique_ptr<JEditorSearchBarHelper> searchHelper;
 		private:
@@ -50,8 +56,10 @@ namespace JinEngine
 		private:
 			void SetStartProjectProccess();
 		private:
-			void DoActivate()noexcept final;
-			void DoDeActivate()noexcept final;
+			void LoadLastRsTexture();
+		private:
+			void DoSetOpen()noexcept final;
+			void DoSetClose()noexcept final; 
 		private:
 			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
 		};

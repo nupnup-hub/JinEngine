@@ -9,10 +9,7 @@
 namespace JinEngine
 {
 	namespace Editor
-	{
-		namespace Constants
-		{
-		}
+	{ 
 		JLogViewer::JLogViewer(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE ownerPageType,

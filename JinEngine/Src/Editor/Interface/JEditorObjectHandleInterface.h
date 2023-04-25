@@ -16,24 +16,20 @@ namespace JinEngine
 		class JEditorObjectHandlerInterface
 		{ 
 		protected:
-			static void SetModifiedBit(Core::JUserPtr<Core::JIdentifier> obj, const bool value)noexcept;
-			static void SetRemoveBit(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
+			static void SetModifiedBit(Core::JUserPtr<Core::JIdentifier> obj, const bool value)noexcept; 
 		private:
 			static Core::JUserPtr<Core::JIdentifier> GetValidModifiedUser(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
 		};
-
-		using JModifiedObjectInfoVector = Core::JVectorPointerStorage<JModifiedObjectInfo>;
-		using JModifiedObjectInfoMap = Core::JMapStorage<JModifiedObjectInfo, size_t>;
-
-		class JEditorModifedObjectStructureInterface
-		{
-		public:
-			JModifiedObjectInfoVector::ObjectVector& GetModifiedObjectInfoVec()noexcept;
-		public:
-			void DestroyHasRemoveBitInfo()noexcept;
-		public:
-			void ClearModifiedInfoStructure()noexcept;
-		};
-
 	}
+	using JModifiedObjectInfoVector = Core::JVectorPointerStorage<JModifiedObjectInfo>;
+	using JModifiedObjectInfoMap = Core::JMapStorage<JModifiedObjectInfo, size_t>;
+	class JEditorModifedObjectInterface
+	{
+	public:
+		bool IsModified(const size_t guid)noexcept;
+	public:
+		JModifiedObjectInfoVector::ObjectVector& GetModifiedObjectInfoVec()noexcept;
+	public:
+		void ClearModifiedInfoStructure()noexcept;
+	};
 }

@@ -7,13 +7,6 @@
 
 namespace JinEngine
 {
-	namespace Graphic
-	{
-		class JGraphicImpl;
-		class JHZBOccCulling;
-		struct JGraphicDrawTarget;
-	}
-
 	namespace FrameUpdate
 	{
 		using FrameBuffCount = int;
@@ -23,14 +16,12 @@ namespace JinEngine
 	}
 #pragma region IFramaeUpdate
 	template<typename ...Param>
-	class IFrameUpdateBase
-	{ 
-	private:
-		friend Graphic::JGraphicImpl;
+	class JFrameUpdateBase
+	{  
 	protected:
-		virtual ~IFrameUpdateBase() = default;
+		virtual ~JFrameUpdateBase() = default;
 	private:
-		virtual void UpdateFrame(Param... var) = 0;
+		virtual void UpdateFrame(Param... var)noexcept = 0;
 	};
 
 	/*
@@ -39,228 +30,128 @@ namespace JinEngine
 			UpdateFrame(std::forward<Param>(var)...);
 		}
 	*/
-	template<typename IFrameUpdateBase1>
-	class IFrameUpdate1 : public IFrameUpdateBase1
+	template<typename JFrameUpdateBase1>
+	class JFrameUpdate1 : public JFrameUpdateBase1
 	{
 	private:
-		using IFrameBase1 = IFrameUpdateBase1;
+		using JFrameBase1 = JFrameUpdateBase1; 
 	private:
-		friend Graphic::JGraphicImpl;
-	private:
-		void CallUpdateEnd()
-		{
-			UpdateEnd();
-		}
 		virtual void UpdateEnd() = 0;
 	};
-	template<typename IFrameUpdateBase1, typename IFrameUpdateBase2>
-	class IFrameUpdate2 : public IFrameUpdateBase1,
-		public IFrameUpdateBase2
+	template<typename JFrameUpdateBase1, typename JFrameUpdateBase2>
+	class JFrameUpdate2 : public JFrameUpdateBase1,
+		public JFrameUpdateBase2
 	{
 	private:
-		using IFrameBase1 = IFrameUpdateBase1;
-		using IFrameBase2 = IFrameUpdateBase2;
+		using JFrameBase1 = JFrameUpdateBase1;
+		using JFrameBase2 = JFrameUpdateBase2; 
 	private:
-		friend Graphic::JGraphicImpl;
-	private:
-		void CallUpdateEnd()
-		{
-			UpdateEnd();
-		}
 		virtual void UpdateEnd() = 0;
 	};
 
-	template<typename IFrameUpdateBase1, typename IFrameUpdateBase2, typename IFrameUpdateBase3>
-	class IFrameUpdate3 : public IFrameUpdateBase1,
-		public IFrameUpdateBase2,
-		public IFrameUpdateBase3
+	template<typename JFrameUpdateBase1, typename JFrameUpdateBase2, typename JFrameUpdateBase3>
+	class JFrameUpdate3 : public JFrameUpdateBase1,
+		public JFrameUpdateBase2,
+		public JFrameUpdateBase3
 	{
 	private:
-		using IFrameBase1 = IFrameUpdateBase1;
-		using IFrameBase2 = IFrameUpdateBase2;
-		using IFrameBase3 = IFrameUpdateBase3;
+		using JFrameBase1 = JFrameUpdateBase1;
+		using JFrameBase2 = JFrameUpdateBase2;
+		using JFrameBase3 = JFrameUpdateBase3; 
 	private:
-		friend Graphic::JGraphicImpl;
-	private:
-		void CallUpdateEnd()
-		{
-			UpdateEnd();
-		}
 		virtual void UpdateEnd() = 0;
 	};
 #pragma endregion
 
-#pragma region IFrameBuff
-	class JFrameBuffUserAccess;
-	class JFrameBuffManagerAccess;
+#pragma region IFrameBuff 
 
-	class IFrameBuff1
+	class JFrameBuff1 
 	{
 	private:
-		friend class JFrameBuffUserAccess;
-		friend class JFrameBuffManagerAccess;
+		uint frameBuffOffset;
 	public:
-		virtual ~IFrameBuff1() = default;
-	protected:
-		virtual int GetFrameBuffOffset()const noexcept = 0;
-		virtual void SetFrameBuffOffset(int value)noexcept = 0;
+		uint GetFrameBuffOffset()const noexcept;
+		void SetFrameBuffOffset(const uint value)noexcept;
 	};
-
-	class IFrameBuff2
+	class JFrameBuff2
 	{
 	private:
-		friend class JFrameBuffUserAccess;
-		friend class JFrameBuffManagerAccess;
+		uint frameBuffOffset00;
+		uint frameBuffOffset01;
 	public:
-		virtual ~IFrameBuff2() = default;
-	protected:
-		virtual int GetFirstFrameBuffOffset()const noexcept = 0;
-		virtual int GetSecondFrameBuffOffset()const noexcept = 0;
-		virtual void SetFirstFrameBuffOffset(int value)noexcept = 0;
-		virtual void SetSecondFrameBuffOffset(int value)noexcept = 0;
-	};
-	class JFrameBuff1 : public IFrameBuff1
-	{
-	private:
-		int frameBuffOffset;
-	protected:
-		int GetFrameBuffOffset()const noexcept final;
-		void SetFrameBuffOffset(int value)noexcept final;
-	};
-	class JFrameBuff2 : public IFrameBuff2
-	{
-	private:
-		int frameBuffOffset00;
-		int frameBuffOffset01;
-	protected:
-		int GetFirstFrameBuffOffset()const noexcept final;
-		int GetSecondFrameBuffOffset()const noexcept final;
-		void SetFirstFrameBuffOffset(int value)noexcept final;
-		void SetSecondFrameBuffOffset(int value)noexcept final;
-	};
-
-	class JFrameBuffUserAccess
-	{
-	public:
-		virtual ~JFrameBuffUserAccess() = default;
-	protected:
-		int CallGetFrameBuffOffset(IFrameBuff1& iFrameBuff)const noexcept;
-	protected:
-		int CallGetFirstFrameBuffOffset(IFrameBuff2& iFrameBuff)const noexcept;
-		int CallGetSecondFrameBuffOffset(IFrameBuff2& iFrameBuff)const noexcept;
-	};
-
-	class JFrameBuffManagerAccess : public JFrameBuffUserAccess
-	{
-	protected:
-		void CallSetFrameBuffOffset(IFrameBuff1& iFrameBuff, int value)const noexcept;
-	protected:
-		void CallSetFirstFrameBuffOffset(IFrameBuff2& iFrameBuff, int value)const noexcept;
-		void CallSetSecondFrameBuffOffset(IFrameBuff2& iFrameBuff, int value)const noexcept;
+		uint GetFirstFrameBuffOffset()const noexcept;
+		uint GetSecondFrameBuffOffset()const noexcept;
+		void SetFirstFrameBuffOffset(const uint value)noexcept;
+		void SetSecondFrameBuffOffset(const uint value)noexcept;
 	};
 #pragma endregion
 
-#pragma region IFrameDirty
-	class IFrameDirtyTrigger
+#pragma region JFrameDirtyBase
+	class JFrameDirtyTriggerBase
 	{
 	protected:
-		virtual ~IFrameDirtyTrigger() = default;
+		virtual ~JFrameDirtyTriggerBase() = default;
 	protected:
 		virtual void SetFrameDirty()noexcept = 0;
 	};
-
-	class JFrameDirtyTrigger : public IFrameDirtyTrigger
+	 
+	//just call empty func
+	class JFrameDirtyTrigger : public JFrameDirtyTriggerBase
 	{
 	protected:
 		void SetFrameDirty()noexcept override;
 	};
 
-	class IFrameDirty
-	{
-	private:
-		friend Graphic::JGraphicImpl;
-		friend Graphic::JHZBOccCulling;
-		friend Graphic::JGraphicDrawTarget;
+	class JFrameDirtyBase
+	{ 
 	protected:
-		virtual ~IFrameDirty() = default;
-	protected:
+		virtual ~JFrameDirtyBase() = default;
+	public:
 		virtual bool IsFrameDirted()const noexcept = 0;
-		virtual void SetFrameDirty()noexcept = 0;
-		virtual void MinusFrameDirty()noexcept = 0;
-		virtual void OffFrameDirty()noexcept = 0;
-	protected:
-		//Debug
-		virtual int GetFrameDirty()noexcept = 0;
 	};
 
-	class JFrameDirty : public IFrameDirty
+	class JFrameDirty : public JFrameDirtyBase
 	{
 	private:
 		int frameDirty;
-	protected:
+	public:
 		bool IsFrameDirted()const noexcept final;
-		void SetFrameDirty()noexcept override;
-		void MinusFrameDirty()noexcept final;
-		void OffFrameDirty()noexcept final;
-	protected:
-		int GetFrameDirty()noexcept final;
+		int GetFrameDirty()noexcept;
+		virtual void SetFrameDirty()noexcept;
+		void MinusFrameDirty()noexcept;
+		void OffFrameDirty()noexcept ;
 	};
-	template<typename T> class IFrameDirtyObserver;
-	template<typename T> class JFrameDirtyObserver;
 
 	class JFrameDirtyListener : public JFrameDirty
-	{
-	private:
-		template<typename T> friend class JFrameDirtyObserver;
-	private:
+	{ 
+	public:
 		const size_t guid = Core::MakeGuid();
-	protected:
-		template<typename T>
-		void RegisterFrameDirtyListener(IFrameDirtyObserver<T>& observer)
-		{
-			observer.AddFrameDirtyListener(*this);
-		}
-		template<typename T>
-		void DeRegisterFrameDirtyListener(IFrameDirtyObserver<T>& observer)
-		{
-			observer.RemoveFrameDirtyListener(*this);
-		}
 	};
 
 	template<typename FrameDirty>
-	class IFrameDirtyObserver : public FrameDirty
-	{
-	private:
-		friend class JFrameDirtyListener;
-	protected:
-		virtual void AddFrameDirtyListener(JFrameDirtyListener& newListener)noexcept = 0;
-		virtual void RemoveFrameDirtyListener(JFrameDirtyListener& oldListener)noexcept = 0;
-	};
-
-	template<typename FrameDirty>
-	class JFrameDirtyObserver : public IFrameDirtyObserver<FrameDirty>
+	class JFrameDirtyChain : public FrameDirty
 	{
 	private:
 		std::vector<JFrameDirtyListener*> listener;
 	protected:
 		void SetFrameDirty()noexcept final
-		{
-			IFrameDirtyObserver<FrameDirty>::SetFrameDirty();
+		{ 
+			FrameDirty::SetFrameDirty();
 			const uint listenerCount = (uint)listener.size();
 			for (uint i = 0; i < listenerCount; ++i)
 				listener[i]->SetFrameDirty();
 		}
 	protected:
-		void AddFrameDirtyListener(JFrameDirtyListener& newListener)noexcept final
+		void AddFrameDirtyListener(JFrameDirtyListener* newListener)noexcept
 		{
-			listener.push_back(&newListener);
+			listener.push_back(newListener);
 		}
-		void RemoveFrameDirtyListener(JFrameDirtyListener& oldListener)noexcept final
+		void RemoveFrameDirtyListener(JFrameDirtyListener* oldListener)noexcept
 		{
 			uint listenerCount = (uint)listener.size();
 			for (uint i = 0; i < listenerCount; ++i)
 			{
-				if (listener[i]->guid == oldListener.guid)
+				if (listener[i]->guid == oldListener->guid)
 				{
 					listener.erase(listener.begin() + i);
 					break;
@@ -270,62 +161,70 @@ namespace JinEngine
 	};
 #pragma endregion
 
-	template<typename IFrameUpdate, typename IFrameDirty, FrameUpdate::FrameBuffCount>
+	template<typename IFrameUpdate, typename JFrameDirtyBase, FrameUpdate::FrameBuffCount>
 	class JFrameUpdate;
 
+	//use update and dirty and 2buff
 	template<typename FrameUpdate, typename FrameDirty>
 	class JFrameUpdate<FrameUpdate, FrameDirty, 2> : public FrameUpdate,
 		public FrameDirty,
 		public JFrameBuff2
 	{
-	protected:
+	public:
 		void UpdateEnd()override
 		{
 			FrameDirty::MinusFrameDirty();
 		}
 	};
+
+	//use update and dirty and 1buff
 	template<typename FrameUpdate, typename FrameDirty>
 	class JFrameUpdate<FrameUpdate, FrameDirty, 1> : public FrameUpdate,
 		public FrameDirty,
 		public JFrameBuff1
 	{
-	protected:
+	public:
 		void UpdateEnd()override
 		{
 			FrameDirty::MinusFrameDirty();
 		}
 	};
 
+	//use update and dirty
 	template<typename FrameUpdate, typename FrameDirty>
 	class JFrameUpdate<FrameUpdate, FrameDirty, 0> : public FrameUpdate,
 		public FrameDirty
 	{
-	protected:
+	public:
 		void UpdateEnd()override
 		{
 			FrameDirty::MinusFrameDirty();
 		}
 	};
 
+	//use update and 2buff
 	template<typename FrameUpdate>
 	class JFrameUpdate<FrameUpdate, Core::EmptyType, 2> : public FrameUpdate, public JFrameBuff2
 	{
-	protected:
-		void UpdateEnd()override
-		{}
-	};
-	template<typename FrameUpdate>
-	class JFrameUpdate<FrameUpdate, Core::EmptyType, 1> : public FrameUpdate, public JFrameBuff1
-	{
-	protected:
+	public:
 		void UpdateEnd()override
 		{}
 	};
 
+	//use update and 1buff
+	template<typename FrameUpdate>
+	class JFrameUpdate<FrameUpdate, Core::EmptyType, 1> : public FrameUpdate, public JFrameBuff1
+	{
+	public:
+		void UpdateEnd()override
+		{}
+	};
+
+	//only use update
 	template<typename FrameUpdate>
 	class JFrameUpdate<FrameUpdate, Core::EmptyType, 0> : public FrameUpdate
 	{
-	protected:
+	public:
 		void UpdateEnd()override
 		{}
 	};

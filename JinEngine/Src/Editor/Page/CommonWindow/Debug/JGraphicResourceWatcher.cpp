@@ -1,10 +1,9 @@
 #include"JGraphicResourceWatcher.h"
 #include"../../JEditorAttribute.h"
-#include"../../../../Graphic/JGraphic.h"
+#include"../../../../Graphic/JGraphicPrivate.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceManager.h" 
-#include"../../../../Graphic/GraphicResource/JGraphicResourceHandle.h" 
-#include"../../../../../Lib/imgui/imgui.h"
-#include"../../../../Core/Identity/JIdentifier.h"
+#include"../../../../Graphic/GraphicResource/JGraphicResourceInfo.h" 
+#include"../../../../../Lib/imgui/imgui.h" 
 
 namespace JinEngine
 {
@@ -28,7 +27,8 @@ namespace JinEngine
 			UpdateDocking();
 			if (IsActivated())
 			{
-				Graphic::JGraphicResourceManager* grManager = JGraphic::Instance().graphicResource.get();
+				using GraphicDebugInterface = Graphic::JGraphicPrivate::DebugInterface;
+				Graphic::JGraphicResourceManager* grManager = GraphicDebugInterface::GetGraphicResourceManager();
 
 				Core::JEnumInfo* rInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_RESOURCE_TYPE).name());
 				Core::JEnumInfo* bInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_BIND_TYPE).name());

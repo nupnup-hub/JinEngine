@@ -4,6 +4,7 @@
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../Editor/EditTool/JEditorViewStructure.h"
+#include"../../../Utility/JMathHelper.h"
 #include <algorithm>
 
 namespace JinEngine

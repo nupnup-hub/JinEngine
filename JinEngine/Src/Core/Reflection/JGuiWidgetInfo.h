@@ -452,7 +452,9 @@ namespace JinEngine
 		class JGuiListInfo : public JGuiWidgetInfo
 		{
 		public: 
-			//모든 JIdenfier를 상속받는 object는 Factory에서 생성되며
+			//모든 JIdenfier를 상속받는 object는 Factory에서 생성되며	.. -> old version
+			//새롭게 모든 JIdenfier를 상속받는 object는 IdenCreator에서 생성된다
+			//이는 IdenCreator만이 BeginCrete에 접근할 수 있기때문이다
 			//Instance는 ownerPtr로 typeInfo class에 저장되고 pointer를 반환한다
 			using CreateElementPtr = JIdentifier* (*)(JIdentifier*);
 		private:

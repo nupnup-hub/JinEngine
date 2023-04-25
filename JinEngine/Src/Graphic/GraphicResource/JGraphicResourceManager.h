@@ -1,7 +1,9 @@
 #pragma once
 #include"JGraphicResourceType.h"
+#include"JGraphicResourceInfo.h"
 #include"../JGraphicConstants.h"
-#include"../../Core/JDataType.h" 
+#include"../../Core/JDataType.h"  
+#include"../../Core/Pointer/JOwnerPtr.h"
 #include"../../../Lib/DirectX/Tk/Src/d3dx12.h" 
 #include<vector>
 #include<string>
@@ -19,27 +21,18 @@ namespace JinEngine
 	}
 	namespace Graphic
 	{
-		class JGraphicResourceHandle;
 		class JGraphicResourceManager
 		{
 		private:
 			using BindViewPtr = void(JGraphicResourceManager::*)(ID3D12Device*, const uint);
 		private:
-			struct Resource
-			{
-			public:
-				Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
-				std::unique_ptr<JGraphicResourceHandle> handle = nullptr;
-			public:
-				void Clear();
-			};
 			struct ResourceViewInfo
 			{
 			public:
 				int count = 0;
 				int capacity = 0;
-				int offset = 0; 
-			public: 
+				int offset = 0;
+			public:
 				void ClearCount();
 				void ClearAllData();
 			public:
@@ -50,30 +43,30 @@ namespace JinEngine
 			{
 			public:
 				int count = 0;
-				int capacity = 0; 
+				int capacity = 0;
 			public:
 				ResourceViewInfo viewInfo[(int)J_GRAPHIC_BIND_TYPE::COUNT];
-			public: 
+			public:
 				void ClearCount();
-				void ClearAllData(); 
+				void ClearAllData();
 			public:
 				bool HasSpace()const noexcept;
 			};
 		private:
-			//friend class JGraphicImpl;
+			//friend class JGraphic;
 			friend class Editor::JGraphicResourceWatcher;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap;
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvHeap;
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap;
-			Microsoft::WRL::ComPtr<ID3D12QueryHeap> occlusionQueryHeap; 
+			Microsoft::WRL::ComPtr<ID3D12QueryHeap> occlusionQueryHeap;
 			uint rtvDescriptorSize = 0;
 			uint dsvDescriptorSize = 0;
 			uint cbvSrvUavDescriptorSize = 0;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionQueryResult;
 		private:
-			std::vector<Resource> resource[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
+			std::vector<Core::JOwnerPtr<JGraphicResourceInfo>> resource[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 			ResourceTypeDesc typeDesc[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 		private:
 			const DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -94,7 +87,7 @@ namespace JinEngine
 			DXGI_FORMAT GetBackBufferFormat()const noexcept;
 			DXGI_FORMAT GetDepthStencilFormat()const noexcept;
 			DirectX::XMVECTORF32 GetBackBufferClearColor()const noexcept;
-		public:		 
+		public:
 			static uint GetSwapChainBufferCount()noexcept;
 			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept;
 			uint GetResourceCapacity(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept;
@@ -103,7 +96,7 @@ namespace JinEngine
 			uint GetTotalViewCount(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
 			uint GetTotalViewCapacity(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
 			ID3D12Resource* GetResource(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept;
-			JGraphicResourceHandle* GetHandle(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept;
+			JGraphicResourceInfo* GetInfo(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept;
 		public:
 			static uint GetOcclusionMipMapViewCapacity()noexcept;
 			static uint GetOcclusionMinSize()noexcept;
@@ -111,7 +104,7 @@ namespace JinEngine
 			ID3D12QueryHeap* GetOcclusionQueryHeap()const noexcept;
 			ID3D12Resource* GetOcclusionQueryResult()const noexcept;
 		private:
-			uint GetHeapIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType); 
+			uint GetHeapIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType);
 		public:
 			void CreateSwapChainBuffer(ID3D12Device* device, IDXGISwapChain* swapChain, const uint width, const uint height);
 			void CreateMainDepthStencilResource(ID3D12Device* device,
@@ -123,29 +116,31 @@ namespace JinEngine
 			void CreateEditorDepthStencilResource(ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList,
 				const uint viewWidth,
-				const uint viewHeight); 
+				const uint viewHeight);
 			void CreateOcclusionQueryResource(ID3D12Device* device);
 			void CreateOcclusionHZBResource(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const uint occWidth, const uint occHeight);
-			JGraphicResourceHandle* Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
+			Core::JUserPtr<JGraphicResourceInfo> Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 				const std::wstring& path,
 				const std::wstring& oriFormat,
 				ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList);
-			JGraphicResourceHandle* CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
+			Core::JUserPtr<JGraphicResourceInfo> CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 				const std::wstring& path,
 				const std::wstring& oriFormat,
 				ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList);
-			JGraphicResourceHandle* CreateRenderTargetTexture(ID3D12Device* device, const uint width, const uint height);
-			JGraphicResourceHandle* CreateShadowMapTexture(ID3D12Device* device, const uint width, const uint height);
-			bool DestroyGraphicTextureResource(ID3D12Device* device, JGraphicResourceHandle** handle);
+			Core::JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(ID3D12Device* device, const uint width, const uint height);
+			Core::JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(ID3D12Device* device, const uint width, const uint height);
+			bool DestroyGraphicTextureResource(ID3D12Device* device, JGraphicResourceInfo* info);
+		private:
+			Core::JOwnerPtr<JGraphicResourceInfo> CreateResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, Microsoft::WRL::ComPtr<ID3D12Resource>&& resource);
 		private:
 			BindViewPtr GetResourceBindViewPtr(const J_GRAPHIC_RESOURCE_TYPE rType);
-			void SetViewCount(JGraphicResourceHandle* handlePtr, const J_GRAPHIC_BIND_TYPE bType, const int nextViewIndex);
+			void SetViewCount(JGraphicResourceInfo* handlePtr, const J_GRAPHIC_BIND_TYPE bType, const int nextViewIndex);
 			void BindSwapChain(ID3D12Device* device, const uint resourceIndex);
 			void BindMainDepthStencil(ID3D12Device* device, const uint resourceIndex);
 			void BindMainDepthStencilDebug(ID3D12Device* device, const uint resourceIndex);
-			void BindEditorDepthStencil(ID3D12Device* device, const uint resourceIndex); 
+			void BindEditorDepthStencil(ID3D12Device* device, const uint resourceIndex);
 			void BindOcclusionHZBDepthMap(ID3D12Device* device, const uint resourceIndex);
 			void BindOcclusionHZBDepthMipMap(ID3D12Device* device, const uint resourceIndex);
 			void BindOcclusionHZBDebug(ID3D12Device* device, const uint resourceIndex);

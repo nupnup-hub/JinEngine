@@ -1,8 +1,5 @@
 #pragma once
-#include"JFSMInterface.h"
-#include"../JDataType.h"
-#include<string>
-#include<vector>
+#include"JFSMinterface.h" 
 #include<memory>
 
 namespace JinEngine
@@ -10,69 +7,54 @@ namespace JinEngine
 	namespace Core
 	{ 
 		class JFSMtransition; 
-		class JFSMdiagram; 
-		class JFSMstateOwnerInterface;
-		__interface JFSMparameterStorageUserAccess;
-
-		class JFSMtransitionOwnerInterface : public JTypeCashInterface<JFSMtransition>
+		class JFSMdiagram;  
+		class JFSMstatePrivate;
+		class JFSMstate : public JFSMinterface
 		{
-		private:
-			friend class JFSMtransition;
-		private:
-			virtual JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept = 0;
-			virtual bool IsSameDiagram(const size_t diagramGuid)const noexcept = 0;
-		};
-
-		class JFSMstate : public JFSMInterface, public JFSMtransitionOwnerInterface
-		{
-			REGISTER_CLASS(JFSMstate)
-		private:
-			friend class JFSMdiagram;
-		public:
-			struct JFSMstateInitData : public JFSMIdentifierInitData
+			REGISTER_CLASS_IDENTIFIER_LINE(JFSMstate)
+		public: 
+			class InitData : public JFSMinterface::InitData
 			{
+				REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 			public:
 				JUserPtr<JFSMdiagram> ownerDiagram;
 			public:
-				JFSMstateInitData(const std::wstring& name, const size_t guid, JUserPtr<JFSMdiagram> ownerDiagram);
-				JFSMstateInitData(const size_t guid, JUserPtr<JFSMdiagram> ownerDiagram);
+				InitData(JUserPtr<JFSMdiagram> ownerDiagram);
+				InitData(const std::wstring& name, const size_t guid, JUserPtr<JFSMdiagram> ownerDiagram);
 			public:
-				bool IsValid() noexcept;
-				J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
+				InitData(const JTypeInfo& initTypeInfo, JUserPtr<JFSMdiagram> ownerDiagram);
+				InitData(const JTypeInfo& initTypeInfo, const std::wstring& name, const size_t guid, JUserPtr<JFSMdiagram> ownerDiagram);
+			public:
+				bool IsValidData()const noexcept override;
 			};
-			using InitData = JFSMstateInitData;
-		public:
-			static constexpr uint maxNumberOffTransistions = 100;
 		private:
-			JFSMstateOwnerInterface* ownerInterface;
-			std::vector<JFSMtransition*> transitionVec;
-			bool decidedNextState = false;
+			friend class JFSMstatePrivate;
+			class JFSMstateImpl;
+		private:
+			std::unique_ptr<JFSMstateImpl> impl;
 		public:
+			static constexpr uint GetMaxTransitionCapacity()noexcept
+			{
+				return 50;
+			}
+			Core::JIdentifierPrivate& GetPrivateInterface()const noexcept override;
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
+			JFSMdiagram* GetOwner()const noexcept;
 			uint GetTransitionCount()const noexcept;
 			JFSMtransition* GetTransition(const size_t guid)noexcept;
 			JFSMtransition* GetTransitionByOutGuid(const size_t outputGuid)noexcept;
 			JFSMtransition* GetTransitionByIndex(uint index)noexcept; 
 		protected:
-			virtual void Initialize()noexcept;
-			void EnterState()noexcept;
-		protected:  
-			bool RemoveParameter(const size_t guid)noexcept; 
-			void Clear()noexcept override; 
-		private:
-			JFSMparameterStorageUserAccess* GetParamStorageInterface()const noexcept final;
-			bool IsSameDiagram(const size_t diagramGuid)const noexcept final;
-		private:
-			bool AddType(JFSMtransition* newTransition)noexcept final;
-			bool RemoveType(JFSMtransition* transition)noexcept final;
-		private:
-			bool RegisterCashData()noexcept final;
-			bool DeRegisterCashData()noexcept final;
+			void Initialize()noexcept;
+			void Clear()noexcept;
 		protected:
-			JFSMstate(const JFSMstateInitData& initData);
+			void EnterState()noexcept;    
+		protected:
+			JFSMstate(const InitData& initData);
 			~JFSMstate();
 			JFSMstate(const JFSMstate& rhs) = delete;
 			JFSMstate& operator=(const JFSMstate& rhs) = delete;
 		};
 	}
 }
+ 

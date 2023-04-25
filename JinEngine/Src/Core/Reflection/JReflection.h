@@ -72,7 +72,7 @@ namespace JinEngine
 			if (!std::is_base_of_v<JIdentifier, T>)
 				return nullptr;
 
-			return static_cast<T*>(T::StaticTypeInfo().GetInstanceRawPtr(objGuid));
+			return T::StaticTypeInfo().GetInstanceRawPtr<T>(objGuid);
 		}
 		static JIdentifier* GetRawPtr(const size_t typeGuid, const size_t objGuid)
 		{
@@ -106,7 +106,6 @@ namespace JinEngine
 			return SearchRawPtr(*JReflectionInfo::Instance().GetTypeInfo(baseTypeFullName), objGuid);
 		}
 
-
 		template<typename T>
 		JUserPtr<T> GetUserPtr(const size_t objGuid)
 		{
@@ -115,11 +114,8 @@ namespace JinEngine
 
 			if (!std::is_base_of_v<JIdentifier, T>)
 				return JUserPtr<T>{};
-
-			JUserPtr<JIdentifier> userObjPtr = T::StaticTypeInfo().GetInstanceUserPtr(objGuid);
-			JUserPtr<T> userTPtr;
-			userTPtr.ConnnectChildUser(userObjPtr);
-			return userTPtr;
+	
+			return T::StaticTypeInfo().GetInstanceUserPtr<T>(objGuid);
 		}
 		template<typename T>
 		JUserPtr<T> GetUserPtr(T* ptr)
@@ -132,11 +128,8 @@ namespace JinEngine
 
 			if (ptr == nullptr)
 				return JUserPtr<T>{};
-
-			JUserPtr<JIdentifier> userObjPtr = ptr->GetTypeInfo().GetInstanceUserPtr(ptr->GetGuid());
-			JUserPtr<T> userTPtr;
-			userTPtr.ConnnectChildUser(userObjPtr);
-			return userTPtr;
+			 
+			return ptr->GetTypeInfo().GetInstanceUserPtr<T>(ptr->GetGuid());
 		} 
 		template<typename T, typename U>
 		JUserPtr<T> GetUserPtr(U* ptr)
@@ -150,10 +143,29 @@ namespace JinEngine
 			if (ptr == nullptr)
 				return JUserPtr<T>{};
 
-			JUserPtr<JIdentifier> userObjPtr = ptr->GetTypeInfo().GetInstanceUserPtr(ptr->GetGuid());
-			JUserPtr<T> userTPtr;
-			userTPtr.ConnnectChildUser(userObjPtr);
-			return userTPtr;
+			return ptr->GetTypeInfo().GetInstanceUserPtr<T>(ptr->GetGuid());
+		}
+		template<typename T>
+		static JUserPtr<T> GetUserPtr(const size_t typeGuid, const size_t objGuid)
+		{
+			if constexpr (!JTypeInfoDetermine<T>::value)
+				return JUserPtr<T>{};
+
+			if (!std::is_base_of_v<JIdentifier, T>)
+				return JUserPtr<T>{};
+
+			return JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceUserPtr<T>(objGuid);
+		}
+		template<typename T>
+		static JUserPtr<T> GetUserPtr(const std::string& typeFullName, const size_t objGuid)
+		{
+			if constexpr (!JTypeInfoDetermine<T>::value)
+				return JUserPtr<T>{};
+
+			if (!std::is_base_of_v<JIdentifier, T>)
+				return JUserPtr<T>{};
+
+			return JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceUserPtr<T>(objGuid);
 		}
 		static JUserPtr<JIdentifier> GetUserPtr(const size_t typeGuid, const size_t objGuid)
 		{

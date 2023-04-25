@@ -1,9 +1,9 @@
 #include"JFSMparameterStorage.h" 
 #include"JFSMparameter.h"  
-#include"JFSMparameterStorageAccess.h" 
-#include"JFSMfactory.h"
+#include"JFSMparameterStorageAccess.h"  
 #include"../File/JFileIOHelper.h"
 #include"../Guid/GuidCreator.h"
+#include"../Identity/JIdenCreator.h"
 #include"../../Utility/JCommonUtility.h"
 #include<fstream>
 
@@ -156,7 +156,7 @@ namespace JinEngine
 				JFileIOHelper::LoadEnumData(stream, valueType);
 				JFileIOHelper::LoadAtomicData(stream, value);
 
-				JFFI<JFSMparameter>::Create(JPtrUtil::MakeOwnerPtr<JFSMparameter::InitData>(name, guid, valueType, this));
+				JICI::Create<JFSMparameter>(name, guid, this, valueType);
 			}
 
 			return J_FILE_IO_RESULT::SUCCESS;

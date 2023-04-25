@@ -17,23 +17,23 @@
 template<typename T>
 ImVec2::ImVec2(const JinEngine::JVector2<T>& jVec2)
 {
-	x = jVec2.x;
-	y = jVec2.y;
+	x = static_cast<float>(jVec2.x);
+	y = static_cast<float>(jVec2.y);
 }
 template<typename T>
 ImVec2& ImVec2::operator=(const JinEngine::JVector2<T>& jVec2)
 {
-	x = jVec2.x;
-	y = jVec2.y;
+	x = static_cast<float>(jVec2.x);
+	y = static_cast<float>(jVec2.y);
 	return *this;
 }
 template<typename T>
 ImVec4::ImVec4(const JinEngine::JVector4<T>& jVec4)
 {
-	x = jVec4.x;
-	y = jVec4.y;
-	z = jVec4.z;
-	w = jVec4.w;
+	x = static_cast<float>(jVec4.x);
+	y = static_cast<float>(jVec4.y);
+	z = static_cast<float>(jVec4.z);
+	w = static_cast<float>(jVec4.w);
 }
 template<typename T>
 ImVec4& ImVec4::operator=(const JinEngine::JVector4<T>& jVec4)
@@ -73,8 +73,8 @@ namespace JinEngine
 	}
 
 	namespace Graphic
-	{
-		class JGraphicResourceHandleInterface;
+	{ 
+		class JGraphicResourceUserAccess;
 	}
 	namespace Editor
 	{
@@ -123,6 +123,10 @@ namespace JinEngine
 		public:
 			//Widget Start
 			//Passing method for trace to ImGuI widget api calling
+			//caution!
+			//window 내부에 sub window는 focusing에 영향을 줄수 있으므로 
+			//ImGui에서 focusing 하지못하게 flag를 설정해야함
+			//ex ) 	ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing;
 			static bool BeginWindow(const std::string& name, bool* p_open = nullptr, ImGuiWindowFlags flags = 0);
 			static void EndWindow();
 			static bool BeginChildWindow(const std::string& name, const JVector2<float>& windowSize = JVector2<float>{ 0,0 }, bool border = false, ImGuiWindowFlags extra_flags = 0);
@@ -176,21 +180,21 @@ namespace JinEngine
 			static void EndListBox();
 		public:
 			//Image  
-			static void Image(Graphic::JGraphicResourceHandleInterface& handle,
+			static void Image(Graphic::JGraphicResourceUserAccess* gUserAccess,
 				const JVector2<float>& size,
 				const JVector2<float>& uv0 = JVector2<float>(0, 0),
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
 				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1),
 				const JVector4<float>& borderCol = JVector4<float>(0, 0, 0, 0));
 			static bool ImageButton(const std::string name,
-				Graphic::JGraphicResourceHandleInterface& handle,
+				Graphic::JGraphicResourceUserAccess* gUserAccess,
 				const JVector2<float>& size,
 				const JVector2<float>& uv0 = JVector2<float>(0, 0),
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
 				float framePadding = -1,
 				const JVector4<float>& bgCol = JVector4<float>(0, 0, 0, 0),
 				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1)); 
-			static void AddImage(Graphic::JGraphicResourceHandleInterface& handle,
+			static void AddImage(Graphic::JGraphicResourceUserAccess* gUserAccess,
 				const JVector2<float>& pMin,
 				const JVector2<float>& pMax,
 				bool isBack = true,
@@ -200,7 +204,7 @@ namespace JinEngine
 		public:
 			//Custom Widget 
 			static bool ImageSelectable(const std::string name,
-				Graphic::JGraphicResourceHandleInterface& handle,
+				Graphic::JGraphicResourceUserAccess* gUserAccess,
 				bool& pressed,
 				bool changeValueIfPreesd,
 				const JVector2<float>& size,
@@ -210,7 +214,7 @@ namespace JinEngine
 				bool changeValueIfPreesd,
 				const JVector2<float>& sizeArg = { 0,0 });
 			static bool ImageSwitch(const std::string name,
-				Graphic::JGraphicResourceHandleInterface& handle,
+				Graphic::JGraphicResourceUserAccess* gUserAccess,
 				bool& pressed,
 				bool changeValueIfPreesd,
 				const JVector2<float>& size,

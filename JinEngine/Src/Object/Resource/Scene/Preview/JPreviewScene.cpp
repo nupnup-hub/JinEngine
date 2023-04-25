@@ -34,6 +34,11 @@ namespace JinEngine
 	{
 		useQuadShape = value;
 	}
+	void JPreviewScene::SetScene(Core::JUserPtr<JScene> newScene)noexcept
+	{
+		scene = newScene;
+		camera = scene->GetMainCamera();
+	}
 	bool JPreviewScene::UseQuadShape()const noexcept
 	{
 		return useQuadShape;
@@ -45,26 +50,15 @@ namespace JinEngine
 
 		if (textureMaterial != nullptr)
 		{
-			JObject::BeginDestroy(textureMaterial);
+			JObject::BeginDestroy(textureMaterial.Get());
 			textureMaterial = nullptr;
 		}
 
 		if (scene != nullptr)
-		{
-			JSceneManager::Instance().TryCloseScene(scene);
-			JObject::BeginDestroy(scene);
+		{ 
+			JObject::BeginDestroy(scene.Get());
 			scene = nullptr;
 		}
-	}
-	void JPreviewScene::TryOpenScene(Core::JUserPtr<JMaterial> observationFram)noexcept
-	{
-		JSceneManager::Instance().TryOpenScene(scene, true, Core::GetUserPtr(observationFram.Get()));
-		camera = scene->GetMainCamera();
-	}
-	void JPreviewScene::TryOpenScene()noexcept
-	{
-		JSceneManager::Instance().TryOpenScene(scene, true);
-		camera = scene->GetMainCamera();
 	}
 	void JPreviewScene::AdjustCamera(_In_ const DirectX::XMFLOAT3& objCenter,
 		const float objRadius,

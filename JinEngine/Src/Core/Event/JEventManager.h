@@ -85,18 +85,17 @@ namespace JinEngine
 				else
 					return AddDirectly(ptr, listener, iden, eventType);
 			}
-			//Res = added 1 << (0..n -1) if fail add 
+			//Res = success count
 			size_t AddEventListener(OnEventPtr ptr, Listener* listener, const IdentifierType& iden, const std::vector<EVENTTYPE>& eventTypeVec)final
 			{
-				size_t resBit = 0;
-				size_t factor = 1;
+				size_t sucCount = 0; 
 				const uint vecSize = (uint)eventTypeVec.size();
 				for (uint i = 0; i < vecSize; ++i)
 				{
-					if (!AddEventListener(ptr, listener, iden, eventTypeVec[i]))
-						resBit += factor << i;
+					if (AddEventListener(ptr, listener, iden, eventTypeVec[i]))
+						++sucCount;
 				}
-				return resBit;
+				return sucCount;
 			}
 			void RemoveEventListener(const IdentifierType& iden, const EVENTTYPE& eventType)final
 			{ 
@@ -131,7 +130,7 @@ namespace JinEngine
 					for (uint i = invokeEndCount; i < nowVecCount; ++i)
 						eventBinderVec[i]->InvokeCompletelyBind();
 					invokeEndCount = nowVecCount;
-					nowVecCount = eventBinderVec.size();
+					nowVecCount = (uint)eventBinderVec.size();
 				}
 
 				eventBinderVec.clear();
