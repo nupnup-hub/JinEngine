@@ -15,15 +15,15 @@ namespace JinEngine
 		JResourceObjectIO();
 		~JResourceObjectIO();
 	public:
-		JDirectory* LoadRootDirectory(const std::wstring& path, const J_OBJECT_FLAG initFlag);
-		void LoadEngineDirectory(JDirectory* engineRootDir);
-		void LoadEngineResource(JDirectory* engineRootDir);
-		void LoadProjectDirectory(JDirectory* projectRootDir);
-		void LoadProjectResource(JDirectory* projectRootDir); 
+		JUserPtr<JDirectory> LoadRootDirectory(const std::wstring& path, const J_OBJECT_FLAG initFlag);
+		void LoadEngineDirectory(const JUserPtr<JDirectory>& engineRootDir);
+		void LoadEngineResource(const JUserPtr<JDirectory>& engineRootDir);
+		void LoadProjectDirectory(const JUserPtr<JDirectory>& projectRootDir);
+		void LoadProjectResource(const JUserPtr<JDirectory>& projectRootDir);
 	private:
-		void SearchDirectory(JDirectory* parentDir, const bool searchProjectFolder, const bool onlyDeafultFolder, const J_OBJECT_FLAG dirFlag);
-		void SearchFile (const J_RESOURCE_TYPE rType, JDirectory* directory, const bool canLoadResource);
+		void SearchDirectory(const JUserPtr<JDirectory>& parentDir, const bool searchProjectFolder, const bool onlyDeafultFolder, const J_OBJECT_FLAG dirFlag);
+		void SearchFile (const J_RESOURCE_TYPE rType, const JUserPtr<JDirectory>& directory, const bool canLoadResource);
 	private:
-		void LoadFile(const J_RESOURCE_TYPE rType, JDirectory* directory, const std::wstring& fileName, const bool canLoadResource);
+		void LoadFile(const J_RESOURCE_TYPE rType, const JUserPtr<JDirectory>& directory, const std::wstring& fileName, const bool canLoadResource);
 	};
 }

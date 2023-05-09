@@ -86,32 +86,33 @@ namespace JinEngine
 			minZoom = std::clamp(-newMinZoom, -Constants::zoomRateRange, 0.0f);
 		}
 		 
-		void JEditorSceneCoordGrid::MakeCoordGrid(JGameObject* parent)
+		void JEditorSceneCoordGrid::MakeCoordGrid(const JUserPtr<JGameObject>& parent)
 		{ 
-			coordGrid = Core::GetUserPtr(JICI::Create<JGameObject>(L"SceneCoordGridRoot", Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, parent));
+			coordGrid = JICI::Create<JGameObject>(L"SceneCoordGridRoot", Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, parent);
 			float posFactor = (Constants::gridLineCount / 2) * -Constants::step;
 
 			//Line is yUp
 			for (int i = 0; i < Constants::gridLineCount; ++i)
 			{
-				JGameObject* newLine = JGCI::CreateDebugLineShape(coordGrid.Get(),
+				JUserPtr<JGameObject> newLine = JGCI::CreateDebugLineShape(coordGrid,
 					OBJECT_FLAG_EDITOR_OBJECT, 
 					J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE, 
 					J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK,
 					false);
-				JTransform* transform = newLine->GetTransform();
+
+				JUserPtr<JTransform> transform = newLine->GetTransform();
 				transform->SetRotation(DirectX::XMFLOAT3(90, 0, 0));
 				transform->SetPosition(DirectX::XMFLOAT3(posFactor + (i * Constants::step), 0, 0));
 				transform->SetScale(DirectX::XMFLOAT3(0, 2000, 0));
 			}
 			for (int i = 0; i < Constants::gridLineCount; ++i)
 			{
-				JGameObject* newLine = JGCI::CreateDebugLineShape(coordGrid.Get(),
+				JUserPtr<JGameObject> newLine = JGCI::CreateDebugLineShape(coordGrid,
 					OBJECT_FLAG_EDITOR_OBJECT, 
 					J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE,
 					J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK,
 					false);
-				JTransform* transform = newLine->GetTransform();
+				JUserPtr<JTransform>transform = newLine->GetTransform();
 				transform->SetRotation(DirectX::XMFLOAT3(0, 0, 90));
 				transform->SetPosition(DirectX::XMFLOAT3(0, 0, posFactor + (i * Constants::step)));
 				transform->SetScale(DirectX::XMFLOAT3(0, 2000, 0));
@@ -130,7 +131,7 @@ namespace JinEngine
 			const int xNowMovedFactor = (int)xzMoveOffset.x / Constants::step;
 			const int zNowMovedFactor = (int)xzMoveOffset.y / Constants::step;
 
-			JTransform* transform = coordGrid->GetTransform();
+			JUserPtr<JTransform> transform = coordGrid->GetTransform();
 			const JVector3<float> nowPos = transform->GetPosition();
 			
 			const int xPreMovedFactor = (int)(nowPos.x / Constants::step);

@@ -33,7 +33,7 @@ namespace JinEngine
 	private:
 		//isUse가 설정된 default resource만 보관
 		//그 외에 default는 이미 생성되있으면 그 객체를 생성되 있지않으면 file을 통해서 load후 전달
-		std::unordered_map<size_t, Core::JUserPtr<JResourceObject>> defaultResourceMap;
+		std::unordered_map<size_t, JUserPtr<JResourceObject>> defaultResourceMap;
 	private:
 		std::unordered_map<J_DEFAULT_TEXTURE, size_t> defaultTextureGuidMap;
 		std::unordered_map<J_DEFAULT_GRAPHIC_SHADER, size_t> defaultGraphicShaderGuidMap;
@@ -48,7 +48,7 @@ namespace JinEngine
 		void Clear(); 
 	public:
 		template<typename CastT, typename EnumName>
-		Core::JUserPtr<CastT> GetDefaultResource(const EnumName key)
+		JUserPtr<CastT> GetDefaultResource(const EnumName key)
 		{
 			if constexpr (std::is_same_v<EnumName, J_DEFAULT_TEXTURE>)
 				return DoGetDefaultResource<CastT>(key, defaultTextureGuidMap);
@@ -61,10 +61,10 @@ namespace JinEngine
 			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_SHAPE>)
 				return DoGetDefaultResource<CastT>(key, defaultMeshGuidMap);
 			else
-				return Core::JUserPtr<CastT>{};
+				return JUserPtr<CastT>{};
 		}
 		template<typename EnumName>
-		void RegisterDefaultResource(const EnumName key, const JFile* file, const bool isUse)
+		void RegisterDefaultResource(const EnumName key, const JUserPtr<JFile>& file, const bool isUse)
 		{
 			if constexpr (std::is_same_v<EnumName, J_DEFAULT_TEXTURE>)
 				DoRegisterDefaultResource(key, file, isUse, defaultTextureGuidMap);
@@ -79,7 +79,7 @@ namespace JinEngine
 		}
 	private:
 		template<typename CastT,  typename EnumName, typename GuidMap>
-		Core::JUserPtr<CastT> DoGetDefaultResource(const EnumName key, GuidMap& map)
+		JUserPtr<CastT> DoGetDefaultResource(const EnumName key, GuidMap& map)
 		{
 			auto guidData = map.find(key);
 			if (guidData != map.end())
@@ -87,25 +87,25 @@ namespace JinEngine
 				auto resourceData = defaultResourceMap.find(guidData->second);
 				if (resourceData != defaultResourceMap.end())
 				{
-					Core::JUserPtr<JResourceObject> resource = resourceData->second;
-					return Core::JUserPtr<CastT>::ConvertChildUser(std::move(resource));
+					JUserPtr<JResourceObject> resource = resourceData->second;
+					return JUserPtr<CastT>::ConvertChild(std::move(resource));
 				}
 				else
-					return Core::JUserPtr<CastT>::ConvertChildUser(JDirectory::SearchFile(guidData->second)->TryGetResourceUser());
+					return JUserPtr<CastT>::ConvertChild(JDirectory::SearchFile(guidData->second)->TryGetResourceUser());
 			}
 			else
-				return Core::JUserPtr<CastT>{};
+				return JUserPtr<CastT>{};
 		}
 		template<typename EnumName, typename GuidMap>
 		void DoRegisterDefaultResource(const EnumName key,
-			const JFile* file,
+			const JUserPtr<JFile>& file,
 			const bool isUse,
 			GuidMap& map)
 		{
 			map.emplace(key, file->GetResourceGuid());
 			if (isUse)
 			{
-				Core::JUserPtr< JResourceObject> user = file->TryGetResourceUser();
+				JUserPtr<JResourceObject> user = file->TryGetResourceUser();
 				defaultResourceMap.emplace(user->GetGuid(), user);
 				CallOnResourceReference(user.Get());
 			}

@@ -17,7 +17,7 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JIdentifier;
+		class Core::JIdentifier;
 	}
 	namespace Editor
 	{
@@ -52,28 +52,28 @@ namespace JinEngine
 		{
 		public:
 			const J_EDITOR_WINDOW_TYPE wndType;
-			std::vector<Core::JUserPtr<Core::JIdentifier>> selectObjVec;
+			std::vector<JUserPtr<Core::JIdentifier>> selectObjVec;
 		public:
 			JEditorPushSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType,
 				const J_EDITOR_WINDOW_TYPE wndType,
-				const Core::JUserPtr<Core::JIdentifier> selectObj);
+				const JUserPtr<Core::JIdentifier> selectObj);
 			JEditorPushSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType,
 				const J_EDITOR_WINDOW_TYPE wndType,
-				const std::vector<Core::JUserPtr<Core::JIdentifier>> selectObj);
+				const std::vector<JUserPtr<Core::JIdentifier>> selectObj);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
 		public:
-			Core::JUserPtr<Core::JIdentifier> GetFirstMatchedTypeObject(const Core::JTypeInfo& typeInfo)const noexcept;
-			Core::JUserPtr<Core::JIdentifier> GetLastMatchedTypeObject(const Core::JTypeInfo& typeInfo)const noexcept;
+			JUserPtr<Core::JIdentifier> GetFirstMatchedTypeObject(const Core::JTypeInfo& typeInfo)const noexcept;
+			JUserPtr<Core::JIdentifier> GetLastMatchedTypeObject(const Core::JTypeInfo& typeInfo)const noexcept;
 		};
 		struct JEditorPopSelectObjectEvStruct : public JEditorEvStruct
 		{
 		public:
-			std::vector<Core::JUserPtr<Core::JIdentifier>> selectObjVec;
+			std::vector<JUserPtr<Core::JIdentifier>> selectObjVec;
 		public:
-			JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> selectObj);
-			JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const std::vector<Core::JUserPtr<Core::JIdentifier>> selectObj);
+			JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, JUserPtr<Core::JIdentifier> selectObj);
+			JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const std::vector<JUserPtr<Core::JIdentifier>> selectObj);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
@@ -96,12 +96,12 @@ namespace JinEngine
 			const size_t openSeletedGuid;
 			const bool hasOpenSeleted = false;
 		public:
-			JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> openSelected = {});
+			JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, JUserPtr<Core::JIdentifier> openSelected = {});
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
 		public:
-			Core::JUserPtr<Core::JIdentifier> GetOpenSeleted()const noexcept;
+			JUserPtr<Core::JIdentifier> GetOpenSeleted()const noexcept;
 		};
 		struct JEditorClosePageEvStruct : public JEditorEvStruct
 		{

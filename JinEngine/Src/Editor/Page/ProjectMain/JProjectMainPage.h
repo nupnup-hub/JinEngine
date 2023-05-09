@@ -68,7 +68,7 @@ namespace JinEngine
 			void Initialize()final;
 			void UpdatePage()final;
 		public:
-			bool IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
+			bool IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
 		private:
 			void RequestCloseConfirmPopup(const bool isCancel);
 		private:

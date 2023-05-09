@@ -86,7 +86,7 @@ namespace JinEngine
 				if (!diagramList->aniCont.IsValid())
 					return;
 
-				std::vector<Core::JUserPtr<Core::JIdentifier>> objVec = diagramList->GetSelectedObjectVec();
+				std::vector<JUserPtr<Core::JIdentifier>> objVec = diagramList->GetSelectedObjectVec();
 				if (objVec.size() == 0)
 					return;
 
@@ -125,7 +125,7 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::ANIMATION_DIAGRAM_LIST;
 		}
-		void JAnimationDiagramList::Initialize(Core::JUserPtr<JAnimationController> newAniCont)noexcept
+		void JAnimationDiagramList::Initialize(JUserPtr<JAnimationController> newAniCont)noexcept
 		{
 			aniCont = newAniCont; 
 		}
@@ -148,7 +148,7 @@ namespace JinEngine
 				JImGuiImpl::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
 				JImGuiImpl::TableHeadersRow();
 
-				const std::vector<Core::JAnimationFSMdiagram*>& diagramVec = aniCont->GetDiagramVec();
+				const std::vector<JUserPtr<Core::JAnimationFSMdiagram>>& diagramVec = aniCont->GetDiagramVec();
 				const uint diagramCount = (uint)diagramVec.size();
 				for (uint i = 0; i < diagramCount; ++i)
 				{
@@ -162,7 +162,7 @@ namespace JinEngine
 					 
 					if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(diagramVec[i]->GetName()), &isSelect))
 					{ 
-						RequestPushSelectObject(Core::GetUserPtr(diagramVec[i]));
+						RequestPushSelectObject(diagramVec[i]);
 						SetContentsClick(true);
 					}
 					if (isSelect)
@@ -170,7 +170,7 @@ namespace JinEngine
 
 					if (JImGuiImpl::IsMouseInRect(preCursorPos, ImGui::GetItemRectSize()))
 					{
-						SetHoveredObject(Core::GetUserPtr(diagramVec[i]));
+						SetHoveredObject(diagramVec[i]);
 						if (ImGui::IsMouseClicked(1))
 							SetContentsClick(true);
 					}

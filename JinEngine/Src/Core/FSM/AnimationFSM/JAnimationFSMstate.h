@@ -19,11 +19,11 @@ namespace JinEngine
 			std::unique_ptr<JAnimationFSMstateImpl> impl;
 		public:
 			virtual J_ANIMATION_STATE_TYPE GetStateType()const noexcept = 0;
-			JAnimationFSMtransition* GetTransitionByIndex(uint index)noexcept;
+			JUserPtr<JAnimationFSMtransition> GetTransitionByIndex(uint index)noexcept;
 		public:
 			virtual bool CanLoop()const noexcept = 0;
 		public:   
-			JAnimationFSMtransition* FindNextStateTransition(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept;
+			JUserPtr<JAnimationFSMtransition> FindNextStateTransition(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept;
 		protected:
 			JAnimationFSMstate(const InitData& initData);
 			~JAnimationFSMstate();

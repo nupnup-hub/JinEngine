@@ -29,9 +29,9 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(StoreData)
 		public: 
-			JObject* obj = nullptr;
+			JUserPtr<JObject> obj = nullptr;
 		public:
-			StoreData(JObject* obj);
+			StoreData(JUserPtr<JObject> obj);
 		public:
 			bool IsValidData()const noexcept override;
 			bool HasCorrectType(const JTypeInfo& correctType)const noexcept;

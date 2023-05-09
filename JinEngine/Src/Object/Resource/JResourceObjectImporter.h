@@ -18,7 +18,7 @@ namespace JinEngine
 	}
 
 	using ClassifyResourceTypeF = Core::JStaticCallableType<std::vector<J_RESOURCE_TYPE>, const Core::JFileImportHelpData>;
-	using ImportResourceF = Core::JStaticCallableType<std::vector<JResourceObject*>, JDirectory*, const Core::JFileImportHelpData>;
+	using ImportResourceF = Core::JStaticCallableType<std::vector<JUserPtr<JResourceObject>>, JUserPtr<JDirectory>, const Core::JFileImportHelpData>;
 
 	class JResourceObjectImporterImpl
 	{
@@ -37,7 +37,7 @@ namespace JinEngine
 		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportResourceF::Ptr ptr)noexcept;
 		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportResourceF::Ptr iptr, ClassifyResourceTypeF::Ptr cptr)noexcept;
 	public:
-		std::vector<JResourceObject*> ImportResource(JDirectory* dir, const Core::JFileImportHelpData& importPathdata)noexcept;
+		std::vector<JUserPtr<JResourceObject>> ImportResource(JUserPtr<JDirectory> dir, const Core::JFileImportHelpData& importPathdata)noexcept;
 	public:
 		bool IsValidFormat(const std::wstring& format)const noexcept;
 	private:

@@ -18,22 +18,23 @@ namespace JinEngine
 				friend class JAnimationFSMstate;
 				friend class JAnimationFSMstatePrivate;
 			private:
-				J_FILE_IO_RESULT LoadAssetData(std::wifstream& stream, JAnimationFSMtransition* trans);
-				J_FILE_IO_RESULT StoreAssetData(std::wofstream& stream, JAnimationFSMtransition* trans);
+				J_FILE_IO_RESULT LoadAssetData(std::wifstream& stream, const JUserPtr<JAnimationFSMtransition>& trans);
+				J_FILE_IO_RESULT StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMtransition>& trans);
 			};
 			class CreateInstanceInterface final : public JFSMtransitionPrivate::CreateInstanceInterface
 			{
 			private:
-				JOwnerPtr<JIdentifier> Create(std::unique_ptr<JDITypeDataBase>&& initData)final;
+				JOwnerPtr<JIdentifier> Create(JDITypeDataBase* initData)final;
+				void Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept final;
 				bool CanCreateInstance(JDITypeDataBase* initData)const noexcept final;
 			};
 			class UpdateInterface final : public JFSMtransitionPrivate::UpdateInterface
 			{
 			private:
-				void Initialize(JFSMtransition* trans)noexcept final;
+				void Initialize(const JUserPtr<JFSMtransition>& trans)noexcept final;
 			};
 		public:
-			Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
+			JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
 			JAnimationFSMtransitionPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept;
 			JFSMtransitionPrivate::UpdateInterface& GetUpdateInterface()const noexcept final;
 		};

@@ -320,7 +320,7 @@ namespace JinEngine
 
 			const uint childrenCount = obj->GetChildrenCount();
 			for (uint i = 0; i < childrenCount; ++i)
-				PrintGameObjectTreeLoop(obj->GetChild(i), level + 1);
+				PrintGameObjectTreeLoop(obj->GetChild(i).Get(), level + 1);
 		}
 		void JDebugTextOut::MessageVector(const DirectX::XMFLOAT3& vector, const std::wstring& guide)
 		{

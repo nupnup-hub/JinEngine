@@ -132,26 +132,26 @@ namespace JinEngine
 			JImGuiImpl::PopFont();
 			ImGui::PopStyleVar(2);
 		}
-		bool JEditorAniContPage::IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept
+		bool JEditorAniContPage::IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept
 		{
 			return StuffAniContData(selectedObj);
 		}
-		bool JEditorAniContPage::StuffAniContData(const Core::JUserPtr<Core::JIdentifier>& selectedObj)
+		bool JEditorAniContPage::StuffAniContData(const JUserPtr<Core::JIdentifier>& selectedObj)
 		{
 			if (!selectedObj.IsValid())
 				return false;
 
-			Core::JUserPtr<JAnimationController> newAniCont;
-			if (!newAniCont.ConnnectChildUser(selectedObj))
+			JUserPtr<JAnimationController> newAniCont;
+			if (!newAniCont.ConnnectChild(selectedObj))
 				return false;
 			 
 			aniCont = newAniCont; 
 
 			const std::wstring sceneName = aniCont->GetName() + L"##_EditorScene";
-			JDirectory* dir = _JResourceManager::Instance().GetDirectory(JApplicationProject::DefaultResourcePath());
+			JUserPtr<JDirectory> dir = _JResourceManager::Instance().GetDirectory(JApplicationProject::DefaultResourcePath());
 			const J_OBJECT_FLAG flag = Core::AddSQValueEnum(OBJECT_FLAG_DO_NOT_SAVE, OBJECT_FLAG_UNEDITABLE);
 
-			JScene* newScene = JICI::Create<JScene>(sceneName,
+			JUserPtr<JScene> newScene = JICI::Create<JScene>(sceneName,
 				Core::MakeGuid(),
 				flag,
 				JResourceObject::GetDefaultFormatIndex(),
@@ -160,7 +160,7 @@ namespace JinEngine
 
 			if (aniPreviweScene.IsValid())
 				JObject::BeginDestroy(aniPreviweScene.Release());
-			aniPreviweScene = Core::GetUserPtr(newScene);
+			aniPreviweScene = newScene;
 
 			diagramList->Initialize(aniCont);
 			conditionList->Initialize(aniCont);
@@ -182,7 +182,7 @@ namespace JinEngine
 				J_EDITOR_EVENT::PUSH_SELECT_OBJECT,
 				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetPageType(),
 					J_EDITOR_WINDOW_TYPE::TEST_WINDOW,
-					Core::GetUserPtr(aniCont->GetDiagramByIndex(0)))));
+					aniCont->GetDiagramByIndex(0))));
 
 			ResourceEvListener::AddEventListener(*JResourceObject::EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 		}

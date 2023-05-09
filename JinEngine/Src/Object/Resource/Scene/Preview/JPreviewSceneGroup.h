@@ -44,9 +44,9 @@ namespace JinEngine
 	private:
 		void Clear()noexcept;
 	private:
-		JPreviewScene* CreatePreviewScene(_In_ Core::JUserPtr<JObject> jObj, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)noexcept;
+		JPreviewScene* CreatePreviewScene(_In_ JUserPtr<JObject> jObj, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)noexcept;
 		bool DestroyPreviewScene(JPreviewScene* previewScene)noexcept;
-		bool DestroyPreviewScene(Core::JUserPtr<JObject> jObj)noexcept;
+		bool DestroyPreviewScene(JUserPtr<JObject> jObj)noexcept;
 		void DestroyInvalidPreviewScene()noexcept;
 	};
 }

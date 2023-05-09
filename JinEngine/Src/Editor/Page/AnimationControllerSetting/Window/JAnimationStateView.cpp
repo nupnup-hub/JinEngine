@@ -193,7 +193,7 @@ namespace JinEngine
 				if (!stateView->aniCont.IsValid() || !stateView->selectedDiagram.IsValid())
 					return;
 
-				std::vector<Core::JUserPtr<Core::JIdentifier>> objVec = stateView->GetSelectedObjectVec();
+				std::vector<JUserPtr<Core::JIdentifier>> objVec = stateView->GetSelectedObjectVec();
 				if (objVec.size() == 0)
 					return;
 
@@ -226,7 +226,7 @@ namespace JinEngine
 			auto creatClipLam = [](const size_t guid, const JEditorCreationHint& creationHint)
 			{
 				JAnimationController* aniCont = static_cast<JAnimationController*>(Core::GetRawPtr(creationHint.openDataHint));
-				Core::JAnimationFSMdiagram* ownerDiagaram = static_cast<Core::JAnimationFSMdiagram*>(Core::GetRawPtr(creationHint.ownerDataHint));
+				JUserPtr<Core::JAnimationFSMdiagram> ownerDiagaram = Core::GetUserPtr<Core::JAnimationFSMdiagram>(creationHint.ownerDataHint);
 				aniCont->CreateFSMclip(ownerDiagaram, guid);
 			};
 
@@ -247,10 +247,9 @@ namespace JinEngine
 			auto createTransitionLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t fromStateGuid, const size_t toStateGuid)
 			{
 				JAnimationController* aniCont = static_cast<JAnimationController*>(Core::GetRawPtr(creationHint.openDataHint));
-				Core::JAnimationFSMdiagram* ownerDiagaram = static_cast<Core::JAnimationFSMdiagram*>(Core::GetRawPtr(creationHint.ownerDataHint));
-				Core::JAnimationFSMstate* fromState = static_cast<Core::JAnimationFSMstate*>(Core::SearchRawPtr(Core::JAnimationFSMstate::StaticTypeInfo(), fromStateGuid));
-				Core::JAnimationFSMstate* toState = static_cast<Core::JAnimationFSMstate*>(Core::SearchRawPtr(Core::JAnimationFSMstate::StaticTypeInfo(), toStateGuid));
-
+				JUserPtr<Core::JAnimationFSMdiagram> ownerDiagaram = Core::GetUserPtr<Core::JAnimationFSMdiagram>(creationHint.ownerDataHint);
+				JUserPtr<Core::JAnimationFSMstate> fromState = Core::SearchUserPtr<Core::JAnimationFSMstate>(Core::JAnimationFSMstate::StaticTypeInfo(), fromStateGuid);
+				JUserPtr<Core::JAnimationFSMstate> toState = Core::SearchUserPtr<Core::JAnimationFSMstate>(Core::JAnimationFSMstate::StaticTypeInfo(), toStateGuid);
 				aniCont->CreateFsmtransition(ownerDiagaram, fromState, toState, guid);
 			};
 
@@ -263,7 +262,7 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::ANIMATION_STATE_VIEW;
 		}
-		void JAnimationStateView::Initialize(Core::JUserPtr<JAnimationController> newAnicont)noexcept
+		void JAnimationStateView::Initialize(JUserPtr<JAnimationController> newAnicont)noexcept
 		{
 			aniCont = newAnicont;
 			RegisterViewGraphGroup(aniCont.Get());
@@ -289,7 +288,7 @@ namespace JinEngine
 				const uint stateCount = selectedDiagram->GetStateCount();
 				for (uint i = 0; i < stateCount; ++i)
 				{
-					Core::JAnimationFSMstate* state = selectedDiagram->GetStateByIndex(i);
+					JUserPtr<Core::JAnimationFSMstate> state = selectedDiagram->GetStateByIndex(i);
 					stateGraph->BuildNode(JCUtil::WstrToU8Str(state->GetName()),
 						state->GetGuid(),
 						aniCont->GetGuid(),
@@ -297,12 +296,12 @@ namespace JinEngine
 				}
 				for (uint i = 0; i < stateCount; ++i)
 				{
-					Core::JAnimationFSMstate* state = selectedDiagram->GetStateByIndex(i);
+					JUserPtr<Core::JAnimationFSMstate> state = selectedDiagram->GetStateByIndex(i);
 					const size_t fromGuid = state->GetGuid();
 					const uint transitionCount = state->GetTransitionCount();
 					for (uint j = 0; j < transitionCount; ++j)
 					{
-						Core::JAnimationFSMtransition* trans = state->GetTransitionByIndex(j);
+						JUserPtr<Core::JAnimationFSMtransition> trans = state->GetTransitionByIndex(j);
 						stateGraph->ConnectNode(fromGuid,
 							trans->GetOutputStateGuid(),
 							IsSelectedObject(trans->GetGuid()));
@@ -313,7 +312,7 @@ namespace JinEngine
 				if (stateGraph->IsLastUpdateHoveredNode())
 				{
 					isHoveredContents = true;
-					SetHoveredObject(Core::GetUserPtr(selectedDiagram->GetState(stateGraph->GetLastUpdateHoveredNodeGuid())));
+					SetHoveredObject(selectedDiagram->GetState(stateGraph->GetLastUpdateHoveredNodeGuid()));
 				}
 				else if(stateGraph->IsLastUpdateHoveredEdge())
 				{
@@ -321,20 +320,20 @@ namespace JinEngine
 					size_t fromGuid;
 					size_t toGuid;
 					stateGraph->GetLastUpdateHoveredEdgeGuid(fromGuid, toGuid); 
-					SetHoveredObject(Core::GetUserPtr(selectedDiagram->GetState(fromGuid)->GetTransitionByOutGuid(toGuid)));
+					SetHoveredObject(selectedDiagram->GetState(fromGuid)->GetTransitionByOutGuid(toGuid));
 				}
 				if (stateGraph->IsLastUpdateSeletedNode())
 				{
 					const size_t guid = stateGraph->GetLastUpdateSeletedNodeGuid();
-					SetSelecteObject(Core::GetUserPtr(selectedDiagram->GetState(guid)));
+					SetSelecteObject(selectedDiagram->GetState(guid));
 				}
 				else if (stateGraph->IsLastUpdateSeletedEdge())
 				{
 					size_t fromGuid;
 					size_t toGuid;
 					stateGraph->GetLastUpdateSelectedEdgeGuid(fromGuid, toGuid);
-					Core::JFSMtransition* tPtr = selectedDiagram->GetState(fromGuid)->GetTransitionByOutGuid(toGuid);
-					SetSelecteObject(Core::GetUserPtr<Core::JAnimationFSMtransition>(tPtr));
+					JUserPtr<Core::JFSMtransition> tUser = selectedDiagram->GetState(fromGuid)->GetTransitionByOutGuid(toGuid);
+					SetSelecteObject(Core::ConvertChildUserPtr<Core::JAnimationFSMtransition>(std::move(tUser)));
 				} 
 				if(isHoveredContents && ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1))
 					SetContentsClick(true);
@@ -344,7 +343,7 @@ namespace JinEngine
 			else
 				stateGraph->OnScreen();
 		}
-		void JAnimationStateView::SetSelecteObject(Core::JUserPtr<Core::JIdentifier> newSelected)
+		void JAnimationStateView::SetSelecteObject(JUserPtr<Core::JIdentifier> newSelected)
 		{
 			RequestPushSelectObject(newSelected);
 			SetContentsClick(true);
@@ -385,11 +384,11 @@ namespace JinEngine
 			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && ev->pageType == GetOwnerPageType())
 			{
 				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(ev);
-				Core::JUserPtr< Core::JIdentifier> diagram = evstruct->GetFirstMatchedTypeObject(Core::JAnimationFSMdiagram::StaticTypeInfo());
+				JUserPtr< Core::JIdentifier> diagram = evstruct->GetFirstMatchedTypeObject(Core::JAnimationFSMdiagram::StaticTypeInfo());
 				if (diagram.IsValid())
 				{
 					if (!selectedDiagram.IsValid() || selectedDiagram->GetGuid() != diagram->GetGuid())
-						selectedDiagram.ConnnectChildUser(diagram);
+						selectedDiagram.ConnnectChild(diagram);
 				}
 			}
 		}

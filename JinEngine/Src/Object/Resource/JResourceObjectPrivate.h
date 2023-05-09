@@ -22,18 +22,21 @@ namespace JinEngine
 	public:
 		class CreateInstanceInterface : public JObjectPrivate::CreateInstanceInterface
 		{
+		protected:
+			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept override;
 		private:
 			void SetValidInstance(Core::JIdentifier* createdPtr)noexcept override;
 		private:
 			//오브젝트를 생성하거나 생성한 후 저장하기위해 캐싱해둔 데이터를 지운다
-			virtual void TryDestroyUnUseData(Core::JIdentifier* createdPtr)noexcept;	 
+			virtual void TryDestroyUnUseData(Core::JIdentifier* createdPtr)noexcept;
 		private:
-			bool Copy(Core::JIdentifier* from, Core::JIdentifier* to) noexcept final; 
+			bool Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept final;
 		};
 		class DestroyInstanceInterface : public JObjectPrivate::DestroyInstanceInterface
 		{
+		protected:
+			void Clear(Core::JIdentifier* ptr, const bool isForced) override;
 		private:
-			void Clear(Core::JIdentifier* ptr, const bool isForced) override; 
 			void SetInvalidInstance(Core::JIdentifier* ptr)noexcept override;
 		};
 		class AssetDataIOInterface
@@ -44,10 +47,10 @@ namespace JinEngine
 			friend class JFile;		//load resource 
 			friend class CreateInstanceInterface;
 		private:
-			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(JDirectory* owner, const Core::JAssetFileLoadPathData& pathData);
-			static std::unique_ptr<Core::JDITypeDataBase> CreateStoreAssetDIDate(JResourceObject* rObj);
+			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(const JUserPtr<JDirectory>& owner, const Core::JAssetFileLoadPathData& pathData);
+			static std::unique_ptr<Core::JDITypeDataBase> CreateStoreAssetDIDate(const JUserPtr<JResourceObject>& rObj);
 		private:
-			virtual Core::JIdentifier* LoadAssetData(Core::JDITypeDataBase* data) = 0;
+			virtual JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data) = 0;
 			virtual Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data) = 0;
 		private:
 			virtual Core::J_FILE_IO_RESULT LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data) = 0;	//use initData
@@ -62,9 +65,9 @@ namespace JinEngine
 			friend class JDirectory;
 			friend class Editor::JWindowDirectory;
 		private:
-			static JFile* CopyJFile(JResourceObject* from, JDirectory* toDir, bool setNewInnderGuid = false)noexcept;
+			static JUserPtr<JFile> CopyJFile(const JUserPtr<JResourceObject>& from, const JUserPtr<JDirectory>& toDir, bool setNewInnderGuid = false)noexcept;
 		private:
-			static void MoveFile(JResourceObject* rObj, JDirectory* toDir)noexcept;
+			static void MoveFile(const JUserPtr<JResourceObject>& rObj, const JUserPtr<JDirectory>& toDir)noexcept;
 			static void DeleteFile(JResourceObject* rObj)noexcept;	//destroy rObj + delete disk asset file
 		};
 		class DestroyInstanceInterfaceEx

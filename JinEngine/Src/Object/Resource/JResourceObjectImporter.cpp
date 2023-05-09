@@ -30,7 +30,7 @@ namespace JinEngine
 		if (data->second.ClassifyCallable == nullptr)
 			data->second.ClassifyCallable = std::make_unique<ClassifyResourceTypeF::Callable>(cptr);
 	}
-	std::vector<JResourceObject*> JResourceObjectImporterImpl::ImportResource(JDirectory* dir, const Core::JFileImportHelpData& importPathdata)noexcept
+	std::vector<JUserPtr<JResourceObject>> JResourceObjectImporterImpl::ImportResource(JUserPtr<JDirectory> dir, const Core::JFileImportHelpData& importPathdata)noexcept
 	{
 		auto data = formatInfoMap.find(importPathdata.format);
 		if (data == formatInfoMap.end())
@@ -55,7 +55,7 @@ namespace JinEngine
 			const std::vector<J_RESOURCE_TYPE> rType = (*data->second.ClassifyCallable)(nullptr, Core::JFileImportHelpData(importPathdata.oriFileWPath, importPathdata.flag));
 			const uint rCount = (uint)rType.size();
 
-			std::vector<JResourceObject*> retVec;
+			std::vector<JUserPtr<JResourceObject>> retVec;
 			retVec.reserve(rCount);
 
 			for (uint i = 0; i < rCount; ++i)
@@ -63,7 +63,7 @@ namespace JinEngine
 				auto callable = data->second.ImportCallableMap.find(rType[i]);
 				if (callable != data->second.ImportCallableMap.end())
 				{
-					std::vector<JResourceObject*> res = (callable->second)(nullptr, dir,
+					std::vector<JUserPtr<JResourceObject>> res = (callable->second)(nullptr, dir,
 						Core::JFileImportHelpData(importPathdata.oriFileWPath, importPathdata.flag));
 					const uint resCount = (uint)res.size();
 					for (uint j = 0; j < resCount; ++j)

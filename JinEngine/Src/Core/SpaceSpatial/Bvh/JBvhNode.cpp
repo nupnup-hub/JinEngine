@@ -13,7 +13,7 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		JBvhNode::JBvhNode(const uint nodeNumber, const J_BVH_NODE_TYPE type, const DirectX::BoundingBox& bbox, JBvhNode* parent, JGameObject* innerGameObject, bool isLeftNode)
+		JBvhNode::JBvhNode(const uint nodeNumber, const J_BVH_NODE_TYPE type, const DirectX::BoundingBox& bbox, JBvhNode* parent, const JUserPtr<JGameObject>& innerGameObject, bool isLeftNode)
 			:nodeNumber(nodeNumber), type(type), bbox(bbox), parent(parent), innerGameObject(innerGameObject)
 		{
 			if (parent != nullptr)
@@ -27,11 +27,11 @@ namespace JinEngine
 				JBvhNode::innerGameObject->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 		}
 		JBvhNode::~JBvhNode() {}
-		void JBvhNode::CreateDebugGameObject(JGameObject* parent, bool onlyLeafNode)noexcept
+		void JBvhNode::CreateDebugGameObject(const JUserPtr<JGameObject>& parent, bool onlyLeafNode)noexcept
 		{
 			if (type != J_BVH_NODE_TYPE::LEAF && onlyLeafNode)
 				return;
-
+			 
 			if (debugGameObject == nullptr)
 			{
 				if (type == J_BVH_NODE_TYPE::LEAF)
@@ -45,7 +45,7 @@ namespace JinEngine
 		{
 			if (debugGameObject != nullptr)
 			{
-				JGameObject::BeginDestroy(debugGameObject);
+				JGameObject::BeginDestroy(debugGameObject.Get());
 				debugGameObject = nullptr;
 			}
 		}
@@ -100,7 +100,7 @@ namespace JinEngine
 				}
 			}
 		}
-		JGameObject* JBvhNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
+		JUserPtr<JGameObject> JBvhNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
 				return innerGameObject;
@@ -112,25 +112,25 @@ namespace JinEngine
 				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
 				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
 
-				JGameObject* res = nullptr;
+				JUserPtr<JGameObject> res = nullptr;
 				if (leftDist < rightDist)
 				{
 					if (leftRes)
 						res = left->IntersectFirst(ori, dir);
-					if (rightRes && !res)
+					if (rightRes && res == nullptr)
 						res = right->IntersectFirst(ori, dir);
 				}
 				else
 				{
 					if (rightRes)
 						res = right->IntersectFirst(ori, dir);
-					if (leftRes && !res)
+					if (leftRes && res == nullptr)
 						res = left->IntersectFirst(ori, dir);
 				}
 				return res;
 			}
 		}
-		void JBvhNode::IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		void JBvhNode::IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
 				res.push_back(innerGameObject);
@@ -158,7 +158,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JBvhNode::IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		void JBvhNode::IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
 				res.push_back(innerGameObject);
@@ -186,7 +186,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JBvhNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		void JBvhNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
 				res.push_back(innerGameObject);
@@ -301,11 +301,11 @@ namespace JinEngine
 			else
 				return nullptr;
 		}
-		JGameObject* JBvhNode::GetInnerGameObject()const noexcept
+		JUserPtr<JGameObject> JBvhNode::GetInnerGameObject()const noexcept
 		{
 			return innerGameObject;
 		}
-		JGameObject* JBvhNode::GetDebugGameObject()const noexcept
+		JUserPtr<JGameObject> JBvhNode::GetDebugGameObject()const noexcept
 		{
 			return debugGameObject;
 		}
@@ -335,7 +335,7 @@ namespace JinEngine
 			if (right != nullptr)
 				right->parent = this;
 		}
-		void JBvhNode::SetInnerGameObject(JGameObject* newInnerGameObject)noexcept
+		void JBvhNode::SetInnerGameObject(const JUserPtr<JGameObject>& newInnerGameObject)noexcept
 		{
 			innerGameObject = newInnerGameObject;
 			if (innerGameObject != nullptr)
@@ -345,7 +345,7 @@ namespace JinEngine
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
 			{
-				JRenderItem* rItem = innerGameObject->GetRenderItem();
+				JUserPtr<JRenderItem> rItem = innerGameObject->GetRenderItem();
 				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 			}
@@ -359,7 +359,7 @@ namespace JinEngine
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
 			{
-				JRenderItem* rItem = innerGameObject->GetRenderItem();
+				JUserPtr<JRenderItem> rItem = innerGameObject->GetRenderItem();
 				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
 			}
@@ -382,7 +382,7 @@ namespace JinEngine
 				return;
 
 			static constexpr float outlineFactor = 0.01f;
-			JTransform* transform = debugGameObject->GetTransform();
+			JUserPtr<JTransform> transform = debugGameObject->GetTransform();
 			const BoundingBox debugBox = debugGameObject->GetRenderItem()->GetMesh()->GetBoundingBox();
 
 			//Bounding Box는 회전에 상관없이 일정한 모양을 유지하므로

@@ -10,6 +10,11 @@
 
 namespace JinEngine
 {
+	namespace
+	{
+		using SearchEqualScenePtr = bool(*)(const JUserPtr< JScene>&, const size_t);
+	}
+
 	class JSceneManager::JSceneManagerImpl : public JResourceObjectUserInterface
 	{
 	public:
@@ -17,7 +22,7 @@ namespace JinEngine
 	public:
 		//opend Scene  
 		//scene vector[0] is main scene  
-		std::vector<JScene*> activatedScene;
+		std::vector<JUserPtr<JScene>> activatedScene;
 	public:
 		JSceneManagerImpl()
 			:JResourceObjectUserInterface(implGuid)
@@ -33,31 +38,32 @@ namespace JinEngine
 		{
 			return (uint)activatedScene.size();
 		}
-		JScene* GetFirstScene() noexcept
+		JUserPtr<JScene> GetFirstScene() noexcept
 		{
 			return activatedScene.size() > 0 ? activatedScene[0] : nullptr;
 		}
 	public:
-		bool IsRegistered(JScene* scene) noexcept
+		bool IsRegistered(const size_t guid) noexcept
 		{
-			return JCUtil::GetJIdenIndex(activatedScene, scene->GetGuid()) != -1;
+			SearchEqualScenePtr equalScenePtr = [](const JUserPtr<JScene>& user, const size_t guid) { return user->GetGuid() == guid;};
+			return JCUtil::GetJIndex(activatedScene, equalScenePtr, guid) != -1;
 		}
-		bool IsFirstScene(const JScene* scene)const noexcept
+		bool IsFirstScene(const size_t guid)const noexcept
 		{
-			return activatedScene.size() > 0 ? scene->GetGuid() == activatedScene[0]->GetGuid() : false;
+			return activatedScene.size() > 0 ? guid == activatedScene[0]->GetGuid() : false;
 		}
 	public:
-		void UpdateScene(JScene* scene, const J_COMPONENT_TYPE compType)
+		void UpdateScene(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE compType)
 		{
 			Graphic::JGraphicDrawList::UpdateScene(scene, compType);
 		}
 	public:
-		bool RegisterScene(JScene* scene, bool isPreviewScene)noexcept
+		bool RegisterScene(const JUserPtr<JScene>& scene, bool isPreviewScene)noexcept
 		{
 			if (scene == nullptr)
 				return false;
 
-			if (!IsRegistered(scene))
+			if (!IsRegistered(scene->GetGuid()))
 			{
 				//has dependency
 				//order 1. AddDrawList, 2. activate
@@ -71,12 +77,13 @@ namespace JinEngine
 			else
 				return false;
 		}
-		bool DeRegisterScene(JScene* scene)noexcept
+		bool DeRegisterScene(const JUserPtr<JScene>& scene)noexcept
 		{
 			if (scene == nullptr)
 				return false;
 
-			int index = JCUtil::GetJIdenIndex(activatedScene, scene->GetGuid());
+			SearchEqualScenePtr equalScenePtr = [](const JUserPtr<JScene>& user, const size_t guid) {return user->GetGuid() == guid; };
+			int index = JCUtil::GetJIndex(activatedScene, equalScenePtr, scene->GetGuid());
 			if (index == -1)
 				return false;
 
@@ -84,7 +91,7 @@ namespace JinEngine
 			Graphic::JGraphicDrawList::PopDrawList(scene);
 			return true;
 		}
-		bool RegisterObservationFrame(JScene* scene, const JFrameUpdateUserAccess& observationFrame)
+		bool RegisterObservationFrame(const JUserPtr<JScene>& scene, const JFrameUpdateUserAccess& observationFrame)
 		{
 			return Graphic::JGraphicDrawList::AddObservationFrame(scene, observationFrame);
 		}
@@ -95,7 +102,7 @@ namespace JinEngine
 				return;
 
 			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE && jRobj->GetResourceType() == J_RESOURCE_TYPE::SCENE)
-				DeRegisterScene(static_cast<JScene*>(jRobj));
+				DeRegisterScene(Core::GetUserPtr<JScene>(jRobj));
 		}
 	};
  
@@ -103,19 +110,19 @@ namespace JinEngine
 	{
 		return impl->GetActivatedSceneCount();
 	}
-	JScene* JSceneManager::GetFirstScene() noexcept
+	JUserPtr<JScene> JSceneManager::GetFirstScene() noexcept
 	{
 		return impl->GetFirstScene();
 	}
 	bool JSceneManager::IsRegistered(JScene* scene) noexcept
 	{
-		return impl->IsRegistered(scene);
+		return impl->IsRegistered(scene->GetGuid());
 	}
-	bool JSceneManager::IsFirstScene(const JScene* scene)const noexcept
+	bool JSceneManager::IsFirstScene(JScene* scene)const noexcept
 	{
-		return impl->IsFirstScene(scene);
+		return impl->IsFirstScene(scene->GetGuid());
 	}
-	bool JSceneManager::RegisterObservationFrame(JScene* scene, const JFrameUpdateUserAccess& observationFrame)
+	bool JSceneManager::RegisterObservationFrame(const JUserPtr<JScene>& scene, const JFrameUpdateUserAccess& observationFrame)
 	{
 		return impl->RegisterObservationFrame(scene, observationFrame);
 	}
@@ -130,15 +137,15 @@ namespace JinEngine
 
 	using SceneAccess = JSceneManagerPrivate::SceneAccess;
 
-	bool SceneAccess::RegisterScene(JScene* scene, bool isPreviewScene)noexcept
+	bool SceneAccess::RegisterScene(const JUserPtr<JScene>& scene, bool isPreviewScene)noexcept
 	{
 		return _JSceneManager::Instance().impl->RegisterScene(scene, isPreviewScene);
 	}
-	bool SceneAccess::DeRegisterScene(JScene* scene)noexcept
+	bool SceneAccess::DeRegisterScene(const JUserPtr<JScene>& scene)noexcept
 	{
 		return _JSceneManager::Instance().impl->DeRegisterScene(scene);
 	}
-	void SceneAccess::UpdateScene(JScene* scene, const J_COMPONENT_TYPE compType)
+	void SceneAccess::UpdateScene(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE compType)
 	{
 		_JSceneManager::Instance().impl->UpdateScene(scene, compType);
 	}

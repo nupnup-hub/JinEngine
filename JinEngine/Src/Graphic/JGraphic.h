@@ -18,6 +18,10 @@ namespace JinEngine
 		private:
 			template<typename T>friend class Core::JCreateUsingNew; 
 		private:
+			struct UpdateHelper;
+			struct DrawHelper;
+			struct DrawCondition;
+		private:
 			friend class JGraphicPrivate;
 			class JGraphicImpl;
 		private:

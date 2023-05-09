@@ -47,7 +47,7 @@ namespace JinEngine
 		public:
 			JApplicationImpl(HINSTANCE hInstance, const char* commandLine, const size_t guid)
 				:JEventListener(guid), guid(guid)
-			{
+			{ 
 				Core::JReflectionInfo::Instance().Initialize();
 				EngineAppAccess::Initialize();
 
@@ -85,6 +85,7 @@ namespace JinEngine
 
 					Core::JGameTimer::UpdateAllTimer();
 					GraphicAppAccess::UpdateWait();
+					Core::JReflectionInfo::Instance().Update();
 					GraphicAppAccess::StartFrame();
 					GraphicAppAccess::DrawProjectSelector();
 					editorManager.Update();
@@ -122,6 +123,7 @@ namespace JinEngine
 
 					Core::JGameTimer::UpdateAllTimer();
 					GraphicAppAccess::UpdateWait(); 
+					Core::JReflectionInfo::Instance().Update();
 					GraphicAppAccess::StartFrame(); 
 					editorManager.Update(); 
 					GraphicAppAccess::UpdateEngine();

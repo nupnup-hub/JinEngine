@@ -3,6 +3,7 @@
 #include"../../JDataType.h"
 #include"../../Geometry/JCullingFrustum.h"
 #include"../../Geometry/JRay.h"
+#include"../../Pointer/JOwnerPtr.h"
 #include"../../../Utility/JVector.h"
 #include<DirectXCollision.h> 
 #include<vector>
@@ -40,8 +41,8 @@ namespace JinEngine
 			JKdTreeNode* parent = nullptr;
 			JKdTreeNode* left = nullptr;
 			JKdTreeNode* right = nullptr;
-			JGameObject* debugGameObject = nullptr;
-			std::vector<JGameObject*> innerGameObject;
+			JUserPtr<JGameObject> debugGameObject = nullptr;
+			std::vector<JUserPtr<JGameObject>> innerGameObject;
 		private:
 			//Debug
 			//std::string nodeLog;
@@ -49,15 +50,15 @@ namespace JinEngine
 			JKdTreeNode(const uint nodeNumber, const J_KDTREE_NODE_TYPE nodeType, const DirectX::BoundingBox& bbox, JKdTreeNode* parent);
 			~JKdTreeNode();
 		public:
-			void CreateDebugGameObject(JGameObject* parent, bool onlyLeafNode)noexcept;
+			void CreateDebugGameObject(const JUserPtr<JGameObject>& parent, bool onlyLeafNode)noexcept;
 			void DestroyDebugGameObject()noexcept;
 			void Clear()noexcept;
 			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
 			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept;
-			JGameObject* IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept;
-			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res, std::vector<float>& distVec)const noexcept;
-			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res, std::vector<float>& distVec)const noexcept;
-			void Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept;
+			JUserPtr<JGameObject> IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept;
+			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<float>& distVec)const noexcept;
+			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<float>& distVec)const noexcept;
+			void Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
 			void OffCulling()noexcept;
 		public:
 			bool IsLeftNode()const noexcept;
@@ -71,8 +72,8 @@ namespace JinEngine
 			JKdTreeNode* GetParentNode()noexcept;
 			JKdTreeNode* GetLeftNode()const noexcept;
 			JKdTreeNode* GetRightNode()const noexcept;
-			std::vector<JGameObject*> GetInnerGameObject()const noexcept;
-			std::vector<JGameObject*> GetAreaInnerGameObject()const noexcept;
+			std::vector<JUserPtr<JGameObject>> GetInnerGameObject()const noexcept;
+			std::vector<JUserPtr<JGameObject>> GetAreaInnerGameObject()const noexcept;
 			uint GetInnerGameObjectCount()const noexcept;
 			uint GetDepth()const noexcept;
 			void GetAlignLeafNode(const JVector3<float>& pos, std::vector<JKdTreeNode*>& alignNode, uint& index)noexcept;
@@ -84,10 +85,10 @@ namespace JinEngine
 			void SetRightNode(JKdTreeNode* newRightNode)noexcept;
 		public:
 			bool HasGameObject(const size_t guid)noexcept;
-			void AddInnerGameObject(JGameObject* newInnerGameObject)noexcept;
-			void AddInnerGameObject(const std::vector<JGameObject*>& newInnerGameObject)noexcept;
+			void AddInnerGameObject(const JUserPtr<JGameObject>& newInnerGameObject)noexcept;
+			void AddInnerGameObject(const std::vector<JUserPtr<JGameObject>>& newInnerGameObject)noexcept;
 			void RemoveInnerGameObject(const size_t guid)noexcept;
-			void StuffInnerGameObject(std::vector<JGameObject*>& objList, uint& listIndex);
+			void StuffInnerGameObject(std::vector<JUserPtr<JGameObject>>& objList, uint& listIndex);
 		private:
 			void SetVisible()noexcept;
 			void SetInVisible()noexcept;

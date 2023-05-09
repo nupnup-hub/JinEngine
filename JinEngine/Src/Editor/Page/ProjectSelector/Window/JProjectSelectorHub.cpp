@@ -819,7 +819,7 @@ namespace JinEngine
 		}
 		void JProjectSelectorHub::LoadLastRsTexture()
 		{
-			JDirectory* engineProjectRsFolder = _JResourceManager::Instance().GetDirectory(JApplicationEngine::ProjectLastRsPath());
+			JUserPtr<JDirectory> engineProjectRsFolder = _JResourceManager::Instance().GetDirectory(JApplicationEngine::ProjectLastRsPath());
 			const uint projectListCount = JApplicationProject::GetProjectInfoCount();
 			lastRSVec.resize(projectListCount); 
 			for (uint i = 0; i < projectListCount; ++i)
@@ -834,13 +834,13 @@ namespace JinEngine
 				std::wstring format;
 				JCUtil::DecomposeFilePath(path, folderPath, name, format);
 				 
-				JFile* file = engineProjectRsFolder->GetDirectoryFile(name + format);
+				JUserPtr<JFile> file = engineProjectRsFolder->GetDirectoryFile(name + format);
 				if (file != nullptr)
-					lastRSVec[i] = Core::JUserPtr<JTexture>::ConvertChildUser(file->TryGetResourceUser());
+					lastRSVec[i] = JUserPtr<JTexture>::ConvertChild(file->TryGetResourceUser());
 				else
 				{ 
 					J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE);
-					JTexture* rsTexture = JICI::Create<JTexture>(name,
+					JUserPtr <JTexture> rsTexture = JICI::Create<JTexture>(name,
 						Core::MakeGuid(),
 						flag,
 						JResourceObject::GetFormatIndex<JTexture>(format),
@@ -848,7 +848,7 @@ namespace JinEngine
 						path);
 					if (rsTexture == nullptr)
 						assert(L"Load last project rs error");
-					lastRSVec[i] = Core::GetUserPtr(rsTexture);
+					lastRSVec[i] = rsTexture;
 				}		 
 			}
 		}

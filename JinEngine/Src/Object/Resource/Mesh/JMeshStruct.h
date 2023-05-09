@@ -72,7 +72,7 @@ namespace JinEngine
 	private:
 		std::wstring name;
 		size_t guid; 
-		Core::JUserPtr<JMaterial> material;
+		JUserPtr<JMaterial> material;
 		std::vector<uint> indices; 
 		DirectX::BoundingBox boundingBox;
 		DirectX::BoundingSphere boundingSphere;
@@ -90,7 +90,7 @@ namespace JinEngine
 	public:
 		std::wstring GetName()const noexcept;
 		size_t GetGuid()const noexcept;
-		Core::JUserPtr<JMaterial> GetMaterial()const noexcept;
+		JUserPtr<JMaterial> GetMaterial()const noexcept;
 		uint GetIndexCount()const noexcept;
 		uint GetIndex(const uint index)const noexcept; 
 		const std::vector<uint>& GetIndexVector()const noexcept; 
@@ -101,7 +101,7 @@ namespace JinEngine
 		virtual DirectX::XMVECTOR GetPosition(uint i)const noexcept = 0;
 	public:
 		void SetName(const std::wstring& newName)noexcept;
-		void SetMaterial(Core::JUserPtr<JMaterial> material)noexcept;
+		void SetMaterial(JUserPtr<JMaterial> material)noexcept;
 		virtual void SetVertexPositionScale(const float rate)noexcept = 0;
 	public:
 		void AddIndex(const uint index)noexcept;
@@ -204,14 +204,14 @@ namespace JinEngine
 	{
 	private:  
 		std::vector<JSkinnedMeshData> skinnedMeshData;
-		Core::JUserPtr<JSkeletonAsset> skeletonAsset;
+		JUserPtr<JSkeletonAsset> skeletonAsset;
 	public:
 		uint GetMeshDataCount()const noexcept final;
 		JMeshData* GetMeshData(const uint index)noexcept final;
 		J_MESHGEOMETRY_TYPE GetMeshGroupType()const noexcept final;
-		Core::JUserPtr<JSkeletonAsset> GetSkeletonAsset()const noexcept;
+		JUserPtr<JSkeletonAsset> GetSkeletonAsset()const noexcept;
 	public:
-		void SetSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept;
+		void SetSkeletonAsset(JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept;
 	public:
 		void AddMeshData(JSkinnedMeshData&& meshData) noexcept;
 	};

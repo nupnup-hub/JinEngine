@@ -2,6 +2,7 @@
 #include"JComponentType.h"
 #include"../../Core/Func/Callable/JCallable.h"
 #include"../../Core/DI/JDIDataBase.h"
+#include"../../Core/Pointer/JOwnerPtr.h"
 #include<memory>
 
 namespace JinEngine
@@ -13,7 +14,7 @@ namespace JinEngine
 	using SetCFrameDirtyCallable = Core::JStaticCallable<void, JComponent*>;
 	using SetCFrameOffsetCallable = Core::JStaticCallable<void, JComponent*, JComponent*, bool>;
 
-	using CreateInitDataCallable = Core::JStaticCallable<std::unique_ptr<Core::JDITypeDataBase>, JGameObject*, std::unique_ptr<Core::JDITypeDataBase>&&>;
+	using CreateInitDataCallable = Core::JStaticCallable<std::unique_ptr<Core::JDITypeDataBase>, JUserPtr<JGameObject>, std::unique_ptr<Core::JDITypeDataBase>&&>;
 	struct CTypeHint
 	{
 	public:
@@ -41,7 +42,7 @@ namespace JinEngine
 	public:
 		Core::JTypeInfo& CallGetTypeInfo();
 		bool CallIsAvailableOverlapCallable();
-		std::unique_ptr<Core::JDITypeDataBase> CallCreateInitDataCallable(JGameObject* parent, std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData = nullptr);
+		std::unique_ptr<Core::JDITypeDataBase> CallCreateInitDataCallable(JUserPtr<JGameObject> parent, std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData = nullptr);
 	};
 
 	struct CTypePrivateFunc
@@ -80,7 +81,7 @@ namespace JinEngine
 		static Core::JTypeInfo& CallGetTypeInfo(const J_COMPONENT_TYPE cType);
 		static bool CallIsAvailableOverlap(const J_COMPONENT_TYPE cType);
 		static std::unique_ptr<Core::JDITypeDataBase> CallCreateInitDataCallable(const J_COMPONENT_TYPE cType,
-			JGameObject* parent,
+			JUserPtr<JGameObject> parent,
 			std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData = nullptr);
 	public:
 		static J_COMPONENT_TYPE ConvertCompType(const Core::JTypeInfo& info);

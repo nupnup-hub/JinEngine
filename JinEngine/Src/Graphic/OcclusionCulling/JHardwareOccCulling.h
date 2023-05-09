@@ -13,7 +13,7 @@ namespace JinEngine
 		class JHardwareOccCulling final: public JOccBase
 		{
 		private:
-			Core::JUserPtr<JCamera> camera;
+			JUserPtr<JCamera> camera;
 			DirectX::BoundingFrustum updateFrustum;
 		private:
 			JVector3<float> prePos;

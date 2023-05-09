@@ -34,7 +34,7 @@ namespace JinEngine
 				false));
 			root = allNodes[0].get();
 
-			std::vector<JGameObject*> objectList = GetInnerObject();
+			std::vector<JUserPtr<JGameObject>> objectList = GetInnerObject();
 			if (objectList.size() > 0)
 			{
 				if (objectList.size() == 1)
@@ -103,7 +103,7 @@ namespace JinEngine
 			if (innerGameObjectCandidate != nullptr)
 			{
 				J_CULLING_FLAG flag = J_CULLING_FLAG::NONE;
-				JRenderItem* rItem = innerGameObjectCandidate->GetRenderItem();
+				JUserPtr<JRenderItem> rItem = innerGameObjectCandidate->GetRenderItem();
 				J_CULLING_RESULT res = camFrustum.IsBoundingBoxIn(rItem->GetBoundingBox(), flag);
 				if (res == J_CULLING_RESULT::CONTAIN)
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
@@ -119,7 +119,7 @@ namespace JinEngine
 			if (innerGameObjectCandidate != nullptr)
 			{
 				J_CULLING_FLAG flag = J_CULLING_FLAG::NONE;
-				JRenderItem* rItem = innerGameObjectCandidate->GetRenderItem();
+				JUserPtr<JRenderItem> rItem = innerGameObjectCandidate->GetRenderItem();
 				ContainmentType res = camFrustum.Contains(rItem->GetBoundingBox());
 				if (res == ContainmentType::CONTAINS)
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
@@ -127,7 +127,7 @@ namespace JinEngine
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
 			}
 		}
-		JGameObject* JBvh::IntersectFirst(const JRay& ray)const noexcept
+		JUserPtr<JGameObject> JBvh::IntersectFirst(const JRay& ray)const noexcept
 		{
 			if (allNodes.size() > 1)
 				return root->IntersectFirst(ray.GetPosV(), ray.GetDirV());
@@ -143,7 +143,7 @@ namespace JinEngine
 					return nullptr;
 			}
 		}
-		void JBvh::Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JGameObject*>& res)const noexcept
+		void JBvh::Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
 			if (allNodes.size() > 1)
 			{
@@ -161,7 +161,7 @@ namespace JinEngine
 					res.push_back(innerGameObjectCandidate);
 			}
 		}
-		void JBvh::UpdateGameObject(JGameObject* gameObject)noexcept
+		void JBvh::UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
 		{
 			auto leafNode = leafNodeMap.find(gameObject->GetGuid());
 			if (leafNode != leafNodeMap.end())
@@ -179,13 +179,13 @@ namespace JinEngine
 				}
 			}
 		}
-		void JBvh::AddGameObject(JGameObject* newGameObject)noexcept
+		void JBvh::AddGameObject(const JUserPtr<JGameObject>& newGameObject)noexcept
 		{
 			JBvhNode* containNode = root->GetContainNodeToLeaf(newGameObject->GetRenderItem()->GetBoundingBox());
 			if (containNode != nullptr)
 				ReBuildBvh(containNode->GetNodeNumber(), newGameObject);
 		}
-		void JBvh::RemoveGameObject(JGameObject* gameObj)noexcept
+		void JBvh::RemoveGameObject(const JUserPtr<JGameObject>& gameObj)noexcept
 		{
 			auto leafNode = leafNodeMap.find(gameObj->GetGuid());
 			if (leafNode != leafNodeMap.end())
@@ -212,7 +212,7 @@ namespace JinEngine
 		}
 		uint JBvh::GetNodeCount()const noexcept
 		{
-			return allNodes.size();
+			return (uint)allNodes.size();
 		}
 		JBvhOption JBvh::GetBvhOption()const noexcept
 		{
@@ -255,7 +255,7 @@ namespace JinEngine
 				return point.z;
 		}
 		void JBvh::BuildTopdownBvh(JBvhNode* parent,
-			std::vector<JGameObject*>& objectList,
+			std::vector<JUserPtr<JGameObject>>& objectList,
 			std::vector<std::unique_ptr<JBvhNode>>& nodeVec,
 			const int start,
 			const int end,
@@ -356,8 +356,8 @@ namespace JinEngine
 					}
 				}
 
-				JGameObject** pmid = std::partition(&objectList[start], &objectList[end - 1] + 1,
-					[=](JGameObject* gameObj)
+				JUserPtr<JGameObject>* pmid = std::partition(&objectList[start], &objectList[end - 1] + 1,
+					[=](JUserPtr<JGameObject> gameObj)
 					{
 						float centroid = GetDimensionValue(gameObj->GetRenderItem()->GetBoundingBox().Center, dim);
 						int b = (int)(bucketCount * ((centroid - centroidMinDim) / (centroidMaxDim - centroidMinDim)));
@@ -391,9 +391,9 @@ namespace JinEngine
 				//int mid = Partition(objectList, bucketCount, minCostSplitBucket, dim, start, end, centroidMinDim, centroidMaxDim);
 			}
 		}
-		void JBvh::ReBuildBvh(const uint nodeNumber, JGameObject* additionalGameObj)noexcept
+		void JBvh::ReBuildBvh(const uint nodeNumber, const JUserPtr<JGameObject>& additionalGameObj)noexcept
 		{
-			std::vector<JGameObject*> objectList;
+			std::vector<JUserPtr<JGameObject>> objectList;
 			if (additionalGameObj != nullptr)
 				objectList.push_back(additionalGameObj);
 
@@ -442,7 +442,7 @@ namespace JinEngine
 					{
 						if (allNodes[i]->GetNodeType() == J_BVH_NODE_TYPE::LEAF)
 						{
-							JGameObject* innerGameObject = allNodes[i]->GetInnerGameObject();
+							JUserPtr<JGameObject> innerGameObject = allNodes[i]->GetInnerGameObject();
 							if (innerGameObject != nullptr)
 								objectList.push_back(innerGameObject);
 						}
@@ -497,7 +497,7 @@ namespace JinEngine
 			{
 				if (allNodes[i]->GetNodeType() == J_BVH_NODE_TYPE::LEAF)
 				{
-					JGameObject* innerGameObject = allNodes[i]->GetInnerGameObject();
+					JUserPtr<JGameObject> innerGameObject = allNodes[i]->GetInnerGameObject();
 					leafNodeMap.erase(innerGameObject->GetGuid());
 				}
 				allNodes[i]->Clear();

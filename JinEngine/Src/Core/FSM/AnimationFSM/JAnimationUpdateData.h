@@ -4,6 +4,7 @@
 #include"JAnimationStateType.h"
 #include"JAnimationTime.h"
 #include"JBlender.h" 
+#include"../../Pointer/JOwnerPtr.h"
 #include"../../JDataType.h"
 #include"../../../Utility/JMathHelper.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
@@ -52,10 +53,10 @@ namespace JinEngine
 			struct DiagramData
 			{
 			public:
-				JAnimationFSMstate* nowState = nullptr;
-				JAnimationFSMstate* nextState = nullptr;
-				JAnimationFSMtransition* nowTransition = nullptr;
-				JAnimationFSMtransition* preTransition = nullptr;
+				Core::JUserPtr<JAnimationFSMstate> nowState = nullptr;
+				Core::JUserPtr<JAnimationFSMstate> nextState = nullptr;
+				Core::JUserPtr<JAnimationFSMtransition> nowTransition = nullptr;
+				Core::JUserPtr<JAnimationFSMtransition>  preTransition = nullptr;
 				JBlender blender;
 				float weight;
 			public:
@@ -66,7 +67,7 @@ namespace JinEngine
 			};
 		public:
 			JGameTimer* timer = nullptr;
-			JSkeletonAsset* modelSkeleton = nullptr;
+			Core::JUserPtr<JSkeletonAsset> modelSkeleton = nullptr;
 		public:
 			DiagramData diagramData[JAnimationFixedData::fsmDiagramMaxCount];
 		public:

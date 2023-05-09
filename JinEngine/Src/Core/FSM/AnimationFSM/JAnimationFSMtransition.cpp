@@ -4,7 +4,7 @@
 #include"../JFSMparameter.h"
 #include"../JFSMparameterStorageAccess.h" 
 #include"../../Identity/JIdenCreator.h"
-#include"../../Identity/JIdentifierImplBase.h"
+#include"../../Reflection/JTypeImplBase.h"
 #include"../../File/JFileConstant.h" 
 #include"../../File/JFileIOHelper.h"
 #include<fstream>
@@ -18,11 +18,11 @@ namespace JinEngine
 			static JAnimationFSMtransitionPrivate aPrivate;
 		}
 		 
-		class JAnimationFSMtransition::JAnimationFSMtransitionImpl : public JIdentifierImplBase
+		class JAnimationFSMtransition::JAnimationFSMtransitionImpl : public JTypeImplBase
 		{
 			REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimationFSMtransitionImpl)
 		public:
-			JAnimationFSMtransition* thisTrans = nullptr;
+			JWeakPtr<JAnimationFSMtransition> thisPointer = nullptr;
 		public:
 			REGISTER_PROPERTY_EX(exitTimeRate, GetExitTimeRate, SetExitTimeRate, GUI_SLIDER(0.0f, 1.0f))
 			float exitTimeRate = 0.75f;
@@ -35,10 +35,8 @@ namespace JinEngine
 			REGISTER_PROPERTY_EX(isFrozen, IsFrozen, SetIsFrozen, GUI_CHECKBOX())
 			bool isFrozen = false;
 		public:
-			JAnimationFSMtransitionImpl(const InitData& initData, JAnimationFSMtransition* thisTrans)
-				:thisTrans(thisTrans)
-			{ 
-			}
+			JAnimationFSMtransitionImpl(const InitData& initData, JAnimationFSMtransition* thisTransRaw)
+			{}
 			~JAnimationFSMtransitionImpl()
 			{}
 		public:
@@ -99,28 +97,32 @@ namespace JinEngine
 		public:
 			void Initialize()noexcept
 			{
-				thisTrans->Initialize();
+				thisPointer->Initialize();
 			}
 		public:
-			static void RegisterCallOnce()
+			void RegisterThisPointer(JAnimationFSMtransition* trans)
+			{
+				thisPointer = GetWeakPtr(trans);
+			}
+			static void RegisterTypeData()
 			{
 				SET_GUI_FLAG(J_GUI_OPTION_DISPLAY_PARENT);
-				Core::JIdentifier::RegisterPrivateInterface(JAnimationFSMtransition::StaticTypeInfo(), aPrivate);
+				JIdentifier::RegisterPrivateInterface(JAnimationFSMtransition::StaticTypeInfo(), aPrivate);
+				IMPL_REALLOC_BIND(JAnimationFSMtransition::JAnimationFSMtransitionImpl, thisPointer)
 			}
 		};
 
-		JAnimationFSMtransition::InitData::InitData(JUserPtr<JFSMstate> ownerState, JUserPtr<JFSMstate> outState)
-			:JFSMtransition::InitData(JAnimationFSMtransition::StaticTypeInfo(), ownerState, outState)
+		JAnimationFSMtransition::InitData::InitData(const JUserPtr<JFSMstate>& inState, const JUserPtr<JFSMstate>& outState)
+			:JFSMtransition::InitData(JAnimationFSMtransition::StaticTypeInfo(), inState, outState)
 		{}
 		JAnimationFSMtransition::InitData::InitData(const std::wstring& name,
 			const size_t guid,
-			JUserPtr<JFSMstate> ownerState,
-			JUserPtr<JFSMstate> outState)
-			:JFSMtransition::InitData(JAnimationFSMtransition::StaticTypeInfo(), name, guid, ownerState, outState)
+			const JUserPtr<JFSMstate>& inState,
+			const JUserPtr<JFSMstate>& outState)
+			:JFSMtransition::InitData(JAnimationFSMtransition::StaticTypeInfo(), name, guid, inState, outState)
 		{}
 
-
-		Core::JIdentifierPrivate& JAnimationFSMtransition::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JAnimationFSMtransition::GetPrivateInterface()const noexcept
 		{
 			return aPrivate;
 		}
@@ -180,9 +182,15 @@ namespace JinEngine
 		using AssetDataIOInterface = JAnimationFSMtransitionPrivate::AssetDataIOInterface;
 		using UpdateInterface = JAnimationFSMtransitionPrivate::UpdateInterface;
 
-		JOwnerPtr<JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<JDITypeDataBase>&& initData)
+		JOwnerPtr<JIdentifier> CreateInstanceInterface::Create(JDITypeDataBase* initData)
 		{
-			return JPtrUtil::MakeOwnerPtr<JAnimationFSMtransition>(*static_cast<JAnimationFSMtransition::InitData*>(initData.get()));
+			return JPtrUtil::MakeOwnerPtr<JAnimationFSMtransition>(*static_cast<JAnimationFSMtransition::InitData*>(initData));
+		}
+		void CreateInstanceInterface::Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept
+		{
+			JFSMtransitionPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+			JAnimationFSMtransition* trans = static_cast<JAnimationFSMtransition*>(createdPtr);
+			trans->impl->RegisterThisPointer(trans); 
 		}
 		bool CreateInstanceInterface::CanCreateInstance(JDITypeDataBase* initData)const noexcept
 		{
@@ -190,7 +198,7 @@ namespace JinEngine
 			return isValidPtr && initData->IsValidData();
 		}
  
-		J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetData(std::wifstream& stream, JAnimationFSMtransition* trans)
+		J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetData(std::wifstream& stream, const JUserPtr<JAnimationFSMtransition>& trans)
 		{
 			if (!stream.is_open() || !trans->GetTypeInfo().IsChildOf<JAnimationFSMtransition>())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -206,12 +214,12 @@ namespace JinEngine
 				float onValue;
 
 				JFileIOHelper::LoadFsmObjectIden(stream, condName, condGuid, fsmType);
-				Core::JUserPtr<Core::JIdentifier> param = JFileIOHelper::LoadHasObjectIden(stream);
+				JUserPtr<JIdentifier> param = JFileIOHelper::LoadHasObjectIden(stream);
 				JFileIOHelper::LoadAtomicData(stream, onValue);
 
-				JFSMcondition* newCondition = JICI::Create<JFSMcondition>(condName, condGuid, Core::GetUserPtr(trans));
+				JUserPtr<JFSMcondition> newCondition = JICI::Create<JFSMcondition>(condName, condGuid, trans);
 				if (param.IsValid())
-					newCondition->SetParameter(static_cast<JFSMparameter*>(param.Get()));
+					newCondition->SetParameter(Core::ConnectChildUserPtr<JFSMparameter>(param));
 				newCondition->SetOnValue(onValue);
 			}
 
@@ -235,7 +243,7 @@ namespace JinEngine
 			 
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
-		J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(std::wofstream& stream, JAnimationFSMtransition* trans)
+		J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMtransition>& trans)
 		{
 			if (!stream.is_open() || !trans->GetTypeInfo().IsChildOf<JAnimationFSMtransition>())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -244,9 +252,9 @@ namespace JinEngine
 			const uint conditionCount = trans->GetConditioCount();
 			for (uint i = 0; i < conditionCount; ++i)
 			{
-				JFSMcondition* cond = trans->GetConditionByIndex(i);
-				JFileIOHelper::StoreFsmObjectIden(stream, cond);
-				JFileIOHelper::StoreHasObjectIden(stream, cond->GetParameter(), Core::JFileConstant::StreamUncopiableGuidSymbol());
+				JUserPtr<JFSMcondition> cond = trans->GetConditionByIndex(i);
+				JFileIOHelper::StoreFsmObjectIden(stream, cond.Get());
+				JFileIOHelper::StoreHasObjectIden(stream, cond->GetParameter().Get(), JFileConstant::StreamUncopiableGuidSymbol());
 				JFileIOHelper::StoreAtomicData(stream, L"ConditionValue:", trans->GetConditionOnValue(i));
 			}
 			JFileIOHelper::StoreAtomicData(stream, L"IsWaitExitTime:", trans->IsWaitExitTime());
@@ -258,12 +266,12 @@ namespace JinEngine
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
 
-		void UpdateInterface::Initialize(JFSMtransition* trans)noexcept
+		void UpdateInterface::Initialize(const JUserPtr<JFSMtransition>& trans)noexcept
 		{ 
-			static_cast<JAnimationFSMtransition*>(trans)->impl->Initialize();
+			static_cast<JAnimationFSMtransition*>(trans.Get())->impl->Initialize();
 		}
 
-		Core::JIdentifierPrivate::CreateInstanceInterface& JAnimationFSMtransitionPrivate::GetCreateInstanceInterface()const noexcept
+		JIdentifierPrivate::CreateInstanceInterface& JAnimationFSMtransitionPrivate::GetCreateInstanceInterface()const noexcept
 		{
 			static CreateInstanceInterface pI;
 			return pI;

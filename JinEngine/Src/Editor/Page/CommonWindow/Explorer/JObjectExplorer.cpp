@@ -46,7 +46,7 @@ namespace JinEngine
 			DestructionInterface destructuion;
 		public:
 			using RequestGObjCreationEvF = Core::JSFunctorType<void, JObjectExplorer*, J_DEFAULT_SHAPE>;
-			using RequestModelCreationEvF = Core::JSFunctorType<void, JObjectExplorer*, Core::JUserPtr<JGameObject>, Core::JUserPtr<JMeshGeometry>>;
+			using RequestModelCreationEvF = Core::JSFunctorType<void, JObjectExplorer*, JUserPtr<JGameObject>, JUserPtr<JMeshGeometry>>;
 			using RequestDestructionEvF = Core::JSFunctorType<void, JObjectExplorer*>;
 		public:
 			std::unique_ptr<RequestGObjCreationEvF::Functor> reqGObjCreationEvF;
@@ -70,7 +70,7 @@ namespace JinEngine
 		class JObjectExplorerSettingImpl
 		{
 		public:
-			using ChangeParentF = Core::JSFunctorType<void, JObjectExplorer*, Core::JUserPtr<JGameObject>, Core::JUserPtr<JGameObject>>;
+			using ChangeParentF = Core::JSFunctorType<void, JObjectExplorer*, JUserPtr<JGameObject>, JUserPtr<JGameObject>>;
 			using RenameF = Core::JSFunctorType<void, JObjectExplorer*>;
 		public:
 			std::unique_ptr<ChangeParentF::Functor> changeParentF;
@@ -175,22 +175,22 @@ namespace JinEngine
 				if (!explorer->root.IsValid())
 					return;
 
-				Core::JUserPtr<JGameObject> parent = explorer->root;
+				JUserPtr<JGameObject> parent = explorer->root;
 				auto hovered = explorer->GetHoveredObject();		
 				if(hovered.IsValid())
-					parent.ConvertChildUser(std::move(hovered));
+					parent.ConvertChild(std::move(hovered));
 
 				JEditorCreationHint creationHint = JEditorCreationHint(explorer,
 					false, true, false, true,
 					Core::JTypeInstanceSearchHint(),
-					Core::JTypeInstanceSearchHint(Core::GetUserPtr(parent->GetOwnerScene())),
+					Core::JTypeInstanceSearchHint(parent->GetOwnerScene()),
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
 
 				JObjectExplorerCreationImpl* impl = explorer->creationImpl.get();
 				impl->gameObject.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, parent->GetGuid(), std::move(shapeType));
 			};
-			auto requestCreateModelLam = [](JObjectExplorer* explorer, Core::JUserPtr<JGameObject> parent, Core::JUserPtr<JMeshGeometry> mesh)
+			auto requestCreateModelLam = [](JObjectExplorer* explorer, JUserPtr<JGameObject> parent, JUserPtr<JMeshGeometry> mesh)
 			{
 				if (!explorer->root.IsValid() || !mesh.IsValid())
 					return;
@@ -201,7 +201,7 @@ namespace JinEngine
 				JEditorCreationHint creationHint = JEditorCreationHint(explorer,
 					false, true, false, true,
 					Core::JTypeInstanceSearchHint(),
-					Core::JTypeInstanceSearchHint(Core::GetUserPtr(parent->GetOwnerScene())),
+					Core::JTypeInstanceSearchHint(parent->GetOwnerScene()),
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
 
@@ -213,14 +213,14 @@ namespace JinEngine
 				if (!explorer->root.IsValid())
 					return;
 
-				std::vector<Core::JUserPtr<Core::JIdentifier>> objVec = explorer->GetSelectedObjectVec();
+				std::vector<JUserPtr<Core::JIdentifier>> objVec = explorer->GetSelectedObjectVec();
 				if (objVec.size() == 0)
 					return;
 
 				JEditorCreationHint creationHint = JEditorCreationHint(explorer,
 					false, true, false, true,
 					Core::JTypeInstanceSearchHint(),
-					Core::JTypeInstanceSearchHint(Core::GetUserPtr(explorer->root->GetOwnerScene())),
+					Core::JTypeInstanceSearchHint(explorer->root->GetOwnerScene()),
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
 
@@ -243,8 +243,8 @@ namespace JinEngine
 			};
 			auto creationGobjLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t parentGuid, const J_DEFAULT_SHAPE shapeType)
 			{
-				auto parentRawPtr = Core::GetRawPtr(Core::JTypeInstanceSearchHint(JGameObject::StaticTypeInfo(), parentGuid));
-				JGCI::CreateShape(static_cast<JGameObject*>(parentRawPtr), guid, OBJECT_FLAG_NONE, shapeType);
+				auto parentUserPtr = Core::GetUserPtr<JGameObject>(Core::JTypeInstanceSearchHint(JGameObject::StaticTypeInfo(), parentGuid));
+				JGCI::CreateShape(parentUserPtr, guid, OBJECT_FLAG_NONE, shapeType);
 			};
 
 			auto canCreationModelLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t parentGuid, const size_t meshGuid)
@@ -262,9 +262,9 @@ namespace JinEngine
 			};
 			auto creationModelLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t parentGuid, const size_t meshGuid)
 			{
-				auto parentRawPtr = Core::GetRawPtr(Core::JTypeInstanceSearchHint(JGameObject::StaticTypeInfo(), parentGuid));
-				auto meshRawPtr = Core::SearchRawPtr(JMeshGeometry::StaticTypeInfo(), meshGuid);
-				JGCI::CreateModel(static_cast<JGameObject*>(parentRawPtr), guid, OBJECT_FLAG_NONE, static_cast<JMeshGeometry*>(meshRawPtr));
+				auto parentUserPtr = Core::GetUserPtr<JGameObject>(Core::JTypeInstanceSearchHint(JGameObject::StaticTypeInfo(), parentGuid));
+				auto meshUserPtr = Core::SearchUserPtr<JMeshGeometry>(JMeshGeometry::StaticTypeInfo(), meshGuid);
+				JGCI::CreateModel(parentUserPtr, guid, OBJECT_FLAG_NONE, meshUserPtr);
 			};
 
 			creationImpl->gameObject.GetCreationInterface()->RegisterCanCreationF(canCreationGobjLam);
@@ -274,15 +274,15 @@ namespace JinEngine
 		}
 		void JObjectExplorer::InitializeSettingImpl()
 		{
-			auto changeParentLam = [](JObjectExplorer* objEx, Core::JUserPtr<JGameObject> obj, Core::JUserPtr<JGameObject> newP)
+			auto changeParentLam = [](JObjectExplorer* objEx, JUserPtr<JGameObject> obj, JUserPtr<JGameObject> newP)
 			{
-				obj->ChangeParent(newP.Get());
-				objEx->SetModifiedBit(Core::GetUserPtr(obj->GetOwnerScene()), true);
+				obj->ChangeParent(newP);
+				objEx->SetModifiedBit(obj->GetOwnerScene(), true);
 			};
 			auto renameLam = [](JObjectExplorer* objEx)
 			{
 				objEx->renameHelper->Activate(objEx->GetHoveredObject());
-				objEx->SetModifiedBit(Core::GetUserPtr(static_cast<JGameObject*>(objEx->GetHoveredObject().Get())->GetOwnerScene()), true);
+				objEx->SetModifiedBit(static_cast<JGameObject*>(objEx->GetHoveredObject().Get())->GetOwnerScene(), true);
 			};
 			settingImpl = std::make_unique<JObjectExplorerSettingImpl>();
 			settingImpl->changeParentF = std::make_unique<JObjectExplorerSettingImpl::ChangeParentF::Functor>(changeParentLam);
@@ -292,7 +292,7 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::OBJECT_EXPLORER;
 		}
-		void JObjectExplorer::Initialize(Core::JUserPtr<JGameObject> newRoot) noexcept
+		void JObjectExplorer::Initialize(JUserPtr<JGameObject> newRoot) noexcept
 		{
 			root = newRoot;
 			renameHelper->Clear();
@@ -313,11 +313,11 @@ namespace JinEngine
 		}
 		void JObjectExplorer::BuildObjectExplorer()
 		{
-			ObjectExplorerOnScreen(root.Get(), searchBarHelper->HasInputData());
+			ObjectExplorerOnScreen(root, searchBarHelper->HasInputData());
 			UpdatePopup(PopupSetting(explorerPopup.get(), editorString.get())); 
 			ImGui::SameLine();
 		}
-		void JObjectExplorer::ObjectExplorerOnScreen(JGameObject* gObj, const bool isAcivatedSearch)
+		void JObjectExplorer::ObjectExplorerOnScreen(const JUserPtr<JGameObject>& gObj, const bool isAcivatedSearch)
 		{
 			//ImGuiTreeNodeFlags_Selected
 			bool isNodeOpen = false;
@@ -351,15 +351,15 @@ namespace JinEngine
 					if (isNodeOpen)
 					{
 						if (ImGui::IsItemHovered())
-							SetHoveredObject(Core::GetUserPtr(gObj));
+							SetHoveredObject(gObj);
 						if (ImGui::IsItemClicked(0) || ImGui::IsItemClicked(1))
 						{
-							RequestPushSelectObject(Core::GetUserPtr(gObj));
+							RequestPushSelectObject(gObj);
 							SetContentsClick(true);
 						}
 
-						TryBeginDragging(Core::GetUserPtr(gObj));
-						Core::JUserPtr<Core::JIdentifier> dragResult = TryGetDraggingTarget();
+						TryBeginDragging(gObj);
+						JUserPtr<Core::JIdentifier> dragResult = TryGetDraggingTarget();
 
 						if (dragResult.IsValid())
 						{
@@ -367,26 +367,26 @@ namespace JinEngine
 							JObject* obj = typeInfo.IsChildOf<JObject>() ? static_cast<JObject*>(dragResult.Get()) : nullptr;
 							if (obj != nullptr && obj->GetObjectType() == J_OBJECT_TYPE::GAME_OBJECT)
 							{
-								Core::JUserPtr<JGameObject> selectedObj;
-								selectedObj.ConnnectChildUser(dragResult);
+								JUserPtr<JGameObject> selectedObj; 
+								selectedObj.ConnnectChild(dragResult);
 
 								using ChangeParentF = JObjectExplorerSettingImpl::ChangeParentF;
 								 
 								std::string taskName = "Change parent";
 								std::string taskDesc = JCUtil::WstrToU8Str(L"object name: " + obj->GetName() + L" " + selectedObj->GetName() + L" to " + gObj->GetName());
 
-								auto doBind = std::make_unique<ChangeParentF::CompletelyBind>(*settingImpl->changeParentF, this, Core::JUserPtr(selectedObj), Core::GetUserPtr(gObj));
-								auto undoBind = std::make_unique<ChangeParentF::CompletelyBind>(*settingImpl->changeParentF, this, Core::JUserPtr(selectedObj), Core::GetUserPtr(selectedObj->GetParent()));
+								auto doBind = std::make_unique<ChangeParentF::CompletelyBind>(*settingImpl->changeParentF, this, JUserPtr<JGameObject>(selectedObj), JUserPtr<JGameObject>(gObj));
+								auto undoBind = std::make_unique<ChangeParentF::CompletelyBind>(*settingImpl->changeParentF, this, JUserPtr<JGameObject>(selectedObj), selectedObj->GetParent());
 								auto evStruct = std::make_unique<JEditorTSetBindFuncEvStruct>(taskName, taskDesc, GetOwnerPageType(), std::move(doBind), std::move(undoBind));
 
 								AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
 							}
 							else if (obj != nullptr && obj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
 							{
-								Core::JUserPtr<JMeshGeometry> sMesh;
-								sMesh.ConnnectChildUser(dragResult);
+								JUserPtr<JMeshGeometry> sMesh;
+								sMesh.ConnnectChild(dragResult);
 								if (sMesh.IsValid())
-									creationImpl->reqModelCreationEvF->Invoke(this, Core::GetUserPtr(gObj), sMesh);
+									creationImpl->reqModelCreationEvF->Invoke(this, gObj, sMesh);
 							}
 						}
 					}
@@ -397,7 +397,7 @@ namespace JinEngine
 				const uint childrenCount = gObj->GetChildrenCount();
 				for (uint i = 0; i < childrenCount; ++i)
 				{
-					JGameObject* child = gObj->GetChild(i);
+					JUserPtr<JGameObject> child = gObj->GetChild(i);
 					if ((child->GetFlag() & OBJECT_FLAG_HIDDEN) > 0)
 						continue;
 

@@ -27,7 +27,7 @@ namespace JinEngine
 	{
 		return (*isAvailableOverlapCallable)(nullptr);
 	}
-	std::unique_ptr<Core::JDITypeDataBase> CTypeCommonFunc::CallCreateInitDataCallable(JGameObject* parent, std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData)
+	std::unique_ptr<Core::JDITypeDataBase> CTypeCommonFunc::CallCreateInitDataCallable(JUserPtr<JGameObject> parent, std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData)
 	{
 		return (*createIntiDataCallable)(nullptr, parent, std::move(parentClassInitData));
 	}
@@ -119,7 +119,7 @@ namespace JinEngine
 		return CTypeInfo::Instance().cFuncStorage[(uint)cType].CallIsAvailableOverlapCallable();
 	}
 	std::unique_ptr<Core::JDITypeDataBase> CTypeCommonCall::CallCreateInitDataCallable(const J_COMPONENT_TYPE cType,
-		JGameObject* parent,
+		JUserPtr<JGameObject> parent,
 		std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData)
 	{
 		return CTypeInfo::Instance().cFuncStorage[(uint)cType].CallCreateInitDataCallable(parent, std::move(parentClassInitData));

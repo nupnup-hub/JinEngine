@@ -23,6 +23,7 @@ namespace JinEngine
 	{
 		class JGraphicResourceManager
 		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(JGraphicResourceManager)
 		private:
 			using BindViewPtr = void(JGraphicResourceManager::*)(ID3D12Device*, const uint);
 		private:
@@ -66,7 +67,7 @@ namespace JinEngine
 		private:
 			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionQueryResult;
 		private:
-			std::vector<Core::JOwnerPtr<JGraphicResourceInfo>> resource[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
+			std::vector<JOwnerPtr<JGraphicResourceInfo>> resource[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 			ResourceTypeDesc typeDesc[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 		private:
 			const DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -113,34 +114,34 @@ namespace JinEngine
 				const uint viewHeight,
 				bool m4xMsaaState,
 				uint m4xMsaaQuality);
-			void CreateEditorDepthStencilResource(ID3D12Device* device,
+			void CreateDebugDepthStencilResource(ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList,
 				const uint viewWidth,
 				const uint viewHeight);
 			void CreateOcclusionQueryResource(ID3D12Device* device);
 			void CreateOcclusionHZBResource(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const uint occWidth, const uint occHeight);
-			Core::JUserPtr<JGraphicResourceInfo> Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
+			JUserPtr<JGraphicResourceInfo> Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 				const std::wstring& path,
 				const std::wstring& oriFormat,
 				ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList);
-			Core::JUserPtr<JGraphicResourceInfo> CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
+			JUserPtr<JGraphicResourceInfo> CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 				const std::wstring& path,
 				const std::wstring& oriFormat,
 				ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList);
-			Core::JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(ID3D12Device* device, const uint width, const uint height);
-			Core::JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(ID3D12Device* device, const uint width, const uint height);
+			JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(ID3D12Device* device, const uint width, const uint height);
+			JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(ID3D12Device* device, const uint width, const uint height);
 			bool DestroyGraphicTextureResource(ID3D12Device* device, JGraphicResourceInfo* info);
 		private:
-			Core::JOwnerPtr<JGraphicResourceInfo> CreateResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, Microsoft::WRL::ComPtr<ID3D12Resource>&& resource);
+			JOwnerPtr<JGraphicResourceInfo> CreateResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, Microsoft::WRL::ComPtr<ID3D12Resource>&& resource);
 		private:
 			BindViewPtr GetResourceBindViewPtr(const J_GRAPHIC_RESOURCE_TYPE rType);
 			void SetViewCount(JGraphicResourceInfo* handlePtr, const J_GRAPHIC_BIND_TYPE bType, const int nextViewIndex);
 			void BindSwapChain(ID3D12Device* device, const uint resourceIndex);
 			void BindMainDepthStencil(ID3D12Device* device, const uint resourceIndex);
 			void BindMainDepthStencilDebug(ID3D12Device* device, const uint resourceIndex);
-			void BindEditorDepthStencil(ID3D12Device* device, const uint resourceIndex);
+			void BindDebugDepthStencil(ID3D12Device* device, const uint resourceIndex);
 			void BindOcclusionHZBDepthMap(ID3D12Device* device, const uint resourceIndex);
 			void BindOcclusionHZBDepthMipMap(ID3D12Device* device, const uint resourceIndex);
 			void BindOcclusionHZBDebug(ID3D12Device* device, const uint resourceIndex);
@@ -152,7 +153,9 @@ namespace JinEngine
 			void BuildRtvDescriptorHeaps(ID3D12Device* device);
 			void BuildDsvDescriptorHeaps(ID3D12Device* device);
 			void BuildSrvDescriptorHeaps(ID3D12Device* device);
-			void BuildOccQueryHeaps(ID3D12Device* device);
+			void BuildOccQueryHeaps(ID3D12Device* device); 
+		public:
+			static void RegisterTypeData();
 		public:
 			JGraphicResourceManager();
 			~JGraphicResourceManager();

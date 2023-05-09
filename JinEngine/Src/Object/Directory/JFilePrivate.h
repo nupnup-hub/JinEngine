@@ -1,19 +1,21 @@
 #pragma once
 #include<memory>
+#include"../../Core/Pointer/JOwnerPtr.h"
 
 namespace JinEngine
 {
 	class JDirectory;
 	class JFile;
+	class JResourceObject;
 	struct JFileInitData;
 	class JFilePrivate final
 	{
 	private:
 		friend class JDirectoryPrivate;
 	private:
-		std::unique_ptr<JFile> CreateFile(const JFileInitData& initData, JDirectory* ownerDir);
+		JOwnerPtr<JFile> CreateFile(const JFileInitData& initData, const JUserPtr<JDirectory>& ownerDir);
 	private: 
-		void ConvertToActFileData(JFile* file, JResourceObject* rObj);
-		void ConvertToDeActFileData(JFile* file); 
+		void ConvertToActFileData(const JUserPtr<JFile>& file, const JUserPtr<JResourceObject>& rObj);
+		void ConvertToDeActFileData(const JUserPtr<JFile>& file);
 	};
 }

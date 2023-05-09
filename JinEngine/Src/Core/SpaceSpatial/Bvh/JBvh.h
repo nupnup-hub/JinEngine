@@ -29,7 +29,7 @@ namespace JinEngine
 			std::unordered_map<size_t, JBvhNode*> leafNodeMap;
 			//Bvh에 JGameObject가 1개일시 트리를 생성하지 않고 캐싱
 			//이 후 JGameObject가 2개이상이될시 트리 생성
-			JGameObject* innerGameObjectCandidate = nullptr; 
+			JUserPtr<JGameObject> innerGameObjectCandidate = nullptr; 
 			J_SPACE_SPATIAL_BUILD_TYPE buildType = J_SPACE_SPATIAL_BUILD_TYPE::TOP_DOWN;
 			J_SPACE_SPATIAL_SPLIT_TYPE splitType = J_SPACE_SPATIAL_SPLIT_TYPE::SAH;
 		private:
@@ -49,12 +49,12 @@ namespace JinEngine
 		public:
 			void Culling(const JCullingFrustum& camFrustum)noexcept final; 
 			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept final;
-			JGameObject* IntersectFirst(const JRay& ray)const noexcept final;
-			void Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JGameObject*>& res)const noexcept final;
-			void UpdateGameObject(JGameObject* gameObject)noexcept final;
+			JUserPtr<JGameObject> IntersectFirst(const JRay& ray)const noexcept final;
+			void Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept final;
+			void UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept final;
 		public:
-			void AddGameObject(JGameObject* newGameObject)noexcept final;
-			void RemoveGameObject(JGameObject* gameObj)noexcept final;
+			void AddGameObject(const JUserPtr<JGameObject>& newGameObject)noexcept final;
+			void RemoveGameObject(const JUserPtr<JGameObject>& gameObj)noexcept final;
 		public:
 			J_SPACE_SPATIAL_TYPE GetType()const noexcept final;
 			uint GetNodeCount()const noexcept;
@@ -65,12 +65,12 @@ namespace JinEngine
 			float GetDimensionValue(const DirectX::XMFLOAT3& point, const int dim)const noexcept;
 		private:
 			void BuildTopdownBvh(JBvhNode* parent,
-				std::vector<JGameObject*>& objectList,
+				std::vector<JUserPtr<JGameObject>>& objectList,
 				std::vector<std::unique_ptr<JBvhNode>>& nodeVec,
 				const int start,
 				const int end,
 				const int numberOffset)noexcept;
-			void ReBuildBvh(const uint nodeNumber, JGameObject* additionalGameObj = nullptr)noexcept;
+			void ReBuildBvh(const uint nodeNumber, const JUserPtr<JGameObject>& additionalGameObj = nullptr)noexcept;
 		private:
 			void ClearBvhNode(const uint nodeNumber)noexcept;
 			void DestroyBvhNode(const uint nodeNumber)noexcept;

@@ -4,13 +4,20 @@
 namespace JinEngine
 {  
 	class JScene;
+	class JCamera;
+	class JTexture;
 	namespace Editor
 	{
 		class JEditorCameraControl;
+		class JSceneCameraList;
 		class JSceneViewer final : public JEditorWindow
-		{ 
+		{
+		private:
+			std::unique_ptr<JSceneCameraList> camList;
+			JUserPtr<JTexture> shiroBack;
 		private: 
-			Core::JUserPtr<JScene> scene;
+			JUserPtr<JScene> scene;
+			JUserPtr<JCamera> selectedCam;
 			std::unique_ptr<JEditorCameraControl> editorCamCtrl;
 		public:
 			JSceneViewer(const std::string& name,
@@ -23,8 +30,14 @@ namespace JinEngine
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept;
 		public:
-			void Initialize(Core::JUserPtr<JScene> newScene);
+			void Initialize(JUserPtr<JScene> newScene);
 			void UpdateWindow()final;
+		private:
+			void DoActivate() noexcept final;
+			void DoDeActivate() noexcept final;
+		private:
+			void StoreEditorWindow(std::wofstream& stream)final;
+			void LoadEditorWindow(std::wifstream& stream)final; 
 		};
 	}
 }

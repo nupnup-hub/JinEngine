@@ -25,12 +25,12 @@ namespace JinEngine
 		std::unique_ptr<JSceneManagerImpl> impl;
 	public:
 		uint GetActivatedSceneCount()const noexcept;
-		JScene* GetFirstScene()noexcept;
+		JUserPtr<JScene> GetFirstScene()noexcept;
 	public:
 		bool IsRegistered(JScene* scene)noexcept;
-		bool IsFirstScene(const JScene* scene)const noexcept;
+		bool IsFirstScene(JScene* scene)const noexcept;
 	public:
-		bool RegisterObservationFrame(JScene* scene, const JFrameUpdateUserAccess& observationFrame);
+		bool RegisterObservationFrame(const JUserPtr<JScene>& scene, const JFrameUpdateUserAccess& observationFrame);
 	private:
 		JSceneManager();
 		~JSceneManager();

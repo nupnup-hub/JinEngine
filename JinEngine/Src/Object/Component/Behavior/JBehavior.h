@@ -15,8 +15,8 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
-			InitData(JGameObject* owner);
-			InitData(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
+			InitData(const JUserPtr<JGameObject>& owner);
+			InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
 		};
 	private:
 		friend class JBehaviorPrivate;

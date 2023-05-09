@@ -4,7 +4,7 @@
 
 namespace JinEngine
 {
-	JFrameUpdateUserAccess::JFrameUpdateUserAccess(Core::JUserPtr<Core::JIdentifier> iden, JFrameDirtyBase* dirtyBase)
+	JFrameUpdateUserAccess::JFrameUpdateUserAccess(JUserPtr<Core::JIdentifier> iden, JFrameDirtyBase* dirtyBase)
 		:iden(iden), dirtyBase(dirtyBase)
 	{}
 	bool JFrameUpdateUserAccess::IsFrameDirted()const noexcept

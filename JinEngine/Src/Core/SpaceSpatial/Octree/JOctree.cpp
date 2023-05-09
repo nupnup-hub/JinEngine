@@ -69,17 +69,17 @@ namespace JinEngine
 			if (rootNodeCash != nullptr)
 				rootNodeCash->Culling(camFrustum, camPos);
 		}
-		JGameObject* JOctree::IntersectFirst(const JRay& ray)const noexcept
+		JUserPtr<JGameObject> JOctree::IntersectFirst(const JRay& ray)const noexcept
 		{
 			//¹Ì±¸Çö
 			if (rootNodeCash == nullptr)
 				return nullptr;
 		}
-		void JOctree::Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JGameObject*>& res)const noexcept
+		void JOctree::Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
 
 		}
-		void JOctree::UpdateGameObject(JGameObject* gameObject)noexcept
+		void JOctree::UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
 		{
 			if (!IsValidLayer(gameObject->GetRenderItem()->GetRenderLayer()))
 				return;
@@ -91,9 +91,9 @@ namespace JinEngine
 				AddGameObject(gameObject);
 			}
 		}
-		void JOctree::AddGameObject(JGameObject* newGameObject)noexcept
+		void JOctree::AddGameObject(const JUserPtr<JGameObject>& newGameObject)noexcept
 		{  
-			JRenderItem* rItem = newGameObject->GetRenderItem();
+			JUserPtr<JRenderItem> rItem = newGameObject->GetRenderItem();
 			JOctreeNode* octNode = FindOptimalNode(rootNodeCash, rItem->GetBoundingBox());
 			if (octNode == nullptr)
 				return;
@@ -105,7 +105,7 @@ namespace JinEngine
 					octNode->CreateDebugGameObject(GetDebugRoot(), IsDebugLeafOnly());
 			}
 		}
-		void JOctree::RemoveGameObject(JGameObject* gameObj)noexcept
+		void JOctree::RemoveGameObject(const JUserPtr<JGameObject>& gameObj)noexcept
 		{
 			auto octNode = containNodeMap.find(gameObj->GetGuid());
 			if (octNode != containNodeMap.end())
@@ -160,7 +160,7 @@ namespace JinEngine
 		}
 		void JOctree::BuildOctree()noexcept
 		{
-			std::vector<JGameObject*> gameObject = GetInnerObject();
+			std::vector<JUserPtr<JGameObject>> gameObject = GetInnerObject();
 			if (rootNodeCash != nullptr)
 			{
 				rootNodeCash->Clear();

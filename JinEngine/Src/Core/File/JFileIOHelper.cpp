@@ -208,10 +208,10 @@ namespace JinEngine
 		}
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::JUserPtr<Core::JIdentifier> JFileIOHelper::LoadHasObjectIden(std::wifstream& stream)
+	JUserPtr<Core::JIdentifier> JFileIOHelper::LoadHasObjectIden(std::wifstream& stream)
 	{
 		if (!stream.is_open() || stream.eof())
-			return Core::JUserPtr<Core::JIdentifier>{};
+			return JUserPtr<Core::JIdentifier>{};
 
 		std::wstring guide;
 		std::wstring name;
@@ -232,18 +232,18 @@ namespace JinEngine
 				if (typeInfo->IsChildOf<JResourceObject>())
 					return _JResourceManager::Instance().TryGetResourceUser(*typeInfo, objGuid);
 				else
-					return Core::JUserPtr<Core::JIdentifier>{};
+					return JUserPtr<Core::JIdentifier>{};
 			}
 			else
-				return Core::GetUserPtr(rawPtr);
+				return Core::GetUserPtr<Core::JIdentifier>(rawPtr);
 		}
 		else
-			return Core::JUserPtr<Core::JIdentifier>{};
+			return JUserPtr<Core::JIdentifier>{};
 	}
 	Core::JTypeInstanceSearchHint JFileIOHelper::LoadHasObjectHint(std::wifstream& stream)
 	{
 		if (!stream.is_open() || stream.eof())
-			return Core::JUserPtr<Core::JIdentifier>{};
+			return Core::JTypeInstanceSearchHint{};
 
 		std::wstring guide;
 		std::wstring name;

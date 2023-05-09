@@ -24,6 +24,7 @@ namespace JinEngine
 	class JScene : public JResourceObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JScene)
+		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
 	public: 
 		class InitData final : public JResourceObject::InitData
 		{
@@ -32,17 +33,17 @@ namespace JinEngine
 			const J_SCENE_USE_CASE_TYPE useCaseType;
 		public:
 			InitData(const uint8 formatIndex,
-				JDirectory* directory,
+				const JUserPtr<JDirectory>& directory,
 				const J_SCENE_USE_CASE_TYPE useCaseType);
 			InitData(const size_t guid,
 				const uint8 formatIndex,
-				JDirectory* directory,
+				const JUserPtr<JDirectory>& directory,
 				const J_SCENE_USE_CASE_TYPE useCaseType);
 			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const uint8 formatIndex,
-				JDirectory* directory,
+				const JUserPtr<JDirectory>& directory,
 				const J_SCENE_USE_CASE_TYPE useCaseType); 
 		};
 	protected: 
@@ -62,7 +63,7 @@ namespace JinEngine
 			Core::JBvhOption bvhOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
 			Core::JKdTreeOption kdTreeOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
 		public:
-			LoadMetaData(JDirectory* directory);
+			LoadMetaData(const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JScenePrivate;
@@ -79,15 +80,15 @@ namespace JinEngine
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 	public:
-		JGameObject* GetRootGameObject()noexcept;
-		JGameObject* GetDebugRootGameObject()noexcept;
-		JGameObject* GetGameObject(const uint index)noexcept;
-		JCamera* GetMainCamera()noexcept;
+		JUserPtr<JGameObject> GetRootGameObject()noexcept;
+		JUserPtr<JGameObject> GetDebugRootGameObject()noexcept;
+		JUserPtr<JGameObject> GetGameObject(const uint index)noexcept;
 		uint GetGameObjectCount()const noexcept;
 		uint GetComponetCount(const J_COMPONENT_TYPE cType)const noexcept;
 		uint GetMeshCount()const noexcept;
 		J_SCENE_USE_CASE_TYPE GetUseCaseType()const noexcept;
-		std::vector<JGameObject*> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept;
+		std::vector<JUserPtr<JGameObject>> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept;
+		std::vector<JUserPtr<JComponent>> GetComponentVec(const J_COMPONENT_TYPE cType)const noexcept;
 		Core::JOctreeOption GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept;
 		Core::JBvhOption GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept;
 		Core::JKdTreeOption GetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept;
@@ -102,9 +103,10 @@ namespace JinEngine
 		bool IsSpaceSpatialActivated()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
 	public:
-		JGameObject* FindGameObject(const size_t guid)noexcept;
+		JUserPtr<JGameObject> FindGameObject(const size_t guid)noexcept;
+		JUserPtr<JCamera> FindFirstSelectedCamera(const bool allowEditorCam)const noexcept;
 		//Intersect by scene space spatial
-		JGameObject* IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
+		JUserPtr<JGameObject> IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

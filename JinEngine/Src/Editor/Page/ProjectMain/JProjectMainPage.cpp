@@ -146,16 +146,16 @@ namespace JinEngine
 				for (auto& data : modVec)
 				{
 					std::string strArr[textCount]{ "","","" };
-					Core::JIdentifier* obj = Core::GetRawPtr(data->typeGuid, data->objectGuid);
+					JUserPtr<Core::JIdentifier> obj = Core::GetUserPtr<Core::JIdentifier>(data->typeGuid, data->objectGuid);
 					if (obj != nullptr)
 					{
 						strArr[0] = JCUtil::WstrToU8Str(obj->GetName());
-						strArr[1] = JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj)->GetPath());
+						strArr[1] = JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj.Get())->GetPath());
 						strArr[2] = obj->GetTypeInfo().NameWithOutModifier();
 					}
 					else
 					{
-						JFile* file = JDirectory::SearchFile(data->objectGuid);
+						JUserPtr<JFile> file = JDirectory::SearchFile(data->objectGuid);
 						if(file == nullptr)
 							continue;
 
@@ -223,9 +223,9 @@ namespace JinEngine
 		{
 			JEditorPage::Initialize();
 			windowDirectory->Initialize();
-			objectExplorer->Initialize(Core::GetUserPtr(_JSceneManager::Instance().GetFirstScene()->GetRootGameObject()));
-			sceneViewer->Initialize(Core::GetUserPtr(_JSceneManager::Instance().GetFirstScene()));
-			sceneObserver->Initialize(Core::GetUserPtr(_JSceneManager::Instance().GetFirstScene()), L"Editor_ObserverCamera");
+			objectExplorer->Initialize(_JSceneManager::Instance().GetFirstScene()->GetRootGameObject());
+			sceneViewer->Initialize(_JSceneManager::Instance().GetFirstScene());
+			sceneObserver->Initialize(_JSceneManager::Instance().GetFirstScene(), L"Editor_ObserverCamera");
 			logViewer->Initialize();
 			BuildMenuNode();
 		}
@@ -272,7 +272,7 @@ namespace JinEngine
 			if (openPopup != nullptr)
 				openPopup->Update(GetName(), JVector2<float>(0, 0), ImGui::GetMainViewport()->WorkSize);
 		}
-		bool JProjectMainPage::IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept
+		bool JProjectMainPage::IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept
 		{
 			return true;
 		}

@@ -11,7 +11,7 @@ namespace JinEngine
 		JEditorRenameHelper::JEditorRenameHelper()
 		{
 			renameBuff = std::make_unique<JEditorInputBuffHelper>(JImGuiImpl::GetTextBuffRange());
-			auto renameLam = [](const std::string newName, Core::JUserPtr<Core::JIdentifier> obj)
+			auto renameLam = [](const std::string newName, JUserPtr<Core::JIdentifier> obj)
 			{
 				obj->SetName(JCUtil::U8StrToWstr(JCUtil::EraseChar(newName, '\n')));
 			};
@@ -57,7 +57,7 @@ namespace JinEngine
 					renameBuff.get(),
 					multilineSize,
 					flag,
-					*renameF, Core::JUserPtr{ renameTar });		
+					*renameF, Core::JUserPtr{ renameTar });
 
 				if (ImGui::IsKeyDown(ImGuiKey_Enter))
 					Clear(); 
@@ -85,7 +85,7 @@ namespace JinEngine
 					Clear();
 			} 
 		}
-		void JEditorRenameHelper::Activate(Core::JUserPtr<Core::JIdentifier> newRenameTar)noexcept
+		void JEditorRenameHelper::Activate(JUserPtr<Core::JIdentifier> newRenameTar)noexcept
 		{
 			renameTar = newRenameTar;
 			if(IsActivated())

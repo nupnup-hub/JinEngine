@@ -50,11 +50,11 @@ namespace JinEngine
 
 			option.innerRoot = nullptr;
 			if (preHasInnerRoot[typeIndex][layerIndex])
-				option.innerRoot = Core::GetRawPtr<JGameObject>(preInnerRootGuid[typeIndex][layerIndex]);
+				option.innerRoot = Core::GetUserPtr<JGameObject>(preInnerRootGuid[typeIndex][layerIndex]);
 
 			option.debugRoot = nullptr;
 			if (preHasDebugRoot[typeIndex][layerIndex])
-				option.debugRoot = Core::GetRawPtr<JGameObject>(preDebugRootGuid[typeIndex][layerIndex]);
+				option.debugRoot = Core::GetUserPtr<JGameObject>(preDebugRootGuid[typeIndex][layerIndex]);
 		}
 		void JSceneSpatialStructure::ActivatedOptionCash::StoreRoot(const JSpaceSpatialOption& option, const J_SPACE_SPATIAL_TYPE type, const J_SPACE_SPATIAL_LAYER layer)noexcept
 		{
@@ -123,11 +123,11 @@ namespace JinEngine
 					data->Culling(camFrustum, cullingCamPos);
 			}
 		}
-		JGameObject* JSceneSpatialStructure::IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept
+		JUserPtr<JGameObject> JSceneSpatialStructure::IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept
 		{
 			return bvh[(int)layer]->IntersectFirst(ray);
 		}
-		void JSceneSpatialStructure::UpdateGameObject(JGameObject* gameObject)noexcept
+		void JSceneSpatialStructure::UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
 		{
 			if (!gameObject->HasRenderItem())
 				return;
@@ -138,7 +138,7 @@ namespace JinEngine
 					data->UpdateGameObject(gameObject);
 			}
 		}
-		void JSceneSpatialStructure::AddGameObject(JGameObject* gameObject)noexcept
+		void JSceneSpatialStructure::AddGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
 		{ 
 			for (auto& data : spaceSpatialVec)
 			{
@@ -146,7 +146,7 @@ namespace JinEngine
 					data->AddGameObject(gameObject);
 			}
 		}
-		void JSceneSpatialStructure::RemoveGameObject(JGameObject* gameObject)noexcept
+		void JSceneSpatialStructure::RemoveGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
 		{
 			if (gameObject == nullptr)
 				return;
@@ -157,14 +157,14 @@ namespace JinEngine
 					data->RemoveGameObject(gameObject);
 			}
 		}
-		std::vector<JGameObject*> JSceneSpatialStructure::GetAlignedObject(const J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& camFrustum)const noexcept
+		std::vector<JUserPtr<JGameObject>> JSceneSpatialStructure::GetAlignedObject(const J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& camFrustum)const noexcept
 		{
 			if (activateTrigger)
 			{
 				if (kdTree[(uint)layer]->IsSpaceSpatialActivated())
 					return kdTree[(uint)layer]->GetAlignedObject(camFrustum);
 			}
-			return std::vector<JGameObject*>();
+			return std::vector<JUserPtr<JGameObject>>();
 		}
 		JOctreeOption JSceneSpatialStructure::GetOctreeOption(const J_SPACE_SPATIAL_LAYER layer)const noexcept
 		{
@@ -199,7 +199,7 @@ namespace JinEngine
 			else
 				optionCash->SetKdTreeOption(layer, option);
 		}
-		void JSceneSpatialStructure::Activate(JGameObject* sceneRoot, JGameObject* sceneDebugRoot)noexcept
+		void JSceneSpatialStructure::Activate()noexcept
 		{
 			if (!activateTrigger)
 			{

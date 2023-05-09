@@ -1,6 +1,6 @@
 #pragma once 
 #include"../JDataType.h"
-#include"../Reflection/JReflection.h"
+#include"../Reflection/JTypeBase.h" 
 #include"../DI/JDIDataBase.h"
 #include<string> 
 
@@ -9,7 +9,7 @@ namespace JinEngine
 	namespace Core
 	{   
 		class JIdentifierPrivate;
-		class JIdentifier
+		class JIdentifier : public JTypeBase
 		{
 			REGISTER_CLASS_IDENTIFIER_LINE(JIdentifier)
 		public:
@@ -37,18 +37,17 @@ namespace JinEngine
 			std::unique_ptr<JIdentifierImpl> impl;
 		public:
 			std::wstring GetName() const noexcept;
-			std::wstring GetNameWithType()const noexcept;
-			size_t GetGuid()const noexcept;
-			static std::wstring GetDefaultName(const JTypeInfo& info)noexcept;
+			std::wstring GetNameWithType()const noexcept; 
+			static std::wstring GetDefaultName(const JTypeInfo& info)noexcept; 
 			static JIdentifierPrivate* GetPrivateInterface(const size_t typeGuid)noexcept;
 			virtual JIdentifierPrivate& GetPrivateInterface()const noexcept = 0;
 		public:
 			virtual void SetName(const std::wstring& newName)noexcept;
 		public:  
-			static bool BeginCopy(JIdentifier* from, JIdentifier* to);
-			static bool BeginDestroy(JIdentifier* ptr);
+			static bool BeginCopy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to);
+			static bool BeginDestroy(Core::JIdentifier* ptr);
 		protected:
-			static bool BeginForcedDestroy(JIdentifier* ptr);
+			static bool BeginForcedDestroy(Core::JIdentifier* ptr);
 			static void RegisterPrivateInterface(const JTypeInfo& info, JIdentifierPrivate& p);	//can't register abstract class 
 		public:
 			template<typename T, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, T>, int> = 0>
@@ -60,5 +59,5 @@ namespace JinEngine
 			JIdentifier(const InitData& initData);
 			virtual ~JIdentifier();
 		};
-	}
+	} 
 }

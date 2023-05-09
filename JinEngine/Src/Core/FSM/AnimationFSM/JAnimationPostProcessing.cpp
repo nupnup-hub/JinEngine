@@ -21,8 +21,8 @@ namespace JinEngine
 			const std::vector<DirectX::XMFLOAT3>& targetTranslation,
 			const std::vector<DirectX::XMFLOAT4X4>& bindPose)noexcept
 		{
-			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar();
-			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar();
+			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
+			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar().Get();
 
 			uint8 srcStRefIndex;
 			uint8 tarStRefIndex;
@@ -53,8 +53,8 @@ namespace JinEngine
 			const uint8 rootJointRefIndex,
 			const std::vector<DirectX::XMFLOAT4X4>& bindPose)noexcept
 		{
-			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar();
-			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton();
+			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
+			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
 			uint8 nowJointRefIndex = startJointRefIndex;
 			const XMFLOAT4 identityQ = JMathHelper::QuaternionZero();
 			const XMFLOAT4X4 identityM = JMathHelper::Identity4x4();
@@ -100,7 +100,7 @@ namespace JinEngine
 			const uint ikCount,
 			const uint loopCount)noexcept
 		{
-			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton();
+			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
 			if (srcSkeleton == nullptr)
 				return false;
 

@@ -7,6 +7,8 @@ namespace JinEngine
 		class EmptyType {};
 		static constexpr EmptyType empty;
 
+		using EmptyParam = const EmptyType&;
+
 		inline bool operator==(const EmptyType&, const EmptyType&)
 		{
 			return true;

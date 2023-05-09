@@ -65,8 +65,8 @@ namespace JinEngine
 	public:
 		JResourceManager* thisManager;
 	public:
-		Core::JUserPtr<JDirectory> engineRootDir = nullptr;
-		Core::JUserPtr<JDirectory> projectRootDir = nullptr;
+		JUserPtr<JDirectory> engineRootDir = nullptr;
+		JUserPtr<JDirectory> projectRootDir = nullptr;
 		std::unique_ptr<JResourceObjectDefualtData> defaultData = nullptr;
 		std::unique_ptr<JResourceObjectIO> resourceIO = nullptr;
 	public:
@@ -111,16 +111,19 @@ namespace JinEngine
 			{
 				if (data->isModified && data->isStore)
 				{
-					Core::JIdentifier* obj = Core::GetRawPtr(data->typeGuid, data->objectGuid);
-					if (obj != nullptr && obj->GetTypeInfo().IsChildOf<JResourceObject>())
+					JObject* obj = Core::GetRawPtr<JObject>(data->typeGuid, data->objectGuid);
+					if(obj == nullptr)
+						continue;
+
+					if (obj->GetTypeInfo().IsChildOf<JResourceObject>())
 					{
-						StoreResource(static_cast<JResourceObject*>(obj));
+						StoreResource(Core::GetUserPtr<JResourceObject>(obj));
 						data->isModified = false;
 					}
-					else
+					else if (obj->GetTypeInfo().IsChildOf<JDirectory>())
 					{
 						//cache file to asset file
-						JFile* file = JDirectory::SearchFile(data->objectGuid);
+						JUserPtr<JFile> file = JDirectory::SearchFile(data->objectGuid);
 						if (file != nullptr)
 						{
 							if (!RTypeCommonCall::GetRTypeHint(file->GetResourceType()).isFixedAssetFile)
@@ -138,26 +141,26 @@ namespace JinEngine
 		{
 			defaultData->Initialize();
 			J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
-			engineRootDir = JICI::CreateRetUser<JDirectory>(JApplicationEngine::RootPath(), Core::MakeGuid(), rootFlag, nullptr);
+			engineRootDir = JICI::Create<JDirectory>(JApplicationEngine::RootPath(), Core::MakeGuid(), rootFlag, nullptr);
 			
-			resourceIO->LoadEngineDirectory(engineRootDir.Get());
-			resourceIO->LoadEngineResource(engineRootDir.Get());
+			resourceIO->LoadEngineDirectory(engineRootDir);
+			resourceIO->LoadEngineResource(engineRootDir);
 			CreateDefaultTexture(defaultData->selectorTextureType);
 		}
 		void LoadProjectResource()
 		{
 			defaultData->Initialize();
 			J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
-			engineRootDir = JICI::CreateRetUser<JDirectory>(JApplicationEngine::RootPath(), Core::MakeGuid(), rootFlag, nullptr);
-			resourceIO->LoadEngineDirectory(engineRootDir.Get());
-			resourceIO->LoadEngineResource(engineRootDir.Get());
+			engineRootDir = JICI::Create<JDirectory>(JApplicationEngine::RootPath(), Core::MakeGuid(), rootFlag, nullptr);
+			resourceIO->LoadEngineDirectory(engineRootDir);
+			resourceIO->LoadEngineResource(engineRootDir);
 
 			rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
-			projectRootDir = Core::GetUserPtr(resourceIO->LoadRootDirectory(JApplicationProject::RootPath(), rootFlag));
+			projectRootDir = resourceIO->LoadRootDirectory(JApplicationProject::RootPath(), rootFlag);
 			
-			JDirectoryPrivate::ActivationInterface::OpenDirectory(projectRootDir.Get());		 
-			resourceIO->LoadProjectDirectory(projectRootDir.Get());
-			resourceIO->LoadProjectResource(projectRootDir.Get());
+			JDirectoryPrivate::ActivationInterface::OpenDirectory(projectRootDir);		 
+			resourceIO->LoadProjectDirectory(projectRootDir);
+			resourceIO->LoadProjectResource(projectRootDir);
 
 			CreateDefaultShader();
 			CreateDefaultTexture(defaultData->projectTextureType);
@@ -166,8 +169,8 @@ namespace JinEngine
 
 			if (_JSceneManager::Instance().GetActivatedSceneCount() == 0)
 			{
-				JDirectory* projectContentsDir = thisManager->GetDirectory(JApplicationProject::ContentsPath());
-				JDirectory* defaultSceneDir = projectContentsDir->GetChildDirctoryByPath(JApplicationProject::ContentScenePath());
+				JUserPtr<JDirectory> projectContentsDir = thisManager->GetDirectory(JApplicationProject::ContentsPath());
+				JUserPtr<JDirectory> defaultSceneDir = projectContentsDir->GetChildDirctoryByPath(JApplicationProject::ContentScenePath());
 				JICI::Create<JScene>(JScene::GetDefaultFormatIndex(), defaultSceneDir, J_SCENE_USE_CASE_TYPE::MAIN);
 			} 
 		}
@@ -177,8 +180,8 @@ namespace JinEngine
 			//수정필요
 			uint handleIncrement = 0;// JGraphic::Instance(DeviceInterface()->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 			uint textureCount = (uint)textureType.size();
-			JDirectory* textureDir = thisManager->GetDirectory(JApplicationEngine::DefaultResourcePath());
-
+			JUserPtr<JDirectory> textureDir = thisManager->GetDirectory(JApplicationEngine::DefaultResourcePath());
+ 
 			//1 is imgui preserved 
 			for (uint i = 0; i < textureCount; ++i)
 			{
@@ -188,7 +191,7 @@ namespace JinEngine
 				std::wstring name;
 				std::wstring format;
 				JCUtil::DecomposeFileName(JDefaultTexture::GetName(textureType[i]), name, format);
-				JFile* file = textureDir->SearchFile(name + format);
+				JUserPtr<JFile> file = textureDir->SearchFile(name + format);
 
 				if (file != nullptr)
 					defaultData->RegisterDefaultResource(textureType[i], file, isUse);
@@ -200,7 +203,7 @@ namespace JinEngine
 					if (textureType[i] == J_DEFAULT_TEXTURE::DEFAULT_SKY)
 						gTextureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE;
 					
-					JTexture* newTexture = JICI::Create<JTexture>(name, guid, objFlag, JResourceObject::GetFormatIndex<JTexture>(format),textureDir, oriPath, gTextureType);
+					JUserPtr<JTexture> newTexture = JICI::Create<JTexture>(name, guid, objFlag, JResourceObject::GetFormatIndex<JTexture>(format),textureDir, oriPath, gTextureType);
 					ThrowIfFailedN(newTexture != nullptr);
 					defaultData->RegisterDefaultResource(textureType[i], textureDir->SearchFile(guid), isUse);
 					StoreResource(newTexture);
@@ -209,7 +212,7 @@ namespace JinEngine
 		}
 		void CreateDefaultShader()
 		{
-			JDirectory* shaderDir = thisManager->GetDirectory(JApplicationProject::ShaderMetafilePath());
+			JUserPtr<JDirectory> shaderDir = thisManager->GetDirectory(JApplicationProject::ShaderMetafilePath());
 			const std::wstring format = JResourceObject::GetDefaultFormat<JShader>();
 			for (uint i = 0; i < (int)J_DEFAULT_GRAPHIC_SHADER::COUNTER; ++i)
 			{
@@ -220,13 +223,13 @@ namespace JinEngine
 				//use all default shader
 				const bool isUse = JDefaultShader::IsDefaultUse(type);
 				std::wstring shaderName = JShaderType::ConvertToName(shaderF, psoCondition.UniqueID());
-				JFile* file = shaderDir->GetDirectoryFile(shaderName + format);
+				JUserPtr<JFile> file = shaderDir->GetDirectoryFile(shaderName + format);
 
 				if (file != nullptr)
 					defaultData->RegisterDefaultResource(type, file, isUse);
 				else
 				{
-					JShader* newShader = JICI::Create<JShader>(objF, shaderF, psoCondition);
+					JUserPtr<JShader> newShader = JICI::Create<JShader>(objF, shaderF, psoCondition);
 					ThrowIfFailedN(newShader != nullptr);
 					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFile(newShader->GetName() + format), isUse);
 				}
@@ -240,12 +243,12 @@ namespace JinEngine
 
 				const bool isUse = JDefaultShader::IsDefaultUse(type);
 				std::wstring shaderName = JShaderType::ConvertToName(shaderF);
-				JFile* file = shaderDir->GetDirectoryFile(shaderName + format);
+				JUserPtr<JFile> file = shaderDir->GetDirectoryFile(shaderName + format);
 				if (file != nullptr)
 					defaultData->RegisterDefaultResource(type, file, isUse);
 				else
 				{
-					JShader* newShader = JICI::Create<JShader>(objF, SHADER_FUNCTION_NONE, JShaderGraphicPsoCondition(), shaderF);
+					JUserPtr<JShader> newShader = JICI::Create<JShader>(objF, SHADER_FUNCTION_NONE, JShaderGraphicPsoCondition(), shaderF);
 					ThrowIfFailedN(newShader != nullptr);
 					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFile(newShader->GetName() + format), isUse);
 				}
@@ -253,20 +256,20 @@ namespace JinEngine
 		}
 		void CreateDefaultMaterial()
 		{
-			auto debugLam = [](JDirectory* ownerDir,
+			auto debugLam = [](const JUserPtr<JDirectory>& ownerDir,
 				const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const XMFLOAT4& color,
-				const bool isLine)
+				const bool isLine) -> JUserPtr<JMaterial>
 			{	 
-				JMaterial* newMaterial = JICI::Create<JMaterial>(name, guid,
+				JUserPtr<JMaterial> newMaterial = JICI::Create<JMaterial>(name, guid,
 					Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), JMaterial::GetDefaultFormatIndex(), ownerDir);
 				JDefaultMaterialSetting::SetDebug(newMaterial, isLine, color); 
 				return newMaterial;
 			};
 
-			JDirectory* matDir = thisManager->GetDirectory(JApplicationProject::DefaultResourcePath());
+			JUserPtr<JDirectory> matDir = thisManager->GetDirectory(JApplicationProject::DefaultResourcePath());
 			const std::wstring format = JResourceObject::GetDefaultFormat<JMaterial>();
 			for (uint i = 0; i < (int)J_DEFAULT_MATERIAL::COUNTER; ++i)
 			{
@@ -276,12 +279,12 @@ namespace JinEngine
 				const bool isUse = JDefaultMateiral::IsDefaultUse(type);
 
 				const std::wstring name = JDefaultMateiral::ConvertToName(type);
-				JFile* file = matDir->SearchFile(name + format);
+				JUserPtr<JFile> file = matDir->SearchFile(name + format);
 				if (file != nullptr)
 					defaultData->RegisterDefaultResource(type, file, isUse);
 				else
 				{
-					JMaterial* newMaterial = nullptr;
+					JUserPtr<JMaterial> newMaterial = nullptr;
 					size_t guid = Core::MakeGuid();
 					switch (type)
 					{
@@ -420,8 +423,8 @@ namespace JinEngine
 			};
 
 			JDefaultGeometryGenerator geoGen;
-			JDirectory* projectDefualDir = thisManager->GetDirectory(JApplicationProject::DefaultResourcePath());
-			JDirectory* engineDefaultDir = thisManager->GetDirectory(JApplicationEngine::DefaultResourcePath());
+			JUserPtr<JDirectory> projectDefualDir = thisManager->GetDirectory(JApplicationProject::DefaultResourcePath());
+			JUserPtr<JDirectory> engineDefaultDir = thisManager->GetDirectory(JApplicationEngine::DefaultResourcePath());
 			//0 = empty
 			for (int i = 1; i < (int)J_DEFAULT_SHAPE::COUNT; ++i)
 			{
@@ -442,7 +445,7 @@ namespace JinEngine
 					std::wstring format;
 					JCUtil::DecomposeFileName(meshName, name, format);
 
-					JFile* file = projectDefualDir->SearchFile(name + format);
+					JUserPtr<JFile> file = projectDefualDir->SearchFile(name + format);
 					if (file != nullptr)
 					{
 						if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
@@ -466,7 +469,7 @@ namespace JinEngine
 							OBJECT_FLAG_UNCOPYABLE |
 							OBJECT_FLAG_HIDDEN);
 						Core::JFileImportHelpData pathData{ projectDefualDir->GetPath() + L"\\" + meshName, objFlag };
-						std::vector<JResourceObject*> result = JResourceObjectImporter::Instance().ImportResource(projectDefualDir, pathData);
+						std::vector<JUserPtr<JResourceObject>> result = JResourceObjectImporter::Instance().ImportResource(projectDefualDir, pathData);
 						for (const auto& data : result)
 						{
 							if (data->GetResourceType() == J_RESOURCE_TYPE::MESH)
@@ -479,7 +482,7 @@ namespace JinEngine
 				}
 				else
 				{
-					JFile* file = projectDefualDir->SearchFile(meshName + JResourceObject::GetDefaultFormat<JMeshGeometry>());
+					JUserPtr<JFile> file = projectDefualDir->SearchFile(meshName + JResourceObject::GetDefaultFormat<JMeshGeometry>());
 					if (file != nullptr)
 					{
 						if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
@@ -505,7 +508,7 @@ namespace JinEngine
 							if (i >= JDefaultShape::debugTypeSt)
 								flag = (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN);
 
-							JStaticMeshGeometry* newMesh = JICI::Create<JStaticMeshGeometry>(meshName, guid, flag, 
+							JUserPtr<JStaticMeshGeometry> newMesh = JICI::Create<JStaticMeshGeometry>(meshName, guid, flag,
 								JMeshGeometry::GetDefaultFormatIndex(), projectDefualDir, std::move(group));
 									 
 							ThrowIfFailedN(newMesh != nullptr);
@@ -523,7 +526,7 @@ namespace JinEngine
 			}
 		}
 	public:
-		void StoreResource(JResourceObject* rObj)
+		void StoreResource(const JUserPtr<JResourceObject>& rObj)
 		{
 			auto storeData = JResourceObjectPrivate::AssetDataIOInterface::CreateStoreAssetDIDate(rObj);
 			auto& rPrivate = static_cast<JResourceObjectPrivate&>(rObj->GetPrivateInterface());
@@ -532,40 +535,40 @@ namespace JinEngine
 	};
  
 	//convert raw to user
-	Core::JUserPtr<JMeshGeometry> JResourceManager::GetDefaultMeshGeometry(const J_DEFAULT_SHAPE type)const noexcept
+	JUserPtr<JMeshGeometry> JResourceManager::GetDefaultMeshGeometry(const J_DEFAULT_SHAPE type)const noexcept
 	{ 
 		return impl->defaultData->GetDefaultResource<JMeshGeometry>(type);
 	}
-	Core::JUserPtr<JMaterial> JResourceManager::GetDefaultMaterial(const J_DEFAULT_MATERIAL type)const noexcept
+	JUserPtr<JMaterial> JResourceManager::GetDefaultMaterial(const J_DEFAULT_MATERIAL type)const noexcept
 	{
 		return impl->defaultData->GetDefaultResource<JMaterial>(type);
 	}
-	Core::JUserPtr<JTexture> JResourceManager::GetDefaultTexture(const J_DEFAULT_TEXTURE type)const noexcept
+	JUserPtr<JTexture> JResourceManager::GetDefaultTexture(const J_DEFAULT_TEXTURE type)const noexcept
 	{
 		return impl->defaultData->GetDefaultResource<JTexture>(type);
 	}
-	Core::JUserPtr<JShader> JResourceManager::GetDefaultShader(const J_DEFAULT_GRAPHIC_SHADER type)const noexcept
+	JUserPtr<JShader> JResourceManager::GetDefaultShader(const J_DEFAULT_GRAPHIC_SHADER type)const noexcept
 	{
 		return impl->defaultData->GetDefaultResource<JShader>(type);
 	}
-	Core::JUserPtr<JShader> JResourceManager::GetDefaultShader(const J_DEFAULT_COMPUTE_SHADER type)const noexcept
+	JUserPtr<JShader> JResourceManager::GetDefaultShader(const J_DEFAULT_COMPUTE_SHADER type)const noexcept
 	{ 
 		return impl->defaultData->GetDefaultResource<JShader>(type);
 	}
-	JDirectory* JResourceManager::GetDirectory(const size_t guid)const noexcept
+	JUserPtr<JDirectory> JResourceManager::GetDirectory(const size_t guid)const noexcept
 	{
-		return JDirectory::StaticTypeInfo().GetInstanceRawPtr<JDirectory>(guid);
+		return JDirectory::StaticTypeInfo().GetInstanceUserPtr<JDirectory>(guid);
 	}
-	JDirectory* JResourceManager::GetDirectory(const std::wstring& path)const noexcept
+	JUserPtr<JDirectory> JResourceManager::GetDirectory(const std::wstring& path)const noexcept
 	{
 		bool(*ptr)(JDirectory*, const std::wstring&) = [](JDirectory* dir, const std::wstring& path){return dir->GetPath() == path;};
 		return GetDirectoryByCondition<JDirectory, const std::wstring&>(ptr, path);	 
 	}
-	JDirectory* JResourceManager::GetEditorResourceDirectory()const noexcept
+	JUserPtr<JDirectory> JResourceManager::GetEditorResourceDirectory()const noexcept
 	{
 		return GetDirectory(JApplicationProject::EditorSettingPath());
 	}
-	JDirectory* JResourceManager::GetActivatedDirectory()const noexcept
+	JUserPtr<JDirectory> JResourceManager::GetActivatedDirectory()const noexcept
 	{
 		bool(*ptr)(JDirectory*) = [](JDirectory* dir) {return dir->IsActivated(); };
 		return GetDirectoryByCondition(ptr);
@@ -574,16 +577,16 @@ namespace JinEngine
 	{
 		return info.GetInstanceCount();
 	}
-	JResourceObject* JResourceManager::GetResource(const Core::JTypeInfo& info, const size_t guid)const noexcept
+	JUserPtr<JResourceObject> JResourceManager::GetResource(const Core::JTypeInfo& info, const size_t guid)const noexcept
 	{
-		return static_cast<JResourceObject*>(info.GetInstanceRawPtr(guid));
+		return Core::GetUserPtr<JResourceObject>(info.TypeGuid(), guid);
 	}
-	JResourceObject* JResourceManager::GetResourceByPath(const Core::JTypeInfo& info, const std::wstring& path)const  noexcept
+	JUserPtr<JResourceObject> JResourceManager::GetResourceByPath(const Core::JTypeInfo& info, const std::wstring& path)const  noexcept
 	{
 		bool(*ptr)(JResourceObject*, const std::wstring&) = [](JResourceObject* rObj, const std::wstring& path) {return rObj->GetPath() == path; };
 		return FineResource<JResourceObject>(info, ptr, path);
 	}
-	Core::JUserPtr<JResourceObject> JResourceManager::TryGetResourceUser(const Core::JTypeInfo& info, const size_t guid)noexcept
+	JUserPtr<JResourceObject> JResourceManager::TryGetResourceUser(const Core::JTypeInfo& info, const size_t guid)noexcept
 	{ 
 		auto userPtr = Core::GetUserPtr<JResourceObject>(info.TypeGuid(), guid);
 		if (userPtr != nullptr)

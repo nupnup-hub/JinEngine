@@ -17,8 +17,8 @@ namespace JinEngine
 			{
 				REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 			public:
-				InitData(JUserPtr<JAnimationFSMdiagram> ownerDiagram);
-				InitData(const std::wstring& name, const size_t guid, JUserPtr<JAnimationFSMdiagram> ownerDiagram);
+				InitData(const JUserPtr<JAnimationFSMdiagram>& ownerDiagram);
+				InitData(const std::wstring& name, const size_t guid, const JUserPtr<JAnimationFSMdiagram>& ownerDiagram);
 			};
 		private:
 			friend class JAnimationFSMstateClipPrivate;
@@ -26,11 +26,11 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JAnimationFSMstateClipImpl> impl;
 		public: 
-			Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+			JIdentifierPrivate& GetPrivateInterface()const noexcept final;
 			J_ANIMATION_STATE_TYPE GetStateType()const noexcept final; 
-			Core::JUserPtr<JAnimationClip> GetClip()const noexcept;
+			JUserPtr<JAnimationClip> GetClip()const noexcept;
 		public:
-			void SetClip(Core::JUserPtr<JAnimationClip> newClip)noexcept;
+			void SetClip(const JUserPtr<JAnimationClip>& newClip)noexcept;
 		public:
 			bool CanLoop()const noexcept final;   
 		private:
@@ -58,8 +58,8 @@ namespace JinEngine
 		{
 			REGISTER_CLASS(JAnimationFSMstateClip)
 		private:
-			REGISTER_PROPERTY_EX(clip, GetClip, SetClip, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::ICON, true))
-			Core::JUserPtr<JAnimationClip> clip;
+			REGISTER_PROPERTY_EX(clip, GetClip, SetClip, GUI_SELECTOR(J_GUI_SELECTOR_IMAGE::ICON, true))
+			JUserPtr<JAnimationClip> clip;
 		public:
 			void Initialize()noexcept final;
 			J_ANIMATION_STATE_TYPE GetStateType()const noexcept final;
@@ -69,8 +69,8 @@ namespace JinEngine
 			void Close(JAnimationUpdateData* updateData)noexcept final;
 		public:
 			void GetRegisteredSkeleton(std::vector<JSkeletonAsset*>& skeletonVec)noexcept final;
-			Core::JUserPtr<JAnimationClip> GetClip()const noexcept;
-			void SetClip(Core::JUserPtr<JAnimationClip> newClip)noexcept;
+			JUserPtr<JAnimationClip> GetClip()const noexcept;
+			void SetClip(JUserPtr<JAnimationClip> newClip)noexcept;
 		public:
 			bool CanLoop()const noexcept final;
 		protected:
@@ -81,7 +81,7 @@ namespace JinEngine
 			J_FILE_IO_RESULT StoreData(std::wofstream& stream)final;
 			J_FILE_IO_RESULT LoadData(std::wifstream& stream)final;
 		private:
-			static void RegisterCallOnce();
+			static void RegisterTypeData();
 		private:
 			JAnimationFSMstateClip(const JFSMstateInitData& initData);
 			~JAnimationFSMstateClip();

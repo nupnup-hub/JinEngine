@@ -1,18 +1,29 @@
 #include"JObject.h"
 #include"JObjectPrivate.h" 
-#include"../Core/Identity/JIdentifierImplBase.h"
+#include"../Core/Reflection/JTypeImplBase.h"
 
 namespace JinEngine
 {
-	class JObject::JObjectImpl : public Core::JIdentifierImplBase
+	class JObject::JObjectImpl : public Core::JTypeImplBase
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JObjectImpl)
+	public:
+		JWeakPtr<JObject> thisPointer;
 	public:
 		const J_OBJECT_FLAG flag;
 	public:
 		JObjectImpl(const InitData& initData)
 			:flag(initData.flag)
-		{}
+		{} 
+	public:
+		void RegisterThisPointer(Core::JIdentifier* iden)
+		{ 
+			thisPointer = Core::GetWeakPtr<JObject>(iden);
+		}
+		static void RegisterTypeData()
+		{
+			IMPL_REALLOC_BIND(JObject::JObjectImpl, thisPointer)
+		}
 	};
 
 	JObject::InitData::InitData(const JTypeInfo& initTypeInfo)
@@ -25,7 +36,7 @@ namespace JinEngine
 		:Core::JIdentifier::InitData(initTypeInfo, name, guid), flag(flag)
 	{}  
 
-	JObject::StoreData::StoreData(JObject* obj)
+	JObject::StoreData::StoreData(JUserPtr<JObject> obj)
 		:obj(obj)
 	{}
 	bool JObject::StoreData::IsValidData()const noexcept
@@ -59,12 +70,21 @@ namespace JinEngine
 	} 
 
 	using CreateInstanceInterface = JObjectPrivate::CreateInstanceInterface;
-	using DestroyInstanceInterface = JObjectPrivate::DestroyInstanceInterface; 
-
-	bool CreateInstanceInterface::CanCopy(Core::JIdentifier* from, Core::JIdentifier* to)noexcept
+	using DestroyInstanceInterface = JObjectPrivate::DestroyInstanceInterface;  
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JIdentifierPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		static_cast<JObject*>(createdPtr)->impl->RegisterThisPointer(static_cast<JObject*>(createdPtr));
+	}
+	bool CreateInstanceInterface::CanCopy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to)noexcept
 	{
 		return Core::JIdentifierPrivate::CreateInstanceInterface::CanCopy(from, to) &&
-			!static_cast<JObject*>(from)->HasFlag(OBJECT_FLAG_UNCOPYABLE);
+			!static_cast<JObject*>(from.Get())->HasFlag(OBJECT_FLAG_UNCOPYABLE);
+	}
+
+	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced) 
+	{
+		Core::JIdentifierPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 	bool DestroyInstanceInterface::CanDestroyInstancce(Core::JIdentifier* ptr, const bool isForced)const noexcept
 	{

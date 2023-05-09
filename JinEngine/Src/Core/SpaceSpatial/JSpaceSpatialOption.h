@@ -1,5 +1,6 @@
 #pragma once
 #include"JSpaceSpatialType.h"
+#include"../Pointer/JOwnerPtr.h"
 #include<fstream>
 
 namespace JinEngine
@@ -10,8 +11,8 @@ namespace JinEngine
 		class JSpaceSpatialOption
 		{
 		public:
-			JGameObject* innerRoot = nullptr;
-			JGameObject* debugRoot = nullptr;
+			JUserPtr<JGameObject> innerRoot = nullptr;
+			JUserPtr<JGameObject> debugRoot = nullptr;
 		public:
 			bool isSpaceSpatialActivated = false;
 			bool isDebugActivated = false;
@@ -19,8 +20,8 @@ namespace JinEngine
 			bool isCullingActivated = false;
 		public:
 			JSpaceSpatialOption() = default;
-			JSpaceSpatialOption(JGameObject* innerRoot, 
-				JGameObject* debugRoot, 
+			JSpaceSpatialOption(JUserPtr<JGameObject> innerRoot,
+				JUserPtr<JGameObject> debugRoot,
 				bool isSpaceSpatialActivated, 
 				bool isDebugActivated, 
 				bool isDebugLeafOnly,

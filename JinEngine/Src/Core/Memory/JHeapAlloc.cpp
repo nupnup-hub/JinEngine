@@ -5,9 +5,9 @@ namespace JinEngine
 {
 	namespace Core
 	{ 
-		bool JHeapAlloc::Initialize(JAllocationDesc newDesc)
+		bool JHeapAlloc::Initialize(JAllocationDesc&& newDesc)
 		{
-			desc = newDesc;
+			desc = std::move(newDesc);
 			heapHandle = HeapCreate(0, 0, desc.dataCount * desc.dataSize);
 			if (heapHandle != NULL)
 			{ 
@@ -66,9 +66,9 @@ namespace JinEngine
 		{
 			return committedBlockCount + blockCount <= reservedBlockCount;
 		}
-		JAllocInfo JHeapAlloc::GetInformation()const noexcept
+		JAllocationInfo JHeapAlloc::GetInformation()const noexcept
 		{
-			return JAllocInfo{};
+			return JAllocationInfo{};
 		}
 		/*
 		void JHeapAlloc::CreateHeap(size_t heapSize, size_t maxSize)

@@ -1,6 +1,7 @@
 #pragma once
 #include"../../../Utility/JVector.h"
 #include"../../../Core/Pointer/JOwnerPtr.h"
+
 namespace JinEngine
 {
 	class JMaterial;
@@ -9,10 +10,10 @@ namespace JinEngine
 	class JDefaultMaterialSetting
 	{
 	public:
-		static void SetStandard(JMaterial* mat);
-		static void SetSky(JMaterial* mat, Core::JUserPtr<JTexture> skyTxt);
-		static void SetShadowMap(JMaterial* mat);
-		static void SetDebug(JMaterial* mat, const bool isLine, const JVector4<float> color);
-		static void SetAlbedoMapOnly(JMaterial* mat, Core::JUserPtr<JTexture> texture);
+		static void SetStandard(const JUserPtr<JMaterial>& mat);
+		static void SetSky(const JUserPtr<JMaterial>& mat, const JUserPtr<JTexture>& skyTxt);
+		static void SetShadowMap(const JUserPtr<JMaterial>& mat);
+		static void SetDebug(const JUserPtr<JMaterial>& mat, const bool isLine, const JVector4<float> color);
+		static void SetAlbedoMapOnly(const JUserPtr<JMaterial>& mat, const JUserPtr<JTexture>& texture);
 	};
 }

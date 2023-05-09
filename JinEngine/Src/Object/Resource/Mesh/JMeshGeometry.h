@@ -11,6 +11,7 @@ namespace JinEngine
 	class JMeshGeometry : public JResourceObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JMeshGeometry)
+		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
 	public: 
 		class InitData : public JResourceObject::InitData
 		{
@@ -20,19 +21,19 @@ namespace JinEngine
 		public:
 			InitData(const Core::JTypeInfo& type,
 				const uint8 formatIndex, 
-				JDirectory* directory,
+				const JUserPtr<JDirectory>& directory,
 				std::unique_ptr<JMeshGroup>&& meshGroup);
 			InitData(const Core::JTypeInfo& type, 
 				const size_t guid,
 				const uint8 formatIndex,
-				JDirectory* directory,
+				const JUserPtr<JDirectory>& directory,
 				std::unique_ptr<JMeshGroup>&& meshGroup);
 			InitData(const Core::JTypeInfo& type, 
 				const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const uint8 formatIndex,
-				JDirectory* directory,
+				const JUserPtr<JDirectory>& directory,
 				std::unique_ptr<JMeshGroup>&& meshGroup);
 		public:
 			bool IsValidData()const noexcept override;
@@ -44,7 +45,7 @@ namespace JinEngine
 		public:
 			J_MESHGEOMETRY_TYPE meshType;
 		public:
-			LoadMetaData(const Core::JTypeInfo& type, JDirectory* directory);
+			LoadMetaData(const Core::JTypeInfo& type, const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JMeshGeometryPrivate;
@@ -68,7 +69,7 @@ namespace JinEngine
 		uint GetSubmeshBaseVertexLocation(const uint index)const noexcept;
 		uint GetSubmeshStartIndexLocation(const uint index)const noexcept;
 		std::wstring GetSubMeshName(const uint index)const noexcept;
-		Core::JUserPtr<JMaterial> GetSubmeshMaterial(const uint index)const noexcept;
+		JUserPtr<JMaterial> GetSubmeshMaterial(const uint index)const noexcept;
 		DirectX::BoundingBox GetBoundingBox()const noexcept;
 		DirectX::XMFLOAT3 GetBoundingBoxCenter()const noexcept;
 		DirectX::XMFLOAT3 GetBoundingBoxExtent()const noexcept;

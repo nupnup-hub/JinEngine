@@ -12,7 +12,7 @@ namespace JinEngine
 	{
 		class JDITypeDataBase;
 		class JIdentifier;
-		class JIdentifierImplBase;
+		class JTypeImplBase;
 		class JIdenCreatorInterface;
 		class JTypeInfo;
 
@@ -24,8 +24,8 @@ namespace JinEngine
 			private:
 				friend class Editor::JEditorObjectReleaseInterface;
 			private:
-				static Core::JOwnerPtr<JIdentifier> ReleaseInstance(JIdentifier* ptr);	//release ownerPtr in typeInfo
-				static bool RestoreInstance(Core::JOwnerPtr<JIdentifier>&& instance);
+				static JOwnerPtr<JTypeBase> ReleaseInstance(JIdentifier* ptr);	//release ownerPtr in typeInfo
+				static bool RestoreInstance(JOwnerPtr<JTypeBase>&& instance);
 			};		
 			class CreateInstanceInterface
 			{
@@ -36,19 +36,20 @@ namespace JinEngine
 			public:
 				virtual ~CreateInstanceInterface() = default;
 			protected: 
-				static JIdentifier* BeginCreate(std::unique_ptr<JDITypeDataBase>&& initData, JIdentifierPrivate* pInterface)noexcept;
-				static JIdentifier* BeginCreateAndCopy(std::unique_ptr<JDITypeDataBase>&& initData, JIdentifier* from)noexcept;
+				static JUserPtr<JIdentifier> BeginCreate(std::unique_ptr<JDITypeDataBase>&& initData, JIdentifierPrivate* pInterface)noexcept;
+				static JUserPtr<JIdentifier> BeginCreateAndCopy(std::unique_ptr<JDITypeDataBase>&& initData, JUserPtr<JIdentifier> from)noexcept;		 
 			private:
-				virtual Core::JOwnerPtr<JIdentifier> Create(std::unique_ptr<JDITypeDataBase>&& initData) = 0;
-				virtual bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept;
-				virtual void PrepareCreateInstance()noexcept;
-				virtual void RegisterCash(JIdentifier* createdPtr)noexcept;				//Register Cash in onwer class or parent class
-				virtual void SetValidInstance(JIdentifier* createdPtr)noexcept;
-				static bool AddInstance(Core::JOwnerPtr<JIdentifier>&& createdOwner)noexcept;	//Add Instance in typeinfo 
-			private:
-				virtual bool Copy(JIdentifier* from, JIdentifier* to) = 0;
+				virtual JOwnerPtr<JIdentifier> Create(JDITypeDataBase* initData) = 0;
+				virtual bool CanCreateInstance(JDITypeDataBase* initData)const noexcept; 
 			protected:
-				virtual bool CanCopy(JIdentifier* from, JIdentifier* to)noexcept = 0;	 
+				virtual void Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept;		//Initialize post creation	it is called by child to parent
+			private:
+				virtual void RegisterCash(JIdentifier* createdPtr)noexcept;				//Register Cash in onwer class or parent class
+				virtual void SetValidInstance(JIdentifier* createdPtr)noexcept; 
+			private:
+				virtual bool Copy(JUserPtr<JIdentifier> from, JUserPtr<JIdentifier> to) = 0;
+			protected:
+				virtual bool CanCopy(JUserPtr<JIdentifier> from, JUserPtr<JIdentifier> to)noexcept = 0;
 			};
 			class DestroyInstanceInterface
 			{
@@ -58,14 +59,12 @@ namespace JinEngine
 			public:
 				virtual ~DestroyInstanceInterface() = default;
 			protected:
-				virtual bool CanDestroyInstancce(JIdentifier* ptr, const bool isForced)const noexcept;
+				virtual bool CanDestroyInstancce(JIdentifier* ptr, const bool isForced)const noexcept; 
+			protected:
+				virtual void Clear(JIdentifier* ptr, const bool isForced);					//Clear Objectit is called by child to parent 
 			private:
-				virtual void Clear(JIdentifier* ptr, const bool isForced) = 0;				//Clear Object	
-				virtual void PrepareDestroyInstance(JIdentifier* ptr)noexcept;			 		
-				virtual void DeRegisterCash(JIdentifier* ptr)noexcept;						//DeRegister Cash in onwer class
-				virtual void SetInvalidInstance(JIdentifier* ptr)noexcept;
-			private:
-				static bool RemoveInstance(JIdentifier* ptr)noexcept;	//Remove Instance in typeinfo 
+				virtual void DeRegisterCash(JIdentifier* ptr)noexcept;						//DeRegister Instance Cash in onwer class
+				virtual void SetInvalidInstance(JIdentifier* ptr)noexcept; 
 			}; 
 		public:
 			virtual ~JIdentifierPrivate() = default;

@@ -1,7 +1,7 @@
 #include"JFSMparameter.h" 
 #include"JFSMparameterPrivate.h" 
 #include"JFSMparameterStorage.h" 
-#include"../Identity/JIdentifierImplBase.h"
+#include"../Reflection/JTypeImplBase.h"
 
 namespace JinEngine
 {
@@ -9,24 +9,28 @@ namespace JinEngine
 	{
 		namespace
 		{
+			using OwnTypeInterface = JFSMparameterStoragePrivate::OwnTypeInterface;
+		}
+		namespace
+		{
 			static JFSMparameterPrivate pPrivate;
 		}
  
-		class JFSMparameter::JFSMparameterImpl : public JIdentifierImplBase
+		class JFSMparameter::JFSMparameterImpl : public JTypeImplBase
 		{
 			REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JFSMparameterImpl)
 			REGISTER_GUI_ENUM_CONDITION(ParameterType, J_FSM_PARAMETER_VALUE_TYPE, paramType)
 		public:
-			JFSMparameter* thisParam;
+			JWeakPtr<JFSMparameter> thisPointer;
 		public:
 			REGISTER_PROPERTY_EX(paramType, GetParamType, SetParamType)
-			JFSMparameterStorageInterface* paramStorage = nullptr;
+			JUserPtr<JFSMparameterStoragePublicAccess> paramStorage = nullptr;
 			J_FSM_PARAMETER_VALUE_TYPE paramType = J_FSM_PARAMETER_VALUE_TYPE::BOOL;
 			float value = 0;
 		public:
-			JFSMparameterImpl(const InitData& initData, JFSMparameter* thisParam)
-				:paramStorage(initData.paramStorage), thisParam(thisParam)
-			{ }
+			JFSMparameterImpl(const InitData& initData, JFSMparameter* thisParamRaw)
+				:paramStorage(initData.paramStorage)
+			{}
 			~JFSMparameterImpl() {}
 		public:
 			float GetValue()const noexcept
@@ -46,40 +50,44 @@ namespace JinEngine
 			void SetParamType(const J_FSM_PARAMETER_VALUE_TYPE newParamType)noexcept
 			{
 				paramType = newParamType;
-				thisParam->SetValue(value);
+				thisPointer->SetValue(value);
 			}
 		public:
 			bool RegisterInstance()noexcept
 			{
-				return paramStorage->AddParameter(thisParam);
+				return OwnTypeInterface::AddParameter(paramStorage, thisPointer);
 			}
 			bool DeRegisterInstance()noexcept
 			{
-				return paramStorage->RemoveParameter(thisParam);
+				return OwnTypeInterface::RemoveParameter(paramStorage, thisPointer);
 			}
 		public:
 			void Clear()noexcept
 			{}
 		public:
-			static void RegisterCallOnce()
+			void RegisterThisPointer(JFSMparameter* param)
 			{
-				Core::JIdentifier::RegisterPrivateInterface(JFSMparameter::StaticTypeInfo(), pPrivate);
+				thisPointer = Core::GetWeakPtr(param);
+			}
+			static void RegisterTypeData()
+			{
+				JIdentifier::RegisterPrivateInterface(JFSMparameter::StaticTypeInfo(), pPrivate);
+				IMPL_REALLOC_BIND(JFSMparameter::JFSMparameterImpl, thisPointer)
 			}
 		};
 
-		JFSMparameter::InitData::InitData(JFSMparameterStorageInterface* paramStorage, const J_FSM_PARAMETER_VALUE_TYPE paramType)
+		JFSMparameter::InitData::InitData(const JUserPtr<JFSMparameterStoragePublicAccess>& paramStorage, const J_FSM_PARAMETER_VALUE_TYPE paramType)
 			: JFSMinterface::InitData(initTypeInfo), paramStorage(paramStorage), paramType(paramType)
 		{}
-		JFSMparameter::InitData::InitData(const std::wstring& name, const size_t guid, JFSMparameterStorageInterface* paramStorage, const J_FSM_PARAMETER_VALUE_TYPE paramType)
+		JFSMparameter::InitData::InitData(const std::wstring& name, const size_t guid, const JUserPtr<JFSMparameterStoragePublicAccess>& paramStorage, const J_FSM_PARAMETER_VALUE_TYPE paramType)
 			: JFSMinterface::InitData(initTypeInfo, name, guid), paramStorage(paramStorage), paramType(paramType)
 		{}
 		bool JFSMparameter::InitData::IsValidData()const noexcept
 		{
 			return JFSMinterface::InitData::IsValidData() && paramStorage != nullptr;
-
 		}
  
-		Core::JIdentifierPrivate& JFSMparameter::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JFSMparameter::GetPrivateInterface()const noexcept
 		{
 			return pPrivate;
 		}
@@ -111,6 +119,10 @@ namespace JinEngine
 		{
 			impl->SetParamType(paramType);
 		} 
+		bool JFSMparameter::IsStorageParameter(const size_t storageGuid)const noexcept
+		{
+			return impl->paramStorage->GetGuid() == storageGuid;
+		}
 		JFSMparameter::JFSMparameter(const InitData& initData)
 			:JFSMinterface(initData), impl(std::make_unique<JFSMparameterImpl>(initData, this))
 		{}
@@ -120,37 +132,44 @@ namespace JinEngine
 		}
 
 		using CreateInstanceInterface = JFSMparameterPrivate::CreateInstanceInterface;
-		using DestroyInstanceInterface = JFSMparameterPrivate::DestroyInstanceInterface;
+		using DestroyInstanceInterface = JFSMparameterPrivate::DestroyInstanceInterface; 
 
-		Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+		JOwnerPtr<JIdentifier> CreateInstanceInterface::Create(JDITypeDataBase* initData)
 		{
-			return Core::JPtrUtil::MakeOwnerPtr<JFSMparameter>(*static_cast<JFSMparameter::InitData*>(initData.get()));
+			return JPtrUtil::MakeOwnerPtr<JFSMparameter>(*static_cast<JFSMparameter::InitData*>(initData));
 		}
-		bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
+		void CreateInstanceInterface::Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept
+		{
+			JIdentifierPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+			JFSMparameter* param = static_cast<JFSMparameter*>(createdPtr);
+			param->impl->RegisterThisPointer(param);
+		}
+		void CreateInstanceInterface::RegisterCash(JIdentifier* createdPtr)noexcept
+		{
+			static_cast<JFSMparameter*>(createdPtr)->impl->RegisterInstance();
+		}
+		bool CreateInstanceInterface::CanCreateInstance(JDITypeDataBase* initData)const noexcept
 		{
 			const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JFSMparameter::InitData::StaticTypeInfo());
 			return isValidPtr && initData->IsValidData();
 		}
-		void CreateInstanceInterface::RegisterCash(Core::JIdentifier* createdPtr)noexcept
-		{
-			static_cast<JFSMparameter*>(createdPtr)->impl->RegisterInstance();
-		}
 
-		void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
+		void DestroyInstanceInterface::Clear(JIdentifier* ptr, const bool isForced)
 		{
+			JFSMinterfacePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 			static_cast<JFSMparameter*>(ptr)->impl->Clear();
 		}
 		void DestroyInstanceInterface::DeRegisterCash(JIdentifier* ptr)noexcept
 		{
 			static_cast<JFSMparameter*>(ptr)->impl->DeRegisterInstance();
 		}
-
-		Core::JIdentifierPrivate::CreateInstanceInterface& JFSMparameterPrivate::GetCreateInstanceInterface()const noexcept
+ 
+		JIdentifierPrivate::CreateInstanceInterface& JFSMparameterPrivate::GetCreateInstanceInterface()const noexcept
 		{
 			static CreateInstanceInterface pI;
 			return pI;
 		}
-		Core::JIdentifierPrivate::DestroyInstanceInterface& JFSMparameterPrivate::GetDestroyInstanceInterface()const noexcept
+		JIdentifierPrivate::DestroyInstanceInterface& JFSMparameterPrivate::GetDestroyInstanceInterface()const noexcept
 		{
 			static DestroyInstanceInterface pI;
 			return pI;

@@ -5,7 +5,7 @@
 #include"../Material/JMaterial.h"
 #include"../../Directory/JDirectory.h" 
 #include"../../../Core/Guid/GuidCreator.h"
-#include"../../../Core/Identity/JIdentifierImplBase.h"
+#include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include<fstream>
@@ -19,15 +19,15 @@ namespace JinEngine
 		static JStaticMeshGeometryPrivate sPrivate;
 	}
  
-	class JStaticMeshGeometry::JStaticMeshGeometryImpl : public Core::JIdentifierImplBase
+	class JStaticMeshGeometry::JStaticMeshGeometryImpl : public Core::JTypeImplBase
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JStaticMeshGeometryImpl)
 	public:
+		JWeakPtr<JStaticMeshGeometry> thisPointer = nullptr;
+	public:
 		JStaticMeshGeometryImpl(const InitData& initData)
 		{}
-		~JStaticMeshGeometryImpl(){}
-	public:
-		void Initialize(const InitData& initData){}
+		~JStaticMeshGeometryImpl(){} 
 	public:
 		static std::unique_ptr<JMeshGroup> ReadAssetData(const std::wstring& path)
 		{
@@ -155,18 +155,23 @@ namespace JinEngine
 			return std::make_unique<InitData>(name, meta->guid, meta->flag, meta->formatIndex, meta->directory, ReadAssetData(path));
 		}
 	public:
-		static void RegisterCallOnce()
+		void RegisterThisPointer(JStaticMeshGeometry* mesh)
+		{
+			thisPointer = Core::GetWeakPtr(mesh);
+		}
+		static void RegisterTypeData()
 		{
 			Core::JIdentifier::RegisterPrivateInterface(JStaticMeshGeometry::StaticTypeInfo(), sPrivate);
+			IMPL_REALLOC_BIND(JStaticMeshGeometry::JStaticMeshGeometryImpl, thisPointer)
 		}
 	};
 
-	JStaticMeshGeometry::InitData::InitData(const uint8 formatIndex, JDirectory* directory, std::unique_ptr<JMeshGroup>&& meshGroup)
+	JStaticMeshGeometry::InitData::InitData(const uint8 formatIndex, const JUserPtr<JDirectory>& directory, std::unique_ptr<JMeshGroup>&& meshGroup)
 		: JMeshGeometry::InitData(JStaticMeshGeometry::StaticTypeInfo(), formatIndex, directory, std::move(meshGroup))
 	{}
 	JStaticMeshGeometry::InitData::InitData(const size_t guid,
 		const uint8 formatIndex,
-		JDirectory* directory,
+		const JUserPtr<JDirectory>& directory,
 		std::unique_ptr<JMeshGroup>&& meshGroup)
 		: JMeshGeometry::InitData(JStaticMeshGeometry::StaticTypeInfo(), guid, formatIndex, directory, std::move(meshGroup))
 	{ }
@@ -174,12 +179,12 @@ namespace JinEngine
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
 		const uint8 formatIndex,
-		JDirectory* directory,
+		const JUserPtr<JDirectory>& directory,
 		std::unique_ptr<JMeshGroup>&& meshGroup)
 		: JMeshGeometry::InitData(JStaticMeshGeometry::StaticTypeInfo(), name, guid, flag, formatIndex, directory, std::move(meshGroup))
 	{ }
 
-	JStaticMeshGeometry::LoadMetaData::LoadMetaData(JDirectory* directory)
+	JStaticMeshGeometry::LoadMetaData::LoadMetaData(const JUserPtr<JDirectory>& directory)
 		: JMeshGeometry::LoadMetaData(JStaticMeshGeometry::StaticTypeInfo(), directory)
 	{}
 
@@ -193,9 +198,7 @@ namespace JinEngine
 	}
 	JStaticMeshGeometry::JStaticMeshGeometry(InitData& initData)
 		: JMeshGeometry(initData), impl(std::make_unique<JStaticMeshGeometryImpl>(initData))
-	{
-		impl->Initialize(initData);
-	}
+	{ }
 	JStaticMeshGeometry::~JStaticMeshGeometry()
 	{
 		impl.reset();
@@ -204,9 +207,15 @@ namespace JinEngine
 	using CreateInstanceInterface = JStaticMeshGeometryPrivate::CreateInstanceInterface;
 	using AssetDataIOInterface = JStaticMeshGeometryPrivate::AssetDataIOInterface; 
 
-	Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{ 
-		return Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGeometry>(*static_cast<JStaticMeshGeometry::InitData*>(initData.get()));
+		return Core::JPtrUtil::MakeOwnerPtr<JStaticMeshGeometry>(*static_cast<JStaticMeshGeometry::InitData*>(initData));
+	}
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JMeshGeometryPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		JStaticMeshGeometry* mesh = static_cast<JStaticMeshGeometry*>(createdPtr);
+		mesh->impl->RegisterThisPointer(mesh);
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
@@ -214,28 +223,28 @@ namespace JinEngine
 		return isValidPtr && initData->IsValidData();
 	}
 
-	Core::JIdentifier* AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
+	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JStaticMeshGeometry::LoadData::StaticTypeInfo()))
 			return nullptr;
   
 		auto loadData = static_cast<JStaticMeshGeometry::LoadData*>(data);
 		auto pathData = loadData->pathData;
-		JDirectory* directory = loadData->directory;
+		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto metaData = std::make_unique<JStaticMeshGeometry::LoadMetaData>(directory);	//for load metadata
 		if (LoadMetaData(pathData.engineMetaFileWPath, metaData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
-		JStaticMeshGeometry* newMesh = nullptr;
+		JUserPtr<JStaticMeshGeometry> newMesh = nullptr;
 		if (directory->HasFile(metaData->guid))
-			newMesh = static_cast<JStaticMeshGeometry*>(Core::GetUserPtr(JStaticMeshGeometry::StaticTypeInfo().TypeGuid(), metaData->guid).Get());
+			newMesh = Core::GetUserPtr<JStaticMeshGeometry>(JStaticMeshGeometry::StaticTypeInfo().TypeGuid(), metaData->guid);
 
 		if (newMesh == nullptr)
 		{
 			using Impl = JStaticMeshGeometry::JStaticMeshGeometryImpl;
-			auto rawPtr = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.engineFileWPath, metaData.get()), &sPrivate);
-			newMesh = static_cast<JStaticMeshGeometry*>(rawPtr);
+			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.engineFileWPath, metaData.get()), &sPrivate);
+			newMesh.ConnnectChild(idenUser);
 		}
 		return newMesh;
 	}
@@ -248,7 +257,8 @@ namespace JinEngine
 		if (!storeData->HasCorrectType(JStaticMeshGeometry::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		JStaticMeshGeometry* newMesh = static_cast<JStaticMeshGeometry*>(storeData->obj);
+		JUserPtr<JStaticMeshGeometry>newMesh;
+		newMesh.ConnnectChild(storeData->obj);
 		return newMesh->impl->WriteAssetData(newMesh->GetPath(), newMesh->GetMeshGroupData()) ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
@@ -274,8 +284,9 @@ namespace JinEngine
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JStaticMeshGeometry::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		auto storeData = static_cast<JStaticMeshGeometry::StoreData*>(data);
-		JStaticMeshGeometry* mesh = static_cast<JStaticMeshGeometry*>(storeData->obj);
+		auto storeData = static_cast<JStaticMeshGeometry::StoreData*>(data); 
+		JUserPtr<JStaticMeshGeometry>mesh;
+		mesh.ConnnectChild(storeData->obj);
 
 		std::wofstream stream;
 		stream.open(mesh->GetMetaFilePath(), std::ios::out | std::ios::binary);

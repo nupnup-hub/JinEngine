@@ -21,9 +21,9 @@ namespace JinEngine
 			friend class JResourceObjectIO;
 			friend class CreateInstanceInterface;
 		private:
-			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(JDirectory* parent, const Core::JAssetFileLoadPathData& pathData);
+			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(const JUserPtr<JDirectory>& parent, const Core::JAssetFileLoadPathData& pathData);
 		private:
-			static Core::JIdentifier* LoadAssetData(Core::JDITypeDataBase* data);
+			static JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data);
 			static Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data);
 			static Core::J_FILE_IO_RESULT LoadMetaData(std::wifstream& stream, Core::JDITypeDataBase* data);	//use initData
 			static Core::J_FILE_IO_RESULT StoreMetaData(std::wofstream& stream, Core::JDITypeDataBase* data);	//use storeData
@@ -33,12 +33,13 @@ namespace JinEngine
 		private:
 			friend class AssetDataIOInterface;
 		private:
-			Core::JOwnerPtr<Core::JIdentifier> Create(std::unique_ptr<Core::JDITypeDataBase>&& initData) final;
+			JOwnerPtr<Core::JIdentifier> Create(Core::JDITypeDataBase* initData) final;
 		private:
 			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final;
+			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept final;
 			void RegisterCash(Core::JIdentifier* createdPtr)noexcept final; 
 			void SetValidInstance(Core::JIdentifier* createdPtr)noexcept final;
-			bool Copy(Core::JIdentifier* from, Core::JIdentifier* to) noexcept; 
+			bool Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept;
 		};
 		class DestroyInstanceInterface final : public JObjectPrivate::DestroyInstanceInterface
 		{
@@ -55,10 +56,10 @@ namespace JinEngine
 			friend class JResourceObject; 
 			friend class JResourceObjectIO;
 		private: 
-			static void ConvertToActFileData(JResourceObject* rObj) noexcept;
+			static void ConvertToActFileData(const JUserPtr<JResourceObject>& rObj) noexcept;
 			static void ConvertToDeActFileData(const size_t guid) noexcept;
 		private:
-			static JFile* CreateJFile(const JFileInitData& initData, JDirectory* owner);
+			static JUserPtr<JFile> CreateJFile(const JFileInitData& initData, const JUserPtr<JDirectory>& owner);
 			static bool DestroyJFile(const size_t rGuid);
 		};
 		class ActivationInterface final
@@ -67,16 +68,16 @@ namespace JinEngine
 			friend class Editor::JWindowDirectory;
 			friend class JResourceManager;
 		private:
-			static void OpenDirectory(JDirectory* dir)noexcept;
-			static void CloseDirectory(JDirectory* dir)noexcept;
+			static void OpenDirectory(const JUserPtr<JDirectory>& dir)noexcept;
+			static void CloseDirectory(const JUserPtr<JDirectory>& dir)noexcept;
 		};
 		class RawDirectoryInterface final
 		{
 		private:
 			friend class Editor::JWindowDirectory; 
 		private:
-			static void MoveDirectory(JDirectory* dir, JDirectory* newParent)noexcept;
-			static void DeleteDirectory(JDirectory* dir)noexcept;
+			static void MoveDirectory(const JUserPtr<JDirectory>& dir, const JUserPtr<JDirectory>& newParent)noexcept;
+			static void DeleteDirectory(const JUserPtr<JDirectory>& dir)noexcept;
 		};
 		class DestroyInstanceInterfaceEx
 		{

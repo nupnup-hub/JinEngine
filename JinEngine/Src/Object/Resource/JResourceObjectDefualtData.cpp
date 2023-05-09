@@ -35,7 +35,8 @@ namespace JinEngine
 		J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON,
 		J_DEFAULT_TEXTURE::COORD_GRID_ICON,
 		J_DEFAULT_TEXTURE::PLAY_SCENE_TIME, 
-		J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME
+		J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME,
+		J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND		//Test
 	}; 
 	//const uint JResourceObjectDefualtData::editorTextureCapacity = (uint)textureNames.size(); 
 	JResourceObjectDefualtData::JResourceObjectDefualtData()

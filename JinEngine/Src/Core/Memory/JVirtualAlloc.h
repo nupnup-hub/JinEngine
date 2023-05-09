@@ -1,5 +1,5 @@
 #pragma once 
-#include"JAllocationInterface.h"
+#include"JAllocationInterface.h" 
 
 namespace JinEngine
 {
@@ -45,10 +45,13 @@ namespace JinEngine
 			size_t oriBlockSize = 0;
 			size_t allocBlockSize = 0;
 			size_t pageSize = 0;
+			size_t totalAllocSize = 0;
 			uint committedPageCount = 0;
-			uint useBlockCount = 0;
+			uint committedBlockCount = 0;
 			uint reservedBlockCount = 0;
 			uint reservedPageCount = 0;
+		private:
+			uint useBlockCount = 0;  
 		private:
 			uint lastAllocPageIndex = 0;	//store last page index  caution! it isn't store realloc page index
 		private:
@@ -57,7 +60,7 @@ namespace JinEngine
 			JVirtualAlloc();
 			~JVirtualAlloc();
 		public:
-			bool Initialize(JAllocationDesc newDesc)final;
+			bool Initialize(JAllocationDesc&& newDesc)final;
 			void* Allocate(const size_t reqSize)final;
 			void DeAllocate(void* p)final;
 			void DeAllocate(void* p, const size_t size)final;
@@ -67,14 +70,17 @@ namespace JinEngine
 		public:
 			bool CanAllocate(const uint blockCount)const noexcept final; 
 		private:
+			bool CanCompactMemory()const noexcept;
 			bool IsOverlapPage(const uint pageIndex)const noexcept;
 		private:
 			uint GetBlockIndex(void* p)const noexcept;
 			uint GetPageIndex(void* p)const noexcept;
 			uint GetPageIndex(const uint blockIndex)const noexcept;
 			uint GetCommittedBlockCount()const noexcept;
-			uint GetAllocableBlockCount()const noexcept;
-			JAllocInfo GetInformation()const noexcept final;
+			uint GetAllocableBlockCount()const noexcept; 
+			uint GetAllocatedBlockCount()const noexcept;
+			uint GetDeAllocatedBlockCount()const noexcept;
+			JAllocationInfo GetInformation()const noexcept final;
 		private:
 			inline DataPointer CalPtrLocation(const uint index)const noexcept
 			{
@@ -87,8 +93,7 @@ namespace JinEngine
 			inline size_t CalBlockSize(const uint blockIndex)const noexcept
 			{
 				return allocBlockSize * (size_t)blockIndex;
-			}
-			//Unuse
+			} 
 			void CalPageInnerBlockIndex(const uint pageIndex, _Out_ uint& st, _Out_ uint& ed)const noexcept;
 		private:
 			DataPointer UsePage(const uint pageIndex)noexcept;
@@ -100,7 +105,7 @@ namespace JinEngine
 			DataPointer CommitEmtpyBlock();
 			DataPointer CommitEmptyPage();
 		private:
-			void CompactUnuseMemory();
+			bool CompactUnuseMemory();
 			void FreeUnuseMemory();
 		private:
 			template<typename T>
@@ -122,6 +127,8 @@ namespace JinEngine
 				}
 				*infoP = nullptr;
 			}
+		private:
+			bool Extend();
 		};
 	}
 }

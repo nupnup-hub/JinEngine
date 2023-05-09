@@ -1,7 +1,7 @@
 #include"JTypeInfo.h"    
 #include"JPropertyInfo.h"    
 #include"JMethodInfo.h"   
-#include"../Pointer/JOwnerPtr.h" 
+#include"../Pointer/JOwnerPtr.h"  
 #include"../../Object/JObject.h"
 #include"../../Utility/JCommonUtility.h" 
 
@@ -9,6 +9,9 @@ namespace JinEngine
 {
 	namespace Core
 	{   
+		JTypeInfo::InterfaceTypeInfo::InterfaceTypeInfo(Core::JTypeInfo& interfaceType, const ConvertInterfacePtr convertPtr)
+			:interfaceType(interfaceType), convertPtr(convertPtr)
+		{}
 		JTypeInfo::ImplTypeInfo::ImplTypeInfo(Core::JTypeInfo& implType, const ConvertImplBasePtr convertPtr)
 			:implType(implType), convertPtr(convertPtr)
 		{}
@@ -23,7 +26,7 @@ namespace JinEngine
 			if (withOutName[0] == 'J')
 				withOutName = withOutName.substr(0);
 			
-			int index = withOutName.find("Interface");
+			int index = (int)withOutName.find("Interface");
 			if (index != std::string::npos)
 				return withOutName.substr(0, index);
 			else
@@ -80,7 +83,7 @@ namespace JinEngine
 		}
 		int JTypeInfo::GetInstanceIndex(IdentifierType iden)const noexcept
 		{
-			return instanceData != nullptr ? JCUtil::GetJIdenIndex(instanceData->classInstanceVec, iden) : -1;
+			return instanceData != nullptr ? JCUtil::GetTypeIndex(instanceData->classInstanceVec, iden) : -1;
  		}
 		JTypeInstance* JTypeInfo::GetInstanceRawPtr(IdentifierType iden)const noexcept
 		{
@@ -98,6 +101,14 @@ namespace JinEngine
 			auto data = instanceData->classInstanceMap.find(iden);
 			return data != instanceData->classInstanceMap.end() ? JUserPtr<JTypeInstance>{data->second } : JUserPtr<JTypeInstance>{};
 		}
+		JWeakPtr<JTypeInstance> JTypeInfo::GetInstanceWeakPtr(IdentifierType iden)const noexcept
+		{
+			if (instanceData == nullptr)
+				return JWeakPtr<JTypeInstance>{};
+
+			auto data = instanceData->classInstanceMap.find(iden);
+			return data != instanceData->classInstanceMap.end() ? JWeakPtr<JTypeInstance>{data->second } : JWeakPtr<JTypeInstance>{};
+		}
 		TypeInstanceVector JTypeInfo::GetInstanceRawPtrVec()const noexcept
 		{
 			if (instanceData == nullptr)
@@ -109,7 +120,7 @@ namespace JinEngine
 		{ 
 			return allocationInterface.get();
 		}
-		JAllocInfo JTypeInfo::GetAllocInfo()const noexcept
+		JAllocationInfo JTypeInfo::GetAllocInfo()const noexcept
 		{
 			if (allocationInterface != nullptr)
 				return allocationInterface->GetInformation();
@@ -117,15 +128,19 @@ namespace JinEngine
 			{
 				if (instanceData != nullptr)
 				{
-					JAllocInfo info;
+					JAllocationInfo info;
 					info.committedBlockCount = instanceData->classInstanceVec.size();
 					info.oriBlockSize = dataSize;
 					info.allocBlockSize = dataSize;
 					return info;
 				}
 				else
-					return JAllocInfo{};		
+					return JAllocationInfo{};		
 			}
+		}
+		JTypeInfo* JTypeInfo::GetInterfaceTypeInfo()const noexcept
+		{
+			return HasInterfaceTypeInfo() ? &interfaceTypeInfo->interfaceType : nullptr;
 		}
 		JTypeInfo* JTypeInfo::GetImplTypeInfo()const noexcept
 		{
@@ -133,18 +148,26 @@ namespace JinEngine
 		}
 		bool JTypeInfo::SetAllocationCreator(std::unique_ptr <JTypeAllocationCreatorInterface>&& newCreator)noexcept
 		{  
-			if (allocInitInfo == nullptr || newCreator == nullptr)
+			if (extraInitInfo == nullptr || !extraInitInfo->canUseAlloc || newCreator == nullptr)
 				return false;
 
-			allocInitInfo->creator = std::move(newCreator);
+			extraInitInfo->allocInitInfo->creator = std::move(newCreator);
 			return true;
 		}
 		bool JTypeInfo::SetAllocationOption(std::unique_ptr<JAllocationDesc>&& newOption)noexcept
 		{ 
-			if (allocInitInfo == nullptr || allocationInterface != nullptr)
+			if (extraInitInfo == nullptr || !extraInitInfo->canUseAlloc || newOption == nullptr)
 				return false;
 
-			allocInitInfo->option = std::move(newOption);
+			extraInitInfo->allocInitInfo->option = std::move(newOption);
+			return true;
+		}
+		bool JTypeInfo::SetDestructionInfo(std::unique_ptr<JLazyDestructionInfo>&& newDesInfo)noexcept
+		{
+			if (extraInitInfo == nullptr || !extraInitInfo->canUseLazy || newDesInfo == nullptr)
+				return false;
+
+			extraInitInfo->lazyDestructionInfo = std::move(newDesInfo);
 			return true;
 		}
 		bool JTypeInfo::IsAbstractType()const noexcept
@@ -174,16 +197,51 @@ namespace JinEngine
 			}
 			return false;
 		}
+		bool JTypeInfo::CanUseLazyDestruction()const noexcept
+		{
+			return lazyDestruction != nullptr;
+		}
+		bool JTypeInfo::HasInterfaceTypeInfo()const noexcept
+		{
+			return interfaceTypeInfo != nullptr;
+		}
 		bool JTypeInfo::HasImplTypeInfo()const noexcept
 		{
 			return implTypeInfo != nullptr;
 		}
-		JIdentifierImplBase* JTypeInfo::ConvertImplBase(JIdentifier* iden)const noexcept
+		JTypeBase* JTypeInfo::ConvertInterfaceBase(JTypeImplBase* implBase)const noexcept
+		{
+			if (!HasInterfaceTypeInfo())
+				return nullptr;
+
+			return interfaceTypeInfo->convertPtr(implBase);
+		}
+		JTypeImplBase* JTypeInfo::ConvertImplBase(JTypeBase* tBase)const noexcept
 		{
 			if (!HasImplTypeInfo())
 				return nullptr;
 
-			return implTypeInfo->convertPtr(iden);
+			return implTypeInfo->convertPtr(tBase);
+		}
+		void JTypeInfo::TryLazyDestruction(JTypeBase* tBase)noexcept
+		{
+			if (!CanUseLazyDestruction())
+				return;
+			lazyDestruction->AddUser(tBase);
+		}
+		void JTypeInfo::TryCancelLazyDestruction(JTypeBase* tBase)noexcept
+		{
+			if (!CanUseLazyDestruction())
+				return;
+
+			lazyDestruction->RemoveUser(tBase);
+		}
+		void JTypeInfo::UpdateLazyDestruction(const float timeOffset)noexcept
+		{
+			if (!CanUseLazyDestruction())
+				return;
+
+			lazyDestruction->Update(timeOffset);
 		}
 		bool JTypeInfo::AddInstance(IdentifierType iden, JOwnerPtr<JTypeInstance> ptr)noexcept
 		{
@@ -192,7 +250,7 @@ namespace JinEngine
 
 			if (instanceData->classInstanceMap.find(iden) == instanceData->classInstanceMap.end())
 			{
-				if (ptr->GetTypeInfo().IsChildOf(JIdentifier::StaticTypeInfo()))
+				if (ptr->GetTypeInfo().IsChildOf(JTypeBase::StaticTypeInfo()))
 				{ 
 					instanceData->classInstanceVec.push_back(ptr.Get());
 					instanceData->classInstanceMap.emplace(iden, std::move(ptr));
@@ -275,32 +333,63 @@ namespace JinEngine
 		}
 		void JTypeInfo::RegisterEngineDefaultAllocationOption()
 		{
-			if (allocationInterface != nullptr || allocInitInfo == nullptr)
+			if (allocationInterface != nullptr || extraInitInfo == nullptr || extraInitInfo->allocInitInfo == nullptr)
 				return;
 			   
-			allocInitInfo->option = std::make_unique<JAllocationDesc>();
-			allocInitInfo->option->allocationType = J_ALLOCATION_TYPE::VIRTUAL;
-			allocInitInfo->option->dataCount = 10000;
-			allocInitInfo->option->dataSize = dataSize; 
+			extraInitInfo->allocInitInfo->option = std::make_unique<JAllocationDesc>();  
+			extraInitInfo->allocInitInfo->option->dataSize = dataSize;  
 		}
 		void JTypeInfo::RegisterAllocation()
 		{ 
-			if (isAbstractType || allocInitInfo == nullptr)
+			if (isAbstractType || extraInitInfo == nullptr || !extraInitInfo->canUseAlloc)
 				return;
 
-			if (allocInitInfo->option == nullptr)
+			if (extraInitInfo->allocInitInfo == nullptr)
+				extraInitInfo->allocInitInfo = std::make_unique<AllocationInitInfo>();
+
+			if (extraInitInfo->allocInitInfo->option == nullptr)
 				RegisterEngineDefaultAllocationOption();
 			 
-			bool useDefaultAllocation = allocInitInfo->option->allocationType == J_ALLOCATION_TYPE::DEFAULT;
+			bool useDefaultAllocation = extraInitInfo->allocInitInfo->option->allocationType == J_ALLOCATION_TYPE::DEFAULT;
 			if (allocationInterface != nullptr || useDefaultAllocation)
 				return;
 
-			if (allocInitInfo->creator == nullptr)
-				allocInitInfo->creator = std::make_unique<JTypeAllocationCreator>();
-			allocationInterface = allocInitInfo->creator->CreateAlloc(allocInitInfo->option.get());
-			allocationInterface->Initialize(*allocInitInfo->option);
+			if (extraInitInfo->allocInitInfo->creator == nullptr)
+				extraInitInfo->allocInitInfo->creator = std::make_unique<JTypeAllocationCreator>();
 
-			allocInitInfo.reset();
+			if(extraInitInfo->allocInitInfo->option->canReAlloc)
+				extraInitInfo->allocInitInfo->option->canReAlloc = instanceData != nullptr;
+			   
+			if (extraInitInfo->allocInitInfo->option->canReAlloc && extraInitInfo->allocInitInfo->option->notifyReAllocB == nullptr)
+			{
+				using NotifyReAllocPtr = JAllocationDesc::NotifyReAllocF::Ptr;
+				using NotifyReAllocF = JAllocationDesc::NotifyReAllocF::Functor;
+				using NotifyReAllocB = JAllocationDesc::NotifyReAllocB;
+				using ReceiverPtr = JAllocationDesc::ReceiverPtr;
+				using ReAllocatedPtr = JAllocationDesc::ReAllocatedPtr;
+				using MemIndex = JAllocationDesc::MemIndex;
+
+				NotifyReAllocPtr notifyPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
+				{
+					auto typeInfo = static_cast<JTypeInfo*>(receiver); 
+					auto iden = static_cast<JIdentifier*>(movedPtr);
+					auto& ownerPtr = typeInfo->instanceData->classInstanceMap.find(iden->GetGuid())->second;
+					ownerPtr.SetValidPointer(iden);
+
+					int vecIndex = JCUtil::GetTypeIndex(typeInfo->instanceData->classInstanceVec, ownerPtr->GetGuid());
+					typeInfo->instanceData->classInstanceVec[vecIndex] = ownerPtr.Get();
+				};
+				auto reAllocF = std::make_unique<NotifyReAllocF>(notifyPtr);
+				extraInitInfo->allocInitInfo->option->notifyReAllocB = UniqueBind(std::move(reAllocF), static_cast<ReceiverPtr>(this), empty, empty);
+			}
+
+			if (extraInitInfo->allocInitInfo->option->dataCount == 0)
+				extraInitInfo->allocInitInfo->option->dataCount = JAllocationDesc::initDataCount;
+			if (extraInitInfo->allocInitInfo->option->dataSize < dataSize)
+				extraInitInfo->allocInitInfo->option->dataSize = dataSize;
+
+			allocationInterface = extraInitInfo->allocInitInfo->creator->CreateAlloc(extraInitInfo->allocInitInfo->option.get());
+			allocationInterface->Initialize(std::move(*extraInitInfo->allocInitInfo->option));
 		}
 		void JTypeInfo::DeRegisterAllocation()
 		{
@@ -308,9 +397,30 @@ namespace JinEngine
 				allocationInterface->Release();
 			allocationInterface = nullptr; 
 		}
+		void JTypeInfo::RegisterLazyDestructionInfo()
+		{
+			if (isAbstractType || extraInitInfo == nullptr || !extraInitInfo->canUseLazy)
+				return;
+			 
+			if (extraInitInfo->lazyDestructionInfo  == nullptr|| extraInitInfo->lazyDestructionInfo->executeDestroy == nullptr)
+				return;
+	 
+			if (lazyDestruction != nullptr)
+				return;
+			 
+			lazyDestruction = std::make_unique<JLazyDestruction>(std::move(extraInitInfo->lazyDestructionInfo));
+		}
+		void JTypeInfo::RegisterInterfaceTypeInfo(std::unique_ptr<InterfaceTypeInfo>&& interfaceTypeInfo)
+		{
+			JTypeInfo::interfaceTypeInfo = std::move(interfaceTypeInfo); 
+		}
 		void JTypeInfo::RegisterImplTypeInfo(std::unique_ptr<ImplTypeInfo>&& implTypeInfo)
 		{ 
 			JTypeInfo::implTypeInfo = std::move(implTypeInfo);
+		}
+		void JTypeInfo::EndRegister()
+		{
+			extraInitInfo.reset();
 		}
 		JTypeInstanceSearchHint::JTypeInstanceSearchHint()
 			:typeGuid(0), objectGuid(0), isValid(false), hasImplType(false)
@@ -318,7 +428,7 @@ namespace JinEngine
 		JTypeInstanceSearchHint::JTypeInstanceSearchHint(const JTypeInfo& info, const size_t guid)
 			: typeGuid(info.TypeGuid()), objectGuid(guid), isValid(true), hasImplType(info.HasImplTypeInfo())
 		{}
-		JTypeInstanceSearchHint::JTypeInstanceSearchHint(Core::JUserPtr<JIdentifier> iden)
+		JTypeInstanceSearchHint::JTypeInstanceSearchHint(JUserPtr<JTypeBase> iden)
 			: typeGuid(iden.IsValid() ? iden->GetTypeInfo().TypeGuid() : 0),
 			objectGuid(iden.IsValid() ? iden->GetGuid() : 0),
 			isValid(iden.IsValid() ? true : false), 

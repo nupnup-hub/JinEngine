@@ -37,14 +37,14 @@ namespace JinEngine
 			{
 				return 100;
 			}
-			Core::JIdentifierPrivate& GetPrivateInterface()const noexcept override;
+			JIdentifierPrivate& GetPrivateInterface()const noexcept override;
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final; 
 			uint GetStateCount()const noexcept; 
 		public:
-			JFSMstate* GetNowState()const noexcept;
-			JFSMstate* GetState(const size_t guid)const noexcept;
-			JFSMstate* GetStateByIndex(const uint index)const noexcept;
-			std::vector<JFSMstate*> GetStateVec()noexcept;  
+			JUserPtr<JFSMstate> GetNowState()const noexcept;
+			JUserPtr<JFSMstate> GetState(const size_t guid)const noexcept;
+			JUserPtr<JFSMstate> GetStateByIndex(const uint index)const noexcept;
+			std::vector<JUserPtr<JFSMstate>> GetStateVec()noexcept;
 		public:
 			bool CanUseParameter(const size_t paramGuid)const noexcept;
 			bool CanCreateState()const noexcept; 

@@ -21,8 +21,8 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
-			InitData(JGameObject* owner);
-			InitData(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
+			InitData(const JUserPtr<JGameObject>& owner);
+			InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
 		};
 	private:
 		friend class JRenderItemPrivate;
@@ -38,9 +38,9 @@ namespace JinEngine
 			return J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM;
 		}
 	public:
-		Core::JUserPtr<JMeshGeometry> GetMesh()const noexcept;
-		Core::JUserPtr<JMaterial> GetValidMaterial(int index)const noexcept;
-		std::vector<Core::JUserPtr<JMaterial>> GetMaterialVec()const noexcept;
+		JUserPtr<JMeshGeometry> GetMesh()const noexcept;
+		JUserPtr<JMaterial> GetValidMaterial(int index)const noexcept;
+		std::vector<JUserPtr<JMaterial>> GetMaterialVec()const noexcept;
 		DirectX::XMFLOAT4X4 GetTextransform()const noexcept;
 		D3D12_PRIMITIVE_TOPOLOGY GetPrimitiveType()const noexcept;
 		J_RENDER_LAYER GetRenderLayer()const noexcept;
@@ -53,9 +53,9 @@ namespace JinEngine
 		//apply scale tranlation  
 		DirectX::BoundingSphere GetBoundingSphere()noexcept;
 	public:
-		void SetMesh(Core::JUserPtr<JMeshGeometry> newMesh)noexcept;
-		void SetMaterial(int index, Core::JUserPtr<JMaterial> newMaterial)noexcept;
-		void SetMaterialVec(const std::vector<Core::JUserPtr<JMaterial>> newVec)noexcept;
+		void SetMesh(JUserPtr<JMeshGeometry> newMesh)noexcept;
+		void SetMaterial(int index, JUserPtr<JMaterial> newMaterial)noexcept;
+		void SetMaterialVec(const std::vector<JUserPtr<JMaterial>> newVec)noexcept;
 		void SetTextureTransform(const DirectX::XMFLOAT4X4& textureTransform)noexcept;
 		void SetPrimitiveType(const D3D12_PRIMITIVE_TOPOLOGY primitiveType)noexcept;
 		void SetRenderLayer(const J_RENDER_LAYER renderLayer)noexcept;

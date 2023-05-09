@@ -10,7 +10,7 @@
 
 namespace JinEngine
 {
-	JPreviewScene::JPreviewScene(Core::JUserPtr<JObject>  jobject, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)
+	JPreviewScene::JPreviewScene(JUserPtr<JObject>  jobject, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)
 		:guid(Core::MakeGuid()), jobject(jobject), previewDimension(previewDimension), previewFlag(previewFlag)
 	{}
 	JPreviewScene::~JPreviewScene() {}
@@ -18,13 +18,13 @@ namespace JinEngine
 	{
 		return guid;
 	}
-	Core::JUserPtr<JObject> JPreviewScene::GetJObject()noexcept
+	JUserPtr<JObject> JPreviewScene::GetJObject()noexcept
 	{ 
 		return jobject;
 	}
-	Core::JUserPtr<JCamera> JPreviewScene::GetPreviewCamera()noexcept
+	JUserPtr<JCamera> JPreviewScene::GetPreviewCamera()noexcept
 	{
-		return Core::GetUserPtr(camera);
+		return camera;
 	}
 	J_PREVIEW_DIMENSION JPreviewScene::GetPreviewDimension()const noexcept
 	{
@@ -34,10 +34,11 @@ namespace JinEngine
 	{
 		useQuadShape = value;
 	}
-	void JPreviewScene::SetScene(Core::JUserPtr<JScene> newScene)noexcept
+	void JPreviewScene::SetScene(JUserPtr<JScene> newScene)noexcept
 	{
 		scene = newScene;
-		camera = scene->GetMainCamera();
+		camera = scene->FindFirstSelectedCamera(true);
+		camera->SetAllowCulling(false);
 	}
 	bool JPreviewScene::UseQuadShape()const noexcept
 	{

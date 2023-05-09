@@ -9,16 +9,16 @@ namespace JinEngine
 { 
 	namespace Core
 	{
-		class JIdentifier;
+		class Core::JIdentifier;
 	}
 	namespace Editor
 	{		
 		class JEditorObjectHandlerInterface
 		{ 
 		protected:
-			static void SetModifiedBit(Core::JUserPtr<Core::JIdentifier> obj, const bool value)noexcept; 
+			static void SetModifiedBit(JUserPtr<Core::JIdentifier> obj, const bool value)noexcept; 
 		private:
-			static Core::JUserPtr<Core::JIdentifier> GetValidModifiedUser(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
+			static JUserPtr<Core::JIdentifier> GetValidModifiedUser(JUserPtr<Core::JIdentifier> obj)noexcept;
 		};
 	}
 	using JModifiedObjectInfoVector = Core::JVectorPointerStorage<JModifiedObjectInfo>;

@@ -18,8 +18,8 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
-			InitData(JGameObject* owner);
-			InitData(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
+			InitData(const JUserPtr<JGameObject>& owner);
+			InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
 		};
 	private:
 		friend class JAnimatorPrivate;
@@ -33,11 +33,11 @@ namespace JinEngine
 		{
 			return J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR;
 		}
-		Core::JUserPtr<JSkeletonAsset>GetSkeletonAsset()const noexcept;
-		Core::JUserPtr<JAnimationController> GetAnimatorController()const noexcept;
+		JUserPtr<JSkeletonAsset>GetSkeletonAsset()const noexcept;
+		JUserPtr<JAnimationController> GetAnimatorController()const noexcept;
 	public:
-		void SetSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept;
-		void SetAnimatorController(Core::JUserPtr<JAnimationController> newAnimationController)noexcept;
+		void SetSkeletonAsset(JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept;
+		void SetAnimatorController(JUserPtr<JAnimationController> newAnimationController)noexcept;
 		void SetParameterValue(Core::JFSMparameter* param, const float value)noexcept; 
 	public:
 		bool IsAvailableOverlap()const noexcept final; 

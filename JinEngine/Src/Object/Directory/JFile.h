@@ -2,7 +2,9 @@
 #include<string>    
 #include"../Resource/JResourceObjectType.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
- 
+#include"../../Core/Reflection/JReflectionMacro.h"
+#include"../../Core/Reflection/JTypeBase.h"
+
 namespace JinEngine
 { 
 	namespace Core
@@ -32,17 +34,17 @@ namespace JinEngine
 		virtual std::wstring GetMetaFilePath()const noexcept = 0;
 		virtual std::wstring GetCacheFilePath()const noexcept = 0;
 	public:
-		virtual JDirectory* GetOwnerDirectory()const noexcept = 0;
-		virtual JResourceObject* GetResource()const noexcept = 0; 
+		virtual JUserPtr<JDirectory> GetOwnerDirectory()const noexcept = 0;
+		virtual JUserPtr<JResourceObject> GetResource()const noexcept = 0;
 	};
+
 	//Jasset file class 
 	//it match one resource objecty 
-	class JFile
+	class JFile : public Core::JTypeBase
 	{
+		REGISTER_CLASS_USE_ALLOCATOR(JFile)
 	private:
-		friend class JFilePrivate; 
-		friend std::unique_ptr<JFile>::deleter_type;
-		friend std::unique_ptr<JFile>;
+		friend class JFilePrivate;  
 	private:
 		std::unique_ptr<JFileData> fileData = nullptr;
 	public:
@@ -59,12 +61,14 @@ namespace JinEngine
 		std::wstring GetMetaFilePath()const noexcept;
 		std::wstring GetCacheFilePath()const noexcept;
 	public:
-		JDirectory* GetOwnerDirectory()const noexcept;
-		JResourceObject* GetResource()const noexcept;
+		JUserPtr<JDirectory> GetOwnerDirectory()const noexcept;
+		JUserPtr<JResourceObject> GetResource()const noexcept;
 		//if resource isn't exist load
-		Core::JUserPtr<JResourceObject> TryGetResourceUser()const noexcept;
+		JUserPtr<JResourceObject> TryGetResourceUser()const noexcept;
+	public: 
+		static void RegisterTypeData();
 	private:
-		JFile(const JFileInitData& initData, JDirectory* ownerDir);
+		JFile(const JFileInitData& initData, const JUserPtr<JDirectory>& ownerDir);
 		~JFile() = default; 
 	};
 }

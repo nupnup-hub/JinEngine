@@ -354,5 +354,5 @@ namespace JinEngine
 			srcIndex = tarIndex;
 		else if (srcIndex < tarIndex)
 			tarIndex = srcIndex;
-	}
+	} 
 }

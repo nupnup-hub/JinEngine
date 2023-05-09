@@ -1,12 +1,11 @@
 #include"JSkeletonAsset.h" 
 #include"JSkeleton.h"
-#include"JSkeletonAssetPrivate.h"
-#include"Avatar/JAvatar.h"  
+#include"JSkeletonAssetPrivate.h" 
 #include"../JResourceObjectHint.h"
 #include"../JClearableInterface.h"
 #include"../../Directory/JDirectory.h"
 #include"../../../Core/Guid/GuidCreator.h"
-#include"../../../Core/Identity/JIdentifierImplBase.h"
+#include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Application/JApplicationProject.h"
@@ -21,26 +20,18 @@ namespace JinEngine
 		static JSkeletonAssetPrivate sPrivate;
 	}
  
-	class JSkeletonAsset::JSkeletonAssetImpl : public Core::JIdentifierImplBase, public JClearableInterface
+	class JSkeletonAsset::JSkeletonAssetImpl : public Core::JTypeImplBase, public JClearableInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSkeletonAssetImpl)
 	public:
-		JSkeletonAsset* thisSkel = nullptr;
+		JWeakPtr<JSkeletonAsset> thisPointer = nullptr;
 	public: 
-		std::unique_ptr<JSkeleton> skeleton = nullptr;
-		std::unique_ptr<JAvatar> avatar = nullptr;
-		JSKELETON_TYPE skeletonType;
-		size_t skeletonHash = 0;
+		JOwnerPtr<JSkeleton> skeleton = nullptr;
+		JOwnerPtr<JAvatar> avatar = nullptr;
+		JSKELETON_TYPE skeletonType; 
 	public:
-		JSkeletonAssetImpl(const InitData& initData, JSkeletonAsset* thisSkel)
-			:thisSkel(thisSkel)
-		{}
+		JSkeletonAssetImpl(const InitData& initData, JSkeletonAsset* thisSkelRaw){}
 		~JSkeletonAssetImpl() {}
-	public:
-		void Initialize(InitData& initData)
-		{
-			ImportSkeleton(std::move(initData.skeleton));
-		}
 	public:
 		std::vector<std::vector<uint8>> GetSkeletonTreeIndexVec()noexcept
 		{
@@ -57,7 +48,10 @@ namespace JinEngine
 		void SetAvatar(JAvatar* inAvatar)noexcept
 		{
 			if (avatar == nullptr)
-				avatar = std::make_unique<JAvatar>();
+			{
+				avatar = Core::JPtrUtil::MakeOwnerPtr<JAvatar>();
+				avatar->ownerSkeleton = thisPointer;
+			}
 
 			const uint32 jointCount = skeleton->GetJointCount();
 			if (avatar->jointInterpolation.size() == 0)
@@ -129,6 +123,7 @@ namespace JinEngine
 					{
 						if (avatar->jointBackReferenceMap[nowIndex].refIndex != JSkeletonFixedData::incorrectJointIndex)
 						{
+							//아바타에 할당되지 않는 조인트는 할당된 부모 조인트 refIndex을 allottedParentRefIndex으로 받는다
 							avatar->jointBackReferenceMap[i].allottedParentRefIndex = avatar->jointBackReferenceMap[nowIndex].refIndex;
 							break;
 						}
@@ -149,23 +144,8 @@ namespace JinEngine
 			}
 			JDebugTextOut::CloseStream();*/
 		}
-		void CopyAvatarJointIndex(_Out_ JAvatar* outAvatar)noexcept
-		{
-			if (outAvatar == nullptr)
-				return;
-
-			if ((uint32)outAvatar->jointReference.size() != JSkeletonFixedData::maxAvatarJointCount)
-			{
-				outAvatar->jointReference.clear();
-				outAvatar->jointReference.resize(JSkeletonFixedData::maxAvatarJointCount);
-			}
-
-			for (uint32 i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
-				outAvatar->jointReference[i] = avatar->jointReference[i];
-		}
-
 	public:
-		bool IsRegularChildJointIndex(uint8 childIndex, uint8 parentIndex)noexcept
+		bool IsRegularChildJointIndex(uint8 childIndex, uint8 parentIndex)const noexcept
 		{
 			if (childIndex == parentIndex || childIndex < parentIndex)
 				return false;
@@ -190,30 +170,52 @@ namespace JinEngine
 			return isParent;
 		}
 	public:
+		void CopyAvatarJointIndex(_Out_ JAvatar* outAvatar)noexcept
+		{
+			if (outAvatar == nullptr)
+				return;
+
+			if ((uint32)outAvatar->jointReference.size() != JSkeletonFixedData::maxAvatarJointCount)
+			{
+				outAvatar->jointReference.clear();
+				outAvatar->jointReference.resize(JSkeletonFixedData::maxAvatarJointCount);
+			}
+
+			for (uint32 i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
+				outAvatar->jointReference[i] = avatar->jointReference[i];
+		}
+	public:
 		void StuffResource()
 		{
-			if (!thisSkel->IsValid())
+			if (!thisPointer->IsValid())
 			{
-				if (ImportSkeleton(ReadAssetData(thisSkel->GetPath())))
-					thisSkel->SetValid(true);
+				const std::wstring path = thisPointer->GetPath();
+				if (ImportSkeleton(ReadAssetData(path)))
+				{ 
+					JSkeletonAsset::LoadMetaData metadata(thisPointer->GetDirectory());
+					static_cast<JSkeletonAssetPrivate::AssetDataIOInterface&>(sPrivate.GetAssetDataIOInterface()).LoadMetaData(path, &metadata);
+					if (metadata.isValidAvatar)
+						SetAvatar(&metadata.avatar);
+					thisPointer->SetValid(true);
+				}
 			}
 		}
 		void ClearResource()
 		{
-			if (thisSkel->IsValid())
+			if (thisPointer->IsValid())
 			{
-				skeleton.reset();
-				avatar.reset();
-				thisSkel->SetValid(false);
+				skeleton.Clear();
+				avatar.Clear();
+				thisPointer->SetValid(false);
 			}
 		}
 	public:	 
-		static std::unique_ptr<JSkeleton> ReadAssetData(const std::wstring& path)
+		static std::vector<Joint> ReadAssetData(const std::wstring& path)
 		{
 			std::wifstream stream;
 			stream.open(path, std::ios::in | std::ios::binary);
 			if (!stream.is_open())
-				return std::unique_ptr<JSkeleton>{};
+				return std::vector<Joint>{};
 
 			uint jointCount;
 			std::vector<Joint> joint;
@@ -231,12 +233,12 @@ namespace JinEngine
 				joint[i].parentIndex = parentIndex;
 			}
 			stream.close();
-			return std::make_unique<JSkeleton>(std::move(joint));
+			return std::move(joint);
 		}
 		bool WriteAssetData()
 		{
 			std::wofstream stream;
-			stream.open(thisSkel->GetPath(), std::ios::out | std::ios::binary);
+			stream.open(thisPointer->GetPath(), std::ios::out | std::ios::binary);
 			if (!stream.is_open())
 				return false;
 
@@ -253,15 +255,24 @@ namespace JinEngine
 			stream.close();
 			return true;
 		}
-		bool ImportSkeleton(std::unique_ptr<JSkeleton>&& newSkeleton)
+		bool ImportSkeleton(std::vector<Joint>&& joint)
 		{
-			skeleton = std::move(newSkeleton);
-			if (skeleton != nullptr)
-				skeletonHash = skeleton->GetHash();
+			skeleton = Core::JPtrUtil::MakeOwnerPtr<JSkeleton>(std::move(joint));
+			if (thisPointer.IsValid())
+				skeleton->ownerSkeleton = thisPointer;
 			return true;
 		}
-	public:
-		static void RegisterCallOnce()
+	public: 
+		void Initialize(InitData* initData)
+		{
+			ImportSkeleton(std::move(initData->joint));
+		}
+		void RegisterThisPointer(JSkeletonAsset* skel)
+		{
+			thisPointer = Core::GetWeakPtr(skel);
+			skeleton->ownerSkeleton = thisPointer;
+		}
+		static void RegisterTypeData()
 		{
 			auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex(GetStaticResourceType(), format); };
 
@@ -274,35 +285,58 @@ namespace JinEngine
 
 			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 			Core::JIdentifier::RegisterPrivateInterface(JSkeletonAsset::StaticTypeInfo(), sPrivate);
+
+			IMPL_REALLOC_BIND(JSkeletonAsset::JSkeletonAssetImpl, thisPointer)
+
+			NotifyReAllocPtr notifySkeltonReAllocPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
+			{ 
+				auto movedSkel = static_cast<JSkeleton*>(movedPtr);
+				movedSkel->ownerSkeleton->impl->skeleton.Release();
+				movedSkel->ownerSkeleton->impl->skeleton.Reset(movedSkel);
+			};
+			NotifyReAllocPtr notifyAvatarReAllocPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
+			{				
+				auto movedAvatar = static_cast<JAvatar*>(movedPtr);
+				movedAvatar->ownerSkeleton->impl->avatar.Release();
+				movedAvatar->ownerSkeleton->impl->avatar.Reset(movedAvatar);
+			};
+			auto skeletonReAllocF = std::make_unique<NotifyReAllocF>(notifySkeltonReAllocPtr);
+			auto avatarReAllocF = std::make_unique<NotifyReAllocF>(notifyAvatarReAllocPtr);
+			std::unique_ptr<JAllocationDesc> skeletonAllocDesc = std::make_unique<JAllocationDesc>();
+			std::unique_ptr<JAllocationDesc> avatarAllocDesc = std::make_unique<JAllocationDesc>();
+			skeletonAllocDesc->notifyReAllocB = UniqueBind(std::move(skeletonReAllocF), static_cast<ReceiverPtr>(nullptr), JinEngine::Core::empty, JinEngine::Core::empty);
+			avatarAllocDesc->notifyReAllocB = UniqueBind(std::move(avatarReAllocF), static_cast<ReceiverPtr>(nullptr), JinEngine::Core::empty, JinEngine::Core::empty);
+			JSkeleton::StaticTypeInfo().SetAllocationOption(std::move(skeletonAllocDesc));
+			JAvatar::StaticTypeInfo().SetAllocationOption(std::move(avatarAllocDesc));
 		}
 	};
 
 	JSkeletonAsset::InitData::InitData(const uint8 formatIndex,
-		JDirectory* directory,
-		std::unique_ptr<JSkeleton>&& skeleton)
-		:JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory), skeleton(std::move(skeleton))
+		const JUserPtr<JDirectory>& directory,
+		std::vector<Joint>&& joint)
+		:JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory), joint(std::move(joint))
 	{}
 	JSkeletonAsset::InitData::InitData(const size_t guid, 
 		const uint8 formatIndex,
-		JDirectory* directory,
-		std::unique_ptr<JSkeleton>&& skeleton)
-		: JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory), skeleton(std::move(skeleton))
+		const JUserPtr<JDirectory>& directory,
+		std::vector<Joint>&& joint)
+		: JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory), joint(std::move(joint))
 	{}
 	JSkeletonAsset::InitData::InitData(const std::wstring& name,
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
 		const uint8 formatIndex,
-		JDirectory* directory,
-		std::unique_ptr<JSkeleton>&& skeleton)
+		const JUserPtr<JDirectory>& directory,
+		std::vector<Joint>&& joint)
 		: JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), name, guid, flag, formatIndex, GetStaticResourceType(), directory),
-		skeleton(std::move(skeleton))
+		joint(std::move(joint))
 	{}
 	bool JSkeletonAsset::InitData::IsValidData()const noexcept
 	{
-		return JResourceObject::InitData::IsValidData() && skeleton != nullptr;
+		return JResourceObject::InitData::IsValidData() && joint.size()> 0;
 	}
 
-	JSkeletonAsset::LoadMetaData::LoadMetaData(JDirectory* directory)
+	JSkeletonAsset::LoadMetaData::LoadMetaData(const JUserPtr<JDirectory>& directory)
 		:JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), directory)
 	{}
 
@@ -323,13 +357,13 @@ namespace JinEngine
 		static std::vector<std::wstring> format{ L".skel", L".fbx" };
 		return format;
 	}
-	JSkeleton* JSkeletonAsset::GetSkeleton()noexcept
-	{
-		return impl->skeleton.get();
+	JUserPtr<JSkeleton> JSkeletonAsset::GetSkeleton()const noexcept
+	{ 
+		return impl->skeleton;
 	}
-	JAvatar* JSkeletonAsset::GetAvatar()noexcept
+	JUserPtr<JAvatar> JSkeletonAsset::GetAvatar()const noexcept
 	{
-		return impl->avatar.get();
+		return impl->avatar;
 	}
 	JSKELETON_TYPE JSkeletonAsset::GetSkeletonType()const noexcept
 	{
@@ -337,13 +371,13 @@ namespace JinEngine
 	}
 	size_t JSkeletonAsset::GetSkeletonHash()const noexcept
 	{
-		return impl->skeletonHash;
+		return impl->skeleton->GetHash();
 	}
-	std::wstring JSkeletonAsset::GetJointName(int index)noexcept
+	std::wstring JSkeletonAsset::GetJointName(int index)const noexcept
 	{
 		return impl->skeleton->GetJointName(index);
 	}
-	std::vector<std::vector<uint8>> JSkeletonAsset::GetSkeletonTreeIndexVec()noexcept
+	std::vector<std::vector<uint8>> JSkeletonAsset::GetSkeletonTreeIndexVec()const noexcept
 	{
 		return impl->GetSkeletonTreeIndexVec();
 	}
@@ -351,11 +385,11 @@ namespace JinEngine
 	{
 		impl->skeletonType = skeletonType;
 	}
-	bool JSkeletonAsset::HasAvatar()noexcept
-	{
+	bool JSkeletonAsset::HasAvatar()const noexcept
+	{ 
 		return impl->avatar != nullptr;
 	}
-	bool JSkeletonAsset::IsRegularChildJointIndex(uint8 childIndex, uint8 parentIndex)noexcept
+	bool JSkeletonAsset::IsRegularChildJointIndex(uint8 childIndex, uint8 parentIndex)const noexcept
 	{ 
 		return impl->IsRegularChildJointIndex(childIndex, parentIndex);
 	} 
@@ -371,41 +405,46 @@ namespace JinEngine
 	}
 	JSkeletonAsset::JSkeletonAsset(InitData& initData)
 		:JResourceObject(initData), impl(std::make_unique<JSkeletonAssetImpl>(initData, this))
-	{
-		impl->Initialize(initData);
-	}
+	{}
 	JSkeletonAsset::~JSkeletonAsset() {}
 	 
 	using CreateInstanceInterface = JSkeletonAssetPrivate::CreateInstanceInterface;
 	using AssetDataIOInterface = JSkeletonAssetPrivate::AssetDataIOInterface;
 	using AvatarInterface = JSkeletonAssetPrivate:: AvatarInterface;
 
-	Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
-		return Core::JPtrUtil::MakeOwnerPtr<JSkeletonAsset>(*static_cast<JSkeletonAsset::InitData*>(initData.get()));
+		return Core::JPtrUtil::MakeOwnerPtr<JSkeletonAsset>(*static_cast<JSkeletonAsset::InitData*>(initData));
 	}
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JResourceObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		JSkeletonAsset* skel = static_cast<JSkeletonAsset*>(createdPtr);
+		skel->impl->RegisterThisPointer(skel);
+		skel->impl->Initialize(static_cast<JSkeletonAsset::InitData*>(initData));
+	} 
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
 		const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JSkeletonAsset::InitData::StaticTypeInfo());
 		return isValidPtr && initData->IsValidData();
 	}
 
-	Core::JIdentifier* AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
+	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkeletonAsset::LoadData::StaticTypeInfo()))
 			return nullptr;
  
 		auto loadData = static_cast<JSkeletonAsset::LoadData*>(data);
 		auto pathData = loadData->pathData;
-		JDirectory* directory = loadData->directory;
+		JUserPtr<JDirectory> directory = loadData->directory;
 		JSkeletonAsset::LoadMetaData metadata(loadData->directory);
 
 		if (LoadMetaData(pathData.engineMetaFileWPath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
-		JSkeletonAsset* newSkel = nullptr;
+		JUserPtr<JSkeletonAsset> newSkel = nullptr;
 		if (directory->HasFile(metadata.guid))
-			newSkel = static_cast<JSkeletonAsset*>(Core::GetUserPtr(JSkeletonAsset::StaticTypeInfo().TypeGuid(), metadata.guid).Get());
+			newSkel = Core::GetUserPtr<JSkeletonAsset>(JSkeletonAsset::StaticTypeInfo().TypeGuid(), metadata.guid);
 
 		if (newSkel == nullptr)
 		{
@@ -416,13 +455,13 @@ namespace JinEngine
 				directory,
 				JSkeletonAsset::JSkeletonAssetImpl::ReadAssetData(pathData.engineFileWPath));
 
-			auto rawPtr = sPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &sPrivate);
-			newSkel = static_cast<JSkeletonAsset*>(rawPtr);
+			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &sPrivate);
+			newSkel.ConnnectChild(idenUser);
 		}
 		if (newSkel != nullptr)
 		{
-			if (metadata.avatar != nullptr)
-				newSkel->impl->SetAvatar(metadata.avatar.get());
+			if (metadata.isValidAvatar)
+				newSkel->impl->SetAvatar(&metadata.avatar);
 			newSkel->SetSkeletonType((JSKELETON_TYPE)metadata.skeletonType); 
 		} 
 		return newSkel;
@@ -436,7 +475,8 @@ namespace JinEngine
 		if (!storeData->HasCorrectType(JSkeletonAsset::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		JSkeletonAsset* skel = static_cast<JSkeletonAsset*>(storeData->obj);
+		JUserPtr<JSkeletonAsset> skel;
+		skel.ConnnectChild(storeData->obj);
 		return skel->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
@@ -452,17 +492,15 @@ namespace JinEngine
 		auto loadMetaData = static_cast<JSkeletonAsset::LoadMetaData*>(data);
 		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
-		bool hasAvatar;
-		JFileIOHelper::LoadAtomicData(stream, hasAvatar);
-		if (hasAvatar)
-		{
-			loadMetaData->avatar = std::make_unique<JAvatar>();
+		 
+		JFileIOHelper::LoadAtomicData(stream, loadMetaData->isValidAvatar);
+		if (loadMetaData->isValidAvatar)
+		{  
 			for (uint32 i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
 			{
 				int index;
 				JFileIOHelper::LoadAtomicData(stream, index);
-				loadMetaData->avatar->jointReference[i] = (uint8)index;
+				loadMetaData->avatar.jointReference[i] = (uint8)index;
 			}
 		}
 		JFileIOHelper::LoadEnumData(stream, loadMetaData->skeletonType); 
@@ -476,7 +514,8 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		auto storeData = static_cast<JSkeletonAsset::StoreData*>(data);
-		JSkeletonAsset* skel = static_cast<JSkeletonAsset*>(storeData->obj);
+		JUserPtr<JSkeletonAsset> skel;
+		skel.ConnnectChild(storeData->obj);
 
 		std::wofstream stream;
 		stream.open(skel->GetMetaFilePath(), std::ios::out | std::ios::binary);
@@ -491,8 +530,8 @@ namespace JinEngine
 		JFileIOHelper::StoreAtomicData(stream, L"HasAvatar:", hasAvatar);
 		if (hasAvatar)
 		{
-			JAvatar* avatar = skel->GetAvatar();
-			for (uint32 i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
+			JUserPtr<JAvatar> avatar = skel->GetAvatar();
+			for (uint i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
 				JFileIOHelper::StoreAtomicData(stream, std::to_wstring(i) + L"Index:", avatar->jointReference[i]);
 		}
 		JFileIOHelper::StoreEnumData(stream, L"SkeletonType:", skel->GetSkeletonType()); 
@@ -503,7 +542,7 @@ namespace JinEngine
 	{
 		skel->impl->SetAvatar(avatar);
 	}
-	void AvatarInterface::CopyAvatarJointIndex(JSkeletonAsset* skel, _Out_ JAvatar* target)noexcept
+	void AvatarInterface::CopyAvatarJointIndex(JSkeletonAsset* skel, _Inout_ JAvatar* target)noexcept
 	{
 		skel->impl->CopyAvatarJointIndex(target);
 	}

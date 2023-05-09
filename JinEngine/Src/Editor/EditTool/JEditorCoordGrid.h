@@ -34,9 +34,9 @@ namespace JinEngine
 		class JEditorSceneCoordGrid
 		{ 
 		private: 
-			Core::JUserPtr<JGameObject> coordGrid;
+			JUserPtr<JGameObject> coordGrid;
 		public:
-			void MakeCoordGrid(JGameObject* parent);
+			void MakeCoordGrid(const JUserPtr<JGameObject>& parent);
 			void Clear();
 		public: 
 			void Update(const JVector2<float> xzMoveOffset);

@@ -73,7 +73,7 @@ namespace JinEngine
 			ClosePage();
 			ImGui::SetWindowFontScale(1);
 		}
-		bool JProjectSelectorPage::IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj) noexcept
+		bool JProjectSelectorPage::IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj) noexcept
 		{
 			return true;
 		}

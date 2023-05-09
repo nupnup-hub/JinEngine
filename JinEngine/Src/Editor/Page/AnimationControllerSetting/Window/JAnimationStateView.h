@@ -25,8 +25,8 @@ namespace JinEngine
 		class JAnimationStateView final : public JEditorWindow
 		{ 
 		private:
-			Core::JUserPtr<JAnimationController> aniCont;
-			Core::JUserPtr<Core::JAnimationFSMdiagram> selectedDiagram; 
+			JUserPtr<JAnimationController> aniCont;
+			JUserPtr<Core::JAnimationFSMdiagram> selectedDiagram; 
 		private:
 			std::unique_ptr<JEditorGraphView> stateGraph;
 			std::unique_ptr<JEditorPopupMenu> statePopup;
@@ -46,12 +46,12 @@ namespace JinEngine
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
-			void Initialize(Core::JUserPtr<JAnimationController> aniCont)noexcept;
+			void Initialize(JUserPtr<JAnimationController> aniCont)noexcept;
 			void UpdateWindow()final; 
 		private:
 			void BuildDiagramView();
 		private:
-			void SetSelecteObject(Core::JUserPtr<Core::JIdentifier> newSelected); 
+			void SetSelecteObject(JUserPtr<Core::JIdentifier> newSelected); 
 		private:
 			void RegisterViewGraphGroup(JAnimationController* newAnicont)noexcept;
 		protected:

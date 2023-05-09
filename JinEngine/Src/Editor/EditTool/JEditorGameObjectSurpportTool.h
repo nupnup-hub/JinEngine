@@ -16,6 +16,7 @@ namespace JinEngine
 	class JObject;
 	class JScene;
 	class JMaterial;
+	class JMeshGeometry;
 	namespace Editor
 	{ 
 		namespace Constants
@@ -28,11 +29,11 @@ namespace JinEngine
 		public:
 			virtual ~JEditorGameObjectSurpportTool() = default;
 		public:
-			virtual void Update(Core::JUserPtr<JGameObject> selected, Core::JUserPtr<JCamera> cam, const JVector2<float>& viewLocalPos) = 0;
+			virtual void Update(const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam, const JVector2<float>& viewLocalPos) = 0;
 		public:
 			virtual	J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE GetToolType()const noexcept = 0; 
-			static JGameObject* SceneIntersect(Core::JUserPtr<JScene> scene,
-				Core::JUserPtr<JCamera> cam,
+			static JUserPtr<JGameObject> SceneIntersect(JUserPtr<JScene> scene,
+				JUserPtr<JCamera> cam,
 				Core::J_SPACE_SPATIAL_LAYER layer, 
 				const JVector2<float>& viewLocalPos) noexcept;
 		public:
@@ -45,13 +46,13 @@ namespace JinEngine
 			struct Arrow
 			{
 			public:
-				Core::JUserPtr<JGameObject> arrow;
-				Core::JUserPtr<JMaterial> material; 
+				JUserPtr<JGameObject> arrow; 
+				JUserPtr<JMaterial> material; 
 				JVector4<float> matColor;
 			public:
 				void CreateMaterial(const JVector4<float> matColor);
 			public:
-				void Initialze(JGameObject* debugRoot,
+				void Initialze(const JUserPtr<JGameObject>& debugRoot,
 					const J_DEFAULT_SHAPE shape,  
 					const JVector3<float> initRotation, 
 					const JVector3<float> initMovePos);
@@ -63,12 +64,12 @@ namespace JinEngine
 				void OffHoveredColor()noexcept;
 			};
 		private:
-			using UpdateTransformT = Core::JStaticCallableType<void, JEditorTransformTool*, JGameObject*, JCamera*>;
+			using UpdateTransformT = Core::JStaticCallableType<void, JEditorTransformTool*, const JUserPtr<JGameObject>&, const JUserPtr<JCamera>&>;
 		private:
 			const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType;
 			const J_DEFAULT_SHAPE shape;
+			JUserPtr<JMeshGeometry> mesh;
 			const float sizeRate = 0;
-			float shapeLength = 0;
 			const bool hasCenter;
 		private:
 			UpdateTransformT::Ptr transformUpdatePtr;
@@ -82,10 +83,10 @@ namespace JinEngine
 			//Mid to nowLocalPos
 			JVector2<float> preLocalMouseMidGap;
 		private:
-			Core::JUserPtr<JGameObject> debugRoot;
-			Core::JUserPtr<JGameObject> transformArrowRoot;
-			Core::JUserPtr<JGameObject> arrowCenter;
-			Core::JUserPtr<JMaterial> arrowCenterMaterial;
+			JUserPtr<JGameObject> debugRoot;
+			JUserPtr<JGameObject> transformArrowRoot;
+			JUserPtr<JGameObject> arrowCenter;
+			JUserPtr<JMaterial> arrowCenterMaterial;
 			Arrow arrow[Constants::arrowCount];
 		public:
 			JEditorTransformTool(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType,
@@ -93,15 +94,15 @@ namespace JinEngine
 				const float sizeRate);
 			~JEditorTransformTool();
 		public:
-			void Update(Core::JUserPtr<JGameObject> selected, Core::JUserPtr<JCamera> cam, const JVector2<float>& viewLocalPos)final;
+			void Update(const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam, const JVector2<float>& viewLocalPos)final;
 		private: 
-			void UpdateArrowPosition(JGameObject* selected, JCamera* cam);
-			void UpdateArrowDragging(JGameObject* selected, JCamera* cam, const JVector2<float>& viewLocalPos);
+			void UpdateArrowPosition(const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam);
+			void UpdateArrowDragging(const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam, const JVector2<float>& viewLocalPos);
 		private:
 			static UpdateTransformT::Ptr GetUpdateTransformPtr(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType)noexcept;
-			static void UpdateSelectedPosition(JEditorTransformTool* tool, JGameObject* selected, JCamera* cam)noexcept;
-			static void UpdateSelectedRotation(JEditorTransformTool* tool, JGameObject* selected, JCamera* cam)noexcept;
-			static void UpdateSelectedScale(JEditorTransformTool* tool, JGameObject* selected, JCamera* cam)noexcept;
+			static void UpdateSelectedPosition(JEditorTransformTool* tool, const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam)noexcept;
+			static void UpdateSelectedRotation(JEditorTransformTool* tool, const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam)noexcept;
+			static void UpdateSelectedScale(JEditorTransformTool* tool, const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam)noexcept;
 		public:
 			void ActivateTool()noexcept;
 			void DeActivateTool()noexcept;
@@ -113,8 +114,9 @@ namespace JinEngine
 			void DestroyToolObject()noexcept;
 		public:
 			J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE GetToolType()const noexcept final;
+			uint GetShapeLength()const noexcept;
 		public:
-			void SetDebugRoot(Core::JUserPtr<JGameObject> debugRoot);
+			void SetDebugRoot(JUserPtr<JGameObject> debugRoot);
 		private:
 			void OnHovering(const int newArrowIndex)noexcept;
 			void OffHovering()noexcept;

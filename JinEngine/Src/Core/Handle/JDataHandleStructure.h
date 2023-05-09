@@ -75,7 +75,7 @@ namespace JinEngine
 			struct PointerTypeDetermine<true>
 			{
 			public:
-				using PointerType = Core::JOwnerPtr<Type>;
+				using PointerType = JOwnerPtr<Type>;
 			};
 		private:
 			using PointerType = typename PointerTypeDetermine< useOwnerPtr>::PointerType;

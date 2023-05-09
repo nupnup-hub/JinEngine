@@ -18,7 +18,7 @@ namespace JinEngine
 			size_t committedBlockCount = 0; 
 			size_t reservedBlockCount = 0;
 		public:
-			bool Initialize(JAllocationDesc newDesc)final;
+			bool Initialize(JAllocationDesc&& newDesc)final;
 			void* Allocate(const size_t size)final;
 			void DeAllocate(void* p)final;
 			void DeAllocate(void* p, const size_t size) final;
@@ -27,7 +27,7 @@ namespace JinEngine
 		public:
 			bool CanAllocate(const uint blockCount)const noexcept final; 
 		public:
-			JAllocInfo GetInformation()const noexcept final;
+			JAllocationInfo GetInformation()const noexcept final;
 		};
 	}
 }

@@ -18,7 +18,7 @@ namespace JinEngine
 				parentNode->childrenNode.push_back(this);
 		}
 		JOctreeNode::~JOctreeNode() {}
-		void JOctreeNode::CreateDebugGameObject(JGameObject* parent, bool onlyLeafNod)noexcept
+		void JOctreeNode::CreateDebugGameObject(JUserPtr<JGameObject> parent, bool onlyLeafNod)noexcept
 		{
 			if (debugGameObject == nullptr)
 			{
@@ -42,7 +42,7 @@ namespace JinEngine
 		{
 			if (debugGameObject != nullptr)
 			{
-				JGameObject::BeginDestroy(debugGameObject); 
+				JGameObject::BeginDestroy(debugGameObject.Get()); 
 				debugGameObject = nullptr;
 			}
 		}
@@ -98,19 +98,19 @@ namespace JinEngine
 					CullingInnerObject(camFrustum, camPos);
 			}	
 		}
-		JGameObject* JOctreeNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
+		JUserPtr<JGameObject> JOctreeNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
 		{
 			return nullptr;
 		}
-		void JOctreeNode::IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		void JOctreeNode::IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
 			//미;구현
 		}
-		void JOctreeNode::IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		void JOctreeNode::IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
 			//미;구현
 		}
-		void JOctreeNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		void JOctreeNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
 			//미;구현
 		}
@@ -125,9 +125,9 @@ namespace JinEngine
 					childrenNode[i]->OffCulling();
 			}
 		}
-		bool JOctreeNode::AddGameObject(JGameObject* gameObj, bool isLooseOctree)noexcept
+		bool JOctreeNode::AddGameObject(JUserPtr<JGameObject> gameObj, bool isLooseOctree)noexcept
 		{
-			JRenderItem* rItem = gameObj->GetRenderItem();
+			JUserPtr<JRenderItem> rItem = gameObj->GetRenderItem();
 			BoundingBox rItemBoundingBox = rItem->GetBoundingBox();
 			ContainmentType res = boundingBox.Contains(rItemBoundingBox);
 
@@ -164,7 +164,7 @@ namespace JinEngine
 			neighborNode.push_back(octreeNode);
 			return true;
 		}
-		bool JOctreeNode::RemoveGameObject(JGameObject* gameObj)noexcept
+		bool JOctreeNode::RemoveGameObject(JUserPtr<JGameObject> gameObj)noexcept
 		{
 			if (gameObj != nullptr)
 				return RemoveInnerGameObject(gameObj);
@@ -202,7 +202,7 @@ namespace JinEngine
 		{
 			return (uint)innerGameObject.size();
 		}
-		bool JOctreeNode::RemoveInnerGameObject(JGameObject* gameObject)noexcept
+		bool JOctreeNode::RemoveInnerGameObject(JUserPtr<JGameObject> gameObject)noexcept
 		{
 			const size_t tarGuid = gameObject->GetGuid();
 			const uint innerGameObjectCount = (uint)innerGameObject.size();
@@ -221,7 +221,7 @@ namespace JinEngine
 			const uint innerGameObjCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerGameObjCount; ++i)
 			{
-				JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
+				JUserPtr<JRenderItem> rItem = innerGameObject[i]->GetRenderItem();
 				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) == 0)
 					continue;
 
@@ -237,7 +237,7 @@ namespace JinEngine
 			const uint innerGameObjCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerGameObjCount; ++i)
 			{
-				JRenderItem* rItem = innerGameObject[i]->GetRenderItem();				 
+				JUserPtr<JRenderItem> rItem = innerGameObject[i]->GetRenderItem();
 				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) == 0)
 					continue;
 
@@ -279,7 +279,7 @@ namespace JinEngine
 			const uint innerGameObjCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerGameObjCount; ++i)
 			{
-				JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
+				JUserPtr<JRenderItem> rItem = innerGameObject[i]->GetRenderItem();
 				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
 					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
 			}

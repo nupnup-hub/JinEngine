@@ -85,10 +85,10 @@ namespace JinEngine
 					int rIndex,
 					int bIndex)noexcept;
 			private:
-				static Core::JUserPtr<JGraphicResourceInfo> Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat);
-				static Core::JUserPtr<JGraphicResourceInfo> CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat);
-				static Core::JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0);
-				static Core::JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0);
+				static JUserPtr<JGraphicResourceInfo> Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat);
+				static JUserPtr<JGraphicResourceInfo> CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadHeap, const std::wstring& path, const std::wstring& oriFormat);
+				static JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0);
+				static JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0);
 				static bool DestroyGraphicTextureResource(JGraphicResourceInfo* info);
 				static void StuffGraphicShaderPso(JGraphicShaderData* shaderData,
 					const J_SHADER_VERTEX_LAYOUT vertexLayout,

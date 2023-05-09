@@ -10,21 +10,18 @@
 
 namespace JinEngine
 {
-	JCamera* JComponentCreatorInterface::CreateCamera(JGameObject* owner, bool isMainCam)
-	{   
-		JCamera* newCamera = JICI::Create<JCamera>(owner);
-		if (isMainCam)
-			newCamera->SetMainCamera(true);
-		return newCamera;
+	JUserPtr<JCamera> JComponentCreatorInterface::CreateCamera(const JUserPtr<JGameObject>& owner)
+	{    
+		return JICI::Create<JCamera>(owner);
 	}
-	JLight* JComponentCreatorInterface::CreateLight(JGameObject* owner, J_LIGHT_TYPE type)
+	JUserPtr<JLight> JComponentCreatorInterface::CreateLight(const JUserPtr<JGameObject>& owner, J_LIGHT_TYPE type)
 	{ 
-		JLight* newLight = JICI::Create<JLight>(owner);
+		JUserPtr<JLight> newLight = JICI::Create<JLight>(owner);
 		newLight->SetLightType(type);
 		return newLight;
 	}
-	JRenderItem* JComponentCreatorInterface::CreateRenderItem(JGameObject* owner,
-		JMeshGeometry* mesh,  
+	JUserPtr<JRenderItem> JComponentCreatorInterface::CreateRenderItem(const JUserPtr<JGameObject>& owner,
+		const JUserPtr<JMeshGeometry>& mesh,  
 		const D3D12_PRIMITIVE_TOPOLOGY primitiveType,
 		const J_RENDER_LAYER renderLayer,
 		const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask)
@@ -33,17 +30,17 @@ namespace JinEngine
 			return nullptr;
 
 		//Has dependency into order
-		JRenderItem* newRenderItem = JICI::Create<JRenderItem>(owner);
+		JUserPtr<JRenderItem> newRenderItem = JICI::Create<JRenderItem>(owner);
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
 		newRenderItem->SetSpaceSpatialMask(spaceSpatialMask);
-		newRenderItem->SetMesh(Core::GetUserPtr(mesh));
+		newRenderItem->SetMesh(mesh);
 
 		return newRenderItem;
 	}
-	JRenderItem* JComponentCreatorInterface::CreateRenderItem(JGameObject* owner,
-		JMeshGeometry* mesh,
-		std::vector<JMaterial*> mat,
+	JUserPtr<JRenderItem> JComponentCreatorInterface::CreateRenderItem(const JUserPtr<JGameObject>& owner,
+		const JUserPtr<JMeshGeometry>& mesh,
+		std::vector<JUserPtr<JMaterial>>& mat,
 		const D3D12_PRIMITIVE_TOPOLOGY primitiveType,
 		const J_RENDER_LAYER renderLayer,
 		const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask)
@@ -52,33 +49,33 @@ namespace JinEngine
 			return nullptr;
 
 		//Has dependency into order
-		JRenderItem* newRenderItem = JICI::Create<JRenderItem>(owner);
+		JUserPtr<JRenderItem> newRenderItem = JICI::Create<JRenderItem>(owner);
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
 		newRenderItem->SetSpaceSpatialMask(spaceSpatialMask);
-		newRenderItem->SetMesh(Core::GetUserPtr(mesh));
+		newRenderItem->SetMesh(mesh);
 		 
 		const int matCount = (uint)mat.size();
 		for (uint i = 0; i < matCount; ++i)
 		{
 			if (mat[i] != nullptr)
-				newRenderItem->SetMaterial(i, Core::GetUserPtr(mat[i]));
+				newRenderItem->SetMaterial(i, mat[i]);
 		}
 		return newRenderItem;
 	}
-	JComponent* JComponentCreatorInterface::CreateComponent(const J_COMPONENT_TYPE cType, JGameObject* owner)
+	JUserPtr<JComponent> JComponentCreatorInterface::CreateComponent(const J_COMPONENT_TYPE cType, const JUserPtr<JGameObject>& owner)
 	{
 		auto& typeInfo = CTypeCommonCall::CallGetTypeInfo(cType);
-		auto rawPtr = JICI::Create(JComponent::CreateInitDIData(cType, owner), Core::JIdentifier::GetPrivateInterface(typeInfo.TypeGuid()));
-		return static_cast<JComponent*>(rawPtr.Get());
+		auto idenUser = JICI::Create(JComponent::CreateInitDIData(cType, owner), Core::JIdentifier::GetPrivateInterface(typeInfo.TypeGuid()));
+		return JUserPtr<JComponent>::ConvertChild(std::move(idenUser));
 	}
-	JComponent* JComponentCreatorInterface::CreateComponent(const Core::JTypeInfo& typeInfo, JGameObject* owner)
+	JUserPtr<JComponent> JComponentCreatorInterface::CreateComponent(const Core::JTypeInfo& typeInfo, const JUserPtr<JGameObject>& owner)
 	{
 		if (!typeInfo.IsChildOf<JComponent>())
 			return nullptr;
 
-		auto rawPtr = JICI::Create(JComponent::CreateInitDIData(CTypeCommonCall::ConvertCompType(typeInfo), owner),
+		auto idenUser = JICI::Create(JComponent::CreateInitDIData(CTypeCommonCall::ConvertCompType(typeInfo), owner),
 			Core::JIdentifier::GetPrivateInterface(typeInfo.TypeGuid()));
-		return static_cast<JComponent*>(rawPtr.Get());
+		return JUserPtr<JComponent>::ConvertChild(std::move(idenUser));
 	}
 }

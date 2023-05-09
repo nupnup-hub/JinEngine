@@ -8,6 +8,7 @@ namespace JinEngine
 	class JSkinnedMeshGeometry final : public JMeshGeometry
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JSkinnedMeshGeometry)
+		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
 	public: 
 		class InitData : public JMeshGeometry::InitData
 		{
@@ -15,18 +16,18 @@ namespace JinEngine
 		private:
 			friend class JSkinnedMeshGeometry;
 		private:
-			Core::JUserPtr<JSkeletonAsset> skeletonAsset;
+			JUserPtr<JSkeletonAsset> skeletonAsset;
 		public:
-			InitData(const uint8 formatIndex, JDirectory* directory, std::unique_ptr<JMeshGroup>&& skinnedMeshGroup);
+			InitData(const uint8 formatIndex, const JUserPtr<JDirectory>& directory, std::unique_ptr<JMeshGroup>&& skinnedMeshGroup);
 			InitData(const size_t guid,
 				const uint8 formatIndex,
-				JDirectory* directory,
+				const JUserPtr<JDirectory>& directory,
 				std::unique_ptr<JMeshGroup>&& skinnedMeshGroup);
 			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const uint8 formatIndex,
-				JDirectory* directory,
+				const JUserPtr<JDirectory>& directory,
 				std::unique_ptr<JMeshGroup>&& skinnedMeshGroup);
 		public:
 			bool IsValidData()const noexcept final;
@@ -38,7 +39,7 @@ namespace JinEngine
 		public:
 			J_MESHGEOMETRY_TYPE meshType;
 		public:
-			LoadMetaData(JDirectory* directory);
+			LoadMetaData(const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JSkinnedMeshGeometryPrivate;
@@ -48,7 +49,7 @@ namespace JinEngine
 	public:
 		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
 		J_MESHGEOMETRY_TYPE GetMeshGeometryType()const noexcept final; 
-		JSkeletonAsset* GetSkeletonAsset()const noexcept;
+		JUserPtr<JSkeletonAsset> GetSkeletonAsset()const noexcept;
 	private:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;   

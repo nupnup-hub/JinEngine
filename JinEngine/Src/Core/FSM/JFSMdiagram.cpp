@@ -7,7 +7,7 @@
 #include"JFSMparameterValueType.h"
 #include"JFSMparameterStorageAccess.h"   
 #include"../Guid/GuidCreator.h"
-#include"../Identity/JIdentifierImplBase.h"
+#include"../Reflection/JTypeImplBase.h"
 #include"../../Utility/JCommonUtility.h"
 #include<memory>
 #include<string>
@@ -24,37 +24,32 @@ namespace JinEngine
 		namespace
 		{
 			static JFSMdiagramPrivate dPrivate;
-			_StateUpdateInterface* StateUpdateInterface(JFSMstate* state)
+			_StateUpdateInterface* StateUpdateInterface(const JUserPtr<JFSMstate>& state)
 			{
 				return &static_cast<_StateUpdateInterface&>(static_cast<JFSMstatePrivate&>(state->GetPrivateInterface()).GetUpdateInterface());
 			}
 		}
  
-		class JFSMdiagram::JFSMdiagramImpl : public JIdentifierImplBase,
+		class JFSMdiagram::JFSMdiagramImpl : public JTypeImplBase,
 			public JFSMparameterStorageUserInterface
 		{
 			REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JFSMdiagramImpl)
 		public:
-			JFSMdiagram* thisDiagram = nullptr;
+			JWeakPtr<JFSMdiagram> thisPointer = nullptr;
 		public:
 			//vector + unorered map => 64bit overhead
 			JFSMdiagramOwnerInterface* ownerInterface;
-			std::vector<JFSMstate*> stateVec;
-			std::unordered_map<size_t, JFSMstate*> stateMap;
-			JFSMstate* initState = nullptr;
+			std::vector<JUserPtr<JFSMstate>> stateVec; 
+			std::unordered_map<size_t, JUserPtr<JFSMstate>> stateMap;
+			JUserPtr<JFSMstate> initState = nullptr;
 			size_t nowStateGuid;
 		public:
-			JFSMdiagramImpl(const InitData& initData, JFSMdiagram* thisDiagram)
-				:ownerInterface(initData.ownerInterface), thisDiagram(thisDiagram)
-			{ 
-				ownerInterface->GetParameterStorageUser()->AddUser(this, thisDiagram->GetGuid());
-			}
-			~JFSMdiagramImpl()
-			{
-				ownerInterface->GetParameterStorageUser()->RemoveUser(this, thisDiagram->GetGuid());
-			}
+			JFSMdiagramImpl(const InitData& initData, JFSMdiagram* thisDiagramRaw)
+				:ownerInterface(initData.ownerInterface)
+			{}
+			~JFSMdiagramImpl(){}
 		public:
-			JFSMstate* GetNowState()const noexcept
+			JUserPtr<JFSMstate> GetNowState()const noexcept
 			{
 				auto data = stateMap.find(nowStateGuid);
 				if (data != stateMap.end())
@@ -62,7 +57,7 @@ namespace JinEngine
 				else
 					return nullptr;
 			}
-			JFSMstate* GetState(const size_t guid)const noexcept
+			JUserPtr<JFSMstate> GetState(const size_t guid)const noexcept
 			{
 				auto data = stateMap.find(guid);
 				if (data != stateMap.end())
@@ -70,14 +65,14 @@ namespace JinEngine
 				else
 					return nullptr;
 			}
-			JFSMstate* GetStateByIndex(const uint index)const noexcept
+			JUserPtr<JFSMstate> GetStateByIndex(const uint index)const noexcept
 			{
 				if (index < stateVec.size())
 					return stateVec[index];
 				else
 					return nullptr;
 			}
-			std::vector<JFSMparameter*> GetStorageParameter()const noexcept
+			std::vector<JUserPtr<JFSMparameter>> GetStorageParameter()const noexcept
 			{
 				return ownerInterface->GetParameterStorageUser()->GetParameterVec();
 			}
@@ -95,9 +90,9 @@ namespace JinEngine
 			}
 			void Clear()noexcept
 			{
-				std::vector<JFSMstate*> copy = stateVec;
+				std::vector<JUserPtr<JFSMstate>> copy = stateVec;
 				for(auto& data : copy)
-					JFSMinterface::BeginDestroy(data); 
+					JFSMinterface::BeginDestroy(data.Get()); 
 				initState = nullptr;
 				stateMap.clear();
 				stateVec.clear();
@@ -112,14 +107,14 @@ namespace JinEngine
 		public:
 			bool RegisterInstance()noexcept
 			{
-				return ownerInterface->RegisterDiagram(thisDiagram);
+				return ownerInterface->RegisterDiagram(thisPointer);
 			}
 			bool DeRegisterInstance()noexcept
 			{
-				return ownerInterface->DeRegisterDiagram(thisDiagram);
+				return ownerInterface->DeRegisterDiagram(thisPointer);
 			}
 		public:
-			bool AddState(JFSMstate* newState)noexcept
+			bool AddState(const JUserPtr<JFSMstate>& newState)noexcept
 			{
 				if (newState == nullptr)
 					return false;
@@ -139,7 +134,7 @@ namespace JinEngine
 
 				return true;
 			}
-			bool RemoveState(JFSMstate* state)noexcept
+			bool RemoveState(const JUserPtr<JFSMstate>& state)noexcept
 			{
 				if (state == nullptr)
 					return false;
@@ -148,13 +143,13 @@ namespace JinEngine
 				if (stateMap.find(guid) != stateMap.end())
 				{
 					stateMap.erase(guid);
-					int index = JCUtil::GetJIdenIndex(stateVec, guid);
+					int index = JCUtil::GetTypeIndex(stateVec, guid);
 					if (index != -1)
 					{ 
 						stateVec.erase(stateVec.begin() + index);
 						const uint stateCount = (uint)stateVec.size();
 						for (uint i = 0; i < stateCount; ++i)
-							JFSMinterface::BeginDestroy(stateVec[i]->GetTransitionByOutGuid(state->GetGuid()));
+							JFSMinterface::BeginDestroy(stateVec[i]->GetTransitionByOutGuid(state->GetGuid()).Get());
 
 						if (guid == nowStateGuid)
 						{
@@ -171,9 +166,22 @@ namespace JinEngine
 					return false;
 			}
 		public:
-			static void RegisterCallOnce()
+			void RegisterThisPointer(JFSMdiagram* fsmDiagram)
 			{
-				Core::JIdentifier::RegisterPrivateInterface(JFSMdiagram::StaticTypeInfo(), dPrivate);
+				thisPointer = GetWeakPtr(fsmDiagram);
+			}
+			void RegisterPostCreation()
+			{
+				ownerInterface->GetParameterStorageUser()->AddUser(this, thisPointer->GetGuid());
+			}
+			void DeRegisterPreDestruction()
+			{
+				ownerInterface->GetParameterStorageUser()->RemoveUser(this, thisPointer->GetGuid());
+			}
+			static void RegisterTypeData()
+			{
+				JIdentifier::RegisterPrivateInterface(JFSMdiagram::StaticTypeInfo(), dPrivate);
+				IMPL_REALLOC_BIND(JFSMdiagram::JFSMdiagramImpl, thisPointer)
 			}
 		};
 
@@ -194,7 +202,7 @@ namespace JinEngine
 			return JFSMinterface::InitData::IsValidData() && ownerInterface != nullptr;
 		}
 		 
-		Core::JIdentifierPrivate& JFSMdiagram::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JFSMdiagram::GetPrivateInterface()const noexcept
 		{
 			return dPrivate;
 		}
@@ -206,19 +214,19 @@ namespace JinEngine
 		{
 			return (uint)impl->stateVec.size();
 		}
-		JFSMstate* JFSMdiagram::GetNowState()const noexcept
+		JUserPtr<JFSMstate> JFSMdiagram::GetNowState()const noexcept
 		{
 			return impl->GetNowState();
 		}
-		JFSMstate* JFSMdiagram::GetState(const size_t guid)const noexcept
+		JUserPtr<JFSMstate> JFSMdiagram::GetState(const size_t guid)const noexcept
 		{
 			return impl->GetState(guid);
 		}
-		JFSMstate* JFSMdiagram::GetStateByIndex(const uint index)const noexcept
+		JUserPtr<JFSMstate> JFSMdiagram::GetStateByIndex(const uint index)const noexcept
 		{
 			return impl->GetStateByIndex(index);
 		}
-		std::vector<JFSMstate*> JFSMdiagram::GetStateVec()noexcept
+		std::vector<JUserPtr<JFSMstate>> JFSMdiagram::GetStateVec()noexcept
 		{
 			return impl->stateVec;
 		}
@@ -249,25 +257,36 @@ namespace JinEngine
 		using CreateInstanceInterface = JFSMdiagramPrivate::CreateInstanceInterface;
 		using DestroyInstanceInterface = JFSMdiagramPrivate::DestroyInstanceInterface;
 		using OwnTypeInterface = JFSMdiagramPrivate::OwnTypeInterface;
+		using OwnerTypeInterface = JFSMdiagramPrivate::OwnerTypeInterface;
 		using ParamInterface = JFSMdiagramPrivate::ParamInterface;
 
-		Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+		JOwnerPtr<JIdentifier> CreateInstanceInterface::Create(JDITypeDataBase* initData)
 		{
-			return Core::JPtrUtil::MakeOwnerPtr<JFSMdiagram>(*static_cast<JFSMdiagram::InitData*>(initData.get()));
+			return JPtrUtil::MakeOwnerPtr<JFSMdiagram>(*static_cast<JFSMdiagram::InitData*>(initData));
 		}
-		bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
+		void CreateInstanceInterface::Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept
+		{
+			JIdentifierPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+			JFSMdiagram* diagram = static_cast<JFSMdiagram*>(createdPtr);
+			diagram->impl->RegisterThisPointer(diagram);
+			diagram->impl->RegisterPostCreation();
+			diagram->impl->Initialize();
+		}
+		void CreateInstanceInterface::RegisterCash(JIdentifier* createdPtr)noexcept
+		{
+			static_cast<JFSMdiagram*>(createdPtr)->impl->RegisterInstance();
+		}
+		bool CreateInstanceInterface::CanCreateInstance(JDITypeDataBase* initData)const noexcept
 		{
 			const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JFSMdiagram::InitData::StaticTypeInfo());
 			return isValidPtr && initData->IsValidData();
 		}
-		void CreateInstanceInterface::RegisterCash(Core::JIdentifier* createdPtr)noexcept
-		{ 
-			static_cast<JFSMdiagram*>(createdPtr)->impl->RegisterInstance();
-		}
-
-		void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
+ 
+		void DestroyInstanceInterface::Clear(JIdentifier* ptr, const bool isForced)
 		{
+			JFSMinterfacePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 			JFSMdiagram* dPtr = static_cast<JFSMdiagram*>(ptr); 
+			dPtr->impl->DeRegisterPreDestruction();
 			dPtr->impl->Clear();
 		}
 		void DestroyInstanceInterface::DeRegisterCash(JIdentifier* ptr)noexcept
@@ -275,26 +294,31 @@ namespace JinEngine
 			static_cast<JFSMdiagram*>(ptr)->impl->DeRegisterInstance();
 		}
 
-		bool OwnTypeInterface::AddState(JFSMstate* state)noexcept
+		bool OwnTypeInterface::AddState(const JUserPtr<JFSMstate>& state)noexcept
 		{
 			return state->GetOwner()->impl->AddState(state);
 		}
-		bool OwnTypeInterface::RemoveState(JFSMstate* state)noexcept
+		bool OwnTypeInterface::RemoveState(const JUserPtr<JFSMstate>& state)noexcept
 		{
 			return state->GetOwner()->impl->RemoveState(state);
 		}
 
-		std::vector<JFSMparameter*> ParamInterface::GetStorageParameter(JFSMdiagram* diagram)noexcept
+		void OwnerTypeInterface::SetOwnerPointer(const JUserPtr<JFSMdiagram>& digram, JFSMdiagramOwnerInterface* ownInterface)noexcept
+		{
+			digram->impl->ownerInterface = ownInterface;
+		}
+
+		std::vector<JUserPtr<JFSMparameter>> ParamInterface::GetStorageParameter(const JUserPtr<JFSMdiagram>& diagram)noexcept
 		{
 			return diagram->impl->GetStorageParameter();
 		}
 
-		Core::JIdentifierPrivate::CreateInstanceInterface& JFSMdiagramPrivate::GetCreateInstanceInterface()const noexcept
+		JIdentifierPrivate::CreateInstanceInterface& JFSMdiagramPrivate::GetCreateInstanceInterface()const noexcept
 		{
 			static CreateInstanceInterface pI;
 			return pI;
 		}
-		Core::JIdentifierPrivate::DestroyInstanceInterface& JFSMdiagramPrivate::GetDestroyInstanceInterface()const noexcept
+		JIdentifierPrivate::DestroyInstanceInterface& JFSMdiagramPrivate::GetDestroyInstanceInterface()const noexcept
 		{
 			static DestroyInstanceInterface pI;
 			return pI;

@@ -26,8 +26,15 @@ namespace JinEngine
 		};
 		class CreateInstanceInterface : public JResourceObjectPrivate::CreateInstanceInterface
 		{
+		protected:
+			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept override;
 		private: 
 			void TryDestroyUnUseData(Core::JIdentifier* createdPtr)noexcept final;
+		};
+		class DestroyInstanceInterface : public JResourceObjectPrivate::DestroyInstanceInterface
+		{
+		protected:
+			void Clear(Core::JIdentifier* ptr, const bool isForced) override;
 		};
 		class BufferViewInterface
 		{

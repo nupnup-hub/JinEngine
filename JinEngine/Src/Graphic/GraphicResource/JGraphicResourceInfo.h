@@ -1,5 +1,6 @@
 #pragma once
-#include"../../Core/JDataType.h"  
+#include"../../Core/JDataType.h"   
+#include"../../Core/Reflection/JReflection.h"
 #include"JGraphicResourceType.h" 
 #include<memory>
 #include<wrl/client.h>  
@@ -11,7 +12,8 @@ namespace JinEngine
 	{ 
 		class JGraphicResourceManager;
 		class JGraphicResourceInfo
-		{  
+		{
+			REGISTER_CLASS_USE_ALLOCATOR(JGraphicResourceInfo)
 		private:
 			friend class JGraphicResourceManager;
 		private:
@@ -21,6 +23,8 @@ namespace JinEngine
 				int stIndex = -1;
 				uint count = 0;
 			}; 
+		private:
+			JGraphicResourceManager* manager = nullptr;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
 		private:
@@ -39,9 +43,11 @@ namespace JinEngine
 			void SetHeapIndexStart(const J_GRAPHIC_BIND_TYPE bindType, const int newValue);
 			void SetViewCount(const J_GRAPHIC_BIND_TYPE bindType, const uint newValue);
 		public:
-			bool Destroy();
+			static bool Destroy(JGraphicResourceInfo* info);  
 		private:
-			JGraphicResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, Microsoft::WRL::ComPtr<ID3D12Resource>&& resource);
+			JGraphicResourceInfo(JGraphicResourceManager* manager,
+				const J_GRAPHIC_RESOURCE_TYPE graphicResourceType,
+				Microsoft::WRL::ComPtr<ID3D12Resource>&& resource);
 		public:
 			~JGraphicResourceInfo();
 		};

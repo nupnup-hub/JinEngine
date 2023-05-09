@@ -9,7 +9,7 @@
 #include"../Material/JDefaultMaterialSetting.h"
 #include"../../Directory/JDirectory.h"  
 #include"../../../Core/Guid/GuidCreator.h"
-#include"../../../Core/Identity/JIdentifierImplBase.h"
+#include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileConstant.h"  
 #include"../../../Core/File/JFileIOHelper.h"
 #include<fstream>
@@ -23,36 +23,26 @@ namespace JinEngine
 		static JSkinnedMeshGeometryPrivate sPrivate;
 	}
  
-	class JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl : public Core::JIdentifierImplBase,
+	class JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl : public Core::JTypeImplBase,
 		public JResourceObjectUserInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSkinnedMeshGeometryImpl)
 	public:
-		JSkinnedMeshGeometry* thisMesh = nullptr;
+		JWeakPtr<JSkinnedMeshGeometry> thisPointer = nullptr;
 	public:
-		Core::JUserPtr<JSkeletonAsset> skeletonAsset = nullptr;
+		JUserPtr<JSkeletonAsset> skeletonAsset = nullptr;
 	public:
-		JSkinnedMeshGeometryImpl(const InitData& initData, JSkinnedMeshGeometry* thisMesh)
-			:JResourceObjectUserInterface(thisMesh->GetGuid()), thisMesh(thisMesh)
-		{
-			AddEventListener(*JResourceObject::EvInterface(), thisMesh->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);			
-		}
-		~JSkinnedMeshGeometryImpl()
-		{
-			RemoveListener(*JResourceObject::EvInterface(), thisMesh->GetGuid());
-		}
+		JSkinnedMeshGeometryImpl(const InitData& initData, JSkinnedMeshGeometry* thisMeshRaw)
+			:JResourceObjectUserInterface(thisMeshRaw->GetGuid())
+		{}
+		~JSkinnedMeshGeometryImpl(){}
 	public:
-		void Initialize(const InitData& initData)
+		void SetSkeletonAsset(JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept
 		{
-			SetSkeletonAsset(initData.skeletonAsset);
-		}
-	public:
-		void SetSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept
-		{
-			if (thisMesh->IsActivated())
+			if (thisPointer->IsActivated())
 				CallOffResourceReference(skeletonAsset.Get());
 			skeletonAsset = newSkeletonAsset;
-			if (thisMesh->IsActivated())
+			if (thisPointer->IsActivated())
 				CallOnResourceReference(skeletonAsset.Get());
 		}
 	public:
@@ -207,7 +197,7 @@ namespace JinEngine
 	public:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 		{ 
-			if (iden == thisMesh->GetGuid())
+			if (iden == thisPointer->GetGuid())
 				return;
 
 			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
@@ -222,20 +212,37 @@ namespace JinEngine
 			return std::make_unique<InitData>(name, meta->guid, meta->flag, meta->formatIndex, meta->directory, ReadAssetData(path));
 		}
 	public:
-		static void RegisterCallOnce()
+		void Initialize(InitData* initData)
+		{
+			SetSkeletonAsset(initData->skeletonAsset);
+		}	 
+		void RegisterThisPointer(JSkinnedMeshGeometry* mesh)
+		{
+			thisPointer = Core::GetWeakPtr(mesh);
+		}
+		void RegisterPostCreation()
+		{
+			AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+		}
+		void DeRegisterPreDestruction()
+		{
+			RemoveListener(*JResourceObject::EvInterface(), thisPointer->GetGuid());
+		}
+		static void RegisterTypeData()
 		{
 			Core::JIdentifier::RegisterPrivateInterface(JSkinnedMeshGeometry::StaticTypeInfo(), sPrivate);
+			IMPL_REALLOC_BIND(JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl, thisPointer)
 		}
 	};
 
-	JSkinnedMeshGeometry::InitData::InitData(const uint8 formatIndex, JDirectory* directory, std::unique_ptr<JMeshGroup>&& skinnedMeshGroup)
+	JSkinnedMeshGeometry::InitData::InitData(const uint8 formatIndex, const JUserPtr<JDirectory>& directory, std::unique_ptr<JMeshGroup>&& skinnedMeshGroup)
 		: JMeshGeometry::InitData(JSkinnedMeshGeometry::StaticTypeInfo(), formatIndex, directory, std::move(skinnedMeshGroup))
 	{
 		skeletonAsset = static_cast<JSkinnedMeshGroup*>(meshGroup.get())->GetSkeletonAsset();
 	}
 	JSkinnedMeshGeometry::InitData::InitData(const size_t guid,
 		const uint8 formatIndex,
-		JDirectory* directory,
+		const JUserPtr<JDirectory>& directory,
 		std::unique_ptr<JMeshGroup>&& skinnedMeshGroup)
 		: JMeshGeometry::InitData(JSkinnedMeshGeometry::StaticTypeInfo(), guid, formatIndex, directory, std::move(skinnedMeshGroup))
 	{
@@ -245,7 +252,7 @@ namespace JinEngine
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
 		const uint8 formatIndex,
-		JDirectory* directory,
+		const JUserPtr<JDirectory>& directory,
 		std::unique_ptr<JMeshGroup>&& skinnedMeshGroup)
 		: JMeshGeometry::InitData(JSkinnedMeshGeometry::StaticTypeInfo(), name, guid, flag, formatIndex, directory, std::move(skinnedMeshGroup))
 	{
@@ -257,7 +264,7 @@ namespace JinEngine
 	}
 
 
-	JSkinnedMeshGeometry::LoadMetaData::LoadMetaData(JDirectory* directory)
+	JSkinnedMeshGeometry::LoadMetaData::LoadMetaData(const JUserPtr<JDirectory>& directory)
 		: JMeshGeometry::LoadMetaData(JSkinnedMeshGeometry::StaticTypeInfo(), directory)
 	{}
 
@@ -269,9 +276,9 @@ namespace JinEngine
 	{
 		return J_MESHGEOMETRY_TYPE::SKINNED;
 	}
-	JSkeletonAsset* JSkinnedMeshGeometry::GetSkeletonAsset()const noexcept
+	JUserPtr<JSkeletonAsset> JSkinnedMeshGeometry::GetSkeletonAsset()const noexcept
 	{
-		return impl->skeletonAsset.Get();
+		return impl->skeletonAsset;
 	}
 	void JSkinnedMeshGeometry::DoActivate()noexcept
 	{
@@ -285,49 +292,62 @@ namespace JinEngine
 	}
 	JSkinnedMeshGeometry::JSkinnedMeshGeometry(InitData& initData)
 		:JMeshGeometry(initData), impl(std::make_unique<JSkinnedMeshGeometryImpl>(initData, this))
-	{ 
-		impl->Initialize(initData);
-	}
+	{}
 	JSkinnedMeshGeometry::~JSkinnedMeshGeometry()
 	{
 		impl.reset();
 	}
 
 	using CreateInstanceInterface = JSkinnedMeshGeometryPrivate::CreateInstanceInterface;
+	using DestroyInstanceInterface = JSkinnedMeshGeometryPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JSkinnedMeshGeometryPrivate::AssetDataIOInterface;
 
-	Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
-		return Core::JPtrUtil::MakeOwnerPtr<JSkinnedMeshGeometry>(*static_cast<JSkinnedMeshGeometry::InitData*>(initData.get()));
+		return Core::JPtrUtil::MakeOwnerPtr<JSkinnedMeshGeometry>(*static_cast<JSkinnedMeshGeometry::InitData*>(initData));
 	}
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JMeshGeometryPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		JSkinnedMeshGeometry* mesh = static_cast<JSkinnedMeshGeometry*>(createdPtr);
+		mesh->impl->RegisterThisPointer(mesh);
+		mesh->impl->RegisterPostCreation();
+		mesh->impl->Initialize(static_cast<JSkinnedMeshGeometry::InitData*>(initData));
+	} 
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
 		const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JSkinnedMeshGeometry::InitData::StaticTypeInfo());
 		return isValidPtr && initData->IsValidData();
 	}
 
-	Core::JIdentifier* AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
+	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr,const bool isForced)
+	{
+		JMeshGeometryPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
+		static_cast<JSkinnedMeshGeometry*>(ptr)->impl->DeRegisterPreDestruction();
+	}
+
+	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkinnedMeshGeometry::LoadData::StaticTypeInfo()))
 			return nullptr;
  
 		auto loadData = static_cast<JSkinnedMeshGeometry::LoadData*>(data);
 		auto pathData = loadData->pathData;
-		JDirectory* directory = loadData->directory;
+		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto metaData = std::make_unique<JSkinnedMeshGeometry::LoadMetaData>(directory);	//for load metadata
 		if (LoadMetaData(pathData.engineMetaFileWPath, metaData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
-		JSkinnedMeshGeometry* newMesh = nullptr;
+		JUserPtr<JSkinnedMeshGeometry> newMesh = nullptr;
 		if (directory->HasFile(metaData->guid))
-			newMesh = static_cast<JSkinnedMeshGeometry*>(Core::GetUserPtr(JSkinnedMeshGeometry::StaticTypeInfo().TypeGuid(), metaData->guid).Get());
+			newMesh = Core::GetUserPtr<JSkinnedMeshGeometry>(JSkinnedMeshGeometry::StaticTypeInfo().TypeGuid(), metaData->guid);
 
 		if (newMesh == nullptr)
 		{
 			using Impl = JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl;
-			auto rawPtr = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.engineFileWPath, metaData.get()), &sPrivate);
-			newMesh = static_cast<JSkinnedMeshGeometry*>(rawPtr);
+			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.engineFileWPath, metaData.get()), &sPrivate);
+			newMesh.ConnnectChild(idenUser);
 		}
 		return newMesh;
 	}
@@ -340,7 +360,8 @@ namespace JinEngine
 		if (!storeData->HasCorrectType(JSkinnedMeshGeometry::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		JSkinnedMeshGeometry* newMesh = static_cast<JSkinnedMeshGeometry*>(storeData->obj);
+		JUserPtr<JSkinnedMeshGeometry>newMesh;
+		newMesh.ConnnectChild(storeData->obj);
 		return newMesh->impl->WriteAssetData(newMesh->GetPath(), newMesh->GetMeshGroupData()) ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
@@ -367,7 +388,8 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		auto storeData = static_cast<JSkinnedMeshGeometry::StoreData*>(data);
-		JSkinnedMeshGeometry* mesh = static_cast<JSkinnedMeshGeometry*>(storeData->obj);
+		JUserPtr<JSkinnedMeshGeometry>mesh;
+		mesh.ConnnectChild(storeData->obj);
 
 		std::wofstream stream;
 		stream.open(mesh->GetMetaFilePath(), std::ios::out | std::ios::binary);
@@ -389,6 +411,11 @@ namespace JinEngine
 	Core::JIdentifierPrivate::CreateInstanceInterface& JSkinnedMeshGeometryPrivate::GetCreateInstanceInterface()const noexcept
 	{
 		static CreateInstanceInterface pI;
+		return pI;
+	}
+	Core::JIdentifierPrivate::DestroyInstanceInterface& JSkinnedMeshGeometryPrivate::GetDestroyInstanceInterface()const noexcept
+	{
+		static DestroyInstanceInterface pI;
 		return pI;
 	}
 	JResourceObjectPrivate::AssetDataIOInterface& JSkinnedMeshGeometryPrivate::GetAssetDataIOInterface()const noexcept

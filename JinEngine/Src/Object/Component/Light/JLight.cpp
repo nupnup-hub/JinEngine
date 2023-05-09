@@ -10,7 +10,7 @@
 #include"../../../Core/Guid/GuidCreator.h" 
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/File/JFileIOHelper.h"
-#include"../../../Core/Identity/JIdentifierImplBase.h"
+#include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Graphic/FrameResource/JLightConstants.h" 
 #include"../../../Graphic/FrameResource/JShadowMapConstants.h" 
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
@@ -32,17 +32,17 @@ namespace JinEngine
 		static JLightPrivate lPrivate;
 	}
  
-	class JLight::JLightImpl : public Core::JIdentifierImplBase,
+	class JLight::JLightImpl : public Core::JTypeImplBase,
 		public JFrameUpdate<LitFrameUpdate, JFrameDirtyListener, FrameUpdate::nonBuff>,
 		public Graphic::JGraphicResourceInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JLightImpl)
 	public:
-		JLight* thisLit;
+		JWeakPtr<JLight> thisPointer;
 	public:
 		REGISTER_GUI_ENUM_CONDITION(LightType, J_LIGHT_TYPE, lightType)
 		REGISTER_PROPERTY_EX(lightType, GetLightType, SetLightType, GUI_ENUM_COMBO(J_LIGHT_TYPE))
-		J_LIGHT_TYPE lightType;
+		J_LIGHT_TYPE lightType = J_LIGHT_TYPE::DIRECTIONAL;
 	public:
 		REGISTER_PROPERTY_EX(strength, GetStrength, SetStrength, GUI_COLOR_PICKER(false))
 		DirectX::XMFLOAT3 strength = { 0.8f, 0.8f, 0.8f };
@@ -57,17 +57,8 @@ namespace JinEngine
 		bool onShadow = false;
 		DirectX::XMFLOAT4X4 shadowTransform;
 	public:
-		JLightImpl(const InitData& initData, JLight* thisLit)
-			:thisLit(thisLit)
-		{
-			JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisLit->GetOwner()->GetTransform(), this);
-			lightType = J_LIGHT_TYPE::DIRECTIONAL;
-		}
-		~JLightImpl()
-		{
-			if (thisLit->GetOwner()->GetTransform() != nullptr)
-				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisLit->GetOwner()->GetTransform(), this);
-		}
+		JLightImpl(const InitData& initData, JLight* thisLitRaw){}
+		~JLightImpl(){}
 	public:
 		J_LIGHT_TYPE GetLightType()const noexcept
 		{
@@ -117,16 +108,16 @@ namespace JinEngine
 		}
 		void SetShadow(const bool value)noexcept
 		{
-			static auto IsShadow = [](JComponent& jcomp){return static_cast<JLight*>(&jcomp)->impl->onShadow;};
+			static auto IsShadow = [](const JUserPtr<JComponent>& jcomp){return static_cast<JLight*>(jcomp.Get())->impl->onShadow;};
 			if (value == onShadow)
 				return;
 
 			if (value)
 			{
-				if (thisLit->IsActivated() && !onShadow)
+				if (thisPointer->IsActivated() && !onShadow)
 				{
 					CreateShadowMap();
-					JScenePrivate::CompFrameInterface::SetComponentFrameDirty(thisLit->GetOwner()->GetOwnerScene(), thisLit->GetComponentType(), thisLit, IsShadow);
+					JScenePrivate::CompFrameInterface::SetComponentFrameDirty(thisPointer->GetOwner()->GetOwnerScene(), thisPointer->GetComponentType(), thisPointer, IsShadow);
 					SetFrameDirty();
 					onShadow = value;
 				}
@@ -136,7 +127,7 @@ namespace JinEngine
 				if (onShadow)
 				{
 					DestroyShadowMap();
-					JScenePrivate::CompFrameInterface::SetComponentFrameDirty(thisLit->GetOwner()->GetOwnerScene(), thisLit->GetComponentType(), thisLit, IsShadow);
+					JScenePrivate::CompFrameInterface::SetComponentFrameDirty(thisPointer->GetOwner()->GetOwnerScene(), thisPointer->GetComponentType(), thisPointer, IsShadow);
 					SetFrameDirty();
 					onShadow = value;
 				}
@@ -151,18 +142,18 @@ namespace JinEngine
 		void CreateShadowMap()noexcept
 		{
 			CreateShadowMapTexture();
-			AddDrawRequest(thisLit->GetOwner()->GetOwnerScene(), thisLit);
+			AddDrawRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 		}
 		void DestroyShadowMap()noexcept
 		{
-			PopDrawRequest(thisLit->GetOwner()->GetOwnerScene(), thisLit);
+			PopDrawRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 			DestroyTexture();
 		};
 	public:
 		DirectX::XMMATRIX CalLightView()const noexcept
 		{
 			const XMVECTOR targetPosV = XMVectorSet(0, 0, 0, 1);
-			const XMVECTOR lightPosV = XMVectorScale(thisLit->GetLightDir(), -50);
+			const XMVECTOR lightPosV = XMVectorScale(thisPointer->GetLightDir(), -50);
 
 			const XMVECTOR lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 			return XMMatrixLookAtLH(lightPosV, targetPosV, lightUp);
@@ -188,9 +179,9 @@ namespace JinEngine
 		{
 			constant.strength = strength;
 			constant.falloffStart = falloffStart;
-			XMStoreFloat3(&constant.direction, thisLit->GetLightDir());
+			XMStoreFloat3(&constant.direction, thisPointer->GetLightDir());
 			constant.falloffEnd = falloffEnd;
-			constant.position = thisLit->GetOwner()->GetTransform()->GetPosition();
+			constant.position = thisPointer->GetOwner()->GetTransform()->GetPosition();
 			constant.spotPower = spotPower;
 			constant.lightType = (int)lightType;
 		}
@@ -200,9 +191,9 @@ namespace JinEngine
 			XMStoreFloat4x4(&constant.shadowTransform, XMMatrixTranspose(XMLoadFloat4x4(&shadowTransform)));
 			constant.strength = strength;
 			constant.falloffStart = falloffStart;
-			XMStoreFloat3(&constant.direction, thisLit->GetLightDir());
+			XMStoreFloat3(&constant.direction, thisPointer->GetLightDir());
 			constant.falloffEnd = falloffEnd;
-			constant.position = thisLit->GetOwner()->GetTransform()->GetPosition();
+			constant.position = thisPointer->GetOwner()->GetTransform()->GetPosition();
 			constant.spotPower = spotPower;
 			constant.lightType = (int)lightType;
 			constant.shadowMapIndex = GetResourceArrayIndex();
@@ -214,7 +205,7 @@ namespace JinEngine
 		void UpdateShadowTransform()noexcept
 		{
 			const XMVECTOR targetPosV = XMVectorSet(0, 0, 0, 1);
-			const XMVECTOR lightPosV = XMVectorScale(thisLit->GetLightDir(), -50);
+			const XMVECTOR lightPosV = XMVectorScale(thisPointer->GetLightDir(), -50);
 
 			const XMVECTOR lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 			const XMMATRIX lightView = XMMatrixLookAtLH(lightPosV, targetPosV, lightUp);
@@ -255,12 +246,35 @@ namespace JinEngine
 			return true;
 		}
 	public:
-		static void RegisterCallOnce()
+		void NotifyReAlloc()
+		{
+			auto transform = thisPointer->GetOwner()->GetTransform();
+			if (transform.IsValid())
+			{
+				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(transform.Get(), this);
+				JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(transform.Get(), this);
+			}
+		}
+	public:
+		void RegisterThisPointer(JLight* lit)
+		{
+			thisPointer = Core::GetWeakPtr(lit);
+		}
+		void RegisterPostCreation()
+		{ 
+			JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), this);
+		}
+		void DeRegisterPreDestruction()
+		{
+			if (thisPointer->GetOwner()->GetTransform() != nullptr)
+				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), this);
+		}
+		static void RegisterTypeData()
 		{
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JLight::StaticTypeInfo };
 			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
-			auto createInitDataLam = [](JGameObject* parent, InitUnq&& parentClassInitData) -> InitUnq
+			auto createInitDataLam = [](JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
 			{
 				using CorrectType = JComponent::ParentType::InitData;
 				const bool isValidUnq = parentClassInitData != nullptr && parentClassInitData->GetTypeInfo().IsChildOf(CorrectType::StaticTypeInfo());
@@ -283,13 +297,15 @@ namespace JinEngine
 
 			RegisterCTypeInfo(JLight::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 			Core::JIdentifier::RegisterPrivateInterface(JLight::StaticTypeInfo(), lPrivate);
+
+			IMPL_REALLOC_BIND(JLight::JLightImpl, thisPointer)
 		}
 	};
 
-	JLight::InitData::InitData(JGameObject* owner)
+	JLight::InitData::InitData(const JUserPtr<JGameObject>& owner)
 		:JComponent::InitData(JLight::StaticTypeInfo(), owner)
 	{}
-	JLight::InitData::InitData(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner)
+	JLight::InitData::InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner)
 		: JComponent::InitData(JLight::StaticTypeInfo(), GetDefaultName(JLight::StaticTypeInfo()), guid, flag, owner)
 	{}
 
@@ -379,7 +395,7 @@ namespace JinEngine
 	void JLight::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
-		RegisterComponent();
+		RegisterComponent(impl->thisPointer);
 		if (IsShadowActivated())
 			impl->CreateShadowMap();
 		impl->SetFrameDirty();
@@ -387,7 +403,7 @@ namespace JinEngine
 	void JLight::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
-		DeRegisterComponent();
+		DeRegisterComponent(impl->thisPointer);
 		if (IsShadowActivated())
 			impl->DestroyShadowMap();
 		impl->OffFrameDirty();
@@ -402,28 +418,42 @@ namespace JinEngine
 
 
 	using CreateInstanceInterface = JLightPrivate::CreateInstanceInterface;
+	using DestroyInstanceInterface = JLightPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JLightPrivate::AssetDataIOInterface; 
 	using FrameUpdateInterface = JLightPrivate::FrameUpdateInterface;
 
-	Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
-		return Core::JPtrUtil::MakeOwnerPtr<JLight>(*static_cast<JLight::InitData*>(initData.get()));
+		return Core::JPtrUtil::MakeOwnerPtr<JLight>(*static_cast<JLight::InitData*>(initData));
+	}
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JComponentPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		JLight* lit = static_cast<JLight*>(createdPtr);
+		lit->impl->RegisterThisPointer(lit);
+		lit->impl->RegisterPostCreation();
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
 		const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JLight::InitData::StaticTypeInfo());
 		return isValidPtr && initData->IsValidData();
 	}
-	bool CreateInstanceInterface::Copy(Core::JIdentifier* from, Core::JIdentifier* to) noexcept
+	bool CreateInstanceInterface::Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept
 	{
 		const bool canCopy = CanCopy(from, to) && from->GetTypeInfo().IsA(JLight::StaticTypeInfo());
 		if (!canCopy)
 			return false;
 
-		return JLight::JLightImpl::DoCopy(static_cast<JLight*>(from), static_cast<JLight*>(to));
+		return JLight::JLightImpl::DoCopy(static_cast<JLight*>(from.Get()), static_cast<JLight*>(to.Get()));
 	}
 
-	Core::JIdentifier* AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
+	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
+	{
+		JComponentPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
+		static_cast<JLight*>(ptr)->impl->DeRegisterPreDestruction();
+	}
+
+	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JLight::LoadData::StaticTypeInfo()))
 			return nullptr;
@@ -440,7 +470,7 @@ namespace JinEngine
 
 		auto loadData = static_cast<JLight::LoadData*>(data);
 		std::wifstream& stream = loadData->stream;
-		JGameObject* owner = loadData->owner;
+		JUserPtr<JGameObject> owner = loadData->owner;
 
 		JFileIOHelper::LoadObjectIden(stream, guid, flag);
 		JFileIOHelper::LoadXMFloat3(stream, sStrength);
@@ -449,15 +479,16 @@ namespace JinEngine
 		JFileIOHelper::LoadAtomicData(stream, sSpotPower);
 		JFileIOHelper::LoadAtomicData(stream, sOnShadow);
 
-		auto rawPtr = lPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JLight::InitData>(guid, flag, owner), &lPrivate);
-		JLight* newLit = static_cast<JLight*>(rawPtr);
-		newLit->SetStrength(sStrength);
-		newLit->SetFalloffStart(sFallOffsetStart);
-		newLit->SetFalloffEnd(sFallOffsetEnd);
-		newLit->SetSpotPower(sSpotPower);
-		newLit->SetShadow(sOnShadow);
+		auto idenUser = lPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JLight::InitData>(guid, flag, owner), &lPrivate);
+		JUserPtr<JLight> litUser;
+		litUser.ConnnectChild(idenUser);
+		litUser->SetStrength(sStrength);
+		litUser->SetFalloffStart(sFallOffsetStart);
+		litUser->SetFalloffEnd(sFallOffsetEnd);
+		litUser->SetSpotPower(sSpotPower);
+		litUser->SetShadow(sOnShadow);
 
-		return newLit;
+		return litUser;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
 	{
@@ -468,11 +499,13 @@ namespace JinEngine
 		if (!storeData->HasCorrectType(JLight::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		JLight* lit = static_cast<JLight*>(storeData->obj);
+		JUserPtr<JLight> lit;
+		lit.ConnnectChild(storeData->obj);
+
 		JLight::JLightImpl* impl = lit->impl.get();
 		std::wofstream& stream = storeData->stream;
 
-		JFileIOHelper::StoreObjectIden(stream, lit);
+		JFileIOHelper::StoreObjectIden(stream, lit.Get());
 		JFileIOHelper::StoreXMFloat3(stream, L"Strength:", impl->strength);
 		JFileIOHelper::StoreAtomicData(stream, L"FallOffsetStart:", impl->falloffStart);
 		JFileIOHelper::StoreAtomicData(stream, L"FallOffsetEnd:", impl->falloffEnd);
@@ -513,6 +546,11 @@ namespace JinEngine
 	Core::JIdentifierPrivate::CreateInstanceInterface& JLightPrivate::GetCreateInstanceInterface()const noexcept
 	{
 		static CreateInstanceInterface pI;
+		return pI;
+	}
+	Core::JIdentifierPrivate::DestroyInstanceInterface& JLightPrivate::GetDestroyInstanceInterface()const noexcept
+	{
+		static DestroyInstanceInterface pI;
 		return pI;
 	}
 	JComponentPrivate::AssetDataIOInterface& JLightPrivate::GetAssetDataIOInterface()const noexcept

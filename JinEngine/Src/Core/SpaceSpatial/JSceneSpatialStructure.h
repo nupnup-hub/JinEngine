@@ -71,13 +71,13 @@ namespace JinEngine
 		public:
 			void Culling(const JCullingFrustum& camFrustum)noexcept;  
 			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
-			JGameObject* IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
-			void UpdateGameObject(JGameObject* gameObject)noexcept;
+			JUserPtr<JGameObject> IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
+			void UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept;
 		public:
-			void AddGameObject(JGameObject* gameObject)noexcept;
-			void RemoveGameObject(JGameObject* gameObject)noexcept;
+			void AddGameObject(const JUserPtr<JGameObject>& gameObject)noexcept;
+			void RemoveGameObject(const JUserPtr<JGameObject>& gameObject)noexcept;
 		public:
-			std::vector<JGameObject*> GetAlignedObject(const J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& camFrustum)const noexcept;
+			std::vector<JUserPtr<JGameObject>> GetAlignedObject(const J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& camFrustum)const noexcept;
 		public:
 			//Option 
 			JOctreeOption GetOctreeOption(const J_SPACE_SPATIAL_LAYER layer)const noexcept;
@@ -88,7 +88,7 @@ namespace JinEngine
 			void SetKdTreeOption(const J_SPACE_SPATIAL_LAYER layer, const JKdTreeOption& option);
 			//void SetDebugKdTreeOption(const JKdTreeOption& option);
 		public:
-			void Activate(JGameObject* sceneRoot, JGameObject* sceneDebugRoot)noexcept;
+			void Activate()noexcept;
 			void DeAcitvate()noexcept;
 		public:
 			void BuildDebugTree(const Core::J_SPACE_SPATIAL_TYPE type,

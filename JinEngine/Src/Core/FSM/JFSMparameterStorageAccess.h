@@ -10,38 +10,33 @@ namespace JinEngine
 	namespace Core
 	{ 
 		class JFSMparameter;
-		class JFSMparameterStorage;
+		class JFSMparameterStoragePrivate;
 		class JFSMparameterStorageUserInterface
 		{
-			friend class JFSMparameterStorage;
+			friend class JFSMparameterStoragePrivate;
 		public:
 			virtual ~JFSMparameterStorageUserInterface() = default;
 		private:
 			virtual void NotifyRemoveParameter(const size_t guid)noexcept = 0;
 		};
 
-		__interface JFSMparameterStorageUserAccess
-		{ 
+		__interface JFSMparameterStoragePublicAccess
+		{
 		public:
-			size_t GetStorageGuid()const noexcept;
+			size_t GetGuid()const noexcept;
 			std::wstring GetParameterUniqueName(const std::wstring& initName)const noexcept;
 			uint GetParameterCount()const noexcept;
-			uint GetParameterMaxCount()const noexcept; 	
-			JFSMparameter* GetParameter(const size_t guid)const noexcept;
-			JFSMparameter* GetParameterByIndex(const uint index)const noexcept;
-			std::vector< JFSMparameter*> GetParameterVec()const noexcept;
+			uint GetParameterMaxCount()const noexcept;
+			JUserPtr<JFSMparameter> GetParameter(const size_t guid)const noexcept;
+			JUserPtr<JFSMparameter> GetParameterByIndex(const uint index)const noexcept;
+			std::vector<JUserPtr<JFSMparameter>> GetParameterVec()const noexcept;
+		};
+
+		__interface JFSMparameterStorageUserAccess : public JFSMparameterStoragePublicAccess
+		{ 
 		public:
 			bool AddUser(JFSMparameterStorageUserInterface* user, const size_t guid)noexcept;
 			bool RemoveUser(JFSMparameterStorageUserInterface* user, const size_t guid)noexcept;
-		};
-		 
-		__interface JFSMparameterStorageManagerAccess : public JFSMparameterStorageUserAccess
-		{
-		public:
-			void Clear();
-		public:
-			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
-			J_FILE_IO_RESULT LoadData(std::wifstream& stream);
-		};
+		};	 
 	}
 }

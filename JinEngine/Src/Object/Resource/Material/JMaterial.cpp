@@ -8,7 +8,7 @@
 #include"../../JFrameUpdate.h"
 #include"../../Directory/JDirectory.h"
 #include"../../../Core/Identity/JIdenCreator.h"
-#include"../../../Core/Identity/JIdentifierImplBase.h"
+#include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Core/File/JFileIOHelper.h" 
 #include"../../../Application/JApplicationProject.h"
@@ -25,15 +25,15 @@ namespace JinEngine
 		static JMaterialPrivate mPrivate;
 	}
 	
-	class JMaterial::JMaterialImpl : Core::JIdentifierImplBase,
+	class JMaterial::JMaterialImpl : public Core::JTypeImplBase,
 		public JFrameUpdate<JFrameUpdate1<JFrameUpdateBase<Graphic::JMaterialConstants&>>, JFrameDirty, FrameUpdate::singleBuff>,
 		public JResourceObjectUserInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JMaterialImpl)
 	public:
-		JMaterial* thisMat = nullptr;
+		JWeakPtr<JMaterial> thisPointer = nullptr;
 	public:
-		Core::JUserPtr<JShader> shader = nullptr;
+		JUserPtr<JShader> shader = nullptr;
 	public:
 		REGISTER_PROPERTY_EX(metallic, GetMetallic, SetMetallic, GUI_SLIDER(0.0f, 1.0f, false, false))
 		float metallic = 0;
@@ -45,15 +45,15 @@ namespace JinEngine
 	public:
 		//Texture
 		REGISTER_PROPERTY_EX(albedoMap, GetAlbedoMap, SetAlbedoMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		Core::JUserPtr<JTexture> albedoMap;
+		JUserPtr<JTexture> albedoMap;
 		REGISTER_PROPERTY_EX(normalMap, GetNormalMap, SetNormalMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		Core::JUserPtr<JTexture> normalMap;
+		JUserPtr<JTexture> normalMap;
 		REGISTER_PROPERTY_EX(heightMap, GetHeightMap, SetHeightMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		Core::JUserPtr<JTexture> heightMap;
+		JUserPtr<JTexture> heightMap;
 		REGISTER_PROPERTY_EX(roughnessMap, GetRoughnessMap, SetRoughnessMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		Core::JUserPtr<JTexture>roughnessMap;
+		JUserPtr<JTexture>roughnessMap;
 		REGISTER_PROPERTY_EX(ambientOcclusionMap, GetAmbientOcclusionMap, SetAmbientOcclusionMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
-		Core::JUserPtr<JTexture> ambientOcclusionMap;
+		JUserPtr<JTexture> ambientOcclusionMap;
 	public:
 		//Shader function option
 		//수정필요
@@ -78,21 +78,10 @@ namespace JinEngine
 	public:
 		bool canUpdateShader = true;		//데이터 로드할때 마지막에 쉐이더 업데이트하기 위한 용도
 	public:
-		JMaterialImpl(const InitData& initData, JMaterial* thisMat)
-			:JResourceObjectUserInterface(thisMat->GetGuid()), thisMat(thisMat)
-		{ 
-			AddEventListener(*JResourceObject::EvInterface(), thisMat->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
-		}
-		~JMaterialImpl()
-		{
-			RemoveListener(*JResourceObject::EvInterface(), thisMat->GetGuid());
-		}
-	public:
-		void Initialize(const InitData& initData)
-		{
-			SetNewFunctionFlag(SHADER_FUNCTION_NONE);
-			SetFrameDirty();
-		}
+		JMaterialImpl(const InitData& initData, JMaterial* thisMatRaw)
+			:JResourceObjectUserInterface(thisMatRaw->GetGuid())
+		{}
+		~JMaterialImpl(){}
 	public:
 		float GetMetallic() const noexcept
 		{
@@ -110,23 +99,23 @@ namespace JinEngine
 		{
 			return matTransform;
 		}
-		Core::JUserPtr<JTexture> GetAlbedoMap() const noexcept
+		JUserPtr<JTexture> GetAlbedoMap() const noexcept
 		{
 			return albedoMap;
 		}
-		Core::JUserPtr<JTexture> GetNormalMap() const noexcept
+		JUserPtr<JTexture> GetNormalMap() const noexcept
 		{
 			return normalMap;
 		}
-		Core::JUserPtr<JTexture> GetHeightMap() const noexcept
+		JUserPtr<JTexture> GetHeightMap() const noexcept
 		{
 			return heightMap;
 		}
-		Core::JUserPtr<JTexture> GetRoughnessMap() const noexcept
+		JUserPtr<JTexture> GetRoughnessMap() const noexcept
 		{
 			return roughnessMap;
 		}
-		Core::JUserPtr<JTexture> GetAmbientOcclusionMap() const noexcept
+		JUserPtr<JTexture> GetAmbientOcclusionMap() const noexcept
 		{
 			return ambientOcclusionMap;
 		}
@@ -199,34 +188,34 @@ namespace JinEngine
 			matTransform = value;
 			SetFrameDirty();
 		}
-		void SetAlbedoMap(Core::JUserPtr<JTexture> newTexture) noexcept
+		void SetAlbedoMap(JUserPtr<JTexture> newTexture) noexcept
 		{
 			SetTexture(albedoMap, newTexture, SHADER_FUNCTION_ALBEDO_MAP);
 		}
-		void SetNormalMap(Core::JUserPtr<JTexture> newTexture) noexcept
+		void SetNormalMap(JUserPtr<JTexture> newTexture) noexcept
 		{
 			SetTexture(normalMap, newTexture, SHADER_FUNCTION_NORMAL_MAP);
 		}
-		void SetHeightMap(Core::JUserPtr<JTexture> newTexture) noexcept
+		void SetHeightMap(JUserPtr<JTexture> newTexture) noexcept
 		{
 			SetTexture(heightMap, newTexture, SHADER_FUNCTION_HEIGHT_MAP);
 		}
-		void SetRoughnessMap(Core::JUserPtr<JTexture> newTexture) noexcept
+		void SetRoughnessMap(JUserPtr<JTexture> newTexture) noexcept
 		{
 			SetTexture(roughnessMap, newTexture, SHADER_FUNCTION_ROUGHNESS_MAP);
 		}
-		void SetAmbientOcclusionMap(Core::JUserPtr<JTexture> newTexture) noexcept
+		void SetAmbientOcclusionMap(JUserPtr<JTexture> newTexture) noexcept
 		{
 			SetTexture(ambientOcclusionMap, newTexture, SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP);
 		}
-		void SetTexture(Core::JUserPtr<JTexture>& existingTexture,
-			Core::JUserPtr<JTexture> newTexture,
+		void SetTexture(JUserPtr<JTexture>& existingTexture,
+			JUserPtr<JTexture> newTexture,
 			const J_GRAPHIC_SHADER_FUNCTION shaderFunction)
 		{
-			if (thisMat->IsActivated())
+			if (thisPointer->IsActivated())
 				CallOffResourceReference(existingTexture.Get());
 			existingTexture = newTexture;
-			if (thisMat->IsActivated())
+			if (thisPointer->IsActivated())
 				CallOnResourceReference(existingTexture.Get());
 
 			SetFrameDirty();	
@@ -339,15 +328,15 @@ namespace JinEngine
 			if (shader != nullptr && shader->GetShaderGFunctionFlag() == newFunc)
 				return;
 
-			Core::JUserPtr<JShader> newShader = nullptr;
+			JUserPtr<JShader> newShader = nullptr;
 			if (shader != nullptr)
 			{
-				newShader = Core::GetUserPtr(JShader::FindShader(newFunc, shader->GetSubGraphicPso()));
+				newShader = JShader::FindShader(newFunc, shader->GetSubGraphicPso());
 				if (newShader == nullptr)
-					newShader = JICI::CreateRetUser<JShader>(OBJECT_FLAG_NONE, newFunc, shader->GetSubGraphicPso());
+					newShader = JICI::Create<JShader>(OBJECT_FLAG_NONE, newFunc, shader->GetSubGraphicPso());
 			}
 			else
-				newShader = JICI::CreateRetUser<JShader>(OBJECT_FLAG_NONE, newFunc);
+				newShader = JICI::Create<JShader>(OBJECT_FLAG_NONE, newFunc);
 			 
 			SetShader(newShader);
 		}
@@ -359,27 +348,27 @@ namespace JinEngine
 			if (shader != nullptr && shader->GetSubGraphicPso() == newPso)
 				return;
 
-			Core::JUserPtr<JShader> newShader = nullptr;
+			JUserPtr<JShader> newShader = nullptr;
 			if (shader != nullptr)
 			{
-				newShader = Core::GetUserPtr(JShader::FindShader(shader->GetShaderGFunctionFlag(), newPso));
+				newShader = JShader::FindShader(shader->GetShaderGFunctionFlag(), newPso);
 				if (newShader == nullptr)
-					newShader = JICI::CreateRetUser<JShader>(OBJECT_FLAG_NONE, shader->GetShaderGFunctionFlag(), newPso);
+					newShader = JICI::Create<JShader>(OBJECT_FLAG_NONE, shader->GetShaderGFunctionFlag(), newPso);
 			}
 			else
-				newShader = JICI::CreateRetUser<JShader>(OBJECT_FLAG_NONE, SHADER_FUNCTION_NONE, newPso);
+				newShader = JICI::Create<JShader>(OBJECT_FLAG_NONE, SHADER_FUNCTION_NONE, newPso);
 			 
 			SetShader(newShader);
 		}
-		void SetShader(Core::JUserPtr<JShader> newShader)noexcept
+		void SetShader(JUserPtr<JShader> newShader)noexcept
 		{
 			CallOffResourceReference(shader.Get());
 			JShader* preShader = shader.Get();
 			shader = newShader;
 			CallOnResourceReference(shader.Get());
 
-			if (preShader != nullptr && CallGetResourceReferenceCount(preShader) == 0)
-				BeginDestroy(preShader);
+			//if (preShader != nullptr && CallGetResourceReferenceCount(preShader) == 0)
+			//	BeginDestroy(preShader);
 		}
 	public:
 		bool OnShadow()const noexcept
@@ -435,27 +424,27 @@ namespace JinEngine
 			return ambientOcclusionMap.IsValid();
 		}
 	public:
-		void TryUpdateShader()
+		void TryUpdateShader()	//for lazy update
 		{
-			auto overlapped = Core::GetUserPtr(JShader::FindShader(GetShaderGFunctionFlag(), GetSubGraphicPso()));
+			auto overlapped = JShader::FindShader(GetShaderGFunctionFlag(), GetSubGraphicPso());
 			if (overlapped.IsValid())
 				SetShader(overlapped);
 			else
-				SetShader(JICI::CreateRetUser<JShader>(OBJECT_FLAG_NONE, GetShaderGFunctionFlag(), GetSubGraphicPso()));
+				SetShader(JICI::Create<JShader>(OBJECT_FLAG_NONE, GetShaderGFunctionFlag(), GetSubGraphicPso()));
 		}
 		void PopTexture(JTexture* texture)noexcept
 		{
 			const size_t tarGuid = texture->GetGuid();
 			if (HasAlbedoMapTexture() && albedoMap->GetGuid() == tarGuid)
-				SetAlbedoMap(Core::JUserPtr< JTexture>{});
+				SetAlbedoMap(JUserPtr< JTexture>{});
 			if (HasNormalMapTexture() && normalMap->GetGuid() == tarGuid)
-				SetNormalMap(Core::JUserPtr< JTexture>{});
+				SetNormalMap(JUserPtr< JTexture>{});
 			if (HasHeightMapTexture() && heightMap->GetGuid() == tarGuid)
-				SetHeightMap(Core::JUserPtr< JTexture>{});
+				SetHeightMap(JUserPtr< JTexture>{});
 			if (HasRoughnessMapTexture() && roughnessMap->GetGuid() == tarGuid)
-				SetRoughnessMap(Core::JUserPtr< JTexture>{});
+				SetRoughnessMap(JUserPtr< JTexture>{});
 			if (HasAmbientOcclusionMapTexture() && ambientOcclusionMap->GetGuid() == tarGuid)
-				SetAmbientOcclusionMap(Core::JUserPtr< JTexture>{});
+				SetAmbientOcclusionMap(JUserPtr< JTexture>{});
 		}
 	public:
 		void OnResourceRef()
@@ -477,22 +466,22 @@ namespace JinEngine
 	public:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 		{
-			if (iden == thisMat->GetGuid())
+			if (iden == thisPointer->GetGuid())
 				return;
 
 			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 			{
 				const size_t objGuid = jRobj->GetGuid();
 				if (albedoMap.IsValid() && albedoMap->GetGuid() == objGuid)
-					SetAlbedoMap(Core::JUserPtr<JTexture>{});
+					SetAlbedoMap(JUserPtr<JTexture>{});
 				if (normalMap.IsValid() && normalMap->GetGuid() == objGuid)
-					SetNormalMap(Core::JUserPtr<JTexture>{});
+					SetNormalMap(JUserPtr<JTexture>{});
 				if (heightMap.IsValid() && heightMap->GetGuid() == objGuid)
-					SetHeightMap(Core::JUserPtr<JTexture>{});
+					SetHeightMap(JUserPtr<JTexture>{});
 				if (roughnessMap.IsValid() && roughnessMap->GetGuid() == objGuid)
-					SetRoughnessMap(Core::JUserPtr<JTexture>{});
+					SetRoughnessMap(JUserPtr<JTexture>{});
 				if (ambientOcclusionMap.IsValid() && ambientOcclusionMap->GetGuid() == objGuid)
-					SetAmbientOcclusionMap(Core::JUserPtr<JTexture>{});
+					SetAmbientOcclusionMap(JUserPtr<JTexture>{});
 
 				if (shader != nullptr && shader->GetGuid() == objGuid)
 					SetShader(nullptr);
@@ -520,7 +509,7 @@ namespace JinEngine
 		bool ReadAssetData()
 		{
 			std::wifstream stream;
-			stream.open(thisMat->GetPath(), std::ios::in | std::ios::binary);
+			stream.open(thisPointer->GetPath(), std::ios::in | std::ios::binary);
 			if (!stream.is_open())
 				return false;
 
@@ -559,11 +548,11 @@ namespace JinEngine
 			JFileIOHelper::LoadXMFloat4(stream, sAlbedoColor);
 			JFileIOHelper::LoadXMFloat4x4(stream, sMatTransform);
 
-			Core::JUserPtr<JTexture> sAlbedoMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
-			Core::JUserPtr<JTexture> sNormalMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
-			Core::JUserPtr<JTexture> sHeightMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
-			Core::JUserPtr<JTexture> sRoughnessMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
-			Core::JUserPtr<JTexture> sAmbientOcclusionMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
+			JUserPtr<JTexture> sAlbedoMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
+			JUserPtr<JTexture> sNormalMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
+			JUserPtr<JTexture> sHeightMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
+			JUserPtr<JTexture> sRoughnessMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
+			JUserPtr<JTexture> sAmbientOcclusionMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
 			stream.close();
 
 			canUpdateShader = false;
@@ -598,7 +587,7 @@ namespace JinEngine
 		bool WriteAssetData()
 		{
 			std::wofstream stream;
-			stream.open(thisMat->GetPath(), std::ios::out | std::ios::binary);
+			stream.open(thisPointer->GetPath(), std::ios::out | std::ios::binary);
 			if (!stream.is_open())
 				return false;
 
@@ -631,7 +620,24 @@ namespace JinEngine
 			return true;
 		}
 	public:
-		static void RegisterCallOnce()
+		void Initialize(InitData* initData)
+		{
+			SetNewFunctionFlag(SHADER_FUNCTION_NONE);
+			SetFrameDirty();
+		}
+		void RegisterThisPointer(JMaterial* mat)
+		{
+			thisPointer = Core::GetWeakPtr(mat);
+		}
+		void RegisterPostCreation()
+		{
+			AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+		}
+		void DeRegisterPreDestruction()
+		{
+			RemoveListener(*JResourceObject::EvInterface(), thisPointer->GetGuid());
+		}
+		static void RegisterTypeData()
 		{
 			auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex(JMaterial::GetStaticResourceType(), format); };
 
@@ -656,24 +662,26 @@ namespace JinEngine
 
 			RegisterRTypeInfo(rTypeHint, rTypeCFunc, rTypeiFunc);
 			Core::JIdentifier::RegisterPrivateInterface(JMaterial::StaticTypeInfo(), mPrivate);
+
+			IMPL_REALLOC_BIND(JMaterial::JMaterialImpl, thisPointer)
 		}
 	};
 
-	JMaterial::InitData::InitData(JDirectory* directory)
+	JMaterial::InitData::InitData(const JUserPtr<JDirectory>& directory)
 		:JResourceObject::InitData(JMaterial::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), directory)
 	{}
 
-	JMaterial::InitData::InitData(const uint8 formatIndex, JDirectory* directory)
+	JMaterial::InitData::InitData(const uint8 formatIndex, const JUserPtr<JDirectory>& directory)
 		:JResourceObject::InitData(JMaterial::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory)
 	{}
-	JMaterial::InitData::InitData(const size_t guid, const uint8 formatIndex, JDirectory* directory)
+	JMaterial::InitData::InitData(const size_t guid, const uint8 formatIndex, const JUserPtr<JDirectory>& directory)
 		: JResourceObject::InitData(JMaterial::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory)
 	{}
 	JMaterial::InitData::InitData(const std::wstring& name,
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
 		const uint8 formatIndex,
-		JDirectory* directory)
+		const JUserPtr<JDirectory>& directory)
 		: JResourceObject::InitData(JMaterial::StaticTypeInfo(), name, guid, flag, formatIndex, GetStaticResourceType(), directory)
 	{ }
 
@@ -698,7 +706,11 @@ namespace JinEngine
 		static std::vector<std::wstring> format{ L".mat" };
 		return format;
 	}
-	JShader* JMaterial::GetShader()const noexcept
+	JUserPtr<JShader> JMaterial::GetShader()const noexcept
+	{
+		return impl->shader;
+	}
+	JShader* JMaterial::GetRawShader()const noexcept
 	{
 		return impl->shader.Get();
 	}
@@ -718,23 +730,23 @@ namespace JinEngine
 	{
 		return impl->GetMatTransform();
 	}
-	Core::JUserPtr<JTexture> JMaterial::GetAlbedoMap() const noexcept
+	JUserPtr<JTexture> JMaterial::GetAlbedoMap() const noexcept
 	{
 		return impl->GetAlbedoMap();
 	}
-	Core::JUserPtr<JTexture> JMaterial::GetNormalMap() const noexcept
+	JUserPtr<JTexture> JMaterial::GetNormalMap() const noexcept
 	{
 		return impl->GetNormalMap();
 	}
-	Core::JUserPtr<JTexture> JMaterial::GetHeightMap() const noexcept
+	JUserPtr<JTexture> JMaterial::GetHeightMap() const noexcept
 	{
 		return impl->GetHeightMap();
 	}
-	Core::JUserPtr<JTexture> JMaterial::GetRoughnessMap() const noexcept
+	JUserPtr<JTexture> JMaterial::GetRoughnessMap() const noexcept
 	{
 		return impl->GetRoughnessMap();
 	}
-	Core::JUserPtr<JTexture> JMaterial::GetAmbientOcclusionMap() const noexcept
+	JUserPtr<JTexture> JMaterial::GetAmbientOcclusionMap() const noexcept
 	{
 		return impl->GetAmbientOcclusionMap();
 	}
@@ -762,23 +774,23 @@ namespace JinEngine
 	{
 		impl->SetMatTransform(value);
 	}
-	void JMaterial::SetAlbedoMap(Core::JUserPtr<JTexture> texture) noexcept
+	void JMaterial::SetAlbedoMap(JUserPtr<JTexture> texture) noexcept
 	{
 		impl->SetAlbedoMap(texture);
 	}
-	void JMaterial::SetNormalMap(Core::JUserPtr<JTexture> texture) noexcept
+	void JMaterial::SetNormalMap(JUserPtr<JTexture> texture) noexcept
 	{
 		impl->SetNormalMap(texture);
 	}
-	void JMaterial::SetHeightMap(Core::JUserPtr<JTexture> texture) noexcept
+	void JMaterial::SetHeightMap(JUserPtr<JTexture> texture) noexcept
 	{
 		impl->SetHeightMap(texture);
 	}
-	void JMaterial::SetRoughnessMap(Core::JUserPtr<JTexture> texture) noexcept
+	void JMaterial::SetRoughnessMap(JUserPtr<JTexture> texture) noexcept
 	{
 		impl->SetRoughnessMap(texture);
 	}
-	void JMaterial::SetAmbientOcclusionMap(Core::JUserPtr<JTexture> texture) noexcept
+	void JMaterial::SetAmbientOcclusionMap(JUserPtr<JTexture> texture) noexcept
 	{
 		impl->SetAmbientOcclusionMap(texture);
 	}
@@ -898,23 +910,30 @@ namespace JinEngine
 	}
 	JMaterial::JMaterial(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JMaterialImpl>(initData, this))
-	{
-		impl->Initialize(initData);
-	}
+	{}
 	JMaterial::~JMaterial()
 	{
 		impl.reset();
 	}
 
 	using CreateInstanceInterface = JMaterialPrivate::CreateInstanceInterface;
+	using DestroyInstanceInterface = JMaterialPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JMaterialPrivate::AssetDataIOInterface;
 	using FrameUpdateInterface = JMaterialPrivate::FrameUpdateInterface;
 	using FrameBuffInterface = JMaterialPrivate::FrameBuffInterface; 
 	using UpdateShaderInterface = JMaterialPrivate::UpdateShaderInterface;
 
-	Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
-		return Core::JPtrUtil::MakeOwnerPtr<JMaterial>(*static_cast<JMaterial::InitData*>(initData.get()));
+		return Core::JPtrUtil::MakeOwnerPtr<JMaterial>(*static_cast<JMaterial::InitData*>(initData));
+	}
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JResourceObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		JMaterial* mat = static_cast<JMaterial*>(createdPtr);
+		mat->impl->RegisterThisPointer(mat);
+		mat->impl->RegisterPostCreation();
+		mat->impl->Initialize(static_cast<JMaterial::InitData*>(initData));
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
@@ -922,28 +941,34 @@ namespace JinEngine
 		return isValidPtr && initData->IsValidData();
 	}
 
-	Core::JIdentifier* AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
+	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
+	{
+		JResourceObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
+		static_cast<JMaterial*>(ptr)->impl->DeRegisterPreDestruction();
+	}
+
+	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JMaterial::LoadData::StaticTypeInfo()))
 			return nullptr;
  
 		auto loadData = static_cast<JMaterial::LoadData*>(data);
 		auto pathData = loadData->pathData;
-		JDirectory* directory = loadData->directory;
+		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto initData = std::make_unique< JMaterial::InitData>(directory);	//for load metadata
 		if (LoadMetaData(pathData.engineMetaFileWPath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
-		JMaterial* newMat = nullptr;
+		JUserPtr<JMaterial> newMat = nullptr;
 		if (directory->HasFile(initData->guid))
-			newMat = static_cast<JMaterial*>(Core::GetUserPtr(JMaterial::StaticTypeInfo().TypeGuid(), initData->guid).Get());
+			newMat = Core::GetUserPtr<JMaterial>(JMaterial::StaticTypeInfo().TypeGuid(), initData->guid);
 
 		if (newMat == nullptr)
 		{
 			initData->name = pathData.name;
-			auto rawPtr = mPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &mPrivate);
-			newMat = static_cast<JMaterial*>(rawPtr);
+			auto idenUser = mPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &mPrivate);
+			newMat.ConnnectChild(idenUser);
 		}
 		newMat->impl->ReadAssetData();
 		return newMat;
@@ -957,7 +982,8 @@ namespace JinEngine
 		if (!storeData->HasCorrectType(JMaterial::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		JMaterial* mat = static_cast<JMaterial*>(storeData->obj);
+		JUserPtr<JMaterial> mat;
+		mat.ConnnectChild(storeData->obj);
 		return mat->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
@@ -983,7 +1009,8 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		auto storeData = static_cast<JMaterial::StoreData*>(data);
-		JMaterial* mat = static_cast<JMaterial*>(storeData->obj);
+		JUserPtr<JMaterial> mat;
+		mat.ConnnectChild(storeData->obj);
 
 		std::wofstream stream;
 		stream.open(mat->GetMetaFilePath(), std::ios::out | std::ios::binary);
@@ -1021,15 +1048,15 @@ namespace JinEngine
 		return mat->impl->GetFrameBuffOffset();
 	}
  
-	void UpdateShaderInterface::OnUpdateShaderTrigger(JMaterial* mat)noexcept
+	void UpdateShaderInterface::OnUpdateShaderTrigger(const JUserPtr<JMaterial>& mat)noexcept
 	{
 		mat->impl->canUpdateShader = true;
 	}
-	void UpdateShaderInterface::OffUpdateShaderTrigger(JMaterial* mat)noexcept
+	void UpdateShaderInterface::OffUpdateShaderTrigger(const JUserPtr<JMaterial>& mat)noexcept
 	{
 		mat->impl->canUpdateShader = false;
 	}
-	void UpdateShaderInterface::UpdateShader(JMaterial* mat)noexcept
+	void UpdateShaderInterface::UpdateShader(const JUserPtr<JMaterial>& mat)noexcept
 	{ 
 		mat->impl->TryUpdateShader();
 	}
@@ -1037,6 +1064,11 @@ namespace JinEngine
 	Core::JIdentifierPrivate::CreateInstanceInterface& JMaterialPrivate::GetCreateInstanceInterface()const noexcept
 	{
 		static CreateInstanceInterface pI;
+		return pI;
+	}
+	Core::JIdentifierPrivate::DestroyInstanceInterface& JMaterialPrivate::GetDestroyInstanceInterface()const noexcept
+	{
+		static DestroyInstanceInterface pI;
 		return pI;
 	}
 	JResourceObjectPrivate::AssetDataIOInterface& JMaterialPrivate::GetAssetDataIOInterface()const noexcept

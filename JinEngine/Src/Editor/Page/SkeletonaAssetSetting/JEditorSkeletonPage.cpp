@@ -131,17 +131,17 @@ namespace JinEngine
 			JImGuiImpl::PopFont();
 			ImGui::PopStyleVar(2); 
 		}
-		bool JEditorSkeletonPage::IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept
+		bool JEditorSkeletonPage::IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept
 		{
 			return StuffSkeletonAssetData(selectedObj);
 		}
-		bool JEditorSkeletonPage::StuffSkeletonAssetData(const Core::JUserPtr<Core::JIdentifier>& selectedObj)
+		bool JEditorSkeletonPage::StuffSkeletonAssetData(const JUserPtr<Core::JIdentifier>& selectedObj)
 		{
 			if (!selectedObj.IsValid())
 				return false;
 
-			Core::JUserPtr<JSkeletonAsset> newSkeletonAsset;
-			if (!newSkeletonAsset.ConnnectChildUser(selectedObj))
+			JUserPtr<JSkeletonAsset> newSkeletonAsset;
+			if (!newSkeletonAsset.ConnnectChild(selectedObj))
 				return false;
 
 			skeleotnAsset = newSkeletonAsset;
@@ -156,27 +156,27 @@ namespace JinEngine
 					return false;
 			};
 			using IsSameSkelFunctor = Core::JFunctor<bool, JMeshGeometry*, size_t>;
-			JMeshGeometry* mesh = _JResourceManager::Instance().GetResourceByCondition<JMeshGeometry, size_t>(IsSameSkelFunctor{ isSameSkelLam }, skeleotnAsset->GetSkeletonHash());
+			JUserPtr<JMeshGeometry> mesh = _JResourceManager::Instance().GetResourceByCondition<JMeshGeometry, size_t>(IsSameSkelFunctor{ isSameSkelLam }, skeleotnAsset->GetSkeletonHash());
 
 			if (mesh == nullptr)
 				return false;
 
 			const std::wstring sceneName = skeleotnAsset->GetName() + L"##_EditorScene";
-			JDirectory* dir = _JResourceManager::Instance().GetDirectory(JApplicationProject::DefaultResourcePath());
+			JUserPtr<JDirectory> dir = _JResourceManager::Instance().GetDirectory(JApplicationProject::DefaultResourcePath());
 
 			const J_OBJECT_FLAG flag = Core::AddSQValueEnum(OBJECT_FLAG_DO_NOT_SAVE, OBJECT_FLAG_UNEDITABLE);
-			JScene* newScene = JICI::Create<JScene>(sceneName,
+			JUserPtr<JScene> newScene = JICI::Create<JScene>(sceneName,
 				Core::MakeGuid(),
 				flag,
 				JScene::GetDefaultFormatIndex(),
 				dir,
 				J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW);
  
-			JGameObject* meshObj = JICI::Create<JGameObject>(mesh->GetName(), Core::MakeGuid(), flag, newScene->GetRootGameObject());
+			JUserPtr<JGameObject> meshObj = JICI::Create<JGameObject>(mesh->GetName(), Core::MakeGuid(), flag, newScene->GetRootGameObject());
 			JCCI::CreateRenderItem(meshObj, mesh);
 
 			std::vector<std::vector<uint8>> skeletonVec = skeleotnAsset->GetSkeletonTreeIndexVec();
-			std::vector<JGameObject*> skeletonTree((uint)skeletonVec.size());
+			std::vector<JUserPtr<JGameObject>> skeletonTree((uint)skeletonVec.size());
 
 			skeletonTree[0] = JICI::Create<JGameObject>(skeleotnAsset->GetJointName(0), Core::MakeGuid(), flag, meshObj);
 			const uint jointCount = (uint)skeletonVec.size();
@@ -195,8 +195,8 @@ namespace JinEngine
 			if (avatarScene.IsValid())
 				JObject::BeginDestroy(avatarScene.Release());
 
-			avatarScene = Core::GetUserPtr(newScene);
-			explorer->Initialize(Core::GetUserPtr(meshObj));
+			avatarScene = newScene;
+			explorer->Initialize(meshObj);
 			avatarEdit->Initialize(skeleotnAsset);
 			avatarObserver->Initialize(avatarScene, L"Skeleton Edit Cam"); 
 			return true;

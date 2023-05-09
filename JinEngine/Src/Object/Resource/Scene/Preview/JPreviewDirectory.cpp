@@ -16,10 +16,10 @@
 #include "../../../../Application/JApplicationProject.h"
 namespace JinEngine
 {
-	JPreviewDirectory::JPreviewDirectory(_In_ Core::JUserPtr<JDirectory> jDir, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)
+	JPreviewDirectory::JPreviewDirectory(_In_ JUserPtr<JDirectory> jDir, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)
 		:JPreviewScene(jDir, previewDimension, previewFlag)
 	{ 
-		Core::JUserPtr<JScene> newScene = JICI::CreateRetUser<JScene>(jDir->GetName() + L"_PreviewScene",
+		JUserPtr<JScene> newScene = JICI::Create<JScene>(jDir->GetName() + L"_PreviewScene",
 			Core::MakeGuid(),
 			OBJECT_FLAG_EDITOR_OBJECT,
 			JScene::GetDefaultFormatIndex(),
@@ -41,25 +41,25 @@ namespace JinEngine
 	}
 	bool JPreviewDirectory::MakeJDirectoryPreviewScene()noexcept
 	{ 
-		Core::JUserPtr<JTexture> texture = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::DIRECTORY);
+		JUserPtr<JTexture> texture = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::DIRECTORY);
 		if (texture == nullptr)
 			return false;
 
 		const std::wstring matName = GetJObject()->GetName() + L"PreviewMaterial";
-		JDirectory* dir = _JResourceManager::Instance().GetEditorResourceDirectory();
+		JUserPtr<JDirectory> dir = _JResourceManager::Instance().GetEditorResourceDirectory();
 
 		J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
-		JMaterial* newTextureMat = JICI::Create<JMaterial>(matName, Core::MakeGuid(), flag, JMaterial::GetDefaultFormatIndex(), dir);
+		JUserPtr<JMaterial> newTextureMat = JICI::Create<JMaterial>(matName, Core::MakeGuid(), flag, JMaterial::GetDefaultFormatIndex(), dir);
 		JDefaultMaterialSetting::SetAlbedoMapOnly(newTextureMat, texture);
 		 
-		JGameObject* shapeObj = JGCI::CreateShape(GetScene()->GetRootGameObject(), flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
-		JRenderItem* renderItem = shapeObj->GetRenderItem();
+		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(GetScene()->GetRootGameObject(), flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
+		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 
-		renderItem->SetMaterial(0, Core::GetUserPtr(newTextureMat));
+		renderItem->SetMaterial(0, newTextureMat);
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
-		SetTextureMaterial(Core::GetUserPtr(newTextureMat));
+		SetTextureMaterial(newTextureMat);
 		SetUseQuadShapeTrigger(true);
 		AdjustCamera(center, radius);
 		return true;

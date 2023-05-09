@@ -14,9 +14,9 @@ namespace JinEngine
 		{
 		public:
 			J_EDITOR_WINDOW_TYPE selectedWnd;
-			Core::JUserPtr<Core::JIdentifier> selectedObj;
+			JUserPtr<Core::JIdentifier> selectedObj;
 		public:
-			JEditorSelectedObjInfo(J_EDITOR_WINDOW_TYPE selectedWnd, Core::JUserPtr<Core::JIdentifier> selectedObj);
+			JEditorSelectedObjInfo(J_EDITOR_WINDOW_TYPE selectedWnd, JUserPtr<Core::JIdentifier> selectedObj);
 		};
 
 		class JEditorPageShareData
@@ -40,7 +40,7 @@ namespace JinEngine
 			static void ClearPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 		public:
 			static bool IsRegisteredPage(const J_EDITOR_PAGE_TYPE pageType)noexcept;
-			static bool IsEditableSelectedObject(Core::JUserPtr<Core::JIdentifier> obj)noexcept;  
+			static bool IsEditableSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept;  
 			static bool HasValidOpenPageData(const J_EDITOR_PAGE_TYPE pageType)noexcept;
 		public:
 			static uint GetPageGuiWindowID(const J_EDITOR_PAGE_TYPE pageType)noexcept;

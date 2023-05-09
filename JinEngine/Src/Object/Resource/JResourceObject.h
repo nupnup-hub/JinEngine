@@ -29,24 +29,24 @@ namespace JinEngine
 		public: 
 			uint8 formatIndex;
 			J_RESOURCE_TYPE rType;
-			JDirectory* directory;
+			JUserPtr<JDirectory> directory;
 		public: 
 			InitData(const JTypeInfo& initTypeInfo, 
 				const uint8 formatIndex, 
 				const J_RESOURCE_TYPE rType, 
-				JDirectory* directory);
+				const JUserPtr<JDirectory>& directory);
 			InitData(const JTypeInfo& initTypeInfo,
 				const size_t guid,
 				const uint8 formatIndex,
 				const J_RESOURCE_TYPE rType,
-				JDirectory* directory);
+				const JUserPtr<JDirectory>& directory);
 			InitData(const JTypeInfo& initTypeInfo, 
 				const std::wstring& name,
 				const size_t& guid,
 				const J_OBJECT_FLAG flag, 
 				const uint8 formatIndex,
 				const J_RESOURCE_TYPE rType,
-				JDirectory* directory);
+				const JUserPtr<JDirectory>& directory);
 		public:
 			bool IsValidData()const noexcept override;
 			J_RESOURCE_TYPE GetResourceType() const noexcept;
@@ -57,10 +57,10 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadData)
 		public:
-			JDirectory* directory;
+			JUserPtr<JDirectory> directory;
 			const Core::JAssetFileLoadPathData pathData;
 		public:
-			LoadData(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData);
+			LoadData(const JUserPtr<JDirectory>& directory, const Core::JAssetFileLoadPathData& pathData);
 			~LoadData();
 		public:
 			bool IsValidData()const noexcept final;
@@ -70,7 +70,7 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(StoreData)  
 		public:
-			StoreData(JResourceObject* jRobj); 
+			StoreData(const JUserPtr<JResourceObject>& jRobj);
 		};
 	private:
 		friend class JResourceObjectPrivate;
@@ -96,7 +96,7 @@ namespace JinEngine
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
 		uint8 GetFormatIndex()const noexcept;
 		static uint8 GetFormatIndex(const J_RESOURCE_TYPE type, const std::wstring& format)noexcept;
-		JDirectory* GetDirectory()const noexcept;
+		JUserPtr<JDirectory> GetDirectory()const noexcept;
 		virtual J_RESOURCE_TYPE GetResourceType()const noexcept = 0;
 		virtual std::wstring GetFormat()const noexcept = 0; 
 	public:

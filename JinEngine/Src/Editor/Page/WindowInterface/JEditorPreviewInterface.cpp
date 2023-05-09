@@ -23,7 +23,7 @@ namespace JinEngine
 				previewGroup = nullptr;
 			}
 		public:
-			JPreviewScene* CreatePreviewScene(Core::JUserPtr<JObject> jObj,
+			JPreviewScene* CreatePreviewScene(JUserPtr<JObject> jObj,
 				const J_PREVIEW_DIMENSION previewDimension,
 				const J_PREVIEW_FLAG previewFlag)noexcept
 			{
@@ -33,7 +33,7 @@ namespace JinEngine
 			{
 				return previewGroup != nullptr ? previewGroup->DestroyPreviewScene(previewScene) : false;
 			}
-			bool DestroyPreviewScene(Core::JUserPtr<JObject> jObj)noexcept
+			bool DestroyPreviewScene(JUserPtr<JObject> jObj)noexcept
 			{
 				return previewGroup != nullptr ? previewGroup->DestroyPreviewScene(jObj) : false;
 			}
@@ -68,7 +68,7 @@ namespace JinEngine
 			}
 		};
 
-		JPreviewScene* JEditorPreviewInterface::CreatePreviewScene(Core::JUserPtr<JObject> jObj,
+		JPreviewScene* JEditorPreviewInterface::CreatePreviewScene(JUserPtr<JObject> jObj,
 			const J_PREVIEW_DIMENSION previewDimension,
 			const J_PREVIEW_FLAG previewFlag)noexcept
 		{
@@ -83,7 +83,7 @@ namespace JinEngine
 				return false;
 			return impl->DestroyPreviewScene(previewScene);
 		}
-		bool JEditorPreviewInterface::DestroyPreviewScene(Core::JUserPtr<JObject> jObj)noexcept
+		bool JEditorPreviewInterface::DestroyPreviewScene(JUserPtr<JObject> jObj)noexcept
 		{
 			return impl->DestroyPreviewScene(jObj);
 		}

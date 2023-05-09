@@ -3,11 +3,20 @@
 #include<vector>
 #include"Joint.h"
 #include"../../../Core/JDataType.h" 
+#include"../../../Core/Reflection/JReflection.h"
 
 namespace JinEngine
 {  
+	class JMeshGeometry;
+	class JSkeletonAsset;
 	struct JSkeleton
 	{ 
+		REGISTER_CLASS_USE_ALLOCATOR(JSkeleton)
+	private:
+		friend class JMeshGeometry;
+		friend class JSkeletonAsset;
+	private:
+		JWeakPtr<JSkeletonAsset> ownerSkeleton;
 	private: 
 		const std::vector<Joint> joint;
 		const size_t skletonHash = 0;
@@ -29,15 +38,13 @@ namespace JinEngine
 		bool IsSame(const size_t skletonHash)const noexcept;
 	private:
 		size_t GetSkeletonHash()const noexcept;
-	public: 
+	private: 
 		//JSkeleton() = default;
-		JSkeleton(std::vector<Joint> && joint);
+		JSkeleton(std::vector<Joint>&& joint);
 		~JSkeleton();
-
-		JSkeleton(const JSkeleton & skeleton) = default;
-		JSkeleton& operator=(const JSkeleton & lhs) = default;
-
-		JSkeleton(JSkeleton && skeleton) = default;
-		JSkeleton& operator=(JSkeleton && rhs) = default;
+		JSkeleton(const JSkeleton & skeleton) = delete;
+		JSkeleton(JSkeleton && skeleton) = delete;
+		JSkeleton& operator=(const JSkeleton& lhs) = delete;
+		JSkeleton& operator=(JSkeleton && rhs) = delete;
 	};
 }

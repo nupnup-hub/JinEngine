@@ -50,7 +50,7 @@ namespace JinEngine
 		{
 			const float dt = JEngineTimer::Data().DeltaTime();
 			bool isChanged = false;
-			JTransform* camTransform = sceneCamera->GetTransform();
+			JUserPtr<JTransform> camTransform = sceneCamera->GetTransform();
 			XMFLOAT3 oldPosF = camTransform->GetPosition();
 			XMVECTOR newPosV = XMLoadFloat3(&oldPosF);
 

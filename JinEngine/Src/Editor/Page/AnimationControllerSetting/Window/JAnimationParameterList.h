@@ -20,8 +20,8 @@ namespace JinEngine
 		class JAnimationParameterList final : public JEditorWindow
 		{
 		private:
-			Core::JUserPtr<JAnimationController> aniCont;
-			Core::JUserPtr<Core::JAnimationFSMdiagram> selectedDiagram;  
+			JUserPtr<JAnimationController> aniCont;
+			JUserPtr<Core::JAnimationFSMdiagram> selectedDiagram;  
 		private:
 			std::unique_ptr<JEditorPopupMenu> parameterListPopup;
 			std::unique_ptr<JEditorStringMap> editorString;
@@ -42,7 +42,7 @@ namespace JinEngine
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
-			void Initialize(Core::JUserPtr<JAnimationController> newAniCont)noexcept;
+			void Initialize(JUserPtr<JAnimationController> newAniCont)noexcept;
 			void UpdateWindow()final;
 		private:
 			void BuildParameterList();

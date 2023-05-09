@@ -50,30 +50,30 @@ namespace JinEngine
 
 	JResourceObjectIO::JResourceObjectIO() {}
 	JResourceObjectIO::~JResourceObjectIO() {}
-	JDirectory* JResourceObjectIO::LoadRootDirectory(const std::wstring& path, const J_OBJECT_FLAG initFlag)
+	JUserPtr<JDirectory> JResourceObjectIO::LoadRootDirectory(const std::wstring& path, const J_OBJECT_FLAG initFlag)
 	{
 		Core::JAssetFileLoadPathData pathData{ path };
 		if (_waccess(pathData.engineFileWPath.c_str(), 00) != -1 &&
 			_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
 		{
 			auto loadData = DirIOInterface::CreateLoadAssetDIData(nullptr, pathData);
-			return static_cast<JDirectory*>(DirIOInterface::LoadAssetData(loadData.get()));
+			return Core::ConvertChildUserPtr<JDirectory>(DirIOInterface::LoadAssetData(loadData.get()));
 		}
 		else
 			return JICI::Create<JDirectory>(pathData.engineFileWPath, Core::MakeGuid(), initFlag, nullptr);
 	}
-	void JResourceObjectIO::LoadEngineDirectory(JDirectory* engineRootDir)
+	void JResourceObjectIO::LoadEngineDirectory(const JUserPtr<JDirectory>& engineRootDir)
 	{
 		SearchDirectory(engineRootDir, false, true, (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE));
 	}
-	void JResourceObjectIO::LoadEngineResource(JDirectory* engineRootDir)
+	void JResourceObjectIO::LoadEngineResource(const JUserPtr<JDirectory>& engineRootDir)
 	{
 		std::vector<RTypeHint> rInfo = RTypeCommonCall::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
 		const uint rInfoCount = (uint)rInfo.size();
 		for (uint i = 0; i < rInfoCount; ++i)
 			SearchFile(rInfo[i].thisType, engineRootDir, false);
 	}
-	void JResourceObjectIO::LoadProjectDirectory(JDirectory* projectRootDir)
+	void JResourceObjectIO::LoadProjectDirectory(const JUserPtr<JDirectory>& projectRootDir)
 	{
 		std::vector<std::wstring> defaultFolderPath
 		{
@@ -91,7 +91,7 @@ namespace JinEngine
 			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE)
 		};
 
-		std::vector<JDirectory*> defaultFolderCash;
+		std::vector<JUserPtr<JDirectory>> defaultFolderCash;
 		for (uint i = 0; i < defaultFolderPath.size(); ++i)
 		{
 			Core::JAssetFileLoadPathData pathData{ defaultFolderPath[i] }; 
@@ -99,7 +99,7 @@ namespace JinEngine
 				_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
 			{
 				auto loadData = DirIOInterface::CreateLoadAssetDIData(projectRootDir, pathData);
-				defaultFolderCash.push_back(static_cast<JDirectory*>(DirIOInterface::LoadAssetData(loadData.get())));
+				defaultFolderCash.push_back(Core::ConvertChildUserPtr<JDirectory>(DirIOInterface::LoadAssetData(loadData.get())));
 			}
 			else
 				defaultFolderCash.push_back(JICI::Create<JDirectory>(pathData.name, Core::MakeGuid(), flag[i], projectRootDir));
@@ -123,7 +123,7 @@ namespace JinEngine
 		SearchDirectory(defaultFolderCash[3], true, true, projectContentDirFlag);
 		SearchDirectory(defaultFolderCash[3], true, false, userDefineDirFlag);
 	}
-	void JResourceObjectIO::LoadProjectResource(JDirectory* projectRootDir)
+	void JResourceObjectIO::LoadProjectResource(const JUserPtr<JDirectory>& projectRootDir)
 	{
 		//scene resource has all dependency
 		std::vector<RTypeHint> rInfo = RTypeCommonCall::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
@@ -135,14 +135,14 @@ namespace JinEngine
 			SearchFile(rInfo[i].thisType, projectRootDir, canLoadResource);
 		}
 	}
-	void JResourceObjectIO::SearchDirectory(JDirectory* parentDir, const bool searchProjectFolder, const bool onlyDeafultFolder, const J_OBJECT_FLAG dirFlag)
+	void JResourceObjectIO::SearchDirectory(const JUserPtr<JDirectory>& parentDir, const bool searchProjectFolder, const bool onlyDeafultFolder, const J_OBJECT_FLAG dirFlag)
 	{ 
 		WIN32_FIND_DATA  findFileData;
 		HANDLE hFindFile = FindFirstFile((parentDir->GetPath() + L"\\*.*").c_str(), &findFileData);
 		BOOL bResult = TRUE;
 		if (hFindFile == INVALID_HANDLE_VALUE)
 			return;
-
+		 
 		IsDefaultFolderPtr isDefaultPtr = GetDefaultFolderPtr(searchProjectFolder);
 		if (onlyDeafultFolder && !isDefaultPtr(parentDir->GetPath()))
 			return;
@@ -153,7 +153,7 @@ namespace JinEngine
 			{
 				if (wcscmp(findFileData.cFileName, L".") && wcscmp(findFileData.cFileName, L".."))
 				{
-					JDirectory* next = nullptr;
+					JUserPtr<JDirectory> next = nullptr; 
 					if (!parentDir->HasChild(findFileData.cFileName))
 					{
 						Core::JAssetFileLoadPathData pathData{ Core::JFileConstant::MakeFilePath(parentDir->GetPath(),  findFileData.cFileName) };
@@ -163,14 +163,14 @@ namespace JinEngine
 								_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
 							{
 								auto loadData = DirIOInterface::CreateLoadAssetDIData(parentDir, pathData);
-								next = static_cast<JDirectory*>(DirIOInterface::LoadAssetData(loadData.get()));
+								next = Core::ConvertChildUserPtr<JDirectory>(DirIOInterface::LoadAssetData(loadData.get()));
 							}
 							else
 								next = JICI::Create<JDirectory>(pathData.name, Core::MakeGuid(), dirFlag, parentDir);
 						}
 					}
 					else
-						next = parentDir->GetChildDirctoryByName(findFileData.cFileName);
+						next = parentDir->GetChildDirctoryByName(findFileData.cFileName); 
 					if (next != nullptr)
 						SearchDirectory(next, searchProjectFolder, onlyDeafultFolder, dirFlag);
 				}
@@ -179,7 +179,7 @@ namespace JinEngine
 		}
 		FindClose(hFindFile);
 	}
-	void JResourceObjectIO::SearchFile(const J_RESOURCE_TYPE rType, JDirectory* directory, const bool canLoadResource)
+	void JResourceObjectIO::SearchFile(const J_RESOURCE_TYPE rType, const JUserPtr<JDirectory>& directory, const bool canLoadResource)
 	{
 		const std::wstring dirWPath = directory->GetPath();
 		WIN32_FIND_DATA  findFileData;
@@ -202,12 +202,12 @@ namespace JinEngine
 		const uint childrenCount = directory->GetChildernDirctoryCount();
 		for (uint i = 0; i < childrenCount; ++i)
 		{
-			JDirectory* nextDir = directory->GetChildDirctory(i);
+			JUserPtr<JDirectory> nextDir = directory->GetChildDirctory(i);
 			if (nextDir != nullptr)
 				SearchFile(rType, nextDir, canLoadResource);
 		}
 	}
-	void JResourceObjectIO::LoadFile(const J_RESOURCE_TYPE rType, JDirectory* directory, const std::wstring& fileName, const bool canLoadResource)
+	void JResourceObjectIO::LoadFile(const J_RESOURCE_TYPE rType, const JUserPtr<JDirectory>& directory, const std::wstring& fileName, const bool canLoadResource)
 	{
 		Core::JAssetFileLoadPathData pathData(directory->GetPath() + L"\\" + fileName);
 		if (pathData.format != Core::JFileConstant::GetFileFormat())

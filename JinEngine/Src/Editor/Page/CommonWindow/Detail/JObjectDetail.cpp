@@ -67,7 +67,7 @@ namespace JinEngine
 			else if (typeInfo.IsChildOf<Core::JFSMinterface>())
 				ObjectOnScreen(selected);
 		}
-		void JObjectDetail::GameObjectDetailOnScreen(Core::JUserPtr<JGameObject> gObj)
+		void JObjectDetail::GameObjectDetailOnScreen(JUserPtr<JGameObject> gObj)
 		{
 			auto compVec = gObj->GetAllComponent();
 			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow |
@@ -105,7 +105,7 @@ namespace JinEngine
 
 					if (JImGuiImpl::Selectable(compType->NameWithOutModifier()))
 					{
-						JCCI::CreateComponent(*compType, gObj.Get());
+						JCCI::CreateComponent(*compType, gObj);
 						SetModifiedBit(gObj, true); 
 					}
 				}
@@ -117,7 +117,7 @@ namespace JinEngine
 				ImGui::EndPopup();
 			}
 		}
-		void JObjectDetail::ObjectOnScreen(Core::JUserPtr<Core::JIdentifier> fObj)
+		void JObjectDetail::ObjectOnScreen(JUserPtr<Core::JIdentifier> fObj)
 		{
 			ImGui::BeginGroup();
 			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow |
@@ -129,7 +129,7 @@ namespace JinEngine
 			if (JImGuiImpl::TreeNodeEx(Core::ErasePrefixJ(fObj->GetTypeInfo().Name()) + JCUtil::WstrToU8Str(L"##TreeNode" + fObj->GetName()), baseFlags))
 			{
 				JImGuiImpl::TreePop();
-				guiHelper->UpdateGuiWidget(fObj.Get(), &fObj->GetTypeInfo());
+				guiHelper->UpdateGuiWidget(fObj, &fObj->GetTypeInfo());
 			}
 			ImGui::EndGroup();
 		}
@@ -159,7 +159,7 @@ namespace JinEngine
 				const bool isSame = newSelected.IsValid() && selected.IsValid() && newSelected->GetGuid() == selected->GetGuid();
 				if (!isSame)
 				{
-					selected.ConnnectChildUser(std::move(newSelected));
+					selected.ConnnectChild(std::move(newSelected));
 					guiHelper->Clear();
 					searchBarHelper->ClearInputBuffer(); 
 				}

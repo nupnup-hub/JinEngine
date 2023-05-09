@@ -5,16 +5,18 @@
 #include "../GameObject/JGameObject.h"
 #include "../GameObject/JGameObjectPrivate.h"
 #include"../../Utility/JCommonUtility.h"
-#include"../../Core/Identity/JIdentifierImplBase.h"
+#include"../../Core/Reflection/JTypeImplBase.h"
 #include<fstream>
 
 namespace JinEngine
 {
-	class JComponent::JComponentImpl : public Core::JIdentifierImplBase
+	class JComponent::JComponentImpl : public Core::JTypeImplBase
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JComponentImpl)
 	public:
-		JGameObject* owner = nullptr;
+		JWeakPtr<JComponent> thisPointer = nullptr;
+	public:
+		JUserPtr<JGameObject> owner = nullptr;
 	public:
 		//For editor redo undo
 		std::unique_ptr<Core::JTypeInstanceSearchHint> ownerInfo;
@@ -25,25 +27,34 @@ namespace JinEngine
 		~JComponentImpl()
 		{}
 	public:
-		bool RegisterInstance(JComponent* comp)noexcept
+		bool RegisterInstance(const JUserPtr<JComponent>& comp)noexcept
 		{ 
 			//For editor redo undo
 			if (owner == nullptr && ownerInfo != nullptr)
-				owner = static_cast<JGameObject*>(Core::GetRawPtr(*ownerInfo));
+				owner = Core::GetUserPtr<JGameObject>(*ownerInfo);
 			 
 			return JGameObjectPrivate::OwnTypeInterface::AddComponent(comp);
 		}
-		bool DeRegisterInstance(JComponent* comp)noexcept
+		bool DeRegisterInstance(const JUserPtr<JComponent>& comp)noexcept
 		{
-			ownerInfo = std::make_unique<Core::JTypeInstanceSearchHint>(Core::GetUserPtr(owner));
+			ownerInfo = std::make_unique<Core::JTypeInstanceSearchHint>(owner);
 			return JGameObjectPrivate::OwnTypeInterface::RemoveComponent(comp);
+		}
+	public:
+		void RegisterThisPointer(JComponent* cPtr)
+		{
+			thisPointer = Core::GetWeakPtr(cPtr);
+		}
+		static void RegisterTypeData()
+		{
+			IMPL_REALLOC_BIND(JComponent::JComponentImpl, thisPointer)
 		}
 	};
 
-	JComponent::InitData::InitData(const Core::JTypeInfo& typeInfo, JGameObject* owner)
+	JComponent::InitData::InitData(const Core::JTypeInfo& typeInfo, const JUserPtr<JGameObject>& owner)
 		:JObject::InitData(typeInfo), owner(owner)
 	{} 
-	JComponent::InitData::InitData(const Core::JTypeInfo& typeInfo, const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner)
+	JComponent::InitData::InitData(const Core::JTypeInfo& typeInfo, const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner)
 		:JObject::InitData(typeInfo, name, guid, flag), owner(owner)
 	{}
 	bool JComponent::InitData::IsValidData()const noexcept
@@ -51,7 +62,7 @@ namespace JinEngine
 		return JObject::InitData::IsValidData() && owner != nullptr;
 	}
 
-	JComponent::LoadData::LoadData(JGameObject* owner, std::wifstream& stream)
+	JComponent::LoadData::LoadData(JUserPtr<JGameObject> owner, std::wifstream& stream)
 		:owner(owner), stream(stream)
 	{}
 	JComponent::LoadData::~LoadData()
@@ -61,7 +72,7 @@ namespace JinEngine
 		return owner != nullptr && stream.is_open();
 	}
 
-	JComponent::StoreData::StoreData(JComponent* comp, std::wofstream& stream)
+	JComponent::StoreData::StoreData(JUserPtr<JComponent> comp, std::wofstream& stream)
 		:JObject::StoreData(comp), stream(stream)
 	{}
 	bool JComponent::StoreData::IsValidData()const noexcept
@@ -73,7 +84,7 @@ namespace JinEngine
 	{
 		return J_OBJECT_TYPE::COMPONENT_OBJECT;
 	}
-	JGameObject* JComponent::GetOwner()const noexcept
+	JUserPtr<JGameObject> JComponent::GetOwner()const noexcept
 	{
 		return impl->owner;
 	}
@@ -89,23 +100,23 @@ namespace JinEngine
 	{
 		JObject::DoDeActivate();
 	}
-	bool JComponent::RegisterComponent()noexcept
+	bool JComponent::RegisterComponent(const JUserPtr<JComponent>& comp)noexcept
 	{
-		return JScenePrivate::CompRegisterInterface::RegisterComponent(this);
+		return JScenePrivate::CompRegisterInterface::RegisterComponent(comp);
 	}
-	bool JComponent::DeRegisterComponent()noexcept
+	bool JComponent::DeRegisterComponent(const JUserPtr<JComponent>& comp)noexcept
 	{
-		return JScenePrivate::CompRegisterInterface::DeRegisterComponent(this);
+		return JScenePrivate::CompRegisterInterface::DeRegisterComponent(comp);
 	}
-	bool JComponent::ReRegisterComponent()noexcept
+	bool JComponent::ReRegisterComponent(const JUserPtr<JComponent>& comp)noexcept
 	{
-		return JScenePrivate::CompRegisterInterface::ReRegisterComponent(this);
+		return JScenePrivate::CompRegisterInterface::ReRegisterComponent(comp);
 	}
 	void JComponent::RegisterCTypeInfo(const Core::JTypeInfo& typeInfo, const CTypeHint& cTypeHint, const CTypeCommonFunc& cTypeCFunc, const CTypePrivateFunc& cTypePFunc)
 	{
 		CTypeRegister::RegisterCTypeInfo(typeInfo, cTypeHint, cTypeCFunc, cTypePFunc);
 	}
-	std::unique_ptr<Core::JDITypeDataBase> JComponent::CreateInitDIData(const J_COMPONENT_TYPE cType, JGameObject* parent, std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData)
+	std::unique_ptr<Core::JDITypeDataBase> JComponent::CreateInitDIData(const J_COMPONENT_TYPE cType, JUserPtr<JGameObject> parent, std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData)
 	{
 		return CTypeCommonCall::CallCreateInitDataCallable(cType, parent, std::move(parentClassInitData));
 	}
@@ -123,10 +134,16 @@ namespace JinEngine
 	using AssetDataIOInterface = JComponentPrivate::AssetDataIOInterface;
 	using ActivateInterface = JComponentPrivate::ActivateInterface;
 
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		JComponent* comp = static_cast<JComponent*>(createdPtr);
+		comp->impl->RegisterThisPointer(comp);
+	}
 	void CreateInstanceInterface::RegisterCash(Core::JIdentifier* createdPtr)noexcept
 	{
 		JComponent* comp = static_cast<JComponent*>(createdPtr);
-		comp->impl->RegisterInstance(comp);
+		comp->impl->RegisterInstance(Core::GetUserPtr(comp));	 
 	}
 	void CreateInstanceInterface::SetValidInstance(Core::JIdentifier* createdPtr)noexcept
 	{
@@ -135,35 +152,38 @@ namespace JinEngine
 			comp->Activate();
 	}
 
-	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced){}
+	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
+	{
+		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
+	}
 	void DestroyInstanceInterface::SetInvalidInstance(Core::JIdentifier* ptr)noexcept
 	{
 		JComponent* comp = static_cast<JComponent*>(ptr);
 		if (comp->IsActivated())
-			comp->DeActivate(); 
+			comp->DeActivate();  
 	} 
 	void DestroyInstanceInterface::DeRegisterCash(Core::JIdentifier* ptr)noexcept
 	{
 		JComponent* comp = static_cast<JComponent*>(ptr);
-		comp->impl->DeRegisterInstance(comp);
+		comp->impl->DeRegisterInstance(Core::GetUserPtr(comp));
 	}
 
-	void ActivateInterface::Activate(JComponent* ptr)noexcept
-	{
-		ptr->Activate();
-	}
-	void ActivateInterface::DeActivate(JComponent* ptr)noexcept
-	{
-		ptr->DeActivate();
-	}
-
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(JGameObject* invoker, std::wifstream& stream)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(const JUserPtr<JGameObject>& invoker, std::wifstream& stream)
 	{
 		return std::make_unique<JComponent::LoadData>(invoker, stream);
 	}
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateStoreAssetDIData(JComponent* comp, std::wofstream& stream)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateStoreAssetDIData(const JUserPtr<JComponent>& comp, std::wofstream& stream)
 	{
 		return std::make_unique<JComponent::StoreData>(comp, stream);
+	}
+
+	void ActivateInterface::Activate(const JUserPtr<JComponent>& ptr)noexcept
+	{
+		ptr->Activate();
+	}
+	void ActivateInterface::DeActivate(const JUserPtr<JComponent>& ptr)noexcept
+	{
+		ptr->DeActivate();
 	}
 
 	Core::JIdentifierPrivate::DestroyInstanceInterface& JComponentPrivate::GetDestroyInstanceInterface()const noexcept

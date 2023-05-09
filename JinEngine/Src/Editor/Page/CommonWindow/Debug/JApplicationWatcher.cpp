@@ -72,6 +72,12 @@ namespace JinEngine
 						JImGuiImpl::Text("Reserve: " + Core::JByteUnit::ByteToString(allocInfo.totalReserveSize));
 						JImGuiImpl::Text("Committed: " + Core::JByteUnit::ByteToString(allocInfo.totalCommittedSize));
 						JImGuiImpl::Text("Count: " + std::to_string(allocInfo.useBlockCount));
+
+						auto implAllocInfo = data->GetImplTypeInfo()->GetAllocInfo();
+						JImGuiImpl::Text("Impl Type: " + data->Name());
+						JImGuiImpl::Text("Impl Reserve: " + Core::JByteUnit::ByteToString(implAllocInfo.totalReserveSize));
+						JImGuiImpl::Text("Impl Committed: " + Core::JByteUnit::ByteToString(implAllocInfo.totalCommittedSize));
+						JImGuiImpl::Text("Impl Count: " + std::to_string(implAllocInfo.useBlockCount));
 						ImGui::NewLine();
 					}
 				}

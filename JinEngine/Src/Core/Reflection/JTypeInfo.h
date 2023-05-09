@@ -6,6 +6,7 @@
 #include"../JDataType.h"
 #include"../JEngineInfo.h"
 #include"../Pointer/JOwnerPtr.h"
+#include"../Lazy/JLazyDestruction.h"
 #include<unordered_map>  
 #include<vector>
 #include<assert.h>  
@@ -15,14 +16,15 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JIdentifier; 
-		class JIdentifierImplBase;
+		class JTypeBase; 
+		class JTypeBasePrivate;
+		class JTypeImplBase;
 		class JPropertyInfo;
 		class JMethodInfo;
 		//template<typename T> class JOwnerPtr;
 		//template<typename T> class JUserPtr;
 
-		using JTypeInstance = JIdentifier;
+		using JTypeInstance = JTypeBase;
 		using IdentifierType = size_t;
 		using TypeInstanceMap = std::unordered_map<IdentifierType, JOwnerPtr<JTypeInstance>>;
 		using TypeInstanceVector = std::vector<JTypeInstance*>;
@@ -50,8 +52,9 @@ namespace JinEngine
 		class JTypeInfo final
 		{
 		private:
-			friend class JIdentifierPrivate;
+			friend class JTypeBasePrivate;
 			friend class JReflectionInfoImpl;
+		private:
 			template<typename Type> friend class JTypeInfoRegister;
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyInfoRegister;
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyExInfoRegister;
@@ -63,15 +66,34 @@ namespace JinEngine
 				std::unique_ptr<JAllocationDesc> option;
 				std::unique_ptr<JTypeAllocationCreatorInterface> creator;
 			};
+			struct ExtraFunctionInitInfo
+			{
+			public:
+				std::unique_ptr<AllocationInitInfo> allocInitInfo;	//has default value
+				std::unique_ptr<JLazyDestructionInfo> lazyDestructionInfo;	//have to call SetDestructionInfo function
+			public:
+				bool canUseAlloc = false;
+				bool canUseLazy = false;
+			};
+			struct InterfaceTypeInfo
+			{
+			public: 
+				using ConvertInterfacePtr = JTypeBase * (*)(JTypeImplBase*); 
+			public:
+				Core::JTypeInfo& interfaceType;
+				const ConvertInterfacePtr convertPtr;
+			public: 
+				InterfaceTypeInfo(Core::JTypeInfo& interfaceType, const ConvertInterfacePtr convertPtr);
+			};
 			struct ImplTypeInfo
 			{
 			public:
-				using ConvertImplBasePtr = JIdentifierImplBase*(*)(JIdentifier*);
+				using ConvertImplBasePtr = JTypeImplBase*(*)(JTypeBase*); 
 			public:
 				Core::JTypeInfo& implType;
-				const ConvertImplBasePtr convertPtr;
+				const ConvertImplBasePtr convertPtr; 
 			public:
-				ImplTypeInfo(Core::JTypeInfo& implType, const ConvertImplBasePtr convertPtr);
+				ImplTypeInfo(Core::JTypeInfo& implType, const ConvertImplBasePtr convertPtr); 
 			};
 		private: 
 			using CallOnecePtr = void(*)();
@@ -81,16 +103,22 @@ namespace JinEngine
 			//basic == template<typename T, typename = int> 일시 call<A> => call<A, int>가된다.
 			//그러므로 std::void_t에 타입인 void로 디폴트 설정
 			template<typename T, typename = void>
-			struct HasEngineDefinedRegister : std::false_type
+			struct HasEngineTypeData : std::false_type
 			{};
 			template<typename T>
-			struct HasEngineDefinedRegister<T, std::void_t<decltype(&T::RegisterCallOnce)>> : std::true_type
+			struct HasEngineTypeData<T, std::void_t<decltype(&T::RegisterTypeData)>> : std::true_type
 			{};
 			template<typename T, typename = void>
 			struct IsEngineAllocatorUser : std::false_type
 			{};
 			template<typename T>
 			struct IsEngineAllocatorUser<T, std::void_t<decltype(&T::InitAllocatorInfo)>> : std::true_type
+			{};
+			template<typename T, typename = void>
+			struct IsLazyDestructionUser : std::false_type
+			{};
+			template<typename T>
+			struct IsLazyDestructionUser<T, std::void_t<decltype(&T::InitLazyDestructionInfo)>> : std::true_type
 			{};
 
 			template<typename Type>
@@ -99,11 +127,11 @@ namespace JinEngine
 			public:
 				static void Execute()
 				{				 
-					if constexpr (HasEngineDefinedRegister<Type>::value)
+					if constexpr (HasEngineTypeData<Type>::value)
 					{ 
 						static bool isValid = true;
 						if(isValid)
-							Type::RegisterCallOnce();
+							Type::RegisterTypeData();
 						isValid = false;
 					}			
 					if constexpr (IsEngineAllocatorUser<Type>::value)
@@ -113,10 +141,24 @@ namespace JinEngine
 							Type::InitAllocatorInfo();
 						isValid = false;
 					}
+					if constexpr (IsLazyDestructionUser<Type>::value)
+					{
+						static bool isValid = true;
+						if (isValid)
+							Type::InitLazyDestructionInfo();
+						isValid = false;
+					}
 				}
 				static constexpr bool IsDefinedInitAllocatorInfo()
 				{
 					if constexpr (IsEngineAllocatorUser<Type>::value)
+						return true;
+					else
+						return false;
+				}
+				static constexpr bool IsDefinedInitLazyDestructionInfo()
+				{
+					if constexpr (IsLazyDestructionUser<Type>::value)
 						return true;
 					else
 						return false;
@@ -136,13 +178,15 @@ namespace JinEngine
 		private:
 			CallOnecePtr callOncePtr = nullptr;
 		private:
-			std::unique_ptr<AllocationInitInfo> allocInitInfo;		//allocation 할당후 nullptr 
-			std::unique_ptr<JAllocationInterface> allocationInterface; 
+			std::unique_ptr<ExtraFunctionInitInfo> extraInitInfo;		//CallOnce 이후 nullptr
 		private:
+			std::unique_ptr<JAllocationInterface> allocationInterface; 
+			std::unique_ptr<JLazyDestruction> lazyDestruction;
+			std::unique_ptr<InterfaceTypeInfo> interfaceTypeInfo;
 			std::unique_ptr<ImplTypeInfo> implTypeInfo;
 		private:
 			const bool isAbstractType;
-			bool isLeafType = true;
+			bool isLeafType = true; 
 		public:
 			//just class name	for display
 			std::string Name()const noexcept;
@@ -163,7 +207,8 @@ namespace JinEngine
 			int GetInstanceIndex(IdentifierType iden)const noexcept;
 		public:
 			JTypeInstance* GetInstanceRawPtr(IdentifierType iden)const noexcept;
-			JUserPtr<JTypeInstance> GetInstanceUserPtr(IdentifierType iden)const noexcept;
+			JUserPtr<JTypeInstance> GetInstanceUserPtr(IdentifierType iden)const noexcept; 
+			JWeakPtr<JTypeInstance> GetInstanceWeakPtr(IdentifierType iden)const noexcept;
 			TypeInstanceVector GetInstanceRawPtrVec()const noexcept;
 		public:
 			template<typename T>
@@ -189,26 +234,43 @@ namespace JinEngine
 				if (IsChildOf(T::StaticTypeInfo()))
 				{
 					auto data = instanceData->classInstanceMap.find(iden);
-					return data != instanceData->classInstanceMap.end() ? JUserPtr<T>::CreateChildUser(data->second) : JUserPtr<T>{};
+					return data != instanceData->classInstanceMap.end() ? JUserPtr<T>::CreateChild(data->second) : JUserPtr<T>{};
 				}
 				else
 					return JUserPtr<T>{};
+			} 
+			template<typename T>
+			JWeakPtr<T> GetInstanceWeakPtr(IdentifierType iden)const noexcept
+			{
+				if (instanceData == nullptr)
+					return JWeakPtr<T>{};
+
+				if (IsChildOf(T::StaticTypeInfo()))
+				{
+					auto data = instanceData->classInstanceMap.find(iden);
+					return data != instanceData->classInstanceMap.end() ? JWeakPtr<T>::CreateChild(data->second) : JWeakPtr<T>{};
+				}
+				else
+					return JWeakPtr<T>{};
 			}
 		public:
 			JAllocationInterface* GetAllocationInterface()const noexcept;
-			JAllocInfo GetAllocInfo()const noexcept;
+			JAllocationInfo GetAllocInfo()const noexcept;
 		public:
-			JTypeInfo* GetImplTypeInfo()const noexcept;
+			JTypeInfo* GetInterfaceTypeInfo()const noexcept;	//for impl class
+			JTypeInfo* GetImplTypeInfo()const noexcept;			//for has impl class
 		public:
-			//is valid until create allocation instance
-			//so it has to called until app run
+			//is valid until CallOnce 
 			bool SetAllocationCreator(std::unique_ptr <JTypeAllocationCreatorInterface>&& newCreator)noexcept;
 			bool SetAllocationOption(std::unique_ptr<JAllocationDesc>&& newOption)noexcept;
+			bool SetDestructionInfo(std::unique_ptr<JLazyDestructionInfo>&& newDesInfo)noexcept;
 		public:
 			bool IsAbstractType()const noexcept;
 			bool IsLeafType()const noexcept;
 			bool IsA(const JTypeInfo& tar)const noexcept;
 			bool IsChildOf(const JTypeInfo& parentCandidate)const noexcept; 
+			bool CanUseLazyDestruction()const noexcept;
+			bool HasInterfaceTypeInfo()const noexcept;
 			bool HasImplTypeInfo()const noexcept;
 		public:
 			template<typename T>
@@ -232,7 +294,13 @@ namespace JinEngine
 				}
 			}
 		public:
-			JIdentifierImplBase* ConvertImplBase(JIdentifier* iden)const noexcept;
+			JTypeBase* ConvertInterfaceBase(JTypeImplBase* implBase)const noexcept;
+			JTypeImplBase* ConvertImplBase(JTypeBase* tBase)const noexcept;
+		public:
+			void TryLazyDestruction(JTypeBase* tBase)noexcept;
+			void TryCancelLazyDestruction(JTypeBase* tBase)noexcept;
+		private:
+			void UpdateLazyDestruction(const float timeOffset)noexcept;
 		private:
 			bool AddInstance(IdentifierType iden, JOwnerPtr<JTypeInstance> ptr)noexcept;
 			bool RemoveInstance(IdentifierType iden)noexcept;
@@ -247,9 +315,14 @@ namespace JinEngine
 			//set default allocation option
 			void RegisterEngineDefaultAllocationOption();
 			void RegisterAllocation();
-			void DeRegisterAllocation();
+			void DeRegisterAllocation();  
 		private:
+			void RegisterLazyDestructionInfo();
+		private:
+			void RegisterInterfaceTypeInfo(std::unique_ptr<InterfaceTypeInfo>&& interfaceTypeInfo);
 			void RegisterImplTypeInfo(std::unique_ptr<ImplTypeInfo>&& implTypeInfo);
+		private:
+			void EndRegister();
 		private:
 			template<typename Type>
 			JTypeInfo(const JTypeInfoInitializer<Type>& initializer)
@@ -264,8 +337,14 @@ namespace JinEngine
 					instanceData = std::make_unique<JTypeInstanceData>();		 
 
 				JReflectionInfo::Instance().AddType(this);
-				if constexpr(CallOnece<Type>::IsDefinedInitAllocatorInfo())
-					allocInitInfo = std::make_unique<AllocationInitInfo>();
+				extraInitInfo = std::make_unique<ExtraFunctionInitInfo>();
+				if constexpr (CallOnece<Type>::IsDefinedInitAllocatorInfo())
+				{
+					extraInitInfo->canUseAlloc = true;
+					extraInitInfo->allocInitInfo = std::make_unique<AllocationInitInfo>();
+				}
+				if constexpr (CallOnece<Type>::IsDefinedInitLazyDestructionInfo())
+					extraInitInfo->canUseLazy = true;
 
 				callOncePtr = &CallOnece<Type>::Execute;
 				if (parent != nullptr)
@@ -285,7 +364,7 @@ namespace JinEngine
 		public:
 			JTypeInstanceSearchHint();
 			JTypeInstanceSearchHint(const JTypeInfo& info, const size_t guid);
-			JTypeInstanceSearchHint(Core::JUserPtr<JIdentifier> iden);
+			JTypeInstanceSearchHint(JUserPtr<JTypeBase> iden);
 		};
 	}
 }

@@ -9,7 +9,7 @@ namespace JinEngine
 	class JDirectory;
 	namespace Core
 	{
-		class JIdentifier;
+		class Core::JIdentifier;
 		class JFSMinterface;
 	}
 	namespace Editor
@@ -21,7 +21,7 @@ namespace JinEngine
 			public JEditorObjectHandlerInterface
 		{
 		private:
-			Core::JUserPtr<Core::JIdentifier> selected;
+			JUserPtr<Core::JIdentifier> selected;
 		private:
 			std::unique_ptr<JReflectionGuiWidgetHelper> guiHelper;
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper; 
@@ -39,8 +39,8 @@ namespace JinEngine
 			void UpdateWindow()final;
 		private:
 			void BuildObjectDetail();
-			void GameObjectDetailOnScreen(Core::JUserPtr<JGameObject> gObj);
-			void ObjectOnScreen(Core::JUserPtr<Core::JIdentifier> fObj);
+			void GameObjectDetailOnScreen(JUserPtr<JGameObject> gObj);
+			void ObjectOnScreen(JUserPtr<Core::JIdentifier> fObj);
 		private:
 			void PropertyOnScreen(Core::JIdentifier* obj, Core::JPropertyInfo* pInfo);
 			void MethodOnScreen(Core::JIdentifier* obj, Core::JMethodInfo* mInfo);

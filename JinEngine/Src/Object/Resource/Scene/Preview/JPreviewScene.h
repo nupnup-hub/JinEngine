@@ -24,30 +24,30 @@ namespace JinEngine
 	private:
 		const size_t guid;
 	private:
-		Core::JUserPtr<JObject> jobject;
-		Core::JUserPtr<JScene> scene;
-		Core::JUserPtr<JMaterial> textureMaterial;
-		JCamera* camera = nullptr;
+		JUserPtr<JObject> jobject;
+		JUserPtr<JScene> scene;
+		JUserPtr<JMaterial> textureMaterial;
+		JUserPtr<JCamera> camera = nullptr;
 	private:
 		J_PREVIEW_DIMENSION previewDimension; 
 		J_PREVIEW_FLAG previewFlag;  
 	private:
 		bool useQuadShape = false;
 	public:
-		JPreviewScene(Core::JUserPtr<JObject> jobject, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag);
+		JPreviewScene(JUserPtr<JObject> jobject, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag);
 		~JPreviewScene();
 		JPreviewScene(JPreviewScene&& rhs) = default;
 		JPreviewScene& operator=(JPreviewScene && rhs) = default; 
 	public:
 		size_t GetGuid()const noexcept;
-		Core::JUserPtr<JObject> GetJObject()noexcept;
-		Core::JUserPtr<JCamera> GetPreviewCamera()noexcept;
+		JUserPtr<JObject> GetJObject()noexcept;
+		JUserPtr<JCamera> GetPreviewCamera()noexcept;
 		J_PREVIEW_DIMENSION GetPreviewDimension()const noexcept; 
-		J_SIMPLE_GET(Core::JUserPtr<JScene>, scene, Scene);
+		J_SIMPLE_GET(JUserPtr<JScene>, scene, Scene);
 	protected:
 		void SetUseQuadShapeTrigger(const bool value)noexcept;
-		void SetScene(Core::JUserPtr<JScene> newScene)noexcept;
-		J_SIMPLE_GET_SET(Core::JUserPtr<JMaterial>, textureMaterial, TextureMaterial);
+		void SetScene(JUserPtr<JScene> newScene)noexcept;
+		J_SIMPLE_GET_SET(JUserPtr<JMaterial>, textureMaterial, TextureMaterial);
 	public:
 		//Draw quad shape for texture rendering
 		bool UseQuadShape()const noexcept;

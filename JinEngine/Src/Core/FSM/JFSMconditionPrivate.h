@@ -12,19 +12,22 @@ namespace JinEngine
 			class CreateInstanceInterface : public JFSMinterfacePrivate::CreateInstanceInterface
 			{
 			private:
-				Core::JOwnerPtr<JIdentifier> Create(std::unique_ptr<JDITypeDataBase>&& initData)override;
-				bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept override;
-				void RegisterCash(Core::JIdentifier* createdPtr)noexcept override;
+				JOwnerPtr<JIdentifier> Create(JDITypeDataBase* initData)override;
+			protected:
+				void Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept override;
+			private:
+				void RegisterCash(JIdentifier* createdPtr)noexcept override;
+				bool CanCreateInstance(JDITypeDataBase* initData)const noexcept override;
 			};
-			class DestroyInstanceInterface : public Core::JIdentifierPrivate::DestroyInstanceInterface
+			class DestroyInstanceInterface : public JIdentifierPrivate::DestroyInstanceInterface
 			{
 			private:
 				void Clear(JIdentifier* ptr, const bool isForced)override;
 				void DeRegisterCash(JIdentifier* ptr)noexcept override;
 			};
 		public:
-			Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept override;
-			Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept override;
+			JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept override;
+			JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept override;
 		};
 	}
 }

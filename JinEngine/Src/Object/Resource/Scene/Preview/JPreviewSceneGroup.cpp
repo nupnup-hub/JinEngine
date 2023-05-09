@@ -46,7 +46,7 @@ namespace JinEngine
 		previewSceneList.clear();
 		previewSceneList.shrink_to_fit();
 	}
-	JPreviewScene* JPreviewSceneGroup::CreatePreviewScene(_In_ Core::JUserPtr<JObject> jObj, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)noexcept
+	JPreviewScene* JPreviewSceneGroup::CreatePreviewScene(_In_ JUserPtr<JObject> jObj, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)noexcept
 	{
 		if (!jObj.IsValid())
 			return nullptr;
@@ -59,8 +59,8 @@ namespace JinEngine
 
 		if (jObj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
 		{
-			Core::JUserPtr<JResourceObject> resource;
-			resource.ConnnectChildUser(jObj); 
+			JUserPtr<JResourceObject> resource;
+			resource.ConnnectChild(jObj); 
 			std::unique_ptr<JPreviewResourceScene> previewResouce = std::make_unique<JPreviewResourceScene>(resource, previewDimension, previewFlag);
 			if (previewResouce->Initialze())
 			{
@@ -70,8 +70,8 @@ namespace JinEngine
 		}
 		else if (jObj->GetObjectType() == J_OBJECT_TYPE::DIRECTORY_OBJECT)
 		{
-			Core::JUserPtr<JDirectory> dir;
-			dir.ConnnectChildUser(jObj);		 
+			JUserPtr<JDirectory> dir;
+			dir.ConnnectChild(jObj);		 
 			std::unique_ptr<JPreviewDirectory> previewResouce = std::make_unique<JPreviewDirectory>(dir, previewDimension, previewFlag);
 			if (previewResouce->Initialze())
 			{
@@ -96,7 +96,7 @@ namespace JinEngine
 		}
 		return false;
 	}
-	bool JPreviewSceneGroup::DestroyPreviewScene(Core::JUserPtr<JObject> jObj)noexcept
+	bool JPreviewSceneGroup::DestroyPreviewScene(JUserPtr<JObject> jObj)noexcept
 	{
 		if (!jObj.IsValid())
 			return false;

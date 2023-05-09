@@ -6,7 +6,7 @@ namespace JinEngine
 {
 	using UpdateShaderInterface = JMaterialPrivate::UpdateShaderInterface;
 
-	void JDefaultMaterialSetting::SetStandard(JMaterial* mat)
+	void JDefaultMaterialSetting::SetStandard(const JUserPtr<JMaterial>& mat)
 	{
 		UpdateShaderInterface::OffUpdateShaderTrigger(mat);
 		mat->SetShadow(true);
@@ -14,7 +14,7 @@ namespace JinEngine
 		UpdateShaderInterface::OnUpdateShaderTrigger(mat);
 		UpdateShaderInterface::UpdateShader(mat);
 	}
-	void JDefaultMaterialSetting::SetSky(JMaterial* mat, Core::JUserPtr<JTexture> texture)
+	void JDefaultMaterialSetting::SetSky(const JUserPtr<JMaterial>& mat, const JUserPtr<JTexture>& texture)
 	{
 		UpdateShaderInterface::OffUpdateShaderTrigger(mat);
 		mat->SetSkyMaterial(true);
@@ -24,7 +24,7 @@ namespace JinEngine
 		UpdateShaderInterface::OnUpdateShaderTrigger(mat);
 		UpdateShaderInterface::UpdateShader(mat);
 	}
-	void JDefaultMaterialSetting::SetShadowMap(JMaterial* mat)
+	void JDefaultMaterialSetting::SetShadowMap(const JUserPtr<JMaterial>& mat)
 	{
 		UpdateShaderInterface::OffUpdateShaderTrigger(mat);
 		mat->SetShadowMapWrite(true);
@@ -32,7 +32,7 @@ namespace JinEngine
 		UpdateShaderInterface::OnUpdateShaderTrigger(mat);
 		UpdateShaderInterface::UpdateShader(mat);
 	}
-	void JDefaultMaterialSetting::SetDebug(JMaterial* mat, const bool isLine, const JVector4<float> color)
+	void JDefaultMaterialSetting::SetDebug(const JUserPtr<JMaterial>& mat, const bool isLine, const JVector4<float> color)
 	{
 		UpdateShaderInterface::OffUpdateShaderTrigger(mat);
 		mat->SetDebugMaterial(true);
@@ -42,7 +42,7 @@ namespace JinEngine
 		UpdateShaderInterface::OnUpdateShaderTrigger(mat);
 		UpdateShaderInterface::UpdateShader(mat);
 	}
-	void JDefaultMaterialSetting::SetAlbedoMapOnly(JMaterial* mat, Core::JUserPtr<JTexture> texture)
+	void JDefaultMaterialSetting::SetAlbedoMapOnly(const JUserPtr<JMaterial>& mat, const JUserPtr<JTexture>& texture)
 	{
 		UpdateShaderInterface::OffUpdateShaderTrigger(mat);
 		mat->SetAlbedoMap(texture);

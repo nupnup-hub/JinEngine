@@ -286,7 +286,7 @@ namespace JinEngine
 			}
 			return passSelectedAboveOneFunctor;
 		}
-		Core::JUserPtr<Core::JIdentifier> JEditorWindow::GetHoveredObject()const noexcept
+		JUserPtr<Core::JIdentifier> JEditorWindow::GetHoveredObject()const noexcept
 		{
 			return hoveredObj;
 		}
@@ -294,9 +294,9 @@ namespace JinEngine
 		{
 			return (uint)selectedObjMap.size();
 		}
-		std::vector<Core::JUserPtr<Core::JIdentifier>> JEditorWindow::GetSelectedObjectVec()const noexcept
+		std::vector<JUserPtr<Core::JIdentifier>> JEditorWindow::GetSelectedObjectVec()const noexcept
 		{
-			std::vector<Core::JUserPtr<Core::JIdentifier>> vec;
+			std::vector<JUserPtr<Core::JIdentifier>> vec;
 			for (const auto& data : selectedObjMap)
 			{
 				if (data.second.IsValid())
@@ -329,11 +329,11 @@ namespace JinEngine
 			JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderHovered);
 			JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderActive);
 		}
-		void JEditorWindow::SetHoveredObject(Core::JUserPtr<Core::JIdentifier> obj)noexcept
+		void JEditorWindow::SetHoveredObject(JUserPtr<Core::JIdentifier> obj)noexcept
 		{
 			hoveredObj = obj;
 		}
-		void JEditorWindow::SetSelectedGameObjectTrigger(JGameObject* gObj, const bool triggerValue)noexcept
+		void JEditorWindow::SetSelectedGameObjectTrigger(const JUserPtr<JGameObject>& gObj, const bool triggerValue)noexcept
 		{
 			const uint childrenCount = gObj->GetChildrenCount();
 			for (uint i = 0; i < childrenCount; ++i)
@@ -348,7 +348,7 @@ namespace JinEngine
 		{
 			isContentsClick = value;
 		}
-		void JEditorWindow::PushSelectedObject(Core::JUserPtr<Core::JIdentifier> obj)noexcept
+		void JEditorWindow::PushSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept
 		{
 			if (!obj.IsValid() || !CanUseSelectedMap() || selectedObjMap.find(obj->GetGuid()) != selectedObjMap.end())
 				return;
@@ -371,17 +371,17 @@ namespace JinEngine
 		{
 			RemoveListener(*JEditorEvent::EvInterface(), GetGuid());
 		}	
-		void JEditorWindow::RequestPushSelectObject(const Core::JUserPtr<Core::JIdentifier>& selectObj)
+		void JEditorWindow::RequestPushSelectObject(const JUserPtr<Core::JIdentifier>& selectObj)
 		{
-			RequestPushSelectObject(std::vector<Core::JUserPtr<Core::JIdentifier>>{selectObj});
+			RequestPushSelectObject(std::vector<JUserPtr<Core::JIdentifier>>{selectObj});
 		}
-		void JEditorWindow::RequestPushSelectObject(const std::vector<Core::JUserPtr<Core::JIdentifier>>& selectObjVec)
+		void JEditorWindow::RequestPushSelectObject(const std::vector<JUserPtr<Core::JIdentifier>>& selectObjVec)
 		{
 			if (selectObjVec.size() == 0)
 				return;
 
 			const J_EDITOR_PAGE_TYPE pageType = GetOwnerPageType();
-			std::vector<Core::JUserPtr<Core::JIdentifier>> newSelectObjVec; 
+			std::vector<JUserPtr<Core::JIdentifier>> newSelectObjVec; 
 
 			const uint newCount = (uint)selectObjVec.size();
 			for (uint i = 0; i < newCount; ++i)
@@ -404,7 +404,7 @@ namespace JinEngine
 				evGuidVec.resize(3);
 				newPushSelectEvStruct = static_cast<JEditorPushSelectObjectEvStruct*>(JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(pageType, GetWindowType(), newSelectObjVec), evGuidVec[0]));
 				popSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPopSelectObjectEvStruct>(pageType, newSelectObjVec), evGuidVec[1]);				 
-				std::vector<Core::JUserPtr<Core::JIdentifier>> overlapped;
+				std::vector<JUserPtr<Core::JIdentifier>> overlapped;
 				for (auto& data : newSelectObjVec)
 				{
 					if (IsSelectedObject(data->GetGuid()))
@@ -464,7 +464,7 @@ namespace JinEngine
 			if (!evStruct.PassDefectInspection())
 				return;
 
-			std::vector<Core::JUserPtr<Core::JIdentifier>> preSelectObjVec;
+			std::vector<JUserPtr<Core::JIdentifier>> preSelectObjVec;
 			for (const auto& data : selectedObjMap)
 				preSelectObjVec.push_back(data.second); 
 
@@ -515,7 +515,7 @@ namespace JinEngine
 				J_EDITOR_EVENT::CLEAR_SELECT_OBJECT,
 				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClearSelectObjectEvStruct>(GetOwnerPageType())));
 		}
-		void JEditorWindow::TryBeginDragging(const Core::JUserPtr<Core::JIdentifier> selectObj)
+		void JEditorWindow::TryBeginDragging(const JUserPtr<Core::JIdentifier> selectObj)
 		{
 			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
 			{
@@ -527,7 +527,7 @@ namespace JinEngine
 				ImGui::EndDragDropSource();
 			}
 		}
-		Core::JUserPtr<Core::JIdentifier> JEditorWindow::TryGetDraggingTarget()
+		JUserPtr<Core::JIdentifier> JEditorWindow::TryGetDraggingTarget()
 		{
 			if (ImGui::BeginDragDropTarget() && !ImGui::IsMouseDragging(0))
 			{
@@ -536,15 +536,15 @@ namespace JinEngine
 				ImGui::EndDragDropTarget();
 
 				if (payload == nullptr || payload->Data == nullptr)
-					return Core::JUserPtr<Core::JIdentifier>{};
+					return JUserPtr<Core::JIdentifier>{};
 				else
 				{
 					Core::JTypeInstanceSearchHint* draggingHint = static_cast<Core::JTypeInstanceSearchHint*>(payload->Data);
-					return Core::JUserPtr<Core::JIdentifier>::ConvertChildUser(Core::GetUserPtr(*draggingHint));
+					return JUserPtr<Core::JIdentifier>::ConvertChild(Core::GetUserPtr(*draggingHint));
 				}			 
 			}
 			else
-				return Core::JUserPtr<Core::JIdentifier>{};
+				return JUserPtr<Core::JIdentifier>{};
 		}
 		void JEditorWindow::DoSetOpen()noexcept
 		{
@@ -643,7 +643,7 @@ namespace JinEngine
 			}*/
 		}
 		void JEditorWindow::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
-		{
+		{ 
 			if (senderGuid != GetGuid() && Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_LISTEN_OTHER_WINDOW_SELECT))
 				return;
 
@@ -656,7 +656,7 @@ namespace JinEngine
 				for (auto& data : evstruct->selectObjVec)
 				{
 					if (data->GetTypeInfo().IsChildOf<JGameObject>())
-						SetSelectedGameObjectTrigger(static_cast<JGameObject*>(data.Get()), true);
+						SetSelectedGameObjectTrigger(Core::ConnectChildUserPtr<JGameObject>(data), true);
 					if (selectedObjMap.find(data->GetGuid()) == selectedObjMap.end())
 						selectedObjMap.emplace(data->GetGuid(), data);
 				}
@@ -667,7 +667,7 @@ namespace JinEngine
 				for (auto& data : evstruct->selectObjVec)
 				{
 					if (data->GetTypeInfo().IsChildOf<JGameObject>())
-						SetSelectedGameObjectTrigger(static_cast<JGameObject*>(data.Get()), false);
+						SetSelectedGameObjectTrigger(Core::ConnectChildUserPtr<JGameObject>(data), false);
 					selectedObjMap.erase(data->GetGuid());
 				}
 			}
@@ -676,7 +676,7 @@ namespace JinEngine
 				for (auto& data : selectedObjMap)
 				{
 					if (data.second->GetTypeInfo().IsChildOf<JGameObject>())
-						SetSelectedGameObjectTrigger(static_cast<JGameObject*>(data.second.Get()), false);
+						SetSelectedGameObjectTrigger(Core::ConnectChildUserPtr<JGameObject>(data.second), false);
 				}
 				selectedObjMap.clear();
 			}

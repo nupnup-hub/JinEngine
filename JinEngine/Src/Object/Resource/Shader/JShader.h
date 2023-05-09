@@ -13,6 +13,7 @@ namespace JinEngine
 	class JShader final : public JResourceObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JShader)
+		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
 	public: 
 		class InitData final : public JResourceObject::InitData
 		{
@@ -62,7 +63,7 @@ namespace JinEngine
 			const JShaderGraphicPsoCondition graphicPSOCond,
 			const J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 	public:
-		static JShader* FindShader(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
+		static JUserPtr<JShader> FindShader(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
 			const JShaderGraphicPsoCondition graphicPSOCond,
 			const J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE);
 	protected:

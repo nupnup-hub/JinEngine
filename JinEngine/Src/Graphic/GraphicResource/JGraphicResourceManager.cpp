@@ -1,9 +1,10 @@
 #include"JGraphicResourceManager.h"   
 #include"JGraphicResourceInfo.h"
+#include"../JGraphic.h"
 
 #include"../../Utility/JLoadTextureFromFile.h"
 #include"../../Utility/JCommonUtility.h"
-#include"../../Core/Exception/JExceptionMacro.h" 
+#include"../../Core/Exception/JExceptionMacro.h"  
 #include"../../../Lib/DirectX/DDSTextureLoader11.h" 
 #include<DirectXColors.h>
 //Debug
@@ -14,9 +15,6 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		namespace
-		{
-		}
 		namespace Constants
 		{
 			static constexpr uint swapChainBufferCount = 2;
@@ -50,7 +48,7 @@ namespace JinEngine
 					return 1;
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG:
 					return 1;
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL:
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL:
 					return 1;
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
 					return 1;
@@ -126,7 +124,8 @@ namespace JinEngine
 					}
 					break;
 				}
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL:
+
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL:
 				{
 					switch (bType)
 					{
@@ -278,7 +277,7 @@ namespace JinEngine
 					return L"Main Depth Stencil";
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG:
 					return L"Main Depth Stencil Debug";
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL:
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL:
 					return L"Editor Depth Stencil";
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
 					return L"Occlusion Depth Map";
@@ -604,7 +603,7 @@ namespace JinEngine
 				ThrowIfFailedHr(swapChain->GetBuffer(i, IID_PPV_ARGS(&newResource)));
 				SetPrivateData(newResource.Get(), Constants::DefaultName(J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN), i);
 
-				auto newInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN, std::move(newResource)); 
+				auto newInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN, std::move(newResource));
 				newInfo->SetArrayIndex(i);
 				resource[(int)J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN][i] = std::move(newInfo);
 
@@ -621,7 +620,7 @@ namespace JinEngine
 		{
 			Microsoft::WRL::ComPtr<ID3D12Resource> newMainDsResource;
 			Microsoft::WRL::ComPtr<ID3D12Resource> newMainDsDebugResource;
- 
+
 			JGraphicResourceManager::ResourceTypeDesc& mainDsDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL];
 			JGraphicResourceManager::ResourceTypeDesc& mainDsDebugDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG];
 
@@ -692,7 +691,7 @@ namespace JinEngine
 				nullptr,
 				IID_PPV_ARGS(&newMainDsDebugResource)));
 			SetPrivateData(newMainDsDebugResource.Get(), Constants::DefaultName(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG), mainDsDebugDesc.count);
- 
+
 			auto newMainDsDebugInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG, std::move(newMainDsDebugResource));
 			newMainDsDebugInfo->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG].size());
 			resource[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG].push_back(std::move(newMainDsDebugInfo));
@@ -700,15 +699,15 @@ namespace JinEngine
 
 			BindMainDepthStencilDebug(device, resource[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG].size() - 1);
 		}
-		void JGraphicResourceManager::CreateEditorDepthStencilResource(ID3D12Device* device,
+		void JGraphicResourceManager::CreateDebugDepthStencilResource(ID3D12Device* device,
 			ID3D12GraphicsCommandList* commandList,
 			const uint viewWidth,
 			const uint viewHeight)
 		{
-			Microsoft::WRL::ComPtr<ID3D12Resource> newEditorDsResource;
-			JGraphicResourceManager::ResourceTypeDesc& editorDsDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL];
+			Microsoft::WRL::ComPtr<ID3D12Resource> newDebugDsResource;
+			JGraphicResourceManager::ResourceTypeDesc& editorDsDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL];
 
-			resource[(int)J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL].clear();
+			resource[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL].clear();
 			editorDsDesc.ClearCount();
 
 			const bool isInValidEditorDs = !editorDsDesc.HasSpace() || !editorDsDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::DSV].HasSpace();
@@ -739,15 +738,15 @@ namespace JinEngine
 				&depthStencilDesc,
 				D3D12_RESOURCE_STATE_DEPTH_READ,
 				&optClear,
-				IID_PPV_ARGS(&newEditorDsResource)));
-			SetPrivateData(newEditorDsResource.Get(), Constants::DefaultName(J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL), editorDsDesc.count);
+				IID_PPV_ARGS(&newDebugDsResource)));
+			SetPrivateData(newDebugDsResource.Get(), Constants::DefaultName(J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL), editorDsDesc.count);
 
-			auto newMainDsDebugInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL, std::move(newEditorDsResource));
-			newMainDsDebugInfo->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL].size());
-			resource[(int)J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL].push_back(std::move(newMainDsDebugInfo));
+			auto newMainDsDebugInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL, std::move(newDebugDsResource));
+			newMainDsDebugInfo->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL].size());
+			resource[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL].push_back(std::move(newMainDsDebugInfo));
 			++editorDsDesc.count;
 
-			BindEditorDepthStencil(device, resource[(int)J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL].size() - 1);
+			BindDebugDepthStencil(device, resource[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL].size() - 1);
 		}
 		void JGraphicResourceManager::CreateOcclusionQueryResource(ID3D12Device* device)
 		{
@@ -876,7 +875,7 @@ namespace JinEngine
 
 			BindOcclusionHZBDebug(device, resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP].size() - 1);
 		}
-		Core::JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
+		JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 			const std::wstring& path,
 			const std::wstring& oriFormat,
 			ID3D12Device* device,
@@ -884,7 +883,7 @@ namespace JinEngine
 		{
 			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D];
 			if (!desc.HasSpace() || !desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace())
-				return Core::JUserPtr<JGraphicResourceInfo>{};
+				return JUserPtr<JGraphicResourceInfo>{};
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> newResource;
 			uint heapIndex = GetHeapIndex(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D, J_GRAPHIC_BIND_TYPE::SRV);
@@ -923,9 +922,9 @@ namespace JinEngine
 				return resource[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D][resourceIndex];
 			}
 			else
-				return Core::JUserPtr<JGraphicResourceInfo>{};
+				return JUserPtr<JGraphicResourceInfo>{};
 		}
-		Core::JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
+		JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 			const std::wstring& path,
 			const std::wstring& oriFormat,
 			ID3D12Device* device,
@@ -933,7 +932,7 @@ namespace JinEngine
 		{
 			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE];
 			if (!desc.HasSpace() || !desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace())
-				return Core::JUserPtr<JGraphicResourceInfo>{};
+				return JUserPtr<JGraphicResourceInfo>{};
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> newResource;
 			uint heapIndex = GetHeapIndex(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE, J_GRAPHIC_BIND_TYPE::SRV);
@@ -967,14 +966,14 @@ namespace JinEngine
 				return resource[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE][resourceIndex];
 			}
 			else
-				return Core::JUserPtr<JGraphicResourceInfo>{};
+				return JUserPtr<JGraphicResourceInfo>{};
 		}
-		Core::JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateRenderTargetTexture(ID3D12Device* device, const uint width, const uint height)
+		JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateRenderTargetTexture(ID3D12Device* device, const uint width, const uint height)
 		{
 			Microsoft::WRL::ComPtr<ID3D12Resource> newResource;
 			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON];
 			if (!desc.HasSpace() || !desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::RTV].HasSpace() || !desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace())
-				return Core::JUserPtr<JGraphicResourceInfo>{};
+				return JUserPtr<JGraphicResourceInfo>{};
 
 			D3D12_RESOURCE_DESC resourceDesc;
 			ZeroMemory(&resourceDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -1002,7 +1001,7 @@ namespace JinEngine
 				IID_PPV_ARGS(&newResource)));
 			SetPrivateData(newResource.Get(), Constants::DefaultName(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON), desc.count);
 
-			auto newInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, std::move(newResource));		 
+			auto newInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, std::move(newResource));
 			newInfo->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON].size());
 			resource[(int)J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON].push_back(std::move(newInfo));
 			++desc.count;
@@ -1011,12 +1010,12 @@ namespace JinEngine
 			BindRenderTarget(device, resourceIndex);
 			return resource[(int)J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON][resourceIndex];
 		}
-		Core::JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateShadowMapTexture(ID3D12Device* device, const uint width, const uint height)
+		JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateShadowMapTexture(ID3D12Device* device, const uint width, const uint height)
 		{
 			Microsoft::WRL::ComPtr<ID3D12Resource> newResource;
 			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP];
 			if (!desc.HasSpace() || !desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::DSV].HasSpace() || !desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace())
-				return Core::JUserPtr<JGraphicResourceInfo>{};
+				return JUserPtr<JGraphicResourceInfo>{};
 
 			D3D12_RESOURCE_DESC resourceDesc;
 			ZeroMemory(&resourceDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -1076,7 +1075,7 @@ namespace JinEngine
 					desc.viewInfo[i].count = 0;
 			}
 			const uint rIndex = info->GetArrayIndex();
-			resource[(int)rType][rIndex].Clear();
+			//resource[(int)rType][rIndex].Clear();
 			for (uint i = rIndex + 1; i < desc.count; ++i)
 			{
 				JGraphicResourceInfo* reBindHandle = resource[(int)rType][i].Get();
@@ -1092,9 +1091,9 @@ namespace JinEngine
 			--desc.count;
 			return true;
 		}
-		Core::JOwnerPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, Microsoft::WRL::ComPtr<ID3D12Resource>&& resource)
+		JOwnerPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, Microsoft::WRL::ComPtr<ID3D12Resource>&& resource)
 		{
-			return Core::JOwnerPtr<JGraphicResourceInfo>(new JGraphicResourceInfo(graphicResourceType, std::move(resource)));
+			return JOwnerPtr<JGraphicResourceInfo>(new JGraphicResourceInfo(this, graphicResourceType, std::move(resource)));
 		}
 		JGraphicResourceManager::BindViewPtr JGraphicResourceManager::GetResourceBindViewPtr(const J_GRAPHIC_RESOURCE_TYPE rType)
 		{
@@ -1106,8 +1105,8 @@ namespace JinEngine
 				return &JGraphicResourceManager::BindMainDepthStencil;
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG:
 				return &JGraphicResourceManager::BindMainDepthStencilDebug;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL:
-				return &JGraphicResourceManager::BindEditorDepthStencil;
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL:
+				return &JGraphicResourceManager::BindDebugDepthStencil;
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
 				return &JGraphicResourceManager::BindOcclusionHZBDepthMap;
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
@@ -1221,12 +1220,12 @@ namespace JinEngine
 			++desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].count;
 			++desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].count;
 		}
-		void JGraphicResourceManager::BindEditorDepthStencil(ID3D12Device* device, const uint resourceIndex)
+		void JGraphicResourceManager::BindDebugDepthStencil(ID3D12Device* device, const uint resourceIndex)
 		{
-			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL];
+			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL];
 
-			ID3D12Resource* resourcePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL)][resourceIndex]->resource.Get();
-			JGraphicResourceInfo* handlePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::EDITOR_DEPTH_STENCIL)][resourceIndex].Get();
+			ID3D12Resource* resourcePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL)][resourceIndex]->resource.Get();
+			JGraphicResourceInfo* handlePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL)][resourceIndex].Get();
 			const int dsvNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::DSV].GetNextViewIndex();
 
 			SetViewCount(handlePtr, J_GRAPHIC_BIND_TYPE::DSV, dsvNextViewIndex);
@@ -1518,10 +1517,30 @@ namespace JinEngine
 			ThrowIfFailedHr(device->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&occlusionQueryHeap)));
 			SetPrivateData(occlusionQueryHeap.Get(), L"Occlusion Query Heap");
 		}
-		JGraphicResourceManager::JGraphicResourceManager()
+		void JGraphicResourceManager::RegisterTypeData()
 		{
+			using JAllocationDesc = JinEngine::Core::JAllocationDesc;
+			using NotifyReAllocPtr = JAllocationDesc::NotifyReAllocF::Ptr;
+			using NotifyReAllocF = JAllocationDesc::NotifyReAllocF::Functor;
+			using ReceiverPtr = JAllocationDesc::ReceiverPtr;
+			using ReAllocatedPtr = JAllocationDesc::ReAllocatedPtr;
+			using MemIndex = JAllocationDesc::MemIndex;
 
+			NotifyReAllocPtr notifyPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
+			{
+				JGraphicResourceInfo* movedInfo = static_cast<JGraphicResourceInfo*>(movedPtr);
+				JGraphicResourceManager* manager = movedInfo->manager;
+
+				manager->resource[(int)movedInfo->GetGraphicResourceType()][movedInfo->GetArrayIndex()].Release();
+				manager->resource[(int)movedInfo->GetGraphicResourceType()][movedInfo->GetArrayIndex()].Reset(movedInfo);
+			};
+			auto reAllocF = std::make_unique<JAllocationDesc::NotifyReAllocF::Functor>(notifyPtr);
+			std::unique_ptr<JAllocationDesc> desc = std::make_unique<JAllocationDesc>();
+
+			desc->notifyReAllocB = UniqueBind(std::move(reAllocF), static_cast<ReceiverPtr>(nullptr), JinEngine::Core::empty, JinEngine::Core::empty);
+			JGraphicResourceInfo::StaticTypeInfo().SetAllocationOption(std::move(desc));
 		}
+		JGraphicResourceManager::JGraphicResourceManager() {}
 		JGraphicResourceManager::~JGraphicResourceManager() {}
 	}
 }

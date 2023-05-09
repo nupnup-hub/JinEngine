@@ -23,10 +23,10 @@
 
 namespace JinEngine
 { 
-	JPreviewResourceScene::JPreviewResourceScene(_In_ Core::JUserPtr<JResourceObject> resource, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)
+	JPreviewResourceScene::JPreviewResourceScene(_In_ JUserPtr<JResourceObject> resource, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)
 		:JPreviewScene(resource, previewDimension, previewFlag)
 	{
-		Core::JUserPtr<JScene> newScene = JICI::CreateRetUser<JScene>(resource->GetName() + L"_PreviewScene",
+		JUserPtr<JScene> newScene = JICI::Create<JScene>(resource->GetName() + L"_PreviewScene",
 			Core::MakeGuid(),
 			OBJECT_FLAG_EDITOR_OBJECT,
 			JScene::GetDefaultFormatIndex(),
@@ -84,14 +84,14 @@ namespace JinEngine
 	}
 	bool JPreviewResourceScene::MakeMeshPreviewScene()noexcept
 	{ 
-		Core::JUserPtr<JScene> scene = GetScene(); 
-		JMeshGeometry* mesh = static_cast<JMeshGeometry*>(GetJObject().Get());
-
+		JUserPtr<JScene> scene = GetScene(); 
+		JUserPtr<JMeshGeometry> mesh = Core::ConvertChildUserPtr<JMeshGeometry>(GetJObject());
+		 
 		if (mesh == nullptr)
 			return false;
 
-		JGameObject* shapeObj = JICI::Create<JGameObject>(mesh->GetName(), Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, scene->GetRootGameObject());
-		JRenderItem* renderItem = JCCI::CreateRenderItem(shapeObj, mesh);
+		JUserPtr<JGameObject> shapeObj = JICI::Create<JGameObject>(mesh->GetName(), Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, scene->GetRootGameObject());
+		JUserPtr<JRenderItem> renderItem = JCCI::CreateRenderItem(shapeObj, mesh);
 
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
@@ -101,15 +101,15 @@ namespace JinEngine
 	}
 	bool JPreviewResourceScene::MakeMaterialPreviewScene()noexcept
 	{ 
-		JMaterial* material = static_cast<JMaterial*>(GetJObject().Get());
+		JUserPtr<JMaterial> material = Core::ConvertChildUserPtr<JMaterial>(GetJObject());
 		if (material == nullptr)
 			return false;
 
-		_JSceneManager::Instance().RegisterObservationFrame(GetScene().Get(), material->GetFrameUserInterface());
-		JGameObject* shapeObj = JGCI::CreateShape(GetScene()->GetRootGameObject(), OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE);
-		JRenderItem* renderItem = shapeObj->GetRenderItem();
+		_JSceneManager::Instance().RegisterObservationFrame(GetScene(), material->GetFrameUserInterface());
+		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(GetScene()->GetRootGameObject(), OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE);
+		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 
-		renderItem->SetMaterial(0, Core::GetUserPtr(material));
+		renderItem->SetMaterial(0, material);
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
@@ -118,18 +118,18 @@ namespace JinEngine
 	}
 	bool JPreviewResourceScene::MakeUserTexturePreviewScene()noexcept
 	{ 
-		Core::JUserPtr<JScene> scene = GetScene();
+		JUserPtr<JScene> scene = GetScene();
 		JResourceObject* resource = static_cast<JResourceObject*>(GetJObject().Get());
-		Core::JUserPtr<JResourceObject> rObj = _JResourceManager::Instance().TryGetResourceUser(JTexture::StaticTypeInfo(), resource->GetGuid());
-		Core::JUserPtr<JTexture> texture = Core::JUserPtr<JTexture>::ConvertChildUser(std::move(rObj));
+		JUserPtr<JResourceObject> rObj = _JResourceManager::Instance().TryGetResourceUser(JTexture::StaticTypeInfo(), resource->GetGuid());
+		JUserPtr<JTexture> texture = JUserPtr<JTexture>::ConvertChild(std::move(rObj));
 		if (texture == nullptr)
 			return false;
 
 		const std::wstring matName = resource->GetName() + L"PreviewMaterial";
-		JDirectory* dir = _JResourceManager::Instance().GetEditorResourceDirectory();
+		JUserPtr<JDirectory> dir = _JResourceManager::Instance().GetEditorResourceDirectory();
 
 		const J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
-		JMaterial* newTextureMat = JICI::Create<JMaterial>(matName, Core::MakeGuid(), flag, JMaterial::GetDefaultFormatIndex(), dir);
+		JUserPtr<JMaterial> newTextureMat = JICI::Create<JMaterial>(matName, Core::MakeGuid(), flag, JMaterial::GetDefaultFormatIndex(), dir);
 	 
 		J_DEFAULT_SHAPE shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD;
 		if (texture->GetTextureType() == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
@@ -140,32 +140,32 @@ namespace JinEngine
 		else
 			JDefaultMaterialSetting::SetAlbedoMapOnly(newTextureMat, texture);
 
-		JGameObject* shapeObj = JGCI::CreateShape(scene->GetRootGameObject(), flag, shapeType);
-		JRenderItem* renderItem = shapeObj->GetRenderItem();
-		renderItem->SetMaterial(0, Core::GetUserPtr(newTextureMat));
+		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(scene->GetRootGameObject(), flag, shapeType);
+		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
+		renderItem->SetMaterial(0, newTextureMat);
 		
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
-		SetTextureMaterial(Core::GetUserPtr(newTextureMat));
+		SetTextureMaterial(newTextureMat);
 		SetUseQuadShapeTrigger(shapeType == J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
 		AdjustCamera(center, radius);
 		return true;
 	}
 	bool JPreviewResourceScene::MakeEditorTexturePreviewScene(const J_DEFAULT_TEXTURE editorTextureType)noexcept
 	{ 
-		Core::JUserPtr<JScene> scene = GetScene();
+		JUserPtr<JScene> scene = GetScene();
 		JResourceObject* resource = static_cast<JResourceObject*>(GetJObject().Get());
-		Core::JUserPtr<JTexture> texture = _JResourceManager::Instance().GetDefaultTexture(editorTextureType);
+		JUserPtr<JTexture> texture = _JResourceManager::Instance().GetDefaultTexture(editorTextureType);
 
 		if (texture == nullptr)
 			return false;
 
 		const std::wstring matName = resource->GetName() + L"PreviewMaterial";
-		JDirectory* dir = _JResourceManager::Instance().GetEditorResourceDirectory();
+		JUserPtr<JDirectory> dir = _JResourceManager::Instance().GetEditorResourceDirectory();
 
 		const J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
-		JMaterial* newTextureMat = JICI::Create<JMaterial>(matName, Core::MakeGuid(), flag, JMaterial::GetDefaultFormatIndex(), dir);
+		JUserPtr<JMaterial> newTextureMat = JICI::Create<JMaterial>(matName, Core::MakeGuid(), flag, JMaterial::GetDefaultFormatIndex(), dir);
 
 		J_DEFAULT_SHAPE shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_EMPTY;
 		if (texture->GetTextureType() == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
@@ -179,14 +179,14 @@ namespace JinEngine
 			shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD;
 		}
 
-		JGameObject* shapeObj = JGCI::CreateShape(scene->GetRootGameObject(), flag, shapeType);
-		JRenderItem* renderItem = shapeObj->GetRenderItem();
-		renderItem->SetMaterial(0, Core::GetUserPtr(newTextureMat));
+		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(scene->GetRootGameObject(), flag, shapeType);
+		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
+		renderItem->SetMaterial(0, newTextureMat);
 
 		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
-		SetTextureMaterial(Core::GetUserPtr(newTextureMat));
+		SetTextureMaterial(newTextureMat);
 		SetUseQuadShapeTrigger(shapeType == J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
 		AdjustCamera(center, radius);
 		return true;

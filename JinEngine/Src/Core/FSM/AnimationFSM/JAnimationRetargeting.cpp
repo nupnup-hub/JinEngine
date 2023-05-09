@@ -24,11 +24,11 @@ namespace JinEngine
 			const XMFLOAT4 idenQF = JMathHelper::QuaternionZero();
 			const XMVECTOR idenQV = XMVectorSet(0, 0, 0, 1);
 
-			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar();
-			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar();
+			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
+			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar().Get();
 
-			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton();
-			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton();
+			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
+			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton().Get();
 			const uint8 srcJointCount = srcSkeleton->GetJointCount();
 			const uint8 tarJointCount = tarSkeleton->GetJointCount();
 
@@ -43,10 +43,10 @@ namespace JinEngine
 			std::vector<DirectX::XMFLOAT3>& bindTargetLocalT,
 			std::vector<DirectX::XMFLOAT3>& bindTargetWorldT)noexcept
 		{
-			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar();
-			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar();
-			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton();
-			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton();
+			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
+			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar().Get();
+			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
+			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton().Get();
 
 			for (uint i = 0; i < JSkeletonFixedData::avatarBoneIndexCount; ++i)
 			{
@@ -123,8 +123,8 @@ namespace JinEngine
 			std::vector<DirectX::XMFLOAT3>& bindTargetWorldT,
 			uint8 refIndex)noexcept
 		{
-			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar();
-			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar();
+			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
+			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar().Get();
 			const uint8 srcIndex = srcAvatar->jointReference[refIndex];
 			const uint8 tarIndex = tarAvatar->jointReference[refIndex];
 
@@ -159,10 +159,10 @@ namespace JinEngine
 			const std::vector<DirectX::XMFLOAT3>& tarModTranslation,
 			std::vector<JAnimationAdditionalBind>& additionalBind)noexcept
 		{
-			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton();
-			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton();
-			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar();
-			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar();
+			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
+			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton().Get();
+			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
+			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar().Get();
 
 			size_t srcGuid = srcSkeletonAsset->GetGuid();
 			size_t tarGuid = tarSkeletonAsset->GetGuid();
@@ -207,10 +207,10 @@ namespace JinEngine
 			std::vector<JAnimationAdditionalBind>& additionalBind,
 			std::vector<DirectX::XMFLOAT4X4>& modBindPose)noexcept
 		{
-			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton();
-			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton();
-			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar();
-			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar();
+			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
+			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton().Get();
+			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
+			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar().Get();
 			size_t srcGuid = srcSkeletonAsset->GetGuid();
 			size_t tarGuid = tarSkeletonAsset->GetGuid();
 
@@ -266,10 +266,10 @@ namespace JinEngine
 			JSkeletonAsset* tarSkeletonAsset,
 			std::vector<DirectX::XMFLOAT4X4>& modBindPose)noexcept
 		{
-			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar();
-			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar();
-			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton();
-			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton();
+			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
+			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar().Get();
+			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
+			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton().Get();
 			const XMVECTOR idenQ = XMVectorSet(0, 0, 0, 1);
 			const XMVECTOR offsetDir = XMVectorSet(0, 0, 1, 0);
 			const std::vector<uint8> restrictIndex
@@ -426,8 +426,8 @@ namespace JinEngine
 			const uint8 tarChildIndex,
 			std::vector<DirectX::XMFLOAT4X4>& modBindPose)noexcept
 		{
-			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton();
-			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton();
+			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
+			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton().Get();
 			const XMVECTOR idenQ = XMVectorSet(0, 0, 0, 1);
 
 			const XMMATRIX srcWorldModBind = XMLoadFloat4x4(&modBindPose[srcIndex]);
@@ -479,8 +479,8 @@ namespace JinEngine
 			const uint8 tarChildIndex,
 			std::vector<DirectX::XMFLOAT4X4>& modBindPose)noexcept
 		{
-			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton();
-			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton();
+			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
+			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton().Get();
 			const XMVECTOR idenQ = XMVectorSet(0, 0, 0, 1);
 
 			const XMMATRIX srcWorldModBind = XMLoadFloat4x4(&modBindPose[srcIndex]);
@@ -534,8 +534,8 @@ namespace JinEngine
 			if (index == JSkeletonFixedData::incorrectJointIndex)
 				return;
 
-			JAvatar* avatar = skeletonAsset->GetAvatar();
-			JSkeleton* skeleton = skeletonAsset->GetSkeleton();
+			JAvatar* avatar = skeletonAsset->GetAvatar().Get();
+			JSkeleton* skeleton = skeletonAsset->GetSkeleton().Get();
 			const uint8 jointCount = skeleton->GetJointCount();
 			for (uint i = index + 1; i < jointCount; ++i)
 			{
@@ -588,10 +588,10 @@ namespace JinEngine
 			std::vector<DirectX::XMFLOAT4X4>& modBindPose)noexcept
 		{
 
-			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar();
-			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar();
-			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton();
-			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton();
+			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
+			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar().Get();
+			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
+			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton().Get();
 
 			std::vector<std::vector<uint8>>refIndex
 			{
@@ -699,10 +699,10 @@ namespace JinEngine
 			std::vector<DirectX::XMFLOAT4X4>& modBindPose)noexcept
 		{
 			//Test
-			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton();
-			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton();
-			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar();
-			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar();
+			JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
+			JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton().Get();
+			JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
+			JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar().Get();
 
 			const XMVECTOR idenQ = XMVectorSet(0, 0, 0, 1);
 			const XMFLOAT4 y90F = JMathHelper::EulerToQuaternion(0, 90, 45);

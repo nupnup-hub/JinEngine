@@ -9,7 +9,7 @@ namespace JinEngine
 	class JPreviewResourceScene : public JPreviewScene
 	{
 	public: 
-		JPreviewResourceScene(_In_ Core::JUserPtr<JResourceObject> resource, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag);
+		JPreviewResourceScene(_In_ JUserPtr<JResourceObject> resource, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag);
 		~JPreviewResourceScene();
 		JPreviewResourceScene(JPreviewResourceScene&& rhs) = default;
 		JPreviewResourceScene& operator=(JPreviewResourceScene && rhs) = default;

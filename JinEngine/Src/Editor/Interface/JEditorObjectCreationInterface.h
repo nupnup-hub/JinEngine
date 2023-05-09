@@ -16,7 +16,7 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JIdentifier;
+		class Core::JIdentifier;
 	}
 	namespace Editor
 	{
@@ -87,8 +87,8 @@ namespace JinEngine
 			friend class JEditorObjectDestroyInterface;
 			friend class JEditorObjectUndoDestroyInterface;
 		private:
-			static Core::JOwnerPtr<Core::JIdentifier> ReleaseInstance(Core::JIdentifier* ptr);
-			static bool RestoreInstance(Core::JOwnerPtr<Core::JIdentifier>&& instance);
+			static JOwnerPtr<Core::JIdentifier> ReleaseInstance(Core::JIdentifier* ptr);
+			static bool RestoreInstance(JOwnerPtr<Core::JIdentifier>&& instance);
 		};
 
 		template<typename ...Param>
@@ -158,7 +158,7 @@ namespace JinEngine
 			{  
 				bool isReleased = false;
 				JEditorWindow* editorWnd = creationHint.editorWnd;
-				Core::JOwnerPtr<Core::JIdentifier> data = dS.Release(dH);
+				JOwnerPtr<Core::JIdentifier> data = dS.Release(dH);
 				if (data.IsValid())
 				{  
 					if (editorWnd != nullptr && preProcessF != nullptr)
@@ -212,7 +212,7 @@ namespace JinEngine
 				Param... var)
 			{
 				JEditorWindow* editorWnd = creationHint.editorWnd;
-				Core::JIdentifier* ptr = Core::SearchRawPtr(Core::JIdentifier::StaticTypeInfo(), guid); 
+				Core::JIdentifier* ptr = Core::SearchRawPtr<Core::JIdentifier>(Core::JIdentifier::StaticTypeInfo(), guid);
 				if (ptr == nullptr)
 				{
 					JEditorTransition::Instance().Log("Creation fail", "invalid guid");
@@ -223,9 +223,9 @@ namespace JinEngine
 				if (creationHint.canSetModBit)
 				{
 					if (creationHint.isSetOpenDataBit)
-						SetModifiedBit(Core::GetUserPtr(creationHint.openDataHint), true);
+						SetModifiedBit(Core::GetUserPtr<Core::JIdentifier>(creationHint.openDataHint), true);
 					if (creationHint.isSetOwnerDataBit)
-						SetModifiedBit(Core::GetUserPtr(creationHint.ownerDataHint), true);
+						SetModifiedBit(Core::GetUserPtr<Core::JIdentifier>(creationHint.ownerDataHint), true);
 					if (creationHint.isSetTargetDataBit)
 						SetModifiedBit(Core::GetUserPtr(ptr), true);
 				}
@@ -442,7 +442,7 @@ namespace JinEngine
 			void RequestDestroyObject(DataHandleStructure& dS,
 				const bool useTransition,
 				JEditorCreationHint creationHint,
-				const std::vector<Core::JUserPtr<Core::JIdentifier>>& idenVec,
+				const std::vector<JUserPtr<Core::JIdentifier>>& idenVec,
 				const JEditorRequestHint requestHint);
 		};
 

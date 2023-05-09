@@ -8,7 +8,7 @@
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/File/JFileConstant.h" 
-#include"../../../Core/Identity/JIdentifierImplBase.h"
+#include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Graphic/FrameResource/JObjectConstants.h"
 #include<fstream>
 
@@ -21,40 +21,28 @@ namespace JinEngine
 		static JTransformPrivate tPrivate;
 	}
  
-	class JTransform::JTransformImpl : public Core::JIdentifierImplBase,
+	class JTransform::JTransformImpl : public Core::JTypeImplBase,
 		public JFrameDirtyChain<JFrameDirtyTrigger>
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTransformImpl)
 	public:
-		JTransform* thisTrans = nullptr;
+		JWeakPtr<JTransform> thisPointer = nullptr;
 	public:
 		REGISTER_GUI_TABLE_GROUP(Transform, true, "Name", "x", "y", "z")
 		REGISTER_PROPERTY_EX(position, GetPosition, SetPosition, GUI_INPUT(false, GUI_TABLE_GROUP_USER(Transform, 3, true)))
-		mutable DirectX::XMFLOAT3 position = DirectX::XMFLOAT3(0, 0, 0);
+		mutable DirectX::XMFLOAT3 position;
 		REGISTER_PROPERTY_EX(rotation, GetRotation, SetRotation, GUI_INPUT(false, GUI_TABLE_GROUP_USER(Transform, 3, true)))
-		mutable DirectX::XMFLOAT3 rotation = DirectX::XMFLOAT3(0, 0, 0);
+		mutable DirectX::XMFLOAT3 rotation;
 		REGISTER_PROPERTY_EX(scale, GetScale, SetScale, GUI_INPUT(false, GUI_TABLE_GROUP_USER(Transform, 3, true)))
-		mutable DirectX::XMFLOAT3 scale = DirectX::XMFLOAT3(1, 1, 1);
+		mutable DirectX::XMFLOAT3 scale;
 		mutable DirectX::XMFLOAT4X4 world;
 		mutable DirectX::XMFLOAT3 tFront;
 		mutable DirectX::XMFLOAT3 tRight;
 		mutable DirectX::XMFLOAT3 tUp;
 	public:
-		JTransformImpl(const InitData& initData, JTransform* thisTrans)
-			:thisTrans(thisTrans)
+		JTransformImpl(const InitData& initData, JTransform* thisTransRaw)
 		{}
 		~JTransformImpl(){}
-	public:
-		void Initialize()
-		{
-			XMStoreFloat3(&tRight, JMathHelper::VectorRight());
-			XMStoreFloat3(&tUp, JMathHelper::VectorUp());
-			XMStoreFloat3(&tFront, JMathHelper::VectorForward());
-			XMStoreFloat4x4(&world, JMathHelper::IdentityMatrix4());
-
-			if (!thisTrans->GetOwner()->IsRoot())
-				UpdateWorld();
-		}
 	public:
 		XMFLOAT3 GetPosition()const noexcept
 		{
@@ -113,7 +101,7 @@ namespace JinEngine
 	public:
 		void SetTransform(const XMFLOAT3& nPosition, const XMFLOAT3& nRotation, const XMFLOAT3& nScale)noexcept
 		{
-			if (thisTrans->GetOwner()->IsRoot())
+			if (thisPointer->GetOwner()->IsRoot())
 				return;
 
 			position = nPosition;
@@ -123,7 +111,7 @@ namespace JinEngine
 		}
 		void SetPosition(const XMFLOAT3& value)noexcept
 		{
-			if (thisTrans->GetOwner()->IsRoot())
+			if (thisPointer->GetOwner()->IsRoot())
 				return;
 
 			position = value;
@@ -131,7 +119,7 @@ namespace JinEngine
 		}
 		void SetRotation(const XMFLOAT3& value)noexcept
 		{
-			if (thisTrans->GetOwner()->IsRoot())
+			if (thisPointer->GetOwner()->IsRoot())
 				return;
 
 			rotation = value;
@@ -166,7 +154,7 @@ namespace JinEngine
 		}
 		void SetScale(const XMFLOAT3& value)noexcept
 		{
-			if (thisTrans->GetOwner()->IsRoot())
+			if (thisPointer->GetOwner()->IsRoot())
 				return;
 
 			scale = value;
@@ -188,7 +176,7 @@ namespace JinEngine
 	public:
 		void LookAt(const XMFLOAT3& target, const XMFLOAT3& worldUp)noexcept
 		{
-			if (thisTrans->GetOwner()->IsRoot())
+			if (thisPointer->GetOwner()->IsRoot())
 				return;
 
 			const XMVECTOR positionVec = XMLoadFloat3(&position);
@@ -244,7 +232,7 @@ namespace JinEngine
 	public:
 		void UpdateTopDown()noexcept
 		{
-			JGameObject* owner = thisTrans->GetOwner();
+			JUserPtr<JGameObject> owner = thisPointer->GetOwner();
 			if (owner->IsRoot())
 				return;
 
@@ -263,16 +251,33 @@ namespace JinEngine
 				rotation.z * (JMathHelper::Pi / 180));
 			const XMVECTOR t = XMLoadFloat3(&position);
 			const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-			const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), XMLoadFloat4x4(&thisTrans->GetOwner()->GetParent()->GetTransform()->impl->world));
+			const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), XMLoadFloat4x4(&thisPointer->GetOwner()->GetParent()->GetTransform()->impl->world));
 			XMStoreFloat4x4(&world, worldM);
 		}
 	public:
-		static void RegisterCallOnce()
+		void Initialize()
+		{
+			position = DirectX::XMFLOAT3(0, 0, 0);
+			rotation = DirectX::XMFLOAT3(0, 0, 0);
+			scale = DirectX::XMFLOAT3(1, 1, 1);
+			XMStoreFloat3(&tRight, JMathHelper::VectorRight());
+			XMStoreFloat3(&tUp, JMathHelper::VectorUp());
+			XMStoreFloat3(&tFront, JMathHelper::VectorForward());
+			XMStoreFloat4x4(&world, JMathHelper::IdentityMatrix4());
+
+			if (!thisPointer->GetOwner()->IsRoot())
+				UpdateWorld();
+		}
+		void RegisterThisPointer(JTransform* trans)
+		{
+			thisPointer = Core::GetWeakPtr(trans);
+		}
+		static void RegisterTypeData()
 		{
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JTransform::StaticTypeInfo };
 			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
-			auto createInitDataLam = [](JGameObject* parent, InitUnq&& parentClassInitData) -> InitUnq
+			auto createInitDataLam = [](JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
 			{
 				using CorrectType = JComponent::ParentType::InitData;
 				const bool isValidUnq = parentClassInitData != nullptr && parentClassInitData->GetTypeInfo().IsChildOf(CorrectType::StaticTypeInfo());
@@ -295,13 +300,15 @@ namespace JinEngine
 
 			RegisterCTypeInfo(JTransform::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 			Core::JIdentifier::RegisterPrivateInterface(JTransform::StaticTypeInfo(), tPrivate);
+
+			IMPL_REALLOC_BIND(JTransform::JTransformImpl, thisPointer)
 		}
 	};
 
-	JTransform::InitData::InitData(JGameObject* owner)
+	JTransform::InitData::InitData(const JUserPtr<JGameObject>& owner)
 		:JComponent::InitData(JTransform::StaticTypeInfo(), owner)
 	{}
-	JTransform::InitData::InitData(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner)
+	JTransform::InitData::InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner)
 		: JComponent::InitData(JTransform::StaticTypeInfo(), GetDefaultName(JTransform::StaticTypeInfo()), guid, flag, owner)
 
 	{}
@@ -399,9 +406,7 @@ namespace JinEngine
 	}
 	JTransform::JTransform(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JTransformImpl>(initData, this))
-	{ 
-		impl->Initialize();
-	}
+	{ }
 	JTransform::~JTransform()
 	{
 		impl.reset();
@@ -412,25 +417,32 @@ namespace JinEngine
 	using UpdateWorldInterface = JTransformPrivate::UpdateWorldInterface;
 	using FrameDirtyInterface = JTransformPrivate::FrameDirtyInterface;
 
-	Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
-		return Core::JPtrUtil::MakeOwnerPtr<JTransform>(*static_cast<JTransform::InitData*>(initData.get()));
+		return Core::JPtrUtil::MakeOwnerPtr<JTransform>(*static_cast<JTransform::InitData*>(initData));
+	}
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JComponentPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		JTransform* trans = static_cast<JTransform*>(createdPtr);
+		trans->impl->RegisterThisPointer(trans);
+		trans->impl->Initialize();
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
 		const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JTransform::InitData::StaticTypeInfo());
 		return isValidPtr && initData->IsValidData();
 	}
-	bool CreateInstanceInterface::Copy(Core::JIdentifier* from, Core::JIdentifier* to) noexcept
+	bool CreateInstanceInterface::Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept
 	{
 		const bool canCopy = CanCopy(from, to) && from->GetTypeInfo().IsA(JTransform::StaticTypeInfo());
 		if (!canCopy)
 			return false;
 
-		return JTransform::JTransformImpl::DoCopy(static_cast<JTransform*>(from), static_cast<JTransform*>(to));
+		return JTransform::JTransformImpl::DoCopy(static_cast<JTransform*>(from.Get()), static_cast<JTransform*>(to.Get()));
 	}
 
-	Core::JIdentifier* AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
+	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JTransform::LoadData::StaticTypeInfo()))
 			return nullptr;
@@ -445,22 +457,22 @@ namespace JinEngine
 
 		auto loadData = static_cast<JTransform::LoadData*>(data);
 		std::wifstream& stream = loadData->stream;
-		JGameObject* owner = loadData->owner;
+		JUserPtr<JGameObject> owner = loadData->owner;
 
 		JFileIOHelper::LoadObjectIden(stream, guid, flag);
 		JFileIOHelper::LoadXMFloat3(stream, pos);
 		JFileIOHelper::LoadXMFloat3(stream, rot);
 		JFileIOHelper::LoadXMFloat3(stream, scale);
  
-		auto rawPtr = tPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JTransform::InitData>(guid, flag, owner), &tPrivate);
-		JTransform* newTransform = static_cast<JTransform*>(rawPtr);
+		auto idenUser = tPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JTransform::InitData>(guid, flag, owner), &tPrivate);
+		JUserPtr<JTransform> transUser = JUserPtr<JTransform>::ConvertChild(std::move(idenUser));
 
-		newTransform->SetPosition(pos);
-		newTransform->SetRotation(rot);
-		newTransform->SetScale(scale);
-		newTransform->impl->SetFrameDirtyTrigger();
+		transUser->SetPosition(pos);
+		transUser->SetRotation(rot);
+		transUser->SetScale(scale);
+		transUser->impl->SetFrameDirtyTrigger();
 
-		return newTransform;
+		return transUser;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
 	{
@@ -471,11 +483,13 @@ namespace JinEngine
 		if (!storeData->HasCorrectType(JTransform::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		JTransform* transform = static_cast<JTransform*>(storeData->obj);
-		JTransform::JTransformImpl* impl = transform->impl.get();
+		JUserPtr<JTransform> transUser;
+		transUser.ConnnectChild(storeData->obj);
+
+		JTransform::JTransformImpl* impl = transUser->impl.get();
 		std::wofstream& stream = storeData->stream;
 
-		JFileIOHelper::StoreObjectIden(stream, transform);
+		JFileIOHelper::StoreObjectIden(stream, transUser.Get());
 		JFileIOHelper::StoreXMFloat3(stream, L"Pos:", impl->position);
 		JFileIOHelper::StoreXMFloat3(stream, L"Rot:", impl->rotation);
 		JFileIOHelper::StoreXMFloat3(stream, L"Scale:", impl->scale);
@@ -483,7 +497,7 @@ namespace JinEngine
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	void UpdateWorldInterface::UpdateWorld(JTransform* transform)noexcept
+	void UpdateWorldInterface::UpdateWorld(const JUserPtr<JTransform>& transform)noexcept
 	{
 		transform->impl->UpdateTopDown();
 	}

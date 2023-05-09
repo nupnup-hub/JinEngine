@@ -16,7 +16,7 @@ namespace JinEngine
 			using ResourceEvListener = Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>;
 		private:
 			std::unique_ptr<JProjectSelectorHub> projectHub;
-			Core::JUserPtr<JTexture> backgroundTexture; 
+			JUserPtr<JTexture> backgroundTexture; 
 		public:
 			JProjectSelectorPage();
 			~JProjectSelectorPage();
@@ -26,7 +26,7 @@ namespace JinEngine
 		public: 
 			void UpdatePage()final;
 		public:
-			bool IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
+			bool IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
 		private:
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;

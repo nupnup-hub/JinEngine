@@ -14,12 +14,12 @@ namespace JinEngine
 	}
 	namespace Editor
 	{
-		void JEditorObjectHandlerInterface::SetModifiedBit(Core::JUserPtr<Core::JIdentifier> obj, const bool value)noexcept
+		void JEditorObjectHandlerInterface::SetModifiedBit(JUserPtr<Core::JIdentifier> obj, const bool value)noexcept
 		{
 			if (!obj.IsValid())
 				return;
 
-			Core::JUserPtr<Core::JIdentifier> validObj = GetValidModifiedUser(obj);
+			JUserPtr<Core::JIdentifier> validObj = GetValidModifiedUser(obj);
 			if (!validObj.IsValid())
 				return;
 			 
@@ -33,22 +33,22 @@ namespace JinEngine
 			}
 			data->isModified = value; 
 		}
-		Core::JUserPtr<Core::JIdentifier> JEditorObjectHandlerInterface::GetValidModifiedUser(Core::JUserPtr<Core::JIdentifier> obj)noexcept
+		JUserPtr<Core::JIdentifier> JEditorObjectHandlerInterface::GetValidModifiedUser(JUserPtr<Core::JIdentifier> obj)noexcept
 		{			
 			/*
 			Component -> Gameobject -> Scene 으로 변환
 			Component와 GameObject는 Resource가아니므로 Scene에 기록한다
 			*/
 			if (obj->GetTypeInfo().IsChildOf(JComponent::StaticTypeInfo()))
-				return Core::GetUserPtr(static_cast<JComponent*>(obj.Get())->GetOwner()->GetOwnerScene());
+				return static_cast<JComponent*>(obj.Get())->GetOwner()->GetOwnerScene();
 			else if (obj->GetTypeInfo().IsChildOf(JGameObject::StaticTypeInfo()))
-				return Core::GetUserPtr(static_cast<JGameObject*>(obj.Get())->GetOwnerScene());
+				return static_cast<JGameObject*>(obj.Get())->GetOwnerScene();
 			else if (obj->GetTypeInfo().IsChildOf(JResourceObject::StaticTypeInfo()))
 				return obj;
 			else if (obj->GetTypeInfo().IsChildOf(JDirectory::StaticTypeInfo()))
 				return obj;
 			else
-				return 	Core::JUserPtr<Core::JIdentifier>{};
+				return 	JUserPtr<Core::JIdentifier>{};
 		}
 	}
 	bool JEditorModifedObjectInterface::IsModified(const size_t guid)noexcept
@@ -70,12 +70,12 @@ namespace JinEngine
 /*
 * unuse
 * remove bit func
-		void JEditorObjectHandlerInterface::SetRemoveBit(Core::JUserPtr<Core::JIdentifier> obj)noexcept
+		void JEditorObjectHandlerInterface::SetRemoveBit(JUserPtr<Core::JIdentifier> obj)noexcept
 		{
 			if (!obj.IsValid())
 				return;
 
-			Core::JUserPtr<Core::JIdentifier> validObj = GetValidModifiedUser(obj);
+			JUserPtr<Core::JIdentifier> validObj = GetValidModifiedUser(obj);
 			if (!validObj.IsValid())
 				return;
 

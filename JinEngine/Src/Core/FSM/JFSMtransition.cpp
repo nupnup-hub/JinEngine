@@ -4,7 +4,7 @@
 #include"JFSMstate.h"
 #include"JFSMcondition.h"    
 #include"../Identity/JIdenCreator.h"
-#include"../Identity/JIdentifierImplBase.h"
+#include"../Reflection/JTypeImplBase.h"
 #include"../../Utility/JCommonUtility.h" 
 
 namespace JinEngine
@@ -17,17 +17,18 @@ namespace JinEngine
 			static JFSMtransitionPrivate tPrivate;
 		}
 
-		class JFSMtransition::JFSMtransitionImpl : public JIdentifierImplBase
+		class JFSMtransition::JFSMtransitionImpl : public JTypeImplBase
 		{
 			REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JFSMtransitionImpl) 
 		public:
-			JFSMstate* owner;
-			JFSMstate* outState;
-			std::vector<JFSMcondition*>conditionVec;
+			JWeakPtr<JFSMtransition> thisPointer;
 		public:
-			JFSMtransitionImpl(const InitData& initData, JFSMtransition* thisTrans)
-				:owner(initData.ownerState.Get()),
-				outState(initData.outState.Get())
+			JUserPtr<JFSMstate> inState;
+			JUserPtr<JFSMstate> outState;
+			std::vector<JUserPtr<JFSMcondition>>conditionVec;
+		public:
+			JFSMtransitionImpl(const InitData& initData, JFSMtransition* thisTransRaaw)
+				:inState(initData.inState), outState(initData.outState)
 			{}
 			~JFSMtransitionImpl() {}
 		public:
@@ -38,7 +39,7 @@ namespace JinEngine
 
 				return conditionVec[index]->GetOnValue();
 			}
-			JFSMcondition* GetConditionByIndex(const uint index)const noexcept
+			JUserPtr<JFSMcondition> GetConditionByIndex(const uint index)const noexcept
 			{
 				if (index >= conditionVec.size())
 					return nullptr;
@@ -46,13 +47,13 @@ namespace JinEngine
 				return conditionVec[index];
 			}
 			REGISTER_METHOD(GetConditionVec)
-			std::vector<JFSMcondition*> GetConditionVec()const noexcept
+			std::vector<JUserPtr<JFSMcondition>> GetConditionVec()const noexcept
 			{
 				return conditionVec;
 			}
 		public:
 			REGISTER_METHOD(SetConditionVec)
-			void SetConditionVec(std::vector<JFSMcondition*> vec)noexcept
+			void SetConditionVec(std::vector<JUserPtr<JFSMcondition>> vec)noexcept
 			{
 				conditionVec = vec;
 			}
@@ -73,12 +74,12 @@ namespace JinEngine
 				return false;
 			}
 		public:
-			static JIdentifier* CreateCondition(JIdentifier* iden)noexcept
+			static JUserPtr<JIdentifier> CreateCondition(JUserPtr<JIdentifier> trans)noexcept
 			{
-				if (!iden->GetTypeInfo().IsChildOf<JFSMtransition>())
+				if (!trans->GetTypeInfo().IsChildOf<JFSMtransition>())
 					return nullptr;
 
-				return JICI::Create<JFSMcondition>(GetUserPtr<JFSMtransition>(iden));
+				return JICI::Create<JFSMcondition>(Core::ConvertChildUserPtr< JFSMtransition>(std::move(trans)));
 			}
 		public:
 			bool RemoveParameter(const size_t guid)noexcept
@@ -92,18 +93,17 @@ namespace JinEngine
 				return true;
 			}
 		public:
-			static bool RegisterInstance(JFSMtransition* trans)noexcept
+			bool RegisterInstance()noexcept
 			{
-				return JFSMstatePrivate::OwnTypeInterface::AddTransition(trans);
+				return JFSMstatePrivate::OwnTypeInterface::AddTransition(thisPointer);
 			}
-			static bool DeRegisterInstance(JFSMtransition* trans)noexcept
+			bool DeRegisterInstance()noexcept
 			{
-				return JFSMstatePrivate::OwnTypeInterface::RemoveTransition(trans);
+				return JFSMstatePrivate::OwnTypeInterface::RemoveTransition(thisPointer);
 			}
 		public:
-			bool AddCondition(JFSMcondition* newCondition)noexcept
-			{
-				JFSMcondition* res = nullptr;
+			bool AddCondition(const JUserPtr<JFSMcondition>& newCondition)noexcept
+			{ 
 				if (newCondition != nullptr)
 				{
 					newCondition->SetName(JCUtil::MakeUniqueName(conditionVec, newCondition->GetName()));
@@ -113,7 +113,7 @@ namespace JinEngine
 				else
 					return false;
 			}
-			bool RemoveCondition(JFSMcondition* condition)noexcept
+			bool RemoveCondition(const JUserPtr<JFSMcondition>& condition)noexcept
 			{
 				const size_t guid = condition->GetGuid();
 				const uint conditionVecSize = (uint)conditionVec.size();
@@ -136,45 +136,50 @@ namespace JinEngine
 			}
 			void Clear()
 			{
-				std::vector<JFSMcondition*> copy = conditionVec;
+				std::vector<JUserPtr<JFSMcondition>> copy = conditionVec;
 				for (auto& data : copy)
-					JFSMinterface::BeginDestroy(data);
+					JFSMinterface::BeginDestroy(data.Get());
 				conditionVec.clear();
 			}
 		public:
-			static void RegisterCallOnce()
+			void RegisterThisPointer(JFSMtransition* trans)
 			{
-				Core::JIdentifier::RegisterPrivateInterface(JFSMtransition::StaticTypeInfo(), tPrivate);
+				thisPointer = GetWeakPtr(trans);
+			}
+			static void RegisterTypeData()
+			{
+				JIdentifier::RegisterPrivateInterface(JFSMtransition::StaticTypeInfo(), tPrivate);
+				IMPL_REALLOC_BIND(JFSMtransition::JFSMtransitionImpl, thisPointer)
 			}
 		};
 
-		JFSMtransition::InitData::InitData(JUserPtr<JFSMstate> ownerState,JUserPtr<JFSMstate> outState)
-			:JFSMinterface::InitData(JFSMtransition::StaticTypeInfo()), ownerState(ownerState), outState(outState)
+		JFSMtransition::InitData::InitData(const JUserPtr<JFSMstate>& inState, const JUserPtr<JFSMstate>& outState)
+			:JFSMinterface::InitData(JFSMtransition::StaticTypeInfo()), inState(inState), outState(outState)
 		{}
 		JFSMtransition::InitData::InitData(const std::wstring& name,
 			const size_t guid,
-			JUserPtr<JFSMstate> ownerState,
-			JUserPtr<JFSMstate> outState)
-			: JFSMinterface::InitData(JFSMtransition::StaticTypeInfo(), name, guid), ownerState(ownerState), outState(outState)
+			const JUserPtr<JFSMstate>& inState,
+			const JUserPtr<JFSMstate>& outState)
+			: JFSMinterface::InitData(JFSMtransition::StaticTypeInfo(), name, guid), inState(inState), outState(outState)
 		{}
 		JFSMtransition::InitData::InitData(const JTypeInfo& initTypeInfo, 
-			JUserPtr<JFSMstate> ownerState,
-			JUserPtr<JFSMstate> outState)
-			:JFSMinterface::InitData(initTypeInfo), ownerState(ownerState), outState(outState)
+			const JUserPtr<JFSMstate>& inState,
+			const JUserPtr<JFSMstate>& outState)
+			:JFSMinterface::InitData(initTypeInfo), inState(inState), outState(outState)
 		{}
 		JFSMtransition::InitData::InitData(const JTypeInfo& initTypeInfo,
 			const std::wstring& name, 
 			const size_t guid,
-			JUserPtr<JFSMstate> ownerState,
-			JUserPtr<JFSMstate> outState)
-			: JFSMinterface::InitData(initTypeInfo, name, guid), ownerState(ownerState), outState(outState)
+			const JUserPtr<JFSMstate>& inState,
+			const JUserPtr<JFSMstate>& outState)
+			: JFSMinterface::InitData(initTypeInfo, name, guid), inState(inState), outState(outState)
 		{}
 		bool JFSMtransition::InitData::IsValidData()const noexcept
 		{
-			return JFSMinterface::InitData::IsValidData() && ownerState != nullptr && outState != nullptr;
+			return JFSMinterface::InitData::IsValidData() && inState != nullptr && outState != nullptr;
 		}
  
-		Core::JIdentifierPrivate& JFSMtransition::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JFSMtransition::GetPrivateInterface()const noexcept
 		{
 			return tPrivate;
 		}
@@ -182,11 +187,11 @@ namespace JinEngine
 		{
 			return J_FSM_OBJECT_TYPE::TRANSITION;
 		}
-		JFSMstate* JFSMtransition::GetOwner()const noexcept
+		JUserPtr<JFSMstate> JFSMtransition::GetInState()const noexcept
 		{
-			return impl->owner;
+			return impl->inState;
 		}
-		JFSMstate* JFSMtransition::GetOutState()const noexcept
+		JUserPtr<JFSMstate> JFSMtransition::GetOutState()const noexcept
 		{
 			return impl->outState;
 		}
@@ -202,15 +207,15 @@ namespace JinEngine
 		{
 			return impl->outState->GetGuid();
 		}
-		JFSMcondition* JFSMtransition::GetConditionByIndex(const uint index)const noexcept
+		JUserPtr<JFSMcondition> JFSMtransition::GetConditionByIndex(const uint index)const noexcept
 		{
 			return impl->GetConditionByIndex(index);
 		}
-		std::vector<JFSMcondition*> JFSMtransition::GetConditionVec()const noexcept
+		std::vector<JUserPtr<JFSMcondition>> JFSMtransition::GetConditionVec()const noexcept
 		{
 			return impl->GetConditionVec();
 		}
-		void JFSMtransition::SetConditionVec(std::vector<JFSMcondition*> vec)noexcept
+		void JFSMtransition::SetConditionVec(std::vector<JUserPtr<JFSMcondition>> vec)noexcept
 		{
 			impl->SetConditionVec(vec);
 		}
@@ -218,7 +223,7 @@ namespace JinEngine
 		{
 			return impl->HasSatisfiedCondition();
 		}		 
-		JIdentifier* JFSMtransition::CreateCondition(JIdentifier* iden)noexcept
+		JUserPtr<JIdentifier> JFSMtransition::CreateCondition(const JUserPtr<JIdentifier>& iden)noexcept
 		{
 			return JFSMtransition::JFSMtransitionImpl::CreateCondition(iden);
 		}
@@ -240,54 +245,62 @@ namespace JinEngine
 		using UpdateInterface = JFSMtransitionPrivate::UpdateInterface;
 		using ParameterInterface = JFSMtransitionPrivate::ParameterInterface;
 
-		Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+		JOwnerPtr<JIdentifier> CreateInstanceInterface::Create(JDITypeDataBase* initData)
 		{
-			return Core::JPtrUtil::MakeOwnerPtr<JFSMtransition>(*static_cast<JFSMtransition::InitData*>(initData.get()));
+			return JPtrUtil::MakeOwnerPtr<JFSMtransition>(*static_cast<JFSMtransition::InitData*>(initData));
 		}
-		bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
+		void CreateInstanceInterface::Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept
+		{
+			JFSMinterfacePrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+			JFSMtransition* trans = static_cast<JFSMtransition*>(createdPtr);
+			trans->impl->RegisterThisPointer(trans);
+			trans->impl->Initialize();
+		}
+		void CreateInstanceInterface::RegisterCash(JIdentifier* createdPtr)noexcept
+		{
+			static_cast<JFSMtransition*>(createdPtr)->impl->RegisterInstance();
+		}
+		bool CreateInstanceInterface::CanCreateInstance(JDITypeDataBase* initData)const noexcept
 		{
 			const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JFSMtransition::InitData::StaticTypeInfo());
 			return isValidPtr && initData->IsValidData();
 		}
-		void CreateInstanceInterface::RegisterCash(Core::JIdentifier* createdPtr)noexcept
-		{
-			JFSMtransition::JFSMtransitionImpl::RegisterInstance(static_cast<JFSMtransition*>(createdPtr));
-		}
 
-		void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
+		void DestroyInstanceInterface::Clear(JIdentifier* ptr, const bool isForced)
 		{
+			JFSMinterfacePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 			static_cast<JFSMtransition*>(ptr)->impl->Clear();
 		}
 		void DestroyInstanceInterface::DeRegisterCash(JIdentifier* ptr)noexcept
 		{
-			JFSMtransition::JFSMtransitionImpl::DeRegisterInstance(static_cast<JFSMtransition*>(ptr));
+			static_cast<JFSMtransition*>(ptr)->impl->DeRegisterInstance();
 		}
 
-		bool OwnTypeInterface::AddCondition(JFSMcondition* cond)noexcept
+		bool OwnTypeInterface::AddCondition(const JUserPtr<JFSMcondition>& cond)noexcept
 		{
 			return cond->GetOwner()->impl->AddCondition(cond);
 		}
-		bool OwnTypeInterface::RemoveCondition(JFSMcondition* cond)noexcept
+		bool OwnTypeInterface::RemoveCondition(const JUserPtr<JFSMcondition>& cond)noexcept
 		{
 			return cond->GetOwner()->impl->RemoveCondition(cond);
 		}
 
-		void UpdateInterface::Initialize(JFSMtransition* trans)noexcept
+		void UpdateInterface::Initialize(const JUserPtr<JFSMtransition>& trans)noexcept
 		{
 			trans->impl->Initialize();
 		}
 
-		void ParameterInterface::RemoveParameter(JFSMtransition* trans, const size_t guid)
+		void ParameterInterface::RemoveParameter(const JUserPtr<JFSMtransition>& trans, const size_t guid)
 		{
 			trans->impl->RemoveParameter(guid);
 		}
 
-		Core::JIdentifierPrivate::CreateInstanceInterface& JFSMtransitionPrivate::GetCreateInstanceInterface()const noexcept
+		JIdentifierPrivate::CreateInstanceInterface& JFSMtransitionPrivate::GetCreateInstanceInterface()const noexcept
 		{
 			static CreateInstanceInterface pI;
 			return pI;
 		}
-		Core::JIdentifierPrivate::DestroyInstanceInterface& JFSMtransitionPrivate::GetDestroyInstanceInterface()const noexcept
+		JIdentifierPrivate::DestroyInstanceInterface& JFSMtransitionPrivate::GetDestroyInstanceInterface()const noexcept
 		{
 			static DestroyInstanceInterface pI;
 			return pI;

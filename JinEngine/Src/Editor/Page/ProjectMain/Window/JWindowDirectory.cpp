@@ -74,7 +74,7 @@ namespace JinEngine
 		{
 		private:
 			using ResourceObjectCreationInterface = JEditorCreationRequestor<JEditorObjectCreateInterface<J_RESOURCE_TYPE>>;
-			using DirectoryCreationInteface = JEditorCreationRequestor<JEditorObjectCreateInterface<Core::JUserPtr<JDirectory>>>;
+			using DirectoryCreationInteface = JEditorCreationRequestor<JEditorObjectCreateInterface<JUserPtr<JDirectory>>>;
 			using DestructionInterface = JEditorDestructionRequestor;
 		public:
 			using ResourceObjectCanCreateF = ResourceObjectCreationInterface::CreateInteface::CanCreateF;
@@ -117,9 +117,9 @@ namespace JinEngine
 		public:
 			using RenameF = Core::JSFunctorType<void, JWindowDirectory*>;
 			using ImportResourceF = Core::JMFunctorType<JWindowDirectory, void>;
-			using CreateImportedResourceF = Core::JSFunctorType<void, JWindowDirectory*, std::vector<JResourceObject*>>;
-			using MoveFIleF = Core::JMFunctorType<JWindowDirectory, void, JDirectory*, JObject*>;
-			using OpenNewDirectoryF = Core::JMFunctorType<JWindowDirectory, void, Core::JUserPtr<JDirectory>>;
+			using CreateImportedResourceF = Core::JSFunctorType<void, JWindowDirectory*, std::vector<JUserPtr<JResourceObject>>>;
+			using MoveFIleF = Core::JMFunctorType<JWindowDirectory, void, JUserPtr<JDirectory>, JUserPtr<JObject>>;
+			using OpenNewDirectoryF = Core::JMFunctorType<JWindowDirectory, void, JUserPtr<JDirectory>>;
 		public:
 			std::unique_ptr<RenameF::Functor> renameF;
 			std::unique_ptr<ImportResourceF::Functor> importResourceF;
@@ -129,7 +129,7 @@ namespace JinEngine
 		public:
 			std::unique_ptr<OpenNewDirectoryF::CompletelyBind> openNewDirB;
 		public:
-			void PushOpenNewDirBind(Core::JUserPtr<JDirectory> dir)
+			void PushOpenNewDirBind(JUserPtr<JDirectory> dir)
 			{
 				openNewDirB = std::make_unique<OpenNewDirectoryF::CompletelyBind>(*openNewDirF, std::move(dir));
 			}
@@ -172,7 +172,7 @@ namespace JinEngine
 				if (!wndDir->root.IsValid())
 					return;
 
-				Core::JUserPtr<JDirectory> owner = wndDir->opendDirctory;
+				JUserPtr<JDirectory> owner = wndDir->opendDirctory;
 				if (!owner.IsValid())
 					owner = wndDir->root;
 
@@ -191,7 +191,7 @@ namespace JinEngine
 				if (!wndDir->root.IsValid())
 					return;
 
-				Core::JUserPtr<JDirectory> parent = wndDir->opendDirctory;
+				JUserPtr<JDirectory> parent = wndDir->opendDirctory;
 				if (!parent.IsValid())
 					parent = wndDir->root;
 
@@ -207,7 +207,7 @@ namespace JinEngine
 			};
 			auto requestDestroyLam = [](JWindowDirectory* wndDir)
 			{
-				std::vector<Core::JUserPtr<Core::JIdentifier>> objVec = wndDir->GetSelectedObjectVec();
+				std::vector<JUserPtr<Core::JIdentifier>> objVec = wndDir->GetSelectedObjectVec();
 				if (objVec.size() == 0)
 					return;
 
@@ -223,19 +223,19 @@ namespace JinEngine
 			};
 			auto creationRObjPostProccessLam = [](JEditorWindow* wndDir, Core::JIdentifier* resource)
 			{
-				static_cast<JWindowDirectory*>(wndDir)->CreatePreviewScene(Core::JUserPtr<JObject>::ConvertChildUser(Core::GetUserPtr(resource)));
+				static_cast<JWindowDirectory*>(wndDir)->CreatePreviewScene(JUserPtr<JObject>::ConvertChild(Core::GetUserPtr(resource)));
 			};
 			auto creationDirPostProccessLam = [](JEditorWindow* wndDir, Core::JIdentifier* dir)
 			{
-				static_cast<JWindowDirectory*>(wndDir)->CreatePreviewScene(Core::JUserPtr<JObject>::ConvertChildUser(Core::GetUserPtr(dir)));
+				static_cast<JWindowDirectory*>(wndDir)->CreatePreviewScene(JUserPtr<JObject>::ConvertChild(Core::GetUserPtr(dir)));
 			};
 			auto destructionPreProccessLam = [](JEditorWindow* wndDir, Core::JIdentifier* resource)
 			{
-				static_cast<JWindowDirectory*>(wndDir)->DestroyPreviewScene(Core::JUserPtr<JObject>::ConvertChildUser(Core::GetUserPtr(resource)));
+				static_cast<JWindowDirectory*>(wndDir)->DestroyPreviewScene(JUserPtr<JObject>::ConvertChild(Core::GetUserPtr(resource)));
 				if (resource->GetTypeInfo().IsChildOf<JResourceObject>())
 					ResourceFileInterface::DeleteFile(static_cast<JResourceObject*>(resource));
 				else if (resource->GetTypeInfo().IsChildOf<JDirectory>())
-					DirRawInterface::DeleteDirectory(static_cast<JDirectory*>(resource)); 
+					DirRawInterface::DeleteDirectory(Core::GetUserPtr<JDirectory>(resource));
 			}; 
 
 			creationImpl = std::make_unique<JWindowDirectoryCreationImpl>(requestCreateRObjLam, requestCreateDirectoryLam, requestDestroyLam);
@@ -256,9 +256,8 @@ namespace JinEngine
 					return false;
 			};
 			auto creationRobjLam = [](const size_t guid, const JEditorCreationHint& creationHint, J_RESOURCE_TYPE rType)
-			{
-				auto owner = Core::GetUserPtr(creationHint.ownerDataHint);
-				JDirectory* ownerDir = static_cast<JDirectory*>(owner.Get());
+			{ 
+				JUserPtr<JDirectory> ownerDir = Core::ConvertChildUserPtr<JDirectory>(Core::GetUserPtr(creationHint.ownerDataHint));
 				switch (rType)
 				{
 				case JinEngine::J_RESOURCE_TYPE::MATERIAL:
@@ -280,13 +279,13 @@ namespace JinEngine
 					break;
 				}
 			};
-			auto canCreationDirLam = [](const size_t guid, const JEditorCreationHint& creationHint, Core::JUserPtr<JDirectory> parent)
+			auto canCreationDirLam = [](const size_t guid, const JEditorCreationHint& creationHint, JUserPtr<JDirectory> parent)
 			{
 				return parent.IsValid();
 			};
-			auto creationDirLam = [](const size_t guid, const JEditorCreationHint& creationHint, Core::JUserPtr<JDirectory> parent)
+			auto creationDirLam = [](const size_t guid, const JEditorCreationHint& creationHint, JUserPtr<JDirectory> parent)
 			{
-				JICI::Create<JDirectory>(parent.Get());
+				JICI::Create<JDirectory>(parent);
 			};
 
 			creationImpl->resourceObj.GetCreationInterface()->RegisterCanCreationF(canCreationRobjLam);
@@ -299,21 +298,21 @@ namespace JinEngine
 			if (settingImpl != nullptr)
 				return;
 
-			auto createImportedResourceFLam = [](JWindowDirectory* wndDir, std::vector<JResourceObject*> rVec)
+			auto createImportedResourceFLam = [](JWindowDirectory* wndDir, std::vector<JUserPtr<JResourceObject>> rVec)
 			{
 				const uint resCount = (uint)rVec.size();
 				for (uint i = 0; i < resCount; ++i)
 				{
 					if (rVec[i] != nullptr)
-						wndDir->SetModifiedBit(Core::GetUserPtr(rVec[i]), true);
+						wndDir->SetModifiedBit(rVec[i], true);
 				}
 				//search bar activate중에는 팝업생성 불가능
-				wndDir->CreateDirectoryPreview(wndDir->opendDirctory.Get(), false);
+				wndDir->CreateDirectoryPreview(wndDir->opendDirctory, false);
 			};
 			auto renameLam = [](JWindowDirectory* wndDir)
 			{
 				wndDir->renameHelper->Activate(wndDir->GetHoveredObject());
-				wndDir->SetModifiedBit(Core::GetUserPtr(wndDir->GetHoveredObject()), true);
+				wndDir->SetModifiedBit(wndDir->GetHoveredObject(), true);
 			};
 
 			using ImportResourceF = JWindowDirectorySettingImpl::ImportResourceF;
@@ -432,7 +431,7 @@ namespace JinEngine
 		void JWindowDirectory::Initialize()
 		{
 			const std::wstring contentPath = JApplicationProject::ContentsPath();
-			root = Core::GetUserPtr(_JResourceManager::Instance().GetDirectory(contentPath));
+			root = _JResourceManager::Instance().GetDirectory(contentPath);
 			//searchBarHelper->RegisterDefaultObject(root);
 			OpenNewDirectory(root);
 		}
@@ -456,12 +455,12 @@ namespace JinEngine
 					if (!hasData)
 					{
 						ClearPreviewGroup();
-						CreateDirectoryPreview(opendDirctory.Get(), false);
+						CreateDirectoryPreview(opendDirctory, false);
 					}
 					else
 					{
 						ClearPreviewGroup();
-						CreateAllDirectoryPreview(root.Get(), true, JCUtil::U8StrToWstr(searchBarHelper->GetInputData()));
+						CreateAllDirectoryPreview(root, true, JCUtil::U8StrToWstr(searchBarHelper->GetInputData()));
 					}
 				}
 
@@ -498,7 +497,7 @@ namespace JinEngine
 			JImGuiImpl::BeginChildWindow(Constants::directoryViewName.c_str(), viewSize, true, ImGuiWindowFlags_AlwaysAutoResize);
 
 			const bool canSelect = !searchBarHelper->HasInputData();
-			DirectoryViewOnScreen(root.Get(), canSelect);
+			DirectoryViewOnScreen(root, canSelect);
 			lastUpdateOpenNewDir = false;
 
 			if (settingImpl->openNewDirB != nullptr)
@@ -524,7 +523,7 @@ namespace JinEngine
 			JImGuiImpl::EndChildWindow();
 			//fileviewPopup->IsMouseInPopup()
 		}
-		void JWindowDirectory::DirectoryViewOnScreen(JDirectory* directory, const bool canSelect)
+		void JWindowDirectory::DirectoryViewOnScreen(const JUserPtr<JDirectory>& directory, const bool canSelect)
 		{
 			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_SpanAvailWidth |
 				ImGuiTreeNodeFlags_Framed;
@@ -532,7 +531,7 @@ namespace JinEngine
 			bool isSelected = opendDirctory->GetGuid() == directory->GetGuid();
 			if (isSelected && canSelect)
 				SetTreeNodeColor(GetSelectedColorFactor());
-			if (lastUpdateOpenNewDir && opendDirctory->IsParent(directory))
+			if (lastUpdateOpenNewDir && opendDirctory->IsParent(directory.Get()))
 				ImGui::SetNextItemOpen(true);
 
 			bool isNodeOpen = JImGuiImpl::TreeNodeEx(JCUtil::WstrToU8Str(directory->GetName()).c_str(), baseFlags);
@@ -540,21 +539,21 @@ namespace JinEngine
 			if (draggingResult.IsValid())
 			{
 				if (draggingResult->GetTypeInfo().IsChildOf<JDirectory>())
-					RequestMoveFile(directory, static_cast<JDirectory*>(draggingResult.Get()));
+					RequestMoveFile(directory, Core::ConnectChildUserPtr<JDirectory>(draggingResult));
 				else if (draggingResult->GetTypeInfo().IsChildOf<JResourceObject>())
-					RequestMoveFile(directory, static_cast<JResourceObject*>(draggingResult.Get()));
+					RequestMoveFile(directory, Core::ConnectChildUserPtr<JResourceObject>(draggingResult));
 			}
 			if (isSelected && canSelect)
 				SetTreeNodeColor(GetSelectedColorFactor() * -1);
 			if (isNodeOpen)
 			{
 				if (ImGui::IsItemClicked(0) && canSelect)
-					settingImpl->PushOpenNewDirBind(Core::GetUserPtr(directory));
+					settingImpl->PushOpenNewDirBind(directory);
 
 				const uint childDirCount = directory->GetChildernDirctoryCount();
 				for (uint i = 0; i < childDirCount; ++i)
 				{
-					JDirectory* child = directory->GetChildDirctory(i);
+					JUserPtr<JDirectory> child = directory->GetChildDirctory(i);
 					if (child == nullptr)
 						continue;
 					DirectoryViewOnScreen(child, canSelect);
@@ -604,7 +603,7 @@ namespace JinEngine
 				JPreviewScene* nowPreviewScene = GetPreviewScene(i);
 				if (nowPreviewScene != nullptr)
 				{
-					Core::JUserPtr<JObject> nowObject = nowPreviewScene->GetJObject();
+					JUserPtr<JObject> nowObject = nowPreviewScene->GetJObject();
 					if (!nowObject.IsValid())
 					{
 						hasInvaildScene = true;
@@ -680,9 +679,9 @@ namespace JinEngine
 					if (draggingResult.IsValid() && objType == J_OBJECT_TYPE::DIRECTORY_OBJECT)
 					{
 						if (draggingResult->GetTypeInfo().IsChildOf<JDirectory>())
-							RequestMoveFile(static_cast<JDirectory*>(nowObject.Get()), static_cast<JDirectory*>(draggingResult.Get()));
+							RequestMoveFile(Core::ConnectChildUserPtr<JDirectory>(nowObject), Core::ConnectChildUserPtr<JDirectory>(draggingResult));
 						else if (draggingResult->GetTypeInfo().IsChildOf<JResourceObject>())
-							RequestMoveFile(static_cast<JDirectory*>(nowObject.Get()), static_cast<JResourceObject*>(draggingResult.Get()));
+							RequestMoveFile(Core::ConnectChildUserPtr<JDirectory>(nowObject), Core::ConnectChildUserPtr<JResourceObject>(draggingResult));
 					}
 
 					ImGui::SetCursorPos(preCursor);
@@ -753,7 +752,7 @@ namespace JinEngine
 						{
 							using CreateImportedResourceF = JWindowDirectorySettingImpl::CreateImportedResourceF;
 
-							std::vector<JResourceObject*> res = JResourceObjectImporter::Instance().ImportResource(opendDirctory.Get(), pathData);
+							std::vector<JUserPtr<JResourceObject>> res = JResourceObjectImporter::Instance().ImportResource(opendDirctory, pathData);
 							auto createImpR = std::make_unique<CreateImportedResourceF::CompletelyBind>(*settingImpl->createImportResourceF,
 								this,
 								std::move(res));
@@ -767,28 +766,28 @@ namespace JinEngine
 			}
 			importFilePath.clear();
 		}
-		void JWindowDirectory::OpenNewDirectory(Core::JUserPtr<JDirectory> newOpendDirectory)
+		void JWindowDirectory::OpenNewDirectory(JUserPtr<JDirectory> newOpendDirectory)
 		{
 			if (!newOpendDirectory.IsValid())
 				return;
 
 			//window->DC.StateStorage->SetInt(id, is_open);
 			ClearPreviewGroup();
-			CreateDirectoryPreview(newOpendDirectory.Get(), false);
+			CreateDirectoryPreview(newOpendDirectory, false);
 
 			if (opendDirctory.IsValid())
-				DirActInterface::CloseDirectory(opendDirctory.Get());
+				DirActInterface::CloseDirectory(opendDirctory);
 			opendDirctory = newOpendDirectory;
-			DirActInterface::OpenDirectory(opendDirctory.Get());
+			DirActInterface::OpenDirectory(opendDirctory);
 			lastUpdateOpenNewDir = true;
 		}
-		void JWindowDirectory::CreateDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask)
+		void JWindowDirectory::CreateDirectoryPreview(const JUserPtr<JDirectory>& directory, const bool hasNameMask, const std::wstring& mask)
 		{
 			const uint existPreviewCount = GetPreviewSceneCount();
 			const uint directoryCount = (uint)directory->GetChildernDirctoryCount();
 			for (uint i = 0; i < directoryCount; ++i)
 			{
-				JDirectory* dir = directory->GetChildDirctory(i);
+				JUserPtr<JDirectory> dir = directory->GetChildDirctory(i);
 				if (dir == nullptr)
 					continue;
 
@@ -809,13 +808,13 @@ namespace JinEngine
 					if (hasOverlap)
 						continue;
 				}
-				CreatePreviewScene(Core::GetUserPtr(dir), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
+				CreatePreviewScene(dir, J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
 			}
 
 			const uint fileCount = (uint)directory->GetFileCount();
 			for (uint i = 0; i < fileCount; ++i)
 			{
-				JFile* file = directory->GetDirectoryFile(i); 
+				JUserPtr<JFile> file = directory->GetDirectoryFile(i);
 				if (file == nullptr)
 					continue;
 
@@ -839,12 +838,12 @@ namespace JinEngine
 				auto preview = CreatePreviewScene(file->TryGetResourceUser(), J_PREVIEW_DIMENSION::TWO_DIMENTIONAL);
 			}
 		}
-		void JWindowDirectory::CreateAllDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask)
+		void JWindowDirectory::CreateAllDirectoryPreview(const JUserPtr<JDirectory>& directory, const bool hasNameMask, const std::wstring& mask)
 		{
 			const uint fileCount = (uint)directory->GetFileCount();
 			for (uint i = 0; i < fileCount; ++i)
 			{
-				JFile* file = directory->GetDirectoryFile(i);
+				JUserPtr<JFile> file = directory->GetDirectoryFile(i);
 				if (file == nullptr)
 					continue;
 
@@ -858,7 +857,7 @@ namespace JinEngine
 			for (uint i = 0; i < childCount; ++i)
 				CreateAllDirectoryPreview(directory->GetChildDirctory(i), hasNameMask, mask);
 		}
-		void JWindowDirectory::RequestMoveFile(JDirectory* to, JObject* obj)
+		void JWindowDirectory::RequestMoveFile(const JUserPtr<JDirectory>& to, const JUserPtr<JObject>& obj)
 		{
 			std::string taskName;
 			std::string taskDesc;
@@ -867,10 +866,10 @@ namespace JinEngine
 			{
 				taskName = "Move directory";
 				taskDesc = JCUtil::WstrToU8Str(L"object name: " + obj->GetName() + L" " +
-					static_cast<JDirectory*>(obj)->GetParent()->GetName() + L" to " +  to->GetName());
+					static_cast<JDirectory*>(obj.Get())->GetParent()->GetName() + L" to " +  to->GetName());
 
-				auto doBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, std::move(to), std::move(obj));
-				auto undoBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, static_cast<JDirectory*>(obj)->GetParent(), std::move(obj));
+				auto doBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, JUserPtr<JDirectory>(to), JUserPtr<JObject>(obj));
+				auto undoBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, static_cast<JDirectory*>(obj.Get())->GetParent(), JUserPtr<JObject>(obj));
 				auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorTSetBindFuncEvStruct>
 					(taskName, taskDesc, GetOwnerPageType(), std::move(doBind), std::move(undoBind)));
 				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
@@ -879,25 +878,25 @@ namespace JinEngine
 			{
 				taskName = "Move file";
 				taskDesc = JCUtil::WstrToU8Str(L"object name: " + obj->GetName() + L" " +
-					static_cast<JResourceObject*>(obj)->GetDirectory()->GetName() + L" to " + to->GetName());
-				auto doBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, std::move(to), std::move(obj));
-				auto undoBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, static_cast<JResourceObject*>(obj)->GetDirectory(), std::move(obj));
+					static_cast<JResourceObject*>(obj.Get())->GetDirectory()->GetName() + L" to " + to->GetName());
+				auto doBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, JUserPtr<JDirectory>(to), JUserPtr<JObject>(obj));
+				auto undoBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, static_cast<JResourceObject*>(obj.Get())->GetDirectory(), JUserPtr<JObject>(obj));
 				auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorTSetBindFuncEvStruct>
 					(taskName, taskDesc, GetOwnerPageType(), std::move(doBind), std::move(undoBind)));
 				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
 			}
 		}
-		void JWindowDirectory::MoveFile(JDirectory* to, JObject* obj)
+		void JWindowDirectory::MoveFile(JUserPtr<JDirectory> to, JUserPtr<JObject> obj)
 		{
 			if (obj->GetObjectType() == J_OBJECT_TYPE::DIRECTORY_OBJECT)
 			{ 
-				DirRawInterface::MoveDirectory(static_cast<JDirectory*>(obj), to);
-				DestroyPreviewScene(Core::GetUserPtr(obj));
+				DirRawInterface::MoveDirectory(Core::ConnectChildUserPtr<JDirectory>(obj), to);
+				DestroyPreviewScene(obj);
 			}
 			else if (obj->GetObjectType() == J_OBJECT_TYPE::RESOURCE_OBJECT)
 			{ 
-				ResourceFileInterface::MoveFile(static_cast<JResourceObject*>(obj), to); 
-				DestroyPreviewScene(Core::GetUserPtr(obj));
+				ResourceFileInterface::MoveFile(Core::ConnectChildUserPtr<JResourceObject>(obj), to);
+				DestroyPreviewScene(obj);
 			}
 		}
 		void JWindowDirectory::DoSetFocus()noexcept
@@ -915,7 +914,7 @@ namespace JinEngine
 			RegisterEventListener(J_EDITOR_EVENT::MOUSE_CLICK);
 			if (!opendDirctory.IsValid())
 				opendDirctory = root;
-			CreateDirectoryPreview(opendDirctory.Get(), false);
+			CreateDirectoryPreview(opendDirctory, false);
 		}
 		void JWindowDirectory::DoDeActivate()noexcept
 		{

@@ -14,23 +14,23 @@ namespace JinEngine
 		class JIdenCreatorInterface
 		{
 		public:
-			static Core::JUserPtr<JIdentifier> Create(std::unique_ptr<Core::JDITypeDataBase>&& initData);
-			static Core::JUserPtr<JIdentifier> Create(std::unique_ptr<Core::JDITypeDataBase>&& initData, JIdentifierPrivate* pInterface);
-			static Core::JUserPtr<JIdentifier> CreateAndCopy(std::unique_ptr<Core::JDITypeDataBase>&& initData, JIdentifier* from);
+			static JUserPtr<JIdentifier> Create(std::unique_ptr<JDITypeDataBase>&& initData);
+			static JUserPtr<JIdentifier> Create(std::unique_ptr<JDITypeDataBase>&& initData, JIdentifierPrivate* pInterface);
+			static JUserPtr<JIdentifier> CreateAndCopy(std::unique_ptr<JDITypeDataBase>&& initData, JUserPtr<JIdentifier> from);
 		public:
-			static Core::JUserPtr<JIdentifier> CreateAndCopy(JGameObject* from, JGameObject* toParent);
-			static Core::JUserPtr<JIdentifier> CreateAndCopy(JComponent* from, JGameObject* toOwner);
-			static Core::JUserPtr<JIdentifier> CreateAndCopy(JDirectory* from, JDirectory* toParent);
+			static JUserPtr<JIdentifier> CreateAndCopy(JUserPtr<JGameObject> from, JUserPtr<JGameObject> toParent);
+			static JUserPtr<JIdentifier> CreateAndCopy(JUserPtr<JComponent> from, JUserPtr<JGameObject> toOwner);
+			static JUserPtr<JIdentifier> CreateAndCopy(JUserPtr<JDirectory> from, JUserPtr<JDirectory> toParent);
 		public:
 			template<typename T, typename ...Param>
-			static T* Create(Param&&... var)
+			static JUserPtr<T> Create(Param&&... var)
 			{
-				return static_cast<T*>(JIdenCreatorInterface::Create(std::make_unique<T::InitData>(std::forward<Param>(var)...)).Get());
+				return JUserPtr<T>::ConvertChild(JIdenCreatorInterface::Create(std::make_unique<T::InitData>(std::forward<Param>(var)...)));
 			}
 			template<typename T, typename ...Param>
-			static Core::JUserPtr<T> CreateRetUser(Param&&... var)
+			static T* CreateRetRaw(Param&&... var)
 			{
-				return Core::JUserPtr<T>::ConvertChildUser(JIdenCreatorInterface::Create(std::make_unique<T::InitData>(std::forward<Param>(var)...)));
+				return static_cast<T*>(JIdenCreatorInterface::Create(std::make_unique<T::InitData>(std::forward<Param>(var)...)).Get());
 			}
 		};
 	}

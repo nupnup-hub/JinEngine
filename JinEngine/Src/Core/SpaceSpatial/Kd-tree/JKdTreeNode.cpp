@@ -31,7 +31,7 @@ namespace JinEngine
 			//	JKdTreeNode::nodeType = J_KDTREE_NODE_TYPE::ROOT;
 		}
 		JKdTreeNode::~JKdTreeNode() {}
-		void JKdTreeNode::CreateDebugGameObject(JGameObject* parent, bool onlyLeafNode)noexcept
+		void JKdTreeNode::CreateDebugGameObject(const JUserPtr<JGameObject>& parent, bool onlyLeafNode)noexcept
 		{
 			if (debugGameObject == nullptr)
 			{
@@ -55,7 +55,7 @@ namespace JinEngine
 		{
 			if (debugGameObject != nullptr)
 			{
-				JGameObject::BeginDestroy(debugGameObject);
+				JGameObject::BeginDestroy(debugGameObject.Get());
 				debugGameObject = nullptr;
 			}
 		}
@@ -110,7 +110,7 @@ namespace JinEngine
 				}
 			}
 		}
-		JGameObject* JKdTreeNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
+		JUserPtr<JGameObject> JKdTreeNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
 		{
 			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
 			{
@@ -142,25 +142,25 @@ namespace JinEngine
 				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
 				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
 
-				JGameObject* res = nullptr;
+				JUserPtr<JGameObject> res = nullptr;
 				if (leftDist < rightDist)
 				{
 					if (leftRes)
 						res = left->IntersectFirst(ori, dir);
-					if (rightRes && !res)
+					if (rightRes && res == nullptr)
 						res = right->IntersectFirst(ori, dir);
 				}
 				else
 				{
 					if (rightRes)
 						res = right->IntersectFirst(ori, dir);
-					if (leftRes && !res)
+					if (leftRes && res == nullptr)
 						res = left->IntersectFirst(ori, dir);
 				}
 				return res;
 			}
 		}
-		void JKdTreeNode::IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res, std::vector<float>& distVec)const noexcept
+		void JKdTreeNode::IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<float>& distVec)const noexcept
 		{
 			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
 			{
@@ -177,7 +177,7 @@ namespace JinEngine
 							if (dist < distVec[j])
 							{
 								isHit = true;
-								JGameObject* tempObj = res[j];
+								JUserPtr<JGameObject> tempObj = res[j];
 								res[j] = innerGameObject[i];
 								res.push_back(tempObj);
 
@@ -219,7 +219,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JKdTreeNode::IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res, std::vector<float>& distVec)const noexcept
+		void JKdTreeNode::IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<float>& distVec)const noexcept
 		{
 			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
 			{
@@ -236,7 +236,7 @@ namespace JinEngine
 							if (dist > distVec[j])
 							{
 								isHit = true;
-								JGameObject* tempObj = res[j];
+								JUserPtr<JGameObject> tempObj = res[j];
 								res[j] = innerGameObject[i];
 								res.push_back(tempObj);
 
@@ -278,7 +278,7 @@ namespace JinEngine
 				}
 			}
 		}
-		void JKdTreeNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JGameObject*>& res)const noexcept
+		void JKdTreeNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
 			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
 			{
@@ -360,18 +360,18 @@ namespace JinEngine
 		{
 			return right;
 		}
-		std::vector<JGameObject*> JKdTreeNode::GetInnerGameObject()const noexcept
+		std::vector<JUserPtr<JGameObject>> JKdTreeNode::GetInnerGameObject()const noexcept
 		{
 			return innerGameObject;
 		}
-		std::vector<JGameObject*> JKdTreeNode::GetAreaInnerGameObject()const noexcept
+		std::vector<JUserPtr<JGameObject>> JKdTreeNode::GetAreaInnerGameObject()const noexcept
 		{
 			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
 				return innerGameObject;
 			else
 			{
-				std::vector<JGameObject*> leftRes = left->GetAreaInnerGameObject();
-				std::vector<JGameObject*> rightRes = right->GetAreaInnerGameObject();
+				std::vector<JUserPtr<JGameObject>> leftRes = left->GetAreaInnerGameObject();
+				std::vector<JUserPtr<JGameObject>> rightRes = right->GetAreaInnerGameObject();
 				leftRes.insert(leftRes.end(), rightRes.begin(), rightRes.end());
 				return leftRes;
 			}
@@ -489,23 +489,23 @@ namespace JinEngine
 		}
 		bool JKdTreeNode::HasGameObject(const size_t guid)noexcept
 		{
-			return JCUtil::GetJIdenIndex(innerGameObject, guid) != JCUtil::searchFail;
+			return JCUtil::GetTypeIndex(innerGameObject, guid) != JCUtil::searchFail;
 		}
-		void JKdTreeNode::AddInnerGameObject(JGameObject* newInnerGameObject)noexcept
+		void JKdTreeNode::AddInnerGameObject(const JUserPtr<JGameObject>& newInnerGameObject)noexcept
 		{
 			innerGameObject.push_back(newInnerGameObject);
 		}
-		void JKdTreeNode::AddInnerGameObject(const std::vector<JGameObject*>& newInnerGameObject)noexcept
+		void JKdTreeNode::AddInnerGameObject(const std::vector<JUserPtr<JGameObject>>& newInnerGameObject)noexcept
 		{
 			innerGameObject = newInnerGameObject;
 		}
 		void JKdTreeNode::RemoveInnerGameObject(const size_t guid)noexcept
 		{
-			int index = JCUtil::GetJIdenIndex(innerGameObject, guid);
+			int index = JCUtil::GetTypeIndex(innerGameObject, guid);
 			if (index != JCUtil::searchFail)
 				innerGameObject.erase(innerGameObject.begin() + index);
 		}
-		void JKdTreeNode::StuffInnerGameObject(std::vector<JGameObject*>& objList, uint& listIndex)
+		void JKdTreeNode::StuffInnerGameObject(std::vector<JUserPtr<JGameObject>>& objList, uint& listIndex)
 		{
 			const uint innerCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerCount; ++i)
@@ -535,7 +535,7 @@ namespace JinEngine
 				const uint innerCount = (uint)innerGameObject.size();
 				for (uint i = 0; i < innerCount; ++i)
 				{
-					JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
+					JUserPtr<JRenderItem> rItem = innerGameObject[i]->GetRenderItem();
 					if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
 						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 				}
@@ -553,7 +553,7 @@ namespace JinEngine
 				const uint innerCount = (uint)innerGameObject.size();
 				for (uint i = 0; i < innerCount; ++i)
 				{
-					JRenderItem* rItem = innerGameObject[i]->GetRenderItem();
+					JUserPtr<JRenderItem> rItem = innerGameObject[i]->GetRenderItem();
 					if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
 						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
 				}

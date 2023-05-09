@@ -22,13 +22,14 @@ namespace JinEngine
 			private:
 				friend class JAnimationController;
 			private: 
-				static JAnimationFSMdiagram* LoadAssetData(std::wifstream& stream, JFSMdiagramOwnerInterface* fsmOwner);	//load diagram data and create state
-				static J_FILE_IO_RESULT StoreAssetData(std::wofstream& stream, JAnimationFSMdiagram* diagram);
+				static JUserPtr<JAnimationFSMdiagram> LoadAssetData(std::wifstream& stream, JFSMdiagramOwnerInterface* fsmOwner);	//load diagram data and create state
+				static J_FILE_IO_RESULT StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMdiagram>& diagram);
 			};
 			class CreateInstanceInterface final : public JFSMdiagramPrivate::CreateInstanceInterface
 			{
 			private:
-				JOwnerPtr<JIdentifier> Create(std::unique_ptr<JDITypeDataBase>&& initData)final;
+				JOwnerPtr<JIdentifier> Create(JDITypeDataBase* initData)final;
+				void Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept final;
 				bool CanCreateInstance(JDITypeDataBase* initData)const noexcept final;
 			};
 			class UpdateInterface final
@@ -36,12 +37,12 @@ namespace JinEngine
 			private:
 				friend class JAnimationController;
 			private:
-				static void Initialize(JAnimationFSMdiagram* diagram, JAnimationUpdateData* updateData, const uint layerNumber)noexcept;
-				static void Enter(JAnimationFSMdiagram* diagram, JAnimationUpdateData* updateData, const uint layerNumber);
-				static void Update(JAnimationFSMdiagram* diagram, JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;
+				static void Initialize(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, const uint layerNumber)noexcept;
+				static void Enter(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, const uint layerNumber);
+				static void Update(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept;
 			};
 		public:
-			Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
+			JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
 		};
 	}
 }

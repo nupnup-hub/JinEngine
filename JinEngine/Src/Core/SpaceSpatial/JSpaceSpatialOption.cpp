@@ -6,8 +6,8 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		JSpaceSpatialOption::JSpaceSpatialOption(JGameObject* innerRoot, 
-			JGameObject* debugRoot,
+		JSpaceSpatialOption::JSpaceSpatialOption(JUserPtr<JGameObject> innerRoot,
+			JUserPtr<JGameObject> debugRoot,
 			bool isSpaceSpatialActivated,
 			bool isDebugActivated, 
 			bool isDebugLeafOnly,
@@ -61,11 +61,11 @@ namespace JinEngine
 		}
 		bool JSpaceSpatialOption::HasInnerRoot()const noexcept
 		{
-			return innerRoot != nullptr && Core::GetUserPtr(innerRoot).IsValid();
+			return innerRoot != nullptr && innerRoot.IsValid();
 		}
 		bool JSpaceSpatialOption::HasDebugRoot()const noexcept
 		{
-			return debugRoot != nullptr && Core::GetUserPtr(debugRoot).IsValid();
+			return debugRoot != nullptr && debugRoot.IsValid();
 		}
 		void JSpaceSpatialOption::Store(std::wofstream& stream)
 		{
@@ -76,7 +76,7 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"IsDebugActivated:", isDebugActivated);
 			JFileIOHelper::StoreAtomicData(stream, L"IsDebugLeafOnly:", isDebugLeafOnly);
 			JFileIOHelper::StoreAtomicData(stream, L"IsCullingActivated:", isCullingActivated);
-			if (innerRoot)
+			if (innerRoot.IsValid())
 			{
 				JFileIOHelper::StoreAtomicData(stream, L"hasInnerRoot:", true);
 				JFileIOHelper::StoreAtomicData(stream, L"innerGuid:", innerRoot->GetGuid());

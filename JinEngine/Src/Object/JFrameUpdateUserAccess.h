@@ -11,10 +11,10 @@ namespace JinEngine
 	class JFrameUpdateUserAccess
 	{
 	private:
-		Core::JUserPtr<Core::JIdentifier> iden;
+		JUserPtr<Core::JIdentifier> iden;
 		JFrameDirtyBase* dirtyBase;
 	public:
-		JFrameUpdateUserAccess(Core::JUserPtr<Core::JIdentifier> iden, JFrameDirtyBase* dirtyBase);
+		JFrameUpdateUserAccess(JUserPtr<Core::JIdentifier> iden, JFrameDirtyBase* dirtyBase);
 	public:
 		bool IsFrameDirted()const noexcept;
 		bool IsValid()const noexcept;

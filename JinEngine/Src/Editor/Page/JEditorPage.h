@@ -8,7 +8,7 @@ namespace JinEngine
 { 
 	namespace Core
 	{
-		class JIdentifier;
+		class Core::JIdentifier;
 	}
 	namespace Editor
 	{ 
@@ -76,7 +76,7 @@ namespace JinEngine
 			void EnterPage(int guiWindowFlag)noexcept;
 			void ClosePage()noexcept;  
 		public:
-			virtual bool IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj) noexcept = 0;
+			virtual bool IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj) noexcept = 0;
 		public:
 			void OpenWindow(const std::string& windowname)noexcept;
 			void OpenWindow(JEditorWindow* window)noexcept;

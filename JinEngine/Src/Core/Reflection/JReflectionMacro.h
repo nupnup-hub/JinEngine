@@ -1,5 +1,6 @@
 #pragma once    
 #include"../Pointer/JOwnerPtr.h"
+#include"../Empty/EmptyType.h"
 #include"../../Utility/JMacroUtility.h" 
 #include<type_traits> 
 
@@ -15,7 +16,6 @@ namespace JinEngine
 			public:
 				enum { value = 0 };
 			};
-
 			template<typename T>
 			struct Depth<T, std::void_t<typename T::ThisType>>
 			{
@@ -29,7 +29,6 @@ namespace JinEngine
 			public:
 				using Type = void;
 			};
-
 			template<typename T>
 			struct ParentClass<T, std::void_t<typename T::ThisType>>
 			{
@@ -37,11 +36,13 @@ namespace JinEngine
 				using Type = typename T::ThisType;
 			};
 
-#define IDEN_IMPL_BASE_CLASS JinEngine::Core::JIdentifierImplBase
-#define IDEN_BASE_CLASS JinEngine::Core::JIdentifier
 
+#define IDEN_IMPL_BASE_CLASS JinEngine::Core::JTypeImplBase
+#define IDEN_BASE_CLASS JinEngine::Core::JTypeBase
+
+#define CONVERT_INTERFACE_BASE_PTR(implName, baseImplName, baseInterfaceName) [](baseImplName* ptr) ->baseInterfaceName* { return static_cast<implName*>(ptr)->thisPointer.Get();}
 #define CONVERT_IMPL_BASE_PTR(baseImplName, interfaceName, baseInterfaceName) [](baseInterfaceName* ptr) ->baseImplName* { return static_cast<interfaceName*>(ptr)->impl.get();}
-
+ 
 
 		}
 
@@ -49,10 +50,29 @@ namespace JinEngine
 
 		//Has order dependecy
 		//type register 호출하기전에 선언되어있어야함
-#define REGISTER_CLASS_DEFAULT_ALLOCATOR private: static void InitAllocatorInfo(){}					 
+#define REGISTER_CLASS_DEFAULT_ALLOCATOR private: static void InitAllocatorInfo(){}		
 
 
-					//Has order dependecy
+#define REGISTER_CLASS_IDENTIFIER_LAZY_DESTRUCTION(waitTime)			\
+	private:												\
+		static void InitLazyDestructionInfo()				\
+		{													\
+			void(*executePtr)(JinEngine::Core::JTypeBase*) = [](JinEngine::Core::JTypeBase* iden) {JinEngine::Core::JIdentifier::BeginDestroy(static_cast<JinEngine::Core::JIdentifier*>(iden)); };\
+			bool(*canDestroyPtr)(JinEngine::Core::JTypeBase*) = [](JinEngine::Core::JTypeBase* iden)	\
+			{																		\
+				if constexpr(std::is_base_of_v<ThisType, JinEngine::JObject>)return !static_cast<JObject*>(iden)->HasFlag(OBJECT_FLAG_UNDESTROYABLE);\
+				else return true;													\
+			};																		\
+			ThisType::StaticTypeInfo().SetDestructionInfo(std::make_unique<JinEngine::Core::JLazyDestructionInfo>(waitTime, executePtr, canDestroyPtr));\
+		}																																	\
+
+
+#define REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION											\
+		REGISTER_CLASS_IDENTIFIER_LAZY_DESTRUCTION(20)												\
+
+
+
+//Has order dependecy
 #define REGISTER_CLASS_DEFINITION_TYPE(typeName, ...)														\
 																										\
 		public:																							\
@@ -79,6 +99,7 @@ namespace JinEngine
 #define REGISTER_IMPL_CLASS_INTERFACE_TYPE	using ThisInterfaceType = ThisType;
 #define REGISTER_INNER_CLASS_OUTER_TYPE	using OuterType = ThisType;
 
+
 #define REGISTER_CLASS_TYPE_INFO_CREATOR(typeName, ...)											\
 		private:																				\
 			inline static struct typeName##TypeInfoInstance										\
@@ -89,7 +110,7 @@ namespace JinEngine
 																								\
 
 
-#define REGISTER_CLASS_TYPE_INFO_CREATOR_IMPL(implName, ...)									\
+#define REGISTER_CLASS_TYPE_INFO_CREATOR_IMPL(implName, baseImplName, baseInterfaceName, ...)									\
 		private:																				\
 			inline static struct implName##TypeInfoInstance										\
 			{																					\
@@ -99,7 +120,8 @@ namespace JinEngine
 					static JTypeInfoRegister typeRegister{ #implName,							\
 						typeid(ThisInterfaceType).name(),										\
 						ThisInterfaceType::StaticTypeInfo(),									\
-						CONVERT_IMPL_BASE_PTR(IDEN_IMPL_BASE_CLASS, ThisInterfaceType, IDEN_BASE_CLASS) };\
+						CONVERT_INTERFACE_BASE_PTR(implName, baseImplName, baseInterfaceName),	\
+						CONVERT_IMPL_BASE_PTR(baseImplName, ThisInterfaceType, baseInterfaceName) };\
 				}																				\
 			}implName##TypeInfoInstance;														\
 
@@ -126,55 +148,35 @@ namespace JinEngine
 		public:																					\
 			static void* operator new(size_t size)												\
 			{																					\
-				if constexpr (std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)		\
-				{																				\
-					auto allocInterface = typeInfo.GetAllocationInterface();					\
-					if (allocInterface != nullptr)												\
-						return allocInterface->Allocate(size);									\
-					else                                                                        \
-						return ::operator new(size);											\
-				}																				\
-				else                                                                            \
+				auto allocInterface = typeInfo.GetAllocationInterface();						\
+				if (allocInterface != nullptr)													\
+					return allocInterface->Allocate(size);										\
+				else																			\
 					return ::operator new(size);												\
 			}																					\
 			static void* operator new[](size_t size)											\
 			{																					\
-				if constexpr (std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)		\
-				{																				\
-					auto allocInterface = typeInfo.GetAllocationInterface();					\
-					if (allocInterface != nullptr)												\
-						return allocInterface->Allocate(size);									\
-					else                                                                        \
-						return ::operator new(size);											\
-				}																				\
-				else                                                                            \
+				auto allocInterface = typeInfo.GetAllocationInterface();						\
+				if (allocInterface != nullptr)													\
+					return allocInterface->Allocate(size);										\
+				else																			\
 					return ::operator new(size);												\
 			}																					\
 			static void operator delete(void* p)												\
 			{																					\
-				if constexpr (std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)		\
-				{																				\
-					auto allocInterface = typeInfo.GetAllocationInterface();					\
-					if (allocInterface != nullptr)												\
-						allocInterface->DeAllocate(p);											\
-					else																		\
-						::operator delete(p);													\
-				}																				\
+				auto allocInterface = typeInfo.GetAllocationInterface();						\
+				if (allocInterface != nullptr)													\
+					allocInterface->DeAllocate(p);												\
 				else																			\
 					::operator delete(p);														\
 			}																					\
 			static void operator delete[](void* p, size_t size)									\
 			{																					\
-				if constexpr (std::is_base_of_v<JinEngine::Core::JIdentifier, ThisType>)		\
-				{																				\
-					auto allocInterface = typeInfo.GetAllocationInterface();					\
-					if (allocInterface != nullptr)												\
-						allocInterface->DeAllocate(p, size);									\
-					else																		\
-						::operator delete(p);													\
-				}																				\
+				auto allocInterface = typeInfo.GetAllocationInterface();						\
+				if (allocInterface != nullptr)													\
+					allocInterface->DeAllocate(p, size);										\
 				else																			\
-					::operator delete(p);													    \
+					::operator delete(p);														\
 			}																					\
 																								\
 
@@ -185,14 +187,14 @@ namespace JinEngine
 		REGISTER_CLASS_DEFAULT_ALLOCATOR															\
 		REGISTER_CLASS_TYPE_INFO_CREATOR(typeName, __VA_ARGS__)										\
 		REGISTER_CLASS_TYPE_FUNC(typeName, __VA_ARGS__)												\
-		REGISTER_CLASS_ALLOC_FUNC															\
+		REGISTER_CLASS_ALLOC_FUNC																	\
 																									
-																								
+
 #define REGISTER_CLASS_IDENTIFIER_LINE_IMPL(typeName, ...)										\
 		REGISTER_IMPL_CLASS_INTERFACE_TYPE														\
 		REGISTER_CLASS_DEFINITION_TYPE(typeName, __VA_ARGS__)									\
 		REGISTER_CLASS_DEFAULT_ALLOCATOR														\
-		REGISTER_CLASS_TYPE_INFO_CREATOR_IMPL(typeName, __VA_ARGS__)							\
+		REGISTER_CLASS_TYPE_INFO_CREATOR_IMPL(typeName, IDEN_IMPL_BASE_CLASS, IDEN_BASE_CLASS, __VA_ARGS__)							\
 		REGISTER_CLASS_TYPE_FUNC(typeName, __VA_ARGS__)											\
 		REGISTER_CLASS_ALLOC_FUNC																\
 
@@ -201,6 +203,14 @@ namespace JinEngine
 		REGISTER_CLASS_DEFINITION_TYPE(typeName, __VA_ARGS__)											\
 		REGISTER_CLASS_TYPE_INFO_CREATOR(typeName, __VA_ARGS__)											\
 		REGISTER_CLASS_TYPE_FUNC(typeName, __VA_ARGS__)													\
+
+
+#define REGISTER_CLASS_USE_ALLOCATOR(typeName, ...)														\
+		REGISTER_CLASS_DEFINITION_TYPE(typeName, __VA_ARGS__)											\
+		REGISTER_CLASS_DEFAULT_ALLOCATOR																\
+		REGISTER_CLASS_TYPE_INFO_CREATOR(typeName, __VA_ARGS__)											\
+		REGISTER_CLASS_TYPE_FUNC(typeName, __VA_ARGS__)													\
+		REGISTER_CLASS_ALLOC_FUNC																	\
 
 
 #define SEMICOLON ;
@@ -332,6 +342,7 @@ namespace JinEngine
 
 
 		}
+
 
 		//enum class n {...., Count}
 		//Added Count and Count name don't registeted

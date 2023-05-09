@@ -26,8 +26,8 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JEditorMenuBar> menuBar;
 		private:
-			Core::JUserPtr<JSkeletonAsset> skeleotnAsset;
-			Core::JUserPtr<JScene> avatarScene;
+			JUserPtr<JSkeletonAsset> skeleotnAsset;
+			JUserPtr<JScene> avatarScene;
 		private:
 			bool setWndOptionOnce = false;
 		public:
@@ -40,9 +40,9 @@ namespace JinEngine
 			void Initialize()final;
 			void UpdatePage()final;
 		public:
-			bool IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
+			bool IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
 		private:
-			bool StuffSkeletonAssetData(const Core::JUserPtr<Core::JIdentifier>& selectedObj);
+			bool StuffSkeletonAssetData(const JUserPtr<Core::JIdentifier>& selectedObj);
 		protected:
 			void DoSetClose()noexcept final;
 			void DoActivate()noexcept;

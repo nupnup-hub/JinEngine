@@ -8,7 +8,7 @@
 #include"../Directory/JDirectoryPrivate.h"
 #include"../../Utility/JCommonUtility.h"
 #include"../../Core/Guid/GuidCreator.h"
-#include"../../Core/Identity/JIdentifierImplBase.h"
+#include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Editor/Interface/JEditorObjectHandleInterface.h"
@@ -41,11 +41,13 @@ namespace JinEngine
 		static JResourceObjectEvent rEv;
 	}
 
-	class JResourceObject::JResourceObjectImpl : public Core::JIdentifierImplBase
+	class JResourceObject::JResourceObjectImpl : public Core::JTypeImplBase
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JResourceObjectImpl)
 	public:
-		JDirectory* directory;
+		JWeakPtr<JResourceObject> thisPointer;
+	public:
+		JUserPtr<JDirectory> directory;
 		const uint8 formatIndex;
 	public:
 		JResourceObjectImpl(const InitData& initData)
@@ -53,24 +55,24 @@ namespace JinEngine
 		{}
 	public:
 		static std::wstring GetCacheFilePath(JResourceObject* rObj) noexcept
-		{
+		{ 
 			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(rObj->GetGuid()) + Core::JFileConstant::GetCacheFileFormat();
 		}
 	public:
-		static bool DoCopy(JResourceObject* from, JResourceObject* to)
+		static bool DoCopy(const JUserPtr<JResourceObject>& from, const JUserPtr<JResourceObject>& to)
 		{
 			bool isAct = to->IsActivated();
 			if (isAct)
 				to->DeActivate();
 
 			//DestroyJFile(to->GetGuid());
-			DeleteRFile(to);
+			DeleteRFile(to.Get());
 			DoCopyRFile(from, to->GetDirectory(), true, nullptr);
 			if (isAct)
 				to->Activate();
 			return true;
 		}
-		static JFile* DoCopyRFile(JResourceObject* from, JDirectory* toDir, bool setNewInnderGuid, JFile* existingFile)
+		static JUserPtr<JFile> DoCopyRFile(const JUserPtr<JResourceObject>& from, const JUserPtr<JDirectory>& toDir, bool setNewInnderGuid, JFile* existingFile)
 		{
 			size_t guid = 0;
 			std::wstring name;
@@ -170,7 +172,7 @@ namespace JinEngine
 			_wremove(rObj->GetMetaFilePath().c_str());
 			DestroyJFile(rObj->GetGuid());
 		}
-		static void MoveRFile(JResourceObject* from, JDirectory* toDir)
+		static void MoveRFile(const JUserPtr<JResourceObject>& from, const JUserPtr<JDirectory>& toDir)
 		{
 			if (toDir == nullptr || toDir->GetGuid() == from->impl->directory->GetGuid())
 				return;
@@ -181,7 +183,7 @@ namespace JinEngine
 			DestroyJFile(from->GetGuid());
 			from->impl->directory = toDir;
 			CreateJFile(JFileInitData{ from }, from->impl->directory);
-			ConvertToActFileData(from);
+			from->impl->ConvertToActFileData();
 
 			const std::wstring name = from->impl->directory->MakeUniqueFileName(from->GetName(), from->GetFormat(), from->GetGuid());
 			if (name != from->GetName())
@@ -193,25 +195,25 @@ namespace JinEngine
 			MoveFileExW(prePath.c_str(), newPath.c_str(), MOVEFILE_WRITE_THROUGH);
 			MoveFileExW(preMethPath.c_str(), newMetaPath.c_str(), MOVEFILE_WRITE_THROUGH);
 		}
-		static void CreateCacheFile(JResourceObject* rObj)noexcept
+		void CreateCacheFile()noexcept
 		{
-			JResourceObject::StoreData storeData(rObj);
-			static_cast<JResourceObjectPrivate&>(rObj->GetPrivateInterface()).GetAssetDataIOInterface().StoreAssetData(&storeData);
-			if (!RTypeCommonCall::GetRTypeHint(rObj->GetResourceType()).isFixedAssetFile)
-				JFileIOHelper::CombineFile(std::vector<std::wstring>{rObj->GetMetaFilePath(), rObj->GetPath()}, GetCacheFilePath(rObj));
+			JResourceObject::StoreData storeData(thisPointer);
+			static_cast<JResourceObjectPrivate&>(thisPointer->GetPrivateInterface()).GetAssetDataIOInterface().StoreAssetData(&storeData);
+			if (!RTypeCommonCall::GetRTypeHint(thisPointer->GetResourceType()).isFixedAssetFile)
+				JFileIOHelper::CombineFile(std::vector<std::wstring>{thisPointer->GetMetaFilePath(), thisPointer->GetPath()}, GetCacheFilePath(thisPointer.Get()));
 			else
-				JFileIOHelper::CopyFile(rObj->GetMetaFilePath(), GetCacheFilePath(rObj));
+				JFileIOHelper::CopyFile(thisPointer->GetMetaFilePath(), GetCacheFilePath(thisPointer.Get()));
 		}
 	public: 
-		static void ConvertToActFileData(JResourceObject* rObj) noexcept
+		void ConvertToActFileData() noexcept
 		{
-			JDirectoryPrivate::FileInterface::ConvertToActFileData(rObj);
+			JDirectoryPrivate::FileInterface::ConvertToActFileData(thisPointer);
 		}
-		static void ConvertToDeActFileData(const size_t guid) noexcept
+		void ConvertToDeActFileData() noexcept
 		{
-			JDirectoryPrivate::FileInterface::ConvertToDeActFileData(guid);
+			JDirectoryPrivate::FileInterface::ConvertToDeActFileData(thisPointer->GetGuid());
 		}
-		static JFile* CreateJFile(const JFileInitData& initData, JDirectory* owner)
+		static JUserPtr<JFile> CreateJFile(const JFileInitData& initData, const JUserPtr<JDirectory>& owner)
 		{
 			return JDirectoryPrivate::FileInterface::CreateJFile(initData, owner);
 		}
@@ -219,12 +221,21 @@ namespace JinEngine
 		{
 			return JDirectoryPrivate::FileInterface::DestroyJFile(guid);
 		}
+	public:
+		void RegisterThisPointer(JResourceObject* rObj)
+		{
+			thisPointer = Core::GetUserPtr(rObj);
+		}
+		static void RegisterTypeData()
+		{
+			IMPL_REALLOC_BIND(JResourceObject::JResourceObjectImpl, thisPointer)
+		}
 	}; 
 	 
 	JResourceObject::InitData::InitData(const JTypeInfo& initTypeInfo,
 		const uint8 formatIndex,
 		const J_RESOURCE_TYPE rType,
-		JDirectory* directory)
+		const JUserPtr<JDirectory>& directory)
 		:JObject::InitData(initTypeInfo), formatIndex(formatIndex), rType(rType), directory(directory)
 	{
 		name = directory->MakeUniqueFileName(name, RTypeCommonCall::GetFormat(rType, formatIndex), guid);
@@ -233,7 +244,7 @@ namespace JinEngine
 		const size_t guid,
 		const uint8 formatIndex,
 		const J_RESOURCE_TYPE rType,
-		JDirectory* directory)
+		const JUserPtr<JDirectory>& directory)
 		: JObject::InitData(initTypeInfo, guid), formatIndex(formatIndex), rType(rType), directory(directory)
 	{
 		name = directory->MakeUniqueFileName(name, RTypeCommonCall::GetFormat(rType, formatIndex), guid);
@@ -244,7 +255,7 @@ namespace JinEngine
 		const J_OBJECT_FLAG flag,
 		const uint8 formatIndex,
 		const J_RESOURCE_TYPE rType,
-		JDirectory* directory)
+		const JUserPtr<JDirectory>& directory)
 		: JObject::InitData(initTypeInfo, name, guid, flag), formatIndex(formatIndex), rType(rType), directory(directory)
 	{
 		InitData::name = directory->MakeUniqueFileName(name, GetFormat(), guid);
@@ -262,7 +273,7 @@ namespace JinEngine
 		return RTypeCommonCall::GetFormat(rType, formatIndex);
 	}
 
-	JResourceObject::LoadData::LoadData(JDirectory* directory, const Core::JAssetFileLoadPathData& pathData)
+	JResourceObject::LoadData::LoadData(const JUserPtr<JDirectory>& directory, const Core::JAssetFileLoadPathData& pathData)
 		:directory(directory), pathData(pathData)
 	{}
 	JResourceObject::LoadData::~LoadData()
@@ -272,7 +283,7 @@ namespace JinEngine
 		return directory != nullptr;
 	}
  
-	JResourceObject::StoreData::StoreData(JResourceObject* jRobj)
+	JResourceObject::StoreData::StoreData(const JUserPtr<JResourceObject>& jRobj)
 		:JObject::StoreData(jRobj)
 	{} 
 
@@ -315,7 +326,7 @@ namespace JinEngine
 		}
 		return GetInvalidFormatIndex();
 	}
-	JDirectory* JResourceObject::GetDirectory()const noexcept
+	JUserPtr<JDirectory> JResourceObject::GetDirectory()const noexcept
 	{
 		return impl->directory;
 	}
@@ -384,6 +395,13 @@ namespace JinEngine
 	using FileInterface = JResourceObjectPrivate::FileInterface;
 	using DestroyInstanceInterfaceEx = JResourceObjectPrivate::DestroyInstanceInterfaceEx;
 
+
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		JResourceObject* rObj = static_cast<JResourceObject*>(createdPtr);
+		rObj->impl->RegisterThisPointer(rObj);
+	}
 	void CreateInstanceInterface::SetValidInstance(Core::JIdentifier* createdPtr)noexcept
 	{
 		JResourceObject* rObj = static_cast<JResourceObject*>(createdPtr);
@@ -392,9 +410,9 @@ namespace JinEngine
 			const bool hasJFile = JDirectory::SearchFile(rObj->GetGuid()) != nullptr;
 			if (!hasJFile)
 				JResourceObject::JResourceObjectImpl::CreateJFile(JFileInitData{ rObj }, rObj->impl->directory);
-			JResourceObject::JResourceObjectImpl::ConvertToActFileData(rObj);
+			rObj->impl->ConvertToActFileData(); 
 			 
-			JResourceObject::StoreData storeData(rObj);
+			JResourceObject::StoreData storeData(Core::GetUserPtr(rObj));
 			auto& rPrivate = static_cast<JResourceObjectPrivate&>(rObj->GetPrivateInterface());
 			if (!rObj->HasFile())
 				rPrivate.GetAssetDataIOInterface().StoreAssetData(&storeData);
@@ -417,17 +435,19 @@ namespace JinEngine
 		}
 	}
 	void CreateInstanceInterface::TryDestroyUnUseData(Core::JIdentifier* createdPtr)noexcept{}
-	bool CreateInstanceInterface::Copy(Core::JIdentifier* from, Core::JIdentifier* to) noexcept
+	bool CreateInstanceInterface::Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept
 	{
 		const bool canCopy = CanCopy(from, to) && from->GetTypeInfo().IsChildOf(JResourceObject::StaticTypeInfo());
 		if (!canCopy)
 			return false;
 
-		return JResourceObject::JResourceObjectImpl::DoCopy(static_cast<JResourceObject*>(from), static_cast<JResourceObject*>(to));
+		return JResourceObject::JResourceObjectImpl::DoCopy(Core::ConvertChildUserPtr<JResourceObject>(from), Core::ConvertChildUserPtr<JResourceObject>(to));
 	}
  
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
 	{
+		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
+
 		JResourceObject* rObj = static_cast<JResourceObject*>(ptr);
 		auto rTypeHint = RTypeCommonCall::GetRTypeHint(rObj->GetResourceType());
 		rEv.NotifyEraseEvent(rObj);	  
@@ -452,7 +472,7 @@ namespace JinEngine
 		//file이 손상된 경우 혹은 리소스를 엔진에서 완전 삭제할시 다시 불러낼 수 없다
 		if (hasFile)
 		{
-			JResourceObject::JResourceObjectImpl::ConvertToDeActFileData(rObj->GetGuid());
+			rObj->impl->ConvertToDeActFileData(); 
 			if (canCreateCache && JApplicationEngine::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
 			{
 				if (JEditorModifedObjectInterface{}.IsModified(rObj->GetGuid()))
@@ -460,11 +480,11 @@ namespace JinEngine
 					if (!rObj->IsActivated())
 					{
 						rObj->Activate();
-						rObj->impl->CreateCacheFile(rObj);
+						rObj->impl->CreateCacheFile();
 						rObj->DeActivate();
 					}
 					else
-						rObj->impl->CreateCacheFile(rObj);
+						rObj->impl->CreateCacheFile();
 				}
 			}
 		}
@@ -482,11 +502,11 @@ namespace JinEngine
 		if (rObj->IsActivated())
 			rObj->DeActivate();
 	}
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(JDirectory* owner, const Core::JAssetFileLoadPathData& pathData)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(const JUserPtr<JDirectory>& owner, const Core::JAssetFileLoadPathData& pathData)
 	{
 		return std::make_unique<JResourceObject::LoadData>(owner, pathData);
 	}
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateStoreAssetDIDate(JResourceObject* rObj)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateStoreAssetDIDate(const JUserPtr<JResourceObject>& rObj)
 	{
 		return std::make_unique<JResourceObject::StoreData>(rObj);
 	}
@@ -522,26 +542,27 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		auto rStore = static_cast<JResourceObject::StoreData*>(data);
-		JResourceObject* rObj = static_cast<JResourceObject*>(rStore->obj);
-		 
+		JUserPtr<JResourceObject> rUser;
+		rUser.ConnnectChild(rStore->obj);
+
 		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
  
-		JFileIOHelper::StoreObjectIden(stream, rObj);
+		JFileIOHelper::StoreObjectIden(stream, rUser.Get());
 
-		stream << Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>() << (int)rObj->GetResourceType() << '\n';
-		stream << Core::JFileConstant::StreamFormatSymbol() << rObj->GetFormat() << '\n';
-		stream << Core::JFileConstant::StreamFormatIndexSymbol() << rObj->GetFormatIndex() << '\n';
+		stream << Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>() << (int)rUser->GetResourceType() << '\n';
+		stream << Core::JFileConstant::StreamFormatSymbol() << rUser->GetFormat() << '\n';
+		stream << Core::JFileConstant::StreamFormatIndexSymbol() << rUser->GetFormatIndex() << '\n';
 		if (closeSream)
 			stream.close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	JFile* FileInterface::CopyJFile(JResourceObject* from, JDirectory* toDir, bool setNewInnderGuid)noexcept
+	JUserPtr<JFile> FileInterface::CopyJFile(const JUserPtr<JResourceObject>& from, const JUserPtr<JDirectory>& toDir, bool setNewInnderGuid)noexcept
 	{
 		return JResourceObject::JResourceObjectImpl::DoCopyRFile(from, toDir, setNewInnderGuid, nullptr);
 	}
-	void FileInterface::MoveFile(JResourceObject* rObj, JDirectory* toDir)noexcept
+	void FileInterface::MoveFile(const JUserPtr<JResourceObject>& rObj, const JUserPtr<JDirectory>& toDir)noexcept
 	{
 		JResourceObject::JResourceObjectImpl::MoveRFile(rObj, toDir);
 	}

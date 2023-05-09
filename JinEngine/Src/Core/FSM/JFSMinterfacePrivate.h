@@ -9,12 +9,12 @@ namespace JinEngine
 		class JFSMinterfacePrivate : public JIdentifierPrivate
 		{
 		public:
-			class CreateInstanceInterface : public Core::JIdentifierPrivate::CreateInstanceInterface
+			class CreateInstanceInterface : public JIdentifierPrivate::CreateInstanceInterface
 			{
 			private:
-				bool Copy(JIdentifier* from, JIdentifier* to)final;
+				bool Copy(JUserPtr<JIdentifier> from, JUserPtr<JIdentifier> to)final;
 			protected:
-				bool CanCopy(Core::JIdentifier* from, Core::JIdentifier* to)noexcept final;
+				bool CanCopy(JUserPtr<JIdentifier> from, JUserPtr<JIdentifier> to)noexcept final;
 			};   
 		};
 	}

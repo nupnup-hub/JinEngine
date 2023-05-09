@@ -2,6 +2,7 @@
 #include"JTypeInfo.h"
 #include"JEnumInfo.h"
 #include"../JDataType.h"
+#include"../Time/JGameTimer.h"
 #include"../../Object/GameObject/JGameObject.h"
 #include"../../Object/Component/JComponent.h"
 #include"../../Object/Resource/JResourceObject.h"
@@ -54,13 +55,13 @@ namespace JinEngine
 		{
 			return jType.typeVec;
 		}
-		std::vector<JTypeInfo*> JReflectionInfoImpl::GetDerivedTypeInfo(const JTypeInfo& baseType)const noexcept
+		std::vector<JTypeInfo*> JReflectionInfoImpl::GetDerivedTypeInfo(const JTypeInfo& baseType, const bool containBaseType)const noexcept
 		{
 			std::vector<JTypeInfo*> res;
 			const uint typeCount = (uint)jType.typeVec.size();
 			for (uint i = 0; i < typeCount; ++i)
 			{
-				if (jType.typeVec[i]->IsA(baseType))
+				if (!containBaseType && jType.typeVec[i]->IsA(baseType))
 					continue;
 
 				if (jType.typeVec[i]->IsChildOf(baseType))
@@ -89,9 +90,9 @@ namespace JinEngine
 			for (auto& data : typeVec)
 				data->ExecuteTypeCallOnece();
 			 
-			std::set<size_t> allocatedType;
+			std::set<size_t> registeredType;
 			JGameObject::StaticTypeInfo().RegisterAllocation();
-			allocatedType.emplace(JGameObject::StaticTypeInfo().TypeGuid());
+			registeredType.emplace(JGameObject::StaticTypeInfo().TypeGuid());
 
 			auto componentTypeVec = GetDerivedTypeInfo(JComponent::StaticTypeInfo());
 			for (auto& data : componentTypeVec)
@@ -99,7 +100,8 @@ namespace JinEngine
 				if (!data->IsAbstractType())
 				{
 					data->RegisterAllocation();
-					allocatedType.emplace(data->TypeGuid());
+					data->RegisterLazyDestructionInfo();
+					registeredType.emplace(data->TypeGuid());
 				}
 			}
 
@@ -113,27 +115,60 @@ namespace JinEngine
 					if (!data->IsAbstractType())
 					{
 						data->RegisterAllocation();
-						allocatedType.emplace(data->TypeGuid());
+						data->RegisterLazyDestructionInfo();
+						registeredType.emplace(data->TypeGuid());
 					}
 				}
 			}
 
-			auto restTypeVec = GetDerivedTypeInfo(JIdentifier::StaticTypeInfo());
-			for (auto& data : restTypeVec)
+			auto idenTypeVec = GetDerivedTypeInfo(Core::JIdentifier::StaticTypeInfo());
+			for (auto& data : idenTypeVec)
 			{
-				if (!data->IsAbstractType() && allocatedType.find(data->TypeGuid()) == allocatedType.end())
+				if (!data->IsAbstractType() && registeredType.find(data->TypeGuid()) == registeredType.end())
 				{
 					data->RegisterAllocation();
-					allocatedType.emplace(data->TypeGuid());
+					data->RegisterLazyDestructionInfo();
+					registeredType.emplace(data->TypeGuid());
 				}
 			}
+			for (auto& data : typeVec)
+			{
+				if (!data->IsAbstractType() && registeredType.find(data->TypeGuid()) == registeredType.end())
+				{
+					data->RegisterAllocation();
+					data->RegisterLazyDestructionInfo();
+					registeredType.emplace(data->TypeGuid());
+				}
+				if (data->CanUseLazyDestruction())
+					jLazy.lazyTypeVec.push_back(data);
+			}
+
+			jLazy.timeVec.resize(jLazy.lazyTypeVec.size());
+			for (auto& data : jLazy.timeVec)
+				data = 0;
+
+			for (auto& data : typeVec)
+				data->EndRegister();
 			callOnce = true;
 		}
 		void JReflectionInfoImpl::Clear()
 		{
-			auto typeVec = GetDerivedTypeInfo(JIdentifier::StaticTypeInfo());
+			auto typeVec = GetDerivedTypeInfo(Core::JIdentifier::StaticTypeInfo());
 			for (auto& data : typeVec)
 				data->DeRegisterAllocation();
+		}
+		void JReflectionInfoImpl::Update()
+		{   
+			jLazy.lazyTypeVec[lazyUpdateIndex]->UpdateLazyDestruction(jLazy.timeVec[lazyUpdateIndex]);
+			++lazyUpdateIndex;
+			if (lazyUpdateIndex >= jLazy.lazyTypeVec.size())
+				lazyUpdateIndex = 0;
+
+			float deltaTime = JEngineTimer::Data().DeltaTime();
+			for (auto& data : jLazy.timeVec)
+				data += deltaTime;
+
+			jLazy.timeVec[lazyUpdateIndex] = 0;
 		}
 	}
 }

@@ -13,14 +13,17 @@ namespace JinEngine
 		{
 		private:
 			friend class Core::JIdenCreatorInterface; 
+		protected:
+			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept override;
 		private:
 			void RegisterCash(Core::JIdentifier* createdPtr)noexcept override; 
 			void SetValidInstance(Core::JIdentifier* createdPtr)noexcept override;
 		}; 
 		class DestroyInstanceInterface : public JObjectPrivate::DestroyInstanceInterface
 		{
-		private:
+		protected:
 			void Clear(Core::JIdentifier* ptr, const bool isForced) override;
+		private:
 			void SetInvalidInstance(Core::JIdentifier* ptr)noexcept override;
 			void DeRegisterCash(Core::JIdentifier* ptr)noexcept override;
 		};
@@ -29,10 +32,10 @@ namespace JinEngine
 		private: 
 			friend class JGameObjectPrivate;
 		private:
-			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(JGameObject* invoker, std::wifstream& stream);
-			static std::unique_ptr<Core::JDITypeDataBase> CreateStoreAssetDIData(JComponent* comp, std::wofstream& stream);
+			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(const JUserPtr<JGameObject>& invoker, std::wifstream& stream);
+			static std::unique_ptr<Core::JDITypeDataBase> CreateStoreAssetDIData(const JUserPtr<JComponent>& comp, std::wofstream& stream);
 		private:
-			virtual Core::JIdentifier* LoadAssetData(Core::JDITypeDataBase* data) = 0;
+			virtual JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data) = 0;
 			virtual Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data) = 0;
 		};
 		class ActivateInterface final
@@ -41,8 +44,8 @@ namespace JinEngine
 			friend class JGameObject;
 			friend class JGameObjectPrivate;
 		private:
-			static void Activate(JComponent* ptr)noexcept;
-			static void DeActivate(JComponent* ptr)noexcept;
+			static void Activate(const JUserPtr<JComponent>& ptr)noexcept;
+			static void DeActivate(const JUserPtr<JComponent>& ptr)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept override;

@@ -2,6 +2,7 @@
 #include"../../JEditorWindow.h" 
 #include"../../../Interface/JEditorObjectHandleInterface.h" 
 #include"../../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
+#include"../../../../Object/Resource/Skeleton/Avatar/JAvatar.h"
 #include"../../../../Utility/JVector.h"
 #include<vector>
 #include<bitset>
@@ -35,8 +36,8 @@ namespace JinEngine
 			SetAllJointRefByAutoF::Functor setAllJointRefByAutoFunctor;
 			ClearJointRefF::Functor clearJointRefFunctor;
 		private: 
-			Core::JUserPtr<JSkeletonAsset> targetSkeleton; 
-			std::unique_ptr<JAvatar> targetAvatar;
+			JUserPtr<JSkeletonAsset> targetSkeleton; 
+			JAvatar targetAvatar;
 
 			bool hasAvatar = false;
 			bool isOpenAvatarSetting = false;
@@ -58,7 +59,7 @@ namespace JinEngine
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:			  
-			void Initialize(const Core::JUserPtr<JSkeletonAsset>& newTargetSkeleton)noexcept;
+			void Initialize(const JUserPtr<JSkeletonAsset>& newTargetSkeleton)noexcept;
 			void UpdateWindow()final;
 		private:
 			//Build Gui

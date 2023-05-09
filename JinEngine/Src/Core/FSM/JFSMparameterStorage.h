@@ -1,5 +1,6 @@
 #pragma once 
 #include"JFSMparameterStorageAccess.h"
+#include"../Reflection/JTypeBase.h"
 #include<vector>
 #include<memory>
 #include<unordered_map>
@@ -11,20 +12,24 @@ namespace JinEngine
 		class JFSMparameter;
 		class JFSMdiagram; 
 
-		class JFSMparameterStorageInterface
+		class JFSMparameterStoragePrivate
 		{
-		private:
-			friend class JFSMparameter;
 		public:
-			virtual ~JFSMparameterStorageInterface() = default;
-		private:
-			virtual bool AddParameter(JFSMparameter* fsmCondition)noexcept = 0;
-			virtual bool RemoveParameter(JFSMparameter* fsmCondition)noexcept = 0;
+			class OwnTypeInterface
+			{
+			private:
+				friend class JFSMparameter;
+			private:
+				static bool AddParameter(const JUserPtr<JFSMparameterStoragePublicAccess>& storagePA, const JUserPtr<JFSMparameter>& fsmParameter)noexcept;
+				static bool RemoveParameter(const JUserPtr<JFSMparameterStoragePublicAccess>& storagePA, const JUserPtr<JFSMparameter>& fsmParameter)noexcept;
+			};
 		};
 
-		class JFSMparameterStorage : public JFSMparameterStorageManagerAccess, 
-			public JFSMparameterStorageInterface
+		class JFSMparameterStorage : public JFSMparameterStorageUserAccess
 		{
+			REGISTER_CLASS_USE_ALLOCATOR(JFSMparameterStorage)
+		private:
+			friend class JFSMparameterStoragePrivate;
 		public:
 			struct StorageUser
 			{
@@ -39,32 +44,32 @@ namespace JinEngine
 		public:
 			static constexpr uint maxNumberOfParameter = 250;
 		private:
-			std::vector<JFSMparameter*> parameterVec;
-			std::unordered_map<size_t, JFSMparameter*> parameterCashMap;
-			std::vector<std::unique_ptr<StorageUser>>storageUser;
+			JUserPtr<Core::JIdentifier> owner;
+		private:
+			std::vector<JUserPtr<JFSMparameter>> parameterVec; 
+			std::vector<std::unique_ptr<StorageUser>>storageUser; 
+		private:
 			const size_t guid;
 		public:
-			JFSMparameterStorage();
+			JFSMparameterStorage(const JUserPtr<Core::JIdentifier>& owner);
 			~JFSMparameterStorage();
 		public:
-			size_t GetStorageGuid()const noexcept;
+			JUserPtr<Core::JIdentifier> GetOwner()const noexcept;
+			size_t GetGuid()const noexcept;
 			std::wstring GetParameterUniqueName(const std::wstring& initName)const noexcept;
 			uint GetParameterCount()const noexcept;
 			uint GetParameterMaxCount()const noexcept;
-			JFSMparameter* GetParameter(const size_t guid)const noexcept;
-			JFSMparameter* GetParameterByIndex(const uint index)const noexcept;
-			std::vector< JFSMparameter*> GetParameterVec()const noexcept;
+			JUserPtr<JFSMparameter> GetParameter(const size_t guid)const noexcept;
+			JUserPtr<JFSMparameter> GetParameterByIndex(const uint index)const noexcept;
+			std::vector<JUserPtr<JFSMparameter>> GetParameterVec()const noexcept;
 		public:
 			bool AddUser(JFSMparameterStorageUserInterface* newUser, const size_t guid)noexcept;
 			bool RemoveUser(JFSMparameterStorageUserInterface* newUser, const size_t guid)noexcept;
-		private:
-			bool AddParameter(JFSMparameter* fsmParameter)noexcept final;
-			bool RemoveParameter(JFSMparameter* fsmParameter)noexcept final;
 		public:
 			void Clear();
 		public:
-			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
-			J_FILE_IO_RESULT LoadData(std::wifstream& stream);
+			static J_FILE_IO_RESULT StoreData(std::wofstream& stream, const JUserPtr< JFSMparameterStorage>& storage);
+			static J_FILE_IO_RESULT LoadData(std::wifstream& stream, const JUserPtr< JFSMparameterStorage>& storage);
 		};
 	}
 }

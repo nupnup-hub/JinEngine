@@ -20,11 +20,11 @@ namespace JinEngine
 
 		//fsm object can't copy
 		using CreateInstanceInterface = JFSMinterfacePrivate::CreateInstanceInterface; 
-		bool CreateInstanceInterface::Copy(Core::JIdentifier* from, Core::JIdentifier* to)
+		bool CreateInstanceInterface::Copy(JUserPtr<JIdentifier> from, JUserPtr<JIdentifier> to)
 		{
 			return false;
 		}
-		bool CreateInstanceInterface::CanCopy(Core::JIdentifier* from, Core::JIdentifier* to)noexcept
+		bool CreateInstanceInterface::CanCopy(JUserPtr<JIdentifier> from, JUserPtr<JIdentifier> to)noexcept
 		{
 			return false;
 		}

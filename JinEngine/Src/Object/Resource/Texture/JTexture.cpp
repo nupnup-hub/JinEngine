@@ -5,7 +5,7 @@
 #include"../JResourceObjectImporter.h"
 #include"../../Directory/JDirectory.h"
 #include"../../../Core/Identity/JIdenCreator.h"
-#include"../../../Core/Identity/JIdentifierImplBase.h"
+#include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Utility/JCommonUtility.h"
@@ -24,19 +24,18 @@ namespace JinEngine
 		static JTexturePrivate tPrivate;
 	}
  
-	class JTexture::JTextureImpl : public Core::JIdentifierImplBase,
+	class JTexture::JTextureImpl : public Core::JTypeImplBase,
 		public JClearableInterface, 
 		public Graphic::JGraphicResourceInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTextureImpl)
 	public:
-		JTexture* thisTex = nullptr; 
+		JWeakPtr<JTexture> thisPointer = nullptr;
 	public:
 		Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer = nullptr;
 		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 	public:
-		JTextureImpl(const InitData& initData, JTexture* thisTex)
-			:thisTex(thisTex)
+		JTextureImpl(const InitData& initData, JTexture* thisTexRaw)
 		{
 			if (IsValidTextureType(initData.textureType))
 				textureType = initData.textureType;
@@ -44,14 +43,6 @@ namespace JinEngine
 				textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 		}
 		~JTextureImpl() {}
-	public:
-		void Initialize(const InitData& initData)
-		{
-			if (!thisTex->HasFile())
-				ImportTexture(initData.oridataPath);
-			ReadTextureData();
-			thisTex->SetValid(true);
-		}
 	public:
 		uint GetTextureWidth()const noexcept
 		{
@@ -67,7 +58,7 @@ namespace JinEngine
 			if (textureType != newTextureType)
 			{
 				textureType = newTextureType;
-				if (thisTex->IsValid())
+				if (thisPointer->IsValid())
 				{
 					ClearResource();
 					StuffResource();
@@ -82,20 +73,20 @@ namespace JinEngine
 	public:
 		void StuffResource()
 		{
-			if (!thisTex->IsValid())
+			if (!thisPointer->IsValid())
 			{
 				if (ReadTextureData())
-					thisTex->SetValid(true);
+					thisPointer->SetValid(true);
 			}
 		}
 		void ClearResource()
 		{
-			if (thisTex->IsValid())
+			if (thisPointer->IsValid())
 			{
 				if (HasTxtHandle())
 					DestroyTexture();
 				uploadBuffer.Reset();
-				thisTex->SetValid(false);
+				thisPointer->SetValid(false);
 			}
 		}
 	public:
@@ -105,12 +96,12 @@ namespace JinEngine
 			{
 				if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
 				{
-					if (Create2DTexture(uploadBuffer, thisTex->GetPath(), thisTex->GetFormat()))
+					if (Create2DTexture(uploadBuffer, thisPointer->GetPath(), thisPointer->GetFormat()))
 						return true;
 				}
 				else if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 				{
-					if (CreateCubeMap(uploadBuffer, thisTex->GetPath(), thisTex->GetFormat()))
+					if (CreateCubeMap(uploadBuffer, thisPointer->GetPath(), thisPointer->GetFormat()))
 						return true;
 				}
 			}
@@ -126,12 +117,12 @@ namespace JinEngine
 			std::wstring format;
 			JCUtil::DecomposeFilePath(oriPath, folderPath, name, format);
 
-			int formatIndex = thisTex->GetFormatIndex(thisTex->GetResourceType(),format);
-			if (formatIndex != thisTex->GetFormatIndex() || formatIndex == GetInvalidFormatIndex())
+			int formatIndex = thisPointer->GetFormatIndex(thisPointer->GetResourceType(),format);
+			if (formatIndex != thisPointer->GetFormatIndex() || formatIndex == GetInvalidFormatIndex())
 				return false;
 
 			std::ifstream source(oriPath, std::ios::in | std::ios::binary);
-			std::ofstream dest(thisTex->GetPath(), std::ios::out | std::ios::binary);
+			std::ofstream dest(thisPointer->GetPath(), std::ios::out | std::ios::binary);
 
 			dest << source.rdbuf();
 			source.close();
@@ -140,7 +131,18 @@ namespace JinEngine
 			return true;
 		}
 	public:
-		static void RegisterCallOnce()
+		void Initialize(InitData* initData)
+		{
+			if (!thisPointer->HasFile())
+				ImportTexture(initData->oridataPath);
+			ReadTextureData();
+			thisPointer->SetValid(true);
+		}
+		void RegisterThisPointer(JTexture* tex)
+		{
+			thisPointer = Core::GetWeakPtr(tex);  
+		}
+		static void RegisterTypeData()
 		{
 			auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex(GetStaticResourceType(), format); };
 
@@ -153,7 +155,7 @@ namespace JinEngine
 
 			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 
-			auto txtImportC = [](JDirectory* dir, const Core::JFileImportHelpData importPathData) -> std::vector<JResourceObject*>
+			auto txtImportC = [](JUserPtr<JDirectory> dir, const Core::JFileImportHelpData importPathData) -> std::vector<JUserPtr<JResourceObject>>
 			{
 				return { JICI::Create<JTexture>(importPathData.name,
 					Core::MakeGuid(),
@@ -169,11 +171,13 @@ namespace JinEngine
 			JResourceObjectImporter::Instance().AddFormatInfo(L".tga", J_RESOURCE_TYPE::TEXTURE, txtImportC);
 			JResourceObjectImporter::Instance().AddFormatInfo(L".bmp", J_RESOURCE_TYPE::TEXTURE, txtImportC);
 			Core::JIdentifier::RegisterPrivateInterface(JTexture::StaticTypeInfo(), tPrivate);
+
+			IMPL_REALLOC_BIND(JTexture::JTextureImpl, thisPointer)
 		}
 	};
 
 	JTexture::InitData::InitData(const uint8 formatIndex,
-		JDirectory* directory,
+		const JUserPtr<JDirectory>& directory,
 		const std::wstring oridataPath,
 		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)
 		:JResourceObject::InitData(JTexture::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory),
@@ -181,7 +185,7 @@ namespace JinEngine
 	{}
 	JTexture::InitData::InitData(const size_t guid,
 		const uint8 formatIndex,
-		JDirectory* directory,
+		const JUserPtr<JDirectory>& directory,
 		const std::wstring oridataPath,
 		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)
 		:JResourceObject::InitData(JTexture::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory),
@@ -191,7 +195,7 @@ namespace JinEngine
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
 		const uint8 formatIndex,
-		JDirectory* directory,
+		const JUserPtr<JDirectory>& directory,
 		const std::wstring oridataPath,
 		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)
 		: JResourceObject::InitData(JTexture::StaticTypeInfo(), name, guid, flag, formatIndex, GetStaticResourceType(), directory),
@@ -202,7 +206,7 @@ namespace JinEngine
 		return JResourceObject::InitData::IsValidData() && _waccess(oridataPath.c_str(), 00) != -1;
 	}
 
-	JTexture::LoadMetaData::LoadMetaData(JDirectory* directory)
+	JTexture::LoadMetaData::LoadMetaData(const JUserPtr<JDirectory>& directory)
 		:JResourceObject::InitData(JTexture::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), directory)
 	{}
  
@@ -255,9 +259,7 @@ namespace JinEngine
 	}
 	JTexture::JTexture(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JTextureImpl>(initData, this))
-	{
-		impl->Initialize(initData);
-	}
+	{}
 	JTexture::~JTexture()
 	{
 		impl.reset();
@@ -266,9 +268,16 @@ namespace JinEngine
 	using CreateInstanceInterface = JTexturePrivate::CreateInstanceInterface;
 	using AssetDataIOInterface = JTexturePrivate::AssetDataIOInterface;
 
-	Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
-		return Core::JPtrUtil::MakeOwnerPtr<JTexture>(*static_cast<JTexture::InitData*>(initData.get()));
+		return Core::JPtrUtil::MakeOwnerPtr<JTexture>(*static_cast<JTexture::InitData*>(initData));
+	}
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JResourceObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		JTexture* txt = static_cast<JTexture*>(createdPtr);
+		txt->impl->RegisterThisPointer(txt);
+		txt->impl->Initialize(static_cast<JTexture::InitData*>(initData));
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
@@ -276,22 +285,22 @@ namespace JinEngine
 		return isValidPtr && initData->IsValidData();
 	}
 
-	Core::JIdentifier* AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
+	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JTexture::LoadData::StaticTypeInfo()))
 			return nullptr;
  
 		auto loadData = static_cast<JTexture::LoadData*>(data);
 		auto pathData = loadData->pathData;
-		JDirectory* directory = loadData->directory;
+		JUserPtr<JDirectory> directory = loadData->directory;
 		JTexture::LoadMetaData metadata(loadData->directory);
 
 		if (LoadMetaData(pathData.engineMetaFileWPath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
-		JTexture* newTex = nullptr;
+		JUserPtr<JTexture> newTex = nullptr;
 		if (directory->HasFile(metadata.guid))
-			newTex = static_cast<JTexture*>(Core::GetUserPtr(JTexture::StaticTypeInfo().TypeGuid(), metadata.guid).Get());
+			newTex = Core::GetUserPtr<JTexture>(JTexture::StaticTypeInfo().TypeGuid(), metadata.guid);
 
 		if (newTex == nullptr)
 		{
@@ -303,8 +312,8 @@ namespace JinEngine
 				pathData.engineFileWPath,
 				metadata.textureType);
 
-			auto rawPtr = tPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &tPrivate);
-			newTex = static_cast<JTexture*>(rawPtr);
+			auto idenUser = tPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &tPrivate);
+			newTex.ConnnectChild(idenUser); 
 		}
 		if (newTex != nullptr)
 			newTex->impl->textureType = metadata.textureType;
@@ -339,7 +348,7 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		auto storeData = static_cast<JTexture::StoreData*>(data);
-		JTexture* tex = static_cast<JTexture*>(storeData->obj);
+		JUserPtr<JTexture> tex = Core::ConnectChildUserPtr<JTexture>(storeData->obj);
 
 		std::wofstream stream;
 		stream.open(tex->GetMetaFilePath(), std::ios::out | std::ios::binary);

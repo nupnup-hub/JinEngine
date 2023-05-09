@@ -7,7 +7,7 @@
 #include"../JFSMcondition.h"  
 #include"../JFSMparameter.h"  
 #include"../../Identity/JIdenCreator.h"
-#include"../../Identity/JIdentifierImplBase.h"
+#include"../../Reflection/JTypeImplBase.h"
 #include"../../File/JFileIOHelper.h"
 #include"../../File/JFileConstant.h" 
 #include"../../Guid/GuidCreator.h" 
@@ -24,23 +24,25 @@ namespace JinEngine
 		}
 		namespace
 		{ 
-			_TransitionIOInterface* TransitionIOInterface(JAnimationFSMtransition* trans)
+			_TransitionIOInterface* TransitionIOInterface(const JUserPtr<JAnimationFSMtransition>& trans)noexcept
 			{
 				return &static_cast<_TransitionIOInterface&>(static_cast<JAnimationFSMtransitionPrivate&>(trans->GetPrivateInterface()).GetAssetDataIOInterface());
 			}
-			_TransitionUpdateInterface* TransitionUpdateInterface(JAnimationFSMtransition* trans)
+			_TransitionUpdateInterface* TransitionUpdateInterface(const JUserPtr<JAnimationFSMtransition>& trans)noexcept
 			{
 				return &static_cast<_TransitionUpdateInterface&>(static_cast<JAnimationFSMtransitionPrivate&>(trans->GetPrivateInterface()).GetUpdateInterface());
 			}
 		}
 		 
-		class JAnimationFSMstate::JAnimationFSMstateImpl : public JIdentifierImplBase
+		class JAnimationFSMstate::JAnimationFSMstateImpl : public JTypeImplBase
 		{
 			REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimationFSMstateImpl) 
 		public:
+			JWeakPtr<JAnimationFSMstate> thisPointer;
+		public:
 			JVector2<float> pos;		//for editor node
 		public:
-			JAnimationFSMstateImpl(const InitData& initData, JAnimationFSMstate* thisState)
+			JAnimationFSMstateImpl(const InitData& initData, JAnimationFSMstate* thisStateRaw)
 			{}
 			~JAnimationFSMstateImpl()
 			{}
@@ -53,31 +55,35 @@ namespace JinEngine
 			{
 				pos = newPos;
 			}
-		};
-		using UniqueAniFSM = std::unique_ptr<JAnimationFSMtransition>;
+		public:
+			void RegisterThisPointer(JAnimationFSMstate* fsmState)
+			{
+				thisPointer = GetWeakPtr(fsmState);
+			}
+			static void RegisterTypeData()
+			{ 
+				IMPL_REALLOC_BIND(JAnimationFSMstate::JAnimationFSMstateImpl, thisPointer)
+			}
+		}; 
  
-		JAnimationFSMtransition* JAnimationFSMstate::GetTransitionByIndex(uint index)noexcept
+		JUserPtr<JAnimationFSMtransition> JAnimationFSMstate::GetTransitionByIndex(uint index)noexcept
 		{
-			JFSMtransition* trans = JFSMstate::GetTransitionByIndex(index);
-			if (trans != nullptr)
-				return static_cast<JAnimationFSMtransition*>(trans);
-			else
-				return nullptr;
+			return ConvertChildUserPtr<JAnimationFSMtransition>(JFSMstate::GetTransitionByIndex(index));
 		}
-		JAnimationFSMtransition* JAnimationFSMstate::FindNextStateTransition(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+		JUserPtr<JAnimationFSMtransition> JAnimationFSMstate::FindNextStateTransition(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 		{
 			JAnimationTime& animationTime = updateData->diagramData[layerNumber].animationTimes[updateNumber];
 			const uint transitionCount = GetTransitionCount();
 			bool hasTransition = false; 
 			for (uint index = 0; index < transitionCount; ++index)
 			{
-				JAnimationFSMtransition* nowTransition = static_cast<JAnimationFSMtransition*>(GetTransitionByIndex(index));
+				JUserPtr<JAnimationFSMtransition> nowTransition = ConvertChildUserPtr<JAnimationFSMtransition>(GetTransitionByIndex(index));
 				if (nowTransition->IsSatisfiedOption(animationTime.normalizedTime))
 				{
 					const uint conditionCount = nowTransition->GetConditioCount();
 					for (uint j = 0; j < conditionCount; ++j)
 					{
-						JFSMcondition* cond = nowTransition->GetConditionByIndex(j);
+						JFSMcondition* cond = nowTransition->GetConditionByIndex(j).Get();
 						const float nowValue = updateData->GetParameterValue(cond->GetParameter()->GetGuid());
 						if (nowValue == cond->GetOnValue())
 							return nowTransition;
@@ -91,10 +97,18 @@ namespace JinEngine
 		{}
 		JAnimationFSMstate::~JAnimationFSMstate() {}
 
+		using CreateInstanceInterface = JAnimationFSMstatePrivate::CreateInstanceInterface;
 		using AssetDataIOInterface = JAnimationFSMstatePrivate::AssetDataIOInterface;
 		using EditorInterface = JAnimationFSMstatePrivate::EditorInterface;
 
-		J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetCommonData(std::wifstream& stream, JAnimationFSMstate* state)
+		void CreateInstanceInterface::Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept
+		{
+			JFSMstatePrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+			JAnimationFSMstate* state = static_cast<JAnimationFSMstate*>(createdPtr);
+			state->impl->RegisterThisPointer(state);
+		}
+
+		J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetCommonData(std::wifstream& stream, const JUserPtr<JAnimationFSMstate>& state)
 		{
 			if (!stream.is_open())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -113,15 +127,15 @@ namespace JinEngine
 				JFileIOHelper::LoadAtomicData(stream, outputGuid);
 				JFileIOHelper::LoadAtomicData(stream, outputTypeGuid);
 
-				auto outuserPtr = Core::GetUserPtr<JAnimationFSMstate>(outputTypeGuid, outputGuid);
+				auto outuserPtr = GetUserPtr<JAnimationFSMstate>(outputTypeGuid, outputGuid);
 				if(outuserPtr != nullptr)
-					JICI::Create< JAnimationFSMtransition>(tName, guid, Core::GetUserPtr(state), outuserPtr);
+					JICI::Create< JAnimationFSMtransition>(tName, guid, state, outuserPtr);
 			}
 			for (uint i = 0; i < transitionCount; ++i)
 				TransitionIOInterface(state->GetTransitionByIndex(i))->LoadAssetData(stream, state->GetTransitionByIndex(i));
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
-		J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetCommonData(std::wofstream& stream, JAnimationFSMstate* state)
+		J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetCommonData(std::wofstream& stream, const JUserPtr<JAnimationFSMstate>& state)
 		{
 			if (!stream.is_open())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -131,8 +145,8 @@ namespace JinEngine
 
 			for (uint i = 0; i < transitionCount; ++i)
 			{
-				JAnimationFSMtransition* nowTran = state->GetTransitionByIndex(i);
-				JFileIOHelper::StoreFsmObjectIden(stream, nowTran);
+				JUserPtr<JAnimationFSMtransition> nowTran = state->GetTransitionByIndex(i);
+				JFileIOHelper::StoreFsmObjectIden(stream, nowTran.Get());
 				JFileIOHelper::StoreAtomicData(stream, JFileConstant::StreamHasObjGuidSymbol(), nowTran->GetOutputStateGuid());
 				JFileIOHelper::StoreAtomicData(stream, L"OutTypeGuid", nowTran->GetOutState()->GetTypeInfo().TypeGuid());
 			}
@@ -141,11 +155,11 @@ namespace JinEngine
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
 
-		JVector2<float> EditorInterface::GetPos(JAnimationFSMstate* state) noexcept
+		JVector2<float> EditorInterface::GetPos(const JUserPtr<JAnimationFSMstate>& state) noexcept
 		{
 			return state->impl->GetPos();
 		}
-		void EditorInterface::SetPos(JAnimationFSMstate* state, const JVector2<float>& newPos)noexcept
+		void EditorInterface::SetPos(const JUserPtr<JAnimationFSMstate>& state, const JVector2<float>& newPos)noexcept
 		{
 			state->impl->SetPos(newPos);
 		}		 

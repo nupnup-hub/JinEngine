@@ -11,50 +11,39 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		using CreateInterface = Core::JIdentifierPrivate::CreateInstanceInterface;
+		using CreateInterface = JIdentifierPrivate::CreateInstanceInterface;
 
-		Core::JUserPtr<JIdentifier> JIdenCreatorInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+		JUserPtr<JIdentifier> JIdenCreatorInterface::Create(std::unique_ptr<JDITypeDataBase>&& initData)
 		{
-			if (initData == nullptr || !initData->GetTypeInfo().IsChildOf(Core::JIdentifier::InitData::StaticTypeInfo()))
+			if (initData == nullptr || !initData->GetTypeInfo().IsChildOf(JIdentifier::InitData::StaticTypeInfo()))
 				return nullptr;
 
-			auto rawPtr = static_cast<Core::JIdentifier::InitData*>(initData.get()); 
+			auto rawPtr = static_cast<JIdentifier::InitData*>(initData.get()); 
 			auto pInterface = JIdentifier::GetPrivateInterface(rawPtr->InitDataTypeInfo().TypeGuid());
 			return Create(std::move(initData), pInterface);
 		}
-		Core::JUserPtr<JIdentifier> JIdenCreatorInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData, JIdentifierPrivate* pInterface)
+		JUserPtr<JIdentifier> JIdenCreatorInterface::Create(std::unique_ptr<JDITypeDataBase>&& initData, JIdentifierPrivate* pInterface)
 		{
-			auto rawPtr = CreateInterface::BeginCreate(std::move(initData), pInterface);
-			if (rawPtr != nullptr)
-				return Core::GetUserPtr(rawPtr);
-			else
-				return Core::JUserPtr<JIdentifier>{};
+			return ConvertChildUserPtr<JIdentifier>(CreateInterface::BeginCreate(std::move(initData), pInterface));
 		}
-		Core::JUserPtr<JIdentifier> JIdenCreatorInterface::CreateAndCopy(std::unique_ptr<Core::JDITypeDataBase>&& initData, JIdentifier* from)
+		JUserPtr<JIdentifier> JIdenCreatorInterface::CreateAndCopy(std::unique_ptr<JDITypeDataBase>&& initData, JUserPtr<JIdentifier> from)
+		{ 
+			return ConvertChildUserPtr<JIdentifier>(CreateInterface::BeginCreateAndCopy(std::move(initData), from));
+		}
+		JUserPtr<JIdentifier> JIdenCreatorInterface::CreateAndCopy(JUserPtr<JGameObject> from, JUserPtr<JGameObject> toParent)
+		{ 
+			auto initData = std::make_unique<JGameObject::InitData>(from->GetName(), MakeGuid(), OBJECT_FLAG_NONE, toParent);
+			return ConvertChildUserPtr<JIdentifier>(CreateInterface::BeginCreateAndCopy(std::move(initData), toParent));
+		}
+		JUserPtr<JIdentifier> JIdenCreatorInterface::CreateAndCopy(JUserPtr<JComponent> from, JUserPtr<JGameObject> toOwner)
 		{
-			auto rawPtr = CreateInterface::BeginCreateAndCopy(std::move(initData), from);
-			if (rawPtr != nullptr)
-				return Core::GetUserPtr(rawPtr);
-			else
-				return Core::JUserPtr<JIdentifier>{};
+			auto initData = JComponent::CreateInitDIData(from->GetComponentType(), toOwner); 
+			return ConvertChildUserPtr<JIdentifier>(CreateInterface::BeginCreateAndCopy(std::move(initData), toOwner));
 		}
-		Core::JUserPtr<JIdentifier> JIdenCreatorInterface::CreateAndCopy(JGameObject* from, JGameObject* toParent)
-		{  
-			auto initData = std::make_unique<JGameObject::InitData>(from->GetName(), Core::MakeGuid(), OBJECT_FLAG_NONE, toParent);
-			auto result = CreateInterface::BeginCreateAndCopy(std::move(initData), toParent);
-			return Core::GetUserPtr(result);
-		}
-		Core::JUserPtr<JIdentifier> JIdenCreatorInterface::CreateAndCopy(JComponent* from, JGameObject* toOwner)
+		JUserPtr<JIdentifier> JIdenCreatorInterface::CreateAndCopy(JUserPtr<JDirectory> from, JUserPtr<JDirectory> toParent)
 		{
-			auto initData = JComponent::CreateInitDIData(from->GetComponentType(), toOwner);
-			auto result = CreateInterface::BeginCreateAndCopy(std::move(initData), toOwner);
-			return Core::GetUserPtr(result);
-		}
-		Core::JUserPtr<JIdentifier> JIdenCreatorInterface::CreateAndCopy(JDirectory* from, JDirectory* toParent)
-		{
-			auto initData = std::make_unique<JDirectory::InitData>(from->GetName(), Core::MakeGuid(), OBJECT_FLAG_NONE, toParent);
-			auto result = CreateInterface::BeginCreateAndCopy(std::move(initData), toParent);
-			return Core::GetUserPtr(result);
+			auto initData = std::make_unique<JDirectory::InitData>(from->GetName(), MakeGuid(), OBJECT_FLAG_NONE, toParent);
+			return ConvertChildUserPtr<JIdentifier>(CreateInterface::BeginCreateAndCopy(std::move(initData), toParent));
 		}
 	}
 }

@@ -17,7 +17,7 @@ namespace JinEngine
 			const uint guiWindowID;
 			const uint dockSpaceID;
 		public:
-			Core::JUserPtr<Core::JIdentifier> openObject;
+			JUserPtr<Core::JIdentifier> openObject;
 			std::unique_ptr<GetPageNameF::Functor> getPageNameF;
 			std::unique_ptr<GetPageFlagF::Functor> getPageFlagF; 
 		public:
@@ -39,7 +39,7 @@ namespace JinEngine
 			static std::unique_ptr<ShareData> pageData[(int)J_EDITOR_PAGE_TYPE::COUNT]; 
 		}
 
-		JEditorSelectedObjInfo::JEditorSelectedObjInfo(J_EDITOR_WINDOW_TYPE selectedWnd, Core::JUserPtr<Core::JIdentifier> selectedObj)
+		JEditorSelectedObjInfo::JEditorSelectedObjInfo(J_EDITOR_WINDOW_TYPE selectedWnd, JUserPtr<Core::JIdentifier> selectedObj)
 			:selectedWnd(selectedWnd), selectedObj(selectedObj)
 		{}
 

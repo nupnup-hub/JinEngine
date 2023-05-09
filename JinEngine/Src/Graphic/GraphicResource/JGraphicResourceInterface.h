@@ -21,7 +21,7 @@ namespace JinEngine
 		private:
 			friend class JGraphicResourceUserInterface;
 		private:
-			Core::JUserPtr<Graphic::JGraphicResourceInfo> info = nullptr;
+			JUserPtr<Graphic::JGraphicResourceInfo> info = nullptr;
 		protected:
 			bool Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer, const std::wstring& path, const std::wstring& oriFormat);
 			bool CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer, const std::wstring& path, const std::wstring& oriFormat);
@@ -29,8 +29,8 @@ namespace JinEngine
 			bool CreateShadowMapTexture(uint textureWidth = 0, uint textureHeight = 0);
 			bool DestroyTexture();
 			bool HasTxtHandle()const noexcept;
-			void AddDrawRequest(JScene* scene, JComponent* jComp);
-			void PopDrawRequest(JScene* scene, JComponent* jComp);
+			void AddDrawRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp);
+			void PopDrawRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp);
 		public:
 			Graphic::J_GRAPHIC_RESOURCE_TYPE GetGraphicResourceType()const noexcept;
 			uint GetResourceWidth()const noexcept;
@@ -46,9 +46,9 @@ namespace JinEngine
 		class JGraphicResourceUserInterface final
 		{
 		private:
-			Core::JUserPtr<Graphic::JGraphicResourceInfo> info = nullptr;
+			JUserPtr<Graphic::JGraphicResourceInfo> info = nullptr;
 		public:
-			JGraphicResourceUserInterface(Core::JUserPtr<Graphic::JGraphicResourceInfo> info);
+			JGraphicResourceUserInterface(JUserPtr<Graphic::JGraphicResourceInfo> info);
 			JGraphicResourceUserInterface(JGraphicResourceInterface* gInterface);
 			~JGraphicResourceUserInterface() = default;
 		public:

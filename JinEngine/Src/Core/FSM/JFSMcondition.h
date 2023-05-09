@@ -18,11 +18,11 @@ namespace JinEngine
 			public:
 				JUserPtr<JFSMtransition> ownerTransition;
 			public:
-				InitData(JUserPtr<JFSMtransition> ownerTransition);
-				InitData(const std::wstring& name, const size_t guid, JUserPtr<JFSMtransition> ownerTransition);
+				InitData(const JUserPtr<JFSMtransition>& ownerTransition);
+				InitData(const std::wstring& name, const size_t guid, const JUserPtr<JFSMtransition>& ownerTransition);
 			public:
-				InitData(const JTypeInfo& initTypeInfo, JUserPtr<JFSMtransition> ownerTransition);
-				InitData(const JTypeInfo& initTypeInfo, const std::wstring& name,  const size_t guid, JUserPtr<JFSMtransition> ownerTransition);
+				InitData(const JTypeInfo& initTypeInfo, const JUserPtr<JFSMtransition>& ownerTransition);
+				InitData(const JTypeInfo& initTypeInfo, const std::wstring& name,  const size_t guid, const JUserPtr<JFSMtransition>& ownerTransition);
 			public:
 				bool IsValidData()const noexcept override;
 			};
@@ -32,13 +32,13 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JFSMconditionImpl> impl;
 		public: 
-			Core::JIdentifierPrivate& GetPrivateInterface()const noexcept override;
+			JIdentifierPrivate& GetPrivateInterface()const noexcept override;
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
-			JFSMtransition* GetOwner()const noexcept;
-			JFSMparameter* GetParameter()const noexcept;
+			JUserPtr<JFSMtransition> GetOwner()const noexcept;
+			JUserPtr<JFSMparameter> GetParameter()const noexcept;
 			float GetOnValue()const noexcept;
 		public:
-			void SetParameter(JFSMparameter* newParam)noexcept;
+			void SetParameter(const JUserPtr<JFSMparameter>& newParam)noexcept;
 			void SetOnValue(float newValue)noexcept;
 		public:
 			bool HasParameter()const noexcept;

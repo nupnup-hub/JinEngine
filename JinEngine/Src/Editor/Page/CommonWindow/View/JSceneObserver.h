@@ -25,9 +25,20 @@ namespace JinEngine
 		class JEditorCameraControl;
 		class JEditorTransformTool;
 		class JEditorMenuBar;
-		class JEditorMenuNode;  
+		class JEditorMenuNode;   
 		class JSceneObserver final : public JEditorWindow, public JEditorObjectHandlerInterface
 		{    
+		private:
+			struct FrustumInfo
+			{
+			public:
+				JUserPtr<JGameObject> frustum;
+				JUserPtr<JCamera> cam;
+			public:
+				FrustumInfo(JUserPtr<JGameObject> frustum, JUserPtr<JCamera> cam);
+			public:
+				void Clear();
+			};
 		private:
 			using SelectMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 			using ActivateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
@@ -46,11 +57,12 @@ namespace JinEngine
 			std::unique_ptr<UpdateMenuNodeT::Functor>updateNodeFunctor;
 			std::unique_ptr<MenuSwitchIconPreesF::Functor> switchIconPressFunctorVec[menuSwitchIconCount];
 		private:
-			Core::JUserPtr<JScene> scene;
-			Core::JUserPtr<JGameObject> cameraObj;
-			Core::JUserPtr<JCamera> cameraComp;
-			Core::JUserPtr<JGameObject> mainCamFrustum; 
-			Core::JUserPtr<JGameObject> selectedGobj;
+			JUserPtr<JScene> scene;
+			JUserPtr<JGameObject> editCamOwner;
+			JUserPtr<JCamera> editCam; 
+		private:
+			JUserPtr<JGameObject> selectedGobj;   
+			std::unordered_map<size_t, FrustumInfo> camFrustumMap;
 		private:
 			std::unique_ptr<JEditorSceneCoordGrid> coordGrid;
 		private:
@@ -60,7 +72,7 @@ namespace JinEngine
 			std::unique_ptr<JEditorTransformTool> rotationTool;
 			std::unique_ptr<JEditorTransformTool> scaleTool;
 		private:
-			std::vector<Core::JUserPtr<JTexture>> iconTexture;
+			std::vector<JUserPtr<JTexture>> iconTexture; 
 		private:
 			static constexpr uint toolCount = 3;
 		private:
@@ -87,7 +99,7 @@ namespace JinEngine
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
-			void Initialize(Core::JUserPtr<JScene> newScene, const std::wstring& editorCameraName)noexcept;
+			void Initialize(JUserPtr<JScene> newScene, const std::wstring& editorCameraName)noexcept;
 			void UpdateWindow()final;
 		private:
 			void CreateMenuLeafNode(JEditorMenuNode* parent, J_OBSERVER_SETTING_TYPE type)noexcept;
@@ -97,6 +109,7 @@ namespace JinEngine
 			void UpdateObserverSetting(const J_OBSERVER_SETTING_TYPE type)noexcept;
 		private: 			
 			void SceneSpaceSpatialOptionOnScreen();
+			void EditorCameraOptionOnScreen();
 			void OctreeOptionOnScreen();
 			void BvhOptionOnScreen();
 			void KdTreeOptionOnScreen();
@@ -107,7 +120,7 @@ namespace JinEngine
 			void OcclusionResultOnScreen();
 		private:
 			void UpdateMainCamFrustum()noexcept;
-			void MakeMainCamFrustum()noexcept; 
+			void CreateCamFrustum(JUserPtr<JCamera> cam)noexcept;
 		private:
 			void ActivateTransformToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type);
 			void DeActivateTransformToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type);

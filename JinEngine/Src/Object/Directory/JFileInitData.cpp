@@ -10,6 +10,13 @@ namespace JinEngine
 		resourceType(rObj->GetResourceType()),
 		formatIndex(rObj->GetFormatIndex())
 	{}
+	JFileInitData::JFileInitData(const JUserPtr<JResourceObject>& rObj)
+		:name(rObj->GetName()),
+		rGuid(rObj->GetGuid()),
+		rTypeInfo(rObj->GetTypeInfo()),
+		resourceType(rObj->GetResourceType()),
+		formatIndex(rObj->GetFormatIndex())
+	{}
 	JFileInitData::JFileInitData(const std::wstring& name,
 		const size_t rGuid,
 		Core::JTypeInfo& rTypeInfo,

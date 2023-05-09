@@ -19,15 +19,17 @@ namespace JinEngine
 			return guid;
 		}
 
-		JFSMparameterStorage::JFSMparameterStorage()
-			:guid(MakeGuid())
+		JFSMparameterStorage::JFSMparameterStorage(const JUserPtr<JIdentifier>& owner)
+			:owner(owner), guid(MakeGuid())
 		{}
 		JFSMparameterStorage::~JFSMparameterStorage()
+		{}
+		JUserPtr<JIdentifier> JFSMparameterStorage::GetOwner()const noexcept
 		{
-			
+			return owner;
 		}
-		size_t JFSMparameterStorage::GetStorageGuid()const noexcept
-		{
+		size_t JFSMparameterStorage::GetGuid()const noexcept
+		{ 
 			return guid;
 		}
 		std::wstring JFSMparameterStorage::GetParameterUniqueName(const std::wstring& initName)const noexcept
@@ -42,21 +44,18 @@ namespace JinEngine
 		{
 			return maxNumberOfParameter;
 		}
-		JFSMparameter* JFSMparameterStorage::GetParameter(const size_t guid)const noexcept
+		JUserPtr<JFSMparameter> JFSMparameterStorage::GetParameter(const size_t guid)const noexcept
 		{
-			auto data = parameterCashMap.find(guid);
-			if (data != parameterCashMap.end())
-				return data->second;
-			else
-				return nullptr;
+			auto paramUser = JFSMparameter::StaticTypeInfo().GetInstanceUserPtr<JFSMparameter>(guid);
+			return paramUser.IsValid() && paramUser->IsStorageParameter(guid) ? paramUser : nullptr;
 		}
-		JFSMparameter* JFSMparameterStorage::GetParameterByIndex(const uint index)const noexcept
+		JUserPtr<JFSMparameter> JFSMparameterStorage::GetParameterByIndex(const uint index)const noexcept
 		{
 			if (parameterVec.size() <= index)
 				return nullptr;
 			return parameterVec[index];
 		}
-		std::vector<JFSMparameter*>JFSMparameterStorage::GetParameterVec()const noexcept
+		std::vector<JUserPtr<JFSMparameter>>JFSMparameterStorage::GetParameterVec()const noexcept
 		{
 			return parameterVec;
 		}
@@ -64,10 +63,10 @@ namespace JinEngine
 		{
 			if (newUser != nullptr)
 			{
-				int index = JCUtil::GetJIdenIndex(storageUser, guid, &StorageUser::GetUserGuid);
+				int index = JCUtil::GetTypeIndex(storageUser, guid, &StorageUser::GetUserGuid);
 				if (index == -1)
 				{
-					storageUser.push_back(std::make_unique< StorageUser>(newUser, guid));
+					storageUser.push_back(std::make_unique<StorageUser>(newUser, guid));
 					return true;
 				}
 			}
@@ -77,7 +76,7 @@ namespace JinEngine
 		{
 			if (newUser != nullptr)
 			{
-				int index = JCUtil::GetJIdenIndex(storageUser, guid, &StorageUser::GetUserGuid);
+				int index = JCUtil::GetTypeIndex(storageUser, guid, &StorageUser::GetUserGuid);
 				if (index != -1)
 				{
 					storageUser.erase(storageUser.begin() + index);
@@ -86,57 +85,33 @@ namespace JinEngine
 			}
 			return false;
 		}
-		bool JFSMparameterStorage::AddParameter(JFSMparameter* fsmParameter)noexcept
-		{
-			if (fsmParameter == nullptr || parameterCashMap.find(fsmParameter->GetGuid()) != parameterCashMap.end())
-				return false;
-
-			fsmParameter->SetName(GetParameterUniqueName(fsmParameter->GetName()));
-			parameterVec.emplace_back(fsmParameter);
-			parameterCashMap.emplace(fsmParameter->GetGuid(), fsmParameter);
-			return true;
-		}
-		bool JFSMparameterStorage::RemoveParameter(JFSMparameter* fsmParameter)noexcept
-		{ 
-			if (fsmParameter == nullptr)
-				return false;
-
-			const uint userCount = (uint)storageUser.size();
-			for (uint i = 0; i < userCount; ++i)
-				storageUser[i]->ptr->NotifyRemoveParameter(fsmParameter->GetGuid());
-
-			parameterCashMap.erase(fsmParameter->GetGuid());
-			parameterVec.erase(parameterVec.begin() + JCUtil::GetJIdenIndex(parameterVec, fsmParameter->GetGuid()));
-			return true;
-		}
 		void JFSMparameterStorage::Clear()
 		{
-			std::vector<JFSMparameter*> copy = parameterVec; 
+			std::vector<JUserPtr<JFSMparameter>> copy = parameterVec;
 			const uint conditionCount = (uint)copy.size();
 			for (uint i = 0; i < conditionCount; ++i)
-				JFSMparameter::BeginDestroy(copy[i]);
+				JFSMparameter::BeginDestroy(copy[i].Get());
 
-			storageUser.clear();
-			parameterCashMap.clear();
+			storageUser.clear(); 
 			parameterVec.clear();
 		}
-		J_FILE_IO_RESULT JFSMparameterStorage::StoreData(std::wofstream& stream)
+		J_FILE_IO_RESULT JFSMparameterStorage::StoreData(std::wofstream& stream, const JUserPtr<JFSMparameterStorage>& storage)
 		{
 			if (!stream.is_open())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-			const uint conditionCount = (uint)parameterVec.size();
+			const uint conditionCount = (uint)storage->parameterVec.size();
 			JFileIOHelper::StoreAtomicData(stream, L"ParameterCount:", conditionCount);
 
 			for (uint i = 0; i < conditionCount; ++i)
 			{
-				JFileIOHelper::StoreFsmObjectIden(stream, parameterVec[i]);
-				JFileIOHelper::StoreEnumData(stream, L"ValueType:", parameterVec[i]->GetParamType());
-				JFileIOHelper::StoreAtomicData(stream, L"Value:", parameterVec[i]->GetValue());
+				JFileIOHelper::StoreFsmObjectIden(stream, storage->parameterVec[i].Get());
+				JFileIOHelper::StoreEnumData(stream, L"ValueType:", storage->parameterVec[i]->GetParamType());
+				JFileIOHelper::StoreAtomicData(stream, L"Value:", storage->parameterVec[i]->GetValue());
 			}
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
-		J_FILE_IO_RESULT JFSMparameterStorage::LoadData(std::wifstream& stream)
+		J_FILE_IO_RESULT JFSMparameterStorage::LoadData(std::wifstream& stream, const JUserPtr<JFSMparameterStorage>& storage)
 		{
 			if (!stream.is_open())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -156,10 +131,42 @@ namespace JinEngine
 				JFileIOHelper::LoadEnumData(stream, valueType);
 				JFileIOHelper::LoadAtomicData(stream, value);
 
-				JICI::Create<JFSMparameter>(name, guid, this, valueType);
+				JICI::Create<JFSMparameter>(name, guid, storage, valueType);
 			}
 
 			return J_FILE_IO_RESULT::SUCCESS;
+		}
+
+		using OwnTypeInterface = JFSMparameterStoragePrivate::OwnTypeInterface;
+
+		bool OwnTypeInterface::AddParameter(const JUserPtr<JFSMparameterStoragePublicAccess>& storagePA, const JUserPtr<JFSMparameter>& fsmParameter)noexcept
+		{
+			if (fsmParameter == nullptr || !fsmParameter->IsStorageParameter(storagePA->GetGuid()))
+				return false;
+			 
+			if (storagePA->GetParameter(fsmParameter->GetGuid()) != nullptr)
+				return false;
+
+			auto strage = static_cast<JFSMparameterStorage*>(storagePA.Get());
+			fsmParameter->SetName(strage->GetParameterUniqueName(fsmParameter->GetName()));
+			strage->parameterVec.emplace_back(fsmParameter); 
+			return true;
+		}
+		bool OwnTypeInterface::RemoveParameter(const JUserPtr<JFSMparameterStoragePublicAccess>& storagePA, const JUserPtr<JFSMparameter>& fsmParameter)noexcept
+		{
+			if (fsmParameter == nullptr || !fsmParameter->IsStorageParameter(storagePA->GetGuid()))
+				return false;
+
+			if (storagePA->GetParameter(fsmParameter->GetGuid()) == nullptr)
+				return false;
+
+			auto strage = static_cast<JFSMparameterStorage*>(storagePA.Get());
+			const uint userCount = (uint)strage->storageUser.size();
+			for (uint i = 0; i < userCount; ++i)
+				strage->storageUser[i]->ptr->NotifyRemoveParameter(fsmParameter->GetGuid());
+			 
+			strage->parameterVec.erase(strage->parameterVec.begin() + JCUtil::GetTypeIndex(strage->parameterVec, fsmParameter->GetGuid()));
+			return true;
 		}
 	}
 }

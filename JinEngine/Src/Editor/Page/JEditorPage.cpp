@@ -454,7 +454,7 @@ namespace JinEngine
 			bool isOpen;
 			bool active;
 			bool isFocus;
-			Core::JUserPtr<Core::JIdentifier> openObj = nullptr;
+			JUserPtr<Core::JIdentifier> openObj = nullptr;
 			bool hasFocusWindow;
 			std::wstring focusWindowName;
 			int windowCount;
@@ -476,7 +476,7 @@ namespace JinEngine
 				if (alreadyHasValidOpenObj)
 				{
 					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::OPEN_PAGE,
-						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), Core::JUserPtr<JObject>())));
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPageEvStruct>(GetPageType(), JUserPtr<JObject>())));
 				}
 				else if (hasOpenObj)
 				{ 

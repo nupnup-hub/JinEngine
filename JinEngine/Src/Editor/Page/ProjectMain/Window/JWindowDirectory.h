@@ -33,8 +33,8 @@ namespace JinEngine
 			public JEditorObjectHandlerInterface
 		{ 
 		private:
-			Core::JUserPtr<JDirectory> root;
-			Core::JUserPtr<JDirectory> opendDirctory; 
+			JUserPtr<JDirectory> root;
+			JUserPtr<JDirectory> opendDirctory; 
 			bool lastUpdateOpenNewDir = false;
 		private:
 			std::unique_ptr<JWindowDirectoryCreationImpl> creationImpl;
@@ -81,17 +81,17 @@ namespace JinEngine
 			void BuildDirectoryView();
 			void BuildFileView();
 			//Ret is NewOpend Directory
-			void DirectoryViewOnScreen(JDirectory* directory, const bool canSelect);
+			void DirectoryViewOnScreen(const JUserPtr<JDirectory>& directory, const bool canSelect);
 			void FileViewOnScreen();  
 			void ImportFile(); 
 		private:
-			void OpenNewDirectory(Core::JUserPtr<JDirectory> newOpendDirectory);
-			void CreateDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask = L"");
+			void OpenNewDirectory(JUserPtr<JDirectory> newOpendDirectory);
+			void CreateDirectoryPreview(const JUserPtr<JDirectory>& directory, const bool hasNameMask, const std::wstring& mask = L"");
 			//Only create file preview not directory
-			void CreateAllDirectoryPreview(JDirectory* directory, const bool hasNameMask, const std::wstring& mask = L"");
+			void CreateAllDirectoryPreview(const JUserPtr<JDirectory>& directory, const bool hasNameMask, const std::wstring& mask = L"");
 		private:
-			void RequestMoveFile(JDirectory* to, JObject* obj);
-			void MoveFile(JDirectory* to, JObject* obj);
+			void RequestMoveFile(const JUserPtr<JDirectory>& to, const JUserPtr<JObject>& obj);
+			void MoveFile(JUserPtr<JDirectory> to, JUserPtr<JObject> obj);
 		protected:
 			void DoSetFocus()noexcept final;
 			void DoSetUnFocus()noexcept final;

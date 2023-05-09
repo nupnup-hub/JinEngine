@@ -62,7 +62,7 @@ public:
 };
 */
 		DEFAULT_CD_REQUESTOR(JAnimationParameterListCreationImpl, JAnimationParameterList)
-		using AniContUserPtr = Core::JUserPtr<JAnimationController>;	 
+		using AniContUserPtr = JUserPtr<JAnimationController>;	 
 		class JAnimationParameterListSettingImpl
 		{
 		public:
@@ -140,7 +140,7 @@ public:
 				if (!paramList->aniCont.IsValid())
 					return;
 
-				std::vector<Core::JUserPtr<Core::JIdentifier>> objVec = paramList->GetSelectedObjectVec();
+				std::vector<JUserPtr<Core::JIdentifier>> objVec = paramList->GetSelectedObjectVec();
 				if (objVec.size() == 0)
 					return;
 
@@ -218,7 +218,7 @@ public:
 		{
 			return J_EDITOR_WINDOW_TYPE::ANIMATION_CONDITION_LIST;
 		}
-		void JAnimationParameterList::Initialize(Core::JUserPtr<JAnimationController> newAniCont)noexcept
+		void JAnimationParameterList::Initialize(JUserPtr<JAnimationController> newAniCont)noexcept
 		{
 			aniCont = newAniCont;
 		}
@@ -251,7 +251,7 @@ public:
 				const uint parameterCount = aniCont->GetParameterCount();
 				for (uint i = 0; i < parameterCount; ++i)
 				{
-					Core::JFSMparameter* nowParameter = aniCont->GetParameterByIndex(i);
+					JUserPtr<Core::JFSMparameter> nowParameter = aniCont->GetParameterByIndex(i);
 					std::string name = JCUtil::WstrToU8Str(nowParameter->GetName());
 					std::string uniqueLabel = std::to_string(nowParameter->GetGuid());
 
@@ -265,7 +265,7 @@ public:
 						SetTreeNodeColor(GetSelectedColorFactor());
 					if (JImGuiImpl::Selectable(name + "##Parameter_Selectable" + uniqueLabel, &isSelect, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap))
 					{ 
-						RequestPushSelectObject(Core::GetUserPtr(nowParameter));
+						RequestPushSelectObject(nowParameter);
 						SetContentsClick(true);
 					} 
 					if (isSelect)
@@ -273,7 +273,7 @@ public:
 
 					if (JImGuiImpl::IsMouseInRect(preCursorPos, ImGui::GetItemRectSize()))
 					{
-						SetHoveredObject(Core::GetUserPtr(nowParameter));
+						SetHoveredObject(nowParameter);
 						if (ImGui::IsMouseClicked(1))
 							SetContentsClick(true);
 					} 
@@ -333,11 +333,11 @@ public:
 			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && ev->pageType == GetOwnerPageType())
 			{
 				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(ev);
-				Core::JUserPtr< Core::JIdentifier> diagram = evstruct->GetFirstMatchedTypeObject(Core::JAnimationFSMdiagram::StaticTypeInfo());
+				JUserPtr< Core::JIdentifier> diagram = evstruct->GetFirstMatchedTypeObject(Core::JAnimationFSMdiagram::StaticTypeInfo());
 				if (diagram.IsValid())
 				{
 					if (!selectedDiagram.IsValid() || selectedDiagram->GetGuid() != diagram->GetGuid())
-						selectedDiagram.ConnnectChildUser(diagram);
+						selectedDiagram.ConnnectChild(diagram);
 				}
 			}
 		}

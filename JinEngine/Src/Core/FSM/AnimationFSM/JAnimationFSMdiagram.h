@@ -34,12 +34,12 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JAnimationFSMdiagramImpl> impl;
 		public: 
-			Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
-			JAnimationFSMstate* GetState(const size_t stateGuid)noexcept;
-			JAnimationFSMstate* GetStateByIndex(const uint index)noexcept;
-			JAnimationFSMtransition* GetTransition(const size_t transitionGuid)noexcept; 
+			JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+			JUserPtr<JAnimationFSMstate> GetState(const size_t stateGuid)noexcept;
+			JUserPtr<JAnimationFSMstate> GetStateByIndex(const uint index)noexcept;
+			JUserPtr<JAnimationFSMtransition> GetTransition(const size_t transitionGuid)noexcept;
 		public:
-			void SetClip(const size_t stateGuid, Core::JUserPtr<JAnimationClip> clip)noexcept;	 
+			void SetClip(const size_t stateGuid, const JUserPtr<JAnimationClip>& clip)noexcept;	 
 		private:
 			JAnimationFSMdiagram(const InitData& initData);
 			~JAnimationFSMdiagram();

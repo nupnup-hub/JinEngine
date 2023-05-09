@@ -28,14 +28,14 @@ namespace JinEngine
 
 		JEditorPushSelectObjectEvStruct::JEditorPushSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType,
 			const J_EDITOR_WINDOW_TYPE wndType,
-			Core::JUserPtr<Core::JIdentifier> selectObj)
+			JUserPtr<Core::JIdentifier> selectObj)
 			:JEditorEvStruct(pageType), wndType(wndType)
 		{
 			selectObjVec.push_back(selectObj);
 		}
 		JEditorPushSelectObjectEvStruct::JEditorPushSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType,
 			const J_EDITOR_WINDOW_TYPE wndType,
-			const std::vector<Core::JUserPtr<Core::JIdentifier>> selectObj)
+			const std::vector<JUserPtr<Core::JIdentifier>> selectObj)
 			: JEditorEvStruct(pageType), wndType(wndType), selectObjVec(selectObj)
 		{}
 		bool JEditorPushSelectObjectEvStruct::PassDefectInspection()const noexcept
@@ -46,7 +46,7 @@ namespace JinEngine
 		{
 			return J_EDITOR_EVENT::PUSH_SELECT_OBJECT;
 		}
-		Core::JUserPtr<Core::JIdentifier> JEditorPushSelectObjectEvStruct::GetFirstMatchedTypeObject(const Core::JTypeInfo& typeInfo)const noexcept
+		JUserPtr<Core::JIdentifier> JEditorPushSelectObjectEvStruct::GetFirstMatchedTypeObject(const Core::JTypeInfo& typeInfo)const noexcept
 		{
 			const uint count = (uint)selectObjVec.size();
 			for (uint i = 0; i < count; ++i)
@@ -54,9 +54,9 @@ namespace JinEngine
 				if (selectObjVec[i]->GetTypeInfo().IsChildOf(typeInfo))
 					return selectObjVec[i];
 			}
-			return Core::JUserPtr<Core::JIdentifier>{};
+			return JUserPtr<Core::JIdentifier>{};
 		}
-		Core::JUserPtr<Core::JIdentifier> JEditorPushSelectObjectEvStruct::GetLastMatchedTypeObject(const Core::JTypeInfo& typeInfo)const noexcept
+		JUserPtr<Core::JIdentifier> JEditorPushSelectObjectEvStruct::GetLastMatchedTypeObject(const Core::JTypeInfo& typeInfo)const noexcept
 		{
 			const int count = (int)selectObjVec.size();
 			for (int i = count - 1; i >= 0; --i)
@@ -64,15 +64,15 @@ namespace JinEngine
 				if (selectObjVec[i]->GetTypeInfo().IsChildOf(typeInfo))
 					return selectObjVec[i];
 			}
-			return Core::JUserPtr<Core::JIdentifier>{};
+			return JUserPtr<Core::JIdentifier>{};
 		}
 
-		JEditorPopSelectObjectEvStruct::JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> selectObj)
+		JEditorPopSelectObjectEvStruct::JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, JUserPtr<Core::JIdentifier> selectObj)
 			:JEditorEvStruct(pageType)
 		{
 			selectObjVec.push_back(selectObj);
 		}
-		JEditorPopSelectObjectEvStruct::JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const std::vector<Core::JUserPtr<Core::JIdentifier>> selectObj)
+		JEditorPopSelectObjectEvStruct::JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const std::vector<JUserPtr<Core::JIdentifier>> selectObj)
 			: JEditorEvStruct(pageType), selectObjVec(selectObj)
 		{}
 		bool JEditorPopSelectObjectEvStruct::PassDefectInspection()const noexcept
@@ -105,7 +105,7 @@ namespace JinEngine
 			return J_EDITOR_EVENT::CLEAR_SELECT_OBJECT;
 		}
 
-		JEditorOpenPageEvStruct::JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, Core::JUserPtr<Core::JIdentifier> openSelected)
+		JEditorOpenPageEvStruct::JEditorOpenPageEvStruct(const J_EDITOR_PAGE_TYPE pageType, JUserPtr<Core::JIdentifier> openSelected)
 			:JEditorEvStruct(pageType),
 			typeGuid(openSelected.IsValid() ? openSelected->GetTypeInfo().TypeGuid() : 0),
 			openSeletedGuid(openSelected.IsValid() ? openSelected->GetGuid() : 0),
@@ -119,9 +119,9 @@ namespace JinEngine
 		{
 			return J_EDITOR_EVENT::OPEN_PAGE;
 		}
-		Core::JUserPtr<Core::JIdentifier> JEditorOpenPageEvStruct::GetOpenSeleted()const noexcept
+		JUserPtr<Core::JIdentifier> JEditorOpenPageEvStruct::GetOpenSeleted()const noexcept
 		{
-			return  hasOpenSeleted ? Core::GetUserPtr(typeGuid, openSeletedGuid) : Core::JUserPtr<Core::JIdentifier>();
+			return hasOpenSeleted ? Core::GetUserPtr<Core::JIdentifier>(typeGuid, openSeletedGuid) : JUserPtr<Core::JIdentifier>();
 		}
 
 		JEditorClosePageEvStruct::JEditorClosePageEvStruct(const J_EDITOR_PAGE_TYPE pageType)

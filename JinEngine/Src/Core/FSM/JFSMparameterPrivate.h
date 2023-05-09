@@ -5,25 +5,27 @@ namespace JinEngine
 {
 	namespace Core
 	{ 
-		class JFSMparameterPrivate : public JFSMinterfacePrivate
+		class JFSMparameterStorage;
+		class JFSMparameterPrivate final: public JFSMinterfacePrivate
 		{
 		public:
-			class CreateInstanceInterface : public JFSMinterfacePrivate::CreateInstanceInterface
+			class CreateInstanceInterface final : public JFSMinterfacePrivate::CreateInstanceInterface
 			{
 			private:
-				Core::JOwnerPtr<JIdentifier> Create(std::unique_ptr<JDITypeDataBase>&& initData)override;
-				bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept override;
-				void RegisterCash(Core::JIdentifier* createdPtr)noexcept override;
+				JOwnerPtr<JIdentifier> Create(JDITypeDataBase* initData)final;
+				void Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept final;
+				void RegisterCash(JIdentifier* createdPtr)noexcept final;
+				bool CanCreateInstance(JDITypeDataBase* initData)const noexcept final;
 			};
-			class DestroyInstanceInterface : public Core::JIdentifierPrivate::DestroyInstanceInterface
+			class DestroyInstanceInterface final : public JIdentifierPrivate::DestroyInstanceInterface
 			{
 			private:
-				void Clear(JIdentifier* ptr, const bool isForced)override;
-				void DeRegisterCash(JIdentifier* ptr)noexcept override;
+				void Clear(JIdentifier* ptr, const bool isForced)final;
+				void DeRegisterCash(JIdentifier* ptr)noexcept final;
 			};
 		public:
-			Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept override;
-			Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept override;
+			JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
+			JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept final;
 		};
 	}
 }

@@ -6,7 +6,7 @@
 #include"JAnimationFSMtransition.h"  
 #include"../../Time/JGameTimer.h" 
 #include"../../File/JFileIOHelper.h" 
-#include"../../Identity/JIdentifierImplBase.h"
+#include"../../Reflection/JTypeImplBase.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"
 #include"../../../Object/Resource/AnimationClip/JAnimationClip.h"
 #include"../../../Object/Resource/JResourceObject.h"
@@ -23,40 +23,35 @@ namespace JinEngine
 			static JAnimationFSMstateClipPrivate cPrivate;
 		}
 		 
-		class JAnimationFSMstateClip::JAnimationFSMstateClipImpl : public JIdentifierImplBase,
+		class JAnimationFSMstateClip::JAnimationFSMstateClipImpl : public JTypeImplBase,
 			public JResourceObjectUserInterface
 		{
 			REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimationFSMstateClipImpl)
 		public:
-			JAnimationFSMstateClip* thisFsmClip = nullptr;
+			JWeakPtr<JAnimationFSMstateClip> thisPointer = nullptr;
 		public:
-			REGISTER_PROPERTY_EX(clip, GetClip, SetClip, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::ICON, true))
-			Core::JUserPtr<JAnimationClip> clip;
+			REGISTER_PROPERTY_EX(clip, GetClip, SetClip, GUI_SELECTOR(J_GUI_SELECTOR_IMAGE::ICON, true))
+			JUserPtr<JAnimationClip> clip;
 		public:
-			JAnimationFSMstateClipImpl(const InitData& initData, JAnimationFSMstateClip* thisFsmClip)
-				:JResourceObjectUserInterface(thisFsmClip->GetGuid()), thisFsmClip(thisFsmClip)
-			{
-				AddEventListener(*JResourceObject::EvInterface(), thisFsmClip->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
-			}
-			~JAnimationFSMstateClipImpl()
-			{
-				RemoveListener(*JResourceObject::EvInterface(), thisFsmClip->GetGuid());
-			}
+			JAnimationFSMstateClipImpl(const InitData& initData, JAnimationFSMstateClip* thisFsmClipRaw)
+				:JResourceObjectUserInterface(thisFsmClipRaw->GetGuid())
+			{}
+			~JAnimationFSMstateClipImpl(){}
 		public:
-			Core::JUserPtr<JAnimationClip> GetClip()const noexcept
+			JUserPtr<JAnimationClip> GetClip()const noexcept
 			{
 				return clip;
 			}
-			void GetRegisteredSkeleton(std::vector<JSkeletonAsset*>& skeletonVec)noexcept
+			void GetRegisteredSkeleton(std::vector<JUserPtr<JSkeletonAsset>>& skeletonVec)noexcept
 			{
 				if (clip.IsValid())
-					skeletonVec.push_back(clip->GetClipSkeletonAsset().Get());
+					skeletonVec.push_back(clip->GetClipSkeletonAsset());
 			}
 		public:
-			void SetClip(Core::JUserPtr<JAnimationClip> newClip)noexcept
+			void SetClip(const JUserPtr<JAnimationClip>& newClip)noexcept
 			{
 				if (clip.IsValid())
-					CallOffResourceReference(clip.Get());
+					CallOffResourceReference(clip.Get()); 
 				clip = newClip;
 				if (clip.IsValid())
 					CallOnResourceReference(clip.Get());
@@ -69,12 +64,12 @@ namespace JinEngine
 		public:
 			void Initialize()noexcept
 			{
-				thisFsmClip->Initialize();
+				thisPointer->Initialize();
 			}
 			void Enter(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 			{
-				JAnimationFSMtransition* nowTransition = updateData->diagramData[layerNumber].nowTransition;
-				const float timeOffset = nowTransition ? nowTransition->GetTargetStartTimeRate() : 0;
+				JUserPtr<JAnimationFSMtransition> nowTransition = updateData->diagramData[layerNumber].nowTransition;
+				const float timeOffset = nowTransition.IsValid() ? nowTransition->GetTargetStartTimeRate() : 0;
 
 				if (clip.IsValid() && clip->GetClipSkeletonAsset().IsValid())
 					clip->ClipEnter(updateData, layerNumber, updateNumber, timeOffset);
@@ -87,7 +82,7 @@ namespace JinEngine
 					clip->Update(updateData, layerNumber, updateNumber);
 					size_t clipGuid = clip->GetClipSkeletonAsset()->GetGuid();
 					updateData->skeletonBlendRate[updateNumber][clipGuid] = 1;
-					updateData->lastState[updateNumber] = thisFsmClip->GetStateType();
+					updateData->lastState[updateNumber] = thisPointer->GetStateType();
 				}
 				else
 					updateData->StuffIdentity(layerNumber, updateNumber);
@@ -99,36 +94,49 @@ namespace JinEngine
 		public:
 			void Clear()noexcept
 			{
-				thisFsmClip->Clear();
-				SetClip(Core::JUserPtr<JAnimationClip>{});
+				thisPointer->Clear();
+				SetClip(JUserPtr<JAnimationClip>{});
 			}
 		public:
 			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 			{
-				if (iden == thisFsmClip->GetGuid())
+				if (iden == thisPointer->GetGuid())
 					return;
 
 				if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 				{
 					if (clip.IsValid() && jRobj->GetGuid() == clip->GetGuid())
-						SetClip(Core::JUserPtr<JAnimationClip>{});
+						SetClip(JUserPtr<JAnimationClip>{});
 				}
 			}
 		public:
-			static void RegisterCallOnce()
+			void RegisterThisPointer(JAnimationFSMstateClip* clip)
 			{
-				Core::JIdentifier::RegisterPrivateInterface(JAnimationFSMstateClip::StaticTypeInfo(), cPrivate);
+				thisPointer = GetWeakPtr(clip);
+			}
+			void RegisterPostCreation()
+			{
+				AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+			}
+			void DeRegisterPreDestruction()
+			{
+				RemoveListener(*JResourceObject::EvInterface(), thisPointer->GetGuid());
+			}
+			static void RegisterTypeData()
+			{
+				JIdentifier::RegisterPrivateInterface(JAnimationFSMstateClip::StaticTypeInfo(), cPrivate);
+				IMPL_REALLOC_BIND(JAnimationFSMstateClip::JAnimationFSMstateClipImpl, thisPointer)
 			}
 		};
 
-		JAnimationFSMstateClip::InitData::InitData(JUserPtr<JAnimationFSMdiagram> ownerDiagram)
+		JAnimationFSMstateClip::InitData::InitData(const JUserPtr<JAnimationFSMdiagram>& ownerDiagram)
 			:JAnimationFSMstate::InitData(JAnimationFSMstateClip::StaticTypeInfo(), ownerDiagram)
 		{}
-		JAnimationFSMstateClip::InitData::InitData(const std::wstring& name, const size_t guid, JUserPtr<JAnimationFSMdiagram> ownerDiagram)
+		JAnimationFSMstateClip::InitData::InitData(const std::wstring& name, const size_t guid, const JUserPtr<JAnimationFSMdiagram>& ownerDiagram)
 			: JAnimationFSMstate::InitData(JAnimationFSMstateClip::StaticTypeInfo(), name, guid, ownerDiagram)
 		{}
 
-		Core::JIdentifierPrivate& JAnimationFSMstateClip::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JAnimationFSMstateClip::GetPrivateInterface()const noexcept
 		{
 			return cPrivate;
 		}
@@ -136,11 +144,11 @@ namespace JinEngine
 		{
 			return J_ANIMATION_STATE_TYPE::CLIP;
 		}
-		Core::JUserPtr<JAnimationClip> JAnimationFSMstateClip::GetClip()const noexcept
+		JUserPtr<JAnimationClip> JAnimationFSMstateClip::GetClip()const noexcept
 		{
 			return impl->GetClip();
 		}
-		void JAnimationFSMstateClip::SetClip(Core::JUserPtr<JAnimationClip> newClip)noexcept
+		void JAnimationFSMstateClip::SetClip(const JUserPtr<JAnimationClip>& newClip)noexcept
 		{
 			impl->SetClip(newClip);
 		}
@@ -161,9 +169,16 @@ namespace JinEngine
 		using AssetDataIOInterface = JAnimationFSMstateClipPrivate::AssetDataIOInterface;
 		using UpdateInterface = JAnimationFSMstateClipPrivate::UpdateInterface;
 
-		JOwnerPtr<JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<JDITypeDataBase>&& initData)
+		JOwnerPtr<JIdentifier> CreateInstanceInterface::Create(JDITypeDataBase* initData)
 		{
-			return JPtrUtil::MakeOwnerPtr<JAnimationFSMstateClip>(*static_cast<JAnimationFSMstateClip::InitData*>(initData.get()));
+			return JPtrUtil::MakeOwnerPtr<JAnimationFSMstateClip>(*static_cast<JAnimationFSMstateClip::InitData*>(initData));
+		}
+		void CreateInstanceInterface::Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept
+		{
+			JAnimationFSMstatePrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+			JAnimationFSMstateClip* clip = static_cast<JAnimationFSMstateClip*>(createdPtr);
+			clip->impl->RegisterThisPointer(clip);
+			clip->impl->RegisterPostCreation();
 		}
 		bool CreateInstanceInterface::CanCreateInstance(JDITypeDataBase* initData)const noexcept
 		{
@@ -171,59 +186,61 @@ namespace JinEngine
 			return isValidPtr && initData->IsValidData();
 		}
 
-		void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
-		{ 
+		void DestroyInstanceInterface::Clear(JIdentifier* ptr, const bool isForced)
+		{
+			JAnimationFSMstatePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
+			static_cast<JAnimationFSMstateClip*>(ptr)->impl->DeRegisterPreDestruction();
 			static_cast<JAnimationFSMstateClip*>(ptr)->impl->Clear();
-		}
+		} 
 
-		J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetData(std::wifstream& stream, JAnimationFSMstate* state)
+		J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetData(std::wifstream& stream, const JUserPtr<JAnimationFSMstate>& state)
 		{
 			if (!stream.is_open() || !state->GetTypeInfo().IsChildOf<JAnimationFSMstateClip>())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-			J_FILE_IO_RESULT res = LoadAssetCommonData(stream, state); 
-			JAnimationFSMstateClip* fsmClip = static_cast<JAnimationFSMstateClip*>(state);
+			J_FILE_IO_RESULT res = LoadAssetCommonData(stream, state);
+			JAnimationFSMstateClip* fsmClip = static_cast<JAnimationFSMstateClip*>(state.Get());
 			fsmClip->SetClip(JFileIOHelper::LoadHasObjectIden<JAnimationClip>(stream));
 			return res;
 		}
-		J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(std::wofstream& stream, JAnimationFSMstate* state)
+		J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMstate>& state)
 		{
 			if (!stream.is_open() || !state->GetTypeInfo().IsChildOf<JAnimationFSMstateClip>())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-			JAnimationFSMstateClip* fsmClip = static_cast<JAnimationFSMstateClip*>(state);
+			JUserPtr<JAnimationFSMstateClip> fsmClip = ConnectChildUserPtr<JAnimationFSMstateClip>(state);
 			J_FILE_IO_RESULT res = StoreAssetCommonData(stream, fsmClip);
 			JFileIOHelper::StoreHasObjectIden(stream, fsmClip->impl->clip.Get());
 			return res;
 		}
 
-		void UpdateInterface::Initialize(JFSMstate* state)noexcept
+		void UpdateInterface::Initialize(const JUserPtr<JFSMstate>& state)noexcept
 		{ 
-			static_cast<JAnimationFSMstateClip*>(state)->impl->Initialize();
+			static_cast<JAnimationFSMstateClip*>(state.Get())->impl->Initialize();
 		}
-		void UpdateInterface::Enter(JAnimationFSMstate* state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+		void UpdateInterface::Enter(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 		{
-			static_cast<JAnimationFSMstateClip*>(state)->impl->Enter(updateData, layerNumber, updateNumber);
+			static_cast<JAnimationFSMstateClip*>(state.Get())->impl->Enter(updateData, layerNumber, updateNumber);
 		}
-		void UpdateInterface::Update(JAnimationFSMstate* state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+		void UpdateInterface::Update(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 		{
-			static_cast<JAnimationFSMstateClip*>(state)->impl->Update(updateData, layerNumber, updateNumber);
+			static_cast<JAnimationFSMstateClip*>(state.Get())->impl->Update(updateData, layerNumber, updateNumber);
 		}
-		void UpdateInterface::Close(JAnimationFSMstate* state, JAnimationUpdateData* updateData)noexcept
+		void UpdateInterface::Close(const JUserPtr<JAnimationFSMstate>& state, JAnimationUpdateData* updateData)noexcept
 		{
-			static_cast<JAnimationFSMstateClip*>(state)->impl->Close(updateData);
+			static_cast<JAnimationFSMstateClip*>(state.Get())->impl->Close(updateData);
 		}
-		void UpdateInterface::GetRegisteredSkeleton(JAnimationFSMstate* state, std::vector<JSkeletonAsset*>& skeletonVec)noexcept
+		void UpdateInterface::GetRegisteredSkeleton(const JUserPtr<JAnimationFSMstate>& state, std::vector<JUserPtr<JSkeletonAsset>>& skeletonVec)noexcept
 		{
-			static_cast<JAnimationFSMstateClip*>(state)->impl->GetRegisteredSkeleton(skeletonVec);
+			static_cast<JAnimationFSMstateClip*>(state.Get())->impl->GetRegisteredSkeleton(skeletonVec);
 		}
 
-		Core::JIdentifierPrivate::CreateInstanceInterface& JAnimationFSMstateClipPrivate::GetCreateInstanceInterface()const noexcept
+		JIdentifierPrivate::CreateInstanceInterface& JAnimationFSMstateClipPrivate::GetCreateInstanceInterface()const noexcept
 		{
 			static CreateInstanceInterface pI;
 			return pI;
 		}
-		Core::JIdentifierPrivate::DestroyInstanceInterface& JAnimationFSMstateClipPrivate::GetDestroyInstanceInterface()const noexcept
+		JIdentifierPrivate::DestroyInstanceInterface& JAnimationFSMstateClipPrivate::GetDestroyInstanceInterface()const noexcept
 		{
 			static DestroyInstanceInterface pI;
 			return pI;

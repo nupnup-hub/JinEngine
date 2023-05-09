@@ -21,21 +21,21 @@ namespace JinEngine
 	class JComponentCreatorInterface
 	{
 	public:
-		static JCamera* CreateCamera(JGameObject* owner, bool isMainCam);
-		static JLight* CreateLight(JGameObject* owner, J_LIGHT_TYPE type);
-		static JRenderItem* CreateRenderItem(JGameObject* owner,
-			JMeshGeometry* mesh, 
+		static JUserPtr<JCamera> CreateCamera(const JUserPtr<JGameObject>& owner);
+		static JUserPtr<JLight> CreateLight(const JUserPtr<JGameObject>& owner, J_LIGHT_TYPE type);
+		static JUserPtr<JRenderItem> CreateRenderItem(const JUserPtr<JGameObject>& owner,
+			const JUserPtr<JMeshGeometry>& mesh, 
 			const D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 			const J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT,
 			const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask = SPACE_SPATIAL_ALLOW_ALL);
-		static JRenderItem* CreateRenderItem(JGameObject* owner,
-			JMeshGeometry* mesh,
-			std::vector<JMaterial*> mat,
+		static JUserPtr<JRenderItem>CreateRenderItem(const JUserPtr<JGameObject>& owner,
+			const JUserPtr<JMeshGeometry>& mesh,
+			std::vector<JUserPtr<JMaterial>>& mat,
 			const D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 			const J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT,
 			const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask = SPACE_SPATIAL_ALLOW_ALL);
-		static JComponent* CreateComponent(const J_COMPONENT_TYPE cType, JGameObject* owner); 
-		static JComponent* CreateComponent(const Core::JTypeInfo&  typeInfo, JGameObject* owner);
+		static JUserPtr<JComponent> CreateComponent(const J_COMPONENT_TYPE cType, const JUserPtr<JGameObject>& owner);
+		static JUserPtr<JComponent> CreateComponent(const Core::JTypeInfo&  typeInfo, const JUserPtr<JGameObject>& owner);
 	};
 
 	using JCCI = JComponentCreatorInterface;

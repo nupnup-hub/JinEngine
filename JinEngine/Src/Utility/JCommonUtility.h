@@ -10,10 +10,10 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JIdentifier;
+		class JTypeBase;
 	}
 	class JCommonUtility
-	{
+	{ 
 	public:
 		enum class J_TEXT_ORDER_TYPE
 		{
@@ -133,6 +133,34 @@ namespace JinEngine
 			else
 				return ori;	 
 		}
+		//have to defined GetName function
+		template<typename Type>
+		static std::wstring MakeUniqueName(const std::vector<Type>& vec, const std::wstring& name)
+		{
+			bool result = true;
+			const uint eleCount = (uint)vec.size();
+			uint index = 0;
+			uint overlapCount = 0;
+
+			std::wstring uniqueName = name;
+			while (result)
+			{
+				if (index >= eleCount)
+					break;
+				else
+				{
+					if (vec[index]->GetName() == uniqueName)
+					{
+						ModifyOverlappedName(uniqueName, uniqueName.length(), overlapCount);
+						++overlapCount;
+						index = 0;
+					}
+					else
+						++index;
+				}
+			}
+			return uniqueName;
+		}
 		template<typename Type>
 		static std::wstring MakeUniqueName(const std::vector<Type*>& vec, const std::wstring& name, std::wstring(Type::*ptr)()const)
 		{
@@ -160,7 +188,7 @@ namespace JinEngine
 			}
 			return uniqueName;
 		}
-		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Type>, int> = 0>
+		template<typename Type, std::enable_if_t<std::is_base_of_v<JTypeBase, Type>, int> = 0>
 		static std::wstring MakeUniqueName(const std::vector<Type*>& vec, const std::wstring& name)
 		{
 			bool result = true;
@@ -187,34 +215,7 @@ namespace JinEngine
 			}
 			return uniqueName;
 		}
-		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Type>, int> = 0>
-		static std::wstring MakeUniqueName(const std::vector<std::unique_ptr<Type>>& vec, const std::wstring& name)
-		{
-			bool result = true;
-			const uint eleCount = (uint)vec.size();
-			uint index = 0;
-			uint overlapCount = 0;
-
-			std::wstring uniqueName = name;
-			while (result)
-			{
-				if (index >= eleCount)
-					break;
-				else
-				{
-					if (vec[index]->GetName() == uniqueName)
-					{
-						ModifyOverlappedName(uniqueName, uniqueName.length(), overlapCount);
-						++overlapCount;
-						index = 0;
-					}
-					else
-						++index;
-				}
-			}
-			return uniqueName;
-		}
-
+		
 		template <typename T>
 		static std::string ToStringWithPrecision(const T value, const int n = 6)
 		{
@@ -224,7 +225,7 @@ namespace JinEngine
 			return out.str();
 		}	 
 		template<typename Type, typename FuncDeclaredType>
-		static int GetJIdenIndex(std::vector<Type*>& vec, const size_t guid, size_t(FuncDeclaredType::* ptr)()const)
+		static int GetTypeIndex(std::vector<Type*>& vec, const size_t guid, size_t(FuncDeclaredType::* ptr)()const)
 		{
 			const uint vecCount = (uint)vec.size();
 			for (uint i = 0; i < vecCount; ++i)
@@ -235,7 +236,7 @@ namespace JinEngine
 			return searchFail;
 		}
 		template<typename Type, typename FuncDeclaredType>
-		static int GetJIdenIndex(std::vector<std::unique_ptr<Type>>& vec, const size_t guid, size_t(FuncDeclaredType::* ptr)()const)
+		static int GetTypeIndex(std::vector<std::unique_ptr<Type>>& vec, const size_t guid, size_t(FuncDeclaredType::* ptr)()const)
 		{
 			const uint vecCount = (uint)vec.size();
 			for (uint i = 0; i < vecCount; ++i)
@@ -245,8 +246,8 @@ namespace JinEngine
 			}
 			return searchFail;
 		}	 
-		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Type>, int> = 0>
-		static int GetJIdenIndex(const std::vector<Type*>& vec, const size_t guid)
+		template<typename Type, std::enable_if_t<std::is_base_of_v<JTypeBase, Type>, int> = 0>
+		static int GetTypeIndex(const std::vector<Type*>& vec, const size_t guid)
 		{
 			const uint vecCount = (uint)vec.size();
 			for (uint i = 0; i < vecCount; ++i)
@@ -256,8 +257,19 @@ namespace JinEngine
 			}
 			return searchFail;
 		} 
-		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JIdentifier, Type>, int> = 0>
-		static int GetJIdenIndex(const std::vector<std::unique_ptr<Type>>& vec, const size_t guid)
+		template<typename Type, std::enable_if_t<std::is_base_of_v<JTypeBase, Type>, int> = 0>
+		static int GetTypeIndex(const std::vector<JUserPtr<Type>>& vec, const size_t guid)
+		{
+			const uint vecCount = (uint)vec.size();
+			for (uint i = 0; i < vecCount; ++i)
+			{
+				if (vec[i]->GetGuid() == guid)
+					return i;
+			}
+			return searchFail;
+		}
+		template<typename Type, std::enable_if_t<std::is_base_of_v<JTypeBase, Type>, int> = 0>
+		static int GetTypeIndex(const std::vector<std::unique_ptr<Type>>& vec, const size_t guid)
 		{
 			const uint vecCount = (uint)vec.size();
 			for (uint i = 0; i < vecCount; ++i)
@@ -279,7 +291,7 @@ namespace JinEngine
 			return searchFail;
 		}
 		template<typename Type, typename ...Param>
-		static int GetJIndex(const std::vector<Type>& vec, bool(*condFunc)(Type&, Param...), Param... var)
+		static int GetJIndex(const std::vector<Type>& vec, bool(*condFunc)(const Type&, Param...), Param... var)
 		{
 			const uint vecCount = (uint)vec.size();
 			for (uint i = 0; i < vecCount; ++i)
@@ -301,6 +313,18 @@ namespace JinEngine
 			return searchFail;
 		}
 
+		template<typename Type, typename VecType, typename ...Param>
+		static std::vector<VecType> GetPassConditionElement(const std::vector<Type>& vec, bool(*condPtr)(const Type&, Param...), Param... var)
+		{
+			std::vector<VecType> result;
+			const uint vecCount = (uint)vec.size();
+			for (uint i = 0; i < vecCount; ++i)
+			{
+				if (condPtr(vec[i], std::forward<Param>(var)...))
+					result.push_back(vec[i]);
+			}
+			return result;
+		}
 		template<typename Type, typename ...Param>
 		static std::vector<Type*> GetPassConditionElement(const std::vector<Type*>& vec, bool(*condPtr)(Type*, Param...), Param... var)
 		{
@@ -333,7 +357,7 @@ namespace JinEngine
 				callable(nullptr, objectVec[i], std::forward<Param>(var)...);
 		}
 		template<typename Ret, typename T, typename ...Param>
-		static void ApplyFunc(const uint st, Core::JStaticCallable<Ret, T*, Param...> callable, std::vector<Core::JIdentifier*>& objectVec, Param&&... var)
+		static void ApplyFunc(const uint st, Core::JStaticCallable<Ret, T*, Param...> callable, std::vector<Core::JTypeBase*>& objectVec, Param&&... var)
 		{
 			const uint objectCount = (uint)objectVec.size();
 			for (uint i = st; i < objectCount; ++i)
@@ -347,7 +371,7 @@ namespace JinEngine
 				callable(nullptr, objectVec[i], i, std::forward<Param>(var)...);
 		}
 		template<typename Ret, typename T, typename ...Param>
-		static void ApplyFuncUseIndex(const uint st, Core::JStaticCallable<Ret, T*, uint,  Param...> callable, std::vector<Core::JIdentifier*>& objectVec, Param&&... var)
+		static void ApplyFuncUseIndex(const uint st, Core::JStaticCallable<Ret, T*, uint,  Param...> callable, std::vector<Core::JTypeBase*>& objectVec, Param&&... var)
 		{
 			const uint objectCount = (uint)objectVec.size();
 			for (uint i = st; i < objectCount; ++i)

@@ -13,10 +13,11 @@ namespace JinEngine
 {
 	struct JFileActData : public JFileData
 	{
+		REGISTER_CLASS_USE_ALLOCATOR(JFileActData)
 	public:
-		JResourceObject* resource;
+		JWeakPtr<JResourceObject> resource;
 	public:
-		JFileActData(JResourceObject* resource)
+		JFileActData(const JWeakPtr<JResourceObject>& resource)
 			: resource(resource)
 		{}
 	public:
@@ -61,28 +62,29 @@ namespace JinEngine
 		{
 			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(resource->GetGuid()) + Core::JFileConstant::GetCacheFileFormat();
 		}
-		JDirectory* GetOwnerDirectory()const noexcept 
+		JUserPtr<JDirectory> GetOwnerDirectory()const noexcept
 		{
 			return resource->GetDirectory();
 		}
-		JResourceObject* GetResource()const noexcept
+		JUserPtr<JResourceObject> GetResource()const noexcept
 		{
 			return resource;
-		} 
+		}
 	};
 	struct JFileDeActData : public JFileData
 	{
+		REGISTER_CLASS_USE_ALLOCATOR(JFileDeActData)
 	public:
 		const size_t rGuid;
 		Core::JTypeInfo& rTypeInfo;
-		JDirectory* ownerDir;
+		JWeakPtr<JDirectory> ownerDir;
 		const J_RESOURCE_TYPE resourceType;
 		const uint8 formatIndex;
 	public:
 		const std::wstring name;
 	public:
-		JFileDeActData(const JFileInitData& initData, JDirectory* ownerDir)
-			:JFileData(), 
+		JFileDeActData(const JFileInitData& initData, const JWeakPtr<JDirectory>& ownerDir)
+			:JFileData(),
 			rGuid(initData.rGuid),
 			rTypeInfo(initData.rTypeInfo),
 			ownerDir(ownerDir),
@@ -118,7 +120,7 @@ namespace JinEngine
 			return name + GetOriginalResourceFormat();
 		}
 		std::wstring GetOriginalResourceFormat()const noexcept
-		{ 
+		{
 			return RTypeCommonCall::GetFormat(resourceType, formatIndex);
 		}
 		std::wstring GetPath()const noexcept
@@ -133,18 +135,18 @@ namespace JinEngine
 		{
 			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(rGuid) + Core::JFileConstant::GetCacheFileFormat();
 		}
-		JDirectory* GetOwnerDirectory()const noexcept
+		JUserPtr<JDirectory> GetOwnerDirectory()const noexcept
 		{
 			return ownerDir;
 		}
-		JResourceObject* GetResource()const noexcept
+		JUserPtr<JResourceObject> GetResource()const noexcept
 		{
-			return static_cast<JResourceObject*>(rTypeInfo.GetInstanceRawPtr(rGuid));
+			return rTypeInfo.GetInstanceUserPtr<JResourceObject>(rGuid);
 		}
 	};
 
 	bool JFile::IsExistingResource()const noexcept
-	{ 
+	{
 		return fileData->IsActData();
 	}
 	size_t JFile::GetResourceGuid()const noexcept
@@ -183,50 +185,88 @@ namespace JinEngine
 	{
 		return fileData->GetCacheFilePath();
 	}
-	JDirectory* JFile::GetOwnerDirectory()const noexcept
+	JUserPtr<JDirectory> JFile::GetOwnerDirectory()const noexcept
 	{
 		return fileData->GetOwnerDirectory();
 	}
-	JResourceObject* JFile::GetResource()const noexcept
+	JUserPtr<JResourceObject> JFile::GetResource()const noexcept
 	{
 		return fileData->GetResource();
 	}
-	Core::JUserPtr<JResourceObject> JFile::TryGetResourceUser()const noexcept
+	JUserPtr<JResourceObject> JFile::TryGetResourceUser()const noexcept
 	{
 		//Act File
 		if (fileData->IsActData())
-			return Core::GetUserPtr(fileData->GetResource());
+			return fileData->GetResource();
 		else
-		{	
+		{
 			using IOInterface = JResourceObjectPrivate::AssetDataIOInterface;
 			auto initData = IOInterface::CreateLoadAssetDIData(fileData->GetOwnerDirectory(), Core::JAssetFileLoadPathData{ GetPath() });
 			auto rPrivate = Core::JIdentifier::GetPrivateInterface(fileData->GetResourceTypeInfo().TypeGuid());
-			auto rawPtr = static_cast<JResourceObjectPrivate*>(rPrivate)->GetAssetDataIOInterface().LoadAssetData(initData.get());
-			return Core::GetUserPtr<JResourceObject>(rawPtr);
-		}	
+			auto idenUser = static_cast<JResourceObjectPrivate*>(rPrivate)->GetAssetDataIOInterface().LoadAssetData(initData.get());
+			JUserPtr<JResourceObject> rUser = JUserPtr<JResourceObject>::ConvertChild(std::move(idenUser));
+			return rUser;
+		}
 	}
-	JFile::JFile(const JFileInitData& initData, JDirectory* ownerDir)
-		:fileData(std::make_unique<JFileDeActData>(initData, ownerDir))
+	void JFile::RegisterTypeData()
+	{ 
+		using ReceiverPtr = JinEngine::Core::JAllocationDesc::ReceiverPtr;
+		using ReAllocatedPtr = JinEngine::Core::JAllocationDesc::ReAllocatedPtr;
+		using MemIndex = JinEngine::Core::JAllocationDesc::MemIndex;
+
+		JinEngine::Core::JAllocationDesc::NotifyReAllocF::Ptr notifyActFilePtr = [](ReceiverPtr receiver,
+			ReAllocatedPtr movedPtr,
+			MemIndex index)
+		{
+			JFileActData* movedAct = static_cast<JFileActData*>(movedPtr);
+			auto filePtr = JFile::StaticTypeInfo().GetInstanceRawPtr<JFile>(movedAct->GetResourceGuid());
+			filePtr->fileData.release();
+			filePtr->fileData.reset(movedAct); 
+		};
+		JinEngine::Core::JAllocationDesc::NotifyReAllocF::Ptr notifyDeActFilePtr = [](ReceiverPtr receiver,
+			ReAllocatedPtr movedPtr,
+			MemIndex index)
+		{
+			JFileDeActData* movedDeAct = static_cast<JFileDeActData*>(movedPtr);
+			auto filePtr = JFile::StaticTypeInfo().GetInstanceRawPtr<JFile>(movedDeAct->GetResourceGuid());
+			filePtr->fileData.release();
+			filePtr->fileData.reset(movedDeAct);
+		};
+		auto actReAllocF = std::make_unique<JinEngine::Core::JAllocationDesc::NotifyReAllocF::Functor>(notifyActFilePtr);
+		auto deactReAllocF = std::make_unique<JinEngine::Core::JAllocationDesc::NotifyReAllocF::Functor>(notifyActFilePtr);
+
+		std::unique_ptr<JinEngine::Core::JAllocationDesc> actDesc = std::make_unique<JinEngine::Core::JAllocationDesc>();
+		std::unique_ptr<JinEngine::Core::JAllocationDesc> deactDesc = std::make_unique<JinEngine::Core::JAllocationDesc>();
+
+		actDesc->notifyReAllocB = UniqueBind(std::move(actReAllocF), static_cast<ReceiverPtr>(&typeInfo), JinEngine::Core::empty, JinEngine::Core::empty);
+		deactDesc->notifyReAllocB = UniqueBind(std::move(deactReAllocF), static_cast<ReceiverPtr>(&typeInfo), JinEngine::Core::empty, JinEngine::Core::empty);
+		JFileActData::StaticTypeInfo().SetAllocationOption(std::move(actDesc));
+		JFileDeActData::StaticTypeInfo().SetAllocationOption(std::move(deactDesc));
+	}
+
+	JFile::JFile(const JFileInitData& initData, const JUserPtr<JDirectory>& ownerDir)
+		:JTypeBase(initData.rGuid),
+		fileData(std::make_unique<JFileDeActData>(initData, ownerDir))
 	{}
 
-	std::unique_ptr<JFile> JFilePrivate::CreateFile(const JFileInitData& initData, JDirectory* ownerDir)
+	JOwnerPtr<JFile> JFilePrivate::CreateFile(const JFileInitData& initData, const JUserPtr<JDirectory>& ownerDir)
 	{
 		if (ownerDir == nullptr)
-			return 	std::unique_ptr<JFile>{};
-		return std::unique_ptr<JFile>(new JFile(initData, ownerDir));
+			return nullptr;
+		return Core::JPtrUtil::MakeOwnerPtr<JFile>(initData, ownerDir);
 	}
-	void JFilePrivate::ConvertToActFileData(JFile* file, JResourceObject* rObj)
+	void JFilePrivate::ConvertToActFileData(const JUserPtr<JFile>& file, const JUserPtr<JResourceObject>& rObj)
 	{
 		if (rObj == nullptr || rObj->GetGuid() != file->GetResourceGuid())
 			return;
 
 		file->fileData = std::make_unique<JFileActData>(rObj);
 	}
-	void JFilePrivate::ConvertToDeActFileData(JFile* file)
+	void JFilePrivate::ConvertToDeActFileData(const JUserPtr<JFile>& file)
 	{
-		auto rawPtr = file->fileData->GetResource();
-		if (rawPtr == nullptr)
+		auto userPtr = file->fileData->GetResource();
+		if (userPtr == nullptr)
 			assert("Can't convert deActfile");
-		file->fileData = std::make_unique<JFileDeActData>(JFileInitData{rawPtr}, rawPtr->GetDirectory());
-	} 
+		file->fileData = std::make_unique<JFileDeActData>(JFileInitData{ userPtr }, userPtr->GetDirectory());
+	}
 }

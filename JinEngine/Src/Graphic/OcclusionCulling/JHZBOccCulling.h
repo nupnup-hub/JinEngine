@@ -49,23 +49,28 @@ namespace JinEngine
 			//Set upload buffer and shader macro
 			void UpdateOcclusionMapInfo(ID3D12Device* device, const JGraphicInfo& info);
 			void UpdateObjectCapacity(ID3D12Device* device, const uint objectCapacity);
+			//pass count == drawList cam count
+			void UpdatePassCapacity(ID3D12Device* device, const uint passCapacity);
 		public:
 			//update upload buffer data
 			void UpdateObject(JRenderItem* rItem, const uint buffIndex);
-			void UpdatePass(JScene* scene, const JGraphicInfo& info, const JGraphicOption& option, const uint queryCount, const uint cbIndex);
+			void UpdatePass(JCamera* cam, const JGraphicInfo& info, const JGraphicOption& option, const uint queryCount, const uint cbIndex);
 		public:
 			void DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,
 				CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapSrvHandle,
 				CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapSrvHandle,
 				CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapUavHandle, 
 				const uint samplingCount,
-				const uint srvDescriptorSize);
-			void OcclusuinCulling(ID3D12GraphicsCommandList* commandList, CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle);
+				const uint srvDescriptorSize,
+				const uint passCBIndex);
+			void OcclusuinCulling(ID3D12GraphicsCommandList* commandList,
+				CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle,
+				const uint passCBIndex);
 		public:
 			void ReadCullingResult();
 		private:
 			void BuildRootSignature(ID3D12Device* d3dDevice, const uint occlusionDsvCapacity);
-			void BuildUploadBuffer(ID3D12Device* device, const uint objectCapacity, const uint occlusionCapacity);
+			void BuildUploadBuffer(ID3D12Device* device, const uint objectCapacity, const uint occlusionCapacity, const uint passCapacity);
 		};
 	}
 }

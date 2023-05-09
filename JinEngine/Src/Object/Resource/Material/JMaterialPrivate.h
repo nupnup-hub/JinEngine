@@ -20,7 +20,7 @@ namespace JinEngine
 		class AssetDataIOInterface final : public JResourceObjectPrivate::AssetDataIOInterface
 		{
 		private:
-			Core::JIdentifier* LoadAssetData(Core::JDITypeDataBase* data) final;
+			JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data) final;
 			Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data) final;
 		private:
 			Core::J_FILE_IO_RESULT LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)final;	//use clipMetaData
@@ -31,8 +31,14 @@ namespace JinEngine
 		private:
 			friend class AssetDataIOInterface;
 		private:
-			Core::JOwnerPtr<Core::JIdentifier> Create(std::unique_ptr<Core::JDITypeDataBase>&& initData) final;
+			JOwnerPtr<Core::JIdentifier> Create(Core::JDITypeDataBase* initData) final;
+			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept final;
 			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final;
+		};
+		class DestroyInstanceInterface final : public JResourceObjectPrivate::DestroyInstanceInterface
+		{
+		private:
+			void Clear(Core::JIdentifier* ptr, const bool isForced) final;
 		};
 		class FrameUpdateInterface final
 		{
@@ -57,13 +63,14 @@ namespace JinEngine
 		private:
 			friend class JDefaultMaterialSetting;
 		private:
-			static void OnUpdateShaderTrigger(JMaterial* mat)noexcept;
-			static void OffUpdateShaderTrigger(JMaterial* mat)noexcept;
+			static void OnUpdateShaderTrigger(const JUserPtr<JMaterial>& mat)noexcept;
+			static void OffUpdateShaderTrigger(const JUserPtr<JMaterial>& mat)noexcept;
 		private:
-			static void UpdateShader(JMaterial* mat)noexcept;
+			static void UpdateShader(const JUserPtr<JMaterial>& mat)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
+		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept final;
 		JResourceObjectPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept final;
 	};
 }

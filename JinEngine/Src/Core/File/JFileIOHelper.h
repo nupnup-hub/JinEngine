@@ -130,11 +130,11 @@ namespace JinEngine
 		//Loading중 다른 오브젝트를 Load할 수 있으므로
 		//Stream에러 발생 할 수있음
 		//LoadHasObjectHint는 Hint만 전달하므로 Stream에러 발생에서 안전함
-		static Core::JUserPtr<Core::JIdentifier> LoadHasObjectIden(std::wifstream& stream);
+		static JUserPtr<Core::JIdentifier> LoadHasObjectIden(std::wifstream& stream);
 		template<typename T>
-		static Core::JUserPtr<T> LoadHasObjectIden(std::wifstream& stream)
+		static JUserPtr<T> LoadHasObjectIden(std::wifstream& stream)
 		{  
-			return Core::JUserPtr<T>::ConvertChildUser(LoadHasObjectIden(stream));
+			return JUserPtr<T>::ConvertChild(LoadHasObjectIden(stream));
 		}
 		static Core::JTypeInstanceSearchHint LoadHasObjectHint(std::wifstream& stream); 
 	public:

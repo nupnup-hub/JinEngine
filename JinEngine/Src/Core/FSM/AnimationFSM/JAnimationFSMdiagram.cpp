@@ -13,7 +13,7 @@
 #include"../../Time/JGameTimer.h"
 #include"../../Reflection/JTypeTemplate.h"
 #include"../../Identity/JIdenCreator.h"
-#include"../../Identity/JIdentifierImplBase.h"
+#include"../../Reflection/JTypeImplBase.h"
 #include"../../../Graphic/FrameResource/JAnimationConstants.h"
 #include"../../../Object/Resource/Skeleton/JSkeleton.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"
@@ -37,36 +37,35 @@ namespace JinEngine
 		{
 			static JAnimationFSMdiagramPrivate aPrivate;
 
-			_StateIOInterface* StateIOInterface(JAnimationFSMstate* state)
+			_StateIOInterface* StateIOInterface(const JUserPtr<JAnimationFSMstate>& state)
 			{
 				return &static_cast<_StateIOInterface&>(static_cast<JAnimationFSMstatePrivate&>(state->GetPrivateInterface()).GetAssetDataIOInterface());
 			}
-			_StateUpdateInterface* StateUpdateInterface(JAnimationFSMstate* state)
+			_StateUpdateInterface* StateUpdateInterface(const JUserPtr<JAnimationFSMstate>& state)
 			{
 				return &static_cast<_StateUpdateInterface&>(static_cast<JAnimationFSMstatePrivate&>(state->GetPrivateInterface()).GetUpdateInterface());
 			}
 		}
 		 
-		class JAnimationFSMdiagram::JAnimationFSMdiagramImpl : public JIdentifierImplBase
+		class JAnimationFSMdiagram::JAnimationFSMdiagramImpl : public JTypeImplBase
 		{
 			REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JAnimationFSMdiagramImpl)
 		public:
-			JAnimationFSMdiagram* thisDiagram = nullptr;
+			JWeakPtr<JAnimationFSMdiagram> thisPointer = nullptr;
 		public:
-			JAnimationFSMdiagramImpl(const InitData& initData, JAnimationFSMdiagram* thisDiagram)
-				:thisDiagram(thisDiagram)
+			JAnimationFSMdiagramImpl(const InitData& initData, JAnimationFSMdiagram* thisDiagramRaw)
 			{}
 			~JAnimationFSMdiagramImpl()
 			{}
 		public:
 			void Initialize(JAnimationUpdateData* updateData, const uint layerNumber)noexcept
 			{
-				thisDiagram->Initialize();
-				JFSMstate* state = thisDiagram->GetNowState();
+				thisPointer->Initialize();
+				JUserPtr<JFSMstate> state = thisPointer->GetNowState();
 
 				JDiagramData& diagramData = updateData->diagramData[layerNumber];
 				if (state != nullptr)
-					diagramData.nowState = static_cast<JAnimationFSMstate*>(thisDiagram->GetNowState());
+					diagramData.nowState = ConvertChildUserPtr<JAnimationFSMstate>(thisPointer->GetNowState());
 				else
 					diagramData.nowState = nullptr;
 				diagramData.nextState = nullptr;
@@ -90,7 +89,7 @@ namespace JinEngine
 					if (diagramData.nowTransition != nullptr)
 					{
 						size_t nextStateId = diagramData.nowTransition->GetOutputStateGuid();
-						diagramData.nextState = static_cast<JAnimationFSMstate*>(thisDiagram->GetState(nextStateId));
+						diagramData.nextState = thisPointer->GetState(nextStateId);
 
 						StateUpdateInterface(diagramData.nextState)->Enter(diagramData.nextState, updateData, layerNumber, 1);
 						diagramData.blender.Initialize(updateData->timer->TotalTime(), updateData->timer->TotalTime() + diagramData.nowTransition->GetDurationTime());
@@ -131,7 +130,7 @@ namespace JinEngine
 			{
 				JDiagramData& diagramData = updateData->diagramData[layerNumber];
 				uint size = (uint)updateData->modelSkeleton->GetSkeleton()->GetJointCount();
-				JSkeleton* skeleton = updateData->modelSkeleton->GetSkeleton();
+				JUserPtr<JSkeleton> skeleton = updateData->modelSkeleton->GetSkeleton();
 				size_t srcGuid = updateData->modelSkeleton->GetGuid();
 				XMVECTOR zero = XMVectorSet(0, 0, 0, 1);
 
@@ -158,7 +157,7 @@ namespace JinEngine
 
 				XMVECTOR zero = XMVectorSet(0, 0, 0, 1);
 
-				JSkeleton* skeleton = updateData->modelSkeleton->GetSkeleton();
+				JUserPtr<JSkeleton> skeleton = updateData->modelSkeleton->GetSkeleton();
 				size_t srcGuid = updateData->modelSkeleton->GetGuid();
 				uint size = (uint)updateData->modelSkeleton->GetSkeleton()->GetJointCount();
 
@@ -180,8 +179,8 @@ namespace JinEngine
 			}
 			void PreprocessSkeletonBindPose(JAnimationUpdateData* updateData)noexcept
 			{
-				std::vector<JSkeletonAsset*> skeletonVec;
-				uint stateSize = thisDiagram->GetStateCount();
+				std::vector<JUserPtr<JSkeletonAsset>> skeletonVec;
+				uint stateSize = thisPointer->GetStateCount();
 				size_t srcGuid = updateData->modelSkeleton->GetGuid();
 
 				if (updateData->skeletonBlendRate[0].find(srcGuid) == updateData->skeletonBlendRate[0].end())
@@ -191,7 +190,7 @@ namespace JinEngine
 
 				for (uint i = 0; i < stateSize; ++i)
 				{
-					JAnimationFSMstate* state = static_cast<JAnimationFSMstate*>(thisDiagram->GetStateByIndex(i));
+					JUserPtr<JAnimationFSMstate> state = thisPointer->GetStateByIndex(i);
 					StateUpdateInterface(state)->GetRegisteredSkeleton(state, skeletonVec); 
 				}
 
@@ -206,7 +205,7 @@ namespace JinEngine
 						{
 							std::vector<JAnimationAdditionalBind> additionalBind(JSkeletonFixedData::maxAvatarJointCount);
 							additionalBind.reserve(JSkeletonFixedData::maxAvatarJointCount);
-							JAnimationRetargeting::CalculateAdditionalBindPose(updateData, updateData->modelSkeleton, skeletonVec[i], additionalBind);
+							JAnimationRetargeting::CalculateAdditionalBindPose(updateData, updateData->modelSkeleton.Get(), skeletonVec[i].Get(), additionalBind);
 							updateData->additionalBind.emplace(skeletonVec[i]->GetGuid(), additionalBind);
 							updateData->skeletonBlendRate->emplace(skeletonVec[i]->GetGuid(), 0.0f);
 						}
@@ -216,7 +215,7 @@ namespace JinEngine
 		public:
 			//state가 소유하는  transtion은 has state object이므로
 			//state먼저 모두 생성한 후 state detail을 load 한다
-			static JAnimationFSMdiagram* LoadAssetData(std::wifstream& stream, JFSMdiagramOwnerInterface* fsmOwner)
+			static JUserPtr<JAnimationFSMdiagram> LoadAssetData(std::wifstream& stream, JFSMdiagramOwnerInterface* fsmOwner)
 			{
 				if (!stream.is_open())
 					return nullptr;
@@ -226,16 +225,15 @@ namespace JinEngine
 				J_FSM_OBJECT_TYPE type;
 
 				JFileIOHelper::LoadFsmObjectIden(stream, name, guid, type);
-
-				JAnimationFSMdiagram* newDiagram = JICI::Create<JAnimationFSMdiagram>(name, guid, fsmOwner);
-				JUserPtr<JAnimationFSMdiagram> diagramUser = GetUserPtr(newDiagram);
+				 
+				JUserPtr<JAnimationFSMdiagram> diagramUser = JICI::Create<JAnimationFSMdiagram>(name, guid, fsmOwner);
 				uint stateCount = 0;
 				JFileIOHelper::LoadAtomicData(stream, stateCount);
 
 				for (uint i = 0; i < stateCount; ++i)
 				{
 					J_ANIMATION_STATE_TYPE stateType;
-					JAnimationFSMstate* newState = nullptr;
+					JUserPtr<JAnimationFSMstate> newState = nullptr;
 					JFileIOHelper::LoadFsmObjectIden(stream, name, guid, type);
 					JFileIOHelper::LoadEnumData(stream, stateType);
 
@@ -246,39 +244,44 @@ namespace JinEngine
 				}
 				for (uint i = 0; i < stateCount; ++i)
 				{
-					JAnimationFSMstate* state = newDiagram->GetStateByIndex(i);
+					JUserPtr<JAnimationFSMstate> state = diagramUser->GetStateByIndex(i);
 					StateIOInterface(state)->LoadAssetData(stream, state);
 				}
-				return newDiagram;
+				return diagramUser;
 			}
-			static J_FILE_IO_RESULT StoreAssetData(std::wofstream& stream, JAnimationFSMdiagram* diagram)
+			static J_FILE_IO_RESULT StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMdiagram>& diagram)
 			{
 				if (!stream.is_open())
 					return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-				JFileIOHelper::StoreFsmObjectIden(stream, diagram);
+				JFileIOHelper::StoreFsmObjectIden(stream, diagram.Get());
 
-				const std::vector<JFSMstate*>& stateVec = diagram->GetStateVec();
+				const std::vector<JUserPtr<JFSMstate>>& stateVec = diagram->GetStateVec();
 				const uint stateCount = (uint)stateVec.size();
 				JFileIOHelper::StoreAtomicData(stream, L"StateCount:", stateCount);
 
 				for (uint i = 0; i < stateCount; ++i)
 				{
-					JAnimationFSMstate* fsmState = diagram->GetStateByIndex(i);
-					JFileIOHelper::StoreFsmObjectIden(stream, fsmState);
+					JUserPtr<JAnimationFSMstate> fsmState = diagram->GetStateByIndex(i);
+					JFileIOHelper::StoreFsmObjectIden(stream, fsmState.Get());
 					JFileIOHelper::StoreEnumData(stream, L"StateType:", fsmState->GetStateType());
 				}
 				for (uint i = 0; i < stateCount; ++i)
 				{
-					JAnimationFSMstate* state = diagram->GetStateByIndex(i);
+					JUserPtr<JAnimationFSMstate> state = diagram->GetStateByIndex(i);
 					StateIOInterface(state)->StoreAssetData(stream, state);
 				}
 				return J_FILE_IO_RESULT::SUCCESS;
 			}
 		public:
-			static void RegisterCallOnce()
+			void RegisterThisPointer(JAnimationFSMdiagram* fsmDiagram)
 			{
-				Core::JIdentifier::RegisterPrivateInterface(JAnimationFSMdiagram::StaticTypeInfo(), aPrivate);
+				thisPointer = GetWeakPtr(fsmDiagram);
+			}
+			static void RegisterTypeData()
+			{
+				JIdentifier::RegisterPrivateInterface(JAnimationFSMdiagram::StaticTypeInfo(), aPrivate);
+				IMPL_REALLOC_BIND(JAnimationFSMdiagram::JAnimationFSMdiagramImpl, thisPointer)
 			}
 		};
 
@@ -289,35 +292,34 @@ namespace JinEngine
 			: JFSMdiagram::InitData(JAnimationFSMdiagram::StaticTypeInfo(), name, guid, ownerInterface)
 		{}
 	  
-		Core::JIdentifierPrivate& JAnimationFSMdiagram::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JAnimationFSMdiagram::GetPrivateInterface()const noexcept
 		{
 			return aPrivate;
 		}
-		JAnimationFSMstate* JAnimationFSMdiagram::GetState(const size_t stateGuid)noexcept
+		JUserPtr<JAnimationFSMstate> JAnimationFSMdiagram::GetState(const size_t stateGuid)noexcept
 		{
-			return static_cast<JAnimationFSMstate*>(JFSMdiagram::GetState(stateGuid));
+			return ConvertChildUserPtr<JAnimationFSMstate>(JFSMdiagram::GetState(stateGuid));
 		}
-		JAnimationFSMstate* JAnimationFSMdiagram::GetStateByIndex(const uint index)noexcept
+		JUserPtr<JAnimationFSMstate> JAnimationFSMdiagram::GetStateByIndex(const uint index)noexcept
 		{
-			return static_cast<JAnimationFSMstate*>(JFSMdiagram::GetStateByIndex(index));
+			return ConvertChildUserPtr<JAnimationFSMstate>(JFSMdiagram::GetStateByIndex(index));
 		}
-		JAnimationFSMtransition* JAnimationFSMdiagram::GetTransition(const size_t transitionGuid)noexcept
+		JUserPtr<JAnimationFSMtransition> JAnimationFSMdiagram::GetTransition(const size_t transitionGuid)noexcept
 		{
-			const std::vector<JFSMstate*>& stateVec = GetStateVec();
+			const std::vector<JUserPtr<JFSMstate>>& stateVec = GetStateVec();
 			for (const auto& data : stateVec)
 			{
-				JFSMtransition* transition = data->GetTransition(transitionGuid);
+				JUserPtr<JFSMtransition> transition = data->GetTransition(transitionGuid);
 				if (transition != nullptr)
-					return static_cast<JAnimationFSMtransition*>(transition);
+					return ConvertChildUserPtr<JAnimationFSMtransition>(transition);
 			}
 			return nullptr;
 		} 
-		void JAnimationFSMdiagram::SetClip(const size_t stateGuid, JUserPtr<JAnimationClip> clip)noexcept
-		{
-			JFSMstate* state = GetState(stateGuid);
-			JAnimationFSMstate* aniFsm = static_cast<JAnimationFSMstate*>(state);
+		void JAnimationFSMdiagram::SetClip(const size_t stateGuid, const JUserPtr<JAnimationClip>& clip)noexcept
+		{ 
+			JUserPtr<JAnimationFSMstate> aniFsm = ConvertChildUserPtr<JAnimationFSMstate>(GetState(stateGuid));
 			if (aniFsm->GetStateType() == J_ANIMATION_STATE_TYPE::CLIP)
-				static_cast<JAnimationFSMstateClip*>(state)->SetClip(clip);
+				static_cast<JAnimationFSMstateClip*>(aniFsm.Get())->SetClip(clip);
 		}
 		JAnimationFSMdiagram::JAnimationFSMdiagram(const InitData& initData)
 			:JFSMdiagram(initData), impl(std::make_unique<JAnimationFSMdiagramImpl>(initData, this))
@@ -331,9 +333,15 @@ namespace JinEngine
 		using AssetDataIOInterface = JAnimationFSMdiagramPrivate::AssetDataIOInterface;
 		using UpdateInterface = JAnimationFSMdiagramPrivate::UpdateInterface;
 
-		JOwnerPtr<JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<JDITypeDataBase>&& initData)
+		JOwnerPtr<JIdentifier> CreateInstanceInterface::Create(JDITypeDataBase* initData)
 		{
-			return JPtrUtil::MakeOwnerPtr<JAnimationFSMdiagram>(*static_cast<JAnimationFSMdiagram::InitData*>(initData.get()));
+			return JPtrUtil::MakeOwnerPtr<JAnimationFSMdiagram>(*static_cast<JAnimationFSMdiagram::InitData*>(initData));
+		}
+		void CreateInstanceInterface::Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept
+		{
+			JFSMdiagramPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+			JAnimationFSMdiagram* diagram = static_cast<JAnimationFSMdiagram*>(createdPtr);
+			diagram->impl->RegisterThisPointer(diagram);
 		}
 		bool CreateInstanceInterface::CanCreateInstance(JDITypeDataBase* initData)const noexcept
 		{
@@ -341,29 +349,29 @@ namespace JinEngine
 			return isValidPtr && initData->IsValidData();
 		}
 
-		JAnimationFSMdiagram* AssetDataIOInterface::LoadAssetData(std::wifstream& stream, JFSMdiagramOwnerInterface* fsmOwner)
+		JUserPtr<JAnimationFSMdiagram> AssetDataIOInterface::LoadAssetData(std::wifstream& stream, JFSMdiagramOwnerInterface* fsmOwner)
 		{
 			return JAnimationFSMdiagram::JAnimationFSMdiagramImpl::LoadAssetData(stream, fsmOwner);
 		}
-		J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(std::wofstream& stream, JAnimationFSMdiagram* diagram)
+		J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMdiagram>& diagram)
 		{
 			return JAnimationFSMdiagram::JAnimationFSMdiagramImpl::StoreAssetData(stream, diagram);
 		}
 
-		void UpdateInterface::Initialize(JAnimationFSMdiagram* diagram, JAnimationUpdateData* updateData, const uint layerNumber)noexcept
+		void UpdateInterface::Initialize(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, const uint layerNumber)noexcept
 		{
 			diagram->impl->Initialize(updateData, layerNumber);
 		}
-		void UpdateInterface::Enter(JAnimationFSMdiagram* diagram, JAnimationUpdateData* updateData, const uint layerNumber)
+		void UpdateInterface::Enter(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, const uint layerNumber)
 		{
 			diagram->impl->Enter(updateData, layerNumber);
 		}
-		void UpdateInterface::Update(JAnimationFSMdiagram* diagram, JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept
+		void UpdateInterface::Update(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, Graphic::JAnimationConstants& animationConstatns, const uint layerNumber)noexcept
 		{
 			diagram->impl->Update(updateData, animationConstatns, layerNumber);
 		}
 
-		Core::JIdentifierPrivate::CreateInstanceInterface& JAnimationFSMdiagramPrivate::GetCreateInstanceInterface()const noexcept
+		JIdentifierPrivate::CreateInstanceInterface& JAnimationFSMdiagramPrivate::GetCreateInstanceInterface()const noexcept
 		{
 			static CreateInstanceInterface pI;
 			return pI;

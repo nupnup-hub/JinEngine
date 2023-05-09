@@ -18,12 +18,12 @@ namespace JinEngine
 		private:
 			using ResourceEvListener = Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>;
 		private: 
-			Core::JUserPtr<JTexture> serachIconTexture;
-			Core::JUserPtr<JTexture> optionSettingTexture;
-			Core::JUserPtr<JTexture> backgroundTexture;
+			JUserPtr<JTexture> serachIconTexture;
+			JUserPtr<JTexture> optionSettingTexture;
+			JUserPtr<JTexture> backgroundTexture;
 		private:
 			//last project rendering scene
-			std::vector<Core::JUserPtr<JTexture>> lastRSVec;
+			std::vector<JUserPtr<JTexture>> lastRSVec;
 			std::unique_ptr<JEditorSearchBarHelper> searchHelper;
 		private:
 			std::unique_ptr<SelectorValues> values;

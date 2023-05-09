@@ -33,13 +33,13 @@ namespace JinEngine
 		}
 		bool JGraphicResourceInterface::DestroyTexture()
 		{
-			return info->Destroy();
+			return JGraphicResourceInfo::Destroy(info.Get());
 		}
 		bool JGraphicResourceInterface::HasTxtHandle()const noexcept
 		{
 			return info != nullptr;
 		}
-		void JGraphicResourceInterface::AddDrawRequest(JScene* scene, JComponent* jComp)
+		void JGraphicResourceInterface::AddDrawRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)
 		{
 			Graphic::J_GRAPHIC_RESOURCE_TYPE gType = info->GetGraphicResourceType();
 			switch (gType)
@@ -58,7 +58,7 @@ namespace JinEngine
 				break;
 			}
 		}
-		void JGraphicResourceInterface::PopDrawRequest(JScene* scene, JComponent* jComp)
+		void JGraphicResourceInterface::PopDrawRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)
 		{
 			Graphic::JGraphicDrawList::PopDrawRequest(scene, jComp);
 		}
@@ -95,7 +95,7 @@ namespace JinEngine
 			return info != nullptr;
 		}
 
-		JGraphicResourceUserInterface::JGraphicResourceUserInterface(Core::JUserPtr<Graphic::JGraphicResourceInfo> info)
+		JGraphicResourceUserInterface::JGraphicResourceUserInterface(JUserPtr<Graphic::JGraphicResourceInfo> info)
 			:info(info)
 		{}
 		JGraphicResourceUserInterface::JGraphicResourceUserInterface(JGraphicResourceInterface* gInterface)

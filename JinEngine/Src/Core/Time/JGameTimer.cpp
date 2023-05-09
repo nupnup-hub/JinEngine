@@ -1,5 +1,5 @@
 //***************************************************************************************
-// JGameTimer.cpp by Frank Luna (C) 2011 All Rights Reserved.
+// GameTimer.cpp by Frank Luna (C) 2011 All Rights Reserved.
 //***************************************************************************************
 #include "JGameTimer.h"
 #include"../Guid/GuidCreator.h"
@@ -39,7 +39,7 @@ namespace JinEngine
 			TimerCashVecData::Data().push_back(this);
 			__int64 countsPerSec;
 			QueryPerformanceFrequency((LARGE_INTEGER*)&countsPerSec);
-			mSecondsPercount = 1.0 / (double)countsPerSec;
+			mSecondsPercount = 1.0 / (double)countsPerSec; 
 		}
 		JGameTimer::~JGameTimer()
 		{
@@ -87,7 +87,7 @@ namespace JinEngine
 			}
 		}
 		float JGameTimer::DeltaTime()const noexcept
-		{
+		{ 
 			return (float)mDeltaTime;
 		}
 		void JGameTimer::Start() noexcept
@@ -144,21 +144,18 @@ namespace JinEngine
 		}
 		void JGameTimer::UpdateAllTimer()
 		{
-			auto tickLam = [](JGameTimer* timer)
+			auto tickLam = [](JGameTimer* timer, int64 currTime)
 			{
 				if (timer->mStopped)
 				{
 					timer->mDeltaTime = 0.0;
 					return;
 				}
-				int64 currTime;
-				QueryPerformanceCounter((LARGE_INTEGER*)&currTime);
 				timer->mCurrTime = currTime;
 				// Time difference between this frame and the previous.
 				timer->mDeltaTime = (timer->mCurrTime - timer->mPrevTime) * timer->mSecondsPercount;
 				// Prepare for next frame.
 				timer->mPrevTime = timer->mCurrTime;
-
 				// Force nonnegative.  The DXSDK's CDXUTGameTimer mentions that if the 
 				// libcessor goes into a power save mode or we get shuffled to another
 				// libcessor, then mDeltaTime can be negative.
@@ -166,9 +163,12 @@ namespace JinEngine
 					timer->mDeltaTime = 0.0f;
 			};
 
+			int64 currTime;
+			QueryPerformanceCounter((LARGE_INTEGER*)&currTime);
+
 			const uint count = (uint)TimerCashVecData::Data().size();
 			for (uint i = 0; i < count; ++i)
-				tickLam(TimerCashVecData::Data()[i]);
+				tickLam(TimerCashVecData::Data()[i], currTime);
  
 			++frameCnt;
 			if ((JEngineTimer::Data().TotalTime() - timeElapsed) >= 1.0f)

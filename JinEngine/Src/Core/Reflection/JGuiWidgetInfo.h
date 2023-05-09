@@ -1,6 +1,7 @@
 #pragma once
 #include"JParameterType.h"
 #include"../JDataType.h"     
+#include"../Pointer/JOwnerPtr.h"
 #include"../../Utility/JTypeUtility.h"
 #include<string>
 #include<vector>
@@ -398,7 +399,7 @@ namespace JinEngine
 		class JGuiSelectorInfo : public JGuiWidgetInfo
 		{ 
 		private:
-			using GetElemntVecPtr = std::vector<JIdentifier*>(*)(JIdentifier*);
+			using GetElemntVecPtr = std::vector<JUserPtr<JIdentifier>>(*)(JUserPtr<JIdentifier>);
 		private:  
 			const J_GUI_SELECTOR_IMAGE imageType;
 			const bool hasSizeSlider;
@@ -451,12 +452,11 @@ namespace JinEngine
 	 
 		class JGuiListInfo : public JGuiWidgetInfo
 		{
-		public: 
-			//모든 JIdenfier를 상속받는 object는 Factory에서 생성되며	.. -> old version
+		public:  
 			//새롭게 모든 JIdenfier를 상속받는 object는 IdenCreator에서 생성된다
 			//이는 IdenCreator만이 BeginCrete에 접근할 수 있기때문이다
 			//Instance는 ownerPtr로 typeInfo class에 저장되고 pointer를 반환한다
-			using CreateElementPtr = JIdentifier* (*)(JIdentifier*);
+			using CreateElementPtr = JUserPtr<JIdentifier>(*)(JUserPtr<JIdentifier>);
 		private:
 			//0.. static
 			//1.. dynamic can add element

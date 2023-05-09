@@ -10,18 +10,19 @@
 #include"../Resource/Scene/JScenePrivate.h"
 #include"../Resource/Scene/JScene.h" 
 #include"../../Core/Identity/JIdenCreator.h" 
-#include"../../Core/Identity/JIdentifierImplBase.h"
+#include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/Guid/GuidCreator.h"
-#include"../../Utility/JCommonUtility.h"  
+#include"../../Core/Empty/EmptyType.h"
+#include"../../Utility/JCommonUtility.h"   
 #include<fstream>
 
 namespace JinEngine
 {
 	namespace
 	{
-		using SearchCompByTypePtr = bool(*)(JComponent*, const J_COMPONENT_TYPE);
+		using SearchCompByTypePtr = bool(*)(const JUserPtr<JComponent>&, const J_COMPONENT_TYPE);
 	}
 	namespace
 	{
@@ -29,26 +30,29 @@ namespace JinEngine
 		static SearchCompByTypePtr searchPtr = nullptr;
 	}
 
-	class JGameObject::JGameObjectImpl : public Core::JIdentifierImplBase
+	class JGameObject::JGameObjectImpl : public Core::JTypeImplBase
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JGameObjectImpl)
 	public:
-		std::vector<JGameObject*> children;
-		std::vector<JComponent*> componentVec;
-		std::vector<JBehavior*> behavior;
-		JGameObject* parent = nullptr;
-		JTransform* transform = nullptr;
-		JAnimator* animator = nullptr;
-		JRenderItem* renderItem = nullptr;
-		JScene* ownerScene = nullptr;
+		JWeakPtr<JGameObject> thisPointer;
+	public:
+		std::vector<JUserPtr<JGameObject>> children;
+		std::vector<JUserPtr<JComponent>> componentVec;
+		std::vector<JUserPtr<JBehavior>> behavior;
+		JUserPtr<JGameObject> parent = nullptr;
+		JUserPtr<JTransform> transform = nullptr;
+		JUserPtr<JAnimator> animator = nullptr;
+		JUserPtr<JRenderItem> renderItem = nullptr;
+		JUserPtr<JScene> ownerScene = nullptr;
 	public:
 		//For Editor
 		std::unique_ptr<Core::JTypeInstanceSearchHint> parentInfo;			//For editor redo undo
-		bool isSelected = false;
+		bool isSelected = false; 
 	public:
 		JGameObjectImpl(const InitData& initData)
 			:parent(initData.parent)
 		{}
+		~JGameObjectImpl(){}
 	public:
 		void Initialize(const InitData& initData, JGameObject* thisGameObj)
 		{
@@ -57,26 +61,23 @@ namespace JinEngine
 				ownerScene = parent->impl->ownerScene;
 			else
 				ownerScene = initData.ownerScene;
-
-			if(initData.makeTransform)
-				transform = JICI::Create<JTransform>(thisGameObj);
 		}
 	public:
-		JComponent* GetComponent(const J_COMPONENT_TYPE compType)const noexcept
+		JUserPtr<JComponent> GetComponent(const J_COMPONENT_TYPE compType)const noexcept
 		{
 			int index = JCUtil::GetJIndex(componentVec, searchPtr, compType);
 			return index != -1 ? componentVec[index] : nullptr;
 		}
-		JComponent* GetComponentWithParent(const J_COMPONENT_TYPE compType)const noexcept
+		JUserPtr<JComponent> GetComponentWithParent(const J_COMPONENT_TYPE compType)const noexcept
 		{
-			JComponent* res = GetComponent(compType);
+			JUserPtr<JComponent> res = GetComponent(compType);
 			if (res == nullptr && parent != nullptr)
 				res = parent->impl->GetComponentWithParent(compType);
 			return res;
 		}
-		JComponent* GetComponentWithChild(const J_COMPONENT_TYPE compType)const noexcept
+		JUserPtr<JComponent> GetComponentWithChild(const J_COMPONENT_TYPE compType)const noexcept
 		{
-			JComponent* res = GetComponent(compType);
+			JUserPtr<JComponent> res = GetComponent(compType);
 			if (res == nullptr)
 			{
 				for (const auto& child : children)
@@ -88,7 +89,7 @@ namespace JinEngine
 			}
 			return res;
 		}
-		void GetComponents(const J_COMPONENT_TYPE compType, std::vector<JComponent*>& result)const noexcept
+		void GetComponents(const J_COMPONENT_TYPE compType, std::vector<JUserPtr<JComponent>>& result)const noexcept
 		{
 			for (const auto& data : componentVec)
 			{
@@ -97,13 +98,13 @@ namespace JinEngine
 					result.push_back(data);
 			}
 		}
-		void GetComponentsWithParent(const J_COMPONENT_TYPE compType, std::vector<JComponent*>& res)const noexcept
+		void GetComponentsWithParent(const J_COMPONENT_TYPE compType, std::vector<JUserPtr<JComponent>>& res)const noexcept
 		{
 			GetComponents(compType, res);
 			if (parent != nullptr)
 				parent->impl->GetComponentsWithParent(compType, res);
 		}
-		void GetComponentsWithChild(const J_COMPONENT_TYPE compType, std::vector<JComponent*>& res)const noexcept
+		void GetComponentsWithChild(const J_COMPONENT_TYPE compType, std::vector<JUserPtr<JComponent>>& res)const noexcept
 		{
 			GetComponents(compType, res);
 			for (const auto& child : children)
@@ -164,9 +165,9 @@ namespace JinEngine
 				return true;
 		}
 	public:
-		JComponent* FindComponent(const size_t guid)const noexcept
+		JUserPtr<JComponent> FindComponent(const size_t guid)const noexcept
 		{
-			int index = JCUtil::GetJIdenIndex(componentVec, guid);
+			int index = JCUtil::GetTypeIndex(componentVec, guid);
 			if (index != -1)
 				return componentVec[index];
 
@@ -177,13 +178,22 @@ namespace JinEngine
 			return nullptr;
 		}
 	public:
-		static bool DoCopy(JGameObject* from, JGameObject* to)
+		void Select()noexcept
+		{
+			isSelected = true;
+		}
+		void DeSelect()noexcept
+		{
+			isSelected = false;
+		}
+	public:
+		static bool DoCopy(JUserPtr<JGameObject> from, JUserPtr<JGameObject> to)
 		{
 			bool preIsActivated = to->IsActivated();
-			to->impl->Clear(to);
+			to->impl->Clear(to.Get());
 			if (preIsActivated)
 				to->Activate();
-
+			 
 			const uint componentCount = (uint)from->impl->componentVec.size();
 			for (uint i = 0; i < componentCount; ++i)
 				JICI::CreateAndCopy(from->impl->componentVec[i], to);
@@ -195,7 +205,7 @@ namespace JinEngine
 			return true;
 		}
 	public:
-		static std::unique_ptr<JGameObject::InitData> CreateInitData(JGameObject* parent)
+		static std::unique_ptr<JGameObject::InitData> CreateInitData(JUserPtr<JGameObject> parent)
 		{
 			return std::make_unique<JGameObject::InitData>(Core::JIdentifier::GetDefaultName(JGameObject::StaticTypeInfo()),
 				Core::MakeGuid(),
@@ -215,15 +225,15 @@ namespace JinEngine
 			if (gPtr->IsActivated())
 				gPtr->DeActivate();
 
-			std::vector<JGameObject*> gCopy = children;
+			std::vector<JUserPtr<JGameObject>> gCopy = children;
 			const uint childrenCount = (uint)gCopy.size();
 			for (uint i = 0; i < childrenCount; ++i)
-				JIdentifier::BeginForcedDestroy(gCopy[i]);
+				Core::JIdentifier::BeginForcedDestroy(gCopy[i].Get());
 
-			std::vector<JComponent*> cCopy = componentVec;
+			std::vector<JUserPtr<JComponent>> cCopy = componentVec;
 			const uint componentCount = (uint)cCopy.size();
 			for (uint i = 0; i < componentCount; ++i)
-				JIdentifier::BeginForcedDestroy(cCopy[i]);
+				Core::JIdentifier::BeginForcedDestroy(cCopy[i].Get());
 
 			componentVec.clear();
 			children.clear();
@@ -233,29 +243,28 @@ namespace JinEngine
 			renderItem = nullptr;
 		}
 	public:
-		bool AddComponent(JComponent* newComp)noexcept
+		bool AddComponent(const JUserPtr<JComponent>& newComp)noexcept
 		{
 			if (!CanAddComponent(newComp->GetComponentType()))
 				return false;
-
-			if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)
-				animator = static_cast<JAnimator*>(newComp);
-			else if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
-				renderItem = static_cast<JRenderItem*>(newComp);
-			else if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM)
-				transform = static_cast<JTransform*>(newComp);
-
+			  
 			componentVec.push_back(newComp);
+			if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_ANIMATOR)
+				animator.ConnnectChild(newComp);
+			else if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
+				renderItem.ConnnectChild(newComp);
+			else if (newComp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_TRANSFORM)
+				transform.ConnnectChild(newComp); 
 			return true;
 		}
-		bool RemoveComponent(JComponent* comp)noexcept
+		bool RemoveComponent(const JUserPtr<JComponent>& comp)noexcept
 		{
-			JGameObject* gPtr = comp->GetOwner();
+			JUserPtr<JGameObject> gPtr = comp->GetOwner();
 			const J_COMPONENT_TYPE cType = comp->GetComponentType();
 			const size_t componenetGuid = comp->GetGuid();
 			const J_COMPONENT_TYPE componentType = comp->GetComponentType();
 
-			int index = JCUtil::GetJIdenIndex(componentVec, comp->GetGuid());
+			int index = JCUtil::GetTypeIndex(componentVec, comp->GetGuid());
 			if (index == -1)
 				return false;
 
@@ -270,24 +279,24 @@ namespace JinEngine
 			return true;
 		}
 	public:
-		bool RegisterInstance(JGameObject* gPtr)noexcept
+		bool RegisterInstance(const JUserPtr<JGameObject>& gPtr)noexcept
 		{
 			if (parent != nullptr)
 				parent->impl->children.push_back(gPtr);
 			else if (parentInfo != nullptr)
 			{
 				auto pIden = Core::GetRawPtr(*parentInfo);
-				parent = pIden != nullptr ? static_cast<JGameObject*>(pIden) : nullptr;
+				parent = pIden != nullptr ? Core::GetUserPtr<JGameObject>(pIden) : nullptr;
 				if (parent != nullptr)
 					parent->impl->children.push_back(gPtr);
 			}
 			return JScenePrivate::OwnTypeInterface::AddGameObject(gPtr);
 		}
-		bool DeRegisterInstance(JGameObject* gPtr)noexcept
+		bool DeRegisterInstance(const JUserPtr<JGameObject>& gPtr)noexcept
 		{
 			if (parent != nullptr)
 			{
-				parentInfo = std::make_unique<Core::JTypeInstanceSearchHint>(Core::GetUserPtr(parent));
+				parentInfo = std::make_unique<Core::JTypeInstanceSearchHint>(parent);
 				const size_t guid = gPtr->GetGuid();
 				const uint pChildrenCount = (uint)parent->impl->children.size();
 				for (uint i = 0; i < pChildrenCount; ++i)
@@ -303,26 +312,35 @@ namespace JinEngine
 			return  JScenePrivate::OwnTypeInterface::RemoveGameObject(gPtr);
 		}
 	public:
-		static void RegisterCallOnce()
+		void RegisterThisPointer(JGameObject* gPtr)
 		{
-			JIdentifier::RegisterPrivateInterface(JGameObject::StaticTypeInfo(), gPrivate);
-			searchPtr = [](JComponent* c, const J_COMPONENT_TYPE compType) {return c->GetComponentType() == compType; };
+			thisPointer = Core::GetWeakPtr(gPtr); 
+		}
+		void CreateTransform()
+		{
+			transform = JICI::Create<JTransform>(thisPointer);
+		}
+		static void RegisterTypeData()
+		{
+			Core::JIdentifier::RegisterPrivateInterface(JGameObject::StaticTypeInfo(), gPrivate);
+			searchPtr = [](const JUserPtr<JComponent>& c, const J_COMPONENT_TYPE compType) {return c->GetComponentType() == compType; };
+			IMPL_REALLOC_BIND(JGameObject::JGameObjectImpl, thisPointer)
 		}
 	};
 
-	JGameObject::InitData::InitData(JGameObject* parent)
+	JGameObject::InitData::InitData(const JUserPtr<JGameObject>& parent)
 		:JObject::InitData(JGameObject::StaticTypeInfo()), parent(parent)
 	{
 		if (parent != nullptr)
 			name = JCUtil::MakeUniqueName(parent->GetChildren(), name);
 	}
-	JGameObject::InitData::InitData(JScene* ownerScene)
+	JGameObject::InitData::InitData(const JUserPtr<JScene>& ownerScene)
 		: JObject::InitData(JGameObject::StaticTypeInfo()), ownerScene(ownerScene)
 	{
 		if (parent != nullptr)
 			name = JCUtil::MakeUniqueName(parent->GetChildren(), name);
 	}
-	JGameObject::InitData::InitData(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JGameObject* parent, JScene* ownerScene)
+	JGameObject::InitData::InitData(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, JUserPtr<JGameObject> parent, JUserPtr<JScene> ownerScene)
 		: JObject::InitData(JGameObject::StaticTypeInfo(), name, guid, flag), parent(parent), ownerScene(ownerScene)
 	{
 		if (parent != nullptr)
@@ -338,7 +356,7 @@ namespace JinEngine
 		return parent != nullptr ? true : ownerScene != nullptr && (ownerScene->GetRootGameObject() == nullptr || ownerScene->GetDebugRootGameObject() == nullptr);
 	}
 
-	JGameObject::LoadData::LoadData(JScene* ownerScene, std::wifstream& stream)
+	JGameObject::LoadData::LoadData(JUserPtr<JScene> ownerScene, std::wifstream& stream)
 		:ownerScene(ownerScene), stream(stream) {}
 	JGameObject::LoadData::~LoadData() {}
 	bool JGameObject::LoadData::IsValidData()const noexcept
@@ -346,7 +364,7 @@ namespace JinEngine
 		return stream.is_open();
 	}
 
-	JGameObject::StoreData::StoreData(JGameObject* obj, std::wofstream& stream)
+	JGameObject::StoreData::StoreData(JUserPtr<JGameObject> obj, std::wofstream& stream)
 		:JObject::StoreData(obj), stream(stream)
 	{}
 	bool JGameObject::StoreData::IsValidData()const noexcept
@@ -354,43 +372,43 @@ namespace JinEngine
 		return JObject::StoreData::IsValidData() && stream.is_open();
 	}
 
-	JScene* JGameObject::GetOwnerScene()const noexcept
+	JUserPtr<JScene> JGameObject::GetOwnerScene()const noexcept
 	{
 		return impl->ownerScene;
 	}
-	JAnimator* JGameObject::GetAnimator()const noexcept
+	JUserPtr<JAnimator> JGameObject::GetAnimator()const noexcept
 	{
 		return impl->animator;
 	}
-	JTransform* JGameObject::GetTransform()const noexcept
+	JUserPtr<JTransform> JGameObject::GetTransform()const noexcept
 	{
 		return impl->transform;
 	}
-	JRenderItem* JGameObject::GetRenderItem()const noexcept
+	JUserPtr<JRenderItem> JGameObject::GetRenderItem()const noexcept
 	{
 		return impl->renderItem;
 	}
-	JComponent* JGameObject::GetComponent(const J_COMPONENT_TYPE compType)const noexcept
+	JUserPtr<JComponent> JGameObject::GetComponent(const J_COMPONENT_TYPE compType)const noexcept
 	{
 		return impl->GetComponent(compType);
 	}
-	JComponent* JGameObject::GetComponentWithParent(const J_COMPONENT_TYPE compType)const noexcept
+	JUserPtr<JComponent> JGameObject::GetComponentWithParent(const J_COMPONENT_TYPE compType)const noexcept
 	{
 		return impl->GetComponentWithParent(compType);
 	}
-	std::vector<JComponent*> JGameObject::GetComponents(const J_COMPONENT_TYPE compType)const noexcept
+	std::vector<JUserPtr<JComponent>> JGameObject::GetComponents(const J_COMPONENT_TYPE compType)const noexcept
 	{
-		std::vector<JComponent*> result;
+		std::vector<JUserPtr<JComponent>> result;
 		impl->GetComponents(compType, result);
 		return result;
 	}
-	std::vector<JComponent*> JGameObject::GetComponentsWithParent(const J_COMPONENT_TYPE compType)const noexcept
+	std::vector<JUserPtr<JComponent>> JGameObject::GetComponentsWithParent(const J_COMPONENT_TYPE compType)const noexcept
 	{
-		std::vector<JComponent*> result;
+		std::vector<JUserPtr<JComponent>> result;
 		impl->GetComponentsWithParent(compType, result);
 		return result;
 	}
-	std::vector<JComponent*> JGameObject::GetAllComponent()const noexcept
+	std::vector<JUserPtr<JComponent>> JGameObject::GetAllComponent()const noexcept
 	{
 		return impl->componentVec;;
 	}
@@ -406,18 +424,18 @@ namespace JinEngine
 	{
 		return (uint)impl->children.size();
 	}
-	JGameObject* JGameObject::GetParent()const noexcept
+	JUserPtr<JGameObject> JGameObject::GetParent()const noexcept
 	{
 		return impl->parent;
 	}
-	JGameObject* JGameObject::GetChild(const uint index)const noexcept
+	JUserPtr<JGameObject> JGameObject::GetChild(const uint index)const noexcept
 	{
 		if (index < impl->children.size())
 			return impl->children[index];
 		else
 			return nullptr;
 	}
-	std::vector<JGameObject*> JGameObject::GetChildren()const noexcept
+	std::vector<JUserPtr<JGameObject>> JGameObject::GetChildren()const noexcept
 	{
 		return impl->children;
 	}
@@ -441,10 +459,10 @@ namespace JinEngine
 	{
 		return impl->parent == nullptr;
 	}
-	bool JGameObject::IsParentLine(JGameObject* child)const noexcept
+	bool JGameObject::IsParentLine(JUserPtr<JGameObject> child)const noexcept
 	{
 		bool isParent = false;
-		JGameObject* childParent = child->GetParent();
+		JUserPtr<JGameObject> childParent = child->GetParent();
 		while (childParent != nullptr)
 		{
 			if (childParent->GetGuid() == GetGuid())
@@ -459,6 +477,10 @@ namespace JinEngine
 	bool JGameObject::IsSelected()const noexcept
 	{
 		return impl->isSelected;
+	}
+	bool JGameObject::IsEditorObject()const noexcept
+	{
+		return HasFlag(OBJECT_FLAG_ONLY_USED_IN_EDITOR);
 	}
 	bool JGameObject::HasComponent(const J_COMPONENT_TYPE type)const noexcept
 	{
@@ -476,13 +498,13 @@ namespace JinEngine
 	{
 		return impl->CanAddComponent(type);
 	}
-	void JGameObject::ChangeParent(JGameObject* newParent)noexcept
+	void JGameObject::ChangeParent(JUserPtr<JGameObject> newParent)noexcept
 	{
 		if ((newParent == nullptr || impl->parent == nullptr) ||
 			(newParent->GetOwnerScene()->GetGuid() != impl->parent->GetOwnerScene()->GetGuid()))
 			return;
 
-		if (impl->IsChild(newParent))
+		if (impl->IsChild(newParent.Get()))
 			return;
 
 		int childIndex = -1;
@@ -502,11 +524,11 @@ namespace JinEngine
 		impl->parent->impl->children.erase(impl->parent->impl->children.begin() + childIndex);
 		impl->parent = newParent;
 		SetName(JCUtil::MakeUniqueName(impl->parent->impl->children, GetName()));
-		newParent->impl->children.push_back(this);
+		newParent->impl->children.push_back(Core::GetUserPtr(this));
 
 		JTransformPrivate::UpdateWorldInterface::UpdateWorld(impl->transform);
 	}
-	JComponent* JGameObject::FindComponent(const size_t guid)const noexcept
+	JUserPtr<JComponent> JGameObject::FindComponent(const size_t guid)const noexcept
 	{
 		return impl->FindComponent(guid);
 	}
@@ -549,9 +571,9 @@ namespace JinEngine
 	using ActivateInterface = JGameObjectPrivate::ActivateInterface;
 	using SelectInterface = JGameObjectPrivate::SelectInterface;
 
-	Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
-		JGameObject::InitData* gInitData = static_cast<JGameObject::InitData*>(initData.get());
+		JGameObject::InitData* gInitData = static_cast<JGameObject::InitData*>(initData);
 		if (gInitData->parent != nullptr)
 			gInitData->name = JCUtil::MakeUniqueName(gInitData->parent->impl->children, gInitData->name);
 		 
@@ -562,10 +584,20 @@ namespace JinEngine
 		const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JGameObject::InitData::StaticTypeInfo());
 		return isValidPtr && initData->IsValidData();
 	}
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		JGameObject* gPtr = static_cast<JGameObject*>(createdPtr);
+		gPtr->impl->RegisterThisPointer(gPtr);
+		
+		JGameObject::InitData* gInitData = static_cast<JGameObject::InitData*>(initData);
+		if (gInitData->makeTransform)
+			gPtr->impl->CreateTransform();
+	}
 	void CreateInstanceInterface::RegisterCash(Core::JIdentifier* createdPtr)noexcept
 	{
 		JGameObject* gPtr = static_cast<JGameObject*>(createdPtr);
-		gPtr->impl->RegisterInstance(gPtr);
+		gPtr->impl->RegisterInstance(Core::GetUserPtr(gPtr));
 	}
 	void CreateInstanceInterface::SetValidInstance(Core::JIdentifier* createdPtr)noexcept
 	{
@@ -574,17 +606,18 @@ namespace JinEngine
 			gPtr->Activate();
 	}
 
-	bool CreateInstanceInterface::Copy(Core::JIdentifier* from, Core::JIdentifier* to) noexcept
+	bool CreateInstanceInterface::Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept
 	{
 		const bool canCopy = CanCopy(from, to) && from->GetTypeInfo().IsA(JGameObject::StaticTypeInfo());
 		if (!canCopy)
 			return false;
-
-		return JGameObject::JGameObjectImpl::DoCopy(static_cast<JGameObject*>(from), static_cast<JGameObject*>(to));
+		 
+		return JGameObject::JGameObjectImpl::DoCopy(Core::ConvertChildUserPtr<JGameObject>(std::move(from)), Core::ConvertChildUserPtr<JGameObject>(std::move(to)));
 	}
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
 	{
+		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		JGameObject* gPtr = static_cast<JGameObject*>(ptr);
 		gPtr->impl->Clear(gPtr);
 	}
@@ -597,24 +630,24 @@ namespace JinEngine
 	void DestroyInstanceInterface::DeRegisterCash(Core::JIdentifier* ptr)noexcept
 	{
 		JGameObject* gPtr = static_cast<JGameObject*>(ptr);
-		gPtr->impl->DeRegisterInstance(gPtr);
+		gPtr->impl->DeRegisterInstance(Core::GetUserPtr(gPtr));
 	}
 
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(JScene* invoker, std::wifstream& stream)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(JUserPtr<JScene> invoker, std::wifstream& stream)
 	{
 		if (invoker == nullptr)
 			return std::unique_ptr < Core::JDITypeDataBase>{};
 
 		return std::make_unique<JGameObject::LoadData>(invoker, stream);
 	}
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateStoreAssetDIData(JGameObject* root, std::wofstream& stream)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateStoreAssetDIData(JUserPtr<JGameObject> root, std::wofstream& stream)
 	{
 		if (root == nullptr)
 			return std::unique_ptr < Core::JDITypeDataBase>{};
 
 		return std::make_unique<JGameObject::StoreData>(root, stream);
 	}
-	Core::JIdentifier* AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
+	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JGameObject::LoadData::StaticTypeInfo()))
 			return nullptr;
@@ -629,10 +662,15 @@ namespace JinEngine
 		JFileIOHelper::LoadObjectIden(loadData->stream, name, guid, flag);
 		std::unique_ptr<JGameObject::InitData> initData = JGameObject::JGameObjectImpl::CreateInitData(name, guid, flag, loadData); 
 
-		Core::JIdentifier* res = gPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &gPrivate);
-		JGameObject* newGameObject = static_cast<JGameObject*>(res);
+		JUserPtr<Core::JIdentifier> res = gPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &gPrivate);
+		auto newGameObject = Core::ConvertChildUserPtr<JGameObject>(std::move(res));
 		if (newGameObject == nullptr)
 			return nullptr;
+
+		bool isSelected;
+		JFileIOHelper::LoadAtomicData(stream, isSelected);
+		if (isSelected)
+			newGameObject->impl->Select();
 
 		int componentCount;
 		JFileIOHelper::LoadAtomicData(stream, componentCount);
@@ -666,9 +704,9 @@ namespace JinEngine
 		if (!gmaeObjStoreData->HasCorrectType(JGameObject::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		JGameObject* gObj = static_cast<JGameObject*>(gmaeObjStoreData->obj);
-
+		JGameObject* gObj = static_cast<JGameObject*>(gmaeObjStoreData->obj.Get());
 		JFileIOHelper::StoreObjectIden(gmaeObjStoreData->stream, gObj);
+		JFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"IsSelect", gObj->impl->isSelected);
 		JFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"ComponentCount:", gObj->impl->componentVec.size());
 
 		for (auto& comp : gObj->impl->componentVec)
@@ -689,31 +727,31 @@ namespace JinEngine
 		}
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	bool OwnTypeInterface::AddComponent(JComponent* comp)noexcept
+	bool OwnTypeInterface::AddComponent(const JUserPtr<JComponent>& comp)noexcept
 	{
 		return comp->GetOwner()->impl->AddComponent(comp);
 	}
-	bool OwnTypeInterface::RemoveComponent(JComponent* comp)noexcept
+	bool OwnTypeInterface::RemoveComponent(const JUserPtr<JComponent>& comp)noexcept
 	{
 		return comp->GetOwner()->impl->RemoveComponent(comp);
 	}
 
-	void ActivateInterface::Activate(JGameObject* ptr)noexcept
+	void ActivateInterface::Activate(const JUserPtr<JGameObject>& ptr)noexcept
 	{
 		ptr->Activate();
 	}
-	void ActivateInterface::DeActivate(JGameObject* ptr)noexcept
+	void ActivateInterface::DeActivate(const JUserPtr<JGameObject>& ptr)noexcept
 	{
 		ptr->DeActivate();
 	}
 
-	void SelectInterface::Select(JGameObject* ptr)noexcept
+	void SelectInterface::Select(const JUserPtr<JGameObject>& ptr)noexcept
 	{
-		ptr->impl->isSelected = true;
+		ptr->impl->Select();
 	}
-	void SelectInterface::DeSelect(JGameObject* ptr)noexcept
+	void SelectInterface::DeSelect(const JUserPtr<JGameObject>& ptr)noexcept
 	{
-		ptr->impl->isSelected = false;
+		ptr->impl->DeSelect();
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JGameObjectPrivate::GetCreateInstanceInterface()const noexcept

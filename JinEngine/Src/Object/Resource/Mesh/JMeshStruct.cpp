@@ -113,7 +113,7 @@ namespace JinEngine
 	{
 		return guid;
 	}
-	Core::JUserPtr<JMaterial> JMeshData::GetMaterial()const noexcept
+	JUserPtr<JMaterial> JMeshData::GetMaterial()const noexcept
 	{
 		return material;
 	}
@@ -141,7 +141,7 @@ namespace JinEngine
 	{
 		name = newName;
 	}
-	void JMeshData::SetMaterial(Core::JUserPtr<JMaterial> material)noexcept
+	void JMeshData::SetMaterial(JUserPtr<JMaterial> material)noexcept
 	{
 		JMeshData::material = material;
 	}
@@ -390,11 +390,11 @@ namespace JinEngine
 	{
 		return J_MESHGEOMETRY_TYPE::SKINNED;
 	}
-	Core::JUserPtr<JSkeletonAsset> JSkinnedMeshGroup::GetSkeletonAsset()const noexcept
+	JUserPtr<JSkeletonAsset> JSkinnedMeshGroup::GetSkeletonAsset()const noexcept
 	{
 		return skeletonAsset;
 	}
-	void JSkinnedMeshGroup::SetSkeletonAsset(Core::JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept
+	void JSkinnedMeshGroup::SetSkeletonAsset(JUserPtr<JSkeletonAsset> newSkeletonAsset)noexcept
 	{
 		skeletonAsset = newSkeletonAsset;
 	}

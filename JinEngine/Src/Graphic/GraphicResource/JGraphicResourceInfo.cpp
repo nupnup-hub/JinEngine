@@ -1,4 +1,5 @@
 #include"JGraphicResourceInfo.h"
+#include"../../Core/Guid/GuidCreator.h"
 #include"../JGraphicDrawList.h" 
 #include"../JGraphicPrivate.h"
 #include<d3d12.h>
@@ -8,7 +9,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		J_GRAPHIC_RESOURCE_TYPE JGraphicResourceInfo::GetGraphicResourceType()const noexcept
-		{ 
+		{   
 			return graphicResourceType;
 		}
 		uint JGraphicResourceInfo::GetWidth()const noexcept
@@ -43,17 +44,21 @@ namespace JinEngine
 		{
 			viewInfo[(int)bindType].count = newValue;
 		}
-		bool JGraphicResourceInfo::Destroy()
-		{ 
-			return JGraphicPrivate::ResourceInterface::DestroyGraphicTextureResource(this); 
-		}
-		JGraphicResourceInfo::JGraphicResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, Microsoft::WRL::ComPtr<ID3D12Resource>&& resource)
-			:graphicResourceType(graphicResourceType), resource(std::move(resource))
+		bool JGraphicResourceInfo::Destroy(JGraphicResourceInfo* info)
+		{   
+			return JGraphicPrivate::ResourceInterface::DestroyGraphicTextureResource(info);
+		} 
+		JGraphicResourceInfo::JGraphicResourceInfo(JGraphicResourceManager* manager,
+			const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, 
+			Microsoft::WRL::ComPtr<ID3D12Resource>&& resource)
+			:manager(manager),
+			graphicResourceType(graphicResourceType), 
+			resource(std::move(resource))
 		{}
 		JGraphicResourceInfo::~JGraphicResourceInfo()
 		{
-			resource->Release();
-			resource.Reset();
+			///resource->Release();
+			//resource.Reset();
 		}
 	}
 }

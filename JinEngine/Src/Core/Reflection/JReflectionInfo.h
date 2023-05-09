@@ -27,6 +27,8 @@ namespace JinEngine
 			using EnumVec = std::vector<JEnumInfo*>;
 			using EnumNameMap = std::unordered_map<size_t, JEnumInfo*>;
 		private:
+			using TimeVec = std::vector<float>;
+		private:
 			struct JTypeData
 			{
 			public:
@@ -39,9 +41,19 @@ namespace JinEngine
 				EnumVec enumVec;
 				EnumNameMap enumNameMap;
 			};
+			struct JLazyData
+			{
+			public:
+				TypeVec lazyTypeVec;
+				TimeVec timeVec;
+			};
 		private:
 			JTypeData jType;
 			JEnumData jEnum; 
+			JLazyData jLazy;
+		private:
+			 
+			int lazyUpdateIndex = 0;
 		public:  
 			void AddType(JTypeInfo* newType);
 			void AddEnum(JEnumInfo* newEnum);
@@ -53,7 +65,7 @@ namespace JinEngine
 			JEnumInfo* GetEnumInfo(const std::string& fullname)const noexcept;
 			JEnumInfo* GetEnumInfo(const size_t enumGuid)const noexcept;
 			std::vector<JTypeInfo*> GetAllTypeInfo()const noexcept;
-			std::vector<JTypeInfo*> GetDerivedTypeInfo(const JTypeInfo& baseType)const noexcept;
+			std::vector<JTypeInfo*> GetDerivedTypeInfo(const JTypeInfo& baseType, const bool containBaseType = false)const noexcept;
 		public:
 			//Debug
 			void SearchInstance();
@@ -61,6 +73,8 @@ namespace JinEngine
 			//it is valid once
 			void Initialize();
 			void Clear(); 
+		private: 
+			void Update();
 		};
 		using JReflectionInfo = JSingletonHolder<JReflectionInfoImpl>;
 	}

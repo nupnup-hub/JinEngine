@@ -19,6 +19,7 @@ namespace JinEngine
 		const uint8 formatIndex; 
 	public:
 		JFileInitData(JResourceObject* rObj);
+		JFileInitData(const JUserPtr<JResourceObject>& rObj);
 		JFileInitData(const std::wstring& name,
 			const size_t rGuid,
 			Core::JTypeInfo& rTypeInfo,

@@ -13,7 +13,7 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JIdentifier;
+		class Core::JIdentifier;
 		class JTypeInfo;  
 		class JGuiWidgetInfoHandleBase;
 	}
@@ -31,7 +31,7 @@ namespace JinEngine
 			JReflectionGuiWidgetHelper(JEditorWindow* ownerWnd);
 			~JReflectionGuiWidgetHelper();
 		public:
-			void UpdateGuiWidget(Core::JIdentifier* obj, Core::JTypeInfo* typeInfo); 
+			void UpdateGuiWidget(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo);
 			void Clear();
 		};
 

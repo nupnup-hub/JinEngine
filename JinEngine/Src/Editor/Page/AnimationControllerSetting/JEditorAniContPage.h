@@ -21,8 +21,8 @@ namespace JinEngine
 		private:
 			using ResourceEvListener = Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>;
 		private:
-			Core::JUserPtr<JAnimationController> aniCont;
-			Core::JUserPtr<JScene> aniPreviweScene;
+			JUserPtr<JAnimationController> aniCont;
+			JUserPtr<JScene> aniPreviweScene;
 		private:
 			std::unique_ptr<JAnimationDiagramList>diagramList;
 			std::unique_ptr<JAnimationParameterList>conditionList;
@@ -43,9 +43,9 @@ namespace JinEngine
 			void Initialize()final;
 			void UpdatePage()final;
 		public:
-			bool IsValidOpenRequest(const Core::JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
+			bool IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept final;
 		private:
-			bool StuffAniContData(const Core::JUserPtr<Core::JIdentifier>& selectedObj);
+			bool StuffAniContData(const JUserPtr<Core::JIdentifier>& selectedObj);
 		protected:
 			void DoSetClose()noexcept final;
 			void DoActivate()noexcept final;

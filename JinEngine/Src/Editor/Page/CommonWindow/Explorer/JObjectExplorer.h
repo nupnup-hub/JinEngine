@@ -23,7 +23,7 @@ namespace JinEngine
 		class JObjectExplorer final : public JEditorWindow, public JEditorObjectHandlerInterface
 		{ 
 		private:
-			Core::JUserPtr<JGameObject> root;   
+			JUserPtr<JGameObject> root;   
 			std::unique_ptr<JEditorStringMap>editorString;
 			std::unique_ptr<JEditorRenameHelper>renameHelper;
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
@@ -45,11 +45,11 @@ namespace JinEngine
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
-			void Initialize(Core::JUserPtr<JGameObject> newRoot)noexcept;
+			void Initialize(JUserPtr<JGameObject> newRoot)noexcept;
 			void UpdateWindow()final;
 		private:
 			void BuildObjectExplorer();
-			void ObjectExplorerOnScreen(JGameObject* gObj, const bool isAcivatedSearch);  
+			void ObjectExplorerOnScreen(const JUserPtr<JGameObject>& gObj, const bool isAcivatedSearch);
 		private:
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;

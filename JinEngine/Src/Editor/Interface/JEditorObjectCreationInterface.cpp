@@ -99,7 +99,7 @@ namespace JinEngine
 			const bool useTransition,
 			JEditorCreationHint creationHint)
 		{
-			Core::JIdentifier* rawPtr = Core::SearchRawPtr(Core::JIdentifier::StaticTypeInfo(), guid);
+			Core::JIdentifier* rawPtr = Core::SearchRawPtr<Core::JIdentifier>(Core::JIdentifier::StaticTypeInfo(), guid);
 			if (rawPtr == nullptr)
 				return;
 
@@ -136,7 +136,7 @@ namespace JinEngine
 			const bool useTransition,
 			JEditorCreationHint creationHint)
 		{
-			Core::JIdentifier* rawPtr = Core::SearchRawPtr(Core::JIdentifier::StaticTypeInfo(), guid);
+			Core::JIdentifier* rawPtr = Core::SearchRawPtr<Core::JIdentifier>(Core::JIdentifier::StaticTypeInfo(), guid);
 			if (rawPtr == nullptr)
 				return false;
 
@@ -158,9 +158,9 @@ namespace JinEngine
 			if (creationHint.canSetModBit)
 			{
 				if (creationHint.isSetOpenDataBit)
-					SetModifiedBit(Core::GetUserPtr(creationHint.openDataHint), true);
+					SetModifiedBit(Core::GetUserPtr<Core::JIdentifier>(creationHint.openDataHint), true);
 				if (creationHint.isSetOwnerDataBit)
-					SetModifiedBit(Core::GetUserPtr(creationHint.ownerDataHint), true);
+					SetModifiedBit(Core::GetUserPtr<Core::JIdentifier>(creationHint.ownerDataHint), true);
 				if (creationHint.isSetTargetDataBit)
 					SetModifiedBit(Core::GetUserPtr(rawPtr), true);
 			}
@@ -216,9 +216,9 @@ namespace JinEngine
 					if (creationHint.canSetModBit)
 					{
 						if (creationHint.isSetOpenDataBit)
-							SetModifiedBit(Core::GetUserPtr(creationHint.openDataHint), true);
+							SetModifiedBit(Core::GetUserPtr<Core::JIdentifier>(creationHint.openDataHint), true);
 						if (creationHint.isSetOwnerDataBit)
-							SetModifiedBit(Core::GetUserPtr(creationHint.ownerDataHint), true);
+							SetModifiedBit(Core::GetUserPtr<Core::JIdentifier>(creationHint.ownerDataHint), true);
 						if (creationHint.isSetTargetDataBit)
 							SetModifiedBit(Core::GetUserPtr(ptr), true);
 					}
@@ -238,11 +238,11 @@ namespace JinEngine
 			dHVec.clear();
 		}
 
-		Core::JOwnerPtr<Core::JIdentifier> JEditorObjectReleaseInterface::ReleaseInstance(Core::JIdentifier* ptr)
-		{
-			return Core::JIdentifierPrivate::ReleaseInterface::ReleaseInstance(ptr);
+		JOwnerPtr<Core::JIdentifier> JEditorObjectReleaseInterface::ReleaseInstance(Core::JIdentifier* ptr)
+		{ 
+			return JOwnerPtr<Core::JIdentifier>::ConvertChild(Core::JIdentifierPrivate::ReleaseInterface::ReleaseInstance(ptr));
 		}
-		bool JEditorObjectReleaseInterface::RestoreInstance(Core::JOwnerPtr<Core::JIdentifier>&& instance)
+		bool JEditorObjectReleaseInterface::RestoreInstance(JOwnerPtr<Core::JIdentifier>&& instance)
 		{
 			return Core::JIdentifierPrivate::ReleaseInterface::RestoreInstance(std::move(instance));
 		}
@@ -258,7 +258,7 @@ namespace JinEngine
 		void JEditorDestructionRequestor::RequestDestroyObject(DataHandleStructure& dS,
 			const bool useTransition,
 			JEditorCreationHint creationHint,
-			const std::vector<Core::JUserPtr<Core::JIdentifier>>& idenVec,
+			const std::vector<JUserPtr<Core::JIdentifier>>& idenVec,
 			const JEditorRequestHint requestHint)
 		{
 			if (!requestHint.IsValid() || !creationHint.IsValid())

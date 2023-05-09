@@ -10,7 +10,7 @@ namespace JinEngine
 	///	:joint(skeleton.joint), jointCount((uint)joint.size()), skletonHash(skeleton.skletonHash)
 	//{}
 	uint JSkeleton::GetJointCount()const noexcept
-	{
+	{ 
 		return (uint)joint.size();
 	}
 	size_t JSkeleton::GetHash()const noexcept

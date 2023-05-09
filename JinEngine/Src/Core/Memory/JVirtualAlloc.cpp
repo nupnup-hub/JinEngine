@@ -1,8 +1,10 @@
 #include"JVirtualAlloc.h" 
+#include"JAllocationDesc.h"
 #include"../Platform/JHardwareInfo.h"
 #include"../Platform/JPlatformInfo.h"
 #include<assert.h> 
 #include<Windows.h> 
+#include<string>
 
 namespace JinEngine
 {
@@ -59,30 +61,33 @@ namespace JinEngine
 		{
 			delete apiInterface;
 		}
-		bool JVirtualAlloc::Initialize(JAllocationDesc newDesc)
+		bool JVirtualAlloc::Initialize(JAllocationDesc&& newDesc)
 		{
-			desc = newDesc;
+			desc = std::move(newDesc);
 			reservedBlockCount = desc.dataCount;
 
 			oriBlockSize = desc.dataSize;
 			allocBlockSize = oriBlockSize;
-			CalculatePageFitAllocationData(allocBlockSize, reservedBlockCount, pageSize, reservedPageCount, desc.useDataAlign);
+			 
+			CalculatePageFitAllocationData(allocBlockSize, 
+				reservedBlockCount,
+				pageSize, 
+				reservedPageCount, 
+				totalAllocSize,
+				desc.useDataAlign,
+				desc.fitAllocationGranularity);
 			desc.alignDataSize = allocBlockSize;
 
 			ReserveInfo info;
-			info.size = CalPageSize(reservedPageCount);
+			info.size = totalAllocSize;
 			pData = (DataPointer)apiInterface->ReserveVirtualMemory(&info);
 			//pData = (DataPointer)VirtualAlloc(NULL, CalPageSize(reservedPageCount), MEM_RESERVE | MEM_TOP_DOWN, PAGE_READWRITE);
 			if (pData != NULL)
 			{
 				committedPageCount = useBlockCount = lastAllocPageIndex = 0;
-				isUsePage = new bool[reservedPageCount];
-				for (uint i = 0; i < reservedPageCount; ++i)
-					isUsePage[i] = false;
-
-				isUseBlock = new bool[reservedBlockCount];
-				for (uint i = 0; i < reservedBlockCount; ++i)
-					isUseBlock[i] = false;
+				isUsePage = new bool[reservedPageCount]();
+				isUseBlock = new bool[reservedBlockCount]();
+				//new type[count]() () is special syntax for value-initializing an array:
 
 				allocablePaegHead = new PageInfo();
 				allocablePaegHead->pageIndex = 0;
@@ -96,9 +101,16 @@ namespace JinEngine
 			if (reqSize < oriBlockSize)
 				return nullptr;
 
-			const uint reqBlockCount = reqSize / allocBlockSize;
-			if (!CanAllocate(reqBlockCount))// 수정필요
-				return nullptr;
+			const uint reqBlockCount = (uint)(reqSize / allocBlockSize);
+			if (!CanAllocate(reqBlockCount))
+			{	 
+				if(CanCompactMemory() && CompactUnuseMemory())
+					return Allocate(reqSize);
+				else if (desc.canReAlloc && desc.notifyReAllocB != nullptr && Extend())
+					return Allocate(reqSize);
+				else
+					return nullptr;
+			}
 
 			if (reqBlockCount == 1)
 			{
@@ -128,7 +140,7 @@ namespace JinEngine
 		void JVirtualAlloc::DeAllocate(void* p, const size_t size)
 		{
 			assert(p >= pData);
-			const uint blockCount = size / allocBlockSize;
+			const uint blockCount = (uint)size / allocBlockSize;
 			for (uint i = 0; i < blockCount; ++i)
 				UnUseBlock(p);
 		}
@@ -172,8 +184,12 @@ namespace JinEngine
 		} 
 		bool JVirtualAlloc::CanAllocate(const uint blockCount)const noexcept
 		{
-			return useBlockCount + blockCount <= reservedBlockCount;
+			return allocableBlockHead != nullptr || committedPageCount < reservedPageCount; 
 		} 
+		bool JVirtualAlloc::CanCompactMemory()const noexcept
+		{
+			return GetDeAllocatedBlockCount() >= desc.memoryCompactBorder && desc.notifyReAllocB != nullptr;
+		}
 		bool JVirtualAlloc::IsOverlapPage(const uint pageIndex)const noexcept
 		{
 			if (pageIndex + 1 >= reservedPageCount)
@@ -216,10 +232,26 @@ namespace JinEngine
 			}
 			return count;
 		}
-		JAllocInfo JVirtualAlloc::GetInformation()const noexcept
+		uint JVirtualAlloc::GetAllocatedBlockCount()const noexcept
 		{
-			JAllocInfo info;
-			info.totalReserveSize = reservedPageCount * pageSize;
+			const uint committedBlockCount = GetCommittedBlockCount();
+			if (committedBlockCount > reservedBlockCount)
+				return reservedBlockCount - GetAllocableBlockCount();
+			else
+				return committedBlockCount - GetAllocableBlockCount();
+		}
+		uint JVirtualAlloc::GetDeAllocatedBlockCount()const noexcept
+		{
+			const uint committedBlockCount = GetCommittedBlockCount();
+			if (committedBlockCount > reservedBlockCount)
+				return reservedBlockCount - (useBlockCount + GetAllocableBlockCount());
+			else
+				return committedBlockCount - (useBlockCount + GetAllocableBlockCount());
+		}
+		JAllocationInfo JVirtualAlloc::GetInformation()const noexcept
+		{
+			JAllocationInfo info;
+			info.totalReserveSize = totalAllocSize;
 			info.totalCommittedSize = committedPageCount * pageSize;
 			info.reservePageCount = reservedPageCount;
 			info.committedPageCount = committedPageCount;
@@ -232,7 +264,6 @@ namespace JinEngine
 			info.allocType = J_ALLOCATION_TYPE::VIRTUAL;
 			return info;
 		}
-		//Unuse
 		void JVirtualAlloc::CalPageInnerBlockIndex(const uint pageIndex, _Out_ uint& st, _Out_ uint& ed)const noexcept
 		{
 			if (pageIndex > 0)
@@ -246,6 +277,8 @@ namespace JinEngine
 				st = 0;
 				ed = (pageSize / allocBlockSize - 1);
 			}
+			if (ed >= reservedBlockCount)
+				ed = reservedBlockCount - 1;
 		} 
 		JVirtualAlloc::DataPointer JVirtualAlloc::UsePage(const uint pageIndex)noexcept
 		{
@@ -295,7 +328,7 @@ namespace JinEngine
 		}
 		void JVirtualAlloc::UnUseBlock(const uint pageIndex, const uint blockIndex)noexcept
 		{
-			--useBlockCount;
+			--useBlockCount; 
 			isUseBlock[blockIndex] = false;
 
 			if (!desc.useMemoryCompaction)
@@ -320,23 +353,29 @@ namespace JinEngine
 		JVirtualAlloc::DataPointer JVirtualAlloc::CommitEmptyPage()
 		{
 			if (allocablePaegHead == nullptr)
+			{
+				int unuseCount = 0;
+				for (uint i = 0; i < reservedBlockCount; ++i)
+				{
+					if (!isUseBlock[i])
+						++unuseCount;
+				}
+				//MessageBox(0, L"useBlockCount", std::to_wstring(useBlockCount).c_str(), 0);
+				//MessageBox(0, L"unuseCount", std::to_wstring(unuseCount).c_str(), 0);
+				//MessageBox(0, L"reservedBlockCount", std::to_wstring(reservedBlockCount).c_str(), 0);
 				return nullptr;
+			}
 
 			if (apiInterface->Allocate((PVOID)((std::intptr_t)pData + CalPageSize(allocablePaegHead->pageIndex)), pageSize) == NULL)
 				return nullptr;
-
 			return UsePage(allocablePaegHead->pageIndex);
 		}
-		void JVirtualAlloc::CompactUnuseMemory()
+		bool JVirtualAlloc::CompactUnuseMemory()
 		{
-			const uint committedBlockCount = GetCommittedBlockCount();
-			const uint allocableBlockCount = GetAllocableBlockCount();
-			const uint deallocatedBlockCount = committedBlockCount - (useBlockCount + allocableBlockCount);
+			if (!CanCompactMemory())
+				return false;
 
-			if (deallocatedBlockCount < desc.memoryCompactBorder)
-				return;
-
-			const uint allocatedBlockCount = committedBlockCount - allocableBlockCount;
+			const uint allocatedBlockCount = GetAllocatedBlockCount();
 			for (uint i = 0; i < allocatedBlockCount; ++i)
 			{
 				if (!isUseBlock[i])
@@ -356,24 +395,27 @@ namespace JinEngine
 					if (!findUseBlock)
 						break;
 
-					BYTE* emptyPtr = CalPtrLocation(i);
-					BYTE* movedPtr = CalPtrLocation(movedBlockIndex);
+					DataPointer emptyPtr = CalPtrLocation(i);
+					DataPointer movedPtr = CalPtrLocation(movedBlockIndex);
 					for (uint j = 0; j < oriBlockSize; ++j)
-						*(emptyPtr + j) = *(movedPtr + j);
+						emptyPtr[j] = movedPtr[j]; 
 					isUseBlock[i] = true;
 					isUseBlock[movedBlockIndex] = false;
+					(*desc.notifyReAllocB)(emptyPtr, movedBlockIndex);
 				}
 			}
 			FreeUnuseMemory();
 			DeleteAllInfoPointer(&allocableBlockHead);
-			const uint newCommittedBlockCount = GetCommittedBlockCount();
-			for (int64 i = newCommittedBlockCount - 1; i >= useBlockCount; --i)
+
+			const uint newallocatedBlockCount = GetAllocatedBlockCount();
+			for (int64 i = newallocatedBlockCount - 1; i >= useBlockCount; --i)
 			{
 				ZeroMemory(CalPtrLocation(i), allocBlockSize);
 				BlockInfo* newBlockInfo = new BlockInfo(GetPageIndex(i), i);
 				newBlockInfo->next = allocableBlockHead;
 				allocableBlockHead = newBlockInfo;
-			}
+			} 
+			return true;
 		}
 		void JVirtualAlloc::FreeUnuseMemory()
 		{
@@ -414,6 +456,54 @@ namespace JinEngine
 					UnUsePage(i);
 				}
 			}
+		}
+		bool JVirtualAlloc::Extend()
+		{
+			DataPointer exPData;
+			size_t exAllocSize = totalAllocSize * desc.extendFactor;
+
+			ReserveInfo info;
+			info.size = exAllocSize;
+			exPData = (DataPointer)apiInterface->ReserveVirtualMemory(&info);
+			if (exPData == NULL)
+				return false;
+
+			if (apiInterface->Allocate(exPData, committedPageCount * pageSize) == NULL)
+			{
+				apiInterface->ReleaseVirtualMemory(exPData);
+				return false;
+			}
+
+			for (uint i = 0; i < useBlockCount; ++i)
+			{
+				DataPointer oldBlockSt = &pData[i * allocBlockSize];
+				DataPointer newBlockSt = &exPData[i * allocBlockSize];
+				for (uint j = 0; j < allocBlockSize; ++j)
+					newBlockSt[j] = oldBlockSt[j]; 
+				if (desc.notifyReAllocB != nullptr)
+					(*desc.notifyReAllocB)(newBlockSt, i);
+			}
+			apiInterface->ReleaseVirtualMemory(pData);
+
+			const size_t preReservePageCount = reservedPageCount;
+			const size_t preReserveBlockCount = reservedBlockCount;
+
+			pData = exPData;
+			totalAllocSize = exAllocSize;
+			reservedPageCount = totalAllocSize / pageSize;
+			reservedBlockCount = (reservedPageCount * pageSize) / allocBlockSize;
+
+			delete isUsePage;
+			isUsePage = new bool[reservedPageCount]();
+			memset(isUsePage, 1, preReservePageCount);
+
+			delete isUseBlock;
+			isUseBlock = new bool[reservedBlockCount]();
+			memset(isUseBlock, 1, preReserveBlockCount);
+
+			allocablePaegHead = new PageInfo();
+			allocablePaegHead->pageIndex = preReservePageCount;
+			return true;
 		}
 	};
 }

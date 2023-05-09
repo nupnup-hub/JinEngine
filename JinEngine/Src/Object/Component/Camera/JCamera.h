@@ -19,8 +19,8 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
-			InitData(JGameObject* owner);
-			InitData(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
+			InitData(const JUserPtr<JGameObject>& owner);
+			InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
 		};
 	private:
 		friend class JCameraPrivate;
@@ -36,7 +36,7 @@ namespace JinEngine
 		{
 			return J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
 		} 	  
-		JTransform* GetTransform()noexcept;
+		JUserPtr<JTransform> GetTransform()noexcept;
 		DirectX::XMMATRIX GetView()const noexcept;
 		DirectX::XMMATRIX GetProj()const noexcept;
 		DirectX::XMFLOAT4X4 GetView4x4f()const noexcept;
@@ -56,18 +56,21 @@ namespace JinEngine
 		float GetFarViewHeight()const noexcept;
 		J_CAMERA_STATE GetCameraState()const noexcept; 
 	public:
-		void SetNear(float value)noexcept;
-		void SetFar(float value) noexcept; 
-		void SetFov(float value) noexcept;
-		void SetFovDegree(float value) noexcept;
-		void SetViewSize(int width, int height) noexcept;
-		void SetOrthoCamera(bool value)noexcept; 
-		void SetMainCamera(bool value)noexcept;
-	public:
+		void SetNear(const float value)noexcept;
+		void SetFar(const float value) noexcept;
+		void SetFov(const float value) noexcept;
+		void SetFovDegree(const float value) noexcept;
+		void SetViewSize(const int width, const int height) noexcept;
+		void SetOrthoCamera(const bool value)noexcept;
+		void SetAllowDisplayDebug(const bool value)noexcept;
+		void SetAllowCulling(const bool value)noexcept;
+		void SetCameraState(const J_CAMERA_STATE state)noexcept;
+	public: 
 		bool IsOrthoCamera()const noexcept;
-		bool IsMainCamera()const noexcept;
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final; 
+		bool AllowDisplayDebug()const noexcept;
+		bool AllowCulling()const noexcept;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 

@@ -13,8 +13,8 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
-			InitData(JGameObject* owner);
-			InitData(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
+			InitData(const JUserPtr<JGameObject>& owner);
+			InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
 		};
 	private:
 		friend class JTransformPrivate;
@@ -149,7 +149,7 @@ class JTransform final : public JComponent
 		Core::J_FILE_IO_RESULT CallStoreComponent(std::wofstream& stream)final;
 		static Core::J_FILE_IO_RESULT StoreObject(std::wofstream& stream, JTransform* transform);
 		static JTransform* LoadObject(std::wifstream& stream, JGameObject* owner);
-		static void RegisterCallOnce();
+		static void RegisterTypeData();
 	private:
 		JTransform(const size_t guid, const J_OBJECT_FLAG flag, JGameObject* owner);
 		~JTransform();

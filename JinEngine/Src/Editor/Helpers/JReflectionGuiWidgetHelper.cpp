@@ -24,7 +24,7 @@
 #include"../../Object/Component/RenderItem/JRenderItem.h"
 
 #include"../../Core/Identity/JIdentifier.h"
-#include"../../Core/Identity/JIdentifierImplBase.h"
+#include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/FSM/JFSMinterface.h"
 #include"../../Core/FSM/JFSMtransition.h"
 #include"../../Core/FSM/JFSMparameter.h"
@@ -46,20 +46,24 @@ namespace JinEngine
 			struct UpdateData
 			{
 			public:
-				Core::JIdentifier* obj = nullptr;
-				Core::JIdentifierImplBase* implObj = nullptr;
+				Core::JUserPtr<Core::JIdentifier> obj = nullptr; 
 				Core::JGuiWidgetInfoHandleBase* handleBase = nullptr;
+				Core::JTypeInfo* updateTypeInfo = nullptr;
 			public:
-				int widgetIndex;
+				int widgetIndex; 
 			public:
-				Core::JGuiWidgetInfo* GetWidgetInfo()
+				Core::JGuiWidgetInfo* GetWidgetInfo()const noexcept
 				{
 					return handleBase->GetWidgetInfo(widgetIndex);
 				}
-			public:
-				bool HasImplType()const noexcept
+				Core::JTypeImplBase* GetImplBase()const noexcept
 				{
-					return implObj != nullptr;
+					return updateTypeInfo->ConvertImplBase(obj.Get());
+				}
+			public:
+				bool HasImplType() const noexcept
+				{
+					return GetImplBase() != nullptr;
 				}
 			};
 
@@ -134,8 +138,8 @@ namespace JinEngine
 			static std::unique_ptr<JGuiWidgetDisplayHandle> MakeGuiHandle(Core::JParameterHint pHint, Core::JGuiWidgetInfo* widgetInfo);
 			static std::unique_ptr<JGuiWidgetGroupHandle> MakeExtraGroupHandle(Core::JGuiWidgetInfo* widgetInfo);
 			static std::unique_ptr<JGuiConditionHandle> MakeExtraConditionHandle(Core::JGuiWidgetInfo* widgetInfo);
-			static void SettingDisplayTypeInfo(Core::JIdentifier* obj, Core::JTypeInfo* typeInfo, UserData* userData);
-			static void SettingUpdateData(Core::JIdentifier* obj, Core::JTypeInfo* typeInfo, UserData* userData);
+			static void SettingDisplayTypeInfo(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo, UserData* userData);
+			static void SettingUpdateData(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo, UserData* userData);
 			static void DisplayWidget(UpdateData& updateData, UserData* userData);
 		}
 
@@ -175,9 +179,9 @@ namespace JinEngine
 			static T GetValue(UpdateData& updateData)
 			{
 				if (updateData.HasImplType())
-					return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->Get(updateData.implObj);
+					return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->Get(updateData.GetImplBase());
 				else
-					return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->Get(updateData.obj);
+					return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->Get(updateData.obj.Get());
 			}
 			template<typename T, typename U>
 			static T GetValue(U* obj, Core::JPropertyInfo* pInfo)
@@ -188,9 +192,9 @@ namespace JinEngine
 			static T UnsafeGetValue(UpdateData& updateData)
 			{
 				if (updateData.HasImplType())
-					return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->UnsafeGet(updateData.implObj);
+					return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->UnsafeGet(updateData.GetImplBase());
 				else
-					return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->UnsafeGet(updateData.obj);
+					return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->UnsafeGet(updateData.obj.Get());
 			}
 			template<typename T, typename U>
 			static T UnsafeGetValue(U* obj, Core::JPropertyInfo* pInfo)
@@ -204,8 +208,8 @@ namespace JinEngine
 				Core::JTypeInstanceSearchHint modObjHint,
 				T value)
 			{
-				Core::JIdentifier* iden = Core::GetRawPtr(objHint);
-				Core::JIdentifier* modifiedIden = Core::GetRawPtr(modObjHint);
+				Core::JIdentifier* iden = Core::GetRawPtr<Core::JIdentifier>(objHint);
+				Core::JIdentifier* modifiedIden = Core::GetRawPtr<Core::JIdentifier>(modObjHint);
 				if (iden == nullptr || modifiedIden == nullptr)
 					return;
 
@@ -228,8 +232,8 @@ namespace JinEngine
 				Core::JTypeInstanceSearchHint modObjHint,
 				T value)
 			{
-				Core::JIdentifier* iden = Core::GetRawPtr(objHint);
-				Core::JIdentifier* modifiedIden = Core::GetRawPtr(modObjHint);
+				Core::JIdentifier* iden = Core::GetRawPtr<Core::JIdentifier>(objHint);
+				Core::JIdentifier* modifiedIden = Core::GetRawPtr<Core::JIdentifier>(modObjHint);
 				if (iden == nullptr || modifiedIden == nullptr)
 					return;
 
@@ -265,24 +269,24 @@ namespace JinEngine
 				std::unique_ptr<FType::Functor> doFunctor = std::make_unique<FType::Functor>(fPtr);
 				std::unique_ptr<FType::Functor> undoFunctor = std::make_unique<FType::Functor>(fPtr);
 
-				Core::JUserPtr<Core::JIdentifier> modObj;
+				JUserPtr<Core::JIdentifier> modObj;
 				if (!updateData.obj->GetTypeInfo().IsChildOf<JObject>())
 					modObj = JEditorPageShareData::GetOpendPageData(userData->editorWnd->GetOwnerPageType()).GetOpenSeleted();
 				else
-					modObj = Core::GetUserPtr(updateData.obj);
+					modObj = updateData.obj;
  
 				Core::JGuiWidgetInfoHandle<T>* doHandle = static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase);
 				Core::JGuiWidgetInfoHandle<T>* undoHandle = static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase);
 
 				std::unique_ptr<typename FType::CompletelyBind> doBind = std::make_unique<typename FType::CompletelyBind>(std::move(doFunctor),
 					std::move(doHandle),
-					Core::JTypeInstanceSearchHint(Core::GetUserPtr(updateData.obj)),
+					Core::JTypeInstanceSearchHint(updateData.obj),
 					Core::JTypeInstanceSearchHint(modObj),
 					std::move(value));
 
 				std::unique_ptr<typename FType::CompletelyBind> undoBind = std::make_unique<typename FType::CompletelyBind>(std::move(undoFunctor),
 					std::move(undoHandle),
-					Core::JTypeInstanceSearchHint(Core::GetUserPtr(updateData.obj)),
+					Core::JTypeInstanceSearchHint(updateData.obj),
 					Core::JTypeInstanceSearchHint(modObj),
 					GetValue<T>(updateData));
 
@@ -461,7 +465,7 @@ namespace JinEngine
 				if (enumCondUser->IsRefUser())
 				{
 					Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(enumCondUser->GetOwnerTypeParameterNameInRefClass());
-					enumOwner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JIdentifier*>(updateData.obj, refPropertyInfo);
+					enumOwner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JIdentifier*>(updateData.obj.Get(), refPropertyInfo);
 
 					if (enumOwner == nullptr)
 						return false;
@@ -470,7 +474,7 @@ namespace JinEngine
 				}
 				else
 				{
-					enumOwner = updateData.obj;
+					enumOwner = updateData.obj.Get();
 					enumPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(enumCondInfo->GetParamName());
 				}
 				if (enumOwner == nullptr || enumPropertyInfo == nullptr)
@@ -488,7 +492,7 @@ namespace JinEngine
 				Core::JGuiExtraFunctionUserInfo* extraUser,
 				Core::JGuiConditionInfo* conditionInfo)
 			{
-				Core::JIdentifierImplBase* enumOwner = nullptr;
+				Core::JTypeImplBase* enumOwner = nullptr;
 				Core::JPropertyInfo* enumPropertyInfo = nullptr;
 
 				Core::JGuiEnumConditionInfo* enumCondInfo = static_cast<Core::JGuiEnumConditionInfo*>(conditionInfo);
@@ -496,7 +500,7 @@ namespace JinEngine
 				if (enumCondUser->IsRefUser())
 				{
 					Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(enumCondUser->GetOwnerTypeParameterNameInRefClass());
-					enumOwner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JIdentifierImplBase*>(updateData.obj, refPropertyInfo);
+					enumOwner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JTypeImplBase*>(updateData.obj.Get(), refPropertyInfo);
 					
 					if (enumOwner == nullptr)
 						return false;
@@ -505,7 +509,7 @@ namespace JinEngine
 				}
 				else
 				{
-					enumOwner = updateData.implObj;
+					enumOwner = updateData.GetImplBase();
 					enumPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(enumCondInfo->GetParamName());
 				}
 				if (enumOwner == nullptr || enumPropertyInfo == nullptr)
@@ -677,7 +681,7 @@ namespace JinEngine
 		class JGuiSelectorHandleHelper : public JGuiWidgetDisplayHandle, public JEditorPreviewInterface
 		{
 		private:
-			using GetElemntVecF = Core::JSFunctorType<std::vector<Core::JIdentifier*>, Core::JIdentifier*>;
+			using GetElemntVecF = Core::JSFunctorType<std::vector<JUserPtr<Core::JIdentifier>>, JUserPtr<Core::JIdentifier>>;
 		private:
 			std::vector<JPreviewScene*> selectorPreviewVec;
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
@@ -711,8 +715,7 @@ namespace JinEngine
 				imageType = inputInfo->GetPreviewImageType();
 
 				Core::JTypeInfo* handleType = updateData.handleBase->GetTypeInfo();
-				const bool canUseImage = handleType->IsChildOf<JObject>() || (handleType->HasImplTypeInfo() && handleType->GetImplTypeInfo()->IsChildOf<JObject>());
-
+				const bool canUseImage = handleType->IsChildOf<JObject>() || (handleType->HasInterfaceTypeInfo() && handleType->GetInterfaceTypeInfo()->IsChildOf<JObject>());
 				if (!canUseImage)
 					imageType = Core::J_GUI_SELECTOR_IMAGE::NONE;
 
@@ -786,7 +789,7 @@ namespace JinEngine
 					ImGui::SameLine();
 				}
 			}
-			void SelectedPreviewOnScreen(JPreviewScene** previewScene, Core::JUserPtr<JObject> previewObject)
+			void SelectedPreviewOnScreen(JPreviewScene** previewScene, JUserPtr<JObject> previewObject)
 			{
 				SelectedPreviewOnScreen(previewScene, previewObject.Get());
 			}
@@ -873,7 +876,7 @@ namespace JinEngine
 				const uint previweSceneCount = (uint)selectorPreviewVec.size();
 				for (uint i = 0; i < previweSceneCount; ++i)
 				{
-					Core::JUserPtr<Core::JIdentifier> previewObj = selectorPreviewVec[i]->GetJObject();
+					JUserPtr<Core::JIdentifier> previewObj = selectorPreviewVec[i]->GetJObject();
 					if (!searchBarHelper->CanSrcNameOnScreen(previewObj->GetName()))
 						continue;
 
@@ -901,7 +904,13 @@ namespace JinEngine
 				}
 				if constexpr (std::is_base_of_v<JResourceObject, ValueType>)
 				{
-					auto rVec = ValueType::StaticTypeInfo().GetInstanceRawPtrVec(); 
+					std::vector<Core::JTypeBase*> rVec;
+					auto derivedTypeVec = Core::JReflectionInfo::Instance().GetDerivedTypeInfo(ValueType::StaticTypeInfo());
+					for (const auto& data : derivedTypeVec)
+					{
+						auto rawVec = data->GetInstanceRawPtrVec();
+						rVec.insert(rVec.end(), rawVec.begin(), rawVec.end());
+					}
 					uint count = (uint)rVec.size();
 					for (uint i = 0; i < count; ++i)
 					{
@@ -922,11 +931,11 @@ namespace JinEngine
 					if (getElemenVecPtr == nullptr)
 						return;
 
-					std::vector<Core::JIdentifier*> elementVec = (*getElemenVecPtr)(updateData.obj);
+					std::vector<JUserPtr<Core::JIdentifier>> elementVec = (*getElemenVecPtr)(updateData.obj);
 					const uint elementCount = (uint)elementVec.size();
 					for (uint i = 0; i < elementCount; ++i)
 					{
-						if (elementVec[i]->GetTypeInfo().IsChildOf<JObject>() && static_cast<JObject*>(elementVec[i])->HasFlag(OBJECT_FLAG_HIDDEN))
+						if (elementVec[i]->GetTypeInfo().IsChildOf<JObject>() && static_cast<JObject*>(elementVec[i].Get())->HasFlag(OBJECT_FLAG_HIDDEN))
 							continue;
 
 						if (!searchBarHelper->CanSrcNameOnScreen(elementVec[i]->GetName()))
@@ -934,7 +943,7 @@ namespace JinEngine
 
 						if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(elementVec[i]->GetName()) + "##" + uniqueLabel))
 						{
-							(*selectedObj) = static_cast<ValueType*>(elementVec[i]);
+							(*selectedObj) = static_cast<ValueType*>(elementVec[i].Get());
 							isSelected = true;
 							ImGui::CloseCurrentPopup();
 						}
@@ -953,7 +962,14 @@ namespace JinEngine
 
 				if constexpr (std::is_base_of_v<JResourceObject, ValueType>)
 				{
-					auto rVec = ValueType::StaticTypeInfo().GetInstanceRawPtrVec();
+					std::vector<Core::JTypeBase*> rVec; 
+					auto derivedTypeVec = Core::JReflectionInfo::Instance().GetDerivedTypeInfo(ValueType::StaticTypeInfo(), true);
+					for (const auto& data : derivedTypeVec)
+					{
+						auto rawVec = data->GetInstanceRawPtrVec();
+						rVec.insert(rVec.end(), rawVec.begin(), rawVec.end());
+					}
+
 					for (auto& data : rVec)
 					{
 						JResourceObject* rObj = static_cast<JResourceObject*>(data);
@@ -1109,7 +1125,8 @@ namespace JinEngine
 					const std::string uniqueLabel = MakeUniqueLabel(updateData) + "_" + std::to_string(i);
 					if (isRenderItemMaterial)
 					{
-						JRenderItem* rItem = static_cast<JRenderItem*>(updateData.obj);
+						JUserPtr<JRenderItem> rItem;
+						rItem.ConnnectChild(updateData.obj);
 						JImGuiImpl::Text(JCUtil::WstrToU8Str(rItem->GetMesh()->GetSubMeshName(i)));
 					}
 
@@ -1475,6 +1492,7 @@ namespace JinEngine
 		class JGuiListHandle : public JGuiWidgetDisplayHandle, public JGuiObjectValueInterface
 		{
 		public:
+			static constexpr bool isUser = Core::JUserPtrDetermine<Core::RemoveAll_T<typename Core::StdArrayDetermine<T>::ValueType>>::value;
 			using ValueType = typename Core::JUserPtrDetermine<Core::RemoveAll_T<typename Core::StdArrayDetermine<T>::ValueType>>::ElementType;
 		private:
 			T container;
@@ -1483,7 +1501,7 @@ namespace JinEngine
 		private:
 			//모든 JIdenfier를 상속받는 object는 Factory에서 생성되며
 			//Instance는 ownerPtr로 typeInfo class에 저장되고 pointer를 반환한다
-			using CreateElementF = Core::JSFunctorType<Core::JIdentifier*, Core::JIdentifier*>;
+			using CreateElementF = Core::JSFunctorType<JUserPtr<Core::JIdentifier>, JUserPtr<Core::JIdentifier>>;
 		private:
 			Core::J_GUI_LIST_TYPE listType;
 			bool canDisplayElementGui;
@@ -1531,7 +1549,10 @@ namespace JinEngine
 							{
 								userData->allowDisplayName = false;
 								userData->isActivatedTable = true;
-								SettingDisplayTypeInfo(container[i], &container[i]->GetTypeInfo(), userData);
+								if constexpr (isUser)
+									SettingDisplayTypeInfo(container[i], &container[i]->GetTypeInfo(), userData);
+								else
+									SettingDisplayTypeInfo(Core::GetUserPtr(container[i]), &container[i]->GetTypeInfo(), userData);
 								userData->isActivatedTable = false;
 								userData->allowDisplayName = true;
 							}
@@ -1564,7 +1585,7 @@ namespace JinEngine
 			public:
 				using Type = JGuiSingleSelectorHandle<std::conditional_t<isRawPointer, T*,
 					std::conditional_t<isUserPointer,
-					Core::JUserPtr<T>,
+					JUserPtr<T>,
 					T>>>;
 			};
 			template<typename T, bool isRawPointer, bool isUserPointer>
@@ -1573,7 +1594,7 @@ namespace JinEngine
 			public:
 				using Type = JGuiMultiSelectorHandle<std::conditional_t<isRawPointer, std::vector<T*>,
 					std::conditional_t<isUserPointer,
-					std::vector<Core::JUserPtr<T>>,
+					std::vector<JUserPtr<T>>,
 					std::vector<T>>>>;
 			};
 
@@ -1582,8 +1603,8 @@ namespace JinEngine
 			{
 			public:
 				using Type = std::conditional_t<isVector,
-					std::conditional_t<isRawPointer, std::vector<T*>, std::conditional_t<isUserPointer, std::vector<Core::JUserPtr<T>>, std::vector<T>>>,
-					std::conditional_t<isRawPointer, T*, std::conditional_t<isUserPointer, Core::JUserPtr<T>, T>>>;
+					std::conditional_t<isRawPointer, std::vector<T*>, std::conditional_t<isUserPointer, std::vector<JUserPtr<T>>, std::vector<T>>>,
+					std::conditional_t<isRawPointer, T*, std::conditional_t<isUserPointer, JUserPtr<T>, T>>>;
 			};
 
 			template<typename T>
@@ -1846,7 +1867,7 @@ namespace JinEngine
 					return std::make_unique<JGuiConditionHandle>();
 				return nullptr;
 			}
-			static void SettingDisplayTypeInfo(Core::JIdentifier* obj, Core::JTypeInfo* typeInfo, UserData* userData)
+			static void SettingDisplayTypeInfo(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo, UserData* userData)
 			{
 				if (obj == nullptr)
 					return;
@@ -1883,11 +1904,7 @@ namespace JinEngine
 				else
 					SettingUpdateData(obj, typeInfo, userData);
 			}
-			static void SettingDisplayTypeInfo(Core::JUserPtr<Core::JIdentifier> obj, Core::JTypeInfo* typeInfo, UserData* userData)
-			{
-				SettingDisplayTypeInfo(obj.Get(), typeInfo, userData);
-			}
-			static void SettingUpdateData(Core::JIdentifier* obj, Core::JTypeInfo* typeInfo, UserData* userData)
+			static void SettingUpdateData(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo, UserData* userData)
 			{
 				Core::JTypeInfoGuiOption* typeOption = nullptr;
 				if (typeInfo->HasImplTypeInfo())
@@ -1899,10 +1916,9 @@ namespace JinEngine
 				for (uint i = 0; i < widgetHandleCount; ++i)
 				{
 					UpdateData updateData;
-					updateData.obj = obj;
-					if (typeInfo->HasImplTypeInfo())
-						updateData.implObj = typeInfo->ConvertImplBase(obj);
+					updateData.obj = obj; 
 
+					updateData.updateTypeInfo = typeInfo;
 					updateData.handleBase = typeOption->GetGuiWidgetInfoHandle(i);
 					if (userData->isActivatedTable)
 						JImGuiImpl::TableSetColumnIndex(i);
@@ -1983,7 +1999,7 @@ namespace JinEngine
 		{
 			PrivateDataMap::Data().erase(guid);
 		}
-		void JReflectionGuiWidgetHelper::UpdateGuiWidget(Core::JIdentifier* obj, Core::JTypeInfo* typeInfo)
+		void JReflectionGuiWidgetHelper::UpdateGuiWidget(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo)
 		{
 			auto userData = PrivateDataMap::Data().find(guid)->second.get();
 			userData->InitOptionValue();

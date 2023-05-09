@@ -49,8 +49,8 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JEditorWindowDockUpdateHelper> dockUpdateHelper = nullptr;
 		private:
-			Core::JUserPtr<Core::JIdentifier> hoveredObj;
-			std::unordered_map<size_t, Core::JUserPtr<Core::JIdentifier>> selectedObjMap;
+			JUserPtr<Core::JIdentifier> hoveredObj;
+			std::unordered_map<size_t, JUserPtr<Core::JIdentifier>> selectedObjMap;
 			bool isContentsClick = false;
 		public:
 			JEditorWindow(const std::string name,
@@ -80,19 +80,19 @@ namespace JinEngine
 		protected: 
 			PassSelectedOneF::Functor* GetPassSelectedOneFunctor()noexcept;
 			PassSelectedAboveOneF::Functor* GetPassSelectedAboveOneFunctor()noexcept;
-			Core::JUserPtr<Core::JIdentifier> GetHoveredObject()const noexcept;
+			JUserPtr<Core::JIdentifier> GetHoveredObject()const noexcept;
 			uint GetSelectedObjectCount()const noexcept;
-			std::vector<Core::JUserPtr<Core::JIdentifier>> GetSelectedObjectVec()const noexcept;
+			std::vector<JUserPtr<Core::JIdentifier>> GetSelectedObjectVec()const noexcept;
 			JVector4<float> GetSelectedColorFactor()const noexcept;
 		protected:
 			void SetButtonColor(const JVector4<float>& factor)noexcept;
 			void SetTreeNodeColor(const JVector4<float>& factor)noexcept; 
 			void SetTreeNodeColorToDefault()noexcept;
-			void SetHoveredObject(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
-			void SetSelectedGameObjectTrigger(JGameObject* gObj, const bool triggerValue)noexcept; 
+			void SetHoveredObject(JUserPtr<Core::JIdentifier> obj)noexcept;
+			void SetSelectedGameObjectTrigger(const JUserPtr<JGameObject>& gObj, const bool triggerValue)noexcept;
 			void SetContentsClick(const bool value)noexcept;
 		protected:
-			void PushSelectedObject(Core::JUserPtr<Core::JIdentifier> obj)noexcept;
+			void PushSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept;
 		protected:
 			bool RegisterEventListener(const J_EDITOR_EVENT evType);
 			bool RegisterEventListener(std::vector<J_EDITOR_EVENT>& evType);
@@ -100,8 +100,8 @@ namespace JinEngine
 			void DeRegisterListener();
 		protected:
 			//Support undo redo 
-			void RequestPushSelectObject(const Core::JUserPtr<Core::JIdentifier>& selectObj);
-			void RequestPushSelectObject(const std::vector<Core::JUserPtr<Core::JIdentifier>>& selectObjVec);
+			void RequestPushSelectObject(const JUserPtr<Core::JIdentifier>& selectObj);
+			void RequestPushSelectObject(const std::vector<JUserPtr<Core::JIdentifier>>& selectObjVec);
 			void RequestPopSelectObject(const JEditorPopSelectObjectEvStruct& evStruct);
 			void RequesBind(const std::string& desc,
 				std::unique_ptr<Core::JBindHandleBase>&& doHandle, 
@@ -109,8 +109,8 @@ namespace JinEngine
 		protected:
 			void ClearSelectedObject();
 		protected:
-			void TryBeginDragging(const Core::JUserPtr<Core::JIdentifier> selectObj);
-			Core::JUserPtr<Core::JIdentifier> TryGetDraggingTarget();
+			void TryBeginDragging(const JUserPtr<Core::JIdentifier> selectObj);
+			JUserPtr<Core::JIdentifier> TryGetDraggingTarget();
 		protected:
 			void DoSetOpen()noexcept override;
 			void DoSetClose()noexcept override;

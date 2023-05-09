@@ -10,7 +10,7 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_IDENTIFIER_LINE(JFSMinterface)
 		public:
-			class InitData : public Core::JIdentifier::InitData
+			class InitData : public JIdentifier::InitData
 			{
 				REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData) 
 			public:
@@ -18,7 +18,7 @@ namespace JinEngine
 				InitData(const JTypeInfo& initTypeInfo, const std::wstring& name, const size_t guid);
 			};
 		protected: 
-			class StoreData : public Core::JDITypeDataBase
+			class StoreData : public JDITypeDataBase
 			{
 				REGISTER_CLASS_ONLY_USE_TYPEINFO(StoreData)
 			public:

@@ -9,6 +9,7 @@ namespace JinEngine
 	class JTexture final: public JResourceObject, public Graphic::JGraphicResourceUserAccess
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JTexture)
+		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
 	public: 
 		class InitData final : public JResourceObject::InitData
 		{
@@ -18,19 +19,19 @@ namespace JinEngine
 			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
 		public:
 			InitData(const uint8 formatIndex,
-				JDirectory* directory,
+				const JUserPtr<JDirectory>& directory,
 				const std::wstring oridataPath,
 				Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 			InitData(const size_t guid,
 				const uint8 formatIndex,
-				JDirectory* directory,
+				const JUserPtr<JDirectory>& directory,
 				const std::wstring oridataPath,
 				Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const uint8 formatIndex,
-				JDirectory* directory,
+				const JUserPtr<JDirectory>& directory,
 				const std::wstring oridataPath,
 				Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D);
 		public:
@@ -43,7 +44,7 @@ namespace JinEngine
 		public:
 			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
 		public:
-			LoadMetaData(JDirectory* directory);
+			LoadMetaData(const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JTexturePrivate;

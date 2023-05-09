@@ -240,7 +240,7 @@ namespace JinEngine
 				page->second->SetFocus();
 				 
 				//main page allways index 0
-				int index = JCUtil::GetJIdenIndex(opendEditorPage, page->second->GetGuid(), &JEditorPage::GetGuid);
+				int index = JCUtil::GetTypeIndex(opendEditorPage, page->second->GetGuid(), &JEditorPage::GetGuid);
 				if (index != 0 && opendEditorPage.size() - 1 != index)
 				{
 					opendEditorPage.erase(opendEditorPage.begin() + index);

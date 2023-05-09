@@ -17,6 +17,7 @@ namespace JinEngine
 	class JAnimationController final : public JResourceObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JAnimationController)
+		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
 	public: 
 		class InitData final : public JResourceObject::InitData
 		{
@@ -26,15 +27,15 @@ namespace JinEngine
 		private:
 			bool makeDiagram = true;
 		public:
-			InitData(const uint8 formatIndex, JDirectory* directory);
+			InitData(const uint8 formatIndex, const JUserPtr<JDirectory>& directory);
 			InitData(const size_t guid,
 				const uint8 formatIndex,
-				JDirectory* directory);
+				const JUserPtr<JDirectory>& directory);
 			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const uint8 formatIndex,
-				JDirectory* directory);  
+				const JUserPtr<JDirectory>& directory);
 		};
 	private:
 		friend class JAnimationControllerPrivate;
@@ -52,23 +53,23 @@ namespace JinEngine
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 		uint GetDiagramCount()const noexcept; 
 		uint GetParameterCount()const noexcept;   
-		Core::JAnimationFSMdiagram* GetDiagram(const size_t guid)noexcept;
-		Core::JAnimationFSMdiagram* GetDiagramByIndex(const uint index)noexcept;
-		const std::vector<Core::JAnimationFSMdiagram*>& GetDiagramVec()noexcept;
-		Core::JFSMparameter* GetParameter(const size_t guid)noexcept;
-		Core::JFSMparameter* GetParameterByIndex(const uint index)noexcept;
+		JUserPtr<Core::JAnimationFSMdiagram> GetDiagram(const size_t guid)noexcept;
+		JUserPtr<Core::JAnimationFSMdiagram> GetDiagramByIndex(const uint index)noexcept;
+		const std::vector<JUserPtr<Core::JAnimationFSMdiagram>>& GetDiagramVec()noexcept;
+		JUserPtr<Core::JFSMparameter> GetParameter(const size_t guid)noexcept;
+		JUserPtr<Core::JFSMparameter> GetParameterByIndex(const uint index)noexcept;
 	public:
 		bool CanCreateDiagram()const noexcept;
 		bool CanCreateParameter()const noexcept;
 		bool CanCreateState(Core::JAnimationFSMdiagram* diagram)const noexcept;
 		bool IsValid()const noexcept final;
 	public:
-		Core::JAnimationFSMdiagram* CreateFSMdiagram(const size_t guid = Core::MakeGuid())noexcept;
-		Core::JFSMparameter* CreateFSMparameter(const size_t guid = Core::MakeGuid())noexcept;
-		Core::JAnimationFSMstate* CreateFSMclip(Core::JAnimationFSMdiagram* diagram, const size_t guid = Core::MakeGuid())noexcept;
-		Core::JAnimationFSMtransition* CreateFsmtransition(Core::JAnimationFSMdiagram* diagram,
-			Core::JAnimationFSMstate* from, 
-			Core::JAnimationFSMstate* to,
+		JUserPtr<Core::JAnimationFSMdiagram> CreateFSMdiagram(const size_t guid = Core::MakeGuid())noexcept;
+		JUserPtr<Core::JFSMparameter> CreateFSMparameter(const size_t guid = Core::MakeGuid())noexcept;
+		JUserPtr<Core::JAnimationFSMstate> CreateFSMclip(const JUserPtr<Core::JAnimationFSMdiagram>& diagram, const size_t guid = Core::MakeGuid())noexcept;
+		JUserPtr<Core::JAnimationFSMtransition> CreateFsmtransition(const JUserPtr<Core::JAnimationFSMdiagram>& diagram,
+			const JUserPtr<Core::JAnimationFSMstate>& from,
+			const JUserPtr<Core::JAnimationFSMstate>& to,
 			const size_t guid = Core::MakeGuid())noexcept;   
 	protected:
 		void DoActivate()noexcept final;

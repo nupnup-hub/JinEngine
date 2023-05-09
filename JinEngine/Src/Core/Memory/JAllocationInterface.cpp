@@ -7,10 +7,12 @@ namespace JinEngine
 	namespace Core
 	{
 		void JAllocationInterface::CalculatePageFitAllocationData(_Inout_ size_t& blockSize,
-			const uint blockCount,
+			_Inout_ uint& blockCount,
 			_Out_ size_t& pageSize,
 			_Out_ uint& paegCount,
-			const bool useBlockAlign)
+			_Out_ size_t& allocSize,
+			const bool useBlockAlign,
+			const bool fitAllocationGranularity)
 		{ 
 			using CpuInfo = Core::JHardwareInfoImpl::CpuInfo;
 			const CpuInfo cpuInfo = JHardwareInfo::Instance().GetCpuInfo();
@@ -26,25 +28,29 @@ namespace JinEngine
 			while (pageSize < blockSize)
 				pageSize += hPageSize;
 
-			const size_t totalBlockByte = blockCount * blockSize;
-			if (totalBlockByte % pageSize)
-				paegCount = (totalBlockByte / pageSize) + 1;
-			else
-				paegCount = (totalBlockByte / pageSize);
-			/* don't use
-			*
-			size_t totalReserveByte = (paegCount * pageSize);
-			size_t allocPageBoundary = hAllocationGranularity;
-
-			if (totalReserveByte > allocPageBoundary)
+			size_t totalByte = blockCount * blockSize;
+			if (fitAllocationGranularity)
 			{
-				//add 64kb until totalReserveByte is smaller than allocPageBoundary
-				while (totalReserveByte > allocPageBoundary)
-					allocPageBoundary += hAllocationGranularity;
-				paegCount += ((allocPageBoundary - totalReserveByte) / pageSize);
-				blockCount = (paegCount * pageSize) / blockSize;
+				size_t granularityCount = 0;
+
+				if (totalByte % hAllocationGranularity)
+					granularityCount = (totalByte / hAllocationGranularity) + 1;
+				else
+					granularityCount = (totalByte / hAllocationGranularity);
+				totalByte = granularityCount * hAllocationGranularity;
+				paegCount = (totalByte / pageSize);
+				blockCount = ((paegCount * pageSize) / blockSize);
+
+				allocSize = totalByte;
 			}
-			*/
+			else
+			{
+				if (totalByte % pageSize)
+					paegCount = (totalByte / pageSize) + 1;
+				else
+					paegCount = (totalByte / pageSize);
+				allocSize = paegCount * pageSize;
+			}
 		}
 	}
 }

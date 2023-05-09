@@ -5,7 +5,7 @@
 #include"../../Directory/JDirectory.h"
 #include"../../Directory/JFile.h"
 #include"../../../Core/Guid/GuidCreator.h"
-#include"../../../Core/Identity/JIdentifierImplBase.h"
+#include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Platform/JHardwareInfo.h"
 #include"../../../Graphic/JGraphic.h"
@@ -111,7 +111,7 @@ namespace JinEngine
  
 	namespace
 	{
-		static JDirectory* GetShaderDirectory()
+		static JUserPtr<JDirectory> GetShaderDirectory()
 		{
 			return _JResourceManager::Instance().GetDirectory(JApplicationProject::ShaderMetafilePath());
 		}
@@ -141,10 +141,10 @@ namespace JinEngine
 			return nullptr;
 		}
 		*/
-		static JShader* FindOverlapShader(const std::wstring& name)
+		static JUserPtr<JShader> FindOverlapShader(const std::wstring& name)
 		{
-			JFile* file = GetShaderDirectory()->GetDirectoryFile(name);
-			return file != nullptr ? static_cast<JShader*>(file->TryGetResourceUser().Get()) : nullptr;
+			JUserPtr<JFile> file = GetShaderDirectory()->GetDirectoryFile(name);
+			return file != nullptr ? Core::ConvertChildUserPtr<JShader>(file->TryGetResourceUser()) : nullptr;
 		}
 		static std::wstring MakeName(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
 			const JShaderGraphicPsoCondition& graphicPSOCond,
@@ -157,11 +157,11 @@ namespace JinEngine
 		}
 	}
  
-	class JShader::JShaderImpl : public Core::JIdentifierImplBase
+	class JShader::JShaderImpl : public Core::JTypeImplBase
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JShaderImpl)
 	public:
-		JShader* thisShader = nullptr; 
+		JWeakPtr<JShader> thisPointer = nullptr;
 	public: 
 		std::unique_ptr<JGraphicShaderData>gShaderData[SHADER_VERTEX_COUNT]{ nullptr, nullptr };
 		std::unique_ptr<JComputeShaderData> cShaderData = nullptr;
@@ -170,22 +170,13 @@ namespace JinEngine
 	public:
 		JShaderGraphicPsoCondition graphicPSOCond;
 	public:
-		JShaderImpl(const InitData& initData, JShader* thisShader)
-			:thisShader(thisShader),
-			gFunctionFlag(initData.gFunctionFlag),
+		JShaderImpl(const InitData& initData, JShader* thisShaderRaw)
+			:gFunctionFlag(initData.gFunctionFlag),
 			cFunctionFlag(initData.cFunctionFlag),
 			graphicPSOCond(initData.graphicPSOCond)
 		{ }
 		~JShaderImpl()
 		{}
-	public:
-		void Initialize()
-		{
-			if (IsComputeShader())
-				SetComputeShaderFunctionFlag((J_COMPUTE_SHADER_FUNCTION)cFunctionFlag);
-			else
-				SetGraphicShaderFunctionFlag((J_GRAPHIC_SHADER_FUNCTION)gFunctionFlag);
-		}
 	public:
 		bool IsComputeShader()const noexcept
 		{
@@ -197,7 +188,7 @@ namespace JinEngine
 			if (gFunctionFlag != newFunctionFlag || !HasShaderData())
 			{
 				gFunctionFlag = newFunctionFlag;
-				if (thisShader->IsActivated())
+				if (thisPointer->IsActivated())
 					CompileShdaer();
 			}
 		}
@@ -206,7 +197,7 @@ namespace JinEngine
 			if (cFunctionFlag != newFunctionFlag || !HasShaderData())
 			{
 				cFunctionFlag = newFunctionFlag;
-				if (thisShader->IsActivated())
+				if (thisPointer->IsActivated())
 					CompileShdaer();
 			}
 		}
@@ -221,7 +212,7 @@ namespace JinEngine
 	public:
 		void RecompileGraphicShader()
 		{
-			if (thisShader->IsActivated())
+			if (thisPointer->IsActivated())
 			{
 				for (uint i = 0; i < SHADER_VERTEX_COUNT; ++i)
 					gShaderData[i].reset();
@@ -230,7 +221,7 @@ namespace JinEngine
 		}
 		void CompileShdaer()
 		{
-			if (thisShader == nullptr)
+			if (thisPointer == nullptr)
 				return;
 
 			if (cFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
@@ -241,7 +232,7 @@ namespace JinEngine
 		void CompileGraphicShader()
 		{
 			GSInitHelper initHelper;
-			StuffInitHelper(initHelper, thisShader->GetShaderGFunctionFlag());
+			StuffInitHelper(initHelper, thisPointer->GetShaderGFunctionFlag());
 
 			std::wstring vertexShaderPath = JApplicationEngine::ShaderPath() + L"\\VertexShader.hlsl";
 			std::wstring pixelShaderPath = JApplicationEngine::ShaderPath() + L"\\PixelShader.hlsl";
@@ -257,15 +248,15 @@ namespace JinEngine
 				
 				GResourceInterface::StuffGraphicShaderPso(gShaderData[i].get(),
 					(J_SHADER_VERTEX_LAYOUT)(SHADER_VERTEX_LAYOUT_STATIC + i),
-					thisShader->GetShaderGFunctionFlag(),
-					thisShader->GetSubGraphicPso());
+					thisPointer->GetShaderGFunctionFlag(),
+					thisPointer->GetSubGraphicPso());
 
 				for (uint j = 0; j < (uint)J_GRAPHIC_EXTRA_PSO_TYPE::COUNT; ++j)
 				{
 					GResourceInterface::StuffGraphicShaderPso(gShaderData[i].get(),
 						(J_SHADER_VERTEX_LAYOUT)(SHADER_VERTEX_LAYOUT_STATIC + i),
-						thisShader->GetShaderGFunctionFlag(),
-						thisShader->GetSubGraphicPso(),
+						thisPointer->GetShaderGFunctionFlag(),
+						thisPointer->GetSubGraphicPso(),
 						(J_GRAPHIC_EXTRA_PSO_TYPE)j);
 				}
 			}
@@ -273,7 +264,7 @@ namespace JinEngine
 		void CompileComputeShader()
 		{
 			CSInitHelper initHelper;
-			StuffInitHelper(initHelper, thisShader->GetShdaerCFunctionFlag());
+			StuffInitHelper(initHelper, thisPointer->GetShdaerCFunctionFlag());
 			 
 			//macroVec = std::vector<D3D_SHADER_MACRO>{ { NULL, NULL } };
 			if (cFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
@@ -447,8 +438,19 @@ namespace JinEngine
 		{
 			return true;
 		}
-	public:
-		static void RegisterCallOnce()
+	public: 
+		void Initialize()
+		{
+			if (IsComputeShader())
+				SetComputeShaderFunctionFlag((J_COMPUTE_SHADER_FUNCTION)cFunctionFlag);
+			else
+				SetGraphicShaderFunctionFlag((J_GRAPHIC_SHADER_FUNCTION)gFunctionFlag);
+		}
+		void RegisterThisPointer(JShader* shader)
+		{
+			thisPointer = Core::GetWeakPtr(shader);
+		}
+		static void RegisterTypeData()
 		{
 			auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex(GetStaticResourceType(),format); };
 
@@ -477,6 +479,8 @@ namespace JinEngine
 			equalGShader = std::make_unique<EqualGShaderT::Callable>(equalGShaderLam);
 			equalCShader = std::make_unique<EqualCShaderT::Callable>(equalCShaderLam);
 			Core::JIdentifier::RegisterPrivateInterface(JShader::StaticTypeInfo(), sPrivate);
+
+			IMPL_REALLOC_BIND(JShader::JShaderImpl, thisPointer)
 		}
 	};
 
@@ -566,7 +570,7 @@ namespace JinEngine
 	{
 		return impl->IsComputeShader();
 	}
-	JShader* JShader::FindShader(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
+	JUserPtr<JShader> JShader::FindShader(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
 		const JShaderGraphicPsoCondition graphicPSOCond,
 		const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 	{
@@ -586,9 +590,7 @@ namespace JinEngine
 	}
 	JShader::JShader(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JShaderImpl>(initData, this))
-	{ 
-		impl->Initialize();
-	}
+	{}
 	JShader::~JShader()
 	{
 		impl.reset();
@@ -598,9 +600,16 @@ namespace JinEngine
 	using AssetDataIOInterface = JShaderPrivate::AssetDataIOInterface;
 	using CompileInterface = JShaderPrivate::CompileInterface;
 
-	Core::JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(std::unique_ptr<Core::JDITypeDataBase>&& initData)
+	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
-		return Core::JPtrUtil::MakeOwnerPtr<JShader>(*static_cast<JShader::InitData*>(initData.get()));
+		return Core::JPtrUtil::MakeOwnerPtr<JShader>(*static_cast<JShader::InitData*>(initData));
+	}
+	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
+	{
+		JResourceObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
+		JShader* shader = static_cast<JShader*>(createdPtr);
+		shader->impl->RegisterThisPointer(shader);
+		shader->impl->Initialize();
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
@@ -608,28 +617,28 @@ namespace JinEngine
 		return isValidPtr && initData->IsValidData();
 	}
 
-	Core::JIdentifier* AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
+	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JShader::LoadData::StaticTypeInfo()))
 			return nullptr;
  
 		auto loadData = static_cast<JShader::LoadData*>(data);
 		auto pathData = loadData->pathData;
-		JDirectory* directory = loadData->directory;
+		JUserPtr<JDirectory> directory = loadData->directory;
 
 		auto initData = std::make_unique<JShader::InitData>();	//for load metadata
 		if (LoadMetaData(pathData.engineMetaFileWPath, initData.get()) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
 
-		JShader* newShdaer = nullptr;
+		JUserPtr<JShader> newShdaer = nullptr;
 		if (directory->HasFile(initData->guid))
-			newShdaer = static_cast<JShader*>(Core::GetUserPtr(JShader::StaticTypeInfo().TypeGuid(), initData->guid).Get());
+			newShdaer = Core::GetUserPtr<JShader>(JShader::StaticTypeInfo().TypeGuid(), initData->guid);
 
 		if (newShdaer == nullptr)
 		{
 			initData->name = MakeName(initData->gFunctionFlag, initData->graphicPSOCond, initData->cFunctionFlag);
-			auto rawPtr = sPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &sPrivate);
-			newShdaer = static_cast<JShader*>(rawPtr); 
+			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &sPrivate);
+			newShdaer.ConnnectChild(idenUser);
 		}
 		newShdaer->impl->ReadAssetData();
 		return newShdaer;
@@ -643,7 +652,8 @@ namespace JinEngine
 		if (!storeData->HasCorrectType(JShader::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		JShader* shader = static_cast<JShader*>(storeData->obj);
+		JUserPtr<JShader> shader;
+		shader.ConnnectChild(storeData->obj);
 		return shader->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)
@@ -679,7 +689,8 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		auto storeData = static_cast<JShader::StoreData*>(data);
-		JShader* shader = static_cast<JShader*>(storeData->obj);
+		JUserPtr<JShader> shader;
+		shader.ConnnectChild(storeData->obj);
 
 		std::wofstream stream;
 		stream.open(shader->GetMetaFilePath(), std::ios::out | std::ios::binary);

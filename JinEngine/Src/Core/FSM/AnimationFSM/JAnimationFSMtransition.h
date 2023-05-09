@@ -14,11 +14,11 @@ namespace JinEngine
 			{
 				REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 			public:
-				InitData(JUserPtr<JFSMstate> ownerState, JUserPtr<JFSMstate> outState);
+				InitData(const JUserPtr<JFSMstate>& inState, const JUserPtr<JFSMstate>& outState);
 				InitData(const std::wstring& name,
 					const size_t guid,
-					JUserPtr<JFSMstate> ownerState,
-					JUserPtr<JFSMstate> outState);
+					const JUserPtr<JFSMstate>& inState,
+					const JUserPtr<JFSMstate>& outState);
 			};
 		private:
 			friend class JAnimationFSMtransitionPrivate;
@@ -26,7 +26,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JAnimationFSMtransitionImpl> impl;
 		public:		
-			Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+			JIdentifierPrivate& GetPrivateInterface()const noexcept final;
 			float GetExitTimeRate()const noexcept;
 			float GetDurationTime()const noexcept;
 			float GetTargetStartTimeRate()const noexcept;
@@ -90,7 +90,7 @@ namespace JinEngine
 			J_FILE_IO_RESULT StoreData(std::wofstream& stream);
 			J_FILE_IO_RESULT LoadData(std::wifstream& stream);
 		private:
-			static void RegisterCallOnce();
+			static void RegisterTypeData();
 		private:
 			JAnimationFSMtransition(const JFSMtransitionInitData& initData);
 			~JAnimationFSMtransition();
