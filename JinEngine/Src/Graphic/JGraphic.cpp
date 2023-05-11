@@ -1119,7 +1119,7 @@ namespace JinEngine
 				//}
 
 				// Swap the back and front buffers
-				ThrowIfFailedG(swapChain->Present(0, 0));
+				ThrowIfFailedG(swapChain->Present(1, 0));
 				currBackBuffer = (currBackBuffer + 1) % graphicResource->GetResourceCapacity(J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN);
 				// Advance the fence value to mark commands up to this fence point.
 				currFrameResource->fence = ++currentFence;
