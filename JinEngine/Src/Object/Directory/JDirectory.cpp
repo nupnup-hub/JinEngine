@@ -269,11 +269,21 @@ namespace JinEngine
 		else
 			return impl->fileList[index];
 	}
-	JUserPtr<JFile> JDirectory::GetDirectoryFile(const std::wstring oriFormatName)const noexcept
+	JUserPtr<JFile> JDirectory::GetDirectoryFile(const std::wstring& name)const noexcept
 	{
 		for (const auto& data : impl->fileList)
 		{
-			if (data->GetFullName() == oriFormatName)
+			if (data->GetName() == name)
+				return data;
+		}
+		return nullptr;
+	}
+	JUserPtr<JFile> JDirectory::GetDirectoryFile(const std::wstring& name, const std::wstring& format)const noexcept
+	{
+		const std::wstring fullname = name + format;
+		for (const auto& data : impl->fileList)
+		{
+			if (data->GetFullName() == fullname)
 				return data;
 		}
 		return nullptr;
@@ -350,15 +360,29 @@ namespace JinEngine
 		}
 		return res;
 	}
-	JUserPtr<JFile> JDirectory::SearchFile(const std::wstring& oriFormatName)const noexcept
+	JUserPtr<JFile> JDirectory::SearchFile(const std::wstring& name)const noexcept
 	{
-		JUserPtr<JFile> file = GetDirectoryFile(oriFormatName);
+		JUserPtr<JFile> file = GetDirectoryFile(name);
 		if (file != nullptr)
 			return file;
 
 		for (const auto& data : impl->children)
 		{
-			file = data->SearchFile(oriFormatName);
+			file = data->SearchFile(name);
+			if (file != nullptr)
+				return file;
+		}
+		return nullptr;
+	}
+	JUserPtr<JFile> JDirectory::SearchFile(const std::wstring& name, const std::wstring& format)const noexcept
+	{
+		JUserPtr<JFile> file = GetDirectoryFile(name, format);
+		if (file != nullptr)
+			return file;
+
+		for (const auto& data : impl->children)
+		{
+			file = data->SearchFile(name, format);
 			if (file != nullptr)
 				return file;
 		}

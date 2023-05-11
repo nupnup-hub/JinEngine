@@ -48,7 +48,8 @@ namespace JinEngine
 		JUserPtr<JDirectory> GetChildDirctoryByName(const std::wstring& name)const noexcept;
 		JUserPtr<JDirectory> GetChildDirctoryByPath(const std::wstring& path)const noexcept;
 		JUserPtr<JFile> GetDirectoryFile(const uint index)const noexcept;
-		JUserPtr<JFile> GetDirectoryFile(const std::wstring oriFormatName)const noexcept;
+		JUserPtr<JFile> GetDirectoryFile(const std::wstring& name)const noexcept;
+		JUserPtr<JFile> GetDirectoryFile(const std::wstring& name, const std::wstring& format)const noexcept;	//full name is name + format
 		JUserPtr<JFile> GetRecentFile()const noexcept;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
 		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final; 
@@ -61,7 +62,8 @@ namespace JinEngine
 		bool IsOpen()const noexcept;
 	public:
 		JUserPtr<JDirectory> SearchDirectory(const std::wstring& path)const noexcept;
-		JUserPtr<JFile> SearchFile(const std::wstring& oriFormatName)const noexcept;	//search this dir -> subDir...
+		JUserPtr<JFile> SearchFile(const std::wstring& name)const noexcept;	//search this dir -> subDir...
+		JUserPtr<JFile> SearchFile(const std::wstring& name, const std ::wstring& format)const noexcept;	//search this dir -> subDir...
 		static JUserPtr<JFile> SearchFile(const size_t resourceGuid)noexcept;	//use static file map
 	public:
 		std::wstring MakeUniqueFileName(const std::wstring& name, const std::wstring& format, const size_t guid)const noexcept;

@@ -16,7 +16,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		JFrameResource::JFrameResource(ID3D12Device* device, const JGraphicInfo& gInfo)
-		{ 
+		{  
 			ThrowIfFailedHr(device->CreateCommandAllocator(
 				D3D12_COMMAND_LIST_TYPE_DIRECT,
 				IID_PPV_ARGS(cmdListAlloc.GetAddressOf())));

@@ -1083,18 +1083,10 @@ namespace JinEngine
 			}
 		public:
 			void StartFrame()
-			{
-				auto pMem = Core::JMemoryCapture::GetCurrentProcessMemory();
-				//MessageBox(0, Core::JByteUnit::ByteToWString(pMem.privateUsage).c_str(), L"Usage1", 0);
-				ImGui_ImplDX12_NewFrame();
-				pMem = Core::JMemoryCapture::GetCurrentProcessMemory();
-				//MessageBox(0, Core::JByteUnit::ByteToWString(pMem.privateUsage).c_str(), L"Usage2", 0);
-				ImGui_ImplWin32_NewFrame();
-				pMem = Core::JMemoryCapture::GetCurrentProcessMemory();
-				//MessageBox(0, Core::JByteUnit::ByteToWString(pMem.privateUsage).c_str(), L"Usage3", 0);
-				ImGui::NewFrame();
-				pMem = Core::JMemoryCapture::GetCurrentProcessMemory();
-				//MessageBox(0, Core::JByteUnit::ByteToWString(pMem.privateUsage).c_str(), L"Usage4", 0);
+			{  
+				ImGui_ImplDX12_NewFrame();  
+				ImGui_ImplWin32_NewFrame();  
+				ImGui::NewFrame();  
 			}
 			void EndFrame()
 			{
@@ -1216,6 +1208,7 @@ namespace JinEngine
 				for (uint i = 0; i < drawListCount; ++i)
 				{
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
+
 					const bool isAllowOcclusion = drawTarget->scene->IsMainScene() && option.isOcclusionQueryActivated;
 					const uint sceneDrawReqCount = (uint)drawTarget->sceneRequestor.size();
 					drawTarget->updateInfo->UpdateStart();
@@ -1520,10 +1513,10 @@ namespace JinEngine
 
 							copiedHelper.allowDrawDebug = copiedHelper.cam->AllowDisplayDebug();
 							copiedHelper.allowCulling = copiedHelper.cam->AllowCulling();
-							 
+							  
 							if (copiedHelper.cam->AllowCulling())
 								JScenePrivate::CullingInterface::ViewCulling(drawTarget->scene, copiedHelper.cam);
-
+		  
 							DrawSceneRenderTarget(copiedHelper);
 							const bool isOcclusionActivated = option.IsHDOccActivated() || option.IsHZBOccActivated();
 							const bool canCullingStart = (occBase != nullptr) && occBase->CanCullingStart();

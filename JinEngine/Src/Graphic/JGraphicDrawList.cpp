@@ -31,7 +31,7 @@ namespace JinEngine
 
 		namespace
 		{
-			static std::deque<std::unique_ptr<JGraphicDrawTarget>> drawList;
+			static std::vector<std::unique_ptr<JGraphicDrawTarget>> drawList;
 
 			int GetIndex(const JUserPtr<JScene>& scene)noexcept
 			{
@@ -67,9 +67,11 @@ namespace JinEngine
 		void JGraphicDrawTarget::UpdateInfo::UpdateEnd()
 		{
 			const uint sceneUpdateCount = objUpdateCount + aniUpdateCount + lightUpdateCount + camUpdateCount;
+			const uint hotUpdateCount = hotObjUpdateCount + hotAniUpdateCount + hotLitghtUpdateCount + hotCamUpdateCount;
+
 			if (updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
 				hasSceneUpdate = true;
-			else if (updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::UPDATED && sceneUpdateCount > 0)
+			else if (updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::UPDATED && hotUpdateCount > 0)
 				hasSceneUpdate = true;
 
 			const uint shadowUpdateCount = hotObjUpdateCount + hotAniUpdateCount + hotLitghtUpdateCount;
@@ -83,13 +85,13 @@ namespace JinEngine
 					hasOcclusionUpdate = true;
 			}
 		}
+
 		JGraphicDrawTarget::JGraphicDrawTarget(const JUserPtr<JScene>& scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling)
 			: scene(scene)
 		{
 			updateInfo = std::make_unique<UpdateInfo>(updateFrequency, isAllowOcclusionCulling);
 		}
 		JGraphicDrawTarget::~JGraphicDrawTarget() {}
-
 		bool JGraphicDrawList::AddDrawList(const JUserPtr<JScene>& scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling)noexcept
 		{
 			if (scene == nullptr)
@@ -241,5 +243,15 @@ namespace JinEngine
 		{
 			return drawList[index].get();
 		}
+		/*
+			std::vector<JGraphicDrawTarget*> JGraphicDrawList::GetAllDrawTarget()noexcept
+		{
+
+		}
+		std::vector<JGraphicDrawTarget*> JGraphicDrawList::GetDrawableTarget()noexcept
+		{
+
+		}
+		*/
 	}
 }

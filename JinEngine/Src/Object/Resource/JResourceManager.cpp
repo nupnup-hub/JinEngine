@@ -191,7 +191,7 @@ namespace JinEngine
 				std::wstring name;
 				std::wstring format;
 				JCUtil::DecomposeFileName(JDefaultTexture::GetName(textureType[i]), name, format);
-				JUserPtr<JFile> file = textureDir->SearchFile(name + format);
+				JUserPtr<JFile> file = textureDir->SearchFile(name, format);
 
 				if (file != nullptr)
 					defaultData->RegisterDefaultResource(textureType[i], file, isUse);
@@ -223,7 +223,7 @@ namespace JinEngine
 				//use all default shader
 				const bool isUse = JDefaultShader::IsDefaultUse(type);
 				std::wstring shaderName = JShaderType::ConvertToName(shaderF, psoCondition.UniqueID());
-				JUserPtr<JFile> file = shaderDir->GetDirectoryFile(shaderName + format);
+				JUserPtr<JFile> file = shaderDir->GetDirectoryFile(shaderName, format);
 
 				if (file != nullptr)
 					defaultData->RegisterDefaultResource(type, file, isUse);
@@ -231,7 +231,7 @@ namespace JinEngine
 				{
 					JUserPtr<JShader> newShader = JICI::Create<JShader>(objF, shaderF, psoCondition);
 					ThrowIfFailedN(newShader != nullptr);
-					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFile(newShader->GetName() + format), isUse);
+					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFile(newShader->GetName(), format), isUse);
 				}
 			}
 
@@ -243,14 +243,14 @@ namespace JinEngine
 
 				const bool isUse = JDefaultShader::IsDefaultUse(type);
 				std::wstring shaderName = JShaderType::ConvertToName(shaderF);
-				JUserPtr<JFile> file = shaderDir->GetDirectoryFile(shaderName + format);
+				JUserPtr<JFile> file = shaderDir->GetDirectoryFile(shaderName, format);
 				if (file != nullptr)
 					defaultData->RegisterDefaultResource(type, file, isUse);
 				else
 				{
 					JUserPtr<JShader> newShader = JICI::Create<JShader>(objF, SHADER_FUNCTION_NONE, JShaderGraphicPsoCondition(), shaderF);
 					ThrowIfFailedN(newShader != nullptr);
-					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFile(newShader->GetName() + format), isUse);
+					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFile(newShader->GetName(), format), isUse);
 				}
 			}
 		}
@@ -279,7 +279,7 @@ namespace JinEngine
 				const bool isUse = JDefaultMateiral::IsDefaultUse(type);
 
 				const std::wstring name = JDefaultMateiral::ConvertToName(type);
-				JUserPtr<JFile> file = matDir->SearchFile(name + format);
+				JUserPtr<JFile> file = matDir->SearchFile(name, format);
 				if (file != nullptr)
 					defaultData->RegisterDefaultResource(type, file, isUse);
 				else
@@ -445,7 +445,7 @@ namespace JinEngine
 					std::wstring format;
 					JCUtil::DecomposeFileName(meshName, name, format);
 
-					JUserPtr<JFile> file = projectDefualDir->SearchFile(name + format);
+					JUserPtr<JFile> file = projectDefualDir->SearchFile(name, format);
 					if (file != nullptr)
 					{
 						if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
@@ -482,7 +482,7 @@ namespace JinEngine
 				}
 				else
 				{
-					JUserPtr<JFile> file = projectDefualDir->SearchFile(meshName + JResourceObject::GetDefaultFormat<JMeshGeometry>());
+					JUserPtr<JFile> file = projectDefualDir->SearchFile(meshName, JResourceObject::GetDefaultFormat<JMeshGeometry>());
 					if (file != nullptr)
 					{
 						if (meshType == J_MESHGEOMETRY_TYPE::STATIC)

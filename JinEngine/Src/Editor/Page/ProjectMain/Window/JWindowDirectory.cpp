@@ -547,7 +547,7 @@ namespace JinEngine
 				SetTreeNodeColor(GetSelectedColorFactor() * -1);
 			if (isNodeOpen)
 			{
-				if (ImGui::IsItemClicked(0) && canSelect)
+				if (ImGui::IsItemClicked(0) && canSelect && !isSelected)
 					settingImpl->PushOpenNewDirBind(directory);
 
 				const uint childDirCount = directory->GetChildernDirctoryCount();
@@ -769,6 +769,9 @@ namespace JinEngine
 		void JWindowDirectory::OpenNewDirectory(JUserPtr<JDirectory> newOpendDirectory)
 		{
 			if (!newOpendDirectory.IsValid())
+				return;
+			 
+			if (opendDirctory.IsValid() && opendDirctory->GetGuid() == newOpendDirectory->GetGuid())
 				return;
 
 			//window->DC.StateStorage->SetInt(id, is_open);

@@ -116,6 +116,9 @@ namespace JinEngine
 		private:
 			static uint GetListCount()noexcept;
 			static JGraphicDrawTarget* GetDrawScene(const uint index)noexcept;
+		private:
+			//static std::vector<JGraphicDrawTarget*> GetAllDrawTarget()noexcept;
+		//	static std::vector<JGraphicDrawTarget*> GetDrawableTarget()noexcept;
 		};	 
 	}
 }

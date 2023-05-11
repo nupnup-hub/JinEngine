@@ -328,15 +328,13 @@ namespace JinEngine
 			if (shader != nullptr && shader->GetShaderGFunctionFlag() == newFunc)
 				return;
 
-			JUserPtr<JShader> newShader = nullptr;
+			JShaderGraphicPsoCondition subPos;
 			if (shader != nullptr)
-			{
-				newShader = JShader::FindShader(newFunc, shader->GetSubGraphicPso());
-				if (newShader == nullptr)
-					newShader = JICI::Create<JShader>(OBJECT_FLAG_NONE, newFunc, shader->GetSubGraphicPso());
-			}
-			else
-				newShader = JICI::Create<JShader>(OBJECT_FLAG_NONE, newFunc);
+				subPos = shader->GetSubGraphicPso(); 
+
+			JUserPtr<JShader> newShader = JShader::FindShader(newFunc, subPos);
+			if (newShader == nullptr)
+				newShader = JICI::Create<JShader>(OBJECT_FLAG_NONE, newFunc, subPos);
 			 
 			SetShader(newShader);
 		}
