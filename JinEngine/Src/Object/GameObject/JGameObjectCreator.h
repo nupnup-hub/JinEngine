@@ -22,7 +22,8 @@ namespace JinEngine
 		static JUserPtr<JGameObject> CreateModel(JUserPtr<JGameObject> parent, const J_OBJECT_FLAG flag, const JUserPtr<JMeshGeometry>& mesh);
 		static JUserPtr<JGameObject> CreateModel(JUserPtr<JGameObject> parent, const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JMeshGeometry>& mesh);
 		static JUserPtr<JGameObject> CreateSky(JUserPtr<JGameObject> parent, const J_OBJECT_FLAG flag, const std::wstring name = L"Skymap");
-		static JUserPtr<JGameObject> CreateCamera(JUserPtr<JGameObject> parent, const J_OBJECT_FLAG flag, const std::wstring name = L"Camera");
+		static JUserPtr<JGameObject> CreateCamera(JUserPtr<JGameObject> parent, const J_OBJECT_FLAG flag, const std::wstring name = L"Camera"); 
+		static JUserPtr<JGameObject> CreateCamera(JUserPtr<JGameObject> parent, const J_OBJECT_FLAG flag, const bool allowCulling, const std::wstring name = L"Camera");
 		static JUserPtr<JGameObject> CreateDebugCamera(JUserPtr<JGameObject> parent, const J_OBJECT_FLAG flag, const std::wstring name = L"DebugCamera");
 		static JUserPtr<JGameObject> CreateLight(JUserPtr<JGameObject> parent, const J_OBJECT_FLAG flag, const J_LIGHT_TYPE type, const std::wstring name = L"JLight");
 		static JUserPtr<JGameObject> CreateDebugLineShape(JUserPtr<JGameObject> parent,

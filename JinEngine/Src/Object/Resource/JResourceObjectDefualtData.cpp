@@ -40,7 +40,6 @@ namespace JinEngine
 	}; 
 	//const uint JResourceObjectDefualtData::editorTextureCapacity = (uint)textureNames.size(); 
 	JResourceObjectDefualtData::JResourceObjectDefualtData()
-		:JResourceObjectUserInterface(guid)
 	{}
 	JResourceObjectDefualtData::~JResourceObjectDefualtData()
 	{}

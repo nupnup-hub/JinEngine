@@ -7,6 +7,8 @@
 #include<d3d12.h>
 #include<wrl/client.h>
 
+//Debug
+#include<fstream>
 namespace JinEngine
 {
 	namespace Graphic
@@ -17,22 +19,25 @@ namespace JinEngine
 			virtual ~JUploadBufferBase() = default;
 		public:
 			virtual void Build(ID3D12Device* device, const uint elementcount) = 0;
-			virtual void Clear()noexcept = 0;
-			virtual uint ElementCount()const noexcept = 0;
+			virtual void Clear()noexcept = 0;\
+		public:
+			virtual uint ElementCount()const noexcept = 0; 
 		};
 
 		template<typename T>
 		class JUploadBuffer : public JUploadBufferBase
 		{
 		private:
+			const std::wstring name;
+		private:
 			Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer;
 			BYTE* mappedData = nullptr;
 			uint elementcount;
-			uint elementByteSize = 0;
-			const J_UPLOAD_BUFFER_TYPE type;
+			uint elementByteSize = 0; 
+			const J_UPLOAD_BUFFER_TYPE type; 
 		public:
-			JUploadBuffer(const J_UPLOAD_BUFFER_TYPE type)
-				:type(type)
+			JUploadBuffer(const std::wstring& name,const J_UPLOAD_BUFFER_TYPE type)
+				:name(name), type(type)
 			{ }
 			JUploadBuffer(const JUploadBuffer& rhs) = delete;
 			JUploadBuffer& operator=(const JUploadBuffer& rhs) = delete;
@@ -69,6 +74,7 @@ namespace JinEngine
 						D3D12_RESOURCE_STATE_COPY_DEST,
 						nullptr,
 						IID_PPV_ARGS(&uploadBuffer)));
+					ThrowIfFailedHr(uploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mappedData)));
 				}
 				else if (type == J_UPLOAD_BUFFER_TYPE::UNORDERED_ACCEESS)
 				{
@@ -96,11 +102,12 @@ namespace JinEngine
 						nullptr,
 						IID_PPV_ARGS(&uploadBuffer)));
 					ThrowIfFailedHr(uploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mappedData)));
-				}
+				} 
+				//uploadBuffer->SetPrivateData(WKPDID_D3DDebugObjectNameW, name.size(), name.c_str());
 			}
 			void Clear()noexcept final
 			{
-				if (uploadBuffer != nullptr && (type == J_UPLOAD_BUFFER_TYPE::COMMON || type == J_UPLOAD_BUFFER_TYPE::CONSTANT))
+				if (uploadBuffer != nullptr && (type != J_UPLOAD_BUFFER_TYPE::UNORDERED_ACCEESS))
 					uploadBuffer->Unmap(0, nullptr);
 				mappedData = nullptr;
 				uploadBuffer.Reset();
@@ -111,6 +118,10 @@ namespace JinEngine
 				return elementcount;
 			}
 		public:
+			BYTE* Pointer()
+			{
+				return mappedData;
+			}
 			T Data(const uint index)
 			{
 				return (T)mappedData[index * elementByteSize];

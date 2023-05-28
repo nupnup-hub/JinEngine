@@ -66,16 +66,26 @@ namespace JinEngine
 	}
 	JUserPtr<JGameObject> JGameObjectCreatorInterface::CreateCamera(JUserPtr<JGameObject> parent, const J_OBJECT_FLAG flag, const std::wstring name)
 	{
+		return CreateCamera(parent, flag, false, name);
+	}
+	JUserPtr<JGameObject> JGameObjectCreatorInterface::CreateCamera(JUserPtr<JGameObject> parent, const J_OBJECT_FLAG flag, const bool allowCulling, const std::wstring name)
+	{
 		JUserPtr<JGameObject> newGameObj = JICI::Create<JGameObject>(name, Core::MakeGuid(), flag, parent);
-		JCCI::CreateCamera(newGameObj);
+		auto cam =  JCCI::CreateCamera(newGameObj);
+		if (allowCulling)
+		{ 
+			cam->SetAllowFrustumCulling(true);
+			cam->SetAllowHzbOcclusionCulling(true);
+		}
 		return newGameObj;
 	}
 	JUserPtr<JGameObject> JGameObjectCreatorInterface::CreateDebugCamera(JUserPtr<JGameObject> parent, const J_OBJECT_FLAG flag, const std::wstring name )
 	{
-		JUserPtr<JGameObject> newGameObj = JICI::Create<JGameObject>(name, Core::MakeGuid(), flag, parent);
+		JUserPtr<JGameObject> newGameObj = JICI::Create<JGameObject>(name, Core::MakeGuid(), flag, parent); 
 		auto cam = JCCI::CreateCamera(newGameObj);
 		cam->SetAllowDisplayDebug(true);
-		cam->SetAllowCulling(false);
+		cam->SetAllowFrustumCulling(false);
+		cam->SetAllowHzbOcclusionCulling(false);
 		return newGameObj;
 	}
 	JUserPtr<JGameObject> JGameObjectCreatorInterface::CreateLight(JUserPtr<JGameObject> parent, const J_OBJECT_FLAG flag, const J_LIGHT_TYPE type, const std::wstring name)

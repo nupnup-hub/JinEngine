@@ -57,7 +57,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JAnimationClipImpl> impl;
 	public:  
-		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
 		JUserPtr<JSkeletonAsset> GetClipSkeletonAsset()const noexcept;
 		float GetUpdateFPS()const noexcept;
 		uint GetSampleCount()const noexcept;

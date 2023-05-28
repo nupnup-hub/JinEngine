@@ -439,8 +439,7 @@ namespace JinEngine
 			}
 		} 
 		JEditorManager::JEditorManager()
-			:JEventListener(JCUtil::CalculateGuid("JEditorManager")),
-			editorManagerGuid(JCUtil::CalculateGuid("JEditorManager"))
+			:editorManagerGuid(JCUtil::CalculateGuid("JEditorManager"))
 		{ }
 		JEditorManager::~JEditorManager()
 		{}

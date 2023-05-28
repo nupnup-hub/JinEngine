@@ -42,7 +42,7 @@ namespace JinEngine
 			void SetArrayIndex(const int newValue);
 			void SetHeapIndexStart(const J_GRAPHIC_BIND_TYPE bindType, const int newValue);
 			void SetViewCount(const J_GRAPHIC_BIND_TYPE bindType, const uint newValue);
-		public:
+		public: 
 			static bool Destroy(JGraphicResourceInfo* info);  
 		private:
 			JGraphicResourceInfo(JGraphicResourceManager* manager,

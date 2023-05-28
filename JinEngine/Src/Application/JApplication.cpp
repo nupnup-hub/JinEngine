@@ -46,7 +46,7 @@ namespace JinEngine
 			Editor::JEditorManager editorManager;
 		public:
 			JApplicationImpl(HINSTANCE hInstance, const char* commandLine, const size_t guid)
-				:JEventListener(guid), guid(guid)
+				:guid(guid)
 			{ 
 				Core::JReflectionInfo::Instance().Initialize();
 				EngineAppAccess::Initialize();

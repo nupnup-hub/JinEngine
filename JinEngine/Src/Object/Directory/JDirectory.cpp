@@ -57,9 +57,27 @@ namespace JinEngine
 			:parent(initData.parent)
 		{} 
 	public:
+		std::vector<JUserPtr<JFile>> GetDirectoryFileVec()const noexcept
+		{
+			return fileList;
+		}
+		std::vector<JUserPtr<JFile>> GetDirectoryFileVec(const J_RESOURCE_TYPE type)const noexcept
+		{
+			std::vector<JUserPtr<JFile>> res;
+			for (const auto& data : fileList)
+			{
+				if (data->GetResourceType() == type)
+					res.push_back(data);
+			}
+			return res;
+		}
 		int GetFileIndex(const size_t guid)const noexcept
 		{ 
-			bool (*ptr)(const JUserPtr<JFile>&, size_t) = [](const JUserPtr<JFile>& a, size_t guid) {return a->GetResourceGuid() == guid; };
+			bool (*ptr)(const JUserPtr<JFile>&, size_t) = [](const JUserPtr<JFile>& a, size_t guid)
+			{
+				//clear중에는 fileList에 invalidFile이 섞여있음
+				return a != nullptr ? a->GetResourceGuid() == guid : false;
+			};
 			return JCUtil::GetJIndex(fileList, ptr, guid);
 		}
 	public:
@@ -141,27 +159,28 @@ namespace JinEngine
 	public:
 		void Clear()
 		{
-			std::vector<JUserPtr<JDirectory>> copyD = children;
-			const uint childrenCount = (uint)copyD.size();
-			for (uint i = 0; i < childrenCount; ++i)
-				Core::JIdentifier::BeginForcedDestroy(copyD[i].Get());
-
-			std::vector<JUserPtr<JResourceObject>> rVec;
-			for (const auto& data : fileList)
-			{
-				auto rawPtr = data->GetResource();
-				if (rawPtr != nullptr)
-					rVec.push_back(rawPtr);
-			}
-			for (auto& data : rVec)
+			auto copyD = children;
+			for(auto& data: copyD)
 				Core::JIdentifier::BeginForcedDestroy(data.Get());
 
-			const uint restFileCount = (uint)fileList.size();
-			for (uint i = 0; i < restFileCount; ++i)
+			std::vector<JUserPtr<JResourceObject>> rVec;
+			auto copyF = fileList;
+		 
+			for (auto& data : copyF)
 			{
-				InstanceInterface::RemoveInstance(fileList[i].Get());
-				fileList[i].Clear();
+				auto rawPtr = data->GetResource().Get();
+				if (rawPtr != nullptr)
+					Core::JIdentifier::BeginForcedDestroy(rawPtr);
+
+				//Resource Destory시 File이 소유하는 Data만 Act에서 DeAct로 컨버트하나
+				//Shader같이 Resource Destory시 File도 Destory하는 경우도 존재함 
+				if (data.IsValid())
+				{
+					InstanceInterface::RemoveInstance(data.Get());
+					data.Clear();
+				}
 			}
+ 
 			children.clear();
 			fileList.clear();
 		}
@@ -213,6 +232,14 @@ namespace JinEngine
 	JDirectory::LoadData::~LoadData()
 	{}
 
+	Core::JIdentifierPrivate& JDirectory::PrivateInterface()const noexcept
+	{
+		return dPrivate;
+	}
+	J_OBJECT_TYPE JDirectory::GetObjectType()const noexcept
+	{
+		return J_OBJECT_TYPE::DIRECTORY_OBJECT;
+	}
 	std::wstring JDirectory::GetPath()const noexcept
 	{
 		if (impl->parent == nullptr)
@@ -292,13 +319,35 @@ namespace JinEngine
 	{
 		return impl->fileList.back();
 	}
-	J_OBJECT_TYPE JDirectory::GetObjectType()const noexcept
+	std::vector<JUserPtr<JFile>> JDirectory::GetDirectoryFileVec(const bool containChildFile)const noexcept
 	{
-		return J_OBJECT_TYPE::DIRECTORY_OBJECT;
+		if(!containChildFile)
+			return impl->fileList;
+		else
+		{
+			std::vector<JUserPtr<JFile>> files = impl->fileList;
+			for (const auto& data : impl->children)
+			{
+				auto childFile = data->GetDirectoryFileVec(containChildFile); 
+				files.insert(files.end(), childFile.begin(), childFile.end());
+			}
+			return files;
+		}
 	}
-	Core::JIdentifierPrivate& JDirectory::GetPrivateInterface()const noexcept
+	std::vector<JUserPtr<JFile>> JDirectory::GetDirectoryFileVec(const bool containChildFile, const J_RESOURCE_TYPE type)const noexcept
 	{
-		return dPrivate;
+		if (!containChildFile)
+			return impl->GetDirectoryFileVec(type);
+		else
+		{
+			std::vector<JUserPtr<JFile>> files = impl->GetDirectoryFileVec(type);
+			for (const auto& data : impl->children)
+			{
+				auto childFile = data->GetDirectoryFileVec(containChildFile, type);
+				files.insert(files.end(), childFile.begin(), childFile.end());
+			}
+			return files;
+		}
 	}
 	void JDirectory::SetName(const std::wstring& newName)noexcept
 	{
@@ -394,15 +443,14 @@ namespace JinEngine
 	}
 	std::wstring JDirectory::MakeUniqueFileName(const std::wstring& name, const std::wstring& format, const size_t guid)const noexcept
 	{
-		auto conditionLam = [](const JUserPtr<JFile>& file, std::wstring name, std::wstring format, size_t guid)
-		{
-			return file->GetName() == name && file->GetOriginalResourceFormat() == format && file->GetResourceGuid() != guid;
+		auto conditionLam = [](const JUserPtr<JFile>& file, const std::wstring& format, size_t guid)
+		{		
+			return file->GetOriginalResourceFormat() == format && file->GetResourceGuid() != guid;
 		};
-		bool(*ptr)(const JUserPtr<JFile>&, std::wstring, std::wstring, size_t) = conditionLam;
-		 
-		std::wstring validName = EraseInvalidNameChar(name);
-		std::vector<JWeakPtr<JFile>> overlappedFile = JCUtil::GetPassConditionElement<JUserPtr<JFile>, JWeakPtr<JFile>>(impl->fileList, ptr, validName, format, guid);
-		return JCUtil::MakeUniqueName(overlappedFile, validName);
+		bool(*ptr)(const JUserPtr<JFile>&, const std::wstring&, size_t) = conditionLam;
+		  
+		auto overlappedFile = JCUtil::GetPassConditionElement<JUserPtr<JFile>, JWeakPtr<JFile>, const std::wstring&, size_t>(impl->fileList, ptr, format, guid);
+		return JCUtil::MakeUniqueName(overlappedFile, EraseInvalidNameChar(name));
 	}
 	JDirectory::JDirectory(const InitData& initData)
 		:JObject(initData), impl(std::make_unique<JDirectoryImpl>(initData, this))

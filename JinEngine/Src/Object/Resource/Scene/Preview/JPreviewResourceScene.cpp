@@ -105,7 +105,7 @@ namespace JinEngine
 		if (material == nullptr)
 			return false;
 
-		_JSceneManager::Instance().RegisterObservationFrame(GetScene(), material->GetFrameUserInterface());
+		_JSceneManager::Instance().RegisterObservationFrame(GetScene(), material->FrameUserInterface());
 		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(GetScene()->GetRootGameObject(), OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE);
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 

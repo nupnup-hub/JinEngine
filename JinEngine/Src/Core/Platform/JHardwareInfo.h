@@ -1,6 +1,5 @@
 #pragma once
-#include"../JDataType.h"
-#include"../Singleton/JSingletonHolder.h"
+#include"../JDataType.h" 
 #include"../../Utility/JVector.h"
 #include<memory>
 #include<vector>
@@ -23,10 +22,8 @@ namespace JinEngine
 			NVIDIA,
 			AMD
 		};
-		class JHardwareInfoImpl
+		class JHardwareInfo
 		{
-		private:
-			template<typename T> friend class JCreateUsingNew;
 		public:
 			struct CpuInfo
 			{
@@ -63,19 +60,10 @@ namespace JinEngine
 				int maxBlocksPerMultiProcessor;
 				JVector3<int> maxThreadsDim;
 				JVector3<int> maxGridDim;		 
-			}; 
-		private:
-			CpuInfo cpuInfo;
-			std::vector<GpuInfo> gpuInfo;
+			};  
 		public: 
-			CpuInfo GetCpuInfo()const noexcept;
-			std::vector<GpuInfo> GetGpuInfo()const noexcept;
-		private: 
-			JHardwareInfoImpl();
-		private:
-			void LoadCpuInfo();
-			void LoadGpuInfo();
-		};
-		using JHardwareInfo = Core::JSingletonHolder<JHardwareInfoImpl>;
+			static CpuInfo GetCpuInfo()noexcept;
+			static std::vector<GpuInfo> GetGpuInfo()noexcept;
+		}; 
 	}
 }

@@ -180,9 +180,7 @@ namespace JinEngine
 		uint indexBufferByteSize = 0;
 		std::vector<SubmeshGeometry> submeshes;
 	public:
-		JMeshGeometryImpl(const InitData& initData, JMeshGeometry* thisMeshRaw)
-			:JResourceObjectUserInterface(thisMeshRaw->GetGuid())
-		{}
+		JMeshGeometryImpl(const InitData& initData, JMeshGeometry* thisMeshRaw){}
 		~JMeshGeometryImpl(){}
 	public:
 		REGISTER_METHOD(GetTotalVertexCount)
@@ -446,7 +444,7 @@ namespace JinEngine
 			{
 				if (thisPointer->GetFormatIndex() != GetInvalidFormatIndex())
 				{
-					auto& p = static_cast<JMeshGeometryPrivate&>(thisPointer->GetPrivateInterface());
+					auto& p = static_cast<JMeshGeometryPrivate&>(thisPointer->PrivateInterface());
 					auto& pA = static_cast<JMeshGeometryPrivate::AssetDataIOInterface&>(p.GetAssetDataIOInterface());
 					auto groupData = pA.ReadMeshGroupData(thisPointer->GetPath());
 					if (ImportMesh(groupData.get()))
@@ -493,6 +491,11 @@ namespace JinEngine
 			}
 		}
 	public:
+		void NotifyReAlloc()
+		{
+			ResetEventListenerPointer(*JResourceObject::EvInterface(), thisPointer->GetGuid());
+		}
+	public:
 		void Initialize(InitData* initData)
 		{
 			TryCreateMeshGroupMaterial(initData->meshGroup.get());
@@ -503,6 +506,14 @@ namespace JinEngine
 		void RegisterThisPointer(JMeshGeometry* mesh)
 		{
 			thisPointer = Core::GetWeakPtr(mesh);
+		}
+		void RegisterPostCreation()
+		{
+			AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+		}
+		void DeRegisterPreDestruction()
+		{
+			RemoveListener(*JResourceObject::EvInterface(), thisPointer->GetGuid());
 		}
 		static void RegisterTypeData()
 		{
@@ -776,7 +787,7 @@ namespace JinEngine
 	}
 
 	using CreateInstanceInterface = JMeshGeometryPrivate::CreateInstanceInterface;
-	using DestroyInstanceInterface = JMeshGeometryPrivate::DestroyInstanceInterface;
+	using DestroyInstanceInterface = JMeshGeometryPrivate::DestroyInstanceInterface; 
 	using BufferViewInterface = JMeshGeometryPrivate::BufferViewInterface;
 
 	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
@@ -784,6 +795,7 @@ namespace JinEngine
 		JResourceObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		JMeshGeometry* mesh = static_cast<JMeshGeometry*>(createdPtr);
 		mesh->impl->RegisterThisPointer(mesh);
+		mesh->impl->RegisterPostCreation();
 		mesh->impl->Initialize(static_cast<JMeshGeometry::InitData*>(initData));
 	}
 	void CreateInstanceInterface::TryDestroyUnUseData(Core::JIdentifier* createdPtr)noexcept
@@ -792,10 +804,11 @@ namespace JinEngine
 	} 
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
-	{
+	{ 
 		JResourceObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
+		static_cast<JMeshGeometry*>(ptr)->impl->DeRegisterPreDestruction();
 	}
-
+	 
 	D3D12_VERTEX_BUFFER_VIEW BufferViewInterface::VertexBufferView(JMeshGeometry* mesh)noexcept
 	{
 		return mesh->impl->VertexBufferView();
@@ -803,5 +816,11 @@ namespace JinEngine
 	D3D12_INDEX_BUFFER_VIEW BufferViewInterface::IndexBufferView(JMeshGeometry* mesh)noexcept
 	{
 		return mesh->impl->IndexBufferView();
+	}
+
+	Core::JIdentifierPrivate::DestroyInstanceInterface& JMeshGeometryPrivate::GetDestroyInstanceInterface()const noexcept
+	{
+		static DestroyInstanceInterface pI;
+		return pI;
 	}
 }

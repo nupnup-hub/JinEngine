@@ -14,8 +14,8 @@ namespace JinEngine
 			const bool useBlockAlign,
 			const bool fitAllocationGranularity)
 		{ 
-			using CpuInfo = Core::JHardwareInfoImpl::CpuInfo;
-			const CpuInfo cpuInfo = JHardwareInfo::Instance().GetCpuInfo();
+			using CpuInfo = Core::JHardwareInfo::CpuInfo;
+			const CpuInfo cpuInfo = JHardwareInfo::GetCpuInfo();
 
 			const size_t hPageSize = cpuInfo.pageSize;
 			const size_t hAllocationGranularity = cpuInfo.allocationGranularity;

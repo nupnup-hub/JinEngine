@@ -42,11 +42,10 @@ namespace JinEngine
 			void Clear()noexcept final;
 		protected:
 			void OnDebugGameObject()noexcept final;
-			void OffDebugGameObject()noexcept final;
-			void OffCulling()noexcept final;
+			void OffDebugGameObject()noexcept final; 
 		public:
-			void Culling(const JCullingFrustum& camFrustum)noexcept final;
-			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept final;
+			void Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum)noexcept final;
+			void Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept final;
 			JUserPtr<JGameObject> IntersectFirst(const JRay& ray)const noexcept final;
 			void Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept final;
 			void UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept final;

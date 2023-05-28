@@ -198,7 +198,7 @@ namespace JinEngine
 		void CreateCacheFile()noexcept
 		{
 			JResourceObject::StoreData storeData(thisPointer);
-			static_cast<JResourceObjectPrivate&>(thisPointer->GetPrivateInterface()).GetAssetDataIOInterface().StoreAssetData(&storeData);
+			static_cast<JResourceObjectPrivate&>(thisPointer->PrivateInterface()).GetAssetDataIOInterface().StoreAssetData(&storeData);
 			if (!RTypeCommonCall::GetRTypeHint(thisPointer->GetResourceType()).isFixedAssetFile)
 				JFileIOHelper::CombineFile(std::vector<std::wstring>{thisPointer->GetMetaFilePath(), thisPointer->GetPath()}, GetCacheFilePath(thisPointer.Get()));
 			else
@@ -413,7 +413,7 @@ namespace JinEngine
 			rObj->impl->ConvertToActFileData(); 
 			 
 			JResourceObject::StoreData storeData(Core::GetUserPtr(rObj));
-			auto& rPrivate = static_cast<JResourceObjectPrivate&>(rObj->GetPrivateInterface());
+			auto& rPrivate = static_cast<JResourceObjectPrivate&>(rObj->PrivateInterface());
 			if (!rObj->HasFile())
 				rPrivate.GetAssetDataIOInterface().StoreAssetData(&storeData);
 			if (!rObj->HasMetafile())
@@ -429,9 +429,6 @@ namespace JinEngine
 		{
 			auto setFrameDirtyCallable = RTypePrivateCall::GetSetFrameDirtyCallable(rObj->GetResourceType());
 			setFrameDirtyCallable(nullptr, rObj);
-
-			auto setFrameBuffIndexCallable = RTypePrivateCall::GetSetFrameBuffIndexCallable(rObj->GetResourceType());
-			setFrameBuffIndexCallable(nullptr, rObj, rObj->GetTypeInfo().GetInstanceCount());
 		}
 	}
 	void CreateInstanceInterface::TryDestroyUnUseData(Core::JIdentifier* createdPtr)noexcept{}
@@ -449,17 +446,14 @@ namespace JinEngine
 		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 
 		JResourceObject* rObj = static_cast<JResourceObject*>(ptr);
-		auto rTypeHint = RTypeCommonCall::GetRTypeHint(rObj->GetResourceType());
 		rEv.NotifyEraseEvent(rObj);	  
+		auto rTypeHint = RTypeCommonCall::GetRTypeHint(rObj->GetResourceType());
 		if (rTypeHint.isFrameResource)
 		{
 			int index = rObj->GetTypeInfo().GetInstanceIndex(rObj->GetGuid());
 			auto objVec = rObj->GetTypeInfo().GetInstanceRawPtrVec();
 			auto setFrameDirtyCallable = RTypePrivateCall::GetSetFrameDirtyCallable(rObj->GetResourceType());
 			JCUtil::ApplyFunc(index, setFrameDirtyCallable, objVec);
-
-			auto setFrameBuffIndexCallable = RTypePrivateCall::GetSetFrameBuffIndexCallable(rObj->GetResourceType());
-			JCUtil::ApplyFuncUseIndex(index, setFrameBuffIndexCallable, objVec);
 		}
 	}
 	void DestroyInstanceInterface::SetInvalidInstance(Core::JIdentifier* ptr)noexcept
@@ -569,7 +563,7 @@ namespace JinEngine
 	void FileInterface::DeleteFile(JResourceObject* rObj)noexcept
 	{
 		JResourceObject::JResourceObjectImpl::DeleteRFile(rObj);
-		JResourceObject::BeginForcedDestroy(rObj);
+		//JResourceObject::BeginForcedDestroy(rObj);
 	}
 
 	void DestroyInstanceInterfaceEx::BeginForcedDestroy(JResourceObject* rObj)noexcept

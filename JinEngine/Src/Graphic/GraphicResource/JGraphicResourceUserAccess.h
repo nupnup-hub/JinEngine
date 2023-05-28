@@ -3,14 +3,23 @@ namespace JinEngine
 { 
 	namespace Graphic
 	{
-		class JGraphicResourceUserInterface;
-		class JGraphicResourceUserAccess
+		class JGraphicSingleResourceUserInterface;
+		class JGraphicMultiResourceUserInterface;
+		class JGraphicSingleResourceUserAccess
 		{
 		protected:
-			JGraphicResourceUserAccess() = default;
-			virtual ~JGraphicResourceUserAccess() = default;
+			JGraphicSingleResourceUserAccess() = default;
+			virtual ~JGraphicSingleResourceUserAccess() = default;
 		public:
-			virtual const JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept = 0;
+			virtual const JGraphicSingleResourceUserInterface GraphicResourceUserInterface()const noexcept = 0;
+		};
+		class JGraphicMultiResourceUserAccess
+		{
+		protected:
+			JGraphicMultiResourceUserAccess() = default;
+			virtual ~JGraphicMultiResourceUserAccess() = default;
+		public:
+			virtual const JGraphicMultiResourceUserInterface GraphicResourceUserInterface()const noexcept = 0;
 		};
 	}
 }

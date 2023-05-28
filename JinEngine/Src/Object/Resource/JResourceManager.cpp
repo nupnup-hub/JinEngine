@@ -83,24 +83,24 @@ namespace JinEngine
 		void Terminate()
 		{
 			//StoreProjectResource();
-			auto rHintVec = RTypeCommonCall::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY_REVERSE);
-			for (uint i = 0; i < rHintVec.size(); ++i)
-			{
-				auto& typeInfo = RTypeCommonCall::CallGetTypeInfo(rHintVec[i].thisType);
-				auto ptrVec = typeInfo.GetInstanceRawPtrVec();
-				for (uint j = 0; j < ptrVec.size(); ++j)
-					JResourceObjectPrivate::DestroyInstanceInterfaceEx::BeginForcedDestroy(static_cast<JResourceObject*>(ptrVec[j]));
-			}
+			auto rTypeInfoVec = RTypeCommonCall::GetTypeInfoVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY_REVERSE, false);
+			for (const auto& type : rTypeInfoVec)
+			{ 
+				auto ptrVec = type->GetInstanceRawPtrVec();
+				for (const auto& rawPtr : ptrVec)
+					JResourceObjectPrivate::DestroyInstanceInterfaceEx::BeginForcedDestroy(static_cast<JResourceObject*>(rawPtr));
+			} 
+
 			defaultData->Clear();
+			if (projectRootDir != nullptr)
+			{
+				JDirectoryPrivate::DestroyInstanceInterfaceEx::BeginForcedDestroy(projectRootDir.Get());
+				projectRootDir = nullptr;
+			}
 			if (engineRootDir != nullptr)
 			{
 				JDirectoryPrivate::DestroyInstanceInterfaceEx::BeginForcedDestroy(engineRootDir.Get());
 				engineRootDir = nullptr;
-			}
-			if (projectRootDir != nullptr)
-			{
-				JDirectoryPrivate::DestroyInstanceInterfaceEx::BeginForcedDestroy(projectRootDir.Get()); 
-				projectRootDir = nullptr;
 			}
 			Core::JReflectionInfo::Instance().SearchInstance();
 		}
@@ -160,13 +160,14 @@ namespace JinEngine
 			
 			JDirectoryPrivate::ActivationInterface::OpenDirectory(projectRootDir);		 
 			resourceIO->LoadProjectDirectory(projectRootDir);
-			resourceIO->LoadProjectResource(projectRootDir);
+			resourceIO->LoadProjectResourceFile(projectRootDir);
 
 			CreateDefaultShader();
 			CreateDefaultTexture(defaultData->projectTextureType);
 			CreateDefaultMaterial();
 			CreateDefaultMesh();
 
+			resourceIO->LoadProjectLastOpendScene(projectRootDir);
 			if (_JSceneManager::Instance().GetActivatedSceneCount() == 0)
 			{
 				JUserPtr<JDirectory> projectContentsDir = thisManager->GetDirectory(JApplicationProject::ContentsPath());
@@ -529,7 +530,7 @@ namespace JinEngine
 		void StoreResource(const JUserPtr<JResourceObject>& rObj)
 		{
 			auto storeData = JResourceObjectPrivate::AssetDataIOInterface::CreateStoreAssetDIDate(rObj);
-			auto& rPrivate = static_cast<JResourceObjectPrivate&>(rObj->GetPrivateInterface());
+			auto& rPrivate = static_cast<JResourceObjectPrivate&>(rObj->PrivateInterface());
 			rPrivate.GetAssetDataIOInterface().StoreAssetData(storeData.get());
 		}
 	};
@@ -563,6 +564,10 @@ namespace JinEngine
 	{
 		bool(*ptr)(JDirectory*, const std::wstring&) = [](JDirectory* dir, const std::wstring& path){return dir->GetPath() == path;};
 		return GetDirectoryByCondition<JDirectory, const std::wstring&>(ptr, path);	 
+	}
+	JUserPtr<JDirectory> JResourceManager::GetProjectContentsDirectory()const noexcept
+	{
+		return GetDirectory(JApplicationProject::ContentsPath());
 	}
 	JUserPtr<JDirectory> JResourceManager::GetEditorResourceDirectory()const noexcept
 	{

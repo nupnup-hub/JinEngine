@@ -27,7 +27,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JAnimatorImpl> impl;
 	public:
-		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{

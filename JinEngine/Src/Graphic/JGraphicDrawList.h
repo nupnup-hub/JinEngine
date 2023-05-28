@@ -1,10 +1,12 @@
 #pragma once
+#include"JGraphicDrawListType.h"
 #include"../Core/JDataType.h"
-#include"../Object/Component/JComponentType.h" 
+#include"../Object/Component/JComponentType.h"  
 #include<deque> 
 #include<vector>
 #include<memory>
 
+struct ID3D12Device;
 namespace JinEngine
 {
 	class JComponent;
@@ -12,56 +14,84 @@ namespace JinEngine
 	class JSceneManager;
 	class JLight;
 	class JCamera;  
-	class JFrameUpdateUserAccess;
 
 	namespace Graphic
 	{
-		enum class J_GRAPHIC_DRAW_FREQUENCY
-		{
-			ALWAYS,
-			UPDATED
-		};
-
 		class JGraphicResourceInfo;  
 		class JGraphicDrawList;
-		class JGraphicResourceInterface;
+		class JGraphicSingleResourceInterface;
+		class JGraphicMultoResourceInterface;
 		class JGraphic;
+		class JFrameUpdateUserAccess;
 
-		struct JShadowMapDrawRequestor
+		class JShadowMapDrawRequestor
 		{
 		public:
-			JUserPtr<JComponent> jLight;
-			JGraphicResourceInfo* handle;
+			JUserPtr<JLight> jLight;
+			const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
 		public:
-			JShadowMapDrawRequestor(const JUserPtr<JComponent>& jLight, JGraphicResourceInfo* handle);
+			bool isUpdated = false;
+			bool canDrawThisFrame = false; 
+		public:
+			JShadowMapDrawRequestor(const JUserPtr<JLight>& jLight, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency);
 			~JShadowMapDrawRequestor();
 		};
-		struct JSceneDrawRequestor
+		class JSceneDrawRequestor
 		{
 		public:
-			JUserPtr<JComponent> jCamera;
-			JGraphicResourceInfo* handle;
+			JUserPtr<JCamera> jCamera;
+			const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
 		public:
-			JSceneDrawRequestor(const JUserPtr<JComponent>& jCamera, JGraphicResourceInfo* handle);
+			bool isUpdated = false;
+			bool canDrawThisFrame = false; 
+		public:
+			JSceneDrawRequestor(const JUserPtr<JCamera>& jCamera, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency);
 			~JSceneDrawRequestor();
 		};
+		class JSceneFrustumCullingRequestor
+		{
+		public:
+			JUserPtr<JComponent> comp;
+			const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
+		public:
+			bool isUpdated = false;
+			bool canDrawThisFrame = false;
+			bool keepCanDrawTrigger = false; 
+		public:
+			JSceneFrustumCullingRequestor(const JUserPtr<JComponent>& comp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency);
+			~JSceneFrustumCullingRequestor();
+		};
+		class JSceneHzbOccCullingRequestor
+		{
+		public:
+			JUserPtr<JComponent> comp;
+			const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
+		public:
+			bool isUpdated = false;
+			bool canDrawThisFrame = false;
+			bool keepCanDrawTrigger = false; 
+		public:
+			JSceneHzbOccCullingRequestor(const JUserPtr<JComponent>& comp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency);
+			~JSceneHzbOccCullingRequestor();
+		};
 
-		struct JGraphicDrawTarget
+		class JGraphicDrawTarget
 		{
 		public:
 			struct UpdateInfo
 			{
 			private:
 				friend class JGraphicDrawList;
+				friend class JGraphicDrawTarget;
 			private:
 				std::unique_ptr<JFrameUpdateUserAccess> observationFrame;		// for resource preview scene
-				const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
-				const bool isAllowOcclusionCulling;
 			public:
 				uint objUpdateCount = 0;
 				uint aniUpdateCount = 0;
 				uint camUpdateCount = 0;
 				uint lightUpdateCount = 0;
+				uint shadowMapUpdateCount = 0;
+				uint hzbOccUpdateCount = 0;
 			public:
 				//frame dirty = gNumFrameDirty
 				uint hotObjUpdateCount = 0;
@@ -69,15 +99,13 @@ namespace JinEngine
 				uint hotCamUpdateCount = 0;
 				uint hotLitghtUpdateCount = 0;
 			public:
-				bool hasSceneUpdate = false;
-				bool hasShadowUpdate = false;
-				bool hasOcclusionUpdate = false;
+				bool sceneUpdated = false;
+				bool shadowUpdated = false;  
 			public:
+				bool nextSceneUpdate = false;
+			private:
 				void UpdateStart();
 				void UpdateEnd();
-			public:
-				UpdateInfo(const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling);
-				~UpdateInfo();
 			};
 		private:
 			friend class JGraphicDrawList;
@@ -86,21 +114,25 @@ namespace JinEngine
 			std::unique_ptr<UpdateInfo> updateInfo;
 			std::vector<std::unique_ptr<JShadowMapDrawRequestor>> shadowRequestor;
 			std::vector<std::unique_ptr<JSceneDrawRequestor>> sceneRequestor;
+			std::vector<std::unique_ptr<JSceneFrustumCullingRequestor>> frustumCullingRequestor;
+			std::vector<std::unique_ptr<JSceneHzbOccCullingRequestor>> hzbOccCullingRequestor;
 		public:
-			JGraphicDrawTarget(const JUserPtr<JScene>& scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling);
+			JGraphicDrawTarget(const JUserPtr<JScene>& scene);
 			~JGraphicDrawTarget();
+		public:
+			void UpdateStart();
+			void UpdateEnd();
 		};
 		 
 		class JGraphicDrawList 
 		{ 
 		private:
 			friend class JGraphic;
-			friend class JGraphicResourceInterface;
-			friend class JSceneManager;
-			friend class JScene;
+			friend class JGraphicDrawListSceneInterface;
+			friend class JGraphicDrawListCompInterface; 
 		private:
 			//drawList
-			static bool AddDrawList(const JUserPtr<JScene>& scene, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency, const bool isAllowOcclusionCulling)noexcept;
+			static bool AddDrawList(const JUserPtr<JScene>& scene)noexcept;
 			static bool PopDrawList(const JUserPtr<JScene>& scene)noexcept;
 			static bool HasDrawList(const JUserPtr<JScene>& scene)noexcept;
 			static void UpdateScene(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE cType)noexcept;
@@ -109,16 +141,18 @@ namespace JinEngine
 			static bool AddObservationFrame(const JUserPtr<JScene>& scene, const JFrameUpdateUserAccess& observationFrame)noexcept;
 		private:
 			//request
-			static void AddDrawShadowRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jLight, JGraphicResourceInfo* handle)noexcept;
-			static void AddDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jCamera, JGraphicResourceInfo* handle)noexcept;
+			static void AddDrawShadowRequest(const JUserPtr<JScene>& scene, const JUserPtr<JLight>& jLight)noexcept;
+			static void AddDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& jCamera, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept;
+			static void AddFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept;
+			static void AddHzbOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept;
 			static void PopDrawRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept;
+			static void PopFrustumCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept;
+			static void PopHzbOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept;
 			static bool HasRequestor(const JUserPtr<JScene>& scene)noexcept;
 		private:
 			static uint GetListCount()noexcept;
-			static JGraphicDrawTarget* GetDrawScene(const uint index)noexcept;
-		private:
-			//static std::vector<JGraphicDrawTarget*> GetAllDrawTarget()noexcept;
-		//	static std::vector<JGraphicDrawTarget*> GetDrawableTarget()noexcept;
+			static JGraphicDrawTarget* GetDrawScene(const uint index)noexcept; 
+			static JSceneDrawRequestor* GetSceneDrawRequestor(const size_t guid)noexcept;
 		};	 
 	}
 }

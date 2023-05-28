@@ -93,6 +93,7 @@ namespace JinEngine
 			void SetContentsClick(const bool value)noexcept;
 		protected:
 			void PushSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept;
+			void ClearSelectedObject();
 		protected:
 			bool RegisterEventListener(const J_EDITOR_EVENT evType);
 			bool RegisterEventListener(std::vector<J_EDITOR_EVENT>& evType);
@@ -106,8 +107,6 @@ namespace JinEngine
 			void RequesBind(const std::string& desc,
 				std::unique_ptr<Core::JBindHandleBase>&& doHandle, 
 				std::unique_ptr<Core::JBindHandleBase>&& undoHandle); 
-		protected:
-			void ClearSelectedObject();
 		protected:
 			void TryBeginDragging(const JUserPtr<Core::JIdentifier> selectObj);
 			JUserPtr<Core::JIdentifier> TryGetDraggingTarget();

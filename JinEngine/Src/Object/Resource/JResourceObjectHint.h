@@ -11,8 +11,7 @@ namespace JinEngine
 	using GetAvailableFormatCallable = Core::JStaticCallable<std::vector<std::wstring>>;
 	using GetFormatIndexCallable = Core::JStaticCallable<uint8, const std::wstring&>;
  
-	using SetRFrameDirtyCallable = Core::JStaticCallable<void, JResourceObject*>;
-	using SetRFrameBuffIndexCallable = Core::JStaticCallable<void, JResourceObject*, uint>;
+	using SetRFrameDirtyCallable = Core::JStaticCallable<void, JResourceObject*>; 
 
 	struct RTypeHint
 	{
@@ -63,18 +62,15 @@ namespace JinEngine
 	struct RTypePrivateFunc
 	{
 	private:
-		SetRFrameDirtyCallable* setFrameDirtyCallable = nullptr;
-		SetRFrameBuffIndexCallable* setFrameBuffIndexCallable = nullptr;
+		SetRFrameDirtyCallable* setFrameDirtyCallable = nullptr; 
 	public:
-		RTypePrivateFunc(SetRFrameDirtyCallable* setFrameDirtyCallable, SetRFrameBuffIndexCallable* setFrameBuffIndexCallable);
+		RTypePrivateFunc(SetRFrameDirtyCallable* setFrameDirtyCallable);
 		RTypePrivateFunc() = default;
 		~RTypePrivateFunc();
 	public:
-		SetRFrameDirtyCallable GetSetFrameDirtyCallable();
-		SetRFrameBuffIndexCallable GetSetFrameBuffIndexCallable();
+		SetRFrameDirtyCallable GetSetFrameDirtyCallable(); 
 	public:
-		void CallSetFrameDirty(JResourceObject* jRobj);
-		void CallSetFrameBuffIndex(JResourceObject* jRobj, const uint value);
+		void CallSetFrameDirty(JResourceObject* jRobj); 
 	};
 
 	class RTypeRegister
@@ -91,6 +87,7 @@ namespace JinEngine
 		static std::wstring GetFormat(const J_RESOURCE_TYPE type, const uint8 index); 
 		static const RTypeHint GetRTypeHint(const J_RESOURCE_TYPE type)noexcept;
 		static const std::vector<RTypeHint> GetRTypeHintVec(const J_RESOURCE_ALIGN_TYPE alignType)noexcept;
+		static const std::vector<Core::JTypeInfo*> GetTypeInfoVec(const J_RESOURCE_ALIGN_TYPE alignType, const bool allowAbstractClass)noexcept;
 	public:
 		static std::vector<std::wstring> CallGetAvailableFormat(const J_RESOURCE_TYPE type);
 		static Core::JTypeInfo& CallGetTypeInfo(const J_RESOURCE_TYPE type);
@@ -103,10 +100,8 @@ namespace JinEngine
 	private: 
 		friend class JResourceObjectPrivate; 
 	private:
-		static SetRFrameDirtyCallable GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type);
-		static SetRFrameBuffIndexCallable GetSetFrameBuffIndexCallable(const J_RESOURCE_TYPE type);
+		static SetRFrameDirtyCallable GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type); 
 	private:
-		static void CallSetFrameDirty(JResourceObject* jRobj);
-		static void CallSetFrameBuffIndex(JResourceObject* jRobj, const uint value);
+		static void CallSetFrameDirty(JResourceObject* jRobj); 
 	};
 }

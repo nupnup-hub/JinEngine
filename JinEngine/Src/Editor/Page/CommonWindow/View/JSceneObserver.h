@@ -84,6 +84,11 @@ namespace JinEngine
 			JVector3<float> lastCamRot{ 0,0,0 };
 		private:
 			bool isCreateHelperGameObj = false;
+		private:
+			bool allowDisplayDebug = true;
+			bool allowFrustumCulling = false;
+			bool allowOccCulling = false;
+			bool allowReflectCullingResult = false;
 		public:
 			JSceneObserver(const std::string& name,
 				std::unique_ptr<JEditorAttribute> attribute,
@@ -117,7 +122,7 @@ namespace JinEngine
 			void DebugTreeOnScreen();
 		private:
 			void ShadowMapViewerOnScreen();
-			void OcclusionResultOnScreen();
+			void RenderResultOnScreen();
 		private:
 			void UpdateMainCamFrustum()noexcept;
 			void CreateCamFrustum(JUserPtr<JCamera> cam)noexcept;

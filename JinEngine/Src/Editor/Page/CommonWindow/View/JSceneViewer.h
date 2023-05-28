@@ -14,7 +14,7 @@ namespace JinEngine
 		{
 		private:
 			std::unique_ptr<JSceneCameraList> camList;
-			JUserPtr<JTexture> shiroBack;
+			//JUserPtr<JTexture> shiroBack;
 		private: 
 			JUserPtr<JScene> scene;
 			JUserPtr<JCamera> selectedCam;

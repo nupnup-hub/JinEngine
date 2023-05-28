@@ -26,11 +26,11 @@ namespace JinEngine
 		{ 
 			_TransitionIOInterface* TransitionIOInterface(const JUserPtr<JAnimationFSMtransition>& trans)noexcept
 			{
-				return &static_cast<_TransitionIOInterface&>(static_cast<JAnimationFSMtransitionPrivate&>(trans->GetPrivateInterface()).GetAssetDataIOInterface());
+				return &static_cast<_TransitionIOInterface&>(static_cast<JAnimationFSMtransitionPrivate&>(trans->PrivateInterface()).GetAssetDataIOInterface());
 			}
 			_TransitionUpdateInterface* TransitionUpdateInterface(const JUserPtr<JAnimationFSMtransition>& trans)noexcept
 			{
-				return &static_cast<_TransitionUpdateInterface&>(static_cast<JAnimationFSMtransitionPrivate&>(trans->GetPrivateInterface()).GetUpdateInterface());
+				return &static_cast<_TransitionUpdateInterface&>(static_cast<JAnimationFSMtransitionPrivate&>(trans->PrivateInterface()).GetUpdateInterface());
 			}
 		}
 		 

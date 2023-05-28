@@ -8,10 +8,13 @@
 #include"../../../../Object/Resource/Scene/JScene.h" 
 #include"../../../../Object/GameObject/JGameObject.h" 
 #include"../../../../Core/File/JFileIOHelper.h" 
-
-
-#include"../../../../Object/Resource/JResourceManager.h" 
-#include"../../../../Object/Resource/Texture/JTexture.h" 
+#include"../../../../Graphic/GraphicResource/JGraphicResourceType.h"
+#include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
+#include"../../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
+#include"../../../../../Lib/DirectX/TK/Src/d3dx12.h"
+//Test
+//#include"../../../../Object/Resource/JResourceManager.h" 
+//#include"../../../../Object/Resource/Texture/JTexture.h" 
 using namespace DirectX;
 
 namespace JinEngine
@@ -47,18 +50,19 @@ namespace JinEngine
 				//camList->DisplayCameraList(scene.Get(), "Viewer", ImGui::GetMainViewport()->Size * 0.15f);
 				selectedCam = camList->GetSelectedCam(scene);
  
-					//Test Code
-				static bool allowShiroBack;
+				//Test Code
+				/*
+				* static bool allowShiroBack;
 				JImGuiImpl::CheckBox("draw shiro background", allowShiroBack);
 
 				if (allowShiroBack)
-				{ 
+				{
 					if (shiroBack == nullptr)
 						shiroBack = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND);
 					JImGuiImpl::Image(shiroBack.Get(), JVector2<float>(50, 50));
 				}
 				else
-					shiroBack.Clear();
+					shiroBack.Clear();*/
 
 				if (selectedCam.IsValid())
 				{
@@ -67,8 +71,8 @@ namespace JinEngine
 						if (ImGui::IsMouseHoveringRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize()))
 							editorCamCtrl->MouseMove(selectedCam.Get(), ImGui::GetMousePos().x, ImGui::GetMousePos().y);
 						editorCamCtrl->KeyboardInput(selectedCam.Get());
-					}
-					JImGuiImpl::Image(selectedCam.Get(), ImGui::GetWindowSize());
+					} 
+					JImGuiImpl::Image(selectedCam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, ImGui::GetWindowSize());
 				}	 
 				//JImGuiImpl::Image(*mainCamera, ImGui::GetMainViewport()->WorkSize);
 			}

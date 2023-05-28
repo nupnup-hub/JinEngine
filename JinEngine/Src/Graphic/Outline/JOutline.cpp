@@ -162,13 +162,14 @@ namespace JinEngine
 			newShaderPso.RTVFormats[0] = rtvFormat;
 			newShaderPso.SampleDesc.Count = 1;
 			newShaderPso.SampleDesc.Quality = 0;
-			newShaderPso.DSVFormat = dsvFormat;
+			//newShaderPso.DSVFormat = dsvFormat;
+			newShaderPso.DSVFormat = DXGI_FORMAT_UNKNOWN;
 
 			ThrowIfFailedG(device->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(gShaderData->pso.GetAddressOf())));
 		}
 		void JOutline::BuildUploadBuffer(ID3D12Device* device)
 		{
-			outlineCB = std::make_unique<JUploadBuffer<JOutlineConstants>>(J_UPLOAD_BUFFER_TYPE::CONSTANT);
+			outlineCB = std::make_unique<JUploadBuffer<JOutlineConstants>>(L"OutLine", J_UPLOAD_BUFFER_TYPE::CONSTANT);
 			outlineCB->Build(device, 1);
 		}
 	}

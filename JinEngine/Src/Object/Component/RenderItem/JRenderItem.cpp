@@ -3,7 +3,6 @@
 #include"../JComponentHint.h"
 #include"../Transform/JTransform.h"
 #include"../Transform/JTransformPrivate.h"
-#include"../../JFrameUpdate.h"
 #include"../../GameObject/JGameObject.h"
 #include"../../Resource/JResourceManager.h" 
 #include"../../Resource/JResourceObjectUserInterface.h"
@@ -15,9 +14,10 @@
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Graphic/FrameResource/JObjectConstants.h"
-#include"../../../Graphic/FrameResource/JBoundingObjectConstants.h"
-#include"../../../Graphic/OcclusionCulling/JOcclusionConstants.h"
+#include"../../../Graphic/Upload/Frameresource/JObjectConstants.h"
+#include"../../../Graphic/Upload/Frameresource/JBoundingObjectConstants.h"
+#include"../../../Graphic/Upload/Frameresource/JFrameUpdate.h"
+#include"../../../Graphic/Upload/Frameresource/JOcclusionConstants.h"
 #include"../../../Utility/JCommonUtility.h" 
 #include"../../../Utility/JMathHelper.h" 
 #include<fstream>
@@ -28,9 +28,12 @@ using namespace DirectX;
 namespace JinEngine
 {
 	namespace
-	{
-		using RitemFrameUpdate = JFrameUpdate2<JFrameUpdateBase<Graphic::JObjectConstants&, const uint>,
-			JFrameUpdateBase<Graphic::JBoundingObjectConstants&>>;
+	{ 
+		using RitemFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder3< 
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, Graphic::JObjectConstants&, const uint>,
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, Graphic::JBoundingObjectConstants&>,
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, Graphic::JHzbOccObjectConstants&>>,
+			Graphic::JFrameDirty>;
 	}
 	namespace
 	{
@@ -39,10 +42,14 @@ namespace JinEngine
 	}
  
 	class JRenderItem::JRenderItemImpl : public Core::JTypeImplBase,
-		public JFrameUpdate<RitemFrameUpdate, JFrameDirtyListener, FrameUpdate::dobuleBuff>,
+		public RitemFrameUpdate,
 		public JResourceObjectUserInterface
-	{
+	{ 
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JRenderItemImpl)
+	public:
+		using ObjectFrame = JFrameInterface1;
+		using BoundingObjectFrame = JFrameInterface2;
+		using OccObjectFrame = JFrameInterface3;
 	public:
 		JWeakPtr<JRenderItem> thisPointer = nullptr;
 	public:
@@ -52,13 +59,13 @@ namespace JinEngine
 		std::vector<JUserPtr<JMaterial>> material;
 		DirectX::XMFLOAT4X4 textureTransform = JMathHelper::Identity4x4();
 		D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT;
-		J_RENDER_VISIBILITY renderVisibility = J_RENDER_VISIBILITY::VISIBLE;
+		J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT; 
 	public:
 		J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask = SPACE_SPATIAL_ALLOW_ALL;
 	public:
+		bool isActivated = false;
+	public:
 		JRenderItemImpl(const InitData& initData, JRenderItem* thisRitemRaw)
-			:JResourceObjectUserInterface(thisRitemRaw->GetGuid())
 		{}
 		~JRenderItemImpl(){ }
 	public:
@@ -109,6 +116,20 @@ namespace JinEngine
 			else
 				return DirectX::BoundingBox();
 		}
+		DirectX::BoundingOrientedBox GetOrientedBoundingBox()noexcept
+		{
+			if (mesh.IsValid())
+			{
+				DirectX::BoundingOrientedBox oriBB;
+				DirectX::BoundingOrientedBox res;
+				DirectX::BoundingOrientedBox::CreateFromBoundingBox(oriBB, mesh->GetBoundingBox());
+			 
+				oriBB.Transform(res, thisPointer->GetOwner()->GetTransform()->GetWorldMatrix());
+				return res;
+			}
+			else
+				return DirectX::BoundingOrientedBox();
+		}
 		DirectX::BoundingSphere GetBoundingSphere()noexcept
 		{
 			if (mesh.IsValid())
@@ -147,29 +168,29 @@ namespace JinEngine
 			else
 				return DirectX::BoundingSphere();
 		}
-		JFrameBuff2* GetFrameBuffInterface()
-		{
-			return this;
-		}
 	public:
 		void SetMesh(JUserPtr<JMeshGeometry> newMesh)noexcept
 		{
 			if (thisPointer->IsActivated())
+			{
 				CallOffResourceReference(mesh.Get());
+				if (isActivated)
+				{
+					DeRegisterComponent(thisPointer);
+					DeActivate();
+				}
+			}
 			mesh = newMesh;
 			if (thisPointer->IsActivated())
+			{
 				CallOnResourceReference(mesh.Get());
+				if (!isActivated && mesh != nullptr && RegisterComponent(thisPointer))
+					Activate();
+			}
 
 			//material.clear();
 			if (mesh.IsValid())
 				material.resize(mesh->GetTotalSubmeshCount());
-
-			if (thisPointer->IsActivated())
-				DeRegisterComponent(thisPointer);
-			if (thisPointer->IsActivated())
-				RegisterComponent(thisPointer);
-			//if (preMesh == nullptr && IsActivated())
-			//	RegisterComponent();
 			SetFrameDirty();
 		}
 		void SetMaterial(int index, JUserPtr<JMaterial> newMaterial)noexcept
@@ -205,9 +226,6 @@ namespace JinEngine
 		{
 			if (spaceSpatialMask != newSpaceSpatialMask)
 			{
-				if ((spaceSpatialMask & SPACE_SPATIAL_ALLOW_CULLING) == 0)
-					thisPointer->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
-
 				if (thisPointer->IsActivated())
 					DeRegisterComponent(thisPointer);
 				spaceSpatialMask = newSpaceSpatialMask;
@@ -265,12 +283,24 @@ namespace JinEngine
 			}
 		}
 	public:
+		void Activate()
+		{
+			RegisterRItemFrameData();
+			isActivated = true;
+		}
+		void DeActivate()
+		{
+			DeRegisterRItemFrameData();
+			isActivated = false;
+		}
+	public:
 		void UpdateFrame(Graphic::JObjectConstants& constant, const uint submeshIndex)noexcept final
 		{
 			JTransform* transform = thisPointer->GetOwner()->GetTransform().Get();
 			XMStoreFloat4x4(&constant.World, XMMatrixTranspose(transform->GetWorldMatrix()));
 			XMStoreFloat4x4(&constant.TexTransform, XMMatrixTranspose(XMLoadFloat4x4(&textureTransform)));
-			constant.MaterialIndex = JMaterialPrivate::FrameBuffInterface::GetCBOffset(GetValidMaterial(submeshIndex).Get());
+			constant.MaterialIndex = JMaterialPrivate::FrameIndexInterface::GetMaterialFrameIndex(GetValidMaterial(submeshIndex).Get());
+			ObjectFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JBoundingObjectConstants& constant)noexcept final
 		{
@@ -301,6 +331,17 @@ namespace JinEngine
 			const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), thisPointer->GetOwner()->GetParent()->GetTransform()->GetWorldMatrix());
 
 			XMStoreFloat4x4(&constant.boundWorld, XMMatrixTranspose(worldM));
+			BoundingObjectFrame::MinusMovedDirty();
+		}
+		void UpdateFrame(Graphic::JHzbOccObjectConstants& constant)noexcept final
+		{
+			const DirectX::BoundingOrientedBox bbox = GetOrientedBoundingBox();
+			bbox.GetCorners(constant.coners);
+			constant.center = bbox.Center;
+			constant.extents = bbox.Extents;
+			constant.isValid = renderLayer == J_RENDER_LAYER::OPAQUE_OBJECT;
+			constant.queryResultIndex = BoundingObjectFrame::GetUploadIndex();
+			OccObjectFrame::MinusMovedDirty();
 		}
 	public:
 		void NotifyReAlloc()
@@ -308,9 +349,13 @@ namespace JinEngine
 			auto transform = thisPointer->GetOwner()->GetTransform();
 			if (transform.IsValid())
 			{
-				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(transform.Get(), this);
-				JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(transform.Get(), this);
+				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(transform.Get(), thisPointer->GetGuid());
+				JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(transform.Get(), this, thisPointer->GetGuid());
 			}
+			ObjectFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, (ObjectFrame*)this);
+			BoundingObjectFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, (BoundingObjectFrame*)this);
+			OccObjectFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this);
+			ResetEventListenerPointer(*JResourceObject::EvInterface(), thisPointer->GetGuid());
 		}
 	public:
 		void RegisterThisPointer(JRenderItem* rItem)
@@ -320,14 +365,26 @@ namespace JinEngine
 		void RegisterPostCreation()
 		{
 			AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
-			JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), this);
+			JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), this, thisPointer->GetGuid());
 		}
 		void DeRegisterPreDestruction()
 		{
 			RemoveListener(*JResourceObject::EvInterface(), thisPointer->GetGuid());
 			if (thisPointer->GetOwner()->GetTransform() != nullptr)
-				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), this);
+				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), thisPointer->GetGuid());
 		} 
+		void RegisterRItemFrameData()
+		{
+			ObjectFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, (ObjectFrame*)this, thisPointer->GetOwner()->GetOwnerGuid(), mesh->GetTotalSubmeshCount());
+			BoundingObjectFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, (BoundingObjectFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+			OccObjectFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+		}
+		void DeRegisterRItemFrameData()
+		{
+			ObjectFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, (ObjectFrame*)this);
+			BoundingObjectFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, (BoundingObjectFrame*)this);
+			OccObjectFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this);
+		}
 		static void RegisterTypeData()
 		{
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JRenderItem::StaticTypeInfo };
@@ -348,40 +405,14 @@ namespace JinEngine
 			static CreateInitDataCallable createInitDataCallable{ createInitDataLam };
 
 			static auto setFrameDirtyLam = [](JComponent* component) {static_cast<JRenderItem*>(component)->impl->SetFrameDirty(); };
-			static auto setFrameOffsetLam = [](JComponent* component, JComponent* refComp, const bool isCreated)
-			{
-				JRenderItem* rItem = static_cast<JRenderItem*>(component);
-				JFrameBuff2* rFrameBase = rItem->impl->GetFrameBuffInterface();
-				if (isCreated)
-				{
-					if (refComp == nullptr)
-					{  
-						rFrameBase->SetFirstFrameBuffOffset(0);
-						rFrameBase->SetSecondFrameBuffOffset(0);
-					}
-					else
-					{
-						JRenderItem* refRItem = static_cast<JRenderItem*>(refComp);
-						JFrameBuff2* refFrameBase = refRItem->impl->GetFrameBuffInterface();
-						rFrameBase->SetFirstFrameBuffOffset(refFrameBase->GetFirstFrameBuffOffset() + refRItem->GetSubmeshCount());
-						rFrameBase->SetSecondFrameBuffOffset(refFrameBase->GetSecondFrameBuffOffset() + 1);
-					}
-				}
-				else
-				{
-					rFrameBase->SetFirstFrameBuffOffset(rFrameBase->GetFirstFrameBuffOffset() - static_cast<JRenderItem*>(refComp)->GetSubmeshCount());
-					rFrameBase->SetSecondFrameBuffOffset(rFrameBase->GetSecondFrameBuffOffset() - 1);
-				}
-			};
-			static SetCFrameDirtyCallable setFrameDirtyCallable{ setFrameDirtyLam };
-			static SetCFrameOffsetCallable setFrameOffsetCallable{ setFrameOffsetLam };
-			static CTypeHint cTypeHint{ GetStaticComponentType(), true, true };
+			static SetCFrameDirtyCallable setFrameDirtyCallable{ setFrameDirtyLam }; 
+			static CTypeHint cTypeHint{ GetStaticComponentType(), true };
 			static CTypeCommonFunc cTypeCommonFunc{ getTypeInfoCallable,isAvailableOverlapCallable, createInitDataCallable };
-			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, &setFrameOffsetCallable };
+			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable};
 
 			RegisterCTypeInfo(JRenderItem::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 			Core::JIdentifier::RegisterPrivateInterface(JRenderItem::StaticTypeInfo(), rPrivate);
-
+			 
 			IMPL_REALLOC_BIND(JRenderItem::JRenderItemImpl, thisPointer)
 		}
 	};
@@ -393,13 +424,13 @@ namespace JinEngine
 		: JComponent::InitData(JRenderItem::StaticTypeInfo(), GetDefaultName(JRenderItem::StaticTypeInfo()), guid, flag, owner)
 	{}
 
-	Core::JIdentifierPrivate& JRenderItem::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JRenderItem::PrivateInterface()const noexcept
 	{
 		return rPrivate;
 	}
-	JFrameUpdateUserAccess JRenderItem::GetFrameUserInterface() noexcept
+	Graphic::JFrameUpdateUserAccess JRenderItem::FrameUserInterface() noexcept
 	{
-		return JFrameUpdateUserAccess(Core::GetUserPtr(this), impl.get());
+		return Graphic::JFrameUpdateUserAccess(Core::GetUserPtr(this), impl.get());
 	}
 	J_COMPONENT_TYPE JRenderItem::GetComponentType()const noexcept
 	{
@@ -449,6 +480,10 @@ namespace JinEngine
 	{
 		return impl->GetBoundingBox();
 	}
+	DirectX::BoundingOrientedBox JRenderItem::GetOrientedBoundingBox()noexcept
+	{
+		return impl->GetOrientedBoundingBox();
+	}
 	DirectX::BoundingSphere JRenderItem::GetBoundingSphere()noexcept
 	{
 		return impl->GetBoundingSphere();
@@ -477,17 +512,9 @@ namespace JinEngine
 	{
 		impl->SetRenderLayer(renderLayer);
 	}
-	void JRenderItem::SetRenderVisibility(const J_RENDER_VISIBILITY renderVisibility)noexcept
-	{
-		impl->renderVisibility = renderVisibility;
-	}
 	void JRenderItem::SetSpaceSpatialMask(const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask)noexcept
 	{
 		impl->SetSpaceSpatialMask(spaceSpatialMask);
-	}
-	bool JRenderItem::IsVisible()const noexcept
-	{
-		return impl->renderVisibility == J_RENDER_VISIBILITY::VISIBLE;
 	}
 	bool JRenderItem::IsAvailableOverlap()const noexcept
 	{
@@ -503,13 +530,18 @@ namespace JinEngine
 	void JRenderItem::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
-		RegisterComponent(impl->thisPointer);
+		if (!impl->isActivated && impl->mesh != nullptr && RegisterComponent(impl->thisPointer))
+			impl->Activate();
 		impl->OnResourceRef();
 	}
 	void JRenderItem::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
-		DeRegisterComponent(impl->thisPointer);
+		if (impl->isActivated)
+		{
+			DeRegisterComponent(impl->thisPointer);
+			impl->DeActivate();
+		}
 		impl->OffResourceRef();
 		impl->OffFrameDirty();
 	}
@@ -517,7 +549,7 @@ namespace JinEngine
 		:JComponent(initData), impl(std::make_unique<JRenderItemImpl>(initData, this))
 	{ }
 	JRenderItem::~JRenderItem()
-	{
+	{ 
 		impl.reset();
 	}
 
@@ -525,6 +557,7 @@ namespace JinEngine
 	using DestroyInstanceInterface = JRenderItemPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JRenderItemPrivate::AssetDataIOInterface;
 	using FrameUpdateInterface = JRenderItemPrivate::FrameUpdateInterface;
+	using FrameIndexInterface = JRenderItemPrivate::FrameIndexInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -633,6 +666,8 @@ namespace JinEngine
 		if (isUpdateForced)
 			rItem->impl->SetFrameDirty();
 
+		rItem->impl->SetLastFrameUpdatedTrigger(false);
+		rItem->impl->SetLastFrameHotUpdatedTrigger(false);
 		return rItem->impl->IsFrameDirted();
 	}
 	void FrameUpdateInterface::UpdateFrame(JRenderItem* rItem, Graphic::JObjectConstants& constant, const uint submeshIndex)noexcept
@@ -643,21 +678,57 @@ namespace JinEngine
 	{
 		rItem->impl->UpdateFrame(constant);
 	}
+	void FrameUpdateInterface::UpdateFrame(JRenderItem* rItem, Graphic::JHzbOccObjectConstants& constant)noexcept
+	{
+		rItem->impl->UpdateFrame(constant);
+	}
 	void FrameUpdateInterface::UpdateEnd(JRenderItem* rItem)noexcept
 	{
-		rItem->impl->UpdateEnd();
+		if (rItem->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources)
+			rItem->impl->SetLastFrameHotUpdatedTrigger(true);
+		rItem->impl->SetLastFrameUpdatedTrigger(true);
+		rItem->impl->UpdateFrameEnd();
+	}
+	int FrameUpdateInterface::GetObjectFrameIndex(JRenderItem* rItem)noexcept
+	{
+		return rItem->impl->ObjectFrame::GetUploadIndex(); 
+	} 
+	int FrameUpdateInterface::GetBoundingFrameIndex(JRenderItem* rItem)noexcept
+	{
+		return rItem->impl->BoundingObjectFrame::GetUploadIndex();
+	}
+	int FrameUpdateInterface::GetOccObjectFrameIndex(JRenderItem* rItem)noexcept
+	{
+		return rItem->impl->OccObjectFrame::GetUploadIndex();
 	}
 	bool FrameUpdateInterface::IsHotUpdated(JRenderItem* rItem)noexcept
 	{
-		return rItem->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources;
+		return rItem->impl->IsLastFrameHotUpdated();
 	}
-	uint FrameUpdateInterface::GetBoundingCBOffset(JRenderItem* rItem)noexcept
+	bool FrameUpdateInterface::IsLastUpdated(JRenderItem* rItem)noexcept
 	{
-		return rItem->impl->GetSecondFrameBuffOffset();
+		return rItem->impl->IsLastFrameUpdated();
 	}
-	uint FrameUpdateInterface::GetObjectCBBuffOffset(JRenderItem* rItem)noexcept
+	bool FrameUpdateInterface::HasObjectRecopyRequest(JRenderItem* rItem)noexcept
 	{
-		return rItem->impl->GetFirstFrameBuffOffset();
+		return rItem->impl->ObjectFrame::HasMovedDirty();
+	}
+	bool FrameUpdateInterface::HasBoundingRecopyRequest(JRenderItem* rItem)noexcept
+	{
+		return rItem->impl->BoundingObjectFrame::HasMovedDirty();
+	}
+	bool FrameUpdateInterface::HasOccObjectRecopyRequest(JRenderItem* rItem)noexcept
+	{
+		return rItem->impl->OccObjectFrame::HasMovedDirty();
+	}
+
+	int FrameIndexInterface::GetObjectFrameIndex(JRenderItem* rItem)noexcept
+	{
+		return rItem->impl->ObjectFrame::GetUploadIndex();
+	}
+	int FrameIndexInterface::GetBoundingFrameIndex(JRenderItem* rItem)noexcept
+	{
+		return rItem->impl->BoundingObjectFrame::GetUploadIndex();
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JRenderItemPrivate::GetCreateInstanceInterface()const noexcept

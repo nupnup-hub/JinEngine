@@ -71,7 +71,7 @@ namespace JinEngine
 		: JComponent::InitData(JBehavior::StaticTypeInfo(), GetDefaultName(JBehavior::StaticTypeInfo()), guid, flag, owner)
 	{}
  
-	Core::JIdentifierPrivate& JBehavior::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JBehavior::PrivateInterface()const noexcept
 	{
 		return bPrivate;
 	}

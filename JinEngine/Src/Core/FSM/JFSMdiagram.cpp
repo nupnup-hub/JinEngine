@@ -26,7 +26,7 @@ namespace JinEngine
 			static JFSMdiagramPrivate dPrivate;
 			_StateUpdateInterface* StateUpdateInterface(const JUserPtr<JFSMstate>& state)
 			{
-				return &static_cast<_StateUpdateInterface&>(static_cast<JFSMstatePrivate&>(state->GetPrivateInterface()).GetUpdateInterface());
+				return &static_cast<_StateUpdateInterface&>(static_cast<JFSMstatePrivate&>(state->PrivateInterface()).GetUpdateInterface());
 			}
 		}
  
@@ -202,7 +202,7 @@ namespace JinEngine
 			return JFSMinterface::InitData::IsValidData() && ownerInterface != nullptr;
 		}
 		 
-		JIdentifierPrivate& JFSMdiagram::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JFSMdiagram::PrivateInterface()const noexcept
 		{
 			return dPrivate;
 		}

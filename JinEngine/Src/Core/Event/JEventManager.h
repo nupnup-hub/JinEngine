@@ -5,7 +5,7 @@
 //#include"../Func/Callable/JCallable.h"
 #include<unordered_map>
 #include<vector>   
-
+ 
 namespace JinEngine
 {
 	namespace Core
@@ -30,9 +30,10 @@ namespace JinEngine
 			virtual bool AddEventListener(OnEventPtr ptr, Listener* listener, const IdentifierType& iden, const EVENTTYPE& eventType) = 0;
 			virtual size_t AddEventListener(OnEventPtr ptr, Listener* listener, const IdentifierType& iden, const std::vector<EVENTTYPE>& eventTypeVec) = 0;
 			virtual void AddEventNotification(IdentifierType iden, EVENTTYPE eventType, Param... var) = 0;
-			virtual void NotifyEvent(const IdentifierType& iden, const EVENTTYPE& eventType, Param... var) = 0;
 			virtual void RemoveListener(const IdentifierType& iden) = 0;
 			virtual void RemoveEventListener(const IdentifierType& iden, const EVENTTYPE& eventType) = 0;
+			virtual void ResetListenerPointer(OnEventPtr ptr, Listener* listener, const IdentifierType& iden) = 0;
+			virtual void NotifyEvent(const IdentifierType& iden, const EVENTTYPE& eventType, Param... var) = 0;
 		};
 
 		template<typename IdentifierType,
@@ -64,6 +65,11 @@ namespace JinEngine
 				~ListenerInfo() = default;
 				ListenerInfo(ListenerInfo&& rhs) = default;
 				ListenerInfo& operator=(ListenerInfo&& rhs) = default;
+			public:
+				void ResetOnEvent(OnEventPtr ptr, Listener* listener)
+				{
+					onEvent = std::make_unique<OnEventFunctor>(ptr, listener);
+				}
 			};
 		private:
 			std::unique_ptr<IdenCompareFunctor> idenCompare;
@@ -76,7 +82,9 @@ namespace JinEngine
 			std::vector<std::tuple<OnEventPtr, Listener*, IdentifierType, EVENTTYPE>> addWaitVec;
 			std::vector<IdentifierType> remListenerWaitVec;
 			std::vector<std::tuple<IdentifierType, EVENTTYPE>> remEvWaitVec;
+			std::vector<std::tuple<OnEventPtr, Listener*, IdentifierType>> resetWaitVec;
 			bool actNotify = false;
+			size_t actListenerGuid = 0;
 		protected:
 			bool AddEventListener(OnEventPtr ptr, Listener* listener, const IdentifierType& iden, const EVENTTYPE& eventType)final
 			{
@@ -110,7 +118,14 @@ namespace JinEngine
 					RemoveListenerLoosly(iden);
 				else
 					RemoveListenerDirectly(iden);
-			}	 
+			}
+			void ResetListenerPointer(OnEventPtr ptr, Listener* listener, const IdentifierType& iden)
+			{
+				if (actNotify && actListenerGuid == iden)
+					ResetLoosly(ptr, listener, iden);
+				else
+					ResetDirectly(ptr, listener, iden);
+			}
 			//Push Event Queue
 			void AddEventNotification(IdentifierType iden, EVENTTYPE eventType, Param... var)final
 			{
@@ -144,11 +159,15 @@ namespace JinEngine
 					for (auto& data : vec->second)
 					{
 						if (data->isValid)
+						{
+							actListenerGuid = data->iden;
 							data->onEvent->Invoke(iden, eventType, std::forward<Param>(as)...);
+						}
 					}
-					ExecuteWaitQuque();
 				}
+				actListenerGuid = 0;
 				actNotify = false; 
+				ExecuteWaitQuque();
 			}
 			void ClearEvent()
 			{
@@ -239,12 +258,32 @@ namespace JinEngine
 					remListenerWaitVec.push_back(iden);
 				}
 			}
+			void ResetDirectly(OnEventPtr ptr, Listener* listener, const IdentifierType& iden)
+			{
+				auto data = listenerDic.find(iden);
+				if(data != listenerDic.end())
+					data->second->ResetOnEvent(ptr, listener);
+			}
+			void ResetLoosly(OnEventPtr ptr, Listener* listener, const IdentifierType& iden)
+			{
+				auto data = listenerDic.find(iden);
+				if (data != listenerDic.end())
+				{
+					data->second->isValid = false;
+					resetWaitVec.push_back(std::tuple(ptr, listener, iden));
+				}
+			}
 		private:
 			void ExecuteWaitQuque()
 			{ 
+				const uint resetCount = (uint)resetWaitVec.size();
+				for (uint i = 0; i < resetCount; ++i)
+					ResetDirectly(std::get<0>(resetWaitVec[i]), std::get<1>(resetWaitVec[i]), std::get<2>(resetWaitVec[i]));
+
 				const uint addCount = (uint)addWaitVec.size();
 				for (uint i = 0; i < addCount; ++i)
 					AddDirectly(std::get<0>(addWaitVec[i]), std::get<1>(addWaitVec[i]), std::get<2>(addWaitVec[i]), std::get<3>(addWaitVec[i]));
+				
 				const uint remEvCount = (uint)remEvWaitVec.size();
 				for (uint i = 0; i < remEvCount; ++i)
 					RemoveEventDirectly(std::get<0>(remEvWaitVec[i]), std::get<1>(remEvWaitVec[i]));
@@ -253,6 +292,7 @@ namespace JinEngine
 				for (uint i = 0; i < remCount; ++i)
 					RemoveListenerDirectly(remListenerWaitVec[i]);
 
+				resetWaitVec.clear();
 				addWaitVec.clear();
 				remEvWaitVec.clear();
 				remListenerWaitVec.clear();

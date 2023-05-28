@@ -1,4 +1,5 @@
 #pragma once
+#include"../JSpaceSpatialNode.h"
 #include"../../JDataType.h"
 #include"../../Geometry/JCullingFrustum.h"
 #include"../../Pointer/JOwnerPtr.h"
@@ -7,11 +8,11 @@
 
 namespace JinEngine
 {
-	class JGameObject;
+	class JGameObject; 
 	namespace Core
 	{
 		class JCullingFrustum;
-		class JOctreeNode
+		class JOctreeNode : public JSpaceSpatialNode
 		{
 		private:
 			DirectX::BoundingBox boundingBox;
@@ -33,13 +34,12 @@ namespace JinEngine
 			void Clear();
 		public:
 			//Culling node bbox
-			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
-			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept;
+			void Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
+			void Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept;
 			JUserPtr<JGameObject> IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept;
 			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
 			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
 			void Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
-			void OffCulling();
 		public:
 			bool AddGameObject(JUserPtr<JGameObject> gameObj, bool isLooseOctree)noexcept;
 			bool AddNeighborNode(JOctreeNode* octreeNode)noexcept;
@@ -56,12 +56,12 @@ namespace JinEngine
 		private:
 			bool RemoveInnerGameObject(JUserPtr<JGameObject> gameObject)noexcept;
 		private:
-			void CullingInnerObject(const JCullingFrustum& camFrustum, J_CULLING_FLAG oriFlag);
-			void CullingInnerObject(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos);
+			void CullingInnerObject(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG oriFlag);
+			void CullingInnerObject(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum);
 		private:
-			void SetVisible(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
-			void SetVisible(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept;
-			void SetInVisible()noexcept;
+			void SetVisible(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
+			void SetVisible(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept;
+			void SetInVisible(Graphic::JCullingUserInterface& cullUser)noexcept;
 		};
 	}
 }

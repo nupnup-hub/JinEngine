@@ -95,8 +95,7 @@ namespace JinEngine
 		public:
 			uint actWidgetCount[(uint)IMGUI_WIDGET::COUNT];
 		public:
-			JImGui()
-				:JEventListener(guid)
+			JImGui() 
 			{
 				this->AddEventListener(*JWindow::EvInterface(), guid, Window::J_WINDOW_EVENT::WINDOW_RESIZE);
 
@@ -157,10 +156,16 @@ namespace JinEngine
 				++actWidgetCount[(uint)type];
 			}
 		public:
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGraphicGpuSrvHandle(Graphic::JGraphicResourceUserAccess* gUserAccess)
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGraphicGpuSrvHandle(Graphic::JGraphicSingleResourceUserAccess* gUserAccess)
 			{
-				Graphic::JGraphicResourceUserInterface handleUser = gUserAccess->GraphicResourceUserInterface();  
+				Graphic::JGraphicSingleResourceUserInterface handleUser = gUserAccess->GraphicResourceUserInterface();
 				return handleUser.GetGpuHandle(Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0);
+			}
+			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGraphicGpuSrvHandle(Graphic::JGraphicMultiResourceUserAccess* gUserAccess,
+				const Graphic::J_GRAPHIC_RESOURCE_TYPE rType)
+			{
+				Graphic::JGraphicMultiResourceUserInterface handleUser = gUserAccess->GraphicResourceUserInterface();
+				return handleUser.GetGpuHandle(rType, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0);
 			}
 		private:
 			void OnResize()
@@ -663,7 +668,18 @@ namespace JinEngine
 		{
 			ImGui::EndListBox();
 		}
-		void JImGuiImpl::Image(	Graphic::JGraphicResourceUserAccess* gUserAccess,
+		void JImGuiImpl::Image(Graphic::JGraphicMultiResourceUserAccess* gUserAccess,
+			const Graphic::J_GRAPHIC_RESOURCE_TYPE rType,
+			const JVector2<float>& size,
+			const JVector2<float>& uv0,
+			const JVector2<float>& uv1,
+			const JVector4<float>& tintCol,
+			const JVector4<float>& borderCol)
+		{
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::IMAGE);
+			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(gUserAccess, rType).ptr, size, uv0, uv1, tintCol, borderCol);
+		}
+		void JImGuiImpl::Image(	Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 			const JVector2<float>& size,
 			const JVector2<float>& uv0,
 			const JVector2<float>& uv1,
@@ -674,7 +690,7 @@ namespace JinEngine
 			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(gUserAccess).ptr, size, uv0, uv1, tintCol, borderCol);
 		}
 		bool JImGuiImpl::ImageButton(const std::string name,
-			Graphic::JGraphicResourceUserAccess* gUserAccess,
+			Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 			const JVector2<float>& size,
 			const JVector2<float>& uv0,
 			const JVector2<float>& uv1,
@@ -693,7 +709,7 @@ namespace JinEngine
 				padding,
 				bgCol, tintCol);
 		}
-		void JImGuiImpl::AddImage(Graphic::JGraphicResourceUserAccess* gUserAccess,
+		void JImGuiImpl::AddImage(Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 			const JVector2<float>& pMin,
 			const JVector2<float>& pMax,
 			bool isBack,
@@ -708,7 +724,7 @@ namespace JinEngine
 				ImGui::GetForegroundDrawList()->AddImage((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(gUserAccess).ptr, pMin, pMax, uvMin, uvMax, color);
 		}
 		bool JImGuiImpl::ImageSelectable(const std::string name,
-			Graphic::JGraphicResourceUserAccess* gUserAccess,
+			Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 			bool& pressed,
 			bool changeValueIfPreesd,
 			const JVector2<float>& size,
@@ -745,7 +761,7 @@ namespace JinEngine
 			return isPress;
 		}
 		bool JImGuiImpl::ImageSwitch(const std::string name,
-			Graphic::JGraphicResourceUserAccess* gUserAccess,
+			Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 			bool& pressed,
 			bool changeValueIfPreesd,
 			const JVector2<float>& size,

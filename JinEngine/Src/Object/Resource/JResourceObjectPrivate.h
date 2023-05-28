@@ -68,7 +68,7 @@ namespace JinEngine
 			static JUserPtr<JFile> CopyJFile(const JUserPtr<JResourceObject>& from, const JUserPtr<JDirectory>& toDir, bool setNewInnderGuid = false)noexcept;
 		private:
 			static void MoveFile(const JUserPtr<JResourceObject>& rObj, const JUserPtr<JDirectory>& toDir)noexcept;
-			static void DeleteFile(JResourceObject* rObj)noexcept;	//destroy rObj + delete disk asset file
+			static void DeleteFile(JResourceObject* rObj)noexcept;	//delete disk asset file
 		};
 		class DestroyInstanceInterfaceEx
 		{ 

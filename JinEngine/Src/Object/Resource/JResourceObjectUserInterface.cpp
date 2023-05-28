@@ -18,9 +18,4 @@ namespace JinEngine
 	{
 		return jRobj->GetReferenceCount();
 	}
-	JResourceObjectUserInterface::JResourceObjectUserInterface(const size_t guid)
-		:JEventListener(guid)
-	{
-
-	}
 }

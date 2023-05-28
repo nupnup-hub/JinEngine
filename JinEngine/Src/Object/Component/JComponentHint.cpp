@@ -4,8 +4,9 @@
 
 namespace JinEngine
 {
-	CTypeHint::CTypeHint(const J_COMPONENT_TYPE thisType, const bool hasFrameDirty, const bool hasFrameOffset)
-		:thisType(thisType), hasFrameDirty(hasFrameDirty), hasFrameOffset(hasFrameOffset)
+	CTypeHint::CTypeHint(const J_COMPONENT_TYPE thisType, const bool hasFrameDirty)
+		:thisType(thisType), 
+		hasFrameDirty(hasFrameDirty)
 	{}
 	CTypeHint::~CTypeHint() {}
 
@@ -32,8 +33,8 @@ namespace JinEngine
 		return (*createIntiDataCallable)(nullptr, parent, std::move(parentClassInitData));
 	}
 
-	CTypePrivateFunc::CTypePrivateFunc(SetCFrameDirtyCallable* setFrameDirtyCallable, SetCFrameOffsetCallable* setFrameOffsetCallable)
-		:setFrameDirtyCallable(setFrameDirtyCallable), setFrameOffsetCallable(setFrameOffsetCallable)
+	CTypePrivateFunc::CTypePrivateFunc(SetCFrameDirtyCallable* setFrameDirtyCallable)
+		:setFrameDirtyCallable(setFrameDirtyCallable)
 	{}
 	CTypePrivateFunc::~CTypePrivateFunc()
 	{
@@ -43,17 +44,9 @@ namespace JinEngine
 	{
 		(*setFrameDirtyCallable)(nullptr, jComp);
 	}
-	void CTypePrivateFunc::CallSetFrameOffset(JComponent* jComp, JComponent* refComp, bool isCreated)
-	{
-		(*setFrameOffsetCallable)(nullptr, jComp, refComp, isCreated);
-	}
 	SetCFrameDirtyCallable* CTypePrivateFunc::GetSetFrameDirtyCallable()
 	{
 		return setFrameDirtyCallable;
-	}
-	SetCFrameOffsetCallable* CTypePrivateFunc::GetSetFrameOffsetCallable()
-	{
-		return setFrameOffsetCallable;
 	}
 
 	struct CTypeInfoData
@@ -136,16 +129,8 @@ namespace JinEngine
 	{
 		return CTypeInfo::Instance().pFuncStorage[(uint)jComp->GetComponentType()].CallSetFrameDirty(jComp);
 	}
-	void CTypePrivateCall::CallSetFrameOffset(JComponent* jComp, JComponent* refComp, bool isCreated)
-	{
-		return CTypeInfo::Instance().pFuncStorage[(uint)jComp->GetComponentType()].CallSetFrameOffset(jComp, refComp, isCreated);
-	}
 	SetCFrameDirtyCallable* CTypePrivateCall::GetSetFrameDirtyCallable(const J_COMPONENT_TYPE cType)
 	{
 		return CTypeInfo::Instance().pFuncStorage[(uint)cType].GetSetFrameDirtyCallable();
-	}
-	SetCFrameOffsetCallable* CTypePrivateCall::GetSetFrameOffsetCallable(const J_COMPONENT_TYPE cType)
-	{
-		return CTypeInfo::Instance().pFuncStorage[(uint)cType].GetSetFrameOffsetCallable();
 	}
 }

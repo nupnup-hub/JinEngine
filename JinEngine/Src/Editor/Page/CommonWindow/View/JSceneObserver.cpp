@@ -27,6 +27,12 @@
 #include"../../../../Utility/JCommonUtility.h"
 #include"../../../../../Lib/DirectX/TK/Src/d3dx12.h"
 
+//test
+#include"../../../../Object/Directory/JDirectory.h"
+#include"../../../../Object/Directory/JFile.h"
+#include"../../../../Object/Resource/Mesh/JMeshGeometry.h" 
+#include"../../../../Object/Component/RenderItem/JRenderItemPrivate.h"
+
 //#include<fstream>
 //Debug
 //#include"../../../../Object/Component/RenderItem/JRenderItem.h"
@@ -45,6 +51,7 @@ namespace JinEngine
 			using SceneDebugInterface = JScenePrivate::DebugInterface;
 			using SceneCashInterface = JScenePrivate::CashInterface; 
 			using GraphicResourceInterface = Graphic::JGraphicPrivate::ResourceInterface;
+			using RItemFrameIndex = JRenderItemPrivate::FrameIndexInterface;
 		}
 		namespace Constants
 		{
@@ -161,13 +168,13 @@ namespace JinEngine
 
 			GetGResourcePtr getGLamVec[menuSwitchIconCount]
 			{
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::POSITION_ARROW).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::ROTATION_ARROW).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SCALE_ARROW).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::COORD_GRID_ICON).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PLAY_SCENE_TIME).Get(); },
-				[]() -> Graphic::JGraphicResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME).Get(); }
+				[]() -> Graphic::JGraphicSingleResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::POSITION_ARROW).Get(); },
+				[]() -> Graphic::JGraphicSingleResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::ROTATION_ARROW).Get(); },
+				[]() -> Graphic::JGraphicSingleResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SCALE_ARROW).Get(); },
+				[]() -> Graphic::JGraphicSingleResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON).Get(); },
+				[]() -> Graphic::JGraphicSingleResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::COORD_GRID_ICON).Get(); },
+				[]() -> Graphic::JGraphicSingleResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PLAY_SCENE_TIME).Get(); },
+				[]() -> Graphic::JGraphicSingleResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME).Get(); }
 			};
 
 			MenuSwitchIconPreesF::Ptr pressPtrVec[menuSwitchIconCount] =
@@ -243,7 +250,7 @@ namespace JinEngine
 					if (ImGui::IsMouseHoveringRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize()))
 						editorCamCtrl->MouseMove(editCam.Get(), ImGui::GetMousePos().x, ImGui::GetMousePos().y);
 					editorCamCtrl->KeyboardInput(editCam.Get());
-				} 
+				}  
 
 				JUserPtr<JTransform> camTransform = editCamOwner->GetTransform();
 				coordGrid->Update(JVector2<float>(camTransform->GetPosition().x, camTransform->GetPosition().z));
@@ -268,7 +275,7 @@ namespace JinEngine
 						toolVec[i]->Update(selectedGobj, editCam, ImGui::GetCursorPos());
 				}
 				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
-				JImGuiImpl::Image(editCam.Get(), ImGui::GetWindowSize());
+				JImGuiImpl::Image(editCam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, ImGui::GetWindowSize());
 
 				lastCamPos = editCam->GetTransform()->GetPosition();
 				lastCamRot = editCam->GetTransform()->GetRotation();
@@ -300,9 +307,9 @@ namespace JinEngine
 				name = "Shadow Map";
 				break;
 			}
-			case J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER:
+			case J_OBSERVER_SETTING_TYPE::VIEW_RENDER_RESULT:
 			{
-				name = "Occlusion Map";
+				name = "Render Result";
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID:
@@ -385,7 +392,7 @@ namespace JinEngine
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
 			{
-				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 6, 1, 6);
+				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 5, 5, 5);
 				nodeUtilData[(int)type].isOpen = false;
 				break;
 			}
@@ -481,9 +488,9 @@ namespace JinEngine
 				ShadowMapViewerOnScreen();
 				break;
 			}
-			case J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER:
+			case J_OBSERVER_SETTING_TYPE::VIEW_RENDER_RESULT:
 			{
-				OcclusionResultOnScreen();
+				RenderResultOnScreen();
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE:
@@ -511,14 +518,16 @@ namespace JinEngine
 		void JSceneObserver::EditorCameraOptionOnScreen()
 		{
 			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::OPTION_EDITOR_CAMERA];
-			JImGuiImpl::BeginWindow("##EditorOption", &data->isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDocking);
-			bool allowAllCullingResult = JCameraPrivate::EditorSettingInterface::AllowAllCullingResult(editCam);
-			bool allowCulling = editCam->AllowCulling();
-			static bool allowShiroBack = true;
-			if (JImGuiImpl::CheckBox("check othrer cam culling##JSceneObserver", allowAllCullingResult))
-				JCameraPrivate::EditorSettingInterface::SetAllowAllCullingResult(editCam, allowAllCullingResult);
-			if (JImGuiImpl::CheckBox("allow editCam Culling", allowCulling))
-				editCam->SetAllowCulling(allowCulling); 
+			JImGuiImpl::BeginWindow("##EditorOption", &data->isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDocking);	 
+			
+			if (JImGuiImpl::CheckBox("allow display debug##JSceneObserver", allowDisplayDebug))
+				editCam->SetAllowDisplayDebug(allowDisplayDebug);
+			if (JImGuiImpl::CheckBox("allow frustum culling", allowFrustumCulling))
+				editCam->SetAllowFrustumCulling(allowFrustumCulling);
+			if (JImGuiImpl::CheckBox("allow occ culling", allowOccCulling))
+				editCam->SetAllowHzbOcclusionCulling(allowOccCulling);
+			if (JImGuiImpl::CheckBox("reflect othrer cam culling##JSceneObserver", allowReflectCullingResult))
+				JCameraPrivate::EditorSettingInterface::SetAllowAllCullingResult(editCam, allowReflectCullingResult);
 			JImGuiImpl::EndWindow();
 		}
 		void JSceneObserver::OctreeOptionOnScreen()
@@ -639,30 +648,43 @@ namespace JinEngine
 				if (shadowLitCount > 0)
 				{
 					JImGuiImpl::ComboSet("Light##SceneObserve", data->selectedIndex, shadowLitVec);
-					JImGuiImpl::Image(shadowLitVec[data->selectedIndex], ImGui::GetWindowSize());
+					JImGuiImpl::Image(shadowLitVec[data->selectedIndex], Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, ImGui::GetWindowSize());
 				}
 				JImGuiImpl::EndWindow();
 			}
 		}
-		void JSceneObserver::OcclusionResultOnScreen()
+		void JSceneObserver::RenderResultOnScreen()
 		{
-			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::VIEW_OCCLUSION_VIEWER];
-			if (JImGuiImpl::BeginWindow("##OcclusionResultWindow1", &data->isOpen, ImGuiWindowFlags_NoDocking))
-			{
-				 
-				CD3DX12_GPU_DESCRIPTOR_HANDLE mainDsvDebugHandle = GraphicResourceInterface::GetGpuDescriptorHandle(
-					Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0, 0);
-
-				ImGui::Image((ImTextureID)(mainDsvDebugHandle).ptr, ImVec2(400, 200));
-
-				Graphic::JGraphicInfo ginfo = JGraphic::Instance().GetGraphicInfo();
-				for (uint i = 0; i < ginfo.occlusionMapCount; ++i)
+			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::VIEW_RENDER_RESULT];
+			if (JImGuiImpl::BeginWindow("##RenderResultWindow1", &data->isOpen, ImGuiWindowFlags_NoDocking))
+			{				 
+				auto camVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA);
+				for (const auto& camData : camVec)
 				{
-					CD3DX12_GPU_DESCRIPTOR_HANDLE occDebugHandle = GraphicResourceInterface::GetGpuDescriptorHandle(
-						Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP, Graphic::J_GRAPHIC_BIND_TYPE::UAV, 0, i);
-					ImGui::Image((ImTextureID)(occDebugHandle).ptr, ImVec2(400, 200));
-					if (i == 0 || (i % 3) > 0)
-						ImGui::SameLine();
+					JCamera* cam = static_cast<JCamera*>(camData.Get());
+					auto gRInterface = cam->GraphicResourceUserInterface();
+					JImGuiImpl::Text(JCUtil::WstrToU8Str(cam->GetName()));
+
+					if (cam->AllowDisplayDepthMap())
+					{
+						JImGuiImpl::Text("Depth Map");
+						auto sceneDsDebugHandle = gRInterface.GetGpuHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG, Graphic::J_GRAPHIC_BIND_TYPE::SRV, 0);
+						ImGui::Image((ImTextureID)(sceneDsDebugHandle).ptr, ImVec2(400, 200));
+					}
+
+					if (cam->AllowHzbOcclusionCulling() && cam->AllowDisplayOccCullingDepthMap())
+					{
+						JImGuiImpl::Text("Occlusion Depth Map");
+						Graphic::JGraphicInfo ginfo = JGraphic::Instance().GetGraphicInfo();
+						for (uint i = 0; i < ginfo.occlusionMapCount; ++i)
+						{
+							auto occDebugHandle = gRInterface.GetGpuHandle(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG, Graphic::J_GRAPHIC_BIND_TYPE::UAV, i);
+							ImGui::Image((ImTextureID)(occDebugHandle).ptr, ImVec2(400, 200));
+							if (i == 0 || (i % 3) > 0)
+								ImGui::SameLine();
+						}
+					}			 
+					ImGui::NewLine();
 				}
 				//ImGui::SameLine();
 				//ImGui::Image((ImTextureID)(JGraphic::Instance().GetDebugSrvHandle(1)).ptr, ImVec2(400, 250));
@@ -853,9 +875,24 @@ namespace JinEngine
 			JEditorWindow::DoActivate(); 
 			if (scene.IsValid())
 				CreateHelperGameObject();
+			 
+			editCam->SetAllowFrustumCulling(allowFrustumCulling);
+			editCam->SetAllowHzbOcclusionCulling(allowOccCulling);
+			editCam->SetAllowDisplayDebug(allowDisplayDebug);
+			JCameraPrivate::EditorSettingInterface::SetAllowAllCullingResult(editCam, allowReflectCullingResult);
 
 			std::vector<J_EDITOR_EVENT> listenEvTypeVec{ J_EDITOR_EVENT::PUSH_SELECT_OBJECT };
 			AddEventListener(*JEditorEvent::EvInterface(), GetGuid(), listenEvTypeVec);
+
+			if (scene.IsValid())
+			{
+				auto vec = scene->GetGameObjectVec();
+				for (const auto& data : vec)
+				{
+					if (data->IsSelected())
+						PushSelectedObject(data);
+				}
+			}
 		}
 		void JSceneObserver::DoDeActivate()noexcept
 		{
@@ -875,6 +912,10 @@ namespace JinEngine
 				JFileIOHelper::StoreAtomicData(stream, L"IsOpen:", data->isOpen);
 				JFileIOHelper::StoreAtomicData(stream, L"SeletedIndex:", data->selectedIndex);
 			}
+			JFileIOHelper::StoreAtomicData(stream, L"allowDisplayDebug", allowDisplayDebug);
+			JFileIOHelper::StoreAtomicData(stream, L"allowFrustumCulling", allowFrustumCulling);
+			JFileIOHelper::StoreAtomicData(stream, L"allowOccCulling", allowOccCulling);
+			JFileIOHelper::StoreAtomicData(stream, L"allowReflectCullingResult", allowReflectCullingResult);
 		}
 		void JSceneObserver::LoadEditorWindow(std::wifstream& stream)
 		{ 
@@ -890,22 +931,32 @@ namespace JinEngine
 				auto data = &nodeUtilData[i];
 				JFileIOHelper::LoadAtomicData(stream, data->isOpen);
 				JFileIOHelper::LoadAtomicData(stream, data->selectedIndex);
-			}  
+			}
+			JFileIOHelper::LoadAtomicData(stream, allowDisplayDebug);
+			JFileIOHelper::LoadAtomicData(stream, allowFrustumCulling);
+			JFileIOHelper::LoadAtomicData(stream, allowOccCulling);
+			JFileIOHelper::LoadAtomicData(stream, allowReflectCullingResult);
 			lastCamPos = lastPos;
 			lastCamRot = lastRot;
 		}
 		void JSceneObserver::CreateShapeGroup(const J_DEFAULT_SHAPE& shape, const uint xDim, const uint yDim, const uint zDim)
 		{
+			//auto dir = _JResourceManager::Instance().GetProjectContentsDirectory();
+			//auto file = dir->GetChildDirctoryByName(L"nier-3dprint")->GetChildDirctoryByName(L"Model")->SearchFile(L"nier-3dprint");
+			//if (file == nullptr)
+		//		return;
+			//auto mehs = Core::ConvertChildUserPtr<JMeshGeometry>(file->TryGetResourceUser());
 			for (uint i = 0; i < xDim; ++i)
 			{
 				for (uint j = 0; j < yDim; ++j)
 				{
 					for (uint k = 0; k < zDim; ++k)
 					{
-						JUserPtr<JGameObject> cube = JGCI::CreateShape(scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
-						cube->GetTransform()->SetScale(DirectX::XMFLOAT3(8, 8, 8));
-						cube->GetTransform()->SetRotation(DirectX::XMFLOAT3(45, 45, 0));
-						cube->GetTransform()->SetPosition(DirectX::XMFLOAT3(16.0f * i, 16.0f * j, 16.0f * k));
+						//JUserPtr<JGameObject> gObj = JGCI::CreateModel(scene->GetRootGameObject(), OBJECT_FLAG_NONE, mehs);
+						JUserPtr<JGameObject> gObj = JGCI::CreateShape(scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
+						gObj->GetTransform()->SetScale(DirectX::XMFLOAT3(8, 8, 8));
+						gObj->GetTransform()->SetRotation(DirectX::XMFLOAT3(45, 45, 0));
+						gObj->GetTransform()->SetPosition(DirectX::XMFLOAT3(16.0f * i, 16.0f * j, 16.0f * k));
 					}
 				}
 			}
@@ -957,6 +1008,7 @@ namespace JinEngine
 	}
 }
 
+//kdtree align debug
 /*
 
 				JSceneSpaceSpatialInterface* iSceneSpace = scene->SpaceSpatialInterface();
@@ -967,6 +1019,66 @@ namespace JinEngine
 				{
 					if (i < debugMaterialCount)
 						alignObject[i]->GetRenderItem()->SetMaterial(0, debugMaterial[i]);
+				}
+
+*/
+
+//frustum culling debug
+/*
+
+				auto rVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
+				for (const auto& data : rVec)
+				{
+					if(data->GetOwner()->GetName() != L"Cube")
+						continue;
+
+					auto rItem = static_cast<JRenderItem*>(data.Get());
+					int frameIndex = RItemFrameIndex::GetBoundingFrameIndex(rItem);
+					auto cam = scene->FindFirstSelectedCamera(false);
+					auto cullingInterface = cam->CullingUserInterface();
+					ImGui::Text((JCUtil::WstrToU8Str(data->GetOwner()->GetName()) + " " +
+						std::to_string(cullingInterface.IsCulled(Graphic::J_CULLING_TYPE::FRUSTUM,frameIndex)) + " "+
+						std::to_string(cullingInterface.IsCulled(Graphic::J_CULLING_TYPE::OCCLUSION, frameIndex))).c_str());
+
+					auto frustum = cam->GetBoundingFrustum();
+					auto bbox = rItem->GetBoundingBox();
+
+					auto nearFrustum = frustum;
+					nearFrustum.Near = 0;
+					nearFrustum.Far = frustum.Near;
+					auto result = bbox.Contains(DirectX::XMLoadFloat3(&frustum.Origin));
+
+					ImGui::SameLine();
+					ImGui::Text(" Pos C: ");
+					ImGui::SameLine();
+					if (result == DirectX::CONTAINS)
+						ImGui::Text("Contain");
+					else if (result == DirectX::INTERSECTS)
+						ImGui::Text("Intersect");
+					else if (result == DirectX::DISJOINT)
+						ImGui::Text("Disjoint");
+
+					ImGui::SameLine();
+					ImGui::Text("B Frustum C: ");
+					ImGui::SameLine();
+					result = bbox.Contains(nearFrustum);
+					if (result == DirectX::CONTAINS)
+						ImGui::Text("Contain");
+					else if (result == DirectX::INTERSECTS)
+						ImGui::Text("Intersect");
+					else if (result == DirectX::DISJOINT)
+						ImGui::Text("Disjoint");
+
+					ImGui::SameLine();
+					ImGui::Text("F Frustum C: ");
+					ImGui::SameLine();
+					result = nearFrustum.Contains(bbox);
+					if (result == DirectX::CONTAINS)
+						ImGui::Text("Contain");
+					else if (result == DirectX::INTERSECTS)
+						ImGui::Text("Intersect");
+					else if (result == DirectX::DISJOINT)
+						ImGui::Text("Disjoint");
 				}
 
 */

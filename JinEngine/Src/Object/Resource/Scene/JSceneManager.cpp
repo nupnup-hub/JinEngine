@@ -5,7 +5,7 @@
 #include"../../Component/JComponentType.h"
 #include"../../../Core/Guid/GuidCreator.h"
 #include"../../../Utility/JCommonUtility.h"
-#include"../../../Graphic/JGraphicDrawList.h"  
+#include"../../../Graphic/JGraphicDrawListInterface.h"  
 #include"../../../Core/Guid/GuidCreator.h" 
 
 namespace JinEngine
@@ -15,7 +15,7 @@ namespace JinEngine
 		using SearchEqualScenePtr = bool(*)(const JUserPtr< JScene>&, const size_t);
 	}
 
-	class JSceneManager::JSceneManagerImpl : public JResourceObjectUserInterface
+	class JSceneManager::JSceneManagerImpl : public JResourceObjectUserInterface, public Graphic::JGraphicDrawListSceneInterface
 	{
 	public:
 		size_t implGuid = Core::MakeGuid();
@@ -24,8 +24,7 @@ namespace JinEngine
 		//scene vector[0] is main scene  
 		std::vector<JUserPtr<JScene>> activatedScene;
 	public:
-		JSceneManagerImpl()
-			:JResourceObjectUserInterface(implGuid)
+		JSceneManagerImpl() 
 		{
 			AddEventListener(*JResourceObject::EvInterface(), implGuid, J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 		}
@@ -51,14 +50,9 @@ namespace JinEngine
 		bool IsFirstScene(const size_t guid)const noexcept
 		{
 			return activatedScene.size() > 0 ? guid == activatedScene[0]->GetGuid() : false;
-		}
+		} 
 	public:
-		void UpdateScene(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE compType)
-		{
-			Graphic::JGraphicDrawList::UpdateScene(scene, compType);
-		}
-	public:
-		bool RegisterScene(const JUserPtr<JScene>& scene, bool isPreviewScene)noexcept
+		bool RegisterScene(const JUserPtr<JScene>& scene)noexcept
 		{
 			if (scene == nullptr)
 				return false;
@@ -67,10 +61,7 @@ namespace JinEngine
 			{
 				//has dependency
 				//order 1. AddDrawList, 2. activate
-				if (isPreviewScene)
-					Graphic::JGraphicDrawList::AddDrawList(scene, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED, false);
-				else
-					Graphic::JGraphicDrawList::AddDrawList(scene, Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS, true);
+				AddDrawList(scene);
 				activatedScene.push_back(scene);
 				return true;
 			}
@@ -88,12 +79,12 @@ namespace JinEngine
 				return false;
 
 			activatedScene.erase(activatedScene.begin() + index);
-			Graphic::JGraphicDrawList::PopDrawList(scene);
+			PopDrawList(scene);
 			return true;
 		}
-		bool RegisterObservationFrame(const JUserPtr<JScene>& scene, const JFrameUpdateUserAccess& observationFrame)
+		bool RegisterObservationFrame(const JUserPtr<JScene>& scene, const Graphic::JFrameUpdateUserAccess& observationFrame)
 		{
-			return Graphic::JGraphicDrawList::AddObservationFrame(scene, observationFrame);
+			return AddObservationFrame(scene, observationFrame);
 		}
 	public:
 		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
@@ -122,7 +113,7 @@ namespace JinEngine
 	{
 		return impl->IsFirstScene(scene->GetGuid());
 	}
-	bool JSceneManager::RegisterObservationFrame(const JUserPtr<JScene>& scene, const JFrameUpdateUserAccess& observationFrame)
+	bool JSceneManager::RegisterObservationFrame(const JUserPtr<JScene>& scene, const Graphic::JFrameUpdateUserAccess& observationFrame)
 	{
 		return impl->RegisterObservationFrame(scene, observationFrame);
 	}
@@ -137,16 +128,12 @@ namespace JinEngine
 
 	using SceneAccess = JSceneManagerPrivate::SceneAccess;
 
-	bool SceneAccess::RegisterScene(const JUserPtr<JScene>& scene, bool isPreviewScene)noexcept
+	bool SceneAccess::RegisterScene(const JUserPtr<JScene>& scene)noexcept
 	{
-		return _JSceneManager::Instance().impl->RegisterScene(scene, isPreviewScene);
+		return _JSceneManager::Instance().impl->RegisterScene(scene);
 	}
 	bool SceneAccess::DeRegisterScene(const JUserPtr<JScene>& scene)noexcept
 	{
 		return _JSceneManager::Instance().impl->DeRegisterScene(scene);
-	}
-	void SceneAccess::UpdateScene(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE compType)
-	{
-		_JSceneManager::Instance().impl->UpdateScene(scene, compType);
-	}
+	} 
 }

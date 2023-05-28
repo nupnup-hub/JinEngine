@@ -108,18 +108,33 @@ namespace JinEngine
 			uint GetHeapIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType);
 		public:
 			void CreateSwapChainBuffer(ID3D12Device* device, IDXGISwapChain* swapChain, const uint width, const uint height);
-			void CreateMainDepthStencilResource(ID3D12Device* device,
+			JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilResource(ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList,
 				const uint viewWidth,
 				const uint viewHeight,
 				bool m4xMsaaState,
 				uint m4xMsaaQuality);
-			void CreateDebugDepthStencilResource(ID3D12Device* device,
+			JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilDebugResource(ID3D12Device* device,
+				ID3D12GraphicsCommandList* commandList,
+				const uint viewWidth,
+				const uint viewHeight,
+				bool m4xMsaaState,
+				uint m4xMsaaQuality);
+			JUserPtr<JGraphicResourceInfo> CreateDebugDepthStencilResource(ID3D12Device* device,
 				ID3D12GraphicsCommandList* commandList,
 				const uint viewWidth,
 				const uint viewHeight);
 			void CreateOcclusionQueryResource(ID3D12Device* device);
-			void CreateOcclusionHZBResource(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const uint occWidth, const uint occHeight);
+			void CreateOcclusionHZBResource(ID3D12Device* device, 
+				ID3D12GraphicsCommandList* commandList, 
+				const uint occWidth, 
+				const uint occHeight,
+				_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo,
+				_Out_ JUserPtr<JGraphicResourceInfo>& outOccMipMapInfo);
+			JUserPtr<JGraphicResourceInfo> CreateOcclusionHZBResourceDebug(ID3D12Device* device,
+				ID3D12GraphicsCommandList* commandList,
+				const uint occWidth,
+				const uint occHeight);
 			JUserPtr<JGraphicResourceInfo> Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 				const std::wstring& path,
 				const std::wstring& oriFormat,

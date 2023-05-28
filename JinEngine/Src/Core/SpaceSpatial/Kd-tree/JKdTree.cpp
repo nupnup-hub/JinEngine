@@ -74,20 +74,15 @@ namespace JinEngine
 			for (int i = 0; i < allNodeCount; ++i)
 				allNodes[i]->DestroyDebugGameObject();
 		}
-		void JKdTree::OffCulling()noexcept
+		void JKdTree::Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum)noexcept
 		{
 			if (root != nullptr)
-				root->OffCulling();
+				root->Culling(cullUser, camFrustum, J_CULLING_FLAG::NONE);
 		}
-		void JKdTree::Culling(const JCullingFrustum& camFrustum)noexcept
+		void JKdTree::Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept
 		{
 			if (root != nullptr)
-				root->Culling(camFrustum, J_CULLING_FLAG::NONE);
-		}
-		void JKdTree::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
-		{
-			if (root != nullptr)
-				root->Culling(camFrustum, camPos);
+				root->Culling(cullUser, camFrustum, cullingFrustum);
 		}
 		JUserPtr<JGameObject> JKdTree::IntersectFirst(const JRay& ray)const noexcept
 		{

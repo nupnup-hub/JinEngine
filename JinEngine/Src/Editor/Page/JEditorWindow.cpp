@@ -155,7 +155,7 @@ namespace JinEngine
 				}
 			}
 						 
-			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows || ImGuiFocusedFlags_DockHierarchy))
+			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
 			{
 				if (!IsFocus())
 				{
@@ -355,6 +355,19 @@ namespace JinEngine
 
 			selectedObjMap.emplace(obj->GetGuid(), obj);
 		}
+		void JEditorWindow::ClearSelectedObject()
+		{
+			if (!CanUseSelectedMap())
+				return;
+
+			selectedObjMap.clear();
+			/*
+				AddEventNotification(*JEditorEvent::EvInterface(),
+				GetGuid(),
+				J_EDITOR_EVENT::CLEAR_SELECT_OBJECT,
+				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClearSelectObjectEvStruct>(GetOwnerPageType())));
+			*/
+		}
 		bool JEditorWindow::RegisterEventListener(const J_EDITOR_EVENT evType)
 		{
 			return AddEventListener(*JEditorEvent::EvInterface(), GetGuid(), evType);
@@ -508,13 +521,6 @@ namespace JinEngine
 			task->RegisterClearTask(std::make_unique< ClearTaskF::CompletelyBind>(*GetClearTaskFunctor(), std::move(evGuidVec)));
 			JEditorTransition::Instance().Execute(std::move(task));
 		}
-		void JEditorWindow::ClearSelectedObject()
-		{
-			AddEventNotification(*JEditorEvent::EvInterface(),
-				GetGuid(),
-				J_EDITOR_EVENT::CLEAR_SELECT_OBJECT,
-				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClearSelectObjectEvStruct>(GetOwnerPageType())));
-		}
 		void JEditorWindow::TryBeginDragging(const JUserPtr<Core::JIdentifier> selectObj)
 		{
 			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
@@ -593,8 +599,7 @@ namespace JinEngine
 		{
 			JEditor::DoDeActivate();
 			DeRegisterListener();
-			if (Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SELECT))
-				selectedObjMap.clear();
+			ClearSelectedObject();
 			hoveredObj.Clear();
 		}
 		void JEditorWindow::StoreEditorWindow(std::wofstream& stream)
@@ -644,12 +649,15 @@ namespace JinEngine
 		}
 		void JEditorWindow::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{ 
+			//이벤트 호출자 관련 이벤트 처리
 			if (senderGuid != GetGuid() && Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_LISTEN_OTHER_WINDOW_SELECT))
 				return;
 
 			if(eventStruct->pageType != GetOwnerPageType())
 				return;
 
+			//호출당 한번만 처리되기에 중복해서는 안되는 기능을 여기서 처리
+			//ex) marking selected trigger
 			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && CanUseSelectedMap())
 			{ 
 				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStruct);
@@ -678,7 +686,7 @@ namespace JinEngine
 					if (data.second->GetTypeInfo().IsChildOf<JGameObject>())
 						SetSelectedGameObjectTrigger(Core::ConnectChildUserPtr<JGameObject>(data.second), false);
 				}
-				selectedObjMap.clear();
+				ClearSelectedObject();
 			}
 		}
 	}

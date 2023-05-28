@@ -17,7 +17,5 @@ namespace JinEngine
 		//Call scene object is deactivated
 		void CallOffResourceReference(JReferenceInterface* jRobj);
 		int CallGetResourceReferenceCount(JReferenceInterface* jRobj);
-	protected:
-		JResourceObjectUserInterface(const size_t guid);
 	};
 }

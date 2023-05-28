@@ -22,7 +22,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JTransformImpl> impl;
 	public:
-		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
@@ -44,6 +44,7 @@ namespace JinEngine
 		void SetTransform(const DirectX::XMFLOAT3& position, const DirectX::XMFLOAT3& rotation, const DirectX::XMFLOAT3& scale)noexcept;
 		void SetPosition(const DirectX::XMFLOAT3& value)noexcept;
 		void SetRotation(const DirectX::XMFLOAT3& value)noexcept;
+		void SetRotation(const DirectX::XMFLOAT4& q)noexcept;
 		void SetScale(const DirectX::XMFLOAT3& value)noexcept;
 	public:
 		bool IsAvailableOverlap()const noexcept final;

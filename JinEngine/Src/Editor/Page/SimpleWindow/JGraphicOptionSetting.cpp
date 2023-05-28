@@ -12,11 +12,8 @@ namespace JinEngine
 			Graphic::JGraphicOption option = JGraphic::Instance().GetGraphicOption();
 			bool isChanged = JImGuiImpl::CheckBox("Occlusion Query##JGraphicOptionSetting", option.isOcclusionQueryActivated); 
 			isChanged |= JImGuiImpl::CheckBox("Hardware Occlusion##JGraphicOptionSetting", option.isHDOcclusionAcitvated);
-			isChanged |= JImGuiImpl::CheckBox("HZB Occlusion##JGraphicOptionSetting", option.isHZBOcclusionActivated);
-			isChanged |= JImGuiImpl::CheckBox("Allow HZB correct fail##JGraphicOptionSetting", option.allowHZBCorrectFail);
-			isChanged |= JImGuiImpl::CheckBox("Allow HZB depth map debug##JGraphicOptionSetting", option.allowHZBDepthMapDebug);
+			isChanged |= JImGuiImpl::CheckBox("HZB Occlusion##JGraphicOptionSetting", option.isHZBOcclusionActivated); 
 			isChanged |= JImGuiImpl::CheckBox("Allow Debug Out line##JGraphicOptionSetting", option.allowDebugOutline); 
-			isChanged |= JImGuiImpl::SliderFloat("Update Frequency##JGraphicOptionSetting", &option.occUpdateFrequency, 0.01f, 2.5f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
 			JImGuiImpl::EndWindow();
 			if (isChanged)
 				JGraphic::Instance().SetGraphicOption(option);

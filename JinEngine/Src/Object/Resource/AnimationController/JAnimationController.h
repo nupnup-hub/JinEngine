@@ -43,7 +43,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JAnimationControllerImpl> impl;
 	public:
-		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{

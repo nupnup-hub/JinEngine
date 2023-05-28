@@ -5,7 +5,7 @@
 #include"../JScene.h" 
 #include"../../../Directory/JDirectory.h"
 #include"../../../../Core/Guid/GuidCreator.h"
-#include"../../../../Graphic/FrameResource/JAnimationConstants.h"  
+#include"../../../../Graphic/Upload/Frameresource/JAnimationConstants.h"  
 #include"../../../../Utility/JCommonUtility.h"
 
 namespace JinEngine

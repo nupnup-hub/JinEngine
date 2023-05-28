@@ -19,7 +19,7 @@ namespace JinEngine
 				return nullptr;
 
 			auto rawPtr = static_cast<JIdentifier::InitData*>(initData.get()); 
-			auto pInterface = JIdentifier::GetPrivateInterface(rawPtr->InitDataTypeInfo().TypeGuid());
+			auto pInterface = JIdentifier::PrivateInterface(rawPtr->InitDataTypeInfo().TypeGuid());
 			return Create(std::move(initData), pInterface);
 		}
 		JUserPtr<JIdentifier> JIdenCreatorInterface::Create(std::unique_ptr<JDITypeDataBase>&& initData, JIdentifierPrivate* pInterface)

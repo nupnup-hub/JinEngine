@@ -780,7 +780,7 @@ namespace JinEngine
 
 				if (hasPreviewScene && hasPreviewObject)
 				{
-					JImGuiImpl::Image((*previewScene)->GetPreviewCamera().Get(), JVector2<float>(sizeMin, sizeMin));
+					JImGuiImpl::Image((*previewScene)->GetPreviewCamera().Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, JVector2<float>(sizeMin, sizeMin));
 					ImGui::SameLine();
 				}
 				else
@@ -880,7 +880,7 @@ namespace JinEngine
 					if (!searchBarHelper->CanSrcNameOnScreen(previewObj->GetName()))
 						continue;
 
-					JImGuiImpl::Image(selectorPreviewVec[i]->GetPreviewCamera().Get(), JVector2<float>(sizeFactor, sizeFactor));
+					JImGuiImpl::Image(selectorPreviewVec[i]->GetPreviewCamera().Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, JVector2<float>(sizeFactor, sizeFactor));
 					ImGui::SameLine();
 					if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(previewObj.Get()->GetName()) + "##" + uniqueLabel,
 						nullptr,

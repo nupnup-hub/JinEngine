@@ -3,6 +3,7 @@
 #include"../../../Object/GameObject/JGameObject.h" 
 #include"../../../Object/GameObject/JGameObjectCreator.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
+#include"../../../Object/Component/RenderItem/JRenderItemPrivate.h"
 #include"../../../Object/Component/Transform/JTransform.h" 
 #include"../../../Editor/EditTool/JEditorViewStructure.h"
 #include"../../../Utility/JCommonUtility.h" 
@@ -61,52 +62,45 @@ namespace JinEngine
 		}
 		void JKdTreeNode::Clear()noexcept
 		{
-			if (innerGameObject.size() > 0)
-				SetVisible();
 			innerGameObject.clear();
 			parent = nullptr;
 			left = nullptr;
 			right = nullptr;
 			DestroyDebugGameObject();
 		}
-		void JKdTreeNode::Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
+		void JKdTreeNode::Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
 		{
 			J_CULLING_RESULT res = camFrustum.IsBoundingBoxIn(bbox, flag);
 			if (res == J_CULLING_RESULT::CONTAIN)
-				SetVisible();
+				SetVisible(cullUser);
 			else if (res == J_CULLING_RESULT::DISJOINT)
-				SetInVisible();
+				SetInVisible(cullUser);
 			else
 			{
 				if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
-					SetVisible();
+					SetVisible(cullUser);
 				else
 				{
-					left->Culling(camFrustum, flag);
-					right->Culling(camFrustum, flag);
+					left->Culling(cullUser, camFrustum, flag);
+					right->Culling(cullUser, camFrustum, flag);
 				}
 			}
 		}
-		void JKdTreeNode::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
+		void JKdTreeNode::Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept
 		{
 			ContainmentType res = camFrustum.Contains(bbox);
 			if (res == ContainmentType::CONTAINS)
-				SetVisible();
+				SetVisible(cullUser, cullingFrustum);
 			else if (res == ContainmentType::DISJOINT)
-				SetInVisible();
+				SetInVisible(cullUser);
 			else
 			{
 				if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
-				{
-					if (bbox.Contains(camPos) == ContainmentType::DISJOINT)
-						SetVisible();
-					else
-						SetInVisible();
-				}
+					SetVisible(cullUser, cullingFrustum);
 				else
 				{
-					left->Culling(camFrustum, camPos);
-					right->Culling(camFrustum, camPos);
+					left->Culling(cullUser, camFrustum, cullingFrustum);
+					right->Culling(cullUser, camFrustum, cullingFrustum);
 				}
 			}
 		}
@@ -120,7 +114,7 @@ namespace JinEngine
 				for (uint i = 0; i < innerCount; ++i)
 				{
 					float dist = 0;
-					if (innerGameObject[i]->GetRenderItem()->GetBoundingBox().Intersects(ori, dir, dist))
+					if (innerGameObject[i]->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, dist))
 					{
 						if (minDist > dist)
 						{
@@ -168,7 +162,7 @@ namespace JinEngine
 				for (uint i = 0; i < innerCount; ++i)
 				{
 					float dist = 0;
-					if (innerGameObject[i]->GetRenderItem()->GetBoundingBox().Intersects(ori, dir, dist))
+					if (innerGameObject[i]->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, dist))
 					{
 						bool isHit = false;
 						const uint distCount = (uint)distVec.size();
@@ -227,7 +221,7 @@ namespace JinEngine
 				for (uint i = 0; i < innerCount; ++i)
 				{
 					float dist = 0;
-					if (innerGameObject[i]->GetRenderItem()->GetBoundingBox().Intersects(ori, dir, dist))
+					if (innerGameObject[i]->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, dist))
 					{
 						bool isHit = false;
 						const uint distCount = (uint)distVec.size();
@@ -286,7 +280,7 @@ namespace JinEngine
 				for (uint i = 0; i < innerCount; ++i)
 				{
 					float dist = 0;
-					if (innerGameObject[i]->GetRenderItem()->GetBoundingBox().Intersects(ori, dir, dist))
+					if (innerGameObject[i]->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, dist))
 						res.push_back(innerGameObject[i]);
 				}
 			}
@@ -303,10 +297,6 @@ namespace JinEngine
 				if (rightRes)
 					right->Intersect(ori, dir, res);
 			}
-		}
-		void JKdTreeNode::OffCulling()noexcept
-		{
-			SetVisible();
 		}
 		bool JKdTreeNode::IsLeftNode()const noexcept
 		{
@@ -528,7 +518,7 @@ namespace JinEngine
 			}
 			//offset += innerCount;
 		}
-		void JKdTreeNode::SetVisible()noexcept
+		void JKdTreeNode::SetVisible(Graphic::JCullingUserInterface& cullUser)noexcept
 		{
 			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
 			{
@@ -537,16 +527,16 @@ namespace JinEngine
 				{
 					JUserPtr<JRenderItem> rItem = innerGameObject[i]->GetRenderItem();
 					if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
-						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+						OffCulling(cullUser, rItem); 
 				}
 			}
 			else
 			{
-				left->SetVisible();
-				right->SetVisible();
+				left->SetVisible(cullUser);
+				right->SetVisible(cullUser);
 			}
 		}
-		void JKdTreeNode::SetInVisible()noexcept
+		void JKdTreeNode::SetVisible(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& cullingFrustum)noexcept
 		{
 			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
 			{
@@ -555,13 +545,36 @@ namespace JinEngine
 				{
 					JUserPtr<JRenderItem> rItem = innerGameObject[i]->GetRenderItem();
 					if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
-						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+					{
+						if (cullingFrustum.Contains(bbox) == DirectX::DISJOINT)
+							OffCulling(cullUser, rItem);
+						else
+							SetCulling(cullUser, rItem);
+					}
 				}
 			}
 			else
 			{
-				left->SetInVisible();
-				right->SetInVisible();
+				left->SetVisible(cullUser);
+				right->SetVisible(cullUser);
+			}
+		}
+		void JKdTreeNode::SetInVisible(Graphic::JCullingUserInterface& cullUser)noexcept
+		{
+			if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
+			{
+				const uint innerCount = (uint)innerGameObject.size();
+				for (uint i = 0; i < innerCount; ++i)
+				{
+					JUserPtr<JRenderItem> rItem = innerGameObject[i]->GetRenderItem();
+					if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
+						SetCulling(cullUser, rItem);
+				}
+			}
+			else
+			{
+				left->SetInVisible(cullUser);
+				right->SetInVisible(cullUser);
 			}
 		}
 		JKdTreeNode* JKdTreeNode::FindRightLeafNode() noexcept

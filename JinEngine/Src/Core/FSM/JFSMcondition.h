@@ -32,7 +32,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JFSMconditionImpl> impl;
 		public: 
-			JIdentifierPrivate& GetPrivateInterface()const noexcept override;
+			JIdentifierPrivate& PrivateInterface()const noexcept override;
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
 			JUserPtr<JFSMtransition> GetOwner()const noexcept;
 			JUserPtr<JFSMparameter> GetParameter()const noexcept;

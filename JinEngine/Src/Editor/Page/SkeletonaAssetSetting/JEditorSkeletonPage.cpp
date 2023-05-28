@@ -26,8 +26,7 @@ namespace JinEngine
 		JEditorSkeletonPage::JEditorSkeletonPage()
 			:JEditorPage("SkeletonAssetPage",
 				std::make_unique<JEditorAttribute>(),
-				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, J_EDITOR_PAGE_REQUIRE_INIT_OBJECT)),
-			ResourceEvListener::JEventListener(GetGuid())
+				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, J_EDITOR_PAGE_REQUIRE_INIT_OBJECT))
 		{
 			constexpr uint memberWindowCount = 4;
 			std::vector<std::string> windowNames

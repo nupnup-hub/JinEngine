@@ -14,7 +14,7 @@
 #include"../../Reflection/JTypeTemplate.h"
 #include"../../Identity/JIdenCreator.h"
 #include"../../Reflection/JTypeImplBase.h"
-#include"../../../Graphic/FrameResource/JAnimationConstants.h"
+#include"../../../Graphic/Upload/Frameresource/JAnimationConstants.h"
 #include"../../../Object/Resource/Skeleton/JSkeleton.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"
 #include"../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
@@ -39,11 +39,11 @@ namespace JinEngine
 
 			_StateIOInterface* StateIOInterface(const JUserPtr<JAnimationFSMstate>& state)
 			{
-				return &static_cast<_StateIOInterface&>(static_cast<JAnimationFSMstatePrivate&>(state->GetPrivateInterface()).GetAssetDataIOInterface());
+				return &static_cast<_StateIOInterface&>(static_cast<JAnimationFSMstatePrivate&>(state->PrivateInterface()).GetAssetDataIOInterface());
 			}
 			_StateUpdateInterface* StateUpdateInterface(const JUserPtr<JAnimationFSMstate>& state)
 			{
-				return &static_cast<_StateUpdateInterface&>(static_cast<JAnimationFSMstatePrivate&>(state->GetPrivateInterface()).GetUpdateInterface());
+				return &static_cast<_StateUpdateInterface&>(static_cast<JAnimationFSMstatePrivate&>(state->PrivateInterface()).GetUpdateInterface());
 			}
 		}
 		 
@@ -292,7 +292,7 @@ namespace JinEngine
 			: JFSMdiagram::InitData(JAnimationFSMdiagram::StaticTypeInfo(), name, guid, ownerInterface)
 		{}
 	  
-		JIdentifierPrivate& JAnimationFSMdiagram::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JAnimationFSMdiagram::PrivateInterface()const noexcept
 		{
 			return aPrivate;
 		}

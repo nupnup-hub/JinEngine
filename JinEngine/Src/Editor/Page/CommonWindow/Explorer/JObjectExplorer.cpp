@@ -174,19 +174,18 @@ namespace JinEngine
 			{
 				if (!explorer->root.IsValid())
 					return;
-
-				JUserPtr<JGameObject> parent = explorer->root;
-				auto hovered = explorer->GetHoveredObject();		
-				if(hovered.IsValid())
-					parent.ConvertChild(std::move(hovered));
-
+				 
+				JUserPtr<JGameObject> parent = Core::ConvertChildUserPtr<JGameObject>(explorer->GetHoveredObject());
+				if(parent == nullptr)
+					parent = explorer->root;
+				
 				JEditorCreationHint creationHint = JEditorCreationHint(explorer,
 					false, true, false, true,
 					Core::JTypeInstanceSearchHint(),
 					Core::JTypeInstanceSearchHint(parent->GetOwnerScene()),
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
-
+				 
 				JObjectExplorerCreationImpl* impl = explorer->creationImpl.get();
 				impl->gameObject.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, parent->GetGuid(), std::move(shapeType));
 			};
@@ -322,7 +321,12 @@ namespace JinEngine
 			//ImGuiTreeNodeFlags_Selected
 			bool isNodeOpen = false;
 			bool isRenameActivaetd = renameHelper->IsActivated() && renameHelper->IsRenameTar(gObj->GetGuid());
-			bool isSelected = IsSelectedObject(gObj->GetGuid());
+
+			//selected mark를 이용하면 자식 gameObject를 참조하는 node까지 mark되어버리므로
+			//이는 Explorer에서 기대하는 바가 아니므로 직접 클릭한 gameObject만 저장되는
+			//SelectedMap을 참조해서 mark
+			bool isSelected = IsSelectedObject(gObj->GetGuid()); 
+
 			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow |
 				ImGuiTreeNodeFlags_SpanAvailWidth |
 				ImGuiTreeNodeFlags_Framed;
@@ -352,6 +356,7 @@ namespace JinEngine
 					{
 						if (ImGui::IsItemHovered())
 							SetHoveredObject(gObj);
+
 						if (ImGui::IsItemClicked(0) || ImGui::IsItemClicked(1))
 						{
 							RequestPushSelectObject(gObj);
@@ -434,6 +439,17 @@ namespace JinEngine
 
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)
 				explorerPopup->SetOpen(false);
+
+			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && eventStruct->pageType == GetOwnerPageType())
+			{
+				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStruct);
+				JUserPtr< Core::JIdentifier> gameObj = evstruct->GetLastMatchedTypeObject(JGameObject::StaticTypeInfo());
+				if (gameObj.IsValid())
+				{
+					ClearSelectedObject();
+					PushSelectedObject(gameObj);				 		
+				}
+			}
 		}
 	}
 }

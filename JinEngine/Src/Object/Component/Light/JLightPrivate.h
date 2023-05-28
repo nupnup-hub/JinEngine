@@ -7,9 +7,12 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphic;
+		class JShadowMap;
+		class JHZBOccCulling;
 		struct JLightConstants;
 		struct JShadowMapLightConstants;
 		struct JShadowMapConstants;
+		struct JHzbOccPassConstants;
 	}
 	class JLightPrivate final : public JComponentPrivate
 	{
@@ -39,14 +42,38 @@ namespace JinEngine
 		class FrameUpdateInterface final
 		{
 		private:
-			friend class Graphic::JGraphic;
+			friend class Graphic::JGraphic; 
+			friend class Graphic::JHZBOccCulling;
 		private:
 			static bool UpdateStart(JLight* lit, const bool isUpdateForced)noexcept;
 			static void UpdateFrame(JLight* lit, Graphic::JLightConstants& constant)noexcept;
-			static void UpdateFrame(JLight* lit, Graphic::JShadowMapLightConstants& constant)noexcept;
+			static void UpdateFrame(JLight* lit, Graphic::JShadowMapLightConstants& constant)noexcept; 
 			static void UpdateFrame(JLight* lit, Graphic::JShadowMapConstants& constant)noexcept;
+			static void UpdateFrame(JLight* lit, Graphic::JHzbOccPassConstants& constant, const uint queryCount, const uint queryOffset)noexcept;
 			static void UpdateEnd(JLight* lit)noexcept;
+		private:
+			static int GetLitFrameIndex(JLight* lit)noexcept;
+			static int GetShadowLitFrameIndex(JLight* lit)noexcept;
+			static int GetShadowMapFrameIndex(JLight* lit)noexcept;
+			static int GetHzbOccPassFrameIndex(JLight* lit)noexcept;
+		private:
 			static bool IsHotUpdated(JLight* lit)noexcept;
+			static bool IsLastUpdated(JLight* lit)noexcept;
+			static bool HasLitRecopyRequest(JLight* lit)noexcept;
+			static bool HasShadowLitRecopyRequest(JLight* lit)noexcept;
+			static bool HasShadowMapRecopyRequest(JLight* lit)noexcept;
+			static bool HasOccPassRecopyRequest(JLight* lit)noexcept;
+		};
+		class FrameIndexInterface final
+		{
+		private:
+			friend class Graphic::JGraphic;
+			friend class Graphic::JShadowMap;
+		private:
+			static int GetLitFrameIndex(JLight* lit)noexcept;
+			static int GetShadowLitFrameIndex(JLight* lit)noexcept;
+			static int GetShadowMapFrameIndex(JLight* lit)noexcept;
+			static int GetHzbOccPassFrameIndex(JLight* lit)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

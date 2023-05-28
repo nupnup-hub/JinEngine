@@ -26,7 +26,7 @@ namespace JinEngine
  
 	class JTexture::JTextureImpl : public Core::JTypeImplBase,
 		public JClearableInterface, 
-		public Graphic::JGraphicResourceInterface
+		public Graphic::JGraphicSingleResourceInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTextureImpl)
 	public:
@@ -210,13 +210,13 @@ namespace JinEngine
 		:JResourceObject::InitData(JTexture::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), directory)
 	{}
  
-	Core::JIdentifierPrivate& JTexture::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JTexture::PrivateInterface()const noexcept
 	{
 		return tPrivate;
 	}
-	const Graphic::JGraphicResourceUserInterface JTexture::GraphicResourceUserInterface()const noexcept
+	const Graphic::JGraphicSingleResourceUserInterface JTexture::GraphicResourceUserInterface()const noexcept
 	{
-		return Graphic::JGraphicResourceUserInterface{ impl.get() };
+		return Graphic::JGraphicSingleResourceUserInterface{ impl.get() };
 	}
 	J_RESOURCE_TYPE JTexture::GetResourceType()const noexcept
 	{

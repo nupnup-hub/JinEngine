@@ -5,7 +5,6 @@
 #include"../Texture/JTexture.h"
 #include"../JResourceManager.h"
 #include"../JResourceObjectUserInterface.h" 
-#include"../../JFrameUpdate.h"
 #include"../../Directory/JDirectory.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
@@ -13,7 +12,8 @@
 #include"../../../Core/File/JFileIOHelper.h" 
 #include"../../../Application/JApplicationProject.h"
 #include"../../../Graphic/JGraphicConstants.h"
-#include"../../../Graphic/FrameResource/JMaterialConstants.h"
+#include"../../../Graphic/Upload/Frameresource/JMaterialConstants.h"
+#include"../../../Graphic/Upload/Frameresource/JFrameUpdate.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
 #include"../../../Utility/JMathHelper.h"
 #include<fstream>
@@ -22,14 +22,22 @@ namespace JinEngine
 {
 	namespace
 	{
+		using MaterialFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder1<
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL, Graphic::JMaterialConstants&>>,
+			Graphic::JFrameDirty>;
+	}
+	namespace
+	{
 		static JMaterialPrivate mPrivate;
 	}
-	
+			
 	class JMaterial::JMaterialImpl : public Core::JTypeImplBase,
-		public JFrameUpdate<JFrameUpdate1<JFrameUpdateBase<Graphic::JMaterialConstants&>>, JFrameDirty, FrameUpdate::singleBuff>,
+		public MaterialFrameUpdate,
 		public JResourceObjectUserInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JMaterialImpl)
+	public:
+		using MaterialFrame = JFrameInterface1;
 	public:
 		JWeakPtr<JMaterial> thisPointer = nullptr;
 	public:
@@ -79,7 +87,6 @@ namespace JinEngine
 		bool canUpdateShader = true;		//데이터 로드할때 마지막에 쉐이더 업데이트하기 위한 용도
 	public:
 		JMaterialImpl(const InitData& initData, JMaterial* thisMatRaw)
-			:JResourceObjectUserInterface(thisMatRaw->GetGuid())
 		{}
 		~JMaterialImpl(){}
 	public:
@@ -502,6 +509,7 @@ namespace JinEngine
 				constant.RoughnessMapIndex = roughnessMap->GraphicResourceUserInterface().GetResourceArrayIndex();
 			if (ambientOcclusionMap.IsValid())
 				constant.AmbientOcclusionMapIndex = ambientOcclusionMap->GraphicResourceUserInterface().GetResourceArrayIndex();
+			MaterialFrame::MinusMovedDirty();
 		}
 	public:
 		bool ReadAssetData()
@@ -618,6 +626,12 @@ namespace JinEngine
 			return true;
 		}
 	public:
+		void NotifyReAlloc()
+		{
+			MaterialFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL, (MaterialFrame*)this);
+			ResetEventListenerPointer(*JResourceObject::EvInterface(), thisPointer->GetGuid());
+		}
+	public:
 		void Initialize(InitData* initData)
 		{
 			SetNewFunctionFlag(SHADER_FUNCTION_NONE);
@@ -635,6 +649,16 @@ namespace JinEngine
 		{
 			RemoveListener(*JResourceObject::EvInterface(), thisPointer->GetGuid());
 		}
+		void RegisterRItemFrameData()
+		{
+			//all material belong same area
+			static constexpr size_t materialArea = 0;
+			MaterialFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL, (MaterialFrame*)this, materialArea);
+		}
+		void DeRegisterRItemFrameData()
+		{
+			MaterialFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL, (MaterialFrame*)this);
+		}
 		static void RegisterTypeData()
 		{
 			auto getFormatIndexLam = [](const std::wstring& format) {return JResourceObject::GetFormatIndex(JMaterial::GetStaticResourceType(), format); };
@@ -647,16 +671,11 @@ namespace JinEngine
 			{
 				static_cast<JMaterial*>(jRobj)->impl->SetFrameDirty();
 			};
-			static auto setBuffIndexLam = [](JResourceObject* jRobj, uint value)
-			{
-				static_cast<JMaterial*>(jRobj)->impl->SetFrameBuffOffset(value);
-			};
-			static SetRFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
-			static SetRFrameBuffIndexCallable setFrameBuffIndexCallable{ setBuffIndexLam };
+			static SetRFrameDirtyCallable setFrameDirtyCallable{ setFrameLam }; 
 
 			static RTypeHint rTypeHint{ GetStaticResourceType(), std::vector<J_RESOURCE_TYPE>{J_RESOURCE_TYPE::SHADER}, false, true, true, false };
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
-			static RTypePrivateFunc rTypeiFunc{ &setFrameDirtyCallable, &setFrameBuffIndexCallable };
+			static RTypePrivateFunc rTypeiFunc{ &setFrameDirtyCallable};
 
 			RegisterRTypeInfo(rTypeHint, rTypeCFunc, rTypeiFunc);
 			Core::JIdentifier::RegisterPrivateInterface(JMaterial::StaticTypeInfo(), mPrivate);
@@ -683,13 +702,13 @@ namespace JinEngine
 		: JResourceObject::InitData(JMaterial::StaticTypeInfo(), name, guid, flag, formatIndex, GetStaticResourceType(), directory)
 	{ }
 
-	Core::JIdentifierPrivate& JMaterial::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JMaterial::PrivateInterface()const noexcept
 	{
 		return mPrivate;
 	}
-	JFrameUpdateUserAccess JMaterial::GetFrameUserInterface() noexcept
+	Graphic::JFrameUpdateUserAccess JMaterial::FrameUserInterface() noexcept
 	{
-		return JFrameUpdateUserAccess(Core::GetUserPtr(this), impl.get());
+		return Graphic::JFrameUpdateUserAccess(Core::GetUserPtr(this), impl.get());
 	}
 	J_RESOURCE_TYPE JMaterial::GetResourceType()const noexcept
 	{  
@@ -908,7 +927,8 @@ namespace JinEngine
 	}
 	JMaterial::JMaterial(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JMaterialImpl>(initData, this))
-	{}
+	{		
+	}
 	JMaterial::~JMaterial()
 	{
 		impl.reset();
@@ -918,7 +938,7 @@ namespace JinEngine
 	using DestroyInstanceInterface = JMaterialPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JMaterialPrivate::AssetDataIOInterface;
 	using FrameUpdateInterface = JMaterialPrivate::FrameUpdateInterface;
-	using FrameBuffInterface = JMaterialPrivate::FrameBuffInterface; 
+	using FrameIndexInterface = JMaterialPrivate::FrameIndexInterface; 
 	using UpdateShaderInterface = JMaterialPrivate::UpdateShaderInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
@@ -931,6 +951,7 @@ namespace JinEngine
 		JMaterial* mat = static_cast<JMaterial*>(createdPtr);
 		mat->impl->RegisterThisPointer(mat);
 		mat->impl->RegisterPostCreation();
+		mat->impl->RegisterRItemFrameData();
 		mat->impl->Initialize(static_cast<JMaterial::InitData*>(initData));
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
@@ -940,9 +961,10 @@ namespace JinEngine
 	}
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
-	{
+	{ 
 		JResourceObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		static_cast<JMaterial*>(ptr)->impl->DeRegisterPreDestruction();
+		static_cast<JMaterial*>(ptr)->impl->DeRegisterRItemFrameData();
 	}
 
 	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
@@ -1026,6 +1048,8 @@ namespace JinEngine
 		if (isUpdateForced)
 			mat->impl->SetFrameDirty();
 
+		mat->impl->SetLastFrameUpdatedTrigger(false);
+		mat->impl->SetLastFrameHotUpdatedTrigger(false);
 		return mat->impl->IsFrameDirted();
 	}
 	void FrameUpdateInterface::UpdateFrame(JMaterial* mat, Graphic::JMaterialConstants& constants)noexcept
@@ -1034,16 +1058,27 @@ namespace JinEngine
 	}
 	void FrameUpdateInterface::UpdateEnd(JMaterial* mat)noexcept
 	{
-		mat->impl->UpdateEnd();
+		if (mat->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources)
+			mat->impl->SetLastFrameHotUpdatedTrigger(true);
+		mat->impl->SetLastFrameUpdatedTrigger(true);
+		mat->impl->UpdateFrameEnd();
 	}
-	uint FrameUpdateInterface::GetCBOffset(JMaterial* mat)noexcept
+	uint FrameUpdateInterface::GetMaterialFrameIndex(JMaterial* mat)noexcept
 	{
-		return mat->impl->GetFrameBuffOffset();
+		return mat->impl->MaterialFrame::GetUploadIndex();
+	}
+	bool FrameUpdateInterface::IsLastFrameUpdated(JMaterial* mat)
+	{
+		return mat->impl->IsLastFrameUpdated();
+	}
+	bool FrameUpdateInterface::HasRecopyRequest(JMaterial* mat)noexcept
+	{
+		return mat->impl->MaterialFrame::HasMovedDirty();
 	}
 
-	uint FrameBuffInterface::GetCBOffset(JMaterial* mat)noexcept
+	uint FrameIndexInterface::GetMaterialFrameIndex(JMaterial* mat)noexcept
 	{
-		return mat->impl->GetFrameBuffOffset();
+		return mat->impl->MaterialFrame::GetUploadIndex();
 	}
  
 	void UpdateShaderInterface::OnUpdateShaderTrigger(const JUserPtr<JMaterial>& mat)noexcept

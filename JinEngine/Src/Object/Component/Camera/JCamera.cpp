@@ -3,16 +3,21 @@
 #include"../JComponentHint.h"
 #include"../Transform/JTransform.h"
 #include"../Transform/JTransformPrivate.h"
-#include"../../JFrameUpdate.h"
-#include"../../GameObject/JGameObject.h" 
+#include"../../GameObject/JGameObject.h"  
 #include"../../Resource/Scene/JScene.h" 
-#include"../../Resource/Scene/JScenePrivate.h" 
+#include"../../Resource/Scene/JScenePrivate.h"  
 #include"../../../Core/Guid/GuidCreator.h"  
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
+#include"../../../Graphic/JGraphic.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
-#include"../../../Graphic/FrameResource/JCameraConstants.h"    
+#include"../../../Graphic/JGraphicDrawListInterface.h"
+#include"../../../Graphic/Upload/Frameresource/JCameraConstants.h"    
+#include"../../../Graphic/Culling/JCullingInterface.h"
+#include"../../../Graphic/Culling/JCullingConstants.h" 
+#include"../../../Graphic/Upload/Frameresource/JFrameUpdate.h"
+#include"../../../Graphic/Upload/Frameresource/JOcclusionConstants.h"
 #include"../../../Window/JWindow.h"
 #include"../../../Utility/JMathHelper.h"
 #include<fstream>
@@ -26,44 +31,68 @@ namespace JinEngine
 		static JCameraPrivate cPrivate;
 	}
  
-	class JCamera::JCameraImpl : public Core::JTypeImplBase,
-		public JFrameUpdate<JFrameUpdate1<JFrameUpdateBase<Graphic::JCameraConstants&>>, JFrameDirtyListener, FrameUpdate::nonBuff>,
-		public Graphic::JGraphicResourceInterface
+	namespace
 	{ 
+		using CameraFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder2<
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, Graphic::JCameraConstants&>,
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, Graphic::JHzbOccPassConstants&, const uint, const uint>>,
+			Graphic::JFrameDirty>;
+		//first extra is occlusion 
+	}
+
+	class JCamera::JCameraImpl : public Core::JTypeImplBase,
+		public CameraFrameUpdate, 
+		public Graphic::JGraphicMultiResourceInterface,
+		public Graphic::JGraphicDrawListCompInterface,
+		public Graphic::JCullingInterface
+	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JCameraImpl)
+	public:
+		using CamFrame = JFrameInterface1;
+		using HzbOccPassFrame = JFrameInterface2; 
 	public:
 		JWeakPtr<JCamera> thisPointer = nullptr;
 	public:
 		//JTransform* ownerTransform;
-		J_CAMERA_STATE camState = J_CAMERA_STATE::IDEL;
-
+		J_CAMERA_STATE camState = J_CAMERA_STATE::RENDER;
 		// Cache frustum properties.
 		REGISTER_PROPERTY_EX(cameraNear, GetNear, SetNear, GUI_SLIDER(0, 1000, true))
 		float cameraNear = 0.0f;
 		REGISTER_PROPERTY_EX(cameraFar, GetFar, SetFar, GUI_SLIDER(0, 1000, true))
 		float cameraFar = 0.0f;
-
 		float cameraAspect = 0.0f;
 		REGISTER_PROPERTY_EX(cameraFov, GetFovYDegree, SetFovDegree, GUI_SLIDER(0, 360, true))
 		float cameraFov = 0.0f;
 		float cameraNearViewHeight = 0.0f;
 		float cameraFarViewHeight = 0.0f;
-
+	public:
 		int viewWidth;
 		int viewHeight;
-
+	public:
 		REGISTER_PROPERTY_EX(isOrtho, IsOrthoCamera, SetOrthoCamera, GUI_CHECKBOX())
 		bool isOrtho = false; 
+		REGISTER_PROPERTY_EX(allowDisplayDepthMap, AllowDisplayDepthMap, SetAllowDisplayDepthMap, GUI_CHECKBOX())
+		bool allowDisplayDepthMap = false;
 		REGISTER_PROPERTY_EX(allowDisplayDebug, AllowDisplayDebug, SetAllowDisplayDebug, GUI_CHECKBOX())
 		bool allowDisplayDebug = false;
-		REGISTER_PROPERTY_EX(allowCulling, AllowCulling, SetAllowCulling, GUI_CHECKBOX())
-		bool allowCulling = true;
+		REGISTER_PROPERTY_EX(allowFrustumCulling, AllowFrustumCulling, SetAllowFrustumCulling, GUI_CHECKBOX())
+		bool allowFrustumCulling = false;
+		REGISTER_PROPERTY_EX(allowHzbOcclusionCulling, AllowHzbOcclusionCulling, SetAllowHzbOcclusionCulling, GUI_CHECKBOX())
+		bool allowHzbOcclusionCulling = false;
+		REGISTER_PROPERTY_EX(allowDisplayOccCullingDepthMap, AllowDisplayOccCullingDepthMap, SetAllowDisplayOccCullingDepthMap, GUI_CHECKBOX())
+		bool allowDisplayOccCullingDepthMap = false;
 		bool allowAllCamCullResult = false;	//use editor camera for check space spatial result
-
+	public:
+		//Culling Option
+		REGISTER_PROPERTY_EX(frustumCulingFrequency, GetFrustumCullingFrequency, SetFrustumCullingFrequency, GUI_SLIDER(Graphic::Constant::cullingUpdateFrequencyMin, Graphic::Constant::cullingUpdateFrequencyMax, true))
+		float frustumCulingFrequency = 0;
+		REGISTER_PROPERTY_EX(occlusionCulingFrequency, GetOcclusionCullingFrequency, SetOcclusionCullingFrequency, GUI_SLIDER(Graphic::Constant::cullingUpdateFrequencyMin, Graphic::Constant::cullingUpdateFrequencyMax, true))
+		float occlusionCulingFrequency = 0;
+	public:
 		// Cache View/Proj matrices.
 		DirectX::XMFLOAT4X4 mView;
 		DirectX::XMFLOAT4X4 mProj;
-		DirectX::BoundingFrustum mCamFrustum;
+		DirectX::BoundingFrustum mCamFrustum; 
 	public:
 		//Caution
 		//Impl생성자에서 interface class 참조시 interface class가 함수내에서 impl을 참조할 경우 error
@@ -83,6 +112,20 @@ namespace JinEngine
 		{
 			return JMathHelper::RadToDeg * cameraFov;
 		} 
+		float GetFrustumCullingFrequency()const noexcept
+		{
+			return frustumCulingFrequency;
+		}
+		float GetOcclusionCullingFrequency()const noexcept
+		{
+			return occlusionCulingFrequency;
+		}
+		DirectX::BoundingFrustum GetBoundingFrustum()const noexcept
+		{
+			DirectX::BoundingFrustum worldCamFrustum;
+			mCamFrustum.Transform(worldCamFrustum, thisPointer->GetOwner()->GetTransform()->GetWorldMatrix());
+			return worldCamFrustum;
+		}
 	public:
 		void SetNear(float value)noexcept
 		{
@@ -130,17 +173,107 @@ namespace JinEngine
 			else
 				CalPerspectiveLens();
 		}
+		void SetAllowDisplayDepthMap(const bool value)noexcept
+		{
+			if (allowDisplayDepthMap == value)
+				return;
+
+			allowDisplayDepthMap = value;
+			if (thisPointer->IsActivated())
+			{
+				if (allowDisplayDepthMap)
+					CreateSceneDepthStencilDebug();
+				else
+					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG);
+			}
+			SetFrameDirty();
+		}
 		void SetAllowDisplayDebug(const bool value)noexcept
 		{
+			if (allowDisplayDebug == value)
+				return;
+
 			allowDisplayDebug = value;
+			if (thisPointer->IsActivated())
+			{
+				if (allowDisplayDebug)
+					CreateDebugDepthStencil();
+				else
+					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG);
+			}
+			SetFrameDirty();
 		}
-		void SetAllowCulling(const bool value)noexcept
+		void SetAllowFrustumCulling(const bool value)noexcept
 		{
-			allowCulling = value;
+			if (allowFrustumCulling == value)
+				return;
+
+			allowFrustumCulling = value;
+			if (thisPointer->IsActivated())
+			{
+				if (allowFrustumCulling)
+				{ 
+					CreateFrustumCullingData();
+					AddFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
+				}
+				else
+				{
+					DestroyCullingData(this, Graphic::J_CULLING_TYPE::FRUSTUM);
+					PopFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+				}
+			}
+			SetFrameDirty();
+		}
+		void SetAllowHzbOcclusionCulling(const bool value)noexcept
+		{
+			if (allowHzbOcclusionCulling == value)
+				return;
+
+			allowHzbOcclusionCulling = value;
+			if (thisPointer->IsActivated())
+			{
+				if (allowHzbOcclusionCulling)
+				{
+					RegisterOccPassFrameData();
+					CreateOccCullingData(this);
+					AddHzbOccCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
+				}
+				else
+				{
+					DeRegisterOccPassFrameData();
+					DestroyCullingData(this, Graphic::J_CULLING_TYPE::OCCLUSION);
+					PopHzbOccCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+				}
+			}
+			SetFrameDirty();
+		}
+		void SetAllowDisplayOccCullingDepthMap(const bool value)noexcept
+		{
+			if (allowDisplayOccCullingDepthMap == value)
+				return;
+
+			allowDisplayOccCullingDepthMap = value;
+			if (thisPointer->IsActivated())
+			{
+				if (allowDisplayOccCullingDepthMap)
+					CreateOcclusionDepthDebug();
+				else
+					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG);
+			}
+			SetFrameDirty();
 		}
 		void SetAllowAllCullingResult(const bool value)noexcept
 		{
 			allowAllCamCullResult = value;
+			SetFrameDirty();
+		} 
+		void SetFrustumCullingFrequency(const float value)noexcept
+		{
+			frustumCulingFrequency = value;
+		}
+		void SetOcclusionCullingFrequency(const float value)noexcept
+		{
+			occlusionCulingFrequency = value;
 		}
 		void SetAspect(float value) noexcept
 		{
@@ -158,32 +291,44 @@ namespace JinEngine
 			if (camState == J_CAMERA_STATE::RENDER)
 			{
 				if (thisPointer->IsActivated() && RegisterComponent(thisPointer))
-					CreateRenderTarget();
+					Activate();
 			}
 			else
 			{
 				if (thisPointer->IsActivated() && DeRegisterComponent(thisPointer))
-					DestroyRenderTarget();
+					DeActivate();
 			}
 			SetFrameDirty();
-		}
+		} 
 	public:
 		bool IsOrthoCamera()const noexcept
 		{
 			return isOrtho;
 		}
+		bool AllowDisplayDepthMap()const noexcept
+		{
+			return allowDisplayDepthMap;
+		}
 		bool AllowDisplayDebug()const noexcept
 		{
 			return allowDisplayDebug;
 		}
-		bool AllowCulling()const noexcept
+		bool AllowFrustumCulling()const noexcept
 		{
-			return allowCulling;
+			return allowFrustumCulling;
 		}
+		bool AllowHzbOcclusionCulling()const noexcept
+		{
+			return allowHzbOcclusionCulling;
+		}
+		bool AllowDisplayOccCullingDepthMap()const noexcept
+		{
+			return allowDisplayOccCullingDepthMap;
+		} 
 		bool AllowAllCullingResult()const noexcept
 		{
 			return allowAllCamCullResult;
-		}
+		}  
 	public:
 		void CalPerspectiveLens() noexcept
 		{
@@ -204,17 +349,45 @@ namespace JinEngine
 			SetFrameDirty();
 		}
 	public:
-		void CreateRenderTarget()noexcept
+		void Activate()noexcept
 		{
 			//if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
+			RegisterCameraFrameData();
 			CreateRenderTargetTexture();
-			AddDrawRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+			CreateSceneDepthStencil();
+			if (allowDisplayDepthMap)
+				CreateSceneDepthStencilDebug();
+			if (allowDisplayDebug)
+				CreateDebugDepthStencil();
+			if (allowFrustumCulling)
+			{
+				CreateFrustumCullingData();
+				AddFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
+			}
+			if (allowHzbOcclusionCulling)
+			{
+				RegisterOccPassFrameData();
+				CreateOccCullingData(this);
+				AddHzbOccCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
+			}
+			if (allowDisplayOccCullingDepthMap)
+				CreateOcclusionDepthDebug();
+
+			if(thisPointer->GetOwner()->GetOwnerScene()->GetUseCaseType() == J_SCENE_USE_CASE_TYPE::TWO_DIMENSIONAL_PREVIEW)
+				AddDrawSceneRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
+			else
+				AddDrawSceneRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS);
 		}
-		void DestroyRenderTarget()noexcept
+		void DeActivate()noexcept
 		{
 			//if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
+			DeRegisterCameraFrameData();
+			DeRegisterOccPassFrameData();
 			PopDrawRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
-			DestroyTexture();
+			PopHzbOccCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+			PopFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+			DestroyAllCullingData(this);
+			DestroyAllTexture(); 
 		}
 	public:
 		void UpdateFrame(Graphic::JCameraConstants& constant)noexcept final
@@ -244,6 +417,38 @@ namespace JinEngine
 			constant.eyePosW = thisPointer->GetTransform()->GetPosition();
 			constant.nearZ = cameraNear;
 			constant.farZ = cameraFar;
+			CamFrame::MinusMovedDirty();
+		}
+		void UpdateFrame(Graphic::JHzbOccPassConstants& constant, const uint queryCount, const uint queryOffset)noexcept final
+		{
+			//static const BoundingBox drawBBox = _JResourceManager::Instance().Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
+			auto info = JGraphic::Instance().GetGraphicInfo();
+			auto option = JGraphic::Instance().GetGraphicOption();
+
+			const XMMATRIX view = XMLoadFloat4x4(&mView);
+			const XMMATRIX proj = XMLoadFloat4x4(&mProj);
+			XMStoreFloat4x4(&constant.view, XMMatrixTranspose(view));
+			XMStoreFloat4x4(&constant.proj, XMMatrixTranspose(proj));
+			XMStoreFloat4x4(&constant.viewProj, XMMatrixTranspose(XMMatrixMultiply(view, proj)));
+
+			const BoundingFrustum frustum = GetBoundingFrustum();
+			XMVECTOR planeV[6];
+			frustum.GetPlanes(&planeV[0], &planeV[1], &planeV[2], &planeV[3], &planeV[4], &planeV[5]);
+			for (uint i = 0; i < 6; ++i)
+				XMStoreFloat4(&constant.frustumPlane[i], planeV[i]);
+
+			constant.frustumDir = frustum.Orientation;
+			constant.frustumPos = frustum.Origin;
+			constant.viewWidth = viewWidth;
+			constant.viewHeight = viewHeight;
+			constant.camNear = cameraNear;
+			constant.camFar = cameraFar;
+			constant.validQueryCount = queryCount;
+			constant.validQueryOffset = queryOffset;
+			constant.occMapCount = info.occlusionMapCount;
+			constant.occIndexOffset = JMathHelper::Log2Int(info.occlusionMinSize);
+			constant.correctFailTrigger = (int)option.allowHZBCorrectFail;
+			HzbOccPassFrame::MinusMovedDirty();
 		}
 		void UpdateViewMatrix() noexcept
 		{
@@ -312,9 +517,11 @@ namespace JinEngine
 			auto transform = thisPointer->GetOwner()->GetTransform();
 			if (transform.IsValid())
 			{
-				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(transform.Get(), this);
-				JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(transform.Get(), this);
+				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(transform.Get(), thisPointer->GetGuid());
+				JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(transform.Get(), this, thisPointer->GetGuid());
 			}
+			CamFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, (CamFrame*)this);
+			HzbOccPassFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, (HzbOccPassFrame*)this);
 		}
 	public:
 		void Initialize()
@@ -337,12 +544,28 @@ namespace JinEngine
 		}
 		void RegisterPostCreation()
 		{
-			JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), this);
+			JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), this, thisPointer->GetGuid());
 		}
 		void DeRegisterPreDestruction()
 		{
 			if (thisPointer->GetOwner()->GetTransform() != nullptr)
-				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), this);
+				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), thisPointer->GetGuid());
+		}
+		void RegisterCameraFrameData()
+		{  
+			CamFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, (CamFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+		}
+		void DeRegisterCameraFrameData()
+		{
+			CamFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, (CamFrame*)this);
+		}
+		void RegisterOccPassFrameData()
+		{
+			HzbOccPassFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, (HzbOccPassFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+		}
+		void DeRegisterOccPassFrameData()
+		{
+			HzbOccPassFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, (HzbOccPassFrame*)this);
 		}
 		static void RegisterTypeData()
 		{
@@ -365,10 +588,10 @@ namespace JinEngine
 
 			static auto setFrameLam = [](JComponent* component) {static_cast<JCamera*>(component)->impl->SetFrameDirty(); };
 			static SetCFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
-
+ 
 			static CTypeHint cTypeHint{ GetStaticComponentType(), true };
 			static CTypeCommonFunc cTypeCommonFunc{ getTypeInfoCallable, isAvailableOverlapCallable, createInitDataCallable };
-			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, nullptr };
+			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable};
 
 			JComponent::RegisterCTypeInfo(JCamera::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 			Core::JIdentifier::RegisterPrivateInterface(JCamera::StaticTypeInfo(), cPrivate);
@@ -384,17 +607,21 @@ namespace JinEngine
 		: JComponent::InitData(JCamera::StaticTypeInfo(), GetDefaultName(JCamera::StaticTypeInfo()), guid, flag, owner)
 	{}
 
-	Core::JIdentifierPrivate& JCamera::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JCamera::PrivateInterface()const noexcept
 	{
 		return cPrivate;
 	}
-	JFrameUpdateUserAccess JCamera::GetFrameUserInterface() noexcept
+	Graphic::JFrameUpdateUserAccess JCamera::FrameUserInterface() noexcept
 	{
-		return JFrameUpdateUserAccess(Core::GetUserPtr(this), impl.get());
+		return Graphic::JFrameUpdateUserAccess(Core::GetUserPtr(this), impl.get());
 	}
-	const Graphic::JGraphicResourceUserInterface JCamera::GraphicResourceUserInterface()const noexcept
+	const Graphic::JGraphicMultiResourceUserInterface JCamera::GraphicResourceUserInterface()const noexcept
 	{
-		return Graphic::JGraphicResourceUserInterface{ impl.get() };
+		return Graphic::JGraphicMultiResourceUserInterface{ impl.get() };
+	}
+	const Graphic::JCullingUserInterface JCamera::CullingUserInterface()const noexcept
+	{
+		return Graphic::JCullingUserInterface{ impl.get() };
 	}
 	J_COMPONENT_TYPE JCamera::GetComponentType()const noexcept
 	{
@@ -422,9 +649,7 @@ namespace JinEngine
 	}
 	DirectX::BoundingFrustum JCamera::GetBoundingFrustum()const noexcept
 	{ 
-		DirectX::BoundingFrustum worldCamFrustum;
-		impl->mCamFrustum.Transform(worldCamFrustum, GetOwner()->GetTransform()->GetWorldMatrix());
-		return worldCamFrustum;
+		return impl->GetBoundingFrustum();
 	}
 	float JCamera::GetNear()const noexcept
 	{
@@ -503,13 +728,25 @@ namespace JinEngine
 	{
 		impl->SetOrthoCamera(value);
 	}
+	void JCamera::SetAllowDisplayDepthMap(const bool value)noexcept
+	{
+		impl->SetAllowDisplayDepthMap(value);
+	}
 	void JCamera::SetAllowDisplayDebug(const bool value)noexcept
 	{
 		impl->SetAllowDisplayDebug(value);
 	}
-	void JCamera::SetAllowCulling(const bool value)noexcept
+	void JCamera::SetAllowFrustumCulling(const bool value)noexcept
 	{
-		impl->SetAllowCulling(value);
+		impl->SetAllowFrustumCulling(value);
+	}
+	void JCamera::SetAllowHzbOcclusionCulling(const bool value)noexcept
+	{
+		impl->SetAllowHzbOcclusionCulling(value);
+	}
+	void JCamera::SetAllowDisplayOccCullingDepthMap(const bool value)noexcept
+	{
+		impl->SetAllowDisplayOccCullingDepthMap(value);
 	}
 	void JCamera::SetCameraState(const J_CAMERA_STATE state)noexcept
 	{
@@ -530,22 +767,34 @@ namespace JinEngine
 		else
 			return false;
 	} 
+	bool JCamera::AllowDisplayDepthMap()const noexcept
+	{
+		return impl->AllowDisplayDepthMap();
+	}
 	bool JCamera::AllowDisplayDebug()const noexcept
 	{
 		return impl->AllowDisplayDebug();
 	}
-	bool JCamera::AllowCulling()const noexcept
+	bool JCamera::AllowFrustumCulling()const noexcept
 	{
-		return impl->AllowCulling();
+		return impl->AllowFrustumCulling();
+	}
+	bool JCamera::AllowHzbOcclusionCulling()const noexcept
+	{
+		return impl->AllowHzbOcclusionCulling();
+	}
+	bool JCamera::AllowDisplayOccCullingDepthMap()const noexcept
+	{
+		return impl->AllowDisplayOccCullingDepthMap();
 	}
 
 	void JCamera::DoActivate()noexcept
 	{
-		JComponent::DoActivate();
+		JComponent::DoActivate(); 
 		if (impl->camState == J_CAMERA_STATE::RENDER)
-		{ 
+		{
 			if (RegisterComponent(impl->thisPointer))
-				impl->CreateRenderTarget();
+				impl->Activate();
 		}
 		impl->SetFrameDirty();
 	}
@@ -553,9 +802,9 @@ namespace JinEngine
 	{
 		JComponent::DoDeActivate();
 		if (impl->camState == J_CAMERA_STATE::RENDER)
-		{ 
+		{
 			if (DeRegisterComponent(impl->thisPointer))
-				impl->DestroyRenderTarget();
+				impl->DeActivate();
 		}
 		impl->OffFrameDirty();
 	}
@@ -571,6 +820,7 @@ namespace JinEngine
 	using DestroyInstanceInterface = JCameraPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JCameraPrivate::AssetDataIOInterface; 
 	using FrameUpdateInterface = JCameraPrivate::FrameUpdateInterface;
+	using FrameIndexInterface = JCameraPrivate::FrameIndexInterface;
 	using EditorSettingInterface = JCameraPrivate::EditorSettingInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
@@ -622,8 +872,11 @@ namespace JinEngine
 		float cameraFar;
 		float camFov; 
 		bool isOrtho;
+		bool allowDisplayDepthMap;
 		bool allowDisplayDebug;
-		bool allowCulling;
+		bool allowFrustumCulling;
+		bool allowHzbOcclusionCulling;
+		bool allowDisplayOccCullingDepthMap;
 
 		auto loadData = static_cast<JCamera::LoadData*>(data);
 		std::wifstream& stream = loadData->stream;
@@ -638,8 +891,11 @@ namespace JinEngine
 		JFileIOHelper::LoadAtomicData(stream, cameraFar);
 		JFileIOHelper::LoadAtomicData(stream, camFov); 
 		JFileIOHelper::LoadAtomicData(stream, isOrtho);
+		JFileIOHelper::LoadAtomicData(stream, allowDisplayDepthMap);
 		JFileIOHelper::LoadAtomicData(stream, allowDisplayDebug);
-		JFileIOHelper::LoadAtomicData(stream, allowCulling);
+		JFileIOHelper::LoadAtomicData(stream, allowFrustumCulling);
+		JFileIOHelper::LoadAtomicData(stream, allowHzbOcclusionCulling);
+		JFileIOHelper::LoadAtomicData(stream, allowDisplayOccCullingDepthMap);
 
 		auto idenUser = cPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JCamera::InitData>(guid, flag, owner), &cPrivate);
 		JUserPtr<JCamera> camUser;
@@ -657,8 +913,11 @@ namespace JinEngine
 			impl->CalOrthoLens();
 		else
 			impl->CalPerspectiveLens();
+		impl->SetAllowDisplayDepthMap(allowDisplayDepthMap);
 		impl->SetAllowDisplayDebug(allowDisplayDebug);
-		impl->SetAllowCulling(allowCulling);
+		impl->SetAllowFrustumCulling(allowFrustumCulling);
+		impl->SetAllowHzbOcclusionCulling(allowHzbOcclusionCulling);
+		impl->SetAllowDisplayOccCullingDepthMap(allowDisplayOccCullingDepthMap);
 		impl->SetCameraState(camState); 
 		return camUser;
 	}
@@ -685,8 +944,11 @@ namespace JinEngine
 		JFileIOHelper::StoreAtomicData(stream, L"CamFar:", impl->cameraFar);
 		JFileIOHelper::StoreAtomicData(stream, L"CamFov:", impl->cameraFov); 
 		JFileIOHelper::StoreAtomicData(stream, L"IsOrtho:", impl->isOrtho);
+		JFileIOHelper::StoreAtomicData(stream, L"AllowDepthMap:", impl->allowDisplayDepthMap);
 		JFileIOHelper::StoreAtomicData(stream, L"AllowDebug:", impl->allowDisplayDebug);
-		JFileIOHelper::StoreAtomicData(stream, L"AllowCulling:", impl->allowCulling);
+		JFileIOHelper::StoreAtomicData(stream, L"AllowFrustumCulling:", impl->allowFrustumCulling);
+		JFileIOHelper::StoreAtomicData(stream, L"AllowHzbOcclusionCulling:", impl->allowHzbOcclusionCulling);
+		JFileIOHelper::StoreAtomicData(stream, L"AllowDislplayCullingDepthMap:", impl->allowDisplayOccCullingDepthMap);
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -696,19 +958,57 @@ namespace JinEngine
 		if (isUpdateForced)
 			cam->impl->SetFrameDirty();
 
+		cam->impl->SetLastFrameUpdatedTrigger(false);
+		cam->impl->SetLastFrameHotUpdatedTrigger(false);
 		return cam->impl->IsFrameDirted();
 	}
 	void FrameUpdateInterface::UpdateFrame(JCamera* cam, Graphic::JCameraConstants& constants)noexcept
 	{
 		cam->impl->UpdateFrame(constants);
 	}
+	void FrameUpdateInterface::UpdateFrame(JCamera* cam, Graphic::JHzbOccPassConstants& constants, const uint queryCount, const uint queryOffset)noexcept
+	{
+		cam->impl->UpdateFrame(constants, queryCount, queryOffset);
+	}
 	void FrameUpdateInterface::UpdateEnd(JCamera* cam)noexcept
 	{
-		cam->impl->UpdateEnd();
+		if(cam->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources)
+			cam->impl->SetLastFrameHotUpdatedTrigger(true);
+		cam->impl->SetLastFrameUpdatedTrigger(true);
+		cam->impl->UpdateFrameEnd();
+	}
+	int FrameUpdateInterface::GetCamFrameIndex(JCamera* cam)noexcept
+	{
+		return cam->impl->CamFrame::GetUploadIndex();
+	}
+	int FrameUpdateInterface::GetHzbOccPassFrameIndex(JCamera* cam)noexcept
+	{
+		return cam->impl->HzbOccPassFrame::GetUploadIndex();
 	}
 	bool FrameUpdateInterface::IsHotUpdated(JCamera* cam)noexcept
 	{
-		return cam->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources;
+		return cam->impl->IsLastFrameHotUpdated();
+	}
+	bool FrameUpdateInterface::IsLastUpdated(JCamera* cam)noexcept
+	{
+		return cam->impl->IsLastFrameUpdated();
+	}
+	bool FrameUpdateInterface::HasCamRecopyRequest(JCamera* cam)noexcept
+	{
+		return cam->impl->CamFrame::HasMovedDirty();
+	}
+	bool FrameUpdateInterface::HasOccPassRecopyRequest(JCamera* cam)noexcept
+	{
+		return cam->impl->HzbOccPassFrame::HasMovedDirty();
+	}
+
+	int FrameIndexInterface::GetCamFrameIndex(JCamera* cam)noexcept
+	{
+		return cam->impl->CamFrame::GetUploadIndex();
+	}
+	int FrameIndexInterface::GetHzbOccPassFrameIndex(JCamera* cam)noexcept
+	{
+		return cam->impl->HzbOccPassFrame::GetUploadIndex();
 	}
 
 	void EditorSettingInterface::SetAllowAllCullingResult(const JUserPtr<JCamera>& cam, const bool value)noexcept

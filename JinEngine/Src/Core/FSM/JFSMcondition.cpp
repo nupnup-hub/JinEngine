@@ -137,7 +137,7 @@ namespace JinEngine
 			return JFSMinterface::InitData::IsValidData() && ownerTransition != nullptr;
 		}
 
-		JIdentifierPrivate& JFSMcondition::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JFSMcondition::PrivateInterface()const noexcept
 		{
 			return cPrivate;
 		}

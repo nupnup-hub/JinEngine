@@ -66,7 +66,7 @@ namespace JinEngine
 	JUserPtr<JComponent> JComponentCreatorInterface::CreateComponent(const J_COMPONENT_TYPE cType, const JUserPtr<JGameObject>& owner)
 	{
 		auto& typeInfo = CTypeCommonCall::CallGetTypeInfo(cType);
-		auto idenUser = JICI::Create(JComponent::CreateInitDIData(cType, owner), Core::JIdentifier::GetPrivateInterface(typeInfo.TypeGuid()));
+		auto idenUser = JICI::Create(JComponent::CreateInitDIData(cType, owner), Core::JIdentifier::PrivateInterface(typeInfo.TypeGuid()));
 		return JUserPtr<JComponent>::ConvertChild(std::move(idenUser));
 	}
 	JUserPtr<JComponent> JComponentCreatorInterface::CreateComponent(const Core::JTypeInfo& typeInfo, const JUserPtr<JGameObject>& owner)
@@ -75,7 +75,7 @@ namespace JinEngine
 			return nullptr;
 
 		auto idenUser = JICI::Create(JComponent::CreateInitDIData(CTypeCommonCall::ConvertCompType(typeInfo), owner),
-			Core::JIdentifier::GetPrivateInterface(typeInfo.TypeGuid()));
+			Core::JIdentifier::PrivateInterface(typeInfo.TypeGuid()));
 		return JUserPtr<JComponent>::ConvertChild(std::move(idenUser));
 	}
 }

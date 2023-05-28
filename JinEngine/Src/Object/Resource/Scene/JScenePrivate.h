@@ -15,6 +15,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphic;
+		class JShadowMap;
 		class JGraphicDrawList;
 	}
 	class JGameObject;
@@ -49,6 +50,7 @@ namespace JinEngine
 		{
 		private:
 			friend class Graphic::JGraphic;
+			friend class Graphic::JShadowMap;
 			friend class Editor::JSceneObserver; //Debug
 		private:
 			static const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const JUserPtr<JScene>& scene, const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept;
@@ -95,7 +97,9 @@ namespace JinEngine
 		public:
 			using SetCompCondition = bool(*)(const JUserPtr<JComponent>&);
 		private:
+			//range: all comp vector
 			static void SetAllComponentFrameDirty(const JUserPtr<JScene>& scene)noexcept;
+			//range: comp vector
 			static void SetComponentFrameDirty(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE cType, JUserPtr<JComponent> stComp = nullptr, SetCompCondition condiiton = nullptr)noexcept;
 		};
 		class CullingInterface
@@ -103,7 +107,7 @@ namespace JinEngine
 		private:
 			friend class Graphic::JGraphic;
 		private:
-			static void ViewCulling(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& cam)noexcept;
+			static void ViewCulling(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& comp)noexcept; 
 		};
 		class DebugInterface
 		{

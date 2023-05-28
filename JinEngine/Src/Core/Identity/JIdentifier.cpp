@@ -7,6 +7,11 @@
 
 #define INVALID_NAME L""
 
+//Debug
+#include<fstream>
+#include"../../Object/Component/RenderItem/JRenderItem.h"
+#include"../../Object/Component/Transform/JTransform.h"
+
 namespace JinEngine
 {
 	namespace Core
@@ -30,6 +35,7 @@ namespace JinEngine
 			JWeakPtr<JIdentifier> thisPointer;
 		public:
 			std::wstring name;  
+			bool isReleased = false;
 		public:
 			//Caution
 			//Impl생성자에서 interface class 참조시 interface class가 함수내에서 impl을 참조할 경우 error
@@ -38,18 +44,41 @@ namespace JinEngine
 				:name(initData.name)
 			{}
 		public:
+			void SetReleasedTrigger(const bool value)noexcept
+			{
+				isReleased = value;
+			}
+		public:
+			bool IsReleased()const noexcept
+			{
+				return isReleased;
+			}
+		public:
 			static bool BeginDestroy(JIdentifier* ptr, const bool isForced)
 			{
 				if (ptr == nullptr)
 					return false;
 
-				auto& destroyInterface = ptr->GetPrivateInterface().GetDestroyInstanceInterface();
+				auto& destroyInterface = ptr->PrivateInterface().GetDestroyInstanceInterface();
 				if (destroyInterface.CanDestroyInstancce(ptr, isForced))
-				{  
-					destroyInterface.SetInvalidInstance(ptr);
-					destroyInterface.DeRegisterCash(ptr); 
-					destroyInterface.Clear(ptr, isForced);
-					return InstanceInterface::RemoveInstance(ptr);
+				{   
+					if (ptr->impl->IsReleased())
+					{
+						//	already execute
+						//	destroyInterface.SetInvalidInstance(ptr);
+						//	destroyInterface.DeRegisterCash(ptr);
+						//	InstanceInterface::RemoveInstance(ptr);
+						destroyInterface.Clear(ptr, isForced);
+						ptr->impl->SetReleasedTrigger(false);
+						return true;
+					}
+					else
+					{
+						destroyInterface.SetInvalidInstance(ptr);
+						destroyInterface.DeRegisterCash(ptr);
+						destroyInterface.Clear(ptr, isForced);
+						return InstanceInterface::RemoveInstance(ptr);
+					}
 				}
 				else
 					return false;
@@ -96,7 +125,7 @@ namespace JinEngine
 		{ 
 			return L"New" + std::wstring(JCUtil::StrToWstr(info.NameWithOutModifier())).substr(1);
 		}
-		JIdentifierPrivate* JIdentifier::GetPrivateInterface(const size_t typeGuid)noexcept
+		JIdentifierPrivate* JIdentifier::PrivateInterface(const size_t typeGuid)noexcept
 		{
 			auto pIData = pMap.find(typeGuid);
 			if (pIData != pMap.end())
@@ -115,7 +144,7 @@ namespace JinEngine
 			if (from == nullptr)
 				return false;
 
-			auto& copyInterface = from->GetPrivateInterface().GetCreateInstanceInterface();
+			auto& copyInterface = from->PrivateInterface().GetCreateInstanceInterface();
 			if (!copyInterface.CanCopy(from, to))
 				return false;
 
@@ -134,9 +163,9 @@ namespace JinEngine
 			pMap.emplace(info.TypeGuid(), p);
 		}
 		JIdentifier::JIdentifier(const InitData& initData)
-			:JTypeBase(initData.guid),
-			impl(std::make_unique<JIdentifierImpl>(initData))
-		{}
+			:JTypeBase(initData.guid), impl(std::make_unique<JIdentifierImpl>(initData))
+		{ 
+		}
 		JIdentifier::~JIdentifier()
 		{
 			impl.reset();
@@ -171,8 +200,8 @@ namespace JinEngine
 				return nullptr;
 
 			JIdentifier::InitData* idenInitData = static_cast<JIdentifier::InitData*>(initData.get());
-			JIdentifierPrivate* fromPI = &from->GetPrivateInterface();
-			JIdentifierPrivate* toPI = JIdentifier::GetPrivateInterface(idenInitData->GetTypeInfo().TypeGuid());
+			JIdentifierPrivate* fromPI = &from->PrivateInterface();
+			JIdentifierPrivate* toPI = JIdentifier::PrivateInterface(idenInitData->GetTypeInfo().TypeGuid());
 			if (fromPI != toPI)
 				return nullptr;
 
@@ -191,7 +220,7 @@ namespace JinEngine
 			return initData != nullptr && initData->IsValidData();
 		} 
 		void CreateInstanceInterface::Initialize(JIdentifier* createdPtr, JDITypeDataBase* initData)noexcept
-		{
+		{ 
 			createdPtr->impl->RegisterThisPointer(createdPtr);
 		} 
 		void CreateInstanceInterface::RegisterCash(JIdentifier* createdPtr)noexcept {}
@@ -214,9 +243,10 @@ namespace JinEngine
 			if (ptr == nullptr)
 				return JOwnerPtr<JIdentifier>{};
 
-			auto& dI = ptr->GetPrivateInterface().GetDestroyInstanceInterface();
+			auto& dI = ptr->PrivateInterface().GetDestroyInstanceInterface();
 			dI.SetInvalidInstance(ptr);
 			dI.DeRegisterCash(ptr);
+			ptr->impl->SetReleasedTrigger(true);
 			return InstanceInterface::ReleaseInstance(ptr);
 		}
 		bool ReleaseInterface::RestoreInstance(JOwnerPtr<JTypeBase>&& instance)
@@ -228,10 +258,15 @@ namespace JinEngine
 				return false;
 
 			auto rawPtr = static_cast<JIdentifier*>(instance.Get());
-			auto& cI = rawPtr->GetPrivateInterface().GetCreateInstanceInterface();
-			cI.RegisterCash(rawPtr);
-			cI.SetValidInstance(rawPtr);
-			return InstanceInterface::AddInstance(std::move(instance)); 
+			auto& cI = rawPtr->PrivateInterface().GetCreateInstanceInterface();
+			bool res = InstanceInterface::AddInstance(std::move(instance));
+			if (res)
+			{
+				cI.RegisterCash(rawPtr);
+				cI.SetValidInstance(rawPtr);
+				rawPtr->impl->SetReleasedTrigger(false);
+			}
+			return res;
 		}
 	}
 }

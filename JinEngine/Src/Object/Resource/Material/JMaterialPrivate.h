@@ -49,14 +49,17 @@ namespace JinEngine
 			static void UpdateFrame(JMaterial* mat, Graphic::JMaterialConstants& constants)noexcept;
 			static void UpdateEnd(JMaterial* mat)noexcept;
 		private:
-			static uint GetCBOffset(JMaterial* mat)noexcept;
+			static uint GetMaterialFrameIndex(JMaterial* mat)noexcept;
+		private:
+			static bool IsLastFrameUpdated(JMaterial* mat);
+			static bool HasRecopyRequest(JMaterial* mat)noexcept;
 		};
-		class FrameBuffInterface final
+		class FrameIndexInterface final
 		{
 		private:
 			friend class JRenderItem;
 		private:
-			static uint GetCBOffset(JMaterial* mat)noexcept;
+			static uint GetMaterialFrameIndex(JMaterial* mat)noexcept;
 		};
 		class UpdateShaderInterface
 		{

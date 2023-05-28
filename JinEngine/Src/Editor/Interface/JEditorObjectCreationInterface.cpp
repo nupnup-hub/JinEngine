@@ -150,7 +150,7 @@ namespace JinEngine
 		void JEditorObjectDestroyInterface::DestroyPreProccess(Core::JIdentifier* rawPtr,
 			const bool useTransition,
 			JEditorCreationHint creationHint)
-		{
+		{ 
 			JEditorWindow* editorWnd = creationHint.editorWnd;
 			if (editorWnd != nullptr && preProcessF != nullptr)
 				(*preProcessF)(editorWnd, rawPtr);

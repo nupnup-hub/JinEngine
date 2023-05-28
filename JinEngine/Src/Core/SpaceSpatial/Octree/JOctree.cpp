@@ -54,20 +54,15 @@ namespace JinEngine
 					allNode[i]->DestroyDebugGameObject();
 			}
 		}
-		void JOctree::OffCulling()noexcept
-		{
-			if (rootNodeCash != nullptr)
-				rootNodeCash->OffCulling();
-		}
-		void JOctree::Culling(const JCullingFrustum& camFrustum)noexcept
+		void JOctree::Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum)noexcept
 		{
 			if(rootNodeCash != nullptr)
-				rootNodeCash->Culling(camFrustum, J_CULLING_FLAG::NONE);
+				rootNodeCash->Culling(cullUser, camFrustum, J_CULLING_FLAG::NONE);
 		}
-		void JOctree::Culling(const BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
+		void JOctree::Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept
 		{
 			if (rootNodeCash != nullptr)
-				rootNodeCash->Culling(camFrustum, camPos);
+				rootNodeCash->Culling(cullUser, camFrustum, cullingFrustum);
 		}
 		JUserPtr<JGameObject> JOctree::IntersectFirst(const JRay& ray)const noexcept
 		{

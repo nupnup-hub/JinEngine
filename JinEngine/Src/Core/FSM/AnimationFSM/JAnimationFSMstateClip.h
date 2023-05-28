@@ -26,7 +26,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JAnimationFSMstateClipImpl> impl;
 		public: 
-			JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+			JIdentifierPrivate& PrivateInterface()const noexcept final;
 			J_ANIMATION_STATE_TYPE GetStateType()const noexcept final; 
 			JUserPtr<JAnimationClip> GetClip()const noexcept;
 		public:

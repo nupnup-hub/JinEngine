@@ -26,7 +26,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JAnimationFSMtransitionImpl> impl;
 		public:		
-			JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+			JIdentifierPrivate& PrivateInterface()const noexcept final;
 			float GetExitTimeRate()const noexcept;
 			float GetDurationTime()const noexcept;
 			float GetTargetStartTimeRate()const noexcept;

@@ -23,15 +23,13 @@ namespace JinEngine
 				else
 					parent->right = this;
 			}
-			if (JBvhNode::innerGameObject != nullptr)
-				JBvhNode::innerGameObject->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 		}
 		JBvhNode::~JBvhNode() {}
 		void JBvhNode::CreateDebugGameObject(const JUserPtr<JGameObject>& parent, bool onlyLeafNode)noexcept
 		{
 			if (type != J_BVH_NODE_TYPE::LEAF && onlyLeafNode)
 				return;
-			 
+
 			if (debugGameObject == nullptr)
 			{
 				if (type == J_BVH_NODE_TYPE::LEAF)
@@ -51,55 +49,54 @@ namespace JinEngine
 		}
 		void JBvhNode::Clear()noexcept
 		{
-			if (innerGameObject != nullptr)
-				SetVisible();
 			innerGameObject = nullptr;
 			parent = nullptr;
 			left = nullptr;
 			right = nullptr;
 			DestroyDebugGameObject();
 		}
-		void JBvhNode::Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
+		void JBvhNode::Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
 		{
 			J_CULLING_RESULT res = camFrustum.IsBoundingBoxIn(bbox, flag);
 			if (res == J_CULLING_RESULT::CONTAIN)
-				SetVisible();
+				SetVisible(cullUser);
 			else if (res == J_CULLING_RESULT::DISJOINT)
-				SetInVisible();
+				SetInVisible(cullUser);
 			else
 			{
 				if (type == J_BVH_NODE_TYPE::LEAF)
-					SetVisible();
+					SetVisible(cullUser);
 				else
 				{
-					left->Culling(camFrustum, flag);
-					right->Culling(camFrustum, flag);
+					left->Culling(cullUser, camFrustum, flag);
+					right->Culling(cullUser, camFrustum, flag);
 				}
 			}
 		}
-		void JBvhNode::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
+		void JBvhNode::Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept
 		{
-			ContainmentType res = camFrustum.Contains(bbox);
-			if (res == ContainmentType::CONTAINS)
-				SetVisible();
-			else if (res == ContainmentType::DISJOINT)
-				SetInVisible();
+			if (type == J_BVH_NODE_TYPE::LEAF)
+			{
+				DirectX::BoundingOrientedBox oriBox = innerGameObject->GetRenderItem()->GetOrientedBoundingBox();
+				if (camFrustum.Contains(oriBox) == ContainmentType::DISJOINT)
+					SetInVisible(cullUser);
+				else  
+					SetVisible(cullUser, cullingFrustum, cullingFrustum.Contains(oriBox) != DirectX::DISJOINT);
+			}
 			else
 			{
-				if (type == J_BVH_NODE_TYPE::LEAF)
-				{
-					if (bbox.Contains(camPos) == ContainmentType::DISJOINT)
-						SetVisible();
-					else
-						SetInVisible();
-				}
+				ContainmentType res = camFrustum.Contains(bbox);
+				if (res == ContainmentType::CONTAINS)
+					SetVisible(cullUser, cullingFrustum, cullingFrustum.Contains(bbox) != DirectX::DISJOINT);
+				else if (res == ContainmentType::DISJOINT)
+					SetInVisible(cullUser);
 				else
 				{
-					left->Culling(camFrustum, camPos);
-					right->Culling(camFrustum, camPos);
+					left->Culling(cullUser, camFrustum, cullingFrustum);
+					right->Culling(cullUser, camFrustum, cullingFrustum);
 				}
 			}
-		}
+		} 
 		JUserPtr<JGameObject> JBvhNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
@@ -109,8 +106,18 @@ namespace JinEngine
 				float leftDist = FLT_MAX;
 				float rightDist = FLT_MAX;
 
-				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
-				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
+				bool leftRes = false;
+				bool rightRes = false;
+
+				if (left->type == J_BVH_NODE_TYPE::LEAF)
+					leftRes = left->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, leftDist);
+				else
+					leftRes = left->bbox.Intersects(ori, dir, leftDist);
+
+				if(right->type == J_BVH_NODE_TYPE::LEAF)
+					rightRes = right->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, rightDist);
+				else
+					rightRes = right->bbox.Intersects(ori, dir, rightDist);
 
 				JUserPtr<JGameObject> res = nullptr;
 				if (leftDist < rightDist)
@@ -139,8 +146,17 @@ namespace JinEngine
 				float leftDist = FLT_MAX;
 				float rightDist = FLT_MAX;
 
-				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
-				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
+				bool leftRes = false;
+				bool rightRes = false;
+				if (left->type == J_BVH_NODE_TYPE::LEAF)
+					leftRes = left->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, leftDist);
+				else
+					leftRes = left->bbox.Intersects(ori, dir, leftDist);
+
+				if (right->type == J_BVH_NODE_TYPE::LEAF)
+					rightRes = right->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, rightDist);
+				else
+					rightRes = right->bbox.Intersects(ori, dir, rightDist);
 
 				if (leftDist < rightDist)
 				{
@@ -167,42 +183,37 @@ namespace JinEngine
 				float leftDist = FLT_MAX;
 				float rightDist = FLT_MAX;
 
-				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
-				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
+				bool leftRes = false;
+				bool rightRes = false;
+				if (left->type == J_BVH_NODE_TYPE::LEAF)
+					leftRes = left->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, leftDist);
+				else
+					leftRes = left->bbox.Intersects(ori, dir, leftDist);
+
+				if (right->type == J_BVH_NODE_TYPE::LEAF)
+					rightRes = right->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, rightDist);
+				else
+					rightRes = right->bbox.Intersects(ori, dir, rightDist);
 
 				if (leftDist > rightDist)
 				{
 					if (leftRes)
-						left->IntersectAscendingSort(ori, dir, res);
+						left->IntersectDescendingSort(ori, dir, res);
 					if (rightRes)
-						right->IntersectAscendingSort(ori, dir, res);
+						right->IntersectDescendingSort(ori, dir, res);
 				}
 				else
 				{
 					if (rightRes)
-						right->IntersectAscendingSort(ori, dir, res);
+						right->IntersectDescendingSort(ori, dir, res);
 					if (leftRes)
-						left->IntersectAscendingSort(ori, dir, res);
+						left->IntersectDescendingSort(ori, dir, res);
 				}
 			}
 		}
 		void JBvhNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
-			if (type == J_BVH_NODE_TYPE::LEAF)
-				res.push_back(innerGameObject);
-			else
-			{
-				float leftDist = FLT_MAX;
-				float rightDist = FLT_MAX;
-
-				const bool leftRes = left->bbox.Intersects(ori, dir, leftDist);
-				const bool rightRes = right->bbox.Intersects(ori, dir, rightDist);
-
-				if (leftRes)
-					left->IntersectAscendingSort(ori, dir, res);
-				if (rightRes)
-					right->IntersectAscendingSort(ori, dir, res);
-			}
+			IntersectAscendingSort(ori, dir, res);
 		}
 		void JBvhNode::UpdateInnerGameObject()noexcept
 		{
@@ -211,10 +222,6 @@ namespace JinEngine
 				bbox = innerGameObject->GetRenderItem()->GetBoundingBox();
 				SetDebugObjectTransform();
 			}
-		}
-		void JBvhNode::OffCulling()noexcept
-		{
-			SetVisible();
 		}
 		bool JBvhNode::IsLeftNode()const noexcept
 		{
@@ -338,35 +345,60 @@ namespace JinEngine
 		void JBvhNode::SetInnerGameObject(const JUserPtr<JGameObject>& newInnerGameObject)noexcept
 		{
 			innerGameObject = newInnerGameObject;
-			if (innerGameObject != nullptr)
-				innerGameObject->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 		}
-		void JBvhNode::SetVisible()noexcept
+		void JBvhNode::SetVisible(Graphic::JCullingUserInterface& cullUser)noexcept
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
 			{
 				JUserPtr<JRenderItem> rItem = innerGameObject->GetRenderItem();
 				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
-					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+					OffCulling(cullUser, rItem);
 			}
 			else
 			{
-				left->SetVisible();
-				right->SetVisible();
+				left->SetVisible(cullUser);
+				right->SetVisible(cullUser);
 			}
 		}
-		void JBvhNode::SetInVisible()noexcept
+		void JBvhNode::SetVisible(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& cullingFrustum, const bool camInParentBBox)noexcept
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
 			{
 				JUserPtr<JRenderItem> rItem = innerGameObject->GetRenderItem();
 				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
-					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+				{
+					if (camInParentBBox && cullingFrustum.Contains(rItem->GetOrientedBoundingBox()) != DirectX::DISJOINT)
+						SetCulling(cullUser, rItem);
+					else
+						OffCulling(cullUser, rItem);
+				}
 			}
 			else
 			{
-				left->SetInVisible();
-				right->SetInVisible();
+				if (camInParentBBox)
+				{
+					left->SetVisible(cullUser, cullingFrustum, cullingFrustum.Contains(bbox) != DirectX::DISJOINT);
+					right->SetVisible(cullUser, cullingFrustum, cullingFrustum.Contains(bbox) != DirectX::DISJOINT);
+				}
+				else
+				{
+					left->SetVisible(cullUser, cullingFrustum, camInParentBBox);
+					right->SetVisible(cullUser, cullingFrustum, camInParentBBox);
+				}
+			}
+		}
+		void JBvhNode::SetInVisible(Graphic::JCullingUserInterface& cullUser)noexcept
+		{
+			if (type == J_BVH_NODE_TYPE::LEAF)
+			{
+				JUserPtr<JRenderItem> rItem = innerGameObject->GetRenderItem();
+				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
+					SetCulling(cullUser, rItem);
+			}
+			else
+			{
+				left->SetInVisible(cullUser);
+				right->SetInVisible(cullUser);
 			}
 		}
 		JBvhNode* JBvhNode::FindRightLeafNode()noexcept
@@ -385,12 +417,31 @@ namespace JinEngine
 			JUserPtr<JTransform> transform = debugGameObject->GetTransform();
 			const BoundingBox debugBox = debugGameObject->GetRenderItem()->GetMesh()->GetBoundingBox();
 
-			//Bounding Box는 회전에 상관없이 일정한 모양을 유지하므로
-			//Object에 회전에 맞는 DebugBox는 생성할 수 없다.
-			transform->SetScale(XMFLOAT3(bbox.Extents.x / debugBox.Extents.x + outlineFactor,
-				bbox.Extents.y / debugBox.Extents.y + outlineFactor,
-				bbox.Extents.z / debugBox.Extents.z + outlineFactor));
-			transform->SetPosition(JMathHelper::Vector3Minus(bbox.Center, debugBox.Center));
+			if (type == J_BVH_NODE_TYPE::LEAF)
+			{
+				const BoundingOrientedBox debugOriented = innerGameObject->GetRenderItem()->GetOrientedBoundingBox();
+			//	XMMATRIX matWorld = XMMatrixRotationQuaternion(XMLoadFloat4(&debugOriented.Orientation));
+				//XMMATRIX matScale = XMMatrixScaling(debugOriented.Extents.x, debugOriented.Extents.y, debugOriented.Extents.z);
+				//matWorld = XMMatrixMultiply(matScale, matWorld);
+				//XMVECTOR position = XMLoadFloat3(&debugOriented.Center);
+				//matWorld.r[3] = XMVectorSelect(matWorld.r[3], position, g_XMSelect1110);
+
+				transform->SetScale(XMFLOAT3(debugOriented.Extents.x / debugBox.Extents.x + outlineFactor,
+					debugOriented.Extents.y / debugBox.Extents.y + outlineFactor,
+					debugOriented.Extents.z / debugBox.Extents.z + outlineFactor));
+				transform->SetRotation(debugOriented.Orientation);
+				transform->SetPosition(debugOriented.Center);
+			}
+			else
+			{
+				//Bounding Box는 회전에 상관없이 일정한 모양을 유지하므로
+				//Object에 회전에 맞는 DebugBox는 생성할 수 없다.
+				//BoundingOriented를 사용하면 회전에 맞는 bbox를 생성할수있다
+				transform->SetScale(XMFLOAT3(bbox.Extents.x / debugBox.Extents.x + outlineFactor,
+					bbox.Extents.y / debugBox.Extents.y + outlineFactor,
+					bbox.Extents.z / debugBox.Extents.z + outlineFactor));
+				transform->SetPosition(JMathHelper::Vector3Minus(bbox.Center, debugBox.Center));
+			}
 		}
 		void JBvhNode::BuildDebugNode(Editor::JEditorBinaryTreeView& treeView)
 		{

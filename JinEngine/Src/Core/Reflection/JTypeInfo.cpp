@@ -357,9 +357,9 @@ namespace JinEngine
 			if (extraInitInfo->allocInitInfo->creator == nullptr)
 				extraInitInfo->allocInitInfo->creator = std::make_unique<JTypeAllocationCreator>();
 
-			if(extraInitInfo->allocInitInfo->option->canReAlloc)
-				extraInitInfo->allocInitInfo->option->canReAlloc = instanceData != nullptr;
-			   
+			//if (extraInitInfo->allocInitInfo->option->canReAlloc)
+			//	extraInitInfo->allocInitInfo->option->canReAlloc = instanceData != nullptr;
+
 			if (extraInitInfo->allocInitInfo->option->canReAlloc && extraInitInfo->allocInitInfo->option->notifyReAllocB == nullptr)
 			{
 				using NotifyReAllocPtr = JAllocationDesc::NotifyReAllocF::Ptr;

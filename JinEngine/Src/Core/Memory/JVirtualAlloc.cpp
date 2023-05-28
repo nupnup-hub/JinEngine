@@ -5,6 +5,8 @@
 #include<assert.h> 
 #include<Windows.h> 
 #include<string>
+#include<fstream>
+
 
 namespace JinEngine
 {
@@ -65,7 +67,7 @@ namespace JinEngine
 		{
 			desc = std::move(newDesc);
 			reservedBlockCount = desc.dataCount;
-
+			 
 			oriBlockSize = desc.dataSize;
 			allocBlockSize = oriBlockSize;
 			 
@@ -101,7 +103,7 @@ namespace JinEngine
 			if (reqSize < oriBlockSize)
 				return nullptr;
 
-			const uint reqBlockCount = (uint)(reqSize / allocBlockSize);
+			const uint reqBlockCount = (uint)(reqSize / oriBlockSize);
 			if (!CanAllocate(reqBlockCount))
 			{	 
 				if(CanCompactMemory() && CompactUnuseMemory())
@@ -377,7 +379,7 @@ namespace JinEngine
 
 			const uint allocatedBlockCount = GetAllocatedBlockCount();
 			for (uint i = 0; i < allocatedBlockCount; ++i)
-			{
+			{ 
 				if (!isUseBlock[i])
 				{
 					bool findUseBlock = false;
@@ -397,11 +399,13 @@ namespace JinEngine
 
 					DataPointer emptyPtr = CalPtrLocation(i);
 					DataPointer movedPtr = CalPtrLocation(movedBlockIndex);
-					for (uint j = 0; j < oriBlockSize; ++j)
-						emptyPtr[j] = movedPtr[j]; 
+					memcpy(emptyPtr, movedPtr, allocBlockSize); 
+ 
 					isUseBlock[i] = true;
 					isUseBlock[movedBlockIndex] = false;
 					(*desc.notifyReAllocB)(emptyPtr, movedBlockIndex);
+					//if (desc.notifyDebugB != nullptr)
+					//	(*desc.notifyDebugB)(movedPtr, emptyPtr, i);
 				}
 			}
 			FreeUnuseMemory();
@@ -473,15 +477,17 @@ namespace JinEngine
 				apiInterface->ReleaseVirtualMemory(exPData);
 				return false;
 			}
-
+ 
 			for (uint i = 0; i < useBlockCount; ++i)
-			{
+			{  
 				DataPointer oldBlockSt = &pData[i * allocBlockSize];
 				DataPointer newBlockSt = &exPData[i * allocBlockSize];
-				for (uint j = 0; j < allocBlockSize; ++j)
-					newBlockSt[j] = oldBlockSt[j]; 
+				memcpy(newBlockSt, oldBlockSt, allocBlockSize);
+
 				if (desc.notifyReAllocB != nullptr)
 					(*desc.notifyReAllocB)(newBlockSt, i);
+				//if (desc.notifyDebugB != nullptr)
+				//	(*desc.notifyDebugB)(oldBlockSt, newBlockSt, i);
 			}
 			apiInterface->ReleaseVirtualMemory(pData);
 

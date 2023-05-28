@@ -39,8 +39,8 @@ namespace JinEngine
 			std::wstring GetName() const noexcept;
 			std::wstring GetNameWithType()const noexcept; 
 			static std::wstring GetDefaultName(const JTypeInfo& info)noexcept; 
-			static JIdentifierPrivate* GetPrivateInterface(const size_t typeGuid)noexcept;
-			virtual JIdentifierPrivate& GetPrivateInterface()const noexcept = 0;
+			static JIdentifierPrivate* PrivateInterface(const size_t typeGuid)noexcept;
+			virtual JIdentifierPrivate& PrivateInterface()const noexcept = 0;
 		public:
 			virtual void SetName(const std::wstring& newName)noexcept;
 		public:  

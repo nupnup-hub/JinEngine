@@ -3,7 +3,9 @@
 #include"../../Geometry/JDirectXCollisionEx.h"
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
+#include"../../../Object/Component/RenderItem/JRenderItemPrivate.h"
 #include"../../../Editor/EditTool/JEditorViewStructure.h"
+#include"../../../Graphic/Culling/JCullingInterface.h"
 #include"../../../Utility/JMathHelper.h"
 #include <algorithm>
 
@@ -12,6 +14,11 @@ namespace JinEngine
 	using namespace DirectX;
 	namespace Core
 	{
+		namespace
+		{
+			using RItemFrameIndexInteface = JRenderItemPrivate::FrameIndexInterface;
+		}
+
 		struct BucketInfo
 		{
 			int count = 0;
@@ -90,41 +97,36 @@ namespace JinEngine
 			for (int i = 0; i < allNodeCount; ++i)
 				allNodes[i]->DestroyDebugGameObject();
 		}
-		void JBvh::OffCulling()noexcept
-		{
-			if (root != nullptr)
-				root->OffCulling();
-		}
-		void JBvh::Culling(const JCullingFrustum& camFrustum)noexcept
+		void JBvh::Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum)noexcept
 		{
 			if (allNodes.size() > 1)
-				root->Culling(camFrustum, J_CULLING_FLAG::NONE);
+				root->Culling(cullUser, camFrustum, J_CULLING_FLAG::NONE);
 
 			if (innerGameObjectCandidate != nullptr)
 			{
 				J_CULLING_FLAG flag = J_CULLING_FLAG::NONE;
 				JUserPtr<JRenderItem> rItem = innerGameObjectCandidate->GetRenderItem();
 				J_CULLING_RESULT res = camFrustum.IsBoundingBoxIn(rItem->GetBoundingBox(), flag);
-				if (res == J_CULLING_RESULT::CONTAIN)
-					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+				if (res == J_CULLING_RESULT::CONTAIN || res == J_CULLING_RESULT::INTERSECT)
+					cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 				else if (res == J_CULLING_RESULT::DISJOINT)
-					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+					cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 			}
 		}
-		void JBvh::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
+		void JBvh::Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept
 		{
 			if (allNodes.size() > 1)
-				root->Culling(camFrustum, camPos);
+				root->Culling(cullUser, camFrustum, cullingFrustum);
 
 			if (innerGameObjectCandidate != nullptr)
 			{
 				J_CULLING_FLAG flag = J_CULLING_FLAG::NONE;
 				JUserPtr<JRenderItem> rItem = innerGameObjectCandidate->GetRenderItem();
 				ContainmentType res = camFrustum.Contains(rItem->GetBoundingBox());
-				if (res == ContainmentType::CONTAINS)
-					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+				if (res == ContainmentType::CONTAINS || res == ContainmentType::INTERSECTS)
+					cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 				else if (res == ContainmentType::DISJOINT)
-					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+					cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 			}
 		}
 		JUserPtr<JGameObject> JBvh::IntersectFirst(const JRay& ray)const noexcept
@@ -136,7 +138,7 @@ namespace JinEngine
 				if (innerGameObjectCandidate != nullptr)
 				{
 					float leftDist = FLT_MAX;
-					bool isIntersect = innerGameObjectCandidate->GetRenderItem()->GetBoundingBox().Intersects(ray.GetPosV(), ray.GetDirV(), leftDist);
+					bool isIntersect = innerGameObjectCandidate->GetRenderItem()->GetOrientedBoundingBox().Intersects(ray.GetPosV(), ray.GetDirV(), leftDist);
 					return isIntersect ? innerGameObjectCandidate : nullptr;
 				}
 				else

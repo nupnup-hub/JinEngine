@@ -1,5 +1,6 @@
 #pragma once 
 #include"../JObject.h"
+#include"../Resource/JResourceObjectType.h"
 #include"../../Core/File/JFilePathData.h" 
 
 namespace JinEngine
@@ -39,6 +40,8 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JDirectoryImpl>impl;
 	public:
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		J_OBJECT_TYPE GetObjectType()const noexcept final;
 		std::wstring GetPath()const noexcept;
 		std::wstring GetMetaFilePath()const noexcept;
 		uint GetChildernDirctoryCount()const noexcept;
@@ -51,8 +54,8 @@ namespace JinEngine
 		JUserPtr<JFile> GetDirectoryFile(const std::wstring& name)const noexcept;
 		JUserPtr<JFile> GetDirectoryFile(const std::wstring& name, const std::wstring& format)const noexcept;	//full name is name + format
 		JUserPtr<JFile> GetRecentFile()const noexcept;
-		J_OBJECT_TYPE GetObjectType()const noexcept final;
-		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final; 
+		std::vector<JUserPtr<JFile>> GetDirectoryFileVec(const bool containChildFile)const noexcept; 
+		std::vector<JUserPtr<JFile>> GetDirectoryFileVec(const bool containChildFile, const J_RESOURCE_TYPE type)const noexcept;
 	public:
 		void SetName(const std::wstring& newName)noexcept final;
 	public:

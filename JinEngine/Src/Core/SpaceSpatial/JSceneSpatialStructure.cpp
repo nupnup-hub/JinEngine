@@ -9,7 +9,12 @@ using namespace DirectX;
 namespace JinEngine
 {
 	namespace Core
-	{
+	{ 
+		namespace
+		{
+			static constexpr bool onlyBvhCanFrustumCulling = true;
+		}
+
 		JOctreeOption JSceneSpatialStructure::ActivatedOptionCash::GetOctreeOption(const J_SPACE_SPATIAL_LAYER layer)const noexcept
 		{
 			JOctreeOption option = preOctreeOption[(int)layer];
@@ -102,30 +107,39 @@ namespace JinEngine
 			}
 			spaceSpatialVec.clear();
 		}
-		void JSceneSpatialStructure::Culling(const JCullingFrustum& camFrustum)noexcept
+		/*void JSceneSpatialStructure::Culling(const JCullingFrustum& camFrustum)noexcept
 		{
 			for (const auto& data : spaceSpatialVec)
 			{
 				if (data->IsSpaceSpatialActivated() && data->IsCullingActivated())
-					data->Culling(camFrustum);
+					data->Culling(camFrustum);			 
 			}
-		}
-		void JSceneSpatialStructure::Culling(const DirectX::BoundingFrustum& camFrustum)noexcept
+		}*/
+		void JSceneSpatialStructure::Culling(Graphic::JCullingUserInterface cullUser, const DirectX::BoundingFrustum& camFrustum)noexcept
 		{
-			const XMVECTOR ori = XMLoadFloat3(&camFrustum.Origin);
-			const XMVECTOR dir = XMLoadFloat4(&camFrustum.Orientation);
-			const XMVECTOR nearZ = XMVector3Rotate(XMVectorSet(0.0f, 0.0f, camFrustum.Near, 1.0f), dir);
-			const XMVECTOR cullingCamPos = ori + nearZ;
+			DirectX::BoundingFrustum nearFrustum = camFrustum;
+			nearFrustum.Near = 0;
+			nearFrustum.Far = camFrustum.Near;
 
 			for (const auto& data : spaceSpatialVec)
 			{
 				if (data->IsSpaceSpatialActivated() && data->IsCullingActivated())
-					data->Culling(camFrustum, cullingCamPos);
+					data->Culling(cullUser, camFrustum, nearFrustum);
 			}
 		}
 		JUserPtr<JGameObject> JSceneSpatialStructure::IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept
 		{
-			return bvh[(int)layer]->IntersectFirst(ray);
+			if(bvh[(int)layer] != nullptr)
+				return bvh[(int)layer]->IntersectFirst(ray);
+			else
+			{
+				for (const auto& data : spaceSpatialVec)
+				{
+					if (data->IsSpaceSpatialActivated() && data->GetLayer() == layer)
+						return data->IntersectFirst(ray);
+				}
+			}
+			return nullptr;
 		}
 		void JSceneSpatialStructure::UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
 		{

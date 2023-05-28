@@ -156,9 +156,9 @@ namespace JinEngine
 			using PtrBase = typename Owner::PtrBase;
 		public:
 			JOwnerPtr() = default;
+			JOwnerPtr(nullptr_t) {}
 			JOwnerPtr(const JOwnerPtr& rhs) = delete;
 			JOwnerPtr& operator=(const JOwnerPtr& rhs) = delete;
-		public:
 			JOwnerPtr(T* newPtr)
 			{  
 				OwnerConnect(newPtr);
@@ -181,6 +181,11 @@ namespace JinEngine
 			JOwnerPtr& operator=(JOwnerPtr<NewType>&& rhs)
 			{
 				OwnerMove(rhs);
+				return *this;
+			}
+			JOwnerPtr& operator=(nullptr_t)
+			{
+				OwnerDisConnect();
 				return *this;
 			}
 			~JOwnerPtr()

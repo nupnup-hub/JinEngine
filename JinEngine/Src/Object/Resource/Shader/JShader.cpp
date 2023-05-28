@@ -219,6 +219,14 @@ namespace JinEngine
 				CompileShdaer();
 			}
 		}
+		void RecompileComputeShader()
+		{
+			if (thisPointer->IsActivated())
+			{
+				cShaderData.reset();
+				CompileShdaer();
+			}
+		}
 		void CompileShdaer()
 		{
 			if (thisPointer == nullptr)
@@ -317,11 +325,11 @@ namespace JinEngine
 					return result;
 			};
 
-			using GpuInfo = Core::JHardwareInfoImpl::GpuInfo;
+			using GpuInfo = Core::JHardwareInfo::GpuInfo;
 
 			auto InitHZBMaps = [](_Out_ CSInitHelper& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 			{
-				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::Instance().GetGpuInfo();
+				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo();
 				Graphic::JGraphicInfo graphicInfo = JGraphic::Instance().GetGraphicInfo();
 
 				//수정필요 
@@ -355,7 +363,7 @@ namespace JinEngine
 			}
 			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_OCCLUSION:
 			{
-				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::Instance().GetGpuInfo();
+				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo();
 				uint totalSmCount = 0;
 				uint totalBlockPerSmCount = 0;
 				uint totalThreadPerBlockCount = 0;
@@ -517,7 +525,7 @@ namespace JinEngine
 		InitData::name = directory->MakeUniqueFileName(name, RTypeCommonCall::GetFormat(rType, formatIndex), guid);
 	}
 
-	Core::JIdentifierPrivate& JShader::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JShader::PrivateInterface()const noexcept
 	{
 		return sPrivate;
 	}
@@ -716,6 +724,10 @@ namespace JinEngine
 	void CompileInterface::RecompileGraphicShader(JShader* shader)noexcept
 	{
 		shader->impl->RecompileGraphicShader();
+	}
+	void CompileInterface::RecompileComputeShader(JShader* shader)noexcept
+	{
+		shader->impl->RecompileComputeShader();
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JShaderPrivate::GetCreateInstanceInterface()const noexcept

@@ -26,8 +26,7 @@ namespace JinEngine
 		JEditorAniContPage::JEditorAniContPage()
 			:JEditorPage("AniContSettingPage",
 				std::make_unique<JEditorAttribute>(),
-				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING)),
-			ResourceEvListener(GetGuid())
+				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING))
 		{
 			constexpr uint memberWindowCount = 5;
 			std::vector<std::string> windowNames

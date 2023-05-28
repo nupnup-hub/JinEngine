@@ -3,7 +3,6 @@
 #include"../Transform/JTransform.h"
 #include"../Transform/JTransformPrivate.h"
 #include"../JComponentHint.h"
-#include"../../JFrameUpdate.h"
 #include"../../GameObject/JGameObject.h" 
 #include"../../Resource/Scene/JScene.h" 
 #include"../../Resource/Scene/JScenePrivate.h"
@@ -11,32 +10,47 @@
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Graphic/FrameResource/JLightConstants.h" 
-#include"../../../Graphic/FrameResource/JShadowMapConstants.h" 
+#include"../../../Graphic/JGraphic.h"  
+#include"../../../Graphic/Upload/Frameresource/JLightConstants.h" 
+#include"../../../Graphic/Upload/Frameresource/JShadowMapConstants.h" 
+#include"../../../Graphic/Upload/Frameresource/JOcclusionConstants.h"
+#include"../../../Graphic/Upload/Frameresource/JFrameUpdate.h"
+#include"../../../Graphic/Culling/JCullingInterface.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
+#include"../../../Graphic/JGraphicDrawListInterface.h" 
 #include<Windows.h>
 #include<fstream>
 
 namespace JinEngine
-{ 
+{
 	using namespace DirectX;
 	namespace
 	{
-		using LitFrameUpdate = JFrameUpdate3 <JFrameUpdateBase<Graphic::JLightConstants&>,
-			JFrameUpdateBase<Graphic::JShadowMapLightConstants&>,
-			JFrameUpdateBase<Graphic::JShadowMapConstants&>>;
+		using LitFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder4 <
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT, Graphic::JLightConstants&>, 
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT, Graphic::JShadowMapLightConstants&>,
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP, Graphic::JShadowMapConstants&>,
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, Graphic::JHzbOccPassConstants&, const uint, const uint>>,
+			Graphic::JFrameDirty>;
 	}
 	namespace
 	{
 		static auto isAvailableoverlapLam = []() {return true; };
 		static JLightPrivate lPrivate;
 	}
- 
+
 	class JLight::JLightImpl : public Core::JTypeImplBase,
-		public JFrameUpdate<LitFrameUpdate, JFrameDirtyListener, FrameUpdate::nonBuff>,
-		public Graphic::JGraphicResourceInterface
+		public LitFrameUpdate,
+		public Graphic::JGraphicMultiResourceInterface,
+		public Graphic::JGraphicDrawListCompInterface,
+		public Graphic::JCullingInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JLightImpl)
+	public:
+		using LitFrame = JFrameInterface1;
+		using ShadowLitFrame = JFrameInterface2;
+		using ShadowMapFrame = JFrameInterface3;
+		using HzbOccPassFrame = JFrameInterface4;
 	public:
 		JWeakPtr<JLight> thisPointer;
 	public:
@@ -55,10 +69,12 @@ namespace JinEngine
 	public:
 		REGISTER_PROPERTY_EX(onShadow, IsShadowActivated, SetShadow, GUI_CHECKBOX())
 		bool onShadow = false;
+	public:
+		bool onOcclusion;		//미구현 .. editor interface && register함수 추가필요 추후 Graphic 기능 확장할때 구현예정
 		DirectX::XMFLOAT4X4 shadowTransform;
 	public:
-		JLightImpl(const InitData& initData, JLight* thisLitRaw){}
-		~JLightImpl(){}
+		JLightImpl(const InitData& initData, JLight* thisLitRaw) {}
+		~JLightImpl() {}
 	public:
 		J_LIGHT_TYPE GetLightType()const noexcept
 		{
@@ -108,7 +124,7 @@ namespace JinEngine
 		}
 		void SetShadow(const bool value)noexcept
 		{
-			static auto IsShadow = [](const JUserPtr<JComponent>& jcomp){return static_cast<JLight*>(jcomp.Get())->impl->onShadow;};
+			static auto IsShadow = [](const JUserPtr<JComponent>& jcomp) {return static_cast<JLight*>(jcomp.Get())->impl->onShadow; };
 			if (value == onShadow)
 				return;
 
@@ -117,7 +133,6 @@ namespace JinEngine
 				if (thisPointer->IsActivated() && !onShadow)
 				{
 					CreateShadowMap();
-					JScenePrivate::CompFrameInterface::SetComponentFrameDirty(thisPointer->GetOwner()->GetOwnerScene(), thisPointer->GetComponentType(), thisPointer, IsShadow);
 					SetFrameDirty();
 					onShadow = value;
 				}
@@ -127,7 +142,6 @@ namespace JinEngine
 				if (onShadow)
 				{
 					DestroyShadowMap();
-					JScenePrivate::CompFrameInterface::SetComponentFrameDirty(thisPointer->GetOwner()->GetOwnerScene(), thisPointer->GetComponentType(), thisPointer, IsShadow);
 					SetFrameDirty();
 					onShadow = value;
 				}
@@ -138,16 +152,36 @@ namespace JinEngine
 		{
 			return onShadow;
 		}
+		bool IsOcclusionActivated()const noexcept
+		{
+			return onOcclusion;
+		}
 	public:
 		void CreateShadowMap()noexcept
 		{
+			DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT);
+			RegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT);
+			RegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP);
+
 			CreateShadowMapTexture();
-			AddDrawRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+			AddDrawShadowRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
+
+			CreateFrustumCullingData();
+			AddFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
+			//CreateFrustumCullingData();
+			//AddFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
 		}
-		void DestroyShadowMap()noexcept
+		void DestroyShadowMap(const bool calledByDeAct = false)noexcept
 		{
+			if(!calledByDeAct)
+				RegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT);
+			DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT);
+			DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP);
 			PopDrawRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
-			DestroyTexture();
+			DestroyAllTexture();
+
+			DestroyCullingData(this, Graphic::J_CULLING_TYPE::FRUSTUM);
+			PopFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 		};
 	public:
 		DirectX::XMMATRIX CalLightView()const noexcept
@@ -175,6 +209,19 @@ namespace JinEngine
 			return XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
 		}
 	public:
+		void Activate()noexcept
+		{
+			RegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT);
+			if (onShadow)
+				CreateShadowMap();
+		}
+		void DeActivate()noexcept
+		{ 
+			//has order dependency
+			DestroyShadowMap(true);
+			DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT);
+		}
+	public:
 		void UpdateFrame(Graphic::JLightConstants& constant) noexcept final
 		{
 			constant.strength = strength;
@@ -184,6 +231,7 @@ namespace JinEngine
 			constant.position = thisPointer->GetOwner()->GetTransform()->GetPosition();
 			constant.spotPower = spotPower;
 			constant.lightType = (int)lightType;
+			LitFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JShadowMapLightConstants& constant)noexcept final
 		{
@@ -196,11 +244,20 @@ namespace JinEngine
 			constant.position = thisPointer->GetOwner()->GetTransform()->GetPosition();
 			constant.spotPower = spotPower;
 			constant.lightType = (int)lightType;
-			constant.shadowMapIndex = GetResourceArrayIndex();
+			constant.shadowMapIndex = GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP);
+			ShadowLitFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JShadowMapConstants& constant) noexcept final
 		{
 			XMStoreFloat4x4(&constant.viewProj, XMMatrixTranspose(XMMatrixMultiply(CalLightView(), CalLightProj())));
+			ShadowMapFrame::MinusMovedDirty();
+		}
+		void UpdateFrame(Graphic::JHzbOccPassConstants& constant, const uint queryCount, const uint queryOffset)noexcept final
+		{
+			auto info = JGraphic::Instance().GetGraphicInfo();
+			auto option = JGraphic::Instance().GetGraphicOption();
+			//미구현
+			HzbOccPassFrame::MinusMovedDirty();
 		}
 		void UpdateShadowTransform()noexcept
 		{
@@ -234,7 +291,7 @@ namespace JinEngine
 		}
 	public:
 		static bool DoCopy(JLight* from, JLight* to)
-		{ 
+		{
 			to->impl->strength = from->impl->strength;
 			to->impl->falloffStart = from->impl->falloffStart;
 			to->impl->falloffEnd = from->impl->falloffEnd;
@@ -251,9 +308,13 @@ namespace JinEngine
 			auto transform = thisPointer->GetOwner()->GetTransform();
 			if (transform.IsValid())
 			{
-				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(transform.Get(), this);
-				JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(transform.Get(), this);
+				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(transform.Get(), thisPointer->GetGuid());
+				JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(transform.Get(), this, thisPointer->GetGuid());
 			}
+			LitFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT, (LitFrame*)this);
+			ShadowLitFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT, (ShadowLitFrame*)this);
+			ShadowMapFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP, (ShadowMapFrame*)this);
+			HzbOccPassFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, (HzbOccPassFrame*)this);
 		}
 	public:
 		void RegisterThisPointer(JLight* lit)
@@ -261,13 +322,35 @@ namespace JinEngine
 			thisPointer = Core::GetWeakPtr(lit);
 		}
 		void RegisterPostCreation()
-		{ 
-			JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), this);
+		{
+			JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), this, thisPointer->GetGuid());
 		}
 		void DeRegisterPreDestruction()
 		{
 			if (thisPointer->GetOwner()->GetTransform() != nullptr)
-				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), this);
+				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), thisPointer->GetGuid());
+		}
+		void RegisterLightFrameData(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
+		{
+			if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT)
+				LitFrame::RegisterFrameData(type, (LitFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT)
+				ShadowLitFrame::RegisterFrameData(type, (ShadowLitFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP)
+				ShadowMapFrame::RegisterFrameData(type, (ShadowMapFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS)
+				HzbOccPassFrame::RegisterFrameData(type, (HzbOccPassFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+		}
+		void DeRegisterLightFrameData(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
+		{
+			if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT)
+				LitFrame::DeRegisterFrameData(type, (LitFrame*)this);
+			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT)
+				ShadowLitFrame::DeRegisterFrameData(type, (ShadowLitFrame*)this);
+			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP)
+				ShadowMapFrame::DeRegisterFrameData(type, (ShadowMapFrame*)this);
+			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS)
+				HzbOccPassFrame::DeRegisterFrameData(type, (HzbOccPassFrame*)this);
 		}
 		static void RegisterTypeData()
 		{
@@ -288,12 +371,12 @@ namespace JinEngine
 			};
 			static CreateInitDataCallable createInitDataCallable{ createInitDataLam };
 
-			static auto setFrameLam = [](JComponent* component) {static_cast<JLight*>(component)->impl->SetFrameDirty(); };
+			static auto setFrameLam = [](JComponent* comp) {static_cast<JLight*>(comp)->impl->SetFrameDirty(); };
 			static SetCFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
 
 			static CTypeHint cTypeHint{ GetStaticComponentType(), true };
 			static CTypeCommonFunc cTypeCommonFunc{ getTypeInfoCallable,isAvailableOverlapCallable, createInitDataCallable };
-			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, nullptr };
+			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable};
 
 			RegisterCTypeInfo(JLight::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 			Core::JIdentifier::RegisterPrivateInterface(JLight::StaticTypeInfo(), lPrivate);
@@ -309,17 +392,21 @@ namespace JinEngine
 		: JComponent::InitData(JLight::StaticTypeInfo(), GetDefaultName(JLight::StaticTypeInfo()), guid, flag, owner)
 	{}
 
-	Core::JIdentifierPrivate& JLight::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JLight::PrivateInterface()const noexcept
 	{
 		return lPrivate;
 	}
-	JFrameUpdateUserAccess JLight::GetFrameUserInterface() noexcept
+	Graphic::JFrameUpdateUserAccess JLight::FrameUserInterface() noexcept
 	{
-		return JFrameUpdateUserAccess(Core::GetUserPtr(this), impl.get());
+		return Graphic::JFrameUpdateUserAccess(Core::GetUserPtr(this), impl.get());
 	}
-	const Graphic::JGraphicResourceUserInterface JLight::GraphicResourceUserInterface()const noexcept
+	const Graphic::JGraphicMultiResourceUserInterface JLight::GraphicResourceUserInterface()const noexcept
 	{
-		return Graphic::JGraphicResourceUserInterface{ impl.get() };
+		return Graphic::JGraphicMultiResourceUserInterface{ impl.get() };
+	}
+	const Graphic::JCullingUserInterface JLight::CullingUserInterface()const noexcept
+	{
+		return Graphic::JCullingUserInterface{ impl.get() };
 	}
 	J_COMPONENT_TYPE JLight::GetComponentType()const noexcept
 	{
@@ -355,7 +442,7 @@ namespace JinEngine
 	}
 	void JLight::SetLightType(const J_LIGHT_TYPE lightType)noexcept
 	{
-		impl->SetLightType(lightType); 
+		impl->SetLightType(lightType);
 	}
 	void JLight::SetStrength(const DirectX::XMFLOAT3& strength)noexcept
 	{
@@ -392,20 +479,22 @@ namespace JinEngine
 		else
 			return false;
 	}
+	bool JLight::AllowHzbOcclusionCulling()const noexcept
+	{
+		return false;
+	}
 	void JLight::DoActivate()noexcept
 	{
 		JComponent::DoActivate();
 		RegisterComponent(impl->thisPointer);
-		if (IsShadowActivated())
-			impl->CreateShadowMap();
+		impl->Activate();
 		impl->SetFrameDirty();
 	}
 	void JLight::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
 		DeRegisterComponent(impl->thisPointer);
-		if (IsShadowActivated())
-			impl->DestroyShadowMap();
+		impl->DeActivate();
 		impl->OffFrameDirty();
 	}
 	JLight::JLight(const InitData& initData)
@@ -419,8 +508,9 @@ namespace JinEngine
 
 	using CreateInstanceInterface = JLightPrivate::CreateInstanceInterface;
 	using DestroyInstanceInterface = JLightPrivate::DestroyInstanceInterface;
-	using AssetDataIOInterface = JLightPrivate::AssetDataIOInterface; 
-	using FrameUpdateInterface = JLightPrivate::FrameUpdateInterface;
+	using AssetDataIOInterface = JLightPrivate::AssetDataIOInterface;
+	using FrameUpdateInterface = JLightPrivate::FrameUpdateInterface; 
+	using FrameIndexInterface = JLightPrivate::FrameIndexInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -515,15 +605,17 @@ namespace JinEngine
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	bool FrameUpdateInterface::UpdateStart(JLight* cam, const bool isUpdateForced)noexcept
+	bool FrameUpdateInterface::UpdateStart(JLight* lit, const bool isUpdateForced)noexcept
 	{
 		if (isUpdateForced)
-			cam->impl->SetFrameDirty();
+			lit->impl->SetFrameDirty();
 
-		return cam->impl->IsFrameDirted();
+		lit->impl->SetLastFrameUpdatedTrigger(false);
+		lit->impl->SetLastFrameHotUpdatedTrigger(false);
+		return lit->impl->IsFrameDirted();
 	}
 	void FrameUpdateInterface::UpdateFrame(JLight* lit, Graphic::JLightConstants& constant)noexcept
-	{  
+	{
 		lit->impl->UpdateFrame(constant);
 	}
 	void FrameUpdateInterface::UpdateFrame(JLight* lit, Graphic::JShadowMapLightConstants& constant)noexcept
@@ -534,13 +626,73 @@ namespace JinEngine
 	{
 		lit->impl->UpdateFrame(constant);
 	}
+	void FrameUpdateInterface::UpdateFrame(JLight* lit, Graphic::JHzbOccPassConstants& constant, const uint queryCount, const uint queryOffset)noexcept
+	{
+		lit->impl->UpdateFrame(constant, queryCount, queryOffset);
+	}
 	void FrameUpdateInterface::UpdateEnd(JLight* lit)noexcept
 	{
-		lit->impl->UpdateEnd();
+		if (lit->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources)
+			lit->impl->SetLastFrameHotUpdatedTrigger(true);
+		lit->impl->SetLastFrameUpdatedTrigger(true);
+		lit->impl->UpdateFrameEnd();
+	}
+	int FrameUpdateInterface::GetLitFrameIndex(JLight* lit)noexcept
+	{
+		return lit->impl->LitFrame::GetUploadIndex();
+	}
+	int FrameUpdateInterface::GetShadowLitFrameIndex(JLight* lit)noexcept
+	{
+		return lit->impl->ShadowLitFrame::GetUploadIndex();
+	}
+	int FrameUpdateInterface::GetShadowMapFrameIndex(JLight* lit)noexcept
+	{
+		return lit->impl->ShadowMapFrame::GetUploadIndex();
+	}
+	int FrameUpdateInterface::GetHzbOccPassFrameIndex(JLight* lit)noexcept
+	{
+		return lit->impl->HzbOccPassFrame::GetUploadIndex();
 	}
 	bool FrameUpdateInterface::IsHotUpdated(JLight* lit)noexcept
 	{
-		return lit->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources;
+		return lit->impl->IsLastFrameHotUpdated();
+	}
+	bool FrameUpdateInterface::IsLastUpdated(JLight* lit)noexcept
+	{
+		return lit->impl->IsLastFrameUpdated();
+	}
+	bool FrameUpdateInterface::HasLitRecopyRequest(JLight* lit)noexcept
+	{
+		return lit->impl->LitFrame::HasMovedDirty();
+	}
+	bool FrameUpdateInterface::HasShadowLitRecopyRequest(JLight* lit)noexcept
+	{
+		return lit->impl->ShadowLitFrame::HasMovedDirty();
+	}
+	bool FrameUpdateInterface::HasShadowMapRecopyRequest(JLight* lit)noexcept
+	{
+		return lit->impl->ShadowMapFrame::HasMovedDirty();
+	}
+	bool FrameUpdateInterface::HasOccPassRecopyRequest(JLight* lit)noexcept
+	{
+		return lit->impl->HzbOccPassFrame::HasMovedDirty();
+	}
+
+	int FrameIndexInterface::GetLitFrameIndex(JLight* lit)noexcept
+	{
+		return lit->impl->LitFrame::GetUploadIndex();
+	}
+	int FrameIndexInterface::GetShadowLitFrameIndex(JLight* lit)noexcept
+	{
+		return lit->impl->ShadowLitFrame::GetUploadIndex();
+	}
+	int FrameIndexInterface::GetShadowMapFrameIndex(JLight* lit)noexcept
+	{
+		return lit->impl->ShadowMapFrame::GetUploadIndex();
+	}
+	int FrameIndexInterface::GetHzbOccPassFrameIndex(JLight* lit)noexcept
+	{
+		return lit->impl->HzbOccPassFrame::GetUploadIndex();
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JLightPrivate::GetCreateInstanceInterface()const noexcept

@@ -41,6 +41,7 @@ namespace JinEngine
 		JUserPtr<JShader> GetDefaultShader(const J_DEFAULT_COMPUTE_SHADER type)const noexcept;
 		JUserPtr<JDirectory> GetDirectory(const size_t guid)const noexcept;
 		JUserPtr<JDirectory> GetDirectory(const std::wstring& path)const noexcept;
+		JUserPtr<JDirectory> GetProjectContentsDirectory()const noexcept;
 		JUserPtr<JDirectory> GetEditorResourceDirectory()const noexcept;
 		JUserPtr<JDirectory> GetActivatedDirectory()const noexcept;
 	public:

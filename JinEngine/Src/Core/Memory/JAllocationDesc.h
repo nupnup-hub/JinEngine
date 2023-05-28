@@ -23,14 +23,20 @@ namespace JinEngine
 			using ReAllocatedPtr = void*;
 			using MemIndex = int;
 		public:
+			using PreAllocatedPtr = void*;
+		public:
 			using NotifyReAllocF = JSFunctorType<void, ReceiverPtr, ReAllocatedPtr, MemIndex>;
 			using NotifyReAllocB = JBindHandle<NotifyReAllocF::Functor, ReceiverPtr, EmptyParam, EmptyParam>;
+		public:
+			using NotifyReAllocDebugF = JSFunctorType<void, ReceiverPtr, PreAllocatedPtr, ReAllocatedPtr, MemIndex>;
+			using NotifyReAllocDebugB = JBindHandle<NotifyReAllocDebugF::Functor, ReceiverPtr, EmptyParam, EmptyParam, EmptyParam>;
 		public:
 			size_t dataCount = initDataCount;
 			size_t dataSize = 0;				//original data size
 			size_t alignDataSize = 0;			//automacally calulcated in allocation class
 		public:
 			std::unique_ptr<NotifyReAllocB> notifyReAllocB;
+			//std::unique_ptr<NotifyReAllocDebugB> notifyDebugB;
 		public:
 			J_ALLOCATION_TYPE allocationType = J_ALLOCATION_TYPE::VIRTUAL;
 		public:

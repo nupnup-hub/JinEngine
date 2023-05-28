@@ -203,11 +203,7 @@ namespace JinEngine
 				return;
 
 			if(isCullingActivated != value)
-			{
 				isCullingActivated = value;
-				if (!isCullingActivated)
-					OffCulling();
-			}
 		}
 		void JSpaceSpatial::SetCommonOption(const JSpaceSpatialOption& newOption)noexcept
 		{

@@ -4,6 +4,7 @@
 #include"Bvh/JBvhOption.h"
 #include"Kd-tree/JKdTreeOption.h"
 #include"../JDataType.h" 
+#include"../../Graphic/Culling/JCullingInterface.h"
 #include<DirectXMath.h>
 #include<DirectXCollision.h>
 #include<memory>
@@ -17,6 +18,7 @@ namespace JinEngine
 	{ 
 		class JEditorBinaryTreeView;
 	}
+
 	namespace Core
 	{
 		class JOctree;
@@ -69,8 +71,8 @@ namespace JinEngine
 		public: 
 			void Clear()noexcept;
 		public:
-			void Culling(const JCullingFrustum& camFrustum)noexcept;  
-			void Culling(const DirectX::BoundingFrustum& camFrustum)noexcept;
+			//void Culling(const Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum)noexcept;  //unuse
+			void Culling(Graphic::JCullingUserInterface cullUser, const DirectX::BoundingFrustum& camFrustum)noexcept;
 			JUserPtr<JGameObject> IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
 			void UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept;
 		public:

@@ -30,7 +30,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JFSMparameterImpl> impl;
 		public:
-			JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+			JIdentifierPrivate& PrivateInterface()const noexcept final;
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept final;
 			float GetValue()const noexcept;
 			J_FSM_PARAMETER_VALUE_TYPE GetParamType()const noexcept; 

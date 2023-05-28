@@ -2,7 +2,7 @@
 #include"../JResourceObject.h"   
 #include"../Shader/JShaderFunctionEnum.h"
 #include"../Shader/JShaderGraphicPsoCondition.h" 
-#include"../../JFrameUpdateUserAccess.h"
+#include"../../../Graphic/Upload/Frameresource/JFrameUpdateUserAccess.h"
 #include<DirectXMath.h>
 
 namespace JinEngine
@@ -11,7 +11,7 @@ namespace JinEngine
 	class JTexture;
 	class JMaterialPrivate;
 	class JMaterial : public JResourceObject, 
-		public JFrameUpdateUserAccessInterface
+		public Graphic::JFrameUpdateUserAccessInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JMaterial)
 		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
@@ -35,8 +35,8 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JMaterialImpl> impl;
 	public:
-		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
-		JFrameUpdateUserAccess GetFrameUserInterface() noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		Graphic::JFrameUpdateUserAccess FrameUserInterface() noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{

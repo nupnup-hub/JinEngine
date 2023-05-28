@@ -10,8 +10,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		JEditor::JEditor(const std::string& name, std::unique_ptr<JEditorAttribute> attribute)
-			: JEventListener(JCUtil::CalculateGuid(name)),
-			name(name),
+			: name(name),
 			guid(JCUtil::CalculateGuid(name)),
 			attribute(std::move(attribute))
 		{}

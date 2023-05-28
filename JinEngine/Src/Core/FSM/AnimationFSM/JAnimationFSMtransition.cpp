@@ -122,7 +122,7 @@ namespace JinEngine
 			:JFSMtransition::InitData(JAnimationFSMtransition::StaticTypeInfo(), name, guid, inState, outState)
 		{}
 
-		JIdentifierPrivate& JAnimationFSMtransition::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JAnimationFSMtransition::PrivateInterface()const noexcept
 		{
 			return aPrivate;
 		}

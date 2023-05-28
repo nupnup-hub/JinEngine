@@ -46,8 +46,7 @@ namespace JinEngine
 			size_t allocBlockSize = 0;
 			size_t pageSize = 0;
 			size_t totalAllocSize = 0;
-			uint committedPageCount = 0;
-			uint committedBlockCount = 0;
+			uint committedPageCount = 0; 
 			uint reservedBlockCount = 0;
 			uint reservedPageCount = 0;
 		private:

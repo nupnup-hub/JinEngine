@@ -22,7 +22,7 @@
 
 #include"../../../Application/JApplicationProject.h"
 #include"../../../Editor/Diagram/JEditorDiagram.h"  
-#include"../../../Graphic/FrameResource/JAnimationConstants.h"
+#include"../../../Graphic/Upload/Frameresource/JAnimationConstants.h"
 #include"../../../Utility/JCommonUtility.h"
 
 //수정필요 
@@ -259,7 +259,7 @@ namespace JinEngine
 		: JResourceObject::InitData(JAnimationController::StaticTypeInfo(), name, guid, flag, formatIndex, GetStaticResourceType(), directory)
 	{}
 
-	Core::JIdentifierPrivate& JAnimationController::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JAnimationController::PrivateInterface()const noexcept
 	{
 		return aPrivate;
 	}

@@ -67,6 +67,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JGameObjectImpl> impl;
 	public:
+		size_t GetOwnerGuid()const noexcept;
 		JUserPtr<JScene> GetOwnerScene()const noexcept;
 		JUserPtr<JAnimator> GetAnimator()const noexcept;
 		JUserPtr<JTransform> GetTransform() const noexcept;
@@ -84,7 +85,7 @@ namespace JinEngine
 		JUserPtr<JGameObject> GetParent()const noexcept;
 		JUserPtr<JGameObject> GetChild(const uint index)const noexcept;
 		std::vector<JUserPtr<JGameObject>> GetChildren()const noexcept;
-		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
 		J_OBJECT_TYPE GetObjectType()const noexcept final;
 	public:
 		void SetName(const std::wstring& newName)noexcept final;

@@ -4,12 +4,12 @@
 #include"../JDataType.h"
 #include"../Pointer/JOwnerPtr.h"
 #include"../Guid/GuidCreator.h"
-
+ 
 namespace JinEngine
 {
-	class JObject;
 	namespace Core
 	{
+		class JIdentifier;
 		namespace Handle
 		{
 			static constexpr int invalidNumber = -1;
@@ -137,15 +137,15 @@ namespace JinEngine
 				return SuccessProcess();
 			}
 			bool Remove(JDataHandle& handle)noexcept
-			{
+			{ 
 				if (!IsValidHandle(handle))
 					return false;
 
 				validIndex = handle.index;
 				arrState[handle.index] = Handle::empty;
 				arrNumber[handle.index] = 0;
-				if constexpr (std::is_base_of_v<JObject, Type>)
-					JObject::BeginDestroy(Get(handle.index));
+				if constexpr (std::is_base_of_v<JIdentifier, Type>)
+					JIdentifier::BeginDestroy(Get(handle.index));
 				ClearData(handle.index);
 				handle.Clear();
 				return true;
@@ -166,10 +166,10 @@ namespace JinEngine
 			{
 				for (uint i = 0; i < Capacity; ++i)
 				{
-					if constexpr (std::is_base_of_v<JObject, Type>)
+					if constexpr (std::is_base_of_v<JIdentifier, Type>)
 					{
 						if (data[i] != nullptr)
-							JObject::BeginDestroy(Get(i));
+							JIdentifier::BeginDestroy(Get(i));
 					}
 					ClearData(i); 
 					arrState[i] = 0;

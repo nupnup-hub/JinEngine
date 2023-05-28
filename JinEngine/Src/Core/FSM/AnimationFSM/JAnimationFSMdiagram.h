@@ -34,7 +34,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JAnimationFSMdiagramImpl> impl;
 		public: 
-			JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+			JIdentifierPrivate& PrivateInterface()const noexcept final;
 			JUserPtr<JAnimationFSMstate> GetState(const size_t stateGuid)noexcept;
 			JUserPtr<JAnimationFSMstate> GetStateByIndex(const uint index)noexcept;
 			JUserPtr<JAnimationFSMtransition> GetTransition(const size_t transitionGuid)noexcept;

@@ -34,7 +34,6 @@ namespace JinEngine
 			JUserPtr<JAnimationClip> clip;
 		public:
 			JAnimationFSMstateClipImpl(const InitData& initData, JAnimationFSMstateClip* thisFsmClipRaw)
-				:JResourceObjectUserInterface(thisFsmClipRaw->GetGuid())
 			{}
 			~JAnimationFSMstateClipImpl(){}
 		public:
@@ -110,6 +109,11 @@ namespace JinEngine
 				}
 			}
 		public:
+			void NotifyReAlloc()
+			{
+				ResetEventListenerPointer(*JResourceObject::EvInterface(), thisPointer->GetGuid());
+			}
+		public:
 			void RegisterThisPointer(JAnimationFSMstateClip* clip)
 			{
 				thisPointer = GetWeakPtr(clip);
@@ -136,7 +140,7 @@ namespace JinEngine
 			: JAnimationFSMstate::InitData(JAnimationFSMstateClip::StaticTypeInfo(), name, guid, ownerDiagram)
 		{}
 
-		JIdentifierPrivate& JAnimationFSMstateClip::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JAnimationFSMstateClip::PrivateInterface()const noexcept
 		{
 			return cPrivate;
 		}

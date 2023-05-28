@@ -50,7 +50,7 @@ namespace JinEngine
 			{
 				return 50;
 			}
-			JIdentifierPrivate& GetPrivateInterface()const noexcept override;
+			JIdentifierPrivate& PrivateInterface()const noexcept override;
 			J_FSM_OBJECT_TYPE GetFSMobjType()const noexcept;
 			JUserPtr<JFSMstate> GetInState()const noexcept;
 			JUserPtr<JFSMstate> GetOutState()const noexcept;

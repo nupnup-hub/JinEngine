@@ -5,7 +5,7 @@
 #include"../Log/JLog.h"
 #include"../Func/Functor/JFunctor.h"
 #include"../Handle/JDataHandleStructure.h"
-
+ 
 namespace JinEngine
 {
 	namespace Core

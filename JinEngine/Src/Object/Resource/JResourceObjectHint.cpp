@@ -51,8 +51,8 @@ namespace JinEngine
 		return (*getFormatIndex)(nullptr, format);
 	}
 
-	RTypePrivateFunc::RTypePrivateFunc(SetRFrameDirtyCallable* setFrameDirtyCallable, SetRFrameBuffIndexCallable* setFrameBuffIndexCallable)
-		:setFrameDirtyCallable(setFrameDirtyCallable), setFrameBuffIndexCallable(setFrameBuffIndexCallable)
+	RTypePrivateFunc::RTypePrivateFunc(SetRFrameDirtyCallable* setFrameDirtyCallable)
+		:setFrameDirtyCallable(setFrameDirtyCallable)
 	{}
 	RTypePrivateFunc::~RTypePrivateFunc()
 	{
@@ -61,20 +61,11 @@ namespace JinEngine
 	SetRFrameDirtyCallable RTypePrivateFunc::GetSetFrameDirtyCallable()
 	{
 		return *setFrameDirtyCallable;
-	}
-	SetRFrameBuffIndexCallable RTypePrivateFunc::GetSetFrameBuffIndexCallable()
-	{
-		return *setFrameBuffIndexCallable;
-	}
+	} 
 	void RTypePrivateFunc::CallSetFrameDirty(JResourceObject* jRobj)
 	{
 		(*setFrameDirtyCallable)(nullptr, jRobj);
-	}
-	void RTypePrivateFunc::CallSetFrameBuffIndex(JResourceObject* jRobj, const uint value)
-	{
-		(*setFrameBuffIndexCallable)(nullptr, jRobj, value);
-	}
- 
+	} 
 
 	struct RTypeInfoData
 	{
@@ -205,6 +196,28 @@ namespace JinEngine
 			return RTypeInfo::Instance().hintStorage;
 		};
 	}
+	const std::vector<Core::JTypeInfo*> RTypeCommonCall::GetTypeInfoVec(const J_RESOURCE_ALIGN_TYPE alignType, const bool allowAbstractClass)noexcept
+	{
+		std::vector<Core::JTypeInfo*> result;
+		auto rHintVec = GetRTypeHintVec(alignType);
+		for (const auto& hint : rHintVec)
+		{
+			auto& typeInfo = RTypeCommonCall::CallGetTypeInfo(hint.thisType);
+			auto derivedVec = Core::JReflectionInfo::Instance().GetDerivedTypeInfo(typeInfo, true);
+			if (!allowAbstractClass)	
+				result.insert(result.end(), derivedVec.begin(), derivedVec.end());
+			
+			else
+			{
+				for (const auto& type : derivedVec)
+				{
+					if (!type->IsAbstractType())
+						result.push_back(type);
+				}
+			}
+		}
+		return result;
+	}
 	std::vector<std::wstring> RTypeCommonCall::CallGetAvailableFormat(const J_RESOURCE_TYPE type)
 	{
 		return RTypeInfo::Instance().cFuncStorage[(int)type].CallGetAvailableFormat();
@@ -225,17 +238,9 @@ namespace JinEngine
 	SetRFrameDirtyCallable RTypePrivateCall::GetSetFrameDirtyCallable(const J_RESOURCE_TYPE type)
 	{
 		return RTypeInfo::Instance().pFuncStorage[(int)type].GetSetFrameDirtyCallable();
-	}
-	SetRFrameBuffIndexCallable RTypePrivateCall::GetSetFrameBuffIndexCallable(const J_RESOURCE_TYPE type)
-	{
-		return RTypeInfo::Instance().pFuncStorage[(int)type].GetSetFrameBuffIndexCallable();
-	}
+	} 
 	void RTypePrivateCall::CallSetFrameDirty(JResourceObject* jRobj)
 	{
 		RTypeInfo::Instance().pFuncStorage[(int)jRobj->GetResourceType()].CallSetFrameDirty(jRobj);
-	}
-	void RTypePrivateCall::CallSetFrameBuffIndex(JResourceObject* jRobj, const uint value)
-	{
-		RTypeInfo::Instance().pFuncStorage[(int)jRobj->GetResourceType()].CallSetFrameBuffIndex(jRobj, value);
-	}
+	} 
 }

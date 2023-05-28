@@ -7,7 +7,7 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		REGISTER_ENUM_CLASS(J_FSM_PARAMETER_VALUE_TYPE, int, BOOL, INT, FLOAT);
+		REGISTER_ENUM_CLASS(J_FSM_PARAMETER_VALUE_TYPE, int, BOOL, INT, FLOAT)
 
 		template<typename T>
 		static float TypeValue(const J_FSM_PARAMETER_VALUE_TYPE type, T value)

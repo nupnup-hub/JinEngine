@@ -1,6 +1,7 @@
 #pragma once  
 #include"../JComponent.h"
-#include"../../JFrameUpdateUserAccess.h"
+#include"../../../Graphic/Upload/Frameresource/JFrameUpdateUserAccess.h"
+#include"../../../Graphic/Culling/JCullingUserAccess.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
 #include"JLightType.h" 
 #include<DirectXMath.h>
@@ -8,8 +9,9 @@
 namespace JinEngine
 {
 	class JLight final :public JComponent,
-		public JFrameUpdateUserAccessInterface,
-		public Graphic::JGraphicResourceUserAccess
+		public Graphic::JFrameUpdateUserAccessInterface,
+		public Graphic::JGraphicMultiResourceUserAccess,
+		public Graphic::JCullingUserAccess
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JLight)
 	public: 
@@ -26,9 +28,10 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JLightImpl> impl;
 	public:
-		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
-		JFrameUpdateUserAccess GetFrameUserInterface() noexcept final;
-		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		Graphic::JFrameUpdateUserAccess FrameUserInterface() noexcept final;
+		const Graphic::JGraphicMultiResourceUserInterface GraphicResourceUserInterface()const noexcept final;
+		const Graphic::JCullingUserInterface CullingUserInterface()const noexcept;
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
@@ -52,6 +55,7 @@ namespace JinEngine
 		bool IsShadowActivated()const noexcept;
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final;
+		bool AllowHzbOcclusionCulling()const noexcept;	//¹Ì±¸Çö
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 

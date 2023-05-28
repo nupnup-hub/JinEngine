@@ -91,7 +91,10 @@ namespace JinEngine
 					return JUserPtr<CastT>::ConvertChild(std::move(resource));
 				}
 				else
-					return JUserPtr<CastT>::ConvertChild(JDirectory::SearchFile(guidData->second)->TryGetResourceUser());
+				{
+					auto file = JDirectory::SearchFile(guidData->second);
+					return file != nullptr ? JUserPtr<CastT>::ConvertChild(file->TryGetResourceUser()) : JUserPtr<CastT>{};
+				}
 			}
 			else
 				return JUserPtr<CastT>{};

@@ -179,7 +179,7 @@ namespace JinEngine
 			return JFSMinterface::InitData::IsValidData() && inState != nullptr && outState != nullptr;
 		}
  
-		JIdentifierPrivate& JFSMtransition::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JFSMtransition::PrivateInterface()const noexcept
 		{
 			return tPrivate;
 		}

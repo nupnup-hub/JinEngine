@@ -11,19 +11,17 @@ namespace JinEngine
 	class JGameObject;
 	using GetCTypeInfoCallable = Core::JStaticCallable<Core::JTypeInfo&>; 
 	using IsAvailableOverlapCallable = Core::JStaticCallable<bool>;
-	using SetCFrameDirtyCallable = Core::JStaticCallable<void, JComponent*>;
-	using SetCFrameOffsetCallable = Core::JStaticCallable<void, JComponent*, JComponent*, bool>;
-
+	using SetCFrameDirtyCallable = Core::JStaticCallable<void, JComponent*>; 
+ 
 	using CreateInitDataCallable = Core::JStaticCallable<std::unique_ptr<Core::JDITypeDataBase>, JUserPtr<JGameObject>, std::unique_ptr<Core::JDITypeDataBase>&&>;
 	struct CTypeHint
 	{
 	public:
 		J_COMPONENT_TYPE thisType;
-		bool hasFrameDirty;
-		bool hasFrameOffset;
+		bool hasFrameDirty; 
 	public:
 		CTypeHint() = default;
-		CTypeHint(const J_COMPONENT_TYPE thisType, const bool hasFrameDirty = false, const bool hasFrameOffset = false);
+		CTypeHint(const J_COMPONENT_TYPE thisType, const bool hasFrameDirty = false);
 		~CTypeHint();
 	};
 
@@ -46,19 +44,16 @@ namespace JinEngine
 	};
 
 	struct CTypePrivateFunc
-	{
+	{ 
 	private:
-		SetCFrameDirtyCallable* setFrameDirtyCallable = nullptr;
-		SetCFrameOffsetCallable* setFrameOffsetCallable = nullptr;
+		SetCFrameDirtyCallable* setFrameDirtyCallable = nullptr; 
 	public:
-		CTypePrivateFunc(SetCFrameDirtyCallable* setFrameDirtyCallable, SetCFrameOffsetCallable* setFrameOffsetCallable);
+		CTypePrivateFunc(SetCFrameDirtyCallable* setFrameDirtyCallable);
 		CTypePrivateFunc() = default;
 		~CTypePrivateFunc();
 	public:
-		void CallSetFrameDirty(JComponent* jComp);
-		void CallSetFrameOffset(JComponent* jComp, JComponent* refComp, bool isCreated);
-		SetCFrameDirtyCallable* GetSetFrameDirtyCallable();
-		SetCFrameOffsetCallable* GetSetFrameOffsetCallable();
+		void CallSetFrameDirty(JComponent* jComp); 
+		SetCFrameDirtyCallable* GetSetFrameDirtyCallable(); 
 	};
 
 	class CTypeRegister
@@ -95,9 +90,7 @@ namespace JinEngine
 		friend class JGameObject;	//conp owner type
 		friend class JScene;		//game obj owner type
 	private:
-		static void CallSetFrameDirty(JComponent* jComp);
-		static void CallSetFrameOffset(JComponent* jComp, JComponent* refComp, bool isCreated);
-		static SetCFrameDirtyCallable* GetSetFrameDirtyCallable(const J_COMPONENT_TYPE cType);
-		static SetCFrameOffsetCallable* GetSetFrameOffsetCallable(const J_COMPONENT_TYPE cType);
+		static void CallSetFrameDirty(JComponent* jComp); 
+		static SetCFrameDirtyCallable* GetSetFrameDirtyCallable(const J_COMPONENT_TYPE cType); 
 	};
 }

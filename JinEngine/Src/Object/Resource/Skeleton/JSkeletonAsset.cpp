@@ -204,7 +204,7 @@ namespace JinEngine
 		{
 			if (thisPointer->IsValid())
 			{
-				skeleton.Clear();
+				skeleton.Clear(); 
 				avatar.Clear();
 				thisPointer->SetValid(false);
 			}
@@ -270,7 +270,6 @@ namespace JinEngine
 		void RegisterThisPointer(JSkeletonAsset* skel)
 		{
 			thisPointer = Core::GetWeakPtr(skel);
-			skeleton->ownerSkeleton = thisPointer;
 		}
 		static void RegisterTypeData()
 		{
@@ -340,7 +339,7 @@ namespace JinEngine
 		:JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), directory)
 	{}
 
-	Core::JIdentifierPrivate& JSkeletonAsset::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JSkeletonAsset::PrivateInterface()const noexcept
 	{
 		return sPrivate;
 	}

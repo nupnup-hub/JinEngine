@@ -71,7 +71,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JSceneImpl> impl;
 	public:
-		Core::JIdentifierPrivate& GetPrivateInterface()const noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -83,11 +83,13 @@ namespace JinEngine
 		JUserPtr<JGameObject> GetRootGameObject()noexcept;
 		JUserPtr<JGameObject> GetDebugRootGameObject()noexcept;
 		JUserPtr<JGameObject> GetGameObject(const uint index)noexcept;
+		JUserPtr<JGameObject> GetGameObject(const std::wstring& name)noexcept;
 		uint GetGameObjectCount()const noexcept;
 		uint GetComponetCount(const J_COMPONENT_TYPE cType)const noexcept;
 		uint GetMeshCount()const noexcept;
 		J_SCENE_USE_CASE_TYPE GetUseCaseType()const noexcept;
 		std::vector<JUserPtr<JGameObject>> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept;
+		std::vector<JUserPtr<JGameObject>> GetGameObjectVec()const noexcept;
 		std::vector<JUserPtr<JComponent>> GetComponentVec(const J_COMPONENT_TYPE cType)const noexcept;
 		Core::JOctreeOption GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept;
 		Core::JBvhOption GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept;

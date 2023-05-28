@@ -364,6 +364,7 @@ namespace JinEngine
 						}																					\
 				}J_MERGE_NAME(enumName, EnumStruct);														\
 			}																								\
+																											\
 
 
 #define REGISTER_ENUM(enumName, dataType, ...)															\
@@ -384,6 +385,7 @@ namespace JinEngine
 						}																					\
 				}J_MERGE_NAME(enumName, EnumStruct);														\
 			}																								\
+																											\
 
 
 namespace ReflectionData

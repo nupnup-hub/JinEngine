@@ -8,7 +8,10 @@ namespace JinEngine
 	class JRenderItem;
 	class JTransform;  
 	class JGameObject;
-	class JFrameDirtyListener;
+	namespace Graphic
+	{
+		class JFrameDirty;
+	}
 	class JTransformPrivate final : public JComponentPrivate
 	{
 	public:
@@ -44,8 +47,8 @@ namespace JinEngine
 			friend class JRenderItem;
 		private:
 			//JFrameDirtyListener is impl class
-			static void RegisterFrameDirtyListener(JTransform* transform, JFrameDirtyListener* listener)noexcept;
-			static void DeRegisterFrameDirtyListener(JTransform* transform, JFrameDirtyListener* listener)noexcept;		 
+			static void RegisterFrameDirtyListener(JTransform* transform, Graphic::JFrameDirty* listener, const size_t guid)noexcept;
+			static void DeRegisterFrameDirtyListener(JTransform* transform, const size_t guid)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

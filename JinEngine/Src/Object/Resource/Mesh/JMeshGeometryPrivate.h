@@ -1,5 +1,6 @@
 #pragma once
 #include"../JResourceObjectPrivate.h" 
+#include"../JResourceObjectEventType.h"
 
 struct D3D12_VERTEX_BUFFER_VIEW;
 struct D3D12_INDEX_BUFFER_VIEW;
@@ -8,10 +9,13 @@ namespace JinEngine
 {	
 	struct JMeshGroup;
 	class JMeshGeometry;
+	class JStaticMeshGeometry;
+	class JSkinnedMeshGeometry;
 
 	namespace Graphic
 	{
 		class JGraphic;
+		class JShadowMap;
 		class JOutline;
 	}
 	class JMeshGeometryPrivate : public JResourceObjectPrivate
@@ -40,10 +44,12 @@ namespace JinEngine
 		{
 		private:
 			friend class Graphic::JGraphic;
+			friend class Graphic::JShadowMap;
 			friend class Graphic::JOutline;
 		private:
 			static D3D12_VERTEX_BUFFER_VIEW VertexBufferView(JMeshGeometry* mesh)noexcept;
 			static D3D12_INDEX_BUFFER_VIEW IndexBufferView(JMeshGeometry* mesh)noexcept;
-		};
+		}; 
+		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept override;
 	};
 }

@@ -44,26 +44,26 @@ namespace JinEngine
 				{
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
 					return swapChainBufferCount;
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL:
-					return 1;
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG:
-					return 1;
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL:
+					return 256;
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG:
+					return 16;
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL:
-					return 1;
+					return 16;
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
-					return 1;
+					return 16;
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
-					return 1;
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP:
-					return 1;
+					return 16;
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
+					return 16;
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
-					return 1000;
+					return 1024;
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
-					return 250;
+					return 128;
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
-					return 250;
+					return 256;
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
-					return 250;
+					return 128;
 				default:
 					return 0;
 				}
@@ -90,7 +90,7 @@ namespace JinEngine
 					}
 					break;
 				}
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL:
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL:
 				{
 					switch (bType)
 					{
@@ -107,7 +107,7 @@ namespace JinEngine
 					}
 					break;
 				}
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG:
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG:
 				{
 					switch (bType)
 					{
@@ -168,15 +168,15 @@ namespace JinEngine
 					case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
 						return 0;
 					case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
-						return 10;
+						return initResourceCapacity * occlusionMipmapViewCapacity;
 					case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
-						return 10;
+						return initResourceCapacity * occlusionMipmapViewCapacity;
 					default:
 						break;
 					}
 					break;
 				}
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP:
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
 				{
 					switch (bType)
 					{
@@ -185,9 +185,9 @@ namespace JinEngine
 					case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
 						return 0;
 					case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
-						return 10;
+						return initResourceCapacity;
 					case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
-						return 10;
+						return initResourceCapacity;
 					default:
 						break;
 					}
@@ -273,18 +273,18 @@ namespace JinEngine
 				{
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
 					return L"Swap Chain";
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL:
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL:
 					return L"Main Depth Stencil";
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG:
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG:
 					return L"Main Depth Stencil Debug";
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL:
 					return L"Editor Depth Stencil";
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
-					return L"Occlusion Depth Map";
+					return L"Occ Depth Map";
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
-					return L"Occlusion Depth Mip Map";
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP:
-					return L"Occlusion Depth Debug Map";
+					return L"Occ Mip Map";
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
+					return L"Occ Debug Map";
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
 					return L"Texture2D";
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
@@ -296,8 +296,11 @@ namespace JinEngine
 				default:
 					return L"InValid Microsoft::WRL::ComPtr<ID3D12Resource>";
 				}
+
+				//return JCUtil::StrToWstr(Core::GetName(rType));
 			}
 		}
+
 		template<typename T, std::enable_if_t<std::is_base_of_v< ID3D12Pageable, T>, int> = 0>
 		static void SetPrivateData(T* resource, const std::wstring& name)
 		{
@@ -435,16 +438,16 @@ namespace JinEngine
 		}
 		void JGraphicResourceManager::Clear()
 		{
-			rtvHeap.Reset();
-			dsvHeap.Reset();
-			srvHeap.Reset();
-			occlusionQueryHeap.Reset();
-			occlusionQueryResult.Reset();
 			for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
 			{
 				resource[i].clear();
 				typeDesc[i].ClearAllData();
 			}
+			rtvHeap.Reset();
+			dsvHeap.Reset();
+			srvHeap.Reset();
+			occlusionQueryHeap.Reset();
+			occlusionQueryResult.Reset();
 		}
 		CD3DX12_CPU_DESCRIPTOR_HANDLE JGraphicResourceManager::GetCpuRtvDescriptorHandle(int index)const noexcept
 		{
@@ -611,28 +614,19 @@ namespace JinEngine
 				BindSwapChain(device, i);
 			}
 		}
-		void JGraphicResourceManager::CreateMainDepthStencilResource(ID3D12Device* device,
+		JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateSceneDepthStencilResource(ID3D12Device* device,
 			ID3D12GraphicsCommandList* commandList,
 			const uint viewWidth,
 			const uint viewHeight,
 			bool m4xMsaaState,
 			uint m4xMsaaQuality)
 		{
-			Microsoft::WRL::ComPtr<ID3D12Resource> newMainDsResource;
-			Microsoft::WRL::ComPtr<ID3D12Resource> newMainDsDebugResource;
+			Microsoft::WRL::ComPtr<ID3D12Resource> newSceneDsResource; 
+			JGraphicResourceManager::ResourceTypeDesc& sceneDsDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL];
 
-			JGraphicResourceManager::ResourceTypeDesc& mainDsDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL];
-			JGraphicResourceManager::ResourceTypeDesc& mainDsDebugDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG];
-
-			resource[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL].clear();
-			resource[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG].clear();
-			mainDsDesc.ClearCount();
-			mainDsDebugDesc.ClearCount();
-
-			const bool isInValidMainDs = !mainDsDesc.HasSpace() || !mainDsDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::DSV].HasSpace() || !mainDsDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace();
-			const bool isInValidMDs = !mainDsDebugDesc.HasSpace() || !mainDsDebugDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace() || !mainDsDebugDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].HasSpace();
-			if (isInValidMainDs || isInValidMDs)
-				return;
+			const bool isValid = !sceneDsDesc.HasSpace() || !sceneDsDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::DSV].HasSpace() || !sceneDsDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace();
+			if (isValid)
+				return nullptr;
 
 			D3D12_RESOURCE_DESC depthStencilDesc;
 			depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -659,15 +653,31 @@ namespace JinEngine
 				&depthStencilDesc,
 				D3D12_RESOURCE_STATE_DEPTH_READ,
 				&optClear,
-				IID_PPV_ARGS(&newMainDsResource)));
-			SetPrivateData(newMainDsResource.Get(), Constants::DefaultName(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL), mainDsDesc.count);
+				IID_PPV_ARGS(&newSceneDsResource)));
+			SetPrivateData(newSceneDsResource.Get(), Constants::DefaultName(J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL), sceneDsDesc.count);
 
-			auto newMainDsInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL, std::move(newMainDsResource));
-			newMainDsInfo->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL].size());
-			resource[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL].push_back(std::move(newMainDsInfo));
-			++mainDsDesc.count;
+			auto newMainDsInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL, std::move(newSceneDsResource));
+			newMainDsInfo->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL].size());
+			resource[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL].push_back(std::move(newMainDsInfo));
+			++sceneDsDesc.count;
 
-			BindMainDepthStencil(device, resource[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL].size() - 1);
+			const uint resourceIndex = resource[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL].size() - 1;
+			BindMainDepthStencil(device, resourceIndex);
+			return resource[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL][resourceIndex];
+		}
+		JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateSceneDepthStencilDebugResource(ID3D12Device* device,
+			ID3D12GraphicsCommandList* commandList,
+			const uint viewWidth,
+			const uint viewHeight,
+			bool m4xMsaaState,
+			uint m4xMsaaQuality)
+		{
+			Microsoft::WRL::ComPtr<ID3D12Resource> newSceneDsDebugResource;
+			JGraphicResourceManager::ResourceTypeDesc& sceneDsDebugDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG];
+
+			const bool isValid = !sceneDsDebugDesc.HasSpace() || !sceneDsDebugDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace() || !sceneDsDebugDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].HasSpace();
+			if (isValid)
+				return nullptr;
 
 			D3D12_RESOURCE_DESC debugDesc;
 			ZeroMemory(&debugDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -683,23 +693,26 @@ namespace JinEngine
 			debugDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 			debugDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
+			CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
 			ThrowIfFailedG(device->CreateCommittedResource(
 				&heapProperties,
 				D3D12_HEAP_FLAG_NONE,
 				&debugDesc,
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 				nullptr,
-				IID_PPV_ARGS(&newMainDsDebugResource)));
-			SetPrivateData(newMainDsDebugResource.Get(), Constants::DefaultName(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG), mainDsDebugDesc.count);
+				IID_PPV_ARGS(&newSceneDsDebugResource)));
+			SetPrivateData(newSceneDsDebugResource.Get(), Constants::DefaultName(J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG), sceneDsDebugDesc.count);
 
-			auto newMainDsDebugInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG, std::move(newMainDsDebugResource));
-			newMainDsDebugInfo->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG].size());
-			resource[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG].push_back(std::move(newMainDsDebugInfo));
-			++mainDsDebugDesc.count;
+			auto newMainDsDebugInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG, std::move(newSceneDsDebugResource));
+			newMainDsDebugInfo->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG].size());
+			resource[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG].push_back(std::move(newMainDsDebugInfo));
+			++sceneDsDebugDesc.count;
 
-			BindMainDepthStencilDebug(device, resource[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG].size() - 1);
+			const uint resourceIndex = resource[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG].size() - 1;
+			BindMainDepthStencilDebug(device,resourceIndex);
+			return resource[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG][resourceIndex];
 		}
-		void JGraphicResourceManager::CreateDebugDepthStencilResource(ID3D12Device* device,
+		JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateDebugDepthStencilResource(ID3D12Device* device,
 			ID3D12GraphicsCommandList* commandList,
 			const uint viewWidth,
 			const uint viewHeight)
@@ -707,12 +720,9 @@ namespace JinEngine
 			Microsoft::WRL::ComPtr<ID3D12Resource> newDebugDsResource;
 			JGraphicResourceManager::ResourceTypeDesc& editorDsDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL];
 
-			resource[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL].clear();
-			editorDsDesc.ClearCount();
-
 			const bool isInValidEditorDs = !editorDsDesc.HasSpace() || !editorDsDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::DSV].HasSpace();
 			if (isInValidEditorDs)
-				return;
+				return nullptr;
 
 			D3D12_RESOURCE_DESC depthStencilDesc;
 			depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -746,7 +756,9 @@ namespace JinEngine
 			resource[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL].push_back(std::move(newMainDsDebugInfo));
 			++editorDsDesc.count;
 
-			BindDebugDepthStencil(device, resource[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL].size() - 1);
+			uint resourceIndex = resource[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL].size() - 1;
+			BindDebugDepthStencil(device, resourceIndex);
+			return resource[(int)J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL][resourceIndex];
 		}
 		void JGraphicResourceManager::CreateOcclusionQueryResource(ID3D12Device* device)
 		{
@@ -762,20 +774,21 @@ namespace JinEngine
 				IID_PPV_ARGS(&occlusionQueryResult)));
 			SetPrivateData(occlusionQueryResult.Get(), L"QueryResult");
 		}
-		void JGraphicResourceManager::CreateOcclusionHZBResource(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const uint occWidth, const uint occHeight)
+		void JGraphicResourceManager::CreateOcclusionHZBResource(ID3D12Device* device, 
+			ID3D12GraphicsCommandList* commandList, 
+			const uint occWidth, 
+			const uint occHeight,
+			_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo,
+			_Out_ JUserPtr<JGraphicResourceInfo>& outOccMipMapInfo)
 		{
 			Microsoft::WRL::ComPtr<ID3D12Resource> occDsResource;
 			Microsoft::WRL::ComPtr<ID3D12Resource> occMipMapResource;
-			Microsoft::WRL::ComPtr<ID3D12Resource> occDebugResource;
-
 			JGraphicResourceManager::ResourceTypeDesc& occDsDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP];
 			JGraphicResourceManager::ResourceTypeDesc& occMipMapDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP];
-			JGraphicResourceManager::ResourceTypeDesc& occDebugDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP];
 
 			const bool isInValidOccDs = !occDsDesc.HasSpace() || !occDsDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::DSV].HasSpace() || !occDsDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace();
-			const bool isInValidOccMipMap = !occMipMapDesc.HasSpace() || !occMipMapDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace() || !occMipMapDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].HasSpace();
-			const bool isInValidOccDebug = !occDebugDesc.HasSpace() || !occDebugDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace() || !occDebugDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].HasSpace();
-			if (isInValidOccDs || isInValidOccMipMap || isInValidOccDebug)
+			 bool isInValidOccMipMap = !occMipMapDesc.HasSpace() || !occMipMapDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace() || !occMipMapDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].HasSpace();
+			if (isInValidOccDs || isInValidOccMipMap)
 				return;
 
 			D3D12_RESOURCE_DESC depthStencilDesc;
@@ -813,7 +826,9 @@ namespace JinEngine
 			resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP].push_back(std::move(occDsInfo));
 			++occDsDesc.count;
 
-			BindOcclusionHZBDepthMap(device, resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP].size() - 1);
+			uint resourceIndex = resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP].size() - 1;
+			BindOcclusionHZBDepthMap(device, resourceIndex);
+			outOccDsInfo = resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP][resourceIndex];
 
 			D3D12_RESOURCE_DESC mipMapDesc;
 			ZeroMemory(&mipMapDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -822,7 +837,7 @@ namespace JinEngine
 			mipMapDesc.Width = occWidth;
 			mipMapDesc.Height = occHeight;
 			mipMapDesc.DepthOrArraySize = 1;
-			mipMapDesc.MipLevels = 0;
+			mipMapDesc.MipLevels = 0;	// 0 = 최대 miplevel 자동계산
 			mipMapDesc.SampleDesc.Count = 1;
 			mipMapDesc.SampleDesc.Quality = 0;
 			mipMapDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -843,7 +858,20 @@ namespace JinEngine
 			resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP].push_back(std::move(occMipMapInfo));
 			++occMipMapDesc.count;
 
-			BindOcclusionHZBDepthMipMap(device, resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP].size() - 1);
+			resourceIndex = resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP].size() - 1;
+			BindOcclusionHZBDepthMipMap(device, resourceIndex);
+			outOccMipMapInfo = resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP][resourceIndex];
+		}
+		JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::CreateOcclusionHZBResourceDebug(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, const uint occWidth, const uint occHeight)
+		{ 
+			Microsoft::WRL::ComPtr<ID3D12Resource> occDebugResource;
+			JGraphicResourceManager::ResourceTypeDesc& occDebugDesc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG];
+
+			const bool isValid = !occDebugDesc.HasSpace() || !occDebugDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].HasSpace() || !occDebugDesc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].HasSpace();
+			if (isValid)
+				return nullptr;
+
+			CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
 
 			D3D12_RESOURCE_DESC debugDesc;
 			ZeroMemory(&debugDesc, sizeof(D3D12_RESOURCE_DESC));
@@ -866,14 +894,16 @@ namespace JinEngine
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 				nullptr,
 				IID_PPV_ARGS(&occDebugResource)));
-			SetPrivateData(occDebugResource.Get(), Constants::DefaultName(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP), occDebugDesc.count);
+			SetPrivateData(occDebugResource.Get(), Constants::DefaultName(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG), occDebugDesc.count);
 
-			auto occDebugInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP, std::move(occDebugResource));
-			occDebugInfo->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP].size());
-			resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP].push_back(std::move(occDebugInfo));
+			auto occDebugInfo = CreateResourceInfo(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG, std::move(occDebugResource));
+			occDebugInfo->SetArrayIndex(resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG].size());
+			resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG].push_back(std::move(occDebugInfo));
 			++occDebugDesc.count;
 
-			BindOcclusionHZBDebug(device, resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP].size() - 1);
+			uint resourceIndex = resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG].size() - 1;
+			BindOcclusionHZBDebug(device, resourceIndex);
+			return resource[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG][resourceIndex];
 		}
 		JUserPtr<JGraphicResourceInfo> JGraphicResourceManager::Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
 			const std::wstring& path,
@@ -1086,7 +1116,8 @@ namespace JinEngine
 				}
 				reBindHandle->SetArrayIndex(i - 1);
 				(this->*ptr)(device, i);
-			}
+			} 
+
 			resource[(int)rType].erase(resource[(int)rType].begin() + rIndex);
 			--desc.count;
 			return true;
@@ -1101,9 +1132,9 @@ namespace JinEngine
 			{
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:
 				return &JGraphicResourceManager::BindSwapChain;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL:
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL:
 				return &JGraphicResourceManager::BindMainDepthStencil;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG:
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG:
 				return &JGraphicResourceManager::BindMainDepthStencilDebug;
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL:
 				return &JGraphicResourceManager::BindDebugDepthStencil;
@@ -1111,7 +1142,7 @@ namespace JinEngine
 				return &JGraphicResourceManager::BindOcclusionHZBDepthMap;
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
 				return &JGraphicResourceManager::BindOcclusionHZBDepthMipMap;
-			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP:
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
 				return &JGraphicResourceManager::BindOcclusionHZBDebug;
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
 				return &JGraphicResourceManager::Bind2DTexture;
@@ -1149,10 +1180,10 @@ namespace JinEngine
 		}
 		void JGraphicResourceManager::BindMainDepthStencil(ID3D12Device* device, const uint resourceIndex)
 		{
-			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL];
+			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL];
 
-			ID3D12Resource* resourcePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL)][resourceIndex]->resource.Get();
-			JGraphicResourceInfo* handlePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL)][resourceIndex].Get();
+			ID3D12Resource* resourcePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL)][resourceIndex]->resource.Get();
+			JGraphicResourceInfo* handlePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL)][resourceIndex].Get();
 			const int dsvNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::DSV].GetNextViewIndex();
 			const int srvNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].GetNextViewIndex();
 
@@ -1190,10 +1221,10 @@ namespace JinEngine
 		}
 		void JGraphicResourceManager::BindMainDepthStencilDebug(ID3D12Device* device, const uint resourceIndex)
 		{
-			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG];
+			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG];
 
-			ID3D12Resource* resourcePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG)][resourceIndex]->resource.Get();
-			JGraphicResourceInfo* handlePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::MAIN_DEPTH_STENCIL_DEBUG)][resourceIndex].Get();
+			ID3D12Resource* resourcePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG)][resourceIndex]->resource.Get();
+			JGraphicResourceInfo* handlePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL_DEBUG)][resourceIndex].Get();
 			const int srvNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].GetNextViewIndex();
 			const int uavNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].GetNextViewIndex();
 
@@ -1320,10 +1351,10 @@ namespace JinEngine
 		}
 		void JGraphicResourceManager::BindOcclusionHZBDebug(ID3D12Device* device, const uint resourceIndex)
 		{
-			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP];
+			JGraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG];
 
-			ID3D12Resource* resourcePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP)][resourceIndex]->resource.Get();
-			JGraphicResourceInfo* handlePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_DEBUG_MAP)][resourceIndex].Get();
+			ID3D12Resource* resourcePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG)][resourceIndex]->resource.Get();
+			JGraphicResourceInfo* handlePtr = resource[int(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG)][resourceIndex].Get();
 			const int srvNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].GetNextViewIndex();
 			const int uavNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].GetNextViewIndex();
 

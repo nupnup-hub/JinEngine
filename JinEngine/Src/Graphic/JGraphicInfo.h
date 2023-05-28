@@ -49,6 +49,8 @@ namespace JinEngine
 			uint occlusionMapCapacity = 0;
 			const uint defaultShadowWidth = 1920;
 			const uint defaultShadowHeight = 1080;
+		public:
+			uint frameThreadCount = 1;
 		};
 	}
 }

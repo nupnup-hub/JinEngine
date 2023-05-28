@@ -202,7 +202,7 @@ namespace JinEngine
 		{
 			using IOInterface = JResourceObjectPrivate::AssetDataIOInterface;
 			auto initData = IOInterface::CreateLoadAssetDIData(fileData->GetOwnerDirectory(), Core::JAssetFileLoadPathData{ GetPath() });
-			auto rPrivate = Core::JIdentifier::GetPrivateInterface(fileData->GetResourceTypeInfo().TypeGuid());
+			auto rPrivate = Core::JIdentifier::PrivateInterface(fileData->GetResourceTypeInfo().TypeGuid());
 			auto idenUser = static_cast<JResourceObjectPrivate*>(rPrivate)->GetAssetDataIOInterface().LoadAssetData(initData.get());
 			JUserPtr<JResourceObject> rUser = JUserPtr<JResourceObject>::ConvertChild(std::move(idenUser));
 			return rUser;

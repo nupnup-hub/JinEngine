@@ -13,8 +13,7 @@ namespace JinEngine
 		JProjectSelectorPage::JProjectSelectorPage()
 			: JEditorPage("ProjectSelectorPage",
 				std::make_unique<JEditorAttribute>(),
-				J_EDITOR_PAGE_NONE),
-			ResourceEvListener(GetGuid())
+				J_EDITOR_PAGE_NONE)
 		{
 			projectHub = std::make_unique<JProjectSelectorHub>("Project Selector",
 				std::make_unique<JEditorAttribute>(),

@@ -8,6 +8,17 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
+		static bool IsOwnerType(const J_GRAPHIC_RESOURCE_TYPE rType)
+		{
+			switch (rType)
+			{
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN:	//owner is swapchain class
+				return false;
+			default:
+				return true;
+			}
+		}
+
 		J_GRAPHIC_RESOURCE_TYPE JGraphicResourceInfo::GetGraphicResourceType()const noexcept
 		{   
 			return graphicResourceType;
@@ -33,7 +44,7 @@ namespace JinEngine
 			return viewInfo[(int)bindType].count;
 		}
 		void JGraphicResourceInfo::SetArrayIndex(const int newValue)
-		{
+		{ 
 			resourceArrayIndex = newValue;
 		}
 		void JGraphicResourceInfo::SetHeapIndexStart(const J_GRAPHIC_BIND_TYPE bindType, const int newValue)
@@ -57,8 +68,12 @@ namespace JinEngine
 		{}
 		JGraphicResourceInfo::~JGraphicResourceInfo()
 		{
-			///resource->Release();
-			//resource.Reset();
+			if (IsOwnerType(graphicResourceType) && resource != nullptr)
+			{
+				resource->Release();
+				resource.Reset();
+				resource = nullptr;
+			}
 		}
 	}
 }

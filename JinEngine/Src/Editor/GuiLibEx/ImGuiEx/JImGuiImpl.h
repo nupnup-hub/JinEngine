@@ -11,9 +11,10 @@
 #include"../../../Core/Empty/EmptyBase.h"
 #include"../../../Core/Reflection/JReflection.h"
 #include"../../../Core/Func/Functor/JFunctor.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceType.h"
 #include"../../../../Lib/imgui/imgui.h"
 #include"../../../../Lib/imgui/imgui_internal.h"
-
+ 
 template<typename T>
 ImVec2::ImVec2(const JinEngine::JVector2<T>& jVec2)
 {
@@ -74,7 +75,8 @@ namespace JinEngine
 
 	namespace Graphic
 	{ 
-		class JGraphicResourceUserAccess;
+		class JGraphicSingleResourceUserAccess;
+		class JGraphicMultiResourceUserAccess;
 	}
 	namespace Editor
 	{
@@ -180,21 +182,28 @@ namespace JinEngine
 			static void EndListBox();
 		public:
 			//Image  
-			static void Image(Graphic::JGraphicResourceUserAccess* gUserAccess,
+			static void Image(Graphic::JGraphicMultiResourceUserAccess* gUserAccess,
+				const Graphic::J_GRAPHIC_RESOURCE_TYPE rType,
+				const JVector2<float>& size,
+				const JVector2<float>& uv0 = JVector2<float>(0, 0),
+				const JVector2<float>& uv1 = JVector2<float>(1, 1),
+				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1),
+				const JVector4<float>& borderCol = JVector4<float>(0, 0, 0, 0));
+			static void Image(Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 				const JVector2<float>& size,
 				const JVector2<float>& uv0 = JVector2<float>(0, 0),
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
 				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1),
 				const JVector4<float>& borderCol = JVector4<float>(0, 0, 0, 0));
 			static bool ImageButton(const std::string name,
-				Graphic::JGraphicResourceUserAccess* gUserAccess,
+				Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 				const JVector2<float>& size,
 				const JVector2<float>& uv0 = JVector2<float>(0, 0),
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
 				float framePadding = -1,
 				const JVector4<float>& bgCol = JVector4<float>(0, 0, 0, 0),
 				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1)); 
-			static void AddImage(Graphic::JGraphicResourceUserAccess* gUserAccess,
+			static void AddImage(Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 				const JVector2<float>& pMin,
 				const JVector2<float>& pMax,
 				bool isBack = true,
@@ -204,7 +213,7 @@ namespace JinEngine
 		public:
 			//Custom Widget 
 			static bool ImageSelectable(const std::string name,
-				Graphic::JGraphicResourceUserAccess* gUserAccess,
+				Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 				bool& pressed,
 				bool changeValueIfPreesd,
 				const JVector2<float>& size,
@@ -214,7 +223,7 @@ namespace JinEngine
 				bool changeValueIfPreesd,
 				const JVector2<float>& sizeArg = { 0,0 });
 			static bool ImageSwitch(const std::string name,
-				Graphic::JGraphicResourceUserAccess* gUserAccess,
+				Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 				bool& pressed,
 				bool changeValueIfPreesd,
 				const JVector2<float>& size,

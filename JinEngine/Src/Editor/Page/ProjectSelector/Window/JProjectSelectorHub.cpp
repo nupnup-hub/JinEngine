@@ -196,8 +196,7 @@ namespace JinEngine
 			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE ownerPageType,
 			const J_EDITOR_WINDOW_FLAG windowFlag)
-			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag),
-			ResourceEvListener(GetGuid())
+			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag)
 		{
 			searchHelper = std::make_unique<JEditorSearchBarHelper>(false);
 			values = std::make_unique<SelectorValues>();

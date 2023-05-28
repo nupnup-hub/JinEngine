@@ -21,7 +21,7 @@ namespace JinEngine
 			static JFSMstatePrivate sPrivate;
 			_TransitionUpdateInterface* TransitionUpdateInterface(const JUserPtr<JFSMtransition>& trans)
 			{
-				return &static_cast<_TransitionUpdateInterface&>(static_cast<JFSMtransitionPrivate&>(trans->GetPrivateInterface()).GetUpdateInterface());
+				return &static_cast<_TransitionUpdateInterface&>(static_cast<JFSMtransitionPrivate&>(trans->PrivateInterface()).GetUpdateInterface());
 			}
 		}
  
@@ -157,7 +157,7 @@ namespace JinEngine
 			return JFSMinterface::InitData::IsValidData() && ownerDiagram != nullptr;
 		}
  
-		JIdentifierPrivate& JFSMstate::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JFSMstate::PrivateInterface()const noexcept
 		{
 			return sPrivate;
 		}

@@ -1,4 +1,5 @@
 #pragma once
+#include"../JSpaceSpatialNode.h"
 #include"../../JDataType.h"
 #include"../../Geometry/JCullingFrustum.h" 
 #include"../../Pointer/JOwnerPtr.h"
@@ -19,12 +20,12 @@ namespace JinEngine
 			LEAF,
 			NODE,
 		};
-		class JBvhNode
+		class JBvhNode : public JSpaceSpatialNode
 		{
 		private:
 			uint nodeNumber;
 			J_BVH_NODE_TYPE type;
-			DirectX::BoundingBox bbox;
+			DirectX::BoundingBox bbox;	//BoundingOriented가 더 정확하지만 느리므로 leaf type Culling에서만 사용하고 그외에는 BoundingBox를 사용한다	
 			JBvhNode* parent = nullptr;
 			JBvhNode* left = nullptr;
 			JBvhNode* right = nullptr;
@@ -41,14 +42,13 @@ namespace JinEngine
 			void CreateDebugGameObject(const JUserPtr<JGameObject>& parent, bool onlyLeafNode)noexcept;
 			void DestroyDebugGameObject()noexcept;
 			void Clear()noexcept;
-			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
-			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept;
+			void Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept; 
+			void Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept;
 			JUserPtr<JGameObject> IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept;
 			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
 			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
 			void Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
-			void UpdateInnerGameObject()noexcept;
-			void OffCulling()noexcept;
+			void UpdateInnerGameObject()noexcept; 
 		public:
 			bool IsLeftNode()const noexcept;
 			bool IsContain(const DirectX::BoundingBox& boundBox)const noexcept;
@@ -57,7 +57,7 @@ namespace JinEngine
 			uint GetLeftNumberEnd()const noexcept;
 			uint GetRightNumberEnd()const noexcept;
 			J_BVH_NODE_TYPE GetNodeType()const noexcept;
-			DirectX::BoundingBox GetBoundingBox()const noexcept;
+			DirectX::BoundingBox GetBoundingBox()const noexcept; 
 			JBvhNode* GetParentNode()noexcept;
 			JBvhNode* GetLeftNode()noexcept;
 			JBvhNode* GetRightNode()noexcept;
@@ -65,15 +65,16 @@ namespace JinEngine
 			JBvhNode* GetContainNodeToLeaf(const DirectX::BoundingBox& boundBox)noexcept;
 			JUserPtr<JGameObject> GetInnerGameObject()const noexcept;
 			JUserPtr<JGameObject> GetDebugGameObject()const noexcept;
-
+		public:
 			void SetNodeNumber(const uint newNumber)noexcept;
 			void SetNodeType(const J_BVH_NODE_TYPE newNodeType)noexcept;
 			void SetLeftNode(JBvhNode* newLeftNode)noexcept;
 			void SetRightNode(JBvhNode* newRightNode)noexcept;
 			void SetInnerGameObject(const JUserPtr<JGameObject>& newInnerGameObject)noexcept;
 		private:
-			void SetVisible()noexcept;  
-			void SetInVisible()noexcept;
+			void SetVisible(Graphic::JCullingUserInterface& cullUser)noexcept;
+			void SetVisible(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& cullingFrustum, const bool camInParentBBox)noexcept;
+			void SetInVisible(Graphic::JCullingUserInterface& cullUser)noexcept;
 			JBvhNode* FindRightLeafNode()noexcept;
 		private:
 			void SetDebugObjectTransform()noexcept;

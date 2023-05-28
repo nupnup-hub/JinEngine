@@ -1,7 +1,6 @@
 #include"JTransform.h"  
 #include"JTransformPrivate.h"
 #include"../JComponentHint.h"
-#include"../../JFrameUpdate.h" 
 #include"../../GameObject/JGameObject.h" 
 #include"../../Resource/Scene/JScenePrivate.h" 
 #include"../../../Utility/JMathHelper.h"
@@ -9,7 +8,8 @@
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Graphic/FrameResource/JObjectConstants.h"
+#include"../../../Graphic/Upload/Frameresource/JObjectConstants.h"
+#include"../../../Graphic/Upload/Frameresource/JFrameUpdate.h" 
 #include<fstream>
 
 namespace JinEngine
@@ -22,7 +22,7 @@ namespace JinEngine
 	}
  
 	class JTransform::JTransformImpl : public Core::JTypeImplBase,
-		public JFrameDirtyChain<JFrameDirtyTrigger>
+		public Graphic::JFrameDirtyChain<Graphic::JFrameDirtyTrigger>
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTransformImpl)
 	public:
@@ -117,13 +117,13 @@ namespace JinEngine
 			position = value;
 			UpdateTopDown();
 		}
-		void SetRotation(const XMFLOAT3& value)noexcept
+		void SetRotation(const XMFLOAT3& euler)noexcept
 		{
 			if (thisPointer->GetOwner()->IsRoot())
 				return;
 
-			rotation = value;
-
+			rotation = euler;
+			
 			if (rotation.x >= 360)
 				rotation.x -= 360;
 			if (rotation.y >= 360)
@@ -151,7 +151,7 @@ namespace JinEngine
 			XMStoreFloat3(&tFront, XMVector3Normalize(newFront));
 
 			UpdateTopDown();
-		}
+		} 
 		void SetScale(const XMFLOAT3& value)noexcept
 		{
 			if (thisPointer->GetOwner()->IsRoot())
@@ -165,13 +165,13 @@ namespace JinEngine
 			SetFrameDirty();
 		}
 	public:
-		void RegisterFrameDirtyListener(JFrameDirtyListener* newListener)
+		void RegisterFrameDirtyListener(Graphic::JFrameDirty* newListener, const size_t guid)
 		{
-			AddFrameDirtyListener(newListener);
+			AddFrameDirtyListener(newListener, guid);
 		}
-		void DeRegisterFrameDirtyListener(JFrameDirtyListener* oldListener)
+		void DeRegisterFrameDirtyListener(const size_t guid)
 		{
-			RemoveFrameDirtyListener(oldListener);
+			RemoveFrameDirtyListener(guid);
 		}
 	public:
 		void LookAt(const XMFLOAT3& target, const XMFLOAT3& worldUp)noexcept
@@ -273,7 +273,7 @@ namespace JinEngine
 			thisPointer = Core::GetWeakPtr(trans);
 		}
 		static void RegisterTypeData()
-		{
+		{ 
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JTransform::StaticTypeInfo };
 			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
@@ -296,11 +296,11 @@ namespace JinEngine
 
 			static CTypeHint cTypeHint{ GetStaticComponentType(), true };
 			static CTypeCommonFunc cTypeCommonFunc{ getTypeInfoCallable,isAvailableOverlapCallable, createInitDataCallable };
-			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable, nullptr };
+			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
 
 			RegisterCTypeInfo(JTransform::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 			Core::JIdentifier::RegisterPrivateInterface(JTransform::StaticTypeInfo(), tPrivate);
-
+			 
 			IMPL_REALLOC_BIND(JTransform::JTransformImpl, thisPointer)
 		}
 	};
@@ -312,7 +312,7 @@ namespace JinEngine
 		: JComponent::InitData(JTransform::StaticTypeInfo(), GetDefaultName(JTransform::StaticTypeInfo()), guid, flag, owner)
 
 	{}
-	Core::JIdentifierPrivate& JTransform::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JTransform::PrivateInterface()const noexcept
 	{
 		return tPrivate;
 	}
@@ -376,6 +376,10 @@ namespace JinEngine
 	{
 		impl->SetRotation(value);
 	}
+	void JTransform::SetRotation(const DirectX::XMFLOAT4& q)noexcept
+	{
+		impl->SetRotation(JMathHelper::ToEulerAngle(q));
+	}
 	void JTransform::SetScale(const XMFLOAT3& value)noexcept
 	{
 		impl->SetScale(value);
@@ -406,7 +410,8 @@ namespace JinEngine
 	}
 	JTransform::JTransform(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JTransformImpl>(initData, this))
-	{ }
+	{  
+	}
 	JTransform::~JTransform()
 	{
 		impl.reset();
@@ -502,13 +507,13 @@ namespace JinEngine
 		transform->impl->UpdateTopDown();
 	}
 
-	void FrameDirtyInterface::RegisterFrameDirtyListener(JTransform* transform, JFrameDirtyListener* listener)noexcept
+	void FrameDirtyInterface::RegisterFrameDirtyListener(JTransform* transform, Graphic::JFrameDirty* listener, const size_t guid)noexcept
 	{
-		transform->impl->RegisterFrameDirtyListener(listener);
+		transform->impl->RegisterFrameDirtyListener(listener, guid);
 	}
-	void FrameDirtyInterface::DeRegisterFrameDirtyListener(JTransform* transform, JFrameDirtyListener* listener)noexcept
+	void FrameDirtyInterface::DeRegisterFrameDirtyListener(JTransform* transform, const size_t guid)noexcept
 	{
-		transform->impl->DeRegisterFrameDirtyListener(listener);
+		transform->impl->DeRegisterFrameDirtyListener(guid);
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JTransformPrivate::GetCreateInstanceInterface()const noexcept

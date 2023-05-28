@@ -55,7 +55,6 @@ namespace JinEngine
 		bool isMatchClipSkeleton = false;
 	public:
 		JAnimationClipImpl(const InitData& initData, JAnimationClip* thisClipRaw)
-			:JResourceObjectUserInterface(thisClipRaw->GetGuid())
 		{ }
 		~JAnimationClipImpl(){}
 	public:
@@ -496,6 +495,11 @@ namespace JinEngine
 			return true;
 		}
 	public:
+		void NotifyReAlloc()
+		{
+			ResetEventListenerPointer(*JResourceObject::EvInterface(), thisPointer->GetGuid());
+		}
+	public:
 		void Initialize(InitData* initData)
 		{
 			ImportAnimationClip(std::move(initData->anidata));
@@ -595,7 +599,7 @@ namespace JinEngine
 		:JResourceObject::InitData(JAnimationClip::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), directory)
 	{}
 
-	Core::JIdentifierPrivate& JAnimationClip::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JAnimationClip::PrivateInterface()const noexcept
 	{
 		return aPrivate;
 	}

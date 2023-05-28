@@ -87,7 +87,7 @@ namespace JinEngine
 			return JFSMinterface::InitData::IsValidData() && paramStorage != nullptr;
 		}
  
-		JIdentifierPrivate& JFSMparameter::GetPrivateInterface()const noexcept
+		JIdentifierPrivate& JFSMparameter::PrivateInterface()const noexcept
 		{
 			return pPrivate;
 		}

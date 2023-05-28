@@ -188,7 +188,7 @@ namespace JinEngine
 		: JMeshGeometry::LoadMetaData(JStaticMeshGeometry::StaticTypeInfo(), directory)
 	{}
 
-	Core::JIdentifierPrivate& JStaticMeshGeometry::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JStaticMeshGeometry::PrivateInterface()const noexcept
 	{
 		return sPrivate;
 	}
@@ -245,7 +245,8 @@ namespace JinEngine
 			using Impl = JStaticMeshGeometry::JStaticMeshGeometryImpl;
 			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(Impl::CreateInitData(pathData.name, pathData.engineFileWPath, metaData.get()), &sPrivate);
 			newMesh.ConnnectChild(idenUser);
-		}
+		} 
+		   
 		return newMesh;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)

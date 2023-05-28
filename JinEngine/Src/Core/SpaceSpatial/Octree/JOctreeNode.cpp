@@ -1,8 +1,10 @@
 #include"JOctreeNode.h"  
+#include"../../../Graphic/Culling/JCullingInterface.h"
 #include"../../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Object/GameObject/JGameObjectCreator.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
+#include"../../../Object/Component/RenderItem/JRenderItemPrivate.h"
 #include"../../../Object/Component/Transform/JTransform.h"
 #include"../../../Utility/JMathHelper.h"
 
@@ -11,6 +13,9 @@ namespace JinEngine
 	using namespace DirectX;
 	namespace Core
 	{
+		namespace
+		{
+		}
 		JOctreeNode::JOctreeNode(const DirectX::BoundingBox& boundingBox, bool isLooseOctree, JOctreeNode* parentNode)
 			:boundingBox(boundingBox), parentNode(parentNode)
 		{
@@ -50,10 +55,8 @@ namespace JinEngine
 		{
 			const uint innerCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerCount; ++i)
-			{
-				innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
 				innerGameObject[i] = nullptr;
-			}
+
 			innerGameObject.clear();
 			DestroyDebugGameObject();
 			if (childrenNode.size() != 0)
@@ -62,40 +65,40 @@ namespace JinEngine
 					childrenNode[i]->Clear();
 			}
 		}
-		void JOctreeNode::Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
+		void JOctreeNode::Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
 		{
 			J_CULLING_RESULT res = camFrustum.IsBoundingBoxIn(boundingBox, flag);
 			if (res == J_CULLING_RESULT::DISJOINT)
-				SetInVisible();
+				SetInVisible(cullUser);
 			else if (res == J_CULLING_RESULT::CONTAIN)
-				SetVisible(camFrustum, flag);
+				SetVisible(cullUser, camFrustum, flag);
 			else
 			{			
 				if (childrenNode.size() > 0)
 				{ 
 					for (uint i = 0; i < 8; ++i)
-						childrenNode[i]->Culling(camFrustum, flag);
+						childrenNode[i]->Culling(cullUser, camFrustum, flag);
 				}
 				else
-					CullingInnerObject(camFrustum, flag);
+					CullingInnerObject(cullUser, camFrustum, flag);
 			}
 		}
-		void JOctreeNode::Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
+		void JOctreeNode::Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept
 		{
 			ContainmentType res = camFrustum.Contains(boundingBox);
 			if (res == ContainmentType::DISJOINT)
-				SetInVisible();
+				SetInVisible(cullUser);
 			else if (res == ContainmentType::CONTAINS)
-				SetVisible(camFrustum, camPos);
+				SetVisible(cullUser, camFrustum, cullingFrustum);
 			else
 			{
 				if (childrenNode.size() > 0)
 				{
 					for (uint i = 0; i < 8; ++i)
-						childrenNode[i]->Culling(camFrustum, camPos);
+						childrenNode[i]->Culling(cullUser, camFrustum, cullingFrustum);
 				}
 				else
-					CullingInnerObject(camFrustum, camPos);
+					CullingInnerObject(cullUser, camFrustum, cullingFrustum);
 			}	
 		}
 		JUserPtr<JGameObject> JOctreeNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
@@ -104,26 +107,15 @@ namespace JinEngine
 		}
 		void JOctreeNode::IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
-			//미;구현
+			//미구현
 		}
 		void JOctreeNode::IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
-			//미;구현
+			//미구현
 		}
 		void JOctreeNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
-			//미;구현
-		}
-		void JOctreeNode::OffCulling()
-		{
-			const uint innerCount = (uint)innerGameObject.size();
-			for (uint i = 0; i < innerCount; ++i)
-				innerGameObject[i]->GetRenderItem()->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
-			if (childrenNode.size() > 0)
-			{
-				for (uint i = 0; i < 8; ++i)
-					childrenNode[i]->OffCulling();
-			}
+			//미구현
 		}
 		bool JOctreeNode::AddGameObject(JUserPtr<JGameObject> gameObj, bool isLooseOctree)noexcept
 		{
@@ -216,7 +208,7 @@ namespace JinEngine
 			}
 			return false;
 		}
-		void JOctreeNode::CullingInnerObject(const JCullingFrustum& camFrustum, J_CULLING_FLAG oriFlag)
+		void JOctreeNode::CullingInnerObject(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG oriFlag)
 		{
 			const uint innerGameObjCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerGameObjCount; ++i)
@@ -227,12 +219,12 @@ namespace JinEngine
 
 				J_CULLING_FLAG flag = oriFlag;
 				if (camFrustum.IsBoundingBoxIn(rItem->GetBoundingBox(), flag) != J_CULLING_RESULT::DISJOINT)
-					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+					OffCulling(cullUser, rItem); 
 				else
-					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+					SetCulling(cullUser, rItem);
 			}
 		}
-		void JOctreeNode::CullingInnerObject(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)
+		void JOctreeNode::CullingInnerObject(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)
 		{
 			const uint innerGameObjCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerGameObjCount; ++i)
@@ -241,53 +233,53 @@ namespace JinEngine
 				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) == 0)
 					continue;
 
-				const BoundingBox bbox = rItem->GetBoundingBox();
-				const ContainmentType res = camFrustum.Contains(bbox);
+				const BoundingOrientedBox oriBBox = rItem->GetOrientedBoundingBox();
+				const ContainmentType res = camFrustum.Contains(oriBBox);
 				if (res == ContainmentType::CONTAINS)
-					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+					OffCulling(cullUser, rItem);
 				else if (res == ContainmentType::INTERSECTS)
 				{
-					if (bbox.Contains(camPos) == ContainmentType::DISJOINT)
-						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::VISIBLE);
+					if (cullingFrustum.Contains(oriBBox) == ContainmentType::DISJOINT)
+						SetCulling(cullUser, rItem);
 					else
-						rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+						OffCulling(cullUser, rItem);
 				}
 				else
-					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+					SetCulling(cullUser, rItem);
 			}
 		}
-		void JOctreeNode::SetVisible(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
+		void JOctreeNode::SetVisible(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept
 		{
-			CullingInnerObject(camFrustum, flag);
+			CullingInnerObject(cullUser, camFrustum, flag);
 			if (childrenNode.size() > 0)
 			{
 				for (uint i = 0; i < 8; ++i)
-					childrenNode[i]->SetVisible(camFrustum, flag);
+					childrenNode[i]->SetVisible(cullUser, camFrustum, flag);
 			}
 		}
-		void JOctreeNode::SetVisible(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept
+		void JOctreeNode::SetVisible(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept
 		{
-			CullingInnerObject(camFrustum, camPos);
+			CullingInnerObject(cullUser, camFrustum, cullingFrustum);
 			if (childrenNode.size() > 0)
 			{
 				for (uint i = 0; i < 8; ++i)
-					childrenNode[i]->SetVisible(camFrustum, camPos);
+					childrenNode[i]->SetVisible(cullUser, camFrustum, cullingFrustum);
 			}
 		}
-		void JOctreeNode::SetInVisible()noexcept
+		void JOctreeNode::SetInVisible(Graphic::JCullingUserInterface& cullUser)noexcept
 		{
 			const uint innerGameObjCount = (uint)innerGameObject.size();
 			for (uint i = 0; i < innerGameObjCount; ++i)
 			{
 				JUserPtr<JRenderItem> rItem = innerGameObject[i]->GetRenderItem();
 				if ((rItem->GetSpaceSpatialMask() & SPACE_SPATIAL_ALLOW_CULLING) > 0)
-					rItem->SetRenderVisibility(J_RENDER_VISIBILITY::INVISIBLE);
+					SetCulling(cullUser, rItem);
 			}
 
 			if (childrenNode.size() > 0)
 			{
 				for (uint i = 0; i < 8; ++i)
-					childrenNode[i]->SetInVisible();
+					childrenNode[i]->SetInVisible(cullUser);
 			}
 		}
 	}

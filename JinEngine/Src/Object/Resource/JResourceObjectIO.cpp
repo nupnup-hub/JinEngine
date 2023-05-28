@@ -68,10 +68,9 @@ namespace JinEngine
 	}
 	void JResourceObjectIO::LoadEngineResource(const JUserPtr<JDirectory>& engineRootDir)
 	{
-		std::vector<RTypeHint> rInfo = RTypeCommonCall::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
-		const uint rInfoCount = (uint)rInfo.size();
-		for (uint i = 0; i < rInfoCount; ++i)
-			SearchFile(rInfo[i].thisType, engineRootDir, false);
+		auto rHintVec = RTypeCommonCall::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
+		for (const auto& hint : rHintVec)
+			SearchFile(hint.thisType, engineRootDir, false);
 	}
 	void JResourceObjectIO::LoadProjectDirectory(const JUserPtr<JDirectory>& projectRootDir)
 	{
@@ -123,16 +122,41 @@ namespace JinEngine
 		SearchDirectory(defaultFolderCash[3], true, true, projectContentDirFlag);
 		SearchDirectory(defaultFolderCash[3], true, false, userDefineDirFlag);
 	}
-	void JResourceObjectIO::LoadProjectResource(const JUserPtr<JDirectory>& projectRootDir)
+	void JResourceObjectIO::LoadProjectResourceFile(const JUserPtr<JDirectory>& projectRootDir)
 	{
 		//scene resource has all dependency
-		std::vector<RTypeHint> rInfo = RTypeCommonCall::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
-		const uint rInfoCount = (uint)rInfo.size();
-		for (uint i = 0; i < rInfoCount; ++i)
+		auto rHintVec = RTypeCommonCall::GetRTypeHintVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY);
+		for (const auto& hint : rHintVec)
+			SearchFile(hint.thisType, projectRootDir, false);
+	}
+	void JResourceObjectIO::LoadProjectLastOpendScene(const JUserPtr<JDirectory>& projectRootDir)
+	{
+		auto fileVec = projectRootDir->GetDirectoryFileVec(true, J_RESOURCE_TYPE::SCENE);
+		for (const auto& data : fileVec)
 		{
-			//last opened scene is Automatically  loaded
-			const bool canLoadResource = rInfo[i].thisType == J_RESOURCE_TYPE::SCENE;
-			SearchFile(rInfo[i].thisType, projectRootDir, canLoadResource);
+			std::wifstream stream;
+			stream.open(data->GetMetaFilePath(), std::ios::in | std::ios::binary);
+			if (!stream.is_open())
+				continue;
+
+			if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeGuidSymbol()))
+				return;
+
+			size_t typeGuid = 0;
+			stream >> typeGuid;
+			Core::JTypeInfo* typeInfo = Core::JReflectionInfo::Instance().GetTypeInfo(typeGuid);
+
+			if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamLastOpenSymbol(*typeInfo)))
+				return;
+
+			bool isOpen = false;
+			stream >> isOpen;
+			stream.close();
+			if (!isOpen)
+				continue;
+
+			if (data->TryGetResourceUser() != nullptr)
+				return;
 		}
 	}
 	void JResourceObjectIO::SearchDirectory(const JUserPtr<JDirectory>& parentDir, const bool searchProjectFolder, const bool onlyDeafultFolder, const J_OBJECT_FLAG dirFlag)
@@ -215,66 +239,66 @@ namespace JinEngine
 
 		std::wifstream stream;
 		stream.open(pathData.engineMetaFileWPath, std::ios::in | std::ios::binary);
-		if (stream.is_open())
+		if (!stream.is_open())
+			return;
+
+		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamObjGuidSymbol()))
+			return;
+
+		size_t guid = 0;
+		stream >> guid;
+
+		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeGuidSymbol()))
+			return;
+
+		size_t typeGuid = 0;
+		stream >> typeGuid;
+		Core::JTypeInfo* typeInfo = Core::JReflectionInfo::Instance().GetTypeInfo(typeGuid);
+
+		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>()))
+			return;
+
+		int storeType = 0;
+		stream >> storeType;
+		J_RESOURCE_TYPE storedRType = (J_RESOURCE_TYPE)storeType;
+		if (storedRType != rType)
 		{
-			if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamObjGuidSymbol()))
-				return;
+			stream.close();
+			return;
+		}
 
-			size_t guid = 0;
-			stream >> guid;
+		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamFormatIndexSymbol()))
+			return;
 
-			if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeGuidSymbol()))
-				return;
+		int formatIndex = 0;
+		stream >> formatIndex;
+		JFileInitData initData(pathData.name, guid, *typeInfo, storedRType, (uint8)formatIndex);
 
-			size_t typeGuid = 0;
-			stream >> typeGuid;
-			Core::JTypeInfo* typeInfo = Core::JReflectionInfo::Instance().GetTypeInfo(typeGuid);
-
-			if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>()))
-				return;
-
-			int storeType = 0;
-			stream >> storeType;
-			J_RESOURCE_TYPE storedRType = (J_RESOURCE_TYPE)storeType;
-			if (storedRType != rType)
+		if (storedRType == J_RESOURCE_TYPE::SCENE)
+		{
+			if (canLoadResource)
 			{
-				stream.close();
-				return;
-			}
+				if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamLastOpenSymbol(*typeInfo)))
+					return;
 
-			if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamFormatIndexSymbol()))
-				return;
-
-			int formatIndex = 0;
-			stream >> formatIndex;
-			JFileInitData initData(pathData.name, guid, *typeInfo, storedRType, (uint8)formatIndex);
-
-			if (storedRType == J_RESOURCE_TYPE::SCENE)
-			{
-				if (canLoadResource)
-				{
-					if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamLastOpenSymbol(*typeInfo)))
-						return;
-
-					bool isOpen = false;
-					stream >> isOpen;
-					stream.close();
-					auto file = DirFileInterface::CreateJFile(initData, directory);
-					if (isOpen)
-						file->TryGetResourceUser();
-						//JRFIB::LoadByName(JRI::CallGetTypeInfo(storedRType).Name(), *directory, pathData);
-				}
-				else
-					DirFileInterface::CreateJFile(initData, directory);
-			}
-			else
-			{
+				bool isOpen = false;
+				stream >> isOpen;
 				stream.close();
 				auto file = DirFileInterface::CreateJFile(initData, directory);
-				if (canLoadResource)
+				if (isOpen)
 					file->TryGetResourceUser();
-					//JRFIB::LoadByName(JRI::CallGetTypeInfo(storedRType).Name(), *directory, pathData);
+				//JRFIB::LoadByName(JRI::CallGetTypeInfo(storedRType).Name(), *directory, pathData);
 			}
+			else
+				DirFileInterface::CreateJFile(initData, directory);
+		}
+		else
+		{
+			stream.close();
+			auto file = DirFileInterface::CreateJFile(initData, directory);
+			if (canLoadResource)
+				file->TryGetResourceUser();
+			//JRFIB::LoadByName(JRI::CallGetTypeInfo(storedRType).Name(), *directory, pathData);
 		}
 	}
 }

@@ -694,7 +694,7 @@ namespace JinEngine
 							bgRectDelta,
 							true);
 					}
-					JImGuiImpl::Image(nowPreviewScene->GetPreviewCamera().Get(), JVector2<float>(btnIconSize, btnIconSize));
+					JImGuiImpl::Image(nowPreviewScene->GetPreviewCamera().Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, JVector2<float>(btnIconSize, btnIconSize));
 
 					std::wstring name;
 					if (objType == J_OBJECT_TYPE::RESOURCE_OBJECT)

@@ -279,25 +279,25 @@ namespace JinEngine
 			return true;
 		}
 	public:
-		bool RegisterInstance(const JUserPtr<JGameObject>& gPtr)noexcept
+		bool RegisterInstance()noexcept
 		{
 			if (parent != nullptr)
-				parent->impl->children.push_back(gPtr);
+				parent->impl->children.push_back(thisPointer);
 			else if (parentInfo != nullptr)
 			{
 				auto pIden = Core::GetRawPtr(*parentInfo);
 				parent = pIden != nullptr ? Core::GetUserPtr<JGameObject>(pIden) : nullptr;
 				if (parent != nullptr)
-					parent->impl->children.push_back(gPtr);
+					parent->impl->children.push_back(thisPointer);
 			}
-			return JScenePrivate::OwnTypeInterface::AddGameObject(gPtr);
+			return JScenePrivate::OwnTypeInterface::AddGameObject(thisPointer);
 		}
-		bool DeRegisterInstance(const JUserPtr<JGameObject>& gPtr)noexcept
+		bool DeRegisterInstance()noexcept
 		{
 			if (parent != nullptr)
 			{
 				parentInfo = std::make_unique<Core::JTypeInstanceSearchHint>(parent);
-				const size_t guid = gPtr->GetGuid();
+				const size_t guid = thisPointer->GetGuid();
 				const uint pChildrenCount = (uint)parent->impl->children.size();
 				for (uint i = 0; i < pChildrenCount; ++i)
 				{
@@ -309,7 +309,7 @@ namespace JinEngine
 					}
 				}
 			}
-			return  JScenePrivate::OwnTypeInterface::RemoveGameObject(gPtr);
+			return  JScenePrivate::OwnTypeInterface::RemoveGameObject(thisPointer);
 		}
 	public:
 		void RegisterThisPointer(JGameObject* gPtr)
@@ -372,6 +372,10 @@ namespace JinEngine
 		return JObject::StoreData::IsValidData() && stream.is_open();
 	}
 
+	size_t JGameObject::GetOwnerGuid()const noexcept
+	{
+		return impl->ownerScene->GetGuid();
+	}
 	JUserPtr<JScene> JGameObject::GetOwnerScene()const noexcept
 	{
 		return impl->ownerScene;
@@ -439,7 +443,7 @@ namespace JinEngine
 	{
 		return impl->children;
 	}
-	Core::JIdentifierPrivate& JGameObject::GetPrivateInterface()const noexcept
+	Core::JIdentifierPrivate& JGameObject::PrivateInterface()const noexcept
 	{
 		return gPrivate;
 	}
@@ -597,7 +601,7 @@ namespace JinEngine
 	void CreateInstanceInterface::RegisterCash(Core::JIdentifier* createdPtr)noexcept
 	{
 		JGameObject* gPtr = static_cast<JGameObject*>(createdPtr);
-		gPtr->impl->RegisterInstance(Core::GetUserPtr(gPtr));
+		gPtr->impl->RegisterInstance();
 	}
 	void CreateInstanceInterface::SetValidInstance(Core::JIdentifier* createdPtr)noexcept
 	{
@@ -630,7 +634,7 @@ namespace JinEngine
 	void DestroyInstanceInterface::DeRegisterCash(Core::JIdentifier* ptr)noexcept
 	{
 		JGameObject* gPtr = static_cast<JGameObject*>(ptr);
-		gPtr->impl->DeRegisterInstance(Core::GetUserPtr(gPtr));
+		gPtr->impl->DeRegisterInstance();
 	}
 
 	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(JUserPtr<JScene> invoker, std::wifstream& stream)
@@ -682,7 +686,7 @@ namespace JinEngine
 			size_t typeGuid;
 			JFileIOHelper::LoadJString(stream, componentName);
 			JFileIOHelper::LoadAtomicData(stream, typeGuid);
-			auto compPrivate = static_cast<JComponentPrivate*>(Core::JIdentifier::GetPrivateInterface(typeGuid));
+			auto compPrivate = static_cast<JComponentPrivate*>(Core::JIdentifier::PrivateInterface(typeGuid));
 			compPrivate->GetAssetDataIOInterface().LoadAssetData(compLoadData.get());
 		}
 
@@ -713,7 +717,7 @@ namespace JinEngine
 		{
 			JFileIOHelper::StoreJString(gmaeObjStoreData->stream, L"TypeName:", JCUtil::U8StrToWstr(comp->GetTypeInfo().Name()));
 			JFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"TypeGuid:", comp->GetTypeInfo().TypeGuid());
-			auto compPrivate = static_cast<JComponentPrivate*>(&comp->GetPrivateInterface());
+			auto compPrivate = static_cast<JComponentPrivate*>(&comp->PrivateInterface());
 			auto compStoreData = compPrivate->GetAssetDataIOInterface().CreateStoreAssetDIData(comp, gmaeObjStoreData->stream);
 			compPrivate->GetAssetDataIOInterface().StoreAssetData(compStoreData.get());
 		}

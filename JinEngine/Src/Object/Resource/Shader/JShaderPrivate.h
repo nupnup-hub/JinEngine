@@ -37,6 +37,7 @@ namespace JinEngine
 			friend class Graphic::JHZBOccCulling;
 		private:
 			static void RecompileGraphicShader(JShader* shader)noexcept;
+			static void RecompileComputeShader(JShader* shader)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

@@ -1,11 +1,10 @@
-#pragma once
+#pragma once  
+#include"../../Core/Reflection/JReflection.h"
 namespace JinEngine
 {
 	namespace Graphic
-	{
-		enum class J_UPLOAD_RESOURCE_TYPE
-		{
-			OBJECT,
+	{ 
+		REGISTER_ENUM_CLASS(J_UPLOAD_FRAME_RESOURCE_TYPE, int, OBJECT,
 			PASS,
 			ANIMATION,
 			CAMERA,
@@ -15,10 +14,9 @@ namespace JinEngine
 			LIGHT_INDEX,
 			SHADOW_MAP_LIGHT,
 			SHADOW_MAP,
-			 
-			//HZB_OBJECT,
-			COUNT,
-		};
+			HZB_OCC_OBJECT,
+			HZB_OCC_PASS)
+		
 		enum class J_UPLOAD_CAPACITY_CONDITION
 		{
 			KEEP,

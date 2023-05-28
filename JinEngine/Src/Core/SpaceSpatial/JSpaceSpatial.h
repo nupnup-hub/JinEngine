@@ -9,6 +9,10 @@
 namespace JinEngine
 {
 	class JGameObject;
+	namespace Graphic
+	{
+		class JCullingUserInterface;
+	}
 	namespace Core
 	{ 
 		class JSpaceSpatial
@@ -31,8 +35,7 @@ namespace JinEngine
 			virtual void UnBuild()noexcept = 0;
 			virtual void Clear()noexcept;
 			virtual void OnDebugGameObject()noexcept = 0;
-			virtual void OffDebugGameObject()noexcept = 0;
-			virtual void OffCulling()noexcept = 0;
+			virtual void OffDebugGameObject()noexcept = 0; 
 		public:
 			bool IsInnerRoot(const JUserPtr<JGameObject>& gameObj)const noexcept;
 			bool IsDebugRoot(const JUserPtr<JGameObject>& gameObj)const noexcept;
@@ -65,8 +68,8 @@ namespace JinEngine
 		private:
 			void FindInnerObject(std::vector<JUserPtr<JGameObject>>& vec, const JUserPtr<JGameObject>& parent)const noexcept;
 		public:
-			virtual void Culling(const JCullingFrustum& camFrustum)noexcept = 0;
-			virtual void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept = 0;
+			virtual void Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum)noexcept = 0;
+			virtual void Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept = 0;
 			virtual JUserPtr<JGameObject> IntersectFirst(const JRay& ray)const noexcept = 0;
 			virtual void Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, std::vector<JUserPtr<JGameObject>>& res)const noexcept = 0;
 			virtual void UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept = 0;

@@ -38,7 +38,8 @@ namespace JinEngine
 	{
 		scene = newScene;
 		camera = scene->FindFirstSelectedCamera(true);
-		camera->SetAllowCulling(false);
+		camera->SetAllowFrustumCulling(false);
+		camera->SetAllowHzbOcclusionCulling(false);
 	}
 	bool JPreviewScene::UseQuadShape()const noexcept
 	{

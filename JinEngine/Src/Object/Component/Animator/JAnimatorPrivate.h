@@ -12,6 +12,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphic;
+		class JShadowMap;
 		struct JAnimationConstants;
 	}
 	class JAnimatorPrivate final : public JComponentPrivate
@@ -55,6 +56,18 @@ namespace JinEngine
 			static bool UpdateStart(JAnimator* ani)noexcept;
 			static void UpdateFrame(JAnimator* ani, Graphic::JAnimationConstants& constant)noexcept;
 			static void UpdateEnd(JAnimator* ani)noexcept;
+		private:
+			static int GetFrameIndex(JAnimator* ani)noexcept; 
+		protected:
+			static bool HasRecopyRequest(JAnimator* ani)noexcept;
+		};
+		class FrameIndexInterface final
+		{
+		private:
+			friend class Graphic::JGraphic;
+			friend class Graphic::JShadowMap;
+		private:
+			static int GetFrameIndex(JAnimator* ani)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

@@ -1,5 +1,6 @@
 #pragma once
 #include"../JSpaceSpatialSortType.h"
+#include"../JSpaceSpatialNode.h"
 #include"../../JDataType.h"
 #include"../../Geometry/JCullingFrustum.h"
 #include"../../Geometry/JRay.h"
@@ -15,7 +16,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorBinaryTreeView;
-	}
+	} 
 	namespace Core
 	{
 		enum class J_KDTREE_NODE_TYPE
@@ -31,7 +32,7 @@ namespace JinEngine
 			Y,
 			Z
 		};
-		class JKdTreeNode
+		class JKdTreeNode : public JSpaceSpatialNode
 		{
 		private:
 			uint nodeNumber;
@@ -53,13 +54,12 @@ namespace JinEngine
 			void CreateDebugGameObject(const JUserPtr<JGameObject>& parent, bool onlyLeafNode)noexcept;
 			void DestroyDebugGameObject()noexcept;
 			void Clear()noexcept;
-			void Culling(const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
-			void Culling(const DirectX::BoundingFrustum& camFrustum, const DirectX::FXMVECTOR camPos)noexcept;
+			void Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
+			void Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept;
 			JUserPtr<JGameObject> IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept;
 			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<float>& distVec)const noexcept;
 			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<float>& distVec)const noexcept;
 			void Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
-			void OffCulling()noexcept;
 		public:
 			bool IsLeftNode()const noexcept;
 			bool IsChildNode(const uint pNodeNumber)const noexcept;
@@ -89,9 +89,10 @@ namespace JinEngine
 			void AddInnerGameObject(const std::vector<JUserPtr<JGameObject>>& newInnerGameObject)noexcept;
 			void RemoveInnerGameObject(const size_t guid)noexcept;
 			void StuffInnerGameObject(std::vector<JUserPtr<JGameObject>>& objList, uint& listIndex);
-		private:
-			void SetVisible()noexcept;
-			void SetInVisible()noexcept;
+		private: 
+			void SetVisible(Graphic::JCullingUserInterface& cullUser)noexcept;
+			void SetVisible(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& cullingFrustum)noexcept;
+			void SetInVisible(Graphic::JCullingUserInterface& cullUser)noexcept;
 			JKdTreeNode* FindRightLeafNode() noexcept;
 		public:
 			//Debug

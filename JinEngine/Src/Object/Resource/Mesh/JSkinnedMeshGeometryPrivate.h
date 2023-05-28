@@ -30,10 +30,10 @@ namespace JinEngine
 		{
 		private:
 			void Clear(Core::JIdentifier* ptr, const bool isForced) final;
-		};
+		}; 
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
 		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept final;
-		JResourceObjectPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept final;
+		JResourceObjectPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept final; 
 	};
 }
