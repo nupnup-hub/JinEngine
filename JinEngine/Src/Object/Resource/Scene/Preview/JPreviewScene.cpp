@@ -5,7 +5,7 @@
 #include"../../../GameObject/JGameObject.h"
 #include"../../../Component/Camera/JCamera.h" 
 #include"../../../Component/Transform/JTransform.h" 
-#include"../../../../Core/Guid/GuidCreator.h"
+#include"../../../../Core/Guid/JGuidCreator.h"
 #include"../../../../Utility/JCommonUtility.h"
 
 namespace JinEngine

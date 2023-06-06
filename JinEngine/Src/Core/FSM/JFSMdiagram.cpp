@@ -6,7 +6,7 @@
 #include"JFSMownerInterface.h"
 #include"JFSMparameterValueType.h"
 #include"JFSMparameterStorageAccess.h"   
-#include"../Guid/GuidCreator.h"
+#include"../Guid/JGuidCreator.h"
 #include"../Reflection/JTypeImplBase.h"
 #include"../../Utility/JCommonUtility.h"
 #include<memory>

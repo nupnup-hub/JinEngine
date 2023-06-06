@@ -85,7 +85,6 @@ namespace JinEngine
 			using JTypeInfoInitializer = JinEngine::Core::JTypeInfoInitializer<typeName>;		\
 			using JTypeInfoCallOnece = JinEngine::Core::JTypeInfo::CallOnece<typeName>;			\
 			using JTypeInfoRegister = JinEngine::Core::JTypeInfoRegister<typeName>;				\
-			using JReflectionInfo = JinEngine::Core::JReflectionInfo;							\
 			using JPtrUtil = JinEngine::Core::JPtrUtil;											\
 																								\
 		private:																				\
@@ -131,7 +130,7 @@ namespace JinEngine
 		public:																					\
 			static JTypeInfo& StaticTypeInfo()noexcept											\
 			{																					\
-				static JTypeInfo& thisTypeInfo = *JReflectionInfo::Instance().GetTypeInfo(typeid(typeName).name());		\
+				static JTypeInfo& thisTypeInfo = *JinEngine::_JReflectionInfo::Instance().GetTypeInfo(typeid(typeName).name());		\
 				return thisTypeInfo;															\
 			}																					\
 			virtual JTypeInfo& GetTypeInfo()const noexcept {return typeInfo;}					\

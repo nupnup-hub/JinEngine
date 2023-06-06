@@ -1,62 +1,25 @@
 #pragma once 
 #include"../Singleton/JSingletonHolder.h"  
-#include<vector>  
-#include<unordered_map>
 #include<memory> 
+#include<vector>
 
 namespace JinEngine
 { 
-	namespace Application
-	{
-		class JApplication;
-	}
-
 	namespace Core
 	{
 		class JTypeInfo;
 		class JEnumInfo;
 
-		class JReflectionInfoImpl final
+		class JReflectionInfoPrivate;
+		class JReflectionInfo final
 		{
 		private:
-			friend class Application::JApplication;
+			template<typename T>friend class JCreateUsingNew;
 		private:
-			using TypeVec = std::vector<JTypeInfo*>;
-			using TypeNameMap = std::unordered_map<size_t, JTypeInfo*>; 
+			friend class JReflectionInfoPrivate;
+			class JReflectionInfoImpl;
 		private:
-			using EnumVec = std::vector<JEnumInfo*>;
-			using EnumNameMap = std::unordered_map<size_t, JEnumInfo*>;
-		private:
-			using TimeVec = std::vector<float>;
-		private:
-			struct JTypeData
-			{
-			public:
-				TypeVec typeVec;
-				TypeNameMap typeNameMap; 
-			};
-			struct JEnumData
-			{
-			public:
-				EnumVec enumVec;
-				EnumNameMap enumNameMap;
-			};
-			struct JLazyData
-			{
-			public:
-				TypeVec lazyTypeVec;
-				TimeVec timeVec;
-			};
-		private:
-			JTypeData jType;
-			JEnumData jEnum; 
-			JLazyData jLazy;
-		private:
-			 
-			int lazyUpdateIndex = 0;
-		public:  
-			void AddType(JTypeInfo* newType);
-			void AddEnum(JEnumInfo* newEnum);
+			std::unique_ptr<JReflectionInfoImpl> impl;
 		public:
 			//Get typeInfo by name			.. typeInfo default key is name	because all typeInfo has typename
 			JTypeInfo* GetTypeInfo(const std::string& fullname)const noexcept; 
@@ -70,12 +33,11 @@ namespace JinEngine
 			//Debug
 			void SearchInstance();
 		private:
-			//it is valid once
-			void Initialize();
-			void Clear(); 
-		private: 
-			void Update();
+			JReflectionInfo();
+			~JReflectionInfo();
+			JReflectionInfo(const JReflectionInfo& rhs) = delete;
+			JReflectionInfo& operator=(const JReflectionInfo& rhs) = delete;
 		};
-		using JReflectionInfo = JSingletonHolder<JReflectionInfoImpl>;
 	}
+	using _JReflectionInfo = Core::JSingletonHolder<Core::JReflectionInfo>;
 }

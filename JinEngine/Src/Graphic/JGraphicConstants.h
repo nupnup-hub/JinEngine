@@ -6,6 +6,7 @@ namespace JinEngine
 		namespace Constants
 		{
 			static constexpr int gNumFrameResources = 3;
+			static constexpr int gMaxFrameThread = 4;
 			static constexpr int commonStencilRef = 1;
 		}
 	}

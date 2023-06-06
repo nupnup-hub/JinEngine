@@ -83,10 +83,42 @@ namespace JinEngine
 			const std::vector<JUserPtr<JGameObject>>& objVec00 = GCash::GetGameObjectCashVec(helper.scene, J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
 			const std::vector<JUserPtr<JGameObject>>& objVec01 = GCash::GetGameObjectCashVec(helper.scene, J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
 
-			DrawShadowMapGameObject(cmdList, currFrame, occCulling, graphicResource, objVec00, helper, JDrawCondition(option, helper, false, true, false));
-			DrawShadowMapGameObject(cmdList, currFrame, occCulling, graphicResource, objVec01, helper, JDrawCondition(option, helper, helper.scene->IsActivatedSceneTime(), true, false));
+			DrawShadowMapGameObject(cmdList, currFrame, occCulling, graphicResource, objVec00, helper, JDrawCondition(option, helper, false, true, false), false);
+			DrawShadowMapGameObject(cmdList, currFrame, occCulling, graphicResource, objVec01, helper, JDrawCondition(option, helper, helper.scene->IsActivatedSceneTime(), true, false), false);
 
 			ResourceTransition(cmdList, shdowMapResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_COMMON);
+		}
+		void JShadowMap::DrawSceneShadowMapMultiThread(ID3D12GraphicsCommandList* cmdList,
+			JFrameResource* currFrame,
+			JHZBOccCulling* occCulling,
+			JGraphicResourceManager* graphicResource,
+			const JGraphicOption& option,
+			const JDrawHelper helper)
+		{
+			auto gRInterface = helper.lit->GraphicResourceUserInterface();
+			const J_GRAPHIC_RESOURCE_TYPE rType = J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP;
+			const uint shadowWidth = gRInterface.GetResourceWidth(rType);
+			const uint shadowHeight = gRInterface.GetResourceHeight(rType); 
+			const uint dsvHeapIndex = gRInterface.GetHeapIndexStart(rType, J_GRAPHIC_BIND_TYPE::DSV);
+
+			D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)shadowWidth, (float)shadowHeight, 0.0f, 1.0f };
+			D3D12_RECT mScissorRect = { 0, 0, shadowWidth, shadowHeight };
+
+			cmdList->RSSetViewports(1, &mViewport);
+			cmdList->RSSetScissorRects(1, &mScissorRect);
+ 
+			D3D12_CPU_DESCRIPTOR_HANDLE dsv = graphicResource->GetCpuDsvDescriptorHandle(dsvHeapIndex); 
+			cmdList->OMSetRenderTargets(0, nullptr, false, &dsv);
+
+			currFrame->passCB->SetGraphicCBBufferView(cmdList, 2, helper.passOffset);
+			currFrame->shadowMapCalCB->SetGraphicCBBufferView(cmdList, 5, LitFrameIndexInterface::GetShadowMapFrameIndex(helper.lit.Get()));
+
+			using GCash = JScenePrivate::CashInterface;
+			const std::vector<JUserPtr<JGameObject>>& objVec00 = GCash::GetGameObjectCashVec(helper.scene, J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JUserPtr<JGameObject>>& objVec01 = GCash::GetGameObjectCashVec(helper.scene, J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
+
+			DrawShadowMapGameObject(cmdList, currFrame, occCulling, graphicResource, objVec00, helper, JDrawCondition(option, helper, false, true, false), true);
+			DrawShadowMapGameObject(cmdList, currFrame, occCulling, graphicResource, objVec01, helper, JDrawCondition(option, helper, helper.scene->IsActivatedSceneTime(), true, false), true);
 		}
 		void JShadowMap::DrawShadowMapGameObject(ID3D12GraphicsCommandList* cmdList,
 			JFrameResource* currFrame,
@@ -94,7 +126,8 @@ namespace JinEngine
 			JGraphicResourceManager* graphicResource,
 			const std::vector<JUserPtr<JGameObject>>& gameObject,
 			const JDrawHelper helper,
-			const JDrawCondition& condition)
+			const JDrawCondition& condition,
+			const bool allowMultiThread)
 		{
 			JShader* shadowShader = _JResourceManager::Instance().GetDefaultShader(J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SHADOW_MAP_SHADER).Get();
 
@@ -105,7 +138,12 @@ namespace JinEngine
 			auto skinCB = currFrame->skinnedCB->Resource();
 			  
 			const uint gameObjCount = (uint)gameObject.size();
-			for (uint i = 0; i < gameObjCount; ++i)
+			uint st = 0;
+			uint ed = gameObjCount; 
+			if(allowMultiThread)
+				helper.CalculateWorkIndex(gameObjCount, st, ed);
+
+			for (uint i = st; i < ed; ++i)
 			{
 				JRenderItem* renderItem = gameObject[i]->GetRenderItem().Get();
 				const uint objFrameIndex = RItemFrameIndexInterface::GetObjectFrameIndex(renderItem);

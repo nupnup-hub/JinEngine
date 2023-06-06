@@ -2,7 +2,7 @@
 #include"JBehaviorPrivate.h"
 #include"../JComponentHint.h"
 #include"../../GameObject/JGameObject.h"  
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 

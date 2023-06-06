@@ -10,16 +10,17 @@
 #include"../Graphic/JGraphicPrivate.h" 
 #include"../Object/Resource/JResourceManager.h"  
 #include"../Object/Resource/JResourceManagerPrivate.h"  
-#include"../Core/Reflection/JReflectionInfo.h"
+#include"../Core/Reflection/JReflectionInfoPrivate.h"
 #include"../Core/Identity/JIdentifier.h"
 #include"../Core/Time/JGameTimer.h"  
 #include"../Core/Time/JStopWatch.h"  
 #include"../Core/Func/Functor/JFunctor.h"  
 #include"../Core/Event/JEventListener.h"
+#include"../Core/Threading/JThreadManagerPrivate.h"
 #include"../Utility/JCommonUtility.h" 
 #include"../Editor/JEditorManager.h" 
 #include"../Window/JWindowEventType.h"
- 
+   
 namespace JinEngine
 {
 	namespace Application
@@ -27,7 +28,9 @@ namespace JinEngine
 		namespace
 		{
 			using WindowAppAccess = Window::JWindowPrivate::ApplicationAccess;
+			using ThreadManagerAccess = Core::JThreadManagerPrivate::ApplicationInterface;
 			using ResourceManagerAppAccess = JResourceManagerPrivate::ApplicationAccess;
+			using RefelectionAppAccess = Core::JReflectionInfoPrivate::ApplicationInterface;
 			using EngineAppAccess = JApplicationEnginePrivate::AppAccess;
 			using ProjectAppAccess = JApplicationProjectPrivate::AppAccess;
 			using ProjectLifeInterface = JApplicationProjectPrivate::LifeInterface;
@@ -48,8 +51,9 @@ namespace JinEngine
 			JApplicationImpl(HINSTANCE hInstance, const char* commandLine, const size_t guid)
 				:guid(guid)
 			{ 
-				Core::JReflectionInfo::Instance().Initialize();
+				RefelectionAppAccess::Initialize();
 				EngineAppAccess::Initialize();
+				ThreadManagerAccess::Initialize();
 
 				auto loadProjectF = std::make_unique<LoadProjectF::Functor>(&JApplicationImpl::LoadProject, this);
 				auto storeProjectF = std::make_unique<StoreProjectF::Functor>(&JApplicationImpl::StoreProject, this);
@@ -60,7 +64,8 @@ namespace JinEngine
 			}
 			~JApplicationImpl()
 			{
-				Core::JReflectionInfo::Instance().Clear();
+				ThreadManagerAccess::Clear();
+				RefelectionAppAccess::Clear();
 			}
 		public: 
 			void RunProjectSelector()
@@ -77,26 +82,27 @@ namespace JinEngine
 
 				JEngineTimer::Data().Start();
 				JEngineTimer::Data().Reset();
+
 				while (true)
 				{
 					std::optional<int> encode = WindowAppAccess::ProcessMessages();
 					if (encode.has_value())
 						break;
-
+					 
 					Core::JGameTimer::UpdateAllTimer();
 					GraphicAppAccess::UpdateWait();
-					Core::JReflectionInfo::Instance().Update();
-					GraphicAppAccess::StartFrame();
-					GraphicAppAccess::DrawProjectSelector();
+					RefelectionAppAccess::Update();
+					ThreadManagerAccess::Update();
+					GraphicAppAccess::UpdateGuiBackend();
 					editorManager.Update();
-					GraphicAppAccess::EndFrame();
-
+					GraphicAppAccess::DrawGui();
+					 
 					if (ProjectAppAccess::CanStartProject())
 					{
 						GraphicAppAccess::UpdateWait();
 						WindowAppAccess::CloseWindow();
 					}
-				}
+				} 
 			}
 			void RunEngine()
 			{
@@ -104,8 +110,8 @@ namespace JinEngine
 					return;
 
 				AddEventListener(*JWindow::EvInterface(), guid, Window::J_WINDOW_EVENT::WINDOW_CLOSE);
-
-				WindowAppAccess::OpenEngineWindow();
+			 
+				WindowAppAccess::OpenEngineWindow(); 
 				GraphicAppAccess::Initialize();
 				ResourceManagerAppAccess::Initialize();
 				ResourceManagerAppAccess::LoadProjectResource();
@@ -123,12 +129,12 @@ namespace JinEngine
 
 					Core::JGameTimer::UpdateAllTimer();
 					GraphicAppAccess::UpdateWait(); 
-					Core::JReflectionInfo::Instance().Update();
-					GraphicAppAccess::StartFrame(); 
+					RefelectionAppAccess::Update();
+					ThreadManagerAccess::Update();
+					GraphicAppAccess::UpdateGuiBackend();
 					editorManager.Update(); 
-					GraphicAppAccess::UpdateEngine();
+					GraphicAppAccess::UpdateFrame();
 					GraphicAppAccess::DrawScene();
-					GraphicAppAccess::EndFrame();
 
 					if (ProjectAppAccess::CanEndProject())
 					{
@@ -217,7 +223,8 @@ namespace JinEngine
 			:impl(std::make_unique<JApplicationImpl>(hInstance, commandLine, Core::MakeGuid()))
 		{}
 		JApplication::~JApplication()
-		{}
+		{
+		}
 		void JApplication::Run()
 		{
 			impl->RunProjectSelector();

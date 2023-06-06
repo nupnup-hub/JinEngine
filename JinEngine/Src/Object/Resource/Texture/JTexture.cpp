@@ -6,7 +6,7 @@
 #include"../../Directory/JDirectory.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphic.h" 

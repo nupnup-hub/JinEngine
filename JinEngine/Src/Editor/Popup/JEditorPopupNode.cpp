@@ -1,7 +1,7 @@
 #include"JEditorPopupNode.h" 
 #include"../String/JEditorStringMap.h" 
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../../Core/Guid/GuidCreator.h"
+#include"../../Core/Guid/JGuidCreator.h"
 
 namespace JinEngine
 {

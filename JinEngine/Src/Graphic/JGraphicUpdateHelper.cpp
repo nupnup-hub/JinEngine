@@ -126,7 +126,7 @@ namespace JinEngine
 			}
 			return false;
 		}
-		void JDrawHelper::SettingOccCulling(const JUserPtr<JComponent>& comp)noexcept
+		void JDrawHelper::SettingOccCulling(const JWeakPtr<JComponent>& comp)noexcept
 		{
 			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
 			{
@@ -140,12 +140,12 @@ namespace JinEngine
 				cullUser = lit->CullingUserInterface();
 			}
 		}
-		void JDrawHelper::SettingDrawShadowMap(const JUserPtr<JLight>& lit)noexcept
+		void JDrawHelper::SettingDrawShadowMap(const JWeakPtr<JLight>& lit)noexcept
 		{
 			JDrawHelper::lit = lit;
 			cullUser = lit->CullingUserInterface();
 		}
-		void JDrawHelper::SettingDrawScene(const JUserPtr<JCamera>& cam)noexcept
+		void JDrawHelper::SettingDrawScene(const JWeakPtr<JCamera>& cam)noexcept
 		{
 			JDrawHelper::cam = cam;
 			cullUser = cam->CullingUserInterface();
@@ -155,6 +155,26 @@ namespace JinEngine
 			allowFrustumCulling = cam->AllowFrustumCulling();
 			allowOcclusionCulling = cam->AllowHzbOcclusionCulling();
 			allowDrawOccMipMap = cam->AllowDisplayOccCullingDepthMap();
+		}
+		void JDrawHelper::CalculateWorkIndex(const uint count, _Out_ uint& stIndex, _Out_ uint& edIndex)const noexcept
+		{
+			if (count == 0)
+			{
+				stIndex = 0;
+				edIndex = 0;
+				return;
+			}
+
+			const uint threadPer = count / threadCount;
+			if (threadIndex == 0)
+				stIndex = 0;
+			else
+				stIndex = threadPer * (threadIndex - 1);
+
+			if (threadIndex == threadCount - 1)
+				edIndex = count;
+			else
+				edIndex = threadPer * (threadIndex + 1);
 		}
 
 		JDrawCondition::JDrawCondition(const JGraphicOption& option,

@@ -6,7 +6,7 @@
 #include"JFSMstate.h"
 #include"JFSMtransition.h"
 #include"JFSMparameter.h" 
-#include"../Guid/GuidCreator.h"
+#include"../Guid/JGuidCreator.h"
 #include"../Reflection/JTypeImplBase.h"
 
 namespace JinEngine

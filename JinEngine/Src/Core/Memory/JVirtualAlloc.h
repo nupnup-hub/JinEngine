@@ -69,7 +69,7 @@ namespace JinEngine
 		public:
 			bool CanAllocate(const uint blockCount)const noexcept final; 
 		private:
-			bool CanCompactMemory()const noexcept;
+			bool CanCompactMemory(const bool allowCompareBorder)const noexcept; 
 			bool IsOverlapPage(const uint pageIndex)const noexcept;
 		private:
 			uint GetBlockIndex(void* p)const noexcept;
@@ -104,7 +104,7 @@ namespace JinEngine
 			DataPointer CommitEmtpyBlock();
 			DataPointer CommitEmptyPage();
 		private:
-			bool CompactUnuseMemory();
+			bool CompactUnuseMemory(const bool allowCompareBorder);
 			void FreeUnuseMemory();
 		private:
 			template<typename T>

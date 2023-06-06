@@ -4,7 +4,7 @@
 #include"JApplicationEnginePrivate.h"
 #include"../Core/JDataType.h"
 #include"../Core/File/JFileIOHelper.h"
-#include"../Core/Guid/GuidCreator.h"
+#include"../Core/Guid/JGuidCreator.h"
 #include"../Utility/JCommonUtility.h"
 #include<Windows.h> 
 #include <direct.h>	 
@@ -474,7 +474,10 @@ namespace JinEngine
 		}
 		JApplicationProjectInfo* JApplicationProject::GetProjectInfo(uint index)noexcept
 		{
-			return impl.projectList[index].get();
+			if (index >= impl.projectList.size())
+				return nullptr;
+			else
+				return impl.projectList[index].get();
 		}
 		JApplicationProjectInfo* JApplicationProject::GetProjectInfo(const std::wstring& projectPath)noexcept
 		{

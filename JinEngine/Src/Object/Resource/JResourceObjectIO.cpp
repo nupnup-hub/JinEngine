@@ -20,7 +20,7 @@
 #include"../../Graphic/GraphicResource/JGraphicResourceManager.h"
 #include"../../Application/JApplicationEngine.h"  
 #include"../../Application/JApplicationProject.h"  
-#include"../../Core/Guid/GuidCreator.h"
+#include"../../Core/Guid/JGuidCreator.h"
 #include<Windows.h>
 #include<io.h>
 #include<fstream>
@@ -144,7 +144,7 @@ namespace JinEngine
 
 			size_t typeGuid = 0;
 			stream >> typeGuid;
-			Core::JTypeInfo* typeInfo = Core::JReflectionInfo::Instance().GetTypeInfo(typeGuid);
+			Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
 
 			if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamLastOpenSymbol(*typeInfo)))
 				return;
@@ -253,7 +253,7 @@ namespace JinEngine
 
 		size_t typeGuid = 0;
 		stream >> typeGuid;
-		Core::JTypeInfo* typeInfo = Core::JReflectionInfo::Instance().GetTypeInfo(typeGuid);
+		Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
 
 		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>()))
 			return;

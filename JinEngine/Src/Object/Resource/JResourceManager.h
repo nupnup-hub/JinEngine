@@ -23,6 +23,13 @@ namespace JinEngine
 	{
 		template<typename T>class JCreateUsingNew;
 	}
+	 
+	//private interface와 impl구현에는 static class보다 singleton이 더 적합하다고 판단해서
+	//위에 두 사항이 필요한 manager class는 singleton 적용
+	//추가) 다른 class에 private interface 사용하려면 friend class 선언이 필요하고 이는 헤더파일에 impl class를 선언을
+	//강제한다 또한 impl은 변수 소유를 강제하며 이는 생성자에서 변수 초기화를 필요로하므로 static class보다
+	//singletone을 채용한 이유이다. 
+
 	class JResourceManager final
 	{
 	private:
@@ -73,26 +80,26 @@ namespace JinEngine
 		template<typename T, typename ...Param, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		JUserPtr<T> GetResourceByCondition(Core::JFunctor<bool, T*, Param...>&& functor, Param... var)const noexcept
 		{
-			return FineResource<T>(T::StaticTypeInfo(), std::move(functor), std::forward<Param>(var)...);
+			return FindResource<T>(T::StaticTypeInfo(), std::move(functor), std::forward<Param>(var)...);
 		} 
 		template<typename T, typename ...Param, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		JUserPtr<T> GetResourceByCondition(bool(*ptr)(T*, Param...), Param... var)const noexcept
 		{
-			return FineResource<T>(T::StaticTypeInfo(), ptr, std::forward<Param>(var)...);
+			return FindResource<T>(T::StaticTypeInfo(), ptr, std::forward<Param>(var)...);
 		}
 		template<typename T, typename ...Param, std::enable_if_t<std::is_base_of_v<JDirectory, T>, int> = 0>
 		JUserPtr<T> GetDirectoryByCondition(Core::JFunctor<bool, T*, Param...>&& functor, Param... var)const noexcept
 		{
-			return FineResource<T>(T::StaticTypeInfo(), std::move(functor), std::forward<Param>(var)...);
+			return FindResource<T>(T::StaticTypeInfo(), std::move(functor), std::forward<Param>(var)...);
 		}
 		template<typename T, typename ...Param, std::enable_if_t<std::is_base_of_v<JDirectory, T>, int> = 0>
 		JUserPtr<T> GetDirectoryByCondition(bool(*ptr)(T*, Param...), Param... var)const noexcept
 		{
-			return FineResource<T>(T::StaticTypeInfo(), ptr, std::forward<Param>(var)...);
+			return FindResource<T>(T::StaticTypeInfo(), ptr, std::forward<Param>(var)...);
 		} 
 	private:
 		template<typename T,  typename F, typename ...Param>
-		JUserPtr<T> FineResource(const Core::JTypeInfo& typeInfo, F func, Param... var)const noexcept
+		JUserPtr<T> FindResource(const Core::JTypeInfo& typeInfo, F func, Param... var)const noexcept
 		{
 			auto vec = typeInfo.GetInstanceRawPtrVec();
 			for (const auto& data : vec)
@@ -106,6 +113,8 @@ namespace JinEngine
 	private:
 		JResourceManager();
 		~JResourceManager();
+		JResourceManager(const JResourceManager& rhs) = delete;
+		JResourceManager& operator=(const JResourceManager& rhs) = delete;
 	}; 
 
 	using _JResourceManager = JinEngine::Core::JSingletonHolder<JResourceManager>;

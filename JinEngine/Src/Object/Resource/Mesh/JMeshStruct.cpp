@@ -2,7 +2,7 @@
 #include"../../../Utility/JCommonUtility.h" 
 #include"../../../Utility/JMathHelper.h"
 #include"../../../Core/Geometry/JDirectXCollisionEx.h"
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
  
 namespace JinEngine
 {

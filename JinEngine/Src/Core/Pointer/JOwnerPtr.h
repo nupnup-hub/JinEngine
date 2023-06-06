@@ -1,6 +1,7 @@
 #pragma once 
 #include "../JDataType.h"  
 #include<type_traits>  
+#include<atomic>
 
 namespace JinEngine
 {
@@ -15,8 +16,8 @@ namespace JinEngine
 			using VoidPointer = void*; 
 		public:
 			VoidPointer ptr = nullptr;
-			uint userCount = 0;
-			uint weakCount = 0;
+			std::atomic<uint> userCount = 0;
+			std::atomic<uint> weakCount = 0;
 		};
 
 		template<typename T> class JOwnerPtrInterface;
@@ -53,11 +54,11 @@ namespace JinEngine
 			}
 			uint GetUserCount()const noexcept
 			{
-				return ptrData != nullptr ? ptrData->userCount : 0;
+				return ptrData != nullptr ? ptrData->userCount.load() : 0;
 			}
 			uint GetWeakCount()const noexcept
 			{
-				return ptrData != nullptr ? ptrData->weakCount : 0;
+				return ptrData != nullptr ? ptrData->weakCount.load() : 0;
 			}
 		protected:
 			template<typename U>

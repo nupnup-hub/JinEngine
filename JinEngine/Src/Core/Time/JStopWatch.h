@@ -33,6 +33,7 @@ namespace JinEngine
 		public:
 			float GetElapsedSecondTime()const noexcept;
 			float GetElapsedMilliTime()const noexcept;
+			float GetElapsedMicroTime()const noexcept;
 			float GetElapsedNanoTime()const noexcept;
 		};
 	}

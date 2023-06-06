@@ -228,7 +228,7 @@ namespace JinEngine
 			auto rawPtr = Core::GetRawPtr(typeGuid, objGuid);
 			if (rawPtr == nullptr)
 			{
-				Core::JTypeInfo* typeInfo = Core::JReflectionInfo::Instance().GetTypeInfo(typeGuid);
+				Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
 				if (typeInfo->IsChildOf<JResourceObject>())
 					return _JResourceManager::Instance().TryGetResourceUser(*typeInfo, objGuid);
 				else
@@ -255,7 +255,7 @@ namespace JinEngine
 		stream >> guide >> objGuid;
 		stream >> guide >> typeGuid;
 
-		return Core::JTypeInstanceSearchHint(*Core::JReflectionInfo::Instance().GetTypeInfo(typeGuid), objGuid);
+		return Core::JTypeInstanceSearchHint(*_JReflectionInfo::Instance().GetTypeInfo(typeGuid), objGuid);
 	}
 	bool JFileIOHelper::SkipLine(std::wifstream& stream, const std::wstring& symbol)
 	{

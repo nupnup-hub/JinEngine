@@ -3,7 +3,7 @@
 #include"../../JGraphicConstants.h"  
 #include"../../../Core/Empty/EmptyType.h"
 #include"../../../Core/JDataType.h"
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Pointer/JOwnerPtr.h"
 #include<vector>
 

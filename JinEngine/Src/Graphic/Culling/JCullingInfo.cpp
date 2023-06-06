@@ -1,7 +1,7 @@
 #include"JCullingInfo.h"
 #include"JCullingConstants.h"
 #include"../JGraphicPrivate.h"
-#include"../../Core/Guid/GuidCreator.h"
+#include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/Time/JGameTimer.h"
 
 namespace JinEngine
@@ -26,7 +26,7 @@ namespace JinEngine
 		}
 		void JCullingInfo::SetUpdateFrequency(const float newUpdateFrequency, const float startTime)noexcept
 		{
-			updateFrequency = std::clamp(newUpdateFrequency, Constant::cullingUpdateFrequencyMin, Constant::cullingUpdateFrequencyMax);
+			updateFrequency = std::clamp(newUpdateFrequency, Constants::cullingUpdateFrequencyMin, Constants::cullingUpdateFrequencyMax);
 			elapsedTime = startTime;
 		} 
 		void JCullingInfo::SetResultPtr(void* ptr, const size_t size)noexcept

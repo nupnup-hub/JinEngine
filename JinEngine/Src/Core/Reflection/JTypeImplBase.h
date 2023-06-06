@@ -39,7 +39,7 @@ namespace JinEngine
 			 NotifyReAllocPtr notifyPtr = [] (ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)\
 			{																									\
 				implTypeName* movedImpl = static_cast<implTypeName*>(movedPtr);									\
-				auto thisPtr = 	movedImpl->thisPointerName;														\
+				auto& thisPtr = movedImpl->thisPointerName;														\
 				thisPtr->impl.release();																		\
 				thisPtr->impl.reset(movedImpl);																	\
 				if constexpr(JinEngine::Core::HasNotifyReAlloc<implTypeName>::value)							\

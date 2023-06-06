@@ -106,7 +106,7 @@ namespace JinEngine
 			const uint reqBlockCount = (uint)(reqSize / oriBlockSize);
 			if (!CanAllocate(reqBlockCount))
 			{	 
-				if(CanCompactMemory() && CompactUnuseMemory())
+				if(CompactUnuseMemory(false))
 					return Allocate(reqSize);
 				else if (desc.canReAlloc && desc.notifyReAllocB != nullptr && Extend())
 					return Allocate(reqSize);
@@ -164,7 +164,7 @@ namespace JinEngine
 		void JVirtualAlloc::ReleaseUnusePage()
 		{
 			if (desc.useMemoryCompaction)
-				CompactUnuseMemory();
+				CompactUnuseMemory(true);
 			else
 				FreeUnuseMemory();
 		}
@@ -188,9 +188,12 @@ namespace JinEngine
 		{
 			return allocableBlockHead != nullptr || committedPageCount < reservedPageCount; 
 		} 
-		bool JVirtualAlloc::CanCompactMemory()const noexcept
+		bool JVirtualAlloc::CanCompactMemory(const bool allowCompareBorder)const noexcept
 		{
-			return GetDeAllocatedBlockCount() >= desc.memoryCompactBorder && desc.notifyReAllocB != nullptr;
+			if (allowCompareBorder)
+				return GetDeAllocatedBlockCount() >= desc.memoryCompactBorder && desc.notifyReAllocB != nullptr;
+			else
+				return GetDeAllocatedBlockCount() > 0 && desc.notifyReAllocB != nullptr;
 		}
 		bool JVirtualAlloc::IsOverlapPage(const uint pageIndex)const noexcept
 		{
@@ -372,9 +375,9 @@ namespace JinEngine
 				return nullptr;
 			return UsePage(allocablePaegHead->pageIndex);
 		}
-		bool JVirtualAlloc::CompactUnuseMemory()
+		bool JVirtualAlloc::CompactUnuseMemory(const bool allowCompareBorder)
 		{
-			if (!CanCompactMemory())
+			if (!CanCompactMemory(allowCompareBorder))
 				return false;
 
 			const uint allocatedBlockCount = GetAllocatedBlockCount();
@@ -403,6 +406,7 @@ namespace JinEngine
  
 					isUseBlock[i] = true;
 					isUseBlock[movedBlockIndex] = false;
+					 
 					(*desc.notifyReAllocB)(emptyPtr, movedBlockIndex);
 					//if (desc.notifyDebugB != nullptr)
 					//	(*desc.notifyDebugB)(movedPtr, emptyPtr, i);
@@ -479,15 +483,15 @@ namespace JinEngine
 			}
  
 			for (uint i = 0; i < useBlockCount; ++i)
-			{  
+			{
 				DataPointer oldBlockSt = &pData[i * allocBlockSize];
 				DataPointer newBlockSt = &exPData[i * allocBlockSize];
 				memcpy(newBlockSt, oldBlockSt, allocBlockSize);
 
-				if (desc.notifyReAllocB != nullptr)
-					(*desc.notifyReAllocB)(newBlockSt, i);
 				//if (desc.notifyDebugB != nullptr)
 				//	(*desc.notifyDebugB)(oldBlockSt, newBlockSt, i);
+				if (desc.notifyReAllocB != nullptr)
+					(*desc.notifyReAllocB)(newBlockSt, i);
 			}
 			apiInterface->ReleaseVirtualMemory(pData);
 

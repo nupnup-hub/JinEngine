@@ -4,7 +4,7 @@
 #include"../../GameObject/JGameObject.h" 
 #include"../../Resource/Scene/JScenePrivate.h" 
 #include"../../../Utility/JMathHelper.h"
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Reflection/JTypeImplBase.h"
@@ -20,7 +20,7 @@ namespace JinEngine
 		static auto isAvailableoverlapLam = []() {return false; };
 		static JTransformPrivate tPrivate;
 	}
- 
+
 	class JTransform::JTransformImpl : public Core::JTypeImplBase,
 		public Graphic::JFrameDirtyChain<Graphic::JFrameDirtyTrigger>
 	{
@@ -42,7 +42,7 @@ namespace JinEngine
 	public:
 		JTransformImpl(const InitData& initData, JTransform* thisTransRaw)
 		{}
-		~JTransformImpl(){}
+		~JTransformImpl() {}
 	public:
 		XMFLOAT3 GetPosition()const noexcept
 		{
@@ -60,7 +60,11 @@ namespace JinEngine
 		{
 			return scale;
 		}
-		DirectX::XMVECTOR GetWorldQuaternion()const noexcept
+		DirectX::XMFLOAT3 GetWorldPosition()const noexcept
+		{
+			return DirectX::XMFLOAT3(world._41, world._42, world._43);
+		}
+		DirectX::XMVECTOR GetWorldQuaternionV()const noexcept
 		{
 			XMVECTOR s;
 			XMVECTOR q;
@@ -97,6 +101,10 @@ namespace JinEngine
 		XMVECTOR GetFront()const noexcept
 		{
 			return XMLoadFloat3(&tFront);
+		} 
+		float GetDistance(const JUserPtr<JTransform>& t)const noexcept
+		{ 
+			return JMathHelper::Vector3Length(JMathHelper::Vector3Minus(t->GetWorldPosition(), GetWorldPosition()));
 		}
 	public:
 		void SetTransform(const XMFLOAT3& nPosition, const XMFLOAT3& nRotation, const XMFLOAT3& nScale)noexcept
@@ -123,7 +131,7 @@ namespace JinEngine
 				return;
 
 			rotation = euler;
-			
+
 			if (rotation.x >= 360)
 				rotation.x -= 360;
 			if (rotation.y >= 360)
@@ -151,7 +159,7 @@ namespace JinEngine
 			XMStoreFloat3(&tFront, XMVector3Normalize(newFront));
 
 			UpdateTopDown();
-		} 
+		}
 		void SetScale(const XMFLOAT3& value)noexcept
 		{
 			if (thisPointer->GetOwner()->IsRoot())
@@ -219,7 +227,7 @@ namespace JinEngine
 		}
 	public:
 		static bool DoCopy(JTransform* from, JTransform* to)
-		{ 
+		{
 			to->impl->position = from->impl->position;
 			to->impl->rotation = from->impl->rotation;
 			to->impl->scale = from->impl->scale;
@@ -237,7 +245,7 @@ namespace JinEngine
 				return;
 
 			UpdateWorld();
-			JScenePrivate::CompSettingInterface::UpdateTransform(owner); 
+			JScenePrivate::CompSettingInterface::UpdateTransform(owner);
 			SetFrameDirty();
 			const uint childrenCount = owner->GetChildrenCount();
 			for (uint i = 0; i < childrenCount; ++i)
@@ -268,12 +276,13 @@ namespace JinEngine
 			if (!thisPointer->GetOwner()->IsRoot())
 				UpdateWorld();
 		}
+	public:
 		void RegisterThisPointer(JTransform* trans)
 		{
 			thisPointer = Core::GetWeakPtr(trans);
 		}
 		static void RegisterTypeData()
-		{ 
+		{
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JTransform::StaticTypeInfo };
 			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
@@ -300,7 +309,7 @@ namespace JinEngine
 
 			RegisterCTypeInfo(JTransform::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 			Core::JIdentifier::RegisterPrivateInterface(JTransform::StaticTypeInfo(), tPrivate);
-			 
+
 			IMPL_REALLOC_BIND(JTransform::JTransformImpl, thisPointer)
 		}
 	};
@@ -317,11 +326,11 @@ namespace JinEngine
 		return tPrivate;
 	}
 	J_COMPONENT_TYPE JTransform::GetComponentType()const noexcept
-	{  
+	{
 		return GetStaticComponentType();
 	}
 	XMFLOAT3 JTransform::GetPosition()const noexcept
-	{ 
+	{
 		return impl->GetPosition();
 	}
 	XMFLOAT3 JTransform::GetRotation()const noexcept
@@ -336,9 +345,13 @@ namespace JinEngine
 	{
 		return impl->GetScale();
 	}
-	DirectX::XMVECTOR JTransform::GetWorldQuaternion()const noexcept
+	DirectX::XMFLOAT3 JTransform::GetWorldPosition()const noexcept
 	{
-		return impl->GetWorldQuaternion();
+		return impl->GetWorldPosition();
+	}
+	DirectX::XMVECTOR JTransform::GetWorldQuaternionV()const noexcept
+	{
+		return impl->GetWorldQuaternionV();
 	}
 	XMMATRIX JTransform::GetWorldMatrix()const noexcept
 	{
@@ -363,6 +376,10 @@ namespace JinEngine
 	XMVECTOR JTransform::GetFront()const noexcept
 	{
 		return impl->GetFront();
+	}
+	float JTransform::GetDistance(const JUserPtr<JTransform>& t)const noexcept
+	{ 
+		return impl->GetDistance(t);
 	}
 	void JTransform::SetTransform(const XMFLOAT3& position, const XMFLOAT3& rotation, const XMFLOAT3& scale)noexcept
 	{
@@ -406,11 +423,11 @@ namespace JinEngine
 	}
 	void JTransform::DoDeActivate()noexcept
 	{
-		JComponent::DoDeActivate(); 
+		JComponent::DoDeActivate();
 	}
 	JTransform::JTransform(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JTransformImpl>(initData, this))
-	{  
+	{
 	}
 	JTransform::~JTransform()
 	{
@@ -468,7 +485,7 @@ namespace JinEngine
 		JFileIOHelper::LoadXMFloat3(stream, pos);
 		JFileIOHelper::LoadXMFloat3(stream, rot);
 		JFileIOHelper::LoadXMFloat3(stream, scale);
- 
+
 		auto idenUser = tPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JTransform::InitData>(guid, flag, owner), &tPrivate);
 		JUserPtr<JTransform> transUser = JUserPtr<JTransform>::ConvertChild(std::move(idenUser));
 
@@ -498,7 +515,7 @@ namespace JinEngine
 		JFileIOHelper::StoreXMFloat3(stream, L"Pos:", impl->position);
 		JFileIOHelper::StoreXMFloat3(stream, L"Rot:", impl->rotation);
 		JFileIOHelper::StoreXMFloat3(stream, L"Scale:", impl->scale);
-		 
+
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

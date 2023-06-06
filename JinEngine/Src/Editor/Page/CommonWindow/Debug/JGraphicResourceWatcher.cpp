@@ -30,8 +30,8 @@ namespace JinEngine
 				using GraphicDebugInterface = Graphic::JGraphicPrivate::DebugInterface;
 				Graphic::JGraphicResourceManager* grManager = GraphicDebugInterface::GetGraphicResourceManager();
 
-				Core::JEnumInfo* rInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_RESOURCE_TYPE).name());
-				Core::JEnumInfo* bInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_BIND_TYPE).name());
+				Core::JEnumInfo* rInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_RESOURCE_TYPE).name());
+				Core::JEnumInfo* bInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Graphic::J_GRAPHIC_BIND_TYPE).name());
 				auto rNameVec = rInfo->GetEnumNameVec();
 				auto bNameVec = bInfo->GetEnumNameVec();
 				 

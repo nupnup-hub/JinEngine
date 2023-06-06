@@ -1,7 +1,7 @@
 #pragma once 
 #include<memory>
 #include"../JResourceObject.h"  
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
 
 namespace JinEngine
 {

@@ -61,7 +61,7 @@ namespace JinEngine
 				JImGuiImpl::Text("WorkingSetSize: " + Core::JByteUnit::ByteToString(proc.workingSetSize));
 				if (JImGuiImpl::BeginListBox("Type##JApplicationWatcher"))
 				{
-					auto typeVec = Core::JReflectionInfo::Instance().GetDerivedTypeInfo(Core::JIdentifier::StaticTypeInfo());
+					auto typeVec = _JReflectionInfo::Instance().GetDerivedTypeInfo(Core::JIdentifier::StaticTypeInfo());
 					for (const auto& data : typeVec)
 					{
 						if(data->IsAbstractType())

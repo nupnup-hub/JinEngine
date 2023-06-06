@@ -8,7 +8,7 @@
 #include"../Component/RenderItem/JRenderItem.h"
 #include"../Component/Camera/JCamera.h"
 #include"../Component/JComponentCreator.h"
-#include"../../Core/Guid/GuidCreator.h"
+#include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/Identity/JIdenCreator.h"
 
 using namespace DirectX;

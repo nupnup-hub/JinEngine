@@ -25,7 +25,7 @@
 
 #include"../../../Application/JApplicationProject.h"
 #include"../../../Core/Identity/JIdenCreator.h"
-#include"../../../Core/Guid/GuidCreator.h" 
+#include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Time/JGameTimer.h"
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/File/JFileIOHelper.h"
@@ -976,9 +976,17 @@ namespace JinEngine
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
+	const std::vector<JUserPtr<JGameObject>>& CashInterface::GetGameObjectCashVec(JScene* scene, const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept
+	{
+		return scene->impl->GetGameObjectCashVec(rLayer, meshType);
+	}
 	const std::vector<JUserPtr<JGameObject>>& CashInterface::GetGameObjectCashVec(const JUserPtr<JScene>& scene, const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept
 	{
 		return scene->impl->GetGameObjectCashVec(rLayer, meshType);
+	}
+	const std::vector<JUserPtr<JComponent>>& CashInterface::GetComponentCashVec(JScene* scene, const J_COMPONENT_TYPE cType)noexcept
+	{
+		return scene->impl->GetComponentCashVec(cType);
 	}
 	const std::vector<JUserPtr<JComponent>>& CashInterface::GetComponentCashVec(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE cType)noexcept
 	{

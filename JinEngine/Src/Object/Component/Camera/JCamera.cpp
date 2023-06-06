@@ -6,7 +6,7 @@
 #include"../../GameObject/JGameObject.h"  
 #include"../../Resource/Scene/JScene.h" 
 #include"../../Resource/Scene/JScenePrivate.h"  
-#include"../../../Core/Guid/GuidCreator.h"  
+#include"../../../Core/Guid/JGuidCreator.h"  
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
@@ -60,6 +60,7 @@ namespace JinEngine
 		float cameraNear = 0.0f;
 		REGISTER_PROPERTY_EX(cameraFar, GetFar, SetFar, GUI_SLIDER(0, 1000, true))
 		float cameraFar = 0.0f;
+		//width / height
 		float cameraAspect = 0.0f;
 		REGISTER_PROPERTY_EX(cameraFov, GetFovYDegree, SetFovDegree, GUI_SLIDER(0, 360, true))
 		float cameraFov = 0.0f;
@@ -84,9 +85,9 @@ namespace JinEngine
 		bool allowAllCamCullResult = false;	//use editor camera for check space spatial result
 	public:
 		//Culling Option
-		REGISTER_PROPERTY_EX(frustumCulingFrequency, GetFrustumCullingFrequency, SetFrustumCullingFrequency, GUI_SLIDER(Graphic::Constant::cullingUpdateFrequencyMin, Graphic::Constant::cullingUpdateFrequencyMax, true))
+		REGISTER_PROPERTY_EX(frustumCulingFrequency, GetFrustumCullingFrequency, SetFrustumCullingFrequency, GUI_SLIDER(Graphic::Constants::cullingUpdateFrequencyMin, Graphic::Constants::cullingUpdateFrequencyMax, true))
 		float frustumCulingFrequency = 0;
-		REGISTER_PROPERTY_EX(occlusionCulingFrequency, GetOcclusionCullingFrequency, SetOcclusionCullingFrequency, GUI_SLIDER(Graphic::Constant::cullingUpdateFrequencyMin, Graphic::Constant::cullingUpdateFrequencyMax, true))
+		REGISTER_PROPERTY_EX(occlusionCulingFrequency, GetOcclusionCullingFrequency, SetOcclusionCullingFrequency, GUI_SLIDER(Graphic::Constants::cullingUpdateFrequencyMin, Graphic::Constants::cullingUpdateFrequencyMax, true))
 		float occlusionCulingFrequency = 0;
 	public:
 		// Cache View/Proj matrices.

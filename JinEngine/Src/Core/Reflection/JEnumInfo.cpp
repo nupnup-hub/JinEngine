@@ -1,5 +1,6 @@
 #include"JEnumInfo.h"
 #include"JReflectionInfo.h" 
+#include"JReflectionInfoPrivate.h"  
 
 namespace JinEngine
 {
@@ -72,7 +73,7 @@ namespace JinEngine
 			isEnumClass(jEnumInitializer.isEnumClass),
 			isTwoSqureEnum(jEnumInitializer.isTwoSqureEnum)
 		{
-			JReflectionInfo::Instance().AddEnum(this);
+			JReflectionInfoPrivate::EnumInterface::AddEnum(this);
 		}
 	}
 }

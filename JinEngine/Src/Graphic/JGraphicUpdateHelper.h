@@ -75,9 +75,9 @@ namespace JinEngine
 			JGraphicDrawTarget* drawTarget = nullptr;
 			JCullingUserInterface cullUser;
 		public:
-			JUserPtr<JScene> scene = nullptr;
-			JUserPtr<JCamera> cam = nullptr;
-			JUserPtr<JLight> lit = nullptr;
+			JWeakPtr<JScene> scene = nullptr;
+			JWeakPtr<JCamera> cam = nullptr;
+			JWeakPtr<JLight> lit = nullptr;
 		public:
 			uint passOffset = 0;
 		public:
@@ -88,11 +88,16 @@ namespace JinEngine
 			bool allowOcclusionCulling = true;
 			bool allowDrawOccMipMap = false;	//for debug
 		public:
+			uint threadCount = 0;
+			uint threadIndex = 0;
+		public:
 			bool RefelectOtherCamCullig(const uint rItemIndex)const noexcept;
 		public: 
-			void SettingOccCulling(const JUserPtr<JComponent>& comp)noexcept;
-			void SettingDrawShadowMap(const JUserPtr<JLight>& lit)noexcept;
-			void SettingDrawScene(const JUserPtr<JCamera>& cam)noexcept;
+			void SettingOccCulling(const JWeakPtr<JComponent>& comp)noexcept;
+			void SettingDrawShadowMap(const JWeakPtr<JLight>& lit)noexcept;
+			void SettingDrawScene(const JWeakPtr<JCamera>& cam)noexcept;
+		public:
+			void CalculateWorkIndex(const uint count, _Out_ uint& stIndex, _Out_ uint& edIndex)const noexcept;
 		};
 		//draw detail condition
 		struct JDrawCondition

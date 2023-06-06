@@ -33,13 +33,15 @@ namespace JinEngine
 		DirectX::XMFLOAT3 GetRotation()const noexcept;
 		DirectX::XMFLOAT4 GetQuaternion()const noexcept;
 		DirectX::XMFLOAT3 GetScale()const noexcept;
-		DirectX::XMVECTOR GetWorldQuaternion()const noexcept;
+		DirectX::XMFLOAT3 GetWorldPosition()const noexcept;
+		DirectX::XMVECTOR GetWorldQuaternionV()const noexcept;
 		DirectX::XMMATRIX GetWorldMatrix()const noexcept;
 		DirectX::XMFLOAT4X4 GetWorld4x4f()const noexcept;
 		DirectX::XMMATRIX GetLocal()const noexcept;
 		DirectX::XMVECTOR GetRight()const noexcept;
 		DirectX::XMVECTOR GetUp()const noexcept;
 		DirectX::XMVECTOR GetFront()const noexcept;
+		float GetDistance(const JUserPtr<JTransform>& t)const noexcept;
 	public:
 		void SetTransform(const DirectX::XMFLOAT3& position, const DirectX::XMFLOAT3& rotation, const DirectX::XMFLOAT3& scale)noexcept;
 		void SetPosition(const DirectX::XMFLOAT3& value)noexcept;
@@ -119,7 +121,7 @@ class JTransform final : public JComponent
 		DirectX::XMFLOAT4 GetQuaternion()const noexcept;
 		DirectX::XMFLOAT3 GetScale()const noexcept;
 
-		DirectX::XMVECTOR GetWorldQuaternion()const noexcept;
+		DirectX::XMVECTOR GetWorldQuaternionV()const noexcept;
 
 		DirectX::XMMATRIX GetWorldMatrix()const noexcept;
 		DirectX::XMFLOAT4X4 GetWorld4x4f()const noexcept;

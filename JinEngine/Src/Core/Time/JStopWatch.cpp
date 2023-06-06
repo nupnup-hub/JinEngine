@@ -24,7 +24,7 @@ namespace JinEngine
 		{
 			resultVec.clear();
 		}
-		int JStopWatch::GetRecordCount()const const noexcept
+		int JStopWatch::GetRecordCount()const noexcept
 		{
 			return (int)resultVec.size();
 		}
@@ -43,6 +43,10 @@ namespace JinEngine
 		float JStopWatch::GetElapsedMilliTime()const noexcept
 		{
 			return (float)std::chrono::duration<double, std::milli>(endTime - startTime).count();
+		}
+		float JStopWatch::GetElapsedMicroTime()const noexcept
+		{
+			return (float)std::chrono::duration<double, std::micro>(endTime - startTime).count();
 		}
 		float JStopWatch::GetElapsedNanoTime()const noexcept
 		{

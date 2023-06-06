@@ -2,7 +2,7 @@
 #include"JIdentifierPrivate.h"  
 #include"../Reflection/JTypeImplBase.h"
 #include"../Reflection/JTypeBasePrivate.h"
-#include"../Guid/GuidCreator.h"
+#include"../Guid/JGuidCreator.h"
 #include"../../Utility/JCommonUtility.h"
 
 #define INVALID_NAME L""

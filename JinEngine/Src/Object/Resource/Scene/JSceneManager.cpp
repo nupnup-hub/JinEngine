@@ -3,10 +3,10 @@
 #include"JScene.h" 
 #include"../JResourceObjectUserInterface.h"
 #include"../../Component/JComponentType.h"
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphicDrawListInterface.h"  
-#include"../../../Core/Guid/GuidCreator.h" 
+#include"../../../Core/Guid/JGuidCreator.h" 
 
 namespace JinEngine
 {

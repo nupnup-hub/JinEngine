@@ -2,7 +2,7 @@
 #include"JFSMparameter.h"  
 #include"JFSMparameterStorageAccess.h"  
 #include"../File/JFileIOHelper.h"
-#include"../Guid/GuidCreator.h"
+#include"../Guid/JGuidCreator.h"
 #include"../Identity/JIdenCreator.h"
 #include"../../Utility/JCommonUtility.h"
 #include<fstream>

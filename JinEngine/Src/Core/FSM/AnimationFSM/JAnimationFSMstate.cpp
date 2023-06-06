@@ -10,7 +10,7 @@
 #include"../../Reflection/JTypeImplBase.h"
 #include"../../File/JFileIOHelper.h"
 #include"../../File/JFileConstant.h" 
-#include"../../Guid/GuidCreator.h" 
+#include"../../Guid/JGuidCreator.h" 
 #include<fstream>
 
 namespace JinEngine

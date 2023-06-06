@@ -4,7 +4,7 @@
 #include"JFSMtransitionPrivate.h" 
 #include"JFSMdiagram.h"
 #include"JFSMdiagramPrivate.h"
-#include"../Guid/GuIdCreator.h"
+#include"../Guid/JGuIdCreator.h"
 #include"../Reflection/JTypeImplBase.h"
 #include"../../Utility/JCommonUtility.h"
 

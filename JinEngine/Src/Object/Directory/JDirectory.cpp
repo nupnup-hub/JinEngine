@@ -9,7 +9,7 @@
 #include"../../Core/Identity/JIdenCreator.h"
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/Reflection/JTypeBasePrivate.h"
-#include"../../Core/Guid/GuidCreator.h"
+#include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/File/JFileConstant.h"
 #include"../../Utility/JCommonUtility.h"
@@ -120,7 +120,7 @@ namespace JinEngine
 			for (uint i = 0; i < fileCount; ++i)
 			{
 				Core::JTypeInfo& info = from->impl->fileList[i]->GetResourceTypeInfo();
-				auto derivedVec = Core::JReflectionInfo::Instance().GetDerivedTypeInfo(info);
+				auto derivedVec = _JReflectionInfo::Instance().GetDerivedTypeInfo(info);
 				for (auto& data : derivedVec)
 				{
 					auto rUser = data->GetInstanceUserPtr<JResourceObject>(from->impl->fileList[i]->GetResourceGuid());

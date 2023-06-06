@@ -13,7 +13,7 @@
 #include"../../../Interface/JEditorObjectCreationInterface.h"
 #include"../../../../Utility/JCommonUtility.h"   
 #include"../../../../Utility/JMathHelper.h"   
-#include"../../../../Core/Guid/GuidCreator.h" 
+#include"../../../../Core/Guid/JGuidCreator.h" 
 #include"../../../../Core/Identity/JIdenCreator.h" 
 #include"../../../../Object/Component/Camera/JCamera.h" 
 #include"../../../../Object/Directory/JDirectory.h"

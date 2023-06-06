@@ -15,7 +15,7 @@
 #include"../Material/JDefaultMaterialSetting.h"
 #include"../../Directory/JDirectory.h" 
 #include"../../../Application/JApplicationProject.h" 
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Exception/JExceptionMacro.h" 

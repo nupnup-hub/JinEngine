@@ -12,7 +12,7 @@
 #include"../../Resource/Material/JMaterialPrivate.h" 
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/File/JFileConstant.h"
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Graphic/Upload/Frameresource/JObjectConstants.h"
 #include"../../../Graphic/Upload/Frameresource/JBoundingObjectConstants.h"

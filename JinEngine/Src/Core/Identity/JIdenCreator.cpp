@@ -1,7 +1,7 @@
 #include"JIdenCreator.h"
 #include"JIdentifierPrivate.h"
 #include"JIdentifier.h"
-#include"../Guid/GuidCreator.h"
+#include"../Guid/JGuidCreator.h"
 #include"../../Object/Component/JComponent.h"
 #include"../../Object/GameObject/JGameObject.h"
 #include"../../Object/Directory/JDirectory.h"

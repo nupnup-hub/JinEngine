@@ -97,7 +97,7 @@ namespace JinEngine
 				ImGui::SameLine();
 				searchBarHelper->UpdateSearchBar();
 
-				std::vector<Core::JTypeInfo*> derivedTypeInfo = Core::JReflectionInfo::Instance().GetDerivedTypeInfo(JComponent::StaticTypeInfo());
+				std::vector<Core::JTypeInfo*> derivedTypeInfo = _JReflectionInfo::Instance().GetDerivedTypeInfo(JComponent::StaticTypeInfo());
 				for (const auto& compType : derivedTypeInfo)
 				{
 					if (!searchBarHelper->CanSrcNameOnScreen(compType->NameWithOutModifier()))

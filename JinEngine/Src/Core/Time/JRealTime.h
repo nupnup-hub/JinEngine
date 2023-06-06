@@ -29,11 +29,7 @@ namespace JinEngine
 				size_t CalOrderNumer()const noexcept;
 			};
 		public:
-			static JTime GetNowTime()noexcept;
-			static std::string GetTime()noexcept;
-			static std::string GetMiliTime()noexcept;
-			static std::string GetMicroTime()noexcept;
-			static std::string GetNanoTime() noexcept;
+			static JTime GetNowTime()noexcept; 
 		};
 	}
 }

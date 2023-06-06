@@ -79,7 +79,7 @@ namespace JinEngine
 			private:
 				bool* isActivatedPtr;
 			private:
-				std::unique_ptr<GetGResourceF::Functor> getGResourceFunctor;
+				std::unique_ptr<GetGResourceF::Functor> getGResourceFunctor;	//get icon image access
 				std::unique_ptr<Core::JBindHandleBase> pressBind;
 			public:
 				SwitchIcon(const size_t guid,

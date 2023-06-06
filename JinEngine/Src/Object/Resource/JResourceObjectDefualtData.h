@@ -13,7 +13,7 @@
 //#include"../../Core/Identity/JIdentifier.h"
 #include"../Directory/JFile.h" 
 #include"../../Core/JDataType.h"
-#include"../../Core/Guid/GuidCreator.h" 
+#include"../../Core/Guid/JGuidCreator.h" 
 
 namespace JinEngine
 { 

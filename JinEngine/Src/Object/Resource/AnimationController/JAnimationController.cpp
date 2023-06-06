@@ -7,7 +7,7 @@
 #include"../../Directory/JFile.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/FSM/AnimationFSM/JAnimationFSMdiagram.h"  
 #include"../../../Core/FSM/AnimationFSM/JAnimationFSMdiagramPrivate.h"
 #include"../../../Core/FSM/AnimationFSM/JAnimationFSMstate.h" 

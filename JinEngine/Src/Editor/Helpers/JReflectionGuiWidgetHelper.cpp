@@ -217,7 +217,7 @@ namespace JinEngine
 					return;
 
 				if (objHint.hasImplType)
-					handle->Set(Core::JReflectionInfo::Instance().GetTypeInfo(objHint.typeGuid)->ConvertImplBase(iden), std::forward<T>(value));
+					handle->Set(_JReflectionInfo::Instance().GetTypeInfo(objHint.typeGuid)->ConvertImplBase(iden), std::forward<T>(value));
 				else
 					handle->Set(iden, std::forward<T>(value));
 
@@ -241,7 +241,7 @@ namespace JinEngine
 					return;
 
 				if (objHint.hasImplType)
-					handle->UnsafeSet(Core::JReflectionInfo::Instance().GetTypeInfo(objHint.typeGuid)->ConvertImplBase(iden), std::forward<T>(value));
+					handle->UnsafeSet(_JReflectionInfo::Instance().GetTypeInfo(objHint.typeGuid)->ConvertImplBase(iden), std::forward<T>(value));
 				else
 					handle->UnsafeSet(iden, std::forward<T>(value)); 
 
@@ -905,7 +905,7 @@ namespace JinEngine
 				if constexpr (std::is_base_of_v<JResourceObject, ValueType>)
 				{
 					std::vector<Core::JTypeBase*> rVec;
-					auto derivedTypeVec = Core::JReflectionInfo::Instance().GetDerivedTypeInfo(ValueType::StaticTypeInfo());
+					auto derivedTypeVec = _JReflectionInfo::Instance().GetDerivedTypeInfo(ValueType::StaticTypeInfo());
 					for (const auto& data : derivedTypeVec)
 					{
 						auto rawVec = data->GetInstanceRawPtrVec();
@@ -963,7 +963,7 @@ namespace JinEngine
 				if constexpr (std::is_base_of_v<JResourceObject, ValueType>)
 				{
 					std::vector<Core::JTypeBase*> rVec; 
-					auto derivedTypeVec = Core::JReflectionInfo::Instance().GetDerivedTypeInfo(ValueType::StaticTypeInfo(), true);
+					auto derivedTypeVec = _JReflectionInfo::Instance().GetDerivedTypeInfo(ValueType::StaticTypeInfo(), true);
 					for (const auto& data : derivedTypeVec)
 					{
 						auto rawVec = data->GetInstanceRawPtrVec();
@@ -1456,7 +1456,7 @@ namespace JinEngine
 				if (updateData.handleBase->GetFieldHint().jDataEnum == Core::J_PARAMETER_TYPE::Enum)
 				{
 					Core::JGuiEnumComboBoxInfo* enumComboInfo = static_cast<Core::JGuiEnumComboBoxInfo*>(updateData.GetWidgetInfo());
-					Core::JEnumInfo* enumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(enumComboInfo->GetEnumFullName());
+					Core::JEnumInfo* enumInfo = _JReflectionInfo::Instance().GetEnumInfo(enumComboInfo->GetEnumFullName());
 					if (enumInfo == nullptr)
 						return;
 
@@ -1723,7 +1723,7 @@ namespace JinEngine
 					Core::JTypeInfo* typeinfo = nullptr;
 					//if success isA casting
 					//exe downcast
-					typeinfo = Core::JReflectionInfo::Instance().GetTypeInfo(pHint.valueTypeFullName);
+					typeinfo = _JReflectionInfo::Instance().GetTypeInfo(pHint.valueTypeFullName);
 					if (typeinfo != nullptr)
 					{
 						if (typeinfo->IsA<JAnimationClip>())
@@ -1807,7 +1807,7 @@ namespace JinEngine
 
 					//if success isA casting
 					//exe downcast
-					typeinfo = Core::JReflectionInfo::Instance().GetTypeInfo(pHint.valueTypeFullName);
+					typeinfo = _JReflectionInfo::Instance().GetTypeInfo(pHint.valueTypeFullName);
 					if (typeinfo != nullptr)
 					{
 						if (typeinfo->IsA<JAnimationClip>())

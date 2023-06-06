@@ -50,7 +50,7 @@ namespace JinEngine
 			const uint defaultShadowWidth = 1920;
 			const uint defaultShadowHeight = 1080;
 		public:
-			uint frameThreadCount = 1;
+			uint frameThreadCount = 0;
 		};
 	}
 }

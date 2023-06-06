@@ -1,5 +1,5 @@
 #include"JGraphicResourceInfo.h"
-#include"../../Core/Guid/GuidCreator.h"
+#include"../../Core/Guid/JGuidCreator.h"
 #include"../JGraphicDrawList.h" 
 #include"../JGraphicPrivate.h"
 #include<d3d12.h>

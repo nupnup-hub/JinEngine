@@ -14,6 +14,7 @@ namespace JinEngine
 			isChanged |= JImGuiImpl::CheckBox("Hardware Occlusion##JGraphicOptionSetting", option.isHDOcclusionAcitvated);
 			isChanged |= JImGuiImpl::CheckBox("HZB Occlusion##JGraphicOptionSetting", option.isHZBOcclusionActivated); 
 			isChanged |= JImGuiImpl::CheckBox("Allow Debug Out line##JGraphicOptionSetting", option.allowDebugOutline); 
+			isChanged |= JImGuiImpl::CheckBox("Allow Multithread##JGraphicOptionSetting", option.allowMultiThread);
 			JImGuiImpl::EndWindow();
 			if (isChanged)
 				JGraphic::Instance().SetGraphicOption(option);

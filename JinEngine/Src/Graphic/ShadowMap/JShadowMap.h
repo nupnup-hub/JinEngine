@@ -32,13 +32,21 @@ namespace JinEngine
 				JGraphicResourceManager* graphicResource,
 				const JGraphicOption& option,
 				const JDrawHelper helper);
+			void DrawSceneShadowMapMultiThread(ID3D12GraphicsCommandList* cmdList,
+				JFrameResource* currFrame,
+				JHZBOccCulling* occCulling,
+				JGraphicResourceManager* graphicResource,
+				const JGraphicOption& option,
+				const JDrawHelper helper);
+		public:
 			void DrawShadowMapGameObject(ID3D12GraphicsCommandList* cmdList,
 				JFrameResource* currFrame,
 				JHZBOccCulling* occCulling,
 				JGraphicResourceManager* graphicResource,
 				const std::vector<JUserPtr<JGameObject>>& gameObject,
 				const JDrawHelper helper,
-				const JDrawCondition& condition);
+				const JDrawCondition& condition,
+				const bool allowMultiThread);
 		};
 	}
 }

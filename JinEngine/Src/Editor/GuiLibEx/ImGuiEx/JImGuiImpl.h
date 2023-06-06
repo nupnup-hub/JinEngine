@@ -148,10 +148,10 @@ namespace JinEngine
 			static bool InputInt(const std::string& name, int* value, ImGuiInputTextFlags flags = 0, int step = 1, int stepFast = 100);
 			static bool InputFloat(const std::string& name, float* value, ImGuiInputTextFlags flags = 0, const char* format = "%.2f", float step = 0.0f, float stepFast = 0.0f);
 		public:
-			static bool SliderInt(const std::string& name, int* value, int vMin, int vMax, const char* format, ImGuiSliderFlags flags);
-			static bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format, ImGuiSliderFlags flags);
-			static bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, const char* format, ImGuiSliderFlags flags);
-			static bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format, ImGuiSliderFlags flags);
+			static bool SliderInt(const std::string& name, int* value, int vMin, int vMax, const char* format = "%d", ImGuiSliderFlags flags = 0);
+			static bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format = "%.2f", ImGuiSliderFlags flags = 0);
+			static bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, const char* format = "%d", ImGuiSliderFlags flags = 0);
+			static bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format = "%.2f", ImGuiSliderFlags flags = 0);
 		public:
 			static bool BeginTabBar(const std::string& name, const ImGuiTabBarFlags flags = 0);
 			static void EndTabBar();
@@ -325,7 +325,7 @@ namespace JinEngine
 			template<typename EnumType>
 			static void ComboEnumSet(const std::string& uniqueLabel, int& selectedIndex)
 			{
-				Core::JEnumInfo* enumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(EnumType).name());
+				Core::JEnumInfo* enumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(EnumType).name());
 				if (JImGuiImpl::BeginCombo(uniqueLabel, enumInfo->ElementName(enumInfo->EnumValue(selectedIndex)).c_str(), ImGuiComboFlags_HeightLarge))
 				{
 					const uint enumCount = enumInfo->GetEnumCount();

@@ -1,7 +1,7 @@
 #pragma once 
 #include"JEditorCoordGrid.h"
 #include"../../Core/JDataType.h"  
-#include"../../Core/Guid/GuidCreator.h"
+#include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Utility/JMacroUtility.h"
 #include"../../Utility/JVector.h"

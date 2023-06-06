@@ -28,7 +28,7 @@
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/Exception/JExceptionMacro.h"
-#include"../../Core/Guid/GuidCreator.h" 
+#include"../../Core/Guid/JGuidCreator.h" 
 #include"../../Core/Func/Functor/JFunctor.h"
 
 #include"../../Utility/JCommonUtility.h"
@@ -102,7 +102,7 @@ namespace JinEngine
 				JDirectoryPrivate::DestroyInstanceInterfaceEx::BeginForcedDestroy(engineRootDir.Get());
 				engineRootDir = nullptr;
 			}
-			Core::JReflectionInfo::Instance().SearchInstance();
+			_JReflectionInfo::Instance().SearchInstance();
 		}
 		void StoreProjectResource()
 		{
@@ -589,7 +589,7 @@ namespace JinEngine
 	JUserPtr<JResourceObject> JResourceManager::GetResourceByPath(const Core::JTypeInfo& info, const std::wstring& path)const  noexcept
 	{
 		bool(*ptr)(JResourceObject*, const std::wstring&) = [](JResourceObject* rObj, const std::wstring& path) {return rObj->GetPath() == path; };
-		return FineResource<JResourceObject>(info, ptr, path);
+		return FindResource<JResourceObject>(info, ptr, path);
 	}
 	JUserPtr<JResourceObject> JResourceManager::TryGetResourceUser(const Core::JTypeInfo& info, const size_t guid)noexcept
 	{ 

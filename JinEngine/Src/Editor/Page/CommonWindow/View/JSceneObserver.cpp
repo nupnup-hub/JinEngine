@@ -55,7 +55,7 @@ namespace JinEngine
 		}
 		namespace Constants
 		{
-			static constexpr uint optionTypeSubTypeCount = 3;
+			static constexpr uint optionTypeSubTypeCount = 3; 
 		}
 
 		JSceneObserver::FrustumInfo::FrustumInfo(JUserPtr<JGameObject> frustum, JUserPtr<JCamera> cam)
@@ -193,10 +193,10 @@ namespace JinEngine
 				{ "gameObject position control" , u8"위치 조정" },
 			    { "gameObject rotation control" , u8"회전 조정" },
 				{ "gameObject scale control" , u8"크기 조정" },
-				{ "Main camera view frustum" , u8"메인 카메라 절두체" },
-				{ "Scene coord grid" , u8"씬 그리드" },
-				{ "Play" , u8"재생" },
-				{ "Pause" , u8"정지" },
+				{ "camera view frustum" , u8"카메라 절두체" },
+				{ "coord grid" , u8"좌표계" },
+				{ "play" , u8"재생" },
+				{ "pause" , u8"정지" },
 			};
 
 			const uint useCount = (uint)useSettingType.size();
@@ -253,6 +253,9 @@ namespace JinEngine
 				}  
 
 				JUserPtr<JTransform> camTransform = editCamOwner->GetTransform();
+
+				//내일 추가필요!
+				//coord grid set pos scale interface
 				coordGrid->Update(JVector2<float>(camTransform->GetPosition().x, camTransform->GetPosition().z));
 				menubar->Update(true);
 
@@ -271,6 +274,9 @@ namespace JinEngine
 				{
 					J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType = toolVec[i]->GetToolType();
 					J_OBSERVER_SETTING_TYPE settingType = ConvertToolToSettingType(toolType);
+
+					//activate된 tool만 update
+					//selectedGobj 가 nullptr일 경우 tool object = nullptr (내부 valid 값으로 컨트롤)
 					if (toolVec[i]->IsActivated())
 						toolVec[i]->Update(selectedGobj, editCam, ImGui::GetCursorPos());
 				}
@@ -289,57 +295,57 @@ namespace JinEngine
 			{
 			case J_OBSERVER_SETTING_TYPE::OPTION_SPACE_SPATIAL:
 			{
-				name = "Space Sptail";
+				name = "Space sptail";
 				break;
 			}
-			case J_OBSERVER_SETTING_TYPE::OPTION_EDITOR_CAMERA:
+			case J_OBSERVER_SETTING_TYPE::OPTION_EDITOR_OBSERVER:
 			{
-				name = "Camera Setting";
+				name = "Editor";
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::VIEW_SETTING_SPACE_SPATIAL_TREE:
 			{
-				name = "Space Sptail Tree";
+				name = "Space sptatial tree";
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::VIEW_SHADOW_VIEWER:
 			{
-				name = "Shadow Map";
+				name = "Shadow map";
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::VIEW_RENDER_RESULT:
 			{
-				name = "Render Result";
+				name = "Render result";
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID:
 			{
-				name = "Scene Coord Grid";
+				name = "Coord grid";
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE:
 			{
-				name = "Cam Frustum";
+				name = "Cam frustum";
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS:
 			{
-				name = "Position Arrow";
+				name = "Position arrow";
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT:
 			{
-				name = "Rotation Arrow";
+				name = "Rotation arrow";
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
 			{
-				name = "Scale Arrow";
+				name = "Scale arrow";
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
 			{
-				name = "Make Debug Shape";
+				name = "Make debug shape";
 				break;
 			}
 			default:
@@ -392,7 +398,7 @@ namespace JinEngine
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
 			{
-				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 5, 5, 5);
+				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 10, 10, 10);
 				nodeUtilData[(int)type].isOpen = false;
 				break;
 			}
@@ -473,7 +479,7 @@ namespace JinEngine
 				SceneSpaceSpatialOptionOnScreen();
 				break;
 			}
-			case J_OBSERVER_SETTING_TYPE::OPTION_EDITOR_CAMERA:
+			case J_OBSERVER_SETTING_TYPE::OPTION_EDITOR_OBSERVER:
 			{
 				EditorCameraOptionOnScreen();
 				break;
@@ -516,18 +522,29 @@ namespace JinEngine
 			JImGuiImpl::EndWindow();
 		}
 		void JSceneObserver::EditorCameraOptionOnScreen()
-		{
-			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::OPTION_EDITOR_CAMERA];
+		{ 
+			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::OPTION_EDITOR_OBSERVER];
 			JImGuiImpl::BeginWindow("##EditorOption", &data->isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDocking);	 
-			
-			if (JImGuiImpl::CheckBox("allow display debug##JSceneObserver", allowDisplayDebug))
+			  
+			JImGuiImpl::Text("Camera");
+			if (JImGuiImpl::CheckBox("display debug##JSceneObserver", allowDisplayDebug))
 				editCam->SetAllowDisplayDebug(allowDisplayDebug);
-			if (JImGuiImpl::CheckBox("allow frustum culling", allowFrustumCulling))
+			if (JImGuiImpl::CheckBox("frustum culling##JSceneObserver", allowFrustumCulling))
 				editCam->SetAllowFrustumCulling(allowFrustumCulling);
-			if (JImGuiImpl::CheckBox("allow occ culling", allowOccCulling))
+			if (JImGuiImpl::CheckBox("occ culling##JSceneObserver", allowOccCulling))
 				editCam->SetAllowHzbOcclusionCulling(allowOccCulling);
 			if (JImGuiImpl::CheckBox("reflect othrer cam culling##JSceneObserver", allowReflectCullingResult))
 				JCameraPrivate::EditorSettingInterface::SetAllowAllCullingResult(editCam, allowReflectCullingResult);
+			 
+			ImGui::Separator();
+			JImGuiImpl::Text("Grid");
+			int lineCount = coordGrid->GetLineCount();
+			int lineStep = coordGrid->GetLineStep();
+
+			if (JImGuiImpl::SliderInt("line count##JSceneObserverSceneCoord", &lineCount, coordGrid->GetMinLineCount(), coordGrid->GetMaxLineCount()))
+				coordGrid->SetLineCount(lineCount);
+			if (JImGuiImpl::SliderInt("line step##JSceneObserverSceneCoord", &lineStep, coordGrid->GetMinLineStep(), coordGrid->GetMaxLineStep()))
+				coordGrid->SetLineStep(lineStep);
 			JImGuiImpl::EndWindow();
 		}
 		void JSceneObserver::OctreeOptionOnScreen()
@@ -554,8 +571,8 @@ namespace JinEngine
 		{
 			bool isUpdated = false; 
 			Core::JBvhOption bvhOption = scene->GetBvhOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
-			Core::JEnumInfo* buildEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_BUILD_TYPE).name());
-			Core::JEnumInfo* splitEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_SPLIT_TYPE).name());
+			Core::JEnumInfo* buildEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_BUILD_TYPE).name());
+			Core::JEnumInfo* splitEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_SPLIT_TYPE).name());
 			int buildIndex = buildEnumInfo->GetEnumIndex((int)bvhOption.buildType);
 			int splitIndex = splitEnumInfo->GetEnumIndex((int)bvhOption.splitType);
 			int preBuildIndex = buildIndex;
@@ -580,8 +597,8 @@ namespace JinEngine
 		{
 			bool isUpdated = false; 
 			Core::JKdTreeOption kdTreeOption = scene->GetKdTreeOption(Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT);
-			Core::JEnumInfo* buildEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_BUILD_TYPE).name());
-			Core::JEnumInfo* splitEnumInfo = Core::JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_SPLIT_TYPE).name());
+			Core::JEnumInfo* buildEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_BUILD_TYPE).name());
+			Core::JEnumInfo* splitEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(Core::J_SPACE_SPATIAL_SPLIT_TYPE).name());
 			int buildIndex = buildEnumInfo->GetEnumIndex((int)kdTreeOption.buildType);
 			int splitIndex = splitEnumInfo->GetEnumIndex((int)kdTreeOption.splitType);
 			int preBuildIndex = buildIndex;
@@ -916,11 +933,16 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"allowFrustumCulling", allowFrustumCulling);
 			JFileIOHelper::StoreAtomicData(stream, L"allowOccCulling", allowOccCulling);
 			JFileIOHelper::StoreAtomicData(stream, L"allowReflectCullingResult", allowReflectCullingResult);
+
+			JFileIOHelper::StoreAtomicData(stream, L"CoordLineCount", coordGrid->GetLineCount()); 
+			JFileIOHelper::StoreAtomicData(stream, L"CoordLineStep", coordGrid->GetLineStep());
 		}
 		void JSceneObserver::LoadEditorWindow(std::wifstream& stream)
 		{ 
 			DirectX::XMFLOAT3 lastPos;
 			DirectX::XMFLOAT3 lastRot;
+			int lineCount = 0; 
+			int lineStep = 0;
 
 			JEditorWindow::LoadEditorWindow(stream); 
 			JFileIOHelper::LoadXMFloat3(stream, lastPos);
@@ -936,8 +958,14 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, allowFrustumCulling);
 			JFileIOHelper::LoadAtomicData(stream, allowOccCulling);
 			JFileIOHelper::LoadAtomicData(stream, allowReflectCullingResult);
+
+			JFileIOHelper::LoadAtomicData(stream, lineCount); 
+			JFileIOHelper::LoadAtomicData(stream, lineStep);
+
 			lastCamPos = lastPos;
 			lastCamRot = lastRot;
+			coordGrid->SetLineCount(lineCount); 
+			coordGrid->SetLineStep(lineStep);
 		}
 		void JSceneObserver::CreateShapeGroup(const J_DEFAULT_SHAPE& shape, const uint xDim, const uint yDim, const uint zDim)
 		{
@@ -954,9 +982,10 @@ namespace JinEngine
 					{
 						//JUserPtr<JGameObject> gObj = JGCI::CreateModel(scene->GetRootGameObject(), OBJECT_FLAG_NONE, mehs);
 						JUserPtr<JGameObject> gObj = JGCI::CreateShape(scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
-						gObj->GetTransform()->SetScale(DirectX::XMFLOAT3(8, 8, 8));
+						gObj->GetTransform()->SetScale(DirectX::XMFLOAT3(16, 16, 16));
 						gObj->GetTransform()->SetRotation(DirectX::XMFLOAT3(45, 45, 0));
-						gObj->GetTransform()->SetPosition(DirectX::XMFLOAT3(16.0f * i, 16.0f * j, 16.0f * k));
+						gObj->GetTransform()->SetPosition(DirectX::XMFLOAT3(128 * i, 128 * j, 128 * k));
+						//gObj->GetTransform()->SetPosition(DirectX::XMFLOAT3(16.0f * i, 16.0f * j, 16.0f * k));
 					}
 				}
 			}
@@ -965,9 +994,6 @@ namespace JinEngine
 		void JSceneObserver::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{
 			JEditorWindow::OnEvent(senderGuid, eventType, eventStruct);	
-			if (senderGuid == GetGuid())
-				return;
-
 			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && eventStruct->pageType == GetOwnerPageType())
 			{
 				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStruct);
@@ -978,6 +1004,9 @@ namespace JinEngine
 						selectedGobj.ConnnectChild(std::move(gameObj));
 				}
 			}
+
+			if (senderGuid == GetGuid())
+				return;
 		}
 		/*
 		void JSceneObserver::CreateDebugMaterial()noexcept

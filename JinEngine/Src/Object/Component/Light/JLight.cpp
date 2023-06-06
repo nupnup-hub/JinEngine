@@ -6,7 +6,7 @@
 #include"../../GameObject/JGameObject.h" 
 #include"../../Resource/Scene/JScene.h" 
 #include"../../Resource/Scene/JScenePrivate.h"
-#include"../../../Core/Guid/GuidCreator.h" 
+#include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"

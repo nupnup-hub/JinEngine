@@ -3,7 +3,7 @@
 #include"JInputManager.h"  
 #include"../Core/JDataType.h"
 #include"../Core/JEngineInfo.h"
-#include"../Core/Guid/GuidCreator.h"
+#include"../Core/Guid/JGuidCreator.h"
 #include"../Core/Exception/JExceptionMacro.h"
 #include"../Core/Exception/JException.h"
 #include"../Core/Singleton/JSingletonHolder.h" 

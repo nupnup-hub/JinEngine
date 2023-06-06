@@ -2,7 +2,7 @@
 #include"../../JEditorAttribute.h"  
 #include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../../../../Core/Log/JLog.h"
-#include"../../../../Core/Guid/GuidCreator.h"
+#include"../../../../Core/Guid/JGuidCreator.h"
 #include"../../../../Utility/JCommonUtility.h"
 #include<deque>
 

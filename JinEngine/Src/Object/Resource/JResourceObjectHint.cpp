@@ -203,7 +203,7 @@ namespace JinEngine
 		for (const auto& hint : rHintVec)
 		{
 			auto& typeInfo = RTypeCommonCall::CallGetTypeInfo(hint.thisType);
-			auto derivedVec = Core::JReflectionInfo::Instance().GetDerivedTypeInfo(typeInfo, true);
+			auto derivedVec = _JReflectionInfo::Instance().GetDerivedTypeInfo(typeInfo, true);
 			if (!allowAbstractClass)	
 				result.insert(result.end(), derivedVec.begin(), derivedVec.end());
 			

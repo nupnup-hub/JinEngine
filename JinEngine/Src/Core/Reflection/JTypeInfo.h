@@ -3,6 +3,7 @@
 #include"JTypeInfoGuiOption.h" 
 #include"JTypeAllocationCreator.h"
 #include"JReflectionInfo.h"  
+#include"JReflectionInfoPrivate.h"  
 #include"../JDataType.h"
 #include"../JEngineInfo.h"
 #include"../Pointer/JOwnerPtr.h"
@@ -49,11 +50,12 @@ namespace JinEngine
 			MethodMap methodInfoMap;
 		};
 		 
+		class JReflectionInfo;
 		class JTypeInfo final
 		{
 		private:
 			friend class JTypeBasePrivate;
-			friend class JReflectionInfoImpl;
+			friend class JReflectionInfo;
 		private:
 			template<typename Type> friend class JTypeInfoRegister;
 			template<typename Type, typename Field, typename Pointer, Pointer ptr> friend class JPropertyInfoRegister;
@@ -335,8 +337,8 @@ namespace JinEngine
 			{
 				if (std::is_base_of_v<JTypeInstance, Type>)
 					instanceData = std::make_unique<JTypeInstanceData>();		 
-
-				JReflectionInfo::Instance().AddType(this);
+				  
+				JReflectionInfoPrivate::TypeInterface::AddType(this);
 				extraInitInfo = std::make_unique<ExtraFunctionInitInfo>();
 				if constexpr (CallOnece<Type>::IsDefinedInitAllocatorInfo())
 				{

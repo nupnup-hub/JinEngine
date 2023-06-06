@@ -23,7 +23,7 @@ namespace JinEngine
 				return RemoveAll_T<T>::TypeName();
 			else if constexpr (IsEnum_V<T>)
 			{
-				JEnumInfo* jEnumInfo = JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<T>).name());
+				JEnumInfo* jEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<T>).name());
 				if (jEnumInfo != nullptr)
 					return jEnumInfo->Name();
 				else
@@ -42,7 +42,7 @@ namespace JinEngine
 				return ptr->GetTypeInfo()->Name();
 			else if constexpr (IsEnum_V<T>)
 			{
-				JEnumInfo* jEnumInfo = JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<T>).name());
+				JEnumInfo* jEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<T>).name());
 				if (jEnumInfo != nullptr)
 					return jEnumInfo->Name();
 				else
@@ -58,7 +58,7 @@ namespace JinEngine
 				return EnumT::TypeName();
 			else if constexpr (IsEnum_V<EnumT>)
 			{
-				JEnumInfo* jEnumInfo = JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<EnumT>).name());
+				JEnumInfo* jEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<EnumT>).name());
 				if (jEnumInfo != nullptr)
 					return jEnumInfo->ElementName((int)enumValue);
 				else
@@ -69,18 +69,18 @@ namespace JinEngine
 
 		static JTypeBase* GetRawPtr(const size_t typeGuid, const size_t objGuid)
 		{
-			return JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceRawPtr(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceRawPtr(objGuid);
 		}
 		static JTypeBase* GetRawPtr(const std::string& typeFullName, const size_t objGuid)
 		{
-			return JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceRawPtr(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceRawPtr(objGuid);
 		}
 		static JTypeBase* GetRawPtr(const JTypeInstanceSearchHint& hint)
 		{
 			if (!hint.isValid)
 				return nullptr;
 
-			return JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceRawPtr(hint.objectGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceRawPtr(hint.objectGuid);
 		}
 		template<typename T>
 		static T* GetRawPtr(const size_t objGuid)
@@ -127,7 +127,7 @@ namespace JinEngine
 			if (!std::is_base_of_v<JTypeBase, T>)
 				return nullptr;
 
-			return JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceRawPtr<T>(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceRawPtr<T>(objGuid);
 		}
 		template<typename T>
 		static T* GetRawPtr(const std::string& typeFullName, const size_t objGuid)
@@ -138,7 +138,7 @@ namespace JinEngine
 			if (!std::is_base_of_v<JTypeBase, T>)
 				return nullptr;
 
-			return JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceRawPtr<T>(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceRawPtr<T>(objGuid);
 		}
 		template<typename T>
 		static T* GetRawPtr(const JTypeInstanceSearchHint& hint)
@@ -146,11 +146,11 @@ namespace JinEngine
 			if (!hint.isValid)
 				return nullptr;
 
-			return JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceRawPtr<T>(hint.objectGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceRawPtr<T>(hint.objectGuid);
 		}
 		static JTypeBase* SearchRawPtr(JTypeInfo& baseTypeInfo, const size_t objGuid)
 		{
-			std::vector<JTypeInfo*> derivedInfoVec = JReflectionInfo::Instance().GetDerivedTypeInfo(baseTypeInfo);
+			std::vector<JTypeInfo*> derivedInfoVec = _JReflectionInfo::Instance().GetDerivedTypeInfo(baseTypeInfo);
 			for (const auto& data : derivedInfoVec)
 			{
 				auto rawPtr = data->GetInstanceRawPtr(objGuid);
@@ -161,7 +161,7 @@ namespace JinEngine
 		}
 		static JTypeBase* SearchRawPtr(const std::string& baseTypeFullName, const size_t objGuid)
 		{ 
-			return SearchRawPtr(*JReflectionInfo::Instance().GetTypeInfo(baseTypeFullName), objGuid);
+			return SearchRawPtr(*_JReflectionInfo::Instance().GetTypeInfo(baseTypeFullName), objGuid);
 		}
 		template<typename  T>
 		static T* SearchRawPtr(JTypeInfo& baseTypeInfo, const size_t objGuid)
@@ -176,18 +176,18 @@ namespace JinEngine
 
 		static JUserPtr<JTypeBase> GetUserPtr(const size_t typeGuid, const size_t objGuid)
 		{
-			return JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceUserPtr(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceUserPtr(objGuid);
 		}
 		static JUserPtr<JTypeBase> GetUserPtr(const std::string& typeFullName, const size_t objGuid)
 		{ 
-			return JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceUserPtr(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceUserPtr(objGuid);
 		}
 		static JUserPtr<JTypeBase> GetUserPtr(const JTypeInstanceSearchHint& hint)
 		{
 			if (!hint.isValid)
 				return JUserPtr<JTypeBase>{};
 
-			return JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceUserPtr(hint.objectGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceUserPtr(hint.objectGuid);
 		}		
 		template<typename T>
 		static JUserPtr<T> GetUserPtr(const size_t objGuid)
@@ -237,7 +237,7 @@ namespace JinEngine
 			if (!std::is_base_of_v<JTypeBase, T>)
 				return JUserPtr<T>{};
 
-			return JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceUserPtr<T>(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceUserPtr<T>(objGuid);
 		}
 		template<typename T>
 		static JUserPtr<T> GetUserPtr(const std::string& typeFullName, const size_t objGuid)
@@ -248,7 +248,7 @@ namespace JinEngine
 			if (!std::is_base_of_v<JTypeBase, T>)
 				return JUserPtr<T>{};
 
-			return JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceUserPtr<T>(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceUserPtr<T>(objGuid);
 		}
 		template<typename T>
 		static JUserPtr<T> GetUserPtr(const JTypeInstanceSearchHint& hint)
@@ -256,7 +256,7 @@ namespace JinEngine
 			if (!hint.isValid)
 				return JUserPtr<T>{};
 
-			return JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceUserPtr<T>(hint.objectGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceUserPtr<T>(hint.objectGuid);
 		}
 		template<typename  T>
 		static JUserPtr<T> ConnectChildUserPtr(const JUserPtr<JTypeBase>& user)
@@ -272,7 +272,7 @@ namespace JinEngine
 		}
 		static JUserPtr<JTypeBase> SearchUserPtr(JTypeInfo& baseTypeInfo, const size_t objGuid)
 		{
-			std::vector<JTypeInfo*> derivedInfoVec = JReflectionInfo::Instance().GetDerivedTypeInfo(baseTypeInfo);
+			std::vector<JTypeInfo*> derivedInfoVec = _JReflectionInfo::Instance().GetDerivedTypeInfo(baseTypeInfo);
 			for (const auto& data : derivedInfoVec)
 			{
 				auto userPtr = data->GetInstanceUserPtr(objGuid);
@@ -283,7 +283,7 @@ namespace JinEngine
 		}
 		static JUserPtr<JTypeBase> SearchUserPtr(const std::string& baseTypeFullName, const size_t objGuid)
 		{
-			return SearchUserPtr(*JReflectionInfo::Instance().GetTypeInfo(baseTypeFullName), objGuid);
+			return SearchUserPtr(*_JReflectionInfo::Instance().GetTypeInfo(baseTypeFullName), objGuid);
 		}
 		template<typename  T>
 		static JUserPtr<T> SearchUserPtr(JTypeInfo& baseTypeInfo, const size_t objGuid)
@@ -298,18 +298,18 @@ namespace JinEngine
 
 		static JWeakPtr<JTypeBase> GetWeakPtr(const size_t typeGuid, const size_t objGuid)
 		{
-			return JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceWeakPtr(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceWeakPtr(objGuid);
 		}
 		static JWeakPtr<JTypeBase> GetWeakPtr(const std::string& typeFullName, const size_t objGuid)
 		{
-			return JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceWeakPtr(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceWeakPtr(objGuid);
 		}
 		static JWeakPtr<JTypeBase> GetWeakPtr(const JTypeInstanceSearchHint& hint)
 		{
 			if (!hint.isValid)
 				return JWeakPtr<JTypeBase>{};
 
-			return JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceWeakPtr(hint.objectGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceWeakPtr(hint.objectGuid);
 		}
 		template<typename T>
 		static JWeakPtr<T> GetWeakPtr(const size_t objGuid)
@@ -359,7 +359,7 @@ namespace JinEngine
 			if (!std::is_base_of_v<JTypeBase, T>)
 				return JWeakPtr<T>{};
 
-			return JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceWeakPtr<T>(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeGuid)->GetInstanceWeakPtr<T>(objGuid);
 		}
 		template<typename T>
 		static JWeakPtr<T> GetWeakPtr(const std::string& typeFullName, const size_t objGuid)
@@ -370,7 +370,7 @@ namespace JinEngine
 			if (!std::is_base_of_v<JTypeBase, T>)
 				return JWeakPtr<T>{};
 
-			return JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceWeakPtr<T>(objGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(typeFullName)->GetInstanceWeakPtr<T>(objGuid);
 		}
 		template<typename T>
 		static JWeakPtr<T> GetWeakPtr(const JTypeInstanceSearchHint& hint)
@@ -378,7 +378,7 @@ namespace JinEngine
 			if (!hint.isValid)
 				return JWeakPtr<T>{};
 
-			return JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceWeakPtr<T>(hint.objectGuid);
+			return _JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceWeakPtr<T>(hint.objectGuid);
 		}
 		template<typename  T>
 		static JWeakPtr<T> ConnectChildWeakPtr(JWeakPtr<JTypeBase>&& user)
@@ -394,7 +394,7 @@ namespace JinEngine
 		}
 		static JWeakPtr<JTypeBase> SearchWeakPtr(JTypeInfo& baseTypeInfo, const size_t objGuid)
 		{
-			std::vector<JTypeInfo*> derivedInfoVec = JReflectionInfo::Instance().GetDerivedTypeInfo(baseTypeInfo);
+			std::vector<JTypeInfo*> derivedInfoVec = _JReflectionInfo::Instance().GetDerivedTypeInfo(baseTypeInfo);
 			for (const auto& data : derivedInfoVec)
 			{
 				auto weakPtr = data->GetInstanceWeakPtr(objGuid);
@@ -405,14 +405,14 @@ namespace JinEngine
 		}
 		static JWeakPtr<JTypeBase> SearchWeakPtr(const std::string& baseTypeFullName, const size_t objGuid)
 		{
-			return SearchUserPtr(*JReflectionInfo::Instance().GetTypeInfo(baseTypeFullName), objGuid);
+			return SearchUserPtr(*_JReflectionInfo::Instance().GetTypeInfo(baseTypeFullName), objGuid);
 		}
 
 
 		template<typename enumType>
 		std::vector<enumType>GetEnumElementVec()
 		{
-			JEnumInfo* jEnumInfo = JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<enumType>).name());
+			JEnumInfo* jEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<enumType>).name());
 			if (jEnumInfo != nullptr)
 			{
 				std::vector<int> intVec = jEnumInfo->GetEnumElementVec(); 

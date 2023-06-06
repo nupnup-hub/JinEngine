@@ -630,9 +630,16 @@ namespace JinEngine
 			{
 				value.ClearInputHelperBuff();
 				value.OffButtonTrigger();
-				AppLifeInterface::SetNextProjectInfo(JApplicationProject::GetProjectInfo(value.GetSelectedIndex())->GetUnique());
+				auto projInfo = JApplicationProject::GetProjectInfo(value.GetSelectedIndex());
+				if (projInfo == nullptr)
+				{
+					MessageBox(0, L"Fail get project info", 0, 0);
+					return;
+				}
+
+				AppLifeInterface::SetNextProjectInfo(projInfo->GetUnique());
 				if (!AppLifeInterface::SetStartNewProjectTrigger())
-					MessageBox(0, L"SetStartNewProjectTrigger Fail", 0, 0);
+					MessageBox(0, L"Fail start new project", 0, 0);
 			};
 			 
 			if (values->GetSelectedIndex() == -1)
@@ -661,7 +668,7 @@ namespace JinEngine
 				true);
 
 			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_Button);
-			if (JImGuiImpl::Button(startBtnName, btnSize))
+			if (JImGuiImpl::Button(startBtnName, btnSize) && values->GetSelectedIndex() != -1)
 				(*startPtr)(*values);
 			JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
 

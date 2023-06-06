@@ -64,7 +64,7 @@ namespace JinEngine
 			JUserPtr<JGameObject> selectedGobj;   
 			std::unordered_map<size_t, FrustumInfo> camFrustumMap;
 		private:
-			std::unique_ptr<JEditorSceneCoordGrid> coordGrid;
+			std::unique_ptr<JEditorSceneCoordGrid> coordGrid;	
 		private:
 			std::unique_ptr<JEditorBinaryTreeView> editorBTreeView;
 			std::unique_ptr<JEditorCameraControl> editorCamCtrl;

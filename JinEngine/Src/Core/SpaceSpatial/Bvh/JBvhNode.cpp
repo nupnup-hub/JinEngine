@@ -75,6 +75,7 @@ namespace JinEngine
 		}
 		void JBvhNode::Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept
 		{
+			//frustum.Contain이 box.Contain보다 빠르다
 			if (type == J_BVH_NODE_TYPE::LEAF)
 			{
 				DirectX::BoundingOrientedBox oriBox = innerGameObject->GetRenderItem()->GetOrientedBoundingBox();

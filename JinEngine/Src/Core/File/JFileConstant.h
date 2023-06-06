@@ -35,7 +35,7 @@ namespace JinEngine
 			template<typename EnumType>
 			static std::wstring StreamTypeSymbol()noexcept
 			{
-				JEnumInfo* eInfo = JReflectionInfo::Instance().GetEnumInfo(typeid(EnumType).name());
+				JEnumInfo* eInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(EnumType).name());
 				if (eInfo == nullptr)
 					return L"Null Enum: ";
 				else

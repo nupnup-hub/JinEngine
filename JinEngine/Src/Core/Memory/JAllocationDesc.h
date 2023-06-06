@@ -36,7 +36,7 @@ namespace JinEngine
 			size_t alignDataSize = 0;			//automacally calulcated in allocation class
 		public:
 			std::unique_ptr<NotifyReAllocB> notifyReAllocB;
-			//std::unique_ptr<NotifyReAllocDebugB> notifyDebugB;
+			std::unique_ptr<NotifyReAllocDebugB> notifyDebugB;
 		public:
 			J_ALLOCATION_TYPE allocationType = J_ALLOCATION_TYPE::VIRTUAL;
 		public:

@@ -53,7 +53,9 @@ namespace JinEngine
 			friend class Graphic::JShadowMap;
 			friend class Editor::JSceneObserver; //Debug
 		private:
+			static const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(JScene* scene, const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept;
 			static const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const JUserPtr<JScene>& scene, const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept;
+			static const std::vector<JUserPtr<JComponent>>& GetComponentCashVec(JScene* scene, const J_COMPONENT_TYPE cType)noexcept;
 			static const std::vector<JUserPtr<JComponent>>& GetComponentCashVec(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE cType)noexcept;
 		};
 		class TimeInterface

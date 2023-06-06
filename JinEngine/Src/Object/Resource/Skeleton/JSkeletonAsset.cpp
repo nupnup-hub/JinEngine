@@ -4,7 +4,7 @@
 #include"../JResourceObjectHint.h"
 #include"../JClearableInterface.h"
 #include"../../Directory/JDirectory.h"
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Utility/JCommonUtility.h"

@@ -8,7 +8,7 @@
 #include"../../Upload/FrameResource/JOcclusionConstants.h"
 #include"../../Upload/FrameResource/JBoundingObjectConstants.h"
 #include"../../../Core/Exception/JExceptionMacro.h" 
-#include"../../../Core/Guid/GuidCreator.h"
+#include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Object/GameObject/JGameObject.h"  
 #include"../../../Object/Component/Transform/JTransform.h"
 #include"../../../Object/Resource/JResourceManager.h" 
@@ -180,7 +180,7 @@ namespace JinEngine
 		{
 			uint passCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JHzbOccPassConstants));
 			D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = currFrame->hzbOccPassCB->Resource()->GetGPUVirtualAddress() + passCBIndex * passCBByteSize;
-
+			 
 			commandList->SetComputeRootDescriptorTable(1, mipMapStHandle);
 			commandList->SetComputeRootShaderResourceView(3, currFrame->hzbOccObjectBuffer->Resource()->GetGPUVirtualAddress());
 			commandList->SetComputeRootUnorderedAccessView(4, occQueryOutBuffer->Resource()->GetGPUVirtualAddress());

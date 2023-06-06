@@ -159,14 +159,12 @@ namespace JinEngine
 				static void Initialize();
 				static void Clear(); 
 			private:
-				static void StartFrame();
-				static void EndFrame();
-			private:
 				static void UpdateWait();
-				static void UpdateEngine();
-			private:
+				static void UpdateGuiBackend();
+				static void UpdateFrame();
+			private: 
+				static void DrawGui();
 				static void DrawScene();
-				static void DrawProjectSelector();
 			private:
 				static void WriteLastRsTexture();
 			};
