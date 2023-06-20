@@ -14,6 +14,8 @@ namespace JinEngine
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JComponent)
 	public: 
+		//comp에 child중에서 파생되지 않는 경우 InitData 생성자에 const Core::JTypeInfo& typeInfo parmeter는 하드코딩 되어있다
+		//그 외에 파생되는 경우는 파생된 class에서 값을 유효한 값을 대입한다.
 		class InitData : public JObject::InitData
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
@@ -26,14 +28,16 @@ namespace JinEngine
 			bool IsValidData()const noexcept override;
 		};
 	protected: 
-		class LoadData final : public Core::JDITypeDataBase
+		class LoadData final: public Core::JDITypeDataBase
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadData)
 		public:
 			JUserPtr<JGameObject> owner = nullptr;
 			std::wifstream& stream;
 		public:
-			LoadData(JUserPtr<JGameObject> owner, std::wifstream& stream);
+			Core::JTypeInfo* loadTypeInfo;
+		public:
+			LoadData(JUserPtr<JGameObject> owner, std::wifstream& stream, const size_t typeGuid);
 			~LoadData();
 		public:
 			bool IsValidData()const noexcept final;
@@ -78,11 +82,11 @@ namespace JinEngine
 	public:
 		//Compoent는 상위클래스에 초기화변수 이외에 오직 Parent변수만을 입력받아 초기화된다
 		//상위클래스 변수는 모두 기본값을 가지고 있다 
-		static std::unique_ptr<Core::JDITypeDataBase> CreateInitDIData(const J_COMPONENT_TYPE cType, JUserPtr<JGameObject> parent, std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData = nullptr);
+		static std::unique_ptr<Core::JDITypeDataBase> CreateInitDIData(const J_COMPONENT_TYPE cType, const JTypeInfo& typeInfo, JUserPtr<JGameObject> owner, std::unique_ptr<Core::JDITypeDataBase>&& parentInitData = nullptr);
 		template<typename T, std::enable_if_t <std::is_base_of_v<JComponent, T> && !std::is_same_v<JComponent, T>, int> = 0>
-		static std::unique_ptr<Core::JDITypeDataBase> CreateInitDIData(JUserPtr<JGameObject> parent, std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData = nullptr)
+		static std::unique_ptr<Core::JDITypeDataBase> CreateInitDIData(const JTypeInfo& typeInfo, JUserPtr<JGameObject> owner, std::unique_ptr<Core::JDITypeDataBase>&& parentInitData = nullptr)
 		{
-			return CreateInitDIData(T::GetStaticComponentType(), parent, std::move(parentClassInitData));
+			return CreateInitDIData(T::GetStaticComponentType(), typeInfo, owner, std::move(parentInitData));
 		}
 	protected:
 		JComponent(const InitData& initData) noexcept;

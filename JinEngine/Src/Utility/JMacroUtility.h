@@ -129,6 +129,12 @@ namespace JinEngine
 			dataName = newData;							\
 		}                                               \
 
+#define  J_SIMPLE_GET_NO_PREFIX_GET(typeName, dataName, methodName)	\
+		typeName methodName()const noexcept				\
+		{												\
+			return dataName;							\
+		}												\
+
 #define  J_SIMPLE_GET(typeName, dataName, methodName)	\
 		typeName Get##methodName()const noexcept		\
 		{												\

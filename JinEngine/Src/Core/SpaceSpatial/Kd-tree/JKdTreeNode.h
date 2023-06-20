@@ -56,9 +56,10 @@ namespace JinEngine
 			void Clear()noexcept;
 			void Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
 			void Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept;
-			JUserPtr<JGameObject> IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept;
-			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<float>& distVec)const noexcept;
-			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<float>& distVec)const noexcept;
+			JUserPtr<JGameObject> IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, const bool allowContainRayPos)const noexcept;
+			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<JIntersectInfo>& info)const noexcept;
+			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<JIntersectInfo>& info)const noexcept;
+			//not sorted
 			void Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
 		public:
 			bool IsLeftNode()const noexcept;

@@ -54,7 +54,7 @@ namespace JinEngine
 			public:
 				Core::JGuiWidgetInfo* GetWidgetInfo()const noexcept
 				{
-					return handleBase->GetWidgetInfo(widgetIndex);
+					return handleBase->GetWidgetInfo(widgetIndex).Get();
 				}
 				Core::JTypeImplBase* GetImplBase()const noexcept
 				{
@@ -132,7 +132,7 @@ namespace JinEngine
 				if (!widgetInfo->IsExtraFunctionUser())
 					return nullptr;
 
-				return widgetInfo->GetExtraFunctionUserInfo(type);
+				return widgetInfo->GetExtraFunctionUserInfo(type).Get();
 			}
 			//forward declaration 
 			static std::unique_ptr<JGuiWidgetDisplayHandle> MakeGuiHandle(Core::JParameterHint pHint, Core::JGuiWidgetInfo* widgetInfo);
@@ -327,12 +327,12 @@ namespace JinEngine
 		public:
 			void Update(JGuiWidgetDisplayHandle* widgetHandle, UpdateData& updateData, UserData* userData, const bool canDisplayWidget)final
 			{
-				Core::JGuiExtraFunctionUserInfo* extraUserInfo = GetExtraUserInfo(updateData, Core::J_GUI_EXTRA_FUNCTION_TYPE::GROUP);
+				Core::JGuiExtraFunctionUserInfo* extraUserInfo = GetExtraUserInfo(updateData, Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE);
 				if (extraUserInfo == nullptr)
 					return;
 
-				Core::JGuiExtraFunctionInfo* extraInfo = Core::JGuiExtraFunctionInfoMap::GetExtraFunctionInfo(extraUserInfo->GetRefInfoMapName());
-				if (extraInfo == nullptr || static_cast<Core::JGuiGroupInfo*>(extraInfo)->GetGroupType() != Core::J_GUI_EXTRA_GROUP_TYPE::TABLE)
+				Core::JGuiExtraFunctionInfo* extraInfo = extraUserInfo->GetExtraFunctionInfo().Get();
+				if (extraInfo == nullptr)
 					return;
 
 				Core::JGuiTableUserInfo* tableUserInfo = static_cast<Core::JGuiTableUserInfo*>(extraUserInfo);
@@ -442,9 +442,11 @@ namespace JinEngine
 				if (extraUser == nullptr)
 					return true;
 
-				Core::JGuiExtraFunctionInfo* extraInfo = Core::JGuiExtraFunctionInfoMap::GetExtraFunctionInfo(extraUser->GetRefInfoMapName());
+				Core::JGuiExtraFunctionInfo* extraInfo = extraUser->GetExtraFunctionInfo().Get();
 				Core::JGuiConditionInfo* conditionInfo = static_cast<Core::JGuiConditionInfo*>(extraInfo);
-				if (conditionInfo->GetConditionType() == Core::J_GUI_EXTRA_CONDITION_TYPE::ENUM)
+				if (conditionInfo->GetConditionType() == Core::J_GUI_EXTRA_CONDITION_TYPE::BOOLEAN_PARAM)
+					return updateData.HasImplType() ? PassImplBoolCondition(updateData, extraUser, conditionInfo) : PassBoolCondition(updateData, extraUser, conditionInfo);
+				else if (conditionInfo->GetConditionType() == Core::J_GUI_EXTRA_CONDITION_TYPE::ENUM_PARAM)
 					return updateData.HasImplType() ? PassImplEnumCondition(updateData, extraUser, conditionInfo) : PassEnumCondition(updateData, extraUser, conditionInfo);
 				else
 				{
@@ -453,6 +455,96 @@ namespace JinEngine
 				}
 			}
 		private:
+			//IsOwnRefParam
+			static bool GetReferenceParameterInfo(UpdateData& updateData,
+				const std::string& refParamName,
+				_Out_ Core::JIdentifier** owner,
+				_Out_ Core::JPropertyInfo** pInfo)
+			{
+				*owner = updateData.obj.Get();
+				*pInfo = updateData.handleBase->GetTypeInfo()->GetProperty(refParamName);
+				return true;
+			}
+			//IsOwnRefParam
+			static bool GetReferenceParameterInfo(UpdateData& updateData,
+				const std::string& refParamName,
+				_Out_ Core::JTypeImplBase** owner,
+				_Out_ Core::JPropertyInfo** pInfo)
+			{
+				*owner = updateData.GetImplBase();
+				*pInfo = updateData.handleBase->GetTypeInfo()->GetProperty(refParamName);
+				return true;
+			}
+			static bool GetReferenceParameterInfo(UpdateData& updateData,
+				const std::string& refParamName,
+				const std::string& refParamOwnerName,
+				_Out_ Core::JIdentifier** owner,
+				_Out_ Core::JPropertyInfo** pInfo)
+			{
+				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(refParamOwnerName);
+				*owner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JIdentifier*>(updateData.obj.Get(), refPropertyInfo);
+
+				if (*owner == nullptr)
+					return false;
+
+				*pInfo = (*owner)->GetTypeInfo().GetProperty(refParamName);
+				return true;
+			}
+			static bool GetReferenceParameterInfo(UpdateData& updateData,
+				const std::string& refParamName,
+				const std::string& refParamOwnerName,
+				_Out_ Core::JTypeImplBase** owner,
+				_Out_ Core::JPropertyInfo** pInfo)
+			{
+				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(refParamOwnerName);
+				*owner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JTypeImplBase*>(updateData.obj.Get(), refPropertyInfo);
+
+				if (*owner == nullptr)
+					return false;
+
+				*pInfo = updateData.obj->GetTypeInfo().GetImplTypeInfo()->GetProperty(refParamName);
+				return true;
+			} 
+			static bool PassBoolCondition(UpdateData& updateData,
+				Core::JGuiExtraFunctionUserInfo* extraUser,
+				Core::JGuiConditionInfo* conditionInfo)
+			{
+				Core::JIdentifier* boolOwner = nullptr;
+				Core::JPropertyInfo* boolPropertyInfo = nullptr;
+
+				Core::JGuiBoolParamConditionInfo* condInfo = static_cast<Core::JGuiBoolParamConditionInfo*>(conditionInfo);
+				Core::JGuiBoolParmConditionUserInfo* condUser = static_cast<Core::JGuiBoolParmConditionUserInfo*>(extraUser);
+
+				if (condUser->IsOwnRefParam())
+					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), &boolOwner, &boolPropertyInfo);
+				else
+					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), condUser->GetRefParamOwnerName(), &boolOwner, &boolPropertyInfo);
+
+				if (boolOwner == nullptr || boolPropertyInfo == nullptr || boolPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
+					return false;
+
+				return condUser->OnTrigger(JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolPropertyInfo));
+			}
+			static bool PassImplBoolCondition(UpdateData& updateData,
+				Core::JGuiExtraFunctionUserInfo* extraUser,
+				Core::JGuiConditionInfo* conditionInfo)
+			{
+				Core::JTypeImplBase* boolOwner = nullptr;
+				Core::JPropertyInfo* boolPropertyInfo = nullptr;
+
+				Core::JGuiBoolParamConditionInfo* condInfo = static_cast<Core::JGuiBoolParamConditionInfo*>(conditionInfo);
+				Core::JGuiBoolParmConditionUserInfo* condUser = static_cast<Core::JGuiBoolParmConditionUserInfo*>(extraUser);
+
+				if (condUser->IsOwnRefParam())
+					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), &boolOwner, &boolPropertyInfo);
+				else
+					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), condUser->GetRefParamOwnerName(), &boolOwner, &boolPropertyInfo);
+
+				if (boolOwner == nullptr || boolPropertyInfo == nullptr || boolPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
+					return false;
+
+				return condUser->OnTrigger(JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolPropertyInfo));
+			}
 			static bool PassEnumCondition(UpdateData& updateData,
 				Core::JGuiExtraFunctionUserInfo* extraUser,
 				Core::JGuiConditionInfo* conditionInfo)
@@ -460,33 +552,18 @@ namespace JinEngine
 				Core::JIdentifier* enumOwner = nullptr;
 				Core::JPropertyInfo* enumPropertyInfo = nullptr;
 
-				Core::JGuiEnumConditionInfo* enumCondInfo = static_cast<Core::JGuiEnumConditionInfo*>(conditionInfo);
-				Core::JGuiEnumConditionUserInfoBase* enumCondUser = static_cast<Core::JGuiEnumConditionUserInfoBase*>(extraUser);
-				if (enumCondUser->IsRefUser())
-				{
-					Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(enumCondUser->GetOwnerTypeParameterNameInRefClass());
-					enumOwner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JIdentifier*>(updateData.obj.Get(), refPropertyInfo);
-
-					if (enumOwner == nullptr)
-						return false;
-
-					enumPropertyInfo = enumOwner->GetTypeInfo().GetProperty(enumCondInfo->GetParamName());
-				}
+				Core::JGuiEnumParamConditionInfo* condInfo = static_cast<Core::JGuiEnumParamConditionInfo*>(conditionInfo);
+				Core::JGuiEnumParamConditionUserInfoInterface* condUser = static_cast<Core::JGuiEnumParamConditionUserInfoInterface*>(extraUser);
+				
+				if (condUser->IsOwnRefParam())
+					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), &enumOwner, &enumPropertyInfo);
 				else
-				{
-					enumOwner = updateData.obj.Get();
-					enumPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(enumCondInfo->GetParamName());
-				}
-				if (enumOwner == nullptr || enumPropertyInfo == nullptr)
+					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), condUser->GetRefParamOwnerName(), &enumOwner, &enumPropertyInfo);
+				
+				if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
 					return false;
 
-				if (enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
-					return false;
-
-				if (enumCondUser->OnTrigger(JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo)))
-					return true;
-				else
-					return false;
+				return condUser->OnTrigger(JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo));
 			}
 			static bool PassImplEnumCondition(UpdateData& updateData,
 				Core::JGuiExtraFunctionUserInfo* extraUser,
@@ -495,33 +572,18 @@ namespace JinEngine
 				Core::JTypeImplBase* enumOwner = nullptr;
 				Core::JPropertyInfo* enumPropertyInfo = nullptr;
 
-				Core::JGuiEnumConditionInfo* enumCondInfo = static_cast<Core::JGuiEnumConditionInfo*>(conditionInfo);
-				Core::JGuiEnumConditionUserInfoBase* enumCondUser = static_cast<Core::JGuiEnumConditionUserInfoBase*>(extraUser);
-				if (enumCondUser->IsRefUser())
-				{
-					Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(enumCondUser->GetOwnerTypeParameterNameInRefClass());
-					enumOwner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JTypeImplBase*>(updateData.obj.Get(), refPropertyInfo);
-					
-					if (enumOwner == nullptr)
-						return false;
-
-					enumPropertyInfo = updateData.obj->GetTypeInfo().GetImplTypeInfo()->GetProperty(enumCondInfo->GetParamName());
-				}
+				Core::JGuiEnumParamConditionInfo* condInfo = static_cast<Core::JGuiEnumParamConditionInfo*>(conditionInfo);
+				Core::JGuiEnumParamConditionUserInfoInterface* condUser = static_cast<Core::JGuiEnumParamConditionUserInfoInterface*>(extraUser);
+				
+				if (condUser->IsOwnRefParam())
+					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), &enumOwner, &enumPropertyInfo);
 				else
-				{
-					enumOwner = updateData.GetImplBase();
-					enumPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(enumCondInfo->GetParamName());
-				}
-				if (enumOwner == nullptr || enumPropertyInfo == nullptr)
+					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), condUser->GetRefParamOwnerName(), &enumOwner, &enumPropertyInfo);
+
+				if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
 					return false;
 
-				if (enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
-					return false;
-
-				if (enumCondUser->OnTrigger(JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo)))
-					return true;
-				else
-					return false;
+				return condUser->OnTrigger(JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo));
 			}
 		};
 
@@ -1850,19 +1912,18 @@ namespace JinEngine
 			}
 			static std::unique_ptr<JGuiWidgetGroupHandle> MakeExtraPropertyGroupHandle(Core::JGuiWidgetInfo* widgetInfo)
 			{
-				Core::JGuiExtraFunctionUserInfo* groupUserInfo = widgetInfo->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::GROUP);
+				Core::JGuiExtraFunctionUserInfo* groupUserInfo = widgetInfo->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE).Get();
 				if (groupUserInfo != nullptr)
 				{
-					auto info = Core::JGuiExtraFunctionInfoMap::GetExtraFunctionInfo(groupUserInfo->GetRefInfoMapName());
-					auto groupInfo = static_cast<Core::JGuiGroupInfo*>(info);
-					if (groupInfo->GetGroupType() == Core::J_GUI_EXTRA_GROUP_TYPE::TABLE)
+					auto info = groupUserInfo->GetExtraFunctionInfo(); 
+					if (info->GetExtraFunctionType() == Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE)
 						return std::make_unique<JGuiTableHandle>();
 				}
 				return nullptr;
 			}
 			static std::unique_ptr<JGuiConditionHandle> MakeExtraConditionHandle(Core::JGuiWidgetInfo* widgetInfo)
 			{
-				Core::JGuiExtraFunctionUserInfo* condUserInfo = widgetInfo->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::CONDITION);
+				Core::JGuiExtraFunctionUserInfo* condUserInfo = widgetInfo->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::CONDITION).Get();
 				if (condUserInfo != nullptr)
 					return std::make_unique<JGuiConditionHandle>();
 				return nullptr;
@@ -1919,7 +1980,7 @@ namespace JinEngine
 					updateData.obj = obj; 
 
 					updateData.updateTypeInfo = typeInfo;
-					updateData.handleBase = typeOption->GetGuiWidgetInfoHandle(i);
+					updateData.handleBase = typeOption->GetGuiWidgetInfoHandle(i).Get();
 					if (userData->isActivatedTable)
 						JImGuiImpl::TableSetColumnIndex(i);
 					const uint innerWidgetInfoCount = updateData.handleBase->GetWidgetInfoCount();
@@ -1954,10 +2015,10 @@ namespace JinEngine
 				auto condHandle = MakeExtraConditionHandle(updateData.GetWidgetInfo());
 				bool failCondition = condHandle != nullptr && !condHandle->PassCondition(updateData);
 
-				Core::JGuiExtraFunctionUserInfo* groupUserInfo = updateData.GetWidgetInfo()->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::GROUP);
+				Core::JGuiExtraFunctionUserInfo* groupUserInfo = updateData.GetWidgetInfo()->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE).Get();
 				if (groupUserInfo != nullptr)
 				{
-					const std::string groupMapKey = groupUserInfo->GetRefInfoMapName() + std::to_string(updateData.obj->GetGuid());
+					const std::string groupMapKey = groupUserInfo->GetExtraFunctionName() + std::to_string(updateData.obj->GetGuid());
 					auto groupData = userData->guiGroupHandleMap.find(groupMapKey);
 					if (groupData == userData->guiGroupHandleMap.end())
 					{

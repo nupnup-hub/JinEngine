@@ -28,7 +28,7 @@ namespace JinEngine
 			int nowIndex = 0;
 			int samplePad00 = 0;
 		};
-		struct JHzbOccPassConstants
+		struct JHzbOccRequestorConstants
 		{ 
 			DirectX::XMFLOAT4X4 view = JMathHelper::Identity4x4();
 			DirectX::XMFLOAT4X4 proj = JMathHelper::Identity4x4(); 

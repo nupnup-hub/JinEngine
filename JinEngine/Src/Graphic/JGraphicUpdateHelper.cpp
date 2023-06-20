@@ -8,6 +8,8 @@
 #include"../Object/Component/Camera/JCameraPrivate.h"
 #include"../Object/Component/Light/JLight.h" 
 
+//Debug
+#include<fstream> 
 namespace JinEngine
 {
 	namespace Graphic
@@ -125,6 +127,20 @@ namespace JinEngine
 					return true;
 			}
 			return false;
+		} 
+		void JDrawHelper::SetDrawTarget(JGraphicDrawTarget* drawTarget)noexcept
+		{
+			JDrawHelper::drawTarget = drawTarget;
+			JDrawHelper::scene = drawTarget->scene;
+		}
+		void JDrawHelper::SetTheadInfo(const uint threadCount, const uint threadIndex)noexcept
+		{
+			JDrawHelper::threadCount = threadCount;
+			JDrawHelper::threadIndex = threadIndex;
+		}
+		void JDrawHelper::SetAllowMultithreadDraw(const JGraphicOption& option, const bool value)noexcept
+		{
+			allowMutilthreadDraw = option.allowMultiThread && value;
 		}
 		void JDrawHelper::SettingOccCulling(const JWeakPtr<JComponent>& comp)noexcept
 		{
@@ -156,7 +172,11 @@ namespace JinEngine
 			allowOcclusionCulling = cam->AllowHzbOcclusionCulling();
 			allowDrawOccMipMap = cam->AllowDisplayOccCullingDepthMap();
 		}
-		void JDrawHelper::CalculateWorkIndex(const uint count, _Out_ uint& stIndex, _Out_ uint& edIndex)const noexcept
+		bool JDrawHelper::CanDispatchWorkIndex()const noexcept
+		{
+			return allowMutilthreadDraw && threadIndex != -1 && threadCount != -1;
+		}
+		void JDrawHelper::DispatchWorkIndex(const uint count, _Out_ uint& stIndex, _Out_ uint& edIndex)const noexcept
 		{
 			if (count == 0)
 			{
@@ -164,25 +184,38 @@ namespace JinEngine
 				edIndex = 0;
 				return;
 			}
-
-			const uint threadPer = count / threadCount;
-			if (threadIndex == 0)
-				stIndex = 0;
+			if (count < threadCount)
+			{
+				if (threadIndex < count)
+				{
+					stIndex = threadIndex;
+					edIndex = threadIndex + 1;
+				}
+				else
+				{
+					stIndex = 0;
+					edIndex = 0;
+				}
+			}
 			else
-				stIndex = threadPer * (threadIndex - 1);
+			{
+				const uint threadPer = count / threadCount;
+				stIndex = threadPer * threadIndex;
 
-			if (threadIndex == threadCount - 1)
-				edIndex = count;
-			else
-				edIndex = threadPer * (threadIndex + 1);
+				if (threadIndex == threadCount - 1)
+					edIndex = count;
+				else
+					edIndex = threadPer * (threadIndex + 1);
+			}
 		}
-
+		  
 		JDrawCondition::JDrawCondition(const JGraphicOption& option,
 			const JDrawHelper& helper,
 			const bool newAllowAnimation,
 			const bool newAllowCulling,
 			const bool newAllowDebugOutline)
-			:allowAnimation(allowAnimation), allowAllCullingResult(CamEditorSettingInterface::AllowAllCullingResult(helper.cam))
+			:allowAnimation(allowAnimation),
+			allowAllCullingResult(CamEditorSettingInterface::AllowAllCullingResult(helper.cam))
 		{
 			allowAnimation = newAllowAnimation; 
 			allowCulling = newAllowCulling;

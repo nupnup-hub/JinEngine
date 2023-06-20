@@ -11,9 +11,9 @@ namespace JinEngine
 		{
 			return (uint)widgetInfo.size();
 		}
-		JGuiWidgetInfo* JGuiWidgetInfoHandleBase::GetWidgetInfo(const uint index)const noexcept
+		JUserPtr<JGuiWidgetInfo> JGuiWidgetInfoHandleBase::GetWidgetInfo(const uint index)const noexcept
 		{
-			return widgetInfo[index].get();
+			return widgetInfo[index];
 		}
 	}
 }

@@ -114,6 +114,9 @@ namespace JinEngine
 				ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
 			
 			EnterPage(guiWindowFlag); 
+			const JVector2<float> pagePos = ImGui::GetWindowPos();
+			const JVector2<float> pageSize = ImGui::GetWindowSize();
+
 			if (HasDockNodeSpace())
 				UpdateDockSpace(dockspaceFlag);
 			else
@@ -124,11 +127,13 @@ namespace JinEngine
 			menuBar->Update(true);
 			ClosePage(); 
 			 
-			uint currOpWndCount = GetOpenWindowCount();
-			for (uint i = 0; i < currOpWndCount; ++i)
-				GetOpenWindow(i)->UpdateWindow();  
+			UpdateOpenWindow();
+			UpdateOpenSimpleWindow();
+
 			JImGuiImpl::PopFont();
 			ImGui::PopStyleVar(2); 
+
+			UpdateOpenPopupWindow(pagePos, pageSize);
 		}
 		bool JEditorSkeletonPage::IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept
 		{
@@ -255,10 +260,10 @@ namespace JinEngine
 		}
 		void JEditorSkeletonPage::BuildMenuNode()
 		{
-			std::unique_ptr<JEditorMenuNode> rootNode = std::make_unique<JEditorMenuNode>("Root", true, false);
+			std::unique_ptr<JEditorMenuNode> rootNode = std::make_unique<JEditorMenuNode>("Root", true, false, false);
 
 			// root Child 
-			std::unique_ptr<JEditorMenuNode> windowNode = std::make_unique<JEditorMenuNode>("Window", false, false, nullptr, rootNode.get());
+			std::unique_ptr<JEditorMenuNode> windowNode = std::make_unique<JEditorMenuNode>("Window", false, false, false, nullptr, rootNode.get());
 
 			JEditorMenuNode* windowNodePtr = windowNode.get();
 			menuBar = std::make_unique<JEditorMenuBar>(std::move(rootNode), false);
@@ -269,10 +274,13 @@ namespace JinEngine
 			for (uint i = 0; i < wndCount; ++i)
 			{
 				std::unique_ptr<JEditorMenuNode> newNode = std::make_unique<JEditorMenuNode>(wndVec[i]->GetName(),
-					false, true,
+					false, true, false,
 					wndVec[i]->GetOpenPtr(),
 					windowNodePtr);
-				newNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, wndVec[i]->GetName()));
+
+				auto openBind = std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpenEditorWindowFunctorPtr(), *this, wndVec[i]->GetName());
+				auto closeBind = std::make_unique<CloseEditorWindowF::CompletelyBind>(*GetCloseEditorWindowFunctorPtr(), *this, wndVec[i]->GetName());
+				newNode->RegisterBindHandle(std::move(openBind), std::move(closeBind)); 
 				menuBar->AddNode(std::move(newNode));
 			}
 		}

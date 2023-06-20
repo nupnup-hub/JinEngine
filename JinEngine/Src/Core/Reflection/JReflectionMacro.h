@@ -1,6 +1,6 @@
 #pragma once    
 #include"../Pointer/JOwnerPtr.h"
-#include"../Empty/EmptyType.h"
+#include"../Empty/JEmptyType.h"
 #include"../../Utility/JMacroUtility.h" 
 #include<type_traits> 
 
@@ -397,19 +397,33 @@ namespace ReflectionData
 			public:																					\
 				GuiTable##tableName()																\
 				{																					\
-					JinEngine::Core::JGuiExtraFunctionInfoMap::AddExtraFunctionInfo(std::make_unique<JinEngine::Core::JGuiTableInfo>(#tableName, __VA_ARGS__));	\
+					JinEngine::Core::JGuiExtraFunctionInfoMap::Register(JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiTableInfo>(#tableName, __VA_ARGS__));	\
 				}																					\
 			}GuiTable##tableName;																	\
 
 
-#define REGISTER_GUI_ENUM_CONDITION(conditioName, enumName, paramName)																\
+#define REGISTER_GUI_BOOL_CONDITION(conditioName, refParamName)																\
+																										\
+			inline static struct GuiBoolCondition##conditioName												\
+			{																							\
+			public:																						\
+				GuiBoolCondition##conditioName()																\
+				{																						\
+					JinEngine::Core::JGuiExtraFunctionInfoMap::Register(JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiBoolParamConditionInfo>(#conditioName, #refParamName));	\
+				}																						\
+			}GuiBoolCondition##conditioName;																	\
+
+
+
+
+#define REGISTER_GUI_ENUM_CONDITION(conditioName, enumName, refParamName)																\
 																										\
 			inline static struct GuiEnumCondition##conditioName												\
 			{																							\
 			public:																						\
 				GuiEnumCondition##conditioName()																\
 				{																						\
-					JinEngine::Core::JGuiExtraFunctionInfoMap::AddExtraFunctionInfo(std::make_unique<JinEngine::Core::JGuiEnumConditionInfo>(#conditioName, #enumName, #paramName));	\
+					JinEngine::Core::JGuiExtraFunctionInfoMap::Register(JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiEnumParamConditionInfo>(#conditioName, #enumName, #refParamName));	\
 				}																						\
 			}GuiEnumCondition##conditioName;																	\
 		
@@ -420,19 +434,21 @@ namespace ReflectionData
 #pragma region Create GUI
 
 
-#define GUI_TABLE_GROUP_USER(tableName, useColumnCount, canAddRowCount) std::make_unique<JinEngine::Core::JGuiTableUserInfo>(#tableName, useColumnCount, canAddRowCount)
-#define GUI_ENUM_CONDITION_USER(conditionName, ...) std::make_unique<JinEngine::Core::JGuiEnumConditionUserInfo<J_COUNT(__VA_ARGS__)>>(#conditionName,  __VA_ARGS__)
-#define GUI_ENUM_CONDITION_REF_USER(conditionName, ownerTypeParameterName, ...) std::make_unique<JinEngine::Core::JGuiEnumConditionRefUserInfo<J_COUNT(__VA_ARGS__)>>(#conditionName, #ownerTypeParameterName, __VA_ARGS__)
+#define GUI_TABLE_GROUP_USER(tableName, useColumnCount, canAddRowCount) JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiTableUserInfo>(#tableName, useColumnCount, canAddRowCount)
+#define GUI_BOOL_CONDITION_USER(conditionName, ...) JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiBoolParmConditionUserInfo>(#conditionName, __VA_ARGS__)
+#define GUI_BOOL_CONDITION_REF_USER(conditionName, refParamOwnerName, ...) JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiBoolParmConditionUserInfo(#conditionName, #refParamOwnerName, __VA_ARGS__)
+#define GUI_ENUM_CONDITION_USER(conditionName, ...) JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiEnumParamConditionUserInfo<J_COUNT(__VA_ARGS__)>>(#conditionName, __VA_ARGS__)
+#define GUI_ENUM_CONDITION_REF_USER(conditionName, refParamOwnerName, ...) JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiEnumParamConditionUserInfo<J_COUNT(__VA_ARGS__)>>(#conditionName, #refParamOwnerName, __VA_ARGS__)
 
-#define GUI_INPUT(isEnterToReturn, ...)	std::make_unique<JinEngine::Core::JGuiInputInfo>(isEnterToReturn, JinEngine::Core::J_PARAMETER_TYPE::UnKnown, __VA_ARGS__)
-#define GUI_FIXED_INPUT(isEnterToReturn, fixedType, ...)	std::make_unique<JinEngine::Core::JGuiInputInfo>(isEnterToReturn, fixedType, __VA_ARGS__)
-#define GUI_CHECKBOX(...)	std::make_unique<JinEngine::Core::JGuiCheckBoxInfo>(__VA_ARGS__)
-#define GUI_SLIDER(minValue, maxValue, ...)	std::make_unique<JinEngine::Core::JGuiSliderInfo>(minValue, maxValue, __VA_ARGS__)
-#define GUI_COLOR_PICKER(hasRgbInput, ...)	std::make_unique<JinEngine::Core::JGuiColorPickerInfo>(hasRgbInput, __VA_ARGS__)
-#define GUI_SELECTOR(imageLevel, hasSizeSlider, ...)	std::make_unique<JinEngine::Core::JGuiSelectorInfo>(imageLevel, hasSizeSlider, __VA_ARGS__)
-#define GUI_READONLY_TEXT(...)	std::make_unique<JinEngine::Core::JGuiReadOnlyTextInfo>(__VA_ARGS__) 
-#define GUI_ENUM_COMBO(enumName, ...) std::make_unique<JinEngine::Core::JGuiEnumComboBoxInfo>(typeid(enumName).name(), __VA_ARGS__) 
-#define GUI_LIST(listType, canDisplayElementGui, ...)  std::make_unique<JinEngine::Core::JGuiListInfo>(listType, canDisplayElementGui, __VA_ARGS__) 
+#define GUI_INPUT(isEnterToReturn, ...)	JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiInputInfo>(isEnterToReturn, JinEngine::Core::J_PARAMETER_TYPE::UnKnown, __VA_ARGS__)
+#define GUI_FIXED_INPUT(isEnterToReturn, fixedType, ...)	JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiInputInfo>(isEnterToReturn, fixedType, __VA_ARGS__)
+#define GUI_CHECKBOX(...)	JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiCheckBoxInfo>(__VA_ARGS__)
+#define GUI_SLIDER(minValue, maxValue, ...)	JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiSliderInfo>(minValue, maxValue, __VA_ARGS__)
+#define GUI_COLOR_PICKER(hasRgbInput, ...)	JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiColorPickerInfo>(hasRgbInput, __VA_ARGS__)
+#define GUI_SELECTOR(imageLevel, hasSizeSlider, ...)	JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiSelectorInfo>(imageLevel, hasSizeSlider, __VA_ARGS__)
+#define GUI_READONLY_TEXT(...)	JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiReadOnlyTextInfo>(__VA_ARGS__) 
+#define GUI_ENUM_COMBO(enumName, ...) JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiEnumComboBoxInfo>(typeid(enumName).name(), __VA_ARGS__) 
+#define GUI_LIST(listType, canDisplayElementGui, ...)  JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiListInfo>(listType, canDisplayElementGui, __VA_ARGS__) 
 
 #pragma endregion
 

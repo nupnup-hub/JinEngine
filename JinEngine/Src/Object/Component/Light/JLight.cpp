@@ -30,7 +30,7 @@ namespace JinEngine
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT, Graphic::JLightConstants&>, 
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT, Graphic::JShadowMapLightConstants&>,
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP, Graphic::JShadowMapConstants&>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, Graphic::JHzbOccPassConstants&, const uint, const uint>>,
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR, Graphic::JHzbOccRequestorConstants&, const uint, const uint>>,
 			Graphic::JFrameDirty>;
 	}
 	namespace
@@ -50,7 +50,7 @@ namespace JinEngine
 		using LitFrame = JFrameInterface1;
 		using ShadowLitFrame = JFrameInterface2;
 		using ShadowMapFrame = JFrameInterface3;
-		using HzbOccPassFrame = JFrameInterface4;
+		using HzbOccReqFrame = JFrameInterface4;
 	public:
 		JWeakPtr<JLight> thisPointer;
 	public:
@@ -252,12 +252,12 @@ namespace JinEngine
 			XMStoreFloat4x4(&constant.viewProj, XMMatrixTranspose(XMMatrixMultiply(CalLightView(), CalLightProj())));
 			ShadowMapFrame::MinusMovedDirty();
 		}
-		void UpdateFrame(Graphic::JHzbOccPassConstants& constant, const uint queryCount, const uint queryOffset)noexcept final
+		void UpdateFrame(Graphic::JHzbOccRequestorConstants& constant, const uint queryCount, const uint queryOffset)noexcept final
 		{
 			auto info = JGraphic::Instance().GetGraphicInfo();
 			auto option = JGraphic::Instance().GetGraphicOption();
 			//¹Ì±¸Çö
-			HzbOccPassFrame::MinusMovedDirty();
+			HzbOccReqFrame::MinusMovedDirty();
 		}
 		void UpdateShadowTransform()noexcept
 		{
@@ -314,7 +314,7 @@ namespace JinEngine
 			LitFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT, (LitFrame*)this);
 			ShadowLitFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT, (ShadowLitFrame*)this);
 			ShadowMapFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP, (ShadowMapFrame*)this);
-			HzbOccPassFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, (HzbOccPassFrame*)this);
+			HzbOccReqFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR, (HzbOccReqFrame*)this);
 		}
 	public:
 		void RegisterThisPointer(JLight* lit)
@@ -338,8 +338,8 @@ namespace JinEngine
 				ShadowLitFrame::RegisterFrameData(type, (ShadowLitFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
 			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP)
 				ShadowMapFrame::RegisterFrameData(type, (ShadowMapFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
-			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS)
-				HzbOccPassFrame::RegisterFrameData(type, (HzbOccPassFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR)
+				HzbOccReqFrame::RegisterFrameData(type, (HzbOccReqFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
 		}
 		void DeRegisterLightFrameData(const Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE type)
 		{
@@ -349,15 +349,15 @@ namespace JinEngine
 				ShadowLitFrame::DeRegisterFrameData(type, (ShadowLitFrame*)this);
 			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP)
 				ShadowMapFrame::DeRegisterFrameData(type, (ShadowMapFrame*)this);
-			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS)
-				HzbOccPassFrame::DeRegisterFrameData(type, (HzbOccPassFrame*)this);
+			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR)
+				HzbOccReqFrame::DeRegisterFrameData(type, (HzbOccReqFrame*)this);
 		}
 		static void RegisterTypeData()
 		{
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JLight::StaticTypeInfo };
 			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
-			auto createInitDataLam = [](JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
+			auto createInitDataLam = [](const Core::JTypeInfo& typeInfo, JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
 			{
 				using CorrectType = JComponent::ParentType::InitData;
 				const bool isValidUnq = parentClassInitData != nullptr && parentClassInitData->GetTypeInfo().IsChildOf(CorrectType::StaticTypeInfo());
@@ -626,7 +626,7 @@ namespace JinEngine
 	{
 		lit->impl->UpdateFrame(constant);
 	}
-	void FrameUpdateInterface::UpdateFrame(JLight* lit, Graphic::JHzbOccPassConstants& constant, const uint queryCount, const uint queryOffset)noexcept
+	void FrameUpdateInterface::UpdateFrame(JLight* lit, Graphic::JHzbOccRequestorConstants& constant, const uint queryCount, const uint queryOffset)noexcept
 	{
 		lit->impl->UpdateFrame(constant, queryCount, queryOffset);
 	}
@@ -649,9 +649,9 @@ namespace JinEngine
 	{
 		return lit->impl->ShadowMapFrame::GetUploadIndex();
 	}
-	int FrameUpdateInterface::GetHzbOccPassFrameIndex(JLight* lit)noexcept
+	int FrameUpdateInterface::GetHzbOccReqFrameIndex(JLight* lit)noexcept
 	{
-		return lit->impl->HzbOccPassFrame::GetUploadIndex();
+		return lit->impl->HzbOccReqFrame::GetUploadIndex();
 	}
 	bool FrameUpdateInterface::IsHotUpdated(JLight* lit)noexcept
 	{
@@ -675,7 +675,7 @@ namespace JinEngine
 	}
 	bool FrameUpdateInterface::HasOccPassRecopyRequest(JLight* lit)noexcept
 	{
-		return lit->impl->HzbOccPassFrame::HasMovedDirty();
+		return lit->impl->HzbOccReqFrame::HasMovedDirty();
 	}
 
 	int FrameIndexInterface::GetLitFrameIndex(JLight* lit)noexcept
@@ -690,9 +690,9 @@ namespace JinEngine
 	{
 		return lit->impl->ShadowMapFrame::GetUploadIndex();
 	}
-	int FrameIndexInterface::GetHzbOccPassFrameIndex(JLight* lit)noexcept
+	int FrameIndexInterface::GetHzbOccReqFrameIndex(JLight* lit)noexcept
 	{
-		return lit->impl->HzbOccPassFrame::GetUploadIndex();
+		return lit->impl->HzbOccReqFrame::GetUploadIndex();
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JLightPrivate::GetCreateInstanceInterface()const noexcept

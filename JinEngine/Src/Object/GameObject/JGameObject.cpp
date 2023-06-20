@@ -14,7 +14,7 @@
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/Guid/JGuidCreator.h"
-#include"../../Core/Empty/EmptyType.h"
+#include"../../Core/Empty/JEmptyType.h"
 #include"../../Utility/JCommonUtility.h"   
 #include<fstream>
 
@@ -678,8 +678,7 @@ namespace JinEngine
 
 		int componentCount;
 		JFileIOHelper::LoadAtomicData(stream, componentCount);
-
-		auto compLoadData = JComponentPrivate::AssetDataIOInterface::CreateLoadAssetDIData(newGameObject, stream);
+	
 		for (int i = 0; i < componentCount; ++i)
 		{
 			std::wstring componentName;
@@ -687,6 +686,7 @@ namespace JinEngine
 			JFileIOHelper::LoadJString(stream, componentName);
 			JFileIOHelper::LoadAtomicData(stream, typeGuid);
 			auto compPrivate = static_cast<JComponentPrivate*>(Core::JIdentifier::PrivateInterface(typeGuid));
+			auto compLoadData = JComponentPrivate::AssetDataIOInterface::CreateLoadAssetDIData(newGameObject, stream, typeGuid);
 			compPrivate->GetAssetDataIOInterface().LoadAssetData(compLoadData.get());
 		}
 

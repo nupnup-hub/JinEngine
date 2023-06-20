@@ -18,7 +18,7 @@
 #include"../../../Object/Resource/Mesh/JMeshGeometry.h"
 #include"../../../Object/Resource/Material/JMaterial.h"
 #include"../../../Utility/JMathHelper.h" 
-#include"../../../Lib/DirectX/Tk/Src/d3dx12.h"
+#include"../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"
 
 //Debug
 //#include"../../Core/File/JFileIOHelper.h"
@@ -140,8 +140,8 @@ namespace JinEngine
 			JShader* copyShader = _JResourceManager::Instance().GetDefaultShader(J_DEFAULT_COMPUTE_SHADER::DEFUALT_HZB_COPY_SHADER).Get();
 			commandList->SetPipelineState(copyShader->GetComputePso());
 
-			uint passCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JHzbOccPassConstants));
-			D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = currFrame->hzbOccPassCB->Resource()->GetGPUVirtualAddress() + passCBIndex * passCBByteSize;
+			uint passCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JHzbOccRequestorConstants));
+			D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = currFrame->hzbOccReqCB->Resource()->GetGPUVirtualAddress() + passCBIndex * passCBByteSize;
 
 			commandList->SetComputeRootDescriptorTable(0, depthMapSrvHandle);
 			commandList->SetComputeRootDescriptorTable(2, mipMapUavHandle);
@@ -178,8 +178,8 @@ namespace JinEngine
 			const uint passCBIndex,
 			const JCullingUserInterface& cullUser)
 		{
-			uint passCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JHzbOccPassConstants));
-			D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = currFrame->hzbOccPassCB->Resource()->GetGPUVirtualAddress() + passCBIndex * passCBByteSize;
+			uint passCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JHzbOccRequestorConstants));
+			D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = currFrame->hzbOccReqCB->Resource()->GetGPUVirtualAddress() + passCBIndex * passCBByteSize;
 			 
 			commandList->SetComputeRootDescriptorTable(1, mipMapStHandle);
 			commandList->SetComputeRootShaderResourceView(3, currFrame->hzbOccObjectBuffer->Resource()->GetGPUVirtualAddress());

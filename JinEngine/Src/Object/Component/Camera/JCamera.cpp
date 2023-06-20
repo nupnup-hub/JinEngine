@@ -23,55 +23,58 @@
 #include<fstream>
 
 namespace JinEngine
-{ 
+{
 	using namespace DirectX;
 	namespace
 	{
 		static auto isAvailableoverlapLam = []() {return false; };
 		static JCameraPrivate cPrivate;
 	}
- 
+
 	namespace
-	{ 
+	{
 		using CameraFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder2<
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, Graphic::JCameraConstants&>,
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, Graphic::JHzbOccPassConstants&, const uint, const uint>>,
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR, Graphic::JHzbOccRequestorConstants&, const uint, const uint>>,
 			Graphic::JFrameDirty>;
 		//first extra is occlusion 
 	}
 
 	class JCamera::JCameraImpl : public Core::JTypeImplBase,
-		public CameraFrameUpdate, 
+		public CameraFrameUpdate,
 		public Graphic::JGraphicMultiResourceInterface,
 		public Graphic::JGraphicDrawListCompInterface,
 		public Graphic::JCullingInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JCameraImpl)
+		REGISTER_GUI_BOOL_CONDITION(IsOrthoCam, isOrtho)
 	public:
 		using CamFrame = JFrameInterface1;
-		using HzbOccPassFrame = JFrameInterface2; 
+		using HzbOccReqFrame = JFrameInterface2;
 	public:
 		JWeakPtr<JCamera> thisPointer = nullptr;
 	public:
 		//JTransform* ownerTransform;
 		J_CAMERA_STATE camState = J_CAMERA_STATE::RENDER;
 		// Cache frustum properties.
-		REGISTER_PROPERTY_EX(cameraNear, GetNear, SetNear, GUI_SLIDER(0, 1000, true))
-		float cameraNear = 0.0f;
-		REGISTER_PROPERTY_EX(cameraFar, GetFar, SetFar, GUI_SLIDER(0, 1000, true))
-		float cameraFar = 0.0f;
-		//width / height
-		float cameraAspect = 0.0f;
-		REGISTER_PROPERTY_EX(cameraFov, GetFovYDegree, SetFovDegree, GUI_SLIDER(0, 360, true))
-		float cameraFov = 0.0f;
-		float cameraNearViewHeight = 0.0f;
-		float cameraFarViewHeight = 0.0f;
+		REGISTER_PROPERTY_EX(camNear, GetNear, SetNear, GUI_SLIDER(0, 1000, true))
+		float camNear = 0.0f;
+		REGISTER_PROPERTY_EX(camFar, GetFar, SetFar, GUI_SLIDER(0, 1000, true))
+		float camFar = 0.0f;
+		REGISTER_PROPERTY_EX(camAspect, GetAspect, SetAspect, GUI_SLIDER(0.1f, 32.0f, true, false, GUI_BOOL_CONDITION_USER(IsOrthoCam, false)))
+		float camAspect = 0.0f;		// Perspective일때 사용
+		REGISTER_PROPERTY_EX(camFov, GetFovYDegree, SetFovYDegree, GUI_SLIDER(0, 360, true))
+		float camFov = 0.0f;	//fovY
 	public:
-		int viewWidth;
-		int viewHeight;
+		REGISTER_PROPERTY_EX(camOrthoViewWidth, GetOrthoViewWidth, SetOrthoViewWidth, GUI_SLIDER(1, 3840, true, false, GUI_BOOL_CONDITION_USER(IsOrthoCam, true)))
+		float camOrthoViewWidth = 0.0f;		// Ortho일때 사용
+		REGISTER_PROPERTY_EX(camOrthoViewHeight, GetOrthoViewHeight, SetOrthoViewHeight, GUI_SLIDER(1, 2160, true, false, GUI_BOOL_CONDITION_USER(IsOrthoCam, true)))
+		float camOrthoViewHeight = 0.0f;	// Ortho일때 사용
+		float camNearViewHeight = 0.0f;
+		float camFarViewHeight = 0.0f;
 	public:
 		REGISTER_PROPERTY_EX(isOrtho, IsOrthoCamera, SetOrthoCamera, GUI_CHECKBOX())
-		bool isOrtho = false; 
+		bool isOrtho = false;
 		REGISTER_PROPERTY_EX(allowDisplayDepthMap, AllowDisplayDepthMap, SetAllowDisplayDepthMap, GUI_CHECKBOX())
 		bool allowDisplayDepthMap = false;
 		REGISTER_PROPERTY_EX(allowDisplayDebug, AllowDisplayDebug, SetAllowDisplayDebug, GUI_CHECKBOX())
@@ -82,7 +85,7 @@ namespace JinEngine
 		bool allowHzbOcclusionCulling = false;
 		REGISTER_PROPERTY_EX(allowDisplayOccCullingDepthMap, AllowDisplayOccCullingDepthMap, SetAllowDisplayOccCullingDepthMap, GUI_CHECKBOX())
 		bool allowDisplayOccCullingDepthMap = false;
-		bool allowAllCamCullResult = false;	//use editor camera for check space spatial result
+		bool allowAllCamCullResult = false;	//use editor cam for check space spatial result
 	public:
 		//Culling Option
 		REGISTER_PROPERTY_EX(frustumCulingFrequency, GetFrustumCullingFrequency, SetFrustumCullingFrequency, GUI_SLIDER(Graphic::Constants::cullingUpdateFrequencyMin, Graphic::Constants::cullingUpdateFrequencyMax, true))
@@ -93,26 +96,75 @@ namespace JinEngine
 		// Cache View/Proj matrices.
 		DirectX::XMFLOAT4X4 mView;
 		DirectX::XMFLOAT4X4 mProj;
-		DirectX::BoundingFrustum mCamFrustum; 
+		DirectX::BoundingFrustum mCamFrustum;
 	public:
 		//Caution
 		//Impl생성자에서 interface class 참조시 interface class가 함수내에서 impl을 참조할 경우 error
 		//impl이 아직 생성되지 않았으므로
-		JCameraImpl(const InitData& initData, JCamera* thisCamRaw){ }
-		~JCameraImpl(){}
-	public:  
+		JCameraImpl(const InitData& initData, JCamera* thisCamRaw) { }
+		~JCameraImpl() {}
+	public:
 		float GetNear()const noexcept
 		{
-			return cameraNear;
+			return camNear;
 		}
 		float GetFar()const noexcept
 		{
-			return cameraFar;
+			return camFar;
+		}
+		float GetFovX()const noexcept
+		{
+			float halfWidth = 0.5f * GetNearViewWidth();
+			return 2.0f * atan(halfWidth / camNear);
+		}
+		float GetFovXDegree()const noexcept
+		{
+			return JMathHelper::RadToDeg * GetFovX();
+		}
+		float GetFovY()const noexcept
+		{
+			return camFov;
 		}
 		float GetFovYDegree()const noexcept
 		{
-			return JMathHelper::RadToDeg * cameraFov;
-		} 
+			return JMathHelper::RadToDeg * camFov;
+		}
+		float GetAspect()const noexcept
+		{
+			return camAspect;
+		}
+		float GetNearViewWidth()const noexcept
+		{
+			return camAspect * camNearViewHeight;
+		}
+		float GetNearViewHeight()const noexcept
+		{
+			return camNearViewHeight;
+		}
+		float GetFarViewWidth()const noexcept
+		{
+			return camAspect * camFarViewHeight; 
+		}
+		float GetFarViewHeight()const noexcept
+		{
+			return camFarViewHeight;
+		}
+		float GetOrthoViewWidth()const noexcept
+		{
+			return camOrthoViewWidth;
+		}
+		float GetOrthoViewHeight()const noexcept
+		{
+			return camOrthoViewHeight;
+		}
+		float GetRenderViewWidth()const noexcept
+		{
+			return isOrtho ? camOrthoViewWidth : GetFarViewWidth();
+		}
+		float GetRenderViewHeight()const noexcept
+		{
+			return isOrtho ? camOrthoViewHeight : GetFarViewHeight();
+		}
 		float GetFrustumCullingFrequency()const noexcept
 		{
 			return frustumCulingFrequency;
@@ -128,45 +180,60 @@ namespace JinEngine
 			return worldCamFrustum;
 		}
 	public:
-		void SetNear(float value)noexcept
+		void SetNear(const float value)noexcept
 		{
-			cameraNear = value;
+			camNear = value;
 			if (isOrtho)
 				CalOrthoLens();
 			else
 				CalPerspectiveLens();
 		}
-		void SetFar(float value) noexcept
+		void SetFar(const float value) noexcept
 		{
-			cameraFar = value;
+			camFar = value;
 			if (isOrtho)
 				CalOrthoLens();
 			else
 				CalPerspectiveLens();
 		}
-		void SetFov(float value) noexcept
+		void SetFovY(const float value) noexcept
 		{
-			cameraFov = value;
+			camFov = value;
 			if (!isOrtho)
 				CalPerspectiveLens();
 		}
-		void SetFovDegree(float value) noexcept
+		void SetFovYDegree(const float value) noexcept
 		{
-			cameraFov = value * JMathHelper::DegToRad;
+			camFov = value * JMathHelper::DegToRad;
 			if (!isOrtho)
 				CalPerspectiveLens();
 		}
-		void SetViewSize(int width, int height) noexcept
+		void SetAspect(float value) noexcept
 		{
-			viewWidth = width;
-			viewHeight = height;
-			SetAspect(static_cast<float>(viewWidth) / viewHeight);
-			if (isOrtho)
-				CalOrthoLens();
-			else
+			camAspect = value;
+			if (!isOrtho)
 				CalPerspectiveLens();
 		}
-		void SetOrthoCamera(bool value)noexcept
+		void SetOrthoViewWidth(const float value)noexcept
+		{
+			camOrthoViewWidth = value;
+			if (isOrtho)
+				CalOrthoLens();
+		}
+		void SetOrthoViewHeight(const float value)noexcept
+		{
+			camOrthoViewHeight = value;
+			if (isOrtho)
+				CalOrthoLens();
+		}
+		void SetOrthoViewSize(const float width, const float height)
+		{
+			camOrthoViewWidth = width;
+			camOrthoViewHeight = height;
+			if (isOrtho)
+				CalOrthoLens();
+		}
+		void SetOrthoCamera(const bool value)noexcept
 		{
 			isOrtho = value;
 			if (isOrtho)
@@ -213,7 +280,7 @@ namespace JinEngine
 			if (thisPointer->IsActivated())
 			{
 				if (allowFrustumCulling)
-				{ 
+				{
 					CreateFrustumCullingData();
 					AddFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
 				}
@@ -267,7 +334,7 @@ namespace JinEngine
 		{
 			allowAllCamCullResult = value;
 			SetFrameDirty();
-		} 
+		}
 		void SetFrustumCullingFrequency(const float value)noexcept
 		{
 			frustumCulingFrequency = value;
@@ -275,13 +342,6 @@ namespace JinEngine
 		void SetOcclusionCullingFrequency(const float value)noexcept
 		{
 			occlusionCulingFrequency = value;
-		}
-		void SetAspect(float value) noexcept
-		{
-			cameraAspect = value;
-			CalPerspectiveLens();
-			if (!isOrtho)
-				CalPerspectiveLens();
 		}
 		void SetCameraState(const J_CAMERA_STATE state)noexcept
 		{
@@ -300,7 +360,7 @@ namespace JinEngine
 					DeActivate();
 			}
 			SetFrameDirty();
-		} 
+		}
 	public:
 		bool IsOrthoCamera()const noexcept
 		{
@@ -325,18 +385,18 @@ namespace JinEngine
 		bool AllowDisplayOccCullingDepthMap()const noexcept
 		{
 			return allowDisplayOccCullingDepthMap;
-		} 
+		}
 		bool AllowAllCullingResult()const noexcept
 		{
 			return allowAllCamCullResult;
-		}  
+		}
 	public:
 		void CalPerspectiveLens() noexcept
 		{
-			cameraNearViewHeight = 2.0f * cameraNear * tanf(0.5f * cameraFov);
-			cameraFarViewHeight = 2.0f * cameraFar * tanf(0.5f * cameraFov);
+			camNearViewHeight = 2.0f * camNear * tanf(0.5f * camFov);
+			camFarViewHeight = 2.0f * camFar * tanf(0.5f * camFov);
 
-			const XMMATRIX P = XMMatrixPerspectiveFovLH(cameraFov, cameraAspect, cameraNear, cameraFar);
+			const XMMATRIX P = XMMatrixPerspectiveFovLH(camFov, camAspect, camNear, camFar);
 			XMStoreFloat4x4(&mProj, P);
 			BoundingFrustum::CreateFromMatrix(mCamFrustum, XMLoadFloat4x4(&mProj));
 			SetFrameDirty();
@@ -344,7 +404,7 @@ namespace JinEngine
 		void CalOrthoLens() noexcept
 		{
 			//XMMatrixOrthographicOffCenterLH
-			const XMMATRIX P = XMMatrixOrthographicLH((float)viewWidth, (float)viewHeight, cameraNear, cameraFar);
+			const XMMATRIX P = XMMatrixOrthographicLH(camOrthoViewWidth, camOrthoViewHeight, camNear, camFar);
 			XMStoreFloat4x4(&mProj, P);
 			BoundingFrustum::CreateFromMatrix(mCamFrustum, XMLoadFloat4x4(&mProj));
 			SetFrameDirty();
@@ -374,7 +434,7 @@ namespace JinEngine
 			if (allowDisplayOccCullingDepthMap)
 				CreateOcclusionDepthDebug();
 
-			if(thisPointer->GetOwner()->GetOwnerScene()->GetUseCaseType() == J_SCENE_USE_CASE_TYPE::TWO_DIMENSIONAL_PREVIEW)
+			if (thisPointer->GetOwner()->GetOwnerScene()->GetUseCaseType() == J_SCENE_USE_CASE_TYPE::TWO_DIMENSIONAL_PREVIEW)
 				AddDrawSceneRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
 			else
 				AddDrawSceneRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::ALWAYS);
@@ -388,7 +448,7 @@ namespace JinEngine
 			PopHzbOccCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 			PopFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 			DestroyAllCullingData(this);
-			DestroyAllTexture(); 
+			DestroyAllTexture();
 		}
 	public:
 		void UpdateFrame(Graphic::JCameraConstants& constant)noexcept final
@@ -412,17 +472,16 @@ namespace JinEngine
 			XMStoreFloat4x4(&constant.invProj, XMMatrixTranspose(invProj));
 			XMStoreFloat4x4(&constant.viewProj, XMMatrixTranspose(viewProj));
 			XMStoreFloat4x4(&constant.invViewProj, XMMatrixTranspose(invViewProj));
-
-			constant.renderTargetSize = XMFLOAT2((float)viewWidth, (float)viewHeight);
-			constant.invRenderTargetSize = XMFLOAT2(1.0f / viewWidth, 1.0f / viewHeight);
+			constant.renderTargetSize = XMFLOAT2(GetRenderViewWidth(), GetRenderViewHeight());
+			constant.invRenderTargetSize = XMFLOAT2(1.0f / GetRenderViewWidth(), 1.0f / GetRenderViewHeight());
 			constant.eyePosW = thisPointer->GetTransform()->GetPosition();
-			constant.nearZ = cameraNear;
-			constant.farZ = cameraFar;
+			constant.nearZ = camNear;
+			constant.farZ = camFar;
 			CamFrame::MinusMovedDirty();
 		}
-		void UpdateFrame(Graphic::JHzbOccPassConstants& constant, const uint queryCount, const uint queryOffset)noexcept final
+		void UpdateFrame(Graphic::JHzbOccRequestorConstants& constant, const uint queryCount, const uint queryOffset)noexcept final
 		{
-			//static const BoundingBox drawBBox = _JResourceManager::Instance().Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
+			//static const BoundingBox drawBBox = _JResourceManager::Instance().Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
 			auto info = JGraphic::Instance().GetGraphicInfo();
 			auto option = JGraphic::Instance().GetGraphicOption();
 
@@ -440,16 +499,16 @@ namespace JinEngine
 
 			constant.frustumDir = frustum.Orientation;
 			constant.frustumPos = frustum.Origin;
-			constant.viewWidth = viewWidth;
-			constant.viewHeight = viewHeight;
-			constant.camNear = cameraNear;
-			constant.camFar = cameraFar;
+			constant.viewWidth = GetRenderViewWidth();
+			constant.viewHeight = GetRenderViewHeight();
+			constant.camNear = camNear;
+			constant.camFar = camFar;
 			constant.validQueryCount = queryCount;
 			constant.validQueryOffset = queryOffset;
 			constant.occMapCount = info.occlusionMapCount;
 			constant.occIndexOffset = JMathHelper::Log2Int(info.occlusionMinSize);
 			constant.correctFailTrigger = (int)option.allowHZBCorrectFail;
-			HzbOccPassFrame::MinusMovedDirty();
+			HzbOccReqFrame::MinusMovedDirty();
 		}
 		void UpdateViewMatrix() noexcept
 		{
@@ -498,18 +557,18 @@ namespace JinEngine
 		}
 	public:
 		static bool DoCopy(JCamera* from, JCamera* to)
-		{ 
-			to->impl->cameraNear = from->impl->cameraNear;
-			to->impl->cameraFar = from->impl->cameraFar;
-			to->impl->cameraAspect = from->impl->cameraAspect;
-			to->impl->cameraFov = from->impl->cameraFov;
-			to->impl->cameraNearViewHeight = from->impl->cameraNearViewHeight;
-			to->impl->cameraFarViewHeight = from->impl->cameraFarViewHeight;
+		{
+			to->impl->camNear = from->impl->camNear;
+			to->impl->camFar = from->impl->camFar;
+			to->impl->camAspect = from->impl->camAspect;
+			to->impl->camFov = from->impl->camFov;
+			to->impl->camNearViewHeight = from->impl->camNearViewHeight;
+			to->impl->camFarViewHeight = from->impl->camFarViewHeight;
 			to->impl->isOrtho = from->impl->isOrtho;
 			if (!to->impl->isOrtho)
 				to->impl->CalPerspectiveLens();
 			else
-				to->impl->CalOrthoLens(); 
+				to->impl->CalOrthoLens();
 			return true;
 		}
 	public:
@@ -522,18 +581,24 @@ namespace JinEngine
 				JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(transform.Get(), this, thisPointer->GetGuid());
 			}
 			CamFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, (CamFrame*)this);
-			HzbOccPassFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, (HzbOccPassFrame*)this);
+			HzbOccReqFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR, (HzbOccReqFrame*)this);
 		}
 	public:
 		void Initialize()
 		{
-			cameraFov = 0.25f * JMathHelper::Pi;
-			cameraNear = 1;
-			cameraFar = 1000;
+			camFov = 60.0f * JMathHelper::DegToRad;
+			//camFov = 0.25f * JMathHelper::Pi;
+			camNear = 1;
+			camFar = 1000;
 			mView = JMathHelper::Identity4x4();
 			mProj = JMathHelper::Identity4x4();
 
-			SetViewSize(JWindow::GetClientWidth(), JWindow::GetClientHeight());
+			const float disWidth = JWindow::GetDisplayWidth();
+			const float disHeight = JWindow::GetDisplayHeight(); 
+
+			SetAspect(disWidth / disHeight);
+			SetOrthoViewWidth(disWidth);
+			SetOrthoViewHeight(disHeight);
 			//ownerTransform->SetPosition(XMFLOAT3(0.0f, 2.0f, -15.0f));
 			CalPerspectiveLens();
 
@@ -553,7 +618,7 @@ namespace JinEngine
 				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer->GetOwner()->GetTransform().Get(), thisPointer->GetGuid());
 		}
 		void RegisterCameraFrameData()
-		{  
+		{
 			CamFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, (CamFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
 		}
 		void DeRegisterCameraFrameData()
@@ -562,18 +627,18 @@ namespace JinEngine
 		}
 		void RegisterOccPassFrameData()
 		{
-			HzbOccPassFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, (HzbOccPassFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
+			HzbOccReqFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR, (HzbOccReqFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
 		}
 		void DeRegisterOccPassFrameData()
 		{
-			HzbOccPassFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, (HzbOccPassFrame*)this);
+			HzbOccReqFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR, (HzbOccReqFrame*)this);
 		}
 		static void RegisterTypeData()
 		{
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JCamera::StaticTypeInfo };
 			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
-			auto createInitDataLam = [](JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
+			auto createInitDataLam = [](const Core::JTypeInfo& typeInfo, JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
 			{
 				using CorrectType = JComponent::ParentType::InitData;
 				const bool isValidUnq = parentClassInitData != nullptr && parentClassInitData->GetTypeInfo().IsChildOf(CorrectType::StaticTypeInfo());
@@ -589,10 +654,10 @@ namespace JinEngine
 
 			static auto setFrameLam = [](JComponent* component) {static_cast<JCamera*>(component)->impl->SetFrameDirty(); };
 			static SetCFrameDirtyCallable setFrameDirtyCallable{ setFrameLam };
- 
+
 			static CTypeHint cTypeHint{ GetStaticComponentType(), true };
 			static CTypeCommonFunc cTypeCommonFunc{ getTypeInfoCallable, isAvailableOverlapCallable, createInitDataCallable };
-			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable};
+			static CTypePrivateFunc cTypeInterfaceFunc{ &setFrameDirtyCallable };
 
 			JComponent::RegisterCTypeInfo(JCamera::StaticTypeInfo(), cTypeHint, cTypeCommonFunc, cTypeInterfaceFunc);
 			Core::JIdentifier::RegisterPrivateInterface(JCamera::StaticTypeInfo(), cPrivate);
@@ -649,7 +714,7 @@ namespace JinEngine
 		return impl->mProj;
 	}
 	DirectX::BoundingFrustum JCamera::GetBoundingFrustum()const noexcept
-	{ 
+	{
 		return impl->GetBoundingFrustum();
 	}
 	float JCamera::GetNear()const noexcept
@@ -660,46 +725,49 @@ namespace JinEngine
 	{
 		return impl->GetFar();
 	}
-	float JCamera::GetAspect()const noexcept
+	float JCamera::GetFovX()const noexcept
 	{
-		return impl->cameraAspect;
+		return impl->GetFovX();
+	}
+	float JCamera::GetFovXDegree()const noexcept
+	{
+		return impl->GetFovXDegree();
 	}
 	float JCamera::GetFovY()const noexcept
 	{
-		return impl->cameraFov;
+		return impl->camFov;
 	}
 	float JCamera::GetFovYDegree()const noexcept
 	{
 		return impl->GetFovYDegree();
 	}
-	float JCamera::GetFovX()const noexcept
+	float JCamera::GetAspect()const noexcept
 	{
-		float halfWidth = 0.5f * GetNearViewWidth();
-		return 2.0f * atan(halfWidth / impl->GetNear());
+		return impl->camAspect;
 	}
-	int JCamera::GetViewWidth()const noexcept
+	float JCamera::GetOrthoViewWidth()const noexcept
 	{
-		return impl->viewWidth;
+		return impl->GetOrthoViewWidth();
 	}
-	int JCamera::GetViewHeight()const noexcept
+	float JCamera::GetOrthoViewHeight()const noexcept
 	{
-		return impl->viewHeight;
+		return impl->GetOrthoViewHeight();
 	}
 	float JCamera::GetNearViewWidth()const noexcept
 	{
-		return impl->cameraAspect * impl->cameraNearViewHeight;
+		return impl->GetNearViewWidth();
 	}
 	float JCamera::GetNearViewHeight()const noexcept
 	{
-		return impl->cameraNearViewHeight;
+		return impl->camNearViewHeight;
 	}
 	float JCamera::GetFarViewWidth()const noexcept
 	{
-		return impl->cameraAspect * impl->cameraFarViewHeight;
+		return impl->GetFarViewWidth();
 	}
 	float JCamera::GetFarViewHeight()const noexcept
 	{
-		return impl->cameraFarViewHeight;
+		return impl->camFarViewHeight;
 	}
 	J_CAMERA_STATE JCamera::GetCameraState()const noexcept
 	{
@@ -707,23 +775,35 @@ namespace JinEngine
 	}
 	void JCamera::SetNear(float value)noexcept
 	{
-		impl->SetNear(value); 
+		impl->SetNear(value);
 	}
 	void JCamera::SetFar(float value) noexcept
 	{
-		impl->SetFar(value); 
+		impl->SetFar(value);
 	}
 	void JCamera::SetFov(float value) noexcept
 	{
-		impl->SetFov(value); 
+		impl->SetFovY(value);
 	}
 	void JCamera::SetFovDegree(float value) noexcept
 	{
-		impl->SetFovDegree(value);
+		impl->SetFovYDegree(value);
 	}
-	void JCamera::SetViewSize(int width, int height) noexcept
+	void JCamera::SetAspect(const float value) noexcept
 	{
-		impl->SetViewSize(width, height);
+		impl->SetAspect(value);
+	}
+	void JCamera::SetOrthoViewWidth(const float value) noexcept
+	{
+		impl->SetOrthoViewWidth(value);
+	}
+	void JCamera::SetOrthoViewHeight(const float value) noexcept
+	{
+		impl->SetOrthoViewHeight(value);
+	}
+	void JCamera::SetOrthoViewSize(const float width, const float height) noexcept
+	{
+		impl->SetOrthoViewSize(width, height);
 	}
 	void JCamera::SetOrthoCamera(bool value)noexcept
 	{
@@ -756,7 +836,7 @@ namespace JinEngine
 	bool JCamera::IsOrthoCamera()const noexcept
 	{
 		return impl->isOrtho;
-	} 
+	}
 	bool JCamera::IsAvailableOverlap()const noexcept
 	{
 		return isAvailableoverlapLam();
@@ -767,7 +847,7 @@ namespace JinEngine
 			return true;
 		else
 			return false;
-	} 
+	}
 	bool JCamera::AllowDisplayDepthMap()const noexcept
 	{
 		return impl->AllowDisplayDepthMap();
@@ -791,7 +871,7 @@ namespace JinEngine
 
 	void JCamera::DoActivate()noexcept
 	{
-		JComponent::DoActivate(); 
+		JComponent::DoActivate();
 		if (impl->camState == J_CAMERA_STATE::RENDER)
 		{
 			if (RegisterComponent(impl->thisPointer))
@@ -819,7 +899,7 @@ namespace JinEngine
 
 	using CreateInstanceInterface = JCameraPrivate::CreateInstanceInterface;
 	using DestroyInstanceInterface = JCameraPrivate::DestroyInstanceInterface;
-	using AssetDataIOInterface = JCameraPrivate::AssetDataIOInterface; 
+	using AssetDataIOInterface = JCameraPrivate::AssetDataIOInterface;
 	using FrameUpdateInterface = JCameraPrivate::FrameUpdateInterface;
 	using FrameIndexInterface = JCameraPrivate::FrameIndexInterface;
 	using EditorSettingInterface = JCameraPrivate::EditorSettingInterface;
@@ -867,11 +947,12 @@ namespace JinEngine
 
 		J_CAMERA_STATE camState;
 		XMFLOAT3 pos;
-		int viewWidth;
-		int viewHeight;
-		float cameraNear;
-		float cameraFar;
-		float camFov; 
+		float camNear;
+		float camFar;
+		float camFov;
+		float camAspect;
+		float camOrthoViewWidth;
+		float camOrthoViewHeight;
 		bool isOrtho;
 		bool allowDisplayDepthMap;
 		bool allowDisplayDebug;
@@ -886,11 +967,12 @@ namespace JinEngine
 		JFileIOHelper::LoadObjectIden(stream, guid, flag);
 		JFileIOHelper::LoadEnumData(stream, camState);
 		JFileIOHelper::LoadXMFloat3(stream, pos);
-		JFileIOHelper::LoadAtomicData(stream, viewWidth);
-		JFileIOHelper::LoadAtomicData(stream, viewHeight);
-		JFileIOHelper::LoadAtomicData(stream, cameraNear);
-		JFileIOHelper::LoadAtomicData(stream, cameraFar);
-		JFileIOHelper::LoadAtomicData(stream, camFov); 
+		JFileIOHelper::LoadAtomicData(stream, camNear);
+		JFileIOHelper::LoadAtomicData(stream, camFar);
+		JFileIOHelper::LoadAtomicData(stream, camFov);
+		JFileIOHelper::LoadAtomicData(stream, camAspect);
+		JFileIOHelper::LoadAtomicData(stream, camOrthoViewWidth);
+		JFileIOHelper::LoadAtomicData(stream, camOrthoViewHeight);
 		JFileIOHelper::LoadAtomicData(stream, isOrtho);
 		JFileIOHelper::LoadAtomicData(stream, allowDisplayDepthMap);
 		JFileIOHelper::LoadAtomicData(stream, allowDisplayDebug);
@@ -903,23 +985,25 @@ namespace JinEngine
 		camUser.ConnnectChild(idenUser);
 
 		JCamera::JCameraImpl* impl = camUser->impl.get();
-		impl->cameraFov = camFov;
-		impl->cameraNear = cameraNear;
-		impl->cameraFar = cameraFar;
-		impl->viewWidth = viewWidth;
-		impl->viewHeight = viewHeight;
+		impl->camNear = camNear;
+		impl->camFar = camFar;
+		impl->camFov = camFov;
+		impl->camAspect = camAspect;
+		impl->camOrthoViewWidth = camOrthoViewWidth;
+		impl->camOrthoViewHeight = camOrthoViewHeight;
 		camUser->GetTransform()->SetPosition(pos);
 
 		if (isOrtho)
 			impl->CalOrthoLens();
 		else
 			impl->CalPerspectiveLens();
+
 		impl->SetAllowDisplayDepthMap(allowDisplayDepthMap);
 		impl->SetAllowDisplayDebug(allowDisplayDebug);
 		impl->SetAllowFrustumCulling(allowFrustumCulling);
 		impl->SetAllowHzbOcclusionCulling(allowHzbOcclusionCulling);
 		impl->SetAllowDisplayOccCullingDepthMap(allowDisplayOccCullingDepthMap);
-		impl->SetCameraState(camState); 
+		impl->SetCameraState(camState);
 		return camUser;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
@@ -931,19 +1015,20 @@ namespace JinEngine
 		if (!storeData->HasCorrectType(JCamera::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		JUserPtr<JCamera> camera;
-		camera.ConnnectChild(storeData->obj);
-		JCamera::JCameraImpl* impl = camera->impl.get();
+		JUserPtr<JCamera> cam;
+		cam.ConnnectChild(storeData->obj);
+		JCamera::JCameraImpl* impl = cam->impl.get();
 		std::wofstream& stream = storeData->stream;
-		 
-		JFileIOHelper::StoreObjectIden(stream, camera.Get());
+
+		JFileIOHelper::StoreObjectIden(stream, cam.Get());
 		JFileIOHelper::StoreEnumData(stream, L"CamState:", impl->camState);
-		JFileIOHelper::StoreXMFloat3(stream, L"Pos:", camera->GetTransform()->GetPosition());
-		JFileIOHelper::StoreAtomicData(stream, L"CamViewWidth:", impl->viewWidth);
-		JFileIOHelper::StoreAtomicData(stream, L"CamViewHeight:", impl->viewHeight);
-		JFileIOHelper::StoreAtomicData(stream, L"CamNear:", impl->cameraNear);
-		JFileIOHelper::StoreAtomicData(stream, L"CamFar:", impl->cameraFar);
-		JFileIOHelper::StoreAtomicData(stream, L"CamFov:", impl->cameraFov); 
+		JFileIOHelper::StoreXMFloat3(stream, L"Pos:", cam->GetTransform()->GetPosition());
+		JFileIOHelper::StoreAtomicData(stream, L"CamNear:", impl->camNear);
+		JFileIOHelper::StoreAtomicData(stream, L"CamFar:", impl->camFar);
+		JFileIOHelper::StoreAtomicData(stream, L"CamFov:", impl->camFov);
+		JFileIOHelper::StoreAtomicData(stream, L"CamAspect:", impl->camAspect);
+		JFileIOHelper::StoreAtomicData(stream, L"camOrthoViewWidth:", impl->camOrthoViewWidth);
+		JFileIOHelper::StoreAtomicData(stream, L"CamOrthoViewHeight:", impl->camOrthoViewHeight);
 		JFileIOHelper::StoreAtomicData(stream, L"IsOrtho:", impl->isOrtho);
 		JFileIOHelper::StoreAtomicData(stream, L"AllowDepthMap:", impl->allowDisplayDepthMap);
 		JFileIOHelper::StoreAtomicData(stream, L"AllowDebug:", impl->allowDisplayDebug);
@@ -953,7 +1038,7 @@ namespace JinEngine
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	 
+
 	bool FrameUpdateInterface::UpdateStart(JCamera* cam, const bool isUpdateForced)noexcept
 	{
 		if (isUpdateForced)
@@ -967,13 +1052,13 @@ namespace JinEngine
 	{
 		cam->impl->UpdateFrame(constants);
 	}
-	void FrameUpdateInterface::UpdateFrame(JCamera* cam, Graphic::JHzbOccPassConstants& constants, const uint queryCount, const uint queryOffset)noexcept
+	void FrameUpdateInterface::UpdateFrame(JCamera* cam, Graphic::JHzbOccRequestorConstants& constants, const uint queryCount, const uint queryOffset)noexcept
 	{
 		cam->impl->UpdateFrame(constants, queryCount, queryOffset);
 	}
 	void FrameUpdateInterface::UpdateEnd(JCamera* cam)noexcept
 	{
-		if(cam->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources)
+		if (cam->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources)
 			cam->impl->SetLastFrameHotUpdatedTrigger(true);
 		cam->impl->SetLastFrameUpdatedTrigger(true);
 		cam->impl->UpdateFrameEnd();
@@ -982,9 +1067,9 @@ namespace JinEngine
 	{
 		return cam->impl->CamFrame::GetUploadIndex();
 	}
-	int FrameUpdateInterface::GetHzbOccPassFrameIndex(JCamera* cam)noexcept
+	int FrameUpdateInterface::GetHzbOccReqFrameIndex(JCamera* cam)noexcept
 	{
-		return cam->impl->HzbOccPassFrame::GetUploadIndex();
+		return cam->impl->HzbOccReqFrame::GetUploadIndex();
 	}
 	bool FrameUpdateInterface::IsHotUpdated(JCamera* cam)noexcept
 	{
@@ -1000,16 +1085,16 @@ namespace JinEngine
 	}
 	bool FrameUpdateInterface::HasOccPassRecopyRequest(JCamera* cam)noexcept
 	{
-		return cam->impl->HzbOccPassFrame::HasMovedDirty();
+		return cam->impl->HzbOccReqFrame::HasMovedDirty();
 	}
 
 	int FrameIndexInterface::GetCamFrameIndex(JCamera* cam)noexcept
 	{
 		return cam->impl->CamFrame::GetUploadIndex();
 	}
-	int FrameIndexInterface::GetHzbOccPassFrameIndex(JCamera* cam)noexcept
+	int FrameIndexInterface::GetHzbOccReqFrameIndex(JCamera* cam)noexcept
 	{
-		return cam->impl->HzbOccPassFrame::GetUploadIndex();
+		return cam->impl->HzbOccReqFrame::GetUploadIndex();
 	}
 
 	void EditorSettingInterface::SetAllowAllCullingResult(const JUserPtr<JCamera>& cam, const bool value)noexcept

@@ -47,12 +47,13 @@ namespace JinEngine
 		DirectX::BoundingFrustum GetBoundingFrustum()const noexcept;
 		float GetNear()const noexcept;
 		float GetFar()const noexcept;
-		float GetAspect()const noexcept;
+		float GetFovX()const noexcept;
+		float GetFovXDegree()const noexcept;
 		float GetFovY()const noexcept;
 		float GetFovYDegree()const noexcept;
-		float GetFovX()const noexcept;
-		int GetViewWidth()const noexcept;
-		int GetViewHeight()const noexcept; 
+		float GetAspect()const noexcept;
+		float GetOrthoViewWidth()const noexcept;
+		float GetOrthoViewHeight()const noexcept;
 		float GetNearViewWidth()const noexcept;
 		float GetNearViewHeight()const noexcept;
 		float GetFarViewWidth()const noexcept;
@@ -63,7 +64,10 @@ namespace JinEngine
 		void SetFar(const float value) noexcept;
 		void SetFov(const float value) noexcept;
 		void SetFovDegree(const float value) noexcept;
-		void SetViewSize(const int width, const int height) noexcept;
+		void SetAspect(const float value) noexcept;
+		void SetOrthoViewWidth(const float value) noexcept;		// for Ortho
+		void SetOrthoViewHeight(const float value) noexcept;	// for Ortho
+		void SetOrthoViewSize(const float width, const float height) noexcept;	// for Ortho
 		void SetOrthoCamera(const bool value)noexcept;
 		void SetAllowDisplayDepthMap(const bool value)noexcept;
 		void SetAllowDisplayDebug(const bool value)noexcept;

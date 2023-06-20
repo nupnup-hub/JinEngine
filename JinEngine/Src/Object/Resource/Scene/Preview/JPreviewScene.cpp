@@ -88,7 +88,7 @@ namespace JinEngine
 		DirectX::XMFLOAT3 camNewPos{ objCenter.x + additionalPos.x, objCenter.y + additionalPos.y, objCenter.z - 1 + additionalPos.z };
 		camera->GetTransform()->SetPosition(camNewPos);
 		camera->SetOrthoCamera(true);
-		camera->SetViewSize((int)(objRadius), (int)(objRadius));
+		camera->SetOrthoViewSize(objRadius, objRadius);
 		camera->GetTransform()->LookAt(objCenter);
 	}
 	void JPreviewScene::Adjust2DOtherCamera(_In_ const DirectX::XMFLOAT3& objCenter,
@@ -97,8 +97,9 @@ namespace JinEngine
 	{
 		DirectX::XMFLOAT3 camNewPos{ objCenter.x + additionalPos.x, objCenter.y + additionalPos.y, objCenter.z + (objRadius * 1.25f) + additionalPos.z };
 		camera->GetTransform()->SetPosition(camNewPos);
-		//camera->SetOrthoCamera();
-		camera->SetViewSize((int)(objRadius * 1.325f), (int)(objRadius * 1.325f));
+		//camera->SetOrthoCamera(); 
+		//camera->SetOrthoViewSize(objRadius * 1.325f, objRadius * 1.325f);
+		camera->SetAspect(1.0f);
 		camera->GetTransform()->LookAt(objCenter);
 	}
 	void JPreviewScene::Adjust3DFixedCamera(_In_ const DirectX::XMFLOAT3& objCenter,

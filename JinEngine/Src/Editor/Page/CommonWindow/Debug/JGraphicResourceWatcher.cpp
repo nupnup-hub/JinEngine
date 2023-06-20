@@ -3,7 +3,7 @@
 #include"../../../../Graphic/JGraphicPrivate.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceManager.h" 
 #include"../../../../Graphic/GraphicResource/JGraphicResourceInfo.h" 
-#include"../../../../../Lib/imgui/imgui.h" 
+#include"../../../../../ThirdParty/imgui/imgui.h" 
 
 namespace JinEngine
 {

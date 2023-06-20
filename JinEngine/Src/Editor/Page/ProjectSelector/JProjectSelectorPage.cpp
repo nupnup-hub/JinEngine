@@ -66,9 +66,7 @@ namespace JinEngine
 			ImGui::PopStyleVar(2);
 
 			//JImGuiImpl::AddImage(*(backgroundTexture.Get()), wPos, wSize, false, IM_COL32(255, 255, 255, 50));
-			uint currOpWndCount = GetOpenWindowCount();
-			for (uint i = 0; i < currOpWndCount; ++i)
-				GetOpenWindow(i)->UpdateWindow();
+			UpdateOpenWindow();
 			ClosePage();
 			ImGui::SetWindowFontScale(1);
 		}

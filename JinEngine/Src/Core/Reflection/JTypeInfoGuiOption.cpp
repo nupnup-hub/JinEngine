@@ -11,9 +11,9 @@ namespace JinEngine
 		{
 			return (uint)widgetHandleVec.size();
 		}
-		JGuiWidgetInfoHandleBase* JTypeInfoGuiOption::GetGuiWidgetInfoHandle(const uint index)const noexcept
+		JUserPtr<JGuiWidgetInfoHandleBase> JTypeInfoGuiOption::GetGuiWidgetInfoHandle(const uint index)const noexcept
 		{
-			return widgetHandleVec[index].get();
+			return widgetHandleVec[index];
 		}
 		J_GUI_OPTION_FLAG JTypeInfoGuiOption::GetGuiWidgetFlag()const noexcept
 		{
@@ -23,7 +23,7 @@ namespace JinEngine
 		{ 
 			guiFlag = AddSQValueEnum(guiFlag, value); 
 		}
-		void JTypeInfoGuiOption::AddGuiWidgetInfoHandle(std::unique_ptr<JGuiWidgetInfoHandleBase>&& handle)
+		void JTypeInfoGuiOption::AddGuiWidgetInfoHandle(JOwnerPtr<JGuiWidgetInfoHandleBase>&& handle)
 		{
 			if (handle != nullptr)
 				widgetHandleVec.push_back(std::move(handle));

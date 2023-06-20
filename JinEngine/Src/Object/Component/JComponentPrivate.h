@@ -32,7 +32,7 @@ namespace JinEngine
 		private: 
 			friend class JGameObjectPrivate;
 		private:
-			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(const JUserPtr<JGameObject>& invoker, std::wifstream& stream);
+			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(const JUserPtr<JGameObject>& invoker, std::wifstream& stream, const size_t typeGuid);
 			static std::unique_ptr<Core::JDITypeDataBase> CreateStoreAssetDIData(const JUserPtr<JComponent>& comp, std::wofstream& stream);
 		private:
 			virtual JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data) = 0;

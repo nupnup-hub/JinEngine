@@ -62,14 +62,14 @@ namespace JinEngine
 		return JObject::InitData::IsValidData() && owner != nullptr;
 	}
 
-	JComponent::LoadData::LoadData(JUserPtr<JGameObject> owner, std::wifstream& stream)
-		:owner(owner), stream(stream)
+	JComponent::LoadData::LoadData(JUserPtr<JGameObject> owner, std::wifstream& stream, const size_t typeGuid)
+		:owner(owner), stream(stream), loadTypeInfo(_JReflectionInfo::Instance().GetTypeInfo(typeGuid))
 	{}
 	JComponent::LoadData::~LoadData()
 	{}
 	bool JComponent::LoadData::IsValidData()const noexcept
 	{
-		return owner != nullptr && stream.is_open();
+		return owner != nullptr && stream.is_open() && loadTypeInfo != nullptr;
 	}
 
 	JComponent::StoreData::StoreData(JUserPtr<JComponent> comp, std::wofstream& stream)
@@ -116,9 +116,9 @@ namespace JinEngine
 	{
 		CTypeRegister::RegisterCTypeInfo(typeInfo, cTypeHint, cTypeCFunc, cTypePFunc);
 	}
-	std::unique_ptr<Core::JDITypeDataBase> JComponent::CreateInitDIData(const J_COMPONENT_TYPE cType, JUserPtr<JGameObject> parent, std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData)
+	std::unique_ptr<Core::JDITypeDataBase> JComponent::CreateInitDIData(const J_COMPONENT_TYPE cType, const JTypeInfo& typeInfo, JUserPtr<JGameObject> owner, std::unique_ptr<Core::JDITypeDataBase>&& parentInitData)
 	{
-		return CTypeCommonCall::CallCreateInitDataCallable(cType, parent, std::move(parentClassInitData));
+		return CTypeCommonCall::CallCreateInitDataCallable(cType, typeInfo, owner, std::move(parentInitData));
 	}
 
 	JComponent::JComponent(const InitData& initData) noexcept
@@ -168,9 +168,9 @@ namespace JinEngine
 		comp->impl->DeRegisterInstance();
 	}
 
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(const JUserPtr<JGameObject>& invoker, std::wifstream& stream)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(const JUserPtr<JGameObject>& invoker, std::wifstream& stream, const size_t typeGuid)
 	{
-		return std::make_unique<JComponent::LoadData>(invoker, stream);
+		return std::make_unique<JComponent::LoadData>(invoker, stream, typeGuid);
 	}
 	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateStoreAssetDIData(const JUserPtr<JComponent>& comp, std::wofstream& stream)
 	{

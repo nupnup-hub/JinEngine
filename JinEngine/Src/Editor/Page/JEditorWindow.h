@@ -17,7 +17,7 @@ namespace JinEngine
 
 		class JEditorWindow : public JEditor
 		{ 
-		protected:
+		protected: 
 			struct PopupSetting
 			{
 			public:
@@ -44,14 +44,17 @@ namespace JinEngine
 			using PassSelectedAboveOneF = Core::JSFunctorType<bool, JEditorWindow*>;
 		private: 
 			const J_EDITOR_PAGE_TYPE ownerPageType; 
-			bool isWindowOpen = false;
 			J_EDITOR_WINDOW_FLAG windowFlag;
 		private:
 			std::unique_ptr<JEditorWindowDockUpdateHelper> dockUpdateHelper = nullptr;
+			//std::unique_ptr< JEditorWindowDockUpdateHelper::UpdateData> updateData;
 		private:
-			JUserPtr<Core::JIdentifier> hoveredObj;
 			std::unordered_map<size_t, JUserPtr<Core::JIdentifier>> selectedObjMap;
+			JUserPtr<Core::JIdentifier> hoveredObj;
+		private:
+			bool isWindowOpen = false;
 			bool isContentsClick = false;
+			bool isMaximize = false; 
 		public:
 			JEditorWindow(const std::string name,
 				std::unique_ptr<JEditorAttribute> attribute, 
@@ -74,9 +77,11 @@ namespace JinEngine
 			void UpdatePopup(const PopupSetting setting);
 			void UpdatePopup(const PopupSetting setting, _Out_ PopupResult& result);
 		protected:
-			bool IsSelectedObject(const size_t guid)const noexcept;
+			bool IsSelectedObject(const size_t guid)const noexcept; 
+			bool CanUseDock()const noexcept;
 			bool CanUseSelectedMap()const noexcept;
 			bool CanUsePopup()const noexcept; 
+			bool CanMaximize()const noexcept;
 		protected: 
 			PassSelectedOneF::Functor* GetPassSelectedOneFunctor()noexcept;
 			PassSelectedAboveOneF::Functor* GetPassSelectedAboveOneFunctor()noexcept;
@@ -84,6 +89,8 @@ namespace JinEngine
 			uint GetSelectedObjectCount()const noexcept;
 			std::vector<JUserPtr<Core::JIdentifier>> GetSelectedObjectVec()const noexcept;
 			JVector4<float> GetSelectedColorFactor()const noexcept;
+		public:
+			void SetMaximize(const bool value)noexcept; 
 		protected:
 			void SetButtonColor(const JVector4<float>& factor)noexcept;
 			void SetTreeNodeColor(const JVector4<float>& factor)noexcept; 
@@ -93,6 +100,7 @@ namespace JinEngine
 			void SetContentsClick(const bool value)noexcept;
 		protected:
 			void PushSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept;
+			void PopSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept;
 			void ClearSelectedObject();
 		protected:
 			bool RegisterEventListener(const J_EDITOR_EVENT evType);

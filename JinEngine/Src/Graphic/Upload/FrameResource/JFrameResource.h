@@ -26,7 +26,7 @@ namespace JinEngine
 		struct JBoundingObjectConstants;
 
 		struct JHzbOccObjectConstants;
-		struct JHzbOccPassConstants; 
+		struct JHzbOccRequestorConstants; 
 
 		struct JGraphicInfo;
 		class JFrameResource
@@ -86,7 +86,7 @@ namespace JinEngine
 			std::unique_ptr<JUploadBuffer<JBoundingObjectConstants>> bundingObjectCB = nullptr;
 		public:
 			//HZB occ
-			std::unique_ptr<JUploadBuffer<JHzbOccPassConstants>> hzbOccPassCB = nullptr;
+			std::unique_ptr<JUploadBuffer<JHzbOccRequestorConstants>> hzbOccReqCB = nullptr;
 			std::unique_ptr<JUploadBuffer<JHzbOccObjectConstants>> hzbOccObjectBuffer = nullptr;
 		private:
 			JUploadBufferBase* uploadBufferVec[(uint)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT];

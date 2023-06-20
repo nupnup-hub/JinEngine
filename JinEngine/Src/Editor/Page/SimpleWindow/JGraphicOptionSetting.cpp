@@ -8,7 +8,7 @@ namespace JinEngine
 	{
 		void JGraphicOptionSetting::Update()
 		{ 
-			JImGuiImpl::BeginWindow("GraphicOption##GraphicOptionSetting", &isOpenGraphicOptionViewer, ImGuiWindowFlags_NoDocking);
+			JImGuiImpl::BeginWindow("GraphicOption##GraphicOptionSetting", GetOpenPtr(), ImGuiWindowFlags_NoDocking);
 			Graphic::JGraphicOption option = JGraphic::Instance().GetGraphicOption();
 			bool isChanged = JImGuiImpl::CheckBox("Occlusion Query##JGraphicOptionSetting", option.isOcclusionQueryActivated); 
 			isChanged |= JImGuiImpl::CheckBox("Hardware Occlusion##JGraphicOptionSetting", option.isHDOcclusionAcitvated);
@@ -18,14 +18,6 @@ namespace JinEngine
 			JImGuiImpl::EndWindow();
 			if (isChanged)
 				JGraphic::Instance().SetGraphicOption(option);
-		}
-		bool JGraphicOptionSetting::IsOpenViewer()const noexcept
-		{
-			return isOpenGraphicOptionViewer;
-		}
-		bool* JGraphicOptionSetting::GetOpenPtr() noexcept
-		{
-			return &isOpenGraphicOptionViewer;
 		}
 	}
 }

@@ -3,7 +3,7 @@
 #include"../JGraphic.h"
 #include"../JGraphicPrivate.h"
 #include"../JGraphicDrawList.h"
-#include"../../../Lib/DirectX/TK/Src/d3dx12.h"
+#include"../../../ThirdParty/DirectX/TK/Src/d3dx12.h"
 
 namespace JinEngine
 {

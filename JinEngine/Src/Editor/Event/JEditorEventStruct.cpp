@@ -6,6 +6,7 @@
 #include"../../Object/Directory/JDirectory.h" 
 #include"../Page/JEditorPageShareData.h"
 #include"../Page/JEditorPage.h"
+#include"../Page/JEditorWindow.h"
 
 namespace JinEngine
 {
@@ -206,8 +207,8 @@ namespace JinEngine
 			return J_EDITOR_EVENT::CLOSE_WINDOW;
 		}
 
-		JEditorActWindowEvStruct::JEditorActWindowEvStruct(JEditorWindow* actWindow, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorEvStruct(pageType), actWindow(actWindow)
+		JEditorActWindowEvStruct::JEditorActWindowEvStruct(JEditorWindow* actWindow)
+			:JEditorEvStruct(actWindow->GetOwnerPageType()), actWindow(actWindow)
 		{}
 		bool JEditorActWindowEvStruct::PassDefectInspection()const noexcept
 		{
@@ -218,8 +219,8 @@ namespace JinEngine
 			return J_EDITOR_EVENT::ACTIVATE_WINDOW;
 		}
 
-		JEditorDeActWindowEvStruct::JEditorDeActWindowEvStruct(JEditorWindow* deActWindow, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorEvStruct(pageType), deActWindow(deActWindow)
+		JEditorDeActWindowEvStruct::JEditorDeActWindowEvStruct(JEditorWindow* deActWindow)
+			:JEditorEvStruct(deActWindow->GetOwnerPageType()), deActWindow(deActWindow)
 		{}
 		bool JEditorDeActWindowEvStruct::PassDefectInspection()const noexcept
 		{
@@ -230,8 +231,8 @@ namespace JinEngine
 			return J_EDITOR_EVENT::DEACTIVATE_WINDOW;
 		}
 
-		JEditorFocusWindowEvStruct::JEditorFocusWindowEvStruct(JEditorWindow* focusWindow, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorEvStruct(pageType), focusWindow(focusWindow)
+		JEditorFocusWindowEvStruct::JEditorFocusWindowEvStruct(JEditorWindow* focusWindow)
+			:JEditorEvStruct(focusWindow->GetOwnerPageType()), focusWindow(focusWindow)
 		{}
 		bool JEditorFocusWindowEvStruct::PassDefectInspection()const noexcept
 		{
@@ -242,8 +243,8 @@ namespace JinEngine
 			return J_EDITOR_EVENT::FOCUS_WINDOW;
 		}
 
-		JEditorUnFocusWindowEvStruct::JEditorUnFocusWindowEvStruct(JEditorWindow* unFocusWindow, const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorEvStruct(pageType), unFocusWindow(unFocusWindow)
+		JEditorUnFocusWindowEvStruct::JEditorUnFocusWindowEvStruct(JEditorWindow* unFocusWindow)
+			:JEditorEvStruct(unFocusWindow->GetOwnerPageType()), unFocusWindow(unFocusWindow)
 		{}
 		bool JEditorUnFocusWindowEvStruct::PassDefectInspection()const noexcept
 		{
@@ -291,6 +292,30 @@ namespace JinEngine
 		J_EDITOR_EVENT JEditorClosePopupWindowEvStruct::GetEventType()const noexcept
 		{
 			return J_EDITOR_EVENT::CLOSE_POPUP_WINDOW;
+		}
+
+		JEditorMaximizeWindowEvStruct::JEditorMaximizeWindowEvStruct(JEditorWindow* wnd)
+			: JEditorEvStruct(wnd->GetOwnerPageType()), wnd(wnd)
+		{}
+		bool JEditorMaximizeWindowEvStruct::PassDefectInspection()const noexcept
+		{
+			return wnd != nullptr;
+		}
+		J_EDITOR_EVENT JEditorMaximizeWindowEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::MAXIMIZE_WINDOW;
+		}
+
+		JEditorPreviousSizeWindowEvStruct::JEditorPreviousSizeWindowEvStruct(JEditorWindow* wnd)
+			: JEditorEvStruct(wnd->GetOwnerPageType()), wnd(wnd)
+		{}
+		bool JEditorPreviousSizeWindowEvStruct::PassDefectInspection()const noexcept
+		{ 
+			return wnd != nullptr;
+		}
+		J_EDITOR_EVENT JEditorPreviousSizeWindowEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::PREVIOUS_SIZE_WINDOW;
 		}
 
 		JEditorBindFuncEvStruct::JEditorBindFuncEvStruct(std::unique_ptr<Core::JBindHandleBase> bindHandle, const J_EDITOR_PAGE_TYPE pageType)

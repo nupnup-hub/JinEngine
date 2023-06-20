@@ -6,17 +6,16 @@ namespace JinEngine
 { 
 	class JGameObject;
 	class JBehaviorPrivate;
-	//¹Ì±¸Çö 
-	class JBehavior final : public JComponent
+	class JBehavior : public JComponent
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JBehavior)
 	public: 
-		class InitData final : public JComponent::InitData
+		class InitData : public JComponent::InitData
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
-			InitData(const JUserPtr<JGameObject>& owner);
-			InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
+			InitData(const Core::JTypeInfo& typeInfo, const JUserPtr<JGameObject>& owner);
+			InitData(const Core::JTypeInfo& typeInfo, const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
 		};
 	private:
 		friend class JBehaviorPrivate;
@@ -35,8 +34,20 @@ namespace JinEngine
 		bool PassDefectInspection()const noexcept final;
 	protected:
 		void DoActivate()noexcept final;
-		void DoDeActivate()noexcept final; 
-	private:
+		void DoDeActivate()noexcept final;
+	protected:
+		virtual void NotifyActivate();
+		virtual void NotifyDeActivate();
+	protected:
+		virtual void Initialize();
+		virtual void Clear();
+	protected:
+		virtual void Update() = 0;
+	protected:
+		virtual bool Copy(JUserPtr<Core::JIdentifier> to);
+	protected:
+		virtual void RegisterChildTypeData() = 0;
+	protected:
 		JBehavior(const InitData& initData);
 		~JBehavior();
 	};

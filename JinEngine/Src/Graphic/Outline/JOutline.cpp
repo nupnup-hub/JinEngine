@@ -47,7 +47,7 @@ namespace JinEngine
 			commandList->SetGraphicsRootConstantBufferView(2, outlineCB->Resource()->GetGPUVirtualAddress());
 			commandList->SetPipelineState(gShaderData->pso.Get());
 
-			JMeshGeometry* mesh = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD).Get();
+			JMeshGeometry* mesh = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::QUAD).Get();
 
 			const D3D12_VERTEX_BUFFER_VIEW vertexPtr = JMeshGeometryPrivate::BufferViewInterface::VertexBufferView(mesh);
 			const D3D12_INDEX_BUFFER_VIEW indexPtr = JMeshGeometryPrivate::BufferViewInterface::IndexBufferView(mesh);

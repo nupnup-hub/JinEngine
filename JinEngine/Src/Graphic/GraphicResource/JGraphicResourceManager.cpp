@@ -5,7 +5,7 @@
 #include"../../Utility/JLoadTextureFromFile.h"
 #include"../../Utility/JCommonUtility.h"
 #include"../../Core/Exception/JExceptionMacro.h"  
-#include"../../../Lib/DirectX/DDSTextureLoader11.h" 
+#include"../../../ThirdParty/DirectX/DDSTextureLoader11.h" 
 #include<DirectXColors.h>
 //Debug
 //#include<fstream>

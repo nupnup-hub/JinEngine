@@ -7,7 +7,7 @@ namespace JinEngine
 	}
 	namespace Core
 	{
-		class JTypeInfo;
+		class JTypeInfo; 
 		class JEnumInfo;
 		class JReflectionInfoPrivate
 		{

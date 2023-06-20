@@ -6,6 +6,7 @@
 #include"../Geometry/JRay.h"
 #include<DirectXCollision.h>
 #include<vector>
+
 namespace JinEngine
 {
 	class JGameObject;
@@ -70,8 +71,8 @@ namespace JinEngine
 		public:
 			virtual void Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum)noexcept = 0;
 			virtual void Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept = 0;
-			virtual JUserPtr<JGameObject> IntersectFirst(const JRay& ray)const noexcept = 0;
-			virtual void Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, std::vector<JUserPtr<JGameObject>>& res)const noexcept = 0;
+			virtual JUserPtr<JGameObject> IntersectFirst(const JRay& ray, const bool allowContainRayPos)const noexcept = 0;
+			virtual void Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept = 0;
 			virtual void UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept = 0;
 		public:
 			virtual void AddGameObject(const JUserPtr<JGameObject>& newGameObject)noexcept = 0;

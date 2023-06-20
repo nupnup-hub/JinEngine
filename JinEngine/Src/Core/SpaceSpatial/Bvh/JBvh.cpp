@@ -129,17 +129,20 @@ namespace JinEngine
 					cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 			}
 		}
-		JUserPtr<JGameObject> JBvh::IntersectFirst(const JRay& ray)const noexcept
+		JUserPtr<JGameObject> JBvh::IntersectFirst(const JRay& ray, const bool allowContainRayPos)const noexcept
 		{
 			if (allNodes.size() > 1)
-				return root->IntersectFirst(ray.GetPosV(), ray.GetDirV());
+				return root->IntersectFirst(ray.GetPosV(), ray.GetDirV(), allowContainRayPos);
 			else
 			{
 				if (innerGameObjectCandidate != nullptr)
 				{
 					float leftDist = FLT_MAX;
-					bool isIntersect = innerGameObjectCandidate->GetRenderItem()->GetOrientedBoundingBox().Intersects(ray.GetPosV(), ray.GetDirV(), leftDist);
-					return isIntersect ? innerGameObjectCandidate : nullptr;
+					auto oriBBox = innerGameObjectCandidate->GetRenderItem()->GetOrientedBoundingBox();
+					if (!allowContainRayPos && oriBBox.Contains(ray.GetPosV()) == DirectX::CONTAINS)
+						return nullptr;
+					
+					return oriBBox.Intersects(ray.GetPosV(), ray.GetDirV(), leftDist) ? innerGameObjectCandidate : nullptr;
 				}
 				else
 					return nullptr;

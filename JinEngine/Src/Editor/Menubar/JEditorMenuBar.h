@@ -5,12 +5,13 @@
 #include"../../Core/JDataType.h"
 #include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Core/Func/Callable/JCallable.h"
+#include"../../Core/Interface/JGroupInterface.h"
 
 namespace JinEngine
 { 
 	namespace Graphic
 	{ 
-		class JGraphicSingleResourceUserAccess;
+		class JGraphicSingleResourceUserAccess;	//texture has one gResource
 	}
 
 	namespace Editor
@@ -22,17 +23,24 @@ namespace JinEngine
 			const std::string nodeName; 
 			bool isRoot;
 			bool isLeaf;
+			bool isControlOpendPtr;
 			bool* isOpend; // Leaf Only window attribute isOpen ptr 
 			bool isCreateOpendPtr = false;
 			JEditorMenuNode* parent;
 			std::vector<JEditorMenuNode*> children;
 		private:
 			std::unique_ptr<Core::JBindHandleBase> openBindHandle = nullptr;
+			std::unique_ptr<Core::JBindHandleBase> closeBindHandle = nullptr;
 			std::unique_ptr<Core::JBindHandleBase> activateBindHandle = nullptr;
 			std::unique_ptr<Core::JBindHandleBase> deActivateBindHandle = nullptr;
 			std::unique_ptr<Core::JBindHandleBase> updateBindHandle = nullptr;
 		public:
-			JEditorMenuNode(const std::string& windowName, bool isRoot, bool isLeaf, bool* isOpend = nullptr, JEditorMenuNode* parent = nullptr);
+			JEditorMenuNode(const std::string& windowName, 
+				bool isRoot, 
+				bool isLeaf,
+				bool isControlOpendPtr = true,
+				bool* isOpend = nullptr, 
+				JEditorMenuNode* parent = nullptr);
 			~JEditorMenuNode();
 			JEditorMenuNode(const JEditorMenuNode& rhs) = delete;
 			JEditorMenuNode& operator=(const JEditorMenuNode& rhs) = delete;
@@ -48,10 +56,12 @@ namespace JinEngine
 			bool IsOpendNode()const noexcept; // LeftNode only
 		public:
 			void RegisterBindHandle(std::unique_ptr<Core::JBindHandleBase>&& newOpenBindHandle = nullptr,
+				std::unique_ptr<Core::JBindHandleBase>&& newCloseBindHandle = nullptr,
 				std::unique_ptr<Core::JBindHandleBase>&& newActivateBindHandle = nullptr,
 				std::unique_ptr<Core::JBindHandleBase>&& newDeActivateBindHandle = nullptr,
 				std::unique_ptr<Core::JBindHandleBase>&& newUpdateBindHandle = nullptr);
 			void ExecuteOpenBind();
+			void ExecuteCloseBind();
 			void ExecuteActivateBind();
 			void ExecuteDeActivateBind();
 			void ExecuteUpdateBind();
@@ -59,35 +69,69 @@ namespace JinEngine
 		class JEditorMenuBar
 		{
 		public:
-			class ExtraWidget
+			enum class EXTRA_WIDGET_TYPE
 			{
+				SWITCH,
+				BUTTON
+			};
+		public:
+			class ExtraWidget
+			{ 
 			private:  
-				const size_t guid; 
+				const size_t guid;  
 			public:
 				ExtraWidget(const size_t guid);
 				virtual ~ExtraWidget() = default;
 			public:
 				virtual void Update(const JEditorStringMap* tooltipMap) = 0;
 			public: 
-				std::string GetUniqueLabel()const noexcept; 
-				J_SIMPLE_GET(size_t, guid, Guid)
+				std::string GetUniqueLabel()const noexcept;  
+			public:
+				J_SIMPLE_GET(size_t, guid, Guid) 
 			};
-			class SwitchIcon : public ExtraWidget
+			class Icon : public ExtraWidget
 			{
 			public:
 				using GetGResourceF = Core::JSFunctorType<Graphic::JGraphicSingleResourceUserAccess*>;
 			private:
-				bool* isActivatedPtr;
-			private:
 				std::unique_ptr<GetGResourceF::Functor> getGResourceFunctor;	//get icon image access
-				std::unique_ptr<Core::JBindHandleBase> pressBind;
 			public:
-				SwitchIcon(const size_t guid,
-					bool* isActivatedPtr,
-					std::unique_ptr<GetGResourceF::Functor>&& newGetGResourceFunctor,
-					std::unique_ptr<Core::JBindHandleBase>&& newPressBind);
+				Icon(const size_t guid, std::unique_ptr<GetGResourceF::Functor>&& getGResourceFunctor);
+			protected:
+				GetGResourceF::Functor* GetGResourceFunctor()const noexcept;
+			protected:
+				void DisplayTooltip(const JEditorStringMap* tooltipMap, 
+					const JVector2<float> pos, 
+					const JVector2<float> size);
+			};
+			class ButtonIcon : public Icon
+			{
+			private:
+				std::unique_ptr<Core::JBindHandleBase> pressBind; 
+			public:
+				ButtonIcon(const size_t guid,
+					std::unique_ptr<GetGResourceF::Functor>&& getGResourceFunctor,
+					std::unique_ptr<Core::JBindHandleBase>&& pressBind);
 			public:
 				void Update(const JEditorStringMap* tooltipMap)final;
+			};
+			class SwitchIcon : public Icon
+			{	 
+			private:
+				std::unique_ptr<Core::JBindHandleBase> onBind;
+				std::unique_ptr<Core::JBindHandleBase> offBind; 
+			private:
+				bool* isActivatedPtr;
+			public:
+				SwitchIcon(const size_t guid,
+					std::unique_ptr<GetGResourceF::Functor>&& getGResourceFunctor,
+					std::unique_ptr<Core::JBindHandleBase>&& onBind,
+					std::unique_ptr<Core::JBindHandleBase>&& offBind,
+					bool* isActivatedPtr);
+			public:
+				void Update(const JEditorStringMap* tooltipMap)final;
+			public: 
+				bool IsActivated()const noexcept;
 			};
 		private:
 			using LoopNodePtr = Core::JStaticCallableType<void, JEditorMenuNode*>::Ptr;

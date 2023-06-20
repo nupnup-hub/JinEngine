@@ -2,19 +2,28 @@
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
 #include"../String/JEditorStringMap.h"
 #include"../../Utility/JVectorExtend.h"
+#include"../../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		namespace Constants
+		namespace 
 		{
 			static constexpr float tooltipInnerPaddingRate = 0.001f;
+			static std::unordered_map <size_t, std::vector<JEditorMenuBar::SwitchIcon*>> switchGroupMap;
 		}
-		JEditorMenuNode::JEditorMenuNode(const std::string& nodeName, bool isRoot, bool isLeaf, bool* isOpend, JEditorMenuNode* parent)
+	 
+		JEditorMenuNode::JEditorMenuNode(const std::string& nodeName, 
+			bool isRoot,
+			bool isLeaf,
+			bool isControlOpendPtr,
+			bool* isOpend,
+			JEditorMenuNode* parent)
 			:nodeName(nodeName + "##_MenuBarNode"),
 			isRoot(isRoot),
 			isLeaf(isLeaf),
+			isControlOpendPtr(isControlOpendPtr),
 			isOpend(isOpend),
 			parent(parent)
 		{
@@ -24,7 +33,7 @@ namespace JinEngine
 			if (isLeaf && isOpend == nullptr)
 			{
 				JEditorMenuNode::isOpend = new bool();
-				isCreateOpendPtr = true;
+				isCreateOpendPtr = true; 
 			}
 		}
 		JEditorMenuNode::~JEditorMenuNode()
@@ -64,12 +73,15 @@ namespace JinEngine
 			return *isOpend;
 		}
 		void JEditorMenuNode::RegisterBindHandle(std::unique_ptr<Core::JBindHandleBase>&& newOpenBindHandle,
+			std::unique_ptr<Core::JBindHandleBase>&& newCloseBindHandle,
 			std::unique_ptr<Core::JBindHandleBase>&& newActivateBindHandle,
 			std::unique_ptr<Core::JBindHandleBase>&& newDeActivateBindHandle,
 			std::unique_ptr<Core::JBindHandleBase>&& newUpdateBindHandle)
 		{
 			if (newOpenBindHandle != nullptr)
 				openBindHandle = std::move(newOpenBindHandle);
+			if (newCloseBindHandle != nullptr)
+				closeBindHandle = std::move(newCloseBindHandle);
 			if (newActivateBindHandle != nullptr)
 				activateBindHandle = std::move(newActivateBindHandle);
 			if (newDeActivateBindHandle != nullptr)
@@ -79,8 +91,19 @@ namespace JinEngine
 		}
 		void JEditorMenuNode::ExecuteOpenBind()
 		{
+			if (isControlOpendPtr)
+				*isOpend = true;
+
 			if (openBindHandle != nullptr)
 				openBindHandle->InvokeCompletelyBind();
+		}
+		void JEditorMenuNode::ExecuteCloseBind()
+		{
+			if (isControlOpendPtr)
+				*isOpend = false;
+
+			if (closeBindHandle != nullptr)
+				closeBindHandle->InvokeCompletelyBind();
 		}
 		void JEditorMenuNode::ExecuteActivateBind()
 		{
@@ -106,43 +129,90 @@ namespace JinEngine
 			return "##" + std::to_string(guid);
 		}
 
-		JEditorMenuBar::SwitchIcon::SwitchIcon(const size_t guid,
-			bool* newIsActivatedPtr,
-			std::unique_ptr<GetGResourceF::Functor>&& newGetGResourceFunctor,
-			std::unique_ptr<Core::JBindHandleBase>&& newPressBind)
-			: ExtraWidget(guid)
+		JEditorMenuBar::Icon::Icon(const size_t guid, std::unique_ptr<GetGResourceF::Functor>&& getGResourceFunctor)
+			:ExtraWidget(guid), getGResourceFunctor(std::move(getGResourceFunctor))
+		{}
+		JEditorMenuBar::Icon::GetGResourceF::Functor* JEditorMenuBar::Icon::GetGResourceFunctor()const noexcept
 		{
-			isActivatedPtr = newIsActivatedPtr;
-			getGResourceFunctor = std::move(newGetGResourceFunctor);
-			pressBind = std::move(newPressBind);
+			return getGResourceFunctor.get();
 		}
-		void JEditorMenuBar::SwitchIcon::Update(const JEditorStringMap* tooltipMap)
+		void JEditorMenuBar::Icon::DisplayTooltip(const JEditorStringMap* tooltipMap,
+			const JVector2<float> pos,
+			const JVector2<float> size)
 		{
-			const JVector2<float> switchPos = ImGui::GetCursorScreenPos();
-			const float barHeight = ImGui::GetCurrentWindow()->MenuBarHeight();
-			const JVector2<float> iconSize = JVector2<float>(barHeight, barHeight);
-			if (JImGuiImpl::ImageSwitch(GetUniqueLabel().c_str(),
-				((*getGResourceFunctor)()),
-				*isActivatedPtr,
-				false,
-				iconSize,
-				IM_COL32(180, 180, 180, 225),
-				IM_COL32(90, 90, 90, 0)))
-				pressBind->InvokeCompletelyBind();
-
 			if (tooltipMap != nullptr)
 			{
 				std::string tooltip = tooltipMap->GetString(GetGuid());
 				if (tooltip.empty())
 					return;
-				 
-				if (JImGuiImpl::IsMouseInRect(switchPos, iconSize))
+
+				if (JImGuiImpl::IsMouseInRect(pos, size))
 				{
-					const JVector2<float> padding = ImGui::GetWindowSize() * Constants::tooltipInnerPaddingRate;
-					const JVector2<float> windowPos = switchPos + padding + iconSize;			 
-					JImGuiImpl::DrawToolTipBox(GetUniqueLabel() + "_ToolTip", tooltip.c_str(), windowPos, padding, true);
+					const JVector2<float> padding = ImGui::GetWindowSize() * tooltipInnerPaddingRate;
+					const JVector2<float> windowPos = pos + padding + size;
+					JImGuiImpl::DrawToolTipBox(GetUniqueLabel() + "_ToolTip", tooltip, windowPos, padding, true);
 				}
-			}  
+			}
+		}
+
+		JEditorMenuBar::ButtonIcon::ButtonIcon(const size_t guid,
+			std::unique_ptr<GetGResourceF::Functor>&& getGResourceFunctor,
+			std::unique_ptr<Core::JBindHandleBase>&& pressBind)
+			:Icon(guid, std::move(getGResourceFunctor)), pressBind(std::move(pressBind))
+		{}
+		void JEditorMenuBar::ButtonIcon::Update(const JEditorStringMap* tooltipMap)
+		{
+			const float barHeight = ImGui::GetCurrentWindow()->MenuBarHeight();
+			const JVector2<float> pos = ImGui::GetCursorScreenPos();
+			const JVector2<float> size = JVector2<float>(barHeight, barHeight);
+			   
+			if (JImGuiImpl::ImageButton(GetUniqueLabel(),
+				((*GetGResourceFunctor())()),
+				size,
+				IM_COL32(180, 180, 180, 225),
+				IM_COL32(90, 90, 90, 0)))
+			{
+				pressBind->InvokeCompletelyBind();
+			}
+			DisplayTooltip(tooltipMap, pos, size);
+		}
+
+
+		JEditorMenuBar::SwitchIcon::SwitchIcon(const size_t guid,
+			std::unique_ptr<GetGResourceF::Functor>&& getGResourceFunctor,
+			std::unique_ptr<Core::JBindHandleBase>&& onBind,
+			std::unique_ptr<Core::JBindHandleBase>&& offBind,
+			bool* isActivatedPtr)
+			:Icon(guid, std::move(getGResourceFunctor)),
+			onBind(std::move(onBind)),
+			offBind(std::move(offBind)),
+			isActivatedPtr(isActivatedPtr)
+		{}
+		void JEditorMenuBar::SwitchIcon::Update(const JEditorStringMap* tooltipMap)
+		{
+			const float barHeight = ImGui::GetCurrentWindow()->MenuBarHeight();
+			const JVector2<float> pos = ImGui::GetCursorScreenPos();			 
+			const JVector2<float> size = JVector2<float>(barHeight, barHeight);
+			 
+			if (JImGuiImpl::ImageSwitch(GetUniqueLabel(),
+				((*GetGResourceFunctor())()),
+				*isActivatedPtr,
+				true, 
+				size,
+				IM_COL32(180, 180, 180, 225),
+				IM_COL32(90, 90, 90, 0)))
+			{
+				//if to turn on
+				if (IsActivated())
+					onBind->InvokeCompletelyBind();
+				else
+					offBind->InvokeCompletelyBind();				 
+			}
+			DisplayTooltip(tooltipMap, pos, size);
+		}
+		bool JEditorMenuBar::SwitchIcon::IsActivated()const noexcept
+		{
+			return *isActivatedPtr;
 		}
 
 		JEditorMenuBar::JEditorMenuBar(std::unique_ptr<JEditorMenuNode> newRoot, const bool isMainMenu)
@@ -178,7 +248,13 @@ namespace JinEngine
 		{
 			bool isSelected = UpdateMenuBar();
 			if (isSelected)
-				GetSelectedNode()->ExecuteOpenBind();
+			{
+				auto selectedNode = GetSelectedNode();
+				if (selectedNode->IsOpendNode())
+					selectedNode->ExecuteCloseBind();
+				else
+					selectedNode->ExecuteOpenBind();
+			}
 
 			if (leafNodeOnly)
 			{

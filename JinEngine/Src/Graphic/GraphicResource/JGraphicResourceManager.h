@@ -4,7 +4,7 @@
 #include"../JGraphicConstants.h"
 #include"../../Core/JDataType.h"  
 #include"../../Core/Pointer/JOwnerPtr.h"
-#include"../../../Lib/DirectX/Tk/Src/d3dx12.h" 
+#include"../../../ThirdParty/DirectX/Tk/Src/d3dx12.h" 
 #include<vector>
 #include<string>
 #include<memory>

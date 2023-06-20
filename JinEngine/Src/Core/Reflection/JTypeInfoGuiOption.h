@@ -1,5 +1,6 @@
 #pragma once 
 #include"JGuiWidgetInfoHandleBase.h" 
+#include"../Pointer/JOwnerPtr.h"
 #include"../JDataType.h" 
 #include<memory>
 #include<vector>
@@ -32,16 +33,16 @@ namespace JinEngine
 			template<typename Type, typename GetPointer, GetPointer getPtr> friend class JMethodGuiWidgetRegister; 
 		private:
 			//Gui option
-			std::vector<std::unique_ptr<JGuiWidgetInfoHandleBase>> widgetHandleVec;
+			std::vector<JOwnerPtr<JGuiWidgetInfoHandleBase>> widgetHandleVec;
 			J_GUI_OPTION_FLAG guiFlag;
 		public:
 			uint GetGuiWidgetInfoHandleCount()const noexcept; 
-			JGuiWidgetInfoHandleBase* GetGuiWidgetInfoHandle(const uint index)const noexcept; 
+			JUserPtr<JGuiWidgetInfoHandleBase> GetGuiWidgetInfoHandle(const uint index)const noexcept;
 			J_GUI_OPTION_FLAG GetGuiWidgetFlag()const noexcept;
 		public:
 			void SetGuiWidgetFlag(const J_GUI_OPTION_FLAG value)noexcept; 
 		private:
-			void AddGuiWidgetInfoHandle(std::unique_ptr<JGuiWidgetInfoHandleBase>&& handle);
+			void AddGuiWidgetInfoHandle(JOwnerPtr<JGuiWidgetInfoHandleBase>&& handle);
 		private:
 			JTypeInfoGuiOption() = default;
 			~JTypeInfoGuiOption() = default;

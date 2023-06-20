@@ -4,8 +4,8 @@
 #include"../../../Object/Resource/Mesh/JMeshStruct.h"
 #include"../../../Object/Resource/AnimationClip/JAnimationSample.h"
 #include"../../../Utility/JVector.h"
-#include"../../../../Lib/Fbx/Include/fbxsdk.h"
-#include"../../../../Lib/DirectX/DirectXMesh.h" 
+#include"../../../../ThirdParty/Fbx/Include/fbxsdk.h"
+#include"../../../../ThirdParty/DirectX/DirectXMesh.h" 
 
 namespace JinEngine
 { 

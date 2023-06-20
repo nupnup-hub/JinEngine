@@ -52,7 +52,7 @@ namespace JinEngine
 		JUserPtr<JMaterial> newTextureMat = JICI::Create<JMaterial>(matName, Core::MakeGuid(), flag, JMaterial::GetDefaultFormatIndex(), dir);
 		JDefaultMaterialSetting::SetAlbedoMapOnly(newTextureMat, texture);
 		 
-		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(GetScene()->GetRootGameObject(), flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
+		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(GetScene()->GetRootGameObject(), flag, J_DEFAULT_SHAPE::QUAD);
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 
 		renderItem->SetMaterial(0, newTextureMat);

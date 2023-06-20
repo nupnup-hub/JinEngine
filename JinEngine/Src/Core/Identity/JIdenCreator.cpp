@@ -37,7 +37,7 @@ namespace JinEngine
 		}
 		JUserPtr<JIdentifier> JIdenCreatorInterface::CreateAndCopy(JUserPtr<JComponent> from, JUserPtr<JGameObject> toOwner)
 		{
-			auto initData = JComponent::CreateInitDIData(from->GetComponentType(), toOwner); 
+			auto initData = JComponent::CreateInitDIData(from->GetComponentType(), from->GetTypeInfo(), toOwner);
 			return ConvertChildUserPtr<JIdentifier>(CreateInterface::BeginCreateAndCopy(std::move(initData), toOwner));
 		}
 		JUserPtr<JIdentifier> JIdenCreatorInterface::CreateAndCopy(JUserPtr<JDirectory> from, JUserPtr<JDirectory> toParent)

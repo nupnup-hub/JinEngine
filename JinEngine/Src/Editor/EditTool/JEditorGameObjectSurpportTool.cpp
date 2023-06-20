@@ -18,6 +18,8 @@
 
 //Debug
 //#include"../../Debug/JDebugTextOut.h"
+#include "../../Core/Time/JStopWatch.h"
+
 using namespace DirectX;
 namespace JinEngine
 {
@@ -69,7 +71,7 @@ namespace JinEngine
 
 			//Editor Window view port size = tab + menu + contents 
 			const JVector2<float> localMousePos = ImGui::GetMousePos() -(ImGui::GetWindowPos() + viewLocalPos);
-			const JVector2<float> camViewSize = JVector2<float>(cam->GetViewWidth(), cam->GetViewHeight());
+			const JVector2<float> camViewSize = JVector2<float>(cam->GetFarViewWidth(), cam->GetFarViewHeight());
 			const float widthRate = (float)camViewSize.x / windowSize.x;
 			const float heightRate = (float)camViewSize.y / windowSize.y;
 			const JVector2<float> finalMousePos = JVector2<float>(localMousePos.x * widthRate, localMousePos.y * heightRate);
@@ -77,12 +79,12 @@ namespace JinEngine
 			const XMFLOAT4X4 proj = cam->GetProj4x4f();
 			const XMMATRIX invView = XMMatrixInverse(nullptr, cam->GetView());
 
-			const float vx = ((2.0f * finalMousePos.x) / cam->GetViewWidth() - 1.0f) / proj(0, 0);
-			const float vy = ((-2.0f * finalMousePos.y) / cam->GetViewHeight() + 1.0f) / proj(1, 1);
+			const float vx = ((2.0f * finalMousePos.x) / cam->GetFarViewWidth() - 1.0f) / proj(0, 0);
+			const float vy = ((-2.0f * finalMousePos.y) / cam->GetFarViewHeight() + 1.0f) / proj(1, 1);
 			const XMVECTOR rayOri = XMVector3TransformCoord(XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), invView);
 			const XMVECTOR rayDir = XMVector3Normalize(XMVector3TransformNormal(XMVectorSet(vx, vy, 1.0f, 0.0f), invView));
-
-			return scene->IntersectFirst(layer, Core::JRay{ rayOri, rayDir });
+			 
+			return scene->IntersectFirst(layer, Core::JRay{ rayOri, rayDir }, false);
 		}
 		void JEditorTransformTool::Arrow::CreateMaterial(const JVector4<float> matColor)
 		{
@@ -326,29 +328,22 @@ namespace JinEngine
 			}
 		}
 		void JEditorTransformTool::UpdateSelectedPosition(JEditorTransformTool* tool, const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam)noexcept
-		{
-			static constexpr float dPosFactor = 0.1f; 
+		{ 
 			const JVector3<float> delthDir = Constants::GetMouseDeltaDirFactor(tool->transformArrowRoot.Get(), cam.Get());
 			const JVector3<float> nowPos = selected->GetTransform()->GetPosition();
 			const JVector2<float> nowMosePos = ImGui::GetMousePos();
+
 			JVector2<float> mDelta = nowMosePos - tool->preWorldMousePos;
-			mDelta.x = std::clamp(mDelta.x, -dPosFactor, dPosFactor);
-			mDelta.y = std::clamp(-mDelta.y, -dPosFactor, dPosFactor);	  
-
 			const float distance = tool->transformArrowRoot->GetTransform()->GetDistance(cam->GetTransform());
-			const float fovX = cam->GetFovX();
-			const float width = distance * fovX;
-			const float distanceDelta = width / cam->GetNearViewWidth();
-
-			//ImGui::Text(("Far: " + std::to_string(cam->GetFar()) + " Width: " + std::to_string(cam->GetViewWidth()) + " FarViewWidth:" + std::to_string(cam->GetFarViewWidth())).c_str());
-			//ImGui::Text(("Distance: " + std::to_string(distance)+ " width: " + std::to_string(width) + " delta" + std::to_string(distanceDelta)).c_str());
-
+			mDelta.y = -mDelta.y;
+			mDelta *= (distance / cam->GetFar()) * 1.5f;
+			 
 			if (tool->draggingIndex == 0)
-				selected->GetTransform()->SetPosition(XMFLOAT3(nowPos.x + mDelta.x * delthDir.x * distanceDelta, nowPos.y, nowPos.z));
+				selected->GetTransform()->SetPosition(XMFLOAT3(nowPos.x + mDelta.x * delthDir.x, nowPos.y, nowPos.z));
 			else if (tool->draggingIndex == 1)
-				selected->GetTransform()->SetPosition(XMFLOAT3(nowPos.x, nowPos.y + mDelta.y * delthDir.y * distanceDelta, nowPos.z));
+				selected->GetTransform()->SetPosition(XMFLOAT3(nowPos.x, nowPos.y + mDelta.y * delthDir.y, nowPos.z));
 			else if (tool->draggingIndex == 2)
-				selected->GetTransform()->SetPosition(XMFLOAT3(nowPos.x, nowPos.y, nowPos.z + mDelta.x * delthDir.z * distanceDelta));
+				selected->GetTransform()->SetPosition(XMFLOAT3(nowPos.x, nowPos.y, nowPos.z + mDelta.x * delthDir.z));
 			tool->SetModifiedBit(selected->GetOwnerScene(), true);
 		}
 		void JEditorTransformTool::UpdateSelectedRotation(JEditorTransformTool* tool, const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam)noexcept
@@ -442,7 +437,7 @@ namespace JinEngine
 
 			if (hasCenter)
 			{
-				JUserPtr<JGameObject> newArrowCenter = JGCI::CreateShape(newTransformArrowRoot, flag, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE);
+				JUserPtr<JGameObject> newArrowCenter = JGCI::CreateShape(newTransformArrowRoot, flag, J_DEFAULT_SHAPE::SPHERE);
 				JUserPtr<JRenderItem> arrowCenterRItem = newArrowCenter->GetRenderItem();
 				arrowCenterRItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_UI);
 				arrowCenterRItem->SetMaterial(0, arrowCenterMaterial);

@@ -4,7 +4,7 @@
 #include"../../Object/Resource/JResourceManager.h"
 #include"../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../Utility/JD3DUtility.h"
-#include"../../../Lib/DirectX/Tk/Src/d3dx12.h" 
+#include"../../../ThirdParty/DirectX/Tk/Src/d3dx12.h" 
 #include<DirectXColors.h>
 using namespace DirectX;
 using namespace Microsoft::WRL;

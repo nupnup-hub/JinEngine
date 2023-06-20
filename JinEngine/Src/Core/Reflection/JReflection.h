@@ -258,18 +258,6 @@ namespace JinEngine
 
 			return _JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceUserPtr<T>(hint.objectGuid);
 		}
-		template<typename  T>
-		static JUserPtr<T> ConnectChildUserPtr(const JUserPtr<JTypeBase>& user)
-		{
-			JUserPtr<T> res;
-			res.ConnnectChild(user);
-			return res;
-		}
-		template<typename  T>
-		static JUserPtr<T> ConvertChildUserPtr(JUserPtr<JTypeBase>&& user)
-		{
-			return JUserPtr<T>::ConvertChild(std::move(user));
-		}
 		static JUserPtr<JTypeBase> SearchUserPtr(JTypeInfo& baseTypeInfo, const size_t objGuid)
 		{
 			std::vector<JTypeInfo*> derivedInfoVec = _JReflectionInfo::Instance().GetDerivedTypeInfo(baseTypeInfo);
@@ -379,18 +367,6 @@ namespace JinEngine
 				return JWeakPtr<T>{};
 
 			return _JReflectionInfo::Instance().GetTypeInfo(hint.typeGuid)->GetInstanceWeakPtr<T>(hint.objectGuid);
-		}
-		template<typename  T>
-		static JWeakPtr<T> ConnectChildWeakPtr(JWeakPtr<JTypeBase>&& user)
-		{
-			JWeakPtr<T> res;
-			res.ConnnectChild(user);
-			return res;
-		}
-		template<typename  T>
-		static JWeakPtr<T> ConvertChildWeakPtr(JWeakPtr<JTypeBase>&& user)
-		{
-			return JWeakPtr<T>::ConvertChild(std::move(user));
 		}
 		static JWeakPtr<JTypeBase> SearchWeakPtr(JTypeInfo& baseTypeInfo, const size_t objGuid)
 		{

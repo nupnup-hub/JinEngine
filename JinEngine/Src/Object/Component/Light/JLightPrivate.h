@@ -12,7 +12,7 @@ namespace JinEngine
 		struct JLightConstants;
 		struct JShadowMapLightConstants;
 		struct JShadowMapConstants;
-		struct JHzbOccPassConstants;
+		struct JHzbOccRequestorConstants;
 	}
 	class JLightPrivate final : public JComponentPrivate
 	{
@@ -49,13 +49,13 @@ namespace JinEngine
 			static void UpdateFrame(JLight* lit, Graphic::JLightConstants& constant)noexcept;
 			static void UpdateFrame(JLight* lit, Graphic::JShadowMapLightConstants& constant)noexcept; 
 			static void UpdateFrame(JLight* lit, Graphic::JShadowMapConstants& constant)noexcept;
-			static void UpdateFrame(JLight* lit, Graphic::JHzbOccPassConstants& constant, const uint queryCount, const uint queryOffset)noexcept;
+			static void UpdateFrame(JLight* lit, Graphic::JHzbOccRequestorConstants& constant, const uint queryCount, const uint queryOffset)noexcept;
 			static void UpdateEnd(JLight* lit)noexcept;
 		private:
 			static int GetLitFrameIndex(JLight* lit)noexcept;
 			static int GetShadowLitFrameIndex(JLight* lit)noexcept;
 			static int GetShadowMapFrameIndex(JLight* lit)noexcept;
-			static int GetHzbOccPassFrameIndex(JLight* lit)noexcept;
+			static int GetHzbOccReqFrameIndex(JLight* lit)noexcept;
 		private:
 			static bool IsHotUpdated(JLight* lit)noexcept;
 			static bool IsLastUpdated(JLight* lit)noexcept;
@@ -73,7 +73,7 @@ namespace JinEngine
 			static int GetLitFrameIndex(JLight* lit)noexcept;
 			static int GetShadowLitFrameIndex(JLight* lit)noexcept;
 			static int GetShadowMapFrameIndex(JLight* lit)noexcept;
-			static int GetHzbOccPassFrameIndex(JLight* lit)noexcept;
+			static int GetHzbOccReqFrameIndex(JLight* lit)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

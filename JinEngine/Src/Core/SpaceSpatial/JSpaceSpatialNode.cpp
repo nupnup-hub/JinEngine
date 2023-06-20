@@ -18,5 +18,14 @@ namespace JinEngine
 		{
 			cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 		}
+
+		bool JIntersectInfo::CompareAsc(const JIntersectInfo& a, const JIntersectInfo& b)
+		{
+			return a.dist < b.dist;
+		}
+		bool JIntersectInfo::CompareDesc(const JIntersectInfo& a, const JIntersectInfo& b)
+		{
+			return a.dist > b.dist;
+		}
 	}
 }

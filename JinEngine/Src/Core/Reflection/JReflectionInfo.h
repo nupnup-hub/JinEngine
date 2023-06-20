@@ -7,7 +7,7 @@ namespace JinEngine
 { 
 	namespace Core
 	{
-		class JTypeInfo;
+		class JTypeInfo; 
 		class JEnumInfo;
 
 		class JReflectionInfoPrivate;
@@ -23,7 +23,7 @@ namespace JinEngine
 		public:
 			//Get typeInfo by name			.. typeInfo default key is name	because all typeInfo has typename
 			JTypeInfo* GetTypeInfo(const std::string& fullname)const noexcept; 
-			JTypeInfo* GetTypeInfo(const size_t typeGuid)const noexcept;
+			JTypeInfo* GetTypeInfo(const size_t typeGuid)const noexcept; 
 			//Get enumInfo by fullname			.. enumInfo default key is fullname( typeid(T).name()) because can't declare typename into enumspace
 			JEnumInfo* GetEnumInfo(const std::string& fullname)const noexcept;
 			JEnumInfo* GetEnumInfo(const size_t enumGuid)const noexcept;

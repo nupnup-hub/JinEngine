@@ -33,9 +33,9 @@ namespace JinEngine
 			if (debugGameObject == nullptr)
 			{
 				if (type == J_BVH_NODE_TYPE::LEAF)
-					debugGameObject = JGCI::CreateDebugLineShape(parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN, false);
+					debugGameObject = JGCI::CreateDebugLineShape(parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN, false);
 				else
-					debugGameObject = JGCI::CreateDebugLineShape(parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED, false);
+					debugGameObject = JGCI::CreateDebugLineShape(parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_RED, false);
 				SetDebugObjectTransform();
 			}
 		}
@@ -98,10 +98,15 @@ namespace JinEngine
 				}
 			}
 		} 
-		JUserPtr<JGameObject> JBvhNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept
+		JUserPtr<JGameObject> JBvhNode::IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, const bool allowContainRayPos)const noexcept
 		{
 			if (type == J_BVH_NODE_TYPE::LEAF)
-				return innerGameObject;
+			{
+				if (!allowContainRayPos && innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Contains(ori) == DirectX::CONTAINS)
+					return nullptr;
+				else
+					return innerGameObject;
+			}
 			else
 			{
 				float leftDist = FLT_MAX;
@@ -124,16 +129,16 @@ namespace JinEngine
 				if (leftDist < rightDist)
 				{
 					if (leftRes)
-						res = left->IntersectFirst(ori, dir);
+						res = left->IntersectFirst(ori, dir, allowContainRayPos);
 					if (rightRes && res == nullptr)
-						res = right->IntersectFirst(ori, dir);
+						res = right->IntersectFirst(ori, dir, allowContainRayPos);
 				}
 				else
 				{
 					if (rightRes)
-						res = right->IntersectFirst(ori, dir);
+						res = right->IntersectFirst(ori, dir, allowContainRayPos);
 					if (leftRes && res == nullptr)
-						res = left->IntersectFirst(ori, dir);
+						res = left->IntersectFirst(ori, dir, allowContainRayPos);
 				}
 				return res;
 			}
@@ -177,40 +182,8 @@ namespace JinEngine
 		}
 		void JBvhNode::IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
-			if (type == J_BVH_NODE_TYPE::LEAF)
-				res.push_back(innerGameObject);
-			else
-			{
-				float leftDist = FLT_MAX;
-				float rightDist = FLT_MAX;
-
-				bool leftRes = false;
-				bool rightRes = false;
-				if (left->type == J_BVH_NODE_TYPE::LEAF)
-					leftRes = left->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, leftDist);
-				else
-					leftRes = left->bbox.Intersects(ori, dir, leftDist);
-
-				if (right->type == J_BVH_NODE_TYPE::LEAF)
-					rightRes = right->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(ori, dir, rightDist);
-				else
-					rightRes = right->bbox.Intersects(ori, dir, rightDist);
-
-				if (leftDist > rightDist)
-				{
-					if (leftRes)
-						left->IntersectDescendingSort(ori, dir, res);
-					if (rightRes)
-						right->IntersectDescendingSort(ori, dir, res);
-				}
-				else
-				{
-					if (rightRes)
-						right->IntersectDescendingSort(ori, dir, res);
-					if (leftRes)
-						left->IntersectDescendingSort(ori, dir, res);
-				}
-			}
+			IntersectAscendingSort(ori, dir, res);
+			std::reverse(res.begin(), res.end());
 		}
 		void JBvhNode::Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{

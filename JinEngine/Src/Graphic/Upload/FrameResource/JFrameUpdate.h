@@ -1,7 +1,7 @@
 #pragma once
 #include"../JUploadType.h"
 #include"../../JGraphicConstants.h"  
-#include"../../../Core/Empty/EmptyType.h"
+#include"../../../Core/Empty/JEmptyType.h"
 #include"../../../Core/JDataType.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Pointer/JOwnerPtr.h"
@@ -32,6 +32,7 @@ namespace JinEngine
 		public:
 			bool HasMovedDirty()const noexcept;
 		protected:
+			//areaGuid는 scene별 혹은 다른 object별 frameData를 구분해 정렬시키기 위해 사용된다
 			static void RegisterFrameData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, JFrameUpdateData* holder, const size_t areaGuid, const uint indexSize = 1);
 			static void DeRegisterFrameData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, JFrameUpdateData* holder);
 			static void ReRegisterFrameData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, JFrameUpdateData* holder);
@@ -404,7 +405,7 @@ namespace JinEngine
   
 		//unuse dirty
 		template<typename FrameUpdate>
-		class JFrameUpdate<FrameUpdate, Core::EmptyType> : public FrameUpdate
+		class JFrameUpdate<FrameUpdate, Core::JEmptyType> : public FrameUpdate
 		{
 		public:
 			void UpdateFrameEnd()override

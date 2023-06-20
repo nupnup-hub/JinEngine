@@ -106,7 +106,7 @@ namespace JinEngine
 			return false;
 
 		_JSceneManager::Instance().RegisterObservationFrame(GetScene(), material->FrameUserInterface());
-		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(GetScene()->GetRootGameObject(), OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE);
+		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(GetScene()->GetRootGameObject(), OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::SPHERE);
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 
 		renderItem->SetMaterial(0, material);
@@ -131,11 +131,11 @@ namespace JinEngine
 		const J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
 		JUserPtr<JMaterial> newTextureMat = JICI::Create<JMaterial>(matName, Core::MakeGuid(), flag, JMaterial::GetDefaultFormatIndex(), dir);
 	 
-		J_DEFAULT_SHAPE shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD;
+		J_DEFAULT_SHAPE shapeType = J_DEFAULT_SHAPE::QUAD;
 		if (texture->GetTextureType() == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 		{
 			JDefaultMaterialSetting::SetSky(newTextureMat, texture);
-			shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE;
+			shapeType = J_DEFAULT_SHAPE::SPHERE;
 		}
 		else
 			JDefaultMaterialSetting::SetAlbedoMapOnly(newTextureMat, texture);
@@ -148,7 +148,7 @@ namespace JinEngine
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		SetTextureMaterial(newTextureMat);
-		SetUseQuadShapeTrigger(shapeType == J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
+		SetUseQuadShapeTrigger(shapeType == J_DEFAULT_SHAPE::QUAD);
 		AdjustCamera(center, radius);
 		return true;
 	}
@@ -167,16 +167,16 @@ namespace JinEngine
 		const J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
 		JUserPtr<JMaterial> newTextureMat = JICI::Create<JMaterial>(matName, Core::MakeGuid(), flag, JMaterial::GetDefaultFormatIndex(), dir);
 
-		J_DEFAULT_SHAPE shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_EMPTY;
+		J_DEFAULT_SHAPE shapeType = J_DEFAULT_SHAPE::EMPTY;
 		if (texture->GetTextureType() == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 		{
 			JDefaultMaterialSetting::SetSky(newTextureMat, texture);
-			shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE;
+			shapeType = J_DEFAULT_SHAPE::SPHERE;
 		}
 		else
 		{
 			JDefaultMaterialSetting::SetAlbedoMapOnly(newTextureMat, texture);
-			shapeType = J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD;
+			shapeType = J_DEFAULT_SHAPE::QUAD;
 		}
 
 		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(scene->GetRootGameObject(), flag, shapeType);
@@ -187,7 +187,7 @@ namespace JinEngine
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		SetTextureMaterial(newTextureMat);
-		SetUseQuadShapeTrigger(shapeType == J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD);
+		SetUseQuadShapeTrigger(shapeType == J_DEFAULT_SHAPE::QUAD);
 		AdjustCamera(center, radius);
 		return true;
 	}

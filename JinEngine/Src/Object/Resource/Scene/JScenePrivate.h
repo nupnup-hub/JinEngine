@@ -118,6 +118,13 @@ namespace JinEngine
 		private:
 			static void BuildDebugTree(const JUserPtr<JScene>& scene, Core::J_SPACE_SPATIAL_TYPE type, const Core::J_SPACE_SPATIAL_LAYER layer, _Out_ Editor::JEditorBinaryTreeView& tree)noexcept;
 		};
+		class FrameIndexInterface
+		{
+		private:
+			friend class Graphic::JGraphic;
+		private:
+			static uint GetLitIndexFrameIndex(JScene* scene);
+		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
 		JResourceObjectPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept final;

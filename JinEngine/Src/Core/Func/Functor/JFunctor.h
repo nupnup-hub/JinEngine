@@ -1,9 +1,11 @@
 #pragma once 
 #include<utility>
 #include<memory> 
-#include<vector> 
-#include"../../Typelist/Typelist.h"   
+#include<vector>
+#include"../../Empty/JEmptyType.h"
 #include"../../../Utility/JTypeUtility.h" 
+#include"../../../../ThirdParty/Loki/Typelist/Typelist.h"   
+
 namespace JinEngine
 {
 	namespace Core
@@ -151,7 +153,7 @@ namespace JinEngine
 			private:
 				using PreSequence = ParamSequence<BindTuple, Index - 1>;
 			public:
-				static constexpr bool isBindParam = !std::is_same_v <RemoveAll_T<std::tuple_element_t<Index, BindTuple>>, EmptyType>;
+				static constexpr bool isBindParam = !std::is_same_v <RemoveAll_T<std::tuple_element_t<Index, BindTuple>>, JEmptyType>;
 				static constexpr bool isCompletely = PreSequence::isCompletely && isBindParam;
 				static constexpr int nextPassIndex = ParamSelector<isBindParam, PreSequence::nextPassIndex>::nextPassIndex;
 				static constexpr int passIndex = nextPassIndex - 1;
@@ -160,7 +162,7 @@ namespace JinEngine
 			struct ParamSequence<BindTuple, 0>
 			{
 			public:
-				static constexpr bool isBindParam = !std::is_same_v <RemoveAll_T<std::tuple_element_t<0, BindTuple>>, EmptyType>;
+				static constexpr bool isBindParam = !std::is_same_v <RemoveAll_T<std::tuple_element_t<0, BindTuple>>, JEmptyType>;
 				static constexpr bool isCompletely = isBindParam;
 				static constexpr int nextPassIndex = ParamSelector<isBindParam, 0>::nextPassIndex;
 				static constexpr int passIndex = nextPassIndex - 1;

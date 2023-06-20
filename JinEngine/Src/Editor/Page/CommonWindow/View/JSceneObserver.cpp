@@ -25,7 +25,7 @@
 #include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h" 
 #include"../../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h" 
 #include"../../../../Utility/JCommonUtility.h"
-#include"../../../../../Lib/DirectX/TK/Src/d3dx12.h"
+#include"../../../../../ThirdParty/DirectX/TK/Src/d3dx12.h"
 
 //test
 #include"../../../../Object/Directory/JDirectory.h"
@@ -56,6 +56,7 @@ namespace JinEngine
 		namespace Constants
 		{
 			static constexpr uint optionTypeSubTypeCount = 3; 
+			static constexpr uint toolCount = 3;
 		}
 
 		JSceneObserver::FrustumInfo::FrustumInfo(JUserPtr<JGameObject> frustum, JUserPtr<JCamera> cam)
@@ -94,13 +95,13 @@ namespace JinEngine
 			if (menubar != nullptr)
 				return;
 
-			std::unique_ptr<JEditorMenuNode> root = std::make_unique<JEditorMenuNode>("Root", true, false, nullptr, nullptr);
+			std::unique_ptr<JEditorMenuNode> root = std::make_unique<JEditorMenuNode>("Root", true, false, true, nullptr, nullptr);
 			menubar = std::make_unique<JEditorMenuBar>(std::move(root), false);
 
 			JEditorMenuNode* rootNode = menubar->GetRootNode();
-			std::unique_ptr<JEditorMenuNode> settingNode = std::make_unique<JEditorMenuNode>("Setting", false, false, nullptr, rootNode);
-			std::unique_ptr<JEditorMenuNode> viewNode = std::make_unique<JEditorMenuNode>("View", false, false, nullptr, rootNode);
-			std::unique_ptr<JEditorMenuNode> editorToolNode = std::make_unique<JEditorMenuNode>("Tool", false, false, nullptr, rootNode);
+			std::unique_ptr<JEditorMenuNode> settingNode = std::make_unique<JEditorMenuNode>("Setting", false, false, true, nullptr, rootNode);
+			std::unique_ptr<JEditorMenuNode> viewNode = std::make_unique<JEditorMenuNode>("View", false, false, true, nullptr, rootNode);
+			std::unique_ptr<JEditorMenuNode> editorToolNode = std::make_unique<JEditorMenuNode>("Tool", false, false, true, nullptr, rootNode);
 
 			int statIndex[Constants::optionTypeSubTypeCount]
 			{
@@ -177,15 +178,26 @@ namespace JinEngine
 				[]() -> Graphic::JGraphicSingleResourceUserAccess* {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME).Get(); }
 			};
 
-			MenuSwitchIconPreesF::Ptr pressPtrVec[menuSwitchIconCount] =
+			MenuSwitchIconOnF::Ptr onPtrVec[menuSwitchIconCount] =
 			{
-				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS); },
-				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT); },
-				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE); },
-				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE); },
-				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID); },
-				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME); },
-				 [](JSceneObserver* ob) {ob->SelectObserverSettingNode(J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME); }
+				 [](JSceneObserver* ob) {ob->ActivateObserverSetting(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS); },
+				 [](JSceneObserver* ob) {ob->ActivateObserverSetting(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT); },
+				 [](JSceneObserver* ob) {ob->ActivateObserverSetting(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE); },
+				 [](JSceneObserver* ob) {ob->ActivateObserverSetting(J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE); },
+				 [](JSceneObserver* ob) {ob->ActivateObserverSetting(J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID); },
+				 [](JSceneObserver* ob) {ob->ActivateObserverSetting(J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME); },
+				 [](JSceneObserver* ob) {ob->ActivateObserverSetting(J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME); }
+			};
+
+			MenuSwitchIconOffF::Ptr offPtrVec[menuSwitchIconCount] =
+			{
+				 [](JSceneObserver* ob) {ob->DeActivateObserverSetting(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS); },
+				 [](JSceneObserver* ob) {ob->DeActivateObserverSetting(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_ROT); },
+				 [](JSceneObserver* ob) {ob->DeActivateObserverSetting(J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE); },
+				 [](JSceneObserver* ob) {ob->DeActivateObserverSetting(J_OBSERVER_SETTING_TYPE::VIEW_FRUSTUM_LINE); },
+				 [](JSceneObserver* ob) {ob->DeActivateObserverSetting(J_OBSERVER_SETTING_TYPE::VIEW_SCENE_COORD_GRID); },
+				 [](JSceneObserver* ob) {ob->DeActivateObserverSetting(J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME); },
+				 [](JSceneObserver* ob) {ob->DeActivateObserverSetting(J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME); }
 			};
 
 			std::vector<std::string> guideVec[menuSwitchIconCount]
@@ -213,13 +225,14 @@ namespace JinEngine
 				}
 				if(!isUse)
 					continue;
-
-				//load texture 
-				switchIconPressFunctorVec[i] = std::make_unique<MenuSwitchIconPreesF::Functor>(pressPtrVec[i]);
+				 
+				switchIconOnFunctorVec[i] = std::make_unique<MenuSwitchIconOnF::Functor>(onPtrVec[i]);
+				switchIconOffFunctorVec[i] = std::make_unique<MenuSwitchIconOffF::Functor>(offPtrVec[i]);
 				menubar->RegisterExtraWidget(std::make_unique<SwitchIcon>(switchIconGuid[i],
-					&nodeUtilData[(int)settingVec[i]].isOpen,
 					std::make_unique<GetGResourceFunctor>(getGLamVec[i]),
-					std::make_unique< MenuSwitchIconPreesF::CompletelyBind>(*switchIconPressFunctorVec[i], this)));
+					std::make_unique<MenuSwitchIconOnF::CompletelyBind>(*switchIconOnFunctorVec[i], this),
+					std::make_unique<MenuSwitchIconOffF::CompletelyBind>(*switchIconOffFunctorVec[i], this),
+					&nodeUtilData[(int)settingVec[i]].isOpen));
 
 				menubar->RegisterEditorString(switchIconGuid[i], guideVec[i]);
 			}
@@ -231,9 +244,9 @@ namespace JinEngine
 		void JSceneObserver::Initialize(JUserPtr<JScene> newScene, const std::wstring& editorCameraName)noexcept
 		{
 			scene = newScene;
-			JSceneObserver::editorCameraName = editorCameraName;
-			lastCamPos = { 0,0,0 };
-			lastCamRot = { 0,0,0 };
+			editCamData.name = editorCameraName;
+			editCamData.lastPos = { 0,0,0 };
+			editCamData.lastRot = { 0,0,0 };
 		}
 		void JSceneObserver::UpdateWindow()
 		{
@@ -248,29 +261,26 @@ namespace JinEngine
 				if (IsFocus())
 				{
 					if (ImGui::IsMouseHoveringRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize()))
-						editorCamCtrl->MouseMove(editCam.Get(), ImGui::GetMousePos().x, ImGui::GetMousePos().y);
-					editorCamCtrl->KeyboardInput(editCam.Get());
+						editorCamCtrl->MouseMove(editCamData.cam.Get(), ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+					editorCamCtrl->KeyboardInput(editCamData.cam.Get());
 				}  
 
-				JUserPtr<JTransform> camTransform = editCamOwner->GetTransform();
-
-				//내일 추가필요!
-				//coord grid set pos scale interface
+				JUserPtr<JTransform> camTransform = editCamData.cam->GetTransform();
 				coordGrid->Update(JVector2<float>(camTransform->GetPosition().x, camTransform->GetPosition().z));
 				menubar->Update(true);
 
 				if (ImGui::IsMouseClicked(0))
 				{
-					JUserPtr<JGameObject> hitObj = JEditorGameObjectSurpportTool::SceneIntersect(scene, editCam, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, ImGui::GetCursorPos());
+					JUserPtr<JGameObject> hitObj = JEditorGameObjectSurpportTool::SceneIntersect(scene, editCamData.cam, Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT, ImGui::GetCursorPos());
 					if (hitObj != nullptr)
-					{
+					{ 
 						RequestPushSelectObject(hitObj);
 						//SetSelectedGameObjectTrigger(static_cast<JGameObject*>(hitObj), true); 
 						SetContentsClick(true);
 					}
-				}
+				} 
 
-				for (uint i = 0; i < toolCount; ++i)
+				for (uint i = 0; i < Constants::toolCount; ++i)
 				{
 					J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType = toolVec[i]->GetToolType();
 					J_OBSERVER_SETTING_TYPE settingType = ConvertToolToSettingType(toolType);
@@ -278,13 +288,13 @@ namespace JinEngine
 					//activate된 tool만 update
 					//selectedGobj 가 nullptr일 경우 tool object = nullptr (내부 valid 값으로 컨트롤)
 					if (toolVec[i]->IsActivated())
-						toolVec[i]->Update(selectedGobj, editCam, ImGui::GetCursorPos());
+						toolVec[i]->Update(selectedGobj, editCamData.cam, ImGui::GetCursorPos());
 				}
-				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize);
-				JImGuiImpl::Image(editCam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, ImGui::GetWindowSize());
-
-				lastCamPos = editCam->GetTransform()->GetPosition();
-				lastCamRot = editCam->GetTransform()->GetRotation();
+				//JImGuiImpl::Image(*camera, ImGui::GetMainViewport()->WorkSize); 
+				JImGuiImpl::Image(editCamData.cam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, ImGui::GetWindowSize());
+			 
+				editCamData.lastPos = editCamData.cam->GetTransform()->GetPosition();
+				editCamData.lastRot = editCamData.cam->GetTransform()->GetRotation();
 			}
 			CloseWindow();
 		}
@@ -301,6 +311,11 @@ namespace JinEngine
 			case J_OBSERVER_SETTING_TYPE::OPTION_EDITOR_OBSERVER:
 			{
 				name = "Editor";
+				break;
+			}
+			case J_OBSERVER_SETTING_TYPE::OPTION_TEST_DATA:
+			{
+				name = "Test data";
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::VIEW_SETTING_SPACE_SPATIAL_TREE:
@@ -343,20 +358,16 @@ namespace JinEngine
 				name = "Scale arrow";
 				break;
 			}
-			case J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
-			{
-				name = "Make debug shape";
-				break;
-			}
 			default:
 				break;
 			}
 			std::unique_ptr<JEditorMenuNode> node = std::make_unique<JEditorMenuNode>(name,
-				false, true,
+				false, true, true,
 				&nodeUtilData[(int)type].isOpen,
 				parent);
 
 			node->RegisterBindHandle(std::make_unique<SelectMenuNodeT::CompletelyBind>(*selectNodeFunctor, std::move(type)),
+				std::make_unique<SelectMenuNodeT::CompletelyBind>(*selectNodeFunctor, std::move(type)),
 				std::make_unique<ActivateMenuNodeT::CompletelyBind>(*activateNodeFunctor, std::move(type)),
 				std::make_unique<DeActivateMenuNodeT::CompletelyBind>(*deActivateNodeFunctor, std::move(type)),
 				std::make_unique<UpdateMenuNodeT::CompletelyBind>(*updateNodeFunctor, std::move(type)));
@@ -364,8 +375,7 @@ namespace JinEngine
 			menubar->AddNode(std::move(node));
 		}
 		void JSceneObserver::SelectObserverSettingNode(const J_OBSERVER_SETTING_TYPE type)noexcept
-		{
-			nodeUtilData[(int)type].isOpen = !nodeUtilData[(int)type].isOpen;
+		{ 
 			if (nodeUtilData[(int)type].isOpen)
 				ActivateObserverSetting(type);
 			else
@@ -394,12 +404,6 @@ namespace JinEngine
 			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
 			{
 				ActivateTransformToolType(ConvertSettingToToolType(type));
-				break;
-			}
-			case J_OBSERVER_SETTING_TYPE::TOOL_MAKE_DEBUG_OBJECT:
-			{
-				CreateShapeGroup(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, 10, 10, 10);
-				nodeUtilData[(int)type].isOpen = false;
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME:
@@ -484,6 +488,11 @@ namespace JinEngine
 				EditorCameraOptionOnScreen();
 				break;
 			}
+			case J_OBSERVER_SETTING_TYPE::OPTION_TEST_DATA:
+			{
+				EngineTestOptionOnScreen();
+				break;
+			}
 			case J_OBSERVER_SETTING_TYPE::VIEW_SETTING_SPACE_SPATIAL_TREE:
 			{
 				DebugTreeOnScreen();
@@ -527,14 +536,14 @@ namespace JinEngine
 			JImGuiImpl::BeginWindow("##EditorOption", &data->isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDocking);	 
 			  
 			JImGuiImpl::Text("Camera");
-			if (JImGuiImpl::CheckBox("display debug##JSceneObserver", allowDisplayDebug))
-				editCam->SetAllowDisplayDebug(allowDisplayDebug);
-			if (JImGuiImpl::CheckBox("frustum culling##JSceneObserver", allowFrustumCulling))
-				editCam->SetAllowFrustumCulling(allowFrustumCulling);
-			if (JImGuiImpl::CheckBox("occ culling##JSceneObserver", allowOccCulling))
-				editCam->SetAllowHzbOcclusionCulling(allowOccCulling);
-			if (JImGuiImpl::CheckBox("reflect othrer cam culling##JSceneObserver", allowReflectCullingResult))
-				JCameraPrivate::EditorSettingInterface::SetAllowAllCullingResult(editCam, allowReflectCullingResult);
+			if (JImGuiImpl::CheckBox("display debug##JSceneObserver", editOption.allowDisplayDebug))
+				editCamData.cam->SetAllowDisplayDebug(editOption.allowDisplayDebug);
+			if (JImGuiImpl::CheckBox("frustum culling##JSceneObserver", editOption.allowFrustumCulling))
+				editCamData.cam->SetAllowFrustumCulling(editOption.allowFrustumCulling);
+			if (JImGuiImpl::CheckBox("occ culling##JSceneObserver", editOption.allowOccCulling))
+				editCamData.cam->SetAllowHzbOcclusionCulling(editOption.allowOccCulling);
+			if (JImGuiImpl::CheckBox("reflect othrer cam culling##JSceneObserver", editOption.allowReflectCullingResult))
+				JCameraPrivate::EditorSettingInterface::SetAllowAllCullingResult(editCamData.cam, editOption.allowReflectCullingResult);
 			 
 			ImGui::Separator();
 			JImGuiImpl::Text("Grid");
@@ -545,6 +554,74 @@ namespace JinEngine
 				coordGrid->SetLineCount(lineCount);
 			if (JImGuiImpl::SliderInt("line step##JSceneObserverSceneCoord", &lineStep, coordGrid->GetMinLineStep(), coordGrid->GetMaxLineStep()))
 				coordGrid->SetLineStep(lineStep);
+			JImGuiImpl::EndWindow();
+		}
+		void JSceneObserver::EngineTestOptionOnScreen()
+		{
+			auto data = &nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::OPTION_TEST_DATA];
+			JImGuiImpl::BeginWindow("##EngineTestingOption", &data->isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDocking);
+			JImGuiImpl::Text("Creation option"); 
+
+			JImGuiImpl::Text("x count");
+			ImGui::SameLine();
+			JImGuiImpl::InputInt("##JSceneObserverSceneCoord x count", &testData.xCount);
+			testData.xCount = std::clamp(testData.xCount, testData.minObjCount, testData.maxObjCount);
+
+			JImGuiImpl::Text("y count");
+			ImGui::SameLine();
+			JImGuiImpl::InputInt("##JSceneObserverSceneCoord y count", &testData.yCount);
+			testData.yCount = std::clamp(testData.yCount, testData.minObjCount, testData.maxObjCount);
+
+			JImGuiImpl::Text("z count");
+			ImGui::SameLine();
+			JImGuiImpl::InputInt("##JSceneObserverSceneCoord z count", &testData.zCount);
+			testData.zCount = std::clamp(testData.zCount, testData.minObjCount, testData.maxObjCount);
+
+			std::string tLabel[3] = {"Cube", "Sphere", "Dragon"};
+			J_DEFAULT_SHAPE shapeType[3] = {J_DEFAULT_SHAPE::CUBE,  J_DEFAULT_SHAPE::SPHERE,  J_DEFAULT_SHAPE::DRAGON };
+			bool testMeshCheck[3] = { testData.meshType == J_DEFAULT_SHAPE::CUBE,
+				testData.meshType == J_DEFAULT_SHAPE::SPHERE,
+				testData.meshType == J_DEFAULT_SHAPE::DRAGON };
+
+			for (uint i = 0; i < 3; ++i)
+			{
+				if (JImGuiImpl::CheckBox(tLabel[i] + "##JSceneObserverSceneCoord", testMeshCheck[i]))
+					testData.meshType = shapeType[i];
+				if (i != 2)
+					ImGui::SameLine();
+			}
+
+			std::string tableColumnLabel[4] = { "Name", "x", "y", "z" };
+			std::string tableRowLabel[4] = { "position", "rotation", "scale", "distance" };
+			JVector3<float>* value[4] = { &testData.offsetPos, &testData.offsetRot, &testData.offsetScale, &testData.distance };
+			
+			Core::JGuiFlag tableFlag = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersV |
+				ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_RowBg | ImGuiTableFlags_ContextMenuInBody;
+			const ImGuiTableColumnFlags_ columnDefaultFlag = ImGuiTableColumnFlags_WidthStretch;
+
+			JImGuiImpl::BeginTable("##JSceneObserverSceneCoordValueTable", 4, tableFlag);
+			for (uint i = 0; i < 4; ++i)
+				JImGuiImpl::TableSetupColumn(tableColumnLabel[i], columnDefaultFlag);
+			JImGuiImpl::TableHeadersRow();
+			JImGuiImpl::TableNextRow();
+
+			for (uint i = 0; i < 4; ++i)
+			{
+				JImGuiImpl::TableSetColumnIndex(0);
+				JImGuiImpl::Text(tableRowLabel[i]);
+				JImGuiImpl::TableSetColumnIndex(1);
+				JImGuiImpl::InputFloat("##JSceneObserverSceneCoord" + tableRowLabel[i] + "X", &value[i]->x);
+				JImGuiImpl::TableSetColumnIndex(2);
+				JImGuiImpl::InputFloat("##JSceneObserverSceneCoord" + tableRowLabel[i] + "Y", &value[i]->y);
+				JImGuiImpl::TableSetColumnIndex(3);
+				JImGuiImpl::InputFloat("##JSceneObserverSceneCoord" + tableRowLabel[i] + "Z", &value[i]->z);
+				if (i + 1 < 4)
+					JImGuiImpl::TableNextRow();
+			}
+			JImGuiImpl::EndTable();
+
+			if (JImGuiImpl::Button("Create##EngineTestingOption"))
+				CreateShapeGroup();
 			JImGuiImpl::EndWindow();
 		}
 		void JSceneObserver::OctreeOptionOnScreen()
@@ -733,8 +810,8 @@ namespace JinEngine
 					JCamera* cam = data.second.cam.Get();
 					JUserPtr<JTransform> frumstumT = data.second.frustum->GetTransform();
 
-					const float camWidth = (float)cam->GetViewWidth();
-					const float camHeight = (float)cam->GetViewHeight();
+					const float camWidth = cam->GetFarViewWidth();
+					const float camHeight = cam->GetFarViewHeight();
 					const float camNear = cam->GetNear();
 					const float camFar = cam->GetFar();
 					const float camDistance = camFar - camNear;
@@ -757,7 +834,7 @@ namespace JinEngine
 
 			auto frustum = JGCI::CreateDebugLineShape(scene->GetRootGameObject(),
 				OBJECT_FLAG_EDITOR_OBJECT,
-				J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM,
+				J_DEFAULT_SHAPE::BOUNDING_FRUSTUM,
 				J_DEFAULT_MATERIAL::DEBUG_LINE_RED,
 				true);
 
@@ -766,30 +843,27 @@ namespace JinEngine
 		}
 		void JSceneObserver::ActivateTransformToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)
 		{
-			if (lastActivatedToolType != J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::NONE)
-			{
-				nodeUtilData[(int)ConvertToolToSettingType(lastActivatedToolType)].isOpen = false;
-				DeActivateTransformToolType(lastActivatedToolType);
-			}
-
-			for (uint i = 0; i < toolCount; ++i)
+			for (uint i = 0; i < Constants::toolCount; ++i)
+				DeActivateTransformToolType((J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE)i);
+	
+			for (uint i = 0; i < Constants::toolCount; ++i)
 			{
 				if (toolVec[i]->GetToolType() == type && !toolVec[i]->IsActivated())
 				{
-					toolVec[i]->ActivateTool();
-					lastActivatedToolType = type;
+					toolVec[i]->ActivateTool(); 
+					nodeUtilData[(int)ConvertToolToSettingType(type)].isOpen = true;
 					break;
 				}
 			}
 		}
 		void JSceneObserver::DeActivateTransformToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)
 		{
-			for (uint i = 0; i < toolCount; ++i)
+			for (uint i = 0; i < Constants::toolCount; ++i)
 			{
 				if (toolVec[i]->GetToolType() == type && toolVec[i]->IsActivated())
 				{
 					toolVec[i]->DeActivateTool();
-					lastActivatedToolType = J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::NONE;
+					nodeUtilData[(int)ConvertToolToSettingType(type)].isOpen = false;
 					return;
 				}
 			}
@@ -805,7 +879,7 @@ namespace JinEngine
 			case J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_SCALE:
 				return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::SCALE_ARROW;
 			default:
-				return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::NONE;
+				return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::POSITION_ARROW;
 			}
 		}
 		J_OBSERVER_SETTING_TYPE JSceneObserver::ConvertToolToSettingType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type)const noexcept
@@ -824,13 +898,12 @@ namespace JinEngine
 		}
 		void JSceneObserver::CreateHelperGameObject()
 		{
-			JUserPtr<JGameObject> camObj = JGCI::CreateDebugCamera(scene->GetRootGameObject(), OBJECT_FLAG_UNIQUE_EDITOR_OBJECT, editorCameraName);
+			JUserPtr<JGameObject> camObj = JGCI::CreateDebugCamera(scene->GetRootGameObject(), OBJECT_FLAG_UNIQUE_EDITOR_OBJECT, editCamData.name);
 			camObj->SetName(L"Observer");
-			camObj->GetTransform()->SetPosition(lastCamPos.ConvertXMF());
-			camObj->GetTransform()->SetRotation(lastCamRot.ConvertXMF());
-			editCamOwner = camObj;
-			editCam = editCamOwner->GetComponent<JCamera>();
-			editCam->SetCameraState(J_CAMERA_STATE::RENDER);
+			camObj->GetTransform()->SetPosition(editCamData.lastPos.ConvertXMF());
+			camObj->GetTransform()->SetRotation(editCamData.lastRot.ConvertXMF());
+			editCamData.cam = camObj->GetComponent<JCamera>();
+			editCamData.cam->SetCameraState(J_CAMERA_STATE::RENDER);
 
 			if (nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_EDIT_GOBJ_POS].isUse)
 				positionTool->SetDebugRoot(scene->GetDebugRootGameObject());
@@ -848,8 +921,11 @@ namespace JinEngine
 		}
 		void JSceneObserver::DestroyHelperGameObject()
 		{
-			if (editCamOwner.IsValid())
-				JObject::BeginDestroy(editCamOwner.Release());
+			if (editCamData.cam.IsValid())
+			{
+				JObject::BeginDestroy(editCamData.cam->GetOwner().Get());
+				editCamData.cam.Clear();
+			}
 			menubar->DeActivateOpenNode(true);
 			isCreateHelperGameObj = false;
 		}
@@ -857,13 +933,13 @@ namespace JinEngine
 		{
 			JEditorWindow::DoSetOpen();
 			positionTool = std::make_unique<JEditorTransformTool>(J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::POSITION_ARROW,
-				J_DEFAULT_SHAPE::DEFAULT_SHAPE_POSITION_ARROW, 1 / 16);
+				J_DEFAULT_SHAPE::POSITION_ARROW, 1 / 16);
 
 			rotationTool = std::make_unique<JEditorTransformTool>(J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::ROTATION_ARROW,
-				J_DEFAULT_SHAPE::DEFAULT_SHAPE_CIRCLE, 1 / 16);
+				J_DEFAULT_SHAPE::CIRCLE, 1 / 16);
 
 			scaleTool = std::make_unique<JEditorTransformTool>(J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::SCALE_ARROW,
-				J_DEFAULT_SHAPE::DEFAULT_SHAPE_SCALE_ARROW, 1 / 16);
+				J_DEFAULT_SHAPE::SCALE_ARROW, 1 / 16);
 
 			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::POSITION_ARROW));
 			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::ROTATION_ARROW));
@@ -873,7 +949,7 @@ namespace JinEngine
 			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PLAY_SCENE_TIME));
 			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME)); 
 
-			toolVec.resize(toolCount);
+			toolVec.resize(Constants::toolCount);
 			toolVec[0] = positionTool.get();
 			toolVec[1] = rotationTool.get();
 			toolVec[2] = scaleTool.get();
@@ -893,10 +969,10 @@ namespace JinEngine
 			if (scene.IsValid())
 				CreateHelperGameObject();
 			 
-			editCam->SetAllowFrustumCulling(allowFrustumCulling);
-			editCam->SetAllowHzbOcclusionCulling(allowOccCulling);
-			editCam->SetAllowDisplayDebug(allowDisplayDebug);
-			JCameraPrivate::EditorSettingInterface::SetAllowAllCullingResult(editCam, allowReflectCullingResult);
+			editCamData.cam->SetAllowFrustumCulling(editOption.allowFrustumCulling);
+			editCamData.cam->SetAllowHzbOcclusionCulling(editOption.allowOccCulling);
+			editCamData.cam->SetAllowDisplayDebug(editOption.allowDisplayDebug);
+			JCameraPrivate::EditorSettingInterface::SetAllowAllCullingResult(editCamData.cam, editOption.allowReflectCullingResult);
 
 			std::vector<J_EDITOR_EVENT> listenEvTypeVec{ J_EDITOR_EVENT::PUSH_SELECT_OBJECT };
 			AddEventListener(*JEditorEvent::EvInterface(), GetGuid(), listenEvTypeVec);
@@ -920,19 +996,18 @@ namespace JinEngine
 		void JSceneObserver::StoreEditorWindow(std::wofstream& stream)
 		{
 			JEditorWindow::StoreEditorWindow(stream); 
-			JFileIOHelper::StoreXMFloat3(stream, L"LastCamPos:", lastCamPos.ConvertXMF());
-			JFileIOHelper::StoreXMFloat3(stream, L"LastCamRot:", lastCamRot.ConvertXMF());
-			JFileIOHelper::StoreEnumData(stream, L"LastActivatedToolType:", lastActivatedToolType);
+			JFileIOHelper::StoreXMFloat3(stream, L"LastCamPos:", editCamData.lastPos.ConvertXMF());
+			JFileIOHelper::StoreXMFloat3(stream, L"LastCamRot:", editCamData.lastRot.ConvertXMF());
 			for (uint i = 0; i < (uint)J_OBSERVER_SETTING_TYPE::COUNT; ++i)
 			{
 				auto data = &nodeUtilData[i];
 				JFileIOHelper::StoreAtomicData(stream, L"IsOpen:", data->isOpen);
 				JFileIOHelper::StoreAtomicData(stream, L"SeletedIndex:", data->selectedIndex);
 			}
-			JFileIOHelper::StoreAtomicData(stream, L"allowDisplayDebug", allowDisplayDebug);
-			JFileIOHelper::StoreAtomicData(stream, L"allowFrustumCulling", allowFrustumCulling);
-			JFileIOHelper::StoreAtomicData(stream, L"allowOccCulling", allowOccCulling);
-			JFileIOHelper::StoreAtomicData(stream, L"allowReflectCullingResult", allowReflectCullingResult);
+			JFileIOHelper::StoreAtomicData(stream, L"allowDisplayDebug", editOption.allowDisplayDebug);
+			JFileIOHelper::StoreAtomicData(stream, L"allowFrustumCulling", editOption.allowFrustumCulling);
+			JFileIOHelper::StoreAtomicData(stream, L"allowOccCulling", editOption.allowOccCulling);
+			JFileIOHelper::StoreAtomicData(stream, L"allowReflectCullingResult", editOption.allowReflectCullingResult);
 
 			JFileIOHelper::StoreAtomicData(stream, L"CoordLineCount", coordGrid->GetLineCount()); 
 			JFileIOHelper::StoreAtomicData(stream, L"CoordLineStep", coordGrid->GetLineStep());
@@ -946,46 +1021,38 @@ namespace JinEngine
 
 			JEditorWindow::LoadEditorWindow(stream); 
 			JFileIOHelper::LoadXMFloat3(stream, lastPos);
-			JFileIOHelper::LoadXMFloat3(stream, lastRot);
-			JFileIOHelper::LoadEnumData(stream, lastActivatedToolType);
+			JFileIOHelper::LoadXMFloat3(stream, lastRot); 
 			for (uint i = 0; i < (uint)J_OBSERVER_SETTING_TYPE::COUNT; ++i)
 			{
 				auto data = &nodeUtilData[i];
 				JFileIOHelper::LoadAtomicData(stream, data->isOpen);
 				JFileIOHelper::LoadAtomicData(stream, data->selectedIndex);
 			}
-			JFileIOHelper::LoadAtomicData(stream, allowDisplayDebug);
-			JFileIOHelper::LoadAtomicData(stream, allowFrustumCulling);
-			JFileIOHelper::LoadAtomicData(stream, allowOccCulling);
-			JFileIOHelper::LoadAtomicData(stream, allowReflectCullingResult);
+			JFileIOHelper::LoadAtomicData(stream, editOption.allowDisplayDebug);
+			JFileIOHelper::LoadAtomicData(stream, editOption.allowFrustumCulling);
+			JFileIOHelper::LoadAtomicData(stream, editOption.allowOccCulling);
+			JFileIOHelper::LoadAtomicData(stream, editOption.allowReflectCullingResult);
 
 			JFileIOHelper::LoadAtomicData(stream, lineCount); 
 			JFileIOHelper::LoadAtomicData(stream, lineStep);
 
-			lastCamPos = lastPos;
-			lastCamRot = lastRot;
+			lastPos = lastPos;
+			lastRot = lastRot;
 			coordGrid->SetLineCount(lineCount); 
 			coordGrid->SetLineStep(lineStep);
 		}
-		void JSceneObserver::CreateShapeGroup(const J_DEFAULT_SHAPE& shape, const uint xDim, const uint yDim, const uint zDim)
+		void JSceneObserver::CreateShapeGroup()
 		{
-			//auto dir = _JResourceManager::Instance().GetProjectContentsDirectory();
-			//auto file = dir->GetChildDirctoryByName(L"nier-3dprint")->GetChildDirctoryByName(L"Model")->SearchFile(L"nier-3dprint");
-			//if (file == nullptr)
-		//		return;
-			//auto mehs = Core::ConvertChildUserPtr<JMeshGeometry>(file->TryGetResourceUser());
-			for (uint i = 0; i < xDim; ++i)
+			for (int i = 0; i < testData.xCount; ++i)
 			{
-				for (uint j = 0; j < yDim; ++j)
+				for (int j = 0; j < testData.yCount; ++j)
 				{
-					for (uint k = 0; k < zDim; ++k)
-					{
-						//JUserPtr<JGameObject> gObj = JGCI::CreateModel(scene->GetRootGameObject(), OBJECT_FLAG_NONE, mehs);
-						JUserPtr<JGameObject> gObj = JGCI::CreateShape(scene->GetRootGameObject(), OBJECT_FLAG_NONE, shape);
-						gObj->GetTransform()->SetScale(DirectX::XMFLOAT3(16, 16, 16));
-						gObj->GetTransform()->SetRotation(DirectX::XMFLOAT3(45, 45, 0));
-						gObj->GetTransform()->SetPosition(DirectX::XMFLOAT3(128 * i, 128 * j, 128 * k));
-						//gObj->GetTransform()->SetPosition(DirectX::XMFLOAT3(16.0f * i, 16.0f * j, 16.0f * k));
+					for (int k = 0; k < testData.zCount; ++k)
+					{ 
+						JUserPtr<JGameObject> gObj = JGCI::CreateShape(scene->GetRootGameObject(), OBJECT_FLAG_NONE, testData.meshType);
+						gObj->GetTransform()->SetScale(testData.offsetScale.ConvertXMF());
+						gObj->GetTransform()->SetRotation(testData.offsetRot.ConvertXMF());
+						gObj->GetTransform()->SetPosition((testData.offsetPos + JVector3<float>(i * testData.distance.x, j * testData.distance.y, k * testData.distance.z)).ConvertXMF());
 					}
 				}
 			}
@@ -1004,7 +1071,6 @@ namespace JinEngine
 						selectedGobj.ConnnectChild(std::move(gameObj));
 				}
 			}
-
 			if (senderGuid == GetGuid())
 				return;
 		}

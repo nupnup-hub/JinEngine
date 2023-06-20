@@ -10,7 +10,7 @@
 #include"../Utility/JCommonUtility.h"
 #include"../Utility/JD3DUtility.h" 
 #include"../../resource.h"
-#include"../../../Lib/imgui/imgui.h"
+#include"../../../ThirdParty/imgui/imgui.h"
 #include<tchar.h>
 #include<fstream>
 #include<shellapi.h>

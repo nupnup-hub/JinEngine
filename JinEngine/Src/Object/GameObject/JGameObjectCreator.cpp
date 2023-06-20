@@ -57,7 +57,7 @@ namespace JinEngine
 		JUserPtr<JGameObject> newGameObj = JICI::Create <JGameObject>(name, Core::MakeGuid(), flag, parent);
 		newGameObj->GetTransform()->SetScale(XMFLOAT3(5000, 5000, 5000));
 		JUserPtr<JRenderItem> newRItem = JCCI::CreateRenderItem(newGameObj,
-			_JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE),
+			_JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::SPHERE),
 			D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 			J_RENDER_LAYER::SKY);
 		 

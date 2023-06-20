@@ -3,8 +3,8 @@
 #include"../../Utility/JCommonUtility.h"
 #include"../../Core/Geometry/JBBox.h"
 #include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../../../../Lib/imgui/imgui.h"
-#include"../../../../Lib/imgui/imgui_internal.h"
+#include"../../../../ThirdParty/imgui/imgui.h"
+#include"../../../../ThirdParty/imgui/imgui_internal.h"
 
 namespace JinEngine
 {
@@ -112,13 +112,18 @@ namespace JinEngine
 		{
 			return isLockOver;
 		}
+		bool JEditorWindowDockUpdateHelper::IsLockMove()const noexcept
+		{
+			return isLockMove;
+		}
 		void JEditorWindowDockUpdateHelper::Update(UpdateData& updataData)
 		{
-			isLastWindow = isLastDock = isLockSplit = isLockOver = false;
+			isLastWindow = isLastDock = isLockSplit = isLockOver = isLockMove =  false;
 			UpdateDockNodeInfo(updataData);
 			UpdateExistingWindow(updataData);
 			UpdateExistingDockNode(updataData);
 			UpdateDraggingDockNode(updataData);
+			RestrictDraggingTitlebarSpace(updataData);
 			RollBackLastDockNode(updataData);
 		}
 		void JEditorWindowDockUpdateHelper::UpdateDockNodeInfo(UpdateData& updataData)
@@ -181,7 +186,10 @@ namespace JinEngine
 
 			int actCount = Private::ActivatedWindowCount(Private::GetDockNodeRoot(dockNode));
 			if (actCount == 1)
+			{
 				isLastWindow = true;
+				isLockMove = true;
+			}
 		}
 		void JEditorWindowDockUpdateHelper::UpdateExistingDockNode(UpdateData& updataData)noexcept
 		{
@@ -219,6 +227,7 @@ namespace JinEngine
 				if (leafCount == 2 && tabItemCount == 1 && isSameId)
 				{
 					isLastDock = true;
+					isLockMove = true;
 					return;
 				}
 			}
@@ -234,6 +243,33 @@ namespace JinEngine
 				if (result != nullptr && result->ID != pageWndID)
 					isLockOver = isLockSplit = true;
 			}
+		}
+		//주의! ImGui API Error
+		//현재 Engine에서 DockTabItem을 소유한 Window에 TitleBar를 Dragging시 (TabItem이 아닌 TitleBar Empty Space에 Mouse cursor가 위치)
+		//버그발생... 따라서 Mouse가 TitleBar에 Empty Space에 Hover중일시에 isLockMove = true로 문제를 해결한다.
+		void JEditorWindowDockUpdateHelper::RestrictDraggingTitlebarSpace(UpdateData& updataData)
+		{
+			ImGuiDockNode* dockNode = ImGui::GetWindowDockNode();
+			if (dockNode == nullptr)
+				return;
+
+			ImGuiWindow* wnd = ImGui::GetCurrentWindow();
+			const ImRect titleBarRect = wnd->TitleBarRect();
+
+			if (!JImGuiImpl::IsMouseInRect(titleBarRect.Min, titleBarRect.GetSize()))
+				return;
+
+			const uint tabItemSize = dockNode->TabBar->Tabs.Size;
+			if (tabItemSize == 0)
+				return;
+
+			const ImRect lastTabItemRect = dockNode->TabBar->Tabs[tabItemSize - 1].Window->DockTabItemRect;
+			const bool canRestrict = lastTabItemRect.Max.x <= ImGui::GetMousePos().x;
+			if (!canRestrict)
+				return;
+
+			isLockMove = true;
+			//isLockOver = isLockSplit = true; 
 		}
 		void JEditorWindowDockUpdateHelper::RollBackLastDockNode(UpdateData& updataData)
 		{

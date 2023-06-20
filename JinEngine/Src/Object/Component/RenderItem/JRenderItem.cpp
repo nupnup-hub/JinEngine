@@ -305,8 +305,8 @@ namespace JinEngine
 		void UpdateFrame(Graphic::JBoundingObjectConstants& constant)noexcept final
 		{
 			const BoundingBox bbox = mesh->GetBoundingBox();
-			static const BoundingBox drawBBox = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
-			//static const BoundingBox drawBBox = _JResourceManager::Instance().Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE)->GetBoundingBox();
+			static const BoundingBox drawBBox = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::BOUNDING_BOX_TRIANGLE)->GetBoundingBox();
+			//static const BoundingBox drawBBox = _JResourceManager::Instance().Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::CUBE)->GetBoundingBox();
 
 			JTransform* transform = thisPointer->GetOwner()->GetTransform().Get();
 
@@ -390,7 +390,7 @@ namespace JinEngine
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JRenderItem::StaticTypeInfo };
 			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
-			auto createInitDataLam = [](JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
+			auto createInitDataLam = [](const Core::JTypeInfo& typeInfo, JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
 			{
 				using CorrectType = JComponent::ParentType::InitData;
 				const bool isValidUnq = parentClassInitData != nullptr && parentClassInitData->GetTypeInfo().IsChildOf(CorrectType::StaticTypeInfo());

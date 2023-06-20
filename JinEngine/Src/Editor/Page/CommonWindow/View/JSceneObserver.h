@@ -39,13 +39,49 @@ namespace JinEngine
 			public:
 				void Clear();
 			};
+			struct EditorOption
+			{
+			public:
+				bool allowDisplayDebug = true;
+				bool allowFrustumCulling = false;
+				bool allowOccCulling = false;
+				bool allowReflectCullingResult = false;
+			};
+			struct EditorCamData
+			{
+			public:
+				JUserPtr<JCamera> cam = nullptr;
+			public:
+				std::wstring name;
+				JVector3<float> lastPos{ 0,0,0 };
+				JVector3<float> lastRot{ 0,0,0 };
+			}; 
+			struct TestData
+			{
+			public:
+				static constexpr int minObjCount = 0;
+				static constexpr int maxObjCount = 100;
+			public:
+				int xCount = 1;
+				int yCount = 1;
+				int zCount = 1;
+			public:
+				J_DEFAULT_SHAPE meshType = J_DEFAULT_SHAPE::CUBE;
+			public:
+				JVector3<float> offsetPos = JVector3<float>(0, 0, 0);
+				JVector3<float> offsetRot = JVector3<float>(0, 0, 0);
+				JVector3<float> offsetScale = JVector3<float>(1, 1, 1); 
+			public:
+				JVector3<float> distance = JVector3<float>(1, 1, 1);
+			};
 		private:
 			using SelectMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 			using ActivateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 			using DeActivateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 			using UpdateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 		private:
-			using MenuSwitchIconPreesF = typename Core::JSFunctorType<void, JSceneObserver*>;
+			using MenuSwitchIconOnF = typename Core::JSFunctorType<void, JSceneObserver*>;
+			using MenuSwitchIconOffF = typename Core::JSFunctorType<void, JSceneObserver*>;
 		private:
 			static constexpr uint menuSwitchIconCount = 7;
 		private: 
@@ -55,17 +91,14 @@ namespace JinEngine
 			std::unique_ptr<ActivateMenuNodeT::Functor>activateNodeFunctor;
 			std::unique_ptr<DeActivateMenuNodeT::Functor>deActivateNodeFunctor;
 			std::unique_ptr<UpdateMenuNodeT::Functor>updateNodeFunctor;
-			std::unique_ptr<MenuSwitchIconPreesF::Functor> switchIconPressFunctorVec[menuSwitchIconCount];
+			std::unique_ptr<MenuSwitchIconOnF::Functor> switchIconOnFunctorVec[menuSwitchIconCount];
+			std::unique_ptr<MenuSwitchIconOffF::Functor> switchIconOffFunctorVec[menuSwitchIconCount];
 		private:
-			JUserPtr<JScene> scene;
-			JUserPtr<JGameObject> editCamOwner;
-			JUserPtr<JCamera> editCam; 
-		private:
+			JUserPtr<JScene> scene; 
 			JUserPtr<JGameObject> selectedGobj;   
 			std::unordered_map<size_t, FrustumInfo> camFrustumMap;
 		private:
 			std::unique_ptr<JEditorSceneCoordGrid> coordGrid;	
-		private:
 			std::unique_ptr<JEditorBinaryTreeView> editorBTreeView;
 			std::unique_ptr<JEditorCameraControl> editorCamCtrl;
 			std::unique_ptr<JEditorTransformTool> positionTool;
@@ -73,22 +106,14 @@ namespace JinEngine
 			std::unique_ptr<JEditorTransformTool> scaleTool;
 		private:
 			std::vector<JUserPtr<JTexture>> iconTexture; 
+			std::vector<JEditorTransformTool*> toolVec; 
 		private:
-			static constexpr uint toolCount = 3;
+			EditorOption editOption;
+			EditorCamData editCamData;
 		private:
-			std::vector<JEditorTransformTool*> toolVec;
-			J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE lastActivatedToolType= J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::NONE;
-		private:
-			std::wstring editorCameraName;
-			JVector3<float> lastCamPos{ 0,0,0 };
-			JVector3<float> lastCamRot{ 0,0,0 };
+			TestData testData;
 		private:
 			bool isCreateHelperGameObj = false;
-		private:
-			bool allowDisplayDebug = true;
-			bool allowFrustumCulling = false;
-			bool allowOccCulling = false;
-			bool allowReflectCullingResult = false;
 		public:
 			JSceneObserver(const std::string& name,
 				std::unique_ptr<JEditorAttribute> attribute,
@@ -115,6 +140,7 @@ namespace JinEngine
 		private: 			
 			void SceneSpaceSpatialOptionOnScreen();
 			void EditorCameraOptionOnScreen();
+			void EngineTestOptionOnScreen();	//For testing engine performance
 			void OctreeOptionOnScreen();
 			void BvhOptionOnScreen();
 			void KdTreeOptionOnScreen();
@@ -143,7 +169,7 @@ namespace JinEngine
 			void LoadEditorWindow(std::wifstream& stream)final;
 		private:
 			//Debug
-			void CreateShapeGroup(const J_DEFAULT_SHAPE& shape, const uint xDim, const uint yDim, const uint zDim);
+			void CreateShapeGroup();
 			//void CreateDebugMaterial()noexcept;
 			//void DestroyDebugMaterial()noexcept;
 		private:

@@ -1,7 +1,7 @@
 #pragma once
 #include"JEditorPopupType.h"
 #include"../../Core/JDataType.h" 
-#include"../../../Lib/imgui/imgui.h"
+#include"../../../ThirdParty/imgui/imgui.h"
 #include<vector>
 #include<string>
 #include<memory> 

@@ -173,7 +173,7 @@ namespace JinEngine
 		public:
 			JEditorWindow* actWindow;
 		public:
-			JEditorActWindowEvStruct(JEditorWindow* actWindow, const J_EDITOR_PAGE_TYPE pageType);
+			JEditorActWindowEvStruct(JEditorWindow* actWindow);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
@@ -183,7 +183,7 @@ namespace JinEngine
 		public:
 			JEditorWindow* deActWindow;
 		public:
-			JEditorDeActWindowEvStruct(JEditorWindow* deActWindow, const J_EDITOR_PAGE_TYPE pageType);
+			JEditorDeActWindowEvStruct(JEditorWindow* deActWindow);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
@@ -194,7 +194,7 @@ namespace JinEngine
 		public:
 			JEditorWindow* focusWindow;
 		public:
-			JEditorFocusWindowEvStruct(JEditorWindow* focusWindow, const J_EDITOR_PAGE_TYPE pageType);
+			JEditorFocusWindowEvStruct(JEditorWindow* focusWindow);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
@@ -204,7 +204,7 @@ namespace JinEngine
 		public:
 			JEditorWindow* unFocusWindow;
 		public:
-			JEditorUnFocusWindowEvStruct(JEditorWindow* unFocusWindow, const J_EDITOR_PAGE_TYPE pageType);
+			JEditorUnFocusWindowEvStruct(JEditorWindow* unFocusWindow);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
@@ -237,6 +237,27 @@ namespace JinEngine
 		public:
 			JEditorClosePopupWindowEvStruct(JEditorPopupWindow* popupWindow, const J_EDITOR_PAGE_TYPE pageType);
 			JEditorClosePopupWindowEvStruct(const J_EDITOR_POPUP_WINDOW_TYPE popupType, const J_EDITOR_PAGE_TYPE pageType);
+		public:
+			bool PassDefectInspection()const noexcept final;
+			J_EDITOR_EVENT GetEventType()const noexcept final;
+		};
+
+		struct JEditorMaximizeWindowEvStruct : public JEditorEvStruct
+		{
+		public:
+			JEditorWindow* wnd = nullptr; 
+		public:
+			JEditorMaximizeWindowEvStruct(JEditorWindow* wnd);
+		public:
+			bool PassDefectInspection()const noexcept final;
+			J_EDITOR_EVENT GetEventType()const noexcept final;
+		};
+		struct JEditorPreviousSizeWindowEvStruct : public JEditorEvStruct
+		{
+		public:
+			JEditorWindow* wnd = nullptr;
+		public:
+			JEditorPreviousSizeWindowEvStruct(JEditorWindow* wnd);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;

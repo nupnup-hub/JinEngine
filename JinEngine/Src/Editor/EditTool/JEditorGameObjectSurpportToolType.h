@@ -8,10 +8,10 @@ namespace JinEngine
 	{
 		enum class J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE
 		{
-			NONE,
 			POSITION_ARROW,
 			ROTATION_ARROW,
 			SCALE_ARROW,
+			COUNT
 		};	 
 	}
 }

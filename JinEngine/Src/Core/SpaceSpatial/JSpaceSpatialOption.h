@@ -37,5 +37,6 @@ namespace JinEngine
 			void Store(std::wofstream& stream);
 			void Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid);
 		};
+		 
 	}
 }

@@ -1,17 +1,13 @@
 #pragma once
+#include"JEditorSimpleWindow.h"
 namespace JinEngine
 {
 	namespace Editor
 	{
-		class JGraphicOptionSetting
-		{  
-		private:
-			bool isOpenGraphicOptionViewer = false;
+		class JGraphicOptionSetting : public JEditorSimpleWindow
+		{   
 		public:
-			void Update();
-		public:
-			bool IsOpenViewer()const noexcept;
-			bool* GetOpenPtr() noexcept;
+			void Update() final;
 		};
 	}
 }

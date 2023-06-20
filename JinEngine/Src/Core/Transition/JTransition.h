@@ -181,14 +181,14 @@ namespace JinEngine
 		{ 
 		public:
 			using Functor = Core::JFunctor<void, DataStructure&, Core::JDataHandle&, Param...>;
-			using Bind = Core::JBindHandle<Functor, const Core::EmptyType&, const Core::EmptyType&, Param...>;
+			using Bind = Core::JBindHandle<Functor, const Core::JEmptyType&, const Core::JEmptyType&, Param...>;
 		};
 		template<typename DataStructure, typename ...Param>
 		struct JTransitionMultiCreationHandleType
 		{
 		public:
 			using Functor = Core::JFunctor<void, DataStructure&, std::vector<Core::JDataHandle>&, Param...>;
-			using Bind = Core::JBindHandle<Functor, const Core::EmptyType&, const Core::EmptyType&, Param...>;
+			using Bind = Core::JBindHandle<Functor, const Core::JEmptyType&, const Core::JEmptyType&, Param...>;
 		};
 
 		//Make transition create task bind unq

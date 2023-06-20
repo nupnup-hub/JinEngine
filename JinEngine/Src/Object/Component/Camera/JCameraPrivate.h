@@ -7,7 +7,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		struct JCameraConstants;
-		struct JHzbOccPassConstants;
+		struct JHzbOccRequestorConstants;
 		struct JDrawCondition;
 		struct JDrawHelper;
 		class JGraphic;
@@ -52,11 +52,11 @@ namespace JinEngine
 		private: 
 			static bool UpdateStart(JCamera* cam, const bool isUpdateForced)noexcept;
 			static void UpdateFrame(JCamera* cam, Graphic::JCameraConstants& constants)noexcept;
-			static void UpdateFrame(JCamera* cam, Graphic::JHzbOccPassConstants& constants, const uint queryCount, const uint queryOffset)noexcept;
+			static void UpdateFrame(JCamera* cam, Graphic::JHzbOccRequestorConstants& constants, const uint queryCount, const uint queryOffset)noexcept;
 			static void UpdateEnd(JCamera* cam)noexcept; 
 		private:
 			static int GetCamFrameIndex(JCamera* cam)noexcept;
-			static int GetHzbOccPassFrameIndex(JCamera* cam)noexcept;
+			static int GetHzbOccReqFrameIndex(JCamera* cam)noexcept;
 		private:
 			static bool IsHotUpdated(JCamera* cam)noexcept;
 			static bool IsLastUpdated(JCamera* cam)noexcept;
@@ -71,7 +71,7 @@ namespace JinEngine
 			friend class Editor::JSceneObserver;
 		private:
 			static int GetCamFrameIndex(JCamera* cam)noexcept;
-			static int GetHzbOccPassFrameIndex(JCamera* cam)noexcept;
+			static int GetHzbOccReqFrameIndex(JCamera* cam)noexcept;
 		};
 		class EditorSettingInterface final
 		{

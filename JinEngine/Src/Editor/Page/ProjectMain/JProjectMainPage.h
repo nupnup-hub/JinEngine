@@ -17,6 +17,7 @@ namespace JinEngine
 		class JApplicationWatcher;
 		class JEditorMenuBar;
 		class JGraphicOptionSetting;
+		class JWindowStateViewer;
 		class JEditorCloseConfirmPopup;
 
 		class JProjectMainPage final : public JEditorPage , public JEditorModifedObjectInterface
@@ -48,6 +49,7 @@ namespace JinEngine
 		private:
 			//simple window
 			std::unique_ptr<JGraphicOptionSetting> graphicOptionSetting;
+			std::unique_ptr<JWindowStateViewer> wndStateViewer;
 		private:
 			std::unique_ptr<StoreProjectF::Functor> storeProjectF;
 			std::unique_ptr<LoadProjectF::Functor> loadProjectF;

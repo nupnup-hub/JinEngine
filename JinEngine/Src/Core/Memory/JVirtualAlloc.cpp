@@ -224,6 +224,9 @@ namespace JinEngine
 		}
 		uint JVirtualAlloc::GetCommittedBlockCount()const noexcept
 		{
+			if (committedPageCount == 0)
+				return 0;
+
 			return (committedPageCount * pageSize) / allocBlockSize;
 		}
 		uint JVirtualAlloc::GetAllocableBlockCount()const noexcept

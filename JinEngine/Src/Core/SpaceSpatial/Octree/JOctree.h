@@ -49,7 +49,7 @@ namespace JinEngine
 		public:
 			void Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum)noexcept final;
 			void Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept final;
-			JUserPtr<JGameObject> IntersectFirst(const JRay& ray)const noexcept final;
+			JUserPtr<JGameObject> IntersectFirst(const JRay& ray, const bool allowContainRayPos)const noexcept final;
 			void Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept final;
 			void UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept final;
 		public:

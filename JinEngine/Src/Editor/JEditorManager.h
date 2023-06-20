@@ -62,6 +62,9 @@ namespace JinEngine
 			void OpenPopupWindow(JEditorOpenPopupWindowEvStruct* evStruct);
 			void ClosePopupWindow(JEditorClosePopupWindowEvStruct* evStruct);
 		private:
+			void MaximizeWindow(JEditorMaximizeWindowEvStruct* evStruct);
+			void PreviousSizeWindow(JEditorPreviousSizeWindowEvStruct* evStruct);
+		private:
 			std::wstring GetMetadataPath()const noexcept;  
 		private:
 			void PressMainWindowCloseButton()noexcept;

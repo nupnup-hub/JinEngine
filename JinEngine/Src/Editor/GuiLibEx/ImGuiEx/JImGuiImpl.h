@@ -7,13 +7,12 @@
 #include"../../Helpers/JEditorInputBuffHelper.h"
 #include"../../../Utility/JVector.h"
 #include"../../../Utility/JCommonUtility.h"
-#include"../../../Core/JDataType.h"
-#include"../../../Core/Empty/EmptyBase.h"
+#include"../../../Core/JDataType.h" 
 #include"../../../Core/Reflection/JReflection.h"
 #include"../../../Core/Func/Functor/JFunctor.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceType.h"
-#include"../../../../Lib/imgui/imgui.h"
-#include"../../../../Lib/imgui/imgui_internal.h"
+#include"../../../../ThirdParty/imgui/imgui.h"
+#include"../../../../ThirdParty/imgui/imgui_internal.h"
  
 template<typename T>
 ImVec2::ImVec2(const JinEngine::JVector2<T>& jVec2)
@@ -120,6 +119,7 @@ namespace JinEngine
 			static JVector2<float> GetGuiWindowPos()noexcept;
 			static JVector2<float> GetGuiWindowSize()noexcept;
 			static JVector2<int> GetGuiWidnowContentsSize()noexcept;  
+			static ImGuiWindow* GetGuiWindow(const std::string& wndName)noexcept;
 			static ImGuiWindow* GetGuiWindow(const ImGuiID id)noexcept;
 			static ImGuiWindow* GetGuiWindow(const ImGuiID id, _Out_ int& order)noexcept;
 		public:
@@ -195,6 +195,7 @@ namespace JinEngine
 				const JVector2<float>& uv1 = JVector2<float>(1, 1),
 				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1),
 				const JVector4<float>& borderCol = JVector4<float>(0, 0, 0, 0));
+			//Use ImGui::ImageButtonEx
 			static bool ImageButton(const std::string name,
 				Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 				const JVector2<float>& size,
@@ -231,6 +232,16 @@ namespace JinEngine
 				const ImU32 bgDelta,
 				const ImU32 frameColor = JImGuiImpl::GetUColor(ImGuiCol_FrameBg),
 				const float frameThickness = 0.0f);
+			//Use ImGui::Selectable and ImGui::Image
+			static bool ImageButton(const std::string name,
+				Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
+				const JVector2<float>& size,
+				const ImU32 bgColor,
+				const ImU32 bgDelta,
+				const ImU32 frameColor = JImGuiImpl::GetUColor(ImGuiCol_FrameBg),
+				const float frameThickness = 0.0f);
+			static bool MaximizeButton(const bool isLocatedCloseBtnLeftSide = true); 
+			static bool PreviousSizeButton(const bool isLocatedCloseBtnLeftSide = true);
 		public:
 			//use wolrd cursor pos
 			static void DrawRectFilledMultiColor(const JVector2<float>& pos, const JVector2<float>& size, const ImU32 color, const ImU32 colorDelta, const bool useRestoreCursorPos)noexcept;

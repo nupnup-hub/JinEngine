@@ -19,12 +19,18 @@ namespace JinEngine
 		private:
 			JOwnerPtr<Core::JIdentifier> Create(Core::JDITypeDataBase* initData) final;
 			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept final;
-			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final;
+			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final; 
 		private:
-			bool Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept;
+			bool Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept final;
+		};
+		class DestroyInstanceInterface final : public JComponentPrivate::DestroyInstanceInterface
+		{
+		private:
+			void Clear(Core::JIdentifier* ptr, const bool isForced)noexcept final;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
-		JComponentPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept final;
+		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept final;
+		JComponentPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept final; 
 	};
 }

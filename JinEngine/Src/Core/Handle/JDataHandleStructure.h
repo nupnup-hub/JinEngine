@@ -24,10 +24,10 @@ namespace JinEngine
 			template<typename uint Capacity, typename Type, bool> friend class JDataHandleStructure;
 		private:
 			const size_t structureGuid;
-			size_t validNumber = Handle::invalidNumber;
+			size_t validNumber = Handle::invalidNumber;		//magic Number
 		private:
 			const uint structureIndex = 0;				//for multi dimension structure
-			int index = Handle::invalidNumber; 
+			int index = Handle::invalidNumber;			//data index
 		public:
 			~JDataHandle() = default;
 			JDataHandle(const JDataHandle& rhs) = delete;
@@ -81,14 +81,10 @@ namespace JinEngine
 			using PointerType = typename PointerTypeDetermine< useOwnerPtr>::PointerType;
 		private:
 			PointerType data[Capacity];
-			// 0 is empty, 1 is full
-			std::bitset<Capacity> arrState;
-			//magic Number Arr
-			size_t arrNumber[Capacity];
-			//now magic Number
-			size_t validNumber = 0;
-			//now valid index
-			int validIndex = 0;
+			std::bitset<Capacity> arrState;		// 0 is empty, 1 is full
+			size_t arrNumber[Capacity];			//magic Number Arr
+			size_t validNumber = 0;				//now magic Number
+			int validIndex = 0;					//now valid index
 		private:
 			const size_t guid;
 		public:

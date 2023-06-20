@@ -7,9 +7,27 @@ namespace JinEngine
 {
 	namespace Core
 	{
+		namespace 
+		{ 
+			template<typename T, typename = void>
+			struct HasTypeInfo : std::false_type {};
+			template<typename T>
+			struct HasTypeInfo<T, std::void_t<decltype(&T::StaticTypeInfo)>> : std::true_type {}; 
+
+			template<typename T, typename = void>
+			struct HasTypeList : std::false_type {};
+			template<typename T>
+			struct HasTypeList<T, std::void_t<typename T::ThisTypeList>> : std::true_type {};
+
+			template<typename T>
+			static constexpr bool CanConvertChildType() noexcept
+			{
+				return HasTypeInfo<T>::value || HasTypeList<T>::value;
+			}
+		}
+
 		class JTypeBase;
 		class JTypeInfo;
-
 		class JPtrData
 		{
 		private:
@@ -36,7 +54,7 @@ namespace JinEngine
 			JPtrData* ptrData = nullptr;
 		public:
 			T& operator*()
-			{ 
+			{   
 				return *Get();
 			}
 			T* operator->() const noexcept
@@ -239,23 +257,34 @@ namespace JinEngine
 			}
 		public:
 			//For JTypeBase
-			template<typename BaseType>
-			static JOwnerPtr ConvertChild(JOwnerPtr<BaseType>&& base)
+			template<typename ChildType>
+			static JOwnerPtr ConvertChild(JOwnerPtr<ChildType>&& child)
 			{
-				if constexpr (!std::is_base_of_v<JTypeBase, BaseType> || !std::is_base_of_v<JTypeBase, T>)
-					return false;
+				if constexpr (!CanConvertChildType<T>())
+					return nullptr;
 
-				if (!base.IsValid())
-					return JOwnerPtr<T>{};
+				if (!child.IsValid())
+					return nullptr;
 
-				if (base.Get()->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				if constexpr (HasTypeInfo<T>::value)
 				{
-					JOwnerPtr newOwner;
-					newOwner.OwnerMove(base);
-					return newOwner;
+					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						JOwnerPtr newOwner;
+						newOwner.OwnerMove(child);
+						return newOwner;
+					}
 				}
-				else
-					return JOwnerPtr{};
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (child->IsChildOf(T::TypeGuid()))
+					{
+						JOwnerPtr newOwner;
+						newOwner.OwnerMove(child);
+						return newOwner;
+					}
+				}
+				return nullptr;
 			}
 		private:
 			template<typename NewType>
@@ -294,13 +323,6 @@ namespace JinEngine
 		private:
 			using User = JUserPtrInterface<T>;
 			using PtrBase = typename User::PtrBase;
-		private:
-			template<typename T, typename = void>
-			struct HasTypeInfo : std::false_type
-			{};
-			template<typename T>
-			struct HasTypeInfo<T, std::void_t<decltype(&T::StaticTypeInfo)>> : std::true_type
-			{};
 		public:
 			JUserPtr() = default;
 			JUserPtr(nullptr_t) {}
@@ -431,59 +453,93 @@ namespace JinEngine
 			template<typename ChildType>
 			static JUserPtr<T> CreateChild(JPtrBase<ChildType>& child)
 			{
-				if constexpr (!std::is_base_of_v<JTypeBase, ChildType> || !std::is_base_of_v<JTypeBase, T>)
-					return JUserPtr<T>{};
+				if constexpr (!CanConvertChildType<T>())
+					return nullptr;
 
 				if (!child.IsValid())
-					return JUserPtr<T>{};
+					return nullptr;
 
-				if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				if constexpr (HasTypeInfo<T>::value)
 				{
-					JUserPtr<T> newUser;
-					newUser.UserConnect(child);
-					return newUser;
+					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						JUserPtr<T> newUser;
+						newUser.UserConnect(child);
+						return newUser;
+					}
 				}
-				else
-					return JUserPtr<T>{};
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (child->IsChildOf(T::TypeGuid()))
+					{
+						JUserPtr<T> newUser;
+						newUser.UserConnect(child);
+						return newUser;
+					}
+				}
+				return nullptr;
 			}
 			//For JTypeBase
 			//Connect base user ... is same downcast base to t
 			template<typename ChildType>
 			static JUserPtr<T> ConvertChild(JUserPtr<ChildType>&& child)
 			{
-				if constexpr (!std::is_base_of_v<JTypeBase, ChildType> || !std::is_base_of_v<JTypeBase, T>)
-					return JUserPtr<T>{};
+				if constexpr (!CanConvertChildType<T>())
+					return nullptr;
 
 				if (!child.IsValid())
-					return JUserPtr<T>{};
+					return nullptr;
 
-				if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				if constexpr (HasTypeInfo<T>::value)
 				{
-					JUserPtr<T> newUser;
-					newUser.UserConnect(child);
-					child.Clear();
-					return newUser;
+					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						JUserPtr<T> newUser;
+						newUser.UserConnect(child);
+						child.Clear();
+						return newUser;
+					}
 				}
-				else
-					return JUserPtr<T>{};
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (child->IsChildOf(T::TypeGuid()))
+					{
+						JUserPtr<T> newUser;
+						newUser.UserConnect(child);
+						child.Clear();
+						return newUser;
+					}
+				}
+				return nullptr;
 			}
 			template<typename ChildType>
 			bool ConnnectChild(const JUserPtr<ChildType>& child)
 			{
-				if constexpr (!std::is_base_of_v<JTypeBase, ChildType> || !std::is_base_of_v<JTypeBase, T>)
-					return false;
+				if constexpr (!CanConvertChildType<T>())
+					return nullptr;
 
 				if (!child.IsValid())
 					return false;
 
-				if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				if constexpr (HasTypeInfo<T>::value)
 				{
-					UserDisConnect();
-					UserConnect(child);
-					return true;
+					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						UserDisConnect();
+						UserConnect(child);
+						return true;
+					}
 				}
-				else
-					return false;
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (child->IsChildOf(T::TypeGuid()))
+					{
+						UserDisConnect();
+						UserConnect(child);
+						return true;
+					}
+				}
+				return false;	 
 			}
 		private:
 			template<typename NewType>
@@ -656,41 +712,64 @@ namespace JinEngine
 			template<typename ChildType>
 			static JWeakPtr<T> CreateChild(JPtrBase<ChildType>& child)
 			{
-				if constexpr (!std::is_base_of_v<JTypeBase, ChildType> || !std::is_base_of_v<JTypeBase, T>)
-					return JWeakPtr<T>{};
+				if constexpr (!CanConvertChildType<T>())
+					return nullptr;
 
 				if (!child.IsValid())
-					return JWeakPtr<T>{};
+					return nullptr;
 
-				if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				if constexpr (HasTypeInfo<T>::value)
 				{
-					JWeakPtr<T> newUser;
-					newUser.WeakConnect(child);
-					return newUser;
+					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						JWeakPtr<T> newUser;
+						newUser.WeakConnect(child);
+						return newUser;
+					}
 				}
-				else
-					return JWeakPtr<T>{};
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (child->IsChildOf(T::TypeGuid()))
+					{
+						JWeakPtr<T> newUser;
+						newUser.WeakConnect(child);
+						return newUser;
+					}
+				}
+				return nullptr;
 			}
 			//For JTypeBase
 			//Connect base user ... is same downcast base to t
 			template<typename ChildType>
 			static JWeakPtr<T> ConvertChild(JWeakPtr<ChildType>&& child)
 			{
-				if constexpr (!std::is_base_of_v<JTypeBase, ChildType> || !std::is_base_of_v<JTypeBase, T>)
-					return JWeakPtr<T>{};
+				if constexpr (!CanConvertChildType<T>())
+					return nullptr;
 
 				if (!child.IsValid())
-					return JWeakPtr<T>{};
+					return nullptr;
 
-				if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				if constexpr (HasTypeInfo<T>::value)
 				{
-					JWeakPtr<T> newUser;
-					newUser.WeakConnect(child);
-					child.Clear();
-					return newUser;
+					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						JWeakPtr<T> newUser;
+						newUser.WeakConnect(child);
+						child.Clear();
+						return newUser;
+					}
 				}
-				else
-					return JWeakPtr<T>{};
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (child->IsChildOf(T::TypeGuid()))
+					{
+						JWeakPtr<T> newUser;
+						newUser.WeakConnect(child);
+						child.Clear();
+						return newUser;
+					}
+				}
+				return nullptr;
 			}
 			template<typename ChildType>
 			bool ConnnectChild(const JWeakPtr<ChildType>& child)
@@ -701,14 +780,25 @@ namespace JinEngine
 				if (!child.IsValid())
 					return false;
 
-				if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+				if constexpr (HasTypeInfo<T>::value)
 				{
-					WeakDisConnect();
-					WeakConnect(child);
-					return true;
+					if (child->GetTypeInfo().IsChildOf(T::StaticTypeInfo()))
+					{
+						WeakDisConnect();
+						WeakConnect(child);
+						return true;
+					}
 				}
-				else
-					return false;
+				else if constexpr (HasTypeList<T>::value)
+				{
+					if (child->IsChildOf(T::TypeGuid()))
+					{
+						WeakDisConnect();
+						WeakConnect(child);
+						return true;
+					}
+				}
+				return false;
 			}
 		private:
 			template<typename NewType>
@@ -727,6 +817,31 @@ namespace JinEngine
 				}
 			}
 		};
+
+		template<typename  T>
+		static JUserPtr<T> ConnectChildUserPtr(const JUserPtr<JTypeBase>& user)
+		{
+			JUserPtr<T> res;
+			res.ConnnectChild(user);
+			return res;
+		}
+		template<typename  T>
+		static JUserPtr<T> ConvertChildUserPtr(JUserPtr<JTypeBase>&& user)
+		{
+			return JUserPtr<T>::ConvertChild(std::move(user));
+		}
+		template<typename  T>
+		static JWeakPtr<T> ConnectChildWeakPtr(JWeakPtr<JTypeBase>&& user)
+		{
+			JWeakPtr<T> res;
+			res.ConnnectChild(user);
+			return res;
+		}
+		template<typename  T>
+		static JWeakPtr<T> ConvertChildWeakPtr(JWeakPtr<JTypeBase>&& user)
+		{
+			return JWeakPtr<T>::ConvertChild(std::move(user));
+		}
 
 		class JPtrUtil
 		{

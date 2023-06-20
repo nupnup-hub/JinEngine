@@ -1,8 +1,8 @@
 #include"JLoadTextureFromFile.h"
 #define STB_IMAGE_IMPLEMENTATION 
 #include"../Core/Exception/JExceptionMacro.h"
-#include"../../Lib/stb-master/stb_image.h"
-#include"../../Lib/DirectX/Tk/Src/d3dx12.h"  
+#include"../../ThirdParty/stb-master/stb_image.h"
+#include"../../ThirdParty/DirectX/Tk/Src/d3dx12.h"  
  
 namespace JinEngine
 {

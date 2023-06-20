@@ -1,6 +1,6 @@
 #pragma once
 #include<string> 
-#include"../../../../Lib/DirectX/DirectXMesh.h" 
+#include"../../../../ThirdParty/DirectX/DirectXMesh.h" 
 #include"../../../Object/Resource/Mesh/JMeshStruct.h" 
 #include"../../../Utility/JVector.h"
 #include"../../JDataType.h" 

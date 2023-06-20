@@ -286,7 +286,7 @@ namespace JinEngine
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JTransform::StaticTypeInfo };
 			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
-			auto createInitDataLam = [](JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
+			auto createInitDataLam = [](const Core::JTypeInfo& typeInfo, JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
 			{
 				using CorrectType = JComponent::ParentType::InitData;
 				const bool isValidUnq = parentClassInitData != nullptr && parentClassInitData->GetTypeInfo().IsChildOf(CorrectType::StaticTypeInfo());

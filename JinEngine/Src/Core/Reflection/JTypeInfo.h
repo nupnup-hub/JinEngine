@@ -271,7 +271,7 @@ namespace JinEngine
 			bool IsLeafType()const noexcept;
 			bool IsA(const JTypeInfo& tar)const noexcept;
 			bool IsChildOf(const JTypeInfo& parentCandidate)const noexcept; 
-			bool CanUseLazyDestruction()const noexcept;
+			bool CanUseLazyDestruction()const noexcept; 
 			bool HasInterfaceTypeInfo()const noexcept;
 			bool HasImplTypeInfo()const noexcept;
 		public:

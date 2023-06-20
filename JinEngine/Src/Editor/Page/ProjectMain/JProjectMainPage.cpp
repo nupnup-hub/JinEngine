@@ -4,6 +4,7 @@
 #include"../JEditorAttribute.h" 
 #include"../JEditorPageShareData.h"
 #include"../SimpleWindow/JGraphicOptionSetting.h" 
+#include"../SimpleWindow/JWindowStateViewer.h" 
 #include"../CommonWindow/Debug/JStringConvertTest.h" 
 #include"../CommonWindow/View/JSceneViewer.h"
 #include"../CommonWindow/View/JSceneObserver.h"
@@ -51,14 +52,17 @@ namespace JinEngine
 			 
 			J_EDITOR_WINDOW_FLAG defaultFlag = J_EDITOR_WINDOW_SUPPORT_WINDOW_CLOSING;
 			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(defaultFlag, J_EDITOR_WINDOW_SUPROT_DOCK);
-			J_EDITOR_WINDOW_FLAG canSelectFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SELECT);
-			J_EDITOR_WINDOW_FLAG selectGObjWindowFlag = Core::AddSQValueEnum(canSelectFlag, J_EDITOR_WINDOW_LISTEN_OTHER_WINDOW_SELECT);
 
-			windowDirectory = std::make_unique<JWindowDirectory>(openInfo[0].GetName(), openInfo[0].MakeAttribute(), GetPageType(), Core::AddSQValueEnum(J_EDITOR_WINDOW_SUPPORT_POPUP, canSelectFlag));
-			objectExplorer = std::make_unique<JObjectExplorer>(openInfo[1].GetName(), openInfo[1].MakeAttribute(), GetPageType(), Core::AddSQValueEnum(J_EDITOR_WINDOW_SUPPORT_POPUP, selectGObjWindowFlag));
+			J_EDITOR_WINDOW_FLAG wndDirFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SUPPORT_POPUP, J_EDITOR_WINDOW_SUPPORT_SELECT);
+			J_EDITOR_WINDOW_FLAG objExplorerFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SUPPORT_POPUP, J_EDITOR_WINDOW_SUPPORT_SELECT, J_EDITOR_WINDOW_LISTEN_OTHER_WINDOW_SELECT);
+			J_EDITOR_WINDOW_FLAG sceneObserverFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SUPPORT_POPUP, J_EDITOR_WINDOW_SUPPORT_SELECT, J_EDITOR_WINDOW_LISTEN_OTHER_WINDOW_SELECT,J_EDITOR_WINDOW_SUPPORT_MAXIMIZE );
+			J_EDITOR_WINDOW_FLAG sceneViewerFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SUPPORT_MAXIMIZE);
+
+			windowDirectory = std::make_unique<JWindowDirectory>(openInfo[0].GetName(), openInfo[0].MakeAttribute(), GetPageType(), wndDirFlag);
+			objectExplorer = std::make_unique<JObjectExplorer>(openInfo[1].GetName(), openInfo[1].MakeAttribute(), GetPageType(), objExplorerFlag);
 			objectDetail = std::make_unique<JObjectDetail>(openInfo[2].GetName(), openInfo[2].MakeAttribute(), GetPageType(), dockFlag);
-			sceneObserver = std::make_unique<JSceneObserver>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType(), Core::AddSQValueEnum(J_EDITOR_WINDOW_SUPPORT_POPUP, selectGObjWindowFlag), Constants::GetAllObserverSetting());
-			sceneViewer = std::make_unique<JSceneViewer>(openInfo[4].GetName(), openInfo[4].MakeAttribute(), GetPageType(), dockFlag);
+			sceneObserver = std::make_unique<JSceneObserver>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType(), sceneObserverFlag, Constants::GetAllObserverSetting());
+			sceneViewer = std::make_unique<JSceneViewer>(openInfo[4].GetName(), openInfo[4].MakeAttribute(), GetPageType(), sceneViewerFlag);
 			logViewer = std::make_unique<JLogViewer>(openInfo[5].GetName(), openInfo[5].MakeAttribute(), GetPageType(), dockFlag);
 			graphicResourceWatcher = std::make_unique<JGraphicResourceWatcher>(openInfo[6].GetName(), openInfo[6].MakeAttribute(), GetPageType(), defaultFlag);
 			stringConvertTest = std::make_unique<JStringConvertTest>(openInfo[7].GetName(), openInfo[7].MakeAttribute(), GetPageType(), defaultFlag);
@@ -191,7 +195,11 @@ namespace JinEngine
 				std::make_unique<ClosePopupContentsF::CompletelyBind>(*closePopupContetnsF, this));
 			closePopup->SetDesc(u8"변경된 자원");
 
-			graphicOptionSetting = std::make_unique<JGraphicOptionSetting>();	 
+			graphicOptionSetting = std::make_unique<JGraphicOptionSetting>();	
+			wndStateViewer = std::make_unique<JWindowStateViewer>();
+
+			std::vector<JEditorSimpleWindow*> simpleWindow{ graphicOptionSetting.get(), wndStateViewer.get() };
+			AddSimpleWindow(simpleWindow);
 		}
 		JProjectMainPage::~JProjectMainPage()
 		{
@@ -227,6 +235,7 @@ namespace JinEngine
 			sceneViewer->Initialize(_JSceneManager::Instance().GetFirstScene());
 			sceneObserver->Initialize(_JSceneManager::Instance().GetFirstScene(), L"Editor_ObserverCamera");
 			logViewer->Initialize();
+			wndStateViewer->Initialize(GetWindowVec());
 			BuildMenuNode();
 		}
 		void JProjectMainPage::UpdatePage()
@@ -240,7 +249,7 @@ namespace JinEngine
 
 			ImGui::SetNextWindowSize(viewport->WorkSize);
 			ImGui::SetNextWindowPos(viewport->WorkPos);
-
+			 
 			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_NoWindowMenuButton;
 			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoInputs |
 				ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground |
@@ -256,21 +265,14 @@ namespace JinEngine
 				BuildDockNode();
 			menuBar->Update(true);  
 			ClosePage();
-
-			uint currOpWndCount = GetOpenWindowCount();
-			for (uint i = 0; i < currOpWndCount; ++i)
-				GetOpenWindow(i)->UpdateWindow();
-
-			//PrintOpenWindowState();
-			if (graphicOptionSetting->IsOpenViewer())
-				graphicOptionSetting->Update();
+			 
+			UpdateOpenWindow();
+			UpdateOpenSimpleWindow();
 
 			JImGuiImpl::PopFont();
 			ImGui::PopStyleVar(2); 
 
-			JEditorPopupWindow* openPopup = GetOpenPopupWindow();
-			if (openPopup != nullptr)
-				openPopup->Update(GetName(), JVector2<float>(0, 0), ImGui::GetMainViewport()->WorkSize);
+			UpdateOpenPopupWindow(JVector2<float>(0, 0), ImGui::GetMainViewport()->WorkSize);
 		}
 		bool JProjectMainPage::IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept
 		{
@@ -342,46 +344,65 @@ namespace JinEngine
 		}
 		void JProjectMainPage::BuildMenuNode()
 		{
-			std::unique_ptr<JEditorMenuNode> rootNode = std::make_unique<JEditorMenuNode>("Root", true, false);
+			std::unique_ptr<JEditorMenuNode> rootNode = std::make_unique<JEditorMenuNode>("Root", true, false, false);
 
 			// root Child
-			std::unique_ptr<JEditorMenuNode> fileNode = std::make_unique<JEditorMenuNode>("JFile", false, false, nullptr, rootNode.get());
-			std::unique_ptr<JEditorMenuNode> windowNode = std::make_unique<JEditorMenuNode>("Window", false, false, nullptr, rootNode.get());
-			std::unique_ptr<JEditorMenuNode> graphicNode = std::make_unique<JEditorMenuNode>("Graphic", false, false, nullptr, rootNode.get());
+			std::unique_ptr<JEditorMenuNode> fileNode = std::make_unique<JEditorMenuNode>("JFile", false, false, false, nullptr, rootNode.get());
+			std::unique_ptr<JEditorMenuNode> windowNode = std::make_unique<JEditorMenuNode>("Window", false, false, false, nullptr, rootNode.get());
+			std::unique_ptr<JEditorMenuNode> graphicNode = std::make_unique<JEditorMenuNode>("Graphic", false, false, false, nullptr, rootNode.get());
 
 			//file Child
-			std::unique_ptr<JEditorMenuNode> saveNode = std::make_unique<JEditorMenuNode>("SaveProject", false, true, nullptr, fileNode.get());
+			std::unique_ptr<JEditorMenuNode> saveNode = std::make_unique<JEditorMenuNode>("SaveProject", false, true, false, nullptr, fileNode.get());
 			saveNode->RegisterBindHandle(std::make_unique<StoreProjectF::CompletelyBind>(*storeProjectF));
-			std::unique_ptr<JEditorMenuNode> loadNode = std::make_unique<JEditorMenuNode>("LoadProject", false, true, nullptr, fileNode.get());
+			std::unique_ptr<JEditorMenuNode> loadNode = std::make_unique<JEditorMenuNode>("LoadProject", false, true, false, nullptr, fileNode.get());
 			loadNode->RegisterBindHandle(std::make_unique<LoadProjectF::CompletelyBind>(*loadProjectF));
-			std::unique_ptr<JEditorMenuNode> buildNode = std::make_unique<JEditorMenuNode>("BuildProject", false, true, nullptr, fileNode.get());
-			std::unique_ptr<JEditorMenuNode> grapicOptionNode = std::make_unique<JEditorMenuNode>("Graphic Option",
-				false, true,
-				graphicOptionSetting->GetOpenPtr(),
-				graphicNode.get());
-			grapicOptionNode->RegisterBindHandle(std::make_unique<OpenSimpleWindowF::CompletelyBind>(*GetOpSimpleWindowFunctorPtr(), graphicOptionSetting->GetOpenPtr()));
-
+			std::unique_ptr<JEditorMenuNode> buildNode = std::make_unique<JEditorMenuNode>("BuildProject", false, true, false, nullptr, fileNode.get());
+		
 			JEditorMenuNode* windowNodePtr = windowNode.get();
+			JEditorMenuNode* graphicNodePtr = graphicNode.get();
 			menuBar = std::make_unique<JEditorMenuBar>(std::move(rootNode), true);
 			menuBar->AddNode(std::move(fileNode));
 			menuBar->AddNode(std::move(windowNode));
 			menuBar->AddNode(std::move(graphicNode));
-			menuBar->AddNode(std::move(grapicOptionNode));
 			menuBar->AddNode(std::move(saveNode));
 			menuBar->AddNode(std::move(loadNode));
 			menuBar->AddNode(std::move(buildNode)); 
-			std::vector<JEditorWindow*> wndVec = GetWindowVec();
-			
-			const uint wndCount = (uint)wndVec.size();
-			for (uint i = 0; i < wndCount; ++i)
+
+			std::vector<JEditorWindow*> wndVec = GetWindowVec();	
+			for (const auto& data : wndVec)
 			{
-				std::unique_ptr<JEditorMenuNode> newNode = std::make_unique<JEditorMenuNode>(wndVec[i]->GetName(),
-					false, true,
-					wndVec[i]->GetOpenPtr(),
+				std::unique_ptr<JEditorMenuNode> newNode = std::make_unique<JEditorMenuNode>(data->GetName(),
+					false, true, false,
+					data->GetOpenPtr(),
 					windowNodePtr);
-				newNode->RegisterBindHandle(std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpEditorWindowFunctorPtr(), *this, wndVec[i]->GetName()));
+
+				auto openBind = std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpenEditorWindowFunctorPtr(), *this, data->GetName());
+				auto closeBind = std::make_unique<CloseEditorWindowF::CompletelyBind>(*GetCloseEditorWindowFunctorPtr(), *this, data->GetName());
+				newNode->RegisterBindHandle(std::move(openBind), std::move(closeBind));
 				menuBar->AddNode(std::move(newNode));
 			}
+
+			std::unique_ptr<JEditorMenuNode> grapicOptionNode = std::make_unique<JEditorMenuNode>("Graphic Option",
+				false, true, false,
+				graphicOptionSetting->GetOpenPtr(),
+				graphicNodePtr);
+
+			std::unique_ptr<JEditorMenuNode> wndStateViewerNode = std::make_unique<JEditorMenuNode>("Window state",
+				false, true, false,
+				wndStateViewer->GetOpenPtr(),
+				windowNodePtr);
+
+			using OpenSimpleB = OpenSimpleWindowF::CompletelyBind;
+			using CloseSimpleB = CloseSimpleWindowF::CompletelyBind;
+
+			grapicOptionNode->RegisterBindHandle(std::make_unique<OpenSimpleB>(*GetOpenSimpleWindowFunctorPtr(), graphicOptionSetting->GetOpenPtr()),
+				std::make_unique<CloseSimpleB>(*GetOpenSimpleWindowFunctorPtr(), graphicOptionSetting->GetOpenPtr()));
+
+			wndStateViewerNode->RegisterBindHandle(std::make_unique<OpenSimpleB>(*GetOpenSimpleWindowFunctorPtr(), wndStateViewer->GetOpenPtr()),
+				std::make_unique<CloseSimpleB>(*GetOpenSimpleWindowFunctorPtr(), wndStateViewer->GetOpenPtr()));
+
+			menuBar->AddNode(std::move(grapicOptionNode));
+			menuBar->AddNode(std::move(wndStateViewerNode));
 		}
 	}
 }

@@ -13,7 +13,11 @@ namespace JinEngine
 	using IsAvailableOverlapCallable = Core::JStaticCallable<bool>;
 	using SetCFrameDirtyCallable = Core::JStaticCallable<void, JComponent*>; 
  
-	using CreateInitDataCallable = Core::JStaticCallable<std::unique_ptr<Core::JDITypeDataBase>, JUserPtr<JGameObject>, std::unique_ptr<Core::JDITypeDataBase>&&>;
+	//parent comp child is chid comp
+	//child comp에 파생 class가 존재할시( ex) JBehavior) const Core::JTypeInfo& parameter로 식별한다
+	//그외에 child comp에게는 유효하지 않다.
+	using CreateInitDataCallable = Core::JStaticCallable<std::unique_ptr<Core::JDITypeDataBase>, const Core::JTypeInfo&, JUserPtr<JGameObject>, std::unique_ptr<Core::JDITypeDataBase>&&>;
+	
 	struct CTypeHint
 	{
 	public:
@@ -30,17 +34,19 @@ namespace JinEngine
 	private:
 		GetCTypeInfoCallable* getTypeInfo = nullptr; 
 		IsAvailableOverlapCallable* isAvailableOverlapCallable = nullptr;
-		CreateInitDataCallable* createIntiDataCallable = nullptr;
+		CreateInitDataCallable* createInitDataCallable = nullptr;
 	public:
 		CTypeCommonFunc() = default;
 		CTypeCommonFunc(GetCTypeInfoCallable& getTypeInfo,  
 			IsAvailableOverlapCallable& isAvailableOverlapCallable,
-			CreateInitDataCallable& createIntiDataCallable);
+			CreateInitDataCallable& createInitDataCallable);
 		~CTypeCommonFunc();
 	public:
 		Core::JTypeInfo& CallGetTypeInfo();
 		bool CallIsAvailableOverlapCallable();
-		std::unique_ptr<Core::JDITypeDataBase> CallCreateInitDataCallable(JUserPtr<JGameObject> parent, std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData = nullptr);
+		std::unique_ptr<Core::JDITypeDataBase> CallCreateInitDataCallable(const Core::JTypeInfo& typeInfo,
+			JUserPtr<JGameObject> owner,
+			std::unique_ptr<Core::JDITypeDataBase>&& parentInitData = nullptr);
 	};
 
 	struct CTypePrivateFunc
@@ -76,8 +82,9 @@ namespace JinEngine
 		static Core::JTypeInfo& CallGetTypeInfo(const J_COMPONENT_TYPE cType);
 		static bool CallIsAvailableOverlap(const J_COMPONENT_TYPE cType);
 		static std::unique_ptr<Core::JDITypeDataBase> CallCreateInitDataCallable(const J_COMPONENT_TYPE cType,
-			JUserPtr<JGameObject> parent,
-			std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData = nullptr);
+			const Core::JTypeInfo& typeInfo, 
+			JUserPtr<JGameObject> owner,
+			std::unique_ptr<Core::JDITypeDataBase>&& parentInitData = nullptr);
 	public:
 		static J_COMPONENT_TYPE ConvertCompType(const Core::JTypeInfo& info);
 	public:

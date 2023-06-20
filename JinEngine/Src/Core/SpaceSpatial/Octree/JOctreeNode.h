@@ -15,9 +15,11 @@ namespace JinEngine
 		class JOctreeNode : public JSpaceSpatialNode
 		{
 		private:
+			static constexpr uint childCount = 8;
+		private:
 			DirectX::BoundingBox boundingBox;
 			JOctreeNode* parentNode = nullptr;
-			std::vector<JOctreeNode*> childrenNode;
+			JOctreeNode* childrenNode[childCount] = { nullptr, };
 			std::vector<JOctreeNode*> neighborNode;
 			std::vector<JUserPtr<JGameObject>> innerGameObject;
 			JUserPtr<JGameObject> debugGameObject = nullptr;
@@ -36,9 +38,9 @@ namespace JinEngine
 			//Culling node bbox
 			void Culling(Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum, J_CULLING_FLAG flag)noexcept;
 			void Culling(Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& camFrustum, const DirectX::BoundingFrustum& cullingFrustum)noexcept;
-			JUserPtr<JGameObject> IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir)const noexcept;
-			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
-			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
+			JUserPtr<JGameObject> IntersectFirst(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, const bool allowContainRayPos)const noexcept;
+			void IntersectAscendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<JIntersectInfo>& info)const noexcept;
+			void IntersectDescendingSort(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res, std::vector<JIntersectInfo>& info)const noexcept;
 			void Intersect(const DirectX::FXMVECTOR ori, const DirectX::FXMVECTOR dir, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
 		public:
 			bool AddGameObject(JUserPtr<JGameObject> gameObj, bool isLooseOctree)noexcept;

@@ -25,7 +25,7 @@ namespace JinEngine
 	namespace
 	{
 		using ContFrameUpdateInteface = JAnimationControllerPrivate::FrameUpdateInterface;
-		using AnimatorFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder1<Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION, Graphic::JAnimationConstants&>>, Core::EmptyType>;
+		using AnimatorFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder1<Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION, Graphic::JAnimationConstants&>>, Core::JEmptyType>;
 	}
 	namespace
 	{
@@ -198,7 +198,7 @@ namespace JinEngine
 			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
-			auto createInitDataLam = [](JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
+			auto createInitDataLam = [](const Core::JTypeInfo& typeInfo, JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
 			{
 				using CorrectType = JComponent::ParentType::InitData;
 				const bool isValidUnq = parentClassInitData != nullptr && parentClassInitData->GetTypeInfo().IsChildOf(CorrectType::StaticTypeInfo());

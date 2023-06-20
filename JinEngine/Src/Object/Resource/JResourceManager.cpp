@@ -410,17 +410,17 @@ namespace JinEngine
 			using CreateStaticMesh = Core::JStaticCallableType<JStaticMeshData, JDefaultGeometryGenerator&>;
 			std::unordered_map<J_DEFAULT_SHAPE, CreateStaticMesh::Callable> callableVec
 			{
-				{J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE, (CreateStaticMesh::Ptr)createCubeLam},
-				{J_DEFAULT_SHAPE::DEFAULT_SHAPE_GRID, (CreateStaticMesh::Ptr)createGridLam},
-				{J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE, (CreateStaticMesh::Ptr)createSphereLam},
-				{J_DEFAULT_SHAPE::DEFAULT_SHAPE_CYILINDER, (CreateStaticMesh::Ptr)createCylinderLam},
-				{J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD, (CreateStaticMesh::Ptr)createQuadLam},
-				{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_LINE, (CreateStaticMesh::Ptr)createLineBBoxLam},
-				{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE, (CreateStaticMesh::Ptr)createTriangleBBoxLam},
-				{J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_FRUSTUM, (CreateStaticMesh::Ptr)createBFrustumLam},
-				{J_DEFAULT_SHAPE::DEFAULT_SHAPE_CIRCLE, (CreateStaticMesh::Ptr)createCircleLam},
-				{J_DEFAULT_SHAPE::DEFAULT_SHAPE_SCALE_ARROW, (CreateStaticMesh::Ptr)createScaleArrowLam},
-				{J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE, (CreateStaticMesh::Ptr)createLineLam}
+				{J_DEFAULT_SHAPE::CUBE, (CreateStaticMesh::Ptr)createCubeLam},
+				{J_DEFAULT_SHAPE::GRID, (CreateStaticMesh::Ptr)createGridLam},
+				{J_DEFAULT_SHAPE::SPHERE, (CreateStaticMesh::Ptr)createSphereLam},
+				{J_DEFAULT_SHAPE::CYILINDER, (CreateStaticMesh::Ptr)createCylinderLam},
+				{J_DEFAULT_SHAPE::QUAD, (CreateStaticMesh::Ptr)createQuadLam},
+				{J_DEFAULT_SHAPE::BOUNDING_BOX_LINE, (CreateStaticMesh::Ptr)createLineBBoxLam},
+				{J_DEFAULT_SHAPE::BOUNDING_BOX_TRIANGLE, (CreateStaticMesh::Ptr)createTriangleBBoxLam},
+				{J_DEFAULT_SHAPE::BOUNDING_FRUSTUM, (CreateStaticMesh::Ptr)createBFrustumLam},
+				{J_DEFAULT_SHAPE::CIRCLE, (CreateStaticMesh::Ptr)createCircleLam},
+				{J_DEFAULT_SHAPE::SCALE_ARROW, (CreateStaticMesh::Ptr)createScaleArrowLam},
+				{J_DEFAULT_SHAPE::LINE, (CreateStaticMesh::Ptr)createLineLam}
 			};
 
 			JDefaultGeometryGenerator geoGen;

@@ -4,6 +4,7 @@
 #include"../../Component/JComponentType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"
 #include"../../../Core/SpaceSpatial/JSpaceSpatialType.h"
+#include"../../../Core/SpaceSpatial/JSpaceSpatialSortType.h"
 #include"../../../Core/SpaceSpatial/Bvh/JBvhOption.h"
 #include"../../../Core/SpaceSpatial/Octree/JOctreeOption.h"
 #include"../../../Core/SpaceSpatial/Kd-tree/JKdTreeOption.h"
@@ -109,6 +110,8 @@ namespace JinEngine
 		JUserPtr<JCamera> FindFirstSelectedCamera(const bool allowEditorCam)const noexcept;
 		//Intersect by scene space spatial
 		JUserPtr<JGameObject> IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
+		JUserPtr<JGameObject> IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const bool allowContainRayPos)const noexcept;
+		void Intersect(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const Core::J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

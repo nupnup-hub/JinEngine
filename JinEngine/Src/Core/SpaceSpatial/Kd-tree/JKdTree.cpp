@@ -84,43 +84,45 @@ namespace JinEngine
 			if (root != nullptr)
 				root->Culling(cullUser, camFrustum, cullingFrustum);
 		}
-		JUserPtr<JGameObject> JKdTree::IntersectFirst(const JRay& ray)const noexcept
+		JUserPtr<JGameObject> JKdTree::IntersectFirst(const JRay& ray, const bool allowContainRayPos)const noexcept
 		{
 			if (root != nullptr)
-				return root->IntersectFirst(ray.GetPosV(), ray.GetDirV());
+				return root->IntersectFirst(ray.GetPosV(), ray.GetDirV(), allowContainRayPos);
 			else
 				return nullptr;
 		}
 		void JKdTree::Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
-			if (root != nullptr)
-			{  
-				std::vector<JUserPtr<JGameObject>> innerList;
-				std::vector<float> distVec;
-				if (sortType == J_SPACE_SPATIAL_SORT_TYPE::ASCENDING)
-					root->IntersectAscendingSort(ray.GetPosV(), ray.GetDirV(), innerList, distVec);
-				else if (sortType == J_SPACE_SPATIAL_SORT_TYPE::DESCENDING)
-					root->IntersectDescendingSort(ray.GetPosV(), ray.GetDirV(), innerList, distVec);
-				else
-					root->Intersect(ray.GetPosV(), ray.GetDirV(), innerList);
+			if (root == nullptr)
+				return;
 
-				const uint innerCount = (uint)innerList.size();
-				for (uint i = 0; i < innerCount; ++i)
+			std::vector<JUserPtr<JGameObject>> innerList;
+			if (sortType == J_SPACE_SPATIAL_SORT_TYPE::NOT_USE)
+				root->Intersect(ray.GetPosV(), ray.GetDirV(), innerList);
+			else
+			{
+				std::vector<JIntersectInfo> info;
+				if (sortType == J_SPACE_SPATIAL_SORT_TYPE::ASCENDING)
+					root->IntersectAscendingSort(ray.GetPosV(), ray.GetDirV(), innerList, info);
+				else if (sortType == J_SPACE_SPATIAL_SORT_TYPE::DESCENDING)
+					root->IntersectDescendingSort(ray.GetPosV(), ray.GetDirV(), innerList, info);
+			}
+			const uint innerCount = (uint)innerList.size();
+			for (uint i = 0; i < innerCount; ++i)
+			{
+				bool isOverlap = false;
+				const size_t guid = innerList[i]->GetGuid();
+				const uint resCount = (uint)res.size();
+				for (uint j = 0; j < resCount; ++j)
 				{
-					bool isOverlap = false;
-					const size_t guid = innerList[i]->GetGuid();
-					const uint resCount = (uint)res.size();
-					for (uint j = 0; j < resCount; ++j)
+					if (res[j]->GetGuid() == guid)
 					{
-						if (res[j]->GetGuid() == guid)
-						{
-							isOverlap = true;
-							break;
-						}
+						isOverlap = true;
+						break;
 					}
-					if (!isOverlap)
-						res.push_back(innerList[i]);
 				}
+				if (!isOverlap)
+					res.push_back(innerList[i]);
 			}
 		}
 		void JKdTree::UpdateGameObject(const JUserPtr<JGameObject>& gameObj)noexcept

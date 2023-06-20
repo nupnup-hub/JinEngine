@@ -50,8 +50,6 @@ namespace JinEngine
 			//Set upload buffer and shader macro
 			void ReBuildOcclusionMapInfoConstants(ID3D12Device* device, const JGraphicInfo& info);	//미적용 occlusion map option 설정하는 인터페이스 추가필요
 			void ReBuildObjectConstants(ID3D12Device* device, const uint objectCapacity);
-			//pass count == drawList cam count
-			void ReBuildPassConstants(ID3D12Device* device, const uint passCapacity);
 		public:
 			void DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,
 				JFrameResource* currFrame,

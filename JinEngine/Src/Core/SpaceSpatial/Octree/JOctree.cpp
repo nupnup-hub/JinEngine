@@ -64,15 +64,29 @@ namespace JinEngine
 			if (rootNodeCash != nullptr)
 				rootNodeCash->Culling(cullUser, camFrustum, cullingFrustum);
 		}
-		JUserPtr<JGameObject> JOctree::IntersectFirst(const JRay& ray)const noexcept
-		{
-			//¹Ì±¸Çö
+		JUserPtr<JGameObject> JOctree::IntersectFirst(const JRay& ray, const bool allowContainRayPos)const noexcept
+		{ 
 			if (rootNodeCash == nullptr)
 				return nullptr;
+
+			rootNodeCash->IntersectFirst(ray.GetPosV(), ray.GetDirV(), allowContainRayPos);
 		}
 		void JOctree::Intersect(const JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
 		{
+			if (rootNodeCash == nullptr)
+				return;
 
+			if (sortType == J_SPACE_SPATIAL_SORT_TYPE::NOT_USE)
+				rootNodeCash->Intersect(ray.GetPosV(), ray.GetDirV(), res);
+			else
+			{
+				std::vector<JIntersectInfo> info;
+				if (sortType == J_SPACE_SPATIAL_SORT_TYPE::ASCENDING)
+					rootNodeCash->IntersectAscendingSort(ray.GetPosV(), ray.GetDirV(), res, info);
+				else if(sortType == J_SPACE_SPATIAL_SORT_TYPE::DESCENDING)
+					rootNodeCash->IntersectDescendingSort(ray.GetPosV(), ray.GetDirV(), res, info);
+			}
+			 
 		}
 		void JOctree::UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
 		{

@@ -10,7 +10,7 @@
 #include"../../../../Core/Transition/JTransition.h"
 #include"../../../../Utility/JCommonUtility.h"
 #include"../../../../Utility/JVectorExtend.h"
-#include"../../../../../Lib/imgui/imgui.h"
+#include"../../../../../ThirdParty/imgui/imgui.h"
 
 namespace JinEngine
 {

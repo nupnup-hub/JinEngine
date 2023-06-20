@@ -1,6 +1,6 @@
 #include"JReflectionInfo.h"
 #include"JReflectionInfoPrivate.h"
-#include"JTypeInfo.h"
+#include"JTypeInfo.h" 
 #include"JEnumInfo.h"
 #include"../JDataType.h"
 #include"../Time/JGameTimer.h"
@@ -21,10 +21,10 @@ namespace JinEngine
 		{
 		private:
 			using TypeVec = std::vector<JTypeInfo*>;
-			using TypeNameMap = std::unordered_map<size_t, JTypeInfo*>;
+			using TypeMap = std::unordered_map<size_t, JTypeInfo*>; 
 		private:
 			using EnumVec = std::vector<JEnumInfo*>;
-			using EnumNameMap = std::unordered_map<size_t, JEnumInfo*>;
+			using EnumMap = std::unordered_map<size_t, JEnumInfo*>;
 		private:
 			using TimeVec = std::vector<float>;
 		private:
@@ -32,13 +32,13 @@ namespace JinEngine
 			{
 			public:
 				TypeVec typeVec;
-				TypeNameMap typeNameMap;
+				TypeMap typeMap;
 			};
 			struct JEnumData
 			{
 			public:
 				EnumVec enumVec;
-				EnumNameMap enumNameMap;
+				EnumMap enumMap;
 			};
 			struct JLazyData
 			{
@@ -47,7 +47,7 @@ namespace JinEngine
 				TimeVec timeVec;
 			};
 		private:
-			JTypeData jType;
+			JTypeData jType; 
 			JEnumData jEnum;
 			JLazyData jLazy;
 		private:
@@ -137,8 +137,8 @@ namespace JinEngine
 			}
 			JTypeInfo* GetTypeInfo(const size_t typeGuid)const noexcept
 			{
-				auto data = jType.typeNameMap.find(typeGuid);
-				return data != jType.typeNameMap.end() ? data->second : nullptr;
+				auto data = jType.typeMap.find(typeGuid);
+				return data != jType.typeMap.end() ? data->second : nullptr;
 			}
 			JEnumInfo* GetEnumInfo(const std::string& fullname)const noexcept
 			{
@@ -146,8 +146,8 @@ namespace JinEngine
 			}
 			JEnumInfo* GetEnumInfo(const size_t enumGuid)const noexcept
 			{
-				auto data = jEnum.enumNameMap.find(enumGuid);
-				return data != jEnum.enumNameMap.end() ? data->second : nullptr;
+				auto data = jEnum.enumMap.find(enumGuid);
+				return data != jEnum.enumMap.end() ? data->second : nullptr;
 			}
 			std::vector<JTypeInfo*> GetAllTypeInfo()const noexcept
 			{
@@ -201,7 +201,7 @@ namespace JinEngine
 					return;
 
 				jType.typeVec.push_back(newType);
-				jType.typeNameMap.emplace(newType->TypeGuid(), newType);
+				jType.typeMap.emplace(newType->TypeGuid(), newType);
 			}
 			void AddEnum(JEnumInfo* newEnum)
 			{
@@ -210,7 +210,7 @@ namespace JinEngine
 					return;
 
 				jEnum.enumVec.push_back(newEnum);
-				jEnum.enumNameMap.emplace(newEnum->EnumGuid(), newEnum);
+				jEnum.enumMap.emplace(newEnum->EnumGuid(), newEnum);
 			}
 		};
 
@@ -252,7 +252,7 @@ namespace JinEngine
 			impl.reset();
 		}
 
-		using TypeInterface = JReflectionInfoPrivate::TypeInterface;
+		using TypeInterface = JReflectionInfoPrivate::TypeInterface; 
 		using EnumInterface = JReflectionInfoPrivate::EnumInterface;
 		using ApplicationInterface = JReflectionInfoPrivate::ApplicationInterface;
 

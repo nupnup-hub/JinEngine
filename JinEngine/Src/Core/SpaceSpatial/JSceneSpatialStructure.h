@@ -1,5 +1,6 @@
 #pragma once 
 #include"JSpaceSpatialType.h"  
+#include"JSpaceSpatialSortType.h"  
 #include"Octree/JOctreeOption.h"
 #include"Bvh/JBvhOption.h"
 #include"Kd-tree/JKdTreeOption.h"
@@ -73,7 +74,8 @@ namespace JinEngine
 		public:
 			//void Culling(const Graphic::JCullingUserInterface& cullUser, const JCullingFrustum& camFrustum)noexcept;  //unuse
 			void Culling(Graphic::JCullingUserInterface cullUser, const DirectX::BoundingFrustum& camFrustum)noexcept;
-			JUserPtr<JGameObject> IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
+			JUserPtr<JGameObject> IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const bool allowContainRayPos)const noexcept;
+			void Intersect(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
 			void UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept;
 		public:
 			void AddGameObject(const JUserPtr<JGameObject>& gameObject)noexcept;

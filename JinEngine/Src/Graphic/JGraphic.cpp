@@ -78,9 +78,9 @@
 #include"../Application/JApplicationProject.h"
 #include"../Utility/JCommonUtility.h" 
 #include"../Editor/GuiLibEx/ImGuiEx/JImGuiImpl.h" 
-#include"../../Lib/imgui/imgui_impl_dx12.h"
-#include"../../Lib/imgui/imgui_impl_win32.h"
-#include"../../Lib/DirectX/TK/Inc/ScreenGrab.h"
+#include"../../ThirdParty/imgui/imgui_impl_dx12.h"
+#include"../../ThirdParty/imgui/imgui_impl_win32.h"
+#include"../../ThirdParty/DirectX/TK/Inc/ScreenGrab.h"
 
 #include<DirectXColors.h>
 #include<functional>
@@ -97,7 +97,7 @@
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "dxgi.lib")
 
-//#define DEBUG 
+#define DEBUG 
 // 
 //#include"../Core/File/JFileIOHelper.h"
 
@@ -110,8 +110,10 @@ namespace JinEngine
 		{
 			using CamEditorSettingInterface = JCameraPrivate::EditorSettingInterface;
 			using GraphicThreadInteface = Core::JThreadManagerPrivate::GraphicInterface;
+		} 
+		namespace
+		{ 
 		}
-
 		class JDrawHandle
 		{
 		public:
@@ -201,7 +203,7 @@ namespace JinEngine
 		public:
 			JGraphicImpl(const size_t guid, JGraphic* thisGraphic)
 				:guid(guid), thisGraphic(thisGraphic)
-			{
+			{ 
 				const uint occMipMapViewCapa = JGraphicResourceManager::GetOcclusionMipMapViewCapacity();
 				info.occlusionWidth = std::pow(2, occMipMapViewCapa - 1);
 				info.occlusionHeight = std::pow(2, occMipMapViewCapa - 1);
@@ -221,7 +223,7 @@ namespace JinEngine
 						sum += (uint)JGraphicDrawList::GetDrawScene(i)->scene->GetMeshCount();
 					return sum;
 				};
-				auto passGetElemenLam = []() {return JGraphicDrawList::GetListCount(); };
+				auto passGetElemenLam = []()->uint {return 1; };
 				auto aniGetElementLam = []()
 				{
 					uint sum = 0;
@@ -272,7 +274,7 @@ namespace JinEngine
 						sum += JGraphicDrawList::GetDrawScene(i)->scene->GetComponetCount(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
 					return sum;
 				};
-				auto hzbPassGetElementLam = []()
+				auto hzbRequestorGetElementLam = []()
 				{
 					uint sum = 0;
 					const uint drawListCount = JGraphicDrawList::GetListCount();
@@ -297,7 +299,7 @@ namespace JinEngine
 					{J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT, litGetElementLam},	{J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_INDEX, litIndexGetElementLam},
 					{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT, shadowLitGetElementLam},{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP, shadowMapElementLam},
 					{J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL, materialGetElementLam},{J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, boundObjGetElementLam},
-					{J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, hzbPassGetElementLam}, 	{J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, hzbObjectGetElementLam}
+					{J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR, hzbRequestorGetElementLam}, 	{J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, hzbObjectGetElementLam}
 				};
 
 				using NotifyUpdateCapacity = JUpdateHelper::NotifyUpdateCapacityT::Callable;
@@ -397,7 +399,9 @@ namespace JinEngine
 
 				workerFunctor = std::make_unique<WorkerThreadF::Functor>(&JGraphicImpl::WorkerThread, this);
 			}
-			~JGraphicImpl() {}
+			~JGraphicImpl()
+			{ 
+			}
 		public:
 			ID3D12Device* GetDevice()const noexcept
 			{
@@ -1154,7 +1158,6 @@ namespace JinEngine
 					const bool isAllowOcclusion = drawTarget->scene->IsMainScene() && option.isOcclusionQueryActivated;
 					const uint sceneDrawReqCount = (uint)drawTarget->sceneRequestor.size();
 					drawTarget->UpdateStart();
-					UpdateScenePassCB(drawTarget->scene);	//always update
 					UpdateSceneAnimationCB(drawTarget->scene, drawTarget->updateInfo->aniUpdateCount, drawTarget->updateInfo->hotAniUpdateCount);
 					UpdateSceneCameraCB(drawTarget->scene, drawTarget->updateInfo->camUpdateCount, drawTarget->updateInfo->hzbOccUpdateCount, drawTarget->updateInfo->hotCamUpdateCount);
 					UpdateSceneLightCB(drawTarget->scene, drawTarget->updateInfo->lightUpdateCount, drawTarget->updateInfo->shadowMapUpdateCount, drawTarget->updateInfo->hzbOccUpdateCount, drawTarget->updateInfo->hotLitghtUpdateCount);	//always update
@@ -1165,6 +1168,7 @@ namespace JinEngine
 					UpdateOccCullingRequestor(drawTarget);
 					drawTarget->UpdateEnd();
 				}
+				UpdateScenePassCB();	//always update
 				UpdateMaterialCB();
 			}
 		private:
@@ -1265,7 +1269,7 @@ namespace JinEngine
 				};
 				updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL].offset += matCount;
 			}
-			void UpdateScenePassCB(_In_ const JUserPtr<JScene>& scene)
+			void UpdateScenePassCB()
 			{
 				JPassConstants passContants;
 				passContants.ambientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
@@ -1320,13 +1324,13 @@ namespace JinEngine
 				const uint hzbOccQueryOffset = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT].offset;
 
 				auto currCameraCB = currFrameResource->cameraCB.get();
-				auto currHzbOccPassCB = currFrameResource->hzbOccPassCB.get();
+				auto currHzbOccReqCB = currFrameResource->hzbOccReqCB.get();
 
 				JCameraConstants camContants;
-				JHzbOccPassConstants hzbOccPassConstants;
+				JHzbOccRequestorConstants hzbOccReqConstants;
 
 				const bool forcedSetFrameDirty = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA].setDirty ||
-					updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS].setDirty;
+					updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR].setDirty;
 				using FrameUpdateInterface = JCameraPrivate::FrameUpdateInterface;
 
 				for (uint i = 0; i < cameraCount; ++i)
@@ -1338,8 +1342,8 @@ namespace JinEngine
 						currCameraCB->CopyData(FrameUpdateInterface::GetCamFrameIndex(camera), camContants);
 						if (camera->AllowHzbOcclusionCulling())
 						{
-							FrameUpdateInterface::UpdateFrame(camera, hzbOccPassConstants, hzbOccQueryCount, hzbOccQueryOffset);
-							currHzbOccPassCB->CopyData(FrameUpdateInterface::GetHzbOccPassFrameIndex(camera), hzbOccPassConstants);
+							FrameUpdateInterface::UpdateFrame(camera, hzbOccReqConstants, hzbOccQueryCount, hzbOccQueryOffset);
+							currHzbOccReqCB->CopyData(FrameUpdateInterface::GetHzbOccReqFrameIndex(camera), hzbOccReqConstants);
 							++hzbUpdateCount;
 						}
 						FrameUpdateInterface::UpdateEnd(camera);
@@ -1356,8 +1360,8 @@ namespace JinEngine
 						}
 						if (FrameUpdateInterface::HasOccPassRecopyRequest(camera))
 						{
-							FrameUpdateInterface::UpdateFrame(camera, hzbOccPassConstants, hzbOccQueryCount, hzbOccQueryOffset);
-							currHzbOccPassCB->CopyData(FrameUpdateInterface::GetHzbOccPassFrameIndex(camera), hzbOccPassConstants);
+							FrameUpdateInterface::UpdateFrame(camera, hzbOccReqConstants, hzbOccQueryCount, hzbOccQueryOffset);
+							currHzbOccReqCB->CopyData(FrameUpdateInterface::GetHzbOccReqFrameIndex(camera), hzbOccReqConstants);
 						}
 					}
 				}
@@ -1378,13 +1382,13 @@ namespace JinEngine
 				auto currLightIndexCB = currFrameResource->lightIndexCB.get();
 				auto currSMLightCB = currFrameResource->smLightBuffer.get();
 				auto currShadowMapCB = currFrameResource->shadowMapCalCB.get();
-				auto currHzbOccPassCB = currFrameResource->hzbOccPassCB.get();
+				auto currHzbOccReqCB = currFrameResource->hzbOccReqCB.get();
 
 				JLightConstants lightConstants;
 				JLightIndexConstants lightIndexConstants;
 				JShadowMapLightConstants smLightConstants;
 				JShadowMapConstants smConstants;
-				JHzbOccPassConstants hzbOccPassConstants;
+				JHzbOccRequestorConstants hzbOccReqConstants;
 
 				uint litCount = 0;
 				uint smLitCount = 0;
@@ -1395,59 +1399,61 @@ namespace JinEngine
 					updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT].setDirty;
 
 				//hzb ¹Ì±¸Çö
-				using FrameUpdateInterface = JLightPrivate::FrameUpdateInterface;
+				using LitFrameUpdateInterface = JLightPrivate::FrameUpdateInterface;
+				using SceneFrameIndexInterface = JScenePrivate::FrameIndexInterface;
+
 				for (uint i = 0; i < lightVecCount; ++i)
 				{
 					JLight* light = static_cast<JLight*>(jLvec[i].Get());
 					const bool onShadow = light->IsShadowActivated();
 
-					if (FrameUpdateInterface::UpdateStart(light, forcedSetFrameDirty))
+					if (LitFrameUpdateInterface::UpdateStart(light, forcedSetFrameDirty))
 					{
 						if (onShadow)
 						{
-							FrameUpdateInterface::UpdateFrame(light, smLightConstants);
-							FrameUpdateInterface::UpdateFrame(light, smConstants);
-							currSMLightCB->CopyData(FrameUpdateInterface::GetShadowLitFrameIndex(light), smLightConstants);
-							currShadowMapCB->CopyData(FrameUpdateInterface::GetShadowMapFrameIndex(light), smConstants);
+							LitFrameUpdateInterface::UpdateFrame(light, smLightConstants);
+							LitFrameUpdateInterface::UpdateFrame(light, smConstants);
+							currSMLightCB->CopyData(LitFrameUpdateInterface::GetShadowLitFrameIndex(light), smLightConstants);
+							currShadowMapCB->CopyData(LitFrameUpdateInterface::GetShadowMapFrameIndex(light), smConstants);
 							++shadowMapUpdateCount;
 						}
 						else
 						{
-							FrameUpdateInterface::UpdateFrame(light, lightConstants);
-							currLightCB->CopyData(FrameUpdateInterface::GetLitFrameIndex(light), lightConstants);
+							LitFrameUpdateInterface::UpdateFrame(light, lightConstants);
+							currLightCB->CopyData(LitFrameUpdateInterface::GetLitFrameIndex(light), lightConstants);
 						}
 						if (light->AllowHzbOcclusionCulling())
 						{
-							FrameUpdateInterface::UpdateFrame(light, hzbOccPassConstants, hzbOccQueryCount, hzbOccQueryOffset);
-							currHzbOccPassCB->CopyData(FrameUpdateInterface::GetHzbOccPassFrameIndex(light), hzbOccPassConstants);
+							LitFrameUpdateInterface::UpdateFrame(light, hzbOccReqConstants, hzbOccQueryCount, hzbOccQueryOffset);
+							currHzbOccReqCB->CopyData(LitFrameUpdateInterface::GetHzbOccReqFrameIndex(light), hzbOccReqConstants);
 							++hzbUpdateCount;
 						}
-						FrameUpdateInterface::UpdateEnd(light);
-						if (FrameUpdateInterface::IsHotUpdated(light))
+						LitFrameUpdateInterface::UpdateEnd(light);
+						if (LitFrameUpdateInterface::IsHotUpdated(light))
 							++hotUpdateCount;
 						++litUpdateCount;
 					}
 					else
 					{
-						if (FrameUpdateInterface::HasLitRecopyRequest(light))
+						if (LitFrameUpdateInterface::HasLitRecopyRequest(light))
 						{
-							FrameUpdateInterface::UpdateFrame(light, lightConstants);
-							currLightCB->CopyData(FrameUpdateInterface::GetLitFrameIndex(light), lightConstants);
+							LitFrameUpdateInterface::UpdateFrame(light, lightConstants);
+							currLightCB->CopyData(LitFrameUpdateInterface::GetLitFrameIndex(light), lightConstants);
 						}
-						if (FrameUpdateInterface::HasShadowLitRecopyRequest(light))
+						if (LitFrameUpdateInterface::HasShadowLitRecopyRequest(light))
 						{
-							FrameUpdateInterface::UpdateFrame(light, smLightConstants);
-							currSMLightCB->CopyData(FrameUpdateInterface::GetShadowLitFrameIndex(light), smLightConstants);
+							LitFrameUpdateInterface::UpdateFrame(light, smLightConstants);
+							currSMLightCB->CopyData(LitFrameUpdateInterface::GetShadowLitFrameIndex(light), smLightConstants);
 						}
-						if (FrameUpdateInterface::HasShadowMapRecopyRequest(light))
+						if (LitFrameUpdateInterface::HasShadowMapRecopyRequest(light))
 						{
-							FrameUpdateInterface::UpdateFrame(light, smConstants);
-							currShadowMapCB->CopyData(FrameUpdateInterface::GetShadowMapFrameIndex(light), smConstants);
+							LitFrameUpdateInterface::UpdateFrame(light, smConstants);
+							currShadowMapCB->CopyData(LitFrameUpdateInterface::GetShadowMapFrameIndex(light), smConstants);
 						}
-						if (FrameUpdateInterface::HasOccPassRecopyRequest(light))
+						if (LitFrameUpdateInterface::HasOccPassRecopyRequest(light))
 						{
-							FrameUpdateInterface::UpdateFrame(light, hzbOccPassConstants, hzbOccQueryCount, hzbOccQueryOffset);
-							currHzbOccPassCB->CopyData(FrameUpdateInterface::GetHzbOccPassFrameIndex(light), hzbOccPassConstants);
+							LitFrameUpdateInterface::UpdateFrame(light, hzbOccReqConstants, hzbOccQueryCount, hzbOccQueryOffset);
+							currHzbOccReqCB->CopyData(LitFrameUpdateInterface::GetHzbOccReqFrameIndex(light), hzbOccReqConstants);
 						}
 					}
 					if (onShadow)
@@ -1461,7 +1467,7 @@ namespace JinEngine
 				lightIndexConstants.shadwMapStIndex = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT].offset;
 				lightIndexConstants.shadowMapEdIndex = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_LIGHT].offset + smLitCount;
 
-				const uint litIndexFrameIndex = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_INDEX].offset;
+				const uint litIndexFrameIndex = SceneFrameIndexInterface::GetLitIndexFrameIndex(scene.Get());
 				currLightIndexCB->CopyData(litIndexFrameIndex, lightIndexConstants);
 
 				updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT].offset += litCount;
@@ -1530,7 +1536,7 @@ namespace JinEngine
 							data->isUpdated = true;
 					}
 				}
-				updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS].offset += target->hzbOccCullingRequestor.size();
+				updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR].offset += target->hzbOccCullingRequestor.size();
 			}
 		public:
 			void DrawScene()
@@ -1642,8 +1648,7 @@ namespace JinEngine
 						JDrawHelper copiedHelper = helper;
 						copiedHelper.SettingDrawScene(data->jCamera);
 						DrawSceneDepthMap(cmdList, copiedHelper);
-					}
-					++helper.passOffset;
+					} 
 				}
 				ThrowIfFailedG(cmdList->Close());
 				ID3D12CommandList* cmdsLists[] = { cmdList };
@@ -1656,7 +1661,7 @@ namespace JinEngine
 				currFrameResource->ResetCmd(info.frameThreadCount);
 				BeginFrame();
 				ComputeFrustumCulling();
-
+				 
 				for (uint i = 0; i < info.frameThreadCount; ++i)
 					GraphicThreadInteface::CreateDrawThread(Core::JThreadInitInfo{}, UniqueBind(*workerFunctor, std::move(i)));
 
@@ -1666,9 +1671,9 @@ namespace JinEngine
 				commandQueue->ExecuteCommandLists(info.frameThreadCount, currFrameResource->shadowCmdBatch);
 				WaitForMultipleObjects(info.frameThreadCount, handle.endDrawScene, true, INFINITE);
 				commandQueue->ExecuteCommandLists(info.frameThreadCount, currFrameResource->sceneCmdBatch);
-
-				MidFrame();
-				EndFrame();
+				 
+				MidFrame(); 
+				EndFrame(); 
 			}
 			void DrawSceneRenderTarget(ID3D12GraphicsCommandList* cmdList, const JDrawHelper helper)
 			{
@@ -1680,7 +1685,9 @@ namespace JinEngine
 				const uint dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV);
 
 				using CamFrameInterface = JCameraPrivate::FrameUpdateInterface;
+				using SceneFrameIndexInterface = JScenePrivate::FrameIndexInterface;
 				const uint camFrameIndex = CamFrameInterface::GetCamFrameIndex(helper.cam.Get());
+				const uint litIndexFrmaeIndex = SceneFrameIndexInterface::GetLitIndexFrameIndex(helper.scene.Get());
 
 				cmdList->RSSetViewports(1, &screenViewport);
 				cmdList->RSSetScissorRects(1, &scissorRect);
@@ -1701,9 +1708,9 @@ namespace JinEngine
 				cmdList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 				cmdList->OMSetRenderTargets(1, &rtv, true, &dsv);
 
-				currFrameResource->passCB->SetGraphicCBBufferView(cmdList, 2, helper.passOffset);
+				currFrameResource->passCB->SetGraphicCBBufferView(cmdList, 2, 0);
 				currFrameResource->cameraCB->SetGraphicCBBufferView(cmdList, 3, camFrameIndex);
-				currFrameResource->lightIndexCB->SetGraphicCBBufferView(cmdList, 4, helper.passOffset);
+				currFrameResource->lightIndexCB->SetGraphicCBBufferView(cmdList, 4, litIndexFrmaeIndex);
 
 				using GCash = JScenePrivate::CashInterface; 
 				const std::vector<JUserPtr<JGameObject>>& objVec00 = GCash::GetGameObjectCashVec(helper.scene, J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
@@ -1745,7 +1752,9 @@ namespace JinEngine
 				const uint dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV);
 
 				using CamFrameInterface = JCameraPrivate::FrameUpdateInterface;
+				using SceneFrameIndexInterface = JScenePrivate::FrameIndexInterface;
 				const uint camFrameIndex = CamFrameInterface::GetCamFrameIndex(helper.cam.Get());
+				const uint litIndexFrmaeIndex = SceneFrameIndexInterface::GetLitIndexFrameIndex(helper.scene.Get());
 
 				cmdList->RSSetViewports(1, &screenViewport);
 				cmdList->RSSetScissorRects(1, &scissorRect);
@@ -1755,16 +1764,15 @@ namespace JinEngine
   
 				cmdList->OMSetRenderTargets(1, &rtv, true, &dsv);
 
-				currFrameResource->passCB->SetGraphicCBBufferView(cmdList, 2, helper.passOffset);
+				currFrameResource->passCB->SetGraphicCBBufferView(cmdList, 2, 0);
 				currFrameResource->cameraCB->SetGraphicCBBufferView(cmdList, 3, camFrameIndex);
-				currFrameResource->lightIndexCB->SetGraphicCBBufferView(cmdList, 4, helper.passOffset);
+				currFrameResource->lightIndexCB->SetGraphicCBBufferView(cmdList, 4, litIndexFrmaeIndex);
 
 				using GCash = JScenePrivate::CashInterface;
 				const std::vector<JUserPtr<JGameObject>>& objVec00 = GCash::GetGameObjectCashVec(helper.scene, J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
 				const std::vector<JUserPtr<JGameObject>>& objVec01 = GCash::GetGameObjectCashVec(helper.scene, J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
 				const std::vector<JUserPtr<JGameObject>>& objVec02 = GCash::GetGameObjectCashVec(helper.scene, J_RENDER_LAYER::DEBUG_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
 				const std::vector<JUserPtr<JGameObject>>& objVec03 = GCash::GetGameObjectCashVec(helper.scene, J_RENDER_LAYER::SKY, J_MESHGEOMETRY_TYPE::STATIC);
-				const std::vector<JUserPtr<JGameObject>>& objVec04 = GCash::GetGameObjectCashVec(helper.scene, J_RENDER_LAYER::DEBUG_UI, J_MESHGEOMETRY_TYPE::STATIC);
 
 				DrawGameObject(cmdList, objVec00, helper, JDrawCondition(option, helper, false, true, helper.allowDrawDebug));
 				DrawGameObject(cmdList, objVec01, helper, JDrawCondition(option, helper, helper.scene->IsActivatedSceneTime(), true, helper.allowDrawDebug));
@@ -1772,7 +1780,31 @@ namespace JinEngine
 					cmdList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
 				if (helper.allowDrawDebug)
 					DrawGameObject(cmdList, objVec02, helper, JDrawCondition());
+				  
 				DrawGameObject(cmdList, objVec03, helper, JDrawCondition());
+			}
+			void DrawSceneDebugUI(ID3D12GraphicsCommandList* cmdList, const JDrawHelper helper)
+			{
+				auto gRInterface = helper.cam->GraphicResourceUserInterface();
+				const uint rtvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_BIND_TYPE::RTV);
+
+				using CamFrameInterface = JCameraPrivate::FrameUpdateInterface;
+				using SceneFrameIndexInterface = JScenePrivate::FrameIndexInterface;
+				const uint camFrameIndex = CamFrameInterface::GetCamFrameIndex(helper.cam.Get());
+				const uint litIndexFrmaeIndex = SceneFrameIndexInterface::GetLitIndexFrameIndex(helper.scene.Get());
+
+				cmdList->RSSetViewports(1, &screenViewport);
+				cmdList->RSSetScissorRects(1, &scissorRect);
+
+				CD3DX12_CPU_DESCRIPTOR_HANDLE rtv = graphicResourceM->GetCpuRtvDescriptorHandle(rtvHeapIndex);
+
+				currFrameResource->passCB->SetGraphicCBBufferView(cmdList, 2, 0);
+				currFrameResource->cameraCB->SetGraphicCBBufferView(cmdList, 3, camFrameIndex);
+				currFrameResource->lightIndexCB->SetGraphicCBBufferView(cmdList, 4, litIndexFrmaeIndex);
+				 
+				using GCash = JScenePrivate::CashInterface;
+				const std::vector<JUserPtr<JGameObject>>& objVec = GCash::GetGameObjectCashVec(helper.scene, J_RENDER_LAYER::DEBUG_UI, J_MESHGEOMETRY_TYPE::STATIC);
+				 
 				if (helper.allowDrawDebug)
 				{
 					const uint debugVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::DEBUG_DEPTH_STENCIL);
@@ -1784,7 +1816,7 @@ namespace JinEngine
 					ResourceTransition(cmdList, debugResource, D3D12_RESOURCE_STATE_DEPTH_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 					cmdList->ClearDepthStencilView(editorDsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 					cmdList->OMSetRenderTargets(1, &rtv, true, &editorDsv);
-					DrawGameObject(cmdList, objVec04, helper, JDrawCondition());
+					DrawGameObject(cmdList, objVec, helper, JDrawCondition());
 					ResourceTransition(cmdList, debugResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
 				}
 			}
@@ -1909,8 +1941,9 @@ namespace JinEngine
 				const uint gameObjCount = (uint)gameObject.size();
 				uint st = 0;
 				uint ed = gameObjCount;
-				if (option.allowMultiThread)
-					helper.CalculateWorkIndex(gameObjCount, st, ed);
+				if (helper.CanDispatchWorkIndex())
+					helper.DispatchWorkIndex(gameObjCount, st, ed);
+				 
 				for (uint i = st; i < ed; ++i)
 				{
 					JRenderItem* renderItem = gameObject[i]->GetRenderItem().Get();
@@ -1939,7 +1972,7 @@ namespace JinEngine
 
 					for (uint j = 0; j < submeshCount; ++j)
 					{
-						const JShader* shader = renderItem->GetValidMaterial(j)->GetShader().Get();
+						const JShader* shader = renderItem->GetValidMaterial(j)->GetShader().Get();		
 						const bool onSkinned = animator != nullptr && condition.allowAnimation;
 						const J_MESHGEOMETRY_TYPE meshType = onSkinned ? J_MESHGEOMETRY_TYPE::SKINNED : J_MESHGEOMETRY_TYPE::STATIC;
 						const J_SHADER_VERTEX_LAYOUT shaderLayout = JShaderType::ConvertToVertexLayout(meshType);
@@ -1973,8 +2006,8 @@ namespace JinEngine
 				const JDrawHelper helper,
 				const JDrawCondition& condition)
 			{
-				//JMeshGeometry* mesh = _JResourceManager::Instance().Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE);
-				JMeshGeometry* mesh = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::DEFAULT_SHAPE_BOUNDING_BOX_TRIANGLE).Get();
+				//JMeshGeometry* mesh = _JResourceManager::Instance().Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::CUBE);
+				JMeshGeometry* mesh = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::BOUNDING_BOX_TRIANGLE).Get();
 				JMaterial* mat = _JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST).Get();
 				JShader* shader = mat->GetShader().Get();
 
@@ -1997,8 +2030,8 @@ namespace JinEngine
 				const uint gameObjCount = (uint)gameObject.size();
 				uint st = 0;
 				uint ed = gameObjCount;
-				if (option.allowMultiThread)
-					helper.CalculateWorkIndex(gameObjCount, st, ed);
+				if (helper.CanDispatchWorkIndex())
+					helper.DispatchWorkIndex(gameObjCount, st, ed);
 				for (uint i = st; i < ed; ++i)
 				{
 					JRenderItem* renderItem = gameObject[i]->GetRenderItem().Get();
@@ -2044,6 +2077,9 @@ namespace JinEngine
 
 					CD3DX12_CPU_DESCRIPTOR_HANDLE rtv = graphicResourceM->GetCpuRtvDescriptorHandle(rtvHeapIndex);
 					ResourceTransition(cmdList, rtResource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
+					
+					cmdList->RSSetViewports(1, &screenViewport);
+					cmdList->RSSetScissorRects(1, &scissorRect);
 					cmdList->OMSetRenderTargets(1, &rtv, true, nullptr);
 
 					outlineHelper->DrawOutline(cmdList,
@@ -2087,12 +2123,12 @@ namespace JinEngine
 					if (helper.cam != nullptr)
 					{
 						using FrameIndexInterface = JCameraPrivate::FrameIndexInterface;
-						occPassFrameIndex = FrameIndexInterface::GetHzbOccPassFrameIndex(helper.cam.Get());
+						occPassFrameIndex = FrameIndexInterface::GetHzbOccReqFrameIndex(helper.cam.Get());
 					}
 					else if (helper.lit != nullptr)
 					{
 						using FrameIndexInterface = JLightPrivate::FrameIndexInterface;
-						occPassFrameIndex = FrameIndexInterface::GetHzbOccPassFrameIndex(helper.lit.Get());
+						occPassFrameIndex = FrameIndexInterface::GetHzbOccReqFrameIndex(helper.lit.Get());
 					}
 
 					hzbOccHelper->DepthMapDownSampling(cmdList,
@@ -2120,15 +2156,15 @@ namespace JinEngine
 			}
 		private:
 			void WorkerThread(uint threadIndex)
-			{
+			{ 
 				auto sceneCmdList = currFrameResource->GetSceneCmd(threadIndex);
 				auto shadowCmdList = currFrameResource->GetShadowCmd(threadIndex);
 				auto hzbDrawOccCmdList = currFrameResource->GetHzbDrawOccCmd(threadIndex); 
 
 				const uint drawListCount = JGraphicDrawList::GetListCount();
 				JDrawHelper helper;
-				helper.threadCount = info.frameThreadCount;
-				helper.threadIndex = threadIndex;
+				helper.SetAllowMultithreadDraw(option, true);
+				helper.SetTheadInfo(info.frameThreadCount, threadIndex);
 
 				if (option.isHZBOcclusionActivated)
 				{
@@ -2137,8 +2173,7 @@ namespace JinEngine
 					for (uint i = 0; i < drawListCount; ++i)
 					{
 						JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-						helper.scene = drawTarget->scene;
-						helper.drawTarget = drawTarget;
+						helper.SetDrawTarget(drawTarget); 
 
 						if (option.isHZBOcclusionActivated)
 						{
@@ -2151,22 +2186,20 @@ namespace JinEngine
 								copiedHelper.SettingOccCulling(data->comp);
 								DrawOcclusionDepthMapMultiThread(hzbDrawOccCmdList, copiedHelper);
 							}
-						}
-						++helper.passOffset;
+						}  
 					}
 				} 
 				ThrowIfFailedG(hzbDrawOccCmdList->Close());
 				SetEvent(handle.endHzbDrawDepthMap[threadIndex]);
 
 				SettingDescriptorHeaps(shadowCmdList);
-				SettingGraphicRootSignature(shadowCmdList);
-				helper.passOffset = 0;
+				SettingGraphicRootSignature(shadowCmdList); 
 
 				for (uint i = 0; i < drawListCount; ++i)
 				{
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-					helper.scene = drawTarget->scene;
-					helper.drawTarget = drawTarget;
+					helper.SetDrawTarget(drawTarget);
+
 					for (const auto& data : drawTarget->shadowRequestor)
 					{
 						if (!data->canDrawThisFrame)
@@ -2175,20 +2208,19 @@ namespace JinEngine
 						JDrawHelper copiedHelper = helper;
 						copiedHelper.SettingDrawShadowMap(data->jLight);
 						DrawShadowMap(shadowCmdList, copiedHelper);
-					}
+					} 
 				}
 				ThrowIfFailedG(shadowCmdList->Close());
 				SetEvent(handle.endDrawShadwMap[threadIndex]);
 
 				SettingDescriptorHeaps(sceneCmdList);
-				SettingGraphicRootSignature(sceneCmdList);
-				helper.passOffset = 0;
+				SettingGraphicRootSignature(sceneCmdList); 
 
 				for (uint i = 0; i < drawListCount; ++i)
 				{
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-					helper.scene = drawTarget->scene;
-					helper.drawTarget = drawTarget;
+					helper.SetDrawTarget(drawTarget);
+
 					for (const auto& data : drawTarget->sceneRequestor)
 					{
 						if (!data->canDrawThisFrame)
@@ -2197,7 +2229,7 @@ namespace JinEngine
 						JDrawHelper copiedHelper = helper;
 						copiedHelper.SettingDrawScene(data->jCamera);
 						DrawSceneRenderTargetMultiThread(sceneCmdList, copiedHelper);
-					}
+					} 
 				}
 				ThrowIfFailedG(sceneCmdList->Close());
 				SetEvent(handle.endDrawScene[threadIndex]);
@@ -2229,6 +2261,8 @@ namespace JinEngine
 				for (uint i = 0; i < drawListCount; ++i)
 				{
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
+					helper.SetDrawTarget(drawTarget); 
+
 					if (option.isHZBOcclusionActivated)
 					{
 						for (const auto& data : drawTarget->hzbOccCullingRequestor)
@@ -2316,6 +2350,7 @@ namespace JinEngine
 			{
 				ID3D12GraphicsCommandList* cmdList = currFrameResource->GetCmd(J_MAIN_THREAD_CMD_ORDER::MID);
 				SettingDescriptorHeaps(cmdList);
+				SettingGraphicRootSignature(cmdList);
 
 				const uint drawListCount = JGraphicDrawList::GetListCount();
 				JDrawHelper helper;
@@ -2323,6 +2358,8 @@ namespace JinEngine
 				for (uint i = 0; i < drawListCount; ++i)
 				{
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
+					helper.SetDrawTarget(drawTarget);
+
 					if (option.isHZBOcclusionActivated)
 					{
 						for (const auto& data : drawTarget->hzbOccCullingRequestor)
@@ -2366,6 +2403,9 @@ namespace JinEngine
 						JDrawHelper copiedHelper = helper;
 						copiedHelper.SettingDrawScene(data->jCamera);
 
+						if (copiedHelper.allowDrawDebug)
+							DrawSceneDebugUI(cmdList, copiedHelper);
+
 						auto gRInterface = copiedHelper.cam->GraphicResourceUserInterface();
 						const uint rtvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
 						const uint dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_DEPTH_STENCIL);
@@ -2375,14 +2415,14 @@ namespace JinEngine
 
 						ResourceTransition(cmdList, dsResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
 						ResourceTransition(cmdList, rtResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
-					}
+					} 
 				}
-
+				 
 				for (uint i = 0; i < drawListCount; ++i)
 				{
 					JGraphicDrawTarget* drawTarget = JGraphicDrawList::GetDrawScene(i);
-					helper.scene = drawTarget->scene;
-					helper.drawTarget = drawTarget;
+					helper.SetDrawTarget(drawTarget);
+
 					if (option.isHZBOcclusionActivated)
 					{
 						for (const auto& data : drawTarget->hzbOccCullingRequestor)
@@ -2421,7 +2461,7 @@ namespace JinEngine
 						JDrawHelper copiedHelper = helper;
 						copiedHelper.SettingDrawScene(data->jCamera);
 						DrawSceneDepthMap(cmdList, copiedHelper);
-					}
+					} 
 				}
 				ThrowIfFailedG(cmdList->Close());
 				ID3D12CommandList* cmdsLists[] = { cmdList };

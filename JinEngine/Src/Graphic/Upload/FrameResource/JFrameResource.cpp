@@ -84,7 +84,7 @@ namespace JinEngine
 			lightIndexCB = std::make_unique<JUploadBuffer<JLightIndexConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_INDEX), J_UPLOAD_BUFFER_TYPE::CONSTANT);
 			shadowMapCalCB = std::make_unique<JUploadBuffer<JShadowMapConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP), J_UPLOAD_BUFFER_TYPE::CONSTANT);
 			bundingObjectCB = std::make_unique<JUploadBuffer<JBoundingObjectConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT), J_UPLOAD_BUFFER_TYPE::CONSTANT);
-			hzbOccPassCB = std::make_unique<JUploadBuffer<JHzbOccPassConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS), J_UPLOAD_BUFFER_TYPE::CONSTANT);
+			hzbOccReqCB = std::make_unique<JUploadBuffer<JHzbOccRequestorConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR), J_UPLOAD_BUFFER_TYPE::CONSTANT);
 			 	 
 			materialBuffer->Build(device, gInfo.minCapacity);
 			lightBuffer->Build(device, gInfo.minCapacity);
@@ -98,7 +98,7 @@ namespace JinEngine
 			lightIndexCB->Build(device, gInfo.minCapacity); 
 			shadowMapCalCB->Build(device, gInfo.minCapacity);
 			bundingObjectCB->Build(device, gInfo.minCapacity);		 
-			hzbOccPassCB->Build(device, gInfo.minCapacity);
+			hzbOccReqCB->Build(device, gInfo.minCapacity);
 			 
 			std::unordered_map<J_UPLOAD_FRAME_RESOURCE_TYPE, JUploadBufferBase*> uploadBufferMap = 
 			{ 
@@ -112,7 +112,7 @@ namespace JinEngine
 				{J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_INDEX, lightIndexCB.get()},
 				{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP, shadowMapCalCB.get()},
 				{J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, bundingObjectCB.get()},
-				{J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_PASS, hzbOccPassCB.get()},
+				{J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_REQUESTOR, hzbOccReqCB.get()},
 				{J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, hzbOccObjectBuffer.get()}
 			}; 
 			for (uint i = 0; i < (uint)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT; ++i)

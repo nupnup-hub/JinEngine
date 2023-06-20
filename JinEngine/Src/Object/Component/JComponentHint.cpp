@@ -12,10 +12,10 @@ namespace JinEngine
 
 	CTypeCommonFunc::CTypeCommonFunc(GetCTypeInfoCallable& getTypeInfo,
 		IsAvailableOverlapCallable& isAvailableOverlapCallable,
-		CreateInitDataCallable& createIntiDataCallable)
+		CreateInitDataCallable& createInitDataCallable)
 		: getTypeInfo(&getTypeInfo), 
 		isAvailableOverlapCallable(&isAvailableOverlapCallable),
-		createIntiDataCallable(&createIntiDataCallable)
+		createInitDataCallable(&createInitDataCallable)
 	{}
 	CTypeCommonFunc::~CTypeCommonFunc()
 	{
@@ -28,9 +28,11 @@ namespace JinEngine
 	{
 		return (*isAvailableOverlapCallable)(nullptr);
 	}
-	std::unique_ptr<Core::JDITypeDataBase> CTypeCommonFunc::CallCreateInitDataCallable(JUserPtr<JGameObject> parent, std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData)
+	std::unique_ptr<Core::JDITypeDataBase> CTypeCommonFunc::CallCreateInitDataCallable(const Core::JTypeInfo& typeInfo,
+		JUserPtr<JGameObject> owner,
+		std::unique_ptr<Core::JDITypeDataBase>&& parentInitData)
 	{
-		return (*createIntiDataCallable)(nullptr, parent, std::move(parentClassInitData));
+		return (*createInitDataCallable)(nullptr, typeInfo, owner, std::move(parentInitData));
 	}
 
 	CTypePrivateFunc::CTypePrivateFunc(SetCFrameDirtyCallable* setFrameDirtyCallable)
@@ -112,10 +114,11 @@ namespace JinEngine
 		return CTypeInfo::Instance().cFuncStorage[(uint)cType].CallIsAvailableOverlapCallable();
 	}
 	std::unique_ptr<Core::JDITypeDataBase> CTypeCommonCall::CallCreateInitDataCallable(const J_COMPONENT_TYPE cType,
-		JUserPtr<JGameObject> parent,
-		std::unique_ptr<Core::JDITypeDataBase>&& parentClassInitData)
+		const Core::JTypeInfo& typeInfo,
+		JUserPtr<JGameObject> owner,
+		std::unique_ptr<Core::JDITypeDataBase>&& parentInitData)
 	{
-		return CTypeInfo::Instance().cFuncStorage[(uint)cType].CallCreateInitDataCallable(parent, std::move(parentClassInitData));
+		return CTypeInfo::Instance().cFuncStorage[(uint)cType].CallCreateInitDataCallable(typeInfo, owner, std::move(parentInitData));
 	}
 	J_COMPONENT_TYPE CTypeCommonCall::ConvertCompType(const Core::JTypeInfo& info)
 	{

@@ -116,7 +116,7 @@ namespace JinEngine
 			{
 				JUserPtr<JGameObject> newLine = JGCI::CreateDebugLineShape(coordGrid,
 					OBJECT_FLAG_EDITOR_OBJECT,
-					J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE,
+					J_DEFAULT_SHAPE::LINE,
 					J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK,
 					false);
 
@@ -129,7 +129,7 @@ namespace JinEngine
 			{
 				JUserPtr<JGameObject> newLine = JGCI::CreateDebugLineShape(coordGrid,
 					OBJECT_FLAG_EDITOR_OBJECT,
-					J_DEFAULT_SHAPE::DEFAULT_SHAPE_LINE,
+					J_DEFAULT_SHAPE::LINE,
 					J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK,
 					false);
 				JUserPtr<JTransform>transform = newLine->GetTransform();

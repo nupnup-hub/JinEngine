@@ -77,9 +77,7 @@ namespace JinEngine
 		public:
 			JWeakPtr<JScene> scene = nullptr;
 			JWeakPtr<JCamera> cam = nullptr;
-			JWeakPtr<JLight> lit = nullptr;
-		public:
-			uint passOffset = 0;
+			JWeakPtr<JLight> lit = nullptr;  
 		public:
 			bool allowDrawDepthMap = false;
 			//draw outline and debug layer object
@@ -88,16 +86,23 @@ namespace JinEngine
 			bool allowOcclusionCulling = true;
 			bool allowDrawOccMipMap = false;	//for debug
 		public:
-			uint threadCount = 0;
-			uint threadIndex = 0;
+			bool allowMutilthreadDraw = false;
 		public:
-			bool RefelectOtherCamCullig(const uint rItemIndex)const noexcept;
+			int threadCount = -1;
+			int threadIndex = -1;
+		public:
+			bool RefelectOtherCamCullig(const uint rItemIndex)const noexcept; 
+		public:
+			void SetDrawTarget(JGraphicDrawTarget* drawTarget)noexcept;
+			void SetTheadInfo(const uint threadCount, const uint threadIndex)noexcept;
+			void SetAllowMultithreadDraw(const JGraphicOption& option, const bool value)noexcept;
 		public: 
 			void SettingOccCulling(const JWeakPtr<JComponent>& comp)noexcept;
 			void SettingDrawShadowMap(const JWeakPtr<JLight>& lit)noexcept;
-			void SettingDrawScene(const JWeakPtr<JCamera>& cam)noexcept;
+			void SettingDrawScene(const JWeakPtr<JCamera>& cam)noexcept;		
 		public:
-			void CalculateWorkIndex(const uint count, _Out_ uint& stIndex, _Out_ uint& edIndex)const noexcept;
+			bool CanDispatchWorkIndex()const noexcept;
+			void DispatchWorkIndex(const uint count, _Out_ uint& stIndex, _Out_ uint& edIndex)const noexcept;
 		};
 		//draw detail condition
 		struct JDrawCondition
@@ -110,8 +115,8 @@ namespace JinEngine
 			bool allowHDOcclusionCulling = false;
 		public:
 			bool allowDebugOutline = false;
-			bool allowAllCullingResult = false;	//for check other cam spacespatial 
-		public:
+			bool allowAllCullingResult = false;	//for check other cam spacespatial   
+		public: 
 			JDrawCondition() = default;
 			JDrawCondition(const JGraphicOption& option,
 				const JDrawHelper& helper,

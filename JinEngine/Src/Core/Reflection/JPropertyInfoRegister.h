@@ -1,5 +1,6 @@
 #pragma once 
 #include"JPropertyInfo.h"   
+#include"../Pointer/JOwnerPtr.h"
 
 namespace JinEngine
 {
@@ -13,7 +14,7 @@ namespace JinEngine
 		{
 		public:
 			 JPropertyInfoRegister(const std::string& name)
-			{
+			{ 
 				static JPropertyOptionInfo optInfo{};
 				if constexpr (std::is_member_pointer_v<Pointer>)
 				{
@@ -29,7 +30,7 @@ namespace JinEngine
 				else
 				{
 					static JStaticPropertyHandler<Type, Field> handler{ ptr };
-					static JPropertyInfo jPropertyInfo{ JPropertyInfoInitializer<Field>(name, handler, Type::StaticTypeInfo(), std::move(optInfo)) };
+					static JPropertyInfo jPropertyInfo{JPropertyInfoInitializer<Field>(name, handler, Type::StaticTypeInfo(), std::move(optInfo)) };
 					static bool init = false;
 					if (!init)
 					{
@@ -50,7 +51,7 @@ namespace JinEngine
 					if (!init)
 					{
 						Type::StaticTypeInfo().AddPropertyInfo(&jPropertyInfo);
-						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(std::make_unique<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
+						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(JPtrUtil::MakeOwnerPtr<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
 						init = true;
 					}
 				}
@@ -62,7 +63,7 @@ namespace JinEngine
 					if (!init)
 					{
 						Type::StaticTypeInfo().AddPropertyInfo(&jPropertyInfo);
-						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(std::make_unique<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
+						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(JPtrUtil::MakeOwnerPtr<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
 						init = true;
 					}
 				}
@@ -113,7 +114,7 @@ namespace JinEngine
 					if (!init)
 					{
 						Type::StaticTypeInfo().AddPropertyInfo(&jPropertyInfo);
-						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(std::make_unique<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
+						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(JPtrUtil::MakeOwnerPtr<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
 						init = true;
 					}
 				}
@@ -125,7 +126,7 @@ namespace JinEngine
 					if (!init)
 					{
 						Type::StaticTypeInfo().AddPropertyInfo(&jPropertyInfo);
-						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(std::make_unique<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
+						Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle(JPtrUtil::MakeOwnerPtr<JPropertyGuiWidgetInfoHandle<Field>>(&jPropertyInfo, std::forward<Widget>(var)...));
 						init = true;
 					}
 				}

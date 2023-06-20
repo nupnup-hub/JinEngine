@@ -11,7 +11,7 @@
 #include"../../../../Graphic/GraphicResource/JGraphicResourceType.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
-#include"../../../../../Lib/DirectX/TK/Src/d3dx12.h"
+#include"../../../../../ThirdParty/DirectX/TK/Src/d3dx12.h"
 //Test
 //#include"../../../../Object/Resource/JResourceManager.h" 
 //#include"../../../../Object/Resource/Texture/JTexture.h" 

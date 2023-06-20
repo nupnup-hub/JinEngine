@@ -1,5 +1,5 @@
 #include"JGraphicUtil.h"
-#include"../../../Lib/DirectX/Tk/Src/d3dx12.h"
+#include"../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"
 
 namespace JinEngine
 {

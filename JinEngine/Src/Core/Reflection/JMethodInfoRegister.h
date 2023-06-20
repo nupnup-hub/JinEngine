@@ -1,5 +1,6 @@
 #pragma once 
 #include"JMethodInfo.h"    
+#include"../Pointer/JOwnerPtr.h"
 //#include"JTypeInfoGuiOption.h"
 //#include"JGuiWidgetInfoHandle.h"
 
@@ -174,8 +175,7 @@ namespace JinEngine
 				Widget&&... var)
 			{
 				AddReadOnlyGuiWidgetInfoHandle<Ret>(displayName, getName, std::forward<Widget>(var)...);
-			}
-		private:
+			} 
 		private:
 			template<typename Ret, typename ...Widget>
 			void AddReadOnlyGuiWidgetInfoHandle(const std::string& displayName, const std::string& getName, Widget&&... var)
@@ -185,7 +185,7 @@ namespace JinEngine
 				if (isValid && getInfo != nullptr)
 				{
 					Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle
-					(std::make_unique<JMethodReadOnlyGuiWidgetInfoHandle<Ret>>(getInfo, displayName, std::forward<Widget>(var)...));
+					(JPtrUtil::MakeOwnerPtr<JMethodReadOnlyGuiWidgetInfoHandle<Ret>>(getInfo, displayName, std::forward<Widget>(var)...));
 				}
 			}
 		};
@@ -265,7 +265,7 @@ namespace JinEngine
 				if (isValid && getInfo != nullptr && setInfo != nullptr)
 				{
 					Type::StaticTypeInfo().GetOption()->AddGuiWidgetInfoHandle
-					(std::make_unique<JMethodGuiWidgetInfoHandle<Ret>>(getInfo, setInfo, displayName, std::forward<Widget>(var)...));
+					(JPtrUtil::MakeOwnerPtr<JMethodGuiWidgetInfoHandle<Ret>>(getInfo, setInfo, displayName, std::forward<Widget>(var)...));
 				}
 			}
 		};

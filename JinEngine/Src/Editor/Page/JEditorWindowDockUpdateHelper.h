@@ -16,7 +16,7 @@ namespace JinEngine
 			{
 			public:
 				J_EDITOR_PAGE_TYPE page;
-				std::unique_ptr<Core::JBindHandleBase> rollbackBind = nullptr;
+				std::unique_ptr<Core::JBindHandleBase> rollbackBind = nullptr; 
 			};
 		private:
 			const uint pageWndID;
@@ -36,6 +36,7 @@ namespace JinEngine
 			bool isLastDock = false; 
 			bool isLockSplit = false;
 			bool isLockOver = false;
+			bool isLockMove = false;
 			bool requestRollBack = false;
 		public:
 			JEditorWindowDockUpdateHelper(const J_EDITOR_PAGE_TYPE page);
@@ -44,14 +45,16 @@ namespace JinEngine
 			bool IsLastDock()const noexcept; 
 			bool IsLockSplitAcitvated()const noexcept;
 			bool IsLockOverAcitvated()const noexcept;
+			bool IsLockMove()const noexcept;
 		public:
-			void Update(UpdateData& updataData);
+			void Update(UpdateData& updateData); 
 		private:
-			void UpdateDockNodeInfo(UpdateData& updataData);
-			void UpdateExistingWindow(UpdateData& updataData)noexcept;
-			void UpdateExistingDockNode(UpdateData& updataData)noexcept;
-			void UpdateDraggingDockNode(UpdateData& updataData);
-			void RollBackLastDockNode(UpdateData& updataData);
+			void UpdateDockNodeInfo(UpdateData& updateData);
+			void UpdateExistingWindow(UpdateData& updateData)noexcept;
+			void UpdateExistingDockNode(UpdateData& updateData)noexcept;
+			void UpdateDraggingDockNode(UpdateData& updateData);
+			void RestrictDraggingTitlebarSpace(UpdateData& updateData);
+			void RollBackLastDockNode(UpdateData& updateData);
 		};
 	}
 }

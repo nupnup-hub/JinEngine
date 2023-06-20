@@ -63,18 +63,12 @@ namespace JinEngine
 		}
 		return newRenderItem;
 	}
-	JUserPtr<JComponent> JComponentCreatorInterface::CreateComponent(const J_COMPONENT_TYPE cType, const JUserPtr<JGameObject>& owner)
-	{
-		auto& typeInfo = CTypeCommonCall::CallGetTypeInfo(cType);
-		auto idenUser = JICI::Create(JComponent::CreateInitDIData(cType, owner), Core::JIdentifier::PrivateInterface(typeInfo.TypeGuid()));
-		return JUserPtr<JComponent>::ConvertChild(std::move(idenUser));
-	}
 	JUserPtr<JComponent> JComponentCreatorInterface::CreateComponent(const Core::JTypeInfo& typeInfo, const JUserPtr<JGameObject>& owner)
 	{
 		if (!typeInfo.IsChildOf<JComponent>())
 			return nullptr;
 
-		auto idenUser = JICI::Create(JComponent::CreateInitDIData(CTypeCommonCall::ConvertCompType(typeInfo), owner),
+		auto idenUser = JICI::Create(JComponent::CreateInitDIData(CTypeCommonCall::ConvertCompType(typeInfo), typeInfo, owner),
 			Core::JIdentifier::PrivateInterface(typeInfo.TypeGuid()));
 		return JUserPtr<JComponent>::ConvertChild(std::move(idenUser));
 	}

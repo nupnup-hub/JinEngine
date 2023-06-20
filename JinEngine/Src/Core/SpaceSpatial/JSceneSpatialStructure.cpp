@@ -127,19 +127,35 @@ namespace JinEngine
 					data->Culling(cullUser, camFrustum, nearFrustum);
 			}
 		}
-		JUserPtr<JGameObject> JSceneSpatialStructure::IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept
+		JUserPtr<JGameObject> JSceneSpatialStructure::IntersectFirst(const J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const bool allowContainRayPos)const noexcept
 		{
 			if(bvh[(int)layer] != nullptr)
-				return bvh[(int)layer]->IntersectFirst(ray);
+				return bvh[(int)layer]->IntersectFirst(ray, allowContainRayPos);
 			else
 			{
 				for (const auto& data : spaceSpatialVec)
 				{
 					if (data->IsSpaceSpatialActivated() && data->GetLayer() == layer)
-						return data->IntersectFirst(ray);
+						return data->IntersectFirst(ray, allowContainRayPos);
 				}
 			}
 			return nullptr;
+		}
+		void JSceneSpatialStructure::Intersect(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
+		{
+			if (bvh[(int)layer] != nullptr)
+				bvh[(int)layer]->Intersect(ray, sortType, res);
+			else
+			{
+				for (const auto& data : spaceSpatialVec)
+				{
+					if (data->IsSpaceSpatialActivated() && data->GetLayer() == layer)
+					{
+						data->Intersect(ray, sortType, res);
+						return;
+					}
+				}
+			} 
 		}
 		void JSceneSpatialStructure::UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
 		{

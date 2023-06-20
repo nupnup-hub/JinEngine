@@ -45,8 +45,7 @@ namespace JinEngine
 				JGraphicResourceManager* graphicResource,
 				const std::vector<JUserPtr<JGameObject>>& gameObject,
 				const JDrawHelper helper,
-				const JDrawCondition& condition,
-				const bool allowMultiThread);
+				const JDrawCondition& condition);
 		};
 	}
 }

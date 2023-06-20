@@ -2,6 +2,7 @@
 #include"JEditorWindow.h"
 #include"JEditorAttribute.h" 
 #include"JEditorPageShareData.h" 
+#include"SimpleWindow/JEditorSimpleWindow.h"
 #include"../Popup/JEditorPopupWindow.h"
 #include"../Event/JEditorEventStruct.h"
 #include"../Event/JEditorEvent.h"
@@ -22,6 +23,11 @@ namespace JinEngine
 {
 	namespace Editor
 	{
+		namespace
+		{
+			static constexpr int previousSizeExeFrame = 1;
+		}
+
 		JEditorPage::WindowInitInfo::WindowInitInfo(const std::string name)
 			:name(name)
 		{}
@@ -40,42 +46,50 @@ namespace JinEngine
 			auto openEditorWindowLam = [](JEditorPage& page, const std::string windowName)
 			{
 				JEditorWindow* selectedWindow = page.FindEditorWindow(windowName);
+				if (selectedWindow->IsOpen())
+					return;
+
+				page.AddEventNotification(*JEditorEvent::EvInterface(), page.GetGuid(), J_EDITOR_EVENT::ACTIVATE_WINDOW,
+					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActWindowEvStruct>(selectedWindow)));
+			};
+			auto closeEditorWindowLam = [](JEditorPage& page, const std::string windowName)
+			{
+				JEditorWindow* selectedWindow = page.FindEditorWindow(windowName);
 				if (!selectedWindow->IsOpen())
-				{
-					page.AddEventNotification(*JEditorEvent::EvInterface(), page.GetGuid(), J_EDITOR_EVENT::ACTIVATE_WINDOW,
-						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActWindowEvStruct>(selectedWindow, page.GetPageType())));
-				}
+					return;
+
+				const bool selectedHasDockNode = JImGuiImpl::GetGuiWindow(ImHashStr(selectedWindow->GetName().c_str()))->DockNode;
+				bool canClose = false;
+				if (!selectedHasDockNode)
+					canClose = true;
 				else
 				{
-					const bool selectedHasDockNode = JImGuiImpl::GetGuiWindow(ImHashStr(selectedWindow->GetName().c_str()))->DockNode;
-					bool canClose = false;
-					if (!selectedHasDockNode)
+					uint dockCount = 0;
+					const uint wndCount = (uint)page.opendWindow.size();
+					for (uint i = 0; i < wndCount; ++i)
+					{
+						if (JImGuiImpl::GetGuiWindow(ImHashStr(page.opendWindow[i]->GetName().c_str()))->DockNode)
+							++dockCount;
+					}
+					if (dockCount > 1)
 						canClose = true;
-					else
-					{
-						uint dockCount = 0;
-						const uint wndCount = (uint)page.opendWindow.size();
-						for (uint i = 0; i < wndCount; ++i)
-						{ 
-							if (JImGuiImpl::GetGuiWindow(ImHashStr(page.opendWindow[i]->GetName().c_str()))->DockNode)
-								++dockCount;
-						}
-						if (dockCount > 1)
-							canClose = true;
-					}
-					if (canClose)
-					{
-						page.AddEventNotification(*JEditorEvent::EvInterface(), page.GetGuid(), J_EDITOR_EVENT::CLOSE_WINDOW,
-							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorCloseWindowEvStruct>(selectedWindow->GetName(), page.GetPageType())));
-					}
-					else
-						*selectedWindow->GetOpenPtr() = true;
 				}
+				if (canClose)
+				{
+					page.AddEventNotification(*JEditorEvent::EvInterface(), page.GetGuid(), J_EDITOR_EVENT::CLOSE_WINDOW,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorCloseWindowEvStruct>(selectedWindow->GetName(), page.GetPageType())));
+				}
+				else
+					*selectedWindow->GetOpenPtr() = true;
 			};
+			auto openSimpleWindowLam = [](bool* isOpen) {*isOpen = true; };
+			auto closeSimpleWindowLam = [](bool* isOpen) {*isOpen = false; };
 
-			auto openSimpleWindowLam = [](bool* isOpen) {*isOpen = !(*isOpen); };
 			openEditorWindowFunctor = std::make_unique<OpenEditorWindowF::Functor>(openEditorWindowLam);
 			openSimpleWindowFunctor = std::make_unique<OpenSimpleWindowF::Functor>(openSimpleWindowLam);
+
+			closeEditorWindowFunctor = std::make_unique<CloseEditorWindowF::Functor>(closeEditorWindowLam);
+			closeSimpleWindowFunctor = std::make_unique<CloseSimpleWindowF::Functor>(closeSimpleWindowLam);
 		}
 		JEditorPage::~JEditorPage()
 		{}
@@ -87,6 +101,10 @@ namespace JinEngine
 		{
 			popupWindow = wnd;
 			closeConfirmPopupWindow = FindEditorPopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
+		}
+		void JEditorPage::AddSimpleWindow(const std::vector<JEditorSimpleWindow*>& wnd)noexcept
+		{
+			simpleWindow = wnd;
 		}
 		J_EDITOR_PAGE_FLAG JEditorPage::GetPageFlag()const noexcept
 		{
@@ -112,9 +130,25 @@ namespace JinEngine
 		{
 			return windows;
 		}
+		bool JEditorPage::CanUpdate(JEditorWindow* wnd)const noexcept
+		{
+			if (wnd == nullptr)
+				return false;
+
+			//maximized window can update and
+			//if previous size reserved other windows can be updated
+			if (HasMaximizedWindow() && maximizeInfo->destroyAfFrame == -1 && maximizeInfo->window->GetGuid() != wnd->GetGuid())
+				return false;
+
+			return true;
+		}
 		bool JEditorPage::HasDockNodeSpace()const noexcept
 		{ 
 			return (ImGuiDockNode*)ImGui::GetCurrentContext()->DockContext.Nodes.GetVoidPtr(ImGui::GetID(GetDockNodeName().c_str()));
+		}
+		bool JEditorPage::HasMaximizedWindow()const noexcept
+		{
+			return maximizeInfo != nullptr;
 		}
 		void JEditorPage::Initialize()
 		{
@@ -173,11 +207,11 @@ namespace JinEngine
 				}
 			}
 			else
-				ImGui::Begin(GetName().c_str(), 0, (ImGuiWindowFlags)guiWindowFlag);
+				JImGuiImpl::BeginWindow(GetName().c_str(), nullptr, (ImGuiWindowFlags)guiWindowFlag);
 		}
 		void JEditorPage::ClosePage()noexcept
 		{
-			ImGui::End();
+			JImGuiImpl::EndWindow();
 			SetLastActivated(IsActivated());
 
 			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
@@ -187,6 +221,62 @@ namespace JinEngine
 				ImGui::PopItemFlag();
 				ImGui::PopItemFlag(); 
 				JImGuiImpl::SetAllColorToSoft(JVector4<float>(-0.2f, -0.2f, -0.2f, 0));
+			}
+		}
+		void JEditorPage::UpdateOpenWindow()
+		{
+			for (const auto& data : opendWindow)
+			{
+				if (CanUpdate(data))
+					data->UpdateWindow();
+			} 
+			if (maximizeInfo != nullptr && maximizeInfo->destroyAfFrame != -1)
+			{ 
+				if (maximizeInfo->destroyAfFrame != 0)
+					--maximizeInfo->destroyAfFrame;
+				else
+				{
+					ImGuiWindow* guiWnd = JImGuiImpl::GetGuiWindow(maximizeInfo->window->GetName());
+					ImGuiDockNode* dockNode = guiWnd->DockNode;
+					ImGui::FocusWindow(guiWnd);
+
+					const uint lastTabItemCount = (uint)maximizeInfo->preTabItemID.size();
+					if (dockNode && maximizeInfo->preTabItemID.size() > 0)
+					{
+						ImVector<ImGuiTabItem> copiedTab = dockNode->TabBar->Tabs;
+						if (lastTabItemCount != copiedTab.size())
+							return;
+
+						auto& preTabItemID = maximizeInfo->preTabItemID;
+						for (uint i = 0; i < lastTabItemCount; ++i)
+						{
+							for (uint j = i; j < lastTabItemCount; ++j)
+							{
+								if (preTabItemID[i] == copiedTab[j].ID)
+								{
+									std::swap(copiedTab[i], copiedTab[j]);
+									break;
+								}
+							}
+						}
+						dockNode->TabBar->Tabs = copiedTab;
+					}
+					maximizeInfo = nullptr;
+				}
+			}
+		}
+		void JEditorPage::UpdateOpenPopupWindow(const JVector2<float> pagePos, const JVector2<float> pageSize)
+		{ 
+			JEditorPopupWindow* openPopup = GetOpenPopupWindow();
+			if (openPopup != nullptr)
+				openPopup->Update(GetName(), pagePos, pageSize);
+		}
+		void JEditorPage::UpdateOpenSimpleWindow()
+		{
+			for (const auto& data : simpleWindow)
+			{
+				if (data->IsOpen())
+					data->Update();
 			}
 		}
 		void JEditorPage::OpenWindow(const std::string& windowname)noexcept
@@ -279,6 +369,31 @@ namespace JinEngine
 			window->SetUnFocus();
 			focusWindow = nullptr;
 		}
+		void JEditorPage::MaximizeWindow(JEditorWindow* window)noexcept
+		{
+			if (window == nullptr || maximizeInfo != nullptr)
+				return;
+
+			maximizeInfo = std::make_unique<WinodwMaximizeInfo>();
+			maximizeInfo->window = window;
+			maximizeInfo->window->SetMaximize(true);
+
+			ImGuiWindow* guiWnd = JImGuiImpl::GetGuiWindow(maximizeInfo->window->GetName());;
+			ImGuiDockNode* dockNode = guiWnd->DockNode;
+			if (dockNode != nullptr)
+			{
+				for (const auto& data : dockNode->TabBar->Tabs)
+					maximizeInfo->preTabItemID.push_back(data.ID);
+			}
+		}
+		void JEditorPage::PreviousSizeWindow(JEditorWindow* window)noexcept
+		{
+			if (window == nullptr || maximizeInfo->window == nullptr || window->GetGuid() != maximizeInfo->window->GetGuid())
+				return;
+			  
+			maximizeInfo->destroyAfFrame = previousSizeExeFrame;
+			maximizeInfo->window->SetMaximize(false);
+		}
 		void JEditorPage::OpenPopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType,
 			const std::string& desc,
 			std::vector<PopupWndFuncTuple>&& tupleVec)
@@ -315,13 +430,21 @@ namespace JinEngine
 				opendPopupWindow = nullptr;
 			}
 		}
-		JEditorPage::OpenEditorWindowF::Functor* JEditorPage::GetOpEditorWindowFunctorPtr()noexcept
+		JEditorPage::OpenEditorWindowF::Functor* JEditorPage::GetOpenEditorWindowFunctorPtr()noexcept
 		{
 			return openEditorWindowFunctor.get();
 		}
-		JEditorPage::OpenSimpleWindowF::Functor* JEditorPage::GetOpSimpleWindowFunctorPtr()noexcept
+		JEditorPage::OpenSimpleWindowF::Functor* JEditorPage::GetOpenSimpleWindowFunctorPtr()noexcept
 		{
 			return openSimpleWindowFunctor.get();
+		}
+		JEditorPage::CloseEditorWindowF::Functor* JEditorPage::GetCloseEditorWindowFunctorPtr()noexcept
+		{
+			return closeEditorWindowFunctor.get();
+		}
+		JEditorPage::CloseSimpleWindowF::Functor* JEditorPage::GetCloseSimpleWindowFunctorPtr()noexcept
+		{
+			return closeSimpleWindowFunctor.get();
 		}
 		void JEditorPage::UpdateDockSpace(const int dockspaceFlag)
 		{ 

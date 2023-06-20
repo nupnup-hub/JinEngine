@@ -18,7 +18,7 @@
 #include"../../../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../../../Core/Identity/JIdentifier.h"
 #include"../../../../Core/Guid/JGuidCreator.h"
-#include"../../../../../Lib/imgui/imgui.h"  
+#include"../../../../../ThirdParty/imgui/imgui.h"  
 
 namespace JinEngine
 {
@@ -137,12 +137,12 @@ namespace JinEngine
 			using RequestDestructionEvF = JObjectExplorerCreationImpl::RequestDestructionEvF;
 			using RenameF = JObjectExplorerSettingImpl::RenameF;
 
-			createCubeNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::DEFAULT_SHAPE_CUBE));
-			createGridNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::DEFAULT_SHAPE_GRID));
-			createCyilinderNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::DEFAULT_SHAPE_CYILINDER));
-			createSphereNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::DEFAULT_SHAPE_SPHERE));
-			createQuadNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::DEFAULT_SHAPE_QUAD));
-			createEmptyNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::DEFAULT_SHAPE_EMPTY));
+			createCubeNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::CUBE));
+			createGridNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::GRID));
+			createCyilinderNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::CYILINDER));
+			createSphereNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::SPHERE));
+			createQuadNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::QUAD));
+			createEmptyNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::EMPTY));
 
 			destroyNode->RegisterSelectBind(std::make_unique<RequestDestructionEvF::CompletelyBind>(*creationImpl->reqDestructionEvF, this));
 			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
@@ -439,17 +439,6 @@ namespace JinEngine
 
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)
 				explorerPopup->SetOpen(false);
-
-			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && eventStruct->pageType == GetOwnerPageType())
-			{
-				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStruct);
-				JUserPtr< Core::JIdentifier> gameObj = evstruct->GetLastMatchedTypeObject(JGameObject::StaticTypeInfo());
-				if (gameObj.IsValid())
-				{
-					ClearSelectedObject();
-					PushSelectedObject(gameObj);				 		
-				}
-			}
 		}
 	}
 }

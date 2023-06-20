@@ -10,10 +10,21 @@ namespace JinEngine
 {
 	namespace
 	{
+		using CreateChildPtr = JOwnerPtr<Core::JIdentifier>(*)(Core::JDITypeDataBase* initData);
+
+		struct ChildPrivateData
+		{
+		public:
+			CreateChildPtr createptr;
+		};
+	}
+	namespace
+	{
 		static auto isAvailableoverlapLam = []() {return true; };
+		static std::unordered_map<size_t, ChildPrivateData> childPrivateMap;
 		static JBehaviorPrivate bPrivate;
 	}
- 
+	
 	class JBehavior::JBehaviorImpl : public Core::JTypeImplBase
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JBehaviorImpl)
@@ -40,17 +51,17 @@ namespace JinEngine
 			static GetCTypeInfoCallable getTypeInfoCallable{ &JBehavior::StaticTypeInfo };
 			static IsAvailableOverlapCallable isAvailableOverlapCallable{ isAvailableoverlapLam };
 			using InitUnq = std::unique_ptr<Core::JDITypeDataBase>;
-			auto createInitDataLam = [](JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
+			auto createInitDataLam = [](const Core::JTypeInfo& typeInfo, JUserPtr<JGameObject> parent, InitUnq&& parentClassInitData) -> InitUnq
 			{
 				using CorrectType = JComponent::ParentType::InitData;
 				const bool isValidUnq = parentClassInitData != nullptr && parentClassInitData->GetTypeInfo().IsChildOf(CorrectType::StaticTypeInfo());
 				if (isValidUnq)
 				{
 					CorrectType* ptr = static_cast<CorrectType*>(parentClassInitData.get());
-					return std::make_unique<JBehavior::InitData>(ptr->guid, ptr->flag, parent);
+					return std::make_unique<JBehavior::InitData>(typeInfo, ptr->guid, ptr->flag, parent);
 				}
 				else
-					return std::make_unique<JBehavior::InitData>(parent);
+					return std::make_unique<JBehavior::InitData>(typeInfo, parent);
 			};
 			static CreateInitDataCallable createInitDataCallable{ createInitDataLam };
 
@@ -64,13 +75,13 @@ namespace JinEngine
 		}
 	};
 
-	JBehavior::InitData::InitData(const JUserPtr<JGameObject>& owner)
-		:JComponent::InitData(JBehavior::StaticTypeInfo(), owner)
+	JBehavior::InitData::InitData(const Core::JTypeInfo& typeInfo, const JUserPtr<JGameObject>& owner)
+		:JComponent::InitData(typeInfo, owner)
 	{}
-	JBehavior::InitData::InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner)
-		: JComponent::InitData(JBehavior::StaticTypeInfo(), GetDefaultName(JBehavior::StaticTypeInfo()), guid, flag, owner)
+	JBehavior::InitData::InitData(const Core::JTypeInfo& typeInfo, const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner)
+		: JComponent::InitData(typeInfo, GetDefaultName(JBehavior::StaticTypeInfo()), guid, flag, owner)
 	{}
- 
+
 	Core::JIdentifierPrivate& JBehavior::PrivateInterface()const noexcept
 	{
 		return bPrivate;
@@ -94,11 +105,21 @@ namespace JinEngine
 	{
 		JComponent::DoActivate();
 		RegisterComponent(impl->thisPointer); 
+		NotifyActivate();
 	}
 	void JBehavior::DoDeActivate()noexcept
 	{
 		JComponent::DoDeActivate();
 		DeRegisterComponent(impl->thisPointer);
+		NotifyDeActivate();
+	}
+	void JBehavior::NotifyActivate(){}
+	void JBehavior::NotifyDeActivate(){}
+	void JBehavior::Initialize(){}
+	void JBehavior::Clear(){}
+	bool JBehavior::Copy(JUserPtr<Core::JIdentifier> to)
+	{	
+		return to.IsValid();
 	}
 	JBehavior::JBehavior(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JBehaviorImpl>(initData, this))
@@ -109,17 +130,21 @@ namespace JinEngine
 	}
 
 	using CreateInstanceInterface = JBehaviorPrivate::CreateInstanceInterface;
+	using DestroyInstanceInterface = JBehaviorPrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JBehaviorPrivate::AssetDataIOInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
-		return Core::JPtrUtil::MakeOwnerPtr<JBehavior>(*static_cast<JBehavior::InitData*>(initData));
+		auto initPtr = static_cast<JBehavior::InitData*>(initData);
+		auto childPrivate = childPrivateMap.find(initPtr->initTypeInfo.TypeGuid());
+		return childPrivate != childPrivateMap.end() ? childPrivate->second.createptr(initData) : nullptr; 
 	}
 	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
 	{
 		JComponentPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		JBehavior* behav = static_cast<JBehavior*>(createdPtr);
 		behav->impl->RegisterThisPointer(behav);
+		behav->Initialize();
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
@@ -128,11 +153,20 @@ namespace JinEngine
 	}
 	bool CreateInstanceInterface::Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept
 	{
-		const bool canCopy = CanCopy(from, to) && from->GetTypeInfo().IsA(JBehavior::StaticTypeInfo());
+		const bool canCopy = CanCopy(from, to) && from->GetTypeInfo().IsA(to->GetTypeInfo());
 		if (!canCopy)
 			return false;
+		 
+		JUserPtr<JBehavior> fromB = Core::ConvertChildUserPtr<JBehavior>(from);
+		JUserPtr<JBehavior> toB = Core::ConvertChildUserPtr<JBehavior>(to);
+		const bool res = JBehavior::JBehaviorImpl::DoCopy(fromB.Get(), toB.Get());
+		return res && fromB->Copy(toB);
+	}
 
-		return JBehavior::JBehaviorImpl::DoCopy(static_cast<JBehavior*>(from.Get()), static_cast<JBehavior*>(to.Get()));
+	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)noexcept
+	{
+		JComponentPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
+		static_cast<JBehavior*>(ptr)->Clear();
 	}
 
 	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
@@ -147,9 +181,9 @@ namespace JinEngine
 		std::wstring guide;
 		size_t guid;
 		J_OBJECT_FLAG flag;
-
+		 
 		JFileIOHelper::LoadObjectIden(stream, guid, flag); 
-		auto rawPtr = bPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JBehavior::InitData>(guid, flag, owner), &bPrivate);
+		auto rawPtr = bPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JBehavior::InitData>(*loadData->loadTypeInfo, guid, flag, owner), &bPrivate);
 		return rawPtr;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
@@ -171,6 +205,11 @@ namespace JinEngine
 	Core::JIdentifierPrivate::CreateInstanceInterface& JBehaviorPrivate::GetCreateInstanceInterface()const noexcept
 	{
 		static CreateInstanceInterface pI;
+		return pI;
+	}
+	Core::JIdentifierPrivate::DestroyInstanceInterface& JBehaviorPrivate::GetDestroyInstanceInterface()const noexcept
+	{
+		static DestroyInstanceInterface pI;
 		return pI;
 	}
 	JComponentPrivate::AssetDataIOInterface& JBehaviorPrivate::GetAssetDataIOInterface()const noexcept

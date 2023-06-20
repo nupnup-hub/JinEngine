@@ -59,7 +59,8 @@ namespace JinEngine
 	}
  
 	class JScene::JSceneImpl : public Core::JTypeImplBase,
-		public JClearableInterface
+		public JClearableInterface,
+		public Graphic::JFrameUpdateData
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSceneImpl)
 	public:
@@ -207,12 +208,17 @@ namespace JinEngine
 			}
 			return nullptr;
 		}
-		JUserPtr<JGameObject> IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept
+		JUserPtr<JGameObject> IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const bool allowContainRayPos = true)const noexcept
 		{
 			if (spatialStructure != nullptr)
-				return spatialStructure->IntersectFirst(layer, ray);
+				return spatialStructure->IntersectFirst(layer, ray, allowContainRayPos);
 			else
 				return nullptr;
+		}
+		void Intersect(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const Core::J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
+		{
+			if (spatialStructure != nullptr)
+				spatialStructure->Intersect(layer, ray, sortType, res);
 		}
 	public:
 		void CreateDefaultGameObject()noexcept
@@ -499,8 +505,9 @@ namespace JinEngine
 		}
 	public:
 		void Activate()
-		{
+		{			
 			SceneMangerAccess::RegisterScene(thisPointer);
+			RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_INDEX, this, thisPointer->GetGuid());
 			StuffResource();
 			if (root != nullptr)
 				JGameObjectPrivate::ActivateInterface::Activate(root);
@@ -519,6 +526,7 @@ namespace JinEngine
 			for (auto& data : allObjects)
 				JGameObjectPrivate::ActivateInterface::DeActivate(data); 
 			ClearResource();
+			DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_INDEX, this);
 			SceneMangerAccess::DeRegisterScene(thisPointer); 
 		}
 	public:
@@ -583,6 +591,11 @@ namespace JinEngine
 				allObjects.shrink_to_fit();
 				thisPointer->SetValid(false);
 			}
+		}
+	public:
+		void NotifyReAlloc()
+		{
+			ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_INDEX, this);
 		}
 	public:
 		void Initialize(InitData* initData)
@@ -775,6 +788,14 @@ namespace JinEngine
 	{
 		return impl->IntersectFirst(layer, ray);
 	}
+	JUserPtr<JGameObject> JScene::IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const bool allowContainRayPos)const noexcept
+	{
+		return impl->IntersectFirst(layer, ray, allowContainRayPos);
+	}
+	void JScene::Intersect(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const Core::J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
+	{
+		impl->Intersect(layer, ray, sortType, res);
+	}
 	void JScene::DoActivate() noexcept
 	{
 		JResourceObject::DoActivate();
@@ -803,6 +824,7 @@ namespace JinEngine
 	using CompFrameInterface = JScenePrivate::CompFrameInterface;
 	using CullingInterface = JScenePrivate::CullingInterface;
 	using DebugInterface = JScenePrivate::DebugInterface;
+	using FrameIndexInterface = JScenePrivate::FrameIndexInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
@@ -1056,6 +1078,11 @@ namespace JinEngine
 	void DebugInterface::BuildDebugTree(const JUserPtr<JScene>& scene, Core::J_SPACE_SPATIAL_TYPE type, const Core::J_SPACE_SPATIAL_LAYER layer, _Out_ Editor::JEditorBinaryTreeView& tree)noexcept
 	{
 		scene->impl->BuildDebugTree(type, layer, tree);
+	}
+
+	uint FrameIndexInterface::GetLitIndexFrameIndex(JScene* scene)
+	{
+		return scene->impl->GetUploadIndex();
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JScenePrivate::GetCreateInstanceInterface()const noexcept

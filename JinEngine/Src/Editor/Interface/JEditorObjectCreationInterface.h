@@ -3,7 +3,7 @@
 #include"../Event/JEditorEvent.h"
 #include"../Page/JEditorWindow.h"
 #include"../../Object/GameObject/JGameObject.h"
-#include"../../Core/Empty/EmptyType.h"
+#include"../../Core/Empty/JEmptyType.h"
 #include"../../Core/Identity/JIdentifier.h"
 #include"../../Core/Handle/JDataHandleStructure.h"
 #include"../Interface/JEditorTransitionInterface.h"

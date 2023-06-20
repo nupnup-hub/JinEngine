@@ -16,9 +16,9 @@
 
 #include"../../../Utility/JCommonUtility.h"
 #include"../../../Utility/JVectorExtend.h"
-#include"../../../../Lib/imgui/imgui_impl_dx12.h"
-#include"../../../../Lib/imgui/imgui_impl_win32.h" 
-#include"../../../../Lib/DirectX/TK/Src/d3dx12.h" 
+#include"../../../../ThirdParty/imgui/imgui_impl_dx12.h"
+#include"../../../../ThirdParty/imgui/imgui_impl_win32.h" 
+#include"../../../../ThirdParty/DirectX/TK/Src/d3dx12.h" 
 #include "../../Icon/IconFontCppHeaders-master/IconsFontAwesome5.h" 
 
 #include<Windows.h> 
@@ -33,7 +33,7 @@ namespace JinEngine
 			using WindowHandleInterface = Window::JWindowPrivate::HandleInterface;
 			using GraphicEditorInterface = Graphic::JGraphicPrivate::EditorInterface;
 		}
-		namespace 
+		namespace
 		{
 			enum class IMGUI_WIDGET
 			{
@@ -95,7 +95,7 @@ namespace JinEngine
 		public:
 			uint actWidgetCount[(uint)IMGUI_WIDGET::COUNT];
 		public:
-			JImGui() 
+			JImGui()
 			{
 				this->AddEventListener(*JWindow::EvInterface(), guid, Window::J_WINDOW_EVENT::WINDOW_RESIZE);
 
@@ -272,7 +272,7 @@ namespace JinEngine
 			void LoadFontFile()
 			{
 				ImGuiIO& io = ImGui::GetIO();
-				ImFontConfig config; 
+				ImFontConfig config;
 				config.OversampleH = 2;
 
 				ImFont* defaultFont = io.Fonts->AddFontDefault();
@@ -282,12 +282,12 @@ namespace JinEngine
 					io.Fonts->GetGlyphRangesKorean());
 				fontMap.clear();
 
-				fontMap.emplace(J_EDITOR_FONT_TYPE::DEFAULT, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>()); 
+				fontMap.emplace(J_EDITOR_FONT_TYPE::DEFAULT, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
 				fontMap.emplace(J_EDITOR_FONT_TYPE::MEDIUM, std::unordered_map<Core::J_LANGUAGE_TYPE, ImFont*>());
 
 				fontMap.find(J_EDITOR_FONT_TYPE::DEFAULT)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, defaultFont);
 				fontMap.find(J_EDITOR_FONT_TYPE::DEFAULT)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, defaultFont);
-  
+
 				fontMap.find(J_EDITOR_FONT_TYPE::MEDIUM)->second.emplace(Core::J_LANGUAGE_TYPE::KOREAN, mediumFont);
 				fontMap.find(J_EDITOR_FONT_TYPE::MEDIUM)->second.emplace(Core::J_LANGUAGE_TYPE::ENGLISH, mediumFont);
 			}
@@ -412,10 +412,14 @@ namespace JinEngine
 			return ImGui::GetWindowSize();
 		}
 		JVector2<int> JImGuiImpl::GetGuiWidnowContentsSize()noexcept
-		{ 
+		{
 			const JVector2<float> windowPaddig = ImGui::GetStyle().WindowPadding;
 			const float windowBorder = ImGui::GetStyle().WindowBorderSize;
 			return ImGui::GetWindowSize() - (windowPaddig * 2) - CreateVec2(windowBorder * 2);
+		}
+		ImGuiWindow* JImGuiImpl::GetGuiWindow(const std::string& wndName)noexcept
+		{
+			return GetGuiWindow(ImHashStr(wndName.c_str()));
 		}
 		ImGuiWindow* JImGuiImpl::GetGuiWindow(const ImGuiID id)noexcept
 		{
@@ -679,7 +683,7 @@ namespace JinEngine
 			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::IMAGE);
 			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(gUserAccess, rType).ptr, size, uv0, uv1, tintCol, borderCol);
 		}
-		void JImGuiImpl::Image(	Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
+		void JImGuiImpl::Image(Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
 			const JVector2<float>& size,
 			const JVector2<float>& uv0,
 			const JVector2<float>& uv1,
@@ -769,7 +773,7 @@ namespace JinEngine
 			const ImU32 bgDelta,
 			const ImU32 frameColor,
 			const float frameThickness)
-		{  
+		{
 			ImU32 finalBgColor = bgColor;
 			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::IMAGE);
 			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::SWITCH);
@@ -790,6 +794,103 @@ namespace JinEngine
 				pressed = !pressed;
 
 			return isPress;
+		}
+		bool JImGuiImpl::ImageButton(const std::string name,
+			Graphic::JGraphicSingleResourceUserAccess* gUserAccess,
+			const JVector2<float>& size,
+			const ImU32 bgColor,
+			const ImU32 bgDelta,
+			const ImU32 frameColor,
+			const float frameThickness)
+		{
+			ImU32 finalBgColor = bgColor;
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::IMAGE);
+			Private::jImgui->AddActWidgetCount(IMGUI_WIDGET::BUTTON);
+
+			const JVector2<float> pos = ImGui::GetCurrentWindow()->DC.CursorPos;
+			DrawRectFilledColor(pos, size, finalBgColor, true);
+			if (frameThickness > 0)
+				DrawRectFrame(pos, size, frameThickness, frameColor, true);
+
+			const JVector2<float> preCursor = ImGui::GetCursorPos();
+			const bool isPress = JImGuiImpl::Selectable(name, false, ImGuiSelectableFlags_AllowItemOverlap, size);
+			ImGui::SetCursorPos(preCursor);
+			ImGui::Image((ImTextureID)Private::jImgui->GetGraphicGpuSrvHandle(gUserAccess).ptr, size);
+
+			return isPress;
+		}
+		bool JImGuiImpl::MaximizeButton(const bool isLocatedCloseBtnLeftSide)
+		{ 
+			ImGuiWindow* wnd = ImGui::GetCurrentWindow();
+			ImGuiDockNode* dockNode = wnd->DockNode;
+	 
+			const ImRect titleBarRect = ImGui::GetCurrentWindow()->TitleBarRect();
+			const JVector2<float> titleBarSize = titleBarRect.GetSize();
+
+			float xOffset = 0;
+			if (isLocatedCloseBtnLeftSide)
+			{
+				ImGuiContext& g = *GImGui;
+				const float closeBtnRadius = ImMax(2.0f, g.FontSize * 0.5f + 1.0f);
+				xOffset = closeBtnRadius * 3.5f;	 
+			}
+			const JVector2<float> selectablePos = ImGui::GetWindowPos() + JVector2<float>(ImGui::GetWindowSize().x - titleBarSize.y - xOffset, 0);
+			const JVector2<float> selectableSize = JVector2<float>(titleBarSize.y, titleBarSize.y);
+
+			const JVector2<float> rectPos = selectablePos + JVector2<float>(titleBarSize.y * 0.15f, titleBarSize.y * 0.15f);
+			const JVector2<float> rectSize = selectableSize * 0.65f;
+
+			if (dockNode != nullptr)
+			{ 
+				ImRect dockRect = dockNode->TabBar->Tabs[dockNode->TabBar->Tabs.size() - 1].Window->DockTabItemRect;
+				const float tabRectX = dockRect.GetCenter().x + dockRect.GetSize().x * 0.6f;
+				if (tabRectX > selectablePos.x)
+					return false;
+			}
+
+			ImGui::PushClipRect(titleBarRect.Min, titleBarRect.Max, false); 
+			JImGuiImpl::DrawRectFrame(rectPos, rectSize, 1.0f, ImGui::GetColorU32(ImGuiCol_Text), true);
+			ImGui::PopClipRect();
+			return ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0) && IsMouseInRect(selectablePos, selectableSize);
+		}
+		bool JImGuiImpl::PreviousSizeButton(const bool isLocatedCloseBtnLeftSide )
+		{
+			ImGuiWindow* wnd = ImGui::GetCurrentWindow();
+			ImGuiDockNode* dockNode = wnd->DockNode;
+
+			const ImRect titleBarRect = ImGui::GetCurrentWindow()->TitleBarRect();
+			const JVector2<float> titleBarSize = titleBarRect.GetSize();
+
+			float xOffset = 0;
+			if (isLocatedCloseBtnLeftSide)
+			{
+				ImGuiContext& g = *GImGui;
+				const float closeBtnRadius = ImMax(2.0f, g.FontSize * 0.5f + 1.0f);
+				xOffset = closeBtnRadius * 3.5f;
+			}
+			const JVector2<float> selectablePos = ImGui::GetWindowPos() + JVector2<float>(ImGui::GetWindowSize().x - titleBarSize.y - xOffset, 0);
+			const JVector2<float> selectableSize = JVector2<float>(titleBarSize.y, titleBarSize.y);
+
+			const JVector2<float> backRectPos = selectablePos + JVector2<float>(titleBarSize.y * 0.3f, titleBarSize.y * 0.15f);
+			const JVector2<float> backRectSize = selectableSize * 0.5f;
+
+			const JVector2<float> frontRectPos = selectablePos + JVector2<float>(titleBarSize.y * 0.15f, titleBarSize.y * 0.3f);
+			const JVector2<float> frontRectSize = selectableSize * 0.5f;
+
+			if (dockNode != nullptr)
+			{
+				ImRect dockRect = dockNode->TabBar->Tabs[dockNode->TabBar->Tabs.size() - 1].Window->DockTabItemRect;
+				const float tabRectX = dockRect.GetCenter().x + dockRect.GetSize().x * 0.6f;
+				if (tabRectX > selectablePos.x)
+					return false;
+			}
+
+			ImGui::PushClipRect(titleBarRect.Min, titleBarRect.Max, false);
+			JImGuiImpl::DrawRectFrame(backRectPos, backRectSize, 1.0f, ImGui::GetColorU32(ImGuiCol_Text), true);
+			JImGuiImpl::DrawRectFilledColor(frontRectPos, frontRectSize, ImGui::GetColorU32(ImGuiCol_TitleBg), true);
+			JImGuiImpl::DrawRectFrame(frontRectPos, frontRectSize, 1.0f, ImGui::GetColorU32(ImGuiCol_Text), true);
+			ImGui::PopClipRect();
+			return ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0) && IsMouseInRect(selectablePos, selectableSize);
 		}
 		void JImGuiImpl::DrawRectFilledMultiColor(const JVector2<float>& pos, const JVector2<float>& size, const ImU32 color, const ImU32 colorDelta, const bool useRestoreCursorPos)noexcept
 		{
@@ -843,19 +944,21 @@ namespace JinEngine
 			const JVector2<float> boxSize = ImGui::CalcTextSize(tooltip.c_str()) + (padding * 2);
 			ImGui::SetNextWindowPos(pos);
 			ImGui::SetNextWindowSize(boxSize);
-			const ImGuiWindowFlags flag = ImGuiWindowFlags_NoTitleBar | 
-				ImGuiWindowFlags_AlwaysAutoResize | 
-				ImGuiWindowFlags_NoNav | 
+			const ImGuiWindowFlags flag = ImGuiWindowFlags_NoTitleBar |
+				ImGuiWindowFlags_AlwaysAutoResize |
+				ImGuiWindowFlags_NoNav |
 				ImGuiWindowFlags_NoSavedSettings | 
 				ImGuiWindowFlags_NoBringToFrontOnFocus | 
 				ImGuiWindowFlags_NoFocusOnAppearing;
+			   
 			JImGuiImpl::BeginWindow(uniqueLabel, 0, flag);
+			ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());
 
 			ImGui::SetCursorScreenPos(pos + padding);
 			JImGuiImpl::Text(tooltip);
 			JImGuiImpl::EndWindow();
 			if (useRestoreCursorPos)
-				ImGui::SetCursorPos(nowCursor);
+				ImGui::SetCursorPos(nowCursor); 
 		}
 		void JImGuiImpl::DrawToolTipBox(const std::string& uniqueLabel,
 			const std::string& tooltip,
@@ -919,17 +1022,17 @@ namespace JinEngine
 		bool JImGuiImpl::IsMouseInLine(JVector2<float> st, JVector2<float> ed, const float thickness)noexcept
 		{
 			const ImVec2 mousePos = ImGui::GetMousePos();
-			 
+
 			const float halfThickness = thickness / 2;
 			const float minX = min(st.x, ed.x);
 			const float maxX = max(st.x, ed.x);
 			const float minY = min(st.y, ed.y);
 			const float maxY = max(st.y, ed.y);
- 
+
 			if (minX - halfThickness <= mousePos.x && mousePos.x <= maxX + halfThickness
 				&& minY <= mousePos.y && mousePos.y <= maxY)
 			{
-				const float dy = (maxY - minY) / (maxX - minX); 
+				const float dy = (maxY - minY) / (maxX - minX);
 				float maxYRange = (mousePos.x - (minX - halfThickness)) * dy + minY;
 				float minYRange = (mousePos.x - (minX + halfThickness)) * dy + minY;
 				return minYRange <= mousePos.y && mousePos.y <= maxYRange;

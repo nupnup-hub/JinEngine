@@ -15,7 +15,7 @@ namespace JinEngine
 			SHADOW_MAP_LIGHT,
 			SHADOW_MAP,
 			HZB_OCC_OBJECT,
-			HZB_OCC_PASS)
+			HZB_OCC_REQUESTOR)
 		
 		enum class J_UPLOAD_CAPACITY_CONDITION
 		{
