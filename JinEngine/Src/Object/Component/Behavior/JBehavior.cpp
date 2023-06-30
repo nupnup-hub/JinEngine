@@ -6,22 +6,16 @@
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 
+
+#include"../JComponentPrivate.h"
 namespace JinEngine
 {
 	namespace
-	{
-		using CreateChildPtr = JOwnerPtr<Core::JIdentifier>(*)(Core::JDITypeDataBase* initData);
-
-		struct ChildPrivateData
-		{
-		public:
-			CreateChildPtr createptr;
-		};
-	}
+	{  }
 	namespace
 	{
 		static auto isAvailableoverlapLam = []() {return true; };
-		static std::unordered_map<size_t, ChildPrivateData> childPrivateMap;
+		static std::unordered_map<size_t, JBehavior::DerivedTypeData> derivedPrivateMap;
 		static JBehaviorPrivate bPrivate;
 	}
 	
@@ -118,8 +112,16 @@ namespace JinEngine
 	void JBehavior::Initialize(){}
 	void JBehavior::Clear(){}
 	bool JBehavior::Copy(JUserPtr<Core::JIdentifier> to)
-	{	
-		return to.IsValid();
+	{ 
+		return true;
+	}
+	void JBehavior::RegisterDerivedData(const Core::JTypeInfo& info, const DerivedTypeData& derivedData)
+	{
+		auto data = derivedPrivateMap.find(info.TypeGuid());
+		if (data != derivedPrivateMap.end())
+			return;
+
+		derivedPrivateMap.emplace(info.TypeGuid(), derivedData);
 	}
 	JBehavior::JBehavior(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JBehaviorImpl>(initData, this))
@@ -136,8 +138,8 @@ namespace JinEngine
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
 	{
 		auto initPtr = static_cast<JBehavior::InitData*>(initData);
-		auto childPrivate = childPrivateMap.find(initPtr->initTypeInfo.TypeGuid());
-		return childPrivate != childPrivateMap.end() ? childPrivate->second.createptr(initData) : nullptr; 
+		auto dPrivate = derivedPrivateMap.find(initPtr->initTypeInfo.TypeGuid());
+		return dPrivate != derivedPrivateMap.end() ? dPrivate->second.createPtr(initData) : nullptr;
 	}
 	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
 	{
@@ -181,7 +183,7 @@ namespace JinEngine
 		std::wstring guide;
 		size_t guid;
 		J_OBJECT_FLAG flag;
-		 
+		  
 		JFileIOHelper::LoadObjectIden(stream, guid, flag); 
 		auto rawPtr = bPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JBehavior::InitData>(*loadData->loadTypeInfo, guid, flag, owner), &bPrivate);
 		return rawPtr;

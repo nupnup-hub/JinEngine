@@ -3,6 +3,7 @@
 
 namespace JinEngine
 {
+	class JBehavior;
 	class JBehaviorPrivate final : public JComponentPrivate
 	{
 	public:
@@ -15,7 +16,7 @@ namespace JinEngine
 		class CreateInstanceInterface final : public JComponentPrivate::CreateInstanceInterface
 		{
 		private:
-			friend class AssetDataIOInterface;
+			friend class AssetDataIOInterface; 
 		private:
 			JOwnerPtr<Core::JIdentifier> Create(Core::JDITypeDataBase* initData) final;
 			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept final;

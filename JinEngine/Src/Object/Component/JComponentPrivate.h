@@ -6,14 +6,15 @@ namespace JinEngine
 	class JGameObject;
 	class JGameObjectPrivate;
 	class JComponent;  
+	 
 	class JComponentPrivate : public JObjectPrivate
 	{
 	public:
 		class CreateInstanceInterface : public JObjectPrivate::CreateInstanceInterface
 		{
 		private:
-			friend class Core::JIdenCreatorInterface; 
-		protected:
+			friend class Core::JIdenCreatorInterface;  
+		protected: 
 			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept override;
 		private:
 			void RegisterCash(Core::JIdentifier* createdPtr)noexcept override; 

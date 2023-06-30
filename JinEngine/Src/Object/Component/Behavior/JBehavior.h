@@ -17,6 +17,14 @@ namespace JinEngine
 			InitData(const Core::JTypeInfo& typeInfo, const JUserPtr<JGameObject>& owner);
 			InitData(const Core::JTypeInfo& typeInfo, const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
 		};
+	public:
+		struct DerivedTypeData
+		{
+		public:
+			using CreatePtr = JOwnerPtr<Core::JIdentifier>(*)(Core::JDITypeDataBase* initData);
+		public:
+			CreatePtr createPtr;
+		};
 	private:
 		friend class JBehaviorPrivate;
 		class JBehaviorImpl;
@@ -41,12 +49,11 @@ namespace JinEngine
 	protected:
 		virtual void Initialize();
 		virtual void Clear();
+		virtual bool Copy(JUserPtr<Core::JIdentifier> to);			//call after JBehavior copied
 	protected:
 		virtual void Update() = 0;
-	protected:
-		virtual bool Copy(JUserPtr<Core::JIdentifier> to);
-	protected:
-		virtual void RegisterChildTypeData() = 0;
+	protected: 
+		static void RegisterDerivedData(const Core::JTypeInfo& info, const DerivedTypeData& derivedData);
 	protected:
 		JBehavior(const InitData& initData);
 		~JBehavior();

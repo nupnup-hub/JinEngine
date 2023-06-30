@@ -390,7 +390,7 @@ namespace JinEngine
 		{
 			const int lastBackSlash = GetPathLastBackSlash(folderPath);
 			if (lastBackSlash != -1)
-				folderPath = folderPath.substr(0, lastBackSlash - 2);
+				folderPath = folderPath.substr(0, lastBackSlash - 1);
 		}
 	} 
 	void JCUtil::DecomposeFileName(const std::wstring& oriname, std::wstring& name, std::wstring& format)

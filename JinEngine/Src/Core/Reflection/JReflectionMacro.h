@@ -180,7 +180,20 @@ namespace JinEngine
 																								\
 
 
-
+#define REGISTER_CLASS_BEHAVIOR_DERIVED_FUNC(typeName)											\
+		private:																				\
+			static void RegisterTypeData()														\
+			{																					\
+				DerivedTypeData derivedData;													\
+				derivedData.createPtr = [](Core::JDITypeDataBase* initData)										\
+				{																								\
+					return Core::JPtrUtil::MakeOwnerPtr<typeName>(*static_cast<typeName::InitData*>(initData)); \
+				};																								\
+				RegisterDerivedData(StaticTypeInfo(), derivedData); /*engine defined*/							\
+				CallOneceWhenRegisterTypeData();	/*user defined*/											\
+			}																									\
+																												
+			 
 #define REGISTER_CLASS_IDENTIFIER_LINE(typeName, ...)												\
 		REGISTER_CLASS_DEFINITION_TYPE(typeName, __VA_ARGS__)										\
 		REGISTER_CLASS_DEFAULT_ALLOCATOR															\
@@ -210,6 +223,12 @@ namespace JinEngine
 		REGISTER_CLASS_TYPE_INFO_CREATOR(typeName, __VA_ARGS__)											\
 		REGISTER_CLASS_TYPE_FUNC(typeName, __VA_ARGS__)													\
 		REGISTER_CLASS_ALLOC_FUNC																	\
+
+
+#define REGISTER_CLASS_BEHAVIOR_DERIVED_LINE(typeName, ...)												\
+		REGISTER_CLASS_IDENTIFIER_LINE(typeName, __VA_ARGS__)									\
+		REGISTER_CLASS_BEHAVIOR_DERIVED_FUNC(typeName, __VA_ARGS__)								\
+
 
 
 #define SEMICOLON ;

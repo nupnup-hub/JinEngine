@@ -188,7 +188,7 @@ namespace JinEngine
 			}
 			return uniqueName;
 		}
-		template<typename Type, std::enable_if_t<std::is_base_of_v<JTypeBase, Type>, int> = 0>
+		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JTypeBase, Type>, int> = 0>
 		static std::wstring MakeUniqueName(const std::vector<Type*>& vec, const std::wstring& name)
 		{
 			bool result = true;
@@ -246,7 +246,7 @@ namespace JinEngine
 			}
 			return searchFail;
 		}	 
-		template<typename Type, std::enable_if_t<std::is_base_of_v<JTypeBase, Type>, int> = 0>
+		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JTypeBase, Type>, int> = 0>
 		static int GetTypeIndex(const std::vector<Type*>& vec, const size_t guid)
 		{
 			const uint vecCount = (uint)vec.size();
@@ -257,7 +257,7 @@ namespace JinEngine
 			}
 			return searchFail;
 		} 
-		template<typename Type, std::enable_if_t<std::is_base_of_v<JTypeBase, Type>, int> = 0>
+		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JTypeBase, Type>, int> = 0>
 		static int GetTypeIndex(const std::vector<JUserPtr<Type>>& vec, const size_t guid)
 		{
 			const uint vecCount = (uint)vec.size();
@@ -268,7 +268,7 @@ namespace JinEngine
 			}
 			return searchFail;
 		}
-		template<typename Type, std::enable_if_t<std::is_base_of_v<JTypeBase, Type>, int> = 0>
+		template<typename Type, std::enable_if_t<std::is_base_of_v<Core::JTypeBase, Type>, int> = 0>
 		static int GetTypeIndex(const std::vector<std::unique_ptr<Type>>& vec, const size_t guid)
 		{
 			const uint vecCount = (uint)vec.size();
