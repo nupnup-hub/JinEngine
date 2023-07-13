@@ -1,0 +1,31 @@
+#pragma once
+#include<exception>
+#include<string>
+#include <sstream>
+#include<Windows.h>
+
+namespace JinEngine
+{
+	namespace Core
+	{
+		class JException
+		{
+		protected:
+			mutable std::wstring whatBuffer;
+		private:
+			int line = 0;
+			std::wstring file = L" ";
+		public:
+			JException(int line, const std::wstring& file);
+			virtual ~JException();
+			virtual const std::wstring what() const;
+			virtual const std::wstring GetType() const;
+			int GetLine() const;
+			const std::wstring GetFile() const;
+			const std::wstring GetOriginString() const;
+		protected:
+			std::wstring TranslateErrorCode(HRESULT hr)const;
+		};
+	}
+}
+ 
