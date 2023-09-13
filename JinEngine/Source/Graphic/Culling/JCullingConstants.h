@@ -8,6 +8,10 @@ namespace JinEngine
 		{
 			static constexpr float cullingUpdateFrequencyMin = 0.0f;
 			static constexpr float cullingUpdateFrequencyMax = 1.0f;
+			 
+			static constexpr uint frustumNonCullingValue = 0;
+			static constexpr uint hzbNonCullingValue = 0;
+			static constexpr uint hdNonCullingValue = 1;
 		}
 	}
 }

@@ -48,7 +48,7 @@ namespace JinEngine
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;
 		private:
-			void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)final;
+			void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStructure)final;
 		};
 	}
 }

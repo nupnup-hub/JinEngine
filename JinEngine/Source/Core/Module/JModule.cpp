@@ -3,7 +3,7 @@
 #include"JModuleMacro.h"
 #include"JModuleFuncDefenitions.h"  
 #include"../File/JJSon.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 #include <psapi.h>
 #include<fstream>
 

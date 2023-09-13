@@ -51,6 +51,10 @@ namespace JinEngine
 			void BuildObjectExplorer();
 			void ObjectExplorerOnScreen(const JUserPtr<JGameObject>& gObj, const bool isAcivatedSearch);
 		private:
+			void DisplayActSignalWidget(const JUserPtr<JGameObject>& gObj,
+				const std::string& unqLabel,
+				const bool allowDisplaySeletable);
+		private:
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;
 			void DoSetUnFocus()noexcept final;

@@ -39,7 +39,9 @@ namespace JinEngine
 				if (handle->GetTypeInfo().IsChildOf<IPropertyHandler<Field>>())
 					return static_cast<IPropertyHandler<Field>*>(handle)->Get(object);
 				else
-					assert(false && "JProperty Get Error");
+				{
+					assert(false && "JProperty Get Error"); 
+				}
 			}
 			template<typename Field>
 			Field UnsafeGet(void* object)

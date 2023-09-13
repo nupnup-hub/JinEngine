@@ -1,6 +1,5 @@
 #pragma once 
-#include"../Singleton/JSingletonHolder.h"  
-#include"../Module/JModuleMacro.h"
+#include"../Singleton/JSingletonHolder.h"   
 #include<memory> 
 #include<vector>
 
@@ -12,7 +11,7 @@ namespace JinEngine
 		class JEnumInfo;
 
 		class JReflectionInfoPrivate;
-		class CORE_API JReflectionInfo final
+		class JReflectionInfo final
 		{
 		private:
 			template<typename T>friend class JCreateUsingNew;

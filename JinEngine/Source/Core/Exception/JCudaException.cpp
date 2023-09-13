@@ -1,5 +1,5 @@
 #include"JCudaException.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 #include "cuda_runtime.h"
 
 namespace JinEngine

@@ -1,8 +1,8 @@
 #pragma once
 #include"JMeshType.h"
-#include"../../../Core/JDataType.h"
+#include"../../../Core/JCoreEssential.h"
 #include"../../../Core/Pointer/JOwnerPtr.h"
-#include"../../../Utility/JVector.h"  
+#include"../../../Core/Math/JVector.h" 
 #include<vector>
 #include<DirectXMath.h>
 #include<DirectXCollision.h>
@@ -22,17 +22,15 @@ namespace JinEngine
 	struct JStaticMeshVertex
 	{
 	public:
-		DirectX::XMFLOAT3 position = DirectX::XMFLOAT3(0, 0, 0);
-		DirectX::XMFLOAT3 normal = DirectX::XMFLOAT3(0, 0, 0);
-		DirectX::XMFLOAT2 texC = DirectX::XMFLOAT2(0, 0);
-		DirectX::XMFLOAT3 tangentU = DirectX::XMFLOAT3(0, 0, 0);
+		JVector3<float> position = JVector3<float>(0, 0, 0);
+		JVector3<float> normal = JVector3<float>(0, 0, 0);
+		JVector2<float> texC = JVector2<float>(0, 0);
+		JVector3<float> tangentU = JVector3<float>(0, 0, 0);
 	public:
 		JStaticMeshVertex() = default; 
-		JStaticMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv, const DirectX::XMFLOAT3& t);
-		JStaticMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv, const DirectX::XMFLOAT4& t);
-
 		JStaticMeshVertex(const JVector3<float>& p, const JVector3<float>& n, const JVector2<float>& uv, const JVector3<float>& t);
-		JStaticMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv);
+		JStaticMeshVertex(const JVector3<float>& p, const JVector3<float>& n, const JVector2<float>& uv, const JVector4<float>& t);
+		JStaticMeshVertex(const JVector3<float>& p, const JVector3<float>& n, const JVector2<float>& uv);
 		JStaticMeshVertex(float px, float py, float pz, float nx, float ny, float nz, float u, float v, float tx, float ty, float tz);
 		JStaticMeshVertex(float px, float py, float pz, float nx, float ny, float nz);
 		JStaticMeshVertex(float px, float py, float pz);
@@ -40,28 +38,27 @@ namespace JinEngine
 	struct JSkinnedMeshVertex
 	{
 	public:
-		DirectX::XMFLOAT3 position = DirectX::XMFLOAT3(0, 0, 0);
-		DirectX::XMFLOAT3 normal = DirectX::XMFLOAT3(0, 0, 0);
-		DirectX::XMFLOAT2 texC = DirectX::XMFLOAT2(0, 0);
-		DirectX::XMFLOAT3 tangentU = DirectX::XMFLOAT3(0, 0, 0);
-		DirectX::XMFLOAT3 jointWeight = DirectX::XMFLOAT3(0, 0, 0);
+		JVector3<float> position = JVector3<float>(0, 0, 0);
+		JVector3<float> normal = JVector3<float>(0, 0, 0);
+		JVector2<float> texC = JVector2<float>(0, 0);
+		JVector3<float> tangentU = JVector3<float>(0, 0, 0);
+		JVector3<float> jointWeight = JVector3<float>(0, 0, 0);
 		uint8 jointIndex[4]{ 0,0,0,0 };
 	public:
 		JSkinnedMeshVertex() = default;
-		JSkinnedMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv, const DirectX::XMFLOAT3& t);
-		JSkinnedMeshVertex(const DirectX::XMFLOAT3& p, 
-			const DirectX::XMFLOAT3& n,
-			const DirectX::XMFLOAT2& uv, 
-			const DirectX::XMFLOAT4& t, 
+		JSkinnedMeshVertex(const JVector3<float>& p, 
+			const JVector3<float>& n,
+			const JVector2<float>& uv, 
+			const JVector4<float>& t, 
 			const std::vector<JBlendingIndexWeightPair>& blendWeightPair);
-		JSkinnedMeshVertex(const DirectX::XMFLOAT3 position,
-			const DirectX::XMFLOAT3 normal,
-			const DirectX::XMFLOAT2 texC,
-			const DirectX::XMFLOAT3 tangentU,
-			const DirectX::XMFLOAT3 jointWeight,
-			const uint(&jointIndex)[4]);
+		JSkinnedMeshVertex(const JVector3<float> position,
+			const JVector3<float> normal,
+			const JVector2<float> texC,
+			const JVector3<float> tangentU,
+			const JVector3<float> jointWeight,
+			const uint(&jointIndex)[4]); 
 		JSkinnedMeshVertex(const JVector3<float>& p, const JVector3<float>& n, const JVector2<float>& uv, const JVector3<float>& t);
-		JSkinnedMeshVertex(const DirectX::XMFLOAT3& p, const DirectX::XMFLOAT3& n, const DirectX::XMFLOAT2& uv);
+		JSkinnedMeshVertex(const JVector3<float>& p, const JVector3<float>& n, const JVector2<float>& uv);
 		JSkinnedMeshVertex(float px, float py, float pz, float nx, float ny, float nz, float u, float v, float tx, float ty, float tz);
 	};
 
@@ -98,7 +95,7 @@ namespace JinEngine
 		DirectX::BoundingSphere GetBSphere()const noexcept;
 		virtual J_MESHGEOMETRY_TYPE GetMeshType()const noexcept = 0;
 		virtual uint GetVertexCount()const noexcept = 0;
-		virtual DirectX::XMVECTOR GetPosition(uint i)const noexcept = 0;
+		virtual JVector3<float> GetPosition(uint i)const noexcept = 0;
 	public:
 		void SetName(const std::wstring& newName)noexcept;
 		void SetMaterial(JUserPtr<JMaterial> material)noexcept;
@@ -106,7 +103,7 @@ namespace JinEngine
 	public:
 		void AddIndex(const uint index)noexcept;
 	protected:
-		virtual void AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept;
+		virtual void AddPositionOffset(const JVector3<float>& offsetPos)noexcept;
 	public:
 		bool HasUV()const noexcept;
 		bool HasNormal()const noexcept;
@@ -139,14 +136,14 @@ namespace JinEngine
 	public:
 		J_MESHGEOMETRY_TYPE GetMeshType()const noexcept final; 
 		uint GetVertexCount()const noexcept;
-		DirectX::XMVECTOR GetPosition(const uint index)const noexcept;
+		JVector3<float> GetPosition(const uint index)const noexcept;
 		JStaticMeshVertex GetVertex(const uint index)const noexcept;
 	public:
 		void SetVertex(const uint index, const JStaticMeshVertex& vertex)const noexcept;
 		void SetVertexPositionScale(const float rate)noexcept final;
 	public:
 		void AddVertex(const JStaticMeshVertex& vertex)noexcept;
-		void AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept final;
+		void AddPositionOffset(const JVector3<float>& offsetPos)noexcept final;
 	public:
 		void Merge(const JStaticMeshData& mesh)noexcept; 
 	};
@@ -166,13 +163,13 @@ namespace JinEngine
 	public:
 		J_MESHGEOMETRY_TYPE GetMeshType()const noexcept final; 
 		uint GetVertexCount()const noexcept;
-		DirectX::XMVECTOR GetPosition(const uint index)const noexcept;
+		JVector3<float> GetPosition(const uint index)const noexcept;
 		JSkinnedMeshVertex GetVertex(const uint index)const noexcept;
 	public:
 		void SetVertex(const uint index, const JSkinnedMeshVertex& vertex)const noexcept;
 		void SetVertexPositionScale(const float rate)noexcept final;
 	public:
-		void AddPositionOffset(const DirectX::XMFLOAT3& offsetPos)noexcept final; 
+		void AddPositionOffset(const JVector3<float>& offsetPos)noexcept final; 
 	};
 
 	struct JMeshGroup

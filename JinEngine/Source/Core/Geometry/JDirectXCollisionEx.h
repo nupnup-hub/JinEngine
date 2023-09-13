@@ -16,8 +16,11 @@ namespace JinEngine
 				_Out_ DirectX::XMFLOAT3& max)noexcept;
 			static float SurfaceArea(_In_ DirectX::BoundingBox& box)noexcept;
 			static DirectX::BoundingBox Convert(_In_ const DirectX::BoundingFrustum& frustum)noexcept;
+			static DirectX::BoundingBox CreateBoundingBox(const JVector3<float>& vMin, const JVector3<float>& vMax)noexcept;
 			static DirectX::BoundingBox CreateBoundingBox(const DirectX::XMVECTOR vMin, const DirectX::XMVECTOR vMax)noexcept;
 			static DirectX::BoundingSphere CreateBoundingSphere(const DirectX::XMVECTOR vMin, const DirectX::XMVECTOR vMax)noexcept;
+			//not use 대신 obb사용
+			//static DirectX::BoundingBox CreateBoundingBox(const DirectX::XMFLOAT3& center, const DirectX::XMFLOAT3& extents, const DirectX::XMVECTOR q)noexcept;
 		};
 	}
 }

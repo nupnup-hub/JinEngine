@@ -1,0 +1,33 @@
+#pragma once  
+#include"../../Core/Reflection/JReflection.h"
+namespace JinEngine
+{
+	namespace Graphic
+	{
+		//HZB_OCC_OBJECT count is same as BOUNDING_OBJECT
+		REGISTER_ENUM_CLASS(J_UPLOAD_FRAME_RESOURCE_TYPE, int, OBJECT,
+			ENGINE_PASS,
+			SCENE_PASS,
+			ANIMATION,
+			CAMERA,
+			BOUNDING_OBJECT,
+			MATERIAL,
+			DIRECTIONAL_LIGHT,
+			CASCADE_SHADOW_MAP_INFO,
+			POINT_LIGHT,
+			SPOT_LIGHT,
+			SHADOW_MAP_ARRAY_DRAW,
+			SHADOW_MAP_CUBE_DRAW,
+			SHADOW_MAP_DRAW,
+			DEPTH_TEST_PASS,
+			HZB_OCC_OBJECT,
+			HZB_OCC_COMPUTE_PASS)
+
+		enum class J_UPLOAD_CAPACITY_CONDITION
+		{
+			KEEP,
+			DOWN_CAPACITY,
+			UP_CAPACITY
+		};
+	}
+}

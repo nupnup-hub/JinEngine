@@ -1,9 +1,9 @@
 #pragma once  
 #include"../JResourceObject.h"   
 #include"../Shader/JShaderFunctionEnum.h"
-#include"../Shader/JShaderGraphicPsoCondition.h" 
-#include"../../../Graphic/Upload/Frameresource/JFrameUpdateUserAccess.h"
-#include<DirectXMath.h>
+#include"../Shader/JShaderCondition.h" 
+#include"../../../Graphic/Frameresource/JFrameUpdateUserAccess.h"
+#include"../../../Core/Math/JMatrix.h"
 
 namespace JinEngine
 { 
@@ -11,7 +11,7 @@ namespace JinEngine
 	class JTexture;
 	class JMaterialPrivate;
 	class JMaterial : public JResourceObject, 
-		public Graphic::JFrameUpdateUserAccessInterface
+		public Graphic::JFrameUpdateUserAccess
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JMaterial)
 		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
@@ -35,8 +35,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JMaterialImpl> impl;
 	public:
-		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
-		Graphic::JFrameUpdateUserAccess FrameUserInterface() noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final; 
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -48,8 +47,8 @@ namespace JinEngine
 		JShader* GetRawShader()const noexcept;
 		float GetMetallic() const noexcept;
 		float GetRoughness() const noexcept;
-		DirectX::XMFLOAT4 GetAlbedoColor() const noexcept;
-		DirectX::XMFLOAT4X4 GetMatTransform() const noexcept;
+		JVector4<float> GetAlbedoColor() const noexcept;
+		JMatrix4x4 GetMatTransform() const noexcept;
 		JUserPtr<JTexture> GetAlbedoMap() const noexcept;
 		JUserPtr<JTexture> GetNormalMap() const noexcept;
 		JUserPtr<JTexture> GetHeightMap() const noexcept;
@@ -60,8 +59,8 @@ namespace JinEngine
 	public:
 		void SetMetallic(const float value) noexcept;
 		void SetRoughness(const float value) noexcept;
-		void SetAlbedoColor(const DirectX::XMFLOAT4& value) noexcept;
-		void SetMatTransform(const DirectX::XMFLOAT4X4& value) noexcept;
+		void SetAlbedoColor(const JVector4<float>& value) noexcept;
+		void SetMatTransform(const JMatrix4x4& value) noexcept;
 		void SetAlbedoMap(JUserPtr<JTexture> texture) noexcept;
 		void SetNormalMap(JUserPtr<JTexture>texture) noexcept;
 		void SetHeightMap(JUserPtr<JTexture> texture) noexcept;
@@ -69,22 +68,19 @@ namespace JinEngine
 		void SetAmbientOcclusionMap(JUserPtr<JTexture> texture) noexcept;
 		void SetShadow(const bool value)noexcept;
 		void SetLight(const bool value)noexcept;
-		void SetAlbedoMapOnly(const bool value)noexcept;
-		void SetShadowMapWrite(const bool value)noexcept;
-		void SetBoundingObjectDepthTest(const bool value)noexcept;
+		void SetAlbedoMapOnly(const bool value)noexcept;  
 		void SetSkyMaterial(const bool value)noexcept;
 		void SetDebugMaterial(const bool value)noexcept;
 		void SetAlphaClip(const bool value)noexcept;
 		void SetNonCulling(const bool value)noexcept;
 		void SetPrimitiveType(const J_SHADER_PRIMITIVE_TYPE value)noexcept;
 		void SetDepthCompareFunc(const J_SHADER_DEPTH_COMPARISON_FUNC value)noexcept;
-	public:
+	public:;
 		bool OnShadow()const noexcept;
 		bool OnLight()const noexcept;
 		bool OnAlbedoOnly()const noexcept;
-		bool OnNonCulling()const noexcept;
-		bool OnShadowMapWrite()const noexcept;
-		bool OnBoundingObjectDepthTest()const noexcept;
+		bool OnNonCulling()const noexcept; 
+		bool IsFrameDirted()const noexcept final;
 		bool IsSkyMaterial()const noexcept;
 		bool IsDebugMaterial()const noexcept; 
 		bool HasAlbedoMapTexture() const noexcept;

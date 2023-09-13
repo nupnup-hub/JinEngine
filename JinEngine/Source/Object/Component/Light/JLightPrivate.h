@@ -4,80 +4,85 @@
 namespace JinEngine
 { 
 	class JLight; 
+	class JDirectionalLight;
+	class JPointLight;
+	class JSpotLight;
 	namespace Graphic
 	{
-		class JGraphic;
-		class JShadowMap;
-		class JHZBOccCulling;
-		struct JLightConstants;
-		struct JShadowMapLightConstants;
-		struct JShadowMapConstants;
-		struct JHzbOccRequestorConstants;
+		class JGraphic;  
+		class JFrameDirty;
+		struct JDrawHelper;
 	}
-	class JLightPrivate final : public JComponentPrivate
+	class JLightPrivate : public JComponentPrivate
 	{
 	public:
-		class AssetDataIOInterface final : public JComponentPrivate::AssetDataIOInterface
+		class AssetDataIOInterface : public JComponentPrivate::AssetDataIOInterface
 		{
-		private:
-			JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data) final;
-			Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data) final;
+		protected:
+			Core::J_FILE_IO_RESULT LoadLightData(std::wifstream& stream, JUserPtr<JLight> user);
+			Core::J_FILE_IO_RESULT StoreLightData(std::wofstream& stream, const JUserPtr<JLight>& user);
 		};
-		class CreateInstanceInterface final : public JComponentPrivate::CreateInstanceInterface
+		class CreateInstanceInterface : public JComponentPrivate::CreateInstanceInterface
 		{
 		private:
 			friend class AssetDataIOInterface; 
-		private:
-			JOwnerPtr<Core::JIdentifier> Create(Core::JDITypeDataBase* initData) final;
-			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept final; 
-			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final;
-		private:
-			bool Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept;
+		protected:
+			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept override;
+		protected:
+			bool Copy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to) noexcept override;
 		};
-		class DestroyInstanceInterface final : public JComponentPrivate::DestroyInstanceInterface
+		class DestroyInstanceInterface : public JComponentPrivate::DestroyInstanceInterface
 		{
-		private:
-			void Clear(Core::JIdentifier* ptr, const bool isForced)final;
+		protected:
+			void Clear(Core::JIdentifier* ptr, const bool isForced)override;
 		};
-		class FrameUpdateInterface final
+		class FrameUpdateInterface
 		{
 		private:
 			friend class Graphic::JGraphic; 
-			friend class Graphic::JHZBOccCulling;
 		private:
-			static bool UpdateStart(JLight* lit, const bool isUpdateForced)noexcept;
-			static void UpdateFrame(JLight* lit, Graphic::JLightConstants& constant)noexcept;
-			static void UpdateFrame(JLight* lit, Graphic::JShadowMapLightConstants& constant)noexcept; 
-			static void UpdateFrame(JLight* lit, Graphic::JShadowMapConstants& constant)noexcept;
-			static void UpdateFrame(JLight* lit, Graphic::JHzbOccRequestorConstants& constant, const uint queryCount, const uint queryOffset)noexcept;
-			static void UpdateEnd(JLight* lit)noexcept;
+			virtual bool UpdateStart(JLight* lit, const bool isUpdateForced)noexcept = 0;
+			virtual void UpdateEnd(JLight* lit)noexcept = 0;
 		private:
-			static int GetLitFrameIndex(JLight* lit)noexcept;
-			static int GetShadowLitFrameIndex(JLight* lit)noexcept;
-			static int GetShadowMapFrameIndex(JLight* lit)noexcept;
-			static int GetHzbOccReqFrameIndex(JLight* lit)noexcept;
+			virtual int GetLitFrameIndex(JLight* lit)noexcept = 0;
+			virtual int GetShadowMapFrameIndex(JLight* lit)noexcept = 0; 
+			virtual int GetDepthTestPassFrameIndex(JLight* lit)noexcept = 0;
+			virtual int GetHzbOccComputeFrameIndex(JLight* lit)noexcept = 0;
 		private:
-			static bool IsHotUpdated(JLight* lit)noexcept;
-			static bool IsLastUpdated(JLight* lit)noexcept;
-			static bool HasLitRecopyRequest(JLight* lit)noexcept;
-			static bool HasShadowLitRecopyRequest(JLight* lit)noexcept;
-			static bool HasShadowMapRecopyRequest(JLight* lit)noexcept;
-			static bool HasOccPassRecopyRequest(JLight* lit)noexcept;
+			//valid updating
+			virtual bool IsHotUpdate(JLight* lit)noexcept = 0;
+			//valid after update end
+			virtual bool IsLastFrameHotUpdated(JLight* lit)noexcept = 0;
+			virtual bool IsLastUpdated(JLight* lit)noexcept = 0;
+			virtual bool HasLitRecopyRequest(JLight* lit)noexcept = 0;
+			virtual bool HasShadowMapRecopyRequest(JLight* lit)noexcept = 0;
+			virtual bool HasDepthTestPassRecopyRequest(JLight* lit)noexcept = 0;
+			virtual bool HasHzbOccComputeRecopyRequest(JLight* lit)noexcept = 0;
 		};
-		class FrameIndexInterface final
+		class FrameIndexInterface
 		{
 		private:
-			friend class Graphic::JGraphic;
-			friend class Graphic::JShadowMap;
+			friend struct Graphic::JDrawHelper;
 		private:
-			static int GetLitFrameIndex(JLight* lit)noexcept;
-			static int GetShadowLitFrameIndex(JLight* lit)noexcept;
-			static int GetShadowMapFrameIndex(JLight* lit)noexcept;
-			static int GetHzbOccReqFrameIndex(JLight* lit)noexcept;
+			virtual int GetLitFrameIndex(JLight* lit)noexcept = 0;
+			virtual int GetShadowMapFrameIndex(JLight* lit)noexcept = 0;
+			virtual int GetDepthTestPassFrameIndex(JLight* lit)noexcept = 0;
+			virtual int GetHzbOccComputeFrameIndex(JLight* lit)noexcept = 0;
 		};
-	public:
-		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
-		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept final;
-		JComponentPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept final;
+		class FrameDirtyInterface final
+		{
+		private:    
+			friend class JDirectionalLight;
+			friend class JPointLight;
+			friend class JSpotLight;
+		private:
+			//almost JFrameDirtyListener is impl class
+			static void RegisterFrameDirtyListener(JLight* lit, Graphic::JFrameDirty* listener, const size_t guid)noexcept;
+			static void DeRegisterFrameDirtyListener(JLight* lit, const size_t guid)noexcept;
+		};
+	public:  
+		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept override;
+		virtual JLightPrivate::FrameUpdateInterface& GetFrameUpdateInterface()const noexcept = 0;
+		virtual JLightPrivate::FrameIndexInterface& GetFrameIndexInterface()const noexcept = 0; 
 	};
 }

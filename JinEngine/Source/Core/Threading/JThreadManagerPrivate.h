@@ -6,21 +6,18 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphic;
-	}
-	namespace Application
-	{
-		class JApplication;;
-	}
+	} 
+	class JMain;
 	namespace Core
 	{
 		struct JThreadInitInfo;
 		class JThreadManagerPrivate
 		{
 		public:
-			class ApplicationInterface
+			class MainAccess
 			{
 			private:
-				friend class Application::JApplication;
+				friend class JMain;
 			private:
 				static void Initialize();
 				static void Clear();

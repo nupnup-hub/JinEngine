@@ -1,7 +1,7 @@
 #pragma once
 #include"JEditorPopupType.h"
 #include"../../Core/Func/Functor/JFunctor.h"
-#include"../../Utility/JVector.h"
+#include"../../Core/Math/JVector.h"
 
 #include<string>
 #include<memory>
@@ -33,14 +33,7 @@ namespace JinEngine
 			virtual void RegisterBind(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type, std::unique_ptr<Core::JBindHandleBase>&& bind)noexcept;
 			void RegisterPostCloseProccess(std::unique_ptr<Core::JBindHandleBase>&& bind);
 		public:
-			virtual void Update(const std::string& uniqueLabel, const JVector2<float> pagePos, const JVector2<float> pageSize) = 0;
-		public:
-			bool IsOpen()const noexcept;
-			bool IsIgnoreConfirm()const noexcept;
-			bool IsPressConfirm()const noexcept;
-			bool IsDefaultFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept;
-		public:
-			virtual bool IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept = 0;
+			virtual void Update(const std::string& uniqueLabel, const JVector2<float>& pagePos, const JVector2<float>& pageSize) = 0;
 		public:
 			virtual J_EDITOR_POPUP_WINDOW_TYPE GetPopupType()const noexcept = 0;	
 			std::string GetDesc()const noexcept;
@@ -51,16 +44,22 @@ namespace JinEngine
 			void SetDesc(const std::string& newDesc)noexcept;
 		protected:
 			void SetConfirm(const bool value)noexcept; 
+		public:
+			bool IsOpen()const noexcept;
+			bool IsIgnoreConfirm()const noexcept;
+			bool IsPressConfirm()const noexcept;
+			bool IsDefaultFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept;
+			virtual bool IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept = 0;
 		};
 
 		class JEditorCautionPopup : public JEditorPopupWindow
 		{
 		public:
-			void Update(const std::string& uniqueLabel, const JVector2<float> pagePos, const JVector2<float> pageSize) final;
-		public:
-			bool IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept final;
+			void Update(const std::string& uniqueLabel, const JVector2<float>& pagePos, const JVector2<float>& pageSize) final;
 		public:
 			J_EDITOR_POPUP_WINDOW_TYPE GetPopupType()const noexcept final;
+		public:
+			bool IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept final;
 		};
 
 		class JEditorCloseConfirmPopup : public JEditorPopupWindow
@@ -73,15 +72,15 @@ namespace JinEngine
 		public:
 			void RegisterBind(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type, std::unique_ptr<Core::JBindHandleBase>&& bind)noexcept final;
 		public:
-			void Update(const std::string& uniqueLabel, const JVector2<float> pagePos, const JVector2<float> pageSize) final;
-		public:
-			bool IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept final;
+			void Update(const std::string& uniqueLabel, const JVector2<float>& pagePos, const JVector2<float>& pageSize) final;
 		public:
 			J_EDITOR_POPUP_WINDOW_TYPE GetPopupType()const noexcept final;
 		public:
 			void SetOpen() noexcept final;
 		protected:
 			void SetCancel(const bool value)noexcept;	
+		public:
+			bool IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept final;
 		};
 	}
 }

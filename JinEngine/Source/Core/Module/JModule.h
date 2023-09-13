@@ -1,7 +1,7 @@
 #pragma once 
 #include"JModuleDesc.h"
 #include"../Platform/JPlatformInfo.h"
-#include"../../Utility/JMacroUtility.h" 
+#include"../Utility/JMacroUtility.h" 
 #include<string>
 
 #ifdef OS_WINDOW

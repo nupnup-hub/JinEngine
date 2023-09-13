@@ -1,7 +1,7 @@
 #pragma once
 #include<vector>
 #include"JAnimationSample.h" 
-#include"../../../Core/JDataType.h"
+#include"../../../Core/JCoreEssential.h"
 
 namespace JinEngine
 {

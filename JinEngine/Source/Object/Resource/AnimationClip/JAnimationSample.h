@@ -1,7 +1,6 @@
 #pragma once
 #include"JointPose.h"
-#include"../../../Core/JDataType.h"
-#include"../../../Utility/JD3DUtility.h"
+#include"../../../Core/JCoreEssential.h" 
 
 namespace JinEngine
 { 

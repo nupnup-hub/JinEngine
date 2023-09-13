@@ -1,23 +1,28 @@
 #pragma once 
-#include "../JDataType.h"  
+#include "../JCoreEssential.h"    
 #include<type_traits>  
-#include<atomic>
+#include<atomic>    
 
 namespace JinEngine
 {
 	namespace Core
 	{
-		namespace 
-		{ 
+		namespace
+		{
 			template<typename T, typename = void>
 			struct HasTypeInfo : std::false_type {};
 			template<typename T>
-			struct HasTypeInfo<T, std::void_t<decltype(&T::StaticTypeInfo)>> : std::true_type {}; 
+			struct HasTypeInfo<T, std::void_t<decltype(&T::StaticTypeInfo)>> : std::true_type {};
 
 			template<typename T, typename = void>
 			struct HasTypeList : std::false_type {};
 			template<typename T>
 			struct HasTypeList<T, std::void_t<typename T::ThisTypeList>> : std::true_type {};
+
+			template<typename T, typename = void>
+			struct HasCustomAlloc : std::false_type {};
+			template<typename T>
+			struct HasCustomAlloc<T, std::void_t<decltype(&T::operator delete)>> : std::true_type {};
 
 			template<typename T>
 			static constexpr bool CanConvertChildType() noexcept
@@ -31,7 +36,7 @@ namespace JinEngine
 		class JPtrData
 		{
 		private:
-			using VoidPointer = void*; 
+			using VoidPointer = void*;
 		public:
 			VoidPointer ptr = nullptr;
 			std::atomic<uint> userCount = 0;
@@ -54,7 +59,7 @@ namespace JinEngine
 			JPtrData* ptrData = nullptr;
 		public:
 			T& operator*()
-			{   
+			{
 				return *Get();
 			}
 			T* operator->() const noexcept
@@ -66,7 +71,7 @@ namespace JinEngine
 			{
 				return IsValid() ? static_cast<T*>(ptrData->ptr) : nullptr;
 			}
-			T* UnsafeGet()const noexcept
+			T* UnsafeGet()noexcept
 			{
 				return static_cast<T*>(ptrData->ptr);
 			}
@@ -120,14 +125,14 @@ namespace JinEngine
 		{
 		private:
 			friend class JTypeInfo;
-		private:
+		protected:
 			using PtrBase = JPtrBase<T>;
 		protected:
 			void SetValidPointer(T* ptr)
 			{
 				PtrBase::ptrData->ptr = ptr;
 			}
-			void SetInValidPointer()noexcept
+			void SetInValidPointer()
 			{
 				PtrBase::ptrData->ptr = nullptr;
 			}
@@ -135,7 +140,7 @@ namespace JinEngine
 		template<typename T>
 		class JUserPtrInterface : public JPtrBase<T>
 		{
-		private:
+		protected:
 			using PtrBase = JPtrBase<T>;
 		protected:
 			void AddUserCount()noexcept
@@ -150,7 +155,7 @@ namespace JinEngine
 		template<typename T>
 		class JWeakPtrInterface : public JPtrBase<T>
 		{
-		private:
+		protected:
 			using PtrBase = JPtrBase<T>;
 		protected:
 			void AddWeakCount()noexcept
@@ -160,54 +165,62 @@ namespace JinEngine
 			void MinusWeakCount()noexcept
 			{
 				--PtrBase::ptrData->weakCount;
-			} 
+			}
 		};
-		 
+
 		template<typename T>
 		class JOwnerPtr final : public JOwnerPtrInterface<T>
 		{
 		public:
 			using ElementType = T;
+			using CustomDestructionPtr = void(*)(void*);
 		private:
 			template<typename T> friend class JOwnerPtr;
 		private:
 			using Owner = JOwnerPtrInterface<T>;
 			using PtrBase = typename Owner::PtrBase;
+		private:
+			CustomDestructionPtr destructionPtr = nullptr;
 		public:
 			JOwnerPtr() = default;
-			JOwnerPtr(nullptr_t) {}
+			JOwnerPtr(nullptr_t)noexcept {}
 			JOwnerPtr(const JOwnerPtr& rhs) = delete;
 			JOwnerPtr& operator=(const JOwnerPtr& rhs) = delete;
-			JOwnerPtr(T* newPtr)
-			{  
+			JOwnerPtr(T* newPtr)noexcept
+			{
 				OwnerConnect(newPtr);
 			}
-			JOwnerPtr(JOwnerPtr&& rhs)
+			JOwnerPtr(T* newPtr, CustomDestructionPtr newDestructionPtr)noexcept
+			{
+				OwnerConnect(newPtr);
+				destructionPtr = newDestructionPtr;
+			}
+			JOwnerPtr(JOwnerPtr&& rhs)noexcept
 			{
 				OwnerMove(rhs);
 			}
-			JOwnerPtr& operator=(JOwnerPtr&& rhs)
+			JOwnerPtr& operator=(JOwnerPtr&& rhs)noexcept
 			{
 				OwnerMove(rhs);
 				return *this;
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JOwnerPtr(JOwnerPtr<NewType>&& rhs)
+			JOwnerPtr(JOwnerPtr<NewType>&& rhs)noexcept
 			{
 				OwnerMove(rhs);
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JOwnerPtr& operator=(JOwnerPtr<NewType>&& rhs)
+			JOwnerPtr& operator=(JOwnerPtr<NewType>&& rhs)noexcept
 			{
 				OwnerMove(rhs);
 				return *this;
 			}
-			JOwnerPtr& operator=(nullptr_t)
+			JOwnerPtr& operator=(nullptr_t)noexcept
 			{
 				OwnerDisConnect();
 				return *this;
 			}
-			~JOwnerPtr()
+			~JOwnerPtr()noexcept
 			{
 				Clear();
 			}
@@ -229,29 +242,37 @@ namespace JinEngine
 			{
 				return PtrBase::Get();
 			}
-			void Reset(T* newPtr)
+		public:
+			void SetDestructionPtr(CustomDestructionPtr newDestructionPtr)
 			{
-				Clear();
-				OwnerConnect(newPtr);
+				destructionPtr = newDestructionPtr;
 			}
+		public:
+			void Reset(T* newPtr)noexcept
+			{
+				if (newPtr == nullptr)
+					Clear();
+				else if (PtrBase::HasPtrData())
+					ExchangePointer(newPtr);
+				else
+					OwnerConnect(newPtr);
+			}
+			/*
 			template<typename ...Param>
 			void Reset(Param&&... var)
 			{
-				Clear();
 				T* newPtr = new T(std::forward<Param>(var)...);
-				OwnerConnect(newPtr);
+				Reset(newPtr);
 			}
-			T* Release()
-			{  
+			*/
+			T* Release()noexcept
+			{
 				T* ptr = PtrBase::Get();
 				if (PtrBase::HasPtrData())
-				{
 					Owner::SetInValidPointer();
-					//PtrBase::TryDestroyPtrData();
-				}
 				return ptr;
 			}
-			void Clear()
+			void Clear()noexcept
 			{
 				OwnerDisConnect();
 			}
@@ -288,11 +309,12 @@ namespace JinEngine
 			}
 		private:
 			template<typename NewType>
-			void OwnerMove(JOwnerPtr<NewType>& rhs)
-			{ 
+			void OwnerMove(JOwnerPtr<NewType>& rhs)noexcept
+			{
 				Clear();
 				PtrBase::SetValidPtrData(rhs);
-				rhs.SetInValidPtrData(); 
+				destructionPtr = rhs.destructionPtr;
+				rhs.SetInValidPtrData();
 			}
 			void OwnerConnect(T* ptr)noexcept
 			{
@@ -304,12 +326,29 @@ namespace JinEngine
 				if (!PtrBase::HasPtrData())
 					return;
 
-				T* ptr = PtrBase::UnsafeGet();
-				if (ptr != nullptr)
-					delete ptr;
+				ExchangePointer(nullptr);
+			}
+			void ExchangePointer(T* newPtr = nullptr)noexcept
+			{ 
+				if (PtrBase::IsValid())
+				{
+					T* ptr = PtrBase::UnsafeGet();
+					if (ptr != nullptr)
+					{
+						if (destructionPtr != nullptr)
+							destructionPtr(ptr);
+						else
+							delete ptr;
+					}
+				}
 
-				Owner::SetInValidPointer();
-				PtrBase::TryDestroyPtrData();
+				if (newPtr != nullptr)
+					Owner::SetValidPointer(newPtr);
+				else
+				{
+					Owner::SetInValidPointer();
+					PtrBase::TryDestroyPtrData();
+				}
 			}
 		};
 
@@ -326,77 +365,77 @@ namespace JinEngine
 		public:
 			JUserPtr() = default;
 			JUserPtr(nullptr_t) {}
-			JUserPtr(const JUserPtr& rhs)
+			JUserPtr(const JUserPtr& rhs)noexcept
 			{
 				UserDisConnect();
 				UserConnect(rhs);
 				//rhs.UserDisConnect();
 			}
-			JUserPtr(JUserPtr&& rhs)
+			JUserPtr(JUserPtr&& rhs)noexcept
 			{
 				UserDisConnect();
 				UserConnect(rhs);
 				//rhs.UserDisConnect();
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JUserPtr(const JPtrBase<NewType>& rhs)
+			JUserPtr(const JPtrBase<NewType>& rhs)noexcept
 			{
 				UserDisConnect();
 				UserConnect(rhs);
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JUserPtr& operator=(const JPtrBase<NewType>& rhs)
+			JUserPtr& operator=(const JPtrBase<NewType>& rhs)noexcept
 			{
 				UserDisConnect();
 				UserConnect(rhs);
 				return *this;
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JUserPtr(const JUserPtr<NewType>& rhs)
+			JUserPtr(const JUserPtr<NewType>& rhs)noexcept
 			{
 				UserDisConnect();
 				UserConnect(rhs);
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JUserPtr(JUserPtr<NewType>&& rhs)
+			JUserPtr(JUserPtr<NewType>&& rhs)noexcept
 			{
 				UserDisConnect();
 				UserConnect(rhs);
 				//rhs.UserDisConnect();
 			}
-			JUserPtr& operator=(const JUserPtr& rhs)
+			JUserPtr& operator=(const JUserPtr& rhs)noexcept
 			{
 				UserDisConnect();
 				UserConnect(rhs);
 				return *this;
 			}
-			JUserPtr& operator=(JUserPtr&& rhs)
-			{
-				UserDisConnect();
-				UserConnect(rhs);
-				return *this;
-			}
-			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JUserPtr& operator=(const JUserPtr<NewType>& rhs)
+			JUserPtr& operator=(JUserPtr&& rhs)noexcept
 			{
 				UserDisConnect();
 				UserConnect(rhs);
 				return *this;
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JUserPtr& operator=(JUserPtr<NewType>&& rhs)
+			JUserPtr& operator=(const JUserPtr<NewType>& rhs)noexcept
+			{
+				UserDisConnect();
+				UserConnect(rhs);
+				return *this;
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JUserPtr& operator=(JUserPtr<NewType>&& rhs)noexcept
 			{
 				UserDisConnect();
 				UserConnect(rhs);
 				//rhs.UserDisConnect();
 				return *this;
 			}
-			JUserPtr& operator=(nullptr_t)
+			JUserPtr& operator=(nullptr_t)noexcept
 			{
 				UserDisConnect();
 				return *this;
 			}
-			~JUserPtr()
+			~JUserPtr()noexcept
 			{
 				Clear();
 			}
@@ -539,22 +578,22 @@ namespace JinEngine
 						return true;
 					}
 				}
-				return false;	 
+				return false;
 			}
 		private:
 			template<typename NewType>
 			void UserConnect(const JPtrBase<NewType>& ptrBase)noexcept
 			{
-				PtrBase::SetValidPtrData(ptrBase); 
+				PtrBase::SetValidPtrData(ptrBase);
 				if (PtrBase::HasPtrData())
 				{
-					User::AddUserCount();
 					if constexpr (HasTypeInfo<T>::value && std::is_convertible_v<T*, JTypeBase*>)
 					{
 						T* ptr = PtrBase::UnsafeGet();
-						if (ptr != nullptr && PtrBase::GetUserCount() == 1)
+						if (ptr != nullptr && PtrBase::GetUserCount() == 0)
 							ptr->GetTypeInfo().TryCancelLazyDestruction(ptr);
 					}
+					User::AddUserCount();
 				}
 			}
 			void UserDisConnect()noexcept
@@ -586,77 +625,77 @@ namespace JinEngine
 		public:
 			JWeakPtr() = default;
 			JWeakPtr(nullptr_t) {}
-			JWeakPtr(const JWeakPtr& rhs)
+			JWeakPtr(const JWeakPtr& rhs)noexcept
 			{
 				WeakDisConnect();
 				WeakConnect(rhs);
 				//rhs.WeakDisConnect();
 			}
-			JWeakPtr(JWeakPtr&& rhs)
+			JWeakPtr(JWeakPtr&& rhs)noexcept
 			{
 				WeakDisConnect();
 				WeakConnect(rhs);
 				//rhs.WeakDisConnect();
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JWeakPtr(const JPtrBase<NewType>& rhs)
+			JWeakPtr(const JPtrBase<NewType>& rhs)noexcept
 			{
 				WeakDisConnect();
 				WeakConnect(rhs);
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JWeakPtr& operator=(const JPtrBase<NewType>& rhs)
+			JWeakPtr& operator=(const JPtrBase<NewType>& rhs)noexcept
 			{
 				WeakDisConnect();
 				WeakConnect(rhs);
 				return *this;
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JWeakPtr(const JWeakPtr<NewType>& rhs)
+			JWeakPtr(const JWeakPtr<NewType>& rhs)noexcept
 			{
 				WeakDisConnect();
 				WeakConnect(rhs);
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JWeakPtr(JWeakPtr<NewType>&& rhs)
+			JWeakPtr(JWeakPtr<NewType>&& rhs)noexcept
 			{
 				WeakDisConnect();
 				WeakConnect(rhs);
 				//rhs.WeakDisConnect();
 			}
-			JWeakPtr& operator=(const JWeakPtr& rhs)
+			JWeakPtr& operator=(const JWeakPtr& rhs)noexcept
 			{
 				WeakDisConnect();
 				WeakConnect(rhs);
 				return *this;
 			}
-			JWeakPtr& operator=(JWeakPtr&& rhs)
-			{
-				WeakDisConnect();
-				WeakConnect(rhs);
-				return *this;
-			}
-			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JWeakPtr& operator=(const JWeakPtr<NewType>& rhs)
+			JWeakPtr& operator=(JWeakPtr&& rhs)noexcept
 			{
 				WeakDisConnect();
 				WeakConnect(rhs);
 				return *this;
 			}
 			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
-			JWeakPtr& operator=(JWeakPtr<NewType>&& rhs)
+			JWeakPtr& operator=(const JWeakPtr<NewType>& rhs)noexcept
+			{
+				WeakDisConnect();
+				WeakConnect(rhs);
+				return *this;
+			}
+			template<typename NewType, std::enable_if_t<std::is_convertible_v<NewType*, T*>, int> = 0>
+			JWeakPtr& operator=(JWeakPtr<NewType>&& rhs)noexcept
 			{
 				WeakDisConnect();
 				WeakConnect(rhs);
 				//rhs.WeakDisConnect();
 				return *this;
 			}
-			JWeakPtr& operator=(nullptr_t)
+			JWeakPtr& operator=(nullptr_t)noexcept
 			{
 				WeakDisConnect();
 				return *this;
 			}
-			~JWeakPtr()
+			~JWeakPtr()noexcept
 			{
 				Clear();
 			}
@@ -804,9 +843,9 @@ namespace JinEngine
 			template<typename NewType>
 			void WeakConnect(const JPtrBase<NewType>& ptrBase)noexcept
 			{
-				PtrBase::SetValidPtrData(ptrBase); 
+				PtrBase::SetValidPtrData(ptrBase);
 				if (PtrBase::HasPtrData())
-					Weak::AddWeakCount(); 				 
+					Weak::AddWeakCount();
 			}
 			void WeakDisConnect()noexcept
 			{

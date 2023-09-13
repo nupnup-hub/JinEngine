@@ -8,8 +8,7 @@ namespace JinEngine
 	enum class J_DEFAULT_MATERIAL
 	{
 		DEFAULT_STANDARD,
-		DEFAULT_SKY,
-		DEFAULT_SHADOW_MAP,
+		DEFAULT_SKY, 
 		DEBUG_RED,
 		DEBUG_GREEN,
 		DEBUG_BLUE,
@@ -19,8 +18,7 @@ namespace JinEngine
 		DEBUG_LINE_BLUE,
 		DEBUG_LINE_YELLOW,
 		DEBUG_LINE_GRAY,
-		DEBUG_LINE_BLACK,
-		DEFAULT_BOUNDING_OBJECT_DEPTH_TEST,
+		DEBUG_LINE_BLACK, 
 		COUNTER
 	};
 
@@ -35,9 +33,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_STANDARD:
 				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_STANDARD_SHADER;
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SKY:
-				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SKY_SHADER;
-			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SHADOW_MAP:
-				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SHADOW_MAP_SHADER;
+				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_SKY_SHADER; 
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_RED:
 				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_SHADER;
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_GREEN:
@@ -57,9 +53,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_GRAY:
 				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_LINE_SHADER;
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK:
-				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_LINE_SHADER;
-			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST:
-				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST_SHADER;
+				return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_DEBUG_LINE_SHADER; 
 			}
 			return J_DEFAULT_GRAPHIC_SHADER::DEFAULT_STANDARD_SHADER;
 		}
@@ -82,9 +76,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_STANDARD:
 				return false;
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SKY:
-				return false;
-			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SHADOW_MAP:
-				return true;
+				return false; 
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_RED:
 				return true;
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_GREEN:
@@ -104,9 +96,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_GRAY:
 				return true;
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK:
-				return true;
-			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST:
-				return true;
+				return true; 
 			default:
 				return false;
 			}
@@ -118,9 +108,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_STANDARD:
 				return L"Default Material";
 			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SKY:
-				return L"Default Sky Material";
-			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SHADOW_MAP:
-				return L"Default Shadow Map Material";
+				return L"Default Sky Material"; 
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_RED:
 				return L"Default Debug Red Material";
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_GREEN:
@@ -140,9 +128,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_GRAY:
 				return L"Default Debug Line Gray Material";
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK:
-				return L"Default Debug Line Black Material";
-			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST:
-				return L"Default Bounding Object Depth Test Material";
+				return L"Default Debug Line Black Material"; 
 			default:
 				return L"Error";
 			}

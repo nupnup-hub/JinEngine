@@ -1,9 +1,9 @@
 #pragma once
-#include"../../../Utility/JMacroUtility.h" 
+#include"../../Utility/JMacroUtility.h" 
 //#include"../../Reflection/JTypeInfo.h"
 #include"../../Reflection/JTypeInfoRegister.h"
-#include"../../Reflection/JReflectionMacro.h"
-#include<windows.h>
+#include"../../Reflection/JReflectionInfo.h"
+#include"../../Reflection/JReflectionMacro.h" 
 
 namespace JinEngine
 {

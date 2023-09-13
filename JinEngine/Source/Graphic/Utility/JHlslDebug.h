@@ -1,6 +1,8 @@
 #pragma once
-#include"../Upload/JUploadBuffer.h"
+#include"../Buffer/JBufferType.h"
+#include"../Buffer/Dx/JDx12GraphicBuffer.h"
 #include<memory>
+
 namespace JinEngine
 {
 	namespace Graphic
@@ -9,49 +11,70 @@ namespace JinEngine
 		class JHlslDebug
 		{
 		private:
-			std::unique_ptr<JUploadBuffer<T>> debugResult;
+			const std::wstring name;
+		private:
+			std::unique_ptr<JDx12GraphicBuffer<T>> uaResult;
+			std::unique_ptr<JDx12GraphicBuffer<T>> rbResult;
 			int rootParamIndex;
 		private:
 			T* mappedData;
 		public:
-			JHlslDebug(const int rootParamIndex)
-				:rootParamIndex(rootParamIndex)
+			JHlslDebug(const std::wstring name, const int rootParamIndex)
+				:name(name), rootParamIndex(rootParamIndex)
 			{}
 			~JHlslDebug()
 			{
 				Clear();
 			}
 		public:
-			void Build(ID3D12Device* device, int capacity)
+			void Build(JGraphicDevice* device, int capacity)
 			{ 
-				debugResult = std::make_unique<JUploadBuffer<T>>(L"HlslDebug", J_UPLOAD_BUFFER_TYPE::READ_BACK);
-				debugResult->Build(device, capacity);
+				uaResult = std::make_unique<JDx12GraphicBuffer<T>>((name + L"_HlslDebug").c_str(), J_GRAPHIC_BUFFER_TYPE::UNORDERED_ACCEESS);
+				rbResult = std::make_unique<JDx12GraphicBuffer<T>>((name + L"_HlslDebug").c_str(), J_GRAPHIC_BUFFER_TYPE::READ_BACK);
+				
+				uaResult->Build(device, capacity);
+				rbResult->Build(device, capacity);
 			}
 			void Clear()
 			{ 
 				if (mappedData != nullptr)
 					UnMap();
-				debugResult.reset();
+				uaResult.reset();
+				rbResult.reset();
 			}
 		public:
-			void SetGraphicShader(ID3D12GraphicsCommandList* commandList)
+			void SettingGraphic(ID3D12GraphicsCommandList* commandList)
 			{
-				commandList->SetGraphicsRootUnorderedAccessView(rootParamIndex, debugResult->Resource()->GetGPUVirtualAddress());
+				JD3DUtility::ResourceTransition(commandList, uaResult->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+				commandList->SetGraphicsRootUnorderedAccessView(rootParamIndex, uaResult->GetResource()->GetGPUVirtualAddress());
 			}
-			void SetComputeShader(ID3D12GraphicsCommandList* commandList)
+			void SettingCompute(ID3D12GraphicsCommandList* commandList)
 			{
-				commandList->SetComputeRootUnorderedAccessView(rootParamIndex, debugResult->Resource()->GetGPUVirtualAddress());
+				JD3DUtility::ResourceTransition(commandList, uaResult->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+				commandList->SetComputeRootUnorderedAccessView(rootParamIndex, uaResult->GetResource()->GetGPUVirtualAddress());
+			}
+			void End(ID3D12GraphicsCommandList* commandList)
+			{
+				CopyDebugResult(commandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON); 
+			}
+		public:
+			void CopyDebugResult(ID3D12GraphicsCommandList* commandList, const D3D12_RESOURCE_STATES beforeState, const D3D12_RESOURCE_STATES afterState)
+			{
+				JD3DUtility::ResourceTransition(commandList, uaResult->GetResource(), beforeState, D3D12_RESOURCE_STATE_COPY_SOURCE);
+				commandList->CopyResource(rbResult->GetResource(), uaResult->GetResource());
+				JD3DUtility::ResourceTransition(commandList, uaResult->GetResource(), D3D12_RESOURCE_STATE_COPY_SOURCE, afterState);
 			}
 		public:
 			T* Map(_Out_ int& count)
 			{
-				ThrowIfFailedHr(debugResult->Resource()->Map(0, nullptr, reinterpret_cast<void**>(&mappedData)));
-				count = debugResult->ElementCount();
+				if(mappedData == nullptr)
+					ThrowIfFailedHr(rbResult->GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&mappedData)));
+				count = rbResult->GetElementCount();
 				return mappedData;
 			}
 			void UnMap()
 			{
-				debugResult->Resource()->Unmap(0, nullptr);
+				rbResult->GetResource()->Unmap(0, nullptr);
 				mappedData = nullptr;
 			}
 		};

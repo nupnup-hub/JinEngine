@@ -1,6 +1,6 @@
 #pragma once 
 #include"JWindowEventType.h"
-#include"../Utility/JVector.h" 
+#include"../Core/Math/JVector.h" 
 #include"../Core/Func/Functor/JFunctor.h"
 #include"../Core/Event/JEventManager.h"
 #include<windows.h>  
@@ -20,26 +20,21 @@ namespace JinEngine
 			static RECT GetPreWindowR()noexcept;
 			static RECT GetClientR()noexcept;
 			static RECT GetPreClientR()noexcept;
-			static int GetDisplayWidth()noexcept;
-			static int GetDisplayHeight()noexcept;
-			static int GetMinWidth()noexcept;
-			static int GetMinHeight()noexcept;
-			static int GetWindowPositionX()noexcept;
-			static int GetWindowPositionY()noexcept;
-			static int GetWindowWidth()noexcept;
-			static int GetWindowHeight()noexcept;
-			static JVector2<int> GetClientPos()noexcept;
-			static int GetClientPositionX()noexcept;
-			static int GetClientPositionY()noexcept;
-			static JVector2<int> GetClientSize()noexcept;
-			static int GetClientWidth()noexcept;
-			static int GetClientHeight()noexcept;
+			static JVector2<float> GetDisplayPosition()noexcept;
+			static JVector2<float> GetDisplaySize()noexcept; 
+			static JVector2<float> GetMinSize()noexcept;
+			static JVector2<float> GetWindowPosition()noexcept;
+			static JVector2<float> GetWindowSize()noexcept;
+			static JVector2<float> GetClientPosition()noexcept; 
+			static JVector2<float> GetClientSize()noexcept; 
+			static uint GetMaxDisplayFrequency()noexcept;
 		public:
 			static bool IsFullScreen()noexcept;
 			static bool HasStorageSpace(const std::wstring& dirPath, size_t capacity)noexcept;
 		public:
-			static bool SelectDirectory(std::wstring& dirPath, const std::wstring& guide)noexcept;
-			static bool SelectFile(std::wstring& filePath, const std::wstring& guide)noexcept;
+			static bool SelectDirectory(_Out_ std::wstring& dirPath, const std::wstring& guide)noexcept;
+			static bool SelectFile(_Out_ std::wstring& filePath, const std::wstring& guide)noexcept;
+			static bool SelectMultiFile(_Out_ std::vector< std::wstring>& filePath, const std::wstring& guide)noexcept;
 		public:
 			static WindowEvInterface* EvInterface()noexcept;
 		};

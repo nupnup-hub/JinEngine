@@ -59,13 +59,13 @@ namespace JinEngine
 			size_t temp = 0;
 			return RegisterEvStruct(std::move(evStruct), temp, true);
 		}
-		JEditorEvStruct* JEditorEvent::RegisterEvStruct(std::unique_ptr<JEditorEvStruct> evStruct, _Out_ size_t& key, bool canRemvoe)noexcept
+		JEditorEvStruct* JEditorEvent::_RegisterEvStruct(std::unique_ptr<JEditorEvStruct> evStruct, _Out_ size_t& key, bool canRemove)noexcept
 		{
 			if (evStruct != nullptr)
 			{
 				key = Core::MakeGuid();
 				JEditorEvStruct* ptr = evStruct.get();
-				evM->evDataMap.emplace(key, JEditorEventManager::EvStructInfo(std::move(evStruct), canRemvoe));
+				evM->evDataMap.emplace(key, JEditorEventManager::EvStructInfo(std::move(evStruct), canRemove));
 				return ptr;
 			}
 			else

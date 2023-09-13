@@ -4,8 +4,8 @@
 #include"../../../Menubar/JEditorMenuNodeUtilData.h"
 #include"../../../EditTool/JEditorGameObjectSurpportToolType.h" 
 #include"../../../Interface/JEditorObjectHandleInterface.h"
-#include"../../../../Utility/JVector.h"
-#include"../../../../Core/SpaceSpatial/JSpaceSpatialType.h"
+#include"../../../../Core/Math/JVector.h"
+#include"../../../../Object/Resource/Scene/Accelerator/JAcceleratorType.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
 
 namespace JinEngine
@@ -13,11 +13,9 @@ namespace JinEngine
 	class JCamera;
 	class JScene;
 	class JTexture;
+	class JMaterial;
 	class JGameObject;
-	namespace Core
-	{
-		class JSpaceSpatialOption;
-	}
+	class JAcceleratorOption;
 	namespace Editor
 	{
 		class JEditorBinaryTreeView;
@@ -25,19 +23,28 @@ namespace JinEngine
 		class JEditorCameraControl;
 		class JEditorTransformTool;
 		class JEditorMenuBar;
-		class JEditorMenuNode;   
+		class JEditorMenuNode;
+		class JEditorMouseIdenDragBox;
 		class JSceneObserver final : public JEditorWindow, public JEditorObjectHandlerInterface
-		{    
+		{
 		private:
 			struct FrustumInfo
 			{
 			public:
-				JUserPtr<JGameObject> frustum;
+				JUserPtr<JGameObject> root;
+				JUserPtr<JGameObject> nearFrustum;
+				JUserPtr<JGameObject> farFrustum;
+			public:
 				JUserPtr<JCamera> cam;
 			public:
-				FrustumInfo(JUserPtr<JGameObject> frustum, JUserPtr<JCamera> cam);
+				FrustumInfo(const JUserPtr<JCamera>& cam);
 			public:
+				void Create(const JUserPtr<JGameObject>& parent);
 				void Clear();
+			public:
+				void Update();
+			public:
+				bool IsValid()const noexcept;
 			};
 			struct EditorOption
 			{
@@ -55,12 +62,13 @@ namespace JinEngine
 				std::wstring name;
 				JVector3<float> lastPos{ 0,0,0 };
 				JVector3<float> lastRot{ 0,0,0 };
-			}; 
+			};
 			struct TestData
 			{
 			public:
 				static constexpr int minObjCount = 0;
 				static constexpr int maxObjCount = 100;
+				static constexpr int matCount = 7;
 			public:
 				int xCount = 1;
 				int yCount = 1;
@@ -70,9 +78,16 @@ namespace JinEngine
 			public:
 				JVector3<float> offsetPos = JVector3<float>(0, 0, 0);
 				JVector3<float> offsetRot = JVector3<float>(0, 0, 0);
-				JVector3<float> offsetScale = JVector3<float>(1, 1, 1); 
+				JVector3<float> offsetScale = JVector3<float>(1, 1, 1);
 			public:
 				JVector3<float> distance = JVector3<float>(1, 1, 1);
+			public:
+				std::vector<JUserPtr<JMaterial>> matVec; 
+			public:
+				std::vector<JUserPtr<JGameObject>> objParentVec;
+			public:
+				void Initialize();
+				void Clear();
 			};
 		private:
 			using SelectMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
@@ -84,8 +99,8 @@ namespace JinEngine
 			using MenuSwitchIconOffF = typename Core::JSFunctorType<void, JSceneObserver*>;
 		private:
 			static constexpr uint menuSwitchIconCount = 7;
-		private: 
-			std::unique_ptr<JEditorMenuBar> menubar; 
+		private:
+			std::unique_ptr<JEditorMenuBar> menubar;
 			JEditorMenuNodeUtilData nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::COUNT];
 			std::unique_ptr<SelectMenuNodeT::Functor>selectNodeFunctor;
 			std::unique_ptr<ActivateMenuNodeT::Functor>activateNodeFunctor;
@@ -94,19 +109,20 @@ namespace JinEngine
 			std::unique_ptr<MenuSwitchIconOnF::Functor> switchIconOnFunctorVec[menuSwitchIconCount];
 			std::unique_ptr<MenuSwitchIconOffF::Functor> switchIconOffFunctorVec[menuSwitchIconCount];
 		private:
-			JUserPtr<JScene> scene; 
-			JUserPtr<JGameObject> selectedGobj;   
+			JUserPtr<JScene> scene;
+			//JUserPtr<JGameObject> selectedGobj;
 			std::unordered_map<size_t, FrustumInfo> camFrustumMap;
 		private:
-			std::unique_ptr<JEditorSceneCoordGrid> coordGrid;	
+			std::unique_ptr<JEditorSceneCoordGrid> coordGrid;
 			std::unique_ptr<JEditorBinaryTreeView> editorBTreeView;
 			std::unique_ptr<JEditorCameraControl> editorCamCtrl;
+			std::unique_ptr<JEditorMouseIdenDragBox> mouseBBox;
 			std::unique_ptr<JEditorTransformTool> positionTool;
 			std::unique_ptr<JEditorTransformTool> rotationTool;
 			std::unique_ptr<JEditorTransformTool> scaleTool;
 		private:
-			std::vector<JUserPtr<JTexture>> iconTexture; 
-			std::vector<JEditorTransformTool*> toolVec; 
+			std::vector<JUserPtr<JTexture>> iconTexture;
+			std::vector<JEditorTransformTool*> toolVec;
 		private:
 			EditorOption editOption;
 			EditorCamData editCamData;
@@ -132,19 +148,21 @@ namespace JinEngine
 			void Initialize(JUserPtr<JScene> newScene, const std::wstring& editorCameraName)noexcept;
 			void UpdateWindow()final;
 		private:
+			void UpdateMouseWheel()final;
+		private:
 			void CreateMenuLeafNode(JEditorMenuNode* parent, J_OBSERVER_SETTING_TYPE type)noexcept;
 			void SelectObserverSettingNode(const J_OBSERVER_SETTING_TYPE type)noexcept;
 			void ActivateObserverSetting(const J_OBSERVER_SETTING_TYPE type)noexcept;
 			void DeActivateObserverSetting(const J_OBSERVER_SETTING_TYPE type)noexcept;
 			void UpdateObserverSetting(const J_OBSERVER_SETTING_TYPE type)noexcept;
-		private: 			
-			void SceneSpaceSpatialOptionOnScreen();
+		private:
+			void SceneAcceleratorOptionOnScreen();
 			void EditorCameraOptionOnScreen();
 			void EngineTestOptionOnScreen();	//For testing engine performance
 			void OctreeOptionOnScreen();
 			void BvhOptionOnScreen();
 			void KdTreeOptionOnScreen();
-			bool CommonOptionOnScreen(const std::string& uniqueName, Core::JSpaceSpatialOption& commonOption);
+			bool CommonOptionOnScreen(const std::string& uniqueName, JAcceleratorOption& commonOption);
 			void DebugTreeOnScreen();
 		private:
 			void ShadowMapViewerOnScreen();

@@ -1,7 +1,8 @@
 #pragma once 
-#include"JEditorAlignType.h"
-#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
-
+#include"JEditorAlignType.h" 
+#include"../Gui/JGui.h"
+#include"../../Core/Math/JVector.h" 
+#include<string>
 namespace JinEngine
 {
 	namespace Editor
@@ -223,7 +224,7 @@ namespace JinEngine
 			}
 			void SetNextContentsPosition()
 			{
-				ImGui::SetCursorPos(GetCursorPos());
+				JGui::SetCursorPos(GetCursorPos());
 				Next();
 			}
 			void SetFirstContentsPosition()

@@ -1,5 +1,6 @@
 #pragma once
 #include"../JResourceObject.h" 
+#include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
 #include"JMeshType.h" 
 #include<DirectXCollision.h> 
 
@@ -8,7 +9,8 @@ namespace JinEngine
 	struct JMeshGroup; 
 	class JMeshGeometryPrivate;
 	class JMaterial;
-	class JMeshGeometry : public JResourceObject
+	class JMeshGeometry : public JResourceObject,
+		public Graphic::JGraphicResourceUserAccess
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JMeshGeometry)
 		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
@@ -53,6 +55,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JMeshGeometryImpl> impl;
 	public:  
+		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -68,13 +71,17 @@ namespace JinEngine
 		uint GetSubmeshIndexCount(const uint index)const noexcept;
 		uint GetSubmeshBaseVertexLocation(const uint index)const noexcept;
 		uint GetSubmeshStartIndexLocation(const uint index)const noexcept;
+		uint GetVertexByteSize()const noexcept;
+		uint GetVertexBufferByteSize()const noexcept;
+		uint GetIndexByteSize()const noexcept;
+		uint GetIndexBufferByteSize()const noexcept;
 		std::wstring GetSubMeshName(const uint index)const noexcept;
 		JUserPtr<JMaterial> GetSubmeshMaterial(const uint index)const noexcept;
 		DirectX::BoundingBox GetBoundingBox()const noexcept;
-		DirectX::XMFLOAT3 GetBoundingBoxCenter()const noexcept;
-		DirectX::XMFLOAT3 GetBoundingBoxExtent()const noexcept;
+		JVector3<float> GetBoundingBoxCenter()const noexcept;
+		JVector3<float> GetBoundingBoxExtent()const noexcept;
 		DirectX::BoundingSphere GetBoundingSphere()const noexcept;
-		DirectX::XMFLOAT3 GetBoundingSphereCenter()const noexcept;
+		JVector3<float> GetBoundingSphereCenter()const noexcept;
 		float GetBoundingSphereRadius()const noexcept; 
 	protected:
 		JMeshGroup* GetMeshGroupData()const noexcept;

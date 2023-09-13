@@ -15,7 +15,7 @@
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/Empty/JEmptyType.h"
-#include"../../Utility/JCommonUtility.h"   
+#include"../../Core/Utility/JCommonUtility.h"  
 #include<fstream>
 
 namespace JinEngine
@@ -52,7 +52,8 @@ namespace JinEngine
 		JGameObjectImpl(const InitData& initData)
 			:parent(initData.parent)
 		{}
-		~JGameObjectImpl(){}
+		~JGameObjectImpl()
+		{}
 	public:
 		void Initialize(const InitData& initData, JGameObject* thisGameObj)
 		{
@@ -65,7 +66,7 @@ namespace JinEngine
 	public:
 		JUserPtr<JComponent> GetComponent(const J_COMPONENT_TYPE compType)const noexcept
 		{
-			int index = JCUtil::GetJIndex(componentVec, searchPtr, compType);
+			int index = JCUtil::GetIndex(componentVec, searchPtr, compType);
 			return index != -1 ? componentVec[index] : nullptr;
 		}
 		JUserPtr<JComponent> GetComponentWithParent(const J_COMPONENT_TYPE compType)const noexcept
@@ -93,7 +94,7 @@ namespace JinEngine
 		{
 			for (const auto& data : componentVec)
 			{
-				int index = JCUtil::GetJIndex(componentVec, searchPtr, compType);
+				int index = JCUtil::GetIndex(componentVec, searchPtr, compType);
 				if (index != -1)
 					result.push_back(data);
 			}
@@ -221,7 +222,7 @@ namespace JinEngine
 		}
 	public:
 		void Clear(JGameObject* gPtr)
-		{
+		{ 
 			if (gPtr->IsActivated())
 				gPtr->DeActivate();
 
@@ -502,6 +503,14 @@ namespace JinEngine
 	{
 		return impl->CanAddComponent(type);
 	}
+	bool JGameObject::CanActivate() const noexcept
+	{
+		return impl->parent != nullptr ? impl->parent->IsActivated() : true;
+	}
+	bool JGameObject::CanDeActivate() const noexcept
+	{
+		return true;
+	}
 	void JGameObject::ChangeParent(JUserPtr<JGameObject> newParent)noexcept
 	{
 		if ((newParent == nullptr || impl->parent == nullptr) ||
@@ -542,20 +551,18 @@ namespace JinEngine
 		{
 			JObject::DoActivate();
 			for (auto& data : impl->componentVec)
-			{
-				if (!data->IsActivated())
-					JComponentPrivate::ActivateInterface::Activate(data);
-			}
+				JComponentPrivate::ActivateInterface::Activate(data);
+			for (auto& data : impl->children)
+				data->Activate();
 		}
 	}
 	void JGameObject::DoDeActivate()noexcept
 	{
-		JObject::DoDeActivate();
+		for (auto& data : impl->children)
+			data->DeActivate();
 		for (auto& data : impl->componentVec)
-		{
-			if (data->IsActivated())
-				JComponentPrivate::ActivateInterface::DeActivate(data);
-		}
+			JComponentPrivate::ActivateInterface::DeActivate(data);
+		JObject::DoDeActivate();
 	}
 
 	JGameObject::JGameObject(const InitData& initData)
@@ -564,8 +571,8 @@ namespace JinEngine
 		impl->Initialize(initData, this);
 	}
 	JGameObject::~JGameObject()
-	{
-		impl.reset();
+	{ 
+		impl.reset(); 
 	}
 
 	using CreateInstanceInterface = JGameObjectPrivate::CreateInstanceInterface;
@@ -621,9 +628,9 @@ namespace JinEngine
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
 	{
-		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		JGameObject* gPtr = static_cast<JGameObject*>(ptr);
 		gPtr->impl->Clear(gPtr);
+		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 	void DestroyInstanceInterface::SetInvalidInstance(Core::JIdentifier* ptr)noexcept
 	{

@@ -6,7 +6,6 @@ namespace JinEngine
 	namespace Core
 	{
 		class JFSMdiagram;
-		class JAnimationUpdateData;
 	}
 	namespace Graphic
 	{
@@ -14,6 +13,7 @@ namespace JinEngine
 	}
 	class JAnimator;
 	class JAnimationController;
+	class JAnimationUpdateData;
 	class JAnimationControllerPrivate final : public JResourceObjectPrivate
 	{
 	public:
@@ -40,8 +40,8 @@ namespace JinEngine
 		private:
 			friend class JAnimator;
 		private:
-			static void Initialize(JAnimationController* aniCont, Core::JAnimationUpdateData* updateData)noexcept;
-			static void Update(JAnimationController* aniCont, Core::JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept;
+			static void Initialize(JAnimationController* aniCont, JAnimationUpdateData* updateData)noexcept;
+			static void Update(JAnimationController* aniCont, JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept;
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

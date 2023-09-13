@@ -1,15 +1,15 @@
 #pragma once 
 #include<string>   
-#include<DirectXMath.h>
-#include"../../../../Core/JDataType.h" 
+#include"../../../../Core/Math/JVector.h" 
+#include"../../../../Core/JCoreEssential.h" 
 
 namespace JinEngine
 {
 	struct JAvatarInterpolation
 	{
 	public:
-		DirectX::XMFLOAT3 translation;
-		DirectX::XMFLOAT4 quaternion; 
+		JVector3<float> translation;
+		JVector4<float> quaternion;
 		bool isAvatarJoint;
 		bool isUpdated;
 	};

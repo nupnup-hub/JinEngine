@@ -77,10 +77,10 @@ namespace JinEngine
 		};
 
 		JFSMparameter::InitData::InitData(const JUserPtr<JFSMparameterStoragePublicAccess>& paramStorage, const J_FSM_PARAMETER_VALUE_TYPE paramType)
-			: JFSMinterface::InitData(initTypeInfo), paramStorage(paramStorage), paramType(paramType)
+			: JFSMinterface::InitData(JFSMparameter::StaticTypeInfo()), paramStorage(paramStorage), paramType(paramType)
 		{}
 		JFSMparameter::InitData::InitData(const std::wstring& name, const size_t guid, const JUserPtr<JFSMparameterStoragePublicAccess>& paramStorage, const J_FSM_PARAMETER_VALUE_TYPE paramType)
-			: JFSMinterface::InitData(initTypeInfo, name, guid), paramStorage(paramStorage), paramType(paramType)
+			: JFSMinterface::InitData(JFSMparameter::StaticTypeInfo(), name, guid), paramStorage(paramStorage), paramType(paramType)
 		{}
 		bool JFSMparameter::InitData::IsValidData()const noexcept
 		{
@@ -156,8 +156,8 @@ namespace JinEngine
 
 		void DestroyInstanceInterface::Clear(JIdentifier* ptr, const bool isForced)
 		{
-			JFSMinterfacePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 			static_cast<JFSMparameter*>(ptr)->impl->Clear();
+			JFSMinterfacePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		}
 		void DestroyInstanceInterface::DeRegisterCash(JIdentifier* ptr)noexcept
 		{

@@ -23,8 +23,8 @@ namespace JinEngine
 			int GetLine() const;
 			const std::wstring GetFile() const;
 			const std::wstring GetOriginString() const;
-		protected:
-			std::wstring TranslateErrorCode(HRESULT hr)const;
+		public:
+			static std::wstring TranslateErrorCode(HRESULT hr);
 		};
 	}
 }

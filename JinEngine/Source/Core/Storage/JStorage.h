@@ -1,7 +1,7 @@
 #pragma once
 #include<vector>
 #include<unordered_map>
-#include"../JDataType.h" 
+#include"../JCoreEssential.h" 
 #include"../Func/Callable/JCallable.h"
 
 namespace JinEngine

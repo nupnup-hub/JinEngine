@@ -1,7 +1,7 @@
 #include"JSkeleton.h"
 #include"JSkeletonFixedData.h"
-#include"../../../Utility/JMathHelper.h"
-#include"../../../Utility/JCommonUtility.h"
+#include"../../../Core/Math/JMathHelper.h"
+#include"../../../Core/Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
@@ -37,53 +37,46 @@ namespace JinEngine
 	}
 	DirectX::XMMATRIX JSkeleton::GetInBindPose(int index)const noexcept
 	{
-		return DirectX::XMLoadFloat4x4(&joint[index].inbindPose);
+		return joint[index].inbindPose.LoadXM();
 	}
 	DirectX::XMMATRIX JSkeleton::GetBindPose(int index)const noexcept
 	{
-		return DirectX::XMMatrixInverse(nullptr, DirectX::XMLoadFloat4x4(&joint[index].inbindPose));
+		return DirectX::XMMatrixInverse(nullptr, joint[index].inbindPose.LoadXM());
 	}
-	DirectX::XMFLOAT4 JSkeleton::GetInBindQuaternion(int index)const noexcept
+	JVector4<float> JSkeleton::GetInBindQuaternion(int index)const noexcept
 	{
 		XMVECTOR s;
 		XMVECTOR q;
-		XMVECTOR t;
-		DirectX::XMMATRIX bindM = DirectX::XMLoadFloat4x4(&joint[index].inbindPose);
-		DirectX::XMMatrixDecompose(&s, &q, &t, bindM);
-		XMFLOAT4 outQ;
-		DirectX::XMStoreFloat4(&outQ, DirectX::XMQuaternionNormalize(q));
-		return outQ;
-	}
-	DirectX::XMVECTOR JSkeleton::GetBindQuaternion(int index)const noexcept
-	{
-		XMVECTOR s;
-		XMVECTOR q;
-		XMVECTOR t;
-		DirectX::XMMATRIX bindM = DirectX::XMMatrixInverse(nullptr, DirectX::XMLoadFloat4x4(&joint[index].inbindPose));
-		DirectX::XMMatrixDecompose(&s, &q, &t, bindM);
+		XMVECTOR t; 
+		DirectX::XMMatrixDecompose(&s, &q, &t, joint[index].inbindPose.LoadXM());
 		return DirectX::XMQuaternionNormalize(q);
 	}
-	void JSkeleton::GetBindTQS(int index, XMFLOAT3& outT, XMFLOAT4& outQ, XMFLOAT3& outS)const noexcept
+	JVector4<float> JSkeleton::GetBindQuaternion(int index)const noexcept
 	{
 		XMVECTOR s;
 		XMVECTOR q;
-		XMVECTOR t;
-
-		XMMATRIX bindM = DirectX::XMMatrixInverse(nullptr, DirectX::XMLoadFloat4x4(&joint[index].inbindPose));
-		DirectX::XMMatrixDecompose(&s, &q, &t, bindM);
-		DirectX::XMStoreFloat3(&outT, t);
-		DirectX::XMStoreFloat4(&outQ, q);
-		DirectX::XMStoreFloat3(&outS, s);
+		XMVECTOR t; 
+		DirectX::XMMatrixDecompose(&s, &q, &t, DirectX::XMMatrixInverse(nullptr, joint[index].inbindPose.LoadXM()));
+		return DirectX::XMQuaternionNormalize(q);
 	}
-	DirectX::XMVECTOR JSkeleton::GetBindT(int index)const noexcept
+	void JSkeleton::GetBindTQS(int index, JVector3<float>& outT, JVector4<float>& outQ, JVector3<float>& outS)const noexcept
 	{
 		XMVECTOR s;
 		XMVECTOR q;
 		XMVECTOR t;
-
-		XMMATRIX bindM = DirectX::XMMatrixInverse(nullptr, DirectX::XMLoadFloat4x4(&joint[index].inbindPose));
-		DirectX::XMMatrixDecompose(&s, &q, &t, bindM);
-
+		 
+		DirectX::XMMatrixDecompose(&s, &q, &t, DirectX::XMMatrixInverse(nullptr, joint[index].inbindPose.LoadXM()));
+		outT = t;
+		outQ = q;
+		outS = s; 
+	}
+	JVector4<float> JSkeleton::GetBindT(int index)const noexcept
+	{
+		XMVECTOR s;
+		XMVECTOR q;
+		XMVECTOR t;
+		 
+		DirectX::XMMatrixDecompose(&s, &q, &t, DirectX::XMMatrixInverse(nullptr, joint[index].inbindPose.LoadXM()));
 		return t;
 	}
 	float JSkeleton::GetJointLength(int index)const noexcept
@@ -108,7 +101,7 @@ namespace JinEngine
 	}
 	JSkeleton::JSkeleton(std::vector<Joint>&& joint)
 		:joint(std::move(joint)), skletonHash(GetSkeletonHash())
-	{}
+	{ }
 	JSkeleton::~JSkeleton() {}
 }
 /*

@@ -1,7 +1,6 @@
 #pragma once
 #include"JEditorPopupType.h"
-#include"../../Core/JDataType.h" 
-#include"../../../ThirdParty/imgui/imgui.h"
+#include"../../Core/JCoreEssential.h"  
 #include<vector>
 #include<string>
 #include<memory> 
@@ -20,7 +19,7 @@ namespace JinEngine
 			std::vector<std::unique_ptr<JEditorPopupNode>>allPopupNode;
 			bool isOpen;
 			bool isPopupContentsClicked = false;
-			bool isLeafPopupContentsClicked = false;
+			bool isLeafPopupContentsClicked = false; 
 		public:
 			JEditorPopupMenu(const std::string& name, std::unique_ptr<JEditorPopupNode> popupRoot);
 			~JEditorPopupMenu(); 

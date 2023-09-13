@@ -1,0 +1,58 @@
+#pragma once
+#include"JLight.h"
+
+namespace JinEngine
+{
+	class JPointLightPrivate;
+	class JPointLight final : public JLight
+	{
+		REGISTER_CLASS_IDENTIFIER_LINE(JPointLight)
+	public:
+		class InitData final: public JLight::InitData
+		{
+			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
+		public:
+			InitData(const JUserPtr<JGameObject>& owner);
+			InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
+		};
+	private:
+		friend class JPointLightPrivate;
+		class JPointLightImpl;
+	private:
+		std::unique_ptr<JPointLightImpl> impl;
+	public:
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
+		const Graphic::JCullingUserInterface CullingUserInterface()const noexcept final;
+		J_LIGHT_TYPE GetLightType()const noexcept final;
+		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept final;
+		float GetNear()const noexcept final;
+		float GetFar()const noexcept final;
+		float GetFalloffStart()const noexcept;
+		float GetFalloffEnd()const noexcept;  
+		float GetRadius()const noexcept;
+		DirectX::BoundingBox GetBBox()const noexcept final;
+	public:
+		void SetShadow(const bool value)noexcept final;
+		void SetShadowResolution(const J_SHADOW_RESOLUTION sQuality)noexcept final;
+		void SetAllowDisplayShadowMap(const bool value)noexcept final; 
+		void SetFalloffStart(const float falloffStart)noexcept;
+		void SetFalloffEnd(const float falloffEnd)noexcept;
+		void SetRadius(const float radius)noexcept;
+	public:
+		bool IsFrameDirted()const noexcept final;
+		bool IsCsmActivated()const noexcept;
+		bool CanAllocateCsm()const noexcept;
+		bool PassDefectInspection()const noexcept final;
+		bool AllowFrustumCulling()const noexcept final;
+		bool AllowHzbOcclusionCulling()const noexcept final;
+		bool AllowHdOcclusionCulling()const noexcept final;
+		bool AllowDisplayOccCullingDepthMap()const noexcept final;
+	protected:
+		void DoActivate()noexcept final;
+		void DoDeActivate()noexcept final;
+	private:
+		JPointLight(const InitData& initData);
+		~JPointLight();
+	};
+}

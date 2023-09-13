@@ -27,6 +27,7 @@ namespace JinEngine
 		public:
 			bool CanAllocate(const uint blockCount)const noexcept final; 
 		public:
+			size_t GetAlignedAllocBlockSize()const noexcept final;
 			JAllocationInfo GetInformation()const noexcept final;
 		};
 	}

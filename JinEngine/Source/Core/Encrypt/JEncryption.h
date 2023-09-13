@@ -1,5 +1,5 @@
 #pragma once
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 #include"../Unit/JBigInt.h"
 #include<bitset>
 #include<string>

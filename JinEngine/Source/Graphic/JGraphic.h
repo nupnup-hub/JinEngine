@@ -29,6 +29,8 @@ namespace JinEngine
 		public:
 			JGraphicInfo GetGraphicInfo()const noexcept;
 			JGraphicOption GetGraphicOption()const noexcept;
+			void GetLastDeviceErrorInfo(_Out_ std::wstring& errorCode, _Out_ std::wstring& errorMsg)const noexcept;
+		public:
 			void SetGraphicOption(JGraphicOption newGraphicOption)noexcept;
 		private:
 			JGraphic();

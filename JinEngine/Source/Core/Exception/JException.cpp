@@ -34,7 +34,7 @@ namespace JinEngine
 		{
 			return L"[JFile] " + file + L"\n" + L"[Line]" + std::to_wstring(line);
 		}
-		std::wstring JException::TranslateErrorCode(HRESULT hr)const
+		std::wstring JException::TranslateErrorCode(HRESULT hr)
 		{
 			LPVOID  pMsgBuf; //reinterpret_cast<LPTSTR>(&pMsgBuf)
 			// windows will allocate memory for err wstring and make our pointer point to it

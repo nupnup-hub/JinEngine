@@ -17,7 +17,7 @@
 #include"../../../GameObject/JGameObjectCreator.h" 
 #include"../../../../Graphic/JGraphicDrawList.h"
 #include"../../../../Application/JApplicationProject.h"
-#include"../../../../Utility/JCommonUtility.h"
+#include"../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../Core/Guid/JGuidCreator.h"
 #include"../../../../Core/Identity/JIdenCreator.h"
 
@@ -93,7 +93,7 @@ namespace JinEngine
 		JUserPtr<JGameObject> shapeObj = JICI::Create<JGameObject>(mesh->GetName(), Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, scene->GetRootGameObject());
 		JUserPtr<JRenderItem> renderItem = JCCI::CreateRenderItem(shapeObj, mesh);
 
-		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
+		const JVector3<float> center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		AdjustCamera(center, radius);
@@ -105,12 +105,12 @@ namespace JinEngine
 		if (material == nullptr)
 			return false;
 
-		_JSceneManager::Instance().RegisterObservationFrame(GetScene(), material->FrameUserInterface());
+		_JSceneManager::Instance().RegisterObservationFrame(GetScene(), material);
 		JUserPtr<JGameObject> shapeObj = JGCI::CreateShape(GetScene()->GetRootGameObject(), OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::SPHERE);
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 
 		renderItem->SetMaterial(0, material);
-		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
+		const JVector3<float> center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		AdjustCamera(center, radius);
@@ -144,7 +144,7 @@ namespace JinEngine
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 		renderItem->SetMaterial(0, newTextureMat);
 		
-		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
+		const JVector3<float> center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		SetTextureMaterial(newTextureMat);
@@ -183,7 +183,7 @@ namespace JinEngine
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 		renderItem->SetMaterial(0, newTextureMat);
 
-		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
+		const JVector3<float> center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		SetTextureMaterial(newTextureMat);

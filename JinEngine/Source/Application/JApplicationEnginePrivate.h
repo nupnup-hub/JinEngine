@@ -3,17 +3,17 @@
 
 namespace JinEngine
 { 
+	class JMain;
 	namespace Application
-	{
-		class JApplication;
+	{ 
 		class JApplicationProject;
 		class JApplicationEnginePrivate final
 		{
 		public:
-			class AppAccess
+			class MainAccess
 			{
 			private:
-				friend class JApplication;
+				friend class JMain;
 			private:
 				static void Initialize();
 				static bool MakeEngineFolder();

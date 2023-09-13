@@ -55,7 +55,9 @@ namespace JinEngine
 		uint GetResourceCount(const Core::JTypeInfo& info)const noexcept;
 		JUserPtr<JResourceObject> GetResource(const Core::JTypeInfo& info, const size_t guid)const noexcept;
 		JUserPtr<JResourceObject> GetResourceByPath(const Core::JTypeInfo& info, const std::wstring& path)const  noexcept;
-		JUserPtr<JResourceObject> TryGetResourceUser(const Core::JTypeInfo& info, const size_t guid) noexcept;			//has possibility of load resource
+		JUserPtr<JResourceObject> TryGetResourceUser(const Core::JTypeInfo& info, const size_t guid) noexcept;		//has possibility of load resource
+		JUserPtr<JResourceObject> TryGetResourceUser(const Core::JTypeInstanceSearchHint& hint) noexcept;			//has possibility of load resource
+		JUserPtr<JResourceObject> TryGetResourceUser(const size_t typeGuid, const size_t objGuid) noexcept;			//has possibility of load resource
 	public:
 		template<typename T, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
 		uint GetResourceCount()const noexcept
@@ -77,29 +79,38 @@ namespace JinEngine
 		{
 			return static_cast<T*>(GetResourceByPath(T::StaticTypeInfo(), path));
 		}
-		template<typename T, typename ...Param, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
-		JUserPtr<T> GetResourceByCondition(Core::JFunctor<bool, T*, Param...>&& functor, Param... var)const noexcept
+		/**
+		* @brief search resource or directory
+		*/
+		template<typename T, typename ...Param>
+		auto GetByCondition(Core::JFunctor<bool, T*, Param...>&& functor,
+			const bool allowChildTypeSearch,
+			Param... var)const noexcept
+			-> std::conditional_t<std::is_base_of_v<JResourceObject, T> || std::is_base_of_v<JDirectory, T>,
+			JUserPtr<T>,
+			void>
 		{
-			return FindResource<T>(T::StaticTypeInfo(), std::move(functor), std::forward<Param>(var)...);
+			return FindJResource<T>(T::StaticTypeInfo(), std::move(functor), allowChildTypeSearch, std::forward<Param>(var)...);
 		} 
-		template<typename T, typename ...Param, std::enable_if_t<std::is_base_of_v<JResourceObject, T>, int> = 0>
-		JUserPtr<T> GetResourceByCondition(bool(*ptr)(T*, Param...), Param... var)const noexcept
+		/**
+		* @brief search resource or directory
+		*/
+		template<typename T, typename ...Param>
+		auto GetByCondition(bool(*ptr)(T*, Param...),
+			const bool allowChildTypeSearch,
+			Param... var)const noexcept
+			-> std::conditional_t<std::is_base_of_v<JResourceObject, T> || std::is_base_of_v<JDirectory, T>,
+			JUserPtr<T>,
+			void>
 		{
-			return FindResource<T>(T::StaticTypeInfo(), ptr, std::forward<Param>(var)...);
+			return FindJResource<T>(T::StaticTypeInfo(), ptr, allowChildTypeSearch, std::forward<Param>(var)...);
 		}
-		template<typename T, typename ...Param, std::enable_if_t<std::is_base_of_v<JDirectory, T>, int> = 0>
-		JUserPtr<T> GetDirectoryByCondition(Core::JFunctor<bool, T*, Param...>&& functor, Param... var)const noexcept
-		{
-			return FindResource<T>(T::StaticTypeInfo(), std::move(functor), std::forward<Param>(var)...);
-		}
-		template<typename T, typename ...Param, std::enable_if_t<std::is_base_of_v<JDirectory, T>, int> = 0>
-		JUserPtr<T> GetDirectoryByCondition(bool(*ptr)(T*, Param...), Param... var)const noexcept
-		{
-			return FindResource<T>(T::StaticTypeInfo(), ptr, std::forward<Param>(var)...);
-		} 
 	private:
 		template<typename T,  typename F, typename ...Param>
-		JUserPtr<T> FindResource(const Core::JTypeInfo& typeInfo, F func, Param... var)const noexcept
+		JUserPtr<T> FindJResource(const Core::JTypeInfo& typeInfo, 
+			F func, 
+			const bool allowChildTypeSearch,
+			Param... var)const noexcept
 		{
 			auto vec = typeInfo.GetInstanceRawPtrVec();
 			for (const auto& data : vec)
@@ -107,6 +118,20 @@ namespace JinEngine
 				T* obj = static_cast<T*>(data);
 				if (func(obj, std::forward<Param>(var)...))
 					return Core::GetUserPtr(obj);
+			}
+			if (allowChildTypeSearch)
+			{
+				auto childVec = typeInfo.GetChildInfo();
+				for (const auto& childType : childVec)
+				{
+					auto childObjVec = childType->GetInstanceRawPtrVec();
+					for (const auto& data : childObjVec)
+					{
+						T* obj = static_cast<T*>(data);
+						if (func(obj, std::forward<Param>(var)...))
+							return Core::GetUserPtr(obj);
+					}
+				}
 			}
 			return nullptr;
 		}

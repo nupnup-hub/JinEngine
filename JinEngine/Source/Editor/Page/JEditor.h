@@ -1,7 +1,7 @@
 #pragma once  
 #include"../Event/JEditorEventType.h"
 #include"../Event/JEditorEventStruct.h" 
-#include"../../Core/JDataType.h"  
+#include"../../Core/JCoreEssential.h"  
 #include"../../Core/Event/JEventListener.h"
 #include<string>
 #include<memory> 
@@ -26,6 +26,8 @@ namespace JinEngine
 			virtual ~JEditor();
 		public:
 			bool IsOpen()const noexcept;
+			//gui api에 update 상황에 따라 focus update하는 방식이 다르므로(실시간 반영, update end후 반영)
+			//1frame 정도 늦은 focus정보를 갖고있다.
 			bool IsFocus()const noexcept;
 			bool IsActivated()const noexcept;
 			bool IsLastActivated()const noexcept;

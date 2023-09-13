@@ -1,7 +1,7 @@
 #include"JStringConvertTest.h"
 #include"../../JEditorAttribute.h"  
-#include"../../../../Utility/JCommonUtility.h"
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
+#include"../../../Gui/JGui.h" 
+#include"../../../../Core/Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
@@ -23,20 +23,21 @@ namespace JinEngine
 		}
 		void JStringConvertTest::UpdateWindow()
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR);
 			if (IsActivated())
 			{
-				JImGuiImpl::Text(u8"결과");
-				JImGuiImpl::Text(("ori: " + ori));
-				JImGuiImpl::Text(("ori -> wstr -> str: " + wstrToStr));
+				UpdateMouseClick();
+				JGui::Text(u8"결과");
+				JGui::Text(("ori: " + ori));
+				JGui::Text(("ori -> wstr -> str: " + wstrToStr));
 
-				ImGui::NewLine();
-				ImGui::NewLine();
-				ImGui::NewLine();
+				JGui::NewLine();
+				JGui::NewLine();
+				JGui::NewLine();
 
-				ImGuiInputTextFlags_ flag = (ImGuiInputTextFlags_)(ImGuiInputTextFlags_EnterReturnsTrue);
+				J_GUI_INPUT_TEXT_FLAG_ flag = J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE;
 
-				if (ImGui::InputText("##TestInputText", &buf[0], 255, flag))
+				if (JGui::InputText("##TestInputText", buf, 255, flag))
 				{
 					ori = JCUtil::EraseChar(buf, ' ');
 					oriToWstr = JCUtil::U8StrToWstr(ori);

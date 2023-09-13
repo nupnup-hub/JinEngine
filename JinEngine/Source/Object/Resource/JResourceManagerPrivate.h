@@ -1,18 +1,15 @@
 #pragma once
 
 namespace JinEngine
-{
-	namespace Application
-	{
-		class JApplication;
-	} 
+{ 
+	class JMain;
 	class JResourceManagerPrivate
 	{
 	public:
-		class ApplicationAccess
+		class MainAccess
 		{
 		private:
-			friend class Application::JApplication;
+			friend class JMain;
 		private:
 			static void Initialize();
 			static void Terminate();

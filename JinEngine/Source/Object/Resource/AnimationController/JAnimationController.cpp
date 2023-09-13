@@ -1,5 +1,12 @@
 #include"JAnimationController.h"
 #include"JAnimationControllerPrivate.h"
+#include"FSM/JAnimationFSMdiagram.h"  
+#include"FSM/JAnimationFSMdiagramPrivate.h"
+#include"FSM/JAnimationFSMstate.h" 
+#include"FSM/JAnimationFSMstateClip.h" 
+#include"FSM/JAnimationTime.h" 
+#include"FSM/JAnimationFSMtransition.h"
+#include"FSM/JAnimationUpdateData.h"  
 #include"../JResourceObjectHint.h"
 #include"../JClearableInterface.h"
 #include"../Skeleton/JSkeletonAsset.h"  
@@ -8,25 +15,16 @@
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h"
-#include"../../../Core/FSM/AnimationFSM/JAnimationFSMdiagram.h"  
-#include"../../../Core/FSM/AnimationFSM/JAnimationFSMdiagramPrivate.h"
-#include"../../../Core/FSM/AnimationFSM/JAnimationFSMstate.h" 
-#include"../../../Core/FSM/AnimationFSM/JAnimationTime.h" 
-#include"../../../Core/FSM/AnimationFSM/JAnimationFSMtransition.h"
-#include"../../../Core/FSM/AnimationFSM/JAnimationUpdateData.h" 
-#include"../../../Core/FSM/JFSMstate.h" 
 #include"../../../Core/FSM/JFSMparameter.h" 
 #include"../../../Core/FSM/JFSMparameterStorage.h"   
 #include"../../../Core/FSM/JFSMownerInterface.h" 
 #include"../../../Core/File/JFileIOHelper.h" 
+#include"../../../Core/Utility/JCommonUtility.h"
 
-#include"../../../Application/JApplicationProject.h"
-#include"../../../Editor/Diagram/JEditorDiagram.h"  
-#include"../../../Graphic/Upload/Frameresource/JAnimationConstants.h"
-#include"../../../Utility/JCommonUtility.h"
+#include"../../../Application/JApplicationProject.h" 
+#include"../../../Graphic/Frameresource/JAnimationConstants.h" 
 
-//수정필요 
-#include"../../../Core/FSM/AnimationFSM/JAnimationFSMstateClip.h"  
+//수정필요  
 #include<fstream>
 
 namespace JinEngine
@@ -34,8 +32,8 @@ namespace JinEngine
 	using namespace Graphic;
 	namespace
 	{
-		using DiagramIOInterface = Core::JAnimationFSMdiagramPrivate::AssetDataIOInterface;
-		using DiagramUpdateInterface = Core::JAnimationFSMdiagramPrivate::UpdateInterface;
+		using DiagramIOInterface = JAnimationFSMdiagramPrivate::AssetDataIOInterface;
+		using DiagramUpdateInterface = JAnimationFSMdiagramPrivate::UpdateInterface;
 	}
 	namespace
 	{
@@ -51,7 +49,7 @@ namespace JinEngine
 		JWeakPtr<JAnimationController> thisPointer = nullptr;
 	public:
 		JOwnerPtr<Core::JFSMparameterStorage> paramStorage;
-		std::vector<JUserPtr<Core::JAnimationFSMdiagram>> diagramVec;
+		std::vector<JUserPtr<JAnimationFSMdiagram>> diagramVec;
 	public:
 		JAnimationControllerImpl(const InitData& initData, JAnimationController* thisPointer)
 		{}
@@ -63,7 +61,7 @@ namespace JinEngine
 			return paramStorage.Get();
 		}
 	public:
-		Core::JUserPtr<Core::JAnimationFSMdiagram> FindDiagram(const size_t guid)noexcept
+		Core::JUserPtr<JAnimationFSMdiagram> FindDiagram(const size_t guid)noexcept
 		{
 			const uint dCount = (uint)diagramVec.size();
 			for (uint i = 0; i < dCount; ++i)
@@ -74,7 +72,7 @@ namespace JinEngine
 			return nullptr;
 		}
 	public:
-		void Initialize(Core::JAnimationUpdateData* updateData)noexcept
+		void Initialize(JAnimationUpdateData* updateData)noexcept
 		{ 
 			uint layerSize = (uint)diagramVec.size();
 			for (uint i = 0; i < layerSize; ++i)
@@ -83,7 +81,7 @@ namespace JinEngine
 				DiagramUpdateInterface::Enter(diagramVec[i], updateData, i);
 			}
 		}
-		void Update(Core::JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept
+		void Update(JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept
 		{
 			bool hasValidValue = false;
 			uint layerSize = (uint)diagramVec.size();
@@ -111,7 +109,7 @@ namespace JinEngine
 		{
 			if (thisPointer->IsValid())
 			{
-				std::vector<JUserPtr<Core::JAnimationFSMdiagram>> copy = diagramVec;
+				std::vector<JUserPtr<JAnimationFSMdiagram>> copy = diagramVec;
 				const uint fsmCount = (uint)copy.size();
 				for (uint i = 0; i < fsmCount; ++i)
 					Core::JFSMinterface::BeginDestroy(copy[i].Get());
@@ -170,10 +168,10 @@ namespace JinEngine
 			if (diagram != nullptr)
 			{
 				int index = JCUtil::GetTypeIndex(diagramVec, diagram->GetGuid());
-				if (index == -1 && diagram->GetTypeInfo().IsA(Core::JAnimationFSMdiagram::StaticTypeInfo()))
+				if (index == -1 && diagram->GetTypeInfo().IsA(JAnimationFSMdiagram::StaticTypeInfo()))
 				{
 					diagram->SetName(JCUtil::MakeUniqueName(diagramVec, diagram->GetName()));
-					diagramVec.push_back(JUserPtr<Core::JAnimationFSMdiagram>::ConvertChild(std::move(diagram)));
+					diagramVec.push_back(JUserPtr<JAnimationFSMdiagram>::ConvertChild(std::move(diagram)));
 					return true;
 				}
 			}
@@ -284,7 +282,7 @@ namespace JinEngine
 	{
 		return impl->paramStorage->GetParameterCount();
 	}  
-	JUserPtr<Core::JAnimationFSMdiagram> JAnimationController::GetDiagram(const size_t guid)noexcept
+	JUserPtr<JAnimationFSMdiagram> JAnimationController::GetDiagram(const size_t guid)noexcept
 	{
 		int index = JCUtil::GetTypeIndex(impl->diagramVec, guid);
 		if (index != -1)
@@ -292,13 +290,13 @@ namespace JinEngine
 		else
 			return nullptr;
 	}
-	JUserPtr<Core::JAnimationFSMdiagram> JAnimationController::GetDiagramByIndex(const uint index)noexcept
+	JUserPtr<JAnimationFSMdiagram> JAnimationController::GetDiagramByIndex(const uint index)noexcept
 	{
 		if (impl->diagramVec.size() <=index)
 			return nullptr;
 		return impl->diagramVec[index];
 	}
-	const std::vector<JUserPtr<Core::JAnimationFSMdiagram>>& JAnimationController::GetDiagramVec()noexcept
+	const std::vector<JUserPtr<JAnimationFSMdiagram>>& JAnimationController::GetDiagramVec()noexcept
 	{
 		return impl->diagramVec;
 	}
@@ -312,13 +310,13 @@ namespace JinEngine
 	}
 	bool JAnimationController::CanCreateDiagram()const noexcept
 	{
-		return impl->diagramVec.size() < Core::JAnimationFixedData::fsmDiagramMaxCount;
+		return impl->diagramVec.size() < JAnimationFixedData::fsmDiagramMaxCount;
 	}
 	bool JAnimationController::CanCreateParameter()const noexcept
 	{
 		return impl->paramStorage->GetParameterCount() < impl->paramStorage->maxNumberOfParameter;
 	}
-	bool JAnimationController::CanCreateState(Core::JAnimationFSMdiagram* diagram)const noexcept
+	bool JAnimationController::CanCreateState(JAnimationFSMdiagram* diagram)const noexcept
 	{ 
 		return diagram && diagram->CanCreateState();
 	}
@@ -326,12 +324,12 @@ namespace JinEngine
 	{
 		return Core::JValidInterface::IsValid();
 	}
-	JUserPtr<Core::JAnimationFSMdiagram> JAnimationController::CreateFSMdiagram(const size_t guid)noexcept
+	JUserPtr<JAnimationFSMdiagram> JAnimationController::CreateFSMdiagram(const size_t guid)noexcept
 	{
 		if (!CanCreateDiagram())
 			return nullptr;
 		 
-		return JICI::Create<Core::JAnimationFSMdiagram>(GetDefaultName<Core::JAnimationFSMdiagram>(), guid, impl.get());
+		return JICI::Create<JAnimationFSMdiagram>(GetDefaultName<JAnimationFSMdiagram>(), guid, impl.get());
 	}
 	JUserPtr<Core::JFSMparameter> JAnimationController::CreateFSMparameter(const size_t guid)noexcept
 	{
@@ -340,7 +338,7 @@ namespace JinEngine
 
 		return JICI::Create<Core::JFSMparameter>(GetDefaultName<Core::JFSMparameter>(), guid, impl->paramStorage);
 	}
-	JUserPtr<Core::JAnimationFSMstate> JAnimationController::CreateFSMclip(const JUserPtr<Core::JAnimationFSMdiagram>& diagram, const size_t guid)noexcept
+	JUserPtr<JAnimationFSMstate> JAnimationController::CreateFSMclip(const JUserPtr<JAnimationFSMdiagram>& diagram, const size_t guid)noexcept
 	{
 		if (!CanCreateState(diagram.Get()))
 			return nullptr;
@@ -348,11 +346,11 @@ namespace JinEngine
 		if (GetDiagram(diagram->GetGuid())->GetGuid() != diagram->GetGuid())
 			return nullptr;
  
-		return JICI::Create<Core::JAnimationFSMstateClip>(GetDefaultName<Core::JAnimationFSMstateClip>(), guid, diagram);
+		return JICI::Create<JAnimationFSMstateClip>(GetDefaultName<JAnimationFSMstateClip>(), guid, diagram);
 	}
-	JUserPtr<Core::JAnimationFSMtransition> JAnimationController::CreateFsmtransition(const JUserPtr<Core::JAnimationFSMdiagram>& diagram,
-		const JUserPtr<Core::JAnimationFSMstate>& from,
-		const JUserPtr<Core::JAnimationFSMstate>& to,
+	JUserPtr<JAnimationFSMtransition> JAnimationController::CreateFsmtransition(const JUserPtr<JAnimationFSMdiagram>& diagram,
+		const JUserPtr<JAnimationFSMstate>& from,
+		const JUserPtr<JAnimationFSMstate>& to,
 		const size_t guid)noexcept
 	{
 		if (from == nullptr || to == nullptr)
@@ -365,7 +363,7 @@ namespace JinEngine
 			diagram->GetState(to->GetGuid())->GetGuid() != to->GetGuid())
 			return nullptr;
 
-		return JICI::Create<Core::JAnimationFSMtransition>(GetDefaultName<Core::JFSMtransition>(), guid, from,to);
+		return JICI::Create<JAnimationFSMtransition>(GetDefaultName<JAnimationFSMtransition>(), guid, from,to);
 	}
 	void JAnimationController::DoActivate()noexcept
 	{
@@ -374,8 +372,8 @@ namespace JinEngine
 	}
 	void JAnimationController::DoDeActivate()noexcept
 	{ 
-		JResourceObject::DoDeActivate();
 		impl->ClearResource();
+		JResourceObject::DoDeActivate();
 	} 
 	JAnimationController::JAnimationController(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JAnimationControllerImpl>(initData, this))
@@ -482,11 +480,11 @@ namespace JinEngine
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	void FrameUpdateInterface::Initialize(JAnimationController* aniCont, Core::JAnimationUpdateData* updateData)noexcept
+	void FrameUpdateInterface::Initialize(JAnimationController* aniCont, JAnimationUpdateData* updateData)noexcept
 	{
 		aniCont->impl->Initialize(updateData);
 	}
-	void FrameUpdateInterface::Update(JAnimationController* aniCont, Core::JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept
+	void FrameUpdateInterface::Update(JAnimationController* aniCont, JAnimationUpdateData* updateData, Graphic::JAnimationConstants& constant)noexcept
 	{
 		aniCont->impl->Update(updateData, constant);
 	}

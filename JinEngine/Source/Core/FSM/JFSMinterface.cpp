@@ -1,7 +1,7 @@
 #include"JFSMinterface.h"
 #include"JFSMinterfacePrivate.h"
 #include"../File/JFileConstant.h"
-#include"../../Utility/JCommonUtility.h"  
+#include"../Utility/JCommonUtility.h"  
 #include<fstream>
 
 namespace JinEngine

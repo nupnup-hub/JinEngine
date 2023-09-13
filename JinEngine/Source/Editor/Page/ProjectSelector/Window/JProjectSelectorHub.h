@@ -10,8 +10,9 @@ namespace JinEngine
 	class JResourceObject;
 	namespace Editor
 	{
-		class SelectorValues;
+		struct SelectorValues;
 		class JEditorSearchBarHelper;
+		class JEditorDynamicSpotColor;
 		class JProjectSelectorHub : public JEditorWindow ,
 			public Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>
 		{ 
@@ -25,6 +26,7 @@ namespace JinEngine
 			//last project rendering scene
 			std::vector<JUserPtr<JTexture>> lastRSVec;
 			std::unique_ptr<JEditorSearchBarHelper> searchHelper;
+			std::unique_ptr<JEditorDynamicSpotColor> dynamicCol;
 		private:
 			std::unique_ptr<SelectorValues> values;
 			float optionListCusorY;

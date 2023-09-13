@@ -21,6 +21,7 @@ namespace JinEngine
 			JUserPtr<JDirectory> parent = nullptr;
 		public:
 			InitData(const JUserPtr<JDirectory>& parent);
+			InitData(const size_t guid, const JUserPtr<JDirectory>& parent);
 			InitData(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JDirectory>& parent);
 		};
 	protected: 
@@ -51,8 +52,8 @@ namespace JinEngine
 		JUserPtr<JDirectory> GetChildDirctoryByName(const std::wstring& name)const noexcept;
 		JUserPtr<JDirectory> GetChildDirctoryByPath(const std::wstring& path)const noexcept;
 		JUserPtr<JFile> GetDirectoryFile(const uint index)const noexcept;
-		JUserPtr<JFile> GetDirectoryFile(const std::wstring& name)const noexcept;
-		JUserPtr<JFile> GetDirectoryFile(const std::wstring& name, const std::wstring& format)const noexcept;	//full name is name + format
+		JUserPtr<JFile> GetDirectoryFileByName(const std::wstring& name)const noexcept;
+		JUserPtr<JFile> GetDirectoryFileByFullName(const std::wstring& name, const std::wstring& format)const noexcept;	//full name is name + format
 		JUserPtr<JFile> GetRecentFile()const noexcept;
 		std::vector<JUserPtr<JFile>> GetDirectoryFileVec(const bool containChildFile)const noexcept; 
 		std::vector<JUserPtr<JFile>> GetDirectoryFileVec(const bool containChildFile, const J_RESOURCE_TYPE type)const noexcept;

@@ -3,11 +3,11 @@
 #include<memory>
 #include<vector>
 #include"JApplicationState.h" 
-#include"../Core/JDataType.h" 
+#include"../Core/JCoreEssential.h" 
 #include"../Core/Platform/JLanguageType.h"     
 #include"../Core/Time/JRealTime.h"
 #include"../Core/Module/JModuleMacro.h"
-#include"../Utility/JMacroUtility.h"
+#include"../Core/Utility/JMacroUtility.h"
  
 
 namespace JinEngine
@@ -43,11 +43,14 @@ namespace JinEngine
 			std::unique_ptr<JApplicationProjectInfo> GetUnique()noexcept;
 			std::wstring lastRsPath()noexcept;
 		public:
+			//last rs is stored close app by .dss format
+			//and next time engine execute
+			//JProjectSelectorHub(Editor) try to get texture(.dss format)
 			static std::wstring CombineLastRsPath(const size_t guid)noexcept;
 		};
 
 		class JApplicationProjectPrivate;
-		class CORE_API JApplicationProject final
+		class JApplicationProject final
 		{
 		public:
 			static std::wstring Name()noexcept;
@@ -56,8 +59,8 @@ namespace JinEngine
 			*/
 			static std::wstring RootPath()noexcept;
 			static std::wstring ContentsPath()noexcept;
-			static std::wstring SettingPath()noexcept;
-			static std::wstring LogPath()noexcept;
+			static std::wstring DocumentPath()noexcept;
+			static std::wstring ConfigPath()noexcept;
 			static std::wstring ProjectResourcePath()noexcept;
 			static std::wstring BinaryPath()noexcept;  
 			static std::wstring SolutionPath()noexcept;
@@ -66,11 +69,12 @@ namespace JinEngine
 			static std::wstring ContentScenePath()noexcept; 
 			static std::wstring ContentResourcePath()noexcept;
 		public:
-			//Setting
-			static std::wstring EditorSettingPath()noexcept;
+			//Documtent
+			static std::wstring LogPath()noexcept;
+			static std::wstring DevelopLogPath()noexcept;
 		public:
-			//Setting
-			static std::wstring ProjectLogPath()noexcept;
+			//Config
+			static std::wstring EditoConfigPath()noexcept;
 			static std::wstring ProjectVersionFilePath()noexcept;
 		public:
 			//ProjectResourcePath

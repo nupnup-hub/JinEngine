@@ -24,24 +24,23 @@
 #include"../../../Core/Geometry/JDirectXCollisionEx.h"
 #include"../../../Core/Loader/FbxLoader/JFbxFileLoader.h"
 #include"../../../Core/Loader/ObjLoader/JObjFileLoader.h"
-
-#include"../../../Utility/JMathHelper.h" 
-#include"../../../Utility/JD3DUtility.h" 
-#include"../../../Utility/JCommonUtility.h"
+#include"../../../Core/Utility/JCommonUtility.h"  
+#include"../../../Core/Math/JMathHelper.h"
+ 
 #include"../../../Graphic/JGraphic.h"
 #include"../../../Graphic/JGraphicPrivate.h"
+#include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
 #include<fstream>
 #include<wrl/client.h>
 
 namespace JinEngine
 {
 	using namespace DirectX;
-	namespace
+	namespace Private
 	{
-		using GDeviceInterface = Graphic::JGraphicPrivate::DeviceInterface;
-		using GCommandInterface = Graphic::JGraphicPrivate::CommandInterface;
+		static constexpr uint useGraphicResourceCount = 2;
 	}
- 
+
 	class SubmeshGeometry
 	{
 	private:
@@ -88,7 +87,7 @@ namespace JinEngine
 		{
 			return indexCount;
 		}
-		DirectX::XMFLOAT3 GetBoundingBoxCenter()const noexcept
+		JVector3<float> GetBoundingBoxCenter()const noexcept
 		{
 			return boundingBox.Center;
 		}
@@ -96,7 +95,7 @@ namespace JinEngine
 		{
 			return XMLoadFloat3(&boundingBox.Center);
 		}
-		DirectX::XMFLOAT3 GetBoundingBoxExtent()const noexcept
+		JVector3<float> GetBoundingBoxExtent()const noexcept
 		{
 			return boundingBox.Extents;
 		}
@@ -104,7 +103,7 @@ namespace JinEngine
 		{
 			return XMLoadFloat3(&boundingBox.Extents);
 		}
-		DirectX::XMFLOAT3 GetBoundingSphereCenter()const noexcept
+		JVector3<float> GetBoundingSphereCenter()const noexcept
 		{
 			return boundingSphere.Center;
 		}
@@ -150,7 +149,8 @@ namespace JinEngine
 
 	class JMeshGeometry::JMeshGeometryImpl : public Core::JTypeImplBase,
 		public JResourceObjectUserInterface,
-		public JClearableInterface
+		public JClearableInterface,
+		public Graphic::JGraphicWideSingleResourceHolder<Private::useGraphicResourceCount>
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JMeshGeometryImpl)
 	public:
@@ -163,20 +163,16 @@ namespace JinEngine
 		//Microsoft::WRL::ComPtr<ID3DBlob> vertexBufferCPU = nullptr;
 		//Microsoft::WRL::ComPtr<ID3DBlob> indexBufferCPU = nullptr;
 	public:
-		Microsoft::WRL::ComPtr<ID3D12Resource> vertexBufferGPU = nullptr;
-		Microsoft::WRL::ComPtr<ID3D12Resource> indexBufferGPU = nullptr;
-		Microsoft::WRL::ComPtr<ID3D12Resource> vertexBufferUploader = nullptr;
-		Microsoft::WRL::ComPtr<ID3D12Resource> indexBufferUploader = nullptr;
-	public:
 		DirectX::BoundingBox boundingBox;
 		DirectX::BoundingSphere boundingSphere;
 	public:
 		// Data about the buffers.
 		uint vertexCount = 0;
 		uint indexCount = 0;
-		uint vertexByteStride = 0;
+		uint vertexByteSize = 0;
 		uint vertexBufferByteSize = 0;
-		DXGI_FORMAT indexFormat = DXGI_FORMAT_R16_UINT;
+		uint indexByteSize = 0;
+		///DXGI_FORMAT indexFormat = DXGI_FORMAT_R16_UINT;
 		uint indexBufferByteSize = 0;
 		std::vector<SubmeshGeometry> submeshes;
 	public:
@@ -186,7 +182,7 @@ namespace JinEngine
 		REGISTER_METHOD(GetTotalVertexCount)
 		REGISTER_METHOD_READONLY_GUI_WIDGET(VertexCount, GetTotalVertexCount, GUI_READONLY_TEXT())
 		uint GetTotalVertexCount()const noexcept
-		{
+		{ 
 			return vertexCount;
 		}
 		REGISTER_METHOD(GetTotalIndexCount)
@@ -226,31 +222,12 @@ namespace JinEngine
 			return submeshes.size() > index ? submeshes[index].GetMaterial() : JUserPtr<JMaterial>{};
 		}
 	public:
-		D3D12_VERTEX_BUFFER_VIEW VertexBufferView()const noexcept
-		{
-			D3D12_VERTEX_BUFFER_VIEW vbv;
-			vbv.BufferLocation = vertexBufferGPU->GetGPUVirtualAddress();
-			vbv.StrideInBytes = vertexByteStride;
-			vbv.SizeInBytes = vertexBufferByteSize;
-			return vbv;
-		}
-		D3D12_INDEX_BUFFER_VIEW IndexBufferView()const noexcept
-		{
-			D3D12_INDEX_BUFFER_VIEW ibv;
-			ibv.BufferLocation = indexBufferGPU->GetGPUVirtualAddress();
-			ibv.Format = indexFormat;
-			ibv.SizeInBytes = indexBufferByteSize;
-			return ibv;
-		}
-	public:
 		void UpdateMeshBound()noexcept
 		{
 			const uint submeshCount = (uint)submeshes.size();
-
-			XMFLOAT3 minInit(+JMathHelper::Infinity, +JMathHelper::Infinity, +JMathHelper::Infinity);
-			XMFLOAT3 maxInit(-JMathHelper::Infinity, -JMathHelper::Infinity, -JMathHelper::Infinity);
-			XMVECTOR minXmV = XMLoadFloat3(&minInit);
-			XMVECTOR maxXmV = XMLoadFloat3(&maxInit);
+			 
+			XMVECTOR minXmV = JVector3<float>::PositiveInfV().ToXmV();
+			XMVECTOR maxXmV = JVector3<float>::NegativeInfV().ToXmV();
 
 			for (uint i = 0; i < submeshCount; ++i)
 			{
@@ -304,7 +281,7 @@ namespace JinEngine
 			//리소스 초기화시 호출된다
 
 			//stuff material
-			ClearGpuBuffer();
+			DestroyAllTexture();
 			const uint submeshCount = (uint)meshGroup->GetMeshDataCount();
  
 			uint vertexCount = 0;
@@ -331,61 +308,47 @@ namespace JinEngine
 			}
 			JMeshGeometryImpl::vertexCount = vertexCount;
 			JMeshGeometryImpl::indexCount = indexCount;
-
-			ID3D12Device* device = GDeviceInterface::GetDevice(); 
-			ID3D12CommandQueue* mCommandQueue = GCommandInterface::GetCommandQueue();
-			ID3D12CommandAllocator* mDirectCmdListAlloc = GCommandInterface::GetCommandAllocator();
-			ID3D12GraphicsCommandList* mCommandList = GCommandInterface::GetCommandList();
-
+			 
 			if (meshGroup->GetMeshGroupType() == J_MESHGEOMETRY_TYPE::STATIC)
 			{
-				vertexByteStride = sizeof(JStaticMeshVertex);
-				vertexBufferByteSize = vertexCount * vertexByteStride;
+				vertexByteSize = sizeof(JStaticMeshVertex);
+				vertexBufferByteSize = vertexCount * vertexByteSize;
 
-				std::vector<JStaticMeshVertex> vertices(vertexCount);
+				std::vector<JStaticMeshVertex> vertex(vertexCount);
 				uint vertexOffset = 0;
 				for (uint i = 0; i < submeshCount; ++i)
 				{
 					JStaticMeshData* meshdata = static_cast<JStaticMeshData*>(meshGroup->GetMeshData(i));
 					const uint subMeshVertexCount = meshdata->GetVertexCount();
 					for (uint j = 0; j < subMeshVertexCount; ++j)
-						vertices[vertexOffset + j] = meshdata->GetVertex(j);
+						vertex[vertexOffset + j] = meshdata->GetVertex(j);
 					vertexOffset += subMeshVertexCount;
 				}
-
-				GCommandInterface::FlushCommandQueue();
-				GCommandInterface::StartCommand();
-				vertexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, vertices.data(), vertexBufferByteSize, vertexBufferUploader);
-				GCommandInterface::EndCommand();
-				GCommandInterface::FlushCommandQueue();
+				CreateVertexBuffer(vertex); 
 			}
 			else
 			{
-				vertexByteStride = sizeof(JSkinnedMeshVertex);
-				vertexBufferByteSize = vertexCount * vertexByteStride;
+				vertexByteSize = sizeof(JSkinnedMeshVertex);
+				vertexBufferByteSize = vertexCount * vertexByteSize;
 
-				std::vector<JSkinnedMeshVertex> vertices(vertexCount);
+				std::vector<JSkinnedMeshVertex> vertex(vertexCount);
 				uint vertexOffset = 0;
 				for (uint i = 0; i < submeshCount; ++i)
 				{
 					JSkinnedMeshData* meshdata = static_cast<JSkinnedMeshData*>(meshGroup->GetMeshData(i));
 					const uint subMeshVertexCount = meshdata->GetVertexCount();
 					for (uint j = 0; j < subMeshVertexCount; ++j)
-						vertices[vertexOffset + j] = meshdata->GetVertex(j);
+						vertex[vertexOffset + j] = meshdata->GetVertex(j);
 					vertexOffset += subMeshVertexCount;
-				}
-				GCommandInterface::FlushCommandQueue();
-				GCommandInterface::StartCommand();
-				vertexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, vertices.data(), vertexBufferByteSize, vertexBufferUploader);
-				GCommandInterface::EndCommand();
-				GCommandInterface::FlushCommandQueue();
+				} 
+				CreateVertexBuffer(vertex);
 			}
 
 			if (indexCount >= 1 << 16)
 			{
-				indexFormat = DXGI_FORMAT_R32_UINT;
-				indexBufferByteSize = indexCount * sizeof(uint32);
-				std::vector<uint32> indices32(indexCount);
+				indexByteSize = sizeof(uint32); 
+				indexBufferByteSize = indexCount * indexByteSize;
+				std::vector<uint32> index32(indexCount);
 
 				uint indicesOffset = 0;
 				for (uint i = 0; i < submeshCount; ++i)
@@ -393,20 +356,16 @@ namespace JinEngine
 					const JMeshData* meshdata = meshGroup->GetMeshData(i);
 					const uint subMeshIndexCount = meshdata->GetIndexCount();
 					for (uint j = 0; j < subMeshIndexCount; ++j)
-						indices32[indicesOffset + j] = meshdata->GetIndex(j);
+						index32[indicesOffset + j] = meshdata->GetIndex(j);
 					indicesOffset += subMeshIndexCount;
 				}
-				GCommandInterface::FlushCommandQueue();
-				GCommandInterface::StartCommand();
-				indexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, indices32.data(), indexBufferByteSize, indexBufferUploader);
-				GCommandInterface::EndCommand();
-				GCommandInterface::FlushCommandQueue();
+				CreateIndexBuffer(index32);
 			}
 			else
 			{
-				indexFormat = DXGI_FORMAT_R16_UINT;
-				indexBufferByteSize = indexCount * sizeof(uint16);
-				std::vector<uint16> indices16(indexCount);
+				indexByteSize = sizeof(uint16);
+				indexBufferByteSize = indexCount * indexByteSize;
+				std::vector<uint16> index16(indexCount);
 				uint indicesOffset = 0;
 
 				for (uint i = 0; i < submeshCount; ++i)
@@ -414,14 +373,10 @@ namespace JinEngine
 					const JMeshData* meshdata = meshGroup->GetMeshData(i);
 					const uint subMeshIndexCount = meshdata->GetIndexCount();
 					for (uint j = 0; j < subMeshIndexCount; ++j)
-						indices16[indicesOffset + j] = meshdata->GetIndex(j);
+						index16[indicesOffset + j] = meshdata->GetIndex(j);
 					indicesOffset += subMeshIndexCount;
 				}
-				GCommandInterface::FlushCommandQueue();
-				GCommandInterface::StartCommand();
-				indexBufferGPU = JD3DUtility::CreateDefaultBuffer(device, mCommandList, indices16.data(), indexBufferByteSize, indexBufferUploader);
-				GCommandInterface::EndCommand();
-				GCommandInterface::FlushCommandQueue();
+				CreateIndexBuffer(index16);
 			}
 			if (thisPointer->IsActivated())
 			{
@@ -430,13 +385,6 @@ namespace JinEngine
 			}
 			UpdateMeshBound();
 			return true;
-		}
-		void ClearGpuBuffer()
-		{
-			vertexBufferUploader.Reset();
-			indexBufferUploader.Reset();
-			vertexBufferGPU.Reset();
-			indexBufferGPU.Reset();
 		}
 		void StuffResource()
 		{
@@ -457,8 +405,8 @@ namespace JinEngine
 			if (thisPointer->IsValid())
 			{
 				// vertexBufferCPU.Reset();
-				//indexBufferCPU.Reset(); 
-				ClearGpuBuffer();
+				//indexBufferCPU.Reset() 
+				DestroyAllTexture();
 				thisPointer->SetValid(false);
 			}
 		}
@@ -493,6 +441,7 @@ namespace JinEngine
 	public:
 		void NotifyReAlloc()
 		{
+			RegisterInterfacePointer();
 			ResetEventListenerPointer(*JResourceObject::EvInterface(), thisPointer->GetGuid());
 		}
 	public:
@@ -506,6 +455,14 @@ namespace JinEngine
 		void RegisterThisPointer(JMeshGeometry* mesh)
 		{
 			thisPointer = Core::GetWeakPtr(mesh);
+		}
+		void RegisterInterfacePointer()
+		{
+			Graphic::JGraphicResourceInterface::SetInterfacePointer(this);
+		}
+		void DeRegisterInterfacePointer()
+		{
+			Graphic::JGraphicResourceInterface::SetInterfacePointer(nullptr);
 		}
 		void RegisterPostCreation()
 		{
@@ -563,21 +520,27 @@ namespace JinEngine
 					if (fileDir == nullptr)
 						fileDir = JICI::Create<JDirectory>(importPathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, dir);
 
+					const size_t skeletonGuid = Core::MakeGuid();
+					const size_t skinnedMeshGuid = Core::MakeGuid();
+
 					JUserPtr<JDirectory> modelDir = JICI::Create<JDirectory>(L"Model", Core::MakeGuid(), OBJECT_FLAG_NONE, fileDir);
 					if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
 					{
+						Core::JTypeInstanceSearchHint skinendHint(JSkinnedMeshGeometry::StaticTypeInfo(), skinnedMeshGuid);
 						newSkeleton = JICI::Create<JSkeletonAsset>(importPathData.name + L"Skel",
-							Core::MakeGuid(),
+							skeletonGuid,
 							importPathData.flag,
 							RTypeCommonCall::CallFormatIndex(JSkeletonAsset::GetStaticResourceType(), importPathData.format),
 							modelDir,
+							skinendHint,
 							std::move(joint));
+
 						skinnedGroup->SetSkeletonAsset(newSkeleton);
 					}
 					if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
 					{
 						newMesh = JICI::Create<JSkinnedMeshGeometry>(importPathData.name,
-							Core::MakeGuid(),
+							skinnedMeshGuid,
 							importPathData.flag,
 							RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
 							modelDir,
@@ -689,6 +652,10 @@ namespace JinEngine
 		:JResourceObject::InitData(type, GetDefaultFormatIndex(), J_RESOURCE_TYPE::MESH,  directory)
 	{}
 
+	const Graphic::JGraphicResourceUserInterface JMeshGeometry::GraphicResourceUserInterface()const noexcept
+	{
+		return Graphic::JGraphicResourceUserInterface{ impl.get() };
+	}
 	J_RESOURCE_TYPE JMeshGeometry::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
@@ -730,6 +697,22 @@ namespace JinEngine
 	{
 		return impl->GetSubmeshStartIndexLocation(index);
 	}
+	uint JMeshGeometry::GetVertexByteSize()const noexcept
+	{
+		return impl->vertexByteSize;
+	}
+	uint JMeshGeometry::GetVertexBufferByteSize()const noexcept
+	{
+		return impl->vertexBufferByteSize;
+	}
+	uint JMeshGeometry::GetIndexByteSize()const noexcept
+	{
+		return impl->indexByteSize;
+	}
+	uint JMeshGeometry::GetIndexBufferByteSize()const noexcept
+	{
+		return impl->indexBufferByteSize;
+	}
 	std::wstring JMeshGeometry::GetSubMeshName(const uint index)const noexcept
 	{
 		return impl->GetSubMeshName(index);
@@ -742,11 +725,11 @@ namespace JinEngine
 	{
 		return impl->boundingBox;
 	}
-	DirectX::XMFLOAT3 JMeshGeometry::GetBoundingBoxCenter()const noexcept
+	JVector3<float> JMeshGeometry::GetBoundingBoxCenter()const noexcept
 	{
 		return impl->boundingBox.Center;
 	}
-	DirectX::XMFLOAT3 JMeshGeometry::GetBoundingBoxExtent()const noexcept
+	JVector3<float> JMeshGeometry::GetBoundingBoxExtent()const noexcept
 	{
 		return impl->boundingBox.Extents;
 	}
@@ -754,7 +737,7 @@ namespace JinEngine
 	{
 		return impl->boundingSphere;
 	}
-	DirectX::XMFLOAT3 JMeshGeometry::GetBoundingSphereCenter()const noexcept
+	JVector3<float> JMeshGeometry::GetBoundingSphereCenter()const noexcept
 	{
 		return impl->boundingSphere.Center;
 	}
@@ -774,9 +757,9 @@ namespace JinEngine
 	}
 	void JMeshGeometry::DoDeActivate()noexcept
 	{
-		JResourceObject::DoDeActivate();
 		impl->ClearResource();
 		impl->OffResourceRef();
+		JResourceObject::DoDeActivate();
 	}
 	JMeshGeometry::JMeshGeometry(InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JMeshGeometryImpl>(initData, this))
@@ -787,14 +770,14 @@ namespace JinEngine
 	}
 
 	using CreateInstanceInterface = JMeshGeometryPrivate::CreateInstanceInterface;
-	using DestroyInstanceInterface = JMeshGeometryPrivate::DestroyInstanceInterface; 
-	using BufferViewInterface = JMeshGeometryPrivate::BufferViewInterface;
+	using DestroyInstanceInterface = JMeshGeometryPrivate::DestroyInstanceInterface;  
 
 	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
 	{
 		JResourceObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		JMeshGeometry* mesh = static_cast<JMeshGeometry*>(createdPtr);
 		mesh->impl->RegisterThisPointer(mesh);
+		mesh->impl->RegisterInterfacePointer();
 		mesh->impl->RegisterPostCreation();
 		mesh->impl->Initialize(static_cast<JMeshGeometry::InitData*>(initData));
 	}
@@ -805,19 +788,11 @@ namespace JinEngine
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
 	{ 
-		JResourceObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		static_cast<JMeshGeometry*>(ptr)->impl->DeRegisterPreDestruction();
+		static_cast<JMeshGeometry*>(ptr)->impl->DeRegisterInterfacePointer();
+		JResourceObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 	 
-	D3D12_VERTEX_BUFFER_VIEW BufferViewInterface::VertexBufferView(JMeshGeometry* mesh)noexcept
-	{
-		return mesh->impl->VertexBufferView();
-	}
-	D3D12_INDEX_BUFFER_VIEW BufferViewInterface::IndexBufferView(JMeshGeometry* mesh)noexcept
-	{
-		return mesh->impl->IndexBufferView();
-	}
-
 	Core::JIdentifierPrivate::DestroyInstanceInterface& JMeshGeometryPrivate::GetDestroyInstanceInterface()const noexcept
 	{
 		static DestroyInstanceInterface pI;

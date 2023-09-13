@@ -19,8 +19,7 @@ namespace JinEngine
 		private:
 			size_t prevTime = 0;	//nano
 		private:
-			std::chrono::steady_clock::time_point time; 
-			std::chrono::steady_clock::time_point stopTime;
+			std::chrono::steady_clock::time_point time;  
 		private:
 			std::vector<JStopWatchResult> resultVec;
 		private:

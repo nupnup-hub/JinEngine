@@ -4,7 +4,7 @@
 #include"../File/JFileIOHelper.h"
 #include"../Guid/JGuidCreator.h"
 #include"../Identity/JIdenCreator.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 #include<fstream>
 
 namespace JinEngine

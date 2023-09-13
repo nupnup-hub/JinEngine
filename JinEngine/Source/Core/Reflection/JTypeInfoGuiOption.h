@@ -1,7 +1,7 @@
 #pragma once 
-#include"JGuiWidgetInfoHandleBase.h" 
+#include"JGuiWidgetInfoHandleBase.h"  
+#include"../JCoreEssential.h" 
 #include"../Pointer/JOwnerPtr.h"
-#include"../JDataType.h" 
 #include<memory>
 #include<vector>
 
@@ -22,7 +22,7 @@ namespace JinEngine
 		template<typename Type, typename GetPointer, GetPointer getPtr>  class JMethodReadOnlyGuiWidgetRegister;
 		template<typename Type, typename GetPointer, GetPointer getPtr>  class JMethodGuiWidgetRegister;
 		class JTypeInfo;
-
+		 
 		class JTypeInfoGuiOption
 		{
 		private:  

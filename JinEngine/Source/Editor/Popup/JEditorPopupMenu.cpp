@@ -1,7 +1,7 @@
 #include"JEditorPopupMenu.h"
 #include"JEditorPopupNode.h"
-#include"../../Core/JDataType.h"  
-#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../Gui/JGui.h"
+#include"../../Core/JCoreEssential.h"  
 
 namespace JinEngine
 {
@@ -16,22 +16,26 @@ namespace JinEngine
 		void JEditorPopupMenu::Update()
 		{
 			isLeafPopupContentsClicked = false;
-			isPopupContentsClicked = false;
+			isPopupContentsClicked = false; 
+
 			if (IsOpen())
 			{
-				if (JImGuiImpl::IsRightMouseClicked())
+				if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::RIGHT))
 					SetOpen(false);
-				else if (JImGuiImpl::IsLeftMouseClicked() && !IsMouseInPopup())
+				else if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT) && !IsMouseInPopup())
 					SetOpen(false);
 
-				if (JImGuiImpl::AnyMouseClicked(true, true, false) && IsMouseInPopup())
+				if (JGui::AnyMouseClicked(false) && IsMouseInPopup())
 					isPopupContentsClicked = true;
 			}
 			else
 			{ 
-				if (JImGuiImpl::IsRightMouseClicked() && ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && JImGuiImpl::IsMouseInRect(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
+
+				if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::RIGHT) &&
+					JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW) &&
+					JGui::IsMouseInRect(JGui::GetWindowPos(), JGui::GetWindowSize()))
 					SetOpen(true);
-				if (!JImGuiImpl::IsEnablePopup())
+				if (!JGui::IsEnablePopup())
 					SetOpen(false);
 			}
 		}
@@ -44,12 +48,12 @@ namespace JinEngine
 		{ 
 			if (isOpen)
 			{
-				ImGui::OpenPopup(name.c_str());
-				if (ImGui::BeginPopup(name.c_str()))
+				JGui::OpenPopup(name);
+				if (JGui::BeginPopup(name))
 				{
 					 JEditorPopupNode* selected = popupRoot->PopupOnScreen(editorString);
-					ImGui::Separator();
-					ImGui::EndPopup();
+					 JGui::Separator();
+					 JGui::EndPopup();
 
 					if (selected != nullptr)
 					{

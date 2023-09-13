@@ -1,17 +1,11 @@
 #pragma once
 #include"JGraphicResourceType.h"
-#include"JGraphicResourceInfo.h"
 #include"../JGraphicConstants.h"
-#include"../../Core/JDataType.h"  
-#include"../../Core/Pointer/JOwnerPtr.h"
-#include"../../../ThirdParty/DirectX/Tk/Src/d3dx12.h" 
-#include<vector>
+#include"../Device/JGraphicDeviceUser.h" 
+#include"../../Core/JCoreEssential.h"  
+#include"../../Core/Pointer/JOwnerPtr.h" 
+#include"../../Object/Resource/Mesh/JMeshStruct.h"
 #include<string>
-#include<memory>
-#include<WindowsX.h> 
-#include<wrl/client.h>  
-#include<d3d12.h>
-#include<dxgi1_4.h>  
 
 namespace JinEngine
 {
@@ -21,12 +15,14 @@ namespace JinEngine
 	}
 	namespace Graphic
 	{
-		class JGraphicResourceManager
+		class JGraphicDevice;
+		class JGraphicResourceInfo; 
+		struct JGraphicBaseDataSet;
+		//Manage graphic texture or buffer 
+		class JGraphicResourceManager : public JGraphicDeviceUser
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(JGraphicResourceManager)
-		private:
-			using BindViewPtr = void(JGraphicResourceManager::*)(ID3D12Device*, const uint);
-		private:
+		protected:
 			struct ResourceViewInfo
 			{
 			public:
@@ -53,127 +49,79 @@ namespace JinEngine
 			public:
 				bool HasSpace()const noexcept;
 			};
-		private:
-			//friend class JGraphic;
-			friend class Editor::JGraphicResourceWatcher;
-		private:
-			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap;
-			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvHeap;
-			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap;
-			Microsoft::WRL::ComPtr<ID3D12QueryHeap> occlusionQueryHeap;
-			uint rtvDescriptorSize = 0;
-			uint dsvDescriptorSize = 0;
-			uint cbvSrvUavDescriptorSize = 0;
-		private:
-			Microsoft::WRL::ComPtr<ID3D12Resource> occlusionQueryResult;
-		private:
-			std::vector<JOwnerPtr<JGraphicResourceInfo>> resource[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
-			ResourceTypeDesc typeDesc[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
-		private:
-			const DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-			const DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		public:
-			void Initialize(ID3D12Device* device);
-			void Clear();
+			JGraphicResourceManager() = default;
+			virtual ~JGraphicResourceManager() = default;
 		public:
-			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuRtvDescriptorHandle(int index)const noexcept;
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuRtvDescriptorHandle(int index)const noexcept;
-			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDsvDescriptorHandle(int index)const noexcept;
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDsvDescriptorHandle(int index)const noexcept;
-			CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuSrvDescriptorHandle(int index)const noexcept;
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuSrvDescriptorHandle(int index)const noexcept;
-			CD3DX12_GPU_DESCRIPTOR_HANDLE GetFirstGpuSrvDescriptorHandle(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept;
-			ID3D12DescriptorHeap* GetDescriptorHeap(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
-			uint GetDescriptorSize(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
-			DXGI_FORMAT GetBackBufferFormat()const noexcept;
-			DXGI_FORMAT GetDepthStencilFormat()const noexcept;
-			DirectX::XMVECTORF32 GetBackBufferClearColor()const noexcept;
-		public:
-			static uint GetSwapChainBufferCount()noexcept;
-			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept;
-			uint GetResourceCapacity(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept;
-			uint GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)const noexcept;
-			uint GetViewOffset(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)const noexcept;
-			uint GetTotalViewCount(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
-			uint GetTotalViewCapacity(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
-			ID3D12Resource* GetResource(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept;
-			JGraphicResourceInfo* GetInfo(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept;
+			virtual void Initialize(JGraphicDevice* device) = 0;
+			virtual void Clear() = 0; 
+		public: 
+			virtual uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0;
+			virtual uint GetResourceCapacity(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0; 
+			virtual uint GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)const noexcept = 0;
+			virtual uint GetViewCapacity(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)const noexcept = 0;
+			virtual uint GetViewOffset(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)const noexcept = 0;
+			virtual uint GetTotalViewCount(const J_GRAPHIC_BIND_TYPE bType)const noexcept = 0;
+			virtual uint GetTotalViewCapacity(const J_GRAPHIC_BIND_TYPE bType)const noexcept = 0;
+			virtual JGraphicResourceInfo* GetInfo(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept = 0;		
 		public:
 			static uint GetOcclusionMipMapViewCapacity()noexcept;
 			static uint GetOcclusionMinSize()noexcept;
-			uint GetOcclusionQueryCapacity()const noexcept;
-			ID3D12QueryHeap* GetOcclusionQueryHeap()const noexcept;
-			ID3D12Resource* GetOcclusionQueryResult()const noexcept;
-		private:
-			uint GetHeapIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType);
+		protected:
+			//has platform dependency!
+			//추후에 window이외에 platform을 사용한다면 수정필요!
+			HWND GetWindowHandle()noexcept;
 		public:
-			void CreateSwapChainBuffer(ID3D12Device* device, IDXGISwapChain* swapChain, const uint width, const uint height);
-			JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilResource(ID3D12Device* device,
-				ID3D12GraphicsCommandList* commandList,
+			virtual bool CanCreateResource(const J_GRAPHIC_RESOURCE_TYPE type)const noexcept = 0;
+		public:
+			virtual JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilResource(JGraphicDevice* device,
 				const uint viewWidth,
-				const uint viewHeight,
-				bool m4xMsaaState,
-				uint m4xMsaaQuality);
-			JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilDebugResource(ID3D12Device* device,
-				ID3D12GraphicsCommandList* commandList,
+				const uint viewHeight) = 0;
+			//for display scene depth stencil map
+			//for debug ui or debug object
+			virtual JUserPtr<JGraphicResourceInfo> CreateDebugDepthStencilResource(JGraphicDevice* device,
 				const uint viewWidth,
-				const uint viewHeight,
-				bool m4xMsaaState,
-				uint m4xMsaaQuality);
-			JUserPtr<JGraphicResourceInfo> CreateDebugDepthStencilResource(ID3D12Device* device,
-				ID3D12GraphicsCommandList* commandList,
+				const uint viewHeight) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateLayerDepthDebugResource(JGraphicDevice* device,
 				const uint viewWidth,
-				const uint viewHeight);
-			void CreateOcclusionQueryResource(ID3D12Device* device);
-			void CreateOcclusionHZBResource(ID3D12Device* device, 
-				ID3D12GraphicsCommandList* commandList, 
-				const uint occWidth, 
+				const uint viewHeight) = 0;
+			virtual void CreateHZBOcclusionResource(JGraphicDevice* device,
+				const uint occWidth,
 				const uint occHeight,
 				_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo,
-				_Out_ JUserPtr<JGraphicResourceInfo>& outOccMipMapInfo);
-			JUserPtr<JGraphicResourceInfo> CreateOcclusionHZBResourceDebug(ID3D12Device* device,
-				ID3D12GraphicsCommandList* commandList,
+				_Out_ JUserPtr<JGraphicResourceInfo>& outOccMipMapInfo) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateOcclusionResourceDebug(JGraphicDevice* device,
 				const uint occWidth,
-				const uint occHeight);
-			JUserPtr<JGraphicResourceInfo> Create2DTexture(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
+				const uint occHeight,
+				const bool isHzb) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> Create2DTexture(JGraphicDevice* device,
 				const std::wstring& path,
-				const std::wstring& oriFormat,
-				ID3D12Device* device,
-				ID3D12GraphicsCommandList* commandList);
-			JUserPtr<JGraphicResourceInfo> CreateCubeMap(Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer,
+				const std::wstring& oriFormat) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateCubeMap(JGraphicDevice* device,
 				const std::wstring& path,
-				const std::wstring& oriFormat,
-				ID3D12Device* device,
-				ID3D12GraphicsCommandList* commandList);
-			JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(ID3D12Device* device, const uint width, const uint height);
-			JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(ID3D12Device* device, const uint width, const uint height);
-			bool DestroyGraphicTextureResource(ID3D12Device* device, JGraphicResourceInfo* info);
-		private:
-			JOwnerPtr<JGraphicResourceInfo> CreateResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, Microsoft::WRL::ComPtr<ID3D12Resource>&& resource);
-		private:
-			BindViewPtr GetResourceBindViewPtr(const J_GRAPHIC_RESOURCE_TYPE rType);
-			void SetViewCount(JGraphicResourceInfo* handlePtr, const J_GRAPHIC_BIND_TYPE bType, const int nextViewIndex);
-			void BindSwapChain(ID3D12Device* device, const uint resourceIndex);
-			void BindMainDepthStencil(ID3D12Device* device, const uint resourceIndex);
-			void BindMainDepthStencilDebug(ID3D12Device* device, const uint resourceIndex);
-			void BindDebugDepthStencil(ID3D12Device* device, const uint resourceIndex);
-			void BindOcclusionHZBDepthMap(ID3D12Device* device, const uint resourceIndex);
-			void BindOcclusionHZBDepthMipMap(ID3D12Device* device, const uint resourceIndex);
-			void BindOcclusionHZBDebug(ID3D12Device* device, const uint resourceIndex);
-			void Bind2DTexture(ID3D12Device* device, const uint resourceIndex);
-			void BindCubeMap(ID3D12Device* device, const uint resourceIndex);
-			void BindRenderTarget(ID3D12Device* device, const uint resourceIndex);
-			void BindShadowMap(ID3D12Device* device, const uint resourceIndex);
-		private:
-			void BuildRtvDescriptorHeaps(ID3D12Device* device);
-			void BuildDsvDescriptorHeaps(ID3D12Device* device);
-			void BuildSrvDescriptorHeaps(ID3D12Device* device);
-			void BuildOccQueryHeaps(ID3D12Device* device); 
+				const std::wstring& oriFormat) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(JGraphicDevice* device,
+				const uint width,
+				const uint height) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(JGraphicDevice* device,
+				const uint width,
+				const uint height) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateShadowMapArrayTexture(JGraphicDevice* device,
+				const uint width,
+				const uint height,
+				const uint count) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateShadowMapCubeTexture(JGraphicDevice* device,
+				const uint width,
+				const uint height) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(JGraphicDevice* device, const std::vector<JStaticMeshVertex>& vertex) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(JGraphicDevice* device, const std::vector<JSkinnedMeshVertex>& vertex) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(JGraphicDevice* device, const std::vector<uint32>& index) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(JGraphicDevice* device, const std::vector<uint16>& index) = 0;
+			virtual bool DestroyGraphicTextureResource(JGraphicDevice* device, JGraphicResourceInfo* info) = 0;
 		public:
-			static void RegisterTypeData();
+			virtual void ResizeWindow(const JGraphicBaseDataSet& base, JGraphicDevice* device) = 0;
 		public:
-			JGraphicResourceManager();
-			~JGraphicResourceManager();
+			virtual void StoreTexture(JGraphicDevice* device, const J_GRAPHIC_RESOURCE_TYPE rType, const int index, const std::wstring& path) = 0;
 		};
 	}
 }

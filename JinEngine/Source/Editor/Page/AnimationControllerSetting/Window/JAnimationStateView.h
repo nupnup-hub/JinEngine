@@ -1,20 +1,16 @@
 #pragma once
 #include"../../JEditorWindow.h"   
-#include"../../../../Core/Event/JEventListener.h" 
 #include"../../../String/JEditorStringMap.h"
 #include"../../../EditTool/JEditorViewStructure.h"
 #include"../../../Popup/JEditorPopupMenu.h" 
+#include"../../../../Core/Event/JEventListener.h" 
 
 namespace JinEngine
 {
 	class JAnimationController;
-	namespace Core
-	{ 
-		class JAnimationFSMdiagram; 
-		class JAnimationFSMstate;
-		class JAnimationFSMtransition;
-	}
-
+	class JAnimationFSMdiagram;
+	class JAnimationFSMstate;
+	class JAnimationFSMtransition;
 	namespace Editor
 	{
 		class JEditorGraphView;
@@ -26,7 +22,7 @@ namespace JinEngine
 		{ 
 		private:
 			JUserPtr<JAnimationController> aniCont;
-			JUserPtr<Core::JAnimationFSMdiagram> selectedDiagram; 
+			JUserPtr<JAnimationFSMdiagram> selectedDiagram; 
 		private:
 			std::unique_ptr<JEditorGraphView> stateGraph;
 			std::unique_ptr<JEditorPopupMenu> statePopup;

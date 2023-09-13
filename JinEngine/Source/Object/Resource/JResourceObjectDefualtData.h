@@ -12,7 +12,7 @@
 #include"JResourceObjectUserInterface.h"
 //#include"../../Core/Identity/JIdentifier.h"
 #include"../Directory/JFile.h" 
-#include"../../Core/JDataType.h"
+#include"../../Core/JCoreEssential.h"
 #include"../../Core/Guid/JGuidCreator.h" 
 
 namespace JinEngine

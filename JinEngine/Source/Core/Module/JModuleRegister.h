@@ -1,8 +1,8 @@
 #pragma once
 #include"JModuleIntializer.h"
 #include"JModuleManager.h"
+#include"../Utility/JCommonUtility.h"
 #include"../../Application/JApplicationProject.h"
-#include"../../Utility/JCommonUtility.h"
 #include<string>  
 #include<windows.h>
 

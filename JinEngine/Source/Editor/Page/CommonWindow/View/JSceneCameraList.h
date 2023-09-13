@@ -1,7 +1,7 @@
 #pragma once
-#include"../../../../Core/JDataType.h"
+#include"../../../../Core/JCoreEssential.h"
 #include"../../../../Core/Pointer/JOwnerPtr.h"
-#include "../../../../Utility/JVector.h"
+#include"../../../../Core/Math/JVector.h"
 #include<string>
 
 namespace JinEngine

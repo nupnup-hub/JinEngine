@@ -1,14 +1,14 @@
 #pragma once 
 #include <string>
-#include<DirectXMath.h>
-#include"../../../Core/JDataType.h"
+#include"../../../Core/Math/JMatrix.h"
+#include"../../../Core/JCoreEssential.h"
 
 namespace JinEngine
 { 
 	struct Joint
 	{
-	public:  
-		DirectX::XMFLOAT4X4 inbindPose;
+	public:   
+		JMatrix4x4 inbindPose;
 		std::wstring name;
 		uint8 parentIndex;
 		float length;

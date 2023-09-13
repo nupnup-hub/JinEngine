@@ -6,17 +6,17 @@
 #include"../JEditorAttribute.h"  
 #include"../CommonWindow/View/JSceneObserver.h" 
 #include"../CommonWindow/Detail/JObjectDetail.h"
-#include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
+#include"../../Gui/JGui.h"  
 #include"../../Menubar/JEditorMenuBar.h"  
 #include "../../Event/JEditorEvent.h"
-#include"../../../Core/Identity/JIdenCreator.h"
-#include"../../../Core/FSM/AnimationFSM/JAnimationFSMdiagram.h"
+#include"../../../Core/Identity/JIdenCreator.h" 
+#include"../../../Object/Resource/AnimationController/FSM/JAnimationFSMdiagram.h"  
 #include"../../../Object/Resource/AnimationController/JAnimationController.h"  
 #include"../../../Object/Component/JComponentCreator.h"
 #include"../../../Object/Resource/JResourceManager.h"    
 #include"../../../Object/Resource/Scene/JScene.h"  
 #include"../../../Object/Resource/Scene/JSceneManager.h"  
-#include"../../../Application/JApplicationProject.h"
+#include"../../../Application/JApplicationProject.h" 
 #include<vector>
 
 namespace JinEngine
@@ -26,7 +26,10 @@ namespace JinEngine
 		JEditorAniContPage::JEditorAniContPage()
 			:JEditorPage("AniContSettingPage",
 				std::make_unique<JEditorAttribute>(),
-				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING))
+				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK,
+					J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING,
+					J_EDITOR_PAGE_SUPPORT_WINDOW_MAXIMIZE,
+					J_EDITOR_PAGE_SUPPORT_WINDOW_MINIMIZE))
 		{
 			constexpr uint memberWindowCount = 5;
 			std::vector<std::string> windowNames
@@ -94,30 +97,25 @@ namespace JinEngine
 		}
 		void JEditorAniContPage::UpdatePage()
 		{
-			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM);
-			JImGuiImpl::PushFont();
-
-			const ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
 			if (setWndOptionOnce)
 			{
-				ImGui::SetNextWindowSize(viewport->WorkSize, ImGuiCond_Once);
-				ImGui::SetNextWindowPos(viewport->WorkPos, ImGuiCond_Once);
+				JGui::SetNextWindowSize(JGui::GetMainWorkSize(), J_GUI_CONDIITON_ONCE);
+				JGui::SetNextWindowPos(JGui::GetMainWorkPos(), J_GUI_CONDIITON_ONCE);			 
 				setWndOptionOnce = false;
 			}
 
-			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_NoWindowMenuButton;
-			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoNavInputs |
-				ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar |
-				ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse |
-				ImGuiWindowFlags_AlwaysAutoResize;
+			//폰트 크기에 따라 페이지 윈도우 타이틀바에 사이즈가 달라진다.
+			//반드시 page enter전에 font를 변경한다.
+			JGui::SetFont(J_GUI_FONT_TYPE::MEDIUM);
+			JGui::PushFont();
 
-			EnterPage(guiWindowFlag);
-			const JVector2<float> pagePos = ImGui::GetWindowPos();
-			const JVector2<float> pageSize = ImGui::GetWindowSize();
-
+			J_GUI_DOCK_NODE_FLAG_ dockspaceFlag = J_GUI_DOCK_NODE_FLAG_NO_WINDOW_MENU_BUTTON;
+			J_GUI_WINDOW_FLAG_ guiWindowFlag = J_GUI_WINDOW_FLAG_MENU_BAR | J_GUI_WINDOW_FLAG_NO_SCROLL_BAR |
+				J_GUI_WINDOW_FLAG_NO_COLLAPSE;
+			  
+			EnterPage(guiWindowFlag); 
+			const JVector2<float> pagePos = JGui::GetWindowPos();
+			const JVector2<float> pageSize = JGui::GetWindowSize();
 			if (HasDockNodeSpace())
 				UpdateDockSpace(dockspaceFlag);
 			else
@@ -128,13 +126,8 @@ namespace JinEngine
 			menuBar->Update(true);
 			ClosePage();
 
-			UpdateOpenWindow();
-			UpdateOpenSimpleWindow();
-
-			JImGuiImpl::PopFont();
-			ImGui::PopStyleVar(2);
-
-			UpdateOpenPopupWindow(pagePos, pageSize);
+			UpdateOpenWindow(); 
+			JGui::PopFont(); 
 		}
 		bool JEditorAniContPage::IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept
 		{
@@ -174,9 +167,9 @@ namespace JinEngine
 		}
 		void JEditorAniContPage::DoSetClose()noexcept
 		{
-			JEditorPage::DoSetClose();
 			if (aniPreviweScene.IsValid())
 				JObject::BeginDestroy(aniPreviweScene.Release());
+			JEditorPage::DoSetClose();
 		}
 		void JEditorAniContPage::DoActivate()noexcept
 		{
@@ -186,7 +179,8 @@ namespace JinEngine
 				J_EDITOR_EVENT::PUSH_SELECT_OBJECT,
 				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetPageType(),
 					J_EDITOR_WINDOW_TYPE::TEST_WINDOW,
-					aniCont->GetDiagramByIndex(0))));
+					aniCont->GetDiagramByIndex(0), 
+					JEditorEvStruct::RANGE::ALL)));
 
 			ResourceEvListener::AddEventListener(*JResourceObject::EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 		}
@@ -209,36 +203,15 @@ namespace JinEngine
 		}
 		void JEditorAniContPage::BuildDockNode()
 		{
-			//ImGui::Begin(GetName().c_str()); ImGui::End();
-			ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGuiID dockspaceId = ImGui::GetID(GetDockNodeName().c_str());
-
-			ImGui::Begin(diagramList->GetName().c_str()); ImGui::End();
-			ImGui::Begin(conditionList->GetName().c_str()); ImGui::End();
-			ImGui::Begin(stateView->GetName().c_str()); ImGui::End();
-			ImGui::Begin(aniContObserver->GetName().c_str()); ImGui::End();
-			ImGui::Begin(aniContDetail->GetName().c_str()); ImGui::End();
-
-			ImGui::DockBuilderRemoveNode(dockspaceId);
-			ImGui::DockBuilderAddNode(dockspaceId);
-			ImGui::DockBuilderSetNodePos(dockspaceId, viewport->WorkPos);
-			ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->WorkSize);
-
-			ImGuiID dock_main = dockspaceId;
-			ImGuiID dockStateView = ImGui::DockBuilderSplitNode(dock_main, ImGuiDir_Up, 1.0f, &dock_main, &dock_main);
-			ImGuiID dockDiagramList = ImGui::DockBuilderSplitNode(dockStateView, ImGuiDir_Left, 0.25f, nullptr, &dockStateView);
-			ImGuiID dockConditionList = ImGui::DockBuilderSplitNode(dockDiagramList, ImGuiDir_Down, 0.5f, nullptr, &dockDiagramList);
-
-			ImGuiID dockAniContDetail = ImGui::DockBuilderSplitNode(dockStateView, ImGuiDir_Right, 0.2f, nullptr, &dockStateView);
-			ImGuiID dockAniContObserver = ImGui::DockBuilderSplitNode(dockAniContDetail, ImGuiDir_Down, 0.5f, nullptr, &dockAniContDetail);
-
-			ImGui::DockBuilderDockWindow(GetName().c_str(), dock_main);
-			ImGui::DockBuilderDockWindow(diagramList->GetName().c_str(), dockDiagramList);
-			ImGui::DockBuilderDockWindow(conditionList->GetName().c_str(), dockConditionList);
-			ImGui::DockBuilderDockWindow(stateView->GetName().c_str(), dockStateView);
-			ImGui::DockBuilderDockWindow(aniContObserver->GetName().c_str(), dockAniContObserver);
-			ImGui::DockBuilderDockWindow(aniContDetail->GetName().c_str(), dockAniContDetail);
-			ImGui::DockBuilderFinish(dockspaceId);
+			static constexpr int dockCount = 6;		//page(1) + window(5)
+			std::vector<std::unique_ptr<JGuiDockBuildNode>> dockVec(dockCount);
+			dockVec[0] = JGuiDockBuildNode::CreateRootNode(GetName(), GetDockNodeName());
+			dockVec[1] = JGuiDockBuildNode::CreateNode(stateView->GetName(), 1, 0, J_GUI_CARDINAL_DIR::LEFT, 0.75f);
+			dockVec[2] = JGuiDockBuildNode::CreateNode(aniContDetail->GetName(), 2, 0, J_GUI_CARDINAL_DIR::RIGHT, 0.25f);
+			dockVec[3] = JGuiDockBuildNode::CreateNode(diagramList->GetName(), 3, 1, J_GUI_CARDINAL_DIR::LEFT, 0.2f);
+			dockVec[4] = JGuiDockBuildNode::CreateNode(conditionList->GetName(), 4, 3, J_GUI_CARDINAL_DIR::DOWN, 0.5f);
+			dockVec[5] = JGuiDockBuildNode::CreateNode(aniContObserver->GetName(), 5, 2, J_GUI_CARDINAL_DIR::DOWN, 0.5f);
+			JGui::BuildDockHirechary(dockVec);
 		}
 		void JEditorAniContPage::BuildMenuNode()
 		{

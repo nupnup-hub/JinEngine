@@ -14,12 +14,12 @@
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Graphic/Upload/Frameresource/JObjectConstants.h"
-#include"../../../Graphic/Upload/Frameresource/JBoundingObjectConstants.h"
-#include"../../../Graphic/Upload/Frameresource/JFrameUpdate.h"
-#include"../../../Graphic/Upload/Frameresource/JOcclusionConstants.h"
-#include"../../../Utility/JCommonUtility.h" 
-#include"../../../Utility/JMathHelper.h" 
+#include"../../../Core/Utility/JCommonUtility.h" 
+#include"../../../Core/Math/JMathHelper.h"
+#include"../../../Graphic/Frameresource/JObjectConstants.h"
+#include"../../../Graphic/Frameresource/JBoundingObjectConstants.h"
+#include"../../../Graphic/Frameresource/JFrameUpdate.h"
+#include"../../../Graphic/Frameresource/JOcclusionConstants.h" 
 #include<fstream>
 
 //Debug  
@@ -57,16 +57,18 @@ namespace JinEngine
 		JUserPtr<JMeshGeometry> mesh;
 		REGISTER_PROPERTY_EX(material, GetMaterialVec, SetMaterialVec, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
 		std::vector<JUserPtr<JMaterial>> material;
-		DirectX::XMFLOAT4X4 textureTransform = JMathHelper::Identity4x4();
+	public:
+		JMatrix4x4 textureTransform = JMatrix4x4::Identity();
 		D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT; 
 	public:
-		J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask = SPACE_SPATIAL_ALLOW_ALL;
+		J_RENDERITEM_ACCELERATOR_MASK spaceSpatialMask = ACCELERATOR_ALLOW_ALL;
 	public:
 		bool isActivated = false;
+		REGISTER_PROPERTY_EX(isOccluder, IsOccluder, SetOccluder, GUI_CHECKBOX())
+		bool isOccluder = false;
 	public:
-		JRenderItemImpl(const InitData& initData, JRenderItem* thisRitemRaw)
-		{}
+		JRenderItemImpl(const InitData& initData, JRenderItem* thisRitemRaw){}
 		~JRenderItemImpl(){ }
 	public:
 		JUserPtr<JMeshGeometry> GetMesh()const noexcept
@@ -134,26 +136,19 @@ namespace JinEngine
 		{
 			if (mesh.IsValid())
 			{
-				JTransform* ownerTransform = thisPointer->GetOwner()->GetTransform().Get();
-				XMMATRIX worldM = ownerTransform->GetWorldMatrix();
+				JTransform* ownerTransform = thisPointer->GetOwner()->GetTransform().Get(); 
 				XMVECTOR s;
 				XMVECTOR q;
 				XMVECTOR t;
-				XMMatrixDecompose(&s, &q, &t, worldM);
+				XMMatrixDecompose(&s, &q, &t, ownerTransform->GetWorldMatrix());
 
-				XMFLOAT3 pos;
-				XMFLOAT3 scale;
-
-				XMStoreFloat3(&pos, t);
-				XMStoreFloat3(&scale, s);
-
-				XMFLOAT3 meshSphereCenter = mesh->GetBoundingSphereCenter();
+				JVector3<float> pos = t;
+				JVector3<float> scale = s;
+				 
+				JVector3<float> meshSphereCenter = mesh->GetBoundingSphereCenter();
 				float meshSphereRad = mesh->GetBoundingSphereRadius();
 
-				XMFLOAT3 gameObjSphereCenter = XMFLOAT3(meshSphereCenter.x + pos.x,
-					meshSphereCenter.y + pos.y,
-					meshSphereCenter.z + pos.z);
-
+				JVector3<float> gameObjSphereCenter = meshSphereCenter + pos;
 				float gameObjSphereRad = meshSphereRad;
 
 				if (scale.x >= scale.y && scale.x >= scale.z)
@@ -163,7 +158,7 @@ namespace JinEngine
 				else
 					gameObjSphereRad *= scale.z;
 
-				return DirectX::BoundingSphere(gameObjSphereCenter, gameObjSphereRad);
+				return DirectX::BoundingSphere(gameObjSphereCenter.ToXmF(), gameObjSphereRad);
 			}
 			else
 				return DirectX::BoundingSphere();
@@ -222,16 +217,25 @@ namespace JinEngine
 					RegisterComponent(thisPointer);
 			}
 		}
-		void SetSpaceSpatialMask(const J_RENDERITEM_SPACE_SPATIAL_MASK newSpaceSpatialMask)noexcept
+		void SetAcceleratorMask(const J_RENDERITEM_ACCELERATOR_MASK newAcceleratorMask)noexcept
 		{
-			if (spaceSpatialMask != newSpaceSpatialMask)
+			if (spaceSpatialMask != newAcceleratorMask)
 			{
 				if (thisPointer->IsActivated())
 					DeRegisterComponent(thisPointer);
-				spaceSpatialMask = newSpaceSpatialMask;
+				spaceSpatialMask = newAcceleratorMask;
 				if (thisPointer->IsActivated())
 					RegisterComponent(thisPointer);
 			}
+		}
+		void SetOccluder(const bool value)noexcept
+		{ 
+			isOccluder = value;
+		}
+	public:
+		bool IsOccluder()const noexcept
+		{
+			return isOccluder;
 		}
 	public:
 		static bool DoCopy(JRenderItem* from, JRenderItem* to)
@@ -297,9 +301,9 @@ namespace JinEngine
 		void UpdateFrame(Graphic::JObjectConstants& constant, const uint submeshIndex)noexcept final
 		{
 			JTransform* transform = thisPointer->GetOwner()->GetTransform().Get();
-			XMStoreFloat4x4(&constant.World, XMMatrixTranspose(transform->GetWorldMatrix()));
-			XMStoreFloat4x4(&constant.TexTransform, XMMatrixTranspose(XMLoadFloat4x4(&textureTransform)));
-			constant.MaterialIndex = JMaterialPrivate::FrameIndexInterface::GetMaterialFrameIndex(GetValidMaterial(submeshIndex).Get());
+			constant.world.StoreXM(XMMatrixTranspose(transform->GetWorldMatrix()));
+			constant.texTransform.StoreXM(XMMatrixTranspose(textureTransform.LoadXM()));
+			constant.materialIndex = JMaterialPrivate::FrameIndexInterface::GetMaterialFrameIndex(GetValidMaterial(submeshIndex).Get());
 			ObjectFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JBoundingObjectConstants& constant)noexcept final
@@ -310,27 +314,18 @@ namespace JinEngine
 
 			JTransform* transform = thisPointer->GetOwner()->GetTransform().Get();
 
-			const XMFLOAT3 objScale = transform->GetScale();
-			const XMFLOAT3 bboxScale = XMFLOAT3((bbox.Extents.x / drawBBox.Extents.x) * objScale.x,
-				(bbox.Extents.y / drawBBox.Extents.y) * objScale.y,
-				(bbox.Extents.z / drawBBox.Extents.z) * objScale.z);
-			const XMVECTOR s = XMLoadFloat3(&bboxScale);
+			const JVector3<float> scale = transform->GetScale();
+			//const XMVECTOR s = ((JVector3<float>(bbox.Extents) / drawBBox.Extents) * (scale * 1.001f)).ToXmV();
+			const XMVECTOR s = ((JVector3<float>(bbox.Extents) / drawBBox.Extents) * scale).ToXmV();
+			const XMVECTOR q = transform->GetQuaternion();
 
-			const XMFLOAT3 bboxRotation = transform->GetRotation();
-			const XMVECTOR q = XMQuaternionRotationRollPitchYaw(bboxRotation.x * (JMathHelper::Pi / 180),
-				bboxRotation.y * (JMathHelper::Pi / 180),
-				bboxRotation.z * (JMathHelper::Pi / 180));
-
-			const XMFLOAT3 objPos = transform->GetPosition();
-			const XMFLOAT3 bboxPos = XMFLOAT3(bbox.Center.x - drawBBox.Center.x + objPos.x,
-				bbox.Center.y - drawBBox.Center.y + objPos.y,
-				bbox.Center.z - drawBBox.Center.z + objPos.z);
-			const XMVECTOR t = XMLoadFloat3(&bboxPos);
+			const JVector3<float> pos = transform->GetPosition(); 
+			const XMVECTOR t = (JVector3<float>(bbox.Center) - drawBBox.Center + pos).ToXmV();
 
 			const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 			const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), thisPointer->GetOwner()->GetParent()->GetTransform()->GetWorldMatrix());
-
-			XMStoreFloat4x4(&constant.boundWorld, XMMatrixTranspose(worldM));
+			  
+			constant.boundWorld.StoreXM(XMMatrixTranspose(worldM));
 			BoundingObjectFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JHzbOccObjectConstants& constant)noexcept final
@@ -340,7 +335,7 @@ namespace JinEngine
 			constant.center = bbox.Center;
 			constant.extents = bbox.Extents;
 			constant.isValid = renderLayer == J_RENDER_LAYER::OPAQUE_OBJECT;
-			constant.queryResultIndex = BoundingObjectFrame::GetUploadIndex();
+			constant.queryResultIndex = OccObjectFrame::GetUploadIndex();
 			OccObjectFrame::MinusMovedDirty();
 		}
 	public:
@@ -380,10 +375,10 @@ namespace JinEngine
 			OccObjectFrame::RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this, thisPointer->GetOwner()->GetOwnerGuid());
 		}
 		void DeRegisterRItemFrameData()
-		{
+		{  
 			ObjectFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, (ObjectFrame*)this);
 			BoundingObjectFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, (BoundingObjectFrame*)this);
-			OccObjectFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this);
+			OccObjectFrame::DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, (OccObjectFrame*)this);		
 		}
 		static void RegisterTypeData()
 		{
@@ -428,10 +423,6 @@ namespace JinEngine
 	{
 		return rPrivate;
 	}
-	Graphic::JFrameUpdateUserAccess JRenderItem::FrameUserInterface() noexcept
-	{
-		return Graphic::JFrameUpdateUserAccess(Core::GetUserPtr(this), impl.get());
-	}
 	J_COMPONENT_TYPE JRenderItem::GetComponentType()const noexcept
 	{
 		return GetStaticComponentType();
@@ -448,7 +439,7 @@ namespace JinEngine
 	{
 		return impl->GetMaterialVec();
 	}
-	DirectX::XMFLOAT4X4 JRenderItem::GetTextransform()const noexcept
+	JMatrix4x4 JRenderItem::GetTextransform()const noexcept
 	{
 		return impl->textureTransform;
 	}
@@ -460,7 +451,7 @@ namespace JinEngine
 	{
 		return impl->renderLayer;
 	}
-	J_RENDERITEM_SPACE_SPATIAL_MASK JRenderItem::GetSpaceSpatialMask()const noexcept
+	J_RENDERITEM_ACCELERATOR_MASK JRenderItem::GetAcceleratorMask()const noexcept
 	{
 		return impl->spaceSpatialMask;
 	}
@@ -500,7 +491,7 @@ namespace JinEngine
 	{
 		impl->SetMaterialVec(newVec);
 	}
-	void JRenderItem::SetTextureTransform(const DirectX::XMFLOAT4X4& textureTransform)noexcept
+	void JRenderItem::SetTextureTransform(const JMatrix4x4& textureTransform)noexcept
 	{
 		impl->textureTransform = textureTransform;
 	}
@@ -512,13 +503,25 @@ namespace JinEngine
 	{
 		impl->SetRenderLayer(renderLayer);
 	}
-	void JRenderItem::SetSpaceSpatialMask(const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask)noexcept
+	void JRenderItem::SetAcceleratorMask(const J_RENDERITEM_ACCELERATOR_MASK spaceSpatialMask)noexcept
 	{
-		impl->SetSpaceSpatialMask(spaceSpatialMask);
+		impl->SetAcceleratorMask(spaceSpatialMask);
+	}
+	void JRenderItem::SetOccluder(const bool value)noexcept
+	{
+		impl->SetOccluder(value);
+	}
+	bool JRenderItem::IsFrameDirted()const noexcept
+	{
+		return impl->IsFrameDirted();
 	}
 	bool JRenderItem::IsAvailableOverlap()const noexcept
 	{
 		return isAvailableoverlapLam();
+	}
+	bool JRenderItem::IsOccluder()const noexcept
+	{
+		return impl->IsOccluder();
 	}
 	bool JRenderItem::PassDefectInspection()const noexcept
 	{
@@ -536,7 +539,6 @@ namespace JinEngine
 	}
 	void JRenderItem::DoDeActivate()noexcept
 	{
-		JComponent::DoDeActivate();
 		if (impl->isActivated)
 		{
 			DeRegisterComponent(impl->thisPointer);
@@ -544,6 +546,7 @@ namespace JinEngine
 		}
 		impl->OffResourceRef();
 		impl->OffFrameDirty();
+		JComponent::DoDeActivate();
 	}
 	JRenderItem::JRenderItem(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JRenderItemImpl>(initData, this))
@@ -586,8 +589,8 @@ namespace JinEngine
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
 	{
-		JComponentPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		static_cast<JRenderItem*>(ptr)->impl->DeRegisterPreDestruction();
+		JComponentPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 
 	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
@@ -601,8 +604,9 @@ namespace JinEngine
 
 		D3D12_PRIMITIVE_TOPOLOGY primitiveType;
 		J_RENDER_LAYER renderLayer;
-		J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask;
+		J_RENDERITEM_ACCELERATOR_MASK spaceSpatialMask;
 		uint materialCount;
+		bool isOccluder;
 
 		auto loadData = static_cast<JRenderItem::LoadData*>(data);
 		std::wifstream& stream = loadData->stream;
@@ -614,6 +618,7 @@ namespace JinEngine
 		JFileIOHelper::LoadEnumData(stream, renderLayer);
 		JFileIOHelper::LoadEnumData(stream, spaceSpatialMask);
 		JFileIOHelper::LoadAtomicData(stream, materialCount);
+		JFileIOHelper::LoadAtomicData(stream, isOccluder);
 
 		std::vector<JUserPtr<JMaterial>>materialVec(materialCount);
 		for (uint i = 0; i < materialCount; ++i)
@@ -626,11 +631,11 @@ namespace JinEngine
 		rUser->SetMesh(mesh);
 		rUser->SetPrimitiveType(primitiveType);
 		rUser->SetRenderLayer(renderLayer);
-		rUser->SetSpaceSpatialMask(spaceSpatialMask);
+		rUser->SetAcceleratorMask(spaceSpatialMask);
 		rUser->impl->material.resize(materialCount);
 		for (uint i = 0; i < materialCount; ++i)
 			rUser->SetMaterial(i, materialVec[i]);
-
+		rUser->SetOccluder(isOccluder);
 		return rUser;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
@@ -652,8 +657,9 @@ namespace JinEngine
 		JFileIOHelper::StoreHasObjectIden(stream, impl->mesh.Get());
 		JFileIOHelper::StoreEnumData(stream, L"PrimitiveType:", impl->primitiveType);
 		JFileIOHelper::StoreEnumData(stream, L"RenderLayer:", impl->renderLayer);
-		JFileIOHelper::StoreEnumData(stream, L"SpaceSpatialMask:", impl->spaceSpatialMask);
-		JFileIOHelper::StoreAtomicData(stream, L"MaterialCount:", impl->material.size());
+		JFileIOHelper::StoreEnumData(stream, L"AcceleratorMask:", impl->spaceSpatialMask);
+		JFileIOHelper::StoreAtomicData(stream, L"MaterialCount:", impl->material.size()); 
+		JFileIOHelper::StoreAtomicData(stream, L"IsOccluder:", impl->isOccluder);
 
 		for (uint i = 0; i < impl->material.size(); ++i)
 			JFileIOHelper::StoreHasObjectIden(stream, impl->material[i].Get());
@@ -701,7 +707,7 @@ namespace JinEngine
 	{
 		return rItem->impl->OccObjectFrame::GetUploadIndex();
 	}
-	bool FrameUpdateInterface::IsHotUpdated(JRenderItem* rItem)noexcept
+	bool FrameUpdateInterface::IsLastFrameHotUpdated(JRenderItem* rItem)noexcept
 	{
 		return rItem->impl->IsLastFrameHotUpdated();
 	}

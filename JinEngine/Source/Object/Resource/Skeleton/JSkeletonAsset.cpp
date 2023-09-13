@@ -7,7 +7,7 @@
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileIOHelper.h"
-#include"../../../Utility/JCommonUtility.h"
+#include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Application/JApplicationProject.h"
 #include<fstream>
 #include<DirectXMath.h>
@@ -30,8 +30,15 @@ namespace JinEngine
 		JOwnerPtr<JAvatar> avatar = nullptr;
 		JSKELETON_TYPE skeletonType; 
 	public:
-		JSkeletonAssetImpl(const InitData& initData, JSkeletonAsset* thisSkelRaw){}
-		~JSkeletonAssetImpl() {}
+		const Core::JTypeInstanceSearchHint modelHint;
+	public:
+		JSkeletonAssetImpl(const InitData& initData, JSkeletonAsset* thisSkelRaw)
+			:modelHint(initData.modelHint)
+		{}
+		~JSkeletonAssetImpl() 
+		{
+			sizeof(JSkeletonAssetImpl);
+		}
 	public:
 		std::vector<std::vector<uint8>> GetSkeletonTreeIndexVec()noexcept
 		{
@@ -59,36 +66,27 @@ namespace JinEngine
 				avatar->jointInterpolation.resize(jointCount);
 				avatar->jointInterpolation.reserve(jointCount);
 			}
-			avatar->jointInterpolation[0].translation = XMFLOAT3(0, 0, 0);
-			avatar->jointInterpolation[0].quaternion = XMFLOAT4(0, 0, 0, 0);
+			avatar->jointInterpolation[0].translation = JVector3<float>(0, 0, 0);
+			avatar->jointInterpolation[0].quaternion = JVector4<float>(0, 0, 0, 0);
 
 			for (uint32 index = 1; index < jointCount; ++index)
 			{
 				uint parentIndex = skeleton->GetJointParentIndex(index);
-				XMFLOAT3 tF;
-				XMFLOAT4 qF;
-				XMFLOAT3 sF;
 				XMVECTOR tV;
 				XMVECTOR qV;
 				XMVECTOR sV;
-
-				XMMATRIX parent;
-				XMMATRIX child;
+				 
 				XMMATRIX parentInverse;
 				XMMATRIX variance;
-				parent = skeleton->GetBindPose(parentIndex);
-				child = skeleton->GetBindPose(index);
+				XMMATRIX parent = skeleton->GetBindPose(parentIndex);
+				XMMATRIX child = skeleton->GetBindPose(index);
 
 				parentInverse = XMMatrixInverse(nullptr, parent);
 				variance = XMMatrixMultiply(child, parentInverse);
 
 				XMMatrixDecompose(&sV, &qV, &tV, variance);
-				XMStoreFloat3(&sF, sV);
-				XMStoreFloat4(&qF, qV);
-				XMStoreFloat3(&tF, tV);
-
-				avatar->jointInterpolation[index].translation = tF;
-				avatar->jointInterpolation[index].quaternion = qF;
+				avatar->jointInterpolation[index].translation = tV;
+				avatar->jointInterpolation[index].quaternion = qV;
 				avatar->jointInterpolation[index].isAvatarJoint = false;
 			}
 			for (uint32 i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
@@ -189,7 +187,7 @@ namespace JinEngine
 		{
 			if (!thisPointer->IsValid())
 			{
-				const std::wstring path = thisPointer->GetPath();
+				const std::wstring path = thisPointer->GetPath(); 
 				if (ImportSkeleton(ReadAssetData(path)))
 				{ 
 					JSkeletonAsset::LoadMetaData metadata(thisPointer->GetDirectory());
@@ -229,7 +227,7 @@ namespace JinEngine
 				JFileIOHelper::LoadJString(stream, joint[i].name);
 				JFileIOHelper::LoadAtomicData(stream, parentIndex);
 				JFileIOHelper::LoadAtomicData(stream, joint[i].length);
-				JFileIOHelper::LoadXMFloat4x4(stream, joint[i].inbindPose);
+				JFileIOHelper::LoadMatrix4x4(stream, joint[i].inbindPose);
 				joint[i].parentIndex = parentIndex;
 			}
 			stream.close();
@@ -250,7 +248,7 @@ namespace JinEngine
 				JFileIOHelper::StoreJString(stream, L"Name:", joint.name);
 				JFileIOHelper::StoreAtomicData(stream, L"ParentIndex:", joint.parentIndex);
 				JFileIOHelper::StoreAtomicData(stream, L"Length:", joint.length);
-				JFileIOHelper::StoreXMFloat4x4(stream, L"InBindPose:", joint.inbindPose);
+				JFileIOHelper::StoreMatrix4x4(stream, L"InBindPose:", joint.inbindPose);
 			}
 			stream.close();
 			return true;
@@ -265,7 +263,10 @@ namespace JinEngine
 	public: 
 		void Initialize(InitData* initData)
 		{
+			//객체를 생성 or 로드시 try import
 			ImportSkeleton(std::move(initData->joint));
+			if(skeleton != nullptr)
+				thisPointer->SetValid(true);
 		}
 		void RegisterThisPointer(JSkeletonAsset* skel)
 		{
@@ -312,22 +313,30 @@ namespace JinEngine
 
 	JSkeletonAsset::InitData::InitData(const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
+		const Core::JTypeInstanceSearchHint& modelHint,
 		std::vector<Joint>&& joint)
-		:JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory), joint(std::move(joint))
+		:JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory),
+		modelHint(modelHint), 
+		joint(std::move(joint))
 	{}
 	JSkeletonAsset::InitData::InitData(const size_t guid, 
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
+		const Core::JTypeInstanceSearchHint& modelHint,
 		std::vector<Joint>&& joint)
-		: JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory), joint(std::move(joint))
+		: JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory),
+		modelHint(modelHint), 
+		joint(std::move(joint))
 	{}
 	JSkeletonAsset::InitData::InitData(const std::wstring& name,
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
+		const Core::JTypeInstanceSearchHint& modelHint,
 		std::vector<Joint>&& joint)
 		: JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), name, guid, flag, formatIndex, GetStaticResourceType(), directory),
+		modelHint(modelHint), 
 		joint(std::move(joint))
 	{}
 	bool JSkeletonAsset::InitData::IsValidData()const noexcept
@@ -380,6 +389,10 @@ namespace JinEngine
 	{
 		return impl->GetSkeletonTreeIndexVec();
 	}
+	Core::JTypeInstanceSearchHint JSkeletonAsset::GetModelHint()const noexcept
+	{
+		return impl->modelHint;
+	}
 	void JSkeletonAsset::SetSkeletonType(JSKELETON_TYPE skeletonType)noexcept
 	{
 		impl->skeletonType = skeletonType;
@@ -399,8 +412,8 @@ namespace JinEngine
 	}
 	void JSkeletonAsset::DoDeActivate()noexcept
 	{
-		JResourceObject::DoDeActivate();
 		impl->ClearResource();
+		JResourceObject::DoDeActivate();
 	}
 	JSkeletonAsset::JSkeletonAsset(InitData& initData)
 		:JResourceObject(initData), impl(std::make_unique<JSkeletonAssetImpl>(initData, this))
@@ -452,6 +465,7 @@ namespace JinEngine
 				metadata.flag,
 				(uint8)metadata.formatIndex,
 				directory,
+				metadata.modelHint,
 				JSkeletonAsset::JSkeletonAssetImpl::ReadAssetData(pathData.engineFileWPath));
 
 			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &sPrivate);
@@ -492,6 +506,7 @@ namespace JinEngine
 		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
+		loadMetaData->modelHint = JFileIOHelper::LoadHasObjectHint(stream);
 		JFileIOHelper::LoadAtomicData(stream, loadMetaData->isValidAvatar);
 		if (loadMetaData->isValidAvatar)
 		{  
@@ -526,6 +541,7 @@ namespace JinEngine
 
 		//아바타 정보 저장 필요		
 		bool hasAvatar = skel->GetAvatar() != nullptr;
+		JFileIOHelper::StoreHasInstanceHint(stream, skel->impl->modelHint);
 		JFileIOHelper::StoreAtomicData(stream, L"HasAvatar:", hasAvatar);
 		if (hasAvatar)
 		{

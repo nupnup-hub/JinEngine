@@ -1,15 +1,14 @@
 #include"JEngineTool.h"
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 #include"../Platform/JPlatformInfo.h"
+#include"../Utility/JCommonUtility.h"
 #include"../../Application/JApplicationEngine.h"
 #include"../../Application/JApplicationProject.h"
-#include"../../Utility/JCommonUtility.h"
 
 namespace JinEngine::Core
 {
 	namespace
 	{
-
 		static void GetToolExePath(const J_ENGINE_TOOL_TYPE type,
 			_Out_ std::string& folderPath,
 			_Out_ std::string& name)noexcept

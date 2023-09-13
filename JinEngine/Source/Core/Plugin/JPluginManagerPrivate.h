@@ -1,19 +1,17 @@
 #pragma once
 namespace JinEngine
 {
-	namespace Application
-	{
-		class JApplication;
-	}
+
+	class JMain;
 	namespace Core
 	{
 		class JPluginManagerPrivate
 		{
 		public:
-			class AppInterface
+			class MainAccess
 			{
 			private:
-				friend class Application::JApplication;
+				friend class JMain;
 			private:
 				static void Clear();
 			};

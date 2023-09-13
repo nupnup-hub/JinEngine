@@ -4,6 +4,8 @@
 
 namespace JinEngine
 {
+	class JComponent;
+	class JScene;
 	namespace Graphic
 	{
 		class JGraphicDrawTarget;
@@ -18,13 +20,7 @@ namespace JinEngine
 			void Initialize();
 			void Clear();
 		public:
-			void BuildResultBuffer(const size_t initCapacity, const JUserPtr<JCullingInfo>& cullingInfo);
-			void ReBuildResultBuffer(const size_t capcity, const std::vector<JUserPtr<JCullingInfo>>& cullingInfo);
-			void DestroyResultBuffer(JCullingInfo* cullignInfo);
-		public:
-			void FrustumCulling(JGraphicDrawTarget* target, 
-				JSceneFrustumCullingRequestor* requestor, 
-				const JUserPtr<JCullingInfo>& cullingInfo);
+			void FrustumCulling(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& comp);
 		};
 	}
 }

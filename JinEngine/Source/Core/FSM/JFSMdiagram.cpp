@@ -8,7 +8,7 @@
 #include"JFSMparameterStorageAccess.h"   
 #include"../Guid/JGuidCreator.h"
 #include"../Reflection/JTypeImplBase.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 #include<memory>
 #include<string>
 #include<unordered_map>
@@ -284,10 +284,10 @@ namespace JinEngine
  
 		void DestroyInstanceInterface::Clear(JIdentifier* ptr, const bool isForced)
 		{
-			JFSMinterfacePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 			JFSMdiagram* dPtr = static_cast<JFSMdiagram*>(ptr); 
 			dPtr->impl->DeRegisterPreDestruction();
 			dPtr->impl->Clear();
+			JFSMinterfacePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		}
 		void DestroyInstanceInterface::DeRegisterCash(JIdentifier* ptr)noexcept
 		{

@@ -1,7 +1,7 @@
 #include"JResourceObjectImporter.h"
 #include"../JObject.h" 
 #include"../../Core/File/JFilePathData.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../../Core/Utility/JCommonUtility.h"
 
 namespace JinEngine
 {

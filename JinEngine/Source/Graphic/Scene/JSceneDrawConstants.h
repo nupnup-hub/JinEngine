@@ -1,0 +1,34 @@
+#pragma once
+#include"../../Core/JCoreEssential.h"
+
+namespace JinEngine
+{
+	namespace Graphic
+	{
+		namespace Constants
+		{
+			//graphic root
+			static constexpr int objCBIndex = 0;
+			static constexpr int skinCBIndex = objCBIndex + 1;
+			static constexpr int enginePassCBIndex = skinCBIndex + 1;
+			static constexpr int scenePassCBIndex = enginePassCBIndex + 1;
+			static constexpr int camCBIndex = scenePassCBIndex + 1;
+			static constexpr int litIndexCBIndex = camCBIndex + 1;
+			static constexpr int boundObjCBIndex = litIndexCBIndex + 1;
+
+			static constexpr int dLitBuffIndex = boundObjCBIndex + 1;
+			static constexpr int pLitBuffIndex = dLitBuffIndex + 1;
+			static constexpr int sLitBuffIndex = pLitBuffIndex + 1;
+			static constexpr int csmBuffIndex = sLitBuffIndex + 1;
+			static constexpr int matBuffIndex = csmBuffIndex + 1;
+
+			static constexpr int textureCubeBuffIndex = matBuffIndex + 1;
+			static constexpr int texture2DBuffIndex = textureCubeBuffIndex + 1;
+			static constexpr int textureShadowMapBuffIndex = texture2DBuffIndex + 1;
+			static constexpr int textureShadowMapArrayBuffIndex = textureShadowMapBuffIndex + 1;
+			static constexpr int textureShadowMapCubeBuffIndex = textureShadowMapArrayBuffIndex + 1;
+
+			static constexpr int graphicRootSignatureSlotCount = textureShadowMapCubeBuffIndex + 1;
+		}
+	}
+}

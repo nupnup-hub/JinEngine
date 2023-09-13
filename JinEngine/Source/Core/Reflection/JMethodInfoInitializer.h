@@ -1,5 +1,5 @@
 #pragma once 
-#include"../JDataType.h"  
+#include"../JCoreEssential.h"  
 #include"JParameter.h"
 #include"JMethodOptionInfo.h"
 

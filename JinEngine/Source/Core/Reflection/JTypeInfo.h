@@ -1,13 +1,12 @@
 #pragma once   
 #include"JTypeInfoInitializer.h" 
 #include"JTypeInfoGuiOption.h" 
-#include"JTypeAllocationCreator.h"
-#include"JReflectionInfo.h"  
+#include"JTypeAllocationCreator.h" 
 #include"JReflectionInfoPrivate.h"  
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 #include"../JEngineInfo.h"
 #include"../Pointer/JOwnerPtr.h"
-#include"../Lazy/JLazyDestruction.h"
+#include"../Lazy/JLazyDestruction.h" 
 #include<unordered_map>  
 #include<vector>
 #include<assert.h>  
@@ -25,10 +24,10 @@ namespace JinEngine
 		//template<typename T> class JOwnerPtr;
 		//template<typename T> class JUserPtr;
 
-		using JTypeInstance = JTypeBase;
+		using JTypeBase = JTypeBase;
 		using IdentifierType = size_t;
-		using TypeInstanceMap = std::unordered_map<IdentifierType, JOwnerPtr<JTypeInstance>>;
-		using TypeInstanceVector = std::vector<JTypeInstance*>;
+		using TypeInstanceMap = std::unordered_map<IdentifierType, JOwnerPtr<JTypeBase>>;
+		using TypeInstanceVector = std::vector<JTypeBase*>;
 		using PropertyVec = std::vector<JPropertyInfo*>;
 		using PropertyMap = std::unordered_map<std::string, JPropertyInfo*>;
 		using MethodVec = std::vector<JMethodInfo*>;
@@ -122,7 +121,6 @@ namespace JinEngine
 			template<typename T>
 			struct IsLazyDestructionUser<T, std::void_t<decltype(&T::InitLazyDestructionInfo)>> : std::true_type
 			{};
-
 			template<typename Type>
 			class CallOnece
 			{
@@ -185,7 +183,7 @@ namespace JinEngine
 			std::unique_ptr<JAllocationInterface> allocationInterface; 
 			std::unique_ptr<JLazyDestruction> lazyDestruction;
 			std::unique_ptr<InterfaceTypeInfo> interfaceTypeInfo;
-			std::unique_ptr<ImplTypeInfo> implTypeInfo;
+			std::unique_ptr<ImplTypeInfo> implTypeInfo;		//for execute impl callable method(gui)
 		private:
 			const bool isAbstractType;
 			bool isLeafType = true; 
@@ -208,10 +206,12 @@ namespace JinEngine
 			uint GetInstanceCount()const noexcept;
 			int GetInstanceIndex(IdentifierType iden)const noexcept;
 		public:
-			JTypeInstance* GetInstanceRawPtr(IdentifierType iden)const noexcept;
-			JUserPtr<JTypeInstance> GetInstanceUserPtr(IdentifierType iden)const noexcept; 
-			JWeakPtr<JTypeInstance> GetInstanceWeakPtr(IdentifierType iden)const noexcept;
+			JTypeBase* GetInstanceRawPtr(IdentifierType iden)const noexcept;
+			JUserPtr<JTypeBase> GetInstanceUserPtr(IdentifierType iden)const noexcept; 
+			JWeakPtr<JTypeBase> GetInstanceWeakPtr(IdentifierType iden)const noexcept;
 			TypeInstanceVector GetInstanceRawPtrVec()const noexcept;
+		public:
+			std::vector<JTypeInfo*> GetChildInfo()const noexcept;
 		public:
 			template<typename T>
 			T* GetInstanceRawPtr(IdentifierType iden)const noexcept
@@ -286,7 +286,7 @@ namespace JinEngine
 				return IsChildOf(T::StaticTypeInfo());
 			}
 			template<typename ...Param>
-			void InvokeInstanceFunc(void(JTypeInstance::* ptr)(Param...), Param... var)
+			void InvokeInstanceFunc(void(JTypeBase::* ptr)(Param...), Param... var)
 			{
 				if (instanceData != nullptr)
 				{
@@ -304,9 +304,9 @@ namespace JinEngine
 		private:
 			void UpdateLazyDestruction(const float timeOffset)noexcept;
 		private:
-			bool AddInstance(IdentifierType iden, JOwnerPtr<JTypeInstance> ptr)noexcept;
+			bool AddInstance(IdentifierType iden, JOwnerPtr<JTypeBase>&& ptr)noexcept;
 			bool RemoveInstance(IdentifierType iden)noexcept;
-			JOwnerPtr<JTypeInstance> ReleaseInstance(IdentifierType iden)noexcept;
+			JOwnerPtr<JTypeBase> ReleaseInstance(IdentifierType iden)noexcept;
 		private:
 			bool AddPropertyInfo(JPropertyInfo* newProperty);
 			bool AddMethodInfo(JMethodInfo* newMethod);
@@ -335,7 +335,7 @@ namespace JinEngine
 				parent(initializer.parent),
 				isAbstractType(std::is_abstract_v<Type>)
 			{
-				if (std::is_base_of_v<JTypeInstance, Type>)
+				if constexpr(std::is_base_of_v<JTypeBase, Type>)
 					instanceData = std::make_unique<JTypeInstanceData>();		 
 				  
 				JReflectionInfoPrivate::TypeInterface::AddType(this);
@@ -358,15 +358,17 @@ namespace JinEngine
 		struct JTypeInstanceSearchHint
 		{
 		public: 
-			const size_t typeGuid;
-			const size_t objectGuid;
-			const bool isValid;
+			size_t typeGuid;
+			size_t objectGuid;
+			bool isValid;
 		public:
-			const bool hasImplType = false;
+			bool hasImplType = false;
 		public:
 			JTypeInstanceSearchHint();
 			JTypeInstanceSearchHint(const JTypeInfo& info, const size_t guid);
 			JTypeInstanceSearchHint(JUserPtr<JTypeBase> iden);
+		public:
+			~JTypeInstanceSearchHint();
 		};
 	}
 }

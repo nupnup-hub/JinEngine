@@ -1,6 +1,6 @@
 #pragma once
 #include"JEnumInitializer.h" 
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 
 namespace JinEngine
 {
@@ -25,6 +25,11 @@ namespace JinEngine
 			std::string Name()const noexcept;
 			std::string FullName()const noexcept;
 			std::string ElementName(const int value)const noexcept;
+			template<typename E, std::enable_if_t<std::is_enum_v<E>, int> = 0>
+			std::string ElementName(const E value)const noexcept
+			{
+				return ElementName((int)value);
+			}
 			size_t EnumGuid()const noexcept;
 			int EnumValue(const int index)const noexcept;
 			uint GetEnumCount()const noexcept;

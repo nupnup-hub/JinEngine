@@ -33,6 +33,8 @@ namespace JinEngine
 			void Initialize(JUserPtr<JScene> newScene);
 			void UpdateWindow()final;
 		private:
+			void UpdateMouseWheel()final;
+		private:
 			void DoActivate() noexcept final;
 			void DoDeActivate() noexcept final;
 		private:

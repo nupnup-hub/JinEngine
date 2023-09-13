@@ -7,11 +7,14 @@ namespace JinEngine
 	namespace Graphic
 	{
 		struct JCameraConstants;
-		struct JHzbOccRequestorConstants;
-		struct JDrawCondition;
+		struct JDepthTestPassConstants;
+		struct JHzbOccComputeConstants;
+		struct JDrawCondition; 
 		struct JDrawHelper;
 		class JGraphic;
+		class JSceneDraw;
 		class JHZBOccCulling;
+		class JDepthTest;
 	}
 	namespace Editor
 	{
@@ -52,33 +55,35 @@ namespace JinEngine
 		private: 
 			static bool UpdateStart(JCamera* cam, const bool isUpdateForced)noexcept;
 			static void UpdateFrame(JCamera* cam, Graphic::JCameraConstants& constants)noexcept;
-			static void UpdateFrame(JCamera* cam, Graphic::JHzbOccRequestorConstants& constants, const uint queryCount, const uint queryOffset)noexcept;
+			static void UpdateFrame(JCamera* cam, Graphic::JDepthTestPassConstants& constant)noexcept;
+			static void UpdateFrame(JCamera* cam, Graphic::JHzbOccComputeConstants& constants, const uint queryCount, const uint queryOffset)noexcept;
 			static void UpdateEnd(JCamera* cam)noexcept; 
 		private:
 			static int GetCamFrameIndex(JCamera* cam)noexcept;
-			static int GetHzbOccReqFrameIndex(JCamera* cam)noexcept;
+			static int GetDepthTestPassFrameIndex(JCamera* cam)noexcept;
+			static int GetHzbOccComputeFrameIndex(JCamera* cam)noexcept;
 		private:
-			static bool IsHotUpdated(JCamera* cam)noexcept;
+			static bool IsLastFrameHotUpdated(JCamera* cam)noexcept;
 			static bool IsLastUpdated(JCamera* cam)noexcept;
 			static bool HasCamRecopyRequest(JCamera* cam)noexcept;
-			static bool HasOccPassRecopyRequest(JCamera* cam)noexcept;
+			static bool HasDepthTestPassRecopyRequest(JCamera* cam)noexcept; 
+			static bool HasHzbOccComputeRecopyRequest(JCamera* cam)noexcept;
 		};
 		class FrameIndexInterface final
 		{
-		private:
-			friend class Graphic::JGraphic;
+		private: 
 			friend struct Graphic::JDrawHelper;
-			friend class Editor::JSceneObserver;
 		private:
 			static int GetCamFrameIndex(JCamera* cam)noexcept;
-			static int GetHzbOccReqFrameIndex(JCamera* cam)noexcept;
+			static int GetDepthTestPassFrameIndex(JCamera* cam)noexcept;
+			static int GetHzbOccComputeFrameIndex(JCamera* cam)noexcept;
 		};
 		class EditorSettingInterface final
 		{
 		private:
+			friend struct Graphic::JDrawCondition;
 			friend class Graphic::JGraphic; 
 			friend class Editor::JSceneObserver;
-			friend struct Graphic::JDrawCondition;
 		private:
 			static void SetAllowAllCullingResult(const JUserPtr<JCamera>& cam, const bool value)noexcept;
 			static bool AllowAllCullingResult(const JUserPtr<JCamera>& cam)noexcept;

@@ -1,10 +1,7 @@
 #pragma once
 namespace JinEngine
 {
-	namespace Application
-	{
-		class JApplication;
-	}
+	class JMain;
 	namespace Core
 	{
 		class JTypeInfo; 
@@ -26,10 +23,10 @@ namespace JinEngine
 			private:
 				static void AddEnum(JEnumInfo* newEnum);
 			};
-			class ApplicationInterface
+			class MainAccess
 			{
-			private:
-				friend class Application::JApplication;
+			private: 
+				friend class JMain;
 			private:
 				//it is valid once
 				static void Initialize();

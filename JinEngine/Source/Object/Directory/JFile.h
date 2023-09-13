@@ -1,5 +1,6 @@
 #pragma once
 #include<string>    
+#include"../JObjectFlag.h"
 #include"../Resource/JResourceObjectType.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
 #include"../../Core/Reflection/JReflectionMacro.h"
@@ -26,6 +27,7 @@ namespace JinEngine
 		virtual size_t GetResourceGuid()const noexcept = 0;
 		virtual J_RESOURCE_TYPE GetResourceType()const noexcept = 0;
 		virtual Core::JTypeInfo& GetResourceTypeInfo()const noexcept = 0;
+		virtual J_OBJECT_FLAG GetObjectFlag()const noexcept = 0;
 	public:
 		virtual std::wstring GetName()const noexcept = 0;
 		virtual std::wstring GetFullName()const noexcept = 0;
@@ -53,6 +55,7 @@ namespace JinEngine
 		size_t GetResourceGuid()const noexcept;
 		J_RESOURCE_TYPE GetResourceType()const noexcept;
 		Core::JTypeInfo& GetResourceTypeInfo()const noexcept;
+		J_OBJECT_FLAG GetObjectFlag()const noexcept;
 	public:
 		std::wstring GetName()const noexcept;		// ret only name
 		std::wstring GetFullName()const noexcept;		// name + original format

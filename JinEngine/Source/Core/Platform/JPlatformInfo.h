@@ -90,6 +90,8 @@
 #define OS_SOLARIS 0
 #endif
 
+#define MS_ALIGN(n) __declspec(align(n))
+
 namespace JinEngine
 {
 	namespace Core

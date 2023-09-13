@@ -3,6 +3,10 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
+		bool JGraphicOption::IsOcclusionActivated()const noexcept
+		{
+			return isOcclusionQueryActivated;
+		}
 		bool JGraphicOption::IsHDOccActivated()const noexcept
 		{
 			return isOcclusionQueryActivated && isHDOcclusionAcitvated;

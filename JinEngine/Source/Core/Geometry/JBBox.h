@@ -1,6 +1,6 @@
 #pragma once
-#include"../JDataType.h"
-#include"../../Utility/JVector.h"
+#include"../JCoreEssential.h"
+#include"../Math/JVector.h"
 #include<DirectXMath.h>
 #include<DirectXCollision.h>
 
@@ -25,10 +25,7 @@ namespace JinEngine
 		};
 
 		class JBBox
-		{
-		public:
-			//DirectX::XMFLOAT3 minP;
-			//DirectX::XMFLOAT3 maxP;
+		{ 
 		public:
 			JVector3<float> minP;
 			JVector3<float> maxP;
@@ -43,15 +40,25 @@ namespace JinEngine
 			JBBox& operator=(JBBox&& rhs) = default;
 		public:
 			DirectX::BoundingBox Convert()const noexcept;
+			void Coners(_Out_ JVector3<float>(&outCorners)[8])const noexcept;
 			JVector3<float> Extent()const noexcept;
 			JVector3<float> Center()const noexcept;
 			JVector3<float> DistanceVector()const noexcept;
+			/*
+				Dimension
+				x = 0, y = 1, z = 2
+			*/
+			float DistancePoint(const uint p)const noexcept;
 			float Surface()const noexcept;
 			/*
 				Dimension
 				x = 0, y = 1, z = 2
 			*/
 			uint MaxDimension()const noexcept;
+		public:
+			void Lengthen(const JVector3<float>& length);
+		public:
+			bool IsDistanceZero()const noexcept;
 		public:
 			static JBBox Union(_In_ const JBBox& box, _In_ const DirectX::XMFLOAT3& point)noexcept;
 			static JBBox Union(_In_ const JBBox& b1, _In_ const JBBox& b2)noexcept;

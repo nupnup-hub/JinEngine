@@ -1,6 +1,5 @@
 #include"JTypeBase.h"
-#include"JTypeBasePrivate.h"
-
+#include"JTypeBasePrivate.h" 
 namespace JinEngine
 {
 	namespace Core
@@ -8,6 +7,9 @@ namespace JinEngine
 		JTypeBase::JTypeBase(const size_t guid)
 			:guid(guid)
 		{}
+		JTypeBase::~JTypeBase()
+		{ 
+		}
 		size_t JTypeBase::GetGuid()const noexcept
 		{ 
 			return guid;

@@ -7,14 +7,14 @@ namespace JinEngine
 	{
 		class JTypeBase
 		{
-			REGISTER_CLASS_ONLY_USE_TYPEINFO(JTypeBase)
+			REGISTER_CLASS_USE_ALLOCATOR(JTypeBase)
 		private:
 			const size_t guid;	//used by classify same type instance
 		public:
 			size_t GetGuid()const noexcept; 
-		protected:
+		public:
 			JTypeBase(const size_t guid);
-			virtual ~JTypeBase() = default;
+			virtual ~JTypeBase();
 		};
 	}
 	using JTypeBase = Core::JTypeBase;

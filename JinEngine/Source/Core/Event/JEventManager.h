@@ -1,6 +1,6 @@
 #pragma once
 #include"JEventListener.h"
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 #include"../Func/Functor/JFunctor.h"
 //#include"../Func/Callable/JCallable.h"
 #include<unordered_map>

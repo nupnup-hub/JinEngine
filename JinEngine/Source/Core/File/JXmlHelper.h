@@ -2,6 +2,7 @@
 #include<string>
 #include<vector>
 #include<unordered_map>
+#include"../JCoreEssential.h"
 
 namespace JinEngine
 {
@@ -18,8 +19,7 @@ namespace JinEngine
 		//unuse
 		struct JXmlNode
 		{
-		public:
-			static constexpr int invalidIndex = -1;
+		public: 
 			int parentIndex = invalidIndex;
 		public:
 			std::string name;					//element

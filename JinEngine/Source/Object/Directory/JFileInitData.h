@@ -1,6 +1,7 @@
 #pragma once
 #include<string>   
 #include"../Resource/JResourceObjectType.h" 
+#include"../JObjectFlag.h"
 
 namespace JinEngine
 { 
@@ -16,6 +17,7 @@ namespace JinEngine
 		const size_t rGuid;
 		Core::JTypeInfo& rTypeInfo;
 		const J_RESOURCE_TYPE resourceType;
+		const J_OBJECT_FLAG flag;
 		const uint8 formatIndex; 
 	public:
 		JFileInitData(JResourceObject* rObj);
@@ -24,6 +26,7 @@ namespace JinEngine
 			const size_t rGuid,
 			Core::JTypeInfo& rTypeInfo,
 			const J_RESOURCE_TYPE resourceType,
+			const J_OBJECT_FLAG flag,
 			const uint8 formatIndex);
 	};
 }

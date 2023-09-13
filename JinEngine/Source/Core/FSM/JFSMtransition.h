@@ -1,6 +1,6 @@
 #pragma once  
 #include"JFSMinterface.h"
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 #include<vector>  
 #include<memory>
  

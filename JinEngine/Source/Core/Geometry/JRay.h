@@ -1,5 +1,5 @@
 #pragma once 
-#include"../../Utility/JVector.h"
+#include"../Math/JVector.h"
 
 namespace JinEngine
 {
@@ -16,8 +16,8 @@ namespace JinEngine
 			JRay2D(const DirectX::XMVECTOR pV, const DirectX::XMVECTOR dirV, float time = 0, float maxTime = FLT_MAX);
 			JRay2D(const JVector2<float>& p, const JVector2<float>& dir, float time = 0, float maxTime = FLT_MAX);
 		public:
-			DirectX::XMVECTOR GetPosV()const noexcept;
-			DirectX::XMVECTOR GetDirV()const noexcept;
+			DirectX::XMVECTOR PosV()const noexcept;
+			DirectX::XMVECTOR DirV()const noexcept;
 		};
 
 		class JRay
@@ -31,8 +31,8 @@ namespace JinEngine
 			JRay(const DirectX::XMVECTOR pV, const DirectX::XMVECTOR dirV, float time = 0, float maxTime = FLT_MAX);
 			JRay(const JVector3<float>& p, const JVector3<float>& dir, float time = 0, float maxTime = FLT_MAX);
 		public:
-			DirectX::XMVECTOR GetPosV()const noexcept;
-			DirectX::XMVECTOR GetDirV()const noexcept;
+			DirectX::XMVECTOR PosV()const noexcept;
+			DirectX::XMVECTOR DirV()const noexcept;
 		};
 	}
 }

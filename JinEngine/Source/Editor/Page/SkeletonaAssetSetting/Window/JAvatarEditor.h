@@ -3,7 +3,7 @@
 #include"../../../Interface/JEditorObjectHandleInterface.h" 
 #include"../../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
 #include"../../../../Object/Resource/Skeleton/Avatar/JAvatar.h"
-#include"../../../../Utility/JVector.h"
+#include"../../../../Core/Math/JVector.h"
 #include<vector>
 #include<bitset>
 
@@ -46,8 +46,7 @@ namespace JinEngine
 			int selectJointIndex;
 			std::bitset<JSkeletonFixedData::maxAvatarJointCount> isValidJointRef; 
 			std::bitset<4> tabs;
-			const JVector4<float> failColor{ 0.85f, 0.2f, 0.2f, 0.75f };
-			JVector4<float> preBtnColor;
+			const JVector4<float> failColor{ 0.85f, 0.2f, 0.2f, 0.75f }; 
 		public:
 			JAvatarEditor(const std::string& name,
 				std::unique_ptr<JEditorAttribute> attribute,
@@ -79,8 +78,7 @@ namespace JinEngine
 			void CloseAllTab()noexcept;
 			int FindSelectedTab()noexcept;
 			bool CheckAllJoint()noexcept;
-			bool IsAllJointPassed()noexcept;
-			bool ArrowClick(const std::string& name); 
+			bool IsAllJointPassed()noexcept; 
 			void StoreAvatarData();
 		private:
 			void DoActivate()noexcept final;

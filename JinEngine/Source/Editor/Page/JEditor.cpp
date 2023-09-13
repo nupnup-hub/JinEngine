@@ -2,8 +2,8 @@
 #include"JEditorAttribute.h"
 #include"JEditorPageShareData.h"
 #include"../Event/JEditorEvent.h"
-#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../Gui/JGui.h"
+#include"../../Core/Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
@@ -140,7 +140,7 @@ namespace JinEngine
 					task->RegisterAddtionalProcess(Core::JTransitionTask::ADDITONAL_PROCESS_TYPE::UNDO_POST, std::move(postUndoVec));
 				}
 				
-				task->RegisterClearTask(std::make_unique< ClearTaskF::CompletelyBind>(*GetClearTaskFunctor(), std::move(evGuidVec)));
+				task->RegisterClearTask(std::make_unique<ClearTaskF::CompletelyBind>(*GetClearTaskFunctor(), std::move(evGuidVec)));
 				JEditorTransition::Instance().Execute(std::move(task));
 			}
 			else
@@ -211,8 +211,6 @@ namespace JinEngine
 		}
 		void JEditor::OnEvent(const size_t& iden, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{
-			if (iden == guid)
-				return;
 		}
 	}
 }

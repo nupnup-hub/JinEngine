@@ -1,5 +1,5 @@
 #include"JFilePathData.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../../Core/Utility/JCommonUtility.h"
 #include"../../Core/File/JFileConstant.h"
 
 namespace JinEngine

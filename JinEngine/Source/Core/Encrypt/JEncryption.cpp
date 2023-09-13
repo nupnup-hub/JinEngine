@@ -1,6 +1,6 @@
 #include"JEncryption.h" 
 #include"../Unit/JBigIntEx.h"  
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {

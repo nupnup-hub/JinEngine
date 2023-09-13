@@ -1,7 +1,7 @@
 #pragma once
 #include<sal.h> 
 #include"JAllocationDesc.h"
-#include"../JDataType.h"  
+#include"../JCoreEssential.h"  
  
 namespace JinEngine
 {
@@ -42,7 +42,8 @@ namespace JinEngine
 		public:
 			virtual bool CanAllocate(const uint blockCount)const noexcept = 0;
 		public:
-			virtual JAllocationInfo GetInformation()const noexcept = 0;
+			virtual size_t GetAlignedAllocBlockSize()const noexcept = 0;
+			virtual JAllocationInfo GetInformation()const noexcept = 0;			
 		public:
 			static void CalculatePageFitAllocationData(_Inout_ size_t& blockSize,
 				_Inout_ uint& blockCount,

@@ -2,14 +2,14 @@
 #include"JTransformPrivate.h"
 #include"../JComponentHint.h"
 #include"../../GameObject/JGameObject.h" 
-#include"../../Resource/Scene/JScenePrivate.h" 
-#include"../../../Utility/JMathHelper.h"
+#include"../../Resource/Scene/JScenePrivate.h"  
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Graphic/Upload/Frameresource/JObjectConstants.h"
-#include"../../../Graphic/Upload/Frameresource/JFrameUpdate.h" 
+#include"../../../Core/Math/JMathHelper.h"
+#include"../../../Graphic/Frameresource/JObjectConstants.h"
+#include"../../../Graphic/Frameresource/JFrameUpdate.h" 
 #include<fstream>
 
 namespace JinEngine
@@ -30,86 +30,82 @@ namespace JinEngine
 	public:
 		REGISTER_GUI_TABLE_GROUP(Transform, true, "Name", "x", "y", "z")
 		REGISTER_PROPERTY_EX(position, GetPosition, SetPosition, GUI_INPUT(false, GUI_TABLE_GROUP_USER(Transform, 3, true)))
-		mutable DirectX::XMFLOAT3 position;
+		mutable JVector3<float> position;
 		REGISTER_PROPERTY_EX(rotation, GetRotation, SetRotation, GUI_INPUT(false, GUI_TABLE_GROUP_USER(Transform, 3, true)))
-		mutable DirectX::XMFLOAT3 rotation;
+		mutable JVector3<float> rotation;
 		REGISTER_PROPERTY_EX(scale, GetScale, SetScale, GUI_INPUT(false, GUI_TABLE_GROUP_USER(Transform, 3, true)))
-		mutable DirectX::XMFLOAT3 scale;
-		mutable DirectX::XMFLOAT4X4 world;
-		mutable DirectX::XMFLOAT3 tFront;
-		mutable DirectX::XMFLOAT3 tRight;
-		mutable DirectX::XMFLOAT3 tUp;
+		mutable JVector3<float> scale;
+		mutable JMatrix4x4 world;
+		mutable JVector3<float> tFront;
+		mutable JVector3<float> tRight;
+		mutable JVector3<float> tUp;
 	public:
 		JTransformImpl(const InitData& initData, JTransform* thisTransRaw)
 		{}
 		~JTransformImpl() {}
 	public:
-		XMFLOAT3 GetPosition()const noexcept
-		{
+		JVector3<float> GetPosition()const noexcept
+		{ 
 			return position;
 		}
-		XMFLOAT3 GetRotation()const noexcept
+		JVector3<float> GetRotation()const noexcept
 		{
 			return rotation;
 		}
-		DirectX::XMFLOAT4 GetQuaternion()const noexcept
-		{
-			return JMathHelper::EulerToQuaternion(rotation);
-		}
-		XMFLOAT3 GetScale()const noexcept
+		XMVECTOR GetQuaternion()const noexcept
+		{ 
+			return XMQuaternionRotationRollPitchYaw(rotation.x * (JMathHelper::Pi / 180),
+				rotation.y * (JMathHelper::Pi / 180),
+				rotation.z * (JMathHelper::Pi / 180));
+		} 
+		JVector3<float> GetScale()const noexcept
 		{
 			return scale;
 		}
-		DirectX::XMFLOAT3 GetWorldPosition()const noexcept
+		JVector3<float> GetWorldPosition()const noexcept
 		{
-			return DirectX::XMFLOAT3(world._41, world._42, world._43);
+			return JVector3<float>(world._41, world._42, world._43);
 		}
-		DirectX::XMVECTOR GetWorldQuaternionV()const noexcept
+		JVector4<float> GetWorldQuaternion()const noexcept
 		{
 			XMVECTOR s;
 			XMVECTOR q;
 			XMVECTOR t;
-			XMMatrixDecompose(&s, &q, &t, XMLoadFloat4x4(&world));
+			XMMatrixDecompose(&s, &q, &t, world.LoadXM());
 			return q;
 		}
-		XMMATRIX GetWorldMatrix()const noexcept
-		{
-			return XMLoadFloat4x4(&world);
-		}
-		DirectX::XMFLOAT4X4 GetWorld4x4f()const noexcept
+		JMatrix4x4 GetWorldMatrix()const noexcept
 		{
 			return world;
+		} 
+		DirectX::XMMATRIX GetLocalMatrix()const noexcept
+		{ 
+			return XMMatrixAffineTransformation(scale.ToXmV(),
+				XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+				GetQuaternion(),
+				position.ToXmV());
 		}
-		XMMATRIX GetLocal()const noexcept
+		JVector3<float> GetRight()const noexcept
 		{
-			XMVECTOR s = XMLoadFloat3(&scale);
-			XMVECTOR q = XMQuaternionRotationRollPitchYaw(rotation.x * (JMathHelper::Pi / 180),
-				rotation.y * (JMathHelper::Pi / 180),
-				rotation.z * (JMathHelper::Pi / 180));
-			XMVECTOR t = XMLoadFloat3(&position);
-			XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-			return XMMatrixAffineTransformation(s, zero, q, t);
+			return tRight;
 		}
-		XMVECTOR GetRight()const noexcept
+		JVector3<float> GetUp()const noexcept
 		{
-			return XMLoadFloat3(&tRight);
+			return tUp;
 		}
-		XMVECTOR GetUp()const noexcept
+		JVector3<float> GetFront()const noexcept
 		{
-			return XMLoadFloat3(&tUp);
-		}
-		XMVECTOR GetFront()const noexcept
-		{
-			return XMLoadFloat3(&tFront);
+			return tFront;
 		} 
 		float GetDistance(const JUserPtr<JTransform>& t)const noexcept
 		{ 
-			return JMathHelper::Vector3Length(JMathHelper::Vector3Minus(t->GetWorldPosition(), GetWorldPosition()));
+			return (t->GetWorldPosition() - GetWorldPosition()).Length(); 
 		}
 	public:
-		void SetTransform(const XMFLOAT3& nPosition, const XMFLOAT3& nRotation, const XMFLOAT3& nScale)noexcept
+		void SetTransform(const JVector3<float>& nPosition, const JVector3<float>& nRotation, const JVector3<float>& nScale)noexcept
 		{
-			if (thisPointer->GetOwner()->IsRoot())
+			if (thisPointer->GetOwner()->IsRoot() || 
+				(position == nPosition && rotation == nRotation && scale == nScale))
 				return;
 
 			position = nPosition;
@@ -117,17 +113,17 @@ namespace JinEngine
 			scale = nScale;
 			UpdateTopDown();
 		}
-		void SetPosition(const XMFLOAT3& value)noexcept
+		void SetPosition(const JVector3<float>& value)noexcept
 		{
-			if (thisPointer->GetOwner()->IsRoot())
+			if (thisPointer->GetOwner()->IsRoot() || position == value)
 				return;
 
 			position = value;
 			UpdateTopDown();
 		}
-		void SetRotation(const XMFLOAT3& euler)noexcept
+		void SetRotation(const JVector3<float>& euler)noexcept
 		{
-			if (thisPointer->GetOwner()->IsRoot())
+			if (thisPointer->GetOwner()->IsRoot() || rotation == euler)
 				return;
 
 			rotation = euler;
@@ -146,23 +142,17 @@ namespace JinEngine
 			if (rotation.z <= -360)
 				rotation.z += 360;
 
-			const XMVECTOR q = XMQuaternionRotationRollPitchYaw(JMathHelper::DegToRad * rotation.x,
-				JMathHelper::DegToRad * rotation.y,
-				JMathHelper::DegToRad * rotation.z);
+			const XMVECTOR q = GetQuaternion();
 
-			XMVECTOR newRight = XMVector3Rotate(JMathHelper::VectorRight(), q);
-			XMVECTOR newUp = XMVector3Rotate(JMathHelper::VectorUp(), q);
-			XMVECTOR newFront = XMVector3Rotate(JMathHelper::VectorForward(), q);
-
-			XMStoreFloat3(&tRight, XMVector3Normalize(newRight));
-			XMStoreFloat3(&tUp, XMVector3Normalize(newUp));
-			XMStoreFloat3(&tFront, XMVector3Normalize(newFront));
-
+			tRight = XMVector3Rotate(JVector3F::Right().ToXmV(), q);
+			tUp = XMVector3Rotate(JVector3F::Up().ToXmV(), q);
+			tFront = XMVector3Rotate(JVector3F::Forward().ToXmV(), q);
+  
 			UpdateTopDown();
 		}
-		void SetScale(const XMFLOAT3& value)noexcept
+		void SetScale(const JVector3<float>& value)noexcept
 		{
-			if (thisPointer->GetOwner()->IsRoot())
+			if (thisPointer->GetOwner()->IsRoot() || scale == value)
 				return;
 
 			scale = value;
@@ -173,33 +163,18 @@ namespace JinEngine
 			SetFrameDirty();
 		}
 	public:
-		void RegisterFrameDirtyListener(Graphic::JFrameDirty* newListener, const size_t guid)
-		{
-			AddFrameDirtyListener(newListener, guid);
-		}
-		void DeRegisterFrameDirtyListener(const size_t guid)
-		{
-			RemoveFrameDirtyListener(guid);
-		}
-	public:
-		void LookAt(const XMFLOAT3& target, const XMFLOAT3& worldUp)noexcept
+		void LookAt(const JVector3<float>& target, const JVector3<float>& worldUp)noexcept
 		{
 			if (thisPointer->GetOwner()->IsRoot())
 				return;
-
-			const XMVECTOR positionVec = XMLoadFloat3(&position);
-			const XMVECTOR targetVec = XMLoadFloat3(&target);
-			const XMVECTOR upVec = XMLoadFloat3(&worldUp);
-
-			const XMVECTOR l = XMVector3Normalize(XMVectorSubtract(targetVec, positionVec));
-			const XMVECTOR r = XMVector3Normalize(XMVector3Cross(upVec, l));
-			const XMVECTOR u = XMVector3Cross(l, r);
-
-			XMStoreFloat3(&tFront, l);
-			XMStoreFloat3(&tRight, r);
-			XMStoreFloat3(&tUp, u);
-
-			DirectX::XMFLOAT4X4 rotation4x4;
+			 
+			//forward
+			tFront = (target - position).Normalize();
+			//up
+			tRight = JVector3F::Cross(worldUp, tFront).Normalize();
+			tUp = JVector3F::Cross(tFront, tRight);
+			 
+			JMatrix4x4 rotation4x4;
 			rotation4x4(0, 0) = tRight.x;
 			rotation4x4(1, 0) = tRight.y;
 			rotation4x4(2, 0) = tRight.z;
@@ -221,7 +196,7 @@ namespace JinEngine
 			rotation4x4(3, 3) = 1.0f;
 
 			//수정필요
-			const XMVECTOR newRotation = XMQuaternionRotationMatrix(XMLoadFloat4x4(&rotation4x4));
+			const XMVECTOR newRotation = XMQuaternionRotationMatrix(rotation4x4.LoadXM());
 			//rotation = JMathHelper::ToEulerAngle(newRotation);
 			UpdateTopDown();
 		}
@@ -252,26 +227,24 @@ namespace JinEngine
 				owner->GetChild(i)->GetTransform()->impl->UpdateTopDown();
 		}
 		void UpdateWorld()noexcept
-		{
-			const XMVECTOR s = XMLoadFloat3(&scale);
-			const XMVECTOR q = XMQuaternionRotationRollPitchYaw(rotation.x * (JMathHelper::Pi / 180),
-				rotation.y * (JMathHelper::Pi / 180),
-				rotation.z * (JMathHelper::Pi / 180));
-			const XMVECTOR t = XMLoadFloat3(&position);
-			const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-			const XMMATRIX worldM = XMMatrixMultiply(XMMatrixAffineTransformation(s, zero, q, t), XMLoadFloat4x4(&thisPointer->GetOwner()->GetParent()->GetTransform()->impl->world));
-			XMStoreFloat4x4(&world, worldM);
+		{  
+			world.StoreXM(XMMatrixMultiply(XMMatrixAffineTransformation(scale.ToXmV(), 
+				XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f),
+				GetQuaternion(), 
+				position.ToXmV()),
+				thisPointer->GetOwner()->GetParent()->GetTransform()->impl->world.LoadXM()));
 		}
 	public:
 		void Initialize()
 		{
-			position = DirectX::XMFLOAT3(0, 0, 0);
-			rotation = DirectX::XMFLOAT3(0, 0, 0);
-			scale = DirectX::XMFLOAT3(1, 1, 1);
-			XMStoreFloat3(&tRight, JMathHelper::VectorRight());
-			XMStoreFloat3(&tUp, JMathHelper::VectorUp());
-			XMStoreFloat3(&tFront, JMathHelper::VectorForward());
-			XMStoreFloat4x4(&world, JMathHelper::IdentityMatrix4());
+			position = JVector3<float>(0, 0, 0);
+			rotation = JVector3<float>(0, 0, 0);
+			scale = JVector3<float>(1, 1, 1);
+
+			tRight = JVector3<float>::Right();
+			tUp = JVector3<float>::Up();
+			tFront = JVector3<float>::Forward();
+			world = JMatrix4x4::Identity(); 
 
 			if (!thisPointer->GetOwner()->IsRoot())
 				UpdateWorld();
@@ -280,6 +253,14 @@ namespace JinEngine
 		void RegisterThisPointer(JTransform* trans)
 		{
 			thisPointer = Core::GetWeakPtr(trans);
+		}
+		void RegisterFrameDirtyListener(Graphic::JFrameDirtyTriggerBase* newListener, const size_t guid)
+		{
+			AddFrameDirtyListener(newListener, guid);
+		}
+		void DeRegisterFrameDirtyListener(const size_t guid)
+		{
+			RemoveFrameDirtyListener(guid);
 		}
 		static void RegisterTypeData()
 		{
@@ -329,51 +310,51 @@ namespace JinEngine
 	{
 		return GetStaticComponentType();
 	}
-	XMFLOAT3 JTransform::GetPosition()const noexcept
+	JVector3<float> JTransform::GetPosition()const noexcept
 	{
 		return impl->GetPosition();
 	}
-	XMFLOAT3 JTransform::GetRotation()const noexcept
+	JVector3<float> JTransform::GetRotation()const noexcept
 	{
 		return impl->GetRotation();
 	}
-	DirectX::XMFLOAT4 JTransform::GetQuaternion()const noexcept
+	XMVECTOR JTransform::GetQuaternion()const noexcept
 	{
 		return impl->GetQuaternion();
 	}
-	XMFLOAT3 JTransform::GetScale()const noexcept
+	JVector3<float> JTransform::GetScale()const noexcept
 	{
 		return impl->GetScale();
 	}
-	DirectX::XMFLOAT3 JTransform::GetWorldPosition()const noexcept
+	JVector3<float> JTransform::GetWorldPosition()const noexcept
 	{
 		return impl->GetWorldPosition();
 	}
-	DirectX::XMVECTOR JTransform::GetWorldQuaternionV()const noexcept
+	JVector4<float> JTransform::GetWorldQuaternion()const noexcept
 	{
-		return impl->GetWorldQuaternionV();
+		return impl->GetWorldQuaternion();
 	}
-	XMMATRIX JTransform::GetWorldMatrix()const noexcept
+	JMatrix4x4 JTransform::GetWorldMatrix4x4()const noexcept
 	{
 		return impl->GetWorldMatrix();
 	}
-	DirectX::XMFLOAT4X4 JTransform::GetWorld4x4f()const noexcept
+	DirectX::XMMATRIX JTransform::GetWorldMatrix()const noexcept
 	{
-		return impl->GetWorld4x4f();
-	}
-	XMMATRIX JTransform::GetLocal()const noexcept
+		return impl->world.LoadXM();
+	} 
+	DirectX::XMMATRIX JTransform::GetLocalMatrix()const noexcept
 	{
-		return impl->GetLocal();
+		return impl->GetLocalMatrix();
 	}
-	XMVECTOR JTransform::GetRight()const noexcept
+	JVector3<float> JTransform::GetRight()const noexcept
 	{
 		return impl->GetRight();
 	}
-	XMVECTOR JTransform::GetUp()const noexcept
+	JVector3<float> JTransform::GetUp()const noexcept
 	{
 		return impl->GetUp();
 	}
-	XMVECTOR JTransform::GetFront()const noexcept
+	JVector3<float> JTransform::GetFront()const noexcept
 	{
 		return impl->GetFront();
 	}
@@ -381,27 +362,35 @@ namespace JinEngine
 	{ 
 		return impl->GetDistance(t);
 	}
-	void JTransform::SetTransform(const XMFLOAT3& position, const XMFLOAT3& rotation, const XMFLOAT3& scale)noexcept
+	void JTransform::SetTransform(const JMatrix4x4& transform)noexcept
+	{
+		XMVECTOR positionV;
+		XMVECTOR rotationV;
+		XMVECTOR scaleV;
+		XMMatrixDecompose(&positionV, &rotationV, &scaleV, transform.LoadXM());	 
+		SetTransform(positionV, rotationV, scaleV);
+	}
+	void JTransform::SetTransform(const JVector3<float>& position, const JVector3<float>& rotation, const JVector3<float>& scale)noexcept
 	{
 		impl->SetTransform(position, rotation, scale);
 	}
-	void JTransform::SetPosition(const XMFLOAT3& value)noexcept
+	void JTransform::SetPosition(const JVector3<float>& value)noexcept
 	{
 		impl->SetPosition(value);
 	}
-	void JTransform::SetRotation(const XMFLOAT3& value)noexcept
+	void JTransform::SetRotation(const JVector3<float>& value)noexcept
 	{
 		impl->SetRotation(value);
 	}
-	void JTransform::SetRotation(const DirectX::XMFLOAT4& q)noexcept
+	void JTransform::SetRotation(const JVector4<float>& q)noexcept
 	{
 		impl->SetRotation(JMathHelper::ToEulerAngle(q));
 	}
-	void JTransform::SetScale(const XMFLOAT3& value)noexcept
+	void JTransform::SetScale(const JVector3<float>& value)noexcept
 	{
 		impl->SetScale(value);
 	}
-	void JTransform::LookAt(const XMFLOAT3& target, const XMFLOAT3& worldUp)noexcept
+	void JTransform::LookAt(const JVector3<float>& target, const JVector3<float>& worldUp)noexcept
 	{
 		impl->LookAt(target, worldUp);
 	}
@@ -430,7 +419,7 @@ namespace JinEngine
 	{
 	}
 	JTransform::~JTransform()
-	{
+	{ 
 		impl.reset();
 	}
 
@@ -473,18 +462,18 @@ namespace JinEngine
 		size_t guid;
 		J_OBJECT_FLAG flag;
 
-		XMFLOAT3 pos;
-		XMFLOAT3 rot;
-		XMFLOAT3 scale;
+		JVector3<float> pos;
+		JVector3<float> rot;
+		JVector3<float> scale;
 
 		auto loadData = static_cast<JTransform::LoadData*>(data);
 		std::wifstream& stream = loadData->stream;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
 		JFileIOHelper::LoadObjectIden(stream, guid, flag);
-		JFileIOHelper::LoadXMFloat3(stream, pos);
-		JFileIOHelper::LoadXMFloat3(stream, rot);
-		JFileIOHelper::LoadXMFloat3(stream, scale);
+		JFileIOHelper::LoadVector3(stream, pos);
+		JFileIOHelper::LoadVector3(stream, rot);
+		JFileIOHelper::LoadVector3(stream, scale);
 
 		auto idenUser = tPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JTransform::InitData>(guid, flag, owner), &tPrivate);
 		JUserPtr<JTransform> transUser = JUserPtr<JTransform>::ConvertChild(std::move(idenUser));
@@ -512,9 +501,9 @@ namespace JinEngine
 		std::wofstream& stream = storeData->stream;
 
 		JFileIOHelper::StoreObjectIden(stream, transUser.Get());
-		JFileIOHelper::StoreXMFloat3(stream, L"Pos:", impl->position);
-		JFileIOHelper::StoreXMFloat3(stream, L"Rot:", impl->rotation);
-		JFileIOHelper::StoreXMFloat3(stream, L"Scale:", impl->scale);
+		JFileIOHelper::StoreVector3(stream, L"Pos:", impl->position);
+		JFileIOHelper::StoreVector3(stream, L"Rot:", impl->rotation);
+		JFileIOHelper::StoreVector3(stream, L"Scale:", impl->scale);
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -524,7 +513,7 @@ namespace JinEngine
 		transform->impl->UpdateTopDown();
 	}
 
-	void FrameDirtyInterface::RegisterFrameDirtyListener(JTransform* transform, Graphic::JFrameDirty* listener, const size_t guid)noexcept
+	void FrameDirtyInterface::RegisterFrameDirtyListener(JTransform* transform, Graphic::JFrameDirtyTriggerBase* listener, const size_t guid)noexcept
 	{
 		transform->impl->RegisterFrameDirtyListener(listener, guid);
 	}

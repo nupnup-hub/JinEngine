@@ -1,9 +1,10 @@
 #include"JEditorMenuBar.h"   
-#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../Gui/JGui.h"
+#include"../Gui/JGuiImageInfo.h"
 #include"../String/JEditorStringMap.h"
-#include"../../Utility/JVectorExtend.h"
-#include"../../Utility/JCommonUtility.h"
-
+#include"../../Core/Utility/JCommonUtility.h"
+#include"../../Core/Math/JVectorExtend.h"
+ 
 namespace JinEngine
 {
 	namespace Editor
@@ -12,6 +13,16 @@ namespace JinEngine
 		{
 			static constexpr float tooltipInnerPaddingRate = 0.001f;
 			static std::unordered_map <size_t, std::vector<JEditorMenuBar::SwitchIcon*>> switchGroupMap;
+		}
+		namespace
+		{
+			static bool IsClickedInLastItemArea(const JVector2<float>& preCursorPos)noexcept
+			{
+				if (!JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT))
+					return false;
+				 
+				return JGui::IsMouseInRect(preCursorPos, JGui::GetLastItemRectSize());
+			}
 		}
 	 
 		JEditorMenuNode::JEditorMenuNode(const std::string& nodeName, 
@@ -121,6 +132,19 @@ namespace JinEngine
 				updateBindHandle->InvokeCompletelyBind();
 		}
 
+		void JEditorMenuBar::UpdateData::SetUpdateStartState()noexcept
+		{
+			isContentsClick = isNextContentsClick = false;
+		}
+		void JEditorMenuBar::UpdateData::ClickContents()noexcept
+		{
+			isContentsClick = true;
+		} 
+		void JEditorMenuBar::UpdateData::ClickContentsNextFrame()noexcept
+		{
+			isNextContentsClick = true;
+		}
+
 		JEditorMenuBar::ExtraWidget::ExtraWidget(const size_t guid)
 			:guid(guid)
 		{}
@@ -146,11 +170,11 @@ namespace JinEngine
 				if (tooltip.empty())
 					return;
 
-				if (JImGuiImpl::IsMouseInRect(pos, size))
+				if (JGui::IsMouseInRect(pos, size))
 				{
-					const JVector2<float> padding = ImGui::GetWindowSize() * tooltipInnerPaddingRate;
+					const JVector2<float> padding = JGui::GetWindowSize() * tooltipInnerPaddingRate;
 					const JVector2<float> windowPos = pos + padding + size;
-					JImGuiImpl::DrawToolTipBox(GetUniqueLabel() + "_ToolTip", tooltip, windowPos, padding, true);
+					JGui::DrawToolTipBox(GetUniqueLabel() + "_ToolTip", tooltip, windowPos, padding, true);
 				}
 			}
 		}
@@ -160,20 +184,34 @@ namespace JinEngine
 			std::unique_ptr<Core::JBindHandleBase>&& pressBind)
 			:Icon(guid, std::move(getGResourceFunctor)), pressBind(std::move(pressBind))
 		{}
-		void JEditorMenuBar::ButtonIcon::Update(const JEditorStringMap* tooltipMap)
+		void JEditorMenuBar::ButtonIcon::Update(const JEditorStringMap* tooltipMap, UpdateData& uData)
 		{
-			const float barHeight = ImGui::GetCurrentWindow()->MenuBarHeight();
-			const JVector2<float> pos = ImGui::GetCursorScreenPos();
+			const float barHeight = JGui::GetWindowMenuBarSize().y;
+			const JVector2<float> pos = JGui::GetCursorScreenPos();
 			const JVector2<float> size = JVector2<float>(barHeight, barHeight);
 			   
-			if (JImGuiImpl::ImageButton(GetUniqueLabel(),
-				((*GetGResourceFunctor())()),
+			/*
+			const std::string name,
+				JGuiImageInfo info,
+				const JVector2<float>& size,
+				const JVector2<float>& uv0 = JVector2<float>(0, 0),
+				const JVector2<float>& uv1 = JVector2<float>(1, 1),
+				float framePadding = -1,
+				const JVector4<float>& bgCol = JVector4<float>(0, 0, 0, 0),
+				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1)
+			*/
+			JGuiImageInfo imageInfo(((*GetGResourceFunctor())()));
+			if (JGui::ImageButton(GetUniqueLabel(),
+				imageInfo,
 				size,
-				IM_COL32(180, 180, 180, 225),
-				IM_COL32(90, 90, 90, 0)))
+				JVector4F(0.7f, 0.7f, 0.7f, 0.88f),
+				JVector4F(0.35f, 0.35f, 0.35f, 0)))
 			{
-				pressBind->InvokeCompletelyBind();
+				pressBind->InvokeCompletelyBind(); 
+				uData.ClickContents();
 			}
+			if (IsClickedInLastItemArea(pos))
+				uData.ClickContentsNextFrame();
 			DisplayTooltip(tooltipMap, pos, size);
 		}
 
@@ -188,26 +226,30 @@ namespace JinEngine
 			offBind(std::move(offBind)),
 			isActivatedPtr(isActivatedPtr)
 		{}
-		void JEditorMenuBar::SwitchIcon::Update(const JEditorStringMap* tooltipMap)
+		void JEditorMenuBar::SwitchIcon::Update(const JEditorStringMap* tooltipMap, UpdateData& uData)
 		{
-			const float barHeight = ImGui::GetCurrentWindow()->MenuBarHeight();
-			const JVector2<float> pos = ImGui::GetCursorScreenPos();			 
+			const float barHeight = JGui::GetWindowMenuBarSize().y;
+			const JVector2<float> pos = JGui::GetCursorScreenPos();			 
 			const JVector2<float> size = JVector2<float>(barHeight, barHeight);
-			 
-			if (JImGuiImpl::ImageSwitch(GetUniqueLabel(),
-				((*GetGResourceFunctor())()),
+	 
+			JGuiImageInfo imageInfo(((*GetGResourceFunctor())()));
+			if (JGui::ImageSwitch(GetUniqueLabel(),
+				imageInfo,
 				*isActivatedPtr,
 				true, 
 				size,
-				IM_COL32(180, 180, 180, 225),
-				IM_COL32(90, 90, 90, 0)))
+				JVector4F(0.7f, 0.7f, 0.7f, 0.88f),
+				JVector4F(0.35f, 0.35f, 0.35f, 0)))
 			{
 				//if to turn on
 				if (IsActivated())
 					onBind->InvokeCompletelyBind();
 				else
-					offBind->InvokeCompletelyBind();				 
+					offBind->InvokeCompletelyBind();
+				uData.ClickContents();
 			}
+			if (IsClickedInLastItemArea(pos))
+				uData.ClickContentsNextFrame();
 			DisplayTooltip(tooltipMap, pos, size);
 		}
 		bool JEditorMenuBar::SwitchIcon::IsActivated()const noexcept
@@ -222,13 +264,21 @@ namespace JinEngine
 			allNode.push_back(std::move(newRoot));
 		}
 		JEditorMenuBar::~JEditorMenuBar() {}
-		JEditorMenuNode* JEditorMenuBar::GetRootNode()noexcept
+		JEditorMenuNode* JEditorMenuBar::GetRootNode()const noexcept
 		{
 			return rootNode;
 		}
-		JEditorMenuNode* JEditorMenuBar::GetSelectedNode()noexcept
+		JEditorMenuNode* JEditorMenuBar::GetSelectedNode()const noexcept
 		{
 			return selectedNode;
+		}
+		bool JEditorMenuBar::IsLastUpdateClickedContents()const noexcept
+		{
+			return  uData.isContentsClick;
+		} 
+		bool JEditorMenuBar::IsNextUpdateClickedContents()const noexcept
+		{
+			return  uData.isNextContentsClick;
 		}
 		void JEditorMenuBar::AddNode(std::unique_ptr<JEditorMenuNode> newNode)noexcept
 		{
@@ -246,6 +296,7 @@ namespace JinEngine
 		}
 		void JEditorMenuBar::Update(const bool leafNodeOnly)
 		{
+			uData.SetUpdateStartState();
 			bool isSelected = UpdateMenuBar();
 			if (isSelected)
 			{
@@ -273,42 +324,48 @@ namespace JinEngine
 			selectedNode = nullptr;
 			if (isMainMenu)
 			{
-				if (JImGuiImpl::BeginMainMenuBar())
+				if (JGui::BeginMainMenuBar())
 				{
 					LoopNode(rootNode);
 					UpdateExtraWidget();
-					JImGuiImpl::EndMainMenuBar();
+					JGui::EndMainMenuBar();
 				}
 			}
 			else
 			{
-				if (JImGuiImpl::BeginMenuBar())
+				if (JGui::BeginMenuBar())
 				{
 					LoopNode(rootNode);
 					UpdateExtraWidget();
-					JImGuiImpl::EndMenuBar();
+					JGui::EndMenuBar();
 				}
-			}
+			} 
 			return selectedNode != nullptr;
 		}
 		void JEditorMenuBar::UpdateExtraWidget()
 		{
 			const uint extraWidgetCount = extraWidgetVec.size();
 			for (uint i = 0; i < extraWidgetCount; ++i)
-				extraWidgetVec[i]->Update(editStrMap.get());
+				extraWidgetVec[i]->Update(editStrMap.get(), uData);
 		}
 		void JEditorMenuBar::LoopNode(JEditorMenuNode* node)
 		{
 			std::string nodeName = node->GetNodeName();
 			if (node->IsLeafNode())
 			{
-				bool canToSoftCol = node->GetParent()->IsRootNode() && node->IsOpendNode();
+				const JVector2<float>preCursorPos = JGui::GetCursorScreenPos();
+				const bool canToSoftCol = node->GetParent()->IsRootNode() && node->IsOpendNode();
 				if (canToSoftCol)
-					JImGuiImpl::SetColorToSoft(ImGuiCol_Header, CreateVec4(-0.15f));
-				if (JImGuiImpl::MenuItem(nodeName.c_str(), node->IsOpendNode(), true))
+					JGui::PushColorToSoft(J_GUI_COLOR::HEADER, CreateVec4(-0.15f));
+				if (JGui::MenuItem(nodeName.c_str(), node->IsOpendNode(), true))
+				{
 					selectedNode = node;
+					uData.ClickContents();
+				}
+				if (IsClickedInLastItemArea(preCursorPos))
+					uData.ClickContentsNextFrame();
 				if (canToSoftCol)
-					JImGuiImpl::SetColorToSoft(ImGuiCol_Header, CreateVec4(0.15f));
+					JGui::PopColor();
 			}
 			else
 			{
@@ -318,11 +375,11 @@ namespace JinEngine
 					for (uint i = 0; i < childrenCount; ++i)
 						LoopNode(node->GetChild(i));
 				}
-				else if (JImGuiImpl::BeginMenu(nodeName))
+				else if (JGui::BeginMenu(nodeName))
 				{
 					for (uint i = 0; i < childrenCount; ++i)
 						LoopNode(node->GetChild(i));
-					JImGuiImpl::EndMenu();
+					JGui::EndMenu();
 				}
 			}
 		}

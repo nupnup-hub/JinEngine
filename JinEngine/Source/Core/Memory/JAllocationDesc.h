@@ -17,7 +17,7 @@ namespace JinEngine
 		struct JAllocationDesc
 		{ 
 		public:
-			static constexpr size_t initDataCount = 32;
+			static constexpr size_t initDataCount = 64;
 		public:
 			using ReceiverPtr = void*;
 			using ReAllocatedPtr = void*;
@@ -30,6 +30,8 @@ namespace JinEngine
 		public:
 			using NotifyReAllocDebugF = JSFunctorType<void, ReceiverPtr, PreAllocatedPtr, ReAllocatedPtr, MemIndex>;
 			using NotifyReAllocDebugB = JBindHandle<NotifyReAllocDebugF::Functor, ReceiverPtr, EmptyParam, EmptyParam, EmptyParam>;
+		public:
+			std::string name; //Debug
 		public:
 			size_t dataCount = initDataCount;
 			size_t dataSize = 0;				//original data size

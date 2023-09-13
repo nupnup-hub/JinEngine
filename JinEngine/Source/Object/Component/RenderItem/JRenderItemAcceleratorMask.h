@@ -1,0 +1,12 @@
+#pragma once
+namespace JinEngine
+{
+	enum J_RENDERITEM_ACCELERATOR_MASK
+	{
+		ACCELERATOR_NOT_ALLOW_ALL = 0,
+		ACCELERATOR_ALLOW_BUILD = 1 << 0,		// can make space spatial tree node
+		ACCELERATOR_ALLOW_CULLING = 1 << 1,	// can culling
+
+		ACCELERATOR_ALLOW_ALL = ACCELERATOR_ALLOW_BUILD | ACCELERATOR_ALLOW_CULLING
+	};
+}

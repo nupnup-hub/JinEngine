@@ -1,7 +1,7 @@
 #pragma once
 #include<vector>
 #include<bitset>
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 #include"../Pointer/JOwnerPtr.h"
 #include"../Guid/JGuidCreator.h"
  
@@ -33,7 +33,7 @@ namespace JinEngine
 			JDataHandle(const JDataHandle& rhs) = delete;
 			JDataHandle& operator=(const JDataHandle& rhs) = delete;
 			JDataHandle& operator=(JDataHandle&& rhs) = delete;
-			JDataHandle(JDataHandle&& rhs)
+			JDataHandle(JDataHandle&& rhs)noexcept
 				:index(rhs.index),
 				validNumber(rhs.validNumber),
 				structureGuid(rhs.structureGuid),
@@ -102,6 +102,8 @@ namespace JinEngine
 				else
 					return nullptr;
 			}
+		public:
+
 		protected:
 			Type* Get(const uint index)const noexcept
 			{
@@ -208,6 +210,10 @@ namespace JinEngine
 			{
 				return (handle.structureGuid == guid && handle.IsValid() && arrState[handle.index]) &&
 					arrNumber[handle.index] == handle.validNumber;
+			}
+			bool CanAdd()const noexcept
+			{
+				return HasValidIndex();
 			}
 		private:
 			JDataHandle SuccessProcess() noexcept

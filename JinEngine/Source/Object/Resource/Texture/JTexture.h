@@ -6,7 +6,7 @@
 namespace JinEngine
 {
 	class JTexturePrivate;
-	class JTexture final: public JResourceObject, public Graphic::JGraphicSingleResourceUserAccess
+	class JTexture final: public JResourceObject, public Graphic::JGraphicResourceUserAccess
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JTexture)
 		REGISTER_CLASS_IDENTIFIER_DEFAULT_LAZY_DESTRUCTION
@@ -53,7 +53,7 @@ namespace JinEngine
 		std::unique_ptr<JTextureImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
-		const Graphic::JGraphicSingleResourceUserInterface GraphicResourceUserInterface()const noexcept final;
+		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{

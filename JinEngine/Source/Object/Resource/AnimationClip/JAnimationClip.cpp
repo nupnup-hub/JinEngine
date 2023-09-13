@@ -1,6 +1,8 @@
 #include"JAnimationClip.h"
 #include"JAnimationClipPrivate.h"
 #include"JAnimationData.h"
+#include"../AnimationController/FSM/JAnimationTime.h"
+#include"../AnimationController/FSM/JAnimationUpdateData.h"
 #include"../JClearableInterface.h"
 #include"../JResourceObjectHint.h"
 #include"../JResourceObjectUserInterface.h"
@@ -18,11 +20,9 @@
 #include"../../../Core/File/JFileIOHelper.h" 
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Time/JGameTimer.h"
-#include"../../../Core/FSM/AnimationFSM/JAnimationTime.h"
-#include"../../../Core/FSM/AnimationFSM/JAnimationUpdateData.h"
 #include"../../../Core/Loader/FbxLoader/JFbxFileLoader.h"
+#include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Application/JApplicationProject.h"
-#include"../../../Utility/JCommonUtility.h"
 
  
 namespace JinEngine
@@ -116,9 +116,9 @@ namespace JinEngine
 			return isMatchClipSkeleton;
 		}
 	public:
-		void ClipEnter(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber, const float timeOffset)noexcept
+		void ClipEnter(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber, const float timeOffset)noexcept
 		{
-			Core::JAnimationTime& animationTime = updateData->diagramData[layerNumber].animationTimes[updateNumber];
+			JAnimationTime& animationTime = updateData->diagramData[layerNumber].animationTimes[updateNumber];
 			const float nowTime = updateData->timer->TotalTime();
 
 			animationTime.timePos = nowTime;
@@ -130,12 +130,12 @@ namespace JinEngine
 		void ClipClose()noexcept
 		{
 		}
-		void Update(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+		void Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 		{
-			//Core::JAnimationTime& animationTime, Core::JAnimationUpdateData* updateData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& worldTransform, float nowTime, float deltaTime
+			//JAnimationTime& animationTime, JAnimationUpdateData* updateData, JSkeletonAsset* srcSkeletonAsset, std::vector<DirectX::XMFLOAT4X4>& worldTransform, float nowTime, float deltaTime
 			//animationTime.timePos = nowTime;
 
-			Core::JAnimationTime& animationTime = updateData->diagramData[layerNumber].animationTimes[updateNumber];
+			JAnimationTime& animationTime = updateData->diagramData[layerNumber].animationTimes[updateNumber];
 			const float deltaTime = updateData->timer->DeltaTime();
 
 			animationTime.timePos += deltaTime;
@@ -158,10 +158,9 @@ namespace JinEngine
 			}
 			float localTime = animationTime.timePos - animationTime.startTime;
 			JSkeleton* tarSkeleton = clipSkeletonAsset->GetSkeleton().Get();
-			const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);;
-			const XMFLOAT4X4 identity = JMathHelper::Identity4x4();
-			DirectX::XMFLOAT4X4* worldTransform = updateData->diagramData[layerNumber].worldTransform[updateNumber];
-			worldTransform[0] = identity;
+			const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+			JMatrix4x4* worldTransform = updateData->diagramData[layerNumber].worldTransform[updateNumber];
+			worldTransform[0] = JMatrix4x4::Identity();
 
 			uint sampleSize = (uint)animationSample.size();
 			for (uint i = 0; i < sampleSize; ++i)
@@ -174,32 +173,28 @@ namespace JinEngine
 				if (localTime < animationSample[i].jointPose.front().stTime)
 				{
 					float lerpPercent = localTime / animationSample[i].jointPose[0].stTime;
-					const XMFLOAT3 initScale(1, 1, 1);
-					const XMFLOAT3 initTrans(0, 0, 0);
-					const XMFLOAT4 initRot(0, 0, 0, 0);
 
-					const XMVECTOR s0 = XMLoadFloat3(&initScale);
-					const XMVECTOR s1 = XMLoadFloat3(&animationSample[i].jointPose.front().Scale);
+					const XMVECTOR s0 = XMVectorSet(1.0f, 1.0f, 1.0f, 0.0f);
+					const XMVECTOR s1 = animationSample[i].jointPose.front().scale.ToXmV();
 
-					const XMVECTOR p0 = XMLoadFloat3(&initTrans);
-					const XMVECTOR p1 = XMLoadFloat3(&animationSample[i].jointPose.front().Translation);
+					const XMVECTOR p0 = XMVectorSet(0, 0, 0, 1.0f);
+					const XMVECTOR p1 = animationSample[i].jointPose.front().translation.ToXmV();
 
-					const XMVECTOR q0 = XMLoadFloat4(&initRot);
-					const XMVECTOR q1 = XMLoadFloat4(&animationSample[i].jointPose.front().RotationQuat);
+					const XMVECTOR q0 = XMVectorSet(0, 0, 0, 0);
+					const XMVECTOR q1 = animationSample[i].jointPose.front().rotationQuat.ToXmV();
 
 					const XMVECTOR S = XMVectorLerp(s0, s1, lerpPercent);
 					const XMVECTOR P = XMVectorLerp(p0, p1, lerpPercent);
 					const XMVECTOR Q = XMQuaternionSlerp(q0, q1, lerpPercent);
 
-					XMStoreFloat4x4(&worldTransform[i], XMMatrixAffineTransformation(S, zero, Q, P));
+					worldTransform[i].StoreXM(XMMatrixAffineTransformation(S, zero, Q, P));
 				}
 				else if (localTime >= animationSample[i].jointPose.back().stTime)
 				{
-					const XMVECTOR S = XMLoadFloat3(&animationSample[i].jointPose.back().Scale);
-					const XMVECTOR P = XMLoadFloat3(&animationSample[i].jointPose.back().Translation);
-					const XMVECTOR Q = XMLoadFloat4(&animationSample[i].jointPose.back().RotationQuat);
-
-					XMStoreFloat4x4(&worldTransform[i], XMMatrixAffineTransformation(S, zero, Q, P));
+					const XMVECTOR S = animationSample[i].jointPose.back().scale.ToXmV();
+					const XMVECTOR P = animationSample[i].jointPose.back().translation.ToXmV();
+					const XMVECTOR Q = animationSample[i].jointPose.back().rotationQuat.ToXmV();
+					worldTransform[i].StoreXM(XMMatrixAffineTransformation(S, zero, Q, P));
 				}
 				else
 				{
@@ -207,37 +202,36 @@ namespace JinEngine
 					const float lerpPercent = (localTime - animationSample[i].jointPose[sampleJointIndex].stTime)
 						/ (animationSample[i].jointPose[sampleJointIndex + 1].stTime - animationSample[i].jointPose[sampleJointIndex].stTime);
 
-					const XMVECTOR s0 = XMLoadFloat3(&animationSample[i].jointPose[sampleJointIndex].Scale);
-					const XMVECTOR s1 = XMLoadFloat3(&animationSample[i].jointPose[sampleJointIndex + 1].Scale);
+					const XMVECTOR s0 = animationSample[i].jointPose[sampleJointIndex].scale.ToXmV();
+					const XMVECTOR s1 = animationSample[i].jointPose[sampleJointIndex + 1].scale.ToXmV();
 
-					const XMVECTOR p0 = XMLoadFloat3(&animationSample[i].jointPose[sampleJointIndex].Translation);
-					const XMVECTOR p1 = XMLoadFloat3(&animationSample[i].jointPose[sampleJointIndex + 1].Translation);
+					const XMVECTOR p0 = animationSample[i].jointPose[sampleJointIndex].translation.ToXmV();
+					const XMVECTOR p1 = animationSample[i].jointPose[sampleJointIndex + 1].translation.ToXmV();
 
-					const XMVECTOR q0 = XMLoadFloat4(&animationSample[i].jointPose[sampleJointIndex].RotationQuat);
-					const XMVECTOR q1 = XMLoadFloat4(&animationSample[i].jointPose[sampleJointIndex + 1].RotationQuat);
+					const XMVECTOR q0 = animationSample[i].jointPose[sampleJointIndex].rotationQuat.ToXmV();
+					const XMVECTOR q1 = animationSample[i].jointPose[sampleJointIndex + 1].rotationQuat.ToXmV();
 
 					const XMVECTOR S = XMVectorLerp(s0, s1, lerpPercent);
 					const XMVECTOR P = XMVectorLerp(p0, p1, lerpPercent);
 					const XMVECTOR Q = XMQuaternionSlerp(q0, q1, lerpPercent);
 
-					XMStoreFloat4x4(&worldTransform[i], XMMatrixAffineTransformation(S, zero, Q, P));
+					worldTransform[i].StoreXM(XMMatrixAffineTransformation(S, zero, Q, P));
 				}
 				//Debug
 				//XMMATRIX bind = srcSkeletonAsset->GetSkeleton()->GetBindPose(i);
 				//XMStoreFloat4x4(&worldTransform[i], bind);
 			}
 		}
-		void UpdateUsingAvatar(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+		void UpdateUsingAvatar(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 		{
 			JAvatar* tarAvatar = clipSkeletonAsset->GetAvatar().Get();
 			JAvatar* srcAvatar = updateData->modelSkeleton->GetAvatar().Get();
 			JSkeleton* tarSkeleton = clipSkeletonAsset->GetSkeleton().Get();
 			JSkeleton* srcSkeleton = updateData->modelSkeleton->GetSkeleton().Get();
-
-			const XMFLOAT4X4 identity = JMathHelper::Identity4x4();
+			 
 			const XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-			DirectX::XMFLOAT4X4* worldTransform = updateData->diagramData[layerNumber].worldTransform[updateNumber];
-			worldTransform[0] = identity;
+			JMatrix4x4* worldTransform = updateData->diagramData[layerNumber].worldTransform[updateNumber];
+			worldTransform[0] = JMatrix4x4::Identity();
 
 			const size_t clipGuid = clipSkeletonAsset->GetGuid();
 
@@ -245,7 +239,7 @@ namespace JinEngine
 			for (uint i = 0; i < jointCount; ++i)
 				srcAvatar->jointInterpolation[i].isUpdated = false;
 
-			Core::JAnimationTime& animationTime = updateData->diagramData[layerNumber].animationTimes[updateNumber];
+			JAnimationTime& animationTime = updateData->diagramData[layerNumber].animationTimes[updateNumber];
 			float localTime = animationTime.timePos - animationTime.startTime;
 
 			for (uint i = 0; i < JSkeletonFixedData::avatarBoneIndexCount; ++i)
@@ -264,7 +258,7 @@ namespace JinEngine
 
 				const XMMATRIX tarWorldBindM = tarSkeleton->GetBindPose(tarIndex);
 				const XMMATRIX srcWorldBindM = srcSkeleton->GetBindPose(srcIndex);
-				const XMMATRIX additionalM = XMLoadFloat4x4(&updateData->additionalBind[clipGuid][i].transform);
+				const XMMATRIX additionalM = updateData->additionalBind[clipGuid][i].transform.LoadXM();
 				const XMMATRIX srcWorldBindModM = XMMatrixMultiply(additionalM, srcWorldBindM);
 				srcAvatar->jointInterpolation[srcIndex].isUpdated = true;
 
@@ -274,18 +268,15 @@ namespace JinEngine
 				if (localTime < animationSample[tarIndex].jointPose.front().stTime)
 				{
 					float lerpPercent = localTime / animationSample[i].jointPose[0].stTime;
-					const XMFLOAT3 initScale(1, 1, 1);
-					const XMFLOAT3 initTrans(0, 0, 0);
-					const XMFLOAT4 initRot(0, 0, 0, 0);
 
-					const XMVECTOR s0 = XMLoadFloat3(&initScale);
-					const XMVECTOR s1 = XMLoadFloat3(&animationSample[tarIndex].jointPose.front().Scale);
+					const XMVECTOR s0 = XMVectorSet(1.0f, 1.0f, 1.0f, 0.0f);
+					const XMVECTOR s1 = animationSample[tarIndex].jointPose.front().scale.ToXmV();
 
-					const XMVECTOR t0 = XMLoadFloat3(&initTrans);
-					const XMVECTOR t1 = XMLoadFloat3(&animationSample[tarIndex].jointPose.front().Translation);
+					const XMVECTOR t0 = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+					const XMVECTOR t1 = animationSample[tarIndex].jointPose.front().translation.ToXmV();
 
-					const XMVECTOR q0 = XMLoadFloat4(&initRot);
-					const XMVECTOR q1 = XMLoadFloat4(&animationSample[tarIndex].jointPose.front().RotationQuat);
+					const XMVECTOR q0 = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+					const XMVECTOR q1 = animationSample[tarIndex].jointPose.front().rotationQuat.ToXmV();
 
 					S = XMVectorLerp(s0, s1, lerpPercent);
 					T = XMVectorLerp(t0, t1, lerpPercent);
@@ -293,9 +284,9 @@ namespace JinEngine
 				}
 				else if (localTime >= animationSample[tarIndex].jointPose.back().stTime)
 				{
-					S = XMLoadFloat3(&animationSample[tarIndex].jointPose.back().Scale);
-					T = XMLoadFloat3(&animationSample[tarIndex].jointPose.back().Translation);
-					Q = XMLoadFloat4(&animationSample[tarIndex].jointPose.back().RotationQuat);
+					S = animationSample[tarIndex].jointPose.back().scale.ToXmV();
+					T = animationSample[tarIndex].jointPose.back().translation.ToXmV();
+					Q = animationSample[tarIndex].jointPose.back().rotationQuat.ToXmV();
 				}
 				else
 				{
@@ -303,14 +294,14 @@ namespace JinEngine
 					const float lerpPercent = (localTime - animationSample[tarIndex].jointPose[sampleJointIndex].stTime)
 						/ (animationSample[tarIndex].jointPose[sampleJointIndex + 1].stTime - animationSample[tarIndex].jointPose[sampleJointIndex].stTime);
 
-					const XMVECTOR s0 = XMLoadFloat3(&animationSample[tarIndex].jointPose[sampleJointIndex].Scale);
-					const XMVECTOR s1 = XMLoadFloat3(&animationSample[tarIndex].jointPose[sampleJointIndex + 1].Scale);
+					const XMVECTOR s0 = animationSample[tarIndex].jointPose[sampleJointIndex].scale.ToXmV();
+					const XMVECTOR s1 = animationSample[tarIndex].jointPose[sampleJointIndex + 1].scale.ToXmV();
 
-					const XMVECTOR t0 = XMLoadFloat3(&animationSample[tarIndex].jointPose[sampleJointIndex].Translation);
-					const XMVECTOR t1 = XMLoadFloat3(&animationSample[tarIndex].jointPose[sampleJointIndex + 1].Translation);
+					const XMVECTOR t0 = animationSample[tarIndex].jointPose[sampleJointIndex].translation.ToXmV();
+					const XMVECTOR t1 = animationSample[tarIndex].jointPose[sampleJointIndex + 1].translation.ToXmV();
 
-					const XMVECTOR q0 = XMLoadFloat4(&animationSample[tarIndex].jointPose[sampleJointIndex].RotationQuat);
-					const XMVECTOR q1 = XMLoadFloat4(&animationSample[tarIndex].jointPose[sampleJointIndex + 1].RotationQuat);
+					const XMVECTOR q0 = animationSample[tarIndex].jointPose[sampleJointIndex].rotationQuat.ToXmV();
+					const XMVECTOR q1 = animationSample[tarIndex].jointPose[sampleJointIndex + 1].rotationQuat.ToXmV();
 
 					S = XMVectorLerp(s0, s1, lerpPercent);
 					T = XMVectorLerp(t0, t1, lerpPercent);
@@ -351,7 +342,7 @@ namespace JinEngine
 
 				const XMMATRIX onlyAnimationModM = XMMatrixAffineTransformation(animationModS, zero, animationModQ, animationModT);
 				const XMMATRIX worldModM = XMMatrixMultiply(onlyAnimationModM, srcWorldBindModM);
-				XMStoreFloat4x4(&worldTransform[srcIndex], worldModM);
+				worldTransform[srcIndex].StoreXM(worldModM);
 				//XMStoreFloat4x4(&worldTransform[srcIndex], srcWorldBindModM);	
 			}
 
@@ -361,14 +352,14 @@ namespace JinEngine
 				{
 					const uint8 parentIndex = srcSkeleton->GetJointParentIndex(i);
 
-					const XMVECTOR tV = XMLoadFloat3(&srcAvatar->jointInterpolation[i].translation);
-					const XMVECTOR qV = XMLoadFloat4(&srcAvatar->jointInterpolation[i].quaternion);
-					const XMVECTOR sV = XMVectorSet(1, 1, 1, 0);
+					const XMVECTOR tV = srcAvatar->jointInterpolation[i].translation.ToXmV();
+					const XMVECTOR qV = srcAvatar->jointInterpolation[i].quaternion.ToXmV();
+					const XMVECTOR sV = XMVectorSet(1.0f, 1.0f, 1.0f, 0.0f);
 					const XMMATRIX local = XMMatrixAffineTransformation(sV, zero, qV, tV);
-					const XMMATRIX parentAniWorld = XMLoadFloat4x4(&worldTransform[parentIndex]);
+					const XMMATRIX parentAniWorld = worldTransform[parentIndex].LoadXM();
 					const XMMATRIX finalM = XMMatrixMultiply(local, parentAniWorld);
 
-					XMStoreFloat4x4(&worldTransform[i], finalM);
+					worldTransform[i].StoreXM(finalM);
 				}
 			}
 			/*JDebugTimer::StopGameTimer();
@@ -439,9 +430,9 @@ namespace JinEngine
 				res->animationSample[i].jointPose.resize(jointCount);
 				for (uint j = 0; j < jointCount; ++j)
 				{
-					JFileIOHelper::LoadXMFloat4(stream, res->animationSample[i].jointPose[j].RotationQuat);
-					JFileIOHelper::LoadXMFloat3(stream, res->animationSample[i].jointPose[j].Translation);
-					JFileIOHelper::LoadXMFloat3(stream, res->animationSample[i].jointPose[j].Scale);
+					JFileIOHelper::LoadVector4(stream, res->animationSample[i].jointPose[j].rotationQuat);
+					JFileIOHelper::LoadVector3(stream, res->animationSample[i].jointPose[j].translation);
+					JFileIOHelper::LoadVector3(stream, res->animationSample[i].jointPose[j].scale);
 					JFileIOHelper::LoadAtomicData(stream, res->animationSample[i].jointPose[j].stTime);
 				}
 			}
@@ -466,9 +457,9 @@ namespace JinEngine
 				const uint jointCount = (uint)animationSample[i].jointPose.size();
 				for (uint j = 0; j < jointCount; ++j)
 				{
-					JFileIOHelper::StoreXMFloat4(stream, L"Quaternion:", animationSample[i].jointPose[j].RotationQuat);
-					JFileIOHelper::StoreXMFloat3(stream, L"Translation:", animationSample[i].jointPose[j].Translation);
-					JFileIOHelper::StoreXMFloat3(stream, L"Scale:", animationSample[i].jointPose[j].Scale);
+					JFileIOHelper::StoreVector4(stream, L"Quaternion:", animationSample[i].jointPose[j].rotationQuat);
+					JFileIOHelper::StoreVector3(stream, L"translation:", animationSample[i].jointPose[j].translation);
+					JFileIOHelper::StoreVector3(stream, L"scale:", animationSample[i].jointPose[j].scale);
 					JFileIOHelper::StoreAtomicData(stream, L"StTime:", animationSample[i].jointPose[j].stTime);
 				}
 			}
@@ -488,7 +479,7 @@ namespace JinEngine
 			updateFramePerSecond = framePerSecond;
 
 			bool(*ptr)(JSkeletonAsset*, size_t) = [](JSkeletonAsset* skel, size_t hash){return skel->GetSkeletonHash() == hash;};			 
-		    auto userPtr = _JResourceManager::Instance().GetResourceByCondition<JSkeletonAsset>(ptr, std::move(skeletonHash));
+		    auto userPtr = _JResourceManager::Instance().GetByCondition(ptr, false, std::move(skeletonHash));
 			if (userPtr != nullptr)
 				SetClipSkeletonAsset(userPtr);
 			
@@ -656,7 +647,7 @@ namespace JinEngine
 	{
 		return Core::JValidInterface::IsValid() && (impl->clipSkeletonAsset.IsValid());
 	}
-	void JAnimationClip::ClipEnter(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber, const float timeOffset)noexcept
+	void JAnimationClip::ClipEnter(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber, const float timeOffset)noexcept
 	{	
 		impl->ClipEnter(updateData, layerNumber, updateNumber, timeOffset);
 	}
@@ -664,7 +655,7 @@ namespace JinEngine
 	{
 		impl->ClipClose();
 	}
-	void JAnimationClip::Update(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
+	void JAnimationClip::Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept
 	{ 
 		impl->Update(updateData, layerNumber, updateNumber);
 	}
@@ -677,9 +668,9 @@ namespace JinEngine
 	}
 	void JAnimationClip::DoDeActivate()noexcept
 	{
-		JResourceObject::DoDeActivate();
 		impl->ClearResource();
 		impl->OffResourceRef();
+		JResourceObject::DoDeActivate();
 	}
 	JAnimationClip::JAnimationClip(InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JAnimationClipImpl>(initData, this))
@@ -713,8 +704,8 @@ namespace JinEngine
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
 	{
-		JResourceObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		static_cast<JAnimationClip*>(ptr)->impl->DeRegisterPreDestruction();
+		JResourceObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 
 	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)

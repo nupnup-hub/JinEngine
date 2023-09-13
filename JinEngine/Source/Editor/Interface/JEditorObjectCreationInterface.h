@@ -5,10 +5,10 @@
 #include"../../Object/GameObject/JGameObject.h"
 #include"../../Core/Empty/JEmptyType.h"
 #include"../../Core/Identity/JIdentifier.h"
+#include"../../Core/Utility/JCommonUtility.h"
 #include"../../Core/Handle/JDataHandleStructure.h"
 #include"../Interface/JEditorTransitionInterface.h"
-
-#include"../../Utility/JCommonUtility.h"
+ 
 #include<memory>
 #include<vector>
 
@@ -232,7 +232,7 @@ namespace JinEngine
 
 				if (isReleased && editorWnd != nullptr && creationHint.notifyPtr != nullptr)
 				{
-					JEditorPushSelectObjectEvStruct selectEv{ editorWnd->GetOwnerPageType(), editorWnd->GetWindowType(), Core::GetUserPtr(ptr) };
+					JEditorPushSelectObjectEvStruct selectEv{ editorWnd->GetOwnerPageType(), editorWnd->GetWindowType(), Core::GetUserPtr(ptr), JEditorEvStruct::RANGE::ALL };
 					(editorWnd->*creationHint.notifyPtr)(*JEditorEvent::EvInterface(), editorWnd->GetGuid(), J_EDITOR_EVENT::PUSH_SELECT_OBJECT, &selectEv);
 				}
 

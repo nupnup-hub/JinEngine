@@ -15,6 +15,26 @@ namespace JinEngine
 		JEditorEvStruct::JEditorEvStruct(const J_EDITOR_PAGE_TYPE pageType)
 			:pageType(pageType)
 		{}
+		JEditorEvStruct::JEditorEvStruct(const J_EDITOR_PAGE_TYPE pageType, const RANGE evRange)
+			: pageType(pageType), evRange(evRange)
+		{}
+		bool JEditorEvStruct::AllowExecuteCallerEv()const noexcept
+		{
+			return Core::HasSQValueEnum(evRange, RANGE::CALLER);
+		}
+		bool JEditorEvStruct::AllowExecuteOtherEv()const noexcept
+		{
+			return Core::HasSQValueEnum(evRange, RANGE::OTHERS);
+		}
+		bool JEditorEvStruct::CanExecuteCallerEv(const size_t senderGuid, const size_t reciverGuid)
+		{
+			return AllowExecuteCallerEv() && senderGuid == reciverGuid;
+		}
+		bool JEditorEvStruct::CanExecuteOtherEv(const size_t senderGuid, const size_t reciverGuid)
+		{
+			return AllowExecuteOtherEv() && senderGuid != reciverGuid;
+		}
+
 		JEditorMouseClickEvStruct::JEditorMouseClickEvStruct(const std::string& windowName, const uint clickBtn, const J_EDITOR_PAGE_TYPE pageType)
 			: JEditorEvStruct(pageType), windowName(windowName), clickBtn(clickBtn)
 		{}
@@ -29,15 +49,17 @@ namespace JinEngine
 
 		JEditorPushSelectObjectEvStruct::JEditorPushSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType,
 			const J_EDITOR_WINDOW_TYPE wndType,
-			JUserPtr<Core::JIdentifier> selectObj)
-			:JEditorEvStruct(pageType), wndType(wndType)
+			JUserPtr<Core::JIdentifier> selectObj,
+			const RANGE evRange)
+			:JEditorEvStruct(pageType, evRange), wndType(wndType)
 		{
 			selectObjVec.push_back(selectObj);
 		}
 		JEditorPushSelectObjectEvStruct::JEditorPushSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType,
 			const J_EDITOR_WINDOW_TYPE wndType,
-			const std::vector<JUserPtr<Core::JIdentifier>> selectObj)
-			: JEditorEvStruct(pageType), wndType(wndType), selectObjVec(selectObj)
+			const std::vector<JUserPtr<Core::JIdentifier>> selectObj,
+			const RANGE evRange)
+			: JEditorEvStruct(pageType, evRange), wndType(wndType), selectObjVec(selectObj)
 		{}
 		bool JEditorPushSelectObjectEvStruct::PassDefectInspection()const noexcept
 		{
@@ -68,13 +90,17 @@ namespace JinEngine
 			return JUserPtr<Core::JIdentifier>{};
 		}
 
-		JEditorPopSelectObjectEvStruct::JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, JUserPtr<Core::JIdentifier> selectObj)
-			:JEditorEvStruct(pageType)
+		JEditorPopSelectObjectEvStruct::JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, 
+			JUserPtr<Core::JIdentifier> selectObj,
+			const RANGE evRange)
+			:JEditorEvStruct(pageType, evRange)
 		{
 			selectObjVec.push_back(selectObj);
 		}
-		JEditorPopSelectObjectEvStruct::JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const std::vector<JUserPtr<Core::JIdentifier>> selectObj)
-			: JEditorEvStruct(pageType), selectObjVec(selectObj)
+		JEditorPopSelectObjectEvStruct::JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, 
+			const std::vector<JUserPtr<Core::JIdentifier>> selectObj,
+			const RANGE evRange)
+			: JEditorEvStruct(pageType, evRange), selectObjVec(selectObj)
 		{}
 		bool JEditorPopSelectObjectEvStruct::PassDefectInspection()const noexcept
 		{
@@ -94,8 +120,8 @@ namespace JinEngine
 			return false;
 		}
 
-		JEditorClearSelectObjectEvStruct::JEditorClearSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType)
-			:JEditorEvStruct(pageType)
+		JEditorClearSelectObjectEvStruct::JEditorClearSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const RANGE evRange)
+			:JEditorEvStruct(pageType, evRange)
 		{}
 		bool JEditorClearSelectObjectEvStruct::PassDefectInspection()const noexcept
 		{
@@ -183,6 +209,55 @@ namespace JinEngine
 		{
 			return J_EDITOR_EVENT::UNFOCUS_PAGE;
 		}
+
+		JEditorMaximizePageEvStruct::JEditorMaximizePageEvStruct(JEditorPage* page,
+			const JVector2F& prePagePos,
+			const JVector2F& prePageSize)
+			:JEditorEvStruct(page->GetPageType()),
+			page(page),
+			prePagePos(prePagePos),
+			prePageSize(prePageSize)
+		{}
+		bool JEditorMaximizePageEvStruct::PassDefectInspection()const noexcept
+		{
+			return page != nullptr;
+		}
+		J_EDITOR_EVENT JEditorMaximizePageEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::MAXIMIZE_PAGE;
+		}
+
+		JEditorMinimizePageEvStruct::JEditorMinimizePageEvStruct(JEditorPage* page,
+			const JVector2F& prePagePos,
+			const JVector2F& prePageSize,
+			const float height)
+			:JEditorEvStruct(page->GetPageType()),
+			page(page),
+			prePagePos(prePagePos),
+			prePageSize(prePageSize),
+			height(height)
+		{}
+		bool JEditorMinimizePageEvStruct::PassDefectInspection()const noexcept
+		{
+			return page != nullptr;
+		}
+		J_EDITOR_EVENT JEditorMinimizePageEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::MINIMIZE_PAGE;
+		}
+
+		JEditorPreviousSizePageEvStruct::JEditorPreviousSizePageEvStruct(JEditorPage* page, const bool useLazy)
+			:JEditorEvStruct(page->GetPageType()), page(page), useLazy(useLazy)
+		{}
+		bool JEditorPreviousSizePageEvStruct::PassDefectInspection()const noexcept
+		{
+			return page != nullptr;
+		}
+		J_EDITOR_EVENT JEditorPreviousSizePageEvStruct::GetEventType()const noexcept
+		{
+			return J_EDITOR_EVENT::PREVIOUS_SIZE_PAGE;
+		}
+
 
 		JEditorOpenWindowEvStruct::JEditorOpenWindowEvStruct(const std::string& openWindowName, const J_EDITOR_PAGE_TYPE pageType)
 			:JEditorEvStruct(pageType), openWindowName(openWindowName)
@@ -294,8 +369,13 @@ namespace JinEngine
 			return J_EDITOR_EVENT::CLOSE_POPUP_WINDOW;
 		}
 
-		JEditorMaximizeWindowEvStruct::JEditorMaximizeWindowEvStruct(JEditorWindow* wnd)
-			: JEditorEvStruct(wnd->GetOwnerPageType()), wnd(wnd)
+		JEditorMaximizeWindowEvStruct::JEditorMaximizeWindowEvStruct(JEditorWindow* wnd,
+			const JVector2F& preWindowPos, 
+			const JVector2F& preWindowSize)
+			: JEditorEvStruct(wnd->GetOwnerPageType()),
+			wnd(wnd),
+			preWindowPos(preWindowPos),
+			preWindowSize(preWindowSize)
 		{}
 		bool JEditorMaximizeWindowEvStruct::PassDefectInspection()const noexcept
 		{
@@ -306,8 +386,8 @@ namespace JinEngine
 			return J_EDITOR_EVENT::MAXIMIZE_WINDOW;
 		}
 
-		JEditorPreviousSizeWindowEvStruct::JEditorPreviousSizeWindowEvStruct(JEditorWindow* wnd)
-			: JEditorEvStruct(wnd->GetOwnerPageType()), wnd(wnd)
+		JEditorPreviousSizeWindowEvStruct::JEditorPreviousSizeWindowEvStruct(JEditorWindow* wnd, const bool useLazy)
+			: JEditorEvStruct(wnd->GetOwnerPageType()), wnd(wnd), useLazy(useLazy)
 		{}
 		bool JEditorPreviousSizeWindowEvStruct::PassDefectInspection()const noexcept
 		{ 

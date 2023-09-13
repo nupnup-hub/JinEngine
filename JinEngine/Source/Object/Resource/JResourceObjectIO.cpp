@@ -10,12 +10,12 @@
 #include"../Directory/JDirectoryPrivate.h" 
 #include"../Directory/JFile.h" 
 #include"../Directory/JFileInitData.h"
-#include"../../Core/JDataType.h"
+#include"../../Core/JCoreEssential.h"
 #include"../../Core/Identity/JIdenCreator.h"
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/File/JFilePathData.h"
 #include"../../Core/File/JFileIOHelper.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../../Core/Utility/JCommonUtility.h"
 #include"../../Graphic/JGraphic.h"
 #include"../../Graphic/GraphicResource/JGraphicResourceManager.h"
 #include"../../Application/JApplicationEngine.h"  
@@ -74,11 +74,16 @@ namespace JinEngine
 	}
 	void JResourceObjectIO::LoadProjectDirectory(const JUserPtr<JDirectory>& projectRootDir)
 	{
+		//has count dependency
+		//defaultFolderCash
+		//flag
+		//subDirFlag
+		//defaultFolderCash indexing
 		std::vector<std::wstring> defaultFolderPath
 		{
-			JApplicationProject::SettingPath(),
+			JApplicationProject::ConfigPath(),
 			JApplicationProject::ProjectResourcePath(),
-			JApplicationProject::LogPath(),
+			JApplicationProject::DocumentPath(), 
 			JApplicationProject::ContentsPath(),
 		};
 
@@ -93,7 +98,7 @@ namespace JinEngine
 		std::vector<JUserPtr<JDirectory>> defaultFolderCash;
 		for (uint i = 0; i < defaultFolderPath.size(); ++i)
 		{
-			Core::JAssetFileLoadPathData pathData{ defaultFolderPath[i] }; 
+			Core::JAssetFileLoadPathData pathData{ defaultFolderPath[i] };   
 			if (_waccess(pathData.engineFileWPath.c_str(), 00) != -1 &&
 				_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
 			{
@@ -112,13 +117,14 @@ namespace JinEngine
 		// defaultFolderCash[2] = projectLog
 		// defaultFolderCash[3] = projectContentsDir
 
+		//subDir Flag
 		const J_OBJECT_FLAG projectOtherDirFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE);
 		const J_OBJECT_FLAG projectContentDirFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE);
 		const J_OBJECT_FLAG userDefineDirFlag = OBJECT_FLAG_NONE;
 
 		SearchDirectory(defaultFolderCash[0], true, true, projectOtherDirFlag);
 		SearchDirectory(defaultFolderCash[1], true, false, projectOtherDirFlag);	// default resource has folder
-		SearchDirectory(defaultFolderCash[2], true, false, projectOtherDirFlag);
+		SearchDirectory(defaultFolderCash[2], true, false, projectOtherDirFlag); 
 		SearchDirectory(defaultFolderCash[3], true, true, projectContentDirFlag);
 		SearchDirectory(defaultFolderCash[3], true, false, userDefineDirFlag);
 	}
@@ -159,7 +165,7 @@ namespace JinEngine
 				return;
 		}
 	}
-	void JResourceObjectIO::SearchDirectory(const JUserPtr<JDirectory>& parentDir, const bool searchProjectFolder, const bool onlyDeafultFolder, const J_OBJECT_FLAG dirFlag)
+	void JResourceObjectIO::SearchDirectory(const JUserPtr<JDirectory>& parentDir, const bool searchProjectFolder, const bool onlyDeafultFolder, const J_OBJECT_FLAG subDirFlag)
 	{ 
 		WIN32_FIND_DATA  findFileData;
 		HANDLE hFindFile = FindFirstFile((parentDir->GetPath() + L"\\*.*").c_str(), &findFileData);
@@ -190,13 +196,13 @@ namespace JinEngine
 								next = Core::ConvertChildUserPtr<JDirectory>(DirIOInterface::LoadAssetData(loadData.get()));
 							}
 							else
-								next = JICI::Create<JDirectory>(pathData.name, Core::MakeGuid(), dirFlag, parentDir);
+								next = JICI::Create<JDirectory>(pathData.name, Core::MakeGuid(), subDirFlag, parentDir);
 						}
 					}
 					else
 						next = parentDir->GetChildDirctoryByName(findFileData.cFileName); 
 					if (next != nullptr)
-						SearchDirectory(next, searchProjectFolder, onlyDeafultFolder, dirFlag);
+						SearchDirectory(next, searchProjectFolder, onlyDeafultFolder, subDirFlag);
 				}
 			}
 			bResult = FindNextFile(hFindFile, &findFileData);
@@ -244,17 +250,20 @@ namespace JinEngine
 
 		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamObjGuidSymbol()))
 			return;
-
 		size_t guid = 0;
 		stream >> guid;
 
 		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeGuidSymbol()))
 			return;
-
 		size_t typeGuid = 0;
 		stream >> typeGuid;
-		Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
 
+		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamObjFlagSymbol()))
+			return;
+		int flag = -1;
+		stream >> flag;
+
+		Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
 		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>()))
 			return;
 
@@ -272,7 +281,7 @@ namespace JinEngine
 
 		int formatIndex = 0;
 		stream >> formatIndex;
-		JFileInitData initData(pathData.name, guid, *typeInfo, storedRType, (uint8)formatIndex);
+		JFileInitData initData(pathData.name, guid, *typeInfo, storedRType, (J_OBJECT_FLAG)flag, (uint8)formatIndex);
 
 		if (storedRType == J_RESOURCE_TYPE::SCENE)
 		{

@@ -2,22 +2,21 @@
 #include"../../Geometry/JDirectXCollisionEx.h"
 #include"../../Guid/JGuidCreator.h"
 #include"../../File/JFilePathData.h"
+#include"../../Utility/JCommonUtility.h"
+#include"../../Math/JMathHelper.h"  
 //#include"../../File/JFileIOHelper.h"
 #include"../../../Object/Resource/Mesh/JMeshStruct.h"
-#include"../../../Object/Resource/Mesh/JMeshGeometry.h" 
-#include"../../../Utility/JCommonUtility.h"
-#include"../../../Utility/JMathHelper.h"
+#include"../../../Object/Resource/Mesh/JMeshGeometry.h"  
 
 #include<fstream>
 #include<io.h>
 
 //수정필요
 namespace JinEngine
-{
-	using namespace DirectX;
+{ 
 	namespace Core
 	{
-		JObjFileLoaderImpl::FaceInfo::FaceInfo(const std::vector<XMINT3>& ptn)
+		JObjFileLoaderImpl::FaceInfo::FaceInfo(const std::vector<JVector3<int>>& ptn)
 			:ptn(ptn)
 		{
 			hasUV = true;
@@ -37,9 +36,9 @@ namespace JinEngine
 			std::wstring materialLibName;
 			std::vector<std::wstring> meshName;
 			std::vector<std::wstring> materialName;
-			std::vector<XMFLOAT3> position;
-			std::vector<XMFLOAT2> texture;
-			std::vector<XMFLOAT3> normal;
+			std::vector<JVector3<float>> position;
+			std::vector<JVector2<float>> texture;
+			std::vector<JVector3<float>> normal;
 			std::vector<uint> index;
 			std::vector<uint>vertexCount;
 			std::vector<uint>indexCount;
@@ -84,7 +83,7 @@ namespace JinEngine
 				{
 					stream >> x >> y >> z;
 					DetectNan(x, y, z);
-					position.emplace_back(SetLeftHand(DirectX::XMFLOAT3(x,y,z)));
+					position.emplace_back(SetLeftHand(JVector3<float>(x,y,z)));
 					++vertexCount[meshCount - 1];
 				}
 				else if (next == L"vt")
@@ -97,13 +96,13 @@ namespace JinEngine
 				{
 					stream >> x >> y >> z;
 					DetectNan(x, y, z);
-					normal.emplace_back(SetLeftHand(DirectX::XMFLOAT3(x, y, z))); 
+					normal.emplace_back(SetLeftHand(JVector3<float>(x, y, z))); 
 				}
 				else if (next == L"f")
 				{
 					std::getline(stream, next);
 					next = JCUtil::EraseSideWChar(next, L' ');
-					std::vector<XMINT3> ptn;
+					std::vector<JVector3<int>> ptn;
 					while (next.size() > 0)
 					{
 						int spaceIndex = next.find_first_of(' ');
@@ -194,7 +193,7 @@ namespace JinEngine
 			if (hasTangent && isSameFace)
 			{
 				 /*
-				 std::vector<XMFLOAT4> tangent(totalVertex.size());
+				 std::vector<JVector4<float>> tangent(totalVertex.size());
 				const uint totalVertexCount = (uint)totalVertex.size();
 				for (int i = 0; i < totalVertexCount; ++i)
 				{
@@ -275,17 +274,17 @@ namespace JinEngine
 				else if (next == L"Ka")
 				{
 					stream >> x >> y >> z;
-					objMatData[matCount].ambient = XMFLOAT4(x, y, z, 1);
+					objMatData[matCount].ambient = JVector4<float>(x, y, z, 1);
 				}
 				else if (next == L"Kd")
 				{
 					stream >> x >> y >> z;
-					objMatData[matCount].albedo = XMFLOAT4(x, y, z, 1);
+					objMatData[matCount].albedo = JVector4<float>(x, y, z, 1);
 				}
 				else if (next == L"Ks")
 				{
 					stream >> x >> y >> z;
-					objMatData[matCount].specular = XMFLOAT4(x, y, z, 1);
+					objMatData[matCount].specular = JVector4<float>(x, y, z, 1);
 				}
 				else if (next == L"Ns")
 				{
@@ -403,11 +402,11 @@ namespace JinEngine
 			y = std::isnan(y) || std::isinf(y) ? 0 : y;
 			z = std::isnan(z) || std::isinf(z) ? 0 : z;
 		}
-		DirectX::XMFLOAT3 JObjFileLoaderImpl::SetLeftHand(const DirectX::XMFLOAT3& v)noexcept
+		JVector3<float> JObjFileLoaderImpl::SetLeftHand(const JVector3<float>& v)noexcept
 		{ 
 			//수정필요
-			return DirectX::XMFLOAT3(v.x, v.y, v.z);
-			//return DirectX::XMFLOAT3(v.x, v.y, v.z);
+			return JVector3<float>(v.x, v.y, v.z);
+			//return JVector3<float>(v.x, v.y, v.z);
 		}
 		size_t JObjFileLoaderImpl::MakeVertexGuid(const uint x, const uint y, const uint z)
 		{

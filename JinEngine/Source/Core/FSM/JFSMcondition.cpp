@@ -214,8 +214,8 @@ namespace JinEngine
 
 		void DestroyInstanceInterface::Clear(JIdentifier* ptr, const bool isForced)
 		{
-			JFSMinterfacePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 			static_cast<JFSMcondition*>(ptr)->impl->Clear();
+			JFSMinterfacePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		}
 		void DestroyInstanceInterface::DeRegisterCash(JIdentifier* ptr)noexcept
 		{

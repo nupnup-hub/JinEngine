@@ -64,10 +64,10 @@ namespace JinEngine
 
 				for (uint i = 0; i < vertexCount; ++i)
 				{
-					JFileIOHelper::LoadXMFloat3(stream, vertices[i].position);
-					JFileIOHelper::LoadXMFloat3(stream, vertices[i].normal);
-					JFileIOHelper::LoadXMFloat2(stream, vertices[i].texC);
-					JFileIOHelper::LoadXMFloat3(stream, vertices[i].tangentU);
+					JFileIOHelper::LoadVector3(stream, vertices[i].position);
+					JFileIOHelper::LoadVector3(stream, vertices[i].normal);
+					JFileIOHelper::LoadVector2(stream, vertices[i].texC);
+					JFileIOHelper::LoadVector3(stream, vertices[i].tangentU);
 				}
 
 				JFileIOHelper::LoadAtomicDataVec(stream, indices);
@@ -125,10 +125,10 @@ namespace JinEngine
 				for (uint i = 0; i < vertexCount; ++i)
 				{
 					JStaticMeshVertex vertices = staticData->GetVertex(i);
-					JFileIOHelper::StoreXMFloat3(stream, L"P:", vertices.position);
-					JFileIOHelper::StoreXMFloat3(stream, L"N:", vertices.normal);
-					JFileIOHelper::StoreXMFloat2(stream, L"U:", vertices.texC);
-					JFileIOHelper::StoreXMFloat3(stream, L"T:", vertices.tangentU);
+					JFileIOHelper::StoreVector3(stream, L"P:", vertices.position);
+					JFileIOHelper::StoreVector3(stream, L"N:", vertices.normal);
+					JFileIOHelper::StoreVector2(stream, L"U:", vertices.texC);
+					JFileIOHelper::StoreVector3(stream, L"T:", vertices.tangentU);
 				}
 				JFileIOHelper::StoreAtomicDataVec(stream, L"Index:", staticData->GetIndexVector(), 6);
 

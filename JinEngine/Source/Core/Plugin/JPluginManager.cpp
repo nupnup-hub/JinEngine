@@ -3,7 +3,7 @@
 #include"JPlugin.h" 
 #include"JPluginPrivate.h" 
 #include"../File/JXmlHelper.h"
-#include"../../Utility/JCommonUtility.h" 
+#include"../Utility/JCommonUtility.h" 
 #include<unordered_map>
 
 namespace JinEngine::Core
@@ -57,6 +57,7 @@ namespace JinEngine::Core
 				return false;
 
 			pMap.emplace(guid, std::move(newP));
+			return true;
 		}
 		bool RemovePlugin(const size_t guid)
 		{
@@ -87,7 +88,7 @@ namespace JinEngine::Core
 			return PluginIOInteface::StorePlugin(p);
 		}
 	public:
-		JPluginInterface* TryAddPlugin(const std::wstring& name,
+		JPluginInterface* Plugin(const std::wstring& name,
 			const std::wstring& folderPath,
 			const std::vector<JUserPtr<JModule>>& modVec,
 			JPluginDesc desc)
@@ -148,7 +149,7 @@ namespace JinEngine::Core
 		const std::vector<JUserPtr<JModule>>& modVec,
 		JPluginDesc desc)
 	{
-		return impl->TryAddPlugin(name, folderPath, modVec, desc);
+		return impl->Plugin(name, folderPath, modVec, desc);
 	}
 	JPluginManager::JPluginManager()
 		:impl(std::make_unique<JPluginManagerImpl>())
@@ -158,9 +159,8 @@ namespace JinEngine::Core
 		impl.reset();
 	}
 
-	using AppInterface = JPluginManagerPrivate::AppInterface;
-
-	void AppInterface::Clear()
+	using MainAccess = JPluginManagerPrivate::MainAccess;
+	void MainAccess::Clear()
 	{ 
 		_JPluginManager::Instance().impl->Clear();
 	}

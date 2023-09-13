@@ -30,8 +30,8 @@
 #include"../../Core/Exception/JExceptionMacro.h"
 #include"../../Core/Guid/JGuidCreator.h" 
 #include"../../Core/Func/Functor/JFunctor.h"
+#include"../../Core/Utility/JCommonUtility.h"
 
-#include"../../Utility/JCommonUtility.h"
 #include"../../Application/JApplicationEngine.h"
 #include"../../Application/JApplicationProject.h"
 //#include"../../Core/Geometry/JDirectXCollisionEx.h"
@@ -85,10 +85,13 @@ namespace JinEngine
 			//StoreProjectResource();
 			auto rTypeInfoVec = RTypeCommonCall::GetTypeInfoVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY_REVERSE, false);
 			for (const auto& type : rTypeInfoVec)
-			{ 
+			{
 				auto ptrVec = type->GetInstanceRawPtrVec();
-				for (const auto& rawPtr : ptrVec)
+				for (auto& rawPtr : ptrVec)
+				{
 					JResourceObjectPrivate::DestroyInstanceInterfaceEx::BeginForcedDestroy(static_cast<JResourceObject*>(rawPtr));
+					rawPtr = nullptr;
+				}
 			} 
 
 			defaultData->Clear();
@@ -182,7 +185,7 @@ namespace JinEngine
 			uint handleIncrement = 0;// JGraphic::Instance(DeviceInterface()->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 			uint textureCount = (uint)textureType.size();
 			JUserPtr<JDirectory> textureDir = thisManager->GetDirectory(JApplicationEngine::DefaultResourcePath());
- 
+
 			//1 is imgui preserved 
 			for (uint i = 0; i < textureCount; ++i)
 			{
@@ -207,7 +210,7 @@ namespace JinEngine
 					JUserPtr<JTexture> newTexture = JICI::Create<JTexture>(name, guid, objFlag, JResourceObject::GetFormatIndex<JTexture>(format),textureDir, oriPath, gTextureType);
 					ThrowIfFailedN(newTexture != nullptr);
 					defaultData->RegisterDefaultResource(textureType[i], textureDir->SearchFile(guid), isUse);
-					StoreResource(newTexture);
+					StoreResource(newTexture); 				 
 				}
 			}
 		}
@@ -219,12 +222,12 @@ namespace JinEngine
 			{
 				const J_DEFAULT_GRAPHIC_SHADER type = (J_DEFAULT_GRAPHIC_SHADER)i;
 				const J_GRAPHIC_SHADER_FUNCTION shaderF = JDefaultShader::GetShaderFunction(type);
-				const JShaderGraphicPsoCondition psoCondition = JDefaultShader::GetShaderGraphicPso(type);
+				const JShaderCondition psoCondition = JDefaultShader::GetShaderGraphicPso(type);
 				const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
 				//use all default shader
 				const bool isUse = JDefaultShader::IsDefaultUse(type);
 				std::wstring shaderName = JShaderType::ConvertToName(shaderF, psoCondition.UniqueID());
-				JUserPtr<JFile> file = shaderDir->GetDirectoryFile(shaderName, format);
+				JUserPtr<JFile> file = shaderDir->GetDirectoryFileByFullName(shaderName, format);
 
 				if (file != nullptr)
 					defaultData->RegisterDefaultResource(type, file, isUse);
@@ -232,7 +235,7 @@ namespace JinEngine
 				{
 					JUserPtr<JShader> newShader = JICI::Create<JShader>(objF, shaderF, psoCondition);
 					ThrowIfFailedN(newShader != nullptr);
-					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFile(newShader->GetName(), format), isUse);
+					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFileByFullName(newShader->GetName(), format), isUse);
 				}
 			}
 
@@ -244,14 +247,14 @@ namespace JinEngine
 
 				const bool isUse = JDefaultShader::IsDefaultUse(type);
 				std::wstring shaderName = JShaderType::ConvertToName(shaderF);
-				JUserPtr<JFile> file = shaderDir->GetDirectoryFile(shaderName, format);
+				JUserPtr<JFile> file = shaderDir->GetDirectoryFileByFullName(shaderName, format);
 				if (file != nullptr)
 					defaultData->RegisterDefaultResource(type, file, isUse);
 				else
 				{
-					JUserPtr<JShader> newShader = JICI::Create<JShader>(objF, SHADER_FUNCTION_NONE, JShaderGraphicPsoCondition(), shaderF);
+					JUserPtr<JShader> newShader = JICI::Create<JShader>(objF, SHADER_FUNCTION_NONE, JShaderCondition(), shaderF);
 					ThrowIfFailedN(newShader != nullptr);
-					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFile(newShader->GetName(), format), isUse);
+					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFileByFullName(newShader->GetName(), format), isUse);
 				}
 			}
 		}
@@ -261,7 +264,7 @@ namespace JinEngine
 				const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
-				const XMFLOAT4& color,
+				const JVector4<float>& color,
 				const bool isLine) -> JUserPtr<JMaterial>
 			{	 
 				JUserPtr<JMaterial> newMaterial = JICI::Create<JMaterial>(name, guid,
@@ -300,71 +303,57 @@ namespace JinEngine
 						newMaterial = JICI::Create<JMaterial>(name, guid, flag, JMaterial::GetDefaultFormatIndex(), matDir);
 						JDefaultMaterialSetting::SetSky(newMaterial, thisManager->GetDefaultTexture(J_DEFAULT_TEXTURE::DEFAULT_SKY));
 						break;
-					}
-					case J_DEFAULT_MATERIAL::DEFAULT_SHADOW_MAP:
-					{
-						newMaterial = JICI::Create<JMaterial>(name, guid, 
-							Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), JMaterial::GetDefaultFormatIndex(), matDir);
-						JDefaultMaterialSetting::SetShadowMap(newMaterial); 
-						break;
-					}
+					} 
 					case J_DEFAULT_MATERIAL::DEBUG_RED:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.1f, 0.1f, 0.8f), false);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.75f, 0.1f, 0.1f, 0.8f), false);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_GREEN:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.75f, 0.1f, 0.8f), false);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.1f, 0.75f, 0.1f, 0.8f), false);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_BLUE:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.1f, 0.75f, 0.8f), false);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.1f, 0.1f, 0.75f, 0.8f), false);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_YELLOW:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.75f, 0.05f, 0.8f), false);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.75f, 0.75f, 0.05f, 0.8f), false);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_LINE_RED:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.1f, 0.1f, 0.8f), true);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.75f, 0.1f, 0.1f, 0.8f), true);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.75f, 0.1f, 0.8f), true);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.1f, 0.75f, 0.1f, 0.8f), true);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_LINE_BLUE:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.1f, 0.1f, 0.75f, 0.8f), true);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.1f, 0.1f, 0.75f, 0.8f), true);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.75f, 0.75f, 0.05f, 0.8f), true);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.75f, 0.75f, 0.05f, 0.8f), true);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_LINE_GRAY:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.325f, 0.325f, 0.325f, 0.8f), true);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.325f, 0.325f, 0.325f, 0.8f), true);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, XMFLOAT4(0.015f, 0.015f, 0.015f, 0.8f), true);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.015f, 0.015f, 0.015f, 0.8f), true);
 						break;
-					}
-					case J_DEFAULT_MATERIAL::DEFAULT_BOUNDING_OBJECT_DEPTH_TEST:
-					{
-						newMaterial = JICI::Create<JMaterial>(name, guid,
-							Core::AddSQValueEnum(flag, OBJECT_FLAG_HIDDEN), JMaterial::GetDefaultFormatIndex(), matDir);
-						newMaterial->SetBoundingObjectDepthTest(true); 
-						break;
-					}
+					} 
 					default:
 						break;
 					}
@@ -396,8 +385,8 @@ namespace JinEngine
 
 				const float cyilinderYOffset = (-cyilinderBBox.Center.y) + cyilinderBBox.Extents.y;
 				const float cubeYOffset = cyilinderYOffset + cyilinderBBox.Center.y + cyilinderBBox.Extents.y + cubeBBox.Center.y;
-				DirectX::XMFLOAT3 cyilinderOffset = DirectX::XMFLOAT3(0, cyilinderYOffset, 0);
-				DirectX::XMFLOAT3 cubeOffset = DirectX::XMFLOAT3(0, cubeYOffset, 0);
+				JVector3<float> cyilinderOffset = JVector3<float>(0, cyilinderYOffset, 0);
+				JVector3<float> cubeOffset = JVector3<float>(0, cubeYOffset, 0);
 
 				cyilinderMesh.AddPositionOffset(cyilinderOffset);
 				cubeMesh.AddPositionOffset(cubeOffset);
@@ -562,8 +551,8 @@ namespace JinEngine
 	}
 	JUserPtr<JDirectory> JResourceManager::GetDirectory(const std::wstring& path)const noexcept
 	{
-		bool(*ptr)(JDirectory*, const std::wstring&) = [](JDirectory* dir, const std::wstring& path){return dir->GetPath() == path;};
-		return GetDirectoryByCondition<JDirectory, const std::wstring&>(ptr, path);	 
+		bool(*ptr)(JDirectory*, const std::wstring*) = [](JDirectory* dir, const std::wstring* path){return dir->GetPath() == *path;};
+		return GetByCondition(ptr, false, &path);	 
 	}
 	JUserPtr<JDirectory> JResourceManager::GetProjectContentsDirectory()const noexcept
 	{
@@ -571,12 +560,12 @@ namespace JinEngine
 	}
 	JUserPtr<JDirectory> JResourceManager::GetEditorResourceDirectory()const noexcept
 	{
-		return GetDirectory(JApplicationProject::EditorSettingPath());
+		return GetDirectory(JApplicationProject::EditoConfigPath());
 	}
 	JUserPtr<JDirectory> JResourceManager::GetActivatedDirectory()const noexcept
 	{
 		bool(*ptr)(JDirectory*) = [](JDirectory* dir) {return dir->IsActivated(); };
-		return GetDirectoryByCondition(ptr);
+		return GetByCondition(ptr, false);
 	}
 	uint JResourceManager::GetResourceCount(const Core::JTypeInfo& info)const noexcept
 	{
@@ -587,18 +576,32 @@ namespace JinEngine
 		return Core::GetUserPtr<JResourceObject>(info.TypeGuid(), guid);
 	}
 	JUserPtr<JResourceObject> JResourceManager::GetResourceByPath(const Core::JTypeInfo& info, const std::wstring& path)const  noexcept
-	{
-		bool(*ptr)(JResourceObject*, const std::wstring&) = [](JResourceObject* rObj, const std::wstring& path) {return rObj->GetPath() == path; };
-		return FindResource<JResourceObject>(info, ptr, path);
+	{ 
+		bool(*ptr)(JResourceObject*, const std::wstring*) = [](JResourceObject* rObj, const std::wstring* path) {return rObj->GetPath() == *path; };
+		return FindJResource<JResourceObject>(info, ptr, true, std::move(&path));
 	}
 	JUserPtr<JResourceObject> JResourceManager::TryGetResourceUser(const Core::JTypeInfo& info, const size_t guid)noexcept
 	{ 
-		auto userPtr = Core::GetUserPtr<JResourceObject>(info.TypeGuid(), guid);
+		return TryGetResourceUser(info.TypeGuid(), guid);
+	} 
+	JUserPtr<JResourceObject> JResourceManager::TryGetResourceUser(const Core::JTypeInstanceSearchHint& hint) noexcept
+	{
+		if (!hint.isValid)
+			return nullptr;
+
+		return TryGetResourceUser(hint.typeGuid, hint.objectGuid);
+	}
+	JUserPtr<JResourceObject> JResourceManager::TryGetResourceUser(const size_t typeGuid, const size_t objGuid) noexcept
+	{
+		auto userPtr = Core::GetUserPtr<JResourceObject>(typeGuid, objGuid);
 		if (userPtr != nullptr)
 			return userPtr;
 		else
-			return JDirectory::SearchFile(guid)->TryGetResourceUser();
-	} 
+		{
+			auto file = JDirectory::SearchFile(objGuid);
+			return file != nullptr ? file->TryGetResourceUser() : nullptr;
+		}
+	}
 
 	JResourceManager::JResourceManager()
 		:impl(std::make_unique<JResourceManagerImpl>(this))
@@ -606,25 +609,25 @@ namespace JinEngine
 	JResourceManager::~JResourceManager()
 	{}
 
-	using ApplicationAccess = JResourceManagerPrivate::ApplicationAccess;
+	using MainAccess = JResourceManagerPrivate::MainAccess;
 
-	void ApplicationAccess::Initialize()
+	void MainAccess::Initialize()
 	{
 		_JResourceManager::Instance().impl->Initialize();
 	}
-	void ApplicationAccess::Terminate()
+	void MainAccess::Terminate()
 	{
 		_JResourceManager::Instance().impl->Terminate();
 	}
-	void ApplicationAccess::StoreProjectResource()
+	void MainAccess::StoreProjectResource()
 	{
 		_JResourceManager::Instance().impl->StoreProjectResource();
 	}
-	void ApplicationAccess::LoadSelectorResource()
+	void MainAccess::LoadSelectorResource()
 	{
 		_JResourceManager::Instance().impl->LoadSelectorResource();
 	}
-	void ApplicationAccess::LoadProjectResource()
+	void MainAccess::LoadProjectResource()
 	{
 		_JResourceManager::Instance().impl->LoadProjectResource();
 	}

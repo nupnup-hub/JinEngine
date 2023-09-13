@@ -1,7 +1,6 @@
-#include"JTransition.h" 
-#include"../Log/JLog.h"
+#include"JTransition.h"  
 #include"../Time/JRealTime.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 #include<stack>
 
 namespace JinEngine
@@ -134,6 +133,11 @@ namespace JinEngine
 			return doBindhandle != nullptr && undoBindhandle != nullptr;
 		}
  
+		JTransition::JTransition(const std::string& name)
+			:name(name)
+		{
+
+		}
 		void JTransition::Log(Core::JLogBase log)
 		{
 			logHandler->PushLog(std::make_unique<Core::JLogBase>(log));
@@ -198,25 +202,9 @@ namespace JinEngine
 			++undoIndex;
 			if (undoIndex >= taskCapacity)
 				undoIndex = 0;
-		}
-		void JTransition::SetTaskCapacity(const uint8 value)noexcept
-		{
-			ClearDoQueue();
-			ClearUndoQueue();
-
-			taskCapacity = value;
-			if (taskCapacity > GetMaxTaskCapacity())
-				taskCapacity = GetMaxTaskCapacity();
-
-			doQueue.resize(taskCapacity);
-			doIndex = 0;
-		}
-		void JTransition::SetLock(const bool value)noexcept
-		{
-			isLock = value;
-		}
+		} 
 		std::vector<JTransitonTaskInfo> JTransition::GetTaskInfo()noexcept
-		{ 
+		{
 			int undoIndexStart;
 			std::vector<JTransitionTask*> sortedTask = GetSortedTask(undoIndexStart);
 			std::vector<JTransitonTaskInfo> taskInfo(sortedTask.size());
@@ -248,15 +236,31 @@ namespace JinEngine
 			}
 			return taskInfo;
 		}
-		const JLogHandler* JTransition::GetLogHandler()noexcept
+		void JTransition::SetTaskCapacity(const uint8 value)noexcept
 		{
-			return logHandler.get();
+			ClearDoQueue();
+			ClearUndoQueue();
+
+			taskCapacity = value;
+			if (taskCapacity > GetMaxTaskCapacity())
+				taskCapacity = GetMaxTaskCapacity();
+
+			doQueue.resize(taskCapacity);
+			doIndex = 0;
+		}
+		void JTransition::SetLock(const bool value)noexcept
+		{
+			isLock = value;
 		}
 		void JTransition::Initialize()
 		{ 
 			doQueue.resize(taskCapacity);
-			logHandler = std::make_unique<JLogHandler>();
-			logHandler->SetCapacity(GetMaxLogCapacity());
+			logHandler = std::make_unique<JPublicLogHolder>(name);
+			
+			JLogHolderInterface::LogHolderOption option;
+			option.capacity = GetMaxLogCapacity();
+
+			logHandler->SetOption(option); 
 			isLock = false;
 		}
 		void JTransition::Clear()

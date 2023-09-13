@@ -1,15 +1,62 @@
 #include"JLogViewer.h"
 #include"../../JEditorAttribute.h"  
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../../Align/JEditorAlignCalculator.h"
+#include"../../../Gui/JGui.h"
 #include"../../../../Core/Log/JLog.h"
+#include"../../../../Core/Log/JLogHandler.h"
 #include"../../../../Core/Guid/JGuidCreator.h"
-#include"../../../../Utility/JCommonUtility.h"
+#include"../../../../Core/Utility/JCommonUtility.h"
+#include"../../../../Develop/Debug/JDevelopDebug.h"
+#include"../../../../Develop/Debug/JDevelopDebugConstants.h"
 #include<deque>
 
 namespace JinEngine
 {
 	namespace Editor
 	{ 
+		namespace
+		{ 
+			static std::vector<Core::JLogBase*> GetUserLog()
+			{
+				return std::vector<Core::JLogBase*>{};
+			}
+			static std::vector<Core::JLogBase*> GetTransitionLog()
+			{
+				return Core::JPublicLogHolder::GetLogVec(JEditorTransition::Name());
+			}
+			static std::vector<Core::JLogBase*> GetDevelopLog()
+			{
+				//Develop::JDevelopDebug::
+				return Core::JPublicLogHolder::GetLogVec(Develop::Constants::defualtLogHandlerName);
+			}
+			static std::vector<Core::JLogBase*> GetAllLog()
+			{
+				std::vector<Core::JLogBase*> user = GetUserLog();
+				std::vector<Core::JLogBase*> trans = GetTransitionLog();
+				std::vector<Core::JLogBase*> develop = GetDevelopLog();
+				user.insert(user.end(), trans.begin(), trans.end());
+				user.insert(user.end(), develop.begin(), develop.end());
+				return user;
+			} 
+			static void ClearUserLog()
+			{
+
+			}
+			static void ClearTransitionLog()
+			{
+				Core::JPublicLogHolder::ClearBuffer(JEditorTransition::Name());
+			}
+			static void ClearDevelopLog()
+			{
+				Core::JPublicLogHolder::ClearBuffer(Develop::Constants::defualtLogHandlerName);
+			}
+			static void ClearAllLog()
+			{
+				ClearUserLog();
+				ClearTransitionLog();
+				ClearDevelopLog();
+			}
+		}
 		JLogViewer::JLogViewer(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE ownerPageType,
@@ -19,9 +66,19 @@ namespace JinEngine
 			//All Log	User, Transition All, Task
 			std::string itemlabel[tabItemCount]
 			{
-				"All Log", "User", "Editor Task"
+				"All Log", "User", "Editor Task", "Develop"
 			};
 			tabBarHelper = std::make_unique<JEditorTabBarHelper<tabItemCount>>(itemlabel);
+
+			getLogVecPtr[0] = &GetAllLog;
+			getLogVecPtr[1] = &GetUserLog;
+			getLogVecPtr[2] = &GetTransitionLog;
+			getLogVecPtr[3] = &GetDevelopLog;
+			 
+			clearLogHandlerPtr[0] = &ClearAllLog;
+			clearLogHandlerPtr[1] = &ClearUserLog;
+			clearLogHandlerPtr[2] = &ClearTransitionLog;
+			clearLogHandlerPtr[3] = &ClearDevelopLog;		 
 		}
 		J_EDITOR_WINDOW_TYPE JLogViewer::GetWindowType()const noexcept
 		{
@@ -31,7 +88,7 @@ namespace JinEngine
 		{}
 		void JLogViewer::UpdateWindow()
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | J_GUI_WINDOW_FLAG_NO_COLLAPSE);
 			UpdateDocking();
 			if (IsActivated())
 			{
@@ -42,76 +99,114 @@ namespace JinEngine
 		}
 		void JLogViewer::BuildLogViewer()
 		{
-			if (JImGuiImpl::BeginTabBar("AvatarSetting"))
+			if (JGui::BeginTabBar("##JLogViewerTab"))
 			{
-				//ImGui::SetCursorPosX(ImGui::GetCursorPosX() + xPadding);
+				//JGui::SetCursorPosX(JGui::GetCursorPosX() + xPadding);
 				for (int i = 0; i < tabItemCount; ++i)
 				{
-					if (JImGuiImpl::BeginTabItem(tabBarHelper->GetLabel(i)))
+					if (JGui::BeginTabItem(tabBarHelper->GetLabel(i)))
 					{
-						tabBarHelper->OpenItemBit(i);
-						JImGuiImpl::EndTabItem();
+						tabBarHelper->OpenItemBit(i); 
+						JGui::EndTabItem();
 					}
 				}
-				JImGuiImpl::EndTabBar();
+				JGui::EndTabBar();
 			}
 
-			const JVector4<float> preFrameCol = JImGuiImpl::GetColor(ImGuiCol_FrameBg);
-			const JVector4<float> wndBgCol = JImGuiImpl::GetColor(ImGuiCol_WindowBg);
+			if(tabBarHelper->IsOpenNewTab())
+				selectedLogIndex = invalidIndex;
+			  
+			const JVector4<float> wndBgCol = JGui::GetColor( J_GUI_COLOR::WINDOW_BG);
 			const JVector4<float> wndBgSotfCol = wndBgCol + JVector4<float>(0.15f, 0.15f, 0.15f, 0.15f);
 
-			JImGuiImpl::SetColor(JImGuiImpl::GetColor(ImGuiCol_WindowBg), ImGuiCol_FrameBg);
-			JVector2<float> nowCursorPos = ImGui::GetCursorPos();
-			JVector2<float> restSize = JImGuiImpl::GetRestWindowSpace();
-			//ImGui::SetCursorPos(ImGui::GetCursorPos() + restSize * 0.1f);
+			JGui::PushColor(J_GUI_COLOR::FRAME_BG, JGui::GetColor(J_GUI_COLOR::WINDOW_BG)); 
+			JVector2<float> nowCursorPos = JGui::GetCursorPos();
+			//JVector2<float> restSize = JGui::GetRestWindowSpace();
+			JVector2<float> contentsSize = JGui::GetRestWindowContentsSize();
+			JVector2<float> titleSize = JVector2<float>(contentsSize.x, JGui::GetAlphabetSize().y * 1.25f);
+			JVector2<float> buttonSize = JGui::CalButtionSize("Clear##JLogViewerLogList#", JVector2F::Zero());
+			float offsetY = JGui::GetFrameBorderSize() + JGui::GetFramePadding().y;
+			//JGui::SetCursorPos(JGui::GetCursorPos() + restSize * 0.1f);
+		 
+			JEditorTextAlignCalculator textAlign; 
+			std::string seletableStr = "";
 
-			static int seletabeIndex = -1;
-			static std::string seletableStr = "";
-			if (JImGuiImpl::BeginListBox("##JLogViewer_TransitionLog", JVector2<float>(restSize.x, restSize.y * 0.75f)))
+			JGui::SetCurrentWindowFontScale(0.8f);
+			if (JGui::BeginListBox("##JLogViewerLogList", JVector2<float>(contentsSize.x, contentsSize.y - buttonSize.y - offsetY)))
 			{
-				std::vector<Core::JLogBase*> logVec; 
 				if (tabBarHelper->IsActivatedItem(0))
-					logVec = GetAllLog();
+					selectedTabIndex = 0;
 				else if (tabBarHelper->IsActivatedItem(1))
-					logVec = GetUserLog();
+					selectedTabIndex = 1; 
 				else if (tabBarHelper->IsActivatedItem(2))
-					logVec = GetTransitionLog(); 
-
+					selectedTabIndex = 2;
+				else if (tabBarHelper->IsActivatedItem(3))
+					selectedTabIndex = 3;
+								
+				std::vector<Core::JLogBase*> logVec= getLogVecPtr[selectedTabIndex]();
 				auto logCompareLam = [](Core::JLogBase* a, Core::JLogBase* b) {return *a < *b; };
 				std::sort(logVec.begin(), logVec.end(), logCompareLam);
 
-				ImGui::Separator();
+				//logVec 갯수가 변경됬을경우(clear, pop)
+				if (logVec.size() >= selectedLogIndex)
+					selectedLogIndex = invalidIndex;
+
+				JGui::Separator();
 				const uint vecCount = (uint)logVec.size();
+				const float titleRange = contentsSize.x;
+				  
 				for (uint i = 0; i < vecCount; ++i)
 				{
-					if (JImGuiImpl::Selectable(logVec[i]->GetTitle() + "##" + std::to_string(i) + "JLogViewer"))
-						seletabeIndex = i;
+					std::string title = logVec[i]->GetTitle();
+					if(title.empty())
+						title = logVec[i]->GetBody();
+					 
+					textAlign.Update(title, titleSize, true);
+					if (JGui::Selectable(textAlign.LeftAligned() + "##" + std::to_string(i) + "JLogViewer"))
+						selectedLogIndex = i;
 
-					if (seletabeIndex != -1)
-						seletableStr = logVec[seletabeIndex]->GetLog() + "\n time: " + logVec[seletabeIndex]->GetTime().ToString();
-					ImGui::Separator();
+					if (selectedLogIndex != invalidIndex)
+						seletableStr = logVec[selectedLogIndex]->GetLog() + "\n time: " + logVec[selectedLogIndex]->GetTime().ToString();
+					JGui::Separator();
 				}
-				JImGuiImpl::EndListBox();
+				JGui::EndListBox();
 			}
-			ImGui::SetCursorPosY(nowCursorPos.y + restSize.y * 0.75f);
-			if (seletabeIndex != -1)
-				JImGuiImpl::Text(seletableStr);
-			JImGuiImpl::SetColor(preFrameCol, ImGuiCol_FrameBg);
+			if (JGui::Button("Clear##JLogViewerLogList#"))
+			{
+				clearLogHandlerPtr[selectedTabIndex]();
+				selectedLogIndex = invalidIndex;
+			}
+			bool isDefaultLogActivated = Develop::JDevelopDebug::IsActivate();
+			if (!isDefaultLogActivated)
+				JGui::PushButtonColorDeActSet();
+
+			JGui::SameLine();
+			if (JGui::Button("Default Log##JLogViewerLogList#"))
+			{
+				if(isDefaultLogActivated)
+					Develop::JDevelopDebug::DeActivate();
+				else
+					Develop::JDevelopDebug::Activate();
+			}
+			if (!isDefaultLogActivated)
+				JGui::PopButtonColorDeActSet();
+
+			//JGui::SetCursorPosY(nowCursorPos.y + restSize.y * 0.75f);
+			if (selectedLogIndex != invalidIndex)
+				JGui::Text(seletableStr);
+			JGui::SetCurrentWindowFontScale(1);
+			JGui::PopColor();
 		}
-		std::vector<Core::JLogBase*> JLogViewer::GetAllLog()
+		void JLogViewer::DoActivate()noexcept
 		{
-			std::vector<Core::JLogBase*> user = GetUserLog();
-			std::vector<Core::JLogBase*> trans = GetTransitionLog();
-			user.insert(user.end(), trans.begin(), trans.end());
-			return user;
+			JEditorWindow::DoActivate();
+			selectedTabIndex = 0;
+			selectedLogIndex = 0;
+			tabBarHelper->SetInitState();
 		}
-		std::vector<Core::JLogBase*> JLogViewer::GetUserLog()
+		void JLogViewer::DoDeActivate()noexcept
 		{
-			return std::vector<Core::JLogBase*>{};
-		}
-		std::vector<Core::JLogBase*> JLogViewer::GetTransitionLog()
-		{
-			return JEditorTransition::Instance().GetLogHandler()->GetLogVec();
+			JEditorWindow::DoDeActivate();
 		}
 	}
 }

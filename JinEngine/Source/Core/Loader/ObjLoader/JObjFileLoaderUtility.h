@@ -2,8 +2,8 @@
 #include<string> 
 #include"../../../../ThirdParty/DirectX/DirectXMesh.h" 
 #include"../../../Object/Resource/Mesh/JMeshStruct.h" 
-#include"../../../Utility/JVector.h"
-#include"../../JDataType.h" 
+#include"../../Math/JVector.h"
+#include"../../JCoreEssential.h" 
 
 namespace JinEngine
 {
@@ -46,12 +46,12 @@ namespace JinEngine
 			std::wstring decalTName;
 
 			//미구현
-			DirectX::XMFLOAT4 ambient;
-			DirectX::XMFLOAT4 albedo;
+			JVector4<float> ambient;
+			JVector4<float> albedo;
 			//미구현
-			DirectX::XMFLOAT4 specular;
+			JVector4<float> specular;
 			//미구현
-			DirectX::XMFLOAT4 transmissionFilterColor;
+			JVector4<float> transmissionFilterColor;
 			//미구현
 			float specularWeight;
 			//미구현

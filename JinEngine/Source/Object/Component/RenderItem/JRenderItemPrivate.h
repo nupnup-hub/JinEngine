@@ -4,19 +4,18 @@
 namespace JinEngine
 {
 	class JRenderItem; 
+	class JAcceleratorNode;
+	class JBvh;
 	namespace Graphic
 	{
 		class JGraphic; 
 		class JShadowMap;
-		class JHZBOccCulling;
+		class JHZBOccCulling; 
+		class JSceneDraw;
 		struct JObjectConstants;
 		struct JBoundingObjectConstants;
 		struct JHzbOccObjectConstants;
-	}
-	namespace Core
-	{
-		class JSpaceSpatialNode; 
-		class JBvh;
+		struct JDrawHelper;
 	}
 	namespace Editor
 	{
@@ -66,7 +65,7 @@ namespace JinEngine
 			static int GetBoundingFrameIndex(JRenderItem* rItem)noexcept;
 			static int GetOccObjectFrameIndex(JRenderItem* rItem)noexcept;
 		private:
-			static bool IsHotUpdated(JRenderItem* rItem)noexcept;
+			static bool IsLastFrameHotUpdated(JRenderItem* rItem)noexcept;
 			static bool IsLastUpdated(JRenderItem* rItem)noexcept;
 			static bool HasObjectRecopyRequest(JRenderItem* rItem)noexcept;
 			static bool HasBoundingRecopyRequest(JRenderItem* rItem)noexcept;
@@ -75,11 +74,10 @@ namespace JinEngine
 		class FrameIndexInterface
 		{
 		private: 
-			friend class Core::JSpaceSpatialNode;
-			friend class Core::JBvh;
-			friend class Graphic::JGraphic;
-			friend class Graphic::JShadowMap;
+			friend class JAcceleratorNode;
+			friend class JBvh; 
 			friend class Editor::JSceneObserver;
+			friend struct Graphic::JDrawHelper;
 		private:
 			//Count submesh
 			static int GetObjectFrameIndex(JRenderItem* rItem)noexcept;

@@ -88,7 +88,7 @@ namespace JinEngine
 					dS.PushValidHandle(newHandle, dHVec);
 				else
 				{
-					JEditorTransition::Instance().Log("Destruction Fail", "Count: " + std::to_string(failCount));
+					JEditorTransition::Instance().Log("Destruction Multi Fail", "Count: " + std::to_string(failCount));
 					++failCount;
 				}
 			}
@@ -101,19 +101,24 @@ namespace JinEngine
 		{
 			Core::JIdentifier* rawPtr = Core::SearchRawPtr<Core::JIdentifier>(Core::JIdentifier::StaticTypeInfo(), guid);
 			if (rawPtr == nullptr)
+			{
+				JEditorTransition::Instance().Log("Destruction Fail invalid guid typeName: " + Core::JIdentifier::StaticTypeInfo().Name());
 				return;
-
+			}
 			DestroyPreProccess(rawPtr, useTransition, creationHint);
 			if (useTransition)
 			{
 				Core::JDataHandle newHandle = dS.Add(ReleaseInterface::ReleaseInstance(rawPtr));
 				dS.TransitionHandle(newHandle, dH);
+				if(!dH.IsValid())
+					JEditorTransition::Instance().Log(L"Destruction transition handle fail", rawPtr->GetNameWithType());
 			}
 			else
 			{
 				Core::JTypeInfo& typeInfo = rawPtr->GetTypeInfo();
-				Core::JIdentifier::BeginDestroy(rawPtr);
+				Core::JIdentifier::BeginDestroy(rawPtr);  
 			}
+			JEditorTransition::Instance().Log(L"Destruction success", rawPtr->GetNameWithType());
 			DestroyPostProccess(guid, useTransition, creationHint); 
 		}
 		void JEditorObjectDestroyInterface::DestroyMulti(const std::vector<size_t> guidVec,
@@ -165,13 +170,12 @@ namespace JinEngine
 					SetModifiedBit(Core::GetUserPtr(rawPtr), true);
 			}
 
+			//destroy되는 대상을 selecte map에서 erase
 			if (editorWnd != nullptr && creationHint.notifyPtr != nullptr)
 			{
-				JEditorPopSelectObjectEvStruct deselectEv{ editorWnd->GetOwnerPageType(), Core::GetUserPtr(rawPtr) };
+				JEditorPopSelectObjectEvStruct deselectEv{editorWnd->GetOwnerPageType(), Core::GetUserPtr(rawPtr), JEditorEvStruct::RANGE::ALL };
 				(editorWnd->*creationHint.notifyPtr)(*JEditorEvent::EvInterface(), editorWnd->GetGuid(), J_EDITOR_EVENT::POP_SELECT_OBJECT, &deselectEv);
-			}
-
-			JEditorTransition::Instance().Log(L"Destruction success ", rawPtr->GetNameWithType());
+			}		 
 		}
 		void JEditorObjectDestroyInterface::DestroyPostProccess(const size_t guid,
 			const bool useTransition,
@@ -223,9 +227,10 @@ namespace JinEngine
 							SetModifiedBit(Core::GetUserPtr(ptr), true);
 					}
 					
+					//undo 되는 target을 select
 					if (editorWnd != nullptr && creationHint.notifyPtr != nullptr)
 					{ 
-						JEditorPushSelectObjectEvStruct selectEv{ editorWnd->GetOwnerPageType(), editorWnd->GetWindowType(), Core::GetUserPtr(ptr) };
+						JEditorPushSelectObjectEvStruct selectEv{editorWnd->GetOwnerPageType(), editorWnd->GetWindowType(), Core::GetUserPtr(ptr), JEditorEvStruct::RANGE::ALL };
 						(editorWnd->*creationHint.notifyPtr)(*JEditorEvent::EvInterface(), editorWnd->GetGuid(), J_EDITOR_EVENT::PUSH_SELECT_OBJECT, &selectEv);
 					} 
 

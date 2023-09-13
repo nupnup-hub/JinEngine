@@ -1,9 +1,9 @@
 #pragma once
 #include<string>
-#include"../../JDataType.h"  
+#include"../../JCoreEssential.h"  
+#include"../../Math/JVector.h"
 #include"../../../Object/Resource/Mesh/JMeshStruct.h"
 #include"../../../Object/Resource/AnimationClip/JAnimationSample.h"
-#include"../../../Utility/JVector.h"
 #include"../../../../ThirdParty/Fbx/Include/fbxsdk.h"
 #include"../../../../ThirdParty/DirectX/DirectXMesh.h" 
 

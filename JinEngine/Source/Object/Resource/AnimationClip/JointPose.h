@@ -1,5 +1,6 @@
 #pragma once
-#include<DirectXMath.h>  
+#include"../../../Core/Math/JVector.h"
+#include"../../../Core/Math/JMatrix.h"
 
 namespace JinEngine
 {
@@ -7,14 +8,14 @@ namespace JinEngine
 	{
 	public: 
 		//World values
-		DirectX::XMFLOAT4 RotationQuat = { 0,0,0,0 };
-		DirectX::XMFLOAT3 Translation = { 0,0,0 };
-		DirectX::XMFLOAT3 Scale = {1,1,1 };  
+		JVector4<float> rotationQuat = { 0,0,0,0 };
+		JVector3<float> translation = { 0,0,0 };
+		JVector3<float> scale = {1,1,1 };  
 		float stTime = 0;
 	public:
 		JointPose() = default;
-		JointPose(const DirectX::XMFLOAT3& s, const DirectX::XMFLOAT3& r, const DirectX::XMFLOAT3& t, float stTime)noexcept;
-		JointPose( const DirectX::XMFLOAT3& s, const DirectX::XMFLOAT4& q, const DirectX::XMFLOAT3& t, float stTime)noexcept;
-		JointPose(const DirectX::XMFLOAT4X4& fm, float stTime)noexcept;
+		JointPose(const JVector3<float>& s, const JVector3<float>& r, const JVector3<float>& t, float stTime)noexcept;
+		JointPose(const JVector3<float>& s, const JVector4<float>& q, const JVector3<float>& t, float stTime)noexcept;
+		JointPose(const JMatrix4x4& m, float stTime)noexcept;
 	};
 }

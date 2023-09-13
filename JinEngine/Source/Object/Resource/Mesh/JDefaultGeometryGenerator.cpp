@@ -1,7 +1,7 @@
 #include<iostream>
 #include <algorithm>
 #include<fstream>
-#include "JDefaultGeometryGenerator.h"
+#include "JDefaultGeometryGenerator.h" 
 
 namespace JinEngine
 {
@@ -140,12 +140,9 @@ namespace JinEngine
 				v.tangentU.y = 0.0f;
 				v.tangentU.z = +radius * sinf(phi) * cosf(theta);
 
-				XMVECTOR T = XMLoadFloat3(&v.tangentU);
-				XMStoreFloat3(&v.tangentU, XMVector3Normalize(T));
-
-				XMVECTOR p = XMLoadFloat3(&v.position);
-				XMStoreFloat3(&v.normal, XMVector3Normalize(p));
-
+				v.tangentU = XMVector3Normalize(v.tangentU.ToXmV());
+				v.normal = XMVector3Normalize(v.position.ToXmV());
+				 
 				v.texC.x = theta / XM_2PI;
 				v.texC.y = phi / XM_PI;
 
@@ -219,14 +216,14 @@ namespace JinEngine
 		const float X = 0.525731f;
 		const float Z = 0.850651f;
 
-		XMFLOAT3 pos[12] =
+		JVector3<float> pos[12] =
 		{
-			XMFLOAT3(-X, 0.0f, Z),  XMFLOAT3(X, 0.0f, Z),
-			XMFLOAT3(-X, 0.0f, -Z), XMFLOAT3(X, 0.0f, -Z),
-			XMFLOAT3(0.0f, Z, X),   XMFLOAT3(0.0f, Z, -X),
-			XMFLOAT3(0.0f, -Z, X),  XMFLOAT3(0.0f, -Z, -X),
-			XMFLOAT3(Z, X, 0.0f),   XMFLOAT3(-Z, X, 0.0f),
-			XMFLOAT3(Z, -X, 0.0f),  XMFLOAT3(-Z, -X, 0.0f)
+			JVector3<float>(-X, 0.0f, Z),  JVector3<float>(X, 0.0f, Z),
+			JVector3<float>(-X, 0.0f, -Z), JVector3<float>(X, 0.0f, -Z),
+			JVector3<float>(0.0f, Z, X),   JVector3<float>(0.0f, Z, -X),
+			JVector3<float>(0.0f, -Z, X),  JVector3<float>(0.0f, -Z, -X),
+			JVector3<float>(Z, X, 0.0f),   JVector3<float>(-Z, X, 0.0f),
+			JVector3<float>(Z, -X, 0.0f),  JVector3<float>(-Z, -X, 0.0f)
 		};
 
 		std::vector<uint> indices =
@@ -251,15 +248,15 @@ namespace JinEngine
 		for (uint i = 0; i < vertexCount; ++i)
 		{
 			// Project onto unit sphere.
-			XMVECTOR n = XMVector3Normalize(meshData.GetPosition(i));
+			XMVECTOR n = XMVector3Normalize(meshData.GetPosition(i).ToXmV());
 
 			// Project onto sphere.
 			XMVECTOR p = radius * n;
 
 			JStaticMeshVertex v;
 
-			XMStoreFloat3(&v.position, p);
-			XMStoreFloat3(&v.normal, n);
+			v.position = p;
+			v.normal = n;
 
 			// Derive texture coordinates from spherical coordinates.
 			float theta = atan2f(v.position.z, v.position.x);
@@ -278,8 +275,7 @@ namespace JinEngine
 			v.tangentU.y = 0.0f;
 			v.tangentU.z = +radius * sinf(phi) * cosf(theta);
 
-			XMVECTOR T = XMLoadFloat3(&v.tangentU);
-			XMStoreFloat3(&v.tangentU, XMVector3Normalize(T));
+			v.tangentU = XMVector3Normalize(v.tangentU.ToXmV());
 			meshData.SetVertex(i, v);
 		}
 
@@ -316,7 +312,7 @@ namespace JinEngine
 				float c = cosf(j * dTheta);
 				float s = sinf(j * dTheta);
 
-				vertex.position = XMFLOAT3(r * c , y, r * s);
+				vertex.position = JVector3<float>(r * c , y, r * s);
 
 				vertex.texC.x = (float)j / slicecount;
 				vertex.texC.y = 1.0f - (float)i / stackcount;
@@ -341,15 +337,15 @@ namespace JinEngine
 				//  dz/dv = (r0-r1)*sin(t)
 
 				// This is unit length.
-				vertex.tangentU = XMFLOAT3(-s, 0.0f, c);
+				vertex.tangentU = JVector3<float>(-s, 0.0f, c);
 
 				float dr = bottomRadius - topRadius;
-				XMFLOAT3 bitangent(dr * c, -height, dr * s);
+				JVector3<float> bitangent(dr * c, -height, dr * s);
 
-				XMVECTOR T = XMLoadFloat3(&vertex.tangentU);
-				XMVECTOR B = XMLoadFloat3(&bitangent);
+				XMVECTOR T = vertex.tangentU.ToXmV();
+				XMVECTOR B = bitangent.ToXmV();
 				XMVECTOR N = XMVector3Normalize(XMVector3Cross(T, B));
-				XMStoreFloat3(&vertex.normal, N);
+				vertex.normal = N;
 
 				vertices.push_back(vertex);
 			}
@@ -406,9 +402,9 @@ namespace JinEngine
 			{
 				float x = -halfWidth + j * dx;
 
-				vertices[i * n + j].position = XMFLOAT3(x, 0.0f, 0.0f);
-				vertices[i * n + j].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
-				vertices[i * n + j].tangentU = XMFLOAT3(1.0f, 0.0f, 0.0f);
+				vertices[i * n + j].position = JVector3<float>(x, 0.0f, z);
+				vertices[i * n + j].normal = JVector3<float>(0.0f, 1.0f, 0.0f);
+				vertices[i * n + j].tangentU = JVector3<float>(1.0f, 0.0f, 0.0f);
 
 				// Stretch texture over grid.
 				vertices[i * n + j].texC.x = j * du;
@@ -488,14 +484,14 @@ namespace JinEngine
 	JStaticMeshData JDefaultGeometryGenerator::CreateLineBoundingBox()
 	{
 		std::vector<JStaticMeshVertex> vertices(8);
-		vertices[0].position = XMFLOAT3(-0.5f, -0.5f, -0.5f);
-		vertices[1].position = XMFLOAT3(0.5f, -0.5f, -0.5f);
-		vertices[2].position = XMFLOAT3(0.5f, -0.5f, 0.5f);
-		vertices[3].position = XMFLOAT3(-0.5f, -0.5f, 0.5f);
-		vertices[4].position = XMFLOAT3(-0.5f, 0.5f, -0.5f);
-		vertices[5].position = XMFLOAT3(0.5f, 0.5f, -0.5f);
-		vertices[6].position = XMFLOAT3(0.5f, 0.5f, 0.5f);
-		vertices[7].position = XMFLOAT3(-0.5f, 0.5f, 0.5f);
+		vertices[0].position = JVector3<float>(-0.5f, -0.5f, -0.5f);
+		vertices[1].position = JVector3<float>(0.5f, -0.5f, -0.5f);
+		vertices[2].position = JVector3<float>(0.5f, -0.5f, 0.5f);
+		vertices[3].position = JVector3<float>(-0.5f, -0.5f, 0.5f);
+		vertices[4].position = JVector3<float>(-0.5f, 0.5f, -0.5f);
+		vertices[5].position = JVector3<float>(0.5f, 0.5f, -0.5f);
+		vertices[6].position = JVector3<float>(0.5f, 0.5f, 0.5f);
+		vertices[7].position = JVector3<float>(-0.5f, 0.5f, 0.5f);
 
 		std::vector<uint> indices
 		{
@@ -517,14 +513,14 @@ namespace JinEngine
 	JStaticMeshData JDefaultGeometryGenerator::CreateTriangleBoundingBox()
 	{
 		std::vector<JStaticMeshVertex> vertices(8);
-		vertices[0].position = XMFLOAT3(-0.5f, 0.5f, -0.5);
-		vertices[1].position = XMFLOAT3(0.5f, 0.5f, -0.5f);
-		vertices[2].position = XMFLOAT3(0.5f, 0.5f, 0.5f);
-		vertices[3].position = XMFLOAT3(-0.5f, 0.5f, 0.5f);
-		vertices[4].position = XMFLOAT3(-0.5f, -0.5f, 0.5f);
-		vertices[5].position = XMFLOAT3(0.5f, -0.5f, 0.5f);
-		vertices[6].position = XMFLOAT3(0.5f, -0.5f, -0.5f);
-		vertices[7].position = XMFLOAT3(-0.5f, -0.5f, -0.5f);
+		vertices[0].position = JVector3<float>(-0.5f, 0.5f, -0.5);
+		vertices[1].position = JVector3<float>(0.5f, 0.5f, -0.5f);
+		vertices[2].position = JVector3<float>(0.5f, 0.5f, 0.5f);
+		vertices[3].position = JVector3<float>(-0.5f, 0.5f, 0.5f);
+		vertices[4].position = JVector3<float>(-0.5f, -0.5f, 0.5f);
+		vertices[5].position = JVector3<float>(0.5f, -0.5f, 0.5f);
+		vertices[6].position = JVector3<float>(0.5f, -0.5f, -0.5f);
+		vertices[7].position = JVector3<float>(-0.5f, -0.5f, -0.5f);
 
 		std::vector<uint> indices
 		{
@@ -551,11 +547,11 @@ namespace JinEngine
 	JStaticMeshData JDefaultGeometryGenerator::CreateBoundingFrustum()
 	{
 		std::vector<JStaticMeshVertex> vertices(5); 
-		vertices[0].position = XMFLOAT3(0, 0, 0);
-		vertices[1].position = XMFLOAT3(-0.5f, -0.5f, 1);
-		vertices[2].position = XMFLOAT3(0.5f, -0.5f, 1);
-		vertices[3].position = XMFLOAT3(0.5f, 0.5f, 1);
-		vertices[4].position = XMFLOAT3(-0.5f, 0.5f, 1);
+		vertices[0].position = JVector3<float>(0, 0, 0);
+		vertices[1].position = JVector3<float>(-0.5f, -0.5f, 1);
+		vertices[2].position = JVector3<float>(0.5f, -0.5f, 1);
+		vertices[3].position = JVector3<float>(0.5f, 0.5f, 1);
+		vertices[4].position = JVector3<float>(-0.5f, 0.5f, 1);
 
 		std::vector<uint> indices
 		{
@@ -627,9 +623,9 @@ namespace JinEngine
 			xFactor = padding * -divFactor;
 		
 		for (uint i = 0; i < thickness; ++i)
-		{
-			vertices[i].position = XMFLOAT3(xFactor, -0.5f, 0.0f);
-			vertices[i + 1].position = XMFLOAT3(xFactor, 0.5f, 0.0f);
+		{	 
+			vertices[i].position = JVector3<float>(xFactor, -0.5f, 0.0f);
+			vertices[i + 1].position = JVector3<float>(xFactor, 0.5f, 0.0f);
 			xFactor += padding;
 
 			indices[i] = i;
@@ -701,32 +697,20 @@ namespace JinEngine
 			std::move(vertices));
 	}
 	JStaticMeshVertex JDefaultGeometryGenerator::MidPoint(const JStaticMeshVertex& v0, const JStaticMeshVertex& v1)
-	{
-		XMVECTOR p0 = XMLoadFloat3(&v0.position);
-		XMVECTOR p1 = XMLoadFloat3(&v1.position);
-
-		XMVECTOR n0 = XMLoadFloat3(&v0.normal);
-		XMVECTOR n1 = XMLoadFloat3(&v1.normal);
-
-		XMVECTOR tan0 = XMLoadFloat3(&v0.tangentU);
-		XMVECTOR tan1 = XMLoadFloat3(&v1.tangentU);
-
-		XMVECTOR tex0 = XMLoadFloat2(&v0.texC);
-		XMVECTOR tex1 = XMLoadFloat2(&v1.texC);
-
+	{    
 		// Compute the midpoints of all the attributes.  Vectors need to be normalized
 		// since linear interpolating can make them not unit length.  
-		XMVECTOR pos = 0.5f * (p0 + p1);
-		XMVECTOR normal = XMVector3Normalize(0.5f * (n0 + n1));
-		XMVECTOR tangent = XMVector3Normalize(0.5f * (tan0 + tan1));
-		XMVECTOR tex = 0.5f * (tex0 + tex1);
+		XMVECTOR pos = 0.5f * (v0.position.ToXmV() + v1.position.ToXmV());
+		XMVECTOR normal = XMVector3Normalize(0.5f * (v0.normal.ToXmV() + v1.normal.ToXmV()));
+		XMVECTOR tangent = XMVector3Normalize(0.5f * (v0.tangentU.ToXmV() + v1.tangentU.ToXmV()));
+		XMVECTOR tex = 0.5f * (v0.texC.ToXmV() + v1.texC.ToXmV());
 
 		JStaticMeshVertex v;
-		XMStoreFloat3(&v.position, pos);
-		XMStoreFloat3(&v.normal, normal);
-		XMStoreFloat3(&v.tangentU, tangent);
-		XMStoreFloat2(&v.texC, tex);
-
+		v.position = pos;
+		v.normal = normal;
+		v.tangentU = tangent;
+		v.texC = tex;
+		 
 		return v;
 	}
 	void JDefaultGeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius, float height,

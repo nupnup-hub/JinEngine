@@ -8,14 +8,13 @@
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/File/JFileIOHelper.h"
-#include"../../../Utility/JCommonUtility.h"
+#include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphic.h" 
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
 #include"../../../Application/JApplicationProject.h" 
 #include<memory>
 #include<fstream>
-#include<io.h>
-#include<d3d12.h>
+#include<io.h> 
 
 namespace JinEngine
 {
@@ -26,13 +25,12 @@ namespace JinEngine
  
 	class JTexture::JTextureImpl : public Core::JTypeImplBase,
 		public JClearableInterface, 
-		public Graphic::JGraphicSingleResourceInterface
+		public Graphic::JGraphicSingleResourceHolder
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTextureImpl)
 	public:
 		JWeakPtr<JTexture> thisPointer = nullptr;
-	public:
-		Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer = nullptr;
+	public: 
 		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 	public:
 		JTextureImpl(const InitData& initData, JTexture* thisTexRaw)
@@ -42,7 +40,9 @@ namespace JinEngine
 			else
 				textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 		}
-		~JTextureImpl() {}
+		~JTextureImpl()
+		{ 
+		}
 	public:
 		uint GetTextureWidth()const noexcept
 		{
@@ -83,25 +83,24 @@ namespace JinEngine
 		{
 			if (thisPointer->IsValid())
 			{
-				if (HasTxtHandle())
-					DestroyTexture();
-				uploadBuffer.Reset();
+				if (HasGraphicResourceHandle())
+					DestroyTexture(); 
 				thisPointer->SetValid(false);
 			}
 		}
 	public:
 		bool ReadTextureData()
 		{
-			if (!HasTxtHandle())
+			if (!HasGraphicResourceHandle())
 			{
 				if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
 				{
-					if (Create2DTexture(uploadBuffer, thisPointer->GetPath(), thisPointer->GetFormat()))
+					if (Create2DTexture(thisPointer->GetPath(), thisPointer->GetFormat()))
 						return true;
 				}
 				else if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 				{
-					if (CreateCubeMap(uploadBuffer, thisPointer->GetPath(), thisPointer->GetFormat()))
+					if (CreateCubeMap(thisPointer->GetPath(), thisPointer->GetFormat()))
 						return true;
 				}
 			}
@@ -131,8 +130,14 @@ namespace JinEngine
 			return true;
 		}
 	public:
+		void NotifyReAlloc()
+		{		 
+			RegisterInterfacePointer();
+		}
+	public:
 		void Initialize(InitData* initData)
 		{
+			//객체를 처음생성할때 initData에서 import
 			if (!thisPointer->HasFile())
 				ImportTexture(initData->oridataPath);
 			ReadTextureData();
@@ -141,6 +146,14 @@ namespace JinEngine
 		void RegisterThisPointer(JTexture* tex)
 		{
 			thisPointer = Core::GetWeakPtr(tex);  
+		}
+		void RegisterInterfacePointer()
+		{
+			Graphic::JGraphicResourceInterface::SetInterfacePointer(this); 
+		}
+		void DeRegisterInterfacePointer()
+		{
+			Graphic::JGraphicResourceInterface::SetInterfacePointer(nullptr);
 		}
 		static void RegisterTypeData()
 		{
@@ -202,7 +215,7 @@ namespace JinEngine
 		oridataPath(oridataPath), textureType(textureType)
 	{}
 	bool JTexture::InitData::IsValidData()const noexcept
-	{
+	{ 
 		return JResourceObject::InitData::IsValidData() && _waccess(oridataPath.c_str(), 00) != -1;
 	}
 
@@ -211,12 +224,12 @@ namespace JinEngine
 	{}
  
 	Core::JIdentifierPrivate& JTexture::PrivateInterface()const noexcept
-	{
+	{ 
 		return tPrivate;
 	}
-	const Graphic::JGraphicSingleResourceUserInterface JTexture::GraphicResourceUserInterface()const noexcept
+	const Graphic::JGraphicResourceUserInterface JTexture::GraphicResourceUserInterface()const noexcept
 	{
-		return Graphic::JGraphicSingleResourceUserInterface{ impl.get() };
+		return Graphic::JGraphicResourceUserInterface{ impl.get() };
 	}
 	J_RESOURCE_TYPE JTexture::GetResourceType()const noexcept
 	{
@@ -254,18 +267,19 @@ namespace JinEngine
 	}
 	void JTexture::DoDeActivate()noexcept
 	{ 
-		JResourceObject::DoDeActivate();
 		impl->ClearResource();
+		JResourceObject::DoDeActivate();
 	}
 	JTexture::JTexture(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JTextureImpl>(initData, this))
-	{}
+	{  }
 	JTexture::~JTexture()
-	{
+	{  
 		impl.reset();
 	}
  
 	using CreateInstanceInterface = JTexturePrivate::CreateInstanceInterface;
+	using DestroyInstanceInterface = JTexturePrivate::DestroyInstanceInterface;
 	using AssetDataIOInterface = JTexturePrivate::AssetDataIOInterface;
 
 	JOwnerPtr<Core::JIdentifier> CreateInstanceInterface::Create(Core::JDITypeDataBase* initData)
@@ -277,12 +291,20 @@ namespace JinEngine
 		JResourceObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		JTexture* txt = static_cast<JTexture*>(createdPtr);
 		txt->impl->RegisterThisPointer(txt);
+		txt->impl->RegisterInterfacePointer();
 		txt->impl->Initialize(static_cast<JTexture::InitData*>(initData));
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
 	{
 		const bool isValidPtr = initData != nullptr && initData->GetTypeInfo().IsChildOf(JTexture::InitData::StaticTypeInfo());	
 		return isValidPtr && initData->IsValidData();
+	}
+
+	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
+	{
+		JTexture* txt = static_cast<JTexture*>(ptr);
+		txt->impl->DeRegisterInterfacePointer();
+		JResourceObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 
 	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)

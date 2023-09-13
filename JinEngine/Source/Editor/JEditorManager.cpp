@@ -9,8 +9,9 @@
 #include"Page/SkeletonaAssetSetting/JEditorSkeletonPage.h"  
 #include"Page/AnimationControllerSetting/JEditorAniContPage.h" 
 #include"Page/ProjectSelector/JProjectSelectorPage.h" 
-#include"GuiLibEx/ImGuiEx/JImGuiImpl.h"
-#include"../Utility/JCommonUtility.h"
+#include"Gui/JGui.h"
+#include"Gui/Adapter/JGuiBehaviorAdapter.h"
+#include"../Core/Utility/JCommonUtility.h"
 #include"../Core/File/JFileIOHelper.h"
 #include"../Core/File/JFileConstant.h"
 #include"../Application/JApplicationEngine.h" 
@@ -22,6 +23,9 @@
 #include<fstream>  
 #include<io.h>   
  
+#include"../Core/Time/JStopWatch.h"
+#include"../Develop/Debug/JDevelopDebug.h"
+
 //수정필요
 //Dock Split시 이전에 Focus하고있던 Window가 offFocus되지않음
 
@@ -29,9 +33,11 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		namespace Constants
+		namespace Private
 		{
+			const std::wstring editorOptionDataFileName = L"EditorOption.txt";
 			const std::wstring editorPageDataFileName = L"EditorData.txt";
+			static constexpr uint previousSizeExeFrame = 1;
 		}
 		namespace Private
 		{
@@ -41,17 +47,18 @@ namespace JinEngine
 			}
 			static std::wstring GetCopiedImGuiSaveDataPath()noexcept
 			{
-				return Core::JFileConstant::MakeFilePath(JApplicationProject::EditorSettingPath(), L"imgui.ini");;
+				return Core::JFileConstant::MakeFilePath(JApplicationProject::EditoConfigPath(), L"imgui.ini");;
 			}
 		}
 
-		void JEditorManager::Initialize()
-		{
-			JImGuiImpl::Initialize();
+		void JEditorManager::Initialize(std::unique_ptr<JGuiBehaviorAdapter>&& adapter)
+		{ 
+			JGuiPrivate::SetAdapter(std::move(adapter)); 
 			JEditorEvent::Initialize();
 		}
 		void JEditorManager::Clear()
 		{
+			JGuiPrivate::StoreOption();
 			uint8 pageCount = (uint8)editorPage.size();
 			for (uint8 i = 0; i < pageCount; ++i)
 			{
@@ -63,7 +70,8 @@ namespace JinEngine
 			JEditorPageShareData::Clear();
 			JEditorTransition::Instance().Clear();
 			JEditorEvent::Clear();
-			JImGuiImpl::Clear();
+			JGuiPrivate::Clear();
+			JGuiPrivate::SetAdapter(nullptr);
 
 			editorPageMap.clear();
 			opendEditorPage.clear();
@@ -72,24 +80,52 @@ namespace JinEngine
 			if(JApplicationEngine::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
 				JFileIOHelper::CopyFile(Private::GetSrcImGuiSaveDataPath(), Private::GetCopiedImGuiSaveDataPath());
 		}
-		void JEditorManager::OpenProjectSelector()
+		Graphic::JGuiBackendInterface* JEditorManager::GetBackendInterface()
 		{
+			return JGuiPrivate::GetBackendInterface();
+		}
+		std::wstring JEditorManager::GetMetadataPath()const noexcept
+		{
+			return Core::JFileConstant::MakeFilePath(JApplicationProject::EditoConfigPath(), Private::editorPageDataFileName);
+		}
+		bool JEditorManager::CanUpdate(JEditorPage* page)const noexcept
+		{
+			if (page == nullptr)
+				return false;
+
+			for (const auto& data : pageSizeTInfo)
+			{
+				if (data->isMaximize && data->destroyAfFrame == -1 && data->page->GetGuid() != page->GetGuid())
+					return false;
+			} 
+			return true;
+		} 
+		void JEditorManager::OpenProjectSelector(std::unique_ptr<Graphic::JGuiInitData>&& initData)
+		{
+			JGuiPrivate::LoadOption();
+			JGuiPrivate::Initialize(std::move(initData));
 			editorPage.push_back(std::make_unique<JProjectSelectorPage>());
 			editorPageMap.emplace(editorPage[0]->GetPageType(), editorPage[0].get());
 
 			editorPage[0]->Initialize();
 			editorPage[0]->SetInitWindow();
+
 			JEditorOpenPageEvStruct evOpenStruct{ editorPage[0]->GetPageType() };
-			JEditorActPageEvStruct evActStruct{ editorPage[0]->GetPageType()};
+			JEditorActPageEvStruct evActStruct{ editorPage[0]->GetPageType() };
+			JEditorFocusPageEvStruct evFocusStruct{ editorPage[0].get() };
 			OpenPage(&evOpenStruct);
 			ActivatePage(&evActStruct);
+			FocusPage(&evFocusStruct); 
 
 			std::vector<J_EDITOR_EVENT> eventVector = Core::GetEnumElementVec<J_EDITOR_EVENT>();
 			AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector); 
 			JEditorTransition::Instance().Initialize();
 		}
-		void JEditorManager::OpenProject()
-		{ 
+		void JEditorManager::OpenProject(std::unique_ptr<Graphic::JGuiInitData>&& initData)
+		{
+			JGuiPrivate::LoadOption();
+			JGuiPrivate::Initialize(std::move(initData));
+
 			const bool hasMetadata = (_waccess(GetMetadataPath().c_str(), 00) != -1);
 			const bool hasImguiTxt = (_waccess(Private::GetCopiedImGuiSaveDataPath().c_str(), 00) != -1);
 			   
@@ -120,8 +156,10 @@ namespace JinEngine
 					editorPage[i]->SetInitWindow();
 				JEditorOpenPageEvStruct evOpenStruct{editorPage[0]->GetPageType()};
 				JEditorActPageEvStruct evActStruct{editorPage[0]->GetPageType() };
+				JEditorFocusPageEvStruct evFocusStruct{ editorPage[0].get() };
 				OpenPage(&evOpenStruct);
 				ActivatePage(&evActStruct);
+				FocusPage(&evFocusStruct);
 			}
 			 
 			//always EditorManager first listener about all event type
@@ -131,24 +169,48 @@ namespace JinEngine
 		} 
 		void JEditorManager::Update()
 		{ 
-			if (ImGui::GetIO().KeyCtrl)
-			{
-				if (ImGui::IsKeyPressedMap(ImGuiKey_Z, false))
-					JEditorTransition::Instance().Undo();
-				else if (ImGui::IsKeyPressedMap(ImGuiKey_Y, false))
-					JEditorTransition::Instance().Redo();
+			if (JGuiPrivate::StartGuiUpdate())
+			{ 
+				if (JGui::IsKeyPressed(Core::J_KEYCODE::CONTROL))
+				{
+					if (JGui::IsKeyDown(Core::J_KEYCODE::Z))
+						JEditorTransition::Instance().Undo();
+					else if (JGui::IsKeyDown(Core::J_KEYCODE::Y))
+						JEditorTransition::Instance().Redo();
+				}
+				JEditorEvent::ExecuteEvent(); 
+				for (const auto& data : opendEditorPage)
+				{
+					if (CanUpdate(data))
+						data->UpdatePage(); 
+				}
+				for (const auto& data : opendEditorPage)
+				{
+					if (CanUpdate(data))
+						data->UpdateOpenPopupWindow(JVector2<float>(0, 0), JGui::GetMainWorkSize());
+				}
+				UpdatePageSizeTransformLife();
+				JGuiPrivate::EndGuiUpdate();
+				JGui::SetAllColorToDefault();		 
 			}
-			JEditorEvent::ExecuteEvent();
-			JImGuiImpl::SetAlphabetSize();
-			JImGuiImpl::StartEditorUpdate();
-			JImGuiImpl::MouseUpdate();
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(JWindow::GetClientSize() * 0.15f));
-			uint8 pageCount = (uint8)opendEditorPage.size();
-			for (uint8 i = 0; i < pageCount; ++i)
-				opendEditorPage[i]->UpdatePage();
-			ImGui::PopStyleVar();
-			JImGuiImpl::EndEditorUpdate();
-			JImGuiImpl::SetAllColorToDefault();
+		} 
+		void JEditorManager::UpdatePageSizeTransformLife()
+		{ 
+			for (int i = 0; i < pageSizeTInfo.size(); ++i)
+			{
+				if (pageSizeTInfo[i]->destroyAfFrame != -1)
+				{
+					if (pageSizeTInfo[i]->destroyAfFrame != 0)
+						--pageSizeTInfo[i]->destroyAfFrame;
+					else
+					{
+						pageSizeTInfo[i]->page->SetFocus();
+						pageSizeTInfo.erase(pageSizeTInfo.begin() + i);
+						--i;
+					}
+				}
+			}
+			 
 		}
 		void JEditorManager::LoadPage()
 		{
@@ -192,8 +254,12 @@ namespace JinEngine
 				return;
 
 			if (page->second->IsOpen())
-			{
-				page->second->DeActivate();
+			{ 
+				if (page->second->IsActivated())
+				{
+					JEditorDeActPageEvStruct deActEv(page->second->GetPageType());
+					DeActivatePage(&deActEv);
+				} 
 				page->second->SetClose();
 
 				const size_t tarGuid = page->second->GetGuid();
@@ -215,17 +281,20 @@ namespace JinEngine
 				return;
 
 			if (page->second->IsOpen())
-			{
-				if (!page->second->IsOpen())
-					page->second->SetOpen();
 				page->second->Activate();
-			}
 		}
 		void JEditorManager::DeActivatePage(JEditorDeActPageEvStruct* evStruct)
 		{
 			auto page = editorPageMap.find(evStruct->pageType);
 			if (page != editorPageMap.end())
+			{
+				if (page->second->IsFocus())
+				{
+					JEditorUnFocusPageEvStruct deFocusEv(page->second);
+					UnFocusPage(&deFocusEv);
+				}
 				page->second->DeActivate();
+			}
 		}
 		void JEditorManager::FocusPage(JEditorFocusPageEvStruct* evStruct)
 		{
@@ -233,11 +302,11 @@ namespace JinEngine
 			if (page == editorPageMap.end())
 				return;
 			
-			if (!page->second->IsOpen())
-				page->second->SetOpen();
-			if (!page->second->IsActivated())
-				page->second->Activate();
+			if (!page->second->IsOpen() || !page->second->IsActivated())
+				return;
+
 			page->second->SetFocus();
+			focusPage = page->second;
 
 			//main page allways index 0
 			int index = JCUtil::GetTypeIndex(opendEditorPage, page->second->GetGuid(), &JEditorPage::GetGuid);
@@ -255,6 +324,81 @@ namespace JinEngine
 				return;
 
 			page->second->SetUnFocus();
+			focusPage = nullptr;
+		}
+		void JEditorManager::MaximizePage(JEditorMaximizePageEvStruct* evStruct)
+		{
+			auto page = editorPageMap.find(evStruct->page->GetPageType());
+			if (page == editorPageMap.end())
+				return;
+ 
+			int existTInfoIndex = FindPageSizeTInfo(evStruct->page->GetGuid());
+			if (existTInfoIndex != invalidIndex)
+			{
+				if (pageSizeTInfo[existTInfoIndex]->isMaximize)
+					evStruct->page->SetMaximize(false);
+				else
+					evStruct->page->SetMinimize(false);
+				pageSizeTInfo.erase(pageSizeTInfo.begin() + existTInfoIndex);
+			}
+
+			auto newPageSizeTInfo = std::make_unique<PageSizeTransformInfo>();
+			newPageSizeTInfo->page = evStruct->page;
+			newPageSizeTInfo->page->SetMaximize(true);
+			newPageSizeTInfo->prePos = evStruct->prePagePos;
+			newPageSizeTInfo->preSize = evStruct->prePageSize;
+			newPageSizeTInfo->isMaximize = true;
+			pageSizeTInfo.push_back(std::move(newPageSizeTInfo));
+		}
+		void JEditorManager::MinimizePage(JEditorMinimizePageEvStruct* evStruct)
+		{
+			auto page = editorPageMap.find(evStruct->page->GetPageType());
+			if (page == editorPageMap.end())
+				return;
+
+			int existTInfoIndex = FindPageSizeTInfo(evStruct->page->GetGuid());
+			if (existTInfoIndex != invalidIndex)
+			{
+				if (pageSizeTInfo[existTInfoIndex]->isMaximize)
+					evStruct->page->SetMaximize(false);
+				else
+					evStruct->page->SetMinimize(false);
+				pageSizeTInfo.erase(pageSizeTInfo.begin() + existTInfoIndex);
+			}
+
+			auto newPageSizeTInfo = std::make_unique<PageSizeTransformInfo>();
+			newPageSizeTInfo->page = evStruct->page;
+			newPageSizeTInfo->page->SetMinimize(true);
+			newPageSizeTInfo->page->SetNextPageSize(JVector2F(evStruct->prePageSize.x, evStruct->height));
+			newPageSizeTInfo->prePos = evStruct->prePagePos;
+			newPageSizeTInfo->preSize = evStruct->prePageSize;
+			newPageSizeTInfo->isMaximize = false;
+			pageSizeTInfo.push_back(std::move(newPageSizeTInfo));
+		}
+		void JEditorManager::PreviousSizePage(JEditorPreviousSizePageEvStruct* evStruct)
+		{
+			auto page = editorPageMap.find(evStruct->page->GetPageType());
+			if (page == editorPageMap.end())
+				return;
+
+			int index = FindPageSizeTInfo(evStruct->page->GetGuid());
+			if (index == invalidIndex)
+				return;
+		
+			pageSizeTInfo[index]->page->SetNextPagePos(pageSizeTInfo[index]->prePos);
+			pageSizeTInfo[index]->page->SetNextPageSize(pageSizeTInfo[index]->preSize);
+			if(pageSizeTInfo[index]->isMaximize)
+				pageSizeTInfo[index]->page->SetMaximize(false);
+			else
+				pageSizeTInfo[index]->page->SetMinimize(false);
+
+			if (evStruct->useLazy)
+				pageSizeTInfo[index]->destroyAfFrame = Private::previousSizeExeFrame;
+			else
+			{
+				pageSizeTInfo[index]->destroyAfFrame = 0;
+				UpdatePageSizeTransformLife();
+			}
 		}
 		void JEditorManager::OpenWindow(JEditorOpenWindowEvStruct* evStruct)
 		{
@@ -277,6 +421,7 @@ namespace JinEngine
 			auto page = editorPageMap.find(evStruct->pageType);
 			if (page == editorPageMap.end())
 				return;
+
 			page->second->ActivateWindow(evStruct->actWindow);
 		}
 		void JEditorManager::DeActivateWindow(JEditorDeActWindowEvStruct* evStruct)
@@ -291,6 +436,7 @@ namespace JinEngine
 			auto page = editorPageMap.find(evStruct->pageType);
 			if (page == editorPageMap.end())
 				return;
+			 
 			page->second->FocusWindow(evStruct->focusWindow);
 		}
 		void JEditorManager::UnFocusWindow(JEditorUnFocusWindowEvStruct* evStruct)
@@ -306,9 +452,12 @@ namespace JinEngine
 			if (page == editorPageMap.end())
 				return;
 
+			//현재는 popup window가 생성될시
+			//우선적으로 popup window 확인, 종료를 강요한다.(페이지와 페이지내부에 윈도우에 제한을 부여한다)
+			//추후에 유즈케이스에 변경이 생길시 수정이 필요된다.
 			JEditorTransition::Instance().SetLock(true);
 			for (auto& data : editorPageMap)
-				data.second->SetPageFlag(Core::AddSQValueEnum(data.second->GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
+				data.second->SetInputLock(true); 
 			if (evStruct->popupWindow != nullptr)
 				page->second->OpenPopupWindow(evStruct->popupWindow);
 			else
@@ -325,7 +474,7 @@ namespace JinEngine
 			else
 				page->second->ClosePopupWindow(evStruct->popupType);
 			for (auto& data : editorPageMap)
-				data.second->SetPageFlag(Core::MinusSQValueEnum(data.second->GetPageFlag(), J_EDITOR_PAGE_WINDOW_INPUT_LOCK));
+				data.second->SetInputLock(false);
 			JEditorTransition::Instance().SetLock(false);
 		}
 		void JEditorManager::MaximizeWindow(JEditorMaximizeWindowEvStruct* evStruct)
@@ -334,7 +483,7 @@ namespace JinEngine
 			if (page == editorPageMap.end())
 				return;
 
-			page->second->MaximizeWindow(evStruct->wnd);
+			page->second->MaximizeWindow(evStruct->wnd, evStruct->preWindowPos, evStruct->preWindowSize);
 		}
 		void JEditorManager::PreviousSizeWindow(JEditorPreviousSizeWindowEvStruct* evStruct)
 		{
@@ -342,11 +491,7 @@ namespace JinEngine
 			if (page == editorPageMap.end())
 				return;
 
-			page->second->PreviousSizeWindow(evStruct->wnd);
-		}
-		std::wstring JEditorManager::GetMetadataPath()const noexcept
-		{
-			return Core::JFileConstant::MakeFilePath(JApplicationProject::EditorSettingPath(), Constants::editorPageDataFileName);
+			page->second->PreviousSizeWindow(evStruct->wnd, evStruct->useLazy);
 		}
 		void JEditorManager::PressMainWindowCloseButton()noexcept
 		{
@@ -356,6 +501,15 @@ namespace JinEngine
 				J_EDITOR_EVENT::OPEN_POPUP_WINDOW,
 				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorOpenPopupWindowEvStruct>(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM, J_EDITOR_PAGE_TYPE::PROJECT_MAIN)));
 			//data->second->OpenPopupWindow(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM);
+		}
+		int JEditorManager::FindPageSizeTInfo(const size_t guid)
+		{
+			bool(*pageEqualPtr)(PageSizeTransformInfo*, size_t) = [](PageSizeTransformInfo* info, size_t guid)
+			{
+				return info->page->GetGuid() == guid;
+			};
+
+			return JCUtil::GetIndex(pageSizeTInfo, pageEqualPtr, guid);
 		}
 		void JEditorManager::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{   
@@ -374,7 +528,7 @@ namespace JinEngine
 			case J_EDITOR_EVENT::CLEAR_SELECT_OBJECT:
 			{
 				JEditorClearSelectObjectEvStruct* clearEvStruct = static_cast<JEditorClearSelectObjectEvStruct*>(eventStruct);
-				JEditorPageShareData::ClearPageData(clearEvStruct->pageType);
+				//JEditorPageShareData::ClearPageData(clearEvStruct->pageType);
 				break;
 			}
 			case J_EDITOR_EVENT::OPEN_PAGE:
@@ -405,6 +559,21 @@ namespace JinEngine
 			case J_EDITOR_EVENT::UNFOCUS_PAGE:
 			{
 				UnFocusPage(static_cast<JEditorUnFocusPageEvStruct*>(eventStruct));
+				break;
+			}
+			case J_EDITOR_EVENT::MAXIMIZE_PAGE:
+			{
+				MaximizePage(static_cast<JEditorMaximizePageEvStruct*>(eventStruct));
+				break;
+			}
+			case J_EDITOR_EVENT::MINIMIZE_PAGE:
+			{
+				MinimizePage(static_cast<JEditorMinimizePageEvStruct*>(eventStruct));
+				break;
+			}
+			case J_EDITOR_EVENT::PREVIOUS_SIZE_PAGE:
+			{
+				PreviousSizePage(static_cast<JEditorPreviousSizePageEvStruct*>(eventStruct));
 				break;
 			}
 			case J_EDITOR_EVENT::OPEN_WINDOW:

@@ -9,7 +9,7 @@ namespace JinEngine
 { 
 	namespace Core
 	{
-		class Core::JIdentifier;
+		class JIdentifier;
 	}
 	namespace Editor
 	{		

@@ -1,5 +1,4 @@
 #include"JEditorAlignCalculator.h" 
-
 namespace JinEngine
 {
 	namespace Editor
@@ -42,7 +41,7 @@ namespace JinEngine
 		}
 		void JEditorStaticAlignCalculator::SetNextContentsPosition()noexcept
 		{
-			ImGui::SetCursorPos(GetCursorPos());
+			JGui::SetCursorPos(GetCursorPos());
 			Next();
 		}
 		void JEditorStaticAlignCalculator::Next()noexcept
@@ -57,8 +56,8 @@ namespace JinEngine
 
 		void JEditorTextAlignCalculator::Update(const std::string& text, const JVector2<float>& size, const bool useCompress)
 		{
-			const JVector2<float> alphaSize = JImGuiImpl::GetAlphabetSize();
-			JEditorTextAlignCalculator::text = JCUtil::EraseChar(text, '\n');
+			const JVector2<float> alphaSize = JGui::GetAlphabetSize();
+			JEditorTextAlignCalculator::text = JCUtil::EraseChar(JCUtil::EraseChar(text, '\n'), '\t');
 			linePerAlpabet = static_cast<int>(size.x / alphaSize.x);
 			lineLength = size.x;
 
@@ -81,14 +80,14 @@ namespace JinEngine
 		}
 		std::string JEditorTextAlignCalculator::Aligned(const J_EDITOR_ALIGN_TYPE dir)
 		{
-			const JVector2<float> alphaSize = JImGuiImpl::GetAlphabetSize();
-			const JVector2<float> spaceSize = ImGui::CalcTextSize(" ");
+			const JVector2<float> alphaSize = JGui::GetAlphabetSize();
+			const JVector2<float> spaceSize = JGui::CalTextSize(" ");
 			std::string srcText = text;
 			std::string result = "";
 			const float addtionalXFactor = dir == J_EDITOR_ALIGN_TYPE::LEFT ? 0.0f : (dir == J_EDITOR_ALIGN_TYPE::MID ? 0.5f : 1.0f);
 			int lineCount = 0;
-
-			ImGuiContext& context = *GImGui;
+			 
+			const float fontSize = JGui::GetFontSize();
 			while (!srcText.empty())
 			{
 				uint subStrCount = CalTextLengthRange(srcText, lineLength);
@@ -97,7 +96,7 @@ namespace JinEngine
 
 				if (useCompress)
 				{
-					const float nextYEndPos = context.FontSize * (lineCount + 2);
+					const float nextYEndPos = fontSize * (lineCount + 2);
 					if (nextYEndPos >= size.y && !srcText.empty())
 					{
 						if (subStrCount > 0)
@@ -114,7 +113,7 @@ namespace JinEngine
 					}
 				}
 
-				const float length = ImGui::CalcTextSize(subStr.c_str()).x;
+				const float length = JGui::CalTextSize(subStr).x;
 				const float additionalXPos = (lineLength - length) * addtionalXFactor;
 				if (additionalXPos > 0)
 				{
@@ -134,7 +133,7 @@ namespace JinEngine
 			const uint loopCount = (uint)calText.size();
 			for (uint i = 0; i < loopCount; ++i)
 			{
-				if (ImGui::CalcTextSize(calText.substr(0, i + 1).c_str()).x >= length)
+				if (JGui::CalTextSize(calText.substr(0, i + 1)).x >= length)
 					return i;
 			}
 			return loopCount;
@@ -144,7 +143,7 @@ namespace JinEngine
 			const uint loopCount = (uint)calText.size();
 			for (uint i = 0; i < loopCount; ++i)
 			{
-				JVector2<float> size = ImGui::CalcTextSize(calText.substr(0, i + 1).c_str());
+				JVector2<float> size = JGui::CalTextSize(calText.substr(0, i + 1));
 				if (size.x * size.y >= area)
 					return i;
 			}
@@ -159,9 +158,9 @@ namespace JinEngine
 		{
 			JVector2<float> cursorPos = pos + JVector2<float>(0, (size.y - constentsSize.y) * 0.5f) + padding;
 			if (useWorldCursor)
-				ImGui::SetCursorScreenPos(cursorPos);
+				JGui::SetCursorScreenPos(cursorPos);
 			else
-				ImGui::SetCursorPos(cursorPos);
+				JGui::SetCursorPos(cursorPos);
 		}
 	}
 }

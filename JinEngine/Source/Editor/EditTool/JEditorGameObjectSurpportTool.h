@@ -5,9 +5,9 @@
 #include"../../Core/Func/Callable/JCallable.h" 
 #include"../../Core/Interface/JActivatedInterface.h"
 #include"../../Core/Interface/JValidInterface.h"
-#include"../../Core/SpaceSpatial/JSpaceSpatialType.h"
+#include"../../Core/Math/JVector.h"
 #include"../../Object/Resource/Mesh/JDefaultShapeType.h"
-#include"../../Utility/JVector.h"
+#include"../../Object/Resource/Scene/Accelerator/JAcceleratorType.h"
 
 namespace JinEngine
 {
@@ -19,29 +19,18 @@ namespace JinEngine
 	class JMeshGeometry;
 	namespace Editor
 	{ 
-		namespace Constants
-		{
-			static constexpr uint arrowCount = 3;
-		} 
-	
 		class JEditorGameObjectSurpportTool : public Core::JActivatedInterface,  public JEditorObjectHandlerInterface
 		{  
 		public:
 			virtual ~JEditorGameObjectSurpportTool() = default;
 		public:
-			virtual void Update(const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam, const JVector2<float>& viewLocalPos) = 0;
-		public:
 			virtual	J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE GetToolType()const noexcept = 0; 
-			static JUserPtr<JGameObject> SceneIntersect(JUserPtr<JScene> scene,
-				JUserPtr<JCamera> cam,
-				Core::J_SPACE_SPATIAL_LAYER layer, 
-				const JVector2<float>& viewLocalPos) noexcept;
 		public:
 			bool IsEditable(JGameObject* obj)const noexcept;
 		};
 
 		class JEditorTransformTool : public JEditorGameObjectSurpportTool, public Core::JValidInterface
-		{  
+		{    
 		private:
 			struct Arrow
 			{
@@ -60,49 +49,73 @@ namespace JinEngine
 			public:
 				bool IsValid()const noexcept; 
 			public:
-				void SetHoveredColor()noexcept;
-				void OffHoveredColor()noexcept;
+				void SetSelectedColor()noexcept;
+				void OffSelectedColor()noexcept;
+			};
+			struct UpdateData
+			{ 
+			public:
+				JVector2<float> preWorldMousePos;
+				JVector2<float> preLocalMouseMidGap;		//Mid to nowLocalPos  
+				int hoveringIndex = invalidIndex;
+			public:
+				bool isDragging = false;
+				bool isLastUpdateSelected= false;
 			};
 		private:
-			using UpdateTransformT = Core::JStaticCallableType<void, JEditorTransformTool*, const JUserPtr<JGameObject>&, const JUserPtr<JCamera>&>;
+			using UpdateTransformT = Core::JStaticCallableType<void, JEditorTransformTool*, const std::vector<JUserPtr<JGameObject>>&, const JUserPtr<JCamera>&>;
+		private:
+			static constexpr uint arrowCount = 3;
 		private:
 			const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType;
 			const J_DEFAULT_SHAPE shape;
-			JUserPtr<JMeshGeometry> mesh;
 			const float sizeRate = 0;
 			const bool hasCenter;
 		private:
 			UpdateTransformT::Ptr transformUpdatePtr;
 		private:
-			bool isDraggingObject = false;
-		private:
-			int hoveringIndex = -1; 
-			int draggingIndex = -1;
-		private:
-			JVector2<float> preWorldMousePos;
-			//Mid to nowLocalPos
-			JVector2<float> preLocalMouseMidGap;
-		private:
+			//shape
 			JUserPtr<JGameObject> debugRoot;
 			JUserPtr<JGameObject> transformArrowRoot;
 			JUserPtr<JGameObject> arrowCenter;
 			JUserPtr<JMaterial> arrowCenterMaterial;
-			Arrow arrow[Constants::arrowCount];
+			JUserPtr<JMeshGeometry> mesh;
+			Arrow arrow[arrowCount];
+		private:
+			//update data
+			UpdateData uData;
 		public:
 			JEditorTransformTool(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType,
 				const J_DEFAULT_SHAPE shape, 
 				const float sizeRate);
 			~JEditorTransformTool();
 		public:
-			void Update(const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam, const JVector2<float>& viewLocalPos)final;
+			void Update(const JUserPtr<JGameObject>& selected, 
+				const JUserPtr<JCamera>& cam,
+				const JVector2<float>& sceneImageMinPoint,
+				const bool canSelectToolObject);
+			/**
+			* @param selected owner scene is same
+			* @param cam is selected object owner scene cam
+			*/
+			void Update(const std::vector<JUserPtr<JGameObject>>& selected,
+				const JUserPtr<JCamera>& cam,
+				const JVector2<float>& sceneImageMinPoint,
+				const bool canSelectToolObject);
+		private:
+			void UpdateStart();
+			void UpdateToolObject(const bool isValidSelected);
 		private: 
-			void UpdateArrowPosition(const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam);
-			void UpdateArrowDragging(const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam, const JVector2<float>& viewLocalPos);
+			void UpdateArrowPosition(const JVector3<float>& posW, const JUserPtr<JCamera>& cam);
+			void UpdateArrowDragging(const std::vector<JUserPtr<JGameObject>>& selected, 
+				const JUserPtr<JCamera>& cam, 
+				const JVector2<float>& sceneImageMinPoint,
+				const bool canSelectToolObject);
 		private:
 			static UpdateTransformT::Ptr GetUpdateTransformPtr(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType)noexcept;
-			static void UpdateSelectedPosition(JEditorTransformTool* tool, const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam)noexcept;
-			static void UpdateSelectedRotation(JEditorTransformTool* tool, const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam)noexcept;
-			static void UpdateSelectedScale(JEditorTransformTool* tool, const JUserPtr<JGameObject>& selected, const JUserPtr<JCamera>& cam)noexcept;
+			static void UpdateSelectedPosition(JEditorTransformTool* tool, const std::vector<JUserPtr<JGameObject>>& selected, const JUserPtr<JCamera>& cam)noexcept;
+			static void UpdateSelectedRotation(JEditorTransformTool* tool, const std::vector<JUserPtr<JGameObject>>& selected, const JUserPtr<JCamera>& cam)noexcept;
+			static void UpdateSelectedScale(JEditorTransformTool* tool, const std::vector<JUserPtr<JGameObject>>& selected, const JUserPtr<JCamera>& cam)noexcept;
 		public:
 			void ActivateTool()noexcept;
 			void DeActivateTool()noexcept;
@@ -117,11 +130,15 @@ namespace JinEngine
 			uint GetShapeLength()const noexcept;
 		public:
 			void SetDebugRoot(JUserPtr<JGameObject> debugRoot);
-		private:
-			void OnHovering(const int newArrowIndex)noexcept;
-			void OffHovering()noexcept;
+		public: 
+			bool IsLastUpdateSelectedObject()const noexcept; 
+			bool IsHoveringObject()const noexcept;
+			bool IsDraggingObject()const noexcept;
+		private: 
 			void OnDragging()noexcept;
 			void OffDragging()noexcept;
+			void OnHovering(const int newArrowIndex)noexcept;
+			void OffHovering()noexcept;
 			//static void SetTransformPosition()
 		};
 	}

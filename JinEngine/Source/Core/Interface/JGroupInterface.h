@@ -2,7 +2,7 @@
 #include<vector>
 #include<memory>
 #include"JValidInterface.h"
-#include"../JDataType.h" 
+#include"../JCoreEssential.h" 
 #include "../Pointer/JOwnerPtr.h" 
 
 //Not Use
@@ -10,10 +10,10 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		enum class J_GROUP_FLAG
+		enum J_GROUP_FLAG
 		{
-			NONE = 0,
-			DEREGISTER_IF_MEMBER_ZERO = 1 << 0
+			J_GROUP_FLAG_NONE = 0,
+			J_GROUP_FLAG_DEREGISTER_IF_MEMBER_ZERO = 1 << 0
 		};
 
 		class JGroupMemberInterface;

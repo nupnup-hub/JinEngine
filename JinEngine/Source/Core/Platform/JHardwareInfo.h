@@ -1,6 +1,6 @@
 #pragma once
-#include"../JDataType.h" 
-#include"../../Utility/JVector.h"
+#include"../JCoreEssential.h" 
+#include"../Math/JVector.h"
 #include<memory>
 #include<vector>
 
@@ -51,6 +51,8 @@ namespace JinEngine
 				size_t totalConstMem;
 				size_t memPitch;
 				size_t textureAlignment;
+				int memoryClockRate;
+				int memoryBusWidth;			//byte
 				// --- MP Information for device %d ---\n
 				size_t sharedMemPerBlock;
 				int multiProcessorCount;
@@ -62,8 +64,8 @@ namespace JinEngine
 				JVector3<int> maxGridDim;		 
 			};  
 		public: 
-			static CpuInfo GetCpuInfo()noexcept;
-			static std::vector<GpuInfo> GetGpuInfo()noexcept;
+			static CpuInfo GetCpuInfo();
+			static std::vector<GpuInfo> GetGpuInfo();
 		}; 
 	}
 }

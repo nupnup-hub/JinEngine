@@ -6,7 +6,7 @@
 #include"../../../Component/Camera/JCamera.h" 
 #include"../../../Component/Transform/JTransform.h" 
 #include"../../../../Core/Guid/JGuidCreator.h"
-#include"../../../../Utility/JCommonUtility.h"
+#include"../../../../Core/Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
@@ -37,9 +37,9 @@ namespace JinEngine
 	void JPreviewScene::SetScene(JUserPtr<JScene> newScene)noexcept
 	{
 		scene = newScene;
-		camera = scene->FindFirstSelectedCamera(true);
+		camera = scene->FindFirstSelectedCamera(true);  
 		camera->SetAllowFrustumCulling(false);
-		camera->SetAllowHzbOcclusionCulling(false);
+		camera->SetAllowHzbOcclusionCulling(false); 
 	}
 	bool JPreviewScene::UseQuadShape()const noexcept
 	{
@@ -62,9 +62,9 @@ namespace JinEngine
 			scene = nullptr;
 		}
 	}
-	void JPreviewScene::AdjustCamera(_In_ const DirectX::XMFLOAT3& objCenter,
+	void JPreviewScene::AdjustCamera(_In_ const JVector3<float>& objCenter,
 		const float objRadius,
-		const DirectX::XMFLOAT3 additionalPos)noexcept
+		const JVector3<float>& additionalPos)noexcept
 	{ 
 		if (previewDimension == J_PREVIEW_DIMENSION::TWO_DIMENTIONAL)
 		{
@@ -81,43 +81,43 @@ namespace JinEngine
 				Adjust3DFixedCamera(objCenter, objRadius, additionalPos);
 		}
 	}
-	void JPreviewScene::Adjust2DTextureCamera(_In_ const DirectX::XMFLOAT3& objCenter,
+	void JPreviewScene::Adjust2DTextureCamera(_In_ const JVector3<float>& objCenter,
 		const float objRadius,
-		const DirectX::XMFLOAT3 additionalPos)noexcept
+		const JVector3<float>& additionalPos)noexcept
 	{
-		DirectX::XMFLOAT3 camNewPos{ objCenter.x + additionalPos.x, objCenter.y + additionalPos.y, objCenter.z - 1 + additionalPos.z };
+		JVector3<float> camNewPos{ objCenter.x + additionalPos.x, objCenter.y + additionalPos.y, objCenter.z - 1 + additionalPos.z };
 		camera->GetTransform()->SetPosition(camNewPos);
 		camera->SetOrthoCamera(true);
 		camera->SetOrthoViewSize(objRadius, objRadius);
 		camera->GetTransform()->LookAt(objCenter);
 	}
-	void JPreviewScene::Adjust2DOtherCamera(_In_ const DirectX::XMFLOAT3& objCenter,
+	void JPreviewScene::Adjust2DOtherCamera(_In_ const JVector3<float>& objCenter,
 		const float objRadius,
-		const DirectX::XMFLOAT3 additionalPos)noexcept
+		const JVector3<float>& additionalPos)noexcept
 	{
-		DirectX::XMFLOAT3 camNewPos{ objCenter.x + additionalPos.x, objCenter.y + additionalPos.y, objCenter.z + (objRadius * 1.25f) + additionalPos.z };
+		JVector3<float> camNewPos{ objCenter.x + additionalPos.x, objCenter.y + additionalPos.y, objCenter.z + (objRadius * 1.25f) + additionalPos.z };
 		camera->GetTransform()->SetPosition(camNewPos);
 		//camera->SetOrthoCamera(); 
 		//camera->SetOrthoViewSize(objRadius * 1.325f, objRadius * 1.325f);
 		camera->SetAspect(1.0f);
 		camera->GetTransform()->LookAt(objCenter);
 	}
-	void JPreviewScene::Adjust3DFixedCamera(_In_ const DirectX::XMFLOAT3& objCenter,
+	void JPreviewScene::Adjust3DFixedCamera(_In_ const JVector3<float>& objCenter,
 		const float objRadius,
-		const DirectX::XMFLOAT3 additionalPos)noexcept
+		const JVector3<float>& additionalPos)noexcept
 	{
-		DirectX::XMFLOAT3 camNewPos = objCenter;
+		JVector3<float> camNewPos = objCenter;
 		camNewPos.x += objRadius + additionalPos.x;
 		camNewPos.y += objRadius + additionalPos.y;
 		camNewPos.z += objRadius + additionalPos.z;
 		camera->GetTransform()->SetPosition(camNewPos); 
 		camera->GetTransform()->LookAt(objCenter);
 	}
-	void JPreviewScene::Adjust3DNonFixedCamera(_In_ const DirectX::XMFLOAT3& objCenter,
+	void JPreviewScene::Adjust3DNonFixedCamera(_In_ const JVector3<float>& objCenter,
 		const float objRadius,
-		const DirectX::XMFLOAT3 additionalPos)noexcept
+		const JVector3<float>& additionalPos)noexcept
 	{
-		DirectX::XMFLOAT3 camNewPos = objCenter;
+		JVector3<float> camNewPos = objCenter;
 		camNewPos.x += objRadius + additionalPos.x;
 		camNewPos.y += objRadius + additionalPos.y;
 		camNewPos.z += objRadius + additionalPos.z;

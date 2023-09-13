@@ -1,21 +1,17 @@
 #pragma once
 #include<time.h>
 #include<memory>
-#include"../JDataType.h" 
+#include"../JCoreEssential.h" 
 
 namespace JinEngine
 {
-	namespace Application
-	{
-		class JApplication;
-	}
-
+	class JMain;
 	namespace Core
 	{  
 		class JGameTimer
 		{
 		private:
-			friend class Application::JApplication;  
+			friend class JMain;
 		private: 
 			double mSecondsPercount = 0;
 			double mDeltaTime = 0;

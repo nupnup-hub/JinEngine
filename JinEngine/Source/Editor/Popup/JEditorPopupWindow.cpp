@@ -1,5 +1,5 @@
 #include"JEditorPopupWindow.h"
-#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../Gui/JGui.h"
 
 namespace JinEngine
 {
@@ -27,32 +27,6 @@ namespace JinEngine
 			default:
 				break;
 			}	
-		}
-		bool JEditorPopupWindow::IsOpen()const noexcept
-		{
-			return isOpen;
-		}
-		bool JEditorPopupWindow::IsIgnoreConfirm()const noexcept
-		{
-			return isIgnoreConfirm;
-		}
-		bool JEditorPopupWindow::IsPressConfirm()const noexcept
-		{
-			return isPressConfirm;
-		}
-		bool JEditorPopupWindow::IsDefaultFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept
-		{
-			switch (type)
-			{
-			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::OPEN_POPUP:
-				return true;
-			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CLOSE_POPUP:
-				return true;
-			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CONFIRM:
-				return true; 
-			default:
-				return false;
-			}
 		}
 		std::string JEditorPopupWindow::GetDesc()const noexcept
 		{
@@ -96,8 +70,34 @@ namespace JinEngine
 					confirmBind->InvokeCompletelyBind();
 			}
 		}
- 
-		void JEditorCautionPopup::Update(const std::string& uniqueLabel, const JVector2<float> pagePos, const JVector2<float> pageSize)
+		bool JEditorPopupWindow::IsOpen()const noexcept
+		{
+			return isOpen;
+		}
+		bool JEditorPopupWindow::IsIgnoreConfirm()const noexcept
+		{
+			return isIgnoreConfirm;
+		}
+		bool JEditorPopupWindow::IsPressConfirm()const noexcept
+		{
+			return isPressConfirm;
+		}
+		bool JEditorPopupWindow::IsDefaultFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept
+		{
+			switch (type)
+			{
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::OPEN_POPUP:
+				return true;
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CLOSE_POPUP:
+				return true;
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CONFIRM:
+				return true;
+			default:
+				return false;
+			}
+		}
+
+		void JEditorCautionPopup::Update(const std::string& uniqueLabel, const JVector2<float>& pagePos, const JVector2<float>& pageSize)
 		{
 			std::string desc = GetDesc();
 			const uint widthFactor = pageSize.x / 4;
@@ -106,7 +106,7 @@ namespace JinEngine
 			const uint innerYPadding = heightFactor / 10;
 
 			const uint descCount = (uint)desc.size();
-			const uint descLength = JImGuiImpl::GetAlphabetSize().x * descCount;
+			const uint descLength = JGui::GetAlphabetSize().x * descCount;
 			uint divCount = descLength / widthFactor;
 			uint divIndex = descCount / divCount;
 			uint modCount = descLength % widthFactor;
@@ -129,40 +129,39 @@ namespace JinEngine
 			JVector2<float> pos = JVector2<float>(pagePos.x + (pageSize.x / 2) - ((widthFactor * 0.5f)),
 				pagePos.y + (pageSize.y * 0.5f) - ((heightFactor * 0.5f)));
 
-			ImGui::SetNextWindowPos(pos);
-			ImGui::SetNextWindowSize(JVector2<float>(widthFactor, heightFactor));
-			ImGuiWindowFlags flag = ImGuiWindowFlags_AlwaysAutoResize |
-				ImGuiWindowFlags_NoDocking |
-				ImGuiWindowFlags_NoMove |
-				ImGuiWindowFlags_NoTitleBar |
-				ImGuiWindowFlags_NoScrollbar;
+			JGui::SetNextWindowPos(pos);
+			JGui::SetNextWindowSize(JVector2<float>(widthFactor, heightFactor));
+			J_GUI_WINDOW_FLAG_ flag = J_GUI_WINDOW_FLAG_AUTO_RESIZE |
+				J_GUI_WINDOW_FLAG_NO_DOCKING |
+				J_GUI_WINDOW_FLAG_NO_MOVE |
+				J_GUI_WINDOW_FLAG_NO_TITLE_BAR |
+				J_GUI_WINDOW_FLAG_NO_SCROLL_BAR;
 
-			JImGuiImpl::BeginWindow("##CloseConfirmPopup" + uniqueLabel, 0, flag);
-			JVector2<float> textLength = ImGui::CalcTextSize("Close JinEngine!");
+			JGui::BeginWindow("##CloseConfirmPopup" + uniqueLabel, 0, flag);
+			JVector2<float> textLength = JGui::CalTextSize("Close JinEngine!");
 
-			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM);
-			JImGuiImpl::PushFont();
-			ImGui::SetCursorPosX(ImGui::GetWindowSize().x * 0.5f - (textLength.x * 0.5f));
-			JImGuiImpl::Text("Close JinEngine");
-			ImGui::Separator();
-			ImGui::SetCursorPosX(innerXPadding);
-	 
-			auto style = ImGui::GetStyle();
-			textLength = ImGui::CalcTextSize("Confirm!Cancel");
-			ImGui::SetCursorPosX(ImGui::GetWindowSize().x * 0.5f - textLength.x - (style.ItemSpacing.x / 2));
-			ImGui::SetCursorPosY(heightFactor - innerYPadding - textLength.y);
-			if (JImGuiImpl::Button("Confirm##CloseConfirmPopup"))
+			JGui::SetFont(J_GUI_FONT_TYPE::MEDIUM);
+			JGui::PushFont();
+			JGui::SetCursorPosX(JGui::GetWindowSize().x * 0.5f - (textLength.x * 0.5f));
+			JGui::Text("Close JinEngine");
+			JGui::Separator();
+			JGui::SetCursorPosX(innerXPadding);
+	  
+			textLength = JGui::CalTextSize("Confirm!Cancel");
+			JGui::SetCursorPosX(JGui::GetWindowSize().x * 0.5f - textLength.x - (JGui::GetItemSpacing().x / 2));
+			JGui::SetCursorPosY(heightFactor - innerYPadding - textLength.y);
+			if (JGui::Button("Confirm##CloseConfirmPopup"))
 				SetConfirm(true); 
-			JImGuiImpl::PopFont();
-			JImGuiImpl::EndWindow();
-		}
-		bool JEditorCautionPopup::IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept
-		{
-			return IsDefaultFuncType(type);
+			JGui::PopFont();
+			JGui::EndWindow();
 		}
 		J_EDITOR_POPUP_WINDOW_TYPE JEditorCautionPopup::GetPopupType()const noexcept
 		{
 			return J_EDITOR_POPUP_WINDOW_TYPE::CAUTION;
+		}
+		bool JEditorCautionPopup::IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept
+		{
+			return IsDefaultFuncType(type);
 		}
 
 		void JEditorCloseConfirmPopup::RegisterBind(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type, std::unique_ptr<Core::JBindHandleBase>&& bind)noexcept
@@ -188,7 +187,7 @@ namespace JinEngine
 				} 
 			} 
 		}
-		void JEditorCloseConfirmPopup::Update(const std::string& uniqueLabel, const JVector2<float> pagePos, const JVector2<float> pageSize)
+		void JEditorCloseConfirmPopup::Update(const std::string& uniqueLabel, const JVector2<float>& pagePos, const JVector2<float>& pageSize)
 		{
 			std::string desc = GetDesc();
 			const uint widthFactor = pageSize.x / 2.5f;
@@ -197,7 +196,7 @@ namespace JinEngine
 			const uint innerYPadding = heightFactor / 10;
 
 			const uint descCount = (uint)desc.size();
-			const uint descLength = JImGuiImpl::GetAlphabetSize().x * descCount;
+			const uint descLength = JGui::GetAlphabetSize().x * descCount;
 			std::string finalDesc;
 
 			if (descLength <= widthFactor)
@@ -221,52 +220,39 @@ namespace JinEngine
 			JVector2<float> pos = JVector2<float>(pagePos.x + (pageSize.x / 2)  - ((widthFactor * 0.5f)),
 				pagePos.y + (pageSize.y * 0.5f) -((heightFactor * 0.5f)));
 			  
-			ImGui::SetNextWindowPos(pos);
-			ImGui::SetNextWindowSize(JVector2<float>(widthFactor, heightFactor));
-			ImGuiWindowFlags flag = ImGuiWindowFlags_AlwaysAutoResize |
-				ImGuiWindowFlags_NoDocking |
-				ImGuiWindowFlags_NoMove |
-				ImGuiWindowFlags_NoTitleBar |
-				ImGuiWindowFlags_NoScrollbar;
+			JGui::SetNextWindowPos(pos);
+			JGui::SetNextWindowSize(JVector2<float>(widthFactor, heightFactor));
+			J_GUI_WINDOW_FLAG_ flag = J_GUI_WINDOW_FLAG_AUTO_RESIZE |
+				J_GUI_WINDOW_FLAG_NO_DOCKING |
+				J_GUI_WINDOW_FLAG_NO_MOVE |
+				J_GUI_WINDOW_FLAG_NO_TITLE_BAR |
+				J_GUI_WINDOW_FLAG_NO_SCROLL_BAR;
 			 
-			JImGuiImpl::BeginWindow("##CloseConfirmPopup" + uniqueLabel, 0, flag);
-			JVector2<float> textLength = ImGui::CalcTextSize("Close JinEngine!");
+			JGui::BeginWindow("##CloseConfirmPopup" + uniqueLabel, 0, flag);
+			JVector2<float> textLength = JGui::CalTextSize("Close JinEngine!");
 
-			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM);
-			JImGuiImpl::PushFont();
-			ImGui::SetCursorPosX(ImGui::GetWindowSize().x * 0.5f - (textLength.x * 0.5f));
-			JImGuiImpl::Text("Close JinEngine");	
-			ImGui::Separator();
-			ImGui::SetCursorPosX(innerXPadding); 
-			JImGuiImpl::Text(desc); 
+			JGui::SetFont(J_GUI_FONT_TYPE::MEDIUM);
+			JGui::PushFont();
+			JGui::SetCursorPosX(JGui::GetWindowSize().x * 0.5f - (textLength.x * 0.5f));
+			JGui::Text("Close JinEngine");
+			JGui::Separator();
+			JGui::SetCursorPosX(innerXPadding);
+			JGui::Text(desc);
 
 			if (contentsBind != nullptr)
 				contentsBind->InvokeCompletelyBind();
-
-			auto style = ImGui::GetStyle();
-			textLength = ImGui::CalcTextSize("Confirm!Cancel");
-			ImGui::SetCursorPosX(ImGui::GetWindowSize().x * 0.5f - textLength.x - (style.ItemSpacing.x / 2));
-			ImGui::SetCursorPosY(heightFactor - innerYPadding - textLength.y);
-			if (JImGuiImpl::Button("Confirm##CloseConfirmPopup"))
+			 
+			textLength = JGui::CalTextSize("Confirm!Cancel");
+			JGui::SetCursorPosX(JGui::GetWindowSize().x * 0.5f - textLength.x - (JGui::GetItemSpacing().x / 2));
+			JGui::SetCursorPosY(heightFactor - innerYPadding - textLength.y);
+			if (JGui::Button("Confirm##CloseConfirmPopup"))
 				SetConfirm(true);
-			ImGui::SameLine();
-			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + textLength.x);
-			if (JImGuiImpl::Button("Cancel##CloseConfirmPopup"))
+			JGui::SameLine();
+			JGui::SetCursorPosX(JGui::GetCursorPosX() + textLength.x);
+			if (JGui::Button("Cancel##CloseConfirmPopup"))
 				SetCancel(true);
-			JImGuiImpl::PopFont();
-			JImGuiImpl::EndWindow();
-		}
-		bool JEditorCloseConfirmPopup::IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept
-		{
-			switch (type)
-			{
-			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CANCEL:
-				return true;
-			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CONTENTS:
-				return true;
-			default:
-				return IsDefaultFuncType(type);
-			}
+			JGui::PopFont();
+			JGui::EndWindow();
 		}
 		J_EDITOR_POPUP_WINDOW_TYPE JEditorCloseConfirmPopup::GetPopupType()const noexcept
 		{
@@ -282,6 +268,18 @@ namespace JinEngine
 			isPressCancel = value;
 			if (isPressCancel && cancelBind != nullptr)
 				cancelBind->InvokeCompletelyBind();
+		}
+		bool JEditorCloseConfirmPopup::IsSupportedFuncType(const J_EDITOR_POPUP_WINDOW_FUNC_TYPE type)const noexcept
+		{
+			switch (type)
+			{
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CANCEL:
+				return true;
+			case JinEngine::Editor::J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CONTENTS:
+				return true;
+			default:
+				return IsDefaultFuncType(type);
+			}
 		}
 	}
 }

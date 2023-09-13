@@ -1,28 +1,28 @@
 #include"JSceneCameraList.h" 
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../../Gui/JGui.h"
+#include"../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../Object/Resource/Scene/JScene.h"
 #include"../../../../Object/GameObject/JGameObject.h"
 #include"../../../../Object/Component/JComponent.h"
 #include"../../../../Object/Component/JComponentType.h"
 #include"../../../../Object/Component/Camera/JCamera.h"
-#include"../../../../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{
 		void JSceneCameraList::DisplayCameraList(const JUserPtr<JScene>& scene, const std::string& unqLabel, const JVector2<float> size)noexcept
-		{
-			const ImGuiWindowFlags flag = ImGuiWindowFlags_NoTitleBar |
-				ImGuiWindowFlags_AlwaysAutoResize |
-				ImGuiWindowFlags_NoNav |
-				ImGuiWindowFlags_NoSavedSettings |
-				ImGuiWindowFlags_NoFocusOnAppearing | 
-				ImGuiWindowFlags_NoMove;
+		{ 
+			const J_GUI_WINDOW_FLAG_ flag = J_GUI_WINDOW_FLAG_NO_TITLE_BAR |
+				J_GUI_WINDOW_FLAG_AUTO_RESIZE |
+				J_GUI_WINDOW_FLAG_NO_NAV |
+				J_GUI_WINDOW_FLAG_NO_SAVE |
+				J_GUI_WINDOW_FLAG_NO_FOCUS_ON_APPEARING | 
+				J_GUI_WINDOW_FLAG_NO_MOVE;
 
-			ImGui::SetCursorPosX(0);
-			JImGuiImpl::BeginWindow(("##SceneListWindow" + unqLabel).c_str(), 0, flag);
-			JImGuiImpl::BeginListBox(("##SceneListBox" + unqLabel).c_str(), size);
+			JGui::SetCursorPosX(0);
+			JGui::BeginWindow(("##SceneListWindow" + unqLabel), 0, flag);
+			JGui::BeginListBox(("##SceneListBox" + unqLabel), size);
 
 			auto compVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA);
 			const uint vecCount = (uint)compVec.size();
@@ -33,15 +33,15 @@ namespace JinEngine
 
 				bool isSelected = i == preSelected;
 				JUserPtr<JCamera> cam = Core::ConnectChildUserPtr<JCamera>(compVec[i]);
-				if (JImGuiImpl::CheckBox(JCUtil::WstrToU8Str(cam->GetName()), isSelected))
+				if (JGui::CheckBox(JCUtil::WstrToU8Str(cam->GetName()), isSelected))
 				{
 					if(isSelected)
 						preSelected = i;
 				}
 			}
 
-			JImGuiImpl::EndListBox();
-			JImGuiImpl::EndWindow();
+			JGui::EndListBox();
+			JGui::EndWindow();
 		}
 		uint JSceneCameraList::GetSelecetdIndex()const noexcept
 		{

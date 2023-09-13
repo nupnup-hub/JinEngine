@@ -2,6 +2,7 @@
 #include"JEditor.h" 
 #include"JEditorPageEnum.h"  
 #include"../Popup/JEditorPopupType.h"
+#include"../Gui/JGuiType.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
 
 namespace JinEngine
@@ -14,8 +15,7 @@ namespace JinEngine
 	{ 
 		class JEditorAttribute; 
 		class JEditorWindow;
-		class JEditorPopupWindow;	
-		class JEditorSimpleWindow;	//It isn't derived from JEditor .... used by testing or debugging
+		class JEditorPopupWindow;	 
 
 		class JEditorPage : public JEditor
 		{ 
@@ -33,39 +33,51 @@ namespace JinEngine
 				std::unique_ptr<JEditorAttribute> MakeAttribute()noexcept;
 			};
 		private:
-			struct WinodwMaximizeInfo
+			struct WinodowMaximizeInfo
 			{ 
 			public:
 				JEditorWindow* window = nullptr; 
-				std::vector<uint> preTabItemID;
+				std::vector<GuiID> preTabItemID; 
+				JVector2F prePos;
+				JVector2F preSize;
 				int destroyAfFrame = -1;	//reserve destroy when on previous size ev
 			};
+			struct State
+			{
+			public: 
+				JVector2F nextPos;
+				JVector2F nextSize; 
+			public:
+				bool hasSetNextPosReq = false;	
+				bool hasSetNextSizeReq = false;	
+			public:
+				bool isPageOpen = false;
+				bool isInputLock = false;
+				bool isMaximize = false;
+				bool isMinimize = false;
+			};
 		private:
-			using OpenEditorWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>;
-			using OpenSimpleWindowF = Core::JSFunctorType<void, bool*>;
-			using CloseEditorWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>;
-			using CloseSimpleWindowF = Core::JSFunctorType<void, bool*>;
+			using OpenEditorWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>; 
+			using CloseEditorWindowF = Core::JSFunctorType<void, JEditorPage&, const std::string>; 
 			using PopupWndFuncTuple = std::tuple <J_EDITOR_POPUP_WINDOW_FUNC_TYPE, std::unique_ptr< Core::JBindHandleBase>>;
+		private:
+			J_EDITOR_PAGE_FLAG pageFlag;
+			State state;
 		private:
 			std::vector<JEditorWindow*>windows;
 			std::vector<JEditorWindow*>opendWindow;
+			std::unordered_map<std::string, JEditorWindow*> windowMap;
 			JEditorWindow* focusWindow = nullptr;   
-			J_EDITOR_PAGE_FLAG pageFlag;
-			bool isPageOpen;
 		private:
 			//popup only use by editor page
 			std::vector<JEditorPopupWindow*>popupWindow;
 			JEditorPopupWindow* opendPopupWindow = nullptr;
-			JEditorPopupWindow* closeConfirmPopupWindow = nullptr;
+			JEditorPopupWindow* closeConfirmPopupWindow = nullptr; 
 		private:
-			std::vector<JEditorSimpleWindow*> simpleWindow;
+			std::unique_ptr<WinodowMaximizeInfo> maximizeInfo;
 		private:
-			std::unique_ptr<WinodwMaximizeInfo> maximizeInfo;
-		private:
-			std::unique_ptr<OpenEditorWindowF::Functor> openEditorWindowFunctor;
-			std::unique_ptr<OpenSimpleWindowF::Functor> openSimpleWindowFunctor;
-			std::unique_ptr<CloseEditorWindowF::Functor> closeEditorWindowFunctor;
-			std::unique_ptr<CloseSimpleWindowF::Functor> closeSimpleWindowFunctor;
+			std::unique_ptr<OpenEditorWindowF::Functor> openEditorWindowFunctor; 
+			std::unique_ptr<CloseEditorWindowF::Functor> closeEditorWindowFunctor; 
 		public:
 			JEditorPage(const std::string name, std::unique_ptr<JEditorAttribute> attribute, const J_EDITOR_PAGE_FLAG pageFlag);
 			~JEditorPage();
@@ -73,35 +85,50 @@ namespace JinEngine
 			JEditorPage& operator=(const JEditorPage& rhs) = delete;
 		protected:
 			void AddWindow(const std::vector<JEditorWindow*>& wnd)noexcept;
-			void AddPopupWindow(const std::vector<JEditorPopupWindow*>& wnd)noexcept;
-			void AddSimpleWindow(const std::vector<JEditorSimpleWindow*>& wnd)noexcept;
+			void AddPopupWindow(const std::vector<JEditorPopupWindow*>& wnd)noexcept; 
 		public:
-			J_EDITOR_PAGE_FLAG GetPageFlag()const noexcept; 
-			void SetPageFlag(const J_EDITOR_PAGE_FLAG flag)noexcept;
-		public:
+			J_EDITOR_PAGE_FLAG GetPageFlag()const noexcept;
+			bool GetPublicState(const J_EDITOR_PAGE_PUBLIC_STATE stateType)const noexcept;
 			virtual J_EDITOR_PAGE_TYPE GetPageType()const noexcept = 0;
-			virtual void SetInitWindow() = 0;
 		protected:
-			uint GetOpenWindowCount()const noexcept; 
-			JEditorWindow* GetOpenWindow(const uint index)const noexcept; 
+			uint GetOpenWindowCount()const noexcept;
+			JEditorWindow* GetOpenWindow(const uint index)const noexcept;
 			JEditorPopupWindow* GetOpenPopupWindow()const noexcept;
 			std::vector<JEditorWindow*> GetWindowVec()const noexcept;
+			GuiID GetWindowID()const noexcept;
+			GuiID GetDockSpaceID()const noexcept;
+		public:
+			void SetPageFlag(const J_EDITOR_PAGE_FLAG flag)noexcept;
+			void SetNextPagePos(const JVector2F& pos)noexcept;
+			void SetNextPageSize(const JVector2F& size)noexcept;
+			void SetInputLock(const bool value)noexcept;
+			void SetMaximize(const bool value)noexcept;
+			void SetMinimize(const bool value);
+			virtual void SetInitWindow() = 0;
+		public:
+			virtual bool IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj) noexcept = 0;
+			bool HasWindow(const std::string& name)noexcept;
 		protected:
 			bool CanUpdate(JEditorWindow* wnd)const noexcept;
+			bool CanClose()const noexcept;
+			bool CanMaximize()const noexcept;
+			bool CanMinimize()const noexcept;
 			bool HasDockNodeSpace()const noexcept;
 			bool HasMaximizedWindow()const noexcept; 
 		public: 
 			virtual void Initialize();
 			virtual void Clear();
-			virtual void UpdatePage() = 0;
-			void EnterPage(int guiWindowFlag)noexcept;
-			void ClosePage()noexcept;  
 		protected:
-			void UpdateOpenWindow();
-			void UpdateOpenPopupWindow(const JVector2<float> pagePos, const JVector2<float> pageSize);
-			void UpdateOpenSimpleWindow();
+			void EnterPage(J_GUI_WINDOW_FLAG_ guiWindowFlag)noexcept;
+			void ClosePage()noexcept;
 		public:
-			virtual bool IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj) noexcept = 0;
+			virtual void UpdatePage() = 0;
+			void UpdateOpenPopupWindow(const JVector2<float>& pagePos, const JVector2<float>& pageSize);
+		protected:
+			void UpdateOpenWindow(); 
+			void UpdateDockSpace(J_GUI_DOCK_NODE_FLAG_ dockspaceFlag); 
+		private:
+			void UpdateMaximizeLife();
 		public:
 			void OpenWindow(const std::string& windowname)noexcept;
 			void OpenWindow(JEditorWindow* window)noexcept;
@@ -110,9 +137,10 @@ namespace JinEngine
 			void ActivateWindow(JEditorWindow* window)noexcept;
 			void DeActivateWindow(JEditorWindow* window)noexcept;
 			void FocusWindow(JEditorWindow* window)noexcept;
+			void FocusWindow(const std::string& windowName)noexcept;
 			void UnFocusWindow(JEditorWindow* window)noexcept;
-			void MaximizeWindow(JEditorWindow* window)noexcept;
-			void PreviousSizeWindow(JEditorWindow* window)noexcept;
+			void MaximizeWindow(JEditorWindow* window, const JVector2F& prePos, const JVector2F& preSize)noexcept;
+			void PreviousSizeWindow(JEditorWindow* window, const bool useLazy)noexcept;
 		public:
 			void OpenPopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType, 
 				const std::string& desc = "", 
@@ -123,12 +151,9 @@ namespace JinEngine
 			void ClosePopupWindow(const J_EDITOR_POPUP_WINDOW_TYPE popupType);
 			void ClosePopupWindow(JEditorPopupWindow* popupWindow);
 		protected:
-			OpenEditorWindowF::Functor* GetOpenEditorWindowFunctorPtr()noexcept;
-			OpenSimpleWindowF::Functor* GetOpenSimpleWindowFunctorPtr()noexcept;
-			CloseEditorWindowF::Functor* GetCloseEditorWindowFunctorPtr()noexcept;
-			CloseSimpleWindowF::Functor* GetCloseSimpleWindowFunctorPtr()noexcept;
+			OpenEditorWindowF::Functor* GetOpenEditorWindowFunctorPtr()noexcept; 
+			CloseEditorWindowF::Functor* GetCloseEditorWindowFunctorPtr()noexcept; 
 		protected:
-			void UpdateDockSpace(const int dockspaceFlag); 
 			void PrintOpenWindowState();	//unuse
 		protected:
 			void DoSetOpen()noexcept override;

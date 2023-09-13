@@ -1,10 +1,10 @@
 #include"JProjectMainPage.h" 
 #include"Window/JLogViewer.h" 
 #include"Window/JWindowDirectory.h"  
+#include"Window/JGraphicOptionSetting.h" 
+#include"Window/JWindowStateViewer.h" 
 #include"../JEditorAttribute.h" 
 #include"../JEditorPageShareData.h"
-#include"../SimpleWindow/JGraphicOptionSetting.h" 
-#include"../SimpleWindow/JWindowStateViewer.h" 
 #include"../CommonWindow/Debug/JStringConvertTest.h" 
 #include"../CommonWindow/View/JSceneViewer.h"
 #include"../CommonWindow/View/JSceneObserver.h"
@@ -16,7 +16,7 @@
 #include"../../Popup/JEditorPopupWindow.h"
 #include"../../Event/JEditorEvent.h"
 #include"../../Menubar/JEditorMenuBar.h" 
-#include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
+#include"../../Gui/JGui.h"  
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Object/Directory/JDirectory.h"
 #include"../../../Object/Directory/JFile.h"
@@ -24,49 +24,53 @@
 #include"../../../Object/Resource/Scene/JScene.h"
 #include"../../../Object/Resource/Scene/JSceneManager.h"  
 #include"../../../Application/JApplicationProjectPrivate.h"
-#include"../../../Utility/JVectorExtend.h"
-#include"../../../Window/JWindow.h"
+#include"../../../Core/Math/JVectorExtend.h" 
 
 namespace JinEngine
 {
 	namespace Editor
 	{
 		JProjectMainPage::JProjectMainPage()
-			:JEditorPage("JEngine#MainPage",
+			:JEditorPage("JProjectMainPage",
 				std::make_unique<JEditorAttribute>(),
-				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK))
+				Core::AddSQValueEnum(J_EDITOR_PAGE_IS_MAIN_PAGE, J_EDITOR_PAGE_SUPPORT_DOCK))
 		{  
 			storeProjectF = std::make_unique<StoreProjectF::Functor>(&JApplicationProjectPrivate::IOInterface::StoreProject);
 			loadProjectF = std::make_unique<LoadProjectF::Functor>(&JApplicationProjectPrivate::IOInterface::LoadProject);
 
 			std::vector<WindowInitInfo> openInfo;
-			openInfo.emplace_back("Window Directory##JEngine");
-			openInfo.emplace_back("Object Explorer##JEngine");
-			openInfo.emplace_back("Object Detail");
-			openInfo.emplace_back("Scene Observe##JEngine");
-			openInfo.emplace_back("Scene Viewer##JEngine");
-			openInfo.emplace_back("Log Viewer##JEngine");
-			openInfo.emplace_back("Graphic Resource Watcher##JEngine");
-			openInfo.emplace_back("String Convert Test##JEngine");
-			openInfo.emplace_back("Application Watcher##JEngine");
-			 
+			openInfo.emplace_back("Window Directory##JProjectMainPage");
+			openInfo.emplace_back("Object Explorer##JProjectMainPage");
+			openInfo.emplace_back("Object Detail##JProjectMainPage");
+			openInfo.emplace_back("Scene Observe##JProjectMainPage");
+			openInfo.emplace_back("Scene Viewer##JProjectMainPage");
+			openInfo.emplace_back("Log Viewer##JProjectMainPage");
+			openInfo.emplace_back("Graphic Resource Watcher##JProjectMainPage");
+			openInfo.emplace_back("String Convert Test##JProjectMainPage");
+			openInfo.emplace_back("Application Watcher##JProjectMainPage");
+			openInfo.emplace_back("Graphic Option##JProjectMainPage");
+			openInfo.emplace_back("Window State##JProjectMainPage");
+
 			J_EDITOR_WINDOW_FLAG defaultFlag = J_EDITOR_WINDOW_SUPPORT_WINDOW_CLOSING;
+			J_EDITOR_WINDOW_FLAG noneDockFlag = Core::AddSQValueEnum(defaultFlag, J_EDITOR_WINDOW_SUPPORT_MAXIMIZE);
 			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(defaultFlag, J_EDITOR_WINDOW_SUPROT_DOCK);
 
 			J_EDITOR_WINDOW_FLAG wndDirFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SUPPORT_POPUP, J_EDITOR_WINDOW_SUPPORT_SELECT);
 			J_EDITOR_WINDOW_FLAG objExplorerFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SUPPORT_POPUP, J_EDITOR_WINDOW_SUPPORT_SELECT, J_EDITOR_WINDOW_LISTEN_OTHER_WINDOW_SELECT);
 			J_EDITOR_WINDOW_FLAG sceneObserverFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SUPPORT_POPUP, J_EDITOR_WINDOW_SUPPORT_SELECT, J_EDITOR_WINDOW_LISTEN_OTHER_WINDOW_SELECT,J_EDITOR_WINDOW_SUPPORT_MAXIMIZE );
 			J_EDITOR_WINDOW_FLAG sceneViewerFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SUPPORT_MAXIMIZE);
-
+ 
 			windowDirectory = std::make_unique<JWindowDirectory>(openInfo[0].GetName(), openInfo[0].MakeAttribute(), GetPageType(), wndDirFlag);
 			objectExplorer = std::make_unique<JObjectExplorer>(openInfo[1].GetName(), openInfo[1].MakeAttribute(), GetPageType(), objExplorerFlag);
 			objectDetail = std::make_unique<JObjectDetail>(openInfo[2].GetName(), openInfo[2].MakeAttribute(), GetPageType(), dockFlag);
 			sceneObserver = std::make_unique<JSceneObserver>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType(), sceneObserverFlag, Constants::GetAllObserverSetting());
 			sceneViewer = std::make_unique<JSceneViewer>(openInfo[4].GetName(), openInfo[4].MakeAttribute(), GetPageType(), sceneViewerFlag);
 			logViewer = std::make_unique<JLogViewer>(openInfo[5].GetName(), openInfo[5].MakeAttribute(), GetPageType(), dockFlag);
-			graphicResourceWatcher = std::make_unique<JGraphicResourceWatcher>(openInfo[6].GetName(), openInfo[6].MakeAttribute(), GetPageType(), defaultFlag);
-			stringConvertTest = std::make_unique<JStringConvertTest>(openInfo[7].GetName(), openInfo[7].MakeAttribute(), GetPageType(), defaultFlag);
-			appWatcher = std::make_unique<JApplicationWatcher>(openInfo[8].GetName(), openInfo[8].MakeAttribute(), GetPageType(), defaultFlag);
+			graphicResourceWatcher = std::make_unique<JGraphicResourceWatcher>(openInfo[6].GetName(), openInfo[6].MakeAttribute(), GetPageType(), noneDockFlag);
+			stringConvertTest = std::make_unique<JStringConvertTest>(openInfo[7].GetName(), openInfo[7].MakeAttribute(), GetPageType(), noneDockFlag);
+			appWatcher = std::make_unique<JApplicationWatcher>(openInfo[8].GetName(), openInfo[8].MakeAttribute(), GetPageType(), noneDockFlag);
+			graphicOptionSetting = std::make_unique<JGraphicOptionSetting>(openInfo[9].GetName(), openInfo[9].MakeAttribute(), GetPageType(), noneDockFlag);
+			wndStateViewer = std::make_unique<JWindowStateViewer>(openInfo[10].GetName(), openInfo[10].MakeAttribute(), GetPageType(), noneDockFlag);
 
 			std::vector<JEditorWindow*> windows
 			{
@@ -78,7 +82,9 @@ namespace JinEngine
 				logViewer.get(), 
 				graphicResourceWatcher.get(),
 				stringConvertTest.get(),
-				appWatcher.get()
+				appWatcher.get(),
+				graphicOptionSetting.get(),
+				wndStateViewer.get()
 			};
 			AddWindow(windows);
 
@@ -112,8 +118,8 @@ namespace JinEngine
 			{
 				constexpr uint columnCount = 4;
 				constexpr uint textCount = 3;
-				const float fontSize = ImGui::GetCurrentContext()->FontSize;
-				const JVector2<float> wndSize = ImGui::GetWindowSize();
+				const float fontSize = JGui::GetFontSize();
+				const JVector2<float> wndSize = JGui::GetWindowSize();
 				const JVector2<float> listSize = JVector2<float>(wndSize.x * 0.85f, wndSize.y * 0.65f);
 				const JVector2<float> padding = listSize * 0.002f;
 				const JVector2<float> contentsSize = JVector2<float>(listSize.x - padding.x * 2, fontSize * 2); 
@@ -132,17 +138,17 @@ namespace JinEngine
 					"Store"
 				};
 
-				ImGui::SetCursorPosX(wndSize.x * 0.075f); 
-				JImGuiImpl::BeginListBox("##ModifiedResource_ProjectMainPage", listSize);
-				ImGui::Separator();
+				JGui::SetCursorPosX(wndSize.x * 0.075f); 
+				JGui::BeginListBox("##ModifiedResource_ProjectMainPage", listSize);
+				JGui::Separator();
 
 				JEditorDynamicAlignCalculator<4> alignCal;
-				alignCal.Update(listSize, contentsSize, padding, CreateVec2(0), innerSize, J_EDITOR_INNER_ALGIN_TYPE::ROW, ImGui::GetCursorPos());
+				alignCal.Update(listSize, contentsSize, padding, CreateVec2(0), innerSize, J_EDITOR_INNER_ALGIN_TYPE::ROW, JGui::GetCursorPos());
 
 				for (uint i = 0; i < columnCount; ++i)
 				{
 					alignCal.SetNextContentsPosition();
-					JImGuiImpl::Text(label[i]);
+					JGui::Text(label[i]);
 				}
 
 				JEditorTextAlignCalculator textCal;
@@ -151,10 +157,18 @@ namespace JinEngine
 				{
 					std::string strArr[textCount]{ "","","" };
 					JUserPtr<Core::JIdentifier> obj = Core::GetUserPtr<Core::JIdentifier>(data->typeGuid, data->objectGuid);
+					const bool isResource = obj->GetTypeInfo().IsChildOf(JResourceObject::StaticTypeInfo());
+					const bool isDir = !isResource ? obj->GetTypeInfo().IsChildOf(JDirectory::StaticTypeInfo()) : false;
+					if (!isResource && !isDir)
+						continue;
+
 					if (obj != nullptr)
 					{
-						strArr[0] = JCUtil::WstrToU8Str(obj->GetName());
-						strArr[1] = JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj.Get())->GetPath());
+						strArr[0] = JCUtil::WstrToU8Str(obj->GetName());	
+						if (isResource)
+							strArr[1] = JCUtil::WstrToU8Str(static_cast<JResourceObject*>(obj.Get())->GetPath());
+						else
+							strArr[1] = JCUtil::WstrToU8Str(static_cast<JDirectory*>(obj.Get())->GetPath());
 						strArr[2] = obj->GetTypeInfo().NameWithOutModifier();
 					}
 					else
@@ -172,12 +186,12 @@ namespace JinEngine
 					{
 						textCal.Update(strArr[j], alignCal.GetInnerContentsSize(), true);
 						alignCal.SetNextContentsPosition();
-						JImGuiImpl::Text(textCal.LeftAligned());
+						JGui::Text(textCal.LeftAligned());
 					}
 					alignCal.SetNextContentsPosition();
-					JImGuiImpl::CheckBox("##ModifiedResource_CheckBox" + strArr[0], data->isStore);
+					JGui::CheckBox("##ModifiedResource_CheckBox" + strArr[0], data->isStore);
 				}
-				JImGuiImpl::EndListBox();
+				JGui::EndListBox();
 			};
 
 			closePopupOpenF = std::make_unique<ClosePopupOpenF::Functor>(openFunc);
@@ -195,11 +209,6 @@ namespace JinEngine
 				std::make_unique<ClosePopupContentsF::CompletelyBind>(*closePopupContetnsF, this));
 			closePopup->SetDesc(u8"변경된 자원");
 
-			graphicOptionSetting = std::make_unique<JGraphicOptionSetting>();	
-			wndStateViewer = std::make_unique<JWindowStateViewer>();
-
-			std::vector<JEditorSimpleWindow*> simpleWindow{ graphicOptionSetting.get(), wndStateViewer.get() };
-			AddSimpleWindow(simpleWindow);
 		}
 		JProjectMainPage::~JProjectMainPage()
 		{
@@ -228,7 +237,7 @@ namespace JinEngine
 				GetOpenWindow(i)->SetLastActivated(true);
 		}
 		void JProjectMainPage::Initialize()
-		{
+		{ 
 			JEditorPage::Initialize();
 			windowDirectory->Initialize();
 			objectExplorer->Initialize(_JSceneManager::Instance().GetFirstScene()->GetRootGameObject());
@@ -240,39 +249,29 @@ namespace JinEngine
 		}
 		void JProjectMainPage::UpdatePage()
 		{
-			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM);
-			JImGuiImpl::PushFont();
-
-			const ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f); 
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-			ImGui::SetNextWindowSize(viewport->WorkSize);
-			ImGui::SetNextWindowPos(viewport->WorkPos);
+			JGui::SetNextWindowSize(JGui::GetMainWorkSize());
+			JGui::SetNextWindowPos(JGui::GetMainWorkPos());
 			 
-			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_NoWindowMenuButton;
-			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoInputs |
-				ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground |
-				ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
+			J_GUI_DOCK_NODE_FLAG_ dockspaceFlag = J_GUI_DOCK_NODE_FLAG_NO_WINDOW_MENU_BUTTON;  
+			J_GUI_WINDOW_FLAG_ guiWindowFlag = J_GUI_WINDOW_FLAG_NO_NAV_INPUT |
+				J_GUI_WINDOW_FLAG_NO_BRING_TO_FRONT_ON_FOCUS | J_GUI_WINDOW_FLAG_NO_BACKGROUND |
+				J_GUI_WINDOW_FLAG_NO_TITLE_BAR | J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | J_GUI_WINDOW_FLAG_NO_COLLAPSE;
 
-			//if (!JImGuiImpl::IsFullScreen())
-			//	dockspaceFlag &= ~ImGuiDockNodeFlags_PassthruCentralNode;
+			//if (!JGui::IsFullScreen())
+			//	dockspaceFlag &= ~JGuiDockNodeFlags_PassthruCentralNode;
 
 			EnterPage(guiWindowFlag);
+			JGui::SetFont(J_GUI_FONT_TYPE::MEDIUM);
+			JGui::PushFont();
 			if (HasDockNodeSpace())
 				UpdateDockSpace(dockspaceFlag);
 			else
 				BuildDockNode();
-			menuBar->Update(true);  
+			menuBar->Update(true);
 			ClosePage();
-			 
-			UpdateOpenWindow();
-			UpdateOpenSimpleWindow();
 
-			JImGuiImpl::PopFont();
-			ImGui::PopStyleVar(2); 
-
-			UpdateOpenPopupWindow(JVector2<float>(0, 0), ImGui::GetMainViewport()->WorkSize);
+			UpdateOpenWindow(); 
+			JGui::PopFont();  
 		}
 		bool JProjectMainPage::IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept
 		{
@@ -298,49 +297,16 @@ namespace JinEngine
 		}
 		void JProjectMainPage::BuildDockNode()
 		{
-			ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGuiID dockspaceId = ImGui::GetID(GetDockNodeName().c_str()); 
-
-			ImGui::Begin(windowDirectory->GetName().c_str()); ImGui::End();
-			ImGui::Begin(objectExplorer->GetName().c_str()); ImGui::End();
-			ImGui::Begin(objectDetail->GetName().c_str()); ImGui::End();
-			ImGui::Begin(sceneObserver->GetName().c_str()); ImGui::End();
-			ImGui::Begin(sceneViewer->GetName().c_str()); ImGui::End();
-			ImGui::Begin(logViewer->GetName().c_str()); ImGui::End(); 
-
-			ImGui::DockBuilderRemoveNode(dockspaceId);
-			ImGui::DockBuilderAddNode(dockspaceId);
-			ImGui::DockBuilderSetNodePos(dockspaceId, viewport->WorkPos);
-			ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->WorkSize);
-			//ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
-
-			ImGuiID dock_main = dockspaceId;
-			ImGuiID dockSceneObserver;
-			ImGuiID dockObjExplorer;
-			ImGuiID dockObjDetail;
-			ImGuiID dockObjLogViewer;
-			ImGuiID dockWindowDirectory;
-			ImGuiID dockSceneViewer;
- 
-			//ImGui::DockBuilderAddNode(dockWindowDirectory);
-			//ImGui::DockBuilderSetNodePos(dockWindowDirectory, viewport->WorkPos);
-			//ImGui::DockBuilderSetNodeSize(dockWindowDirectory, viewport->WorkSize);
-			dockWindowDirectory = ImGui::DockBuilderSplitNode(dock_main, ImGuiDir_Down, 1, &dock_main, &dock_main);
-			dockObjDetail = ImGui::DockBuilderSplitNode(dockWindowDirectory, ImGuiDir_Right, 0.3f, nullptr, &dockWindowDirectory);
-			dockObjExplorer = ImGui::DockBuilderSplitNode(dockObjDetail, ImGuiDir_Left, 0.5f, nullptr, &dockObjDetail);
-			dockObjLogViewer = ImGui::DockBuilderSplitNode(dockObjExplorer, ImGuiDir_Down, 0.4f, nullptr, &dockObjExplorer);
-			dockSceneViewer = ImGui::DockBuilderSplitNode(dockWindowDirectory, ImGuiDir_Up, 0.7f, nullptr, &dockWindowDirectory);
-			dockSceneObserver = ImGui::DockBuilderSplitNode(dockSceneViewer, ImGuiDir_Up, 0, &dockSceneViewer, nullptr);
- 
-			ImGui::DockBuilderDockWindow(GetName().c_str(), dock_main);
-			ImGui::DockBuilderDockWindow(windowDirectory->GetName().c_str(), dockWindowDirectory);
-			ImGui::DockBuilderDockWindow(objectExplorer->GetName().c_str(), dockObjExplorer);
-			ImGui::DockBuilderDockWindow(objectDetail->GetName().c_str(), dockObjDetail);
-			ImGui::DockBuilderDockWindow(sceneViewer->GetName().c_str(), dockSceneViewer);
-			ImGui::DockBuilderDockWindow(sceneObserver->GetName().c_str(), dockSceneObserver);
-			ImGui::DockBuilderDockWindow(logViewer->GetName().c_str(), dockObjLogViewer); 
-		 
-			ImGui::DockBuilderFinish(dockspaceId);
+			static constexpr int dockCount = 7;		//page(1) + window(6) 
+			std::vector<std::unique_ptr<JGuiDockBuildNode>> dockVec(dockCount);
+			dockVec[0] = JGuiDockBuildNode::CreateRootNode(GetName(), GetDockNodeName());
+			dockVec[1] = JGuiDockBuildNode::CreateNode(windowDirectory->GetName(), 1, 0, J_GUI_CARDINAL_DIR::DOWN, 0.7f);
+			dockVec[2] = JGuiDockBuildNode::CreateNode(objectDetail->GetName(), 2, 0, J_GUI_CARDINAL_DIR::RIGHT, 0.3f);
+			dockVec[3] = JGuiDockBuildNode::CreateNode(objectExplorer->GetName(), 3, 2, J_GUI_CARDINAL_DIR::LEFT, 0.5f);
+			dockVec[4] = JGuiDockBuildNode::CreateNode(logViewer->GetName(), 4, 3, J_GUI_CARDINAL_DIR::DOWN, 0.4f);
+			dockVec[5] = JGuiDockBuildNode::CreateNode(sceneViewer->GetName(), 5, 1, J_GUI_CARDINAL_DIR::UP, 0.7f);
+			dockVec[6] = JGuiDockBuildNode::CreateNode(sceneObserver->GetName(), 6, 5, J_GUI_CARDINAL_DIR::NONE, 0);
+			JGui::BuildDockHirechary(dockVec); 
 		}
 		void JProjectMainPage::BuildMenuNode()
 		{
@@ -386,23 +352,12 @@ namespace JinEngine
 				false, true, false,
 				graphicOptionSetting->GetOpenPtr(),
 				graphicNodePtr);
+   
+			auto openBind = std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpenEditorWindowFunctorPtr(), *this, graphicOptionSetting->GetName());
+			auto closeBind = std::make_unique<CloseEditorWindowF::CompletelyBind>(*GetCloseEditorWindowFunctorPtr(), *this, graphicOptionSetting->GetName());
+			grapicOptionNode->RegisterBindHandle(std::move(openBind), std::move(closeBind));
 
-			std::unique_ptr<JEditorMenuNode> wndStateViewerNode = std::make_unique<JEditorMenuNode>("Window state",
-				false, true, false,
-				wndStateViewer->GetOpenPtr(),
-				windowNodePtr);
-
-			using OpenSimpleB = OpenSimpleWindowF::CompletelyBind;
-			using CloseSimpleB = CloseSimpleWindowF::CompletelyBind;
-
-			grapicOptionNode->RegisterBindHandle(std::make_unique<OpenSimpleB>(*GetOpenSimpleWindowFunctorPtr(), graphicOptionSetting->GetOpenPtr()),
-				std::make_unique<CloseSimpleB>(*GetOpenSimpleWindowFunctorPtr(), graphicOptionSetting->GetOpenPtr()));
-
-			wndStateViewerNode->RegisterBindHandle(std::make_unique<OpenSimpleB>(*GetOpenSimpleWindowFunctorPtr(), wndStateViewer->GetOpenPtr()),
-				std::make_unique<CloseSimpleB>(*GetOpenSimpleWindowFunctorPtr(), wndStateViewer->GetOpenPtr()));
-
-			menuBar->AddNode(std::move(grapicOptionNode));
-			menuBar->AddNode(std::move(wndStateViewerNode));
+			menuBar->AddNode(std::move(grapicOptionNode)); 
 		}
 	}
 }

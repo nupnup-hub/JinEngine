@@ -1,7 +1,7 @@
 #pragma once
 #include"../Singleton/JSingletonHolder.h"
 #include"../Pointer/JOwnerPtr.h"
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 #include"JModuleMacro.h"
 #include"JModuleDesc.h"
 #include<string>
@@ -14,7 +14,7 @@ namespace JinEngine
 		class JModule;
 		class JModuleIntializer;
 		template<typename T>class JCreateUsingNew;
-		class CORE_API JModuleManager
+		class JModuleManager
 		{ 
 		private:
 			template<typename T> friend class JCreateUsingNew;

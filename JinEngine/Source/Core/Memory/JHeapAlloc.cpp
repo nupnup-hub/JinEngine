@@ -66,6 +66,10 @@ namespace JinEngine
 		{
 			return committedBlockCount + blockCount <= reservedBlockCount;
 		}
+		size_t JHeapAlloc::GetAlignedAllocBlockSize()const noexcept
+		{
+			return 0;
+		}
 		JAllocationInfo JHeapAlloc::GetInformation()const noexcept
 		{
 			return JAllocationInfo{};

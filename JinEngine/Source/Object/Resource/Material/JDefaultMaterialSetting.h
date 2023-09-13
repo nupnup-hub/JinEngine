@@ -1,5 +1,5 @@
 #pragma once
-#include"../../../Utility/JVector.h"
+#include"../../../Core/Math/JVector.h" 
 #include"../../../Core/Pointer/JOwnerPtr.h"
 
 namespace JinEngine
@@ -11,8 +11,7 @@ namespace JinEngine
 	{
 	public:
 		static void SetStandard(const JUserPtr<JMaterial>& mat);
-		static void SetSky(const JUserPtr<JMaterial>& mat, const JUserPtr<JTexture>& skyTxt);
-		static void SetShadowMap(const JUserPtr<JMaterial>& mat);
+		static void SetSky(const JUserPtr<JMaterial>& mat, const JUserPtr<JTexture>& skyTxt); 
 		static void SetDebug(const JUserPtr<JMaterial>& mat, const bool isLine, const JVector4<float> color);
 		static void SetAlbedoMapOnly(const JUserPtr<JMaterial>& mat, const JUserPtr<JTexture>& texture);
 	};

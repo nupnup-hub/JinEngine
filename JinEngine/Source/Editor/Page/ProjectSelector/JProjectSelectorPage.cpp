@@ -2,9 +2,9 @@
 #include"Window/JProjectSelectorHub.h"
 #include"../JEditorAttribute.h"
 #include"../JEditorPageShareData.h" 
-#include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
+#include"../../Gui/JGui.h" 
 #include"../../../Object/Resource/JResourceManager.h"
-#include"../../../Object/Resource/Texture/JTexture.h"
+#include"../../../Object/Resource/Texture/JTexture.h" 
 
 namespace JinEngine
 {
@@ -49,26 +49,22 @@ namespace JinEngine
 		}
 		void JProjectSelectorPage::UpdatePage()
 		{
-			ImGui::SetWindowFontScale(2);
-			const ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGui::SetNextWindowSize(viewport->WorkSize);
-			ImGui::SetNextWindowPos(viewport->WorkPos);
-
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-			//ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM); 
-			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
-			guiWindowFlag |= ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoInputs;
+			JGui::SetCurrentWindowFontScale(2); 
+			JGui::SetNextWindowSize(JGui::GetMainWorkSize());
+			JGui::SetNextWindowPos(JGui::GetMainWorkPos());
+ 
+			J_GUI_WINDOW_FLAG_ guiWindowFlag = J_GUI_WINDOW_FLAG_NO_DOCKING | J_GUI_WINDOW_FLAG_NO_MOVE | J_GUI_WINDOW_FLAG_NO_TITLE_BAR;
+			guiWindowFlag |= J_GUI_WINDOW_FLAG_NO_COLLAPSE | J_GUI_WINDOW_FLAG_NO_NAV_INPUT;
 
 			EnterPage(guiWindowFlag); 
-			ImGui::PopStyleVar(2);
+			JGui::SetFont(J_GUI_FONT_TYPE::MEDIUM);
+			JGui::PushFont();
 
-			//JImGuiImpl::AddImage(*(backgroundTexture.Get()), wPos, wSize, false, IM_COL32(255, 255, 255, 50));
+			//JGui::AddImage(*(backgroundTexture.Get()), wPos, wSize, false, IM_COL32(255, 255, 255, 50));
 			UpdateOpenWindow();
+			JGui::PopFont(); 
 			ClosePage();
-			ImGui::SetWindowFontScale(1);
+			JGui::SetCurrentWindowFontScale(1);
 		}
 		bool JProjectSelectorPage::IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj) noexcept
 		{
@@ -81,8 +77,8 @@ namespace JinEngine
 		}
 		void JProjectSelectorPage::DoDeActivate()noexcept
 		{
-			JEditorPage::DoDeActivate();
 			backgroundTexture.Clear();
+			JEditorPage::DoDeActivate();
 		}
 		void JProjectSelectorPage::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 		{

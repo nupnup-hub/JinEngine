@@ -1,5 +1,5 @@
 #pragma once
-#include"../../Utility/JVector.h"
+#include"../../Core/Math/JVector.h"
 #include"../../Core/Pointer/JOwnerPtr.h"
 
 namespace JinEngine
@@ -41,7 +41,7 @@ namespace JinEngine
 		private:
 			int lineCount = 128;	//ex) lineCount = 2 => create row line 2 and column line 2
 			int lineScale = 128;
-			int lineStep = 1;
+			int lineStep = 4;
 		public:
 			void MakeCoordGrid(const JUserPtr<JGameObject>& parent);
 			void Clear();

@@ -3,7 +3,7 @@
 #include"../File/JJSon.h"
 #include"../Module/JModule.h" 
 #include"../Module/JModuleManager.h" 
-#include"../../Utility/JCommonUtility.h" 
+#include"../Utility/JCommonUtility.h" 
 #include<iostream>
 #include <psapi.h>
  

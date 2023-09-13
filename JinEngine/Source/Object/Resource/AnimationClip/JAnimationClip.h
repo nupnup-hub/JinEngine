@@ -7,10 +7,8 @@
 namespace JinEngine
 {
 	class JSkeletonAsset;
-	namespace Core
-	{ 
-		class JAnimationUpdateData;
-	}
+	class JAnimationUpdateData;
+
 	struct JAnimationData;
 	class JAnimationClipPrivate;
 	class JAnimationClip final : public JResourceObject
@@ -78,9 +76,9 @@ namespace JinEngine
 		bool IsSameSkeleton(JSkeletonAsset* srcSkeletonAsset)noexcept;
 		bool IsValid()const noexcept final;
 	public:
-		void ClipEnter(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber, const float timeOffset)noexcept;
+		void ClipEnter(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber, const float timeOffset)noexcept;
 		void ClipClose()noexcept; 
-		void Update(Core::JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept;
+		void Update(JAnimationUpdateData* updateData, const uint layerNumber, const uint updateNumber)noexcept;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

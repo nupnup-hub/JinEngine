@@ -1,191 +1,205 @@
 #include"JEditorWindow.h"
 #include"JEditorPageShareData.h"
 #include"JEditorAttribute.h"  
-#include"JEditorWindowDockUpdateHelper.h"
+#include"Docking/JDockUpdateHelper.h"
 #include"../Event/JEditorEvent.h" 
 #include"../Popup/JEditorPopupMenu.h"
-#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../Gui/JGui.h"
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/Transition/JTransition.h"
-#include"../../Utility/JCommonUtility.h"   
+#include"../../Core/Utility/JCommonUtility.h"
 #include"../../Object/GameObject/JGameObject.h" 
 #include"../../Object/GameObject/JGameObjectPrivate.h" 
 #include"../../Window/JWindow.h"
 #include<fstream>
 
+#include"../../Develop/Debug/JDevelopDebug.h"
 namespace JinEngine
 {
 	namespace Editor
 	{
-		namespace Private
-		{
-			static void OverrideDockFlag(ImGuiDockNodeFlags flag)
-			{
-				ImGuiWindowClass window_class;
-				window_class.DockNodeFlagsOverrideSet |= flag;
-				ImGui::SetNextWindowClass(&window_class);
-			}
-		}
-
 		JEditorWindow::PopupSetting::PopupSetting(JEditorPopupMenu* popupMenu,
 			JEditorStringMap* stringMap,
 			bool canOpenPopup)
 			:popupMenu(popupMenu), stringMap(stringMap), canOpenPopup(canOpenPopup)
-		{
-
-		}
+		{}
 		bool JEditorWindow::PopupSetting::IsValid()const noexcept
 		{
 			return popupMenu != nullptr && stringMap != nullptr;
 		}
-
 		JEditorWindow::JEditorWindow(const std::string name,
 			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE ownerPageType,
 			const J_EDITOR_WINDOW_FLAG windowFlag)
 			:JEditor(name, std::move(attribute)), ownerPageType(ownerPageType), windowFlag(windowFlag)
 		{
-		
+
 		}
 		JEditorWindow::~JEditorWindow() {}
 		J_EDITOR_PAGE_TYPE JEditorWindow::GetOwnerPageType()const noexcept
 		{
 			return ownerPageType;
 		}
-		void JEditorWindow::EnterWindow(int guiWindowFlag)
+		void JEditorWindow::EnterWindow(J_GUI_WINDOW_FLAG_ guiWindowFlag)
 		{
 			J_EDITOR_PAGE_FLAG pageFlag = JEditorPageShareData::GetPageFlag(ownerPageType);
-			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
-			{ 
-				guiWindowFlag = Core::AddSQValueEnum((ImGuiWindowFlags_)guiWindowFlag, ImGuiWindowFlags_NoInputs);
-				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-				ImGui::PushItemFlag(ImGuiItemFlags_NoNav, true);
-				ImGui::PushItemFlag(ImGuiItemFlags_NoNavDefaultFocus, true);
-				ImGui::PushItemFlag(ImGuiItemFlags_ReadOnly, true);
-				ImGui::PushItemFlag(ImGuiItemFlags_Inputable, false);  
-				JImGuiImpl::SetAllColorToSoft(JVector4<float>(0.2f, 0.2f, 0.2f, 0));
+			if (JEditorPageShareData::GetPublicState(ownerPageType, J_EDITOR_PAGE_PUBLIC_STATE::INPUT_LOCK))
+			{
+				guiWindowFlag = Core::AddSQValueEnum((J_GUI_WINDOW_FLAG)guiWindowFlag, J_GUI_WINDOW_FLAG_NO_NAV_INPUT);
+				JGui::PushItemFlag(J_GUI_ITEM_FLAG_DISABLED, true);
+				JGui::PushItemFlag(J_GUI_ITEM_FLAG_NO_NAV, true);
+				JGui::PushItemFlag(J_GUI_ITEM_FLAG_NO_NAV_DEFAULT_FOCUS, true);
+				JGui::PushItemFlag(J_GUI_ITEM_FLAG_READ_ONLY, true);
+				JGui::PushItemFlag(J_GUI_ITEM_FLAG_INPUTABLE, false);
+				JGui::SetAllColorToSoft(JVector4F(0.2f, 0.2f, 0.2f, 0));
 			}
 
-			if (isMaximize)
-				guiWindowFlag = Core::AddSQValueEnum((ImGuiWindowFlags_)guiWindowFlag, ImGuiWindowFlags_NoResize);
+			if (state.isMaximize)
+				guiWindowFlag = Core::AddSQValueEnum((J_GUI_WINDOW_FLAG)guiWindowFlag, J_GUI_WINDOW_FLAG_NO_MOVE, J_GUI_WINDOW_FLAG_NO_RESIZE);
 
 			if (CanUseDock())
 			{
-				ImGuiDockNodeFlagsPrivate_ flag = ImGuiDockNodeFlags_NoWindowMenuButton;
+				J_GUI_DOCK_NODE_FLAG_ flag = J_GUI_DOCK_NODE_FLAG_NO_WINDOW_MENU_BUTTON;
 				if (dockUpdateHelper->IsLockSplitAcitvated())
 				{
-					flag = Core::AddSQValueEnum(flag, (ImGuiDockNodeFlagsPrivate_)(ImGuiDockNodeFlags_NoDockingSplitMe |
-						ImGuiDockNodeFlags_NoDockingSplitOther));
+					flag = Core::AddSQValueEnum((J_GUI_DOCK_NODE_FLAG)flag,
+						J_GUI_DOCK_NODE_FLAG_NO_SPLIT_ME,
+						J_GUI_DOCK_NODE_FLAG_NO_SPLIT_OTHER);
 				}
 				if (dockUpdateHelper->IsLockOverAcitvated())
 				{
-					flag = Core::AddSQValueEnum(flag, (ImGuiDockNodeFlagsPrivate_)(ImGuiDockNodeFlags_NoDockingOverMe |
-						ImGuiDockNodeFlags_NoDockingOverOther |
-						ImGuiDockNodeFlags_NoDockingOverEmpty));
+					flag = Core::AddSQValueEnum((J_GUI_DOCK_NODE_FLAG)flag, J_GUI_DOCK_NODE_FLAG_NO_OVER_ME,
+						J_GUI_DOCK_NODE_FLAG_NO_OVER_OTHER,
+						J_GUI_DOCK_NODE_FLAG_NO_OVER_EMPTY);
 				}
-				Private::OverrideDockFlag(flag);
+				JGui::OverrideNextDockNodeFlag(flag);
 				if (dockUpdateHelper->IsLockMove())
-					guiWindowFlag = Core::AddSQValueEnum((ImGuiWindowFlags_)guiWindowFlag, ImGuiWindowFlags_NoMove);
+					guiWindowFlag = Core::AddSQValueEnum((J_GUI_WINDOW_FLAG)guiWindowFlag, J_GUI_WINDOW_FLAG_NO_MOVE);
 
 				if (dockUpdateHelper->IsLastDock() || dockUpdateHelper->IsLastWindow())
-					JImGuiImpl::BeginWindow(GetName(), nullptr, guiWindowFlag);
+					JGui::BeginWindow(GetName(), nullptr, guiWindowFlag);
 				else
-					JImGuiImpl::BeginWindow(GetName(), &isWindowOpen, guiWindowFlag);
+					JGui::BeginWindow(GetName(), &state.isWindowOpen, guiWindowFlag);
 			}
 			else
 			{
-				guiWindowFlag = Core::AddSQValue(guiWindowFlag, ImGuiWindowFlags_NoDocking);
-				JImGuiImpl::BeginWindow(GetName().c_str(), &isWindowOpen, guiWindowFlag);
-			}
-			 
-			if (CanMaximize())
-			{ 
-				if (isMaximize)
+				guiWindowFlag = Core::AddSQValue(guiWindowFlag, J_GUI_WINDOW_FLAG_NO_DOCKING);
+				if(!state.isMaximize)
+					guiWindowFlag = Core::MinusSQValue((J_GUI_WINDOW_FLAG)guiWindowFlag, J_GUI_WINDOW_FLAG_NO_COLLAPSE);
+				else
+					guiWindowFlag = Core::AddSQValue((J_GUI_WINDOW_FLAG)guiWindowFlag, J_GUI_WINDOW_FLAG_NO_COLLAPSE);
+				if (state.isMaximize)
 				{
-					if (JImGuiImpl::PreviousSizeButton(false))
+					//개별 윈도우는 뷰포트 크기만큼 확대
+					//dockNode를 지원하는 윈도우는 dockSpace(page)만큼 자동으로 확대된다
+					JGui::SetNextWindowPos(JGui::GetMainWorkPos());
+					JGui::SetNextWindowSize(JGui::GetMainWorkSize());
+				}
+
+				if (state.hasSetNextPosReq)
+				{
+					JGui::SetNextWindowPos(state.nextPos);
+					state.hasSetNextPosReq = false;
+				}
+				if (state.hasSetNextSizeReq)
+				{
+					JGui::SetNextWindowSize(state.nextSize);
+					state.hasSetNextSizeReq = false;
+				}
+				JGui::BeginWindow(GetName(), &state.isWindowOpen, guiWindowFlag);
+			}
+
+			if (CanMaximize())
+			{
+				if (state.isMaximize)
+				{
+					if (JGui::PreviousSizeButton(true, false))
 					{
 						AddEventNotification(*JEditorEvent::EvInterface(),
 							GetGuid(),
 							J_EDITOR_EVENT::PREVIOUS_SIZE_WINDOW,
-							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPreviousSizeWindowEvStruct>(this)));
+							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPreviousSizeWindowEvStruct>(this, true)));
 					}
 				}
 				else
 				{
-					if (JImGuiImpl::MaximizeButton())
+					if (JGui::MaximizeButton())
 					{
 						AddEventNotification(*JEditorEvent::EvInterface(),
 							GetGuid(),
 							J_EDITOR_EVENT::MAXIMIZE_WINDOW,
-							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorMaximizeWindowEvStruct>(this)));
+							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorMaximizeWindowEvStruct>(this, JGui::GetWindowPos(), JGui::GetWindowSize())));
 					}
 				}
 			}
 
-			if (!isWindowOpen)
+			if (!state.isWindowOpen)
 			{
 				bool canCloseWindow = dockUpdateHelper != nullptr ? (!dockUpdateHelper->IsLastDock() && !dockUpdateHelper->IsLastWindow()) : true;
 				if (canCloseWindow)
 				{
+					if (state.isMaximize)
+					{
+						AddEventNotification(*JEditorEvent::EvInterface(),
+							GetGuid(),
+							J_EDITOR_EVENT::PREVIOUS_SIZE_WINDOW,
+							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPreviousSizeWindowEvStruct>(this, false)));
+					}
 					AddEventNotification(*JEditorEvent::EvInterface(),
 						GetGuid(),
 						J_EDITOR_EVENT::CLOSE_WINDOW,
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorCloseWindowEvStruct>(GetName(), GetOwnerPageType())));
 				}
-			}	
-			SetContentsClick(false); 
+			}
+			SetContentsClick(false);
 		}
 		void JEditorWindow::CloseWindow()
-		{			
-			if (CanUseSelectedMap())
+		{
+			const bool isMouseClick = JGui::AnyMouseClicked(false);
+			if (CanUseSelectedMap() && isMouseClick && selectedObjMap.size() > 0)
 			{
-				const bool isFocus = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
-				const bool isMouseClick = ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1);
-				const bool isMouseInWindow = JImGuiImpl::IsMouseInRect(ImGui::GetWindowPos(), ImGui::GetWindowSize());
-				const bool selectedHold = ImGui::GetIO().KeyCtrl;
-				if (selectedObjMap.size() > 0 && isMouseClick && !isContentsClick && !selectedHold && isMouseInWindow)
-				{
-					AddEventNotification(*JEditorEvent::EvInterface(),
-						GetGuid(),
-						J_EDITOR_EVENT::CLEAR_SELECT_OBJECT,
-						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClearSelectObjectEvStruct>(GetOwnerPageType())));
-				}
+				const bool isMouseInWindow = JGui::IsMouseInRect(JGui::GetWindowPos(), JGui::GetWindowSize());
+				const bool selectedHold = JGui::IsKeyDown(Core::J_KEYCODE::CONTROL);
+				//!canStaySelected일 경우 화면을 벗어나서 클릭하면 selected map clear
+				if (!isMouseInWindow && !option.canStaySelected)
+					ExecuteEv(WINDOW_INNER_EVENT::CLEAR_SELECTED_OBJECT);
+				//hold를 누르지않고 유효하지않은 객체를 클릭시  selected map clear
+				//유효 객체를 클릭시 하위 윈도우 클래스에서 clear & push를 할것이라고 예상한다
+				if (isMouseInWindow && !state.isContentsClick && !selectedHold)
+					ExecuteEv(WINDOW_INNER_EVENT::CLEAR_SELECTED_OBJECT);
 			}
-			JImGuiImpl::EndWindow();
+			JGui::EndWindow();
 			SetLastActivated(IsActivated());
 			J_EDITOR_PAGE_FLAG pageFlag = JEditorPageShareData::GetPageFlag(ownerPageType);
-			if (Core::HasSQValueEnum(pageFlag, J_EDITOR_PAGE_WINDOW_INPUT_LOCK))
+			if (JEditorPageShareData::GetPublicState(ownerPageType, J_EDITOR_PAGE_PUBLIC_STATE::INPUT_LOCK))
 			{
-				ImGui::PopItemFlag();
-				ImGui::PopItemFlag();
-				ImGui::PopItemFlag();
-				ImGui::PopItemFlag();
-				ImGui::PopItemFlag(); 
-				JImGuiImpl::SetAllColorToSoft(JVector4<float>(-0.2f, -0.2f, -0.2f, 0));
+				JGui::PopItemFlag();
+				JGui::PopItemFlag();
+				JGui::PopItemFlag();
+				JGui::PopItemFlag();
+				JGui::PopItemFlag();
+				JGui::SetAllColorToSoft(JVector4<float>(-0.2f, -0.2f, -0.2f, 0));
 			}
 		}
 		void JEditorWindow::UpdateMouseClick()
 		{
-			std::string windowName = GetName();
-
-			if (IsFocus() && IsActivated() && JImGuiImpl::IsMouseInRect(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize()))
+			const bool isMouseInWindow = JGui::IsMouseInRect(JGui::GetWindowPos(), JGui::GetWindowSize());
+			if (IsFocus() && IsActivated() && isMouseInWindow)
 			{
-				if (JImGuiImpl::IsLeftMouseClicked())
+				if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT))
 				{
-					JImGuiImpl::SetMouseClick(0, true);
-					std::unique_ptr<JEditorMouseClickEvStruct> lclickEvStruct = std::make_unique<JEditorMouseClickEvStruct>(windowName, 0, ownerPageType);
+					std::unique_ptr<JEditorMouseClickEvStruct> lclickEvStruct = std::make_unique<JEditorMouseClickEvStruct>(GetName(), 0, ownerPageType);
 					NotifyEvent(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::MOUSE_CLICK, lclickEvStruct.get());
 				}
-				else if (JImGuiImpl::IsRightMouseClicked())
+				else if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::RIGHT))
 				{
-					JImGuiImpl::SetMouseClick(1, true);
-					std::unique_ptr<JEditorMouseClickEvStruct> rclickEvStruct = std::make_unique< JEditorMouseClickEvStruct>(windowName, 1, ownerPageType);
+					std::unique_ptr<JEditorMouseClickEvStruct> rclickEvStruct = std::make_unique< JEditorMouseClickEvStruct>(GetName(), 1, ownerPageType);
 					NotifyEvent(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::MOUSE_CLICK, rclickEvStruct.get());
 				}
-			} 
+			}
 
-			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
-			{ 
+			if (JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW))
+			{
 				if (!IsFocus())
 				{
 					AddEventNotification(*JEditorEvent::EvInterface(),
@@ -194,19 +208,15 @@ namespace JinEngine
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorFocusWindowEvStruct>(this)));
 				}
 			}
-			else
+			else if (!isMouseInWindow && IsFocus())
 			{
-				//allow window popup or subWidget click
-				const bool isMouseInWindowSubWidget = CanUsePopup() && JImGuiImpl::IsMouseInRect(JImGuiImpl::GetGuiWindowPos(), JImGuiImpl::GetGuiWindowSize());
-				if (!isMouseInWindowSubWidget && IsFocus())
-				{
-					AddEventNotification(*JEditorEvent::EvInterface(),
-						GetGuid(),
-						J_EDITOR_EVENT::UNFOCUS_WINDOW,
-						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorUnFocusWindowEvStruct>(this)));
-				}
+				AddEventNotification(*JEditorEvent::EvInterface(),
+					GetGuid(),
+					J_EDITOR_EVENT::UNFOCUS_WINDOW,
+					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorUnFocusWindowEvStruct>(this)));
 			}
 		}
+		void JEditorWindow::UpdateMouseWheel() {}
 		void JEditorWindow::UpdateDocking()
 		{
 			if (!CanUseDock())
@@ -214,9 +224,7 @@ namespace JinEngine
 
 			if (dockUpdateHelper != nullptr)
 			{
-				JEditorWindowDockUpdateHelper::UpdateData updata;
-				updata.page = GetOwnerPageType(); 
-
+				JDockUpdateHelper::UpdateData updata;
 				dockUpdateHelper->Update(updata);
 				if (updata.rollbackBind != nullptr)
 				{
@@ -224,23 +232,26 @@ namespace JinEngine
 						GetGuid(),
 						J_EDITOR_EVENT::BIND_FUNC,
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorBindFuncEvStruct>(std::move(updata.rollbackBind), GetOwnerPageType())));
-				} 
+				}
 			}
 
-			ImGuiDockNode* dockNode = ImGui::GetWindowDockNode();
-			if (dockNode != nullptr)
+			JGuiWindowInfo wndInfo;
+			JGuiDockNodeInfo dockInfo;
+			if (JGui::GetCurrentWindowInfo(wndInfo) && JGui::GetCurrentDockNodeInfo(dockInfo))
 			{
-				ImGuiID windowID = ImGui::GetCurrentWindow()->ID;
-				ImGuiID selectedTabId = dockNode->SelectedTabId;
+				GuiID windowID = wndInfo.windowID;
+				GuiID selectedTabID = dockInfo.selectedTabID;
+				if (selectedTabID == 0)
+					return;
 
-				if (IsActivated() && windowID != selectedTabId)
+				if (IsActivated() && windowID != selectedTabID)
 				{
 					AddEventNotification(*JEditorEvent::EvInterface(),
 						GetGuid(),
 						J_EDITOR_EVENT::DEACTIVATE_WINDOW,
 						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorDeActWindowEvStruct>(this)));
 				}
-				else if (!IsActivated() && windowID == selectedTabId)
+				else if (!IsActivated() && windowID == selectedTabID)
 				{
 					AddEventNotification(*JEditorEvent::EvInterface(),
 						GetGuid(),
@@ -255,9 +266,9 @@ namespace JinEngine
 			UpdatePopup(setting, temp);
 		}
 		void JEditorWindow::UpdatePopup(const PopupSetting setting, _Out_ PopupResult& result)
-		{ 
+		{
 			if (CanUsePopup() && setting.IsValid() && setting.canOpenPopup)
-			{ 
+			{
 				if (setting.popupMenu->IsOpen())
 				{
 					result.isOpen = true;
@@ -273,27 +284,6 @@ namespace JinEngine
 
 				result.isMouseInPopup = setting.popupMenu->IsMouseInPopup();
 			}
-		}
-		bool JEditorWindow::IsSelectedObject(const size_t guid)const noexcept
-		{
-			return selectedObjMap.find(guid) != selectedObjMap.end();
-		} 
-		bool JEditorWindow::CanUseDock()const noexcept
-		{
-			return Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SUPROT_DOCK);
-		}
-		bool JEditorWindow::CanUseSelectedMap()const noexcept
-		{
-			return Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SUPPORT_SELECT);
-		}
-		bool JEditorWindow::CanUsePopup()const noexcept
-		{
-			return Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SUPPORT_POPUP) &&
-			!Core::HasSQValueEnum(JEditorPageShareData::GetPageFlag(ownerPageType), J_EDITOR_PAGE_WINDOW_INPUT_LOCK);
-		}
-		bool JEditorWindow::CanMaximize()const noexcept
-		{
-			return Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SUPPORT_MAXIMIZE);
 		}
 		JEditorWindow::PassSelectedOneF::Functor* JEditorWindow::GetPassSelectedOneFunctor()noexcept
 		{
@@ -325,15 +315,36 @@ namespace JinEngine
 		}
 		JUserPtr<Core::JIdentifier> JEditorWindow::GetHoveredObject()const noexcept
 		{
-			return hoveredObj;
+			return state.hoveredObj;
 		}
 		uint JEditorWindow::GetSelectedObjectCount()const noexcept
 		{
 			return (uint)selectedObjMap.size();
 		}
+		JVector4<float> JEditorWindow::GetSelectableColorFactor(const bool isSelecetd, const bool isHovered)const noexcept
+		{
+			if (isSelecetd)
+			{
+				if (IsFocus())
+					return JGui::GetSelectedWidgetColorFactor();
+				else
+					return  JGui::GetUnFocusedWidgetColorFactor();
+			}
+			else if (isHovered)
+			{
+				if (IsFocus())
+					return JGui::GetSelectedWidgetColorFactor() * 0.75f;
+				else
+					return JGui::GetUnFocusedWidgetColorFactor();
+			}
+			else
+				return JVector4F::Zero();
+		}
 		std::vector<JUserPtr<Core::JIdentifier>> JEditorWindow::GetSelectedObjectVec()const noexcept
 		{
 			std::vector<JUserPtr<Core::JIdentifier>> vec;
+			vec.reserve(selectedObjMap.size());
+
 			for (const auto& data : selectedObjMap)
 			{
 				if (data.second.IsValid())
@@ -341,39 +352,34 @@ namespace JinEngine
 			}
 			return vec;
 		}
-		JVector4<float> JEditorWindow::GetSelectedColorFactor()const noexcept
+		void JEditorWindow::SetNextWindowPos(const JVector2F& pos)noexcept
 		{
-			if (IsFocus())
-				return JImGuiImpl::GetSelectColorFactor();
-			else
-				return JImGuiImpl::GetOffFocusSelectedColorFactor();
+			if (CanUseDock())
+				return;
+
+			state.hasSetNextPosReq = true;
+			state.nextPos = pos;
+		}
+		void JEditorWindow::SetNextWindowSize(const JVector2F& size)noexcept
+		{
+			if (CanUseDock())
+				return;
+
+			state.hasSetNextSizeReq = true;
+			state.nextSize = size;
 		}
 		void JEditorWindow::SetMaximize(const bool value)noexcept
 		{
 			if (CanMaximize())
-				isMaximize = value;
+				state.isMaximize = value;
 		}
-		void JEditorWindow::SetButtonColor(const JVector4<float>& factor)noexcept
+		void JEditorWindow::SetOption(const Option& newOption)noexcept
 		{
-			JImGuiImpl::SetColorToSoft(ImGuiCol_Button, factor);
-			JImGuiImpl::SetColorToSoft(ImGuiCol_ButtonHovered, factor);
-			JImGuiImpl::SetColorToSoft(ImGuiCol_ButtonActive, factor);
-		}
-		void JEditorWindow::SetTreeNodeColor(const JVector4<float>& factor)noexcept
-		{
-			JImGuiImpl::SetColorToSoft(ImGuiCol_Header, factor);
-			JImGuiImpl::SetColorToSoft(ImGuiCol_HeaderHovered, factor);
-			JImGuiImpl::SetColorToSoft(ImGuiCol_HeaderActive, factor);
-		}
-		void JEditorWindow::SetTreeNodeColorToDefault()noexcept
-		{
-			JImGuiImpl::SetColorToDefault(ImGuiCol_Header);
-			JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderHovered);
-			JImGuiImpl::SetColorToDefault(ImGuiCol_HeaderActive);
+			option = newOption;
 		}
 		void JEditorWindow::SetHoveredObject(JUserPtr<Core::JIdentifier> obj)noexcept
 		{
-			hoveredObj = obj;
+			state.hoveredObj = obj;
 		}
 		void JEditorWindow::SetSelectedGameObjectTrigger(const JUserPtr<JGameObject>& gObj, const bool triggerValue)noexcept
 		{
@@ -388,7 +394,46 @@ namespace JinEngine
 		}
 		void JEditorWindow::SetContentsClick(const bool value)noexcept
 		{
-			isContentsClick = value;
+			state.isContentsClick = value;
+		}
+		bool JEditorWindow::IsSelectedObject(const size_t guid)const noexcept
+		{
+			return selectedObjMap.find(guid) != selectedObjMap.end();
+		}
+		bool JEditorWindow::CanUseDock()const noexcept
+		{
+			return Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SUPROT_DOCK);
+		}
+		bool JEditorWindow::CanUseSelectedMap()const noexcept
+		{
+			return Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SUPPORT_SELECT);
+		}
+		bool JEditorWindow::CanUsePopup()const noexcept
+		{
+			return Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SUPPORT_POPUP) &&
+				!JEditorPageShareData::GetPublicState(ownerPageType, J_EDITOR_PAGE_PUBLIC_STATE::INPUT_LOCK);
+		}
+		bool JEditorWindow::CanMaximize()const noexcept
+		{
+			return Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_SUPPORT_MAXIMIZE);
+		}
+		bool JEditorWindow::IsContentsClicked()const noexcept
+		{
+			return state.isContentsClick;
+		}
+		void JEditorWindow::PushTreeNodeColorSet(const bool isActivated, const bool isSelected)
+		{
+			if (!isActivated)
+				JGui::PushColorToSoft(J_GUI_COLOR::TEXT, JGui::GetDeActivatedTextColorFactor());
+			if (isSelected)
+				JGui::PushTreeNodeColorToSoft(GetSelectableColorFactor(true, true));
+		}
+		void JEditorWindow::PopTreeNodeColorSet(const bool isActivated, const bool isSelected)
+		{
+			if (isSelected)
+				JGui::PopTreeNodeColorToSoftSet();
+			if (!isActivated)
+				JGui::PopColor();
 		}
 		void JEditorWindow::PushSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept
 		{
@@ -432,7 +477,7 @@ namespace JinEngine
 		void JEditorWindow::DeRegisterListener()
 		{
 			RemoveListener(*JEditorEvent::EvInterface(), GetGuid());
-		}	
+		}
 		void JEditorWindow::RequestPushSelectObject(const JUserPtr<Core::JIdentifier>& selectObj)
 		{
 			RequestPushSelectObject(std::vector<JUserPtr<Core::JIdentifier>>{selectObj});
@@ -443,19 +488,19 @@ namespace JinEngine
 				return;
 
 			const J_EDITOR_PAGE_TYPE pageType = GetOwnerPageType();
-			std::vector<JUserPtr<Core::JIdentifier>> newSelectObjVec; 
+			std::vector<JUserPtr<Core::JIdentifier>> newSelectObjVec;
 
 			const uint newCount = (uint)selectObjVec.size();
 			for (uint i = 0; i < newCount; ++i)
 			{
-				if(selectObjVec[i].IsValid())
+				if (selectObjVec[i].IsValid())
 					newSelectObjVec.push_back(selectObjVec[i]);
 			}
 			if (newSelectObjVec.size() == 0)
 				return;
-			   
+
 			//const bool canSelectMulti = CanUseSelectedMap() && ImGui::GetIO().KeyCtrl;
-			const bool canSelectMulti = ImGui::GetIO().KeyCtrl;
+			const bool canSelectMulti = JGui::IsKeyDown(Core::J_KEYCODE::CONTROL);
 			JEditorPushSelectObjectEvStruct* newPushSelectEvStruct = nullptr;
 			JEditorEvStruct* popSelectEvStruct = nullptr;
 			JEditorEvStruct* clearEvStruct = nullptr;
@@ -464,25 +509,25 @@ namespace JinEngine
 			if (canSelectMulti)
 			{
 				evGuidVec.resize(3);
-				newPushSelectEvStruct = static_cast<JEditorPushSelectObjectEvStruct*>(JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(pageType, GetWindowType(), newSelectObjVec), evGuidVec[0]));
-				popSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPopSelectObjectEvStruct>(pageType, newSelectObjVec), evGuidVec[1]);				 
+				newPushSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(pageType, GetWindowType(), newSelectObjVec, JEditorEvStruct::RANGE::ALL), evGuidVec[0]);
+				popSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPopSelectObjectEvStruct>(pageType, newSelectObjVec, JEditorEvStruct::RANGE::ALL), evGuidVec[1]);
 				std::vector<JUserPtr<Core::JIdentifier>> overlapped;
 				for (auto& data : newSelectObjVec)
 				{
 					if (IsSelectedObject(data->GetGuid()))
 						overlapped.emplace_back(data);
 				}
-				if(overlapped.size() > 0)
-					popOverlapSelectedEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPopSelectObjectEvStruct>(pageType, overlapped), evGuidVec[2]);
+				if (overlapped.size() > 0)
+					popOverlapSelectedEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPopSelectObjectEvStruct>(pageType, overlapped, JEditorEvStruct::RANGE::ALL), evGuidVec[2]);
 			}
 			else
 			{
 				evGuidVec.resize(3);
-				newPushSelectEvStruct = static_cast<JEditorPushSelectObjectEvStruct*>(JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(pageType, GetWindowType(), newSelectObjVec[0]), evGuidVec[0]));
-				popSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPopSelectObjectEvStruct>(pageType, newSelectObjVec[0]), evGuidVec[1]);
-				clearEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClearSelectObjectEvStruct>(pageType), evGuidVec[2]);
+				newPushSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(pageType, GetWindowType(), newSelectObjVec[0], JEditorEvStruct::RANGE::ALL), evGuidVec[0]);
+				popSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPopSelectObjectEvStruct>(pageType, newSelectObjVec[0], JEditorEvStruct::RANGE::ALL), evGuidVec[1]);
+				clearEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClearSelectObjectEvStruct>(pageType, JEditorEvStruct::RANGE::ALL), evGuidVec[2]);
 			}
- 
+
 			std::wstring objName = L"names: ";
 			const uint selectedCount = (uint)newPushSelectEvStruct->selectObjVec.size();
 			if (selectedCount == 1)
@@ -510,7 +555,7 @@ namespace JinEngine
 					task->RegisterAddtionalProcess(ADDITONAL_PROCESS_TYPE::DO_POST, std::move(processBindVec));
 				}
 			}
-			else 
+			else
 			{
 				auto preDoBinder = std::make_unique<EventF::CompletelyBind>(*GetEvFunctor(), *this, J_EDITOR_EVENT::CLEAR_SELECT_OBJECT, *clearEvStruct);
 				using ADDITONAL_PROCESS_TYPE = Core::JTransitionTask::ADDITONAL_PROCESS_TYPE;
@@ -519,23 +564,28 @@ namespace JinEngine
 				processBindVec.push_back(std::move(preDoBinder));
 				task->RegisterAddtionalProcess(ADDITONAL_PROCESS_TYPE::DO_PRE, std::move(processBindVec));
 			}
-			JEditorTransition::Instance().Execute(std::move(task));		 
+			JEditorTransition::Instance().Execute(std::move(task));
 		}
-		void JEditorWindow::RequestPopSelectObject(const JEditorPopSelectObjectEvStruct& evStruct)
+		void JEditorWindow::RequestPopSelectObject(const JUserPtr<Core::JIdentifier>& selectObj)
 		{
+			RequestPopSelectObject(std::vector<JUserPtr<Core::JIdentifier>>{selectObj});
+		}
+		void JEditorWindow::RequestPopSelectObject(const std::vector<JUserPtr<Core::JIdentifier>>& selectObjVec)
+		{
+			JEditorPopSelectObjectEvStruct evStruct(GetOwnerPageType(), selectObjVec, JEditorEvStruct::RANGE::ALL);
 			if (!evStruct.PassDefectInspection())
 				return;
 
 			std::vector<JUserPtr<Core::JIdentifier>> preSelectObjVec;
 			for (const auto& data : selectedObjMap)
-				preSelectObjVec.push_back(data.second); 
+				preSelectObjVec.push_back(data.second);
 
 			if (preSelectObjVec.size() == 0)
-				return; 
+				return;
 
 			std::vector<size_t> evGuidVec(2);
 			JEditorEvStruct* popSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPopSelectObjectEvStruct>(evStruct), evGuidVec[0]);
-			JEditorEvStruct* pushSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(evStruct.pageType, GetWindowType(), evStruct.selectObjVec), evGuidVec[1]);
+			JEditorEvStruct* pushSelectEvStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(evStruct.pageType, GetWindowType(), evStruct.selectObjVec, JEditorEvStruct::RANGE::ALL), evGuidVec[1]);
 
 			std::wstring objName = L"names: ";
 			const uint selectedCount = (uint)evStruct.selectObjVec.size();
@@ -546,14 +596,14 @@ namespace JinEngine
 				for (auto& data : evStruct.selectObjVec)
 					objName += data->GetName() + L'\n';
 			}
- 
+
 			auto doBinder = std::make_unique<EventF::CompletelyBind>(*GetEvFunctor(), *this, J_EDITOR_EVENT::POP_SELECT_OBJECT, *popSelectEvStruct);
 			auto undoBinder = std::make_unique<EventF::CompletelyBind>(*GetEvFunctor(), *this, J_EDITOR_EVENT::PUSH_SELECT_OBJECT, *pushSelectEvStruct);
 			auto task = std::make_unique<Core::JTransitionSetValueTask>("DeSelect", JCUtil::WstrToU8Str(objName), std::move(doBinder), std::move(undoBinder));
 			task->RegisterClearTask(std::make_unique< ClearTaskF::CompletelyBind>(*GetClearTaskFunctor(), std::move(evGuidVec)));
 			JEditorTransition::Instance().Execute(std::move(task));
 		}
-		void JEditorWindow::RequesBind(const std::string& desc,
+		void JEditorWindow::RequestBind(const std::string& desc,
 			std::unique_ptr<Core::JBindHandleBase>&& doHandle,
 			std::unique_ptr<Core::JBindHandleBase>&& undoHandle)
 		{
@@ -570,33 +620,108 @@ namespace JinEngine
 			task->RegisterClearTask(std::make_unique< ClearTaskF::CompletelyBind>(*GetClearTaskFunctor(), std::move(evGuidVec)));
 			JEditorTransition::Instance().Execute(std::move(task));
 		}
+		void JEditorWindow::ExecuteEv(const WINDOW_INNER_EVENT evType)
+		{
+			switch (evType)
+			{
+			case JinEngine::Editor::JEditorWindow::WINDOW_INNER_EVENT::CLEAR_SELECTED_OBJECT:
+			{
+				AddEventNotification(*JEditorEvent::EvInterface(),
+					GetGuid(),
+					J_EDITOR_EVENT::CLEAR_SELECT_OBJECT,
+					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClearSelectObjectEvStruct>(GetOwnerPageType(), JEditorEvStruct::RANGE::ALL)));
+				break;
+			}
+			default:
+				break;
+			}
+		}
+		void JEditorWindow::ExecuteThisWindowNotifiedEv(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStructure)
+		{
+			//이벤트 호출자 관련 이벤트 처리 
+			//호출당 한번만 처리되기에 중복해서는 안되는 기능을 여기서 처리
+			//ex) marking selected trigger
+			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && CanUseSelectedMap())
+			{
+				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStructure);
+				for (auto& data : evstruct->selectObjVec)
+				{
+					if (data->GetTypeInfo().IsChildOf<JGameObject>())
+						SetSelectedGameObjectTrigger(Core::ConnectChildUserPtr<JGameObject>(data), true);
+					if (selectedObjMap.find(data->GetGuid()) == selectedObjMap.end())
+						selectedObjMap.emplace(data->GetGuid(), data);
+				}
+			}
+			else if (eventType == J_EDITOR_EVENT::POP_SELECT_OBJECT && CanUseSelectedMap())
+			{
+				JEditorPopSelectObjectEvStruct* evstruct = static_cast<JEditorPopSelectObjectEvStruct*>(eventStructure);
+				for (auto& data : evstruct->selectObjVec)
+				{
+					if (data->GetTypeInfo().IsChildOf<JGameObject>())
+						SetSelectedGameObjectTrigger(Core::ConnectChildUserPtr<JGameObject>(data), false);
+					selectedObjMap.erase(data->GetGuid());
+				}
+			}
+			else if (eventType == J_EDITOR_EVENT::CLEAR_SELECT_OBJECT && CanUseSelectedMap())
+			{
+				for (auto& data : selectedObjMap)
+				{
+					if (data.second->GetTypeInfo().IsChildOf<JGameObject>())
+						SetSelectedGameObjectTrigger(Core::ConnectChildUserPtr<JGameObject>(data.second), false);
+				}
+				ClearSelectedObject();
+			}
+		}
+		void JEditorWindow::ExecuteOtherWindowNotifiedEv(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStructure)
+		{
+			const bool isListenOtherWndSelect = Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_LISTEN_OTHER_WINDOW_SELECT);
+			if (isListenOtherWndSelect)
+			{
+				if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && CanUseSelectedMap())
+				{
+					JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStructure);
+					for (auto& data : evstruct->selectObjVec)
+					{
+						if (selectedObjMap.find(data->GetGuid()) == selectedObjMap.end())
+							selectedObjMap.emplace(data->GetGuid(), data);
+					}
+				}
+				else if (eventType == J_EDITOR_EVENT::POP_SELECT_OBJECT && CanUseSelectedMap())
+				{
+					JEditorPopSelectObjectEvStruct* evstruct = static_cast<JEditorPopSelectObjectEvStruct*>(eventStructure);
+					for (auto& data : evstruct->selectObjVec)
+						selectedObjMap.erase(data->GetGuid());
+				}
+				else if (eventType == J_EDITOR_EVENT::CLEAR_SELECT_OBJECT && CanUseSelectedMap())
+				{
+					ClearSelectedObject();
+				}
+			}
+		}
 		void JEditorWindow::TryBeginDragging(const JUserPtr<Core::JIdentifier> selectObj)
 		{
-			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+			if (JGui::BeginDragDropSource())
 			{
-				RequestPushSelectObject(selectObj); 
-				JImGuiImpl::Text(JCUtil::WstrToU8Str(selectObj->GetName()));
+				RequestPushSelectObject(selectObj);
+				JGui::Text(JCUtil::WstrToU8Str(selectObj->GetName()));
 				std::string typeName = std::to_string(JEditorPageShareData::GetPageGuiWindowID(GetOwnerPageType()));
 				Core::JTypeInstanceSearchHint* draggingHint = JEditorPageShareData::RegisterDraggingHint(GetOwnerPageType(), selectObj.Get());
-				ImGui::SetDragDropPayload(typeName.c_str(), draggingHint, sizeof(Core::JTypeInstanceSearchHint));
-				ImGui::EndDragDropSource();
+				JGui::SetDragDropPayload(typeName, draggingHint);
+				JGui::EndDragDropSource();
 			}
 		}
 		JUserPtr<Core::JIdentifier> JEditorWindow::TryGetDraggingTarget()
 		{
-			if (ImGui::BeginDragDropTarget() && !ImGui::IsMouseDragging(0))
+			if (JGui::BeginDragDropTarget() && !JGui::IsMouseDragging(Core::J_MOUSE_BUTTON::LEFT))
 			{
 				std::string typeName = std::to_string(JEditorPageShareData::GetPageGuiWindowID(GetOwnerPageType()));
-				const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(typeName.c_str(), ImGuiDragDropFlags_None);
-				ImGui::EndDragDropTarget();
+				Core::JTypeInstanceSearchHint* draggingHint = JGui::TryGetTypeHintDragDropPayload(typeName);
+				JGui::EndDragDropTarget();
+				if (draggingHint == nullptr)
+					return nullptr;
 
-				if (payload == nullptr || payload->Data == nullptr)
-					return JUserPtr<Core::JIdentifier>{};
-				else
-				{
-					Core::JTypeInstanceSearchHint* draggingHint = static_cast<Core::JTypeInstanceSearchHint*>(payload->Data);
-					return JUserPtr<Core::JIdentifier>::ConvertChild(Core::GetUserPtr(*draggingHint));
-				}			 
+				JEditorPageShareData::DeRegisterDraggingHint(GetOwnerPageType());
+				return JUserPtr<Core::JIdentifier>::ConvertChild(Core::GetUserPtr(*draggingHint));
 			}
 			else
 				return JUserPtr<Core::JIdentifier>{};
@@ -605,32 +730,21 @@ namespace JinEngine
 		{
 			JEditor::DoSetOpen();
 			if (Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_FLAG::J_EDITOR_WINDOW_SUPROT_DOCK))
-				dockUpdateHelper = std::make_unique<JEditorWindowDockUpdateHelper>(ownerPageType);
-			isWindowOpen = true;
+				dockUpdateHelper = JGui::CreateDockUpdateHelper(ownerPageType);
+			state.isWindowOpen = true;
 		}
 		void JEditorWindow::DoSetClose()noexcept
 		{
-			JEditor::DoSetClose();
 			dockUpdateHelper.reset();
-			isWindowOpen = false;
+			state.isWindowOpen = false;
 
 			if (CanUseDock())
 			{
-				ImGuiID id = ImHashStr(GetName().c_str());
-				ImGuiWindow* window = nullptr;
-				ImGuiContext* cont = ImGui::GetCurrentContext();
-				const int wndCount = (int)cont->Windows.size();
-				for (int i = 0; i < wndCount; ++i)
-				{
-					if (cont->Windows[i]->ID == id)
-					{
-						window = cont->Windows[i];
-						break;
-					}
-				}
-				if (window->DockNode != nullptr)
-					window->DockNode->WantCloseTabId = window->ID;
+				JGuiWindowInfo info;
+				JGui::GetWindowInfo(GetName(), info);
+				JGui::CloseTabItem(info.windowID);
 			}
+			JEditor::DoSetClose();
 		}
 		void JEditorWindow::DoActivate()noexcept
 		{
@@ -646,10 +760,10 @@ namespace JinEngine
 		}
 		void JEditorWindow::DoDeActivate()noexcept
 		{
-			JEditor::DoDeActivate();
 			DeRegisterListener();
 			ClearSelectedObject();
-			hoveredObj.Clear();
+			state.hoveredObj.Clear();
+			JEditor::DoDeActivate();
 		}
 		void JEditorWindow::StoreEditorWindow(std::wofstream& stream)
 		{
@@ -696,51 +810,12 @@ namespace JinEngine
 					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorFocusWindowEvStruct>(this, ownerPageType)));
 			}*/
 		}
-		void JEditorWindow::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
-		{ 
-			//이벤트 호출자 관련 이벤트 처리
-			const bool isThisWindowEv = senderGuid == GetGuid();
-			if (!isThisWindowEv && !Core::HasSQValueEnum(windowFlag, J_EDITOR_WINDOW_LISTEN_OTHER_WINDOW_SELECT))
-				return;
-
-			if(eventStruct->pageType != GetOwnerPageType())
-				return;
-
-			//호출당 한번만 처리되기에 중복해서는 안되는 기능을 여기서 처리
-			//ex) marking selected trigger
-			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && CanUseSelectedMap())
-			{ 
-				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStruct);
-				for (auto& data : evstruct->selectObjVec)
-				{
-					if (isThisWindowEv && data->GetTypeInfo().IsChildOf<JGameObject>())
-						SetSelectedGameObjectTrigger(Core::ConnectChildUserPtr<JGameObject>(data), true);
-					if (selectedObjMap.find(data->GetGuid()) == selectedObjMap.end())
-						selectedObjMap.emplace(data->GetGuid(), data);
-				}
-			}
-			else if (eventType == J_EDITOR_EVENT::POP_SELECT_OBJECT && CanUseSelectedMap())
-			{
-				JEditorPopSelectObjectEvStruct* evstruct = static_cast<JEditorPopSelectObjectEvStruct*>(eventStruct);
-				for (auto& data : evstruct->selectObjVec)
-				{
-					if (isThisWindowEv && data->GetTypeInfo().IsChildOf<JGameObject>())
-						SetSelectedGameObjectTrigger(Core::ConnectChildUserPtr<JGameObject>(data), false);
-					selectedObjMap.erase(data->GetGuid());
-				}
-			}
-			else if (eventType == J_EDITOR_EVENT::CLEAR_SELECT_OBJECT && CanUseSelectedMap())
-			{
-				if (isThisWindowEv)
-				{
-					for (auto& data : selectedObjMap)
-					{
-						if (data.second->GetTypeInfo().IsChildOf<JGameObject>())
-							SetSelectedGameObjectTrigger(Core::ConnectChildUserPtr<JGameObject>(data.second), false);
-					}
-				}
-				ClearSelectedObject();
-			}
+		void JEditorWindow::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStructure)
+		{
+			if (eventStructure->CanExecuteCallerEv(senderGuid, GetGuid()))
+				ExecuteThisWindowNotifiedEv(senderGuid, eventType, eventStructure);
+			if (eventStructure->CanExecuteOtherEv(senderGuid, GetGuid()))
+				ExecuteOtherWindowNotifiedEv(senderGuid, eventType, eventStructure);
 		}
 	}
 }

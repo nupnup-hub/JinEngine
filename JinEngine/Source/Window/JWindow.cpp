@@ -1,23 +1,22 @@
 #include"JWindow.h"  
-#include"JWindowPrivate.h"  
-#include"JInputManager.h"  
-#include"../Core/JDataType.h"
+#include"JWindowPrivate.h"   
+#include"../Core/JCoreEssential.h"
 #include"../Core/JEngineInfo.h"
 #include"../Core/Guid/JGuidCreator.h"
 #include"../Core/Exception/JExceptionMacro.h"
 #include"../Core/Exception/JException.h"
 #include"../Core/Singleton/JSingletonHolder.h" 
-#include"../Utility/JCommonUtility.h"
-#include"../Utility/JD3DUtility.h" 
+#include"../Core/Utility/JCommonUtility.h" 
 #include"../../resource.h"
-#include"../../../ThirdParty/imgui/imgui.h"
+#include"../../ThirdParty/imgui/imgui.h"
 #include<tchar.h>
 #include<fstream>
 #include<shellapi.h>
 #include<ShlObj_core.h> 
 #include<functional>
-#include<optional>
-#pragma comment(lib, "shell32") 
+#include<optional> 
+
+#define EXE_FILEDIG(cond, contents) cond = cond ? SUCCEEDED(contents) : false
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 namespace JinEngine
@@ -27,14 +26,19 @@ namespace JinEngine
 #define WIND_CLASS_NAME L"JinEngineClass"
 #define UM_CHECKSTATECHANGE (WM_USER + 100)
 
-		using WindowCloseConfirmF = JWindowPrivate::ApplicationAccess::CloseConfirmF;
+		namespace
+		{
+			static constexpr float minWindowRate = 0.4f;
+		}
+		using WindowCloseConfirmF = JWindowPrivate::MainAccess::CloseConfirmF;
 		class JWindowImpl : public Core::JEventManager<size_t, J_WINDOW_EVENT>
 		{
-		public: 
+		public:
 			const size_t guid;
-			JInputManager inputManager;
+			//JInputManager inputManager;
 			WNDCLASSEX wc;
 			HINSTANCE hInst;
+			RECT displayRect;
 			RECT preWindowRect;
 			RECT preClinetRect;
 			HWND hwnd;
@@ -47,10 +51,10 @@ namespace JinEngine
 				guid(Core::MakeGuid()),
 				hwnd(0)
 			{}
-			~JWindowImpl(){}
+			~JWindowImpl() {}
 		public:
 			HWND GetHandle()const noexcept
-			{
+			{ 
 				return hwnd;
 			}
 			RECT GetWindowR()const noexcept
@@ -73,61 +77,47 @@ namespace JinEngine
 			{
 				return preClinetRect;
 			}
-			int GetDisplayWidth()const noexcept
+			JVector2<float> GetDisplayPosition()const noexcept
 			{
-				return GetSystemMetrics(SM_CXFULLSCREEN);
+				return JVector2F(displayRect.left, displayRect.top);
 			}
-			int GetDisplayHeight()const noexcept
+			JVector2<float> GetDisplaySize()const noexcept
 			{
-				return GetSystemMetrics(SM_CYFULLSCREEN);
+				return JVector2F(displayRect.right - displayRect.left, displayRect.bottom - displayRect.top);
 			}
-			int GetMinWidth()const noexcept
+			JVector2<float> GetMinSize()const noexcept
 			{
-				return GetDisplayWidth() * 0.4f;
+				return GetDisplaySize() * minWindowRate;
 			}
-			int GetMinHeight()const noexcept
+			JVector2<float> GetWindowPosition()const noexcept
 			{
-				return GetDisplayHeight() * 0.4f;
+				return JVector2F(preWindowRect.left, preWindowRect.top);
 			}
-			int GetWindowPositionX()const noexcept
+			JVector2<float> GetWindowSize()const noexcept
 			{
-				return preWindowRect.left;
+				return JVector2F(preWindowRect.right - preWindowRect.left, preWindowRect.bottom - preWindowRect.top);
 			}
-			int GetWindowPositionY()const noexcept
+			JVector2<float> GetClientPosition()const noexcept
 			{
-				return preWindowRect.top;
+				return JVector2F(preClinetRect.left, preClinetRect.top);
 			}
-			int GetWindowWidth()const noexcept
+			JVector2<float> GetClientSize()const noexcept
 			{
-				return preWindowRect.right - preWindowRect.left;
+				return JVector2F(preClinetRect.right - preClinetRect.left, preClinetRect.bottom - preClinetRect.top);
 			}
-			int GetWindowHeight()const noexcept
+			uint GetMaxDisplayFrequency()const noexcept
 			{
-				return preWindowRect.bottom - preWindowRect.top;
-			}
-			JVector2<int> GetClientPos()const noexcept
-			{
-				return JVector2<int>(preClinetRect.left, preClinetRect.top);
-			}
-			int GetClientPositionX()const noexcept
-			{
-				return preClinetRect.left;
-			}
-			int GetClientPositionY()const noexcept
-			{
-				return preClinetRect.top;
-			}
-			JVector2<int> GetClientSize()const noexcept
-			{
-				return JVector2<int>(GetClientWidth(), GetClientHeight());
-			}
-			int GetClientWidth()const noexcept
-			{
-				return preClinetRect.right - preClinetRect.left;
-			}
-			int GetClientHeight()const noexcept
-			{
-				return preClinetRect.bottom - preClinetRect.top;
+				DEVMODE dm;
+				ZeroMemory(&dm, sizeof(dm));
+				dm.dmSize = sizeof(dm);
+
+				static constexpr uint defaultFrequency = 60;
+
+				// 현재 디스플레이 디바이스의 설정 가져오기
+				if (EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm))
+					return dm.dmDisplayFrequency;
+				else
+					return defaultFrequency;
 			}
 		public:
 			bool IsFullScreen()const noexcept
@@ -150,48 +140,69 @@ namespace JinEngine
 				return false;
 			}
 		public:
-			bool SelectDirectory(std::wstring& dirPath, const std::wstring& guide)noexcept
+			bool SelectFile(_Out_ std::vector<std::wstring>& filePath,
+				const std::wstring& guide,
+				const bool allowMultiSelect,
+				const bool selectFolder)noexcept
 			{
-				BROWSEINFO   browserInfo;
-				LPITEMIDLIST  idl;
-				TCHAR path[MAX_PATH] = { 0, };
-				ZeroMemory(&browserInfo, sizeof(BROWSEINFO));
-				browserInfo.hwndOwner = hwnd;
-				browserInfo.pszDisplayName = path;
-				browserInfo.lpszTitle = guide.c_str();
-				browserInfo.ulFlags = BIF_EDITBOX | BIF_USENEWUI | 0x0040;
+				IFileOpenDialog* pfd;
+				// CoCreate the dialog object.
+				HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog,
+					NULL,
+					CLSCTX_INPROC_SERVER,
+					IID_PPV_ARGS(&pfd));
+				 
+				bool isValid = SUCCEEDED(hr); 
 
-				idl = SHBrowseForFolder(&browserInfo);
-				if (idl)
-				{
-					SHGetPathFromIDList(idl, path);
-					dirPath = path;
-					return true;
-				}
+				EXE_FILEDIG(isValid, pfd->SetTitle(guide.c_str()));
+				DWORD dwOptions; 
+				EXE_FILEDIG(isValid, pfd->GetOptions(&dwOptions));
+				if (selectFolder)
+					EXE_FILEDIG(isValid, pfd->SetOptions(dwOptions | FOS_PICKFOLDERS));
 				else
-					return false;
-			}
-			bool SelectFile(std::wstring& filePath, const std::wstring& guide)noexcept
-			{
-				BROWSEINFO   browserInfo;
-				LPITEMIDLIST  idl;
-				TCHAR path[MAX_PATH] = { 0, };
-				ZeroMemory(&browserInfo, sizeof(BROWSEINFO));
-				browserInfo.hwndOwner = hwnd;
-				browserInfo.pszDisplayName = path;
-				browserInfo.lpszTitle = guide.c_str();
-				browserInfo.ulFlags = BIF_EDITBOX | BIF_USENEWUI | BIF_BROWSEINCLUDEFILES | 0x0040;
-
-				idl = SHBrowseForFolder(&browserInfo);
-				if (idl)
 				{
-					SHGetPathFromIDList(idl, path);
-					filePath = path;
-					return true;
+					COMDLG_FILTERSPEC fileFilter[] = { { L"All Files", L"*.*" } };
+					EXE_FILEDIG(isValid, pfd->SetFileTypes(1, fileFilter));
 				}
-				else
-					return false;
 
+				if (isValid && allowMultiSelect)
+					EXE_FILEDIG(isValid, pfd->SetOptions(dwOptions | FOS_ALLOWMULTISELECT));
+				  
+				EXE_FILEDIG(isValid, pfd->Show(NULL));
+				if (isValid)
+				{
+					IShellItemArray* pSelectedItems = nullptr;
+					EXE_FILEDIG(isValid, pfd->GetResults(&pSelectedItems));
+
+					// 선택된 파일 항목 개수 가져오기
+					DWORD dwItemCount = 0;
+					EXE_FILEDIG(isValid, pSelectedItems->GetCount(&dwItemCount));
+
+					if (isValid)
+					{
+						filePath.resize(dwItemCount);
+						for (DWORD i = 0; i < dwItemCount; ++i)
+						{
+							// 개별 파일 항목 가져오기
+							IShellItem* pItem = nullptr;
+							pSelectedItems->GetItemAt(i, &pItem);
+
+							// 파일 경로 가져오기
+							PWSTR pszFilePath = nullptr;
+							pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+							filePath[i] = pszFilePath;
+
+							// 메모리 해제
+							CoTaskMemFree(pszFilePath);
+							pItem->Release();
+						}
+						// 메모리 해제
+						pSelectedItems->Release();
+						 
+					}
+				}			 
+				pfd->Release();
+				return isValid;
 			}
 		public:
 			JEventInterface* EvInterface()
@@ -248,6 +259,7 @@ namespace JinEngine
 				rid.dwFlags = 0;
 				rid.hwndTarget = nullptr;
 
+				SetDisplayInfo();
 				ThrowIfFailedW(RegisterRawInputDevices(&rid, 1, sizeof(rid)))
 			}
 			void OpenEngineWindow()
@@ -298,6 +310,7 @@ namespace JinEngine
 				rid.dwFlags = 0;
 				rid.hwndTarget = nullptr;
 
+				SetDisplayInfo();
 				ThrowIfFailedW(RegisterRawInputDevices(&rid, 1, sizeof(rid)));
 			}
 			void CloseWindow()
@@ -320,7 +333,7 @@ namespace JinEngine
 					DispatchMessage(&msg);
 				}
 				return {};
-			}	 
+			}
 			void RegisterWindowClass()
 			{
 				wc = { 0 };
@@ -352,6 +365,15 @@ namespace JinEngine
 				}
 			}
 		public:
+			void SetDisplayInfo()
+			{
+				MONITORINFOEX monitorInfo;
+				monitorInfo.cbSize = sizeof(MONITORINFOEX);
+
+				// 현재 프라이머리 모니터의 정보 가져오기
+				if (GetMonitorInfoW(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &monitorInfo))
+					displayRect = monitorInfo.rcWork;
+			}
 			void Resize(WPARAM wParam)
 			{
 				GetWindowRect(hwnd, &preWindowRect);
@@ -372,7 +394,7 @@ namespace JinEngine
 			static LRESULT CALLBACK HandleMsgThunk(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam);
 			static LRESULT HandleMsg(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam);
 		};
- 
+
 		using Impl = JinEngine::Core::JSingletonHolder<JWindowImpl>;
 
 		LRESULT CALLBACK JWindowImpl::HandleMsgSetup(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam)
@@ -441,10 +463,9 @@ namespace JinEngine
 			{
 				int newWidth = ((RECT*)lParam)->right - ((RECT*)lParam)->left;
 				int newHeight = ((RECT*)lParam)->bottom - ((RECT*)lParam)->top;
-				int minWidth = Impl::Instance().GetMinWidth();
-				int minHeight = Impl::Instance().GetMinHeight();
+				JVector2F minSize = Impl::Instance().GetMinSize(); 
 
-				if (newWidth <= minWidth || newHeight <= minHeight)
+				if (newWidth <= minSize.x || newHeight <= minSize.y)
 				{
 					RECT preWindowRect = Impl::Instance().GetPreWindowR();
 					((RECT*)lParam)->left = preWindowRect.left;
@@ -488,6 +509,11 @@ namespace JinEngine
 			case WM_KEYUP:
 				//inputManager.UpKey(wParam);
 				break;
+			case WM_DISPLAYCHANGE:
+			{
+				Impl::Instance().SetDisplayInfo();
+				break;
+			}
 			}
 			return DefWindowProc(hwnd, msg, wParam, lParam);
 		}
@@ -508,61 +534,37 @@ namespace JinEngine
 		{
 			return Impl::Instance().GetPreClientR();
 		}
-		int JWindow::GetDisplayWidth()noexcept
+		JVector2<float> JWindow::GetDisplayPosition()noexcept
 		{
-			return Impl::Instance().GetDisplayWidth();
+			return Impl::Instance().GetDisplayPosition();
 		}
-		int JWindow::GetDisplayHeight()noexcept
+		JVector2<float> JWindow::GetDisplaySize()noexcept
 		{
-			return Impl::Instance().GetDisplayHeight();
+			return Impl::Instance().GetDisplaySize();
 		}
-		int JWindow::GetMinWidth()noexcept
+		JVector2<float> JWindow::GetMinSize()noexcept
 		{
-			return Impl::Instance().GetMinWidth();
+			return Impl::Instance().GetMinSize();
 		}
-		int JWindow::GetMinHeight()noexcept
+		JVector2<float> JWindow::GetWindowPosition()noexcept
 		{
-			return Impl::Instance().GetMinHeight();
+			return Impl::Instance().GetWindowPosition();
 		}
-		int JWindow::GetWindowPositionX()noexcept
+		JVector2<float> JWindow::GetWindowSize()noexcept
 		{
-			return Impl::Instance().GetWindowPositionX();
-		}
-		int JWindow::GetWindowPositionY()noexcept
+			return Impl::Instance().GetWindowSize();
+		} 
+		JVector2<float> JWindow::GetClientPosition()noexcept
 		{
-			return Impl::Instance().GetWindowPositionY();
+			return Impl::Instance().GetClientPosition();
 		}
-		int JWindow::GetWindowWidth()noexcept
-		{
-			return Impl::Instance().GetWindowWidth();
-		}
-		int JWindow::GetWindowHeight()noexcept
-		{
-			return Impl::Instance().GetWindowHeight();
-		}
-		JVector2<int> JWindow::GetClientPos()noexcept
-		{
-			return Impl::Instance().GetClientPos();
-		}
-		int JWindow::GetClientPositionX()noexcept
-		{
-			return Impl::Instance().GetClientPositionX();
-		}
-		int JWindow::GetClientPositionY()noexcept
-		{
-			return Impl::Instance().GetClientPositionY();
-		}
-		JVector2<int> JWindow::GetClientSize()noexcept
+		JVector2<float> JWindow::GetClientSize()noexcept
 		{
 			return Impl::Instance().GetClientSize();
 		}
-		int JWindow::GetClientWidth()noexcept
+		uint JWindow::GetMaxDisplayFrequency()noexcept
 		{
-			return Impl::Instance().GetClientWidth();
-		}
-		int JWindow::GetClientHeight()noexcept
-		{
-			return Impl::Instance().GetClientHeight();
+			return Impl::Instance().GetMaxDisplayFrequency();
 		}
 		bool JWindow::IsFullScreen()noexcept
 		{
@@ -572,39 +574,51 @@ namespace JinEngine
 		{
 			return Impl::Instance().HasStorageSpace(dirPath, capacity);
 		}
-		bool JWindow::SelectDirectory(std::wstring& dirPath, const std::wstring& guide)noexcept
+		bool JWindow::SelectDirectory(_Out_ std::wstring& dirPath, const std::wstring& guide)noexcept
 		{
-			return Impl::Instance().SelectDirectory(dirPath, guide);
+			std::vector<std::wstring> path;
+			const bool result = Impl::Instance().SelectFile(path, guide, false, true);
+			if (result)
+				dirPath = path[0];
+			return result;
 		}
-		bool JWindow::SelectFile(std::wstring& filePath, const std::wstring& guide)noexcept
+		bool JWindow::SelectFile(_Out_ std::wstring& filePath, const std::wstring& guide)noexcept
 		{
-			return Impl::Instance().SelectFile(filePath, guide);
+			std::vector<std::wstring> path;
+			const bool result = Impl::Instance().SelectFile(path, guide, false, false);
+			if (result)
+				filePath = path[0];
+			return result;
+		}
+		bool JWindow::SelectMultiFile(_Out_ std::vector<std::wstring>& filePath, const std::wstring& guide)noexcept
+		{
+			return Impl::Instance().SelectFile(filePath, guide, true, false);
 		}
 		WindowEvInterface* JWindow::EvInterface()noexcept
 		{
 			return Impl::Instance().EvInterface();
 		}
 
-		using ApplicationAccess = JWindowPrivate::ApplicationAccess;
+		using MainAccess = JWindowPrivate::MainAccess;
 		using HandleInterface = JWindowPrivate::HandleInterface;
 
-		void ApplicationAccess::Initialize(HINSTANCE hInstance, std::unique_ptr<CloseConfirmF>&& closeConfirmF)
+		void MainAccess::Initialize(HINSTANCE hInstance, std::unique_ptr<CloseConfirmF>&& closeConfirmF)
 		{
 			Impl::Instance().Initialize(hInstance, std::move(closeConfirmF));
 		}
-		void ApplicationAccess::OpenProjecSelectorWindow()
+		void MainAccess::OpenProjecSelectorWindow()
 		{
 			Impl::Instance().OpenProjecSelectorWindow();
 		}
-		void ApplicationAccess::OpenEngineWindow()
+		void MainAccess::OpenEngineWindow()
 		{
 			Impl::Instance().OpenEngineWindow();
 		}
-		void ApplicationAccess::CloseWindow()
+		void MainAccess::CloseWindow()
 		{
 			Impl::Instance().CloseWindow();
 		}
-		std::optional<int> ApplicationAccess::ProcessMessages()
+		std::optional<int> MainAccess::ProcessMessages()
 		{
 			return Impl::Instance().ProcessMessages();
 		}

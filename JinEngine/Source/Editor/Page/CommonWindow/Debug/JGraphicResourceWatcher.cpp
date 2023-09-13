@@ -1,9 +1,9 @@
 #include"JGraphicResourceWatcher.h"
 #include"../../JEditorAttribute.h"
+#include"../../../Gui/JGui.h"
 #include"../../../../Graphic/JGraphicPrivate.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceManager.h" 
-#include"../../../../Graphic/GraphicResource/JGraphicResourceInfo.h" 
-#include"../../../../../ThirdParty/imgui/imgui.h" 
+#include"../../../../Graphic/GraphicResource/JGraphicResourceInfo.h"  
 
 namespace JinEngine
 {
@@ -23,10 +23,11 @@ namespace JinEngine
 		}
 		void JGraphicResourceWatcher::UpdateWindow()
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR);
 			UpdateDocking();
 			if (IsActivated())
 			{
+				UpdateMouseClick();
 				using GraphicDebugInterface = Graphic::JGraphicPrivate::DebugInterface;
 				Graphic::JGraphicResourceManager* grManager = GraphicDebugInterface::GetGraphicResourceManager();
 
@@ -36,18 +37,19 @@ namespace JinEngine
 				auto bNameVec = bInfo->GetEnumNameVec();
 				 
 				for (uint i = 0; i < (uint)Graphic::J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
-				{
-					Graphic::JGraphicResourceManager::ResourceTypeDesc& desc = grManager->typeDesc[i];
-					ImGui::Text(rNameVec[i].c_str());
-					ImGui::Text(("Resource Count:" + std::to_string(desc.count)).c_str());
+				{ 
+					const Graphic::J_GRAPHIC_RESOURCE_TYPE rType = (Graphic::J_GRAPHIC_RESOURCE_TYPE)i;
+					JGui::Text(rNameVec[i].c_str());
+					JGui::Text(("Resource Count:" + std::to_string(grManager->GetResourceCount(rType))));
 					for (uint j = 0; j < (uint)Graphic::J_GRAPHIC_BIND_TYPE::COUNT; ++j)
 					{
-						ImGui::Text(bNameVec[j].c_str());
-						ImGui::Text(("View Count:" + std::to_string(desc.viewInfo[j].count)).c_str());
-						ImGui::Text(("View Capacity:" + std::to_string(desc.viewInfo[j].capacity)).c_str());
-						ImGui::Text(("View Offset:" + std::to_string(desc.viewInfo[j].offset)).c_str());
+						const Graphic::J_GRAPHIC_BIND_TYPE bType = (Graphic::J_GRAPHIC_BIND_TYPE)j;
+						JGui::Text(bNameVec[j].c_str());
+						JGui::Text(("View Count:" + std::to_string(grManager->GetViewCount(rType, bType))));
+						JGui::Text(("View Capacity:" + std::to_string(grManager->GetViewCapacity(rType, bType))));
+						JGui::Text(("View Offset:" + std::to_string(grManager->GetViewOffset(rType, bType))));
 					}
-					ImGui::Separator();
+					JGui::Separator();
 				}
 			} 
 			CloseWindow();

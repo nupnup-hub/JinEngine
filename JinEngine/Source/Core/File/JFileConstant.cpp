@@ -1,6 +1,6 @@
 #include"JFileConstant.h"
 #include"../Reflection/JTypeInfo.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 #include<fstream> 
 namespace JinEngine
 {
@@ -29,6 +29,10 @@ namespace JinEngine
 		std::wstring JFileConstant::StreamObjGuidSymbol()noexcept
 		{
 			return L"ObjGuid: ";
+		}
+		std::wstring JFileConstant::StreamObjFlagSymbol()noexcept
+		{
+			return L"ObjFlag: ";
 		}
 		std::wstring JFileConstant::StreamTypeGuidSymbol()noexcept
 		{

@@ -8,7 +8,7 @@ namespace JinEngine
 {
 	namespace Core
 	{ 
-		JHardwareInfo::CpuInfo JHardwareInfo::GetCpuInfo() noexcept
+		JHardwareInfo::CpuInfo JHardwareInfo::GetCpuInfo()
 		{ 
 			JHardwareInfo::CpuInfo cpuInfo;
 #if defined OS_WINDOW
@@ -44,7 +44,7 @@ namespace JinEngine
 #endif
 			return cpuInfo;
 		}
-		std::vector<JHardwareInfo::GpuInfo> JHardwareInfo::GetGpuInfo() noexcept
+		std::vector<JHardwareInfo::GpuInfo> JHardwareInfo::GetGpuInfo()
 		{ 
 			std::vector<JHardwareInfo::GpuInfo> gpuInfo;
 			cudaDeviceProp prop;
@@ -60,6 +60,7 @@ namespace JinEngine
 				gpuInfo[i].majorComputeCapability = prop.major;
 				gpuInfo[i].minorComputeCapability = prop.minor;
 				gpuInfo[i].clockRate = prop.clockRate;
+	 
 				gpuInfo[i].canDeviceOverlap = prop.deviceOverlap;
 				gpuInfo[i].canKernelExecTimeout = prop.kernelExecTimeoutEnabled;
 
@@ -67,6 +68,8 @@ namespace JinEngine
 				gpuInfo[i].totalConstMem = prop.totalConstMem;
 				gpuInfo[i].memPitch = prop.memPitch;
 				gpuInfo[i].textureAlignment = prop.textureAlignment;
+				gpuInfo[i].memoryClockRate = prop.memoryClockRate;
+				gpuInfo[i].memoryBusWidth = prop.memoryBusWidth / 8;
 
 				gpuInfo[i].multiProcessorCount = prop.multiProcessorCount;
 				gpuInfo[i].sharedMemPerBlock = prop.sharedMemPerBlock;

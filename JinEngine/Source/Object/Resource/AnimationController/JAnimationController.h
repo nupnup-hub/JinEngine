@@ -7,12 +7,12 @@ namespace JinEngine
 {
 	namespace Core
 	{
-		class JAnimationFSMdiagram; 
-		class JAnimationFSMstate;
-		class JAnimationFSMtransition;		  
 		class JFSMparameter; 
 	}
-	 
+
+	class JAnimationFSMdiagram;
+	class JAnimationFSMstate;
+	class JAnimationFSMtransition;
 	class JAnimationControllerPrivate;
 	class JAnimationController final : public JResourceObject
 	{
@@ -53,23 +53,23 @@ namespace JinEngine
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 		uint GetDiagramCount()const noexcept; 
 		uint GetParameterCount()const noexcept;   
-		JUserPtr<Core::JAnimationFSMdiagram> GetDiagram(const size_t guid)noexcept;
-		JUserPtr<Core::JAnimationFSMdiagram> GetDiagramByIndex(const uint index)noexcept;
-		const std::vector<JUserPtr<Core::JAnimationFSMdiagram>>& GetDiagramVec()noexcept;
+		JUserPtr<JAnimationFSMdiagram> GetDiagram(const size_t guid)noexcept;
+		JUserPtr<JAnimationFSMdiagram> GetDiagramByIndex(const uint index)noexcept;
+		const std::vector<JUserPtr<JAnimationFSMdiagram>>& GetDiagramVec()noexcept;
 		JUserPtr<Core::JFSMparameter> GetParameter(const size_t guid)noexcept;
 		JUserPtr<Core::JFSMparameter> GetParameterByIndex(const uint index)noexcept;
 	public:
 		bool CanCreateDiagram()const noexcept;
 		bool CanCreateParameter()const noexcept;
-		bool CanCreateState(Core::JAnimationFSMdiagram* diagram)const noexcept;
+		bool CanCreateState(JAnimationFSMdiagram* diagram)const noexcept;
 		bool IsValid()const noexcept final;
 	public:
-		JUserPtr<Core::JAnimationFSMdiagram> CreateFSMdiagram(const size_t guid = Core::MakeGuid())noexcept;
+		JUserPtr<JAnimationFSMdiagram> CreateFSMdiagram(const size_t guid = Core::MakeGuid())noexcept;
 		JUserPtr<Core::JFSMparameter> CreateFSMparameter(const size_t guid = Core::MakeGuid())noexcept;
-		JUserPtr<Core::JAnimationFSMstate> CreateFSMclip(const JUserPtr<Core::JAnimationFSMdiagram>& diagram, const size_t guid = Core::MakeGuid())noexcept;
-		JUserPtr<Core::JAnimationFSMtransition> CreateFsmtransition(const JUserPtr<Core::JAnimationFSMdiagram>& diagram,
-			const JUserPtr<Core::JAnimationFSMstate>& from,
-			const JUserPtr<Core::JAnimationFSMstate>& to,
+		JUserPtr<JAnimationFSMstate> CreateFSMclip(const JUserPtr<JAnimationFSMdiagram>& diagram, const size_t guid = Core::MakeGuid())noexcept;
+		JUserPtr<JAnimationFSMtransition> CreateFsmtransition(const JUserPtr<JAnimationFSMdiagram>& diagram,
+			const JUserPtr<JAnimationFSMstate>& from,
+			const JUserPtr<JAnimationFSMstate>& to,
 			const size_t guid = Core::MakeGuid())noexcept;   
 	protected:
 		void DoActivate()noexcept final;

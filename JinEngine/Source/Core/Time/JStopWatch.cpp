@@ -24,21 +24,16 @@ namespace JinEngine
 		void JStopWatch::Start()noexcept
 		{
 			time = std::chrono::high_resolution_clock::now();
-			if (isStop)
-			{
-				isStop = false;
-				prevTime += (float)std::chrono::duration<double, std::nano>(stopTime - time).count();
-			}
+			isStop = false;
 		}
 		void JStopWatch::Stop()noexcept
-		{ 
-			stopTime = std::chrono::high_resolution_clock::now(); 
+		{  
+			prevTime += (float)std::chrono::duration<double, std::nano>(std::chrono::high_resolution_clock::now() - time).count();
 			isStop = true;
 		}
 		void JStopWatch::Reset()noexcept
 		{
-			time = std::chrono::high_resolution_clock::now();
-			stopTime = std::chrono::high_resolution_clock::now();
+			time = std::chrono::high_resolution_clock::now(); 
 			prevTime = 0;
 			isStop = false;
 		}
@@ -69,28 +64,28 @@ namespace JinEngine
 		float JStopWatch::GetElapsedSecondTime()const noexcept
 		{
 			if (isStop)
-				return ToFloatTime<std::chrono::seconds>(time, stopTime) + prevTime * ns2sec;
+				return prevTime * ns2sec;
 			else
 				return ToFloatTime<std::chrono::seconds>(time, std::chrono::high_resolution_clock::now()) + prevTime * ns2sec;
 		}
 		float JStopWatch::GetElapsedMilliTime()const noexcept
 		{
 			if (isStop)
-				return ToFloatTime<std::chrono::milliseconds>(time, stopTime) + prevTime * ns2milli;
+				return prevTime * ns2milli;
 			else
 				return ToFloatTime<std::chrono::milliseconds>(time, std::chrono::high_resolution_clock::now()) + prevTime * ns2milli;
 		}
 		float JStopWatch::GetElapsedMicroTime()const noexcept
 		{
 			if (isStop)
-				return ToFloatTime<std::chrono::microseconds>(time, stopTime) + prevTime * ns2micro;
+				return prevTime * ns2micro;
 			else
 				return ToFloatTime<std::chrono::microseconds>(time, std::chrono::high_resolution_clock::now()) + prevTime * ns2micro;
 		}
 		float JStopWatch::GetElapsedNanoTime()const noexcept
 		{
 			if (isStop)
-				return ToFloatTime<std::chrono::nanoseconds>(time, stopTime) + prevTime;
+				return prevTime;
 			else
 				return ToFloatTime<std::chrono::nanoseconds>(time, std::chrono::high_resolution_clock::now()) + prevTime;
 		}

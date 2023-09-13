@@ -1,9 +1,8 @@
 #include"JTypeInfo.h"    
 #include"JPropertyInfo.h"    
 #include"JMethodInfo.h"   
-#include"../Pointer/JOwnerPtr.h"  
-#include"../../Object/JObject.h"
-#include"../../Utility/JCommonUtility.h" 
+#include"JTypeBase.h"   
+#include"../Utility/JCommonUtility.h"    
 
 namespace JinEngine
 {
@@ -85,7 +84,7 @@ namespace JinEngine
 		{
 			return instanceData != nullptr ? JCUtil::GetTypeIndex(instanceData->classInstanceVec, iden) : -1;
  		}
-		JTypeInstance* JTypeInfo::GetInstanceRawPtr(IdentifierType iden)const noexcept
+		JTypeBase* JTypeInfo::GetInstanceRawPtr(IdentifierType iden)const noexcept
 		{
 			if (instanceData == nullptr)
 				return nullptr;
@@ -93,21 +92,21 @@ namespace JinEngine
 			auto data = instanceData->classInstanceMap.find(iden);
 			return data != instanceData->classInstanceMap.end() ? data->second.Get() : nullptr;
 		}
-		JUserPtr<JTypeInstance> JTypeInfo::GetInstanceUserPtr(IdentifierType iden)const noexcept
+		JUserPtr<JTypeBase> JTypeInfo::GetInstanceUserPtr(IdentifierType iden)const noexcept
 		{
 			if (instanceData == nullptr)
-				return JUserPtr<JTypeInstance>{};
+				return JUserPtr<JTypeBase>{};
 
 			auto data = instanceData->classInstanceMap.find(iden);
-			return data != instanceData->classInstanceMap.end() ? JUserPtr<JTypeInstance>{data->second } : JUserPtr<JTypeInstance>{};
+			return data != instanceData->classInstanceMap.end() ? JUserPtr<JTypeBase>{data->second } : JUserPtr<JTypeBase>{};
 		}
-		JWeakPtr<JTypeInstance> JTypeInfo::GetInstanceWeakPtr(IdentifierType iden)const noexcept
+		JWeakPtr<JTypeBase> JTypeInfo::GetInstanceWeakPtr(IdentifierType iden)const noexcept
 		{
 			if (instanceData == nullptr)
-				return JWeakPtr<JTypeInstance>{};
+				return JWeakPtr<JTypeBase>{};
 
 			auto data = instanceData->classInstanceMap.find(iden);
-			return data != instanceData->classInstanceMap.end() ? JWeakPtr<JTypeInstance>{data->second } : JWeakPtr<JTypeInstance>{};
+			return data != instanceData->classInstanceMap.end() ? JWeakPtr<JTypeBase>{data->second } : JWeakPtr<JTypeBase>{};
 		}
 		TypeInstanceVector JTypeInfo::GetInstanceRawPtrVec()const noexcept
 		{
@@ -115,6 +114,10 @@ namespace JinEngine
 				return TypeInstanceVector{};
 
 			return instanceData->classInstanceVec;
+		}
+		std::vector<JTypeInfo*> JTypeInfo::GetChildInfo()const noexcept
+		{
+			return _JReflectionInfo::Instance().GetDerivedTypeInfo(*this, false);
 		}
 	 	JAllocationInterface* JTypeInfo::GetAllocationInterface()const noexcept
 		{ 
@@ -243,7 +246,7 @@ namespace JinEngine
 
 			lazyDestruction->Update(timeOffset);
 		}
-		bool JTypeInfo::AddInstance(IdentifierType iden, JOwnerPtr<JTypeInstance> ptr)noexcept
+		bool JTypeInfo::AddInstance(IdentifierType iden, JOwnerPtr<JTypeBase>&& ptr)noexcept
 		{
 			if (instanceData == nullptr)
 				return false; 
@@ -252,6 +255,13 @@ namespace JinEngine
 			{
 				if (ptr->GetTypeInfo().IsChildOf(JTypeBase::StaticTypeInfo()))
 				{ 
+					auto destructionPtr = [](void* ptr)
+					{  
+						delete static_cast<JTypeBase*>(ptr);
+						//JTypeBase::operator delete(ptr);
+					};
+
+					ptr.SetDestructionPtr(destructionPtr);
 					instanceData->classInstanceVec.push_back(ptr.Get());
 					instanceData->classInstanceMap.emplace(iden, std::move(ptr));
 					return true;
@@ -266,23 +276,23 @@ namespace JinEngine
 		{
 			if (instanceData == nullptr)
 				return false;
-			 
+
 			const uint instanceCount = (uint)instanceData->classInstanceVec.size();
 			for (uint i = 0; i < instanceCount; ++i)
 			{
 				if (instanceData->classInstanceVec[i]->GetGuid() == iden)
-				{ 
-					instanceData->classInstanceVec.erase(instanceData->classInstanceVec.begin() + i);
-					instanceData->classInstanceMap.erase(iden);
+				{   
+					instanceData->classInstanceVec.erase(instanceData->classInstanceVec.begin() + i);  
+					instanceData->classInstanceMap.erase(iden); 
 					return true;
 				}
 			}
 			return false;
 		}
-		JOwnerPtr<JTypeInstance> JTypeInfo::ReleaseInstance(IdentifierType iden)noexcept
+		JOwnerPtr<JTypeBase> JTypeInfo::ReleaseInstance(IdentifierType iden)noexcept
 		{
 			if (instanceData == nullptr)
-				return JOwnerPtr<JTypeInstance>{};
+				return JOwnerPtr<JTypeBase>{};
 
 			const uint instanceCount = (uint)instanceData->classInstanceVec.size();
 			for (uint i = 0; i < instanceCount; ++i)
@@ -290,12 +300,12 @@ namespace JinEngine
 				if (instanceData->classInstanceVec[i]->GetGuid() == iden)
 				{
 					instanceData->classInstanceVec.erase(instanceData->classInstanceVec.begin() + i);
-					JOwnerPtr<JTypeInstance> owner = std::move(instanceData->classInstanceMap.find(iden)->second);
+					JOwnerPtr<JTypeBase> owner = std::move(instanceData->classInstanceMap.find(iden)->second);
 					instanceData->classInstanceMap.erase(iden);
 					return owner;
 				}
 			}
-			return JOwnerPtr<JTypeInstance>{};
+			return JOwnerPtr<JTypeBase>{};
 		}
 		bool JTypeInfo::AddPropertyInfo(JPropertyInfo* newProperty)
 		{
@@ -372,7 +382,7 @@ namespace JinEngine
 				NotifyReAllocPtr notifyPtr = [](ReceiverPtr receiver, ReAllocatedPtr movedPtr, MemIndex index)
 				{
 					auto typeInfo = static_cast<JTypeInfo*>(receiver); 
-					auto iden = static_cast<JIdentifier*>(movedPtr);
+					auto iden = static_cast<JTypeBase*>(movedPtr);
 					auto& ownerPtr = typeInfo->instanceData->classInstanceMap.find(iden->GetGuid())->second;
 					ownerPtr.SetValidPointer(iden);
 
@@ -388,6 +398,8 @@ namespace JinEngine
 			if (extraInitInfo->allocInitInfo->option->dataSize < dataSize)
 				extraInitInfo->allocInitInfo->option->dataSize = dataSize;
 
+			//Debug
+			extraInitInfo->allocInitInfo->option->name = Name();
 			allocationInterface = extraInitInfo->allocInitInfo->creator->CreateAlloc(extraInitInfo->allocInitInfo->option.get());
 			allocationInterface->Initialize(std::move(*extraInitInfo->allocInitInfo->option));
 		}
@@ -434,5 +446,8 @@ namespace JinEngine
 			isValid(iden.IsValid() ? true : false), 
 			hasImplType(iden.IsValid() ? iden->GetTypeInfo().HasImplTypeInfo() : false)
 		{}
+		JTypeInstanceSearchHint::~JTypeInstanceSearchHint()
+		{  
+		}
 	}
 }

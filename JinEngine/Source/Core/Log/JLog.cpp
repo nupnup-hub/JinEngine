@@ -1,6 +1,6 @@
 #include"JLog.h"
 #include<algorithm>
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
@@ -32,6 +32,14 @@ namespace JinEngine
 					return title + body;
 			} 
 		}
+		bool JLogBase::HasTitle()const noexcept
+		{
+			return !title.empty();
+		}
+		bool JLogBase::HasContents()const noexcept
+		{
+			return !body.empty();
+		}
 		void JLogBase::AddTitle(const std::string postTitle)noexcept
 		{
 			title += postTitle;
@@ -39,57 +47,6 @@ namespace JinEngine
 		void JLogBase::AddBody(const std::string postBody)noexcept
 		{
 			body += postBody;
-		}
-
-		std::vector<JLogBase*> JLogHandler::GetLogVec()const noexcept
-		{
-			std::vector<JLogBase*> rLogVec;
-			//circulate staet
-			if (logVec[index] != nullptr)
-			{
-				const uint logVecCount = (uint)logVec.size();
-				for (int i = index; i < logVecCount; ++i)
-					rLogVec.push_back(logVec[i].get());
-			}
-			for (int i = 0; i < index; ++i)
-				rLogVec.push_back(logVec[i].get());
-			return rLogVec;
-		}
-		std::vector<JLogBase*> JLogHandler::GetLogVec(const bool useSort)noexcept
-		{
-			if (useSort)
-				Sort();
-
-			return GetLogVec();
-		}
-		void JLogHandler::SetCapacity(const uint newCapacity)noexcept
-		{
-			if(logVec.size() > 0)
-				Sort();
-
-			if(newCapacity >= maxCapacity)
-				logVec.resize(maxCapacity);
-			else
-				logVec.resize(newCapacity);
-		}
-		void JLogHandler::PushLog(std::unique_ptr<JLogBase> newLog)noexcept
-		{
-			logVec[index] = std::move(newLog);
-			++index;
-			if (index >= logVec.size())
-				index = 0;
-		}
-		void JLogHandler::Clear()noexcept
-		{
-			index = 0;  
-			logVec.clear(); 
-		}
-		void JLogHandler::Sort()noexcept
-		{
-			bool isCirculateState = logVec[index] != nullptr; 
-			std::sort(logVec.begin(), logVec.end());		 
-			if (isCirculateState)
-				index = logVec.size() - 1;
 		}
 	}
 }

@@ -1,8 +1,8 @@
 #pragma once
 #include"JEditorPopupType.h" 
 #include"../../Core/Func/Functor/JFunctor.h"
-#include"../../Core/JDataType.h"
-#include"../../Utility/JVector.h" 
+#include"../../Core/JCoreEssential.h"
+#include"../../Core/Math/JVector.h"
 #include<vector>
 #include<string> 
 

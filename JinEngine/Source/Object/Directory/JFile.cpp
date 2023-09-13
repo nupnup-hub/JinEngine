@@ -5,7 +5,7 @@
 #include"../Resource/JResourceObject.h"
 #include"../Resource/JResourceObjectHint.h"
 #include"../Resource/JResourceObjectPrivate.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../../Core/Utility/JCommonUtility.h"
 #include"../../Core/File/JFileConstant.h"
 #include"../../Application/JApplicationProject.h"
 
@@ -37,6 +37,10 @@ namespace JinEngine
 		Core::JTypeInfo& GetResourceTypeInfo()const noexcept
 		{
 			return resource->GetTypeInfo();
+		}
+		J_OBJECT_FLAG GetObjectFlag()const noexcept
+		{
+			return resource->GetFlag();
 		}
 		std::wstring GetName()const noexcept
 		{
@@ -79,6 +83,7 @@ namespace JinEngine
 		Core::JTypeInfo& rTypeInfo;
 		JWeakPtr<JDirectory> ownerDir;
 		const J_RESOURCE_TYPE resourceType;
+		const J_OBJECT_FLAG flag;
 		const uint8 formatIndex;
 	public:
 		const std::wstring name;
@@ -89,6 +94,7 @@ namespace JinEngine
 			rTypeInfo(initData.rTypeInfo),
 			ownerDir(ownerDir),
 			resourceType(initData.resourceType),
+			flag(initData.flag),
 			formatIndex(initData.formatIndex),
 			name(initData.name)
 		{}
@@ -110,6 +116,10 @@ namespace JinEngine
 		Core::JTypeInfo& GetResourceTypeInfo()const noexcept
 		{
 			return rTypeInfo;
+		}
+		J_OBJECT_FLAG GetObjectFlag()const noexcept
+		{
+			return flag;
 		}
 		std::wstring GetName()const noexcept
 		{
@@ -160,6 +170,10 @@ namespace JinEngine
 	Core::JTypeInfo& JFile::GetResourceTypeInfo()const noexcept
 	{
 		return fileData->GetResourceTypeInfo();
+	}
+	J_OBJECT_FLAG JFile::GetObjectFlag()const noexcept
+	{
+		return fileData->GetObjectFlag();
 	}
 	std::wstring JFile::GetName()const noexcept
 	{

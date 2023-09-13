@@ -17,6 +17,8 @@ namespace JinEngine
 			using EvInterface = typename JEventInterface< IdentifierType, EVENTTYPE, Param...>;
 			using NotifyPtr = void(Listener::*)(EvInterface&, const IdentifierType&, const EVENTTYPE&, Param...);
 			using AddEventNotificationPtr = void(Listener::*)(EvInterface&, const IdentifierType&, const EVENTTYPE&, Param...);
+		public:
+			virtual ~JEventListener(){}
 		protected: 
 			virtual void OnEvent(const IdentifierType& iden, const EVENTTYPE& eventType, Param... var) = 0;
 		protected:  

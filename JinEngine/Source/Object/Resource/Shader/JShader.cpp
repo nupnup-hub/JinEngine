@@ -1,5 +1,6 @@
 #include"JShader.h" 
 #include"JShaderPrivate.h"
+#include"JShaderDataHolderBase.h"
 #include"../JResourceObjectHint.h"
 #include"../JResourceManager.h" 
 #include"../../Directory/JDirectory.h"
@@ -7,13 +8,12 @@
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileIOHelper.h"
-#include"../../../Core/Platform/JHardwareInfo.h"
+#include"../../../Core/Platform/JHardwareInfo.h" 
+#include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphic.h"
 #include"../../../Graphic/JGraphicPrivate.h"
 #include"../../../Application/JApplicationEngine.h"
 #include"../../../Application/JApplicationProject.h"
-#include"../../../Utility/JD3DUtility.h"
-#include"../../../Utility/JCommonUtility.h"
 #include<fstream>
 #include<d3d12.h>
 
@@ -25,6 +25,8 @@ namespace JinEngine
 #define TEXTURE_2D_COUNT_SYMBOL "TEXTURE_2D_COUNT"
 #define TEXTURE_CUBE_COUNT_SYMBOL "CUBE_MAP_COUNT"
 #define SHADOW_MAP_COUNT_SYMBOL "SHADOW_MAP_COUNT"
+#define SHADOW_MAP_ARRAY_COUNT_SYMBOL "SHADOW_MAP_ARRAY_COUNT"
+#define SHADOW_MAP_CUBE_COUNT_SYMBOL "SHADOW_MAP_CUBE_COUNT"
 
 //Compute Shader Macro Symbol ";
 #define THREAD_DIM_X_SYMBOL "DIMX"
@@ -34,78 +36,34 @@ namespace JinEngine
 #define HZB_SAMPLING_COUNT_SYMBOL "DOWN_SAMPLING_COUNT"
 #define HZB_OCC_QUERY_COUNT_SYMBOL "OCCLUSION_QUERY_COUNT" 
 	}
- 
-	struct GSInitHelper
-	{
-	public:
-		std::vector<D3D_SHADER_MACRO> macro[SHADER_VERTEX_COUNT];
-		std::vector<std::string> macroStrVec[SHADER_VERTEX_COUNT];
-	};
-	struct CSInitHelper
-	{
-	public:
-		std::vector<D3D_SHADER_MACRO> macro;
-		std::vector<std::string> macroStrVec;
-		JComputeShaderData::DispatchInfo dispatchInfo;
-	};
 
 	namespace
 	{
-		static const std::unordered_map<J_GRAPHIC_SHADER_FUNCTION, const D3D_SHADER_MACRO> shaderFuncMacroMap
+		static const std::unordered_map<J_GRAPHIC_SHADER_FUNCTION, const JMacroSet> shaderFuncMacroMap
 		{
-			{SHADER_FUNCTION_NONE, {NULL, NULL}},
+			//{SHADER_FUNCTION_NONE, {"", ""}},
 			{SHADER_FUNCTION_ALBEDO_MAP, {"ALBEDO_MAP", "1"}},
 			{SHADER_FUNCTION_ALBEDO_MAP_ONLY, {"ALBEDO_MAP_ONLY", "2"}},
 			{SHADER_FUNCTION_NORMAL_MAP, {"NORMAL_MAP", "3"}},
 			{SHADER_FUNCTION_HEIGHT_MAP, {"HEIGHT_MAP", "4"}},
 			{SHADER_FUNCTION_ROUGHNESS_MAP,{ "ROUGHNESS_MAP", "5"}},
-			{SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP, {"AMBIENT_OCCUSION_MAP", "6"}},
+			{SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP, {"AMBIENT_OCCUSION_MAP", "6"}}, 
 			{SHADER_FUNCTION_SHADOW, {"SHADOW", "7"}},
 			{SHADER_FUNCTION_LIGHT, {"LIGHT", "8"}},
 			{SHADER_FUNCTION_SKY, {"SKY", "9"}},
-			{SHADER_FUNCTION_ALPHA_CLIP, {"ALPHA_CLIP", "10"}},
-			{SHADER_FUNCTION_WRITE_SHADOWMAP, {"WRITE_SHADOW_MAP", "11"}},
-			{SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT, {"BOUNDING_OBJECT_DEPTH_TEST", "12"}},
-			{SHADER_FUNCTION_DEBUG, {"DEBUG", "13"}}
+			{SHADER_FUNCTION_ALPHA_CLIP, {"ALPHA_CLIP", "10"}}, 
+			{SHADER_FUNCTION_DEBUG, {"DEBUG", "11"}}
 		};
 		//std::unordered_map<J_COMPUTE_SHADER_FUNCTION, std::unique_ptr<JShader::CSInitHelperCallable>> JShader::computeShaderHelperMap;
-		static const std::unordered_map<J_SHADER_VERTEX_LAYOUT, const D3D_SHADER_MACRO> vertexLayoutMacroMap
+		static const std::unordered_map<J_SHADER_VERTEX_LAYOUT, const JMacroSet> vertexLayoutMacroMap
 		{
 			{SHADER_VERTEX_LAYOUT_STATIC, {"STATIC", "1"}},
-			{SHADER_VERTEX_LAYOUT_SKINNED, {"SKINNED", "2"}},
-		};
-		static const std::unordered_map<J_SHADER_VERTEX_LAYOUT, std::vector<D3D12_INPUT_ELEMENT_DESC>> inputLayout
-		{
-			{SHADER_VERTEX_LAYOUT_STATIC,
-			{
-				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-			}},
-			{SHADER_VERTEX_LAYOUT_SKINNED,
-			{
-				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "BONEINDICES", 0, DXGI_FORMAT_R8G8B8A8_UINT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-			}},
+			{SHADER_VERTEX_LAYOUT_SKINNED, {"SKINNED", "2"}}
 		};
 	}
 
 	namespace
-	{
-		using CSInitHelperCallable = Core::JStaticCallable<CSInitHelper>;
-		using EqualGShaderT = Core::JStaticCallableType<bool, const J_GRAPHIC_SHADER_FUNCTION, const JShaderGraphicPsoCondition&, JShader*>;
-		using EqualCShaderT = Core::JStaticCallableType<bool, const J_COMPUTE_SHADER_FUNCTION, JShader*>;
-		using GResourceInterface = Graphic::JGraphicPrivate::ResourceInterface;
-
-		static std::unique_ptr<EqualGShaderT::Callable> equalGShader = nullptr;
-		static std::unique_ptr<EqualCShaderT::Callable> equalCShader = nullptr;
-		static std::unordered_map <J_COMPUTE_SHADER_FUNCTION, std::vector<std::string>> computeShaderThreadDim;
-
+	{ 
 		static JShaderPrivate sPrivate;
 	}
  
@@ -116,14 +74,14 @@ namespace JinEngine
 			return _JResourceManager::Instance().GetDirectory(JApplicationProject::ShaderMetafilePath());
 		}
 		/*
-		static JShader* FindOverlapShader(const J_GRAPHIC_SHADER_FUNCTION newFunc, const JShaderGraphicPsoCondition& graphicPSOCond)
+		static JShader* FindOverlapShader(const J_GRAPHIC_SHADER_FUNCTION newFunc, const JShaderCondition& condition)
 		{
 			uint count;
 			std::vector<JResourceObject*>::const_iterator st = _JResourceManager::Instance().Instance().GetResourceVectorHandle<JShader>(count);
 			for (uint i = 0; i < count; ++i)
 			{
 				JShader* shader = static_cast<JShader*>(*(st + i));
-				if ((*equalGShader)(nullptr, newFunc, graphicPSOCond, shader))
+				if ((*equalGShader)(nullptr, newFunc, condition, shader))
 					return shader;
 			}
 			return nullptr;
@@ -143,15 +101,15 @@ namespace JinEngine
 		*/
 		static JUserPtr<JShader> FindOverlapShader(const std::wstring& name)
 		{
-			JUserPtr<JFile> file = GetShaderDirectory()->GetDirectoryFile(name);
+			JUserPtr<JFile> file = GetShaderDirectory()->GetDirectoryFileByName(name);
 			return file != nullptr ? Core::ConvertChildUserPtr<JShader>(file->TryGetResourceUser()) : nullptr;
 		}
 		static std::wstring MakeName(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
-			const JShaderGraphicPsoCondition& graphicPSOCond,
+			const JShaderCondition& condition,
 			const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept
 		{
 			if (cFunctionFlag == J_COMPUTE_SHADER_FUNCTION::NONE)
-				return JShaderType::ConvertToName(gFunctionFlag, graphicPSOCond.UniqueID());
+				return JShaderType::ConvertToName(gFunctionFlag, condition.UniqueID());
 			else
 				return JShaderType::ConvertToName(cFunctionFlag);
 		}
@@ -163,18 +121,20 @@ namespace JinEngine
 	public:
 		JWeakPtr<JShader> thisPointer = nullptr;
 	public: 
-		std::unique_ptr<JGraphicShaderData>gShaderData[SHADER_VERTEX_COUNT]{ nullptr, nullptr };
-		std::unique_ptr<JComputeShaderData> cShaderData = nullptr;
+		JOwnerPtr<JGraphicShaderDataHolderBase> gShaderData[SHADER_VERTEX_COUNT]{ nullptr, nullptr }; 
+		JOwnerPtr<JComputeShaderDataHolderBase> cShaderData = nullptr;
+		//std::unique_ptr<JGraphicShaderData>gShaderData[SHADER_VERTEX_COUNT]{ nullptr, nullptr };
 		J_GRAPHIC_SHADER_FUNCTION gFunctionFlag = SHADER_FUNCTION_NONE;
 		J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
 	public:
-		JShaderGraphicPsoCondition graphicPSOCond;
+		JShaderCondition condition;
 	public:
 		JShaderImpl(const InitData& initData, JShader* thisShaderRaw)
 			:gFunctionFlag(initData.gFunctionFlag),
 			cFunctionFlag(initData.cFunctionFlag),
-			graphicPSOCond(initData.graphicPSOCond)
-		{ }
+			condition(initData.condition)
+		{ 
+		}
 		~JShaderImpl()
 		{}
 	public:
@@ -189,7 +149,7 @@ namespace JinEngine
 			{
 				gFunctionFlag = newFunctionFlag;
 				if (thisPointer->IsActivated())
-					CompileShdaer();
+					CompileShdaer(); 
 			}
 		}
 		void SetComputeShaderFunctionFlag(const J_COMPUTE_SHADER_FUNCTION newFunctionFlag)
@@ -215,7 +175,7 @@ namespace JinEngine
 			if (thisPointer->IsActivated())
 			{
 				for (uint i = 0; i < SHADER_VERTEX_COUNT; ++i)
-					gShaderData[i].reset();
+					gShaderData[i].Clear();
 				CompileShdaer();
 			}
 		}
@@ -223,7 +183,7 @@ namespace JinEngine
 		{
 			if (thisPointer->IsActivated())
 			{
-				cShaderData.reset();
+				cShaderData.Clear();
 				CompileShdaer();
 			}
 		}
@@ -239,53 +199,30 @@ namespace JinEngine
 		}
 		void CompileGraphicShader()
 		{
-			GSInitHelper initHelper;
-			StuffInitHelper(initHelper, thisPointer->GetShaderGFunctionFlag());
+			JGraphicShaderInitData initHelper;
+			StuffInitHelper(initHelper, gFunctionFlag, condition);
 
-			std::wstring vertexShaderPath = JApplicationEngine::ShaderPath() + L"\\VertexShader.hlsl";
-			std::wstring pixelShaderPath = JApplicationEngine::ShaderPath() + L"\\PixelShader.hlsl";
-
-			 
+			using GResourceInterface = Graphic::JGraphicPrivate::ResourceInterface;
 			for (uint i = 0; i < SHADER_VERTEX_COUNT; ++i)
-			{ 
-				gShaderData[i] = std::make_unique<JGraphicShaderData>();
-				gShaderData[i]->vs = JD3DUtility::CompileShader(vertexShaderPath, &initHelper.macro[i][0], "VS", "vs_5_1");
-				if ((gFunctionFlag & SHADER_FUNCTION_WRITE_SHADOWMAP) == 0 && (gFunctionFlag & SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT) == 0)
-					gShaderData[i]->ps = JD3DUtility::CompileShader(pixelShaderPath, &initHelper.macro[i][0], "PS", "ps_5_1");
-				StuffInputLayout(gShaderData[i]->inputLayout, (J_SHADER_VERTEX_LAYOUT)(SHADER_VERTEX_LAYOUT_STATIC + i));
-				
-				GResourceInterface::StuffGraphicShaderPso(gShaderData[i].get(),
-					(J_SHADER_VERTEX_LAYOUT)(SHADER_VERTEX_LAYOUT_STATIC + i),
-					thisPointer->GetShaderGFunctionFlag(),
-					thisPointer->GetSubGraphicPso());
-
-				for (uint j = 0; j < (uint)J_GRAPHIC_EXTRA_PSO_TYPE::COUNT; ++j)
-				{
-					GResourceInterface::StuffGraphicShaderPso(gShaderData[i].get(),
-						(J_SHADER_VERTEX_LAYOUT)(SHADER_VERTEX_LAYOUT_STATIC + i),
-						thisPointer->GetShaderGFunctionFlag(),
-						thisPointer->GetSubGraphicPso(),
-						(J_GRAPHIC_EXTRA_PSO_TYPE)j);
-				}
+			{
+				initHelper.layoutType = (J_SHADER_VERTEX_LAYOUT)i;
+				gShaderData[i] = GResourceInterface::StuffGraphicShaderPso(initHelper);
 			}
 		}
 		void CompileComputeShader()
 		{
-			CSInitHelper initHelper;
-			StuffInitHelper(initHelper, thisPointer->GetShdaerCFunctionFlag());
-			 
+			JComputeShaderInitData initHelper;
+			StuffInitHelper(initHelper, cFunctionFlag);
 			//macroVec = std::vector<D3D_SHADER_MACRO>{ { NULL, NULL } };
 			if (cFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
 			{
-				JShaderType::CompileInfo compileInfo = JShaderType::ComputeShaderCompileInfo(cFunctionFlag);
-				std::wstring computeShaderPath = JApplicationEngine::ShaderPath() + L"\\" + compileInfo.fileName;
-				cShaderData = std::make_unique<JComputeShaderData>();
-				cShaderData->cs = JD3DUtility::CompileShader(computeShaderPath, &initHelper.macro[0], compileInfo.functionName, "cs_5_1");
-				cShaderData->dispatchInfo = initHelper.dispatchInfo;
-				GResourceInterface::StuffComputeShaderPso(cShaderData.get(), cFunctionFlag);
+				using GResourceInterface = Graphic::JGraphicPrivate::ResourceInterface;
+				cShaderData = GResourceInterface::StuffComputeShaderPso(initHelper);
 			}
 		}
-		static void StuffInitHelper(_Out_ GSInitHelper& initHelper, const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag)noexcept
+		static void StuffInitHelper(_Out_ JGraphicShaderInitData& initHelper, 
+			const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
+			const JShaderCondition& cond)noexcept
 		{
 			Graphic::JGraphicInfo info = JGraphic::Instance().GetGraphicInfo();
 			for (uint i = 0; i < (uint)J_SHADER_VERTEX_LAYOUT::SHADER_VERTEX_COUNT; ++i)
@@ -298,17 +235,17 @@ namespace JinEngine
 						initHelper.macro[i].push_back(data.second);
 				}
 
-				initHelper.macroStrVec[i].push_back(std::to_string(info.binding2DTextureCapacity));
-				initHelper.macroStrVec[i].push_back(std::to_string(info.bindingCubeMapCapacity));
-				initHelper.macroStrVec[i].push_back(std::to_string(info.initBindTShadowCapacity));
-
-				initHelper.macro[i].push_back({ TEXTURE_2D_COUNT_SYMBOL, initHelper.macroStrVec[i][0].c_str() });
-				initHelper.macro[i].push_back({ TEXTURE_CUBE_COUNT_SYMBOL, initHelper.macroStrVec[i][1].c_str() });
-				initHelper.macro[i].push_back({ SHADOW_MAP_COUNT_SYMBOL, initHelper.macroStrVec[i][2].c_str() });
-				initHelper.macro[i].push_back(shaderFuncMacroMap.find(SHADER_FUNCTION_NONE)->second);
+				initHelper.macro[i].push_back({ TEXTURE_2D_COUNT_SYMBOL, std::to_string(info.binding2DTextureCapacity) });
+				initHelper.macro[i].push_back({ TEXTURE_CUBE_COUNT_SYMBOL, std::to_string(info.bindingCubeMapCapacity) });
+				initHelper.macro[i].push_back({ SHADOW_MAP_COUNT_SYMBOL,std::to_string(info.bindingShadowTextureCapacity) });
+				initHelper.macro[i].push_back({ SHADOW_MAP_ARRAY_COUNT_SYMBOL, std::to_string(info.bindingShadowTextureArrayCapacity) });
+				initHelper.macro[i].push_back({ SHADOW_MAP_CUBE_COUNT_SYMBOL,std::to_string(info.bindingShadowTextureCubeCapacity) });
+				//initHelper.macro[i].push_back(shaderFuncMacroMap.find(SHADER_FUNCTION_NONE)->second);
 			}
+			initHelper.gFunctionFlag = gFunctionFlag;
+			initHelper.condition = cond;
 		}
-		static void StuffInitHelper(_Out_ CSInitHelper& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept
+		static void StuffInitHelper(_Out_ JComputeShaderInitData& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept
 		{
 			auto calThreadDim = [](const uint ori, const uint length, const uint devideFactor, uint& devideCount) -> uint
 			{
@@ -327,7 +264,7 @@ namespace JinEngine
 
 			using GpuInfo = Core::JHardwareInfo::GpuInfo;
 
-			auto InitHZBMaps = [](_Out_ CSInitHelper& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
+			auto InitHZBMaps = [](_Out_ JComputeShaderInitData& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 			{
 				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo();
 				Graphic::JGraphicInfo graphicInfo = JGraphic::Instance().GetGraphicInfo();
@@ -394,31 +331,22 @@ namespace JinEngine
 					initHelper.dispatchInfo.groupDim = JVector3<uint>(queryCount / warpFactor, 1, 1);
 					initHelper.dispatchInfo.taskOriCount = queryCount;
 				}
-
-				initHelper.macroStrVec.push_back(std::to_string(queryCount));
-				initHelper.macro.push_back({ HZB_OCC_QUERY_COUNT_SYMBOL, initHelper.macroStrVec[0].c_str() });
+				  
+				initHelper.macro.push_back({ HZB_OCC_QUERY_COUNT_SYMBOL, std::to_string(queryCount) });
 				StuffComputeShaderCommonMacro(initHelper, cFunctionFlag);
 				break;
 			}
 			default:
 				break;
 			}
-			initHelper.macro.push_back({ NULL, NULL });
+			//initHelper.macro.push_back({ NULL, NULL });
+			initHelper.cFunctionFlag = cFunctionFlag;
 		}
-		static void StuffInputLayout(_Out_ std::vector<D3D12_INPUT_ELEMENT_DESC>& outInputLayout, const J_SHADER_VERTEX_LAYOUT vertexLayoutFlag)noexcept
-		{
-			outInputLayout = inputLayout.find(vertexLayoutFlag)->second;
-		}
-		static void StuffComputeShaderCommonMacro(_Out_ CSInitHelper& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
-		{
-			int offset = initHelper.macroStrVec.size();
-			initHelper.macroStrVec.push_back(std::to_string(initHelper.dispatchInfo.threadDim.x));
-			initHelper.macroStrVec.push_back(std::to_string(initHelper.dispatchInfo.threadDim.y));
-			initHelper.macroStrVec.push_back(std::to_string(initHelper.dispatchInfo.threadDim.z));
-
-			initHelper.macro.push_back({ THREAD_DIM_X_SYMBOL, initHelper.macroStrVec[offset].c_str() });
-			initHelper.macro.push_back({ THREAD_DIM_Y_SYMBOL, initHelper.macroStrVec[offset + 1].c_str() });
-			initHelper.macro.push_back({ THREAD_DIM_Z_SYMBOL, initHelper.macroStrVec[offset + 2].c_str() });
+		static void StuffComputeShaderCommonMacro(_Out_ JComputeShaderInitData& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
+		{ 
+			initHelper.macro.push_back({ THREAD_DIM_X_SYMBOL, std::to_string(initHelper.dispatchInfo.threadDim.x) });
+			initHelper.macro.push_back({ THREAD_DIM_Y_SYMBOL, std::to_string(initHelper.dispatchInfo.threadDim.y) });
+			initHelper.macro.push_back({ THREAD_DIM_Z_SYMBOL, std::to_string(initHelper.dispatchInfo.threadDim.z) });
 		}
 	public:
 		void ClearShaderData()
@@ -428,13 +356,13 @@ namespace JinEngine
 				if (gShaderData[i] != nullptr)
 				{
 					gShaderData[i]->Clear();
-					gShaderData[i].reset();
+					gShaderData[i].Clear();
 				}
 			}
 			if (cShaderData != nullptr)
 			{
 				cShaderData->Clear();
-				cShaderData.reset();
+				cShaderData.Clear();
 			}
 		}
 	public:
@@ -470,22 +398,6 @@ namespace JinEngine
 			static RTypeCommonFunc rTypeCFunc{ getTypeInfoCallable, getAvailableFormatCallable, getFormatIndexCallable };
 
 			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
-
-			/*
-			using EqualGShaderT = Core::JStaticCallableType<bool, const J_GRAPHIC_SHADER_FUNCTION, const JShaderGraphicPsoCondition&, JShader*>;
-			using EqualCShaderT = Core::JStaticCallableType<bool, const J_COMPUTE_SHADER_FUNCTION, JShader*>;
-			*/
-			auto equalGShaderLam = [](const J_GRAPHIC_SHADER_FUNCTION newFunc, const JShaderGraphicPsoCondition& graphicPSOCond, JShader* shader)
-			{
-				return !shader->IsComputeShader() && shader->GetShaderGFunctionFlag() == newFunc && shader->impl->graphicPSOCond == graphicPSOCond;
-			};
-			auto equalCShaderLam = [](const J_COMPUTE_SHADER_FUNCTION newFunc, JShader* shader)
-			{
-				return shader->IsComputeShader() && shader->GetShdaerCFunctionFlag() == newFunc;
-			};
-
-			equalGShader = std::make_unique<EqualGShaderT::Callable>(equalGShaderLam);
-			equalCShader = std::make_unique<EqualCShaderT::Callable>(equalCShaderLam);
 			Core::JIdentifier::RegisterPrivateInterface(JShader::StaticTypeInfo(), sPrivate);
 
 			IMPL_REALLOC_BIND(JShader::JShaderImpl, thisPointer)
@@ -494,34 +406,34 @@ namespace JinEngine
 
 	JShader::InitData::InitData(const J_OBJECT_FLAG flag, 
 		const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
-		const JShaderGraphicPsoCondition graphicPSOCond,
+		const JShaderCondition condition,
 		const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 		:JResourceObject::InitData(JShader::StaticTypeInfo(), GetDefaultFormatIndex(), GetStaticResourceType(), GetShaderDirectory()),
 		gFunctionFlag(gFunctionFlag), 
-		graphicPSOCond(graphicPSOCond), 
+		condition(condition), 
 		cFunctionFlag(cFunctionFlag)
 	{
 		InitData::flag = Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE);
 		if (cFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
 			InitData::gFunctionFlag = SHADER_FUNCTION_NONE;
-		name = MakeName(InitData::gFunctionFlag, graphicPSOCond, cFunctionFlag);
+		name = MakeName(InitData::gFunctionFlag, condition, cFunctionFlag);
 		name = directory->MakeUniqueFileName(name, RTypeCommonCall::GetFormat(rType, formatIndex), guid);
 	}
 	JShader::InitData::InitData(const std::wstring& name,
 		const size_t& guid,
 		const J_OBJECT_FLAG flag,
 		const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
-		const JShaderGraphicPsoCondition graphicPSOCond,
+		const JShaderCondition condition,
 		const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 		: JResourceObject::InitData(JShader::StaticTypeInfo(), name, guid, flag, GetDefaultFormatIndex(), GetStaticResourceType(), GetShaderDirectory()),
 		gFunctionFlag(gFunctionFlag),
-		graphicPSOCond(graphicPSOCond),
+		condition(condition),
 		cFunctionFlag(cFunctionFlag)
 	{
 		InitData::flag = Core::HasSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE) ? flag : Core::AddSQValueEnum(flag, OBJECT_FLAG_UNEDITABLE);
 		if (cFunctionFlag != J_COMPUTE_SHADER_FUNCTION::NONE)
 			InitData::gFunctionFlag = SHADER_FUNCTION_NONE;
-		InitData::name = MakeName(InitData::gFunctionFlag, graphicPSOCond, cFunctionFlag);
+		InitData::name = MakeName(InitData::gFunctionFlag, condition, cFunctionFlag);
 		InitData::name = directory->MakeUniqueFileName(name, RTypeCommonCall::GetFormat(rType, formatIndex), guid);
 	}
 
@@ -542,21 +454,13 @@ namespace JinEngine
 		static std::vector<std::wstring> format{ L".shader" };
 		return format;
 	}
-	ID3D12PipelineState* JShader::GetComputePso()const noexcept
+	JUserPtr<JGraphicShaderDataHolderBase> JShader::GetGraphicData(const J_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
 	{
-		return impl->cShaderData->pso.Get();
+		return impl->gShaderData[(uint)vertexLayout];
 	}
-	ID3D12PipelineState* JShader::GetGraphicPso(const J_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
+	JUserPtr<JComputeShaderDataHolderBase> JShader::GetComputeData()const noexcept
 	{
-		return impl->gShaderData[(int)vertexLayout]->pso.Get();
-	}
-	ID3D12PipelineState* JShader::GetGraphicExtraPso(const J_SHADER_VERTEX_LAYOUT vertexLayout, const J_GRAPHIC_EXTRA_PSO_TYPE type)const noexcept
-	{ 
-		return impl->gShaderData[(int)vertexLayout]->extraPso[(int)type].Get();
-	}
-	ID3D12RootSignature* JShader::GetComputeRootSignature()const noexcept
-	{
-		return impl->cShaderData->RootSignature;
+		return impl->cShaderData;
 	}
 	JVector3<uint> JShader::GetComputeGroupDim()const noexcept
 	{
@@ -570,19 +474,19 @@ namespace JinEngine
 	{
 		return impl->cFunctionFlag;
 	}
-	JShaderGraphicPsoCondition JShader::GetSubGraphicPso()const noexcept
+	JShaderCondition JShader::GetSubGraphicPso()const noexcept
 	{
-		return impl->graphicPSOCond;
+		return impl->condition;
 	} 
 	bool JShader::IsComputeShader()const noexcept
 	{
 		return impl->IsComputeShader();
 	}
 	JUserPtr<JShader> JShader::FindShader(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
-		const JShaderGraphicPsoCondition graphicPSOCond,
+		const JShaderCondition condition,
 		const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 	{
-		return FindOverlapShader(MakeName(gFunctionFlag, graphicPSOCond, cFunctionFlag));
+		return FindOverlapShader(MakeName(gFunctionFlag, condition, cFunctionFlag));
 	}
 	void JShader::DoActivate()noexcept
 	{
@@ -592,9 +496,9 @@ namespace JinEngine
 	}
 	void JShader::DoDeActivate()noexcept
 	{
-		JResourceObject::DoDeActivate();
 		impl->ClearShaderData();
 		SetValid(false);
+		JResourceObject::DoDeActivate();
 	}
 	JShader::JShader(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JShaderImpl>(initData, this))
@@ -644,7 +548,7 @@ namespace JinEngine
 
 		if (newShdaer == nullptr)
 		{
-			initData->name = MakeName(initData->gFunctionFlag, initData->graphicPSOCond, initData->cFunctionFlag);
+			initData->name = MakeName(initData->gFunctionFlag, initData->condition, initData->cFunctionFlag);
 			auto idenUser = sPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &sPrivate);
 			newShdaer.ConnnectChild(idenUser);
 		}
@@ -681,12 +585,12 @@ namespace JinEngine
 		JFileIOHelper::LoadEnumData(stream, loadMetaData->gFunctionFlag);
 		JFileIOHelper::LoadEnumData(stream, loadMetaData->cFunctionFlag);
 
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->graphicPSOCond.primitiveCondition);
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->graphicPSOCond.depthCompareCondition);
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->graphicPSOCond.cullModeCondition);
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->graphicPSOCond.primitiveType);
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->graphicPSOCond.depthCompareFunc);
-		JFileIOHelper::LoadAtomicData(stream, loadMetaData->graphicPSOCond.isCullModeNone);
+		JFileIOHelper::LoadEnumData(stream, loadMetaData->condition.primitiveCondition);
+		JFileIOHelper::LoadEnumData(stream, loadMetaData->condition.depthCompareCondition);
+		JFileIOHelper::LoadEnumData(stream, loadMetaData->condition.cullModeCondition);
+		JFileIOHelper::LoadEnumData(stream, loadMetaData->condition.primitiveType);
+		JFileIOHelper::LoadEnumData(stream, loadMetaData->condition.depthCompareFunc);
+		JFileIOHelper::LoadAtomicData(stream, loadMetaData->condition.isCullModeNone);
 
 		stream.close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
@@ -711,12 +615,12 @@ namespace JinEngine
 		JFileIOHelper::StoreEnumData(stream, L"ShaderFuncFlag:", shader->impl->gFunctionFlag);
 		JFileIOHelper::StoreEnumData(stream, L"ComputeShaderFuncFlag:", shader->impl->cFunctionFlag);
 
-		JFileIOHelper::StoreEnumData(stream, L"SubPsoPrimitiveCondition:", shader->impl->graphicPSOCond.primitiveCondition);
-		JFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesionCondition:", shader->impl->graphicPSOCond.depthCompareCondition);
-		JFileIOHelper::StoreEnumData(stream, L"SubPsoCullModeCondition:", shader->impl->graphicPSOCond.cullModeCondition);
-		JFileIOHelper::StoreEnumData(stream, L"SubPsoPrimitive:", shader->impl->graphicPSOCond.primitiveType);
-		JFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesion:", shader->impl->graphicPSOCond.depthCompareFunc);
-		JFileIOHelper::StoreAtomicData(stream, L"SubPsoCullMode:", shader->impl->graphicPSOCond.isCullModeNone);
+		JFileIOHelper::StoreEnumData(stream, L"SubPsoPrimitiveCondition:", shader->impl->condition.primitiveCondition);
+		JFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesionCondition:", shader->impl->condition.depthCompareCondition);
+		JFileIOHelper::StoreEnumData(stream, L"SubPsoCullModeCondition:", shader->impl->condition.cullModeCondition);
+		JFileIOHelper::StoreEnumData(stream, L"SubPsoPrimitive:", shader->impl->condition.primitiveType);
+		JFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesion:", shader->impl->condition.depthCompareFunc);
+		JFileIOHelper::StoreAtomicData(stream, L"SubPsoCullMode:", shader->impl->condition.isCullModeNone);
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}

@@ -12,7 +12,7 @@ namespace JinEngine
 		class JObjectExplorer;
 		class JAvatarEditor;  
 		class JSceneObserver;
-		class JObjectDetail;
+		class JObjectDetail; 
 		class JEditorMenuBar;
 		class JEditorSkeletonPage final: public JEditorPage, public Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>
 		{
@@ -22,7 +22,7 @@ namespace JinEngine
 			std::unique_ptr< JObjectExplorer> explorer;
 			std::unique_ptr< JAvatarEditor> avatarEdit;
 			std::unique_ptr< JSceneObserver> avatarObserver;
-			std::unique_ptr<JObjectDetail>avatarDetail;
+			std::unique_ptr<JObjectDetail>avatarDetail; 
 		private:
 			std::unique_ptr<JEditorMenuBar> menuBar;
 		private:

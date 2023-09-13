@@ -5,7 +5,7 @@
 #include"JFSMcondition.h"    
 #include"../Identity/JIdenCreator.h"
 #include"../Reflection/JTypeImplBase.h"
-#include"../../Utility/JCommonUtility.h" 
+#include"../Utility/JCommonUtility.h" 
 
 namespace JinEngine
 {
@@ -268,8 +268,8 @@ namespace JinEngine
 
 		void DestroyInstanceInterface::Clear(JIdentifier* ptr, const bool isForced)
 		{
-			JFSMinterfacePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 			static_cast<JFSMtransition*>(ptr)->impl->Clear();
+			JFSMinterfacePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		}
 		void DestroyInstanceInterface::DeRegisterCash(JIdentifier* ptr)noexcept
 		{

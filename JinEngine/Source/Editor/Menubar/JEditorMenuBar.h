@@ -2,7 +2,7 @@
 #include<vector>
 #include<memory>
 #include<string>
-#include"../../Core/JDataType.h"
+#include"../../Core/JCoreEssential.h"
 #include"../../Core/Func/Functor/JFunctor.h"
 #include"../../Core/Func/Callable/JCallable.h"
 #include"../../Core/Interface/JGroupInterface.h"
@@ -11,7 +11,7 @@ namespace JinEngine
 { 
 	namespace Graphic
 	{ 
-		class JGraphicSingleResourceUserAccess;	//texture has one gResource
+		class JGraphicResourceUserAccess;	//texture has one gResource
 	}
 
 	namespace Editor
@@ -75,6 +75,19 @@ namespace JinEngine
 				BUTTON
 			};
 		public:
+			struct UpdateData
+			{
+			public:
+				bool isContentsClick = false;
+				//ImGui::IsMouseClick 과 widget click간의 값이 동일하지않은 경우가 있으므로 사용
+				//ImageButton, Selectable, MenuItem... 등등 
+				bool isNextContentsClick = false;
+			public:
+				void SetUpdateStartState()noexcept; 
+			public:
+				void ClickContents()noexcept;
+				void ClickContentsNextFrame()noexcept;
+			};
 			class ExtraWidget
 			{ 
 			private:  
@@ -83,7 +96,7 @@ namespace JinEngine
 				ExtraWidget(const size_t guid);
 				virtual ~ExtraWidget() = default;
 			public:
-				virtual void Update(const JEditorStringMap* tooltipMap) = 0;
+				virtual void Update(const JEditorStringMap* tooltipMap, UpdateData& uData) = 0;
 			public: 
 				std::string GetUniqueLabel()const noexcept;  
 			public:
@@ -92,7 +105,7 @@ namespace JinEngine
 			class Icon : public ExtraWidget
 			{
 			public:
-				using GetGResourceF = Core::JSFunctorType<Graphic::JGraphicSingleResourceUserAccess*>;
+				using GetGResourceF = Core::JSFunctorType<Graphic::JGraphicResourceUserAccess*>;
 			private:
 				std::unique_ptr<GetGResourceF::Functor> getGResourceFunctor;	//get icon image access
 			public:
@@ -113,7 +126,7 @@ namespace JinEngine
 					std::unique_ptr<GetGResourceF::Functor>&& getGResourceFunctor,
 					std::unique_ptr<Core::JBindHandleBase>&& pressBind);
 			public:
-				void Update(const JEditorStringMap* tooltipMap)final;
+				void Update(const JEditorStringMap* tooltipMap, UpdateData& uData)final;
 			};
 			class SwitchIcon : public Icon
 			{	 
@@ -129,7 +142,7 @@ namespace JinEngine
 					std::unique_ptr<Core::JBindHandleBase>&& offBind,
 					bool* isActivatedPtr);
 			public:
-				void Update(const JEditorStringMap* tooltipMap)final;
+				void Update(const JEditorStringMap* tooltipMap, UpdateData& uData)final;
 			public: 
 				bool IsActivated()const noexcept;
 			};
@@ -144,13 +157,20 @@ namespace JinEngine
 			std::vector<std::unique_ptr<ExtraWidget>> extraWidgetVec; 
 			std::unique_ptr<JEditorStringMap> editStrMap;
 		private:
+			UpdateData uData;
+		private:
 			const bool isMainMenu = false;
 		public:
 			JEditorMenuBar(std::unique_ptr<JEditorMenuNode> root, const bool isMainMenu);
 			~JEditorMenuBar();
 		public:
-			JEditorMenuNode* GetRootNode()noexcept;
-			JEditorMenuNode* GetSelectedNode()noexcept;
+			JEditorMenuNode* GetRootNode()const noexcept;
+			JEditorMenuNode* GetSelectedNode()const noexcept;
+		public:
+			bool IsLastUpdateClickedContents()const noexcept; 
+			//IsMouseClick 과 widget click간의 값이 동일하지않은 경우가 있으므로 사용
+			//ImageButton, Selectable, MenuItem... 등등 
+			bool IsNextUpdateClickedContents()const noexcept;
 		public:
 			void AddNode(std::unique_ptr<JEditorMenuNode> newNode)noexcept;
 			void RegisterExtraWidget(std::unique_ptr<ExtraWidget>&& extraWidget)noexcept;

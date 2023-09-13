@@ -14,11 +14,10 @@ namespace JinEngine
 
 	//friend class Editor::JProjectMainPage;
 	//friend class Editor::JProjectSelectorHub;
+	class JMain;
 	namespace Application
-	{
-		class JApplication;
+	{ 
 		class JApplicationProjectInfo;
-
 		class JApplicationProjectPrivate final
 		{ 
 		public:
@@ -26,10 +25,10 @@ namespace JinEngine
 			using StoreProjectF = Core::JFunctor<void>;
 			using SetAppStateF = Core::JFunctor<void, const J_APPLICATION_STATE>;
 		public:
-			class AppAccess
+			class MainAccess
 			{
 			private:
-				friend class JApplication;
+				friend class JMain;
 			private:
 				static void RegisterFunctor(std::unique_ptr<LoadProjectF>&& loadF, 
 					std::unique_ptr<StoreProjectF>&& storeF,
@@ -58,7 +57,7 @@ namespace JinEngine
 			class LifeInterface
 			{
 			private:
-				friend class JApplication;
+				friend class JMain;
 				friend class Editor::JProjectMainPage;
 				friend class Editor::JProjectSelectorHub;
 			private:
@@ -80,7 +79,7 @@ namespace JinEngine
 			class IOInterface
 			{
 			private:
-				friend class JApplication;
+				friend class JMain;
 				friend class Editor::JProjectMainPage;
 				friend class Editor::JProjectSelectorHub; 
 			private:

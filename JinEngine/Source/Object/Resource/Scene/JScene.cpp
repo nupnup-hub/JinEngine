@@ -2,6 +2,7 @@
 #include"JScenePrivate.h"
 #include"JSceneManager.h"
 #include"JSceneManagerPrivate.h"
+#include"Accelerator/JSceneAcceleratorStructure.h" 
 #include"../JClearableInterface.h"
 #include"../JResourceObjectHint.h"
 #include"../Mesh/JMeshGeometry.h" 
@@ -29,10 +30,9 @@
 #include"../../../Core/Time/JGameTimer.h"
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/File/JFileIOHelper.h"
-#include"../../../Core/Geometry/JCullingFrustum.h"
-#include"../../../Core/SpaceSpatial/JSceneSpatialStructure.h"   
-#include"../../../Graphic/Upload/Frameresource/JFrameUpdate.h" 
-#include"../../../Utility/JCommonUtility.h"
+#include"../../../Core/Geometry/JCullingFrustum.h"  
+#include"../../../Core/Utility/JCommonUtility.h" 
+#include"../../../Graphic/Frameresource/JFrameUpdate.h" 
 #include<DirectXColors.h>
 
 namespace JinEngine
@@ -40,7 +40,8 @@ namespace JinEngine
 	namespace
 	{ 
 		using SetCompCondition = JScenePrivate::CompFrameInterface::SetCompCondition;
-		using SceneMangerAccess = JSceneManagerPrivate::SceneAccess;
+		using CompSortPtr = JScenePrivate::CompRegisterInterface::CompSortPtr;
+		using SceneMangerAccess = JSceneManagerPrivate::SceneAccess; 
 
 		static SetCompCondition SpaceStructureUseCamCond()
 		{
@@ -68,7 +69,7 @@ namespace JinEngine
 	public:
 		JUserPtr<JGameObject> root = nullptr;
 		JUserPtr<JGameObject> debugRoot = nullptr;
-		std::unique_ptr<Core::JSceneSpatialStructure> spatialStructure;
+		std::unique_ptr<JSceneAcceleratorStructure> accelerator;
 		std::vector<JUserPtr<JGameObject>> allObjects;
 		std::vector<JUserPtr<JGameObject>> objectLayer[(int)J_RENDER_LAYER::COUNT][(int)J_MESHGEOMETRY_TYPE::COUNT];
 		std::unordered_map<J_COMPONENT_TYPE, std::vector<JUserPtr<JComponent>>> componentCash;
@@ -83,7 +84,7 @@ namespace JinEngine
 		{
 			if (useCaseType == J_SCENE_USE_CASE_TYPE::MAIN ||
 				useCaseType == J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW)
-				spatialStructure = std::make_unique<Core::JSceneSpatialStructure>(); 
+				accelerator = std::make_unique<JSceneAcceleratorStructure>(); 
 		}
 		~JSceneImpl(){}
 	public:
@@ -111,13 +112,6 @@ namespace JinEngine
 				sum += static_cast<JRenderItem*>(data.Get())->GetSubmeshCount();
 			return sum;
 		}
-		std::vector<JUserPtr<JGameObject>> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept
-		{
-			if (spatialStructure != nullptr)
-				return spatialStructure->GetAlignedObject(layer, frustum);
-			else
-				return std::vector<JUserPtr<JGameObject>>();
-		}
 		const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept
 		{
 			return objectLayer[(int)rLayer][(int)meshType];
@@ -138,41 +132,78 @@ namespace JinEngine
 			else
 				return vec->second;
 		}
-		Core::JOctreeOption GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept
+		JOctreeOption GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept
 		{
-			return spatialStructure != nullptr ? spatialStructure->GetOctreeOption(layer) : Core::JOctreeOption();
+			return accelerator != nullptr ? accelerator->GetOctreeOption(layer) : JOctreeOption();
 		}
-		Core::JBvhOption GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept
+		JBvhOption GetBvhOption(const J_ACCELERATOR_LAYER layer)const noexcept
 		{
-			return spatialStructure != nullptr ? spatialStructure->GetBvhOption(layer) : Core::JBvhOption();
+			return accelerator != nullptr ? accelerator->GetBvhOption(layer) : JBvhOption();
 		}
-		Core::JKdTreeOption GetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept
+		JKdTreeOption GetKdTreeOption(const J_ACCELERATOR_LAYER layer)const noexcept
 		{
-			return spatialStructure != nullptr ? spatialStructure->GetKdTreeOption(layer) : Core::JKdTreeOption();
+			return accelerator != nullptr ? accelerator->GetKdTreeOption(layer) : JKdTreeOption();
+		}
+		DirectX::BoundingBox GetSceneBBox(const J_ACCELERATOR_LAYER layer)const noexcept
+		{
+			Core::JBBox result;
+			bool isValid;
+			if (accelerator != nullptr)
+				result = accelerator->GetSceneBBox(layer, isValid);
+			
+			Core::JBBox result2;
+			auto& vec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
+			for (const auto& data : vec)
+			{
+				JRenderItem* r = static_cast<JRenderItem*>(data.Get());
+				if (ConvertAcceleratorLayer(r->GetRenderLayer()) == layer)
+					result2 = Core::JBBox::Union(result2, r->GetBoundingBox());
+			}
+			if (isValid && !result.IsDistanceZero())
+				return result.Convert();
+			else
+			{
+				auto& vec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
+				for (const auto& data : vec)
+				{
+					JRenderItem* r = static_cast<JRenderItem*>(data.Get());
+					if (ConvertAcceleratorLayer(r->GetRenderLayer()) == layer)
+						result = Core::JBBox::Union(result, r->GetBoundingBox());
+				}
+				return result.Convert();
+			}
+		}
+		float GetTotalTime()const noexcept
+		{
+			return IsActivatedSceneTime() ? sceneTimer->TotalTime() : 0;
+		}
+		float GetDeltaTime()const noexcept
+		{
+			return IsActivatedSceneTime() ? sceneTimer->DeltaTime() : 0;
 		}
 	public:
-		void SetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JOctreeOption& newOption)noexcept
+		void SetOctreeOption(const J_ACCELERATOR_LAYER layer, const JOctreeOption& newOption)noexcept
 		{
-			if (spatialStructure == nullptr)
+			if (accelerator == nullptr)
 				return; 
 
-			spatialStructure->SetOctreeOption(layer, newOption);
+			accelerator->SetOctreeOption(layer, newOption);
 			SetComponentFrameDirty(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA, 0, SpaceStructureUseCamCond());
 		}
-		void SetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JBvhOption& newOption)noexcept
+		void SetBvhOption(const J_ACCELERATOR_LAYER layer, const JBvhOption& newOption)noexcept
 		{
-			if (spatialStructure == nullptr)
+			if (accelerator == nullptr)
 				return;
 
-			spatialStructure->SetBvhOption(layer, newOption);
+			accelerator->SetBvhOption(layer, newOption);
 			SetComponentFrameDirty(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA, 0, SpaceStructureUseCamCond());
 		}
-		void SetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JKdTreeOption& newOption)noexcept
+		void SetKdTreeOption(const J_ACCELERATOR_LAYER layer, const JKdTreeOption& newOption)noexcept
 		{
-			if (spatialStructure == nullptr)
+			if (accelerator == nullptr)
 				return;
 
-			spatialStructure->SetKdTreeOption(layer, newOption);
+			accelerator->SetKdTreeOption(layer, newOption);
 			SetComponentFrameDirty(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA, 0, SpaceStructureUseCamCond());
 		}
 	public:
@@ -208,17 +239,32 @@ namespace JinEngine
 			}
 			return nullptr;
 		}
-		JUserPtr<JGameObject> IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const bool allowContainRayPos = true)const noexcept
+		JUserPtr<JGameObject> IntersectFirst(JAcceleratorIntersectInfo& info)const noexcept
 		{
-			if (spatialStructure != nullptr)
-				return spatialStructure->IntersectFirst(layer, ray, allowContainRayPos);
-			else
-				return nullptr;
+			info.untilFirst = true;
+			accelerator->Intersect(info);
+			return info.firstResult;
 		}
-		void Intersect(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const Core::J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
+		void Intersect(JAcceleratorIntersectInfo& info)const noexcept
 		{
-			if (spatialStructure != nullptr)
-				spatialStructure->Intersect(layer, ray, sortType, res);
+			info.untilFirst = false;
+			accelerator->Intersect(info); 
+		}
+		void Contain(JAcceleratorContainInfo& info)
+		{
+			accelerator->Contain(info);
+		}
+		std::vector<JUserPtr<JGameObject>> AlignedObject(JAcceleratorAlignInfo& info)const noexcept
+		{
+			if (accelerator != nullptr)
+				return accelerator->AlignedObject(info);
+			else
+				return std::vector<JUserPtr<JGameObject>>();
+		}
+		void AlignedObjectF(JAcceleratorAlignInfo& info, _Out_ std::vector<JUserPtr<JGameObject>>& aligned, _Out_ int& count)const noexcept
+		{
+			if (accelerator != nullptr)
+				accelerator->AlignedObjectF(info, aligned, count);
 		}
 	public:
 		void CreateDefaultGameObject()noexcept
@@ -234,10 +280,8 @@ namespace JinEngine
 				JGCI::CreateSky(root, objFlag, L"DefaultSky");
 
 			JUserPtr<JGameObject> mainCam;
-			if (useCaseType == J_SCENE_USE_CASE_TYPE::MAIN || useCaseType == J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW)
-				mainCam = JGCI::CreateCamera(root, objFlag, true, L"MainCamera");		
-			else if (useCaseType == J_SCENE_USE_CASE_TYPE::TWO_DIMENSIONAL_PREVIEW)
-				mainCam = JGCI::CreateCamera(root, objFlag, L"MainCamera");
+			const bool canCreateCulling = useCaseType == J_SCENE_USE_CASE_TYPE::MAIN || useCaseType == J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW;
+			mainCam = JGCI::CreateCamera(root, objFlag, canCreateCulling, L"MainCamera");
 			
 			mainCam->GetComponent<JCamera>()->SetCameraState(J_CAMERA_STATE::RENDER);
 			JUserPtr<JGameObject> lit = JGCI::CreateLight(root, objFlag, J_LIGHT_TYPE::DIRECTIONAL, L"MainLight");
@@ -308,11 +352,11 @@ namespace JinEngine
 			if (owner == nullptr || !owner->HasRenderItem())
 				return;
 
-			if (thisPointer->IsActivated() && spatialStructure != nullptr)
-				spatialStructure->UpdateGameObject(owner);
+			if (thisPointer->IsActivated() && accelerator != nullptr)
+				accelerator->UpdateGameObject(owner);
 		}
 	public:
-		bool RegisterComponent(const JUserPtr<JComponent>& component)noexcept
+		bool RegisterComponent(const JUserPtr<JComponent>& component, CompSortPtr comparePtr)noexcept
 		{
 			if (!component->PassDefectInspection())
 				return false;
@@ -327,13 +371,23 @@ namespace JinEngine
 
 			const uint compCount = (uint)cashVec->second.size();
 			const size_t guid = component->GetGuid();
+
+			//for sorting	 
+			int insertIndex = -1;
 			for (uint i = 0; i < compCount; ++i)
 			{
 				if (cashVec->second[i]->GetGuid() == guid)
 					return false;
+
+				if (comparePtr != nullptr && insertIndex == -1 && comparePtr(component, cashVec->second[i]))
+					insertIndex = i;
 			}
-			 
-			cashVec->second.push_back(component);
+
+			if (comparePtr == nullptr || insertIndex == -1)
+				cashVec->second.push_back(component);
+			else
+				cashVec->second.insert(cashVec->second.begin() + insertIndex, component);
+
 			if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM)
 			{
 				JRenderItem* jRItem = static_cast<JRenderItem*>(component.Get());
@@ -341,8 +395,8 @@ namespace JinEngine
 				const J_MESHGEOMETRY_TYPE meshType = jRItem->GetMesh()->GetMeshGeometryType();
 				objectLayer[(int)renderLayer][(int)meshType].push_back(jRItem->GetOwner());
 
-				if (spatialStructure != nullptr)
-					spatialStructure->AddGameObject(jRItem->GetOwner());
+				if (accelerator != nullptr)
+					accelerator->AddGameObject(jRItem->GetOwner());
 			}
 			return true;
 		}
@@ -390,8 +444,8 @@ namespace JinEngine
 					}
 				}
 				//objectLayer[rIndex][mIndex].push_back(jOwner);
-				if (spatialStructure != nullptr)
-					spatialStructure->RemoveGameObject(jOwner);
+				if (accelerator != nullptr)
+					accelerator->RemoveGameObject(jOwner);
 			}
 
 			cashVec.erase(cashVec.begin() + hitIndex); 
@@ -441,92 +495,84 @@ namespace JinEngine
 	public:
 		void ViewCulling(const Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& frustum)
 		{
-			spatialStructure->Culling(cullUser, frustum);
-			
-			/*	Old Log
-				//DirectX::BoundingFrustum camFrustum = mainCamera->GetBoundingFrustum();
-				//DirectX::BoundingFrustum worldCamFrustum;
-				//camFrustum.Transform(worldCamFrustum, mainCamera->GetTransform()->GetWorldMatrix());
-				spatialStructure->Culling(cam->GetBoundingFrustum());
-
-				//Caution: Has Bug
-				//Core::JCullingFrustum cFrustum(worldCamFrustum);
-				//spatialStructure->Culling(cFrustum);
-			*/
+			JAcceleratorCullingInfo info(cullUser, frustum);
+			accelerator->Culling(info);
 		}
-		void InitializeSpaceSpatial()noexcept
+		void ViewCulling(const Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingBox& bbox)
 		{
-			if (spatialStructure != nullptr)
+			JAcceleratorCullingInfo info(cullUser, bbox);
+			accelerator->Culling(info);
+		}
+		void InitializeAccelerator()noexcept
+		{
+			if (accelerator != nullptr)
 			{
-				Core::J_SPACE_SPATIAL_LAYER commonLayer = Core::J_SPACE_SPATIAL_LAYER::COMMON_OBJECT;
-				Core::J_SPACE_SPATIAL_LAYER debugLayer = Core::J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT;
+				J_ACCELERATOR_LAYER commonLayer = J_ACCELERATOR_LAYER::COMMON_OBJECT;
+				J_ACCELERATOR_LAYER debugLayer = J_ACCELERATOR_LAYER::DEBUG_OBJECT;
 
-				Core::JOctreeOption octreeOption = spatialStructure->GetOctreeOption(commonLayer);
+				JOctreeOption octreeOption = accelerator->GetOctreeOption(commonLayer);
 				octreeOption.commonOption.innerRoot = root;
 				octreeOption.commonOption.debugRoot = debugRoot;
-				spatialStructure->SetOctreeOption(commonLayer, octreeOption);
+				accelerator->SetOctreeOption(commonLayer, octreeOption);
 
-				Core::JBvhOption bvhOption = spatialStructure->GetBvhOption(commonLayer);
+				JBvhOption bvhOption = accelerator->GetBvhOption(commonLayer);
 				bvhOption.commonOption.innerRoot = root;
 				bvhOption.commonOption.debugRoot = debugRoot;
-				bvhOption.commonOption.isSpaceSpatialActivated = true;
+				bvhOption.commonOption.isAcceleratorActivated = true;
 				bvhOption.commonOption.isCullingActivated = true;
-				spatialStructure->SetBvhOption(commonLayer, bvhOption);
+				accelerator->SetBvhOption(commonLayer, bvhOption);
 
-				Core::JKdTreeOption kdOption = spatialStructure->GetKdTreeOption(commonLayer);
+				JKdTreeOption kdOption = accelerator->GetKdTreeOption(commonLayer);
 				//kdOption.isOcclusionCullingActivated = true;
 				kdOption.commonOption.innerRoot = root;
 				kdOption.commonOption.debugRoot = debugRoot;
-				spatialStructure->SetKdTreeOption(commonLayer, kdOption);
+				accelerator->SetKdTreeOption(commonLayer, kdOption);
 
-				Core::JBvhOption bvhDebugOption = spatialStructure->GetBvhOption(debugLayer);
+				JBvhOption bvhDebugOption = accelerator->GetBvhOption(debugLayer);
 				bvhDebugOption.commonOption.innerRoot = debugRoot;
 				bvhDebugOption.commonOption.debugRoot = debugRoot;
-				bvhDebugOption.commonOption.isSpaceSpatialActivated = true;
+				bvhDebugOption.commonOption.isAcceleratorActivated = true;
 
 				//bvhDebugOption.commonOption.isDebugActivated = true;
 				//bvhDebugOption.commonOption.isDebugLeafOnly = true;
 
-				spatialStructure->SetBvhOption(debugLayer, bvhDebugOption); 
+				accelerator->SetBvhOption(debugLayer, bvhDebugOption); 
 				/*
-						Core::JKdTreeOption kdDebugOption;
+						JKdTreeOption kdDebugOption;
 				kdDebugOption.commonOption.innerRoot = debugRoot;
 				kdDebugOption.commonOption.debugRoot = debugRoot;
-				kdDebugOption.commonOption.isSpaceSpatialActivated = true;
-				spatialStructure->SetKdTreeOption(debugLayer, kdOption);
+				kdDebugOption.commonOption.isAcceleratorActivated = true;
+				accelerator->SetKdTreeOption(debugLayer, kdOption);
 				*/
 			}
 		}
 	public:
-		void BuildDebugTree(Core::J_SPACE_SPATIAL_TYPE type, const Core::J_SPACE_SPATIAL_LAYER layer, Editor::JEditorBinaryTreeView& tree)noexcept
+		void BuildDebugTree(const J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, Editor::JEditorBinaryTreeView& tree)noexcept
 		{
-			if (spatialStructure != nullptr)
-				spatialStructure->BuildDebugTree(type, layer, tree);
+			if (accelerator != nullptr)
+				accelerator->BuildDebugTree(type, layer, tree);
 		}
-	public:
+	public: 
 		void Activate()
 		{			
 			SceneMangerAccess::RegisterScene(thisPointer);
-			RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_INDEX, this, thisPointer->GetGuid());
+			RegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS, this, thisPointer->GetGuid());
 			StuffResource();
-			if (root != nullptr)
-				JGameObjectPrivate::ActivateInterface::Activate(root);
-			for (auto& data : allObjects)
-				JGameObjectPrivate::ActivateInterface::Activate(data);
-
+			JGameObjectPrivate::ActivateInterface::Activate(root);
+			JGameObjectPrivate::ActivateInterface::Activate(debugRoot);
 			SetAllComponentFrameDirty();
-			if (spatialStructure != nullptr)
-				spatialStructure->Activate();
+			if (accelerator != nullptr)
+				accelerator->Activate();
 		}
 		void DeActivate()
 		{
-			if (spatialStructure != nullptr)
-				spatialStructure->DeAcitvate();
+			if (accelerator != nullptr)
+				accelerator->DeAcitvate();
+
 			JGameObjectPrivate::ActivateInterface::DeActivate(root);
-			for (auto& data : allObjects)
-				JGameObjectPrivate::ActivateInterface::DeActivate(data); 
+			JGameObjectPrivate::ActivateInterface::DeActivate(debugRoot);
 			ClearResource();
-			DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_INDEX, this);
+			DeRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS, this);
 			SceneMangerAccess::DeRegisterScene(thisPointer); 
 		}
 	public:
@@ -595,7 +641,7 @@ namespace JinEngine
 	public:
 		void NotifyReAlloc()
 		{
-			ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::LIGHT_INDEX, this);
+			ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS, this);
 		}
 	public:
 		void Initialize(InitData* initData)
@@ -604,8 +650,8 @@ namespace JinEngine
 			{
 				CreateDefaultGameObject();
 				CreateDebugRoot();
-				if (spatialStructure != nullptr)
-					InitializeSpaceSpatial();
+				if (accelerator != nullptr)
+					InitializeAccelerator();
 			}
 			else
 				ReadAssetData();
@@ -708,6 +754,13 @@ namespace JinEngine
 	{
 		return (uint)impl->allObjects.size();
 	}
+	uint JScene::GetGameObjectCount(const J_RENDER_LAYER layer)const noexcept
+	{
+		uint sum = 0;
+		for (uint i = 0; i < (uint)J_MESHGEOMETRY_TYPE::COUNT; ++i)
+			sum += (uint)impl->objectLayer[(uint)layer][i].size();
+		return sum;
+	}
 	uint JScene::GetComponetCount(const J_COMPONENT_TYPE cType)const noexcept
 	{
 		return (uint)impl->GetComponentCashVec(cType).size();
@@ -720,10 +773,6 @@ namespace JinEngine
 	{
 		return impl->useCaseType;
 	}
-	std::vector<JUserPtr<JGameObject>> JScene::GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept
-	{
-		return impl->GetAlignedObject(layer, frustum);
-	}
 	std::vector<JUserPtr<JGameObject>> JScene::GetGameObjectVec()const noexcept
 	{
 		return impl->allObjects;
@@ -732,27 +781,49 @@ namespace JinEngine
 	{
 		return impl->GetComponentVec(cType);
 	}
-	Core::JOctreeOption JScene::GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept
+	JUserPtr<JComponent> JScene::GetDirectionalLight()const noexcept
+	{
+		auto& vec = impl->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+		for (const auto& data : vec)
+		{
+			if (static_cast<JLight*>(data.Get())->GetLightType() == J_LIGHT_TYPE::DIRECTIONAL)
+				return data;
+		}
+		return nullptr;
+	}
+	JOctreeOption JScene::GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept
 	{
 		return impl->GetOctreeOption(layer);
 	}
-	Core::JBvhOption JScene::GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept
+	JBvhOption JScene::GetBvhOption(const J_ACCELERATOR_LAYER layer)const noexcept
 	{
 		return impl->GetBvhOption(layer);
 	}
-	Core::JKdTreeOption JScene::GetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept
+	JKdTreeOption JScene::GetKdTreeOption(const J_ACCELERATOR_LAYER layer)const noexcept
 	{
 		return impl->GetKdTreeOption(layer);
 	}
-	void JScene::SetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JOctreeOption& newOption)noexcept
+	DirectX::BoundingBox JScene::GetSceneBBox(const J_ACCELERATOR_LAYER layer)const noexcept
+	{
+		return impl->GetSceneBBox(layer);
+	}
+	float JScene::GetTotalTime()const noexcept
+	{
+		return impl->GetTotalTime();
+	}
+	float JScene::GetDeltaTime()const noexcept
+	{
+		return impl->GetDeltaTime();
+	}
+	void JScene::SetOctreeOption(const J_ACCELERATOR_LAYER layer, const JOctreeOption& newOption)noexcept
 	{
 		impl->SetOctreeOption(layer, newOption);
 	}
-	void JScene::SetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JBvhOption& newOption)noexcept
+	void JScene::SetBvhOption(const J_ACCELERATOR_LAYER layer, const JBvhOption& newOption)noexcept
 	{
 		impl->SetBvhOption(layer, newOption);
 	}
-	void JScene::SetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JKdTreeOption& newOption)noexcept
+	void JScene::SetKdTreeOption(const J_ACCELERATOR_LAYER layer, const JKdTreeOption& newOption)noexcept
 	{
 		impl->SetKdTreeOption(layer, newOption);
 	}
@@ -768,13 +839,17 @@ namespace JinEngine
 	{
 		return impl->useCaseType == J_SCENE_USE_CASE_TYPE::MAIN;
 	}
-	bool JScene::IsSpaceSpatialActivated()const noexcept
+	bool JScene::IsAcceleratorActivated()const noexcept
 	{
-		return impl->spatialStructure != nullptr;
+		return impl->accelerator != nullptr;
 	}
 	bool JScene::HasComponent(const J_COMPONENT_TYPE cType)const noexcept
 	{
 		return impl->HasComponent(cType);
+	}
+	bool JScene::CanUseAcceleratorUtility(const J_ACCELERATOR_LAYER layer, const J_ACCELERATOR_TYPE type)const noexcept
+	{
+		return IsAcceleratorActivated() && impl->accelerator->IsActivated(layer, type);
 	}
 	JUserPtr<JGameObject> JScene::FindGameObject(const size_t guid)noexcept
 	{
@@ -784,17 +859,30 @@ namespace JinEngine
 	{
 		return impl->FindFirstSelectedCamera(allowEditorCam);
 	}
-	JUserPtr<JGameObject> JScene::IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept
+	JUserPtr<JGameObject> JScene::IntersectFirst(const Core::JRay& ray, const J_ACCELERATOR_LAYER layer)const noexcept
 	{
-		return impl->IntersectFirst(layer, ray);
+		JAcceleratorIntersectInfo info(ray, layer, J_ACCELERATOR_SORT_TYPE::NOT_USE, false, true);
+		return IntersectFirst(info);
 	}
-	JUserPtr<JGameObject> JScene::IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const bool allowContainRayPos)const noexcept
-	{
-		return impl->IntersectFirst(layer, ray, allowContainRayPos);
+	JUserPtr<JGameObject> JScene::IntersectFirst(JAcceleratorIntersectInfo& info)const noexcept
+	{ 
+		return impl->IntersectFirst(info);
 	}
-	void JScene::Intersect(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const Core::J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept
+	void JScene::Intersect(JAcceleratorIntersectInfo& info)const noexcept
 	{
-		impl->Intersect(layer, ray, sortType, res);
+		impl->Intersect(info);
+	}
+	void JScene::Contain(JAcceleratorContainInfo& info)
+	{
+		impl->Contain(info);
+	}
+	std::vector<JUserPtr<JGameObject>> JScene::AlignedObject(JAcceleratorAlignInfo& info)const noexcept
+	{
+		return impl->AlignedObject(info);
+	}
+	void JScene::AlignedObjectF(JAcceleratorAlignInfo& info, _Out_ std::vector<JUserPtr<JGameObject>>& aligned, _Out_ int& count)const noexcept
+	{
+		impl->AlignedObjectF(info, aligned, count);
 	}
 	void JScene::DoActivate() noexcept
 	{
@@ -874,43 +962,43 @@ namespace JinEngine
 		}
 		if (newScene != nullptr  && metadata.isMainScene)
 		{ 
-			if (metadata.isActivatedSpaceSpatial)
+			if (metadata.isActivatedAccelerator)
 			{
-				for (uint i = 0; i < (uint)Core::J_SPACE_SPATIAL_LAYER::COUNT; ++i)
+				for (uint i = 0; i < (uint)J_ACCELERATOR_LAYER::COUNT; ++i)
 				{
-					const uint occIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::OCTREE;
-					const uint bvhIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::BVH;
-					const uint kdIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::KD_TREE;
+					const uint occIndex = (uint)J_ACCELERATOR_TYPE::OCTREE;
+					const uint bvhIndex = (uint)J_ACCELERATOR_TYPE::BVH;
+					const uint kdIndex = (uint)J_ACCELERATOR_TYPE::KD_TREE;
 
 					if (metadata.hasInnerRoot[occIndex][i])
 					{
-						if (i == (int)Core::J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
+						if (i == (int)J_ACCELERATOR_LAYER::DEBUG_OBJECT)
 							metadata.octreeOption[i].commonOption.innerRoot = newScene->impl->debugRoot;
 						else
 							metadata.octreeOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[occIndex][i]);
 					}
 					metadata.octreeOption[i].commonOption.debugRoot = newScene->impl->debugRoot;
-					newScene->SetOctreeOption((Core::J_SPACE_SPATIAL_LAYER)i, metadata.octreeOption[i]);
+					newScene->SetOctreeOption((J_ACCELERATOR_LAYER)i, metadata.octreeOption[i]);
 
 					if (metadata.hasInnerRoot[bvhIndex][i])
 					{
-						if (i == (int)Core::J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
+						if (i == (int)J_ACCELERATOR_LAYER::DEBUG_OBJECT)
 							metadata.bvhOption[i].commonOption.innerRoot = newScene->impl->debugRoot;
 						else
 							metadata.bvhOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[bvhIndex][i]);
 					}
 					metadata.bvhOption[i].commonOption.debugRoot = newScene->impl->debugRoot;
-					newScene->SetBvhOption((Core::J_SPACE_SPATIAL_LAYER)i, metadata.bvhOption[i]);
+					newScene->SetBvhOption((J_ACCELERATOR_LAYER)i, metadata.bvhOption[i]);
 
 					if (metadata.hasInnerRoot[kdIndex][i])
 					{
-						if (i == (int)Core::J_SPACE_SPATIAL_LAYER::DEBUG_OBJECT)
+						if (i == (int)J_ACCELERATOR_LAYER::DEBUG_OBJECT)
 							metadata.kdTreeOption[i].commonOption.innerRoot = newScene->impl->debugRoot;
 						else
 							metadata.kdTreeOption[i].commonOption.innerRoot = Core::GetUserPtr<JGameObject>(metadata.innerRootGuid[kdIndex][i]);
 					}
 					metadata.kdTreeOption[i].commonOption.debugRoot = newScene->impl->debugRoot;
-					newScene->SetKdTreeOption((Core::J_SPACE_SPATIAL_LAYER)i, metadata.kdTreeOption[i]);
+					newScene->SetKdTreeOption((J_ACCELERATOR_LAYER)i, metadata.kdTreeOption[i]);
 				}
 			} 
 		}
@@ -948,13 +1036,13 @@ namespace JinEngine
 		JFileIOHelper::LoadEnumData(stream, loadMetaData->useCaseType);
 		JFileIOHelper::LoadAtomicData(stream, loadMetaData->isOpen);
 		JFileIOHelper::LoadAtomicData(stream, loadMetaData->isMainScene);
-		JFileIOHelper::LoadAtomicData(stream, loadMetaData->isActivatedSpaceSpatial);
+		JFileIOHelper::LoadAtomicData(stream, loadMetaData->isActivatedAccelerator);
 
-		for (uint i = 0; i < (uint)Core::J_SPACE_SPATIAL_LAYER::COUNT; ++i)
+		for (uint i = 0; i < (uint)J_ACCELERATOR_LAYER::COUNT; ++i)
 		{
-			const uint occIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::OCTREE;
-			const uint bvhIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::BVH;
-			const uint kdIndex = (uint)Core::J_SPACE_SPATIAL_TYPE::KD_TREE;
+			const uint occIndex = (uint)J_ACCELERATOR_TYPE::OCTREE;
+			const uint bvhIndex = (uint)J_ACCELERATOR_TYPE::BVH;
+			const uint kdIndex = (uint)J_ACCELERATOR_TYPE::KD_TREE;
 
 			loadMetaData->octreeOption[i].Load(stream, loadMetaData->hasInnerRoot[occIndex][i], loadMetaData->innerRootGuid[occIndex][i]);
 			loadMetaData->bvhOption[i].Load(stream, loadMetaData->hasInnerRoot[bvhIndex][i], loadMetaData->innerRootGuid[bvhIndex][i]);
@@ -983,13 +1071,13 @@ namespace JinEngine
 		JFileIOHelper::StoreEnumData(stream, L"UseCaseType:", scene->GetUseCaseType());
 		JFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamLastOpenSymbol(JScene::StaticTypeInfo()), scene->IsValid());
 		JFileIOHelper::StoreAtomicData(stream, L"IsMainScene:", scene->IsMainScene());
-		JFileIOHelper::StoreAtomicData(stream, L"IsActivatedSpaceSpatial:", scene->IsSpaceSpatialActivated());
+		JFileIOHelper::StoreAtomicData(stream, L"IsActivatedAccelerator:", scene->IsAcceleratorActivated());
 
-		for (uint i = 0; i < (uint)Core::J_SPACE_SPATIAL_LAYER::COUNT; ++i)
+		for (uint i = 0; i < (uint)J_ACCELERATOR_LAYER::COUNT; ++i)
 		{
-			Core::JOctreeOption octreeOption = scene->GetOctreeOption((Core::J_SPACE_SPATIAL_LAYER)i);
-			Core::JBvhOption bvhOption = scene->GetBvhOption((Core::J_SPACE_SPATIAL_LAYER)i);
-			Core::JKdTreeOption kdTreeOption = scene->GetKdTreeOption((Core::J_SPACE_SPATIAL_LAYER)i);
+			JOctreeOption octreeOption = scene->GetOctreeOption((J_ACCELERATOR_LAYER)i);
+			JBvhOption bvhOption = scene->GetBvhOption((J_ACCELERATOR_LAYER)i);
+			JKdTreeOption kdTreeOption = scene->GetKdTreeOption((J_ACCELERATOR_LAYER)i);
 
 			octreeOption.Store(stream);
 			bvhOption.Store(stream);
@@ -1042,18 +1130,18 @@ namespace JinEngine
 		gObject->GetOwnerScene()->impl->UpdateTransform(gObject);
 	}
 
-	bool CompRegisterInterface::RegisterComponent(const JUserPtr<JComponent>& comp)noexcept
+	bool CompRegisterInterface::RegisterComponent(const JUserPtr<JComponent>& comp, CompSortPtr comparePtr)noexcept
 	{
-		return comp->GetOwner()->GetOwnerScene()->impl->RegisterComponent(comp);
+		return comp->GetOwner()->GetOwnerScene()->impl->RegisterComponent(comp, comparePtr);
 	}
 	bool CompRegisterInterface::DeRegisterComponent(const JUserPtr<JComponent>& comp)noexcept
 	{
 		return comp->GetOwner()->GetOwnerScene()->impl->DeRegisterComponent(comp);
 	}
-	bool CompRegisterInterface::ReRegisterComponent(const JUserPtr<JComponent>& comp)noexcept
+	bool CompRegisterInterface::ReRegisterComponent(const JUserPtr<JComponent>& comp, CompSortPtr comparePtr)noexcept
 	{
 		DeRegisterComponent(comp);
-		return RegisterComponent(comp);
+		return RegisterComponent(comp, comparePtr);
 	}
 
 	void CompFrameInterface::SetAllComponentFrameDirty(const JUserPtr<JScene>& scene)noexcept
@@ -1073,14 +1161,19 @@ namespace JinEngine
 			JCamera* cam = static_cast<JCamera*>(comp.Get());
 			scene->impl->ViewCulling(cam->CullingUserInterface(), cam->GetBoundingFrustum());
 		}
+		else if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+		{
+			JLight* lit = static_cast<JLight*>(comp.Get()); 
+			scene->impl->ViewCulling(lit->CullingUserInterface(), lit->GetBBox());
+		}
 	}
  
-	void DebugInterface::BuildDebugTree(const JUserPtr<JScene>& scene, Core::J_SPACE_SPATIAL_TYPE type, const Core::J_SPACE_SPATIAL_LAYER layer, _Out_ Editor::JEditorBinaryTreeView& tree)noexcept
+	void DebugInterface::BuildDebugTree(const JUserPtr<JScene>& scene, J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, _Out_ Editor::JEditorBinaryTreeView& tree)noexcept
 	{
 		scene->impl->BuildDebugTree(type, layer, tree);
 	}
 
-	uint FrameIndexInterface::GetLitIndexFrameIndex(JScene* scene)
+	uint FrameIndexInterface::GetPassFrameIndex(JScene* scene)
 	{
 		return scene->impl->GetUploadIndex();
 	}

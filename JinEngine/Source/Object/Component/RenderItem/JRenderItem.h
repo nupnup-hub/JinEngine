@@ -1,8 +1,9 @@
 #pragma once  
 #include"../JComponent.h"
 #include"JRenderLayer.h" 
-#include"JRenderItemSpaceSpatialMask.h"   
-#include"../../../Graphic/Upload/Frameresource/JFrameUpdateUserAccess.h"
+#include"JRenderItemAcceleratorMask.h"   
+#include"../../../Graphic/Frameresource/JFrameUpdateUserAccess.h"
+#include"../../../Core/Math/JMatrix.h"
 #include<DirectXCollision.h>
 #include<d3d12.h>
 
@@ -12,7 +13,7 @@ namespace JinEngine
 	class JMaterial;
 	class JRenderItemPrivate;
 	class JRenderItem final : public JComponent, 
-		public Graphic::JFrameUpdateUserAccessInterface
+		public Graphic::JFrameUpdateUserAccess
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JRenderItem)
 	public: 
@@ -29,8 +30,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JRenderItemImpl> impl;
 	public:
-		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
-		Graphic::JFrameUpdateUserAccess FrameUserInterface() noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final; 
 		J_COMPONENT_TYPE GetComponentType()const noexcept final;
 		static constexpr J_COMPONENT_TYPE GetStaticComponentType()noexcept
 		{
@@ -40,10 +40,10 @@ namespace JinEngine
 		JUserPtr<JMeshGeometry> GetMesh()const noexcept;
 		JUserPtr<JMaterial> GetValidMaterial(int index)const noexcept;
 		std::vector<JUserPtr<JMaterial>> GetMaterialVec()const noexcept;
-		DirectX::XMFLOAT4X4 GetTextransform()const noexcept;
+		JMatrix4x4 GetTextransform()const noexcept;
 		D3D12_PRIMITIVE_TOPOLOGY GetPrimitiveType()const noexcept;
 		J_RENDER_LAYER GetRenderLayer()const noexcept;
-		J_RENDERITEM_SPACE_SPATIAL_MASK GetSpaceSpatialMask()const noexcept; 
+		J_RENDERITEM_ACCELERATOR_MASK GetAcceleratorMask()const noexcept; 
 		uint GetTotalVertexCount()const noexcept;
 		uint GetTotalIndexCount()const noexcept;
 		uint GetSubmeshCount()const noexcept;
@@ -56,12 +56,15 @@ namespace JinEngine
 		void SetMesh(JUserPtr<JMeshGeometry> newMesh)noexcept;
 		void SetMaterial(int index, JUserPtr<JMaterial> newMaterial)noexcept;
 		void SetMaterialVec(const std::vector<JUserPtr<JMaterial>> newVec)noexcept;
-		void SetTextureTransform(const DirectX::XMFLOAT4X4& textureTransform)noexcept;
+		void SetTextureTransform(const JMatrix4x4& textureTransform)noexcept;
 		void SetPrimitiveType(const D3D12_PRIMITIVE_TOPOLOGY primitiveType)noexcept;
 		void SetRenderLayer(const J_RENDER_LAYER renderLayer)noexcept; 
-		void SetSpaceSpatialMask(const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask)noexcept;
+		void SetAcceleratorMask(const J_RENDERITEM_ACCELERATOR_MASK spaceSpatialMask)noexcept;
+		void SetOccluder(const bool value)noexcept;
 	public: 
+		bool IsFrameDirted()const noexcept final;
 		bool IsAvailableOverlap()const noexcept final;
+		bool IsOccluder()const noexcept;
 		bool PassDefectInspection()const noexcept final; 
 	protected:
 		void DoActivate()noexcept final;

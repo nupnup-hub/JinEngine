@@ -1,10 +1,15 @@
 #include"JProjectSelectorHub.h"
 #include"../../JEditorAttribute.h"
+#include"../../../Gui/JGui.h" 
+#include"../../../Gui/JGuiImageInfo.h"
 #include"../../../Align/JEditorAlignCalculator.h"
-#include"../../../Helpers/JEditorSearchBarHelper.h"
-#include"../../../Helpers/JEditorInputBuffHelper.h"
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
+#include"../../../EditTool/JEditorSearchBarHelper.h"
+#include"../../../EditTool/JEditorInputBuffHelper.h"
+#include"../../../EditTool/JEditorDynamicColor.h"
 #include"../../../../Core/Identity/JIdenCreator.h"
+#include"../../../../Core/Utility/JMacroUtility.h"
+#include"../../../../Core/Utility/JCommonUtility.h"
+#include"../../../../Core/Math/JVectorExtend.h"
 #include"../../../../Application/JApplicationEngine.h" 
 #include"../../../../Application/JApplicationProject.h" 
 #include"../../../../Application/JApplicationProjectPrivate.h" 
@@ -15,10 +20,7 @@
 #include"../../../../Object/Directory/JDirectory.h"
 #include"../../../../Object/Directory/JFile.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
-#include"../../../../Window/JWindow.h"
-#include"../../../../Utility/JCommonUtility.h"
-#include"../../../../Utility/JVectorExtend.h"
-#include"../../../../Utility/JMacroUtility.h"
+#include"../../../../Window/JWindow.h" 
 
 namespace JinEngine
 {
@@ -29,19 +31,19 @@ namespace JinEngine
 			using AppIOInterface = JApplicationProjectPrivate::IOInterface;
 			using AppLifeInterface = JApplicationProjectPrivate::LifeInterface;
 		}
-		namespace Constants
+		namespace Private
 		{ 
-			static constexpr ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoResize |
-				ImGuiWindowFlags_NoMove |
-				ImGuiWindowFlags_NoCollapse |
-				ImGuiWindowFlags_NoDocking;
+			static constexpr J_GUI_WINDOW_FLAG_ guiWindowFlag = J_GUI_WINDOW_FLAG_NO_RESIZE |
+				J_GUI_WINDOW_FLAG_NO_MOVE |
+				J_GUI_WINDOW_FLAG_NO_COLLAPSE |
+				J_GUI_WINDOW_FLAG_NO_DOCKING;
 			  
 			static constexpr float paddingRate = 0.025f;
-			static constexpr float frameThickness = 5;
+			static constexpr float frameThickness = 7.5f;
 
 			//text and icon rate
 			static constexpr float iconSizeRate = 0.75f;
-			static constexpr float iconSpacingRate = 0.02f; 
+			static constexpr float iconSpacingRate = 0.01f; 
 
 			//pList 
 			static constexpr float pListSpacingRate = 0.02f;
@@ -85,6 +87,7 @@ namespace JinEngine
 		enum class J_TITLE_ICON
 		{ 
 			OPTION_SETTING,
+			//TEST,
 			COUNT
 		};
 
@@ -167,22 +170,27 @@ namespace JinEngine
 				titleIconPos[(int)type] = value;
 			}
 		public:
-			ImU32 GetCanvasColor()const noexcept
+			JVector4F GetCanvasColor()const noexcept
 			{
-				return JImGuiImpl::ConvertUColor(JImGuiImpl::GetColor(ImGuiCol_Header) + JImGuiImpl::GetOffFocusSelectedColorFactor());
+				//GetCanvasHigtLightColor 큰 값을 가져야한다.
+				return JGui::GetColor(J_GUI_COLOR::HEADER) + JVector4F(0.2f, 0.2f, 0.2f, 0.2f);
 			}
-			ImU32 GetCanvasDeltaColor()const noexcept
+			JVector4F GetCanvasDeltaColor()const noexcept
 			{
-				return IM_COL32(25, 25, 25, 0);
+				return JVector4F(0.2125f, 0.098f, 0.098f, 0);
+				//return JVector4F(0.25f, 0.098f, 0.125f, 0.05f);
+				//return JVector4F(0.098f, 0.098f, 0.098f, 0);
 			}
-			ImU32 GetFrameColor()const noexcept
+			JVector4F GetCanvasHigtLightColor()const noexcept
 			{
-				return JImGuiImpl::GetUColor(ImGuiCol_Separator);
+				return JVector4F(0.1f, 0.1f, 0.1f, 0.15f);
+				//return JVector4F(0.25f, 0.098f, 0.125f, 0.05f);
+				//return JVector4F(0.098f, 0.098f, 0.098f, 0);
 			}
-			JVector4<float> GetFrameColorV4()const noexcept
+			JVector4F GetFrameColor()const noexcept
 			{
-				return JImGuiImpl::GetColor(ImGuiCol_Separator);
-			}
+				return JGui::GetColor(J_GUI_COLOR::FRAME_BG);
+			} 
 		public:
 			J_SIMPLE_GET_SET(JVector2<float>, totalCanvasSize, TotalCanvasSize);
 			J_SIMPLE_GET_SET(JVector2<float>, canvasPadding, CanvasPadding);
@@ -199,6 +207,7 @@ namespace JinEngine
 			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag)
 		{
 			searchHelper = std::make_unique<JEditorSearchBarHelper>(false);
+			dynamicCol = std::make_unique<JEditorDynamicSpotColor>();
 			values = std::make_unique<SelectorValues>();
 			ResourceEvListener::AddEventListener(*JResourceObject::EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 			AppIOInterface::LoadProjectList(); 
@@ -213,17 +222,23 @@ namespace JinEngine
 			return J_EDITOR_WINDOW_TYPE::PROJECT_SELECTOR_HUB;
 		}
 		void JProjectSelectorHub::UpdateWindow()
-		{
-			const ImGuiViewport* viewport = ImGui::GetMainViewport(); 
-			ImGui::SetNextWindowSize(viewport->WorkSize, ImGuiCond_FirstUseEver);
-			ImGui::SetNextWindowPos(viewport->WorkPos, ImGuiCond_FirstUseEver);
+		{ 
+			//ImGuiCond_FirstUseEver
+			JGui::SetNextWindowSize(JWindow::GetClientSize(), J_GUI_CONDIITON_ONCE);
+			JGui::SetNextWindowPos(JWindow::GetClientPosition(), J_GUI_CONDIITON_ONCE);
 
-			int flag = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
+			J_GUI_WINDOW_FLAG_ flag = J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | 
+				J_GUI_WINDOW_FLAG_NO_COLLAPSE | 
+				J_GUI_WINDOW_FLAG_NO_MOVE | 
+				J_GUI_WINDOW_FLAG_NO_TITLE_BAR;
+
+			JGui::PushStyle(J_GUI_STYLE::WINDOW_ROUNDING, 0.0f);
+			JGui::PushStyle(J_GUI_STYLE::WINDOW_PADDING, JVector2F(0.0f, 0.0f));
 			EnterWindow(flag);
+			JGui::PopStyle(2);
 			if (IsActivated())
 			{
-				//JImGuiImpl::AddImage(*backgroundTexture.Get(), viewport->WorkPos, viewport->WorkSize, false, IM_COL32(255, 255, 255, 50));
-				JImGuiImpl::PushFont();
+				//JGui::AddImage(*backgroundTexture.Get(), viewport->WorkPos, viewport->WorkSize, false, IM_COL32(255, 255, 255, 50));
 				UpdateMouseClick();
 				UpdateCanvasSize();
 				TitleOnScreen();
@@ -237,31 +252,29 @@ namespace JinEngine
 					LoadProjectOnScreen();
 				if (values->GetTrigger(J_PS_TRIGGER::OPTION))
 					OptionOnScreen();
-
-				JImGuiImpl::PopFont();
 			}
 			CloseWindow();
 		}
 		void JProjectSelectorHub::UpdateCanvasSize()
-		{
-			ImGui::SetWindowFontScale(2);
-			const JVector2<float> titleTextSize = ImGui::CalcTextSize(ENGINE_NAME);
+		{ 
+			JGui::SetCurrentWindowFontScale(2);
+			const JVector2<float> titleTextSize = JGui::CalTextSize(ENGINE_NAME);
 
-			ImGui::SetWindowFontScale(0.9f);
-			const JVector2<float> otherTextSize = ImGui::CalcTextSize(ENGINE_NAME);
-			ImGui::SetWindowFontScale(2);
+			JGui::SetCurrentWindowFontScale(0.9f);
+			const JVector2<float> otherTextSize = JGui::CalTextSize(ENGINE_NAME);
+			JGui::SetCurrentWindowFontScale(2);
 
 			JVector2<float> canvasPos[(int)J_PS_CANVAS::COUNT];
 			JVector2<float> canvasSize[(int)J_PS_CANVAS::COUNT];
 			 
-			const JVector2<float> wndSize = JImGuiImpl::GetGuiWidnowContentsSize();
-			const JVector2<float> padding = wndSize * Constants::paddingRate;
+			const JVector2<float> wndSize = JGui::GetWindowContentsSize();
+			const JVector2<float> padding = wndSize * Private::paddingRate;
 			const JVector2<float> canvasSpacing = wndSize * JVector2<float>(0.0125f, 0.025f);
 
 			const JVector2<float> pListCanvasRate = JVector2<float>(0.7f, 0.8f);
 			const JVector2<float> pDetailCanvasRate = JVector2<float>(0.3f, 0.8f);
 
-			canvasPos[(int)J_PS_CANVAS::TITLE] = ImGui::GetCursorPos() + padding;
+			canvasPos[(int)J_PS_CANVAS::TITLE] = JGui::GetCursorPos() + padding;
 			canvasSize[(int)J_PS_CANVAS::TITLE] = JVector2<float>(wndSize.x - padding.x * 2, titleTextSize.y * 1.25f);
 
 			canvasPos[(int)J_PS_CANVAS::PROJECT_LIST].x = canvasPos[(int)J_PS_CANVAS::TITLE].x;
@@ -290,39 +303,76 @@ namespace JinEngine
 			values->SetTotalCanvasSize(wndSize);
 			values->SetCanvasPadding(padding);
 			values->SetCanvasSpacing(canvasSpacing);
-			ImGui::SetWindowFontScale(1);
+			JGui::SetCurrentWindowFontScale(1);
+
+			dynamicCol->Clear();
+			JVector2F titleMin = canvasPos[(int)J_PS_CANVAS::TITLE];
+			JVector2F titleMax = canvasPos[(int)J_PS_CANVAS::TITLE] + canvasSize[(int)J_PS_CANVAS::TITLE];
+			JVector2F pListMin = canvasPos[(int)J_PS_CANVAS::PROJECT_LIST];
+			JVector2F pListMax = canvasPos[(int)J_PS_CANVAS::PROJECT_LIST] + canvasSize[(int)J_PS_CANVAS::PROJECT_LIST];
+			JVector2F pDetailMin = canvasPos[(int)J_PS_CANVAS::PROJECT_DETAIL];
+			JVector2F pDetailMax = canvasPos[(int)J_PS_CANVAS::PROJECT_DETAIL] + canvasSize[(int)J_PS_CANVAS::PROJECT_DETAIL];
+		 
+			JVector2F maxP = JVector2F::Max(JVector2F::Max(titleMax, pListMax), pDetailMax);
+			//up left, up right, down left, down right
+			dynamicCol->PushPoint(titleMin, maxP);
+			dynamicCol->PushPoint(JVector2F(titleMax.x, titleMin.y), maxP);
+			dynamicCol->PushPoint(JVector2F(titleMin.x, titleMax.y), maxP);
+			dynamicCol->PushPoint(titleMax, maxP); 
+
+			dynamicCol->PushPoint(pListMin, maxP);
+			dynamicCol->PushPoint(JVector2F(pListMax.x, pListMin.y), maxP);
+			dynamicCol->PushPoint(JVector2F(pListMin.x, pListMax.y), maxP);
+			dynamicCol->PushPoint(pListMax, maxP);
+
+			dynamicCol->PushPoint(pDetailMin, maxP);
+			dynamicCol->PushPoint(JVector2F(pDetailMax.x, pDetailMin.y), maxP);
+			dynamicCol->PushPoint(JVector2F(pDetailMin.x, pDetailMax.y), maxP);
+			dynamicCol->PushPoint(pDetailMax, maxP);
+
+			dynamicCol->SetUpdateSpeed(0.00005f);
+			dynamicCol->SetColor(values->GetCanvasColor());
+			dynamicCol->SetDeltaColor(values->GetCanvasDeltaColor());
+			dynamicCol->SetHighLight(values->GetCanvasHigtLightColor(), -0.9f, 0.45f);
+			dynamicCol->Update();
 		}
 		void JProjectSelectorHub::TitleOnScreen()
 		{
-			ImGui::SetWindowFontScale(1.5f);
-			const JVector2<float> textSize = ImGui::CalcTextSize("JinEngine");
-			const JVector2<float> iconSize = JVector2<float>(ImGui::GetCurrentContext()->FontSize * 0.75f, ImGui::GetCurrentContext()->FontSize * 0.75f);
-			const JVector2<float> iconSpacing = values->GetTotalCanvasSize() * Constants::iconSpacingRate;
-
-			ImGui::SetCursorPos(values->GetCanvasPos(J_PS_CANVAS::TITLE));
-			JImGuiImpl::DrawRectFilledColor(ImGui::GetCursorScreenPos(),
+			JGui::SetCurrentWindowFontScale(1.5f);
+			const JVector2<float> textSize = JGui::CalTextSize("JinEngine");
+			const JVector2<float> iconSize = CreateVec2(JGui::GetFontSize() * 0.7f);
+			const JVector2<float> iconSpacing = values->GetTotalCanvasSize() * Private::iconSpacingRate;
+			 
+			JGui::SetCursorPos(values->GetCanvasPos(J_PS_CANVAS::TITLE));
+			JGui::DrawRectFilledMultiColor(JGui::GetCursorScreenPos(),
 				values->GetCanvasSize(J_PS_CANVAS::TITLE),
-				values->GetCanvasColor(),
+				dynamicCol->GetColor(0),
+				dynamicCol->GetColor(1),
+				dynamicCol->GetColor(2),
+				dynamicCol->GetColor(3),
 				true);
-			JImGuiImpl::DrawRectFrame(ImGui::GetCursorScreenPos(),
+			JGui::DrawRectFrame(JGui::GetCursorScreenPos(),
 				values->GetCanvasSize(J_PS_CANVAS::TITLE),
-				Constants::frameThickness,
 				values->GetFrameColor(),
+				Private::frameThickness,
 				true);
 			 
-			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::CalcTextSize("J").x * 0.5f);
-			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (values->GetCanvasSize(J_PS_CANVAS::TITLE).y - textSize.y) * 0.5f);
+			JGui::SetCursorPosX(JGui::GetCursorPosX() + JGui::CalTextSize("J").x * 0.5f);
+			JGui::SetCursorPosY(JGui::GetCursorPosY() + (values->GetCanvasSize(J_PS_CANVAS::TITLE).y - textSize.y) * 0.5f);
 			JEditorTextAlignCalculator textAlign;
 			textAlign.Update("JinEngine", values->GetCanvasSize(J_PS_CANVAS::TITLE), false);
-			JImGuiImpl::Text(textAlign.LeftAligned());
+			JGui::Text(textAlign.LeftAligned());
 
-			float iconCanvasWidth = (iconSize.x * (int)J_TITLE_ICON::COUNT) + (iconSpacing.x * ((int)J_TITLE_ICON::COUNT - 1));
+			float iconCanvasWidth = (iconSize.x * (int)J_TITLE_ICON::COUNT) + 
+				(iconSpacing.x * ((int)J_TITLE_ICON::COUNT - 1)) + 
+				(values->GetCanvasPadding().x) + 
+				(iconSize.x * 0.3f);		//icon selectable영역이 canavas를 초과할수있으므로 offset값이 필요
 			float iconCanvasHeight = iconSize.y;
-
+		
 			const JVector2<float>canvasSize = JVector2<float>(iconCanvasWidth, iconCanvasHeight);
 			JVector2<float>canvasPos;
-			canvasPos.x = values->GetTotalCanvasSize().x - canvasSize.x - values->GetCanvasPadding().x;
-			canvasPos.y = ImGui::GetCursorPosY() - iconSize.y;
+			canvasPos.x = values->GetTotalCanvasSize().x - canvasSize.x;
+			canvasPos.y = JGui::GetCursorPosY() - iconSize.y;
 
 			JEditorStaticAlignCalculator iconAlignCal;
 			iconAlignCal.Update(canvasSize, iconSize, CreateVec2(0), iconSpacing, canvasPos);
@@ -332,7 +382,7 @@ namespace JinEngine
 
 			static std::string uniqueLabel[(int)J_TITLE_ICON::COUNT]
 			{
-				"##" + std::to_string(Core::MakeGuid()),
+				"##" + std::to_string(Core::MakeGuid()), 
 				//"##" + std::to_string(Core::MakeGuid()),
 				//"##" + std::to_string(Core::MakeGuid())
 			};
@@ -340,12 +390,14 @@ namespace JinEngine
 			GetTexturePtr getTexturePtr[(int)J_TITLE_ICON::COUNT]
 			{
 				[]() {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::OPTION_SETTING).Get(); },
+				//[]() {return _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::OPTION_SETTING).Get(); }
 				//[]() {return _JResourceManager::Instance().Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::OPTION_SETTING); },
 				//[]() {return _JResourceManager::Instance().Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::OPTION_SETTING); }
 			};
 			MenuIconPtr iconPtr[(int)J_TITLE_ICON::COUNT]
 			{
 				[](SelectorValues& value) {value.SetNotTrigger(J_PS_TRIGGER::OPTION); },
+				//[](SelectorValues& value) {value.SetNotTrigger(J_PS_TRIGGER::OPTION); }
 				//[](SelectorValues& value) {MessageBox(0, L"Click2", 0, 0); },
 				//[](SelectorValues& value) {MessageBox(0, L"Click3", 0, 0); }
 			};
@@ -353,62 +405,72 @@ namespace JinEngine
 			for (uint i = 0; i < (int)J_TITLE_ICON::COUNT; ++i)
 			{
 				iconAlignCal.SetNextContentsPosition();
-				values->SetTitleIconPos((J_TITLE_ICON)i, ImGui::GetCursorScreenPos());
+				values->SetTitleIconPos((J_TITLE_ICON)i, JGui::GetCursorScreenPos());
 				bool isOpen = true;
-				if (JImGuiImpl::ImageSwitch(uniqueLabel[i],
-					(*getTexturePtr[i])(),
+			  
+				JGuiImageInfo imageInfo((*getTexturePtr[i])());
+				if (JGui::ImageSwitch(uniqueLabel[i],
+					imageInfo,
 					isOpen,
 					false,
 					iconSize,
-					JImGuiImpl::GetUColor(ImGuiCol_ChildBg),
-					IM_COL32(0, 0, 0, 0)))
+					JGui::GetColor(J_GUI_COLOR::CHILD_BG),
+					JVector4F::Zero()))
 					(*iconPtr[i])(*values);
 			} 
-			ImGui::SetWindowFontScale(1);
+			JGui::SetCurrentWindowFontScale(1);
 		}
 		void JProjectSelectorHub::ProjectListOnScreen()
 		{
-			ImGui::SetWindowFontScale(0.9f);
-			ImGui::SetCursorPos(values->GetCanvasPos(J_PS_CANVAS::PROJECT_LIST));
-			JImGuiImpl::DrawRectFilledMultiColor(ImGui::GetCursorScreenPos(),
+			JGui::SetCurrentWindowFontScale(0.9f);
+			JGui::SetCursorPos(values->GetCanvasPos(J_PS_CANVAS::PROJECT_LIST));
+			/*
+					JGui::DrawRectFilledMultiColor(JGui::GetCursorScreenPos(),
 				values->GetCanvasSize(J_PS_CANVAS::PROJECT_LIST),
 				values->GetCanvasColor(),
 				values->GetCanvasDeltaColor(),
+				true,
+				J_GUI_ORDINAL_DIR_UP_LEFT_DOWN_LEFT);
+			*/
+			JGui::DrawRectFilledMultiColor(JGui::GetCursorScreenPos(),
+				values->GetCanvasSize(J_PS_CANVAS::PROJECT_LIST),
+				dynamicCol->GetColor(4),
+				dynamicCol->GetColor(5),
+				dynamicCol->GetColor(6),
+				dynamicCol->GetColor(7),
 				true);
 
 			//has order dependency
 			//child window내부에서는 window pos + size를 벗어날수없으므로
 			//frame 외부가 잘린다
-			JImGuiImpl::DrawRectFrame(ImGui::GetCursorScreenPos(),
+			JGui::DrawRectFrame(JGui::GetCursorScreenPos(),
 				values->GetCanvasSize(J_PS_CANVAS::PROJECT_LIST),
-				Constants::frameThickness,
 				values->GetFrameColor(),
+				Private::frameThickness,
 				true);
 
-			JImGuiImpl::BeginChildWindow("##ProjectList", values->GetCanvasSize(J_PS_CANVAS::PROJECT_LIST));		
+			JGui::SetCursorPos(JGui::GetCursorPos() + Private::frameThickness);
+			JGui::BeginChildWindow("##ProjectList", values->GetCanvasSize(J_PS_CANVAS::PROJECT_LIST));
 			searchHelper->UpdateSearchBar();
 			 
-			const JVector2<float> contentsPadding = values->GetTotalCanvasSize() * JVector2<float>(Constants::pListPaddingRate, Constants::pListPaddingRate * 0.5f);
-			const JVector2<float> contentsSpacing = values->GetTotalCanvasSize() * Constants::pListSpacingRate;
-			float hoveredFrameThickness = (contentsSpacing.x > contentsSpacing.y ? contentsSpacing.x : contentsSpacing.y) * 2;
+			const JVector2<float> contentsPadding = values->GetTotalCanvasSize() * JVector2<float>(Private::pListPaddingRate, Private::pListPaddingRate * 0.5f);
+			const JVector2<float> contentsSpacing = values->GetTotalCanvasSize() * Private::pListSpacingRate;
+			float hoveredFrameThickness = (contentsSpacing.x > contentsSpacing.y ? contentsSpacing.x : contentsSpacing.y);//* 2
 			 
 			JEditorDynamicAlignCalculator<2> widgetAlignCal; 
 			widgetAlignCal.Update(values->GetCanvasSize(J_PS_CANVAS::PROJECT_LIST),
 				contentsPadding + (contentsSpacing * 0.5f),
 				contentsSpacing,
-				Constants::pListPerColumn,
-				Constants::pListPerRow,
-				{ CreateVec2(Constants::pListImageRate), JVector2<float>(Constants::pListImageRate, 1 - Constants::pListImageRate)},
+				Private::pListPerColumn,
+				Private::pListPerRow,
+				{ CreateVec2(Private::pListImageRate), JVector2<float>(Private::pListImageRate, 1 - Private::pListImageRate)},
 				{ CreateVec2(0), CreateVec2(0) },
 				J_EDITOR_INNER_ALGIN_TYPE::COLUMN,
-				JVector2<float>(0, ImGui::GetCursorPosY()));
+				JVector2<float>(0, JGui::GetCursorPosY()));
 
-			const JVector4<float> preHeaderCol = JImGuiImpl::GetColor(ImGuiCol_Header);
-			const JVector4<float> preHeaderHovCol = JImGuiImpl::GetColor(ImGuiCol_HeaderHovered);
-			const JVector4<float> preHeaderActCol = JImGuiImpl::GetColor(ImGuiCol_HeaderActive);
-			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_Header);
-			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_HeaderHovered);
-			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_HeaderActive);
+			JGui::PushColor(J_GUI_COLOR::HEADER, JVector4F::Zero());
+			JGui::PushColor(J_GUI_COLOR::HEADER_HOVERED, JVector4F::Zero());
+			JGui::PushColor(J_GUI_COLOR::HEADER_ACTIVE, JVector4F::Zero());
 
 			JEditorTextAlignCalculator txtAlignCal;
 			const uint projectListCount = JApplicationProject::GetProjectInfoCount();
@@ -421,24 +483,20 @@ namespace JinEngine
 				JVector2<float> nowSize = widgetAlignCal.GetInnerContentsSize();
 				widgetAlignCal.SetNextContentsPosition();
 				bool isSelected = i == values->GetSelectedIndex();
-				bool isHovered = JImGuiImpl::IsMouseInRect(ImGui::GetCursorScreenPos(), nowSize);
+				bool isHovered = JGui::IsMouseInRect(JGui::GetCursorScreenPos(), nowSize);
 
-				JVector4<float> addedFrameColor = CreateVec4(0);
-				if (isSelected)
-					addedFrameColor = GetSelectedColorFactor();
-				if (isHovered)
-					addedFrameColor = JImGuiImpl::GetSelectColorFactor();
-	 
+				JVector4<float> addedFrameColor = GetSelectableColorFactor(isSelected, isHovered);
 				if (lastRSVec[i].IsValid())
 				{
-					const float contetentsFrameThickness = (isSelected || isHovered) ? hoveredFrameThickness : Constants::frameThickness;
-					JImGuiImpl::DrawRectFrame(ImGui::GetCursorScreenPos(),
+					const float contetentsFrameThickness = (isSelected || isHovered) ? hoveredFrameThickness : Private::frameThickness;
+					JGui::DrawRectFrame(JGui::GetCursorScreenPos(),
 						nowSize,
+						values->GetFrameColor() + addedFrameColor,
 						contetentsFrameThickness,
-						JImGuiImpl::ConvertUColor(values->GetFrameColorV4() + addedFrameColor),
 						true);
 
-					if (JImGuiImpl::ImageSelectable(JCUtil::WstrToU8Str(info->GetName()), lastRSVec[i].Get(),
+					JGuiImageInfo imageInfo(lastRSVec[i].Get());
+					if (JGui::ImageSelectable(JCUtil::WstrToU8Str(info->GetName()), imageInfo,
 						isSelected, false,
 						nowSize,
 						true))
@@ -446,8 +504,8 @@ namespace JinEngine
 				}
 				else
 				{
-					JImGuiImpl::DrawRectFrame(ImGui::GetCursorScreenPos(), nowSize, Constants::frameThickness, JImGuiImpl::ConvertUColor(values->GetFrameColorV4() + addedFrameColor), true);
-					if (JImGuiImpl::Switch("##" + JCUtil::WstrToU8Str(info->GetName()) + "ProjectList", isSelected, false, nowSize))
+					JGui::DrawRectFrame(JGui::GetCursorScreenPos(), nowSize, values->GetFrameColor() + addedFrameColor, Private::frameThickness, true);
+					if (JGui::Switch("##" + JCUtil::WstrToU8Str(info->GetName()) + "ProjectList", isSelected, false, nowSize))
 						values->SetSelectedIndex(i);
 				}
 
@@ -455,14 +513,12 @@ namespace JinEngine
 				widgetAlignCal.SetNextContentsPosition();
 
 				txtAlignCal.Update(JCUtil::WstrToU8Str(info->GetName()), nowSize, true);
-				JImGuiImpl::Text(txtAlignCal.MiddleAligned());
+				JGui::Text(txtAlignCal.MiddleAligned());
 			}
-			JImGuiImpl::EndChildWindow();
-			ImGui::SetWindowFontScale(1);
+			JGui::EndChildWindow();
+			JGui::SetCurrentWindowFontScale(1);
 
-			JImGuiImpl::SetColor(preHeaderCol, ImGuiCol_Header);
-			JImGuiImpl::SetColor(preHeaderHovCol, ImGuiCol_HeaderHovered);
-			JImGuiImpl::SetColor(preHeaderActCol, ImGuiCol_HeaderActive);
+			JGui::PopColor(3); 
 			//const JVector2<float>
 		}
 		void JProjectSelectorHub::ProjectDetailOnScreen()
@@ -471,23 +527,33 @@ namespace JinEngine
 			static const JVector2<float> pDetailImagePaddingRate = JVector2<float>(0.2f, 0.075f);
 			static const JVector2<float> pDetailTextPaddingRate = JVector2<float>(0.025f, 0.075f);
 
-			ImGui::SetWindowFontScale(0.9f);
-			ImGui::SetCursorPos(values->GetCanvasPos(J_PS_CANVAS::PROJECT_DETAIL));
+			JGui::SetCurrentWindowFontScale(0.9f);
+			JGui::SetCursorPos(values->GetCanvasPos(J_PS_CANVAS::PROJECT_DETAIL));
 
-			JImGuiImpl::DrawRectFilledMultiColor(ImGui::GetCursorScreenPos(),
+			/*JGui::DrawRectFilledMultiColor(JGui::GetCursorScreenPos(),
 				values->GetCanvasSize(J_PS_CANVAS::PROJECT_DETAIL),
 				values->GetCanvasColor(),
 				values->GetCanvasDeltaColor(),
+				true,
+				J_GUI_ORDINAL_DIR_UP_RIGHT_DOWN_RIGHT);*/
+
+			JGui::DrawRectFilledMultiColor(JGui::GetCursorScreenPos(),
+				values->GetCanvasSize(J_PS_CANVAS::PROJECT_DETAIL),
+				dynamicCol->GetColor(8),
+				dynamicCol->GetColor(9),
+				dynamicCol->GetColor(10),
+				dynamicCol->GetColor(11),
 				true);
+
 			//has order dependency
 			//child window내부에서는 window pos + size를 벗어날수없으므로
 			//frame 외부가 잘린다
-			JImGuiImpl::DrawRectFrame(ImGui::GetCursorScreenPos(),
+			JGui::DrawRectFrame(JGui::GetCursorScreenPos(),
 				values->GetCanvasSize(J_PS_CANVAS::PROJECT_DETAIL),
-				Constants::frameThickness,
 				values->GetFrameColor(),
+				Private::frameThickness,
 				true);
-			JImGuiImpl::BeginChildWindow("##ProjectDetail", values->GetCanvasSize(J_PS_CANVAS::PROJECT_DETAIL));
+			JGui::BeginChildWindow("##ProjectDetail", values->GetCanvasSize(J_PS_CANVAS::PROJECT_DETAIL));
 
 			const JVector2<float> canvasSize = values->GetCanvasSize(J_PS_CANVAS::PROJECT_DETAIL);
 			const JVector2<float> imageSize = (canvasSize - canvasSize * pDetailImagePaddingRate * 2) * pDetailImageSizeRate;
@@ -496,45 +562,47 @@ namespace JinEngine
 			const JVector2<float> textPadding = canvasSize * pDetailTextPaddingRate;
 			const JVector2<float> textPos = textPadding;
 			JApplicationProjectInfo* info = nullptr;
-			ImGui::SetCursorPos(imagePos);
+			JGui::SetCursorPos(imagePos);
+
 			if (values->GetSelectedIndex() != -1)
 			{
 				info = JApplicationProject::GetProjectInfo(values->GetSelectedIndex());
 				if (lastRSVec[values->GetSelectedIndex()].IsValid())
 				{
-					JImGuiImpl::Image(lastRSVec[values->GetSelectedIndex()].Get(), imageSize);
-					ImGui::SetCursorPos(imagePos);
-					JImGuiImpl::DrawRectFrame(ImGui::GetCursorScreenPos(), imageSize, Constants::frameThickness, values->GetFrameColor(), true);
-					ImGui::SetCursorPos(imagePos + JVector2<float>(0, imageSize.y + textPadding.y));
+					JGuiImageInfo imageInfo(lastRSVec[values->GetSelectedIndex()].Get());
+					JGui::AddRoundedImage(imageInfo, JGui::GetCursorScreenPos(), JGui::GetCursorScreenPos() + imageSize);
+					JGui::SetCursorPos(imagePos);
+					JGui::DrawRectFrame(JGui::GetCursorScreenPos(), imageSize, values->GetFrameColor(), Private::frameThickness, true);
+					JGui::SetCursorPos(imagePos + JVector2<float>(0, imageSize.y + textPadding.y));
 				}
 				else
-				{
-					JImGuiImpl::DrawRectFilledColor(ImGui::GetCursorScreenPos(), imageSize, JImGuiImpl::GetUColor(ImGuiCol_Button), false);
-					ImGui::SetCursorPos(imagePos);
-					JImGuiImpl::DrawRectFrame(ImGui::GetCursorScreenPos(), imageSize, Constants::frameThickness, values->GetFrameColor(), true);
-					ImGui::SetCursorPos(imagePos + JVector2<float>(0, imageSize.y + textPadding.y));
+				{ 
+					JGui::DrawRectFilledColor(JGui::GetCursorScreenPos(), imageSize, JGui::GetColor(J_GUI_COLOR::BUTTON), false);
+					JGui::SetCursorPos(imagePos);
+					JGui::DrawRectFrame(JGui::GetCursorScreenPos(), imageSize, values->GetFrameColor(), Private::frameThickness, true);
+					JGui::SetCursorPos(imagePos + JVector2<float>(0, imageSize.y + textPadding.y));
 				}
 			}
 			else
 			{
-				JImGuiImpl::DrawRectFilledColor(ImGui::GetCursorScreenPos(), imageSize, JImGuiImpl::GetUColor(ImGuiCol_Button), true);
-				JImGuiImpl::DrawRectFrame(ImGui::GetCursorScreenPos(), imageSize, Constants::frameThickness, values->GetFrameColor(), true);
+				JGui::DrawRectFilledColor(JGui::GetCursorScreenPos(), imageSize, JGui::GetColor(J_GUI_COLOR::BUTTON), true);
+				JGui::DrawRectFrame(JGui::GetCursorScreenPos(), imageSize, values->GetFrameColor(), Private::frameThickness, true);
 			}
 
 			auto pInfoOnScreen = [](const JVector2<float> padding, const std::string& guide, const std::string& info)
 			{
-				ImGui::SetCursorPosX(padding.x);
-				//ImGui::SetCursorPosY(ImGui::GetCursorPos().y + padding.y);
-				JImGuiImpl::Text(guide);
-				ImGui::SameLine();
-				JImGuiImpl::Text(info);
+				JGui::SetCursorPosX(padding.x);
+				//JGui::SetCursorPosY(ImGui::GetCursorPos().y + padding.y);
+				JGui::Text(guide);
+				JGui::SameLine();
+				JGui::Text(info);
 			};
 
 			JEditorTextAlignCalculator txtAlignCal;
 			if (info != nullptr)
 			{
 				const std::string path = JCUtil::WstrToU8Str(info->GetPath());
-				txtAlignCal.Update(path, JVector2<float>(JImGuiImpl::GetGuiWidnowContentsSize().x - textPadding.x * 2, 0), false);
+				txtAlignCal.Update(path, JVector2<float>(JGui::GetWindowContentsSize().x - textPadding.x * 2, 0), false);
 
 				pInfoOnScreen(textPadding, "Name: ", JCUtil::WstrToU8Str(info->GetName()));
 				pInfoOnScreen(textPadding, "Path: ", txtAlignCal.LeftAligned());
@@ -544,31 +612,31 @@ namespace JinEngine
 			}
 			else
 			{
-				txtAlignCal.Update("Please, select project", JImGuiImpl::GetGuiWidnowContentsSize(), false);
-				const float cursorPosY = (canvasSize.y - ImGui::GetCursorPosY()) / 2 + ImGui::GetCurrentContext()->FontSize / 2;
-				ImGui::SetCursorPosX(textPadding.x);
-				ImGui::SetCursorPosY(cursorPosY);
-				JImGuiImpl::Text(txtAlignCal.MiddleAligned());
+				txtAlignCal.Update("Please, select project", JGui::GetWindowContentsSize(), false);
+				const float cursorPosY = (canvasSize.y - JGui::GetCursorPosY()) / 2 + JGui::GetFontSize() * 0.5f;
+				JGui::SetCursorPosX(textPadding.x);
+				JGui::SetCursorPosY(cursorPosY);
+				JGui::Text(txtAlignCal.MiddleAligned());
 			}
-			JImGuiImpl::EndChildWindow();
-			ImGui::SetWindowFontScale(1);
+			JGui::EndChildWindow();
+			JGui::SetCurrentWindowFontScale(1);
 		}
 		void JProjectSelectorHub::GuideButtonOnScreen()
 		{
-			ImGui::SetWindowFontScale(0.9f);
-			const JVector2<float> wndSize = JImGuiImpl::GetGuiWidnowContentsSize();
-			const JVector2<float> alphabetSize = CreateVec2(ImGui::GetCurrentContext()->FontSize);
-			const JVector2<float> btnSize = JVector2<float>(wndSize.x * Constants::buttonWidthRate, alphabetSize.y * Constants::buttonHeightRate);
-			const JVector2<float> btnSpacing = wndSize * Constants::buttonSpacingRate;
+			JGui::SetCurrentWindowFontScale(0.9f);
+			const JVector2<float> wndSize = JGui::GetWindowContentsSize();
+			const JVector2<float> alphabetSize = CreateVec2(JGui::GetFontSize());
+			const JVector2<float> btnSize = JVector2<float>(wndSize.x * Private::buttonWidthRate, alphabetSize.y * Private::buttonHeightRate);
+			const JVector2<float> btnSpacing = wndSize * Private::buttonSpacingRate;
 
 			const float listCanvasEndPosX = values->GetCanvasPos(J_PS_CANVAS::PROJECT_LIST).x + values->GetCanvasSize(J_PS_CANVAS::PROJECT_LIST).x;
 			const float detailCanvasEndPosX = values->GetCanvasPos(J_PS_CANVAS::PROJECT_DETAIL).x + values->GetCanvasSize(J_PS_CANVAS::PROJECT_DETAIL).x;
 
-			const float listBtnPosX = listCanvasEndPosX - Constants::pListButtonCount * (btnSize.x + btnSpacing.x) + btnSpacing.x;
+			const float listBtnPosX = listCanvasEndPosX - Private::pListButtonCount * (btnSize.x + btnSpacing.x) + btnSpacing.x;
 			const JVector2<float> listBtnPos = JVector2<float>(listBtnPosX, values->GetCanvasPos(J_PS_CANVAS::GUIDE_BUTTON).y);
 			const JVector2<float> listBtnSize = JVector2<float>(listCanvasEndPosX - listBtnPos.x, btnSize.y);
 
-			const float detailBtnPosX = detailCanvasEndPosX - Constants::pDetailButtonCount * (btnSize.x + btnSpacing.x) + btnSpacing.x;
+			const float detailBtnPosX = detailCanvasEndPosX - Private::pDetailButtonCount * (btnSize.x + btnSpacing.x) + btnSpacing.x;
 			const JVector2<float> detailBtnPos = JVector2<float>(detailBtnPosX, values->GetCanvasPos(J_PS_CANVAS::GUIDE_BUTTON).y);
 			const JVector2<float> detailBtnSize = JVector2<float>(detailCanvasEndPosX - detailBtnPos.x, btnSize.y);
 
@@ -580,12 +648,12 @@ namespace JinEngine
 				listBtnPos);
 
 			using GuidButtonPtr = void(*)(SelectorValues& value);
-			std::string pListBtnName[Constants::pListButtonCount]
+			std::string pListBtnName[Private::pListButtonCount]
 			{
 				"Create##ProjectSelector",
 				"Load##ProjectSelector"
 			};
-			GuidButtonPtr pListPtr[Constants::pListButtonCount]
+			GuidButtonPtr pListPtr[Private::pListButtonCount]
 			{
 				[](SelectorValues& value)
 				{
@@ -601,24 +669,24 @@ namespace JinEngine
 				},
 			};
 
-			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_Button);
-			for (uint i = 0; i < Constants::pListButtonCount; ++i)
+			JGui::PushColor(J_GUI_COLOR::BUTTON, JVector4F::Zero());
+			for (uint i = 0; i < Private::pListButtonCount; ++i)
 			{
 				btnAlignCal.SetNextContentsPosition();
-				JImGuiImpl::DrawRectFilledMultiColor(ImGui::GetCursorScreenPos(),
+				JGui::DrawRectFilledColor(JGui::GetCursorScreenPos(),
 					btnSize,
 					values->GetCanvasColor(),
-					values->GetCanvasDeltaColor(),
 					true);
-				JImGuiImpl::DrawRectFrame(ImGui::GetCursorScreenPos(),
+
+				JGui::DrawRectFrame(JGui::GetCursorScreenPos(),
 					btnSize,
-					Constants::frameThickness,
 					values->GetFrameColor(),
+					Private::frameThickness,
 					true);
-				if (JImGuiImpl::Button(pListBtnName[i], btnSize))
+				if (JGui::Button(pListBtnName[i], btnSize))
 					(*pListPtr[i])(*values);
 			}
-			JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
+			JGui::PopColor();
 			btnAlignCal.Update(detailBtnSize,
 				btnSize,
 				JVector2<float>(0, 0),
@@ -643,58 +711,59 @@ namespace JinEngine
 			};
 			 
 			if (values->GetSelectedIndex() == -1)
-				JImGuiImpl::DeActivateButtonColor();
+				JGui::PushButtonColorDeActSet();
 
 			btnAlignCal.SetNextContentsPosition();
 			if (values->GetSelectedIndex() == -1)
 			{
-				JImGuiImpl::DrawRectFilledColor(ImGui::GetCursorScreenPos(),
+				JGui::DrawRectFilledColor(JGui::GetCursorScreenPos(),
 					btnSize,
-					JImGuiImpl::GetUColor(ImGuiCol_Button),
+					JGui::GetColor(J_GUI_COLOR::BUTTON),
 					true);
 			}
 			else
 			{
-				JImGuiImpl::DrawRectFilledMultiColor(ImGui::GetCursorScreenPos(),
+				JGui::DrawRectFilledColor(JGui::GetCursorScreenPos(),
 					btnSize,
-					values->GetCanvasColor(),
-					values->GetCanvasDeltaColor(),
-					true);
+					values->GetCanvasColor(), 
+					true); 
 			}
-			JImGuiImpl::DrawRectFrame(ImGui::GetCursorScreenPos(),
+			JGui::DrawRectFrame(JGui::GetCursorScreenPos(),
 				btnSize,
-				Constants::frameThickness,
 				values->GetFrameColor(),
+				Private::frameThickness,
 				true);
 
-			JImGuiImpl::SetColor(JVector4<float>(0, 0, 0, 0), ImGuiCol_Button);
-			if (JImGuiImpl::Button(startBtnName, btnSize) && values->GetSelectedIndex() != -1)
+			JGui::PushColor(J_GUI_COLOR::BUTTON, JVector4F::Zero());
+			if (JGui::Button(startBtnName, btnSize) && values->GetSelectedIndex() != -1)
 				(*startPtr)(*values);
-			JImGuiImpl::SetColorToDefault(ImGuiCol_Button);
+			JGui::PopColor();
 
 			if (values->GetSelectedIndex() == -1)
-				JImGuiImpl::ActivateButtonColor();
+				JGui::PopButtonColorDeActSet();
 
-			ImGui::SetWindowFontScale(1);
+			JGui::SetCurrentWindowFontScale(1);
 		}
 		void JProjectSelectorHub::CreateNewProjectOnScreen()
 		{
-			ImGui::SetWindowFontScale(0.9f);
-			ImGui::SetNextWindowFocus();
-			ImGui::SetNextWindowSize(ImVec2(JWindow::GetClientWidth() * 0.7f, JWindow::GetClientHeight() * 0.6f));
-			if (JImGuiImpl::BeginWindow("Create New Project##Create Project Window" + GetName(), values->GetTriggerPtr(J_PS_TRIGGER::CREATE_PROJECT), Constants::guiWindowFlag))
+			JGui::SetCurrentWindowFontScale(0.9f);
+			JGui::SetNextWindowFocus();
+			JGui::SetNextWindowSize(JVector2F(JWindow::GetClientSize().x * 0.7f, JWindow::GetClientSize().y * 0.6f));
+			if (JGui::BeginWindow("Create New Project##Create Project Window" + GetName(), values->GetTriggerPtr(J_PS_TRIGGER::CREATE_PROJECT), Private::guiWindowFlag))
 			{
-				//ImGui::SetWindowFontScale(0.6f);
-				//ImGui::SetCursorPosY(JWindow::Instance().GetClientHeight() * 0.4f);
-				JImGuiImpl::Text("Project Name: ");
-				JImGuiImpl::InputText("##NameInput_ProjectSelector", values->GetNameHelper()->buff, values->GetNameHelper()->result, "Name...");
+				//JGui::SetCurrentWindowFontScale(0.6f);
+				//JGui::SetCursorPosY(JWindow::Instance().GetClientHeight() * 0.4f);
+				JGui::Text("Project Name: ");
+				JGui::InputText("##NameInput_ProjectSelector", values->GetNameHelper()->buff, values->GetNameHelper()->result, "Name...");
+				 
+				JGui::Text("Folder: ");
+				JGui::InputText("##PathInput_ProjectSelector", values->GetPathHelper()->buff, values->GetPathHelper()->result, "Path...", J_GUI_INPUT_TEXT_FLAG_READ_ONLY);
 
-				JImGuiImpl::Text("Folder: ");
-				JImGuiImpl::InputText("##PathInput_ProjectSelector", values->GetPathHelper()->buff, values->GetPathHelper()->result, "Path...", ImGuiInputTextFlags_ReadOnly);
+				JGui::SameLine();
+				const float iconSize = JGui::GetWindowSize().x * Private::searchIconWidthRate;
 
-				ImGui::SameLine();
-				const float iconSize = ImGui::GetWindowSize().x * Constants::searchIconWidthRate;
-				if (JImGuiImpl::ImageButton("##SearchDir_ProjectSelector", serachIconTexture.Get(), CreateVec2(iconSize)))
+				JGuiImageInfo imageInfo(serachIconTexture.Get());
+				if (JGui::ImageButton("##SearchDir_ProjectSelector", imageInfo, CreateVec2(iconSize)))
 				{
 					std::wstring dirPath;
 					if (JWindow::SelectDirectory(dirPath, L"please, select project location") && JWindow::HasStorageSpace(dirPath, necessaryCapacityMB))
@@ -705,9 +774,9 @@ namespace JinEngine
 					}
 				}
 
-				JImGuiImpl::Text("Version: ");
-				JImGuiImpl::ComboSet("##Create Project Window Version Combo", versionIndex, JApplicationEngine::GetAppVersion());
-				if (JImGuiImpl::Button("Create Proejct##Create Project Window"))
+				JGui::Text("Version: ");
+				JGui::ComboSet("##Create Project Window Version Combo", versionIndex, JApplicationEngine::GetAppVersion());
+				if (JGui::Button("Create Proejct##Create Project Window"))
 				{
 					if (!values->GetNameHelper()->result.empty() && !values->GetPathHelper()->result.empty())
 					{
@@ -722,9 +791,9 @@ namespace JinEngine
 						}
 					}
 				}
-				JImGuiImpl::EndWindow();
+				JGui::EndWindow();
 			}
-			ImGui::SetWindowFontScale(1);
+			JGui::SetCurrentWindowFontScale(1);
 		}
 		void JProjectSelectorHub::LoadProjectOnScreen()
 		{
@@ -762,27 +831,27 @@ namespace JinEngine
 				for (uint i = 0; i < innerTriggerCount; ++i)
 					values.SetTrigger((J_PS_TRIGGER)((uint)J_PS_TRIGGER::OPTION + i), value);
 			};
-
-			const JVector2<float> optWndSize = ImVec2(JWindow::GetClientWidth() * 0.2f, JWindow::GetClientHeight() * 0.6f);
+			 
+			const JVector2<float> optWndSize = JVector2F(JWindow::GetClientSize().x * 0.2f, JWindow::GetClientSize().y * 0.6f);
 			const JVector2<float> optWndPos = values->GetTitleIconPos(J_TITLE_ICON::OPTION_SETTING) - JVector2<float>(optWndSize.x, 0);
-			ImGui::SetNextWindowFocus();
-			ImGui::SetNextWindowPos(optWndPos);
-			ImGui::SetNextWindowSize(optWndSize);
-			if (JImGuiImpl::BeginWindow("Opttion##Create Project Window" + GetName(), values->GetTriggerPtr(J_PS_TRIGGER::OPTION), Constants::guiWindowFlag))
+			JGui::SetNextWindowFocus();
+			JGui::SetNextWindowPos(optWndPos);
+			JGui::SetNextWindowSize(optWndSize);
+			if (JGui::BeginWindow("Opttion##Create Project Window" + GetName(), values->GetTriggerPtr(J_PS_TRIGGER::OPTION), Private::guiWindowFlag))
 			{ 
-				ImGui::SetWindowFontScale(1.2f); 
-				ImGui::SetNextItemWidth(ImGui::GetWindowSize().x);
-				ImGui::Separator();
-				if (JImGuiImpl::Selectable("Credit##" + GetName()))
+				JGui::SetCurrentWindowFontScale(1.2f);
+				JGui::SetNextItemWidth(JGui::GetWindowSize().x);
+				JGui::Separator();
+				if (JGui::Selectable("Credit##" + GetName()))
 					values->SetNotTrigger(J_PS_TRIGGER::OPTION_CREDIT);
 
-				const bool isMouseClick = ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1);
-				if (isMouseClick && !JImGuiImpl::IsMouseInRect(ImGui::GetWindowPos(), ImGui::GetWindowSize()))
+				const bool isMouseClick = JGui::AnyMouseClicked(false);
+				if (isMouseClick && !JGui::IsMouseInRect(JGui::GetWindowPos(), JGui::GetWindowSize()))
 				{
 					values->SetTrigger(J_PS_TRIGGER::OPTION, false);
 					setInnerTrigger(*values, false);
 				} 
-				JImGuiImpl::EndWindow();
+				JGui::EndWindow();
 			}	 
 			if(!values->GetTrigger(J_PS_TRIGGER::OPTION))
 				setInnerTrigger(*values, false);
@@ -790,31 +859,31 @@ namespace JinEngine
 			if (values->GetTrigger(J_PS_TRIGGER::OPTION_CREDIT))
 			{
 				const std::string longStr = "Developed by jung jin woo";
-				const float blankWidth = ImGui::CalcTextSize(" ").x;
-				const float creditWndWidth = ImGui::CalcTextSize(longStr.c_str()).x + blankWidth * 2;
+				const float blankWidth = JGui::CalTextSize(" ").x;
+				const float creditWndWidth = JGui::CalTextSize(longStr.c_str()).x + blankWidth * 2;
 				const JVector2<float> creditWndSize = JVector2<float>(creditWndWidth, optWndSize.y * 0.5f);
 				const JVector2<float> creditWndPos = optWndPos - JVector2<float>(creditWndSize.x, 0);
-				ImGui::SetNextWindowPos(creditWndPos);
-				ImGui::SetNextWindowSize(creditWndSize);
+				JGui::SetNextWindowPos(creditWndPos);
+				JGui::SetNextWindowSize(creditWndSize);
 
-				if (JImGuiImpl::BeginWindow("Credit##Create Project Window" + GetName(), 
+				if (JGui::BeginWindow("Credit##Create Project Window" + GetName(),
 					values->GetTriggerPtr(J_PS_TRIGGER::OPTION_CREDIT), 
-					Constants::guiWindowFlag))
+					Private::guiWindowFlag))
 				{
-					ImGui::SetWindowFontScale(0.6f);
-					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + blankWidth);
-					JImGuiImpl::Text("Developed by jung jin woo");
-					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + blankWidth);
-					JImGuiImpl::Text("Years: 2021 - 2023");
-					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + blankWidth);
-					JImGuiImpl::Text("Email: flcl1501@naver.com");
-					JImGuiImpl::EndWindow();
+					JGui::SetCurrentWindowFontScale(0.6f);
+					JGui::SetCursorPosX(JGui::GetCursorPosX() + blankWidth);
+					JGui::Text("Developed by jung jin woo");
+					JGui::SetCursorPosX(JGui::GetCursorPosX() + blankWidth);
+					JGui::Text("Years: 2021 - 2023");
+					JGui::SetCursorPosX(JGui::GetCursorPosX() + blankWidth);
+					JGui::Text("Email: flcl1501@naver.com");
+					JGui::EndWindow();
 				}
 			}
-			ImGui::SetWindowFontScale(1);
+			JGui::SetCurrentWindowFontScale(1);
 		}
 		void JProjectSelectorHub::SetStartProjectProccess()
-		{
+		{ 
 			const std::wstring newProejctName = JCUtil::U8StrToWstr(JCUtil::EraseSideChar(values->GetNameHelper()->result, ' '));
 			const std::wstring newProejctPath = JCUtil::U8StrToWstr(JCUtil::EraseSideChar(values->GetPathHelper()->result, ' '))+ L"\\" + newProejctName;
 			std::vector<std::string> version = JApplicationEngine::GetAppVersion();
@@ -839,8 +908,8 @@ namespace JinEngine
 				std::wstring name;
 				std::wstring format;
 				JCUtil::DecomposeFilePath(path, folderPath, name, format);
-				 
-				JUserPtr<JFile> file = engineProjectRsFolder->GetDirectoryFile(name + format);
+
+				JUserPtr<JFile> file = engineProjectRsFolder->GetDirectoryFileByFullName(name, format);
 				if (file != nullptr)
 					lastRSVec[i] = JUserPtr<JTexture>::ConvertChild(file->TryGetResourceUser());
 				else
@@ -859,7 +928,7 @@ namespace JinEngine
 			}
 		}
 		void JProjectSelectorHub::DoSetOpen()noexcept
-		{
+		{ 
 			JEditorWindow::DoSetOpen();
 			serachIconTexture = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SEARCH_FOLDER_ICON);
 			optionSettingTexture = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::OPTION_SETTING);
@@ -868,12 +937,12 @@ namespace JinEngine
 		}
 		void JProjectSelectorHub::DoSetClose()noexcept
 		{
-			JEditorWindow::DoSetClose();
 			serachIconTexture.Clear();
 			optionSettingTexture.Clear();
 			//backgroundTexture.Clear();
 			lastRSVec.clear();
 			searchHelper->ClearInputBuffer();
+			JEditorWindow::DoSetClose();
 		}
 		void JProjectSelectorHub::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
 		{

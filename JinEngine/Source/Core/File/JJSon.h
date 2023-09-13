@@ -16,6 +16,17 @@ namespace JinEngine
 		public:
 			bool Load();
 			bool Store();
+		public:
+			template<typename Enum>
+			Enum LoadEnum(const std::string& label)
+			{
+				return (Enum)value[label].asInt();
+			}
+			template<typename Enum>
+			void StoreEnum(const std::string& label, Enum e)
+			{
+				value[label] = (int)e;
+			}
 		};
 	}
 }

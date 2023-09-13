@@ -1,8 +1,8 @@
 #include"JBBox.h"
 #include"JRay.h"
 #include"JDirectXCollisionEx.h"
-#include"../../Utility/JVectorExtend.h"
-#include"../../Utility/JMathHelper.h"   
+#include"../Math/JMathHelper.h"   
+#include"../Math/JVectorExtend.h"
 namespace JinEngine
 {
 	namespace Core
@@ -39,9 +39,7 @@ namespace JinEngine
 
 		JBBox::JBBox(const JVector3<float>& minP, const JVector3<float>& maxP)
 			:minP(minP), maxP(maxP)
-		{
-
-		}
+		{}
 		JBBox::JBBox(const DirectX::XMFLOAT3& minP, const DirectX::XMFLOAT3& maxP)
 			:minP(minP), maxP(maxP)
 		{}
@@ -57,7 +55,14 @@ namespace JinEngine
 		JBBox::~JBBox() {}
 		DirectX::BoundingBox JBBox::Convert()const noexcept
 		{  
-			return DirectX::BoundingBox(Center().ConvertXMF(), Extent().ConvertXMF());
+			return DirectX::BoundingBox(Center().ToXmF(), Extent().ToXmF());
+		}
+		void JBBox::Coners(_Out_ JVector3<float>(&outCorners)[8])const noexcept
+		{
+			XMFLOAT3 xmConer[8];
+			Convert().GetCorners(xmConer);
+			for(uint i = 0; i < 8; ++i)
+				outCorners[i] = xmConer[i];
 		}
 		JVector3<float> JBBox::Extent()const noexcept
 		{
@@ -70,6 +75,15 @@ namespace JinEngine
 		JVector3<float> JBBox::DistanceVector()const noexcept
 		{  
 			return maxP - minP;
+		}
+		float JBBox::DistancePoint(const uint p)const noexcept
+		{
+			if (p == 0)
+				return maxP.x - minP.x;
+			else if (p == 1)
+				return maxP.y - minP.y;
+			else
+				return maxP.z - minP.z;
 		}
 		float JBBox::Surface()const noexcept
 		{
@@ -85,6 +99,20 @@ namespace JinEngine
 				return 1;
 			else
 				return 2;
+		}
+		void JBBox::Lengthen(const JVector3<float>& length)
+		{
+			minP.x = JMathHelper::Min(minP.x - length.x, minP.x + length.x);
+			minP.y = JMathHelper::Min(minP.y - length.y, minP.y + length.y);
+			minP.z = JMathHelper::Min(minP.z - length.z, minP.z + length.z);
+
+			maxP.x = JMathHelper::Max(maxP.x - length.x, maxP.x + length.x);
+			maxP.y = JMathHelper::Max(maxP.y - length.y, maxP.y + length.y);
+			maxP.z = JMathHelper::Max(maxP.z - length.z, maxP.z + length.z);
+		}
+		bool JBBox::IsDistanceZero()const noexcept
+		{
+			return (maxP - minP) == JVector3<float>(0, 0, 0);
 		}
 		JBBox JBBox::Union(_In_ const JBBox& box, _In_ const DirectX::XMFLOAT3& point)noexcept
 		{

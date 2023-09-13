@@ -8,9 +8,7 @@
 #include<locale.h> 
 #include<vector>
 #include<unordered_map>
-
-struct ImGuiWindow;
-
+ 
 namespace JinEngine
 {
 	class JFile;
@@ -57,8 +55,7 @@ namespace JinEngine
 			JVector2<float> renameCursorPos;
 			JVector2<float> renameRectSize;
 		private:
-			float childWindowHeight = 0; 
-			std::wstring importFilePath; 
+			float childWindowHeight = 0;  
 		public:
 			JWindowDirectory(const std::string &name,
 				std::unique_ptr<JEditorAttribute> attribute,
@@ -92,7 +89,7 @@ namespace JinEngine
 		private:
 			void RequestMoveFile(const JUserPtr<JDirectory>& to, const JUserPtr<JObject>& obj);
 			void MoveFile(JUserPtr<JDirectory> to, JUserPtr<JObject> obj);
-		protected:
+		private:
 			void DoSetFocus()noexcept final;
 			void DoSetUnFocus()noexcept final;
 			void DoActivate()noexcept final;

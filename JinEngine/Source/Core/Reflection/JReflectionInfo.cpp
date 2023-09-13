@@ -2,13 +2,13 @@
 #include"JReflectionInfoPrivate.h"
 #include"JTypeInfo.h" 
 #include"JEnumInfo.h"
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 #include"../Time/JGameTimer.h"
+#include"../Utility/JCommonUtility.h"
 #include"../../Object/GameObject/JGameObject.h"
 #include"../../Object/Component/JComponent.h"
 #include"../../Object/Resource/JResourceObject.h"
 #include"../../Object/Resource/JResourceObjectHint.h"
-#include"../../Utility/JCommonUtility.h"
 #include<set>
 #include<vector>  
 #include<unordered_map>
@@ -254,7 +254,7 @@ namespace JinEngine
 
 		using TypeInterface = JReflectionInfoPrivate::TypeInterface; 
 		using EnumInterface = JReflectionInfoPrivate::EnumInterface;
-		using ApplicationInterface = JReflectionInfoPrivate::ApplicationInterface;
+		using MainAccess = JReflectionInfoPrivate::MainAccess;
 
 		void TypeInterface::AddType(JTypeInfo* newType)
 		{
@@ -266,15 +266,15 @@ namespace JinEngine
 			_JReflectionInfo::Instance().impl->AddEnum(newEnum);
 		}
 
-		void ApplicationInterface::Initialize()
+		void MainAccess::Initialize()
 		{
 			_JReflectionInfo::Instance().impl->Initialize();
 		}
-		void ApplicationInterface::Clear()
+		void MainAccess::Clear()
 		{
 			_JReflectionInfo::Instance().impl->Clear();
 		}
-		void ApplicationInterface::Update()
+		void MainAccess::Update()
 		{
 			_JReflectionInfo::Instance().impl->Update();
 		}

@@ -5,8 +5,9 @@ namespace JinEngine
 {
 	namespace Graphic
 	{
-		class JGraphic;
-		class JHZBOccCulling;
+		class JGraphic; 
+		class JGraphicShaderDataHandler;
+		class JComputeShaderDataHandler;
 	}
 	class JShader;
 	class JShaderPrivate final : public JResourceObjectPrivate
@@ -34,7 +35,8 @@ namespace JinEngine
 		{
 		private:
 			friend class Graphic::JGraphic;
-			friend class Graphic::JHZBOccCulling;
+			friend class Graphic::JGraphicShaderDataHandler;
+			friend class Graphic::JComputeShaderDataHandler;
 		private:
 			static void RecompileGraphicShader(JShader* shader)noexcept;
 			static void RecompileComputeShader(JShader* shader)noexcept;

@@ -1,7 +1,7 @@
 #pragma once 
 #include"JFSMparameterValueType.h"
 #include"../File/JFileIOResult.h"
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 #include<string>
 #include<vector>
 

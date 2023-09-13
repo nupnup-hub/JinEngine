@@ -1,6 +1,6 @@
 #include"JEnumInitializer.h"
-#include"../JDataType.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../JCoreEssential.h"
+#include"../Utility/JCommonUtility.h"
 #include<algorithm>
 
 namespace JinEngine

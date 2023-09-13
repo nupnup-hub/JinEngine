@@ -8,14 +8,22 @@ namespace JinEngine
 		{
 			return isActivated;
 		}
+		bool JActivatedInterface::CanActivate() const noexcept
+		{
+			return true;
+		}
+		bool JActivatedInterface::CanDeActivate() const noexcept
+		{
+			return true;
+		}
 		void JActivatedInterface::Activate() noexcept
 		{
-			if (!isActivated)
+			if (!IsActivated() && CanActivate())
 				DoActivate();
 		}
 		void JActivatedInterface::DeActivate()noexcept
 		{
-			if (isActivated)
+			if (IsActivated() && CanDeActivate())
 				DoDeActivate();
 		}
 		void JActivatedInterface::DoActivate() noexcept

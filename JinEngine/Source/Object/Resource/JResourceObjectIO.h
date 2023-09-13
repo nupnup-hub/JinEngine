@@ -27,7 +27,7 @@ namespace JinEngine
 		void LoadProjectResourceFile(const JUserPtr<JDirectory>& projectRootDir);
 		void LoadProjectLastOpendScene(const JUserPtr<JDirectory>& projectRootDir);
 	private:
-		void SearchDirectory(const JUserPtr<JDirectory>& parentDir, const bool searchProjectFolder, const bool onlyDeafultFolder, const J_OBJECT_FLAG dirFlag);
+		void SearchDirectory(const JUserPtr<JDirectory>& parentDir, const bool searchProjectFolder, const bool onlyDeafultFolder, const J_OBJECT_FLAG subDirFlag);
 		void SearchFile (const J_RESOURCE_TYPE rType, const JUserPtr<JDirectory>& directory, const bool canLoadResource);
 	private:
 		void LoadFile(const J_RESOURCE_TYPE rType, const JUserPtr<JDirectory>& directory, const std::wstring& fileName, const bool canLoadResource);

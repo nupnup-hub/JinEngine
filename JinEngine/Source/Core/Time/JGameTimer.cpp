@@ -2,7 +2,7 @@
 // GameTimer.cpp by Frank Luna (C) 2011 All Rights Reserved.
 //***************************************************************************************
 #include "JGameTimer.h"
-#include"../Guid/JGuidCreator.h"
+#include"../Guid/JGuidCreator.h" 
 #include <windows.h>
 #include<string>
 #include <chrono>  
@@ -177,7 +177,7 @@ namespace JinEngine
 				mspf = 1000.0f / fps;			 
 				frameCnt = 0;
 				timeElapsed += 1.0f;
-			}
+			} 
 		}
 	}
 }

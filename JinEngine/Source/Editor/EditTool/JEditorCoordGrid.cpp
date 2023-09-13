@@ -1,5 +1,5 @@
 #include"JEditorCoordGrid.h"
-#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../Gui/JGui.h"
 #include"../../Core/Identity/JIdenCreator.h"
 #include"../../Object/GameObject/JGameObject.h" 
 #include"../../Object/GameObject/JGameObjectCreator.h" 
@@ -11,7 +11,7 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		namespace Constants
+		namespace Private
 		{
 			static constexpr float zoomRateRange = 75;
 
@@ -27,8 +27,8 @@ namespace JinEngine
 		{
 			static int ModifyLineCount(int newLineCount, const int preLineCount) noexcept
 			{
-				newLineCount = std::clamp(newLineCount, Constants::minLineCount, Constants::maxLineCount);
-				if (newLineCount == Constants::minLineCount || newLineCount == Constants::maxLineCount)
+				newLineCount = std::clamp(newLineCount, Private::minLineCount, Private::maxLineCount);
+				if (newLineCount == Private::minLineCount || newLineCount == Private::maxLineCount)
 					return newLineCount;
 
 				if (newLineCount < preLineCount)
@@ -45,38 +45,36 @@ namespace JinEngine
 		}
 		void JEditorGuiCoordGrid::Update()
 		{
-			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows | ImGuiFocusedFlags_DockHierarchy))
+			if (JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW | J_GUI_FOCUS_FLAG_DOCK_HIERARCHY))
 			{
-				if (ImGui::IsMouseDown(2))
+				if (JGui::IsMouseDown(Core::J_MOUSE_BUTTON::MIDDLE))
 				{
 					const float halfCanvas = gridSize * 0.5f;
-					mouseOffset = mouseOffset + (ImGui::GetMousePos() - preMousePos);
+					mouseOffset = mouseOffset + (JGui::GetMousePos() - preMousePos);
 					mouseOffset.x = std::clamp(mouseOffset.x, -halfCanvas, halfCanvas);
 					mouseOffset.y = std::clamp(mouseOffset.y, -halfCanvas, halfCanvas);
 				}
-				zoom += ImGui::GetIO().MouseWheel;
+				zoom += JGui::GetMouseWheel();
 				zoom = std::clamp(zoom, minZoom, maxZoom);
 			}
-			preMousePos = ImGui::GetMousePos();
-			preWheelPos = ImGui::GetIO().MouseWheel;
-			ImGui::Text((std::to_string(mouseOffset.x) + "_" + std::to_string(mouseOffset.y)).c_str());
+			preMousePos = JGui::GetMousePos();
+			preWheelPos = JGui::GetMouseWheel();
+			JGui::Text((std::to_string(mouseOffset.x) + "_" + std::to_string(mouseOffset.y)));
 		}
 		void JEditorGuiCoordGrid::Draw()
 		{
-			ImVec2 canvasP0 = ImGui::GetCursorScreenPos();
-			ImVec2 canvasSz = ImGui::GetContentRegionAvail();
+			JVector2<uint> canvasP0 = JGui::GetCursorScreenPos();
+			JVector2<uint> canvasSz = JGui::GetRestWindowContentsSize();
 			if (canvasSz.x < 50.0f) canvasSz.x = 50.0f;
 			if (canvasSz.y < 50.0f) canvasSz.y = 50.0f;
-			ImVec2 canvasP1 = ImVec2(canvasP0.x + canvasSz.x, canvasP0.y + canvasSz.y);
-
-			ImDrawList* drawList = ImGui::GetWindowDrawList();
-			drawList->PushClipRect(canvasP0, canvasP1, true);
-
+			JVector2<uint> canvasP1(canvasP0.x + canvasSz.x, canvasP0.y + canvasSz.y);
+			 
+			JGui::PushClipRect(canvasP0, canvasP1, true);
 			const float GRID_STEP = lineCount * GetZoomRate();
 			for (float x = fmodf(mouseOffset.x, GRID_STEP); x < canvasSz.x; x += GRID_STEP)
-				drawList->AddLine(ImVec2(canvasP0.x + x, canvasP0.y), ImVec2(canvasP0.x + x, canvasP1.y), IM_COL32(200, 200, 200, 40), 2.0f);
+				JGui::AddLine(JVector2F(canvasP0.x + x, canvasP0.y), JVector2F(canvasP0.x + x, canvasP1.y), JVector4F(0.8f, 0.8f, 0.8f, 0.15f), 2.0f);
 			for (float y = fmodf(mouseOffset.y, GRID_STEP); y < canvasSz.y; y += GRID_STEP)
-				drawList->AddLine(ImVec2(canvasP0.x, canvasP0.y + y), ImVec2(canvasP1.x, canvasP0.y + y), IM_COL32(200, 200, 200, 40), 2.0f);
+				JGui::AddLine(JVector2F(canvasP0.x, canvasP0.y + y), JVector2F(canvasP1.x, canvasP0.y + y), JVector4F(0.8f, 0.8f, 0.8f, 0.15f), 2.0f);
 		}
 		JVector2<float> JEditorGuiCoordGrid::GetMouseOffset()const noexcept
 		{
@@ -99,11 +97,11 @@ namespace JinEngine
 		}
 		void JEditorGuiCoordGrid::SetMaxZoomRate(const float newMaxZoom)noexcept
 		{
-			maxZoom = std::clamp(newMaxZoom, 0.0f, Constants::zoomRateRange);
+			maxZoom = std::clamp(newMaxZoom, 0.0f, Private::zoomRateRange);
 		}
 		void JEditorGuiCoordGrid::SetMinZoomRate(const float newMinZoom)noexcept
 		{
-			minZoom = std::clamp(-newMinZoom, -Constants::zoomRateRange, 0.0f);
+			minZoom = std::clamp(-newMinZoom, -Private::zoomRateRange, 0.0f);
 		}
 
 		void JEditorSceneCoordGrid::MakeCoordGrid(const JUserPtr<JGameObject>& parent)
@@ -121,9 +119,9 @@ namespace JinEngine
 					false);
 
 				JUserPtr<JTransform> transform = newLine->GetTransform();
-				transform->SetRotation(DirectX::XMFLOAT3(90, 0, 0));
-				transform->SetPosition(DirectX::XMFLOAT3(posFactor + (i * lineStep), 0, 0));
-				transform->SetScale(DirectX::XMFLOAT3(1, lineScale, 1));
+				transform->SetRotation(JVector3<float>(90, 0, 0));
+				transform->SetPosition(JVector3<float>(posFactor + (i * lineStep), 0, 0));
+				transform->SetScale(JVector3<float>(1, lineScale, 1));
 			}
 			for (int i = 0; i < lineCount; ++i)
 			{
@@ -133,9 +131,9 @@ namespace JinEngine
 					J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK,
 					false);
 				JUserPtr<JTransform>transform = newLine->GetTransform();
-				transform->SetRotation(DirectX::XMFLOAT3(0, 0, 90));
-				transform->SetPosition(DirectX::XMFLOAT3(0, 0, posFactor + (i * lineStep)));
-				transform->SetScale(DirectX::XMFLOAT3(1, lineScale, 1));
+				transform->SetRotation(JVector3<float>(0, 0, 90));
+				transform->SetPosition(JVector3<float>(0, 0, posFactor + (i * lineStep)));
+				transform->SetScale(JVector3<float>(1, lineScale, 1));
 			}
 		}
 		void JEditorSceneCoordGrid::Clear()
@@ -159,7 +157,7 @@ namespace JinEngine
 
 			if (xNowMovedFactor != xPreMovedFactor || zNowMovedFactor != zPreMovedFactor)
 			{
-				transform->SetPosition(DirectX::XMFLOAT3((float)(xNowMovedFactor * lineStep), 0.0f,
+				transform->SetPosition(JVector3<float>((float)(xNowMovedFactor * lineStep), 0.0f,
 					(float)(zNowMovedFactor * lineStep)));
 			}
 		}
@@ -173,19 +171,19 @@ namespace JinEngine
 		}
 		int JEditorSceneCoordGrid::GetMinLineCount()const noexcept
 		{
-			return Constants::minLineCount;
+			return Private::minLineCount;
 		}
 		int JEditorSceneCoordGrid::GetMinLineStep()const noexcept
 		{
-			return Constants::minLineStep;
+			return Private::minLineStep;
 		}
 		int JEditorSceneCoordGrid::GetMaxLineCount()const noexcept
 		{
-			return Constants::maxLineCount;
+			return Private::maxLineCount;
 		}
 		int JEditorSceneCoordGrid::GetMaxLineStep()const noexcept
 		{
-			return Constants::maxLineStep;
+			return Private::maxLineStep;
 		}
 		void JEditorSceneCoordGrid::SetLineCount(const int value)noexcept
 		{
@@ -218,21 +216,21 @@ namespace JinEngine
 				const uint rowOffset = children.size() / 2;
 
 				for (int i = 0; i < lineCount; ++i)
-					children[i]->GetTransform()->SetPosition(DirectX::XMFLOAT3(posFactor + (i * lineStep), 0, 0));
+					children[i]->GetTransform()->SetPosition(JVector3<float>(posFactor + (i * lineStep), 0, 0));
 				for (int i = 0; i < lineCount; ++i)
-					children[i + rowOffset]->GetTransform()->SetPosition(DirectX::XMFLOAT3(0, 0, posFactor + (i * lineStep)));
+					children[i + rowOffset]->GetTransform()->SetPosition(JVector3<float>(0, 0, posFactor + (i * lineStep)));
 			}
 			SetLineScale();
 		}
 		void JEditorSceneCoordGrid::SetLineScale()noexcept
 		{
 			int newLineScale = lineCount * lineStep;
-			lineScale = std::clamp(newLineScale, Constants::minLineScale, Constants::maxLineScale);
+			lineScale = std::clamp(newLineScale, Private::minLineScale, Private::maxLineScale);
 			if (coordGrid != nullptr)
 			{
 				auto children = coordGrid->GetChildren();
 				for (const auto& data : children)
-					data->GetTransform()->SetScale(DirectX::XMFLOAT3(1, lineScale, 1));
+					data->GetTransform()->SetScale(JVector3<float>(1, lineScale, 1));
 			}
 		}
 		bool JEditorSceneCoordGrid::HasCoordGrid()const noexcept

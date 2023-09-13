@@ -3,7 +3,7 @@
 #include"JModule.h"
 #include"JModulePrivate.h"
 #include"JModuleIntializer.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 #include<vector>
 #include<unordered_map>
  
@@ -57,6 +57,7 @@ namespace JinEngine::Core
 			 
 			moduleMap.emplace(guid, newMod);
 			moduleVec.push_back(std::move(newMod));
+			return true;
 		}
 		bool RemoveModule(const size_t guid)
 		{
@@ -65,7 +66,7 @@ namespace JinEngine::Core
 				return false;
 
 			moduleMap.erase(guid);
-			int index = JCUtil::GetJIndex(moduleVec, &IsSame, guid);
+			int index = JCUtil::GetIndex(moduleVec, &IsSame, guid);
 			moduleVec.erase(moduleVec.begin() + index);
 			return true;
 		}
@@ -152,9 +153,9 @@ namespace JinEngine::Core
 		impl.reset();
 	}
 
-	using AppInterface = JModuleManagerPrivate::AppInterface;
+	using MainAccess = JModuleManagerPrivate::MainAccess;
 	 
-	void AppInterface::Clear()
+	void MainAccess::Clear()
 	{
 		_JModuleManager::Instance().impl->Clear();
 	}

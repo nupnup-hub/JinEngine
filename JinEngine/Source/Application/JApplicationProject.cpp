@@ -2,7 +2,7 @@
 #include"JApplicationProjectPrivate.h"  
 #include"JApplicationEngine.h"
 #include"JApplicationEnginePrivate.h"
-#include"../Core/JDataType.h"
+#include"../Core/JCoreEssential.h"
 #include"../Core/File/JFileIOHelper.h"
 #include"../Core/Guid/JGuidCreator.h"
 #include"../Core/Module/JModuleManager.h"
@@ -10,7 +10,7 @@
 #include"../Core/Script/JCplusScriptCreator.h"
 #include"../Core/Binary/JEngineTool.h"
 #include"../Core/Platform/JPlatformInfo.h"
-#include"../Utility/JCommonUtility.h"
+#include"../Core/Utility/JCommonUtility.h"
 #include<Windows.h> 
 #include <direct.h>	 
 #include<fstream>  
@@ -24,7 +24,7 @@ namespace JinEngine
 	{
 		namespace
 		{
-			using AppAccess = JApplicationProjectPrivate::AppAccess;
+			using MainAccess = JApplicationProjectPrivate::MainAccess;
 			using LifeInterface = JApplicationProjectPrivate::LifeInterface;
 			using IOInterface = JApplicationProjectPrivate::IOInterface;
 		}
@@ -189,6 +189,15 @@ namespace JinEngine
 				if (p == nullptr)
 					MessageBox(0, L"Fail add plugin", 0, 0);
 			}
+
+			static void DestroyProjectPreviewAsset(const std::wstring& ddsPath, const bool destroyDDs)
+			{
+				if (destroyDDs)
+					_wremove(ddsPath.c_str());
+
+				_wremove((JCUtil::GetPathWithOutFormat(ddsPath) + L".jAsset").c_str());
+				_wremove((JCUtil::GetPathWithOutFormat(ddsPath) + L".jAssetMeta").c_str());
+			}
 		}
 
 		using LoadProjectF = JApplicationProjectPrivate::LoadProjectF;
@@ -217,7 +226,7 @@ namespace JinEngine
 		public:
 			std::wstring ProjectVersionFilePath()noexcept
 			{
-				return JApplicationProject::SettingPath() + L"\\" + L"ProjectVersion.txt";
+				return JApplicationProject::ConfigPath() + L"\\" + L"ProjectVersion.txt";
 			}
 		public:
 			void SetProjectFolderPath(const std::wstring& projectName, const std::wstring& projectPath)
@@ -254,9 +263,8 @@ namespace JinEngine
 				return isValidVersion;
 			}
 			bool IsValidPath(const std::wstring& projectPath)noexcept
-			{
-				const std::wstring projectVersionFilePath = projectPath + L"\\" + L"ProjectSetting" + L"\\" + L"ProjectVersion.txt";
-				return _waccess(projectVersionFilePath.c_str(), 00) != -1;
+			{   
+				return _waccess(ProjectVersionFilePath().c_str(), 00) != -1;
 			}
 			bool CanStartProject()noexcept
 			{
@@ -271,7 +279,7 @@ namespace JinEngine
 			{
 				auto defulatFolderPathVec = JApplicationProject::GetDefaultFolderPath();
 				for (const auto& data : defulatFolderPathVec)
-				{
+				{ 
 					if (_waccess(data.c_str(), 00) == -1)
 					{
 						if (_wmkdir(data.c_str()) == -1)
@@ -379,9 +387,11 @@ namespace JinEngine
 			void CloseProject()noexcept
 			{
 				bool (*ptr)(JApplicationProjectInfo*, size_t) = [](JApplicationProjectInfo* a, size_t guid) {return a->GetGuid() == guid; };
-				int index = JCUtil::GetJIndex(projectList, ptr, JApplicationProject::GetOpenProjectInfo()->GetGuid());
+				int index = JCUtil::GetIndex(projectList, ptr, JApplicationProject::GetOpenProjectInfo()->GetGuid());
 				projectList[index] = std::move(MakeProjectInfo(projectList[index].get()));
 				StoreProjectList();
+				//for update new preview image
+				DestroyProjectPreviewAsset(projectList[index]->lastRsPath(), false);
 			}
 		public:
 			void RegisterFunctor(std::unique_ptr<LoadProjectF>&& newLoadProjectF,
@@ -410,10 +420,15 @@ namespace JinEngine
 						projectList.emplace_back(MakeProjectInfo(nextProjectInfo.get()));
 					else
 					{
-						bool (*ptr)(JApplicationProjectInfo*, std::wstring) = [](JApplicationProjectInfo* a, std::wstring path) {return a->GetPath() == path; };
-						int index = JCUtil::GetJIndex(projectList, ptr, nextProjectInfo->GetPath());
+						bool (*ptr)(JApplicationProjectInfo*, std::wstring*) = [](JApplicationProjectInfo* a, std::wstring* path)
+						{  
+							return a->GetPath() == *path;
+						};
+						auto str = nextProjectInfo->GetPath();
+						int index = JCUtil::GetIndex(projectList, ptr,  &str);
+						//<JApplicationProjectInfo, const std::wstring&>
 						projectList[index] = std::move(MakeProjectInfo(nextProjectInfo.get()));
-					}
+					} 
 					StoreProjectList();
 					(*setAppStateF)(J_APPLICATION_STATE::EDIT_GAME);
 				}
@@ -544,10 +559,14 @@ namespace JinEngine
 						JFileIOHelper::LoadJString(stream, version);
 						Core::JRealTime::JTime createTime = LoadJTime(stream);
 						Core::JRealTime::JTime lastUpdateTime = LoadJTime(stream);
+ 
 						if (_waccess(path.c_str(), 00) == 0)
 							projectList.emplace_back(std::make_unique<JApplicationProjectInfo>(guid, name, path, version, createTime, lastUpdateTime));
 						else
-							_wremove(JApplicationProjectInfo::CombineLastRsPath(guid).c_str());
+						{ 
+							std::wstring ddsPath = JApplicationProjectInfo::CombineLastRsPath(guid);
+							DestroyProjectPreviewAsset(ddsPath.c_str(), true);
+						}
 					}
 				}
 			}
@@ -596,13 +615,13 @@ namespace JinEngine
 		{
 			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + L"Content";
 		}
-		std::wstring JApplicationProject::SettingPath()noexcept
+		std::wstring JApplicationProject::DocumentPath()noexcept
 		{
-			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + L"Setting";
+			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + L"Document";
 		}
-		std::wstring JApplicationProject::LogPath()noexcept
+		std::wstring JApplicationProject::ConfigPath()noexcept
 		{
-			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + L"Log";
+			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + L"Config";
 		}
 		std::wstring JApplicationProject::ProjectResourcePath()noexcept
 		{
@@ -625,15 +644,19 @@ namespace JinEngine
 		{
 			return ContentsPath() + L"\\" + L"Resource";
 		}
-		//Setting
-		std::wstring JApplicationProject::EditorSettingPath()noexcept
-		{
-			return SettingPath() + L"\\" + L"Editor";
-		}
 		//Log
-		std::wstring JApplicationProject::ProjectLogPath()noexcept
+		std::wstring JApplicationProject::LogPath()noexcept
 		{
-			return LogPath() + L"\\" + L"ProjectLog";
+			return DocumentPath() + L"\\Log";
+		}
+		std::wstring JApplicationProject::DevelopLogPath()noexcept
+		{
+			return LogPath() + L"\\DevelopLog";
+		}
+		//Config
+		std::wstring JApplicationProject::EditoConfigPath()noexcept
+		{
+			return ConfigPath() + L"\\" + L"Editor";
 		}
 		//VersionFile
 		std::wstring JApplicationProject::ProjectVersionFilePath()noexcept
@@ -698,16 +721,17 @@ namespace JinEngine
 			{
 				JApplicationProjectImpl::Instance().activatedProjectPath,
 					ContentsPath(),
-					SettingPath(),
-					LogPath(),
+					DocumentPath(),
+					ConfigPath(),
 					ProjectResourcePath(),
 					BinaryPath(),
 					SolutionPath(),
 					ShaderMetafilePath(),
 					DefaultResourcePath(),
 					ModResourceCachePath(),
-					EditorSettingPath(),
-					ProjectLogPath(),
+					EditoConfigPath(),
+					LogPath(),
+					DevelopLogPath(),
 					ContentScenePath(),
 					ContentResourcePath(),
 					ProjectBinaryPath(),
@@ -732,33 +756,33 @@ namespace JinEngine
 			}
 			return false;
 		}
-		void AppAccess::RegisterFunctor(std::unique_ptr<LoadProjectF>&& loadF,
+		void MainAccess::RegisterFunctor(std::unique_ptr<LoadProjectF>&& loadF,
 			std::unique_ptr<StoreProjectF>&& storeF,
 			std::unique_ptr<SetAppStateF>&& setStateF)
 		{
 			JApplicationProjectImpl::Instance().RegisterFunctor(std::move(loadF), std::move(storeF), std::move(setStateF));
 		}
-		bool AppAccess::Initialize()
+		bool MainAccess::Initialize()
 		{
 			return JApplicationProjectImpl::Instance().Initialize();
 		}
-		void AppAccess::BeginLoadOtherProject()noexcept
+		void MainAccess::BeginLoadOtherProject()noexcept
 		{
 			JApplicationProjectImpl::Instance().BeginLoadOtherProject();
 		}
-		void AppAccess::BeginCloseProject()noexcept
+		void MainAccess::BeginCloseProject()noexcept
 		{
 			JApplicationProjectImpl::Instance().BeginCloseProject();
 		}
-		void AppAccess::CloseProject()noexcept
+		void MainAccess::CloseProject()noexcept
 		{
 			JApplicationProjectImpl::Instance().CloseProject();
 		}
-		bool AppAccess::CanStartProject()noexcept
+		bool MainAccess::CanStartProject()noexcept
 		{
 			return JApplicationProjectImpl::Instance().CanStartProject();
 		}
-		bool AppAccess::CanEndProject()noexcept
+		bool MainAccess::CanEndProject()noexcept
 		{
 			return JApplicationProjectImpl::Instance().CanEndProject();
 		}

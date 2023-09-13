@@ -1,11 +1,11 @@
 #include"JEditorSkeletonPage.h"
-#include"Window/JAvatarEditor.h" 
+#include"Window/JAvatarEditor.h"  
 #include"../JEditorPageShareData.h"
 #include"../JEditorAttribute.h"  
 #include"../CommonWindow/View/JSceneObserver.h"
 #include"../CommonWindow/Explorer/JObjectExplorer.h"
 #include"../CommonWindow/Detail/JObjectDetail.h"
-#include"../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
+#include"../../Gui/JGui.h"   
 #include"../../Menubar/JEditorMenuBar.h"
 #include"../../../Object/GameObject/JGameObject.h" 
 #include"../../../Object/Component/JComponentCreator.h"
@@ -16,7 +16,8 @@
 #include"../../../Object/Resource/Skeleton/JSkeletonAsset.h"   
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Identity/JIdenCreator.h"
-#include"../../../Application/JApplicationProject.h"
+#include"../../../Core/Math/JVectorExtend.h"
+#include"../../../Application/JApplicationProject.h" 
 
 namespace JinEngine
 {
@@ -25,8 +26,12 @@ namespace JinEngine
 		//const std::string& name, const size_t guid, const J_OBJECT_FLAG flag, std::unique_ptr<JEditorAttribute> attribute
 		JEditorSkeletonPage::JEditorSkeletonPage()
 			:JEditorPage("SkeletonAssetPage",
-				std::make_unique<JEditorAttribute>(),
-				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, J_EDITOR_PAGE_REQUIRE_INIT_OBJECT))
+				std::make_unique<JEditorAttribute>(),	
+				Core::AddSQValueEnum(J_EDITOR_PAGE_SUPPORT_DOCK, 
+					J_EDITOR_PAGE_SUPPORT_WINDOW_CLOSING, 
+					J_EDITOR_PAGE_SUPPORT_WINDOW_MAXIMIZE,
+					J_EDITOR_PAGE_SUPPORT_WINDOW_MINIMIZE,
+					J_EDITOR_PAGE_REQUIRE_INIT_OBJECT))
 		{
 			constexpr uint memberWindowCount = 4;
 			std::vector<std::string> windowNames
@@ -51,7 +56,7 @@ namespace JinEngine
 
 			J_EDITOR_WINDOW_FLAG defaultFlag = J_EDITOR_WINDOW_SUPPORT_WINDOW_CLOSING;
 			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(defaultFlag, J_EDITOR_WINDOW_SUPROT_DOCK);
-			
+
 			explorer = std::make_unique<JObjectExplorer>(windowNames[0], std::move(windowAttributes[0]), GetPageType(), dockFlag);
 			avatarEdit = std::make_unique<JAvatarEditor>(windowNames[1], std::move(windowAttributes[1]), GetPageType(), dockFlag);
 			avatarObserver = std::make_unique<JSceneObserver>(windowNames[2], std::move(windowAttributes[2]), GetPageType(), dockFlag, settingType);
@@ -64,7 +69,7 @@ namespace JinEngine
 				avatarObserver.get(),
 				avatarDetail.get()
 			};
-			AddWindow(windows);	
+			AddWindow(windows); 
 		}
 		JEditorSkeletonPage::~JEditorSkeletonPage()
 		{}
@@ -94,46 +99,41 @@ namespace JinEngine
 		}
 		void JEditorSkeletonPage::UpdatePage()
 		{
-			JImGuiImpl::SetFont(J_EDITOR_FONT_TYPE::MEDIUM);
-			JImGuiImpl::PushFont();
-
-			const ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f); 
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
 			if (setWndOptionOnce)
 			{
-				ImGui::SetNextWindowSize(viewport->WorkSize, ImGuiCond_Once);
-				ImGui::SetNextWindowPos(viewport->WorkPos, ImGuiCond_Once);
+				JGui::SetNextWindowSize(JGui::GetMainWorkSize(), J_GUI_CONDIITON_ONCE);
+				JGui::SetNextWindowPos(JGui::GetMainWorkPos(), J_GUI_CONDIITON_ONCE);
 				setWndOptionOnce = false;
 			}
- 
-			ImGuiDockNodeFlags dockspaceFlag = ImGuiDockNodeFlags_NoWindowMenuButton;
-			ImGuiWindowFlags guiWindowFlag = ImGuiWindowFlags_NoNavInputs |
-				ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar |
-				ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
-			
-			EnterPage(guiWindowFlag); 
-			const JVector2<float> pagePos = ImGui::GetWindowPos();
-			const JVector2<float> pageSize = ImGui::GetWindowSize();
+			//폰트 크기에 따라 페이지 윈도우 타이틀바에 사이즈가 달라진다.
+			//반드시 page enter전에 font를 변경한다.
+			JGui::SetFont(J_GUI_FONT_TYPE::MEDIUM);
+			JGui::PushFont();
 
+			//J_GUI_WINDOW_FLAG_ guiWindowFlag = J_GUI_WINDOW_FLAG_NO_NAV_INPUT |
+			//J_GUI_WINDOW_FLAG_NO_BACKGROUND | J_GUI_WINDOW_FLAG_MENU_BAR |
+			//J_GUI_WINDOW_FLAG_NO_TITLE_BAR | J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | J_GUI_WINDOW_FLAG_NO_COLLAPSE;
+
+			J_GUI_DOCK_NODE_FLAG_ dockspaceFlag = J_GUI_DOCK_NODE_FLAG_NO_WINDOW_MENU_BUTTON;
+			J_GUI_WINDOW_FLAG_ guiWindowFlag = J_GUI_WINDOW_FLAG_MENU_BAR | J_GUI_WINDOW_FLAG_NO_SCROLL_BAR |
+				J_GUI_WINDOW_FLAG_NO_COLLAPSE;
+
+			EnterPage(guiWindowFlag); 
+			const JVector2<float> pagePos = JGui::GetWindowPos();
+			const JVector2<float> pageSize = JGui::GetWindowSize();
 			if (HasDockNodeSpace())
 				UpdateDockSpace(dockspaceFlag);
 			else
 			{
 				BuildDockNode();
 				setWndOptionOnce = true;
-			}
-			menuBar->Update(true);
-			ClosePage(); 
-			 
-			UpdateOpenWindow();
-			UpdateOpenSimpleWindow();
+			} 
+			menuBar->Update(true); 
+			ClosePage();
 
-			JImGuiImpl::PopFont();
-			ImGui::PopStyleVar(2); 
-
-			UpdateOpenPopupWindow(pagePos, pageSize);
+			UpdateOpenWindow(); 
+			JGui::PopFont(); 
+			//UpdateOpenPopupWindow(pagePos, pageSize);
 		}
 		bool JEditorSkeletonPage::IsValidOpenRequest(const JUserPtr<Core::JIdentifier>& selectedObj)noexcept
 		{
@@ -148,20 +148,14 @@ namespace JinEngine
 			if (!newSkeletonAsset.ConnnectChild(selectedObj))
 				return false;
 
-			skeleotnAsset = newSkeletonAsset;
-			auto isSameSkelLam = [](JMeshGeometry* mesh, size_t skelHash)
-			{
-				if (mesh->GetMeshGeometryType() == J_MESHGEOMETRY_TYPE::SKINNED)
-				{
-					JSkinnedMeshGeometry* skinnedMesh = static_cast<JSkinnedMeshGeometry*>(mesh);
-					return skinnedMesh->IsActivated() && skinnedMesh->GetSkeletonAsset()->GetSkeletonHash()== skelHash;
-				}
-				else
-					return false;
-			};
-			using IsSameSkelFunctor = Core::JFunctor<bool, JMeshGeometry*, size_t>;
-			JUserPtr<JMeshGeometry> mesh = _JResourceManager::Instance().GetResourceByCondition<JMeshGeometry, size_t>(IsSameSkelFunctor{ isSameSkelLam }, skeleotnAsset->GetSkeletonHash());
-
+			skeleotnAsset = newSkeletonAsset; 
+			Core::JTypeInstanceSearchHint hint = skeleotnAsset->GetModelHint();
+			if (!hint.isValid)
+				return false;
+			
+			//현재 skeleton은 skinned mesh서 파생되어 owner는 모두 skinned mesh이지만
+			//미래에 skinned mesh이외에 skeleton을 파생할 수 있을경우 확인이 필요하다.
+			JUserPtr<JMeshGeometry> mesh = Core::ConvertChildUserPtr<JMeshGeometry>(_JResourceManager::Instance().TryGetResourceUser(skeleotnAsset->GetModelHint()));
 			if (mesh == nullptr)
 				return false;
 
@@ -175,7 +169,7 @@ namespace JinEngine
 				JScene::GetDefaultFormatIndex(),
 				dir,
 				J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW);
- 
+
 			JUserPtr<JGameObject> meshObj = JICI::Create<JGameObject>(mesh->GetName(), Core::MakeGuid(), flag, newScene->GetRootGameObject());
 			JCCI::CreateRenderItem(meshObj, mesh);
 
@@ -191,7 +185,7 @@ namespace JinEngine
 				{
 					const uint index = skeletonVec[i][j];
 					skeletonTree[index] = JICI::Create<JGameObject>(skeleotnAsset->GetJointName(index),
-						Core::MakeGuid(), 
+						Core::MakeGuid(),
 						flag,
 						skeletonTree[i]);
 				}
@@ -202,14 +196,14 @@ namespace JinEngine
 			avatarScene = newScene;
 			explorer->Initialize(meshObj);
 			avatarEdit->Initialize(skeleotnAsset);
-			avatarObserver->Initialize(avatarScene, L"Skeleton Edit Cam"); 
+			avatarObserver->Initialize(avatarScene, L"Skeleton Edit Cam");
 			return true;
 		}
 		void JEditorSkeletonPage::DoSetClose()noexcept
 		{
-			JEditorPage::DoSetClose();
 			if (avatarScene.IsValid())
 				JObject::BeginDestroy(avatarScene.Release());
+			JEditorPage::DoSetClose();
 		}
 		void JEditorSkeletonPage::DoActivate()noexcept
 		{
@@ -231,32 +225,14 @@ namespace JinEngine
 		}
 		void JEditorSkeletonPage::BuildDockNode()
 		{
-			//ImGui::Begin(GetName().c_str()); ImGui::End();
-			ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImGuiID dockspaceId = ImGui::GetID(GetDockNodeName().c_str());
-		 
-			ImGui::Begin(explorer->GetName().c_str()); ImGui::End();
-			ImGui::Begin(avatarEdit->GetName().c_str()); ImGui::End();
-			ImGui::Begin(avatarObserver->GetName().c_str()); ImGui::End();
-			ImGui::Begin(avatarDetail->GetName().c_str()); ImGui::End();
-
-			ImGui::DockBuilderRemoveNode(dockspaceId);
-			ImGui::DockBuilderAddNode(dockspaceId); 
-			ImGui::DockBuilderSetNodePos(dockspaceId, viewport->WorkPos);
-			ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->WorkSize);
-
-			ImGuiID dock_main = dockspaceId;
-			ImGuiID dockAvatarSceneEditor = ImGui::DockBuilderSplitNode(dock_main, ImGuiDir_Right, 1, &dock_main, &dock_main);
-			ImGuiID dockSkeletonExplorer = ImGui::DockBuilderSplitNode(dockAvatarSceneEditor, ImGuiDir_Left, 0.2f, nullptr, &dockAvatarSceneEditor);
-			ImGuiID dockAvatarEdit = ImGui::DockBuilderSplitNode(dockSkeletonExplorer, ImGuiDir_Down, 0.5f, nullptr, &dockSkeletonExplorer);
-			ImGuiID dockAvatarDetail = ImGui::DockBuilderSplitNode(dockAvatarSceneEditor, ImGuiDir_Right, 0.2f, nullptr, &dockAvatarSceneEditor);
-
-			ImGui::DockBuilderDockWindow(GetName().c_str(), dock_main);
-			ImGui::DockBuilderDockWindow(explorer->GetName().c_str(), dockSkeletonExplorer);
-			ImGui::DockBuilderDockWindow(avatarEdit->GetName().c_str(), dockAvatarEdit);
-			ImGui::DockBuilderDockWindow(avatarObserver->GetName().c_str(), dockAvatarSceneEditor);
-			ImGui::DockBuilderDockWindow(avatarDetail->GetName().c_str(), dockAvatarDetail);
-			ImGui::DockBuilderFinish(dockspaceId);
+			static constexpr int dockCount = 5;		//page(1) + window(4)
+			std::vector<std::unique_ptr<JGuiDockBuildNode>> dockVec(dockCount);
+			dockVec[0] = JGuiDockBuildNode::CreateRootNode(GetName(), GetDockNodeName());
+			dockVec[1] = JGuiDockBuildNode::CreateNode(avatarObserver->GetName(), 1, 0, J_GUI_CARDINAL_DIR::LEFT, 0.7f);
+			dockVec[2] = JGuiDockBuildNode::CreateNode(explorer->GetName(), 2, 0, J_GUI_CARDINAL_DIR::RIGHT, 0.3f);
+			dockVec[3] = JGuiDockBuildNode::CreateNode(avatarEdit->GetName(), 3, 1, J_GUI_CARDINAL_DIR::DOWN, 0.35f);
+			dockVec[4] = JGuiDockBuildNode::CreateNode(avatarDetail->GetName(), 4, 2, J_GUI_CARDINAL_DIR::DOWN, 0.5f);
+			JGui::BuildDockHirechary(dockVec);
 		}
 		void JEditorSkeletonPage::BuildMenuNode()
 		{
@@ -280,7 +256,7 @@ namespace JinEngine
 
 				auto openBind = std::make_unique<OpenEditorWindowF::CompletelyBind>(*GetOpenEditorWindowFunctorPtr(), *this, wndVec[i]->GetName());
 				auto closeBind = std::make_unique<CloseEditorWindowF::CompletelyBind>(*GetCloseEditorWindowFunctorPtr(), *this, wndVec[i]->GetName());
-				newNode->RegisterBindHandle(std::move(openBind), std::move(closeBind)); 
+				newNode->RegisterBindHandle(std::move(openBind), std::move(closeBind));
 				menuBar->AddNode(std::move(newNode));
 			}
 		}
@@ -292,7 +268,7 @@ namespace JinEngine
 			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 			{
 				if (skeleotnAsset.IsValid() && jRobj->GetGuid() == skeleotnAsset->GetGuid())
-				{  
+				{
 					skeleotnAsset.Clear();
 					if (avatarScene.IsValid())
 						JObject::BeginDestroy(avatarScene.Release());

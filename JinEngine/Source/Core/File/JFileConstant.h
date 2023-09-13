@@ -1,7 +1,7 @@
 #pragma once
 #include<string> 
 #include"../Reflection/JReflectionInfo.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
@@ -19,6 +19,7 @@ namespace JinEngine
 		public:
 			//can't combine
 			static std::wstring StreamObjGuidSymbol()noexcept;
+			static std::wstring StreamObjFlagSymbol()noexcept;
 			static std::wstring StreamTypeGuidSymbol()noexcept;
 			static std::wstring StreamHasObjGuidSymbol()noexcept;
 			static std::wstring StreamUncopiableGuidSymbol()noexcept;

@@ -1,9 +1,8 @@
 #include"JApplicationEngine.h" 
-#include"JApplicationEnginePrivate.h" 
-#include"JApplication.h"
-#include"../Core/JDataType.h"
+#include"JApplicationEnginePrivate.h"  
+#include"../Core/JCoreEssential.h"
 #include"../Core/File/JFileIOHelper.h"
-#include"../Utility/JCommonUtility.h"
+#include"../Core/Utility/JCommonUtility.h"
 #include<Windows.h> 
 #include <direct.h>	 
 #include<fstream>  
@@ -51,11 +50,23 @@ namespace JinEngine
 		} 
 		std::wstring JApplicationEngine::ResourcePath()
 		{
-			return Private::engineProjPath + L"\\EngineResource";
+			return Private::engineProjPath + L"\\Resource";
 		}
-		std::wstring JApplicationEngine::InfoPath()noexcept
+		std::wstring JApplicationEngine::DoucmentPath()noexcept
 		{
-			return Private::engineProjPath + L"\\EngineInfo";
+			return Private::engineProjPath + L"\\Document";
+		}
+		std::wstring JApplicationEngine::ProjectDocumentPath()noexcept
+		{
+			return DoucmentPath() + L"\\Project";
+		}
+		std::wstring JApplicationEngine::LogPath()noexcept
+		{
+			return DoucmentPath() + L"\\Log";
+		}
+		std::wstring JApplicationEngine::ConfigPath()noexcept
+		{
+			return Private::engineProjPath + L"\\Config";
 		}
 		std::wstring JApplicationEngine::DefaultResourcePath()noexcept
 		{
@@ -67,7 +78,7 @@ namespace JinEngine
 		}
 		std::wstring JApplicationEngine::ProjectListFilePath()noexcept
 		{
-			return InfoPath() + L"\\ProejctList.txt";
+			return ProjectDocumentPath() + L"\\ProejctList.txt";
 		}
 		std::wstring JApplicationEngine::ShaderPath()noexcept
 		{
@@ -112,8 +123,11 @@ namespace JinEngine
 					ResourcePath(),
 					DefaultResourcePath(),
 					ProjectLastRsPath(),
-					InfoPath(),
-					ShaderPath()
+					DoucmentPath(),
+					ProjectDocumentPath(),
+					LogPath(),
+					ShaderPath(),
+					ConfigPath()
 			};
 		}
 		std::string JApplicationEngine::GetDriveAlpha()noexcept
@@ -130,9 +144,9 @@ namespace JinEngine
 			}
 			return false;
 		}
-		using AppAccess = JApplicationEnginePrivate::AppAccess; 
+		using MainAccess = JApplicationEnginePrivate::MainAccess; 
 		 	 
-		void AppAccess::Initialize()
+		void MainAccess::Initialize()
 		{
 			TCHAR programpath[_MAX_PATH];
 			GetModuleFileName(NULL, programpath, _MAX_PATH);
@@ -157,7 +171,7 @@ namespace JinEngine
 
 			MakeEngineFolder();
 		}
-		bool AppAccess::MakeEngineFolder()
+		bool MainAccess::MakeEngineFolder()
 		{
 			auto defulatFolderPathVec = JApplicationEngine::GetDefaultFolderPath();
 			for (const auto& data : defulatFolderPathVec)
@@ -170,7 +184,7 @@ namespace JinEngine
 			}
 			return true;
 		}
-		void AppAccess::SetApplicationState(const J_APPLICATION_STATE newState)noexcept
+		void MainAccess::SetApplicationState(const J_APPLICATION_STATE newState)noexcept
 		{
 			Private::applicationState = newState;
 		}

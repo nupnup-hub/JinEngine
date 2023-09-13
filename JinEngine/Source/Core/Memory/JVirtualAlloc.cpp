@@ -6,8 +6,7 @@
 #include<Windows.h> 
 #include<string>
 #include<fstream>
-
-
+ 
 namespace JinEngine
 {
 	namespace Core
@@ -52,7 +51,6 @@ namespace JinEngine
 			:pageIndex(pageIndex), blockIndex(blockIndex)
 		{}
 
-
 		JVirtualAlloc::JVirtualAlloc()
 		{
 			auto osName = GetOsName();
@@ -70,7 +68,7 @@ namespace JinEngine
 			 
 			oriBlockSize = desc.dataSize;
 			allocBlockSize = oriBlockSize;
-			 
+
 			CalculatePageFitAllocationData(allocBlockSize, 
 				reservedBlockCount,
 				pageSize, 
@@ -102,7 +100,7 @@ namespace JinEngine
 		{  
 			if (reqSize < oriBlockSize)
 				return nullptr;
-
+  
 			const uint reqBlockCount = (uint)(reqSize / oriBlockSize);
 			if (!CanAllocate(reqBlockCount))
 			{	 
@@ -256,6 +254,10 @@ namespace JinEngine
 			else
 				return committedBlockCount - (useBlockCount + GetAllocableBlockCount());
 		}
+		size_t JVirtualAlloc::GetAlignedAllocBlockSize()const noexcept
+		{
+			return desc.alignDataSize;
+		}
 		JAllocationInfo JVirtualAlloc::GetInformation()const noexcept
 		{
 			JAllocationInfo info;
@@ -335,7 +337,7 @@ namespace JinEngine
 			return CalPtrLocation(blockIndex);
 		}
 		void JVirtualAlloc::UnUseBlock(const uint pageIndex, const uint blockIndex)noexcept
-		{
+		{ 
 			--useBlockCount; 
 			isUseBlock[blockIndex] = false;
 
@@ -355,7 +357,7 @@ namespace JinEngine
 		{
 			if (allocableBlockHead == nullptr)
 				return nullptr;
-
+			  
 			return UseBlock(allocableBlockHead->pageIndex, allocableBlockHead->blockIndex);
 		}
 		JVirtualAlloc::DataPointer JVirtualAlloc::CommitEmptyPage()
@@ -375,11 +377,12 @@ namespace JinEngine
 			}
 
 			if (apiInterface->Allocate((PVOID)((std::intptr_t)pData + CalPageSize(allocablePaegHead->pageIndex)), pageSize) == NULL)
-				return nullptr;
+				return nullptr;  
+
 			return UsePage(allocablePaegHead->pageIndex);
 		}
 		bool JVirtualAlloc::CompactUnuseMemory(const bool allowCompareBorder)
-		{
+		{ 
 			if (!CanCompactMemory(allowCompareBorder))
 				return false;
 
@@ -410,7 +413,9 @@ namespace JinEngine
 					isUseBlock[i] = true;
 					isUseBlock[movedBlockIndex] = false;
 					 
-					(*desc.notifyReAllocB)(emptyPtr, movedBlockIndex);
+					if (desc.notifyReAllocB != nullptr)
+						(*desc.notifyReAllocB)(emptyPtr, movedBlockIndex);
+					 
 					//if (desc.notifyDebugB != nullptr)
 					//	(*desc.notifyDebugB)(movedPtr, emptyPtr, i);
 				}
@@ -429,7 +434,7 @@ namespace JinEngine
 			return true;
 		}
 		void JVirtualAlloc::FreeUnuseMemory()
-		{
+		{ 
 			for (int64 i = lastAllocPageIndex; i >= 0; --i)
 			{
 				if (!isUsePage[i])
@@ -469,7 +474,7 @@ namespace JinEngine
 			}
 		}
 		bool JVirtualAlloc::Extend()
-		{
+		{ 
 			DataPointer exPData;
 			size_t exAllocSize = totalAllocSize * desc.extendFactor;
 
@@ -516,6 +521,7 @@ namespace JinEngine
 
 			allocablePaegHead = new PageInfo();
 			allocablePaegHead->pageIndex = preReservePageCount;
+			 
 			return true;
 		}
 	};

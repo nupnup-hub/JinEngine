@@ -1,6 +1,7 @@
 #pragma once
 #include"JReflectionMacro.h"
 #include"JTypeInfoRegister.h"
+#include"JReflectionInfo.h"
 
 namespace JinEngine
 {

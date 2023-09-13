@@ -7,8 +7,7 @@
 namespace JinEngine
 {
 	namespace Core
-	{
-		class JIdentifier;
+	{ 
 		class JLazyDestruction
 		{
 		private:

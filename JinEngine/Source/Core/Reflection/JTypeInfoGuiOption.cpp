@@ -2,6 +2,7 @@
 #include"JPropertyInfo.h"
 #include"JMethodInfo.h"
 #include"JGuiWidgetInfoHandle.h" 
+#include"../Pointer/JOwnerPtr.h"
 
 namespace JinEngine
 {

@@ -9,6 +9,7 @@ namespace JinEngine
 		{
 		public:
 			static Core::JTransition& Instance();
+			static std::string Name();
 		};
 	}
 } 

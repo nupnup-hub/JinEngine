@@ -1,13 +1,12 @@
 #pragma once   
 #include"../JResourceObject.h" 
 #include"JSceneType.h"
+#include"Accelerator/JAcceleratorType.h" 
+#include"Accelerator/Bvh/JBvhOption.h"
+#include"Accelerator/Octree/JOctreeOption.h"
+#include"Accelerator/Kd-tree/JKdTreeOption.h"
 #include"../../Component/JComponentType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"
-#include"../../../Core/SpaceSpatial/JSpaceSpatialType.h"
-#include"../../../Core/SpaceSpatial/JSpaceSpatialSortType.h"
-#include"../../../Core/SpaceSpatial/Bvh/JBvhOption.h"
-#include"../../../Core/SpaceSpatial/Octree/JOctreeOption.h"
-#include"../../../Core/SpaceSpatial/Kd-tree/JKdTreeOption.h"
 #include<memory>
 #include<vector>  
 #include<DirectXCollision.h>
@@ -16,6 +15,7 @@ namespace JinEngine
 {
 	class JComponent;
 	class JCamera;
+	class JLight;
 	class JGameObject;
 	class JScenePrivate;
 	namespace Core
@@ -57,12 +57,12 @@ namespace JinEngine
 			bool isOpen = false;
 			bool isMainScene = false;
 			//space spatial trigger
-			bool isActivatedSpaceSpatial;
-			bool hasInnerRoot[(uint)Core::J_SPACE_SPATIAL_TYPE::COUNT][(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
-			size_t innerRootGuid[(uint)Core::J_SPACE_SPATIAL_TYPE::COUNT][(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
-			Core::JOctreeOption octreeOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
-			Core::JBvhOption bvhOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
-			Core::JKdTreeOption kdTreeOption[(uint)Core::J_SPACE_SPATIAL_LAYER::COUNT];
+			bool isActivatedAccelerator;
+			bool hasInnerRoot[(uint)J_ACCELERATOR_TYPE::COUNT][(uint)J_ACCELERATOR_LAYER::COUNT];
+			size_t innerRootGuid[(uint)J_ACCELERATOR_TYPE::COUNT][(uint)J_ACCELERATOR_LAYER::COUNT];
+			JOctreeOption octreeOption[(uint)J_ACCELERATOR_LAYER::COUNT];
+			JBvhOption bvhOption[(uint)J_ACCELERATOR_LAYER::COUNT];
+		JKdTreeOption kdTreeOption[(uint)J_ACCELERATOR_LAYER::COUNT];
 		public:
 			LoadMetaData(const JUserPtr<JDirectory>& directory);
 		};
@@ -86,32 +86,51 @@ namespace JinEngine
 		JUserPtr<JGameObject> GetGameObject(const uint index)noexcept;
 		JUserPtr<JGameObject> GetGameObject(const std::wstring& name)noexcept;
 		uint GetGameObjectCount()const noexcept;
+		uint GetGameObjectCount(const J_RENDER_LAYER layer)const noexcept;
 		uint GetComponetCount(const J_COMPONENT_TYPE cType)const noexcept;
 		uint GetMeshCount()const noexcept;
-		J_SCENE_USE_CASE_TYPE GetUseCaseType()const noexcept;
-		std::vector<JUserPtr<JGameObject>> GetAlignedObject(const Core::J_SPACE_SPATIAL_LAYER layer, const DirectX::BoundingFrustum& frustum)const noexcept;
+		J_SCENE_USE_CASE_TYPE GetUseCaseType()const noexcept; 
 		std::vector<JUserPtr<JGameObject>> GetGameObjectVec()const noexcept;
 		std::vector<JUserPtr<JComponent>> GetComponentVec(const J_COMPONENT_TYPE cType)const noexcept;
-		Core::JOctreeOption GetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept;
-		Core::JBvhOption GetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept;
-		Core::JKdTreeOption GetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer)const noexcept;
+		JUserPtr<JComponent> GetDirectionalLight()const noexcept;
+		JOctreeOption GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept;
+		JBvhOption GetBvhOption(const J_ACCELERATOR_LAYER layer)const noexcept;
+		JKdTreeOption GetKdTreeOption(const J_ACCELERATOR_LAYER layer)const noexcept;		
+		DirectX::BoundingBox GetSceneBBox(const J_ACCELERATOR_LAYER layer = J_ACCELERATOR_LAYER::COMMON_OBJECT)const noexcept;
+		/**
+		* @return return 0 if scene time deactivated 
+		*/
+		float GetTotalTime()const noexcept;
+		/**
+		* @return return 0 if scene time deactivated
+		*/
+		float GetDeltaTime()const noexcept;
 	public:
-		void SetOctreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JOctreeOption& newOption)noexcept;
-		void SetBvhOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JBvhOption& newOption)noexcept;
-		void SetKdTreeOption(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JKdTreeOption& newOption)noexcept;
+		void SetOctreeOption(const J_ACCELERATOR_LAYER layer, const JOctreeOption& newOption)noexcept;
+		void SetBvhOption(const J_ACCELERATOR_LAYER layer, const JBvhOption& newOption)noexcept;
+		void SetKdTreeOption(const J_ACCELERATOR_LAYER layer, const JKdTreeOption& newOption)noexcept;
 	public:
 		bool IsActivatedSceneTime()const noexcept;
 		bool IsPauseSceneTime()const noexcept;
 		bool IsMainScene()const noexcept;
-		bool IsSpaceSpatialActivated()const noexcept;
+		bool IsAcceleratorActivated()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
+		bool CanUseAcceleratorUtility(const J_ACCELERATOR_LAYER layer, const J_ACCELERATOR_TYPE type)const noexcept;
 	public:
 		JUserPtr<JGameObject> FindGameObject(const size_t guid)noexcept;
 		JUserPtr<JCamera> FindFirstSelectedCamera(const bool allowEditorCam)const noexcept;
 		//Intersect by scene space spatial
-		JUserPtr<JGameObject> IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray)const noexcept;
-		JUserPtr<JGameObject> IntersectFirst(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const bool allowContainRayPos)const noexcept;
-		void Intersect(const Core::J_SPACE_SPATIAL_LAYER layer, const Core::JRay& ray, const Core::J_SPACE_SPATIAL_SORT_TYPE sortType, _Out_ std::vector<JUserPtr<JGameObject>>& res)const noexcept;
+		JUserPtr<JGameObject> IntersectFirst(const Core::JRay& ray, const J_ACCELERATOR_LAYER layer)const noexcept;
+		JUserPtr<JGameObject> IntersectFirst(JAcceleratorIntersectInfo& info)const noexcept;
+		void Intersect(JAcceleratorIntersectInfo& info)const noexcept;
+		void Contain(JAcceleratorContainInfo& info);
+		std::vector<JUserPtr<JGameObject>> AlignedObject(JAcceleratorAlignInfo& info)const noexcept;
+		/**
+		* fast version
+		* aligned vector는 algined할 layer에 render item만큼 크기를 갖고있어야한다.
+		* 크기가 부족할시 함수내부에서 재할당한다.
+		*/
+		void AlignedObjectF(JAcceleratorAlignInfo& info, _Out_ std::vector<JUserPtr<JGameObject>>& aligned, _Out_ int& count)const noexcept;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

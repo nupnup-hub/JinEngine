@@ -8,16 +8,8 @@ struct D3D12_INDEX_BUFFER_VIEW;
 namespace JinEngine
 {	
 	struct JMeshGroup;
-	class JMeshGeometry;
-	class JStaticMeshGeometry;
-	class JSkinnedMeshGeometry;
+	class JMeshGeometry;  
 
-	namespace Graphic
-	{
-		class JGraphic;
-		class JShadowMap;
-		class JOutline;
-	}
 	class JMeshGeometryPrivate : public JResourceObjectPrivate
 	{
 	public:
@@ -40,16 +32,6 @@ namespace JinEngine
 		protected:
 			void Clear(Core::JIdentifier* ptr, const bool isForced) override;
 		};
-		class BufferViewInterface
-		{
-		private:
-			friend class Graphic::JGraphic;
-			friend class Graphic::JShadowMap;
-			friend class Graphic::JOutline;
-		private:
-			static D3D12_VERTEX_BUFFER_VIEW VertexBufferView(JMeshGeometry* mesh)noexcept;
-			static D3D12_INDEX_BUFFER_VIEW IndexBufferView(JMeshGeometry* mesh)noexcept;
-		}; 
 		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept override;
 	};
 }

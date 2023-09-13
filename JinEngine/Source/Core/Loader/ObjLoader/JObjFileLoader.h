@@ -1,6 +1,6 @@
 #pragma once 
 #include"JObjFileLoaderUtility.h"
-#include"../../../Core/JDataType.h"
+#include"../../../Core/JCoreEssential.h"
 #include"../../../Core/Singleton/JSingletonHolder.h"  
 #include<string>
 #include<vector>
@@ -19,11 +19,11 @@ namespace JinEngine
 			struct FaceInfo
 			{
 			public:
-				std::vector<DirectX::XMINT3> ptn;
+				std::vector<JVector3<int>> ptn;
 				bool hasUV;
 				bool hasNormal;
 			public:
-				FaceInfo(const std::vector<DirectX::XMINT3>& ptn);
+				FaceInfo(const std::vector<JVector3<int>>& ptn);
 			};
 		public:
 			bool LoadObjFile(const JFileImportHelpData& pathData, JObjFileMeshData& objMeshData, std::vector<JObjFileMatData>& objMatData);
@@ -35,7 +35,7 @@ namespace JinEngine
 			void DetectNan(float& x, float& y);
 			void DetectNan(float& x, float& y, float& z);
 		private:
-			DirectX::XMFLOAT3 SetLeftHand(const DirectX::XMFLOAT3& v)noexcept;
+			JVector3<float> SetLeftHand(const JVector3<float>& v)noexcept;
 			size_t MakeVertexGuid(const uint x, const uint y, const uint z);
 		};
 	}

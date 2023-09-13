@@ -6,7 +6,7 @@
 #include"../Directory/JFileInitData.h"
 #include"../Directory/JDirectory.h" 
 #include"../Directory/JDirectoryPrivate.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../../Core/Utility/JCommonUtility.h"
 #include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/File/JFileConstant.h"
@@ -149,7 +149,7 @@ namespace JinEngine
 
 			if (existingFile == nullptr)
 			{
-				JFileInitData initData(name, guid, from->GetTypeInfo(), from->GetResourceType(), from->GetFormatIndex());
+				JFileInitData initData(name, guid, from->GetTypeInfo(), from->GetResourceType(), from->GetFlag(), from->GetFormatIndex());
 				CreateJFile(initData, toDir);
 			}
 			else
@@ -158,7 +158,7 @@ namespace JinEngine
 					existingFile->GetResource()->SetName(name);
 				else
 				{
-					JFileInitData initData(name, guid, from->GetTypeInfo(), from->GetResourceType(), from->GetFormatIndex());
+					JFileInitData initData(name, guid, from->GetTypeInfo(), from->GetResourceType(), from->GetFlag(), from->GetFormatIndex());
 					DestroyJFile(existingFile->GetResourceGuid());
 					CreateJFile(initData, toDir);
 				}
@@ -443,8 +443,6 @@ namespace JinEngine
  
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
 	{
-		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
-
 		JResourceObject* rObj = static_cast<JResourceObject*>(ptr);
 		rEv.NotifyEraseEvent(rObj);	  
 		auto rTypeHint = RTypeCommonCall::GetRTypeHint(rObj->GetResourceType());
@@ -454,7 +452,8 @@ namespace JinEngine
 			auto objVec = rObj->GetTypeInfo().GetInstanceRawPtrVec();
 			auto setFrameDirtyCallable = RTypePrivateCall::GetSetFrameDirtyCallable(rObj->GetResourceType());
 			JCUtil::ApplyFunc(index, setFrameDirtyCallable, objVec);
-		}
+		}		
+		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 	void DestroyInstanceInterface::SetInvalidInstance(Core::JIdentifier* ptr)noexcept
 	{

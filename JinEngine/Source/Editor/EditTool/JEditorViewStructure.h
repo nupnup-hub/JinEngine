@@ -1,10 +1,10 @@
 #pragma once 
 #include"JEditorCoordGrid.h"
-#include"../../Core/JDataType.h"  
+#include"../../Core/JCoreEssential.h"  
 #include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/Func/Functor/JFunctor.h"
-#include"../../Utility/JMacroUtility.h"
-#include"../../Utility/JVector.h"
+#include"../../Core/Utility/JMacroUtility.h"
+#include"../../Core/Math/JVector.h"
 #include<string>
 #include<vector>
 #include<memory>
@@ -19,7 +19,7 @@ namespace JinEngine
 		{
 		private:
 			std::string name;
-			std::string info;
+			std::string desc;
 		private:
 			size_t guid;
 		private:
@@ -29,7 +29,7 @@ namespace JinEngine
 			bool isNewNode = false;
 			bool isSelected = false;
 		public:
-			JEditorNodeBase(const std::string& name, const size_t guid, const std::string& info, const bool isSelected);
+			JEditorNodeBase(const std::string& name, const size_t guid, const std::string& desc, const bool isSelected);
 			virtual ~JEditorNodeBase() = default;
 		public:
 			void DrawRect(const JEditorViewUpdateHelper* updateHelper);
@@ -51,20 +51,21 @@ namespace JinEngine
 			void SetNewNodeTrigger(const bool value)noexcept;
 		public:
 			J_SIMPLE_GET_SET(std::string, name, Name)
-			J_SIMPLE_GET_SET(std::string, info, Info)
+			J_SIMPLE_GET_SET(std::string, desc, Desc)
 			J_SIMPLE_GET_SET(size_t, guid, Guid)
 			J_SIMPLE_GET_SET(JVector2<float>, center, Center)
 		protected:
-			virtual uint GetRectInnerColor()const noexcept = 0;
-			uint GetRectFrameColor()const noexcept;
-			uint GetRectSelectedFrameColor()const noexcept;
-			uint GetRectHoveredDeltaColor()const noexcept;
-			uint GetRectDraggingDeltaColor()const noexcept;
-			uint GetRectVertexDeltaColor()const noexcept;
-			uint GetTextColor()const noexcept;
-			uint GetInfoBoxColor()const noexcept;
-			uint GetLineColor()const noexcept;
-			uint GetSelectedLineColor()const noexcept;
+			virtual JVector4<float> GetRectInnerColor()const noexcept = 0;
+			JVector4<float> GetRectFrameColor()const noexcept;
+			JVector4<float> GetRectSelectedFrameColor()const noexcept;
+			JVector4<float> GetRectSelectedDeltaColor()const noexcept;
+			JVector4<float> GetRectHoveredDeltaColor()const noexcept;
+			JVector4<float> GetRectDraggingDeltaColor()const noexcept; 
+			JVector4<float> GetDescBoxColor()const noexcept;
+			JVector4<float> GetLineColor()const noexcept;
+			JVector4<float> GetTriangleColor()const noexcept;
+			JVector4<float> GetSelectedTriangleColor()const noexcept;
+			JVector4<float> GetSelectedLineColor()const noexcept;
 		};
 
 		class JEditorViewBase
@@ -143,7 +144,7 @@ namespace JinEngine
 			void BuildNode(const std::string& name,
 				const size_t nodeGuid, 
 				const size_t groupGuid = GetDefaultGroupGuid(),
-				const std::string& info = "",
+				const std::string& desc = "",
 				const bool isSelectedNode = false,
 				const bool isSelectedParentEdge = false)noexcept;
 			void BuildEndSplit()noexcept;
@@ -155,7 +156,7 @@ namespace JinEngine
 			void BuildNode(const std::string& name, 
 				const size_t nodeGuid,
 				const size_t groupGuid = GetDefaultGroupGuid(),
-				const std::string& info = "",
+				const std::string& desc = "",
 				const bool isSelectedNode = false,
 				const bool isSelectedParentEdge = false)noexcept;
 		};
@@ -174,7 +175,7 @@ namespace JinEngine
 			void BuildNode(const std::string& name,
 				const size_t nodeGuid,
 				const size_t groupGuid = GetDefaultGroupGuid(), 
-				const std::string& info = "",
+				const std::string& desc = "",
 				const bool isSelectedNode = false)noexcept;
 			void BuildNode(const std::string& name,
 				const size_t nodeGuid,

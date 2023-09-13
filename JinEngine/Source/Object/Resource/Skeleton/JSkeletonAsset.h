@@ -19,19 +19,23 @@ namespace JinEngine
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
 			std::vector<Joint> joint;
+			Core::JTypeInstanceSearchHint modelHint;
 		public:
 			InitData(const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
+				const Core::JTypeInstanceSearchHint& modelHint,
 				std::vector<Joint>&& joint);
 			InitData(const size_t guid,
 				const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
+				const Core::JTypeInstanceSearchHint& modelHint,
 				std::vector<Joint>&& joint);
 			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
+				const Core::JTypeInstanceSearchHint& modelHint,
 				std::vector<Joint>&& joint);
 		public:
 			bool IsValidData()const noexcept final;
@@ -43,6 +47,7 @@ namespace JinEngine
 		public:
 			JAvatar avatar;
 			JSKELETON_TYPE skeletonType; 
+			Core::JTypeInstanceSearchHint modelHint;
 		public:
 			bool isValidAvatar = false;
 		public:
@@ -69,6 +74,7 @@ namespace JinEngine
 		size_t GetSkeletonHash()const noexcept;
 		std::wstring GetJointName(int index)const noexcept;
 		std::vector<std::vector<uint8>> GetSkeletonTreeIndexVec()const noexcept;
+		Core::JTypeInstanceSearchHint GetModelHint()const noexcept;
 	public:
 		void SetSkeletonType(JSKELETON_TYPE skeletonType)noexcept;
 	public:

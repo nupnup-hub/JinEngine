@@ -13,7 +13,7 @@ namespace JinEngine
 		{
 			return Graphic::JGraphicDrawList::PopDrawList(scene);
 		}
-		bool JGraphicDrawListSceneInterface::AddObservationFrame(const JUserPtr<JScene>& scene, const JFrameUpdateUserAccess& observationFrame)noexcept
+		bool JGraphicDrawListSceneInterface::AddObservationFrame(const JUserPtr<JScene>& scene, const JUserPtr<JFrameUpdateUserAccess>& observationFrame)noexcept
 		{
 			return Graphic::JGraphicDrawList::AddObservationFrame(scene, observationFrame);
 		}
@@ -38,6 +38,10 @@ namespace JinEngine
 		{
 			Graphic::JGraphicDrawList::AddHzbOccCullingRequest(scene, jComp, updateFrequency);
 		}
+		void JGraphicDrawListCompInterface::AddHdOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
+		{
+			Graphic::JGraphicDrawList::AddHdOccCullingRequest(scene, jComp, updateFrequency);
+		}
 		void JGraphicDrawListCompInterface::PopDrawRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
 		{
 			Graphic::JGraphicDrawList::PopDrawRequest(scene, jComp);
@@ -49,6 +53,10 @@ namespace JinEngine
 		void JGraphicDrawListCompInterface::PopHzbOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
 		{
 			Graphic::JGraphicDrawList::PopHzbOccCullingRequest(scene, jComp);
+		}
+		void JGraphicDrawListCompInterface::PopHdOccCullingRequest(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& jComp)noexcept
+		{
+			Graphic::JGraphicDrawList::PopHdOccCullingRequest(scene, jComp);
 		}
 		bool JGraphicDrawListCompInterface::HasRequestor(const JUserPtr<JScene>& scene)noexcept
 		{

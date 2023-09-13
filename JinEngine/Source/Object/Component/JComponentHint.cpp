@@ -121,8 +121,21 @@ namespace JinEngine
 		return CTypeInfo::Instance().cFuncStorage[(uint)cType].CallCreateInitDataCallable(typeInfo, owner, std::move(parentInitData));
 	}
 	J_COMPONENT_TYPE CTypeCommonCall::ConvertCompType(const Core::JTypeInfo& info)
-	{
-		return CTypeInfo::Instance().typeMap.find(info.TypeGuid())->second;
+	{ 
+		auto& typeMap = CTypeInfo::Instance().typeMap;
+		auto data = typeMap.find(info.TypeGuid());
+		if (data == typeMap.end())
+		{
+			auto nextInfo = info.GetParent();
+			while (nextInfo != nullptr && data == typeMap.end())
+			{
+				data = typeMap.find(nextInfo->TypeGuid());
+				nextInfo = nextInfo->GetParent();
+			}
+			return data != typeMap.end() ? data->second : (J_COMPONENT_TYPE)-1;
+		}
+		else
+			return data->second;
 	}
 	bool CTypeCommonCall::NameOrder(const CTypeHint& a, const CTypeHint& b)noexcept
 	{

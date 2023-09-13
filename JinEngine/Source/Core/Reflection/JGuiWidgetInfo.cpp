@@ -2,7 +2,7 @@
 #include"JReflectionInfo.h"
 #include"JEnumInfo.h"
 #include"JGuiWidgetInfoHandleBase.h"
-#include"../../Editor/GuiLibEx/JGuiWidgetType.h"  
+#include"JGuiWidgetType.h"  
 
 namespace JinEngine
 {
@@ -61,8 +61,11 @@ namespace JinEngine
 			:JGuiExtraFunctionUserInfo(infoMapName), refParamInfo(nullptr)
 		{}
 		JGuiParamConditionUserInfoBase::JGuiParamConditionUserInfoBase(const JGuiExtraFunctionInfoMapName infoMapName, const std::string refParamOwnerName)
-			: JGuiExtraFunctionUserInfo(infoMapName), refParamInfo(std::make_unique<RefParamInfo>(refParamOwnerName))
-		{}
+			: JGuiExtraFunctionUserInfo(infoMapName)
+		{
+			if (!refParamOwnerName.empty())
+				refParamInfo = std::make_unique<RefParamInfo>(refParamOwnerName);
+		}
 		std::string JGuiParamConditionUserInfoBase::GetRefParamOwnerName()const noexcept
 		{
 			return refParamInfo != nullptr ? refParamInfo->refParamOwnerName : std::string();
@@ -135,16 +138,22 @@ namespace JinEngine
 			return J_GUI_EXTRA_FUNCTION_TYPE::CONDITION;
 		}
 
-		JGuiBoolParamConditionInfo::JGuiBoolParamConditionInfo(const std::string& extraFunctionName, const std::string& refParamName)
-			:JGuiConditionInfo(extraFunctionName), refParamName(refParamName)
+		JGuiBoolParamConditionInfo::JGuiBoolParamConditionInfo(const std::string& extraFunctionName,
+			const std::string& refName,
+			const bool isRefMethod)
+			:JGuiConditionInfo(extraFunctionName), refName(refName), isRefMethod(isRefMethod)
 		{}
 		J_GUI_EXTRA_CONDITION_TYPE JGuiBoolParamConditionInfo::GetConditionType()const noexcept
 		{ 
 			return J_GUI_EXTRA_CONDITION_TYPE::BOOLEAN_PARAM;
 		}
-		std::string JGuiBoolParamConditionInfo::GetRefParamName()const noexcept
+		std::string JGuiBoolParamConditionInfo::GetRefName()const noexcept
 		{
-			return refParamName;
+			return refName;
+		}
+		bool JGuiBoolParamConditionInfo::IsRefMethod()const noexcept
+		{
+			return isRefMethod;
 		}
 
 		JGuiEnumParamConditionInfo::JGuiEnumParamConditionInfo(const std::string& extraFunctionName, const std::string& enumName, const std::string& refParamName)
@@ -196,9 +205,9 @@ namespace JinEngine
 			isEnterToReturn(isEnterToReturn),
 			fixedParam(fixedParam)
 		{} 
-		JSupportGuiWidgetType JGuiInputInfo::GetSupportWidgetType()const noexcept
+		J_GUI_WIDGET_TYPE JGuiInputInfo::GetSupportWidgetType()const noexcept
 		{ 
-			return Editor::J_GUI_WIDGET_INPUT;
+			return J_GUI_WIDGET_TYPE::INPUT;
 		}
 		J_PARAMETER_TYPE JGuiInputInfo::GetFixedParameter()const noexcept
 		{
@@ -216,9 +225,9 @@ namespace JinEngine
 		}
 
 
-		JSupportGuiWidgetType JGuiCheckBoxInfo::GetSupportWidgetType()const noexcept
+		J_GUI_WIDGET_TYPE JGuiCheckBoxInfo::GetSupportWidgetType()const noexcept
 		{
-			return Editor::J_GUI_WIDGET_CHECKBOX;
+			return J_GUI_WIDGET_TYPE::CHECKBOX;
 		}
 
 		JGuiSliderInfo::JGuiSliderInfo(const float minValue, const float maxValue)
@@ -241,9 +250,9 @@ namespace JinEngine
 		{
 
 		}
-		JSupportGuiWidgetType JGuiSliderInfo::GetSupportWidgetType()const noexcept
+		J_GUI_WIDGET_TYPE JGuiSliderInfo::GetSupportWidgetType()const noexcept
 		{
-			return Editor::J_GUI_WIDGET_SLIDER;
+			return J_GUI_WIDGET_TYPE::SLIDER;
 		}
 		float JGuiSliderInfo::GetMinValue()const noexcept
 		{
@@ -262,9 +271,9 @@ namespace JinEngine
 			return isVertical;
 		}
 
-		JSupportGuiWidgetType JGuiColorPickerInfo::GetSupportWidgetType()const noexcept
+		J_GUI_WIDGET_TYPE JGuiColorPickerInfo::GetSupportWidgetType()const noexcept
 		{
-			return Editor::J_GUI_WIDGET_COLOR_PICKER;
+			return J_GUI_WIDGET_TYPE::COLOR_PICKER;
 		}
 		bool JGuiColorPickerInfo::HasRgbInput()const noexcept
 		{
@@ -277,9 +286,9 @@ namespace JinEngine
 			hasSizeSlider(hasSizeSlider),
 			getElementVecPtr(getElementVecPtr)
 		{}
-		JSupportGuiWidgetType JGuiSelectorInfo::GetSupportWidgetType()const noexcept
+		J_GUI_WIDGET_TYPE JGuiSelectorInfo::GetSupportWidgetType()const noexcept
 		{
-			return Editor::J_GUI_WIDGET_SELECTOR;
+			return J_GUI_WIDGET_TYPE::SELECTOR;
 		}
 		J_GUI_SELECTOR_IMAGE JGuiSelectorInfo::GetPreviewImageType()const noexcept
 		{
@@ -294,18 +303,25 @@ namespace JinEngine
 			return hasSizeSlider;
 		}
 
-		JSupportGuiWidgetType JGuiReadOnlyTextInfo::GetSupportWidgetType()const noexcept
+		J_GUI_WIDGET_TYPE JGuiReadOnlyTextInfo::GetSupportWidgetType()const noexcept
 		{
-			return Editor::J_GUI_WIDGET_READONLY_TEXT;
+			return J_GUI_WIDGET_TYPE::READONLY_TEXT;
 		}
 
-		JSupportGuiWidgetType JGuiEnumComboBoxInfo::GetSupportWidgetType()const noexcept
+		JGuiEnumComboBoxInfo::JGuiEnumComboBoxInfo(const std::string enumFullName)
+			:JGuiWidgetInfo(), enumFullName(enumFullName)
+		{}
+		J_GUI_WIDGET_TYPE JGuiEnumComboBoxInfo::GetSupportWidgetType()const noexcept
 		{
-			return Editor::J_GUI_WIDGET_ENUM_COMBO;
+			return J_GUI_WIDGET_TYPE::COMBO;
 		}
 		std::string JGuiEnumComboBoxInfo::GetEnumFullName()const noexcept
 		{
 			return enumFullName;
+		}
+		std::string JGuiEnumComboBoxInfo::GetDisplayCommand()const noexcept
+		{
+			return displayCommand;
 		}
 
 		JGuiListInfo::JGuiListInfo(const J_GUI_LIST_TYPE listType, const bool canDisplayElementGui, CreateElementPtr createElementPtr)
@@ -314,9 +330,9 @@ namespace JinEngine
 			canDisplayElementGui(canDisplayElementGui),
 			createElementPtr(createElementPtr)
 		{ }
-		JSupportGuiWidgetType JGuiListInfo::GetSupportWidgetType()const noexcept
+		J_GUI_WIDGET_TYPE JGuiListInfo::GetSupportWidgetType()const noexcept
 		{
-			return Editor::J_GUI_WIDGET_LIST;
+			return J_GUI_WIDGET_TYPE::LIST;
 		}
 		J_GUI_LIST_TYPE JGuiListInfo::GetListType()const noexcept
 		{

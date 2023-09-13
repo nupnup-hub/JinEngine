@@ -1,6 +1,6 @@
 #include"JEditorPopupNode.h" 
 #include"../String/JEditorStringMap.h" 
-#include"../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../Gui/JGui.h"
 #include"../../Core/Guid/JGuidCreator.h"
 
 namespace JinEngine
@@ -33,8 +33,8 @@ namespace JinEngine
 			{
 			case J_EDITOR_POPUP_NODE_TYPE::ROOT:
 			{
-				popupPos = JImGuiImpl::GetGuiWindowPos();
-				popupSize = JImGuiImpl::GetGuiWindowSize();
+				popupPos = JGui::GetWindowPos();
+				popupSize = JGui::GetWindowSize();
 				for (uint i = 0; i < childrenCount; ++i)
 				{
 					JEditorPopupNode* res = children[i]->PopupOnScreen(editorString);
@@ -45,18 +45,18 @@ namespace JinEngine
 			}
 			case J_EDITOR_POPUP_NODE_TYPE::INTERNAL:
 			{
-				if (ImGui::BeginMenu(editorString->GetString(nodeId).c_str()))
+				if (JGui::BeginMenu(editorString->GetString(nodeId)))
 				{
 					isOpen = true;
-					popupPos = JImGuiImpl::GetGuiWindowPos();
-					popupSize = JImGuiImpl::GetGuiWindowSize();
+					popupPos = JGui::GetWindowPos();
+					popupSize = JGui::GetWindowSize();
 					for (uint i = 0; i < childrenCount; ++i)
 					{
 						JEditorPopupNode* res = children[i]->PopupOnScreen(editorString);
 						if (res != nullptr)
 							selected = res;
 					}
-					ImGui::EndMenu();
+					JGui::EndMenu();
 				}
 				else
 					isOpen = false;
@@ -68,13 +68,13 @@ namespace JinEngine
 				bool isEnable = enableBind != nullptr ? enableBind->Invoke() : true;
 				if (hasShortCut)
 				{
-					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), editorString->GetString(shortCutId).c_str(), false, isEnable))
+					if (JGui::MenuItem(editorString->GetString(nodeId), editorString->GetString(shortCutId), false, isEnable))
 						selected = this;
 					PrintTooltip(editorString);
 				}
 				else
 				{
-					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), 0, false, isEnable))
+					if (JGui::MenuItem(editorString->GetString(nodeId), false, isEnable))
 						selected = this;
 					PrintTooltip(editorString);
 				}
@@ -85,13 +85,13 @@ namespace JinEngine
 				bool isEnable = enableBind != nullptr ? enableBind->Invoke() : true;
 				if (hasShortCut)
 				{
-					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), editorString->GetString(shortCutId).c_str(), &isActivated, isEnable))
+					if (JGui::MenuItem(editorString->GetString(nodeId), editorString->GetString(shortCutId), &isActivated, isEnable))
 						selected = this;
 					PrintTooltip(editorString);
 				}
 				else
 				{
-					if (ImGui::MenuItem(editorString->GetString(nodeId).c_str(), "", &isActivated, isEnable))
+					if (JGui::MenuItem(editorString->GetString(nodeId), "", &isActivated, isEnable))
 						selected = this;
 					PrintTooltip(editorString);
 				}
@@ -108,8 +108,8 @@ namespace JinEngine
 		{
 			if (hasTooltip)
 			{
-				if (ImGui::IsItemHovered())
-					ImGui::SetTooltip(editorString->GetString(tooltipId).c_str());
+				if (JGui::IsLastItemHovered())
+					JGui::Tooltip(editorString->GetString(tooltipId));
 			}
 		}
 		void JEditorPopupNode::RegisterSelectBind(std::unique_ptr<Core::JBindHandleBase>&& newSelectBind)noexcept
@@ -147,7 +147,7 @@ namespace JinEngine
 		}
 		bool JEditorPopupNode::IsMouseInPopup()const noexcept
 		{ 
-			return JVector2<float>(ImGui::GetMousePos().x, ImGui::GetMousePos().y).Contain(popupPos, popupSize);
+			return JVector2<float>(JGui::GetMousePos().x, JGui::GetMousePos().y).Contained(popupPos, popupSize);
 		}
 	}
 }

@@ -17,7 +17,7 @@ namespace JinEngine
 		{} 
 	public:
 		void RegisterThisPointer(Core::JIdentifier* iden)
-		{ 
+		{   
 			thisPointer = Core::GetWeakPtr<JObject>(iden);
 		}
 		static void RegisterTypeData()
@@ -53,7 +53,7 @@ namespace JinEngine
 	}
 
 	J_OBJECT_FLAG JObject::GetFlag()const noexcept
-	{ 
+	{  
 		return impl->flag;
 	}
 	bool JObject::HasFlag(const J_OBJECT_FLAG flag)const noexcept

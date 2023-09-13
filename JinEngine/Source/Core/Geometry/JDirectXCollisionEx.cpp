@@ -113,6 +113,13 @@ namespace JinEngine
 			XMStoreFloat3(&boundBox.Extents, 0.5f * (maxV - minV));
 			return boundBox;
 		}
+		DirectX::BoundingBox JDirectXCollisionEx::CreateBoundingBox(const JVector3<float>& vMin, const JVector3<float>& vMax)noexcept
+		{
+			DirectX::BoundingBox box;
+			box.Center = ((vMin + vMax) * 0.5f).ToXmF();
+			box.Extents = ((vMax - vMin) * 0.5f).ToXmF();
+			return box;
+		}
 		DirectX::BoundingBox JDirectXCollisionEx::CreateBoundingBox(const DirectX::XMVECTOR vMin, const DirectX::XMVECTOR vMax)noexcept
 		{
 			DirectX::BoundingBox box;
@@ -131,3 +138,34 @@ namespace JinEngine
 		}
 	}
 }
+//not use 대신 obb사용
+/*
+		DirectX::BoundingBox JDirectXCollisionEx::CreateBoundingBox(const DirectX::XMFLOAT3& center, const DirectX::XMFLOAT3& extents, const DirectX::XMVECTOR q)noexcept
+		{
+			XMFLOAT3 coners[8]
+			{
+				XMFLOAT3(extents.x, extents.y, extents.z),
+				XMFLOAT3(extents.x, extents.y, -extents.z),
+				XMFLOAT3(extents.x, -extents.y, extents.z),
+				XMFLOAT3(extents.x, -extents.y, -extents.z),
+				XMFLOAT3(-extents.x, extents.y, extents.z),
+				XMFLOAT3(-extents.x, extents.y, -extents.z),
+				XMFLOAT3(-extents.x, -extents.y, extents.z),
+				XMFLOAT3(-extents.x, -extents.y, -extents.z)
+			};
+
+			XMVECTOR minV = XMVectorSet(FLT_MAX, FLT_MAX, FLT_MAX, 1.0f);
+			XMVECTOR maxV = XMVectorSet(-FLT_MAX, -FLT_MAX, -FLT_MAX, 1.0f);
+
+			for (uint i = 0; i < 8; ++i)
+			{
+				XMVECTOR conerV = XMVector3Rotate(XMLoadFloat3(&coners[i]), q);
+				minV = XMVectorMin(minV, conerV);
+				maxV = XMVectorMax(maxV, conerV);
+			}
+			DirectX::BoundingBox boundBox;
+			XMStoreFloat3(&boundBox.Center, 0.5f * (maxV + minV));
+			XMStoreFloat3(&boundBox.Extents, 0.5f * (maxV - minV));
+			return boundBox;
+		}
+*/

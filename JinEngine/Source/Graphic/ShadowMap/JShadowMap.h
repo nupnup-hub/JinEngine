@@ -1,51 +1,27 @@
 #pragma once 
-#include<d3d12.h>
-#include<wrl/client.h>
-#include"../../Core/JDataType.h"
-#include"../../Core/Func/Callable/JCallable.h"
-#include"../Upload/JUploadBuffer.h" 
-#include"../Upload/JUploadType.h" 
+#include"../DataSet/JGraphicDataSet.h"
+#include"../Device/JGraphicDeviceUser.h" 
+#include"../Thread/JGraphicMultiThreadDrawInterface.h"
+#include"../../Core/JCoreEssential.h"   
+#include"../../Core/Pointer/JOwnerPtr.h"   
 
 namespace JinEngine
 {
-	class JGameObject;
-	class JLight;
+	//struct JGraphicShaderData; 
 	namespace Graphic
-	{ 
+	{
 		struct JGraphicInfo;
-		struct JGraphicOption;
 		struct JDrawHelper;
-		struct JDrawCondition;
-		class JFrameResource;
-		class JGraphicResourceManager;
-		class JHZBOccCulling;
-
-		class JShadowMap
-		{ 
+		class JShadowMap : public JGraphicDeviceUser, public JGraphicMultiThreadDrawInterface
+		{
 		public:
-			void Initialize(ID3D12Device* device, const JGraphicInfo& gInfo);
-			void Clear(); 
+			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info) = 0;
+			virtual void Clear() = 0;
 		public:
-			void DrawSceneShadowMap(ID3D12GraphicsCommandList* cmdList,
-				JFrameResource* currFrame,
-				JHZBOccCulling* occCulling,
-				JGraphicResourceManager* graphicResource,
-				const JGraphicOption& option,
-				const JDrawHelper helper);
-			void DrawSceneShadowMapMultiThread(ID3D12GraphicsCommandList* cmdList,
-				JFrameResource* currFrame,
-				JHZBOccCulling* occCulling,
-				JGraphicResourceManager* graphicResource,
-				const JGraphicOption& option,
-				const JDrawHelper helper);
+			virtual void BindResource(const JGraphicBindSet* bindSet) = 0;
 		public:
-			void DrawShadowMapGameObject(ID3D12GraphicsCommandList* cmdList,
-				JFrameResource* currFrame,
-				JHZBOccCulling* occCulling,
-				JGraphicResourceManager* graphicResource,
-				const std::vector<JUserPtr<JGameObject>>& gameObject,
-				const JDrawHelper helper,
-				const JDrawCondition& condition);
+			virtual void DrawSceneShadowMap(const JGraphicShadowMapDrawSet* shadowDrawSet, const JDrawHelper& helper) = 0;
+			virtual void DrawSceneShadowMapMultiThread(const JGraphicShadowMapDrawSet* shadowDrawSet, const JDrawHelper& helper) = 0;
 		};
 	}
 }

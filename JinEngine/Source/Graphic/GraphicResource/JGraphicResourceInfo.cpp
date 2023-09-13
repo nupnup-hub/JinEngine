@@ -1,8 +1,6 @@
-#include"JGraphicResourceInfo.h"
-#include"../../Core/Guid/JGuidCreator.h"
-#include"../JGraphicDrawList.h" 
+#include"JGraphicResourceInfo.h"  
 #include"../JGraphicPrivate.h"
-#include<d3d12.h>
+#include"../../Core/Reflection/JTypeBase.h"
 
 namespace JinEngine
 {
@@ -23,14 +21,6 @@ namespace JinEngine
 		{   
 			return graphicResourceType;
 		}
-		uint JGraphicResourceInfo::GetWidth()const noexcept
-		{ 
-			return resource->GetDesc().Width;
-		}
-		uint JGraphicResourceInfo::GetHeight()const noexcept
-		{
-			return resource->GetDesc().Height;
-		}
 		int JGraphicResourceInfo::GetArrayIndex()const noexcept
 		{
 			return resourceArrayIndex;
@@ -40,10 +30,10 @@ namespace JinEngine
 			return viewInfo[(int)bindType].stIndex;
 		}
 		uint JGraphicResourceInfo::GetViewCount(const J_GRAPHIC_BIND_TYPE bindType)const noexcept
-		{ 
+		{
 			return viewInfo[(int)bindType].count;
 		}
-		void JGraphicResourceInfo::SetArrayIndex(const int newValue)
+		void JGraphicResourceInfo::SetArrayIndex(const int newValue)noexcept
 		{ 
 			resourceArrayIndex = newValue;
 		}
@@ -55,25 +45,18 @@ namespace JinEngine
 		{
 			viewInfo[(int)bindType].count = newValue;
 		}
+		bool JGraphicResourceInfo::HasView(const J_GRAPHIC_BIND_TYPE bindType)const noexcept
+		{
+			return viewInfo[(int)bindType].count > 0;
+		}
 		bool JGraphicResourceInfo::Destroy(JGraphicResourceInfo* info)
 		{   
 			return JGraphicPrivate::ResourceInterface::DestroyGraphicTextureResource(info);
 		} 
-		JGraphicResourceInfo::JGraphicResourceInfo(JGraphicResourceManager* manager,
-			const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, 
-			Microsoft::WRL::ComPtr<ID3D12Resource>&& resource)
-			:manager(manager),
-			graphicResourceType(graphicResourceType), 
-			resource(std::move(resource))
+		JGraphicResourceInfo::JGraphicResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType)
+			:graphicResourceType(graphicResourceType)
 		{}
 		JGraphicResourceInfo::~JGraphicResourceInfo()
-		{
-			if (IsOwnerType(graphicResourceType) && resource != nullptr)
-			{
-				resource->Release();
-				resource.Reset();
-				resource = nullptr;
-			}
-		}
+		{}
 	}
 }

@@ -25,7 +25,7 @@ namespace JinEngine
 			JScene::GetDefaultFormatIndex(),
 			_JResourceManager::Instance().GetEditorResourceDirectory(),
 			J_SCENE_USE_CASE_TYPE::TWO_DIMENSIONAL_PREVIEW);
-
+		 
 		SetScene(newScene); 
 	}
 	JPreviewDirectory::~JPreviewDirectory(){}
@@ -56,7 +56,7 @@ namespace JinEngine
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 
 		renderItem->SetMaterial(0, newTextureMat);
-		const DirectX::XMFLOAT3 center = renderItem->GetMesh()->GetBoundingSphereCenter();
+		const JVector3<float> center = renderItem->GetMesh()->GetBoundingSphereCenter();
 		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
 		SetTextureMaterial(newTextureMat);

@@ -1,7 +1,6 @@
 #pragma once
-#include"../../Core/JDataType.h"
-#include"../../Utility/JMathHelper.h"
-#include<DirectXMath.h>
+#include"../../Core/JCoreEssential.h"
+#include"../../Core/Math/JMatrix.h" 
 
 namespace JinEngine
 {
@@ -9,19 +8,19 @@ namespace JinEngine
 	{
 		struct JOutlineConstants
 		{
-			DirectX::XMFLOAT4X4 world = JMathHelper::Identity4x4();
+			JMatrix4x4 world = JMatrix4x4::Identity();
 
 			//invalid red ornage yellow green blue purple black
-			DirectX::XMFLOAT4 colors[8] =
+			JVector4<float> colors[8] =
 			{
-				DirectX::XMFLOAT4(0.0f ,0.0f, 0.0f, 0.0f),
-				DirectX::XMFLOAT4(1.0f ,0.0f, 0.0f, 1.0f),
-				DirectX::XMFLOAT4(1.0f ,0.5f, 0.0f, 1.0f),
-				DirectX::XMFLOAT4(1.0f ,1.0f, 0.0f, 1.0f),
-				DirectX::XMFLOAT4(0.0f ,1.0f, 0.0f, 1.0f),
-				DirectX::XMFLOAT4(0.0f ,0.0f, 1.0f, 1.0f),
-				DirectX::XMFLOAT4(0.5f ,0.0f, 0.75f, 1.0f),
-				DirectX::XMFLOAT4(0.05f ,0.05f, 0.05f, 1.0f)
+				JVector4<float>(0.0f ,0.0f, 0.0f, 0.0f),
+				JVector4<float>(1.0f ,0.0f, 0.0f, 1.0f),
+				JVector4<float>(1.0f ,0.5f, 0.0f, 1.0f),
+				JVector4<float>(1.0f ,1.0f, 0.0f, 1.0f),
+				JVector4<float>(0.0f ,1.0f, 0.0f, 1.0f),
+				JVector4<float>(0.0f ,0.0f, 1.0f, 1.0f),
+				JVector4<float>(0.5f ,0.0f, 0.75f, 1.0f),
+				JVector4<float>(0.05f ,0.05f, 0.05f, 1.0f)
 			};
 			float threshold = 0.01f;
 			float thickness = 4;

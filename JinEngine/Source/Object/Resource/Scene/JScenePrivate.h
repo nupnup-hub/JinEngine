@@ -1,9 +1,9 @@
 #pragma once
 #include"../JResourceObjectPrivate.h"
+#include"Accelerator/JAcceleratorType.h"
 #include"../Mesh/JMeshType.h"
 #include"../../Component/JComponentType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"
-#include"../../../Core/SpaceSpatial/JSpaceSpatialType.h"
 
 namespace JinEngine
 {
@@ -13,10 +13,11 @@ namespace JinEngine
 		class JEditorBinaryTreeView;
 	}
 	namespace Graphic
-	{
+	{ 
 		class JGraphic;
-		class JShadowMap;
-		class JGraphicDrawList;
+		class JGraphicDrawList; 
+		class JFrustumCulling;
+		struct JDrawHelper;
 	}
 	class JGameObject;
 	class JScene;
@@ -24,6 +25,7 @@ namespace JinEngine
 	class JCamera;
 	class JLight;
 	class JRenderItem;
+	class JMeshGeometry;
 
 	class JScenePrivate : public JResourceObjectPrivate
 	{
@@ -49,8 +51,8 @@ namespace JinEngine
 		class CashInterface
 		{
 		private:
+			friend struct Graphic::JDrawHelper;
 			friend class Graphic::JGraphic;
-			friend class Graphic::JShadowMap;
 			friend class Editor::JSceneObserver; //Debug
 		private:
 			static const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(JScene* scene, const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept;
@@ -83,18 +85,21 @@ namespace JinEngine
 			static void UpdateTransform(const JUserPtr<JGameObject>& gObject)noexcept;
 		};
 		class CompRegisterInterface
-		{
+		{ 
+		public:
+			//Ascending order 
+			//return true is insert this point
+			using CompSortPtr = bool(*)(const JUserPtr<JComponent>&, const JUserPtr<JComponent>&);
 		private:
 			friend class JComponent; 
 		private:
-			static bool RegisterComponent(const JUserPtr<JComponent>& comp)noexcept;
+			static bool RegisterComponent(const JUserPtr<JComponent>& comp, CompSortPtr comparePtr = nullptr)noexcept;
 			static bool DeRegisterComponent(const JUserPtr<JComponent>& comp)noexcept;
-			static bool ReRegisterComponent(const JUserPtr<JComponent>& comp)noexcept;
+			static bool ReRegisterComponent(const JUserPtr<JComponent>& comp, CompSortPtr comparePtr = nullptr)noexcept;
 		};
 		class CompFrameInterface
 		{
-		private:
-			friend class JLight;
+		private: 
 			friend class Graphic::JGraphicDrawList; 
 		public:
 			using SetCompCondition = bool(*)(const JUserPtr<JComponent>&);
@@ -107,7 +112,7 @@ namespace JinEngine
 		class CullingInterface
 		{
 		private:
-			friend class Graphic::JGraphic;
+			friend class Graphic::JFrustumCulling;
 		private:
 			static void ViewCulling(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& comp)noexcept; 
 		};
@@ -116,14 +121,15 @@ namespace JinEngine
 		private:
 			friend class Editor::JSceneObserver;
 		private:
-			static void BuildDebugTree(const JUserPtr<JScene>& scene, Core::J_SPACE_SPATIAL_TYPE type, const Core::J_SPACE_SPATIAL_LAYER layer, _Out_ Editor::JEditorBinaryTreeView& tree)noexcept;
+			static void BuildDebugTree(const JUserPtr<JScene>& scene, J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, _Out_ Editor::JEditorBinaryTreeView& tree)noexcept;
 		};
 		class FrameIndexInterface
 		{
 		private:
 			friend class Graphic::JGraphic;
+			friend struct Graphic::JDrawHelper;
 		private:
-			static uint GetLitIndexFrameIndex(JScene* scene);
+			static uint GetPassFrameIndex(JScene* scene);
 		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;

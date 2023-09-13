@@ -1,14 +1,14 @@
 #pragma once 
 #include"JPreviewEnum.h"
 #include"../../Texture/JDefaulTextureType.h"
-#include"../../../../Core/JDataType.h"
+#include"../../../../Core/JCoreEssential.h"
 #include"../../../../Graphic/JGraphicConstants.h" 
 #include"../../../../Core/Pointer/JOwnerPtr.h"
-#include"../../../../Utility/JMacroUtility.h"
+#include"../../../../Core/Utility/JMacroUtility.h"
+#include"../../../../Core/Math/JVector.h" 
 #include<memory>
 #include<string>
-#include<vector>
-#include<DirectXMath.h>
+#include<vector> 
 
 namespace JinEngine
 {   
@@ -54,21 +54,21 @@ namespace JinEngine
 	public:
 		void Clear()noexcept;
 	protected: 
-		void AdjustCamera(_In_ const DirectX::XMFLOAT3& objCenter, 
+		void AdjustCamera(_In_ const JVector3<float>& objCenter, 
 			const float objRadius, 
-			const DirectX::XMFLOAT3 additionalPos = DirectX::XMFLOAT3(0,0,0))noexcept;
+			const JVector3<float>& additionalPos = JVector3<float>(0,0,0))noexcept;
 	private:
-		void Adjust2DTextureCamera(const DirectX::XMFLOAT3& objCenter,
+		void Adjust2DTextureCamera(const JVector3<float>& objCenter,
 			const float objRadius,
-			const DirectX::XMFLOAT3 additionalPos)noexcept;
-		void Adjust2DOtherCamera(const DirectX::XMFLOAT3& objCenter,
+			const JVector3<float>& additionalPos)noexcept;
+		void Adjust2DOtherCamera(const JVector3<float>& objCenter,
 			const float objRadius,
-			const DirectX::XMFLOAT3 additionalPos)noexcept;
-		void Adjust3DFixedCamera(const DirectX::XMFLOAT3& objCenter,
+			const JVector3<float>& additionalPos)noexcept;
+		void Adjust3DFixedCamera(const JVector3<float>& objCenter,
 			const float objRadius,
-			const DirectX::XMFLOAT3 additionalPos)noexcept;
-		void Adjust3DNonFixedCamera(const DirectX::XMFLOAT3& objCenter, 
+			const JVector3<float>& additionalPos)noexcept;
+		void Adjust3DNonFixedCamera(const JVector3<float>& objCenter, 
 			const float objRadius,
-			const DirectX::XMFLOAT3 additionalPos)noexcept; 
+			const JVector3<float>& additionalPos)noexcept;
 	};
 }

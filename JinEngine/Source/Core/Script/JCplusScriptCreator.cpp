@@ -1,5 +1,5 @@
 #include"JCplusScriptCreator.h"
-#include"../../Utility/JMacroUtility.h"
+#include"../Utility/JMacroUtility.h"
  
 namespace JinEngine::Core
 {

@@ -1,55 +1,56 @@
 #pragma once
-#include"../../Core/JDataType.h"   
-#include"../../Core/Reflection/JReflection.h"
+#include"../Device/JGraphicDeviceUser.h"
+#include"../JGraphicConstants.h"
+#include"../../Core/JCoreEssential.h"   
+#include"../../Core/Reflection/JReflection.h" 
 #include"JGraphicResourceType.h" 
 #include<memory>
-#include<wrl/client.h>  
-
-struct ID3D12Resource;
+#include<string> 
+ 
 namespace JinEngine
 {
 	namespace Graphic
-	{ 
-		class JGraphicResourceManager;
-		class JGraphicResourceInfo
+	{ 		
+		/*
+		* JGraphicResourceManager에서만 생성가능한 Info
+		* 자원을 JGraphicResourceManager 에서 할당받아 Graphic Resource에 참조를 소유하는 Class에서 참조한다
+		* 항상 유효한 객체이다
+		*/  
+		class JGraphicResourceInfo : public JGraphicDeviceUser
 		{
-			REGISTER_CLASS_USE_ALLOCATOR(JGraphicResourceInfo)
-		private:
-			friend class JGraphicResourceManager;
+			REGISTER_CLASS_USE_ALLOCATOR(JGraphicResourceInfo) 
 		private:
 			struct ResourceViewInfo
 			{
 			public:	 
 				int stIndex = -1;
 				uint count = 0;
-			}; 
-		private:
-			JGraphicResourceManager* manager = nullptr;
-		private:
-			Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
+			};  
 		private:
 			const J_GRAPHIC_RESOURCE_TYPE graphicResourceType; 
-			int resourceArrayIndex = -1;
+			int resourceArrayIndex = -1;  
+		private:
 			ResourceViewInfo viewInfo[(int)J_GRAPHIC_BIND_TYPE::COUNT];
 		public:
 			J_GRAPHIC_RESOURCE_TYPE GetGraphicResourceType()const noexcept;
-			uint GetWidth()const noexcept;
-			uint GetHeight()const noexcept;
 			int GetArrayIndex()const noexcept;
 			int GetHeapIndexStart(const J_GRAPHIC_BIND_TYPE bindType)const noexcept;
-			uint GetViewCount(const J_GRAPHIC_BIND_TYPE bindType)const noexcept; 
-		private:
-			void SetArrayIndex(const int newValue);
+			uint GetViewCount(const J_GRAPHIC_BIND_TYPE bindType)const noexcept;
+			virtual uint GetWidth()const noexcept = 0;
+			virtual uint GetHeight()const noexcept = 0; 
+			virtual ResourceHandle GetResourceHandle(const J_GRAPHIC_BIND_TYPE bindType, const uint bIndex = 0)const noexcept = 0;
+		public:
+			virtual void SetPrivateName(const std::wstring& name)noexcept = 0;
+			void SetArrayIndex(const int newValue)noexcept;
 			void SetHeapIndexStart(const J_GRAPHIC_BIND_TYPE bindType, const int newValue);
 			void SetViewCount(const J_GRAPHIC_BIND_TYPE bindType, const uint newValue);
+		public:
+			bool HasView(const J_GRAPHIC_BIND_TYPE bindType)const noexcept;
 		public: 
 			static bool Destroy(JGraphicResourceInfo* info);  
-		private:
-			JGraphicResourceInfo(JGraphicResourceManager* manager,
-				const J_GRAPHIC_RESOURCE_TYPE graphicResourceType,
-				Microsoft::WRL::ComPtr<ID3D12Resource>&& resource);
-		public:
-			~JGraphicResourceInfo();
+		protected:
+			JGraphicResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType);
+			virtual ~JGraphicResourceInfo();
 		};
 	}
 }

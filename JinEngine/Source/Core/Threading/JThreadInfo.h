@@ -11,7 +11,8 @@ namespace JinEngine
 		{
 		public:
 			ThreadEndNotifyPtr* notifyF;
-			const bool callBindOnce = true;		//관련된 기능들이 미구현 상태이므로 값은 수정불가
+			//WorkT가 wait상태일시 bind된 func를 교체관련 여부 trigger 관련된 기능들이 미구현 상태이므로 값은 수정불가
+			const bool callBindOnce = true;
 		public:
 			JThreadInitInfo(ThreadEndNotifyPtr* notifyF = nullptr);
 		};

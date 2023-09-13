@@ -72,6 +72,10 @@ namespace JinEngine
     if(hr__ != S_OK) {GfxException(__LINE__, __FILE__, hr__); return ret;}       \
 }
 #endif
+   
+#define JCodeAddress (__FILE__ + '(' + std::to_string(__LINE__) + ')') 
+#define JErrorMessage(msg) (JCodeAddress + #msg)
+
 
 }
 

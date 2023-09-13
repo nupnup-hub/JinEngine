@@ -3,6 +3,8 @@
 #include"../JComponentHint.h"
 #include"../../Resource/AnimationController/JAnimationController.h"
 #include"../../Resource/AnimationController/JAnimationControllerPrivate.h" 
+#include"../../Resource/AnimationController/FSM/JAnimationTime.h"
+#include"../../Resource/AnimationController/FSM/JAnimationUpdateData.h"
 #include"../../Resource/Skeleton/JSkeletonAsset.h"
 #include"../../Resource/Skeleton/JSkeletonFixedData.h" 
 #include"../../Resource/JResourceObject.h" 
@@ -10,15 +12,13 @@
 #include"../../Resource/JResourceObjectUserInterface.h" 
 #include"../../GameObject/JGameObject.h" 
 #include"../../../Core/FSM/JFSMparameter.h"
-#include"../../../Core/FSM/AnimationFSM/JAnimationTime.h"
-#include"../../../Core/FSM/AnimationFSM/JAnimationUpdateData.h"
 #include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Pointer/JOwnerPtr.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Graphic/Upload/Frameresource/JAnimationConstants.h" 
-#include"../../../Graphic/Upload/Frameresource/JFrameUpdate.h"
+#include"../../../Graphic/Frameresource/JAnimationConstants.h" 
+#include"../../../Graphic/Frameresource/JFrameUpdate.h"
 #include<fstream>
 namespace JinEngine
 {
@@ -48,7 +48,7 @@ namespace JinEngine
 		REGISTER_PROPERTY_EX(animationController, GetAnimatorController, SetAnimatorController, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
 		JUserPtr<JAnimationController> animationController;
 		Core::JGameTimer* userTimer = nullptr;
-		std::unique_ptr<Core::JAnimationUpdateData> animationUpdateData;
+		std::unique_ptr<JAnimationUpdateData> animationUpdateData;
 	public:
 		bool reqSettingAniData = false;
 	public:
@@ -97,7 +97,7 @@ namespace JinEngine
 		{
 			if (reqSettingAniData && thisPointer->IsActivated() && animationController.IsValid())
 			{
-				animationUpdateData = std::make_unique<Core::JAnimationUpdateData>();
+				animationUpdateData = std::make_unique<JAnimationUpdateData>();
 				animationUpdateData->Initialize();
 				animationUpdateData->timer = userTimer;
 				animationUpdateData->modelSkeleton = skeletonAsset;
@@ -280,11 +280,11 @@ namespace JinEngine
 	}
 	void JAnimator::DoDeActivate()noexcept
 	{
-		JComponent::DoDeActivate();
 		DeRegisterComponent(impl->thisPointer);
 		impl->DeRegisterAnimationFrameData();
 		impl->OffResourceRef();
 		impl->ClearAnimationUpdateData();
+		JComponent::DoDeActivate();
 	}
 	JAnimator::JAnimator(const InitData& initData)
 		:JComponent(initData), impl(std::make_unique<JAnimatorImpl>(initData, this))
@@ -328,8 +328,8 @@ namespace JinEngine
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)noexcept
 	{
-		JComponentPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		static_cast<JAnimator*>(ptr)->impl->DeRegisterPreDestruction();
+		JComponentPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 
 	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)

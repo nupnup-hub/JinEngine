@@ -1,16 +1,16 @@
 #include"JObjectDetail.h"   
 #include"../../JEditorPageShareData.h"
 #include"../../JEditorAttribute.h"
-#include"../../../Helpers/JReflectionGuiWidgetHelper.h"  
-#include"../../../Helpers/JEditorSearchBarHelper.h"  
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../../EditTool/JReflectionGuiWidgetHelper.h"  
+#include"../../../EditTool/JEditorSearchBarHelper.h"  
+#include"../../../Gui/JGui.h"
 #include"../../../../Core/FSM/JFSMinterface.h" 
+#include"../../../../Core/Utility/JCommonUtility.h"    
 #include"../../../../Object/GameObject/JGameObject.h"
 #include"../../../../Object/Component/JComponent.h"
 #include"../../../../Object/Component/JComponentCreator.h"
 #include"../../../../Object/Resource/JResourceObject.h"
-#include"../../../../Object/Directory/JDirectory.h" 
-#include"../../../../Utility/JCommonUtility.h"
+#include"../../../../Object/Directory/JDirectory.h"  
 
 namespace JinEngine
 {
@@ -32,7 +32,7 @@ namespace JinEngine
 		}
 		void JObjectDetail::UpdateWindow()
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | J_GUI_WINDOW_FLAG_NO_COLLAPSE);
 			UpdateDocking();
 			if (IsActivated())
 			{
@@ -52,7 +52,7 @@ namespace JinEngine
 				switch (static_cast<JObject*>(selected.Get())->GetObjectType())
 				{
 				case J_OBJECT_TYPE::GAME_OBJECT:
-					GameObjectDetailOnScreen(Core::GetUserPtr<JGameObject>(selected.Get()));
+					GameObjectDetailOnScreen(Core::ConnectChildUserPtr<JGameObject>(selected));
 					break;
 				case J_OBJECT_TYPE::RESOURCE_OBJECT:
 					ObjectOnScreen(selected);
@@ -70,68 +70,77 @@ namespace JinEngine
 		void JObjectDetail::GameObjectDetailOnScreen(JUserPtr<JGameObject> gObj)
 		{
 			auto compVec = gObj->GetAllComponent();
-			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow |
-				ImGuiTreeNodeFlags_SpanAvailWidth |
-				ImGuiTreeNodeFlags_Framed |
-				ImGuiTreeNodeFlags_DefaultOpen;
+			/*
+						J_GUI_TREE_NODE_FLAG_DEFAULT_OPEN = 1 << 0,
+			J_GUI_TREE_NODE_FLAG_EXTEND_HIT_BOX_WIDTH = 1 << 1,
+			J_GUI_TREE_NODE_FLAG_FRAMED = 1 << 2,
+			J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW = 1 << 3,
+			*/
+			J_GUI_TREE_NODE_FLAG_ baseFlags = J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW |
+				J_GUI_TREE_NODE_FLAG_EXTEND_HIT_BOX_WIDTH |
+				J_GUI_TREE_NODE_FLAG_FRAMED |
+				J_GUI_TREE_NODE_FLAG_DEFAULT_OPEN;
 
 			for (const auto& comp : compVec)
 			{
-				ImGui::BeginGroup();
-				ImGui::Separator();
-				if (JImGuiImpl::TreeNodeEx(JCUtil::WstrToU8Str(Core::ErasePrefixJW(comp->GetName()) + L"##TreeNode" + gObj->GetName()), baseFlags))
+				JGui::BeginGroup();
+				JGui::Separator();
+				if (JGui::TreeNodeEx(JCUtil::WstrToU8Str(Core::ErasePrefixJW(comp->GetName()) + L"##TreeNode" + gObj->GetName()), baseFlags))
 				{
-					JImGuiImpl::TreePop();
+					JGui::TreePop();
 					guiHelper->UpdateGuiWidget(comp, &comp->GetTypeInfo());
 				}
-				ImGui::EndGroup();
+				JGui::EndGroup();
 			}
 
-			if (JImGuiImpl::Button("AddComponent"))
-				ImGui::OpenPopup("##AddComponentPopup");
+			if (JGui::Button("AddComponent"))
+				JGui::OpenPopup("##AddComponentPopup");
 
-			if (ImGui::BeginPopup("##AddComponentPopup"))
+			if (JGui::BeginPopup("##AddComponentPopup"))
 			{
-				//ImGui::BeginGroup();
-				JImGuiImpl::Text("Search");
-				ImGui::SameLine();
+				//JGui::BeginGroup();
+				JGui::Text("Search");
+				JGui::SameLine();
 				searchBarHelper->UpdateSearchBar();
 
 				std::vector<Core::JTypeInfo*> derivedTypeInfo = _JReflectionInfo::Instance().GetDerivedTypeInfo(JComponent::StaticTypeInfo());
 				for (const auto& compType : derivedTypeInfo)
 				{
+					if (compType->IsAbstractType())
+						continue;
+
 					if (!searchBarHelper->CanSrcNameOnScreen(compType->NameWithOutModifier()))
 						continue;
 
-					if (JImGuiImpl::Selectable(compType->NameWithOutModifier()))
+					if (JGui::Selectable(compType->NameWithOutModifier()))
 					{
 						JCCI::CreateComponent(*compType, gObj);
 						SetModifiedBit(gObj, true); 
 					}
 				}
 
-				//bool clickAnyMouse = ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1) || ImGui::IsMouseClicked(2);
-				//if (clickAnyMouse && !JImGuiImpl::IsMouseInRect(ImGui::GetWindowPos(), ImGui::GetWindowSize()))
+				//bool clickAnyMouse = JGui::IsMouseClicked(0) || JGui::IsMouseClicked(1) || JGui::IsMouseClicked(2);
+				//if (clickAnyMouse && !JGui::IsMouseInRect(JGui::GetWindowPos(), JGui::GetWindowSize()))
 				//	isPressAddGameObject = false;
-				//ImGui::EndGroup();
-				ImGui::EndPopup();
+				//JGui::EndGroup();
+				JGui::EndPopup();
 			}
 		}
 		void JObjectDetail::ObjectOnScreen(JUserPtr<Core::JIdentifier> fObj)
 		{
-			ImGui::BeginGroup();
-			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow |
-				ImGuiTreeNodeFlags_SpanAvailWidth |
-				ImGuiTreeNodeFlags_Framed |
-				ImGuiTreeNodeFlags_DefaultOpen;
+			JGui::BeginGroup();
+			J_GUI_TREE_NODE_FLAG_ baseFlags = J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW |
+				J_GUI_TREE_NODE_FLAG_EXTEND_HIT_BOX_WIDTH |
+				J_GUI_TREE_NODE_FLAG_FRAMED |
+				J_GUI_TREE_NODE_FLAG_DEFAULT_OPEN;
 
-			ImGui::Separator();
-			if (JImGuiImpl::TreeNodeEx(Core::ErasePrefixJ(fObj->GetTypeInfo().Name()) + JCUtil::WstrToU8Str(L"##TreeNode" + fObj->GetName()), baseFlags))
+			JGui::Separator();
+			if (JGui::TreeNodeEx(Core::ErasePrefixJ(fObj->GetTypeInfo().Name()) + JCUtil::WstrToU8Str(L"##TreeNode" + fObj->GetName()), baseFlags))
 			{
-				JImGuiImpl::TreePop();
+				JGui::TreePop();
 				guiHelper->UpdateGuiWidget(fObj, &fObj->GetTypeInfo());
 			}
-			ImGui::EndGroup();
+			JGui::EndGroup();
 		}
 		void JObjectDetail::DoActivate()noexcept
 		{
@@ -141,20 +150,20 @@ namespace JinEngine
 		}
 		void JObjectDetail::DoDeActivate()noexcept
 		{
-			JEditorWindow::DoDeActivate();
 			guiHelper->Clear();
 			searchBarHelper->ClearInputBuffer(); 
 			DeRegisterListener();
+			JEditorWindow::DoDeActivate();
 		}
-		void JObjectDetail::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
+		void JObjectDetail::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStructure)
 		{ 
-			JEditorWindow::OnEvent(senderGuid, eventType, eventStruct);
-			if (senderGuid == GetGuid())
+			JEditorWindow::OnEvent(senderGuid, eventType, eventStructure);
+			if (!eventStructure->CanExecuteOtherEv(senderGuid, GetGuid()))
 				return;
-		
-			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && eventStruct->pageType == GetOwnerPageType())
+
+			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && eventStructure->pageType == GetOwnerPageType())
 			{
-				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStruct);
+				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStructure);
 				auto newSelected = evstruct->GetFirstMatchedTypeObject(Core::JIdentifier::StaticTypeInfo());				
 				const bool isSame = newSelected.IsValid() && selected.IsValid() && newSelected->GetGuid() == selected->GetGuid();
 				if (!isSame)
@@ -164,12 +173,12 @@ namespace JinEngine
 					searchBarHelper->ClearInputBuffer(); 
 				}
 			}
-			else if (eventType == J_EDITOR_EVENT::POP_SELECT_OBJECT && eventStruct->pageType == GetOwnerPageType())
+			else if (eventType == J_EDITOR_EVENT::POP_SELECT_OBJECT && eventStructure->pageType == GetOwnerPageType())
 			{
 				if (!selected.IsValid())
 					return;
 
-				JEditorPopSelectObjectEvStruct* evstruct = static_cast<JEditorPopSelectObjectEvStruct*>(eventStruct);
+				JEditorPopSelectObjectEvStruct* evstruct = static_cast<JEditorPopSelectObjectEvStruct*>(eventStructure);
 				if (evstruct->IsPopTarget(selected->GetGuid()))
 				{
 					selected.Clear();

@@ -9,8 +9,10 @@
 #include"JGuiWidgetInfoHandleBase.h"
 #include"JReflectionInfo.h" 
 #include"JEnumRegister.h"    
+#include"../Utility/JCommonUtility.h"
+#include"../Pointer/JOwnerPtr.h"
 #include<vector>
- 
+
 namespace JinEngine
 { 
 	namespace Core
@@ -33,6 +35,11 @@ namespace JinEngine
 				return "UnKnown";
 		}
 		template<typename T>
+		static std::wstring GetWName()
+		{
+			return JCUtil::StrToWstr(GetName<T>());
+		}
+		template<typename T>
 		static std::string GetName(T* ptr)
 		{
 			if (ptr == nullptr)
@@ -44,28 +51,43 @@ namespace JinEngine
 			{
 				JEnumInfo* jEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<T>).name());
 				if (jEnumInfo != nullptr)
-					return jEnumInfo->Name();
+					return jEnumInfo->ElementName(*ptr);
 				else
 					return "UnKnown";
 			}
 			else
 				return "UnKnown";
 		}
-		template<typename EnumT>
-		static std::string GetName(EnumT enumValue)
+		template<typename T>
+		static std::wstring GetWName(T* ptr)
 		{
-			if constexpr (JTypeInfoDetermine<EnumT>::value)
-				return EnumT::TypeName();
-			else if constexpr (IsEnum_V<EnumT>)
+			if (ptr == nullptr)
+				return L"UnKnown";
+
+			if constexpr (std::is_base_of_v<JIdentifier, T>)
+				return ptr->GetName();
+			else  
+				return JCUtil::StrToWstr(GetName(ptr));
+		}
+		template<typename T>
+		static std::string GetName(T value)
+		{
+			if constexpr (IsEnum_V<T>)
 			{
-				JEnumInfo* jEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<EnumT>).name());
+				JEnumInfo* jEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<T>).name());
 				if (jEnumInfo != nullptr)
-					return jEnumInfo->ElementName((int)enumValue);
+					return jEnumInfo->ElementName(value);
 				else
 					return "UnKnown";
 			}
-			return "UnKnown";
+			else
+				return "UnKnown";
 		} 
+		template<typename T>
+		static std::wstring GetWName(T value)
+		{
+			return JCUtil::StrToWstr(GetName(value));
+		}
 
 		static JTypeBase* GetRawPtr(const size_t typeGuid, const size_t objGuid)
 		{

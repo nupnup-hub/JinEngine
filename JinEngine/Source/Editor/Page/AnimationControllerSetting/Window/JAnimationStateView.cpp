@@ -3,23 +3,23 @@
 #include"../../JEditorPageShareData.h" 
 #include"../../../Event/JEditorEvent.h"
 #include"../../../Popup/JEditorPopupNode.h"
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"  
+#include"../../../Gui/JGui.h"  
 #include"../../../Interface/JEditorObjectCreationInterface.h"
 #include"../../../../Core/Reflection/JTypeTemplate.h" 
-#include"../../../../Core/FSM/AnimationFSM/JAnimationStateType.h"
-#include"../../../../Core/FSM/AnimationFSM/JAnimationFSMdiagram.h"
-#include"../../../../Core/FSM/AnimationFSM/JAnimationFSMstate.h"
-#include"../../../../Core/FSM/AnimationFSM/JAnimationFSMstateClip.h"
-#include"../../../../Core/FSM/AnimationFSM/JAnimationFSMtransition.h"
-#include"../../../../Object/Resource/JResourceManager.h"
+#include"../../../../Object/Resource/AnimationController/FSM/JAnimationStateType.h"
+#include"../../../../Object/Resource/AnimationController/FSM/JAnimationFSMdiagram.h"
+#include"../../../../Object/Resource/AnimationController/FSM/JAnimationFSMstate.h"
+#include"../../../../Object/Resource/AnimationController/FSM/JAnimationFSMstateClip.h"
+#include"../../../../Object/Resource/AnimationController/FSM/JAnimationFSMtransition.h"
 #include"../../../../Object/Resource/AnimationController/JAnimationController.h"  
+#include"../../../../Object/Resource/JResourceManager.h"
 #include"../../../../Application/JApplicationProject.h"
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		namespace Constants
+		namespace Private
 		{
 			static std::string DockNodeName(const std::string& uniqueLabel)noexcept
 			{
@@ -31,7 +31,7 @@ namespace JinEngine
 			}
 			static std::wstring ViewGraphPath()noexcept
 			{
-				return JApplicationProject::EditorSettingPath() + L"\\AniContViewGraph.txt";
+				return JApplicationProject::EditoConfigPath() + L"\\AniContViewGraph.txt";
 			}
 		}
 
@@ -92,7 +92,7 @@ namespace JinEngine
 			stateGraph = std::make_unique<JEditorGraphView>();
 			stateGraph->GetGrid()->SetMinZoomRate(50);
 			stateGraph->GetGrid()->SetMaxZoomRate(50);
-			stateGraph->LoadData(Constants::ViewGraphPath());
+			stateGraph->LoadData(Private::ViewGraphPath());
 			stateGraph->UseBeginViewWindow(false);
 
 			uint count = 0;
@@ -129,14 +129,14 @@ namespace JinEngine
 			destroyNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creationImpl->reqDestroyEvF, this));
 			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 
-			statePopup = std::make_unique< JEditorPopupMenu>(Constants::StateViewName(GetName()), std::move(stateViewRootNode));
+			statePopup = std::make_unique< JEditorPopupMenu>(Private::StateViewName(GetName()), std::move(stateViewRootNode));
 			statePopup->AddPopupNode(std::move(createNewCilpStateNode));
 			statePopup->AddPopupNode(std::move(createTransitionNode));
 			statePopup->AddPopupNode(std::move(destroyNode));
 		}
 		JAnimationStateView::~JAnimationStateView()
 		{
-			stateGraph->StoreData(Constants::ViewGraphPath());
+			stateGraph->StoreData(Private::ViewGraphPath());
 			creationImpl.reset();
 		}
 		void JAnimationStateView::InitializeCreationImpl()
@@ -164,7 +164,7 @@ namespace JinEngine
 				using bType = JAnimationStateViewCreationImpl::ConnectStateTrasitionF::CompletelyBind;
 				auto selectedVec = stateView->GetSelectedObjectVec();
 				if (stateView->aniCont.IsValid() && selectedVec[0].IsValid() &&
-					selectedVec[0]->GetTypeInfo().IsChildOf<Core::JAnimationFSMstate>())
+					selectedVec[0]->GetTypeInfo().IsChildOf<JAnimationFSMstate>())
 				{
 					stateView->stateGraph->SetConnectNodeMode(selectedVec[0]->GetGuid(),
 						std::make_unique<bType>(*stateView->creationImpl->connectStateTransF, std::move(stateView)));
@@ -218,15 +218,15 @@ namespace JinEngine
 				if (openSelectedPtr == nullptr || ownerPtr == nullptr)
 					return false;
 
-				if (openSelectedPtr->GetTypeInfo().IsChildOf<JAnimationController>() && ownerPtr->GetTypeInfo().IsChildOf<Core::JAnimationFSMdiagram>())
-					return static_cast<JAnimationController*>(openSelectedPtr)->CanCreateState(static_cast<Core::JAnimationFSMdiagram*>(ownerPtr));
+				if (openSelectedPtr->GetTypeInfo().IsChildOf<JAnimationController>() && ownerPtr->GetTypeInfo().IsChildOf<JAnimationFSMdiagram>())
+					return static_cast<JAnimationController*>(openSelectedPtr)->CanCreateState(static_cast<JAnimationFSMdiagram*>(ownerPtr));
 				else
 					return false;
 			};
 			auto creatClipLam = [](const size_t guid, const JEditorCreationHint& creationHint)
 			{
 				JAnimationController* aniCont = static_cast<JAnimationController*>(Core::GetRawPtr(creationHint.openDataHint));
-				JUserPtr<Core::JAnimationFSMdiagram> ownerDiagaram = Core::GetUserPtr<Core::JAnimationFSMdiagram>(creationHint.ownerDataHint);
+				JUserPtr<JAnimationFSMdiagram> ownerDiagaram = Core::GetUserPtr<JAnimationFSMdiagram>(creationHint.ownerDataHint);
 				aniCont->CreateFSMclip(ownerDiagaram, guid);
 			};
 
@@ -237,9 +237,9 @@ namespace JinEngine
 				if (openSelectedPtr == nullptr || ownerPtr == nullptr)
 					return false;
 
-				auto fromStatePtr = Core::SearchRawPtr(Core::JAnimationFSMstate::StaticTypeInfo(), fromStateGuid);
-				auto toStatePtr = Core::SearchRawPtr(Core::JAnimationFSMstate::StaticTypeInfo(), toStateGuid);
-				if (fromStatePtr != nullptr && toStatePtr != nullptr && openSelectedPtr->GetTypeInfo().IsChildOf<JAnimationController>() && ownerPtr->GetTypeInfo().IsChildOf<Core::JAnimationFSMdiagram>())
+				auto fromStatePtr = Core::SearchRawPtr(JAnimationFSMstate::StaticTypeInfo(), fromStateGuid);
+				auto toStatePtr = Core::SearchRawPtr(JAnimationFSMstate::StaticTypeInfo(), toStateGuid);
+				if (fromStatePtr != nullptr && toStatePtr != nullptr && openSelectedPtr->GetTypeInfo().IsChildOf<JAnimationController>() && ownerPtr->GetTypeInfo().IsChildOf<JAnimationFSMdiagram>())
 					return true;
 				else
 					return false;
@@ -247,9 +247,9 @@ namespace JinEngine
 			auto createTransitionLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t fromStateGuid, const size_t toStateGuid)
 			{
 				JAnimationController* aniCont = static_cast<JAnimationController*>(Core::GetRawPtr(creationHint.openDataHint));
-				JUserPtr<Core::JAnimationFSMdiagram> ownerDiagaram = Core::GetUserPtr<Core::JAnimationFSMdiagram>(creationHint.ownerDataHint);
-				JUserPtr<Core::JAnimationFSMstate> fromState = Core::SearchUserPtr<Core::JAnimationFSMstate>(Core::JAnimationFSMstate::StaticTypeInfo(), fromStateGuid);
-				JUserPtr<Core::JAnimationFSMstate> toState = Core::SearchUserPtr<Core::JAnimationFSMstate>(Core::JAnimationFSMstate::StaticTypeInfo(), toStateGuid);
+				JUserPtr<JAnimationFSMdiagram> ownerDiagaram = Core::GetUserPtr<JAnimationFSMdiagram>(creationHint.ownerDataHint);
+				JUserPtr<JAnimationFSMstate> fromState = Core::SearchUserPtr<JAnimationFSMstate>(JAnimationFSMstate::StaticTypeInfo(), fromStateGuid);
+				JUserPtr<JAnimationFSMstate> toState = Core::SearchUserPtr<JAnimationFSMstate>(JAnimationFSMstate::StaticTypeInfo(), toStateGuid);
 				aniCont->CreateFsmtransition(ownerDiagaram, fromState, toState, guid);
 			};
 
@@ -268,8 +268,13 @@ namespace JinEngine
 			RegisterViewGraphGroup(aniCont.Get());
 		}
 		void JAnimationStateView::UpdateWindow()
-		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
+		{ 
+			const bool hoveredGraphObj = stateGraph->IsLastUpdateHoveredNode() || stateGraph->IsLastUpdateSeletedEdge();
+			J_GUI_WINDOW_FLAG_ flag = J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | J_GUI_WINDOW_FLAG_NO_COLLAPSE;
+			if (hoveredGraphObj)
+				flag |= J_GUI_WINDOW_FLAG_NO_MOVE;
+
+			EnterWindow(flag);
 			UpdateDocking();
 			if (IsActivated())
 			{
@@ -288,7 +293,7 @@ namespace JinEngine
 				const uint stateCount = selectedDiagram->GetStateCount();
 				for (uint i = 0; i < stateCount; ++i)
 				{
-					JUserPtr<Core::JAnimationFSMstate> state = selectedDiagram->GetStateByIndex(i);
+					JUserPtr<JAnimationFSMstate> state = selectedDiagram->GetStateByIndex(i);
 					stateGraph->BuildNode(JCUtil::WstrToU8Str(state->GetName()),
 						state->GetGuid(),
 						aniCont->GetGuid(),
@@ -296,18 +301,18 @@ namespace JinEngine
 				}
 				for (uint i = 0; i < stateCount; ++i)
 				{
-					JUserPtr<Core::JAnimationFSMstate> state = selectedDiagram->GetStateByIndex(i);
+					JUserPtr<JAnimationFSMstate> state = selectedDiagram->GetStateByIndex(i);
 					const size_t fromGuid = state->GetGuid();
 					const uint transitionCount = state->GetTransitionCount();
 					for (uint j = 0; j < transitionCount; ++j)
 					{
-						JUserPtr<Core::JAnimationFSMtransition> trans = state->GetTransitionByIndex(j);
+						JUserPtr<JAnimationFSMtransition> trans = state->GetTransitionByIndex(j);
 						stateGraph->ConnectNode(fromGuid,
 							trans->GetOutputStateGuid(),
 							IsSelectedObject(trans->GetGuid()));
 					}
 				}
-				JImGuiImpl::Text(JCUtil::WstrToU8Str(selectedDiagram->GetName()).c_str());
+				JGui::Text(JCUtil::WstrToU8Str(selectedDiagram->GetName()));
 				stateGraph->OnScreen(aniCont->GetGuid());
 				if (stateGraph->IsLastUpdateHoveredNode())
 				{
@@ -333,9 +338,9 @@ namespace JinEngine
 					size_t toGuid;
 					stateGraph->GetLastUpdateSelectedEdgeGuid(fromGuid, toGuid);
 					JUserPtr<Core::JFSMtransition> tUser = selectedDiagram->GetState(fromGuid)->GetTransitionByOutGuid(toGuid);
-					SetSelecteObject(Core::ConvertChildUserPtr<Core::JAnimationFSMtransition>(std::move(tUser)));
+					SetSelecteObject(Core::ConvertChildUserPtr<JAnimationFSMtransition>(std::move(tUser)));
 				} 
-				if(isHoveredContents && ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1))
+				if(isHoveredContents && JGui::AnyMouseClicked(false))
 					SetContentsClick(true);
 
 				UpdatePopup(PopupSetting(statePopup.get(), editorString.get()));
@@ -358,6 +363,7 @@ namespace JinEngine
 		{
 			aniCont.Clear();
 			selectedDiagram.Clear();
+			JEditorWindow::DoSetClose();
 		}
 		void JAnimationStateView::DoActivate()noexcept
 		{
@@ -370,21 +376,21 @@ namespace JinEngine
 		}
 		void JAnimationStateView::DoDeActivate()noexcept
 		{
-			JEditorWindow::DoDeActivate();
 			DeRegisterListener();
+			JEditorWindow::DoDeActivate();
 		}
-		void JAnimationStateView::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* ev)
+		void JAnimationStateView::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStructure)
 		{
-			JEditorWindow::OnEvent(senderGuid, eventType, ev);
-			if (senderGuid == GetGuid())
+			JEditorWindow::OnEvent(senderGuid, eventType, eventStructure);
+			if (!eventStructure->CanExecuteOtherEv(senderGuid, GetGuid()))
 				return;
-
+ 
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)
 				statePopup->SetOpen(false);
-			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && ev->pageType == GetOwnerPageType())
+			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && eventStructure->pageType == GetOwnerPageType())
 			{
-				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(ev);
-				JUserPtr< Core::JIdentifier> diagram = evstruct->GetFirstMatchedTypeObject(Core::JAnimationFSMdiagram::StaticTypeInfo());
+				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStructure);
+				JUserPtr< Core::JIdentifier> diagram = evstruct->GetFirstMatchedTypeObject(JAnimationFSMdiagram::StaticTypeInfo());
 				if (diagram.IsValid())
 				{
 					if (!selectedDiagram.IsValid() || selectedDiagram->GetGuid() != diagram->GetGuid())

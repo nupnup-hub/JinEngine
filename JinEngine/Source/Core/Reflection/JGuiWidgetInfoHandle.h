@@ -1,6 +1,6 @@
 #pragma once
 #include"JGuiWidgetInfoHandleBase.h" 
-#include"../JDataType.h" 
+#include"../JCoreEssential.h" 
 #include<memory>
 #include<vector>
 

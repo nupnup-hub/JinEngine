@@ -1,6 +1,6 @@
 #pragma once
 #include"../../JEditorWindow.h" 
-#include"../../../Helpers/JEditorTabBarHelper.h"
+#include"../../../EditTool/JEditorTabBarHelper.h"
 
 namespace JinEngine
 { 
@@ -14,8 +14,17 @@ namespace JinEngine
 		class JLogViewer final : public JEditorWindow
 		{  
 		private:
-			static constexpr uint tabItemCount = 3;
+			using GetLogVecPtr = std::vector<Core::JLogBase*>(*)();
+			using ClearLogHandlerPtr = void(*)();
+		private:
+			static constexpr uint tabItemCount = 4;
 			std::unique_ptr<JEditorTabBarHelper<tabItemCount>> tabBarHelper;
+		private:
+			GetLogVecPtr getLogVecPtr[tabItemCount];
+			ClearLogHandlerPtr clearLogHandlerPtr[tabItemCount];
+		private: 
+			int selectedTabIndex = 0;
+			int selectedLogIndex = invalidIndex;
 		public:
 			JLogViewer(const std::string& name, 
 				std::unique_ptr<JEditorAttribute> attribute,
@@ -30,12 +39,10 @@ namespace JinEngine
 			void Initialize()noexcept;
 			void UpdateWindow()final;
 		private:
-			void BuildLogViewer();
-		private:
-			//¹Ì±¸Çö
-			std::vector<Core::JLogBase*> GetAllLog();
-			std::vector<Core::JLogBase*> GetUserLog();
-			std::vector<Core::JLogBase*> GetTransitionLog();
+			void BuildLogViewer(); 
+		private: 
+			void DoActivate()noexcept final;
+			void DoDeActivate()noexcept final;
 		};
 	}
 }

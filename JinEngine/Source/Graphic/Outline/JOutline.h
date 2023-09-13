@@ -1,39 +1,25 @@
 #pragma once 
-#include"JOutlineConstants.h" 
-#include"../Upload/JUploadBuffer.h" 
-#include"../../Object/Resource/Shader/JShaderData.h"  
-#include"../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"  
-#include<wrl/client.h>   
-#include<memory>
-#include<dxgiformat.h>
+#include"JOutlineConstants.h"  
+#include"../DataSet/JGraphicDataSet.h"
+#include"../Device/JGraphicDeviceUser.h"
+#include<memory> 
  
 namespace JinEngine
 {
 	namespace Graphic
 	{
-		class JOutline
+		class JGraphicResourceManager;
+		struct JDrawHelper;
+		class JOutline : public JGraphicDeviceUser
 		{
-		private:
-			std::unique_ptr<JUploadBuffer<JOutlineConstants>> outlineCB = nullptr;
-		private:
-			Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
-			std::unique_ptr<JGraphicShaderData> gShaderData;
 		public:
-			void Initialize(ID3D12Device* device, 
-				const DXGI_FORMAT& rtvFormat, 
-				const DXGI_FORMAT& dsvFormat,
-				const uint width,
-				const uint height,
-				const uint cbOffset);
-			void Clear();
+			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info) = 0;
+			virtual void Clear() = 0;
 		public:
-			void UpdatePassBuf(const uint width, const uint height, const uint stencilRefOffset);
-		public:
-			void DrawOutline(ID3D12GraphicsCommandList* commandList, const CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapHandle, const CD3DX12_GPU_DESCRIPTOR_HANDLE stencilMapHandle);
-		private:
-			void BuildRootSignature(ID3D12Device* device);
-			void BuildPso(ID3D12Device* device, const DXGI_FORMAT& rtvFormat, const DXGI_FORMAT& dsvFormat);
-			void BuildUploadBuffer(ID3D12Device* device);
+			virtual void UpdatePassBuf(const uint width, const uint height, const uint stencilRefOffset) = 0;
+		public: 
+			virtual void DrawCamOutline(const JGraphicOutlineObjectSet* drawSet, const JDrawHelper& helper) = 0;
+			virtual void DrawOutline(const JGraphicOutlineHandleSet* drawSet, const JDrawHelper& helper) = 0;
 		};
 	}
 }

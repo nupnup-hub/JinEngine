@@ -87,16 +87,16 @@ namespace JinEngine
 
 				std::vector<JSkinnedMeshVertex> vertices(vertexCount);
 				std::vector<uint> indices;
-				XMFLOAT4 jointIndex;
+				JVector4<int> jointIndex;
 
 				for (uint i = 0; i < vertexCount; ++i)
 				{
-					JFileIOHelper::LoadXMFloat3(stream, vertices[i].position);
-					JFileIOHelper::LoadXMFloat3(stream, vertices[i].normal);
-					JFileIOHelper::LoadXMFloat2(stream, vertices[i].texC);
-					JFileIOHelper::LoadXMFloat3(stream, vertices[i].tangentU);
-					JFileIOHelper::LoadXMFloat3(stream, vertices[i].jointWeight);
-					JFileIOHelper::LoadXMFloat4(stream, jointIndex);
+					JFileIOHelper::LoadVector3(stream, vertices[i].position);
+					JFileIOHelper::LoadVector3(stream, vertices[i].normal);
+					JFileIOHelper::LoadVector2(stream, vertices[i].texC);
+					JFileIOHelper::LoadVector3(stream, vertices[i].tangentU);
+					JFileIOHelper::LoadVector3(stream, vertices[i].jointWeight);
+					JFileIOHelper::LoadVector4(stream, jointIndex);
 
 					vertices[i].jointIndex[0] = jointIndex.x;
 					vertices[i].jointIndex[1] = jointIndex.y;
@@ -164,11 +164,11 @@ namespace JinEngine
 				for (uint i = 0; i < vertexCount; ++i)
 				{
 					JSkinnedMeshVertex vertices = skinnedData->GetVertex(i);
-					JFileIOHelper::StoreXMFloat3(stream, L"P:", vertices.position);
-					JFileIOHelper::StoreXMFloat3(stream, L"N:", vertices.normal);
-					JFileIOHelper::StoreXMFloat2(stream, L"U:", vertices.texC);
-					JFileIOHelper::StoreXMFloat3(stream, L"T:", vertices.tangentU);
-					JFileIOHelper::StoreXMFloat3(stream, L"W:", vertices.jointWeight);
+					JFileIOHelper::StoreVector3(stream, L"P:", vertices.position);
+					JFileIOHelper::StoreVector3(stream, L"N:", vertices.normal);
+					JFileIOHelper::StoreVector2(stream, L"U:", vertices.texC);
+					JFileIOHelper::StoreVector3(stream, L"T:", vertices.tangentU);
+					JFileIOHelper::StoreVector3(stream, L"W:", vertices.jointWeight);
 					JFileIOHelper::StoreXMFloat4(stream, L"I", XMFLOAT4(vertices.jointIndex[0],
 						vertices.jointIndex[1],
 						vertices.jointIndex[2],
@@ -291,8 +291,8 @@ namespace JinEngine
 	}
 	void JSkinnedMeshGeometry::DoDeActivate()noexcept
 	{
-		JMeshGeometry::DoDeActivate();
 		impl->OffResourceRef();
+		JMeshGeometry::DoDeActivate();
 	}
 	JSkinnedMeshGeometry::JSkinnedMeshGeometry(InitData& initData)
 		:JMeshGeometry(initData), impl(std::make_unique<JSkinnedMeshGeometryImpl>(initData, this))
@@ -326,8 +326,8 @@ namespace JinEngine
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr,const bool isForced)
 	{
-		JMeshGeometryPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		static_cast<JSkinnedMeshGeometry*>(ptr)->impl->DeRegisterPreDestruction();
+		JMeshGeometryPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 
 	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)

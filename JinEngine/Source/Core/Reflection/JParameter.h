@@ -1,7 +1,7 @@
 #pragma once
-#include"../JDataType.h"
-#include"../../Utility/JTypeUtility.h" 
-#include"../../Utility/JVector.h"
+#include"../JCoreEssential.h"
+#include"../Utility/JTypeTraitUtility.h" 
+#include"../Math/JVector.h"
 #include"JParameterType.h"
 #include<string>
 #include<vector>

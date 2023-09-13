@@ -13,6 +13,10 @@ namespace JinEngine
 	class JComponent : public JObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JComponent)
+	public:
+		//Ascending order 
+		//return false is insert this point
+		using UserCompComparePtr = bool(*)(const JUserPtr<JComponent>&, const JUserPtr<JComponent>&);
 	public: 
 		//comp에 child중에서 파생되지 않는 경우 InitData 생성자에 const Core::JTypeInfo& typeInfo parmeter는 하드코딩 되어있다
 		//그 외에 파생되는 경우는 파생된 class에서 값을 유효한 값을 대입한다.
@@ -41,8 +45,7 @@ namespace JinEngine
 			~LoadData();
 		public:
 			bool IsValidData()const noexcept final;
-		};
-		 
+		};	 
 		class StoreData final : public JObject::StoreData
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(StoreData)
@@ -52,7 +55,7 @@ namespace JinEngine
 			StoreData(JUserPtr<JComponent> comp, std::wofstream& stream);
 		public:
 			bool IsValidData()const noexcept final;
-		};
+		}; 
 	private:
 		using JObject::SetName;
 	private:
@@ -66,7 +69,7 @@ namespace JinEngine
 		virtual J_COMPONENT_TYPE GetComponentType()const noexcept = 0;
 	public:
 		virtual bool IsAvailableOverlap()const noexcept = 0;
-		/*Defect Inspection When Use JComponent */
+		//Defect Inspection When Use JComponent
 		virtual bool PassDefectInspection()const noexcept;
 	protected:
 		//step) DoActivate => RegistComponent
@@ -74,9 +77,9 @@ namespace JinEngine
 		//step) DoDeActivate => DeRegistComponent
 		void DoDeActivate()noexcept override;
 	protected:
-		static bool RegisterComponent(const JUserPtr<JComponent>& comp)noexcept;	//Register component in scene
+		static bool RegisterComponent(const JUserPtr<JComponent>& comp, UserCompComparePtr comparePtr = nullptr)noexcept;		//Register component in scene
 		static bool DeRegisterComponent(const JUserPtr<JComponent>& comp)noexcept;		//DeRegister component in scene
-		static bool ReRegisterComponent(const JUserPtr<JComponent>& comp)noexcept;		//ReRegister component in scene
+		static bool ReRegisterComponent(const JUserPtr<JComponent>& comp, UserCompComparePtr comparePtr = nullptr)noexcept;		//ReRegister component in scene
 	protected:
 		static void RegisterCTypeInfo(const Core::JTypeInfo& typeInfo, const CTypeHint& cTypeHint, const CTypeCommonFunc& cTypeCFunc, const CTypePrivateFunc& cTypePFunc);
 	public:

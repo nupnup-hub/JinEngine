@@ -4,7 +4,7 @@
 #include"JAvatarJoint.h" 
 #include"../JSkeletonFixedData.h"
 #include"../../../../Core/Reflection/JReflection.h"
-#include"../../../../Core/JDataType.h"
+#include"../../../../Core/JCoreEssential.h"
 
 namespace JinEngine
 {

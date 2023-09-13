@@ -24,6 +24,11 @@ namespace JinEngine
 			void Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept final;
 			bool CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept final;
 		};
+		class DestroyInstanceInterface final: public JResourceObjectPrivate::DestroyInstanceInterface
+		{
+		private:
+			void Clear(Core::JIdentifier* ptr, const bool isForced) final; 
+		};
 	public:
 		Core::JIdentifierPrivate::CreateInstanceInterface& GetCreateInstanceInterface()const noexcept final;
 		JResourceObjectPrivate::AssetDataIOInterface& GetAssetDataIOInterface()const noexcept final;

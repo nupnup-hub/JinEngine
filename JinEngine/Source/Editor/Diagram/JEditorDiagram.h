@@ -1,6 +1,6 @@
 #pragma once 
 #include"../../Core/JDataType.h"
-#include"../../Utility/JVector.h"
+#include"../../Core/Math/JVector.h"
 
 namespace JinEngine
 {

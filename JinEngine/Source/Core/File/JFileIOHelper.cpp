@@ -5,19 +5,44 @@
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/Identity/JIdentifier.h"
 #include"../../Core/FSM/JFSMinterface.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../../Core/Utility/JCommonUtility.h"
 
 namespace JinEngine
 {
+	Core::J_FILE_IO_RESULT JFileIOHelper::StoreMatrix4x4(std::wofstream& stream, const std::wstring& guide, const JMatrix4x4& m)
+	{
+		if (!stream.is_open())
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+		stream << guide << '\n';
+		stream << m._11 << " " << m._12 << " " << m._13 << " " << m._14 << '\n';
+		stream << m._21 << " " << m._22 << " " << m._23 << " " << m._24 << '\n';
+		stream << m._31 << " " << m._32 << " " << m._33 << " " << m._34 << '\n';
+		stream << m._41 << " " << m._42 << " " << m._43 << " " << m._44 << '\n';
+		return Core::J_FILE_IO_RESULT::SUCCESS;
+	}
+	Core::J_FILE_IO_RESULT JFileIOHelper::LoadMatrix4x4(std::wifstream& stream, JMatrix4x4& m)
+	{
+		if (!stream.is_open() || stream.eof())
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+		std::wstring guide;
+		stream >> guide;
+		stream >> m._11 >> m._12 >> m._13 >> m._14;
+		stream >> m._21 >> m._22 >> m._23 >> m._24;
+		stream >> m._31 >> m._32 >> m._33 >> m._34;
+		stream >> m._41 >> m._42 >> m._43 >> m._44;
+		return Core::J_FILE_IO_RESULT::SUCCESS;
+	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::StoreJString(std::wofstream& stream, const std::wstring& guide, const std::wstring& str, const bool useChangeLine)
 	{
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		if(useChangeLine)
-			stream << guide << " " << str << '\n';
+			stream << guide << L' ' << str << L'\n';
 		else
-			stream << guide << " " << str << '\n';
+			stream << guide << L' ' << str << L'\n';
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadJString(std::wifstream& stream, std::wstring& str)
@@ -114,7 +139,7 @@ namespace JinEngine
 		stream << L"Name: " << obj->GetName() << '\n';
 		stream << Core::JFileConstant::StreamObjGuidSymbol() << obj->GetGuid() << '\n';
 		stream << Core::JFileConstant::StreamTypeGuidSymbol() << obj->GetTypeInfo().TypeGuid() << '\n';
-		stream << L"Flag: " << (int)obj->GetFlag() << '\n';
+		stream << Core::JFileConstant::StreamObjFlagSymbol() << (int)obj->GetFlag() << '\n';
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::LoadObjectIden(std::wifstream& stream, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag)
@@ -208,6 +233,21 @@ namespace JinEngine
 		}
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
+	Core::J_FILE_IO_RESULT JFileIOHelper::StoreHasInstanceHint(std::wofstream& stream, const Core::JTypeInstanceSearchHint& hint)
+	{
+		return StoreHasInstanceHint(stream, hint, Core::JFileConstant::StreamHasObjGuidSymbol());
+	}
+	Core::J_FILE_IO_RESULT JFileIOHelper::StoreHasInstanceHint(std::wofstream& stream, const Core::JTypeInstanceSearchHint& hint, const std::wstring& guiSymbol)
+	{
+		if (!stream.is_open())
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+		stream << L"IsValid: " << hint.isValid << '\n'; 
+		stream << guiSymbol << hint.objectGuid << '\n';
+		stream << Core::JFileConstant::StreamTypeGuidSymbol() << " " << hint.typeGuid << '\n';
+
+		return Core::J_FILE_IO_RESULT::SUCCESS;
+	}
 	JUserPtr<Core::JIdentifier> JFileIOHelper::LoadHasObjectIden(std::wifstream& stream)
 	{
 		if (!stream.is_open() || stream.eof())
@@ -245,13 +285,11 @@ namespace JinEngine
 		if (!stream.is_open() || stream.eof())
 			return Core::JTypeInstanceSearchHint{};
 
-		std::wstring guide;
-		std::wstring name;
+		std::wstring guide; 
 		bool hasObject;
 		size_t objGuid;
 		size_t typeGuid;
-		stream >> guide >> hasObject;
-		stream >> guide; std::getline(stream, name);
+		stream >> guide >> hasObject; 
 		stream >> guide >> objGuid;
 		stream >> guide >> typeGuid;
 

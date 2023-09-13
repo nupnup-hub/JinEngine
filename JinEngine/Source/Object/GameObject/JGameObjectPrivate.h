@@ -10,6 +10,7 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorWindow;
+		class JObjectExplorer;
 	}
 	class JGameObjectPrivate final : public JObjectPrivate
 	{
@@ -57,6 +58,7 @@ namespace JinEngine
 		{
 		private:
 			friend class JScene;
+			friend class Editor::JObjectExplorer;
 		private:
 			static void Activate(const JUserPtr<JGameObject>& ptr)noexcept;
 			static void DeActivate(const JUserPtr<JGameObject>& ptr)noexcept;

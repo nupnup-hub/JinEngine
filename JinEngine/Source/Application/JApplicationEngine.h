@@ -17,7 +17,10 @@ namespace JinEngine
 			static std::wstring BinaryPath()noexcept;
 			static std::wstring DotNetBinaryPath()noexcept; 
 			static std::wstring ResourcePath();
-			static std::wstring InfoPath()noexcept;
+			static std::wstring DoucmentPath()noexcept;
+			static std::wstring ProjectDocumentPath()noexcept;
+			static std::wstring LogPath()noexcept;
+			static std::wstring ConfigPath()noexcept;
 		public:
 			static std::wstring DefaultResourcePath()noexcept;
 			static std::wstring ProjectLastRsPath()noexcept;

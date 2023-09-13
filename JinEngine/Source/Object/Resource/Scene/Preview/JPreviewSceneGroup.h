@@ -1,6 +1,6 @@
 #pragma once
 #include"JPreviewEnum.h" 
-#include"../../../../Core/JDataType.h"
+#include"../../../../Core/JCoreEssential.h"
 #include"../../../../Core/Pointer/JOwnerPtr.h"
 #include<vector>
 #include<string> 

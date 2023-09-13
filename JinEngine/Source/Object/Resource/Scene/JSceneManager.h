@@ -1,6 +1,6 @@
 #pragma once 
 #include"../../../Core/Singleton/JSingletonHolder.h"
-#include"../../../Core/JDataType.h" 
+#include"../../../Core/JCoreEssential.h" 
 #include"../../../Core/Pointer/JOwnerPtr.h"
 
 namespace JinEngine
@@ -33,7 +33,7 @@ namespace JinEngine
 		bool IsRegistered(JScene* scene)noexcept;
 		bool IsFirstScene(JScene* scene)const noexcept;
 	public:
-		bool RegisterObservationFrame(const JUserPtr<JScene>& scene, const Graphic::JFrameUpdateUserAccess& observationFrame);
+		bool RegisterObservationFrame(const JUserPtr<JScene>& scene, const JUserPtr<Graphic::JFrameUpdateUserAccess>& observationFrame);
 	private:
 		JSceneManager();
 		~JSceneManager();

@@ -101,9 +101,9 @@ namespace JinEngine
 	}
 	void JBehavior::DoDeActivate()noexcept
 	{
-		JComponent::DoDeActivate();
 		DeRegisterComponent(impl->thisPointer);
 		NotifyDeActivate();
+		JComponent::DoDeActivate();
 	}
 	void JBehavior::NotifyActivate(){}
 	void JBehavior::NotifyDeActivate(){}
@@ -165,8 +165,8 @@ namespace JinEngine
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)noexcept
 	{
-		JComponentPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		static_cast<JBehavior*>(ptr)->Clear();
+		JComponentPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 
 	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)

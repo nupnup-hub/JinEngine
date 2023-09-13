@@ -5,21 +5,21 @@
 #include"../../../Interface/JEditorObjectCreationInterface.h"
 #include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
+#include"../../../Gui/JGui.h" 
 #include"../../../String/JEditorStringMap.h"
-#include"../../../Helpers/JEditorInputBuffHelper.h"
+#include"../../../EditTool/JEditorInputBuffHelper.h"
 #include"../../../EditTool/JEditorViewStructure.h" 
 #include"../../../../Core/Reflection/JTypeTemplate.h" 
-#include"../../../../Core/FSM/JFSMparameter.h"
-#include"../../../../Core/FSM/AnimationFSM/JAnimationStateType.h"
-#include"../../../../Core/FSM/AnimationFSM/JAnimationFSMdiagram.h" 
+#include"../../../../Core/FSM/JFSMparameter.h" 
 #include"../../../../Object/Resource/AnimationController/JAnimationController.h"   
+#include"../../../../Object/Resource/AnimationController/FSM/JAnimationStateType.h" 
+#include"../../../../Object/Resource/AnimationController/FSM/JAnimationFSMdiagram.h" 
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		namespace Constants
+		namespace Private
 		{
 			static std::string ParameterListName(const std::string& uniqueLabel)noexcept
 			{
@@ -106,7 +106,7 @@ public:
 			destroyParameterNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creationImpl->reqDestroyEvF, this));
 			destroyParameterNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 
-			parameterListPopup = std::make_unique<JEditorPopupMenu>(Constants::ParameterListName(GetName()), std::move(parameterListRootNode));
+			parameterListPopup = std::make_unique<JEditorPopupMenu>(Private::ParameterListName(GetName()), std::move(parameterListRootNode));
 			parameterListPopup->AddPopupNode(std::move(createNewParameterNode));
 			parameterListPopup->AddPopupNode(std::move(destroyParameterNode));
 		}
@@ -224,7 +224,7 @@ public:
 		}
 		void JAnimationParameterList::UpdateWindow()
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | J_GUI_WINDOW_FLAG_NO_COLLAPSE);
 			UpdateDocking();
 			if (IsActivated())
 			{
@@ -235,19 +235,19 @@ public:
 		}
 		void JAnimationParameterList::BuildParameterList()
 		{  
-			ImGuiTableFlags flag = ImGuiTableFlags_BordersV |
-				ImGuiTableFlags_BordersOuterH |
-				ImGuiTableFlags_RowBg |
-				ImGuiTableFlags_ContextMenuInBody |
-				ImGuiTableFlags_Resizable;
+			J_GUI_TABLE_FLAG_ flag = J_GUI_TABLE_FLAG_BORDER_V |
+				J_GUI_TABLE_FLAG_BORDER_OUTHER_H |
+				J_GUI_TABLE_FLAG_ROW_BG |  
+				J_GUI_TABLE_FLAG_CONTEXT_MENU_IN_BODY |
+				J_GUI_TABLE_FLAG_RESIZABLE;
 
-			if (aniCont.IsValid() && JImGuiImpl::BeginTable("##ParameterList_Table" + GetName(), 3, flag))
+			if (aniCont.IsValid() && JGui::BeginTable("##ParameterList_Table" + GetName(), 3, flag))
 			{
-				//JImGuiImpl::TableSetupColumn("", ImGuiTableColumnFlags_DefaultHide, 0.005f);
-				JImGuiImpl::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 0.445f);
-				JImGuiImpl::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch, 0.275f);
-				JImGuiImpl::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 0.275f);
-				JImGuiImpl::TableHeadersRow();
+				//JGui::TableSetupColumn("", ImGuiTableColumnFlags_DefaultHide, 0.005f);
+				JGui::TableSetupColumn("Name", J_GUI_TABLE_COLUMN_FLAG_WIDTH_STRETCH, 0.445f);
+				JGui::TableSetupColumn("Type", J_GUI_TABLE_COLUMN_FLAG_WIDTH_STRETCH, 0.275f);
+				JGui::TableSetupColumn("Value", J_GUI_TABLE_COLUMN_FLAG_WIDTH_STRETCH, 0.275f);
+				JGui::TableHeadersRow();
 				const uint parameterCount = aniCont->GetParameterCount();
 				for (uint i = 0; i < parameterCount; ++i)
 				{
@@ -255,50 +255,48 @@ public:
 					std::string name = JCUtil::WstrToU8Str(nowParameter->GetName());
 					std::string uniqueLabel = std::to_string(nowParameter->GetGuid());
 
-					JImGuiImpl::TableNextRow();
-					JImGuiImpl::TableSetColumnIndex(0);
+					JGui::TableNextRow();
+					JGui::TableSetColumnIndex(0);
 
 					const bool isSelect = IsSelectedObject( nowParameter->GetGuid()); 
-					const JVector2<float> preCursorPos = ImGui::GetCursorScreenPos();			 
+					const JVector2<float> preCursorPos = JGui::GetCursorScreenPos();
 					
-					if (isSelect)
-						SetTreeNodeColor(GetSelectedColorFactor());
-					if (JImGuiImpl::Selectable(name + "##Parameter_Selectable" + uniqueLabel, &isSelect, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap))
+					PushTreeNodeColorSet(true, isSelect);
+					if (JGui::Selectable(name + "##Parameter_Selectable" + uniqueLabel, &isSelect, J_GUI_SELECTABLE_FLAG_SPAN_ALL_COLUMNS | J_GUI_SELECTABLE_FLAG_ALLOW_ITEM_OVERLAP))
 					{ 
 						RequestPushSelectObject(nowParameter);
 						SetContentsClick(true);
 					} 
-					if (isSelect)
-						SetTreeNodeColor(GetSelectedColorFactor() * -1);
+					PopTreeNodeColorSet(true, isSelect);
 
-					if (JImGuiImpl::IsMouseInRect(preCursorPos, ImGui::GetItemRectSize()))
+					if (JGui::IsMouseInRect(preCursorPos, JGui::GetLastItemRectSize()))
 					{
 						SetHoveredObject(nowParameter);
-						if (ImGui::IsMouseClicked(1))
+						if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::RIGHT))
 							SetContentsClick(true);
 					} 
-					ImGui::PushItemWidth(-FLT_MIN);
+					JGui::PushItemWidth(-FLT_MIN);
 					if (isSelect)
 					{
 						//rename 추가 필요
 					} 
 
 					Core::J_FSM_PARAMETER_VALUE_TYPE valueType = nowParameter->GetParamType();
-					JImGuiImpl::TableSetColumnIndex(1);
-					ImGui::PushItemWidth(-FLT_MIN);
+					JGui::TableSetColumnIndex(1);
+					JGui::PushItemWidth(-FLT_MIN);
 
-					JImGuiImpl::ComoboEnumSetT(name, uniqueLabel, valueType, *settingImpl->setParameterTypeF, aniCont, nowParameter->GetGuid());
+					JGui::ComoboEnumSetT(name, uniqueLabel, valueType, *settingImpl->setParameterTypeF, aniCont, nowParameter->GetGuid());
 
-					JImGuiImpl::TableSetColumnIndex(2);
-					ImGui::PushItemWidth(-FLT_MIN);
+					JGui::TableSetColumnIndex(2);
+					JGui::PushItemWidth(-FLT_MIN);
 					if (valueType == Core::J_FSM_PARAMETER_VALUE_TYPE::BOOL)
-						JImGuiImpl::CheckBoxSetT(name, uniqueLabel, (bool)nowParameter->GetValue(), *settingImpl->setParameterBoolF, aniCont, nowParameter->GetGuid());
+						JGui::CheckBoxSetT(name, uniqueLabel, (bool)nowParameter->GetValue(), *settingImpl->setParameterBoolF, aniCont, nowParameter->GetGuid());
 					else if (valueType == Core::J_FSM_PARAMETER_VALUE_TYPE::INT)
-						JImGuiImpl::InputIntSetT(name, uniqueLabel, (int)nowParameter->GetValue(), *settingImpl->setParameterIntF, aniCont, nowParameter->GetGuid());
+						JGui::InputIntSetT(name, uniqueLabel, (int)nowParameter->GetValue(), *settingImpl->setParameterIntF, aniCont, nowParameter->GetGuid());
 					else if (valueType == Core::J_FSM_PARAMETER_VALUE_TYPE::FLOAT)
-						JImGuiImpl::InputFloatSetT(name, uniqueLabel, (float)nowParameter->GetValue(), *settingImpl->setParameterFloatF, aniCont, nowParameter->GetGuid());
+						JGui::InputFloatSetT(name, uniqueLabel, (float)nowParameter->GetValue(), *settingImpl->setParameterFloatF, aniCont, nowParameter->GetGuid());
 				}
-				JImGuiImpl::EndTable();
+				JGui::EndTable();
 			}
 			if (aniCont.IsValid())
 				UpdatePopup(PopupSetting(parameterListPopup.get(), editorString.get()));
@@ -307,6 +305,7 @@ public:
 		{
 			aniCont.Clear();
 			selectedDiagram.Clear(); 
+			JEditorWindow::DoSetClose();
 		}
 		void JAnimationParameterList::DoActivate()noexcept
 		{
@@ -319,8 +318,8 @@ public:
 		}
 		void JAnimationParameterList::DoDeActivate()noexcept
 		{
-			JEditorWindow::DoDeActivate();
 			DeRegisterListener();
+			JEditorWindow::DoDeActivate();
 		}
 		void JAnimationParameterList::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* ev)
 		{ 
@@ -333,7 +332,7 @@ public:
 			else if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && ev->pageType == GetOwnerPageType())
 			{
 				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(ev);
-				JUserPtr< Core::JIdentifier> diagram = evstruct->GetFirstMatchedTypeObject(Core::JAnimationFSMdiagram::StaticTypeInfo());
+				JUserPtr< Core::JIdentifier> diagram = evstruct->GetFirstMatchedTypeObject(JAnimationFSMdiagram::StaticTypeInfo());
 				if (diagram.IsValid())
 				{
 					if (!selectedDiagram.IsValid() || selectedDiagram->GetGuid() != diagram->GetGuid())

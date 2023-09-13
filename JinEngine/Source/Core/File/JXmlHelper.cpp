@@ -91,7 +91,7 @@ namespace JinEngine
 				userInfo.err = "can't open xml file, it is invalid path";
 				return false;
 			}
-			LoadNodeData(&doc, nullptr, JXmlNode::invalidIndex, node);
+			LoadNodeData(&doc, nullptr, invalidIndex, node);
 			return true;
 		}
 		bool JXmlIOHelper::Store(_Inout_ JXmlUserInfo& userInfo, _In_ const std::vector<JXmlNode>& node)
@@ -108,7 +108,7 @@ namespace JinEngine
 
 			if (node.size() > 0)
 			{
-				StoreNodeData(doc, nullptr, JXmlNode::invalidIndex, node);
+				StoreNodeData(doc, nullptr, invalidIndex, node);
 				doc->LinkEndChild(doc->FirstChildElement());
 			}
 			XMLError err = doc->SaveFile(userInfo.path.c_str());

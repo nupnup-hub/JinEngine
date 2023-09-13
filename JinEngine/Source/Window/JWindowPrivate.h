@@ -6,10 +6,7 @@
 
 namespace JinEngine
 {
-	namespace Application
-	{
-		class JApplication;
-	}
+	class JMain;
 	namespace Core
 	{
 		class JWindowException;
@@ -17,11 +14,11 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphic;
+		class JGraphicResourceManager; 
 	}
 	namespace Editor
 	{
-		class JEditorCameraControl;
-		class JImGui;
+		class JEditorCameraControl; 
 		class JProjectSelectorHub;
 	}
 
@@ -30,10 +27,10 @@ namespace JinEngine
 		class JWindowPrivate
 		{
 		public:
-			class ApplicationAccess
+			class MainAccess
 			{
 			private:
-				friend class Application::JApplication;
+				friend class JMain;
 			public:
 				using CloseConfirmF = Core::JFunctor<void>;
 			private:
@@ -46,12 +43,12 @@ namespace JinEngine
 			class HandleInterface
 			{
 			private:
-				friend class Application::JApplication;
+				friend class JMain;
 				friend class Core::JWindowException;
 				friend class Graphic::JGraphic;
+				friend class Graphic::JGraphicResourceManager; 
 				friend class Editor::JEditorCameraControl;
-				friend class Editor::JProjectSelectorHub;
-				friend class Editor::JImGui;
+				friend class Editor::JProjectSelectorHub; 
 			private:
 				static HWND GetHandle()noexcept;
 			};

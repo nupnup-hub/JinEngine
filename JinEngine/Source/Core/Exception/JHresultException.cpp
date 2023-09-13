@@ -1,5 +1,5 @@
 #include"JHresultException.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 
 namespace JinEngine
 {

@@ -1,9 +1,11 @@
 #include"JLazyDestruction.h"
 #include"../Identity/JIdentifier.h"
 #include"../Time/JGameTimer.h" 
-#include"../../Utility/JCommonUtility.h"
+#include"../Utility/JCommonUtility.h"
 #include"../../Object/Resource/Mesh/JStaticMeshGeometry.h"
 
+//Debug
+//#include"../../Develop/Debug/JDevelopDebug.h"
 namespace JinEngine
 {
 	namespace Core
@@ -32,7 +34,7 @@ namespace JinEngine
 			{}
 		public:
 			void Update(const float timeOffset)
-			{
+			{ 
 				for (int i = 0; i < objectVec.size(); ++i)
 				{
 					if (!objectVec[i]->user.IsValid())
@@ -47,8 +49,11 @@ namespace JinEngine
 				{
 					objectVec[i]->stTime += deltaTime;
 					if (objectVec[i]->stTime >= info->waitTime)
+					{
+						MessageBoxA(0, "executeDestroy", 0, 0);
 						info->executeDestroy(objectVec[i]->user.Get());
-				}
+					}
+				} 
 			}
 			void Clear()noexcept
 			{
@@ -65,7 +70,7 @@ namespace JinEngine
 					if (!info->canDestroy(ptr))
 						return false;
 				}
-
+				 
 				objectVec.emplace_back(std::make_unique<ObjectInfo>(Core::GetUserPtr(ptr)));
 				if (info->notifyExecuteLazy != nullptr)
 					info->notifyExecuteLazy(ptr);
@@ -83,13 +88,13 @@ namespace JinEngine
 				}
 
 				bool(*equalPtr)(ObjectInfo*, const size_t) = [](ObjectInfo* info, const size_t guid) {return info->user.IsValid() ? info->user->GetGuid() == guid : false; };
-				int index = JCUtil::GetJIndex(objectVec, equalPtr, ptr->GetGuid());
+				int index = JCUtil::GetIndex(objectVec, equalPtr, ptr->GetGuid());
 				if (index == -1)
 					return false;
-
 				if (info->notifyCancelLazy != nullptr)
 					info->notifyCancelLazy(objectVec[index]->user.Get());
 				objectVec.erase(objectVec.begin() + index);
+				 
 				return true;
 			}
 		};
@@ -109,7 +114,7 @@ namespace JinEngine
 			impl->Clear();
 		}
 		bool JLazyDestruction::AddUser(JTypeBase* ptr)noexcept
-		{ 
+		{
 			return impl->AddUser(ptr);
 		}
 		bool JLazyDestruction::RemoveUser(JTypeBase* ptr)noexcept

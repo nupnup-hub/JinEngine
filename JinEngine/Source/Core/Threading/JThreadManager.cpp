@@ -160,7 +160,7 @@ namespace JinEngine
 			int reservedSpace[priorityRange];
 			int workingPoolStartIndex[priorityRange];
 		public:
-			int threadCount;
+			int threadCount = 0;
 		public:
 			void Initialize()
 			{
@@ -298,6 +298,7 @@ namespace JinEngine
 
 				thread[index] = std::make_unique<std::thread>(threadFLam, this, index);
 			}
+			//work thread중 wait 상태인 thread search
 			int FindWaitThread(const int woringSetStIndex)const noexcept
 			{
 				for (int i = woringSetStIndex; i < threadCount; ++i)
@@ -329,18 +330,18 @@ namespace JinEngine
 			impl.reset();
 		}
 
-		using ApplicationInterface = JThreadManagerPrivate::ApplicationInterface;
+		using MainAccess = JThreadManagerPrivate::MainAccess;
 		using GraphicInterface = JThreadManagerPrivate::GraphicInterface;
 
-		void ApplicationInterface::Initialize()
+		void MainAccess::Initialize()
 		{
 			_JThreadManager::Instance().impl->Initialize();
 		}
-		void ApplicationInterface::Clear()
+		void MainAccess::Clear()
 		{
 			_JThreadManager::Instance().impl->Clear();
 		}
-		void ApplicationInterface::Update()
+		void MainAccess::Update()
 		{
 			_JThreadManager::Instance().impl->Update();
 		} 

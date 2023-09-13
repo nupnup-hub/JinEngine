@@ -2,28 +2,37 @@
 #include"../../JEditorAttribute.h"
 #include"../../JEditorPageShareData.h"
 #include"../../../Interface/JEditorObjectCreationInterface.h"
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../../Gui/JGui.h"
 #include"../../../Event/JEditorEvent.h"
 #include"../../../String/JEditorStringMap.h"
 #include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"   
-#include"../../../Helpers/JEditorRenameHelper.h"
-#include"../../../Helpers/JEditorSearchBarHelper.h"
-#include"../../../../Utility/JCommonUtility.h"    
+#include"../../../EditTool/JEditorRenameHelper.h"
+#include"../../../EditTool/JEditorSearchBarHelper.h"
 #include"../../../../Object/Component/JComponentCreator.h"
-#include"../../../../Object/GameObject/JGameObject.h"   
+#include"../../../../Object/GameObject/JGameObject.h" 
+#include"../../../../Object/GameObject/JGameObjectPrivate.h"
 #include"../../../../Object/GameObject/JGameObjectCreator.h"
 #include"../../../../Object/Resource/JResourceManager.h"
 #include"../../../../Object/Resource/Scene/JScene.h" 
 #include"../../../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../../../Core/Identity/JIdentifier.h"
 #include"../../../../Core/Guid/JGuidCreator.h"
-#include"../../../../../ThirdParty/imgui/imgui.h"  
+#include"../../../../Core/Utility/JCommonUtility.h"     
 
 namespace JinEngine
 {
 	namespace Editor
 	{
+		namespace
+		{
+			//using NodeColorFactor = int;
+			//static NodeColorFactor setNodeColorFactor = 1;
+			//static NodeColorFactor offNodeColorFactor = -1;
+			static const JVector4<float> actColor = JVector4<float>(0.15f, 0.7f, 0.15f, 0.7f);
+			static const JVector4<float> deActColor = JVector4<float>(0.7f, 0.15f, 0.15f, 0.7f);
+		}
+
 		class JObjectExplorerCreationImpl
 		{
 		private:
@@ -72,9 +81,11 @@ namespace JinEngine
 		public:
 			using ChangeParentF = Core::JSFunctorType<void, JObjectExplorer*, JUserPtr<JGameObject>, JUserPtr<JGameObject>>;
 			using RenameF = Core::JSFunctorType<void, JObjectExplorer*>;
+			using ActivateF = Core::JSFunctorType<void, JObjectExplorer*, JUserPtr<JGameObject>, bool>;
 		public:
 			std::unique_ptr<ChangeParentF::Functor> changeParentF;
 			std::unique_ptr<RenameF::Functor> renameF;
+			std::unique_ptr<ActivateF::Functor> activateF;
 		};
 
 
@@ -283,9 +294,17 @@ namespace JinEngine
 				objEx->renameHelper->Activate(objEx->GetHoveredObject());
 				objEx->SetModifiedBit(static_cast<JGameObject*>(objEx->GetHoveredObject().Get())->GetOwnerScene(), true);
 			};
+			auto activateLam = [](JObjectExplorer* objEx, JUserPtr<JGameObject> obj, bool value)
+			{
+				if (value)
+					JGameObjectPrivate::ActivateInterface::Activate(obj);
+				else
+					JGameObjectPrivate::ActivateInterface::DeActivate(obj);
+			};
 			settingImpl = std::make_unique<JObjectExplorerSettingImpl>();
 			settingImpl->changeParentF = std::make_unique<JObjectExplorerSettingImpl::ChangeParentF::Functor>(changeParentLam);
 			settingImpl->renameF = std::make_unique<JObjectExplorerSettingImpl::RenameF::Functor>(renameLam);
+			settingImpl->activateF = std::make_unique<JObjectExplorerSettingImpl::ActivateF::Functor>(activateLam);
 		}
 		J_EDITOR_WINDOW_TYPE JObjectExplorer::GetWindowType()const noexcept
 		{
@@ -300,8 +319,9 @@ namespace JinEngine
 		}
 		void JObjectExplorer::UpdateWindow()
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
-			UpdateDocking();
+			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | J_GUI_WINDOW_FLAG_NO_COLLAPSE);
+			UpdateDocking(); 
+ 
 			if (IsActivated() && root.IsValid())
 			{
 				UpdateMouseClick();
@@ -314,55 +334,59 @@ namespace JinEngine
 		{
 			ObjectExplorerOnScreen(root, searchBarHelper->HasInputData());
 			UpdatePopup(PopupSetting(explorerPopup.get(), editorString.get())); 
-			ImGui::SameLine();
+			JGui::SameLine();
 		}
 		void JObjectExplorer::ObjectExplorerOnScreen(const JUserPtr<JGameObject>& gObj, const bool isAcivatedSearch)
 		{
-			//ImGuiTreeNodeFlags_Selected
+			//JGuiTreeNodeFlags_Selected
 			bool isNodeOpen = false;
-			bool isRenameActivaetd = renameHelper->IsActivated() && renameHelper->IsRenameTar(gObj->GetGuid());
+			const bool isRenameActivaetd = renameHelper->IsActivated() && renameHelper->IsRenameTar(gObj->GetGuid());
 
 			//selected mark를 이용하면 자식 gameObject를 참조하는 node까지 mark되어버리므로
 			//이는 Explorer에서 기대하는 바가 아니므로 직접 클릭한 gameObject만 저장되는
 			//SelectedMap을 참조해서 mark
-			bool isSelected = IsSelectedObject(gObj->GetGuid()); 
+			const bool isSelected = IsSelectedObject(gObj->GetGuid()); 
+			const bool isActivated = gObj->IsActivated();
 
-			ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow |
-				ImGuiTreeNodeFlags_SpanAvailWidth |
-				ImGuiTreeNodeFlags_Framed;
+			const J_GUI_TREE_NODE_FLAG_ baseFlags = J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW |
+				J_GUI_TREE_NODE_FLAG_EXTEND_HIT_BOX_WIDTH |
+				J_GUI_TREE_NODE_FLAG_FRAMED;
 
 			//if(!isSelected && gObj->IsSelectedbyEditor())
 			//	RequestPushSelectObject(Core::GetUserPtr(gObj));
 
-			std::string name = JCUtil::WstrToU8Str(gObj->GetName());
-			bool canOnScreen = searchBarHelper->CanSrcNameOnScreen(name);
+			const std::string name = JCUtil::WstrToU8Str(gObj->GetName());
+			const bool canOnScreen = searchBarHelper->CanSrcNameOnScreen(name); 
 			if (canOnScreen)
 			{
 				if (isRenameActivaetd)
 				{
-					isNodeOpen = ImGui::TreeNodeBehaviorIsOpen(ImGui::GetCurrentWindow()->GetID((name + "##TreeNode").c_str()), baseFlags);
+					//can't select and hover
+					//fixed hover object when start rename ev
+					PushTreeNodeColorSet(isActivated, isSelected); 
+					isNodeOpen = JGui::IsTreeNodeOpend(name + "##TreeNode", baseFlags);
+					PopTreeNodeColorSet(isActivated, isSelected);
+					DisplayActSignalWidget(gObj, name + "ActSignal", false);
 					renameHelper->Update(isNodeOpen);
 				}
 				else
-				{
-					if (isSelected)
-						SetTreeNodeColor(GetSelectedColorFactor());
+				{ 
 					if (isAcivatedSearch)
-						ImGui::SetNextItemOpen(true);
-					isNodeOpen = JImGuiImpl::TreeNodeEx((name + "##TreeNode").c_str(), baseFlags);
-					if (isSelected)
-						SetTreeNodeColor(GetSelectedColorFactor() * -1);
+						JGui::SetNextItemOpen(true);		
+					PushTreeNodeColorSet(isActivated, isSelected);
+					isNodeOpen = JGui::TreeNodeEx(name + "##TreeNode", baseFlags);
+					PopTreeNodeColorSet(isActivated, isSelected);
+					if (JGui::IsLastItemHovered())
+						SetHoveredObject(gObj);
+
+					DisplayActSignalWidget(gObj, name + "ActSignal", true);
+					if (JGui::IsLastItemAnyClicked(false) && !JGui::IsKeyDown(Core::J_KEYCODE::CONTROL))
+					{
+						RequestPushSelectObject(gObj);
+						SetContentsClick(true);
+					}
 					if (isNodeOpen)
 					{
-						if (ImGui::IsItemHovered())
-							SetHoveredObject(gObj);
-
-						if (ImGui::IsItemClicked(0) || ImGui::IsItemClicked(1))
-						{
-							RequestPushSelectObject(gObj);
-							SetContentsClick(true);
-						}
-
 						TryBeginDragging(gObj);
 						JUserPtr<Core::JIdentifier> dragResult = TryGetDraggingTarget();
 
@@ -409,9 +433,42 @@ namespace JinEngine
 					ObjectExplorerOnScreen(child, isAcivatedSearch);
 				}
 				if (isRenameActivaetd)
-					ImGui::Unindent();
+					JGui::UnIndent();
 				else if (isNodeOpen)
-					JImGuiImpl::TreePop();
+					JGui::TreePop();
+			}
+		}
+		void JObjectExplorer::DisplayActSignalWidget(const JUserPtr<JGameObject>& gObj,
+			const std::string& unqLabel, 
+			const bool allowDisplaySeletable)
+		{   
+			const bool isActivated = gObj->IsActivated();
+			const float radius = JGui::GetLastItemRectSize().y * 0.25f;
+			const float xOffset = radius * 2;
+			const JVector2<uint> centerPos = JVector2<uint>(JGui::GetLastItemRectMax().x - xOffset, JGui::GetLastItemRectMin().y + JGui::GetLastItemRectSize().y * 0.5f);
+			JVector4 color = isActivated ? actColor : deActColor;
+
+			const bool isHover = allowDisplaySeletable && JGui::IsMouseInRect(centerPos - JVector2<uint>(radius, radius), JVector2<uint>(radius * 2, radius * 2));
+			if (isHover)
+				color += GetSelectableColorFactor(false, isHover);
+
+			JGui::DrawCircleFilledColor(centerPos, radius, color, true);
+			if (gObj != nullptr)
+			{
+				if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT) && isHover)
+				{
+					using ActivateF = JObjectExplorerSettingImpl::ActivateF;
+
+					std::string taskType = !isActivated ? "Activate" : "DeActivate";
+					std::string taskName = taskType + " " + JCUtil::WstrToU8Str(gObj->GetName());
+					std::string taskDesc = "";
+
+					auto doBind = std::make_unique<ActivateF::CompletelyBind>(*settingImpl->activateF, this, JUserPtr<JGameObject>(gObj), !gObj->IsActivated());
+					auto undoBind = std::make_unique<ActivateF::CompletelyBind>(*settingImpl->activateF, this, JUserPtr<JGameObject>(gObj), gObj->IsActivated());
+					auto evStruct = std::make_unique<JEditorTSetBindFuncEvStruct>(taskName, taskDesc, GetOwnerPageType(), std::move(doBind), std::move(undoBind));
+
+					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
+				}  
 			}
 		}
 		void JObjectExplorer::DoActivate()noexcept
@@ -422,8 +479,8 @@ namespace JinEngine
 		}
 		void JObjectExplorer::DoDeActivate()noexcept
 		{
-			JEditorWindow::DoDeActivate();
 			RemoveListener(*JEditorEvent::EvInterface(), GetGuid());
+			JEditorWindow::DoDeActivate();
 		}
 		void JObjectExplorer::DoSetUnFocus()noexcept
 		{
@@ -434,7 +491,7 @@ namespace JinEngine
 		void JObjectExplorer::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{
 			JEditorWindow::OnEvent(senderGuid, eventType, eventStruct);
-			if (senderGuid == GetGuid())
+			if (!eventStruct->CanExecuteOtherEv(senderGuid, GetGuid()))
 				return;
 
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)

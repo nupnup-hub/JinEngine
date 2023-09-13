@@ -1,8 +1,8 @@
 #include"JApplicationWatcher.h"
 #include"../../JEditorAttribute.h"  
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../../Gui/JGui.h"
 #include"../../../../Application/JApplicationProject.h"
-#include"../../../../Utility/JCommonUtility.h"
+#include"../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../Core/Identity/JIdentifier.h"
 #include"../../../../Core/Time/JGameTimer.h"
 #include"../../../../Core/Memory/JMemoryCapture.h"
@@ -26,10 +26,11 @@ namespace JinEngine
 		}
 		void JApplicationWatcher::UpdateWindow()
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR);
 			UpdateDocking();
 			if (IsActivated())
 			{ 
+				UpdateMouseClick();
 				DisplayTimeOnScreen();
 				DisplayMemoryUsageOnScreen();
 			}
@@ -37,29 +38,29 @@ namespace JinEngine
 		}
 		void JApplicationWatcher::DisplayTimeOnScreen()
 		{
-			ImGui::BeginGroup();
-			JImGuiImpl::Text("Open date: " + JApplicationProject::GetOpenProjectInfo()->GetLastUpdateTime().ToString());
-			JImGuiImpl::Text("Fps: " + std::to_string(Core::JGameTimer::FramePerSecond()));
-			ImGui::EndGroup();
+			JGui::BeginGroup();
+			JGui::Text("Open date: " + JApplicationProject::GetOpenProjectInfo()->GetLastUpdateTime().ToString());
+			JGui::Text("Fps: " + std::to_string(Core::JGameTimer::FramePerSecond()));
+			JGui::EndGroup();
 		}
 		void JApplicationWatcher::DisplayMemoryUsageOnScreen()
 		{
-			ImGui::BeginGroup();
+			JGui::BeginGroup();
 			auto mem = Core::JMemoryCapture::GetTotalMemory();
 			auto proc = Core::JMemoryCapture::GetCurrentProcessMemory();
-			JImGuiImpl::Text("Memory: " + Core::JByteUnit::ByteToString(mem.totalPhys));
-			JImGuiImpl::Text("VirtualMemory: " + Core::JByteUnit::ByteToString(mem.totalVirtual));
-			JImGuiImpl::Text("ProcessUsage: " + Core::JByteUnit::ByteToString(proc.privateUsage));
+			JGui::Text("Memory: " + Core::JByteUnit::ByteToString(mem.totalPhys));
+			JGui::Text("VirtualMemory: " + Core::JByteUnit::ByteToString(mem.totalVirtual));
+			JGui::Text("ProcessUsage: " + Core::JByteUnit::ByteToString(proc.privateUsage));
 
 			static bool displayDetail = false;
-			if (JImGuiImpl::Button("Detail##JApplicationWatcher"))
+			if (JGui::Button("Detail##JApplicationWatcher"))
 				displayDetail = !displayDetail;
 
 			if (displayDetail)
 			{
-				JImGuiImpl::Text("PeakWorkingSetSize: " + Core::JByteUnit::ByteToString(proc.peakWorkingSetSize));
-				JImGuiImpl::Text("WorkingSetSize: " + Core::JByteUnit::ByteToString(proc.workingSetSize));
-				if (JImGuiImpl::BeginListBox("Type##JApplicationWatcher"))
+				JGui::Text("PeakWorkingSetSize: " + Core::JByteUnit::ByteToString(proc.peakWorkingSetSize));
+				JGui::Text("WorkingSetSize: " + Core::JByteUnit::ByteToString(proc.workingSetSize));
+				if (JGui::BeginListBox("Type##JApplicationWatcher"))
 				{
 					auto typeVec = _JReflectionInfo::Instance().GetDerivedTypeInfo(Core::JIdentifier::StaticTypeInfo());
 					for (const auto& data : typeVec)
@@ -68,21 +69,21 @@ namespace JinEngine
 							continue;
 
 						auto allocInfo = data->GetAllocInfo();
-						JImGuiImpl::Text("Type: " + data->Name());
-						JImGuiImpl::Text("Reserve: " + Core::JByteUnit::ByteToString(allocInfo.totalReserveSize));
-						JImGuiImpl::Text("Committed: " + Core::JByteUnit::ByteToString(allocInfo.totalCommittedSize));
-						JImGuiImpl::Text("Count: " + std::to_string(allocInfo.useBlockCount));
+						JGui::Text("Type: " + data->Name());
+						JGui::Text("Reserve: " + Core::JByteUnit::ByteToString(allocInfo.totalReserveSize));
+						JGui::Text("Committed: " + Core::JByteUnit::ByteToString(allocInfo.totalCommittedSize));
+						JGui::Text("Count: " + std::to_string(allocInfo.useBlockCount));
 
 						auto implAllocInfo = data->GetImplTypeInfo()->GetAllocInfo();
-						JImGuiImpl::Text("Impl Type: " + data->Name());
-						JImGuiImpl::Text("Impl Reserve: " + Core::JByteUnit::ByteToString(implAllocInfo.totalReserveSize));
-						JImGuiImpl::Text("Impl Committed: " + Core::JByteUnit::ByteToString(implAllocInfo.totalCommittedSize));
-						JImGuiImpl::Text("Impl Count: " + std::to_string(implAllocInfo.useBlockCount));
-						ImGui::NewLine();
+						JGui::Text("Impl Type: " + data->Name());
+						JGui::Text("Impl Reserve: " + Core::JByteUnit::ByteToString(implAllocInfo.totalReserveSize));
+						JGui::Text("Impl Committed: " + Core::JByteUnit::ByteToString(implAllocInfo.totalCommittedSize));
+						JGui::Text("Impl Count: " + std::to_string(implAllocInfo.useBlockCount));
+						JGui::NewLine();
 					}
 				}
 			}
-			ImGui::EndGroup();
+			JGui::EndGroup();
 		}
 	}
 }

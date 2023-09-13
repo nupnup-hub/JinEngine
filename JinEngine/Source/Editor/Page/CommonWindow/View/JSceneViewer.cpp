@@ -2,7 +2,8 @@
 #include"JSceneCameraList.h"
 #include"../../JEditorAttribute.h" 
 #include"../../../Event/JEditorEvent.h"
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h"
+#include"../../../Gui/JGui.h"
+#include"../../../Gui/JGuiImageInfo.h"
 #include"../../../EditTool/JEditorCameraControl.h" 
 #include"../../../../Object/Component/Camera/JCamera.h" 
 #include"../../../../Object/Resource/Scene/JScene.h" 
@@ -40,47 +41,52 @@ namespace JinEngine
 			scene = newScene;
 		}
 		void JSceneViewer::UpdateWindow()
-		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+		{ 
+			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR |
+				J_GUI_WINDOW_FLAG_NO_SCROLL_WITH_MOUSE |
+				J_GUI_WINDOW_FLAG_NO_COLLAPSE);
 			UpdateDocking();
 			if (IsActivated() && scene.IsValid())
 			{ 
 				UpdateMouseClick(); 
+				UpdateMouseWheel();
 				camList->Update(scene);
-				//camList->DisplayCameraList(scene.Get(), "Viewer", ImGui::GetMainViewport()->Size * 0.15f);
+				//camList->DisplayCameraList(scene.Get(), "Viewer", JGui::GetMainViewport()->Size * 0.15f);
 				selectedCam = camList->GetSelectedCam(scene);
  
 				//Test Code
 				/*
 				* static bool allowShiroBack;
-				JImGuiImpl::CheckBox("draw shiro background", allowShiroBack);
+				JJGuiImpl::CheckBox("draw shiro background", allowShiroBack);
 
 				if (allowShiroBack)
 				{
 					if (shiroBack == nullptr)
 						shiroBack = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND);
-					JImGuiImpl::Image(shiroBack.Get(), JVector2<float>(50, 50));
+					JJGuiImpl::Image(shiroBack.Get(), JVector2<float>(50, 50));
 				}
 				else
 					shiroBack.Clear();*/
 
 				if (selectedCam.IsValid())
 				{
-					if (IsFocus())
-					{
-						if (ImGui::IsMouseHoveringRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize()))
-							editorCamCtrl->MouseMove(selectedCam.Get(), ImGui::GetMousePos().x, ImGui::GetMousePos().y);
-						editorCamCtrl->KeyboardInput(selectedCam.Get());
-					} 
-					JImGuiImpl::Image(selectedCam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, ImGui::GetWindowSize());
+					editorCamCtrl->Update(selectedCam.Get(), JGui::GetMousePos().x, JGui::GetMousePos().y, J_GUI_FOCUS_FLAG_CHILD_WINDOW);
+					JGuiImageInfo info(selectedCam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
+					info.useFirstHandle = false;
+					JGui::Image(info, JGui::GetWindowSize());
 				}	 
-				//JImGuiImpl::Image(*mainCamera, ImGui::GetMainViewport()->WorkSize);
+				//JJGuiImpl::Image(*mainCamera, JGui::GetMainViewport()->WorkSize);
 			}
 			CloseWindow();
+		}
+		void JSceneViewer::UpdateMouseWheel()
+		{
+			editorCamCtrl->AddMovementFactor(JGui::GetMouseWheel());
 		}
 		void JSceneViewer::DoActivate()noexcept
 		{
 			JEditorWindow::DoActivate();  
+			editorCamCtrl->SetMousePos(JGui::GetMousePos());
 		}
 		void JSceneViewer::DoDeActivate()noexcept
 		{

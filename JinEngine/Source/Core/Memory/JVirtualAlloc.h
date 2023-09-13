@@ -79,6 +79,7 @@ namespace JinEngine
 			uint GetAllocableBlockCount()const noexcept; 
 			uint GetAllocatedBlockCount()const noexcept;
 			uint GetDeAllocatedBlockCount()const noexcept;
+			size_t GetAlignedAllocBlockSize()const noexcept final;
 			JAllocationInfo GetInformation()const noexcept final;
 		private:
 			inline DataPointer CalPtrLocation(const uint index)const noexcept

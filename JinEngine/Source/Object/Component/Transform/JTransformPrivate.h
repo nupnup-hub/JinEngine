@@ -5,12 +5,15 @@ namespace JinEngine
 {
 	class JCamera;
 	class JLight;
+	class JDirectionalLight;
+	class JPointLight;
+	class JSpotLight;
 	class JRenderItem;
 	class JTransform;  
 	class JGameObject;
 	namespace Graphic
 	{
-		class JFrameDirty;
+		class JFrameDirtyTriggerBase;
 	}
 	class JTransformPrivate final : public JComponentPrivate
 	{
@@ -47,7 +50,7 @@ namespace JinEngine
 			friend class JRenderItem;
 		private:
 			//JFrameDirtyListener is impl class
-			static void RegisterFrameDirtyListener(JTransform* transform, Graphic::JFrameDirty* listener, const size_t guid)noexcept;
+			static void RegisterFrameDirtyListener(JTransform* transform, Graphic::JFrameDirtyTriggerBase* listener, const size_t guid)noexcept;
 			static void DeRegisterFrameDirtyListener(JTransform* transform, const size_t guid)noexcept;
 		};
 	public:

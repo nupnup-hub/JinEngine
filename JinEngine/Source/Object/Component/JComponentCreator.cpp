@@ -2,6 +2,9 @@
 #include"../../Object/Component/JComponentHint.h"
 #include"../../Object/Component/Camera/JCamera.h"
 #include"../../Object/Component/Light/JLight.h"
+#include"../../Object/Component/Light/JDirectionalLight.h"
+#include"../../Object/Component/Light/JPointLight.h"
+#include"../../Object/Component/Light/JSpotLight.h"
 #include"../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../Object/Resource/JResourceManager.h"
 #include"../../Object/Resource/Mesh/JMeshGeometry.h"
@@ -16,15 +19,20 @@ namespace JinEngine
 	}
 	JUserPtr<JLight> JComponentCreatorInterface::CreateLight(const JUserPtr<JGameObject>& owner, J_LIGHT_TYPE type)
 	{ 
-		JUserPtr<JLight> newLight = JICI::Create<JLight>(owner);
-		newLight->SetLightType(type);
-		return newLight;
+		if (type == J_LIGHT_TYPE::DIRECTIONAL)
+			return JICI::Create<JDirectionalLight>(owner);
+		else if (type == J_LIGHT_TYPE::POINT)
+			return JICI::Create<JPointLight>(owner);
+		else if (type == J_LIGHT_TYPE::SPOT)
+			return JICI::Create<JSpotLight>(owner);
+		else
+			return nullptr;
 	}
 	JUserPtr<JRenderItem> JComponentCreatorInterface::CreateRenderItem(const JUserPtr<JGameObject>& owner,
 		const JUserPtr<JMeshGeometry>& mesh,  
 		const D3D12_PRIMITIVE_TOPOLOGY primitiveType,
 		const J_RENDER_LAYER renderLayer,
-		const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask)
+		const J_RENDERITEM_ACCELERATOR_MASK spaceSpatialMask)
 	{
 		if (mesh == nullptr)
 			return nullptr;
@@ -33,7 +41,7 @@ namespace JinEngine
 		JUserPtr<JRenderItem> newRenderItem = JICI::Create<JRenderItem>(owner);
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
-		newRenderItem->SetSpaceSpatialMask(spaceSpatialMask);
+		newRenderItem->SetAcceleratorMask(spaceSpatialMask);
 		newRenderItem->SetMesh(mesh);
 
 		return newRenderItem;
@@ -43,7 +51,7 @@ namespace JinEngine
 		std::vector<JUserPtr<JMaterial>>& mat,
 		const D3D12_PRIMITIVE_TOPOLOGY primitiveType,
 		const J_RENDER_LAYER renderLayer,
-		const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask)
+		const J_RENDERITEM_ACCELERATOR_MASK spaceSpatialMask)
 	{
 		if (mesh == nullptr)
 			return nullptr;
@@ -52,10 +60,10 @@ namespace JinEngine
 		JUserPtr<JRenderItem> newRenderItem = JICI::Create<JRenderItem>(owner);
 		newRenderItem->SetPrimitiveType(primitiveType);
 		newRenderItem->SetRenderLayer(renderLayer);
-		newRenderItem->SetSpaceSpatialMask(spaceSpatialMask);
+		newRenderItem->SetAcceleratorMask(spaceSpatialMask);
 		newRenderItem->SetMesh(mesh);
 		 
-		const int matCount = (uint)mat.size();
+		const uint matCount = (uint)mat.size();
 		for (uint i = 0; i < matCount; ++i)
 		{
 			if (mat[i] != nullptr)

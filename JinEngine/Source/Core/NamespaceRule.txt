@@ -1,0 +1,12 @@
+JinEngine에 namespace 구역은 
+1) 모듈에 디렉토리 트리(JiEngine::...)
+2) Header file에 정의된 static constexpr 혹은 static const파일 (Constants)
+3) cpp파일내부에서만 사용하는 데이터들 (Private) ... interface class 혹은 안정성이 높은 클래스들은 anonymous namespace 사용할수도있다.
+위에 3가지 규칙에 따라정의된다
+
+예외로 일부 클래스들은 편의를 위해 JinEngine까지만 namespace 선언한다.(Math, Utility)
+
+ex) JinEngine//Core//JCoreEssential.h -> namespace JinEngine::Core
+ex) JinEngine//Graphic//JGraphicConstants.h 내부에 Constants영역 -> namespace JinEngine::Graphic::Constants
+
+

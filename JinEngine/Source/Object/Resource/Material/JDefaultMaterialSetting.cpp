@@ -24,21 +24,13 @@ namespace JinEngine
 		UpdateShaderInterface::OnUpdateShaderTrigger(mat);
 		UpdateShaderInterface::UpdateShader(mat);
 	}
-	void JDefaultMaterialSetting::SetShadowMap(const JUserPtr<JMaterial>& mat)
-	{
-		UpdateShaderInterface::OffUpdateShaderTrigger(mat);
-		mat->SetShadowMapWrite(true);
-		mat->SetAlphaClip(true);
-		UpdateShaderInterface::OnUpdateShaderTrigger(mat);
-		UpdateShaderInterface::UpdateShader(mat);
-	}
 	void JDefaultMaterialSetting::SetDebug(const JUserPtr<JMaterial>& mat, const bool isLine, const JVector4<float> color)
 	{
 		UpdateShaderInterface::OffUpdateShaderTrigger(mat);
 		mat->SetDebugMaterial(true);
 		if (isLine)
 			mat->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE);
-		mat->SetAlbedoColor(color.ConvertXMF()); 
+		mat->SetAlbedoColor(color); 
 		UpdateShaderInterface::OnUpdateShaderTrigger(mat);
 		UpdateShaderInterface::UpdateShader(mat);
 	}

@@ -1,6 +1,6 @@
 #pragma once
 #include<string>
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 #include"../Module/JModuleMacro.h"
 #include"../Pointer/JOwnerPtr.h"
 #include"JPluginDesc.h" 
@@ -11,7 +11,7 @@ namespace JinEngine
 	namespace Core
 	{
 		class JModule;
-		class CORE_API JPluginInterface
+		class JPluginInterface
 		{
 		public:
 			virtual ~JPluginInterface() = default;

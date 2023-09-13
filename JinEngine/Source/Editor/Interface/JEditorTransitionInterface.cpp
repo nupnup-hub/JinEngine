@@ -6,8 +6,12 @@ namespace JinEngine
 	{
 		Core::JTransition& JEditorTransition::Instance()
 		{
-			static Core::JTransition trans;
+			static Core::JTransition trans(Name());
 			return trans;
+		}
+		std::string JEditorTransition::Name()
+		{
+			return "JEditorTransition";
 		}
 	}
 }

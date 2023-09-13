@@ -1,4 +1,6 @@
-#pragma once
+#pragma once 
+#include"Device/JGraphicDeviceType.h"
+
 namespace JinEngine
 {
 	namespace Graphic
@@ -10,11 +12,15 @@ namespace JinEngine
 			bool isHDOcclusionAcitvated = false;
 			bool isHZBOcclusionActivated = false; 
 		public:
-			//Debug
 			bool allowHZBCorrectFail = true;
-			bool allowDebugOutline = false;
-			bool allowMultiThread = true;
+			bool allowDebugOutline = true;
 		public:
+			bool allowMultiThread = true;
+			bool allowDrawGui = true; 
+		public:
+			J_GRAPHIC_DEVICE_TYPE deviceType = J_GRAPHIC_DEVICE_TYPE::DX12;
+		public:
+			bool IsOcclusionActivated()const noexcept;
 			bool IsHDOccActivated()const noexcept;
 			bool IsHZBOccActivated()const noexcept;
 		};

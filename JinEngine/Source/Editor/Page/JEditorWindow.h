@@ -1,8 +1,8 @@
 #pragma once
 #include"JEditor.h"  
 #include"JEditorPageEnum.h"
-#include"JEditorWindowEnum.h" 
-#include"JEditorWindowFontType.h" 
+#include"JEditorWindowEnum.h"  
+#include"../Gui/JGuiType.h"
 #include"../../Core/Func/Functor/JFunctor.h"
  
 namespace JinEngine
@@ -13,11 +13,37 @@ namespace JinEngine
 		class JEditorPopupMenu;
 		class JEditorStringMap;
 		class JEditorAttribute;
-		class JEditorWindowDockUpdateHelper;
+		class JDockUpdateHelper;
 
 		class JEditorWindow : public JEditor
-		{ 
+		{
+		private:
+			enum class WINDOW_INNER_EVENT
+			{
+				CLEAR_SELECTED_OBJECT
+			};
 		protected: 
+			struct State
+			{
+			public:
+				JUserPtr<Core::JIdentifier> hoveredObj;
+			public:
+				JVector2F nextPos;
+				JVector2F nextSize;
+			public:
+				bool hasSetNextPosReq = false;	//dock node가 아닌경우면 유효
+				bool hasSetNextSizeReq = false;	//dock node가 아닌경우면 유효
+			public:
+				bool isWindowOpen = false;
+				bool isContentsClick = false; 
+				bool isMaximize = false;
+			};
+			struct Option
+			{
+			public:
+				//selected option
+				bool canStaySelected = true;
+			};
 			struct PopupSetting
 			{
 			public:
@@ -37,7 +63,7 @@ namespace JinEngine
 				bool isOpen = false;
 				bool isMouseInPopup = false;
 				bool isPopupContentsClicked = false;
-				bool isLeafPopupContentsClicked = false;
+				bool isLeafPopupContentsClicked = false; 
 			};
 		protected:			 
 			using PassSelectedOneF = Core::JSFunctorType<bool, JEditorWindow*>;
@@ -46,15 +72,12 @@ namespace JinEngine
 			const J_EDITOR_PAGE_TYPE ownerPageType; 
 			J_EDITOR_WINDOW_FLAG windowFlag;
 		private:
-			std::unique_ptr<JEditorWindowDockUpdateHelper> dockUpdateHelper = nullptr;
-			//std::unique_ptr< JEditorWindowDockUpdateHelper::UpdateData> updateData;
+			std::unique_ptr<JDockUpdateHelper> dockUpdateHelper = nullptr;
+		private:
+			State state; 
+			Option option;
 		private:
 			std::unordered_map<size_t, JUserPtr<Core::JIdentifier>> selectedObjMap;
-			JUserPtr<Core::JIdentifier> hoveredObj;
-		private:
-			bool isWindowOpen = false;
-			bool isContentsClick = false;
-			bool isMaximize = false; 
 		public:
 			JEditorWindow(const std::string name,
 				std::unique_ptr<JEditorAttribute> attribute, 
@@ -69,35 +92,57 @@ namespace JinEngine
 		public:
 			virtual void UpdateWindow() = 0;
 		protected:
-			void EnterWindow(int guiWindowFlag);
+			void EnterWindow(J_GUI_WINDOW_FLAG_ flag);
 			void CloseWindow();
 		protected:
-			void UpdateMouseClick();
+			virtual void UpdateMouseClick();
+			virtual void UpdateMouseWheel();
 			void UpdateDocking(); 
 			void UpdatePopup(const PopupSetting setting);
 			void UpdatePopup(const PopupSetting setting, _Out_ PopupResult& result);
-		protected:
-			bool IsSelectedObject(const size_t guid)const noexcept; 
-			bool CanUseDock()const noexcept;
-			bool CanUseSelectedMap()const noexcept;
-			bool CanUsePopup()const noexcept; 
-			bool CanMaximize()const noexcept;
 		protected: 
 			PassSelectedOneF::Functor* GetPassSelectedOneFunctor()noexcept;
 			PassSelectedAboveOneF::Functor* GetPassSelectedAboveOneFunctor()noexcept;
 			JUserPtr<Core::JIdentifier> GetHoveredObject()const noexcept;
-			uint GetSelectedObjectCount()const noexcept;
+			uint GetSelectedObjectCount()const noexcept; 
+			JVector4<float> GetSelectableColorFactor(const bool isSelecetd, const bool isHovered)const noexcept;
 			std::vector<JUserPtr<Core::JIdentifier>> GetSelectedObjectVec()const noexcept;
-			JVector4<float> GetSelectedColorFactor()const noexcept;
-		public:
+			template<typename T>
+			std::vector<JUserPtr<T>> GetSelectedObjectVec()const noexcept
+			{
+				std::vector<JUserPtr<T>> vec;
+				vec.reserve(selectedObjMap.size());
+
+				Core::JTypeInfo& info = T::StaticTypeInfo();
+				for (const auto& data : selectedObjMap)
+				{
+					JUserPtr<T> ptr = Core::ConnectChildUserPtr<T>(data.second);
+					if (ptr != nullptr)
+						vec.push_back(ptr);
+				}
+				return vec;
+			}
+		public: 
+			//dock node가 아닌경우만 유효
+			void SetNextWindowPos(const JVector2F& pos)noexcept;
+			//dock node가 아닌경우만 유효
+			void SetNextWindowSize(const JVector2F& size)noexcept;
 			void SetMaximize(const bool value)noexcept; 
 		protected:
-			void SetButtonColor(const JVector4<float>& factor)noexcept;
-			void SetTreeNodeColor(const JVector4<float>& factor)noexcept; 
-			void SetTreeNodeColorToDefault()noexcept;
+			void SetOption(const Option& newOption)noexcept; 
 			void SetHoveredObject(JUserPtr<Core::JIdentifier> obj)noexcept;
 			void SetSelectedGameObjectTrigger(const JUserPtr<JGameObject>& gObj, const bool triggerValue)noexcept;
 			void SetContentsClick(const bool value)noexcept;
+		protected:
+			bool IsSelectedObject(const size_t guid)const noexcept;
+			bool CanUseDock()const noexcept;
+			bool CanUseSelectedMap()const noexcept;
+			bool CanUsePopup()const noexcept;
+			bool CanMaximize()const noexcept;
+			bool IsContentsClicked()const noexcept;
+		protected:
+			void PushTreeNodeColorSet(const bool isActivated, const bool isSelected);
+			void PopTreeNodeColorSet(const bool isActivated, const bool isSelected);
 		protected:
 			void PushSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept;
 			void PopSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept;
@@ -109,12 +154,18 @@ namespace JinEngine
 			void DeRegisterListener();
 		protected:
 			//Support undo redo 
+			//delay call
 			void RequestPushSelectObject(const JUserPtr<Core::JIdentifier>& selectObj);
 			void RequestPushSelectObject(const std::vector<JUserPtr<Core::JIdentifier>>& selectObjVec);
-			void RequestPopSelectObject(const JEditorPopSelectObjectEvStruct& evStruct);
-			void RequesBind(const std::string& desc,
+			void RequestPopSelectObject(const JUserPtr<Core::JIdentifier>& selectObj);
+			void RequestPopSelectObject(const std::vector<JUserPtr<Core::JIdentifier>>& selectObjVec);
+			void RequestBind(const std::string& desc,
 				std::unique_ptr<Core::JBindHandleBase>&& doHandle, 
 				std::unique_ptr<Core::JBindHandleBase>&& undoHandle); 
+		private:
+			void ExecuteEv(const WINDOW_INNER_EVENT evType); 
+			void ExecuteThisWindowNotifiedEv(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* ev);
+			void ExecuteOtherWindowNotifiedEv(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* ev);
 		protected:
 			void TryBeginDragging(const JUserPtr<Core::JIdentifier> selectObj);
 			JUserPtr<Core::JIdentifier> TryGetDraggingTarget();
@@ -127,7 +178,7 @@ namespace JinEngine
 			virtual void StoreEditorWindow(std::wofstream& stream);
 			virtual void LoadEditorWindow(std::wifstream& stream);
 		protected:
-			void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct) override;
+			void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* ev) override;
 		};
 	}
 }

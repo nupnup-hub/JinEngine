@@ -1,19 +1,21 @@
 #pragma once
 #include"../../Core/File/JFileIOResult.h"
 #include"../../Core/FSM/JFSMobjectType.h"
-#include"../../Object/JObjectFlag.h"  
+#include"../../Core/Math/JMatrix.h"
+#include"../../Core/Math/JVector.h"
+#include"../../Object/JObjectFlag.h"   
 #include<DirectXMath.h>
 #include<fstream>
 
 namespace JinEngine
 {
 	class JObject;
-	class JResourceObject;  
+	class JResourceObject;
 	namespace Core
 	{
 		class JIdentifier;
 		class JFSMinterface;
-	} 
+	}
 	class JFileIOHelper
 	{
 	public:
@@ -39,7 +41,7 @@ namespace JinEngine
 			stream >> guide >> value;
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
-
+	public:
 		template<typename T, std::enable_if_t<std::is_enum_v<T>, int> = 0>
 		static Core::J_FILE_IO_RESULT StoreEnumData(std::wofstream& stream, const std::wstring& guide, T value, const bool useChangeLine = true)
 		{
@@ -64,6 +66,97 @@ namespace JinEngine
 			eValue = (T)value;
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
+	public:
+		template<typename T>
+		static Core::J_FILE_IO_RESULT StoreVector2(std::wofstream& stream, const std::wstring& guide, const JVector2<T>& value)
+		{
+			if constexpr (JVector2<T>::isValidValue)
+			{
+				if (!stream.is_open())
+					return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+				stream << guide << " " << value.x << " " << value.y << '\n';
+				return Core::J_FILE_IO_RESULT::SUCCESS;
+			}
+			else
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+		}
+		template<typename T>
+		static Core::J_FILE_IO_RESULT StoreVector3(std::wofstream& stream, const std::wstring& guide, const JVector3<T>& value)
+		{
+			if constexpr (JVector3<T>::isValidValue)
+			{
+				if (!stream.is_open())
+					return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+				stream << guide << " " << value.x << " " << value.y << " " << value.z << '\n';
+				return Core::J_FILE_IO_RESULT::SUCCESS;
+			}
+			else
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+		}
+		template<typename T>
+		static Core::J_FILE_IO_RESULT StoreVector4(std::wofstream& stream, const std::wstring& guide, const JVector4<T>& value)
+		{
+			if constexpr (JVector4<T>::isValidValue)
+			{
+				if (!stream.is_open())
+					return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+				stream << guide << " " << value.x << " " << value.y << " " << value.z << " " << value.w << '\n';
+				return Core::J_FILE_IO_RESULT::SUCCESS;
+			}
+			else
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+		}
+		template<typename T>
+		static Core::J_FILE_IO_RESULT LoadVector2(std::wifstream& stream, JVector2<T>& v2)
+		{
+			if constexpr (JVector2<T>::isValidValue)
+			{
+				if (!stream.is_open() || stream.eof())
+					return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+				std::wstring guide;
+				stream >> guide >> v2.x >> v2.y;
+				return Core::J_FILE_IO_RESULT::SUCCESS;
+			}
+			else
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+		}
+		template<typename T>
+		static Core::J_FILE_IO_RESULT LoadVector3(std::wifstream& stream, JVector3<T>& v3)
+		{
+			if constexpr (JVector3<T>::isValidValue)
+			{
+				if (!stream.is_open() || stream.eof())
+					return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+				std::wstring guide;
+				stream >> guide >> v3.x >> v3.y >> v3.z;
+				return Core::J_FILE_IO_RESULT::SUCCESS;
+			}
+			else
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA; 
+		}
+		template<typename T>
+		static Core::J_FILE_IO_RESULT LoadVector4(std::wifstream& stream, JVector4<T>& v4)
+		{
+			if constexpr (JVector4<T>::isValidValue)
+			{
+				if (!stream.is_open() || stream.eof())
+					return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+				std::wstring guide;
+				stream >> guide >> v4.x >> v4.y >> v4.z >> v4.w;
+				return Core::J_FILE_IO_RESULT::SUCCESS;
+			}
+			else
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+		}
+	public:
+		static Core::J_FILE_IO_RESULT StoreMatrix4x4(std::wofstream& stream, const std::wstring& guide, const JMatrix4x4& m);
+		static Core::J_FILE_IO_RESULT LoadMatrix4x4(std::wifstream& stream, JMatrix4x4& m);
 	public:
 		template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
 		static Core::J_FILE_IO_RESULT StoreAtomicDataVec(std::wofstream& stream, const std::wstring& guide, const std::vector<T>& vec, int spaceoffset)
@@ -126,6 +219,8 @@ namespace JinEngine
 	public:
 		static Core::J_FILE_IO_RESULT StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden);
 		static Core::J_FILE_IO_RESULT StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden, const std::wstring& guiSymbol);
+		static Core::J_FILE_IO_RESULT StoreHasInstanceHint(std::wofstream& stream, const Core::JTypeInstanceSearchHint& hint);
+		static Core::J_FILE_IO_RESULT StoreHasInstanceHint(std::wofstream& stream, const Core::JTypeInstanceSearchHint& hint, const std::wstring& guiSymbol);
 		//Warrning
 		//Loading중 다른 오브젝트를 Load할 수 있으므로
 		//Stream에러 발생 할 수있음
@@ -133,10 +228,10 @@ namespace JinEngine
 		static JUserPtr<Core::JIdentifier> LoadHasObjectIden(std::wifstream& stream);
 		template<typename T>
 		static JUserPtr<T> LoadHasObjectIden(std::wifstream& stream)
-		{  
+		{
 			return JUserPtr<T>::ConvertChild(LoadHasObjectIden(stream));
 		}
-		static Core::JTypeInstanceSearchHint LoadHasObjectHint(std::wifstream& stream); 
+		static Core::JTypeInstanceSearchHint LoadHasObjectHint(std::wifstream& stream);
 	public:
 		//skip file using getline until symbol
 		//if fail stream is close
@@ -154,7 +249,7 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT DevideFile(const std::wstring& from, const std::vector<std::wstring> to);
 	public:
 		/**
-		* @return return empty if invalid path 
+		* @return return empty if invalid path
 		*/
 		static std::string FileToString(const std::string& path);
 		/**

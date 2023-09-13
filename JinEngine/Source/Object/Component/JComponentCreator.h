@@ -1,7 +1,7 @@
 #pragma once
 #include"../JObjectFlag.h"
 #include"../Component/RenderItem/JRenderLayer.h"
-#include"../Component/RenderItem/JRenderItemSpaceSpatialMask.h"
+#include"../Component/RenderItem/JRenderItemAcceleratorMask.h"
 #include"../Component/Light/JLightType.h"
 #include"../Component/JComponentType.h"
 #include<d3d12.h>
@@ -27,13 +27,13 @@ namespace JinEngine
 			const JUserPtr<JMeshGeometry>& mesh, 
 			const D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 			const J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT,
-			const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask = SPACE_SPATIAL_ALLOW_ALL);
+			const J_RENDERITEM_ACCELERATOR_MASK spaceSpatialMask = ACCELERATOR_ALLOW_ALL);
 		static JUserPtr<JRenderItem>CreateRenderItem(const JUserPtr<JGameObject>& owner,
 			const JUserPtr<JMeshGeometry>& mesh,
 			std::vector<JUserPtr<JMaterial>>& mat,
 			const D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
 			const J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT,
-			const J_RENDERITEM_SPACE_SPATIAL_MASK spaceSpatialMask = SPACE_SPATIAL_ALLOW_ALL); 
+			const J_RENDERITEM_ACCELERATOR_MASK spaceSpatialMask = ACCELERATOR_ALLOW_ALL); 
 		static JUserPtr<JComponent> CreateComponent(const Core::JTypeInfo&  typeInfo, const JUserPtr<JGameObject>& owner);
 	};
 

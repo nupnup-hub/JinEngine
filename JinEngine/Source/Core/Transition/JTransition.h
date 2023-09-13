@@ -2,7 +2,7 @@
 #include<deque>
 #include<string>
 #include<memory>
-#include"../Log/JLog.h"
+#include"../Log/JLogHandler.h"
 #include"../Func/Functor/JFunctor.h"
 #include"../Handle/JDataHandleStructure.h"
  
@@ -197,8 +197,7 @@ namespace JinEngine
 		{
 			return std::make_unique<BindType>(functor, empty, empty, std::forward<Param>(var)...);
 		}
-
-		class JLogHandler;
+		 
 		class JTransitonTaskInfo
 		{
 		public:
@@ -206,21 +205,23 @@ namespace JinEngine
 			bool isUndo;
 		};
 
-		struct JTransitionData;
+		struct JTransitionData; 
 		class JTransition
-		{ 
+		{  
 		private:
-			static constexpr int invalidIndex = -1;
+			std::string name;
 		private:
 			std::deque<std::unique_ptr<JTransitionTask>> doQueue;
 			std::deque<std::unique_ptr<JTransitionTask>> undoQueue;
 			//static std::stack<std::unique_ptr<JTransitionTask>> undoStack;
-			std::unique_ptr<JLogHandler> logHandler;
-
+			std::unique_ptr<JPublicLogHolder> logHandler;
+		private:
 			int doIndex = 0;
 			int undoIndex = invalidIndex;
 			uint8 taskCapacity = 20;
 			bool isLock = false;
+		public:
+			JTransition(const std::string& name);
 		public:
 			void Log(Core::JLogBase log);
 			void Log(const std::string& title, const std::string& body = "");
@@ -236,10 +237,9 @@ namespace JinEngine
 			static constexpr uint GetMaxLogCapacity() noexcept
 			{
 				return 50;
-			}
+			} 
+			std::vector<JTransitonTaskInfo> GetTaskInfo()noexcept; 
 		public:
-			std::vector<JTransitonTaskInfo> GetTaskInfo()noexcept;
-			const JLogHandler* GetLogHandler()noexcept;
 			void SetTaskCapacity(const uint8 value)noexcept;
 			void SetLock(const bool value)noexcept;
 		public:

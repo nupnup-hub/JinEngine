@@ -5,20 +5,20 @@
 #include"../../../Event/JEditorEvent.h"
 #include"../../../Popup/JEditorPopupMenu.h"
 #include"../../../Popup/JEditorPopupNode.h"
-#include"../../../GuiLibEx/ImGuiEx/JImGuiImpl.h" 
+#include"../../../Gui/JGui.h" 
 #include"../../../String/JEditorStringMap.h"
-#include"../../../Helpers/JEditorInputBuffHelper.h"
+#include"../../../EditTool/JEditorInputBuffHelper.h"
 #include"../../../EditTool/JEditorViewStructure.h" 
-#include"../../../../Core/Reflection/JTypeTemplate.h" 
-#include"../../../../Core/FSM/AnimationFSM/JAnimationStateType.h"
-#include"../../../../Core/FSM/AnimationFSM/JAnimationFSMdiagram.h" 
+#include"../../../../Core/Reflection/JTypeTemplate.h"  
+#include"../../../../Object/Resource/AnimationController/FSM/JAnimationStateType.h"   
+#include"../../../../Object/Resource/AnimationController/FSM/JAnimationFSMdiagram.h"   
 #include"../../../../Object/Resource/AnimationController/JAnimationController.h"   
 
 namespace JinEngine
 {
 	namespace Editor
 	{
-		namespace Constants
+		namespace Private
 		{
 			static std::string DiagramListName(const std::string& uniqueLabel)noexcept
 			{
@@ -53,7 +53,7 @@ namespace JinEngine
 			destroyDigamraNode->RegisterSelectBind(std::make_unique< RequestEvF::CompletelyBind>(*creationImpl->reqDestroyEvF, this));
 			destroyDigamraNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 			 
-			diagramListPopup = std::make_unique<JEditorPopupMenu>(Constants::DiagramListName(GetName()), std::move(diagramListRootNode));
+			diagramListPopup = std::make_unique<JEditorPopupMenu>(Private::DiagramListName(GetName()), std::move(diagramListRootNode));
 			diagramListPopup->AddPopupNode(std::move(createNewDiagramNode));
 			diagramListPopup->AddPopupNode(std::move(destroyDigamraNode));
 		}
@@ -131,7 +131,7 @@ namespace JinEngine
 		}
 		void JAnimationDiagramList::UpdateWindow()
 		{
-			EnterWindow(ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | J_GUI_WINDOW_FLAG_NO_COLLAPSE);
 			UpdateDocking();
 			if (IsActivated())
 			{
@@ -142,41 +142,38 @@ namespace JinEngine
 		}
 		void JAnimationDiagramList::BuildDiagramList()
 		{ 
-			ImGuiTableFlags flag = ImGuiTableFlags_Borders | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-			if (aniCont.IsValid() && JImGuiImpl::BeginTable("##DiagramListTable" + GetName(), 1, flag))
+			J_GUI_TABLE_FLAG_ flag = J_GUI_TABLE_FLAG_BORDERS | J_GUI_TABLE_FLAG_REORDERABLE | J_GUI_TABLE_FLAG_HIDEABLE;
+			if (aniCont.IsValid() && JGui::BeginTable("##DiagramListTable" + GetName(), 1, flag))
 			{
-				JImGuiImpl::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
-				JImGuiImpl::TableHeadersRow();
+				JGui::TableSetupColumn("Name", J_GUI_TABLE_COLUMN_FLAG_WIDTH_STRETCH);
+				JGui::TableHeadersRow();
 
-				const std::vector<JUserPtr<Core::JAnimationFSMdiagram>>& diagramVec = aniCont->GetDiagramVec();
+				const std::vector<JUserPtr<JAnimationFSMdiagram>>& diagramVec = aniCont->GetDiagramVec();
 				const uint diagramCount = (uint)diagramVec.size();
 				for (uint i = 0; i < diagramCount; ++i)
 				{
-					JImGuiImpl::TableNextRow();
-					JImGuiImpl::TableSetColumnIndex(0);
+					JGui::TableNextRow();
+					JGui::TableSetColumnIndex(0);
 
 					const bool isSelect = IsSelectedObject(diagramVec[i]->GetGuid()); 
-					const JVector2<float> preCursorPos = ImGui::GetCursorScreenPos();
-					if (isSelect)
-						SetTreeNodeColor(GetSelectedColorFactor());
-					 
-					if (JImGuiImpl::Selectable(JCUtil::WstrToU8Str(diagramVec[i]->GetName()), &isSelect))
+					const JVector2<float> preCursorPos = JGui::GetCursorScreenPos();
+					PushTreeNodeColorSet(true, isSelect); 				 
+					if (JGui::Selectable(JCUtil::WstrToU8Str(diagramVec[i]->GetName()), &isSelect))
 					{ 
 						RequestPushSelectObject(diagramVec[i]);
 						SetContentsClick(true);
 					}
-					if (isSelect)
-						SetTreeNodeColor(GetSelectedColorFactor() * -1);
+					PopTreeNodeColorSet(true, isSelect);
 
-					if (JImGuiImpl::IsMouseInRect(preCursorPos, ImGui::GetItemRectSize()))
+					if (JGui::IsMouseInRect(preCursorPos, JGui::GetLastItemRectSize()))
 					{
 						SetHoveredObject(diagramVec[i]);
-						if (ImGui::IsMouseClicked(1))
+						if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::RIGHT))
 							SetContentsClick(true);
 					}
 			 
 				}
-				JImGuiImpl::EndTable();
+				JGui::EndTable();
 			}
 			if (aniCont.IsValid())
 				UpdatePopup(PopupSetting(diagramListPopup.get(), editorString.get())); 
@@ -192,8 +189,8 @@ namespace JinEngine
 		}
 		void JAnimationDiagramList::DoDeActivate()noexcept
 		{
-			JEditorWindow::DoDeActivate();
 			DeRegisterListener();
+			JEditorWindow::DoDeActivate();
 		}
 		void JAnimationDiagramList::DoSetClose()noexcept
 		{

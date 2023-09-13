@@ -4,7 +4,7 @@
 #include"../Resource/Scene/JScenePrivate.h"
 #include "../GameObject/JGameObject.h"
 #include "../GameObject/JGameObjectPrivate.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../../Core/Utility/JCommonUtility.h"
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include<fstream>
 
@@ -19,13 +19,15 @@ namespace JinEngine
 		JUserPtr<JGameObject> owner = nullptr;
 	public:
 		//For editor redo undo
-		std::unique_ptr<Core::JTypeInstanceSearchHint> ownerInfo;
+		std::unique_ptr<Core::JTypeInstanceSearchHint> ownerInfo = nullptr;
 	public:
 		JComponentImpl(const JComponent::InitData& initData)
 			:owner(initData.owner)
 		{}
 		~JComponentImpl()
-		{}
+		{
+			ownerInfo.reset();
+		}
 	public:
 		bool RegisterInstance()noexcept
 		{ 
@@ -36,7 +38,7 @@ namespace JinEngine
 			return JGameObjectPrivate::OwnTypeInterface::AddComponent(thisPointer);
 		}
 		bool DeRegisterInstance()noexcept
-		{
+		{ 
 			ownerInfo = std::make_unique<Core::JTypeInstanceSearchHint>(owner);
 			return JGameObjectPrivate::OwnTypeInterface::RemoveComponent(thisPointer);
 		}
@@ -100,17 +102,17 @@ namespace JinEngine
 	{
 		JObject::DoDeActivate();
 	}
-	bool JComponent::RegisterComponent(const JUserPtr<JComponent>& comp)noexcept
+	bool JComponent::RegisterComponent(const JUserPtr<JComponent>& comp, UserCompComparePtr comparePtr)noexcept
 	{
-		return JScenePrivate::CompRegisterInterface::RegisterComponent(comp);
+		return JScenePrivate::CompRegisterInterface::RegisterComponent(comp, comparePtr);
 	}
 	bool JComponent::DeRegisterComponent(const JUserPtr<JComponent>& comp)noexcept
 	{
 		return JScenePrivate::CompRegisterInterface::DeRegisterComponent(comp);
 	}
-	bool JComponent::ReRegisterComponent(const JUserPtr<JComponent>& comp)noexcept
+	bool JComponent::ReRegisterComponent(const JUserPtr<JComponent>& comp, UserCompComparePtr comparePtr)noexcept
 	{
-		return JScenePrivate::CompRegisterInterface::ReRegisterComponent(comp);
+		return JScenePrivate::CompRegisterInterface::ReRegisterComponent(comp, comparePtr);
 	}
 	void JComponent::RegisterCTypeInfo(const Core::JTypeInfo& typeInfo, const CTypeHint& cTypeHint, const CTypeCommonFunc& cTypeCFunc, const CTypePrivateFunc& cTypePFunc)
 	{
@@ -126,7 +128,7 @@ namespace JinEngine
 	{}
 	JComponent::~JComponent()
 	{ 
-		impl.reset();
+		impl.reset(); 
 	}
 
 	using CreateInstanceInterface = JComponentPrivate::CreateInstanceInterface;

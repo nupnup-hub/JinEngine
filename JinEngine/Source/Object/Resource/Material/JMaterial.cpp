@@ -10,14 +10,14 @@
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/File/JFileIOHelper.h" 
+#include"../../../Core/Math/JMathHelper.h"
 #include"../../../Application/JApplicationProject.h"
 #include"../../../Graphic/JGraphicConstants.h"
-#include"../../../Graphic/Upload/Frameresource/JMaterialConstants.h"
-#include"../../../Graphic/Upload/Frameresource/JFrameUpdate.h"
+#include"../../../Graphic/Frameresource/JMaterialConstants.h"
+#include"../../../Graphic/Frameresource/JFrameUpdate.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
-#include"../../../Utility/JMathHelper.h"
 #include<fstream>
-
+ 
 namespace JinEngine
 {
 	namespace
@@ -44,12 +44,12 @@ namespace JinEngine
 		JUserPtr<JShader> shader = nullptr;
 	public:
 		REGISTER_PROPERTY_EX(metallic, GetMetallic, SetMetallic, GUI_SLIDER(0.0f, 1.0f, false, false))
-		float metallic = 0;
+		float metallic = 0.25f;
 		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0.0f, 1.0f))
-		float roughness = 0;
+		float roughness = 0.75f;
 		REGISTER_PROPERTY_EX(albedoColor, GetAlbedoColor, SetAlbedoColor, GUI_COLOR_PICKER(true))
-		DirectX::XMFLOAT4 albedoColor = { 0.75f, 0.75f, 0.75f, 0.65f };
-		DirectX::XMFLOAT4X4 matTransform = JMathHelper::Identity4x4();
+		JVector4<float> albedoColor = { 0.75f, 0.75f, 0.75f, 0.65f };
+		JMatrix4x4 matTransform = JMatrix4x4::Identity();
 	public:
 		//Texture
 		REGISTER_PROPERTY_EX(albedoMap, GetAlbedoMap, SetAlbedoMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
@@ -72,11 +72,7 @@ namespace JinEngine
 		bool light = false;
 		REGISTER_PROPERTY_EX(albedoMapOnly, OnAlbedoOnly, SetAlbedoMapOnly, GUI_CHECKBOX())
 		bool albedoMapOnly = false;
-		bool nonCulling = false;
-		//Draw ShadowMap by depth test
-		bool isShadowMapWrite = false;
-		//Draw bounding object by depth test
-		bool isBoundingObjDepthTest = false;
+		bool nonCulling = false; 
 		bool isSkyMateral = false;
 		bool isDebugMaterial = false;
 		bool alphaClip = false;
@@ -88,7 +84,9 @@ namespace JinEngine
 	public:
 		JMaterialImpl(const InitData& initData, JMaterial* thisMatRaw)
 		{}
-		~JMaterialImpl(){}
+		~JMaterialImpl()
+		{ 
+		}
 	public:
 		float GetMetallic() const noexcept
 		{
@@ -98,11 +96,11 @@ namespace JinEngine
 		{
 			return roughness;
 		}
-		DirectX::XMFLOAT4 GetAlbedoColor() const noexcept
+		JVector4<float> GetAlbedoColor() const noexcept
 		{
 			return albedoColor;
 		}
-		DirectX::XMFLOAT4X4 GetMatTransform()const  noexcept
+		JMatrix4x4 GetMatTransform()const  noexcept
 		{
 			return matTransform;
 		}
@@ -137,41 +135,39 @@ namespace JinEngine
 			if (shadow) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_SHADOW);
 			if (light) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_LIGHT);
 			if (albedoMapOnly) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_ALBEDO_MAP_ONLY);
-			if (isShadowMapWrite) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_WRITE_SHADOWMAP);
-			if (isBoundingObjDepthTest) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_DEPTH_TEST_BOUNDING_OBJECT);
 			if (isSkyMateral) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_SKY);
 			if (isDebugMaterial) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_DEBUG);
 			if (alphaClip) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_ALPHA_CLIP);
 			return gFunction;
 		}
-		JShaderGraphicPsoCondition GetSubGraphicPso()const noexcept
+		JShaderCondition GetSubGraphicPso()const noexcept
 		{
-			JShaderGraphicPsoCondition psoCondition;
+			JShaderCondition psoCondition;
 			if (nonCulling)
 			{
-				psoCondition.cullModeCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+				psoCondition.cullModeCondition = J_SHADER_APPLIY_CONDITION::APPLY;
 				psoCondition.isCullModeNone = true;
 			}
 			else
 			{
-				psoCondition.cullModeCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
+				psoCondition.cullModeCondition = J_SHADER_APPLIY_CONDITION::NOT;
 				psoCondition.isCullModeNone = false;
 			}
 			if (primitiveType != J_SHADER_PRIMITIVE_TYPE::DEFAULT)
 			{
-				psoCondition.primitiveCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+				psoCondition.primitiveCondition = J_SHADER_APPLIY_CONDITION::APPLY;
 				psoCondition.primitiveType = primitiveType;
 			}
 			else
-				psoCondition.primitiveCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
+				psoCondition.primitiveCondition = J_SHADER_APPLIY_CONDITION::NOT;
 
 			if (depthComparesionFunc != J_SHADER_DEPTH_COMPARISON_FUNC::DEFAULT)
 			{
-				psoCondition.depthCompareCondition = J_SHADER_PSO_APPLIY_CONDITION::APPLY_J_PSO;
+				psoCondition.depthCompareCondition = J_SHADER_APPLIY_CONDITION::APPLY;
 				psoCondition.depthCompareFunc = depthComparesionFunc;
 			}
 			else
-				psoCondition.depthCompareCondition = J_SHADER_PSO_APPLIY_CONDITION::SAME_AS;
+				psoCondition.depthCompareCondition = J_SHADER_APPLIY_CONDITION::NOT;
 			return psoCondition;
 		}
 	public:
@@ -185,12 +181,12 @@ namespace JinEngine
 			roughness = value;
 			SetFrameDirty();
 		}
-		void SetAlbedoColor(const DirectX::XMFLOAT4& value)noexcept
+		void SetAlbedoColor(const JVector4<float>& value)noexcept
 		{
 			albedoColor = value;
 			SetFrameDirty();
 		}
-		void SetMatTransform(const DirectX::XMFLOAT4X4& value)noexcept
+		void SetMatTransform(const JMatrix4x4& value)noexcept
 		{
 			matTransform = value;
 			SetFrameDirty();
@@ -255,24 +251,6 @@ namespace JinEngine
 			SetFrameDirty();
 			SetNewFunctionFlag(GetShaderGFunctionFlag());
 		}	 
-		void SetShadowMapWrite(const bool value)noexcept
-		{
-			if (isShadowMapWrite == value)
-				return;
-
-			isShadowMapWrite = value; 
-			SetFrameDirty();
-			SetNewFunctionFlag(GetShaderGFunctionFlag());
-		}
-		void SetBoundingObjectDepthTest(const bool value)noexcept
-		{
-			if (isBoundingObjDepthTest == value)
-				return;
-
-			isBoundingObjDepthTest = value;
-			SetFrameDirty();
-			SetNewFunctionFlag(GetShaderGFunctionFlag());
-		}
 		void SetSkyMaterial(const bool value)noexcept
 		{
 			if (isSkyMateral == value)
@@ -335,7 +313,7 @@ namespace JinEngine
 			if (shader != nullptr && shader->GetShaderGFunctionFlag() == newFunc)
 				return;
 
-			JShaderGraphicPsoCondition subPos;
+			JShaderCondition subPos;
 			if (shader != nullptr)
 				subPos = shader->GetSubGraphicPso(); 
 
@@ -345,7 +323,7 @@ namespace JinEngine
 			 
 			SetShader(newShader);
 		}
-		void SetNewOption(const JShaderGraphicPsoCondition newPso)
+		void SetNewOption(const JShaderCondition newPso)
 		{
 			if (!canUpdateShader)
 				return;
@@ -391,14 +369,6 @@ namespace JinEngine
 		bool OnNonCulling()const noexcept
 		{
 			return nonCulling;
-		}
-		bool OnShadowMapWrite()const noexcept
-		{
-			return isShadowMapWrite;
-		}
-		bool OnBoundingObjectDepthTest()const noexcept
-		{
-			return isBoundingObjDepthTest;
 		}
 		bool IsSkyMaterial()const noexcept
 		{
@@ -495,20 +465,20 @@ namespace JinEngine
 	public:
 		void UpdateFrame(Graphic::JMaterialConstants& constant)noexcept final
 		{  
-			constant.AlbedoColor = albedoColor;
-			constant.Metalic = metallic;
-			constant.Roughness = roughness;
-			XMStoreFloat4x4(&constant.MatTransform, XMMatrixTranspose(XMLoadFloat4x4(&matTransform)));
+			constant.albedoColor = albedoColor;
+			constant.metalic = metallic;
+			constant.roughness = roughness;
+			constant.matTransform.StoreXM(XMMatrixTranspose(matTransform.LoadXM()));
 			if (albedoMap.IsValid())
-				constant.AlbedoMapIndex = albedoMap->GraphicResourceUserInterface().GetResourceArrayIndex();
+				constant.albedoMapIndex = albedoMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
 			if (normalMap.IsValid())
-				constant.NormalMapIndex = normalMap->GraphicResourceUserInterface().GetResourceArrayIndex();
+				constant.normalMapIndex = normalMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
 			if (heightMap.IsValid())
-				constant.HeightMapIndex = heightMap->GraphicResourceUserInterface().GetResourceArrayIndex();
+				constant.heightMapIndex = heightMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
 			if (roughnessMap.IsValid())
-				constant.RoughnessMapIndex = roughnessMap->GraphicResourceUserInterface().GetResourceArrayIndex();
+				constant.roughnessMapIndex = roughnessMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
 			if (ambientOcclusionMap.IsValid())
-				constant.AmbientOcclusionMapIndex = ambientOcclusionMap->GraphicResourceUserInterface().GetResourceArrayIndex();
+				constant.ambientOcclusionMapIndex = ambientOcclusionMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
 			MaterialFrame::MinusMovedDirty();
 		}
 	public:
@@ -521,9 +491,7 @@ namespace JinEngine
 
 			bool sShadow = false;
 			bool sLight = false;
-			bool sAlbedoOnly = false;
-			bool sIsShadowMapWrite = false;
-			bool sBoundingObjDepthTest = false;
+			bool sAlbedoOnly = false; 
 			bool sIsSkyMateral = false;
 			bool sIsDebugMaterial = false;
 			bool sAlphaclip = false;
@@ -532,14 +500,12 @@ namespace JinEngine
 			int sDepthComparesionFunc = 0;
 			float sMetallic;
 			float sRoughness;
-			DirectX::XMFLOAT4 sAlbedoColor;
-			DirectX::XMFLOAT4X4 sMatTransform;
+			JVector4<float> sAlbedoColor;
+			JMatrix4x4 sMatTransform;
 
 			JFileIOHelper::LoadAtomicData(stream, sShadow);
 			JFileIOHelper::LoadAtomicData(stream, sLight);
-			JFileIOHelper::LoadAtomicData(stream, sAlbedoOnly);
-			JFileIOHelper::LoadAtomicData(stream, sIsShadowMapWrite);
-			JFileIOHelper::LoadAtomicData(stream, sBoundingObjDepthTest);
+			JFileIOHelper::LoadAtomicData(stream, sAlbedoOnly); 
 			JFileIOHelper::LoadAtomicData(stream, sIsSkyMateral);
 			JFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial);
 			JFileIOHelper::LoadAtomicData(stream, sAlphaclip);
@@ -551,8 +517,8 @@ namespace JinEngine
 			JFileIOHelper::LoadAtomicData(stream, sMetallic);
 			JFileIOHelper::LoadAtomicData(stream, sRoughness);
 
-			JFileIOHelper::LoadXMFloat4(stream, sAlbedoColor);
-			JFileIOHelper::LoadXMFloat4x4(stream, sMatTransform);
+			JFileIOHelper::LoadVector4(stream, sAlbedoColor);
+			JFileIOHelper::LoadMatrix4x4(stream, sMatTransform);
 
 			JUserPtr<JTexture> sAlbedoMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
 			JUserPtr<JTexture> sNormalMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
@@ -565,9 +531,7 @@ namespace JinEngine
 			SetShadow(sShadow);
 			SetLight(sLight);
 			SetAlbedoMapOnly(sAlbedoOnly);
-			SetNonCulling(sNonCulling);
-			SetShadowMapWrite(sIsShadowMapWrite);
-			SetBoundingObjectDepthTest(sBoundingObjDepthTest);
+			SetNonCulling(sNonCulling); 
 			SetSkyMaterial(sIsSkyMateral);
 			SetDebugMaterial(sIsDebugMaterial);
 			SetAlphaClip(sAlphaclip);
@@ -599,9 +563,7 @@ namespace JinEngine
 
 			JFileIOHelper::StoreAtomicData(stream, L"Shadow", shadow);
 			JFileIOHelper::StoreAtomicData(stream, L"Light", light);
-			JFileIOHelper::StoreAtomicData(stream, L"AlbedoOnly", albedoMapOnly);
-			JFileIOHelper::StoreAtomicData(stream, L"ShadowMapWrite", isShadowMapWrite);
-			JFileIOHelper::StoreAtomicData(stream, L"BoundingObjDepthTest", isBoundingObjDepthTest);
+			JFileIOHelper::StoreAtomicData(stream, L"AlbedoOnly", albedoMapOnly); 
 			JFileIOHelper::StoreAtomicData(stream, L"SkyMaterial", isSkyMateral);
 			JFileIOHelper::StoreAtomicData(stream, L"DebugMaterial", isDebugMaterial);
 			JFileIOHelper::StoreAtomicData(stream, L"AlphaClip", alphaClip);
@@ -613,8 +575,8 @@ namespace JinEngine
 			JFileIOHelper::StoreAtomicData(stream, L"Metallic", metallic);
 			JFileIOHelper::StoreAtomicData(stream, L"Roughness", roughness);
 
-			JFileIOHelper::StoreXMFloat4(stream, L"AlbedoColor", albedoColor);
-			JFileIOHelper::StoreXMFloat4x4(stream, L"Matransform", matTransform);
+			JFileIOHelper::StoreVector4(stream, L"AlbedoColor", albedoColor);
+			JFileIOHelper::StoreMatrix4x4(stream, L"Matransform", matTransform);
 
 			JFileIOHelper::StoreHasObjectIden(stream, albedoMap.Get());
 			JFileIOHelper::StoreHasObjectIden(stream, normalMap.Get());
@@ -705,11 +667,7 @@ namespace JinEngine
 	Core::JIdentifierPrivate& JMaterial::PrivateInterface()const noexcept
 	{
 		return mPrivate;
-	}
-	Graphic::JFrameUpdateUserAccess JMaterial::FrameUserInterface() noexcept
-	{
-		return Graphic::JFrameUpdateUserAccess(Core::GetUserPtr(this), impl.get());
-	}
+	} 
 	J_RESOURCE_TYPE JMaterial::GetResourceType()const noexcept
 	{  
 		return GetStaticResourceType();
@@ -739,11 +697,11 @@ namespace JinEngine
 	{
 		return impl->GetRoughness();
 	}
-	DirectX::XMFLOAT4 JMaterial::GetAlbedoColor() const noexcept
+	JVector4<float> JMaterial::GetAlbedoColor() const noexcept
 	{
 		return impl->GetAlbedoColor();
 	}
-	DirectX::XMFLOAT4X4 JMaterial::GetMatTransform()const  noexcept
+	JMatrix4x4 JMaterial::GetMatTransform()const  noexcept
 	{
 		return impl->GetMatTransform();
 	}
@@ -783,11 +741,11 @@ namespace JinEngine
 	{
 		impl->SetRoughness(value);
 	}
-	void JMaterial::SetAlbedoColor(const DirectX::XMFLOAT4& value)noexcept
+	void JMaterial::SetAlbedoColor(const JVector4<float>& value)noexcept
 	{
 		impl->SetAlbedoColor(value);
 	}
-	void JMaterial::SetMatTransform(const DirectX::XMFLOAT4X4& value)noexcept
+	void JMaterial::SetMatTransform(const JMatrix4x4& value)noexcept
 	{
 		impl->SetMatTransform(value);
 	}
@@ -822,15 +780,7 @@ namespace JinEngine
 	void JMaterial::SetAlbedoMapOnly(const bool value)noexcept
 	{
 		impl->SetAlbedoMapOnly(value);
-	}
-	void JMaterial::SetShadowMapWrite(const bool value)noexcept
-	{
-		impl->SetShadowMapWrite(value);
-	}
-	void JMaterial::SetBoundingObjectDepthTest(const bool value)noexcept
-	{
-		impl->SetBoundingObjectDepthTest(value);
-	}
+	} 
 	void JMaterial::SetSkyMaterial(const bool value)noexcept
 	{
 		impl->SetSkyMaterial(value);
@@ -870,14 +820,10 @@ namespace JinEngine
 	bool JMaterial::OnNonCulling()const noexcept
 	{
 		return impl->OnNonCulling();
-	}
-	bool JMaterial::OnShadowMapWrite()const noexcept
+	} 
+	bool JMaterial::IsFrameDirted()const noexcept
 	{
-		return impl->OnShadowMapWrite();
-	}
-	bool JMaterial::OnBoundingObjectDepthTest()const noexcept
-	{
-		return impl->OnBoundingObjectDepthTest();
+		return impl->IsFrameDirted();
 	}
 	bool JMaterial::IsSkyMaterial()const noexcept
 	{
@@ -920,17 +866,17 @@ namespace JinEngine
 	}
 	void JMaterial::DoDeActivate()noexcept
 	{
-		JResourceObject::DoDeActivate();
 		SetValid(false);
 		impl->OffFrameDirty();
 		impl->OffResourceRef();
+		JResourceObject::DoDeActivate();
 	}
 	JMaterial::JMaterial(const InitData& initData)
 		: JResourceObject(initData), impl(std::make_unique<JMaterialImpl>(initData, this))
 	{		
 	}
 	JMaterial::~JMaterial()
-	{
+	{ 
 		impl.reset();
 	}
 
@@ -962,9 +908,9 @@ namespace JinEngine
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
 	{ 
-		JResourceObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		static_cast<JMaterial*>(ptr)->impl->DeRegisterPreDestruction();
 		static_cast<JMaterial*>(ptr)->impl->DeRegisterRItemFrameData();
+		JResourceObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 
 	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)

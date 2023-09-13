@@ -4,7 +4,7 @@
 #include"../JResourceObjectUserInterface.h"
 #include"../../Component/JComponentType.h"
 #include"../../../Core/Guid/JGuidCreator.h"
-#include"../../../Utility/JCommonUtility.h"
+#include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphicDrawListInterface.h"  
 #include"../../../Core/Guid/JGuidCreator.h" 
 
@@ -45,7 +45,7 @@ namespace JinEngine
 		bool IsRegistered(const size_t guid) noexcept
 		{
 			SearchEqualScenePtr equalScenePtr = [](const JUserPtr<JScene>& user, const size_t guid) { return user->GetGuid() == guid;};
-			return JCUtil::GetJIndex(activatedScene, equalScenePtr, guid) != -1;
+			return JCUtil::GetIndex(activatedScene, equalScenePtr, guid) != -1;
 		}
 		bool IsFirstScene(const size_t guid)const noexcept
 		{
@@ -74,7 +74,7 @@ namespace JinEngine
 				return false;
 
 			SearchEqualScenePtr equalScenePtr = [](const JUserPtr<JScene>& user, const size_t guid) {return user->GetGuid() == guid; };
-			int index = JCUtil::GetJIndex(activatedScene, equalScenePtr, scene->GetGuid());
+			int index = JCUtil::GetIndex(activatedScene, equalScenePtr, scene->GetGuid());
 			if (index == -1)
 				return false;
 
@@ -82,7 +82,7 @@ namespace JinEngine
 			PopDrawList(scene);
 			return true;
 		}
-		bool RegisterObservationFrame(const JUserPtr<JScene>& scene, const Graphic::JFrameUpdateUserAccess& observationFrame)
+		bool RegisterObservationFrame(const JUserPtr<JScene>& scene, const JUserPtr<Graphic::JFrameUpdateUserAccess>& observationFrame)
 		{
 			return AddObservationFrame(scene, observationFrame);
 		}
@@ -113,7 +113,7 @@ namespace JinEngine
 	{
 		return impl->IsFirstScene(scene->GetGuid());
 	}
-	bool JSceneManager::RegisterObservationFrame(const JUserPtr<JScene>& scene, const Graphic::JFrameUpdateUserAccess& observationFrame)
+	bool JSceneManager::RegisterObservationFrame(const JUserPtr<JScene>& scene, const JUserPtr<Graphic::JFrameUpdateUserAccess>& observationFrame)
 	{
 		return impl->RegisterObservationFrame(scene, observationFrame);
 	}

@@ -1,5 +1,5 @@
 #pragma once 
-#include"../JDataType.h"
+#include"../JCoreEssential.h"
 #include"../Reflection/JTypeBase.h" 
 #include"../DI/JDIDataBase.h"
 #include<string> 
@@ -57,7 +57,7 @@ namespace JinEngine
 			}
 		protected:
 			JIdentifier(const InitData& initData);
-			virtual ~JIdentifier();
+			~JIdentifier();
 		};
 	} 
 }

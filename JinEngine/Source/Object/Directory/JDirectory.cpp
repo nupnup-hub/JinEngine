@@ -12,7 +12,7 @@
 #include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/File/JFileConstant.h"
-#include"../../Utility/JCommonUtility.h"
+#include"../../Core/Utility/JCommonUtility.h"
 #include<io.h>
 #include<fstream>
 #include<vector>  
@@ -78,7 +78,7 @@ namespace JinEngine
 				//clear중에는 fileList에 invalidFile이 섞여있음
 				return a != nullptr ? a->GetResourceGuid() == guid : false;
 			};
-			return JCUtil::GetJIndex(fileList, ptr, guid);
+			return JCUtil::GetIndex(fileList, ptr, guid);
 		}
 	public:
 		static void ActivateDirectory(JDirectory* tar)
@@ -219,6 +219,13 @@ namespace JinEngine
 		if (parent != nullptr)
 			name = JCUtil::MakeUniqueName(parent->impl->children, EraseInvalidNameChar(name));
 	}
+	JDirectory::InitData::InitData(const size_t guid, const JUserPtr<JDirectory>& parent)
+		: JObject::InitData(JDirectory::StaticTypeInfo(), guid), parent(parent)
+	{
+		if (parent != nullptr)
+			name = JCUtil::MakeUniqueName(parent->impl->children, EraseInvalidNameChar(name));
+	}
+
 	JDirectory::InitData::InitData(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JDirectory>& parent)
 		: JObject::InitData(JDirectory::StaticTypeInfo(), name, guid, flag), parent(parent)
 	{
@@ -296,7 +303,7 @@ namespace JinEngine
 		else
 			return impl->fileList[index];
 	}
-	JUserPtr<JFile> JDirectory::GetDirectoryFile(const std::wstring& name)const noexcept
+	JUserPtr<JFile> JDirectory::GetDirectoryFileByName(const std::wstring& name)const noexcept
 	{
 		for (const auto& data : impl->fileList)
 		{
@@ -305,7 +312,7 @@ namespace JinEngine
 		}
 		return nullptr;
 	}
-	JUserPtr<JFile> JDirectory::GetDirectoryFile(const std::wstring& name, const std::wstring& format)const noexcept
+	JUserPtr<JFile> JDirectory::GetDirectoryFileByFullName(const std::wstring& name, const std::wstring& format)const noexcept
 	{
 		const std::wstring fullname = name + format;
 		for (const auto& data : impl->fileList)
@@ -355,14 +362,15 @@ namespace JinEngine
 		if (validName == GetName())
 			return;
 
-		const std::wstring prePath = GetMetaFilePath();
+		const std::wstring preMetafilePath = GetMetaFilePath();
+		const std::wstring prePath = GetPath();
 		if (impl->parent != nullptr)
 			JObject::SetName(JCUtil::MakeUniqueName(impl->parent->impl->children, validName));
 		else
 			JObject::SetName(validName);
-
-		const std::wstring newPath = GetMetaFilePath();
-		_wrename(prePath.c_str(), newPath.c_str());
+		 
+		_wrename(preMetafilePath.c_str(), GetMetaFilePath().c_str());
+		_wrename(prePath.c_str(), GetPath().c_str());
 	}
 	bool JDirectory::HasChild(const std::wstring& name)const noexcept
 	{
@@ -411,7 +419,7 @@ namespace JinEngine
 	}
 	JUserPtr<JFile> JDirectory::SearchFile(const std::wstring& name)const noexcept
 	{
-		JUserPtr<JFile> file = GetDirectoryFile(name);
+		JUserPtr<JFile> file = GetDirectoryFileByName(name);
 		if (file != nullptr)
 			return file;
 
@@ -425,7 +433,7 @@ namespace JinEngine
 	}
 	JUserPtr<JFile> JDirectory::SearchFile(const std::wstring& name, const std::wstring& format)const noexcept
 	{
-		JUserPtr<JFile> file = GetDirectoryFile(name, format);
+		JUserPtr<JFile> file = GetDirectoryFileByFullName(name, format);
 		if (file != nullptr)
 			return file;
 
@@ -513,8 +521,8 @@ namespace JinEngine
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
 	{
-		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 		static_cast<JDirectory*>(ptr)->impl->Clear();
+		JObjectPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 	void DestroyInstanceInterface::SetInvalidInstance(Core::JIdentifier* ptr)noexcept
 	{ 

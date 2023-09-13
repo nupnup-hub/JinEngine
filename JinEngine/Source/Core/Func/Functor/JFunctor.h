@@ -3,7 +3,7 @@
 #include<memory> 
 #include<vector>
 #include"../../Empty/JEmptyType.h"
-#include"../../../Utility/JTypeUtility.h" 
+#include"../../Utility/JTypeTraitUtility.h" 
 #include"../../../../ThirdParty/Loki/Typelist/Typelist.h"   
 
 namespace JinEngine
@@ -75,7 +75,7 @@ namespace JinEngine
 			JFunctor(JFunctor&& rhs) = default;
 			JFunctor& operator=(const JFunctor& rhs) = delete;	 
 			JFunctor& operator=(JFunctor&& rhs) = default;
-
+			JFunctor() = default;
 			JFunctor(std::unique_ptr<Impl> impl)
 				:impl(std::move(impl))
 			{}
@@ -90,7 +90,6 @@ namespace JinEngine
 			JFunctor(Ret(Object::* ptr)(Param...)const, Object* object)
 				:impl(std::make_unique<MemberFunctionImpl<Ret(Object::*)(Param...)const, Object, Ret, Param...>>(ptr, object))
 			{}
-
 			~JFunctor() {};
 		public:
 			Ret operator()(Param... var)

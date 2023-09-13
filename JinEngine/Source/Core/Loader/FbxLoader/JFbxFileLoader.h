@@ -101,18 +101,18 @@ namespace JinEngine
 			void SetRotationDegreeToRadian(FbxVector4& r)noexcept;
 			void SetSceneAxis(FbxScene* scene, FbxNode* root)noexcept;
 		private:
-			void ConvertFbaToXM(FbxAMatrix& fbxM, DirectX::XMFLOAT4X4& xmM)noexcept; 
+			void ConvertFbaToJM(FbxAMatrix& fbxM, JMatrix4x4& m)noexcept; 
 			void ConvertAxis(JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
-			void ConvertPosition(DirectX::XMFLOAT3& posion, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
-			void ConvertQuaternion(DirectX::XMFLOAT4& quaternion, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
-			void ConvertScale(DirectX::XMFLOAT3& scale, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
+			void ConvertPosition(JVector3<float>& posion, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
+			void ConvertQuaternion(JVector4<float>& posion, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
+			void ConvertScale(JVector3<float>& posion, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept;
 			size_t MakeVertexMapKey(const DirectX::XMFLOAT3& positionXm,
 				const DirectX::XMFLOAT2& textureXm,
 				const DirectX::XMFLOAT3& normalXm,
 				const DirectX::XMFLOAT3& biNormalXm,
 				const DirectX::XMFLOAT4& tangentXm,
 				const bool isSkin)noexcept;
-			void ResizeMatrix(DirectX::XMFLOAT4X4& xmF)noexcept;
+			void ResizeMatrix(JMatrix4x4& m)noexcept;
 			void ResizeVertexPosition(DirectX::XMFLOAT3& vertexPosition)noexcept;
 			void ResizeVertexPosition(JVector3<float>& vertexPosition)noexcept;
 		};

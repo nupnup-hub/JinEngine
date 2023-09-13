@@ -5,9 +5,9 @@
 namespace JinEngine
 {
 	class JAnimationController;
+	class JAnimationFSMdiagram;
 	namespace Core
 	{
-		class JAnimationFSMdiagram;
 		class JFSMparameter;
 	}
 	namespace Editor
@@ -21,7 +21,7 @@ namespace JinEngine
 		{
 		private:
 			JUserPtr<JAnimationController> aniCont;
-			JUserPtr<Core::JAnimationFSMdiagram> selectedDiagram;  
+			JUserPtr<JAnimationFSMdiagram> selectedDiagram;  
 		private:
 			std::unique_ptr<JEditorPopupMenu> parameterListPopup;
 			std::unique_ptr<JEditorStringMap> editorString;

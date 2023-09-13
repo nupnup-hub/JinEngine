@@ -3,15 +3,9 @@
 #include"../Reflection/JTypeImplBase.h"
 #include"../Reflection/JTypeBasePrivate.h"
 #include"../Guid/JGuidCreator.h"
-#include"../../Utility/JCommonUtility.h"
-
+#include"../Utility/JCommonUtility.h"
+  
 #define INVALID_NAME L""
-
-//Debug
-#include<fstream>
-#include"../../Object/Component/RenderItem/JRenderItem.h"
-#include"../../Object/Component/Transform/JTransform.h"
-
 namespace JinEngine
 {
 	namespace Core
@@ -43,6 +37,9 @@ namespace JinEngine
 			JIdentifierImpl(const InitData& initData)
 				:name(initData.name)
 			{}
+			~JIdentifierImpl()
+			{ 
+			}
 		public:
 			void SetReleasedTrigger(const bool value)noexcept
 			{
@@ -133,9 +130,8 @@ namespace JinEngine
 			else
 				return nullptr;
 		}
-
 		void JIdentifier::SetName(const std::wstring& newName)noexcept
-		{
+		{ 
 			if (!newName.empty())
 				impl->name = newName;
 		}
@@ -167,7 +163,7 @@ namespace JinEngine
 		{ 
 		}
 		JIdentifier::~JIdentifier()
-		{
+		{ 
 			impl.reset();
 		}
 

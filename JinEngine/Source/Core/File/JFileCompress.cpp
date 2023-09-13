@@ -1,6 +1,7 @@
 #include"JFileCompress.h"
+#include"../../../ThirdParty/fast-lzma2-master/fast-lzma2.h"
 #include <stdio.h>
-#include <fast-lzma2.h> /* Assumes that libfast-lzma2 was installed using 'make install' */
+//#include <fast-lzma2.h> /* Assumes that libfast-lzma2 was installed using 'make install' */
 
 using uint = unsigned int;
 namespace JinEngine

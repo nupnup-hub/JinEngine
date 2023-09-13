@@ -7,7 +7,7 @@ namespace JinEngine
 		JBigInt::JBigInt(const std::string& s)
 		{
 			digits = "";
-			int n = s.size();
+			int n = (int)s.size();
 			for (int i = n - 1; i >= 0; i--)
 			{
 				if (!isdigit(s[i]))
@@ -84,7 +84,7 @@ namespace JinEngine
 		}
 		JBigInt& JBigInt::operator++()
 		{
-			int i, n = digits.size();
+			int i, n = (int)digits.size();
 			for (i = 0; i < n && digits[i] == 9; i++)
 				digits[i] = 0;
 			if (i == n)
@@ -104,7 +104,7 @@ namespace JinEngine
 		{
 			if (digits[0] == 0 && digits.size() == 1)
 				throw("UNDERFLOW");
-			int i, n = digits.size();
+			int i, n = (int)digits.size();
 			for (i = 0; digits[i] == 0 && i < n; i++)
 				digits[i] = 9;
 			digits[i]--;

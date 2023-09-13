@@ -110,7 +110,7 @@ namespace JinEngine
 				a = JBigInt();
 				return a;
 			}
-			int n = a.digits.size(), m = b.digits.size();
+			int n = (int)a.digits.size(), m = (int)b.digits.size();
 			std::vector<int> v(n + m, 0);
 			for (int i = 0; i < n; i++)
 			{
@@ -279,7 +279,7 @@ namespace JinEngine
 		{
 			std::string s;
 			in >> s;
-			int n = s.size();
+			int n = (int)s.size();
 			for (int i = n - 1; i >= 0; i--)
 			{
 				if (!isdigit(s[i]))
@@ -290,7 +290,7 @@ namespace JinEngine
 		}
 		static std::ostream& operator<<(std::ostream& out, const JBigInt& a)
 		{
-			for (int i = a.digits.size() - 1; i >= 0; i--)
+			for (int i = (int)a.digits.size() - 1; i >= 0; i--)
 				std::cout << (short)a.digits[i];
 			return std::cout;
 		}

@@ -1,7 +1,7 @@
 #pragma once    
 #include"../JObject.h"
 #include"../Component/JComponentType.h"
-#include"../../Utility/JTypeUtility.h"
+#include"../../Core/Utility/JTypeTraitUtility.h" 
 #include<vector>
 #include<fstream>
 
@@ -98,6 +98,9 @@ namespace JinEngine
 		bool HasRenderItem()const noexcept;
 		bool HasAnimator()const noexcept;
 		bool CanAddComponent(const J_COMPONENT_TYPE type)const noexcept;
+	private:
+		bool CanActivate() const noexcept final;
+		bool CanDeActivate() const noexcept final;
 	public:
 		void ChangeParent(JUserPtr<JGameObject> newParent)noexcept;
 		JUserPtr<JComponent> FindComponent(const size_t guid)const noexcept;

@@ -9,7 +9,7 @@
 #include"../Interface/JEditorTransitionInterface.h"
 #include"../../Core/Log/JLog.h"
 #include"../../Core/Func/Functor/JFunctor.h"
-#include"../../Core/JDataType.h" 
+#include"../../Core/JCoreEssential.h" 
 #include"../../Core/Pointer/JOwnerPtr.h"
 #include"../../Object/Resource/JResourceObjectType.h"
 
@@ -28,13 +28,27 @@ namespace JinEngine
 		struct JEditorEvStruct
 		{
 		public:
+			enum class RANGE
+			{
+				CALLER = 1 << 0,
+				OTHERS = 1 << 1,
+				ALL = CALLER | OTHERS
+			};
+		public:
 			const J_EDITOR_PAGE_TYPE pageType;
+			const RANGE evRange = RANGE::ALL;
 		public:
 			JEditorEvStruct(const J_EDITOR_PAGE_TYPE pageType);
+			JEditorEvStruct(const J_EDITOR_PAGE_TYPE pageType, const RANGE evRange);
 			virtual ~JEditorEvStruct() = default;
 		public:
 			virtual bool PassDefectInspection()const noexcept = 0;
 			virtual J_EDITOR_EVENT GetEventType()const noexcept = 0;
+		public:
+			bool AllowExecuteCallerEv()const noexcept;
+			bool AllowExecuteOtherEv()const noexcept; 
+			bool CanExecuteCallerEv(const size_t senderGuid, const size_t reciverGuid);
+			bool CanExecuteOtherEv(const size_t senderGuid, const size_t reciverGuid);
 		};
 		struct JEditorMouseClickEvStruct : public JEditorEvStruct
 		{
@@ -56,10 +70,12 @@ namespace JinEngine
 		public:
 			JEditorPushSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType,
 				const J_EDITOR_WINDOW_TYPE wndType,
-				const JUserPtr<Core::JIdentifier> selectObj);
+				const JUserPtr<Core::JIdentifier> selectObj,
+				const RANGE evRange);
 			JEditorPushSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType,
 				const J_EDITOR_WINDOW_TYPE wndType,
-				const std::vector<JUserPtr<Core::JIdentifier>> selectObj);
+				const std::vector<JUserPtr<Core::JIdentifier>> selectObj,
+				const RANGE evRange);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
@@ -72,8 +88,12 @@ namespace JinEngine
 		public:
 			std::vector<JUserPtr<Core::JIdentifier>> selectObjVec;
 		public:
-			JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, JUserPtr<Core::JIdentifier> selectObj);
-			JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const std::vector<JUserPtr<Core::JIdentifier>> selectObj);
+			JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, 
+				JUserPtr<Core::JIdentifier> selectObj,
+				const RANGE evRange);
+			JEditorPopSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, 
+				const std::vector<JUserPtr<Core::JIdentifier>> selectObj,
+				const RANGE evRange);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
@@ -83,7 +103,7 @@ namespace JinEngine
 		struct JEditorClearSelectObjectEvStruct : public JEditorEvStruct
 		{
 		public:
-			JEditorClearSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType);
+			JEditorClearSelectObjectEvStruct(const J_EDITOR_PAGE_TYPE pageType, const RANGE evRange);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
@@ -143,6 +163,47 @@ namespace JinEngine
 			JEditorPage* unFocusPage;
 		public:
 			JEditorUnFocusPageEvStruct(JEditorPage* unFocusPage);
+		public:
+			bool PassDefectInspection()const noexcept final;
+			J_EDITOR_EVENT GetEventType()const noexcept final;
+		};
+		struct JEditorMaximizePageEvStruct : public JEditorEvStruct
+		{
+		public:
+			JEditorPage* page = nullptr;
+			JVector2F prePagePos;
+			JVector2F prePageSize;
+		public:
+			JEditorMaximizePageEvStruct(JEditorPage* page,
+				const JVector2F& prePagePos,
+				const JVector2F& prePageSize);
+		public:
+			bool PassDefectInspection()const noexcept final;
+			J_EDITOR_EVENT GetEventType()const noexcept final;
+		};
+		struct JEditorMinimizePageEvStruct : public JEditorEvStruct
+		{
+		public:
+			JEditorPage* page = nullptr;
+			JVector2F prePagePos;
+			JVector2F prePageSize;
+			float height;
+		public:
+			JEditorMinimizePageEvStruct(JEditorPage* page,
+				const JVector2F& prePagePos,
+				const JVector2F& prePageSize,
+				const float height);
+		public:
+			bool PassDefectInspection()const noexcept final;
+			J_EDITOR_EVENT GetEventType()const noexcept final;
+		};
+		struct JEditorPreviousSizePageEvStruct : public JEditorEvStruct
+		{
+		public:
+			JEditorPage* page = nullptr;
+			bool useLazy = true;
+		public:
+			JEditorPreviousSizePageEvStruct(JEditorPage* page, const bool useLazy);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
@@ -246,8 +307,12 @@ namespace JinEngine
 		{
 		public:
 			JEditorWindow* wnd = nullptr; 
+			JVector2F preWindowPos;
+			JVector2F preWindowSize;
 		public:
-			JEditorMaximizeWindowEvStruct(JEditorWindow* wnd);
+			JEditorMaximizeWindowEvStruct(JEditorWindow* wnd, 
+				const JVector2F& preWindowPos, 
+				const JVector2F& preWindowSize);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
@@ -256,8 +321,9 @@ namespace JinEngine
 		{
 		public:
 			JEditorWindow* wnd = nullptr;
+			bool useLazy = false;
 		public:
-			JEditorPreviousSizeWindowEvStruct(JEditorWindow* wnd);
+			JEditorPreviousSizeWindowEvStruct(JEditorWindow* wnd, const bool useLazy);
 		public:
 			bool PassDefectInspection()const noexcept final;
 			J_EDITOR_EVENT GetEventType()const noexcept final;
