@@ -4,7 +4,7 @@
 #include"../Device/JGraphicDeviceUser.h" 
 #include"../../Core/JCoreEssential.h"  
 #include"../../Core/Pointer/JOwnerPtr.h" 
-#include"../../Object/Resource/Mesh/JMeshStruct.h"
+#include"../../Core/Geometry/Mesh/JMeshStruct.h"
 #include<string>
 
 namespace JinEngine
@@ -113,8 +113,8 @@ namespace JinEngine
 			virtual JUserPtr<JGraphicResourceInfo> CreateShadowMapCubeTexture(JGraphicDevice* device,
 				const uint width,
 				const uint height) = 0;
-			virtual JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(JGraphicDevice* device, const std::vector<JStaticMeshVertex>& vertex) = 0;
-			virtual JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(JGraphicDevice* device, const std::vector<JSkinnedMeshVertex>& vertex) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(JGraphicDevice* device, const std::vector<Core::JStaticMeshVertex>& vertex) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(JGraphicDevice* device, const std::vector<Core::JSkinnedMeshVertex>& vertex) = 0;
 			virtual JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(JGraphicDevice* device, const std::vector<uint32>& index) = 0;
 			virtual JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(JGraphicDevice* device, const std::vector<uint16>& index) = 0;
 			virtual bool DestroyGraphicTextureResource(JGraphicDevice* device, JGraphicResourceInfo* info) = 0;

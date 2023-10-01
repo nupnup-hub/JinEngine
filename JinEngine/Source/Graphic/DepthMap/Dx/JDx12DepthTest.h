@@ -1,7 +1,7 @@
 #pragma once
 #include"../JDepthTest.h"
 #include"../../../Core/Utility/JTypeTraitUtility.h" 
-#include"../../../Object/Resource/Mesh/JMeshType.h"  
+#include"../../../Core/Geometry/Mesh/JMeshType.h"  
 #include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"
 #include<wrl/client.h>
 

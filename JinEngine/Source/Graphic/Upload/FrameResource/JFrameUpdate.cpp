@@ -46,7 +46,7 @@ namespace JinEngine
 			}
 		}
  
-		int JFrameUpdateData::GetUploadIndex()const noexcept
+		int JFrameUpdateData::GetFrameIndex()const noexcept
 		{
 			return index;
 		}

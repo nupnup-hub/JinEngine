@@ -8,12 +8,18 @@ namespace JinEngine
 	class JShader;
 	class JGraphicShaderDataHolderBase;
 	class JComputeShaderDataHolderBase;
+
+	/**
+	* User가 JObject를 통해서 조절가능한 Shader생성하는 책임을 가지는 class는
+	* Graphic, Compute type에 따라 밑에 class를 반드시 상속한다. 
+	*/
 	namespace Graphic
 	{
 		class JGraphicDevice;
 		class JGraphicResourceManager;
-		struct JGraphicInfo;
-		 
+		struct JGraphicOption;
+		struct JGraphicInfo; 
+
 		//현재 scene drawing은 모두 JSceneDraw에 파생클래스에서 행해진다.
 		//그러므로 사실상 JGraphicShaderDataHandler는 JSceneDraw만 상속받아서 사용한다.
 		//추후에 다른 종류에 GraphicShader를 사용해서 Scene을 Draw할 경우가 생기면 JGraphicImpl에서
@@ -27,7 +33,7 @@ namespace JinEngine
 		public:
 			void RecompileShader(JShader* shader); 
 		};
-
+ 
 		// ComputeDrawClass마다 다루는 Compute Shader갯수와 종류 Recompile조건도 다르므로
 		// NotifyChangeGraphicShaderMacro로 일괄적으로 알려서 조건에 따라 처리하거나
 		// Event발생시 직접 필요로 하는 곳에 알려서 처리할수있다.

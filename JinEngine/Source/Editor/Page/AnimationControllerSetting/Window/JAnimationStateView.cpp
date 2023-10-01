@@ -129,7 +129,7 @@ namespace JinEngine
 			destroyNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creationImpl->reqDestroyEvF, this));
 			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 
-			statePopup = std::make_unique< JEditorPopupMenu>(Private::StateViewName(GetName()), std::move(stateViewRootNode));
+			statePopup = std::make_unique<JEditorPopupMenu>(Private::StateViewName(GetName()), std::move(stateViewRootNode));
 			statePopup->AddPopupNode(std::move(createNewCilpStateNode));
 			statePopup->AddPopupNode(std::move(createTransitionNode));
 			statePopup->AddPopupNode(std::move(destroyNode));

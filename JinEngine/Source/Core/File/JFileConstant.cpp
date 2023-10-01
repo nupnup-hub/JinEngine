@@ -38,6 +38,14 @@ namespace JinEngine
 		{
 			return L"TypeGuid: ";
 		}
+		std::wstring JFileConstant::StreamSelectedSymbol()noexcept
+		{
+			return L"IsSelected: ";
+		}
+		std::wstring JFileConstant::StreamActivatedSymbol()noexcept
+		{
+			return L"IsActivated: ";
+		}
 		std::wstring JFileConstant::StreamHasObjGuidSymbol()noexcept
 		{
 			return L"HasObjGuid: ";

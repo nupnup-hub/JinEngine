@@ -1,5 +1,6 @@
 #pragma once 
 #include"../JDepthMapDebug.h" 
+#include"../../JGraphicEnum.h"
 #include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"
 #include<wrl/client.h>
 #include<memory>
@@ -14,12 +15,12 @@ namespace JinEngine
 		struct JGraphicInfo;
 		struct JDrawHelper;
 		class JDx12DepthMapDebug final : public JDepthMapDebug
-		{
+		{ 
 		private:
 			//graphic
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> cRootSignature;
 			std::unique_ptr<JDx12ComputeShaderDataHolder> linearDepthMapShaderData;
-			std::unique_ptr<JDx12ComputeShaderDataHolder> nonLinearDepthMapShaderData;
+			std::unique_ptr<JDx12ComputeShaderDataHolder> nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::COUNT];
 		public:
 			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)final;
 			void Clear()final;
@@ -43,7 +44,8 @@ namespace JinEngine
 				const CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle,
 				const JVector2<uint> size,
 				const float nearF,
-				const float farF);
+				const float farF,
+				const bool isPerspective);
 		private:
 			void BuildComputeResource(ID3D12Device* device, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthStencilFormat);
 		};

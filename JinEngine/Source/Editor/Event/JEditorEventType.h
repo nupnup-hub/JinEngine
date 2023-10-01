@@ -33,8 +33,8 @@ namespace JinEngine
 			BIND_FUNC,				
 			T_BIND_FUNC);		
 
-		//BIND_FUNC = Bind를 wrapping한 class를 통해 지연호출한다.
-		//T_BIND_FUNC = do, undo  Bind를 wrapping한 클래스를 통해 
+		//BIND_FUNC = Bind를 wrapping한 class를 통해 지연호출한다.	(unro, redo을 사용하고싶으면 수동으로 Transition호출이 필요하며 JEditorWindow class 들은 Request Bind로 이용가능)
+		//T_BIND_FUNC Bind를 wrapping한 class를 Transition을 통해 지연호출한다.	(Transition에서 자체적으로 unro, redo, log 지원)
 		//J_EDITOR_EVENT에 등록된 transition 기능을 지원하는 함수이외에도 transition기능을 활용하게한다.
 
 		class JEditorEvType

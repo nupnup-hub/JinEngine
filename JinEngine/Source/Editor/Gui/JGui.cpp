@@ -17,6 +17,8 @@
 #include"../../Application/JApplicationEngine.h"
 #include"../../Application/JApplicationProject.h"
 #include<bitset>
+#include <sstream>
+#include <iomanip>
 
 //#include"../../Develop/Debug/JDevelopDebug.h"
 namespace JinEngine::Editor
@@ -231,8 +233,38 @@ namespace JinEngine::Editor
 		}
 	}
 
-#pragma region Color
+#pragma region JIdentifier  
+	std::string JGui::CreateGuiLabel(Core::JIdentifier* iden) noexcept
+	{
+		return JCUtil::WstrToU8Str(iden->GetName()) + "##" + std::to_string(iden->GetGuid());
+	}
+	std::string JGui::CreateGuiLabel(Core::JIdentifier* iden, const std::string& text) noexcept
+	{
+		return JCUtil::WstrToU8Str(iden->GetName()) + "##" + std::to_string(iden->GetGuid());
+	}
+	std::string JGui::CreateGuiLabel(const JUserPtr<Core::JIdentifier>& iden) noexcept
+	{
+		return JCUtil::WstrToU8Str(iden->GetName()) + "##" + std::to_string(iden->GetGuid());
+	}
+	std::string JGui::CreateGuiLabel(const JUserPtr<Core::JIdentifier>& iden, const std::string& text) noexcept
+	{
+		return JCUtil::WstrToU8Str(iden->GetName()) + "##" + std::to_string(iden->GetGuid()) + text;
+	}
+	std::string JGui::CreateGuiLabel(const std::string& name, const std::string& uniqueLabel) noexcept
+	{
+		return  name + "##" + uniqueLabel;
+	}
+	std::string JGui::CreateGuiLabel(const std::string& name, const size_t guid) noexcept
+	{
+		return  name + "##" + std::to_string(guid);
+	}
+	std::string JGui::CreateGuiLabel(const std::string& name, const size_t guid, const std::string& uniqueLabel) noexcept
+	{
+		return  name + "##" + std::to_string(guid) + uniqueLabel;
+	}
+#pragma endregion
 
+#pragma region Color
 	JVector4<float> JGui::GetSelectedWidgetColorFactor()noexcept
 	{
 		return JVector4<float>(0.35f, 0.35f, 0.35f, 0.35f);
@@ -550,7 +582,11 @@ namespace JinEngine::Editor
 	} 
 	bool JGui::IsMouseInRect(const JVector2<float>& position, const JVector2<float>& size)noexcept
 	{
-		return Private::Adaptee()->IsMouseInRect(position, size);
+		return Private::Adaptee()->IsMouseInRect(position, position + size);
+	}
+	bool JGui::IsMouseInRectMM(const JVector2<float>& min, const JVector2<float>& max)noexcept
+	{
+		return Private::Adaptee()->IsMouseInRect(min, max);
 	}
 	bool JGui::IsMouseHoveringRect(const JVector2<float>& min, const JVector2<float>& max, const bool clip)noexcept
 	{
@@ -869,6 +905,13 @@ namespace JinEngine::Editor
 		Private::Adaptee()->Tooltip(message);
 		JGui::SetCurrentWindowFontScale(preFontScale);
 	} 
+	void JGui::Tooltip(const float value, const int range, const float fontScale)noexcept
+	{
+		std::ostringstream oss;
+		oss << std::fixed << std::setprecision(range);
+		oss << value;
+		Tooltip(oss.str(), fontScale);
+	}
 	void JGui::InvalidImage(const JVector2<float>& size,
 		const JVector2<float>& uv0,
 		const JVector2<float>& uv1,
@@ -1106,24 +1149,22 @@ namespace JinEngine::Editor
 		bool& pressed,
 		bool changeValueIfPreesd,
 		const JVector2<float>& size,
-		const JVector4<float>& bgColor,
-		const JVector4<float>& bgDelta,
+		const JVector4<float>& bgColor, 
 		const JVector4<float>& frameColor,
 		const float frameThickness)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SWITCH);
-		return Private::Adaptee()->ImageSwitch(name, info, pressed, changeValueIfPreesd, size, bgColor, bgDelta, frameColor, frameThickness);
+		return Private::Adaptee()->ImageSwitch(name, info, pressed, changeValueIfPreesd, size, bgColor, frameColor, frameThickness);
 	}
 	bool JGui::ImageButton(const std::string name,
 		JGuiImageInfo info,
 		const JVector2<float>& size,
-		const JVector4<float>& bgColor,
-		const JVector4<float>& bgDelta,
+		const JVector4<float>& bgColor, 
 		const JVector4<float>& frameColor,
 		const float frameThickness)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::BUTTON);
-		return Private::Adaptee()->ImageButton(name, info, size, bgColor, bgDelta, frameColor, frameThickness);
+		return Private::Adaptee()->ImageButton(name, info, size, bgColor, frameColor, frameThickness);
 	}
 	bool JGui::MaximizeButton(const bool isLocatedCloseBtnLeftSide)
 	{
@@ -1622,6 +1663,8 @@ namespace JinEngine::Editor
 		return Private::Adaptee()->CreateDockUpdateHelper(pageType);
 	}
 #pragma endregion
+
+
 
 	bool JGuiPrivate::StartGuiUpdate()
 	{

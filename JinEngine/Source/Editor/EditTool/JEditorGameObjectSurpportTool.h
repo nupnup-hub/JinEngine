@@ -27,6 +27,10 @@ namespace JinEngine
 			virtual	J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE GetToolType()const noexcept = 0; 
 		public:
 			bool IsEditable(JGameObject* obj)const noexcept;
+		public:
+			//calculate ui object scale in the scene
+			//카메라에서 멀어질수록 높은 scale값을 return
+			static JVector2F CalUiScale(const JVector3F& posW, const JVector2F fixedScale, const JUserPtr<JCamera>& cam);
 		};
 
 		class JEditorTransformTool : public JEditorGameObjectSurpportTool, public Core::JValidInterface
@@ -37,14 +41,14 @@ namespace JinEngine
 			public:
 				JUserPtr<JGameObject> arrow; 
 				JUserPtr<JMaterial> material; 
-				JVector4<float> matColor;
+				JVector4F matColor;
 			public:
-				void CreateMaterial(const JVector4<float> matColor);
+				void CreateMaterial(const JVector4F matColor);
 			public:
 				void Initialze(const JUserPtr<JGameObject>& debugRoot,
 					const J_DEFAULT_SHAPE shape,  
-					const JVector3<float> initRotation, 
-					const JVector3<float> initMovePos);
+					const JVector3F initRotation, 
+					const JVector3F initMovePos);
 				void Clear();
 			public:
 				bool IsValid()const noexcept; 
@@ -53,14 +57,21 @@ namespace JinEngine
 				void OffSelectedColor()noexcept;
 			};
 			struct UpdateData
-			{ 
+			{  
 			public:
-				JVector2<float> preWorldMousePos;
-				JVector2<float> preLocalMouseMidGap;		//Mid to nowLocalPos  
+				JVector3F lastPos = InvalidPos();
+				JUserPtr<JGameObject> lastSelected;		//single click만 유효
+			public:
+				JVector2F preWorldMousePos;
+				JVector2F preLocalMouseMidGap;		//Mid to nowLocalPos  
 				int hoveringIndex = invalidIndex;
 			public:
 				bool isDragging = false;
 				bool isLastUpdateSelected= false;
+			public:
+				JVector3F InvalidPos()const noexcept;
+			public:
+				void Clear();
 			};
 		private:
 			using UpdateTransformT = Core::JStaticCallableType<void, JEditorTransformTool*, const std::vector<JUserPtr<JGameObject>>&, const JUserPtr<JCamera>&>;
@@ -90,9 +101,9 @@ namespace JinEngine
 				const float sizeRate);
 			~JEditorTransformTool();
 		public:
-			void Update(const JUserPtr<JGameObject>& selected, 
+			void Update(const JUserPtr<JGameObject>& selected,
 				const JUserPtr<JCamera>& cam,
-				const JVector2<float>& sceneImageMinPoint,
+				const JVector2F& sceneImageScreenMinPoint,
 				const bool canSelectToolObject);
 			/**
 			* @param selected owner scene is same
@@ -100,16 +111,20 @@ namespace JinEngine
 			*/
 			void Update(const std::vector<JUserPtr<JGameObject>>& selected,
 				const JUserPtr<JCamera>& cam,
-				const JVector2<float>& sceneImageMinPoint,
+				const JVector2F& sceneImageScreenMinPoint,
 				const bool canSelectToolObject);
 		private:
 			void UpdateStart();
 			void UpdateToolObject(const bool isValidSelected);
 		private: 
-			void UpdateArrowPosition(const JVector3<float>& posW, const JUserPtr<JCamera>& cam);
+			void UpdateArrowPosition(const JVector3F& posW, const JUserPtr<JCamera>& cam);
+			void UpdateArrowDragging(const JUserPtr<JGameObject>& selected,
+				const JUserPtr<JCamera>& cam,
+				const JVector2F& sceneImageScreenMinPoint,
+				const bool canSelectToolObject);
 			void UpdateArrowDragging(const std::vector<JUserPtr<JGameObject>>& selected, 
 				const JUserPtr<JCamera>& cam, 
-				const JVector2<float>& sceneImageMinPoint,
+				const JVector2F& sceneImageScreenMinPoint,
 				const bool canSelectToolObject);
 		private:
 			static UpdateTransformT::Ptr GetUpdateTransformPtr(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType)noexcept;
@@ -128,12 +143,14 @@ namespace JinEngine
 		public:
 			J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE GetToolType()const noexcept final;
 			uint GetShapeLength()const noexcept;
+			JUserPtr<JGameObject> GetLastSelected()const noexcept;
 		public:
 			void SetDebugRoot(JUserPtr<JGameObject> debugRoot);
 		public: 
-			bool IsLastUpdateSelectedObject()const noexcept; 
-			bool IsHoveringObject()const noexcept;
-			bool IsDraggingObject()const noexcept;
+			bool IsLastUpdateSelected()const noexcept; 
+			bool IsHovering()const noexcept;
+			bool IsDragging()const noexcept; 
+			bool IsHitDebugObject(const JUserPtr<JCamera>& cam, const JVector2F& sceneImageScreenMinPoint)const noexcept;
 		private: 
 			void OnDragging()noexcept;
 			void OffDragging()noexcept;

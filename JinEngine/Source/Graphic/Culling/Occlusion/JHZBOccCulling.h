@@ -11,7 +11,10 @@ namespace JinEngine
 		struct JGraphicOption;
 		class JCullingInfo;
 
-		class JHZBOccCulling : public JOccCulling, public JComputeShaderDataHandler
+		/**
+		* Hzb는 IsOccluder trigger가 켜진 object에 가려진 대상을 Occlude한다.
+		*/
+		class JHZBOccCulling : public JOccCulling
 		{ 
 		public:
 			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info) = 0;

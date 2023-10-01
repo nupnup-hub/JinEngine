@@ -11,9 +11,12 @@ namespace JinEngine
 {
 	class JScene;
 	class JComponent;
-	class JCamera;
-	struct JStaticMeshVertex;
-	struct JSkinnedMeshVertex;
+	class JCamera; 
+	namespace Core
+	{
+		struct JStaticMeshVertex;
+		struct JSkinnedMeshVertex;
+	}
 	namespace Graphic
 	{ 
 		class JGraphicResourceUserInterface;
@@ -44,8 +47,8 @@ namespace JinEngine
 			bool CreateShadowMapTexture(const uint size);
 			bool CreateShadowMapArrayTexture(const uint size, const uint count);
 			bool CreateShadowMapCubeTexture(const uint size);
-			bool CreateVertexBuffer(const std::vector<JStaticMeshVertex>& vertex);
-			bool CreateVertexBuffer(const std::vector<JSkinnedMeshVertex>& vertex);
+			bool CreateVertexBuffer(const std::vector<Core::JStaticMeshVertex>& vertex);
+			bool CreateVertexBuffer(const std::vector<Core::JSkinnedMeshVertex>& vertex);
 			bool CreateIndexBuffer(std::vector<uint32>& index);
 			bool CreateIndexBuffer(std::vector<uint16>& index);
 		protected:
@@ -55,6 +58,8 @@ namespace JinEngine
 		public:
 			uint GetResourceWidth(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
 			uint GetResourceHeight(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
+			JVector2F GetResourceSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
+			JVector2F GetResourceInvSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
 			int GetResourceArrayIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
 			int GetHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept;
 			uint GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept;
@@ -62,6 +67,8 @@ namespace JinEngine
 			virtual uint GetDataCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0;
 		public:
 			int GetFirstResourceArrayIndex()const noexcept;
+			JVector2F GetFirstResourceSize()const noexcept;
+			JVector2F GetFirstResourceInvSize()const noexcept;
 			Graphic::ResourceHandle GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType) const noexcept;
 		protected:
 			virtual JUserPtr<JGraphicResourceInfo> GetInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept = 0;
@@ -156,14 +163,14 @@ namespace JinEngine
 				if (index == invalidIndex)
 					return;
 
-				info[index] = nullptr;
-				for (int i = info; i < count - 1; ++i)
+				JGraphicResourceInfo::Destroy(info[index].Release()); 
+				for (int i = index; i < count - 1; ++i)
 					info[i] = std::move(info[i + 1]);
 			}
 			void DestroyAllTexture()
 			{
 				for (uint i = 0; i < count; ++i)
-					info[i] = nullptr;
+					JGraphicResourceInfo::Destroy(info[i].Release());
 			}
 		private:
 			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo)
@@ -213,6 +220,10 @@ namespace JinEngine
 			}
 		};
 
+		template<>
+		class JGraphicWideSingleResourceHolder<0>
+		{};
+
 		using JGraphicResourceInterfacePointer = Core::JTypeImplInterfacePointer<JGraphicResourceInterface>;
 		class JGraphicResourceUserInterface final
 		{
@@ -226,12 +237,16 @@ namespace JinEngine
 			uint GetDataCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept;
 			uint GetResourceWidth(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
 			uint GetResourceHeight(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
+			JVector2F GetResourceSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
+			JVector2F GetResourceInvSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
 			int GetResourceArrayIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
 			int GetHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept;
 			uint GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept;
 			Graphic::ResourceHandle GetGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint bIndex, const uint dataIndex) const noexcept;
 		public:
 			int GetFirstResourceArrayIndex()const noexcept;
+			JVector2F GetFirstResourceSize()const noexcept;
+			JVector2F GetFirstResourceInvSize()const noexcept;
 			Graphic::ResourceHandle GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType) const noexcept;
 		public:
 			bool IsValidHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;

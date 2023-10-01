@@ -4,11 +4,11 @@
 #include"JAnimationFSMtransitionPrivate.h" 
 #include"JAnimationTime.h"    
 #include"JAnimationUpdateData.h"  
+#include"../../../JObjectFileIOHelper.h"
 #include"../../../../Core/Fsm/JFSMcondition.h"  
 #include"../../../../Core/Fsm/JFSMparameter.h"  
 #include"../../../../Core/Identity/JIdenCreator.h"
 #include"../../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../../Core/File/JFileIOHelper.h"
 #include"../../../../Core/File/JFileConstant.h" 
 #include"../../../../Core/Guid/JGuidCreator.h" 
 #include<fstream>
@@ -112,7 +112,7 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		uint transitionCount = 0;
-		JFileIOHelper::LoadAtomicData(stream, transitionCount);
+		JObjectFileIOHelper::LoadAtomicData(stream, transitionCount);
 
 		for (uint i = 0; i < transitionCount; ++i)
 		{
@@ -121,9 +121,9 @@ namespace JinEngine
 			Core::J_FSM_OBJECT_TYPE oType;
 			size_t outputGuid;
 			size_t outputTypeGuid;
-			JFileIOHelper::LoadFsmObjectIden(stream, tName, guid, oType);
-			JFileIOHelper::LoadAtomicData(stream, outputGuid);
-			JFileIOHelper::LoadAtomicData(stream, outputTypeGuid);
+			JObjectFileIOHelper::LoadFsmIden(stream, tName, guid, oType);
+			JObjectFileIOHelper::LoadAtomicData(stream, outputGuid);
+			JObjectFileIOHelper::LoadAtomicData(stream, outputTypeGuid);
 
 			auto outuserPtr = Core::GetUserPtr<JAnimationFSMstate>(outputTypeGuid, outputGuid);
 			if (outuserPtr != nullptr)
@@ -138,15 +138,15 @@ namespace JinEngine
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JFileIOHelper::StoreAtomicData(stream, L"TransitionCount:", state->GetTransitionCount());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"TransitionCount:", state->GetTransitionCount());
 		const uint transitionCount = state->GetTransitionCount();
 
 		for (uint i = 0; i < transitionCount; ++i)
 		{
 			JUserPtr<JAnimationFSMtransition> nowTran = state->GetTransitionByIndex(i);
-			JFileIOHelper::StoreFsmObjectIden(stream, nowTran.Get());
-			JFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamHasObjGuidSymbol(), nowTran->GetOutputStateGuid());
-			JFileIOHelper::StoreAtomicData(stream, L"OutTypeGuid", nowTran->GetOutState()->GetTypeInfo().TypeGuid());
+			JObjectFileIOHelper::StoreFsmIden(stream, nowTran.Get());
+			JObjectFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamHasObjGuidSymbol(), nowTran->GetOutputStateGuid());
+			JObjectFileIOHelper::StoreAtomicData(stream, L"OutTypeGuid", nowTran->GetOutState()->GetTypeInfo().TypeGuid());
 		}
 		for (uint i = 0; i < transitionCount; ++i)
 			TransitionIOInterface(state->GetTransitionByIndex(i))->StoreAssetData(stream, state->GetTransitionByIndex(i));

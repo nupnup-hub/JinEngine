@@ -7,8 +7,7 @@
 #include"../../../../../Core/Math/JMathHelper.h"  
 #include"../../../../../Editor/EditTool/JEditorViewStructure.h"
 #include"../../../../../Graphic/Culling/JCullingInterface.h"
-#include <algorithm>
-
+#include <algorithm> 
 namespace JinEngine
 {
 	using namespace DirectX;
@@ -140,12 +139,7 @@ namespace JinEngine
 				return;
 
 			if (innerGameObjectCandidate->GetRenderItem()->GetBoundingBox().Intersects(info.ray.PosV(), info.ray.DirV(), leftDist))
-			{
-				if (info.untilFirst)
-					info.firstResult = innerGameObjectCandidate;
-				else
-					info.resultObjVec.push_back(innerGameObjectCandidate);
-			}
+				info.result.push_back(JAcceleratorIntersectInfo::Result{ innerGameObjectCandidate, leftDist });
 		}
 	}
 	void JBvh::Contain(JAcceleratorContainInfo& info)const noexcept
@@ -178,6 +172,8 @@ namespace JinEngine
 		{
 			uint index = 0;
 			root->AlignLeafNode(info, aligned, index, 0);
+			if (aligned.size() != index)
+				aligned.resize(index);
 		}
 		else if (innerGameObjectCandidate != nullptr)
 			aligned[0] = innerGameObjectCandidate;
@@ -201,7 +197,7 @@ namespace JinEngine
 		}
 	}
 	void JBvh::AddGameObject(const JUserPtr<JGameObject>& newGameObject)noexcept
-	{
+	{ 
 		JBvhNode* containNode = root->GetContainNodeToLeaf(newGameObject->GetRenderItem()->GetBoundingBox());
 		if (containNode != nullptr)
 			ReBuildBvh(containNode->GetNodeNumber(), newGameObject);

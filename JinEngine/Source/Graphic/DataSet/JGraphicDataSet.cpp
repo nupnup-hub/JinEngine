@@ -49,8 +49,8 @@ namespace JinEngine::Graphic
 		: graphicResourceM(graphicResourceM)
 	{}	 
 
-	JGraphicDepthMapDebugHandleSet::JGraphicDepthMapDebugHandleSet(const JVector2<uint> size, const float nearF, const float farF)
-		: size(size), nearF(nearF), farF(farF)
+	JGraphicDepthMapDebugHandleSet::JGraphicDepthMapDebugHandleSet(const JVector2<uint> size, const float nearF, const float farF, const bool isPerspective)
+		: size(size), nearF(nearF), farF(farF), isPerspective(isPerspective)
 	{}
 
 	JGraphicSceneDrawSet::JGraphicSceneDrawSet(JGraphicDevice* device,

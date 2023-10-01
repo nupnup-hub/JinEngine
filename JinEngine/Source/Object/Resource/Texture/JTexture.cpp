@@ -4,10 +4,10 @@
 #include"../JResourceObjectHint.h"
 #include"../JResourceObjectImporter.h"
 #include"../../Directory/JDirectory.h"
+#include"../../JObjectFileIOHelper.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Core/Guid/JGuidCreator.h"
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphic.h" 
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
@@ -172,7 +172,7 @@ namespace JinEngine
 			{
 				return { JICI::Create<JTexture>(importPathData.name,
 					Core::MakeGuid(),
-					importPathData.flag,
+					(J_OBJECT_FLAG)importPathData.flag,
 					RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
 					dir,
 					importPathData.oriFileWPath) };
@@ -360,7 +360,7 @@ namespace JinEngine
 		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->textureType);
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->textureType);
 		stream.close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -380,7 +380,7 @@ namespace JinEngine
 		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	 
-		JFileIOHelper::StoreEnumData(stream, L"TextureType:", tex->GetTextureType());
+		JObjectFileIOHelper::StoreEnumData(stream, L"TextureType:", tex->GetTextureType());
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

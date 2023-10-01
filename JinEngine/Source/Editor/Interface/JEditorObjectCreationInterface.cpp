@@ -6,11 +6,7 @@
 namespace JinEngine
 {
 	namespace Editor
-	{ 
-		namespace
-		{
-			using ReleaseInterface = JEditorObjectReleaseInterface;
-		}
+	{  
 		JEditorCreationHint::JEditorCreationHint(JEditorWindow* editorWnd,
 			bool isSetOpenDataBit,
 			bool isSetOwnerDataBit,
@@ -99,26 +95,31 @@ namespace JinEngine
 			const bool useTransition,
 			JEditorCreationHint creationHint)
 		{
-			Core::JIdentifier* rawPtr = Core::SearchRawPtr<Core::JIdentifier>(Core::JIdentifier::StaticTypeInfo(), guid);
-			if (rawPtr == nullptr)
+			JUserPtr<Core::JIdentifier> userPtr = Core::SearchUserPtr<Core::JIdentifier>(Core::JIdentifier::StaticTypeInfo(), guid);
+			if (userPtr == nullptr)
 			{
 				JEditorTransition::Instance().Log("Destruction Fail invalid guid typeName: " + Core::JIdentifier::StaticTypeInfo().Name());
 				return;
 			}
-			DestroyPreProccess(rawPtr, useTransition, creationHint);
-			if (useTransition)
+			DestroyPreProccess(userPtr.Get(), useTransition, creationHint);
+
+			const std::wstring logContents = userPtr->GetNameWithType();
+			if (useTransition && userPtr->CanControlIdentifiable())
 			{
-				Core::JDataHandle newHandle = dS.Add(ReleaseInterface::ReleaseInstance(rawPtr));
+				userPtr->SetUnIdentifiable();
+				Core::JDataHandle newHandle = dS.Add(std::move(userPtr));
 				dS.TransitionHandle(newHandle, dH);
 				if(!dH.IsValid())
-					JEditorTransition::Instance().Log(L"Destruction transition handle fail", rawPtr->GetNameWithType());
+					JEditorTransition::Instance().Log(L"Destruction transition handle fail", logContents);
+				else
+					JEditorTransition::Instance().Log(L"Destruction success", logContents);
 			}
 			else
 			{
-				Core::JTypeInfo& typeInfo = rawPtr->GetTypeInfo();
-				Core::JIdentifier::BeginDestroy(rawPtr);  
-			}
-			JEditorTransition::Instance().Log(L"Destruction success", rawPtr->GetNameWithType());
+				Core::JTypeInfo& typeInfo = userPtr->GetTypeInfo();
+				Core::JIdentifier::BeginDestroy(userPtr.Release());
+				JEditorTransition::Instance().Log(L"Destruction success", logContents);
+			}  
 			DestroyPostProccess(guid, useTransition, creationHint); 
 		}
 		void JEditorObjectDestroyInterface::DestroyMulti(const std::vector<size_t> guidVec,
@@ -214,7 +215,7 @@ namespace JinEngine
 					if (editorWnd != nullptr && preProcessF != nullptr)
 						(*preProcessF)(editorWnd);
 					Core::JIdentifier* ptr = data.Get();
-					ReleaseInterface::RestoreInstance(std::move(data));
+					ptr->SetIdentifiable(); 
 					JEditorTransition::Instance().Log(L"Cancel destruction success ", ptr->GetNameWithType());
 
 					if (creationHint.canSetModBit)
@@ -242,16 +243,7 @@ namespace JinEngine
 			}
 			dHVec.clear();
 		}
-
-		JOwnerPtr<Core::JIdentifier> JEditorObjectReleaseInterface::ReleaseInstance(Core::JIdentifier* ptr)
-		{ 
-			return JOwnerPtr<Core::JIdentifier>::ConvertChild(Core::JIdentifierPrivate::ReleaseInterface::ReleaseInstance(ptr));
-		}
-		bool JEditorObjectReleaseInterface::RestoreInstance(JOwnerPtr<Core::JIdentifier>&& instance)
-		{
-			return Core::JIdentifierPrivate::ReleaseInterface::RestoreInstance(std::move(instance));
-		}
-
+		 
 		JEditorObjectDestroyInterface* JEditorDestructionRequestor::GetDestruectionInterface()
 		{
 			return &destructionInterface;

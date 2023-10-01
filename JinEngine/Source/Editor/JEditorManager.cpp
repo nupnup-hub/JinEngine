@@ -21,14 +21,9 @@
 #include"../Object/Resource/JResourceManager.h" 
 #include"../Window/JWindow.h"
 #include<fstream>  
-#include<io.h>   
- 
-#include"../Core/Time/JStopWatch.h"
-#include"../Develop/Debug/JDevelopDebug.h"
-
+#include<io.h>    
 //수정필요
 //Dock Split시 이전에 Focus하고있던 Window가 offFocus되지않음
-
 namespace JinEngine
 {
 	namespace Editor

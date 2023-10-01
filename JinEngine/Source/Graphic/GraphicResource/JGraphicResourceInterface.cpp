@@ -2,7 +2,7 @@
 #include"../JGraphic.h"
 #include"../JGraphicPrivate.h"
 #include"../JGraphicDrawList.h" 
-
+#include"../../Core/Math/JVectorExtend.h"
 //Debug
 //#include"../../Develop/Debug/JDevelopDebug.h"
 namespace JinEngine
@@ -157,7 +157,7 @@ namespace JinEngine
 			AddInfo(gUser);
 			return true;
 		}
-		bool JGraphicResourceInterface::CreateVertexBuffer(const std::vector<JStaticMeshVertex>& vertex)
+		bool JGraphicResourceInterface::CreateVertexBuffer(const std::vector<Core::JStaticMeshVertex>& vertex)
 		{
 			if (!HasSpace(J_GRAPHIC_RESOURCE_TYPE::VERTEX))
 				return false;
@@ -169,7 +169,7 @@ namespace JinEngine
 			AddInfo(gUser);
 			return true;
 		}
-		bool JGraphicResourceInterface::CreateVertexBuffer(const std::vector<JSkinnedMeshVertex>& vertex)
+		bool JGraphicResourceInterface::CreateVertexBuffer(const std::vector<Core::JSkinnedMeshVertex>& vertex)
 		{
 			if (!HasSpace(J_GRAPHIC_RESOURCE_TYPE::VERTEX))
 				return false;
@@ -222,6 +222,16 @@ namespace JinEngine
 			auto info = GetInfo(rType, dataIndex);
 			return info != nullptr ? info->GetHeight() : 0;
 		}
+		JVector2F JGraphicResourceInterface::GetResourceSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
+		{
+			auto info = GetInfo(rType, dataIndex);
+			return info != nullptr ? JVector2F(info->GetWidth(), info->GetHeight()) : JVector2F::Zero();
+		}
+		JVector2F JGraphicResourceInterface::GetResourceInvSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
+		{
+			auto info = GetInfo(rType, dataIndex);
+			return info != nullptr ? (1.0f / JVector2F(info->GetWidth(), info->GetHeight())) : JVector2F::Zero();
+		}
 		int JGraphicResourceInterface::GetResourceArrayIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
 		{
 			auto info = GetInfo(rType, dataIndex);
@@ -248,10 +258,17 @@ namespace JinEngine
 		int JGraphicResourceInterface::GetFirstResourceArrayIndex()const noexcept
 		{
 			auto info = GetFirstInfo();
-			if (info != nullptr)
-				return info->GetArrayIndex();
-			else
-				return -1;
+			return info != nullptr ? info->GetArrayIndex() : -1;
+		}
+		JVector2F JGraphicResourceInterface::GetFirstResourceSize()const noexcept
+		{
+			auto info = GetFirstInfo();
+			return info != nullptr ? JVector2F(info->GetWidth(), info->GetHeight()) : JVector2F::Zero();
+		}
+		JVector2F JGraphicResourceInterface::GetFirstResourceInvSize()const noexcept
+		{
+			auto info = GetFirstInfo();
+			return info != nullptr ? (1.0f / JVector2F(info->GetWidth(), info->GetHeight())) : JVector2F::Zero();
 		}
 		Graphic::ResourceHandle JGraphicResourceInterface::GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType) const noexcept
 		{
@@ -436,6 +453,14 @@ namespace JinEngine
 		{
 			return gPtrWrapper->Get()->GetResourceHeight(rType, dataIndex);
 		}
+		JVector2F JGraphicResourceUserInterface::GetResourceSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
+		{
+			return gPtrWrapper->Get()->GetResourceSize(rType, dataIndex);
+		}
+		JVector2F JGraphicResourceUserInterface::GetResourceInvSize(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
+		{
+			return gPtrWrapper->Get()->GetResourceInvSize(rType, dataIndex);
+		}
 		int JGraphicResourceUserInterface::GetResourceArrayIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept
 		{
 			return gPtrWrapper->Get()->GetResourceArrayIndex(rType, dataIndex);
@@ -455,6 +480,14 @@ namespace JinEngine
 		int JGraphicResourceUserInterface::GetFirstResourceArrayIndex()const noexcept
 		{
 			return gPtrWrapper->Get()->GetFirstResourceArrayIndex();
+		}
+		JVector2F JGraphicResourceUserInterface::GetFirstResourceSize()const noexcept
+		{
+			return gPtrWrapper->Get()->GetFirstResourceSize();
+		}
+		JVector2F JGraphicResourceUserInterface::GetFirstResourceInvSize()const noexcept
+		{
+			return gPtrWrapper->Get()->GetFirstResourceInvSize();
 		}
 		Graphic::ResourceHandle JGraphicResourceUserInterface::GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType)const noexcept
 		{

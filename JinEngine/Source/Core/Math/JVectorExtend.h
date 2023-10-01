@@ -91,6 +91,21 @@ namespace JinEngine
 		return JVector2<T>(v.x - xm.x, v.y - xm.y);
 	}
 	template<typename T>
+	static JVector2<T> operator-(const T f, const JVector2<T>& v) noexcept
+	{
+		return JVector2<T>(v.x - f, v.y - f);
+	}
+	template<typename T>
+	static JVector2<T> operator-(const JVector2<T>& v, const T f) noexcept
+	{
+		return JVector2<T>(v.x - f, v.y - f);
+	}
+	template<typename T>
+	static JVector2<T> operator-(const JVector2<T>& v) noexcept
+	{
+		return JVector2<T>(-v.x, -v.y);
+	}
+	template<typename T>
 	static JVector2<T> operator*(const JVector2<T>& v, const float f) noexcept
 	{
 		return JVector2<T>(v.x * f, v.y * f);
@@ -100,6 +115,16 @@ namespace JinEngine
 	{
 		return JVector2<T>(v.x * f, v.y * f);
 	} 
+	template<typename T>
+	static JVector2<T> operator/(const JVector2<T>& v, const float f) noexcept
+	{
+		return JVector2<T>(v.x / f, v.y / f);
+	}
+	template<typename T>
+	static JVector2<T> operator/(const float f, const JVector2<T>& v) noexcept
+	{
+		return JVector2<T>(v.x / f, v.y / f);
+	}
 
 	template<typename T>
 	static JVector3<T> operator+(const DirectX::XMFLOAT3& xm, const JVector3<T>& v) noexcept
@@ -130,6 +155,11 @@ namespace JinEngine
 	static JVector3<T> operator-(const JVector3<T>& v, const DirectX::XMFLOAT3& xm) noexcept
 	{
 		return JVector3<T>(v.x - xm.x, v.y - xm.y, v.z - xm.z);
+	}
+	template<typename T>
+	static JVector3<T> operator-(const JVector3<T>& v) noexcept
+	{
+		return JVector3<T>(-v.x, -v.y, -v.z);
 	}
 	template<typename T>
 	static JVector3<T> operator*(const JVector3<T>& v, const float f) noexcept
@@ -171,6 +201,11 @@ namespace JinEngine
 	static JVector4<T> operator-(const JVector4<T>& v, const DirectX::XMFLOAT4& xm) noexcept
 	{
 		return JVector4<T>(v.x - xm.x, v.y - xm.y, v.z - xm.z, v.w - xm.w);
+	}
+	template<typename T>
+	static JVector4<T> operator-(const JVector4<T>& v) noexcept
+	{
+		return JVector3<T>(-v.x, -v.y, -v.z, -v.w);
 	}
 	template<typename T>
 	static JVector4<T> operator*(const JVector4<T>& v, const float f) noexcept

@@ -431,6 +431,10 @@ namespace JinEngine
 		{
 			return isNewNode;
 		}
+		std::string JEditorNodeBase::GetUniqueName()const noexcept
+		{
+			return JGui::CreateGuiLabel(name, guid);
+		}
 		JVector2<float> JEditorNodeBase::GetValidCenter(const JEditorViewUpdateHelper* updateHelper)const noexcept
 		{
 			return center + updateHelper->mouseOffset;

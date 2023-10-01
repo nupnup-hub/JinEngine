@@ -10,7 +10,7 @@ namespace JinEngine::Develop
 	namespace Private
 	{
 		static constexpr bool canStreamOut = true;
-		static bool isActivated = true;
+		static bool isActivated = false;
 		struct JDevelopDebugData
 		{
 		public:
@@ -104,7 +104,7 @@ namespace JinEngine::Develop
 #else
 		return;
 #endif
-	}
+	} 
 	void JDevelopDebug::PushLog(const std::wstring& contents)
 	{
 #ifdef DEVELOP 

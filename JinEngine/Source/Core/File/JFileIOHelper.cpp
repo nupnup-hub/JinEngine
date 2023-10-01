@@ -1,14 +1,61 @@
-#include"JFileIOHelper.h" 
-#include"../../Object/JObject.h"
-#include"../../Object/Resource/JResourceObject.h"
-#include"../../Object/Resource/JResourceManager.h"
+#include"JFileIOHelper.h"  
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/Identity/JIdentifier.h"
 #include"../../Core/FSM/JFSMinterface.h"
 #include"../../Core/Utility/JCommonUtility.h"
+#include"../../Core/Identity/JIdentifier.h"
 
 namespace JinEngine
 {
+	namespace Private
+	{
+		using TraversalPtr = void(*)(const std::wstring& path, const bool isDir);
+		struct TraversalCondition
+		{
+		public:
+			bool canAccessDir = true;
+			bool canAccessFile = true;
+			bool callDirPtrAfterTrabersal = true;
+		};
+
+		/**
+		* 깊이탐색
+		*/
+		static void TraversalDirectroy(const std::wstring& parentDirectoryPath, 
+			TraversalPtr ptr,
+			const TraversalCondition& cond)
+		{
+			if (ptr == nullptr)
+				return;
+
+			WIN32_FIND_DATA  findFileData;
+			HANDLE hFindFile = FindFirstFile((parentDirectoryPath + L"\\*.*").c_str(), &findFileData);
+			BOOL bResult = TRUE;
+			if (hFindFile == INVALID_HANDLE_VALUE)
+				return;
+
+			if (cond.canAccessDir && !cond.callDirPtrAfterTrabersal)
+				ptr(parentDirectoryPath + L"\\" + findFileData.cFileName, true);
+			while (bResult)
+			{
+				const bool isDir = (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+				if (!isDir)
+				{
+					if (cond.canAccessFile && wcscmp(findFileData.cFileName, L".") && wcscmp(findFileData.cFileName, L".."))
+						ptr(parentDirectoryPath + L"\\" + findFileData.cFileName, isDir);
+				} 
+				if (isDir)
+				{
+					if (wcscmp(findFileData.cFileName, L".") && wcscmp(findFileData.cFileName, L".."))
+						TraversalDirectroy(parentDirectoryPath + L"\\" + findFileData.cFileName, ptr, cond); 
+				}
+				bResult = FindNextFile(hFindFile, &findFileData);
+			}
+			FindClose(hFindFile);
+			if (cond.canAccessDir && cond.callDirPtrAfterTrabersal)
+				ptr(parentDirectoryPath, true);
+		}
+	}
 	Core::J_FILE_IO_RESULT JFileIOHelper::StoreMatrix4x4(std::wofstream& stream, const std::wstring& guide, const JMatrix4x4& m)
 	{
 		if (!stream.is_open())
@@ -131,54 +178,49 @@ namespace JinEngine
 		stream >> xm4x4._41 >> xm4x4._42 >> xm4x4._43 >> xm4x4._44;
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JFileIOHelper::StoreObjectIden(std::wofstream& stream, JObject* obj)
+	static Core::J_FILE_IO_RESULT StoreIden(std::wofstream& stream, Core::JIdentifier* obj);
+	static Core::J_FILE_IO_RESULT LoadIden(std::wifstream& stream, _Out_ size_t& oGuid);
+	static Core::J_FILE_IO_RESULT LoadIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid);
+	Core::J_FILE_IO_RESULT JFileIOHelper::StoreIden(std::wofstream& stream, Core::JIdentifier* obj)
 	{
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		stream << L"Name: " << obj->GetName() << '\n';
 		stream << Core::JFileConstant::StreamObjGuidSymbol() << obj->GetGuid() << '\n';
-		stream << Core::JFileConstant::StreamTypeGuidSymbol() << obj->GetTypeInfo().TypeGuid() << '\n';
-		stream << Core::JFileConstant::StreamObjFlagSymbol() << (int)obj->GetFlag() << '\n';
+		stream << Core::JFileConstant::StreamTypeGuidSymbol() << obj->GetTypeInfo().TypeGuid() << '\n'; 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JFileIOHelper::LoadObjectIden(std::wifstream& stream, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag)
+	Core::J_FILE_IO_RESULT JFileIOHelper::LoadIden(std::wifstream& stream, _Out_ size_t& oGuid)
 	{
 		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		std::wstring guide;
-		std::wstring name; 
-		int flag;
+		std::wstring name;  
 		size_t typeGuid;
 
 		stream >> guide; std::getline(stream, name); 
 		stream >> guide >> oGuid;
-		stream >> guide >> typeGuid;
-		stream >> guide >> flag;
-		oFlag = (J_OBJECT_FLAG)flag;
+		stream >> guide >> typeGuid; 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JFileIOHelper::LoadObjectIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag)
+	Core::J_FILE_IO_RESULT JFileIOHelper::LoadIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid)
 	{
 		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		std::wstring guide;
-		int flag;
+		std::wstring guide; 
 		size_t typeGuid;
 
 		stream >> guide; std::getline(stream, oName);
 		stream >> guide >> oGuid;
-		stream >> guide >> typeGuid;
-		stream >> guide >> flag;
+		stream >> guide >> typeGuid; 
 
-		oName = JCUtil::EraseSideWChar(oName, L' ');
-		oFlag = (J_OBJECT_FLAG)flag;
-
+		oName = JCUtil::EraseSideWChar(oName, L' '); 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JFileIOHelper::StoreFsmObjectIden(std::wofstream& stream, Core::JFSMinterface* obj)
+	Core::J_FILE_IO_RESULT JFileIOHelper::StoreFsmIden(std::wofstream& stream, Core::JFSMinterface* obj)
 	{
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -192,7 +234,7 @@ namespace JinEngine
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JFileIOHelper::LoadFsmObjectIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ Core::J_FSM_OBJECT_TYPE& oType)
+	Core::J_FILE_IO_RESULT JFileIOHelper::LoadFsmIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ Core::J_FSM_OBJECT_TYPE& oType)
 	{
 		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -208,11 +250,11 @@ namespace JinEngine
 		oType = (Core::J_FSM_OBJECT_TYPE)fType;
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JFileIOHelper::StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden)
+	Core::J_FILE_IO_RESULT JFileIOHelper::StoreHasIden(std::wofstream& stream, Core::JIdentifier* iden)
 	{
-		return StoreHasObjectIden(stream, iden, Core::JFileConstant::StreamHasObjGuidSymbol());
+		return StoreHasIden(stream, iden, Core::JFileConstant::StreamHasObjGuidSymbol());
 	}
-	Core::J_FILE_IO_RESULT JFileIOHelper::StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden, const std::wstring& guiSymbol)
+	Core::J_FILE_IO_RESULT JFileIOHelper::StoreHasIden(std::wofstream& stream, Core::JIdentifier* iden, const std::wstring& guiSymbol)
 	{
 		if (!stream.is_open())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -248,7 +290,7 @@ namespace JinEngine
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	JUserPtr<Core::JIdentifier> JFileIOHelper::LoadHasObjectIden(std::wifstream& stream)
+	JUserPtr<Core::JIdentifier> JFileIOHelper::LoadHasIden(std::wifstream& stream, TryAgainLoadObjIfFailPtr tryAgainPtr)
 	{
 		if (!stream.is_open() || stream.eof())
 			return JUserPtr<Core::JIdentifier>{};
@@ -269,10 +311,10 @@ namespace JinEngine
 			if (rawPtr == nullptr)
 			{
 				Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
-				if (typeInfo->IsChildOf<JResourceObject>())
-					return _JResourceManager::Instance().TryGetResourceUser(*typeInfo, objGuid);
+				if (typeInfo != nullptr && tryAgainPtr != nullptr)
+					return tryAgainPtr(typeInfo, objGuid);
 				else
-					return JUserPtr<Core::JIdentifier>{};
+					return JUserPtr<Core::JIdentifier>{};	 
 			}
 			else
 				return Core::GetUserPtr<Core::JIdentifier>(rawPtr);
@@ -280,7 +322,7 @@ namespace JinEngine
 		else
 			return JUserPtr<Core::JIdentifier>{};
 	}
-	Core::JTypeInstanceSearchHint JFileIOHelper::LoadHasObjectHint(std::wifstream& stream)
+	Core::JTypeInstanceSearchHint JFileIOHelper::LoadHasIdenHint(std::wifstream& stream, TryAgainLoadHintIfFailPtr tryAgainPtr)
 	{
 		if (!stream.is_open() || stream.eof())
 			return Core::JTypeInstanceSearchHint{};
@@ -293,7 +335,15 @@ namespace JinEngine
 		stream >> guide >> objGuid;
 		stream >> guide >> typeGuid;
 
-		return Core::JTypeInstanceSearchHint(*_JReflectionInfo::Instance().GetTypeInfo(typeGuid), objGuid);
+		Core::JTypeInfo* info = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
+		if (info == nullptr)
+			return Core::JTypeInstanceSearchHint();
+
+		Core::JTypeInstanceSearchHint hint(*info, objGuid);
+		if (!hint.isValid && tryAgainPtr != nullptr)
+			hint = tryAgainPtr(info, objGuid);
+
+		return hint;
 	}
 	bool JFileIOHelper::SkipLine(std::wifstream& stream, const std::wstring& symbol)
 	{
@@ -405,6 +455,34 @@ namespace JinEngine
 		}
 		fromStream.close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
+	}
+	Core::J_FILE_IO_RESULT JFileIOHelper::DestroyFile(const std::wstring& path)
+	{
+		if (_waccess(path.c_str(), 00) == -1)
+			return 	Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+ 
+		return _wremove(path.c_str()) == 0 ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+	}
+	Core::J_FILE_IO_RESULT JFileIOHelper::DestroyDirectory(const std::wstring& path)
+	{
+		if (_waccess(path.c_str(), 00) == -1)
+			return 	Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+	  
+		/**
+		* Window에서 Directory를 지우려면 내부에 파일과 디렉토리들을 우선적으로 지워야한다.
+		*/
+		Private::TraversalPtr destroyPtr = [](const std::wstring& path, const bool isDir)
+		{
+			if (isDir)
+				_wrmdir(path.c_str()); 
+			else
+				_wremove(path.c_str());
+		};
+		Private::TraversalCondition cond;
+		cond.canAccessDir = cond.canAccessFile = cond.callDirPtrAfterTrabersal = true;
+
+		Private::TraversalDirectroy(path.c_str(), destroyPtr, cond);
+		return _wrmdir(path.c_str()) == 0 ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 	}
 	std::string JFileIOHelper::FileToString(const std::string& path)
 	{

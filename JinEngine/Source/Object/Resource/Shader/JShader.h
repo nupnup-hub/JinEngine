@@ -2,7 +2,7 @@
 #include"JShaderFunctionEnum.h" 
 #include"JShaderCondition.h"  
 #include"../JResourceObject.h"
-#include"../Mesh/JMeshType.h"  
+#include"../../../Core/Geometry/Mesh/JMeshType.h"  
 #include<d3d12.h>  
 
 namespace JinEngine

@@ -253,7 +253,7 @@ public:
 				{
 					JUserPtr<Core::JFSMparameter> nowParameter = aniCont->GetParameterByIndex(i);
 					std::string name = JCUtil::WstrToU8Str(nowParameter->GetName());
-					std::string uniqueLabel = std::to_string(nowParameter->GetGuid());
+					std::string uniqueLabel = std::to_string(nowParameter->GetGuid()) + GetName();
 
 					JGui::TableNextRow();
 					JGui::TableSetColumnIndex(0);

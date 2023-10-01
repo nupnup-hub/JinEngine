@@ -10,6 +10,7 @@
 #include"../../Object/Resource/Mesh/JMeshGeometry.h"
 #include"../../Object/Resource/Material/JMaterial.h"
 #include"../../Core/Identity/JIdenCreator.h"
+#include"../../Core/Guid/JGuidCreator.h"
 
 namespace JinEngine
 {
@@ -32,18 +33,19 @@ namespace JinEngine
 		const JUserPtr<JMeshGeometry>& mesh,  
 		const D3D12_PRIMITIVE_TOPOLOGY primitiveType,
 		const J_RENDER_LAYER renderLayer,
-		const J_RENDERITEM_ACCELERATOR_MASK spaceSpatialMask)
+		const J_RENDERITEM_ACCELERATOR_MASK acceleratorMask)
 	{
 		if (mesh == nullptr)
 			return nullptr;
-
+ 
 		//Has dependency into order
-		JUserPtr<JRenderItem> newRenderItem = JICI::Create<JRenderItem>(owner);
-		newRenderItem->SetPrimitiveType(primitiveType);
-		newRenderItem->SetRenderLayer(renderLayer);
-		newRenderItem->SetAcceleratorMask(spaceSpatialMask);
+		JUserPtr<JRenderItem> newRenderItem = JICI::Create<JRenderItem>(Core::MakeGuid(),
+			OBJECT_FLAG_NONE, 
+			owner, 
+			renderLayer,
+			acceleratorMask);
+		newRenderItem->SetPrimitiveType(primitiveType); 
 		newRenderItem->SetMesh(mesh);
-
 		return newRenderItem;
 	}
 	JUserPtr<JRenderItem> JComponentCreatorInterface::CreateRenderItem(const JUserPtr<JGameObject>& owner,
@@ -51,16 +53,19 @@ namespace JinEngine
 		std::vector<JUserPtr<JMaterial>>& mat,
 		const D3D12_PRIMITIVE_TOPOLOGY primitiveType,
 		const J_RENDER_LAYER renderLayer,
-		const J_RENDERITEM_ACCELERATOR_MASK spaceSpatialMask)
+		const J_RENDERITEM_ACCELERATOR_MASK acceleratorMask)
 	{
 		if (mesh == nullptr)
 			return nullptr;
 
 		//Has dependency into order
-		JUserPtr<JRenderItem> newRenderItem = JICI::Create<JRenderItem>(owner);
-		newRenderItem->SetPrimitiveType(primitiveType);
-		newRenderItem->SetRenderLayer(renderLayer);
-		newRenderItem->SetAcceleratorMask(spaceSpatialMask);
+		JUserPtr<JRenderItem> newRenderItem = JICI::Create<JRenderItem>(Core::MakeGuid(),
+			OBJECT_FLAG_NONE,
+			owner,
+			renderLayer,
+			acceleratorMask);
+		 
+		newRenderItem->SetPrimitiveType(primitiveType); 
 		newRenderItem->SetMesh(mesh);
 		 
 		const uint matCount = (uint)mat.size();

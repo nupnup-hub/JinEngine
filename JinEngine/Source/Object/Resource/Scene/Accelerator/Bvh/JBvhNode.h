@@ -48,7 +48,7 @@ namespace JinEngine
 		/**
 		* @brief alignGameObject은 항상 총 gameObject 갯수만큼 resize 되있어야 한다.
 		*/
-		void AlignLeafNode(const JAcceleratorAlignInfo& info, std::vector<	JUserPtr<JGameObject>>& alignGameObject, uint& index, const uint depth)noexcept;
+		void AlignLeafNode(const JAcceleratorAlignInfo& info, std::vector<JUserPtr<JGameObject>>& alignGameObject, uint& index, const uint depth)noexcept;
 	public:
 		void UpdateInnerGameObject()noexcept;
 	public:
@@ -82,8 +82,8 @@ namespace JinEngine
 		bool IsNearRight(const JAcceleratorAlignInfo& info);
 	private:
 		JBvhNode* FindRightLeafNode()noexcept;
-		JUserPtr<JGameObject> FindFirstIntersect(JAcceleratorIntersectInfo& info)const noexcept;
-		void FindIntersectAscendingSort(JAcceleratorIntersectInfo& info)const noexcept;
+		JAcceleratorIntersectInfo::Result FindFirstIntersect(JAcceleratorIntersectInfo& info, const float dist)const noexcept;
+		void FindIntersectNotSort(JAcceleratorIntersectInfo& info, const float dist)const noexcept;
 		void FindContainNotSort(JAcceleratorContainInfo& info)const noexcept;
 	public:
 		void BuildDebugNode(Editor::JEditorBinaryTreeView& treeView);

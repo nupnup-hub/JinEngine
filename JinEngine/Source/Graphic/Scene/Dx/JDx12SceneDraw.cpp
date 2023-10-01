@@ -21,6 +21,7 @@
 #include"../../../Core/Exception/JExceptionMacro.h"
 #include"../../../Object/Component/Animator/JAnimator.h" 
 #include"../../../Object/Component/Camera/JCamera.h" 
+#include"../../../Object/Component/Transform/JTransform.h" 
 #include"../../../Object/Component/RenderItem/JRenderItem.h" 
 #include"../../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../../Object/Resource/Material/JMaterial.h"
@@ -28,8 +29,7 @@
 #include"../../../Object/Resource/Scene/JScene.h" 
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Application/JApplicationEngine.h"
-
-//#include"../../../Develop/Debug/JDevelopDebug.h"
+ 
 namespace JinEngine::Graphic
 {
 	namespace Private
@@ -103,8 +103,41 @@ namespace JinEngine::Graphic
 						0.0f,                              // mipLODBias
 						8),                                // maxAnisotropy
 
-						//shadow
+					//shadow cube not cmp
 					CD3DX12_STATIC_SAMPLER_DESC(6, // shaderRegister
+						D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, // filter
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
+						0.0f,                               // mipLODBias
+						16,                                 // maxAnisotropy
+						D3D12_COMPARISON_FUNC_LESS_EQUAL,
+						D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK),
+
+					//shadow pcss find bloker
+					CD3DX12_STATIC_SAMPLER_DESC(7, // shaderRegister
+						//D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT,
+						D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
+						0.0f,                               // mipLODBias
+						16,                                 // maxAnisotropy
+						D3D12_COMPARISON_FUNC_LESS_EQUAL),
+
+					//shadow pcss filter
+					CD3DX12_STATIC_SAMPLER_DESC(8, // shaderRegister
+						D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+						//D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
+						0.0f,                               // mipLODBias
+						16,                                 // maxAnisotropy
+						D3D12_COMPARISON_FUNC_LESS_EQUAL),
+
+					//shadow linear point cmp
+					CD3DX12_STATIC_SAMPLER_DESC(9, // shaderRegister
 						D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
 						D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressU
 						D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressV
@@ -112,7 +145,7 @@ namespace JinEngine::Graphic
 						0.0f,                               // mipLODBias
 						16,                                 // maxAnisotropy
 						D3D12_COMPARISON_FUNC_LESS_EQUAL,
-						D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK),
+						D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
 			};
 		}
 		static D3D12_PRIMITIVE_TOPOLOGY_TYPE ConvertD3d12PrimitiveType(const J_SHADER_PRIMITIVE_TYPE primitiveType)noexcept
@@ -202,8 +235,8 @@ namespace JinEngine::Graphic
 		dx12Frame->csmBuffer->SetGraphicsRootShaderResourceView(cmdList, Constants::csmBuffIndex);
 		dx12Frame->materialBuffer->SetGraphicsRootShaderResourceView(cmdList, Constants::matBuffIndex);
 
-		cmdList->SetGraphicsRootDescriptorTable(Constants::textureCubeBuffIndex, dx12Gm->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE));
 		cmdList->SetGraphicsRootDescriptorTable(Constants::texture2DBuffIndex, dx12Gm->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D));
+		cmdList->SetGraphicsRootDescriptorTable(Constants::textureCubeBuffIndex, dx12Gm->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE));
 		cmdList->SetGraphicsRootDescriptorTable(Constants::textureShadowMapBuffIndex, dx12Gm->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP));
 		cmdList->SetGraphicsRootDescriptorTable(Constants::textureShadowMapArrayBuffIndex, dx12Gm->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY));
 		cmdList->SetGraphicsRootDescriptorTable(Constants::textureShadowMapCubeBuffIndex, dx12Gm->GetFirstGpuSrvDescriptorHandle(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE));
@@ -224,9 +257,7 @@ namespace JinEngine::Graphic
 
 		const int dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, 0);
 		const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, 0);
-
-		const int camFrameIndex = helper.GetCamFrameIndex();
-
+ 
 		ID3D12Resource* dsResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
 		ID3D12Resource* rtResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtvVecIndex);
 
@@ -321,11 +352,11 @@ namespace JinEngine::Graphic
 		dx12Frame->scenePassCB->SetGraphicCBBufferView(cmdList, Constants::scenePassCBIndex, sceneFrameIndex);
 		dx12Frame->cameraCB->SetGraphicCBBufferView(cmdList, Constants::camCBIndex, camFrameIndex);
 
-		const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
-		const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
-		const std::vector<JUserPtr<JGameObject>>& objVec02 = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
-		const std::vector<JUserPtr<JGameObject>>& objVec03 = helper.GetGameObjectCashVec(J_RENDER_LAYER::SKY, J_MESHGEOMETRY_TYPE::STATIC);
-		const std::vector<JUserPtr<JGameObject>>& objVec04 = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_UI, J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
+		const std::vector<JUserPtr<JGameObject>>& objVec02 = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec03 = helper.GetGameObjectCashVec(J_RENDER_LAYER::SKY, Core::J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec04 = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_UI, Core::J_MESHGEOMETRY_TYPE::STATIC);
  
 		DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec00, helper, JDrawCondition(helper, false, true, helper.allowDrawDebug));
 		DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec01, helper, JDrawCondition(helper, helper.scene->IsActivatedSceneTime(), true, helper.allowDrawDebug));
@@ -388,10 +419,10 @@ namespace JinEngine::Graphic
 		dx12Frame->scenePassCB->SetGraphicCBBufferView(cmdList, Constants::scenePassCBIndex, sceneFrameIndex);
 		dx12Frame->cameraCB->SetGraphicCBBufferView(cmdList, Constants::camCBIndex, camFrameIndex);
 
-		const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
-		const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
-		const std::vector<JUserPtr<JGameObject>>& objVec02 = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
-		const std::vector<JUserPtr<JGameObject>>& objVec03 = helper.GetGameObjectCashVec(J_RENDER_LAYER::SKY, J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
+		const std::vector<JUserPtr<JGameObject>>& objVec02 = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec03 = helper.GetGameObjectCashVec(J_RENDER_LAYER::SKY, Core::J_MESHGEOMETRY_TYPE::STATIC);
 
 		DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec00, helper, JDrawCondition(helper, false, true, helper.allowDrawDebug));
 		DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec01, helper, JDrawCondition(helper, helper.scene->IsActivatedSceneTime(), true, helper.allowDrawDebug));
@@ -430,7 +461,7 @@ namespace JinEngine::Graphic
 		dx12Frame->scenePassCB->SetGraphicCBBufferView(cmdList, Constants::scenePassCBIndex, sceneFrameIndex);
 		dx12Frame->cameraCB->SetGraphicCBBufferView(cmdList, Constants::camCBIndex, camFrameIndex);
 
-		const std::vector<JUserPtr<JGameObject>>& objVec = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_UI, J_MESHGEOMETRY_TYPE::STATIC);
+		const std::vector<JUserPtr<JGameObject>>& objVec = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_UI, Core::J_MESHGEOMETRY_TYPE::STATIC);
 
 		const int debugVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL, 0);
 		const int debugHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, 0);
@@ -458,11 +489,11 @@ namespace JinEngine::Graphic
 			auto cullInterface = helper.cam->CullingUserInterface();
 			hdOccResource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, cullInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION));
 		}
-		
+
 		//Debug
 		//Scene Observer로 main cam hd occ Debug시 가끔 main cam에 hd occ 가시성결과가 비정확할때가 있는데(hd occ opion on, off시 한번이라도 업데이트 하면 정상작동)
 		//Debug 이외에는 문제가 발생하지않으며 그 문제도 한번에 업데이트로 없어지므로 굳이 특정하지않고 사용하도록한다.
-		/*if (condition.allowAllCullingResult)
+		/*if (condition.allowHDOcclusionCulling && condition.allowAllCullingResult)
 		{
 			auto firstcam = helper.scene->FindFirstSelectedCamera(false);
 			if (firstcam != nullptr && firstcam->AllowHdOcclusionCulling())
@@ -471,7 +502,7 @@ namespace JinEngine::Graphic
 				hdOccResource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, cullInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION));
 			}
 		}*/
-		
+		const bool canUseHd = hdOccResource != nullptr;
 		uint objectCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JObjectConstants));
 		uint skinCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JAnimationConstants));
 
@@ -484,7 +515,7 @@ namespace JinEngine::Graphic
 		if (helper.CanDispatchWorkIndex())
 			helper.DispatchWorkIndex(gameObjCount, st, ed);
 
-		auto cullUser = helper.GetCullInterface();
+		auto cullUser = helper.GetCullInterface(); 
 		for (uint i = st; i < ed; ++i)
 		{
 			JRenderItem* renderItem = gameObject[i]->GetRenderItem().Get();
@@ -509,13 +540,13 @@ namespace JinEngine::Graphic
 			const uint submeshCount = (uint)mesh->GetTotalSubmeshCount();
 
 			if (condition.allowDebugOutline && gameObject[i]->IsSelected())
-				cmdList->OMSetStencilRef(2);
-
+				cmdList->OMSetStencilRef(Constants::outlineStencilRef);
+			 
 			for (uint j = 0; j < submeshCount; ++j)
 			{
 				const JShader* shader = renderItem->GetValidMaterial(j)->GetShader().Get();
 				const bool onSkinned = animator != nullptr && condition.allowAnimation;
-				const J_MESHGEOMETRY_TYPE meshType = onSkinned ? J_MESHGEOMETRY_TYPE::SKINNED : J_MESHGEOMETRY_TYPE::STATIC;
+				const Core::J_MESHGEOMETRY_TYPE meshType = onSkinned ? Core::J_MESHGEOMETRY_TYPE::SKINNED : Core::J_MESHGEOMETRY_TYPE::STATIC;
 				const J_SHADER_VERTEX_LAYOUT shaderLayout = JShaderType::ConvertToVertexLayout(meshType);
 
 				JDx12GraphicShaderDataHolder* dx12ShaderData = static_cast<JDx12GraphicShaderDataHolder*>(shader->GetGraphicData(shaderLayout).Get());
@@ -526,12 +557,12 @@ namespace JinEngine::Graphic
 
 				D3D12_GPU_VIRTUAL_ADDRESS objectCBAddress = objectCB->GetGPUVirtualAddress() + (objFrameIndex + j) * objectCBByteSize;
 				cmdList->SetGraphicsRootConstantBufferView(Constants::objCBIndex, objectCBAddress);
-				if (onSkinned && meshType == J_MESHGEOMETRY_TYPE::SKINNED)
+				if (onSkinned && meshType == Core::J_MESHGEOMETRY_TYPE::SKINNED)
 				{
 					D3D12_GPU_VIRTUAL_ADDRESS skinObjCBAddress = skinCB->GetGPUVirtualAddress() + helper.GetAnimationFrameIndex(animator) * skinCBByteSize;
 					cmdList->SetGraphicsRootConstantBufferView(Constants::skinCBIndex, skinObjCBAddress);
 				}
-				if (hdOccResource != nullptr)
+				if (canUseHd)
 					cmdList->SetPredication(hdOccResource, boundFrameIndex * 8, D3D12_PREDICATION_OP_EQUAL_ZERO);
 				cmdList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(j), 1, mesh->GetSubmeshStartIndexLocation(j), mesh->GetSubmeshBaseVertexLocation(j), 0);
 			}
@@ -708,11 +739,11 @@ namespace JinEngine::Graphic
 	void JDx12SceneDraw::BuildRootSignature(ID3D12Device* device, const JGraphicInfo& info)
 	{
 		// Root parameter can be a table, root descriptor or root constants.
-		CD3DX12_DESCRIPTOR_RANGE cubeMapTable;
-		cubeMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.bindingCubeMapCapacity, 2, 0);
-
 		CD3DX12_DESCRIPTOR_RANGE tex2DTable;
-		tex2DTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.binding2DTextureCapacity, 2, 1);
+		tex2DTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.binding2DTextureCapacity, 2, 0);
+
+		CD3DX12_DESCRIPTOR_RANGE cubeMapTable;
+		cubeMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.bindingCubeMapCapacity, 2, 1);
 
 		CD3DX12_DESCRIPTOR_RANGE shadowMapTable;
 		shadowMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.bindingShadowTextureCapacity, 2, 2);
@@ -731,9 +762,9 @@ namespace JinEngine::Graphic
 		slotRootParameter[Constants::enginePassCBIndex].InitAsConstantBufferView(Constants::enginePassCBIndex);
 		slotRootParameter[Constants::scenePassCBIndex].InitAsConstantBufferView(Constants::scenePassCBIndex);
 		slotRootParameter[Constants::camCBIndex].InitAsConstantBufferView(Constants::camCBIndex);
-		slotRootParameter[Constants::litIndexCBIndex].InitAsConstants(2, Constants::litIndexCBIndex);
+		//slotRootParameter[Constants::litIndexCBIndex].InitAsConstants(2, Constants::litIndexCBIndex);
 		//slotRootParameter[5].InitAsConstantBufferView(5);
-		slotRootParameter[Constants::boundObjCBIndex].InitAsConstantBufferView(Constants::boundObjCBIndex);
+		//slotRootParameter[Constants::boundObjCBIndex].InitAsConstantBufferView(Constants::boundObjCBIndex);
 
 		//Light Buff
 		slotRootParameter[Constants::dLitBuffIndex].InitAsShaderResourceView(0, 0);
@@ -743,8 +774,8 @@ namespace JinEngine::Graphic
 		//Material Buff
 		slotRootParameter[Constants::matBuffIndex].InitAsShaderResourceView(1);
 		//Texture Buff
-		slotRootParameter[Constants::textureCubeBuffIndex].InitAsDescriptorTable(1, &cubeMapTable, D3D12_SHADER_VISIBILITY_ALL);
 		slotRootParameter[Constants::texture2DBuffIndex].InitAsDescriptorTable(1, &tex2DTable, D3D12_SHADER_VISIBILITY_ALL);
+		slotRootParameter[Constants::textureCubeBuffIndex].InitAsDescriptorTable(1, &cubeMapTable, D3D12_SHADER_VISIBILITY_ALL);
 		slotRootParameter[Constants::textureShadowMapBuffIndex].InitAsDescriptorTable(1, &shadowMapTable, D3D12_SHADER_VISIBILITY_ALL);
 		slotRootParameter[Constants::textureShadowMapArrayBuffIndex].InitAsDescriptorTable(1, &shadowMapArryTable, D3D12_SHADER_VISIBILITY_ALL);
 		slotRootParameter[Constants::textureShadowMapCubeBuffIndex].InitAsDescriptorTable(1, &shadowMapCubeTable, D3D12_SHADER_VISIBILITY_ALL);

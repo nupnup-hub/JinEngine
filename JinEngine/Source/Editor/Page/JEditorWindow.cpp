@@ -12,8 +12,7 @@
 #include"../../Object/GameObject/JGameObjectPrivate.h" 
 #include"../../Window/JWindow.h"
 #include<fstream>
-
-#include"../../Develop/Debug/JDevelopDebug.h"
+ 
 namespace JinEngine
 {
 	namespace Editor

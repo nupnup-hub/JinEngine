@@ -1,5 +1,5 @@
 #include"JDx12GraphicResourceInfo.h"
-#include"JDx12GraphicResourceHolder.h"  
+#include"JDx12GraphicResourceHolder.h"   
 
 namespace JinEngine::Graphic
 {
@@ -41,9 +41,10 @@ namespace JinEngine::Graphic
 		manager(manager), 
 		resourceHolder(std::move(resourceHolder)),
 		getHandlePtr(getHandlePtr)
-	{}
+	{
+	}
 	JDx12GraphicResourceInfo::~JDx12GraphicResourceInfo()
-	{ 
+	{
 		resourceHolder.reset();
 	}
 }

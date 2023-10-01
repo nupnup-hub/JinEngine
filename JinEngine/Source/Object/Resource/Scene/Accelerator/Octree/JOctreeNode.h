@@ -59,10 +59,9 @@ namespace JinEngine
 		void SetVisible(JAcceleratorCullingInfo& info)noexcept;
 		void SetInVisible(JAcceleratorCullingInfo& info)noexcept;
 	private:
-		JUserPtr<JGameObject> FindIntersectFirst(JAcceleratorIntersectInfo& info)const noexcept;
-		void FindIntersectAscendingSort(JAcceleratorIntersectInfo& info)const noexcept;
+		JAcceleratorIntersectInfo::Result FindIntersectFirst(JAcceleratorIntersectInfo& info)const noexcept;
 		void FindIntersectNotSort(JAcceleratorIntersectInfo& info)const noexcept;
-		void FindContainNotSort(JAcceleratorContainInfo& info)const noexcept;
+		void FindContainNotSort(JAcceleratorContainInfo& info)const noexcept; 
 	private:
 		void StuffChildIntermediateData(JAcceleratorIntersectInfo& info, JAcceleratorIntersectInfo::Intermediate* ptr)const noexcept;
 	};

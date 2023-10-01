@@ -1,5 +1,9 @@
 #include"DepthFunc.hlsl"
 
+#if defined(PERSPECTIVE_DEPTH_MAP)
+#define USE_PERSPECTIVE 1
+#endif
+
 Texture2D depthMap	: register(t0);
 RWTexture2D<float4> result	: register(u0);
 SamplerState samLinearWrap	: register(s0);
@@ -56,7 +60,11 @@ void NonLinearMap(uint3 groupThreadID : SV_GroupThreadID, uint3 dispatchThreadID
 
 	while (maxPixelCount > (textureXFactor + (textureYFactor * width)))
 	{  
-		const float z = 1 - ToLinearZValue(depthMap.Load(int3(textureXFactor, textureYFactor, 0)).r, camNear, camFar);
+#ifdef USE_PERSPECTIVE
+		const float z = 1 - LinearDepth(depthMap.Load(int3(textureXFactor, textureYFactor, 0)).r, camNear, camFar);
+#else
+		const float z = 1 - depthMap.Load(int3(textureXFactor, textureYFactor, 0)).r;
+#endif
 		result[int2(textureXFactor, textureYFactor)] = float4(z, z, z, z);
 		textureXFactor += 512;
 		if (textureXFactor >= width)

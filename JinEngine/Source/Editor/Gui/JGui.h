@@ -27,6 +27,16 @@ namespace JinEngine
 		class JGuiBehaviorAdapter; 
 		class JGui
 		{
+#pragma region JIdentifier
+		public:
+			static std::string CreateGuiLabel(Core::JIdentifier* iden) noexcept;
+			static std::string CreateGuiLabel(Core::JIdentifier* iden, const std::string& text) noexcept;
+			static std::string CreateGuiLabel(const JUserPtr<Core::JIdentifier>& iden) noexcept;
+			static std::string CreateGuiLabel(const JUserPtr<Core::JIdentifier>& iden, const std::string& text) noexcept;
+			static std::string CreateGuiLabel(const std::string& name, const std::string& uniqueLabel) noexcept;
+			static std::string CreateGuiLabel(const std::string& name, const size_t guid) noexcept;
+			static std::string CreateGuiLabel(const std::string& name, const size_t guid, const std::string& uniqueLabel) noexcept;
+#pragma endregion
 #pragma region Color
 		public:
 			//to soft factor
@@ -116,8 +126,14 @@ namespace JinEngine
 			static bool IsMouseDragging(const Core::J_MOUSE_BUTTON btn)noexcept;
 			static bool AnyMouseDown(const bool containMiddle = true, const bool containRight = true, const bool containLeft = true)noexcept;
 			static bool AnyMouseClicked(const bool containMiddle = true, const bool containRight = true, const bool containLeft = true)noexcept;
-			//use world pos
+			/**
+			* @brief use world size and pos
+			*/
 			static bool IsMouseInRect(const JVector2<float>& position, const JVector2<float>& size)noexcept; 
+			/**
+			* @brief use min, max point
+			*/
+			static bool IsMouseInRectMM(const JVector2<float>& min, const JVector2<float>& max)noexcept;
 			static bool IsMouseHoveringRect(const JVector2<float>& min, const JVector2<float>& max, const bool clip = true)noexcept;
 			static bool IsMouseInLine(JVector2<float> st, JVector2<float> ed, const float thickness)noexcept;
 			static bool CanFocusByMouseRightClick()noexcept;
@@ -160,12 +176,12 @@ namespace JinEngine
 			static bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputMultilineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, int step = 1);
-			static bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const char* format = "%.2f", float step = 0.0f);
+			static bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const char* format = "%.3f", float step = 0.0f);
 		public:
 			static bool SliderInt(const std::string& name, int* value, int vMin, int vMax, const char* format = "%d", J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
-			static bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format = "%.2f", J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
+			static bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format = "%.3f", J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
 			static bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, const char* format = "%d", J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
-			static bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format = "%.2f", J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
+			static bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format = "%.3f", J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
 		public:
 			static bool BeginTabBar(const std::string& name, J_GUI_TAB_BAR_FLAG_ flags = J_GUI_TAB_BAR_FLAG_NONE);
 			static void EndTabBar();
@@ -197,13 +213,8 @@ namespace JinEngine
 		public:
 			static bool ColorPicker(const std::string& name, JVector3<float>& color, J_GUI_COLOR_EDIT_FALG_ flags);
 			static bool ColorPicker(const std::string& name, JVector4<float>& color, J_GUI_COLOR_EDIT_FALG_ flags);
-			static void Tooltip(const std::string& message, const float fontScale = 0.8f)noexcept;
-			template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
-			static void Tooltip(T value, const float fontScale = 0.8f)noexcept
-			{
-				if constexpr(std::is_integral_v<T> || std::is_floating_point_v<T>)
-					Tooltip(std::to_string(value), fontScale);
-			}
+			static void Tooltip(const std::string& message, const float fontScale = 0.8f)noexcept; 
+			static void Tooltip(const float value, const int range = 2, const float fontScale = 0.8f)noexcept;
 		public:
 			//Image  
 			static void InvalidImage(const JVector2<float>& size,
@@ -276,16 +287,14 @@ namespace JinEngine
 				bool& pressed,
 				bool changeValueIfPreesd,
 				const JVector2<float>& size,
-				const JVector4<float>& bgColor,
-				const JVector4<float>& bgDelta,
+				const JVector4<float>& bgColor, 
 				const JVector4<float>& frameColor = GetColor(J_GUI_COLOR::FRAME_BG),
 				const float frameThickness = 0.0f); 
 			//display one image
 			static bool ImageButton(const std::string name,
 				JGuiImageInfo info,
 				const JVector2<float>& size,
-				const JVector4<float>& bgColor,
-				const JVector4<float>& bgDelta,
+				const JVector4<float>& bgColor, 
 				const JVector4<float>& frameColor = GetColor(J_GUI_COLOR::FRAME_BG),
 				const float frameThickness = 0.0f);
 			static bool MaximizeButton(const bool isLocatedCloseBtnLeftSide = true);
@@ -458,7 +467,7 @@ namespace JinEngine
 					for (uint i = 0; i < count; i++)
 					{
 						bool isSelected = (selectedIndex == i);
-						if (Selectable(JCUtil::WstrToU8Str(objVec[i]->GetName()), &isSelected))
+						if (Selectable(CreateGuiLabel(objVec[i], uniqueLabel), &isSelected))
 							selectedIndex = i;
 						if (isSelected)
 							SetLastItemDefaultFocus();
@@ -703,6 +712,7 @@ namespace JinEngine
 		public:
 			static std::unique_ptr<JDockUpdateHelper> CreateDockUpdateHelper(const J_EDITOR_PAGE_TYPE pageType);
 #pragma endregion
+
 		};
   
 		class JGuiPrivate

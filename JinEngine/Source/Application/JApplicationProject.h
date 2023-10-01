@@ -40,7 +40,7 @@ namespace JinEngine
 			J_SIMPLE_GET(std::wstring, version, Version)
 			J_SIMPLE_GET(JTime, lastUpdateTime, LastUpdateTime)
 			J_SIMPLE_GET(JTime, createdTime, CreatedTime)
-			std::unique_ptr<JApplicationProjectInfo> GetUnique()noexcept;
+			std::unique_ptr<JApplicationProjectInfo> CreateReplica()noexcept;
 			std::wstring lastRsPath()noexcept;
 		public:
 			//last rs is stored close app by .dss format

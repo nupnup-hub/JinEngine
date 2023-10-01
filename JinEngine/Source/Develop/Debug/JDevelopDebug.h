@@ -12,7 +12,7 @@ namespace JinEngine
 			static std::vector<Core::JLogBase*> GetLogVec(const std::string& name); 
 		public:
 			//use develop default log handler
-			static void PushLog(const std::string& contents);
+			static void PushLog(const std::string& contents); 
 			static void PushLog(const std::wstring& contents);
 			static void PushLog(const std::string& name, const std::string& contents); 
 		public:

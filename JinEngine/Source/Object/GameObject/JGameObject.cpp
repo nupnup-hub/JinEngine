@@ -9,9 +9,9 @@
 #include"../Component/Transform/JTransformPrivate.h"
 #include"../Resource/Scene/JScenePrivate.h"
 #include"../Resource/Scene/JScene.h" 
+#include"../JObjectFileIOHelper.h"
 #include"../../Core/Identity/JIdenCreator.h" 
-#include"../../Core/Reflection/JTypeImplBase.h"
-#include"../../Core/File/JFileIOHelper.h"
+#include"../../Core/Reflection/JTypeImplBase.h" 
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/Empty/JEmptyType.h"
@@ -197,12 +197,17 @@ namespace JinEngine
 			 
 			const uint componentCount = (uint)from->impl->componentVec.size();
 			for (uint i = 0; i < componentCount; ++i)
-				JICI::CreateAndCopy(from->impl->componentVec[i], to);
+			{
+				auto initData = JComponent::CreateInitDIData(from->impl->componentVec[i]->GetComponentType(), from->GetTypeInfo(), to);
+				JICI::CreateAndCopy(std::move(initData), from->impl->componentVec[i]);
+			}
 
 			const uint childrenCount = (uint)from->impl->children.size();
 			for (uint i = 0; i < childrenCount; ++i)
-				JICI::CreateAndCopy(from->impl->children[i], to);
-
+			{
+				auto initData = std::make_unique<JGameObject::InitData>(from->impl->children[i]->GetName(), Core::MakeGuid(), OBJECT_FLAG_NONE, to);
+				JICI::CreateAndCopy(std::move(initData), from->impl->children[i]);
+			}
 			return true;
 		}
 	public:
@@ -670,7 +675,7 @@ namespace JinEngine
 		auto loadData = static_cast<JGameObject::LoadData*>(data);
 		std::wifstream& stream = loadData->stream;
 
-		JFileIOHelper::LoadObjectIden(loadData->stream, name, guid, flag);
+		JObjectFileIOHelper::LoadObjectIden(loadData->stream, name, guid, flag);
 		std::unique_ptr<JGameObject::InitData> initData = JGameObject::JGameObjectImpl::CreateInitData(name, guid, flag, loadData); 
 
 		JUserPtr<Core::JIdentifier> res = gPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &gPrivate);
@@ -679,31 +684,36 @@ namespace JinEngine
 			return nullptr;
 
 		bool isSelected;
-		JFileIOHelper::LoadAtomicData(stream, isSelected);
+		bool isActivated;
+		JObjectFileIOHelper::LoadAtomicData(stream, isSelected);
+		JObjectFileIOHelper::LoadAtomicData(stream, isActivated);
 		if (isSelected)
 			newGameObject->impl->Select();
 
 		int componentCount;
-		JFileIOHelper::LoadAtomicData(stream, componentCount);
+		JObjectFileIOHelper::LoadAtomicData(stream, componentCount);
 	
 		for (int i = 0; i < componentCount; ++i)
 		{
 			std::wstring componentName;
 			size_t typeGuid;
-			JFileIOHelper::LoadJString(stream, componentName);
-			JFileIOHelper::LoadAtomicData(stream, typeGuid);
+			JObjectFileIOHelper::LoadJString(stream, componentName);
+			JObjectFileIOHelper::LoadAtomicData(stream, typeGuid);
 			auto compPrivate = static_cast<JComponentPrivate*>(Core::JIdentifier::PrivateInterface(typeGuid));
 			auto compLoadData = JComponentPrivate::AssetDataIOInterface::CreateLoadAssetDIData(newGameObject, stream, typeGuid);
 			compPrivate->GetAssetDataIOInterface().LoadAssetData(compLoadData.get());
 		}
 
 		int childrenCount;
-		JFileIOHelper::LoadAtomicData(stream, childrenCount);
+		JObjectFileIOHelper::LoadAtomicData(stream, childrenCount);
 		for (int i = 0; i < childrenCount; ++i)
-		{
+		{ 
 			loadData->parent = newGameObject;
 			LoadAssetData(loadData);
 		}
+		if (!isActivated)
+			newGameObject->DeActivate();
+
 		return newGameObject;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
@@ -716,20 +726,22 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		JGameObject* gObj = static_cast<JGameObject*>(gmaeObjStoreData->obj.Get());
-		JFileIOHelper::StoreObjectIden(gmaeObjStoreData->stream, gObj);
-		JFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"IsSelect", gObj->impl->isSelected);
-		JFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"ComponentCount:", gObj->impl->componentVec.size());
+		JObjectFileIOHelper::StoreObjectIden(gmaeObjStoreData->stream, gObj);
+		JObjectFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, Core::JFileConstant::StreamSelectedSymbol(), gObj->impl->isSelected);
+		JObjectFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, Core::JFileConstant::StreamActivatedSymbol(), gObj->IsActivated());
+		JObjectFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"ComponentCount:", gObj->impl->componentVec.size());
 
 		for (auto& comp : gObj->impl->componentVec)
 		{
-			JFileIOHelper::StoreJString(gmaeObjStoreData->stream, L"TypeName:", JCUtil::U8StrToWstr(comp->GetTypeInfo().Name()));
-			JFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"TypeGuid:", comp->GetTypeInfo().TypeGuid());
+			JObjectFileIOHelper::StoreJString(gmaeObjStoreData->stream, L"TypeName:", JCUtil::U8StrToWstr(comp->GetTypeInfo().Name()));
+			JObjectFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"TypeGuid:", comp->GetTypeInfo().TypeGuid());
+			 
 			auto compPrivate = static_cast<JComponentPrivate*>(&comp->PrivateInterface());
 			auto compStoreData = compPrivate->GetAssetDataIOInterface().CreateStoreAssetDIData(comp, gmaeObjStoreData->stream);
 			compPrivate->GetAssetDataIOInterface().StoreAssetData(compStoreData.get());
 		}
 
-		JFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"ChildCount:", gObj->impl->children.size());
+		JObjectFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"ChildCount:", gObj->impl->children.size());
 		for (auto& child : gObj->impl->children)
 		{
 			gmaeObjStoreData->obj = child;

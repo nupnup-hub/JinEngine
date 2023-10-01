@@ -1,6 +1,5 @@
 #include"JMeshGeometry.h"
 #include"JMeshGeometryPrivate.h"
-#include"JMeshStruct.h"
 #include"JStaticMeshGeometry.h"
 #include"JSkinnedMeshGeometry.h"
 #include"../JResourceObjectHint.h"
@@ -10,20 +9,21 @@
 #include"../JResourceManager.h"
 #include"../Skeleton/JSkeletonAsset.h"
 #include"../Skeleton/JSkeleton.h" 
-#include"../Skeleton/Joint.h" 
 #include"../Material/JMaterial.h" 
 #include"../Material/JDefaultMaterialSetting.h"
 #include"../../Directory/JDirectory.h" 
+#include"../../JObjectFileIOHelper.h"
 #include"../../../Application/JApplicationProject.h" 
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Exception/JExceptionMacro.h" 
-#include"../../../Core/File/JFileConstant.h"
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Geometry/JDirectXCollisionEx.h"
-#include"../../../Core/Loader/FbxLoader/JFbxFileLoader.h"
-#include"../../../Core/Loader/ObjLoader/JObjFileLoader.h"
+#include"../../../Core/Geometry/Mesh/JMeshStruct.h"
+#include"../../../Core/Geometry/Mesh/Loader/FbxLoader/JFbxFileLoader.h"
+#include"../../../Core/Geometry/Mesh/Loader/ObjLoader/JObjFileLoader.h"
+#include"../../../Core/Animation/Joint.h" 
 #include"../../../Core/Utility/JCommonUtility.h"  
 #include"../../../Core/Math/JMathHelper.h"
  
@@ -35,7 +35,8 @@
 
 namespace JinEngine
 {
-	using namespace DirectX;
+	using namespace DirectX; 
+
 	namespace Private
 	{
 		static constexpr uint useGraphicResourceCount = 2;
@@ -56,7 +57,7 @@ namespace JinEngine
 		DirectX::BoundingSphere boundingSphere;
 		bool hasNormal = false;
 		bool hasUV = false;
-		J_MESHGEOMETRY_TYPE type;
+		Core::J_MESHGEOMETRY_TYPE type;
 	public:
 		SubmeshGeometry(const std::wstring name, const size_t guid)
 			:name(name), guid(guid)
@@ -112,9 +113,9 @@ namespace JinEngine
 			return boundingSphere.Radius;
 		}
 	public:
-		void SetMesh(const JMeshData& meshData, const uint vertexSt, const uint indexSt)
+		void SetMesh(const Core::JMeshData& meshData, const uint vertexSt, const uint indexSt)
 		{
-			JUserPtr<JMaterial> meshMaterial = meshData.GetMaterial();
+			JUserPtr<JMaterial> meshMaterial = Core::ConvertChildUserPtr<JMaterial>(meshData.GetMaterial());
 			if (meshMaterial.IsValid())
 				material = meshMaterial;
 			else
@@ -156,7 +157,7 @@ namespace JinEngine
 	public:
 		JWeakPtr<JMeshGeometry> thisPointer = nullptr;
 	public:
-		std::unique_ptr<JMeshGroup> meshGroupData = nullptr;	//for store group data 리소스 초기화후 nullptr 이 된다
+		std::unique_ptr<Core::JMeshGroup> meshGroupData = nullptr;	//for store group data 리소스 초기화후 nullptr 이 된다
 	public:
 		// System memory copies.  Use Blobs because the vertex/index format can be generic.
 		// It is up to the client to cast appropriately.
@@ -253,7 +254,7 @@ namespace JinEngine
 				CallOffResourceReference(submeshes[i].GetMaterial().Get());
 		}
 	public:
-		void TryCreateMeshGroupMaterial(JMeshGroup* meshGroup)
+		void TryCreateMeshGroupMaterial(Core::JMeshGroup* meshGroup)
 		{
 			const uint submeshCount = (uint)meshGroup->GetMeshDataCount();
 			JUserPtr<JDirectory> matDir = thisPointer->GetDirectory()->GetChildDirctoryByName(L"Material");
@@ -275,7 +276,7 @@ namespace JinEngine
 				meshGroup->GetMeshData(i)->SetMaterial(newMaterial);
 			} 
 		}
-		bool ImportMesh(JMeshGroup* meshGroup)
+		bool ImportMesh(Core::JMeshGroup* meshGroup)
 		{
 			//SutffSubMesh는  하위 메시 클래스에서
 			//리소스 초기화시 호출된다
@@ -298,10 +299,10 @@ namespace JinEngine
 
 			for (uint i = 0; i < submeshCount; ++i)
 			{
-				if (meshGroup->GetMeshData(i)->GetMeshType() == J_MESHGEOMETRY_TYPE::STATIC)
-					submeshes[i].SetMesh(*static_cast<JStaticMeshData*>(meshGroup->GetMeshData(i)), vertexCount, indexCount);
+				if (meshGroup->GetMeshData(i)->GetMeshType() == Core::J_MESHGEOMETRY_TYPE::STATIC)
+					submeshes[i].SetMesh(*static_cast<Core::JStaticMeshData*>(meshGroup->GetMeshData(i)), vertexCount, indexCount);
 				else
-					submeshes[i].SetMesh(*static_cast<JSkinnedMeshData*>(meshGroup->GetMeshData(i)), vertexCount, indexCount);
+					submeshes[i].SetMesh(*static_cast<Core::JSkinnedMeshData*>(meshGroup->GetMeshData(i)), vertexCount, indexCount);
 
 				vertexCount += submeshes[i].GetVertexCount();
 				indexCount += submeshes[i].GetIndexCount();
@@ -309,16 +310,16 @@ namespace JinEngine
 			JMeshGeometryImpl::vertexCount = vertexCount;
 			JMeshGeometryImpl::indexCount = indexCount;
 			 
-			if (meshGroup->GetMeshGroupType() == J_MESHGEOMETRY_TYPE::STATIC)
+			if (meshGroup->GetMeshGroupType() == Core::J_MESHGEOMETRY_TYPE::STATIC)
 			{
-				vertexByteSize = sizeof(JStaticMeshVertex);
+				vertexByteSize = sizeof(Core::JStaticMeshVertex);
 				vertexBufferByteSize = vertexCount * vertexByteSize;
 
-				std::vector<JStaticMeshVertex> vertex(vertexCount);
+				std::vector<Core::JStaticMeshVertex> vertex(vertexCount);
 				uint vertexOffset = 0;
 				for (uint i = 0; i < submeshCount; ++i)
 				{
-					JStaticMeshData* meshdata = static_cast<JStaticMeshData*>(meshGroup->GetMeshData(i));
+					Core::JStaticMeshData* meshdata = static_cast<Core::JStaticMeshData*>(meshGroup->GetMeshData(i));
 					const uint subMeshVertexCount = meshdata->GetVertexCount();
 					for (uint j = 0; j < subMeshVertexCount; ++j)
 						vertex[vertexOffset + j] = meshdata->GetVertex(j);
@@ -328,14 +329,14 @@ namespace JinEngine
 			}
 			else
 			{
-				vertexByteSize = sizeof(JSkinnedMeshVertex);
+				vertexByteSize = sizeof(Core::JSkinnedMeshVertex);
 				vertexBufferByteSize = vertexCount * vertexByteSize;
 
-				std::vector<JSkinnedMeshVertex> vertex(vertexCount);
+				std::vector<Core::JSkinnedMeshVertex> vertex(vertexCount);
 				uint vertexOffset = 0;
 				for (uint i = 0; i < submeshCount; ++i)
 				{
-					JSkinnedMeshData* meshdata = static_cast<JSkinnedMeshData*>(meshGroup->GetMeshData(i));
+					Core::JSkinnedMeshData* meshdata = static_cast<Core::JSkinnedMeshData*>(meshGroup->GetMeshData(i));
 					const uint subMeshVertexCount = meshdata->GetVertexCount();
 					for (uint j = 0; j < subMeshVertexCount; ++j)
 						vertex[vertexOffset + j] = meshdata->GetVertex(j);
@@ -353,7 +354,7 @@ namespace JinEngine
 				uint indicesOffset = 0;
 				for (uint i = 0; i < submeshCount; ++i)
 				{
-					const JMeshData* meshdata = meshGroup->GetMeshData(i);
+					const Core::JMeshData* meshdata = meshGroup->GetMeshData(i);
 					const uint subMeshIndexCount = meshdata->GetIndexCount();
 					for (uint j = 0; j < subMeshIndexCount; ++j)
 						index32[indicesOffset + j] = meshdata->GetIndex(j);
@@ -370,7 +371,7 @@ namespace JinEngine
 
 				for (uint i = 0; i < submeshCount; ++i)
 				{
-					const JMeshData* meshdata = meshGroup->GetMeshData(i);
+					const Core::JMeshData* meshdata = meshGroup->GetMeshData(i);
 					const uint subMeshIndexCount = meshdata->GetIndexCount();
 					for (uint j = 0; j < subMeshIndexCount; ++j)
 						index16[indicesOffset + j] = meshdata->GetIndex(j);
@@ -487,8 +488,8 @@ namespace JinEngine
 			//JResourceObject*, const std::wstring, JDirectory*, const std::wstring>
 			auto fbxClassifyC = [](const Core::JFileImportHelpData importPathdata) -> std::vector<J_RESOURCE_TYPE>
 			{
-				using FbxFileTypeInfo = Core::JFbxFileLoaderImpl::FbxFileTypeInfo;
-				FbxFileTypeInfo info = Core::JFbxFileLoader::Instance().GetFileTypeInfo(importPathdata.oriFilePath);
+				using FbxFileTypeInfo = Core::JFbxFileLoader::FbxFileTypeInfo;
+				FbxFileTypeInfo info = JFbxFileLoader::Instance().GetFileTypeInfo(importPathdata.oriFilePath);
 				if (info.typeInfo == Core::J_FBXRESULT::FAIL)
 					return {};
 
@@ -503,16 +504,16 @@ namespace JinEngine
 			auto fbxMeshImportC = [](JUserPtr<JDirectory> dir, const Core::JFileImportHelpData importPathData) -> std::vector<JUserPtr<JResourceObject>>
 			{
 				std::vector<JUserPtr<JResourceObject>> res;
-				using FbxFileTypeInfo = Core::JFbxFileLoaderImpl::FbxFileTypeInfo;
-				FbxFileTypeInfo info = Core::JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
+				using FbxFileTypeInfo = Core::JFbxFileLoader::FbxFileTypeInfo;
+				FbxFileTypeInfo info = JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
 
 				JUserPtr<JMeshGeometry> newMesh = nullptr;
 				JUserPtr<JSkeletonAsset> newSkeleton = nullptr;
 				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
 				{
-					std::unique_ptr<JSkinnedMeshGroup> skinnedGroup = std::make_unique<JSkinnedMeshGroup>();
-					std::vector<Joint> joint;
-					Core::J_FBXRESULT loadRes = Core::JFbxFileLoader::Instance().LoadFbxMeshFile(importPathData.oriFilePath, *skinnedGroup, joint);
+					std::unique_ptr<Core::JSkinnedMeshGroup> skinnedGroup = std::make_unique<Core::JSkinnedMeshGroup>();
+					std::vector<Core::Joint> joint;
+					Core::J_FBXRESULT loadRes = JFbxFileLoader::Instance().LoadFbxMeshFile(importPathData.oriFilePath, *skinnedGroup, joint);
 					if (loadRes == Core::J_FBXRESULT::FAIL)
 						return { nullptr };
 					 
@@ -529,7 +530,7 @@ namespace JinEngine
 						Core::JTypeInstanceSearchHint skinendHint(JSkinnedMeshGeometry::StaticTypeInfo(), skinnedMeshGuid);
 						newSkeleton = JICI::Create<JSkeletonAsset>(importPathData.name + L"Skel",
 							skeletonGuid,
-							importPathData.flag,
+							(J_OBJECT_FLAG)importPathData.flag,
 							RTypeCommonCall::CallFormatIndex(JSkeletonAsset::GetStaticResourceType(), importPathData.format),
 							modelDir,
 							skinendHint,
@@ -541,7 +542,7 @@ namespace JinEngine
 					{
 						newMesh = JICI::Create<JSkinnedMeshGeometry>(importPathData.name,
 							skinnedMeshGuid,
-							importPathData.flag,
+							(J_OBJECT_FLAG)importPathData.flag,
 							RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
 							modelDir,
 							std::move(skinnedGroup));
@@ -552,8 +553,8 @@ namespace JinEngine
 				}
 				else
 				{
-					std::unique_ptr<JStaticMeshGroup> staticMeshGroup = std::make_unique<JStaticMeshGroup>();
-					Core::J_FBXRESULT loadRes = Core::JFbxFileLoader::Instance().LoadFbxMeshFile(importPathData.oriFilePath, *staticMeshGroup);
+					std::unique_ptr<Core::JStaticMeshGroup> staticMeshGroup = std::make_unique<Core::JStaticMeshGroup>();
+					Core::J_FBXRESULT loadRes = JFbxFileLoader::Instance().LoadFbxMeshFile(importPathData.oriFilePath, *staticMeshGroup);
 					if (loadRes == Core::J_FBXRESULT::FAIL)
 						return { nullptr };
 
@@ -566,7 +567,7 @@ namespace JinEngine
 					{
 						newMesh = JICI::Create<JStaticMeshGeometry>(importPathData.name,
 							Core::MakeGuid(),
-							importPathData.flag,
+							(J_OBJECT_FLAG)importPathData.flag,
 							RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
 							modelDir,
 							std::move(staticMeshGroup));
@@ -596,10 +597,10 @@ namespace JinEngine
 					JUserPtr<JDirectory> modelDir = JICI::Create<JDirectory>(L"Model", Core::MakeGuid(), OBJECT_FLAG_NONE, fileDir);
 					newMesh = JICI::Create<JStaticMeshGeometry>(importPathData.name,
 						Core::MakeGuid(),
-						importPathData.flag,
+						(J_OBJECT_FLAG)importPathData.flag,
 						RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
 						modelDir,
-						std::make_unique<JStaticMeshGroup>(objMeshData.meshGroup));
+						std::make_unique<Core::JStaticMeshGroup>(objMeshData.meshGroup));
 				}
 				if (newMesh != nullptr)
 				{
@@ -621,7 +622,7 @@ namespace JinEngine
 	JMeshGeometry::InitData::InitData(const Core::JTypeInfo& type, 
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
-		std::unique_ptr<JMeshGroup>&& meshGroup)
+		std::unique_ptr<Core::JMeshGroup>&& meshGroup)
 		: JResourceObject::InitData(type, formatIndex, GetStaticResourceType(), directory),
 		meshGroup(std::move(meshGroup))
 	{}
@@ -629,7 +630,7 @@ namespace JinEngine
 		const size_t guid,
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
-		std::unique_ptr<JMeshGroup>&& meshGroup)
+		std::unique_ptr<Core::JMeshGroup>&& meshGroup)
 		: JResourceObject::InitData(type, guid, formatIndex, GetStaticResourceType(), directory),
 		meshGroup(std::move(meshGroup))
 	{ }
@@ -639,7 +640,7 @@ namespace JinEngine
 		const J_OBJECT_FLAG flag,
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
-		std::unique_ptr<JMeshGroup>&& meshGroup)
+		std::unique_ptr<Core::JMeshGroup>&& meshGroup)
 		: JResourceObject::InitData(type, name, guid, flag, formatIndex, GetStaticResourceType(), directory), 
 		meshGroup(std::move(meshGroup))
 	{ }
@@ -745,7 +746,7 @@ namespace JinEngine
 	{
 		return impl->boundingSphere.Radius;
 	}
-	JMeshGroup* JMeshGeometry::GetMeshGroupData()const noexcept
+	Core::JMeshGroup* JMeshGeometry::GetMeshGroupData()const noexcept
 	{
 		return impl->meshGroupData.get();
 	}

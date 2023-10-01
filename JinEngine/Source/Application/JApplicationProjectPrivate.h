@@ -35,18 +35,20 @@ namespace JinEngine
 					std::unique_ptr<SetAppStateF>&& setStateF);
 				static bool Initialize();
 			private:
-				//Load Project order
-				//1. BeginLoadOtherProject()	//set trigger
-				//2. End window proccess		// loop
-				//3. End Project order
-				static void BeginLoadOtherProject()noexcept;
-				//End Project order
-				//1. BeginCloseProject()	//set trigger
-				//2. End window proccess		// loop
-				//3.0 CancelCloseProject()	-> cancel close project
-				//3.1.0 Call ConfirmCloseProject()
-				//3.1.1 CloseProject()
-				//3.2 if set load trigger ->	restart new project
+				/** Load Project order
+				* 1. BeginLoadOtherProject()	//set trigger
+				* 2. End window proccess		// loop
+				* 3. Begin End Project order
+				*/
+				static void BeginLoadOtherProject(std::unique_ptr<JApplicationProjectInfo>&& nextProjInfo)noexcept;
+				/** End Project order
+				* 1. BeginCloseProject()	//set trigger
+				* 2. End window proccess		// loop
+				* 3.0 CancelCloseProject()	-> cancel close project
+				* 3.1.0 Call ConfirmCloseProject()
+				* 3.1.1 CloseProject()
+				* 3.2 if set load trigger ->	restart new project
+				*/
 				static void BeginCloseProject()noexcept;
 			private:
 				static void CloseProject()noexcept;
@@ -67,14 +69,21 @@ namespace JinEngine
 			private:
 				static void SetNextProjectInfo(std::unique_ptr<JApplicationProjectInfo>&& nextProjectInfo)noexcept;
 			private:
-				//Start project order
-				//1. SetNextProjectInfo()
-				//2. SetStartNewProjectTrigger()
-				//3. Call Intiailize()
+				/** Start project order
+				* 1. SetNextProjectInfo()
+				* 2. SetStartNewProjectTrigger()
+				* 3. Call Intiailize()
+				*/
 				static bool SetStartNewProjectTrigger();
 			private:
 				static void CancelCloseProject()noexcept;
 				static void ConfirmCloseProject()noexcept;
+			private:
+				/**
+				* can destroy project in PROJECT_SELECT state
+				* 추후에 다른 state에서도 삭제가능하게 추가필요.
+				*/
+				static void DestroyProject(const int projectIndex)noexcept;
 			};
 			class IOInterface
 			{

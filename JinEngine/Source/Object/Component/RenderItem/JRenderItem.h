@@ -21,8 +21,16 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
+			J_RENDER_LAYER layer = J_RENDER_LAYER::OPAQUE_OBJECT;
+			J_RENDERITEM_ACCELERATOR_MASK acceleratorMask = J_RENDERITEM_ACCELERATOR_MASK::ACCELERATOR_ALLOW_ALL;
+		public:
 			InitData(const JUserPtr<JGameObject>& owner);
 			InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
+			InitData(const size_t guid, 
+				const J_OBJECT_FLAG flag,
+				const JUserPtr<JGameObject>& owner,
+				const J_RENDER_LAYER layer,
+				const J_RENDERITEM_ACCELERATOR_MASK acceleratorMask);
 		};
 	private:
 		friend class JRenderItemPrivate;
@@ -48,10 +56,10 @@ namespace JinEngine
 		uint GetTotalIndexCount()const noexcept;
 		uint GetSubmeshCount()const noexcept;
 		//apply scale rotation tranlation 
-		DirectX::BoundingBox GetBoundingBox()noexcept;
-		DirectX::BoundingOrientedBox GetOrientedBoundingBox()noexcept;
+		DirectX::BoundingBox GetBoundingBox()const noexcept;
+		DirectX::BoundingOrientedBox GetOrientedBoundingBox()const noexcept;
 		//apply scale tranlation  
-		DirectX::BoundingSphere GetBoundingSphere()noexcept;
+		DirectX::BoundingSphere GetBoundingSphere()const noexcept;
 	public:
 		void SetMesh(JUserPtr<JMeshGeometry> newMesh)noexcept;
 		void SetMaterial(int index, JUserPtr<JMaterial> newMaterial)noexcept;
@@ -59,7 +67,7 @@ namespace JinEngine
 		void SetTextureTransform(const JMatrix4x4& textureTransform)noexcept;
 		void SetPrimitiveType(const D3D12_PRIMITIVE_TOPOLOGY primitiveType)noexcept;
 		void SetRenderLayer(const J_RENDER_LAYER renderLayer)noexcept; 
-		void SetAcceleratorMask(const J_RENDERITEM_ACCELERATOR_MASK spaceSpatialMask)noexcept;
+		void SetAcceleratorMask(const J_RENDERITEM_ACCELERATOR_MASK acceleratorMask)noexcept;
 		void SetOccluder(const bool value)noexcept;
 	public: 
 		bool IsFrameDirted()const noexcept final;

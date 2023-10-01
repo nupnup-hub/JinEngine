@@ -211,8 +211,8 @@ namespace JinEngine
 	bool JAccelerator::CanAddGameObject(const JUserPtr<JGameObject>& gameObj)const noexcept
 	{
 		return gameObj->HasRenderItem() &&
-			(gameObj->GetRenderItem()->GetAcceleratorMask() & ACCELERATOR_ALLOW_BUILD) > 0 &&
-			ConvertAcceleratorLayer(gameObj->GetRenderItem()->GetRenderLayer()) == layer &&
+			((gameObj->GetRenderItem()->GetAcceleratorMask() & ACCELERATOR_ALLOW_BUILD) > 0) &&
+			(ConvertAcceleratorLayer(gameObj->GetRenderItem()->GetRenderLayer()) == layer) &&
 			innerRoot->IsParentLine(gameObj);
 	}
 	void JAccelerator::FindInnerObject(std::vector<JUserPtr<JGameObject>>& vec, const JUserPtr<JGameObject>& parent)const noexcept

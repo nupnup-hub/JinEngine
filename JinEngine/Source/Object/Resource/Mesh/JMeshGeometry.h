@@ -1,12 +1,15 @@
 #pragma once
 #include"../JResourceObject.h" 
 #include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
-#include"JMeshType.h" 
+#include"../../../Core/Geometry/Mesh/JMeshType.h" 
 #include<DirectXCollision.h> 
 
 namespace JinEngine
 {
-	struct JMeshGroup; 
+	namespace Core
+	{
+		struct JMeshGroup;
+	}
 	class JMeshGeometryPrivate;
 	class JMaterial;
 	class JMeshGeometry : public JResourceObject,
@@ -19,24 +22,24 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
-			std::unique_ptr<JMeshGroup> meshGroup;
+			std::unique_ptr<Core::JMeshGroup> meshGroup;
 		public:
 			InitData(const Core::JTypeInfo& type,
 				const uint8 formatIndex, 
 				const JUserPtr<JDirectory>& directory,
-				std::unique_ptr<JMeshGroup>&& meshGroup);
+				std::unique_ptr<Core::JMeshGroup>&& meshGroup);
 			InitData(const Core::JTypeInfo& type, 
 				const size_t guid,
 				const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
-				std::unique_ptr<JMeshGroup>&& meshGroup);
+				std::unique_ptr<Core::JMeshGroup>&& meshGroup);
 			InitData(const Core::JTypeInfo& type, 
 				const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
-				std::unique_ptr<JMeshGroup>&& meshGroup);
+				std::unique_ptr<Core::JMeshGroup>&& meshGroup);
 		public:
 			bool IsValidData()const noexcept override;
 		};
@@ -45,7 +48,7 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
 		public:
-			J_MESHGEOMETRY_TYPE meshType;
+			Core::J_MESHGEOMETRY_TYPE meshType;
 		public:
 			LoadMetaData(const Core::JTypeInfo& type, const JUserPtr<JDirectory>& directory);
 		};
@@ -63,7 +66,7 @@ namespace JinEngine
 		}
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
-		virtual J_MESHGEOMETRY_TYPE GetMeshGeometryType()const noexcept = 0;
+		virtual Core::J_MESHGEOMETRY_TYPE GetMeshGeometryType()const noexcept = 0;
 		uint GetTotalVertexCount()const noexcept;
 		uint GetTotalIndexCount()const noexcept;
 		uint GetTotalSubmeshCount()const noexcept;
@@ -84,7 +87,7 @@ namespace JinEngine
 		JVector3<float> GetBoundingSphereCenter()const noexcept;
 		float GetBoundingSphereRadius()const noexcept; 
 	protected:
-		JMeshGroup* GetMeshGroupData()const noexcept;
+		Core::JMeshGroup* GetMeshGroupData()const noexcept;
 	protected:
 		void DoActivate()noexcept override;
 		void DoDeActivate()noexcept override; 

@@ -18,9 +18,10 @@ namespace JinEngine
 				float _41, _42, _43, _44;
 			};
 			float m[4][4];
+			JVector4<float> r[4];
 		};
 	public:
-		JMatrix4x4() = default;
+		JMatrix4x4();
 		JMatrix4x4(float m00, float m01, float m02, float m03,
 			float m10, float m11, float m12, float m13,
 			float m20, float m21, float m22, float m23,

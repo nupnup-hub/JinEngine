@@ -17,7 +17,7 @@ namespace JinEngine
 	{
 		return skletonHash;
 	}
-	Joint JSkeleton::GetJoint(int index)const noexcept
+	Core::Joint JSkeleton::GetJoint(int index)const noexcept
 	{
 		return joint[index];
 	}
@@ -99,7 +99,7 @@ namespace JinEngine
 			totalName += joint[i].name;
 		return std::hash<std::wstring>{}(totalName);
 	}
-	JSkeleton::JSkeleton(std::vector<Joint>&& joint)
+	JSkeleton::JSkeleton(std::vector<Core::Joint>&& joint)
 		:joint(std::move(joint)), skletonHash(GetSkeletonHash())
 	{ }
 	JSkeleton::~JSkeleton() {}

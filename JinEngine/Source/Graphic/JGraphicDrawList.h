@@ -121,8 +121,8 @@ namespace JinEngine
 			public:
 				bool nextSceneUpdate = false;
 			private:
-				void UpdateStart();
-				void UpdateEnd();
+				void BeginUpdate();
+				void EndUpdate();
 			};
 		private:
 			friend class JGraphicDrawList;
@@ -138,8 +138,8 @@ namespace JinEngine
 			JGraphicDrawTarget(const JUserPtr<JScene>& scene);
 			~JGraphicDrawTarget();
 		public:
-			void UpdateStart();
-			void UpdateEnd();
+			void BeginUpdate();
+			void EndUpdate();
 		};
 		 
 		class JGraphicDrawList 

@@ -1,5 +1,5 @@
 #pragma once
-#include"../../Core/Math/JMathHelper.h"
+#include"../../Core/Math/JVector.h"
 #include"../../Core/JCoreEssential.h"
 
 namespace JinEngine
@@ -9,9 +9,11 @@ namespace JinEngine
 		struct JEnginePassConstants
 		{ 
 			float appTotalTime = 0.0f;
-			float appDeltaTime = 0.0f;	 
-			uint ePassPad00 = 0;
-			uint ePassPad01 = 0;
+			float appDeltaTime = 0.0f;	  
+			int missingTextureIndex = 0;		//always exist until engine end
+			int bluseNoiseTextureIndex = 0;		//always exist until engine end
+			JVector2F bluseNoiseTextureSize;
+			JVector2F invBluseNoiseTextureSize;
 		};
 		struct JScenePassConstants
 		{ 

@@ -3,15 +3,16 @@
 #include"JLightConstants.h"
 #include"../Transform/JTransform.h" 
 #include"../JComponentHint.h"
+#include"../../JObjectFileIOHelper.h"
 #include"../../GameObject/JGameObject.h" 
 #include"../../Resource/Scene/JScene.h" 
 #include"../../Resource/Scene/JScenePrivate.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
-#include"../../../Core/File/JFileConstant.h"
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Math/JMathHelper.h"
 #include"../../../Graphic/JGraphic.h"  
+#include"../../../Graphic/JGraphicPrivate.h"
 #include"../../../Graphic/Frameresource/JLightConstants.h"  
 #include"../../../Graphic/Frameresource/JShadowMapConstants.h"   
 #include"../../../Graphic/Frameresource/JFrameUpdate.h"
@@ -26,7 +27,7 @@ namespace JinEngine
 {
 	namespace
 	{
-		enum class LIT_DIR_TYPE
+		enum class POINT_LIT_DIR
 		{
 			RIGHT,
 			LEFT,
@@ -37,113 +38,166 @@ namespace JinEngine
 			COUNT
 		};
 		using LitFrameUpdate = Graphic::JFrameUpdate<Graphic::JFrameUpdateInterfaceHolder2<
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, Graphic::JPointLightConstants&>, 
-			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW, Graphic::JShadowMapCubeDrawConstants&>>, 
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, Graphic::JPointLightConstants&>,
+			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW, Graphic::JShadowMapCubeDrawConstants&>>,
 			Graphic::JFrameDirty>;
 	}
 	namespace
 	{
 		static auto isAvailableoverlapLam = []() {return true; };
 		static JPointLightPrivate lPrivate;
+	}
+	namespace Private
+	{
+		static constexpr float minPower = 0.1f;
+		static constexpr float maxPower = 2.0f;
 
-		static XMVECTOR GetLitDir(const LIT_DIR_TYPE litType)
+		static constexpr float InitPower()noexcept
 		{
-			switch (litType)
+			return 1.0f;
+		}
+		static void CalView(const JUserPtr<JTransform>& transform, const POINT_LIT_DIR type, _Out_ JMatrix4x4& m) noexcept
+		{ 
+			/**
+			*  front축에 dir방향이 위치하게 회전한다고 생각하면 계산이 편하다.
+			*/
+			float zOffset = 0.2f;
+			switch (type)
 			{
-			case JinEngine::LIT_DIR_TYPE::UP:
-				return JVector3<float>::Up().ToXmV();
-			case JinEngine::LIT_DIR_TYPE::DOWN:
-				return JVector3<float>::Down().ToXmV();
-			case JinEngine::LIT_DIR_TYPE::FORWARD:
-				return JVector3<float>::Forward().ToXmV();
-			case JinEngine::LIT_DIR_TYPE::BACK:
-				return JVector3<float>::Back().ToXmV();
-			case JinEngine::LIT_DIR_TYPE::LEFT:
-				return JVector3<float>::Left().ToXmV();
-			case JinEngine::LIT_DIR_TYPE::RIGHT:
-				return JVector3<float>::Right().ToXmV();
-			default:
-				return JVector3<float>::Up().ToXmV();
+			case JinEngine::POINT_LIT_DIR::UP:
+			{
+				JTransform::CalTransformMatrix(m, 
+					transform,
+					transform->GetPosition() + (transform->GetUp().Normalize() * -zOffset),
+					transform->GetRight(),
+					transform->GetFront() * JVector3F::NegativeOne(),
+					transform->GetUp());		
+				//m.r[3] += XMVector3Rotate(XMVectorSet(0, zOffset, 0, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+				break;
 			}
+			case JinEngine::POINT_LIT_DIR::DOWN:
+			{
+				JTransform::CalTransformMatrix(m, 
+					transform,
+					transform->GetPosition() + (transform->GetUp().Normalize() * zOffset),
+					transform->GetRight(),
+					transform->GetFront(),
+					transform->GetUp() * JVector3F::NegativeOne());
+				//m.r[3] += XMVector3Rotate(XMVectorSet(0, -zOffset, 0, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+				break;
+			}
+			case JinEngine::POINT_LIT_DIR::FORWARD:
+			{
+				JTransform::CalTransformMatrix(m, 
+					transform,
+					transform->GetPosition() + (transform->GetFront().Normalize() * -zOffset),
+					transform->GetRight(),
+					transform->GetUp(),
+					transform->GetFront());
+				//m.r[3] += XMVector3Rotate(XMVectorSet(0, 0, zOffset, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+				break;
+			}
+			case JinEngine::POINT_LIT_DIR::BACK:
+			{
+				JTransform::CalTransformMatrix(m, 
+					transform,
+					transform->GetPosition() + (transform->GetFront().Normalize() * zOffset),
+					transform->GetRight() * JVector3F::NegativeOne(),
+					transform->GetUp(),
+					transform->GetFront() * JVector3F::NegativeOne());
+				//m.r[3] += XMVector3Rotate(XMVectorSet(0, 0, -zOffset, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+				break;
+			}
+			case JinEngine::POINT_LIT_DIR::RIGHT:
+			{
+				JTransform::CalTransformMatrix(m, 
+					transform,
+					transform->GetPosition() + (transform->GetRight().Normalize() * -zOffset),
+					transform->GetFront() * JVector3F::NegativeOne(),
+					transform->GetUp(),
+					transform->GetRight());
+				//m.r[3] += XMVector3Rotate(XMVectorSet(zOffset, 0, 0, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+				break;
+			}
+			case JinEngine::POINT_LIT_DIR::LEFT:
+			{
+				JTransform::CalTransformMatrix(m,
+					transform,
+					transform->GetPosition() + (transform->GetRight().Normalize() * zOffset),
+					transform->GetFront(),
+					transform->GetUp(),
+					transform->GetRight() * JVector3F::NegativeOne());
+				//m.r[3] += XMVector3Rotate(XMVectorSet(-zOffset, 0, 0, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+				break;
+			}
+			default:
+				break;
+			}    
 		}
-		static XMVECTOR CalLightWorldDir(const JUserPtr<JTransform>& transform, const JVector3<float>& initDir = JVector3<float>(0, -1, 0)) noexcept
+		static XMMATRIX CalProj(const float range)noexcept
 		{
-			return XMVector3Normalize(XMVector3Rotate(initDir.ToXmV(), transform->GetWorldQuaternion().ToXmV()));
-		}
-		static XMVECTOR CalLightWorldPos(const JUserPtr<JTransform>& transform) noexcept
-		{
-			return transform->GetWorldPosition().ToXmV();
-		}
-		static XMMATRIX CalView(const JUserPtr<JTransform>& transform, const LIT_DIR_TYPE type) noexcept
-		{
-			const XMVECTOR worldPos = CalLightWorldPos(transform);
-			const XMVECTOR worldDir = CalLightWorldDir(transform, GetLitDir(type));
-
-			return XMMatrixLookAtLH(worldPos,
-				XMVectorAdd(worldPos, worldDir),
-				XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-		}
-		static XMMATRIX CalProj(const float radius)noexcept
-		{
-			return XMMatrixOrthographicLH(radius * 2, radius * 2, 0, radius * 2);
+			return XMMatrixPerspectiveFovLH(90.0f * JMathHelper::DegToRad, 1.0f, 0.2f, range);
+			//return XMMatrixOrthographicOffCenterLH(-radius, radius, -radius, radius, frustumNear, frustumFar);
+			//return XMMatrixOrthographicLH(radius * 2, radius * 2, frustumNear, frustumFar);
 		}
 	}
 
 	class JPointLight::JPointLightImpl : public Core::JTypeImplBase,
 		public LitFrameUpdate,
-		public Graphic::JGraphicTypePerSingleResourceHolder,
+		public Graphic::JGraphicWideSingleResourceHolder<2>,
+		//public Graphic::JGraphicTypePerSingleResourceHolder,
 		public Graphic::JGraphicDrawListCompInterface,
 		public Graphic::JCullingInterface
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JPointLightImpl)
 	public:
 		using PointLitFrame = JFrameInterface1;
-		using ShadowMapCubeDrawFrame = JFrameInterface2; 
+		using ShadowMapCubeDrawFrame = JFrameInterface2;
 	public:
-		JWeakPtr<JPointLight> thisPointer; 
-	public: 
-		REGISTER_PROPERTY_EX(falloffStart, GetFalloffStart, SetFalloffStart, GUI_SLIDER(1, 2000, true, false))
-		float falloffStart = 1.0f;
-		REGISTER_PROPERTY_EX(falloffEnd, GetFalloffEnd, SetFalloffEnd, GUI_SLIDER(1, 2000, true, false))
-		float falloffEnd = 100.0f;
-		REGISTER_PROPERTY_EX(radius, GetRadius, SetRadius, GUI_SLIDER(Constants::lightMinDistance * 0.5f, Constants::lightMaxDistance * 0.5f, true, false, GUI_ENUM_CONDITION_USER(LightType, J_LIGHT_TYPE::SPOT, J_LIGHT_TYPE::POINT)))
-		float radius = 1.0f;
+		JWeakPtr<JPointLight> thisPointer;
+	public:
+		REGISTER_PROPERTY_EX(power, GetPower, SetPower, GUI_SLIDER(Private::minPower, Private::maxPower, true, false))
+		float power = Private::InitPower();
+		REGISTER_PROPERTY_EX(range, GetRange, SetRange, GUI_SLIDER(Constants::lightNear, Constants::lightMaxFar, true, false))
+		float range = 100.0f;
+		REGISTER_PROPERTY_EX(radius, GetRadius, SetRadius, GUI_SLIDER(0, Constants::lightMaxFar * 0.5f, true, false, GUI_ENUM_CONDITION_USER(LightType, J_LIGHT_TYPE::SPOT, J_LIGHT_TYPE::POINT)))
+		float radius = 0.0f;
 	public:
 		//managed by light type  
-		bool allowFrustumCulling = false; 
+		bool allowFrustumCulling = false;
 	public:
-		JPointLightImpl(const InitData& initData, JPointLight* thisLitRaw)
-		{ 
-		}
-		~JPointLightImpl()
-		{ }
+		JMatrix4x4 view[(uint)POINT_LIT_DIR::COUNT];
+		JMatrix4x4 proj;
+	public:
+		JPointLightImpl(const InitData& initData, JPointLight* thisLitRaw) {}
+		~JPointLightImpl() {}
 	public:
 		J_LIGHT_TYPE GetLightType()const noexcept
-		{
+		{ 
 			return J_LIGHT_TYPE::POINT;
 		}
 		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept
 		{
 			if (!thisPointer->IsShadowActivated())
 				return J_SHADOW_MAP_TYPE::NONE;
-			 
+
 			return J_SHADOW_MAP_TYPE::CUBE;
 		}
-		float GetNear()const noexcept
+		float GetFrustumNear()const noexcept
 		{
 			return Constants::lightNear;
 		}
-		float GetFar()const noexcept
+		float GetFrustumFar()const noexcept
 		{
-			return falloffEnd;
+			return range;
 		}
-		float GetFalloffStart()const noexcept
+		float GetPower()const noexcept
 		{
-			return falloffStart;
+			return power;
 		}
-		float GetFalloffEnd()const noexcept
+		float GetRange()const noexcept
 		{
-			return falloffEnd;
+			return range;
 		}
 		float GetRadius()const noexcept
 		{
@@ -159,7 +213,7 @@ namespace JinEngine
 		JUserPtr<JTransform> GetTransform()const noexcept
 		{
 			return thisPointer->GetOwner()->GetTransform();
-		}  
+		}
 	public:
 		//value가 bool type일경우에만 justCallFunc을 사용할수있다
 		//justCallFunc는 값을 변경하지않고 함수내에서 value per 기능을 수행한다
@@ -192,7 +246,7 @@ namespace JinEngine
 			SetAllowDisplayShadowMapEx(value, false);
 		}
 		void SetAllowDisplayShadowMapEx(const bool value, const bool justCallFunc = false)
-		{ 
+		{
 			if (justCallFunc || thisPointer->IsActivated())
 			{
 				if (value)
@@ -224,26 +278,26 @@ namespace JinEngine
 			}
 			SetFrameDirty();
 		}
-		void SetFalloffStart(const float newFalloffStart)noexcept
+		void SetPower(const float newPower)noexcept
 		{
-			falloffStart = newFalloffStart;
+			power = std::clamp(newPower, Private::minPower, Private::maxPower);
 			SetFrameDirty();
 		}
-		void SetFalloffEnd(const float newFalloffEnd)noexcept
+		void SetRange(const float newRange)noexcept
 		{
-			falloffEnd = newFalloffEnd;
+			range = std::clamp(newRange, Constants::lightNear, Constants::lightMaxFar);
 			SetFrameDirty();
 		}
 		void SetRadius(const float newRadius)noexcept
 		{
-			radius = std::clamp(newRadius, Constants::lightMinDistance * 0.5f, Constants::lightMaxDistance * 0.5f);
+			radius = std::clamp(newRadius, 0.0f, range * 0.5f);
 			SetFrameDirty();
 		}
 	public:
 		bool IsShadowActivated()const noexcept
 		{
 			return thisPointer->IsShadowActivated();
-		}   
+		}
 		bool AllowFrustumCulling()const noexcept
 		{
 			return allowFrustumCulling;
@@ -274,7 +328,7 @@ namespace JinEngine
 			AddFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
 		}
 		void DestroyShadowMapResource()noexcept
-		{  
+		{
 			DeRegisterLightFrameData(JLightType::SmToFrameR(GetLightType(), false));
 
 			DestroyShadowMapDebugResource();
@@ -285,7 +339,7 @@ namespace JinEngine
 			PopFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 		};
 		void CreateShadowMapDebugResource()
-		{ 
+		{
 			CreateLayerDepthDebugResource(JVector2<uint>(thisPointer->GetShadowMapSize(), thisPointer->GetShadowMapSize()));
 		}
 		void DestroyShadowMapDebugResource()
@@ -294,12 +348,12 @@ namespace JinEngine
 		}
 	public:
 		void Activate()noexcept
-		{ 
+		{
 			RegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
 			if (thisPointer->IsShadowActivated())
 				SetShadowEx(true, true);
 			if (allowFrustumCulling)
-				SetAllowFrustumCulling(true, true); 
+				SetAllowFrustumCulling(true, true);
 		}
 		void DeActivate()noexcept
 		{
@@ -308,39 +362,41 @@ namespace JinEngine
 			if (thisPointer->IsShadowActivated())
 				SetShadowEx(false, true);
 			if (allowFrustumCulling)
-				SetAllowFrustumCulling(false, true); 
+				SetAllowFrustumCulling(false, true);
 			DestroyAllCullingData();
 			DestroyAllTexture();
 		}
-	public: 
+	public:
 		void UpdateFrame(Graphic::JPointLightConstants& constant)noexcept final
 		{
 			constant.color = thisPointer->GetColor();
-			constant.falloffStart = falloffStart;
-			constant.position = CalLightWorldPos(GetTransform());
-			constant.falloffEnd = falloffEnd;
-			constant.nearPlane = 0.1f;
-			constant.farPlane = falloffEnd;
+			constant.power = power;
+			constant.position = GetTransform()->GetWorldPosition();
+			constant.range = range;
+			constant.radius = radius;
 			constant.shadowMapIndex = IsShadowActivated() ? GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE, 0) : 0;
 			constant.hasShadowMap = IsShadowActivated();
 			PointLitFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JShadowMapCubeDrawConstants& constant)noexcept final
-		{ 
-			const XMMATRIX projM = CalProj(radius);
-			for (uint i = 0; i < (uint)LIT_DIR_TYPE::COUNT; ++i)
-			{
-				constant.shadowMapTransform[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(CalView(GetTransform(),
-					(LIT_DIR_TYPE)i), projM)));
-			}
+		{
+			const XMMATRIX projM = proj.LoadXM();
+			for (uint i = 0; i < (uint)POINT_LIT_DIR::COUNT; ++i)
+				constant.shadowMapTransform[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(view[i].LoadXM(), projM)));
 			ShadowMapCubeDrawFrame::MinusMovedDirty();
+		}
+		void UpdateLightTransform()
+		{
+			for (uint i = 0; i < (uint)POINT_LIT_DIR::COUNT; ++i)
+				Private::CalView(GetTransform(), (POINT_LIT_DIR)i, view[i]);
+			proj.StoreXM(Private::CalProj(range));
 		}
 	public:
 		static bool DoCopy(JPointLight* from, JPointLight* to)
-		{		  
+		{
 			from->impl->SetAllowFrustumCulling(to->impl->AllowFrustumCulling());
-			from->impl->SetFalloffStart(to->impl->GetFalloffStart());
-			from->impl->SetFalloffEnd(to->impl->GetFalloffEnd());
+			from->impl->SetPower(to->impl->GetPower());
+			from->impl->SetRange(to->impl->GetRange());
 			from->impl->SetRadius(to->impl->GetRadius());
 
 			to->impl->SetFrameDirty();
@@ -350,7 +406,7 @@ namespace JinEngine
 		void NotifyReAlloc()
 		{
 			if (thisPointer.IsValid())
-			{ 
+			{
 				JLightPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer.Get(), thisPointer->GetGuid());
 				JLightPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(thisPointer.Get(), this, thisPointer->GetGuid());
 			}
@@ -358,7 +414,7 @@ namespace JinEngine
 
 			JFrameUpdateData::ReRegisterFrameData(JLightType::LitToFrameR(GetLightType()), (PointLitFrame*)this);
 			JFrameUpdateData::ReRegisterFrameData(JLightType::SmToFrameR(GetLightType(), false), (ShadowMapCubeDrawFrame*)this);
-		}   
+		}
 	public:
 		void RegisterThisPointer(JPointLight* lit)
 		{
@@ -367,7 +423,7 @@ namespace JinEngine
 		void RegisterInterfacePointer()
 		{
 			Graphic::JGraphicResourceInterface::SetInterfacePointer(this);
-			Graphic::JCullingInterface::SetInterfacePointer(this); 
+			Graphic::JCullingInterface::SetInterfacePointer(this);
 		}
 		void RegisterPostCreation()
 		{
@@ -390,16 +446,16 @@ namespace JinEngine
 			if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT)
 				PointLitFrame::DeRegisterFrameData(type, (PointLitFrame*)this);
 			else if (type == Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW)
-				ShadowMapCubeDrawFrame::DeRegisterFrameData(type, (ShadowMapCubeDrawFrame*)this);			 
+				ShadowMapCubeDrawFrame::DeRegisterFrameData(type, (ShadowMapCubeDrawFrame*)this);
 		}
 		static void RegisterTypeData()
 		{
 			Core::JIdentifier::RegisterPrivateInterface(JPointLight::StaticTypeInfo(), lPrivate);
 			IMPL_REALLOC_BIND(JPointLight::JPointLightImpl, thisPointer)
-			SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT);
+				SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT);
 		}
 	};
- 
+
 	Core::JIdentifierPrivate& JPointLight::PrivateInterface()const noexcept
 	{
 		return lPrivate;
@@ -420,21 +476,21 @@ namespace JinEngine
 	{
 		return impl->GetShadowMapType();
 	}
-	float JPointLight::GetNear()const noexcept
+	float JPointLight::GetFrustumNear()const noexcept
 	{
-		return impl->GetNear();
+		return impl->GetFrustumNear();
 	}
-	float JPointLight::GetFar()const noexcept
+	float JPointLight::GetFrustumFar()const noexcept
 	{
-		return impl->GetFar();
+		return impl->GetFrustumFar();
 	}
-	float JPointLight::GetFalloffStart()const noexcept
+	float JPointLight::GetPower()const noexcept
 	{
-		return impl->GetFalloffStart();
+		return impl->GetPower();
 	}
-	float JPointLight::GetFalloffEnd()const noexcept
+	float JPointLight::GetRange()const noexcept
 	{
-		return impl->GetFalloffEnd();
+		return impl->GetRange();
 	}
 	float JPointLight::GetRadius()const noexcept
 	{
@@ -454,7 +510,7 @@ namespace JinEngine
 	}
 	void JPointLight::SetShadowResolution(const J_SHADOW_RESOLUTION sQuality)noexcept
 	{
-		if (sQuality == GetShadowResolution())
+		if (sQuality == GetShadowResolutionType())
 			return;
 
 		JLight::SetShadowResolution(sQuality);
@@ -467,14 +523,14 @@ namespace JinEngine
 
 		JLight::SetAllowDisplayShadowMap(value);
 		impl->SetAllowDisplayShadowMap(value);
-	} 
-	void JPointLight::SetFalloffStart(const float falloffStart)noexcept
-	{
-		impl->SetFalloffStart(falloffStart);
 	}
-	void JPointLight::SetFalloffEnd(const float falloffEnd)noexcept
+	void JPointLight::SetPower(const float power)noexcept
 	{
-		impl->SetFalloffEnd(falloffEnd);
+		impl->SetPower(power);
+	}
+	void JPointLight::SetRange(const float range)noexcept
+	{
+		impl->SetRange(range);
 	}
 	void JPointLight::SetRadius(const float radius)noexcept
 	{
@@ -483,7 +539,7 @@ namespace JinEngine
 	bool JPointLight::IsFrameDirted()const noexcept
 	{
 		return impl->IsFrameDirted();
-	}  
+	}
 	bool JPointLight::PassDefectInspection()const noexcept
 	{
 		if (JComponent::PassDefectInspection())
@@ -570,7 +626,7 @@ namespace JinEngine
 	}
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
-	{  
+	{
 		static_cast<JPointLight*>(ptr)->impl->DeRegisterPreDestruction();
 		JLightPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
@@ -583,26 +639,29 @@ namespace JinEngine
 		std::wstring guide;
 		size_t guid;
 		J_OBJECT_FLAG flag;
-		float sFalloffStart;
-		float sFalloffEnd;
+		bool isActivated;
+		float sPower;
+		float sRange;
 		float sRadius;
 
 		auto loadData = static_cast<JPointLight::LoadData*>(data);
 		std::wifstream& stream = loadData->stream;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
-		JFileIOHelper::LoadObjectIden(stream, guid, flag);
+		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
 		auto idenUser = lPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JPointLight::InitData>(guid, flag, owner), &lPrivate);
 		JUserPtr<JPointLight> litUser;
 		litUser.ConnnectChild(idenUser);
 
 		JLightPrivate::AssetDataIOInterface::LoadLightData(stream, litUser);
-		JFileIOHelper::LoadAtomicData(stream, sFalloffStart);
-		JFileIOHelper::LoadAtomicData(stream, sFalloffEnd);
-		JFileIOHelper::LoadAtomicData(stream, sRadius);
-		litUser->SetFalloffStart(sFalloffStart);
-		litUser->SetFalloffEnd(sFalloffEnd);
+		JObjectFileIOHelper::LoadAtomicData(stream, sPower);
+		JObjectFileIOHelper::LoadAtomicData(stream, sRange);
+		JObjectFileIOHelper::LoadAtomicData(stream, sRadius);
+		litUser->SetPower(sPower);
+		litUser->SetRange(sRange);
 		litUser->SetRadius(sRadius);
+		if (!isActivated)
+			litUser->DeActivate();
 		return litUser;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
@@ -619,12 +678,12 @@ namespace JinEngine
 
 		JPointLight::JPointLightImpl* impl = lit->impl.get();
 		std::wofstream& stream = storeData->stream;
-		 
-		JFileIOHelper::StoreObjectIden(stream, lit.Get());
+
+		JObjectFileIOHelper::StoreComponentIden(stream, lit.Get());
 		JLightPrivate::AssetDataIOInterface::StoreLightData(stream, lit);
-		JFileIOHelper::StoreAtomicData(stream, L"FallOffStart:", impl->falloffStart);
-		JFileIOHelper::StoreAtomicData(stream, L"FallOffEnd:", impl->falloffEnd);
-		JFileIOHelper::StoreAtomicData(stream, L"Radius:", impl->radius);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"Power:", impl->power);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"Range:", impl->range);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"Radius:", impl->radius);
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -639,7 +698,9 @@ namespace JinEngine
 			dLit->impl->SetFrameDirty();
 
 		dLit->impl->SetLastFrameUpdatedTrigger(false);
-		dLit->impl->SetLastFrameHotUpdatedTrigger(false); 
+		dLit->impl->SetLastFrameHotUpdatedTrigger(false);
+		if (dLit->impl->GetFrameDirty() == Graphic::Constants::gNumFrameResources)
+			dLit->impl->UpdateLightTransform();
 		return dLit->impl->IsFrameDirted();
 	}
 	void FrameUpdateInterface::UpdateFrame(JPointLight* lit, Graphic::JPointLightConstants& constant)noexcept
@@ -666,15 +727,15 @@ namespace JinEngine
 		if (lit->GetLightType() != J_LIGHT_TYPE::POINT)
 			return -1;
 
-		return static_cast<JPointLight*>(lit)->impl->PointLitFrame::GetUploadIndex();
+		return static_cast<JPointLight*>(lit)->impl->PointLitFrame::GetFrameIndex();
 	}
 	int FrameUpdateInterface::GetShadowMapFrameIndex(JLight* lit)noexcept
 	{
 		if (lit->GetLightType() != J_LIGHT_TYPE::POINT)
 			return -1;
-		 
-		return static_cast<JPointLight*>(lit)->impl->ShadowMapCubeDrawFrame::GetUploadIndex();
-	}  
+
+		return static_cast<JPointLight*>(lit)->impl->ShadowMapCubeDrawFrame::GetFrameIndex();
+	}
 	int FrameUpdateInterface::GetDepthTestPassFrameIndex(JLight* lit)noexcept
 	{
 		return -1;
@@ -709,7 +770,7 @@ namespace JinEngine
 		if (lit->GetLightType() != J_LIGHT_TYPE::POINT)
 			return false;
 
-		return static_cast<JPointLight*>(lit)->impl->ShadowMapCubeDrawFrame::HasMovedDirty(); 
+		return static_cast<JPointLight*>(lit)->impl->ShadowMapCubeDrawFrame::HasMovedDirty();
 	}
 	bool FrameUpdateInterface::HasShadowMapRecopyRequest(JLight* lit)noexcept
 	{
@@ -717,7 +778,7 @@ namespace JinEngine
 			return false;
 
 		return static_cast<JPointLight*>(lit)->impl->ShadowMapCubeDrawFrame::HasMovedDirty();
-	} 
+	}
 	bool FrameUpdateInterface::HasDepthTestPassRecopyRequest(JLight* lit)noexcept
 	{
 		return false;
@@ -732,15 +793,15 @@ namespace JinEngine
 		if (lit->GetLightType() != J_LIGHT_TYPE::POINT)
 			return -1;
 
-		return static_cast<JPointLight*>(lit)->impl->PointLitFrame::GetUploadIndex();
+		return static_cast<JPointLight*>(lit)->impl->PointLitFrame::GetFrameIndex();
 	}
 	int FrameIndexInterface::GetShadowMapFrameIndex(JLight* lit)noexcept
 	{
 		if (lit->GetLightType() != J_LIGHT_TYPE::POINT)
 			return -1;
 
-		return static_cast<JPointLight*>(lit)->impl->ShadowMapCubeDrawFrame::GetUploadIndex();
-	} 
+		return static_cast<JPointLight*>(lit)->impl->ShadowMapCubeDrawFrame::GetFrameIndex();
+	}
 	int FrameIndexInterface::GetDepthTestPassFrameIndex(JLight* lit)noexcept
 	{
 		return -1;

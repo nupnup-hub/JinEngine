@@ -43,7 +43,7 @@ namespace JinEngine
 			else
 			{
 				auto callable = data->second.ImportCallableMap.begin()->second;
-				return callable(nullptr, dir, Core::JFileImportHelpData(importPathdata.oriFileWPath, importPathdata.flag));
+				return callable(nullptr, dir, Core::JFileImportHelpData(importPathdata.oriFileWPath, (J_OBJECT_FLAG)importPathdata.flag));
 			}
 		}
 		else
@@ -52,7 +52,7 @@ namespace JinEngine
 			//이후에 JFileImporter 생성자 매개변수가 지금보다 늘어날시
 			//리팩토링 필요
 			//ex) callable 매개변수 참조자로 변경 or 생성함수 작성
-			const std::vector<J_RESOURCE_TYPE> rType = (*data->second.ClassifyCallable)(nullptr, Core::JFileImportHelpData(importPathdata.oriFileWPath, importPathdata.flag));
+			const std::vector<J_RESOURCE_TYPE> rType = (*data->second.ClassifyCallable)(nullptr, Core::JFileImportHelpData(importPathdata.oriFileWPath, (J_OBJECT_FLAG)importPathdata.flag));
 			const uint rCount = (uint)rType.size();
 
 			std::vector<JUserPtr<JResourceObject>> retVec;
@@ -64,7 +64,7 @@ namespace JinEngine
 				if (callable != data->second.ImportCallableMap.end())
 				{
 					std::vector<JUserPtr<JResourceObject>> res = (callable->second)(nullptr, dir,
-						Core::JFileImportHelpData(importPathdata.oriFileWPath, importPathdata.flag));
+						Core::JFileImportHelpData(importPathdata.oriFileWPath, (J_OBJECT_FLAG)importPathdata.flag));
 					const uint resCount = (uint)res.size();
 					for (uint j = 0; j < resCount; ++j)
 					{

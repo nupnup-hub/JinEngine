@@ -33,7 +33,7 @@ namespace JinEngine
 
 				bool isSelected = i == preSelected;
 				JUserPtr<JCamera> cam = Core::ConnectChildUserPtr<JCamera>(compVec[i]);
-				if (JGui::CheckBox(JCUtil::WstrToU8Str(cam->GetName()), isSelected))
+				if (JGui::CheckBox(JGui::CreateGuiLabel(cam, "JSceneCameraListCheckBox"), isSelected))
 				{
 					if(isSelected)
 						preSelected = i;

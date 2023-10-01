@@ -3,10 +3,10 @@
 #include"JSkeletonAssetPrivate.h" 
 #include"../JResourceObjectHint.h"
 #include"../JClearableInterface.h"
+#include"../../JObjectFileIOHelper.h"
 #include"../../Directory/JDirectory.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Application/JApplicationProject.h"
 #include<fstream>
@@ -208,26 +208,26 @@ namespace JinEngine
 			}
 		}
 	public:	 
-		static std::vector<Joint> ReadAssetData(const std::wstring& path)
+		static std::vector<Core::Joint> ReadAssetData(const std::wstring& path)
 		{
 			std::wifstream stream;
 			stream.open(path, std::ios::in | std::ios::binary);
 			if (!stream.is_open())
-				return std::vector<Joint>{};
+				return std::vector<Core::Joint>{};
 
 			uint jointCount;
-			std::vector<Joint> joint;
+			std::vector<Core::Joint> joint;
 
-			JFileIOHelper::LoadAtomicData(stream, jointCount);
+			JObjectFileIOHelper::LoadAtomicData(stream, jointCount);
 			joint.resize(jointCount);
 
 			for (uint i = 0; i < jointCount; ++i)
 			{
 				int parentIndex;
-				JFileIOHelper::LoadJString(stream, joint[i].name);
-				JFileIOHelper::LoadAtomicData(stream, parentIndex);
-				JFileIOHelper::LoadAtomicData(stream, joint[i].length);
-				JFileIOHelper::LoadMatrix4x4(stream, joint[i].inbindPose);
+				JObjectFileIOHelper::LoadJString(stream, joint[i].name);
+				JObjectFileIOHelper::LoadAtomicData(stream, parentIndex);
+				JObjectFileIOHelper::LoadAtomicData(stream, joint[i].length);
+				JObjectFileIOHelper::LoadMatrix4x4(stream, joint[i].inbindPose);
 				joint[i].parentIndex = parentIndex;
 			}
 			stream.close();
@@ -240,20 +240,20 @@ namespace JinEngine
 			if (!stream.is_open())
 				return false;
 
-			JFileIOHelper::StoreAtomicData(stream, L"JointCount:", skeleton->GetJointCount());
+			JObjectFileIOHelper::StoreAtomicData(stream, L"JointCount:", skeleton->GetJointCount());
 			const uint jointCount = skeleton->GetJointCount();
 			for (uint i = 0; i < skeleton->GetJointCount(); ++i)
 			{
-				const Joint joint = skeleton->GetJoint(i);
-				JFileIOHelper::StoreJString(stream, L"Name:", joint.name);
-				JFileIOHelper::StoreAtomicData(stream, L"ParentIndex:", joint.parentIndex);
-				JFileIOHelper::StoreAtomicData(stream, L"Length:", joint.length);
-				JFileIOHelper::StoreMatrix4x4(stream, L"InBindPose:", joint.inbindPose);
+				const Core::Joint joint = skeleton->GetJoint(i);
+				JObjectFileIOHelper::StoreJString(stream, L"Name:", joint.name);
+				JObjectFileIOHelper::StoreAtomicData(stream, L"ParentIndex:", joint.parentIndex);
+				JObjectFileIOHelper::StoreAtomicData(stream, L"Length:", joint.length);
+				JObjectFileIOHelper::StoreMatrix4x4(stream, L"InBindPose:", joint.inbindPose);
 			}
 			stream.close();
 			return true;
 		}
-		bool ImportSkeleton(std::vector<Joint>&& joint)
+		bool ImportSkeleton(std::vector<Core::Joint>&& joint)
 		{
 			skeleton = Core::JPtrUtil::MakeOwnerPtr<JSkeleton>(std::move(joint));
 			if (thisPointer.IsValid())
@@ -314,7 +314,7 @@ namespace JinEngine
 	JSkeletonAsset::InitData::InitData(const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
 		const Core::JTypeInstanceSearchHint& modelHint,
-		std::vector<Joint>&& joint)
+		std::vector<Core::Joint>&& joint)
 		:JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory),
 		modelHint(modelHint), 
 		joint(std::move(joint))
@@ -323,7 +323,7 @@ namespace JinEngine
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
 		const Core::JTypeInstanceSearchHint& modelHint,
-		std::vector<Joint>&& joint)
+		std::vector<Core::Joint>&& joint)
 		: JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory),
 		modelHint(modelHint), 
 		joint(std::move(joint))
@@ -334,7 +334,7 @@ namespace JinEngine
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
 		const Core::JTypeInstanceSearchHint& modelHint,
-		std::vector<Joint>&& joint)
+		std::vector<Core::Joint>&& joint)
 		: JResourceObject::InitData(JSkeletonAsset::StaticTypeInfo(), name, guid, flag, formatIndex, GetStaticResourceType(), directory),
 		modelHint(modelHint), 
 		joint(std::move(joint))
@@ -506,18 +506,18 @@ namespace JinEngine
 		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
-		loadMetaData->modelHint = JFileIOHelper::LoadHasObjectHint(stream);
-		JFileIOHelper::LoadAtomicData(stream, loadMetaData->isValidAvatar);
+		loadMetaData->modelHint = JObjectFileIOHelper::LoadHasIdenHint(stream);
+		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->isValidAvatar);
 		if (loadMetaData->isValidAvatar)
 		{  
 			for (uint32 i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
 			{
 				int index;
-				JFileIOHelper::LoadAtomicData(stream, index);
+				JObjectFileIOHelper::LoadAtomicData(stream, index);
 				loadMetaData->avatar.jointReference[i] = (uint8)index;
 			}
 		}
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->skeletonType); 
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->skeletonType); 
 
 		stream.close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
@@ -541,15 +541,15 @@ namespace JinEngine
 
 		//아바타 정보 저장 필요		
 		bool hasAvatar = skel->GetAvatar() != nullptr;
-		JFileIOHelper::StoreHasInstanceHint(stream, skel->impl->modelHint);
-		JFileIOHelper::StoreAtomicData(stream, L"HasAvatar:", hasAvatar);
+		JObjectFileIOHelper::StoreHasInstanceHint(stream, skel->impl->modelHint);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"HasAvatar:", hasAvatar);
 		if (hasAvatar)
 		{
 			JUserPtr<JAvatar> avatar = skel->GetAvatar();
 			for (uint i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
-				JFileIOHelper::StoreAtomicData(stream, std::to_wstring(i) + L"Index:", avatar->jointReference[i]);
+				JObjectFileIOHelper::StoreAtomicData(stream, std::to_wstring(i) + L"Index:", avatar->jointReference[i]);
 		}
-		JFileIOHelper::StoreEnumData(stream, L"SkeletonType:", skel->GetSkeletonType()); 
+		JObjectFileIOHelper::StoreEnumData(stream, L"SkeletonType:", skel->GetSkeletonType()); 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

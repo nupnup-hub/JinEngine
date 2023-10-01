@@ -10,11 +10,11 @@
 #include"../Directory/JDirectoryPrivate.h" 
 #include"../Directory/JFile.h" 
 #include"../Directory/JFileInitData.h"
+#include"../JObjectFileIOHelper.h"
 #include"../../Core/JCoreEssential.h"
 #include"../../Core/Identity/JIdenCreator.h"
 #include"../../Core/File/JFileConstant.h"
-#include"../../Core/File/JFilePathData.h"
-#include"../../Core/File/JFileIOHelper.h"
+#include"../../Core/File/JFilePathData.h" 
 #include"../../Core/Utility/JCommonUtility.h"
 #include"../../Graphic/JGraphic.h"
 #include"../../Graphic/GraphicResource/JGraphicResourceManager.h"
@@ -64,7 +64,13 @@ namespace JinEngine
 	}
 	void JResourceObjectIO::LoadEngineDirectory(const JUserPtr<JDirectory>& engineRootDir)
 	{
-		SearchDirectory(engineRootDir, false, true, (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE));
+		const J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED |
+			OBJECT_FLAG_UNDESTROYABLE |
+			OBJECT_FLAG_HIDDEN | 
+			OBJECT_FLAG_UNEDITABLE | 
+			OBJECT_FLAG_UNCOPYABLE | 
+			OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
+		SearchDirectory(engineRootDir, false, true, flag);
 	}
 	void JResourceObjectIO::LoadEngineResource(const JUserPtr<JDirectory>& engineRootDir)
 	{
@@ -79,6 +85,7 @@ namespace JinEngine
 		//flag
 		//subDirFlag
 		//defaultFolderCash indexing
+
 		std::vector<std::wstring> defaultFolderPath
 		{
 			JApplicationProject::ConfigPath(),
@@ -89,10 +96,10 @@ namespace JinEngine
 
 		std::vector<J_OBJECT_FLAG> flag
 		{
-			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE),
-			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE),
-			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE),
-			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE)
+			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE),
+			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE),
+			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE),
+			(J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE)
 		};
 
 		std::vector<JUserPtr<JDirectory>> defaultFolderCash;
@@ -118,8 +125,8 @@ namespace JinEngine
 		// defaultFolderCash[3] = projectContentsDir
 
 		//subDir Flag
-		const J_OBJECT_FLAG projectOtherDirFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE);
-		const J_OBJECT_FLAG projectContentDirFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE);
+		const J_OBJECT_FLAG projectOtherDirFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
+		const J_OBJECT_FLAG projectContentDirFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 		const J_OBJECT_FLAG userDefineDirFlag = OBJECT_FLAG_NONE;
 
 		SearchDirectory(defaultFolderCash[0], true, true, projectOtherDirFlag);
@@ -145,14 +152,14 @@ namespace JinEngine
 			if (!stream.is_open())
 				continue;
 
-			if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeGuidSymbol()))
+			if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeGuidSymbol()))
 				return;
 
 			size_t typeGuid = 0;
 			stream >> typeGuid;
 			Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
 
-			if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamLastOpenSymbol(*typeInfo)))
+			if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamLastOpenSymbol(*typeInfo)))
 				return;
 
 			bool isOpen = false;
@@ -248,23 +255,23 @@ namespace JinEngine
 		if (!stream.is_open())
 			return;
 
-		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamObjGuidSymbol()))
+		if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamObjGuidSymbol()))
 			return;
 		size_t guid = 0;
 		stream >> guid;
 
-		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeGuidSymbol()))
+		if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeGuidSymbol()))
 			return;
 		size_t typeGuid = 0;
 		stream >> typeGuid;
 
-		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamObjFlagSymbol()))
+		if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamObjFlagSymbol()))
 			return;
 		int flag = -1;
 		stream >> flag;
 
 		Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
-		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>()))
+		if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>()))
 			return;
 
 		int storeType = 0;
@@ -276,7 +283,7 @@ namespace JinEngine
 			return;
 		}
 
-		if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamFormatIndexSymbol()))
+		if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamFormatIndexSymbol()))
 			return;
 
 		int formatIndex = 0;
@@ -287,7 +294,7 @@ namespace JinEngine
 		{
 			if (canLoadResource)
 			{
-				if (!JFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamLastOpenSymbol(*typeInfo)))
+				if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamLastOpenSymbol(*typeInfo)))
 					return;
 
 				bool isOpen = false;

@@ -1,4 +1,4 @@
-#include"JDx12ShadowMap.h" 
+ï»¿#include"JDx12ShadowMap.h" 
 #include"../../JGraphicInfo.h"
 #include"../../JGraphicOption.h"
 #include"../../JGraphicUpdateHelper.h"
@@ -23,6 +23,7 @@
 #include"../../../Object/Component/Animator/JAnimatorPrivate.h"
 #include"../../../Object/Component/Light/JLight.h"
 #include"../../../Object/Component/Light/JLightPrivate.h"
+#include"../../../Object/Component/Light/JDirectionalLight.h"
 #include"../../../Object/Component/Light/JDirectionalLightPrivate.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../Object/Component/RenderItem/JRenderItemPrivate.h" 
@@ -45,18 +46,18 @@ namespace JinEngine::Graphic
 			CD3DX12_RESOURCE_BARRIER rsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(pResource, stateBefore, stateAfter);
 			cmdList->ResourceBarrier(1, &rsBarrier);
 		}
-		static std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout(const J_MESHGEOMETRY_TYPE meshType)noexcept
+		static std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout(const Core::J_MESHGEOMETRY_TYPE meshType)noexcept
 		{
 			switch (meshType)
 			{
-			case JinEngine::J_MESHGEOMETRY_TYPE::STATIC:
+			case JinEngine::Core::J_MESHGEOMETRY_TYPE::STATIC:
 			{
 				return
 				{
 					{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 				};
 			}
-			case JinEngine::J_MESHGEOMETRY_TYPE::SKINNED:
+			case JinEngine::Core::J_MESHGEOMETRY_TYPE::SKINNED:
 			{
 				return
 				{
@@ -70,18 +71,16 @@ namespace JinEngine::Graphic
 			}
 			return std::vector<D3D12_INPUT_ELEMENT_DESC>();
 		}
-		static void StuffMacro(std::vector<JMacroSet>& macro,
-			const J_MESHGEOMETRY_TYPE meshType,
-			const J_SHADOW_MAP_TYPE smType)noexcept
+		static void StuffMeshMacro(std::vector<JMacroSet>& macro, const Core::J_MESHGEOMETRY_TYPE meshType)noexcept
 		{
 			switch (meshType)
 			{
-			case JinEngine::J_MESHGEOMETRY_TYPE::STATIC:
+			case JinEngine::Core::J_MESHGEOMETRY_TYPE::STATIC:
 			{
 				macro.push_back({ "STATIC", "1" });
 				break;
 			}
-			case JinEngine::J_MESHGEOMETRY_TYPE::SKINNED:
+			case JinEngine::Core::J_MESHGEOMETRY_TYPE::SKINNED:
 			{
 				macro.push_back({ "SKINNED", "2" });
 				break;
@@ -89,7 +88,9 @@ namespace JinEngine::Graphic
 			default:
 				break;
 			}
-
+		}
+		static void StuffShadowMapMacro(std::vector<JMacroSet>& macro, const J_SHADOW_MAP_TYPE smType)noexcept
+		{
 			switch (smType)
 			{
 			case JinEngine::J_SHADOW_MAP_TYPE::NORMAL:
@@ -100,7 +101,7 @@ namespace JinEngine::Graphic
 			case JinEngine::J_SHADOW_MAP_TYPE::CSM:
 			{
 				macro.push_back({ "ARRAY", "2" });
-				macro.push_back({ "ARRAY_COUNT", std::to_string(JCsmOption::maxCountOfSplit)});
+				macro.push_back({ "ARRAY_COUNT", std::to_string(JCsmOption::maxCountOfSplit) });
 				break;
 			}
 			case JinEngine::J_SHADOW_MAP_TYPE::CUBE:
@@ -110,7 +111,12 @@ namespace JinEngine::Graphic
 			}
 			default:
 				break;
-			} 
+			}
+		}
+		static void StuffCsmMacro(std::vector<JMacroSet>& macro, const uint count)noexcept
+		{
+			macro.push_back({ "ARRAY", "2" });
+			macro.push_back({ "ARRAY_COUNT", std::to_string(count) });
 		}
 		static bool CanUseGs(const J_SHADOW_MAP_TYPE smType)noexcept
 		{
@@ -158,21 +164,61 @@ namespace JinEngine::Graphic
 		ID3D12Device* d3d12Device = static_cast<JDx12GraphicDevice*>(device)->GetDevice();
 		DXGI_FORMAT dsvFormat = static_cast<JDx12GraphicResourceManager*>(gM)->GetDepthStencilFormat();
 		BuildRootSignature(d3d12Device);
-		for (uint i = 0; i < (uint)J_SHADOW_MAP_TYPE::COUNT; ++i)
-			BuildPso(d3d12Device, dsvFormat, (J_SHADOW_MAP_TYPE)i);
+		for (uint i = 0; i < (uint)Core::J_MESHGEOMETRY_TYPE::COUNT; ++i)
+		{
+			normalShadowShaderData[i] = std::make_unique<JDx12GraphicShaderDataHolder>();
+			cubeShadowShaderData[i] = std::make_unique<JDx12GraphicShaderDataHolder>();
+
+			std::vector<JMacroSet> normalMacro;
+			std::vector<JMacroSet> cubeMacro;
+			StuffMeshMacro(normalMacro, (Core::J_MESHGEOMETRY_TYPE)i);
+			StuffMeshMacro(cubeMacro, (Core::J_MESHGEOMETRY_TYPE)i);
+			StuffShadowMapMacro(normalMacro, J_SHADOW_MAP_TYPE::NORMAL);
+			StuffShadowMapMacro(cubeMacro, J_SHADOW_MAP_TYPE::CUBE);
+
+			BuildPso(d3d12Device, dsvFormat, (Core::J_MESHGEOMETRY_TYPE)i, J_SHADOW_MAP_TYPE::NORMAL, normalMacro, *normalShadowShaderData[i]);
+			BuildPso(d3d12Device, dsvFormat, (Core::J_MESHGEOMETRY_TYPE)i, J_SHADOW_MAP_TYPE::CUBE, cubeMacro, *cubeShadowShaderData[i]);
+		}
+		for (uint i = 0; i < (uint)Core::J_MESHGEOMETRY_TYPE::COUNT; ++i)
+		{
+			for (uint j = 0; j < JCsmOption::maxCountOfSplit; ++j)
+			{
+				csmShaderData[i][j] = std::make_unique<JDx12GraphicShaderDataHolder>();
+				std::vector<JMacroSet> csmMacro;
+				StuffMeshMacro(csmMacro, (Core::J_MESHGEOMETRY_TYPE)i);
+				StuffCsmMacro(csmMacro, j + JCsmOption::minCountOfSplit);
+				BuildPso(d3d12Device, dsvFormat, (Core::J_MESHGEOMETRY_TYPE)i, J_SHADOW_MAP_TYPE::CSM, csmMacro, *csmShaderData[i][j]);
+			}
+		}
 	}
 	void JDx12ShadowMap::Clear()
 	{
 		mRootSignature = nullptr;
-		for (uint i = 0; i < (uint)J_LIGHT_TYPE::COUNT; ++i)
+		for (uint i = 0; i < (uint)Core::J_MESHGEOMETRY_TYPE::COUNT; ++i)
 		{
-			for (uint j = 0; j < (uint)J_MESHGEOMETRY_TYPE::COUNT; ++j)
-				gShaderData[i][j] = nullptr;
+			normalShadowShaderData[i] = nullptr;
+			cubeShadowShaderData[i] = nullptr;
+		}
+
+		for (uint i = 0; i < (uint)Core::J_MESHGEOMETRY_TYPE::COUNT; ++i)
+		{
+			for (uint j = 0; j < JCsmOption::maxCountOfSplit; ++j)
+				csmShaderData[i][j] = nullptr;
 		}
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12ShadowMap::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+	JDx12GraphicShaderDataHolder* JDx12ShadowMap::GetShaderDataHolder(const JDrawHelper& helper, const Core::J_MESHGEOMETRY_TYPE mType)
+	{
+		const J_SHADOW_MAP_TYPE smType = helper.lit->GetShadowMapType();
+		if (smType == J_SHADOW_MAP_TYPE::CSM)
+			return csmShaderData[(uint)mType][static_cast<JDirectionalLight*>(helper.lit.Get())->GetCsmSplitCount() - JCsmOption::minCountOfSplit].get();
+		else if (smType == J_SHADOW_MAP_TYPE::CUBE)
+			return cubeShadowShaderData[(uint)mType].get();
+		else
+			return normalShadowShaderData[(uint)mType].get();
 	}
 	bool JDx12ShadowMap::HasPreprocessing()const noexcept
 	{
@@ -272,10 +318,10 @@ namespace JinEngine::Graphic
 			cmdList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 			cmdList->OMSetRenderTargets(0, nullptr, false, &dsv);
 
-			BindLightFrameResource(cmdList, dx12Frame, helper);
+			BindLightFrameResource(cmdList, dx12Frame, helper, i);
 
-			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
-			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
+			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
 
 			DrawShadowMapGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec00, helper, JDrawCondition(helper, false, true, false), i);
 			DrawShadowMapGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec01, helper, JDrawCondition(helper, helper.scene->IsActivatedSceneTime(), true, false), i);
@@ -318,10 +364,10 @@ namespace JinEngine::Graphic
 			D3D12_CPU_DESCRIPTOR_HANDLE dsv = dx12Gm->GetCpuDsvDescriptorHandle(dsvHeapIndex);
 			cmdList->OMSetRenderTargets(0, nullptr, false, &dsv);
 
-			BindLightFrameResource(cmdList, dx12Frame, helper);
+			BindLightFrameResource(cmdList, dx12Frame, helper, i);
 
-			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
-			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
+			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
 
 			DrawShadowMapGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec00, helper, JDrawCondition(helper, false, true, false), i);
 			DrawShadowMapGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec01, helper, JDrawCondition(helper, helper.scene->IsActivatedSceneTime(), true, false), i);
@@ -366,8 +412,8 @@ namespace JinEngine::Graphic
 			const uint boundFrameIndex = helper.GetBoundingFrameIndex(renderItem);
 
 			//share same inedx culling and shadow
-			if (condition.allowCulling && cullUser.IsCulled(boundFrameIndex))
-				continue;
+			//if (condition.allowCulling && cullUser.IsCulled(boundFrameIndex))
+			//	continue;
 
 			JUserPtr<JMeshGeometry> mesh = renderItem->GetMesh();
 			const D3D12_VERTEX_BUFFER_VIEW vertexPtr = dx12Gm->VertexBufferView(mesh);
@@ -377,7 +423,7 @@ namespace JinEngine::Graphic
 			cmdList->IASetIndexBuffer(&indexPtr);
 			cmdList->IASetPrimitiveTopology(renderItem->GetPrimitiveType());
 
-			cmdList->SetPipelineState(gShaderData[smIndex][(uint)mesh->GetMeshGeometryType()]->pso.Get());
+			cmdList->SetPipelineState(GetShaderDataHolder(helper, mesh->GetMeshGeometryType())->pso.Get());
 
 			JAnimator* animator = gameObject[i]->GetComponentWithParent<JAnimator>().Get();
 			const uint submeshCount = (uint)mesh->GetTotalSubmeshCount();
@@ -393,8 +439,8 @@ namespace JinEngine::Graphic
 					D3D12_GPU_VIRTUAL_ADDRESS skinObjCBAddress = skinCB->GetGPUVirtualAddress() + helper.GetAnimationFrameIndex(animator) * skinCBByteSize;
 					cmdList->SetGraphicsRootConstantBufferView(aniCBIndex, skinObjCBAddress);
 				}
-				//hd »ç¿ë½Ã ³Ê¹« ´À·ÁÁö¹Ç·Î
-				//light´Â ÇöÀç hzb¸¸ »ç¿ë°¡´ÉÇÏ´Ù.
+				//hd ì‚¬ìš©ì‹œ ë„ˆë¬´ ëŠë ¤ì§€ë¯€ë¡œ
+				//lightëŠ” í˜„ìž¬ hzbë§Œ ì‚¬ìš©ê°€ëŠ¥í•˜ë‹¤.
 				if (queryResult != nullptr)
 					cmdList->SetPredication(queryResult, boundFrameIndex * 8, D3D12_PREDICATION_OP_EQUAL_ZERO);
 
@@ -402,13 +448,13 @@ namespace JinEngine::Graphic
 			}
 		}
 	}
-	void JDx12ShadowMap::BindLightFrameResource(ID3D12GraphicsCommandList* cmdList, JDx12FrameResource* dx12Frame, const JDrawHelper& helper)
+	void JDx12ShadowMap::BindLightFrameResource(ID3D12GraphicsCommandList* cmdList, JDx12FrameResource* dx12Frame, const JDrawHelper& helper, const int offset)
 	{
 		J_SHADOW_MAP_TYPE smType = helper.lit->GetShadowMapType();
 		if (smType == J_SHADOW_MAP_TYPE::NONE)
 			return;
 
-		const int frameIndex = helper.GetShadowMapDrawFrameIndex();
+		const int frameIndex = helper.GetShadowMapDrawFrameIndex() + offset;
 		if (smType == J_SHADOW_MAP_TYPE::NORMAL)
 			dx12Frame->smDrawCB->SetGraphicCBBufferView(cmdList, normalShadowMapDrawCBIndex, frameIndex);
 		else if (smType == J_SHADOW_MAP_TYPE::CSM)
@@ -446,57 +492,55 @@ namespace JinEngine::Graphic
 
 		mRootSignature->SetName(L"ShadowMapDraw RootSignature");
 	}
-	void JDx12ShadowMap::BuildPso(ID3D12Device* device, const DXGI_FORMAT dsvFormat, const J_SHADOW_MAP_TYPE smType)
+	void JDx12ShadowMap::BuildPso(ID3D12Device* device,
+		const DXGI_FORMAT dsvFormat,
+		const Core::J_MESHGEOMETRY_TYPE meshType,
+		const J_SHADOW_MAP_TYPE smType,
+		const std::vector<JMacroSet>& macroSet,
+		_Out_ JDx12GraphicShaderDataHolder& data)
 	{
-		std::wstring gShaderPath = JApplicationEngine::ShaderPath() + L"\\ShadowMap.hlsl";
-		const uint smIndex = (uint)smType; 
-		for (uint i = 0; i < (uint)J_MESHGEOMETRY_TYPE::COUNT; ++i)
-		{ 
-			std::vector<JMacroSet> macro;
-			gShaderData[smIndex][i] = std::make_unique<JDx12GraphicShaderDataHolder>();
-			auto gShaderDataPtr = gShaderData[smIndex][i].get();
+		std::wstring gShaderPath = JApplicationEngine::ShaderPath() + L"\\ShadowMapDraw.hlsl";
+		const uint smIndex = (uint)smType;
 
-			gShaderDataPtr->inputLayout = GetInputLayout((J_MESHGEOMETRY_TYPE)i);
-			StuffMacro(macro, (J_MESHGEOMETRY_TYPE)i, smType);
-			 
-			std::vector<D3D_SHADER_MACRO> d3dMacro = JDxShaderDataUtil::ToD3d12Macro(macro);
-			gShaderDataPtr->vs = JD3DUtility::CompileShader(gShaderPath, d3dMacro.data(), "VS", "vs_5_1");
-			if (CanUseGs(smType))
-				gShaderDataPtr->gs = JD3DUtility::CompileShader(gShaderPath, d3dMacro.data(), "GS", "gs_5_1");
+		data.inputLayout = GetInputLayout((Core::J_MESHGEOMETRY_TYPE)meshType);
+		std::vector<D3D_SHADER_MACRO> d3dMacro = JDxShaderDataUtil::ToD3d12Macro(macroSet);
+		data.vs = JD3DUtility::CompileShader(gShaderPath, d3dMacro.data(), "VS", "vs_5_1");
+		if (CanUseGs(smType))
+			data.gs = JD3DUtility::CompileShader(gShaderPath, d3dMacro.data(), "GS", "gs_5_1");
 
-			D3D12_GRAPHICS_PIPELINE_STATE_DESC newShaderPso;
-			ZeroMemory(&newShaderPso, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-			newShaderPso.InputLayout = { gShaderDataPtr->inputLayout.data(), (uint)gShaderDataPtr->inputLayout.size() };
-			newShaderPso.pRootSignature = mRootSignature.Get();
-			newShaderPso.VS =
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC newShaderPso;
+		ZeroMemory(&newShaderPso, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+		newShaderPso.InputLayout = { data.inputLayout.data(), (uint)data.inputLayout.size() };
+		newShaderPso.pRootSignature = mRootSignature.Get();
+		newShaderPso.VS =
+		{
+			reinterpret_cast<BYTE*>(data.vs->GetBufferPointer()),
+			data.vs->GetBufferSize()
+		};
+		if (data.gs != nullptr)
+		{
+			newShaderPso.GS =
 			{
-				reinterpret_cast<BYTE*>(gShaderDataPtr->vs->GetBufferPointer()),
-				gShaderDataPtr->vs->GetBufferSize()
+				reinterpret_cast<BYTE*>(data.gs->GetBufferPointer()),
+				data.gs->GetBufferSize()
 			};
-			if (gShaderDataPtr->gs != nullptr)
-			{
-				newShaderPso.GS =
-				{
-					reinterpret_cast<BYTE*>(gShaderDataPtr->gs->GetBufferPointer()),
-					gShaderDataPtr->gs->GetBufferSize()
-				};
-			}
-
-			newShaderPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-			newShaderPso.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-			newShaderPso.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-			newShaderPso.SampleMask = UINT_MAX;
-			newShaderPso.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-			newShaderPso.DSVFormat = dsvFormat;
-			newShaderPso.DepthStencilState.StencilEnable = false;
-			newShaderPso.RasterizerState.DepthBias = 100000;
-			newShaderPso.RasterizerState.DepthBiasClamp = 0.0f;
-			newShaderPso.RasterizerState.SlopeScaledDepthBias = 1.0f;
-			newShaderPso.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
-			newShaderPso.NumRenderTargets = 0;
-			newShaderPso.SampleDesc.Count = 1;
-			newShaderPso.SampleDesc.Quality = 0;
-			ThrowIfFailedG(device->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(gShaderDataPtr->pso.GetAddressOf())));
 		}
+
+		newShaderPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		newShaderPso.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		newShaderPso.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		newShaderPso.SampleMask = UINT_MAX;
+		newShaderPso.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		//newShaderPso.DSVFormat = dsvFormat;
+		newShaderPso.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+		newShaderPso.DepthStencilState.StencilEnable = false; 
+		newShaderPso.RasterizerState.DepthBias = 100000 * 0.25f;
+		newShaderPso.RasterizerState.DepthBiasClamp = 0.0f;
+		newShaderPso.RasterizerState.SlopeScaledDepthBias = 1.25f;
+		newShaderPso.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+		newShaderPso.NumRenderTargets = 0;
+		newShaderPso.SampleDesc.Count = 1;
+		newShaderPso.SampleDesc.Quality = 0;
+		ThrowIfFailedG(device->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(data.pso.GetAddressOf())));
 	}
 }

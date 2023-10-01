@@ -6,10 +6,10 @@
 #include"../JResourceManager.h"
 #include"../JResourceObjectUserInterface.h" 
 #include"../../Directory/JDirectory.h"
+#include"../../JObjectFileIOHelper.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Core/Guid/JGuidCreator.h"
-#include"../../../Core/File/JFileIOHelper.h" 
+#include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Math/JMathHelper.h"
 #include"../../../Application/JApplicationProject.h"
 #include"../../../Graphic/JGraphicConstants.h"
@@ -503,28 +503,28 @@ namespace JinEngine
 			JVector4<float> sAlbedoColor;
 			JMatrix4x4 sMatTransform;
 
-			JFileIOHelper::LoadAtomicData(stream, sShadow);
-			JFileIOHelper::LoadAtomicData(stream, sLight);
-			JFileIOHelper::LoadAtomicData(stream, sAlbedoOnly); 
-			JFileIOHelper::LoadAtomicData(stream, sIsSkyMateral);
-			JFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial);
-			JFileIOHelper::LoadAtomicData(stream, sAlphaclip);
+			JObjectFileIOHelper::LoadAtomicData(stream, sShadow);
+			JObjectFileIOHelper::LoadAtomicData(stream, sLight);
+			JObjectFileIOHelper::LoadAtomicData(stream, sAlbedoOnly); 
+			JObjectFileIOHelper::LoadAtomicData(stream, sIsSkyMateral);
+			JObjectFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial);
+			JObjectFileIOHelper::LoadAtomicData(stream, sAlphaclip);
 
-			JFileIOHelper::LoadAtomicData(stream, sNonCulling);
-			JFileIOHelper::LoadAtomicData(stream, sPrimitiveType);
-			JFileIOHelper::LoadAtomicData(stream, sDepthComparesionFunc);
+			JObjectFileIOHelper::LoadAtomicData(stream, sNonCulling);
+			JObjectFileIOHelper::LoadAtomicData(stream, sPrimitiveType);
+			JObjectFileIOHelper::LoadAtomicData(stream, sDepthComparesionFunc);
 
-			JFileIOHelper::LoadAtomicData(stream, sMetallic);
-			JFileIOHelper::LoadAtomicData(stream, sRoughness);
+			JObjectFileIOHelper::LoadAtomicData(stream, sMetallic);
+			JObjectFileIOHelper::LoadAtomicData(stream, sRoughness);
 
-			JFileIOHelper::LoadVector4(stream, sAlbedoColor);
-			JFileIOHelper::LoadMatrix4x4(stream, sMatTransform);
+			JObjectFileIOHelper::LoadVector4(stream, sAlbedoColor);
+			JObjectFileIOHelper::LoadMatrix4x4(stream, sMatTransform);
 
-			JUserPtr<JTexture> sAlbedoMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
-			JUserPtr<JTexture> sNormalMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
-			JUserPtr<JTexture> sHeightMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
-			JUserPtr<JTexture> sRoughnessMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
-			JUserPtr<JTexture> sAmbientOcclusionMap = JFileIOHelper::LoadHasObjectIden<JTexture>(stream);
+			JUserPtr<JTexture> sAlbedoMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(stream);
+			JUserPtr<JTexture> sNormalMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(stream);
+			JUserPtr<JTexture> sHeightMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(stream);
+			JUserPtr<JTexture> sRoughnessMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(stream);
+			JUserPtr<JTexture> sAmbientOcclusionMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(stream);
 			stream.close();
 
 			canUpdateShader = false;
@@ -561,28 +561,28 @@ namespace JinEngine
 			if (!stream.is_open())
 				return false;
 
-			JFileIOHelper::StoreAtomicData(stream, L"Shadow", shadow);
-			JFileIOHelper::StoreAtomicData(stream, L"Light", light);
-			JFileIOHelper::StoreAtomicData(stream, L"AlbedoOnly", albedoMapOnly); 
-			JFileIOHelper::StoreAtomicData(stream, L"SkyMaterial", isSkyMateral);
-			JFileIOHelper::StoreAtomicData(stream, L"DebugMaterial", isDebugMaterial);
-			JFileIOHelper::StoreAtomicData(stream, L"AlphaClip", alphaClip);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"Shadow", shadow);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"Light", light);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"AlbedoOnly", albedoMapOnly); 
+			JObjectFileIOHelper::StoreAtomicData(stream, L"SkyMaterial", isSkyMateral);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"DebugMaterial", isDebugMaterial);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"AlphaClip", alphaClip);
 
-			JFileIOHelper::StoreAtomicData(stream, L"NonCulling", nonCulling);
-			JFileIOHelper::StoreAtomicData(stream, L"PrimitiveType", (int)primitiveType);
-			JFileIOHelper::StoreAtomicData(stream, L"DepthComparesionFunc", (int)depthComparesionFunc);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"NonCulling", nonCulling);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"PrimitiveType", (int)primitiveType);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"DepthComparesionFunc", (int)depthComparesionFunc);
 
-			JFileIOHelper::StoreAtomicData(stream, L"Metallic", metallic);
-			JFileIOHelper::StoreAtomicData(stream, L"Roughness", roughness);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"Metallic", metallic);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"Roughness", roughness);
 
-			JFileIOHelper::StoreVector4(stream, L"AlbedoColor", albedoColor);
-			JFileIOHelper::StoreMatrix4x4(stream, L"Matransform", matTransform);
+			JObjectFileIOHelper::StoreVector4(stream, L"AlbedoColor", albedoColor);
+			JObjectFileIOHelper::StoreMatrix4x4(stream, L"Matransform", matTransform);
 
-			JFileIOHelper::StoreHasObjectIden(stream, albedoMap.Get());
-			JFileIOHelper::StoreHasObjectIden(stream, normalMap.Get());
-			JFileIOHelper::StoreHasObjectIden(stream, heightMap.Get());
-			JFileIOHelper::StoreHasObjectIden(stream, roughnessMap.Get());
-			JFileIOHelper::StoreHasObjectIden(stream, ambientOcclusionMap.Get());
+			JObjectFileIOHelper::_StoreHasIden(stream, albedoMap.Get());
+			JObjectFileIOHelper::_StoreHasIden(stream, normalMap.Get());
+			JObjectFileIOHelper::_StoreHasIden(stream, heightMap.Get());
+			JObjectFileIOHelper::_StoreHasIden(stream, roughnessMap.Get());
+			JObjectFileIOHelper::_StoreHasIden(stream, ambientOcclusionMap.Get());
 
 			stream.close();
 			return true;
@@ -1011,7 +1011,7 @@ namespace JinEngine
 	}
 	uint FrameUpdateInterface::GetMaterialFrameIndex(JMaterial* mat)noexcept
 	{
-		return mat->impl->MaterialFrame::GetUploadIndex();
+		return mat->impl->MaterialFrame::GetFrameIndex();
 	}
 	bool FrameUpdateInterface::IsLastFrameUpdated(JMaterial* mat)
 	{
@@ -1024,7 +1024,7 @@ namespace JinEngine
 
 	uint FrameIndexInterface::GetMaterialFrameIndex(JMaterial* mat)noexcept
 	{
-		return mat->impl->MaterialFrame::GetUploadIndex();
+		return mat->impl->MaterialFrame::GetFrameIndex();
 	}
  
 	void UpdateShaderInterface::OnUpdateShaderTrigger(const JUserPtr<JMaterial>& mat)noexcept

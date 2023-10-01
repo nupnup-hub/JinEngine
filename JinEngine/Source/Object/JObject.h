@@ -46,6 +46,7 @@ namespace JinEngine
 		J_OBJECT_FLAG GetFlag()const noexcept;
 		virtual J_OBJECT_TYPE GetObjectType()const noexcept = 0;
 	public:
+		bool CanControlIdentifiable()const noexcept final;
 		bool HasFlag(const J_OBJECT_FLAG flag)const noexcept;
 	protected:
 		JObject(const InitData& initData);

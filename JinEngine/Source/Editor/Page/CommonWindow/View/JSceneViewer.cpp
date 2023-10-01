@@ -50,9 +50,12 @@ namespace JinEngine
 			{ 
 				UpdateMouseClick(); 
 				UpdateMouseWheel();
+			 
 				camList->Update(scene);
-				//camList->DisplayCameraList(scene.Get(), "Viewer", JGui::GetMainViewport()->Size * 0.15f);
 				selectedCam = camList->GetSelectedCam(scene);
+				editorCamCtrl->Update(selectedCam.Get(), JGui::GetMousePos().x, JGui::GetMousePos().y, J_GUI_FOCUS_FLAG_CHILD_WINDOW);
+
+				//camList->DisplayCameraList(scene.Get(), "Viewer", JGui::GetMainViewport()->Size * 0.15f);
  
 				//Test Code
 				/*
@@ -69,8 +72,7 @@ namespace JinEngine
 					shiroBack.Clear();*/
 
 				if (selectedCam.IsValid())
-				{
-					editorCamCtrl->Update(selectedCam.Get(), JGui::GetMousePos().x, JGui::GetMousePos().y, J_GUI_FOCUS_FLAG_CHILD_WINDOW);
+				{ 
 					JGuiImageInfo info(selectedCam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
 					info.useFirstHandle = false;
 					JGui::Image(info, JGui::GetWindowSize());

@@ -289,6 +289,7 @@ namespace JinEngine
 			}
 			return false;
 		}
+		/*
 		JOwnerPtr<JTypeBase> JTypeInfo::ReleaseInstance(IdentifierType iden)noexcept
 		{
 			if (instanceData == nullptr)
@@ -307,6 +308,7 @@ namespace JinEngine
 			}
 			return JOwnerPtr<JTypeBase>{};
 		}
+		*/
 		bool JTypeInfo::AddPropertyInfo(JPropertyInfo* newProperty)
 		{
 			if (memberData == nullptr)

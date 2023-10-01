@@ -3,19 +3,18 @@
 #include"../../Object/Component/Camera/JCamera.h"
 #include"../../Object/Component/Transform/JTransform.h"
 #include"../../Core/Time/JGameTimer.h"  
-#include"../../Window/JWindowPrivate.h"
-#include<DirectXMath.h> 
+#include"../../Core/Math/JVectorExtend.h"
+#include"../../Window/JWindowPrivate.h" 
 
-using namespace DirectX;
 namespace JinEngine
 {
 	namespace Editor
 	{
-		namespace 
+		namespace
 		{
-			static constexpr float camDeltaFactor = 5.0f;
+			static constexpr float camDeltaFactor = 0.1f;
 			static constexpr float movementFactorMax = 10.0f;
-			static constexpr float movementFactorMin = 1.0f;
+			static constexpr float movementFactorMin = 0.5f;
 		}
 		JEditorCameraControl::JEditorCameraControl()
 		{
@@ -24,13 +23,13 @@ namespace JinEngine
 		}
 		JEditorCameraControl::~JEditorCameraControl() {}
 		void JEditorCameraControl::Update(JCamera* sceneCamera, float x, float y, const J_GUI_FOCUS_FLAG_ wndFocusFlag)
-		{ 
+		{
 			if (JGui::IsCurrentWindowFocused(wndFocusFlag))
 			{
 				if (JGui::IsMouseHoveringRect(JGui::GetWindowPos(), JGui::GetWindowPos() + JGui::GetWindowSize()))
 					MouseMove(sceneCamera, x, y);
 				KeyboardInput(sceneCamera);
-			}
+			}	 
 			preMousePos.x = x;
 			preMousePos.y = y;
 		}
@@ -49,16 +48,12 @@ namespace JinEngine
 			ReleaseCapture();
 		}
 		void JEditorCameraControl::MouseMove(JCamera* sceneCamera, float x, float y)
-		{ 
+		{
 			if (JGui::IsMouseDown(Core::J_MOUSE_BUTTON::RIGHT))
-			{
-				// Make each pixel correspond to a quarter of a degree.
-				float dx = XMConvertToRadians(x - preMousePos.x) * camDeltaFactor;
-				float dy = XMConvertToRadians(y - preMousePos.y) * camDeltaFactor;
-				JVector3<float> newRot = sceneCamera->GetTransform()->GetRotation();
-				newRot.y += dx;
-				newRot.x += dy;
-				sceneCamera->GetTransform()->SetRotation(newRot);
+			{ 
+				float dx = (x - preMousePos.x) * camDeltaFactor;
+				float dy = (y - preMousePos.y) * camDeltaFactor;  
+				sceneCamera->GetTransform()->SetRotation(sceneCamera->GetTransform()->GetRotation() + JVector3F(dy, dx, 0));
 			}
 		}
 		void JEditorCameraControl::KeyboardInput(JCamera* sceneCamera)
@@ -66,25 +61,22 @@ namespace JinEngine
 			const float dt = JEngineTimer::Data().DeltaTime();
 			bool isChanged = false;
 			JUserPtr<JTransform> camTransform = sceneCamera->GetTransform();
-			JVector3<float> oldPosF = camTransform->GetPosition();
-			XMVECTOR newPosV = camTransform->GetPosition().ToXmV();
+			JVector3<float> oldPos = camTransform->GetPosition();
+			JVector3<float> newPos = camTransform->GetPosition();
 
 			if (GetAsyncKeyState('W') & 0x8000)
-				newPosV += XMVectorScale(camTransform->GetFront().ToXmV(), 0.01f * movementFactor);
+				newPos += camTransform->GetFront() * (0.01f * movementFactor);
 			if (GetAsyncKeyState('S') & 0x8000)
-				newPosV += XMVectorScale(-camTransform->GetFront().ToXmV(), 0.01f * movementFactor);
+				newPos += -camTransform->GetFront() * (0.01f * movementFactor);
 			if (GetAsyncKeyState('A') & 0x8000)
-				newPosV += XMVectorScale(-camTransform->GetRight().ToXmV(), 0.01f * movementFactor);
+				newPos += -camTransform->GetRight() * (0.01f * movementFactor);
 			if (GetAsyncKeyState('D') & 0x8000)
-				newPosV += XMVectorScale(camTransform->GetRight().ToXmV(), 0.01f * movementFactor);
-
-			XMFLOAT3 newPosF;
-			XMStoreFloat3(&newPosF, newPosV);
-			if (newPosF.x != oldPosF.x || newPosF.y != oldPosF.y || newPosF.z != oldPosF.z)
-				camTransform->SetPosition(newPosF);
+				newPos += camTransform->GetRight() * (0.01f * movementFactor);
+			  
+			camTransform->SetPosition(newPos);
 		}
 		void JEditorCameraControl::AddMovementFactor(const float delta)
-		{ 
+		{
 			movementFactor = std::clamp(movementFactor + delta, movementFactorMin, movementFactorMax);
 		}
 	}

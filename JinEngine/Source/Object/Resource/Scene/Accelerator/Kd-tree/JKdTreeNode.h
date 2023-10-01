@@ -92,8 +92,7 @@ namespace JinEngine
 			JAcceleratorAlignInfo::AlignPassCondPtr cond = nullptr);
 	private:
 		JKdTreeNode* FindRightLeafNode() noexcept; 
-		JUserPtr<JGameObject> FindIFirstntersect(JAcceleratorIntersectInfo& info)const noexcept;
-		void FindIntersectAscendingSort(JAcceleratorIntersectInfo& info)const noexcept;
+		JAcceleratorIntersectInfo::Result FindFirstntersect(JAcceleratorIntersectInfo& info)const noexcept;
 		void FindIntersectNotSort(JAcceleratorIntersectInfo& info)const noexcept;
 		void FindContainNotSort(JAcceleratorContainInfo& info)const noexcept;
 	public:

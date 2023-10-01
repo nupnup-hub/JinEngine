@@ -6,7 +6,7 @@
 #include"Culling/JCullingUserAccess.h"   
 #include"../Object/Component/JComponentType.h"
 #include"../Object/Component/RenderItem/JRenderLayer.h"
-#include"../Object/Resource/Mesh/JMeshType.h"
+#include"../Core/Geometry/Mesh/JMeshType.h"
 #include<vector>
 #include<memory>
 
@@ -47,7 +47,9 @@ namespace JinEngine
 				static constexpr float defaultDownCapacityFactor = 2.0f;
 				static constexpr uint defaultDownCapacityCountMax = 3600;
 			public:
+				//buffer count
 				uint count = 0;
+				//buffer capacity
 				uint capacity = 0;
 			public:
 				float upCapacityFactor = defaultUpCapacityFactor;
@@ -64,10 +66,10 @@ namespace JinEngine
 				std::unique_ptr<GetElementCountT::Callable> getElement = nullptr;
 				std::vector<std::unique_ptr<NotifyUpdateCapacityT::Callable>> notifyUpdateCapacity;
 			public: 
-				//accumulated upload count
-				//필요한 upload data만 사용
-				uint offset = 0;
-				uint setDirty = 0; 
+				uint uploadCountPerTarget = 0;
+				uint uploadOffset = 0;
+				uint setDirty = 0;
+			public:   
 				bool useGetMultiCount = true;
 			};
 			struct BindingTextureData : public UpdateDataBase
@@ -87,6 +89,9 @@ namespace JinEngine
 			bool hasRecompileShader;
 		public:
 			std::vector<std::unique_ptr<GetElementMultiCountT::Callable>> getElementMultiCount;
+		public:
+			void BeginUpdatingDrawTarget();
+			void EndUpdatingDrawTarget();
 		public:
 			void Clear();
 			void RegisterCallable(J_UPLOAD_FRAME_RESOURCE_TYPE type, GetElementCountT::Ptr getCountPtr);
@@ -156,7 +161,7 @@ namespace JinEngine
 			int GetShadowMapDrawFrameIndex()const noexcept;
 			int GetLitDepthTestPassFrameIndex()const noexcept;
 			int GetLitHzbOccComputeFrameIndex()const noexcept;
-			const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept;
+			const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)const noexcept;
 		public:
 			static int GetObjectFrameIndex(JRenderItem* rItem)noexcept;
 			static int GetBoundingFrameIndex(JRenderItem* rItem)noexcept;
@@ -172,7 +177,8 @@ namespace JinEngine
 		public:
 			bool CanDrawShadowMap()const noexcept;
 			bool CanOccCulling()const noexcept;
-			bool CanDispatchWorkIndex()const noexcept;  
+			bool CanDispatchWorkIndex()const noexcept; 
+			bool UsePerspectiveProjection()const noexcept;
 		public:
 			void DispatchWorkIndex(const uint count, _Out_ uint& stIndex, _Out_ uint& edIndex)const noexcept;
 		public:

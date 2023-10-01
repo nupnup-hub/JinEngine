@@ -6,11 +6,11 @@
 #include"../Directory/JFileInitData.h"
 #include"../Directory/JDirectory.h" 
 #include"../Directory/JDirectoryPrivate.h"
+#include"../JObjectFileIOHelper.h"
 #include"../../Core/Utility/JCommonUtility.h"
 #include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/Reflection/JTypeImplBase.h"
-#include"../../Core/File/JFileConstant.h"
-#include"../../Core/File/JFileIOHelper.h"
+#include"../../Core/File/JFileConstant.h" 
 #include"../../Editor/Interface/JEditorObjectHandleInterface.h"
 #include"../../Application/JApplicationEngine.h"
 #include"../../Application/JApplicationProject.h"
@@ -200,9 +200,9 @@ namespace JinEngine
 			JResourceObject::StoreData storeData(thisPointer);
 			static_cast<JResourceObjectPrivate&>(thisPointer->PrivateInterface()).GetAssetDataIOInterface().StoreAssetData(&storeData);
 			if (!RTypeCommonCall::GetRTypeHint(thisPointer->GetResourceType()).isFixedAssetFile)
-				JFileIOHelper::CombineFile(std::vector<std::wstring>{thisPointer->GetMetaFilePath(), thisPointer->GetPath()}, GetCacheFilePath(thisPointer.Get()));
+				JObjectFileIOHelper::CombineFile(std::vector<std::wstring>{thisPointer->GetMetaFilePath(), thisPointer->GetPath()}, GetCacheFilePath(thisPointer.Get()));
 			else
-				JFileIOHelper::CopyFile(thisPointer->GetMetaFilePath(), GetCacheFilePath(thisPointer.Get()));
+				JObjectFileIOHelper::CopyFile(thisPointer->GetMetaFilePath(), GetCacheFilePath(thisPointer.Get()));
 		}
 	public: 
 		void ConvertToActFileData() noexcept
@@ -513,7 +513,7 @@ namespace JinEngine
 
 		auto rInit = static_cast<JResourceObject::InitData*>(data);
 
-		JFileIOHelper::LoadObjectIden(stream, rInit->guid, rInit->flag);
+		JObjectFileIOHelper::LoadObjectIden(stream, rInit->guid, rInit->flag);
 		std::wstring guide;
 		std::wstring format;
 		int rType;
@@ -541,7 +541,7 @@ namespace JinEngine
 		if (!stream.is_open() || stream.eof())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
  
-		JFileIOHelper::StoreObjectIden(stream, rUser.Get());
+		JObjectFileIOHelper::StoreObjectIden(stream, rUser.Get());
 
 		stream << Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>() << (int)rUser->GetResourceType() << '\n';
 		stream << Core::JFileConstant::StreamFormatSymbol() << rUser->GetFormat() << '\n';
@@ -559,9 +559,20 @@ namespace JinEngine
 	{
 		JResourceObject::JResourceObjectImpl::MoveRFile(rObj, toDir);
 	}
+	/**
+	* DeleteFile 호출자는 함수호출이후 JResourceObject Destroy에 대한 책임을 진다.
+	*/
 	void FileInterface::DeleteFile(JResourceObject* rObj)noexcept
 	{
 		JResourceObject::JResourceObjectImpl::DeleteRFile(rObj);
+		//함수 호출자에게 책임을 전가한다.
+		//JIdentifier 들은 보통 BeginDestroy함수를 통해 삭제가 되며
+		//JResourceObject는 특수하게 resource가 없어져도 engine내부에 file, hardware disk에 data가 존재하며
+		//일반적인 경우 JResourceObject만 삭제하면 되지만 engine을 통해 hardware disk상에서 data를 지워야 하는 특수한경우가 존재한다.
+		//BeginDestroy에 매개변수를 통해 처리해도 되지만 JResourceObject계통만에 특수한 경우고 
+		//DeleteFile 호출하는 clsss가 JWindowDirectory(Editor)뿐이므로 우선은 따로 JWindowDirectory 책임을 지고 올바른 호출을 하는 방향으로
+		//구성한다. 
+		//추후 BeginDestroy에 여러 조건이 필요해지는 경우 수청한다
 		//JResourceObject::BeginForcedDestroy(rObj);
 	}
 

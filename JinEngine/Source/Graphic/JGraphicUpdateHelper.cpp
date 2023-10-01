@@ -44,6 +44,18 @@ namespace JinEngine
 			return hasCallable;
 		}
 
+		void JUpdateHelper::BeginUpdatingDrawTarget()
+		{
+			const uint uCount = UDataCount();
+			for (uint i = 0; i < uCount; ++i)
+				uData[i].uploadCountPerTarget = 0;
+		}
+		void JUpdateHelper::EndUpdatingDrawTarget()
+		{
+			const uint uCount = UDataCount();
+			for (uint i = 0; i < uCount; ++i)
+				uData[i].uploadOffset += uData[i].uploadCountPerTarget;
+		}
 		void JUpdateHelper::Clear()
 		{
 			const uint uCount = UDataCount();
@@ -51,7 +63,8 @@ namespace JinEngine
 			{
 				uData[i].count = 0;
 				uData[i].capacity = 0; 
-				uData[i].offset = 0;
+				uData[i].uploadCountPerTarget = 0;
+				uData[i].uploadOffset = 0;
 				//uData[i].setDirty = false;
 				if (uData[i].setDirty > 0)
 					--uData[i].setDirty;
@@ -236,7 +249,7 @@ namespace JinEngine
 			JLightPrivate* lp = static_cast<JLightPrivate*>(&lit->PrivateInterface());
 			return lp->GetFrameIndexInterface().GetHzbOccComputeFrameIndex(lit.Get()); 
 		}
-		const std::vector<JUserPtr<JGameObject>>& JDrawHelper::GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept
+		const std::vector<JUserPtr<JGameObject>>& JDrawHelper::GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)const noexcept
 		{
 			return SceneCashInterface::GetGameObjectCashVec(scene, rLayer, meshType);
 		} 
@@ -327,6 +340,27 @@ namespace JinEngine
 		{
 			return allowMutilthreadDraw && threadIndex != -1 && threadCount != -1;
 		}
+		bool JDrawHelper::UsePerspectiveProjection()const noexcept
+		{ 
+			bool isPerspective = true;
+			if (drawType == DRAW_TYPE::SCENE)
+			{
+				if (cam != nullptr)
+					isPerspective = !cam->IsOrthoCamera();
+				else if (lit != nullptr)
+					isPerspective = lit->GetLightType() == J_LIGHT_TYPE::POINT || lit->GetLightType() == J_LIGHT_TYPE::SPOT;
+			}
+			else if (drawType == DRAW_TYPE::SHADOW_MAP)
+				isPerspective = lit->GetLightType() == J_LIGHT_TYPE::POINT || lit->GetLightType() == J_LIGHT_TYPE::SPOT;
+			else if (drawType == DRAW_TYPE::OCC)
+			{
+				if (occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+					isPerspective = !cam->IsOrthoCamera();
+				else
+					isPerspective = lit->GetLightType() == J_LIGHT_TYPE::POINT || lit->GetLightType() == J_LIGHT_TYPE::SPOT;
+			}
+			return isPerspective;
+		}	
 		void JDrawHelper::DispatchWorkIndex(const uint count, _Out_ uint& stIndex, _Out_ uint& edIndex)const noexcept
 		{
 			if (count == 0)
@@ -394,6 +428,11 @@ namespace JinEngine
 				helper.option.isOcclusionQueryActivated && helper.option.isHDOcclusionAcitvated;
 			allowDebugOutline = newAllowDebugOutline && helper.allowDrawDebug && helper.option.allowDebugOutline;
 			allowAllCullingResult = helper.cam != nullptr && CamEditorSettingInterface::AllowAllCullingResult(helper.cam);
+			if (allowAllCullingResult)
+			{
+				allowHzbOcclusionCulling = newAllowCulling;
+				allowHDOcclusionCulling = newAllowCulling;
+			}
 		}
 	}
 }

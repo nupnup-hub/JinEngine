@@ -1,12 +1,12 @@
 #include"JAnimationFSMtransition.h" 
 #include"JAnimationFSMtransitionPrivate.h" 
+#include"../../../JObjectFileIOHelper.h"
 #include"../../../../Core/FSM/JFSMcondition.h"
 #include"../../../../Core/FSM/JFSMparameter.h"
 #include"../../../../Core/FSM/JFSMparameterStorageAccess.h" 
 #include"../../../../Core/Identity/JIdenCreator.h"
 #include"../../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../../Core/File/JFileConstant.h" 
-#include"../../../../Core/File/JFileIOHelper.h"
+#include"../../../../Core/File/JFileConstant.h"  
 #include<fstream>
 
 namespace JinEngine
@@ -202,7 +202,7 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		uint conditionCount = 0;
-		JFileIOHelper::LoadAtomicData(stream, conditionCount);
+		JObjectFileIOHelper::LoadAtomicData(stream, conditionCount);
 
 		for (uint i = 0; i < conditionCount; ++i)
 		{
@@ -211,9 +211,9 @@ namespace JinEngine
 			Core::J_FSM_OBJECT_TYPE fsmType;
 			float onValue;
 
-			JFileIOHelper::LoadFsmObjectIden(stream, condName, condGuid, fsmType);
-			JUserPtr<Core::JIdentifier> param = JFileIOHelper::LoadHasObjectIden(stream);
-			JFileIOHelper::LoadAtomicData(stream, onValue);
+			JObjectFileIOHelper::LoadFsmIden(stream, condName, condGuid, fsmType);
+			JUserPtr<Core::JIdentifier> param = JObjectFileIOHelper::_LoadHasIden(stream);
+			JObjectFileIOHelper::LoadAtomicData(stream, onValue);
 
 			JUserPtr<Core::JFSMcondition> newCondition = JICI::Create<Core::JFSMcondition>(condName, condGuid, trans);
 			if (param.IsValid())
@@ -227,11 +227,11 @@ namespace JinEngine
 		float durationTime = 0;
 		float targetStartTimeRate = 0;
 
-		JFileIOHelper::LoadAtomicData(stream, isWaitExitTime);
-		JFileIOHelper::LoadAtomicData(stream, isFrozen);
-		JFileIOHelper::LoadAtomicData(stream, exitTimeRate);
-		JFileIOHelper::LoadAtomicData(stream, durationTime);
-		JFileIOHelper::LoadAtomicData(stream, targetStartTimeRate);
+		JObjectFileIOHelper::LoadAtomicData(stream, isWaitExitTime);
+		JObjectFileIOHelper::LoadAtomicData(stream, isFrozen);
+		JObjectFileIOHelper::LoadAtomicData(stream, exitTimeRate);
+		JObjectFileIOHelper::LoadAtomicData(stream, durationTime);
+		JObjectFileIOHelper::LoadAtomicData(stream, targetStartTimeRate);
 
 		trans->SetIsWaitExitTime(isWaitExitTime);
 		trans->SetIsFrozen(isFrozen);
@@ -246,20 +246,20 @@ namespace JinEngine
 		if (!stream.is_open() || !trans->GetTypeInfo().IsChildOf<JAnimationFSMtransition>())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JFileIOHelper::StoreAtomicData(stream, L"ConditionCount:", trans->GetConditioCount());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"ConditionCount:", trans->GetConditioCount());
 		const uint conditionCount = trans->GetConditioCount();
 		for (uint i = 0; i < conditionCount; ++i)
 		{
 			JUserPtr<Core::JFSMcondition> cond = trans->GetConditionByIndex(i);
-			JFileIOHelper::StoreFsmObjectIden(stream, cond.Get());
-			JFileIOHelper::StoreHasObjectIden(stream, cond->GetParameter().Get(), Core::JFileConstant::StreamUncopiableGuidSymbol());
-			JFileIOHelper::StoreAtomicData(stream, L"ConditionValue:", trans->GetConditionOnValue(i));
+			JObjectFileIOHelper::StoreFsmIden(stream, cond.Get());
+			JObjectFileIOHelper::_StoreHasIden(stream, cond->GetParameter().Get(), Core::JFileConstant::StreamUncopiableGuidSymbol());
+			JObjectFileIOHelper::StoreAtomicData(stream, L"ConditionValue:", trans->GetConditionOnValue(i));
 		}
-		JFileIOHelper::StoreAtomicData(stream, L"IsWaitExitTime:", trans->IsWaitExitTime());
-		JFileIOHelper::StoreAtomicData(stream, L"IsFrozen:", trans->IsFrozen());
-		JFileIOHelper::StoreAtomicData(stream, L"ExitGameTimerate:", trans->GetExitTimeRate());
-		JFileIOHelper::StoreAtomicData(stream, L"DurationTime:", trans->GetDurationTime());
-		JFileIOHelper::StoreAtomicData(stream, L"TargetStateOffset:", trans->GetTargetStartTimeRate());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"IsWaitExitTime:", trans->IsWaitExitTime());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"IsFrozen:", trans->IsFrozen());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"ExitGameTimerate:", trans->GetExitTimeRate());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"DurationTime:", trans->GetDurationTime());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"TargetStateOffset:", trans->GetTargetStartTimeRate());
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}

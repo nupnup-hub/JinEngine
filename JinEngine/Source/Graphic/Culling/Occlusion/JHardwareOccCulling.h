@@ -9,6 +9,9 @@ namespace JinEngine
 	{
 		struct JGraphicInfo; 
 		class JCullingInfo;
+		/**
+		* Hd IsOccluder trigger에 관계없이 Object에 Occlude 여부를 검사한다
+		*/
 		class JHardwareOccCulling : public JOccCulling
 		{
 		public:

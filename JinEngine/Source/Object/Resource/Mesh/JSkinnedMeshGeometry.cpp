@@ -1,17 +1,17 @@
 #include"JSkinnedMeshGeometry.h"
 #include"JSkinnedMeshGeometryPrivate.h"
-#include"JMeshStruct.h"
 #include"../JResourceObjectUserInterface.h" 
 #include"../JResourceManager.h" 
 #include"../Skeleton/JSkeletonAsset.h"
 #include"../Skeleton/JSkeleton.h"
 #include"../Material/JMaterial.h"
 #include"../Material/JDefaultMaterialSetting.h"
+#include"../../JObjectFileIOHelper.h"
 #include"../../Directory/JDirectory.h"  
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/File/JFileConstant.h"  
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/Geometry/Mesh/JMeshStruct.h"
 #include<fstream>
 
 namespace JinEngine
@@ -55,21 +55,21 @@ namespace JinEngine
 			CallOffResourceReference(skeletonAsset.Get());
 		}
 	public:
-		static std::unique_ptr<JMeshGroup> ReadAssetData(const std::wstring& path)
+		static std::unique_ptr<Core::JMeshGroup> ReadAssetData(const std::wstring& path)
 		{
 			std::wifstream stream;
 			stream.open(path, std::ios::in | std::ios::binary);
 			if (!stream.is_open())
 				return nullptr;
 
-			std::unique_ptr<JSkinnedMeshGroup> meshGroup = std::make_unique<JSkinnedMeshGroup>();
+			std::unique_ptr<Core::JSkinnedMeshGroup> meshGroup = std::make_unique<Core::JSkinnedMeshGroup>();
 
 			uint meshCount = 0;
 			uint totalVertexCount = 0;
 			uint totalIndexCount = 0;
-			JFileIOHelper::LoadAtomicData(stream, meshCount);
-			JFileIOHelper::LoadAtomicData(stream, totalVertexCount);
-			JFileIOHelper::LoadAtomicData(stream, totalIndexCount);
+			JObjectFileIOHelper::LoadAtomicData(stream, meshCount);
+			JObjectFileIOHelper::LoadAtomicData(stream, totalVertexCount);
+			JObjectFileIOHelper::LoadAtomicData(stream, totalIndexCount);
 
 			for (uint i = 0; i < meshCount; ++i)
 			{
@@ -77,26 +77,26 @@ namespace JinEngine
 				size_t guid;
 				uint vertexCount;
 				uint indexCount;
-				J_MESHGEOMETRY_TYPE meshType;
+				Core::J_MESHGEOMETRY_TYPE meshType;
 
-				JFileIOHelper::LoadJString(stream, name);
-				JFileIOHelper::LoadAtomicData(stream, guid);
-				JFileIOHelper::LoadAtomicData(stream, vertexCount);
-				JFileIOHelper::LoadAtomicData(stream, indexCount);
-				JFileIOHelper::LoadEnumData(stream, meshType);
-
-				std::vector<JSkinnedMeshVertex> vertices(vertexCount);
+				JObjectFileIOHelper::LoadJString(stream, name);
+				JObjectFileIOHelper::LoadAtomicData(stream, guid);
+				JObjectFileIOHelper::LoadAtomicData(stream, vertexCount);
+				JObjectFileIOHelper::LoadAtomicData(stream, indexCount);
+				JObjectFileIOHelper::LoadEnumData(stream, meshType);
+				 
+				std::vector<Core::JSkinnedMeshVertex> vertices(vertexCount);
 				std::vector<uint> indices;
 				JVector4<int> jointIndex;
 
 				for (uint i = 0; i < vertexCount; ++i)
 				{
-					JFileIOHelper::LoadVector3(stream, vertices[i].position);
-					JFileIOHelper::LoadVector3(stream, vertices[i].normal);
-					JFileIOHelper::LoadVector2(stream, vertices[i].texC);
-					JFileIOHelper::LoadVector3(stream, vertices[i].tangentU);
-					JFileIOHelper::LoadVector3(stream, vertices[i].jointWeight);
-					JFileIOHelper::LoadVector4(stream, jointIndex);
+					JObjectFileIOHelper::LoadVector3(stream, vertices[i].position);
+					JObjectFileIOHelper::LoadVector3(stream, vertices[i].normal);
+					JObjectFileIOHelper::LoadVector2(stream, vertices[i].texC);
+					JObjectFileIOHelper::LoadVector3(stream, vertices[i].tangentU);
+					JObjectFileIOHelper::LoadVector3(stream, vertices[i].jointWeight);
+					JObjectFileIOHelper::LoadVector4(stream, jointIndex);
 
 					vertices[i].jointIndex[0] = jointIndex.x;
 					vertices[i].jointIndex[1] = jointIndex.y;
@@ -104,36 +104,36 @@ namespace JinEngine
 					vertices[i].jointIndex[3] = jointIndex.w;
 				}
 
-				JFileIOHelper::LoadAtomicDataVec(stream, indices);
+				JObjectFileIOHelper::LoadAtomicDataVec(stream, indices);
 
 				DirectX::BoundingBox boundingBox;
 				DirectX::BoundingSphere boundingSphere;
 				bool hasUV;
 				bool hasNormal;
 
-				JFileIOHelper::LoadXMFloat3(stream, boundingBox.Center);
-				JFileIOHelper::LoadXMFloat3(stream, boundingBox.Extents);
-				JFileIOHelper::LoadXMFloat3(stream, boundingSphere.Center);
-				JFileIOHelper::LoadAtomicData(stream, boundingSphere.Radius);
-				JFileIOHelper::LoadAtomicData(stream, hasUV);
-				JFileIOHelper::LoadAtomicData(stream, hasNormal);
+				JObjectFileIOHelper::LoadXMFloat3(stream, boundingBox.Center);
+				JObjectFileIOHelper::LoadXMFloat3(stream, boundingBox.Extents);
+				JObjectFileIOHelper::LoadXMFloat3(stream, boundingSphere.Center);
+				JObjectFileIOHelper::LoadAtomicData(stream, boundingSphere.Radius);
+				JObjectFileIOHelper::LoadAtomicData(stream, hasUV);
+				JObjectFileIOHelper::LoadAtomicData(stream, hasNormal);
 
-				meshGroup->AddMeshData(JSkinnedMeshData{ name , guid, std::move(indices), hasUV, hasNormal, std::move(vertices) });
+				meshGroup->AddMeshData(Core::JSkinnedMeshData{ name , guid, std::move(indices), hasUV, hasNormal, std::move(vertices) });
 			}
  
 			for (uint i = 0; i < meshCount; ++i)
-				meshGroup->GetMeshData(i)->SetMaterial(JFileIOHelper::LoadHasObjectIden<JMaterial>(stream));
-			meshGroup->SetSkeletonAsset(JFileIOHelper::LoadHasObjectIden<JSkeletonAsset>(stream));
+				meshGroup->GetMeshData(i)->SetMaterial(JObjectFileIOHelper::_LoadHasIden<JMaterial>(stream));
+			meshGroup->SetSkeletonAsset(JObjectFileIOHelper::_LoadHasIden<JSkeletonAsset>(stream));
 
 			stream.close();
 			return std::move(meshGroup);
 		}
-		bool WriteAssetData(const std::wstring& path, JMeshGroup* meshGroup)
+		bool WriteAssetData(const std::wstring& path, Core::JMeshGroup* meshGroup)
 		{
 			if (meshGroup == nullptr)
 				return false;
 
-			if (meshGroup->GetMeshGroupType() != J_MESHGEOMETRY_TYPE::SKINNED)
+			if (meshGroup->GetMeshGroupType() != Core::J_MESHGEOMETRY_TYPE::SKINNED)
 				return false;
 
 			std::wofstream stream;
@@ -141,55 +141,55 @@ namespace JinEngine
 			if (!stream.is_open())
 				return false;
 
-			JSkinnedMeshGroup* skinnedMeshs = static_cast<JSkinnedMeshGroup*>(meshGroup);
+			Core::JSkinnedMeshGroup* skinnedMeshs = static_cast<Core::JSkinnedMeshGroup*>(meshGroup);
 			const uint meshCount = skinnedMeshs->GetMeshDataCount();
-			JFileIOHelper::StoreAtomicData(stream, L"MeshCount:", meshCount);
-			JFileIOHelper::StoreAtomicData(stream, L"TotalVertexCount:", skinnedMeshs->GetTotalVertexCount());
-			JFileIOHelper::StoreAtomicData(stream, L"TotalIndexCount:", skinnedMeshs->GetTotalIndexCount());
+			JObjectFileIOHelper::StoreAtomicData(stream, L"MeshCount:", meshCount);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"TotalVertexCount:", skinnedMeshs->GetTotalVertexCount());
+			JObjectFileIOHelper::StoreAtomicData(stream, L"TotalIndexCount:", skinnedMeshs->GetTotalIndexCount());
 
 			for (uint i = 0; i < meshCount; ++i)
 			{
-				JSkinnedMeshData* skinnedData = static_cast<JSkinnedMeshData*>(skinnedMeshs->GetMeshData(i));
+				Core::JSkinnedMeshData* skinnedData = static_cast<Core::JSkinnedMeshData*>(skinnedMeshs->GetMeshData(i));
 
-				JFileIOHelper::StoreJString(stream, L"Name:", skinnedData->GetName());
-				JFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamHasObjGuidSymbol(), skinnedData->GetGuid());
+				JObjectFileIOHelper::StoreJString(stream, L"Name:", skinnedData->GetName());
+				JObjectFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamHasObjGuidSymbol(), skinnedData->GetGuid());
 
 				const uint vertexCount = skinnedData->GetVertexCount();
 				const uint indexCount = skinnedData->GetIndexCount();
 
-				JFileIOHelper::StoreAtomicData(stream, L"VertexCount:", vertexCount);
-				JFileIOHelper::StoreAtomicData(stream, L"IndexCount:", indexCount);
-				JFileIOHelper::StoreEnumData(stream, L"MeshType:", J_MESHGEOMETRY_TYPE::SKINNED);
+				JObjectFileIOHelper::StoreAtomicData(stream, L"VertexCount:", vertexCount);
+				JObjectFileIOHelper::StoreAtomicData(stream, L"IndexCount:", indexCount);
+				JObjectFileIOHelper::StoreEnumData(stream, L"MeshType:", Core::J_MESHGEOMETRY_TYPE::SKINNED);
 
 				for (uint i = 0; i < vertexCount; ++i)
 				{
-					JSkinnedMeshVertex vertices = skinnedData->GetVertex(i);
-					JFileIOHelper::StoreVector3(stream, L"P:", vertices.position);
-					JFileIOHelper::StoreVector3(stream, L"N:", vertices.normal);
-					JFileIOHelper::StoreVector2(stream, L"U:", vertices.texC);
-					JFileIOHelper::StoreVector3(stream, L"T:", vertices.tangentU);
-					JFileIOHelper::StoreVector3(stream, L"W:", vertices.jointWeight);
-					JFileIOHelper::StoreXMFloat4(stream, L"I", XMFLOAT4(vertices.jointIndex[0],
+					Core::JSkinnedMeshVertex vertices = skinnedData->GetVertex(i);
+					JObjectFileIOHelper::StoreVector3(stream, L"P:", vertices.position);
+					JObjectFileIOHelper::StoreVector3(stream, L"N:", vertices.normal);
+					JObjectFileIOHelper::StoreVector2(stream, L"U:", vertices.texC);
+					JObjectFileIOHelper::StoreVector3(stream, L"T:", vertices.tangentU);
+					JObjectFileIOHelper::StoreVector3(stream, L"W:", vertices.jointWeight);
+					JObjectFileIOHelper::StoreXMFloat4(stream, L"I", XMFLOAT4(vertices.jointIndex[0],
 						vertices.jointIndex[1],
 						vertices.jointIndex[2],
 						vertices.jointIndex[3]));
 				}
-				JFileIOHelper::StoreAtomicDataVec(stream, L"Index:", skinnedData->GetIndexVector(), 6);
+				JObjectFileIOHelper::StoreAtomicDataVec(stream, L"Index:", skinnedData->GetIndexVector(), 6);
 
 				const DirectX::BoundingBox boundingBox = skinnedData->GetBBox();
 				const DirectX::BoundingSphere boundingSphere = skinnedData->GetBSphere();
 
-				JFileIOHelper::StoreXMFloat3(stream, L"BBoxCenter:", boundingBox.Center);
-				JFileIOHelper::StoreXMFloat3(stream, L"BBoxExtents:", boundingBox.Extents);
-				JFileIOHelper::StoreXMFloat3(stream, L"SphereCenter:", boundingSphere.Center);
-				JFileIOHelper::StoreAtomicData(stream, L"SphereRadius:", boundingSphere.Radius);
-				JFileIOHelper::StoreAtomicData(stream, L"HasUV:", skinnedData->HasUV());
-				JFileIOHelper::StoreAtomicData(stream, L"HasNormal:", skinnedData->HasNormal());
+				JObjectFileIOHelper::StoreXMFloat3(stream, L"BBoxCenter:", boundingBox.Center);
+				JObjectFileIOHelper::StoreXMFloat3(stream, L"BBoxExtents:", boundingBox.Extents);
+				JObjectFileIOHelper::StoreXMFloat3(stream, L"SphereCenter:", boundingSphere.Center);
+				JObjectFileIOHelper::StoreAtomicData(stream, L"SphereRadius:", boundingSphere.Radius);
+				JObjectFileIOHelper::StoreAtomicData(stream, L"HasUV:", skinnedData->HasUV());
+				JObjectFileIOHelper::StoreAtomicData(stream, L"HasNormal:", skinnedData->HasNormal());
 			}
 			 
 			for (uint i = 0; i < meshCount; ++i)
-				JFileIOHelper::StoreHasObjectIden(stream, skinnedMeshs->GetMeshData(i)->GetMaterial().Get());
-			JFileIOHelper::StoreHasObjectIden(stream, skinnedMeshs->GetSkeletonAsset().Get());
+				JObjectFileIOHelper::_StoreHasIden(stream, Core::ConnectChildUserPtr<JMaterial>(skinnedMeshs->GetMeshData(i)->GetMaterial()).Get());
+			JObjectFileIOHelper::_StoreHasIden(stream, Core::ConnectChildUserPtr<JSkeletonAsset>(skinnedMeshs->GetSkeletonAsset()).Get());
 			stream.close();
 			return true;
 		}
@@ -239,32 +239,32 @@ namespace JinEngine
 		}
 	};
 
-	JSkinnedMeshGeometry::InitData::InitData(const uint8 formatIndex, const JUserPtr<JDirectory>& directory, std::unique_ptr<JMeshGroup>&& skinnedMeshGroup)
+	JSkinnedMeshGeometry::InitData::InitData(const uint8 formatIndex, const JUserPtr<JDirectory>& directory, std::unique_ptr<Core::JMeshGroup>&& skinnedMeshGroup)
 		: JMeshGeometry::InitData(JSkinnedMeshGeometry::StaticTypeInfo(), formatIndex, directory, std::move(skinnedMeshGroup))
 	{
-		skeletonAsset = static_cast<JSkinnedMeshGroup*>(meshGroup.get())->GetSkeletonAsset();
+		skeletonAsset = Core::ConvertChildUserPtr<JSkeletonAsset>(static_cast<Core::JSkinnedMeshGroup*>(meshGroup.get())->GetSkeletonAsset());
 	}
 	JSkinnedMeshGeometry::InitData::InitData(const size_t guid,
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
-		std::unique_ptr<JMeshGroup>&& skinnedMeshGroup)
+		std::unique_ptr<Core::JMeshGroup>&& skinnedMeshGroup)
 		: JMeshGeometry::InitData(JSkinnedMeshGeometry::StaticTypeInfo(), guid, formatIndex, directory, std::move(skinnedMeshGroup))
 	{
-		skeletonAsset = static_cast<JSkinnedMeshGroup*>(meshGroup.get())->GetSkeletonAsset();
+		skeletonAsset = Core::ConvertChildUserPtr<JSkeletonAsset>(static_cast<Core::JSkinnedMeshGroup*>(meshGroup.get())->GetSkeletonAsset());
 	}
 	JSkinnedMeshGeometry::InitData::InitData(const std::wstring& name,
 		const size_t guid,
 		const J_OBJECT_FLAG flag,
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
-		std::unique_ptr<JMeshGroup>&& skinnedMeshGroup)
+		std::unique_ptr<Core::JMeshGroup>&& skinnedMeshGroup)
 		: JMeshGeometry::InitData(JSkinnedMeshGeometry::StaticTypeInfo(), name, guid, flag, formatIndex, directory, std::move(skinnedMeshGroup))
 	{
-		skeletonAsset = static_cast<JSkinnedMeshGroup*>(meshGroup.get())->GetSkeletonAsset();
+		skeletonAsset = Core::ConvertChildUserPtr<JSkeletonAsset>(static_cast<Core::JSkinnedMeshGroup*>(meshGroup.get())->GetSkeletonAsset());
 	}
 	bool JSkinnedMeshGeometry::InitData::IsValidData()const noexcept
 	{
-		return JMeshGeometry::InitData::IsValidData() && skeletonAsset.IsValid();
+		return JMeshGeometry::InitData::IsValidData() && skeletonAsset.IsValid() && skeletonAsset->GetTypeInfo().IsChildOf<JSkeletonAsset>();
 	}
 
 
@@ -276,9 +276,9 @@ namespace JinEngine
 	{
 		return sPrivate;
 	}
-	J_MESHGEOMETRY_TYPE JSkinnedMeshGeometry::GetMeshGeometryType()const noexcept
+	Core::J_MESHGEOMETRY_TYPE JSkinnedMeshGeometry::GetMeshGeometryType()const noexcept
 	{
-		return J_MESHGEOMETRY_TYPE::SKINNED;
+		return Core::J_MESHGEOMETRY_TYPE::SKINNED;
 	}
 	JUserPtr<JSkeletonAsset> JSkinnedMeshGeometry::GetSkeletonAsset()const noexcept
 	{
@@ -382,7 +382,7 @@ namespace JinEngine
 		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->meshType);
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->meshType);
 		stream.close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -403,11 +403,11 @@ namespace JinEngine
 		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JFileIOHelper::StoreEnumData(stream, L"MeshType:", mesh->GetMeshGeometryType());
+		JObjectFileIOHelper::StoreEnumData(stream, L"MeshType:", mesh->GetMeshGeometryType());
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	std::unique_ptr<JMeshGroup> AssetDataIOInterface::ReadMeshGroupData(const std::wstring& path)
+	std::unique_ptr<Core::JMeshGroup> AssetDataIOInterface::ReadMeshGroupData(const std::wstring& path)
 	{
 		return JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl::ReadAssetData(path);
 	}

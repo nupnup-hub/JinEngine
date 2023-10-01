@@ -5,9 +5,9 @@
 #include"../JResourceManager.h" 
 #include"../../Directory/JDirectory.h"
 #include"../../Directory/JFile.h"
+#include"../../JObjectFileIOHelper.h"
 #include"../../../Core/Guid/JGuidCreator.h"
-#include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/Reflection/JTypeImplBase.h" 
 #include"../../../Core/Platform/JHardwareInfo.h" 
 #include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Graphic/JGraphic.h"
@@ -28,13 +28,16 @@ namespace JinEngine
 #define SHADOW_MAP_ARRAY_COUNT_SYMBOL "SHADOW_MAP_ARRAY_COUNT"
 #define SHADOW_MAP_CUBE_COUNT_SYMBOL "SHADOW_MAP_CUBE_COUNT"
 
+#define USE_DIRECTIONAL_LIGHT_PCSS "USE_DIRECTIONAL_LIGHT_PCSS"
+#define USE_DIRECTIONAL_LIGHT_PCM "USE_DIRECTIONAL_LIGHT_PCM"
+#define USE_POINT_LIGHT_PCM "USE_POINT_LIGHT_PCM" 
+#define USE_SPOT_LIGHT_PCM "USE_SPOT_LIGHT_PCM" 
+
 //Compute Shader Macro Symbol ";
 #define THREAD_DIM_X_SYMBOL "DIMX"
 #define THREAD_DIM_Y_SYMBOL "DIMY"
 #define THREAD_DIM_Z_SYMBOL "DIMZ"
 
-#define HZB_SAMPLING_COUNT_SYMBOL "DOWN_SAMPLING_COUNT"
-#define HZB_OCC_QUERY_COUNT_SYMBOL "OCCLUSION_QUERY_COUNT" 
 	}
 
 	namespace
@@ -220,11 +223,11 @@ namespace JinEngine
 				cShaderData = GResourceInterface::StuffComputeShaderPso(initHelper);
 			}
 		}
-		static void StuffInitHelper(_Out_ JGraphicShaderInitData& initHelper, 
-			const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,
-			const JShaderCondition& cond)noexcept
+		static void StuffInitHelper(_Out_ JGraphicShaderInitData& initHelper, const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, const JShaderCondition& cond)noexcept
 		{
 			Graphic::JGraphicInfo info = JGraphic::Instance().GetGraphicInfo();
+			Graphic::JGraphicOption option = JGraphic::Instance().GetGraphicOption();
+
 			for (uint i = 0; i < (uint)J_SHADER_VERTEX_LAYOUT::SHADER_VERTEX_COUNT; ++i)
 			{
 				J_SHADER_VERTEX_LAYOUT layount = (J_SHADER_VERTEX_LAYOUT)i;
@@ -240,6 +243,15 @@ namespace JinEngine
 				initHelper.macro[i].push_back({ SHADOW_MAP_COUNT_SYMBOL,std::to_string(info.bindingShadowTextureCapacity) });
 				initHelper.macro[i].push_back({ SHADOW_MAP_ARRAY_COUNT_SYMBOL, std::to_string(info.bindingShadowTextureArrayCapacity) });
 				initHelper.macro[i].push_back({ SHADOW_MAP_CUBE_COUNT_SYMBOL,std::to_string(info.bindingShadowTextureCubeCapacity) });
+
+				if (option.useDirectionalLightPcss)
+					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCSS, std::to_string(1)});
+				if (option.useDirectionalLightPcm)
+					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCM, std::to_string(1) });
+				if (option.usePointLightPcm)
+					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCM, std::to_string(1) });
+				if (option.useSpotLightPcm)
+					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCM, std::to_string(1) });
 				//initHelper.macro[i].push_back(shaderFuncMacroMap.find(SHADER_FUNCTION_NONE)->second);
 			}
 			initHelper.gFunctionFlag = gFunctionFlag;
@@ -261,9 +273,14 @@ namespace JinEngine
 				else
 					return result;
 			};
-
 			using GpuInfo = Core::JHardwareInfo::GpuInfo;
 
+			/*
+
+			//앞으로 hzb에 대한 shader option control은 JShader객체를 통해서가아닌 
+			//Graphic Option을 통해서 이루어지게 한다.
+			//그러므로 JHZBOccCulling 하위 class들이 Shader data를 소유하고 graphic option변경에 따라 graphic이 이들을 호출해
+			//shader를 새 option에 따라 재컴파일한다.
 			auto InitHZBMaps = [](_Out_ JComputeShaderInitData& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 			{
 				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo();
@@ -286,56 +303,10 @@ namespace JinEngine
 				StuffComputeShaderCommonMacro(initHelper, cFunctionFlag);
 			};
 
+			*/
+			
 			switch (cFunctionFlag)
 			{
-			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_COPY:
-			{
-				InitHZBMaps(initHelper, cFunctionFlag);
-				break;
-			}
-			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_DOWN_SAMPLING:
-			{
-				InitHZBMaps(initHelper, cFunctionFlag);
-				break;
-			}
-			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_OCCLUSION:
-			{
-				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo();
-				uint totalSmCount = 0;
-				uint totalBlockPerSmCount = 0;
-				uint totalThreadPerBlockCount = 0;
-				for (const auto& data : gpuInfo)
-				{
-					totalSmCount += data.multiProcessorCount;
-					totalBlockPerSmCount += data.maxBlocksPerMultiProcessor;
-					totalThreadPerBlockCount += data.maxThreadsPerBlock;
-				}
-
-				Graphic::JGraphicInfo graphicInfo = JGraphic::Instance().GetGraphicInfo();
-				//graphicInfo.upObjCapacity always 2 squared
-				uint queryCount = graphicInfo.upObjCapacity > 0 ? graphicInfo.upObjCapacity : 1;
-
-				//수정필요 
-				//thread per group factor가 하드코딩됨
-				//이후 amd graphic info 추가와 동시에 수정할 예정
-				uint warpFactor = gpuInfo[0].vendor == Core::J_GRAPHIC_VENDOR::AMD ? 64 : 32;
-				if (queryCount < warpFactor)
-				{
-					initHelper.dispatchInfo.threadDim = JVector3<uint>(queryCount, 1, 1);
-					initHelper.dispatchInfo.groupDim = JVector3<uint>(1, 1, 1);
-					initHelper.dispatchInfo.taskOriCount = queryCount;
-				}
-				else
-				{
-					initHelper.dispatchInfo.threadDim = JVector3<uint>(warpFactor, 1, 1);
-					initHelper.dispatchInfo.groupDim = JVector3<uint>(queryCount / warpFactor, 1, 1);
-					initHelper.dispatchInfo.taskOriCount = queryCount;
-				}
-				  
-				initHelper.macro.push_back({ HZB_OCC_QUERY_COUNT_SYMBOL, std::to_string(queryCount) });
-				StuffComputeShaderCommonMacro(initHelper, cFunctionFlag);
-				break;
-			}
 			default:
 				break;
 			}
@@ -582,15 +553,15 @@ namespace JinEngine
 		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
  
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->gFunctionFlag);
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->cFunctionFlag);
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->gFunctionFlag);
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->cFunctionFlag);
 
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->condition.primitiveCondition);
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->condition.depthCompareCondition);
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->condition.cullModeCondition);
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->condition.primitiveType);
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->condition.depthCompareFunc);
-		JFileIOHelper::LoadAtomicData(stream, loadMetaData->condition.isCullModeNone);
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->condition.primitiveCondition);
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->condition.depthCompareCondition);
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->condition.cullModeCondition);
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->condition.primitiveType);
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->condition.depthCompareFunc);
+		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->condition.isCullModeNone);
 
 		stream.close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
@@ -612,15 +583,15 @@ namespace JinEngine
 		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JFileIOHelper::StoreEnumData(stream, L"ShaderFuncFlag:", shader->impl->gFunctionFlag);
-		JFileIOHelper::StoreEnumData(stream, L"ComputeShaderFuncFlag:", shader->impl->cFunctionFlag);
+		JObjectFileIOHelper::StoreEnumData(stream, L"ShaderFuncFlag:", shader->impl->gFunctionFlag);
+		JObjectFileIOHelper::StoreEnumData(stream, L"ComputeShaderFuncFlag:", shader->impl->cFunctionFlag);
 
-		JFileIOHelper::StoreEnumData(stream, L"SubPsoPrimitiveCondition:", shader->impl->condition.primitiveCondition);
-		JFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesionCondition:", shader->impl->condition.depthCompareCondition);
-		JFileIOHelper::StoreEnumData(stream, L"SubPsoCullModeCondition:", shader->impl->condition.cullModeCondition);
-		JFileIOHelper::StoreEnumData(stream, L"SubPsoPrimitive:", shader->impl->condition.primitiveType);
-		JFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesion:", shader->impl->condition.depthCompareFunc);
-		JFileIOHelper::StoreAtomicData(stream, L"SubPsoCullMode:", shader->impl->condition.isCullModeNone);
+		JObjectFileIOHelper::StoreEnumData(stream, L"SubPsoPrimitiveCondition:", shader->impl->condition.primitiveCondition);
+		JObjectFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesionCondition:", shader->impl->condition.depthCompareCondition);
+		JObjectFileIOHelper::StoreEnumData(stream, L"SubPsoCullModeCondition:", shader->impl->condition.cullModeCondition);
+		JObjectFileIOHelper::StoreEnumData(stream, L"SubPsoPrimitive:", shader->impl->condition.primitiveType);
+		JObjectFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesion:", shader->impl->condition.depthCompareFunc);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"SubPsoCullMode:", shader->impl->condition.isCullModeNone);
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}

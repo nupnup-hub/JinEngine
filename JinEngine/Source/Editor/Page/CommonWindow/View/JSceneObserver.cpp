@@ -13,6 +13,7 @@
 #include"../../../EditTool/JEditorMouseDragBox.h" 
 #include"../../../../Core/File/JFileIOHelper.h"
 #include"../../../../Core/Identity/JIdenCreator.h"
+#include"../../../../Core/Math/JVectorExtend.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../Object/Component/Camera/JCamera.h"  
 #include"../../../../Object/Component/Camera/JCameraPrivate.h"  
@@ -30,6 +31,7 @@
 #include"../../../../Graphic/JGraphicPrivate.h"
 #include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h" 
 #include"../../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h" 
+#include"../../../../Graphic/Outline/JOutlineConstants.h"
 #include"../../../../../ThirdParty/DirectX/TK/Src/d3dx12.h"
 
 //test
@@ -45,8 +47,7 @@
 //#include"../../../../Object/Resource/JResourceObjectFactory.h"  
 //#include"../../../../Core/File/JFileIOHelper.h"
 //#include"../../../../Debug/JDebugTimer.h" 
-//#include"../../../../Core/Time/JStopWatch.h"
-//#include"../../../../Develop/Debug/JDevelopDebug.h"
+//#include"../../../../Core/Time/JStopWatch.h" 
 
 namespace JinEngine
 {
@@ -64,6 +65,28 @@ namespace JinEngine
 		{
 			static constexpr uint optionTypeSubTypeCount = 3;
 			static constexpr uint toolCount = 3;
+
+			static constexpr uint menuIconCount = 7;
+			static constexpr uint sceneIconCount = 4;
+			static constexpr uint camTextureIndex = sceneIconCount - 1;
+
+			static JVector2F cursor;
+			static constexpr int GetLightTextureIndex(const J_LIGHT_TYPE type)
+			{
+				switch (type)
+				{
+				case JinEngine::J_LIGHT_TYPE::DIRECTIONAL:
+					return 0;
+				case JinEngine::J_LIGHT_TYPE::POINT:
+					return 1;
+				case JinEngine::J_LIGHT_TYPE::SPOT:
+					return 2;
+				default:
+					break;
+				}
+				return -1;
+			}
+
 		}
 		namespace
 		{
@@ -226,7 +249,7 @@ namespace JinEngine
 				viewNode.get(),
 				editorToolNode.get()
 			};
- 
+
 			menubar->AddNode(std::move(settingNode));
 			menubar->AddNode(std::move(viewNode));
 			menubar->AddNode(std::move(editorToolNode));
@@ -375,7 +398,9 @@ namespace JinEngine
 				if (menubar->IsLastUpdateClickedContents() || menubar->IsNextUpdateClickedContents())
 					SetContentsClick(true);
 
-				JVector2<uint> sceneImageCursorPos = JGui::GetCursorPos();
+				JVector2<float> sceneImageScreenPos = JGui::GetCursorScreenPos();
+				JVector2<float> sceneImageCursorPos = JGui::GetCursorPos();
+				const bool isLastLeftMouseCliked = JGui::IsLastMouseClicked(Core::J_MOUSE_BUTTON::LEFT);
 				bool isHoveringToolObject = false;
 				bool isDraggingToolObject = false;
 				bool isLastUpdateSelectedToolObject = false;
@@ -390,10 +415,20 @@ namespace JinEngine
 					//selectedGobj 가 nullptr일 경우 tool object = nullptr (내부 valid 값으로 컨트롤)
 					if (toolVec[i]->IsActivated())
 					{
-						toolVec[i]->Update(selectedVec, editCamData.cam, sceneImageCursorPos, !mouseBBox->IsActivated());
-						isHoveringToolObject = isDraggingToolObject || toolVec[i]->IsHoveringObject();
-						isDraggingToolObject = isDraggingToolObject || toolVec[i]->IsDraggingObject();
-						isLastUpdateSelectedToolObject = isLastUpdateSelectedToolObject || toolVec[i]->IsLastUpdateSelectedObject();
+						toolVec[i]->Update(selectedVec, editCamData.cam, sceneImageScreenPos, !mouseBBox->IsActivated());
+						isHoveringToolObject = isDraggingToolObject || toolVec[i]->IsHovering();
+						isDraggingToolObject = isDraggingToolObject || toolVec[i]->IsDragging();
+						isLastUpdateSelectedToolObject = isLastUpdateSelectedToolObject || toolVec[i]->IsLastUpdateSelected();
+						if (selectedVec.size() == 0 && isLastLeftMouseCliked)
+						{
+							JUserPtr<JGameObject> lastSelecetd = toolVec[i]->GetLastSelected();
+							if (lastSelecetd != nullptr && toolVec[i]->IsHitDebugObject(editCamData.cam, sceneImageScreenPos))
+							{
+								RequestPushSelectObject(lastSelecetd);
+								SetContentsClick(true);
+								isLastUpdateSelectedToolObject = true;
+							}
+						}
 					}
 				}
 
@@ -402,14 +437,22 @@ namespace JinEngine
 					SetContentsClick(true);
 
 				const bool isCurrentWndFocused = JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW);
-				const bool isLastLeftMouseCliked = JGui::IsLastMouseClicked(Core::J_MOUSE_BUTTON::LEFT); 
-				const bool canSelectSceneObject = isLastLeftMouseCliked && !isToolContentsSelected;
+				bool canSelectSceneObject = isLastLeftMouseCliked && !isToolContentsSelected && !isHoveringToolObject;
 				JGuiWindowInfo wndInfo;
 				JGui::GetCurrentWindowInfo(wndInfo);
 
-				if (isLastLeftMouseCliked && !isToolContentsSelected && isCurrentWndFocused)
+				Private::cursor = JGui::GetCursorScreenPos();
+				//JGui::Image(*camera, JGui::GetMainViewport()->WorkSize); 
+				JGuiImageInfo imageInfo(editCamData.cam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
+				JGui::Image(imageInfo, JGui::GetWindowSize());
+
+				bool hasSelecetdIcon = false;
+				DisplaySceneIcon(sceneImageScreenPos, canSelectSceneObject, hasSelecetdIcon);
+
+				canSelectSceneObject = canSelectSceneObject && !hasSelecetdIcon;
+				if (canSelectSceneObject)
 				{
-					JUserPtr<JGameObject> hitObj = JEditorSceneImageInteraction::Intersect(scene, editCamData.cam, J_ACCELERATOR_LAYER::COMMON_OBJECT, sceneImageCursorPos);
+					JUserPtr<JGameObject> hitObj = JEditorSceneImageInteraction::Intersect(scene, editCamData.cam, J_ACCELERATOR_LAYER::COMMON_OBJECT, sceneImageScreenPos);
 					if (hitObj != nullptr)
 					{
 						if (hitObj->IsSelected())
@@ -421,14 +464,10 @@ namespace JinEngine
 					}
 				}
 
-				//JGui::Image(*camera, JGui::GetMainViewport()->WorkSize); 
-				JGuiImageInfo imageInfo(editCamData.cam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
-				JGui::Image(imageInfo, JGui::GetWindowSize());
-
 				bool canAcitvateMouseBBox = !IsContentsClicked() && !isHoveringToolObject && JGui::IsMouseDragging(Core::J_MOUSE_BUTTON::LEFT);
-				if (isCurrentWndFocused && !mouseBBox->IsActivated() && canAcitvateMouseBBox)
+				if (isCurrentWndFocused && !mouseBBox->IsActivated() && !hasSelecetdIcon && canAcitvateMouseBBox)
 				{
-					JUserPtr<JGameObject> hitObj = JEditorSceneImageInteraction::Intersect(scene, editCamData.cam, J_ACCELERATOR_LAYER::COMMON_OBJECT, sceneImageCursorPos);
+					JUserPtr<JGameObject> hitObj = JEditorSceneImageInteraction::Intersect(scene, editCamData.cam, J_ACCELERATOR_LAYER::COMMON_OBJECT, sceneImageScreenPos);
 					canAcitvateMouseBBox = canAcitvateMouseBBox && hitObj == nullptr;
 				}
 				using DragBoxUpdaetIn = JEditorMouseIdenDragBox::UpdateIn;
@@ -436,7 +475,7 @@ namespace JinEngine
 
 				if (JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW))
 				{
-					DragBoxUpdaetIn in(canAcitvateMouseBBox, sceneImageCursorPos, scene, editCamData.cam, J_ACCELERATOR_LAYER::COMMON_OBJECT);
+					DragBoxUpdaetIn in(canAcitvateMouseBBox, sceneImageCursorPos, JVector2F::Zero(), sceneImageScreenPos, scene, editCamData.cam, J_ACCELERATOR_LAYER::COMMON_OBJECT);
 					DragBoxUpdaetOut out;
 
 					mouseBBox->UpdateSceneImageDrag(in, out);
@@ -448,12 +487,12 @@ namespace JinEngine
 							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPopSelectObjectEvStruct>(GetOwnerPageType(), out.newDeSelectedVec, JEditorEvStruct::RANGE::ALL)));
 					}
 					if (out.newSelectedVec.size() > 0)
-					{
 						AddEventNotification(*JEditorEvent::EvInterface(),
 							GetGuid(),
 							J_EDITOR_EVENT::PUSH_SELECT_OBJECT,
-							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetOwnerPageType(), GetWindowType(), out.newSelectedVec, JEditorEvStruct::RANGE::ALL)));
-					} 
+							JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetOwnerPageType(), GetWindowType(), out.newSelectedVec, JEditorEvStruct::RANGE::ALL))); {
+
+					}
 					if (mouseBBox->GetSelectedCount() > 0)
 						SetContentsClick(true);
 				}
@@ -465,6 +504,105 @@ namespace JinEngine
 		void JSceneObserver::UpdateMouseWheel()
 		{
 			editorCamCtrl->AddMovementFactor(JGui::GetMouseWheel());
+		}
+		void JSceneObserver::DisplaySceneIcon(const JVector2F sceneImagePos, const bool canSelectIcon, _Out_ bool& hasSelected)
+		{
+			hasSelected = false;
+			if (scene == nullptr)
+				return;
+
+			auto calReduceRateLam = [](const float range, const float zValue)
+			{
+				return  ((range * 2 - (zValue * 0.5f)) / (range * 2));;
+			};
+
+			//obj to screen pos
+			auto litVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+			auto camVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA);
+ 
+			auto camFrustum = editCamData.cam->GetBoundingFrustum();
+			auto validFrustum = camFrustum;
+			const float frustumRange = camFrustum.Far - camFrustum.Near;
+			const float iconRange = frustumRange / 0.25f;
+			validFrustum.Far = validFrustum.Near + iconRange;
+
+			auto viewM = editCamData.cam->GetView();
+			auto projM = editCamData.cam->GetProj();
+
+			const float camWidth = editCamData.cam->GetFarViewWidth();
+			const float camHeight = editCamData.cam->GetFarViewHeight();
+
+			const JVector2F posOffset = sceneImagePos;
+			const JVector2F wndSize = JGui::GetWindowSize();
+			const float iconSizeFactor = max(wndSize.x, wndSize.y) * 0.125f;
+
+			const JVector4F color = JVector4F(0.8f, 0.8f, 0.8f, 0.75f);
+			const JVector4F selectColor = JVector4F(1.0f, 1.0f, 1.0f, 1.0f);
+
+			for (const auto& data : litVec)
+			{
+				const auto wPos = JVector4F(data->GetOwner()->GetTransform()->GetWorldPosition(), 1.0f).ToXmV();
+				if (validFrustum.Contains(wPos) == DirectX::ContainmentType::DISJOINT)
+					continue;
+
+				const JLight* lit = static_cast<JLight*>(data.Get());
+				JTexture* texture = sceneIconTexture[Private::GetLightTextureIndex(lit->GetLightType())].Get();
+				const JVector2F offsetScaleRate = JVector2F(iconSizeFactor, iconSizeFactor) / JVector2F(texture->GetTextureWidth(), texture->GetTextureHeight());
+
+				const JVector4F cPos = DirectX::XMVector4Transform(DirectX::XMVector4Transform(wPos, viewM), projM);
+				const JVector2F ndcPos = JVector2F(cPos.x / cPos.w, cPos.y / cPos.w);
+				const float reduceSizeFactor = calReduceRateLam(iconRange, cPos.w);
+				 
+				const JVector2F iconCenterPos = JVector2F((ndcPos.x * wndSize.x + wndSize.x) / 2, (-ndcPos.y * wndSize.y + wndSize.y) / 2) + posOffset;
+				const JVector2F iconHalfSize = JVector2F(iconSizeFactor * reduceSizeFactor, iconSizeFactor * reduceSizeFactor) * offsetScaleRate * 0.5f;
+				const JVector2F iconMinPos = iconCenterPos - iconHalfSize;
+				const JVector2F iconMaxPos = iconCenterPos + iconHalfSize;
+
+				JGuiImageInfo info(texture);
+				JGui::AddImage(info, iconMinPos, iconMaxPos, false, data->GetOwner()->IsSelected() ? selectColor : color);
+				if (canSelectIcon && JGui::IsMouseInRectMM(iconMinPos, iconMaxPos))
+				{
+					AddEventNotification(*JEditorEvent::EvInterface(),
+						GetGuid(),
+						J_EDITOR_EVENT::PUSH_SELECT_OBJECT,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetOwnerPageType(), GetWindowType(), data->GetOwner(), JEditorEvStruct::RANGE::ALL)));
+					hasSelected = true;
+				}
+			}
+
+			for (const auto& data : camVec)
+			{
+				if (data->GetGuid() == editCamData.cam->GetGuid())
+					continue;
+
+				const auto wPos = JVector4F(data->GetOwner()->GetTransform()->GetWorldPosition(), 1.0f).ToXmV();
+				if (validFrustum.Contains(wPos) == DirectX::ContainmentType::DISJOINT)
+					continue;
+
+				const JLight* lit = static_cast<JLight*>(data.Get());
+				JTexture* texture = sceneIconTexture[Private::camTextureIndex].Get();
+				const JVector2F offsetScaleRate = JVector2F(iconSizeFactor, iconSizeFactor) / JVector2F(texture->GetTextureWidth(), texture->GetTextureHeight());
+
+				const JVector4F cPos = DirectX::XMVector4Transform(DirectX::XMVector4Transform(wPos, viewM), projM);
+				const JVector2F ndcPos = JVector2F(cPos.x / cPos.w, cPos.y / cPos.w);
+				const float reduceSizeFactor = calReduceRateLam(iconRange, cPos.w);
+
+				const JVector2F iconCenterPos = JVector2F((ndcPos.x * wndSize.x + wndSize.x) / 2, (-ndcPos.y * wndSize.y + wndSize.y) / 2) + posOffset;
+				const JVector2F iconHalfSize = JVector2F(iconSizeFactor * reduceSizeFactor, iconSizeFactor * reduceSizeFactor) * offsetScaleRate * 0.5f;
+				const JVector2F iconMinPos = iconCenterPos - iconHalfSize;
+				const JVector2F iconMaxPos = iconCenterPos + iconHalfSize;
+
+				JGuiImageInfo info(texture);
+				JGui::AddImage(info, iconMinPos, iconMaxPos, false, data->GetOwner()->IsSelected() ? selectColor : color);
+				if (canSelectIcon && JGui::IsMouseInRectMM(iconMinPos, iconMaxPos))
+				{
+					AddEventNotification(*JEditorEvent::EvInterface(),
+						GetGuid(),
+						J_EDITOR_EVENT::PUSH_SELECT_OBJECT,
+						JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetOwnerPageType(), GetWindowType(), data->GetOwner(), JEditorEvStruct::RANGE::ALL)));
+					hasSelected = true;
+				}
+			}
 		}
 		void JSceneObserver::CreateMenuLeafNode(JEditorMenuNode* parent, J_OBSERVER_SETTING_TYPE type)noexcept
 		{
@@ -762,7 +900,7 @@ namespace JinEngine
 			std::string tableColumnLabel[4] = { "Name", "x", "y", "z" };
 			std::string tableRowLabel[4] = { "position", "rotation", "scale", "distance" };
 			JVector3<float>* value[4] = { &testData.offsetPos, &testData.offsetRot, &testData.offsetScale, &testData.distance };
-			 
+
 			J_GUI_TABLE_FLAG_ tableFlag = J_GUI_TABLE_FLAG_SIZING_FIXED_FIT | J_GUI_TABLE_FLAG_BORDER_V |
 				J_GUI_TABLE_FLAG_BORDER_OUTHER_H | J_GUI_TABLE_FLAG_ROW_BG | J_GUI_TABLE_FLAG_CONTEXT_MENU_IN_BODY;
 			const J_GUI_TABLE_COLUMN_FLAG_ columnDefaultFlag = J_GUI_TABLE_COLUMN_FLAG_WIDTH_STRETCH;
@@ -799,7 +937,7 @@ namespace JinEngine
 			JOctreeOption octreeOption = scene->GetOctreeOption(J_ACCELERATOR_LAYER::COMMON_OBJECT);
 			int minSize = octreeOption.minSize;
 			int octreeSizeSquare = octreeOption.octreeSizeSquare;
- 
+
 			bool isChanged = false;
 			isChanged |= JGui::InputInt("minSize##JSceneObserver", &minSize, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
 			isChanged |= JGui::InputInt("octreeSizeSquare##JSceneObserver", &octreeSizeSquare, J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE);
@@ -899,7 +1037,6 @@ namespace JinEngine
 			{
 				const std::vector<JUserPtr<JComponent>> litVec = SceneCashInterface::GetComponentCashVec(scene, J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
 				const uint litCount = (uint)litVec.size();
-
 				std::vector<JLight*> shadowLitVec;
 				for (uint i = 0; i < litCount; ++i)
 				{
@@ -911,6 +1048,9 @@ namespace JinEngine
 				const uint shadowLitCount = (uint)shadowLitVec.size();
 				if (shadowLitCount > 0)
 				{
+					if (data->selectedIndex >= shadowLitCount)
+						data->selectedIndex = 0;
+
 					auto selectedLit = shadowLitVec[data->selectedIndex];
 					JGui::ComboSet("Light##SceneObserve", data->selectedIndex, shadowLitVec);
 					if (shadowLitVec[data->selectedIndex]->AllowDisplayShadowMap())
@@ -1114,13 +1254,20 @@ namespace JinEngine
 			scaleTool = std::make_unique<JEditorTransformTool>(J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::SCALE_ARROW,
 				J_DEFAULT_SHAPE::SCALE_ARROW, 1 / 16);
 
-			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::POSITION_ARROW));
-			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::ROTATION_ARROW));
-			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SCALE_ARROW));
-			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON));
-			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::COORD_GRID_ICON));
-			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PLAY_SCENE_TIME));
-			iconTexture.push_back(_JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME));
+			menuIconTexture.resize(Private::menuIconCount);
+			menuIconTexture[0] = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::POSITION_ARROW);
+			menuIconTexture[1] = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::ROTATION_ARROW);
+			menuIconTexture[2] = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SCALE_ARROW);
+			menuIconTexture[3] = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON);
+			menuIconTexture[4] = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::COORD_GRID_ICON);
+			menuIconTexture[5] = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PLAY_SCENE_TIME);
+			menuIconTexture[6] = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME);
+
+			sceneIconTexture.resize(Private::sceneIconCount);
+			sceneIconTexture[0] = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::DIRECTIONAL_LIGHT);
+			sceneIconTexture[1] = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::POINT_LIGHT);
+			sceneIconTexture[2] = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::SPOT_LIGHT);
+			sceneIconTexture[3] = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::CAMERA);
 
 			toolVec.resize(Private::toolCount);
 			toolVec[0] = positionTool.get();
@@ -1133,7 +1280,7 @@ namespace JinEngine
 			positionTool.reset();
 			rotationTool.reset();
 			scaleTool.reset();
-			iconTexture.clear();
+			menuIconTexture.clear();
 			toolVec.clear();
 			testData.Clear();
 			JEditorWindow::DoSetClose();
@@ -1220,6 +1367,30 @@ namespace JinEngine
 		}
 		void JSceneObserver::CreateShapeGroup()
 		{
+			bool isOctreeActivated = false;
+			bool isBvhActivated = false;
+			bool isKdTreeActivated = false;
+			JOctreeOption octreeOpt = scene->GetOctreeOption(J_ACCELERATOR_LAYER::COMMON_OBJECT);
+			JBvhOption bvhOpt = scene->GetBvhOption(J_ACCELERATOR_LAYER::COMMON_OBJECT);
+			JKdTreeOption kdTreeOpt = scene->GetKdTreeOption(J_ACCELERATOR_LAYER::COMMON_OBJECT);
+
+			if (scene->IsAcceleratorActivated())
+			{
+				isOctreeActivated = octreeOpt.commonOption.isAcceleratorActivated;
+				isBvhActivated = bvhOpt.commonOption.isAcceleratorActivated;
+				isKdTreeActivated = kdTreeOpt.commonOption.isAcceleratorActivated;
+
+				octreeOpt.commonOption.isAcceleratorActivated = false;
+				bvhOpt.commonOption.isAcceleratorActivated = false;
+				kdTreeOpt.commonOption.isAcceleratorActivated = false;
+
+				if (isOctreeActivated)
+					scene->SetOctreeOption(J_ACCELERATOR_LAYER::COMMON_OBJECT, octreeOpt);
+				if (isBvhActivated)
+					scene->SetBvhOption(J_ACCELERATOR_LAYER::COMMON_OBJECT, bvhOpt);
+				if (isKdTreeActivated)
+					scene->SetKdTreeOption(J_ACCELERATOR_LAYER::COMMON_OBJECT, kdTreeOpt);
+			}
 			JUserPtr<JGameObject> parent = JGCI::CreateShape(scene->GetRootGameObject(), OBJECT_FLAG_NONE, J_DEFAULT_SHAPE::EMPTY);
 			parent->SetName(L"Test Object Set");
 			for (int i = 0; i < testData.xCount; ++i)
@@ -1237,6 +1408,22 @@ namespace JinEngine
 				}
 			}
 			testData.objParentVec.push_back(parent);
+			if (isOctreeActivated)
+			{
+				octreeOpt.commonOption.isAcceleratorActivated = true;
+				scene->SetOctreeOption(J_ACCELERATOR_LAYER::COMMON_OBJECT, octreeOpt);
+			}
+			if (isBvhActivated)
+			{
+				bvhOpt.commonOption.isAcceleratorActivated = true;
+				scene->SetBvhOption(J_ACCELERATOR_LAYER::COMMON_OBJECT, bvhOpt);
+			}
+			if (isKdTreeActivated)
+			{
+				kdTreeOpt.commonOption.isAcceleratorActivated = true;
+				scene->SetKdTreeOption(J_ACCELERATOR_LAYER::COMMON_OBJECT, kdTreeOpt);
+			}
+
 			SetModifiedBit(scene, true);
 		}
 		void JSceneObserver::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)

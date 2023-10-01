@@ -4,7 +4,6 @@
 #include"JShaderFunctionEnum.h"
 #include"JShaderCondition.h"
 #include<string>
-
 namespace JinEngine
 {
 	//Is Same as {J_DEVICE_TYPE, ...}
@@ -61,8 +60,7 @@ namespace JinEngine
 		std::vector<JMacroSet> macro[SHADER_VERTEX_COUNT]; 
 		J_GRAPHIC_SHADER_FUNCTION gFunctionFlag;
 		J_SHADER_VERTEX_LAYOUT layoutType;
-		JShaderCondition condition;
-		//J_GRAPHIC_SHADER_EXTRA_FUNCTION extraType;
+		JShaderCondition condition; 
 	};
 	struct JComputeShaderInitData
 	{

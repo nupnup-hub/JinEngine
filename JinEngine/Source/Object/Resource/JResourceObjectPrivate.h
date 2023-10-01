@@ -68,6 +68,9 @@ namespace JinEngine
 			static JUserPtr<JFile> CopyJFile(const JUserPtr<JResourceObject>& from, const JUserPtr<JDirectory>& toDir, bool setNewInnderGuid = false)noexcept;
 		private:
 			static void MoveFile(const JUserPtr<JResourceObject>& rObj, const JUserPtr<JDirectory>& toDir)noexcept;
+			/**
+			* DeleteFile 호출자는 함수호출이후 JResourceObject Destroy에 대한 책임을 진다.
+			*/
 			static void DeleteFile(JResourceObject* rObj)noexcept;	//delete disk asset file
 		};
 		class DestroyInstanceInterfaceEx

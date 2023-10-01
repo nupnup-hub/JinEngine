@@ -121,7 +121,8 @@ namespace JinEngine
 			std::unique_ptr<JEditorTransformTool> rotationTool;
 			std::unique_ptr<JEditorTransformTool> scaleTool;
 		private:
-			std::vector<JUserPtr<JTexture>> iconTexture;
+			std::vector<JUserPtr<JTexture>> menuIconTexture;	//cashing
+			std::vector<JUserPtr<JTexture>> sceneIconTexture;	//cashing
 			std::vector<JEditorTransformTool*> toolVec;
 		private:
 			EditorOption editOption;
@@ -149,6 +150,8 @@ namespace JinEngine
 			void UpdateWindow()final;
 		private:
 			void UpdateMouseWheel()final;
+		private:
+			void DisplaySceneIcon(const JVector2F sceneImagePos, const bool canSelectIcon, _Out_ bool& hasSelected);
 		private:
 			void CreateMenuLeafNode(JEditorMenuNode* parent, J_OBSERVER_SETTING_TYPE type)noexcept;
 			void SelectObserverSettingNode(const J_OBSERVER_SETTING_TYPE type)noexcept;

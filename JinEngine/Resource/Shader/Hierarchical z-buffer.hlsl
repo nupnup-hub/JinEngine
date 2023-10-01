@@ -1,20 +1,24 @@
 #include"DepthFunc.hlsl"
 
+#if defined(PERSPECTIVE_DEPTH_MAP)
+#define USE_PERSPECTIVE 1
+#endif
+
 struct ObjectInfo
-{ 
+{
 	float3 coners[8];
 	float3 center;
 	float3 extents;
 	int queryResultIndex;
-	int isValid; 
-}; 
+	int isValid;
+};
 //Debug
 struct HZBDebugInfo
 {
 	float3 bboxV[8];
-	float3 nearPoint[6];	 
-	float3 center;			 
-	float3 extents;	
+	float3 nearPoint[6];
+	float3 center;
+	float3 extents;
 	float2 ndc[8];
 	float compareDepth[8];
 	float4 minNearPoint;
@@ -34,9 +38,9 @@ struct HZBDebugInfo
 RWStructuredBuffer<HZBDebugInfo> hzbDebugInfo : register(u2, space1);
 
 
-Texture2D<float> depthMap: register(t0);
-Texture2D mipmap: register(t1);
-RWTexture2D<float> lastMipmap: register(u0);
+Texture2D<float> depthMap : register(t0);
+Texture2D mipmap : register(t1);
+RWTexture2D<float> lastMipmap : register(u0);
 
 StructuredBuffer<ObjectInfo> object : register(t2);
 RWStructuredBuffer<uint> queryResult : register(u1, space1);
@@ -53,9 +57,9 @@ cbuffer cbDepthMapInfo : register(b0)
 };
 
 cbuffer cbPass : register(b1)
-{  
+{
 	float4x4 camView;
-	float4x4 camProj; 
+	float4x4 camProj;
 	float4x4 camViewProj;
 	float4 frustumPlane[6];
 	float4 frustumDir;
@@ -66,9 +70,9 @@ cbuffer cbPass : register(b1)
 	float camFar;
 	int validQueryCount;
 	int validQueryOffset;
-	int occMapCount; 
+	int occMapCount;
 	int occIndexOffset;
-	int correctFailTrigger;  
+	int correctFailTrigger;
 	int usePerspective;
 	int hzbOccComputePad00;
 	int hzbOccComputePad01;
@@ -78,7 +82,7 @@ cbuffer cbPass : register(b1)
 static const float maxDistance = -100000;
 static const float minDistance = 100000;
 static const float correctFailDeltaRate = 0.1f;
-static const uint correctFailLoopCount = (uint)(1.0f / correctFailDeltaRate);
+static const uint correctFailLoopCount = (uint) (1.0f / correctFailDeltaRate);
 //occMap size max is 512
 //512 is less than thread and group max dim
 
@@ -88,8 +92,12 @@ void HZBCopyDepthMap(int3 dispatchThreadID : SV_DispatchThreadID)
 {
 	if (nowWidth <= dispatchThreadID.x || nowHeight <= dispatchThreadID.y)
 		return;
-	 
-	lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = ToLinearZValue(depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0)), camNear, camFar);
+#ifdef USE_PERSPECTIVE
+lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = LinearDepth(depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0)), camNear, camFar);
+#else
+lastMipmap[int2(dispatchThreadID.x, dispatchThreadID.y)].r = depthMap.Load(int3(dispatchThreadID.x, dispatchThreadID.y, 0));
+#endif
+
 }
 #endif
 
@@ -185,12 +193,12 @@ void HZBDownSampling(int3 dispatchThreadID : SV_DispatchThreadID)
   
 int CullBBox(const float3 center, const float3 extents)
 {
-	int isOut = (int)(dot(float4(center, 1.0f), frustumPlane[0]) > dot(extents, abs(frustumPlane[0].xyz)));
-	isOut += (int)(dot(float4(center, 1.0f), frustumPlane[1]) > dot(extents, abs(frustumPlane[1].xyz)));
-	isOut += (int)(dot(float4(center, 1.0f), frustumPlane[2]) > dot(extents, abs(frustumPlane[2].xyz)));
-	isOut += (int)(dot(float4(center, 1.0f), frustumPlane[3]) > dot(extents, abs(frustumPlane[3].xyz)));
-	isOut += (int)(dot(float4(center, 1.0f), frustumPlane[4]) > dot(extents, abs(frustumPlane[4].xyz)));
-	isOut += (int)(dot(float4(center, 1.0f), frustumPlane[5]) > dot(extents, abs(frustumPlane[5].xyz)));
+	int isOut = (int) (dot(float4(center, 1.0f), frustumPlane[0]) > dot(extents, abs(frustumPlane[0].xyz)));
+	isOut += (int) (dot(float4(center, 1.0f), frustumPlane[1]) > dot(extents, abs(frustumPlane[1].xyz)));
+	isOut += (int) (dot(float4(center, 1.0f), frustumPlane[2]) > dot(extents, abs(frustumPlane[2].xyz)));
+	isOut += (int) (dot(float4(center, 1.0f), frustumPlane[3]) > dot(extents, abs(frustumPlane[3].xyz)));
+	isOut += (int) (dot(float4(center, 1.0f), frustumPlane[4]) > dot(extents, abs(frustumPlane[4].xyz)));
+	isOut += (int) (dot(float4(center, 1.0f), frustumPlane[5]) > dot(extents, abs(frustumPlane[5].xyz)));
 	return isOut;
 }
 
@@ -198,7 +206,7 @@ float3 CalNearPoint(const float3 p0, const float3 p1, const float3 p2, const flo
 {
 	const float3 camPos = float3(0, 0, 0);
 	const float3 pNormal = normalize(cross(p1 - p0, p2 - p0));
-	const float3 dist = -dot(pNormal, p0); 
+	const float3 dist = -dot(pNormal, p0);
 	float3 nearPoint = camPos - dist * pNormal;
 	
 	const float2 xFactor = float2(min(min(p0.x, p1.x), min(p2.x, p3.x)), max(max(p0.x, p1.x), max(p2.x, p3.x)));
@@ -277,17 +285,35 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	
 	//nearPoint[minIndex].z  < 0 인경우 동차나누기를 하면 값이 1보다 크게 나올수있다
 	float centerDepth = 0; 
+
+#ifdef DEBUG
 	float4 clipNearH = float4(0, 0, 0, 0);
 	float3 clipNearC = float3(0, 0, 0);
+#endif
 
 	if (nearPoint[minIndex].z <= 0)
 		centerDepth = 0;
 	else
 	{
-		//디버그시  clipNearH, clipNearC을 조건문 밖으로
+#ifdef DEBUG
 		clipNearH = mul(float4(nearPoint[minIndex], 1.0f), camProj);
+#ifdef  USE_PERSPECTIVE
 		clipNearC = clipNearH.xyz / clipNearH.w;
-		centerDepth = ToLinearZValue(clipNearC.z, camNear, camFar);
+		centerDepth = LinearDepth(clipNearC.z, camNear, camFar);
+#else
+		//직교투영은 원근나누기가 불필요하다.
+		centerDepth = clipNearH.z;
+#endif
+#else
+		float4 clipNearH = mul(float4(nearPoint[minIndex], 1.0f), camProj);
+#ifdef  USE_PERSPECTIVE
+		float3 clipNearC = clipNearH.xyz / clipNearH.w;
+		centerDepth = LinearDepth(clipNearC.z, camNear, camFar);
+#else
+		//직교투영은 원근나누기가 불필요하다.
+		centerDepth = clipNearH.z;
+#endif
+#endif
 	}
 
 	const float4 bboxPointH[8] =
@@ -400,9 +426,8 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 		queryResult[queryIndex] = 0;
 	else
 		queryResult[queryIndex] = 1;
-	//Debug
-	/* 	
- 	 	
+
+#ifdef DEBUG
 	hzbDebugInfo[threadIndex].threadIndex = threadIndex;
 	hzbDebugInfo[threadIndex].queryIndex = queryIndex;
 	hzbDebugInfo[threadIndex].cullingRes = 1;
@@ -448,9 +473,7 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	hzbDebugInfo[threadIndex].compareDepth[5] = compareDepth05;
 	hzbDebugInfo[threadIndex].compareDepth[6] = compareDepth06;
 	hzbDebugInfo[threadIndex].compareDepth[7] = compareDepth07;
-
- 
-	*/
+#endif
 
 }
 #endif

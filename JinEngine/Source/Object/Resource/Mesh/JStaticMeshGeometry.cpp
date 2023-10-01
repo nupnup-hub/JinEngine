@@ -1,13 +1,13 @@
 #include"JStaticMeshGeometry.h" 
-#include"JStaticMeshGeometryPrivate.h"
-#include"JMeshStruct.h"
+#include"JStaticMeshGeometryPrivate.h" 
 #include"../JResourceManager.h"
 #include"../Material/JMaterial.h"
+#include"../../JObjectFileIOHelper.h"
 #include"../../Directory/JDirectory.h" 
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Core/File/JFileConstant.h"
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/File/JFileConstant.h" 
+#include"../../../Core/Geometry/Mesh/JMeshStruct.h"
 #include<fstream>
 
 namespace JinEngine
@@ -29,21 +29,21 @@ namespace JinEngine
 		{}
 		~JStaticMeshGeometryImpl(){} 
 	public:
-		static std::unique_ptr<JMeshGroup> ReadAssetData(const std::wstring& path)
+		static std::unique_ptr<Core::JMeshGroup> ReadAssetData(const std::wstring& path)
 		{
 			std::wifstream stream;
 			stream.open(path, std::ios::in | std::ios::binary);
 			if (!stream.is_open())
 				return nullptr;
 			 
-			std::unique_ptr<JStaticMeshGroup> meshGroup = std::make_unique<JStaticMeshGroup>();
+			std::unique_ptr<Core::JStaticMeshGroup> meshGroup = std::make_unique<Core::JStaticMeshGroup>();
 
 			uint meshCount = 0;
 			uint totalVertexCount = 0;
 			uint totalIndexCount = 0;
-			JFileIOHelper::LoadAtomicData(stream, meshCount);
-			JFileIOHelper::LoadAtomicData(stream, totalVertexCount);
-			JFileIOHelper::LoadAtomicData(stream, totalIndexCount);
+			JObjectFileIOHelper::LoadAtomicData(stream, meshCount);
+			JObjectFileIOHelper::LoadAtomicData(stream, totalVertexCount);
+			JObjectFileIOHelper::LoadAtomicData(stream, totalIndexCount);
 
 			for (uint i = 0; i < meshCount; ++i)
 			{
@@ -51,48 +51,48 @@ namespace JinEngine
 				size_t guid = 0;
 				uint vertexCount = 0;
 				uint indexCount = 0;
-				J_MESHGEOMETRY_TYPE meshType;
+				Core::J_MESHGEOMETRY_TYPE meshType;
 
-				JFileIOHelper::LoadJString(stream, name);
-				JFileIOHelper::LoadAtomicData(stream, guid);
-				JFileIOHelper::LoadAtomicData(stream, vertexCount);
-				JFileIOHelper::LoadAtomicData(stream, indexCount);
-				JFileIOHelper::LoadEnumData(stream, meshType);
+				JObjectFileIOHelper::LoadJString(stream, name);
+				JObjectFileIOHelper::LoadAtomicData(stream, guid);
+				JObjectFileIOHelper::LoadAtomicData(stream, vertexCount);
+				JObjectFileIOHelper::LoadAtomicData(stream, indexCount);
+				JObjectFileIOHelper::LoadEnumData(stream, meshType);
 
-				std::vector<JStaticMeshVertex> vertices(vertexCount);
+				std::vector<Core::JStaticMeshVertex> vertices(vertexCount);
 				std::vector<uint> indices;
 
 				for (uint i = 0; i < vertexCount; ++i)
 				{
-					JFileIOHelper::LoadVector3(stream, vertices[i].position);
-					JFileIOHelper::LoadVector3(stream, vertices[i].normal);
-					JFileIOHelper::LoadVector2(stream, vertices[i].texC);
-					JFileIOHelper::LoadVector3(stream, vertices[i].tangentU);
+					JObjectFileIOHelper::LoadVector3(stream, vertices[i].position);
+					JObjectFileIOHelper::LoadVector3(stream, vertices[i].normal);
+					JObjectFileIOHelper::LoadVector2(stream, vertices[i].texC);
+					JObjectFileIOHelper::LoadVector3(stream, vertices[i].tangentU);
 				}
 
-				JFileIOHelper::LoadAtomicDataVec(stream, indices);
+				JObjectFileIOHelper::LoadAtomicDataVec(stream, indices);
 
 				DirectX::BoundingBox boundingBox;
 				DirectX::BoundingSphere boundingSphere;
 				bool hasUV;
 				bool hasNormal;
 
-				JFileIOHelper::LoadXMFloat3(stream, boundingBox.Center);
-				JFileIOHelper::LoadXMFloat3(stream, boundingBox.Extents);
-				JFileIOHelper::LoadXMFloat3(stream, boundingSphere.Center);
-				JFileIOHelper::LoadAtomicData(stream, boundingSphere.Radius);
-				JFileIOHelper::LoadAtomicData(stream, hasUV);
-				JFileIOHelper::LoadAtomicData(stream, hasNormal);
+				JObjectFileIOHelper::LoadXMFloat3(stream, boundingBox.Center);
+				JObjectFileIOHelper::LoadXMFloat3(stream, boundingBox.Extents);
+				JObjectFileIOHelper::LoadXMFloat3(stream, boundingSphere.Center);
+				JObjectFileIOHelper::LoadAtomicData(stream, boundingSphere.Radius);
+				JObjectFileIOHelper::LoadAtomicData(stream, hasUV);
+				JObjectFileIOHelper::LoadAtomicData(stream, hasNormal);
 
-				meshGroup->AddMeshData(JStaticMeshData{ name , guid, std::move(indices),hasUV, hasNormal, std::move(vertices) });
+				meshGroup->AddMeshData(Core::JStaticMeshData{ name , guid, std::move(indices),hasUV, hasNormal, std::move(vertices) });
 			} 
 
 			for (uint i = 0; i < meshCount; ++i)
-				meshGroup->GetMeshData(i)->SetMaterial(JFileIOHelper::LoadHasObjectIden<JMaterial>(stream));
+				meshGroup->GetMeshData(i)->SetMaterial(JObjectFileIOHelper::_LoadHasIden<JMaterial>(stream));
 			stream.close();
 			return std::move(meshGroup);
 		}
-		static bool WriteAssetData(const std::wstring& path, JMeshGroup* meshGroup)
+		static bool WriteAssetData(const std::wstring& path, Core::JMeshGroup* meshGroup)
 		{
 			std::wofstream stream;
 			stream.open(path, std::ios::out | std::ios::binary);
@@ -102,49 +102,49 @@ namespace JinEngine
 			if(meshGroup == nullptr)
 				return false;
 
-			JStaticMeshGroup* staticMeshs = static_cast<JStaticMeshGroup*>(meshGroup);
+			Core::JStaticMeshGroup* staticMeshs = static_cast<Core::JStaticMeshGroup*>(meshGroup);
 			const uint meshCount = staticMeshs->GetMeshDataCount();
-			JFileIOHelper::StoreAtomicData(stream, L"MeshCount:", meshCount);
-			JFileIOHelper::StoreAtomicData(stream, L"TotalVertexCount:", staticMeshs->GetTotalVertexCount());
-			JFileIOHelper::StoreAtomicData(stream, L"TotalIndexCount:", staticMeshs->GetTotalIndexCount());
+			JObjectFileIOHelper::StoreAtomicData(stream, L"MeshCount:", meshCount);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"TotalVertexCount:", staticMeshs->GetTotalVertexCount());
+			JObjectFileIOHelper::StoreAtomicData(stream, L"TotalIndexCount:", staticMeshs->GetTotalIndexCount());
 
 			for (uint i = 0; i < meshCount; ++i)
 			{
-				JStaticMeshData* staticData = static_cast<JStaticMeshData*>(staticMeshs->GetMeshData(i));
+				Core::JStaticMeshData* staticData = static_cast<Core::JStaticMeshData*>(staticMeshs->GetMeshData(i));
 
-				JFileIOHelper::StoreJString(stream, L"Name:", staticData->GetName());
-				JFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamHasObjGuidSymbol(), staticData->GetGuid());
+				JObjectFileIOHelper::StoreJString(stream, L"Name:", staticData->GetName());
+				JObjectFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamHasObjGuidSymbol(), staticData->GetGuid());
 
 				const uint vertexCount = staticData->GetVertexCount();
 				const uint indexCount = staticData->GetIndexCount();
 
-				JFileIOHelper::StoreAtomicData(stream, L"VertexCount:", vertexCount);
-				JFileIOHelper::StoreAtomicData(stream, L"IndexCount:", indexCount);
-				JFileIOHelper::StoreEnumData(stream, L"MeshType:", J_MESHGEOMETRY_TYPE::STATIC);
+				JObjectFileIOHelper::StoreAtomicData(stream, L"VertexCount:", vertexCount);
+				JObjectFileIOHelper::StoreAtomicData(stream, L"IndexCount:", indexCount);
+				JObjectFileIOHelper::StoreEnumData(stream, L"MeshType:", Core::J_MESHGEOMETRY_TYPE::STATIC);
 
 				for (uint i = 0; i < vertexCount; ++i)
 				{
-					JStaticMeshVertex vertices = staticData->GetVertex(i);
-					JFileIOHelper::StoreVector3(stream, L"P:", vertices.position);
-					JFileIOHelper::StoreVector3(stream, L"N:", vertices.normal);
-					JFileIOHelper::StoreVector2(stream, L"U:", vertices.texC);
-					JFileIOHelper::StoreVector3(stream, L"T:", vertices.tangentU);
+					Core::JStaticMeshVertex vertices = staticData->GetVertex(i);
+					JObjectFileIOHelper::StoreVector3(stream, L"P:", vertices.position);
+					JObjectFileIOHelper::StoreVector3(stream, L"N:", vertices.normal);
+					JObjectFileIOHelper::StoreVector2(stream, L"U:", vertices.texC);
+					JObjectFileIOHelper::StoreVector3(stream, L"T:", vertices.tangentU);
 				}
-				JFileIOHelper::StoreAtomicDataVec(stream, L"Index:", staticData->GetIndexVector(), 6);
+				JObjectFileIOHelper::StoreAtomicDataVec(stream, L"Index:", staticData->GetIndexVector(), 6);
 
 				const DirectX::BoundingBox boundingBox = staticData->GetBBox();
 				const DirectX::BoundingSphere boundingSphere = staticData->GetBSphere();
 
-				JFileIOHelper::StoreXMFloat3(stream, L"BBoxCenter:", boundingBox.Center);
-				JFileIOHelper::StoreXMFloat3(stream, L"BBoxExtents:", boundingBox.Extents);
-				JFileIOHelper::StoreXMFloat3(stream, L"SphereCenter:", boundingSphere.Center);
-				JFileIOHelper::StoreAtomicData(stream, L"SphereRadius:", boundingSphere.Radius);
-				JFileIOHelper::StoreAtomicData(stream, L"HasUV:", staticData->HasUV());
-				JFileIOHelper::StoreAtomicData(stream, L"HasNormal:", staticData->HasNormal());
+				JObjectFileIOHelper::StoreXMFloat3(stream, L"BBoxCenter:", boundingBox.Center);
+				JObjectFileIOHelper::StoreXMFloat3(stream, L"BBoxExtents:", boundingBox.Extents);
+				JObjectFileIOHelper::StoreXMFloat3(stream, L"SphereCenter:", boundingSphere.Center);
+				JObjectFileIOHelper::StoreAtomicData(stream, L"SphereRadius:", boundingSphere.Radius);
+				JObjectFileIOHelper::StoreAtomicData(stream, L"HasUV:", staticData->HasUV());
+				JObjectFileIOHelper::StoreAtomicData(stream, L"HasNormal:", staticData->HasNormal());
 			}
-			 
+			  
 			for (uint i = 0; i < meshCount; ++i)
-				JFileIOHelper::StoreHasObjectIden(stream, meshGroup->GetMeshData(i)->GetMaterial().Get());
+				JObjectFileIOHelper::_StoreHasIden(stream,  Core::ConnectChildUserPtr<JMaterial>(meshGroup->GetMeshData(i)->GetMaterial()).Get());
 			
 			stream.close();
 			return true;
@@ -166,13 +166,13 @@ namespace JinEngine
 		}
 	};
 
-	JStaticMeshGeometry::InitData::InitData(const uint8 formatIndex, const JUserPtr<JDirectory>& directory, std::unique_ptr<JMeshGroup>&& meshGroup)
+	JStaticMeshGeometry::InitData::InitData(const uint8 formatIndex, const JUserPtr<JDirectory>& directory, std::unique_ptr<Core::JMeshGroup>&& meshGroup)
 		: JMeshGeometry::InitData(JStaticMeshGeometry::StaticTypeInfo(), formatIndex, directory, std::move(meshGroup))
 	{}
 	JStaticMeshGeometry::InitData::InitData(const size_t guid,
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
-		std::unique_ptr<JMeshGroup>&& meshGroup)
+		std::unique_ptr<Core::JMeshGroup>&& meshGroup)
 		: JMeshGeometry::InitData(JStaticMeshGeometry::StaticTypeInfo(), guid, formatIndex, directory, std::move(meshGroup))
 	{ }
 	JStaticMeshGeometry::InitData::InitData(const std::wstring& name,
@@ -180,7 +180,7 @@ namespace JinEngine
 		const J_OBJECT_FLAG flag,
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
-		std::unique_ptr<JMeshGroup>&& meshGroup)
+		std::unique_ptr<Core::JMeshGroup>&& meshGroup)
 		: JMeshGeometry::InitData(JStaticMeshGeometry::StaticTypeInfo(), name, guid, flag, formatIndex, directory, std::move(meshGroup))
 	{ }
 
@@ -192,9 +192,9 @@ namespace JinEngine
 	{
 		return sPrivate;
 	}
-	J_MESHGEOMETRY_TYPE JStaticMeshGeometry::GetMeshGeometryType()const noexcept
+	Core::J_MESHGEOMETRY_TYPE JStaticMeshGeometry::GetMeshGeometryType()const noexcept
 	{
-		return J_MESHGEOMETRY_TYPE::STATIC;
+		return Core::J_MESHGEOMETRY_TYPE::STATIC;
 	}
 	JStaticMeshGeometry::JStaticMeshGeometry(InitData& initData)
 		: JMeshGeometry(initData), impl(std::make_unique<JStaticMeshGeometryImpl>(initData))
@@ -276,7 +276,7 @@ namespace JinEngine
 		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->meshType);
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->meshType);
 		stream.close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -297,11 +297,11 @@ namespace JinEngine
 		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JFileIOHelper::StoreEnumData(stream, L"MeshType:", mesh->GetMeshGeometryType());
+		JObjectFileIOHelper::StoreEnumData(stream, L"MeshType:", mesh->GetMeshGeometryType());
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	std::unique_ptr<JMeshGroup> AssetDataIOInterface::ReadMeshGroupData(const std::wstring& path)
+	std::unique_ptr<Core::JMeshGroup> AssetDataIOInterface::ReadMeshGroupData(const std::wstring& path)
 	{
 		return JStaticMeshGeometry::JStaticMeshGeometryImpl::ReadAssetData(path);
 	}

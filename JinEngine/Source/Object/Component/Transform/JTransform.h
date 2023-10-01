@@ -53,6 +53,17 @@ namespace JinEngine
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final;
 	public:
+		/**
+		* 현재 transform right, up, dir를 축으로하는 변환행렬 생성
+		*/  
+		void CalTransformMatrix(_Out_ JMatrix4x4& m);
+		static void CalTransformMatrix(_Out_ JMatrix4x4& m,
+			const JUserPtr<JTransform>& t,
+			const JVector3<float>& position,
+			const JVector3<float>& right,
+			const JVector3<float>& up,
+			const JVector3<float>& front);
+	public:
 		void LookAt(const JVector3<float>& target, const JVector3<float>& worldUp = JVector3<float>(0, 1, 0))noexcept;
 	protected:
 		void DoActivate()noexcept final;

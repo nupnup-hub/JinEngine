@@ -45,10 +45,10 @@ namespace JinEngine
 				debugGameObject = JGCI::CreateDebugLineShape(parent, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::BOUNDING_BOX_LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN, false);
 
 			const float outlineFactor = 0.01f;
-			const BoundingBox rBBox = debugGameObject->GetRenderItem()->GetMesh()->GetBoundingBox();
+			const BoundingBox debugBBox = debugGameObject->GetRenderItem()->GetMesh()->GetBoundingBox();
 
-			debugGameObject->GetTransform()->SetScale(JVector3<float>(bbox.Extents) / rBBox.Extents + outlineFactor);
-			debugGameObject->GetTransform()->SetPosition(JVector3<float>(bbox.Center) + rBBox.Center);
+			debugGameObject->GetTransform()->SetScale(JVector3<float>(bbox.Extents) / debugBBox.Extents + outlineFactor);
+			debugGameObject->GetTransform()->SetPosition(JVector3<float>(bbox.Center) - debugBBox.Center);
 		}
 	}
 	void JKdTreeNode::DestroyDebugGameObject()noexcept
@@ -106,15 +106,18 @@ namespace JinEngine
 	void JKdTreeNode::FindIntersect(JAcceleratorIntersectInfo& info)const noexcept
 	{
 		if (info.untilFirst)
-			info.firstResult = FindIFirstntersect(info);
+			info.result.push_back(FindFirstntersect(info));
 		else
 		{
 			if (info.sortType == J_ACCELERATOR_SORT_TYPE::ASCENDING)
-				FindIntersectAscendingSort(info);
+			{
+				FindIntersectNotSort(info);
+				info.SortResult();
+			}
 			else if (info.sortType == J_ACCELERATOR_SORT_TYPE::DESCENDING)
 			{
-				FindIntersectAscendingSort(info);
-				std::reverse(info.resultObjVec.begin(), info.resultObjVec.end());
+				FindIntersectNotSort(info); 
+				info.SortResult();
 			}
 			else
 				FindIntersectNotSort(info);
@@ -382,8 +385,9 @@ namespace JinEngine
 		else
 			return right->FindRightLeafNode();
 	}
-	JUserPtr<JGameObject> JKdTreeNode::FindIFirstntersect(JAcceleratorIntersectInfo& info)const noexcept
+	JAcceleratorIntersectInfo::Result JKdTreeNode::FindFirstntersect(JAcceleratorIntersectInfo& info)const noexcept
 	{
+		using Result = JAcceleratorIntersectInfo::Result;
 		if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
 		{
 			float minDist = FLT_MAX;
@@ -403,81 +407,56 @@ namespace JinEngine
 				}
 			}
 			if (index != -1)
-				return innerGameObject[index];
+				return Result{ innerGameObject[index] , minDist };
 			else
-				return nullptr;
+				return Result();
 		}
 		else
 		{
 			float leftDist = FLT_MAX;
 			float rightDist = FLT_MAX;
 
-			const bool leftRes = left->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), leftDist);
-			const bool rightRes = right->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), rightDist);
+			const bool leftIntersected = left->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), leftDist);
+			const bool rightIntersected = right->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), rightDist);
 
-			JUserPtr<JGameObject> res = nullptr;
-			if (leftDist < rightDist)
+			Result res;
+			if (leftDist < 0 || rightDist < 0)
 			{
-				if (leftRes)
-					res = left->FindIFirstntersect(info);
-				if (rightRes && res == nullptr)
-					res = right->FindIFirstntersect(info);
+				Result leftRes = leftIntersected ? left->FindFirstntersect(info) : Result();
+				Result rightRes = rightIntersected ? right->FindFirstntersect(info) : Result();
+
+				if (leftRes.dist < rightRes.dist)
+				{
+					if (leftRes.obj != nullptr)
+						res = leftRes;
+					if (res.obj == nullptr && rightRes.obj != nullptr)
+						res = rightRes;
+				}
+				else
+				{
+					if (rightRes.obj != nullptr)
+						res = rightRes;
+					if (res.obj == nullptr && leftRes.obj != nullptr)
+						res = leftRes;
+				}
+			}
+			else if (leftDist < rightDist)
+			{
+				if (leftIntersected)
+					res = left->FindFirstntersect(info);
+				if (rightIntersected && res.obj == nullptr)
+					res = right->FindFirstntersect(info);
 			}
 			else
 			{
-				if (rightRes)
-					res = right->FindIFirstntersect(info);
-				if (leftRes && res == nullptr)
-					res = left->FindIFirstntersect(info);
+				if (rightIntersected)
+					res = right->FindFirstntersect(info);
+				if (leftIntersected && res.obj == nullptr)
+					res = left->FindFirstntersect(info);
 			}
 			return res;
 		}
-	}
-	void JKdTreeNode::FindIntersectAscendingSort(JAcceleratorIntersectInfo& info)const noexcept
-	{
-		if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
-		{
-			const uint innerCount = (uint)innerGameObject.size();
-			if (info.intermediate.size() < innerCount)
-				info.intermediate.resize(innerCount);
-
-			for (uint i = 0; i < innerCount; ++i)
-			{
-				info.intermediate[i].index = i;
-				info.intermediate[i].isIntersect = innerGameObject[i]->GetRenderItem()->GetOrientedBoundingBox().Intersects(info.ray.PosV(), info.ray.DirV(), info.intermediate[i].dist);
-			}
-			info.SortIntermediate(innerCount, true);
-			for (uint i = 0; i < innerCount; ++i)
-			{
-				auto& intermidiate = info.intermediate[i];
-				if (intermidiate.isIntersect && info.CanAdd(innerGameObject[intermidiate.index]))
-					info.resultObjVec.push_back(innerGameObject[intermidiate.index]);
-			}
-		}
-		else
-		{
-			float leftDist = FLT_MAX;
-			float rightDist = FLT_MAX;
-
-			const bool leftRes = left->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), leftDist);
-			const bool rightRes = right->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), rightDist);
-
-			if (leftDist < rightDist)
-			{
-				if (leftRes)
-					left->FindIntersectAscendingSort(info);
-				if (rightRes)
-					right->FindIntersectAscendingSort(info);
-			}
-			else
-			{
-				if (rightRes)
-					right->FindIntersectAscendingSort(info);
-				if (leftRes)
-					left->FindIntersectAscendingSort(info);
-			}
-		}
-	}
+	} 
 	void JKdTreeNode::FindIntersectNotSort(JAcceleratorIntersectInfo& info)const noexcept
 	{
 		if (nodeType == J_KDTREE_NODE_TYPE::LEAF)
@@ -488,7 +467,7 @@ namespace JinEngine
 				float dist = 0;
 				if (innerGameObject[i]->GetRenderItem()->GetOrientedBoundingBox().Intersects(info.ray.PosV(), info.ray.DirV(), dist) &&
 					info.CanAdd(innerGameObject[i]))
-					info.resultObjVec.push_back(innerGameObject[i]);
+					info.result.push_back({ innerGameObject[i], dist });
 			}
 		}
 		else

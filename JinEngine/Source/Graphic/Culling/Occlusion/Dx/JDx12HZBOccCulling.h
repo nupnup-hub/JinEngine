@@ -23,6 +23,18 @@ namespace JinEngine
 		class JDx12CullingManager;
 		class JDx12HZBOccCulling final: public JHZBOccCulling
 		{
+		public:
+			enum class COMPUTE_TYPE
+			{
+				HZB_COPY_PERSPECTIVE,
+				HZB_COPY_ORTHOLOGIC,
+				HZB_DOWN_SAMPLING,
+				HZB_CULLING_PERSPECTIVE,
+				HZB_CULLING_ORTHOLOGIC,
+				COUNT
+			};
+		private:
+			std::unique_ptr<JDx12ComputeShaderDataHolder> shader[(uint)COMPUTE_TYPE::COUNT];
 		private:
 			std::unique_ptr<JDx12GraphicBuffer<JHzbOccDepthMapInfoConstants>> occDepthMapInfoCB;	//static resource
 			std::unique_ptr<JDx12GraphicBuffer<uint>> occQueryOutBuffer;
@@ -70,24 +82,24 @@ namespace JinEngine
 				CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapUavHandle,
 				const uint samplingCount,
 				const uint srvDescriptorSize,
-				const uint passCBIndex);
+				const uint passCBIndex,
+				const bool isPerspective);
 			void OcclusionCulling(ID3D12GraphicsCommandList* commandList,
 				JDx12FrameResource* dx12Frame,
 				JDx12CullingManager* dx12Cm,
 				CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle,
 				const uint passCBIndex,
-				const JCullingUserInterface& cullUser);
+				const JCullingUserInterface& cullUser,
+				const bool isPerspective);
 		private:
 			void BuildRootSignature(JGraphicDevice* device, const uint occlusionDsvCapacity);
 			void BuildUploadBuffer(JGraphicDevice* device, const uint objectCapacity, const uint occlusionMapCapacity);
 		private: 
-			JOwnerPtr<JComputeShaderDataHolderBase> CreateComputeShader(JGraphicDevice* device, JGraphicResourceManager* gResourceM, const JComputeShaderInitData& initDara) final;
+			void CreateSamplingShader(JGraphicDevice* device, const JGraphicInfo& info, const COMPUTE_TYPE type);
+			void CreateCullingShader(JGraphicDevice* device, const uint objectCapacity, const COMPUTE_TYPE type);
 		private:
-			void CompileShader(JDx12ComputeShaderDataHolder* holder, const JComputeShaderInitData& initData); 
-			void StuffPso(JDx12ComputeShaderDataHolder* holder,
-				JDx12GraphicDevice* dx12Device,
-				JDx12GraphicResourceManager* dx12Gm,
-				const JComputeShaderInitData& initData);
+			void CompileShader(JDx12ComputeShaderDataHolder* holder, const JComputeShaderInitData& initData, const COMPUTE_TYPE type);
+			void StuffPso(JDx12ComputeShaderDataHolder* holder, JDx12GraphicDevice* dx12Device, const JComputeShaderInitData& initData, const COMPUTE_TYPE type);
 		};
 	}
 } 

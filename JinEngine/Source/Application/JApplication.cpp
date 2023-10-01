@@ -187,7 +187,7 @@ namespace JinEngine
 					std::unique_ptr<JApplicationProjectInfo> pInfo;
 					JApplicationProjectInfo* existingInfo = JApplicationProject::GetProjectInfo(dirPath);
 					if (existingInfo != nullptr)
-						pInfo = existingInfo->GetUnique();
+						pInfo = existingInfo->CreateReplica();
 					else
 						pInfo = ProjectLifeInterface::MakeProjectInfo(dirPath);
 					if (pInfo != nullptr)

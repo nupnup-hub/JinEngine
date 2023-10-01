@@ -119,8 +119,8 @@ namespace JinEngine
 	public:
 		JUserPtr<JGameObject> FindGameObject(const size_t guid)noexcept;
 		JUserPtr<JCamera> FindFirstSelectedCamera(const bool allowEditorCam)const noexcept;
-		//Intersect by scene space spatial
-		JUserPtr<JGameObject> IntersectFirst(const Core::JRay& ray, const J_ACCELERATOR_LAYER layer)const noexcept;
+		//Intersect by scene space spatial 
+		JUserPtr<JGameObject> IntersectFirst(const Core::JRay& ray, const J_ACCELERATOR_LAYER layer, const bool findOtherAcceleratorIfTypeNull = false)const noexcept;
 		JUserPtr<JGameObject> IntersectFirst(JAcceleratorIntersectInfo& info)const noexcept;
 		void Intersect(JAcceleratorIntersectInfo& info)const noexcept;
 		void Contain(JAcceleratorContainInfo& info);

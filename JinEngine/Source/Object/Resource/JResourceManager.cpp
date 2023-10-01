@@ -23,10 +23,10 @@
 #include"../Directory/JFile.h" 
 #include"../Directory/JDirectory.h" 
 #include"../Directory/JDirectoryPrivate.h"  
+#include"../JObjectFileIOHelper.h"
 
 #include"../../Core/Identity/JIdenCreator.h"
-#include"../../Core/File/JFileConstant.h"
-#include"../../Core/File/JFileIOHelper.h"
+#include"../../Core/File/JFileConstant.h" 
 #include"../../Core/Exception/JExceptionMacro.h"
 #include"../../Core/Guid/JGuidCreator.h" 
 #include"../../Core/Func/Functor/JFunctor.h"
@@ -130,9 +130,9 @@ namespace JinEngine
 						if (file != nullptr)
 						{
 							if (!RTypeCommonCall::GetRTypeHint(file->GetResourceType()).isFixedAssetFile)
-								JFileIOHelper::DevideFile(file->GetCacheFilePath(), std::vector<std::wstring>{file->GetMetaFilePath(), file->GetPath()});
+								JObjectFileIOHelper::DevideFile(file->GetCacheFilePath(), std::vector<std::wstring>{file->GetMetaFilePath(), file->GetPath()});
 							else
-								JFileIOHelper::CopyFile(file->GetCacheFilePath(), file->GetMetaFilePath());
+								JObjectFileIOHelper::CopyFile(file->GetCacheFilePath(), file->GetMetaFilePath());
 							_wremove(file->GetCacheFilePath().c_str());
 						}
 					}
@@ -143,7 +143,7 @@ namespace JinEngine
 		void LoadSelectorResource()
 		{
 			defaultData->Initialize();
-			J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
+			J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			engineRootDir = JICI::Create<JDirectory>(JApplicationEngine::ProjectPath(), Core::MakeGuid(), rootFlag, nullptr);
 			
 			resourceIO->LoadEngineDirectory(engineRootDir);
@@ -153,12 +153,12 @@ namespace JinEngine
 		void LoadProjectResource()
 		{
 			defaultData->Initialize();
-			J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
+			J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			engineRootDir = JICI::Create<JDirectory>(JApplicationEngine::ProjectPath(), Core::MakeGuid(), rootFlag, nullptr);
 			resourceIO->LoadEngineDirectory(engineRootDir);
 			resourceIO->LoadEngineResource(engineRootDir);
 
-			rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE);
+			rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			projectRootDir = resourceIO->LoadRootDirectory(JApplicationProject::RootPath(), rootFlag);
 			
 			JDirectoryPrivate::ActivationInterface::OpenDirectory(projectRootDir);		 
@@ -188,7 +188,7 @@ namespace JinEngine
 
 			//1 is imgui preserved 
 			for (uint i = 0; i < textureCount; ++i)
-			{
+			{ 
 				const J_OBJECT_FLAG objFlag = JDefaultTexture::GetFlag(textureType[i]);
 				const bool isUse = JDefaultTexture::IsDefaultUse(textureType[i]);
 				std::wstring foldernam;
@@ -196,7 +196,7 @@ namespace JinEngine
 				std::wstring format;
 				JCUtil::DecomposeFileName(JDefaultTexture::GetName(textureType[i]), name, format);
 				JUserPtr<JFile> file = textureDir->SearchFile(name, format);
-
+				 
 				if (file != nullptr)
 					defaultData->RegisterDefaultResource(textureType[i], file, isUse);
 				else
@@ -377,8 +377,8 @@ namespace JinEngine
 			auto createCircleLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCircle(1.2f, 1.1f); };
 			auto createScaleArrowLam = [](JDefaultGeometryGenerator& geoGen)
 			{
-				JStaticMeshData cyilinderMesh = geoGen.CreateCylinder(0.125f, 0.125f, 2.04f, 10, 10);
-				JStaticMeshData cubeMesh = geoGen.CreateCube(0.5f, 0.5f, 0.5f, 1);
+				Core::JStaticMeshData cyilinderMesh = geoGen.CreateCylinder(0.125f, 0.125f, 2.04f, 10, 10);
+				Core::JStaticMeshData cubeMesh = geoGen.CreateCube(0.5f, 0.5f, 0.5f, 1);
 
 				const DirectX::BoundingBox cyilinderBBox = cyilinderMesh.GetBBox();
 				const DirectX::BoundingBox cubeBBox = cubeMesh.GetBBox();
@@ -396,7 +396,7 @@ namespace JinEngine
 			};
 			auto createLineLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLine(3); };
 
-			using CreateStaticMesh = Core::JStaticCallableType<JStaticMeshData, JDefaultGeometryGenerator&>;
+			using CreateStaticMesh = Core::JStaticCallableType<Core::JStaticMeshData, JDefaultGeometryGenerator&>;
 			std::unordered_map<J_DEFAULT_SHAPE, CreateStaticMesh::Callable> callableVec
 			{
 				{J_DEFAULT_SHAPE::CUBE, (CreateStaticMesh::Ptr)createCubeLam},
@@ -419,7 +419,7 @@ namespace JinEngine
 			for (int i = 1; i < (int)J_DEFAULT_SHAPE::COUNT; ++i)
 			{
 				const J_DEFAULT_SHAPE shapeType = (J_DEFAULT_SHAPE)i;
-				const J_MESHGEOMETRY_TYPE meshType = JDefaultShape::GetMeshType(shapeType);
+				const Core::J_MESHGEOMETRY_TYPE meshType = JDefaultShape::GetMeshType(shapeType);
 				const bool isUse = JDefaultShape::IsDefaultUse(shapeType);
 				const bool isExternalFile = JDefaultShape::IsExternalFile(shapeType);
 
@@ -438,9 +438,9 @@ namespace JinEngine
 					JUserPtr<JFile> file = projectDefualDir->SearchFile(name, format);
 					if (file != nullptr)
 					{
-						if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
+						if (meshType == Core::J_MESHGEOMETRY_TYPE::STATIC)
 							defaultData->RegisterDefaultResource(shapeType, file, isUse);
-						else if (meshType == J_MESHGEOMETRY_TYPE::SKINNED)
+						else if (meshType == Core::J_MESHGEOMETRY_TYPE::SKINNED)
 							defaultData->RegisterDefaultResource(shapeType, file, isUse);
 						else
 							assert("MeshType Error");
@@ -449,7 +449,7 @@ namespace JinEngine
 					{
 						const std::wstring srcPath = engineDefaultDir->GetPath() + L"\\" + meshName;
 						const std::wstring destPath = projectDefualDir->GetPath() + L"\\" + meshName;
-						Core::J_FILE_IO_RESULT copyRes = JFileIOHelper::CopyFile(srcPath, destPath);
+						Core::J_FILE_IO_RESULT copyRes = JObjectFileIOHelper::CopyFile(srcPath, destPath);
 						if (copyRes != Core::J_FILE_IO_RESULT::SUCCESS)
 							assert("Copy File Error");
 
@@ -457,7 +457,8 @@ namespace JinEngine
 							OBJECT_FLAG_UNEDITABLE |
 							OBJECT_FLAG_UNDESTROYABLE |
 							OBJECT_FLAG_UNCOPYABLE |
-							OBJECT_FLAG_HIDDEN);
+							OBJECT_FLAG_HIDDEN | 
+							OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 						Core::JFileImportHelpData pathData{ projectDefualDir->GetPath() + L"\\" + meshName, objFlag };
 						std::vector<JUserPtr<JResourceObject>> result = JResourceObjectImporter::Instance().ImportResource(projectDefualDir, pathData);
 						for (const auto& data : result)
@@ -475,25 +476,29 @@ namespace JinEngine
 					JUserPtr<JFile> file = projectDefualDir->SearchFile(meshName, JResourceObject::GetDefaultFormat<JMeshGeometry>());
 					if (file != nullptr)
 					{
-						if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
+						if (meshType == Core::J_MESHGEOMETRY_TYPE::STATIC)
 							defaultData->RegisterDefaultResource(shapeType, file, isUse);
-						else if (meshType == J_MESHGEOMETRY_TYPE::SKINNED)
+						else if (meshType == Core::J_MESHGEOMETRY_TYPE::SKINNED)
 							defaultData->RegisterDefaultResource(shapeType, file, isUse);
 						else
 							assert("MeshType Error");
 					}
 					else
 					{
-						if (meshType == J_MESHGEOMETRY_TYPE::STATIC)
+						if (meshType == Core::J_MESHGEOMETRY_TYPE::STATIC)
 						{
-							JStaticMeshData staticMeshData = callableVec.find(shapeType)->second(nullptr, geoGen);
+							Core::JStaticMeshData staticMeshData = callableVec.find(shapeType)->second(nullptr, geoGen);
 							staticMeshData.CreateBoundingObject();
 
-							std::unique_ptr<JStaticMeshGroup> group = std::make_unique<JStaticMeshGroup>();
+							std::unique_ptr<Core::JStaticMeshGroup> group = std::make_unique<Core::JStaticMeshGroup>();
 							group->AddMeshData(std::move(staticMeshData));
 
 							const size_t guid = Core::MakeGuid();
-							J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
+							J_OBJECT_FLAG flag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | 
+								OBJECT_FLAG_UNEDITABLE |
+								OBJECT_FLAG_UNDESTROYABLE | 
+								OBJECT_FLAG_UNCOPYABLE |
+								OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 
 							if (i >= JDefaultShape::debugTypeSt)
 								flag = (J_OBJECT_FLAG)(flag | OBJECT_FLAG_HIDDEN);
@@ -504,7 +509,7 @@ namespace JinEngine
 							ThrowIfFailedN(newMesh != nullptr);
 							defaultData->RegisterDefaultResource(shapeType, projectDefualDir->SearchFile(guid), isUse);
 						}
-						else if (meshType == J_MESHGEOMETRY_TYPE::SKINNED)
+						else if (meshType == Core::J_MESHGEOMETRY_TYPE::SKINNED)
 						{
 							//추가필요
 							assert("Load default skinned mesh is not updated");

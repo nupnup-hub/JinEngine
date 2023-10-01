@@ -2,15 +2,13 @@
 #include"../../Core/File/JFileIOResult.h"
 #include"../../Core/FSM/JFSMobjectType.h"
 #include"../../Core/Math/JMatrix.h"
-#include"../../Core/Math/JVector.h"
-#include"../../Object/JObjectFlag.h"   
+#include"../../Core/Math/JVector.h"  
+#include"../../Core/Reflection/JTypeBase.h"
 #include<DirectXMath.h>
 #include<fstream>
 
 namespace JinEngine
-{
-	class JObject;
-	class JResourceObject;
+{ 
 	namespace Core
 	{
 		class JIdentifier;
@@ -18,6 +16,9 @@ namespace JinEngine
 	}
 	class JFileIOHelper
 	{
+	public:
+		using TryAgainLoadObjIfFailPtr = JUserPtr<Core::JIdentifier>(*)(Core::JTypeInfo*, size_t);
+		using TryAgainLoadHintIfFailPtr = Core::JTypeInstanceSearchHint(*)(Core::JTypeInfo*, size_t);
 	public:
 		template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_floating_point_v<T>, int> = 0>
 		static Core::J_FILE_IO_RESULT StoreAtomicData(std::wofstream& stream, const std::wstring& guide, T value, const bool useChangeLine = true)
@@ -210,28 +211,28 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT LoadXMFloat4(std::wifstream& stream, DirectX::XMFLOAT4& xm4);
 		static Core::J_FILE_IO_RESULT LoadXMFloat4x4(std::wifstream& stream, DirectX::XMFLOAT4X4& xm4x4);
 	public:
-		static Core::J_FILE_IO_RESULT StoreObjectIden(std::wofstream& stream, JObject* obj);
-		static Core::J_FILE_IO_RESULT LoadObjectIden(std::wifstream& stream, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag);
-		static Core::J_FILE_IO_RESULT LoadObjectIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag);
+		static Core::J_FILE_IO_RESULT StoreIden(std::wofstream& stream, Core::JIdentifier* obj);
+		static Core::J_FILE_IO_RESULT LoadIden(std::wifstream& stream, _Out_ size_t& oGuid);
+		static Core::J_FILE_IO_RESULT LoadIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid);
 	public:
-		static Core::J_FILE_IO_RESULT StoreFsmObjectIden(std::wofstream& stream, Core::JFSMinterface* obj);
-		static Core::J_FILE_IO_RESULT LoadFsmObjectIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ Core::J_FSM_OBJECT_TYPE& oType);
+		static Core::J_FILE_IO_RESULT StoreFsmIden(std::wofstream& stream, Core::JFSMinterface* obj);
+		static Core::J_FILE_IO_RESULT LoadFsmIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ Core::J_FSM_OBJECT_TYPE& oType);
 	public:
-		static Core::J_FILE_IO_RESULT StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden);
-		static Core::J_FILE_IO_RESULT StoreHasObjectIden(std::wofstream& stream, Core::JIdentifier* iden, const std::wstring& guiSymbol);
+		static Core::J_FILE_IO_RESULT StoreHasIden(std::wofstream& stream, Core::JIdentifier* iden);
+		static Core::J_FILE_IO_RESULT StoreHasIden(std::wofstream& stream, Core::JIdentifier* iden, const std::wstring& guiSymbol);
 		static Core::J_FILE_IO_RESULT StoreHasInstanceHint(std::wofstream& stream, const Core::JTypeInstanceSearchHint& hint);
 		static Core::J_FILE_IO_RESULT StoreHasInstanceHint(std::wofstream& stream, const Core::JTypeInstanceSearchHint& hint, const std::wstring& guiSymbol);
 		//Warrning
 		//Loading중 다른 오브젝트를 Load할 수 있으므로
 		//Stream에러 발생 할 수있음
 		//LoadHasObjectHint는 Hint만 전달하므로 Stream에러 발생에서 안전함
-		static JUserPtr<Core::JIdentifier> LoadHasObjectIden(std::wifstream& stream);
+		static JUserPtr<Core::JIdentifier> LoadHasIden(std::wifstream& stream, TryAgainLoadObjIfFailPtr tryAgainPtr = nullptr);
 		template<typename T>
-		static JUserPtr<T> LoadHasObjectIden(std::wifstream& stream)
+		static JUserPtr<T> LoadHasIden(std::wifstream& stream, TryAgainLoadObjIfFailPtr tryAgainPtr = nullptr)
 		{
-			return JUserPtr<T>::ConvertChild(LoadHasObjectIden(stream));
+			return JUserPtr<T>::ConvertChild(LoadHasIden(stream, tryAgainPtr));
 		}
-		static Core::JTypeInstanceSearchHint LoadHasObjectHint(std::wifstream& stream);
+		static Core::JTypeInstanceSearchHint LoadHasIdenHint(std::wifstream& stream, TryAgainLoadHintIfFailPtr tryAgainPtr = nullptr);
 	public:
 		//skip file using getline until symbol
 		//if fail stream is close
@@ -247,6 +248,8 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT CombineFile(const std::vector<std::wstring> from, const std::wstring& to);
 		//read to fixed symbol on fromFile when end of toFile
 		static Core::J_FILE_IO_RESULT DevideFile(const std::wstring& from, const std::vector<std::wstring> to);
+		static Core::J_FILE_IO_RESULT DestroyFile(const std::wstring& path);
+		static Core::J_FILE_IO_RESULT DestroyDirectory(const std::wstring& path);
 	public:
 		/**
 		* @return return empty if invalid path

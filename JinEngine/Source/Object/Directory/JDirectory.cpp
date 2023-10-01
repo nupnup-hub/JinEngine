@@ -3,14 +3,14 @@
 #include"JFile.h"  
 #include"JFilePrivate.h"
 #include"JFileInitData.h"
+#include"../JObjectFileIOHelper.h"
 #include"../Resource/JResourceObject.h" 
 #include"../Resource/JResourceObjectPrivate.h"
 #include"../../Application/JApplicationProject.h" 
 #include"../../Core/Identity/JIdenCreator.h"
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/Reflection/JTypeBasePrivate.h"
-#include"../../Core/Guid/JGuidCreator.h"
-#include"../../Core/File/JFileIOHelper.h"
+#include"../../Core/Guid/JGuidCreator.h" 
 #include"../../Core/File/JFileConstant.h"
 #include"../../Core/Utility/JCommonUtility.h"
 #include<io.h>
@@ -130,7 +130,10 @@ namespace JinEngine
 			}
 			 
 			for (const auto& child : from->impl->children)
-				JICI::CreateAndCopy(child, toUser);
+			{
+				auto initData = std::make_unique<JDirectory::InitData>(child->GetName(), Core::MakeGuid(), OBJECT_FLAG_NONE, toUser);
+				JICI::CreateAndCopy(std::move(initData), child);
+			}
 			return true;
 		}
 	public:
@@ -153,8 +156,7 @@ namespace JinEngine
 		}
 		static void DeleteDirectoryFile(const std::wstring& path)
 		{
-			if (_waccess(path.c_str(), 00) != -1)
-				_wremove(path.c_str());
+			JFileIOHelper::DestroyDirectory(path); 
 		}
 	public:
 		void Clear()
@@ -583,7 +585,7 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		auto dirInit = static_cast<JDirectory::InitData*>(data);
-		JFileIOHelper::LoadObjectIden(stream, dirInit->guid, dirInit->flag);
+		JObjectFileIOHelper::LoadObjectIden(stream, dirInit->guid, dirInit->flag);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(std::wofstream& stream, Core::JDITypeDataBase* data)
@@ -595,7 +597,7 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		auto dirStore = static_cast<JDirectory::StoreData*>(data);
-		JFileIOHelper::StoreObjectIden(stream, dirStore->obj.Get());
+		JObjectFileIOHelper::StoreObjectIden(stream, dirStore->obj.Get());
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	void FileInterface::ConvertToActFileData(const JUserPtr<JResourceObject>& rObj) noexcept

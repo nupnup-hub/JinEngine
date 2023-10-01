@@ -1,9 +1,9 @@
 #pragma once
 #include"JSkeletonType.h"
-#include"Joint.h"
 #include"Avatar/JAvatar.h"  
 #include"../JResourceObject.h" 
- 
+#include"../../../Core/Animation/Joint.h"
+
 namespace JinEngine
 {
 	struct JSkeleton;
@@ -18,25 +18,25 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
-			std::vector<Joint> joint;
+			std::vector<Core::Joint> joint;
 			Core::JTypeInstanceSearchHint modelHint;
 		public:
 			InitData(const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
 				const Core::JTypeInstanceSearchHint& modelHint,
-				std::vector<Joint>&& joint);
+				std::vector<Core::Joint>&& joint);
 			InitData(const size_t guid,
 				const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
 				const Core::JTypeInstanceSearchHint& modelHint,
-				std::vector<Joint>&& joint);
+				std::vector<Core::Joint>&& joint);
 			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
 				const Core::JTypeInstanceSearchHint& modelHint,
-				std::vector<Joint>&& joint);
+				std::vector<Core::Joint>&& joint);
 		public:
 			bool IsValidData()const noexcept final;
 		};

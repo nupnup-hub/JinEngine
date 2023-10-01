@@ -53,8 +53,8 @@ namespace JinEngine
 				J_GUI_INPUT_TEXT_FLAG_ flag = J_GUI_INPUT_TEXT_FLAG_NO_HORIZONTAL_SCROLL;
 				if (enterisReturn)
 					flag |= J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE;
-
-				const bool result = JGui::InputMultilineTextSetT(JCUtil::WstrToU8Str(renameTar->GetName()),
+				 
+				const bool result = JGui::InputMultilineTextSetT(JGui::CreateGuiLabel(renameTar, "InputMultilineTextSetT"),
 					uniqueLabel, 
 					renameBuff.get(),
 					multilineSize,
@@ -70,7 +70,7 @@ namespace JinEngine
 				if (enterisReturn)
 					flag |= J_GUI_INPUT_TEXT_FLAG_ENTER_RETURN_TRUE;
 
-				if (JGui::InputTextSetT(JCUtil::WstrToU8Str(renameTar->GetName()),
+				if (JGui::InputTextSetT(JGui::CreateGuiLabel(renameTar, "InputTextSetT"),
 					uniqueLabel, 
 					renameBuff.get(),
 					"New name...",

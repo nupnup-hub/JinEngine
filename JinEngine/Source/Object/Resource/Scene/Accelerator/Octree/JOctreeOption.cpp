@@ -1,5 +1,5 @@
 #include"JOctreeOption.h"
-#include"../../../../../Core/File/JFileIOHelper.h"
+#include"../../../../JObjectFileIOHelper.h"
 
 namespace JinEngine
 {
@@ -25,9 +25,9 @@ namespace JinEngine
 			return;
 
 		commonOption.Store(stream);
-		JFileIOHelper::StoreAtomicData(stream, L"minsize:", minSize);
-		JFileIOHelper::StoreAtomicData(stream, L"octreeSizeSquare:", octreeSizeSquare);
-		JFileIOHelper::StoreAtomicData(stream, L"looseFactor:", looseFactor);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"minsize:", minSize);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"octreeSizeSquare:", octreeSizeSquare);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"looseFactor:", looseFactor);
 	}
 	void JOctreeOption::Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid)
 	{
@@ -35,8 +35,8 @@ namespace JinEngine
 			return;
 
 		commonOption.Load(stream, hasInnerRoot, innerRootGuid);
-		JFileIOHelper::LoadAtomicData(stream, minSize);
-		JFileIOHelper::LoadAtomicData(stream, octreeSizeSquare);
-		JFileIOHelper::LoadAtomicData(stream, looseFactor);
+		JObjectFileIOHelper::LoadAtomicData(stream, minSize);
+		JObjectFileIOHelper::LoadAtomicData(stream, octreeSizeSquare);
+		JObjectFileIOHelper::LoadAtomicData(stream, looseFactor);
 	}
 }

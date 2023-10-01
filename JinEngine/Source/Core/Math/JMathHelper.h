@@ -17,8 +17,7 @@ namespace JinEngine
 		static int Log2Int(uint v)noexcept;
 		static uint PowerOfTwoExponent(uint v)noexcept;
 		static uint DivideTwo(uint v, int count)noexcept;
-	public:
-		static float Floor(const float value, const uint decimalPlace);
+	public: 
 		// Returns simple random float in [0, 1).
 		static float RandF()noexcept;
 		// Returns simple random float in [a, b).

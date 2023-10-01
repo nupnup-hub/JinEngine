@@ -91,8 +91,12 @@ namespace JinEngine
 				JUserPtr<JCamera> cam;
 				J_ACCELERATOR_LAYER layer; 
 			public:
+				JVector2F sceneImageScreenMinPoint;
+			public:
 				UpdateIn(const bool allowActivateBBox,
-					JVector2<float> sceneImageMinPoint,
+					JVector2<float> minOffset,
+					JVector2<float> maxOffset,
+					JVector2<float> sceneImageScreenMinPoint,
 					JUserPtr<JScene> scene,
 					JUserPtr<JCamera> cam,
 					J_ACCELERATOR_LAYER layer);

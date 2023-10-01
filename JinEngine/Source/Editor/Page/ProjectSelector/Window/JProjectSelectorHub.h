@@ -13,11 +13,14 @@ namespace JinEngine
 		struct SelectorValues;
 		class JEditorSearchBarHelper;
 		class JEditorDynamicSpotColor;
+		class JProjectSelectorHubCreationImpl;
 		class JProjectSelectorHub : public JEditorWindow ,
 			public Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>
 		{ 
 		private:
 			using ResourceEvListener = Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>;
+		private:
+			std::unique_ptr<JProjectSelectorHubCreationImpl> creationImpl;
 		private: 
 			JUserPtr<JTexture> serachIconTexture;
 			JUserPtr<JTexture> optionSettingTexture;
@@ -42,12 +45,15 @@ namespace JinEngine
 			~JProjectSelectorHub();
 			JProjectSelectorHub(const JProjectSelectorHub& rhs) = delete;
 			JProjectSelectorHub& operator=(const JProjectSelectorHub& rhs) = delete;
+		private:
+			void InitializeCreationImpl(); 
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public: 
 			void UpdateWindow()final;
 		private:
 			void UpdateCanvasSize();
+		private:
 			void TitleOnScreen();
 			void ProjectListOnScreen(); 
 			void ProjectDetailOnScreen();
@@ -56,7 +62,9 @@ namespace JinEngine
 			void LoadProjectOnScreen();
 			void OptionOnScreen();
 		private:
-			void SetStartProjectProccess();
+			void RequestDestroyProject(); 
+		private:
+			void CreateProjectProccess();
 		private:
 			void LoadLastRsTexture();
 		private:

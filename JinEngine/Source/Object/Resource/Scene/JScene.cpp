@@ -6,9 +6,7 @@
 #include"../JClearableInterface.h"
 #include"../JResourceObjectHint.h"
 #include"../Mesh/JMeshGeometry.h" 
-#include"../Material/JMaterial.h"   
-#include"../Mesh/JMeshType.h" 
-#include"../../../Core/Reflection/JTypeImplBase.h"
+#include"../Material/JMaterial.h"    
 //#include"../JResourceManager.h" 
  
 #include"../../Component/JComponentHint.h"
@@ -23,18 +21,18 @@
 #include"../../GameObject/JGameObject.h"
 #include"../../GameObject/JGameObjectPrivate.h"
 #include"../../Directory/JDirectory.h"
+#include"../../JObjectFileIOHelper.h"
 
 #include"../../../Application/JApplicationProject.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Time/JGameTimer.h"
-#include"../../../Core/File/JFileConstant.h"
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Geometry/JCullingFrustum.h"  
+#include"../../../Core/Geometry/Mesh/JMeshType.h"  
 #include"../../../Core/Utility/JCommonUtility.h" 
 #include"../../../Graphic/Frameresource/JFrameUpdate.h" 
-#include<DirectXColors.h>
-
+#include<DirectXColors.h> 
 namespace JinEngine
 {
 	namespace
@@ -71,7 +69,7 @@ namespace JinEngine
 		JUserPtr<JGameObject> debugRoot = nullptr;
 		std::unique_ptr<JSceneAcceleratorStructure> accelerator;
 		std::vector<JUserPtr<JGameObject>> allObjects;
-		std::vector<JUserPtr<JGameObject>> objectLayer[(int)J_RENDER_LAYER::COUNT][(int)J_MESHGEOMETRY_TYPE::COUNT];
+		std::vector<JUserPtr<JGameObject>> objectLayer[(int)J_RENDER_LAYER::COUNT][(int)Core::J_MESHGEOMETRY_TYPE::COUNT];
 		std::unordered_map<J_COMPONENT_TYPE, std::vector<JUserPtr<JComponent>>> componentCash;
 	public:
 		const size_t debugRootGuid;
@@ -112,7 +110,7 @@ namespace JinEngine
 				sum += static_cast<JRenderItem*>(data.Get())->GetSubmeshCount();
 			return sum;
 		}
-		const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)const noexcept
+		const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)const noexcept
 		{
 			return objectLayer[(int)rLayer][(int)meshType];
 		}
@@ -147,22 +145,15 @@ namespace JinEngine
 		DirectX::BoundingBox GetSceneBBox(const J_ACCELERATOR_LAYER layer)const noexcept
 		{
 			Core::JBBox result;
-			bool isValid;
+			bool isValid = false;
 			if (accelerator != nullptr)
 				result = accelerator->GetSceneBBox(layer, isValid);
-			
-			Core::JBBox result2;
-			auto& vec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
-			for (const auto& data : vec)
-			{
-				JRenderItem* r = static_cast<JRenderItem*>(data.Get());
-				if (ConvertAcceleratorLayer(r->GetRenderLayer()) == layer)
-					result2 = Core::JBBox::Union(result2, r->GetBoundingBox());
-			}
+
 			if (isValid && !result.IsDistanceZero())
 				return result.Convert();
 			else
 			{
+				result = Core::JBBox();
 				auto& vec = GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
 				for (const auto& data : vec)
 				{
@@ -241,9 +232,9 @@ namespace JinEngine
 		}
 		JUserPtr<JGameObject> IntersectFirst(JAcceleratorIntersectInfo& info)const noexcept
 		{
-			info.untilFirst = true;
+			info.untilFirst = true; 
 			accelerator->Intersect(info);
-			return info.firstResult;
+			return info.result.size() != 0 ? info.result[0].obj : nullptr;
 		}
 		void Intersect(JAcceleratorIntersectInfo& info)const noexcept
 		{
@@ -270,7 +261,7 @@ namespace JinEngine
 		void CreateDefaultGameObject()noexcept
 		{
 			const J_OBJECT_FLAG sceneFlag = thisPointer->GetFlag();
-			const J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE);
+			const J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			root = JGCI::CreateRoot(L"RootGameObject", Core::MakeGuid(), Core::AddSQValueEnum(sceneFlag, rootFlag), thisPointer);
 
 			const bool is3DScene = (useCaseType == J_SCENE_USE_CASE_TYPE::MAIN) ||
@@ -281,16 +272,16 @@ namespace JinEngine
 
 			JUserPtr<JGameObject> mainCam;
 			const bool canCreateCulling = useCaseType == J_SCENE_USE_CASE_TYPE::MAIN || useCaseType == J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW;
-			mainCam = JGCI::CreateCamera(root, objFlag, canCreateCulling, L"MainCamera");
+			mainCam = JGCI::CreateCamera(root, L"MainCamera", Core::MakeGuid(), objFlag, canCreateCulling);
 			
 			mainCam->GetComponent<JCamera>()->SetCameraState(J_CAMERA_STATE::RENDER);
-			JUserPtr<JGameObject> lit = JGCI::CreateLight(root, objFlag, J_LIGHT_TYPE::DIRECTIONAL, L"MainLight");
+			JUserPtr<JGameObject> lit = JGCI::CreateLight(root, L"MainLight", Core::MakeGuid(), objFlag, J_LIGHT_TYPE::DIRECTIONAL);
 			if (is3DScene)
 				lit->GetComponent<JLight>()->SetShadow(true);
 		}
 		void CreateDebugRoot()noexcept
 		{
-			const J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE);
+			const J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			debugRoot = JGCI::CreateDebugRoot(L"DebugRoot", debugRootGuid, rootFlag, thisPointer);
 		}
 	public:
@@ -392,7 +383,7 @@ namespace JinEngine
 			{
 				JRenderItem* jRItem = static_cast<JRenderItem*>(component.Get());
 				const J_RENDER_LAYER renderLayer = jRItem->GetRenderLayer();
-				const J_MESHGEOMETRY_TYPE meshType = jRItem->GetMesh()->GetMeshGeometryType();
+				const Core::J_MESHGEOMETRY_TYPE meshType = jRItem->GetMesh()->GetMeshGeometryType();
 				objectLayer[(int)renderLayer][(int)meshType].push_back(jRItem->GetOwner());
 
 				if (accelerator != nullptr)
@@ -431,7 +422,7 @@ namespace JinEngine
 				const int rIndex = (int)jRItem->GetRenderLayer();
 				const size_t guid = jOwner->GetGuid();
 
-				for (uint j = 0; j < (uint)J_MESHGEOMETRY_TYPE::COUNT; ++j)
+				for (uint j = 0; j < (uint)Core::J_MESHGEOMETRY_TYPE::COUNT; ++j)
 				{
 					const uint vecCount = (uint)objectLayer[rIndex][j].size();
 					for (uint k = 0; k < vecCount; ++k)
@@ -626,7 +617,7 @@ namespace JinEngine
 
 				for (int i = 0; i < (int)J_RENDER_LAYER::COUNT; ++i)
 				{
-					for (int j = 0; j < (int)J_MESHGEOMETRY_TYPE::COUNT; ++j)
+					for (int j = 0; j < (int)Core::J_MESHGEOMETRY_TYPE::COUNT; ++j)
 					{
 						objectLayer[i][j].clear();
 						objectLayer[i][j].shrink_to_fit();
@@ -757,7 +748,7 @@ namespace JinEngine
 	uint JScene::GetGameObjectCount(const J_RENDER_LAYER layer)const noexcept
 	{
 		uint sum = 0;
-		for (uint i = 0; i < (uint)J_MESHGEOMETRY_TYPE::COUNT; ++i)
+		for (uint i = 0; i < (uint)Core::J_MESHGEOMETRY_TYPE::COUNT; ++i)
 			sum += (uint)impl->objectLayer[(uint)layer][i].size();
 		return sum;
 	}
@@ -858,10 +849,12 @@ namespace JinEngine
 	JUserPtr<JCamera> JScene::FindFirstSelectedCamera(const bool allowEditorCam)const noexcept
 	{
 		return impl->FindFirstSelectedCamera(allowEditorCam);
-	}
-	JUserPtr<JGameObject> JScene::IntersectFirst(const Core::JRay& ray, const J_ACCELERATOR_LAYER layer)const noexcept
+	} 
+	JUserPtr<JGameObject> JScene::IntersectFirst(const Core::JRay& ray, const J_ACCELERATOR_LAYER layer, const bool findOtherAcceleratorIfTypeNull)const noexcept
 	{
 		JAcceleratorIntersectInfo info(ray, layer, J_ACCELERATOR_SORT_TYPE::NOT_USE, false, true);
+		info.findOtherAcceleratorIfTypeNull = findOtherAcceleratorIfTypeNull;
+
 		return IntersectFirst(info);
 	}
 	JUserPtr<JGameObject> JScene::IntersectFirst(JAcceleratorIntersectInfo& info)const noexcept
@@ -1033,10 +1026,10 @@ namespace JinEngine
 		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JFileIOHelper::LoadEnumData(stream, loadMetaData->useCaseType);
-		JFileIOHelper::LoadAtomicData(stream, loadMetaData->isOpen);
-		JFileIOHelper::LoadAtomicData(stream, loadMetaData->isMainScene);
-		JFileIOHelper::LoadAtomicData(stream, loadMetaData->isActivatedAccelerator);
+		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->useCaseType);
+		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->isOpen);
+		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->isMainScene);
+		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->isActivatedAccelerator);
 
 		for (uint i = 0; i < (uint)J_ACCELERATOR_LAYER::COUNT; ++i)
 		{
@@ -1068,10 +1061,10 @@ namespace JinEngine
 		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JFileIOHelper::StoreEnumData(stream, L"UseCaseType:", scene->GetUseCaseType());
-		JFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamLastOpenSymbol(JScene::StaticTypeInfo()), scene->IsValid());
-		JFileIOHelper::StoreAtomicData(stream, L"IsMainScene:", scene->IsMainScene());
-		JFileIOHelper::StoreAtomicData(stream, L"IsActivatedAccelerator:", scene->IsAcceleratorActivated());
+		JObjectFileIOHelper::StoreEnumData(stream, L"UseCaseType:", scene->GetUseCaseType());
+		JObjectFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamLastOpenSymbol(JScene::StaticTypeInfo()), scene->IsValid());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"IsMainScene:", scene->IsMainScene());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"IsActivatedAccelerator:", scene->IsAcceleratorActivated());
 
 		for (uint i = 0; i < (uint)J_ACCELERATOR_LAYER::COUNT; ++i)
 		{
@@ -1086,11 +1079,11 @@ namespace JinEngine
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 
-	const std::vector<JUserPtr<JGameObject>>& CashInterface::GetGameObjectCashVec(JScene* scene, const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept
+	const std::vector<JUserPtr<JGameObject>>& CashInterface::GetGameObjectCashVec(JScene* scene, const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)noexcept
 	{
 		return scene->impl->GetGameObjectCashVec(rLayer, meshType);
 	}
-	const std::vector<JUserPtr<JGameObject>>& CashInterface::GetGameObjectCashVec(const JUserPtr<JScene>& scene, const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept
+	const std::vector<JUserPtr<JGameObject>>& CashInterface::GetGameObjectCashVec(const JUserPtr<JScene>& scene, const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)noexcept
 	{
 		return scene->impl->GetGameObjectCashVec(rLayer, meshType);
 	}
@@ -1175,7 +1168,7 @@ namespace JinEngine
 
 	uint FrameIndexInterface::GetPassFrameIndex(JScene* scene)
 	{
-		return scene->impl->GetUploadIndex();
+		return scene->impl->GetFrameIndex();
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JScenePrivate::GetCreateInstanceInterface()const noexcept

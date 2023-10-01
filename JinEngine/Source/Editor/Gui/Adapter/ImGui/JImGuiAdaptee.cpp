@@ -59,61 +59,61 @@ namespace JinEngine::Editor
 		static void SetGuiStyle(JImGuiPrivateData* data)
 		{
 			auto& colors = data->colors;
-			colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-			colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-			colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.12f, 1.00f);
-			colors[ImGuiCol_ChildBg] = ImVec4(0.1f, 0.1f, 0.12f, 0.00f);
-			colors[ImGuiCol_PopupBg] = ImVec4(0.1f, 0.1f, 0.12f, 1.00f);
-			colors[ImGuiCol_Border] = ImVec4(0.5f, 0.5f, 0.5f, 0.7f);
-			colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.24f);
-			colors[ImGuiCol_FrameBg] = ImVec4(0.15f, 0.15f, 0.17f, 0.54f);
-			colors[ImGuiCol_FrameBgHovered] = ImVec4(0.25f, 0.25f, 0.28f, 0.54f);
-			colors[ImGuiCol_FrameBgActive] = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
-			colors[ImGuiCol_TitleBg] = ImVec4(0.15f, 0.15f, 0.17f, 1.00f);
-			colors[ImGuiCol_TitleBgActive] = ImVec4(Graphic::Constants::backBufferClearColor.xyz * 0.5f, 1.0f);//ImVec4(0.2f, 0.2f, 0.225f, 1.00f);
-			colors[ImGuiCol_TitleBgCollapsed] = ImVec4(Graphic::Constants::backBufferClearColor.xyz * 0.25f, 1.0f);	 //ImVec4(0.125f, 0.125f, 0.125f, 1.00f);							   //ImVec4(0.125f, 0.125f, 0.125f, 1.00f);
-			colors[ImGuiCol_MenuBarBg] = ImVec4(0.15f, 0.15f, 0.17f, 1.00f);
-			colors[ImGuiCol_ScrollbarBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.54f);
-			colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.34f, 0.34f, 0.34f, 0.54f);
-			colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.40f, 0.40f, 0.40f, 0.54f);
-			colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.56f, 0.56f, 0.56f, 0.54f);
-			colors[ImGuiCol_CheckMark] = ImVec4(0.33f, 0.67f, 0.86f, 1.00f);
-			colors[ImGuiCol_SliderGrab] = ImVec4(0.34f, 0.34f, 0.34f, 0.54f);
-			colors[ImGuiCol_SliderGrabActive] = ImVec4(0.56f, 0.56f, 0.56f, 0.54f);
-			colors[ImGuiCol_Button] = ImVec4(0.05f, 0.05f, 0.05f, 0.54f);
-			colors[ImGuiCol_ButtonHovered] = ImVec4(0.19f, 0.19f, 0.19f, 0.54f);
-			colors[ImGuiCol_ButtonActive] = ImVec4(0.20f, 0.22f, 0.23f, 1.00f);
-			colors[ImGuiCol_Header] = ImVec4(0.15f, 0.15f, 0.17f, 0.54f);
-			colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.25f, 0.28f, 0.54f);
-			colors[ImGuiCol_HeaderActive] = ImVec4(0.35f, 0.35f, 0.4f, 1.00f);
-			colors[ImGuiCol_Separator] = ImVec4(0.28f, 0.28f, 0.28f, 1.00f);
-			colors[ImGuiCol_SeparatorHovered] = ImVec4(0.44f, 0.44f, 0.44f, 1.00f);
-			colors[ImGuiCol_SeparatorActive] = ImVec4(0.40f, 0.44f, 0.47f, 1.00f);
-			colors[ImGuiCol_ResizeGrip] = ImVec4(0.28f, 0.28f, 0.28f, 0.29f);
-			colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.44f, 0.44f, 0.44f, 0.29f);
-			colors[ImGuiCol_ResizeGripActive] = ImVec4(0.40f, 0.44f, 0.47f, 1.00f);
-			colors[ImGuiCol_Tab] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
-			colors[ImGuiCol_TabHovered] = Graphic::Constants::backBufferClearColor; //ImVec4(0.14f, 0.14f, 0.25f, 1.00f);				
-			colors[ImGuiCol_TabActive] = Graphic::Constants::backBufferClearColor;	//ImVec4(0.14f, 0.14f, 0.25f, 1.00f);
-			colors[ImGuiCol_TabUnfocused] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
-			colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
-			colors[ImGuiCol_DockingPreview] = ImVec4(0.33f, 0.67f, 0.86f, 1.00f);
-			colors[ImGuiCol_DockingEmptyBg] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
-			colors[ImGuiCol_PlotLines] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
-			colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
-			colors[ImGuiCol_PlotHistogram] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
-			colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
-			colors[ImGuiCol_TableHeaderBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.52f);
-			colors[ImGuiCol_TableBorderStrong] = ImVec4(0.00f, 0.00f, 0.00f, 0.52f);
-			colors[ImGuiCol_TableBorderLight] = ImVec4(0.28f, 0.28f, 0.28f, 0.29f);
-			colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-			colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.06f);
-			colors[ImGuiCol_TextSelectedBg] = ImVec4(0.20f, 0.22f, 0.23f, 1.00f);
-			colors[ImGuiCol_DragDropTarget] = ImVec4(0.33f, 0.67f, 0.86f, 1.00f);
-			colors[ImGuiCol_NavHighlight] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
-			colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 0.00f, 0.00f, 0.70f);
-			colors[ImGuiCol_NavWindowingDimBg] = ImVec4(1.00f, 0.00f, 0.00f, 0.20f);
-			colors[ImGuiCol_ModalWindowDimBg] = ImVec4(1.00f, 0.00f, 0.00f, 0.35f);
+			colors[ImGuiCol_Text] = JVector4F(1.00f, 1.00f, 1.00f, 1.00f);
+			colors[ImGuiCol_TextDisabled] = JVector4F(0.50f, 0.50f, 0.50f, 1.00f);
+			colors[ImGuiCol_WindowBg] = JVector4F(0.1f, 0.1f, 0.12f, 1.00f);
+			colors[ImGuiCol_ChildBg] = JVector4F(0.1f, 0.1f, 0.12f, 0.00f);
+			colors[ImGuiCol_PopupBg] = JVector4F(0.1f, 0.1f, 0.12f, 1.00f);
+			colors[ImGuiCol_Border] = JVector4F(0.5f, 0.5f, 0.5f, 0.7f);
+			colors[ImGuiCol_BorderShadow] = JVector4F(0.00f, 0.00f, 0.00f, 0.24f);
+			colors[ImGuiCol_FrameBg] = JVector4F(0.15f, 0.15f, 0.17f, 0.54f);
+			colors[ImGuiCol_FrameBgHovered] = JVector4F(0.4f, 0.4f, 0.4532f, 0.8f);
+			colors[ImGuiCol_FrameBgActive] = JVector4F(0.55f, 0.55f, 0.62f, 1.00f);
+			colors[ImGuiCol_TitleBg] = JVector4F(0.15f, 0.15f, 0.17f, 1.00f);
+			colors[ImGuiCol_TitleBgActive] = JVector4F(JVector3F(Graphic::Constants::backBufferClearColor.xyz) * 0.75f, 1.0f);//JVector4F(0.2f, 0.2f, 0.225f, 1.00f);
+			colors[ImGuiCol_TitleBgCollapsed] = JVector4F(JVector3F(Graphic::Constants::backBufferClearColor.xyz) * 0.325f, 1.0f);	 //JVector4F(0.125f, 0.125f, 0.125f, 1.00f);							   //JVector4F(0.125f, 0.125f, 0.125f, 1.00f);
+			colors[ImGuiCol_MenuBarBg] = JVector4F(0.15f, 0.15f, 0.17f, 1.00f);
+			colors[ImGuiCol_ScrollbarBg] = JVector4F(0.05f, 0.05f, 0.05f, 0.54f);
+			colors[ImGuiCol_ScrollbarGrab] = JVector4F(0.34f, 0.34f, 0.34f, 0.74f);
+			colors[ImGuiCol_ScrollbarGrabHovered] = JVector4F(0.40f, 0.40f, 0.40f, 0.74f);
+			colors[ImGuiCol_ScrollbarGrabActive] = JVector4F(0.56f, 0.56f, 0.56f, 0.74f);
+			colors[ImGuiCol_CheckMark] = JVector4F(0.33f, 0.67f, 0.86f, 1.00f);
+			colors[ImGuiCol_SliderGrab] = JVector4F(0.34f, 0.34f, 0.34f, 0.74f);
+			colors[ImGuiCol_SliderGrabActive] = JVector4F(0.56f, 0.56f, 0.56f, 0.74f);
+			colors[ImGuiCol_Button] = JVector4F(0.05f, 0.05f, 0.05f, 0.54f);
+			colors[ImGuiCol_ButtonHovered] = JVector4F(0.19f, 0.19f, 0.19f, 0.74f);
+			colors[ImGuiCol_ButtonActive] = JVector4F(0.20f, 0.22f, 0.23f, 1.00f);
+			colors[ImGuiCol_Header] = JVector4F(0.15f, 0.15f, 0.17f, 0.54f);
+			colors[ImGuiCol_HeaderHovered] = JVector4F(0.4f, 0.4f, 0.4532f, 0.8f);
+			colors[ImGuiCol_HeaderActive] = JVector4F(0.55f, 0.55f, 0.62f, 1.00f);
+			colors[ImGuiCol_Separator] = JVector4F(0.28f, 0.28f, 0.28f, 1.00f);
+			colors[ImGuiCol_SeparatorHovered] = JVector4F(0.44f, 0.44f, 0.44f, 1.00f);
+			colors[ImGuiCol_SeparatorActive] = JVector4F(0.40f, 0.44f, 0.47f, 1.00f);
+			colors[ImGuiCol_ResizeGrip] = JVector4F(0.28f, 0.28f, 0.28f, 0.29f);
+			colors[ImGuiCol_ResizeGripHovered] = JVector4F(0.44f, 0.44f, 0.44f, 0.29f);
+			colors[ImGuiCol_ResizeGripActive] = JVector4F(0.40f, 0.44f, 0.47f, 1.00f);
+			colors[ImGuiCol_Tab] = JVector4F(0.14f, 0.14f, 0.14f, 1.00f);
+			colors[ImGuiCol_TabHovered] = Graphic::Constants::backBufferClearColor; //JVector4F(0.14f, 0.14f, 0.25f, 1.00f);				
+			colors[ImGuiCol_TabActive] = Graphic::Constants::backBufferClearColor;	//JVector4F(0.14f, 0.14f, 0.25f, 1.00f);
+			colors[ImGuiCol_TabUnfocused] = JVector4F(0.14f, 0.14f, 0.14f, 1.00f);
+			colors[ImGuiCol_TabUnfocusedActive] = JVector4F(0.25f, 0.25f, 0.25f, 1.00f);
+			colors[ImGuiCol_DockingPreview] = JVector4F(0.33f, 0.67f, 0.86f, 1.00f);
+			colors[ImGuiCol_DockingEmptyBg] = JVector4F(1.00f, 0.00f, 0.00f, 1.00f);
+			colors[ImGuiCol_PlotLines] = JVector4F(1.00f, 0.00f, 0.00f, 1.00f);
+			colors[ImGuiCol_PlotLinesHovered] = JVector4F(1.00f, 0.00f, 0.00f, 1.00f);
+			colors[ImGuiCol_PlotHistogram] = JVector4F(1.00f, 0.00f, 0.00f, 1.00f);
+			colors[ImGuiCol_PlotHistogramHovered] = JVector4F(1.00f, 0.00f, 0.00f, 1.00f);
+			colors[ImGuiCol_TableHeaderBg] = JVector4F(0.00f, 0.00f, 0.00f, 0.52f);
+			colors[ImGuiCol_TableBorderStrong] = JVector4F(0.00f, 0.00f, 0.00f, 0.52f);
+			colors[ImGuiCol_TableBorderLight] = JVector4F(0.28f, 0.28f, 0.28f, 0.29f);
+			colors[ImGuiCol_TableRowBg] = JVector4F(0.00f, 0.00f, 0.00f, 0.00f);
+			colors[ImGuiCol_TableRowBgAlt] = JVector4F(1.00f, 1.00f, 1.00f, 0.06f);
+			colors[ImGuiCol_TextSelectedBg] = JVector4F(0.20f, 0.22f, 0.23f, 1.00f);
+			colors[ImGuiCol_DragDropTarget] = JVector4F(0.33f, 0.67f, 0.86f, 1.00f);
+			colors[ImGuiCol_NavHighlight] = JVector4F(1.00f, 0.00f, 0.00f, 1.00f);
+			colors[ImGuiCol_NavWindowingHighlight] = JVector4F(1.00f, 0.00f, 0.00f, 0.70f);
+			colors[ImGuiCol_NavWindowingDimBg] = JVector4F(1.00f, 0.00f, 0.00f, 0.20f);
+			colors[ImGuiCol_ModalWindowDimBg] = JVector4F(1.00f, 0.00f, 0.00f, 0.35f);
 
 			ImGuiStyle& style = ImGui::GetStyle();
 			style.WindowPadding = ImVec2(8.00f, 8.00f);
@@ -855,9 +855,9 @@ namespace JinEngine::Editor
 	{
 		return ImGui::IsMouseDragging(ConvertMouseBtnType(btn));
 	}
-	bool JImGuiAdaptee::IsMouseInRect(const JVector2<float>& position, const JVector2<float>& size)const noexcept
+	bool JImGuiAdaptee::IsMouseInRect(const JVector2<float>& min, const JVector2<float>& max)const noexcept
 	{
-		return ImGui::IsMouseHoveringRect(position, position + size, false);
+		return ImGui::IsMouseHoveringRect(min, max, false);
 		/*
 			ImVec2 mousePos = ImGui::GetMousePos();
 		if (mousePos.x >= position.x && mousePos.x <= position.x + size.x &&
@@ -1316,24 +1316,19 @@ namespace JinEngine::Editor
 		bool& pressed,
 		bool changeValueIfPreesd,
 		const JVector2<float>& size,
-		const JVector4<float>& bgColor,
-		const JVector4<float>& bgDelta,
+		const JVector4<float>& bgColor, 
 		const JVector4<float>& frameColor,
 		const float frameThickness)
-	{
-		JVector4<float> finalBgColor = bgColor;
-		if (pressed)
-			finalBgColor -= bgDelta;
-
+	{  
 		const JVector2<float> pos = ImGui::GetCurrentWindow()->DC.CursorPos;
-		DrawRectFilledColor(pos, size, finalBgColor, ImGui::GetStyle().FrameRounding, J_GUI_DRAW_FLAG_ROUND_ALL, true);
+		DrawRectFilledColor(pos, size, pressed ? GetColor(J_GUI_COLOR::HEADER_ACTIVE) : bgColor, ImGui::GetStyle().FrameRounding, J_GUI_DRAW_FLAG_ROUND_ALL, true);
 		if (frameThickness > 0)
 			DrawRectFrame(pos, size, frameColor, frameThickness, ImGui::GetStyle().FrameRounding, J_GUI_DRAW_FLAG_ROUND_ALL, true);
 
-		const JVector2<float> preCursor = ImGui::GetCursorPos();
+		const JVector2<float> preCursor = ImGui::GetCursorPos(); 
 		const bool isPress = Selectable(name, false, J_GUI_SELECTABLE_FLAG_ALLOW_ITEM_OVERLAP, size);
+ 
 		ImGui::SetCursorPos(preCursor);
-
 		info.displayAllType = false;
 		Image(info, size);
 
@@ -1344,14 +1339,12 @@ namespace JinEngine::Editor
 	bool JImGuiAdaptee::ImageButton(const std::string name,
 		JGuiImageInfo info,
 		const JVector2<float>& size,
-		const JVector4<float>& bgColor,
-		const JVector4<float>& bgDelta,
+		const JVector4<float>& bgColor, 
 		const JVector4<float>& frameColor,
 		const float frameThickness)
-	{
-		JVector4<float> finalBgColor = bgColor;
-		const JVector2<float> pos = ImGui::GetCurrentWindow()->DC.CursorPos;
-		DrawRectFilledColor(pos, size, finalBgColor, ImGui::GetStyle().FrameRounding, J_GUI_DRAW_FLAG_ROUND_ALL, true);
+	{ 
+		const JVector2<float> pos = ImGui::GetCurrentWindow()->DC.CursorPos; 
+		DrawRectFilledColor(pos, size, bgColor, ImGui::GetStyle().FrameRounding, J_GUI_DRAW_FLAG_ROUND_ALL, true);
 		if (frameThickness > 0)
 			DrawRectFrame(pos, size, frameColor, frameThickness, ImGui::GetStyle().FrameRounding, J_GUI_DRAW_FLAG_ROUND_ALL, true);
 
@@ -1393,7 +1386,7 @@ namespace JinEngine::Editor
 		ImGui::PushClipRect(selectablePos, selectablePos + selectableSize, false);
 		DrawRectFrame(rectPos, rectSize, GetColor(J_GUI_COLOR::TEXT), 1.0f, 1.0f, J_GUI_DRAW_FLAG_ROUND_ALL, true);
 		ImGui::PopClipRect();
-		return ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0) && IsMouseInRect(selectablePos, selectableSize);
+		return ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0) && IsMouseInRect(selectablePos, selectablePos + selectableSize);
 	}
 	bool JImGuiAdaptee::MinimizeButton(const bool isLocatedCloseBtnLeftSide, const bool isLocatedMaximizeBtnLeftSize)
 	{
@@ -1428,7 +1421,7 @@ namespace JinEngine::Editor
 		AddLine(linePos0, linePos1, GetColor(J_GUI_COLOR::TEXT), 2.5f);
 		ImGui::PopClipRect();
 		ImGui::SetCursorPos(preCursor);
-		return ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0) && IsMouseInRect(selectablePos, selectableSize);
+		return ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0) && IsMouseInRect(selectablePos, selectablePos + selectableSize);
 	}
 	bool JImGuiAdaptee::PreviousSizeButton(const bool isLocatedCloseBtnLeftSide, const bool isLocatedMaximizeBtnLeftSize)
 	{
@@ -1466,7 +1459,7 @@ namespace JinEngine::Editor
 		DrawRectFilledColor(frontRectPos, frontRectSize, GetColor(J_GUI_COLOR::TITLE_BG), 1.0f, J_GUI_DRAW_FLAG_ROUND_ALL, true);
 		DrawRectFrame(frontRectPos, frontRectSize, GetColor(J_GUI_COLOR::TEXT), 1.0f, 1.0f, J_GUI_DRAW_FLAG_ROUND_ALL, true);
 		ImGui::PopClipRect();
-		return ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0) && IsMouseInRect(selectablePos, selectableSize);
+		return ImGui::IsWindowFocused() && ImGui::IsMouseClicked(0) && IsMouseInRect(selectablePos, selectablePos + selectableSize);
 	}
 	void JImGuiAdaptee::DrawRectFilledMultiColor(const JVector2<float>& pos,
 		const JVector2<float>& size,
@@ -1549,7 +1542,12 @@ namespace JinEngine::Editor
 		const bool useRestoreCursorPos)
 	{
 		const JVector2<float> nowCursor = ImGui::GetCursorPos();
-		const JVector2<float> boxSize = ImGui::CalcTextSize(tooltip.c_str()) + (padding * 2);
+		JVector2<float> boxSize = ImGui::CalcTextSize(tooltip.c_str()) + (padding * 2);
+		boxSize.x += GetAlphabetSize().x * 3;
+
+		JEditorTextAlignCalculator textCal;
+		textCal.Update(tooltip, boxSize, false);
+		 
 		ImGui::SetNextWindowPos(pos);
 		ImGui::SetNextWindowSize(boxSize);
 		J_GUI_WINDOW_FLAG_ flag = J_GUI_WINDOW_FLAG_NO_TITLE_BAR |
@@ -1563,7 +1561,7 @@ namespace JinEngine::Editor
 		ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());
 
 		ImGui::SetCursorScreenPos(pos + padding);
-		JImGuiAdaptee::Text(tooltip);
+		JImGuiAdaptee::Text(textCal.MiddleAligned());
 		JImGuiAdaptee::EndWindow();
 		if (useRestoreCursorPos)
 			ImGui::SetCursorPos(nowCursor);

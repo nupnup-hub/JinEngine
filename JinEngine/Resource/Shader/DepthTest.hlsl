@@ -24,7 +24,7 @@ VertexOut VS(VertexIn vin)
 	float4 posW = mul(float4(vin.posL, 1.0f), objWorld);
 	vout.posH = mul(posW, viewProj);
 #if defined(OCCLUSION_QUERY)
-	vout.posH.z -= 0.1f;
+	vout.posH.z *= 0.95f;
 #endif
 	return vout;
 }

@@ -12,15 +12,18 @@ namespace JinEngine
 		class JEditorSceneImageInteraction
 		{
 		public:
+			/**
+			* ´ëºÎºÐ sceneImageMinPoint = local cursor pos
+			*/
 			static JUserPtr<JGameObject> Intersect(JUserPtr<JScene> scene,
 				JUserPtr<JCamera> cam,
 				const J_ACCELERATOR_LAYER layer,
-				const JVector2<float>& sceneImageMinPoint) noexcept;
+				const JVector2<float>& sceneImageScreenMinPoint) noexcept;
 			//use obb
 			static std::vector<JUserPtr<JGameObject>> Contain(JUserPtr<JScene> scene,
 				JUserPtr<JCamera> cam,
 				const J_ACCELERATOR_LAYER layer,
-				const JVector2<float>& sceneImageMinPoint,
+				const JVector2<float>& sceneImageScreenMinPoint,
 				const JVector2<float>& minMousePos,
 				const JVector2<float>& maxMousePos) noexcept;
 		};

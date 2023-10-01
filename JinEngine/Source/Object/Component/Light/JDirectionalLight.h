@@ -26,14 +26,22 @@ namespace JinEngine
 		const Graphic::JCullingUserInterface CullingUserInterface()const noexcept final;
 		J_LIGHT_TYPE GetLightType()const noexcept final;
 		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept final;   
-		float GetNear()const noexcept final;
-		float GetFar()const noexcept final;
+		float GetFrustumNear()const noexcept final;
+		float GetFrustumFar()const noexcept final;
 		DirectX::BoundingBox GetBBox()const noexcept final;
+		uint GetCsmSplitCount()const noexcept;
+		float GetCsmSplitBlendRate()const noexcept;
+		float GetCsmShadowDistance()const noexcept;
+		float GetCsmLevelBlendRate()const noexcept;
 	public: 
 		void SetShadow(const bool value)noexcept final;
 		void SetShadowResolution(const J_SHADOW_RESOLUTION sQuality)noexcept final;
 		void SetAllowDisplayShadowMap(const bool value)noexcept final;
 		void SetCsm(const bool value)noexcept;
+		void SetCsmSplitCount(const uint newCount)noexcept;
+		void SetCsmSplitBlendRate(const float value)noexcept;
+		void SetCsmShadowDistance(const float value)noexcept;
+		void SetCsmLevelBlendRate(const float value)noexcept;
 	public:
 		bool IsFrameDirted()const noexcept final;
 		bool IsCsmActivated()const noexcept; 

@@ -1,6 +1,7 @@
 #pragma once
 #include<string>
-#include"JMeshType.h"
+#include"../../../Core/Geometry/Mesh/JMeshType.h"
+
 namespace JinEngine
 {
 	//has sequence dependency
@@ -112,14 +113,14 @@ namespace JinEngine
 				return L"Error";
 			}
 		}
-		static J_MESHGEOMETRY_TYPE GetMeshType(const J_DEFAULT_SHAPE type)
+		static Core::J_MESHGEOMETRY_TYPE GetMeshType(const J_DEFAULT_SHAPE type)
 		{
 			switch (type)
 			{
 			case JinEngine::J_DEFAULT_SHAPE::DRAGON:
-				return J_MESHGEOMETRY_TYPE::SKINNED;
+				return Core::J_MESHGEOMETRY_TYPE::SKINNED;
 			default:
-				return J_MESHGEOMETRY_TYPE::STATIC;
+				return Core::J_MESHGEOMETRY_TYPE::STATIC;
 			}		
 		}
 	};	 

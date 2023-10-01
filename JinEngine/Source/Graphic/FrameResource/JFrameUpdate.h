@@ -16,7 +16,10 @@ namespace JinEngine
 		class JFrameUpdateData
 		{ 
 		private:
-			//frame index
+			//same as holdervec index
+			int number = 0;
+		private:
+			//frame index	calculated) index = pre data index + pre data indexSize
 			int index = -1;
 			//frame index size
 			short indexSize = -1;
@@ -27,8 +30,10 @@ namespace JinEngine
 			JFrameUpdateData() = default;
 			virtual ~JFrameUpdateData() = default;
 		public:
-			int GetUploadIndex()const noexcept; 
-			int GetIndexSize()const noexcept;
+			int GetFrameIndex()const noexcept; 
+			int GetFrameIndexSize()const noexcept;
+			static uint GetTotalRegistedCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type);
+			static uint GetTotalFrameCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type);
 		protected:
 			void SetUploadIndex(const int value) noexcept; 
 			void SetMovedDirty()noexcept;
@@ -96,11 +101,11 @@ namespace JinEngine
 			}
 			uint GetFirstFrameIndex()const noexcept
 			{
-				return JFrameInterface1::GetUploadIndex();
+				return JFrameInterface1::GetFrameIndex();
 			}
 			uint GetSecondFrameIndex()const noexcept
 			{
-				return JFrameInterface2::GetUploadIndex();
+				return JFrameInterface2::GetFrameIndex();
 			}
 		protected:
 			void SetFirstFrameIndex(const uint value)noexcept
@@ -130,7 +135,7 @@ namespace JinEngine
 			}
 			uint GetFirstFrameIndex()const noexcept
 			{
-				return JFrameInterface1::GetUploadIndex();
+				return JFrameInterface1::GetFrameIndex();
 			}
 			J_UPLOAD_FRAME_RESOURCE_TYPE GetSecondUploadType()const noexcept
 			{
@@ -138,7 +143,7 @@ namespace JinEngine
 			}
 			uint GetSecondFrameIndex()const noexcept
 			{
-				return JFrameInterface2::GetUploadIndex();
+				return JFrameInterface2::GetFrameIndex();
 			}
 			J_UPLOAD_FRAME_RESOURCE_TYPE GetThirdUploadType()const noexcept
 			{
@@ -146,7 +151,7 @@ namespace JinEngine
 			}
 			uint GetThirdFrameIndex()const noexcept
 			{
-				return JFrameInterface3::GetUploadIndex();
+				return JFrameInterface3::GetFrameIndex();
 			}
 		protected:
 			void SetFirstFrameIndex(const uint value)noexcept
@@ -194,19 +199,19 @@ namespace JinEngine
 			}
 			uint GetFirstFrameIndex()const noexcept
 			{
-				return JFrameInterface1::GetUploadIndex();
+				return JFrameInterface1::GetFrameIndex();
 			}
 			uint GetSecondFrameIndex()const noexcept
 			{
-				return JFrameInterface2::GetUploadIndex();
+				return JFrameInterface2::GetFrameIndex();
 			}
 			uint GetThirdFrameIndex()const noexcept
 			{
-				return JFrameInterface3::GetUploadIndex();
+				return JFrameInterface3::GetFrameIndex();
 			}
 			uint GetForthFrameIndex()const noexcept
 			{
-				return JFrameInterface4::GetUploadIndex();
+				return JFrameInterface4::GetFrameIndex();
 			}
 		protected:
 			void SetFirstFrameIndex(const uint value)noexcept
@@ -264,23 +269,23 @@ namespace JinEngine
 			}
 			uint GetFirstFrameIndex()const noexcept
 			{
-				return JFrameInterface1::GetUploadIndex();
+				return JFrameInterface1::GetFrameIndex();
 			}
 			uint GetSecondFrameIndex()const noexcept
 			{
-				return JFrameInterface2::GetUploadIndex();
+				return JFrameInterface2::GetFrameIndex();
 			}
 			uint GetThirdFrameIndex()const noexcept
 			{
-				return JFrameInterface3::GetUploadIndex();
+				return JFrameInterface3::GetFrameIndex();
 			}
 			uint GetForthFrameIndex()const noexcept
 			{
-				return JFrameInterface4::GetUploadIndex();
+				return JFrameInterface4::GetFrameIndex();
 			}
 			uint GetFifthFrameIndex()const noexcept
 			{
-				return JFrameInterface5::GetUploadIndex();
+				return JFrameInterface5::GetFrameIndex();
 			}
 		protected:
 			void SetFirstFrameIndex(const uint value)noexcept
@@ -348,27 +353,27 @@ namespace JinEngine
 			}
 			uint GetFirstFrameIndex()const noexcept
 			{
-				return JFrameInterface1::GetUploadIndex();
+				return JFrameInterface1::GetFrameIndex();
 			}
 			uint GetSecondFrameIndex()const noexcept
 			{
-				return JFrameInterface2::GetUploadIndex();
+				return JFrameInterface2::GetFrameIndex();
 			}
 			uint GetThirdFrameIndex()const noexcept
 			{
-				return JFrameInterface3::GetUploadIndex();
+				return JFrameInterface3::GetFrameIndex();
 			}
 			uint GetForthFrameIndex()const noexcept
 			{
-				return JFrameInterface4::GetUploadIndex();
+				return JFrameInterface4::GetFrameIndex();
 			}
 			uint GetFifthFrameIndex()const noexcept
 			{
-				return JFrameInterface5::GetUploadIndex();
+				return JFrameInterface5::GetFrameIndex();
 			}
 			uint GetSixthFrameIndex()const noexcept
 			{
-				return JFrameInterface6::GetUploadIndex();
+				return JFrameInterface6::GetFrameIndex();
 			}
 		protected:
 			void SetFirstFrameIndex(const uint value)noexcept
@@ -446,31 +451,31 @@ namespace JinEngine
 			}
 			uint GetFirstFrameIndex()const noexcept
 			{
-				return JFrameInterface1::GetUploadIndex();
+				return JFrameInterface1::GetFrameIndex();
 			}
 			uint GetSecondFrameIndex()const noexcept
 			{
-				return JFrameInterface2::GetUploadIndex();
+				return JFrameInterface2::GetFrameIndex();
 			}
 			uint GetThirdFrameIndex()const noexcept
 			{
-				return JFrameInterface3::GetUploadIndex();
+				return JFrameInterface3::GetFrameIndex();
 			}
 			uint GetForthFrameIndex()const noexcept
 			{
-				return JFrameInterface4::GetUploadIndex();
+				return JFrameInterface4::GetFrameIndex();
 			}
 			uint GetFifthFrameIndex()const noexcept
 			{
-				return JFrameInterface5::GetUploadIndex();
+				return JFrameInterface5::GetFrameIndex();
 			}
 			uint GetSixthFrameIndex()const noexcept
 			{
-				return JFrameInterface6::GetUploadIndex();
+				return JFrameInterface6::GetFrameIndex();
 			}
 			uint GetSeventhFrameIndex()const noexcept
 			{
-				return JFrameInterface7::GetUploadIndex();
+				return JFrameInterface7::GetFrameIndex();
 			}
 		protected:
 			void SetFirstFrameIndex(const uint value)noexcept
@@ -558,35 +563,35 @@ namespace JinEngine
 				}
 				uint GetFirstFrameIndex()const noexcept
 				{
-					return JFrameInterface1::GetUploadIndex();
+					return JFrameInterface1::GetFrameIndex();
 				}
 				uint GetSecondFrameIndex()const noexcept
 				{
-					return JFrameInterface2::GetUploadIndex();
+					return JFrameInterface2::GetFrameIndex();
 				}
 				uint GetThirdFrameIndex()const noexcept
 				{
-					return JFrameInterface3::GetUploadIndex();
+					return JFrameInterface3::GetFrameIndex();
 				}
 				uint GetForthFrameIndex()const noexcept
 				{
-					return JFrameInterface4::GetUploadIndex();
+					return JFrameInterface4::GetFrameIndex();
 				}
 				uint GetFifthFrameIndex()const noexcept
 				{
-					return JFrameInterface5::GetUploadIndex();
+					return JFrameInterface5::GetFrameIndex();
 				}
 				uint GetSixthFrameIndex()const noexcept
 				{
-					return JFrameInterface6::GetUploadIndex();
+					return JFrameInterface6::GetFrameIndex();
 				}
 				uint GetSeventhFrameIndex()const noexcept
 				{
-					return JFrameInterface7::GetUploadIndex();
+					return JFrameInterface7::GetFrameIndex();
 				}
 				uint GetEighthFrameIndex()const noexcept
 				{
-					return JFrameInterface8::GetUploadIndex();
+					return JFrameInterface8::GetFrameIndex();
 				}
 			protected:
 				void SetFirstFrameIndex(const uint value)noexcept
@@ -684,39 +689,39 @@ namespace JinEngine
 				}
 				uint GetFirstFrameIndex()const noexcept
 				{
-					return JFrameInterface1::GetUploadIndex();
+					return JFrameInterface1::GetFrameIndex();
 				}
 				uint GetSecondFrameIndex()const noexcept
 				{
-					return JFrameInterface2::GetUploadIndex();
+					return JFrameInterface2::GetFrameIndex();
 				}
 				uint GetThirdFrameIndex()const noexcept
 				{
-					return JFrameInterface3::GetUploadIndex();
+					return JFrameInterface3::GetFrameIndex();
 				}
 				uint GetForthFrameIndex()const noexcept
 				{
-					return JFrameInterface4::GetUploadIndex();
+					return JFrameInterface4::GetFrameIndex();
 				}
 				uint GetFifthFrameIndex()const noexcept
 				{
-					return JFrameInterface5::GetUploadIndex();
+					return JFrameInterface5::GetFrameIndex();
 				}
 				uint GetSixthFrameIndex()const noexcept
 				{
-					return JFrameInterface6::GetUploadIndex();
+					return JFrameInterface6::GetFrameIndex();
 				}
 				uint GetSeventhFrameIndex()const noexcept
 				{
-					return JFrameInterface7::GetUploadIndex();
+					return JFrameInterface7::GetFrameIndex();
 				}
 				uint GetEighthFrameIndex()const noexcept
 				{
-					return JFrameInterface8::GetUploadIndex();
+					return JFrameInterface8::GetFrameIndex();
 				}
 				uint GetNinethFrameIndex()const noexcept
 				{
-					return JFrameInterface9::GetUploadIndex();
+					return JFrameInterface9::GetFrameIndex();
 				}
 			protected:
 				void SetFirstFrameIndex(const uint value)noexcept

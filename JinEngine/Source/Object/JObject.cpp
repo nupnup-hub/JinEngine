@@ -56,6 +56,10 @@ namespace JinEngine
 	{  
 		return impl->flag;
 	}
+	bool JObject::CanControlIdentifiable()const noexcept
+	{
+		return !HasFlag(OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
+	}
 	bool JObject::HasFlag(const J_OBJECT_FLAG flag)const noexcept
 	{
 		return Core::HasSQValueEnum(GetFlag(), flag);

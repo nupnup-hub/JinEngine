@@ -26,18 +26,18 @@ namespace JinEngine
 		const Graphic::JCullingUserInterface CullingUserInterface()const noexcept final;
 		J_LIGHT_TYPE GetLightType()const noexcept final;
 		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept final;
-		float GetNear()const noexcept final;
-		float GetFar()const noexcept final;
-		float GetFalloffStart()const noexcept;
-		float GetFalloffEnd()const noexcept;  
+		float GetFrustumNear()const noexcept final;
+		float GetFrustumFar()const noexcept final;
+		float GetPower()const noexcept;
+		float GetRange()const noexcept;
 		float GetRadius()const noexcept;
 		DirectX::BoundingBox GetBBox()const noexcept final;
 	public:
 		void SetShadow(const bool value)noexcept final;
 		void SetShadowResolution(const J_SHADOW_RESOLUTION sQuality)noexcept final;
 		void SetAllowDisplayShadowMap(const bool value)noexcept final; 
-		void SetFalloffStart(const float falloffStart)noexcept;
-		void SetFalloffEnd(const float falloffEnd)noexcept;
+		void SetPower(const float power)noexcept;
+		void SetRange(const float range)noexcept;
 		void SetRadius(const float radius)noexcept;
 	public:
 		bool IsFrameDirted()const noexcept final;

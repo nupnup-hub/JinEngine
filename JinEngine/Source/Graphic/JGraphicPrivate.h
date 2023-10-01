@@ -27,8 +27,6 @@ namespace JinEngine
 	struct JComputeShaderInitData;
 	class JGraphicShaderDataHolderBase;
 	class JComputeShaderDataHolderBase;
-	struct JStaticMeshVertex;
-	struct JSkinnedMeshVertex;
 	class JMeshGeometry;
 	class JMaterial;
 	class JShader;
@@ -39,6 +37,8 @@ namespace JinEngine
 	namespace Core
 	{
 		class JGraphicException;
+		struct JStaticMeshVertex;
+		struct JSkinnedMeshVertex;
 	}
 	namespace Editor
 	{ 
@@ -83,8 +83,8 @@ namespace JinEngine
 				static JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(uint textureWidth, uint textureHeight);
 				static JUserPtr<JGraphicResourceInfo> CreateShadowMapArrayTexture(uint textureWidth, uint textureHeight, const uint count);
 				static JUserPtr<JGraphicResourceInfo> CreateShadowMapCubeTexture(uint textureWidth, uint textureHeight);
-				static JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(const std::vector<JStaticMeshVertex>& vertex);
-				static JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(const std::vector<JSkinnedMeshVertex>& vertex);
+				static JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(const std::vector<Core::JStaticMeshVertex>& vertex);
+				static JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(const std::vector<Core::JSkinnedMeshVertex>& vertex);
 				static JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(std::vector<uint32>& index);
 				static JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(std::vector<uint16>& index);
 			private:

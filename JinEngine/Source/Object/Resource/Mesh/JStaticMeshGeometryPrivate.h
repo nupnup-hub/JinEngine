@@ -15,7 +15,7 @@ namespace JinEngine
 			Core::J_FILE_IO_RESULT LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data)final;	//use clipMetaData
 			Core::J_FILE_IO_RESULT StoreMetaData(Core::JDITypeDataBase* data)final;	//use storeData	 
 		private:
-			std::unique_ptr<JMeshGroup> ReadMeshGroupData(const std::wstring& path) final;
+			std::unique_ptr<Core::JMeshGroup> ReadMeshGroupData(const std::wstring& path) final;
 		};
 		class CreateInstanceInterface final : public JMeshGeometryPrivate::CreateInstanceInterface
 		{

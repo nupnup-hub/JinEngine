@@ -17,6 +17,7 @@ namespace JinEngine
 		BASIC_MATERIAL_ALBEDO_MAP,
 		BASIC_MATERIAL_NORMAL_MAP,
 		DEFAULT_SKY,
+		BLUE_NOISE,
 		SKELETON,
 		ANIMATION_CLIP,
 		ANIMATION_CONTROLLER,
@@ -29,6 +30,10 @@ namespace JinEngine
 		OPTION_SETTING,
 		PLAY_SCENE_TIME,
 		PAUSE_SCENE_TIME,
+		DIRECTIONAL_LIGHT,
+		POINT_LIGHT,
+		SPOT_LIGHT,
+		CAMERA,
 		PROJECT_SELECTOR_BACKGROUND
 	};
 
@@ -43,22 +48,8 @@ namespace JinEngine
 				return true;
 			case JinEngine::J_DEFAULT_TEXTURE::MISSING:
 				return true;
-			case JinEngine::J_DEFAULT_TEXTURE::POSITION_ARROW:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::ROTATION_ARROW:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::SCALE_ARROW:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::VIEW_FRUSTUM_ICON:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::COORD_GRID_ICON:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::OPTION_SETTING:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::PLAY_SCENE_TIME:
-				return false;
-			case JinEngine::J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME:
-				return false;
+			case JinEngine::J_DEFAULT_TEXTURE::BLUE_NOISE:
+				return true;
 			default:
 				return false;
 			}
@@ -87,6 +78,8 @@ namespace JinEngine
 				return L"white_Normal.png";
 			case JinEngine::J_DEFAULT_TEXTURE::DEFAULT_SKY:
 				return L"DefaultSky.dds";
+			case JinEngine::J_DEFAULT_TEXTURE::BLUE_NOISE:
+				return L"BlueNoise.png";
 			case JinEngine::J_DEFAULT_TEXTURE::SKELETON:
 				return L"skeleton.png";
 			case JinEngine::J_DEFAULT_TEXTURE::ANIMATION_CLIP:
@@ -111,6 +104,14 @@ namespace JinEngine
 				return L"PlaySceneTime.png";
 			case JinEngine::J_DEFAULT_TEXTURE::PAUSE_SCENE_TIME:
 				return L"PauseSceneTime.png";
+			case JinEngine::J_DEFAULT_TEXTURE::DIRECTIONAL_LIGHT:
+				return L"DirectionalLight.png";
+			case JinEngine::J_DEFAULT_TEXTURE::POINT_LIGHT:
+				return L"PointLight.png";
+			case JinEngine::J_DEFAULT_TEXTURE::SPOT_LIGHT:
+				return L"SpotLight.png";
+			case JinEngine::J_DEFAULT_TEXTURE::CAMERA:
+				return L"Camera.png";
 			case JinEngine::J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND:
 				return L"Shiro_Background.jpg";
 			default:
@@ -122,13 +123,13 @@ namespace JinEngine
 			switch (texture)
 			{
 			case JinEngine::J_DEFAULT_TEXTURE::DEFAULT_SKY:
-				return (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE);
+				return (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			case JinEngine::J_DEFAULT_TEXTURE::BASIC_MATERIAL_ALBEDO_MAP:
-				return (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE);
+				return (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			case JinEngine::J_DEFAULT_TEXTURE::BASIC_MATERIAL_NORMAL_MAP:
-				return (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE);
+				return (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			default:
-				return (J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE); 
+				return (J_OBJECT_FLAG)(OBJECT_FLAG_HIDDEN | OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			}
 		}
 	};

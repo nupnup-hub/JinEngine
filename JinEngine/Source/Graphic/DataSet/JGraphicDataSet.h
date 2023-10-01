@@ -110,8 +110,9 @@ namespace JinEngine
 			JVector2<uint> size;
 			float nearF;
 			float farF;
+			bool isPerspective;
 		public:
-			JGraphicDepthMapDebugHandleSet(const JVector2<uint> size, const float nearF, const float farF);
+			JGraphicDepthMapDebugHandleSet(const JVector2<uint> size, const float nearF, const float farF, const bool isPerspective);
 		};
 
 		struct JGraphicSceneDrawSet : public JGraphicDeviceUser, public Core::JValidInterface

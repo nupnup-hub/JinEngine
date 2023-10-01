@@ -309,9 +309,9 @@ namespace JinEngine
 			} J_MERGE_NAME(methodName, __VA_ARGS__);													\
 	
 
-#define REGISTER_METHOD_READONLY_GUI_WIDGET(displayName, getName, ...)												\
+#define REGISTER_METHOD_READONLY_GUI_WIDGET(displayName, getName, ...)									\
 			template<typename Class,  typename GetPointer, GetPointer getPtr>							\
-			class JinEngine::Core::JMethodReadOnlyGuiWidgetRegister;											\
+			class JinEngine::Core::JMethodReadOnlyGuiWidgetRegister;									\
 																										\
 			inline static struct J_MERGE_NAME(displayName, getName)										\
 			{																							\
@@ -326,7 +326,10 @@ namespace JinEngine
 			} J_MERGE_NAME(displayName, getName);														\
 
 
-#define REGISTER_METHOD_GUI_WIDGET(displayName, getName, setName, ...)												\
+#define REGISTER_METHOD_GUI_WIDGET(displayName, getName, setName, ...)									\
+																										\
+			REGISTER_METHOD(getName)																	\
+			REGISTER_METHOD(setName)																								\
 			template<typename Class,  typename GetPointer, GetPointer getPtr>							\
 			class JinEngine::Core::JMethodGuiWidgetRegister;											\
 																										\

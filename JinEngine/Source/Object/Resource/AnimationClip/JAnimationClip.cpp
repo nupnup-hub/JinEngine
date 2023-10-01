@@ -1,6 +1,5 @@
 #include"JAnimationClip.h"
-#include"JAnimationClipPrivate.h"
-#include"JAnimationData.h"
+#include"JAnimationClipPrivate.h" 
 #include"../AnimationController/FSM/JAnimationTime.h"
 #include"../AnimationController/FSM/JAnimationUpdateData.h"
 #include"../JClearableInterface.h"
@@ -13,14 +12,15 @@
 #include"../Skeleton/JSkeleton.h"
 #include"../Skeleton/JSkeletonAsset.h"
 #include"../Skeleton/JSkeletonFixedData.h"
+#include"../../JObjectFileIOHelper.h"
 #include"../../Directory/JDirectory.h"  
 #include"../../Directory/JFile.h"
 #include"../../../Core/Identity/JIdenCreator.h"
-#include"../../../Core/Reflection/JTypeImplBase.h"
-#include"../../../Core/File/JFileIOHelper.h" 
+#include"../../../Core/Reflection/JTypeImplBase.h" 
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Time/JGameTimer.h"
-#include"../../../Core/Loader/FbxLoader/JFbxFileLoader.h"
+#include"../../../Core/Animation/JAnimationData.h"
+#include"../../../Core/Geometry/Mesh/Loader/FbxLoader/JFbxFileLoader.h"
 #include"../../../Core/Utility/JCommonUtility.h"
 #include"../../../Application/JApplicationProject.h"
 
@@ -41,7 +41,7 @@ namespace JinEngine
 	public:
 		JWeakPtr<JAnimationClip> thisPointer;
 	public:
-		std::vector<JAnimationSample>animationSample;			//fixed
+		std::vector<Core::JAnimationSample>animationSample;			//fixed
 		size_t skeletonHash;			//fixed
 	public:
 		REGISTER_PROPERTY_EX(clipSkeletonAsset, GetClipSkeletonAsset, SetClipSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
@@ -411,34 +411,34 @@ namespace JinEngine
 			}
 		}
 	public:
-		static std::unique_ptr<JAnimationData> ReadAssetData(const std::wstring& path)
+		static std::unique_ptr<Core::JAnimationData> ReadAssetData(const std::wstring& path)
 		{
 			std::wifstream stream;
 			stream.open(path, std::ios::in | std::ios::binary);
 			if (!stream.is_open())
-				return std::unique_ptr<JAnimationData>{};
+				return std::unique_ptr<Core::JAnimationData>{};
 
-			std::unique_ptr<JAnimationData> res = std::make_unique<JAnimationData>();
+			std::unique_ptr<Core::JAnimationData> res = std::make_unique<Core::JAnimationData>();
 
 			uint sampleCount;
-			JFileIOHelper::LoadAtomicData(stream, sampleCount);
+			JObjectFileIOHelper::LoadAtomicData(stream, sampleCount);
 			res->animationSample.resize(sampleCount);
 			for (uint i = 0; i < sampleCount; ++i)
 			{
 				uint jointCount;
-				JFileIOHelper::LoadAtomicData(stream, jointCount);
+				JObjectFileIOHelper::LoadAtomicData(stream, jointCount);
 				res->animationSample[i].jointPose.resize(jointCount);
 				for (uint j = 0; j < jointCount; ++j)
 				{
-					JFileIOHelper::LoadVector4(stream, res->animationSample[i].jointPose[j].rotationQuat);
-					JFileIOHelper::LoadVector3(stream, res->animationSample[i].jointPose[j].translation);
-					JFileIOHelper::LoadVector3(stream, res->animationSample[i].jointPose[j].scale);
-					JFileIOHelper::LoadAtomicData(stream, res->animationSample[i].jointPose[j].stTime);
+					JObjectFileIOHelper::LoadVector4(stream, res->animationSample[i].jointPose[j].rotationQuat);
+					JObjectFileIOHelper::LoadVector3(stream, res->animationSample[i].jointPose[j].translation);
+					JObjectFileIOHelper::LoadVector3(stream, res->animationSample[i].jointPose[j].scale);
+					JObjectFileIOHelper::LoadAtomicData(stream, res->animationSample[i].jointPose[j].stTime);
 				}
 			}
-			JFileIOHelper::LoadAtomicData(stream, res->skeletonHash);
-			JFileIOHelper::LoadAtomicData(stream, res->length);
-			JFileIOHelper::LoadAtomicData(stream, res->framePerSecond);
+			JObjectFileIOHelper::LoadAtomicData(stream, res->skeletonHash);
+			JObjectFileIOHelper::LoadAtomicData(stream, res->length);
+			JObjectFileIOHelper::LoadAtomicData(stream, res->framePerSecond);
 			stream.close();
 			return std::move(res);
 		}
@@ -449,28 +449,28 @@ namespace JinEngine
 			if (!stream.is_open())
 				return false;
 
-			JFileIOHelper::StoreAtomicData(stream, L"SampleCount:", animationSample.size());
+			JObjectFileIOHelper::StoreAtomicData(stream, L"SampleCount:", animationSample.size());
 			const uint sampleCount = (uint)animationSample.size();
 			for (uint i = 0; i < sampleCount; ++i)
 			{
-				JFileIOHelper::StoreAtomicData(stream, L"JointPoseCount:", animationSample[i].jointPose.size());
+				JObjectFileIOHelper::StoreAtomicData(stream, L"JointPoseCount:", animationSample[i].jointPose.size());
 				const uint jointCount = (uint)animationSample[i].jointPose.size();
 				for (uint j = 0; j < jointCount; ++j)
 				{
-					JFileIOHelper::StoreVector4(stream, L"Quaternion:", animationSample[i].jointPose[j].rotationQuat);
-					JFileIOHelper::StoreVector3(stream, L"translation:", animationSample[i].jointPose[j].translation);
-					JFileIOHelper::StoreVector3(stream, L"scale:", animationSample[i].jointPose[j].scale);
-					JFileIOHelper::StoreAtomicData(stream, L"StTime:", animationSample[i].jointPose[j].stTime);
+					JObjectFileIOHelper::StoreVector4(stream, L"Quaternion:", animationSample[i].jointPose[j].rotationQuat);
+					JObjectFileIOHelper::StoreVector3(stream, L"translation:", animationSample[i].jointPose[j].translation);
+					JObjectFileIOHelper::StoreVector3(stream, L"scale:", animationSample[i].jointPose[j].scale);
+					JObjectFileIOHelper::StoreAtomicData(stream, L"StTime:", animationSample[i].jointPose[j].stTime);
 				}
 			}
 
-			JFileIOHelper::StoreAtomicData(stream, L"OriSkeletonHash:", skeletonHash);
-			JFileIOHelper::StoreAtomicData(stream, L"ClipLength", length);
-			JFileIOHelper::StoreAtomicData(stream, L"ClipFramePerSecond", framePerSecond);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"OriSkeletonHash:", skeletonHash);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"ClipLength", length);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"ClipFramePerSecond", framePerSecond);
 			stream.close();
 			return true;
 		}
-		bool ImportAnimationClip(std::unique_ptr<JAnimationData>&& aniData)
+		bool ImportAnimationClip(std::unique_ptr<Core::JAnimationData>&& aniData)
 		{
 			animationSample = std::move(aniData->animationSample);
 			skeletonHash = aniData->skeletonHash;
@@ -524,12 +524,12 @@ namespace JinEngine
 			auto fbxMeshImportC = [](JUserPtr<JDirectory> dir, const Core::JFileImportHelpData importPathData) -> std::vector<JUserPtr<JResourceObject>>
 			{
 				std::vector<JUserPtr<JResourceObject>> res;
-				using FbxFileTypeInfo = Core::JFbxFileLoaderImpl::FbxFileTypeInfo;
-				FbxFileTypeInfo info = Core::JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
+				using FbxFileTypeInfo = Core::JFbxFileLoader::FbxFileTypeInfo;
+				FbxFileTypeInfo info = JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
 				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
 				{
 					Core::JFbxAnimationData jfbxAniData;
-					Core::J_FBXRESULT loadRes = Core::JFbxFileLoader::Instance().LoadFbxAnimationFile(importPathData.oriFilePath, jfbxAniData);
+					Core::J_FBXRESULT loadRes = JFbxFileLoader::Instance().LoadFbxAnimationFile(importPathData.oriFilePath, jfbxAniData);
 					if (loadRes == Core::J_FBXRESULT::FAIL)
 						return { nullptr };
 
@@ -543,10 +543,10 @@ namespace JinEngine
 					{
 						res.push_back(JICI::Create<JAnimationClip>(importPathData.name,
 							Core::MakeGuid(),
-							importPathData.flag,
+							(J_OBJECT_FLAG)importPathData.flag,
 							RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
 							animationDir,
-							std::make_unique<JAnimationData>(std::move(jfbxAniData))));
+							std::make_unique<Core::JAnimationData>(std::move(jfbxAniData))));
 					}
 				}
 				return res;
@@ -561,13 +561,13 @@ namespace JinEngine
 
 	JAnimationClip::InitData::InitData(const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
-		std::unique_ptr<JAnimationData>&& anidata)
+		std::unique_ptr<Core::JAnimationData>&& anidata)
 		:JResourceObject::InitData(JAnimationClip::StaticTypeInfo(), formatIndex, GetStaticResourceType(), directory), anidata(std::move(anidata))
 	{}
 	JAnimationClip::InitData::InitData(const size_t guid,
 		const uint8 formatIndex,
 		const JUserPtr<JDirectory>& directory,
-		std::unique_ptr<JAnimationData>&& anidata)
+		std::unique_ptr<Core::JAnimationData>&& anidata)
 		: JResourceObject::InitData(JAnimationClip::StaticTypeInfo(), guid, formatIndex, GetStaticResourceType(), directory),
 		anidata(std::move(anidata))
 	{}
@@ -576,7 +576,7 @@ namespace JinEngine
 		const J_OBJECT_FLAG flag,
 		const uint8 formatIndex, 
 		const JUserPtr<JDirectory>& directory,
-		std::unique_ptr<JAnimationData>&& anidata)
+		std::unique_ptr<Core::JAnimationData>&& anidata)
 		: JResourceObject::InitData(JAnimationClip::StaticTypeInfo(), name, guid, flag, formatIndex, GetStaticResourceType(), directory),
 		anidata(std::move(anidata))
 	{}
@@ -772,9 +772,9 @@ namespace JinEngine
 		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		loadMetaData->clipSkeletonAsset = JFileIOHelper::LoadHasObjectIden<JSkeletonAsset>(stream);
-		JFileIOHelper::LoadAtomicData(stream, loadMetaData->updateFramePerSecond);
-		JFileIOHelper::LoadAtomicData(stream, loadMetaData->isLooping);
+		loadMetaData->clipSkeletonAsset = JObjectFileIOHelper::_LoadHasIden<JSkeletonAsset>(stream);
+		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->updateFramePerSecond);
+		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->isLooping);
 
 		stream.close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
@@ -796,9 +796,9 @@ namespace JinEngine
 		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
-		JFileIOHelper::StoreHasObjectIden(stream, clip->impl->clipSkeletonAsset.Get());
-		JFileIOHelper::StoreAtomicData(stream, L"updateFramePerSecond", clip->impl->updateFramePerSecond);
-		JFileIOHelper::StoreAtomicData(stream, L"IsLooping", clip->impl->isLooping);
+		JObjectFileIOHelper::_StoreHasIden(stream, clip->impl->clipSkeletonAsset.Get());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"updateFramePerSecond", clip->impl->updateFramePerSecond);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"IsLooping", clip->impl->isLooping);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

@@ -71,7 +71,7 @@ namespace JinEngine
 		{
 			auto compVec = gObj->GetAllComponent();
 			/*
-						J_GUI_TREE_NODE_FLAG_DEFAULT_OPEN = 1 << 0,
+			J_GUI_TREE_NODE_FLAG_DEFAULT_OPEN = 1 << 0,
 			J_GUI_TREE_NODE_FLAG_EXTEND_HIT_BOX_WIDTH = 1 << 1,
 			J_GUI_TREE_NODE_FLAG_FRAMED = 1 << 2,
 			J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW = 1 << 3,
@@ -84,8 +84,8 @@ namespace JinEngine
 			for (const auto& comp : compVec)
 			{
 				JGui::BeginGroup();
-				JGui::Separator();
-				if (JGui::TreeNodeEx(JCUtil::WstrToU8Str(Core::ErasePrefixJW(comp->GetName()) + L"##TreeNode" + gObj->GetName()), baseFlags))
+				JGui::Separator(); 
+				if (JGui::TreeNodeEx(JGui::CreateGuiLabel(Core::ErasePrefixJ(comp->GetTypeInfo().Name()), comp->GetGuid(), GetName() + "TreeNode"), baseFlags))
 				{
 					JGui::TreePop();
 					guiHelper->UpdateGuiWidget(comp, &comp->GetTypeInfo());
@@ -134,8 +134,8 @@ namespace JinEngine
 				J_GUI_TREE_NODE_FLAG_FRAMED |
 				J_GUI_TREE_NODE_FLAG_DEFAULT_OPEN;
 
-			JGui::Separator();
-			if (JGui::TreeNodeEx(Core::ErasePrefixJ(fObj->GetTypeInfo().Name()) + JCUtil::WstrToU8Str(L"##TreeNode" + fObj->GetName()), baseFlags))
+			JGui::Separator(); 
+			if (JGui::TreeNodeEx(JGui::CreateGuiLabel(Core::ErasePrefixJ(fObj->GetTypeInfo().Name()), fObj->GetGuid(), GetName() + "TreeNode"), baseFlags))
 			{
 				JGui::TreePop();
 				guiHelper->UpdateGuiWidget(fObj, &fObj->GetTypeInfo());

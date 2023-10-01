@@ -17,9 +17,7 @@
 #include<DirectXColors.h>
 //Debug
 //#include<fstream>
-//#include"../../Core/File/JFileIOHelper.h"
-//#include"../../Develop/Debug/JDevelopDebug.h"
-
+//#include"../../Core/File/JFileIOHelper.h" 
 namespace JinEngine
 {
 	namespace Graphic
@@ -580,7 +578,7 @@ namespace JinEngine
 			BuildSrvDescriptorHeaps(d3dDevice);
 		}
 		void JDx12GraphicResourceManager::Clear()
-		{
+		{ 
 			for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
 			{
 				resource[i].clear();
@@ -915,8 +913,8 @@ namespace JinEngine
 			BindMainDepthStencil(data.device, resourceIndex);
 			auto& result = resource[(int)J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL][resourceIndex];;
 
-			Private::EndCreation(device, data);
-			return  result;
+			Private::EndCreation(device, data); 
+			return result;
 		}
 		JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::CreateDebugDepthStencilResource(JGraphicDevice* device,
 			const uint viewWidth,
@@ -1351,7 +1349,8 @@ namespace JinEngine
 			resourceDesc.Height = height;
 			resourceDesc.DepthOrArraySize = 1;
 			resourceDesc.MipLevels = 1;
-			resourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+			resourceDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			//resourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
 			resourceDesc.SampleDesc.Count = 1;
 			resourceDesc.SampleDesc.Quality = 0;
 			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -1359,7 +1358,7 @@ namespace JinEngine
 
 			CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 			CD3DX12_CLEAR_VALUE optClear;
-			optClear.Format = depthStencilFormat;
+			optClear.Format = DXGI_FORMAT_D32_FLOAT;
 			optClear.DepthStencil.Depth = 1.0f;
 			optClear.DepthStencil.Stencil = 0;
 
@@ -1409,7 +1408,8 @@ namespace JinEngine
 			resourceDesc.Height = height;
 			resourceDesc.DepthOrArraySize = count;
 			resourceDesc.MipLevels = 1;
-			resourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+			//resourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+			resourceDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 			resourceDesc.SampleDesc.Count = 1;
 			resourceDesc.SampleDesc.Quality = 0;
 			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -1417,7 +1417,7 @@ namespace JinEngine
 
 			CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 			CD3DX12_CLEAR_VALUE optClear;
-			optClear.Format = depthStencilFormat;
+			optClear.Format = DXGI_FORMAT_D32_FLOAT;
 			optClear.DepthStencil.Depth = 1.0f;
 			optClear.DepthStencil.Stencil = 0;
 
@@ -1428,7 +1428,7 @@ namespace JinEngine
 				D3D12_RESOURCE_STATE_COMMON,
 				&optClear,
 				IID_PPV_ARGS(&newResource)));
-
+			 
 			auto newInfo = CreateResourceInfo(type, std::move(newResource));
 			newInfo->SetArrayIndex(resource[(int)type].size());
 			newInfo->SetPrivateName();
@@ -1466,7 +1466,8 @@ namespace JinEngine
 			resourceDesc.Height = height;
 			resourceDesc.DepthOrArraySize = 6;
 			resourceDesc.MipLevels = 1;
-			resourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+			resourceDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			//resourceDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
 			resourceDesc.SampleDesc.Count = 1;
 			resourceDesc.SampleDesc.Quality = 0;
 			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -1474,7 +1475,8 @@ namespace JinEngine
 
 			CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 			CD3DX12_CLEAR_VALUE optClear;
-			optClear.Format = depthStencilFormat;
+			optClear.Format = DXGI_FORMAT_D32_FLOAT;
+			//optClear.Format = depthStencilFormat;
 			optClear.DepthStencil.Depth = 1.0f;
 			optClear.DepthStencil.Stencil = 0;
 
@@ -1499,13 +1501,13 @@ namespace JinEngine
 			Private::EndCreation(device, data);
 			return result;
 		}
-		JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::CreateVertexBuffer(JGraphicDevice* device, const std::vector<JStaticMeshVertex>& vertex)
+		JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::CreateVertexBuffer(JGraphicDevice* device, const std::vector<Core::JStaticMeshVertex>& vertex)
 		{
-			return CreateBuffer(J_GRAPHIC_RESOURCE_TYPE::VERTEX, device, vertex.data(), sizeof(JStaticMeshVertex) * vertex.size());
+			return CreateBuffer(J_GRAPHIC_RESOURCE_TYPE::VERTEX, device, vertex.data(), sizeof(Core::JStaticMeshVertex) * vertex.size());
 		}
-		JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::CreateVertexBuffer(JGraphicDevice* device, const std::vector<JSkinnedMeshVertex>& vertex)
+		JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::CreateVertexBuffer(JGraphicDevice* device, const std::vector<Core::JSkinnedMeshVertex>& vertex)
 		{
-			return CreateBuffer(J_GRAPHIC_RESOURCE_TYPE::VERTEX, device, vertex.data(), sizeof(JSkinnedMeshVertex) * vertex.size());
+			return CreateBuffer(J_GRAPHIC_RESOURCE_TYPE::VERTEX, device, vertex.data(), sizeof(Core::JSkinnedMeshVertex) * vertex.size());
 		}
 		JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::CreateIndexBuffer(JGraphicDevice* device, const std::vector<uint32>& index)
 		{
@@ -1528,7 +1530,7 @@ namespace JinEngine
 			const J_GRAPHIC_RESOURCE_TYPE rType = dxInfo->GetGraphicResourceType();
 			JDx12GraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)rType];
 			BindViewPtr ptr = GetResourceBindViewPtr(rType);
-
+  
 			//ptr can nullptr ex) occlusion query(resource view binding을 사용하지 않는 타입)
 			if (ptr != nullptr)
 			{
@@ -1557,8 +1559,18 @@ namespace JinEngine
 					}
 
 					//reset array, heap st, bind value
-					reBindHandle->SetArrayIndex(i - 1);
+					const int newIndex = i - 1;
+					reBindHandle->SetArrayIndex(newIndex);
 					(this->*ptr)(data.device, i);
+				}
+			} 
+			else
+			{
+				for (uint i = rIndex + 1; i < desc.count; ++i)
+				{
+					//reset array
+					const int newIndex = i - 1;
+					resource[(int)rType][i]->SetArrayIndex(newIndex);
 				}
 			}
 
@@ -1653,7 +1665,10 @@ namespace JinEngine
 				handlePtr->SetViewCount(bType, 1);
 			}
 			else
-				handlePtr->SetViewCount(bType, handlePtr->GetViewCount(bType) + 1);
+			{
+				const int viewCount = handlePtr->GetViewCount(bType) + 1;
+				handlePtr->SetViewCount(bType, viewCount);
+			}
 		}
 		void JDx12GraphicResourceManager::BindSwapChain(ID3D12Device* device, const uint resourceIndex)
 		{
@@ -1679,7 +1694,7 @@ namespace JinEngine
 			SetViewCount(handlePtr, J_GRAPHIC_BIND_TYPE::DSV, dsvNextViewIndex);
 			SetViewCount(handlePtr, J_GRAPHIC_BIND_TYPE::SRV, srvNextViewIndex);
 			SetViewCount(handlePtr, J_GRAPHIC_BIND_TYPE::SRV, srvNextViewIndex);
-
+ 
 			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
 			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
@@ -2016,12 +2031,14 @@ namespace JinEngine
 			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-			dsvDesc.Format = depthStencilFormat;
-			dsvDesc.Texture2D.MipSlice = 0;
+			//dsvDesc.Format = depthStencilFormat;
+			dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+			dsvDesc.Texture2D.MipSlice = 0; 
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+			//srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+			srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 			srvDesc.Texture2D.MostDetailedMip = 0;
 			srvDesc.Texture2D.MipLevels = resourcePtr->GetDesc().MipLevels;
@@ -2051,22 +2068,23 @@ namespace JinEngine
 			// Create DSV to resource so we can render to the shadow map.
 			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-			dsvDesc.Format = depthStencilFormat;
-			dsvDesc.Texture2D.MipSlice = 0;
+			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+			//dsvDesc.Format = depthStencilFormat;
+			dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+			dsvDesc.Texture2DArray.ArraySize = resourcePtr->GetDesc().DepthOrArraySize;
+			dsvDesc.Texture2DArray.FirstArraySlice = 0;
+			dsvDesc.Texture2DArray.MipSlice = 0;
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+			//srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+			srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-			srvDesc.Texture2D.MostDetailedMip = 0;
-			srvDesc.Texture2D.MipLevels = resourcePtr->GetDesc().MipLevels;
-			srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-			srvDesc.Texture2D.PlaneSlice = 0;
 			srvDesc.Texture2DArray.ArraySize = resourcePtr->GetDesc().DepthOrArraySize;
 			srvDesc.Texture2DArray.FirstArraySlice = 0;
 			srvDesc.Texture2DArray.MostDetailedMip = 0;
-			srvDesc.Texture2DArray.PlaneSlice = 0;
+			srvDesc.Texture2DArray.MipLevels = resourcePtr->GetDesc().MipLevels;
+			srvDesc.Texture2DArray.ResourceMinLODClamp = 0.0f; 
 
 			device->CreateDepthStencilView(resourcePtr, &dsvDesc, GetCpuDsvDescriptorHandle(dsvNextViewIndex));
 			device->CreateShaderResourceView(resourcePtr, &srvDesc, GetCpuSrvDescriptorHandle(srvNextViewIndex));
@@ -2091,18 +2109,23 @@ namespace JinEngine
 			// Create DSV to resource so we can render to the shadow map.
 			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
 			dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-			dsvDesc.Format = depthStencilFormat;
-			dsvDesc.Texture2D.MipSlice = 0;
+			dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+			//dsvDesc.Format = depthStencilFormat;
+			dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+			dsvDesc.Texture2DArray.ArraySize = 6;
+			dsvDesc.Texture2DArray.FirstArraySlice = 0;
+			dsvDesc.Texture2DArray.MipSlice = 0;
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+			srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+			//srvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 			srvDesc.Texture2D.MostDetailedMip = 0;
-			srvDesc.Texture2D.MipLevels = resourcePtr->GetDesc().MipLevels;
 			srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-			srvDesc.Texture2D.PlaneSlice = 0;
+			srvDesc.TextureCube.MostDetailedMip = 0;
+			srvDesc.TextureCube.MipLevels = resourcePtr->GetDesc().MipLevels;
+			srvDesc.TextureCube.ResourceMinLODClamp = 0.0f; 
 
 			device->CreateDepthStencilView(resourcePtr, &dsvDesc, GetCpuDsvDescriptorHandle(dsvNextViewIndex));
 			device->CreateShaderResourceView(resourcePtr, &srvDesc, GetCpuSrvDescriptorHandle(srvNextViewIndex));

@@ -306,7 +306,7 @@ namespace JinEngine
 		private:
 			bool AddInstance(IdentifierType iden, JOwnerPtr<JTypeBase>&& ptr)noexcept;
 			bool RemoveInstance(IdentifierType iden)noexcept;
-			JOwnerPtr<JTypeBase> ReleaseInstance(IdentifierType iden)noexcept;
+			//JOwnerPtr<JTypeBase> ReleaseInstance(IdentifierType iden)noexcept;
 		private:
 			bool AddPropertyInfo(JPropertyInfo* newProperty);
 			bool AddMethodInfo(JMethodInfo* newMethod);

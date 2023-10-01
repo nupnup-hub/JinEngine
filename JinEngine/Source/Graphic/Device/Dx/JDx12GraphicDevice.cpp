@@ -5,7 +5,7 @@
 #include"../../../Core/Exception/JExceptionMacro.h"
 #include<assert.h>
 #include<vector>
- 
+
 namespace JinEngine::Graphic
 {
 	JDx12GraphicDevice::RefSet::RefSet(ID3D12Device* device)
@@ -18,14 +18,12 @@ namespace JinEngine::Graphic
 
 	bool JDx12GraphicDevice::CreateDeviceObject()
 	{
-#if defined(GRAPIC_DEBUG) || defined(_DEBUG) 
+#if defined(GRAPIC_DEBUG) 
 		// Enable the D3D12 DEBUG layer.
-		{
-			ComPtr<ID3D12Debug> debugController;
-			ThrowIfFailedHr(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
-			debugController->EnableDebugLayer();
-		}
-#endif 
+		ComPtr<ID3D12Debug> debugController;
+		ThrowIfFailedHr(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+		debugController->EnableDebugLayer();
+#endif
 		ThrowIfFailedHr(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
 		//ThrowIfFailedHr(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG,  IID_PPV_ARGS(&dxgiFactory)));
 
@@ -34,6 +32,26 @@ namespace JinEngine::Graphic
 			D3D_FEATURE_LEVEL_11_0,
 			IID_PPV_ARGS(&d3dDevice));
 		d3dDevice->SetName(L"JinEngineDx12 Device");
+
+#if defined(GRAPIC_DEBUG) 
+		ComPtr<ID3D12InfoQueue> d3dInfoQueue; 
+		if (SUCCEEDED(d3dDevice.As(&d3dInfoQueue))) 
+		{
+			//d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+			//d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+			D3D12_MESSAGE_ID hide[1] =
+			{ 
+				//RESOLVE_QUERY_INVALID_QUERY_STATE
+				//occ hd query는 항상 유효한 파라미터만 참조하므로 resolve시 정확하지않은 data를 가져와도 된다.
+				//D3D12_MESSAGE_ID에 정의되어있지않으므로 오류번호로 대체
+				(D3D12_MESSAGE_ID)1319	 
+			};
+			D3D12_INFO_QUEUE_FILTER filter = {};
+			filter.DenyList.NumIDs = static_cast<UINT>(std::size(hide));
+			filter.DenyList.pIDList = hide;
+			d3dInfoQueue->AddStorageFilterEntries(&filter);
+		}
+#endif 
 
 		if (FAILED(hardwareResult))
 		{
@@ -46,7 +64,7 @@ namespace JinEngine::Graphic
 				IID_PPV_ARGS(&d3dDevice)));
 		}
 
-		ThrowIfFailedHr(d3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))); 
+		ThrowIfFailedHr(d3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
 		CreateCommandObjects();
 		return true;
 	}
@@ -69,7 +87,7 @@ namespace JinEngine::Graphic
 		assert(m4xMsaaQuality > 0 && "Unexpected MSAA quality level.");
 
 #ifdef _DEBUG
-		LogAdapters();
+		LogAdapters(dataSet);
 #endif  
 		CreateSwapChain(dataSet);
 		return true;
@@ -132,9 +150,9 @@ namespace JinEngine::Graphic
 		return d3dDevice.Get();
 	}
 	ID3D12CommandQueue* JDx12GraphicDevice::GetCommandQueue()const noexcept
-	{ 
+	{
 		return commandQueue.Get();
-	} 
+	}
 	ID3D12GraphicsCommandList* JDx12GraphicDevice::GetPublicCmdList()const noexcept
 	{
 		return publicCmdList.Get();
@@ -144,7 +162,7 @@ namespace JinEngine::Graphic
 		if (swapChain == nullptr)
 			return NULL;
 
-		DXGI_SWAP_CHAIN_DESC desc;  
+		DXGI_SWAP_CHAIN_DESC desc;
 		return swapChain->GetDesc(&desc) == S_OK ? desc.OutputWindow : NULL;
 	}
 	D3D12_VIEWPORT JDx12GraphicDevice::GetViewPort()const noexcept
@@ -174,7 +192,7 @@ namespace JinEngine::Graphic
 	void JDx12GraphicDevice::SetBackBufferIndex(const int value)noexcept
 	{
 		currBackBuffer = value;
-	} 
+	}
 	bool JDx12GraphicDevice::IsSupportPublicCommand()const noexcept
 	{
 		return true;
@@ -196,7 +214,7 @@ namespace JinEngine::Graphic
 		commandQueue->Signal(fence.Get(), currentFence);
 	}
 	void JDx12GraphicDevice::StartPublicCommand()
-	{ 
+	{
 		if (!stCommand)
 		{
 			ThrowIfFailedHr(publicCmdList->Reset(publicCmdListAlloc.Get(), nullptr));
@@ -204,7 +222,7 @@ namespace JinEngine::Graphic
 		}
 	}
 	void JDx12GraphicDevice::EndPublicCommand()
-	{ 
+	{
 		if (stCommand)
 		{
 			ThrowIfFailedG(publicCmdList->Close());
@@ -214,7 +232,7 @@ namespace JinEngine::Graphic
 		}
 	}
 	void JDx12GraphicDevice::FlushCommandQueue()
-	{ 
+	{
 		// Advance the fence value to mark commands up to this fence point.
 		currentFence++;
 		// Add an instruction to the command queue to set a new fence point.  Because we 
@@ -234,7 +252,7 @@ namespace JinEngine::Graphic
 		}
 	}
 	void JDx12GraphicDevice::UpdateWait(const GraphicFence frameFence)
-	{ 
+	{
 		if (frameFence != 0 && fence->GetCompletedValue() < frameFence)
 		{
 			//nullptr, FALSE, FALSE, EVENT_ALL_ACCESS 
@@ -336,7 +354,7 @@ namespace JinEngine::Graphic
 		publicCmdList->SetName(L"PublicCmd");
 	}
 	void JDx12GraphicDevice::CreateSwapChain(const JGraphicDeviceInitSet& dataSet)
-	{ 
+	{
 		static_cast<JDx12GraphicResourceManager*>(dataSet.gResourceM)->CreateSwapChainBuffer(d3dDevice.Get(),
 			dxgiFactory.Get(),
 			commandQueue.Get(),
@@ -344,7 +362,7 @@ namespace JinEngine::Graphic
 			dataSet.info.width,
 			dataSet.info.height,
 			m4xMsaaState,
-			m4xMsaaQuality); 
+			m4xMsaaQuality);
 	}
 	void JDx12GraphicDevice::ResizeWindow(const JGraphicDeviceInitSet& dataSet)
 	{
@@ -353,10 +371,10 @@ namespace JinEngine::Graphic
 		assert(publicCmdListAlloc);
 
 		// Flush before changing any resources.
-		FlushCommandQueue();
+		//FlushCommandQueue();
 		currBackBuffer = 0;
 		CreateSwapChain(dataSet);
-		FlushCommandQueue();
+		//FlushCommandQueue();
 		screenViewport.TopLeftX = 0;
 		screenViewport.TopLeftY = 0;
 		screenViewport.Width = static_cast<float>(dataSet.info.width);

@@ -2,9 +2,9 @@
 #include"JTransformPrivate.h"
 #include"../JComponentHint.h"
 #include"../../GameObject/JGameObject.h" 
+#include"../../JObjectFileIOHelper.h"
 #include"../../Resource/Scene/JScenePrivate.h"  
-#include"../../../Core/Guid/JGuidCreator.h"
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Math/JMathHelper.h"
@@ -168,12 +168,10 @@ namespace JinEngine
 			if (thisPointer->GetOwner()->IsRoot())
 				return;
 			 
-			//forward
 			tFront = (target - position).Normalize();
-			//up
 			tRight = JVector3F::Cross(worldUp, tFront).Normalize();
-			tUp = JVector3F::Cross(tFront, tRight);
-			 
+			tUp = JVector3F::Cross(tFront, tRight).Normalize();		 
+			
 			JMatrix4x4 rotation4x4;
 			rotation4x4(0, 0) = tRight.x;
 			rotation4x4(1, 0) = tRight.y;
@@ -197,7 +195,7 @@ namespace JinEngine
 
 			//수정필요
 			const XMVECTOR newRotation = XMQuaternionRotationMatrix(rotation4x4.LoadXM());
-			//rotation = JMathHelper::ToEulerAngle(newRotation);
+			rotation = JMathHelper::ToEulerAngle(newRotation);
 			UpdateTopDown();
 		}
 	public:
@@ -221,10 +219,10 @@ namespace JinEngine
 
 			UpdateWorld();
 			JScenePrivate::CompSettingInterface::UpdateTransform(owner);
-			SetFrameDirty();
 			const uint childrenCount = owner->GetChildrenCount();
 			for (uint i = 0; i < childrenCount; ++i)
 				owner->GetChild(i)->GetTransform()->impl->UpdateTopDown();
+			SetFrameDirty();
 		}
 		void UpdateWorld()noexcept
 		{  
@@ -390,6 +388,58 @@ namespace JinEngine
 	{
 		impl->SetScale(value);
 	}
+	void JTransform::CalTransformMatrix(_Out_ JMatrix4x4& m)
+	{
+		CalTransformMatrix(m, impl->thisPointer, impl->position, impl->tRight, impl->tUp, impl->tFront); 
+	}
+	void JTransform::CalTransformMatrix(_Out_ JMatrix4x4& m,
+		const JUserPtr<JTransform>& t,
+		const JVector3<float>& position,
+		const JVector3<float>& right,
+		const JVector3<float>& up,
+		const JVector3<float>& front)
+	{
+		const XMVECTOR R = right.ToXmV();
+		const XMVECTOR U = up.ToXmV();
+		const XMVECTOR L = front.ToXmV();
+		const XMVECTOR P = position.ToXmV();
+
+		// Fill in the view matrix entries.
+		const float x = -XMVectorGetX(XMVector3Dot(P, R));
+		const float y = -XMVectorGetX(XMVector3Dot(P, U));
+		const float z = -XMVectorGetX(XMVector3Dot(P, L));
+
+		XMFLOAT3 rightVector;
+		XMFLOAT3 upVector;
+		XMFLOAT3 lookVector;
+
+		XMStoreFloat3(&rightVector, R);
+		XMStoreFloat3(&upVector, U);
+		XMStoreFloat3(&lookVector, L);
+
+		m(0, 0) = rightVector.x;
+		m(1, 0) = rightVector.y;
+		m(2, 0) = rightVector.z;
+		m(3, 0) = x;
+
+		m(0, 1) = upVector.x;
+		m(1, 1) = upVector.y;
+		m(2, 1) = upVector.z;
+		m(3, 1) = y;
+
+		m(0, 2) = lookVector.x;
+		m(1, 2) = lookVector.y;
+		m(2, 2) = lookVector.z;
+		m(3, 2) = z;
+
+		m(0, 3) = 0.0f;
+		m(1, 3) = 0.0f;
+		m(2, 3) = 0.0f;
+		m(3, 3) = 1.0f;
+
+		if (!t->GetOwner()->IsRoot())
+			m.StoreXM(XMMatrixMultiply(m.LoadXM(), t->GetOwner()->GetParent()->GetTransform()->impl->world.LoadXM()));
+	}
 	void JTransform::LookAt(const JVector3<float>& target, const JVector3<float>& worldUp)noexcept
 	{
 		impl->LookAt(target, worldUp);
@@ -461,7 +511,7 @@ namespace JinEngine
 		std::wstring guide;
 		size_t guid;
 		J_OBJECT_FLAG flag;
-
+		bool isActivated;
 		JVector3<float> pos;
 		JVector3<float> rot;
 		JVector3<float> scale;
@@ -470,10 +520,10 @@ namespace JinEngine
 		std::wifstream& stream = loadData->stream;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
-		JFileIOHelper::LoadObjectIden(stream, guid, flag);
-		JFileIOHelper::LoadVector3(stream, pos);
-		JFileIOHelper::LoadVector3(stream, rot);
-		JFileIOHelper::LoadVector3(stream, scale);
+		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
+		JObjectFileIOHelper::LoadVector3(stream, pos);
+		JObjectFileIOHelper::LoadVector3(stream, rot);
+		JObjectFileIOHelper::LoadVector3(stream, scale);
 
 		auto idenUser = tPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JTransform::InitData>(guid, flag, owner), &tPrivate);
 		JUserPtr<JTransform> transUser = JUserPtr<JTransform>::ConvertChild(std::move(idenUser));
@@ -482,6 +532,8 @@ namespace JinEngine
 		transUser->SetRotation(rot);
 		transUser->SetScale(scale);
 		transUser->impl->SetFrameDirtyTrigger();
+		if (!isActivated)
+			transUser->DeActivate();
 
 		return transUser;
 	}
@@ -500,10 +552,10 @@ namespace JinEngine
 		JTransform::JTransformImpl* impl = transUser->impl.get();
 		std::wofstream& stream = storeData->stream;
 
-		JFileIOHelper::StoreObjectIden(stream, transUser.Get());
-		JFileIOHelper::StoreVector3(stream, L"Pos:", impl->position);
-		JFileIOHelper::StoreVector3(stream, L"Rot:", impl->rotation);
-		JFileIOHelper::StoreVector3(stream, L"Scale:", impl->scale);
+		JObjectFileIOHelper::StoreComponentIden(stream, transUser.Get());
+		JObjectFileIOHelper::StoreVector3(stream, L"Pos:", impl->position);
+		JObjectFileIOHelper::StoreVector3(stream, L"Rot:", impl->rotation);
+		JObjectFileIOHelper::StoreVector3(stream, L"Scale:", impl->scale);
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}

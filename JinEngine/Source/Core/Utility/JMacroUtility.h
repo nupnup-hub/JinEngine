@@ -117,6 +117,7 @@ namespace JinEngine
 		}                                               \
                                                         \
 
+
  #define J_SIMPLE_P_GET_SET(typeName, dataName, methodName)		\
                                                                 \
 		typeName* Get##methodName()const noexcept			    \
@@ -166,11 +167,27 @@ namespace JinEngine
 			return dataName;									\
 		}														\
 																\
-		 J_SIMPLE_CLAMP_SET(typeName, dataName, methodName, minData, maxData)	\
+		J_SIMPLE_CLAMP_SET(typeName, dataName, methodName, minData, maxData)	\
+ 
+
+#define J_SIMPLE_GET_SET_EX(typeName, dataName, methodName, afterSet)\
+                                                        \
+		typeName Get##methodName()const noexcept		\
+		{												\
+			return dataName;							\
+		}												\
+														\
+		void Set##methodName(const typeName& newData)noexcept\
+		{												\
+			dataName = newData;							\
+			afterSet;									\
+		}                                               \
+                                                        \
 
 
 #define J_COMPILE_ERROR_MESSAGE(msg)  message(msg)			
  
+
 
     }
 }

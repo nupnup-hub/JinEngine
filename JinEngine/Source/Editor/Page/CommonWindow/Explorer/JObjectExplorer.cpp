@@ -9,7 +9,7 @@
 #include"../../../Popup/JEditorPopupNode.h"   
 #include"../../../EditTool/JEditorRenameHelper.h"
 #include"../../../EditTool/JEditorSearchBarHelper.h"
-#include"../../../../Object/Component/JComponentCreator.h"
+#include"../../../../Object/Component/JComponentCreator.h" 
 #include"../../../../Object/GameObject/JGameObject.h" 
 #include"../../../../Object/GameObject/JGameObjectPrivate.h"
 #include"../../../../Object/GameObject/JGameObjectCreator.h"
@@ -38,12 +38,15 @@ namespace JinEngine
 		private:
 			using GameObjectCreationInterface = JEditorCreationRequestor<JEditorObjectCreateInterface<const size_t, const J_DEFAULT_SHAPE>>;
 			using ModelCreationInteface = JEditorCreationRequestor<JEditorObjectCreateInterface<const size_t, const size_t>>;
+			using LightCreationInterface = JEditorCreationRequestor<JEditorObjectCreateInterface<const size_t, const J_LIGHT_TYPE>>;
 			using DestructionInterface = JEditorDestructionRequestor;
 		public:
 			using GameObjectCanCreateF = GameObjectCreationInterface::CreateInteface::CanCreateF;
 			using GameObjectCreateF = GameObjectCreationInterface::CreateInteface::ObjectCreateF;
 			using ModelCanCreateF = ModelCreationInteface::CreateInteface::CanCreateF;
 			using ModelCreateF = ModelCreationInteface::CreateInteface::ObjectCreateF;
+			using LightCanCreateF = LightCreationInterface::CreateInteface::CanCreateF;
+			using LightCreateF = LightCreationInterface::CreateInteface::ObjectCreateF;
 		public:
 			using DataHandleStructure = GameObjectCreationInterface::DataHandleStructure;
 			using NotifyPtr = GameObjectCreationInterface::NotifyPtr;
@@ -52,22 +55,27 @@ namespace JinEngine
 		public:
 			GameObjectCreationInterface gameObject;
 			ModelCreationInteface model;
+			LightCreationInterface light;
 			DestructionInterface destructuion;
 		public:
 			using RequestGObjCreationEvF = Core::JSFunctorType<void, JObjectExplorer*, J_DEFAULT_SHAPE>;
 			using RequestModelCreationEvF = Core::JSFunctorType<void, JObjectExplorer*, JUserPtr<JGameObject>, JUserPtr<JMeshGeometry>>;
+			using RequestLightCreationEvF = Core::JSFunctorType<void, JObjectExplorer*, J_LIGHT_TYPE>;
 			using RequestDestructionEvF = Core::JSFunctorType<void, JObjectExplorer*>;
 		public:
 			std::unique_ptr<RequestGObjCreationEvF::Functor> reqGObjCreationEvF;
 			std::unique_ptr<RequestModelCreationEvF::Functor> reqModelCreationEvF;
+			std::unique_ptr<RequestLightCreationEvF::Functor> reqLightCreationEvF;
 			std::unique_ptr<RequestDestructionEvF::Functor> reqDestructionEvF;
 		public:
 			JObjectExplorerCreationImpl(RequestGObjCreationEvF::Ptr reqGObjCreationEvPtr,
 				RequestModelCreationEvF::Ptr reqModelCreationEvPtr,
+				RequestLightCreationEvF::Ptr reqLightCreationEvPtr,
 				RequestDestructionEvF::Ptr reqDestructionEvPtr)
 			{
 				reqGObjCreationEvF = std::make_unique<RequestGObjCreationEvF::Functor>(reqGObjCreationEvPtr);
 				reqModelCreationEvF = std::make_unique<RequestModelCreationEvF::Functor>(reqModelCreationEvPtr);
+				reqLightCreationEvF = std::make_unique<RequestLightCreationEvF::Functor>(reqLightCreationEvPtr);
 				reqDestructionEvF = std::make_unique<RequestDestructionEvF::Functor>(reqDestructionEvPtr);
 			}
 			~JObjectExplorerCreationImpl()
@@ -87,7 +95,6 @@ namespace JinEngine
 			std::unique_ptr<RenameF::Functor> renameF;
 			std::unique_ptr<ActivateF::Functor> activateF;
 		};
-
 
 		JObjectExplorer::JObjectExplorer(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute,
@@ -111,29 +118,49 @@ namespace JinEngine
 			editorString->AddString(createGameObjectNode->GetNodeId(), { "Create GameObject", u8"게임오브젝트 생성" });
 			editorString->AddString(createGameObjectNode->GetTooltipId(), { "Create selected gameObject's child in the scene", u8"씬내에 선택한 게임오브젝에 자식을 생성합니다." });
 
+			std::unique_ptr<JEditorPopupNode> createShapeNode =
+				std::make_unique<JEditorPopupNode>("Shape", J_EDITOR_POPUP_NODE_TYPE::INTERNAL, createGameObjectNode.get(), false);
+			editorString->AddString(createShapeNode->GetNodeId(), { "Shape", u8"도형" }); 
+
 			std::unique_ptr<JEditorPopupNode> createCubeNode =
-				std::make_unique<JEditorPopupNode>("Cube", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Cube", J_EDITOR_POPUP_NODE_TYPE::LEAF, createShapeNode.get());
 			editorString->AddString(createCubeNode->GetNodeId(), { "Cube", u8"정육면체" });
 
 			std::unique_ptr<JEditorPopupNode> createGridNode =
-				std::make_unique<JEditorPopupNode>("Grid", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Grid", J_EDITOR_POPUP_NODE_TYPE::LEAF, createShapeNode.get());
 			editorString->AddString(createGridNode->GetNodeId(), { "Grid", u8"격자판" });
 
 			std::unique_ptr<JEditorPopupNode> createCyilinderNode =
-				std::make_unique<JEditorPopupNode>("Cyilinder", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Cyilinder", J_EDITOR_POPUP_NODE_TYPE::LEAF, createShapeNode.get());
 			editorString->AddString(createCyilinderNode->GetNodeId(), { "Cyilinder", u8"원기둥" });
 
 			std::unique_ptr<JEditorPopupNode> createSphereNode =
-				std::make_unique<JEditorPopupNode>("Sphere", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Sphere", J_EDITOR_POPUP_NODE_TYPE::LEAF, createShapeNode.get());
 			editorString->AddString(createSphereNode->GetNodeId(), { "Sphere", u8"구체" });
 
 			std::unique_ptr<JEditorPopupNode> createQuadNode =
-				std::make_unique<JEditorPopupNode>("Quad", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Quad", J_EDITOR_POPUP_NODE_TYPE::LEAF, createShapeNode.get());
 			editorString->AddString(createQuadNode->GetNodeId(), { "Quad", u8"사각형" });
 
 			std::unique_ptr<JEditorPopupNode> createEmptyNode =
-				std::make_unique<JEditorPopupNode>("Empty", J_EDITOR_POPUP_NODE_TYPE::LEAF, createGameObjectNode.get());
+				std::make_unique<JEditorPopupNode>("Empty", J_EDITOR_POPUP_NODE_TYPE::LEAF, createShapeNode.get());
 			editorString->AddString(createEmptyNode->GetNodeId(), { "Empty", u8"빈 오브젝트" });
+
+			std::unique_ptr<JEditorPopupNode> createLightNode =
+				std::make_unique<JEditorPopupNode>("Light", J_EDITOR_POPUP_NODE_TYPE::INTERNAL, createGameObjectNode.get(), false);
+			editorString->AddString(createLightNode->GetNodeId(), { "Light", u8"라이트" });
+
+			std::unique_ptr<JEditorPopupNode> createDirectionalLightNode =
+				std::make_unique<JEditorPopupNode>("Directional Light", J_EDITOR_POPUP_NODE_TYPE::LEAF, createLightNode.get());
+			editorString->AddString(createDirectionalLightNode->GetNodeId(), { "Directional Light", u8"디렉셔널 라이트" });
+
+			std::unique_ptr<JEditorPopupNode> createPointLightNode =
+				std::make_unique<JEditorPopupNode>("Point Light", J_EDITOR_POPUP_NODE_TYPE::LEAF, createLightNode.get());
+			editorString->AddString(createPointLightNode->GetNodeId(), { "Point Light", u8"포인트 라이트" });
+
+			std::unique_ptr<JEditorPopupNode> createSpotLightNode =
+				std::make_unique<JEditorPopupNode>("Spot Light", J_EDITOR_POPUP_NODE_TYPE::LEAF, createLightNode.get());
+			editorString->AddString(createSpotLightNode->GetNodeId(), { "Spot Light", u8"스팟 라이트" });
 
 			std::unique_ptr<JEditorPopupNode> destroyNode =
 				std::make_unique<JEditorPopupNode>("Destroy JGameObject", J_EDITOR_POPUP_NODE_TYPE::LEAF, explorerPopupRootNode.get(), true);
@@ -145,15 +172,23 @@ namespace JinEngine
 			editorString->AddString(renameNode->GetNodeId(), { "Rename", u8"새이름" });
 
 			using RequestGObjCreationEvF = JObjectExplorerCreationImpl::RequestGObjCreationEvF;
+			using RequestLightCreationEvF = JObjectExplorerCreationImpl::RequestLightCreationEvF;
 			using RequestDestructionEvF = JObjectExplorerCreationImpl::RequestDestructionEvF;
 			using RenameF = JObjectExplorerSettingImpl::RenameF;
 
+			//register popup callback
+			//enable = condition
+			//select = doSomething
 			createCubeNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::CUBE));
 			createGridNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::GRID));
 			createCyilinderNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::CYILINDER));
 			createSphereNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::SPHERE));
 			createQuadNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::QUAD));
 			createEmptyNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::EMPTY));
+
+			createDirectionalLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creationImpl->reqLightCreationEvF, this, J_LIGHT_TYPE::DIRECTIONAL));
+			createPointLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creationImpl->reqLightCreationEvF, this, J_LIGHT_TYPE::POINT));
+			createSpotLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creationImpl->reqLightCreationEvF, this, J_LIGHT_TYPE::SPOT));
 
 			destroyNode->RegisterSelectBind(std::make_unique<RequestDestructionEvF::CompletelyBind>(*creationImpl->reqDestructionEvF, this));
 			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
@@ -162,12 +197,17 @@ namespace JinEngine
 
 			explorerPopup = std::make_unique<JEditorPopupMenu>("explorerPopup", std::move(explorerPopupRootNode));
 			explorerPopup->AddPopupNode(std::move(createGameObjectNode));
+			explorerPopup->AddPopupNode(std::move(createShapeNode));
 			explorerPopup->AddPopupNode(std::move(createCubeNode));
 			explorerPopup->AddPopupNode(std::move(createGridNode));
 			explorerPopup->AddPopupNode(std::move(createCyilinderNode));
 			explorerPopup->AddPopupNode(std::move(createSphereNode));
 			explorerPopup->AddPopupNode(std::move(createQuadNode));
 			explorerPopup->AddPopupNode(std::move(createEmptyNode));
+			explorerPopup->AddPopupNode(std::move(createLightNode));
+			explorerPopup->AddPopupNode(std::move(createDirectionalLightNode));
+			explorerPopup->AddPopupNode(std::move(createPointLightNode));
+			explorerPopup->AddPopupNode(std::move(createSpotLightNode));
 			explorerPopup->AddPopupNode(std::move(destroyNode));
 			explorerPopup->AddPopupNode(std::move(renameNode));
 		}
@@ -181,6 +221,8 @@ namespace JinEngine
 			if (creationImpl != nullptr)
 				return;
 
+			//register request
+			//creation request use creation interface
 			auto requestCreateGObjLam = [](JObjectExplorer* explorer, J_DEFAULT_SHAPE shapeType)
 			{
 				if (!explorer->root.IsValid())
@@ -218,6 +260,25 @@ namespace JinEngine
 				JObjectExplorerCreationImpl* impl = explorer->creationImpl.get();
 				impl->model.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, parent->GetGuid(), mesh->GetGuid());
 			};
+			auto requestCreateLightLam = [](JObjectExplorer* explorer, J_LIGHT_TYPE lightType)
+			{
+				if (!explorer->root.IsValid())
+					return;
+
+				JUserPtr<JGameObject> parent = Core::ConvertChildUserPtr<JGameObject>(explorer->GetHoveredObject());
+				if (parent == nullptr)
+					parent = explorer->root;
+
+				JEditorCreationHint creationHint = JEditorCreationHint(explorer,
+					false, true, false, true,
+					Core::JTypeInstanceSearchHint(),
+					Core::JTypeInstanceSearchHint(parent->GetOwnerScene()),
+					&JEditorWindow::NotifyEvent);
+				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
+
+				JObjectExplorerCreationImpl* impl = explorer->creationImpl.get();
+				impl->light.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, parent->GetGuid(), std::move(lightType));
+			};
 			auto requestDestroyLam = [](JObjectExplorer* explorer)
 			{
 				if (!explorer->root.IsValid())
@@ -237,8 +298,9 @@ namespace JinEngine
 				JObjectExplorerCreationImpl* impl = explorer->creationImpl.get();
 				impl->destructuion.RequestDestroyObject(impl->dS, true, creationHint, objVec, requestHint);
 			};
-			creationImpl = std::make_unique<JObjectExplorerCreationImpl>(requestCreateGObjLam, requestCreateModelLam, requestDestroyLam);
+			creationImpl = std::make_unique<JObjectExplorerCreationImpl>(requestCreateGObjLam, requestCreateModelLam, requestCreateLightLam, requestDestroyLam);
 
+			//register can create & create
 			auto canCreationGobjLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t parentGuid, const J_DEFAULT_SHAPE shapeType)
 			{
 				auto ownerPtr = Core::GetRawPtr(creationHint.ownerDataHint);
@@ -276,11 +338,31 @@ namespace JinEngine
 				auto meshUserPtr = Core::SearchUserPtr<JMeshGeometry>(JMeshGeometry::StaticTypeInfo(), meshGuid);
 				JGCI::CreateModel(parentUserPtr, guid, OBJECT_FLAG_NONE, meshUserPtr);
 			};
+			
+			auto canCreateLightLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t parentGuid, const J_LIGHT_TYPE lightType)
+			{
+				auto ownerPtr = Core::GetRawPtr(creationHint.ownerDataHint);
+				if (ownerPtr == nullptr)
+					return false;
+
+				auto rawPtr = Core::GetRawPtr(Core::JTypeInstanceSearchHint(JGameObject::StaticTypeInfo(), parentGuid));
+				if (ownerPtr->GetTypeInfo().IsChildOf<JScene>() && rawPtr != nullptr)
+					return static_cast<JGameObject*>(rawPtr)->GetOwnerScene()->GetGuid() == ownerPtr->GetGuid();
+				else
+					return false;
+			};
+			auto createLightLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t parentGuid, const J_LIGHT_TYPE lightType)
+			{ 
+				auto parentUserPtr = Core::GetUserPtr<JGameObject>(Core::JTypeInstanceSearchHint(JGameObject::StaticTypeInfo(), parentGuid));
+				JGCI::CreateLight(parentUserPtr, guid, OBJECT_FLAG_NONE, lightType);
+			};
 
 			creationImpl->gameObject.GetCreationInterface()->RegisterCanCreationF(canCreationGobjLam);
 			creationImpl->gameObject.GetCreationInterface()->RegisterObjectCreationF(creationGobjLam);
 			creationImpl->model.GetCreationInterface()->RegisterCanCreationF(canCreationModelLam);
 			creationImpl->model.GetCreationInterface()->RegisterObjectCreationF(creationModelLam);
+			creationImpl->light.GetCreationInterface()->RegisterCanCreationF(canCreateLightLam);
+			creationImpl->light.GetCreationInterface()->RegisterObjectCreationF(createLightLam);
 		}
 		void JObjectExplorer::InitializeSettingImpl()
 		{
@@ -338,14 +420,17 @@ namespace JinEngine
 		}
 		void JObjectExplorer::ObjectExplorerOnScreen(const JUserPtr<JGameObject>& gObj, const bool isAcivatedSearch)
 		{
+			const std::string objName = JCUtil::WstrToU8Str(gObj->GetName());
+			const size_t objGuid = gObj->GetGuid();
+
 			//JGuiTreeNodeFlags_Selected
 			bool isNodeOpen = false;
-			const bool isRenameActivaetd = renameHelper->IsActivated() && renameHelper->IsRenameTar(gObj->GetGuid());
+			const bool isRenameActivaetd = renameHelper->IsActivated() && renameHelper->IsRenameTar(objGuid);
 
 			//selected mark를 이용하면 자식 gameObject를 참조하는 node까지 mark되어버리므로
 			//이는 Explorer에서 기대하는 바가 아니므로 직접 클릭한 gameObject만 저장되는
 			//SelectedMap을 참조해서 mark
-			const bool isSelected = IsSelectedObject(gObj->GetGuid()); 
+			const bool isSelected = IsSelectedObject(objGuid);
 			const bool isActivated = gObj->IsActivated();
 
 			const J_GUI_TREE_NODE_FLAG_ baseFlags = J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW |
@@ -354,9 +439,8 @@ namespace JinEngine
 
 			//if(!isSelected && gObj->IsSelectedbyEditor())
 			//	RequestPushSelectObject(Core::GetUserPtr(gObj));
-
-			const std::string name = JCUtil::WstrToU8Str(gObj->GetName());
-			const bool canOnScreen = searchBarHelper->CanSrcNameOnScreen(name); 
+			 
+			const bool canOnScreen = searchBarHelper->CanSrcNameOnScreen(objName);
 			if (canOnScreen)
 			{
 				if (isRenameActivaetd)
@@ -364,9 +448,9 @@ namespace JinEngine
 					//can't select and hover
 					//fixed hover object when start rename ev
 					PushTreeNodeColorSet(isActivated, isSelected); 
-					isNodeOpen = JGui::IsTreeNodeOpend(name + "##TreeNode", baseFlags);
+					isNodeOpen = JGui::IsTreeNodeOpend(JGui::CreateGuiLabel(objName, objGuid, GetName() + "TreeNode"), baseFlags);
 					PopTreeNodeColorSet(isActivated, isSelected);
-					DisplayActSignalWidget(gObj, name + "ActSignal", false);
+					DisplayActSignalWidget(gObj, false);
 					renameHelper->Update(isNodeOpen);
 				}
 				else
@@ -374,12 +458,12 @@ namespace JinEngine
 					if (isAcivatedSearch)
 						JGui::SetNextItemOpen(true);		
 					PushTreeNodeColorSet(isActivated, isSelected);
-					isNodeOpen = JGui::TreeNodeEx(name + "##TreeNode", baseFlags);
+					isNodeOpen = JGui::TreeNodeEx(JGui::CreateGuiLabel(objName, objGuid, GetName() + "TreeNode"), baseFlags);
 					PopTreeNodeColorSet(isActivated, isSelected);
 					if (JGui::IsLastItemHovered())
 						SetHoveredObject(gObj);
 
-					DisplayActSignalWidget(gObj, name + "ActSignal", true);
+					DisplayActSignalWidget(gObj, true);
 					if (JGui::IsLastItemAnyClicked(false) && !JGui::IsKeyDown(Core::J_KEYCODE::CONTROL))
 					{
 						RequestPushSelectObject(gObj);
@@ -438,9 +522,7 @@ namespace JinEngine
 					JGui::TreePop();
 			}
 		}
-		void JObjectExplorer::DisplayActSignalWidget(const JUserPtr<JGameObject>& gObj,
-			const std::string& unqLabel, 
-			const bool allowDisplaySeletable)
+		void JObjectExplorer::DisplayActSignalWidget(const JUserPtr<JGameObject>& gObj, const bool allowDisplaySeletable)
 		{   
 			const bool isActivated = gObj->IsActivated();
 			const float radius = JGui::GetLastItemRectSize().y * 0.25f;

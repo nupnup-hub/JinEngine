@@ -45,14 +45,12 @@ namespace JinEngine
 					return nullptr;
 
 				return conditionVec[index];
-			}
-			REGISTER_METHOD(GetConditionVec)
+			} 
 			std::vector<JUserPtr<JFSMcondition>> GetConditionVec()const noexcept
 			{
 				return conditionVec;
 			}
-		public:
-			REGISTER_METHOD(SetConditionVec)
+		public: 
 			void SetConditionVec(std::vector<JUserPtr<JFSMcondition>> vec)noexcept
 			{
 				conditionVec = vec;

@@ -1,5 +1,5 @@
 #pragma once
-#include"../Mesh/JMeshType.h"
+#include"../../../Core/Geometry/Mesh/JMeshType.h"
 #include<string>
 
 namespace JinEngine
@@ -39,9 +39,6 @@ namespace JinEngine
 	enum class J_COMPUTE_SHADER_FUNCTION
 	{
 		NONE = 0,
-		HZB_COPY,
-		HZB_DOWN_SAMPLING,
-		HZB_OCCLUSION,
 		COUNT
 	};
 
@@ -67,23 +64,9 @@ namespace JinEngine
 		{
 			return L"Cs" + std::to_wstring((int)funcFlag);
 		}
-		static CompileInfo ComputeShaderCompileInfo(const J_COMPUTE_SHADER_FUNCTION funcFlag)
+		static J_SHADER_VERTEX_LAYOUT ConvertToVertexLayout(const Core::J_MESHGEOMETRY_TYPE type)
 		{
-			switch (funcFlag)
-			{
-			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_COPY:
-				return CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBCopyDepthMap");
-			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_DOWN_SAMPLING:
-				return CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBDownSampling");
-			case JinEngine::J_COMPUTE_SHADER_FUNCTION::HZB_OCCLUSION:
-				return CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBOcclusion");
-			default:
-				return CompileInfo(L"Error", "Error");
-			}
-		}
-		static J_SHADER_VERTEX_LAYOUT ConvertToVertexLayout(const J_MESHGEOMETRY_TYPE type)
-		{
-			return type == J_MESHGEOMETRY_TYPE::STATIC ? SHADER_VERTEX_LAYOUT_STATIC : SHADER_VERTEX_LAYOUT_SKINNED;
+			return type == Core::J_MESHGEOMETRY_TYPE::STATIC ? SHADER_VERTEX_LAYOUT_STATIC : SHADER_VERTEX_LAYOUT_SKINNED;
 		}
 	};
 }

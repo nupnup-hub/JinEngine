@@ -11,8 +11,8 @@
 #include"../../Resource/JResourceManager.h" 
 #include"../../Resource/JResourceObjectUserInterface.h" 
 #include"../../GameObject/JGameObject.h" 
-#include"../../../Core/FSM/JFSMparameter.h"
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../JObjectFileIOHelper.h"
+#include"../../../Core/FSM/JFSMparameter.h" 
 #include"../../../Core/File/JFileConstant.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/Pointer/JOwnerPtr.h"
@@ -340,19 +340,23 @@ namespace JinEngine
 		std::wstring guide;
 		size_t guid;
 		J_OBJECT_FLAG flag;
+		bool isActivated;
 
 		auto loadData = static_cast<JAnimator::LoadData*>(data);
 		std::wifstream& stream = loadData->stream;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
-		JFileIOHelper::LoadObjectIden(stream, guid, flag);
-		JUserPtr<JAnimationController> aniCont = JFileIOHelper::LoadHasObjectIden<JAnimationController>(stream);
-		JUserPtr<JSkeletonAsset> skeletonAsset = JFileIOHelper::LoadHasObjectIden<JSkeletonAsset>(stream);
+		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
+		JUserPtr<JAnimationController> aniCont = JObjectFileIOHelper::_LoadHasIden<JAnimationController>(stream);
+		JUserPtr<JSkeletonAsset> skeletonAsset = JObjectFileIOHelper::_LoadHasIden<JSkeletonAsset>(stream);
 		 
 		auto idenUser = aPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JAnimator::InitData>(guid, flag, owner), &aPrivate);
 		auto aniUser = Core::ConvertChildUserPtr<JAnimator>(std::move(idenUser));
 		aniUser->SetAnimatorController(aniCont);
 		aniUser->SetSkeletonAsset(skeletonAsset);
+		if (!isActivated)
+			aniUser->DeActivate();
+
 		return aniUser;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
@@ -367,9 +371,9 @@ namespace JinEngine
 		JAnimator* animator = static_cast<JAnimator*>(storeData->obj.Get());
 		std::wofstream& stream = storeData->stream;
 
-		JFileIOHelper::StoreObjectIden(stream, animator);
-		JFileIOHelper::StoreHasObjectIden(stream, animator->GetAnimatorController().Get());
-		JFileIOHelper::StoreHasObjectIden(stream, animator->GetSkeletonAsset().Get());
+		JObjectFileIOHelper::StoreComponentIden(stream, animator);
+		JObjectFileIOHelper::_StoreHasIden(stream, animator->GetAnimatorController().Get());
+		JObjectFileIOHelper::_StoreHasIden(stream, animator->GetSkeletonAsset().Get());
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -401,7 +405,7 @@ namespace JinEngine
 	}
 	int FrameUpdateInterface::GetFrameIndex(JAnimator* ani)noexcept
 	{
-		return ani->impl->AniFrame::GetUploadIndex();
+		return ani->impl->AniFrame::GetFrameIndex();
 	} 
 	bool FrameUpdateInterface::HasRecopyRequest(JAnimator* ani)noexcept
 	{
@@ -410,7 +414,7 @@ namespace JinEngine
 
 	int FrameIndexInterface::GetFrameIndex(JAnimator* ani)noexcept
 	{
-		return ani->impl->AniFrame::GetUploadIndex();
+		return ani->impl->AniFrame::GetFrameIndex();
 	}
 
 	Core::JIdentifierPrivate::CreateInstanceInterface& JAnimatorPrivate::GetCreateInstanceInterface()const noexcept

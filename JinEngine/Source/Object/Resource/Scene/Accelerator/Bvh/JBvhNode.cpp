@@ -10,6 +10,7 @@
 #include"../../../../../Core/Math/JVectorExtend.h"
 #include"../../../../../Editor/EditTool/JEditorViewStructure.h" 
  
+#include"../../../../../Develop/Debug/JDevelopDebug.h"
 using namespace DirectX;
 namespace JinEngine
 {
@@ -22,8 +23,8 @@ namespace JinEngine
 			if (isLeftNode)
 				parent->left = this;
 			else
-				parent->right = this; 
-		} 
+				parent->right = this;
+		}
 	}
 	JBvhNode::~JBvhNode() {}
 	void JBvhNode::CreateDebugGameObject(const JUserPtr<JGameObject>& parent, bool onlyLeafNode)noexcept
@@ -100,25 +101,49 @@ namespace JinEngine
 		}
 	}
 	void JBvhNode::FindIntersect(JAcceleratorIntersectInfo& info)const noexcept
-	{
+	{ 
 		if (info.untilFirst)
-			info.firstResult = FindFirstIntersect(info);
+		{
+			info.sortType = J_ACCELERATOR_SORT_TYPE::ASCENDING;
+			FindIntersectNotSort(info, FLT_MAX);
+			info.SortResult();
+			for (const auto& data : info.result)
+			{
+				Develop::JDevelopDebug::PushLog(data.obj->GetName() + L" " + std::to_wstring(data.dist));
+			}
+			Develop::JDevelopDebug::Write();
+			/*
+			* FindFirstIntersect는 정확성에 문제가 있으므로 위에 방식을 사용한다
+			* 성능은 object 1000개 기준 3 ~ 4배정도 나지만 정확하다.
+			* FindFirstIntersect가 비정확한 이유
+			* 1. 두개의 자식 노드중 인터섹팅 결과가 가까운노드에서 항상 FirstIntersected를 구할수있는건 아니다.
+			* 2. ray ori가 노드에 내부에서 시작된경우 더더욱 Intersect out dist가 음수이므로 FirstIntersected가 있는 자식노드에
+			*    접근하는게 어렵다.
+			* 위에 이유때문에 정확히 구하기 위해선 FindIntersectNotSort와 같이 여러 노드들을 탐색해야할 필요가있으며
+			* 현재는 FindIntersectNotSort를 사용하며 추후에 개선하도록한다.
+			*/
+			//FindFirstIntersect(info, FLT_MAX)
+			//info.result.push_back(FindFirstIntersect(info, FLT_MAX));
+		}
 		else
 		{
 			if (info.sortType == J_ACCELERATOR_SORT_TYPE::ASCENDING)
-				FindIntersectAscendingSort(info);
+			{
+				FindIntersectNotSort(info, FLT_MAX);
+				info.SortResult();
+			}
 			else if (info.sortType == J_ACCELERATOR_SORT_TYPE::DESCENDING)
 			{
-				FindIntersectAscendingSort(info);
-				std::reverse(info.resultObjVec.begin(), info.resultObjVec.end());
+				FindIntersectNotSort(info, FLT_MAX);
+				info.SortResult();
 			}
 			else
-				FindIntersectAscendingSort(info);
+				FindIntersectNotSort(info, FLT_MAX);
 		}
 	}
 	void JBvhNode::FindContain(JAcceleratorContainInfo& info)const noexcept
-	{ 
-		FindContainNotSort(info); 
+	{
+		FindContainNotSort(info);
 	}
 	void JBvhNode::AlignLeafNode(const JAcceleratorAlignInfo& info, std::vector<JUserPtr<JGameObject>>& alignGameObject, uint& index, const uint depth)noexcept
 	{
@@ -131,6 +156,10 @@ namespace JinEngine
 			bool canAdd = true;
 			if (info.tool == JAcceleratorAlignInfo::ALIGN_TOOL::FRUSTUM && info.hasCullingArea)
 				canAdd = info.cullingFrustum.Intersects(bbox) == ContainmentType::DISJOINT;
+
+			if (info.alignPassCondPtr != nullptr)
+				canAdd = info.alignPassCondPtr(innerGameObject.Get());
+
 			if (canAdd)
 			{
 				alignGameObject[index] = innerGameObject;
@@ -181,7 +210,7 @@ namespace JinEngine
 			return nodeNumber;
 		else
 			return right->FindRightLeafNode()->nodeNumber;
-	} 
+	}
 	J_BVH_NODE_TYPE JBvhNode::GetNodeType()const noexcept
 	{
 		return type;
@@ -342,18 +371,16 @@ namespace JinEngine
 
 		if (type == J_BVH_NODE_TYPE::LEAF)
 		{
-			const BoundingOrientedBox debugOriented = innerGameObject->GetRenderItem()->GetOrientedBoundingBox();
+			const BoundingOrientedBox innterOriented = innerGameObject->GetRenderItem()->GetOrientedBoundingBox();
 			//	XMMATRIX matWorld = XMMatrixRotationQuaternion(XMLoadFloat4(&debugOriented.Orientation));
 				//XMMATRIX matScale = XMMatrixScaling(debugOriented.Extents.x, debugOriented.Extents.y, debugOriented.Extents.z);
 				//matWorld = XMMatrixMultiply(matScale, matWorld);
 				//XMVECTOR position = XMLoadFloat3(&debugOriented.Center);
 				//matWorld.r[3] = XMVectorSelect(matWorld.r[3], position, g_XMSelect1110);
 
-			transform->SetScale(XMFLOAT3(debugOriented.Extents.x / debugBox.Extents.x + outlineFactor,
-				debugOriented.Extents.y / debugBox.Extents.y + outlineFactor,
-				debugOriented.Extents.z / debugBox.Extents.z + outlineFactor));
-			transform->SetRotation(debugOriented.Orientation);
-			transform->SetPosition(debugOriented.Center);
+			transform->SetScale((JVector3F(innterOriented.Extents) / debugBox.Extents) + outlineFactor);
+			transform->SetRotation(innterOriented.Orientation);
+			transform->SetPosition((JVector3F(innterOriented.Center) - debugBox.Center));
 		}
 		else
 		{
@@ -361,7 +388,7 @@ namespace JinEngine
 			//Object에 회전에 맞는 DebugBox는 생성할 수 없다.
 			//BoundingOriented를 사용하면 회전에 맞는 bbox를 생성할수있다
 			debugGameObject->GetTransform()->SetScale(JVector3<float>(bbox.Extents) / debugBox.Extents + outlineFactor);
-			debugGameObject->GetTransform()->SetPosition(JVector3<float>(bbox.Center) + debugBox.Center);
+			debugGameObject->GetTransform()->SetPosition(JVector3<float>(bbox.Center) - debugBox.Center);
 		}
 	}
 	bool JBvhNode::IsLeftNode()const noexcept
@@ -386,89 +413,102 @@ namespace JinEngine
 		else
 			return right->FindRightLeafNode();
 	}
-	JUserPtr<JGameObject> JBvhNode::FindFirstIntersect(JAcceleratorIntersectInfo& info)const noexcept
+	JAcceleratorIntersectInfo::Result JBvhNode::FindFirstIntersect(JAcceleratorIntersectInfo& info, const float dist)const noexcept
 	{
+		using Result = JAcceleratorIntersectInfo::Result;
 		if (type == J_BVH_NODE_TYPE::LEAF)
 		{
 			if (info.CanAdd(innerGameObject))
-				return innerGameObject;
+				return Result{ innerGameObject, dist };
 			else
-				return nullptr;
+				return Result();
 		}
 		else
 		{
-			float leftDist = FLT_MAX;
-			float rightDist = FLT_MAX;
+			float leftDist = 0;
+			float rightDist = 0;
 
-			bool leftRes = false;
-			bool rightRes = false;
+			bool leftIntersected = false;
+			bool rightIntersected = false;
 
 			if (left->type == J_BVH_NODE_TYPE::LEAF)
-				leftRes = left->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(info.ray.PosV(), info.ray.DirV(), leftDist);
+				leftIntersected = left->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(info.ray.PosV(), info.ray.DirV(), leftDist);
 			else
-				leftRes = left->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), leftDist);
+				leftIntersected = left->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), leftDist);
 
 			if (right->type == J_BVH_NODE_TYPE::LEAF)
-				rightRes = right->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(info.ray.PosV(), info.ray.DirV(), rightDist);
+				rightIntersected = right->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(info.ray.PosV(), info.ray.DirV(), rightDist);
 			else
-				rightRes = right->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), rightDist);
-
-			JUserPtr<JGameObject> res = nullptr;
-			if (leftDist < rightDist)
-			{
-				if (leftRes)
-					res = left->FindFirstIntersect(info);
-				if (rightRes && res == nullptr)
-					res = right->FindFirstIntersect(info);
+				rightIntersected = right->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), rightDist);
+			
+			Result res;
+			//레이에 시작점이 bbox내부에 있을경우
+			if (leftDist < 0 || rightDist < 0)
+			{ 
+				Result leftRes = leftIntersected ? left->FindFirstIntersect(info, leftDist) : Result();
+				Result rightRes = rightIntersected ? right->FindFirstIntersect(info, rightDist) : Result();
+ 
+				if (leftRes.dist < rightRes.dist)
+				{
+					if (leftRes.obj != nullptr)
+						res = leftRes;
+					if (res.obj == nullptr && rightRes.obj != nullptr)
+						res = rightRes;
+				}
+				else
+				{
+					if (rightRes.obj != nullptr)
+						res = rightRes;
+					if (res.obj == nullptr && leftRes.obj != nullptr)
+						res = leftRes;
+				}
+			}
+			else if (leftDist < rightDist)
+			{ 
+				if (leftIntersected)
+					res = left->FindFirstIntersect(info, leftDist);
+				if (rightIntersected && res.obj == nullptr)
+					res = right->FindFirstIntersect(info, rightDist);
 			}
 			else
-			{
-				if (rightRes)
-					res = right->FindFirstIntersect(info);
-				if (leftRes && res == nullptr)
-					res = left->FindFirstIntersect(info);
+			{ 	
+				if (rightIntersected)
+					res = right->FindFirstIntersect(info, rightDist);
+				if (leftIntersected && res.obj == nullptr)
+					res = left->FindFirstIntersect(info, leftDist);
 			}
 			return res;
 		}
 	}
-	void JBvhNode::FindIntersectAscendingSort(JAcceleratorIntersectInfo& info)const noexcept
+	void JBvhNode::FindIntersectNotSort(JAcceleratorIntersectInfo& info, const float dist)const noexcept
 	{
 		if (type == J_BVH_NODE_TYPE::LEAF)
 		{
 			if (info.CanAdd(innerGameObject))
-				info.resultObjVec.push_back(innerGameObject);
+				info.result.push_back(JAcceleratorIntersectInfo::Result{ innerGameObject , dist });
 		}
 		else
 		{
 			float leftDist = FLT_MAX;
 			float rightDist = FLT_MAX;
 
-			bool leftRes = false;
-			bool rightRes = false;
+			bool leftIntersected = false;
+			bool rightIntersected = false;
 			if (left->type == J_BVH_NODE_TYPE::LEAF)
-				leftRes = left->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(info.ray.PosV(), info.ray.DirV(), leftDist);
+				leftIntersected = left->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(info.ray.PosV(), info.ray.DirV(), leftDist);
 			else
-				leftRes = left->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), leftDist);
+				leftIntersected = left->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), leftDist);
 
 			if (right->type == J_BVH_NODE_TYPE::LEAF)
-				rightRes = right->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(info.ray.PosV(), info.ray.DirV(), rightDist);
+				rightIntersected = right->innerGameObject->GetRenderItem()->GetOrientedBoundingBox().Intersects(info.ray.PosV(), info.ray.DirV(), rightDist);
 			else
-				rightRes = right->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), rightDist);
+				rightIntersected = right->bbox.Intersects(info.ray.PosV(), info.ray.DirV(), rightDist);
 
-			if (leftDist < rightDist)
-			{
-				if (leftRes)
-					left->FindIntersectAscendingSort(info);
-				if (rightRes)
-					right->FindIntersectAscendingSort(info);
-			}
-			else
-			{
-				if (rightRes)
-					right->FindIntersectAscendingSort(info);
-				if (leftRes)
-					left->FindIntersectAscendingSort(info);
-			}
+			//레이에 시작점이 bbox내부에 있을경우
+			if (leftIntersected)
+				left->FindIntersectNotSort(info, leftDist);
+			if (rightIntersected)
+				right->FindIntersectNotSort(info, rightDist);
 		}
 	}
 	void JBvhNode::FindContainNotSort(JAcceleratorContainInfo& info)const noexcept

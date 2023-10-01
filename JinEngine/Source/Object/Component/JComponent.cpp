@@ -6,8 +6,7 @@
 #include "../GameObject/JGameObjectPrivate.h"
 #include"../../Core/Utility/JCommonUtility.h"
 #include"../../Core/Reflection/JTypeImplBase.h"
-#include<fstream>
-
+#include<fstream> 
 namespace JinEngine
 {
 	class JComponent::JComponentImpl : public Core::JTypeImplBase
@@ -180,8 +179,8 @@ namespace JinEngine
 	}
 
 	void ActivateInterface::Activate(const JUserPtr<JComponent>& ptr)noexcept
-	{
-		ptr->Activate();
+	{ 
+		ptr->Activate(); 
 	}
 	void ActivateInterface::DeActivate(const JUserPtr<JComponent>& ptr)noexcept
 	{

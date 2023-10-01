@@ -2,11 +2,7 @@
 #include"../Pointer/JOwnerPtr.h"
 
 namespace JinEngine
-{
-	namespace Editor
-	{
-		class JEditorObjectReleaseInterface;
-	} 
+{ 
 	class JDirectory;
 	class JDirectoryPrivate;
 	namespace Core
@@ -23,12 +19,10 @@ namespace JinEngine
 				friend class JIdentifier;
 				friend class JIdentifierPrivate;
 				friend class JDirectory;		// create file
-				friend class JDirectoryPrivate;		// create file 
-				friend class Editor::JEditorObjectReleaseInterface;	//for release
+				friend class JDirectoryPrivate;		// create file  
 			private:
 				static bool AddInstance(JOwnerPtr<JTypeBase>&& ownerPtr)noexcept;
-				static bool RemoveInstance(JTypeBase* ptr)noexcept;
-				static JOwnerPtr<JTypeBase> ReleaseInstance(JTypeBase* ptr)noexcept;
+				static bool RemoveInstance(JTypeBase* ptr)noexcept; 
 			};
 		};
 	}

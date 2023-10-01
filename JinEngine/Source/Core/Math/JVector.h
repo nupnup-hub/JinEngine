@@ -357,6 +357,9 @@ namespace JinEngine
 		JVector3(const ValueType x, const ValueType y, const ValueType z)
 			: x(x), y(y), z(z)
 		{}
+		JVector3(const ValueType(&v)[3])
+			: x(v[0]), y(v[1]), z(v[2])
+		{}
 		JVector3(const DirectX::XMFLOAT3& xm)
 			: x(xm.x), y(xm.y), z(xm.z)
 		{}
@@ -566,9 +569,13 @@ namespace JinEngine
 		{
 			return JVector3(0, 0, 0);
 		}
-		static JVector3 One()noexcept
+		static JVector3 PositiveOne()noexcept
 		{
 			return JVector3(1, 1, 1);
+		}
+		static JVector3 NegativeOne()noexcept
+		{
+			return JVector3(-1, -1, -1);
 		}
 		static JVector3 PositiveInfV()noexcept
 		{
@@ -641,7 +648,7 @@ namespace JinEngine
 			};
 			struct
 			{
-				JVector3<T> xyz;
+				ValueType xyz[3]; 
 				ValueType a;
 			};
 			ValueType value[4];

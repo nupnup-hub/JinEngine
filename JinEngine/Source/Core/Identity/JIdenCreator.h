@@ -18,10 +18,6 @@ namespace JinEngine
 			static JUserPtr<JIdentifier> Create(std::unique_ptr<JDITypeDataBase>&& initData, JIdentifierPrivate* pInterface);
 			static JUserPtr<JIdentifier> CreateAndCopy(std::unique_ptr<JDITypeDataBase>&& initData, JUserPtr<JIdentifier> from);
 		public:
-			static JUserPtr<JIdentifier> CreateAndCopy(JUserPtr<JGameObject> from, JUserPtr<JGameObject> toParent);
-			static JUserPtr<JIdentifier> CreateAndCopy(JUserPtr<JComponent> from, JUserPtr<JGameObject> toOwner);
-			static JUserPtr<JIdentifier> CreateAndCopy(JUserPtr<JDirectory> from, JUserPtr<JDirectory> toParent);
-		public:
 			template<typename T, typename ...Param>
 			static JUserPtr<T> Create(Param&&... var)
 			{

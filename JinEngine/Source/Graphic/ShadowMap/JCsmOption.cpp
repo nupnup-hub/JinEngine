@@ -8,9 +8,8 @@ namespace JinEngine::Graphic
 		bool isEqual = true;
 		isEqual &= (splitBlendRate == rhs.splitBlendRate);
 		isEqual &= (splitCount == rhs.splitCount);
-		isEqual &= (shadowDistance == rhs.shadowDistance);
-		isEqual &= (mapMinBorder == rhs.mapMinBorder);
-		isEqual &= (mapMaxBorder == rhs.mapMaxBorder); 
+		isEqual &= (shadowDistance == rhs.shadowDistance); 
+		isEqual &= (levelBlendRate == rhs.levelBlendRate);
 		return isEqual;
 	}
 	uint JCsmOption::GetMaxSplitCount()const noexcept
@@ -20,15 +19,7 @@ namespace JinEngine::Graphic
 	uint JCsmOption::GetSplitCount()const noexcept
 	{
 		return splitCount;
-	} 
-	float JCsmOption::GetMapMinBorder()const noexcept
-	{
-		return mapMinBorder;
-	}
-	float JCsmOption::GetMapMaxBorder()const noexcept
-	{
-		return mapMaxBorder;
-	}
+	}  
 	float JCsmOption::GetSplitBlendRate()const noexcept
 	{
 		return splitBlendRate;
@@ -36,6 +27,10 @@ namespace JinEngine::Graphic
 	float JCsmOption::GetShadowDistance()const noexcept
 	{
 		return shadowDistance;
+	}
+	float JCsmOption::GetLevelBlendRate()const noexcept
+	{
+		return levelBlendRate;
 	}
 	void JCsmOption::SetSplitCount(const uint newCount)noexcept
 	{
@@ -49,12 +44,8 @@ namespace JinEngine::Graphic
 	{
 		shadowDistance = std::clamp(value, 0.0f, value);
 	} 
-	void JCsmOption::SetMapMinBorder(const float newValue)noexcept
+	void JCsmOption::SetLevelBlendRate(const float value)noexcept
 	{
-		mapMinBorder = std::clamp(newValue, 0.0f, mapMaxBorder);
-	}
-	void JCsmOption::SetMapMaxBorder(const float newValue)noexcept
-	{
-		mapMaxBorder = std::clamp(newValue, mapMinBorder, 1.0f);
-	}
+		levelBlendRate = std::clamp(value, 0.0f, 1.0f);
+	} 
 }

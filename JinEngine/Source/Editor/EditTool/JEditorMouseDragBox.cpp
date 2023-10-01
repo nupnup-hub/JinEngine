@@ -6,9 +6,7 @@
 #include"../../Core/Time/JStopWatch.h"
 #include"../../Core/Math/JVector.h"
 #include"../../Core/Utility/JCommonUtility.h"
-
-//Debug
-#include"../../Develop/Debug/JDevelopDebug.h"
+ 
 namespace JinEngine::Editor
 {
 	namespace Private
@@ -144,12 +142,14 @@ namespace JinEngine::Editor
 	}
 
 	JEditorMouseIdenDragBox::UpdateIn::UpdateIn(const bool allowActivateBBox,
-		JVector2<float> sceneImageMinPoint,
+		JVector2<float> minOffset,
+		JVector2<float> maxOffset,
+		JVector2<float> sceneImageScreenMinPoint,
 		JUserPtr<JScene> scene,
 		JUserPtr<JCamera> cam,
 		J_ACCELERATOR_LAYER layer)
-		:JEditorMouseDragBox::UpdateIn(allowActivateBBox, sceneImageMinPoint),
-		scene(scene), cam(cam), layer(layer)
+		:JEditorMouseDragBox::UpdateIn(allowActivateBBox, minOffset, maxOffset),
+		scene(scene), cam(cam), layer(layer), sceneImageScreenMinPoint(sceneImageScreenMinPoint)
 	{
 
 	}
@@ -166,12 +166,12 @@ namespace JinEngine::Editor
 
 		JVector2<int> minV2;
 		JVector2<int> maxV2;
-		GetBBoxMinMax(minV2, maxV2, in.minOffset);
+		GetBBoxMinMax(minV2, maxV2, in.minOffset, in.maxOffset);
  
 		std::vector<JUserPtr<JGameObject>> selectedVec = JEditorSceneImageInteraction::Contain(in.scene,
 			in.cam,
 			J_ACCELERATOR_LAYER::COMMON_OBJECT,
-			in.minOffset,
+			in.sceneImageScreenMinPoint,
 			minV2,
 			maxV2);
 

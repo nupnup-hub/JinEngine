@@ -138,6 +138,17 @@ namespace JinEngine
 				return;
 			}
 		}
+		if (info.findOtherAcceleratorIfTypeNull)
+		{
+			for (const auto& data : spaceSpatialVec)
+			{
+				if (data->IsAcceleratorActivated() && data->GetLayer() == info.layer && info.spacitalType != data->GetType())
+				{
+					data->Intersect(info);
+					return;
+				}
+			}
+		}
 	}
 	void JSceneAcceleratorStructure::Contain(JAcceleratorContainInfo& info)const noexcept
 	{ 
@@ -172,18 +183,23 @@ namespace JinEngine
 	{
 		if (!gameObject->HasRenderItem())
 			return;
-
+ 
+		const J_ACCELERATOR_LAYER accLayer = ConvertAcceleratorLayer(gameObject->GetRenderItem()->GetRenderLayer());
 		for (auto& data : spaceSpatialVec)
 		{
-			if (data->IsAcceleratorActivated())
+			if (data->IsAcceleratorActivated() && data->GetLayer() == accLayer)
 				data->UpdateGameObject(gameObject);
 		}
 	}
 	void JSceneAcceleratorStructure::AddGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
 	{
+		if (!gameObject->HasRenderItem() || gameObject->GetRenderItem()->GetMesh() == nullptr)
+			return;
+
+		const J_ACCELERATOR_LAYER accLayer = ConvertAcceleratorLayer(gameObject->GetRenderItem()->GetRenderLayer());
 		for (auto& data : spaceSpatialVec)
 		{
-			if (data->IsAcceleratorActivated() && data->CanAddGameObject(gameObject))
+			if (data->IsAcceleratorActivated() && data->CanAddGameObject(gameObject) && data->GetLayer() == accLayer)
 				data->AddGameObject(gameObject);
 		}
 	}

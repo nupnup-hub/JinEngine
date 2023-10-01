@@ -8,8 +8,8 @@
 #include"../../AnimationClip/JAnimationClip.h" 
 #include"../../JResourceManager.h"
 #include"../../JResourceObjectUserInterface.h"
-#include"../../../../Core/Time/JGameTimer.h" 
-#include"../../../../Core/File/JFileIOHelper.h" 
+#include"../../../JObjectFileIOHelper.h"
+#include"../../../../Core/Time/JGameTimer.h"  
 #include"../../../../Core/Reflection/JTypeImplBase.h"
 #include<fstream>
 
@@ -202,7 +202,7 @@ namespace JinEngine
 
 		Core::J_FILE_IO_RESULT res = LoadAssetCommonData(stream, state);
 		JAnimationFSMstateClip* fsmClip = static_cast<JAnimationFSMstateClip*>(state.Get());
-		fsmClip->SetClip(JFileIOHelper::LoadHasObjectIden<JAnimationClip>(stream));
+		fsmClip->SetClip(JObjectFileIOHelper::_LoadHasIden<JAnimationClip>(stream));
 		return res;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMstate>& state)
@@ -212,7 +212,7 @@ namespace JinEngine
 
 		JUserPtr<JAnimationFSMstateClip> fsmClip = Core::ConnectChildUserPtr<JAnimationFSMstateClip>(state);
 		Core::J_FILE_IO_RESULT res = StoreAssetCommonData(stream, fsmClip);
-		JFileIOHelper::StoreHasObjectIden(stream, fsmClip->impl->clip.Get());
+		JObjectFileIOHelper::_StoreHasIden(stream, fsmClip->impl->clip.Get());
 		return res;
 	}
 

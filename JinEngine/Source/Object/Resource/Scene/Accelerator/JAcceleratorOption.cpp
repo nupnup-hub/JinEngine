@@ -1,7 +1,7 @@
 #include"JAcceleratorOption.h"
 #include"../../../GameObject/JGameObject.h"  
 #include"../../../Component/RenderItem/JRenderItem.h"   
-#include"../../../../Core/File/JFileIOHelper.h"
+#include"../../../JObjectFileIOHelper.h"
 
 namespace JinEngine
 {
@@ -20,6 +20,28 @@ namespace JinEngine
 				for (uint j = 0; j < resCount; ++j)
 				{
 					if (finalResult[j]->GetGuid() == guid)
+					{
+						isOverlap = true;
+						break;
+					}
+				}
+				if (!isOverlap)
+					finalResult.push_back(vec[i]);
+			}
+			vec = std::move(finalResult);
+		}
+		void EraseOverlap(std::vector<JAcceleratorIntersectInfo::Result>& vec)
+		{
+			std::vector<JAcceleratorIntersectInfo::Result> finalResult;
+			const uint innerCount = (uint)vec.size();
+			for (uint i = 0; i < innerCount; ++i)
+			{
+				bool isOverlap = false;
+				const size_t guid = vec[i].obj->GetGuid();
+				const uint resCount = (uint)finalResult.size();
+				for (uint j = 0; j < resCount; ++j)
+				{
+					if (finalResult[j].obj->GetGuid() == guid)
 					{
 						isOverlap = true;
 						break;
@@ -97,19 +119,19 @@ namespace JinEngine
 		if (!stream.is_open())
 			return;
 
-		JFileIOHelper::StoreAtomicData(stream, L"IsAcceleratorActivated:", isAcceleratorActivated);
-		JFileIOHelper::StoreAtomicData(stream, L"IsDebugActivated:", isDebugActivated);
-		JFileIOHelper::StoreAtomicData(stream, L"IsDebugLeafOnly:", isDebugLeafOnly);
-		JFileIOHelper::StoreAtomicData(stream, L"IsCullingActivated:", isCullingActivated);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"IsAcceleratorActivated:", isAcceleratorActivated);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"IsDebugActivated:", isDebugActivated);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"IsDebugLeafOnly:", isDebugLeafOnly);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"IsCullingActivated:", isCullingActivated);
 		if (innerRoot.IsValid())
 		{
-			JFileIOHelper::StoreAtomicData(stream, L"hasInnerRoot:", true);
-			JFileIOHelper::StoreAtomicData(stream, L"innerGuid:", innerRoot->GetGuid());
+			JObjectFileIOHelper::StoreAtomicData(stream, L"hasInnerRoot:", true);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"innerGuid:", innerRoot->GetGuid());
 		}
 		else
 		{
-			JFileIOHelper::StoreAtomicData(stream, L"hasInnerRoot:", false);
-			JFileIOHelper::StoreAtomicData(stream, L"innerGuid:", 0);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"hasInnerRoot:", false);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"innerGuid:", 0);
 		}
 	}
 	void JAcceleratorOption::Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid)
@@ -117,12 +139,12 @@ namespace JinEngine
 		if (!stream.is_open() || stream.eof())
 			return;
 
-		JFileIOHelper::LoadAtomicData(stream, isAcceleratorActivated);
-		JFileIOHelper::LoadAtomicData(stream, isDebugActivated);
-		JFileIOHelper::LoadAtomicData(stream, isDebugLeafOnly);
-		JFileIOHelper::LoadAtomicData(stream, isCullingActivated);
-		JFileIOHelper::LoadAtomicData(stream, hasInnerRoot);
-		JFileIOHelper::LoadAtomicData(stream, innerRootGuid);
+		JObjectFileIOHelper::LoadAtomicData(stream, isAcceleratorActivated);
+		JObjectFileIOHelper::LoadAtomicData(stream, isDebugActivated);
+		JObjectFileIOHelper::LoadAtomicData(stream, isDebugLeafOnly);
+		JObjectFileIOHelper::LoadAtomicData(stream, isCullingActivated);
+		JObjectFileIOHelper::LoadAtomicData(stream, hasInnerRoot);
+		JObjectFileIOHelper::LoadAtomicData(stream, innerRootGuid);
 	}
 
 	JAcceleratorCullingInfo::JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,
@@ -232,14 +254,22 @@ namespace JinEngine
 	}
 	void JAcceleratorIntersectInfo::EraseOverlap()
 	{
-		Private::EraseOverlap(resultObjVec);
+		Private::EraseOverlap(result);
 	}
-	void JAcceleratorIntersectInfo::SortIntermediate(const uint count, const bool isAscending)
+	void JAcceleratorIntersectInfo::SortResult()
 	{
-		if (isAscending)
-			std::sort(intermediate.begin(), intermediate.begin() + count, &Intermediate::CompareAsc);
-		else
-			std::sort(intermediate.begin(), intermediate.begin() + count, &Intermediate::CompareDesc);
+		auto sortAsecLam = [](const Result& a, const Result& b)
+		{
+			return a.dist < b.dist;
+		};
+		auto sortDescLam = [](const Result& a, const Result& b)
+		{
+			return a.dist > b.dist;
+		};
+		if(sortType == J_ACCELERATOR_SORT_TYPE::ASCENDING)
+			std::sort(result.begin(), result.end(), sortAsecLam);
+		else if (sortType == J_ACCELERATOR_SORT_TYPE::DESCENDING)
+			std::sort(result.begin(), result.end(), sortDescLam);
 	}
 
 	JAcceleratorContainInfo::JAcceleratorContainInfo(const DirectX::BoundingFrustum& frustum,

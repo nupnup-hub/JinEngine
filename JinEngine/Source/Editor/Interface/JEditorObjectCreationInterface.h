@@ -31,7 +31,7 @@ namespace JinEngine
 
 			using ClearTaskFunctor = typename Core::JSFunctorType<void, std::vector<size_t>>::Functor;
 			//using NotifyPtr = void(JEditorWindow::*)(Core::JEventInterface<size_t, J_EDITOR_EVENT, JEditorEvStruct*>&, size_t, J_EDITOR_EVENT, JEditorEvStruct*);
-			using DataHandleStructure = Core::JDataHandleStructure<Core::JTransition::GetMaxTaskCapacity(), Core::JIdentifier>;
+			using DataHandleStructure = Core::JDataHandleStructure<Core::JTransition::GetMaxTaskCapacity(), Core::JIdentifier, false>;
 		}
 
 		struct JEditorCreationHint
@@ -75,22 +75,7 @@ namespace JinEngine
 		public:
 			bool IsValid()const noexcept;
 		};
-
-		template<typename ...Param> class JEditorObjectCreateInterface;
-		class JEditorObjectDestroyInterface;
-		class JEditorObjectUndoDestroyInterface;
-		//passing class
-		class JEditorObjectReleaseInterface
-		{
-		private:
-			template<typename ...Param> friend class JEditorObjectCreateInterface;
-			friend class JEditorObjectDestroyInterface;
-			friend class JEditorObjectUndoDestroyInterface;
-		private:
-			static JOwnerPtr<Core::JIdentifier> ReleaseInstance(Core::JIdentifier* ptr);
-			static bool RestoreInstance(JOwnerPtr<Core::JIdentifier>&& instance);
-		};
-
+ 
 		template<typename ...Param>
 		class JEditorObjectCreateInterface : public JEditorObjectHandlerInterface
 		{
@@ -158,16 +143,12 @@ namespace JinEngine
 			{  
 				bool isReleased = false;
 				JEditorWindow* editorWnd = creationHint.editorWnd;
-				JOwnerPtr<Core::JIdentifier> data = dS.Release(dH);
+				JUserPtr<Core::JIdentifier> data = dS.Release(dH);
 				if (data.IsValid())
 				{  
 					if (editorWnd != nullptr && preProcessF != nullptr)
 						(*preProcessF)(editorWnd);
-					if (!JEditorObjectReleaseInterface::RestoreInstance(std::move(data)))
-					{
-						JEditorTransition::Instance().Log("Creation fail", "can't restore instance");
-						return;
-					}
+					data->SetIdentifiable();
 					isReleased = true;
 				}
 				else

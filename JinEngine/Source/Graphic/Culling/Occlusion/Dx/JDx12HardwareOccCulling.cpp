@@ -10,12 +10,7 @@
 #include"../../../JGraphicUpdateHelper.h"
 #include"../../../../Core/Time/JStopWatch.h"
 #include"../../../../Core/Platform/JHardwareInfo.h"
-#include"../../../../Object/Component/Camera/JCamera.h"
-
-#include"../../../../Object/Resource/Scene/JScene.h"
-#include"../../../../Object/Resource/Scene/Accelerator/JAcceleratorOption.h"
-#include"../../../../Develop/Debug/JDevelopDebug.h"
-
+#include"../../../../Object/Component/Camera/JCamera.h" 
 namespace JinEngine::Graphic
 {
 	namespace Private
@@ -227,8 +222,8 @@ namespace JinEngine::Graphic
 			//draw specific count 
 
 			JDx12GraphicDepthMapDrawSet depthMapSet(dx12DrawSet);
-			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
-			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
+			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
 
 			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet,
 				objVec00,
@@ -269,8 +264,8 @@ namespace JinEngine::Graphic
 			CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = dx12Gm->GetCpuDsvDescriptorHandle(dsvHeapIndex);
 			cmdList->OMSetRenderTargets(0, nullptr, false, &dsv);
 
-			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::STATIC);
-			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, J_MESHGEOMETRY_TYPE::SKINNED);
+			const std::vector<JUserPtr<JGameObject>>& objVec00 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
+			const std::vector<JUserPtr<JGameObject>>& objVec01 = helper.GetGameObjectCashVec(J_RENDER_LAYER::OPAQUE_OBJECT, Core::J_MESHGEOMETRY_TYPE::SKINNED);
 
 			JDx12GraphicDepthMapDrawSet depthMapSet(dx12DrawSet);
 			dx12DrawSet->depthTest->DrawHdOcclusionQueryObject(&depthMapSet,

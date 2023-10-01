@@ -10,7 +10,7 @@ namespace JinEngine
 //***************************************************************************************
 	using namespace DirectX;
 
-	JStaticMeshData JDefaultGeometryGenerator::CreateCube(const float width,
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateCube(const float width,
 		const float height,
 		const float depth,
 		uint numSubdivisions)
@@ -18,48 +18,48 @@ namespace JinEngine
 		//
 		// Create the vertices.
 		//
-		std::vector< JStaticMeshVertex> v(24);
+		std::vector<Core::JStaticMeshVertex> v(24);
 
 		float w2 = 0.5f * width;
 		float h2 = 0.5f * height;
 		float d2 = 0.5f * depth;
 
 		// Fill in the front face vertex data.
-		v[0] = JStaticMeshVertex(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
-		v[1] = JStaticMeshVertex(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-		v[2] = JStaticMeshVertex(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-		v[3] = JStaticMeshVertex(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+		v[0] = Core::JStaticMeshVertex(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+		v[1] = Core::JStaticMeshVertex(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		v[2] = Core::JStaticMeshVertex(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		v[3] = Core::JStaticMeshVertex(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f);
 
 		// Fill in the back face vertex data.
-		v[4] = JStaticMeshVertex(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f);
-		v[5] = JStaticMeshVertex(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f);
-		v[6] = JStaticMeshVertex(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
-		v[7] = JStaticMeshVertex(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+		v[4] = Core::JStaticMeshVertex(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f);
+		v[5] = Core::JStaticMeshVertex(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f);
+		v[6] = Core::JStaticMeshVertex(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+		v[7] = Core::JStaticMeshVertex(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f);
 
 		// Fill in the top face vertex data.
-		v[8] = JStaticMeshVertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
-		v[9] = JStaticMeshVertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-		v[10] = JStaticMeshVertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-		v[11] = JStaticMeshVertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+		v[8] = Core::JStaticMeshVertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+		v[9] = Core::JStaticMeshVertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		v[10] = Core::JStaticMeshVertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		v[11] = Core::JStaticMeshVertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f);
 
 		// Fill in the bottom face vertex data.
-		v[12] = JStaticMeshVertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f);
-		v[13] = JStaticMeshVertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f);
-		v[14] = JStaticMeshVertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
-		v[15] = JStaticMeshVertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+		v[12] = Core::JStaticMeshVertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f);
+		v[13] = Core::JStaticMeshVertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f);
+		v[14] = Core::JStaticMeshVertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+		v[15] = Core::JStaticMeshVertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f);
 
 		// Fill in the left face vertex data.
-		v[16] = JStaticMeshVertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f);
-		v[17] = JStaticMeshVertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f);
-		v[18] = JStaticMeshVertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f);
-		v[19] = JStaticMeshVertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f);
+		v[16] = Core::JStaticMeshVertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f);
+		v[17] = Core::JStaticMeshVertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+		v[18] = Core::JStaticMeshVertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+		v[19] = Core::JStaticMeshVertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f);
 
 		// Fill in the right face vertex data.
-		v[20] = JStaticMeshVertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
-		v[21] = JStaticMeshVertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-		v[22] = JStaticMeshVertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-		v[23] = JStaticMeshVertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f);
-		 		 
+		v[20] = Core::JStaticMeshVertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
+		v[21] = Core::JStaticMeshVertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		v[22] = Core::JStaticMeshVertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+		v[23] = Core::JStaticMeshVertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f);
+
 		//
 		// Create the indices.
 		//
@@ -89,8 +89,8 @@ namespace JinEngine
 		// Fill in the right face index data
 		i[30] = 20; i[31] = 21; i[32] = 22;
 		i[33] = 20; i[34] = 22; i[35] = 23;
- 
-		JStaticMeshData meshData(L"Cube", std::move(i), true, true, std::move(v));
+
+		Core::JStaticMeshData meshData(L"Cube", std::move(i), true, true, std::move(v));
 		// Put a cap on the number of subdivisions.
 		numSubdivisions = std::min<uint>(numSubdivisions, 6u);
 		for (uint i = 0; i < numSubdivisions; ++i)
@@ -99,7 +99,7 @@ namespace JinEngine
 		return meshData;
 	}
 
-	JStaticMeshData JDefaultGeometryGenerator::CreateSphere(const float radius,
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateSphere(const float radius,
 		const uint slicecount,
 		const uint stackcount)
 	{
@@ -109,12 +109,12 @@ namespace JinEngine
 		// Poles: note that there will be texture coordinate distortion as there is
 		// not a unique point on the texture map to assign to the pole when mapping
 		// a rectangular texture onto a sphere.
-		JStaticMeshVertex topVertex(0.0f, radius, 0.0f, 0.0f, +1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-		JStaticMeshVertex bottomVertex(0.0f, -radius, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+		Core::JStaticMeshVertex topVertex(0.0f, radius, 0.0f, 0.0f, +1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		Core::JStaticMeshVertex bottomVertex(0.0f, -radius, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
 
-		std::vector<JStaticMeshVertex> vertices;
+		std::vector<Core::JStaticMeshVertex> vertices;
 		vertices.push_back(topVertex);
-		 
+
 		float phiStep = XM_PI / stackcount;
 		float thetaStep = 2.0f * XM_PI / slicecount;
 
@@ -128,7 +128,7 @@ namespace JinEngine
 			{
 				float theta = j * thetaStep;
 
-				JStaticMeshVertex v;
+				Core::JStaticMeshVertex v;
 
 				// spherical to cartesian
 				v.position.x = radius * sinf(phi) * cosf(theta);
@@ -142,7 +142,7 @@ namespace JinEngine
 
 				v.tangentU = XMVector3Normalize(v.tangentU.ToXmV());
 				v.normal = XMVector3Normalize(v.position.ToXmV());
-				 
+
 				v.texC.x = theta / XM_2PI;
 				v.texC.y = phi / XM_PI;
 
@@ -203,11 +203,11 @@ namespace JinEngine
 			indices.push_back(baseIndex + i + 1);
 		}
 
-		//JStaticMeshData meshData{L"Cube", std::move(i), true, true, std::move(v)};
-		return JStaticMeshData{L"Sphere", std::move(indices), true, true, std::move(vertices) };
+		//Core::JStaticMeshData meshData{L"Cube", std::move(i), true, true, std::move(v)};
+		return Core::JStaticMeshData{ L"Sphere", std::move(indices), true, true, std::move(vertices) };
 	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateGeosphere(const float radius, uint numSubdivisions)
-	{ 
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateGeosphere(const float radius, uint numSubdivisions)
+	{
 		// Put a cap on the number of subdivisions.
 		numSubdivisions = std::min<uint>(numSubdivisions, 6u);
 
@@ -233,12 +233,12 @@ namespace JinEngine
 			3,10,7, 10,6,7, 6,11,7, 6,0,11, 6,1,0,
 			10,1,6, 11,0,9, 2,11,9, 5,2,9,  11,2,7
 		};
-		std::vector<JStaticMeshVertex> vertices(12);
+		std::vector<Core::JStaticMeshVertex> vertices(12);
 
 		for (uint i = 0; i < 12; ++i)
 			vertices[i].position = pos[i];
 
-		JStaticMeshData meshData{ L"GeoSphere", std::move(indices), true, true, std::move(vertices) };
+		Core::JStaticMeshData meshData{ L"GeoSphere", std::move(indices), true, true, std::move(vertices) };
 
 		for (uint i = 0; i < numSubdivisions; ++i)
 			Subdivide(meshData);
@@ -253,7 +253,7 @@ namespace JinEngine
 			// Project onto sphere.
 			XMVECTOR p = radius * n;
 
-			JStaticMeshVertex v;
+			Core::JStaticMeshVertex v;
 
 			v.position = p;
 			v.normal = n;
@@ -281,7 +281,7 @@ namespace JinEngine
 
 		return meshData;
 	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateCylinder(const float bottomRadius,
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateCylinder(const float bottomRadius,
 		const float topRadius,
 		const float height,
 		const uint slicecount,
@@ -290,7 +290,7 @@ namespace JinEngine
 		//
 		// Build Stacks.
 		// 
-		std::vector<JStaticMeshVertex> vertices;
+		std::vector<Core::JStaticMeshVertex> vertices;
 		std::vector<uint> indices;
 
 		float stackHeight = height / stackcount;
@@ -307,12 +307,12 @@ namespace JinEngine
 			float dTheta = 2.0f * XM_PI / slicecount;
 			for (uint j = 0; j <= slicecount; ++j)
 			{
-				JStaticMeshVertex vertex;
+				Core::JStaticMeshVertex vertex;
 
 				float c = cosf(j * dTheta);
 				float s = sinf(j * dTheta);
 
-				vertex.position = JVector3<float>(r * c , y, r * s);
+				vertex.position = JVector3<float>(r * c, y, r * s);
 
 				vertex.texC.x = (float)j / slicecount;
 				vertex.texC.y = 1.0f - (float)i / stackcount;
@@ -369,13 +369,13 @@ namespace JinEngine
 				indices.push_back(i * ringVertexcount + j + 1);
 			}
 		}
-		JStaticMeshData meshData(L"Cylinder", std::move(indices), true, true, std::move(vertices));
+		Core::JStaticMeshData meshData(L"Cylinder", std::move(indices), true, true, std::move(vertices));
 		BuildCylinderTopCap(bottomRadius, topRadius, height, slicecount, stackcount, meshData);
 		BuildCylinderBottomCap(bottomRadius, topRadius, height, slicecount, stackcount, meshData);
 
 		return meshData;
 	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateGrid(const float width,
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateGrid(const float width,
 		const float depth,
 		const uint m,
 		const uint n)
@@ -394,7 +394,7 @@ namespace JinEngine
 		float du = 1.0f / (n - 1);
 		float dv = 1.0f / (m - 1);
 
-		std::vector<JStaticMeshVertex> vertices(vertexcount);	 
+		std::vector<Core::JStaticMeshVertex> vertices(vertexcount);
 		for (uint i = 0; i < m; ++i)
 		{
 			float z = halfDepth - i * dz;
@@ -434,38 +434,38 @@ namespace JinEngine
 			}
 		}
 
-		return JStaticMeshData(L"Grid", std::move(indices), true, true, std::move(vertices));
+		return Core::JStaticMeshData(L"Grid", std::move(indices), true, true, std::move(vertices));
 	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateQuad(const float x,
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateQuad(const float x,
 		const float y,
 		const float w,
 		const float h,
 		const float depth)
 	{
-		std::vector<JStaticMeshVertex> vertices(4);
-		std::vector<uint> indices(6); 
+		std::vector<Core::JStaticMeshVertex> vertices(4);
+		std::vector<uint> indices(6);
 
 		// position coordinates specified in NDC space.
-		  
-		vertices[0] = JStaticMeshVertex(
+
+		vertices[0] = Core::JStaticMeshVertex(
 			x, y - h, depth,
 			0.0f, 0.0f, -1.0f,
 			0.0f, 1.0f,
 			1.0f, 0.0f, 0.0f);
 
-		vertices[1] = JStaticMeshVertex(
+		vertices[1] = Core::JStaticMeshVertex(
 			x, y, depth,
 			0.0f, 0.0f, -1.0f,
 			0.0f, 0.0f,
 			1.0f, 0.0f, 0.0f);
 
-		vertices[2] = JStaticMeshVertex(
+		vertices[2] = Core::JStaticMeshVertex(
 			x + w, y, depth,
 			0.0f, 0.0f, -1.0f,
 			1.0f, 0.0f,
 			1.0f, 0.0f, 0.0f);
 
-		vertices[3] = JStaticMeshVertex(
+		vertices[3] = Core::JStaticMeshVertex(
 			x + w, y - h, depth,
 			0.0f, 0.0f, -1.0f,
 			1.0f, 1.0f,
@@ -479,11 +479,11 @@ namespace JinEngine
 		indices[4] = 2;
 		indices[5] = 3;
 
-		return JStaticMeshData(L"Quad", std::move(indices), true, true, std::move(vertices));
+		return Core::JStaticMeshData(L"Quad", std::move(indices), true, true, std::move(vertices));
 	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateLineBoundingBox()
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateLineBoundingBox()
 	{
-		std::vector<JStaticMeshVertex> vertices(8);
+		std::vector<Core::JStaticMeshVertex> vertices(8);
 		vertices[0].position = JVector3<float>(-0.5f, -0.5f, -0.5f);
 		vertices[1].position = JVector3<float>(0.5f, -0.5f, -0.5f);
 		vertices[2].position = JVector3<float>(0.5f, -0.5f, 0.5f);
@@ -508,11 +508,11 @@ namespace JinEngine
 			2, 6,
 			3, 7
 		};
-		return JStaticMeshData(L"Bounding Box_L", std::move(indices), false, false, std::move(vertices));
+		return Core::JStaticMeshData(L"Bounding Box_L", std::move(indices), false, false, std::move(vertices));
 	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateTriangleBoundingBox()
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateTriangleBoundingBox()
 	{
-		std::vector<JStaticMeshVertex> vertices(8);
+		std::vector<Core::JStaticMeshVertex> vertices(8);
 		vertices[0].position = JVector3<float>(-0.5f, 0.5f, -0.5);
 		vertices[1].position = JVector3<float>(0.5f, 0.5f, -0.5f);
 		vertices[2].position = JVector3<float>(0.5f, 0.5f, 0.5f);
@@ -542,11 +542,11 @@ namespace JinEngine
 			0, 3, 4,
 			0, 4, 7
 		};
-		return JStaticMeshData(L"Bounding Box_T", std::move(indices), false, false, std::move(vertices));
+		return Core::JStaticMeshData(L"Bounding Box_T", std::move(indices), false, false, std::move(vertices));
 	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateBoundingFrustum()
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateBoundingFrustum()
 	{
-		std::vector<JStaticMeshVertex> vertices(5); 
+		std::vector<Core::JStaticMeshVertex> vertices(5);
 		vertices[0].position = JVector3<float>(0, 0, 0);
 		vertices[1].position = JVector3<float>(-0.5f, -0.5f, 1);
 		vertices[2].position = JVector3<float>(0.5f, -0.5f, 1);
@@ -565,14 +565,14 @@ namespace JinEngine
 			2, 3
 		};
 
-		return JStaticMeshData(L"Bounding Frustum", std::move(indices), false, false, std::move(vertices));
-	} 
-	JStaticMeshData JDefaultGeometryGenerator::CreateCircle(float outRadius, float innerRadius)
+		return Core::JStaticMeshData(L"Bounding Frustum", std::move(indices), false, false, std::move(vertices));
+	}
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateCircle(float outRadius, float innerRadius)
 	{
 		const int segments = 32;
 		const int vertexCount = (segments + 1) * 2;
-		const int indexCount = (vertexCount - 2) * 3 + 6; 
-		std::vector<JStaticMeshVertex> vertices(vertexCount);
+		const int indexCount = (vertexCount - 2) * 3 + 6;
+		std::vector<Core::JStaticMeshVertex> vertices(vertexCount);
 		std::vector<uint> indices(indexCount);
 
 		float theta = 2.0f * XM_PI;
@@ -589,12 +589,12 @@ namespace JinEngine
 		float piRate = 1.0f / segments;
 
 		for (int i = 1; i < loopCount; i++)
-		{ 	 
+		{
 			vertexOffset += 2;
 			theta = 2.0f * XM_PI * ((float)((segments + 1) - i) / segments - piRate);
 			vertices[vertexOffset].position.x = innerRadius * std::cos(theta);
 			vertices[vertexOffset].position.y = innerRadius * std::sin(theta);
-			 
+
 			vertices[vertexOffset + 1].position.x = outRadius * std::cos(theta);
 			vertices[vertexOffset + 1].position.y = outRadius * std::sin(theta);
 
@@ -606,24 +606,24 @@ namespace JinEngine
 			indices[indexOffset + 5] = vertexOffset;
 
 			indexOffset += 6;
-		}  
-		return JStaticMeshData(L"Circle", std::move(indices), false, false, std::move(vertices));
+		}
+		return Core::JStaticMeshData(L"Circle", std::move(indices), false, false, std::move(vertices));
 	}
-	JStaticMeshData JDefaultGeometryGenerator::CreateLine(const uint thickness)
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateLine(const uint thickness)
 	{
 		const float padding = 0.05f;
-		std::vector<JStaticMeshVertex> vertices(thickness * 2);
+		std::vector<Core::JStaticMeshVertex> vertices(thickness * 2);
 		std::vector<uint> indices(thickness * 2);
 
-		float xFactor = 0; 
-		int divFactor = thickness / 2; 
+		float xFactor = 0;
+		int divFactor = thickness / 2;
 		if (thickness % 2)
 			xFactor = padding * -(divFactor - 1) - padding * -0.5f;
 		else
 			xFactor = padding * -divFactor;
-		
+
 		for (uint i = 0; i < thickness; ++i)
-		{	 
+		{
 			vertices[i].position = JVector3<float>(xFactor, -0.5f, 0.0f);
 			vertices[i + 1].position = JVector3<float>(xFactor, 0.5f, 0.0f);
 			xFactor += padding;
@@ -631,12 +631,12 @@ namespace JinEngine
 			indices[i] = i;
 			indices[i + 1] = i + 1;
 		}
-		return JStaticMeshData(L"Line", std::move(indices), false, false, std::move(vertices));
+		return Core::JStaticMeshData(L"Line", std::move(indices), false, false, std::move(vertices));
 	}
-	void JDefaultGeometryGenerator::Subdivide(JStaticMeshData& meshData)
+	void JDefaultGeometryGenerator::Subdivide(Core::JStaticMeshData& meshData)
 	{
 		// Save a copy of the input geometry.
-		JStaticMeshData inputCopy = meshData;
+		Core::JStaticMeshData inputCopy = meshData;
 
 		//       v1
 		//       *
@@ -648,21 +648,21 @@ namespace JinEngine
 		// *-----*-----*
 		// v0    m2     v2
 
-		std::vector<JStaticMeshVertex> vertices;
+		std::vector<Core::JStaticMeshVertex> vertices;
 		std::vector<uint> indices;
 
 		uint numTris = (uint)inputCopy.GetIndexCount() / 3;
 		for (uint i = 0; i < numTris; ++i)
 		{
-			JStaticMeshVertex v0 = inputCopy.GetVertex(inputCopy.GetIndex(i * 3 + 0));
-			JStaticMeshVertex v1 = inputCopy.GetVertex(inputCopy.GetIndex(i * 3 + 1));
-			JStaticMeshVertex v2 = inputCopy.GetVertex(inputCopy.GetIndex(i * 3 + 2));
+			Core::JStaticMeshVertex v0 = inputCopy.GetVertex(inputCopy.GetIndex(i * 3 + 0));
+			Core::JStaticMeshVertex v1 = inputCopy.GetVertex(inputCopy.GetIndex(i * 3 + 1));
+			Core::JStaticMeshVertex v2 = inputCopy.GetVertex(inputCopy.GetIndex(i * 3 + 2));
 			//
 			// Generate the midpoints.
 			//
-			JStaticMeshVertex m0 = MidPoint(v0, v1);
-			JStaticMeshVertex m1 = MidPoint(v1, v2);
-			JStaticMeshVertex m2 = MidPoint(v0, v2);
+			Core::JStaticMeshVertex m0 = MidPoint(v0, v1);
+			Core::JStaticMeshVertex m1 = MidPoint(v1, v2);
+			Core::JStaticMeshVertex m2 = MidPoint(v0, v2);
 			//
 			// Add new geometry.
 			//
@@ -689,15 +689,15 @@ namespace JinEngine
 			indices.push_back(i * 6 + 1);
 			indices.push_back(i * 6 + 4);
 		}
-		meshData = JStaticMeshData(inputCopy.GetName(),
+		meshData = Core::JStaticMeshData(inputCopy.GetName(),
 			inputCopy.GetGuid(),
 			std::move(indices),
 			inputCopy.HasUV(),
 			inputCopy.HasNormal(),
 			std::move(vertices));
 	}
-	JStaticMeshVertex JDefaultGeometryGenerator::MidPoint(const JStaticMeshVertex& v0, const JStaticMeshVertex& v1)
-	{    
+	Core::JStaticMeshVertex JDefaultGeometryGenerator::MidPoint(const Core::JStaticMeshVertex& v0, const Core::JStaticMeshVertex& v1)
+	{
 		// Compute the midpoints of all the attributes.  Vectors need to be normalized
 		// since linear interpolating can make them not unit length.  
 		XMVECTOR pos = 0.5f * (v0.position.ToXmV() + v1.position.ToXmV());
@@ -705,16 +705,16 @@ namespace JinEngine
 		XMVECTOR tangent = XMVector3Normalize(0.5f * (v0.tangentU.ToXmV() + v1.tangentU.ToXmV()));
 		XMVECTOR tex = 0.5f * (v0.texC.ToXmV() + v1.texC.ToXmV());
 
-		JStaticMeshVertex v;
+		Core::JStaticMeshVertex v;
 		v.position = pos;
 		v.normal = normal;
 		v.tangentU = tangent;
 		v.texC = tex;
-		 
+
 		return v;
 	}
 	void JDefaultGeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius, float height,
-		uint slicecount, uint stackcount, JStaticMeshData& meshData)
+		uint slicecount, uint stackcount, Core::JStaticMeshData& meshData)
 	{
 		uint baseIndex = (uint)meshData.GetVertexCount();
 
@@ -732,11 +732,11 @@ namespace JinEngine
 			float u = x / height + 0.5f;
 			float v = z / height + 0.5f;
 
-			meshData.AddVertex(JStaticMeshVertex(x, y, z, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
+			meshData.AddVertex(Core::JStaticMeshVertex(x, y, z, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
 		}
 
 		// Cap center vertex.
-		meshData.AddVertex(JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
+		meshData.AddVertex(Core::JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
 
 		// Index of center vertex.
 		uint centerIndex = (uint)meshData.GetVertexCount() - 1;
@@ -749,7 +749,7 @@ namespace JinEngine
 		}
 	}
 	void JDefaultGeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height,
-		uint slicecount, uint stackcount, JStaticMeshData& meshData)
+		uint slicecount, uint stackcount, Core::JStaticMeshData& meshData)
 	{
 		// 
 		// Build bottom cap.
@@ -771,11 +771,11 @@ namespace JinEngine
 			float v = z / height + 0.5f;
 
 			//수정필요
-			meshData.AddVertex(JStaticMeshVertex(x, y, z, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
+			meshData.AddVertex(Core::JStaticMeshVertex(x, y, z, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
 		}
 
 		// Cap center vertex.
-		meshData.AddVertex(JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
+		meshData.AddVertex(Core::JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
 
 		// Cache the index of center vertex.
 		uint centerIndex = (uint)meshData.GetVertexCount() - 1;

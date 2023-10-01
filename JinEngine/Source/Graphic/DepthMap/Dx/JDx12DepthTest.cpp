@@ -26,7 +26,7 @@
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Core/Identity/JIdentifier.h"
 #include"../../../Application/JApplicationEngine.h"
-
+ 
 namespace JinEngine::Graphic
 {
 	namespace
@@ -39,18 +39,18 @@ namespace JinEngine::Graphic
 	}
 	namespace Private
 	{
-		static std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout(const J_MESHGEOMETRY_TYPE meshType)noexcept
+		static std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout(const Core::J_MESHGEOMETRY_TYPE meshType)noexcept
 		{
 			switch (meshType)
 			{
-			case JinEngine::J_MESHGEOMETRY_TYPE::STATIC:
+			case JinEngine::Core::J_MESHGEOMETRY_TYPE::STATIC:
 			{
 				return
 				{
 					{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 				};
 			}
-			case JinEngine::J_MESHGEOMETRY_TYPE::SKINNED:
+			case JinEngine::Core::J_MESHGEOMETRY_TYPE::SKINNED:
 			{
 				return
 				{
@@ -282,7 +282,7 @@ namespace JinEngine::Graphic
 
 			std::vector<D3D_SHADER_MACRO> macro = Private::GetShaderMacro(type);
 
-			gShaderDataPtr->inputLayout = Private::GetInputLayout(J_MESHGEOMETRY_TYPE::STATIC);
+			gShaderDataPtr->inputLayout = Private::GetInputLayout(Core::J_MESHGEOMETRY_TYPE::STATIC);
 			gShaderDataPtr->vs = JD3DUtility::CompileShader(gShaderPath, macro.data(), "VS", "vs_5_1");
 
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC newShaderPso;
@@ -310,6 +310,7 @@ namespace JinEngine::Graphic
 			{
 				newShaderPso.BlendState.RenderTarget[0].RenderTargetWriteMask = 0;
 				newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+				newShaderPso.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 				//same as main ds format
 				newShaderPso.DSVFormat = depthStencilFormat;
 				//newShaderPso.DSVFormat = DXGI_FORMAT_D32_FLOAT;

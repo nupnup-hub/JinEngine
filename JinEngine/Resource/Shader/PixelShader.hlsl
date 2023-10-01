@@ -1,46 +1,9 @@
 #include "VertexLayout.hlsl"
+#include "ShadowMapCal.hlsl"
+
+#ifndef JINENGINE_COMMON
 #include "Common.hlsl" 
- 
-float4 CalculateLight(Material mat, 
-	float3 posW,
-	float3 normal,
-	float3 toEye)
-{
-	float3 directLight = float3(0, 0, 0);
-#ifdef SHADOW
-	for (int i = directionalLitSt; i < directionalLitEd; ++i)
-	{
-		float shadowFactor = 1;
-		float4 shadowPosH = mul(float4(posW, 1.0f), directionalLight[i].shadowMapTransform);
-		if (directionalLight[i].shadowMapType == DIRECTONAL_LIGHT_HAS_NORMAL_SHADOW_MAP)
-			shadowFactor = CalShadowFactor(shadowPosH, directionalLight[i].shadowMapIndex);
-		else if (directionalLight[i].shadowMapType == DIRECTONAL_LIGHT_HAS_CSM)
-			shadowFactor = CalCascadeShadowFactor(shadowPosH, directionalLight[i].shadowMapIndex, directionalLight[i].csmDataIndex + csmLocalIndex);
-
-		directLight += ComputeDirectionalLight(directionalLight[i], mat, normal, toEye) * shadowFactor;
-	}
-	for (int i = pointLitSt; i < pointLitEd; ++i)
-	{
-		float shadowFactor = CalCubeShadowFactor(posW, i, pointLight[i].shadowMapIndex);
-		directLight += ComputePointLight(pointLight[i], mat, posW, normal, toEye) * shadowFactor;
-	}
-	for (int i = spotLitSt; i < spotLitEd; ++i)
-	{
-		float4 shadowPosH = mul(float4(posW, 1.0f), spotLight[i].shadowMapTransform);
-		float shadowFactor = CalShadowFactor(shadowPosH, spotLight[i].shadowMapIndex);
-		directLight += ComputeSpotLight(spotLight[i], mat, posW, normal, toEye) * shadowFactor;
-	}
-#else 
-	for (int i = directionalLitSt; i < directionalLitEd; ++i)
-		directLight += ComputeDirectionalLight(directionalLight[i], mat, normal, toEye);
-	for (int i = pointLitSt; i < pointLitEd; ++i)
-		directLight += ComputePointLight(pointLight[i], mat, posW, normal, toEye);
-	for (int i = spotLitSt; i < spotLitEd; ++i)
-		directLight += ComputeSpotLight(spotLight[i], mat, posW, normal, toEye);
 #endif
-	return float4(directLight, 0.0f);
-}
-
 
 #if defined(DEBUG)
 float4 PS(VertexOut pin) : SV_Target

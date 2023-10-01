@@ -5,7 +5,7 @@
 namespace JinEngine
 {
 	namespace Graphic
-	{
+	{ 
 		struct JOutlineConstants
 		{
 			JMatrix4x4 world = JMatrix4x4::Identity();
@@ -14,7 +14,7 @@ namespace JinEngine
 			JVector4<float> colors[8] =
 			{
 				JVector4<float>(0.0f ,0.0f, 0.0f, 0.0f),
-				JVector4<float>(1.0f ,0.0f, 0.0f, 1.0f),
+				JVector4<float>(1.0f ,0.0f, 0.0f, 1.0f),	//same as DefaultColor
 				JVector4<float>(1.0f ,0.5f, 0.0f, 1.0f),
 				JVector4<float>(1.0f ,1.0f, 0.0f, 1.0f),
 				JVector4<float>(0.0f ,1.0f, 0.0f, 1.0f),

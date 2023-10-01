@@ -9,7 +9,7 @@
 #include<algorithm>
 
 //Debug
-//#include"../../File/JFileIOHelper.h"
+//#include"../../File/JObjectFileIOHelper.h"
 //#include"../../../Debug/JDebugTimer.h"
 
 using namespace DirectX;
@@ -154,17 +154,17 @@ namespace JinEngine
 		stream.open(L"D:\\JinWooJung\\KdTreeLog.txt", std::ios::out | std::ios::app);
 		JDebugTimer::StartGameTimer();
 		JDebugTimer::StopGameTimer();
-		JFileIOHelper::StoreAtomicData(stream, L"Find ChangeTime", JDebugTimer::GetElapsedMilliTime());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"Find ChangeTime", JDebugTimer::GetElapsedMilliTime());
 		if (hasChanged)
 		{
 			JDebugTimer::StartGameTimer();
 
 			JDebugTimer::StopGameTimer();
-			JFileIOHelper::StoreAtomicData(stream, L"Tree Build ms:", JDebugTimer::GetElapsedMilliTime());
+			JObjectFileIOHelper::StoreAtomicData(stream, L"Tree Build ms:", JDebugTimer::GetElapsedMilliTime());
 		}
 		else
-			JFileIOHelper::StoreJString(stream, L"don't Build", L" ");
-		JFileIOHelper::InputSpace(stream, 1);
+			JObjectFileIOHelper::StoreJString(stream, L"don't Build", L" ");
+		JObjectFileIOHelper::InputSpace(stream, 1);
 		stream.close();
 		*/
 	}
@@ -301,13 +301,13 @@ namespace JinEngine
 		   JDebugTimer::StopGameTimer();
 		   std::wofstream stream;
 		   stream.open(L"D:\\JinWooJung\\KdTreeLog.txt", std::ios::out | std::ios::app);
-		   JFileIOHelper::StoreJString(stream, L"Tree Log", L"");
-		   JFileIOHelper::StoreAtomicData(stream, L"newNodeCount:", newNodeCount);
-		   JFileIOHelper::StoreAtomicData(stream, L"objListCount:", objList.size());
-		   JFileIOHelper::StoreAtomicData(stream, L"ElapsedTime na:", JDebugTimer::GetElapsedNanoTime());
-		   JFileIOHelper::StoreAtomicData(stream, L"ElapsedTime ms:", JDebugTimer::GetElapsedMilliTime());
-		   JFileIOHelper::StoreAtomicData(stream, L"ElapsedTime s:", JDebugTimer::GetElapsedSecondTime());
-		   JFileIOHelper::InputSpace(stream, 1);
+		   JObjectFileIOHelper::StoreJString(stream, L"Tree Log", L"");
+		   JObjectFileIOHelper::StoreAtomicData(stream, L"newNodeCount:", newNodeCount);
+		   JObjectFileIOHelper::StoreAtomicData(stream, L"objListCount:", objList.size());
+		   JObjectFileIOHelper::StoreAtomicData(stream, L"ElapsedTime na:", JDebugTimer::GetElapsedNanoTime());
+		   JObjectFileIOHelper::StoreAtomicData(stream, L"ElapsedTime ms:", JDebugTimer::GetElapsedMilliTime());
+		   JObjectFileIOHelper::StoreAtomicData(stream, L"ElapsedTime s:", JDebugTimer::GetElapsedSecondTime());
+		   JObjectFileIOHelper::InputSpace(stream, 1);
 		   stream.close();
 		*/
 	}

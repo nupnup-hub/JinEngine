@@ -213,6 +213,7 @@ namespace JinEngine
 			std::unique_ptr<SetAppStateF> setAppStateF;
 			std::unique_ptr<JApplicationProjectInfo> nextProjectInfo;
 			std::vector<std::unique_ptr<JApplicationProjectInfo>> projectList;
+		public:
 			bool startProjectOnce = false;
 			bool endProject = false;
 			bool loadOtherProjectOnce = false;
@@ -350,8 +351,12 @@ namespace JinEngine
 					Core::JRealTime::GetNowTime());
 			}
 		public:
-			void BeginLoadOtherProject()noexcept
+			void BeginLoadOtherProject(std::unique_ptr<JApplicationProjectInfo>&& nextProjInfo)noexcept
 			{
+				if (nextProjInfo == nullptr)
+					return;
+
+				SetNextProjectInfo(std::move(nextProjInfo));
 				loadOtherProjectOnce = true;
 			}
 			void BeginCloseProject()noexcept
@@ -392,6 +397,22 @@ namespace JinEngine
 				StoreProjectList();
 				//for update new preview image
 				DestroyProjectPreviewAsset(projectList[index]->lastRsPath(), false);
+			}
+			void DestroyProjectImmediately(const int projectIndex)
+			{
+				if (JApplicationEngine::GetApplicationState() != J_APPLICATION_STATE::PROJECT_SELECT || projectList.size() <= projectIndex)
+					return;
+				 
+				if (nextProjectInfo != nullptr && nextProjectInfo->GetPath() == projectList[projectIndex]->GetPath())
+				{
+					nextProjectInfo = nullptr;
+					startProjectOnce = false;
+					loadOtherProjectOnce = false;
+				}
+				 
+				DestroyProjectPreviewAsset(projectList[projectIndex]->lastRsPath(), true);
+				JFileIOHelper::DestroyDirectory(projectList[projectIndex]->GetPath());
+				projectList.erase(projectList.begin() + projectIndex);
 			}
 		public:
 			void RegisterFunctor(std::unique_ptr<LoadProjectF>&& newLoadProjectF,
@@ -585,7 +606,7 @@ namespace JinEngine
 			createdTime(createdTime),
 			lastUpdateTime(lastUpdateTime)
 		{}
-		std::unique_ptr<JApplicationProjectInfo> JApplicationProjectInfo::GetUnique()noexcept
+		std::unique_ptr<JApplicationProjectInfo> JApplicationProjectInfo::CreateReplica()noexcept
 		{
 			return std::make_unique<JApplicationProjectInfo>(guid,
 				name,
@@ -683,7 +704,7 @@ namespace JinEngine
 		}
 		std::wstring JApplicationProject::SouceCodePath()noexcept
 		{
-			return JApplicationProjectImpl::Instance().activatedProjectPath + L"\\" + GetSrcFolderWName();
+			return SolutionPath() + L"\\" + GetSrcFolderWName();
 		}
 		std::wstring JApplicationProject::OutDirPath()noexcept
 		{
@@ -766,9 +787,9 @@ namespace JinEngine
 		{
 			return JApplicationProjectImpl::Instance().Initialize();
 		}
-		void MainAccess::BeginLoadOtherProject()noexcept
+		void MainAccess::BeginLoadOtherProject(std::unique_ptr<JApplicationProjectInfo>&& nextProjInfo)noexcept
 		{
-			JApplicationProjectImpl::Instance().BeginLoadOtherProject();
+			JApplicationProjectImpl::Instance().BeginLoadOtherProject(std::move(nextProjInfo));
 		}
 		void MainAccess::BeginCloseProject()noexcept
 		{
@@ -814,6 +835,10 @@ namespace JinEngine
 		void LifeInterface::ConfirmCloseProject()noexcept
 		{
 			JApplicationProjectImpl::Instance().ConfirmCloseProject();
+		}
+		void LifeInterface::DestroyProject(const int projectIndex)noexcept
+		{
+			JApplicationProjectImpl::Instance().DestroyProjectImmediately(projectIndex);
 		}
 
 		Core::J_FILE_IO_RESULT IOInterface::StoreProjectVersion(const std::string& pVersion)

@@ -59,10 +59,11 @@ namespace JinEngine::Graphic
 	JDx12GraphicDepthMapDebugHandleSet::JDx12GraphicDepthMapDebugHandleSet(const JVector2<uint> size,
 		const float nearF,
 		const float farF,
+		const bool isPerspective,
 		ID3D12GraphicsCommandList* cmdList,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle)
-		:JGraphicDepthMapDebugHandleSet(size, nearF, farF), cmdList(cmdList), srcHandle(srcHandle), destHandle(destHandle)
+		:JGraphicDepthMapDebugHandleSet(size, nearF, farF, isPerspective), cmdList(cmdList), srcHandle(srcHandle), destHandle(destHandle)
 	{
 		SetValid(true);
 	}

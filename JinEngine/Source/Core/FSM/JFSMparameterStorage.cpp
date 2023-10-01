@@ -105,7 +105,7 @@ namespace JinEngine
 
 			for (uint i = 0; i < conditionCount; ++i)
 			{
-				JFileIOHelper::StoreFsmObjectIden(stream, storage->parameterVec[i].Get());
+				JFileIOHelper::StoreFsmIden(stream, storage->parameterVec[i].Get());
 				JFileIOHelper::StoreEnumData(stream, L"ValueType:", storage->parameterVec[i]->GetParamType());
 				JFileIOHelper::StoreAtomicData(stream, L"Value:", storage->parameterVec[i]->GetValue());
 			}
@@ -127,7 +127,7 @@ namespace JinEngine
 				J_FSM_PARAMETER_VALUE_TYPE valueType;
 				float value;
 
-				JFileIOHelper::LoadFsmObjectIden(stream, name, guid, fType);
+				JFileIOHelper::LoadFsmIden(stream, name, guid, fType);
 				JFileIOHelper::LoadEnumData(stream, valueType);
 				JFileIOHelper::LoadAtomicData(stream, value);
 

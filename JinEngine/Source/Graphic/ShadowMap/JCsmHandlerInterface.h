@@ -18,13 +18,6 @@ namespace JinEngine
 		{
 		private:
 			friend class JCsmManager;
-		protected:
-			struct DebugDataSet
-			{
-			public:
-				float nearOffset = 0;
-				float farOffset = 0;
-			};
 		private:
 			struct ComputeResult
 			{
@@ -32,7 +25,10 @@ namespace JinEngine
 				JMatrix4x4 shadowProjM[JCsmOption::maxCountOfSplit];
 				JVector4<float> scale[JCsmOption::maxCountOfSplit];
 				JVector4<float> posOffset[JCsmOption::maxCountOfSplit];
+				JVector2<float> frustumSize[JCsmOption::maxCountOfSplit];
 				float splitRate[JCsmOption::maxCountOfSplit];
+				float fNear[JCsmOption::maxCountOfSplit];
+				float fFar[JCsmOption::maxCountOfSplit]; 
 			public:
 				uint subFrustumCount;
 			};
@@ -45,7 +41,7 @@ namespace JinEngine
 				bool IsValid()const noexcept;
 			}; 
 		private:  
-			JCsmOption option;
+			mutable JCsmOption option;
 			std::vector<TargetData> target; 
 		public:
 			JCsmOption GetCsmOption()const noexcept;
@@ -54,19 +50,19 @@ namespace JinEngine
 			virtual size_t GetCsmHandlerGuid()const noexcept = 0;
 			virtual size_t GetCsmAreaGuid()const noexcept = 0;
 		protected:
+			JCsmOption& GetCsmOptionRef()const noexcept;
+		protected:
 			void SetCsmOption(const JCsmOption& newOption)noexcept;   
 		protected: 
 			void CsmUpdate(const DirectX::XMMATRIX lightView,
 				const DirectX::BoundingBox& sceneBBoxW,			//world bbox 
-				const size_t mapSize,
-				const DebugDataSet& debugSet);
+				const size_t mapSize);
 		private:
 			void CalculateShadowMap(const DirectX::XMMATRIX lightView,
 				const DirectX::BoundingBox& sceneBBoxW,			//world bbox
 				const DirectX::BoundingFrustum& camFrustumW,	//world frustum
 				const size_t mapSize,
-				const uint targetIndex,
-				const DebugDataSet& debugSet);
+				const uint targetIndex);
 		protected:
 			virtual void NotifyAddCsmTarget(const uint index) = 0;
 			virtual void NotifyPopCsmTarget(const uint index) = 0;

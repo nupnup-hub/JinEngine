@@ -12,7 +12,7 @@
 #include"../../Skeleton/JSkeleton.h"
 #include"../../Skeleton/JSkeletonAsset.h"
 #include"../../Skeleton/JSkeletonFixedData.h"
-#include"../../../../Core/File/JFileIOHelper.h"
+#include"../../../JObjectFileIOHelper.h"
 #include"../../../../Core/Time/JGameTimer.h"
 #include"../../../../Core/Reflection/JTypeTemplate.h"
 #include"../../../../Core/Identity/JIdenCreator.h"
@@ -225,18 +225,18 @@ namespace JinEngine
 			size_t guid;
 			Core::J_FSM_OBJECT_TYPE type;
 
-			JFileIOHelper::LoadFsmObjectIden(stream, name, guid, type);
+			JObjectFileIOHelper::LoadFsmIden(stream, name, guid, type);
 
 			JUserPtr<JAnimationFSMdiagram> diagramUser = JICI::Create<JAnimationFSMdiagram>(name, guid, fsmOwner);
 			uint stateCount = 0;
-			JFileIOHelper::LoadAtomicData(stream, stateCount);
+			JObjectFileIOHelper::LoadAtomicData(stream, stateCount);
 
 			for (uint i = 0; i < stateCount; ++i)
 			{
 				J_ANIMATION_STATE_TYPE stateType;
 				JUserPtr<JAnimationFSMstate> newState = nullptr;
-				JFileIOHelper::LoadFsmObjectIden(stream, name, guid, type);
-				JFileIOHelper::LoadEnumData(stream, stateType);
+				JObjectFileIOHelper::LoadFsmIden(stream, name, guid, type);
+				JObjectFileIOHelper::LoadEnumData(stream, stateType);
 
 				if (stateType == J_ANIMATION_STATE_TYPE::CLIP)
 					newState = JICI::Create<JAnimationFSMstateClip>(name, guid, diagramUser);
@@ -255,17 +255,17 @@ namespace JinEngine
 			if (!stream.is_open())
 				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-			JFileIOHelper::StoreFsmObjectIden(stream, diagram.Get());
+			JObjectFileIOHelper::StoreFsmIden(stream, diagram.Get());
 
 			const std::vector<JUserPtr<Core::JFSMstate>>& stateVec = diagram->GetStateVec();
 			const uint stateCount = (uint)stateVec.size();
-			JFileIOHelper::StoreAtomicData(stream, L"StateCount:", stateCount);
+			JObjectFileIOHelper::StoreAtomicData(stream, L"StateCount:", stateCount);
 
 			for (uint i = 0; i < stateCount; ++i)
 			{
 				JUserPtr<JAnimationFSMstate> fsmState = diagram->GetStateByIndex(i);
-				JFileIOHelper::StoreFsmObjectIden(stream, fsmState.Get());
-				JFileIOHelper::StoreEnumData(stream, L"StateType:", fsmState->GetStateType());
+				JObjectFileIOHelper::StoreFsmIden(stream, fsmState.Get());
+				JObjectFileIOHelper::StoreEnumData(stream, L"StateType:", fsmState->GetStateType());
 			}
 			for (uint i = 0; i < stateCount; ++i)
 			{

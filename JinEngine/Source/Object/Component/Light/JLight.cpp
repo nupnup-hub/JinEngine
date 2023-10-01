@@ -6,9 +6,9 @@
 #include"../../GameObject/JGameObject.h" 
 #include"../../Resource/Scene/JScene.h" 
 #include"../../Resource/Scene/JScenePrivate.h"
+#include"../../JObjectFileIOHelper.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
-#include"../../../Core/File/JFileConstant.h"
-#include"../../../Core/File/JFileIOHelper.h"
+#include"../../../Core/File/JFileConstant.h" 
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Math/JMathHelper.h"
 #include"../../../Graphic/JGraphic.h"  
@@ -134,7 +134,7 @@ namespace JinEngine
 		static bool DoCopy(JLight* from, JLight* to)
 		{ 
 			from->SetColor(to->GetColor()); 	
-			from->SetShadowResolution(to->GetShadowResolution());
+			from->SetShadowResolution(to->GetShadowResolutionType());
 			from->SetAllowDisplayShadowMap(to->AllowDisplayShadowMap());
 			from->SetShadow(to->IsShadowActivated());
 
@@ -224,10 +224,14 @@ namespace JinEngine
 	{
 		return impl->GetColor();
 	}
-	J_SHADOW_RESOLUTION JLight::GetShadowResolution()const noexcept
+	uint JLight::GetShadowResolution()const noexcept
+	{
+		return (uint)impl->GetShadowResolution();
+	} 
+	J_SHADOW_RESOLUTION JLight::GetShadowResolutionType()const noexcept
 	{
 		return impl->GetShadowResolution();
-	} 
+	}
 	uint JLight::GetShadowMapSize()const noexcept
 	{
 		return impl->GetShadowMapSize();
@@ -320,10 +324,10 @@ namespace JinEngine
 		bool sOnShadow;
 		bool sAllowDisplayShadowMap;
 		  
-		JFileIOHelper::LoadVector3(stream, sColor);
-		JFileIOHelper::LoadEnumData(stream, sShadowResolutionType);
-		JFileIOHelper::LoadAtomicData(stream, sOnShadow);
-		JFileIOHelper::LoadAtomicData(stream, sAllowDisplayShadowMap);
+		JObjectFileIOHelper::LoadVector3(stream, sColor);
+		JObjectFileIOHelper::LoadEnumData(stream, sShadowResolutionType);
+		JObjectFileIOHelper::LoadAtomicData(stream, sOnShadow);
+		JObjectFileIOHelper::LoadAtomicData(stream, sAllowDisplayShadowMap);
    
 		user->SetColor(sColor);
 		user->SetShadowResolution(sShadowResolutionType);
@@ -336,10 +340,10 @@ namespace JinEngine
 		if (!stream.is_open())
 			return 	Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
-		JFileIOHelper::StoreVector3(stream, L"Color:", user->GetColor());
-		JFileIOHelper::StoreEnumData(stream, L"ShadowResolution: ", user->GetShadowResolution());
-		JFileIOHelper::StoreAtomicData(stream, L"OnShadow:", user->IsShadowActivated()); 
-		JFileIOHelper::StoreAtomicData(stream, L"AllowDisplayShadowMap:", user->AllowDisplayShadowMap());
+		JObjectFileIOHelper::StoreVector3(stream, L"Color:", user->GetColor());
+		JObjectFileIOHelper::StoreEnumData(stream, L"ShadowResolution:", user->GetShadowResolutionType());
+		JObjectFileIOHelper::StoreAtomicData(stream, L"OnShadow:", user->IsShadowActivated()); 
+		JObjectFileIOHelper::StoreAtomicData(stream, L"AllowDisplayShadowMap:", user->AllowDisplayShadowMap());
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
  

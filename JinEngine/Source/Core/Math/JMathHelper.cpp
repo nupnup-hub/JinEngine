@@ -35,11 +35,6 @@ namespace JinEngine
 		}
 		return vF;
 	}
-	float JMathHelper::Floor(const float value, const uint decimalPlace)
-	{
-		float multiplier = pow(10.0f, decimalPlace);
-		return floor(value * multiplier) / multiplier;
-	}
 	// Returns random float in [0, 1).
 	float JMathHelper::RandF()noexcept
 	{

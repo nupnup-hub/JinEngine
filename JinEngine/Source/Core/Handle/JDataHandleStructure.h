@@ -69,7 +69,7 @@ namespace JinEngine
 			struct PointerTypeDetermine
 			{
 			public:
-				using PointerType = std::unique_ptr<Type>;
+				using PointerType = JUserPtr<Type>;
 			};
 			template<>
 			struct PointerTypeDetermine<true>
@@ -78,7 +78,7 @@ namespace JinEngine
 				using PointerType = JOwnerPtr<Type>;
 			};
 		private:
-			using PointerType = typename PointerTypeDetermine< useOwnerPtr>::PointerType;
+			using PointerType = typename PointerTypeDetermine<useOwnerPtr>::PointerType;
 		private:
 			PointerType data[Capacity];
 			std::bitset<Capacity> arrState;		// 0 is empty, 1 is full
@@ -101,23 +101,15 @@ namespace JinEngine
 					return Get(handle.index);
 				else
 					return nullptr;
-			}
-		public:
-
+			} 
 		protected:
 			Type* Get(const uint index)const noexcept
 			{
-				if constexpr (useOwnerPtr)
-					return data[index].Get();
-				else 
-					return data[index].get(); 
+				return data[index].Get();
 			}
 			void ClearData(const uint index)
 			{
-				if constexpr (useOwnerPtr)
-					data[index].Clear();
-				else
-					data[index].reset();
+				data[index].Clear();
 			}
 		public:
 			JDataHandle Add(Type* type)noexcept

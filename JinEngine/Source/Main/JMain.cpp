@@ -191,13 +191,13 @@ namespace JinEngine
 				std::unique_ptr<JApplicationProjectInfo> pInfo;
 				JApplicationProjectInfo* existingInfo = JApplicationProject::GetProjectInfo(dirPath);
 				if (existingInfo != nullptr)
-					pInfo = existingInfo->GetUnique();
+					pInfo = existingInfo->CreateReplica();
 				else
 					pInfo = ProjectLifeInterface::MakeProjectInfo(dirPath);
 				if (pInfo != nullptr)
 				{
-					ProjectMainAccess::BeginLoadOtherProject();
-					ProjectLifeInterface::SetNextProjectInfo(std::move(pInfo));
+					//pInfo가 비정확할경우 project는 load되지않고 종료된다.
+					ProjectMainAccess::BeginLoadOtherProject(std::move(pInfo));
 					CloseApp();
 					//JWindow::Instance().MainAccess()->CloseWindow();
 					//if (!JApplicationProject::SetStartNewProjectTrigger())

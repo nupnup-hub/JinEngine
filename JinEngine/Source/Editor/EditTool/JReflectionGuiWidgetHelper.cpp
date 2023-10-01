@@ -125,10 +125,7 @@ namespace JinEngine
 			}
 			static std::string MakeUniqueLabel(UpdateData& updateData)
 			{
-				return updateData.handleBase->GetName() +
-					std::to_string(updateData.widgetIndex) +
-					"_" +
-					std::to_string(updateData.obj->GetGuid());
+				return updateData.handleBase->GetName() + std::to_string(updateData.widgetIndex) + std::to_string(updateData.obj->GetGuid());
 			}
 			static Core::JGuiExtraFunctionUserInfo* GetExtraUserInfo(UpdateData& updateData, const Core::J_GUI_EXTRA_FUNCTION_TYPE type) noexcept
 			{
@@ -623,7 +620,7 @@ namespace JinEngine
 				Core::JTypeImplBase* boolOwner = nullptr;
 				Core::JGuiBoolParamConditionInfo* condInfo = static_cast<Core::JGuiBoolParamConditionInfo*>(conditionInfo);
 				Core::JGuiBoolParmConditionUserInfo* condUser = static_cast<Core::JGuiBoolParmConditionUserInfo*>(extraUser);
-
+				 
 				bool value = false; 
 				if (condInfo->IsRefMethod())
 				{
@@ -1008,7 +1005,7 @@ namespace JinEngine
 						JGui::SetNextItemWidth(sliderWidth);
 						JGui::SliderFloat("##GuiSelectorSlider" + uniqueLabel, &sizeFactor, sizeMin, sizeMax, "", J_GUI_SLIDER_FLAG_ALWAYS_CLAMP);
 						if (JGui::IsLastItemActivated() || JGui::IsLastItemHovered())
-							JGui::Tooltip(JMathHelper::Floor(sizeFactor, 2));
+							JGui::Tooltip(sizeFactor, 3);
 
 						JGui::PopStyle();
 					}
@@ -1435,7 +1432,7 @@ namespace JinEngine
 					}
 					else
 					{
-						if (JGui::InputFloat("##GuiSliderFloatInput" + MakeUniqueLabel(updateData), &value, 0, "%.1f"))
+						if (JGui::InputFloat("##GuiSliderFloatInput" + MakeUniqueLabel(updateData), &value, 0, "%.3f"))
 							RequestSetValue<T>(updateData, userData, value);
 					}
 					JGui::SameLine();
@@ -1471,7 +1468,7 @@ namespace JinEngine
 				}
 
 				if (JGui::IsLastItemActivated() || JGui::IsLastItemHovered())
-					JGui::Tooltip(JMathHelper::Floor(value, 2));
+					JGui::Tooltip(value, 3);
 			}
 		};
 		//XMFLOAT4, JVector4, XMFLOAT3, JVector3

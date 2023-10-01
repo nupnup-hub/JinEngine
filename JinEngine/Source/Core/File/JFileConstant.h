@@ -21,6 +21,8 @@ namespace JinEngine
 			static std::wstring StreamObjGuidSymbol()noexcept;
 			static std::wstring StreamObjFlagSymbol()noexcept;
 			static std::wstring StreamTypeGuidSymbol()noexcept;
+			static std::wstring StreamSelectedSymbol()noexcept;
+			static std::wstring StreamActivatedSymbol()noexcept;
 			static std::wstring StreamHasObjGuidSymbol()noexcept;
 			static std::wstring StreamUncopiableGuidSymbol()noexcept;
 			static std::wstring StreamEndFixedDataSymbol()noexcept;

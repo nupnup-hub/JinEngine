@@ -34,12 +34,13 @@ namespace JinEngine
 			return J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT;
 		} 
 		JVector3<float> GetColor()const noexcept; 
-		J_SHADOW_RESOLUTION GetShadowResolution()const noexcept;
+		uint GetShadowResolution()const noexcept;
+		J_SHADOW_RESOLUTION GetShadowResolutionType()const noexcept;
 		uint GetShadowMapSize()const noexcept;
 		virtual J_LIGHT_TYPE GetLightType()const noexcept = 0;
 		virtual J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept = 0;
-		virtual float GetNear()const noexcept = 0;
-		virtual float GetFar()const noexcept = 0;
+		virtual float GetFrustumNear()const noexcept = 0;
+		virtual float GetFrustumFar()const noexcept = 0;
 		virtual DirectX::BoundingBox GetBBox()const noexcept = 0;
 	public: 
 		void SetColor(const JVector3<float>& color)noexcept;  

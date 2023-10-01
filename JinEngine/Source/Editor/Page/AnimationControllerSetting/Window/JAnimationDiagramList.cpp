@@ -158,7 +158,7 @@ namespace JinEngine
 					const bool isSelect = IsSelectedObject(diagramVec[i]->GetGuid()); 
 					const JVector2<float> preCursorPos = JGui::GetCursorScreenPos();
 					PushTreeNodeColorSet(true, isSelect); 				 
-					if (JGui::Selectable(JCUtil::WstrToU8Str(diagramVec[i]->GetName()), &isSelect))
+					if (JGui::Selectable(JGui::CreateGuiLabel(diagramVec[i], GetName() + "Selectable"), &isSelect))
 					{ 
 						RequestPushSelectObject(diagramVec[i]);
 						SetContentsClick(true);

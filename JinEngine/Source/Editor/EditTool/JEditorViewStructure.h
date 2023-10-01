@@ -45,9 +45,15 @@ namespace JinEngine
 			bool IsSame(JEditorNodeBase* ptr)const noexcept;
 			bool IsNewNode()const noexcept;
 		public:
+			/**
+			* JEditorNodeBase내부에서 uniqueLabel이 필요한 jgui widget 사용시 호출
+			* --2023-09-26-- 현재까지는 0개
+			*/
+			std::string GetUniqueName()const noexcept;
 			//Apply mouse offset
 			JVector2<float> GetValidCenter(const JEditorViewUpdateHelper* updateHelper)const noexcept;
 			std::string GetCompressName(const JEditorViewUpdateHelper* updateHelper)const noexcept;
+		public:
 			void SetNewNodeTrigger(const bool value)noexcept;
 		public:
 			J_SIMPLE_GET_SET(std::string, name, Name)

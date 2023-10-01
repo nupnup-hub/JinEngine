@@ -173,7 +173,7 @@ namespace JinEngine
 				if (JGui::IsMouseInRect(pos, size))
 				{
 					const JVector2<float> padding = JGui::GetWindowSize() * tooltipInnerPaddingRate;
-					const JVector2<float> windowPos = pos + padding + size;
+					const JVector2<float> windowPos = pos + padding + JVector2F(0, size.y);
 					JGui::DrawToolTipBox(GetUniqueLabel() + "_ToolTip", tooltip, windowPos, padding, true);
 				}
 			}
@@ -199,13 +199,13 @@ namespace JinEngine
 				float framePadding = -1,
 				const JVector4<float>& bgCol = JVector4<float>(0, 0, 0, 0),
 				const JVector4<float>& tintCol = JVector4<float>(1, 1, 1, 1)
-			*/
+			*/ 
 			JGuiImageInfo imageInfo(((*GetGResourceFunctor())()));
 			if (JGui::ImageButton(GetUniqueLabel(),
 				imageInfo,
 				size,
-				JVector4F(0.7f, 0.7f, 0.7f, 0.88f),
-				JVector4F(0.35f, 0.35f, 0.35f, 0)))
+				JGui::GetColor(J_GUI_COLOR::HEADER),
+				JVector4F(0.1f, 0.1f, 0.1f, 0)))
 			{
 				pressBind->InvokeCompletelyBind(); 
 				uData.ClickContents();
@@ -238,8 +238,8 @@ namespace JinEngine
 				*isActivatedPtr,
 				true, 
 				size,
-				JVector4F(0.7f, 0.7f, 0.7f, 0.88f),
-				JVector4F(0.35f, 0.35f, 0.35f, 0)))
+				JGui::GetColor(J_GUI_COLOR::HEADER),
+				JVector4F(0.1f, 0.1f, 0.1f, 0)))
 			{
 				//if to turn on
 				if (IsActivated())

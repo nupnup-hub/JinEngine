@@ -12,13 +12,13 @@
 #include"../Skeleton/JSkeletonAsset.h"  
 #include"../../Directory/JDirectory.h"
 #include"../../Directory/JFile.h"
+#include"../../JObjectFileIOHelper.h"
 #include"../../../Core/Identity/JIdenCreator.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Guid/JGuidCreator.h"
 #include"../../../Core/FSM/JFSMparameter.h" 
 #include"../../../Core/FSM/JFSMparameterStorage.h"   
-#include"../../../Core/FSM/JFSMownerInterface.h" 
-#include"../../../Core/File/JFileIOHelper.h" 
+#include"../../../Core/FSM/JFSMownerInterface.h"  
 #include"../../../Core/Utility/JCommonUtility.h"
 
 #include"../../../Application/JApplicationProject.h" 
@@ -130,7 +130,7 @@ namespace JinEngine
 			Core::JFSMparameterStorage::LoadData(stream, paramStorage);
 
 			uint diagramCount = 0;
-			JFileIOHelper::LoadAtomicData(stream, diagramCount);
+			JObjectFileIOHelper::LoadAtomicData(stream, diagramCount);
 			for (uint i = 0; i < diagramCount; ++i)
 				DiagramIOInterface::LoadAssetData(stream, this); 
 
@@ -147,7 +147,7 @@ namespace JinEngine
 			//For classify copy object call 
 			Core::JFSMparameterStorage::StoreData(stream, paramStorage);
 
-			JFileIOHelper::StoreAtomicData(stream, L"DiagramCount:", diagramVec.size());
+			JObjectFileIOHelper::StoreAtomicData(stream, L"DiagramCount:", diagramVec.size());
 			const uint diagramCount = (uint)diagramVec.size();
 			for (uint i = 0; i < diagramCount; ++i)
 				DiagramIOInterface::StoreAssetData(stream, diagramVec[i]);

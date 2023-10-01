@@ -90,6 +90,9 @@ namespace JinEngine
 			void RequestMoveFile(const JUserPtr<JDirectory>& to, const JUserPtr<JObject>& obj);
 			void MoveFile(JUserPtr<JDirectory> to, JUserPtr<JObject> obj);
 		private:
+			void RequestOpenNewDirectory(JUserPtr<JDirectory> newOpendDirectory);
+			void RequestImportPostProccess(std::vector<JUserPtr<JResourceObject>>&& rVec);
+		private:
 			void DoSetFocus()noexcept final;
 			void DoSetUnFocus()noexcept final;
 			void DoActivate()noexcept final;

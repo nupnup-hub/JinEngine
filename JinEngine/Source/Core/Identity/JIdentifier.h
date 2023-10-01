@@ -36,13 +36,18 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JIdentifierImpl> impl;
 		public:
-			std::wstring GetName() const noexcept;
-			std::wstring GetNameWithType()const noexcept; 
-			static std::wstring GetDefaultName(const JTypeInfo& info)noexcept; 
 			static JIdentifierPrivate* PrivateInterface(const size_t typeGuid)noexcept;
 			virtual JIdentifierPrivate& PrivateInterface()const noexcept = 0;
 		public:
+			std::wstring GetName() const noexcept;
+			std::wstring GetNameWithType()const noexcept; 
+			static std::wstring GetDefaultName(const JTypeInfo& info)noexcept; 
+		public:
+			void SetIdentifiable()noexcept;
+			void SetUnIdentifiable()noexcept;
 			virtual void SetName(const std::wstring& newName)noexcept;
+		public:
+			virtual bool CanControlIdentifiable()const noexcept;
 		public:  
 			static bool BeginCopy(JUserPtr<Core::JIdentifier> from, JUserPtr<Core::JIdentifier> to);
 			static bool BeginDestroy(Core::JIdentifier* ptr);

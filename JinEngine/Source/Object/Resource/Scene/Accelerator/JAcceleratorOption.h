@@ -124,23 +124,26 @@ namespace JinEngine
 			static bool CompareAsc(const Intermediate& a, const Intermediate& b);
 			static bool CompareDesc(const Intermediate& a, const Intermediate& b);
 		};
+		struct Result
+		{
+		public:
+			JUserPtr<JGameObject> obj;
+			float dist;
+		};
 	public:
 		Core::JRay ray;
 	public:
 		J_ACCELERATOR_TYPE spacitalType = J_ACCELERATOR_TYPE::BVH;
 		J_ACCELERATOR_LAYER layer;
 		J_ACCELERATOR_SORT_TYPE sortType;
+	public:  
+		std::vector<Result> result;					// out data 
 	public:
-		//untilFirst trigger가 false일때 유효한 값을 가짐
-		std::vector<JUserPtr<JGameObject>> resultObjVec;		// out data
-		//untilFirst trigger가 true일때 유효한 값을 가짐
-		JUserPtr<JGameObject> firstResult;			// out data
+		//std::vector<Intermediate> intermediate;	//unuse
 	public:
-		std::vector<Intermediate> intermediate;
-	public:
-		bool allowContainRayPos = true;
+		bool allowContainRayPos = true;   
 		bool untilFirst = false;
-		bool findOtherAcceleratorIfTypeNull = true;
+		bool findOtherAcceleratorIfTypeNull = false;
 	public:
 		JAcceleratorIntersectInfo(const Core::JRay& ray,
 			const J_ACCELERATOR_LAYER layer,
@@ -155,8 +158,8 @@ namespace JinEngine
 		bool CanAdd(const DirectX::BoundingOrientedBox& bbox);
 	public:
 		void EraseOverlap();
-	public:
-		void SortIntermediate(const uint count, const bool isAscending);
+	public: 
+		void SortResult();
 	};
 	struct JAcceleratorContainInfo
 	{

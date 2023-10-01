@@ -83,7 +83,7 @@ namespace JinEngine
 			bool IsMouseReleased(const Core::J_MOUSE_BUTTON btn)const noexcept final;
 			bool IsMouseDown(const Core::J_MOUSE_BUTTON btn)const noexcept final;
 			bool IsMouseDragging(const Core::J_MOUSE_BUTTON btn)const noexcept final;
-			bool IsMouseInRect(const JVector2<float>& position, const JVector2<float>& size)const noexcept final;
+			bool IsMouseInRect(const JVector2<float>& min, const JVector2<float>& max)const noexcept final;
 			bool IsMouseHoveringRect(const JVector2<float>& min, const JVector2<float>& max, const bool clip)const noexcept final;
 			bool IsMouseInLine(JVector2<float> st, JVector2<float> ed, const float thickness)const noexcept final;
 		public:
@@ -219,8 +219,7 @@ namespace JinEngine
 				bool& pressed,
 				bool changeValueIfPreesd,
 				const JVector2<float>& size,
-				const JVector4<float>& bgColor,
-				const JVector4<float>& bgDelta,
+				const JVector4<float>& bgColor, 
 				const JVector4<float>& frameColor,
 				const float frameThickness) final;
 			//Use ImGui::Selectable and ImGui::Image
@@ -228,8 +227,7 @@ namespace JinEngine
 			bool ImageButton(const std::string name,
 				JGuiImageInfo info,
 				const JVector2<float>& size,
-				const JVector4<float>& bgColor,
-				const JVector4<float>& bgDelta,
+				const JVector4<float>& bgColor, 
 				const JVector4<float>& frameColor,
 				const float frameThickness) final;
 			bool MaximizeButton(const bool isLocatedCloseBtnLeftSide) final;

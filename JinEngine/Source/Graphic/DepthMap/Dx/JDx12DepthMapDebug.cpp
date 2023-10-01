@@ -33,7 +33,8 @@ namespace JinEngine::Graphic
 	void JDx12DepthMapDebug::Clear()
 	{
 		linearDepthMapShaderData.reset();
-		nonLinearDepthMapShaderData.reset();
+		for(uint i = 0; i < (uint)J_GRAPHIC_PROJECTION_TYPE::COUNT; ++i)
+			nonLinearDepthMapShaderData[i].reset();
 		cRootSignature.Reset();
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12DepthMapDebug::GetDeviceType()const noexcept
@@ -65,7 +66,8 @@ namespace JinEngine::Graphic
 				dx12Gm->GetGpuSrvDescriptorHandle(mainDepthDebugInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::UAV)),
 				JVector2<uint>(helper.info.width, helper.info.height),
 				helper.cam->GetNear(),
-				helper.cam->GetFar());
+				helper.cam->GetFar(),
+				!helper.cam->IsOrthoCamera());
 		}
 		else
 		{
@@ -88,9 +90,9 @@ namespace JinEngine::Graphic
 
 		bool isNonLinearDepthMap = false;
 		const J_LIGHT_TYPE litType = helper.lit->GetLightType();
-		if (litType == J_LIGHT_TYPE::SPOT)
+		if (litType == J_LIGHT_TYPE::SPOT || litType == J_LIGHT_TYPE::POINT)
 			isNonLinearDepthMap = true;	//spot is perspective
-
+		 
 		auto gRInterface = helper.lit->GraphicResourceUserInterface();
 		const J_GRAPHIC_RESOURCE_TYPE grType = JLightType::SmToGraphicR(helper.lit->GetShadowMapType());
 		const uint debugCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
@@ -104,15 +106,21 @@ namespace JinEngine::Graphic
 
 			auto depthInfo = dx12Gm->GetDxInfo(grType, litDsIndex);
 			auto depthDebugInfo = dx12Gm->GetDxInfo(J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG, litDebugDsIndex);
-
+			 
+			/*
+			* light는 type에 따라서 projection type이 정해진다.
+			* directional => orhto ... Linear
+			* point, spot => perspective ... NonLinear
+			*/
 			if (isNonLinearDepthMap)
 			{
 				DrawNonLinearDepthDebug(cmdList,
 					dx12Gm->GetGpuSrvDescriptorHandle(depthInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
 					dx12Gm->GetGpuSrvDescriptorHandle(depthDebugInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::UAV)),
 					JVector2<uint>(width, height),
-					helper.lit->GetNear(),
-					helper.lit->GetFar());
+					helper.lit->GetFrustumNear(),
+					helper.lit->GetFrustumFar(),
+					true);
 			}
 			else
 			{
@@ -120,8 +128,8 @@ namespace JinEngine::Graphic
 					dx12Gm->GetGpuSrvDescriptorHandle(depthInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
 					dx12Gm->GetGpuSrvDescriptorHandle(depthDebugInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::UAV)),
 					JVector2<uint>(width, height),
-					helper.lit->GetNear(),
-					helper.lit->GetFar());
+					helper.lit->GetFrustumNear(),
+					helper.lit->GetFrustumFar());
 			}
 		}
 	}
@@ -137,9 +145,9 @@ namespace JinEngine::Graphic
 	{
 		if (!IsSameDevice(debugSet))
 			return;
-
+		 
 		const JDx12GraphicDepthMapDebugHandleSet* dx12Set = static_cast<const JDx12GraphicDepthMapDebugHandleSet*>(debugSet);
-		DrawNonLinearDepthDebug(dx12Set->cmdList, dx12Set->srcHandle, dx12Set->destHandle, dx12Set->size, dx12Set->nearF, dx12Set->farF);
+		DrawNonLinearDepthDebug(dx12Set->cmdList, dx12Set->srcHandle, dx12Set->destHandle, dx12Set->size, dx12Set->nearF, dx12Set->farF, dx12Set->isPerspective);
 	}
 	void JDx12DepthMapDebug::DrawLinearDepthDebug(ID3D12GraphicsCommandList* commandList,
 		const CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
@@ -171,7 +179,8 @@ namespace JinEngine::Graphic
 		const CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle,
 		const JVector2<uint> size,
 		const float nearF,
-		const float farF)
+		const float farF, 
+		const bool isPerspective)
 	{
 		D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)size.x, (float)size.y, 0.0f, 1.0f };
 		D3D12_RECT mScissorRect = { 0, 0, size.x, size.y };
@@ -187,7 +196,10 @@ namespace JinEngine::Graphic
 		commandList->SetComputeRoot32BitConstants(2, 1, &size.y, 1);
 		commandList->SetComputeRoot32BitConstants(2, 1, &nearF, 2);
 		commandList->SetComputeRoot32BitConstants(2, 1, &farF, 3);
-		commandList->SetPipelineState(nonLinearDepthMapShaderData->pso.Get());
+		if (isPerspective)
+			commandList->SetPipelineState(nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE]->pso.Get());
+		else
+			commandList->SetPipelineState(nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC]->pso.Get());
 
 		commandList->Dispatch(1, 512, 1);
 	}
@@ -247,8 +259,15 @@ namespace JinEngine::Graphic
 		linearDepthMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
 		linearDepthMapShaderData->cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "LinearMap", "cs_5_1");
 
-		nonLinearDepthMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
-		nonLinearDepthMapShaderData->cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "NonLinearMap", "cs_5_1");
+		std::vector<JMacroSet> set; 
+		set.push_back(JMacroSet{ "PERSPECTIVE_DEPTH_MAP", "1"});
+		std::vector<D3D_SHADER_MACRO> macroVec = JDxShaderDataUtil::ToD3d12Macro(set);
+
+		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE] = std::make_unique<JDx12ComputeShaderDataHolder>();
+		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE]->cs = JD3DUtility::CompileShader(computeShaderPath, macroVec.data(), "NonLinearMap", "cs_5_1");
+
+		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC] = std::make_unique<JDx12ComputeShaderDataHolder>();
+		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC]->cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "NonLinearMap", "cs_5_1");
 
 		D3D12_COMPUTE_PIPELINE_STATE_DESC newShaderPso;
 		ZeroMemory(&newShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
@@ -262,9 +281,16 @@ namespace JinEngine::Graphic
 
 		newShaderPso.CS =
 		{
-			reinterpret_cast<BYTE*>(nonLinearDepthMapShaderData->cs->GetBufferPointer()),
-			nonLinearDepthMapShaderData->cs->GetBufferSize()
+			reinterpret_cast<BYTE*>(nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE]->cs->GetBufferPointer()),
+			nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE]->cs->GetBufferSize()
 		};
-		ThrowIfFailedG(device->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(nonLinearDepthMapShaderData->pso.GetAddressOf())));
+		ThrowIfFailedG(device->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE]->pso.GetAddressOf())));
+
+		newShaderPso.CS =
+		{
+			reinterpret_cast<BYTE*>(nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC]->cs->GetBufferPointer()),
+			nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC]->cs->GetBufferSize()
+		};
+		ThrowIfFailedG(device->CreateComputePipelineState(&newShaderPso, IID_PPV_ARGS(nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC]->pso.GetAddressOf())));
 	}
 }

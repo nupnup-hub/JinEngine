@@ -1,9 +1,9 @@
 #include"JBehavior.h"  
 #include"JBehaviorPrivate.h"
 #include"../JComponentHint.h"
+#include"../../JObjectFileIOHelper.h"
 #include"../../GameObject/JGameObject.h"  
 #include"../../../Core/Guid/JGuidCreator.h"
-#include"../../../Core/File/JFileIOHelper.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 
 
@@ -181,9 +181,14 @@ namespace JinEngine
 		std::wstring guide;
 		size_t guid;
 		J_OBJECT_FLAG flag; 
-		JFileIOHelper::LoadObjectIden(stream, guid, flag); 
-		auto rawPtr = bPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JBehavior::InitData>(*loadData->loadTypeInfo, guid, flag, owner), &bPrivate);
-		return rawPtr;
+		bool isActivated;
+		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
+		auto iden = bPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JBehavior::InitData>(*loadData->loadTypeInfo, guid, flag, owner), &bPrivate);
+		auto bUser = Core::ConvertChildUserPtr<JBehavior>(std::move(iden));
+		if (!isActivated)
+			bUser->DeActivate();
+
+		return bUser;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
 	{
@@ -197,7 +202,7 @@ namespace JinEngine
 		JBehavior* bComp = static_cast<JBehavior*>(storeData->obj.Get());
 		std::wofstream& stream = storeData->stream;
 
-		JFileIOHelper::StoreObjectIden(stream, bComp); 
+		JObjectFileIOHelper::StoreComponentIden(stream, bComp); 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

@@ -3,11 +3,7 @@
 #include<memory>
 
 namespace JinEngine
-{
-	namespace Editor
-	{
-		class JEditorObjectReleaseInterface;
-	}
+{ 
 	namespace Core
 	{
 		class JDITypeDataBase;
@@ -19,14 +15,6 @@ namespace JinEngine
 		class JIdentifierPrivate
 		{
 		public:			
-			class ReleaseInterface
-			{
-			private:
-				friend class Editor::JEditorObjectReleaseInterface;
-			private:
-				static JOwnerPtr<JTypeBase> ReleaseInstance(JIdentifier* ptr);	//release ownerPtr in typeInfo
-				static bool RestoreInstance(JOwnerPtr<JTypeBase>&& instance);
-			};		
 			class CreateInstanceInterface
 			{
 			private:

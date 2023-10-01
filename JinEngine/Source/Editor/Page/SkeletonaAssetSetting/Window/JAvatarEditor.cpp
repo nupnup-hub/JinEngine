@@ -262,7 +262,7 @@ namespace JinEngine
 					int doJointIndex = index;
 					int undoJointRefIndex = selectJointRefIndex;
 					int undoJointIndex = targetAvatar.jointReference[selectJointRefIndex];
-
+					 
 					JEditorTransition::Instance().Execute(std::make_unique<Core::JTransitionSetValueTask>("Select avatar joint reference",
 						"skeleton name: " + JCUtil::WstrToU8Str(targetSkeleton->GetName()),
 						std::make_unique<SetJointRefF::CompletelyBind>(setJointRefFunctor, std::move(doJointRefIndex), std::move(doJointIndex)),

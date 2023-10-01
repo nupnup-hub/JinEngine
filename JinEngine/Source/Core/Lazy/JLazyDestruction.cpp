@@ -1,11 +1,8 @@
 #include"JLazyDestruction.h"
 #include"../Identity/JIdentifier.h"
 #include"../Time/JGameTimer.h" 
-#include"../Utility/JCommonUtility.h"
-#include"../../Object/Resource/Mesh/JStaticMeshGeometry.h"
-
-//Debug
-//#include"../../Develop/Debug/JDevelopDebug.h"
+#include"../Utility/JCommonUtility.h" 
+ 
 namespace JinEngine
 {
 	namespace Core
@@ -49,10 +46,7 @@ namespace JinEngine
 				{
 					objectVec[i]->stTime += deltaTime;
 					if (objectVec[i]->stTime >= info->waitTime)
-					{
-						MessageBoxA(0, "executeDestroy", 0, 0);
 						info->executeDestroy(objectVec[i]->user.Get());
-					}
 				} 
 			}
 			void Clear()noexcept

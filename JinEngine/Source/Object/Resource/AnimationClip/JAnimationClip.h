@@ -1,6 +1,5 @@
 #pragma once
-#include<vector>  
-#include"JAnimationData.h"
+#include<vector>   
 #include"../JResourceObject.h"
 #include"../Skeleton/JSkeletonAsset.h"
 
@@ -8,9 +7,11 @@ namespace JinEngine
 {
 	class JSkeletonAsset;
 	class JAnimationUpdateData;
-
-	struct JAnimationData;
 	class JAnimationClipPrivate;
+	namespace Core
+	{
+		struct JAnimationData;
+	}
 	class JAnimationClip final : public JResourceObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JAnimationClip)
@@ -20,21 +21,21 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
-			std::unique_ptr<JAnimationData> anidata;
+			std::unique_ptr<Core::JAnimationData> anidata;
 		public:
 			InitData(const uint8 formatIndex, 
 				const JUserPtr<JDirectory>& directory,
-				std::unique_ptr<JAnimationData>&& anidata);
+				std::unique_ptr<Core::JAnimationData>&& anidata);
 			InitData(const size_t guid,
 				const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
-				std::unique_ptr<JAnimationData>&& anidata);
+				std::unique_ptr<Core::JAnimationData>&& anidata);
 			InitData(const std::wstring& name,
 				const size_t guid,
 				const J_OBJECT_FLAG flag,
 				const uint8 formatIndex, 
 				const JUserPtr<JDirectory>& directory,
-				std::unique_ptr<JAnimationData>&& anidata);
+				std::unique_ptr<Core::JAnimationData>&& anidata);
 		public:
 			bool IsValidData()const noexcept final; 
 		};

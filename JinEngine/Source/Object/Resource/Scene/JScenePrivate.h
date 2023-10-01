@@ -1,9 +1,9 @@
 #pragma once
 #include"../JResourceObjectPrivate.h"
 #include"Accelerator/JAcceleratorType.h"
-#include"../Mesh/JMeshType.h"
 #include"../../Component/JComponentType.h"
 #include"../../Component/RenderItem/JRenderLayer.h"
+#include"../../../Core/Geometry/Mesh/JMeshType.h"
 
 namespace JinEngine
 {
@@ -55,8 +55,8 @@ namespace JinEngine
 			friend class Graphic::JGraphic;
 			friend class Editor::JSceneObserver; //Debug
 		private:
-			static const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(JScene* scene, const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept;
-			static const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const JUserPtr<JScene>& scene, const J_RENDER_LAYER rLayer, const J_MESHGEOMETRY_TYPE meshType)noexcept;
+			static const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(JScene* scene, const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)noexcept;
+			static const std::vector<JUserPtr<JGameObject>>& GetGameObjectCashVec(const JUserPtr<JScene>& scene, const J_RENDER_LAYER rLayer, const Core::J_MESHGEOMETRY_TYPE meshType)noexcept;
 			static const std::vector<JUserPtr<JComponent>>& GetComponentCashVec(JScene* scene, const J_COMPONENT_TYPE cType)noexcept;
 			static const std::vector<JUserPtr<JComponent>>& GetComponentCashVec(const JUserPtr<JScene>& scene, const J_COMPONENT_TYPE cType)noexcept;
 		};

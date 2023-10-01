@@ -1,5 +1,5 @@
 #include"JBvhOption.h"
-#include"../../../../../Core/File/JFileIOHelper.h"
+#include"../../../../JObjectFileIOHelper.h"
 
 namespace JinEngine
 {
@@ -22,8 +22,8 @@ namespace JinEngine
 			return;
 
 		commonOption.Store(stream);
-		JFileIOHelper::StoreAtomicData(stream, L"buildType:", (int)buildType);
-		JFileIOHelper::StoreAtomicData(stream, L"splitType:", (int)splitType);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"buildType:", (int)buildType);
+		JObjectFileIOHelper::StoreAtomicData(stream, L"splitType:", (int)splitType);
 	}
 	void JBvhOption::Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid)
 	{
@@ -33,8 +33,8 @@ namespace JinEngine
 		commonOption.Load(stream, hasInnerRoot, innerRootGuid);
 		int buildTypeN;
 		int splitTypeN;
-		JFileIOHelper::LoadAtomicData(stream, buildTypeN);
-		JFileIOHelper::LoadAtomicData(stream, splitTypeN);
+		JObjectFileIOHelper::LoadAtomicData(stream, buildTypeN);
+		JObjectFileIOHelper::LoadAtomicData(stream, splitTypeN);
 		buildType = (J_ACCELERATOR_BUILD_TYPE)buildTypeN;
 		splitType = (J_ACCELERATOR_SPLIT_TYPE)splitTypeN;
 	}

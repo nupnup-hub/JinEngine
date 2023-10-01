@@ -24,10 +24,6 @@ namespace JinEngine
 		bool InstanceInterface::RemoveInstance(JTypeBase* ptr)noexcept
 		{
 			return ptr->GetTypeInfo().RemoveInstance(ptr->GetGuid());
-		}
-		JOwnerPtr<JTypeBase> InstanceInterface::ReleaseInstance(JTypeBase* ptr)noexcept
-		{
-			return ptr->GetTypeInfo().ReleaseInstance(ptr->GetGuid());
-		}
+		} 
 	}
 }
