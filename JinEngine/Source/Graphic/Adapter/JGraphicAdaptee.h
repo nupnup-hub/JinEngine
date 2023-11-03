@@ -23,7 +23,8 @@ namespace JinEngine
 		class JHardwareOccCulling;
 		class JHZBOccCulling;
 		class JOutline;
-		 
+		class JBlur;
+
 		class JGraphicAdaptee : public JGraphicDeviceUser
 		{
 		public:
@@ -39,6 +40,7 @@ namespace JinEngine
 			virtual std::unique_ptr<JHardwareOccCulling> CreateHdOcc() = 0;
 			virtual std::unique_ptr<JHZBOccCulling> CreateHzbOcc() = 0;
 			virtual std::unique_ptr<JOutline> CreateOutlineDraw() = 0;
+			virtual std::unique_ptr<JBlur> CreateBlur() = 0;
 		public:
 			//main thread(use single thread)
 			virtual bool BeginDrawSceneSingleThread(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet) = 0;

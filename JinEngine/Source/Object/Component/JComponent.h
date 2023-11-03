@@ -6,6 +6,7 @@ namespace JinEngine
 { 
 	class JGameObject;
 	class JComponentPrivate;
+	class JFileIOTool;
 	struct CTypeHint;
 	struct CTypeCommonFunc;
 	struct CTypePrivateFunc;
@@ -37,11 +38,11 @@ namespace JinEngine
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadData)
 		public:
 			JUserPtr<JGameObject> owner = nullptr;
-			std::wifstream& stream;
+			JFileIOTool& tool;
 		public:
 			Core::JTypeInfo* loadTypeInfo;
 		public:
-			LoadData(JUserPtr<JGameObject> owner, std::wifstream& stream, const size_t typeGuid);
+			LoadData(JUserPtr<JGameObject> owner, JFileIOTool& tool, const size_t typeGuid);
 			~LoadData();
 		public:
 			bool IsValidData()const noexcept final;
@@ -50,9 +51,9 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(StoreData)
 		public:
-			std::wofstream& stream;
+			JFileIOTool& tool;
 		public:
-			StoreData(JUserPtr<JComponent> comp, std::wofstream& stream);
+			StoreData(JUserPtr<JComponent> comp, JFileIOTool& tool);
 		public:
 			bool IsValidData()const noexcept final;
 		}; 

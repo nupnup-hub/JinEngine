@@ -119,7 +119,9 @@ namespace JinEngine
 		void JGraphicDrawTarget::UpdateInfo::BeginUpdate()
 		{
 			objUpdateCount = aniUpdateCount = camUpdateCount = lightUpdateCount = shadowMapUpdateCount = hzbOccUpdateCount = hdOccUpdateCount =
-				hotObjUpdateCount = hotAniUpdateCount = hotCamUpdateCount = hotLitghtUpdateCount = 0;
+				hotObjUpdateCount = hotAniUpdateCount = hotCamUpdateCount = hotLitghtUpdateCount =
+				thisFrameObjCount = 0;
+
 			sceneUpdated = false;
 			shadowUpdated = false;
 			occCullingUpdated = false;
@@ -132,7 +134,6 @@ namespace JinEngine
 		{
 			//cam이 자기자신의 update이외에 영향을 주는 객체들의 update count
 			const uint sceneUpdateFactor = objUpdateCount + aniUpdateCount + lightUpdateCount;
-			const uint hotUpdateCount = hotObjUpdateCount + hotAniUpdateCount + hotLitghtUpdateCount + hotCamUpdateCount;
 			if (sceneUpdateFactor > 0 || nextSceneUpdate)
 				sceneUpdated = true;
 	 
@@ -142,7 +143,12 @@ namespace JinEngine
 			if (shadowUpdateFactor > 0)
 				shadowUpdated = true;
 			 
-			occCullingUpdated = sceneUpdated || hasObjRecopy;
+			const uint occUpdateHotFactor = hotObjUpdateCount + hotAniUpdateCount;
+			occCullingUpdated = occUpdateHotFactor || hasObjRecopy;
+			if (thisFrameObjCount < lastFrameObjCount)
+				shadowUpdated = occCullingUpdated = true;
+
+			lastFrameObjCount = thisFrameObjCount;
 			nextSceneUpdate = false;
 		}
 
@@ -177,12 +183,12 @@ namespace JinEngine
 			}
 			for (const auto& data : hdOccCullingRequestor)
 			{
-				data->isUpdated = false;
+				data->isUpdated = false; 
 				data->canDrawThisFrame = false;
 			}
 		}
 		void JGraphicDrawTarget::EndUpdate()
-		{
+		{ 
 			updateInfo->EndUpdate();
 			for (const auto& data : sceneRequestor)
 			{
@@ -213,7 +219,7 @@ namespace JinEngine
 				if (updateInfo->occCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
 				if (data->keepCanDrawTrigger)
-					data->canDrawThisFrame = true;
+					data->canDrawThisFrame = true; 
 			}
 		}
 

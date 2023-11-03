@@ -19,24 +19,28 @@ namespace JinEngine
 	{
 		return commonOption.Equal(tar.commonOption);
 	}
-	void JOctreeOption::Store(std::wofstream& stream)
+	void JOctreeOption::Store(JFileIOTool& tool)
 	{
-		if (!stream.is_open())
+		if (!tool.CanStore())
 			return;
 
-		commonOption.Store(stream);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"minsize:", minSize);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"octreeSizeSquare:", octreeSizeSquare);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"looseFactor:", looseFactor);
+		tool.PushMapMember("Occtree");
+		commonOption.Store(tool);
+		JObjectFileIOHelper::StoreAtomicData(tool, minSize, "minsize:");
+		JObjectFileIOHelper::StoreAtomicData(tool, octreeSizeSquare, "octreeSizeSquare:");
+		JObjectFileIOHelper::StoreAtomicData(tool, looseFactor, "looseFactor:");
+		tool.PopStack();
 	}
-	void JOctreeOption::Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid)
+	void JOctreeOption::Load(JFileIOTool& tool, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid)
 	{
-		if (!stream.is_open() || stream.eof())
+		if (!tool.CanLoad())
 			return;
 
-		commonOption.Load(stream, hasInnerRoot, innerRootGuid);
-		JObjectFileIOHelper::LoadAtomicData(stream, minSize);
-		JObjectFileIOHelper::LoadAtomicData(stream, octreeSizeSquare);
-		JObjectFileIOHelper::LoadAtomicData(stream, looseFactor);
+		tool.PushExistStack("Occtree");
+		commonOption.Load(tool, hasInnerRoot, innerRootGuid);
+		JObjectFileIOHelper::LoadAtomicData(tool, minSize);
+		JObjectFileIOHelper::LoadAtomicData(tool, octreeSizeSquare);
+		JObjectFileIOHelper::LoadAtomicData(tool, looseFactor);
+		tool.PopStack();
 	}
 }

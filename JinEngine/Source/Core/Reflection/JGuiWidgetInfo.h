@@ -3,6 +3,7 @@
 #include"JGuiWidgetType.h"
 #include"../JCoreEssential.h"      
 #include"../Utility/JTypeTraitUtility.h" 
+#include"../Utility/JSimpleCompiler.h"
 #include"../Pointer/JOwnerPtr.h"
 #include "../../../ThirdParty/Loki/Typelist/Typelist.h"
 #include<string>
@@ -113,7 +114,7 @@ namespace JinEngine
 			std::unique_ptr<RefParamInfo> refParamInfo; 
 		public:
 			JGuiParamConditionUserInfoBase(const JGuiExtraFunctionInfoMapName infoMapName);
-			JGuiParamConditionUserInfoBase(const JGuiExtraFunctionInfoMapName infoMapName, const std::string refParamOwnerName);
+			JGuiParamConditionUserInfoBase(const JGuiExtraFunctionInfoMapName infoMapName, const std::string& refParamOwnerName);
 		public: 
 			std::string GetRefParamOwnerName()const noexcept;
 			bool IsOwnRefParam()const noexcept;
@@ -126,7 +127,7 @@ namespace JinEngine
 			const bool condValue;
 		public:
 			JGuiBoolParmConditionUserInfo(const JGuiExtraFunctionInfoMapName infoMapName, const bool value);
-			JGuiBoolParmConditionUserInfo(const JGuiExtraFunctionInfoMapName infoMapName, const std::string refParamOwnerName, const bool value);
+			JGuiBoolParmConditionUserInfo(const JGuiExtraFunctionInfoMapName infoMapName, const std::string& refParamOwnerName, const bool value);
 		public:
 			bool OnTrigger(const bool value)const noexcept;
 		};
@@ -136,7 +137,7 @@ namespace JinEngine
 			DECLARE_CHILD_CLASS_TYPE_LIST(JGuiEnumParamConditionUserInfoInterface, JGuiParamConditionUserInfoBase)
 		public:
 			JGuiEnumParamConditionUserInfoInterface(const JGuiExtraFunctionInfoMapName infoMapName);
-			JGuiEnumParamConditionUserInfoInterface(const JGuiExtraFunctionInfoMapName infoMapName, const std::string refParamOwnerName);
+			JGuiEnumParamConditionUserInfoInterface(const JGuiExtraFunctionInfoMapName infoMapName, const std::string& refParamOwnerName);
 		public:
 			virtual bool OnTrigger(const JEnum value)const noexcept = 0; 
 		};
@@ -150,7 +151,7 @@ namespace JinEngine
 			JEnum condValue[buffCount];
 		public:
 			template<typename ...Param>
-			JGuiEnumParamConditionUserInfo(const JGuiExtraFunctionInfoMapName infoMapName, const std::string refParamOwnerName, Param... value)
+			JGuiEnumParamConditionUserInfo(const JGuiExtraFunctionInfoMapName infoMapName, const std::string& refParamOwnerName, Param... value)
 				: JGuiEnumParamConditionUserInfoInterface(infoMapName, refParamOwnerName)
 			{
 				int i = 0;
@@ -182,7 +183,7 @@ namespace JinEngine
 		private:
 			const std::string extraFunctionName;
 		public:
-			JGuiExtraFunctionInfo(const std::string extraFunctionName);
+			JGuiExtraFunctionInfo(const std::string& extraFunctionName);
 		protected:
 			virtual ~JGuiExtraFunctionInfo() = default;
 		public:
@@ -206,7 +207,7 @@ namespace JinEngine
 				columnCount = (uint)columnGuide.size();
 			}
 			template<typename ...Param>
-			JGuiTableInfo(const std::string extraFunctionName, const bool isFirstColumnGuide, Param... var)
+			JGuiTableInfo(const std::string& extraFunctionName, const bool isFirstColumnGuide, Param... var)
 				: JGuiExtraFunctionInfo(extraFunctionName), isFirstColumnGuide(isFirstColumnGuide)
 			{
 				((columnGuide.push_back(var)), ...);
@@ -236,7 +237,7 @@ namespace JinEngine
 		{
 			DECLARE_CHILD_CLASS_TYPE_LIST(JGuiConditionInfo, JGuiExtraFunctionInfo)
 		public:
-			JGuiConditionInfo(const std::string extraFunctionName);
+			JGuiConditionInfo(const std::string& extraFunctionName);
 		public:
 			virtual J_GUI_EXTRA_CONDITION_TYPE GetConditionType()const noexcept = 0;
 			J_GUI_EXTRA_FUNCTION_TYPE GetExtraFunctionType()const noexcept;
@@ -290,6 +291,8 @@ namespace JinEngine
 		private: 
 			JOwnerPtr<JGuiExtraFunctionUserInfo> extraUserInfo[(int)J_GUI_EXTRA_FUNCTION_TYPE::COUNT];
 		private:
+			std::vector<JOwnerPtr<JGuiExtraFunctionUserInfo>> invalidExtraUserInfo;
+		private:
 			bool isExtraFunctionUser = false;
 		public: 
 			JGuiWidgetInfo() = default;
@@ -303,27 +306,9 @@ namespace JinEngine
 						//Register if has extra info
 						JUserPtr<JGuiExtraFunctionInfo> info = ownerInfo->GetExtraFunctionInfo();
 						if (info != nullptr)
-						{ 			 
-							const J_GUI_EXTRA_FUNCTION_TYPE type = info->GetExtraFunctionType();
-							widgetInfo->isExtraFunctionUser = true;
-							switch (type)
-							{ 
-							case JinEngine::Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE:
-							{
-								if (widgetInfo->extraUserInfo[(int)type] == nullptr)
-									widgetInfo->extraUserInfo[(int)type] = std::move(ownerInfo);
-								break;
-							}
-							case JinEngine::Core::J_GUI_EXTRA_FUNCTION_TYPE::CONDITION:
-							{
-								if (widgetInfo->extraUserInfo[(int)type] == nullptr)
-									widgetInfo->extraUserInfo[(int)type] = std::move(ownerInfo);
-								break;
-							}
-							default:
-								break;
-							} 
-						}
+							widgetInfo->SetExtraFunctionUserInfo(info, std::move(ownerInfo));
+						else
+							widgetInfo->invalidExtraUserInfo.push_back(std::move(ownerInfo));
 					}
 				}; 
 
@@ -333,10 +318,21 @@ namespace JinEngine
 			virtual ~JGuiWidgetInfo() = default;
 		public:
 			virtual J_GUI_WIDGET_TYPE GetSupportWidgetType()const noexcept = 0;
-		public:
-			bool IsExtraFunctionUser()const noexcept;
 			JGuiExtraFunctionInfoMapName GetExtraFunctionMapName(const J_GUI_EXTRA_FUNCTION_TYPE type)const noexcept;
 			JUserPtr<JGuiExtraFunctionUserInfo> GetExtraFunctionUserInfo(const J_GUI_EXTRA_FUNCTION_TYPE type)const noexcept;
+		private:
+			void SetExtraFunctionUserInfo(const JUserPtr<JGuiExtraFunctionInfo>& info, JOwnerPtr<JGuiExtraFunctionUserInfo>&& userInfo);
+		public:
+			bool IsExtraFunctionUser()const noexcept;
+		public:
+			/**
+			* JGuiWidgetInfo중에 일부 JGuiExtraFunctionUserInfo는 다른 class에 JGuiExtraFunctionInfo를 참조하며
+			* 이는 컴파일 순서에 따라서 JGuiWidgetInfo생성 단계에서 해당하는 JGuiExtraFunctionUserInfo가 invalid처리될 경우가
+			* 있음을 의미한다.
+			* 그런 invalid처리된 .JGuiExtraFunctionUserInfo들이 다시한번 할당될수있는 기회를 부여하는 함수이다.
+			* (이미 해당하는 type에 JGuiExtraFunctionUserInfo가 있을경우 할당되지않는다.)
+			*/
+			void TryReSettingExtraUserInfo();
 		};
 		class JGuiInputInfo : public JGuiWidgetInfo
 		{
@@ -382,25 +378,30 @@ namespace JinEngine
 			const float minValue;
 			const float maxValue;
 		private:
+			const uint floatDigit = 3;
+		private:
 			const bool isSupportInput = true;
 			const bool isVertical = false;
 		public: 
 			JGuiSliderInfo(const float minValue, const float maxValue);
 			JGuiSliderInfo(const float minValue, const float maxValue, const bool isSupportInput);
 			JGuiSliderInfo(const float minValue, const float maxValue, const bool isSupportInput, const bool isVertical);
+			JGuiSliderInfo(const float minValue, const float maxValue, const bool isSupportInput, const bool isVertical, const uint floatDigit);
 			template<typename ...Param>
-			JGuiSliderInfo(const float minValue, const float maxValue, const bool isSupportInput, const bool isVertical, Param... var)
+			JGuiSliderInfo(const float minValue, const float maxValue, const bool isSupportInput, const bool isVertical, const uint floatDigit, Param... var)
 				: JGuiWidgetInfo(std::forward<Param>(var)...),
 				minValue(minValue),
 				maxValue(maxValue),
 				isSupportInput(isSupportInput),
-				isVertical(isVertical)
+				isVertical(isVertical),
+				floatDigit(floatDigit)
 			{}
 		public:
 			J_GUI_WIDGET_TYPE GetSupportWidgetType()const noexcept final;
 		public:
 			float GetMinValue()const noexcept;
 			float GetMaxValue()const noexcept;
+			uint GetFloatDigit()const noexcept;
 		public:
 			bool IsSupportInput()const noexcept;
 			bool IsVertical()const noexcept;
@@ -464,19 +465,20 @@ namespace JinEngine
 			DECLARE_CHILD_CLASS_TYPE_LIST(JGuiEnumComboBoxInfo, JGuiWidgetInfo)
 		private:
 			const std::string enumFullName;
-			const std::string displayCommand;
+			const std::vector<JCommandToken> token;
 		public:  
-			JGuiEnumComboBoxInfo(const std::string enumFullName);
+			JGuiEnumComboBoxInfo(const std::string& enumFullName);
 			template<typename ...Param>
-			JGuiEnumComboBoxInfo(const std::string enumFullName, const std::string displayCommand, Param... var)
+			JGuiEnumComboBoxInfo(const std::string& enumFullName, const std::string& displayCommand, Param... var)
 				: JGuiWidgetInfo(std::forward<Param>(var)...),
-				enumFullName(enumFullName), displayCommand(displayCommand)
+				enumFullName(enumFullName), token(CreateToken(displayCommand))
 			{} 
 		public:
 			J_GUI_WIDGET_TYPE GetSupportWidgetType()const noexcept final;
-		public:
-			std::string GetEnumFullName()const noexcept; 
-			std::string GetDisplayCommand()const noexcept;
+			std::string GetEnumFullName()const noexcept;  
+			const std::vector<JCommandToken>& GetToken()const noexcept;
+		private:
+			static std::vector<JCommandToken> CreateToken(std::string displayCommand);
 		};	 
 		class JGuiListInfo : public JGuiWidgetInfo
 		{

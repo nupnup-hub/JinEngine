@@ -7,7 +7,7 @@
 #include"../../Core/Math/JVectorExtend.h"
 #include"../../Object/Resource/Texture/JTexture.h"
 #include"../../Object/Resource/JResourceManager.h"
-#include"../../Core/File/JJSon.h"
+#include"../../Core/File/JFileIOHelper.h"
 #include"../../Graphic/Gui/JGuiBackendInterface.h"
 #include"../../Graphic/JGraphic.h" 
 #include"../../Graphic/JGraphicPrivate.h" 
@@ -28,6 +28,8 @@ namespace JinEngine::Editor
 		
 		class JGuiImpl final : public Graphic::JGuiBackendInterface
 		{
+		private:
+			using IntersectCondPtr = bool(*)(const JGuiWindowInfo&, std::string);
 		private:
 			const size_t guid = JCUtil::CalculateGuid(typeid(JGuiImpl).name());
 		private:
@@ -87,6 +89,19 @@ namespace JinEngine::Editor
 					adaptee = adapter->GetAdaptee(option.guiType, gOption.deviceType);
 				}
 			} 
+			void SetGui(const J_GUI_TYPE guiType)
+			{
+				if (option.guiType == guiType)
+					return;
+
+				auto gOption = JGraphic::Instance().GetGraphicOption();
+				auto newAdaptee = adapter->GetAdaptee(guiType, gOption.deviceType);
+				if (newAdaptee == nullptr)
+					return;
+
+				adaptee = newAdaptee;
+				option.guiType = guiType;
+			}
 		public:
 			bool IsLastMouseClicked(const Core::J_MOUSE_BUTTON btn)
 			{
@@ -120,8 +135,8 @@ namespace JinEngine::Editor
 				if (!adaptee->CanFocusByMouseRightClick() && lastMouseClicked[(uint)Core::J_MOUSE_BUTTON::RIGHT])
 				{ 
 					const JVector2F mousePos = adaptee->GetMousePos();
-					JGuiWindowInfo* info = Intersect(mousePos);
-					if (info != nullptr || !info->isLastFrameFocused)
+					JGuiWindowInfo* info = IntersectFirst(mousePos);
+					if (info != nullptr && !info->isLastFrameFocused)
 						adaptee->FocusWindow(info->windowID);
 				}
 			}
@@ -132,17 +147,13 @@ namespace JinEngine::Editor
 				lastMouseClicked[(uint)Core::J_MOUSE_BUTTON::MIDDLE] = adaptee->IsMouseClicked(Core::J_MOUSE_BUTTON::MIDDLE);
 			}
 		public:
-			JGuiWindowInfo* Intersect(const JVector2F& pos)
+			JGuiWindowInfo* IntersectFirst(const JVector2F& pos)
 			{
 				const int count = (int)lastDisplayedWndInfo.size();
 				if (count == 0)
 					return nullptr;
-				  
-				bool (*findHostWndPtr)(const JGuiWindowInfo&, std::string) = [](const JGuiWindowInfo& a, std::string name)
-				{
-					return JCUtil::Contain(a.windowName, name);
-				};
 
+				auto findHostWndPtr = GetIntersectCondPtr();
 				JGuiWindowInfo* lastSelected = nullptr;
 				int lastSelectedOrder = -1;
 				 
@@ -175,7 +186,7 @@ namespace JinEngine::Editor
 					}
 				}
 				return lastSelected;
-			}
+			} 
 		public:
 			void AddDisplayedWindowInfo(JGuiWindowInfo&& lastDisplayedWindowInfo)
 			{
@@ -206,15 +217,29 @@ namespace JinEngine::Editor
 		public:
 			void LoadOption()
 			{
-				Core::JJSon json(GetConfigFilePath());
-				json.Load();
-				option.guiType = json.LoadEnum<J_GUI_TYPE>("GuiType");
+				JFileIOTool tool;
+				if (!tool.Begin(GetConfigFilePath(), JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
+					return;
+
+				J_GUI_TYPE guiType;
+				JFileIOHelper::LoadEnumData(tool, guiType, "GuiType");
+				tool.Close();
+
+				SetGui(guiType);
 			}
 			void StoreOption()
 			{
-				Core::JJSon json(GetConfigFilePath());
-				json.StoreEnum("GuiType", option.guiType);
-				json.Store();
+				JFileIOTool tool;
+				if (!tool.Begin(GetConfigFilePath(), JFileIOTool::TYPE::JSON))
+					return;
+
+				JFileIOHelper::StoreEnumData(tool, option.guiType, "GuiType");
+				tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
+			}
+		private:
+			IntersectCondPtr GetIntersectCondPtr()
+			{
+				return [](const JGuiWindowInfo& a, std::string name){return JCUtil::Contain(a.windowName, name);}; 
 			}
 		};
 		std::unique_ptr<Private::JGuiImpl> impl;
@@ -285,6 +310,25 @@ namespace JinEngine::Editor
 	{
 		return Private::Adaptee()->GetUColor(flag);
 	}
+	JVector4<float> JGui::GetSelectableColorFactor(const bool isFocus, const bool isSelecetd, const bool isHovered) noexcept
+	{
+		if (isSelecetd)
+		{
+			if (isFocus)
+				return JGui::GetSelectedWidgetColorFactor();
+			else
+				return  JGui::GetUnFocusedWidgetColorFactor();
+		}
+		else if (isHovered)
+		{
+			if (isFocus)
+				return JGui::GetSelectedWidgetColorFactor() * 0.75f;
+			else
+				return JGui::GetUnFocusedWidgetColorFactor();
+		}
+		else
+			return JVector4F::Zero();
+	}
 	void JGui::SetColor(const J_GUI_COLOR flag, const JVector4<float>& color)noexcept
 	{
 		Private::Adaptee()->SetColor(flag, color);
@@ -351,6 +395,20 @@ namespace JinEngine::Editor
 	void JGui::PopButtonColorDeActSet()
 	{
 		Private::Adaptee()->PopColor(4);
+	}
+	void JGui::PushTreeNodeColorSet(const bool isFocus, const bool isActivated, const bool isSelected)noexcept
+	{
+		if (!isActivated)
+			JGui::PushColorToSoft(J_GUI_COLOR::TEXT, JGui::GetDeActivatedTextColorFactor());
+		if (isSelected)
+			JGui::PushTreeNodeColorToSoft(GetSelectableColorFactor(isFocus, true, true));
+	}
+	void JGui::PopTreeNodeColorSet(const bool isActivated, const bool isSelected)noexcept
+	{
+		if (isSelected)
+			JGui::PopTreeNodeColorToSoftSet();
+		if (!isActivated)
+			JGui::PopColor();
 	}
 #pragma endregion
 
@@ -584,6 +642,10 @@ namespace JinEngine::Editor
 	{
 		return Private::Adaptee()->IsMouseInRect(position, position + size);
 	}
+	bool JGui::IsMouseInCurrentWindow()noexcept
+	{
+		return IsMouseInRect(GetWindowPos(), GetWindowSize());
+	}
 	bool JGui::IsMouseInRectMM(const JVector2<float>& min, const JVector2<float>& max)noexcept
 	{
 		return Private::Adaptee()->IsMouseInRect(min, max);
@@ -688,6 +750,11 @@ namespace JinEngine::Editor
 	{
 		Private::Adaptee()->EndGroup();
 	}
+	void JGui::Text(const std::wstring& text)
+	{
+		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::TEXT);
+		Private::Adaptee()->Text(JCUtil::WstrToU8Str(text));
+	}
 	void JGui::Text(const std::string& text)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::TEXT);
@@ -761,30 +828,30 @@ namespace JinEngine::Editor
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::INPUT);
 		return Private::Adaptee()->InputInt(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, step);
 	}
-	bool JGui::InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags, const char* format, float step)
+	bool JGui::InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags, const float formatDigit, float step)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::INPUT);
-		return Private::Adaptee()->InputFloat(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, format, step);
+		return Private::Adaptee()->InputFloat(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, formatDigit, step);
 	}
-	bool JGui::SliderInt(const std::string& name, int* value, int vMin, int vMax, const char* format, J_GUI_SLIDER_FLAG_ flags)
+	bool JGui::SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SLIDER);
-		return Private::Adaptee()->SliderInt(name, value, vMin, vMax, format, (J_GUI_SLIDER_FLAG)flags);
+		return Private::Adaptee()->SliderInt(name, value, vMin, vMax, (J_GUI_SLIDER_FLAG)flags);
 	}
-	bool JGui::SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format, J_GUI_SLIDER_FLAG_ flags)
+	bool JGui::SliderFloat(const std::string& name, float* value, float vMin, float vMax, const float formatDigit, J_GUI_SLIDER_FLAG_ flags)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SLIDER);
-		return Private::Adaptee()->SliderFloat(name, value, vMin, vMax, format, (J_GUI_SLIDER_FLAG)flags);
+		return Private::Adaptee()->SliderFloat(name, value, vMin, vMax, formatDigit, (J_GUI_SLIDER_FLAG)flags);
 	}
-	bool JGui::VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, const char* format, J_GUI_SLIDER_FLAG_ flags)
+	bool JGui::VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SLIDER);
-		return Private::Adaptee()->VSliderInt(name, size, value, vMin, vMax, format, (J_GUI_SLIDER_FLAG)flags);
+		return Private::Adaptee()->VSliderInt(name, size, value, vMin, vMax, (J_GUI_SLIDER_FLAG)flags);
 	}
-	bool JGui::VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format, J_GUI_SLIDER_FLAG_ flags)
+	bool JGui::VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const float formatDigit, J_GUI_SLIDER_FLAG_ flags)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SLIDER);
-		return Private::Adaptee()->VSliderFloat(name, size, value, vMin, vMax, format, (J_GUI_SLIDER_FLAG)flags);
+		return Private::Adaptee()->VSliderFloat(name, size, value, vMin, vMax, formatDigit, (J_GUI_SLIDER_FLAG)flags);
 	}
 	bool JGui::BeginTabBar(const std::string& name, J_GUI_TAB_BAR_FLAG_ flags)
 	{
@@ -1441,21 +1508,34 @@ namespace JinEngine::Editor
 	{
 		return Private::Adaptee()->GetWindowOrder(windowID);
 	}
-	bool JGui::GetWindowInfo(const std::string& wndName, _Out_ JGuiWindowInfo& info)noexcept
+	bool JGui::GetWindowInfo(const std::string& wndName, _Inout_ JGuiWindowInfo& info)noexcept
 	{
 		return Private::Adaptee()->GetWindowInfo(wndName, info);
 	}
-	bool JGui::GetWindowInfo(const GuiID windowID, _Out_ JGuiWindowInfo& info)noexcept
+	bool JGui::GetWindowInfo(const GuiID windowID, _Inout_ JGuiWindowInfo& info)noexcept
 	{
 		return Private::Adaptee()->GetWindowInfo(windowID, info);
 	}
-	bool JGui::GetCurrentWindowInfo(_Out_ JGuiWindowInfo& info)noexcept
+	bool JGui::GetCurrentWindowInfo(_Inout_ JGuiWindowInfo& info)noexcept
 	{
 		return Private::Adaptee()->GetCurrentWindowInfo(info);
 	} 
 	std::vector<JGuiWindowInfo> JGui::GetDisplayedWindowInfo()noexcept
 	{
 		return Private::Adaptee()->GetDisplayedWindowInfo(true);
+	}   
+	bool JGui::GetFirstIntersectWindowInfo(const JVector2F pos, _Inout_ JGuiWindowInfo& info)noexcept
+	{
+		auto result = Private::impl->IntersectFirst(pos);
+		if (result == nullptr)
+			return false;
+
+		info = *result;
+		return true;
+	}
+	std::set<GuiID> JGui::GetWindowOpendTreeNodeID(const GuiID windowID)noexcept
+	{ 
+		return Private::Adaptee()->GetWindowOpendTreeNodeID(windowID);
 	}
 	void JGui::SetNextWindowPos(const JVector2<float>& pos, J_GUI_CONDIITON flag)noexcept
 	{
@@ -1484,6 +1564,10 @@ namespace JinEngine::Editor
 	void JGui::RestoreFromMaximize(const GuiID windowID, const std::vector<GuiID>& preTabItemID)
 	{
 		Private::Adaptee()->RestoreFromMaximize(windowID, preTabItemID);
+	} 
+	GuiID JGui::CalCurrentWindowItemID(const std::string& label)noexcept
+	{
+		return Private::Adaptee()->CalCurrentWindowItemID(label);
 	}
 	JVector2<float> JGui::GetLastItemRectMin()noexcept
 	{
@@ -1580,6 +1664,10 @@ namespace JinEngine::Editor
 	{
 		return 	GetClientWindowSize().x * 0.05f;
 	}
+	std::vector<GuiID> GetWindowOpendTreeNodeID(const GuiID windowID)
+	{
+
+	}
 	bool JGui::IsFullScreen()noexcept
 	{
 		return JWindow::IsFullScreen();
@@ -1614,23 +1702,23 @@ namespace JinEngine::Editor
 #pragma endregion
 
 #pragma region Docking
-	bool JGui::GetDockNodeInfoByWindowName(const std::string& windowName, _Out_ JGuiDockNodeInfo& info)noexcept
+	bool JGui::GetDockNodeInfoByWindowName(const std::string& windowName, _Inout_ JGuiDockNodeInfo& info)noexcept
 	{
 		return Private::Adaptee()->GetDockNodeInfoByWindowName(windowName, info);
 	};
-	bool JGui::GetDockNodeInfo(const std::string& dockNodeName, _Out_ JGuiDockNodeInfo& info)noexcept
+	bool JGui::GetDockNodeInfo(const std::string& dockNodeName, _Inout_ JGuiDockNodeInfo& info)noexcept
 	{
 		return Private::Adaptee()->GetDockNodeInfo(dockNodeName, info);
 	}
-	bool JGui::GetDockNodeInfo(const GuiID dockID, _Out_ JGuiDockNodeInfo& info)noexcept
+	bool JGui::GetDockNodeInfo(const GuiID dockID, _Inout_ JGuiDockNodeInfo& info)noexcept
 	{
 		return Private::Adaptee()->GetDockNodeInfo(dockID, info);
 	}
-	bool JGui::GetDockNodeHostWindowInfo(const GuiID childDockID, _Out_ JGuiWindowInfo& info)noexcept
+	bool JGui::GetDockNodeHostWindowInfo(const GuiID childDockID, _Inout_ JGuiWindowInfo& info)noexcept
 	{
 		return Private::Adaptee()->GetDockNodeHostWindowInfo(childDockID, info);
 	}
-	bool JGui::GetCurrentDockNodeInfo(_Out_ JGuiDockNodeInfo& info)noexcept
+	bool JGui::GetCurrentDockNodeInfo(_Inout_ JGuiDockNodeInfo& info)noexcept
 	{
 		return Private::Adaptee()->GetCurrentDockNodeInfo(info);
 	}
@@ -1707,5 +1795,13 @@ namespace JinEngine::Editor
 	void JGuiPrivate::StoreOption()
 	{
 		Private::Impl()->StoreOption();
+	}
+	void JGuiPrivate::LoadGuiData()
+	{
+		Private::Adaptee()->LoadGuiData();
+	}
+	void JGuiPrivate::StoreGuiData()
+	{
+		Private::Adaptee()->StoreGuiData();
 	}
 }

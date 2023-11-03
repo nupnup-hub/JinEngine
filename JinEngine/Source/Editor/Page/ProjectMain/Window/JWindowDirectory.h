@@ -1,7 +1,7 @@
 #pragma once
 #include"../../JEditorWindow.h"     
 #include"../../WindowInterface/JEditorPreviewInterface.h" 
-#include"../../../Interface/JEditorObjectHandleInterface.h"
+#include"../../../../Object/JObjectModifyInterface.h"
 #include"../../../../Object/JObjectType.h"
 #include"../../../../Object/Resource/JResourceObjectType.h" 
 #include<stdlib.h> 
@@ -22,21 +22,22 @@ namespace JinEngine
 		class JEditorPopupMenu; 
 		class JEditorSearchBarHelper;
 		class JEditorRenameHelper;
+		class JEditorTreeStructure;
 
-		class JWindowDirectoryCreationImpl;
-		class JWindowDirectorySettingImpl;
+		class JWindowDirectoryCreationFunctor;
+		class JWindowDirectorySettingFunctor;
 
 		class JWindowDirectory final : public JEditorWindow,
 			public JEditorPreviewInterface,
-			public JEditorObjectHandlerInterface
+			public JObjectModifyInterface
 		{ 
 		private:
 			JUserPtr<JDirectory> root;
 			JUserPtr<JDirectory> opendDirctory; 
 			bool lastUpdateOpenNewDir = false;
 		private:
-			std::unique_ptr<JWindowDirectoryCreationImpl> creationImpl;
-			std::unique_ptr<JWindowDirectorySettingImpl> settingImpl;
+			std::unique_ptr<JWindowDirectoryCreationFunctor> creation;
+			std::unique_ptr<JWindowDirectorySettingFunctor> setting;
 		private:
 			std::unique_ptr<JEditorStringMap> editorString;
 			std::unique_ptr<JEditorRenameHelper> renameHelper;
@@ -44,6 +45,7 @@ namespace JinEngine
 			//std::unique_ptr<JEditorPopupMenu>directoryViewPopup;
 			std::unique_ptr<JEditorPopupMenu>fileviewPopup; 
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
+			std::unique_ptr<JEditorTreeStructure> treeStrcture;
 		private:
 			static constexpr float selectorIconMaxRate = 0.075f;
 			static constexpr float selectorIconMinRate = 0.035f;
@@ -97,6 +99,9 @@ namespace JinEngine
 			void DoSetUnFocus()noexcept final;
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;
+		private:
+			void LoadEditorWindow(JFileIOTool& tool);
+			void StoreEditorWindow(JFileIOTool& tool);
 		private:
 			void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)final;
 		};

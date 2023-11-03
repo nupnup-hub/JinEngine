@@ -1,6 +1,7 @@
 #include"JAvatarEditor.h" 
 #include"../../JEditorAttribute.h" 
 #include"../../../Gui/JGui.h"  
+#include"../../../EditTool/JEditorTreeStructure.h"
 #include"../../../Align/JEditorAlignCalculator.h"
 #include"../../../../Object/GameObject/JGameObject.h" 
 #include"../../../../Object/Resource/Skeleton/JSkeleton.h"
@@ -10,7 +11,7 @@
 #include"../../../../Core/Transition/JTransition.h"
 #include"../../../../Core/Utility/JCommonUtility.h" 
 #include"../../../../Core/Math/JVectorExtend.h" 
-
+#
 namespace JinEngine
 {
 	namespace Editor
@@ -18,23 +19,52 @@ namespace JinEngine
 		namespace
 		{
 			using AvatarInterface = JSkeletonAssetPrivate::AvatarInterface;
-		}
+		 
+			//Setting
+			using MakeAvatarF = Core::JMFunctorType<JAvatarEditor, void>;
+			using ClearAvatarF = Core::JMFunctorType<JAvatarEditor, void>;
+			using SelectTabF = Core::JMFunctorType<JAvatarEditor, void, const uint>;
+			using OpenJointSelectorF = Core::JMFunctorType<JAvatarEditor, void, const int>;
+			using SetJointRefF = Core::JMFunctorType<JAvatarEditor, void, const int, const int>;
+			using SetAllJointRefByVecF = Core::JMFunctorType<JAvatarEditor, void, std::vector<uint8>&&>;
+			using SetAllJointRefByAutoF = Core::JMFunctorType<JAvatarEditor, void>;
+			using ClearJointRefF = Core::JMFunctorType<JAvatarEditor, void>;
+		} 
+   
+		class JAvatarEditorSettingFunctor
+		{
+		public:
+			std::unique_ptr<MakeAvatarF::Functor> makeAvatarFunctor;
+			std::unique_ptr<ClearAvatarF::Functor> clearAvatarFunctor;
+			std::unique_ptr<SelectTabF::Functor> selectTabFunctor;
+			std::unique_ptr<OpenJointSelectorF::Functor> openJointSelectorFunctor;
+			std::unique_ptr<SetJointRefF::Functor> setJointRefFunctor;
+			std::unique_ptr<SetAllJointRefByVecF::Functor> setAllJointRefByVecFunctor;
+			std::unique_ptr<SetAllJointRefByAutoF::Functor> setAllJointRefByAutoFunctor;
+			std::unique_ptr<ClearJointRefF::Functor> clearJointRefFunctor;
+		};
 		JAvatarEditor::JAvatarEditor(const std::string& name, 
 			std::unique_ptr<JEditorAttribute> attribute, 
 			const J_EDITOR_PAGE_TYPE ownerPageType,
 			const J_EDITOR_WINDOW_FLAG windowFlag)
-			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag),
-			makeAvatarFunctor(&JAvatarEditor::MakeAvatar, this),
-			clearAvatarFunctor(&JAvatarEditor::ClearAvatar, this),
-			selectTabFunctor(&JAvatarEditor::SelectTab, this),
-			openJointSelectorFunctor(&JAvatarEditor::OpenJointSelector, this),
-			setJointRefFunctor(&JAvatarEditor::SetJointReference, this),
-			setAllJointRefByVecFunctor(&JAvatarEditor::SetAllJointReferenceByVec, this),
-			setAllJointRefByAutoFunctor(&JAvatarEditor::SetAllJointReferenceByAuto, this),
-			clearJointRefFunctor(&JAvatarEditor::ClearJointReference, this)
-		{  }
+			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag)
+		{
+			InitializeSettingImpl();
+		}
 		JAvatarEditor::~JAvatarEditor()
 		{ }
+		void JAvatarEditor::InitializeSettingImpl()
+		{
+			setting = std::make_unique<JAvatarEditorSettingFunctor>();
+			setting->makeAvatarFunctor = std::make_unique<MakeAvatarF::Functor>(&JAvatarEditor::MakeAvatar, this);
+			setting->clearAvatarFunctor = std::make_unique<ClearAvatarF::Functor>(&JAvatarEditor::ClearAvatar, this);
+			setting->selectTabFunctor = std::make_unique<SelectTabF::Functor>(&JAvatarEditor::SelectTab, this);
+			setting->openJointSelectorFunctor = std::make_unique<OpenJointSelectorF::Functor>(&JAvatarEditor::OpenJointSelector, this);
+			setting->setJointRefFunctor = std::make_unique<SetJointRefF::Functor>(&JAvatarEditor::SetJointReference, this);
+			setting->setAllJointRefByVecFunctor = std::make_unique<SetAllJointRefByVecF::Functor>(&JAvatarEditor::SetAllJointReferenceByVec, this);
+			setting->setAllJointRefByAutoFunctor = std::make_unique<SetAllJointRefByAutoF::Functor>(&JAvatarEditor::SetAllJointReferenceByAuto, this);
+			setting->clearJointRefFunctor = std::make_unique<ClearJointRefF::Functor>(&JAvatarEditor::ClearJointReference, this);
+		}
 		J_EDITOR_WINDOW_TYPE JAvatarEditor::GetWindowType()const noexcept
 		{
 			return J_EDITOR_WINDOW_TYPE::AVATAR_EDITOR;
@@ -49,8 +79,8 @@ namespace JinEngine
 			UpdateDocking();
 			if (IsActivated() && targetSkeleton.IsValid())
 			{
-				UpdateMouseClick(); 
-				BuildAvatarEdit();
+				UpdateMouseClick();  
+				BuildAvatarEdit(); 
 			}
 			CloseWindow();
 		}
@@ -68,8 +98,8 @@ namespace JinEngine
 			{
 				JEditorTransition::Instance().Execute(std::make_unique<Core::JTransitionSetValueTask>("Make avatar",
 					"skeleton name: " + JCUtil::WstrToU8Str(targetSkeleton->GetName()),
-					std::make_unique<MakeAvatarF::CompletelyBind>(makeAvatarFunctor),
-					std::make_unique<ClearAvatarF::CompletelyBind>(clearAvatarFunctor)));
+					std::make_unique<MakeAvatarF::CompletelyBind>(*setting->makeAvatarFunctor),
+					std::make_unique<ClearAvatarF::CompletelyBind>(*setting->clearAvatarFunctor)));
 			}
 			if (hasAvatar)
 			{
@@ -83,8 +113,8 @@ namespace JinEngine
 							int doIndex = i;
 							JEditorTransition::Instance().Execute(std::make_unique<Core::JTransitionSetValueTask>("Select avatar part",
 								"skeleton name: " + JCUtil::WstrToU8Str(targetSkeleton->GetName()),
-								std::make_unique<SelectTabF::CompletelyBind>(selectTabFunctor, std::move(doIndex)),
-								std::make_unique<SelectTabF::CompletelyBind>(selectTabFunctor, std::move(FindSelectedTab()))));
+								std::make_unique<SelectTabF::CompletelyBind>(*setting->selectTabFunctor, std::move(doIndex)),
+								std::make_unique<SelectTabF::CompletelyBind>(*setting->selectTabFunctor, std::move(FindSelectedTab()))));
 							JGui::EndTabItem();
 						}
 					}
@@ -176,8 +206,8 @@ namespace JinEngine
 							taskName = "Cancel open avatar Joint Selector";
 						JEditorTransition::Instance().Execute(std::make_unique<Core::JTransitionSetValueTask>(taskName,
 							"skeleton name: " + JCUtil::WstrToU8Str(targetSkeleton->GetName()),
-							std::make_unique<OpenJointSelectorF::CompletelyBind>(openJointSelectorFunctor, std::move(doJointRefIndex)),
-							std::make_unique<OpenJointSelectorF::CompletelyBind>(openJointSelectorFunctor, std::move(undoJointRefIndex))));
+							std::make_unique<OpenJointSelectorF::CompletelyBind>(*setting->openJointSelectorFunctor, std::move(doJointRefIndex)),
+							std::make_unique<OpenJointSelectorF::CompletelyBind>(*setting->openJointSelectorFunctor, std::move(undoJointRefIndex))));
 					}
 
 					nowSize = alignCal.GetInnerContentsSize();
@@ -191,8 +221,8 @@ namespace JinEngine
 
 						JEditorTransition::Instance().Execute(std::make_unique<Core::JTransitionSetValueTask>("Erase avatar joint reference",
 							"skeleton name: " + JCUtil::WstrToU8Str(targetSkeleton->GetName()),
-							std::make_unique<SetJointRefF::CompletelyBind>(setJointRefFunctor, std::move(doJointRefIndex), std::move(doJointIndex)),
-							std::make_unique<SetJointRefF::CompletelyBind>(setJointRefFunctor, std::move(undoJointRefIndex), std::move(undoJointIndex))));
+							std::make_unique<SetJointRefF::CompletelyBind>(*setting->setJointRefFunctor, std::move(doJointRefIndex), std::move(doJointIndex)),
+							std::make_unique<SetJointRefF::CompletelyBind>(*setting->setJointRefFunctor, std::move(undoJointRefIndex), std::move(undoJointIndex))));
 					}
 
 					if (!isValidJointRef[jointRefIndex])
@@ -207,8 +237,8 @@ namespace JinEngine
 					std::vector<uint8> preJointRef = targetAvatar.jointReference;
 					JEditorTransition::Instance().Execute(std::make_unique<Core::JTransitionSetValueTask>("Auto generate avatar joint reference",
 						"skeleton name: " + JCUtil::WstrToU8Str(targetSkeleton->GetName()),
-						std::make_unique<SetAllJointRefByAutoF::CompletelyBind>(setAllJointRefByAutoFunctor),
-						std::make_unique<SetAllJointRefByVecF::CompletelyBind>(setAllJointRefByVecFunctor, std::move(preJointRef))));
+						std::make_unique<SetAllJointRefByAutoF::CompletelyBind>(*setting->setAllJointRefByAutoFunctor),
+						std::make_unique<SetAllJointRefByVecF::CompletelyBind>(*setting->setAllJointRefByVecFunctor, std::move(preJointRef))));
 				}
 
 				const float btnPaddingRate = 0.0025f;
@@ -232,28 +262,27 @@ namespace JinEngine
 					std::vector<uint8> preJointRef = targetAvatar.jointReference;
 					JEditorTransition::Instance().Execute(std::make_unique<Core::JTransitionSetValueTask>("Clear avatar joint reference",
 						"skeleton name: " + JCUtil::WstrToU8Str(targetSkeleton->GetName()),
-						std::make_unique<ClearJointRefF::CompletelyBind>(clearJointRefFunctor),
-						std::make_unique<SetAllJointRefByVecF::CompletelyBind>(setAllJointRefByVecFunctor, std::move(preJointRef))));
+						std::make_unique<ClearJointRefF::CompletelyBind>(*setting->clearJointRefFunctor),
+						std::make_unique<SetAllJointRefByVecF::CompletelyBind>(*setting->setAllJointRefByVecFunctor, std::move(preJointRef))));
 				}
 
 				if (isOpenJointSelector)
 				{
 					JGui::BeginWindow("Selector", &isOpenJointSelector);
+					treeStrcture->Begin();
 					BuildObjectExplorer(0, targetSkeleton->GetSkeletonTreeIndexVec());
+					treeStrcture->End();
 					JGui::EndWindow();
 				}
 			}
 		}
 		void JAvatarEditor::BuildObjectExplorer(const uint8 index, const std::vector<std::vector<uint8>>& treeIndexVec)
 		{
-			std::string name = JCUtil::WstrToU8Str(targetSkeleton->GetJointName(index));
-			bool arrowHovered= JGui::IsTreeNodeArrowHovered(name);
+			std::string label = JCUtil::WstrToU8Str(targetSkeleton->GetJointName(index)) + "##" + GetName() + "Explorer";
+			bool arrowHovered= JGui::IsTreeNodeArrowHovered(label);
 			bool isSelected = selectJointIndex == index;
 
-			PushTreeNodeColorSet(true, isSelected);
-			bool res = JGui::TreeNodeEx(name.c_str(), J_GUI_TREE_NODE_FLAG_FRAMED | J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW);
-			PopTreeNodeColorSet(true, isSelected);
-
+			bool isNodeOpen = treeStrcture->DisplayTreeNode(label.c_str(), J_GUI_TREE_NODE_FLAG_FRAMED | J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW, IsFocus(), true, isSelected);
 			if ((JGui::IsLastItemClicked(Core::J_MOUSE_BUTTON::LEFT) || JGui::IsLastItemClicked(Core::J_MOUSE_BUTTON::RIGHT)) && !arrowHovered)
 			{
 				if (isSelected)
@@ -265,14 +294,14 @@ namespace JinEngine
 					 
 					JEditorTransition::Instance().Execute(std::make_unique<Core::JTransitionSetValueTask>("Select avatar joint reference",
 						"skeleton name: " + JCUtil::WstrToU8Str(targetSkeleton->GetName()),
-						std::make_unique<SetJointRefF::CompletelyBind>(setJointRefFunctor, std::move(doJointRefIndex), std::move(doJointIndex)),
-						std::make_unique<SetJointRefF::CompletelyBind>(setJointRefFunctor, std::move(undoJointRefIndex), std::move(undoJointIndex))));
+						std::make_unique<SetJointRefF::CompletelyBind>(*setting->setJointRefFunctor, std::move(doJointRefIndex), std::move(doJointIndex)),
+						std::make_unique<SetJointRefF::CompletelyBind>(*setting->setJointRefFunctor, std::move(undoJointRefIndex), std::move(undoJointIndex))));
 					isOpenJointSelector = false;
 				}
 				else
 					selectJointIndex = index;
 			}
-			if (res)
+			if (isNodeOpen)
 			{
 				const uint childrenCount = (uint)treeIndexVec[index].size();
 				for (uint i = 0; i < childrenCount; ++i)
@@ -436,6 +465,18 @@ namespace JinEngine
 					CheckAllJoint();
 				}
 			}
+		}
+		void JAvatarEditor::LoadEditorWindow(JFileIOTool& tool)
+		{
+			JEditorWindow::LoadEditorWindow(tool);
+			treeStrcture->LoadData(tool);
+		}
+		void JAvatarEditor::StoreEditorWindow(JFileIOTool& tool)
+		{
+			JEditorWindow::StoreEditorWindow(tool);
+			JGuiWindowInfo info;
+			JGui::GetWindowInfo(GetName(), info);
+			treeStrcture->StoreData(tool, info.windowID);
 		}
 	}
 }

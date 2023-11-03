@@ -1,7 +1,7 @@
 #include"JFSMtransition.h"
 #include"JFSMtransitionPrivate.h"
 #include"JFSMstatePrivate.h"
-#include"JFSMstate.h"
+#include"JFSMstate.h" 
 #include"JFSMcondition.h"    
 #include"../Identity/JIdenCreator.h"
 #include"../Reflection/JTypeImplBase.h"
@@ -47,7 +47,7 @@ namespace JinEngine
 				return conditionVec[index];
 			} 
 			std::vector<JUserPtr<JFSMcondition>> GetConditionVec()const noexcept
-			{
+			{ 
 				return conditionVec;
 			}
 		public: 

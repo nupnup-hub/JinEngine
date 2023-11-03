@@ -1,5 +1,5 @@
 #include "VertexLayout.hlsl"
-#include "Common.hlsl" 
+#include "VertexCommon.hlsl" 
 
 #if defined(DEBUG)
 VertexOut VS(VertexIn vin)

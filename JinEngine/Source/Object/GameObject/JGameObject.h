@@ -14,6 +14,7 @@ namespace JinEngine
 	class JComponent;
 
 	class JGameObjectPrivate;
+	class JFileIOTool;
 	class JGameObject final : public JObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JGameObject)
@@ -41,11 +42,11 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadData)
 		public:
-			std::wifstream& stream;
+			JFileIOTool& tool;
 			JUserPtr<JGameObject> parent = nullptr;
 			JUserPtr<JScene> ownerScene = nullptr;
 		public:
-			LoadData(JUserPtr<JScene> owenerScene, std::wifstream& stream);
+			LoadData(JUserPtr<JScene> owenerScene, JFileIOTool& tool);
 			~LoadData();
 		public:
 			bool IsValidData()const noexcept final;
@@ -55,9 +56,9 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(StoreData)
 		public:
-			std::wofstream& stream;
+			JFileIOTool& tool;
 		public:
-			StoreData(JUserPtr<JGameObject> obj, std::wofstream& stream);
+			StoreData(JUserPtr<JGameObject> obj, JFileIOTool& tool);
 		public:
 			bool IsValidData()const noexcept final;
 		};

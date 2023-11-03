@@ -3,6 +3,7 @@
 #include"../JClearableInterface.h"
 #include"../JResourceObjectHint.h"
 #include"../JResourceObjectImporter.h"
+#include"../JResourceObjectEventDesc.h"
 #include"../../Directory/JDirectory.h"
 #include"../../JObjectFileIOHelper.h"
 #include"../../../Core/Identity/JIdenCreator.h"
@@ -22,16 +23,18 @@ namespace JinEngine
 	{
 		static JTexturePrivate tPrivate;
 	}
- 
+
 	class JTexture::JTextureImpl : public Core::JTypeImplBase,
 		public JClearableInterface, 
 		public Graphic::JGraphicSingleResourceHolder
 	{
-		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTextureImpl)
+		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTextureImpl) 
 	public:
 		JWeakPtr<JTexture> thisPointer = nullptr;
 	public: 
 		Graphic::J_GRAPHIC_RESOURCE_TYPE textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
+		REGISTER_PROPERTY_EX(resolution, GetTextureResolution, SetTextureResolution, GUI_ENUM_COMBO(J_TEXTURE_RESOLUTION, "-a {v} x {v}; -c {v} != 0;"))
+		J_TEXTURE_RESOLUTION resolution = J_TEXTURE_RESOLUTION::ORIGINAL;
 	public:
 		JTextureImpl(const InitData& initData, JTexture* thisTexRaw)
 		{
@@ -52,6 +55,10 @@ namespace JinEngine
 		{
 			return GetResourceHeight();
 		} 
+		J_TEXTURE_RESOLUTION GetTextureResolution()const noexcept
+		{
+			return resolution;
+		}
 	public:
 		void SetTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE newTextureType)noexcept
 		{
@@ -65,10 +72,48 @@ namespace JinEngine
 				}
 			}
 		}
+		void SetTextureResolution(const J_TEXTURE_RESOLUTION newResolution)
+		{
+			if (resolution == newResolution)
+				return;
+
+			resolution = newResolution;
+			DestroyTexture();
+			ReadTextureData(); 
+			JResourceObjectPrivate::EventInterface::NotifyEvent(thisPointer.Get(), 
+				J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE,
+				std::make_unique<JResourceUpdateEvDesc>(JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_AND_REAR_OF_FRAME_BUFFER));
+		}
+		//void SetTextureResolution
 	public:
 		static bool IsValidTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE type)
 		{
 			return type == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D || type == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE;
+		}
+	private:
+		void AdjustResoultion()noexcept
+		{
+			if (resolution == J_TEXTURE_RESOLUTION::ORIGINAL)
+				return;
+
+			auto firstInfo = GetFirstInfo();
+			if (firstInfo == nullptr)
+				return;
+			 
+			const uint bigOne = max(firstInfo->GetWidth(), firstInfo->GetHeight());
+			auto elementValueVec = Core::GetEnumElementValueVec<J_TEXTURE_RESOLUTION>();
+			for (const auto& data : elementValueVec)
+			{ 
+				if (data == (uint)J_TEXTURE_RESOLUTION::ORIGINAL)
+					continue;
+
+				if (data >= bigOne)
+				{
+					resolution = (J_TEXTURE_RESOLUTION)data;
+					break;
+				}
+			}
+			
 		}
 	public:
 		void StuffResource()
@@ -95,13 +140,19 @@ namespace JinEngine
 			{
 				if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
 				{
-					if (Create2DTexture(thisPointer->GetPath(), thisPointer->GetFormat()))
+					if (Create2DTexture((uint)resolution, thisPointer->GetPath(), thisPointer->GetFormat()))
+					{ 
+						AdjustResoultion();
 						return true;
+					}
 				}
 				else if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 				{
-					if (CreateCubeMap(thisPointer->GetPath(), thisPointer->GetFormat()))
+					if (CreateCubeMap((uint)resolution, thisPointer->GetPath(), thisPointer->GetFormat()))
+					{
+						AdjustResoultion();
 						return true;
+					}
 				}
 			}
 			return false;
@@ -178,13 +229,15 @@ namespace JinEngine
 					importPathData.oriFileWPath) };
 			};
 
-			JResourceObjectImporter::Instance().AddFormatInfo(L".jpg", J_RESOURCE_TYPE::TEXTURE, txtImportC);
-			JResourceObjectImporter::Instance().AddFormatInfo(L".png", J_RESOURCE_TYPE::TEXTURE, txtImportC);
-			JResourceObjectImporter::Instance().AddFormatInfo(L".dds", J_RESOURCE_TYPE::TEXTURE, txtImportC);
-			JResourceObjectImporter::Instance().AddFormatInfo(L".tga", J_RESOURCE_TYPE::TEXTURE, txtImportC);
-			JResourceObjectImporter::Instance().AddFormatInfo(L".bmp", J_RESOURCE_TYPE::TEXTURE, txtImportC);
-			Core::JIdentifier::RegisterPrivateInterface(JTexture::StaticTypeInfo(), tPrivate);
+			auto foramatVec = JTexture::GetAvailableFormat();
+			for(const auto& data: foramatVec)
+				JResourceObjectImporter::Instance().AddFormatInfo(data, J_RESOURCE_TYPE::TEXTURE, txtImportC);
+			//JResourceObjectImporter::Instance().AddFormatInfo(L".png", J_RESOURCE_TYPE::TEXTURE, txtImportC);
+			//JResourceObjectImporter::Instance().AddFormatInfo(L".dds", J_RESOURCE_TYPE::TEXTURE, txtImportC);
+			//JResourceObjectImporter::Instance().AddFormatInfo(L".tga", J_RESOURCE_TYPE::TEXTURE, txtImportC);
+			//JResourceObjectImporter::Instance().AddFormatInfo(L".bmp", J_RESOURCE_TYPE::TEXTURE, txtImportC);
 
+			Core::JIdentifier::RegisterPrivateInterface(JTexture::StaticTypeInfo(), tPrivate);
 			IMPL_REALLOC_BIND(JTexture::JTextureImpl, thisPointer)
 		}
 	};
@@ -241,7 +294,7 @@ namespace JinEngine
 	}
 	std::vector<std::wstring> JTexture::GetAvailableFormat()noexcept
 	{
-		static std::vector<std::wstring> format{ L".jpg",L".png",L".dds",L".tga",L".bmp" };
+		static std::vector<std::wstring> format{ L".jpg",L".png",L".dds",L".tga",L".bmp", L".tif", L".tiff"};
 		return format;
 	}
 	uint JTexture::GetTextureWidth()const noexcept
@@ -256,10 +309,18 @@ namespace JinEngine
 	{
 		return impl->textureType;
 	}
+	J_TEXTURE_RESOLUTION JTexture::GetTextureResolution()const noexcept
+	{
+		return impl->GetTextureResolution();
+	}
 	void JTexture::SetTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)noexcept
 	{
 		impl->SetTextureType(textureType);
 	} 
+	void JTexture::SetTextureResolution(const J_TEXTURE_RESOLUTION resolutionType)noexcept
+	{
+		impl->SetTextureResolution(resolutionType);
+	}
 	void JTexture::DoActivate()noexcept
 	{	
 		JResourceObject::DoActivate();
@@ -319,7 +380,7 @@ namespace JinEngine
 
 		if (LoadMetaData(pathData.engineMetaFileWPath, &metadata) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return nullptr;
-
+ 
 		JUserPtr<JTexture> newTex = nullptr;
 		if (directory->HasFile(metadata.guid))
 			newTex = Core::GetUserPtr<JTexture>(JTexture::StaticTypeInfo().TypeGuid(), metadata.guid);
@@ -351,17 +412,17 @@ namespace JinEngine
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JTexture::LoadMetaData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		std::wifstream stream;
-		stream.open(path, std::ios::in | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		auto loadMetaData = static_cast<JTexture::LoadMetaData*>(data);
-		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->textureType);
-		stream.close();
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->textureType, "TextureType"); 
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->resoultion, "Resoultion");
+		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
@@ -372,15 +433,16 @@ namespace JinEngine
 		auto storeData = static_cast<JTexture::StoreData*>(data);
 		JUserPtr<JTexture> tex = Core::ConnectChildUserPtr<JTexture>(storeData->obj);
 
-		std::wofstream stream;
-		stream.open(tex->GetMetaFilePath(), std::ios::out | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(tex->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 	 
-		JObjectFileIOHelper::StoreEnumData(stream, L"TextureType:", tex->GetTextureType());
+		JObjectFileIOHelper::StoreEnumData(tool, tex->GetTextureType(), "TextureType");
+		JObjectFileIOHelper::StoreEnumData(tool, tex->GetTextureResolution(), "Resoultion");
+		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

@@ -85,7 +85,7 @@ namespace JinEngine
 				bool allowSameLine = false;
 			public:
 				//Inner
-				bool isActivatedTable;
+				bool isActivatedTable = false;
 			public:
 				UserData(JEditorWindow* editorWnd)
 					:editorWnd(editorWnd)
@@ -173,7 +173,7 @@ namespace JinEngine
 					JGui::Text(updateData.handleBase->GetName());
 			}
 		};
-		class JGuiObjectValueInterface : public JEditorObjectHandlerInterface
+		class JGuiObjectValueInterface : public JObjectModifyInterface
 		{
 		public:
 			template<typename T>
@@ -184,6 +184,22 @@ namespace JinEngine
 				else
 					return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->Get(updateData.obj.Get());
 			}
+			template<typename T>
+			static T GetValue(UpdateData& updateData, Core::JPropertyInfo* pInfo)
+			{
+				if (updateData.HasImplType())
+					return pInfo->Get<T>(updateData.GetImplBase());
+				else
+					return pInfo->Get<T>(updateData.obj.Get());
+			}
+			template<typename T>
+			static T GetValue(UpdateData& updateData, Core::JMethodInfo* mInfo)
+			{
+				if (updateData.HasImplType())
+					return mInfo->Invoke<T>(updateData.GetImplBase());
+				else
+					return mInfo->Invoke<T>(updateData.obj.Get());
+			}
 			template<typename T, typename U>
 			static T GetValue(U* obj, Core::JPropertyInfo* pInfo)
 			{
@@ -191,7 +207,7 @@ namespace JinEngine
 			}
 			template<typename T, typename U>
 			static T GetValue(U* obj, Core::JMethodInfo* mInfo)
-			{ 
+			{
 				return mInfo->Invoke<T>(obj);
 			}
 			template<typename T>
@@ -201,6 +217,22 @@ namespace JinEngine
 					return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->UnsafeGet(updateData.GetImplBase());
 				else
 					return static_cast<Core::JGuiWidgetInfoHandle<T>*>(updateData.handleBase)->UnsafeGet(updateData.obj.Get());
+			}
+			template<typename T>
+			static T UnsafeGetValue(UpdateData& updateData, Core::JPropertyInfo* pInfo)
+			{
+				if (updateData.HasImplType())
+					return pInfo->UnsafeGet<T>(updateData.GetImplBase());
+				else
+					return pInfo->UnsafeGet<T>(updateData.obj.Get());
+			}
+			template<typename T>
+			static T UnsafeGetValue(UpdateData& updateData, Core::JMethodInfo* mInfo)
+			{
+				if (updateData.HasImplType())
+					return mInfo->UnsafeInvoke<T>(updateData.GetImplBase());
+				else
+					return mInfo->UnsafeInvoke<T>(updateData.obj.Get());
 			}
 			template<typename T, typename U>
 			static T UnsafeGetValue(U* obj, Core::JPropertyInfo* pInfo)
@@ -503,7 +535,7 @@ namespace JinEngine
 				_Out_ Core::JPropertyInfo** pInfo)
 			{
 				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(refParamOwnerName);
-				*owner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JIdentifier*>(updateData.obj.Get(), refPropertyInfo);
+				*owner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JIdentifier*>(updateData, refPropertyInfo);
 
 				if (*owner == nullptr)
 					return false;
@@ -514,16 +546,29 @@ namespace JinEngine
 			static bool GetReferenceParameterInfo(UpdateData& updateData,
 				const std::string& refName,
 				const std::string& refParamOwnerName,
+				Core::JPropertyInfo* refPropertyInfo,
 				_Out_ Core::JTypeImplBase** owner,
 				_Out_ Core::JPropertyInfo** pInfo)
 			{
-				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(refParamOwnerName);
-				*owner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JTypeImplBase*>(updateData.obj.Get(), refPropertyInfo);
+				JTypeBase* tBase = nullptr;
+				Core::JParameterHint hint = refPropertyInfo->GetHint();
+				if (hint.isPtr)
+					tBase = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JTypeBase*>(updateData, refPropertyInfo);
+				else if (hint.jDataEnum == Core::J_PARAMETER_TYPE::USER_PTR)
+					tBase = JGuiObjectValueInterface{}.UnsafeGetValue<JUserPtr<Core::JTypeBase>>(updateData, refPropertyInfo).Get();
+				else if (hint.jDataEnum == Core::J_PARAMETER_TYPE::WEAK_PTR)
+					tBase = JGuiObjectValueInterface{}.UnsafeGetValue<JWeakPtr<Core::JTypeBase>>(updateData, refPropertyInfo).Get();
+ 
+				if (tBase == nullptr)
+					return false;
+
+				Core::JTypeInfo& info = tBase->GetTypeInfo();
+				*owner = info.ConvertImplBase(tBase);
 
 				if (*owner == nullptr)
 					return false;
 
-				*pInfo = updateData.obj->GetTypeInfo().GetImplTypeInfo()->GetProperty(refName);
+				*pInfo = info.GetImplTypeInfo()->GetProperty(refName);
 				return true;
 			} 
 			static bool GetReferenceParameterInfo(UpdateData& updateData,
@@ -551,7 +596,7 @@ namespace JinEngine
 				_Out_ Core::JMethodInfo** mInfo)
 			{
 				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(refParamOwnerName);
-				*owner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JIdentifier*>(updateData.obj.Get(), refPropertyInfo);
+				*owner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JIdentifier*>(updateData, refPropertyInfo);
 
 				if (*owner == nullptr)
 					return false;
@@ -561,17 +606,30 @@ namespace JinEngine
 			}
 			static bool GetReferenceParameterInfo(UpdateData& updateData,
 				const std::string& refName,
-				const std::string& refParamOwnerName,
+				const std::string& refParamOwnerName, 
+				Core::JPropertyInfo* refPropertyInfo,
 				_Out_ Core::JTypeImplBase** owner,
 				_Out_ Core::JMethodInfo** mInfo)
-			{
-				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(refParamOwnerName);
-				*owner = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JTypeImplBase*>(updateData.obj.Get(), refPropertyInfo);
+			{  
+				JTypeBase* tBase = nullptr;
+				Core::JParameterHint hint = refPropertyInfo->GetHint();
+				if (hint.isPtr)
+					tBase = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JTypeBase*>(updateData, refPropertyInfo);
+				else if (hint.jDataEnum == Core::J_PARAMETER_TYPE::USER_PTR)
+					tBase = JGuiObjectValueInterface{}.UnsafeGetValue<JUserPtr<Core::JTypeBase>>(updateData, refPropertyInfo).Get();
+				else if (hint.jDataEnum == Core::J_PARAMETER_TYPE::WEAK_PTR)
+					tBase = JGuiObjectValueInterface{}.UnsafeGetValue<JWeakPtr<Core::JTypeBase>>(updateData, refPropertyInfo).Get();
+
+				if (tBase == nullptr)
+					return false;
+
+				Core::JTypeInfo& info = tBase->GetTypeInfo();
+				*owner = info.ConvertImplBase(tBase);
 
 				if (*owner == nullptr)
 					return false;
 
-				*mInfo = updateData.obj->GetTypeInfo().GetImplTypeInfo()->GetMethod(refName);
+				*mInfo = info.GetImplTypeInfo()->GetMethod(refName);
 				return true;
 			}
 			static bool PassBoolCondition(UpdateData& updateData,
@@ -579,75 +637,128 @@ namespace JinEngine
 				Core::JGuiConditionInfo* conditionInfo)
 			{
 				Core::JIdentifier* boolOwner = nullptr;
-				Core::JPropertyInfo* boolPropertyInfo = nullptr;
+				Core::JTypeImplBase* boolImplOwner = nullptr; 
 
 				Core::JGuiBoolParamConditionInfo* condInfo = static_cast<Core::JGuiBoolParamConditionInfo*>(conditionInfo);
 				Core::JGuiBoolParmConditionUserInfo* condUser = static_cast<Core::JGuiBoolParmConditionUserInfo*>(extraUser);
 
+				Core::JPropertyInfo* boolPropertyInfo = nullptr;
+				Core::JMethodInfo* boolMethodInfo = nullptr;
 				bool value = false;
-				if (condInfo->IsRefMethod())
+
+				if (condUser->IsOwnRefParam())
 				{
-					Core::JMethodInfo* boolMethodInfo = nullptr;
-					if (condUser->IsOwnRefParam())
+					if (condInfo->IsRefMethod())
+					{
 						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), &boolOwner, &boolMethodInfo);
+						if (boolOwner == nullptr || boolMethodInfo == nullptr || boolMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool || boolMethodInfo->ParameterCount() > 0)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolMethodInfo);
+					}
 					else
-						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), &boolOwner, &boolMethodInfo);
-					if (boolOwner == nullptr ||
-						boolMethodInfo == nullptr ||
-						boolMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool ||
-						boolMethodInfo->ParameterCount() > 0)
-						return false;
-					value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolMethodInfo);
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), &boolOwner, &boolMethodInfo);
+						if (boolOwner == nullptr || boolPropertyInfo == nullptr || boolPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolPropertyInfo);
+					}
 				}
 				else
 				{
-					Core::JPropertyInfo* boolPropertyInfo = nullptr;
-					if (condUser->IsOwnRefParam())
-						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), &boolOwner, &boolPropertyInfo);
-					else
-						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), &boolOwner, &boolPropertyInfo);
-					if (boolOwner == nullptr || boolPropertyInfo == nullptr || boolPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
+					if (!PassRefBoolCondition(updateData, condInfo, condUser, value))
 						return false;
-					value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolPropertyInfo);
 				}
- 
+			
 				return condUser->OnTrigger(value);
 			}
 			static bool PassImplBoolCondition(UpdateData& updateData,
 				Core::JGuiExtraFunctionUserInfo* extraUser,
 				Core::JGuiConditionInfo* conditionInfo)
-			{
-				Core::JTypeImplBase* boolOwner = nullptr;
+			{	 
+				Core::JIdentifier* boolOwner = nullptr;
+				Core::JTypeImplBase* boolImplOwner = nullptr;
+
 				Core::JGuiBoolParamConditionInfo* condInfo = static_cast<Core::JGuiBoolParamConditionInfo*>(conditionInfo);
 				Core::JGuiBoolParmConditionUserInfo* condUser = static_cast<Core::JGuiBoolParmConditionUserInfo*>(extraUser);
-				 
+
+				Core::JPropertyInfo* boolPropertyInfo = nullptr;
+				Core::JMethodInfo* boolMethodInfo = nullptr;
+
 				bool value = false; 
-				if (condInfo->IsRefMethod())
+				if (condUser->IsOwnRefParam())
 				{
-					Core::JMethodInfo* boolMethodInfo = nullptr;
-					if (condUser->IsOwnRefParam())
-						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), &boolOwner, &boolMethodInfo);
+					if (condInfo->IsRefMethod())
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), &boolImplOwner, &boolMethodInfo);
+						if (boolImplOwner == nullptr || boolMethodInfo == nullptr || boolMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool || boolMethodInfo->ParameterCount() > 0)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolImplOwner, boolMethodInfo);
+					}
 					else
-						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), &boolOwner, &boolMethodInfo);
-					if (boolOwner == nullptr || 
-						boolMethodInfo == nullptr ||
-						boolMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool ||
-						boolMethodInfo->ParameterCount() > 0)
-						return false;
-					value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolMethodInfo);
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), &boolImplOwner, &boolPropertyInfo);
+						if (boolImplOwner == nullptr || boolPropertyInfo == nullptr || boolPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolImplOwner, boolPropertyInfo);
+					}
 				}
 				else
 				{
-					Core::JPropertyInfo* boolPropertyInfo = nullptr;
-					if (condUser->IsOwnRefParam())
-						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), &boolOwner, &boolPropertyInfo);
-					else
-						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), &boolOwner, &boolPropertyInfo);
-					if (boolOwner == nullptr || boolPropertyInfo == nullptr || boolPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
+					if(!PassRefBoolCondition(updateData, condInfo, condUser, value))
 						return false;
-					value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolPropertyInfo);
 				}
 				return condUser->OnTrigger(value);
+			}
+			static bool PassRefBoolCondition(UpdateData& updateData, 
+				Core::JGuiBoolParamConditionInfo* condInfo,
+				Core::JGuiBoolParmConditionUserInfo* condUser,
+				_Out_ bool& value)
+			{
+				Core::JIdentifier* boolOwner = nullptr;
+				Core::JTypeImplBase* boolImplOwner = nullptr;
+
+				Core::JPropertyInfo* boolPropertyInfo = nullptr;
+				Core::JMethodInfo* boolMethodInfo = nullptr;
+
+				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(condUser->GetRefParamOwnerName());
+				Core::JParameterHint pHint = refPropertyInfo->GetHint();
+				Core::JTypeInfo* refTypeInfo = _JReflectionInfo::Instance().GetTypeInfo(pHint.valueTypeFullName);
+
+				if (refTypeInfo != nullptr && refTypeInfo->HasImplTypeInfo())
+				{
+					if (condInfo->IsRefMethod())
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), refPropertyInfo, &boolImplOwner, &boolMethodInfo);
+						if (boolImplOwner == nullptr || boolMethodInfo == nullptr || boolMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool || boolMethodInfo->ParameterCount() > 0)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolMethodInfo);
+					}
+					else
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), refPropertyInfo, &boolImplOwner, &boolPropertyInfo);
+						if (boolImplOwner == nullptr || boolPropertyInfo == nullptr || boolPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolImplOwner, boolPropertyInfo);
+					}
+				}
+				else
+				{
+					if (condInfo->IsRefMethod())
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), &boolOwner, &boolMethodInfo);
+						if (boolOwner == nullptr || boolMethodInfo == nullptr || boolMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool || boolMethodInfo->ParameterCount() > 0)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolMethodInfo);
+					}
+					else
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), &boolOwner, &boolPropertyInfo);
+						if (boolOwner == nullptr || boolPropertyInfo == nullptr || boolPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolPropertyInfo);
+					}
+				}
+				return true;
 			}
 			static bool PassEnumCondition(UpdateData& updateData,
 				Core::JGuiExtraFunctionUserInfo* extraUser,
@@ -659,10 +770,13 @@ namespace JinEngine
 				Core::JGuiEnumParamConditionInfo* condInfo = static_cast<Core::JGuiEnumParamConditionInfo*>(conditionInfo);
 				Core::JGuiEnumParamConditionUserInfoInterface* condUser = static_cast<Core::JGuiEnumParamConditionUserInfoInterface*>(extraUser);
 				
+				Core::JEnum value = 0;
 				if (condUser->IsOwnRefParam())
 					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), &enumOwner, &enumPropertyInfo);
 				else
+				{
 					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), condUser->GetRefParamOwnerName(), &enumOwner, &enumPropertyInfo);
+				}
 				
 				if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
 					return false;
@@ -679,15 +793,51 @@ namespace JinEngine
 				Core::JGuiEnumParamConditionInfo* condInfo = static_cast<Core::JGuiEnumParamConditionInfo*>(conditionInfo);
 				Core::JGuiEnumParamConditionUserInfoInterface* condUser = static_cast<Core::JGuiEnumParamConditionUserInfoInterface*>(extraUser);
 				
+				Core::JEnum value = 0;
 				if (condUser->IsOwnRefParam())
+				{
 					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), &enumOwner, &enumPropertyInfo);
+					if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+						return false;
+					value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo);
+				}
 				else
+				{
+					if (!PassRefEnumCondition(updateData, condInfo, condUser, value))
+						return false;
+				}
+				return condUser->OnTrigger(value);
+			}
+			static bool PassRefEnumCondition(UpdateData& updateData,
+				Core::JGuiEnumParamConditionInfo* condInfo,
+				Core::JGuiEnumParamConditionUserInfoInterface* condUser,
+				_Out_ Core::JEnum& value)
+			{
+				Core::JIdentifier* enumOwner = nullptr;
+				Core::JTypeImplBase* enumImplOwner = nullptr;
+
+				Core::JPropertyInfo* enumPropertyInfo = nullptr;
+				Core::JMethodInfo* enumMethodInfo = nullptr;
+
+				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(condUser->GetRefParamOwnerName());
+				Core::JParameterHint pHint = refPropertyInfo->GetHint();
+				Core::JTypeInfo* refTypeInfo = _JReflectionInfo::Instance().GetTypeInfo(pHint.valueTypeFullName);
+
+				if (refTypeInfo != nullptr && refTypeInfo->HasImplTypeInfo())
+				{
+					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), condUser->GetRefParamOwnerName(), refPropertyInfo, &enumImplOwner, &enumPropertyInfo);
+					if (enumImplOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+						return false;
+					value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumImplOwner, enumPropertyInfo);
+				}
+				else
+				{
 					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), condUser->GetRefParamOwnerName(), &enumOwner, &enumPropertyInfo);
-
-				if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
-					return false;
-
-				return condUser->OnTrigger(JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo));
+					if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+						return false;
+					value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo);
+				}
+				return true;
 			}
 		};
 
@@ -1003,7 +1153,7 @@ namespace JinEngine
 							sliderWidth -= (textWidth - sliderPosX);
 						JGui::SetCursorPosX(sliderPosX);
 						JGui::SetNextItemWidth(sliderWidth);
-						JGui::SliderFloat("##GuiSelectorSlider" + uniqueLabel, &sizeFactor, sizeMin, sizeMax, "", J_GUI_SLIDER_FLAG_ALWAYS_CLAMP);
+						JGui::SliderFloat("##GuiSelectorSlider" + uniqueLabel, &sizeFactor, sizeMin, sizeMax, J_GUI_SLIDER_FLAG_ALWAYS_CLAMP);
 						if (JGui::IsLastItemActivated() || JGui::IsLastItemHovered())
 							JGui::Tooltip(sizeFactor, 3);
 
@@ -1286,7 +1436,10 @@ namespace JinEngine
 					{
 						JUserPtr<JRenderItem> rItem;
 						rItem.ConnnectChild(updateData.obj);
-						JGui::Text(JCUtil::WstrToU8Str(rItem->GetMesh()->GetSubMeshName(i)));
+
+						JUserPtr<JMeshGeometry> mesh = rItem->GetMesh();
+						if(mesh != nullptr)
+							JGui::Text(JCUtil::WstrToU8Str(mesh->GetSubMeshName(i)));
 					}
 
 					if constexpr (std::is_base_of_v<JObject, ValueType>)
@@ -1378,13 +1531,21 @@ namespace JinEngine
 			void Initialize(UpdateData& updateData, UserData* userData)final {}
 			void Update(UpdateData& updateData, UserData* userData)final
 			{
-				if (!IsConveribleParam(updateData.handleBase->GetFieldHint()))
+				Core::JParameterHint hint = updateData.handleBase->GetFieldHint();
+				if (!IsConveribleParam(hint))
 					return;
 
 				value = GetValue<bool>(updateData);
 				TrySameLine(userData);
 				if (JGui::CheckBox(GetDisplayName("GuiCheckbox" + MakeUniqueLabel(updateData), updateData, userData), value))
-					RequestSetValue<bool>(updateData, userData, value);
+				{
+					if (hint.jDataEnum == Core::J_PARAMETER_TYPE::Int)
+						RequestSetValue<int>(updateData, userData, value);
+					else if (hint.jDataEnum == Core::J_PARAMETER_TYPE::Float)
+						RequestSetValue<float>(updateData, userData, value);
+					else
+						RequestSetValue<bool>(updateData, userData, value);
+				}
 			}
 		public:
 			static bool IsConveribleParam(const Core::JParameterHint hint)
@@ -1403,6 +1564,8 @@ namespace JinEngine
 			T maxValue;
 			T value;
 		private:
+			uint floatDigit = 3;	//floating digit
+		private:
 			bool isSupportInput = false;
 			bool isVertical = false;
 		private:
@@ -1416,6 +1579,7 @@ namespace JinEngine
 				maxValue = static_cast<T>(sliderInfo->GetMaxValue());
 				isSupportInput = sliderInfo->IsSupportInput();
 				isVertical = sliderInfo->IsVertical();
+				floatDigit = sliderInfo->GetFloatDigit();
 			}
 			void Update(UpdateData& updateData, UserData* userData)final
 			{
@@ -1432,7 +1596,7 @@ namespace JinEngine
 					}
 					else
 					{
-						if (JGui::InputFloat("##GuiSliderFloatInput" + MakeUniqueLabel(updateData), &value, 0, "%.3f"))
+						if (JGui::InputFloat("##GuiSliderFloatInput" + MakeUniqueLabel(updateData), &value, 0, floatDigit))
 							RequestSetValue<T>(updateData, userData, value);
 					}
 					JGui::SameLine();
@@ -1443,12 +1607,12 @@ namespace JinEngine
 					JVector2<float> vSliderSize{ JGui::GetClientWindowSize().x * 0.01f, JGui::GetClientWindowSize().y * 0.075f };
 					if constexpr (std::is_integral_v<T>)
 					{
-						if (JGui::VSliderInt("##GuiIntVSlider" + MakeUniqueLabel(updateData), vSliderSize, &value, minValue, maxValue, "", J_GUI_SLIDER_FLAG_ALWAYS_CLAMP))
+						if (JGui::VSliderInt("##GuiIntVSlider" + MakeUniqueLabel(updateData), vSliderSize, &value, minValue, maxValue, J_GUI_SLIDER_FLAG_ALWAYS_CLAMP))
 							RequestSetValue<T>(updateData, userData, value);
 					}
 					else
 					{
-						if (JGui::VSliderFloat("##GuiFloatVSlider" + MakeUniqueLabel(updateData), vSliderSize, &value, minValue, maxValue, "", J_GUI_SLIDER_FLAG_ALWAYS_CLAMP))
+						if (JGui::VSliderFloat("##GuiFloatVSlider" + MakeUniqueLabel(updateData), vSliderSize, &value, minValue, maxValue, isSupportInput ? 0 : floatDigit, J_GUI_SLIDER_FLAG_ALWAYS_CLAMP))
 							RequestSetValue<T>(updateData, userData, value);
 					}
 				}
@@ -1457,18 +1621,18 @@ namespace JinEngine
 					JGui::SetNextItemWidth(JGui::GetSliderWidth());
 					if constexpr (std::is_integral_v<T>)
 					{
-						if (JGui::SliderInt("##GuiIntSlider" + MakeUniqueLabel(updateData), &value, minValue, maxValue, "", J_GUI_SLIDER_FLAG_ALWAYS_CLAMP))
+						if (JGui::SliderInt("##GuiIntSlider" + MakeUniqueLabel(updateData), &value, minValue, maxValue, J_GUI_SLIDER_FLAG_ALWAYS_CLAMP))
 							RequestSetValue<T>(updateData, userData, value);
 					}
 					else
 					{
-						if (JGui::SliderFloat("##GuiFloatSlider" + MakeUniqueLabel(updateData), &value, minValue, maxValue, "", J_GUI_SLIDER_FLAG_ALWAYS_CLAMP))
+						if (JGui::SliderFloat("##GuiFloatSlider" + MakeUniqueLabel(updateData), &value, minValue, maxValue, isSupportInput ? 0 : floatDigit, J_GUI_SLIDER_FLAG_ALWAYS_CLAMP))
 							RequestSetValue<T>(updateData, userData, value);
 					}
 				}
 
 				if (JGui::IsLastItemActivated() || JGui::IsLastItemHovered())
-					JGui::Tooltip(value, 3);
+					JGui::Tooltip(value, floatDigit);
 			}
 		};
 		//XMFLOAT4, JVector4, XMFLOAT3, JVector3
@@ -1515,7 +1679,7 @@ namespace JinEngine
 						JVector3F colorV3 = color;
 						if (JGui::ColorPicker(("##GuiColorPicker" + MakeUniqueLabel(updateData)), colorV3, flag))
 						{
-							color = colorV3.ToXmF();
+							color = colorV3.ToSimilar<DirectX::XMFLOAT3>();
 							if constexpr (std::is_same_v<T, DirectX::XMFLOAT3>)
 								RequestSetValue<T>(updateData, userData, color);
 						}
@@ -1525,7 +1689,7 @@ namespace JinEngine
 						JVector4F colorV4 = color;
 						if (JGui::ColorPicker(("##GuiColorPicker" + MakeUniqueLabel(updateData)), colorV4, flag))
 						{
-							color = colorV4.ToXmF();
+							color = colorV4.ToSimilar<DirectX::XMFLOAT4>();
 							if constexpr (std::is_same_v<T, DirectX::XMFLOAT4>)
 								RequestSetValue<T>(updateData, userData, color);
 						}
@@ -1654,30 +1818,144 @@ namespace JinEngine
 				Core::JEnumInfo* enumInfo, 
 				Core::JEnum value)
 			{
-				std::string displayCmd = guiInfo->GetDisplayCommand();
-				if (displayCmd.empty())
-					return enumInfo->ElementName(value);
-				else
+				const std::vector<Core::JCommandToken>& token = guiInfo->GetToken();
+				const uint count = (uint)token.size();
+				bool canApplyCmd = true;
+				std::string cmdType;
+
+				std::string contents;
+				Core::JEnum condLeft = 0;	bool findCondLeft = false;
+				Core::JEnum condRight = 0;	bool findCondRight = false;
+				Core::JCommandToken operatorToken;
+				for (uint i = 0; i < count; ++i)
 				{
-					int keywordIndex = displayCmd.find_first_of("-");
-					if(keywordIndex == -1)
-						return enumInfo->ElementName(value);
+					if (token[i].kind == Core::J_COMMAND_KIND::SUBTRACT && i + 2 < count)
+					{
+						cmdType = token[i + 1].str;
+						i += 2;
+					}
 
-					int contentsIndex = displayCmd.find_first_of(" ", keywordIndex + 1);
-					if (contentsIndex == -1)
-						return enumInfo->ElementName(value);
+					if (!cmdType.empty())
+					{
+						const bool isAdd = cmdType == "a";
+						const bool isCond = cmdType == "c";
+						if (!isAdd && !isCond)
+							continue;
+						
+						bool onKeyword = false;
+						if (isAdd)
+						{		 
+							for (;i < count; ++i)
+							{
+								if (token[i].kind == Core::J_COMMAND_KIND::SEMICOLON)
+									break;
 
-					std::string enumName = enumInfo->ElementName(value);
-					std::string keyword = displayCmd.substr(keywordIndex + 1, 1);
-					std::string contents = displayCmd.substr(contentsIndex + 1);
-					 
-					if (keyword == "a")
-						return enumName + JCUtil::EraseChar(JCUtil::ChangeWord(contents, "v", std::to_string(value)), '\"');
-					else
-						return enumName;
+								if (token[i].kind == Core::J_COMMAND_KIND::LEFT_BRACE)
+								{
+									onKeyword = true;
+									continue;
+								}
+								else if (token[i].kind == Core::J_COMMAND_KIND::RIGHT_BRACE)
+								{
+									onKeyword = false;
+									continue;
+								}
+
+								if (onKeyword)
+								{
+									if (token[i].str == "v")
+										contents += std::to_string(value);
+								}
+								else
+									contents += token[i].str;
+							}
+						}
+						else if(isCond)
+						{
+							condLeft = condRight = 0;	
+							findCondLeft = findCondRight = false;
+
+							for (; i < count; ++i)
+							{
+								if (token[i].kind == Core::J_COMMAND_KIND::SEMICOLON)
+									break;
+
+								if (token[i].kind == Core::J_COMMAND_KIND::LEFT_BRACE)
+								{
+									onKeyword = true;
+									continue;
+								}
+								else if (token[i].kind == Core::J_COMMAND_KIND::RIGHT_BRACE)
+								{
+									onKeyword = false;
+									continue;
+								}
+
+								if (onKeyword)
+								{
+									if (token[i].str == "v")
+									{
+										if (!findCondLeft)
+										{
+											condLeft = value;
+											findCondLeft = true;
+										}
+										else if (!findCondRight)
+										{
+											condRight = value;
+											findCondRight = true;
+										} 
+									}
+								}
+								else if (token[i].kind == Core::J_COMMAND_KIND::EQUAL)
+									operatorToken = token[i];
+								else if (token[i].kind == Core::J_COMMAND_KIND::NOT_EQUAL)
+									operatorToken = token[i];
+								else if (token[i].kind == Core::J_COMMAND_KIND::LESS_THAN)
+									operatorToken = token[i];
+								else if (token[i].kind == Core::J_COMMAND_KIND::GREATER_THAN)
+									operatorToken = token[i];
+								else if (token[i].kind == Core::J_COMMAND_KIND::LESS_OR_EQUAL)
+									operatorToken = token[i];
+								else if (token[i].kind == Core::J_COMMAND_KIND::GREATER_OR_EQUAL)
+									operatorToken = token[i];
+								else if (token[i].kind == Core::J_COMMAND_KIND::NUMBER_LITERAL)
+								{
+									if (!findCondLeft)
+									{
+										condLeft = JCUtil::StringToInt(token[i].str);
+										findCondLeft = true;
+									}
+									else if (!findCondRight)
+									{
+										condRight = JCUtil::StringToInt(token[i].str);
+										findCondRight = true;
+									}
+								} 
+							}
+						}
+					}
 				}
-				// enumInfo->ElementName(enumValue).c_str()
-				//std::string displayCommand = info->Get
+
+				if (operatorToken.kind != Core::J_COMMAND_KIND::UNKNOWN)
+				{
+					if (operatorToken.kind == Core::J_COMMAND_KIND::EQUAL)
+						canApplyCmd = (condLeft == condRight);
+					else if (operatorToken.kind == Core::J_COMMAND_KIND::NOT_EQUAL)
+						canApplyCmd = (condLeft != condRight);
+					else if (operatorToken.kind == Core::J_COMMAND_KIND::LESS_THAN)
+						canApplyCmd = (condLeft < condRight);
+					else if (operatorToken.kind == Core::J_COMMAND_KIND::GREATER_THAN)
+						canApplyCmd = (condLeft > condRight);
+					else if (operatorToken.kind == Core::J_COMMAND_KIND::LESS_OR_EQUAL)
+						canApplyCmd = (condLeft <= condRight);
+					else if (operatorToken.kind == Core::J_COMMAND_KIND::GREATER_OR_EQUAL)
+						canApplyCmd = (condLeft >= condRight);
+				}
+				if (canApplyCmd)
+					return contents;
+				else
+					return enumInfo->ElementName(value);			 
 			}
 		};
 		//list is array  type
@@ -1723,7 +2001,8 @@ namespace JinEngine
 					const J_GUI_TABLE_COLUMN_FLAG_ columnDefaultFlag = J_GUI_TABLE_COLUMN_FLAG_WIDTH_STRETCH;
 
 					Core::JTypeInfo* typeInfo = &ValueType::StaticTypeInfo();
-					Core::JTypeInfoGuiOption* option = typeInfo->GetOption();
+					Core::JTypeInfoGuiOption* option = typeInfo->TryGetImplOption(); 
+
 					uint rowMax = containerCount;
 					uint columnMax = option->GetGuiWidgetInfoHandleCount();
 
@@ -2063,11 +2342,7 @@ namespace JinEngine
 				if (obj == nullptr)
 					return;
 
-				Core::JTypeInfoGuiOption* typeOption = nullptr;
-				if (typeInfo->HasImplTypeInfo())
-					typeOption = typeInfo->GetImplTypeInfo()->GetOption();
-				else
-					typeOption = typeInfo->GetOption();
+				Core::JTypeInfoGuiOption* typeOption = typeInfo->TryGetImplOption(); 
 
 				const bool isChildToParent = userData->allowDisplayParent && Core::HasSQValueEnum(typeOption->GetGuiWidgetFlag(), Core::J_GUI_OPTION_DISPLAY_PARENT);
 				const bool isParentToChild = userData->allowDisplayParent && Core::HasSQValueEnum(typeOption->GetGuiWidgetFlag(), Core::J_GUI_OPTION_DISPLAY_PARENT_TO_CHILD);
@@ -2100,11 +2375,7 @@ namespace JinEngine
 			}
 			static void SettingUpdateData(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo, UserData* userData)
 			{
-				Core::JTypeInfoGuiOption* typeOption = nullptr;
-				if (typeInfo->HasImplTypeInfo())
-					typeOption = typeInfo->GetImplTypeInfo()->GetOption();
-				else
-					typeOption = typeInfo->GetOption();
+				Core::JTypeInfoGuiOption* typeOption = typeInfo->TryGetImplOption();
 
 				const uint widgetHandleCount = typeOption->GetGuiWidgetInfoHandleCount();
 				for (uint i = 0; i < widgetHandleCount; ++i)
@@ -2143,7 +2414,7 @@ namespace JinEngine
 				}
 
 				if (widgetHandle == userData->guiWidgetHandleMap.end())
-					return;
+					return; 
 
 				auto condHandle = MakeExtraConditionHandle(updateData.GetWidgetInfo());
 				bool failCondition = condHandle != nullptr && !condHandle->PassCondition(updateData);

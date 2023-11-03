@@ -64,7 +64,7 @@ namespace JinEngine
 		}
 		std::wstring GetCacheFilePath()const noexcept
 		{
-			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(resource->GetGuid()) + Core::JFileConstant::GetCacheFileFormat();
+			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(resource->GetGuid()) + Core::JFileConstant::GetCacheFileFormatW();
 		}
 		JUserPtr<JDirectory> GetOwnerDirectory()const noexcept
 		{
@@ -135,15 +135,15 @@ namespace JinEngine
 		}
 		std::wstring GetPath()const noexcept
 		{
-			return ownerDir->GetPath() + L"\\" + name + Core::JFileConstant::GetFileFormat();
+			return ownerDir->GetPath() + L"\\" + name + Core::JFileConstant::GetFileFormatW();
 		}
 		std::wstring GetMetaFilePath()const noexcept
 		{
-			return ownerDir->GetPath() + L"\\" + name + Core::JFileConstant::GetMetaFileFormat();
+			return ownerDir->GetPath() + L"\\" + name + Core::JFileConstant::GetMetaFileFormatW();
 		}
 		std::wstring GetCacheFilePath()const noexcept
 		{
-			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(rGuid) + Core::JFileConstant::GetCacheFileFormat();
+			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(rGuid) + Core::JFileConstant::GetCacheFileFormatW();
 		}
 		JUserPtr<JDirectory> GetOwnerDirectory()const noexcept
 		{

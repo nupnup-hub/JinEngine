@@ -101,6 +101,9 @@ namespace JinEngine
 		//camera->SetOrthoViewSize(objRadius * 1.325f, objRadius * 1.325f);
 		camera->SetAspect(1.0f);
 		camera->GetTransform()->LookAt(objCenter);
+
+		auto light = scene->GetDirectionalLight();
+		light->GetOwner()->GetTransform()->SetRotation(JVector3F(90, 0, 0));
 	}
 	void JPreviewScene::Adjust3DFixedCamera(_In_ const JVector3<float>& objCenter,
 		const float objRadius,
@@ -111,7 +114,10 @@ namespace JinEngine
 		camNewPos.y += objRadius + additionalPos.y;
 		camNewPos.z += objRadius + additionalPos.z;
 		camera->GetTransform()->SetPosition(camNewPos); 
-		camera->GetTransform()->LookAt(objCenter);
+		camera->GetTransform()->LookAt(objCenter);		 
+
+		auto light = scene->GetDirectionalLight();
+		light->GetOwner()->GetTransform()->SetRotation(JVector3F(25, 0, 0));
 	}
 	void JPreviewScene::Adjust3DNonFixedCamera(_In_ const JVector3<float>& objCenter,
 		const float objRadius,
@@ -123,5 +129,8 @@ namespace JinEngine
 		camNewPos.z += objRadius + additionalPos.z;
 		camera->GetTransform()->SetPosition(camNewPos); 
 		camera->GetTransform()->LookAt(objCenter);
+
+		auto light = scene->GetDirectionalLight();
+		light->GetOwner()->GetTransform()->SetRotation(JVector3F(25, 0, 0));
 	}
 }

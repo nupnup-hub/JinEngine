@@ -84,6 +84,7 @@ namespace JinEngine
 			return 0;
 		}
 	public:
+		//animation clip은 import시 animation과 같은 skeleton hash를 보유한 skeletonAsset(Skinned mesh import시 생성되는)을 검색해서 참조한다.
 		void SetClipSkeletonAsset(JUserPtr<JSkeletonAsset> newClipSkeletonAsset)noexcept
 		{
 			if (thisPointer->IsActivated())
@@ -151,10 +152,8 @@ namespace JinEngine
 			if (!thisPointer->IsSameSkeleton(updateData->modelSkeleton.Get()))
 			{
 				if (updateData->modelSkeleton->HasAvatar() && clipSkeletonAsset->HasAvatar())
-				{
 					UpdateUsingAvatar(updateData, layerNumber, updateNumber);
-					return;
-				}
+				return;
 			}
 			float localTime = animationTime.timePos - animationTime.startTime;
 			JSkeleton* tarSkeleton = clipSkeletonAsset->GetSkeleton().Get();
@@ -377,7 +376,7 @@ namespace JinEngine
 			}*/
 		} 
 	public:
-		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
 			if (iden == thisPointer->GetGuid())
 				return;
@@ -413,61 +412,57 @@ namespace JinEngine
 	public:
 		static std::unique_ptr<Core::JAnimationData> ReadAssetData(const std::wstring& path)
 		{
-			std::wifstream stream;
-			stream.open(path, std::ios::in | std::ios::binary);
-			if (!stream.is_open())
-				return std::unique_ptr<Core::JAnimationData>{};
-
+			JFileIOTool tool;
+			if (!tool.Begin(path, JFileIOTool::TYPE::INPUT_STREAM))
+				return nullptr;
+ 
 			std::unique_ptr<Core::JAnimationData> res = std::make_unique<Core::JAnimationData>();
-
 			uint sampleCount;
-			JObjectFileIOHelper::LoadAtomicData(stream, sampleCount);
+			JObjectFileIOHelper::LoadAtomicData(tool, sampleCount, "SampleCount:"); 
 			res->animationSample.resize(sampleCount);
 			for (uint i = 0; i < sampleCount; ++i)
 			{
-				uint jointCount;
-				JObjectFileIOHelper::LoadAtomicData(stream, jointCount);
+				uint jointCount = 0;
+				JObjectFileIOHelper::LoadAtomicData(tool, jointCount, "JointPoseCount:");
 				res->animationSample[i].jointPose.resize(jointCount);
 				for (uint j = 0; j < jointCount; ++j)
 				{
-					JObjectFileIOHelper::LoadVector4(stream, res->animationSample[i].jointPose[j].rotationQuat);
-					JObjectFileIOHelper::LoadVector3(stream, res->animationSample[i].jointPose[j].translation);
-					JObjectFileIOHelper::LoadVector3(stream, res->animationSample[i].jointPose[j].scale);
-					JObjectFileIOHelper::LoadAtomicData(stream, res->animationSample[i].jointPose[j].stTime);
+					JObjectFileIOHelper::LoadVector4(tool, res->animationSample[i].jointPose[j].rotationQuat, "Quaternion:");
+					JObjectFileIOHelper::LoadVector3(tool, res->animationSample[i].jointPose[j].translation, "translation:");
+					JObjectFileIOHelper::LoadVector3(tool, res->animationSample[i].jointPose[j].scale, "scale:");
+					JObjectFileIOHelper::LoadAtomicData(tool, res->animationSample[i].jointPose[j].stTime, "StTime:");
 				}
 			}
-			JObjectFileIOHelper::LoadAtomicData(stream, res->skeletonHash);
-			JObjectFileIOHelper::LoadAtomicData(stream, res->length);
-			JObjectFileIOHelper::LoadAtomicData(stream, res->framePerSecond);
-			stream.close();
+			JObjectFileIOHelper::LoadAtomicData(tool, res->skeletonHash, "OriSkeletonHash:");
+			JObjectFileIOHelper::LoadAtomicData(tool, res->length, "ClipLength");
+			JObjectFileIOHelper::LoadAtomicData(tool, res->framePerSecond, "ClipFramePerSecond");
+			tool.Close();
 			return std::move(res);
 		}
 		bool WriteAssetData()
 		{
-			std::wofstream stream;
-			stream.open(thisPointer->GetPath(), std::ios::out | std::ios::binary);
-			if (!stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(thisPointer->GetPath(), JFileIOTool::TYPE::OUTPUT_STREAM))
 				return false;
-
-			JObjectFileIOHelper::StoreAtomicData(stream, L"SampleCount:", animationSample.size());
+ 
+			JObjectFileIOHelper::StoreAtomicData(tool, animationSample.size(), "SampleCount:");
 			const uint sampleCount = (uint)animationSample.size();
 			for (uint i = 0; i < sampleCount; ++i)
 			{
-				JObjectFileIOHelper::StoreAtomicData(stream, L"JointPoseCount:", animationSample[i].jointPose.size());
+				JObjectFileIOHelper::StoreAtomicData(tool, animationSample[i].jointPose.size(), "JointPoseCount:");
 				const uint jointCount = (uint)animationSample[i].jointPose.size();
 				for (uint j = 0; j < jointCount; ++j)
 				{
-					JObjectFileIOHelper::StoreVector4(stream, L"Quaternion:", animationSample[i].jointPose[j].rotationQuat);
-					JObjectFileIOHelper::StoreVector3(stream, L"translation:", animationSample[i].jointPose[j].translation);
-					JObjectFileIOHelper::StoreVector3(stream, L"scale:", animationSample[i].jointPose[j].scale);
-					JObjectFileIOHelper::StoreAtomicData(stream, L"StTime:", animationSample[i].jointPose[j].stTime);
+					JObjectFileIOHelper::StoreVector4(tool, animationSample[i].jointPose[j].rotationQuat, "Quaternion:");
+					JObjectFileIOHelper::StoreVector3(tool, animationSample[i].jointPose[j].translation, "translation:");
+					JObjectFileIOHelper::StoreVector3(tool, animationSample[i].jointPose[j].scale, "scale:");
+					JObjectFileIOHelper::StoreAtomicData(tool, animationSample[i].jointPose[j].stTime, "StTime:");
 				}
 			}
-
-			JObjectFileIOHelper::StoreAtomicData(stream, L"OriSkeletonHash:", skeletonHash);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"ClipLength", length);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"ClipFramePerSecond", framePerSecond);
-			stream.close();
+			JObjectFileIOHelper::StoreAtomicData(tool, skeletonHash, "OriSkeletonHash:");
+			JObjectFileIOHelper::StoreAtomicData(tool, length, "ClipLength");
+			JObjectFileIOHelper::StoreAtomicData(tool, framePerSecond, "ClipFramePerSecond");
+			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			return true;
 		}
 		bool ImportAnimationClip(std::unique_ptr<Core::JAnimationData>&& aniData)
@@ -481,8 +476,7 @@ namespace JinEngine
 			bool(*ptr)(JSkeletonAsset*, size_t) = [](JSkeletonAsset* skel, size_t hash){return skel->GetSkeletonHash() == hash;};			 
 		    auto userPtr = _JResourceManager::Instance().GetByCondition(ptr, false, std::move(skeletonHash));
 			if (userPtr != nullptr)
-				SetClipSkeletonAsset(userPtr);
-			
+				SetClipSkeletonAsset(userPtr);		
 			return true;
 		}
 	public:
@@ -762,21 +756,19 @@ namespace JinEngine
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JAnimationClip::LoadMetaData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
-
-		std::wifstream stream;
-		stream.open(path, std::ios::in | std::ios::binary);
-		if (!stream.is_open())
+		 
+		JFileIOTool tool;
+		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
+ 
 		auto loadMetaData = static_cast<JAnimationClip::LoadMetaData*>(data);
-		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		loadMetaData->clipSkeletonAsset = JObjectFileIOHelper::_LoadHasIden<JSkeletonAsset>(stream);
-		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->updateFramePerSecond);
-		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->isLooping);
-
-		stream.close();
+		loadMetaData->clipSkeletonAsset = JObjectFileIOHelper::_LoadHasIden<JSkeletonAsset>(tool, "SkeletonAsset");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->updateFramePerSecond, "updateFramePerSecond");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->isLooping, "IsLooping");
+		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
@@ -786,19 +778,20 @@ namespace JinEngine
 
 		auto storeData = static_cast<JAnimationClip::StoreData*>(data);
 		JUserPtr<JAnimationClip> clip;
-		clip.ConnnectChild(storeData->obj);
-	 
-		std::wofstream stream;
-		stream.open(clip->GetMetaFilePath(), std::ios::out | std::ios::binary);
-		if (!stream.is_open())
+		clip.ConnnectChild(storeData->obj);	 
+
+		JFileIOTool tool;
+		if (!tool.Begin(clip->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
-		JObjectFileIOHelper::_StoreHasIden(stream, clip->impl->clipSkeletonAsset.Get());
-		JObjectFileIOHelper::StoreAtomicData(stream, L"updateFramePerSecond", clip->impl->updateFramePerSecond);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"IsLooping", clip->impl->isLooping);
+		JObjectFileIOHelper::_StoreHasIden(tool, clip->impl->clipSkeletonAsset.Get(), "SkeletonAsset");
+		JObjectFileIOHelper::StoreAtomicData(tool, clip->impl->updateFramePerSecond, "updateFramePerSecond");
+		JObjectFileIOHelper::StoreAtomicData(tool, clip->impl->isLooping, "IsLooping");
+		
+		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

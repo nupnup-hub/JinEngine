@@ -34,7 +34,7 @@ namespace JinEngine
 		private:
 			//Gui option
 			std::vector<JOwnerPtr<JGuiWidgetInfoHandleBase>> widgetHandleVec;
-			J_GUI_OPTION_FLAG guiFlag;
+			J_GUI_OPTION_FLAG guiFlag = J_GUI_OPTION_NONE;
 		public:
 			uint GetGuiWidgetInfoHandleCount()const noexcept; 
 			JUserPtr<JGuiWidgetInfoHandleBase> GetGuiWidgetInfoHandle(const uint index)const noexcept;

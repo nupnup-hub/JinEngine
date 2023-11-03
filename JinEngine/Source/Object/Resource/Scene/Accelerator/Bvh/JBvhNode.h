@@ -1,6 +1,5 @@
 #pragma once
-#include"../JAcceleratorNode.h" 
-#include"../../../../../Core/Geometry/JCullingFrustum.h"  
+#include"../JAcceleratorNode.h"   
 #include<unordered_map>
 
 namespace JinEngine
@@ -41,7 +40,7 @@ namespace JinEngine
 		void DestroyDebugGameObject()noexcept;
 		void Clear()noexcept;
 	public:
-		void Culling(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG flag)noexcept;
+		//void Culling(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG flag)noexcept;
 		void Culling(JAcceleratorCullingInfo& info)noexcept;
 		void FindIntersect(JAcceleratorIntersectInfo& info)const noexcept;
 		void FindContain(JAcceleratorContainInfo& info)const noexcept;

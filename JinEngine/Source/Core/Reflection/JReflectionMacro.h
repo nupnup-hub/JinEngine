@@ -230,8 +230,7 @@ namespace JinEngine
 		REGISTER_CLASS_BEHAVIOR_DERIVED_FUNC(typeName, __VA_ARGS__)								\
 
 
-
-#define SEMICOLON ;
+ 
 #define EMPTY_STR ""
 
 		//Parameter
@@ -454,6 +453,9 @@ namespace ReflectionData
 
 #pragma region Create GUI
 
+/*
+Condition ref value type중에서 JTypaBase line 객체들은 rawPtr, userPtr, weakPtr만 ref값으로 허용한다.
+*/
 /**
 * @param std::string tableName
 * @param uint useColumnCount
@@ -508,6 +510,7 @@ namespace ReflectionData
 * @param float maxValue
 * @param bool isSupportInput(option)
 * @param bool isVertical(option)
+* @param uint floatDigit(option default = 3)	
 * @param std::string extraFuntionUserInfo(option)
 */
 #define GUI_SLIDER(minValue, maxValue, ...)	JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiSliderInfo>(minValue, maxValue, __VA_ARGS__)
@@ -528,10 +531,13 @@ namespace ReflectionData
 */
 #define GUI_READONLY_TEXT(...)	JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiReadOnlyTextInfo>(__VA_ARGS__) 
 /**
-* @param std::string enumName
-* @param std::string displayCommand(option) control display enum command: -a = add .. keyword: v = enum value ex) -a v"X"v => display enum value + "X" + enum value
+* @param std::string enumName										
+* @param std::string displayCommand(option) control display enum 
+* @param command: -a = add .. -c condition							     
+* @param keyword: {v} = enum value ; = end of command {} is reserved	 
+* @param ex) -a {v} + X + {v} => display enum value + "X" + enum value;  -c {v} != 0	=> apply other command if enum value != 0,  command마다 ","은 필수
 * @param std::string extraFuntionUserInfo(option)  
-*/
+*/	 
 #define GUI_ENUM_COMBO(enumName, ...) JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiEnumComboBoxInfo>(typeid(enumName).name(), __VA_ARGS__) 
 /** 
 * @param J_GUI_LIST_TYPE listType

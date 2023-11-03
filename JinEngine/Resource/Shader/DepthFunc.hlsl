@@ -34,3 +34,4 @@ float ViewToNdcOZ(const float v, const float near, const float far)
 {
 	return (v - near) / (far - near);
 }
+ 

@@ -5,13 +5,7 @@
 #include"../Core/File/JFileIOResult.h"
 
 namespace JinEngine
-{
-	namespace Editor
-	{
-		class JProjectSelectorHub;
-		class JProjectMainPage;
-	}
-
+{ 
 	//friend class Editor::JProjectMainPage;
 	//friend class Editor::JProjectSelectorHub;
 	class JMain;
@@ -20,9 +14,7 @@ namespace JinEngine
 		class JApplicationProjectInfo;
 		class JApplicationProjectPrivate final
 		{ 
-		public:
-			using LoadProjectF = Core::JFunctor<void>;
-			using StoreProjectF = Core::JFunctor<void>;
+		public: 
 			using SetAppStateF = Core::JFunctor<void, const J_APPLICATION_STATE>;
 		public:
 			class MainAccess
@@ -30,12 +22,10 @@ namespace JinEngine
 			private:
 				friend class JMain;
 			private:
-				static void RegisterFunctor(std::unique_ptr<LoadProjectF>&& loadF, 
-					std::unique_ptr<StoreProjectF>&& storeF,
-					std::unique_ptr<SetAppStateF>&& setStateF);
+				static void RegisterFunctor(std::unique_ptr<SetAppStateF>&& setStateF);
 				static bool Initialize();
 			private:
-				/** Load Project order
+				/** Load Other Project order
 				* 1. BeginLoadOtherProject()	//set trigger
 				* 2. End window proccess		// loop
 				* 3. Begin End Project order
@@ -59,9 +49,7 @@ namespace JinEngine
 			class LifeInterface
 			{
 			private:
-				friend class JMain;
-				friend class Editor::JProjectMainPage;
-				friend class Editor::JProjectSelectorHub;
+				friend class JMain; 
 			private:
 				static std::unique_ptr<JApplicationProjectInfo> MakeProjectInfo(const std::wstring& projectPath)noexcept;
 				static std::unique_ptr<JApplicationProjectInfo> MakeProjectInfo(const std::wstring& projectPath, const std::string& pVersion)noexcept;
@@ -88,16 +76,10 @@ namespace JinEngine
 			class IOInterface
 			{
 			private:
-				friend class JMain;
-				friend class Editor::JProjectMainPage;
-				friend class Editor::JProjectSelectorHub; 
+				friend class JMain; 
 			private:
 				static Core::J_FILE_IO_RESULT StoreProjectVersion(const std::string& pVersion);
 				static Core::J_FILE_IO_RESULT LoadProejctVersion(_Out_ std::string& pVersion);
-			private:
-				//Store & Load project resource
-				static void StoreProject();
-				static void LoadProject();
 			private:
 				//Store & Load project info
 				static void StoreProjectList();

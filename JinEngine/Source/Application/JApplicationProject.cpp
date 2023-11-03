@@ -199,17 +199,13 @@ namespace JinEngine
 				_wremove((JCUtil::GetPathWithOutFormat(ddsPath) + L".jAssetMeta").c_str());
 			}
 		}
-
-		using LoadProjectF = JApplicationProjectPrivate::LoadProjectF;
-		using StoreProjectF = JApplicationProjectPrivate::StoreProjectF;
+		 
 		using SetAppStateF = JApplicationProjectPrivate::SetAppStateF;
 		class JApplicationProjectImpl
 		{
 		public:
 			std::wstring activatedProjectName;
-			std::wstring activatedProjectPath;
-			std::unique_ptr<LoadProjectF> loadProjectF;
-			std::unique_ptr<StoreProjectF> storeProjectF;
+			std::wstring activatedProjectPath; 
 			std::unique_ptr<SetAppStateF> setAppStateF;
 			std::unique_ptr<JApplicationProjectInfo> nextProjectInfo;
 			std::vector<std::unique_ptr<JApplicationProjectInfo>> projectList;
@@ -415,12 +411,8 @@ namespace JinEngine
 				projectList.erase(projectList.begin() + projectIndex);
 			}
 		public:
-			void RegisterFunctor(std::unique_ptr<LoadProjectF>&& newLoadProjectF,
-				std::unique_ptr<StoreProjectF>&& newStoreProjectF,
-				std::unique_ptr<SetAppStateF>&& newSetAppStateF)
-			{
-				loadProjectF = std::move(newLoadProjectF);
-				storeProjectF = std::move(newStoreProjectF);
+			void RegisterFunctor(std::unique_ptr<SetAppStateF>&& newSetAppStateF)
+			{ 
 				setAppStateF = std::move(newSetAppStateF);
 			}
 			bool Initialize()
@@ -459,25 +451,25 @@ namespace JinEngine
 				return isValid;
 			}
 		public:
-			void StoreJTime(std::wofstream& stream, const std::wstring& guide, const Core::JRealTime::JTime& time)
+			void StoreJTime(JFileIOTool& tool, const Core::JRealTime::JTime& time, const std::string& guide)
 			{
-				if (!stream.is_open())
+				if (!tool.CanStore())
 					return;
 
-				JFileIOHelper::StoreJString(stream, guide, L"");
-				JFileIOHelper::StoreAtomicData(stream, L"Year", time.year, false);
-				JFileIOHelper::StoreAtomicData(stream, L"Month", time.month, false);
-				JFileIOHelper::StoreAtomicData(stream, L"Day", time.day, false);
-				JFileIOHelper::StoreAtomicData(stream, L"Hour", time.hour, false);
-				JFileIOHelper::StoreAtomicData(stream, L"Minute", time.minute, false);
-				JFileIOHelper::StoreAtomicData(stream, L"Sec", time.sec);
+				tool.PushMapMember(guide);
+				JFileIOHelper::StoreAtomicData(tool, time.year, "Year");
+				JFileIOHelper::StoreAtomicData(tool, time.month, "Month");
+				JFileIOHelper::StoreAtomicData(tool, time.day, "Day");
+				JFileIOHelper::StoreAtomicData(tool, time.hour, "Hour");
+				JFileIOHelper::StoreAtomicData(tool, time.minute, "Minute");
+				JFileIOHelper::StoreAtomicData(tool, time.sec, "Sec");
+				tool.PopStack();
 			}
-			const Core::JRealTime::JTime LoadJTime(std::wifstream& stream)
+			const Core::JRealTime::JTime LoadJTime(JFileIOTool& tool, const std::string& guide)
 			{
-				if (!stream.is_open())
+				if (!tool.CanLoad())
 					return Core::JRealTime::JTime(0, 0, 0, 0, 0, 0);
-
-				std::wstring guide;
+				 
 				int year = 0;
 				int month = 0;
 				int day = 0;
@@ -485,111 +477,108 @@ namespace JinEngine
 				int minute = 0;
 				int sec = 0;
 
-				JFileIOHelper::LoadJString(stream, guide);
-				JFileIOHelper::LoadAtomicData(stream, year);
-				JFileIOHelper::LoadAtomicData(stream, month);
-				JFileIOHelper::LoadAtomicData(stream, day);
-				JFileIOHelper::LoadAtomicData(stream, hour);
-				JFileIOHelper::LoadAtomicData(stream, minute);
-				JFileIOHelper::LoadAtomicData(stream, sec);
+				tool.PushExistStack(guide); 
+				JFileIOHelper::LoadAtomicData(tool, year, "Year");
+				JFileIOHelper::LoadAtomicData(tool, month, "Month");
+				JFileIOHelper::LoadAtomicData(tool, day, "Day");
+				JFileIOHelper::LoadAtomicData(tool, hour, "Hour");
+				JFileIOHelper::LoadAtomicData(tool, minute, "Minute");
+				JFileIOHelper::LoadAtomicData(tool, sec, "Sec");
 
+				tool.PopStack();
 				return Core::JRealTime::JTime(year, month, day, hour, minute, sec);
-			}
-			Core::J_FILE_IO_RESULT StoreProjectVersion(const std::string& pVersion)
-			{
-				std::wofstream stream;
-				stream.open(ProjectVersionFilePath().c_str(), std::ios::out | std::ios::binary);
-				if (stream.is_open())
-				{
-					JFileIOHelper::StoreJString(stream, L"Symbol:", ENGINE_PROJECT_SYMBOL);
-					JFileIOHelper::StoreJString(stream, L"Version:", JCUtil::StrToWstr(pVersion));
-					stream.clear();
-					return Core::J_FILE_IO_RESULT::SUCCESS;
-				}
-				else
-					return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 			}
 			Core::J_FILE_IO_RESULT LoadProejctVersion(_Out_ std::string& pVersion)
 			{
-				std::wifstream stream;
-				stream.open(ProjectVersionFilePath().c_str(), std::ios::in | std::ios::binary);
-				if (stream.is_open() && JFileIOHelper::SkipLine(stream, ENGINE_PROJECT_SYMBOL))
-				{
-					std::wstring version;
-					JFileIOHelper::LoadJString(stream, version);
-					stream.clear();
-					pVersion = JCUtil::WstrToU8Str(version);
-					return Core::J_FILE_IO_RESULT::SUCCESS;
-				}
-				else
+				JFileIOTool tool;
+				if (!tool.Begin(ProjectVersionFilePath(), JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 					return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-			}
-			void StoreProject()
-			{
-				(*storeProjectF)();
-			}
-			void LoadProject()
-			{
-				(*loadProjectF)();
-			}
-			void StoreProjectList()
-			{
-				//std::locale::global(std::locale("Korean"));
-				std::wstring dirPath = JApplicationEngine::ProjectListFilePath();
-				std::wofstream stream;
-				stream.open(dirPath, std::ios::out | std::ios::binary);
+				  
+				std::wstring version;
+				Core::J_FILE_IO_RESULT result = JFileIOHelper::LoadJString(tool, version, "Version:");
+				if (result != Core::J_FILE_IO_RESULT::SUCCESS)
+					return result;
 
-				JFileIOHelper::StoreAtomicData(stream, L"ProjectCount:", (uint)projectList.size());
-				for (const auto& data : projectList)
-				{
-					JFileIOHelper::StoreAtomicData(stream, L"Guid:", data->GetGuid());
-					JFileIOHelper::StoreJString(stream, L"Name:", data->GetName());
-					JFileIOHelper::StoreJString(stream, L"Path:", data->GetPath());
-					JFileIOHelper::StoreJString(stream, L"Version:", data->GetVersion());
+				pVersion = JCUtil::WstrToU8Str(version);
+				tool.Close();
+				return result;
+			}
+			Core::J_FILE_IO_RESULT StoreProjectVersion(const std::string& pVersion)
+			{
+				JFileIOTool tool;
+				if (!tool.Begin(ProjectVersionFilePath(), JFileIOTool::TYPE::JSON))
+					return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-					StoreJTime(stream, L"CreatedTime:", data->GetCreatedTime());
-					StoreJTime(stream, L"LastUpdatedTime:", data->GetLastUpdateTime());
-					JFileIOHelper::InputSpace(stream, 1);
-				}
-				stream.close();
+				JFileIOHelper::StoreJString(tool, ENGINE_PROJECT_SYMBOL, "Symbol:");
+				JFileIOHelper::StoreJString(tool, JCUtil::StrToWstr(pVersion), "Version:");
+				tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
+
+				return Core::J_FILE_IO_RESULT::SUCCESS;
 			}
 			void LoadProjectList()
 			{
-				//std::locale::global(std::locale("Korean"));
-				std::wstring dirPath = JApplicationEngine::ProjectListFilePath();
-				std::wifstream stream;
-				stream.open(dirPath, std::ios::in | std::ios::binary);
-
+				//std::locale::global(std::locale("Korean")); 
+				JFileIOTool tool;
+				if (!tool.Begin(JApplicationEngine::ProjectListFilePath(), JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
+					return;
+				 
 				uint projectCount;
 				size_t guid;
 				std::wstring name;
 				std::wstring path;
 				std::wstring version;
-				JFileIOHelper::LoadAtomicData(stream, projectCount);
+				JFileIOHelper::LoadAtomicData(tool, projectCount, "ProjectCount: ");
 				 
-				if (stream.is_open())
-				{
-					// stream.eof == 파일끝을지나 읽기시도시
-					//https://stackoverflow.com/questions/4533063/how-does-ifstreams-eof-work
+				// stream.eof == 파일끝을지나 읽기시도시
+				//https://stackoverflow.com/questions/4533063/how-does-ifstreams-eof-work
 
-					for (uint i = 0; i < projectCount; ++i)
+				tool.PushExistStack("ProjectData");
+				for (uint i = 0; i < projectCount; ++i)
+				{
+					tool.PushExistStack();
+					JFileIOHelper::LoadAtomicData(tool, guid, "Guid: ");
+					JFileIOHelper::LoadJString(tool, name, "Name: ");
+					JFileIOHelper::LoadJString(tool, path, "Path: ");
+					JFileIOHelper::LoadJString(tool, version, "Version: ");
+					Core::JRealTime::JTime createTime = LoadJTime(tool, "CreatedTime: ");
+					Core::JRealTime::JTime lastUpdateTime = LoadJTime(tool, "LastUpdatedTime: ");
+					tool.PopStack();
+
+					if (_waccess(path.c_str(), 00) == 0)
+						projectList.emplace_back(std::make_unique<JApplicationProjectInfo>(guid, name, path, version, createTime, lastUpdateTime));
+					else
 					{
-						JFileIOHelper::LoadAtomicData(stream, guid);
-						JFileIOHelper::LoadJString(stream, name);
-						JFileIOHelper::LoadJString(stream, path);
-						JFileIOHelper::LoadJString(stream, version);
-						Core::JRealTime::JTime createTime = LoadJTime(stream);
-						Core::JRealTime::JTime lastUpdateTime = LoadJTime(stream);
- 
-						if (_waccess(path.c_str(), 00) == 0)
-							projectList.emplace_back(std::make_unique<JApplicationProjectInfo>(guid, name, path, version, createTime, lastUpdateTime));
-						else
-						{ 
-							std::wstring ddsPath = JApplicationProjectInfo::CombineLastRsPath(guid);
-							DestroyProjectPreviewAsset(ddsPath.c_str(), true);
-						}
+						std::wstring ddsPath = JApplicationProjectInfo::CombineLastRsPath(guid);
+						DestroyProjectPreviewAsset(ddsPath.c_str(), true);
 					}
 				}
+				tool.PopStack();
+				tool.Close();
+			}
+			void StoreProjectList()
+			{
+				//std::locale::global(std::locale("Korean")); 
+				JFileIOTool tool;
+				if (!tool.Begin(JApplicationEngine::ProjectListFilePath(), JFileIOTool::TYPE::JSON))
+					return;
+
+				JFileIOHelper::StoreAtomicData(tool, (uint)projectList.size(), "ProjectCount: ");
+				tool.PushArrayOwner("ProjectData");
+				for (const auto& data : projectList)
+				{
+					tool.PushArrayMember();
+					JFileIOHelper::StoreAtomicData(tool, data->GetGuid(), "Guid: ");
+					JFileIOHelper::StoreJString(tool, data->GetName(), "Name: ");
+					JFileIOHelper::StoreJString(tool, data->GetPath(), "Path: ");
+					JFileIOHelper::StoreJString(tool, data->GetVersion(), "Version: ");
+
+					StoreJTime(tool, data->GetCreatedTime(), "CreatedTime: ");
+					StoreJTime(tool, data->GetLastUpdateTime(), "LastUpdatedTime: ");
+					tool.PopStack();
+					//JFileIOHelper::InputSpace(tool, 1);
+				}
+				tool.PopStack();
+				tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			}
 		};
 		  
@@ -777,11 +766,9 @@ namespace JinEngine
 			}
 			return false;
 		}
-		void MainAccess::RegisterFunctor(std::unique_ptr<LoadProjectF>&& loadF,
-			std::unique_ptr<StoreProjectF>&& storeF,
-			std::unique_ptr<SetAppStateF>&& setStateF)
+		void MainAccess::RegisterFunctor(std::unique_ptr<SetAppStateF>&& setStateF)
 		{
-			JApplicationProjectImpl::Instance().RegisterFunctor(std::move(loadF), std::move(storeF), std::move(setStateF));
+			JApplicationProjectImpl::Instance().RegisterFunctor(std::move(setStateF));
 		}
 		bool MainAccess::Initialize()
 		{
@@ -848,15 +835,7 @@ namespace JinEngine
 		Core::J_FILE_IO_RESULT IOInterface::LoadProejctVersion(_Out_ std::string& pVersion)
 		{
 			return JApplicationProjectImpl::Instance().LoadProejctVersion(pVersion);
-		}
-		void IOInterface::StoreProject()
-		{
-			JApplicationProjectImpl::Instance().StoreProject();
-		}
-		void IOInterface::LoadProject()
-		{
-			JApplicationProjectImpl::Instance().LoadProject();
-		}
+		} 
 		void IOInterface::StoreProjectList()
 		{
 			JApplicationProjectImpl::Instance().StoreProjectList();

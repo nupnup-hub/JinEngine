@@ -28,7 +28,7 @@ namespace JinEngine
 		}
 
 		/*
-	class JAnimationParameterListCreationImpl
+	class JAnimationParameterListCreationFunctor
 {
 private:
 	using ParameterCreationInterface = JEditorCreationRequestor<JEditorObjectCreateInterface<>>;
@@ -50,20 +50,20 @@ public:
 	std::unique_ptr<RegisterEvF::Functor> regCreateStateEvF;
 	std::unique_ptr<RegisterEvF::Functor> regDestroyEvF;
 public:
-	JAnimationParameterListCreationImpl(RegisterEvF::Ptr regCreateStateEvPtr, RegisterEvF::Ptr regDestroyEvPtr)
+	JAnimationParameterListCreationFunctor(RegisterEvF::Ptr regCreateStateEvPtr, RegisterEvF::Ptr regDestroyEvPtr)
 	{
 		regCreateStateEvF = std::make_unique<RegisterEvF::Functor>(regCreateStateEvPtr);
 		regDestroyEvF = std::make_unique<RegisterEvF::Functor>(regDestroyEvPtr);
 	}
-	~JAnimationParameterListCreationImpl()
+	~JAnimationParameterListCreationFunctor()
 	{
 		dS.Clear();
 	}
 };
 */
-		DEFAULT_CD_REQUESTOR(JAnimationParameterListCreationImpl, JAnimationParameterList)
+		DEFAULT_CD_REQUESTOR(JAnimationParameterListCreationFunctor, JAnimationParameterList)
 		using AniContUserPtr = JUserPtr<JAnimationController>;	 
-		class JAnimationParameterListSettingImpl
+		class JAnimationParameterListSettingFunctor
 		{
 		public:
 			using SetParameterTypeFunctor = Core::JFunctor<void, const Core::J_FSM_PARAMETER_VALUE_TYPE, AniContUserPtr, size_t>;
@@ -100,10 +100,10 @@ public:
 				std::make_unique<JEditorPopupNode>("Destroy Parameter", J_EDITOR_POPUP_NODE_TYPE::LEAF, parameterListRootNode.get());
 			editorString->AddString(destroyParameterNode->GetNodeId(), { "Destroy Parameter" , u8"애니메이션 패러미터 삭제" });
 
-			using RequestEvF = JAnimationParameterListCreationImpl::RequestEvF;
+			using RequestEvF = JAnimationParameterListCreationFunctor::RequestEvF;
 
-			createNewParameterNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creationImpl->reqCreateStateEvF, this));
-			destroyParameterNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creationImpl->reqDestroyEvF, this));
+			createNewParameterNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creation->reqCreateStateEvF, this));
+			destroyParameterNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creation->reqDestroyEvF, this));
 			destroyParameterNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 
 			parameterListPopup = std::make_unique<JEditorPopupMenu>(Private::ParameterListName(GetName()), std::move(parameterListRootNode));
@@ -112,12 +112,12 @@ public:
 		}
 		JAnimationParameterList::~JAnimationParameterList()
 		{
-			creationImpl.reset();
-			settingImpl.reset();
+			creation.reset();
+			setting.reset();
 		}
 		void JAnimationParameterList::InitializeCreationImpl()
 		{
-			if (creationImpl != nullptr)
+			if (creation != nullptr)
 				return;
 
 			auto requestCreateLam = [](JAnimationParameterList* paramList)
@@ -132,7 +132,7 @@ public:
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, paramList->GetClearTaskFunctor());
 
-				JAnimationParameterListCreationImpl* impl = paramList->creationImpl.get();
+				JAnimationParameterListCreationFunctor* impl = paramList->creation.get();
 				impl->creation.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint);
 			};
 			auto requestDestroyLam = [](JAnimationParameterList* paramList)
@@ -151,10 +151,10 @@ public:
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, paramList->GetClearTaskFunctor());
 
-				JAnimationParameterListCreationImpl* impl = paramList->creationImpl.get();
+				JAnimationParameterListCreationFunctor* impl = paramList->creation.get();
 				impl->destructuion.RequestDestroyObject(impl->dS, true, creationHint, objVec, requestHint);
 			};
-			creationImpl = std::make_unique<JAnimationParameterListCreationImpl>(requestCreateLam, requestDestroyLam);
+			creation = std::make_unique<JAnimationParameterListCreationFunctor>(requestCreateLam, requestDestroyLam);
 
 			auto canCreateParamLam = [](const size_t guid, const JEditorCreationHint& creationHint)
 			{
@@ -172,12 +172,12 @@ public:
 				static_cast<JAnimationController*>(Core::GetRawPtr(creationHint.openDataHint))->CreateFSMparameter(guid);
 			};
 
-			creationImpl->creation.GetCreationInterface()->RegisterCanCreationF(canCreateParamLam);
-			creationImpl->creation.GetCreationInterface()->RegisterObjectCreationF(createParamLam);
+			creation->creation.GetCreationInterface()->RegisterCanCreationF(canCreateParamLam);
+			creation->creation.GetCreationInterface()->RegisterObjectCreationF(createParamLam);
 		}
 		void JAnimationParameterList::InitializeSettingImpl()
 		{
-			if (settingImpl != nullptr)
+			if (setting != nullptr)
 				return;
 
 			auto setParameterTypeLam = [](const Core::J_FSM_PARAMETER_VALUE_TYPE vType, AniContUserPtr aniCont, size_t guid)
@@ -201,18 +201,18 @@ public:
 				aniCont->GetParameter(guid)->SetValue(value);
 			};
 
-			settingImpl = std::make_unique<JAnimationParameterListSettingImpl>();
-			using SetParameterTypeFunctor = JAnimationParameterListSettingImpl::SetParameterTypeFunctor;
-			using SetParameterNameFunctor = JAnimationParameterListSettingImpl::SetParameterNameFunctor;
-			using SetParameterBooleanValueFunctor = JAnimationParameterListSettingImpl::SetParameterBooleanValueFunctor;
-			using SetParameterIntValueFunctor = JAnimationParameterListSettingImpl::SetParameterIntValueFunctor;
-			using SetParameterFloatValueFunctor = JAnimationParameterListSettingImpl::SetParameterFloatValueFunctor;
+			setting = std::make_unique<JAnimationParameterListSettingFunctor>();
+			using SetParameterTypeFunctor = JAnimationParameterListSettingFunctor::SetParameterTypeFunctor;
+			using SetParameterNameFunctor = JAnimationParameterListSettingFunctor::SetParameterNameFunctor;
+			using SetParameterBooleanValueFunctor = JAnimationParameterListSettingFunctor::SetParameterBooleanValueFunctor;
+			using SetParameterIntValueFunctor = JAnimationParameterListSettingFunctor::SetParameterIntValueFunctor;
+			using SetParameterFloatValueFunctor = JAnimationParameterListSettingFunctor::SetParameterFloatValueFunctor;
 
-			settingImpl->setParameterTypeF = std::make_unique<SetParameterTypeFunctor>(setParameterTypeLam);
-			settingImpl->setParameterNameF = std::make_unique<SetParameterNameFunctor>(setParameterNameLam);
-			settingImpl->setParameterBoolF = std::make_unique< SetParameterBooleanValueFunctor>(setParameterBoolLam);
-			settingImpl->setParameterIntF = std::make_unique< SetParameterIntValueFunctor>(setParameterIntLam);
-			settingImpl->setParameterFloatF = std::make_unique< SetParameterFloatValueFunctor>(setParameterFloatLam);
+			setting->setParameterTypeF = std::make_unique<SetParameterTypeFunctor>(setParameterTypeLam);
+			setting->setParameterNameF = std::make_unique<SetParameterNameFunctor>(setParameterNameLam);
+			setting->setParameterBoolF = std::make_unique< SetParameterBooleanValueFunctor>(setParameterBoolLam);
+			setting->setParameterIntF = std::make_unique< SetParameterIntValueFunctor>(setParameterIntLam);
+			setting->setParameterFloatF = std::make_unique< SetParameterFloatValueFunctor>(setParameterFloatLam);
 		}
 		J_EDITOR_WINDOW_TYPE JAnimationParameterList::GetWindowType()const noexcept
 		{
@@ -261,13 +261,13 @@ public:
 					const bool isSelect = IsSelectedObject( nowParameter->GetGuid()); 
 					const JVector2<float> preCursorPos = JGui::GetCursorScreenPos();
 					
-					PushTreeNodeColorSet(true, isSelect);
+					JGui::PushTreeNodeColorSet(IsFocus(), true, isSelect);
 					if (JGui::Selectable(name + "##Parameter_Selectable" + uniqueLabel, &isSelect, J_GUI_SELECTABLE_FLAG_SPAN_ALL_COLUMNS | J_GUI_SELECTABLE_FLAG_ALLOW_ITEM_OVERLAP))
 					{ 
 						RequestPushSelectObject(nowParameter);
 						SetContentsClick(true);
 					} 
-					PopTreeNodeColorSet(true, isSelect);
+					JGui::PopTreeNodeColorSet(true, isSelect);
 
 					if (JGui::IsMouseInRect(preCursorPos, JGui::GetLastItemRectSize()))
 					{
@@ -285,21 +285,21 @@ public:
 					JGui::TableSetColumnIndex(1);
 					JGui::PushItemWidth(-FLT_MIN);
 
-					JGui::ComoboEnumSetT(name, uniqueLabel, valueType, *settingImpl->setParameterTypeF, aniCont, nowParameter->GetGuid());
+					JGui::ComoboEnumSetT(name, uniqueLabel, valueType, *setting->setParameterTypeF, aniCont, nowParameter->GetGuid());
 
 					JGui::TableSetColumnIndex(2);
 					JGui::PushItemWidth(-FLT_MIN);
 					if (valueType == Core::J_FSM_PARAMETER_VALUE_TYPE::BOOL)
-						JGui::CheckBoxSetT(name, uniqueLabel, (bool)nowParameter->GetValue(), *settingImpl->setParameterBoolF, aniCont, nowParameter->GetGuid());
+						JGui::CheckBoxSetT(name, uniqueLabel, (bool)nowParameter->GetValue(), *setting->setParameterBoolF, aniCont, nowParameter->GetGuid());
 					else if (valueType == Core::J_FSM_PARAMETER_VALUE_TYPE::INT)
-						JGui::InputIntSetT(name, uniqueLabel, (int)nowParameter->GetValue(), *settingImpl->setParameterIntF, aniCont, nowParameter->GetGuid());
+						JGui::InputIntSetT(name, uniqueLabel, (int)nowParameter->GetValue(), *setting->setParameterIntF, aniCont, nowParameter->GetGuid());
 					else if (valueType == Core::J_FSM_PARAMETER_VALUE_TYPE::FLOAT)
-						JGui::InputFloatSetT(name, uniqueLabel, (float)nowParameter->GetValue(), *settingImpl->setParameterFloatF, aniCont, nowParameter->GetGuid());
+						JGui::InputFloatSetT(name, uniqueLabel, (float)nowParameter->GetValue(), *setting->setParameterFloatF, aniCont, nowParameter->GetGuid());
 				}
 				JGui::EndTable();
 			}
 			if (aniCont.IsValid())
-				UpdatePopup(PopupSetting(parameterListPopup.get(), editorString.get()));
+				UpdatePopup(PopupSetting(parameterListPopup.get(), editorString.get())); 
 		}
 		void JAnimationParameterList::DoSetClose()noexcept
 		{

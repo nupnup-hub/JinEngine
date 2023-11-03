@@ -21,7 +21,7 @@ namespace JinEngine
 			float splitBlendRate = 0.75f;
 			uint splitCount = 4;
 		private:
-			float shadowDistance = 1000.0f; 
+			float shadowDistance = 1000; 
 		private:
 			/**
 			* [0.0 ~ 1.0] blend n ~ n + 1 cascade (if n != max index)

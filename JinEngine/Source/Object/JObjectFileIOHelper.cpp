@@ -6,89 +6,125 @@
 
 namespace JinEngine
 {
-	Core::J_FILE_IO_RESULT JObjectFileIOHelper::StoreObjectIden(std::wofstream& stream, JObject* obj)
-	{
-		if (!stream.is_open())
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
-		Core::J_FILE_IO_RESULT res = StoreIden(stream, obj);
+	Core::J_FILE_IO_RESULT JObjectFileIOHelper::StoreObjectIden(JFileIOTool& tool, JObject* obj)
+	{ 
+		Core::J_FILE_IO_RESULT res = StoreIden(tool, obj);
 		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 			return res;
 		 
-		stream << Core::JFileConstant::StreamObjFlagSymbol() << (int)obj->GetFlag() << '\n';
+		if (tool.CanUseJSon())
+		{
+			if(!Core::JJSon::StoreData(GetJSonHandle(tool), obj->GetFlag(), Core::JFileConstant::GetObjFlagSymbol()))
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+		}
+		else
+			GetOutputStream(tool) << Core::JFileConstant::GetObjFlagSymbol() << (int)obj->GetFlag() << '\n';
 		return Core::J_FILE_IO_RESULT::SUCCESS;
-	}
-	Core::J_FILE_IO_RESULT JObjectFileIOHelper::LoadObjectIden(std::wifstream& stream, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag)
+	} 
+	Core::J_FILE_IO_RESULT JObjectFileIOHelper::LoadObjectIden(JFileIOTool& tool, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag)
 	{
-		if (!stream.is_open() || stream.eof())
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
-		std::wstring guide;
-		int flag;
-
-		Core::J_FILE_IO_RESULT res = LoadIden(stream, oGuid);
+		Core::J_FILE_IO_RESULT res = LoadIden(tool, oGuid);
 		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 			return res;
 
-		stream >> guide >> flag;
-		oFlag = (J_OBJECT_FLAG)flag;
+		if (tool.CanUseJSon())
+		{
+			J_OBJECT_FLAG flag;
+			if(!Core::JJSon::LoadData(GetJSonHandle(tool), flag, Core::JFileConstant::GetObjFlagSymbol()))
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+			oFlag = flag;
+		}
+		else
+		{
+			std::string guide;
+			int flag;
+			GetInputStream(tool) >> guide >> flag;
+			oFlag = (J_OBJECT_FLAG)flag; 
+		}
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JObjectFileIOHelper::LoadObjectIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag)
-	{
-		if (!stream.is_open() || stream.eof())
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
-		std::wstring guide;
-		int flag;
-		size_t typeGuid;
-
-		Core::J_FILE_IO_RESULT res = LoadIden(stream, oName, oGuid);
+	Core::J_FILE_IO_RESULT JObjectFileIOHelper::LoadObjectIden(JFileIOTool& tool, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag)
+	{  
+		Core::J_FILE_IO_RESULT res = LoadIden(tool, oName, oGuid);
 		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 			return res;
 
-		stream >> guide >> flag;	 
-		oFlag = (J_OBJECT_FLAG)flag;
+		if (tool.CanUseJSon())
+		{
+			J_OBJECT_FLAG flag;
+			if (!Core::JJSon::LoadData(GetJSonHandle(tool), flag, Core::JFileConstant::GetObjFlagSymbol()))
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+			oFlag = flag;
+		}
+		else
+		{
+			std::string guide;
+			int flag;
+			GetInputStream(tool) >> guide >> flag;
+			oFlag = (J_OBJECT_FLAG)flag;
+		} 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JObjectFileIOHelper::StoreComponentIden(std::wofstream& stream, JComponent* comp)
+	Core::J_FILE_IO_RESULT JObjectFileIOHelper::StoreComponentIden(JFileIOTool& tool, JComponent* comp)
 	{
-		Core::J_FILE_IO_RESULT res = StoreObjectIden(stream, comp);
+		Core::J_FILE_IO_RESULT res = StoreObjectIden(tool, comp);
 		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 			return res;
 
-		stream << Core::JFileConstant::StreamActivatedSymbol() << comp->IsActivated() << "\n";
+		if (tool.CanUseJSon())
+		{
+			if (!Core::JJSon::StoreData(GetJSonHandle(tool), comp->IsActivated(), Core::JFileConstant::GetActivatedSymbol()))
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+		}
+		else
+			GetOutputStream(tool) << Core::JFileConstant::GetActivatedSymbol() << comp->IsActivated() << '\n';
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JObjectFileIOHelper::LoadComponentIden(std::wifstream& stream, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag, _Out_ bool& isActivated)
+	Core::J_FILE_IO_RESULT JObjectFileIOHelper::LoadComponentIden(JFileIOTool& tool, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag, _Out_ bool& isActivated)
 	{
-		Core::J_FILE_IO_RESULT res = LoadObjectIden(stream, oGuid, oFlag);
+		Core::J_FILE_IO_RESULT res = LoadObjectIden(tool, oGuid, oFlag);
 		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 			return res;
 
-		std::wstring guide;
-		stream >> guide >> isActivated;
+		if (tool.CanUseJSon())
+		{
+			bool temp;
+			if (!Core::JJSon::LoadData(GetJSonHandle(tool), temp, Core::JFileConstant::GetActivatedSymbol()))
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+			isActivated = temp;
+		}
+		else
+		{
+			std::string guide; 
+			GetInputStream(tool) >> guide >> isActivated; 
+		}
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JObjectFileIOHelper::LoadComponentIden(std::wifstream& stream, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag, _Out_ bool& isActivated)
-	{
-		Core::J_FILE_IO_RESULT res = LoadObjectIden(stream, oName, oGuid, oFlag);
+	Core::J_FILE_IO_RESULT JObjectFileIOHelper::LoadComponentIden(JFileIOTool& tool, _Out_ std::wstring& oName, _Out_ size_t& oGuid, _Out_ J_OBJECT_FLAG& oFlag, _Out_ bool& isActivated)
+	{ 
+		Core::J_FILE_IO_RESULT res = LoadObjectIden(tool, oName, oGuid, oFlag);
 		if (res != Core::J_FILE_IO_RESULT::SUCCESS)
 			return res;
 
-		std::wstring guide;
-		stream >> guide >> isActivated;
+		if (tool.CanUseJSon())
+		{
+			bool temp;
+			if (!Core::JJSon::LoadData(GetJSonHandle(tool), temp, Core::JFileConstant::GetActivatedSymbol()))
+				return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
+			isActivated = temp;
+		}
+		else
+		{
+			std::string guide;
+			GetInputStream(tool) >> guide >> isActivated;
+		} 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT JObjectFileIOHelper::_StoreHasIden(std::wofstream& stream, Core::JIdentifier* iden)
+	Core::J_FILE_IO_RESULT JObjectFileIOHelper::_StoreHasIden(JFileIOTool& tool, Core::JIdentifier* iden, const std::string& guide, const bool applyUncopyableSymbol)
 	{
-		return JFileIOHelper::StoreHasIden(stream, iden);
-	}
-	Core::J_FILE_IO_RESULT JObjectFileIOHelper::_StoreHasIden(std::wofstream& stream, Core::JIdentifier* iden, const std::wstring& guiSymbol)
-	{
-		return JFileIOHelper::StoreHasIden(stream, iden, guiSymbol);
-	}
-	JUserPtr<Core::JIdentifier> JObjectFileIOHelper::_LoadHasIden(std::wifstream& stream)
+		return JFileIOHelper::StoreHasIden(tool, iden, guide, applyUncopyableSymbol);
+	} 
+	JUserPtr<Core::JIdentifier> JObjectFileIOHelper::_LoadHasIden(JFileIOTool& tool, const std::string& key, const bool applyUncopyableSymbol)
 	{
 		TryAgainLoadObjIfFailPtr ptr = [](Core::JTypeInfo* info, size_t objGuid) 
 			->  JUserPtr<Core::JIdentifier>
@@ -99,6 +135,6 @@ namespace JinEngine
 				return nullptr;
 		}; 
 
-		return LoadHasIden(stream, ptr);
+		return LoadHasIden(tool, key, ptr, applyUncopyableSymbol);
 	}
 }

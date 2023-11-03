@@ -24,7 +24,7 @@ namespace JinEngine
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
 			std::unique_ptr<JDx12GraphicShaderDataHolder> normalShadowShaderData[(uint)Core::J_MESHGEOMETRY_TYPE::COUNT];
 			std::unique_ptr<JDx12GraphicShaderDataHolder> cubeShadowShaderData[(uint)Core::J_MESHGEOMETRY_TYPE::COUNT];
-			std::unique_ptr<JDx12GraphicShaderDataHolder> csmShaderData[(uint)Core::J_MESHGEOMETRY_TYPE::COUNT][JCsmOption::maxCountOfSplit];
+			std::unique_ptr<JDx12GraphicShaderDataHolder> csmShaderData[JCsmOption::maxCountOfSplit][(uint)Core::J_MESHGEOMETRY_TYPE::COUNT];
 		public:
 			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)final;
 			void Clear()final;
@@ -48,7 +48,7 @@ namespace JinEngine
 			//Contain Draw Debug UI
 			void DrawSceneShadowMap(const JGraphicShadowMapDrawSet* shadowDrawSet, const JDrawHelper& helper)final;
 			void DrawSceneShadowMapMultiThread(const JGraphicShadowMapDrawSet* shadowDrawSet, const JDrawHelper& helper)final;
-		public:
+		private:
 			void DrawShadowMapGameObject(ID3D12GraphicsCommandList* cmdList,
 				JDx12FrameResource* dx12Frame,
 				JDx12GraphicResourceManager* dx12Gm,
@@ -63,8 +63,8 @@ namespace JinEngine
 			void BuildRootSignature(ID3D12Device* device);
 			void BuildPso(ID3D12Device* device,
 				const DXGI_FORMAT dsvFormat,
+				const J_SHADOW_MAP_TYPE smType, 
 				const Core::J_MESHGEOMETRY_TYPE meshType,
-				const J_SHADOW_MAP_TYPE smType,
 				const std::vector<JMacroSet>& macroSet,
 				_Out_ JDx12GraphicShaderDataHolder& data);
 		};

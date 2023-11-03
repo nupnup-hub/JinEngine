@@ -109,7 +109,7 @@ namespace JinEngine
 					animationUpdateData->RegisterParameter(param->GetGuid(), param->GetValue());
 				}
 				ContFrameUpdateInteface::Initialize(animationController.Get(), animationUpdateData.get());
-				reqSettingAniData = false;
+				reqSettingAniData = false; 
 			}
 		}
 	public:
@@ -152,7 +152,7 @@ namespace JinEngine
 			if (animationController.IsValid())
 				CallOffResourceReference(animationController.Get());
 		}
-		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
 			if (iden == thisPointer->GetGuid())
 				return;
@@ -343,12 +343,12 @@ namespace JinEngine
 		bool isActivated;
 
 		auto loadData = static_cast<JAnimator::LoadData*>(data);
-		std::wifstream& stream = loadData->stream;
+		JFileIOTool& tool = loadData->tool;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
-		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
-		JUserPtr<JAnimationController> aniCont = JObjectFileIOHelper::_LoadHasIden<JAnimationController>(stream);
-		JUserPtr<JSkeletonAsset> skeletonAsset = JObjectFileIOHelper::_LoadHasIden<JSkeletonAsset>(stream);
+		JObjectFileIOHelper::LoadComponentIden(tool, guid, flag, isActivated);
+		JUserPtr<JAnimationController> aniCont = JObjectFileIOHelper::_LoadHasIden<JAnimationController>(tool, "AnimationController");
+		JUserPtr<JSkeletonAsset> skeletonAsset = JObjectFileIOHelper::_LoadHasIden<JSkeletonAsset>(tool, "SkeletonAsset");
 		 
 		auto idenUser = aPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JAnimator::InitData>(guid, flag, owner), &aPrivate);
 		auto aniUser = Core::ConvertChildUserPtr<JAnimator>(std::move(idenUser));
@@ -369,11 +369,11 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		JAnimator* animator = static_cast<JAnimator*>(storeData->obj.Get());
-		std::wofstream& stream = storeData->stream;
+		JFileIOTool& tool = storeData->tool;
 
-		JObjectFileIOHelper::StoreComponentIden(stream, animator);
-		JObjectFileIOHelper::_StoreHasIden(stream, animator->GetAnimatorController().Get());
-		JObjectFileIOHelper::_StoreHasIden(stream, animator->GetSkeletonAsset().Get());
+		JObjectFileIOHelper::StoreComponentIden(tool, animator);
+		JObjectFileIOHelper::_StoreHasIden(tool, animator->GetAnimatorController().Get(), "AnimationController");
+		JObjectFileIOHelper::_StoreHasIden(tool, animator->GetSkeletonAsset().Get(), "SkeletonAsset");
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -382,7 +382,7 @@ namespace JinEngine
 	{
 		ani->impl->reqSettingAniData = true;
 		ani->impl->userTimer = sceneTimer;
-		ani->impl->SettingAnimationUpdateData();
+		ani->impl->SettingAnimationUpdateData(); 
 	}
 	void AnimationUpdateInterface::OffAnimationUpdate(JUserPtr<JAnimator> ani)noexcept
 	{

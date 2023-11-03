@@ -115,6 +115,7 @@ namespace JinEngine
 		}
 		void SetPosition(const JVector3<float>& value)noexcept
 		{
+			position.SetNanToZero();
 			if (thisPointer->GetOwner()->IsRoot() || position == value)
 				return;
 
@@ -123,11 +124,11 @@ namespace JinEngine
 		}
 		void SetRotation(const JVector3<float>& euler)noexcept
 		{
+			rotation.SetNanToZero();
 			if (thisPointer->GetOwner()->IsRoot() || rotation == euler)
 				return;
 
 			rotation = euler;
-
 			if (rotation.x >= 360)
 				rotation.x -= 360;
 			if (rotation.y >= 360)
@@ -152,6 +153,7 @@ namespace JinEngine
 		}
 		void SetScale(const JVector3<float>& value)noexcept
 		{
+			scale.SetNanToZero();
 			if (thisPointer->GetOwner()->IsRoot() || scale == value)
 				return;
 
@@ -517,13 +519,13 @@ namespace JinEngine
 		JVector3<float> scale;
 
 		auto loadData = static_cast<JTransform::LoadData*>(data);
-		std::wifstream& stream = loadData->stream;
+		JFileIOTool& tool = loadData->tool;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
-		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
-		JObjectFileIOHelper::LoadVector3(stream, pos);
-		JObjectFileIOHelper::LoadVector3(stream, rot);
-		JObjectFileIOHelper::LoadVector3(stream, scale);
+		FILE_ASSERTION(JObjectFileIOHelper::LoadComponentIden(tool, guid, flag, isActivated));
+		FILE_ASSERTION(JObjectFileIOHelper::LoadVector3(tool, pos, "Pos:"));
+		FILE_ASSERTION(JObjectFileIOHelper::LoadVector3(tool, rot, "Rot:"));
+		FILE_ASSERTION(JObjectFileIOHelper::LoadVector3(tool, scale, "Scale:"));
 
 		auto idenUser = tPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JTransform::InitData>(guid, flag, owner), &tPrivate);
 		JUserPtr<JTransform> transUser = JUserPtr<JTransform>::ConvertChild(std::move(idenUser));
@@ -550,12 +552,12 @@ namespace JinEngine
 		transUser.ConnnectChild(storeData->obj);
 
 		JTransform::JTransformImpl* impl = transUser->impl.get();
-		std::wofstream& stream = storeData->stream;
+		JFileIOTool& tool = storeData->tool;
 
-		JObjectFileIOHelper::StoreComponentIden(stream, transUser.Get());
-		JObjectFileIOHelper::StoreVector3(stream, L"Pos:", impl->position);
-		JObjectFileIOHelper::StoreVector3(stream, L"Rot:", impl->rotation);
-		JObjectFileIOHelper::StoreVector3(stream, L"Scale:", impl->scale);
+		JObjectFileIOHelper::StoreComponentIden(tool, transUser.Get());
+		JObjectFileIOHelper::StoreVector3(tool, impl->position, "Pos:");
+		JObjectFileIOHelper::StoreVector3(tool, impl->rotation, "Rot:");
+		JObjectFileIOHelper::StoreVector3(tool, impl->scale, "Scale:");
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}

@@ -12,7 +12,7 @@ namespace JinEngine
 			friend class JMain;
 		private:
 			static void Initialize();
-			static void Terminate();
+			static void Terminate(const bool storeResource);
 			static void StoreProjectResource();
 			static void LoadSelectorResource();
 			static void LoadProjectResource();

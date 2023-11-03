@@ -1,5 +1,4 @@
-#pragma once
-#include<d3d12.h> 
+#pragma once 
 
 namespace JinEngine
 { 
@@ -11,7 +10,7 @@ namespace JinEngine
 	};
 	enum class J_SHADER_PRIMITIVE_TYPE
 	{
-		DEFAULT = 0,
+		TRIANGLE = 0,	//triangle
 		LINE
 	};
 	enum class J_SHADER_DEPTH_COMPARISON_FUNC
@@ -34,7 +33,7 @@ namespace JinEngine
 		J_SHADER_APPLIY_CONDITION depthCompareCondition = J_SHADER_APPLIY_CONDITION::NOT;
 		J_SHADER_APPLIY_CONDITION cullModeCondition = J_SHADER_APPLIY_CONDITION::NOT;
 	public:
-		J_SHADER_PRIMITIVE_TYPE primitiveType = J_SHADER_PRIMITIVE_TYPE::DEFAULT;
+		J_SHADER_PRIMITIVE_TYPE primitiveType = J_SHADER_PRIMITIVE_TYPE::TRIANGLE;
 		J_SHADER_DEPTH_COMPARISON_FUNC depthCompareFunc = J_SHADER_DEPTH_COMPARISON_FUNC::DEFAULT;
 		bool isCullModeNone = false;
 	public:
@@ -44,6 +43,5 @@ namespace JinEngine
 		bool Equal(const JShaderCondition& pso)const noexcept;
 		size_t UniqueID()const noexcept;
 	};
-	
 
 }

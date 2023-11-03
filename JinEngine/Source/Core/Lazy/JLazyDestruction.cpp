@@ -83,12 +83,12 @@ namespace JinEngine
 
 				bool(*equalPtr)(ObjectInfo*, const size_t) = [](ObjectInfo* info, const size_t guid) {return info->user.IsValid() ? info->user->GetGuid() == guid : false; };
 				int index = JCUtil::GetIndex(objectVec, equalPtr, ptr->GetGuid());
-				if (index == -1)
+				if (index == invalidIndex)
 					return false;
+
 				if (info->notifyCancelLazy != nullptr)
 					info->notifyCancelLazy(objectVec[index]->user.Get());
-				objectVec.erase(objectVec.begin() + index);
-				 
+				objectVec.erase(objectVec.begin() + index);				 
 				return true;
 			}
 		};
@@ -98,6 +98,10 @@ namespace JinEngine
 		JLazyDestruction::~JLazyDestruction()
 		{
 			impl.reset();
+		}
+		uint JLazyDestruction::GetWaitingCount()const noexcept
+		{
+			return impl->objectVec.size();
 		}
 		void JLazyDestruction::Update(const float timeOffset)noexcept
 		{  

@@ -77,7 +77,7 @@ namespace JinEngine
 		newGameObj->GetTransform()->SetScale({ 5000, 5000, 5000 });
 		JUserPtr<JRenderItem> newRItem = JCCI::CreateRenderItem(newGameObj,
 			_JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::SPHERE),
-			D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
+			J_RENDER_PRIMITIVE::TRIANGLE,
 			J_RENDER_LAYER::SKY);
 		 
 		newRItem->SetMaterial(0, _JResourceManager::Instance().GetDefaultMaterial(J_DEFAULT_MATERIAL::DEFAULT_SKY));
@@ -142,7 +142,7 @@ namespace JinEngine
 		const J_RENDERITEM_ACCELERATOR_MASK acceleratorMask)
 	{
 		const J_RENDER_LAYER layer = isDebugUI ? J_RENDER_LAYER::DEBUG_UI : J_RENDER_LAYER::DEBUG_OBJECT;
-		const D3D_PRIMITIVE_TOPOLOGY primitive = isLine ? D3D11_PRIMITIVE_TOPOLOGY_LINELIST : D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		const J_RENDER_PRIMITIVE primitive = isLine ? J_RENDER_PRIMITIVE::LINE : J_RENDER_PRIMITIVE::TRIANGLE;
 		//has sequence dependency
 		JUserPtr<JGameObject> newGameObj = JICI::Create<JGameObject>(name, Core::MakeGuid(), flag, parent);
 		JUserPtr<JRenderItem> newRItem = JCCI::CreateRenderItem(newGameObj,

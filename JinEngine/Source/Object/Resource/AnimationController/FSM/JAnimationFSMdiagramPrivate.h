@@ -15,7 +15,7 @@ namespace JinEngine
 	}
 	class JAnimationUpdateData;
 	class JAnimationFSMdiagram;
-
+	class JFileIOTool;
 	class JAnimationFSMdiagramPrivate final : public Core::JFSMdiagramPrivate
 	{
 	public:
@@ -24,8 +24,8 @@ namespace JinEngine
 		private:
 			friend class JAnimationController;
 		private:
-			static JUserPtr<JAnimationFSMdiagram> LoadAssetData(std::wifstream& stream, Core::JFSMdiagramOwnerInterface* fsmOwner);	//load diagram data and create state
-			static Core::J_FILE_IO_RESULT StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMdiagram>& diagram);
+			static JUserPtr<JAnimationFSMdiagram> LoadAssetData(JFileIOTool& tool, Core::JFSMdiagramOwnerInterface* fsmOwner);	//load diagram data and create state
+			static Core::J_FILE_IO_RESULT StoreAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMdiagram>& diagram);
 		};
 		class CreateInstanceInterface final : public Core::JFSMdiagramPrivate::CreateInstanceInterface
 		{

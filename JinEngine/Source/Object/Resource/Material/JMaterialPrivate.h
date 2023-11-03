@@ -13,6 +13,7 @@ namespace JinEngine
 	class JPreviewResourceScene;
 	class JFrameDirtyBase;
 	class JDefaultMaterialSetting;
+	class JResourceManager;
 
 	class JMaterialPrivate final : public JResourceObjectPrivate
 	{
@@ -65,6 +66,7 @@ namespace JinEngine
 		{
 		private:
 			friend class JDefaultMaterialSetting;
+			friend class JResourceManager;;
 		private:
 			static void OnUpdateShaderTrigger(const JUserPtr<JMaterial>& mat)noexcept;
 			static void OffUpdateShaderTrigger(const JUserPtr<JMaterial>& mat)noexcept;

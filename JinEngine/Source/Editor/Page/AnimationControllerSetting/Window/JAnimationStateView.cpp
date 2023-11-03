@@ -35,7 +35,7 @@ namespace JinEngine
 			}
 		}
 
-		class JAnimationStateViewCreationImpl
+		class JAnimationStateViewCreationFunctor
 		{
 		private:
 			using ClipCreationInterface = JEditorCreationRequestor<JEditorObjectCreateInterface<>>;
@@ -65,7 +65,7 @@ namespace JinEngine
 			std::unique_ptr<ConnectStateTrasitionF::Functor> connectStateTransF;
 			std::unique_ptr<RequestEvF::Functor> reqDestroyEvF;
 		public:
-			JAnimationStateViewCreationImpl(RequestEvF::Ptr reqCreateStateEvPtr,
+			JAnimationStateViewCreationFunctor(RequestEvF::Ptr reqCreateStateEvPtr,
 				TryConnectStateTransitionF::Ptr tryConnectStateTransPtr,
 				ConnectStateTrasitionF::Ptr connectStateTransPtr,
 				RequestEvF::Ptr reqDestroyEvPtr)
@@ -76,7 +76,7 @@ namespace JinEngine
 
 				reqDestroyEvF = std::make_unique<RequestEvF::Functor>(reqDestroyEvPtr);
 			}
-			~JAnimationStateViewCreationImpl()
+			~JAnimationStateViewCreationFunctor()
 			{
 				dS.Clear();
 			}
@@ -120,13 +120,13 @@ namespace JinEngine
 
 			//createNewCilpStateNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
 
-			using RequestEvF = JAnimationStateViewCreationImpl::RequestEvF;
-			using TryConnectStateTransitionF = JAnimationStateViewCreationImpl::TryConnectStateTransitionF;
+			using RequestEvF = JAnimationStateViewCreationFunctor::RequestEvF;
+			using TryConnectStateTransitionF = JAnimationStateViewCreationFunctor::TryConnectStateTransitionF;
 
-			createNewCilpStateNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creationImpl->reqCreateStateEvF, this));
-			createTransitionNode->RegisterSelectBind(std::make_unique<TryConnectStateTransitionF::CompletelyBind>(*creationImpl->tryConnectStateTransF, this));
+			createNewCilpStateNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creation->reqCreateStateEvF, this));
+			createTransitionNode->RegisterSelectBind(std::make_unique<TryConnectStateTransitionF::CompletelyBind>(*creation->tryConnectStateTransF, this));
 			createTransitionNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
-			destroyNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creationImpl->reqDestroyEvF, this));
+			destroyNode->RegisterSelectBind(std::make_unique<RequestEvF::CompletelyBind>(*creation->reqDestroyEvF, this));
 			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 
 			statePopup = std::make_unique<JEditorPopupMenu>(Private::StateViewName(GetName()), std::move(stateViewRootNode));
@@ -137,11 +137,11 @@ namespace JinEngine
 		JAnimationStateView::~JAnimationStateView()
 		{
 			stateGraph->StoreData(Private::ViewGraphPath());
-			creationImpl.reset();
+			creation.reset();
 		}
 		void JAnimationStateView::InitializeCreationImpl()
 		{
-			if (creationImpl != nullptr)
+			if (creation != nullptr)
 				return;
 
 			auto requestCreateStateLam = [](JAnimationStateView* stateView)
@@ -156,18 +156,18 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, stateView->GetClearTaskFunctor());
 
-				JAnimationStateViewCreationImpl* impl = stateView->creationImpl.get();
+				JAnimationStateViewCreationFunctor* impl = stateView->creation.get();
 				impl->clip.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint);
 			};
 			auto tryConnectStateTransLam = [](JAnimationStateView* stateView)
 			{
-				using bType = JAnimationStateViewCreationImpl::ConnectStateTrasitionF::CompletelyBind;
+				using bType = JAnimationStateViewCreationFunctor::ConnectStateTrasitionF::CompletelyBind;
 				auto selectedVec = stateView->GetSelectedObjectVec();
 				if (stateView->aniCont.IsValid() && selectedVec[0].IsValid() &&
 					selectedVec[0]->GetTypeInfo().IsChildOf<JAnimationFSMstate>())
 				{
 					stateView->stateGraph->SetConnectNodeMode(selectedVec[0]->GetGuid(),
-						std::make_unique<bType>(*stateView->creationImpl->connectStateTransF, std::move(stateView)));
+						std::make_unique<bType>(*stateView->creation->connectStateTransF, std::move(stateView)));
 				}
 			};
 			auto connectStateTransLam = [](JAnimationStateView* stateView)
@@ -185,7 +185,7 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, stateView->GetClearTaskFunctor());
 
-				JAnimationStateViewCreationImpl* impl = stateView->creationImpl.get();
+				JAnimationStateViewCreationFunctor* impl = stateView->creation.get();
 				impl->transition.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, std::move(fromGuid), std::move(toGuid));
 			};
 			auto requestDestroyLam = [](JAnimationStateView* stateView)
@@ -204,11 +204,11 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, stateView->GetClearTaskFunctor());
 
-				JAnimationStateViewCreationImpl* impl = stateView->creationImpl.get();
+				JAnimationStateViewCreationFunctor* impl = stateView->creation.get();
 				impl->destructuion.RequestDestroyObject(impl->dS, true, creationHint, objVec, requestHint);
 			};
 
-			creationImpl = std::make_unique<JAnimationStateViewCreationImpl>(requestCreateStateLam,
+			creation = std::make_unique<JAnimationStateViewCreationFunctor>(requestCreateStateLam,
 				tryConnectStateTransLam, connectStateTransLam, requestDestroyLam);
 
 			auto canCreateClipLam = [](const size_t guid, const JEditorCreationHint& creationHint)
@@ -253,10 +253,10 @@ namespace JinEngine
 				aniCont->CreateFsmtransition(ownerDiagaram, fromState, toState, guid);
 			};
 
-			creationImpl->clip.GetCreationInterface()->RegisterCanCreationF(canCreateClipLam);
-			creationImpl->clip.GetCreationInterface()->RegisterObjectCreationF(creatClipLam);
-			creationImpl->transition.GetCreationInterface()->RegisterCanCreationF(canCreateTransitionLam);
-			creationImpl->transition.GetCreationInterface()->RegisterObjectCreationF(createTransitionLam);
+			creation->clip.GetCreationInterface()->RegisterCanCreationF(canCreateClipLam);
+			creation->clip.GetCreationInterface()->RegisterObjectCreationF(creatClipLam);
+			creation->transition.GetCreationInterface()->RegisterCanCreationF(canCreateTransitionLam);
+			creation->transition.GetCreationInterface()->RegisterObjectCreationF(createTransitionLam);
 		}
 		J_EDITOR_WINDOW_TYPE JAnimationStateView::GetWindowType()const noexcept
 		{
@@ -342,7 +342,7 @@ namespace JinEngine
 				} 
 				if(isHoveredContents && JGui::AnyMouseClicked(false))
 					SetContentsClick(true);
-
+				 
 				UpdatePopup(PopupSetting(statePopup.get(), editorString.get()));
 			}
 			else

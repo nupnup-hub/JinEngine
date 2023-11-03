@@ -15,8 +15,8 @@ namespace JinEngine
 		class JEditorPopupMenu;
 		class JEditorStringMap;
 
-		class JAnimationParameterListCreationImpl;
-		class JAnimationParameterListSettingImpl;
+		class JAnimationParameterListCreationFunctor;
+		class JAnimationParameterListSettingFunctor;
 		class JAnimationParameterList final : public JEditorWindow
 		{
 		private:
@@ -26,8 +26,8 @@ namespace JinEngine
 			std::unique_ptr<JEditorPopupMenu> parameterListPopup;
 			std::unique_ptr<JEditorStringMap> editorString;
 		private:
-			std::unique_ptr<JAnimationParameterListCreationImpl> creationImpl;
-			std::unique_ptr<JAnimationParameterListSettingImpl> settingImpl;
+			std::unique_ptr<JAnimationParameterListCreationFunctor> creation;
+			std::unique_ptr<JAnimationParameterListSettingFunctor> setting;
 		public:
 			JAnimationParameterList(const std::string& name,
 				std::unique_ptr<JEditorAttribute> attribute,

@@ -1,8 +1,8 @@
 #pragma once
 #include"JAcceleratorType.h"
-#include"../../../../Core/Pointer/JOwnerPtr.h"
-#include"../../../../Core/Geometry/JCullingFrustum.h"
+#include"../../../../Core/Pointer/JOwnerPtr.h" 
 #include"../../../../Core/Geometry/JRay.h" 
+#include"../../../../Core/Geometry/JGeometryEnum.h" 
 #include"../../../../Core/JCoreEssential.h"
 #include"../../../../Graphic/Culling/JCullingInterface.h"
 #include<fstream>
@@ -12,6 +12,7 @@ namespace JinEngine
 {
 	class JGameObject; 
 	class JRenderItem;
+	class JFileIOTool;
 	class JAcceleratorOption
 	{
 	public:
@@ -38,8 +39,8 @@ namespace JinEngine
 		bool HasInnerRoot()const noexcept;
 		bool HasDebugRoot()const noexcept;
 	public:
-		void Store(std::wofstream& stream);
-		void Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid);
+		void Store(JFileIOTool& tool);
+		void Load(JFileIOTool& tool, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid);
 	};
 	struct JAcceleratorCullingInfo
 	{
@@ -48,14 +49,11 @@ namespace JinEngine
 		DirectX::BoundingFrustum frustum;
 		DirectX::BoundingFrustum cullingFrustum;
 	public:
-		DirectX::BoundingBox bbox;
-	public:
-		Core::JCullingFrustum jFrustum;
-		Core::JCullingFrustum jCullingFrustum;
+		DirectX::BoundingBox bbox; 
 	public:
 		bool hasCullingArea;
-		//JFustum은 아직 미흡한 부분이있으므로 DirectX::BoundingFrustum 주로 사용한다
-		bool useJFrustum;
+		//JFustum은 아직 미개발이므로 DirectX::BoundingFrustum 주로 사용한다
+		bool useJFrustum = false;
 		bool useBBox = false;
 	public:
 		JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,

@@ -19,8 +19,12 @@ namespace JinEngine
 	{
 		JEditorWindow::PopupSetting::PopupSetting(JEditorPopupMenu* popupMenu,
 			JEditorStringMap* stringMap,
-			bool canOpenPopup)
-			:popupMenu(popupMenu), stringMap(stringMap), canOpenPopup(canOpenPopup)
+			const bool canOpenPopup,
+			const bool focusWindowIfCloseThisFrame)
+			:popupMenu(popupMenu), 
+			stringMap(stringMap),
+			canOpenPopup(canOpenPopup),
+			focusWindowIfCloseThisFrame(focusWindowIfCloseThisFrame)
 		{}
 		bool JEditorWindow::PopupSetting::IsValid()const noexcept
 		{
@@ -42,7 +46,8 @@ namespace JinEngine
 		void JEditorWindow::EnterWindow(J_GUI_WINDOW_FLAG_ guiWindowFlag)
 		{
 			J_EDITOR_PAGE_FLAG pageFlag = JEditorPageShareData::GetPageFlag(ownerPageType);
-			if (JEditorPageShareData::GetPublicState(ownerPageType, J_EDITOR_PAGE_PUBLIC_STATE::INPUT_LOCK))
+			const bool inputLocked = JEditorPageShareData::GetPublicState(ownerPageType, J_EDITOR_PAGE_PUBLIC_STATE::INPUT_LOCK);
+			if (inputLocked)
 			{
 				guiWindowFlag = Core::AddSQValueEnum((J_GUI_WINDOW_FLAG)guiWindowFlag, J_GUI_WINDOW_FLAG_NO_NAV_INPUT);
 				JGui::PushItemFlag(J_GUI_ITEM_FLAG_DISABLED, true);
@@ -51,6 +56,18 @@ namespace JinEngine
 				JGui::PushItemFlag(J_GUI_ITEM_FLAG_READ_ONLY, true);
 				JGui::PushItemFlag(J_GUI_ITEM_FLAG_INPUTABLE, false);
 				JGui::SetAllColorToSoft(JVector4F(0.2f, 0.2f, 0.2f, 0));
+			}
+
+			if (state.nextFocusReqFrame > 0)
+			{
+				if (inputLocked)
+					state.nextFocusReqFrame = 0;
+				else
+				{
+					--state.nextFocusReqFrame;
+					if (state.nextFocusReqFrame == 0)
+						JGui::SetNextWindowFocus();
+				}
 			}
 
 			if (state.isMaximize)
@@ -104,7 +121,7 @@ namespace JinEngine
 				{
 					JGui::SetNextWindowSize(state.nextSize);
 					state.hasSetNextSizeReq = false;
-				}
+				} 
 				JGui::BeginWindow(GetName(), &state.isWindowOpen, guiWindowFlag);
 			}
 
@@ -280,8 +297,10 @@ namespace JinEngine
 					result.isPopupContentsClicked = setting.popupMenu->IsPopupContentsClicked();
 					SetContentsClick(true);
 				}
-
 				result.isMouseInPopup = setting.popupMenu->IsMouseInPopup();
+				result.isCloseThisFrame = result.isOpen && !setting.popupMenu->IsOpen();
+				if (setting.focusWindowIfCloseThisFrame && result.isCloseThisFrame && JGui::IsMouseInCurrentWindow())
+					JGui::FocusCurrentWindow();
 			}
 		}
 		JEditorWindow::PassSelectedOneF::Functor* JEditorWindow::GetPassSelectedOneFunctor()noexcept
@@ -319,25 +338,6 @@ namespace JinEngine
 		uint JEditorWindow::GetSelectedObjectCount()const noexcept
 		{
 			return (uint)selectedObjMap.size();
-		}
-		JVector4<float> JEditorWindow::GetSelectableColorFactor(const bool isSelecetd, const bool isHovered)const noexcept
-		{
-			if (isSelecetd)
-			{
-				if (IsFocus())
-					return JGui::GetSelectedWidgetColorFactor();
-				else
-					return  JGui::GetUnFocusedWidgetColorFactor();
-			}
-			else if (isHovered)
-			{
-				if (IsFocus())
-					return JGui::GetSelectedWidgetColorFactor() * 0.75f;
-				else
-					return JGui::GetUnFocusedWidgetColorFactor();
-			}
-			else
-				return JVector4F::Zero();
 		}
 		std::vector<JUserPtr<Core::JIdentifier>> JEditorWindow::GetSelectedObjectVec()const noexcept
 		{
@@ -420,20 +420,6 @@ namespace JinEngine
 		{
 			return state.isContentsClick;
 		}
-		void JEditorWindow::PushTreeNodeColorSet(const bool isActivated, const bool isSelected)
-		{
-			if (!isActivated)
-				JGui::PushColorToSoft(J_GUI_COLOR::TEXT, JGui::GetDeActivatedTextColorFactor());
-			if (isSelected)
-				JGui::PushTreeNodeColorToSoft(GetSelectableColorFactor(true, true));
-		}
-		void JEditorWindow::PopTreeNodeColorSet(const bool isActivated, const bool isSelected)
-		{
-			if (isSelected)
-				JGui::PopTreeNodeColorToSoftSet();
-			if (!isActivated)
-				JGui::PopColor();
-		}
 		void JEditorWindow::PushSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept
 		{
 			if (!obj.IsValid() || !CanUseSelectedMap() || selectedObjMap.find(obj->GetGuid()) != selectedObjMap.end())
@@ -460,6 +446,20 @@ namespace JinEngine
 				J_EDITOR_EVENT::CLEAR_SELECT_OBJECT,
 				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClearSelectObjectEvStruct>(GetOwnerPageType())));
 			*/
+		}
+		void JEditorWindow::PushOtherWindowGuidForListenEv(const size_t guid)noexcept
+		{
+			if (!CanUseSelectedMap())
+				return;
+
+			listenOtherWindowGuidSet.emplace(guid);
+		}
+		void JEditorWindow::PopOtherWindowGuidForListenEv(const size_t guid)noexcept
+		{
+			if (!CanUseSelectedMap())
+				return;
+
+			listenOtherWindowGuidSet.erase(guid);
 		}
 		bool JEditorWindow::RegisterEventListener(const J_EDITOR_EVENT evType)
 		{
@@ -692,9 +692,7 @@ namespace JinEngine
 						selectedObjMap.erase(data->GetGuid());
 				}
 				else if (eventType == J_EDITOR_EVENT::CLEAR_SELECT_OBJECT && CanUseSelectedMap())
-				{
 					ClearSelectedObject();
-				}
 			}
 		}
 		void JEditorWindow::TryBeginDragging(const JUserPtr<Core::JIdentifier> selectObj)
@@ -764,15 +762,7 @@ namespace JinEngine
 			state.hoveredObj.Clear();
 			JEditor::DoDeActivate();
 		}
-		void JEditorWindow::StoreEditorWindow(std::wofstream& stream)
-		{
-			JFileIOHelper::StoreJString(stream, L"Name:", JCUtil::U8StrToWstr(GetName()));
-			JFileIOHelper::StoreAtomicData(stream, L"Open:", IsOpen());
-			JFileIOHelper::StoreAtomicData(stream, L"Activate:", IsActivated());
-			JFileIOHelper::StoreAtomicData(stream, L"IsLastActivated:", IsLastActivated());
-			JFileIOHelper::StoreAtomicData(stream, L"Focus:", IsFocus());
-		}
-		void JEditorWindow::LoadEditorWindow(std::wifstream& stream)
+		void JEditorWindow::LoadEditorWindow(JFileIOTool& tool)
 		{
 			std::wstring name;
 			bool isOpen;
@@ -780,11 +770,11 @@ namespace JinEngine
 			bool isLastActivated;
 			bool isFocus;
 
-			JFileIOHelper::LoadJString(stream, name);
-			JFileIOHelper::LoadAtomicData(stream, isOpen);
-			JFileIOHelper::LoadAtomicData(stream, activated);
-			JFileIOHelper::LoadAtomicData(stream, isLastActivated);
-			JFileIOHelper::LoadAtomicData(stream, isFocus);
+			JFileIOHelper::LoadJString(tool, name, "Name:");
+			JFileIOHelper::LoadAtomicData(tool, isOpen, "Open:");
+			JFileIOHelper::LoadAtomicData(tool, activated, "Activate:");
+			JFileIOHelper::LoadAtomicData(tool, isLastActivated, "IsLastActivated:");
+			JFileIOHelper::LoadAtomicData(tool, isFocus, "Focus:");
 
 			if (isOpen)
 			{
@@ -801,19 +791,22 @@ namespace JinEngine
 					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorActWindowEvStruct>(this)));
 			}
 			SetLastActivated(isLastActivated);
-			/*if (isFocus)
-			{
-				AddEventNotification(*JEditorEvent::EvInterface(),
-					GetGuid(),
-					J_EDITOR_EVENT::FOCUS_WINDOW,
-					JEditorEvent::RegisterEvStruct(std::make_unique<JEditorFocusWindowEvStruct>(this, ownerPageType)));
-			}*/
+			if (isFocus)
+				state.nextFocusReqFrame = state.nextFocusWattingFrame;
+		}
+		void JEditorWindow::StoreEditorWindow(JFileIOTool& tool)
+		{
+			JFileIOHelper::StoreJString(tool, GetName(), "Name:");
+			JFileIOHelper::StoreAtomicData(tool, IsOpen(), "Open:");
+			JFileIOHelper::StoreAtomicData(tool, IsActivated(), "Activate:");
+			JFileIOHelper::StoreAtomicData(tool, IsLastActivated(), "IsLastActivated:");
+			JFileIOHelper::StoreAtomicData(tool, IsFocus(), "Focus:");
 		}
 		void JEditorWindow::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStructure)
 		{
 			if (eventStructure->CanExecuteCallerEv(senderGuid, GetGuid()))
 				ExecuteThisWindowNotifiedEv(senderGuid, eventType, eventStructure);
-			if (eventStructure->CanExecuteOtherEv(senderGuid, GetGuid()))
+			if (eventStructure->CanExecuteOtherEv(senderGuid, GetGuid()) && listenOtherWindowGuidSet.find(senderGuid) != listenOtherWindowGuidSet.end())
 				ExecuteOtherWindowNotifiedEv(senderGuid, eventType, eventStructure);
 		}
 	}

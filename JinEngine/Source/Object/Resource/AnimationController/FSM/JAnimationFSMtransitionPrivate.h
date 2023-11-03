@@ -7,6 +7,7 @@ namespace JinEngine
 	class JAnimationFSMstate;
 	class JAnimationFSMstatePrivate;
 	class JAnimationFSMtransition;
+	class JFileIOTool;
 	class JAnimationFSMtransitionPrivate final : public Core::JFSMtransitionPrivate
 	{
 	public:
@@ -16,8 +17,8 @@ namespace JinEngine
 			friend class JAnimationFSMstate;
 			friend class JAnimationFSMstatePrivate;
 		private:
-			Core::J_FILE_IO_RESULT LoadAssetData(std::wifstream& stream, const JUserPtr<JAnimationFSMtransition>& trans);
-			Core::J_FILE_IO_RESULT StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMtransition>& trans);
+			Core::J_FILE_IO_RESULT LoadAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMtransition>& trans);
+			Core::J_FILE_IO_RESULT StoreAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMtransition>& trans);
 		};
 		class CreateInstanceInterface final : public JFSMtransitionPrivate::CreateInstanceInterface
 		{

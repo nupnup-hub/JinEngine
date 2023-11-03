@@ -23,7 +23,7 @@ namespace JinEngine
 		{
 			std::string withOutName = name;
 			if (withOutName[0] == 'J')
-				withOutName = withOutName.substr(0);
+				withOutName = withOutName.substr(1);
 			
 			int index = (int)withOutName.find("Interface");
 			if (index != std::string::npos)
@@ -72,7 +72,7 @@ namespace JinEngine
 			else
 				return nullptr;
 		}
-		JTypeInfoGuiOption* JTypeInfo::GetOption() noexcept
+		JTypeInfoGuiOption* JTypeInfo::GetOption()noexcept
 		{  
 			return &option;
 		}
@@ -226,6 +226,10 @@ namespace JinEngine
 
 			return implTypeInfo->convertPtr(tBase);
 		}
+		JTypeInfoGuiOption* JTypeInfo::TryGetImplOption()noexcept
+		{
+			return HasImplTypeInfo() ? GetImplTypeInfo()->GetOption() : GetOption();
+		}
 		void JTypeInfo::TryLazyDestruction(JTypeBase* tBase)noexcept
 		{
 			if (!CanUseLazyDestruction())
@@ -341,6 +345,12 @@ namespace JinEngine
 		}
 		void JTypeInfo::ExecuteTypeCallOnece()
 		{
+			for (const auto& data : option.widgetHandleVec)
+			{
+				const uint widgetCount = data->GetWidgetInfoCount();
+				for (uint i = 0; i < widgetCount; ++i)
+					data->GetWidgetInfo(i)->TryReSettingExtraUserInfo();
+			}
 			callOncePtr();
 		}
 		void JTypeInfo::RegisterEngineDefaultAllocationOption()

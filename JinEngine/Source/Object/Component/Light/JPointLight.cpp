@@ -51,92 +51,93 @@ namespace JinEngine
 	{
 		static constexpr float minPower = 0.1f;
 		static constexpr float maxPower = 2.0f;
+		static constexpr float frustumNear = 1.0f;	//Constants::lightNear
 
 		static constexpr float InitPower()noexcept
 		{
 			return 1.0f;
 		}
-		static void CalView(const JUserPtr<JTransform>& transform, const POINT_LIT_DIR type, _Out_ JMatrix4x4& m) noexcept
+		static void CalView(const JUserPtr<JTransform>& transform, const POINT_LIT_DIR type, const float fNear, _Out_ JMatrix4x4& m) noexcept
 		{ 
 			/**
 			*  front축에 dir방향이 위치하게 회전한다고 생각하면 계산이 편하다.
 			*/
-			float zOffset = 0.2f;
+			float zOffset = fNear;
 			switch (type)
 			{
 			case JinEngine::POINT_LIT_DIR::UP:
 			{
 				JTransform::CalTransformMatrix(m, 
 					transform,
-					transform->GetPosition() + (transform->GetUp().Normalize() * -zOffset),
+					transform->GetPosition(),
+					//transform->GetPosition() + (transform->GetUp().Normalize() * -zOffset),
 					transform->GetRight(),
 					transform->GetFront() * JVector3F::NegativeOne(),
-					transform->GetUp());		
-				//m.r[3] += XMVector3Rotate(XMVectorSet(0, zOffset, 0, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+					transform->GetUp());		 
 				break;
 			}
 			case JinEngine::POINT_LIT_DIR::DOWN:
 			{
 				JTransform::CalTransformMatrix(m, 
 					transform,
-					transform->GetPosition() + (transform->GetUp().Normalize() * zOffset),
+					transform->GetPosition(),
+					//transform->GetPosition() + (transform->GetUp().Normalize() * zOffset),
 					transform->GetRight(),
 					transform->GetFront(),
-					transform->GetUp() * JVector3F::NegativeOne());
-				//m.r[3] += XMVector3Rotate(XMVectorSet(0, -zOffset, 0, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+					transform->GetUp() * JVector3F::NegativeOne()); 
 				break;
 			}
 			case JinEngine::POINT_LIT_DIR::FORWARD:
 			{
 				JTransform::CalTransformMatrix(m, 
 					transform,
-					transform->GetPosition() + (transform->GetFront().Normalize() * -zOffset),
+					transform->GetPosition(),
+					//transform->GetPosition() + (transform->GetFront().Normalize() * -zOffset),
 					transform->GetRight(),
 					transform->GetUp(),
-					transform->GetFront());
-				//m.r[3] += XMVector3Rotate(XMVectorSet(0, 0, zOffset, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+					transform->GetFront()); 
 				break;
 			}
 			case JinEngine::POINT_LIT_DIR::BACK:
 			{
 				JTransform::CalTransformMatrix(m, 
 					transform,
-					transform->GetPosition() + (transform->GetFront().Normalize() * zOffset),
+					transform->GetPosition(),
+					//transform->GetPosition() + (transform->GetFront().Normalize() * zOffset),
 					transform->GetRight() * JVector3F::NegativeOne(),
 					transform->GetUp(),
-					transform->GetFront() * JVector3F::NegativeOne());
-				//m.r[3] += XMVector3Rotate(XMVectorSet(0, 0, -zOffset, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+					transform->GetFront() * JVector3F::NegativeOne()); 
 				break;
 			}
 			case JinEngine::POINT_LIT_DIR::RIGHT:
 			{
 				JTransform::CalTransformMatrix(m, 
 					transform,
-					transform->GetPosition() + (transform->GetRight().Normalize() * -zOffset),
+					transform->GetPosition(),
+					//transform->GetPosition() + (transform->GetRight().Normalize() * -zOffset),
 					transform->GetFront() * JVector3F::NegativeOne(),
 					transform->GetUp(),
-					transform->GetRight());
-				//m.r[3] += XMVector3Rotate(XMVectorSet(zOffset, 0, 0, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+					transform->GetRight()); 
 				break;
 			}
 			case JinEngine::POINT_LIT_DIR::LEFT:
 			{
 				JTransform::CalTransformMatrix(m,
 					transform,
-					transform->GetPosition() + (transform->GetRight().Normalize() * zOffset),
+					transform->GetPosition(),
+					//transform->GetPosition() + (transform->GetRight().Normalize() * zOffset),
 					transform->GetFront(),
 					transform->GetUp(),
-					transform->GetRight() * JVector3F::NegativeOne());
-				//m.r[3] += XMVector3Rotate(XMVectorSet(-zOffset, 0, 0, 1.0f), XMQuaternionRotationMatrix(m.LoadXM()));
+					transform->GetRight() * JVector3F::NegativeOne()); 
 				break;
 			}
 			default:
 				break;
 			}    
 		}
-		static XMMATRIX CalProj(const float range)noexcept
+		static XMMATRIX CalProj(const float fNear, const float fFar)noexcept
 		{
-			return XMMatrixPerspectiveFovLH(90.0f * JMathHelper::DegToRad, 1.0f, 0.2f, range);
+			return XMMatrixPerspectiveFovLH(90.0f * JMathHelper::DegToRad, 1.0f, fNear, fFar);
 			//return XMMatrixOrthographicOffCenterLH(-radius, radius, -radius, radius, frustumNear, frustumFar);
 			//return XMMatrixOrthographicLH(radius * 2, radius * 2, frustumNear, frustumFar);
 		}
@@ -144,7 +145,7 @@ namespace JinEngine
 
 	class JPointLight::JPointLightImpl : public Core::JTypeImplBase,
 		public LitFrameUpdate,
-		public Graphic::JGraphicWideSingleResourceHolder<2>,
+		public Graphic::JGraphicWideSingleResourceHolder<3>,	//shadowMap, debug, rtv(for vsm)
 		//public Graphic::JGraphicTypePerSingleResourceHolder,
 		public Graphic::JGraphicDrawListCompInterface,
 		public Graphic::JCullingInterface
@@ -160,11 +161,15 @@ namespace JinEngine
 		float power = Private::InitPower();
 		REGISTER_PROPERTY_EX(range, GetRange, SetRange, GUI_SLIDER(Constants::lightNear, Constants::lightMaxFar, true, false))
 		float range = 100.0f;
-		REGISTER_PROPERTY_EX(radius, GetRadius, SetRadius, GUI_SLIDER(0, Constants::lightMaxFar * 0.5f, true, false, GUI_ENUM_CONDITION_USER(LightType, J_LIGHT_TYPE::SPOT, J_LIGHT_TYPE::POINT)))
+		REGISTER_PROPERTY_EX(radius, GetRadius, SetRadius, GUI_SLIDER(0, Constants::lightMaxFar, true, false, 3, GUI_ENUM_CONDITION_USER(LightType, J_LIGHT_TYPE::SPOT, J_LIGHT_TYPE::POINT)))
 		float radius = 0.0f;
 	public:
 		//managed by light type  
 		bool allowFrustumCulling = false;
+	public:
+		//J_SIMPLE_GET_SET_EX(bool, allowVSM, AllowVSM, SetFrameDirty();)
+		//REGISTER_PROPERTY_EX(allowVSM, GetAllowVSM, SetAllowVSM, GUI_CHECKBOX())
+		//bool allowVSM = false;
 	public:
 		JMatrix4x4 view[(uint)POINT_LIT_DIR::COUNT];
 		JMatrix4x4 proj;
@@ -185,7 +190,7 @@ namespace JinEngine
 		}
 		float GetFrustumNear()const noexcept
 		{
-			return Constants::lightNear;
+			return Private::frustumNear;
 		}
 		float GetFrustumFar()const noexcept
 		{
@@ -206,7 +211,7 @@ namespace JinEngine
 		DirectX::BoundingBox GetBBox()const noexcept
 		{
 			DirectX::BoundingBox bbox;
-			bbox.Center = GetTransform()->GetWorldPosition().ToXmF();
+			bbox.Center = GetTransform()->GetWorldPosition().ToSimilar<XMFLOAT3>();
 			bbox.Extents = XMFLOAT3(radius, radius, radius);
 			return bbox;
 		}
@@ -217,21 +222,17 @@ namespace JinEngine
 	public:
 		//value가 bool type일경우에만 justCallFunc을 사용할수있다
 		//justCallFunc는 값을 변경하지않고 함수내에서 value per 기능을 수행한다
-		void SetShadow(const bool value)
+		void SetShadow(const bool value, const bool isManual = false)noexcept
 		{
-			SetShadowEx(value, false);
-		}
-		void SetShadowEx(const bool value, const bool justCallFunc)noexcept
-		{
-			if (justCallFunc || thisPointer->IsActivated())
+			if (thisPointer->IsActivated() || isManual)
 			{
-				if (thisPointer->IsShadowActivated())
+				if (value)
 					CreateShadowMapResource();
 				else
 					DestroyShadowMapResource();
 			}
 			SetFrameDirty();
-		}
+		} 
 		void SetShadowResolution(const J_SHADOW_RESOLUTION newShadowResolution)noexcept
 		{
 			if (thisPointer->IsActivated() && thisPointer->IsShadowActivated())
@@ -241,13 +242,9 @@ namespace JinEngine
 			}
 			SetFrameDirty();
 		}
-		void SetAllowDisplayShadowMap(const bool value)
+		void SetAllowDisplayShadowMap(const bool value, const bool isManual = false)
 		{
-			SetAllowDisplayShadowMapEx(value, false);
-		}
-		void SetAllowDisplayShadowMapEx(const bool value, const bool justCallFunc = false)
-		{
-			if (justCallFunc || thisPointer->IsActivated())
+			if (thisPointer->IsActivated() || isManual)
 			{
 				if (value)
 					CreateShadowMapDebugResource();
@@ -290,7 +287,7 @@ namespace JinEngine
 		}
 		void SetRadius(const float newRadius)noexcept
 		{
-			radius = std::clamp(newRadius, 0.0f, range * 0.5f);
+			radius = std::clamp(newRadius, 0.0f, range);
 			SetFrameDirty();
 		}
 	public:
@@ -316,10 +313,9 @@ namespace JinEngine
 		}
 	public:
 		void CreateShadowMapResource()noexcept
-		{
-			CreateShadowMapCubeTexture(thisPointer->GetShadowMapSize());
+		{ 
+			CreateShadowMapTextureCube(thisPointer->GetShadowMapSize());
 			CreateFrustumCullingData();
-
 			if (thisPointer->AllowDisplayShadowMap())
 				CreateShadowMapDebugResource();
 
@@ -351,7 +347,7 @@ namespace JinEngine
 		{
 			RegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
 			if (thisPointer->IsShadowActivated())
-				SetShadowEx(true, true);
+				SetShadow(true, true);
 			if (allowFrustumCulling)
 				SetAllowFrustumCulling(true, true);
 		}
@@ -360,7 +356,7 @@ namespace JinEngine
 			//has order dependency
 			DeRegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
 			if (thisPointer->IsShadowActivated())
-				SetShadowEx(false, true);
+				SetShadow(false, true);
 			if (allowFrustumCulling)
 				SetAllowFrustumCulling(false, true);
 			DestroyAllCullingData();
@@ -369,27 +365,37 @@ namespace JinEngine
 	public:
 		void UpdateFrame(Graphic::JPointLightConstants& constant)noexcept final
 		{
+			const XMMATRIX projM = proj.LoadXM();
+			const XMMATRIX ndcM = JMatrix4x4::NdcToTextureSpaceXM();
+			for (uint i = 0; i < Graphic::Constants::cubeMapPlaneCount; ++i)		 
+				constant.shadowMapTransform[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(XMMatrixMultiply(view[i].LoadXM(), projM), ndcM)));
+			 
 			constant.color = thisPointer->GetColor();
 			constant.power = power;
 			constant.position = GetTransform()->GetWorldPosition();
-			constant.range = range;
+			constant.frustumNear = GetFrustumNear();
+			constant.frustumFar = GetFrustumFar();
 			constant.radius = radius;
+			constant.penumbraScale = thisPointer->GetPenumbraWidth();
+			constant.penumbraBlockerScale = thisPointer->GetPenumbraBlockerWidth();
 			constant.shadowMapIndex = IsShadowActivated() ? GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE, 0) : 0;
 			constant.hasShadowMap = IsShadowActivated();
+			constant.shadowMapSize = thisPointer->GetShadowMapSize();
+			constant.shadowMapInvSize = 1.0f / constant.shadowMapSize;
 			PointLitFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JShadowMapCubeDrawConstants& constant)noexcept final
 		{
 			const XMMATRIX projM = proj.LoadXM();
-			for (uint i = 0; i < (uint)POINT_LIT_DIR::COUNT; ++i)
+			for (uint i = 0; i < Graphic::Constants::cubeMapPlaneCount; ++i)
 				constant.shadowMapTransform[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(view[i].LoadXM(), projM)));
 			ShadowMapCubeDrawFrame::MinusMovedDirty();
 		}
 		void UpdateLightTransform()
 		{
 			for (uint i = 0; i < (uint)POINT_LIT_DIR::COUNT; ++i)
-				Private::CalView(GetTransform(), (POINT_LIT_DIR)i, view[i]);
-			proj.StoreXM(Private::CalProj(range));
+				Private::CalView(GetTransform(), (POINT_LIT_DIR)i, GetFrustumNear(), view[i]);
+			proj.StoreXM(Private::CalProj(GetFrustumNear(), GetFrustumFar()));
 		}
 	public:
 		static bool DoCopy(JPointLight* from, JPointLight* to)
@@ -645,18 +651,18 @@ namespace JinEngine
 		float sRadius;
 
 		auto loadData = static_cast<JPointLight::LoadData*>(data);
-		std::wifstream& stream = loadData->stream;
+		JFileIOTool& tool = loadData->tool;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
-		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
+		JObjectFileIOHelper::LoadComponentIden(tool, guid, flag, isActivated);
 		auto idenUser = lPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JPointLight::InitData>(guid, flag, owner), &lPrivate);
 		JUserPtr<JPointLight> litUser;
 		litUser.ConnnectChild(idenUser);
 
-		JLightPrivate::AssetDataIOInterface::LoadLightData(stream, litUser);
-		JObjectFileIOHelper::LoadAtomicData(stream, sPower);
-		JObjectFileIOHelper::LoadAtomicData(stream, sRange);
-		JObjectFileIOHelper::LoadAtomicData(stream, sRadius);
+		JLightPrivate::AssetDataIOInterface::LoadLightData(tool, litUser);
+		JObjectFileIOHelper::LoadAtomicData(tool, sPower, "Power:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sRange, "Range:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sRadius, "Radius:");
 		litUser->SetPower(sPower);
 		litUser->SetRange(sRange);
 		litUser->SetRadius(sRadius);
@@ -677,13 +683,13 @@ namespace JinEngine
 		lit.ConnnectChild(storeData->obj);
 
 		JPointLight::JPointLightImpl* impl = lit->impl.get();
-		std::wofstream& stream = storeData->stream;
+		JFileIOTool& tool = storeData->tool;
 
-		JObjectFileIOHelper::StoreComponentIden(stream, lit.Get());
-		JLightPrivate::AssetDataIOInterface::StoreLightData(stream, lit);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"Power:", impl->power);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"Range:", impl->range);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"Radius:", impl->radius);
+		JObjectFileIOHelper::StoreComponentIden(tool, lit.Get());
+		JLightPrivate::AssetDataIOInterface::StoreLightData(tool, lit);
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->power, "Power:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->range, "Range:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->radius, "Radius:");
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}

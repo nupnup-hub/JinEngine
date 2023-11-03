@@ -18,7 +18,7 @@
 #include"../../../../Object/Component/Camera/JCamera.h"  
 #include"../../../../Object/Component/Camera/JCameraPrivate.h"  
 #include"../../../../Object/Component/Transform/JTransform.h"
-#include"../../../../Object/Component/RenderItem/JRenderItem.h"
+#include"../../../../Object/Component/RenderItem/JRenderItem.h" 
 #include"../../../../Object/Component/Light/JLight.h" 
 #include"../../../../Object/Resource/Scene/JScene.h"  
 #include"../../../../Object/Resource/Scene/JScenePrivate.h"  
@@ -35,10 +35,10 @@
 #include"../../../../../ThirdParty/DirectX/TK/Src/d3dx12.h"
 
 //test
-#include"../../../../Object/Directory/JDirectory.h"
-#include"../../../../Object/Directory/JFile.h"
-#include"../../../../Object/Resource/Mesh/JMeshGeometry.h" 
-#include"../../../../Object/Component/RenderItem/JRenderItemPrivate.h"
+//#include"../../../../Object/Directory/JDirectory.h"
+//#include"../../../../Object/Directory/JFile.h"
+//#include"../../../../Object/Resource/Mesh/JMeshGeometry.h" 
+//#include"../../../../Object/Component/RenderItem/JRenderItemPrivate.h"
 
 //#include<fstream>
 //Debug
@@ -59,7 +59,8 @@ namespace JinEngine
 			using SceneDebugInterface = JScenePrivate::DebugInterface;
 			using SceneCashInterface = JScenePrivate::CashInterface;
 			using GraphicResourceInterface = Graphic::JGraphicPrivate::ResourceInterface;
-			using RItemFrameIndex = JRenderItemPrivate::FrameIndexInterface;
+			//Debug
+			//using RItemFrameIndex = JRenderItemPrivate::FrameIndexInterface;
 		}
 		namespace Private
 		{
@@ -201,18 +202,21 @@ namespace JinEngine
 			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE pageType,
 			const J_EDITOR_WINDOW_FLAG windowFlag,
-			const std::vector<J_OBSERVER_SETTING_TYPE> useSettingType)
+			const std::vector<J_OBSERVER_SETTING_TYPE> useSettingType,
+			const std::vector<size_t>& listenWindowGuidVec)
 			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
 		{
 			coordGrid = std::make_unique<JEditorSceneCoordGrid>();
-			editorBTreeView = std::make_unique<JEditorBinaryTreeView>();
-			editorCamCtrl = std::make_unique<JEditorCameraControl>();
+			editBTreeView = std::make_unique<JEditorBinaryTreeView>();
+			editCamCtrl = std::make_unique<JEditorCameraControl>();
 			mouseBBox = std::make_unique<JEditorMouseIdenDragBox>();
 			selectNodeFunctor = std::make_unique<SelectMenuNodeT::Functor>(&JSceneObserver::SelectObserverSettingNode, this);
 			activateNodeFunctor = std::make_unique<ActivateMenuNodeT::Functor>(&JSceneObserver::ActivateObserverSetting, this);
 			deActivateNodeFunctor = std::make_unique<DeActivateMenuNodeT::Functor>(&JSceneObserver::DeActivateObserverSetting, this);
 			updateNodeFunctor = std::make_unique<UpdateMenuNodeT::Functor>(&JSceneObserver::UpdateObserverSetting, this);
 
+			for (const auto& data : listenWindowGuidVec)
+				PushOtherWindowGuidForListenEv(data);
 			BuildMenuBar(useSettingType);
 			BuildMenuIcon(useSettingType);
 		}
@@ -369,6 +373,11 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::SCENE_OBSERVER;
 		}
+		void JSceneObserver::SetScenePlayProccess(std::unique_ptr<BeginScenePlayF::Functor> newBeginScenePlayF, std::unique_ptr<EndScenePlayF::Functor> newEndScenePlayF)
+		{
+			beginScenePlayF = std::move(newBeginScenePlayF);
+			endScenePlayF = std::move(newEndScenePlayF);
+		}
 		void JSceneObserver::Initialize(JUserPtr<JScene> newScene, const std::wstring& editorCameraName)noexcept
 		{
 			scene = newScene;
@@ -390,7 +399,7 @@ namespace JinEngine
 
 				UpdateMouseClick();
 				UpdateMouseWheel();
-				editorCamCtrl->Update(editCamData.cam.Get(), JGui::GetMousePos().x, JGui::GetMousePos().y, J_GUI_FOCUS_FLAG_CHILD_WINDOW);
+				editCamCtrl->Update(editCamData.cam, JGui::GetMousePos().x, JGui::GetMousePos().y, J_GUI_FOCUS_FLAG_CHILD_WINDOW);
 
 				JUserPtr<JTransform> camTransform = editCamData.cam->GetTransform();
 				coordGrid->Update(JVector2<float>(camTransform->GetPosition().x, camTransform->GetPosition().z));
@@ -441,6 +450,32 @@ namespace JinEngine
 				JGuiWindowInfo wndInfo;
 				JGui::GetCurrentWindowInfo(wndInfo);
 
+				//Debug
+				/*
+				if (GetSelectedObjectCount() == 1)
+				{
+					auto selected = GetSelectedObjectVec();
+					auto fCam = scene->FindFirstSelectedCamera(false);
+					auto gameObj = Core::ConvertChildUserPtr<JGameObject>(selected[0]);
+					if (fCam != nullptr && gameObj != nullptr)
+					{
+						auto rItem = gameObj->GetRenderItem();
+						if (rItem != nullptr)
+						{
+							//auto oBB = rItem->GetOrientedBoundingBox();
+							//auto tBB = rItem->GetDetphTestBoundingBox();
+							//auto frsutum = fCam->GetBoundingFrustum();
+
+							//JGui::Text(JVector3F(oBB.Center).ToString() + " " + JVector3F(oBB.Extents).ToString());
+							//JGui::Text(JVector3F(tBB.Center).ToString() + " " + JVector3F(tBB.Extents).ToString());
+							//JGui::Text(std::to_string(frsutum.Contains(oBB)));
+							//JGui::Text(std::to_string(frsutum.Contains(tBB)));
+							//JGui::Text(std::to_string(JRenderItemPrivate::FrameIndexInterface::GetBoundingFrameIndex(rItem.Get())));
+						}
+					}
+				}
+				*/
+				
 				Private::cursor = JGui::GetCursorScreenPos();
 				//JGui::Image(*camera, JGui::GetMainViewport()->WorkSize); 
 				JGuiImageInfo imageInfo(editCamData.cam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);
@@ -496,14 +531,17 @@ namespace JinEngine
 					if (mouseBBox->GetSelectedCount() > 0)
 						SetContentsClick(true);
 				}
-				editCamData.lastPos = editCamData.cam->GetTransform()->GetPosition();
-				editCamData.lastRot = editCamData.cam->GetTransform()->GetRotation();
+				if (editCamData.cam != nullptr)
+				{
+					editCamData.lastPos = editCamData.cam->GetTransform()->GetPosition();
+					editCamData.lastRot = editCamData.cam->GetTransform()->GetRotation();
+				}
 			}
 			CloseWindow();
 		}
 		void JSceneObserver::UpdateMouseWheel()
 		{
-			editorCamCtrl->AddMovementFactor(JGui::GetMouseWheel());
+			editCamCtrl->AddMovementFactor(JGui::GetMouseWheel());
 		}
 		void JSceneObserver::DisplaySceneIcon(const JVector2F sceneImagePos, const bool canSelectIcon, _Out_ bool& hasSelected)
 		{
@@ -519,7 +557,7 @@ namespace JinEngine
 			//obj to screen pos
 			auto litVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
 			auto camVec = scene->GetComponentVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA);
- 
+
 			auto camFrustum = editCamData.cam->GetBoundingFrustum();
 			auto validFrustum = camFrustum;
 			const float frustumRange = camFrustum.Far - camFrustum.Near;
@@ -552,7 +590,7 @@ namespace JinEngine
 				const JVector4F cPos = DirectX::XMVector4Transform(DirectX::XMVector4Transform(wPos, viewM), projM);
 				const JVector2F ndcPos = JVector2F(cPos.x / cPos.w, cPos.y / cPos.w);
 				const float reduceSizeFactor = calReduceRateLam(iconRange, cPos.w);
-				 
+
 				const JVector2F iconCenterPos = JVector2F((ndcPos.x * wndSize.x + wndSize.x) / 2, (-ndcPos.y * wndSize.y + wndSize.y) / 2) + posOffset;
 				const JVector2F iconHalfSize = JVector2F(iconSizeFactor * reduceSizeFactor, iconSizeFactor * reduceSizeFactor) * offsetScaleRate * 0.5f;
 				const JVector2F iconMinPos = iconCenterPos - iconHalfSize;
@@ -714,6 +752,8 @@ namespace JinEngine
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_PLAY_SCENE_TIME:
 			{
+				if (beginScenePlayF != nullptr)
+					(*beginScenePlayF)();
 				SceneTimeInterface::ActivateSceneTime(scene);
 				nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME].isOpen = false;
 				break;
@@ -766,6 +806,8 @@ namespace JinEngine
 			{
 				SceneTimeInterface::DeActivateSceneTime(scene);
 				nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME].isOpen = false;
+				if (endScenePlayF != nullptr)
+					(*endScenePlayF)();
 				break;
 			}
 			case J_OBSERVER_SETTING_TYPE::TOOL_PAUSE_SCENE_TIME:
@@ -1021,12 +1063,12 @@ namespace JinEngine
 			if (spaceData->selectedIndex != -1)
 			{
 				J_ACCELERATOR_TYPE type = (J_ACCELERATOR_TYPE)spaceData->selectedIndex;
-				editorBTreeView->ClearNode();
-				SceneDebugInterface::BuildDebugTree(scene, type, J_ACCELERATOR_LAYER::COMMON_OBJECT, *editorBTreeView);
-				if (editorBTreeView->BeginView(Core::GetName(type) + +"##DebugTreeView", &treeData->isOpen, J_GUI_WINDOW_FLAG_NO_DOCKING))
+				editBTreeView->ClearNode();
+				SceneDebugInterface::BuildDebugTree(scene, type, J_ACCELERATOR_LAYER::COMMON_OBJECT, *editBTreeView);
+				if (editBTreeView->BeginView(Core::GetName(type) + +"##DebugTreeView", &treeData->isOpen, J_GUI_WINDOW_FLAG_NO_DOCKING))
 				{
-					editorBTreeView->OnScreen();
-					editorBTreeView->EndView();
+					editBTreeView->OnScreen();
+					editBTreeView->EndView();
 				}
 			}
 		}
@@ -1309,7 +1351,7 @@ namespace JinEngine
 				}
 			}
 
-			editorCamCtrl->SetMousePos(JGui::GetMousePos());
+			editCamCtrl->SetMousePos(JGui::GetMousePos());
 		}
 		void JSceneObserver::DoDeActivate()noexcept
 		{
@@ -1317,53 +1359,65 @@ namespace JinEngine
 			RemoveListener(*JEditorEvent::EvInterface(), GetGuid());
 			JEditorWindow::DoDeActivate();
 		}
-		void JSceneObserver::StoreEditorWindow(std::wofstream& stream)
-		{
-			JEditorWindow::StoreEditorWindow(stream);
-			JFileIOHelper::StoreVector3(stream, L"LastCamPos:", editCamData.lastPos);
-			JFileIOHelper::StoreVector3(stream, L"LastCamRot:", editCamData.lastRot);
-			for (uint i = 0; i < (uint)J_OBSERVER_SETTING_TYPE::COUNT; ++i)
-			{
-				auto data = &nodeUtilData[i];
-				JFileIOHelper::StoreAtomicData(stream, L"IsOpen:", data->isOpen);
-				JFileIOHelper::StoreAtomicData(stream, L"SeletedIndex:", data->selectedIndex);
-			}
-			JFileIOHelper::StoreAtomicData(stream, L"allowDisplayDebug", editOption.allowDisplayDebug);
-			JFileIOHelper::StoreAtomicData(stream, L"allowFrustumCulling", editOption.allowFrustumCulling);
-			JFileIOHelper::StoreAtomicData(stream, L"allowOccCulling", editOption.allowOccCulling);
-			JFileIOHelper::StoreAtomicData(stream, L"allowReflectCullingResult", editOption.allowReflectCullingResult);
-
-			JFileIOHelper::StoreAtomicData(stream, L"CoordLineCount", coordGrid->GetLineCount());
-			JFileIOHelper::StoreAtomicData(stream, L"CoordLineStep", coordGrid->GetLineStep());
-		}
-		void JSceneObserver::LoadEditorWindow(std::wifstream& stream)
+		void JSceneObserver::LoadEditorWindow(JFileIOTool& tool)
 		{
 			JVector3<float> lastPos;
 			JVector3<float> lastRot;
 			int lineCount = 0;
 			int lineStep = 0;
+			float movementFactor = 0;
 
-			JEditorWindow::LoadEditorWindow(stream);
-			JFileIOHelper::LoadVector3(stream, lastPos);
-			JFileIOHelper::LoadVector3(stream, lastRot);
+			JEditorWindow::LoadEditorWindow(tool);
+			JFileIOHelper::LoadVector3(tool, lastPos, "LastCamPos:");
+			JFileIOHelper::LoadVector3(tool, lastRot, "LastCamRot:");
+
+			tool.PushExistStack("NodeData");
 			for (uint i = 0; i < (uint)J_OBSERVER_SETTING_TYPE::COUNT; ++i)
 			{
 				auto data = &nodeUtilData[i];
-				JFileIOHelper::LoadAtomicData(stream, data->isOpen);
-				JFileIOHelper::LoadAtomicData(stream, data->selectedIndex);
+				tool.PushExistStack();
+				JFileIOHelper::LoadAtomicData(tool, data->isOpen, "IsOpen:");
+				JFileIOHelper::LoadAtomicData(tool, data->selectedIndex, "SeletedIndex:");
+				tool.PopStack();
 			}
-			JFileIOHelper::LoadAtomicData(stream, editOption.allowDisplayDebug);
-			JFileIOHelper::LoadAtomicData(stream, editOption.allowFrustumCulling);
-			JFileIOHelper::LoadAtomicData(stream, editOption.allowOccCulling);
-			JFileIOHelper::LoadAtomicData(stream, editOption.allowReflectCullingResult);
+			tool.PopStack();
+			JFileIOHelper::LoadAtomicData(tool, editOption.allowDisplayDebug, "allowDisplayDebug");
+			JFileIOHelper::LoadAtomicData(tool, editOption.allowFrustumCulling, "allowFrustumCulling");
+			JFileIOHelper::LoadAtomicData(tool, editOption.allowOccCulling, "allowOccCulling");
+			JFileIOHelper::LoadAtomicData(tool, editOption.allowReflectCullingResult, "allowReflectCullingResult");
+			JFileIOHelper::LoadAtomicData(tool, lineCount, "CoordLineCount");
+			JFileIOHelper::LoadAtomicData(tool, lineStep, "CoordLineStep");
+			JFileIOHelper::LoadAtomicData(tool, movementFactor, "MovemnetFactor:");
 
-			JFileIOHelper::LoadAtomicData(stream, lineCount);
-			JFileIOHelper::LoadAtomicData(stream, lineStep);
-
-			lastPos = lastPos;
-			lastRot = lastRot;
+			editCamData.lastPos = lastPos;
+			editCamData.lastRot = lastRot;
 			coordGrid->SetLineCount(lineCount);
 			coordGrid->SetLineStep(lineStep);
+			editCamCtrl->SetMovemnetFactor(movementFactor);
+		}
+		void JSceneObserver::StoreEditorWindow(JFileIOTool& tool)
+		{
+			JEditorWindow::StoreEditorWindow(tool);
+			JFileIOHelper::StoreVector3(tool, editCamData.lastPos, "LastCamPos:");
+			JFileIOHelper::StoreVector3(tool, editCamData.lastRot, "LastCamRot:");
+
+			tool.PushArrayOwner("NodeData");
+			for (uint i = 0; i < (uint)J_OBSERVER_SETTING_TYPE::COUNT; ++i)
+			{
+				auto data = &nodeUtilData[i];
+				tool.PushArrayMember();
+				JFileIOHelper::StoreAtomicData(tool, data->isOpen, "IsOpen:");
+				JFileIOHelper::StoreAtomicData(tool, data->selectedIndex, "SeletedIndex:");
+				tool.PopStack();
+			}
+			tool.PopStack();
+			JFileIOHelper::StoreAtomicData(tool, editOption.allowDisplayDebug, "allowDisplayDebug");
+			JFileIOHelper::StoreAtomicData(tool, editOption.allowFrustumCulling, "allowFrustumCulling");
+			JFileIOHelper::StoreAtomicData(tool, editOption.allowOccCulling, "allowOccCulling");
+			JFileIOHelper::StoreAtomicData(tool, editOption.allowReflectCullingResult, "allowReflectCullingResult");
+			JFileIOHelper::StoreAtomicData(tool, coordGrid->GetLineCount(), "CoordLineCount");
+			JFileIOHelper::StoreAtomicData(tool, coordGrid->GetLineStep(), "CoordLineStep");
+			JFileIOHelper::StoreAtomicData(tool, editCamCtrl->GetMovemnetFactor(), "MovemnetFactor:");
 		}
 		void JSceneObserver::CreateShapeGroup()
 		{

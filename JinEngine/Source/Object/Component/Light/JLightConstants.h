@@ -7,7 +7,7 @@ namespace JinEngine
 		static constexpr int maxScenePerDircitonalLight = 4;
 
 		static constexpr float lightMinDistance = 0.1f;
-		static constexpr float lightMaxDistance = 10000;
+		static constexpr float lightMaxDistance = 2500;
 		static constexpr float lightMaxDistanceHalf = lightMaxDistance * 0.5f;
 
 		//for calculate perspective proj

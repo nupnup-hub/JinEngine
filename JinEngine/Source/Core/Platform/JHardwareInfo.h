@@ -57,6 +57,7 @@ namespace JinEngine
 				size_t sharedMemPerBlock;
 				int multiProcessorCount;
 				int registersPerBlock;
+				int registersPerMultiProcessor;
 				int threadWarpSize;
 				int maxThreadsPerBlock;
 				int maxBlocksPerMultiProcessor;

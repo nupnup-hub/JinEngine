@@ -54,6 +54,7 @@ namespace JinEngine
 		JUserPtr<JTexture> GetHeightMap() const noexcept;
 		JUserPtr<JTexture> GetRoughnessMap() const noexcept;
 		JUserPtr<JTexture> GetAmbientOcclusionMap() const noexcept;
+		JShaderCondition GetShaderCondition()const noexcept;
 		J_SHADER_PRIMITIVE_TYPE GetPrimitiveType()const noexcept;
 		J_SHADER_DEPTH_COMPARISON_FUNC GetDepthCompasionFunc()const noexcept;
 	public:

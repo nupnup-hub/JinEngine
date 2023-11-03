@@ -55,7 +55,7 @@ namespace JinEngine
 		JBBox::~JBBox() {}
 		DirectX::BoundingBox JBBox::Convert()const noexcept
 		{  
-			return DirectX::BoundingBox(Center().ToXmF(), Extent().ToXmF());
+			return DirectX::BoundingBox(Center().ToSimilar<XMFLOAT3>(), Extent().ToSimilar<XMFLOAT3>());
 		}
 		void JBBox::Coners(_Out_ JVector3<float>(&outCorners)[8])const noexcept
 		{

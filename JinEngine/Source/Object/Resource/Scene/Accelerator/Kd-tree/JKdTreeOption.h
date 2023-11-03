@@ -4,6 +4,7 @@
  
 namespace JinEngine
 {
+	class JFileIOTool;
 	struct JKdTreeOption
 	{
 	public:
@@ -20,7 +21,7 @@ namespace JinEngine
 		bool EqualKdTreeOption(const JKdTreeOption& tar)const noexcept;
 		bool EqualCommonOption(const JKdTreeOption& tar)const noexcept;
 	public:
-		void Store(std::wofstream& stream);
-		void Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid);
+		void Store(JFileIOTool& tool);
+		void Load(JFileIOTool& tool, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid);
 	};
 }

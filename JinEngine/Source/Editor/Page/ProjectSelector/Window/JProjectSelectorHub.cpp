@@ -26,12 +26,7 @@
 namespace JinEngine
 {
 	namespace Editor
-	{
-		namespace
-		{
-			using AppIOInterface = JApplicationProjectPrivate::IOInterface;
-			using AppLifeInterface = JApplicationProjectPrivate::LifeInterface;
-		}
+	{ 
 		namespace Private
 		{
 			static constexpr J_GUI_WINDOW_FLAG_ guiWindowFlag = J_GUI_WINDOW_FLAG_NO_RESIZE |
@@ -203,7 +198,7 @@ namespace JinEngine
 			J_SIMPLE_UNIQUE_P_GET(JEditorInputBuffHelper, nameHelper, NameHelper);
 			J_SIMPLE_UNIQUE_P_GET(JEditorInputBuffHelper, pathHelper, PathHelper);
 		};
-		class JProjectSelectorHubCreationImpl
+		class JProjectSelectorHubCreationFunctor
 		{
 		public:
 			using DestroyProjectF = Core::JSFunctorType<void, JProjectSelectorHub*>;
@@ -215,22 +210,24 @@ namespace JinEngine
 		JProjectSelectorHub::JProjectSelectorHub(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE ownerPageType,
-			const J_EDITOR_WINDOW_FLAG windowFlag)
-			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag)
+			const J_EDITOR_WINDOW_FLAG windowFlag,
+			std::unique_ptr<JEditorProjectInterface>&& newPInterface)
+			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag),
+			pInterface(std::move(newPInterface))
 		{
-			creationImpl = std::make_unique<JProjectSelectorHubCreationImpl>();
+			creation = std::make_unique<JProjectSelectorHubCreationFunctor>();
 			searchHelper = std::make_unique<JEditorSearchBarHelper>(false);
 			dynamicCol = std::make_unique<JEditorDynamicSpotColor>();
 			values = std::make_unique<SelectorValues>();
 			InitializeCreationImpl();
 
 			ResourceEvListener::AddEventListener(*JResourceObject::EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
-			AppIOInterface::LoadProjectList();
+			(*pInterface->loadProjectListF)(); 
 		}
 		JProjectSelectorHub::~JProjectSelectorHub()
 		{
 			ResourceEvListener::RemoveListener(*JResourceObject::EvInterface(), GetGuid());
-			AppIOInterface::StoreProjectList();
+			(*pInterface->storeProjectListF)();
 		}
 		void JProjectSelectorHub::InitializeCreationImpl()
 		{
@@ -242,10 +239,10 @@ namespace JinEngine
 				const int selectedIndex = hub->values->GetSelectedIndex();
 				Core::JIdentifier::BeginDestroy(hub->lastRSVec[selectedIndex].Release()); 
 				hub->lastRSVec.erase(hub->lastRSVec.begin() + selectedIndex);
-				AppLifeInterface::DestroyProject(selectedIndex);
+				(*hub->pInterface->destroyProjectF)(selectedIndex);
 			};
-			using DestroyProjectF = JProjectSelectorHubCreationImpl::DestroyProjectF;
-			creationImpl->destroyF = std::make_unique<DestroyProjectF::Functor>(destoryProjLam);
+			using DestroyProjectF = JProjectSelectorHubCreationFunctor::DestroyProjectF;
+			creation->destroyF = std::make_unique<DestroyProjectF::Functor>(destoryProjLam);
 		}
 		J_EDITOR_WINDOW_TYPE JProjectSelectorHub::GetWindowType()const noexcept
 		{
@@ -517,7 +514,7 @@ namespace JinEngine
 				bool isSelected = i == values->GetSelectedIndex();
 				bool isHovered = JGui::IsMouseInRect(JGui::GetCursorScreenPos(), nowSize);
 
-				JVector4<float> addedFrameColor = GetSelectableColorFactor(isSelected, isHovered);
+				JVector4<float> addedFrameColor = JGui::GetSelectableColorFactor(IsFocus(), isSelected, isHovered);
 				if (lastRSVec[i].IsValid())
 				{
 					const float contetentsFrameThickness = (isSelected || isHovered) ? hoveredFrameThickness : Private::frameThickness;
@@ -699,7 +696,7 @@ namespace JinEngine
 				layOutData.btnSpacing,
 				layOutData.listBtnPos);
 
-			using GuidButtonPtr = void(*)(SelectorValues& value);
+			using GuidButtonPtr = void(*)(SelectorValues& value, JEditorProjectInterface* pInterface);
 			using CanSelectButtonPtr = bool(*)(const SelectorValues& value);
 			using ControllLayoutPtr = void(*)(JEditorStaticAlignCalculator& cal, const LayoutData& data);
 			//Left side buttion
@@ -726,25 +723,25 @@ namespace JinEngine
 			};
 			GuidButtonPtr pListPtr[Private::pTotalButtonCount]
 			{
-				[](SelectorValues& value)
+				[](SelectorValues& value, JEditorProjectInterface* pInterface)
 				{
 					value.ClearInputHelperBuff();
 					value.OffButtonTrigger();
 					value.SetTrigger(J_PS_TRIGGER::CREATE_PROJECT, true);
 				},
-				[](SelectorValues& value)
+				[](SelectorValues& value, JEditorProjectInterface* pInterface)
 				{
 					value.ClearInputHelperBuff();
 					value.OffButtonTrigger();
 					value.SetTrigger(J_PS_TRIGGER::LOAD_PROEJCT, true);
 				},
-				[](SelectorValues& value)
+				[](SelectorValues& value, JEditorProjectInterface* pInterface)
 				{
 					value.ClearInputHelperBuff();
 					value.OffButtonTrigger();
 					value.SetTrigger(J_PS_TRIGGER::DESTROY_PROJECT, true);
 				},
-				[](SelectorValues& value)
+				[](SelectorValues& value, JEditorProjectInterface* pInterface)
 				{
 					value.ClearInputHelperBuff();
 					value.OffButtonTrigger();
@@ -754,9 +751,7 @@ namespace JinEngine
 						MessageBox(0, L"Fail get project info", 0, 0);
 						return;
 					}
-					AppLifeInterface::SetNextProjectInfo(projInfo->CreateReplica());
-					if (!AppLifeInterface::SetStartNewProjectTrigger())
-						MessageBox(0, L"Fail start new project", 0, 0);
+					(*pInterface->startProjectF)(projInfo->CreateReplica()); 
 				}
 			};
 			ControllLayoutPtr pListLayoutCtrl[Private::pTotalButtonCount]
@@ -794,7 +789,7 @@ namespace JinEngine
 				if (!canSelect)
 					JGui::PushButtonColorDeActSet();
 				if (JGui::Button(pListBtnName[i], layOutData.btnSize) && canSelect)
-					(*pListPtr[i])(*values);
+					(*pListPtr[i])(*values, pInterface.get());
 				if (!canSelect)
 					JGui::PopButtonColorDeActSet();
 			}
@@ -859,16 +854,7 @@ namespace JinEngine
 			{
 				if (JApplicationProject::IsValidPath(dirPath))
 				{
-					std::unique_ptr<JApplicationProjectInfo> pInfo;
-					JApplicationProjectInfo* existingInfo = JApplicationProject::GetProjectInfo(dirPath);
-					if (existingInfo != nullptr)
-						pInfo = existingInfo->CreateReplica();
-					else
-						pInfo = AppLifeInterface::MakeProjectInfo(dirPath);
-
-					AppLifeInterface::SetNextProjectInfo(std::move(pInfo));
-					if (!AppLifeInterface::SetStartNewProjectTrigger())
-						MessageBox(0, L"Load Project Fail", 0, 0);
+					(*pInterface->loadUnRegisteredProjectF)(dirPath);
 					values->ClearInputHelperBuff();
 				}
 				values->SetTrigger(J_PS_TRIGGER::LOAD_PROEJCT, false);
@@ -946,8 +932,8 @@ namespace JinEngine
 				values->SetTrigger(J_PS_TRIGGER::DESTROY_PROJECT, false);
 				return;
 			}
-			using DestroyProjectF = JProjectSelectorHubCreationImpl::DestroyProjectF;
-			auto destroyB = std::make_unique<DestroyProjectF::CompletelyBind>(*creationImpl->destroyF, this);
+			using DestroyProjectF = JProjectSelectorHubCreationFunctor::DestroyProjectF;
+			auto destroyB = std::make_unique<DestroyProjectF::CompletelyBind>(*creation->destroyF, this);
 			auto evStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(destroyB), GetOwnerPageType());
 			JEditor::AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
 			values->SetTrigger(J_PS_TRIGGER::DESTROY_PROJECT, false);
@@ -958,9 +944,7 @@ namespace JinEngine
 			const std::wstring newProejctPath = JCUtil::U8StrToWstr(JCUtil::EraseSideChar(values->GetPathHelper()->result, ' ')) + L"\\" + newProejctName;
 			std::vector<std::string> version = JApplicationEngine::GetAppVersion();
 
-			AppLifeInterface::SetNextProjectInfo(AppLifeInterface::MakeProjectInfo(newProejctPath, version[versionIndex]));
-			if (!AppLifeInterface::SetStartNewProjectTrigger())
-				MessageBox(0, L"Start Project Fail", 0, 0);
+			(*pInterface->createProjectF)(newProejctPath, version[versionIndex]);
 		}
 		void JProjectSelectorHub::LoadLastRsTexture()
 		{
@@ -1014,7 +998,7 @@ namespace JinEngine
 			searchHelper->ClearInputBuffer();
 			JEditorWindow::DoSetClose();
 		}
-		void JProjectSelectorHub::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		void JProjectSelectorHub::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
 			if (iden == GetGuid())
 				return;

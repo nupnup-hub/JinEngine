@@ -2,15 +2,15 @@
 #include"JAnimationFSMstatePrivate.h"
 #include<vector>
 namespace JinEngine
-{ 
+{  
 	class JAnimationFSMstateClipPrivate : public JAnimationFSMstatePrivate
 	{
 	public:
 		class AssetDataIOInterface final : public JAnimationFSMstatePrivate::AssetDataIOInterface
 		{
 		private:
-			Core::J_FILE_IO_RESULT LoadAssetData(std::wifstream& stream, const JUserPtr<JAnimationFSMstate>& state) final;
-			Core::J_FILE_IO_RESULT StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMstate>& state) final;
+			Core::J_FILE_IO_RESULT LoadAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMstate>& state) final;
+			Core::J_FILE_IO_RESULT StoreAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMstate>& state) final;
 		};
 		class CreateInstanceInterface final : public JAnimationFSMstatePrivate::CreateInstanceInterface
 		{

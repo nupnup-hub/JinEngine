@@ -34,20 +34,9 @@ namespace JinEngine
 			const std::wstring editorPageDataFileName = L"EditorData.txt";
 			static constexpr uint previousSizeExeFrame = 1;
 		}
-		namespace Private
-		{
-			static std::wstring GetSrcImGuiSaveDataPath()noexcept 
-			{
-				return Core::JFileConstant::MakeFilePath(JApplicationEngine::ProjectPath(), L"imgui.ini");
-			}
-			static std::wstring GetCopiedImGuiSaveDataPath()noexcept
-			{
-				return Core::JFileConstant::MakeFilePath(JApplicationProject::EditoConfigPath(), L"imgui.ini");;
-			}
-		}
 
 		void JEditorManager::Initialize(std::unique_ptr<JGuiBehaviorAdapter>&& adapter)
-		{ 
+		{  
 			JGuiPrivate::SetAdapter(std::move(adapter)); 
 			JEditorEvent::Initialize();
 		}
@@ -65,15 +54,15 @@ namespace JinEngine
 			JEditorPageShareData::Clear();
 			JEditorTransition::Instance().Clear();
 			JEditorEvent::Clear();
+
+			if (JApplicationEngine::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
+				JGuiPrivate::StoreGuiData();
 			JGuiPrivate::Clear();
 			JGuiPrivate::SetAdapter(nullptr);
 
 			editorPageMap.clear();
 			opendEditorPage.clear();
 			editorPage.clear();
-			 
-			if(JApplicationEngine::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
-				JFileIOHelper::CopyFile(Private::GetSrcImGuiSaveDataPath(), Private::GetCopiedImGuiSaveDataPath());
 		}
 		Graphic::JGuiBackendInterface* JEditorManager::GetBackendInterface()
 		{
@@ -95,11 +84,12 @@ namespace JinEngine
 			} 
 			return true;
 		} 
-		void JEditorManager::OpenProjectSelector(std::unique_ptr<Graphic::JGuiInitData>&& initData)
+		void JEditorManager::OpenProjectSelector(std::unique_ptr<Graphic::JGuiInitData>&& initData, std::unique_ptr<JEditorProjectInterface>&& pInterface)
 		{
-			JGuiPrivate::LoadOption();
 			JGuiPrivate::Initialize(std::move(initData));
-			editorPage.push_back(std::make_unique<JProjectSelectorPage>());
+			JGuiPrivate::LoadOption();
+
+			editorPage.push_back(std::make_unique<JProjectSelectorPage>(std::move(pInterface)));
 			editorPageMap.emplace(editorPage[0]->GetPageType(), editorPage[0].get());
 
 			editorPage[0]->Initialize();
@@ -116,19 +106,14 @@ namespace JinEngine
 			AddEventListener(*JEditorEvent::EvInterface(), editorManagerGuid, eventVector); 
 			JEditorTransition::Instance().Initialize();
 		}
-		void JEditorManager::OpenProject(std::unique_ptr<Graphic::JGuiInitData>&& initData)
+		void JEditorManager::OpenProject(std::unique_ptr<Graphic::JGuiInitData>&& initData, std::unique_ptr<JEditorProjectInterface>&& pInterface)
 		{
-			JGuiPrivate::LoadOption();
 			JGuiPrivate::Initialize(std::move(initData));
+			JGuiPrivate::LoadOption();
+			JGuiPrivate::LoadGuiData();
 
 			const bool hasMetadata = (_waccess(GetMetadataPath().c_str(), 00) != -1);
-			const bool hasImguiTxt = (_waccess(Private::GetCopiedImGuiSaveDataPath().c_str(), 00) != -1);
-			   
-			_wremove(Private::GetSrcImGuiSaveDataPath().c_str());
-			if (hasImguiTxt)
-				JFileIOHelper::CopyFile(Private::GetCopiedImGuiSaveDataPath(), Private::GetSrcImGuiSaveDataPath());
-	
-			editorPage.push_back(std::make_unique<JProjectMainPage>());
+			editorPage.push_back(std::make_unique<JProjectMainPage>(std::move(pInterface)));
 			editorPage.push_back(std::make_unique<JEditorSkeletonPage>());
 			editorPage.push_back(std::make_unique<JEditorAniContPage>());
 
@@ -209,22 +194,31 @@ namespace JinEngine
 		}
 		void JEditorManager::LoadPage()
 		{
-			std::wstring guide;
-			std::wifstream stream;
-			stream.open(GetMetadataPath(), std::ios::in);
-			stream >> guide;
+			JFileIOTool tool;
+			if (!tool.Begin(GetMetadataPath(), JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
+				return;
+
 			for (int i = 0; i < editorPage.size(); ++i)
-				editorPage[i]->LoadPage(stream);
-			stream.close();
+			{
+				tool.PushExistStack();
+				editorPage[i]->LoadPage(tool);
+				tool.PopStack();
+			}
+			tool.Close();
 		}
 		void JEditorManager::StorePage()
 		{ 
-			std::wofstream stream;
-			stream.open(GetMetadataPath(), std::ios::out);
-			stream << L"EditorPage: " << '\n';
+			JFileIOTool tool;
+			if (!tool.Begin(GetMetadataPath(), JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_SET_CONTENTS_ARRAY_OWNER))
+				return;
+
 			for (int i = 0; i < editorPage.size(); ++i)
-				editorPage[i]->StorePage(stream);
-			stream.close();
+			{
+				tool.PushArrayMember();
+				editorPage[i]->StorePage(tool);
+				tool.PopStack();
+			}
+			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		}
 		void JEditorManager::OpenPage(JEditorOpenPageEvStruct* evStruct)
 		{

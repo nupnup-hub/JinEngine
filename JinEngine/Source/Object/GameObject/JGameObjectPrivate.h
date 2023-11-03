@@ -6,6 +6,7 @@ namespace JinEngine
 	class JComponent;
 	class JScene;
 	class JGameObject;
+	class JFileIOTool;
 
 	namespace Editor
 	{
@@ -20,8 +21,8 @@ namespace JinEngine
 		private:
 			friend class JScene;
 		private:
-			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(JUserPtr<JScene> invoker, std::wifstream& stream);
-			static std::unique_ptr<Core::JDITypeDataBase> CreateStoreAssetDIData(JUserPtr<JGameObject> root, std::wofstream& stream);
+			static std::unique_ptr<Core::JDITypeDataBase> CreateLoadAssetDIData(JUserPtr<JScene> invoker, JFileIOTool& tool);
+			static std::unique_ptr<Core::JDITypeDataBase> CreateStoreAssetDIData(JUserPtr<JGameObject> root, JFileIOTool& tool);
 		private:
 			static JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data);
 			static Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data);

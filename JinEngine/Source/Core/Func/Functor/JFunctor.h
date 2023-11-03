@@ -208,7 +208,7 @@ namespace JinEngine
 			template<size_t ...Is, typename PassTuple>
 			auto CallFunc(std::index_sequence<Is...>, PassTuple& passTuple)
 			{
-				if(rawFunctor != nullptr)
+				if (rawFunctor != nullptr)
 					return (*rawFunctor)(GetParam<Is>(passTuple)...);
 				else
 					return (*unqFunctor)(GetParam<Is>(passTuple)...);
@@ -281,7 +281,7 @@ namespace JinEngine
 		}
 
 		template<typename Ret, typename ...Param, typename ...BindParam>
-		std::unique_ptr<JBindHandle<JFunctor<Ret, Param...>, BindParam...>> UniqueBind(std::unique_ptr< JFunctor<Ret, Param...>>&& unqFunctor, BindParam&&... bindVar)
+		std::unique_ptr<JBindHandle<JFunctor<Ret, Param...>, BindParam...>> UniqueBind(std::unique_ptr<JFunctor<Ret, Param...>>&& unqFunctor, BindParam&&... bindVar)
 		{
 			return  std::make_unique<JBindHandle<JFunctor<Ret, Param...>, BindParam...>>(std::move(unqFunctor), std::forward<BindParam>(bindVar)...);
 		}

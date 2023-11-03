@@ -362,20 +362,20 @@ namespace JinEngine
 		return parent != nullptr ? true : ownerScene != nullptr && (ownerScene->GetRootGameObject() == nullptr || ownerScene->GetDebugRootGameObject() == nullptr);
 	}
 
-	JGameObject::LoadData::LoadData(JUserPtr<JScene> ownerScene, std::wifstream& stream)
-		:ownerScene(ownerScene), stream(stream) {}
+	JGameObject::LoadData::LoadData(JUserPtr<JScene> ownerScene, JFileIOTool& tool)
+		:ownerScene(ownerScene), tool(tool) {}
 	JGameObject::LoadData::~LoadData() {}
 	bool JGameObject::LoadData::IsValidData()const noexcept
 	{
-		return stream.is_open();
+		return tool.CanLoad();
 	}
 
-	JGameObject::StoreData::StoreData(JUserPtr<JGameObject> obj, std::wofstream& stream)
-		:JObject::StoreData(obj), stream(stream)
+	JGameObject::StoreData::StoreData(JUserPtr<JGameObject> obj, JFileIOTool& tool)
+		:JObject::StoreData(obj), tool(tool)
 	{}
 	bool JGameObject::StoreData::IsValidData()const noexcept
 	{
-		return JObject::StoreData::IsValidData() && stream.is_open();
+		return JObject::StoreData::IsValidData() && tool.CanStore();
 	}
 
 	size_t JGameObject::GetOwnerGuid()const noexcept
@@ -649,19 +649,19 @@ namespace JinEngine
 		gPtr->impl->DeRegisterInstance();
 	}
 
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(JUserPtr<JScene> invoker, std::wifstream& stream)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(JUserPtr<JScene> invoker, JFileIOTool& tool)
 	{
 		if (invoker == nullptr)
 			return std::unique_ptr < Core::JDITypeDataBase>{};
 
-		return std::make_unique<JGameObject::LoadData>(invoker, stream);
+		return std::make_unique<JGameObject::LoadData>(invoker, tool);
 	}
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateStoreAssetDIData(JUserPtr<JGameObject> root, std::wofstream& stream)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateStoreAssetDIData(JUserPtr<JGameObject> root, JFileIOTool& tool)
 	{
 		if (root == nullptr)
 			return std::unique_ptr < Core::JDITypeDataBase>{};
 
-		return std::make_unique<JGameObject::StoreData>(root, stream);
+		return std::make_unique<JGameObject::StoreData>(root, tool);
 	}
 	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
 	{
@@ -673,11 +673,17 @@ namespace JinEngine
 		J_OBJECT_FLAG flag;
 
 		auto loadData = static_cast<JGameObject::LoadData*>(data);
-		std::wifstream& stream = loadData->stream;
+		JFileIOTool& tool = loadData->tool;
 
-		JObjectFileIOHelper::LoadObjectIden(loadData->stream, name, guid, flag);
+		JFileIOTool::NextCurrentHint* nextCurrentHint = tool.GetNextCurrentHint();
+		if (nextCurrentHint == nullptr)
+			nextCurrentHint = tool.CreateNextCurrentHint(std::make_unique<JFileIOTool::NextCurrentHint>(0));
+		else
+			++nextCurrentHint->index;
+
+		FILE_TOOL_ASSERTION(tool.PushExistStack(std::to_string(nextCurrentHint->index)));
+		FILE_ASSERTION(JObjectFileIOHelper::LoadObjectIden(tool, name, guid, flag));
 		std::unique_ptr<JGameObject::InitData> initData = JGameObject::JGameObjectImpl::CreateInitData(name, guid, flag, loadData); 
-
 		JUserPtr<Core::JIdentifier> res = gPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &gPrivate);
 		auto newGameObject = Core::ConvertChildUserPtr<JGameObject>(std::move(res));
 		if (newGameObject == nullptr)
@@ -685,30 +691,38 @@ namespace JinEngine
 
 		bool isSelected;
 		bool isActivated;
-		JObjectFileIOHelper::LoadAtomicData(stream, isSelected);
-		JObjectFileIOHelper::LoadAtomicData(stream, isActivated);
+		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, isSelected, Core::JFileConstant::GetSelectedSymbol()));
+		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, isActivated, Core::JFileConstant::GetActivatedSymbol()));
 		if (isSelected)
 			newGameObject->impl->Select();
 
 		int componentCount;
-		JObjectFileIOHelper::LoadAtomicData(stream, componentCount);
+		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, componentCount, "ComponentCount:"));
 	
+		FILE_TOOL_ASSERTION(tool.PushExistStack("ComponentData"));
 		for (int i = 0; i < componentCount; ++i)
 		{
 			std::wstring componentName;
 			size_t typeGuid;
-			JObjectFileIOHelper::LoadJString(stream, componentName);
-			JObjectFileIOHelper::LoadAtomicData(stream, typeGuid);
+			FILE_TOOL_ASSERTION(tool.PushExistStack());
+			FILE_ASSERTION(JObjectFileIOHelper::LoadJString(tool, componentName, "ComponentTypeName:"));
+			FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, typeGuid, "ComponentTypeGuid:"));
 			auto compPrivate = static_cast<JComponentPrivate*>(Core::JIdentifier::PrivateInterface(typeGuid));
-			auto compLoadData = JComponentPrivate::AssetDataIOInterface::CreateLoadAssetDIData(newGameObject, stream, typeGuid);
+			auto compLoadData = JComponentPrivate::AssetDataIOInterface::CreateLoadAssetDIData(newGameObject, tool, typeGuid);
 			compPrivate->GetAssetDataIOInterface().LoadAssetData(compLoadData.get());
+			FILE_TOOL_ASSERTION(tool.PopStack());
 		}
+		FILE_TOOL_ASSERTION(tool.PopStack());
 
 		int childrenCount;
-		JObjectFileIOHelper::LoadAtomicData(stream, childrenCount);
-		for (int i = 0; i < childrenCount; ++i)
+		int childrenStoredCount;
+		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, childrenCount, "ChildrenCount:"));
+		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, childrenStoredCount, "ChildrenStoredCount:"));
+		FILE_TOOL_ASSERTION(tool.PopStack());
+		
+		for (int i = 0; i < childrenStoredCount; ++i)
 		{ 
-			loadData->parent = newGameObject;
+			loadData->parent = newGameObject; 
 			LoadAssetData(loadData);
 		}
 		if (!isActivated)
@@ -725,29 +739,55 @@ namespace JinEngine
 		if (!gmaeObjStoreData->HasCorrectType(JGameObject::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
+		JFileIOTool& tool = gmaeObjStoreData->tool;
 		JGameObject* gObj = static_cast<JGameObject*>(gmaeObjStoreData->obj.Get());
-		JObjectFileIOHelper::StoreObjectIden(gmaeObjStoreData->stream, gObj);
-		JObjectFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, Core::JFileConstant::StreamSelectedSymbol(), gObj->impl->isSelected);
-		JObjectFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, Core::JFileConstant::StreamActivatedSymbol(), gObj->IsActivated());
-		JObjectFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"ComponentCount:", gObj->impl->componentVec.size());
 
+		JFileIOTool::NextCurrentHint* nextCurrentHint = tool.GetNextCurrentHint();
+		int currentIndex = 0;
+		if (nextCurrentHint == nullptr)
+		{
+			nextCurrentHint = tool.CreateNextCurrentHint(std::make_unique<JFileIOTool::NextCurrentHint>(0));
+			currentIndex = 0;
+		}
+		else
+		{
+			++nextCurrentHint->index;
+			currentIndex = nextCurrentHint->index;
+		}
+
+		FILE_TOOL_ASSERTION(tool.PushMapMember(std::to_string(currentIndex)));
+		//tool.PushMapMember(std::to_string(gObj->GetGuid()));
+		FILE_ASSERTION(JObjectFileIOHelper::StoreObjectIden(tool, gObj));
+		FILE_ASSERTION(JObjectFileIOHelper::StoreAtomicData(tool, gObj->impl->isSelected, Core::JFileConstant::GetSelectedSymbol()));
+		FILE_ASSERTION(JObjectFileIOHelper::StoreAtomicData(tool, gObj->IsActivated(), Core::JFileConstant::GetActivatedSymbol()));
+		FILE_ASSERTION(JObjectFileIOHelper::StoreAtomicData(tool, gObj->impl->componentVec.size(), "ComponentCount:"));
+
+		FILE_TOOL_ASSERTION(tool.PushArrayOwner("ComponentData"));
 		for (auto& comp : gObj->impl->componentVec)
 		{
-			JObjectFileIOHelper::StoreJString(gmaeObjStoreData->stream, L"TypeName:", JCUtil::U8StrToWstr(comp->GetTypeInfo().Name()));
-			JObjectFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"TypeGuid:", comp->GetTypeInfo().TypeGuid());
-			 
+			FILE_TOOL_ASSERTION(tool.PushArrayMember());
+			FILE_ASSERTION(JObjectFileIOHelper::StoreJString(tool, comp->GetTypeInfo().Name(), "ComponentTypeName:"));
+			FILE_ASSERTION(JObjectFileIOHelper::StoreAtomicData(tool, comp->GetTypeInfo().TypeGuid(), "ComponentTypeGuid:"));
 			auto compPrivate = static_cast<JComponentPrivate*>(&comp->PrivateInterface());
-			auto compStoreData = compPrivate->GetAssetDataIOInterface().CreateStoreAssetDIData(comp, gmaeObjStoreData->stream);
+			auto compStoreData = compPrivate->GetAssetDataIOInterface().CreateStoreAssetDIData(comp, tool);
 			compPrivate->GetAssetDataIOInterface().StoreAssetData(compStoreData.get());
+			FILE_TOOL_ASSERTION(tool.PopStack());
 		}
+		FILE_TOOL_ASSERTION(tool.PopStack());
+		 
+		FILE_ASSERTION(JObjectFileIOHelper::StoreAtomicData(tool, gObj->impl->children.size(), "ChildrenCount:"));
+		FILE_TOOL_ASSERTION(tool.PopStack());
 
-		JObjectFileIOHelper::StoreAtomicData(gmaeObjStoreData->stream, L"ChildCount:", gObj->impl->children.size());
+		int childrenStoredCount = 0;
 		for (auto& child : gObj->impl->children)
 		{
-			gmaeObjStoreData->obj = child;
-			if (StoreAssetData(data) != Core::J_FILE_IO_RESULT::SUCCESS)
-				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+			gmaeObjStoreData->obj = child; 
+			if (StoreAssetData(data) == Core::J_FILE_IO_RESULT::SUCCESS)
+				++childrenStoredCount;
 		}
+		FILE_TOOL_ASSERTION(tool.PushMapMember(std::to_string(currentIndex)));
+		FILE_ASSERTION(JObjectFileIOHelper::StoreAtomicData(tool, childrenStoredCount, "ChildrenStoredCount:"));
+		FILE_TOOL_ASSERTION(tool.PopStack());
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	bool OwnTypeInterface::AddComponent(const JUserPtr<JComponent>& comp)noexcept

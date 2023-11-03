@@ -54,7 +54,7 @@ namespace JinEngine
 			}
 			static JVector3F GetMidPosByPoint(const std::vector<JUserPtr<JGameObject>>& selected)
 			{
-				JVector3F p;
+				JVector3F p = JVector3F::Zero();
 				for (const auto& data : selected)
 					p += data->GetTransform()->GetWorldPosition();	 
 				return p / selected.size();
@@ -235,32 +235,15 @@ namespace JinEngine
 			const JVector2F& sceneImageScreenMinPoint,
 			const bool canSelectToolObject)
 		{
-			UpdateStart();
-			//UpdateToolObject(Private::IsValidSelected(selected));
-			if (!IsValid() || !Private::IsValidSelected(selected))
-			{
-				if (IsDragging())
-					OffDragging();
-				if (IsHovering())
-					OffHovering();
-				if (cam != nullptr && uData.lastPos != uData.InvalidPos())
-					UpdateArrowPosition(uData.lastPos, cam);
-				return;
-			}
-			 
-			JVector3F midPos = Private::GetMidPosByPoint(selected);
-			UpdateArrowPosition(midPos, cam);
-			UpdateArrowDragging(selected, cam, sceneImageScreenMinPoint, canSelectToolObject);
-			uData.lastPos = midPos;
-			uData.lastSelected = selected;
+			std::vector<JUserPtr<JGameObject>> vec{ selected };
+			Update(selected, cam, sceneImageScreenMinPoint, canSelectToolObject);
 		}
 		void JEditorTransformTool::Update(const std::vector<JUserPtr<JGameObject>>& selected,
 			const JUserPtr<JCamera>& cam, 
 			const JVector2F& sceneImageScreenMinPoint,
 			const bool canSelectToolObject)
 		{
-			UpdateStart();
-			//UpdateToolObject(Private::IsValidSelected(selected));
+			UpdateStart(); 
 			if (!IsValid() || !Private::IsValidSelected(selected))
 			{
 				if (IsDragging())
@@ -268,7 +251,11 @@ namespace JinEngine
 				if (IsHovering())
 					OffHovering();
 				if (cam != nullptr && uData.lastPos != uData.InvalidPos())
-					UpdateArrowPosition(uData.lastPos, cam);
+				{
+					JVector3F midPos = Private::GetMidPosByPoint(uData.lastSelected);
+					UpdateArrowPosition(midPos, cam);
+					uData.lastPos = midPos; 
+				}
 				return;
 			}
 			 

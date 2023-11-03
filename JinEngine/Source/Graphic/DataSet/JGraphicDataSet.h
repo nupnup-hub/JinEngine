@@ -2,6 +2,7 @@
 #include"../JGraphicInfo.h"
 #include"../JGraphicOption.h"
 #include"../Device/JGraphicDeviceUser.h"
+#include"../Blur/JBlurDesc.h"
 #include"../../Core/Interface/JValidInterface.h"
 #include"../../Core/Math/JVector.h"
 #include<memory>
@@ -23,7 +24,8 @@ namespace JinEngine
 		class JDepthTest;
 		class JDepthMapDebug;
 		class JCullingUserInterface;
-		 
+		class JBlur;
+
 		struct JGraphicBaseDataSet
 		{
 		public:
@@ -63,6 +65,8 @@ namespace JinEngine
 			JDepthMapDebug* depthDebug;
 			JDepthTest* depthTest;
 		public:
+			JBlur* blur;
+		public:
 			JGraphicDrawReferenceSet(const JGraphicInfo& info, 
 				const JGraphicOption& option,
 				JGraphicDevice* device,
@@ -70,7 +74,8 @@ namespace JinEngine
 				JCullingManager* cullingM,
 				JFrameResource* currFrame,
 				JDepthMapDebug* depthDebug,
-				JDepthTest* depthTest);
+				JDepthTest* depthTest,
+				JBlur* blur);
 		};
 
 		//device type per draw data set 
@@ -136,11 +141,13 @@ namespace JinEngine
 			JFrameResource* currFrame;
 			JGraphicResourceManager* graphicResourceM;
 			JCullingManager* cullingM;
+			JBlur* blur;
 		public:
 			JGraphicShadowMapDrawSet(JGraphicDevice* device,
 				JFrameResource* currFrame,
 				JGraphicResourceManager* graphicResourceM,
-				JCullingManager* cullingM);
+				JCullingManager* cullingM,
+				JBlur* blur);
 		};
 
 		struct JGraphicOccDrawSet : public JGraphicDeviceUser, public Core::JValidInterface
@@ -207,7 +214,16 @@ namespace JinEngine
 		public:
 			JGraphicOutlineHandleSet(JGraphicResourceManager* graphicResourceM);
 		};
-		  
+		
+		struct JGraphicBlurTaskSet : public JGraphicDeviceUser, public Core::JValidInterface
+		{
+		public:
+			JGraphicDevice* device; 
+			std::unique_ptr<JBlurDesc> desc;
+		public:
+			JGraphicBlurTaskSet(JGraphicDevice* device, std::unique_ptr<JBlurDesc>&& desc);
+		};
+
 		//draw scene single thread
 		struct JGraphicDrawSceneSTSet
 		{
@@ -220,7 +236,7 @@ namespace JinEngine
 			std::unique_ptr<JGraphicHzbOccComputeSet> hzbCompute;
 			std::unique_ptr<JGraphicHdOccExtractSet> hdExtract;
 			std::unique_ptr<JGraphicDepthMapDebugObjectSet> depthMapDebug;
-			std::unique_ptr<JGraphicOutlineObjectSet> outline;
+			std::unique_ptr<JGraphicOutlineObjectSet> outline; 
 		};
 
 		struct JGraphicBeginFrameSet

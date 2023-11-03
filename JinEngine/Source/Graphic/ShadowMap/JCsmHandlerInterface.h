@@ -25,7 +25,7 @@ namespace JinEngine
 				JMatrix4x4 shadowProjM[JCsmOption::maxCountOfSplit];
 				JVector4<float> scale[JCsmOption::maxCountOfSplit];
 				JVector4<float> posOffset[JCsmOption::maxCountOfSplit];
-				JVector2<float> frustumSize[JCsmOption::maxCountOfSplit];
+				//JVector2<float> frustumSize[JCsmOption::maxCountOfSplit];
 				float splitRate[JCsmOption::maxCountOfSplit];
 				float fNear[JCsmOption::maxCountOfSplit];
 				float fFar[JCsmOption::maxCountOfSplit]; 

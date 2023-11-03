@@ -109,7 +109,8 @@ namespace JinEngine
 		bool JCullingInterface::IsCulled(const uint objectIndex)const noexcept
 		{ 
 			return (info[(uint)J_CULLING_TYPE::FRUSTUM] != nullptr ? info[(uint)J_CULLING_TYPE::FRUSTUM]->IsCulled(objectIndex) : false) ||
-				(info[(uint)J_CULLING_TYPE::HZB_OCCLUSION] != nullptr ? info[(uint)J_CULLING_TYPE::HZB_OCCLUSION]->IsCulled(objectIndex) : false);
+				(info[(uint)J_CULLING_TYPE::HZB_OCCLUSION] != nullptr ? info[(uint)J_CULLING_TYPE::HZB_OCCLUSION]->IsCulled(objectIndex) : false) || 
+				(info[(uint)J_CULLING_TYPE::HD_OCCLUSION] != nullptr ? info[(uint)J_CULLING_TYPE::HD_OCCLUSION]->IsCulled(objectIndex) : false);
 		}
 		bool JCullingInterface::IsCulled(const J_CULLING_TYPE type, const uint objectIndex)const noexcept
 		{

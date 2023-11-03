@@ -33,17 +33,11 @@ namespace JinEngine
 					J_EDITOR_PAGE_SUPPORT_WINDOW_MINIMIZE,
 					J_EDITOR_PAGE_REQUIRE_INIT_OBJECT))
 		{
-			constexpr uint memberWindowCount = 4;
-			std::vector<std::string> windowNames
-			{
-				"Skeleton Explorer##SkeletonAssetPage",
-				"Avatar Editor##SkeletonAssetPage",
-				"Avatar Observer##SkeletonAssetPage",
-				"Avatar Detail##SkeletonAssetPage"
-			};
-			std::vector<std::unique_ptr<JEditorAttribute>> windowAttributes(memberWindowCount);
-			for (uint i = 0; i < memberWindowCount; ++i)
-				windowAttributes[i] = std::make_unique<JEditorAttribute>();
+			std::vector<WindowInitInfo> openInfo;
+			openInfo.emplace_back("Skeleton Explorer##SkeletonAssetPage");
+			openInfo.emplace_back("Avatar Editor##SkeletonAssetPage");
+			openInfo.emplace_back("Avatar Observer##SkeletonAssetPage");
+			openInfo.emplace_back("Avatar Detail##SkeletonAssetPage");
 
 			//수정필요
 			std::vector<J_OBSERVER_SETTING_TYPE> settingType
@@ -57,10 +51,13 @@ namespace JinEngine
 			J_EDITOR_WINDOW_FLAG defaultFlag = J_EDITOR_WINDOW_SUPPORT_WINDOW_CLOSING;
 			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(defaultFlag, J_EDITOR_WINDOW_SUPROT_DOCK);
 
-			explorer = std::make_unique<JObjectExplorer>(windowNames[0], std::move(windowAttributes[0]), GetPageType(), dockFlag);
-			avatarEdit = std::make_unique<JAvatarEditor>(windowNames[1], std::move(windowAttributes[1]), GetPageType(), dockFlag);
-			avatarObserver = std::make_unique<JSceneObserver>(windowNames[2], std::move(windowAttributes[2]), GetPageType(), dockFlag, settingType);
-			avatarDetail = std::make_unique<JObjectDetail>(windowNames[3], std::move(windowAttributes[3]), GetPageType(), dockFlag);
+			const size_t explorerGuid = JEditorWindow::CalculateGuid(openInfo[0].GetName());
+			const size_t observerGuid = JEditorWindow::CalculateGuid(openInfo[2].GetName());
+			using GuidVec = std::vector<size_t>;
+			explorer = std::make_unique<JObjectExplorer>(openInfo[0].GetName(), openInfo[0].MakeAttribute(), GetPageType(), dockFlag, GuidVec{ observerGuid });
+			avatarEdit = std::make_unique<JAvatarEditor>(openInfo[1].GetName(), openInfo[1].MakeAttribute(), GetPageType(), dockFlag);
+			avatarObserver = std::make_unique<JSceneObserver>(openInfo[2].GetName(), openInfo[2].MakeAttribute(), GetPageType(), dockFlag, settingType, GuidVec{observerGuid });
+			avatarDetail = std::make_unique<JObjectDetail>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType(), dockFlag);
 
 			std::vector<JEditorWindow*> windows
 			{
@@ -215,13 +212,13 @@ namespace JinEngine
 			ResourceEvListener::RemoveListener(*JResourceObject::EvInterface(), GetGuid());
 			JEditorPage::DoDeActivate();
 		}
-		void JEditorSkeletonPage::StorePage(std::wofstream& stream)
+		void JEditorSkeletonPage::LoadPage(JFileIOTool& tool)
 		{
-			JEditorPage::StorePage(stream);
+			JEditorPage::LoadPage(tool);
 		}
-		void JEditorSkeletonPage::LoadPage(std::wifstream& stream)
+		void JEditorSkeletonPage::StorePage(JFileIOTool& tool)
 		{
-			JEditorPage::LoadPage(stream);
+			JEditorPage::StorePage(tool);
 		}
 		void JEditorSkeletonPage::BuildDockNode()
 		{
@@ -260,7 +257,7 @@ namespace JinEngine
 				menuBar->AddNode(std::move(newNode));
 			}
 		}
-		void JEditorSkeletonPage::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		void JEditorSkeletonPage::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
 			if (iden == GetGuid())
 				return;

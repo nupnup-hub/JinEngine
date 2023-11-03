@@ -72,6 +72,7 @@ namespace JinEngine
 			childrenNode[i] = nullptr;
 		}
 	}
+	/*
 	void JOctreeNode::Culling(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG flag)noexcept
 	{
 		Core::J_CULLING_RESULT res = Contain(info, boundingBox, flag);
@@ -90,6 +91,7 @@ namespace JinEngine
 			}
 		}
 	}
+	*/
 	void JOctreeNode::Culling(JAcceleratorCullingInfo& info)noexcept
 	{
 		ContainmentType res = Contain(info, boundingBox);
@@ -223,6 +225,7 @@ namespace JinEngine
 		}
 		return false;
 	}
+	/*
 	void JOctreeNode::CullingInnerObject(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG oriFlag)
 	{
 		const uint innerGameObjCount = (uint)innerGameObject.size();
@@ -239,6 +242,7 @@ namespace JinEngine
 				SetCulling(info, rItem);
 		}
 	}
+	*/
 	void JOctreeNode::CullingInnerObject(JAcceleratorCullingInfo& info)
 	{
 		const uint innerGameObjCount = (uint)innerGameObject.size();
@@ -263,6 +267,7 @@ namespace JinEngine
 				SetCulling(info, rItem);
 		}
 	}
+	/*
 	void JOctreeNode::SetVisible(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG oriFlag)noexcept
 	{
 		CullingInnerObject(info, oriFlag);
@@ -272,6 +277,7 @@ namespace JinEngine
 				childrenNode[i]->SetVisible(info, oriFlag);
 		}
 	}
+	*/
 	void JOctreeNode::SetVisible(JAcceleratorCullingInfo& info)noexcept
 	{
 		CullingInnerObject(info);

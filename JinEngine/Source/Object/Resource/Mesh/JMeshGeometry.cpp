@@ -412,7 +412,7 @@ namespace JinEngine
 			}
 		}
 	public:
-		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
 			if (iden == thisPointer->GetGuid())
 				return;

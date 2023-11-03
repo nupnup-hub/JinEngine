@@ -14,7 +14,7 @@ namespace JinEngine
 			virtual ID3D12Resource* GetResource()const noexcept = 0;
 		public:
 			bool IsGpuResource()const noexcept final;
-			bool CanSetValue()const noexcept final;
+			bool CanSetValue()const noexcept final; 
 		};
 
 		class JHzbDx12CullingResultHolder final : public JDx12CullingResourceHolder
@@ -35,7 +35,7 @@ namespace JinEngine
 			/*
 			* @brief 0 is non culling 1 is culling
 			*/
-			bool IsCulled(const uint index)const noexcept final;
+			bool IsCulled(const uint index)const noexcept final; 
 		public:
 			void Build(JGraphicDevice* device, const uint newCapacity);
 			void Clear();
@@ -46,8 +46,8 @@ namespace JinEngine
 		public:
 			using ResultType = uint64;
 		private:
-			JDx12GraphicBuffer<ResultType> result;
-			JDx12GraphicBuffer<ResultType> readBack;	//for debug
+			//JDx12GraphicBuffer<ResultType> result;
+			JDx12GraphicBuffer<ResultType> readBack;
 		public:
 			JHdDx12CullingResultHolder();
 			~JHdDx12CullingResultHolder();
@@ -56,7 +56,7 @@ namespace JinEngine
 		public:
 			uint GetBuffSize()const noexcept final;
 			/*
-			* @return Predict
+			* @return ReadBack
 			*/
 			ID3D12Resource* GetResource()const noexcept final;
 			ID3D12Resource* GetPredictResource()const noexcept;

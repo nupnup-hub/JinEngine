@@ -17,10 +17,13 @@ namespace JinEngine
 		struct JHzbOccObjectConstants;
 		struct JDrawHelper;
 	}
+	//Debug
+	/*
 	namespace Editor
 	{
 		class JSceneObserver;
 	}
+	*/
 	class JRenderItemPrivate final : public JComponentPrivate
 	{
 	public:
@@ -76,7 +79,8 @@ namespace JinEngine
 		private: 
 			friend class JAcceleratorNode;
 			friend class JBvh; 
-			friend class Editor::JSceneObserver;
+			//Debug
+			//friend class Editor::JSceneObserver;
 			friend struct Graphic::JDrawHelper;
 		private:
 			//Count submesh

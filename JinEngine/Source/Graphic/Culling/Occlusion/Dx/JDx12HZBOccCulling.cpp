@@ -63,75 +63,80 @@ namespace JinEngine::Graphic
 		static constexpr int computePassCBIndex = depthMapInfoCBIndex + 1;
 		static constexpr int debugPassCBIndex = computePassCBIndex + 1;
 		//static constexpr int slotCount = computePassCBIndex + 1;
-		static constexpr int slotCount = debugPassCBIndex + 1;
+#ifdef _DEBUG
 		static constexpr bool allowHzbDebug = true;
+		static constexpr int slotCount = debugPassCBIndex + 1;
+#else
+		static constexpr bool allowHzbDebug = false;
+		static constexpr int slotCount = computePassCBIndex + 1;
+#endif
 	}
 	namespace
 	{
-		static void _StreamOutDebugInfo(JHlslDebug<HZBDebugInfo>* debugInfo, const std::wstring& path)
+		static void _StreamOutDebugInfo(JHlslDebug<JHZBDebugInfo>* debugInfo, const std::wstring& path)
 		{
 			if (!allowHzbDebug)
 				return;
- 
+
 			auto rawVec = JRenderItem::StaticTypeInfo().GetInstanceRawPtrVec();
-			std::wofstream stream;
-			stream.open(path.c_str(), std::ios::app | std::ios::out);
-			if (stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_SET_CONTENTS_ARRAY_OWNER))
+				return;
+
+			int count = 0;
+			int offset = 0;
+			JHZBDebugInfo* info = debugInfo->Map(count);
+			for (uint i = 0; i < count; ++i)
 			{
-				int count = 0;
-				int offset = 0;
-				HZBDebugInfo* info = debugInfo->Map(count);
-				for (uint i = 0; i < count; ++i)
-				{
-					//JFileIOHelper::StoreXMFloat3(stream, L"Center", info[i].center);
-					//JFileIOHelper::StoreXMFloat3(stream, L"Extents", info[i].extents);
-	 
-					JFileIOHelper::StoreJString(stream, L"Name:", static_cast<JRenderItem*>(rawVec[info[i].queryIndex])->GetOwner()->GetName());
-					JFileIOHelper::StoreVector3(stream, L"Scale:", static_cast<JRenderItem*>(rawVec[info[i].queryIndex])->GetOwner()->GetTransform()->GetScale());
+				//JFileIOHelper::StoreXMFloat3(stream, L"Center", info[i].center);
+				//JFileIOHelper::StoreXMFloat3(stream, L"Extents", info[i].extents);
+				tool.PushArrayMember();
+				JFileIOHelper::StoreJString(tool, static_cast<JRenderItem*>(rawVec[info[i].queryIndex])->GetOwner()->GetName(), "Name:");
+				JFileIOHelper::StoreVector3(tool, static_cast<JRenderItem*>(rawVec[info[i].queryIndex])->GetOwner()->GetTransform()->GetScale(), "Scale:");
 
-					//JFileIOHelper::StoreXMFloat3(stream, L"BBox0", info[i].bboxV[0]);
-					//JFileIOHelper::StoreXMFloat3(stream, L"BBox1", info[i].bboxV[1]);
-					//JFileIOHelper::StoreXMFloat3(stream, L"BBox2", info[i].bboxV[2]);
-					//JFileIOHelper::StoreXMFloat3(stream, L"BBox3", info[i].bboxV[3]);
-					//JFileIOHelper::StoreXMFloat3(stream, L"BBox4", info[i].bboxV[4]);
-					//JFileIOHelper::StoreXMFloat3(stream, L"BBox5", info[i].bboxV[5]);
-					//JFileIOHelper::StoreXMFloat3(stream, L"BBox6", info[i].bboxV[6]);
-					//JFileIOHelper::StoreXMFloat3(stream, L"BBox7", info[i].bboxV[7]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"BBox0", info[i].bboxV[0]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"BBox1", info[i].bboxV[1]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"BBox2", info[i].bboxV[2]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"BBox3", info[i].bboxV[3]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"BBox4", info[i].bboxV[4]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"BBox5", info[i].bboxV[5]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"BBox6", info[i].bboxV[6]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"BBox7", info[i].bboxV[7]);
 
-					//JFileIOHelper::StoreXMFloat3(stream, L"NearP0", info[i].nearPoint[0]);
-					//JFileIOHelper::StoreXMFloat3(stream, L"NearP1", info[i].nearPoint[1]);
-					//JFileIOHelper::StoreXMFloat3(stream, L"NearP2", info[i].nearPoint[2]);
-					///JFileIOHelper::StoreXMFloat3(stream, L"NearP3", info[i].nearPoint[3]);
-					//JFileIOHelper::StoreXMFloat3(stream, L"NearP4", info[i].nearPoint[4]);
-					//JFileIOHelper::StoreXMFloat3(stream, L"NearP5", info[i].nearPoint[5]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"NearP0", info[i].nearPoint[0]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"NearP1", info[i].nearPoint[1]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"NearP2", info[i].nearPoint[2]);
+				///JFileIOHelper::StoreXMFloat3(stream, L"NearP3", info[i].nearPoint[3]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"NearP4", info[i].nearPoint[4]);
+				//JFileIOHelper::StoreXMFloat3(stream, L"NearP5", info[i].nearPoint[5]);
 
-				//	JFileIOHelper::StoreXMFloat4(stream, L"MinNearPoint", info[i].minNearPoint);
-				//	JFileIOHelper::StoreXMFloat4(stream, L"ClipNearH", info[i].clipNearH);
-					//JFileIOHelper::StoreXMFloat3(stream, L"ClipNearC", info[i].clipNearC);
-					 
-					JFileIOHelper::StoreAtomicData(stream, L"QueryIdex", info[i].queryIndex);
-					JFileIOHelper::StoreAtomicData(stream, L"ThreadIndex", info[i].threadIndex);
-					JFileIOHelper::StoreAtomicData(stream, L"CullingRes", info[i].cullingRes);
-					JFileIOHelper::StoreAtomicData(stream, L"CenterDepth", info[i].centerDepth);
-					JFileIOHelper::StoreAtomicData(stream, L"FinalCompareDepth", info[i].finalCompareDepth);
-					JFileIOHelper::InputSpace(stream, 1);
-				}
-				stream.close();
+			//	JFileIOHelper::StoreXMFloat4(stream, L"MinNearPoint", info[i].minNearPoint);
+			//	JFileIOHelper::StoreXMFloat4(stream, L"ClipNearH", info[i].clipNearH);
+				//JFileIOHelper::StoreXMFloat3(stream, L"ClipNearC", info[i].clipNearC);
+
+				JFileIOHelper::StoreAtomicData(tool, info[i].queryIndex, "QueryIdex");
+				JFileIOHelper::StoreAtomicData(tool, info[i].threadIndex, "ThreadIndex");
+				JFileIOHelper::StoreAtomicData(tool, info[i].cullingRes, "CullingRes");
+				JFileIOHelper::StoreAtomicData(tool, info[i].centerDepth, "CenterDepth");
+				JFileIOHelper::StoreAtomicData(tool, info[i].finalCompareDepth, "FinalCompareDepth");
+				JFileIOHelper::InputSpace(tool, 1);
+				tool.PopStack();
 			}
+			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		}
-		static void _StreamOutDebugBufferInfo(JHlslDebug<HZBDebugInfo>* debugInfo)
+		static void _StreamOutDebugBufferInfo(JHlslDebug<JHZBDebugInfo>* debugInfo)
 		{
 #if defined(DEVELOP)
 			if (!allowHzbDebug || !Develop::JDevelopDebug::IsActivate())
 				return;
 
 			int count = 0;
-			HZBDebugInfo* info = debugInfo->Map(count);
+			JHZBDebugInfo* info = debugInfo->Map(count);
 			auto rawVec = JRenderItem::StaticTypeInfo().GetInstanceRawPtrVec();
 
 			Develop::JDevelopDebug::PushLog("OccResult.. OutCount: " + std::to_string(count));
 			for (uint i = 0; i < 3; ++i)
-			{  
+			{
 				if (rawVec.size() <= i)
 					break;
 
@@ -142,7 +147,7 @@ namespace JinEngine::Graphic
 				Develop::JDevelopDebug::PushLog("ThreadIndex: " + std::to_string(info[i].threadIndex));
 				Develop::JDevelopDebug::PushLog("CullingRes: " + std::to_string(info[i].cullingRes));
 				Develop::JDevelopDebug::PushLog("CenterDepth: " + std::to_string(info[i].centerDepth));
-				Develop::JDevelopDebug::PushLog("FinalCompareDepth: " + std::to_string(info[i].finalCompareDepth)); 
+				Develop::JDevelopDebug::PushLog("FinalCompareDepth: " + std::to_string(info[i].finalCompareDepth));
 				Develop::JDevelopDebug::PushLog("MinNearPoint: " + info[i].minNearPoint.ToString());
 				Develop::JDevelopDebug::PushLog("ClipNearH: " + info[i].clipNearH.ToString());
 				Develop::JDevelopDebug::PushLog("ClipNearC: " + info[i].clipNearC.ToString());
@@ -155,7 +160,7 @@ namespace JinEngine::Graphic
 				Develop::JDevelopDebug::PushLog("BBox5: " + info[i].bboxV[5].ToString());
 				Develop::JDevelopDebug::PushLog("BBox6: " + info[i].bboxV[6].ToString());
 				Develop::JDevelopDebug::PushLog("BBox7: " + info[i].bboxV[7].ToString());
-				 
+
 				Develop::JDevelopDebug::PushLog("nearPoint0: " + info[i].nearPoint[0].ToString());
 				Develop::JDevelopDebug::PushLog("nearPoint1: " + info[i].nearPoint[1].ToString());
 				Develop::JDevelopDebug::PushLog("nearPoint2: " + info[i].nearPoint[2].ToString());
@@ -209,10 +214,10 @@ namespace JinEngine::Graphic
 				return JShaderType::CompileInfo(L"Error", "Error");
 			}
 		}
-		static void StuffSamplingInitHelper(_Out_ JComputeShaderInitData& initHelper, 
+		static void StuffSamplingInitHelper(_Out_ JComputeShaderInitData& initHelper,
 			const JDx12HZBOccCulling::COMPUTE_TYPE type,
 			const JGraphicInfo& graphicInfo)noexcept
-		{	
+		{
 			using COMPUTE_TYPE = JinEngine::Graphic::JDx12HZBOccCulling::COMPUTE_TYPE;
 			auto calThreadDim = [](const uint ori, const uint length, const uint devideFactor, uint& devideCount) -> uint
 			{
@@ -235,7 +240,7 @@ namespace JinEngine::Graphic
 				const JDx12HZBOccCulling::COMPUTE_TYPE type,
 				const JGraphicInfo& graphicInfo)
 			{
-				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo(); 
+				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo();
 
 				//수정필요 
 				//thread per group factor가 하드코딩됨
@@ -250,6 +255,7 @@ namespace JinEngine::Graphic
 
 				initHelper.dispatchInfo.threadDim = JVector3<uint>(threadDimX, threadDimY, 1);
 				initHelper.dispatchInfo.groupDim = JVector3<uint>(groupDimX, groupDimY, 1);
+				 
 				initHelper.dispatchInfo.taskOriCount = graphicInfo.occlusionWidth * graphicInfo.occlusionHeight;
 				if (type == COMPUTE_TYPE::HZB_COPY_PERSPECTIVE)
 					initHelper.macro.push_back({ HZB_PERSPECTIVE_DEPTH_MAP_SYMBOL, "1" });
@@ -274,77 +280,77 @@ namespace JinEngine::Graphic
 		static void StuffCullingInitHelper(_Out_ JComputeShaderInitData& initHelper,
 			const JDx12HZBOccCulling::COMPUTE_TYPE type,
 			const int capacity)noexcept
+		{
+			using COMPUTE_TYPE = JinEngine::Graphic::JDx12HZBOccCulling::COMPUTE_TYPE;
+			auto calThreadDim = [](const uint ori, const uint length, const uint devideFactor, uint& devideCount) -> uint
 			{
-				using COMPUTE_TYPE = JinEngine::Graphic::JDx12HZBOccCulling::COMPUTE_TYPE;
-				auto calThreadDim = [](const uint ori, const uint length, const uint devideFactor, uint& devideCount) -> uint
+				devideCount = 0;
+				uint result = ori;
+				while (result > length)
 				{
-					devideCount = 0;
-					uint result = ori;
-					while (result > length)
-					{
-						result /= devideFactor;
-						++devideCount;
-					}
-					if (result == 0)
-						return 1;
-					else
-						return result;
-				};
-
-				using GpuInfo = Core::JHardwareInfo::GpuInfo;
-				switch (type)
-				{
-				case COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE:
-				case COMPUTE_TYPE::HZB_CULLING_ORTHOLOGIC:
-				{
-					std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo();
-					uint totalSmCount = 0;
-					uint totalBlockPerSmCount = 0;
-					uint totalThreadPerBlockCount = 0;
-					for (const auto& data : gpuInfo)
-					{
-						totalSmCount += data.multiProcessorCount;
-						totalBlockPerSmCount += data.maxBlocksPerMultiProcessor;
-						totalThreadPerBlockCount += data.maxThreadsPerBlock;
-					}
-
-					//graphicInfo.upObjCapacity always 2 squared
-					uint queryCount = capacity > 0 ? capacity : 1;
-
-					//수정필요 
-					//thread per group factor가 하드코딩됨
-					//이후 amd graphic info 추가와 동시에 수정할 예정
-					uint warpFactor = gpuInfo[0].vendor == Core::J_GRAPHIC_VENDOR::AMD ? 64 : 32;
-					if (queryCount < warpFactor)
-					{
-						initHelper.dispatchInfo.threadDim = JVector3<uint>(queryCount, 1, 1);
-						initHelper.dispatchInfo.groupDim = JVector3<uint>(1, 1, 1);
-						initHelper.dispatchInfo.taskOriCount = queryCount;
-					}
-					else
-					{
-						initHelper.dispatchInfo.threadDim = JVector3<uint>(warpFactor, 1, 1);
-						initHelper.dispatchInfo.groupDim = JVector3<uint>(queryCount / warpFactor, 1, 1);
-						initHelper.dispatchInfo.taskOriCount = queryCount;
-					}
-					initHelper.macro.push_back({ HZB_OCC_QUERY_COUNT_SYMBOL, std::to_string(queryCount) });
-					if (type == COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE)
-						initHelper.macro.push_back({ HZB_PERSPECTIVE_DEPTH_MAP_SYMBOL, "1" });
-					StuffComputeShaderCommonMacro(initHelper, type);
-					break;
+					result /= devideFactor;
+					++devideCount;
 				}
-				default:
-					break;
+				if (result == 0)
+					return 1;
+				else
+					return result;
+			};
+
+			using GpuInfo = Core::JHardwareInfo::GpuInfo;
+			switch (type)
+			{
+			case COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE:
+			case COMPUTE_TYPE::HZB_CULLING_ORTHOLOGIC:
+			{
+				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo();
+				uint totalSmCount = 0;
+				uint totalBlockPerSmCount = 0;
+				uint totalThreadPerBlockCount = 0;
+				for (const auto& data : gpuInfo)
+				{
+					totalSmCount += data.multiProcessorCount;
+					totalBlockPerSmCount += data.maxBlocksPerMultiProcessor;
+					totalThreadPerBlockCount += data.maxThreadsPerBlock;
 				}
-				//initHelper.macro.push_back({ NULL, NULL });
-				//initHelper.cFunctionFlag = cFunctionFlag;
+
+				//graphicInfo.upObjCapacity always 2 squared
+				uint queryCount = capacity > 0 ? capacity : 1;
+
+				//수정필요 
+				//thread per group factor가 하드코딩됨
+				//이후 amd graphic info 추가와 동시에 수정할 예정
+				uint warpFactor = gpuInfo[0].vendor == Core::J_GRAPHIC_VENDOR::AMD ? 64 : 32;
+				if (queryCount < warpFactor)
+				{
+					initHelper.dispatchInfo.threadDim = JVector3<uint>(queryCount, 1, 1);
+					initHelper.dispatchInfo.groupDim = JVector3<uint>(1, 1, 1);
+					initHelper.dispatchInfo.taskOriCount = queryCount;
+				}
+				else
+				{
+					initHelper.dispatchInfo.threadDim = JVector3<uint>(warpFactor, 1, 1);
+					initHelper.dispatchInfo.groupDim = JVector3<uint>(queryCount / warpFactor, 1, 1);
+					initHelper.dispatchInfo.taskOriCount = queryCount;
+				}
+				initHelper.macro.push_back({ HZB_OCC_QUERY_COUNT_SYMBOL, std::to_string(queryCount) });
+				if (type == COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE)
+					initHelper.macro.push_back({ HZB_PERSPECTIVE_DEPTH_MAP_SYMBOL, "1" });
+				StuffComputeShaderCommonMacro(initHelper, type);
+				break;
 			}
+			default:
+				break;
+			}
+			//initHelper.macro.push_back({ NULL, NULL });
+			//initHelper.cFunctionFlag = cFunctionFlag;
+		}
 	}
 	void JDx12HZBOccCulling::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)
 	{
 		if (!IsSameDevice(device) || !IsSameDevice(gM))
 			return;
-		 
+
 		BuildRootSignature(device, info.occlusionMapCapacity);
 		BuildUploadBuffer(device, info.upObjCapacity, info.occlusionMapCapacity);
 
@@ -393,7 +399,7 @@ namespace JinEngine::Graphic
 	void JDx12HZBOccCulling::NotifyBuildNewHzbOccBuffer(JGraphicDevice* device, const size_t initCapacity, const JUserPtr<JCullingInfo>& cullingInfo)
 	{
 		BuildOccDebugBuffer(device, initCapacity, cullingInfo);
-		 
+
 		cullingInfo->SetUpdateFrequency(1.0f);
 		cullingInfo->SetUpdatePerObjectRate(1.0f);
 		cullingInfo->SetUpdateEnd(true);
@@ -415,22 +421,25 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12HZBOccCulling::BuildOccDebugBuffer(JGraphicDevice* device, const size_t initCapacity, const JUserPtr<JCullingInfo>& cullingInfo)
 	{
-		if (!IsSameDevice(device))
+		if constexpr (!allowHzbDebug)
 			return false;
 
-		if (!allowHzbDebug || cullingInfo->GetCullingType() != J_CULLING_TYPE::HZB_OCCLUSION)
+		if (!IsSameDevice(device) || cullingInfo->GetCullingType() != J_CULLING_TYPE::HZB_OCCLUSION)
 			return false;
-		 
-		auto debugBuff = std::make_unique<JHlslDebug<HZBDebugInfo>>(L"Hzb", debugPassCBIndex);
+
+		auto debugBuff = std::make_unique<JHlslDebug<JHZBDebugInfo>>(L"Hzb", debugPassCBIndex);
 		debugBuff->Build(device, initCapacity);
 		occDebugBuffer.push_back(std::move(debugBuff));
 		return true;
 	}
 	void JDx12HZBOccCulling::ReBuildOccDebugBuffer(JGraphicDevice* device, const size_t capacity, const std::vector<JUserPtr<JCullingInfo>>& cullingInfo)
-	{ 
-		if (!IsSameDevice(device) || !allowHzbDebug)
+	{
+		if constexpr (!allowHzbDebug)
 			return;
-		 
+
+		if (!IsSameDevice(device))
+			return;
+
 		for (const auto& data : cullingInfo)
 		{
 			if (data->GetCullingType() != J_CULLING_TYPE::HZB_OCCLUSION)
@@ -447,18 +456,18 @@ namespace JinEngine::Graphic
 			return;
 
 		occQueryOutBuffer->Clear();
-		occQueryOutBuffer->Build(device, objectCapacity);  
+		occQueryOutBuffer->Build(device, objectCapacity);
 
 		CreateCullingShader(device, objectCapacity, COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE);
 		CreateCullingShader(device, objectCapacity, COMPUTE_TYPE::HZB_CULLING_ORTHOLOGIC);
 	}
 	void JDx12HZBOccCulling::DestroyOccDebugBuffer(JCullingInfo* cullingInfo)
 	{
-		if (!allowHzbDebug)
+		if constexpr (!allowHzbDebug)
 			return;
-		 
+
 		occDebugBuffer.erase(occDebugBuffer.begin() + cullingInfo->GetArrayIndex());
-	} 
+	}
 	void JDx12HZBOccCulling::ReBuildOcclusionMapInfoConstants(JGraphicDevice* device, const JGraphicInfo& info)
 	{
 		if (!IsSameDevice(device))
@@ -477,11 +486,14 @@ namespace JinEngine::Graphic
 			nowWidth /= 2;
 			nowHeight /= 2;
 		}
-		 
-		CreateSamplingShader(device, info, COMPUTE_TYPE::HZB_DOWN_SAMPLING); 
+
+		CreateSamplingShader(device, info, COMPUTE_TYPE::HZB_DOWN_SAMPLING);
 	}
 	void JDx12HZBOccCulling::StreamOutDebugInfo(const JUserPtr<JCullingInfo>& cullingInfo, const std::wstring& path)
 	{
+		if constexpr (!allowHzbDebug)
+			return;
+
 		if (cullingInfo == nullptr)
 			return;
 
@@ -493,6 +505,9 @@ namespace JinEngine::Graphic
 	}
 	void JDx12HZBOccCulling::StreamOutDebugInfo(const std::wstring& path)
 	{
+		if constexpr (!allowHzbDebug)
+			return;
+
 		if (occDebugBuffer.size() == 0)
 			return;
 
@@ -568,7 +583,7 @@ namespace JinEngine::Graphic
 			cmdList->RSSetViewports(1, &mViewport);
 			cmdList->RSSetScissorRects(1, &mScissorRect);
 
-			ID3D12Resource* occDepthMap = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP, occVecIndex); 
+			ID3D12Resource* occDepthMap = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP, occVecIndex);
 			D3D12_CPU_DESCRIPTOR_HANDLE dsv = dx12Gm->GetCpuDsvDescriptorHandle(occHeapIndex);
 
 			JD3DUtility::ResourceTransition(cmdList, occDepthMap, D3D12_RESOURCE_STATE_DEPTH_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
@@ -598,7 +613,7 @@ namespace JinEngine::Graphic
 			};
 			alignInfo.alignRange = JAcceleratorAlignInfo::ALIGN_RANGE::ALL;
 			//draw specific count
-			 
+
 			JDx12GraphicDepthMapDrawSet depthMapSet(dx12DrawSet);
 			occDrawSet->depthTest->DrawSceneBoundingBox(&depthMapSet,
 				helper.scene->AlignedObject(alignInfo),
@@ -688,12 +703,12 @@ namespace JinEngine::Graphic
 		if (helper.occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
 		{
 			camNear = helper.cam->GetNear();
-			camFar = helper.cam->GetFar(); 
+			camFar = helper.cam->GetFar();
 		}
 		else
 		{
 			camNear = helper.lit->GetFrustumNear();
-			camFar = helper.lit->GetFrustumFar(); 
+			camFar = helper.lit->GetFrustumFar();
 		}
 
 		J_GRAPHIC_RESOURCE_TYPE srcType;
@@ -706,7 +721,7 @@ namespace JinEngine::Graphic
 			isNonlinear = false;
 		}
 		else
-			return; 
+			return;
 
 		auto gRInterface = helper.GetOccGResourceInterface();
 		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
@@ -748,7 +763,7 @@ namespace JinEngine::Graphic
 		JDx12CullingManager* dx12Cm = static_cast<JDx12CullingManager*>(dx12ComputeSet->cullingM);
 		ID3D12GraphicsCommandList* cmdList = dx12ComputeSet->cmdList;
 
-		const bool isPerspective = helper.UsePerspectiveProjection(); 
+		const bool isPerspective = helper.UsePerspectiveProjection();
 		auto gRInterface = helper.GetOccGResourceInterface();
 		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
 
@@ -763,9 +778,9 @@ namespace JinEngine::Graphic
 			uint occPassFrameIndex = 0;
 
 			if (helper.cam != nullptr)
-				occPassFrameIndex = helper.GetCamHzbOccComputeFrameIndex(); 
+				occPassFrameIndex = helper.GetCamHzbOccComputeFrameIndex();
 			else if (helper.lit != nullptr)
-				occPassFrameIndex = helper.GetLitHzbOccComputeFrameIndex(); 
+				occPassFrameIndex = helper.GetLitHzbOccComputeFrameIndex();
 
 			DepthMapDownSampling(cmdList,
 				dx12Frame,
@@ -799,7 +814,7 @@ namespace JinEngine::Graphic
 	{
 		const uint depthMapInfoCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JHzbOccDepthMapInfoConstants));
 		commandList->SetComputeRootSignature(mRootSignature.Get());
-		 
+
 		JDx12ComputeShaderDataHolder* copyShader = isPerspective ? shader[(uint)COMPUTE_TYPE::HZB_COPY_PERSPECTIVE].get() : shader[(uint)COMPUTE_TYPE::HZB_COPY_ORTHOLOGIC].get();
 		commandList->SetPipelineState(copyShader->pso.Get());
 
@@ -852,22 +867,24 @@ namespace JinEngine::Graphic
 		commandList->SetComputeRootConstantBufferView(computePassCBIndex, passCBAddress);
 
 		//Debug
-		if (allowHzbDebug)
+		if constexpr (allowHzbDebug)
 			occDebugBuffer[cullUser.GetArrayIndex(J_CULLING_TYPE::HZB_OCCLUSION)]->SettingCompute(commandList);
 
-		JDx12ComputeShaderDataHolder* occShader = isPerspective ? shader[(uint)COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE].get() : shader[(uint)COMPUTE_TYPE::HZB_CULLING_ORTHOLOGIC].get();	 
+		JDx12ComputeShaderDataHolder* occShader = isPerspective ? shader[(uint)COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE].get() : shader[(uint)COMPUTE_TYPE::HZB_CULLING_ORTHOLOGIC].get();
 		commandList->SetPipelineState(occShader->pso.Get());
 
 		JD3DUtility::ResourceTransition(commandList, occQueryOutBuffer->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 		JVector3<uint> groupDim = occShader->dispatchInfo.groupDim;
-		commandList->Dispatch(groupDim.x, groupDim.y, groupDim.z); 
+		commandList->Dispatch(groupDim.x, groupDim.y, groupDim.z);
 
+		auto resource = dx12Cm->GetResource(J_CULLING_TYPE::HZB_OCCLUSION, cullUser.GetArrayIndex(J_CULLING_TYPE::HZB_OCCLUSION));
 		JD3DUtility::ResourceTransition(commandList, occQueryOutBuffer->GetResource(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
-		auto resource = dx12Cm->GetResource(J_CULLING_TYPE::HZB_OCCLUSION, cullUser.GetArrayIndex(J_CULLING_TYPE::HZB_OCCLUSION));		
+		JD3DUtility::ResourceTransition(commandList, resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
 		commandList->CopyResource(resource, occQueryOutBuffer->GetResource());
+		JD3DUtility::ResourceTransition(commandList, resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
 		JD3DUtility::ResourceTransition(commandList, occQueryOutBuffer->GetResource(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON);
-	
-		if (allowHzbDebug)
+
+		if constexpr (allowHzbDebug)
 			occDebugBuffer[cullUser.GetArrayIndex(J_CULLING_TYPE::HZB_OCCLUSION)]->End(commandList);
 	}
 	void JDx12HZBOccCulling::BuildRootSignature(JGraphicDevice* device, const uint occlusionDsvCapacity)
@@ -898,7 +915,8 @@ namespace JinEngine::Graphic
 		slotRootParameter[computePassCBIndex].InitAsConstantBufferView(1);
 
 		//Debug
-		slotRootParameter[debugPassCBIndex].InitAsUnorderedAccessView(2, 1);
+		if constexpr (allowHzbDebug)
+			slotRootParameter[debugPassCBIndex].InitAsUnorderedAccessView(2, 1);
 
 		std::vector< CD3DX12_STATIC_SAMPLER_DESC> samDesc
 		{
@@ -927,8 +945,8 @@ namespace JinEngine::Graphic
 		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, (uint)samDesc.size(), samDesc.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 		// create a root signature with a single slot which points to a descriptor length consisting of a single constant buffer
-		ComPtr<ID3DBlob> serializedRootSig = nullptr;
-		ComPtr<ID3DBlob> errorBlob = nullptr;
+		Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 		HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
 			serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
 
@@ -957,18 +975,18 @@ namespace JinEngine::Graphic
 		occQueryOutBuffer->Build(device, objectCapacity);
 	}
 	void JDx12HZBOccCulling::CreateSamplingShader(JGraphicDevice* device, const JGraphicInfo& info, const COMPUTE_TYPE type)
-	{ 
+	{
 		if (!IsSameDevice(device) || type == COMPUTE_TYPE::HZB_CULLING_ORTHOLOGIC || type == COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE)
 			return;
 
-		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(device); 
+		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(device);
 		shader[(uint)type] = std::make_unique<JDx12ComputeShaderDataHolder>();
 
 		JComputeShaderInitData initData;
 		StuffSamplingInitHelper(initData, type, info);
 
 		CompileShader(shader[(uint)type].get(), initData, type);
-		StuffPso(shader[(uint)type].get(), dx12Device, initData, type);	 
+		StuffPso(shader[(uint)type].get(), dx12Device, initData, type);
 	}
 	void JDx12HZBOccCulling::CreateCullingShader(JGraphicDevice* device, const uint objectCapacity, const COMPUTE_TYPE type)
 	{
@@ -986,11 +1004,9 @@ namespace JinEngine::Graphic
 	}
 	void JDx12HZBOccCulling::CompileShader(JDx12ComputeShaderDataHolder* holder, const JComputeShaderInitData& initData, const COMPUTE_TYPE type)
 	{
-		JShaderType::CompileInfo compileInfo = ComputeShaderCompileInfo(type);
-		std::wstring computeShaderPath = JApplicationEngine::ShaderPath() + L"\\" + compileInfo.fileName;
-
+		JShaderType::CompileInfo compileInfo = ComputeShaderCompileInfo(type); 
 		auto macro = JDxShaderDataUtil::ToD3d12Macro(initData.macro);
-		holder->cs = JD3DUtility::CompileShader(computeShaderPath, macro.data(), compileInfo.functionName, "cs_5_1");
+		holder->cs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, macro.data(), compileInfo.functionName, "cs_5_1");
 		holder->dispatchInfo = initData.dispatchInfo;
 	}
 	void JDx12HZBOccCulling::StuffPso(JDx12ComputeShaderDataHolder* holder, JDx12GraphicDevice* dx12Device, const JComputeShaderInitData& initData, const COMPUTE_TYPE type)

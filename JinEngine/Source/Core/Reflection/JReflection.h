@@ -423,6 +423,15 @@ namespace JinEngine
 			else
 				return std::vector<enumType>{};
 		}
+		template<typename enumType>
+		std::vector<int>GetEnumElementValueVec()
+		{
+			JEnumInfo* jEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<enumType>).name());
+			if (jEnumInfo != nullptr)
+				return jEnumInfo->GetEnumElementVec();
+			else
+				return std::vector<int>{};
+		}
 
 		static std::string ErasePrefixJ(const std::string& str)
 		{

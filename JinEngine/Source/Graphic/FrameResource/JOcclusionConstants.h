@@ -16,8 +16,8 @@ namespace JinEngine
 				 DirectX::XMFLOAT3(0, 0, 0),DirectX::XMFLOAT3(0, 0, 0)
 			};
 			DirectX::XMFLOAT3 center = DirectX::XMFLOAT3(0, 0, 0);
-			DirectX::XMFLOAT3 extents = DirectX::XMFLOAT3(0, 0, 0);
 			int queryResultIndex = 0;
+			DirectX::XMFLOAT3 extents = DirectX::XMFLOAT3(0, 0, 0);
 			int isValid = 0;
 		};
 		struct JHzbOccDepthMapInfoConstants
@@ -50,7 +50,7 @@ namespace JinEngine
 			int hzbOccComputePad02 = 0;
 		};
 
-		struct HZBDebugInfo
+		struct JHZBDebugInfo
 		{
 			JVector3F bboxV[8]
 			{ 

@@ -166,8 +166,8 @@ namespace JinEngine
 			bool IsWindowInVector(JEditorWindow* window, std::vector<JEditorWindow*>::const_iterator st, const uint count)const noexcept;
 			int FindWindowIndex(JEditorWindow* window, std::vector<JEditorWindow*>::const_iterator st, const uint count)const noexcept;
 		public:
-			virtual void StorePage(std::wofstream& stream);
-			virtual void LoadPage(std::wifstream& stream);
+			virtual void LoadPage(JFileIOTool& tool);
+			virtual void StorePage(JFileIOTool& tool);
 		};
 	}
 }

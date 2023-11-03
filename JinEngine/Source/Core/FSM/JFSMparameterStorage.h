@@ -1,6 +1,7 @@
 #pragma once 
 #include"JFSMparameterStorageAccess.h"
 #include"../Reflection/JTypeBase.h"
+#include"../File/JFileIOHelper.h"
 #include<vector>
 #include<memory>
 #include<unordered_map>
@@ -46,7 +47,8 @@ namespace JinEngine
 		private:
 			JUserPtr<Core::JIdentifier> owner;
 		private:
-			std::vector<JUserPtr<JFSMparameter>> parameterVec; 
+			std::vector<JUserPtr<JFSMparameter>> parameterVec;
+			std::unordered_map<size_t, JUserPtr<JFSMparameter>> parameterMap;
 			std::vector<std::unique_ptr<StorageUser>>storageUser; 
 		private:
 			const size_t guid;
@@ -68,8 +70,8 @@ namespace JinEngine
 		public:
 			void Clear();
 		public:
-			static J_FILE_IO_RESULT StoreData(std::wofstream& stream, const JUserPtr< JFSMparameterStorage>& storage);
-			static J_FILE_IO_RESULT LoadData(std::wifstream& stream, const JUserPtr< JFSMparameterStorage>& storage);
+			static J_FILE_IO_RESULT LoadData(JFileIOTool& tool, const JUserPtr< JFSMparameterStorage>& storage);
+			static J_FILE_IO_RESULT StoreData(JFileIOTool& tool,  const JUserPtr< JFSMparameterStorage>& storage);
 		};
 	}
 }

@@ -62,7 +62,7 @@ namespace JinEngine
 		defaultTextureGuidMap.clear();
 		defaultResourceMap.clear();
 	}
-	void JResourceObjectDefualtData::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+	void JResourceObjectDefualtData::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 	{
 		if (iden == guid)
 			return;

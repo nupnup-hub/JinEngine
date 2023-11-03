@@ -3,7 +3,7 @@
 
 
 namespace JinEngine
-{
+{ 
 	namespace Core
 	{
 		class JFSMinterfacePrivate : public JIdentifierPrivate

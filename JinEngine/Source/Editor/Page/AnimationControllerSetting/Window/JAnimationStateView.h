@@ -17,7 +17,7 @@ namespace JinEngine
 		class JEditorPopupMenu;
 		class JEditorStringMap;
 
-		class JAnimationStateViewCreationImpl;
+		class JAnimationStateViewCreationFunctor;
 		class JAnimationStateView final : public JEditorWindow
 		{ 
 		private:
@@ -28,7 +28,7 @@ namespace JinEngine
 			std::unique_ptr<JEditorPopupMenu> statePopup;
 			std::unique_ptr<JEditorStringMap> editorString;
 		private:
-			std::unique_ptr<JAnimationStateViewCreationImpl> creationImpl;
+			std::unique_ptr<JAnimationStateViewCreationFunctor> creation;
 		public:
 			JAnimationStateView(const std::string& name,
 				std::unique_ptr<JEditorAttribute> attribute,

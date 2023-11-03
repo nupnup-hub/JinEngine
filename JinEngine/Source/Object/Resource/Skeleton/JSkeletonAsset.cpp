@@ -210,47 +210,53 @@ namespace JinEngine
 	public:	 
 		static std::vector<Core::Joint> ReadAssetData(const std::wstring& path)
 		{
-			std::wifstream stream;
-			stream.open(path, std::ios::in | std::ios::binary);
-			if (!stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(path, JFileIOTool::TYPE::INPUT_STREAM))
 				return std::vector<Core::Joint>{};
 
 			uint jointCount;
 			std::vector<Core::Joint> joint;
-
-			JObjectFileIOHelper::LoadAtomicData(stream, jointCount);
+			 
+			JObjectFileIOHelper::LoadAtomicData(tool, jointCount, "JointCount:");
 			joint.resize(jointCount);
 
+			tool.PushExistStack("JointData");
 			for (uint i = 0; i < jointCount; ++i)
 			{
 				int parentIndex;
-				JObjectFileIOHelper::LoadJString(stream, joint[i].name);
-				JObjectFileIOHelper::LoadAtomicData(stream, parentIndex);
-				JObjectFileIOHelper::LoadAtomicData(stream, joint[i].length);
-				JObjectFileIOHelper::LoadMatrix4x4(stream, joint[i].inbindPose);
+				tool.PushExistStack();
+				JObjectFileIOHelper::LoadJString(tool, joint[i].name, "Name:");
+				JObjectFileIOHelper::LoadAtomicData(tool, parentIndex, "ParentIndex:");
+				JObjectFileIOHelper::LoadAtomicData(tool, joint[i].length, "Length:");
+				JObjectFileIOHelper::LoadMatrix4x4(tool, joint[i].inbindPose, "InBindPose:"); 
+				tool.PopStack();
 				joint[i].parentIndex = parentIndex;
 			}
-			stream.close();
+			tool.PopStack();
+			tool.Close();
 			return std::move(joint);
 		}
 		bool WriteAssetData()
 		{
-			std::wofstream stream;
-			stream.open(thisPointer->GetPath(), std::ios::out | std::ios::binary);
-			if (!stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(thisPointer->GetPath(), JFileIOTool::TYPE::OUTPUT_STREAM))
 				return false;
 
-			JObjectFileIOHelper::StoreAtomicData(stream, L"JointCount:", skeleton->GetJointCount());
+			JObjectFileIOHelper::StoreAtomicData(tool, skeleton->GetJointCount(), "JointCount:");
 			const uint jointCount = skeleton->GetJointCount();
+			tool.PushArrayOwner("JointData");
 			for (uint i = 0; i < skeleton->GetJointCount(); ++i)
 			{
 				const Core::Joint joint = skeleton->GetJoint(i);
-				JObjectFileIOHelper::StoreJString(stream, L"Name:", joint.name);
-				JObjectFileIOHelper::StoreAtomicData(stream, L"ParentIndex:", joint.parentIndex);
-				JObjectFileIOHelper::StoreAtomicData(stream, L"Length:", joint.length);
-				JObjectFileIOHelper::StoreMatrix4x4(stream, L"InBindPose:", joint.inbindPose);
+				tool.PushArrayMember();
+				JObjectFileIOHelper::StoreJString(tool, joint.name, "Name:");
+				JObjectFileIOHelper::StoreAtomicData(tool, (int)joint.parentIndex, "ParentIndex:");
+				JObjectFileIOHelper::StoreAtomicData(tool, joint.length, "Length:");
+				JObjectFileIOHelper::StoreMatrix4x4(tool, joint.inbindPose, "InBindPose:");
+				tool.PopStack();
 			}
-			stream.close();
+			tool.PopStack();
+			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			return true;
 		}
 		bool ImportSkeleton(std::vector<Core::Joint>&& joint)
@@ -497,29 +503,31 @@ namespace JinEngine
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JSkeletonAsset::LoadMetaData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		std::wifstream stream;
-		stream.open(path, std::ios::in | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		auto loadMetaData = static_cast<JSkeletonAsset::LoadMetaData*>(data);
-		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
-		loadMetaData->modelHint = JObjectFileIOHelper::LoadHasIdenHint(stream);
-		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->isValidAvatar);
+		loadMetaData->modelHint = JObjectFileIOHelper::LoadHasIdenHint(tool, "ModelHint:");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->isValidAvatar, "HasAvatar:");
 		if (loadMetaData->isValidAvatar)
-		{  
-			for (uint32 i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
+		{
+			tool.PushExistStack("AvatarData");
+			for (uint i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
 			{
 				int index;
-				JObjectFileIOHelper::LoadAtomicData(stream, index);
+				tool.PushExistStack();
+				JObjectFileIOHelper::LoadAtomicData(tool, index, std::to_string(i) + "Index:");
+				tool.PopStack();
 				loadMetaData->avatar.jointReference[i] = (uint8)index;
 			}
+			tool.PopStack();
 		}
-		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->skeletonType); 
-
-		stream.close();
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->skeletonType, "SkeletonType:"); 
+		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
@@ -531,25 +539,31 @@ namespace JinEngine
 		JUserPtr<JSkeletonAsset> skel;
 		skel.ConnnectChild(storeData->obj);
 
-		std::wofstream stream;
-		stream.open(skel->GetMetaFilePath(), std::ios::out | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(skel->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		//아바타 정보 저장 필요		
 		bool hasAvatar = skel->GetAvatar() != nullptr;
-		JObjectFileIOHelper::StoreHasInstanceHint(stream, skel->impl->modelHint);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"HasAvatar:", hasAvatar);
+		JObjectFileIOHelper::StoreHasInstanceHint(tool, skel->impl->modelHint, "ModelHint:");
+		JObjectFileIOHelper::StoreAtomicData(tool, hasAvatar, "HasAvatar:");
 		if (hasAvatar)
 		{
 			JUserPtr<JAvatar> avatar = skel->GetAvatar();
+			tool.PushArrayOwner("AvatarData");
 			for (uint i = 0; i < JSkeletonFixedData::maxAvatarJointCount; ++i)
-				JObjectFileIOHelper::StoreAtomicData(stream, std::to_wstring(i) + L"Index:", avatar->jointReference[i]);
+			{
+				tool.PushArrayMember();
+				JObjectFileIOHelper::StoreAtomicData(tool, avatar->jointReference[i], std::to_string(i) + "Index:");
+				tool.PopStack();
+			}
+			tool.PopStack();
 		}
-		JObjectFileIOHelper::StoreEnumData(stream, L"SkeletonType:", skel->GetSkeletonType()); 
+		JObjectFileIOHelper::StoreEnumData(tool, skel->GetSkeletonType(), "SkeletonType:");
+		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

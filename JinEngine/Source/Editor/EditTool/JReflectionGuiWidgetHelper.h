@@ -1,7 +1,6 @@
 #pragma once 
-#include"../Interface/JEditorObjectHandleInterface.h"
 #include"../../Editor/Page/JEditorPageEnum.h"
-#include"../../Core/JCoreEssential.h" 
+#include"../../Object/JObjectModifyInterface.h"
 #include"../../Core/Reflection/JGuiWidgetInfo.h"
 #include"../../Core/Reflection/JGuiWidgetType.h"
 #include<vector>

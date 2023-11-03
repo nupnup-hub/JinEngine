@@ -116,7 +116,7 @@ namespace JinEngine
 		}
 		std::wstring JIdentifier::GetDefaultName(const JTypeInfo& info)noexcept
 		{ 
-			return L"New" + std::wstring(JCUtil::StrToWstr(info.NameWithOutModifier())).substr(1);
+			return L"New" + std::wstring(JCUtil::StrToWstr(info.NameWithOutModifier()));
 		}
 		void JIdentifier::SetIdentifiable()noexcept
 		{

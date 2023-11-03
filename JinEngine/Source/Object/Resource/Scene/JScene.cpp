@@ -28,7 +28,6 @@
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/Time/JGameTimer.h"
 #include"../../../Core/File/JFileConstant.h" 
-#include"../../../Core/Geometry/JCullingFrustum.h"  
 #include"../../../Core/Geometry/Mesh/JMeshType.h"  
 #include"../../../Core/Utility/JCommonUtility.h" 
 #include"../../../Graphic/Frameresource/JFrameUpdate.h" 
@@ -569,26 +568,25 @@ namespace JinEngine
 	public:
 		bool ReadAssetData()
 		{
-			std::wifstream stream;
-			stream.open(thisPointer->GetPath(), std::ios::in | std::ios::binary);
-			if (!stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(thisPointer->GetPath(), JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 				return false;
 
-			auto data = JGameObjectPrivate::AssetDataIOInterface::CreateLoadAssetDIData(thisPointer, stream);
+			auto data = JGameObjectPrivate::AssetDataIOInterface::CreateLoadAssetDIData(thisPointer, tool);
 			root.ConnnectChild(JGameObjectPrivate::AssetDataIOInterface::LoadAssetData(data.get()));
-			stream.close();
+			tool.Close();
+			 
 			return true;
 		}
 		bool WriteAssetData()
 		{
-			std::wofstream stream;
-			stream.open(thisPointer->GetPath(), std::ios::out | std::ios::binary);
-			if (!stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(thisPointer->GetPath(), JFileIOTool::TYPE::JSON))
 				return false;
 
-			auto data = JGameObjectPrivate::AssetDataIOInterface::CreateStoreAssetDIData(root, stream);
+			auto data = JGameObjectPrivate::AssetDataIOInterface::CreateStoreAssetDIData(root, tool);
 			Core::J_FILE_IO_RESULT res = JGameObjectPrivate::AssetDataIOInterface::StoreAssetData(data.get());
-			stream.close();
+			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			return res == Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 	public:
@@ -637,19 +635,16 @@ namespace JinEngine
 	public:
 		void Initialize(InitData* initData)
 		{
+			//새로생성된 scene에 경우 기존에 파일을 가져오는게 불가능하므로
+			//Default Object 생성
 			if (!thisPointer->HasFile())
 			{
 				CreateDefaultGameObject();
 				CreateDebugRoot();
 				if (accelerator != nullptr)
 					InitializeAccelerator();
+				thisPointer->SetValid(true);
 			}
-			else
-				ReadAssetData();
-
-			if (debugRoot == nullptr)
-				CreateDebugRoot();
-			thisPointer->SetValid(true);
 		}
 		void RegisterThisPointer(JScene* scene)
 		{
@@ -1006,8 +1001,7 @@ namespace JinEngine
 		if (!storeData->HasCorrectType(JScene::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		StoreMetaData(data);
-
+		//StoreMetaData(data);
 		JUserPtr<JScene> scene;
 		scene.ConnnectChild(storeData->obj);
 		return scene->impl->WriteAssetData() ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
@@ -1017,31 +1011,34 @@ namespace JinEngine
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JScene::LoadMetaData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		std::wifstream stream;
-		stream.open(path, std::ios::in | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		auto loadMetaData = static_cast<JScene::LoadMetaData*>(data);
-		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->useCaseType);
-		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->isOpen);
-		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->isMainScene);
-		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->isActivatedAccelerator);
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->useCaseType, "UseCaseType:");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->isOpen, Core::JFileConstant::GetLastOpenSymbol(JScene::StaticTypeInfo()));
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->isMainScene, "IsMainScene:");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->isActivatedAccelerator, "IsActivatedAccelerator:");
 
+		tool.PushExistStack("AcceleratorOption");
 		for (uint i = 0; i < (uint)J_ACCELERATOR_LAYER::COUNT; ++i)
 		{
 			const uint occIndex = (uint)J_ACCELERATOR_TYPE::OCTREE;
 			const uint bvhIndex = (uint)J_ACCELERATOR_TYPE::BVH;
 			const uint kdIndex = (uint)J_ACCELERATOR_TYPE::KD_TREE;
 
-			loadMetaData->octreeOption[i].Load(stream, loadMetaData->hasInnerRoot[occIndex][i], loadMetaData->innerRootGuid[occIndex][i]);
-			loadMetaData->bvhOption[i].Load(stream, loadMetaData->hasInnerRoot[bvhIndex][i], loadMetaData->innerRootGuid[bvhIndex][i]);
-			loadMetaData->kdTreeOption[i].Load(stream, loadMetaData->hasInnerRoot[kdIndex][i], loadMetaData->innerRootGuid[kdIndex][i]);
+			tool.PushExistStack();
+			loadMetaData->octreeOption[i].Load(tool, loadMetaData->hasInnerRoot[occIndex][i], loadMetaData->innerRootGuid[occIndex][i]);
+			loadMetaData->bvhOption[i].Load(tool, loadMetaData->hasInnerRoot[bvhIndex][i], loadMetaData->innerRootGuid[bvhIndex][i]);
+			loadMetaData->kdTreeOption[i].Load(tool, loadMetaData->hasInnerRoot[kdIndex][i], loadMetaData->innerRootGuid[kdIndex][i]);
+			tool.PopStack();
 		}
-		stream.close();
+		tool.PopStack();
+		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
@@ -1053,29 +1050,33 @@ namespace JinEngine
 		JUserPtr<JScene> scene;
 		scene.ConnnectChild(storeData->obj);
 
-		std::wofstream stream;
-		stream.open(scene->GetMetaFilePath(), std::ios::out | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(scene->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JObjectFileIOHelper::StoreEnumData(stream, L"UseCaseType:", scene->GetUseCaseType());
-		JObjectFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamLastOpenSymbol(JScene::StaticTypeInfo()), scene->IsValid());
-		JObjectFileIOHelper::StoreAtomicData(stream, L"IsMainScene:", scene->IsMainScene());
-		JObjectFileIOHelper::StoreAtomicData(stream, L"IsActivatedAccelerator:", scene->IsAcceleratorActivated());
+		JObjectFileIOHelper::StoreEnumData(tool, scene->GetUseCaseType(), "UseCaseType:");
+		JObjectFileIOHelper::StoreAtomicData(tool, scene->IsValid(), Core::JFileConstant::GetLastOpenSymbol(JScene::StaticTypeInfo()));
+		JObjectFileIOHelper::StoreAtomicData(tool, scene->IsMainScene(), "IsMainScene:");
+		JObjectFileIOHelper::StoreAtomicData(tool, scene->IsAcceleratorActivated(), "IsActivatedAccelerator:");
 
+		tool.PushArrayOwner("AcceleratorOption");
 		for (uint i = 0; i < (uint)J_ACCELERATOR_LAYER::COUNT; ++i)
 		{
 			JOctreeOption octreeOption = scene->GetOctreeOption((J_ACCELERATOR_LAYER)i);
 			JBvhOption bvhOption = scene->GetBvhOption((J_ACCELERATOR_LAYER)i);
 			JKdTreeOption kdTreeOption = scene->GetKdTreeOption((J_ACCELERATOR_LAYER)i);
 
-			octreeOption.Store(stream);
-			bvhOption.Store(stream);
-			kdTreeOption.Store(stream);
+			tool.PushArrayMember();
+			octreeOption.Store(tool);
+			bvhOption.Store(tool);
+			kdTreeOption.Store(tool);
+			tool.PopStack();
 		}
+		tool.PopStack();
+		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

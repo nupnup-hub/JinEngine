@@ -22,11 +22,43 @@ namespace JinEngine
 			OCCLUSION_DEPTH_MAP_DEBUG, 
 			TEXTURE_2D,
 			TEXTURE_CUBE,
-			RENDER_RESULT_COMMON,
+			RENDER_RESULT_COMMON, 
 			SHADOW_MAP,
 			SHADOW_MAP_ARRAY,
 			SHADOW_MAP_CUBE,
 			VERTEX,
 			INDEX)
+
+		//Option에 Bind View는 EnumClass에 선언된 순서로 정렬된다
+		REGISTER_ENUM_CLASS(J_GRAPHIC_RESOURCE_OPTION_TYPE, int, POST_PROCESSING)
+
+		class JGraphicResourceType
+		{
+		public:
+			static bool CanUseOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE optionType, const J_GRAPHIC_RESOURCE_TYPE rType)
+			{
+				switch (optionType)
+				{
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING:
+				{
+					switch (rType)
+					{ 
+					case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON:
+						return true;
+					case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
+						return true;
+					case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY:
+						return true;
+					case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
+						return true;
+					default:
+						return false;
+					}
+				}
+				default:
+					return false;
+				}
+			}	 
+		};
 	}
 }

@@ -1,5 +1,6 @@
 #include"JCamera.h"
 #include"JCameraPrivate.h"
+#include"JCameraConstants.h"
 #include"../JComponentHint.h"
 #include"../Transform/JTransform.h"
 #include"../Transform/JTransformPrivate.h"
@@ -45,7 +46,7 @@ namespace JinEngine
 
 	class JCamera::JCameraImpl : public Core::JTypeImplBase,
 		public CameraFrameUpdate,
-		public Graphic::JGraphicTypePerSingleResourceHolder,
+		public Graphic::JGraphicWideSingleResourceHolder<7>,// main) rtv, dsv , debug) dsv(out line), srv, hzb) mip, depth map, debug
 		public Graphic::JGraphicDrawListCompInterface,
 		public Graphic::JCullingInterface,
 		public Graphic::JCsmTargetInterface
@@ -67,18 +68,18 @@ namespace JinEngine
 		//JTransform* ownerTransform;
 		J_CAMERA_STATE camState = J_CAMERA_STATE::RENDER;
 		// Cache frustum properties.
-		REGISTER_PROPERTY_EX(camNear, GetNear, SetNear, GUI_SLIDER(1, 1000, true))
+		REGISTER_PROPERTY_EX(camNear, GetNear, SetNear, GUI_SLIDER(Constants::minCamFrustumNear, Constants::maxCamFrustumFar, true))
 		float camNear = 0.0f;
-		REGISTER_PROPERTY_EX(camFar, GetFar, SetFar, GUI_SLIDER(1, 1000, true))
+		REGISTER_PROPERTY_EX(camFar, GetFar, SetFar, GUI_SLIDER(Constants::minCamFrustumNear, Constants::maxCamFrustumFar, true))
 		float camFar = 0.0f;
-		REGISTER_PROPERTY_EX(camAspect, GetAspect, SetAspect, GUI_SLIDER(0.1f, 32.0f, true, false, GUI_BOOL_CONDITION_USER(IsOrthoCam, false)))
+		REGISTER_PROPERTY_EX(camAspect, GetAspect, SetAspect, GUI_SLIDER(0.1f, 32.0f, true, false, 3, GUI_BOOL_CONDITION_USER(IsOrthoCam, false)))
 		float camAspect = 0.0f;		// Perspective일때 사용
 		REGISTER_PROPERTY_EX(camFov, GetFovYDegree, SetFovYDegree, GUI_SLIDER(1, 185, true))
 		float camFov = 0.0f;		//fovY
 	public:
-		REGISTER_PROPERTY_EX(camOrthoViewWidth, GetOrthoViewWidth, SetOrthoViewWidth, GUI_SLIDER(1, 3840, true, false, GUI_BOOL_CONDITION_USER(IsOrthoCam, true)))
+		REGISTER_PROPERTY_EX(camOrthoViewWidth, GetOrthoViewWidth, SetOrthoViewWidth, GUI_SLIDER(1, 3840, true, false, 3, GUI_BOOL_CONDITION_USER(IsOrthoCam, true)))
 		float camOrthoViewWidth = 0.0f;		// Ortho일때 사용
-		REGISTER_PROPERTY_EX(camOrthoViewHeight, GetOrthoViewHeight, SetOrthoViewHeight, GUI_SLIDER(1, 2160, true, false, GUI_BOOL_CONDITION_USER(IsOrthoCam, true)))
+		REGISTER_PROPERTY_EX(camOrthoViewHeight, GetOrthoViewHeight, SetOrthoViewHeight, GUI_SLIDER(1, 2160, true, false, 3, GUI_BOOL_CONDITION_USER(IsOrthoCam, true)))
 		float camOrthoViewHeight = 0.0f;	// Ortho일때 사용
 		float camNearViewHeight = 0.0f;
 		float camFarViewHeight = 0.0f;
@@ -111,11 +112,11 @@ namespace JinEngine
 		JCameraImpl(const InitData& initData, JCamera* thisCamRaw)
 		{}
 		~JCameraImpl()
-		{ 
+		{  
 		}
 	public:
 		float GetNear()const noexcept
-		{   
+		{    
 			return camNear;
 		}
 		float GetFar()const noexcept
@@ -200,7 +201,7 @@ namespace JinEngine
 	public:
 		void SetNear(const float value)noexcept
 		{
-			camNear = std::clamp(value, value, camFar);
+			camNear = std::clamp(value, Constants::minCamFrustumNear, camFar);
 			if (camNear < 0.1f)
 				camNear = 0.1f;
 			if (isOrtho)
@@ -210,7 +211,7 @@ namespace JinEngine
 		}
 		void SetFar(const float value) noexcept
 		{
-			camFar = std::clamp(value, camNear, value);
+			camFar = std::clamp(value, camNear, Constants::maxCamFrustumFar);
 			if (isOrtho)
 				CalOrthoLens();
 			else
@@ -594,7 +595,7 @@ namespace JinEngine
 			CamFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JDepthTestPassConstants& constant)noexcept final
-		{  
+		{ 
 			constant.viewProj.StoreXM(XMMatrixTranspose(XMMatrixMultiply(mView.LoadXM(), mProj.LoadXM())));
 			DepthTestFrame::MinusMovedDirty();
 		}
@@ -661,8 +662,8 @@ namespace JinEngine
 				JTransformPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(transform.Get(), thisPointer->GetGuid());
 				JTransformPrivate::FrameDirtyInterface::RegisterFrameDirtyListener(transform.Get(), this, thisPointer->GetGuid());
 			}
-			TrySetGetFrustumPtr();
 			RegisterInterfacePointer();
+			TrySetGetFrustumPtr();
 
 			CamFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, (CamFrame*)this);
 			HzbOccReqFrame::ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS, (HzbOccReqFrame*)this);
@@ -670,10 +671,10 @@ namespace JinEngine
 	public:
 		void Initialize()
 		{
-			camFov = 60.0f * JMathHelper::DegToRad;
+			camFov = Constants::defaultCamFovDeg * JMathHelper::DegToRad;
 			//camFov = 0.25f * JMathHelper::Pi;
-			camNear = 1;
-			camFar = 1000;
+			camNear = Constants::defaultCamFrustumNear;
+			camFar = Constants::defaultCamFrustumFar;
 			mView = JMatrix4x4::Identity();
 			mProj = JMatrix4x4::Identity();
 			 
@@ -693,7 +694,7 @@ namespace JinEngine
 		}
 		void RegisterInterfacePointer()
 		{
-			Graphic::JGraphicTypePerSingleResourceHolder::SetInterfacePointer(this);
+			Graphic::JGraphicResourceInterface::SetInterfacePointer(this);
 			Graphic::JCullingInterface::SetInterfacePointer(this);
 			Graphic::JCsmTargetInterface::SetInterfacePointer(this);
 		}
@@ -1046,7 +1047,7 @@ namespace JinEngine
 	}
 
 	JUserPtr<Core::JIdentifier> AssetDataIOInterface::LoadAssetData(Core::JDITypeDataBase* data)
-	{
+	{ 
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JCamera::LoadData::StaticTypeInfo()))
 			return nullptr;
 
@@ -1072,25 +1073,25 @@ namespace JinEngine
 		bool allowDisplayOccCullingDepthMap;
 
 		auto loadData = static_cast<JCamera::LoadData*>(data);
-		std::wifstream& stream = loadData->stream;
+		JFileIOTool& tool = loadData->tool;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
-		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
-		JObjectFileIOHelper::LoadEnumData(stream, camState);
-		JObjectFileIOHelper::LoadVector3(stream, pos);
-		JObjectFileIOHelper::LoadAtomicData(stream, camNear);
-		JObjectFileIOHelper::LoadAtomicData(stream, camFar);
-		JObjectFileIOHelper::LoadAtomicData(stream, camFov);
-		JObjectFileIOHelper::LoadAtomicData(stream, camAspect);
-		JObjectFileIOHelper::LoadAtomicData(stream, camOrthoViewWidth);
-		JObjectFileIOHelper::LoadAtomicData(stream, camOrthoViewHeight);
-		JObjectFileIOHelper::LoadAtomicData(stream, isOrtho);
-		JObjectFileIOHelper::LoadAtomicData(stream, allowDisplayDepthMap);
-		JObjectFileIOHelper::LoadAtomicData(stream, allowDisplayDebug);
-		JObjectFileIOHelper::LoadAtomicData(stream, allowFrustumCulling);
-		JObjectFileIOHelper::LoadAtomicData(stream, allowHzbOcclusionCulling);
-		JObjectFileIOHelper::LoadAtomicData(stream, allowHdOcclusionCulling);
-		JObjectFileIOHelper::LoadAtomicData(stream, allowDisplayOccCullingDepthMap);
+		JObjectFileIOHelper::LoadComponentIden(tool, guid, flag, isActivated);
+		JObjectFileIOHelper::LoadEnumData(tool, camState, "CamState:");
+		JObjectFileIOHelper::LoadVector3(tool, pos, "Pos:");
+		JObjectFileIOHelper::LoadAtomicData(tool, camNear, "CamNear:");
+		JObjectFileIOHelper::LoadAtomicData(tool, camFar, "CamFar:");
+		JObjectFileIOHelper::LoadAtomicData(tool, camFov, "CamFov:");
+		JObjectFileIOHelper::LoadAtomicData(tool, camAspect, "CamAspect:");
+		JObjectFileIOHelper::LoadAtomicData(tool, camOrthoViewWidth, "camOrthoViewWidth:");
+		JObjectFileIOHelper::LoadAtomicData(tool, camOrthoViewHeight, "CamOrthoViewHeight:");
+		JObjectFileIOHelper::LoadAtomicData(tool, isOrtho, "IsOrtho:");
+		JObjectFileIOHelper::LoadAtomicData(tool, allowDisplayDepthMap, "AllowDepthMap:");
+		JObjectFileIOHelper::LoadAtomicData(tool, allowDisplayDebug, "AllowDebug:");
+		JObjectFileIOHelper::LoadAtomicData(tool, allowFrustumCulling, "AllowFrustumCulling:");
+		JObjectFileIOHelper::LoadAtomicData(tool, allowHzbOcclusionCulling, "AllowHzbOcclusionCulling:");
+		JObjectFileIOHelper::LoadAtomicData(tool, allowHdOcclusionCulling, "AllowHdOcclusionCulling:");
+		JObjectFileIOHelper::LoadAtomicData(tool, allowDisplayOccCullingDepthMap, "AllowDislplayCullingDepthMap:");
 
 		auto idenUser = cPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JCamera::InitData>(guid, flag, owner), &cPrivate);
 		JUserPtr<JCamera> camUser;
@@ -1137,24 +1138,24 @@ namespace JinEngine
 		JUserPtr<JCamera> cam;
 		cam.ConnnectChild(storeData->obj);
 		JCamera::JCameraImpl* impl = cam->impl.get();
-		std::wofstream& stream = storeData->stream;
+		JFileIOTool& tool = storeData->tool;
 
-		JObjectFileIOHelper::StoreComponentIden(stream, cam.Get());
-		JObjectFileIOHelper::StoreEnumData(stream, L"CamState:", impl->camState);
-		JObjectFileIOHelper::StoreVector3(stream, L"Pos:", cam->GetTransform()->GetPosition());
-		JObjectFileIOHelper::StoreAtomicData(stream, L"CamNear:", impl->camNear);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"CamFar:", impl->camFar);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"CamFov:", impl->camFov);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"CamAspect:", impl->camAspect);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"camOrthoViewWidth:", impl->camOrthoViewWidth);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"CamOrthoViewHeight:", impl->camOrthoViewHeight);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"IsOrtho:", impl->isOrtho);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"AllowDepthMap:", impl->allowDisplayDepthMap);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"AllowDebug:", impl->allowDisplayDebug);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"AllowFrustumCulling:", impl->allowFrustumCulling);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"AllowHzbOcclusionCulling:", impl->allowHzbOcclusionCulling);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"AllowHdOcclusionCulling:", impl->allowHdOcclusionCulling);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"AllowDislplayCullingDepthMap:", impl->allowDisplayOccCullingDepthMap);
+		JObjectFileIOHelper::StoreComponentIden(tool, cam.Get());
+		JObjectFileIOHelper::StoreEnumData(tool, impl->camState, "CamState:");
+		JObjectFileIOHelper::StoreVector3(tool, cam->GetTransform()->GetPosition(), "Pos:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->camNear, "CamNear:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->camFar, "CamFar:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->camFov, "CamFov:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->camAspect, "CamAspect:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->camOrthoViewWidth, "camOrthoViewWidth:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->camOrthoViewHeight, "CamOrthoViewHeight:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->isOrtho, "IsOrtho:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowDisplayDepthMap, "AllowDepthMap:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowDisplayDebug, "AllowDebug:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowFrustumCulling, "AllowFrustumCulling:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowHzbOcclusionCulling, "AllowHzbOcclusionCulling:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowHdOcclusionCulling, "AllowHdOcclusionCulling:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowDisplayOccCullingDepthMap, "AllowDislplayCullingDepthMap:");
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}

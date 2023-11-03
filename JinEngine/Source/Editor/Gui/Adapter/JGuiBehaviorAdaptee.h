@@ -13,7 +13,7 @@
 #include"../../../Graphic/GraphicResource/JGraphicResourceType.h"
 #include"../../../Graphic/Device/JGraphicDeviceUser.h"
 #include"../../../Graphic/Gui/JGuiData.h"
-
+#include<set>
 namespace JinEngine
 {
 	namespace Graphic
@@ -33,6 +33,9 @@ namespace JinEngine
 		public:
 			virtual void SettingGuiDrawing() = 0;
 			virtual void Draw(std::unique_ptr<Graphic::JGuiDrawData>&& drawData) = 0;
+		public:
+			virtual void LoadGuiData() = 0;
+			virtual void StoreGuiData() = 0;
 #pragma region Color
 		public: 
 			uint32 ConvertUColor(const JVector4<float>& color)const noexcept;
@@ -129,7 +132,7 @@ namespace JinEngine
 			virtual void EndGroup() = 0;
 			virtual void Text(const std::string& text)const noexcept = 0;
 			virtual bool CheckBox(const std::string& checkName, bool& v) = 0;
-			virtual bool Button(const std::string& btnName, const JVector2<float>& jVec2) = 0;
+			virtual bool Button(const std::string& btnName, const JVector2<float>& jVec2) = 0; 
 			virtual bool IsTreeNodeOpend(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags) = 0;
 			virtual bool TreeNodeEx(const std::string& nodeName, J_GUI_TREE_NODE_FLAG flags) = 0;
 			virtual void TreePop() = 0;
@@ -140,12 +143,12 @@ namespace JinEngine
 			virtual bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, J_GUI_INPUT_TEXT_FLAG flags) = 0;
 			virtual bool InputMultilineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, J_GUI_INPUT_TEXT_FLAG flags) = 0;
 			virtual bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG flags, int step) = 0;
-			virtual bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG flags, const char* format, float step) = 0;
+			virtual bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG flags, const uint formatDigit, float step) = 0;
 		public:
-			virtual bool SliderInt(const std::string& name, int* value, int vMin, int vMax, const char* format, J_GUI_SLIDER_FLAG flags) = 0;
-			virtual bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format, J_GUI_SLIDER_FLAG flags) = 0;
-			virtual bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, const char* format, J_GUI_SLIDER_FLAG flags) = 0;
-			virtual bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format, J_GUI_SLIDER_FLAG flags) = 0;
+			virtual bool SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG flags) = 0;
+			virtual bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const uint formatDigit, J_GUI_SLIDER_FLAG flags) = 0;
+			virtual bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG flags) = 0;
+			virtual bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const uint formatDigit, J_GUI_SLIDER_FLAG flags) = 0;
 		public:
 			virtual bool BeginTabBar(const std::string& name, J_GUI_TAB_BAR_FLAG flags) = 0;
 			virtual void EndTabBar() = 0;
@@ -323,17 +326,19 @@ namespace JinEngine
 			virtual JVector2<float> GetWindowMenuBarSize()const noexcept = 0;
 			virtual JVector2<float> GetWindowTitleBarSize()const noexcept = 0; 
 			virtual int GetWindowOrder(const GuiID windowID)const noexcept = 0;
-			virtual bool GetWindowInfo(const std::string& wndName, _Out_ JGuiWindowInfo& info)const noexcept = 0;
-			virtual bool GetWindowInfo(const GuiID windowID, _Out_ JGuiWindowInfo& info)const noexcept = 0; 
-			virtual bool GetCurrentWindowInfo(_Out_ JGuiWindowInfo& info)const noexcept = 0; 
+			virtual bool GetWindowInfo(const std::string& wndName, _Inout_ JGuiWindowInfo& info)const noexcept = 0;
+			virtual bool GetWindowInfo(const GuiID windowID, _Inout_ JGuiWindowInfo& info)const noexcept = 0;
+			virtual bool GetCurrentWindowInfo(_Inout_ JGuiWindowInfo& info)const noexcept = 0;
 			virtual std::vector<JGuiWindowInfo> GetDisplayedWindowInfo(const bool isSortedBackToFront)const noexcept = 0;
+			virtual std::set<GuiID> GetWindowOpendTreeNodeID(const GuiID windowID)const noexcept = 0;
 			virtual void SetNextWindowPos(const JVector2<float>& pos, J_GUI_CONDIITON flag)noexcept = 0;
 			virtual void SetNextWindowSize(const JVector2<float>& size, J_GUI_CONDIITON flag)noexcept = 0;	
-			virtual void SetNextWindowFocus()noexcept = 0;
+			virtual void SetNextWindowFocus()noexcept = 0; 
 			virtual bool IsCurrentWindowFocused(J_GUI_FOCUS_FLAG flag)const noexcept = 0; 
 			virtual void FocusWindow(const GuiID windowID) = 0;
 			virtual void FocusCurrentWindow() = 0;
 			virtual void RestoreFromMaximize(const GuiID windowID, const std::vector<GuiID>& preTabItemID) = 0;
+			virtual GuiID CalCurrentWindowItemID(const std::string& label)const noexcept = 0;
 		public:
 			virtual JVector2<float> GetLastItemRectMin()const noexcept = 0;
 			virtual JVector2<float> GetLastItemRectMax()const noexcept = 0;
@@ -355,11 +360,11 @@ namespace JinEngine
 			virtual void PopItemWidth()noexcept = 0;
 #pragma endregion
 #pragma region Docking 
-			virtual bool GetDockNodeInfoByWindowName(const std::string& windowName, _Out_ JGuiDockNodeInfo& info)const noexcept = 0;
-			virtual bool GetDockNodeInfo(const std::string& dockNodeName, _Out_ JGuiDockNodeInfo& info)const noexcept = 0;
-			virtual bool GetDockNodeInfo(const GuiID dockID, _Out_ JGuiDockNodeInfo& info)const noexcept = 0; 
-			virtual bool GetDockNodeHostWindowInfo(const GuiID childDockID, _Out_ JGuiWindowInfo& info) const noexcept = 0;
-			virtual bool GetCurrentDockNodeInfo(_Out_ JGuiDockNodeInfo& info)const noexcept = 0;
+			virtual bool GetDockNodeInfoByWindowName(const std::string& windowName, _Inout_ JGuiDockNodeInfo& info)const noexcept = 0;
+			virtual bool GetDockNodeInfo(const std::string& dockNodeName, _Inout_ JGuiDockNodeInfo& info)const noexcept = 0;
+			virtual bool GetDockNodeInfo(const GuiID dockID, _Inout_ JGuiDockNodeInfo& info)const noexcept = 0;
+			virtual bool GetDockNodeHostWindowInfo(const GuiID childDockID, _Inout_ JGuiWindowInfo& info) const noexcept = 0;
+			virtual bool GetCurrentDockNodeInfo(_Inout_ JGuiDockNodeInfo& info)const noexcept = 0;
 			virtual bool HasDockNode(const std::string& dockNodeName)const noexcept = 0;
 			virtual bool CanUseDockHirechary()noexcept = 0;
 			virtual void BuildDockHirechary(const std::vector<std::unique_ptr<JGuiDockBuildNode>>& nodeVec) = 0;

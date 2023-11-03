@@ -116,6 +116,9 @@ namespace JinEngine
 	}*/
 	void JSceneAcceleratorStructure::Culling(JAcceleratorCullingInfo& info)noexcept
 	{
+		//JFustum은 아직 미개발이므로 DirectX::BoundingFrustum 주로 사용한다
+		info.useJFrustum = false;
+
 		bool cullingOnece = false;
 		for (const auto& data : spaceSpatialVec)
 		{

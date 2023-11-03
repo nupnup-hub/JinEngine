@@ -9,8 +9,7 @@
 #include"../../../../../Core/Math/JMathHelper.h"  
 #include"../../../../../Core/Math/JVectorExtend.h"
 #include"../../../../../Editor/EditTool/JEditorViewStructure.h" 
- 
-#include"../../../../../Develop/Debug/JDevelopDebug.h"
+  
 using namespace DirectX;
 namespace JinEngine
 {
@@ -57,7 +56,8 @@ namespace JinEngine
 		right = nullptr;
 		DestroyDebugGameObject();
 	}
-	void JBvhNode::Culling(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG flag)noexcept
+/*
+* 	void JBvhNode::Culling(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG flag)noexcept
 	{
 		Core::J_CULLING_RESULT res = Contain(info, bbox, flag);
 		if (res == Core::J_CULLING_RESULT::CONTAIN)
@@ -75,6 +75,7 @@ namespace JinEngine
 			}
 		}
 	}
+*/
 	void JBvhNode::Culling(JAcceleratorCullingInfo& info)noexcept
 	{
 		//frustum.Contain이 box.Contain보다 빠르다
@@ -107,11 +108,6 @@ namespace JinEngine
 			info.sortType = J_ACCELERATOR_SORT_TYPE::ASCENDING;
 			FindIntersectNotSort(info, FLT_MAX);
 			info.SortResult();
-			for (const auto& data : info.result)
-			{
-				Develop::JDevelopDebug::PushLog(data.obj->GetName() + L" " + std::to_wstring(data.dist));
-			}
-			Develop::JDevelopDebug::Write();
 			/*
 			* FindFirstIntersect는 정확성에 문제가 있으므로 위에 방식을 사용한다
 			* 성능은 object 1000개 기준 3 ~ 4배정도 나지만 정확하다.
@@ -146,8 +142,7 @@ namespace JinEngine
 		FindContainNotSort(info);
 	}
 	void JBvhNode::AlignLeafNode(const JAcceleratorAlignInfo& info, std::vector<JUserPtr<JGameObject>>& alignGameObject, uint& index, const uint depth)noexcept
-	{
-		sizeof(JBvhNode);
+	{ 
 		if (index >= alignGameObject.size())
 			return;
 

@@ -5,6 +5,7 @@
 #include"../../Core/Geometry/JRay.h"
 #include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/Math/JMathHelper.h"
+#include"../../Core/Storage/JStorage.h"
 #include<unordered_map>
 #include<algorithm>
 
@@ -21,7 +22,7 @@ namespace JinEngine
 			static constexpr uint descBlankCount = 8;
 			static constexpr uint initGridSize = 1000;
 			static constexpr float thicknessFactor = 7.5f;
-			static constexpr float triangleLengthFactor = 25.0f;
+			static constexpr float triangleLengthFactor = 12.5f;
 		}
 
 		enum class LAST_HINT_TYPE
@@ -283,12 +284,12 @@ namespace JinEngine
 		{
 			const Core::JBBox2D bbox = Private::GetBBox2D(this, updateHelper);
 			const JVector2<float> bboxDistance = bbox.DistanceVector();
-	 
+ 
 			const bool isMouseInRect = bbox.Contain(JGui::GetMousePos());
-			if (isMouseInRect)
+			if (isMouseInRect && JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW | J_GUI_FOCUS_FLAG_DOCK_HIERARCHY | J_GUI_FOCUS_FLAG_NO_POPUP_HIERARCHY))
 			{
-				updateHelper->UpdateLastNodeHint(LAST_HINT_TYPE::HOVERED, GetGuid());
-				if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT) && JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW | J_GUI_FOCUS_FLAG_DOCK_HIERARCHY))
+				updateHelper->UpdateLastNodeHint(LAST_HINT_TYPE::HOVERED, GetGuid()); 
+				if (JGui::AnyMouseClicked(false))
 					updateHelper->UpdateLastNodeHint(LAST_HINT_TYPE::SELECTED, GetGuid());
 			}
 
@@ -371,11 +372,10 @@ namespace JinEngine
 					SetCenter(GetCenter() + (JGui::GetMousePos() - updateHelper->preMousePos));
 			}
 		}
-		void JEditorNodeBase::DrawLine(const JEditorViewUpdateHelper* updateHelper, const JEditorNodeBase* to, const bool isSelecetdEdge)
-		{
-			const JVector2<float> fromCenter = GetValidCenter(updateHelper);
-			const JVector2<float> toCenter = to->GetValidCenter(updateHelper);
- 
+		void JEditorNodeBase::DrawLine(const JEditorViewUpdateHelper* updateHelper, const JEditorNodeBase* to, const bool isSelecetdEdge, const bool isBilateralEdge)
+		{   
+			JVector2<float> fromCenter = GetValidCenter(updateHelper);
+			JVector2<float> toCenter = to->GetValidCenter(updateHelper);
 			JVector4<float> lineColor = isSelecetdEdge ? GetSelectedLineColor() : GetLineColor();
 			JVector4<float> triangleColor = isSelecetdEdge ? GetSelectedTriangleColor (): GetTriangleColor();
 
@@ -383,6 +383,12 @@ namespace JinEngine
 			JVector2<float> bottomDir;
 			bottomDir.x = dir.x * std::cos(90 * JMathHelper::DegToRad) + dir.y * std::sin(90 * JMathHelper::DegToRad);
 			bottomDir.y = dir.x * std::sin(-90 * JMathHelper::DegToRad) + dir.y * std::cos(90 * JMathHelper::DegToRad);
+			if (isBilateralEdge && AllowBilateralEdge())
+			{
+				JVector2<float> additionalPos = bottomDir * updateHelper->nodeHalfSize.x * GetBilateralEdgeOffsetPosRate();
+				fromCenter += additionalPos;
+				toCenter += additionalPos;
+			}
 
 			const JVector2<float> xFactor = bottomDir * updateHelper->triangleLength;
 			const JVector2<float> yFactor = dir * updateHelper->triangleLength;
@@ -397,9 +403,12 @@ namespace JinEngine
 				lineColor += GetRectHoveredDeltaColor();
 				triangleColor += GetRectHoveredDeltaColor();
 
-				updateHelper->UpdateLastEdgeHint(LAST_HINT_TYPE::HOVERED, GetGuid(), to->GetGuid());
-				if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT) && JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW | J_GUI_FOCUS_FLAG_DOCK_HIERARCHY))
-					updateHelper->UpdateLastEdgeHint(LAST_HINT_TYPE::SELECTED, GetGuid(), to->GetGuid());
+				if (JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW | J_GUI_FOCUS_FLAG_DOCK_HIERARCHY | J_GUI_FOCUS_FLAG_NO_POPUP_HIERARCHY))
+				{
+					updateHelper->UpdateLastEdgeHint(LAST_HINT_TYPE::HOVERED, GetGuid(), to->GetGuid());
+					if (JGui::AnyMouseClicked(false))
+						updateHelper->UpdateLastEdgeHint(LAST_HINT_TYPE::SELECTED, GetGuid(), to->GetGuid());
+				}
 			}
 			JGui::AddLine(fromCenter, toCenter, lineColor, updateHelper->thickness);
 			JGui::AddTriangleFilled(p1, p2, p3, triangleColor);
@@ -422,18 +431,6 @@ namespace JinEngine
 				Private::JEditorNodeStoredData* nodeData = Private::GetNodeData(updateHelper->viewGuid, updateHelper->groupGuid, GetGuid());
 				SetCenter(nodeData->center);
 			}
-		}
-		bool JEditorNodeBase::IsSame(JEditorNodeBase* ptr)const noexcept
-		{
-			return ptr != nullptr && ptr->GetGuid() == GetGuid() ? true : false;
-		}
-		bool JEditorNodeBase::IsNewNode()const noexcept
-		{
-			return isNewNode;
-		}
-		std::string JEditorNodeBase::GetUniqueName()const noexcept
-		{
-			return JGui::CreateGuiLabel(name, guid);
 		}
 		JVector2<float> JEditorNodeBase::GetValidCenter(const JEditorViewUpdateHelper* updateHelper)const noexcept
 		{
@@ -487,6 +484,18 @@ namespace JinEngine
 		{
 			return JVector4<float>(0.75f, 0.75f, 0.75f, 1.0f);
 		}
+		bool JEditorNodeBase::IsSame(JEditorNodeBase* ptr)const noexcept
+		{
+			return ptr != nullptr && ptr->GetGuid() == GetGuid() ? true : false;
+		}
+		bool JEditorNodeBase::IsNewNode()const noexcept
+		{
+			return isNewNode;
+		}
+		std::string JEditorNodeBase::GetUniqueName()const noexcept
+		{
+			return JGui::CreateGuiLabel(name, guid);
+		}
 
 		class JEditorTreeNodeBase : public JEditorNodeBase
 		{
@@ -519,11 +528,20 @@ namespace JinEngine
 				}
 				return depth;
 			}
+			float GetBilateralEdgeOffsetPosRate()const noexcept final
+			{
+				return 0.0f;
+			}
+		public: 
 			bool IsRoot()const noexcept
 			{
 				return parent == nullptr;
 			}
 			virtual bool IsLeaf()const noexcept = 0;
+			bool AllowBilateralEdge()const noexcept final
+			{
+				return false;
+			}
 		public:
 			void NodeOnScreen(const JEditorViewUpdateHelper* updateHelper)
 			{
@@ -538,7 +556,7 @@ namespace JinEngine
 			void SettingDrawLine(const JEditorViewUpdateHelper* updateHelper)final
 			{
 				if (!IsRoot())
-					DrawLine(updateHelper, parent, isSelectedParentEdge);
+					DrawLine(updateHelper, parent, isSelectedParentEdge, false);
 			}
 		protected:
 			JVector4<float> GetRectInnerColor()const noexcept final
@@ -677,7 +695,6 @@ namespace JinEngine
 				return false;
 			}
 		};
-
 		class JEditorGraphNode : public JEditorNodeBase
 		{
 		private:
@@ -686,13 +703,15 @@ namespace JinEngine
 			public:
 				JEditorGraphNode* node;
 				bool isSelected;
+				bool isBilateral;
 			public:
-				JEditprGraphEdge(JEditorGraphNode* node, bool isSelected)
-					:node(node), isSelected(isSelected)
+				JEditprGraphEdge(JEditorGraphNode* node, bool isSelected, bool isBilateral)
+					:node(node), isSelected(isSelected), isBilateral(isBilateral)
 				{}
 			};
 		private:
-			std::vector<JEditprGraphEdge> edge;
+			Core::JVectorStorage<JEditprGraphEdge> edge;
+			//std::vector<JEditprGraphEdge> edge;
 			const bool isStartNode = false;
 			bool isOnScreenThisFrame = false;
 		public:
@@ -711,9 +730,12 @@ namespace JinEngine
 			void SettingDrawLine(const JEditorViewUpdateHelper* updateHelper)final
 			{
 				const JVector2<float> fromCenter = GetValidCenter(updateHelper);
-				const uint edgeCount = (uint)edge.size();
+				const uint edgeCount = edge.Count();
 				for (uint i = 0; i < edgeCount; ++i)
-					DrawLine(updateHelper, edge[i].node, edge[i].isSelected);
+				{
+					auto edgeData = edge.Get(i);
+					DrawLine(updateHelper, edgeData->node, edgeData->isSelected, edgeData->isBilateral);
+				}
 			}
 			bool DoInitializeWhenAddedNewNode()const noexcept final
 			{
@@ -724,12 +746,49 @@ namespace JinEngine
 			{
 				if (otherNode == nullptr || IsSame(otherNode))
 					return;
-				edge.push_back(JEditprGraphEdge(otherNode, isSelected));
+				 
+				int otherToIndex = GetNodeEdgeIndex(otherNode, this);
+				bool isBilateral = otherToIndex != invalidIndex;
+				if (isBilateral)
+					otherNode->edge.Get(otherToIndex)->isBilateral = true;
+
+				edge.Add(JEditprGraphEdge(otherNode, isSelected, isBilateral));
 			}
-		protected:
+			void DisConnectNode(JEditorGraphNode* otherNode)
+			{
+				if (otherNode == nullptr || IsSame(otherNode))
+					return;
+
+				int edgeIndex = GetNodeEdgeIndex(this, otherNode);
+				if (edgeIndex == invalidIndex)
+					return;
+
+				int otherToIndex = GetNodeEdgeIndex(otherNode, this);
+				bool isBilateral = otherToIndex != invalidIndex;
+				if (isBilateral)
+					otherNode->edge.Get(otherToIndex)->isBilateral = false;
+
+				edge.Remove(edgeIndex);
+			}
+		private:
+			static int GetNodeEdgeIndex(JEditorGraphNode* from, JEditorGraphNode* to)
+			{
+				bool(*equalPtr)(JEditprGraphEdge*, size_t) = [](JEditprGraphEdge* a, size_t guid) {return a->node->GetGuid() == guid; };
+				return from->edge.GetIndex(equalPtr, to->GetGuid());
+			}
 			JVector4<float> GetRectInnerColor()const noexcept final
 			{
 				return isStartNode ? JVector4<float>(0.375f, 0.375f, 0.775f, 1.0f) : JVector4<float>(0.775f, 0.375f, 0.375f, 1.0f);
+			}
+		public:
+			float GetBilateralEdgeOffsetPosRate()const noexcept final
+			{
+				return 0.2f;
+			}
+		public:
+			bool AllowBilateralEdge()const noexcept final
+			{
+				return true;
 			}
 		};
 #pragma endregion
@@ -811,7 +870,7 @@ namespace JinEngine
 		{
 			return allNodes[0].get();
 		}
-		JEditorNodeBase* JEditorViewBase::GetNode(const size_t guid)noexcept
+		JEditorNodeBase* JEditorViewBase::GetNode(const size_t guid)const noexcept
 		{
 			return nodeMap.find(guid)->second;
 		}
@@ -819,12 +878,13 @@ namespace JinEngine
 		{
 			return allNodes[index].get();
 		}
-		JEditorNodeBase* JEditorViewBase::GetLastSelectedNode()noexcept
+		JEditorNodeBase* JEditorViewBase::GetLastHoveredNode()const noexcept
 		{
-			if (IsLastUpdateSeletedNode())
-				return nodeMap.find(GetLastUpdateSeletedNodeGuid())->second;
-			else
-				return nullptr;
+			return IsLastUpdateHoveredNode() ? nodeMap.find(GetLastUpdateHoveredNodeGuid())->second : nullptr;
+		}
+		JEditorNodeBase* JEditorViewBase::GetLastSelectedNode()const noexcept
+		{
+			return IsLastUpdateSeletedNode() ? nodeMap.find(GetLastUpdateSeletedNodeGuid())->second : nullptr;
 		}
 		JEditorNodeBase* JEditorViewBase::AddNode(const size_t groupGuid, std::unique_ptr<JEditorNodeBase>&& newNode)
 		{
@@ -900,64 +960,80 @@ namespace JinEngine
 		}
 		void JEditorViewBase::StoreData(const std::wstring& path)
 		{
-			std::wofstream stream;
-			stream.open(path, std::ios::binary | std::ios::out);
-			if (stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(path, JFileIOTool::TYPE::JSON))
+				return;
+			 
+			auto viewData = Private::GetViewData(GetGuid());
+			uint canStoreGroup = 0;
+			for (auto& groupData : viewData->groupDataMap)
+				canStoreGroup += groupData.second.CanStoreGroupData(groupData.first) ? 1 : 0;
+
+			JFileIOHelper::StoreAtomicData(tool, canStoreGroup, "GroupCount");
+			tool.PushArrayOwner("GroupData");
+
+			for (auto& groupData : viewData->groupDataMap)
 			{
-				JFileIOHelper::StoreJString(stream, L"EditorViewData", L"");
-				auto viewData = Private::GetViewData(GetGuid());
-
-				uint canStoreGroup = 0;
-				for (auto& groupData : viewData->groupDataMap)
-					canStoreGroup += groupData.second.CanStoreGroupData(groupData.first) ? 1 : 0;
-
-				JFileIOHelper::StoreAtomicData(stream, L"GroupCount", canStoreGroup);
-				for (auto& groupData : viewData->groupDataMap)
+				if (groupData.second.CanStoreGroupData(groupData.first))
 				{
-					if (groupData.second.CanStoreGroupData(groupData.first))
+					tool.PushArrayMember();
+					JFileIOHelper::StoreAtomicData(tool, groupData.first, "GroupGuid");
+					JFileIOHelper::StoreAtomicData(tool, groupData.second.nodeDataMap.size(), "NodeCount");
+
+					tool.PushArrayOwner("NodeData");
+					for (auto& nodeData : groupData.second.nodeDataMap)
 					{
-						JFileIOHelper::StoreAtomicData(stream, L"GroupGuid", groupData.first);
-						JFileIOHelper::StoreAtomicData(stream, L"NodeCount", groupData.second.nodeDataMap.size());
-						for (auto& nodeData : groupData.second.nodeDataMap)
-						{
-							JFileIOHelper::StoreAtomicData(stream, L"NodeGuid", nodeData.first);
-							JFileIOHelper::StoreVector2(stream, L"Center", nodeData.second.center);
-						}
+						tool.PushArrayMember();
+						JFileIOHelper::StoreAtomicData(tool, nodeData.first, "NodeGuid");
+						JFileIOHelper::StoreVector2(tool, nodeData.second.center, "Center");
+						tool.PopStack();
 					}
+					tool.PopStack();
+					tool.PopStack();
 				}
-				stream.close();
-			}
+			} 
+
+			tool.PopStack(); 
+			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		}
 		void JEditorViewBase::LoadData(const std::wstring& path)
 		{
-			std::wifstream stream;
-			stream.open(path, std::ios::binary | std::ios::in);
-			if (stream.is_open())
-			{
-				std::wstring guide;
-				uint groupCount = 0;
-				JFileIOHelper::LoadJString(stream, guide);
-				JFileIOHelper::LoadAtomicData(stream, groupCount);
-				for (uint i = 0; i < groupCount; ++i)
-				{
-					size_t groupGuid = 0;
-					uint nodeCount = 0;
-					JFileIOHelper::LoadAtomicData(stream, groupGuid);
-					JFileIOHelper::LoadAtomicData(stream, nodeCount);
+			JFileIOTool tool;
+			if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
+				return;
 
-					Private::AddGroupData(GetGuid(), groupGuid);
-					for (uint j = 0; j < nodeCount; ++j)
-					{
-						size_t nodeGuid = 0;
-						JVector2<float> center;
-						JFileIOHelper::LoadAtomicData(stream, nodeGuid);
-						JFileIOHelper::LoadVector2(stream, center);
-						Private::AddNodeData(GetGuid(), groupGuid, nodeGuid);
-						Private::GetNodeData(GetGuid(), groupGuid, nodeGuid)->center = center;
-					}
+			std::wstring guide;
+			uint groupCount = 0;
+			 
+			JFileIOHelper::LoadAtomicData(tool, groupCount, "GroupCount");
+			tool.PushExistStack("GroupInfo");
+
+			for (uint i = 0; i < groupCount; ++i)
+			{
+				tool.PushExistStack();
+				size_t groupGuid = 0;
+				uint nodeCount = 0;
+				JFileIOHelper::LoadAtomicData(tool, groupGuid);
+				JFileIOHelper::LoadAtomicData(tool, nodeCount);
+				Private::AddGroupData(GetGuid(), groupGuid);
+
+				tool.PushExistStack("NodeInfo");
+				for (uint j = 0; j < nodeCount; ++j)
+				{
+					tool.PushExistStack();
+					size_t nodeGuid = 0;
+					JVector2<float> center;
+					JFileIOHelper::LoadAtomicData(tool, nodeGuid);
+					JFileIOHelper::LoadVector2(tool, center);
+					Private::AddNodeData(GetGuid(), groupGuid, nodeGuid);
+					Private::GetNodeData(GetGuid(), groupGuid, nodeGuid)->center = center;
+					tool.PopStack();
 				}
-				stream.close();
+				tool.PopStack();
+				tool.PopStack();
 			}
+			tool.PopStack();
+			tool.Close();
 		}
 
 		void JEditorTreeViewBase::NodeOnScreen(const JEditorViewUpdateHelper* updateHelper)noexcept
@@ -1061,11 +1137,17 @@ namespace JinEngine
 				JVector2<float> lineEnd = JGui::GetMousePos();
 				JGui::AddLine(lineStart, lineEnd, JVector4<float>(0.333f, 0.333f, 0.686f, 1.0f), updateHelper->thickness);
 
-				if (JGui::IsMouseDown(Core::J_MOUSE_BUTTON::LEFT) || JGui::IsMouseDown(Core::J_MOUSE_BUTTON::RIGHT))
-				{
-					if (IsLastUpdateSeletedNode())
+				const bool isLeftClick = JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT);
+				const bool isRightClick = JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::RIGHT);
+				//JGui::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_CHILD_WINDOW | J_GUI_FOCUS_FLAG_DOCK_HIERARCHY)
+				if ((isLeftClick || isRightClick))
+				{ 
+					//selectedNode에 transition을 추가하는 시나리오이기 때문에
+					//새로운 selectedNode가아닌 hoveredNode에 transition을 연결해야한다. 
+					//새로운 selectedNode에 추가하고싶다면 기존에 selectedNode와 trnasition상태를 저장할 구조가 팔요하다.
+					if (IsLastUpdateHoveredNode() && isLeftClick)
 					{
-						JEditorGraphNode* toNode = static_cast<JEditorGraphNode*>(GetLastSelectedNode());
+						JEditorGraphNode* toNode = static_cast<JEditorGraphNode*>(GetLastHoveredNode());
 						if (toNode != nullptr)
 						{
 							connectToGuid = toNode->GetGuid();

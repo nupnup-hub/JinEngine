@@ -1,12 +1,12 @@
 #pragma once
 #include"../JEditorPage.h" 
 #include"../../../Object/Resource/JResourceObjectEventType.h"
+#include"../../../Object/Resource/JResourceObject.h"
 
 namespace JinEngine
 { 
 	class JScene;
-	class JSkeletonAsset;
-	class JResourceObject;
+	class JSkeletonAsset; 
 	namespace Editor
 	{
 		class JObjectExplorer;
@@ -14,10 +14,10 @@ namespace JinEngine
 		class JSceneObserver;
 		class JObjectDetail; 
 		class JEditorMenuBar;
-		class JEditorSkeletonPage final: public JEditorPage, public Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>
+		class JEditorSkeletonPage final: public JEditorPage, public JResourceEventManager::Listener
 		{
 		private:
-			using ResourceEvListener = Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>;
+			using ResourceEvListener = JResourceEventManager::Listener;
 		private:
 			std::unique_ptr< JObjectExplorer> explorer;
 			std::unique_ptr< JAvatarEditor> avatarEdit;
@@ -47,14 +47,14 @@ namespace JinEngine
 			void DoSetClose()noexcept final;
 			void DoActivate()noexcept;
 			void DoDeActivate()noexcept;
-		public:
-			void StorePage(std::wofstream& stream)final;
-			void LoadPage(std::wifstream& stream)final;
+		private:
+			void LoadPage(JFileIOTool& tool)final;
+			void StorePage(JFileIOTool& tool)final;
 		private:
 			void BuildDockNode();
 			void BuildMenuNode();
 		private:
-			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
+			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)final;
 		};
 	}
 }

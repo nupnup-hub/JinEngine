@@ -6,11 +6,13 @@
 #include"../../../DataSet/Dx/JDx12GraphicDataSet.h"
 #include"../../../Device/Dx/JDx12GraphicDevice.h"
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
-#include"../../../Utility/JD3DUtility.h"
+#include"../../../Utility/Dx/JD3DUtility.h"
 #include"../../../JGraphicUpdateHelper.h"
 #include"../../../../Core/Time/JStopWatch.h"
 #include"../../../../Core/Platform/JHardwareInfo.h"
-#include"../../../../Object/Component/Camera/JCamera.h" 
+#include"../../../../Object/Component/Camera/JCamera.h"  
+//#include"../../../../Develop/Debug/JDevelopDebug.h"
+
 namespace JinEngine::Graphic
 {
 	namespace Private
@@ -101,9 +103,13 @@ namespace JinEngine::Graphic
 				count = delta;
 				countOffset += delta;
 			}
-		}
+		} 
 	}
-
+	void JDx12HardwareOccCulling::UpdateData::Reset()
+	{
+		updateAllObject = false;
+		countOffset = 0;
+	}
 
 	void JDx12HardwareOccCulling::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)
 	{
@@ -112,7 +118,6 @@ namespace JinEngine::Graphic
 	}
 	void JDx12HardwareOccCulling::Clear()
 	{
-
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12HardwareOccCulling::GetDeviceType()const noexcept
 	{
@@ -158,22 +163,26 @@ namespace JinEngine::Graphic
 	}
 	void JDx12HardwareOccCulling::BeginDraw(const JGraphicBindSet* bindSet, const JDrawHelper& helper)
 	{
-		if (!IsSameDevice(bindSet))
+		/*	
+			//앞으로 read back buffer로 cpu로 occlusion query 데이터를 가져와서 
+			//SetPredict가 아닌 pointer에 접근해서 데이터를 읽는다.
+			if (!IsSameDevice(bindSet))
 			return;
 
-		const JDx12GraphicBindSet* dx12BindSet = static_cast<const JDx12GraphicBindSet*>(bindSet);
-		JDx12CullingManager* dx12Cm = static_cast<JDx12CullingManager*>(dx12BindSet->cullingManager);
-		ID3D12GraphicsCommandList* cmdList = dx12BindSet->cmdList;
+			const JDx12GraphicBindSet* dx12BindSet = static_cast<const JDx12GraphicBindSet*>(bindSet);
+			JDx12CullingManager* dx12Cm = static_cast<JDx12CullingManager*>(dx12BindSet->cullingManager);
+			ID3D12GraphicsCommandList* cmdList = dx12BindSet->cmdList;
 
-		auto cInterface = helper.GetCullInterface();
-		if (!cInterface.HasCullingData(J_CULLING_TYPE::HD_OCCLUSION))
-			return;
-
-		auto resource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION));
-		JD3DUtility::ResourceTransition(cmdList, resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PREDICATION);
+			auto cInterface = helper.GetCullInterface();
+			if (!cInterface.HasCullingData(J_CULLING_TYPE::HD_OCCLUSION))
+				return;
+					//auto resource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION));
+		//JD3DUtility::ResourceTransition(cmdList, resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PREDICATION);
+		*/
 	}
 	void JDx12HardwareOccCulling::EndDraw(const JGraphicBindSet* bindSet, const JDrawHelper& helper)
 	{
+		/*
 		if (!IsSameDevice(bindSet))
 			return;
 
@@ -187,6 +196,7 @@ namespace JinEngine::Graphic
 
 		auto resource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION));
 		JD3DUtility::ResourceTransition(cmdList, resource, D3D12_RESOURCE_STATE_PREDICATION, D3D12_RESOURCE_STATE_COMMON);
+		*/
 	}
 	void JDx12HardwareOccCulling::DrawOcclusionDepthMap(const JGraphicOccDrawSet* occDrawSet, const JDrawHelper& helper)
 	{
@@ -215,8 +225,12 @@ namespace JinEngine::Graphic
 			ID3D12Resource* dsResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
 			JGraphicResourceInfo* dsInfo = dx12Gm->GetInfo(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
 
-			CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = dx12Gm->GetCpuDsvDescriptorHandle(dsvHeapIndex);
+			const D3D12_VIEWPORT viewPort = dx12Device->GetViewPort();
+			const D3D12_RECT rect = dx12Device->GetRect();
+			cmdList->RSSetViewports(1, &viewPort);
+			cmdList->RSSetScissorRects(1, &rect);
 
+			CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = dx12Gm->GetCpuDsvDescriptorHandle(dsvHeapIndex);
 			JD3DUtility::ResourceTransition(cmdList, dsResource, D3D12_RESOURCE_STATE_DEPTH_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 			cmdList->OMSetRenderTargets(0, nullptr, false, &dsv);
 			//draw specific count 
@@ -261,6 +275,11 @@ namespace JinEngine::Graphic
 			const int dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, 0);
 			const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, 0);
 
+			const D3D12_VIEWPORT viewPort = dx12Device->GetViewPort();
+			const D3D12_RECT rect = dx12Device->GetRect();
+			cmdList->RSSetViewports(1, &viewPort);
+			cmdList->RSSetScissorRects(1, &rect);
+
 			CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = dx12Gm->GetCpuDsvDescriptorHandle(dsvHeapIndex);
 			cmdList->OMSetRenderTargets(0, nullptr, false, &dsv);
 
@@ -295,9 +314,9 @@ namespace JinEngine::Graphic
 		ID3D12Resource* occQueryResource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, occVecIndex);
 
 		size_t queryOffset = 0;
-		size_t queryCount = 0;
+		size_t queryCount = 0; 
 		updateData[occVecIndex].Update(queryOffset, queryCount);
-
+		 
 		JD3DUtility::ResourceTransition(cmdList, occQueryResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
 		cmdList->ResolveQueryData(occQueryHeap, D3D12_QUERY_TYPE_BINARY_OCCLUSION, queryOffset, queryCount, occQueryResource, queryOffset * Private::querySize);
 		JD3DUtility::ResourceTransition(cmdList, occQueryResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
@@ -306,7 +325,18 @@ namespace JinEngine::Graphic
 		//여기서 updateData[occVecIndex].updateAllObject trigger를 해제한다.
 		if (updateData[occVecIndex].updateAllObject)
 			updateData[occVecIndex].updateAllObject = false;
-		 
+		  
 		dx12Cm->GetCullingInfo(J_CULLING_TYPE::HD_OCCLUSION, occVecIndex)->SetUpdateEnd(updateData[occVecIndex].isUpdateEnd);
+		/*
+		if (occQueryResource != nullptr)
+		{
+			std::string result;
+			auto dxHolder = dx12Cm->GetDxHolder(J_CULLING_TYPE::HD_OCCLUSION, occVecIndex);
+			for (uint i = 0; i < queryCount; ++i)
+				result += "(" + std::to_string(queryOffset + i) + "): " + std::to_string(dxHolder->IsCulled(i)) + "	 ";
+			Develop::JDevelopDebug::PushLog(result);
+			Develop::JDevelopDebug::Write();
+		}
+		*/
 	}
 }

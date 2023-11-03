@@ -31,7 +31,7 @@ namespace JinEngine
 { 
 	using namespace Graphic;
 	namespace
-	{
+	{ 
 		using DiagramIOInterface = JAnimationFSMdiagramPrivate::AssetDataIOInterface;
 		using DiagramUpdateInterface = JAnimationFSMdiagramPrivate::UpdateInterface;
 	}
@@ -122,37 +122,45 @@ namespace JinEngine
 	public:
 		bool ReadAssetData()
 		{
-			std::wifstream stream;
-			stream.open(thisPointer->GetPath(), std::ios::in | std::ios::binary);
-			if (!stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(thisPointer->GetPath(), JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 				return false;
 			 
-			Core::JFSMparameterStorage::LoadData(stream, paramStorage);
+			Core::JFSMparameterStorage::LoadData(tool, paramStorage);
 
 			uint diagramCount = 0;
-			JObjectFileIOHelper::LoadAtomicData(stream, diagramCount);
+			JObjectFileIOHelper::LoadAtomicData(tool, diagramCount, "DiagramCount:"); 
+			tool.PushExistStack("DiagramData");
 			for (uint i = 0; i < diagramCount; ++i)
-				DiagramIOInterface::LoadAssetData(stream, this); 
-
-			stream.close();
+			{
+				tool.PushExistStack();
+				DiagramIOInterface::LoadAssetData(tool, this);
+				tool.PopStack();
+			}
+			tool.PopStack();
+			tool.Close();
 			return true;
 		}
 		bool WriteAssetData()
 		{
-			std::wofstream stream;
-			stream.open(thisPointer->GetPath(), std::ios::out | std::ios::binary);
-			if (!stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(thisPointer->GetPath(), JFileIOTool::TYPE::JSON))
 				return false;
-
+ 
 			//For classify copy object call 
-			Core::JFSMparameterStorage::StoreData(stream, paramStorage);
+			Core::JFSMparameterStorage::StoreData(tool, paramStorage);
+			JObjectFileIOHelper::StoreAtomicData(tool, diagramVec.size(), "DiagramCount:");
 
-			JObjectFileIOHelper::StoreAtomicData(stream, L"DiagramCount:", diagramVec.size());
 			const uint diagramCount = (uint)diagramVec.size();
+			tool.PushArrayOwner("DiagramData");
 			for (uint i = 0; i < diagramCount; ++i)
-				DiagramIOInterface::StoreAssetData(stream, diagramVec[i]);
-
-			stream.close();
+			{
+				tool.PushArrayMember();
+				DiagramIOInterface::StoreAssetData(tool, diagramVec[i]);
+				tool.PopStack();
+			}
+			tool.PopStack();
+			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			return true;
 		}
 	public:
@@ -448,16 +456,15 @@ namespace JinEngine
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JAnimationController::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		std::wifstream stream;
-		stream.open(path, std::ios::in | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		auto loadMetaData = static_cast<JAnimationController::InitData*>(data);
-		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
  
-		stream.close();
+		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
@@ -469,14 +476,14 @@ namespace JinEngine
 		Core::JUserPtr<JAnimationController> cont;
 		cont.ConnnectChild(storeData->obj); 
 
-		std::wofstream stream;
-		stream.open(cont->GetMetaFilePath(), std::ios::out | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(cont->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
+		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

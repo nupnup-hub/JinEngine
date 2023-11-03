@@ -13,6 +13,7 @@
 #include"Mesh/JSkinnedMeshGeometry.h"
 #include"Mesh/JDefaultGeometryGenerator.h"
 #include"Material/JMaterial.h"  
+#include"Material/JMaterialPrivate.h"  
 #include"Material/JDefaultMaterialSetting.h"
 #include"Texture/JTexture.h" 
 #include"Texture/JDefaulTextureType.h"   
@@ -24,6 +25,7 @@
 #include"../Directory/JDirectory.h" 
 #include"../Directory/JDirectoryPrivate.h"  
 #include"../JObjectFileIOHelper.h"
+#include"../JObjectModifyInterface.h"
 
 #include"../../Core/Identity/JIdenCreator.h"
 #include"../../Core/File/JFileConstant.h" 
@@ -38,9 +40,7 @@
 
 #include"../../Graphic/JGraphic.h"
 //#include"../../Graphic/JGraphicDrawList.h" 
-
-#include"../JModifiedObjectInfo.h"
-#include"../../Editor/Interface/JEditorObjectHandleInterface.h"
+  
 
 //Debug
 //#include"../../Core/Memory/JMemoryCapture.h"
@@ -50,7 +50,8 @@ namespace JinEngine
 {
 	namespace
 	{
-		class JModifiedObjectInfoReader : public JEditorModifedObjectInterface
+		using AssetDataIOInterface = JResourceObjectPrivate::AssetDataIOInterface;
+		class JModifiedObjectInfoReader : public JModifedObjectInterface
 		{
 			using ModVector = JModifiedObjectInfoVector::ObjectVector;
 		public:
@@ -80,10 +81,35 @@ namespace JinEngine
 		{}
 	public:
 		void Initialize() {}
-		void Terminate()
+		void Terminate(const bool storeResource)
 		{
 			//StoreProjectResource();
+			JModifedObjectInterface modInterface;
 			auto rTypeInfoVec = RTypeCommonCall::GetTypeInfoVec(J_RESOURCE_ALIGN_TYPE::DEPENDENCY_REVERSE, false);
+			if (storeResource)
+			{
+				auto modifiedVec = modInterface.GetModifiedObjectInfoVec();
+				for (auto& data : modifiedVec)
+				{
+					if (modInterface.IsModifiedAndStoreAble(data))
+					{
+						auto user = Core::GetUserPtr<JResourceObject>(data->typeGuid, data->objectGuid);
+						if (user != nullptr)
+						{
+							auto storeData = AssetDataIOInterface::CreateStoreAssetDIDate(user);
+							static_cast<JResourceObjectPrivate&>(user->PrivateInterface()).GetAssetDataIOInterface().StoreAssetData(storeData.get());
+						}
+						else
+							data->canStore = false;
+						data->isModified = false;
+					}
+				}
+			}
+
+			auto matRaw = JMaterial::StaticTypeInfo().GetInstanceRawPtrVec();
+			for (auto mat : matRaw)
+				JMaterialPrivate::UpdateShaderInterface::OffUpdateShaderTrigger(Core::GetUserPtr<JMaterial>(mat));
+
 			for (const auto& type : rTypeInfoVec)
 			{
 				auto ptrVec = type->GetInstanceRawPtrVec();
@@ -106,13 +132,14 @@ namespace JinEngine
 				engineRootDir = nullptr;
 			}
 			_JReflectionInfo::Instance().SearchInstance();
+			modInterface.ClearModifiedInfoStructure();
 		}
 		void StoreProjectResource()
-		{
+		{ 
 			auto modInfo = JModifiedObjectInfoReader{}.GetVector();
 			for (const auto& data : modInfo)
 			{
-				if (data->isModified && data->isStore)
+				if (data->isModified && data->canStore)
 				{
 					JObject* obj = Core::GetRawPtr<JObject>(data->typeGuid, data->objectGuid);
 					if(obj == nullptr)
@@ -142,6 +169,7 @@ namespace JinEngine
 		}
 		void LoadSelectorResource()
 		{
+			Terminate(true);
 			defaultData->Initialize();
 			J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			engineRootDir = JICI::Create<JDirectory>(JApplicationEngine::ProjectPath(), Core::MakeGuid(), rootFlag, nullptr);
@@ -152,6 +180,7 @@ namespace JinEngine
 		}
 		void LoadProjectResource()
 		{
+			Terminate(true);
 			defaultData->Initialize();
 			J_OBJECT_FLAG rootFlag = (J_OBJECT_FLAG)(OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNCOPYABLE | OBJECT_FLAG_DO_NOT_SAVE | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			engineRootDir = JICI::Create<JDirectory>(JApplicationEngine::ProjectPath(), Core::MakeGuid(), rootFlag, nullptr);
@@ -525,7 +554,11 @@ namespace JinEngine
 		{
 			auto storeData = JResourceObjectPrivate::AssetDataIOInterface::CreateStoreAssetDIDate(rObj);
 			auto& rPrivate = static_cast<JResourceObjectPrivate&>(rObj->PrivateInterface());
-			rPrivate.GetAssetDataIOInterface().StoreAssetData(storeData.get());
+
+			auto hint = RTypeCommonCall::GetRTypeHint(rObj->GetResourceType());
+			rPrivate.GetAssetDataIOInterface().StoreMetaData(storeData.get());
+			if (!hint.isFixedAssetFile)
+				rPrivate.GetAssetDataIOInterface().StoreAssetData(storeData.get());
 		}
 	};
  
@@ -620,9 +653,9 @@ namespace JinEngine
 	{
 		_JResourceManager::Instance().impl->Initialize();
 	}
-	void MainAccess::Terminate()
+	void MainAccess::Terminate(const bool storeResource)
 	{
-		_JResourceManager::Instance().impl->Terminate();
+		_JResourceManager::Instance().impl->Terminate(storeResource);
 	}
 	void MainAccess::StoreProjectResource()
 	{

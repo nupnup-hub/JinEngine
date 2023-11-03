@@ -1,8 +1,7 @@
 #pragma once
 #include"../JHZBOccCulling.h" 
-#include"../../../FrameResource/JOcclusionConstants.h"
-#include"../../../Buffer/Dx/JDx12GraphicBuffer.h"
-#include"../../../Utility/JHlslDebug.h"
+#include"../../../FrameResource/JOcclusionConstants.h" 
+#include"../../../Buffer/Dx/JHlslDebug.h"
 #include"../../../../Object/Resource/Shader/JShaderDataHolderBase.h"
 #include"../../../../Core/Math/JVector.h"
 #include"../../../../Core/Pointer/JOwnerPtr.h"
@@ -38,7 +37,7 @@ namespace JinEngine
 		private:
 			std::unique_ptr<JDx12GraphicBuffer<JHzbOccDepthMapInfoConstants>> occDepthMapInfoCB;	//static resource
 			std::unique_ptr<JDx12GraphicBuffer<uint>> occQueryOutBuffer;
-			std::vector<std::unique_ptr<JHlslDebug<HZBDebugInfo>>> occDebugBuffer;
+			std::vector<std::unique_ptr<JHlslDebug<JHZBDebugInfo>>> occDebugBuffer;
 		private:
 			Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature;
 		public:

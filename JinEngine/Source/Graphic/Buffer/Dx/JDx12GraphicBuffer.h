@@ -2,7 +2,7 @@
 #include"JDxGraphicBufferInterface.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceHolder.h"
 #include"../../Device/Dx/JDx12GraphicDevice.h"
-#include"../../Utility/JD3DUtility.h"   
+#include"../../Utility/Dx/JD3DUtility.h"   
 #include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"
 #include<d3d12.h>
 #include<wrl/client.h>
@@ -65,10 +65,10 @@ namespace JinEngine
 						&uploadProperty,
 						D3D12_HEAP_FLAG_NONE,
 						&uploadDesc,
-						D3D12_RESOURCE_STATE_COPY_DEST,
+						D3D12_RESOURCE_STATE_COMMON,
 						nullptr,
 						IID_PPV_ARGS(&buffer)));
-					canMapped = true;
+					canMapped = true; 
 				}
 				else if (type == J_GRAPHIC_BUFFER_TYPE::UNORDERED_ACCEESS)
 				{

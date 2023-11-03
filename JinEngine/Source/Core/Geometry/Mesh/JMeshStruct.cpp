@@ -41,7 +41,7 @@ namespace JinEngine
 			normal(n),
 			texC(uv),
 			tangentU(t.x, t.y, t.z)
-		{
+		{ 
 			int i = 0;
 			for (; i < blendWeightPair.size() && i < 4; ++i)
 			{
@@ -145,8 +145,8 @@ namespace JinEngine
 		}
 		void JMeshData::AddPositionOffset(const JVector3<float>& offsetPos)noexcept
 		{
-			boundingBox.Center = (boundingBox.Center + offsetPos).ToXmF();
-			boundingBox.Extents = (boundingBox.Extents + offsetPos).ToXmF();
+			boundingBox.Center = (boundingBox.Center + offsetPos).ToSimilar<XMFLOAT3>();
+			boundingBox.Extents = (boundingBox.Extents + offsetPos).ToSimilar<XMFLOAT3>();
 		}
 		bool JMeshData::HasUV()const noexcept
 		{

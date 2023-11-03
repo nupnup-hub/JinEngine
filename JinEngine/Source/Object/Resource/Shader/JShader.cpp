@@ -14,8 +14,7 @@
 #include"../../../Graphic/JGraphicPrivate.h"
 #include"../../../Application/JApplicationEngine.h"
 #include"../../../Application/JApplicationProject.h"
-#include<fstream>
-#include<d3d12.h>
+#include<fstream> 
 
 namespace JinEngine
 {
@@ -28,10 +27,36 @@ namespace JinEngine
 #define SHADOW_MAP_ARRAY_COUNT_SYMBOL "SHADOW_MAP_ARRAY_COUNT"
 #define SHADOW_MAP_CUBE_COUNT_SYMBOL "SHADOW_MAP_CUBE_COUNT"
 
-#define USE_DIRECTIONAL_LIGHT_PCSS "USE_DIRECTIONAL_LIGHT_PCSS"
+#define PCM_NORMAL_QUALITY_COUNT 16
+#define PCM_HIGH_QUALITY_COUNT 32
+
 #define USE_DIRECTIONAL_LIGHT_PCM "USE_DIRECTIONAL_LIGHT_PCM"
-#define USE_POINT_LIGHT_PCM "USE_POINT_LIGHT_PCM" 
-#define USE_SPOT_LIGHT_PCM "USE_SPOT_LIGHT_PCM" 
+#define USE_DIRECTIONAL_LIGHT_PCSS "USE_DIRECTIONAL_LIGHT_PCSS" 
+#define USE_DIRECTIONAL_LIGHT_PCM_16_SAMPLE "USE_DIRECTIONAL_LIGHT_PCM_16_SAMPLE" 
+#define USE_DIRECTIONAL_LIGHT_PCM_32_SAMPLE "USE_DIRECTIONAL_LIGHT_PCM_32_SAMPLE" 
+
+#define USE_POINT_LIGHT_PCM "USE_POINT_LIGHT_PCM"   
+#define USE_POINT_LIGHT_PCSS "USE_POINT_LIGHT_PCSS"  
+#define USE_POINT_LIGHT_PCM_16_SAMPLE "USE_POINT_LIGHT_PCM_16_SAMPLE"
+#define USE_POINT_LIGHT_PCM_32_SAMPLE "USE_POINT_LIGHT_PCM_32_SAMPLE"
+
+#define USE_SPOT_LIGHT_PCM "USE_SPOT_LIGHT_PCM"    
+#define USE_SPOT_LIGHT_PCSS "USE_SPOT_LIGHT_PCSS"   
+#define USE_SPOT_LIGHT_PCM_16_SAMPLE "USE_SPOT_LIGHT_PCM_16_SAMPLE" 
+#define USE_SPOT_LIGHT_PCM_32_SAMPLE "USE_SPOT_LIGHT_PCM_32_SAMPLE" 
+
+#define USE_BRDF_SMITH_MASKING "USE_BRDF_SMITH_MASKING"  
+#define USE_BRDF_TORRANCE_MASKING "USE_BRDF_TORRANCE_MASKING"  
+
+#define USE_BRDF_GGX_NDF "USE_BRDF_GGX_NDF"  
+#define USE_BRDF_BECKMANN_NDF "USE_BRDF_BECKMANN_NDF"  
+#define USE_BRDF_BLINN_PHONG_NDF "USE_BRDF_BLINN_PHONG_NDF"  
+#define USE_BRDF_ISOTROPY_NDF "USE_BRDF_ISOTROPY_NDF"  
+
+#define USE_BRDF_DISNEY_DIFFUSE "USE_BRDF_DISNEY_DIFFUSE"  
+#define USE_BRDF_HAMMON_DIFFUSE "USE_BRDF_HAMMON_DIFFUSE"  
+#define USE_BRDF_SHIRELY_DIFFUSE "USE_BRDF_SHIRELY_DIFFUSE"  
+#define USE_BRDF_LAMBERTIAN_DIFFUSE "USE_BRDF_LAMBERTIAN_DIFFUSE"  
 
 //Compute Shader Macro Symbol ";
 #define THREAD_DIM_X_SYMBOL "DIMX"
@@ -39,7 +64,6 @@ namespace JinEngine
 #define THREAD_DIM_Z_SYMBOL "DIMZ"
 
 	}
-
 	namespace
 	{
 		static const std::unordered_map<J_GRAPHIC_SHADER_FUNCTION, const JMacroSet> shaderFuncMacroMap
@@ -50,7 +74,7 @@ namespace JinEngine
 			{SHADER_FUNCTION_NORMAL_MAP, {"NORMAL_MAP", "3"}},
 			{SHADER_FUNCTION_HEIGHT_MAP, {"HEIGHT_MAP", "4"}},
 			{SHADER_FUNCTION_ROUGHNESS_MAP,{ "ROUGHNESS_MAP", "5"}},
-			{SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP, {"AMBIENT_OCCUSION_MAP", "6"}}, 
+			{SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP, {"AMBIENT_OCCLUSION_MAP", "6"}}, 
 			{SHADER_FUNCTION_SHADOW, {"SHADOW", "7"}},
 			{SHADER_FUNCTION_LIGHT, {"LIGHT", "8"}},
 			{SHADER_FUNCTION_SKY, {"SKY", "9"}},
@@ -244,14 +268,68 @@ namespace JinEngine
 				initHelper.macro[i].push_back({ SHADOW_MAP_ARRAY_COUNT_SYMBOL, std::to_string(info.bindingShadowTextureArrayCapacity) });
 				initHelper.macro[i].push_back({ SHADOW_MAP_CUBE_COUNT_SYMBOL,std::to_string(info.bindingShadowTextureCubeCapacity) });
 
-				if (option.useDirectionalLightPcss)
-					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCSS, std::to_string(1)});
+				//Shadow
 				if (option.useDirectionalLightPcm)
+				{
 					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCM, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCM_16_SAMPLE, std::to_string(1) });
+				}
+				if (option.useDirectionalLightPcmHighQuality)
+				{
+					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCM, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCM_32_SAMPLE, std::to_string(1) });
+				}
+				if (option.useDirectionalLightPcss)
+					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCSS, std::to_string(1) }); 
+
 				if (option.usePointLightPcm)
+				{ 
 					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCM, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCM_16_SAMPLE, std::to_string(1) });
+				}
+				if (option.usePointLightPcmHighQuality)
+				{
+					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCM, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCM_32_SAMPLE, std::to_string(1) });
+				}
+				if (option.usePointLightPcss)
+					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCSS, std::to_string(1) });
+
 				if (option.useSpotLightPcm)
+				{ 
 					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCM, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCM_16_SAMPLE, std::to_string(1) });
+				}
+				if (option.useSpotLightPcmHighQuality)
+				{
+					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCM, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCM_32_SAMPLE, std::to_string(1) });
+				}
+				if (option.useSpotLightPcss)
+					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCSS, std::to_string(1) });
+
+				//BRDF
+				if (option.useSmithMasking)
+					initHelper.macro[i].push_back({ USE_BRDF_SMITH_MASKING, std::to_string(1) });
+				if (option.useTorranceMaskig)
+					initHelper.macro[i].push_back({ USE_BRDF_TORRANCE_MASKING, std::to_string(1) });
+				if (option.useGGXNDF)
+					initHelper.macro[i].push_back({ USE_BRDF_GGX_NDF, std::to_string(1) });
+				if (option.useBeckmannNDF)
+					initHelper.macro[i].push_back({ USE_BRDF_BECKMANN_NDF, std::to_string(1) });
+				if (option.useBlinnPhongNDF)
+					initHelper.macro[i].push_back({ USE_BRDF_BLINN_PHONG_NDF, std::to_string(1) });
+				if (option.useIsotropy)
+					initHelper.macro[i].push_back({ USE_BRDF_ISOTROPY_NDF, std::to_string(1) });
+				if (option.useDisneyDiffuse)
+					initHelper.macro[i].push_back({ USE_BRDF_DISNEY_DIFFUSE, std::to_string(1) });
+				if (option.useHammonDiffuse)
+					initHelper.macro[i].push_back({ USE_BRDF_HAMMON_DIFFUSE, std::to_string(1) });
+				if (option.useShirleyDiffuse)
+					initHelper.macro[i].push_back({ USE_BRDF_SHIRELY_DIFFUSE, std::to_string(1) });
+				if (option.useLambertianDiffuse)
+					initHelper.macro[i].push_back({ USE_BRDF_LAMBERTIAN_DIFFUSE, std::to_string(1) });
+
 				//initHelper.macro[i].push_back(shaderFuncMacroMap.find(SHADER_FUNCTION_NONE)->second);
 			}
 			initHelper.gFunctionFlag = gFunctionFlag;
@@ -445,7 +523,7 @@ namespace JinEngine
 	{
 		return impl->cFunctionFlag;
 	}
-	JShaderCondition JShader::GetSubGraphicPso()const noexcept
+	JShaderCondition JShader::GetShaderCondition()const noexcept
 	{
 		return impl->condition;
 	} 
@@ -544,26 +622,24 @@ namespace JinEngine
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JShader::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		std::wifstream stream;
-		stream.open(path, std::ios::in | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		auto loadMetaData = static_cast<JShader::InitData*>(data);
-		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
  
-		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->gFunctionFlag);
-		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->cFunctionFlag);
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->gFunctionFlag, "ShaderFuncFlag:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->cFunctionFlag, "ComputeShaderFuncFlag:");
 
-		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->condition.primitiveCondition);
-		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->condition.depthCompareCondition);
-		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->condition.cullModeCondition);
-		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->condition.primitiveType);
-		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->condition.depthCompareFunc);
-		JObjectFileIOHelper::LoadAtomicData(stream, loadMetaData->condition.isCullModeNone);
-
-		stream.close();
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.primitiveCondition, "SubPsoPrimitiveCondition:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.depthCompareCondition, "SubPsoDepthComparesionCondition:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.cullModeCondition, "SubPsoCullModeCondition:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.primitiveType, "SubPsoPrimitive:");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->condition.depthCompareFunc, "SubPsoDepthComparesion:");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->condition.isCullModeNone, "SubPsoCullMode:");
+		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
@@ -575,24 +651,24 @@ namespace JinEngine
 		JUserPtr<JShader> shader;
 		shader.ConnnectChild(storeData->obj);
 
-		std::wofstream stream;
-		stream.open(shader->GetMetaFilePath(), std::ios::out | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(shader->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JObjectFileIOHelper::StoreEnumData(stream, L"ShaderFuncFlag:", shader->impl->gFunctionFlag);
-		JObjectFileIOHelper::StoreEnumData(stream, L"ComputeShaderFuncFlag:", shader->impl->cFunctionFlag);
+		JObjectFileIOHelper::StoreEnumData(tool, shader->impl->gFunctionFlag, "ShaderFuncFlag:");
+		JObjectFileIOHelper::StoreEnumData(tool, shader->impl->cFunctionFlag, "ComputeShaderFuncFlag:");
 
-		JObjectFileIOHelper::StoreEnumData(stream, L"SubPsoPrimitiveCondition:", shader->impl->condition.primitiveCondition);
-		JObjectFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesionCondition:", shader->impl->condition.depthCompareCondition);
-		JObjectFileIOHelper::StoreEnumData(stream, L"SubPsoCullModeCondition:", shader->impl->condition.cullModeCondition);
-		JObjectFileIOHelper::StoreEnumData(stream, L"SubPsoPrimitive:", shader->impl->condition.primitiveType);
-		JObjectFileIOHelper::StoreEnumData(stream, L"SubPsoDepthComparesion:", shader->impl->condition.depthCompareFunc);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"SubPsoCullMode:", shader->impl->condition.isCullModeNone);
-
+		JObjectFileIOHelper::StoreEnumData(tool, shader->impl->condition.primitiveCondition, "SubPsoPrimitiveCondition:");
+		JObjectFileIOHelper::StoreEnumData(tool, shader->impl->condition.depthCompareCondition, "SubPsoDepthComparesionCondition:");
+		JObjectFileIOHelper::StoreEnumData(tool, shader->impl->condition.cullModeCondition, "SubPsoCullModeCondition:");
+		JObjectFileIOHelper::StoreEnumData(tool, shader->impl->condition.primitiveType, "SubPsoPrimitive:");
+		JObjectFileIOHelper::StoreEnumData(tool, shader->impl->condition.depthCompareFunc, "SubPsoDepthComparesion:");
+		JObjectFileIOHelper::StoreAtomicData(tool, shader->impl->condition.isCullModeNone, "SubPsoCullMode:");
+		
+		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

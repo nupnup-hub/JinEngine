@@ -175,14 +175,14 @@ namespace JinEngine
 			return nullptr;
 
 		auto loadData = static_cast<JBehavior::LoadData*>(data);
-		std::wifstream& stream = loadData->stream;
+		JFileIOTool& tool = loadData->tool;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
 		std::wstring guide;
 		size_t guid;
 		J_OBJECT_FLAG flag; 
 		bool isActivated;
-		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
+		JObjectFileIOHelper::LoadComponentIden(tool, guid, flag, isActivated);
 		auto iden = bPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JBehavior::InitData>(*loadData->loadTypeInfo, guid, flag, owner), &bPrivate);
 		auto bUser = Core::ConvertChildUserPtr<JBehavior>(std::move(iden));
 		if (!isActivated)
@@ -200,9 +200,9 @@ namespace JinEngine
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		JBehavior* bComp = static_cast<JBehavior*>(storeData->obj.Get());
-		std::wofstream& stream = storeData->stream;
+		JFileIOTool& tool = storeData->tool;
 
-		JObjectFileIOHelper::StoreComponentIden(stream, bComp); 
+		JObjectFileIOHelper::StoreComponentIden(tool, bComp);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

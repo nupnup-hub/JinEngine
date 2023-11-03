@@ -3,8 +3,7 @@
 #include"../Device/JGraphicDeviceUser.h"
 #include"../../Core/JCoreEssential.h" 
 #include<string>
-
-struct ID3D12Resource;
+ 
 namespace JinEngine
 {
 	namespace Graphic

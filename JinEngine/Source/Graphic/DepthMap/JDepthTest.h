@@ -22,6 +22,7 @@ namespace JinEngine
 			{
 				BOUNDING_TEST = 0,
 				QUERY_TEST,
+				QUERY_TEST_PASS,
 				COUNT
 			}; 
 		public:

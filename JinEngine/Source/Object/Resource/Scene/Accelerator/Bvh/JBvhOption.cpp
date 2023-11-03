@@ -16,26 +16,26 @@ namespace JinEngine
 	{
 		return commonOption.Equal(tar.commonOption);
 	}
-	void JBvhOption::Store(std::wofstream& stream)
+	void JBvhOption::Store(JFileIOTool& tool)
 	{
-		if (!stream.is_open())
+		if (!tool.CanStore())
 			return;
 
-		commonOption.Store(stream);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"buildType:", (int)buildType);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"splitType:", (int)splitType);
+		tool.PushMapMember("Bvh");
+		commonOption.Store(tool);
+		JObjectFileIOHelper::StoreEnumData(tool, buildType, "buildType:");
+		JObjectFileIOHelper::StoreEnumData(tool, splitType, "splitType:");
+		tool.PopStack();
 	}
-	void JBvhOption::Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid)
+	void JBvhOption::Load(JFileIOTool& tool, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid)
 	{
-		if (!stream.is_open() || stream.eof())
+		if (!tool.CanLoad())
 			return;
 
-		commonOption.Load(stream, hasInnerRoot, innerRootGuid);
-		int buildTypeN;
-		int splitTypeN;
-		JObjectFileIOHelper::LoadAtomicData(stream, buildTypeN);
-		JObjectFileIOHelper::LoadAtomicData(stream, splitTypeN);
-		buildType = (J_ACCELERATOR_BUILD_TYPE)buildTypeN;
-		splitType = (J_ACCELERATOR_SPLIT_TYPE)splitTypeN;
+		tool.PushExistStack("Bvh");
+		commonOption.Load(tool, hasInnerRoot, innerRootGuid);
+		JObjectFileIOHelper::LoadEnumData(tool, buildType, "buildType:");
+		JObjectFileIOHelper::LoadEnumData(tool, splitType, "splitType:");
+		tool.PopStack();
 	}
 }

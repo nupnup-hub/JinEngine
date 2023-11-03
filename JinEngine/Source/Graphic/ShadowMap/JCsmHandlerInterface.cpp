@@ -387,7 +387,7 @@ namespace JinEngine::Graphic
 
 		auto& result = target[targetIndex].result;
 		result.subFrustumCount = 0;
-
+		 
 		//1. calculate split rate
 		const uint splitCount = option.GetSplitCount();
 		for (uint i = 0; i < splitCount; ++i)
@@ -425,13 +425,16 @@ namespace JinEngine::Graphic
 		//float outFrustumNear[JCsmOption::maxCountOfSplit];
 		//float outFrustumFar[JCsmOption::maxCountOfSplit];
 
+		float shadowDistance = option.GetShadowDistance();
 		const XMMATRIX ndcToTextureSpaceM = JMatrix4x4::NdcToTextureSpace().LoadXM();
 		for (uint i = 0; i < result.subFrustumCount; ++i)
 		{
 			//3. split frustum
 			BoundingFrustum subFrustum = camFrustumW;
 			subFrustum.Far = result.splitRate[i] * camFrustumW.Far;
- 
+			if (subFrustum.Far > shadowDistance)
+				subFrustum.Far = shadowDistance;
+
 			XMFLOAT3 wCorner[8];
 			subFrustum.GetCorners(wCorner);
 
@@ -521,7 +524,7 @@ namespace JinEngine::Graphic
 			result.scale[i].w = 1.0f;
 			result.posOffset[i] = shadowTextureM.r[3];
 			result.posOffset[i].w = 0;
-			result.frustumSize[i] = JVector2F(abs(maxX - minX), abs(maxY - minY));
+			//result.frustumSize[i] = JVector2F(abs(maxX - minX), abs(maxY - minY));
 			result.fNear[i] = outFrustumNear;
 			result.fFar[i] = outFrustumFar; 
 		}

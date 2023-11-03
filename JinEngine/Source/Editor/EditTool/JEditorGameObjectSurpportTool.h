@@ -1,11 +1,11 @@
 #pragma once
-#include"JEditorGameObjectSurpportToolType.h"
-#include"../Interface/JEditorObjectHandleInterface.h"
+#include"JEditorGameObjectSurpportToolType.h" 
 #include"../../Core/Pointer/JOwnerPtr.h"
 #include"../../Core/Func/Callable/JCallable.h" 
 #include"../../Core/Interface/JActivatedInterface.h"
 #include"../../Core/Interface/JValidInterface.h"
 #include"../../Core/Math/JVector.h"
+#include"../../Object/JObjectModifyInterface.h"
 #include"../../Object/Resource/Mesh/JDefaultShapeType.h"
 #include"../../Object/Resource/Scene/Accelerator/JAcceleratorType.h"
 
@@ -19,7 +19,7 @@ namespace JinEngine
 	class JMeshGeometry;
 	namespace Editor
 	{ 
-		class JEditorGameObjectSurpportTool : public Core::JActivatedInterface,  public JEditorObjectHandlerInterface
+		class JEditorGameObjectSurpportTool : public Core::JActivatedInterface,  public JObjectModifyInterface
 		{  
 		public:
 			virtual ~JEditorGameObjectSurpportTool() = default;

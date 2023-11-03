@@ -1,8 +1,8 @@
-#pragma once
-#include"JEditorObjectHandleInterface.h" 
+#pragma once 
 #include"../Event/JEditorEvent.h"
 #include"../Page/JEditorWindow.h"
 #include"../../Object/GameObject/JGameObject.h"
+#include"../../Object/JObjectModifyInterface.h"
 #include"../../Core/Empty/JEmptyType.h"
 #include"../../Core/Identity/JIdentifier.h"
 #include"../../Core/Utility/JCommonUtility.h"
@@ -77,7 +77,7 @@ namespace JinEngine
 		};
  
 		template<typename ...Param>
-		class JEditorObjectCreateInterface : public JEditorObjectHandlerInterface
+		class JEditorObjectCreateInterface : public JObjectModifyInterface
 		{
 		protected:
 			using NotifyPtr = typename Constants::NotifyPtr;
@@ -222,7 +222,7 @@ namespace JinEngine
 			}
 		};
 
-		class JEditorObjectDestroyInterface : public JEditorObjectHandlerInterface
+		class JEditorObjectDestroyInterface : public JObjectModifyInterface
 		{
 		protected:
 			using DataHandleStructure = Constants::DataHandleStructure;
@@ -290,7 +290,7 @@ namespace JinEngine
 				JEditorCreationHint creationHint);
 		};
 
-		class JEditorObjectUndoDestroyInterface : public JEditorObjectHandlerInterface
+		class JEditorObjectUndoDestroyInterface : public JObjectModifyInterface
 		{
 		protected:
 			using NotifyPtr = Constants::NotifyPtr;

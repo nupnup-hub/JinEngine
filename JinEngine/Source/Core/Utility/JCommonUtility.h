@@ -6,6 +6,8 @@
 #include"../Pointer/JOwnerPtr.h"
 #include"../Exception/JExceptionMacro.h" 
 #include"../Func/Callable/JCallable.h"
+#include"../Func/Functor/JFunctor.h"
+#include"../Interface/JTreeInterface.h"
 
 namespace JinEngine
 {
@@ -404,6 +406,35 @@ namespace JinEngine
 			const uint objectCount = (uint)objectVec.size();
 			for (uint i = st; i < objectCount; ++i)
 				callable(nullptr, static_cast<T*>(objectVec[i]), i, std::forward<Param>(var)...);
+		}
+		template<typename ...Param>
+		static void TraversalTreeNode(Core::JTreeInterface* node, void(*func)(Core::JTreeInterface*, Param...), Param&&... var)
+		{
+			if (node == nullptr)
+				return;
+
+			if (func != nullptr)
+				func(node, std::forward<Param>(var)...);
+			
+			const uint count = node->GetChildrenCount();
+			for(uint i = 0; i < count; ++i)
+				TraversalTreeNode(node->GetChild(i), func, std::forward<Param>(var)...);
+		}
+		template<typename EntryBind, typename ExitBind>
+		static void TraversalTreeNode(Core::JTreeInterface* node, EntryBind* entryB, ExitBind* exitB)
+		{
+			if (node == nullptr)
+				return;
+
+			if (entryB != nullptr)
+				(*entryB)(node);
+
+			const uint count = node->GetChildrenCount();
+			for (uint i = 0; i < count; ++i)
+				TraversalTreeNode(node->GetChild(i), entryB, exitB);
+
+			if (exitB != nullptr)
+				(*exitB)(node);
 		}
 	};
 

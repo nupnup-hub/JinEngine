@@ -1,5 +1,5 @@
-#pragma once
-#include"JGraphicResourceType.h"
+#pragma once 
+#include"JGraphicResourceType.h" 
 #include"../JGraphicConstants.h"
 #include"../Device/JGraphicDeviceUser.h" 
 #include"../../Core/JCoreEssential.h"  
@@ -39,8 +39,8 @@ namespace JinEngine
 			struct ResourceTypeDesc
 			{
 			public:
-				int count = 0;
-				int capacity = 0;
+				int count = 0; 
+				int capacity = 0; 
 			public:
 				ResourceViewInfo viewInfo[(int)J_GRAPHIC_BIND_TYPE::COUNT];
 			public:
@@ -62,7 +62,7 @@ namespace JinEngine
 			virtual uint GetViewCapacity(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)const noexcept = 0;
 			virtual uint GetViewOffset(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)const noexcept = 0;
 			virtual uint GetTotalViewCount(const J_GRAPHIC_BIND_TYPE bType)const noexcept = 0;
-			virtual uint GetTotalViewCapacity(const J_GRAPHIC_BIND_TYPE bType)const noexcept = 0;
+			virtual uint GetTotalViewCapacity(const J_GRAPHIC_BIND_TYPE bType)const noexcept = 0; 
 			virtual JGraphicResourceInfo* GetInfo(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept = 0;		
 		public:
 			static uint GetOcclusionMipMapViewCapacity()noexcept;
@@ -72,19 +72,14 @@ namespace JinEngine
 			//추후에 window이외에 platform을 사용한다면 수정필요!
 			HWND GetWindowHandle()noexcept;
 		public:
-			virtual bool CanCreateResource(const J_GRAPHIC_RESOURCE_TYPE type)const noexcept = 0;
+			virtual bool CanCreateResource(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0;
+			virtual bool CanCreateOptionResource(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0;
 		public:
-			virtual JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilResource(JGraphicDevice* device,
-				const uint viewWidth,
-				const uint viewHeight) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilResource(JGraphicDevice* device, const uint viewWidth, const uint viewHeight) = 0;
 			//for display scene depth stencil map
 			//for debug ui or debug object
-			virtual JUserPtr<JGraphicResourceInfo> CreateDebugDepthStencilResource(JGraphicDevice* device,
-				const uint viewWidth,
-				const uint viewHeight) = 0;
-			virtual JUserPtr<JGraphicResourceInfo> CreateLayerDepthDebugResource(JGraphicDevice* device,
-				const uint viewWidth,
-				const uint viewHeight) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateDebugDepthStencilResource(JGraphicDevice* device, const uint viewWidth, const uint viewHeight) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateLayerDepthDebugResource(JGraphicDevice* device, const uint viewWidth, const uint viewHeight) = 0;
 			virtual void CreateHZBOcclusionResource(JGraphicDevice* device,
 				const uint occWidth,
 				const uint occHeight,
@@ -94,30 +89,19 @@ namespace JinEngine
 				const uint occWidth,
 				const uint occHeight,
 				const bool isHzb) = 0;
-			virtual JUserPtr<JGraphicResourceInfo> Create2DTexture(JGraphicDevice* device,
-				const std::wstring& path,
-				const std::wstring& oriFormat) = 0;
-			virtual JUserPtr<JGraphicResourceInfo> CreateCubeMap(JGraphicDevice* device,
-				const std::wstring& path,
-				const std::wstring& oriFormat) = 0;
-			virtual JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(JGraphicDevice* device,
-				const uint width,
-				const uint height) = 0;
-			virtual JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(JGraphicDevice* device,
-				const uint width,
-				const uint height) = 0;
-			virtual JUserPtr<JGraphicResourceInfo> CreateShadowMapArrayTexture(JGraphicDevice* device,
-				const uint width,
-				const uint height,
-				const uint count) = 0;
-			virtual JUserPtr<JGraphicResourceInfo> CreateShadowMapCubeTexture(JGraphicDevice* device,
-				const uint width,
-				const uint height) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> Create2DTexture(JGraphicDevice* device, const uint maxSize, const std::wstring& path, const std::wstring& oriFormat) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateCubeMap(JGraphicDevice* device, const uint maxSize, const std::wstring& path, const std::wstring& oriFormat) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(JGraphicDevice* device, const uint width, const uint height) = 0; 
+			virtual JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(JGraphicDevice* device, const uint width, const uint height) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateShadowMapTextureArray(JGraphicDevice* device, const uint width, const uint height, const uint count) = 0;
+			virtual JUserPtr<JGraphicResourceInfo> CreateShadowMapTextureCube(JGraphicDevice* device, const uint width, const uint height) = 0;
 			virtual JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(JGraphicDevice* device, const std::vector<Core::JStaticMeshVertex>& vertex) = 0;
 			virtual JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(JGraphicDevice* device, const std::vector<Core::JSkinnedMeshVertex>& vertex) = 0;
 			virtual JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(JGraphicDevice* device, const std::vector<uint32>& index) = 0;
 			virtual JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(JGraphicDevice* device, const std::vector<uint16>& index) = 0;
+			virtual bool CreatePostProcessingTexture(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo>& info) = 0;
 			virtual bool DestroyGraphicTextureResource(JGraphicDevice* device, JGraphicResourceInfo* info) = 0;
+			virtual bool DestroyGraphicOption(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE optype) = 0;
 		public:
 			virtual void ResizeWindow(const JGraphicBaseDataSet& base, JGraphicDevice* device) = 0;
 		public:

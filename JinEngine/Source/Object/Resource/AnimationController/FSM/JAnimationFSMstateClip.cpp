@@ -95,7 +95,7 @@ namespace JinEngine
 			SetClip(JUserPtr<JAnimationClip>{});
 		}
 	public:
-		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
 			if (iden == thisPointer->GetGuid())
 				return;
@@ -195,24 +195,24 @@ namespace JinEngine
 		JAnimationFSMstatePrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetData(std::wifstream& stream, const JUserPtr<JAnimationFSMstate>& state)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMstate>& state)
 	{
-		if (!stream.is_open() || !state->GetTypeInfo().IsChildOf<JAnimationFSMstateClip>())
+		if (!tool.CanLoad())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		Core::J_FILE_IO_RESULT res = LoadAssetCommonData(stream, state);
+		Core::J_FILE_IO_RESULT res = LoadAssetCommonData(tool, state);
 		JAnimationFSMstateClip* fsmClip = static_cast<JAnimationFSMstateClip*>(state.Get());
-		fsmClip->SetClip(JObjectFileIOHelper::_LoadHasIden<JAnimationClip>(stream));
+		fsmClip->SetClip(JObjectFileIOHelper::_LoadHasIden<JAnimationClip>(tool, "AnimationClip"));
 		return res;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMstate>& state)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMstate>& state)
 	{
-		if (!stream.is_open() || !state->GetTypeInfo().IsChildOf<JAnimationFSMstateClip>())
+		if (!tool.CanStore())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		JUserPtr<JAnimationFSMstateClip> fsmClip = Core::ConnectChildUserPtr<JAnimationFSMstateClip>(state);
-		Core::J_FILE_IO_RESULT res = StoreAssetCommonData(stream, fsmClip);
-		JObjectFileIOHelper::_StoreHasIden(stream, fsmClip->impl->clip.Get());
+		Core::J_FILE_IO_RESULT res = StoreAssetCommonData(tool, fsmClip);
+		JObjectFileIOHelper::_StoreHasIden(tool, fsmClip->impl->clip.Get(), "AnimationClip");
 		return res;
 	}
 

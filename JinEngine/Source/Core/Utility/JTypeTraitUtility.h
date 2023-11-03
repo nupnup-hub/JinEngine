@@ -270,6 +270,17 @@ namespace JinEngine
 			using ElementType = typename T::ElementType;
 		};
 
+		template<typename T, typename = void>
+		struct JWeakPtrDetermine : std::bool_constant<false> { using ElementType = T; };
+
+		//std::is_base_of_v<JPtrBase<JUserPtrDetermine<valueType>::ElementType>, T
+		template<typename T>
+		struct JWeakPtrDetermine<T, std::void_t<typename T::ElementType>>
+			: std::bool_constant<std::is_same_v<JWeakPtr<typename T::ElementType>, T>>
+		{
+			using ElementType = typename T::ElementType;
+		};
+
 		template<typename T>
 		struct StdStructureLastDimValueType
 		{

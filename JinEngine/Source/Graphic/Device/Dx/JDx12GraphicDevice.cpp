@@ -1,7 +1,7 @@
 #include"JDx12GraphicDevice.h"
 #include"../../GraphicResource/JGraphicResourceManager.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
-#include"../../Utility/JD3DUtility.h" 
+#include"../../Utility/Dx/JD3DUtility.h" 
 #include"../../../Core/Exception/JExceptionMacro.h"
 #include<assert.h>
 #include<vector>
@@ -20,7 +20,7 @@ namespace JinEngine::Graphic
 	{
 #if defined(GRAPIC_DEBUG) 
 		// Enable the D3D12 DEBUG layer.
-		ComPtr<ID3D12Debug> debugController;
+		Microsoft::WRL::ComPtr<ID3D12Debug> debugController;
 		ThrowIfFailedHr(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
 		debugController->EnableDebugLayer();
 #endif
@@ -34,7 +34,7 @@ namespace JinEngine::Graphic
 		d3dDevice->SetName(L"JinEngineDx12 Device");
 
 #if defined(GRAPIC_DEBUG) 
-		ComPtr<ID3D12InfoQueue> d3dInfoQueue; 
+		Microsoft::WRL::ComPtr<ID3D12InfoQueue> d3dInfoQueue;
 		if (SUCCEEDED(d3dDevice.As(&d3dInfoQueue))) 
 		{
 			//d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);

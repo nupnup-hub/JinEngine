@@ -8,11 +8,11 @@ struct ObjectInfo
 {
 	float3 coners[8];
 	float3 center;
-	float3 extents;
 	int queryResultIndex;
+	float3 extents;
 	int isValid;
 };
-//Debug
+#ifdef DEBUG
 struct HZBDebugInfo
 {
 	float3 bboxV[8];
@@ -36,7 +36,7 @@ struct HZBDebugInfo
 	int debugPad03;
 };
 RWStructuredBuffer<HZBDebugInfo> hzbDebugInfo : register(u2, space1);
-
+#endif
 
 Texture2D<float> depthMap : register(t0);
 Texture2D mipmap : register(t1);
@@ -48,6 +48,7 @@ RWStructuredBuffer<uint> queryResult : register(u1, space1);
 SamplerState downSam : register(s0);
 SamplerState occFrameSam : register(s1);
 
+//16
 cbuffer cbDepthMapInfo : register(b0)
 {
 	int nowWidth;
@@ -56,6 +57,7 @@ cbuffer cbDepthMapInfo : register(b0)
 	int samplePad00;
 };
 
+//368
 cbuffer cbPass : register(b1)
 {
 	float4x4 camView;

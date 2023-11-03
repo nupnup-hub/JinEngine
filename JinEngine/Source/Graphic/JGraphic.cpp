@@ -13,6 +13,8 @@
 #include"ShadowMap/JCsmManager.h"
 #include"DepthMap/JDepthMapDebug.h"
 #include"DepthMap/JDepthTest.h" 
+#include"Buffer/JGraphicBuffer.h" 
+#include"Blur/JBlur.h" 
 #include"Culling/JCullingInfo.h"
 #include"Culling/JCullingManager.h"
 #include"Culling/Frustum/JFrustumCulling.h"
@@ -32,7 +34,6 @@
 #include"FrameResource/JOcclusionConstants.h"
 #include"FrameResource/JShadowMapConstants.h"
 #include"FrameResource/JDepthTestConstants.h"
-#include"Buffer/JGraphicBuffer.h" 
 
 #include"Gui/JGuiBackendInterface.h"
 #include"Gui/JGuiBackendDataAdapter.h"
@@ -91,7 +92,7 @@
 #include"../Application/JApplicationEngine.h"
 #include"../Application/JApplicationEnginePrivate.h"
 #include"../Application/JApplicationProject.h"  
- 
+   
 namespace JinEngine
 {
 	using namespace DirectX;
@@ -130,12 +131,103 @@ namespace JinEngine
 				ani = JAnimationConstants();
 			}
 		};
-
-
 		namespace
 		{
 			using CamEditorSettingInterface = JCameraPrivate::EditorSettingInterface;
 			using GraphicThreadInteface = Core::JThreadManagerPrivate::GraphicInterface;
+
+			/*
+			* newFirst, newSecond중 하나만 true값을 가지며
+			* 입력값이 비정확할경우 newFirst을 true로 한다.
+			*/
+			static void SwitchBoolValue(bool& newFirst, bool& newSecond, bool& oldFirst, bool& oldSecond)
+			{
+				if (newFirst && newSecond)
+				{
+					if (!oldFirst)
+						newSecond = false;
+					else if (!oldSecond)
+						newFirst = false; 
+
+					if (newFirst && newSecond)
+						newSecond = false;
+				}
+				else if (!newFirst && !newSecond)
+				{
+					if (oldFirst)
+						newFirst = oldFirst;
+					if (oldSecond)
+						newSecond = oldSecond;
+					if (!newFirst && !newSecond)
+						newFirst = true;
+				}
+			}
+			/*
+			* newFirst, newSecond, newThird 중 하나만 true값을 가지며
+			* 입력값이 비정확할경우 newFirst을 true로 한다.
+			*/
+			static void SwitchBoolValue(bool& newFirst, bool& newSecond, bool& newThird, bool& oldFirst, bool& oldSecond, bool& oldThird)
+			{
+				int trueCount = newFirst + newSecond + newThird; 
+				if (trueCount > 1)
+				{
+					if (!oldFirst && newFirst)
+						newSecond = newThird = false;
+					else if (!oldSecond && newSecond)
+						newFirst = newThird = false;
+					else if (!oldThird && newThird)
+						newFirst = newSecond = false;
+
+					trueCount = newFirst + newSecond + newThird;
+					if (trueCount > 1)
+						newSecond = newThird = false;
+				}
+				else if (trueCount == 0)
+				{
+					if (oldFirst)
+						newFirst = oldFirst;
+					if (oldSecond)
+						newSecond = oldSecond;
+					if (oldThird)
+						newThird = oldThird;
+
+					if (!newFirst && !newSecond && !newThird)
+						newFirst = true;
+				}
+			}
+			static void SwitchBoolValue(bool& newFirst, bool& newSecond, bool& newThird, bool& newForth, bool& oldFirst, bool& oldSecond, bool& oldThird, bool& oldForth)
+			{
+				int trueCount = newFirst + newSecond + newThird + newForth;
+				if (trueCount > 1)
+				{
+					if (!oldFirst && newFirst)
+						newSecond = newThird = newForth = false;
+					else if (!oldSecond && newSecond)
+						newFirst = newThird = newForth = false;
+					else if (!oldThird && newThird)
+						newFirst = newSecond = newForth = false;
+					else if (!oldForth && newForth)
+						newFirst = newSecond = newThird = false;
+
+					trueCount = newFirst + newSecond + newThird + newForth;
+					if (trueCount > 1)
+						newSecond = newThird = newForth = false;
+				}
+				else if (trueCount == 0)
+				{
+					if (oldFirst)
+						newFirst = oldFirst;
+					if (oldSecond)
+						newSecond = oldSecond;
+					if (oldThird)
+						newThird = oldThird;
+					if (oldForth)
+						newForth = oldForth;
+
+					if (!newFirst && !newSecond && !newThird && !newForth)
+						newFirst = true;
+				}
+			}
 		} 
 
 #pragma region Impl
@@ -171,6 +263,7 @@ namespace JinEngine
 			std::unique_ptr<JDepthMapDebug> depthMapDebug;
 			std::unique_ptr<JDepthTest> depthTest;
 			std::unique_ptr<JOutline> outlineHelper; 
+			std::unique_ptr<JBlur> blur;
 			std::unique_ptr<JGraphicDrawReferenceSet> drawRefSet;
 		private:
 			std::unique_ptr<WorkerThreadF::Functor> workerFunctor;
@@ -202,16 +295,6 @@ namespace JinEngine
 			//CallOnece
 			void RegisterResouceNotifyFunc()
 			{
-				/*
-						REGISTER_ENUM_CLASS(J_UPLOAD_FRAME_RESOURCE_TYPE, int, 
-						DIRECTIONAL_LIGHT,
-						CASCADE_SHADOW_MAP_INFO,
-						POINT_LIGHT,
-						SPOT_LIGHT,
-						SHADOW_MAP_ARRAY_DRAW,
-						SHADOW_MAP_CUBE_DRAW,
-						SHADOW_MAP_DRAW,)
-				*/
 				auto objGetElementLam = [](){return JFrameUpdateData::GetTotalFrameCount(J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT);};
 				auto enginePassGetElemenLam = []() {return JFrameUpdateData::GetTotalFrameCount(J_UPLOAD_FRAME_RESOURCE_TYPE::ENGINE_PASS); };;
 				auto scenePassGetElementLam = []() {return JFrameUpdateData::GetTotalFrameCount(J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS); };
@@ -360,11 +443,44 @@ namespace JinEngine
 				}
 				bool needRecompileGraphicShader = false;
 				needRecompileGraphicShader |= (option.useDirectionalLightPcm != newGraphicOption.useDirectionalLightPcm);
-				needRecompileGraphicShader |= (option.useDirectionalLightPcss != newGraphicOption.useDirectionalLightPcss);
-				needRecompileGraphicShader |= (option.usePointLightPcm != newGraphicOption.usePointLightPcm);
-				needRecompileGraphicShader |= (option.useSpotLightPcm != newGraphicOption.useSpotLightPcm);
+				needRecompileGraphicShader |= (option.useDirectionalLightPcmHighQuality != newGraphicOption.useDirectionalLightPcmHighQuality);
+				needRecompileGraphicShader |= (option.useDirectionalLightPcss != newGraphicOption.useDirectionalLightPcss); 
+				needRecompileGraphicShader |= (option.usePointLightPcm != newGraphicOption.usePointLightPcm); 
+				needRecompileGraphicShader |= (option.usePointLightPcmHighQuality != newGraphicOption.usePointLightPcmHighQuality);
+				needRecompileGraphicShader |= (option.usePointLightPcss != newGraphicOption.usePointLightPcss);
+				needRecompileGraphicShader |= (option.useSpotLightPcm != newGraphicOption.useSpotLightPcm); 
+				needRecompileGraphicShader |= (option.useSpotLightPcmHighQuality != newGraphicOption.useSpotLightPcmHighQuality);
+				needRecompileGraphicShader |= (option.useSpotLightPcss != newGraphicOption.useSpotLightPcss);
+
+				needRecompileGraphicShader |= (option.useSmithMasking != newGraphicOption.useSmithMasking);
+				needRecompileGraphicShader |= (option.useTorranceMaskig != newGraphicOption.useTorranceMaskig);
+				needRecompileGraphicShader |= (option.useGGXNDF != newGraphicOption.useGGXNDF);
+				needRecompileGraphicShader |= (option.useBeckmannNDF != newGraphicOption.useBeckmannNDF);
+				needRecompileGraphicShader |= (option.useBlinnPhongNDF != newGraphicOption.useBlinnPhongNDF);
+				needRecompileGraphicShader |= (option.useIsotropy != newGraphicOption.useIsotropy);
+				needRecompileGraphicShader |= (option.useDisneyDiffuse != newGraphicOption.useDisneyDiffuse);
+				needRecompileGraphicShader |= (option.useHammonDiffuse != newGraphicOption.useHammonDiffuse);
+				needRecompileGraphicShader |= (option.useShirleyDiffuse != newGraphicOption.useShirleyDiffuse);
+				needRecompileGraphicShader |= (option.useLambertianDiffuse != newGraphicOption.useLambertianDiffuse);
+ 
+				SwitchBoolValue(newGraphicOption.isHDOcclusionAcitvated, newGraphicOption.isHZBOcclusionActivated,
+					option.isHDOcclusionAcitvated, option.isHZBOcclusionActivated);
+				SwitchBoolValue(newGraphicOption.useDirectionalLightPcss, newGraphicOption.useDirectionalLightPcmHighQuality, newGraphicOption.useDirectionalLightPcm,
+					option.useDirectionalLightPcss, option.useDirectionalLightPcmHighQuality, option.useDirectionalLightPcm);
+				SwitchBoolValue(newGraphicOption.usePointLightPcss, newGraphicOption.usePointLightPcmHighQuality, newGraphicOption.usePointLightPcm,
+					option.usePointLightPcss, option.usePointLightPcmHighQuality, option.usePointLightPcm);
+				SwitchBoolValue(newGraphicOption.useSpotLightPcss, newGraphicOption.useSpotLightPcmHighQuality, newGraphicOption.useSpotLightPcm,
+					option.useSpotLightPcss, option.useSpotLightPcmHighQuality, option.useSpotLightPcm);
+
+				SwitchBoolValue(newGraphicOption.useSmithMasking, newGraphicOption.useTorranceMaskig,
+					option.useSmithMasking, option.useTorranceMaskig);
+				SwitchBoolValue(newGraphicOption.useGGXNDF, newGraphicOption.useBeckmannNDF, newGraphicOption.useBlinnPhongNDF,
+					option.useGGXNDF, option.useBeckmannNDF, option.useBlinnPhongNDF); 
+				SwitchBoolValue(newGraphicOption.useDisneyDiffuse, newGraphicOption.useHammonDiffuse, newGraphicOption.useShirleyDiffuse, newGraphicOption.useLambertianDiffuse,
+					option.useDisneyDiffuse, option.useHammonDiffuse, option.useShirleyDiffuse, option.useLambertianDiffuse);
+
 				option = newGraphicOption;
-				if (needRecompileGraphicShader)
+				if (needRecompileGraphicShader && device != nullptr)
 				{
 					device->FlushCommandQueue();
 					device->StartPublicCommand();
@@ -401,13 +517,13 @@ namespace JinEngine
 			{
 				return graphicResourceM->CreateOcclusionResourceDebug(device.get(), info.occlusionWidth, info.occlusionHeight, isHzb);
 			}
-			JUserPtr<JGraphicResourceInfo> Create2DTexture(const std::wstring& path, const std::wstring& oriFormat)
+			JUserPtr<JGraphicResourceInfo> Create2DTexture(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
 			{
-				return graphicResourceM->Create2DTexture(device.get(), path, oriFormat);
+				return graphicResourceM->Create2DTexture(device.get(), maxSize, path, oriFormat);
 			}
-			JUserPtr<JGraphicResourceInfo> CreateCubeMap(const std::wstring& path, const std::wstring& oriFormat)
+			JUserPtr<JGraphicResourceInfo> CreateCubeMap(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
 			{
-				return graphicResourceM->CreateCubeMap(device.get(), path, oriFormat);
+				return graphicResourceM->CreateCubeMap(device.get(), maxSize, path, oriFormat);
 			}
 			JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(uint textureWidth, uint textureHeight)
 			{
@@ -417,27 +533,27 @@ namespace JinEngine
 					textureHeight = info.height;
 
 				return graphicResourceM->CreateRenderTargetTexture(device.get(), textureWidth, textureHeight);
-			}
-			JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(uint textureWidth, uint textureHeight)
+			}	
+			JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(const uint textureWidth, const uint textureHeight)
 			{
 				if (textureWidth == 0 || textureHeight == 0)
 					return nullptr;
 
 				return graphicResourceM->CreateShadowMapTexture(device.get(), textureWidth, textureHeight);
 			}
-			JUserPtr<JGraphicResourceInfo> CreateShadowMapArrayTexture(uint textureWidth, uint textureHeight, const uint count)
-			{
-				if (textureWidth == 0 || textureHeight == 0 || count == 0)
-					return nullptr;
-
-				return graphicResourceM->CreateShadowMapArrayTexture(device.get(), textureWidth, textureHeight, count);
-			}
-			JUserPtr<JGraphicResourceInfo> CreateShadowMapCubeTexture(uint textureWidth, uint textureHeight)
+			JUserPtr<JGraphicResourceInfo> CreateShadowMapTextureArray(const uint textureWidth, const uint textureHeight, const uint count)
 			{
 				if (textureWidth == 0 || textureHeight == 0)
 					return nullptr;
 
-				return graphicResourceM->CreateShadowMapCubeTexture(device.get(), textureWidth, textureHeight);
+				return graphicResourceM->CreateShadowMapTextureArray(device.get(), textureWidth, textureHeight, count);
+			}
+			JUserPtr<JGraphicResourceInfo> CreateShadowMapTextureCube(const uint textureWidth, const uint textureHeight)
+			{
+				if (textureWidth == 0 || textureHeight == 0)
+					return nullptr;
+
+				return graphicResourceM->CreateShadowMapTextureCube(device.get(), textureWidth, textureHeight);
 			}
 			JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(const std::vector<Core::JStaticMeshVertex>& vertex)
 			{
@@ -455,12 +571,29 @@ namespace JinEngine
 			{
 				return graphicResourceM->CreateIndexBuffer(device.get(), index);
 			}
+			bool CreateOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
+			{
+				switch (opType)
+				{
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING:
+					return graphicResourceM->CreatePostProcessingTexture(device.get(), info);
+				default:
+					break;
+				}
+			}
 			bool DestroyGraphicTextureResource(JGraphicResourceInfo* info)
 			{
 				if (info == nullptr)
 					return false;
 
 				return graphicResourceM->DestroyGraphicTextureResource(device.get(), info);
+			}
+			bool DestroyGraphicOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE optype)
+			{
+				if (info == nullptr)
+					return false;
+
+				return graphicResourceM->DestroyGraphicOption(device.get(), info, optype);
 			}
 		public:
 			JUserPtr<JCullingInfo> CreateFrsutumCullingResultBuffer()
@@ -728,14 +861,14 @@ namespace JinEngine
 					UpdateOccCullingRequestor(drawTarget);
 					UpdateScenePassCB(drawTarget->scene);	//always update && has order dependency(Light)
 					drawTarget->EndUpdate();
-					updateHelper.EndUpdatingDrawTarget();
+					updateHelper.EndUpdatingDrawTarget();					 
 				}
 				UpdateEnginePassCB(0);	//always update
 				UpdateMaterialCB();
-
+				 
 				//Debug
-				if(hzbOccHelper->CanReadBackDebugInfo())
-					hzbOccHelper->StreamOutDebugInfo(JApplicationProject::RootPath() + L"\\Hzb.txt");
+				//if(hzbOccHelper->CanReadBackDebugInfo())
+				//	hzbOccHelper->StreamOutDebugInfo(JApplicationProject::RootPath() + L"\\Hzb.txt");
 			}
 			void UpdateReAllocCondition(JUpdateHelper::UpdateDataBase& uBase)const noexcept
 			{
@@ -831,7 +964,8 @@ namespace JinEngine
 						}
 					}
 				}
-
+				 
+				target->updateInfo->thisFrameObjCount = renderItemCount;
 				updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT].uploadCountPerTarget = renderItemCount;
 				updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT].uploadCountPerTarget = renderItemCount;
 				updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT].uploadCountPerTarget = renderItemCount;
@@ -898,7 +1032,7 @@ namespace JinEngine
 					contCash.scenePass.sceneTotalTime = 0;
 					contCash.scenePass.sceneDeltaTime = 0;
 				}
-
+				 
 				auto currPassCB = currFrameResource->GetGraphicBufferBase(J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS);
 				currPassCB->CopyData(SceneFrameIndexInterface::GetPassFrameIndex(scene.Get()), &contCash.scenePass);
 			}
@@ -1307,7 +1441,8 @@ namespace JinEngine
 					cullingM.get(),
 					currFrameResource,
 					depthMapDebug.get(),
-					depthTest.get());
+					depthTest.get(),
+					blur.get());
 
 				if (allowDrawScene)
 				{
@@ -1375,7 +1510,7 @@ namespace JinEngine
 					{
 						if (!data->canDrawThisFrame)
 							continue;
-
+						 
 						shadowMap->DrawSceneShadowMap(dataSet.shadowMapDraw.get(),
 							JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
 					}	
@@ -1434,8 +1569,7 @@ namespace JinEngine
 						depthMapDebug->DrawCamDepthDebug(dataSet.depthMapDebug.get(),
 							JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
 					}
-				}
-
+				} 
 				adapter->EndDrawSceneSingeThread(option.deviceType, *drawRefSet);
 				EndFrame(true);
 			}
@@ -1705,7 +1839,7 @@ namespace JinEngine
 						{
 							if (!data->canDrawThisFrame)
 								continue;
-
+							  
 							hdOccHelper->ExtractHDOcclusionCullingData(dataSet.hdExtract.get(),
 								JDrawHelper::CreateOccCullingHelper(helper, data->comp)); 
 						}
@@ -1779,6 +1913,7 @@ namespace JinEngine
 				depthMapDebug = adapter->CreateDepthMapDebug(option.deviceType);
 				depthTest = adapter->CreateDepthTest(option.deviceType);
 				outlineHelper = adapter->CreateOutlineDraw(option.deviceType);
+				blur = adapter->CreateBlur(option.deviceType);
 
 				csmM = std::make_unique<JCsmManager>();
 				frustumHelper = std::make_unique<JFrustumCulling>();
@@ -1798,6 +1933,9 @@ namespace JinEngine
 				device->FlushCommandQueue(); 
 				device->StartPublicCommand();
  
+				blur->Clear();
+				blur.reset();
+
 				outlineHelper->Clear();
 				outlineHelper.reset();
 
@@ -1872,6 +2010,7 @@ namespace JinEngine
 				depthMapDebug->Initialize(device.get(), graphicResourceM.get(), info);
 				depthTest->Initialize(device.get(), graphicResourceM.get(), info);
 				outlineHelper->Initialize(device.get(), graphicResourceM.get(), info);
+				blur->Initialize(device.get(), graphicResourceM.get(), info);
 				device->EndPublicCommand();
 				device->FlushCommandQueue(); 
 				return res;
@@ -1879,78 +2018,98 @@ namespace JinEngine
 		public:		
 			void LoadData()
 			{
+				JFileIOTool tool;
 				const std::wstring path = Core::JFileConstant::MakeFilePath(JApplicationProject::ConfigPath(), L"GraphicOption.txt");
-				std::wifstream stream;
-				stream.open(path, std::ios::binary | std::ios::in);
-				if (!stream.is_open())
+				if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 					return;
 
-				std::wstring guide;
-				JFileIOHelper::LoadJString(stream, guide);
-				JFileIOHelper::LoadAtomicData(stream, info.upObjCount);
-				JFileIOHelper::LoadAtomicData(stream, info.upAniCount);
-				JFileIOHelper::LoadAtomicData(stream, info.upEnginePassCount);
-				JFileIOHelper::LoadAtomicData(stream, info.upScenePassCount);
-				JFileIOHelper::LoadAtomicData(stream, info.upCameraCount);
-				JFileIOHelper::LoadAtomicData(stream, info.updLightCount);
-				JFileIOHelper::LoadAtomicData(stream, info.uppLightCount);
-				JFileIOHelper::LoadAtomicData(stream, info.upsLightCount);
-				JFileIOHelper::LoadAtomicData(stream, info.upCsmCount);
-				JFileIOHelper::LoadAtomicData(stream, info.upCubeShadowMapCount);
-				JFileIOHelper::LoadAtomicData(stream, info.upNormalShadowMapCount);
-				JFileIOHelper::LoadAtomicData(stream, info.upMaterialCount);
-				JFileIOHelper::LoadAtomicData(stream, info.binding2DTextureCapacity);
-				JFileIOHelper::LoadAtomicData(stream, info.bindingCubeMapCapacity);
-				JFileIOHelper::LoadAtomicData(stream, info.bindingShadowTextureCapacity);
-				JFileIOHelper::LoadAtomicData(stream, info.bindingShadowTextureArrayCapacity);
-				JFileIOHelper::LoadAtomicData(stream, info.bindingShadowTextureCubeCapacity);
+				tool.PushExistStack("--Info--");
+				JFileIOHelper::LoadAtomicData(tool, info.upObjCount, "UploadObjCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.upAniCount, "UploadAniCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.upEnginePassCount, "UploadEnginePassCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.upScenePassCount, "UploadScenePassCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.upCameraCount, "UploadCameraCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.updLightCount, "UploadDirectionalLightCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.uppLightCount, "UploadPointLightCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.upsLightCount, "UploadSpotLightCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.upCsmCount, "UploadCsmCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.upCubeShadowMapCount, "UploadCubeShadowMapCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.upNormalShadowMapCount, "UploadNormalShadowMapCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.upMaterialCount, "UploadMaterialCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.binding2DTextureCapacity, "Bind2DTextureCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.bindingCubeMapCapacity, "BindCubeMapCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.bindingShadowTextureCapacity, "BindShadowTextureCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.bindingShadowTextureArrayCapacity, "BindShadowTextureArrayCount:");
+				JFileIOHelper::LoadAtomicData(tool, info.bindingShadowTextureCubeCapacity, "BindShadowTextureCubeCount:");
+				tool.PopStack();
 
+				tool.PushExistStack("--Option--");
 				JGraphicOption newOption;
-				JFileIOHelper::LoadJString(stream, guide);
-				JFileIOHelper::LoadAtomicData(stream, newOption.isOcclusionQueryActivated);
-				JFileIOHelper::LoadAtomicData(stream, newOption.isHDOcclusionAcitvated);
-				JFileIOHelper::LoadAtomicData(stream, newOption.isHZBOcclusionActivated);
-				JFileIOHelper::LoadAtomicData(stream, newOption.allowHZBCorrectFail);
-				JFileIOHelper::LoadAtomicData(stream, newOption.allowDebugOutline);
-				JFileIOHelper::LoadAtomicData(stream, newOption.allowMultiThread);
-				stream.close();
+				JFileIOHelper::LoadAtomicData(tool, newOption.isOcclusionQueryActivated, "AllowOcclusionQuery:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.isHDOcclusionAcitvated, "HardwareOcclusionAcitvated:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.isHZBOcclusionActivated, "HZBOcclusionAcitvated:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.allowHZBCorrectFail, "AllowHZBCorrectFail:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.allowDebugOutline, "AllowOutline:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.allowMultiThread, "AllowMultiThread:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.useDirectionalLightPcm, "UseDirectionalLightPcm:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.useDirectionalLightPcmHighQuality, "UseDirectionalLightPcmHighQuality:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.useDirectionalLightPcss, "UseDirectionalLightPcss:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.usePointLightPcm, "UsePointLightPcm:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.usePointLightPcmHighQuality, "UsePointLightPcmHighQuality:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.usePointLightPcss, "UsePointLightPcss:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.useSpotLightPcm, "UseSpotLightPcm:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.useSpotLightPcmHighQuality, "UseSpotLightPcmHighQuality:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.useSpotLightPcss, "UseSpotLightPcss:");
+				tool.PopStack();
+				tool.Close();
 				SetOption(newOption);
 			}
 			void StoreData()
 			{
+				JFileIOTool tool;
 				const std::wstring path = Core::JFileConstant::MakeFilePath(JApplicationProject::ConfigPath(), L"GraphicOption.txt");
-				std::wofstream stream;
-				stream.open(path, std::ios::binary | std::ios::out);
-				if (!stream.is_open())
+				if (!tool.Begin(path, JFileIOTool::TYPE::JSON))
 					return;
+ 
+				tool.PushMapMember("--Info--");
+				JFileIOHelper::StoreAtomicData(tool, info.upObjCount, "UploadObjCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.upAniCount, "UploadAniCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.upEnginePassCount, "UploadEnginePassCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.upScenePassCount, "UploadScenePassCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.upCameraCount, "UploadCameraCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.updLightCount, "UploadDirectionalLightCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.uppLightCount, "UploadPointLightCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.upsLightCount, "UploadSpotLightCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.upCsmCount, "UploadCsmCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.upCubeShadowMapCount, "UploadCubeShadowMapCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.upNormalShadowMapCount, "UploadNormalShadowMapCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.upMaterialCount, "UploadMaterialCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.binding2DTextureCapacity, "Bind2DTextureCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.bindingCubeMapCapacity, "BindCubeMapCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.bindingShadowTextureCapacity, "BindShadowTextureCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.bindingShadowTextureArrayCapacity, "BindShadowTextureArrayCount:");
+				JFileIOHelper::StoreAtomicData(tool, info.bindingShadowTextureCubeCapacity, "BindShadowTextureCubeCount:");
 
-				JFileIOHelper::StoreJString(stream, L"--Info--", L"");
-				JFileIOHelper::StoreAtomicData(stream, L"UploadObjCount:", info.upObjCount);
-				JFileIOHelper::StoreAtomicData(stream, L"UploadAniCount:", info.upAniCount);
-				JFileIOHelper::StoreAtomicData(stream, L"UploadEnginePassCount:", info.upEnginePassCount);
-				JFileIOHelper::StoreAtomicData(stream, L"UploadScenePassCount:", info.upScenePassCount);
-				JFileIOHelper::StoreAtomicData(stream, L"UploadCameraCount:", info.upCameraCount);
-				JFileIOHelper::StoreAtomicData(stream, L"UploadDirectionalLightCount:", info.updLightCount);
-				JFileIOHelper::StoreAtomicData(stream, L"UploadPointLightCount:", info.uppLightCount);
-				JFileIOHelper::StoreAtomicData(stream, L"UploadSpotLightCount:", info.upsLightCount);
-				JFileIOHelper::StoreAtomicData(stream, L"UploadCsmCount:", info.upCsmCount);
-				JFileIOHelper::StoreAtomicData(stream, L"UploadCubeShadowMapCount:", info.upCubeShadowMapCount);
-				JFileIOHelper::StoreAtomicData(stream, L"UploadNormalShadowMapCount:", info.upNormalShadowMapCount);
-				JFileIOHelper::StoreAtomicData(stream, L"UploadMaterialCount:", info.upMaterialCount);
-				JFileIOHelper::StoreAtomicData(stream, L"Bind2DTextureCount:", info.binding2DTextureCapacity);
-				JFileIOHelper::StoreAtomicData(stream, L"BindCubeMapCount:", info.bindingCubeMapCapacity);
-				JFileIOHelper::StoreAtomicData(stream, L"BindShadowTextureCount:", info.bindingShadowTextureCapacity);
-				JFileIOHelper::StoreAtomicData(stream, L"BindShadowTextureArrayCount:", info.bindingShadowTextureArrayCapacity);
-				JFileIOHelper::StoreAtomicData(stream, L"BindShadowTextureCubeCount:", info.bindingShadowTextureCubeCapacity);
+				tool.PopStack();
+				tool.PushMapMember("--Option--");
+				JFileIOHelper::StoreAtomicData(tool, option.isOcclusionQueryActivated, "AllowOcclusionQuery:");
+				JFileIOHelper::StoreAtomicData(tool, option.isHDOcclusionAcitvated, "HardwareOcclusionAcitvated:");
+				JFileIOHelper::StoreAtomicData(tool, option.isHZBOcclusionActivated, "HZBOcclusionAcitvated:");
+				JFileIOHelper::StoreAtomicData(tool, option.allowHZBCorrectFail, "AllowHZBCorrectFail:");
+				JFileIOHelper::StoreAtomicData(tool, option.allowDebugOutline, "AllowOutline:");
+				JFileIOHelper::StoreAtomicData(tool, option.allowMultiThread, "AllowMultiThread:");
 
-				JFileIOHelper::StoreJString(stream, L"--Option--", L"");
-				JFileIOHelper::StoreAtomicData(stream, L"AllowOcclusionQuery:", option.isOcclusionQueryActivated);
-				JFileIOHelper::StoreAtomicData(stream, L"HardwareOcclusionAcitvated:", option.isHDOcclusionAcitvated);
-				JFileIOHelper::StoreAtomicData(stream, L"HZBOcclusionAcitvated:", option.isHZBOcclusionActivated);
-				JFileIOHelper::StoreAtomicData(stream, L"AllowHZBCorrectFail:", option.allowHZBCorrectFail);
-				JFileIOHelper::StoreAtomicData(stream, L"AllowOutline:", option.allowDebugOutline);
-				JFileIOHelper::StoreAtomicData(stream, L"AllowMultiThread:", option.allowMultiThread);
-				stream.close();
+				JFileIOHelper::StoreAtomicData(tool, option.useDirectionalLightPcm, "UseDirectionalLightPcm:");
+				JFileIOHelper::StoreAtomicData(tool, option.useDirectionalLightPcmHighQuality, "UseDirectionalLightPcmHighQuality:");
+				JFileIOHelper::StoreAtomicData(tool, option.useDirectionalLightPcss, "UseDirectionalLightPcss:");
+				JFileIOHelper::StoreAtomicData(tool, option.usePointLightPcm, "UsePointLightPcm:");
+				JFileIOHelper::StoreAtomicData(tool, option.usePointLightPcmHighQuality, "UsePointLightPcmHighQuality:");
+				JFileIOHelper::StoreAtomicData(tool, option.usePointLightPcss, "UsePointLightPcss:");
+				JFileIOHelper::StoreAtomicData(tool, option.useSpotLightPcm, "UseSpotLightPcm:");
+				JFileIOHelper::StoreAtomicData(tool, option.useSpotLightPcmHighQuality, "UseSpotLightPcmHighQuality:");
+				JFileIOHelper::StoreAtomicData(tool, option.useSpotLightPcss, "UseSpotLightPcss:");
+				tool.PopStack();
+				tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			}
 			void WriteLastRsTexture()
 			{ 
@@ -2030,29 +2189,29 @@ namespace JinEngine
 		{
 			return JinEngine::JGraphic::Instance().impl->CreateOcclusionResourceDebug(isHzb);
 		}
-		JUserPtr<JGraphicResourceInfo> ResourceInterface::Create2DTexture(const std::wstring& path, const std::wstring& oriFormat)
+		JUserPtr<JGraphicResourceInfo> ResourceInterface::Create2DTexture(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
 		{
-			return JinEngine::JGraphic::Instance().impl->Create2DTexture(path, oriFormat);
+			return JinEngine::JGraphic::Instance().impl->Create2DTexture(maxSize, path, oriFormat);
 		}
-		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateCubeMap(const std::wstring& path, const std::wstring& oriFormat)
+		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateCubeMap(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
 		{
-			return JinEngine::JGraphic::Instance().impl->CreateCubeMap(path, oriFormat);
+			return JinEngine::JGraphic::Instance().impl->CreateCubeMap(maxSize, path, oriFormat);
 		}
 		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateRenderTargetTexture(uint textureWidth, uint textureHeight)
 		{
 			return JinEngine::JGraphic::Instance().impl->CreateRenderTargetTexture(textureWidth, textureHeight);
 		}
-		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateShadowMapTexture(uint textureWidth, uint textureHeight)
+		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateShadowMapTexture(const uint textureWidth, const uint textureHeight)
 		{
 			return JinEngine::JGraphic::Instance().impl->CreateShadowMapTexture(textureWidth, textureHeight);
 		}
-		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateShadowMapArrayTexture(uint textureWidth, uint textureHeight, const uint count)
+		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateShadowMapTextureArray(const uint textureWidth, const uint textureHeight, const uint count)
 		{
-			return JinEngine::JGraphic::Instance().impl->CreateShadowMapArrayTexture(textureWidth, textureHeight, count);
+			return JinEngine::JGraphic::Instance().impl->CreateShadowMapTextureArray(textureWidth, textureHeight, count);
 		}
-		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateShadowMapCubeTexture(uint textureWidth, uint textureHeight)
+		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateShadowMapTextureCube(const uint textureWidth, const uint textureHeight)
 		{
-			return JinEngine::JGraphic::Instance().impl->CreateShadowMapCubeTexture(textureWidth, textureHeight);
+			return JinEngine::JGraphic::Instance().impl->CreateShadowMapTextureCube(textureWidth, textureHeight);
 		} 
 		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateVertexBuffer(const std::vector<Core::JStaticMeshVertex>& vertex)
 		{
@@ -2070,9 +2229,17 @@ namespace JinEngine
 		{
 			return JinEngine::JGraphic::Instance().impl->CreateIndexBuffer(index);
 		}
+		bool ResourceInterface::CreateOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
+		{
+			return JinEngine::JGraphic::Instance().impl->CreateOption(info, opType);
+		}
 		bool ResourceInterface::DestroyGraphicTextureResource(JGraphicResourceInfo* info)
 		{
 			return JinEngine::JGraphic::Instance().impl->DestroyGraphicTextureResource(info);
+		}
+		bool ResourceInterface::DestroyGraphicOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE optype)
+		{
+			return JinEngine::JGraphic::Instance().impl->DestroyGraphicOption(info, optype);
 		}
 		JOwnerPtr<JGraphicShaderDataHolderBase> ResourceInterface::StuffGraphicShaderPso(const JGraphicShaderInitData& shaderData)
 		{

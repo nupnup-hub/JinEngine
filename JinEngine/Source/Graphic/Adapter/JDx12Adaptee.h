@@ -20,6 +20,7 @@ namespace JinEngine
 			std::unique_ptr<JHardwareOccCulling> CreateHdOcc() final;
 			std::unique_ptr<JHZBOccCulling> CreateHzbOcc() final;
 			std::unique_ptr<JOutline> CreateOutlineDraw() final;
+			std::unique_ptr<JBlur> CreateBlur()final;
 		public:
 			//main thread(use single thread)
 			bool BeginDrawSceneSingleThread(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet) final;

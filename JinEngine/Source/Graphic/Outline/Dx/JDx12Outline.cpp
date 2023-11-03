@@ -5,7 +5,7 @@
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"
-#include"../../Utility/JD3DUtility.h"
+#include"../../Utility/Dx/JD3DUtility.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../Object/Component/Camera/JCamera.h"
 #include"../../../Object/Resource/JResourceManager.h"
@@ -159,8 +159,8 @@ namespace JinEngine
 			CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, (uint)samDesc.size(), samDesc.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 			// create a root signature with a single slot which points to a descriptor length consisting of a single constant buffer
-			ComPtr<ID3DBlob> serializedRootSig = nullptr;
-			ComPtr<ID3DBlob> errorBlob = nullptr;
+			Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+			Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 			HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
 				serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
 
@@ -183,8 +183,8 @@ namespace JinEngine
 			std::wstring gShaderPath = JApplicationEngine::ShaderPath() + L"\\Outline.hlsl";
 
 			gShaderData = std::make_unique<JDx12GraphicShaderDataHolder>();
-			gShaderData->vs = JD3DUtility::CompileShader(gShaderPath, &macro, "VS", "vs_5_1");
-			gShaderData->ps = JD3DUtility::CompileShader(gShaderPath, &macro, "PS", "ps_5_1");
+			gShaderData->vs = JDxShaderDataUtil::CompileShader(gShaderPath, &macro, "VS", "vs_5_1");
+			gShaderData->ps = JDxShaderDataUtil::CompileShader(gShaderPath, &macro, "PS", "ps_5_1");
 			gShaderData->inputLayout =
 			{
 				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },

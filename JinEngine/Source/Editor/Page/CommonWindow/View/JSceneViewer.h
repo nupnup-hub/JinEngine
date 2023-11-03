@@ -38,8 +38,8 @@ namespace JinEngine
 			void DoActivate() noexcept final;
 			void DoDeActivate() noexcept final;
 		private:
-			void StoreEditorWindow(std::wofstream& stream)final;
-			void LoadEditorWindow(std::wifstream& stream)final; 
+			void LoadEditorWindow(JFileIOTool& tool)final;
+			void StoreEditorWindow(JFileIOTool& tool)final;
 		};
 	}
 }

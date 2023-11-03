@@ -10,6 +10,8 @@ namespace JinEngine
 	class JAnimationFSMdiagram;
 	class JAnimationFSMstate;
 	class JAnimationUpdateData;
+
+	class JFileIOTool;
 	class JAnimationFSMstatePrivate : public Core::JFSMstatePrivate
 	{
 	public:
@@ -18,11 +20,11 @@ namespace JinEngine
 		private:
 			friend class JAnimationFSMdiagram;
 		private:
-			virtual Core::J_FILE_IO_RESULT LoadAssetData(std::wifstream& stream, const JUserPtr<JAnimationFSMstate>& state) = 0;	//load state data and create transition
-			virtual Core::J_FILE_IO_RESULT StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMstate>& state) = 0;
+			virtual Core::J_FILE_IO_RESULT LoadAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMstate>& state) = 0;	//load state data and create transition
+			virtual Core::J_FILE_IO_RESULT StoreAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMstate>& state) = 0;
 		protected:
-			static Core::J_FILE_IO_RESULT LoadAssetCommonData(std::wifstream& stream, const JUserPtr<JAnimationFSMstate>& state);
-			static Core::J_FILE_IO_RESULT StoreAssetCommonData(std::wofstream& stream, const JUserPtr<JAnimationFSMstate>& state);
+			static Core::J_FILE_IO_RESULT LoadAssetCommonData(JFileIOTool& tool, const JUserPtr<JAnimationFSMstate>& state);
+			static Core::J_FILE_IO_RESULT StoreAssetCommonData(JFileIOTool& tool, const JUserPtr<JAnimationFSMstate>& state);
 		};
 		class CreateInstanceInterface : public JFSMstatePrivate::CreateInstanceInterface
 		{

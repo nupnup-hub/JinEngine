@@ -26,7 +26,7 @@ namespace JinEngine
 			float m10, float m11, float m12, float m13,
 			float m20, float m21, float m22, float m23,
 			float m30, float m31, float m32, float m33); 
-		JMatrix4x4(const JVector4<float>(&v)[4]);  
+		JMatrix4x4(const JVector4<float>(&v)[4]);   
 	public:
 		float operator() (size_t Row, size_t Column)const noexcept;
 		float& operator() (size_t Row, size_t Column)noexcept;

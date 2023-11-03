@@ -1,6 +1,6 @@
+#pragma once 
 #include"../Core/JCoreEssential.h"
 #include"../Core/Math/JVector.h"
-#pragma once 
 
 #define _DEBUG
 #ifdef _DEBUG
@@ -25,6 +25,7 @@ namespace JinEngine
 			static constexpr int commonStencilRef = 1;
 			static constexpr int outlineStencilRef= 2;
 			static constexpr int outlineStencilRange = 7;
+			static constexpr int cubeMapPlaneCount = 6;
 			static const JVector4F backBufferClearColor = JVector4F(0.45490196f, 0.54117647f, 0.63137255f, 1.0f);
 		}
 	}

@@ -1,7 +1,6 @@
 #pragma once
 #include"JAcceleratorType.h" 
-#include"JAcceleratorOption.h"
-#include"../../../../Core/Geometry/JCullingFrustum.h" 
+#include"JAcceleratorOption.h" 
 #include"../../../../Core/Geometry/JRay.h"
 #include"../../../../Core/Geometry/JBBox.h"
 #include"../../../../Core/JCoreEssential.h"

@@ -417,6 +417,8 @@ namespace JinEngine
 						return J_PARAMETER_TYPE::XMFloat4;
 					else if constexpr (JUserPtrDetermine<T>::value)
 						return  J_PARAMETER_TYPE::USER_PTR;
+					else if constexpr (JWeakPtrDetermine<T>::value)
+						return  J_PARAMETER_TYPE::WEAK_PTR;
 					else if constexpr (StdVectorDetermine<T>::value)
 						return  J_PARAMETER_TYPE::STD_VECTOR;
 					else if constexpr (StdDequeDetermine<T>::value)
@@ -442,6 +444,11 @@ namespace JinEngine
 		}
 		struct JParameterHint
 		{
+		public:
+			enum class TEMPLATE_TYPE
+			{
+
+			};
 		public:
 			const std::string name;  
 			//Remove_All<T> typeid name... if vector<T> => T name same other template
@@ -681,7 +688,7 @@ namespace JinEngine
 		static void CreateParameterHint(std::index_sequence<Is...>, std::vector<JParameterHint>& hintVec, const std::vector<std::string>& rawPramVec)
 		{
 			//std::index_sequence<5> => 5	std::index_sequence<0, 1, 2> => 0, 1, 2
-			//std::make_index_sequence<1> => std::index_sequence<0>	std::make_index_sequence<3> => std::index_sequence<0, 1, 2>
+			//std::make_index_sequence<1> => std::index_sequence<0>,	std::make_index_sequence<3> => std::index_sequence<0, 1, 2>
 			std::string sum;
 			((hintVec.emplace_back(CreateParameterHint<Param>(rawPramVec[Is]))), ...);
 		}

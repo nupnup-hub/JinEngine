@@ -86,17 +86,17 @@ namespace JinEngine
 				transform->GetUp() * JVector3F::NegativeOne());
 			return m.LoadXM();
 		}
-		static XMMATRIX CalProj(const float range, const float angle, const float aspect)noexcept
+		static XMMATRIX CalProj(const float fNear, const float fFar, const float angle, const float aspect)noexcept
 		{  
 			//Caution!
 			//Near값은 1보다 작을시 shadow map에 그려지는 물체들의 깊이값이 비정확해진다.
-			return XMMatrixPerspectiveFovLH(angle, aspect, Constants::lightNear, range);
+			return XMMatrixPerspectiveFovLH(angle, aspect, fNear, fFar);
 		} 
 	}
 
 	class JSpotLight::JSpotLightImpl : public Core::JTypeImplBase,
 		public LitFrameUpdate,
-		public Graphic::JGraphicWideSingleResourceHolder<2>,
+		public Graphic::JGraphicWideSingleResourceHolder<3>,	//shadowMap, debug, rtv(for vsm)
 		public Graphic::JGraphicDrawListCompInterface,
 		public Graphic::JCullingInterface
 	{
@@ -195,13 +195,9 @@ namespace JinEngine
 	public:
 		//value가 bool type일경우에만 justCallFunc을 사용할수있다
 		//justCallFunc는 값을 변경하지않고 함수내에서 value per 기능을 수행한다
-		void SetShadow(const bool value)
+		void SetShadow(const bool value, const bool isManual = false)noexcept
 		{
-			SetShadowEx(value, false);
-		}
-		void SetShadowEx(const bool value, const bool justCallFunc)noexcept
-		{
-			if (justCallFunc || thisPointer->IsActivated())
+			if (thisPointer->IsActivated() || isManual)
 			{
 				if (thisPointer->IsShadowActivated())
 					CreateShadowMapResource();
@@ -341,7 +337,7 @@ namespace JinEngine
 		{
 			RegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
 			if (thisPointer->IsShadowActivated())
-				SetShadowEx(true, true);
+				SetShadow(true, true);
 			if (allowFrustumCulling)
 				SetAllowFrustumCulling(true, true);
 		}
@@ -350,7 +346,7 @@ namespace JinEngine
 			//has order dependency
 			DeRegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
 			if (thisPointer->IsShadowActivated())
-				SetShadowEx(false, true);
+				SetShadow(false, true);
 			if (allowFrustumCulling)
 				SetAllowFrustumCulling(false, true);
 			DestroyAllCullingData();
@@ -361,16 +357,21 @@ namespace JinEngine
 		{
 			if (IsShadowActivated())
 				constant.shadowMapTransform.StoreXM(XMMatrixTranspose(GetShadowMapTransform()));
-
+			  
 			constant.color = thisPointer->GetColor(); 
-			constant.range = range;
-			constant.position = Private::CalLightWorldPos(GetTransform());
-			constant.direction = Private::CalLightWorldDir(GetTransform());
 			constant.power = power;
+			constant.position = Private::CalLightWorldPos(GetTransform());
+			constant.frustumNear = GetFrustumNear();
+			constant.direction = Private::CalLightWorldDir(GetTransform());
+			constant.frustumFar = GetFrustumFar();
 			constant.innerConeAngle = cos(innerConeAngle);
 			constant.outerConeAngle = cos(outerConeAngle);
+			constant.penumbraScale = thisPointer->GetPenumbraWidth();
+			constant.penumbraBlockerScale = thisPointer->GetPenumbraBlockerWidth();
 			constant.shadowMapIndex = IsShadowActivated() ? GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0) : 0;
 			constant.hasShadowMap = IsShadowActivated();
+			constant.shadowMapSize = thisPointer->GetShadowMapSize();
+			constant.shadowMapInvSize = 1.0f / constant.shadowMapSize;
 			SpotLitFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JShadowMapDrawConstants& constant)noexcept final
@@ -381,7 +382,7 @@ namespace JinEngine
 		void UpdateLightTransform()noexcept
 		{
 			view.StoreXM(Private::CalView(GetTransform()));
-			proj.StoreXM(Private::CalProj(range, outerConeAngle * 2, 1));
+			proj.StoreXM(Private::CalProj(GetFrustumNear(), GetFrustumFar(), outerConeAngle * 2, 1));
 		}
 	public:
 		static bool DoCopy(JSpotLight* from, JSpotLight* to)
@@ -647,19 +648,19 @@ namespace JinEngine
 		float sOuterConeAngle;
 
 		auto loadData = static_cast<JSpotLight::LoadData*>(data);
-		std::wifstream& stream = loadData->stream;
+		JFileIOTool& tool = loadData->tool;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
-		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
+		JObjectFileIOHelper::LoadComponentIden(tool, guid, flag, isActivated);
 		auto idenUser = lPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JSpotLight::InitData>(guid, flag, owner), &lPrivate);
 		JUserPtr<JSpotLight> litUser;
 		litUser.ConnnectChild(idenUser);
 
-		JLightPrivate::AssetDataIOInterface::LoadLightData(stream, litUser);
-		JObjectFileIOHelper::LoadAtomicData(stream, sPower);
-		JObjectFileIOHelper::LoadAtomicData(stream, sRange);
-		JObjectFileIOHelper::LoadAtomicData(stream, sInnerAngle);
-		JObjectFileIOHelper::LoadAtomicData(stream, sOuterConeAngle);
+		JLightPrivate::AssetDataIOInterface::LoadLightData(tool, litUser);
+		JObjectFileIOHelper::LoadAtomicData(tool, sPower, "Power:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sRange, "Range:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sInnerAngle, "InnerConeAngle:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sOuterConeAngle, "OuterConeAngle:");
 
 		litUser->SetPower(sPower);
 		litUser->SetRange(sRange);
@@ -684,14 +685,14 @@ namespace JinEngine
 		lit.ConnnectChild(storeData->obj);
 
 		JSpotLight::JSpotLightImpl* impl = lit->impl.get();
-		std::wofstream& stream = storeData->stream;
+		JFileIOTool& tool = storeData->tool;
 
-		JObjectFileIOHelper::StoreComponentIden(stream, lit.Get());
-		JLightPrivate::AssetDataIOInterface::StoreLightData(stream, lit);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"Power:", impl->power);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"Range:", impl->range);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"InnerConeAngle:", impl->innerConeAngle);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"OuterConeAngle:", impl->outerConeAngle);
+		JObjectFileIOHelper::StoreComponentIden(tool, lit.Get());
+		JLightPrivate::AssetDataIOInterface::StoreLightData(tool, lit);
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->power, "Power:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->range, "Range:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->innerConeAngle, "InnerConeAngle:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->outerConeAngle, "OuterConeAngle:");
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}

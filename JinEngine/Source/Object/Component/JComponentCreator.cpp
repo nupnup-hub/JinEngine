@@ -31,7 +31,7 @@ namespace JinEngine
 	}
 	JUserPtr<JRenderItem> JComponentCreatorInterface::CreateRenderItem(const JUserPtr<JGameObject>& owner,
 		const JUserPtr<JMeshGeometry>& mesh,  
-		const D3D12_PRIMITIVE_TOPOLOGY primitiveType,
+		const J_RENDER_PRIMITIVE primitiveType,
 		const J_RENDER_LAYER renderLayer,
 		const J_RENDERITEM_ACCELERATOR_MASK acceleratorMask)
 	{
@@ -51,7 +51,7 @@ namespace JinEngine
 	JUserPtr<JRenderItem> JComponentCreatorInterface::CreateRenderItem(const JUserPtr<JGameObject>& owner,
 		const JUserPtr<JMeshGeometry>& mesh,
 		std::vector<JUserPtr<JMaterial>>& mat,
-		const D3D12_PRIMITIVE_TOPOLOGY primitiveType,
+		const J_RENDER_PRIMITIVE primitiveType,
 		const J_RENDER_LAYER renderLayer,
 		const J_RENDERITEM_ACCELERATOR_MASK acceleratorMask)
 	{

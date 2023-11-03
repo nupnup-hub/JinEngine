@@ -6,7 +6,7 @@
 #include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
 #include"../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h" 
-#include"../../Utility/JD3DUtility.h" 
+#include"../../Utility/Dx/JD3DUtility.h" 
 #include"../../../Application/JApplicationEngine.h" 
 #include"../../../Core/Exception/JExceptionMacro.h"  
 #include"../../../Object/Component/Camera/JCamera.h"
@@ -19,6 +19,13 @@ using namespace Microsoft::WRL;
 
 namespace JinEngine::Graphic
 {
+	namespace
+	{
+		static constexpr uint srcTextureHandleIndex = 0;
+		static constexpr uint destTextureHandleIndex = srcTextureHandleIndex + 1;
+		static constexpr uint settingCbIndex = destTextureHandleIndex + 1;
+		static constexpr uint slotCount = settingCbIndex + 1;
+	}
 	void JDx12DepthMapDebug::Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info)
 	{
 		if (!IsSameDevice(device) || !IsSameDevice(gM))
@@ -166,8 +173,7 @@ namespace JinEngine::Graphic
 		commandList->SetComputeRootDescriptorTable(0, srcHandle);
 		commandList->SetComputeRootDescriptorTable(1, destHandle);
 
-		commandList->SetComputeRoot32BitConstants(2, 1, &size.x, 0);
-		commandList->SetComputeRoot32BitConstants(2, 1, &size.y, 1);
+		commandList->SetComputeRoot32BitConstants(2, 2, &size, 0); 
 		commandList->SetComputeRoot32BitConstants(2, 1, &nearF, 2);
 		commandList->SetComputeRoot32BitConstants(2, 1, &farF, 3);
 		commandList->SetPipelineState(linearDepthMapShaderData->pso.Get());
@@ -189,13 +195,13 @@ namespace JinEngine::Graphic
 		//commandList->RSSetScissorRects(1, &mScissorRect);
 
 		commandList->SetComputeRootSignature(cRootSignature.Get());
-		commandList->SetComputeRootDescriptorTable(0, srcHandle);
-		commandList->SetComputeRootDescriptorTable(1, destHandle);
+		commandList->SetComputeRootDescriptorTable(srcTextureHandleIndex, srcHandle);
+		commandList->SetComputeRootDescriptorTable(destTextureHandleIndex, destHandle);
 
-		commandList->SetComputeRoot32BitConstants(2, 1, &size.x, 0);
-		commandList->SetComputeRoot32BitConstants(2, 1, &size.y, 1);
-		commandList->SetComputeRoot32BitConstants(2, 1, &nearF, 2);
-		commandList->SetComputeRoot32BitConstants(2, 1, &farF, 3);
+		commandList->SetComputeRoot32BitConstants(settingCbIndex, 1, &size.x, 0);
+		commandList->SetComputeRoot32BitConstants(settingCbIndex, 1, &size.y, 1);
+		commandList->SetComputeRoot32BitConstants(settingCbIndex, 1, &nearF, 2);
+		commandList->SetComputeRoot32BitConstants(settingCbIndex, 1, &farF, 3);
 		if (isPerspective)
 			commandList->SetPipelineState(nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE]->pso.Get());
 		else
@@ -204,9 +210,7 @@ namespace JinEngine::Graphic
 		commandList->Dispatch(1, 512, 1);
 	}
 	void JDx12DepthMapDebug::BuildComputeResource(ID3D12Device* device, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthStencilFormat)
-	{
-		static constexpr int slotCount = 3;
-
+	{ 
 		CD3DX12_DESCRIPTOR_RANGE depthMapTable;
 		depthMapTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
@@ -214,9 +218,9 @@ namespace JinEngine::Graphic
 		wTextureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
 
 		CD3DX12_ROOT_PARAMETER slotRootParameter[slotCount];
-		slotRootParameter[0].InitAsDescriptorTable(1, &depthMapTable);
-		slotRootParameter[1].InitAsDescriptorTable(1, &wTextureTable);
-		slotRootParameter[2].InitAsConstants(4, 0);
+		slotRootParameter[srcTextureHandleIndex].InitAsDescriptorTable(1, &depthMapTable);
+		slotRootParameter[destTextureHandleIndex].InitAsDescriptorTable(1, &wTextureTable);
+		slotRootParameter[settingCbIndex].InitAsConstants(4, 0);
 
 		// 생성자 대입자 결과가 다름
 		std::vector< CD3DX12_STATIC_SAMPLER_DESC> samDesc
@@ -257,17 +261,17 @@ namespace JinEngine::Graphic
 		std::wstring computeShaderPath = JApplicationEngine::ShaderPath() + L"\\DepthMapDebug.hlsl";
 
 		linearDepthMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
-		linearDepthMapShaderData->cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "LinearMap", "cs_5_1");
+		linearDepthMapShaderData->cs = JDxShaderDataUtil::CompileShader(computeShaderPath, &macro, "LinearMap", "cs_5_1");
 
 		std::vector<JMacroSet> set; 
 		set.push_back(JMacroSet{ "PERSPECTIVE_DEPTH_MAP", "1"});
 		std::vector<D3D_SHADER_MACRO> macroVec = JDxShaderDataUtil::ToD3d12Macro(set);
 
 		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE] = std::make_unique<JDx12ComputeShaderDataHolder>();
-		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE]->cs = JD3DUtility::CompileShader(computeShaderPath, macroVec.data(), "NonLinearMap", "cs_5_1");
+		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE]->cs = JDxShaderDataUtil::CompileShader(computeShaderPath, macroVec.data(), "NonLinearMap", "cs_5_1");
 
 		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC] = std::make_unique<JDx12ComputeShaderDataHolder>();
-		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC]->cs = JD3DUtility::CompileShader(computeShaderPath, &macro, "NonLinearMap", "cs_5_1");
+		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC]->cs = JDxShaderDataUtil::CompileShader(computeShaderPath, &macro, "NonLinearMap", "cs_5_1");
 
 		D3D12_COMPUTE_PIPELINE_STATE_DESC newShaderPso;
 		ZeroMemory(&newShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));

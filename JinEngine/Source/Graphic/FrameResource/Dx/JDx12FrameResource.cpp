@@ -110,7 +110,7 @@ namespace JinEngine::Graphic
 		pLightBuffer = std::make_unique<JDx12GraphicBuffer<JPointLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
 		sLightBuffer = std::make_unique<JDx12GraphicBuffer<JSpotLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
 		hzbOccObjectBuffer = std::make_unique<JDx12GraphicBuffer<JHzbOccObjectConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
-
+     
 		objectCB = std::make_unique<JDx12GraphicBuffer<JObjectConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
 		skinnedCB = std::make_unique<JDx12GraphicBuffer<JAnimationConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION), J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
 		enginePassCB = std::make_unique<JDx12GraphicBuffer<JEnginePassConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::ENGINE_PASS), J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
@@ -200,11 +200,11 @@ namespace JinEngine::Graphic
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 	JGraphicBufferBase* JDx12FrameResource::GetGraphicBufferBase(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept
-	{
+	{ 
 		return bufferVec[(uint)type];
 	}
 	uint JDx12FrameResource::GetElementCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept
-	{
+	{ 
 		return bufferVec[(uint)type]->GetElementCount();
 	}
 	GraphicFence JDx12FrameResource::GetFenceValue()const noexcept

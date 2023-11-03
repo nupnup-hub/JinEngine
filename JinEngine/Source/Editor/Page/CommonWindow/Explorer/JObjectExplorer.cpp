@@ -9,6 +9,7 @@
 #include"../../../Popup/JEditorPopupNode.h"   
 #include"../../../EditTool/JEditorRenameHelper.h"
 #include"../../../EditTool/JEditorSearchBarHelper.h"
+#include"../../../EditTool/JEditorTreeStructure.h"
 #include"../../../../Object/Component/JComponentCreator.h" 
 #include"../../../../Object/GameObject/JGameObject.h" 
 #include"../../../../Object/GameObject/JGameObjectPrivate.h"
@@ -33,7 +34,7 @@ namespace JinEngine
 			static const JVector4<float> deActColor = JVector4<float>(0.7f, 0.15f, 0.15f, 0.7f);
 		}
 
-		class JObjectExplorerCreationImpl
+		class JObjectExplorerCreationFunctor
 		{
 		private:
 			using GameObjectCreationInterface = JEditorCreationRequestor<JEditorObjectCreateInterface<const size_t, const J_DEFAULT_SHAPE>>;
@@ -68,7 +69,7 @@ namespace JinEngine
 			std::unique_ptr<RequestLightCreationEvF::Functor> reqLightCreationEvF;
 			std::unique_ptr<RequestDestructionEvF::Functor> reqDestructionEvF;
 		public:
-			JObjectExplorerCreationImpl(RequestGObjCreationEvF::Ptr reqGObjCreationEvPtr,
+			JObjectExplorerCreationFunctor(RequestGObjCreationEvF::Ptr reqGObjCreationEvPtr,
 				RequestModelCreationEvF::Ptr reqModelCreationEvPtr,
 				RequestLightCreationEvF::Ptr reqLightCreationEvPtr,
 				RequestDestructionEvF::Ptr reqDestructionEvPtr)
@@ -78,13 +79,13 @@ namespace JinEngine
 				reqLightCreationEvF = std::make_unique<RequestLightCreationEvF::Functor>(reqLightCreationEvPtr);
 				reqDestructionEvF = std::make_unique<RequestDestructionEvF::Functor>(reqDestructionEvPtr);
 			}
-			~JObjectExplorerCreationImpl()
+			~JObjectExplorerCreationFunctor()
 			{
 				dS.Clear();
 			}
 		};
 
-		class JObjectExplorerSettingImpl
+		class JObjectExplorerSettingFunctor
 		{
 		public:
 			using ChangeParentF = Core::JSFunctorType<void, JObjectExplorer*, JUserPtr<JGameObject>, JUserPtr<JGameObject>>;
@@ -99,13 +100,17 @@ namespace JinEngine
 		JObjectExplorer::JObjectExplorer(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute,
 			const J_EDITOR_PAGE_TYPE pageType,
-			const J_EDITOR_WINDOW_FLAG windowFlag)
+			const J_EDITOR_WINDOW_FLAG windowFlag,
+			const std::vector<size_t>& listenWindowGuidVec)
 			:JEditorWindow(name, std::move(attribute), pageType, windowFlag)
 		{
 			editorString = std::make_unique<JEditorStringMap>();
 			renameHelper = std::make_unique<JEditorRenameHelper>();
 			searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
+			treeStrcture = std::make_unique<JEditorTreeStructure>();
 
+			for (const auto& data : listenWindowGuidVec)
+				PushOtherWindowGuidForListenEv(data);
 			InitializeCreationImpl();
 			InitializeSettingImpl();
 
@@ -171,28 +176,28 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Rename JGameObject", J_EDITOR_POPUP_NODE_TYPE::LEAF, explorerPopupRootNode.get(), false);
 			editorString->AddString(renameNode->GetNodeId(), { "Rename", u8"»õÀÌ¸§" });
 
-			using RequestGObjCreationEvF = JObjectExplorerCreationImpl::RequestGObjCreationEvF;
-			using RequestLightCreationEvF = JObjectExplorerCreationImpl::RequestLightCreationEvF;
-			using RequestDestructionEvF = JObjectExplorerCreationImpl::RequestDestructionEvF;
-			using RenameF = JObjectExplorerSettingImpl::RenameF;
+			using RequestGObjCreationEvF = JObjectExplorerCreationFunctor::RequestGObjCreationEvF;
+			using RequestLightCreationEvF = JObjectExplorerCreationFunctor::RequestLightCreationEvF;
+			using RequestDestructionEvF = JObjectExplorerCreationFunctor::RequestDestructionEvF;
+			using RenameF = JObjectExplorerSettingFunctor::RenameF;
 
 			//register popup callback
 			//enable = condition
 			//select = doSomething
-			createCubeNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::CUBE));
-			createGridNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::GRID));
-			createCyilinderNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::CYILINDER));
-			createSphereNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::SPHERE));
-			createQuadNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::QUAD));
-			createEmptyNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creationImpl->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::EMPTY));
+			createCubeNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creation->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::CUBE));
+			createGridNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creation->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::GRID));
+			createCyilinderNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creation->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::CYILINDER));
+			createSphereNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creation->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::SPHERE));
+			createQuadNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creation->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::QUAD));
+			createEmptyNode->RegisterSelectBind(std::make_unique<RequestGObjCreationEvF::CompletelyBind>(*creation->reqGObjCreationEvF, this, J_DEFAULT_SHAPE::EMPTY));
 
-			createDirectionalLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creationImpl->reqLightCreationEvF, this, J_LIGHT_TYPE::DIRECTIONAL));
-			createPointLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creationImpl->reqLightCreationEvF, this, J_LIGHT_TYPE::POINT));
-			createSpotLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creationImpl->reqLightCreationEvF, this, J_LIGHT_TYPE::SPOT));
+			createDirectionalLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creation->reqLightCreationEvF, this, J_LIGHT_TYPE::DIRECTIONAL));
+			createPointLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creation->reqLightCreationEvF, this, J_LIGHT_TYPE::POINT));
+			createSpotLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creation->reqLightCreationEvF, this, J_LIGHT_TYPE::SPOT));
 
-			destroyNode->RegisterSelectBind(std::make_unique<RequestDestructionEvF::CompletelyBind>(*creationImpl->reqDestructionEvF, this));
+			destroyNode->RegisterSelectBind(std::make_unique<RequestDestructionEvF::CompletelyBind>(*creation->reqDestructionEvF, this));
 			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
-			renameNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*settingImpl->renameF, this));
+			renameNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*setting->renameF, this));
 			renameNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
 
 			explorerPopup = std::make_unique<JEditorPopupMenu>("explorerPopup", std::move(explorerPopupRootNode));
@@ -213,12 +218,12 @@ namespace JinEngine
 		}
 		JObjectExplorer::~JObjectExplorer()
 		{
-			creationImpl.reset();
-			settingImpl.reset();
+			creation.reset();
+			setting.reset();
 		}
 		void JObjectExplorer::InitializeCreationImpl()
 		{
-			if (creationImpl != nullptr)
+			if (creation != nullptr)
 				return;
 
 			//register request
@@ -239,7 +244,7 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
 				 
-				JObjectExplorerCreationImpl* impl = explorer->creationImpl.get();
+				JObjectExplorerCreationFunctor* impl = explorer->creation.get();
 				impl->gameObject.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, parent->GetGuid(), std::move(shapeType));
 			};
 			auto requestCreateModelLam = [](JObjectExplorer* explorer, JUserPtr<JGameObject> parent, JUserPtr<JMeshGeometry> mesh)
@@ -257,7 +262,7 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
 
-				JObjectExplorerCreationImpl* impl = explorer->creationImpl.get();
+				JObjectExplorerCreationFunctor* impl = explorer->creation.get();
 				impl->model.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, parent->GetGuid(), mesh->GetGuid());
 			};
 			auto requestCreateLightLam = [](JObjectExplorer* explorer, J_LIGHT_TYPE lightType)
@@ -276,7 +281,7 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
 
-				JObjectExplorerCreationImpl* impl = explorer->creationImpl.get();
+				JObjectExplorerCreationFunctor* impl = explorer->creation.get();
 				impl->light.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint, parent->GetGuid(), std::move(lightType));
 			};
 			auto requestDestroyLam = [](JObjectExplorer* explorer)
@@ -295,10 +300,10 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, explorer->GetClearTaskFunctor());
 
-				JObjectExplorerCreationImpl* impl = explorer->creationImpl.get();
+				JObjectExplorerCreationFunctor* impl = explorer->creation.get();
 				impl->destructuion.RequestDestroyObject(impl->dS, true, creationHint, objVec, requestHint);
 			};
-			creationImpl = std::make_unique<JObjectExplorerCreationImpl>(requestCreateGObjLam, requestCreateModelLam, requestCreateLightLam, requestDestroyLam);
+			creation = std::make_unique<JObjectExplorerCreationFunctor>(requestCreateGObjLam, requestCreateModelLam, requestCreateLightLam, requestDestroyLam);
 
 			//register can create & create
 			auto canCreationGobjLam = [](const size_t guid, const JEditorCreationHint& creationHint, const size_t parentGuid, const J_DEFAULT_SHAPE shapeType)
@@ -357,12 +362,12 @@ namespace JinEngine
 				JGCI::CreateLight(parentUserPtr, guid, OBJECT_FLAG_NONE, lightType);
 			};
 
-			creationImpl->gameObject.GetCreationInterface()->RegisterCanCreationF(canCreationGobjLam);
-			creationImpl->gameObject.GetCreationInterface()->RegisterObjectCreationF(creationGobjLam);
-			creationImpl->model.GetCreationInterface()->RegisterCanCreationF(canCreationModelLam);
-			creationImpl->model.GetCreationInterface()->RegisterObjectCreationF(creationModelLam);
-			creationImpl->light.GetCreationInterface()->RegisterCanCreationF(canCreateLightLam);
-			creationImpl->light.GetCreationInterface()->RegisterObjectCreationF(createLightLam);
+			creation->gameObject.GetCreationInterface()->RegisterCanCreationF(canCreationGobjLam);
+			creation->gameObject.GetCreationInterface()->RegisterObjectCreationF(creationGobjLam);
+			creation->model.GetCreationInterface()->RegisterCanCreationF(canCreationModelLam);
+			creation->model.GetCreationInterface()->RegisterObjectCreationF(creationModelLam);
+			creation->light.GetCreationInterface()->RegisterCanCreationF(canCreateLightLam);
+			creation->light.GetCreationInterface()->RegisterObjectCreationF(createLightLam);
 		}
 		void JObjectExplorer::InitializeSettingImpl()
 		{
@@ -383,10 +388,10 @@ namespace JinEngine
 				else
 					JGameObjectPrivate::ActivateInterface::DeActivate(obj);
 			};
-			settingImpl = std::make_unique<JObjectExplorerSettingImpl>();
-			settingImpl->changeParentF = std::make_unique<JObjectExplorerSettingImpl::ChangeParentF::Functor>(changeParentLam);
-			settingImpl->renameF = std::make_unique<JObjectExplorerSettingImpl::RenameF::Functor>(renameLam);
-			settingImpl->activateF = std::make_unique<JObjectExplorerSettingImpl::ActivateF::Functor>(activateLam);
+			setting = std::make_unique<JObjectExplorerSettingFunctor>();
+			setting->changeParentF = std::make_unique<JObjectExplorerSettingFunctor::ChangeParentF::Functor>(changeParentLam);
+			setting->renameF = std::make_unique<JObjectExplorerSettingFunctor::RenameF::Functor>(renameLam);
+			setting->activateF = std::make_unique<JObjectExplorerSettingFunctor::ActivateF::Functor>(activateLam);
 		}
 		J_EDITOR_WINDOW_TYPE JObjectExplorer::GetWindowType()const noexcept
 		{
@@ -408,7 +413,9 @@ namespace JinEngine
 			{
 				UpdateMouseClick();
 				searchBarHelper->UpdateSearchBar();
+				treeStrcture->Begin();
 				BuildObjectExplorer();
+				treeStrcture->End();
 			}
 			CloseWindow();
 		}
@@ -447,19 +454,15 @@ namespace JinEngine
 				{
 					//can't select and hover
 					//fixed hover object when start rename ev
-					PushTreeNodeColorSet(isActivated, isSelected); 
-					isNodeOpen = JGui::IsTreeNodeOpend(JGui::CreateGuiLabel(objName, objGuid, GetName() + "TreeNode"), baseFlags);
-					PopTreeNodeColorSet(isActivated, isSelected);
+					isNodeOpen = treeStrcture->CheckTreeNodeIsOpen(JGui::CreateGuiLabel(objName, objGuid, GetName() + "TreeNode"), baseFlags, IsFocus(), isActivated, isSelected);
 					DisplayActSignalWidget(gObj, false);
 					renameHelper->Update(isNodeOpen);
 				}
 				else
 				{ 
 					if (isAcivatedSearch)
-						JGui::SetNextItemOpen(true);		
-					PushTreeNodeColorSet(isActivated, isSelected);
-					isNodeOpen = JGui::TreeNodeEx(JGui::CreateGuiLabel(objName, objGuid, GetName() + "TreeNode"), baseFlags);
-					PopTreeNodeColorSet(isActivated, isSelected);
+						JGui::SetNextItemOpen(true);	
+					isNodeOpen = treeStrcture->DisplayTreeNode(JGui::CreateGuiLabel(objName, objGuid, GetName() + "TreeNode"), baseFlags, IsFocus(), isActivated, isSelected);
 					if (JGui::IsLastItemHovered())
 						SetHoveredObject(gObj);
 
@@ -483,13 +486,13 @@ namespace JinEngine
 								JUserPtr<JGameObject> selectedObj; 
 								selectedObj.ConnnectChild(dragResult);
 
-								using ChangeParentF = JObjectExplorerSettingImpl::ChangeParentF;
+								using ChangeParentF = JObjectExplorerSettingFunctor::ChangeParentF;
 								 
 								std::string taskName = "Change parent";
 								std::string taskDesc = JCUtil::WstrToU8Str(L"object name: " + obj->GetName() + L" " + selectedObj->GetName() + L" to " + gObj->GetName());
 
-								auto doBind = std::make_unique<ChangeParentF::CompletelyBind>(*settingImpl->changeParentF, this, JUserPtr<JGameObject>(selectedObj), JUserPtr<JGameObject>(gObj));
-								auto undoBind = std::make_unique<ChangeParentF::CompletelyBind>(*settingImpl->changeParentF, this, JUserPtr<JGameObject>(selectedObj), selectedObj->GetParent());
+								auto doBind = std::make_unique<ChangeParentF::CompletelyBind>(*setting->changeParentF, this, JUserPtr<JGameObject>(selectedObj), JUserPtr<JGameObject>(gObj));
+								auto undoBind = std::make_unique<ChangeParentF::CompletelyBind>(*setting->changeParentF, this, JUserPtr<JGameObject>(selectedObj), selectedObj->GetParent());
 								auto evStruct = std::make_unique<JEditorTSetBindFuncEvStruct>(taskName, taskDesc, GetOwnerPageType(), std::move(doBind), std::move(undoBind));
 
 								AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
@@ -499,7 +502,7 @@ namespace JinEngine
 								JUserPtr<JMeshGeometry> sMesh;
 								sMesh.ConnnectChild(dragResult);
 								if (sMesh.IsValid())
-									creationImpl->reqModelCreationEvF->Invoke(this, gObj, sMesh);
+									creation->reqModelCreationEvF->Invoke(this, gObj, sMesh);
 							}
 						}
 					}
@@ -532,21 +535,21 @@ namespace JinEngine
 
 			const bool isHover = allowDisplaySeletable && JGui::IsMouseInRect(centerPos - JVector2<uint>(radius, radius), JVector2<uint>(radius * 2, radius * 2));
 			if (isHover)
-				color += GetSelectableColorFactor(false, isHover);
+				color += JGui::GetSelectableColorFactor(IsFocus(), false, isHover);
 
 			JGui::DrawCircleFilledColor(centerPos, radius, color, true);
 			if (gObj != nullptr)
 			{
 				if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT) && isHover)
 				{
-					using ActivateF = JObjectExplorerSettingImpl::ActivateF;
+					using ActivateF = JObjectExplorerSettingFunctor::ActivateF;
 
 					std::string taskType = !isActivated ? "Activate" : "DeActivate";
 					std::string taskName = taskType + " " + JCUtil::WstrToU8Str(gObj->GetName());
 					std::string taskDesc = "";
 
-					auto doBind = std::make_unique<ActivateF::CompletelyBind>(*settingImpl->activateF, this, JUserPtr<JGameObject>(gObj), !gObj->IsActivated());
-					auto undoBind = std::make_unique<ActivateF::CompletelyBind>(*settingImpl->activateF, this, JUserPtr<JGameObject>(gObj), gObj->IsActivated());
+					auto doBind = std::make_unique<ActivateF::CompletelyBind>(*setting->activateF, this, JUserPtr<JGameObject>(gObj), !gObj->IsActivated());
+					auto undoBind = std::make_unique<ActivateF::CompletelyBind>(*setting->activateF, this, JUserPtr<JGameObject>(gObj), gObj->IsActivated());
 					auto evStruct = std::make_unique<JEditorTSetBindFuncEvStruct>(taskName, taskDesc, GetOwnerPageType(), std::move(doBind), std::move(undoBind));
 
 					AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
@@ -569,6 +572,18 @@ namespace JinEngine
 			JEditorWindow::DoSetUnFocus();
 			explorerPopup->SetOpen(false);
 			renameHelper->Clear();
+		}
+		void JObjectExplorer::LoadEditorWindow(JFileIOTool& tool)
+		{
+			JEditorWindow::LoadEditorWindow(tool);
+			treeStrcture->LoadData(tool);
+		}
+		void JObjectExplorer::StoreEditorWindow(JFileIOTool& tool)
+		{
+			JEditorWindow::StoreEditorWindow(tool);
+			JGuiWindowInfo info;
+			JGui::GetWindowInfo(GetName(), info);
+			treeStrcture->StoreData(tool, info.windowID);
 		}
 		void JObjectExplorer::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{

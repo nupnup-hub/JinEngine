@@ -13,7 +13,7 @@ namespace JinEngine
 			using NotifyExecuteLazy = void(*)(JTypeBase*);
 			using NotifyCancelLazy = void(*)(JTypeBase*);
 		public:
-			float waitTime = 10;
+			float waitTime = 1;
 		public:
 			ExecuteDestroy executeDestroy = nullptr;
 			CanDestroy canDestroy;

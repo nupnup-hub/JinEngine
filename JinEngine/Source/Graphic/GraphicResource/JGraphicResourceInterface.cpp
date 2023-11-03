@@ -85,24 +85,24 @@ namespace JinEngine
 			AddInfo(gUser);
 			return true;
 		}
-		bool JGraphicResourceInterface::Create2DTexture(const std::wstring& path, const std::wstring& oriFormat)
+		bool JGraphicResourceInterface::Create2DTexture(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
 		{
 			if (!HasSpace(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D))
 				return false;
 
-			auto gUser = JGraphicPrivate::ResourceInterface::Create2DTexture(path, oriFormat);
+			auto gUser = JGraphicPrivate::ResourceInterface::Create2DTexture(maxSize, path, oriFormat);
 			if (gUser == nullptr)
 				return false;
 
 			AddInfo(gUser);
 			return true;
 		}
-		bool JGraphicResourceInterface::CreateCubeMap(const std::wstring& path, const std::wstring& oriFormat)
+		bool JGraphicResourceInterface::CreateCubeMap(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
 		{
 			if (!HasSpace(J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE))
 				return false;
 
-			auto gUser = JGraphicPrivate::ResourceInterface::CreateCubeMap(path, oriFormat);
+			auto gUser = JGraphicPrivate::ResourceInterface::CreateCubeMap(maxSize, path, oriFormat);
 			if (gUser == nullptr)
 				return false;
 
@@ -133,24 +133,24 @@ namespace JinEngine
 			AddInfo(gUser);
 			return true;
 		}
-		bool JGraphicResourceInterface::CreateShadowMapArrayTexture(const uint size, const uint count)
+		bool JGraphicResourceInterface::CreateShadowMapTextureArray(const uint size, const uint count)
 		{
 			if (!HasSpace(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY))
 				return false;
 
-			auto gUser = JGraphicPrivate::ResourceInterface::CreateShadowMapArrayTexture(size, size, count);
+			auto gUser = JGraphicPrivate::ResourceInterface::CreateShadowMapTextureArray(size, size, count);
 			if (gUser == nullptr)
 				return false;
 
 			AddInfo(gUser);
 			return true;
 		}
-		bool JGraphicResourceInterface::CreateShadowMapCubeTexture(const uint size)
+		bool JGraphicResourceInterface::CreateShadowMapTextureCube(const uint size)
 		{
 			if (!HasSpace(J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE))
 				return false;
 
-			auto gUser = JGraphicPrivate::ResourceInterface::CreateShadowMapCubeTexture(size, size);
+			auto gUser = JGraphicPrivate::ResourceInterface::CreateShadowMapTextureCube(size, size);
 			if (gUser == nullptr)
 				return false;
 
@@ -205,6 +205,13 @@ namespace JinEngine
 			AddInfo(gUser);
 			return true;
 		}
+		bool JGraphicResourceInterface::CreateOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE option)
+		{
+			if (!info.IsValid())
+				return false;
+			
+			return JGraphicPrivate::ResourceInterface::CreateOption(info, option);
+		}
 		bool JGraphicResourceInterface::DestroyTexture(JUserPtr<JGraphicResourceInfo>& info)
 		{
 			if (!info.IsValid())
@@ -242,6 +249,11 @@ namespace JinEngine
 			auto info = GetInfo(rType, dataIndex);
 			return info != nullptr ? info->GetHeapIndexStart(bType) : invalidIndex;
 		}
+		int JGraphicResourceInterface::GetOptionHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)const noexcept
+		{
+			auto info = GetInfo(rType, dataIndex);
+			return info != nullptr ? info->GetOptionHeapIndexStart(bType, opType) : invalidIndex;
+		}
 		uint JGraphicResourceInterface::GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept
 		{
 			auto info = GetInfo(rType, dataIndex);
@@ -270,6 +282,11 @@ namespace JinEngine
 			auto info = GetFirstInfo();
 			return info != nullptr ? (1.0f / JVector2F(info->GetWidth(), info->GetHeight())) : JVector2F::Zero();
 		}
+		J_GRAPHIC_RESOURCE_TYPE JGraphicResourceInterface::GetFirstResourceType()const noexcept
+		{
+			auto info = GetFirstInfo();
+			return info != nullptr ? info->GetGraphicResourceType() : (J_GRAPHIC_RESOURCE_TYPE)invalidIndex;
+		}
 		Graphic::ResourceHandle JGraphicResourceInterface::GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType) const noexcept
 		{
 			auto info = GetFirstInfo();
@@ -289,6 +306,16 @@ namespace JinEngine
 		bool JGraphicResourceInterface::HasFirstHandle()const noexcept
 		{
 			return GetFirstInfo() != nullptr;
+		}
+		bool JGraphicResourceInterface::HasOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)
+		{ 
+			auto info = GetInfo(rType, dataIndex);
+			return info != nullptr ? info->HasOptional(opType) : false;
+		}
+		bool JGraphicResourceInterface::HasFirstOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
+		{
+			auto info = GetFirstInfo();
+			return info != nullptr ? info->HasOptional(opType) : false;
 		}
 
 		bool JGraphicSingleResourceHolder::DestroyTexture()
@@ -327,7 +354,7 @@ namespace JinEngine
 		{
 			return info == nullptr;
 		} 
-		bool JGraphicSingleResourceHolder::AllowHoldMultiResourcePerType()const noexcept
+		bool JGraphicSingleResourceHolder::AllowHoldMultiHold(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
 		{
 			return false;
 		}
@@ -367,7 +394,7 @@ namespace JinEngine
 		{
 			return info[(uint)rType] == nullptr;
 		} 
-		bool JGraphicTypePerSingleResourceHolder::AllowHoldMultiResourcePerType()const noexcept
+		bool JGraphicTypePerSingleResourceHolder::AllowHoldMultiHold(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
 		{
 			return false;
 		}
@@ -433,7 +460,7 @@ namespace JinEngine
 		{
 			return true;
 		}
-		bool JGraphicMultiResourceHolder::AllowHoldMultiResourcePerType()const noexcept
+		bool JGraphicMultiResourceHolder::AllowHoldMultiHold(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
 		{
 			return true;
 		}
@@ -469,6 +496,10 @@ namespace JinEngine
 		{
 			return gPtrWrapper->Get()->GetHeapIndexStart(rType, bType, dataIndex);
 		}
+		int JGraphicResourceUserInterface::GetOptionHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)const noexcept
+		{
+			return gPtrWrapper->Get()->GetOptionHeapIndexStart(rType, bType, opType, dataIndex);
+		}
 		uint JGraphicResourceUserInterface::GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept
 		{
 			return gPtrWrapper->Get()->GetViewCount(rType, bType, dataIndex);
@@ -489,6 +520,10 @@ namespace JinEngine
 		{
 			return gPtrWrapper->Get()->GetFirstResourceInvSize();
 		}
+		J_GRAPHIC_RESOURCE_TYPE JGraphicResourceUserInterface::GetFirstResourceType()const noexcept
+		{
+			return gPtrWrapper->Get()->GetFirstResourceType();
+		}
 		Graphic::ResourceHandle JGraphicResourceUserInterface::GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType)const noexcept
 		{
 			return gPtrWrapper->Get()->GetFirstGpuHandle(bType);
@@ -504,6 +539,14 @@ namespace JinEngine
 		bool JGraphicResourceUserInterface::HasFirstHandle()const noexcept
 		{
 			return gPtrWrapper != nullptr && gPtrWrapper->Get()->HasFirstHandle();
+		}
+		bool JGraphicResourceUserInterface::HasOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)
+		{
+			return gPtrWrapper != nullptr && gPtrWrapper->Get()->HasOption(rType, opType, dataIndex);
+		}
+		bool JGraphicResourceUserInterface::HasFirstOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
+		{
+			return gPtrWrapper != nullptr && gPtrWrapper->Get()->HasFirstOption(rType, opType);
 		}
 	}
 }

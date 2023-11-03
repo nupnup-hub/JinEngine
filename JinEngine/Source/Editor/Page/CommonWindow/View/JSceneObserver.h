@@ -3,8 +3,8 @@
 #include"../../JEditorWindow.h"
 #include"../../../Menubar/JEditorMenuNodeUtilData.h"
 #include"../../../EditTool/JEditorGameObjectSurpportToolType.h" 
-#include"../../../Interface/JEditorObjectHandleInterface.h"
 #include"../../../../Core/Math/JVector.h"
+#include"../../../../Object/JObjectModifyInterface.h"
 #include"../../../../Object/Resource/Scene/Accelerator/JAcceleratorType.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
 
@@ -25,7 +25,7 @@ namespace JinEngine
 		class JEditorMenuBar;
 		class JEditorMenuNode;
 		class JEditorMouseIdenDragBox;
-		class JSceneObserver final : public JEditorWindow, public JEditorObjectHandlerInterface
+		class JSceneObserver final : public JEditorWindow, public JObjectModifyInterface
 		{
 		private:
 			struct FrustumInfo
@@ -82,13 +82,16 @@ namespace JinEngine
 			public:
 				JVector3<float> distance = JVector3<float>(1, 1, 1);
 			public:
-				std::vector<JUserPtr<JMaterial>> matVec; 
+				std::vector<JUserPtr<JMaterial>> matVec;
 			public:
 				std::vector<JUserPtr<JGameObject>> objParentVec;
 			public:
 				void Initialize();
 				void Clear();
 			};
+		public:
+			using BeginScenePlayF = Core::JSFunctorType<void>;
+			using EndScenePlayF = Core::JSFunctorType<void>;
 		private:
 			using SelectMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
 			using ActivateMenuNodeT = typename Core::JMFunctorType<JSceneObserver, void, const J_OBSERVER_SETTING_TYPE>;
@@ -99,6 +102,9 @@ namespace JinEngine
 			using MenuSwitchIconOffF = typename Core::JSFunctorType<void, JSceneObserver*>;
 		private:
 			static constexpr uint menuSwitchIconCount = 7;
+		private:
+			std::unique_ptr<BeginScenePlayF::Functor> beginScenePlayF;
+			std::unique_ptr<EndScenePlayF::Functor> endScenePlayF;
 		private:
 			std::unique_ptr<JEditorMenuBar> menubar;
 			JEditorMenuNodeUtilData nodeUtilData[(int)J_OBSERVER_SETTING_TYPE::COUNT];
@@ -114,8 +120,8 @@ namespace JinEngine
 			std::unordered_map<size_t, FrustumInfo> camFrustumMap;
 		private:
 			std::unique_ptr<JEditorSceneCoordGrid> coordGrid;
-			std::unique_ptr<JEditorBinaryTreeView> editorBTreeView;
-			std::unique_ptr<JEditorCameraControl> editorCamCtrl;
+			std::unique_ptr<JEditorBinaryTreeView> editBTreeView;
+			std::unique_ptr<JEditorCameraControl> editCamCtrl;
 			std::unique_ptr<JEditorMouseIdenDragBox> mouseBBox;
 			std::unique_ptr<JEditorTransformTool> positionTool;
 			std::unique_ptr<JEditorTransformTool> rotationTool;
@@ -136,15 +142,18 @@ namespace JinEngine
 				std::unique_ptr<JEditorAttribute> attribute,
 				const J_EDITOR_PAGE_TYPE pageType,
 				const J_EDITOR_WINDOW_FLAG windowFlag,
-				const std::vector< J_OBSERVER_SETTING_TYPE> useSettingType);
+				const std::vector<J_OBSERVER_SETTING_TYPE> useSettingType,
+				const std::vector<size_t>& listenWindowGuidVec = {});
 			~JSceneObserver();
 			JSceneObserver(const JSceneObserver& rhs) = delete;
 			JSceneObserver& operator=(const JSceneObserver& rhs) = delete;
 		private:
-			void BuildMenuBar(const std::vector< J_OBSERVER_SETTING_TYPE> useSettingType);
+			void BuildMenuBar(const std::vector<J_OBSERVER_SETTING_TYPE> useSettingType);
 			void BuildMenuIcon(const std::vector<J_OBSERVER_SETTING_TYPE> useSettingType);
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
+		public:
+			void SetScenePlayProccess(std::unique_ptr<BeginScenePlayF::Functor> newBeginScenePlayF, std::unique_ptr<EndScenePlayF::Functor> newEndScenePlayF);
 		public:
 			void Initialize(JUserPtr<JScene> newScene, const std::wstring& editorCameraName)noexcept;
 			void UpdateWindow()final;
@@ -181,13 +190,14 @@ namespace JinEngine
 		private:
 			void CreateHelperGameObject();
 			void DestroyHelperGameObject();
-		public:
+		private:
 			void DoSetOpen()noexcept final;
 			void DoSetClose()noexcept final;
 			void DoActivate() noexcept final;
 			void DoDeActivate() noexcept final;
-			void StoreEditorWindow(std::wofstream& stream)final;
-			void LoadEditorWindow(std::wifstream& stream)final;
+		private:
+			void LoadEditorWindow(JFileIOTool& tool)final;
+			void StoreEditorWindow(JFileIOTool& tool)final;
 		private:
 			//Debug
 			void CreateShapeGroup();

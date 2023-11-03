@@ -1,7 +1,7 @@
 #pragma once
 #include"JResourceObject.h"
-#include"../../Core/Event/JEventListener.h"
 #include"JResourceObjectEventType.h"
+#include"../../Core/Event/JEventListener.h"
 
 namespace JinEngine
 {

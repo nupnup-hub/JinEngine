@@ -1,6 +1,7 @@
 #pragma once
 #include"JLazyDestructionInfo.h"
 #include"../Module/JModuleMacro.h"
+#include"../JCoreEssential.h"
 #include<vector>
 #include<memory>
 
@@ -17,6 +18,8 @@ namespace JinEngine
 		public:
 			JLazyDestruction(std::unique_ptr<JLazyDestructionInfo>&& info);
 			~JLazyDestruction();
+		public:
+			uint GetWaitingCount()const noexcept;
 		public:
 			void Update(const float timeOffset = 0)noexcept;
 			void Clear()noexcept;

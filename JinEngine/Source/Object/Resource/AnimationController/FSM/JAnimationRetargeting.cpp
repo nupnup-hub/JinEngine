@@ -25,6 +25,8 @@ namespace JinEngine
 
 		JAvatar* srcAvatar = srcSkeletonAsset->GetAvatar().Get();
 		JAvatar* tarAvatar = tarSkeletonAsset->GetAvatar().Get();
+		if (srcAvatar == nullptr || tarAvatar == nullptr)
+			return false;
 
 		JSkeleton* srcSkeleton = srcSkeletonAsset->GetSkeleton().Get();
 		JSkeleton* tarSkeleton = tarSkeletonAsset->GetSkeleton().Get();

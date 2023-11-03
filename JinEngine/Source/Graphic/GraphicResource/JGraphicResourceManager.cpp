@@ -9,14 +9,52 @@ namespace JinEngine
 		{
 			static constexpr uint occlusionMipmapViewCapacity = 10;
 			static constexpr uint minOcclusionSize = 8;
-		}
-		 
+		}	
+
 		/*
 		* create resource senario
 		1. Create resource and info(Owner Pointer)
 		2. caller(impl) is derived interface(has ginfo and access gmanager public method)
 		3. impl interface class can derived user access class(restrict version impl derived interface)
 		*/
+
+		void JGraphicResourceManager::ResourceViewInfo::ClearCount()
+		{
+			count = 0;
+		}
+		void JGraphicResourceManager::ResourceViewInfo::ClearAllData()
+		{
+			count = 0;
+			capacity = 0;
+			offset = 0;
+		}
+		int JGraphicResourceManager::ResourceViewInfo::GetNextViewIndex()const noexcept
+		{
+			return offset + count;
+		}
+		bool JGraphicResourceManager::ResourceViewInfo::HasSpace()const noexcept
+		{
+			return count < capacity;
+		}
+
+		void JGraphicResourceManager::ResourceTypeDesc::ClearCount()
+		{
+			count = 0;
+			for (uint i = 0; i < (uint)J_GRAPHIC_BIND_TYPE::COUNT; ++i)
+				viewInfo[i].ClearCount();
+		}
+		void JGraphicResourceManager::ResourceTypeDesc::ClearAllData()
+		{
+			count = 0;
+			capacity = 0;
+			for (uint i = 0; i < (uint)J_GRAPHIC_BIND_TYPE::COUNT; ++i)
+				viewInfo[i].ClearAllData();
+		}
+		bool JGraphicResourceManager::ResourceTypeDesc::HasSpace()const noexcept
+		{
+			return count < capacity;
+		}
+
 		uint JGraphicResourceManager::GetOcclusionMipMapViewCapacity()noexcept
 		{
 			return Private::occlusionMipmapViewCapacity;

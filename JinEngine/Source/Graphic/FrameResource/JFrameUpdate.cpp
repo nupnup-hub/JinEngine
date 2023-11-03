@@ -178,8 +178,10 @@ namespace JinEngine
 			if (insertIndex == invalidIndex)
 				insertIndex = areaEdIndex + 1;
 
-			holder->index = vec[insertIndex - 1].ptr->index + vec[insertIndex - 1].ptr->indexSize;
-			holder->number = insertIndex;
+			auto& insertHolder = vec[insertIndex - 1];
+			holder->index = insertHolder.ptr->index + insertHolder.ptr->indexSize;
+			holder->number = insertHolder.ptr->number + 1;
+
 			vec.insert(vec.begin() + insertIndex, JFrameUpdateIndexHolderInfo(holder, areaGuid));
 
 			const int count = (int)vec.size();

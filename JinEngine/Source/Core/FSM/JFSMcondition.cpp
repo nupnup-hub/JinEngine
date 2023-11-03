@@ -4,8 +4,8 @@
 #include"JFSMtransitionPrivate.h"
 #include"JFSMdiagram.h"
 #include"JFSMstate.h"
-#include"JFSMtransition.h"
 #include"JFSMparameter.h" 
+#include"JFSMtransition.h"
 #include"../Guid/JGuidCreator.h"
 #include"../Reflection/JTypeImplBase.h"
 
@@ -31,7 +31,7 @@ namespace JinEngine
 				GUI_CHECKBOX(GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::BOOL)),
 				GUI_FIXED_INPUT(false, J_PARAMETER_TYPE::Int, GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::INT)),
 				GUI_FIXED_INPUT(false, J_PARAMETER_TYPE::Float, GUI_ENUM_CONDITION_REF_USER(ParameterType, parameter, J_FSM_PARAMETER_VALUE_TYPE::FLOAT)))
-				float onValue = 0;
+			float onValue = 0;
 		public:
 			JFSMconditionImpl(const InitData& initData, JFSMcondition* thisCondRaw)
 				:owner(initData.ownerTransition)
@@ -45,7 +45,7 @@ namespace JinEngine
 			float GetOnValue()const noexcept
 			{
 				if (HasParameter())
-					return TypeValue(parameter->GetParamType(), onValue);
+					return FsmParamTypeValue(parameter->GetParamType(), onValue);
 				else
 					return 0;
 			}
@@ -71,7 +71,7 @@ namespace JinEngine
 			void SetOnValue(float newValue)noexcept
 			{
 				if (HasParameter())
-					onValue = TypeValue(parameter->GetParamType(), newValue);
+					onValue = FsmParamTypeValue(parameter->GetParamType(), newValue);
 			}
 		public:
 			bool HasParameter()const noexcept

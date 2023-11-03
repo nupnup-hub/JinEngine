@@ -78,7 +78,7 @@ namespace JinEngine
 		if (root != nullptr)
 		{
 			if (info.useJFrustum)
-				root->Culling(info, Core::J_CULLING_FLAG::NONE);
+				;//root->Culling(info, Core::J_CULLING_FLAG::NONE);
 			else
 				root->Culling(info);
 		}

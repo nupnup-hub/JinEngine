@@ -231,7 +231,8 @@ namespace JinEngine
 		{
 			J_GUI_FOCUS_FLAG_NONE = 0,
 			J_GUI_FOCUS_FLAG_CHILD_WINDOW = 1 << 0,	// Return true if any children of the window is focused
-			J_GUI_FOCUS_FLAG_DOCK_HIERARCHY = 1 << 1	//Consider docking hierarchy (treat dockspace host as parent of docked window) (when used with _ChildWindows or _RootWindow)
+			J_GUI_FOCUS_FLAG_DOCK_HIERARCHY = 1 << 1,	//Consider docking hierarchy (treat dockspace host as parent of docked window) (when used with _ChildWindows or _RootWindow)
+			J_GUI_FOCUS_FLAG_NO_POPUP_HIERARCHY = 1 << 2,  // Do not consider popup hierarchy 
 		};
 
 		using J_GUI_HOVERED_FLAG_ = int;

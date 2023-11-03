@@ -30,14 +30,12 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JProjectMainPage::JProjectMainPage()
+		JProjectMainPage::JProjectMainPage(std::unique_ptr<JEditorProjectInterface>&& newProjInterface)
 			:JEditorPage("JProjectMainPage",
 				std::make_unique<JEditorAttribute>(),
-				Core::AddSQValueEnum(J_EDITOR_PAGE_IS_MAIN_PAGE, J_EDITOR_PAGE_SUPPORT_DOCK))
-		{  
-			storeProjectF = std::make_unique<StoreProjectF::Functor>(&JApplicationProjectPrivate::IOInterface::StoreProject);
-			loadProjectF = std::make_unique<LoadProjectF::Functor>(&JApplicationProjectPrivate::IOInterface::LoadProject);
-
+				Core::AddSQValueEnum(J_EDITOR_PAGE_IS_MAIN_PAGE, J_EDITOR_PAGE_SUPPORT_DOCK)),
+			projInterface(std::move(newProjInterface))
+		{   
 			std::vector<WindowInitInfo> openInfo;
 			openInfo.emplace_back("Window Directory##JProjectMainPage");
 			openInfo.emplace_back("Object Explorer##JProjectMainPage");
@@ -60,10 +58,14 @@ namespace JinEngine
 			J_EDITOR_WINDOW_FLAG sceneObserverFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SUPPORT_POPUP, J_EDITOR_WINDOW_SUPPORT_SELECT, J_EDITOR_WINDOW_LISTEN_OTHER_WINDOW_SELECT,J_EDITOR_WINDOW_SUPPORT_MAXIMIZE );
 			J_EDITOR_WINDOW_FLAG sceneViewerFlag = Core::AddSQValueEnum(dockFlag, J_EDITOR_WINDOW_SUPPORT_MAXIMIZE);
  
+			const size_t explorerGuid = JEditorWindow::CalculateGuid(openInfo[1].GetName());
+			const size_t observerGuid = JEditorWindow::CalculateGuid(openInfo[3].GetName());
+			using GuidVec = std::vector<size_t>;
+
 			windowDirectory = std::make_unique<JWindowDirectory>(openInfo[0].GetName(), openInfo[0].MakeAttribute(), GetPageType(), wndDirFlag);
-			objectExplorer = std::make_unique<JObjectExplorer>(openInfo[1].GetName(), openInfo[1].MakeAttribute(), GetPageType(), objExplorerFlag);
+			objectExplorer = std::make_unique<JObjectExplorer>(openInfo[1].GetName(), openInfo[1].MakeAttribute(), GetPageType(), objExplorerFlag, GuidVec{ observerGuid });
 			objectDetail = std::make_unique<JObjectDetail>(openInfo[2].GetName(), openInfo[2].MakeAttribute(), GetPageType(), dockFlag);
-			sceneObserver = std::make_unique<JSceneObserver>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType(), sceneObserverFlag, Constants::GetAllObserverSetting());
+			sceneObserver = std::make_unique<JSceneObserver>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType(), sceneObserverFlag, Constants::GetAllObserverSetting(), GuidVec{ explorerGuid });
 			sceneViewer = std::make_unique<JSceneViewer>(openInfo[4].GetName(), openInfo[4].MakeAttribute(), GetPageType(), sceneViewerFlag);
 			logViewer = std::make_unique<JLogViewer>(openInfo[5].GetName(), openInfo[5].MakeAttribute(), GetPageType(), dockFlag);
 			graphicResourceWatcher = std::make_unique<JGraphicResourceWatcher>(openInfo[6].GetName(), openInfo[6].MakeAttribute(), GetPageType(), noneDockFlag);
@@ -71,6 +73,9 @@ namespace JinEngine
 			appWatcher = std::make_unique<JApplicationWatcher>(openInfo[8].GetName(), openInfo[8].MakeAttribute(), GetPageType(), noneDockFlag);
 			graphicOptionSetting = std::make_unique<JGraphicOptionSetting>(openInfo[9].GetName(), openInfo[9].MakeAttribute(), GetPageType(), noneDockFlag);
 			wndStateViewer = std::make_unique<JWindowStateViewer>(openInfo[10].GetName(), openInfo[10].MakeAttribute(), GetPageType(), noneDockFlag);
+ 
+			sceneObserver->SetScenePlayProccess(std::make_unique<JSceneObserver::BeginScenePlayF::Functor>(&JProjectMainPage::BeginScenePlay, this),
+				std::make_unique<JSceneObserver::BeginScenePlayF::Functor>(&JProjectMainPage::EndScenePlay, this));
 
 			std::vector<JEditorWindow*> windows
 			{
@@ -112,8 +117,8 @@ namespace JinEngine
 					mainPage->RequestCloseConfirmPopup(false);					
 				}
 			};
-			auto confirmFunc = [](JProjectMainPage* page){page->RequestCloseConfirmPopup(false);};
-			auto cancelFunc = [](JProjectMainPage* page){page->RequestCloseConfirmPopup(true);};
+			auto confirmFunc = [](JProjectMainPage* mainPage){mainPage->RequestCloseConfirmPopup(false);};
+			auto cancelFunc = [](JProjectMainPage* mainPage){mainPage->RequestCloseConfirmPopup(true);};
 			auto conetnsFunc = [](JProjectMainPage* mainPage)
 			{
 				constexpr uint columnCount = 4;
@@ -157,6 +162,9 @@ namespace JinEngine
 				{
 					std::string strArr[textCount]{ "","","" };
 					JUserPtr<Core::JIdentifier> obj = Core::GetUserPtr<Core::JIdentifier>(data->typeGuid, data->objectGuid);
+					if (obj == nullptr)
+						continue;
+
 					const bool isResource = obj->GetTypeInfo().IsChildOf(JResourceObject::StaticTypeInfo());
 					const bool isDir = !isResource ? obj->GetTypeInfo().IsChildOf(JDirectory::StaticTypeInfo()) : false;
 					if (!isResource && !isDir)
@@ -189,7 +197,7 @@ namespace JinEngine
 						JGui::Text(textCal.LeftAligned());
 					}
 					alignCal.SetNextContentsPosition();
-					JGui::CheckBox("##ModifiedResource_CheckBox" + strArr[0], data->isStore);
+					JGui::CheckBox("##ModifiedResource_CheckBox" + strArr[0], data->canStore);
 				}
 				JGui::EndListBox();
 			};
@@ -212,8 +220,8 @@ namespace JinEngine
 		}
 		JProjectMainPage::~JProjectMainPage()
 		{
-			(*storeProjectF)();
-			ClearModifiedInfoStructure(); 
+			//(*storeProjectF)();
+			//ClearModifiedInfoStructure(); 
 		}
 		J_EDITOR_PAGE_TYPE JProjectMainPage::GetPageType()const noexcept
 		{
@@ -284,14 +292,14 @@ namespace JinEngine
 				J_EDITOR_EVENT::CLOSE_POPUP_WINDOW,
 				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorClosePopupWindowEvStruct>(J_EDITOR_POPUP_WINDOW_TYPE::CLOSE_CONFIRM, GetPageType())));
 
-			auto confirmLam = []() {JApplicationProjectPrivate::LifeInterface::ConfirmCloseProject(); };
-			auto cancelLam = []() {JApplicationProjectPrivate::LifeInterface::CancelCloseProject(); };
-			using CloseF = Core::JSFunctorType<void>;
+			auto confirmLam = [](JProjectMainPage* page) {(*page->projInterface->confirmCloseProjectF)(); };
+			auto cancelLam = [](JProjectMainPage* page) {(*page->projInterface->cancelCloseProjectF)(); };
+			using CloseF = Core::JSFunctorType<void, JProjectMainPage*>;
 			std::unique_ptr<CloseF::CompletelyBind> closePopupB;
 			if(isCancel)
-				closePopupB = std::make_unique<CloseF::CompletelyBind>(std::make_unique<CloseF::Functor>(cancelLam));
+				closePopupB = std::make_unique<CloseF::CompletelyBind>(std::make_unique<CloseF::Functor>(cancelLam), this);
 			else
-				closePopupB = std::make_unique<CloseF::CompletelyBind>(std::make_unique<CloseF::Functor>(confirmLam));
+				closePopupB = std::make_unique<CloseF::CompletelyBind>(std::make_unique<CloseF::Functor>(confirmLam), this);
 			
 			closePopup->RegisterBind(J_EDITOR_POPUP_WINDOW_FUNC_TYPE::CLOSE_POPUP, std::move(closePopupB));
 		}
@@ -319,9 +327,9 @@ namespace JinEngine
 
 			//file Child
 			std::unique_ptr<JEditorMenuNode> saveNode = std::make_unique<JEditorMenuNode>("SaveProject", false, true, false, nullptr, fileNode.get());
-			saveNode->RegisterBindHandle(std::make_unique<StoreProjectF::CompletelyBind>(*storeProjectF));
+			saveNode->RegisterBindHandle(std::make_unique<JEditorProjectInterface::StoreProjectF::CompletelyBind>(*projInterface->storeProjectF));
 			std::unique_ptr<JEditorMenuNode> loadNode = std::make_unique<JEditorMenuNode>("LoadProject", false, true, false, nullptr, fileNode.get());
-			loadNode->RegisterBindHandle(std::make_unique<LoadProjectF::CompletelyBind>(*loadProjectF));
+			loadNode->RegisterBindHandle(std::make_unique<JEditorProjectInterface::LoadOtherProjectF::CompletelyBind>(*projInterface->loadOtherProjectF));
 			std::unique_ptr<JEditorMenuNode> buildNode = std::make_unique<JEditorMenuNode>("BuildProject", false, true, false, nullptr, fileNode.get());
 		
 			JEditorMenuNode* windowNodePtr = windowNode.get();
@@ -358,6 +366,15 @@ namespace JinEngine
 			grapicOptionNode->RegisterBindHandle(std::move(openBind), std::move(closeBind));
 
 			menuBar->AddNode(std::move(grapicOptionNode)); 
+		}
+		void JProjectMainPage::BeginScenePlay()
+		{
+			(*projInterface->storeProjectF)();
+		}
+		void JProjectMainPage::EndScenePlay()
+		{
+			JModifedObjectInterface::ClearModifiedInfoStructure();
+			(*projInterface->reLoadProjectF)();
 		}
 	}
 }

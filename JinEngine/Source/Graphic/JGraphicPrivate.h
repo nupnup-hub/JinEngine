@@ -1,37 +1,16 @@
 #pragma once
-#include"GraphicResource/JGraphicResourceType.h"
-#include"FrameResource/JFrameResourceEnum.h"  
-#include"Gui/JGuiConstants.h"
+#include"GraphicResource/JGraphicResourceType.h"  
+#include"FrameResource/JFrameResourceEnum.h"   
 #include"../Core/JCoreEssential.h" 
 #include<string>
-
-struct ID3D12Device;
-struct ID3D12CommandQueue;
-struct ID3D12CommandAllocator;
-struct ID3D12GraphicsCommandList;
-struct CD3DX12_CPU_DESCRIPTOR_HANDLE;
-struct CD3DX12_GPU_DESCRIPTOR_HANDLE;
-struct ID3D12Resource;
-
-namespace Microsoft
-{
-	namespace WRL
-	{
-		template<typename T>class ComPtr;
-	}
-}
-
+ 
 namespace JinEngine
 {
 	struct JGraphicShaderInitData;
 	struct JComputeShaderInitData;
 	class JGraphicShaderDataHolderBase;
-	class JComputeShaderDataHolderBase;
-	class JMeshGeometry;
-	class JMaterial;
-	class JShader;
-	class JScene;
-	class JResourceManager;
+	class JComputeShaderDataHolderBase; 
+	class JShader;  
  
 	class JMain;
 	namespace Core
@@ -58,7 +37,7 @@ namespace JinEngine
 		class JGraphicAdapter;
 		class JGuiBackendDataAdapter;
 		class JGuiBackendInterface;
-		struct JGuiInitData;
+		struct JGuiInitData; 
 
 		class JGraphicPrivate
 		{
@@ -77,18 +56,20 @@ namespace JinEngine
 				static JUserPtr<JGraphicResourceInfo> CreateLayerDepthDebugResource(uint textureWidth = 0, uint textureHeight = 0);
 				static void CreateHZBOcclusionResource(_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo, _Out_ JUserPtr<JGraphicResourceInfo>& outOccMipMapInfo);
 				static JUserPtr<JGraphicResourceInfo> CreateOcclusionResourceDebug(const bool isHzb);
-				static JUserPtr<JGraphicResourceInfo> Create2DTexture(const std::wstring& path, const std::wstring& oriFormat);
-				static JUserPtr<JGraphicResourceInfo> CreateCubeMap(const std::wstring& path, const std::wstring& oriFormat);
+				static JUserPtr<JGraphicResourceInfo> Create2DTexture(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat);
+				static JUserPtr<JGraphicResourceInfo> CreateCubeMap(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat);
 				static JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0);
-				static JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(uint textureWidth, uint textureHeight);
-				static JUserPtr<JGraphicResourceInfo> CreateShadowMapArrayTexture(uint textureWidth, uint textureHeight, const uint count);
-				static JUserPtr<JGraphicResourceInfo> CreateShadowMapCubeTexture(uint textureWidth, uint textureHeight);
+				static JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(const uint textureWidth, const uint textureHeight);
+				static JUserPtr<JGraphicResourceInfo> CreateShadowMapTextureArray(const uint textureWidth, const uint textureHeight, const uint count);
+				static JUserPtr<JGraphicResourceInfo> CreateShadowMapTextureCube(const uint textureWidth, const uint textureHeight);
 				static JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(const std::vector<Core::JStaticMeshVertex>& vertex);
 				static JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(const std::vector<Core::JSkinnedMeshVertex>& vertex);
 				static JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(std::vector<uint32>& index);
 				static JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(std::vector<uint16>& index);
+				static bool CreateOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType);
 			private:
 				static bool DestroyGraphicTextureResource(JGraphicResourceInfo* info);
+				static bool DestroyGraphicOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE optype);
 			private:
 				static JOwnerPtr<JGraphicShaderDataHolderBase> StuffGraphicShaderPso(const JGraphicShaderInitData& shaderData);
 				static JOwnerPtr<JComputeShaderDataHolderBase> StuffComputeShaderPso(const JComputeShaderInitData& shaderData);

@@ -13,6 +13,7 @@ namespace JinEngine
 	{
 		return info.useBBox ? info.bbox.Contains(box) : info.frustum.Contains(box);
 	}
+	/*
 	Core::J_CULLING_RESULT JAcceleratorNode::Contain(const JAcceleratorCullingInfo& info, const BoundingBox& box, _Inout_ Core::J_CULLING_FLAG& flag)const noexcept
 	{
 		return info.useBBox ? Core::JCullingFrustum::ConvertType(info.bbox.Contains(box)) : info.jFrustum.Contain(box, flag);
@@ -21,6 +22,7 @@ namespace JinEngine
 	{
 		return info.useBBox ? Core::JCullingFrustum::ConvertType(info.bbox.Contains(box)) : info.jFrustum.Contain(box, flag);
 	}
+	*/
 	bool JAcceleratorNode::IsIntersectCullingFrustum(const JAcceleratorCullingInfo& info, const BoundingOrientedBox& box)const noexcept
 	{
 		return info.hasCullingArea && info.cullingFrustum.Contains(box) != ContainmentType::DISJOINT;

@@ -3,6 +3,7 @@
 #include"../Event/JEditorEventStruct.h" 
 #include"../../Core/JCoreEssential.h"  
 #include"../../Core/Event/JEventListener.h"
+#include"../../Core/File/JFileIOHelper.h"
 #include<string>
 #include<memory> 
 
@@ -45,6 +46,8 @@ namespace JinEngine
 			//Support undo redo
 			void RequestOpenPage(const JEditorOpenPageEvStruct& evStruct, const bool doAct);
 			void RequestClosePage(const JEditorClosePageEvStruct& evStruct, const bool isAct);
+		public:
+			static size_t CalculateGuid(const std::string& str);
 		public:
 			void SetOpen()noexcept;
 			void SetClose()noexcept;

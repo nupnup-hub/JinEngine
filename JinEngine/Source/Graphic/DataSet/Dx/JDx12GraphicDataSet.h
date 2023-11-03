@@ -86,6 +86,7 @@ namespace JinEngine
 				JFrameResource* currFrame,
 				JGraphicResourceManager* graphicResourceM,
 				JCullingManager* cullingM,
+				JBlur* blur,
 				ID3D12GraphicsCommandList* cmdList);
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
@@ -165,6 +166,22 @@ namespace JinEngine
 				ID3D12GraphicsCommandList* cmdList,
 			CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapHandle,
 			CD3DX12_GPU_DESCRIPTOR_HANDLE stencilMapHandle);
+		public:
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+		};
+
+		struct JDx12GraphicBlurApplySet : public JGraphicBlurTaskSet
+		{
+		public:
+			ID3D12GraphicsCommandList* cmdList;
+			CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle;
+			CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle;
+		public:
+			JDx12GraphicBlurApplySet(JGraphicDevice* device,
+				std::unique_ptr<JBlurDesc>&& desc,
+				ID3D12GraphicsCommandList* cmdList,
+				CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
+				CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle);
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};

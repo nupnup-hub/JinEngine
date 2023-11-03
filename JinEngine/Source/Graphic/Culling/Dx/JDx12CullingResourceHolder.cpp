@@ -56,8 +56,7 @@ namespace JinEngine::Graphic
 	}
 
 	JHdDx12CullingResultHolder::JHdDx12CullingResultHolder()
-		:result(L"HdOccPredict", J_GRAPHIC_BUFFER_TYPE::OCC_PREDICT),
-		readBack(L"HdOccReadBack", J_GRAPHIC_BUFFER_TYPE::READ_BACK)
+		:readBack(L"HdOccReadBack", J_GRAPHIC_BUFFER_TYPE::READ_BACK)
 	{}
 	JHdDx12CullingResultHolder::~JHdDx12CullingResultHolder()
 	{
@@ -70,15 +69,15 @@ namespace JinEngine::Graphic
 	}
 	uint JHdDx12CullingResultHolder::GetBuffSize()const noexcept
 	{
-		return result.GetElementCount();
+		return readBack.GetElementCount();
 	}
 	ID3D12Resource* JHdDx12CullingResultHolder::GetResource()const noexcept
 	{
-		return result.GetResource();
+		return readBack.GetResource();
 	}
 	ID3D12Resource* JHdDx12CullingResultHolder::GetPredictResource()const noexcept
 	{
-		return result.GetResource();
+		return readBack.GetResource();
 	}
 	ID3D12Resource* JHdDx12CullingResultHolder::GetReadBackResource()const noexcept
 	{
@@ -86,21 +85,18 @@ namespace JinEngine::Graphic
 	}
 	bool JHdDx12CullingResultHolder::IsCulled(const uint index)const noexcept
 	{
-		return readBack.GetElementCount() > index ? readBack.GetCpuPointer()[index] : false;
+		//0 is cull
+		//1 is not cull
+		return readBack.GetElementCount() > index ? !readBack.GetCpuPointer()[index] : false;
 	}
 	void JHdDx12CullingResultHolder::Build(JGraphicDevice* device, const uint newCapacity)
-	{
-		result.Clear();
+	{ 
 		readBack.Clear();
-
-		result.Build(device, newCapacity);
 		readBack.Build(device, newCapacity);
-
 		//memset(result.GetCpuPointer(), Constants::hdNonCullingValue, sizeof(uint64) * newCapacity);
 	}
 	void JHdDx12CullingResultHolder::Clear()
 	{
-		result.Clear();
 		readBack.Clear();
 	}
 }

@@ -1,4 +1,5 @@
 #include"JGraphicAdapter.h"  
+#include"../Blur/JBlur.h"
 #include"../Culling/JCullingManager.h"
 #include"../DepthMap/JDepthMapDebug.h"
 #include"../DepthMap/JDepthTest.h"
@@ -102,6 +103,13 @@ namespace JinEngine::Graphic
 		 
 		return GetAdaptee(deviceType)->CreateOutlineDraw();
 	}  
+	std::unique_ptr<JBlur> JGraphicAdapter::CreateBlur(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	{
+		if (!IsSameDevice(deviceType))
+			return nullptr;
+
+		return GetAdaptee(deviceType)->CreateBlur();
+	}
 	void JGraphicAdapter::BeginDrawSceneSingleThread(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet)
 	{
 		if (!IsSameDevice(deviceType))

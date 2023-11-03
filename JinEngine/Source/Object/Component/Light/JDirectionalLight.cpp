@@ -1,6 +1,7 @@
 #include"JDirectionalLight.h"   
 #include"JDirectionalLightPrivate.h"
 #include"JLightConstants.h"
+#include"../Camera/JCameraConstants.h"
 #include"../Transform/JTransform.h" 
 #include"../JComponentHint.h"
 #include"../../JObjectFileIOHelper.h"
@@ -38,21 +39,26 @@ namespace JinEngine
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS, Graphic::JDepthTestPassConstants&>,
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS, Graphic::JHzbOccComputeConstants&, const uint, const uint>>,
 			Graphic::JFrameDirty>;
+	
+		static constexpr uint multiResourceCount = 2;	//shadow map(csm(multi) + ssm(single)) + debug
+		static constexpr uint singleResourceCount = 3;	// depth + mip + debug
+		 
+		using JGraphicWideSingleOneMultiResourceHolder = Graphic::JGraphicWideSingleOneMultiResourceHolder<singleResourceCount, true,
+			Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY, 
+			Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG>;
 	}
 	namespace
-	{
+	{ 
 		static auto isAvailableoverlapLam = []() {return true; };
 		static JDirectionalLightPrivate lPrivate;
-		 
-		static constexpr float minPenumbraWidth = 0;
-		static constexpr float maxPenumbraWidth = Constants::lightMaxDistance * 0.5f;
 
-		static constexpr float minPenumbraNearPlane = Constants::lightMinDistance;
-		static constexpr float maxPenumbraNearPlane = Constants::lightMaxDistance;
-
-		static XMVECTOR CalLightWorldDir(const JUserPtr<JTransform>& transform, const JVector3<float>& initDir = JVector3<float>(0, -1, 0)) noexcept
+		static XMVECTOR GetInitDir()
 		{
-			return XMVector3Normalize(XMVector3Rotate(initDir.ToXmV(), transform->GetWorldQuaternion().ToXmV()));
+			return XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f);
+		}
+		static XMVECTOR CalLightWorldDir(const JUserPtr<JTransform>& transform) noexcept
+		{
+			return XMVector3Normalize(XMVector3Rotate(GetInitDir(), transform->GetWorldQuaternion().ToXmV()));
 		}
 		static XMVECTOR CalLightWorldPos(const JUserPtr<JTransform>& transform) noexcept
 		{ 
@@ -140,7 +146,8 @@ namespace JinEngine
 
 	class JDirectionalLight::JDirectionalLightImpl : public Core::JTypeImplBase,
 		public LitFrameUpdate,
-		public Graphic::JGraphicMultiResourceHolder,
+		public JGraphicWideSingleOneMultiResourceHolder,
+		//public Graphic::JGraphicMultiResourceHolder,
 		public Graphic::JGraphicDrawListCompInterface,
 		public Graphic::JCullingInterface,
 		public Graphic::JCsmHandlerInterface
@@ -161,15 +168,13 @@ namespace JinEngine
 		JMatrix4x4 view;
 		JMatrix4x4 proj;
 	public:
-		REGISTER_PROPERTY_EX(penumbraWidth, GetPenumbraWidth, SetPenumbraWidth, GUI_SLIDER(minPenumbraWidth, maxPenumbraWidth, true, false))
-		float penumbraWidth= 1.0f;
-		REGISTER_PROPERTY_EX(penumbraNearPlane, GetPenumbraNearPlane, SetPenumbraNearPlane, GUI_SLIDER(minPenumbraNearPlane, maxPenumbraNearPlane, true, false))
-		float penumbraNearPlane = 1.0f;
+		REGISTER_PROPERTY_EX(bias, GetBias, SetBias, GUI_SLIDER(-1.0f, 1.0f, true, false, 5))
+		float bias = 0.0f;
 	public:
 		//REGISTER_PROPERTY_EX(onCsm, IsCsmActivated, SetCsm, GUI_CHECKBOX(GUI_BOOL_CONDITION_REF_USER(OnShadow, true)))
 		REGISTER_GUI_BOOL_CONDITION(OnShadow, IsShadowActivated, true)
 		REGISTER_GUI_BOOL_CONDITION(OnCsm, onCsm, false)
-		REGISTER_PROPERTY_EX(onCsm, IsCsmActivated, SetCsm, GUI_CHECKBOX(GUI_BOOL_CONDITION_REF_USER(OnShadow, true)))
+		REGISTER_PROPERTY_EX(onCsm, IsCsmActivated, SetCsm, GUI_CHECKBOX(GUI_BOOL_CONDITION_USER(OnShadow, true)))
 		bool onCsm = false;
 	public:  
 		bool allowHzbOcclusionCulling = false;
@@ -178,7 +183,8 @@ namespace JinEngine
 	public:
 		JDirectionalLightImpl(const InitData& initData, JDirectionalLight* thisLitRaw)
 			:Graphic::JCsmHandlerInterface()
-		{ }
+		{ 
+		}
 		~JDirectionalLightImpl()
 		{ }
 	public:
@@ -267,32 +273,22 @@ namespace JinEngine
 		{
 			return GetCsmOptionRef().GetLevelBlendRate();
 		}
-		float GetPenumbraWidth()
+		float GetBias()const noexcept
 		{
-			return penumbraWidth;
+			return bias;
 		}
-		float GetPenumbraNearPlane()
+	public:  
+		void SetShadow(const bool value, const bool isManual = false)noexcept
 		{
-			return penumbraNearPlane;
-		}
-	public: 
-		//value가 bool type일경우에만 justCallFunc을 사용할수있다
-		//justCallFunc는 값을 변경하지않고 함수내에서 value per 기능을 수행한다
-		void SetShadow(const bool value)
-		{
-			SetShadowEx(value, false);
-		}
-		void SetShadowEx(const bool value, const bool justCallFunc)noexcept
-		{
-			if (justCallFunc || thisPointer->IsActivated())
+			if (thisPointer->IsActivated() || isManual)
 			{
-				if (thisPointer->IsShadowActivated())
+				if (value)
 					CreateShadowMapResource(CanAllocateCsm());
 				else
 					DestroyShadowMapResource();
 			}
 			SetFrameDirty();
-		}
+		} 
 		void SetShadowResolution(const J_SHADOW_RESOLUTION newShadowResolution)noexcept
 		{  
 			if (thisPointer->IsActivated() && thisPointer->IsShadowActivated())
@@ -304,26 +300,38 @@ namespace JinEngine
 		}
 		void SetCsm(const bool value)noexcept
 		{
-			SetCsmEx(value);
-		}
-		void SetCsmEx(const bool value, const bool justCallFunc = false)noexcept
-		{
-			if (!justCallFunc && onCsm == value)
-				return; 
+			if (onCsm == value)
+				return;
 
-			if (justCallFunc || thisPointer->IsActivated())
+			if (thisPointer->IsActivated())
 			{
-				DestroyShadowMapResource();
+				if(IsShadowActivated())
+					DestroyShadowMapResource();
 				if (onCsm)
 					DeRegisterCsmHandlerface();
 			}
-			if(!justCallFunc)
-				onCsm = value;
-			if (justCallFunc || thisPointer->IsActivated())
+			onCsm = value;
+			if (thisPointer->IsActivated())
 			{
 				if (onCsm)
 					RegisterCsmHandlerface();
-				CreateShadowMapResource(CanAllocateCsm());
+				if (IsShadowActivated())
+					CreateShadowMapResource(CanAllocateCsm());
+			}
+			SetFrameDirty();
+		}
+		void SetCsmManual(const bool value)noexcept
+		{
+			if (IsShadowActivated())
+				DestroyShadowMapResource();
+			if (onCsm)
+				DeRegisterCsmHandlerface();
+			if (value)
+			{
+				if (onCsm)
+					RegisterCsmHandlerface();
+				if (IsShadowActivated())
+					CreateShadowMapResource(CanAllocateCsm());
 			}
 			SetFrameDirty();
 		}
@@ -331,9 +339,9 @@ namespace JinEngine
 		{
 			SetAllowDisplayShadowMapEx(value, false);
 		}
-		void SetAllowDisplayShadowMapEx(const bool value, const bool justCallFunc = false)
+		void SetAllowDisplayShadowMapEx(const bool value, const bool allowManualControll = false)
 		{ 
-			if (justCallFunc || thisPointer->IsActivated())
+			if (allowManualControll || thisPointer->IsActivated())
 			{
 				if (value)
 					CreateShadowMapDebugResource(CanAllocateCsm());
@@ -342,17 +350,17 @@ namespace JinEngine
 			}
 			SetFrameDirty();
 		} 
-		void SetAllowHzbOcclusionCulling(const bool value, const bool justCallFunc = false)noexcept
+		void SetAllowHzbOcclusionCulling(const bool value, const bool allowManualControll = false)noexcept
 		{ 
-			if (!justCallFunc && allowHzbOcclusionCulling == value)
+			if (!allowManualControll && allowHzbOcclusionCulling == value)
 				return;
 
 			if (AllowHdOcclusionCulling())
 				SetAllowHdOcclusionCulling(false);
 
-			if (!justCallFunc)
+			if (!allowManualControll)
 				allowHzbOcclusionCulling = value;
-			if (justCallFunc || thisPointer->IsActivated())
+			if (allowManualControll || thisPointer->IsActivated())
 			{
 				if (value)
 				{
@@ -378,17 +386,17 @@ namespace JinEngine
 			}
 			SetFrameDirty();
 		}
-		void SetAllowHdOcclusionCulling(const bool value, const bool justCallFunc = false)noexcept
+		void SetAllowHdOcclusionCulling(const bool value, const bool allowManualControll = false)noexcept
 		{ 
-			if (!justCallFunc && allowHdOcclusionCulling == value)
+			if (!allowManualControll && allowHdOcclusionCulling == value)
 				return;
 
 			if (AllowHzbOcclusionCulling())
 				SetAllowHzbOcclusionCulling(false);
 
-			if (!justCallFunc)
+			if (!allowManualControll)
 				allowHdOcclusionCulling = value;
-			if (justCallFunc || thisPointer->IsActivated())
+			if (allowManualControll || thisPointer->IsActivated())
 			{
 				if (value)
 				{
@@ -409,14 +417,14 @@ namespace JinEngine
 			}
 			SetFrameDirty();
 		}
-		void SetAllowDisplayOccCullingDepthMap(const bool value, const bool justCallFunc = false)noexcept
+		void SetAllowDisplayOccCullingDepthMap(const bool value, const bool allowManualControll = false)noexcept
 		{
-			if (!justCallFunc && allowDisplayOccCullingDepthMap == value)
+			if (!allowManualControll && allowDisplayOccCullingDepthMap == value)
 				return;
 
-			if (!justCallFunc)
+			if (!allowManualControll)
 				allowDisplayOccCullingDepthMap = value;
-			if (justCallFunc || thisPointer->IsActivated())
+			if (allowManualControll || thisPointer->IsActivated())
 			{
 				if (value)
 					CreateOcclusionDepthDebug(AllowHzbOcclusionCulling());
@@ -442,7 +450,7 @@ namespace JinEngine
 		}
 		void SetShadowDistance(const float value)noexcept
 		{
-			GetCsmOptionRef().SetShadowDistance(value);
+			GetCsmOptionRef().SetShadowDistance(std::clamp(value, Constants::minCamFrustumNear, Constants::maxCamFrustumFar));
 			SetFrameDirty();
 		}
 		void SetLevelBlendRate(const float value)noexcept
@@ -450,21 +458,16 @@ namespace JinEngine
 			GetCsmOptionRef().SetLevelBlendRate(value);
 			SetFrameDirty();
 		}
-		void SetPenumbraWidth(const float value)
+		void SetBias(const float value)
 		{
-			penumbraWidth = std::clamp(value, minPenumbraWidth, abs(vSceneBBoxMaxF.x - vSceneBBoxMinF.x));
-			SetFrameDirty();
-		}
-		void SetPenumbraNearPlane(const float value)
-		{
-			penumbraNearPlane = std::clamp(value, minPenumbraNearPlane, vSceneBBoxMinF.z);
+			bias = std::clamp(value, -1.0f, 1.0f);
 			SetFrameDirty();
 		}
 	public:
-		REGISTER_METHOD_GUI_WIDGET(CsmSplitCount, GetSplitCount, SetSplitCount, GUI_SLIDER(Graphic::JCsmOption::minCountOfSplit, Graphic::JCsmOption::maxCountOfSplit, true, false, GUI_BOOL_CONDITION_USER(OnCsm, true)))
-		REGISTER_METHOD_GUI_WIDGET(CsmSplitBlendRate, GetSplitBlendRate, SetSplitBlendRate, GUI_SLIDER(Graphic::JCsmOption::minSplitRate, Graphic::JCsmOption::maxSplitRate, true, false, GUI_BOOL_CONDITION_USER(OnCsm, true)))
-		//REGISTER_METHOD_GUI_WIDGET(CsmShadowDistance, GetShadowDistance, SetShadowDistance, GUI_SLIDER(Graphic::JCsmOption::minCountOfSplit, Graphic::JCsmOption::maxCountOfSplit, GUI_BOOL_CONDITION_USER(OnCsm, true)))
-		REGISTER_METHOD_GUI_WIDGET(CsmLevelBlendRate, GetLevelBlendRate, SetLevelBlendRate, GUI_SLIDER(Graphic::JCsmOption::minLevelRate, Graphic::JCsmOption::maxLevelRate, true, false, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_METHOD_GUI_WIDGET(CsmSplitCount, GetSplitCount, SetSplitCount, GUI_SLIDER(Graphic::JCsmOption::minCountOfSplit, Graphic::JCsmOption::maxCountOfSplit, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_METHOD_GUI_WIDGET(CsmSplitBlendRate, GetSplitBlendRate, SetSplitBlendRate, GUI_SLIDER(Graphic::JCsmOption::minSplitRate, Graphic::JCsmOption::maxSplitRate, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_METHOD_GUI_WIDGET(CsmShadowDistance, GetShadowDistance, SetShadowDistance, GUI_SLIDER(Constants::minCamFrustumNear, Constants::maxCamFrustumFar, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
+		REGISTER_METHOD_GUI_WIDGET(CsmLevelBlendRate, GetLevelBlendRate, SetLevelBlendRate, GUI_SLIDER(Graphic::JCsmOption::minLevelRate, Graphic::JCsmOption::maxLevelRate, true, false, 3, GUI_BOOL_CONDITION_USER(OnCsm, true)))
 	public:
 		REGISTER_METHOD(IsShadowActivated)
 		bool IsShadowActivated()const noexcept
@@ -509,7 +512,7 @@ namespace JinEngine
 				RegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO);
 				const uint targetCount = GetCsmTargetCount();
 				for (uint i = 0; i < targetCount; ++i)
-					CreateShadowMapArrayTexture(thisPointer->GetShadowMapSize(), GetCsmOptionRef().GetSplitCount());
+					CreateShadowMapTextureArray(thisPointer->GetShadowMapSize(), GetCsmOptionRef().GetSplitCount());
 			} 
 			else
 				CreateShadowMapTexture(thisPointer->GetShadowMapSize());
@@ -547,29 +550,29 @@ namespace JinEngine
 			DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
 		}
 	public:
-		void Activate()noexcept
+		void Activate()
 		{
 			if (AllowHdOcclusionCulling() && AllowHzbOcclusionCulling())
 				allowHdOcclusionCulling = allowHzbOcclusionCulling = false;
-
+ 
 			RegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
 			if (onCsm)
-				SetCsmEx(true, true);
+				SetCsmManual(true);
 			if (thisPointer->IsShadowActivated())
-				SetShadowEx(true, true); 
+				SetShadow(true, true);
 			if (allowHzbOcclusionCulling)
 				SetAllowHzbOcclusionCulling(true, true);
 			if (allowHdOcclusionCulling)
 				SetAllowHdOcclusionCulling(true, true);
 		}
-		void DeActivate()noexcept
-		{
+		void DeActivate()
+		{ 
 			//has order dependency
 			DeRegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
 			if (onCsm)
-				SetCsmEx(false, true);
+				SetCsmManual(false);
 			if (thisPointer->IsShadowActivated())
-				SetShadowEx(false, true); 
+				SetShadow(false, true);
 			if (allowHzbOcclusionCulling)
 				SetAllowHzbOcclusionCulling(false, true);
 			if (allowHdOcclusionCulling)
@@ -581,12 +584,14 @@ namespace JinEngine
 		void UpdateFrame(Graphic::JDirectionalLightConstants& constant) noexcept final
 		{ 
 			const XMMATRIX viewM = view.LoadXM();
-			const XMMATRIX projM = proj.LoadXM();
+			const XMMATRIX projM = proj.LoadXM(); 
 
-			constant.color = thisPointer->GetColor();
+			constant.view.StoreXM(XMMatrixTranspose(viewM));
+			constant.viewProj.StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM, projM)));
 			if (CanAllocateCsm())
 			{
-				constant.shadowMapTransform.StoreXM(XMMatrixTranspose(viewM));
+				constant.shadowMapTransform.StoreXM(XMMatrixTranspose(GetShadowMapTransform()));
+				//constant.shadowMapTransform.StoreXM(XMMatrixTranspose(viewM));
 				constant.shadowMapIndex = GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY, 0);
 				constant.csmDataIndex = CsmInfoFrame::GetFrameIndex();
 			}
@@ -594,16 +599,20 @@ namespace JinEngine
 			{ 
 				constant.shadowMapTransform.StoreXM(XMMatrixTranspose(GetShadowMapTransform()));
 				constant.shadowMapIndex = GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0);
-			}
-			constant.view.StoreXM(XMMatrixTranspose(viewM));
-			constant.viewProj.StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM, projM)));
+			}  
+
 			constant.shadowMapType = (uint)GetShadowMapType();
+			constant.color = thisPointer->GetColor();
 			constant.direction = CalLightWorldDir(GetTransform());
 			constant.frustumSize = JVector2F(abs(vSceneBBoxMaxF.x - vSceneBBoxMinF.x), abs(vSceneBBoxMaxF.y - vSceneBBoxMinF.y));
 			constant.frustumNear = vSceneBBoxMinF.z;
 			constant.frustumFar = vSceneBBoxMaxF.z;
-			constant.punumbraScale = penumbraWidth;
-			constant.penumbraNearPlane = penumbraNearPlane; 
+			constant.penumbraScale = thisPointer->GetPenumbraWidth();
+			constant.penumbraBlockerScale = thisPointer->GetPenumbraBlockerWidth();
+			constant.shadowMapSize = thisPointer->GetShadowMapSize();
+			constant.shadowMapInvSize = 1.0f / constant.shadowMapSize;
+			constant.tanAngle = XMVectorGetX(DirectX::XMVector3AngleBetweenNormals(constant.direction.ToXmV(), GetInitDir()));
+			constant.bias = bias;
 			DirLitFrame::MinusMovedDirty();  	 
 		}
 		void UpdateFrame(Graphic::JCsmConstants& constant, const uint index)noexcept final
@@ -629,7 +638,7 @@ namespace JinEngine
 			for (uint i = 0; i < result.subFrustumCount; ++i)
 			{
 				constant.shadowMapTransform[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewM,
-					result.shadowProjM[i].LoadXM())));
+					result.shadowProjM[i].LoadXM()))); 
 			}
 			CsmDrawFrame::MinusMovedDirty();
 		}	
@@ -676,10 +685,7 @@ namespace JinEngine
 			view.StoreXM(viewM);
 			proj.StoreXM(CalProj(GetSceneBBox(), view, thisPointer->GetShadowResolution(), vSceneBBoxMinF, vSceneBBoxMaxF));
 			if (CanAllocateCsm())
-				CsmUpdate(viewM, GetSceneBBox(), thisPointer->GetShadowMapSize());
-
-			penumbraWidth = std::clamp(penumbraWidth, minPenumbraWidth, abs(vSceneBBoxMaxF.x - vSceneBBoxMinF.x));
-			penumbraNearPlane = std::clamp(penumbraNearPlane, minPenumbraNearPlane, vSceneBBoxMinF.z);
+				CsmUpdate(viewM, GetSceneBBox(), thisPointer->GetShadowMapSize());		 
 		}
 		void UpdateCsmTargetCount(const uint index, const bool isRegister)
 		{
@@ -704,7 +710,7 @@ namespace JinEngine
 					}
 					else
 					{
-						CreateShadowMapArrayTexture(thisPointer->GetShadowMapSize(), GetCsmOption().GetSplitCount());
+						CreateShadowMapTextureArray(thisPointer->GetShadowMapSize(), GetCsmOption().GetSplitCount());
 						if (thisPointer->AllowDisplayShadowMap())
 							CreateLayerDepthDebugResource(JVector2<uint>(thisPointer->GetShadowMapSize(), thisPointer->GetShadowMapSize()));
 					}
@@ -716,9 +722,9 @@ namespace JinEngine
 				CsmDrawFrame::SetMovedDirty();
 				if (!isSameCount)
 				{
-					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY, index);
+					DestroyMultiTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_ARRAY, index);
 					if (thisPointer->AllowDisplayShadowMap())
-						DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG, index);
+						DestroyMultiTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG, index);
 				}
 			}
 			SetFrameDirty();
@@ -1048,23 +1054,42 @@ namespace JinEngine
 			return nullptr;
 
 		std::wstring guide;
-		size_t guid;
-		J_OBJECT_FLAG flag;
-		bool isActivated;
-		bool sOnCsm; 
+		size_t guid = 0;
+		J_OBJECT_FLAG flag = OBJECT_FLAG_NONE;
+		bool isActivated = false;
+		bool sOnCsm = false;
+		float sBias = 0;
+		float sSplitBlendRate = 0;
+		uint sSplitCount = 0;
+		float sShadowDistance = 0;
+		float sLevelBlendRate = 0;
+		float sPenumbraWidth = 0;
+		float sPenumbraBlockerScale = 0; 
 
 		auto loadData = static_cast<JDirectionalLight::LoadData*>(data);
-		std::wifstream& stream = loadData->stream;
+		JFileIOTool& tool = loadData->tool;
+		Graphic::JCsmOption csmOption;
 		JUserPtr<JGameObject> owner = loadData->owner;
 
-		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
+		JObjectFileIOHelper::LoadComponentIden(tool, guid, flag, isActivated);
 		auto idenUser = lPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JDirectionalLight::InitData>(guid, flag, owner), &lPrivate);
 		JUserPtr<JDirectionalLight> litUser;
 		litUser.ConnnectChild(idenUser);
 
-		JLightPrivate::AssetDataIOInterface::LoadLightData(stream, litUser);		
-		JObjectFileIOHelper::LoadAtomicData(stream, sOnCsm);
+		JLightPrivate::AssetDataIOInterface::LoadLightData(tool, litUser);
+		JObjectFileIOHelper::LoadAtomicData(tool, sOnCsm, "OnCsm:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sBias, "Bias:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sSplitBlendRate, "CsmSplitBlendRate:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sSplitCount, "CsmSplitCount:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sShadowDistance, "CsmShadowDistance:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sLevelBlendRate, "CsmLevelBlendRate:");
+
 		litUser->SetCsm(sOnCsm); 
+		litUser->impl->SetBias(sBias);
+		litUser->impl->SetSplitBlendRate(sSplitBlendRate);
+		litUser->impl->SetSplitCount(sSplitCount);
+		litUser->impl->SetShadowDistance(sShadowDistance);
+		litUser->impl->SetLevelBlendRate(sLevelBlendRate);
 		if (!isActivated)
 			litUser->DeActivate();
 		return litUser;
@@ -1082,12 +1107,17 @@ namespace JinEngine
 		lit.ConnnectChild(storeData->obj);
 
 		JDirectionalLight::JDirectionalLightImpl* impl = lit->impl.get();
-		std::wofstream& stream = storeData->stream;
+		JFileIOTool& tool = storeData->tool;
+		auto option = impl->GetCsmOption();
 
-		JObjectFileIOHelper::StoreComponentIden(stream, lit.Get());
-		JLightPrivate::AssetDataIOInterface::StoreLightData(stream, lit);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"OnCsm:", impl->onCsm);
-
+		JObjectFileIOHelper::StoreComponentIden(tool, lit.Get());
+		JLightPrivate::AssetDataIOInterface::StoreLightData(tool, lit);
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->onCsm, "OnCsm:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->bias, "Bias:");
+		JObjectFileIOHelper::StoreAtomicData(tool, option.GetSplitBlendRate(), "CsmSplitBlendRate:");
+		JObjectFileIOHelper::StoreAtomicData(tool, option.GetSplitCount(), "CsmSplitCount:");
+		JObjectFileIOHelper::StoreAtomicData(tool, option.GetShadowDistance(), "CsmShadowDistance:");
+		JObjectFileIOHelper::StoreAtomicData(tool, option.GetLevelBlendRate(), "CsmLevelBlendRate:");
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

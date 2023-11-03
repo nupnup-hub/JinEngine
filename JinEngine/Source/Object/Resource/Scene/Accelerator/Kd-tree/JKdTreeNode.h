@@ -1,7 +1,6 @@
 #pragma once 
 #include"../JAcceleratorNode.h"
-#include"../JAcceleratorOption.h" 
-#include"../../../../../Core/Geometry/JCullingFrustum.h"
+#include"../JAcceleratorOption.h"  
 #include"../../../../../Core/Geometry/JRay.h" 
 #include"../../../../../Core/Math/JVector.h"
 #include<DirectXCollision.h> 
@@ -50,7 +49,7 @@ namespace JinEngine
 		void DestroyDebugGameObject()noexcept;
 		void Clear()noexcept;
 	public:
-		void Culling(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG flag)noexcept;
+		//void Culling(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG flag)noexcept;
 		void Culling(JAcceleratorCullingInfo& info)noexcept;
 		void FindIntersect(JAcceleratorIntersectInfo& info)const noexcept;
 		void FindContain(JAcceleratorContainInfo& info)const noexcept;

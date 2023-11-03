@@ -2,16 +2,18 @@
 #include"JResourceObjectPrivate.h"
 #include "JResourceObjectHint.h" 
 #include "JResourceManager.h" 
+#include"JResourceObjectEventDesc.h"
 #include"../Directory/JFile.h"
 #include"../Directory/JFileInitData.h"
 #include"../Directory/JDirectory.h" 
 #include"../Directory/JDirectoryPrivate.h"
 #include"../JObjectFileIOHelper.h"
+#include"../JObjectModifyInterface.h"
 #include"../../Core/Utility/JCommonUtility.h"
 #include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/File/JFileConstant.h" 
-#include"../../Editor/Interface/JEditorObjectHandleInterface.h"
+#include"../../Core/File/JFileIOHelper.h" 
 #include"../../Application/JApplicationEngine.h"
 #include"../../Application/JApplicationProject.h"
 #include<fstream>
@@ -31,9 +33,13 @@ namespace JinEngine
 			return this;
 		}
 	public:
-		void NotifyEraseEvent(JResourceObject* rObj)
+		void NotifyUpdateEvent(JResourceObject* rObj, std::unique_ptr<JResourceEventDesc>&& desc = nullptr)
 		{
-			NotifyEvent(rObj->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE, rObj);
+			NotifyEvent(rObj->GetGuid(), J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE, rObj, desc.get());
+		}
+		void NotifyEraseEvent(JResourceObject* rObj, std::unique_ptr<JResourceEventDesc>&& desc = nullptr)
+		{
+			NotifyEvent(rObj->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE, rObj, desc.get());
 		}
 	};
 	namespace
@@ -56,7 +62,7 @@ namespace JinEngine
 	public:
 		static std::wstring GetCacheFilePath(JResourceObject* rObj) noexcept
 		{ 
-			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(rObj->GetGuid()) + Core::JFileConstant::GetCacheFileFormat();
+			return JApplicationProject::ModResourceCachePath() + L"\\" + std::to_wstring(rObj->GetGuid()) + Core::JFileConstant::GetCacheFileFormatW();
 		}
 	public:
 		static bool DoCopy(const JUserPtr<JResourceObject>& from, const JUserPtr<JResourceObject>& to)
@@ -84,8 +90,8 @@ namespace JinEngine
 			else
 				name = toDir->MakeUniqueFileName(existingFile->GetName(), from->GetFormat(), existingFile->GetResourceGuid());
 
-			std::wstring toPath = toDir->GetPath() + L"\\" + name + Core::JFileConstant::GetFileFormat();
-			std::wstring toMetaPath = toDir->GetPath() + L"\\" + name + Core::JFileConstant::GetMetaFileFormat();
+			std::wstring toPath = toDir->GetPath() + L"\\" + name + Core::JFileConstant::GetFileFormatW();
+			std::wstring toMetaPath = toDir->GetPath() + L"\\" + name + Core::JFileConstant::GetMetaFileFormatW();
 			std::wifstream fromStream;
 			std::wofstream toStream;
 
@@ -98,21 +104,22 @@ namespace JinEngine
 
 				//jasset
 				std::wstring guide;
-				const std::wstring guidSymbol = Core::JFileConstant::StreamUncopiableGuidSymbol();
+				const std::wstring guidSymbol = Core::JFileConstant::GetUncopiableGuidSymbolW();
 				while (getline(fromStream, guide))
 				{
 					if (JCUtil::Contain(guide, guidSymbol))
 					{
-						const size_t storedGuid = JCUtil::WstringToInt(guide.substr(guidSymbol.size()));
+						const uint index = guide.find(guidSymbol);
+						const size_t storedGuid = JCUtil::WstringToInt(JCUtil::EraseSideWChar(guide.substr(index), L' '));
 						auto guidData = guidMap.find(storedGuid);
 
 						if (guidData != guidMap.end())
-							toStream << guidSymbol << guidData->second << '\n';
+							toStream<< guide.substr(0, index + guidSymbol.size()) << guidData->second << '\n';
 						else
 						{
 							const size_t newGuid = Core::MakeGuid();
 							guidMap.emplace(storedGuid, newGuid);
-							toStream << guidSymbol << newGuid << '\n';
+							toStream << guide.substr(0, index + guidSymbol.size()) << newGuid << '\n';
 						}
 					}
 					else
@@ -136,11 +143,14 @@ namespace JinEngine
 			fromStream.open(from->GetMetaFilePath(), std::ios::binary | std::ios::in);
 			toStream.open(toMetaPath, std::ios::binary | std::ios::out);
 			std::wstring guide;
-			const std::wstring guidSymbol = Core::JFileConstant::StreamObjGuidSymbol();
+			const std::wstring guidSymbol = Core::JFileConstant::GetObjGuidSymbolW();
 			while (getline(fromStream, guide))
 			{
 				if (JCUtil::Contain(guide, guidSymbol))
-					toStream << guidSymbol << guid << '\n';
+				{
+					const uint index = guide.find(guidSymbol);
+					toStream << guide.substr(0, index + guidSymbol.size()) << guid << '\n';
+				}
 				else
 					toStream << guide << '\n';
 			}
@@ -293,11 +303,11 @@ namespace JinEngine
 	}
 	std::wstring JResourceObject::GetPath()const noexcept
 	{
-		return impl->directory->GetPath() + L"\\" + GetName() + Core::JFileConstant::GetFileFormat();
+		return impl->directory->GetPath() + L"\\" + GetName() + Core::JFileConstant::GetFileFormatW();
 	}
 	std::wstring JResourceObject::GetMetaFilePath()const noexcept
 	{
-		return impl->directory->GetPath() + L"\\" + GetName() + Core::JFileConstant::GetMetaFileFormat();
+		return impl->directory->GetPath() + L"\\" + GetName() + Core::JFileConstant::GetMetaFileFormatW();
 	}
 	std::wstring JResourceObject::GetFolderPath()const noexcept
 	{
@@ -394,7 +404,7 @@ namespace JinEngine
 	using AssetDataIOInterface = JResourceObjectPrivate::AssetDataIOInterface;
 	using FileInterface = JResourceObjectPrivate::FileInterface;
 	using DestroyInstanceInterfaceEx = JResourceObjectPrivate::DestroyInstanceInterfaceEx;
-
+	using EventInterface = JResourceObjectPrivate::EventInterface;
 
 	void CreateInstanceInterface::Initialize(Core::JIdentifier* createdPtr, Core::JDITypeDataBase* initData)noexcept
 	{
@@ -444,7 +454,7 @@ namespace JinEngine
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)
 	{
 		JResourceObject* rObj = static_cast<JResourceObject*>(ptr);
-		rEv.NotifyEraseEvent(rObj);	  
+		rEv.NotifyEraseEvent(rObj, nullptr);	  
 		auto rTypeHint = RTypeCommonCall::GetRTypeHint(rObj->GetResourceType());
 		if (rTypeHint.isFrameResource)
 		{
@@ -468,7 +478,7 @@ namespace JinEngine
 			rObj->impl->ConvertToDeActFileData(); 
 			if (canCreateCache && JApplicationEngine::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
 			{
-				if (JEditorModifedObjectInterface{}.IsModified(rObj->GetGuid()))
+				if (JModifedObjectInterface{}.IsModifiedAndStoreAble(rObj->GetGuid()))
 				{
 					if (!rObj->IsActivated())
 					{
@@ -486,11 +496,16 @@ namespace JinEngine
 		if (!isUndestroyable)
 		{
 			if (!rTypeHint.canKeepDiskFileLife)
+			{
 				rObj->impl->DeleteRFile(rObj);	//완전한 resource 파괴
+				JModifedObjectInterface{}.RemoveInfo(rObj->GetGuid());
+			}
 			else if (!rTypeHint.canKeepJFileLife)
+			{
 				JResourceObject::JResourceObjectImpl::DestroyJFile(rObj->GetGuid());	//JFile을 통한 Load를 막고 새로운 resource 생성만 유효하게 한다		
+				JModifedObjectInterface{}.RemoveInfo(rObj->GetGuid());
+			}
 		}
-
 		//clear data
 		if (rObj->IsActivated())
 			rObj->DeActivate();
@@ -503,53 +518,48 @@ namespace JinEngine
 	{
 		return std::make_unique<JResourceObject::StoreData>(rObj);
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadCommonMetaData(std::wifstream& stream, Core::JDITypeDataBase* data, const bool closeSream)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadCommonMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JResourceObject::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
-		 
-		if (!stream.is_open() || stream.eof())
+
+		if (!tool.CanLoad())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		auto rInit = static_cast<JResourceObject::InitData*>(data);
-
-		JObjectFileIOHelper::LoadObjectIden(stream, rInit->guid, rInit->flag);
 		std::wstring guide;
 		std::wstring format;
-		int rType;
-		int formatIndex;
 
-		stream >> guide >> rType;
-		stream >> guide >> format;
-		stream >> guide >> formatIndex; 
-		if (closeSream)
-			stream.close();
-		rInit->rType = (J_RESOURCE_TYPE)rType;
-		rInit->formatIndex = formatIndex;
-
+		JObjectFileIOHelper::LoadObjectIden(tool, rInit->guid, rInit->flag);
+		JObjectFileIOHelper::LoadEnumData(tool, rInit->rType, Core::JFileConstant::GetTypeSymbol<J_RESOURCE_TYPE>());
+		JObjectFileIOHelper::LoadJString(tool, format, Core::JFileConstant::GetFormatSymbol());
+		JObjectFileIOHelper::LoadAtomicData(tool, rInit->formatIndex, Core::JFileConstant::GetFormatIndexSymbol());
+		
+		if (canClose)
+			tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreCommonMetaData(std::wofstream& stream, Core::JDITypeDataBase* data, const bool closeSream)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreCommonMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JResourceObject::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
+		if(!tool.CanStore())
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
 		auto rStore = static_cast<JResourceObject::StoreData*>(data);
 		JUserPtr<JResourceObject> rUser;
 		rUser.ConnnectChild(rStore->obj);
-
-		if (!stream.is_open() || stream.eof())
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
  
-		JObjectFileIOHelper::StoreObjectIden(stream, rUser.Get());
+		JObjectFileIOHelper::StoreObjectIden(tool, rUser.Get());
+		JObjectFileIOHelper::StoreEnumData(tool, rUser->GetResourceType(), Core::JFileConstant::GetTypeSymbol<J_RESOURCE_TYPE>());
+		JObjectFileIOHelper::StoreJString(tool, rUser->GetFormat(), Core::JFileConstant::GetFormatSymbol());
+		JObjectFileIOHelper::StoreAtomicData(tool, rUser->GetFormatIndex(), Core::JFileConstant::GetFormatIndexSymbol());
 
-		stream << Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>() << (int)rUser->GetResourceType() << '\n';
-		stream << Core::JFileConstant::StreamFormatSymbol() << rUser->GetFormat() << '\n';
-		stream << Core::JFileConstant::StreamFormatIndexSymbol() << rUser->GetFormatIndex() << '\n';
-		if (closeSream)
-			stream.close();
+		if (canClose)
+			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
-	}
+	} 
 
 	JUserPtr<JFile> FileInterface::CopyJFile(const JUserPtr<JResourceObject>& from, const JUserPtr<JDirectory>& toDir, bool setNewInnderGuid)noexcept
 	{
@@ -579,6 +589,28 @@ namespace JinEngine
 	void DestroyInstanceInterfaceEx::BeginForcedDestroy(JResourceObject* rObj)noexcept
 	{
 		JResourceObject::BeginForcedDestroy(rObj);
+	}
+
+	void EventInterface::NotifyEvent(JResourceObject* rObj, const J_RESOURCE_EVENT_TYPE type, std::unique_ptr<JResourceEventDesc>&& desc)
+	{
+		if (rObj == nullptr)
+			return;
+
+		switch (type)
+		{
+		case JinEngine::J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE:
+		{
+			rEv.NotifyEraseEvent(rObj, std::move(desc));
+			break;
+		}
+		case JinEngine::J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE:
+		{
+			rEv.NotifyUpdateEvent(rObj, std::move(desc));
+			break;
+		}
+		default:
+			break;
+		}
 	}
 
 	Core::JIdentifierPrivate::DestroyInstanceInterface& JResourceObjectPrivate::GetDestroyInstanceInterface()const noexcept

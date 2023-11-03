@@ -15,7 +15,8 @@ namespace JinEngine::Graphic
 		JCullingManager* cullingM,
 		JFrameResource* currFrame,
 		JDepthMapDebug* depthDebug,
-		JDepthTest* depthTest)
+		JDepthTest* depthTest,
+		JBlur* blur)
 		: info(info), 
 		option(option),
 		device(device),
@@ -23,10 +24,11 @@ namespace JinEngine::Graphic
 		cullingM(cullingM),
 		currFrame(currFrame),
 		depthDebug(depthDebug),
-		depthTest(depthTest)
+		depthTest(depthTest),
+		blur(blur)
 	{
 		if (device != nullptr && gResourceM != nullptr && cullingM != nullptr && currFrame != nullptr &&
-			depthDebug != nullptr && depthTest != nullptr)
+			depthDebug != nullptr && depthTest != nullptr && blur != nullptr)
 			SetValid(true);
 		else
 			SetValid(false);
@@ -63,8 +65,9 @@ namespace JinEngine::Graphic
 	JGraphicShadowMapDrawSet::JGraphicShadowMapDrawSet(JGraphicDevice* device,
 		JFrameResource* currFrame,
 		JGraphicResourceManager* graphicResourceM,
-		JCullingManager* cullingM)
-		:device(device), currFrame(currFrame), graphicResourceM(graphicResourceM), cullingM(cullingM)
+		JCullingManager* cullingM,
+		JBlur* blur)
+		:device(device), currFrame(currFrame), graphicResourceM(graphicResourceM), cullingM(cullingM), blur(blur)
 	{}
 
 	JGraphicOccDrawSet::JGraphicOccDrawSet(JGraphicDevice* device,
@@ -97,13 +100,16 @@ namespace JinEngine::Graphic
 		:cullingM(cullingM)
 	{}
 
-	JGraphicOutlineObjectSet::JGraphicOutlineObjectSet(JGraphicDevice* device,
-		JGraphicResourceManager* graphicResourceM)
+	JGraphicOutlineObjectSet::JGraphicOutlineObjectSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM)
 		: device(device), graphicResourceM(graphicResourceM)
 	{}
 
 	JGraphicOutlineHandleSet::JGraphicOutlineHandleSet(JGraphicResourceManager* graphicResourceM)
 		: graphicResourceM(graphicResourceM)
+	{}
+
+	JGraphicBlurTaskSet::JGraphicBlurTaskSet(JGraphicDevice* device, std::unique_ptr<JBlurDesc>&& desc)
+		: device(device), desc(std::move(desc))
 	{}
 
 	JGraphicEndConditonSet::JGraphicEndConditonSet(const bool isSceneDrawn)

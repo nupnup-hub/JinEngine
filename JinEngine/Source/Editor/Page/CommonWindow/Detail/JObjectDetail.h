@@ -1,6 +1,6 @@
 #pragma once
 #include"../../JEditorWindow.h"     
-#include"../../../Interface/JEditorObjectHandleInterface.h"
+#include"../../../../Object/JObjectModifyInterface.h"
 
 namespace JinEngine
 {
@@ -17,8 +17,7 @@ namespace JinEngine
 		class JReflectionGuiWidgetHelper;
 		class JEditorSearchBarHelper;
 
-		class JObjectDetail final : public JEditorWindow,
-			public JEditorObjectHandlerInterface
+		class JObjectDetail final : public JEditorWindow, public JObjectModifyInterface
 		{
 		private:
 			JUserPtr<Core::JIdentifier> selected;

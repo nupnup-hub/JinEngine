@@ -38,6 +38,12 @@ namespace JinEngine
 				return (int)static_cast<JLight*>(a.Get())->GetLightType() < (int)static_cast<JLight*>(b.Get())->GetLightType();
 			};
 		} 
+
+		static constexpr float minPenumbraWidth = 0;
+		static constexpr float maxPenumbraWidth = 100000.0f; //Constants::lightMaxDistance * 0.5f;
+
+		static constexpr float minPenumbraNearPlane = 0;
+		static constexpr float maxPenumbraNearPlane = 100000.0f;
 	}
 	 
 	class JLight::JLightImpl : public Core::JTypeImplBase,
@@ -46,18 +52,21 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JLightImpl)
 	public:
 		JWeakPtr<JLight> thisPointer;
-	public:  
 	public:
 		REGISTER_PROPERTY_EX(color, GetColor, SetColor, GUI_COLOR_PICKER(false))
 		JVector3<float> color = { 0.8f, 0.8f, 0.8f };
 	public:
 		//type별 크기제한 필요
-		REGISTER_PROPERTY_EX(shadowResolution, GetShadowResolution, TryCallSetShadowResolution, GUI_ENUM_COMBO(J_SHADOW_RESOLUTION, "-a (v\" X \"v)"))
+		REGISTER_PROPERTY_EX(shadowResolution, GetShadowResolution, TryCallSetShadowResolution, GUI_ENUM_COMBO(J_SHADOW_RESOLUTION, "-a {v} x {v};"))
 		J_SHADOW_RESOLUTION shadowResolution = J_SHADOW_RESOLUTION::MEDIUM;
+	public:
+		REGISTER_PROPERTY_EX(penumbraWidth, GetPenumbraWidth, SetPenumbraWidth, GUI_SLIDER(minPenumbraWidth, maxPenumbraWidth, true, false))
+		float penumbraWidth = 1.0f;
+		REGISTER_PROPERTY_EX(penumbraBlockerScale, GetPenumbraBlockerWidth, SetPenumbraBlockerWidth, GUI_SLIDER(minPenumbraWidth, maxPenumbraWidth, true, false))
+		float penumbraBlockerScale = 1.0f;
 	public:
 		REGISTER_PROPERTY_EX(onShadow, IsShadowActivated, TryCallSetShadow, GUI_CHECKBOX())
 		bool onShadow = false;
-	public:
 		//managed by light type 
 		REGISTER_PROPERTY_EX(allowDisplayShadowMap, AllowDisplayShadowMap, TryCallSetAllowDisplayShadowMap, GUI_CHECKBOX())
 		bool allowDisplayShadowMap = false;
@@ -65,7 +74,7 @@ namespace JinEngine
 		JLightImpl(const InitData& initData, JLight* thisLitRaw)
 		{}
 		~JLightImpl()
-		{ }
+		{}
 	public: 
 		J_SHADOW_RESOLUTION GetShadowResolution()const noexcept
 		{
@@ -78,6 +87,14 @@ namespace JinEngine
 		JVector3<float> GetColor()const noexcept
 		{
 			return color;
+		}
+		float GetPenumbraWidth()const noexcept
+		{
+			return penumbraWidth;
+		}
+		float GetPenumbraBlockerWidth()const noexcept
+		{
+			return penumbraBlockerScale;
 		}
 	public: 
 		void SetColor(const JVector3<float>& newColor)noexcept
@@ -100,6 +117,16 @@ namespace JinEngine
 			allowDisplayShadowMap = value;
 			SetFrameDirty();
 		} 
+		void SetPenumbraWidth(const float value)noexcept
+		{
+			penumbraWidth = std::clamp(value, minPenumbraWidth, maxPenumbraWidth);
+			SetFrameDirty();
+		}
+		void SetPenumbraBlockerWidth(const float value)noexcept
+		{
+			penumbraBlockerScale = std::clamp(value, minPenumbraWidth, maxPenumbraWidth);
+			SetFrameDirty();
+		}
 	public:
 		bool IsShadowActivated()const noexcept
 		{
@@ -236,6 +263,14 @@ namespace JinEngine
 	{
 		return impl->GetShadowMapSize();
 	}
+	float JLight::GetPenumbraWidth()const noexcept
+	{
+		return impl->GetPenumbraWidth();
+	}
+	float JLight::GetPenumbraBlockerWidth()const noexcept
+	{
+		return impl->GetPenumbraBlockerWidth();
+	}
 	void JLight::SetColor(const JVector3<float>& color)noexcept
 	{
 		impl->SetColor(color);
@@ -251,6 +286,14 @@ namespace JinEngine
 	void JLight::SetAllowDisplayShadowMap(const bool value)noexcept
 	{
 		impl->SetAllowDisplayShadowMap(value);
+	}
+	void JLight::SetPenumbraWidth(const float value)noexcept
+	{
+		impl->SetPenumbraWidth(value);
+	}
+	void JLight::SetPenumbraBlockerWidth(const float value)noexcept
+	{
+		impl->SetPenumbraBlockerWidth(value);
 	}
 	bool JLight::IsShadowActivated()const noexcept
 	{
@@ -313,37 +356,45 @@ namespace JinEngine
 		JComponentPrivate::DestroyInstanceInterface::Clear(ptr, isForced);
 	}
 
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadLightData(std::wifstream& stream, JUserPtr<JLight> user)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadLightData(JFileIOTool& tool, JUserPtr<JLight> user)
 	{
-		if (!stream.is_open())
+		if (!tool.CanLoad())
 			return 	Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		std::wstring guide; 
-		J_SHADOW_RESOLUTION sShadowResolutionType;
 		JVector3<float> sColor;
-		bool sOnShadow;
-		bool sAllowDisplayShadowMap;
-		  
-		JObjectFileIOHelper::LoadVector3(stream, sColor);
-		JObjectFileIOHelper::LoadEnumData(stream, sShadowResolutionType);
-		JObjectFileIOHelper::LoadAtomicData(stream, sOnShadow);
-		JObjectFileIOHelper::LoadAtomicData(stream, sAllowDisplayShadowMap);
-   
+		J_SHADOW_RESOLUTION sShadowResolutionType;
+		float sPenumbraWidth = 0;
+		float sPenumbraBlockerScale = 0;
+		bool sOnShadow = 0;
+		bool sAllowDisplayShadowMap = 0;
+
+		JObjectFileIOHelper::LoadVector3(tool, sColor, "Color:");
+		JObjectFileIOHelper::LoadEnumData(tool, sShadowResolutionType, "ShadowResolution:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sPenumbraWidth, "PenumbraWidth:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sPenumbraBlockerScale, "PenumbraBlockerScale:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sOnShadow, "OnShadow:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sAllowDisplayShadowMap, "AllowDisplayShadowMap:");
+
 		user->SetColor(sColor);
 		user->SetShadowResolution(sShadowResolutionType);
+		user->SetPenumbraWidth(sPenumbraWidth);
+		user->SetPenumbraBlockerWidth(sPenumbraBlockerScale);
 		user->SetAllowDisplayShadowMap(sAllowDisplayShadowMap);
 		user->SetShadow(sOnShadow);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreLightData(std::wofstream& stream, const JUserPtr<JLight>& user)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreLightData(JFileIOTool& tool, const JUserPtr<JLight>& user)
 	{
-		if (!stream.is_open())
+		if (!tool.CanStore())
 			return 	Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 		 
-		JObjectFileIOHelper::StoreVector3(stream, L"Color:", user->GetColor());
-		JObjectFileIOHelper::StoreEnumData(stream, L"ShadowResolution:", user->GetShadowResolutionType());
-		JObjectFileIOHelper::StoreAtomicData(stream, L"OnShadow:", user->IsShadowActivated()); 
-		JObjectFileIOHelper::StoreAtomicData(stream, L"AllowDisplayShadowMap:", user->AllowDisplayShadowMap());
+		JObjectFileIOHelper::StoreVector3(tool, user->GetColor(), "Color:");
+		JObjectFileIOHelper::StoreEnumData(tool, user->GetShadowResolutionType(), "ShadowResolution:");
+		JObjectFileIOHelper::StoreAtomicData(tool, user->GetPenumbraWidth(), "PenumbraWidth:");
+		JObjectFileIOHelper::StoreAtomicData(tool, user->GetPenumbraBlockerWidth(), "PenumbraBlockerScale:");
+		JObjectFileIOHelper::StoreAtomicData(tool, user->IsShadowActivated(), "OnShadow:");
+		JObjectFileIOHelper::StoreAtomicData(tool, user->AllowDisplayShadowMap(), "AllowDisplayShadowMap:");
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
  

@@ -5,7 +5,7 @@
 #include <cmath>
 #include<string>
 #include"../JCoreEssential.h"
- 
+
 namespace JinEngine
 {
 	template<typename T>
@@ -115,16 +115,25 @@ namespace JinEngine
 		JVector2(const ValueType x, const ValueType y)
 			: x(x), y(y)
 		{}
-		JVector2(const DirectX::XMFLOAT2& xm)
-			: x(xm.x), y(xm.y)
+#if defined(_XM_NO_INTRINSICS_) 
+		JVector2(const __vector4& v)
+			: x(v.vector4_f32[0]), y(v.vector4_f32[1]))
 		{}
-		JVector2(const DirectX::XMVECTOR& xv)
-			:x(DirectX::XMVectorGetX(xv)), y(DirectX::XMVectorGetY(xv))
+#elif defined(_XM_ARM_NEON_INTRINSICS_) 
+		JVector2(const float32x4_t& v)
+			: x(vgetq_lane_f32(v, 0)), y(vgetq_lane_f32(v, 1))
 		{}
+#elif defined(_XM_SSE_INTRINSICS_) 
+		JVector2(const __m128& v)
+		{
+			_mm_store_ss(&x, v);
+			_mm_store_ss(&y, XM_PERMUTE_PS(v, _MM_SHUFFLE(1, 1, 1, 1))); 
+		}
+#endif 
 		JVector2(const JVector2&) = default;
 		JVector2& operator=(const JVector2& rhs) = default;
 		JVector2(JVector2&&) = default;
-		JVector2& operator=(JVector2&&) = default; 
+		JVector2& operator=(JVector2&&) = default;
 	public:
 		template<typename U, std::enable_if_t<std::is_convertible_v<ValueType, U>, int> = 0>
 		JVector2(const JVector2<U>& rhs)
@@ -147,7 +156,7 @@ namespace JinEngine
 		JVector2& operator=(const U& v)
 		{
 			x = static_cast<ValueType>(v.x);
-			y = static_cast<ValueType>(v.y); 
+			y = static_cast<ValueType>(v.y);
 			return *this;
 		}
 	public:
@@ -207,12 +216,12 @@ namespace JinEngine
 		}
 		bool operator!=(const JVector2& data) const
 		{
-			return x != data.x || y != data.y;
+			return x != data.x && y != data.y;
 		}
 		bool operator==(const JVector2& data) const
 		{
 			return x == data.x && y == data.y;
-		} 
+		}
 		ValueType& operator[](const uint index)noexcept
 		{
 			if (index == 0)
@@ -260,7 +269,7 @@ namespace JinEngine
 		static JVector2 Max(const JVector2& a, const JVector2& b)noexcept
 		{
 			return JVector2(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y);
-		} 
+		}
 	public:
 		float Length()const noexcept
 		{
@@ -292,13 +301,10 @@ namespace JinEngine
 			return JVector2(Base::NegativeInf<T>(), Base::NegativeInf<T>());
 		}
 	public:
-		DirectX::XMFLOAT2 ToXmF()const noexcept
+		template<typename T>
+		auto ToSimilar()const noexcept -> std::conditional_t<HasXY<T>::value, T, void>
 		{
-			if constexpr (std::is_same_v<ValueType, T>)
-				return DirectX::XMFLOAT2{ (float)x, float(y) };
-			else
-				return DirectX::XMFLOAT2{ 0.0f, 0.0f };
-
+			return T{ (float)x, (float)y };
 		}
 		DirectX::XMVECTOR ToXmV(const float w = 1.0f)const noexcept
 		{
@@ -338,7 +344,7 @@ namespace JinEngine
 			static constexpr bool value = sizeof(S) == sizeof(JVector3<T>) &&
 				std::is_convertible_v<decltype(S::x), ValueType> &&
 				std::is_convertible_v<decltype(S::y), ValueType> &&
-				std::is_convertible_v<decltype(S::z), ValueType> ;
+				std::is_convertible_v<decltype(S::z), ValueType>;
 		};
 	public:
 		static constexpr bool isValidValue = !std::is_same_v<ValueType, void>;
@@ -363,9 +369,22 @@ namespace JinEngine
 		JVector3(const DirectX::XMFLOAT3& xm)
 			: x(xm.x), y(xm.y), z(xm.z)
 		{}
-		JVector3(const DirectX::XMVECTOR& xv)
-			:x(DirectX::XMVectorGetX(xv)), y(DirectX::XMVectorGetY(xv)), z(DirectX::XMVectorGetZ(xv))
+#if defined(_XM_NO_INTRINSICS_) 
+		JVector3(const __vector4& v)
+			: x(v.vector4_f32[0]), y(v.vector4_f32[1])), z(v.vector4_f32[2]))
 		{}
+#elif defined(_XM_ARM_NEON_INTRINSICS_) 
+		JVector3(const float32x4_t& v)
+			: x(vgetq_lane_f32(v, 0)), y(vgetq_lane_f32(v, 1)), z(vgetq_lane_f32(v, 2))
+		{}
+#elif defined(_XM_SSE_INTRINSICS_) 
+		JVector3(const __m128& v)
+		{
+			_mm_store_ss(&x, v);
+			_mm_store_ss(&y, XM_PERMUTE_PS(v, _MM_SHUFFLE(1, 1, 1, 1)));
+			_mm_store_ss(&z, XM_PERMUTE_PS(v, _MM_SHUFFLE(2, 2, 2, 2))); 
+		}
+#endif 
 		JVector3(const JVector3&) = default;
 		JVector3& operator=(const JVector3&) = default;
 		JVector3(JVector3&&) = default;
@@ -399,7 +418,7 @@ namespace JinEngine
 		{
 			x = static_cast<ValueType>(v.x);
 			y = static_cast<ValueType>(v.y);
-			z = static_cast<ValueType>(v.z); 
+			z = static_cast<ValueType>(v.z);
 			return *this;
 		}
 	public:
@@ -465,7 +484,7 @@ namespace JinEngine
 		}
 		bool operator!=(const JVector3& data) const
 		{
-			return x != data.x || y != data.y || z != data.z;
+			return x != data.x && y != data.y && z != data.z;
 		}
 		bool operator==(const JVector3& data) const
 		{
@@ -539,7 +558,7 @@ namespace JinEngine
 		JVector3 Normalize()const noexcept
 		{
 			return DirectX::XMVector3Normalize(ToXmV());
-		} 
+		}
 	public:
 		static JVector3 Left()noexcept
 		{
@@ -586,12 +605,10 @@ namespace JinEngine
 			return JVector3(Base::NegativeInf<T>(), Base::NegativeInf<T>(), Base::NegativeInf<T>());
 		}
 	public:
-		DirectX::XMFLOAT3 ToXmF()const noexcept
+		template<typename T>
+		auto ToSimilar()const noexcept -> std::conditional_t<HasXYZ<T>::value, T, void>
 		{
-			if constexpr (std::is_same_v<ValueType, T>)
-				return DirectX::XMFLOAT3{ (float)x, (float)y, (float)z };
-			else
-				return DirectX::XMFLOAT3{ 0.0f, 0.0f, 0.0f };
+			return T{ (float)x, (float)y, (float)z };
 		}
 		DirectX::XMVECTOR ToXmV(const float w = 1.0f)const noexcept
 		{
@@ -609,6 +626,21 @@ namespace JinEngine
 		static constexpr uint GetDigitCount()noexcept
 		{
 			return 3;
+		}
+	public:
+		void SetNanToZero()
+		{
+			if (std::isnan(x))
+				x = (ValueType)0;
+			if (std::isnan(y))
+				y = (ValueType)0;
+			if (std::isnan(z))
+				z = (ValueType)0;
+		}
+	public:
+		bool HasNan()const noexcept
+		{
+			return std::isnan(x) || std::isnan(y) || std::isnan(z);
 		}
 	};
 	template<typename T>
@@ -636,8 +668,8 @@ namespace JinEngine
 		};
 	public:
 		static constexpr bool isValidValue = !std::is_same_v<ValueType, void>;
-	public: 
-		union 
+	public:
+		union
 		{
 			struct
 			{
@@ -648,7 +680,7 @@ namespace JinEngine
 			};
 			struct
 			{
-				ValueType xyz[3]; 
+				ValueType xyz[3];
 				ValueType a;
 			};
 			ValueType value[4];
@@ -667,12 +699,23 @@ namespace JinEngine
 		JVector4(const DirectX::XMFLOAT4& xm)
 			: x(xm.x), y(xm.y), z(xm.z), w(xm.w)
 		{}
-		JVector4(const DirectX::XMVECTOR& xv)
-			:x(DirectX::XMVectorGetX(xv)),
-			y(DirectX::XMVectorGetY(xv)),
-			z(DirectX::XMVectorGetZ(xv)),
-			w(DirectX::XMVectorGetW(xv))
-		{} 
+#if defined(_XM_NO_INTRINSICS_) 
+		JVector4(const __vector4& v)
+			: x(v.vector4_f32[0]), y(v.vector4_f32[1])), z(v.vector4_f32[2])), w(v.vector4_f32[3]))
+		{}
+#elif defined(_XM_ARM_NEON_INTRINSICS_) 
+		JVector4(const float32x4_t& v)
+			: x(vgetq_lane_f32(v, 0)), y(vgetq_lane_f32(v, 1)), z(vgetq_lane_f32(v, 2)), w(vgetq_lane_f32(v, 3))
+		{}
+#elif defined(_XM_SSE_INTRINSICS_) 
+		JVector4(const __m128& v)
+		{
+			_mm_store_ss(&x, v);
+			_mm_store_ss(&y, XM_PERMUTE_PS(v, _MM_SHUFFLE(1, 1, 1, 1)));
+			_mm_store_ss(&z, XM_PERMUTE_PS(v, _MM_SHUFFLE(2, 2, 2, 2)));
+			_mm_store_ss(&w, XM_PERMUTE_PS(v, _MM_SHUFFLE(3, 3, 3, 3)));
+		}
+#endif 
 		JVector4(const float(&v)[4])
 			:x(v[0]),
 			y(v[1]),
@@ -688,7 +731,7 @@ namespace JinEngine
 			z = data.z;
 			w = data.w;
 			return *this;
-		} 
+		}
 		JVector4(JVector4&&) = default;
 		JVector4& operator=(JVector4&&) = default;
 	public:
@@ -720,7 +763,7 @@ namespace JinEngine
 		template<typename U, std::enable_if_t<HasXYZW<U>::value, int> = 0>
 		JVector4(const U& v)
 			: x(v.x), y(v.y), z(v.z), w(v.w)
-		{} 
+		{}
 		template<typename U, std::enable_if_t<HasXYZW<U>::value, int> = 0>
 		JVector4& operator=(const U& v)
 		{
@@ -799,8 +842,8 @@ namespace JinEngine
 		}
 		bool operator!=(const JVector4& data)
 		{
-			return x != data.x || y != data.y || z != data.z || w != data.w;
-		} 
+			return x != data.x && y != data.y && z != data.z && w != data.w;
+		}
 		ValueType& operator[](const uint index)noexcept
 		{
 			if (index == 0)
@@ -836,8 +879,8 @@ namespace JinEngine
 	public:
 		ValueType* Data()noexcept
 		{
-			return &x; 
-		} 
+			return &x;
+		}
 	public:
 		template<typename T1, typename T2>
 		static float Dot(const JVector4<T1>& v1, const JVector4<T2>& v2) noexcept
@@ -884,12 +927,10 @@ namespace JinEngine
 			return JVector4(Base::NegativeInf<T>(), Base::NegativeInf<T>(), Base::NegativeInf<T>(), Base::NegativeInf<T>());
 		}
 	public:
-		DirectX::XMFLOAT4 ToXmF()const noexcept
+		template<typename T>
+		auto ToSimilar()const noexcept -> std::conditional_t<HasXYZW<T>::value, T, void>
 		{
-			if constexpr (std::is_same_v<ValueType, T>)
-				return DirectX::XMFLOAT4{ (float)x, (float)y, (float)z, (float)w };
-			else
-				return DirectX::XMFLOAT4{ 0.0f, 0.0f, 0.0f, 1.0f };
+			return T{ (float)x, (float)y, (float)z, (float)w };
 		}
 		DirectX::XMVECTOR ToXmV()const noexcept
 		{
@@ -897,7 +938,7 @@ namespace JinEngine
 				return DirectX::XMVectorSet((float)x, (float)y, (float)z, (float)w);
 			else
 				return DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-		} 
+		}
 		std::string ToString()const noexcept
 		{
 			return std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z) + " " + std::to_string(w);

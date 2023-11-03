@@ -10,6 +10,7 @@ namespace JinEngine
 	class JResourceManager;
 	class JResourceObjectIO;
 	class JResourceObject; 
+	class JFileIOTool;
 
 	class JDirectoryPrivate final : public JObjectPrivate
 	{
@@ -25,8 +26,8 @@ namespace JinEngine
 		private:
 			static JUserPtr<Core::JIdentifier> LoadAssetData(Core::JDITypeDataBase* data);
 			static Core::J_FILE_IO_RESULT StoreAssetData(Core::JDITypeDataBase* data);
-			static Core::J_FILE_IO_RESULT LoadMetaData(std::wifstream& stream, Core::JDITypeDataBase* data);	//use initData
-			static Core::J_FILE_IO_RESULT StoreMetaData(std::wofstream& stream, Core::JDITypeDataBase* data);	//use storeData
+			static Core::J_FILE_IO_RESULT LoadMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data);	//use initData
+			static Core::J_FILE_IO_RESULT StoreMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data);	//use storeData
 		};
 		class CreateInstanceInterface final : public JObjectPrivate::CreateInstanceInterface
 		{

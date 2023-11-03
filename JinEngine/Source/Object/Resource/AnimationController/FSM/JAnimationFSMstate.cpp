@@ -5,8 +5,8 @@
 #include"JAnimationTime.h"    
 #include"JAnimationUpdateData.h"  
 #include"../../../JObjectFileIOHelper.h"
-#include"../../../../Core/Fsm/JFSMcondition.h"  
 #include"../../../../Core/Fsm/JFSMparameter.h"  
+#include"../../../../Core/Fsm/JFSMcondition.h"  
 #include"../../../../Core/Identity/JIdenCreator.h"
 #include"../../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../../Core/File/JFileConstant.h" 
@@ -106,14 +106,15 @@ namespace JinEngine
 		state->impl->RegisterThisPointer(state);
 	}
 
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetCommonData(std::wifstream& stream, const JUserPtr<JAnimationFSMstate>& state)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetCommonData(JFileIOTool& tool, const JUserPtr<JAnimationFSMstate>& state)
 	{
-		if (!stream.is_open())
+		if (!tool.CanLoad())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		uint transitionCount = 0;
-		JObjectFileIOHelper::LoadAtomicData(stream, transitionCount);
+		JObjectFileIOHelper::LoadAtomicData(tool, transitionCount, "TransitionCount:");
 
+		tool.PushExistStack("TransitionMetaData");
 		for (uint i = 0; i < transitionCount; ++i)
 		{
 			std::wstring tName;
@@ -121,35 +122,54 @@ namespace JinEngine
 			Core::J_FSM_OBJECT_TYPE oType;
 			size_t outputGuid;
 			size_t outputTypeGuid;
-			JObjectFileIOHelper::LoadFsmIden(stream, tName, guid, oType);
-			JObjectFileIOHelper::LoadAtomicData(stream, outputGuid);
-			JObjectFileIOHelper::LoadAtomicData(stream, outputTypeGuid);
+			tool.PushExistStack();
+			JObjectFileIOHelper::LoadFsmIden(tool, tName, guid, oType);
+			JObjectFileIOHelper::LoadAtomicData(tool, outputGuid, Core::JFileConstant::GetHasObjGuidSymbol());
+			JObjectFileIOHelper::LoadAtomicData(tool, outputTypeGuid, "OutTypeGuid");
+			tool.PopStack();
 
 			auto outuserPtr = Core::GetUserPtr<JAnimationFSMstate>(outputTypeGuid, outputGuid);
 			if (outuserPtr != nullptr)
 				JICI::Create< JAnimationFSMtransition>(tName, guid, state, outuserPtr);
 		}
-		for (uint i = 0; i < transitionCount; ++i)
-			TransitionIOInterface(state->GetTransitionByIndex(i))->LoadAssetData(stream, state->GetTransitionByIndex(i));
-		return Core::J_FILE_IO_RESULT::SUCCESS;
-	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetCommonData(std::wofstream& stream, const JUserPtr<JAnimationFSMstate>& state)
-	{
-		if (!stream.is_open())
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
-		JObjectFileIOHelper::StoreAtomicData(stream, L"TransitionCount:", state->GetTransitionCount());
-		const uint transitionCount = state->GetTransitionCount();
-
+		tool.PopStack();
+		tool.PushExistStack("TransitionData");
 		for (uint i = 0; i < transitionCount; ++i)
 		{
-			JUserPtr<JAnimationFSMtransition> nowTran = state->GetTransitionByIndex(i);
-			JObjectFileIOHelper::StoreFsmIden(stream, nowTran.Get());
-			JObjectFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamHasObjGuidSymbol(), nowTran->GetOutputStateGuid());
-			JObjectFileIOHelper::StoreAtomicData(stream, L"OutTypeGuid", nowTran->GetOutState()->GetTypeInfo().TypeGuid());
+			tool.PushExistStack();
+			TransitionIOInterface(state->GetTransitionByIndex(i))->LoadAssetData(tool, state->GetTransitionByIndex(i));
+			tool.PopStack();
 		}
+		tool.PopStack();
+		return Core::J_FILE_IO_RESULT::SUCCESS;
+	}
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetCommonData(JFileIOTool& tool, const JUserPtr<JAnimationFSMstate>& state)
+	{
+		if (!tool.CanStore())
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+
+		JObjectFileIOHelper::StoreAtomicData(tool, state->GetTransitionCount(), "TransitionCount:");
+		const uint transitionCount = state->GetTransitionCount();
+
+		tool.PushArrayOwner("TransitionMetaData");
 		for (uint i = 0; i < transitionCount; ++i)
-			TransitionIOInterface(state->GetTransitionByIndex(i))->StoreAssetData(stream, state->GetTransitionByIndex(i));
+		{
+			tool.PushArrayMember();
+			JUserPtr<JAnimationFSMtransition> nowTran = state->GetTransitionByIndex(i);
+			JObjectFileIOHelper::StoreFsmIden(tool, nowTran.Get());
+			JObjectFileIOHelper::StoreAtomicData(tool, nowTran->GetOutputStateGuid(), Core::JFileConstant::GetHasObjGuidSymbol());
+			JObjectFileIOHelper::StoreAtomicData(tool, nowTran->GetOutState()->GetTypeInfo().TypeGuid(), "OutTypeGuid");
+			tool.PopStack();
+		}
+		tool.PopStack();
+		tool.PushArrayOwner("TransitionData");
+		for (uint i = 0; i < transitionCount; ++i)
+		{
+			tool.PushArrayMember();
+			TransitionIOInterface(state->GetTransitionByIndex(i))->StoreAssetData(tool, state->GetTransitionByIndex(i));
+			tool.PopStack();
+		}
+		tool.PopStack();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

@@ -2,6 +2,7 @@
 #include"Event/JEditorEventType.h" 
 #include"Event/JEditorEventStruct.h"
 #include"Page/JEditorPageEnum.h" 
+#include"Interface/JEditorProjectInterface.h"
 #include"../Core/Event/JEventListener.h"
 #include"../Core/JCoreEssential.h"  
 #include"../Core/Utility/JCommonUtility.h"
@@ -53,7 +54,7 @@ namespace JinEngine
 			std::vector<JEditorPage*> opendEditorPage;  
 			std::vector<std::unique_ptr<PageSizeTransformInfo>> pageSizeTInfo;
 		private:
-			JEditorPage* focusPage = nullptr;
+			JEditorPage* focusPage = nullptr; 
 		public:
 			void Initialize(std::unique_ptr<JGuiBehaviorAdapter>&& adapter);
 			void Clear();
@@ -65,8 +66,8 @@ namespace JinEngine
 			bool CanUpdate(JEditorPage* page)const noexcept;
 			bool HasMaximizePage()const noexcept;
 		public:
-			void OpenProjectSelector(std::unique_ptr<Graphic::JGuiInitData>&& initData);
-			void OpenProject(std::unique_ptr<Graphic::JGuiInitData>&& initData);
+			void OpenProjectSelector(std::unique_ptr<Graphic::JGuiInitData>&& initData, std::unique_ptr<JEditorProjectInterface>&& pInterface);
+			void OpenProject(std::unique_ptr<Graphic::JGuiInitData>&& initData, std::unique_ptr<JEditorProjectInterface>&& pInterface);
 		public:
 			void Update(); 
 		private: 

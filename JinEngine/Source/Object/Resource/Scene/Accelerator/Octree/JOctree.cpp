@@ -60,7 +60,7 @@ namespace JinEngine
 		if (rootNodeCash != nullptr)
 		{
 			if (info.useJFrustum)
-				rootNodeCash->Culling(info, Core::J_CULLING_FLAG::NONE);
+				;// rootNodeCash->Culling(info, Core::J_CULLING_FLAG::NONE);
 			else
 				rootNodeCash->Culling(info);
 		}

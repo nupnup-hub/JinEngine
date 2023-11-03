@@ -1,6 +1,6 @@
 #pragma once 
 #include"../../JEditorWindow.h" 
-#include"../../../Interface/JEditorObjectHandleInterface.h" 
+#include"../../../../Object/JObjectModifyInterface.h"
 #include"../../../../Object/Resource/Skeleton/JSkeletonFixedData.h"
 #include"../../../../Object/Resource/Skeleton/Avatar/JAvatar.h"
 #include"../../../../Core/Math/JVector.h"
@@ -14,31 +14,18 @@ namespace JinEngine
 	class JSkeletonAsset;
 	namespace Editor
 	{
-		class JAvatarEditor final : public JEditorWindow, public JEditorObjectHandlerInterface
+		class JEditorTreeStructure; 
+		class JAvatarEditorSettingFunctor;
+		class JAvatarEditor final : public JEditorWindow, public JObjectModifyInterface
 		{ 
+		private: 
+			std::unique_ptr<JAvatarEditorSettingFunctor> setting;
 		private:
-			using MakeAvatarF = Core::JMFunctorType<JAvatarEditor, void>;
-			using ClearAvatarF = Core::JMFunctorType<JAvatarEditor, void>;
-			using SelectTabF = Core::JMFunctorType<JAvatarEditor, void, const uint>;
-			using OpenJointSelectorF = Core::JMFunctorType<JAvatarEditor, void, const int>;
-			using SetJointRefF = Core::JMFunctorType<JAvatarEditor, void, const int, const int>;
-			using SetAllJointRefByVecF = Core::JMFunctorType<JAvatarEditor, void, std::vector<uint8>&&>;
-			using SetAllJointRefByAutoF = Core::JMFunctorType<JAvatarEditor, void>;
-			using ClearJointRefF = Core::JMFunctorType<JAvatarEditor, void>;
-		private:
-			//Functor
-			MakeAvatarF::Functor makeAvatarFunctor;
-			ClearAvatarF::Functor clearAvatarFunctor;
-			SelectTabF::Functor selectTabFunctor;
-			OpenJointSelectorF::Functor openJointSelectorFunctor;
-			SetJointRefF::Functor setJointRefFunctor;
-			SetAllJointRefByVecF::Functor setAllJointRefByVecFunctor;
-			SetAllJointRefByAutoF::Functor setAllJointRefByAutoFunctor;
-			ClearJointRefF::Functor clearJointRefFunctor;
+			std::unique_ptr<JEditorTreeStructure> treeStrcture;
 		private: 
 			JUserPtr<JSkeletonAsset> targetSkeleton; 
 			JAvatar targetAvatar;
-
+		private:
 			bool hasAvatar = false;
 			bool isOpenAvatarSetting = false;
 			bool isOpenJointSelector = false; 
@@ -55,6 +42,8 @@ namespace JinEngine
 			~JAvatarEditor();
 			JAvatarEditor(const JAvatarEditor & rhs) = delete;
 			JAvatarEditor& operator=(const JAvatarEditor & rhs) = delete;
+		private:
+			void InitializeSettingImpl();
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:			  
@@ -82,6 +71,9 @@ namespace JinEngine
 			void StoreAvatarData();
 		private:
 			void DoActivate()noexcept final;
+		private:
+			void LoadEditorWindow(JFileIOTool& tool)final;
+			void StoreEditorWindow(JFileIOTool& tool)final;
 		};
 	}
 }

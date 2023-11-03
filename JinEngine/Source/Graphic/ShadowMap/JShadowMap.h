@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once  
 #include"../DataSet/JGraphicDataSet.h"
 #include"../Device/JGraphicDeviceUser.h" 
 #include"../Thread/JGraphicMultiThreadDrawInterface.h"

@@ -1,7 +1,6 @@
 #pragma once
 #include"../JAcceleratorNode.h"
-#include"../JAcceleratorOption.h" 
-#include"../../../../../Core/Geometry/JCullingFrustum.h" 
+#include"../JAcceleratorOption.h"  
 #include<vector> 
 #include<DirectXCollision.h>
 
@@ -32,7 +31,7 @@ namespace JinEngine
 		void Clear();
 	public:
 		//Culling node bbox
-		void Culling(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG flag)noexcept;
+		//void Culling(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG flag)noexcept;
 		void Culling(JAcceleratorCullingInfo& info)noexcept;
 		void FindIntersect(JAcceleratorIntersectInfo& info)const noexcept;
 		void FindContain(JAcceleratorContainInfo& info)const noexcept;
@@ -52,10 +51,10 @@ namespace JinEngine
 	private:
 		bool RemoveInnerGameObject(JUserPtr<JGameObject> gameObject)noexcept;
 	private:
-		void CullingInnerObject(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG oriFlag);
+		//void CullingInnerObject(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG oriFlag);
 		void CullingInnerObject(JAcceleratorCullingInfo& info);
 	private:
-		void SetVisible(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG oriFlag)noexcept;
+		//void SetVisible(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG oriFlag)noexcept;
 		void SetVisible(JAcceleratorCullingInfo& info)noexcept;
 		void SetInVisible(JAcceleratorCullingInfo& info)noexcept;
 	private:

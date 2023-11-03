@@ -26,7 +26,7 @@ namespace JinEngine
 			}
 		}
 		 
-		DEFAULT_CD_REQUESTOR(JAnimationDiagramListCreationImpl, JAnimationDiagramList)
+		DEFAULT_CD_REQUESTOR(JAnimationDiagramListCreationFunctor, JAnimationDiagramList)
  
 		JAnimationDiagramList::JAnimationDiagramList(const std::string& name,
 			std::unique_ptr<JEditorAttribute> attribute,
@@ -48,9 +48,9 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Destroy Diagram", J_EDITOR_POPUP_NODE_TYPE::LEAF, diagramListRootNode.get());
 			editorString->AddString(destroyDigamraNode->GetNodeId(), { "Destroy Diagram" , u8"애니메이션 다이어그램 삭제" });
 
-			using RequestEvF = JAnimationDiagramListCreationImpl::RequestEvF;
-			createNewDiagramNode->RegisterSelectBind(std::make_unique< RequestEvF::CompletelyBind>(*creationImpl->reqCreateStateEvF, this));
-			destroyDigamraNode->RegisterSelectBind(std::make_unique< RequestEvF::CompletelyBind>(*creationImpl->reqDestroyEvF, this));
+			using RequestEvF = JAnimationDiagramListCreationFunctor::RequestEvF;
+			createNewDiagramNode->RegisterSelectBind(std::make_unique< RequestEvF::CompletelyBind>(*creation->reqCreateStateEvF, this));
+			destroyDigamraNode->RegisterSelectBind(std::make_unique< RequestEvF::CompletelyBind>(*creation->reqDestroyEvF, this));
 			destroyDigamraNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 			 
 			diagramListPopup = std::make_unique<JEditorPopupMenu>(Private::DiagramListName(GetName()), std::move(diagramListRootNode));
@@ -59,11 +59,11 @@ namespace JinEngine
 		}
 		JAnimationDiagramList::~JAnimationDiagramList()
 		{
-			creationImpl.reset();
+			creation.reset();
 		}
 		void JAnimationDiagramList::InitializeCreationImpl()
 		{
-			if (creationImpl != nullptr)
+			if (creation != nullptr)
 				return;
 
 			auto requestCreateLam = [](JAnimationDiagramList* diagramList)
@@ -78,7 +78,7 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, diagramList->GetClearTaskFunctor());
 
-				JAnimationDiagramListCreationImpl* impl = diagramList->creationImpl.get();
+				JAnimationDiagramListCreationFunctor* impl = diagramList->creation.get();
 				impl->creation.RequestCreateObject(impl->dS, true, creationHint, Core::MakeGuid(), requestHint);
 			};
 			auto requestDestroyLam = [](JAnimationDiagramList* diagramList)
@@ -97,10 +97,10 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, diagramList->GetClearTaskFunctor());
 
-				JAnimationDiagramListCreationImpl* impl = diagramList->creationImpl.get();
+				JAnimationDiagramListCreationFunctor* impl = diagramList->creation.get();
 				impl->destructuion.RequestDestroyObject(impl->dS, true, creationHint, objVec, requestHint);
 			};
-			creationImpl = std::make_unique<JAnimationDiagramListCreationImpl>(requestCreateLam, requestDestroyLam);
+			creation = std::make_unique<JAnimationDiagramListCreationFunctor>(requestCreateLam, requestDestroyLam);
 
 			auto canCreateDiagramLam = [](const size_t guid, const JEditorCreationHint& creationHint)
 			{
@@ -118,8 +118,8 @@ namespace JinEngine
 				static_cast<JAnimationController*>(Core::GetRawPtr(creationHint.openDataHint))->CreateFSMdiagram(guid);
 			};
 			 
-			creationImpl->creation.GetCreationInterface()->RegisterCanCreationF(canCreateDiagramLam);
-			creationImpl->creation.GetCreationInterface()->RegisterObjectCreationF(createDiagramLam);
+			creation->creation.GetCreationInterface()->RegisterCanCreationF(canCreateDiagramLam);
+			creation->creation.GetCreationInterface()->RegisterObjectCreationF(createDiagramLam);
 		}
 		J_EDITOR_WINDOW_TYPE JAnimationDiagramList::GetWindowType()const noexcept
 		{
@@ -157,13 +157,13 @@ namespace JinEngine
 
 					const bool isSelect = IsSelectedObject(diagramVec[i]->GetGuid()); 
 					const JVector2<float> preCursorPos = JGui::GetCursorScreenPos();
-					PushTreeNodeColorSet(true, isSelect); 				 
+					JGui::PushTreeNodeColorSet(IsFocus(), true, isSelect);
 					if (JGui::Selectable(JGui::CreateGuiLabel(diagramVec[i], GetName() + "Selectable"), &isSelect))
 					{ 
 						RequestPushSelectObject(diagramVec[i]);
 						SetContentsClick(true);
 					}
-					PopTreeNodeColorSet(true, isSelect);
+					JGui::PopTreeNodeColorSet(true, isSelect);
 
 					if (JGui::IsMouseInRect(preCursorPos, JGui::GetLastItemRectSize()))
 					{

@@ -3,6 +3,9 @@
 
 namespace JinEngine::Graphic
 {
+	namespace Private
+	{ 
+	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceInfo::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
@@ -19,7 +22,7 @@ namespace JinEngine::Graphic
 	{  
 		if (GetViewCount(bindType) <= bIndex)
 			return nullptr;
-
+		 
 		CD3DX12_GPU_DESCRIPTOR_HANDLE handle = getHandlePtr(manager, bindType, GetHeapIndexStart(bindType) + bIndex);
 		//cast uint64 to void*
 		//void*는 uint64주소가 아니라 값으로 채워진다.
@@ -33,6 +36,21 @@ namespace JinEngine::Graphic
 			static_cast<JDxGraphicResourceHolderInterface*>(resourceHolder.get())->SetPrivateName(fName);
 		}
 	}
+	void JDx12GraphicResourceInfo::SetOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, std::unique_ptr<JDx12GraphicResourceHolder>&& holder)
+	{
+		if (holder == nullptr || HasOptional(opType))
+			return;
+
+		TryCreateOptionViewInfo();
+		if (optionHolderSet != nullptr)
+			optionHolderSet = std::make_unique< JDx12GraphicResourceInfo::OptionHolderSet>();
+
+		optionHolderSet->holder[(uint)opType] = std::move(holder);
+	}
+	bool JDx12GraphicResourceInfo::HasOptional(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept
+	{
+		return optionHolderSet != nullptr && optionHolderSet->holder[(uint)opType] != nullptr;
+	}
 	JDx12GraphicResourceInfo::JDx12GraphicResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, 
 		JDx12GraphicResourceManager* manager,
 		std::unique_ptr<JDx12GraphicResourceHolder>&& resourceHolder,
@@ -45,6 +63,12 @@ namespace JinEngine::Graphic
 	}
 	JDx12GraphicResourceInfo::~JDx12GraphicResourceInfo()
 	{
-		resourceHolder.reset();
+		resourceHolder = nullptr;
+		if (optionHolderSet != nullptr)
+		{
+			for (auto& data : optionHolderSet->holder)
+				data = nullptr;
+			optionHolderSet = nullptr;
+		}
 	}
 }

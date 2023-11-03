@@ -116,8 +116,8 @@ namespace JinEngine
 		DirectX::BoundingBox JDirectXCollisionEx::CreateBoundingBox(const JVector3<float>& vMin, const JVector3<float>& vMax)noexcept
 		{
 			DirectX::BoundingBox box;
-			box.Center = ((vMin + vMax) * 0.5f).ToXmF();
-			box.Extents = ((vMax - vMin) * 0.5f).ToXmF();
+			box.Center = ((vMin + vMax) * 0.5f).ToSimilar<XMFLOAT3>();
+			box.Extents = ((vMax - vMin) * 0.5f).ToSimilar<XMFLOAT3>();
 			return box;
 		}
 		DirectX::BoundingBox JDirectXCollisionEx::CreateBoundingBox(const DirectX::XMVECTOR vMin, const DirectX::XMVECTOR vMax)noexcept

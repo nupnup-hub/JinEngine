@@ -1,8 +1,8 @@
 #include"JModule.h"
 #include"JModulePrivate.h"
 #include"JModuleMacro.h"
-#include"JModuleFuncDefenitions.h"  
-#include"../File/JJSon.h"
+#include"JModuleFuncDefenitions.h"   
+#include"../File/JFileIOHelper.h"
 #include"../Utility/JCommonUtility.h"
 #include <psapi.h>
 #include<fstream>
@@ -95,43 +95,41 @@ namespace JinEngine::Core
 	using IOInterface = JModulePrivate::IOInterface;
 	JOwnerPtr<JModule> IOInterface::LoadModule(const std::wstring& metafilePath)
 	{
-		JJSon json(metafilePath);
-		if (!json.Load())
-			return nullptr;
+		JFileIOTool tool;
+		if (!tool.Begin(metafilePath, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
+			return nullptr; 
 
 		std::wstring name;
 		std::wstring path;
 
-		const std::vector<std::string> contentsVec = GetJSonLabelVec();
-		for(const auto& data: contentsVec)
-		{
-			if (json.value[data].isNull())	
-				return nullptr;
-		}
- 
 		JModuleDesc desc; 
-		name = JCUtil::U8StrToWstr(json.value["Name"].asString());
-		path = JCUtil::U8StrToWstr(json.value["Path"].asString());
-		desc.version = json.value["Version"].asString();
-		desc.moduleType = (J_MODULE_TYPE)json.value["ModuleType"].asInt();
-		desc.linkType = (J_MODULE_LINK_TYPE)json.value["LinkType"].asInt();
-		desc.loadPhase = (J_MODULE_LOAD_PHASE)json.value["LoadPhase"].asInt();
+		bool isSuccess = true;
+		isSuccess &= JFileIOHelper::LoadJString(tool, name, "Name") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::LoadJString(tool, path, "Path") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::LoadJString(tool, desc.version, "Version") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::LoadEnumData(tool, desc.moduleType, "ModuleType") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::LoadEnumData(tool, desc.linkType, "LinkType") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::LoadEnumData(tool, desc.loadPhase, "LoadPhase") == Core::J_FILE_IO_RESULT::SUCCESS;
+		tool.Close();
 
+		if (!isSuccess)
+			return nullptr;
 		return JPtrUtil::MakeOwnerPtr<JModule>(name, path, desc);
 	}
 	bool IOInterface::StoreModule(const JUserPtr<JModule>& m)
 	{
-		if (m == nullptr)
+		JFileIOTool tool;
+		if (m == nullptr || !tool.Begin(m->GetMetafilePath(), JFileIOTool::TYPE::JSON))
 			return false;
 
-		JJSon json(m->GetMetafilePath());
-		json.value["Name"] = JCUtil::WstrToU8Str(m->name);
-		json.value["Path"] = JCUtil::WstrToU8Str(m->path);
-		json.value["Version"] = m->desc.version;
-		json.value["ModuleType"] = (int)m->desc.moduleType;
-		json.value["LinkType"] = (int)m->desc.linkType;
-		json.value["LoadPhase"] = (int)m->desc.loadPhase;
-
-		return json.Store();
+		bool isSuccess = true;
+		isSuccess &= JFileIOHelper::StoreJString(tool, JCUtil::WstrToU8Str(m->name), "Name") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::StoreJString(tool, JCUtil::WstrToU8Str(m->path), "Path") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::StoreJString(tool, m->desc.version, "Version") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::StoreEnumData(tool, m->desc.moduleType, "ModuleType") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::StoreEnumData(tool, m->desc.linkType, "LinkType") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::StoreEnumData(tool, m->desc.loadPhase, "LoadPhase") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess ? tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA) : tool.Close();
+		return isSuccess;
 	}
 }

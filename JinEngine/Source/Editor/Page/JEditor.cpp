@@ -11,7 +11,7 @@ namespace JinEngine
 	{
 		JEditor::JEditor(const std::string& name, std::unique_ptr<JEditorAttribute> attribute)
 			: name(name),
-			guid(JCUtil::CalculateGuid(name)),
+			guid(CalculateGuid(name)),
 			attribute(std::move(attribute))
 		{}
 		JEditor::~JEditor()
@@ -150,6 +150,10 @@ namespace JinEngine
 				JEditorTransition::Instance().Log(taskName, taskDesc);
 				doBinder.InvokeCompletelyBind();
 			}
+		}
+		size_t JEditor::CalculateGuid(const std::string& str)
+		{
+			return JCUtil::CalculateGuid(str);
 		}
 		void JEditor::SetOpen()noexcept
 		{

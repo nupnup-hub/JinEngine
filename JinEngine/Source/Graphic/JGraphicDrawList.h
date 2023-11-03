@@ -80,9 +80,9 @@ namespace JinEngine
 			JUserPtr<JComponent> comp;
 			const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
 		public:
-			bool isUpdated = false;
+			bool isUpdated = false; 
 			bool canDrawThisFrame = false;
-			bool keepCanDrawTrigger = false;
+			bool keepCanDrawTrigger = false; 
 		public:
 			JSceneHdOccCullingRequestor(const JUserPtr<JComponent>& comp, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency);
 			~JSceneHdOccCullingRequestor();
@@ -111,7 +111,10 @@ namespace JinEngine
 				uint hotObjUpdateCount = 0;
 				uint hotAniUpdateCount = 0;
 				uint hotCamUpdateCount = 0;
-				uint hotLitghtUpdateCount = 0;
+				uint hotLitghtUpdateCount = 0;  
+			public:
+				uint thisFrameObjCount = 0;
+				uint lastFrameObjCount = 0;
 			public:
 				bool hasObjRecopy = false;
 			public:

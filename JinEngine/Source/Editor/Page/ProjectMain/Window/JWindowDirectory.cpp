@@ -9,6 +9,7 @@
 #include"../../../Popup/JEditorPopupNode.h"  
 #include"../../../EditTool/JEditorSearchBarHelper.h"
 #include"../../../EditTool/JEditorRenameHelper.h"
+#include"../../../EditTool/JEditorTreeStructure.h"
 #include"../../../Align/JEditorAlignCalculator.h"
 #include"../../../Interface/JEditorObjectCreationInterface.h"
 #include"../../../../Core/Math/JMathHelper.h"
@@ -16,6 +17,7 @@
 #include"../../../../Core/Guid/JGuidCreator.h" 
 #include"../../../../Core/Identity/JIdenCreator.h" 
 #include"../../../../Core/Utility/JCommonUtility.h"
+#include"../../../../Object/JObjectFileIOHelper.h" 
 #include"../../../../Object/Component/Camera/JCamera.h" 
 #include"../../../../Object/Directory/JDirectory.h"
 #include"../../../../Object/Directory/JDirectoryPrivate.h"
@@ -67,7 +69,7 @@ namespace JinEngine
 			return level;
 		}
 
-		class JWindowDirectoryCreationImpl
+		class JWindowDirectoryCreationFunctor
 		{
 		private:
 			using ResourceObjectCreationInterface = JEditorCreationRequestor<JEditorObjectCreateInterface<J_RESOURCE_TYPE>>;
@@ -96,7 +98,7 @@ namespace JinEngine
 			std::unique_ptr<RequestDirectoryCreationEvF::Functor> reqDirCreationEvF;
 			std::unique_ptr<RequestDestructionEvF::Functor> reqDestructionEvF;
 		public:
-			JWindowDirectoryCreationImpl(RequestRObjCreationEvF::Ptr reqRObjCreationEvPtr,
+			JWindowDirectoryCreationFunctor(RequestRObjCreationEvF::Ptr reqRObjCreationEvPtr,
 				RequestDirectoryCreationEvF::Ptr reqDirCreationEvPtr,
 				RequestDestructionEvF::Ptr reqDestructionEvPtr)
 			{
@@ -104,12 +106,12 @@ namespace JinEngine
 				reqDirCreationEvF = std::make_unique<RequestDirectoryCreationEvF::Functor>(reqDirCreationEvPtr);
 				reqDestructionEvF = std::make_unique<RequestDestructionEvF::Functor>(reqDestructionEvPtr);
 			}
-			~JWindowDirectoryCreationImpl()
+			~JWindowDirectoryCreationFunctor()
 			{
 				dS.Clear();
 			}
 		};
-		class JWindowDirectorySettingImpl
+		class JWindowDirectorySettingFunctor
 		{
 		public:
 			using RenameF = Core::JSFunctorType<void, JWindowDirectory*>;
@@ -135,6 +137,7 @@ namespace JinEngine
 			editorString = std::make_unique<JEditorStringMap>();
 			renameHelper = std::make_unique<JEditorRenameHelper>();
 			searchBarHelper = std::make_unique<JEditorSearchBarHelper>(false);
+			treeStrcture = std::make_unique<JEditorTreeStructure>();
 
 			selectorIconSlidebarId = Core::MakeGuid();
 			editorString->AddString(selectorIconSlidebarId, { "Icon Size" , u8"아이콘 크기" });
@@ -145,12 +148,12 @@ namespace JinEngine
 		}
 		JWindowDirectory::~JWindowDirectory()
 		{
-			creationImpl.reset();
-			settingImpl.reset();
+			creation.reset();
+			setting.reset();
 		}
 		void JWindowDirectory::InitializeCreationImpl()
 		{
-			if (creationImpl != nullptr)
+			if (creation != nullptr)
 				return;
 
 			auto requestCreateRObjLam = [](JWindowDirectory* wndDir, J_RESOURCE_TYPE resourceType)
@@ -169,7 +172,7 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, wndDir->GetClearTaskFunctor());
 
-				JWindowDirectoryCreationImpl* impl = wndDir->creationImpl.get();
+				JWindowDirectoryCreationFunctor* impl = wndDir->creation.get();
 				impl->resourceObj.RequestCreateObject(impl->dS, false, creationHint, Core::MakeGuid(), requestHint, std::move(resourceType));
 			};
 			auto requestCreateDirectoryLam = [](JWindowDirectory* wndDir)
@@ -188,7 +191,7 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, wndDir->GetClearTaskFunctor());
 
-				JWindowDirectoryCreationImpl* impl = wndDir->creationImpl.get();
+				JWindowDirectoryCreationFunctor* impl = wndDir->creation.get();
 				impl->directory.RequestCreateObject(impl->dS, false, creationHint, Core::MakeGuid(), requestHint, std::move(parent));
 			};
 			auto requestDestroyLam = [](JWindowDirectory* wndDir)
@@ -204,7 +207,7 @@ namespace JinEngine
 					&JEditorWindow::NotifyEvent);
 				JEditorRequestHint requestHint = JEditorRequestHint(&JEditorWindow::AddEventNotification, wndDir->GetClearTaskFunctor());
 
-				JWindowDirectoryCreationImpl* impl = wndDir->creationImpl.get();
+				JWindowDirectoryCreationFunctor* impl = wndDir->creation.get();
 				impl->destructuion.RequestDestroyObject(impl->dS, false, creationHint, objVec, requestHint);
 			};
 			auto creationRObjPostProccessLam = [](JEditorWindow* wndDir, Core::JIdentifier* resource)
@@ -224,10 +227,10 @@ namespace JinEngine
 					DirRawInterface::DeleteDirectory(Core::GetUserPtr<JDirectory>(resource));
 			};
 
-			creationImpl = std::make_unique<JWindowDirectoryCreationImpl>(requestCreateRObjLam, requestCreateDirectoryLam, requestDestroyLam);
-			creationImpl->resourceObj.GetCreationInterface()->RegisterCreatePostProcess(creationRObjPostProccessLam);
-			creationImpl->directory.GetCreationInterface()->RegisterCreatePostProcess(creationDirPostProccessLam);
-			creationImpl->destructuion.GetDestruectionInterface()->RegisterDestroyPreProcess(destructionPreProccessLam);
+			creation = std::make_unique<JWindowDirectoryCreationFunctor>(requestCreateRObjLam, requestCreateDirectoryLam, requestDestroyLam);
+			creation->resourceObj.GetCreationInterface()->RegisterCreatePostProcess(creationRObjPostProccessLam);
+			creation->directory.GetCreationInterface()->RegisterCreatePostProcess(creationDirPostProccessLam);
+			creation->destructuion.GetDestruectionInterface()->RegisterDestroyPreProcess(destructionPreProccessLam);
 
 			auto canCreationRobjLam = [](const size_t guid, const JEditorCreationHint& creationHint, J_RESOURCE_TYPE rType)
 			{
@@ -274,14 +277,14 @@ namespace JinEngine
 				JICI::Create<JDirectory>(guid, parent);
 			};
 
-			creationImpl->resourceObj.GetCreationInterface()->RegisterCanCreationF(canCreationRobjLam);
-			creationImpl->resourceObj.GetCreationInterface()->RegisterObjectCreationF(creationRobjLam);
-			creationImpl->directory.GetCreationInterface()->RegisterCanCreationF(canCreationDirLam);
-			creationImpl->directory.GetCreationInterface()->RegisterObjectCreationF(creationDirLam);
+			creation->resourceObj.GetCreationInterface()->RegisterCanCreationF(canCreationRobjLam);
+			creation->resourceObj.GetCreationInterface()->RegisterObjectCreationF(creationRobjLam);
+			creation->directory.GetCreationInterface()->RegisterCanCreationF(canCreationDirLam);
+			creation->directory.GetCreationInterface()->RegisterObjectCreationF(creationDirLam);
 		}
 		void JWindowDirectory::InitializeSettingImpl()
 		{
-			if (settingImpl != nullptr)
+			if (setting != nullptr)
 				return;
 
 			auto importedResourcePostProcessFLam = [](JWindowDirectory* wndDir, std::vector<JUserPtr<JResourceObject>> rVec)
@@ -301,18 +304,18 @@ namespace JinEngine
 				wndDir->SetModifiedBit(wndDir->GetHoveredObject(), true);
 			};
 
-			using ImportResourceF = JWindowDirectorySettingImpl::ImportResourceF;
-			using ImportPostProcessF = JWindowDirectorySettingImpl::ImportPostProcessF;
-			using RenameF = JWindowDirectorySettingImpl::RenameF;
-			using MoveFIleF = JWindowDirectorySettingImpl::MoveFIleF;
-			using OpenNewDirectoryF = JWindowDirectorySettingImpl::OpenNewDirectoryF;
+			using ImportResourceF = JWindowDirectorySettingFunctor::ImportResourceF;
+			using ImportPostProcessF = JWindowDirectorySettingFunctor::ImportPostProcessF;
+			using RenameF = JWindowDirectorySettingFunctor::RenameF;
+			using MoveFIleF = JWindowDirectorySettingFunctor::MoveFIleF;
+			using OpenNewDirectoryF = JWindowDirectorySettingFunctor::OpenNewDirectoryF;
 
-			settingImpl = std::make_unique<JWindowDirectorySettingImpl>();
-			settingImpl->importResourceF = std::make_unique<ImportResourceF::Functor>(&JWindowDirectory::ImportFile, this);
-			settingImpl->importPostProcessF = std::make_unique<ImportPostProcessF::Functor>(importedResourcePostProcessFLam);
-			settingImpl->renameF = std::make_unique<RenameF::Functor>(renameLam);
-			settingImpl->moveFileF = std::make_unique< MoveFIleF::Functor>(&JWindowDirectory::MoveFile, this);
-			settingImpl->openNewDirF = std::make_unique<OpenNewDirectoryF::Functor>(&JWindowDirectory::OpenNewDirectory, this);
+			setting = std::make_unique<JWindowDirectorySettingFunctor>();
+			setting->importResourceF = std::make_unique<ImportResourceF::Functor>(&JWindowDirectory::ImportFile, this);
+			setting->importPostProcessF = std::make_unique<ImportPostProcessF::Functor>(importedResourcePostProcessFLam);
+			setting->renameF = std::make_unique<RenameF::Functor>(renameLam);
+			setting->moveFileF = std::make_unique< MoveFIleF::Functor>(&JWindowDirectory::MoveFile, this);
+			setting->openNewDirF = std::make_unique<OpenNewDirectoryF::Functor>(&JWindowDirectory::OpenNewDirectory, this);
 		}
 		void JWindowDirectory::BuildPopup()
 		{
@@ -377,22 +380,22 @@ namespace JinEngine
 		//	destoryDirectoryNode->RegisterSelectBind(std::make_unique<RegisterDestroyEvF::CompletelyBind>(*regDestroyObjF));
 			//renameDirectoryNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*renameF, this));
 
-			using RequestRObjCreationEvF = JWindowDirectoryCreationImpl::RequestRObjCreationEvF;
-			using RequestDirCreationEvF = JWindowDirectoryCreationImpl::RequestDirectoryCreationEvF;
-			using RequestDestructionEvF = JWindowDirectoryCreationImpl::RequestDestructionEvF;
+			using RequestRObjCreationEvF = JWindowDirectoryCreationFunctor::RequestRObjCreationEvF;
+			using RequestDirCreationEvF = JWindowDirectoryCreationFunctor::RequestDirectoryCreationEvF;
+			using RequestDestructionEvF = JWindowDirectoryCreationFunctor::RequestDestructionEvF;
 
-			createMaterialNode->RegisterSelectBind(std::make_unique<RequestRObjCreationEvF::CompletelyBind>(*creationImpl->reqRObjCreationEvF, this, J_RESOURCE_TYPE::MATERIAL));
-			createSceneNode->RegisterSelectBind(std::make_unique<RequestRObjCreationEvF::CompletelyBind>(*creationImpl->reqRObjCreationEvF, this, J_RESOURCE_TYPE::SCENE));
-			createAnimationControllerNode->RegisterSelectBind(std::make_unique<RequestRObjCreationEvF::CompletelyBind>(*creationImpl->reqRObjCreationEvF, this, J_RESOURCE_TYPE::ANIMATION_CONTROLLER));
-			createDirctoryInFileViewNode->RegisterSelectBind(std::make_unique<RequestDirCreationEvF::CompletelyBind>(*creationImpl->reqDirCreationEvF, this));
-			destroyNode->RegisterSelectBind(std::make_unique<RequestDestructionEvF::CompletelyBind>(*creationImpl->reqDestructionEvF, this));
+			createMaterialNode->RegisterSelectBind(std::make_unique<RequestRObjCreationEvF::CompletelyBind>(*creation->reqRObjCreationEvF, this, J_RESOURCE_TYPE::MATERIAL));
+			createSceneNode->RegisterSelectBind(std::make_unique<RequestRObjCreationEvF::CompletelyBind>(*creation->reqRObjCreationEvF, this, J_RESOURCE_TYPE::SCENE));
+			createAnimationControllerNode->RegisterSelectBind(std::make_unique<RequestRObjCreationEvF::CompletelyBind>(*creation->reqRObjCreationEvF, this, J_RESOURCE_TYPE::ANIMATION_CONTROLLER));
+			createDirctoryInFileViewNode->RegisterSelectBind(std::make_unique<RequestDirCreationEvF::CompletelyBind>(*creation->reqDirCreationEvF, this));
+			destroyNode->RegisterSelectBind(std::make_unique<RequestDestructionEvF::CompletelyBind>(*creation->reqDestructionEvF, this));
 			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 
-			using ImportResourceF = JWindowDirectorySettingImpl::ImportResourceF;
-			using RenameF = JWindowDirectorySettingImpl::RenameF;
+			using ImportResourceF = JWindowDirectorySettingFunctor::ImportResourceF;
+			using RenameF = JWindowDirectorySettingFunctor::RenameF;
 
-			importNode->RegisterSelectBind(std::make_unique<ImportResourceF::CompletelyBind>(*settingImpl->importResourceF));
-			renameFileNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*settingImpl->renameF, this));
+			importNode->RegisterSelectBind(std::make_unique<ImportResourceF::CompletelyBind>(*setting->importResourceF));
+			renameFileNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*setting->renameF, this));
 			renameFileNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
 
 			//directoryViewPopup = std::make_unique<JEditorPopupMenu>("Window JDirectory Directory Popup", std::move(directoryViewPopupNode));
@@ -458,7 +461,7 @@ namespace JinEngine
 				//JGui::PushStyle(J_GUI_STYLE::FRAME_PADDING, JVector2F(JGui::GetFramePadding().x, 0));
 				//JGui::SetCursorPosX(JGui::GetWindowSize().x - JGui::GetSliderWidth() - xOffset);
 				JGui::SetNextItemWidth(JGui::GetRestWindowContentsSize().x);
-				JGui::SliderFloat("##" + GetName() + "_SizeSlider", &btnIconSize, btnIconMinSize, btnIconMaxSize, "", J_GUI_SLIDER_FLAG_ALWAYS_CLAMP | J_GUI_SLIDER_FLAG_NO_INPUT);
+				JGui::SliderFloat("##" + GetName() + "_SizeSlider", &btnIconSize, btnIconMinSize, btnIconMaxSize, 1, J_GUI_SLIDER_FLAG_ALWAYS_CLAMP | J_GUI_SLIDER_FLAG_NO_INPUT);
 				if (JGui::IsLastItemActivated() || JGui::IsLastItemHovered())
 					JGui::Tooltip(btnIconSize, 3);
 				 
@@ -479,7 +482,9 @@ namespace JinEngine
 			JGui::BeginChildWindow(Private::directoryViewName.c_str(), viewSize, true, J_GUI_WINDOW_FLAG_AUTO_RESIZE);
 
 			const bool canSelect = !searchBarHelper->HasInputData();
+			treeStrcture->Begin();
 			DirectoryViewOnScreen(root, canSelect);
+			treeStrcture->End();
 			lastUpdateOpenNewDir = false;
 
 			//보류
@@ -507,11 +512,8 @@ namespace JinEngine
 			bool isSelected = opendDirctory->GetGuid() == directory->GetGuid();
 			if (lastUpdateOpenNewDir && opendDirctory->IsParent(directory.Get()))
 				JGui::SetNextItemOpen(true);
-			  
-			PushTreeNodeColorSet(true, isSelected && canSelect);
-			bool isNodeOpen = JGui::TreeNodeEx(JGui::CreateGuiLabel(directory, GetName()), baseFlags);
-			PopTreeNodeColorSet(true, isSelected && canSelect);
-
+  
+			bool isNodeOpen = treeStrcture->DisplayTreeNode(JGui::CreateGuiLabel(directory, GetName()), baseFlags, IsFocus(), true, isSelected);
 			auto draggingResult = TryGetDraggingTarget();
 			if (draggingResult.IsValid())
 			{
@@ -599,7 +601,7 @@ namespace JinEngine
 							SetContentsClick(true);
 					}
 
-					const JVector4F addedColor = GetSelectableColorFactor(isSelected, isHovered);  
+					const JVector4F addedColor = JGui::GetSelectableColorFactor(IsFocus(), isSelected, isHovered);  
 					//draw bg frame rect
 					JGui::DrawRectFrame(JGui::GetCursorScreenPos(),
 						widgetAlignCal.GetTotalContentsSize(),
@@ -828,15 +830,15 @@ namespace JinEngine
 		{
 			std::string taskName;
 			std::string taskDesc;
-			using MoveFileF = JWindowDirectorySettingImpl::MoveFIleF;
+			using MoveFileF = JWindowDirectorySettingFunctor::MoveFIleF;
 			if (obj->GetObjectType() == J_OBJECT_TYPE::DIRECTORY_OBJECT)
 			{
 				taskName = "Move directory";
 				taskDesc = JCUtil::WstrToU8Str(L"object name: " + obj->GetName() + L" " +
 					static_cast<JDirectory*>(obj.Get())->GetParent()->GetName() + L" to " + to->GetName());
 
-				auto doBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, JUserPtr<JDirectory>(to), JUserPtr<JObject>(obj));
-				auto undoBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, static_cast<JDirectory*>(obj.Get())->GetParent(), JUserPtr<JObject>(obj));
+				auto doBind = std::make_unique<MoveFileF::CompletelyBind>(*setting->moveFileF, JUserPtr<JDirectory>(to), JUserPtr<JObject>(obj));
+				auto undoBind = std::make_unique<MoveFileF::CompletelyBind>(*setting->moveFileF, static_cast<JDirectory*>(obj.Get())->GetParent(), JUserPtr<JObject>(obj));
 				auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorTSetBindFuncEvStruct>
 					(taskName, taskDesc, GetOwnerPageType(), std::move(doBind), std::move(undoBind)));
 				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
@@ -846,8 +848,8 @@ namespace JinEngine
 				taskName = "Move file";
 				taskDesc = JCUtil::WstrToU8Str(L"object name: " + obj->GetName() + L" " +
 					static_cast<JResourceObject*>(obj.Get())->GetDirectory()->GetName() + L" to " + to->GetName());
-				auto doBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, JUserPtr<JDirectory>(to), JUserPtr<JObject>(obj));
-				auto undoBind = std::make_unique<MoveFileF::CompletelyBind>(*settingImpl->moveFileF, static_cast<JResourceObject*>(obj.Get())->GetDirectory(), JUserPtr<JObject>(obj));
+				auto doBind = std::make_unique<MoveFileF::CompletelyBind>(*setting->moveFileF, JUserPtr<JDirectory>(to), JUserPtr<JObject>(obj));
+				auto undoBind = std::make_unique<MoveFileF::CompletelyBind>(*setting->moveFileF, static_cast<JResourceObject*>(obj.Get())->GetDirectory(), JUserPtr<JObject>(obj));
 				auto evStruct = JEditorEvent::RegisterEvStruct(std::make_unique<JEditorTSetBindFuncEvStruct>
 					(taskName, taskDesc, GetOwnerPageType(), std::move(doBind), std::move(undoBind)));
 				AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::T_BIND_FUNC, evStruct);
@@ -868,16 +870,19 @@ namespace JinEngine
 		}
 		void JWindowDirectory::RequestOpenNewDirectory(JUserPtr<JDirectory> newOpendDirectory)
 		{
-			using OpenNewDirectoryF = JWindowDirectorySettingImpl::OpenNewDirectoryF;
-			auto openNewBindB = std::make_unique<OpenNewDirectoryF::CompletelyBind>(*settingImpl->openNewDirF, std::move(newOpendDirectory));
+			if (newOpendDirectory == nullptr)
+				return;
+
+			using OpenNewDirectoryF = JWindowDirectorySettingFunctor::OpenNewDirectoryF;
+			auto openNewBindB = std::make_unique<OpenNewDirectoryF::CompletelyBind>(*setting->openNewDirF, std::move(newOpendDirectory));
 
 			auto evStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(openNewBindB), GetOwnerPageType());
 			AddEventNotification(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::BIND_FUNC, JEditorEvent::RegisterEvStruct(std::move(evStruct)));
 		}
 		void JWindowDirectory::RequestImportPostProccess(std::vector<JUserPtr<JResourceObject>>&& rVec)
 		{
-			using ImportPostProcessF = JWindowDirectorySettingImpl::ImportPostProcessF;
-			auto postImplB = std::make_unique<ImportPostProcessF::CompletelyBind>(*settingImpl->importPostProcessF,
+			using ImportPostProcessF = JWindowDirectorySettingFunctor::ImportPostProcessF;
+			auto postImplB = std::make_unique<ImportPostProcessF::CompletelyBind>(*setting->importPostProcessF,
 				this,
 				std::move(rVec));
 			auto evStruct = std::make_unique<JEditorBindFuncEvStruct>(std::move(postImplB), GetOwnerPageType());
@@ -905,6 +910,20 @@ namespace JinEngine
 			DeRegisterListener();
 			ClearPreviewGroup();
 			JEditorWindow::DoDeActivate();
+		}
+		void JWindowDirectory::LoadEditorWindow(JFileIOTool& tool)
+		{
+			JEditorWindow::LoadEditorWindow(tool);
+			RequestOpenNewDirectory(JObjectFileIOHelper::_LoadHasIden<JDirectory>(tool, "OpendDirectory"));
+			treeStrcture->LoadData(tool); 
+		}
+		void JWindowDirectory::StoreEditorWindow(JFileIOTool& tool)
+		{
+			JEditorWindow::StoreEditorWindow(tool);
+			JObjectFileIOHelper::_StoreHasIden(tool, opendDirctory.Get(), "OpendDirectory");
+			JGuiWindowInfo info;
+			JGui::GetWindowInfo(GetName(), info);
+			treeStrcture->StoreData(tool, info.windowID);
 		}
 		void JWindowDirectory::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
 		{

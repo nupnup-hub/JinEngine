@@ -29,6 +29,14 @@ namespace JinEngine
 		{
 			return J_GRAPHIC_DEVICE_TYPE::DX12;
 		}
+		JDx12CullingResourceHolder* JDx12CullingManager::GetDxHolder(const J_CULLING_TYPE type, int index)const noexcept
+		{
+			auto info = GetCullingInfo(type, index);
+			if (info == nullptr || !info->IsCullingResultInGpu())
+				return nullptr;
+
+			return static_cast<JDx12CullingResourceHolder*>(GetHolder(info.Get()));
+		}
 		ID3D12Resource* JDx12CullingManager::GetResource(const J_CULLING_TYPE type, int index)const noexcept
 		{
 			auto info = GetCullingInfo(type, index);

@@ -114,37 +114,37 @@ namespace JinEngine
 	{
 		return debugRoot != nullptr && debugRoot.IsValid();
 	}
-	void JAcceleratorOption::Store(std::wofstream& stream)
+	void JAcceleratorOption::Store(JFileIOTool& tool)
 	{
-		if (!stream.is_open())
+		if (!tool.CanStore())
 			return;
 
-		JObjectFileIOHelper::StoreAtomicData(stream, L"IsAcceleratorActivated:", isAcceleratorActivated);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"IsDebugActivated:", isDebugActivated);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"IsDebugLeafOnly:", isDebugLeafOnly);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"IsCullingActivated:", isCullingActivated);
+		JObjectFileIOHelper::StoreAtomicData(tool, isAcceleratorActivated, "IsAcceleratorActivated:");
+		JObjectFileIOHelper::StoreAtomicData(tool, isDebugActivated, "IsDebugActivated:");
+		JObjectFileIOHelper::StoreAtomicData(tool, isDebugLeafOnly, "IsDebugLeafOnly:");
+		JObjectFileIOHelper::StoreAtomicData(tool, isCullingActivated, "IsCullingActivated:");
 		if (innerRoot.IsValid())
 		{
-			JObjectFileIOHelper::StoreAtomicData(stream, L"hasInnerRoot:", true);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"innerGuid:", innerRoot->GetGuid());
+			JObjectFileIOHelper::StoreAtomicData(tool, true, "hasInnerRoot:");
+			JObjectFileIOHelper::StoreAtomicData(tool, innerRoot->GetGuid(), "innerGuid:");
 		}
 		else
 		{
-			JObjectFileIOHelper::StoreAtomicData(stream, L"hasInnerRoot:", false);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"innerGuid:", 0);
+			JObjectFileIOHelper::StoreAtomicData(tool, false, "hasInnerRoot:");
+			JObjectFileIOHelper::StoreAtomicData(tool, 0, "innerGuid:");
 		}
 	}
-	void JAcceleratorOption::Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid)
+	void JAcceleratorOption::Load(JFileIOTool& tool, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid)
 	{
-		if (!stream.is_open() || stream.eof())
+		if (!tool.CanLoad())
 			return;
 
-		JObjectFileIOHelper::LoadAtomicData(stream, isAcceleratorActivated);
-		JObjectFileIOHelper::LoadAtomicData(stream, isDebugActivated);
-		JObjectFileIOHelper::LoadAtomicData(stream, isDebugLeafOnly);
-		JObjectFileIOHelper::LoadAtomicData(stream, isCullingActivated);
-		JObjectFileIOHelper::LoadAtomicData(stream, hasInnerRoot);
-		JObjectFileIOHelper::LoadAtomicData(stream, innerRootGuid);
+		JObjectFileIOHelper::LoadAtomicData(tool, isAcceleratorActivated, "IsAcceleratorActivated:");
+		JObjectFileIOHelper::LoadAtomicData(tool, isDebugActivated, "IsDebugActivated:");
+		JObjectFileIOHelper::LoadAtomicData(tool, isDebugLeafOnly, "IsDebugLeafOnly:");
+		JObjectFileIOHelper::LoadAtomicData(tool, isCullingActivated, "IsCullingActivated:");
+		JObjectFileIOHelper::LoadAtomicData(tool, hasInnerRoot, "hasInnerRoot:");
+		JObjectFileIOHelper::LoadAtomicData(tool, innerRootGuid, "innerGuid:");
 	}
 
 	JAcceleratorCullingInfo::JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,

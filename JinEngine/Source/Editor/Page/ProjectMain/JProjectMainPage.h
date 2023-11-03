@@ -1,6 +1,7 @@
 #pragma once  
 #include"../JEditorPage.h"  
-#include"../../Interface/JEditorObjectHandleInterface.h"
+#include"../../Interface/JEditorProjectInterface.h" 
+#include"../../../Object/JObjectModifyInterface.h"
 
 namespace JinEngine
 {
@@ -20,11 +21,8 @@ namespace JinEngine
 		class JWindowStateViewer;
 		class JEditorCloseConfirmPopup;
 
-		class JProjectMainPage final : public JEditorPage , public JEditorModifedObjectInterface
-		{
-		private:
-			using StoreProjectF = Core::JSFunctorType<void>;
-			using LoadProjectF = Core::JSFunctorType<void>;
+		class JProjectMainPage final : public JEditorPage, public JModifedObjectInterface
+		{ 
 		private:
 			using ClosePopupOpenF = Core::JSFunctorType<void, JProjectMainPage*>;
 			using ClosePopupConfirmF = Core::JSFunctorType<void, JProjectMainPage*>;
@@ -51,15 +49,14 @@ namespace JinEngine
 			std::unique_ptr<JGraphicOptionSetting> graphicOptionSetting;
 			std::unique_ptr<JWindowStateViewer> wndStateViewer;
 		private:
-			std::unique_ptr<StoreProjectF::Functor> storeProjectF;
-			std::unique_ptr<LoadProjectF::Functor> loadProjectF;
-		private:
 			std::unique_ptr<ClosePopupOpenF::Functor> closePopupOpenF;
 			std::unique_ptr<ClosePopupConfirmF::Functor> closePopupConfirmF; 
 			std::unique_ptr<ClosePopupCancelF::Functor> closePopupCancelF;
 			std::unique_ptr<ClosePopupContentsF::Functor> closePopupContetnsF;
+		private:
+			std::unique_ptr<JEditorProjectInterface> projInterface;
 		public:
-			JProjectMainPage();
+			JProjectMainPage(std::unique_ptr<JEditorProjectInterface>&& newProjInterface);
 			~JProjectMainPage();
 			JProjectMainPage(const JProjectMainPage& rhs) = delete;
 			JProjectMainPage& operator=(const JProjectMainPage& rhs) = delete;
@@ -76,6 +73,9 @@ namespace JinEngine
 		private:
 			void BuildDockNode();
 			void BuildMenuNode();
+		private:
+			void BeginScenePlay();
+			void EndScenePlay();
 		};
 	}
 }

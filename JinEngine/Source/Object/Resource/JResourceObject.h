@@ -15,9 +15,10 @@ namespace JinEngine
 	struct RTypeHint;
 	struct RTypeCommonFunc;
 	struct RTypePrivateFunc;
+	struct JResourceEventDesc;
 
 	class JResourceObject;
-	using JResourceEventManager = Core::JEventManager<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>;
+	using JResourceEventManager = Core::JEventManager<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*, JResourceEventDesc*>;
 	using JResourceEventInterface = JResourceEventManager::Interface;
 	class JResourceObject : public JObject, public JReferenceInterface, public Core::JValidInterface
 	{

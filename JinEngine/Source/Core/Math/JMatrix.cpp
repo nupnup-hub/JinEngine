@@ -3,7 +3,9 @@
 using namespace DirectX;
 namespace JinEngine
 {
-	JMatrix4x4::JMatrix4x4() {}
+	JMatrix4x4::JMatrix4x4()
+		:r{ {0, 0, 0, 0},{0, 0, 0, 0},{0, 0, 0, 0},{0, 0, 0, 0} }
+	{ }
 	JMatrix4x4::JMatrix4x4(float m00, float m01, float m02, float m03,
 		float m10, float m11, float m12, float m13,
 		float m20, float m21, float m22, float m23,
@@ -14,14 +16,10 @@ namespace JinEngine
 		_41(m30), _42(m31), _43(m32), _44(m33)
 	{ }
 	JMatrix4x4::JMatrix4x4(const JVector4<float>(&v)[4])
-	{
-		r[0] = v[0];
-		r[1] = v[1];
-		r[2] = v[2];
-		r[3] = v[3]; 
-	} 
+		: r{ v[0],v[1],v[2],v[3] }
+	{} 
 	float JMatrix4x4::operator() (size_t Row, size_t Column)const noexcept
-	{
+	{ 
 		return m[Row][Column];
 	}
 	float& JMatrix4x4::operator() (size_t Row, size_t Column)noexcept

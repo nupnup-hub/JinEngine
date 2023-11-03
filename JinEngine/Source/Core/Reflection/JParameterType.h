@@ -28,6 +28,7 @@ namespace JinEngine
 			STD_MAP,
 			STD_UNORDERED_MAP,
 			USER_PTR,
+			WEAK_PTR,
 			Class,
 			Enum,
 		};

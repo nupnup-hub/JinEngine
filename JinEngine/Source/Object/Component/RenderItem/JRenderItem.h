@@ -2,10 +2,10 @@
 #include"../JComponent.h"
 #include"JRenderLayer.h" 
 #include"JRenderItemAcceleratorMask.h"   
+#include"JRenderItemPrimitive.h"
 #include"../../../Graphic/Frameresource/JFrameUpdateUserAccess.h"
 #include"../../../Core/Math/JMatrix.h"
-#include<DirectXCollision.h>
-#include<d3d12.h>
+#include<DirectXCollision.h> 
 
 namespace JinEngine
 {
@@ -49,7 +49,7 @@ namespace JinEngine
 		JUserPtr<JMaterial> GetValidMaterial(int index)const noexcept;
 		std::vector<JUserPtr<JMaterial>> GetMaterialVec()const noexcept;
 		JMatrix4x4 GetTextransform()const noexcept;
-		D3D12_PRIMITIVE_TOPOLOGY GetPrimitiveType()const noexcept;
+		J_RENDER_PRIMITIVE GetPrimitiveType()const noexcept;
 		J_RENDER_LAYER GetRenderLayer()const noexcept;
 		J_RENDERITEM_ACCELERATOR_MASK GetAcceleratorMask()const noexcept; 
 		uint GetTotalVertexCount()const noexcept;
@@ -57,6 +57,8 @@ namespace JinEngine
 		uint GetSubmeshCount()const noexcept;
 		//apply scale rotation tranlation 
 		DirectX::BoundingBox GetBoundingBox()const noexcept;
+		//for debug
+		DirectX::BoundingOrientedBox GetDetphTestBoundingBox()const noexcept;
 		DirectX::BoundingOrientedBox GetOrientedBoundingBox()const noexcept;
 		//apply scale tranlation  
 		DirectX::BoundingSphere GetBoundingSphere()const noexcept;
@@ -65,7 +67,7 @@ namespace JinEngine
 		void SetMaterial(int index, JUserPtr<JMaterial> newMaterial)noexcept;
 		void SetMaterialVec(const std::vector<JUserPtr<JMaterial>> newVec)noexcept;
 		void SetTextureTransform(const JMatrix4x4& textureTransform)noexcept;
-		void SetPrimitiveType(const D3D12_PRIMITIVE_TOPOLOGY primitiveType)noexcept;
+		void SetPrimitiveType(const J_RENDER_PRIMITIVE primitiveType)noexcept;
 		void SetRenderLayer(const J_RENDER_LAYER renderLayer)noexcept; 
 		void SetAcceleratorMask(const J_RENDERITEM_ACCELERATOR_MASK acceleratorMask)noexcept;
 		void SetOccluder(const bool value)noexcept;

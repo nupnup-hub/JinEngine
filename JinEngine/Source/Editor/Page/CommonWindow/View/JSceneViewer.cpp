@@ -50,10 +50,10 @@ namespace JinEngine
 			{ 
 				UpdateMouseClick(); 
 				UpdateMouseWheel();
-			 
+			  
 				camList->Update(scene);
 				selectedCam = camList->GetSelectedCam(scene);
-				editorCamCtrl->Update(selectedCam.Get(), JGui::GetMousePos().x, JGui::GetMousePos().y, J_GUI_FOCUS_FLAG_CHILD_WINDOW);
+				editorCamCtrl->Update(selectedCam, JGui::GetMousePos().x, JGui::GetMousePos().y, J_GUI_FOCUS_FLAG_CHILD_WINDOW);
 
 				//camList->DisplayCameraList(scene.Get(), "Viewer", JGui::GetMainViewport()->Size * 0.15f);
  
@@ -94,17 +94,21 @@ namespace JinEngine
 		{
 			JEditorWindow::DoDeActivate();   
 		}
-		void JSceneViewer::StoreEditorWindow(std::wofstream& stream)
-		{
-			JEditorWindow::StoreEditorWindow(stream); 
-			JFileIOHelper::StoreAtomicData(stream, L"LastSelectedCam:", camList->GetSelecetdIndex());
-		}
-		void JSceneViewer::LoadEditorWindow(std::wifstream& stream)
+		void JSceneViewer::LoadEditorWindow(JFileIOTool& tool)
 		{
 			uint lastSelecetdCamIndex = 0;
-			JEditorWindow::LoadEditorWindow(stream); 		 
-			JFileIOHelper::LoadAtomicData(stream, lastSelecetdCamIndex);
+			float movementFactor = 0;
+			JEditorWindow::LoadEditorWindow(tool);
+			JFileIOHelper::LoadAtomicData(tool, lastSelecetdCamIndex, "LastSelectedCam:");
+			JFileIOHelper::LoadAtomicData(tool, movementFactor, "MovemnetFactor:");
 			camList->SetSelecetdIndex(lastSelecetdCamIndex);
+			editorCamCtrl->SetMovemnetFactor(movementFactor);
 		}  
+		void JSceneViewer::StoreEditorWindow(JFileIOTool& tool)
+		{
+			JEditorWindow::StoreEditorWindow(tool);
+			JFileIOHelper::StoreAtomicData(tool, camList->GetSelecetdIndex(), "LastSelectedCam:");
+			JFileIOHelper::StoreAtomicData(tool, editorCamCtrl->GetMovemnetFactor(), "MovemnetFactor:");
+		}
 	}
 }

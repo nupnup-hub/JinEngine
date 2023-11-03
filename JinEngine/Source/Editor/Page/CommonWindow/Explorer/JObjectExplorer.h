@@ -1,7 +1,7 @@
 #pragma once
 #include"../../JEditorWindow.h"   
-#include"../../../Interface/JEditorObjectHandleInterface.h"
 #include"../../../../Object/JObjectType.h"
+#include"../../../../Object/JObjectModifyInterface.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
 #include"../../../../Core/Event/JEventListener.h"
 #include"../../../../Core/Transition/JTransition.h"
@@ -17,10 +17,11 @@ namespace JinEngine
 		class JEditorRenameHelper;
 		class JEditorPopupMenu;
 		class JEditorSearchBarHelper;
+		class JEditorTreeStructure;
 
-		class JObjectExplorerCreationImpl;
-		class JObjectExplorerSettingImpl;
-		class JObjectExplorer final : public JEditorWindow, public JEditorObjectHandlerInterface
+		class JObjectExplorerCreationFunctor;
+		class JObjectExplorerSettingFunctor;
+		class JObjectExplorer final : public JEditorWindow, public JObjectModifyInterface
 		{ 
 		private:
 			JUserPtr<JGameObject> root;   
@@ -28,14 +29,16 @@ namespace JinEngine
 			std::unique_ptr<JEditorRenameHelper>renameHelper;
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
 			std::unique_ptr<JEditorPopupMenu>explorerPopup; 
+			std::unique_ptr<JEditorTreeStructure> treeStrcture;
 		private:
-			std::unique_ptr<JObjectExplorerCreationImpl> creationImpl;
-			std::unique_ptr<JObjectExplorerSettingImpl> settingImpl;
+			std::unique_ptr<JObjectExplorerCreationFunctor> creation;
+			std::unique_ptr<JObjectExplorerSettingFunctor> setting;
 		public:
 			JObjectExplorer(const std::string& name, 
 				std::unique_ptr<JEditorAttribute> attribute, 
 				const J_EDITOR_PAGE_TYPE pageType,
-				const J_EDITOR_WINDOW_FLAG windowFlag);
+				const J_EDITOR_WINDOW_FLAG windowFlag,
+				const std::vector<size_t>& listenWindowGuidVec);
 			~JObjectExplorer();
 			JObjectExplorer(const JObjectExplorer& rhs) = delete;
 			JObjectExplorer& operator=(const JObjectExplorer& rhs) = delete;
@@ -56,6 +59,9 @@ namespace JinEngine
 			void DoActivate()noexcept final;
 			void DoDeActivate()noexcept final;
 			void DoSetUnFocus()noexcept final;
+		private:
+			void LoadEditorWindow(JFileIOTool& tool)final;
+			void StoreEditorWindow(JFileIOTool& tool)final;
 		private:
 			void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)final;
 		};

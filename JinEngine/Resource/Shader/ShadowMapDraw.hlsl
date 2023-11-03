@@ -1,9 +1,20 @@
+#include "DepthFunc.hlsl"
 
+#define ARRAY_MAX_COUNT 8
 #if !defined(ARRAY_COUNT)
-#define ARRAY_COUNT 8
+#define ARRAY_COUNT ARRAY_MAX_COUNT
 #endif
-#define CUBE_MAP_FACE 6
+ 
 
+#define CUBE_MAP_FACE 6
+  
+#if defined(USE_VSM)
+#define STORE_VARIANCE 1
+#else
+#define STORE_DEPTH_ONLY 1
+#endif
+
+//64
 cbuffer cbObject : register(b0)
 {
 	float4x4 objWorld;
@@ -13,22 +24,47 @@ cbuffer cbObject : register(b0)
 	//uint objPad01;
 	//uint objPad02;
 };
+//16384
 cbuffer cbSkinned : register(b1)
 {
 	float4x4 objBoneTransforms[256];
 };
-cbuffer cbNormalLightShadowMap : register(b2)
+//spot light and directional light(off csm)
+//64
+cbuffer cbShadowMap : register(b2)
 {
-	float4x4 shadowT;
+	float4x4 shadowT; 
 };
-cbuffer cbCsm : register (b3)
+//512
+cbuffer cbShadowMapArray : register(b3)
 {
-	float4x4 csmT[ARRAY_COUNT];
+	float4x4 shadowArrayT[ARRAY_MAX_COUNT]; 
 };
-cbuffer cbPointLightShadowMap : register (b4)
+//384
+cbuffer cbShadowMapCube : register(b4)
 {
-	float4x4 pointLightShadowT[CUBE_MAP_FACE];
+	float4x4 shadowCubeT[CUBE_MAP_FACE]; 
 };
+
+
+//Vsm 
+float2 ComputeMoments(float depth)
+{
+    // Compute first few moments of depth
+	float2 momments;
+	momments.x = depth;
+	momments.y = depth * depth;
+    
+    // Ajust the variance distribution to include the whole pixel if requested
+    // NOTE: Disabled right now as a min variance clamp takes care of all problems
+    // and doesn't risk screwy hardware derivatives.
+	
+	//float dx = ddx(depth);
+	//float dy = ddy(depth); 
+	//momments.y = depth * depth + 0.25f * (dx * dx + dy * dy);
+    // Perhaps clamp maximum Delta here
+	return momments;
+}
 
 //
 // Csm Contents
@@ -47,6 +83,9 @@ struct VertexOut
 struct VertexIn
 {
 	float3 posL    : POSITION;
+	float3 normalL : NORMAL;
+	float2 texC    : TEXCOORD;
+	float3 tangentL : TANGENT;
 	float3 boneWeights : WEIGHTS;
 	uint4 boneIndices  : BONEINDICES;
 };
@@ -81,13 +120,14 @@ VertexOut VS(VertexIn vin)
 	for (int i = 0; i < 4; ++i)
 		posL += weights[i] * mul(float4(vin.posL, 1.0f), objBoneTransforms[vin.boneIndices[i]]).xyz;
 
-	vout.posW = mul(float4(vin.posL, 1.0f), objWorld);
+	vout.posW = mul(float4(posL, 1.0f), objWorld);
 	return vout;
 }
 #endif
 [maxvertexcount(ARRAY_COUNT * 3)]
 void GS(triangle VertexOut input[3], inout TriangleStream<GsOut> output)
 {
+	[unroll]
 	for (int i = 0; i < ARRAY_COUNT; ++i)
 	{
 		GsOut gsOut;
@@ -95,12 +135,19 @@ void GS(triangle VertexOut input[3], inout TriangleStream<GsOut> output)
 		for (int j = 0; j < 3; j++)
 		{
 			//can add bias
-			gsOut.posH = mul(input[j].posW, csmT[i]);
+			gsOut.posH = mul(input[j].posW, shadowArrayT[i]);
 			output.Append(gsOut);
 		}
 		output.RestartStrip();
 	}
 }
+#ifdef STORE_VARIANCE
+float2 PS(GsOut pin) : SV_Target
+{     
+	return ComputeMoments(pin.posH.z / pin.posH.w);
+}
+#endif
+
 #endif
 
 #if defined(CUBE)
@@ -117,6 +164,9 @@ struct VertexOut
 struct VertexIn
 {
 	float3 posL    : POSITION;
+	float3 normalL : NORMAL;
+	float2 texC    : TEXCOORD;
+	float3 tangentL : TANGENT;
 	float3 boneWeights : WEIGHTS;
 	uint4 boneIndices  : BONEINDICES;
 };
@@ -151,28 +201,36 @@ VertexOut VS(VertexIn vin)
 	for (int i = 0; i < 4; ++i)
 		posL += weights[i] * mul(float4(vin.posL, 1.0f), objBoneTransforms[vin.boneIndices[i]]).xyz;
 
-	vout.posW = mul(float4(vin.posL, 1.0f), objWorld);
+	vout.posW = mul(float4(posL, 1.0f), objWorld);
 	return vout;
 }
 #endif
 [maxvertexcount(CUBE_MAP_FACE * 3)]
 void GS(triangle VertexOut input[3], inout TriangleStream<GsOut> output)
 {
+	[unroll]
 	for (int i = 0; i < CUBE_MAP_FACE; ++i)
 	{
 		GsOut gsOut;
 		gsOut.rTIndex = i;
 		for (uint j = 0; j < 3; j++)
 		{
-			gsOut.posH = mul(input[j].posW, pointLightShadowT[i]);
+			gsOut.posH = mul(input[j].posW, shadowCubeT[i]);
 			output.Append(gsOut);
 		}
 		output.RestartStrip();
 	}
 } 
+#ifdef STORE_VARIANCE
+float2 PS(GsOut pin) : SV_Target
+{     
+	return ComputeMoments(pin.posH.z / pin.posH.w);
+}
 #endif
 
-#if defined(NORMAL)
+#endif
+ 
+#if defined(NORMALSM)
 #if defined(STATIC)
 struct VertexIn
 {
@@ -186,6 +244,9 @@ struct VertexOut
 struct VertexIn
 {
 	float3 posL    : POSITION;
+	float3 normalL : NORMAL;
+	float2 texC    : TEXCOORD;
+	float3 tangentL : TANGENT;
 	float3 boneWeights : WEIGHTS;
 	uint4 boneIndices  : BONEINDICES;
 };
@@ -216,9 +277,15 @@ VertexOut VS(VertexIn vin)
 	for (int i = 0; i < 4; ++i)
 		posL += weights[i] * mul(float4(vin.posL, 1.0f), objBoneTransforms[vin.boneIndices[i]]).xyz;
 
-	float4 posW = mul(float4(vin.posL, 1.0f), objWorld);
+	float4 posW = mul(float4(posL, 1.0f), objWorld);
 	vout.posH = mul(posW, shadowT);
 	return vout;
+}
+#endif
+#ifdef STORE_VARIANCE
+float2 PS(VertexOut pin) : SV_Target
+{     
+	return ComputeMoments(pin.posH.z / pin.posH.w);
 }
 #endif
 #endif

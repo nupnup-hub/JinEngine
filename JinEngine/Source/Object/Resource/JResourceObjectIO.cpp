@@ -147,28 +147,33 @@ namespace JinEngine
 		auto fileVec = projectRootDir->GetDirectoryFileVec(true, J_RESOURCE_TYPE::SCENE);
 		for (const auto& data : fileVec)
 		{
-			std::wifstream stream;
-			stream.open(data->GetMetaFilePath(), std::ios::in | std::ios::binary);
-			if (!stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(data->GetMetaFilePath(), JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 				continue;
-
-			if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeGuidSymbol()))
-				return;
 
 			size_t typeGuid = 0;
-			stream >> typeGuid;
-			Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
+			if (JFileIOHelper::LoadAtomicData(tool, typeGuid, Core::JFileConstant::GetTypeGuidSymbol()) != Core::J_FILE_IO_RESULT::SUCCESS)
+			{
+				tool.Close();
+				continue;
+			}
 
-			if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamLastOpenSymbol(*typeInfo)))
-				return;
+			Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
+			if (JFileIOHelper::LoadAtomicData(tool, typeGuid, Core::JFileConstant::GetTypeGuidSymbol()) != Core::J_FILE_IO_RESULT::SUCCESS)
+			{
+				tool.Close();
+				continue;
+			}
 
 			bool isOpen = false;
-			stream >> isOpen;
-			stream.close();
-			if (!isOpen)
+			if (JFileIOHelper::LoadAtomicData(tool, isOpen, Core::JFileConstant::GetLastOpenSymbol(*typeInfo)) != Core::J_FILE_IO_RESULT::SUCCESS)
+			{
+				tool.Close();
 				continue;
+			}
+			tool.Close();
 
-			if (data->TryGetResourceUser() != nullptr)
+			if (isOpen && data->TryGetResourceUser() != nullptr)
 				return;
 		}
 	}
@@ -198,9 +203,9 @@ namespace JinEngine
 						{
 							if (_waccess(pathData.engineFileWPath.c_str(), 00) != -1 &&
 								_waccess(pathData.engineMetaFileWPath.c_str(), 00) != -1)
-							{
+							{ 
 								auto loadData = DirIOInterface::CreateLoadAssetDIData(parentDir, pathData);
-								next = Core::ConvertChildUserPtr<JDirectory>(DirIOInterface::LoadAssetData(loadData.get()));
+								next = Core::ConvertChildUserPtr<JDirectory>(DirIOInterface::LoadAssetData(loadData.get())); 
 							}
 							else
 								next = JICI::Create<JDirectory>(pathData.name, Core::MakeGuid(), subDirFlag, parentDir);
@@ -247,59 +252,65 @@ namespace JinEngine
 	void JResourceObjectIO::LoadFile(const J_RESOURCE_TYPE rType, const JUserPtr<JDirectory>& directory, const std::wstring& fileName, const bool canLoadResource)
 	{
 		Core::JAssetFileLoadPathData pathData(directory->GetPath() + L"\\" + fileName);
-		if (pathData.format != Core::JFileConstant::GetFileFormat())
+		if (pathData.format != Core::JFileConstant::GetFileFormatW())
 			return;
 
-		std::wifstream stream;
-		stream.open(pathData.engineMetaFileWPath, std::ios::in | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(pathData.engineMetaFileWPath, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return;
-
-		if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamObjGuidSymbol()))
-			return;
+ 
 		size_t guid = 0;
-		stream >> guid;
-
-		if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeGuidSymbol()))
-			return;
-		size_t typeGuid = 0;
-		stream >> typeGuid;
-
-		if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamObjFlagSymbol()))
-			return;
-		int flag = -1;
-		stream >> flag;
-
-		Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
-		if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamTypeSymbol<J_RESOURCE_TYPE>()))
-			return;
-
-		int storeType = 0;
-		stream >> storeType;
-		J_RESOURCE_TYPE storedRType = (J_RESOURCE_TYPE)storeType;
-		if (storedRType != rType)
+		if (JFileIOHelper::LoadAtomicData(tool, guid, Core::JFileConstant::GetObjGuidSymbol()) != Core::J_FILE_IO_RESULT::SUCCESS)
 		{
-			stream.close();
+			tool.Close();
 			return;
 		}
 
-		if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamFormatIndexSymbol()))
+		size_t typeGuid = 0;
+		if (JFileIOHelper::LoadAtomicData(tool, typeGuid, Core::JFileConstant::GetTypeGuidSymbol()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		{
+			tool.Close();
 			return;
+		}
+ 
+		J_OBJECT_FLAG flag = OBJECT_FLAG_NONE;
+		if (JFileIOHelper::LoadEnumData(tool, flag, Core::JFileConstant::GetObjFlagSymbol()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		{
+			tool.Close();
+			return;
+		}
+ 
+		J_RESOURCE_TYPE storedRType;
+		Core::JTypeInfo* typeInfo = _JReflectionInfo::Instance().GetTypeInfo(typeGuid);
+		if (JFileIOHelper::LoadEnumData(tool, storedRType, Core::JFileConstant::GetTypeSymbol<J_RESOURCE_TYPE>()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		{
+			tool.Close();
+			return;
+		}
 
+		if (storedRType != rType)
+		{
+			tool.Close();
+			return;
+		}
 		int formatIndex = 0;
-		stream >> formatIndex;
+		if (JFileIOHelper::LoadAtomicData(tool, formatIndex, Core::JFileConstant::GetFormatIndexSymbol()) != Core::J_FILE_IO_RESULT::SUCCESS)
+		{
+			tool.Close();
+			return;
+		}
+	 
 		JFileInitData initData(pathData.name, guid, *typeInfo, storedRType, (J_OBJECT_FLAG)flag, (uint8)formatIndex);
-
 		if (storedRType == J_RESOURCE_TYPE::SCENE)
 		{
 			if (canLoadResource)
 			{
-				if (!JObjectFileIOHelper::SkipSentence(stream, Core::JFileConstant::StreamLastOpenSymbol(*typeInfo)))
-					return;
-
 				bool isOpen = false;
-				stream >> isOpen;
-				stream.close();
+				if (JFileIOHelper::LoadAtomicData(tool, isOpen, Core::JFileConstant::GetLastOpenSymbol(*typeInfo)) != Core::J_FILE_IO_RESULT::SUCCESS)
+				{
+					tool.Close();
+					return;
+				}				 
 				auto file = DirFileInterface::CreateJFile(initData, directory);
 				if (isOpen)
 					file->TryGetResourceUser();
@@ -310,7 +321,7 @@ namespace JinEngine
 		}
 		else
 		{
-			stream.close();
+			tool.Close();
 			auto file = DirFileInterface::CreateJFile(initData, directory);
 			if (canLoadResource)
 				file->TryGetResourceUser();

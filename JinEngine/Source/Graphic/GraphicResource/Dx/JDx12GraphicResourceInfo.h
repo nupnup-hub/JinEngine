@@ -14,20 +14,31 @@ namespace JinEngine
 		public:
 			using GetHandlePtr = CD3DX12_GPU_DESCRIPTOR_HANDLE(*)(JDx12GraphicResourceManager*, const J_GRAPHIC_BIND_TYPE, const uint index);
 		private:
+			struct OptionHolderSet
+			{
+			public:
+				std::unique_ptr<JDx12GraphicResourceHolder> holder[(uint)J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNT];		 
+			};
+		private:
 			friend class JDx12GraphicResourceManager;
 		private: 
 			JDx12GraphicResourceManager* manager = nullptr;
 			GetHandlePtr getHandlePtr = nullptr;
 		private:
-			std::unique_ptr<JDx12GraphicResourceHolder> resourceHolder;
+			std::unique_ptr<JDx12GraphicResourceHolder> resourceHolder; 
+			std::unique_ptr<OptionHolderSet> optionHolderSet;
 		public:
-			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final; 
 			uint GetWidth()const noexcept final;
 			uint GetHeight()const noexcept final;
 			ResourceHandle GetResourceHandle(const J_GRAPHIC_BIND_TYPE bindType, const uint bIndex = 0)const noexcept final;
 		public:
 			//Graphic resource type name + L": " + name 
 			void SetPrivateName(const std::wstring& name = L"")noexcept final; 
+		private:
+			void SetOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, std::unique_ptr<JDx12GraphicResourceHolder>&& holder);
+		public:
+			bool HasOptional(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept final;
 		public:
 			JDx12GraphicResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, 
 				JDx12GraphicResourceManager* manager,

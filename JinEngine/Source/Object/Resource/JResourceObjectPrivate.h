@@ -1,12 +1,15 @@
 #pragma once
 #include"../JObjectPrivate.h"
+#include"JResourceObjectEventType.h"
 
 namespace JinEngine
 { 
 	class JDirectory;
 	class JFile;
+	class JFileIOTool;
 	class JResourceObject; 
 	class JResourceManager; 
+	struct JResourceEventDesc;
 
 	namespace Editor
 	{
@@ -16,7 +19,7 @@ namespace JinEngine
 	{
 		struct JAssetFileLoadPathData;
 	}
- 
+
 	class JResourceObjectPrivate : public JObjectPrivate
 	{ 
 	public:
@@ -56,8 +59,8 @@ namespace JinEngine
 			virtual Core::J_FILE_IO_RESULT LoadMetaData(const std::wstring& path, Core::JDITypeDataBase* data) = 0;	//use initData
 			virtual Core::J_FILE_IO_RESULT StoreMetaData(Core::JDITypeDataBase* data) = 0;	//use storeData	 
 		protected:
-			static Core::J_FILE_IO_RESULT LoadCommonMetaData(std::wifstream& stream, Core::JDITypeDataBase* data, const bool closeSream = false);	//use initData
-			static Core::J_FILE_IO_RESULT StoreCommonMetaData(std::wofstream& stream, Core::JDITypeDataBase* data, const bool closeSream = false);	//use storeData	
+			static Core::J_FILE_IO_RESULT LoadCommonMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose = false);	//use initData
+			static Core::J_FILE_IO_RESULT StoreCommonMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data, const bool canClose = false);	//use storeData	
 		}; 
 		class FileInterface
 		{
@@ -79,6 +82,11 @@ namespace JinEngine
 			friend class JResourceManager; 
 		private:
 			static void BeginForcedDestroy(JResourceObject* rObj) noexcept;
+		};
+		class EventInterface
+		{
+		public:
+			static void NotifyEvent(JResourceObject* rObj, const J_RESOURCE_EVENT_TYPE type, std::unique_ptr<JResourceEventDesc>&& desc = nullptr);
 		};
 	public:
 		Core::JIdentifierPrivate::DestroyInstanceInterface& GetDestroyInstanceInterface()const noexcept override;

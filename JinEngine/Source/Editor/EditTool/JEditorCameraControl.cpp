@@ -1,7 +1,7 @@
 #include"JEditorCameraControl.h" 
 #include"../Gui/JGui.h"
 #include"../../Object/Component/Camera/JCamera.h"
-#include"../../Object/Component/Transform/JTransform.h"
+#include"../../Object/Component/Transform/JTransform.h" 
 #include"../../Core/Time/JGameTimer.h"  
 #include"../../Core/Math/JVectorExtend.h"
 #include"../../Window/JWindowPrivate.h" 
@@ -12,9 +12,10 @@ namespace JinEngine
 	{
 		namespace
 		{
-			static constexpr float camDeltaFactor = 0.1f;
+			static constexpr float camDeltaMoveFactor = 0.1f;
+			static constexpr float camDeltaRotateFactor = 0.1f;
 			static constexpr float movementFactorMax = 10.0f;
-			static constexpr float movementFactorMin = 0.5f;
+			static constexpr float movementFactorMin = 0.1f;
 		}
 		JEditorCameraControl::JEditorCameraControl()
 		{
@@ -22,45 +23,55 @@ namespace JinEngine
 			preMousePos.y = 0;
 		}
 		JEditorCameraControl::~JEditorCameraControl() {}
-		void JEditorCameraControl::Update(JCamera* sceneCamera, float x, float y, const J_GUI_FOCUS_FLAG_ wndFocusFlag)
+		void JEditorCameraControl::Update(const JUserPtr<JCamera>& cam, float x, float y, const J_GUI_FOCUS_FLAG_ wndFocusFlag)
 		{
 			if (JGui::IsCurrentWindowFocused(wndFocusFlag))
 			{
 				if (JGui::IsMouseHoveringRect(JGui::GetWindowPos(), JGui::GetWindowPos() + JGui::GetWindowSize()))
-					MouseMove(sceneCamera, x, y);
-				KeyboardInput(sceneCamera);
+					MouseMove(cam, x, y);
+				KeyboardInput(cam);
 			}	 
 			preMousePos.x = x;
 			preMousePos.y = y;
+		}
+		float JEditorCameraControl::GetMovemnetFactor()const noexcept
+		{
+			return movementFactor;
 		}
 		void JEditorCameraControl::SetMousePos(const JVector2F mousePos)
 		{
 			preMousePos = mousePos;
 		}
-		void JEditorCameraControl::MouseDown(JCamera* sceneCamera, float x, float y)
+		void JEditorCameraControl::SetMovemnetFactor(const float factor)noexcept
+		{
+			movementFactor = std::clamp(factor, movementFactorMin, movementFactorMax);
+		}
+		void JEditorCameraControl::MouseDown(const JUserPtr<JCamera>& cam, float x, float y)
 		{
 			preMousePos.x = x;
 			preMousePos.y = y;
 			SetCapture(Window::JWindowPrivate::HandleInterface::GetHandle());
 		}
-		void JEditorCameraControl::MouseUp(JCamera* sceneCamera, float x, float y)
+		void JEditorCameraControl::MouseUp(const JUserPtr<JCamera>& cam, float x, float y)
 		{
 			ReleaseCapture();
 		}
-		void JEditorCameraControl::MouseMove(JCamera* sceneCamera, float x, float y)
+		void JEditorCameraControl::MouseMove(const JUserPtr<JCamera>& cam, float x, float y)
 		{
 			if (JGui::IsMouseDown(Core::J_MOUSE_BUTTON::RIGHT))
 			{ 
-				float dx = (x - preMousePos.x) * camDeltaFactor;
-				float dy = (y - preMousePos.y) * camDeltaFactor;  
-				sceneCamera->GetTransform()->SetRotation(sceneCamera->GetTransform()->GetRotation() + JVector3F(dy, dx, 0));
+				const float dx = (x - preMousePos.x);
+				const float dy = (y - preMousePos.y);
+				const JVector3F dV = JVector3F(abs(dy) > 0 ? dy * camDeltaRotateFactor : 0, abs(dx) > 0 ? dx * camDeltaRotateFactor : 0, 0);
+				cam->GetTransform()->SetRotation(cam->GetTransform()->GetRotation() + dV);
+				SetModifiedBit(cam, true);
 			}
 		}
-		void JEditorCameraControl::KeyboardInput(JCamera* sceneCamera)
+		void JEditorCameraControl::KeyboardInput(const JUserPtr<JCamera>& cam)
 		{
 			const float dt = JEngineTimer::Data().DeltaTime();
 			bool isChanged = false;
-			JUserPtr<JTransform> camTransform = sceneCamera->GetTransform();
+			JUserPtr<JTransform> camTransform = cam->GetTransform();
 			JVector3<float> oldPos = camTransform->GetPosition();
 			JVector3<float> newPos = camTransform->GetPosition();
 
@@ -73,11 +84,15 @@ namespace JinEngine
 			if (GetAsyncKeyState('D') & 0x8000)
 				newPos += camTransform->GetRight() * (0.01f * movementFactor);
 			  
+			if (newPos == oldPos || newPos.HasNan())
+				return;
+		 
+			SetModifiedBit(cam, true);
 			camTransform->SetPosition(newPos);
 		}
 		void JEditorCameraControl::AddMovementFactor(const float delta)
 		{
-			movementFactor = std::clamp(movementFactor + delta, movementFactorMin, movementFactorMax);
+			movementFactor = std::clamp(movementFactor + std::clamp(delta, -camDeltaMoveFactor, camDeltaMoveFactor), movementFactorMin, movementFactorMax);
 		}
 	}
 }

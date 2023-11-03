@@ -1,13 +1,14 @@
 #pragma once 
 #include"../Gui/JGuiType.h"
 #include"../../Core/Math/JVector.h"
- 
+#include"../../Object/JObjectModifyInterface.h"
+
 namespace JinEngine
 {     
 	class JCamera; 
 	namespace Editor
 	{
-		class JEditorCameraControl
+		class JEditorCameraControl : public JObjectModifyInterface
 		{
 		private:
 			JVector2<float> preMousePos;
@@ -19,14 +20,17 @@ namespace JinEngine
 			JEditorCameraControl(const JEditorCameraControl& rhs) = delete;
 			JEditorCameraControl& operator=(const JEditorCameraControl& rhs) = delete;
 		public:
-			void SetMousePos(const JVector2F mousePos);
+			float GetMovemnetFactor()const noexcept;
 		public:
-			void Update(JCamera* sceneCamera, float x, float y, const J_GUI_FOCUS_FLAG_ wndFocusFlag);
+			void SetMousePos(const JVector2F mousePos);
+			void SetMovemnetFactor(const float factor)noexcept;
+		public:
+			void Update(const JUserPtr<JCamera>& cam, float x, float y, const J_GUI_FOCUS_FLAG_ wndFocusFlag);
 		private:
-			void MouseDown(JCamera* sceneCamera, float x, float y);
-			void MouseUp(JCamera* sceneCamera, float x, float y);
-			void MouseMove(JCamera* sceneCamera, float x, float y);
-			void KeyboardInput(JCamera* sceneCamera);
+			void MouseDown(const JUserPtr<JCamera>& cam, float x, float y);
+			void MouseUp(const JUserPtr<JCamera>& cam, float x, float y);
+			void MouseMove(const JUserPtr<JCamera>& cam, float x, float y);
+			void KeyboardInput(const JUserPtr<JCamera>& cam);
 		public:
 			void AddMovementFactor(const float delta);
 		};

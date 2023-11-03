@@ -37,6 +37,8 @@ namespace JinEngine
 	{
 		static auto isAvailableoverlapLam = []() {return false; };
 		static JRenderItemPrivate rPrivate;
+
+		static constexpr float bboxScaleFactor = 1.05f;
 	}
  
 	class JRenderItem::JRenderItemImpl : public Core::JTypeImplBase,
@@ -57,7 +59,7 @@ namespace JinEngine
 		std::vector<JUserPtr<JMaterial>> material; 
 	public:
 		JMatrix4x4 textureTransform = JMatrix4x4::Identity();
-		D3D12_PRIMITIVE_TOPOLOGY primitiveType = D3D12_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		J_RENDER_PRIMITIVE primitiveType = J_RENDER_PRIMITIVE::TRIANGLE;
 		J_RENDER_LAYER renderLayer = J_RENDER_LAYER::OPAQUE_OBJECT; 
 	public:
 		J_RENDERITEM_ACCELERATOR_MASK acceleratorMask = ACCELERATOR_ALLOW_ALL;
@@ -119,6 +121,18 @@ namespace JinEngine
 			else
 				return DirectX::BoundingBox();
 		}
+		DirectX::BoundingOrientedBox GetDetphTestBoundingBox() noexcept
+		{
+			Graphic::JBoundingObjectConstants cons;
+			UpdateFrame(cons);
+
+			DirectX::BoundingOrientedBox oriBB;
+			DirectX::BoundingOrientedBox res;
+			DirectX::BoundingOrientedBox::CreateFromBoundingBox(oriBB, mesh->GetBoundingBox());
+
+			oriBB.Transform(res, XMMatrixTranspose(cons.boundWorld.LoadXM()));
+			return res;
+		}
 		DirectX::BoundingOrientedBox GetOrientedBoundingBox()const noexcept
 		{
 			if (mesh.IsValid())
@@ -159,7 +173,7 @@ namespace JinEngine
 				else
 					gameObjSphereRad *= scale.z;
 
-				return DirectX::BoundingSphere(gameObjSphereCenter.ToXmF(), gameObjSphereRad);
+				return DirectX::BoundingSphere(gameObjSphereCenter.ToSimilar<XMFLOAT3>(), gameObjSphereRad);
 			}
 			else
 				return DirectX::BoundingSphere();
@@ -270,7 +284,7 @@ namespace JinEngine
 			for (uint i = 0; i < matCount; ++i)
 				CallOffResourceReference(material[i].Get());
 		}
-		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
 			if (iden == thisPointer->GetGuid())
 				return;
@@ -326,7 +340,7 @@ namespace JinEngine
 			const JVector3<float> scale = transform->GetScale();
 			//const XMVECTOR s = ((JVector3<float>(bbox.Extents) / drawBBox.Extents) * (scale * 1.001f)).ToXmV();
 			 
-			const XMVECTOR s = ((meshExtents / drawBBoxExtents) * scale).ToXmV();
+			const XMVECTOR s = ((meshExtents / drawBBoxExtents) * (scale * bboxScaleFactor)).ToXmV();
 			const XMVECTOR q = transform->GetQuaternion();
 
 			const JVector3<float> pos = transform->GetPosition(); 
@@ -461,7 +475,7 @@ namespace JinEngine
 	{
 		return impl->textureTransform;
 	}
-	D3D12_PRIMITIVE_TOPOLOGY JRenderItem::GetPrimitiveType()const noexcept
+	J_RENDER_PRIMITIVE JRenderItem::GetPrimitiveType()const noexcept
 	{
 		return impl->primitiveType;
 	}
@@ -489,6 +503,10 @@ namespace JinEngine
 	{
 		return impl->GetBoundingBox();
 	}
+	DirectX::BoundingOrientedBox JRenderItem::GetDetphTestBoundingBox()const noexcept
+	{
+		return impl->GetDetphTestBoundingBox();
+	}
 	DirectX::BoundingOrientedBox JRenderItem::GetOrientedBoundingBox()const noexcept
 	{
 		return impl->GetOrientedBoundingBox();
@@ -513,7 +531,7 @@ namespace JinEngine
 	{
 		impl->textureTransform = textureTransform;
 	}
-	void JRenderItem::SetPrimitiveType(const D3D12_PRIMITIVE_TOPOLOGY primitiveType)noexcept
+	void JRenderItem::SetPrimitiveType(const J_RENDER_PRIMITIVE primitiveType)noexcept
 	{
 		impl->primitiveType = primitiveType;
 	}
@@ -621,27 +639,33 @@ namespace JinEngine
 		J_OBJECT_FLAG flag;
 		bool isActivated;
 
-		D3D12_PRIMITIVE_TOPOLOGY primitiveType;
+		J_RENDER_PRIMITIVE primitiveType; 
 		J_RENDER_LAYER renderLayer;
 		J_RENDERITEM_ACCELERATOR_MASK acceleratorMask;
 		uint materialCount;
 		bool isOccluder;
 
 		auto loadData = static_cast<JRenderItem::LoadData*>(data);
-		std::wifstream& stream = loadData->stream;
-		JUserPtr<JGameObject> owner = loadData->owner;
+		JFileIOTool& tool = loadData->tool;
+		JUserPtr<JGameObject> owner = loadData->owner;		 
 
-		JObjectFileIOHelper::LoadComponentIden(stream, guid, flag, isActivated);
-		JUserPtr<JMeshGeometry> mesh = JObjectFileIOHelper::_LoadHasIden<JMeshGeometry>(stream);
-		JObjectFileIOHelper::LoadEnumData(stream, primitiveType);
-		JObjectFileIOHelper::LoadEnumData(stream, renderLayer);
-		JObjectFileIOHelper::LoadEnumData(stream, acceleratorMask);
-		JObjectFileIOHelper::LoadAtomicData(stream, materialCount);
-		JObjectFileIOHelper::LoadAtomicData(stream, isOccluder);
-
+		FILE_ASSERTION(JObjectFileIOHelper::LoadComponentIden(tool, guid, flag, isActivated));
+		JUserPtr<JMeshGeometry> mesh = JObjectFileIOHelper::_LoadHasIden<JMeshGeometry>(tool, "MeshGeometry");
+		FILE_ASSERTION(JObjectFileIOHelper::LoadEnumData(tool, primitiveType, "PrimitiveType:"));
+		FILE_ASSERTION(JObjectFileIOHelper::LoadEnumData(tool, renderLayer, "RenderLayer:"));
+		FILE_ASSERTION(JObjectFileIOHelper::LoadEnumData(tool, acceleratorMask, "AcceleratorMask:"));
+		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, materialCount, "MaterialCount:"));
+		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, isOccluder, "IsOccluder:"));
+		
 		std::vector<JUserPtr<JMaterial>>materialVec(materialCount);
+		tool.PushExistStack("Material");
 		for (uint i = 0; i < materialCount; ++i)
-			materialVec[i] = JObjectFileIOHelper::_LoadHasIden<JMaterial>(stream);
+		{
+			//tool.PushExistStack();
+			materialVec[i] = JObjectFileIOHelper::_LoadHasIden<JMaterial>(tool, std::to_string(i));
+			//tool.PopStack();
+		}
+		tool.PopStack();
 
 		auto idenUser = rPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JRenderItem::InitData>(guid, flag, owner), &rPrivate);
 		JUserPtr<JRenderItem> rUser;
@@ -672,19 +696,24 @@ namespace JinEngine
 		rUser.ConnnectChild(storeData->obj);
 
 		JRenderItem::JRenderItemImpl* impl = rUser->impl.get();
-		std::wofstream& stream = storeData->stream;
+		JFileIOTool& tool = storeData->tool;
 
-		JObjectFileIOHelper::StoreComponentIden(stream, rUser.Get());
-		JObjectFileIOHelper::_StoreHasIden(stream, impl->mesh.Get());
-		JObjectFileIOHelper::StoreEnumData(stream, L"PrimitiveType:", impl->primitiveType);
-		JObjectFileIOHelper::StoreEnumData(stream, L"RenderLayer:", impl->renderLayer);
-		JObjectFileIOHelper::StoreEnumData(stream, L"AcceleratorMask:", impl->acceleratorMask);
-		JObjectFileIOHelper::StoreAtomicData(stream, L"MaterialCount:", impl->material.size()); 
-		JObjectFileIOHelper::StoreAtomicData(stream, L"IsOccluder:", impl->isOccluder);
+		JObjectFileIOHelper::StoreComponentIden(tool, rUser.Get());
+		JObjectFileIOHelper::_StoreHasIden(tool, impl->mesh.Get(), "MeshGeometry");
+		JObjectFileIOHelper::StoreEnumData(tool, impl->primitiveType, "PrimitiveType:");
+		JObjectFileIOHelper::StoreEnumData(tool, impl->renderLayer, "RenderLayer:");
+		JObjectFileIOHelper::StoreEnumData(tool, impl->acceleratorMask, "AcceleratorMask:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->material.size(), "MaterialCount:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->isOccluder, "IsOccluder:");
 
+		tool.PushArrayOwner("Material");
 		for (uint i = 0; i < impl->material.size(); ++i)
-			JObjectFileIOHelper::_StoreHasIden(stream, impl->material[i].Get());
-
+		{
+			//tool.PushArrayMember();
+			JObjectFileIOHelper::_StoreHasIden(tool, impl->material[i].Get(), std::to_string(i));
+			//tool.PopStack();
+		}
+		tool.PopStack();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

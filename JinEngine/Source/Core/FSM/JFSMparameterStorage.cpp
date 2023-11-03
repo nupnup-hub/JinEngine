@@ -46,8 +46,8 @@ namespace JinEngine
 		}
 		JUserPtr<JFSMparameter> JFSMparameterStorage::GetParameter(const size_t guid)const noexcept
 		{
-			auto paramUser = JFSMparameter::StaticTypeInfo().GetInstanceUserPtr<JFSMparameter>(guid);
-			return paramUser.IsValid() && paramUser->IsStorageParameter(guid) ? paramUser : nullptr;
+			auto data = parameterMap.find(guid);
+			return data != parameterMap.end() ? data->second : nullptr; 
 		}
 		JUserPtr<JFSMparameter> JFSMparameterStorage::GetParameterByIndex(const uint index)const noexcept
 		{
@@ -95,45 +95,52 @@ namespace JinEngine
 			storageUser.clear(); 
 			parameterVec.clear();
 		}
-		J_FILE_IO_RESULT JFSMparameterStorage::StoreData(std::wofstream& stream, const JUserPtr<JFSMparameterStorage>& storage)
+		J_FILE_IO_RESULT JFSMparameterStorage::LoadData(JFileIOTool& tool, const JUserPtr<JFSMparameterStorage>& storage)
 		{
-			if (!stream.is_open())
-				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
-			const uint conditionCount = (uint)storage->parameterVec.size();
-			JFileIOHelper::StoreAtomicData(stream, L"ParameterCount:", conditionCount);
-
-			for (uint i = 0; i < conditionCount; ++i)
-			{
-				JFileIOHelper::StoreFsmIden(stream, storage->parameterVec[i].Get());
-				JFileIOHelper::StoreEnumData(stream, L"ValueType:", storage->parameterVec[i]->GetParamType());
-				JFileIOHelper::StoreAtomicData(stream, L"Value:", storage->parameterVec[i]->GetValue());
-			}
-			return J_FILE_IO_RESULT::SUCCESS;
-		}
-		J_FILE_IO_RESULT JFSMparameterStorage::LoadData(std::wifstream& stream, const JUserPtr<JFSMparameterStorage>& storage)
-		{
-			if (!stream.is_open())
+			if (!tool.CanLoad())
 				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 			uint conditionCount;
-			JFileIOHelper::LoadAtomicData(stream, conditionCount);
+			JFileIOHelper::LoadAtomicData(tool, conditionCount, "ParameterCount:");
 
+			tool.PushExistStack("ParameterData");
 			for (uint i = 0; i < conditionCount; ++i)
-			{ 
+			{
 				std::wstring name;
 				size_t guid;
 				J_FSM_OBJECT_TYPE fType;
 				J_FSM_PARAMETER_VALUE_TYPE valueType;
 				float value;
 
-				JFileIOHelper::LoadFsmIden(stream, name, guid, fType);
-				JFileIOHelper::LoadEnumData(stream, valueType);
-				JFileIOHelper::LoadAtomicData(stream, value);
+				tool.PushExistStack();
+				JFileIOHelper::LoadFsmIden(tool, name, guid, fType);
+				JFileIOHelper::LoadEnumData(tool, valueType, "ValueType:");
+				JFileIOHelper::LoadAtomicData(tool, value, "Value");
+				tool.PopStack();
 
 				JICI::Create<JFSMparameter>(name, guid, storage, valueType);
 			}
+			tool.PopStack(); 
+			return J_FILE_IO_RESULT::SUCCESS;
+		}
+		J_FILE_IO_RESULT JFSMparameterStorage::StoreData(JFileIOTool& tool, const JUserPtr<JFSMparameterStorage>& storage)
+		{
+			if(!tool.CanStore())
+				return J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
+			const uint conditionCount = (uint)storage->parameterVec.size();
+			JFileIOHelper::StoreAtomicData(tool, conditionCount, "ParameterCount:");
+
+			tool.PushArrayOwner("ParameterData");
+			for (uint i = 0; i < conditionCount; ++i)
+			{
+				tool.PushArrayMember();
+				JFileIOHelper::StoreFsmIden(tool, storage->parameterVec[i].Get());
+				JFileIOHelper::StoreEnumData(tool, storage->parameterVec[i]->GetParamType(), "ValueType:");
+				JFileIOHelper::StoreAtomicData(tool, storage->parameterVec[i]->GetValue(), "Value");
+				tool.PopStack();
+			}
+			tool.PopStack(); 
 			return J_FILE_IO_RESULT::SUCCESS;
 		}
 
@@ -143,13 +150,14 @@ namespace JinEngine
 		{
 			if (fsmParameter == nullptr || !fsmParameter->IsStorageParameter(storagePA->GetGuid()))
 				return false;
-			 
+			  
 			if (storagePA->GetParameter(fsmParameter->GetGuid()) != nullptr)
 				return false;
 
 			auto strage = static_cast<JFSMparameterStorage*>(storagePA.Get());
 			fsmParameter->SetName(strage->GetParameterUniqueName(fsmParameter->GetName()));
 			strage->parameterVec.emplace_back(fsmParameter); 
+			strage->parameterMap.emplace(fsmParameter->GetGuid(), fsmParameter);
 			return true;
 		}
 		bool OwnTypeInterface::RemoveParameter(const JUserPtr<JFSMparameterStoragePublicAccess>& storagePA, const JUserPtr<JFSMparameter>& fsmParameter)noexcept
@@ -157,15 +165,17 @@ namespace JinEngine
 			if (fsmParameter == nullptr || !fsmParameter->IsStorageParameter(storagePA->GetGuid()))
 				return false;
 
-			if (storagePA->GetParameter(fsmParameter->GetGuid()) == nullptr)
+			const size_t paramGuid = fsmParameter->GetGuid();
+			if (storagePA->GetParameter(paramGuid) == nullptr)
 				return false;
 
 			auto strage = static_cast<JFSMparameterStorage*>(storagePA.Get());
 			const uint userCount = (uint)strage->storageUser.size();
 			for (uint i = 0; i < userCount; ++i)
-				strage->storageUser[i]->ptr->NotifyRemoveParameter(fsmParameter->GetGuid());
+				strage->storageUser[i]->ptr->NotifyRemoveParameter(paramGuid);
 			 
-			strage->parameterVec.erase(strage->parameterVec.begin() + JCUtil::GetTypeIndex(strage->parameterVec, fsmParameter->GetGuid()));
+			strage->parameterMap.erase(paramGuid);
+			strage->parameterVec.erase(strage->parameterVec.begin() + JCUtil::GetTypeIndex(strage->parameterVec, paramGuid));
 			return true;
 		}
 	}

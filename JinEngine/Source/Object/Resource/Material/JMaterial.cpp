@@ -5,6 +5,7 @@
 #include"../Texture/JTexture.h"
 #include"../JResourceManager.h"
 #include"../JResourceObjectUserInterface.h" 
+#include"../JResourceObjectEventDesc.h"
 #include"../../Directory/JDirectory.h"
 #include"../../JObjectFileIOHelper.h"
 #include"../../../Core/Identity/JIdenCreator.h"
@@ -17,7 +18,7 @@
 #include"../../../Graphic/Frameresource/JFrameUpdate.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
 #include<fstream>
- 
+  
 namespace JinEngine
 {
 	namespace
@@ -43,7 +44,7 @@ namespace JinEngine
 	public:
 		JUserPtr<JShader> shader = nullptr;
 	public:
-		REGISTER_PROPERTY_EX(metallic, GetMetallic, SetMetallic, GUI_SLIDER(0.0f, 1.0f, false, false))
+		REGISTER_PROPERTY_EX(metallic, GetMetallic, SetMetallic, GUI_SLIDER(0.0f, 1.0f))
 		float metallic = 0.25f;
 		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0.0f, 1.0f))
 		float roughness = 0.75f;
@@ -71,14 +72,12 @@ namespace JinEngine
 		REGISTER_PROPERTY_EX(light, OnLight, SetLight, GUI_CHECKBOX())
 		bool light = false;
 		REGISTER_PROPERTY_EX(albedoMapOnly, OnAlbedoOnly, SetAlbedoMapOnly, GUI_CHECKBOX())
-		bool albedoMapOnly = false;
-		bool nonCulling = false; 
+		bool albedoMapOnly = false; 
 		bool isSkyMateral = false;
 		bool isDebugMaterial = false;
 		bool alphaClip = false;
 	public:
-		J_SHADER_PRIMITIVE_TYPE primitiveType = J_SHADER_PRIMITIVE_TYPE::DEFAULT;
-		J_SHADER_DEPTH_COMPARISON_FUNC depthComparesionFunc = J_SHADER_DEPTH_COMPARISON_FUNC::DEFAULT;
+		JShaderCondition shaderCond; 
 	public:
 		bool canUpdateShader = true;		//데이터 로드할때 마지막에 쉐이더 업데이트하기 위한 용도
 	public:
@@ -140,35 +139,9 @@ namespace JinEngine
 			if (alphaClip) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_ALPHA_CLIP);
 			return gFunction;
 		}
-		JShaderCondition GetSubGraphicPso()const noexcept
+		JShaderCondition GetShaderCondition()const noexcept
 		{
-			JShaderCondition psoCondition;
-			if (nonCulling)
-			{
-				psoCondition.cullModeCondition = J_SHADER_APPLIY_CONDITION::APPLY;
-				psoCondition.isCullModeNone = true;
-			}
-			else
-			{
-				psoCondition.cullModeCondition = J_SHADER_APPLIY_CONDITION::NOT;
-				psoCondition.isCullModeNone = false;
-			}
-			if (primitiveType != J_SHADER_PRIMITIVE_TYPE::DEFAULT)
-			{
-				psoCondition.primitiveCondition = J_SHADER_APPLIY_CONDITION::APPLY;
-				psoCondition.primitiveType = primitiveType;
-			}
-			else
-				psoCondition.primitiveCondition = J_SHADER_APPLIY_CONDITION::NOT;
-
-			if (depthComparesionFunc != J_SHADER_DEPTH_COMPARISON_FUNC::DEFAULT)
-			{
-				psoCondition.depthCompareCondition = J_SHADER_APPLIY_CONDITION::APPLY;
-				psoCondition.depthCompareFunc = depthComparesionFunc;
-			}
-			else
-				psoCondition.depthCompareCondition = J_SHADER_APPLIY_CONDITION::NOT;
-			return psoCondition;
+			return shaderCond;
 		}
 	public:
 		void SetMetallic(const float value) noexcept
@@ -280,30 +253,43 @@ namespace JinEngine
 		}
 		void SetNonCulling(const bool value)noexcept
 		{
-			if (nonCulling == value)
+			if (shaderCond.isCullModeNone == value)
 				return;
 
-			nonCulling = value;
+			shaderCond.isCullModeNone = value;
+			if (shaderCond.isCullModeNone)
+				shaderCond.cullModeCondition = J_SHADER_APPLIY_CONDITION::APPLY;
+			else
+				shaderCond.cullModeCondition = J_SHADER_APPLIY_CONDITION::NOT;
+			shaderCond.isCullModeNone = value;
 			SetFrameDirty(); 
-			SetNewOption(GetSubGraphicPso());
+			SetNewOption(GetShaderCondition());
 		}
 		void SetPrimitiveType(const J_SHADER_PRIMITIVE_TYPE value)noexcept
 		{
-			if (primitiveType == value)
+			if (shaderCond.primitiveType == value)
 				return;
 
-			primitiveType = value;
+			shaderCond.primitiveType = value;
+			if (shaderCond.primitiveType != J_SHADER_PRIMITIVE_TYPE::TRIANGLE)
+				shaderCond.primitiveCondition = J_SHADER_APPLIY_CONDITION::APPLY;
+			else
+				shaderCond.primitiveCondition = J_SHADER_APPLIY_CONDITION::NOT;
 			SetFrameDirty();
-			SetNewOption(GetSubGraphicPso());
+			SetNewOption(GetShaderCondition());
 		}
 		void SetDepthCompareFunc(const J_SHADER_DEPTH_COMPARISON_FUNC value)noexcept
 		{
-			if (depthComparesionFunc == value)
+			if (shaderCond.depthCompareFunc == value)
 				return;
 
-			depthComparesionFunc = value;
+			shaderCond.depthCompareFunc = value;
+			if (shaderCond.depthCompareFunc != J_SHADER_DEPTH_COMPARISON_FUNC::DEFAULT)
+				shaderCond.depthCompareCondition = J_SHADER_APPLIY_CONDITION::APPLY;
+			else
+				shaderCond.depthCompareCondition = J_SHADER_APPLIY_CONDITION::NOT;
 			SetFrameDirty(); 
-			SetNewOption(GetSubGraphicPso());
+			SetNewOption(GetShaderCondition());
 		}
 		void SetNewFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunc)
 		{
@@ -315,7 +301,7 @@ namespace JinEngine
 
 			JShaderCondition subPos;
 			if (shader != nullptr)
-				subPos = shader->GetSubGraphicPso(); 
+				subPos = shader->GetShaderCondition(); 
 
 			JUserPtr<JShader> newShader = JShader::FindShader(newFunc, subPos);
 			if (newShader == nullptr)
@@ -328,7 +314,7 @@ namespace JinEngine
 			if (!canUpdateShader)
 				return;
 
-			if (shader != nullptr && shader->GetSubGraphicPso() == newPso)
+			if (shader != nullptr && shader->GetShaderCondition() == newPso)
 				return;
 
 			JUserPtr<JShader> newShader = nullptr;
@@ -349,7 +335,7 @@ namespace JinEngine
 			JShader* preShader = shader.Get();
 			shader = newShader;
 			CallOnResourceReference(shader.Get());
-
+			 
 			//if (preShader != nullptr && CallGetResourceReferenceCount(preShader) == 0)
 			//	BeginDestroy(preShader);
 		}
@@ -368,7 +354,7 @@ namespace JinEngine
 		}
 		bool OnNonCulling()const noexcept
 		{
-			return nonCulling;
+			return shaderCond.isCullModeNone;
 		}
 		bool IsSkyMaterial()const noexcept
 		{
@@ -401,11 +387,11 @@ namespace JinEngine
 	public:
 		void TryUpdateShader()	//for lazy update
 		{
-			auto overlapped = JShader::FindShader(GetShaderGFunctionFlag(), GetSubGraphicPso());
+			auto overlapped = JShader::FindShader(GetShaderGFunctionFlag(), GetShaderCondition());
 			if (overlapped.IsValid())
 				SetShader(overlapped);
 			else
-				SetShader(JICI::Create<JShader>(OBJECT_FLAG_NONE, GetShaderGFunctionFlag(), GetSubGraphicPso()));
+				SetShader(JICI::Create<JShader>(OBJECT_FLAG_NONE, GetShaderGFunctionFlag(), GetShaderCondition()));
 		}
 		void PopTexture(JTexture* texture)noexcept
 		{
@@ -439,7 +425,7 @@ namespace JinEngine
 			CallOffResourceReference(ambientOcclusionMap.Get());
 		}
 	public:
-		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
 			if (iden == thisPointer->GetGuid())
 				return;
@@ -460,6 +446,33 @@ namespace JinEngine
 
 				if (shader != nullptr && shader->GetGuid() == objGuid)
 					SetShader(nullptr);
+			}
+			else if (eventType == J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE && 
+				jRobj->GetResourceType() == J_RESOURCE_TYPE::TEXTURE &&
+				desc != nullptr)
+			{ 
+				JResourceUpdateEvDesc* evDesc = static_cast<JResourceUpdateEvDesc*>(desc);			 
+				switch (evDesc->action)
+				{
+				case JinEngine::JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_ONLY:
+				{
+					SetFrameDirty();
+					break;
+				}
+				case JinEngine::JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_AND_REAR_OF_FRAME_BUFFER:
+				{
+					const int frameIndex = GetFrameIndex();
+					auto rawVec = thisPointer->GetTypeInfo().GetInstanceRawPtrVec();
+					for (const auto& data : rawVec)
+					{
+						if (static_cast<JMaterial*>(data)->impl->GetFrameIndex() > frameIndex)
+							static_cast<JMaterial*>(data)->impl->SetFrameDirty();
+					}
+					break;
+				}
+				default:
+					break;
+				}
 			}
 		}
 	public:
@@ -484,9 +497,8 @@ namespace JinEngine
 	public:
 		bool ReadAssetData()
 		{
-			std::wifstream stream;
-			stream.open(thisPointer->GetPath(), std::ios::in | std::ios::binary);
-			if (!stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(thisPointer->GetPath(), JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 				return false;
 
 			bool sShadow = false;
@@ -496,36 +508,36 @@ namespace JinEngine
 			bool sIsDebugMaterial = false;
 			bool sAlphaclip = false;
 			bool sNonCulling = false;
-			int sPrimitiveType = 0;
-			int sDepthComparesionFunc = 0;
-			float sMetallic;
-			float sRoughness;
+			J_SHADER_PRIMITIVE_TYPE sPrimitiveType = J_SHADER_PRIMITIVE_TYPE::TRIANGLE;
+			J_SHADER_DEPTH_COMPARISON_FUNC sDepthComparesionFunc = J_SHADER_DEPTH_COMPARISON_FUNC::DEFAULT;
+			float sMetallic = 0;
+			float sRoughness = 0;
 			JVector4<float> sAlbedoColor;
 			JMatrix4x4 sMatTransform;
 
-			JObjectFileIOHelper::LoadAtomicData(stream, sShadow);
-			JObjectFileIOHelper::LoadAtomicData(stream, sLight);
-			JObjectFileIOHelper::LoadAtomicData(stream, sAlbedoOnly); 
-			JObjectFileIOHelper::LoadAtomicData(stream, sIsSkyMateral);
-			JObjectFileIOHelper::LoadAtomicData(stream, sIsDebugMaterial);
-			JObjectFileIOHelper::LoadAtomicData(stream, sAlphaclip);
+			JObjectFileIOHelper::LoadAtomicData(tool, sShadow, "Shadow");
+			JObjectFileIOHelper::LoadAtomicData(tool, sLight, "Light");
+			JObjectFileIOHelper::LoadAtomicData(tool, sAlbedoOnly, "AlbedoOnly");
+			JObjectFileIOHelper::LoadAtomicData(tool, sIsSkyMateral, "SkyMaterial");
+			JObjectFileIOHelper::LoadAtomicData(tool, sIsDebugMaterial, "DebugMaterial");
+			JObjectFileIOHelper::LoadAtomicData(tool, sAlphaclip, "AlphaClip");
 
-			JObjectFileIOHelper::LoadAtomicData(stream, sNonCulling);
-			JObjectFileIOHelper::LoadAtomicData(stream, sPrimitiveType);
-			JObjectFileIOHelper::LoadAtomicData(stream, sDepthComparesionFunc);
+			JObjectFileIOHelper::LoadAtomicData(tool, sNonCulling, "NonCulling");
+			JObjectFileIOHelper::LoadEnumData(tool, sPrimitiveType, "PrimitiveType");
+			JObjectFileIOHelper::LoadEnumData(tool, sDepthComparesionFunc, "DepthComparesionFunc");
 
-			JObjectFileIOHelper::LoadAtomicData(stream, sMetallic);
-			JObjectFileIOHelper::LoadAtomicData(stream, sRoughness);
+			JObjectFileIOHelper::LoadAtomicData(tool, sMetallic, "Metallic");
+			JObjectFileIOHelper::LoadAtomicData(tool, sRoughness, "Roughness");
 
-			JObjectFileIOHelper::LoadVector4(stream, sAlbedoColor);
-			JObjectFileIOHelper::LoadMatrix4x4(stream, sMatTransform);
-
-			JUserPtr<JTexture> sAlbedoMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(stream);
-			JUserPtr<JTexture> sNormalMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(stream);
-			JUserPtr<JTexture> sHeightMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(stream);
-			JUserPtr<JTexture> sRoughnessMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(stream);
-			JUserPtr<JTexture> sAmbientOcclusionMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(stream);
-			stream.close();
+			JObjectFileIOHelper::LoadVector4(tool, sAlbedoColor, "AlbedoColor");
+			JObjectFileIOHelper::LoadMatrix4x4(tool, sMatTransform, "Matransform");
+ 
+			JUserPtr<JTexture> sAlbedoMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "AlbedoMap");
+			JUserPtr<JTexture> sNormalMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "NormalMap");
+			JUserPtr<JTexture> sHeightMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "HeightMap");
+			JUserPtr<JTexture> sRoughnessMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "RoughnessMap");
+			JUserPtr<JTexture> sAmbientOcclusionMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "AmbientOcclusionMap");
+			tool.Close();
 
 			canUpdateShader = false;
 			SetShadow(sShadow);
@@ -556,35 +568,34 @@ namespace JinEngine
 		}
 		bool WriteAssetData()
 		{
-			std::wofstream stream;
-			stream.open(thisPointer->GetPath(), std::ios::out | std::ios::binary);
-			if (!stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(thisPointer->GetPath(), JFileIOTool::TYPE::JSON))
 				return false;
 
-			JObjectFileIOHelper::StoreAtomicData(stream, L"Shadow", shadow);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"Light", light);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"AlbedoOnly", albedoMapOnly); 
-			JObjectFileIOHelper::StoreAtomicData(stream, L"SkyMaterial", isSkyMateral);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"DebugMaterial", isDebugMaterial);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"AlphaClip", alphaClip);
+			JObjectFileIOHelper::StoreAtomicData(tool, shadow, "Shadow");
+			JObjectFileIOHelper::StoreAtomicData(tool, light, "Light");
+			JObjectFileIOHelper::StoreAtomicData(tool, albedoMapOnly, "AlbedoOnly");
+			JObjectFileIOHelper::StoreAtomicData(tool, isSkyMateral, "SkyMaterial");
+			JObjectFileIOHelper::StoreAtomicData(tool, isDebugMaterial, "DebugMaterial");
+			JObjectFileIOHelper::StoreAtomicData(tool, alphaClip, "AlphaClip");
 
-			JObjectFileIOHelper::StoreAtomicData(stream, L"NonCulling", nonCulling);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"PrimitiveType", (int)primitiveType);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"DepthComparesionFunc", (int)depthComparesionFunc);
+			JObjectFileIOHelper::StoreAtomicData(tool, shaderCond.isCullModeNone, "NonCulling");
+			JObjectFileIOHelper::StoreEnumData(tool, shaderCond.primitiveType, "PrimitiveType");
+			JObjectFileIOHelper::StoreEnumData(tool, shaderCond.depthCompareFunc, "DepthComparesionFunc");
 
-			JObjectFileIOHelper::StoreAtomicData(stream, L"Metallic", metallic);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"Roughness", roughness);
+			JObjectFileIOHelper::StoreAtomicData(tool, metallic, "Metallic");
+			JObjectFileIOHelper::StoreAtomicData(tool, roughness, "Roughness");
 
-			JObjectFileIOHelper::StoreVector4(stream, L"AlbedoColor", albedoColor);
-			JObjectFileIOHelper::StoreMatrix4x4(stream, L"Matransform", matTransform);
+			JObjectFileIOHelper::StoreVector4(tool, albedoColor, "AlbedoColor");
+			JObjectFileIOHelper::StoreMatrix4x4(tool, matTransform, "Matransform");
 
-			JObjectFileIOHelper::_StoreHasIden(stream, albedoMap.Get());
-			JObjectFileIOHelper::_StoreHasIden(stream, normalMap.Get());
-			JObjectFileIOHelper::_StoreHasIden(stream, heightMap.Get());
-			JObjectFileIOHelper::_StoreHasIden(stream, roughnessMap.Get());
-			JObjectFileIOHelper::_StoreHasIden(stream, ambientOcclusionMap.Get());
+			JObjectFileIOHelper::_StoreHasIden(tool, albedoMap.Get(), "AlbedoMap");
+			JObjectFileIOHelper::_StoreHasIden(tool, normalMap.Get(), "NormalMap");
+			JObjectFileIOHelper::_StoreHasIden(tool, heightMap.Get(), "HeightMap");
+			JObjectFileIOHelper::_StoreHasIden(tool, roughnessMap.Get(), "RoughnessMap");
+			JObjectFileIOHelper::_StoreHasIden(tool, ambientOcclusionMap.Get(), "AmbientOcclusionMap");
 
-			stream.close();
+			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			return true;
 		}
 	public:
@@ -604,8 +615,9 @@ namespace JinEngine
 			thisPointer = Core::GetWeakPtr(mat);
 		}
 		void RegisterPostCreation()
-		{
-			AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+		{ 
+			auto vec = {J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE , J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE };
+			AddEventListener(*JResourceObject::EvInterface(), thisPointer->GetGuid(), vec);
 		}
 		void DeRegisterPreDestruction()
 		{
@@ -725,13 +737,17 @@ namespace JinEngine
 	{
 		return impl->GetAmbientOcclusionMap();
 	}
+	JShaderCondition JMaterial::GetShaderCondition()const noexcept
+	{
+		return impl->shaderCond;
+	}
 	J_SHADER_PRIMITIVE_TYPE JMaterial::GetPrimitiveType()const noexcept
 	{
-		return impl->primitiveType;
+		return impl->shaderCond.primitiveType;
 	}
 	J_SHADER_DEPTH_COMPARISON_FUNC JMaterial::GetDepthCompasionFunc()const noexcept
 	{
-		return impl->depthComparesionFunc;
+		return impl->shaderCond.depthCompareFunc;
 	}
 	void JMaterial::SetMetallic(const float value) noexcept
 	{
@@ -957,16 +973,15 @@ namespace JinEngine
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JMaterial::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		std::wifstream stream;
-		stream.open(path, std::ios::in | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		auto loadMetaData = static_cast<JMaterial::InitData*>(data);
-		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		stream.close();
+		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
@@ -978,14 +993,14 @@ namespace JinEngine
 		JUserPtr<JMaterial> mat;
 		mat.ConnnectChild(storeData->obj);
 
-		std::wofstream stream;
-		stream.open(mat->GetMetaFilePath(), std::ios::out | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(mat->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
+		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

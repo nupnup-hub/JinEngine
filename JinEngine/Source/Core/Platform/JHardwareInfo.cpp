@@ -54,13 +54,13 @@ namespace JinEngine
 			gpuInfo.resize(count);
 			for (int i = 0; i < count; i++)
 			{
-				ThrowIfFailedC(cudaGetDeviceProperties(&prop, i));
+				ThrowIfFailedC(cudaGetDeviceProperties(&prop, i)); 
 				gpuInfo[i].vendor = J_GRAPHIC_VENDOR::NVIDIA;
 				gpuInfo[i].name = prop.name;
 				gpuInfo[i].majorComputeCapability = prop.major;
 				gpuInfo[i].minorComputeCapability = prop.minor;
 				gpuInfo[i].clockRate = prop.clockRate;
-	 
+			 
 				gpuInfo[i].canDeviceOverlap = prop.deviceOverlap;
 				gpuInfo[i].canKernelExecTimeout = prop.kernelExecTimeoutEnabled;
 
@@ -70,10 +70,11 @@ namespace JinEngine
 				gpuInfo[i].textureAlignment = prop.textureAlignment;
 				gpuInfo[i].memoryClockRate = prop.memoryClockRate;
 				gpuInfo[i].memoryBusWidth = prop.memoryBusWidth / 8;
-
+				   
 				gpuInfo[i].multiProcessorCount = prop.multiProcessorCount;
 				gpuInfo[i].sharedMemPerBlock = prop.sharedMemPerBlock;
 				gpuInfo[i].registersPerBlock = prop.regsPerBlock;
+				gpuInfo[i].registersPerMultiProcessor = prop.regsPerMultiprocessor;
 				gpuInfo[i].threadWarpSize = prop.warpSize;
 				gpuInfo[i].maxThreadsPerBlock = prop.maxThreadsPerBlock;
 				gpuInfo[i].maxBlocksPerMultiProcessor = prop.maxBlocksPerMultiProcessor;

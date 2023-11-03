@@ -1,26 +1,28 @@
 #pragma once
 #include"../../JEditorWindow.h"  
+#include"../../../Interface/JEditorProjectInterface.h"
 #include"../../../../Core/Event/JEventListener.h"
 #include"../../../../Object/Resource/JResourceObjectEventType.h"
+#include"../../../../Object/Resource/JResourceObject.h"
 #include<string>
 
 namespace JinEngine
 {
-	class JTexture;
-	class JResourceObject;
+	class JTexture; 
 	namespace Editor
 	{
 		struct SelectorValues;
 		class JEditorSearchBarHelper;
 		class JEditorDynamicSpotColor;
-		class JProjectSelectorHubCreationImpl;
-		class JProjectSelectorHub : public JEditorWindow ,
-			public Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>
+		class JProjectSelectorHubCreationFunctor;
+		class JProjectSelectorHub : public JEditorWindow, public JResourceEventManager::Listener
 		{ 
 		private:
-			using ResourceEvListener = Core::JEventListener<size_t, J_RESOURCE_EVENT_TYPE, JResourceObject*>;
+			using ResourceEvListener = JResourceEventManager::Listener;
 		private:
-			std::unique_ptr<JProjectSelectorHubCreationImpl> creationImpl;
+			std::unique_ptr<JProjectSelectorHubCreationFunctor> creation;
+		private:
+			std::unique_ptr<JEditorProjectInterface> pInterface;
 		private: 
 			JUserPtr<JTexture> serachIconTexture;
 			JUserPtr<JTexture> optionSettingTexture;
@@ -41,7 +43,8 @@ namespace JinEngine
 			JProjectSelectorHub(const std::string& name, 
 				std::unique_ptr<JEditorAttribute> attribute,
 				const J_EDITOR_PAGE_TYPE ownerPageType,
-				const J_EDITOR_WINDOW_FLAG windowFlag);
+				const J_EDITOR_WINDOW_FLAG windowFlag,
+				std::unique_ptr<JEditorProjectInterface>&& newPInterface);
 			~JProjectSelectorHub();
 			JProjectSelectorHub(const JProjectSelectorHub& rhs) = delete;
 			JProjectSelectorHub& operator=(const JProjectSelectorHub& rhs) = delete;
@@ -71,7 +74,7 @@ namespace JinEngine
 			void DoSetOpen()noexcept final;
 			void DoSetClose()noexcept final; 
 		private:
-			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)final;
+			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)final;
 		};
 	}
 }

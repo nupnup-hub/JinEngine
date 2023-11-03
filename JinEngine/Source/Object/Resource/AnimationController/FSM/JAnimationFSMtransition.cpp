@@ -1,8 +1,8 @@
 #include"JAnimationFSMtransition.h" 
 #include"JAnimationFSMtransitionPrivate.h" 
 #include"../../../JObjectFileIOHelper.h"
-#include"../../../../Core/FSM/JFSMcondition.h"
 #include"../../../../Core/FSM/JFSMparameter.h"
+#include"../../../../Core/FSM/JFSMcondition.h"
 #include"../../../../Core/FSM/JFSMparameterStorageAccess.h" 
 #include"../../../../Core/Identity/JIdenCreator.h"
 #include"../../../../Core/Reflection/JTypeImplBase.h"
@@ -196,14 +196,15 @@ namespace JinEngine
 		return isValidPtr && initData->IsValidData();
 	}
 
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetData(std::wifstream& stream, const JUserPtr<JAnimationFSMtransition>& trans)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMtransition>& trans)
 	{
-		if (!stream.is_open() || !trans->GetTypeInfo().IsChildOf<JAnimationFSMtransition>())
+		if (!tool.CanLoad())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		uint conditionCount = 0;
-		JObjectFileIOHelper::LoadAtomicData(stream, conditionCount);
+		JObjectFileIOHelper::LoadAtomicData(tool, conditionCount, "ConditionCount:");
 
+		tool.PushExistStack("ConditionData");
 		for (uint i = 0; i < conditionCount; ++i)
 		{
 			std::wstring condName;
@@ -211,15 +212,18 @@ namespace JinEngine
 			Core::J_FSM_OBJECT_TYPE fsmType;
 			float onValue;
 
-			JObjectFileIOHelper::LoadFsmIden(stream, condName, condGuid, fsmType);
-			JUserPtr<Core::JIdentifier> param = JObjectFileIOHelper::_LoadHasIden(stream);
-			JObjectFileIOHelper::LoadAtomicData(stream, onValue);
+			tool.PushExistStack();
+			JObjectFileIOHelper::LoadFsmIden(tool, condName, condGuid, fsmType);
+			JUserPtr<Core::JIdentifier> param = JObjectFileIOHelper::_LoadHasIden(tool, "FsmParameter");
+			JObjectFileIOHelper::LoadAtomicData(tool, onValue, "ConditionValue");
+			tool.PopStack();
 
 			JUserPtr<Core::JFSMcondition> newCondition = JICI::Create<Core::JFSMcondition>(condName, condGuid, trans);
 			if (param.IsValid())
 				newCondition->SetParameter(Core::ConnectChildUserPtr<Core::JFSMparameter>(param));
 			newCondition->SetOnValue(onValue);
 		}
+		tool.PopStack();
 
 		bool isWaitExitTime = false;
 		bool isFrozen = false;
@@ -227,12 +231,12 @@ namespace JinEngine
 		float durationTime = 0;
 		float targetStartTimeRate = 0;
 
-		JObjectFileIOHelper::LoadAtomicData(stream, isWaitExitTime);
-		JObjectFileIOHelper::LoadAtomicData(stream, isFrozen);
-		JObjectFileIOHelper::LoadAtomicData(stream, exitTimeRate);
-		JObjectFileIOHelper::LoadAtomicData(stream, durationTime);
-		JObjectFileIOHelper::LoadAtomicData(stream, targetStartTimeRate);
-
+		JObjectFileIOHelper::LoadAtomicData(tool, isWaitExitTime, "IsWaitExitTime:");
+		JObjectFileIOHelper::LoadAtomicData(tool, isFrozen, "IsFrozen:");
+		JObjectFileIOHelper::LoadAtomicData(tool, exitTimeRate, "ExitGameTimerate:");
+		JObjectFileIOHelper::LoadAtomicData(tool, durationTime, "DurationTime:");
+		JObjectFileIOHelper::LoadAtomicData(tool, targetStartTimeRate, "TargetStateOffset:");
+ 
 		trans->SetIsWaitExitTime(isWaitExitTime);
 		trans->SetIsFrozen(isFrozen);
 		trans->SetExitTimeRate(exitTimeRate);
@@ -241,25 +245,29 @@ namespace JinEngine
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMtransition>& trans)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMtransition>& trans)
 	{
-		if (!stream.is_open() || !trans->GetTypeInfo().IsChildOf<JAnimationFSMtransition>())
+		if (!tool.CanStore())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JObjectFileIOHelper::StoreAtomicData(stream, L"ConditionCount:", trans->GetConditioCount());
+		JObjectFileIOHelper::StoreAtomicData(tool, trans->GetConditioCount(), "ConditionCount:");
 		const uint conditionCount = trans->GetConditioCount();
+		tool.PushArrayOwner("ConditionData");
 		for (uint i = 0; i < conditionCount; ++i)
 		{
+			tool.PushArrayMember();
 			JUserPtr<Core::JFSMcondition> cond = trans->GetConditionByIndex(i);
-			JObjectFileIOHelper::StoreFsmIden(stream, cond.Get());
-			JObjectFileIOHelper::_StoreHasIden(stream, cond->GetParameter().Get(), Core::JFileConstant::StreamUncopiableGuidSymbol());
-			JObjectFileIOHelper::StoreAtomicData(stream, L"ConditionValue:", trans->GetConditionOnValue(i));
+			JObjectFileIOHelper::StoreFsmIden(tool, cond.Get());
+			JObjectFileIOHelper::_StoreHasIden(tool, cond->GetParameter().Get(), "FsmParameter", true);
+			JObjectFileIOHelper::StoreAtomicData(tool, trans->GetConditionOnValue(i), "ConditionValue");
+			tool.PopStack();
 		}
-		JObjectFileIOHelper::StoreAtomicData(stream, L"IsWaitExitTime:", trans->IsWaitExitTime());
-		JObjectFileIOHelper::StoreAtomicData(stream, L"IsFrozen:", trans->IsFrozen());
-		JObjectFileIOHelper::StoreAtomicData(stream, L"ExitGameTimerate:", trans->GetExitTimeRate());
-		JObjectFileIOHelper::StoreAtomicData(stream, L"DurationTime:", trans->GetDurationTime());
-		JObjectFileIOHelper::StoreAtomicData(stream, L"TargetStateOffset:", trans->GetTargetStartTimeRate());
+		tool.PopStack();
+		JObjectFileIOHelper::StoreAtomicData(tool, trans->IsWaitExitTime(), "IsWaitExitTime:");
+		JObjectFileIOHelper::StoreAtomicData(tool, trans->IsFrozen(), "IsFrozen:");
+		JObjectFileIOHelper::StoreAtomicData(tool, trans->GetExitTimeRate(), "ExitGameTimerate:");
+		JObjectFileIOHelper::StoreAtomicData(tool, trans->GetDurationTime(), "DurationTime:");
+		JObjectFileIOHelper::StoreAtomicData(tool, trans->GetTargetStartTimeRate(), "TargetStateOffset:");
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}

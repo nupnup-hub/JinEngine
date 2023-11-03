@@ -1,7 +1,7 @@
 #include"JDx12DepthTest.h"
 #include"../../DataSet/Dx/JDx12GraphicDataSet.h"
 #include"../../Device/Dx/JDx12GraphicDevice.h"
-#include"../../Utility/JD3DUtility.h"
+#include"../../Utility/Dx/JD3DUtility.h"
 #include"../../FrameResource/Dx/JDx12FrameResource.h"
 #include"../../FrameResource/JAnimationConstants.h"
 #include"../../FrameResource/JObjectConstants.h"
@@ -12,6 +12,7 @@
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h"
 #include"../../JGraphicInfo.h"
 #include"../../JGraphicUpdateHelper.h"
+#include"../../../Object/Component/Transform/JTransform.h"
 #include"../../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../../Object/Component/RenderItem/JRenderItemPrivate.h"
 #include"../../../Object/Component/Camera/JCamera.h"
@@ -26,7 +27,7 @@
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Core/Identity/JIdentifier.h"
 #include"../../../Application/JApplicationEngine.h"
- 
+  
 namespace JinEngine::Graphic
 {
 	namespace
@@ -70,8 +71,15 @@ namespace JinEngine::Graphic
 			switch (testType)
 			{
 			case JinEngine::Graphic::JDepthTest::TEST_TYPE::QUERY_TEST:
+			{
 				macro.push_back({ "OCCLUSION_QUERY", "1" });
 				break;
+			}
+			case JinEngine::Graphic::JDepthTest::TEST_TYPE::QUERY_TEST_PASS:
+			{
+				macro.push_back({ "OCCLUSION_QUERY", "1" });
+				break;
+			}
 			default:
 				break;
 			}
@@ -134,9 +142,8 @@ namespace JinEngine::Graphic
 		if (helper.CanDispatchWorkIndex())
 			helper.DispatchWorkIndex(gameObjCount, st, ed);
 
-		auto cullUser = helper.GetCullInterface();
-		auto pso = gShaderData[TEST_TYPE::BOUNDING_TEST]->pso.Get();
-		cmdList->SetPipelineState(pso);
+		auto cullUser = helper.GetCullInterface(); 
+		cmdList->SetPipelineState(gShaderData[TEST_TYPE::BOUNDING_TEST]->pso.Get());
 		for (uint i = st; i < ed; ++i)
 		{
 			JRenderItem* renderItem = gameObject[i]->GetRenderItem().Get();
@@ -189,19 +196,18 @@ namespace JinEngine::Graphic
 			helper.DispatchWorkIndex(gameObjCount, st, ed);
 
 		auto cullUser = helper.GetCullInterface();
-		auto pso = gShaderData[TEST_TYPE::QUERY_TEST]->pso.Get();
-		cmdList->SetPipelineState(pso);
+		cmdList->SetPipelineState(gShaderData[TEST_TYPE::QUERY_TEST]->pso.Get()); 
 		for (uint i = st; i < ed; ++i)
 		{
 			JRenderItem* renderItem = gameObject[i]->GetRenderItem().Get();
-			const uint boundFrameIndex = helper.GetBoundingFrameIndex(renderItem);
-			
+			const uint boundFrameIndex = helper.GetBoundingFrameIndex(renderItem); 
+
 			//if(!renderItem->IsOccluder())
 			//	continue;
 
 			if (condition.allowCulling && cullUser.IsCulled(J_CULLING_TYPE::FRUSTUM, boundFrameIndex))
 				continue;
-
+ 
 			D3D12_GPU_VIRTUAL_ADDRESS boundingObjectCBAddress = boundingObjectCB->GetGPUVirtualAddress() + boundFrameIndex * boundingObjectCBByteSize;
 			cmdList->SetGraphicsRootConstantBufferView(objCBIndex, boundingObjectCBAddress);
 
@@ -253,8 +259,8 @@ namespace JinEngine::Graphic
 
 		CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(slotCount, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 		// create a root signature with a single slot which points to a descriptor length consisting of a single constant buffer
-		ComPtr<ID3DBlob> serializedRootSig = nullptr;
-		ComPtr<ID3DBlob> errorBlob = nullptr;
+		Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 		HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
 			serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
 
@@ -283,7 +289,7 @@ namespace JinEngine::Graphic
 			std::vector<D3D_SHADER_MACRO> macro = Private::GetShaderMacro(type);
 
 			gShaderDataPtr->inputLayout = Private::GetInputLayout(Core::J_MESHGEOMETRY_TYPE::STATIC);
-			gShaderDataPtr->vs = JD3DUtility::CompileShader(gShaderPath, macro.data(), "VS", "vs_5_1");
+			gShaderDataPtr->vs = JDxShaderDataUtil::CompileShader(gShaderPath, macro.data(), "VS", "vs_5_1");
 
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC newShaderPso;
 			ZeroMemory(&newShaderPso, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
@@ -293,7 +299,7 @@ namespace JinEngine::Graphic
 			{
 				reinterpret_cast<BYTE*>(gShaderDataPtr->vs->GetBufferPointer()),
 				gShaderDataPtr->vs->GetBufferSize()
-			};
+			}; 
 
 			newShaderPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 			newShaderPso.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
@@ -308,18 +314,27 @@ namespace JinEngine::Graphic
 
 			if (type == TEST_TYPE::QUERY_TEST)
 			{
-				newShaderPso.BlendState.RenderTarget[0].RenderTargetWriteMask = 0;
+				newShaderPso.BlendState.RenderTarget[0].RenderTargetWriteMask = 0; 
+				newShaderPso.RasterizerState.CullMode = D3D12_CULL_MODE::D3D12_CULL_MODE_NONE;
 				newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 				newShaderPso.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 				//same as main ds format
 				newShaderPso.DSVFormat = depthStencilFormat;
 				//newShaderPso.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 			}
+			else if (type == TEST_TYPE::QUERY_TEST_PASS)
+			{
+				newShaderPso.BlendState.RenderTarget[0].RenderTargetWriteMask = 0;
+				newShaderPso.RasterizerState.CullMode = D3D12_CULL_MODE::D3D12_CULL_MODE_NONE;
+				newShaderPso.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+				newShaderPso.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+				//same as main ds format
+				newShaderPso.DSVFormat = depthStencilFormat;
+			}
 			else if (type == TEST_TYPE::BOUNDING_TEST)
 			{
 				newShaderPso.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 			}
-
 			ThrowIfFailedG(device->CreateGraphicsPipelineState(&newShaderPso, IID_PPV_ARGS(gShaderDataPtr->pso.GetAddressOf())));
 		}
 	}

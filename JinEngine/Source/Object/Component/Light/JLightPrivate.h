@@ -19,8 +19,8 @@ namespace JinEngine
 		class AssetDataIOInterface : public JComponentPrivate::AssetDataIOInterface
 		{
 		protected:
-			Core::J_FILE_IO_RESULT LoadLightData(std::wifstream& stream, JUserPtr<JLight> user);
-			Core::J_FILE_IO_RESULT StoreLightData(std::wofstream& stream, const JUserPtr<JLight>& user);
+			Core::J_FILE_IO_RESULT LoadLightData(JFileIOTool& tool, JUserPtr<JLight> user);
+			Core::J_FILE_IO_RESULT StoreLightData(JFileIOTool& tool, const JUserPtr<JLight>& user);
 		};
 		class CreateInstanceInterface : public JComponentPrivate::CreateInstanceInterface
 		{

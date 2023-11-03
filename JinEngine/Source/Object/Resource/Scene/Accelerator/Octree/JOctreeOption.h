@@ -18,7 +18,7 @@ namespace JinEngine
 		bool EqualOctreeOption(const JOctreeOption& tar)const noexcept;
 		bool EqualCommonOption(const JOctreeOption& tar)const noexcept;
 	public:
-		void Store(std::wofstream& stream);
-		void Load(std::wifstream& stream, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid);
+		void Store(JFileIOTool& tool);
+		void Load(JFileIOTool& tool, _Out_ bool& hasInnerRoot, _Out_ size_t& innerRootGuid);
 	};
 }

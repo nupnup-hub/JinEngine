@@ -2,8 +2,7 @@
 #include"JShaderFunctionEnum.h" 
 #include"JShaderCondition.h"  
 #include"../JResourceObject.h"
-#include"../../../Core/Geometry/Mesh/JMeshType.h"  
-#include<d3d12.h>  
+#include"../../../Core/Geometry/Mesh/JMeshType.h"   
 
 namespace JinEngine
 {
@@ -55,7 +54,7 @@ namespace JinEngine
 		JVector3<uint> GetComputeGroupDim()const noexcept;
 		J_GRAPHIC_SHADER_FUNCTION GetShaderGFunctionFlag()const noexcept;
 		J_COMPUTE_SHADER_FUNCTION GetShdaerCFunctionFlag()const noexcept;
-		JShaderCondition GetSubGraphicPso()const noexcept;
+		JShaderCondition GetShaderCondition()const noexcept;
 	public:
 		bool IsComputeShader()const noexcept;  
 		static bool HasShader(const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag,

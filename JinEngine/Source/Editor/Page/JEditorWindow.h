@@ -4,7 +4,7 @@
 #include"JEditorWindowEnum.h"  
 #include"../Gui/JGuiType.h"
 #include"../../Core/Func/Functor/JFunctor.h"
- 
+#include<set>
 namespace JinEngine
 {
 	class JGameObject;
@@ -26,13 +26,17 @@ namespace JinEngine
 			struct State
 			{
 			public:
+				static constexpr int nextFocusWattingFrame = 2;
+			public:
 				JUserPtr<Core::JIdentifier> hoveredObj;
 			public:
 				JVector2F nextPos;
 				JVector2F nextSize;
 			public:
+				int nextFocusReqFrame = 0;	// set next window focus if nextFocusReqFrame n to 0
+			public:
 				bool hasSetNextPosReq = false;	//dock node가 아닌경우면 유효
-				bool hasSetNextSizeReq = false;	//dock node가 아닌경우면 유효
+				bool hasSetNextSizeReq = false;	//dock node가 아닌경우면 유효 
 			public:
 				bool isWindowOpen = false;
 				bool isContentsClick = false; 
@@ -50,10 +54,12 @@ namespace JinEngine
 				JEditorPopupMenu* popupMenu;
 				JEditorStringMap* stringMap;
 				bool canOpenPopup; 
+				bool focusWindowIfCloseThisFrame;
 			public:
 				PopupSetting(JEditorPopupMenu* popupMenu,
 					JEditorStringMap* stringMap,
-					bool canOpenPopup = true);
+					const bool canOpenPopup = true,
+					const bool focusWindowIfCloseThisFrame = true);
 			public:
 				bool IsValid()const noexcept;
 			};
@@ -64,6 +70,7 @@ namespace JinEngine
 				bool isMouseInPopup = false;
 				bool isPopupContentsClicked = false;
 				bool isLeafPopupContentsClicked = false; 
+				bool isCloseThisFrame = false;
 			};
 		protected:			 
 			using PassSelectedOneF = Core::JSFunctorType<bool, JEditorWindow*>;
@@ -78,6 +85,7 @@ namespace JinEngine
 			Option option;
 		private:
 			std::unordered_map<size_t, JUserPtr<Core::JIdentifier>> selectedObjMap;
+			std::set<size_t> listenOtherWindowGuidSet;
 		public:
 			JEditorWindow(const std::string name,
 				std::unique_ptr<JEditorAttribute> attribute, 
@@ -104,8 +112,7 @@ namespace JinEngine
 			PassSelectedOneF::Functor* GetPassSelectedOneFunctor()noexcept;
 			PassSelectedAboveOneF::Functor* GetPassSelectedAboveOneFunctor()noexcept;
 			JUserPtr<Core::JIdentifier> GetHoveredObject()const noexcept;
-			uint GetSelectedObjectCount()const noexcept; 
-			JVector4<float> GetSelectableColorFactor(const bool isSelecetd, const bool isHovered)const noexcept;
+			uint GetSelectedObjectCount()const noexcept;  
 			std::vector<JUserPtr<Core::JIdentifier>> GetSelectedObjectVec()const noexcept;
 			template<typename T>
 			std::vector<JUserPtr<T>> GetSelectedObjectVec()const noexcept
@@ -139,14 +146,14 @@ namespace JinEngine
 			bool CanUseSelectedMap()const noexcept;
 			bool CanUsePopup()const noexcept;
 			bool CanMaximize()const noexcept;
-			bool IsContentsClicked()const noexcept;
-		protected:
-			void PushTreeNodeColorSet(const bool isActivated, const bool isSelected);
-			void PopTreeNodeColorSet(const bool isActivated, const bool isSelected);
+			bool IsContentsClicked()const noexcept;  
 		protected:
 			void PushSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept;
 			void PopSelectedObject(JUserPtr<Core::JIdentifier> obj)noexcept;
 			void ClearSelectedObject();
+		protected:
+			void PushOtherWindowGuidForListenEv(const size_t guid)noexcept;
+			void PopOtherWindowGuidForListenEv(const size_t guid)noexcept;
 		protected:
 			bool RegisterEventListener(const J_EDITOR_EVENT evType);
 			bool RegisterEventListener(std::vector<J_EDITOR_EVENT>& evType);
@@ -175,8 +182,8 @@ namespace JinEngine
 			void DoActivate()noexcept override;
 			void DoDeActivate()noexcept override;
 		public:
-			virtual void StoreEditorWindow(std::wofstream& stream);
-			virtual void LoadEditorWindow(std::wifstream& stream);
+			virtual void LoadEditorWindow(JFileIOTool& tool);
+			virtual void StoreEditorWindow(JFileIOTool& tool);
 		protected:
 			void OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* ev) override;
 		};

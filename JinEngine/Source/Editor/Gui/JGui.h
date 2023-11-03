@@ -12,6 +12,7 @@
 #include"../../Core/Input/JMouse.h"
 #include"../../Core/Input/JKeyboard.h"
 #include"../../Graphic/Gui/JGuiData.h"  
+#include<set>
 
 namespace JinEngine
 {
@@ -45,6 +46,7 @@ namespace JinEngine
 			static JVector4<float> GetDeActivatedTextColorFactor()noexcept;
 			static JVector4<float> GetColor(const J_GUI_COLOR flag)noexcept;
 			static uint GetUColor(const J_GUI_COLOR flag)noexcept;
+			static JVector4<float> GetSelectableColorFactor(const bool isFocus, const bool isSelecetd, const bool isHovered)noexcept;
 			static void SetColor(const J_GUI_COLOR flag, const JVector4<float>& color)noexcept;
 			static void SetColorToSoft(const J_GUI_COLOR flag, const JVector4<float>& factor)noexcept;
 			//Set widget color to default
@@ -65,6 +67,10 @@ namespace JinEngine
 			static void PopTreeNodeColorToSoftSet();
 			static void PopButtonColorToSoftSet();
 			static void PopButtonColorDeActSet();
+		public:
+			//Combination defined by engine
+			static void PushTreeNodeColorSet(const bool isFocus, const bool isActivated, const bool isSelected)noexcept;
+			static void PopTreeNodeColorSet(const bool isActivated, const bool isSelected)noexcept;
 #pragma endregion
 #pragma region Style
 		public:
@@ -130,6 +136,7 @@ namespace JinEngine
 			* @brief use world size and pos
 			*/
 			static bool IsMouseInRect(const JVector2<float>& position, const JVector2<float>& size)noexcept; 
+			static bool IsMouseInCurrentWindow()noexcept;
 			/**
 			* @brief use min, max point
 			*/
@@ -162,11 +169,12 @@ namespace JinEngine
 			static void EndPopup();
 			static void BeginGroup();
 			static void EndGroup();
+			static void Text(const std::wstring& text);
 			static void Text(const std::string& text);
 			static void Text(const std::string& text, const float fontScale);
 			static bool CheckBox(const std::string& name, bool& v);
 			static bool Button(const std::string& name, const JVector2<float>& jVec2 = { 0,0 });
-			static bool IsTreeNodeOpend(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags);
+			static bool IsTreeNodeOpend(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags); 
 			static bool TreeNodeEx(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags = J_GUI_TREE_NODE_FLAG_NONE);
 			static void TreePop();
 			static bool Selectable(const std::string& name, bool* pSelected = nullptr, J_GUI_SELECTABLE_FLAG_ flags = J_GUI_SELECTABLE_FLAG_NONE, const JVector2<float>& sizeArg = { 0,0 });
@@ -176,12 +184,12 @@ namespace JinEngine
 			static bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputMultilineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, int step = 1);
-			static bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const char* format = "%.3f", float step = 0.0f);
+			static bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const float formatDigit = 3, float step = 0.0f);
 		public:
-			static bool SliderInt(const std::string& name, int* value, int vMin, int vMax, const char* format = "%d", J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
-			static bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format = "%.3f", J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
-			static bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, const char* format = "%d", J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
-			static bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format = "%.3f", J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
+			static bool SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
+			static bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const float formatDigit, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
+			static bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
+			static bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const float formatDigit, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
 		public:
 			static bool BeginTabBar(const std::string& name, J_GUI_TAB_BAR_FLAG_ flags = J_GUI_TAB_BAR_FLAG_NONE);
 			static void EndTabBar();
@@ -415,17 +423,20 @@ namespace JinEngine
 			//get displayed window order back to front
 			//return -1 if didn't display
 			static int GetWindowOrder(const GuiID windowID)noexcept;
-			static bool GetWindowInfo(const std::string& wndName, _Out_ JGuiWindowInfo& info)noexcept;
-			static bool GetWindowInfo(const GuiID windowID, _Out_ JGuiWindowInfo& info)noexcept; 
-			static bool GetCurrentWindowInfo(_Out_ JGuiWindowInfo& info)noexcept; 
+			static bool GetWindowInfo(const std::string& wndName, _Inout_ JGuiWindowInfo& info)noexcept;
+			static bool GetWindowInfo(const GuiID windowID, _Inout_ JGuiWindowInfo& info)noexcept;
+			static bool GetCurrentWindowInfo(_Inout_ JGuiWindowInfo& info)noexcept;
 			static std::vector<JGuiWindowInfo> GetDisplayedWindowInfo()noexcept;
+			static bool GetFirstIntersectWindowInfo(const JVector2F pos, _Inout_ JGuiWindowInfo& info)noexcept;
+			static std::set<GuiID> GetWindowOpendTreeNodeID(const GuiID windowID)noexcept;
 			static void SetNextWindowPos(const JVector2<float>& pos, J_GUI_CONDIITON flag = J_GUI_CONDIITON_NONE)noexcept;
 			static void SetNextWindowSize(const JVector2<float>& size, J_GUI_CONDIITON flag = J_GUI_CONDIITON_NONE)noexcept;
 			static void SetNextWindowFocus()noexcept;
-			static bool IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_ flag)noexcept;  
+			static bool IsCurrentWindowFocused(J_GUI_FOCUS_FLAG_ flag)noexcept; 
 			static void FocusWindow(const GuiID windowID);
 			static void FocusCurrentWindow();
-			static void RestoreFromMaximize(const GuiID windowID, const std::vector<GuiID>& preTabItemID);
+			static void RestoreFromMaximize(const GuiID windowID, const std::vector<GuiID>& preTabItemID); 
+			static GuiID CalCurrentWindowItemID(const std::string& label)noexcept;
 		public:
 			//item : button, slider, input...
 			static JVector2<float> GetLastItemRectMin()noexcept;
@@ -450,7 +461,7 @@ namespace JinEngine
 		public:
 			//util 
 			static float GetSliderRightAlignPosX(bool hasScrollbar = false)noexcept;
-			static float GetSliderWidth()noexcept;
+			static float GetSliderWidth()noexcept; 
 		public:
 			static bool IsFullScreen()noexcept;
 			static bool IsEnablePopup()noexcept;
@@ -697,11 +708,11 @@ namespace JinEngine
 #pragma endregion
 #pragma region Docking
 		public: 
-			static bool GetDockNodeInfoByWindowName(const std::string& windowName, _Out_ JGuiDockNodeInfo& info)noexcept;
-			static bool GetDockNodeInfo(const std::string& dockNodeName, _Out_ JGuiDockNodeInfo& info)noexcept;
-			static bool GetDockNodeInfo(const GuiID dockID, _Out_ JGuiDockNodeInfo& info)noexcept; 
-			static bool GetDockNodeHostWindowInfo(const GuiID childDockID, _Out_ JGuiWindowInfo& info)noexcept;
-			static bool GetCurrentDockNodeInfo(_Out_ JGuiDockNodeInfo& info)noexcept;
+			static bool GetDockNodeInfoByWindowName(const std::string& windowName, _Inout_ JGuiDockNodeInfo& info)noexcept;
+			static bool GetDockNodeInfo(const std::string& dockNodeName, _Inout_ JGuiDockNodeInfo& info)noexcept;
+			static bool GetDockNodeInfo(const GuiID dockID, _Inout_ JGuiDockNodeInfo& info)noexcept;
+			static bool GetDockNodeHostWindowInfo(const GuiID childDockID, _Inout_ JGuiWindowInfo& info)noexcept;
+			static bool GetCurrentDockNodeInfo(_Inout_ JGuiDockNodeInfo& info)noexcept;
 			static bool HasDockNode(const std::string& dockNodeName)noexcept;
 			static bool CanUseDockHirechary()noexcept;
 			static void BuildDockHirechary(const std::vector<std::unique_ptr<JGuiDockBuildNode>>& nodeVec);
@@ -732,6 +743,9 @@ namespace JinEngine
 		private:
 			static void LoadOption();
 			static void StoreOption();
+		private:
+			static void LoadGuiData();
+			static void StoreGuiData();
 		};
 	}
 }

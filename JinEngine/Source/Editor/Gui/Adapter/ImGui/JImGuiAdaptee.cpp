@@ -4,9 +4,12 @@
 #include"../../../Align/JEditorAlignCalculator.h"
 #include"../../../Page/Docking/ImGui/JImGuiDockUpdateHelper.h"
 #include"../../../../Core/Math/JVectorExtend.h"
+#include"../../../../Core/File/JFileConstant.h"
+#include"../../../../Core/File/JFileIOHelper.h"
 #include"../../../../Object/Resource/JResourceManager.h"
 #include"../../../../Object/Resource/Texture/JTexture.h"
 #include"../../../../Application/JApplicationEngine.h" 
+#include"../../../../Application/JApplicationProject.h" 
 #include"../../../../Graphic/Gui/JGuiBackendInterface.h" 
 #include"../../../../Graphic/GraphicResource/JGraphicResourceInterface.h"  
 #include"../../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"   
@@ -54,6 +57,17 @@ ImVec4& ImVec4::operator=(const JinEngine::JVector4<T>& jVec4)
 
 namespace JinEngine::Editor
 {
+	namespace
+	{
+		static std::wstring GetSrcImGuiSaveDataPath()noexcept
+		{
+			return Core::JFileConstant::MakeFilePath(JApplicationEngine::ProjectPath(), L"imgui.ini");
+		}
+		static std::wstring GetCopiedImGuiSaveDataPath()noexcept
+		{
+			return Core::JFileConstant::MakeFilePath(JApplicationProject::EditoConfigPath(), L"imgui.ini");;
+		}
+	}
 	namespace
 	{
 		static void SetGuiStyle(JImGuiPrivateData* data)
@@ -364,6 +378,8 @@ namespace JinEngine::Editor
 				imguiFlag |= ImGuiFocusedFlags_ChildWindows;
 			if (Core::HasSQValueEnum(flag, J_GUI_FOCUS_FLAG_DOCK_HIERARCHY))
 				imguiFlag |= ImGuiFocusedFlags_DockHierarchy;
+			if (Core::HasSQValueEnum(flag, J_GUI_FOCUS_FLAG_NO_POPUP_HIERARCHY))
+				imguiFlag |= ImGuiFocusedFlags_NoPopupHierarchy;
 			return (ImGuiFocusedFlags_)imguiFlag;
 		}
 		static ImGuiHoveredFlags_ ConvertHoveredFlag(const J_GUI_HOVERED_FLAG flag)noexcept
@@ -552,6 +568,30 @@ namespace JinEngine::Editor
 
 			return FindDockNodeRoot(dock->ParentNode);
 		}
+		static const char* ConvertFloattingFormat(const uint formatDigit)
+		{
+			switch (formatDigit)
+			{
+			case 0:
+				return " ";
+			case 1:
+				return "%.1f";
+			case 2:
+				return "%.2f";
+			case 3:
+				return "%.3f";
+			case 4:
+				return "%.4f";
+			case 5:
+				return "%.5f";
+			case 6:
+				return "%.6f";
+			case 7:
+				return "%.7f";
+			default:
+				return "%.5f";
+			}
+		}
 	}
 
 	void JImGuiAdaptee::Initialize(std::unique_ptr<Graphic::JGuiInitData>&& initData)
@@ -581,6 +621,18 @@ namespace JinEngine::Editor
 		ClearBackend();
 		ImGui::DestroyContext();
 		data.reset();
+	}
+	void JImGuiAdaptee::LoadGuiData()
+	{ 
+		const bool hasImguiTxt = (_waccess(GetCopiedImGuiSaveDataPath().c_str(), 00) != -1);
+		_wremove(GetSrcImGuiSaveDataPath().c_str());
+		if (hasImguiTxt)
+			JFileIOHelper::CopyFile(GetCopiedImGuiSaveDataPath(), GetSrcImGuiSaveDataPath());
+	}
+	void JImGuiAdaptee::StoreGuiData()
+	{
+		if (JApplicationEngine::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
+			JFileIOHelper::CopyFile(GetSrcImGuiSaveDataPath(), GetCopiedImGuiSaveDataPath());
 	}
 	J_GUI_TYPE JImGuiAdaptee::GetGuiType()const noexcept
 	{
@@ -1002,7 +1054,7 @@ namespace JinEngine::Editor
 	bool JImGuiAdaptee::Button(const std::string& btnName, const JVector2<float>& jVec2)
 	{
 		return ImGui::Button(btnName.c_str(), jVec2);
-	}
+	} 
 	bool JImGuiAdaptee::IsTreeNodeOpend(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags)
 	{
 		return ImGui::TreeNodeBehaviorIsOpen(ImGui::GetID((name + "##TreeNode").c_str()), flags);
@@ -1082,25 +1134,25 @@ namespace JinEngine::Editor
 	{
 		return ImGui::InputInt(name.c_str(), value, step, 100, ConvertInputTextFlag(flags));
 	}
-	bool JImGuiAdaptee::InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG flags, const char* format, float step)
+	bool JImGuiAdaptee::InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG flags, const uint formatDigit, float step)
 	{
-		return ImGui::InputFloat(name.c_str(), value, step, 100, format, ConvertInputTextFlag(flags));
+		return ImGui::InputFloat(name.c_str(), value, step, 100, ConvertFloattingFormat(formatDigit), ConvertInputTextFlag(flags));
 	}
-	bool JImGuiAdaptee::SliderInt(const std::string& name, int* value, int vMin, int vMax, const char* format, J_GUI_SLIDER_FLAG flags)
+	bool JImGuiAdaptee::SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG flags)
 	{
-		return ImGui::SliderInt(name.c_str(), value, vMin, vMax, format, ConvertSliderFlag(flags));
+		return ImGui::SliderInt(name.c_str(), value, vMin, vMax, "%d", ConvertSliderFlag(flags));
 	}
-	bool JImGuiAdaptee::SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format, J_GUI_SLIDER_FLAG flags)
+	bool JImGuiAdaptee::SliderFloat(const std::string& name, float* value, float vMin, float vMax, const uint formatDigit, J_GUI_SLIDER_FLAG flags)
 	{
-		return ImGui::SliderFloat(name.c_str(), value, vMin, vMax, format, ConvertSliderFlag(flags));
+		return ImGui::SliderFloat(name.c_str(), value, vMin, vMax, ConvertFloattingFormat(formatDigit), ConvertSliderFlag(flags));
 	}
-	bool JImGuiAdaptee::VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, const char* format, J_GUI_SLIDER_FLAG flags)
+	bool JImGuiAdaptee::VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG flags)
 	{
-		return ImGui::VSliderInt(name.c_str(), size, value, vMin, vMax, format, ConvertSliderFlag(flags));
+		return ImGui::VSliderInt(name.c_str(), size, value, vMin, vMax, "%d", ConvertSliderFlag(flags));
 	}
-	bool JImGuiAdaptee::VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format, J_GUI_SLIDER_FLAG flags)
+	bool JImGuiAdaptee::VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const uint formatDigit, J_GUI_SLIDER_FLAG flags)
 	{
-		return ImGui::VSliderFloat(name.c_str(), size, value, vMin, vMax, format, ConvertSliderFlag(flags));
+		return ImGui::VSliderFloat(name.c_str(), size, value, vMin, vMax, ConvertFloattingFormat(formatDigit), ConvertSliderFlag(flags));
 	}
 	bool JImGuiAdaptee::BeginTabBar(const std::string& name, const J_GUI_TAB_BAR_FLAG flags)
 	{
@@ -1716,15 +1768,15 @@ namespace JinEngine::Editor
 		}
 		return invalidIndex;
 	}
-	bool JImGuiAdaptee::GetWindowInfo(const std::string& wndName, _Out_ JGuiWindowInfo& info)const noexcept
+	bool JImGuiAdaptee::GetWindowInfo(const std::string& wndName, _Inout_ JGuiWindowInfo& info)const noexcept
 	{
 		return StuffWindowInfo(ImGui::FindWindowByName(wndName.c_str()), info);
 	}
-	bool JImGuiAdaptee::GetWindowInfo(const GuiID windowID, _Out_ JGuiWindowInfo& info)const noexcept
+	bool JImGuiAdaptee::GetWindowInfo(const GuiID windowID, _Inout_ JGuiWindowInfo& info)const noexcept
 	{ 
 		return StuffWindowInfo(ImGui::FindWindowByID(windowID), info);
 	}
-	bool JImGuiAdaptee::GetCurrentWindowInfo(_Out_ JGuiWindowInfo& info)const noexcept
+	bool JImGuiAdaptee::GetCurrentWindowInfo(_Inout_ JGuiWindowInfo& info)const noexcept
 	{ 
 		return StuffWindowInfo(ImGui::GetCurrentWindow(), info);
 	}
@@ -1737,6 +1789,21 @@ namespace JinEngine::Editor
 			StuffWindowInfo(guiWindowVec[i], result[i]);
 		return result;
 	}
+	std::set<GuiID>JImGuiAdaptee::GetWindowOpendTreeNodeID(const GuiID windowID)const noexcept
+	{
+		auto wnd = ImGui::FindWindowByID(windowID);
+		if (wnd == nullptr)
+			return std::set<GuiID>{};
+
+		auto storage = wnd->DC.StateStorage;
+		std::set<GuiID> res;
+		for (const auto& data : storage->Data)
+		{
+			if(data.val_i > 0)
+				res.emplace(data.key);
+		}
+		return res;
+	}
 	void JImGuiAdaptee::SetNextWindowPos(const JVector2<float>& pos, J_GUI_CONDIITON flag)noexcept
 	{
 		ImGui::SetNextWindowPos(pos, flag);
@@ -1746,11 +1813,11 @@ namespace JinEngine::Editor
 		ImGui::SetNextWindowSize(size, flag);
 	}
 	void JImGuiAdaptee::SetNextWindowFocus()noexcept
-	{
+	{ 
 		ImGui::SetNextWindowFocus();
-	}
+	} 
 	bool JImGuiAdaptee::IsCurrentWindowFocused(J_GUI_FOCUS_FLAG flag)const noexcept
-	{  
+	{ 
 		return ImGui::IsWindowFocused(ConvertFocusFlag(flag));
 	} 
 	void JImGuiAdaptee::FocusWindow(const GuiID windowID)
@@ -1788,6 +1855,10 @@ namespace JinEngine::Editor
 			}
 		}
 		tabBar->Tabs = copiedTab;
+	}
+	GuiID JImGuiAdaptee::CalCurrentWindowItemID(const std::string& label)const noexcept
+	{
+		return ImGui::GetCurrentWindow()->GetID(label.c_str());
 	}
 	JVector2<float> JImGuiAdaptee::GetLastItemRectMin()const noexcept
 	{
@@ -1880,18 +1951,18 @@ namespace JinEngine::Editor
 	}
 #pragma endregion
 #pragma region Docking
-	bool JImGuiAdaptee::GetDockNodeInfoByWindowName(const std::string& windowName, _Out_ JGuiDockNodeInfo& info)const noexcept
+	bool JImGuiAdaptee::GetDockNodeInfoByWindowName(const std::string& windowName, _Inout_ JGuiDockNodeInfo& info)const noexcept
 	{
 		auto window = ImGui::FindWindowByName(windowName.c_str());
 		if (window == nullptr)
 			return false;
 		return StuffDockNodeInfo(window->DockNode, info);
 	}
-	bool JImGuiAdaptee::GetDockNodeInfo(const std::string& dockNodeName, _Out_ JGuiDockNodeInfo& info)const noexcept
+	bool JImGuiAdaptee::GetDockNodeInfo(const std::string& dockNodeName, _Inout_ JGuiDockNodeInfo& info)const noexcept
 	{
 		return GetDockNodeInfo(ImGui::GetID(dockNodeName.c_str()), info);
 	}
-	bool JImGuiAdaptee::GetDockNodeInfo(const GuiID dockID, _Out_ JGuiDockNodeInfo& info)const noexcept
+	bool JImGuiAdaptee::GetDockNodeInfo(const GuiID dockID, _Inout_ JGuiDockNodeInfo& info)const noexcept
 	{
 		ImGuiDockNode* dockNode = static_cast<ImGuiDockNode*>(ImGui::GetCurrentContext()->DockContext.Nodes.GetVoidPtr(dockID));
 		if (dockNode == nullptr)

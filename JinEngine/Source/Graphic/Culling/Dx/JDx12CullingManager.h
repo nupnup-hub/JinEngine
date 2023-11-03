@@ -13,6 +13,7 @@ namespace JinEngine
 {
 	namespace Graphic
 	{ 
+		class JDx12CullingResourceHolder;
 		class JDx12CullingManager final : public JCullingManager
 		{
 		private:
@@ -21,6 +22,7 @@ namespace JinEngine
 			std::vector<Microsoft::WRL::ComPtr<ID3D12QueryHeap>> occQueryHeap;
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+			JDx12CullingResourceHolder* GetDxHolder(const J_CULLING_TYPE type, int index)const noexcept;
 			ID3D12Resource* GetResource(const J_CULLING_TYPE type, int index)const noexcept;
 			ID3D12QueryHeap* GetQueryHeap(const uint index)const noexcept;
 		private:

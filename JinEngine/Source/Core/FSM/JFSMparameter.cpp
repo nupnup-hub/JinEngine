@@ -35,7 +35,7 @@ namespace JinEngine
 		public:
 			float GetValue()const noexcept
 			{
-				return TypeValue(paramType, value);
+				return FsmParamTypeValue(paramType, value);
 			}
 			J_FSM_PARAMETER_VALUE_TYPE GetParamType()const noexcept
 			{
@@ -45,7 +45,7 @@ namespace JinEngine
 			template<typename T>
 			void SetValue(T newValue)noexcept
 			{
-				value = TypeValue(paramType, newValue);
+				value = FsmParamTypeValue(paramType, newValue);
 			}
 			void SetParamType(const J_FSM_PARAMETER_VALUE_TYPE newParamType)noexcept
 			{

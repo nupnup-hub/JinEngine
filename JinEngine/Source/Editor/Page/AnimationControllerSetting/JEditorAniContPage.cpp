@@ -31,18 +31,12 @@ namespace JinEngine
 					J_EDITOR_PAGE_SUPPORT_WINDOW_MAXIMIZE,
 					J_EDITOR_PAGE_SUPPORT_WINDOW_MINIMIZE))
 		{
-			constexpr uint memberWindowCount = 5;
-			std::vector<std::string> windowNames
-			{
-				"DiagramList##AniContSettingPage",
-				"ConditionList##AniContSettingPage",
-				"StateView##AniContSettingPage",
-				"AniContObserver##AniContSettingPage",
-				"AniContDetail##AniContSettingPage"
-			};
-			std::vector<std::unique_ptr<JEditorAttribute>> windowAttributes(memberWindowCount);
-			for (uint i = 0; i < memberWindowCount; ++i)
-				windowAttributes[i] = std::make_unique<JEditorAttribute>();
+			std::vector<WindowInitInfo> openInfo;
+			openInfo.emplace_back("DiagramList##AniContSettingPage");
+			openInfo.emplace_back("ConditionList##AniContSettingPage");
+			openInfo.emplace_back("StateView##AniContSettingPage");
+			openInfo.emplace_back("AniContObserver##AniContSettingPage");
+			openInfo.emplace_back("AniContDetail##AniContSettingPage");
 
 			J_EDITOR_WINDOW_FLAG defaultFlag = J_EDITOR_WINDOW_SUPPORT_WINDOW_CLOSING;
 			J_EDITOR_WINDOW_FLAG dockFlag = Core::AddSQValueEnum(defaultFlag, J_EDITOR_WINDOW_SUPROT_DOCK);
@@ -50,11 +44,11 @@ namespace JinEngine
 
 			std::vector<J_OBSERVER_SETTING_TYPE> settingType{};
 
-			diagramList = std::make_unique<JAnimationDiagramList>(windowNames[0], std::move(windowAttributes[0]), GetPageType(), listFlag);
-			conditionList = std::make_unique<JAnimationParameterList>(windowNames[1], std::move(windowAttributes[1]), GetPageType(), listFlag);
-			stateView = std::make_unique<JAnimationStateView>(windowNames[2], std::move(windowAttributes[2]), GetPageType(), listFlag);
-			aniContObserver = std::make_unique<JSceneObserver>(windowNames[3], std::move(windowAttributes[3]), GetPageType(), dockFlag, settingType);
-			aniContDetail = std::make_unique<JObjectDetail>(windowNames[4], std::move(windowAttributes[4]), GetPageType(), dockFlag);
+			diagramList = std::make_unique<JAnimationDiagramList>(openInfo[0].GetName(), openInfo[0].MakeAttribute(), GetPageType(), listFlag);
+			conditionList = std::make_unique<JAnimationParameterList>(openInfo[1].GetName(), openInfo[1].MakeAttribute(), GetPageType(), listFlag);
+			stateView = std::make_unique<JAnimationStateView>(openInfo[2].GetName(), openInfo[2].MakeAttribute(), GetPageType(), listFlag);
+			aniContObserver = std::make_unique<JSceneObserver>(openInfo[3].GetName(), openInfo[3].MakeAttribute(), GetPageType(), dockFlag, settingType);
+			aniContDetail = std::make_unique<JObjectDetail>(openInfo[4].GetName(), openInfo[4].MakeAttribute(), GetPageType(), dockFlag);
 
 			std::vector<JEditorWindow*> windows
 			{
@@ -181,7 +175,7 @@ namespace JinEngine
 					J_EDITOR_WINDOW_TYPE::TEST_WINDOW,
 					aniCont->GetDiagramByIndex(0), 
 					JEditorEvStruct::RANGE::ALL)));
-
+			 
 			ResourceEvListener::AddEventListener(*JResourceObject::EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
 		}
 		void JEditorAniContPage::DoDeActivate()noexcept
@@ -193,13 +187,13 @@ namespace JinEngine
 			//JObject::BeginDestroy(aniCont.Get());
 			//aniCont.Clear();
 		}
-		void JEditorAniContPage::StorePage(std::wofstream& stream)
+		void JEditorAniContPage::LoadPage(JFileIOTool& tool)
 		{
-			JEditorPage::StorePage(stream);
+			JEditorPage::LoadPage(tool);
 		}
-		void JEditorAniContPage::LoadPage(std::wifstream& stream)
+		void JEditorAniContPage::StorePage(JFileIOTool& tool)
 		{
-			JEditorPage::LoadPage(stream);
+			JEditorPage::StorePage(tool);
 		}
 		void JEditorAniContPage::BuildDockNode()
 		{
@@ -240,7 +234,7 @@ namespace JinEngine
 				menuBar->AddNode(std::move(newNode));
 			}
 		}
-		void JEditorAniContPage::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		void JEditorAniContPage::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
 			if (iden == GetGuid())
 				return;

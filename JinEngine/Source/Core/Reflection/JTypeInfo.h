@@ -299,6 +299,11 @@ namespace JinEngine
 			JTypeBase* ConvertInterfaceBase(JTypeImplBase* implBase)const noexcept;
 			JTypeImplBase* ConvertImplBase(JTypeBase* tBase)const noexcept;
 		public:
+			/*
+			*  if has impl return impl opt
+			*  else return thisType opt
+			*/
+			JTypeInfoGuiOption* TryGetImplOption()noexcept;
 			void TryLazyDestruction(JTypeBase* tBase)noexcept;
 			void TryCancelLazyDestruction(JTypeBase* tBase)noexcept;
 		private:
@@ -358,9 +363,9 @@ namespace JinEngine
 		struct JTypeInstanceSearchHint
 		{
 		public: 
-			size_t typeGuid;
-			size_t objectGuid;
-			bool isValid;
+			size_t typeGuid = 0;
+			size_t objectGuid = 0;
+			bool isValid = false;
 		public:
 			bool hasImplType = false;
 		public:

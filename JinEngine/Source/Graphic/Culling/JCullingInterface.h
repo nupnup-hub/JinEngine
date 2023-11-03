@@ -67,7 +67,7 @@ namespace JinEngine
 		public:
 			bool IsCulled(const uint objectIndex)const noexcept;											//culling array is ordered by render item mesh number
 			bool IsCulled(const J_CULLING_TYPE type, const uint objectIndex)const noexcept;				//culling array is ordered by render item mesh number
-			bool IsValid()const noexcept;
+			bool IsValid()const noexcept; 
 			bool IsUpdateEnd(const J_CULLING_TYPE type)const noexcept;
 			bool HasCullingData(const J_CULLING_TYPE type)const noexcept; 												//culling array is ordered by render item mesh number
 		};

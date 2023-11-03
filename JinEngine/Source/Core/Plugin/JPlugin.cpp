@@ -1,6 +1,6 @@
 #include"JPlugin.h" 
 #include"JPluginPrivate.h"
-#include"../File/JJSon.h"
+#include"../File/JFileIOHelper.h"
 #include"../Module/JModule.h" 
 #include"../Module/JModuleManager.h" 
 #include"../Utility/JCommonUtility.h" 
@@ -53,27 +53,41 @@ namespace JinEngine::Core
  
 	JOwnerPtr<JPluginInterface> IOInterface::LoadPlugin(const std::wstring& metafilePath)
 	{
-		JJSon json(metafilePath);
-		if (!json.Load())
+		JFileIOTool tool;
+		if (!tool.Begin(metafilePath, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return nullptr;
-
-		std::wstring name = JCUtil::U8StrToWstr(json.value["Name"].asString());
-
+		 
+		std::wstring name;
 		JPluginDesc desc;
-		desc.version = json.value["Version"].asString();
-		desc.minEngineVersion = json.value["MinEngineVersion"].asString();
 
+		bool isSuccess = true;
+		isSuccess &= JFileIOHelper::LoadJString(tool, name, "Name") == Core::J_FILE_IO_RESULT::SUCCESS; 
+		isSuccess &= JFileIOHelper::LoadJString(tool, desc.version, "Version") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::LoadJString(tool, desc.minEngineVersion, "MinEngineVersion") == Core::J_FILE_IO_RESULT::SUCCESS;
 		JOwnerPtr<JPlugin> newPlugin = JPtrUtil::MakeOwnerPtr<JPlugin>(name, metafilePath, desc);
 
-		auto& modManager = _JModuleManager::Instance();
-		const uint moduleCount = (uint)json.value["ModuleInfo"].size();
+		auto& modManager = _JModuleManager::Instance(); 
+		tool.PushExistStack("ModuleData");
+
+		const uint moduleCount = tool.GetCurrentMemberCount();
 		for (uint i = 0; i < moduleCount; ++i)
 		{
-			const std::wstring path = JCUtil::U8StrToWstr(json.value["ModuleInfo"][i]["Path"].asString());
+			std::wstring name;
+			std::wstring path;
+			tool.PushExistStack();
+			isSuccess &= JFileIOHelper::StoreJString(tool, name, "Name") == Core::J_FILE_IO_RESULT::SUCCESS;
+			isSuccess &= JFileIOHelper::StoreJString(tool, path, "Path") == Core::J_FILE_IO_RESULT::SUCCESS; 
+			tool.PopStack();
+
 			auto mod = modManager.GetModule(path);
 			if (mod != nullptr)
 				newPlugin->moduleVec.push_back(mod);
 		}
+		tool.PopStack();
+		tool.Close();
+		if (!isSuccess)
+			return nullptr;
+
 		newPlugin->moduleVec.shrink_to_fit();
 		newPlugin->desc.isLoaded = true;
 		return newPlugin;
@@ -83,22 +97,27 @@ namespace JinEngine::Core
 		if (p == nullptr)
 			return false;
 
+		JFileIOTool tool;
 		auto desc = p->GetPluginDesc();
-		if (!desc.isLoaded)
+		if (!desc.isLoaded || !tool.Begin(p->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return false;
 
-		JJSon json(p->GetMetaFilePath());
-		json.value["Name"] = JCUtil::WstrToU8Str(p->GetName());
-		json.value["Version"] = desc.version;
-		json.value["MinEngineVersion"] = desc.minEngineVersion;
-
+		bool isSuccess = true;
+		isSuccess &= JFileIOHelper::StoreJString(tool, JCUtil::WstrToU8Str(p->GetName()), "Name") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::StoreJString(tool, desc.version, "Version") == Core::J_FILE_IO_RESULT::SUCCESS;
+		isSuccess &= JFileIOHelper::StoreJString(tool, desc.minEngineVersion, "MinEngineVersion") == Core::J_FILE_IO_RESULT::SUCCESS;
+ 
+		tool.PushArrayOwner("ModuleData");
 		for (const auto& data : p->GetAllModule())
-		{
-			const std::string name = JCUtil::WstrToU8Str(data->GetName());
-			json.value["ModuleInfo"][name]["Name"] = name;
-			json.value["ModuleInfo"][name]["Path"] = JCUtil::WstrToU8Str(data->GetPath());
+		{ 
+			tool.PushArrayMember();
+			isSuccess &= JFileIOHelper::StoreJString(tool, JCUtil::WstrToU8Str(data->GetName()), "Name") == Core::J_FILE_IO_RESULT::SUCCESS;
+			isSuccess &= JFileIOHelper::StoreJString(tool, JCUtil::WstrToU8Str(data->GetPath()), "Path") == Core::J_FILE_IO_RESULT::SUCCESS;
+			tool.PopStack();
 		}
-		return json.Store();
+		tool.PopStack();
+		isSuccess ? tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA) : tool.Close();
+		return isSuccess;
 	}
 }
 

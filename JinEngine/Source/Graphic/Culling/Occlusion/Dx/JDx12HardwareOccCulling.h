@@ -1,5 +1,6 @@
 #pragma once
 #include"../JHardwareOccCulling.h"
+#include"../../../Buffer/Dx/JDx12GraphicBuffer.h" 
 
 namespace JinEngine
 {
@@ -30,10 +31,11 @@ namespace JinEngine
 			public:
 				//Update countOffset and out(offset, count)
 				void Update(_Out_ size_t& offset, _Out_ size_t& count);
+				void Reset();
 			};
 		private:
 			std::vector<UpdateData> updateData;
-			size_t gpuMemoryBusWidth = 0;
+			size_t gpuMemoryBusWidth = 0; 
 		public:
 			void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info) final;
 			void Clear()final;

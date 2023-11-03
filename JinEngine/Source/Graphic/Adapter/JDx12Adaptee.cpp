@@ -12,9 +12,11 @@
 #include"../Culling/Occlusion/Dx/JDx12HZBOccCulling.h"
 #include"../Scene/Dx/JDx12SceneDraw.h"
 #include"../ShadowMap/Dx/JDx12ShadowMap.h" 
+#include"../Blur/Dx/JDx12Blur.h"
 #include"../FrameResource/Dx/JDx12FrameResource.h"
-#include"../Utility/JD3DUtility.h" 
- 
+#include"../Utility/Dx/JD3DUtility.h" 
+
+
 namespace JinEngine::Graphic
 {
 	namespace
@@ -79,6 +81,10 @@ namespace JinEngine::Graphic
 	{
 		return std::make_unique<JDx12Outline>();
 	}
+	std::unique_ptr<JBlur> JDx12Adaptee::CreateBlur()
+	{
+		return std::make_unique<JDx12Blur>();
+	}
 	bool JDx12Adaptee::BeginDrawSceneSingleThread(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet)
 	{
 		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.gResourceM) ||
@@ -102,14 +108,13 @@ namespace JinEngine::Graphic
 
 		dataSet.bind = std::make_unique<JDx12GraphicBindSet>(dx12Frame, dx12Gm, dx12Cm, cmdList);
 		dataSet.sceneDraw = std::make_unique<JDx12GraphicSceneDrawSet>(dx12Device, dx12Frame, dx12Gm, dx12Cm, cmdList);
-		dataSet.shadowMapDraw = std::make_unique<JDx12GraphicShadowMapDrawSet>(dx12Device, dx12Frame, dx12Gm, dx12Cm, cmdList);
+		dataSet.shadowMapDraw = std::make_unique<JDx12GraphicShadowMapDrawSet>(dx12Device, dx12Frame, dx12Gm, dx12Cm, drawRefSet.blur, cmdList);
 		dataSet.occDraw = std::make_unique<JDx12GraphicOccDrawSet>(dx12Device, dx12Frame, dx12Gm, dx12Cm, drawRefSet.depthTest, cmdList);
 		dataSet.occDebug = std::make_unique<JDx12GraphicOccDebugDrawSet>(dx12Device, dx12Gm, drawRefSet.depthDebug, cmdList);
 		dataSet.hzbCompute = std::make_unique<JDx12GraphicHzbOccComputeSet>(dx12Frame, dx12Gm, dx12Cm, cmdList);
 		dataSet.hdExtract = std::make_unique<JDx12GraphicHdOccExtractSet>(dx12Cm, cmdList);
 		dataSet.depthMapDebug = std::make_unique<JDx12GraphicDepthMapDebugObjectSet>(dx12Gm, cmdList);
-		dataSet.outline = std::make_unique<JDx12GraphicOutlineObjectSet>(dx12Device, dx12Gm, cmdList);
-
+		dataSet.outline = std::make_unique<JDx12GraphicOutlineObjectSet>(dx12Device, dx12Gm, cmdList); 
 		return true;
 	}
 	bool JDx12Adaptee::EndDrawSceneSingeThread(const JGraphicDrawReferenceSet& drawRefSet)
@@ -295,7 +300,7 @@ namespace JinEngine::Graphic
 		SettingDescriptorHeaps(dx12Gm, cmdList);
 
 		dataSet.bind = std::make_unique<JDx12GraphicBindSet>(dx12Frame, dx12Gm, drawRefSet.cullingM, cmdList);
-		dataSet.shadowMapDraw = std::make_unique<JDx12GraphicShadowMapDrawSet>(drawRefSet.device, dx12Frame, dx12Gm, drawRefSet.cullingM, cmdList);
+		dataSet.shadowMapDraw = std::make_unique<JDx12GraphicShadowMapDrawSet>(drawRefSet.device, dx12Frame, dx12Gm, drawRefSet.cullingM, drawRefSet.blur, cmdList);
 		return true;
 	}
 	bool JDx12Adaptee::NotifyCompleteDrawShadowMapTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex)

@@ -9,7 +9,7 @@ namespace JinEngine
 	{
 		class JEditorPopupMenu;
 		class JEditorStringMap;
-		class JAnimationDiagramListCreationImpl;
+		class JAnimationDiagramListCreationFunctor;
 		class JAnimationDiagramList final : public JEditorWindow
 		{
 		private:
@@ -18,7 +18,7 @@ namespace JinEngine
 			std::unique_ptr<JEditorPopupMenu> diagramListPopup;
 			std::unique_ptr<JEditorStringMap> editorString;
 		private:
-			std::unique_ptr<JAnimationDiagramListCreationImpl> creationImpl;
+			std::unique_ptr<JAnimationDiagramListCreationFunctor> creation;
 		public:
 			JAnimationDiagramList(const std::string& name,
 				std::unique_ptr<JEditorAttribute> attribute,

@@ -189,6 +189,7 @@ namespace JinEngine
 			if (updateData->skeletonBlendRate[1].find(srcGuid) == updateData->skeletonBlendRate[0].end())
 				updateData->skeletonBlendRate[1].emplace(srcGuid, 0.0f);
 
+			//animation clip은 import시 animation과 같은 skeleton hash를 보유한 skeletonAsset(Skinned mesh import시 생성되는)을 검색해서 참조한다.
 			for (uint i = 0; i < stateSize; ++i)
 			{
 				JUserPtr<JAnimationFSMstate> state = thisPointer->GetStateByIndex(i);
@@ -196,19 +197,20 @@ namespace JinEngine
 			}
 
 			uint skeletonVecSize = (uint)skeletonVec.size();
-
 			for (uint i = 0; i < skeletonVecSize; ++i)
 			{
 				if (skeletonVec[i] != nullptr)
 				{
-					size_t tarGuid = skeletonVec[i]->GetGuid();
+					size_t tarGuid = skeletonVec[i]->GetGuid(); 
 					if (tarGuid != srcGuid && updateData->additionalBind.find(tarGuid) == updateData->additionalBind.end())
 					{
 						std::vector<JAnimationAdditionalBind> additionalBind(JSkeletonFixedData::maxAvatarJointCount);
 						additionalBind.reserve(JSkeletonFixedData::maxAvatarJointCount);
-						JAnimationRetargeting::CalculateAdditionalBindPose(updateData, updateData->modelSkeleton.Get(), skeletonVec[i].Get(), additionalBind);
-						updateData->additionalBind.emplace(skeletonVec[i]->GetGuid(), additionalBind);
-						updateData->skeletonBlendRate->emplace(skeletonVec[i]->GetGuid(), 0.0f);
+						if (JAnimationRetargeting::CalculateAdditionalBindPose(updateData, updateData->modelSkeleton.Get(), skeletonVec[i].Get(), additionalBind))
+						{
+							updateData->additionalBind.emplace(skeletonVec[i]->GetGuid(), additionalBind);
+							updateData->skeletonBlendRate->emplace(skeletonVec[i]->GetGuid(), 0.0f);
+						}
 					}
 				}
 			}
@@ -216,62 +218,77 @@ namespace JinEngine
 	public:
 		//state가 소유하는  transtion은 has state object이므로
 		//state먼저 모두 생성한 후 state detail을 load 한다
-		static JUserPtr<JAnimationFSMdiagram> LoadAssetData(std::wifstream& stream, Core::JFSMdiagramOwnerInterface* fsmOwner)
+		static JUserPtr<JAnimationFSMdiagram> LoadAssetData(JFileIOTool& tool, Core::JFSMdiagramOwnerInterface* fsmOwner)
 		{
-			if (!stream.is_open())
+			if (!tool.CanLoad())
 				return nullptr;
 
 			std::wstring name;
 			size_t guid;
 			Core::J_FSM_OBJECT_TYPE type;
 
-			JObjectFileIOHelper::LoadFsmIden(stream, name, guid, type);
+			JObjectFileIOHelper::LoadFsmIden(tool, name, guid, type);
 
 			JUserPtr<JAnimationFSMdiagram> diagramUser = JICI::Create<JAnimationFSMdiagram>(name, guid, fsmOwner);
 			uint stateCount = 0;
-			JObjectFileIOHelper::LoadAtomicData(stream, stateCount);
+			JObjectFileIOHelper::LoadAtomicData(tool, stateCount, "StateCount"); 
 
+			tool.PushExistStack("StateMetaData");
 			for (uint i = 0; i < stateCount; ++i)
 			{
 				J_ANIMATION_STATE_TYPE stateType;
-				JUserPtr<JAnimationFSMstate> newState = nullptr;
-				JObjectFileIOHelper::LoadFsmIden(stream, name, guid, type);
-				JObjectFileIOHelper::LoadEnumData(stream, stateType);
+				JUserPtr<JAnimationFSMstate> newState = nullptr;	
+				tool.PushExistStack();
+				JObjectFileIOHelper::LoadFsmIden(tool, name, guid, type);
+				JObjectFileIOHelper::LoadEnumData(tool, stateType, "StateType");
+				tool.PopStack();
 
 				if (stateType == J_ANIMATION_STATE_TYPE::CLIP)
 					newState = JICI::Create<JAnimationFSMstateClip>(name, guid, diagramUser);
 				else if (stateType == J_ANIMATION_STATE_TYPE::BLEND_TREE)
 					;//미구현 
 			}
+			tool.PopStack();
+			tool.PushExistStack("StateData");
 			for (uint i = 0; i < stateCount; ++i)
 			{
 				JUserPtr<JAnimationFSMstate> state = diagramUser->GetStateByIndex(i);
-				StateIOInterface(state)->LoadAssetData(stream, state);
+				tool.PushExistStack();
+				StateIOInterface(state)->LoadAssetData(tool, state);
+				tool.PopStack();
 			}
+			tool.PopStack();
 			return diagramUser;
 		}
-		static Core::J_FILE_IO_RESULT StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMdiagram>& diagram)
+		static Core::J_FILE_IO_RESULT StoreAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMdiagram>& diagram)
 		{
-			if (!stream.is_open())
+			if (!tool.CanStore())
 				return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-			JObjectFileIOHelper::StoreFsmIden(stream, diagram.Get());
-
+			JObjectFileIOHelper::StoreFsmIden(tool, diagram.Get());
 			const std::vector<JUserPtr<Core::JFSMstate>>& stateVec = diagram->GetStateVec();
 			const uint stateCount = (uint)stateVec.size();
-			JObjectFileIOHelper::StoreAtomicData(stream, L"StateCount:", stateCount);
+			JObjectFileIOHelper::StoreAtomicData(tool, stateCount, "StateCount");
 
+			tool.PushArrayOwner("StateMetaData");
 			for (uint i = 0; i < stateCount; ++i)
 			{
+				tool.PushArrayMember();
 				JUserPtr<JAnimationFSMstate> fsmState = diagram->GetStateByIndex(i);
-				JObjectFileIOHelper::StoreFsmIden(stream, fsmState.Get());
-				JObjectFileIOHelper::StoreEnumData(stream, L"StateType:", fsmState->GetStateType());
+				JObjectFileIOHelper::StoreFsmIden(tool, fsmState.Get());
+				JObjectFileIOHelper::StoreEnumData(tool, fsmState->GetStateType(), "StateType");
+				tool.PopStack();
 			}
+			tool.PopStack();
+			tool.PushArrayOwner("StateData");
 			for (uint i = 0; i < stateCount; ++i)
 			{
+				tool.PushArrayMember();
 				JUserPtr<JAnimationFSMstate> state = diagram->GetStateByIndex(i);
-				StateIOInterface(state)->StoreAssetData(stream, state);
+				StateIOInterface(state)->StoreAssetData(tool, state);
+				tool.PopStack();
 			}
+			tool.PopStack();
 			return Core::J_FILE_IO_RESULT::SUCCESS;
 		}
 	public:
@@ -350,13 +367,13 @@ namespace JinEngine
 		return isValidPtr && initData->IsValidData();
 	}
 
-	JUserPtr<JAnimationFSMdiagram> AssetDataIOInterface::LoadAssetData(std::wifstream& stream, Core::JFSMdiagramOwnerInterface* fsmOwner)
+	JUserPtr<JAnimationFSMdiagram> AssetDataIOInterface::LoadAssetData(JFileIOTool& tool, Core::JFSMdiagramOwnerInterface* fsmOwner)
 	{
-		return JAnimationFSMdiagram::JAnimationFSMdiagramImpl::LoadAssetData(stream, fsmOwner);
+		return JAnimationFSMdiagram::JAnimationFSMdiagramImpl::LoadAssetData(tool, fsmOwner);
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(std::wofstream& stream, const JUserPtr<JAnimationFSMdiagram>& diagram)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(JFileIOTool& tool, const JUserPtr<JAnimationFSMdiagram>& diagram)
 	{
-		return JAnimationFSMdiagram::JAnimationFSMdiagramImpl::StoreAssetData(stream, diagram);
+		return JAnimationFSMdiagram::JAnimationFSMdiagramImpl::StoreAssetData(tool, diagram);
 	}
 
 	void UpdateInterface::Initialize(const JUserPtr<JAnimationFSMdiagram>& diagram, JAnimationUpdateData* updateData, const uint layerNumber)noexcept

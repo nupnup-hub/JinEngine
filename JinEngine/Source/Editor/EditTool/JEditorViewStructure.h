@@ -33,7 +33,7 @@ namespace JinEngine
 			virtual ~JEditorNodeBase() = default;
 		public:
 			void DrawRect(const JEditorViewUpdateHelper* updateHelper);
-			void DrawLine(const JEditorViewUpdateHelper* updateHelper, const JEditorNodeBase* to, const bool isSelecetdEdge);
+			void DrawLine(const JEditorViewUpdateHelper* updateHelper, const JEditorNodeBase* to, const bool isSelecetdEdge, const bool isBilateralEdge);
 			void StoreUpdatedNodeData(const JEditorViewUpdateHelper* updateHelper)noexcept;
 			void LoadUpdateNodeData(const JEditorViewUpdateHelper* updateHelper)noexcept;
 		public:
@@ -42,17 +42,18 @@ namespace JinEngine
 			virtual void Initialize(const JEditorViewUpdateHelper* updateHelper)noexcept = 0;
 			virtual bool DoInitializeWhenAddedNewNode()const noexcept = 0;
 		public:
-			bool IsSame(JEditorNodeBase* ptr)const noexcept;
-			bool IsNewNode()const noexcept;
-		public:
 			/**
-			* JEditorNodeBase내부에서 uniqueLabel이 필요한 jgui widget 사용시 호출
+			* JEditorNodeBase내부에서 uniqueLabel이 필요한 gui widget 사용시 호출
 			* --2023-09-26-- 현재까지는 0개
 			*/
 			std::string GetUniqueName()const noexcept;
 			//Apply mouse offset
 			JVector2<float> GetValidCenter(const JEditorViewUpdateHelper* updateHelper)const noexcept;
 			std::string GetCompressName(const JEditorViewUpdateHelper* updateHelper)const noexcept;
+			/*
+			* offset = normal(toCenter - fromCenter) * updateHelper->nodeHalfSize.x * GetBilateralEdgeOffsetPosRate()
+			*/
+			virtual float GetBilateralEdgeOffsetPosRate()const noexcept = 0;
 		public:
 			void SetNewNodeTrigger(const bool value)noexcept;
 		public:
@@ -72,6 +73,10 @@ namespace JinEngine
 			JVector4<float> GetTriangleColor()const noexcept;
 			JVector4<float> GetSelectedTriangleColor()const noexcept;
 			JVector4<float> GetSelectedLineColor()const noexcept;
+		public:
+			bool IsSame(JEditorNodeBase* ptr)const noexcept;
+			bool IsNewNode()const noexcept;
+			virtual bool AllowBilateralEdge()const noexcept = 0;
 		};
 
 		class JEditorViewBase
@@ -114,9 +119,10 @@ namespace JinEngine
 			void SetGridSize(const uint gridSize)noexcept;
 		protected:
 			JEditorNodeBase* GetRootNode()const noexcept;
-			JEditorNodeBase* GetNode(const size_t guid) noexcept;
+			JEditorNodeBase* GetNode(const size_t guid)const noexcept;
 			JEditorNodeBase* GetNodeByIndex(const uint index)const noexcept;
-			JEditorNodeBase* GetLastSelectedNode()noexcept;
+			JEditorNodeBase* GetLastHoveredNode()const noexcept;
+			JEditorNodeBase* GetLastSelectedNode()const noexcept;
 		public:
 			J_SIMPLE_P_GET_SET(JEditorNodeBase, lastAddedNode, LastAddedNode)
 			J_SIMPLE_GET(size_t, guid, Guid)
@@ -137,13 +143,11 @@ namespace JinEngine
 			void StoreData(const std::wstring& path);
 			void LoadData(const std::wstring& path);
 		};
-
 		class JEditorTreeViewBase : public JEditorViewBase
 		{
 		protected:
 			void NodeOnScreen(const JEditorViewUpdateHelper* updateHelper)noexcept final;
 		};
-
 		class JEditorBinaryTreeView : public JEditorTreeViewBase
 		{
 		public:
@@ -155,7 +159,6 @@ namespace JinEngine
 				const bool isSelectedParentEdge = false)noexcept;
 			void BuildEndSplit()noexcept;
 		};
-
 		class JEdtiorTreeView : public JEditorTreeViewBase
 		{
 		public:
@@ -166,7 +169,6 @@ namespace JinEngine
 				const bool isSelectedNode = false,
 				const bool isSelectedParentEdge = false)noexcept;
 		};
-
 		class JEditorGraphView : public JEditorViewBase
 		{
 		private:

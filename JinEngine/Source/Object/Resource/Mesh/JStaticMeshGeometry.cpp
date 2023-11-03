@@ -31,9 +31,8 @@ namespace JinEngine
 	public:
 		static std::unique_ptr<Core::JMeshGroup> ReadAssetData(const std::wstring& path)
 		{
-			std::wifstream stream;
-			stream.open(path, std::ios::in | std::ios::binary);
-			if (!stream.is_open())
+			JFileIOTool tool;
+			if (!tool.Begin(path, JFileIOTool::TYPE::INPUT_STREAM))
 				return nullptr;
 			 
 			std::unique_ptr<Core::JStaticMeshGroup> meshGroup = std::make_unique<Core::JStaticMeshGroup>();
@@ -41,10 +40,11 @@ namespace JinEngine
 			uint meshCount = 0;
 			uint totalVertexCount = 0;
 			uint totalIndexCount = 0;
-			JObjectFileIOHelper::LoadAtomicData(stream, meshCount);
-			JObjectFileIOHelper::LoadAtomicData(stream, totalVertexCount);
-			JObjectFileIOHelper::LoadAtomicData(stream, totalIndexCount);
+			JObjectFileIOHelper::LoadAtomicData(tool, meshCount, "MeshCount:");
+			JObjectFileIOHelper::LoadAtomicData(tool, totalVertexCount, "TotalVertexCount:");
+			JObjectFileIOHelper::LoadAtomicData(tool, totalIndexCount, "TotalIndexCount:");
 
+			tool.PushExistStack("MeshData");
 			for (uint i = 0; i < meshCount; ++i)
 			{
 				std::wstring name;
@@ -53,100 +53,121 @@ namespace JinEngine
 				uint indexCount = 0;
 				Core::J_MESHGEOMETRY_TYPE meshType;
 
-				JObjectFileIOHelper::LoadJString(stream, name);
-				JObjectFileIOHelper::LoadAtomicData(stream, guid);
-				JObjectFileIOHelper::LoadAtomicData(stream, vertexCount);
-				JObjectFileIOHelper::LoadAtomicData(stream, indexCount);
-				JObjectFileIOHelper::LoadEnumData(stream, meshType);
+				tool.PushExistStack();
+				JObjectFileIOHelper::LoadJString(tool, name, "Name:");
+				JObjectFileIOHelper::LoadAtomicData(tool, guid, Core::JFileConstant::GetHasObjGuidSymbol());
+				JObjectFileIOHelper::LoadAtomicData(tool, vertexCount, "VertexCount:");
+				JObjectFileIOHelper::LoadAtomicData(tool, indexCount, "IndexCount:");
+				JObjectFileIOHelper::LoadEnumData(tool, meshType, "MeshType:");
 
 				std::vector<Core::JStaticMeshVertex> vertices(vertexCount);
 				std::vector<uint> indices;
 
+				tool.PushExistStack("VerticesData");
 				for (uint i = 0; i < vertexCount; ++i)
 				{
-					JObjectFileIOHelper::LoadVector3(stream, vertices[i].position);
-					JObjectFileIOHelper::LoadVector3(stream, vertices[i].normal);
-					JObjectFileIOHelper::LoadVector2(stream, vertices[i].texC);
-					JObjectFileIOHelper::LoadVector3(stream, vertices[i].tangentU);
+					tool.PushExistStack();
+					JObjectFileIOHelper::LoadVector3(tool, vertices[i].position, "P:");
+					JObjectFileIOHelper::LoadVector3(tool, vertices[i].normal, "N:");
+					JObjectFileIOHelper::LoadVector2(tool, vertices[i].texC, "U:");
+					JObjectFileIOHelper::LoadVector3(tool, vertices[i].tangentU, "T:"); 
+					tool.PopStack();
 				}
-
-				JObjectFileIOHelper::LoadAtomicDataVec(stream, indices);
+				tool.PopStack();
+				JObjectFileIOHelper::LoadAtomicDataVec(tool, indices, "Index");
 
 				DirectX::BoundingBox boundingBox;
 				DirectX::BoundingSphere boundingSphere;
 				bool hasUV;
 				bool hasNormal;
 
-				JObjectFileIOHelper::LoadXMFloat3(stream, boundingBox.Center);
-				JObjectFileIOHelper::LoadXMFloat3(stream, boundingBox.Extents);
-				JObjectFileIOHelper::LoadXMFloat3(stream, boundingSphere.Center);
-				JObjectFileIOHelper::LoadAtomicData(stream, boundingSphere.Radius);
-				JObjectFileIOHelper::LoadAtomicData(stream, hasUV);
-				JObjectFileIOHelper::LoadAtomicData(stream, hasNormal);
-
+				JObjectFileIOHelper::LoadXMFloat3(tool, boundingBox.Center, "BBoxCenter:");
+				JObjectFileIOHelper::LoadXMFloat3(tool, boundingBox.Extents, "BBoxExtents:");
+				JObjectFileIOHelper::LoadXMFloat3(tool, boundingSphere.Center, "SphereCenter:");
+				JObjectFileIOHelper::LoadAtomicData(tool, boundingSphere.Radius, "SphereRadius:");
+				JObjectFileIOHelper::LoadAtomicData(tool, hasUV, "HasUV:");
+				JObjectFileIOHelper::LoadAtomicData(tool, hasNormal, "HasNormal:");
+				tool.PopStack();
 				meshGroup->AddMeshData(Core::JStaticMeshData{ name , guid, std::move(indices),hasUV, hasNormal, std::move(vertices) });
 			} 
-
+			tool.PopStack();
+			tool.PushExistStack("MaterialData");
 			for (uint i = 0; i < meshCount; ++i)
-				meshGroup->GetMeshData(i)->SetMaterial(JObjectFileIOHelper::_LoadHasIden<JMaterial>(stream));
-			stream.close();
+			{
+				//tool.PushExistStack();
+				meshGroup->GetMeshData(i)->SetMaterial(JObjectFileIOHelper::_LoadHasIden<JMaterial>(tool, std::to_string(i)));
+				//tool.PopStack();
+			}
+			tool.Close();
 			return std::move(meshGroup);
 		}
 		static bool WriteAssetData(const std::wstring& path, Core::JMeshGroup* meshGroup)
 		{
-			std::wofstream stream;
-			stream.open(path, std::ios::out | std::ios::binary);
-			if (!stream.is_open())
+			if(meshGroup == nullptr)
 				return false;
 
-			if(meshGroup == nullptr)
+			JFileIOTool tool;
+			if (!tool.Begin(path, JFileIOTool::TYPE::OUTPUT_STREAM))
 				return false;
 
 			Core::JStaticMeshGroup* staticMeshs = static_cast<Core::JStaticMeshGroup*>(meshGroup);
 			const uint meshCount = staticMeshs->GetMeshDataCount();
-			JObjectFileIOHelper::StoreAtomicData(stream, L"MeshCount:", meshCount);
-			JObjectFileIOHelper::StoreAtomicData(stream, L"TotalVertexCount:", staticMeshs->GetTotalVertexCount());
-			JObjectFileIOHelper::StoreAtomicData(stream, L"TotalIndexCount:", staticMeshs->GetTotalIndexCount());
+			JObjectFileIOHelper::StoreAtomicData(tool, meshCount, "MeshCount:");
+			JObjectFileIOHelper::StoreAtomicData(tool, staticMeshs->GetTotalVertexCount(), "TotalVertexCount:");
+			JObjectFileIOHelper::StoreAtomicData(tool, staticMeshs->GetTotalIndexCount(), "TotalIndexCount:");
 
+			tool.PushArrayOwner("MeshData");
 			for (uint i = 0; i < meshCount; ++i)
 			{
 				Core::JStaticMeshData* staticData = static_cast<Core::JStaticMeshData*>(staticMeshs->GetMeshData(i));
 
-				JObjectFileIOHelper::StoreJString(stream, L"Name:", staticData->GetName());
-				JObjectFileIOHelper::StoreAtomicData(stream, Core::JFileConstant::StreamHasObjGuidSymbol(), staticData->GetGuid());
-
+				tool.PushArrayMember();
+				JObjectFileIOHelper::StoreJString(tool, staticData->GetName(), "Name:");
+				JObjectFileIOHelper::StoreAtomicData(tool, staticData->GetGuid(), Core::JFileConstant::GetHasObjGuidSymbol());
+ 
 				const uint vertexCount = staticData->GetVertexCount();
 				const uint indexCount = staticData->GetIndexCount();
 
-				JObjectFileIOHelper::StoreAtomicData(stream, L"VertexCount:", vertexCount);
-				JObjectFileIOHelper::StoreAtomicData(stream, L"IndexCount:", indexCount);
-				JObjectFileIOHelper::StoreEnumData(stream, L"MeshType:", Core::J_MESHGEOMETRY_TYPE::STATIC);
+				JObjectFileIOHelper::StoreAtomicData(tool, vertexCount, "VertexCount:");
+				JObjectFileIOHelper::StoreAtomicData(tool, indexCount, "IndexCount:");
+				JObjectFileIOHelper::StoreEnumData(tool, Core::J_MESHGEOMETRY_TYPE::STATIC, "MeshType:");
 
+				tool.PushArrayOwner("VerticesData");
 				for (uint i = 0; i < vertexCount; ++i)
 				{
+					tool.PushArrayMember();
 					Core::JStaticMeshVertex vertices = staticData->GetVertex(i);
-					JObjectFileIOHelper::StoreVector3(stream, L"P:", vertices.position);
-					JObjectFileIOHelper::StoreVector3(stream, L"N:", vertices.normal);
-					JObjectFileIOHelper::StoreVector2(stream, L"U:", vertices.texC);
-					JObjectFileIOHelper::StoreVector3(stream, L"T:", vertices.tangentU);
+					JObjectFileIOHelper::StoreVector3(tool, vertices.position, "P:");
+					JObjectFileIOHelper::StoreVector3(tool, vertices.normal, "N:");
+					JObjectFileIOHelper::StoreVector2(tool, vertices.texC, "U:");
+					JObjectFileIOHelper::StoreVector3(tool, vertices.tangentU, "T:"); 
+					tool.PopStack(); 
 				}
-				JObjectFileIOHelper::StoreAtomicDataVec(stream, L"Index:", staticData->GetIndexVector(), 6);
+				tool.PopStack();
+				JObjectFileIOHelper::StoreAtomicDataVec(tool, staticData->GetIndexVector(), 8, "Index:");
 
 				const DirectX::BoundingBox boundingBox = staticData->GetBBox();
 				const DirectX::BoundingSphere boundingSphere = staticData->GetBSphere();
 
-				JObjectFileIOHelper::StoreXMFloat3(stream, L"BBoxCenter:", boundingBox.Center);
-				JObjectFileIOHelper::StoreXMFloat3(stream, L"BBoxExtents:", boundingBox.Extents);
-				JObjectFileIOHelper::StoreXMFloat3(stream, L"SphereCenter:", boundingSphere.Center);
-				JObjectFileIOHelper::StoreAtomicData(stream, L"SphereRadius:", boundingSphere.Radius);
-				JObjectFileIOHelper::StoreAtomicData(stream, L"HasUV:", staticData->HasUV());
-				JObjectFileIOHelper::StoreAtomicData(stream, L"HasNormal:", staticData->HasNormal());
+				JObjectFileIOHelper::StoreXMFloat3(tool, boundingBox.Center, "BBoxCenter:");
+				JObjectFileIOHelper::StoreXMFloat3(tool, boundingBox.Extents, "BBoxExtents:");
+				JObjectFileIOHelper::StoreXMFloat3(tool, boundingSphere.Center, "SphereCenter:");
+				JObjectFileIOHelper::StoreAtomicData(tool, boundingSphere.Radius, "SphereRadius:");
+				JObjectFileIOHelper::StoreAtomicData(tool, staticData->HasUV(), "HasUV:");
+				JObjectFileIOHelper::StoreAtomicData(tool, staticData->HasNormal(), "HasNormal:");
+				tool.PopStack();
 			}
-			  
+			tool.PopStack();
+
+			tool.PushArrayOwner("MaterialData");
 			for (uint i = 0; i < meshCount; ++i)
-				JObjectFileIOHelper::_StoreHasIden(stream,  Core::ConnectChildUserPtr<JMaterial>(meshGroup->GetMeshData(i)->GetMaterial()).Get());
-			
-			stream.close();
+			{
+				//tool.PushArrayMember();
+				JObjectFileIOHelper::_StoreHasIden(tool, Core::ConnectChildUserPtr<JMaterial>(meshGroup->GetMeshData(i)->GetMaterial()).Get(), std::to_string(i));
+				//tool.PopStack();
+			}
+			tool.PopStack(); 
+			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			return true;
 		} 
 	public:
@@ -267,17 +288,16 @@ namespace JinEngine
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JStaticMeshGeometry::LoadMetaData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		std::wifstream stream;
-		stream.open(path, std::ios::in | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(path, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		auto loadMetaData = static_cast<JStaticMeshGeometry::LoadMetaData*>(data);
-		if (LoadCommonMetaData(stream, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JObjectFileIOHelper::LoadEnumData(stream, loadMetaData->meshType);
-		stream.close();
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->meshType, "MeshType");
+		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(Core::JDITypeDataBase* data)
@@ -289,15 +309,15 @@ namespace JinEngine
 		JUserPtr<JStaticMeshGeometry>mesh;
 		mesh.ConnnectChild(storeData->obj);
 
-		std::wofstream stream;
-		stream.open(mesh->GetMetaFilePath(), std::ios::out | std::ios::binary);
-		if (!stream.is_open())
+		JFileIOTool tool;
+		if (!tool.Begin(mesh->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		if (StoreCommonMetaData(stream, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
+		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
-		JObjectFileIOHelper::StoreEnumData(stream, L"MeshType:", mesh->GetMeshGeometryType());
+		JObjectFileIOHelper::StoreEnumData(tool, mesh->GetMeshGeometryType(), "MeshType");
+		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

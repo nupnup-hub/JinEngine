@@ -1,11 +1,13 @@
 #include"DepthFunc.hlsl"
 
+//64
 cbuffer cbObject : register(b0)
 {
 	float4x4 objWorld;
 };
+//64
 cbuffer cbPass: register(b1)
-{
+{ 
 	float4x4 viewProj;
 };
 
@@ -22,9 +24,10 @@ VertexOut VS(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;
 	float4 posW = mul(float4(vin.posL, 1.0f), objWorld);
+#if defined(OCCLUSION_QUERY) 
 	vout.posH = mul(posW, viewProj);
-#if defined(OCCLUSION_QUERY)
-	vout.posH.z *= 0.95f;
+#else
+	vout.posH = mul(posW, viewProj);
 #endif
 	return vout;
 }

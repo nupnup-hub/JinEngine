@@ -687,28 +687,35 @@ namespace JinEngine
 			}
 			return -1;
 		}
-		void JEditorPage::StorePage(std::wofstream& stream)
+		void JEditorPage::StorePage(JFileIOTool& tool)
 		{
-			JObjectFileIOHelper::StoreJString(stream, L"PageName:", JCUtil::U8StrToWstr(GetName()));
-			JObjectFileIOHelper::StoreAtomicData(stream, L"PageGuid:", GetGuid());
-			JObjectFileIOHelper::StoreAtomicData(stream, L"Open:", IsOpen());
-			JObjectFileIOHelper::StoreAtomicData(stream, L"Activate:", IsActivated());
-			JObjectFileIOHelper::StoreAtomicData(stream, L"Focus:", IsFocus());
-			JObjectFileIOHelper::_StoreHasIden(stream, JEditorPageShareData::GetOpendPageData(GetPageType()).GetOpenSeleted().Get());
+			JObjectFileIOHelper::StoreJString(tool, GetName(), "PageName:");
+			JObjectFileIOHelper::StoreAtomicData(tool, GetGuid(), "PageGuid:");
+			JObjectFileIOHelper::StoreAtomicData(tool, IsOpen(), "Open:");
+			JObjectFileIOHelper::StoreAtomicData(tool, IsActivated(), "Activate:");
+			JObjectFileIOHelper::StoreAtomicData(tool, IsFocus(), "Focus:");
+			JObjectFileIOHelper::_StoreHasIden(tool, JEditorPageShareData::GetOpendPageData(GetPageType()).GetOpenSeleted().Get(), "OpenSelected");
 			
 			bool hasFocusWindow = focusWindow != nullptr;
-			JObjectFileIOHelper::StoreAtomicData(stream, L"HasFocusWindow:", hasFocusWindow);
+			JObjectFileIOHelper::StoreAtomicData(tool, hasFocusWindow, "HasFocusWindow:");
 			if (hasFocusWindow)
-				JObjectFileIOHelper::StoreJString(stream, L"FocusWindowName:", JCUtil::U8StrToWstr(focusWindow->GetName()));
+				JObjectFileIOHelper::StoreJString(tool, focusWindow->GetName(), "FocusWindowName:");
 			else
-				JObjectFileIOHelper::StoreJString(stream, L"FocusWindowName:", L"None");
+				JObjectFileIOHelper::StoreJString(tool, "None", "FocusWindowName:");
 
-			JObjectFileIOHelper::StoreAtomicData(stream, L"WindowCount:", (uint)windows.size());
+			JObjectFileIOHelper::StoreAtomicData(tool, (uint)windows.size(), "WindowCount");
 			const uint editorWindowCount = (uint)windows.size();
+
+			tool.PushArrayOwner("WindowData");
 			for (uint i = 0; i < editorWindowCount; ++i)
-				windows[i]->StoreEditorWindow(stream);
+			{
+				tool.PushArrayMember();
+				windows[i]->StoreEditorWindow(tool);
+				tool.PopStack();
+			}
+			tool.PopStack();
 		}
-		void JEditorPage::LoadPage(std::wifstream& stream)
+		void JEditorPage::LoadPage(JFileIOTool& tool)
 		{
 			std::wstring guide;
 			std::wstring name;
@@ -721,15 +728,16 @@ namespace JinEngine
 			std::wstring focusWindowName;
 			int windowCount;
 
-			JObjectFileIOHelper::LoadJString(stream, name);
-			JObjectFileIOHelper::LoadAtomicData(stream, pageGuid);
-			JObjectFileIOHelper::LoadAtomicData(stream, isOpen);
-			JObjectFileIOHelper::LoadAtomicData(stream, active);
-			JObjectFileIOHelper::LoadAtomicData(stream, isFocus);
-			openObj = JObjectFileIOHelper::_LoadHasIden(stream);
-			JObjectFileIOHelper::LoadAtomicData(stream, hasFocusWindow);
-			JObjectFileIOHelper::LoadJString(stream, focusWindowName);
-			JObjectFileIOHelper::LoadAtomicData(stream, windowCount);
+			JObjectFileIOHelper::LoadJString(tool, name, "PageName:");
+			JObjectFileIOHelper::LoadAtomicData(tool, pageGuid, "PageGuid:");
+			JObjectFileIOHelper::LoadAtomicData(tool, isOpen, "Open:");
+			JObjectFileIOHelper::LoadAtomicData(tool, active, "Activate:");
+			JObjectFileIOHelper::LoadAtomicData(tool, isFocus, "Focus:");
+			 
+			openObj = JObjectFileIOHelper::_LoadHasIden(tool, "OpenSelected");
+			JObjectFileIOHelper::LoadAtomicData(tool, hasFocusWindow, "HasFocusWindow:");
+			JObjectFileIOHelper::LoadJString(tool, focusWindowName, "FocusWindowName:");
+			JObjectFileIOHelper::LoadAtomicData(tool, windowCount, "WindowCount");
 
 			if (isOpen)
 			{
@@ -758,9 +766,14 @@ namespace JinEngine
 					}
 				}
 			}
-
+			tool.PushExistStack("WindowData");
 			for (uint i = 0; i < windowCount; ++i)
-				windows[i]->LoadEditorWindow(stream);
+			{
+				tool.PushExistStack();
+				windows[i]->LoadEditorWindow(tool);
+				tool.PopStack();
+			}
+			tool.PopStack();
 		}
 	}
 }

@@ -8,7 +8,7 @@ namespace JinEngine
 	REGISTER_ENUM_CLASS(J_LIGHT_TYPE, short, DIRECTIONAL = 0, POINT, SPOT)
 
 	//affect shadow map texture size
-	REGISTER_ENUM_CLASS(J_SHADOW_RESOLUTION, short, LOWEST = 256,
+	REGISTER_ENUM_CLASS(J_SHADOW_RESOLUTION, int, LOWEST = 256,
 		LOW = 512,
 		MEDIUM = 1024,
 		HIGH = 2048,
@@ -21,7 +21,7 @@ namespace JinEngine
 		CSM,
 		CUBE,
 		COUNT
-	};
+	}; 
 
 	class JLightType
 	{

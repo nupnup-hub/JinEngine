@@ -100,22 +100,22 @@ namespace JinEngine
 		if (allNodes.size() > 1)
 		{
 			if (info.useJFrustum)
-				root->Culling(info, Core::J_CULLING_FLAG::NONE);
+				;//root->Culling(info, Core::J_CULLING_FLAG::NONE);
 			else
 				root->Culling(info);
 		}
 
 		if (innerGameObjectCandidate != nullptr)
 		{
-			Core::J_CULLING_FLAG flag = Core::J_CULLING_FLAG::NONE;
+			//Core::J_CULLING_FLAG flag = Core::J_CULLING_FLAG::NONE;
 			JUserPtr<JRenderItem> rItem = innerGameObjectCandidate->GetRenderItem();
 			if (info.useJFrustum)
 			{
-				Core::J_CULLING_RESULT res = info.jFrustum.Contain(rItem->GetBoundingBox(), flag);
-				if (res == Core::J_CULLING_RESULT::CONTAIN || res == Core::J_CULLING_RESULT::INTERSECT)
-					info.cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
-				else if (res == Core::J_CULLING_RESULT::DISJOINT)
-					info.cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+				//Core::J_CULLING_RESULT res = info.jFrustum.Contain(rItem->GetBoundingBox(), flag);
+				//if (res == Core::J_CULLING_RESULT::CONTAIN || res == Core::J_CULLING_RESULT::INTERSECT)
+				//	info.cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+				//else if (res == Core::J_CULLING_RESULT::DISJOINT)
+				//	info.cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 			}
 			else
 			{

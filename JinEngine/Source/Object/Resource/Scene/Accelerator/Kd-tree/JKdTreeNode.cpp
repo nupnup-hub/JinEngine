@@ -67,6 +67,7 @@ namespace JinEngine
 		right = nullptr;
 		DestroyDebugGameObject();
 	}
+	/*
 	void JKdTreeNode::Culling(JAcceleratorCullingInfo& info, Core::J_CULLING_FLAG flag)noexcept
 	{
 		Core::J_CULLING_RESULT res = Contain(info, bbox, flag);
@@ -85,6 +86,7 @@ namespace JinEngine
 			}
 		}
 	}
+	*/
 	void JKdTreeNode::Culling(JAcceleratorCullingInfo& info)noexcept
 	{
 		ContainmentType res = Contain(info, bbox);

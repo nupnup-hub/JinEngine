@@ -1,5 +1,6 @@
 #pragma once
 #include"../../../Core/Geometry/Mesh/JMeshType.h"
+#include"../../../Application/JApplicationEngine.h"
 #include<string>
 
 namespace JinEngine
@@ -48,12 +49,11 @@ namespace JinEngine
 		struct CompileInfo
 		{
 		public:
-			std::wstring fileName;
+			std::wstring filePath;
 			std::string functionName;
 		public:
 			CompileInfo(const std::wstring& fileName, const std::string& functionName)
-				:fileName(fileName), functionName(functionName)
-			{}
+				:filePath(JApplicationEngine::ShaderPath() + L"\\" + fileName), functionName(functionName) {}
 		};
 	public:
 		static std::wstring ConvertToName(const J_GRAPHIC_SHADER_FUNCTION funcFlag, const size_t subPsoID)

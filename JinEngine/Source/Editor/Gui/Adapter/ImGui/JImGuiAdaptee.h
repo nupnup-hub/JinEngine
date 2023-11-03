@@ -18,6 +18,9 @@ namespace JinEngine
 			virtual void IntiailizeBackend(JImGuiInitData* initData) = 0;
 			virtual void ClearBackend() = 0;
 		public:
+			void LoadGuiData()final;
+			void StoreGuiData()final;
+		public:
 			J_GUI_TYPE GetGuiType()const noexcept final;
 #pragma region Color
 		public:
@@ -112,7 +115,7 @@ namespace JinEngine
 			void EndGroup() final;
 			void Text(const std::string& text)const noexcept final;
 			bool CheckBox(const std::string& checkName, bool& v) final;
-			bool Button(const std::string& btnName, const JVector2<float>& jVec2) final;
+			bool Button(const std::string& btnName, const JVector2<float>& jVec2) final; 
 			bool IsTreeNodeOpend(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags) final;
 			bool TreeNodeEx(const std::string& nodeName, J_GUI_TREE_NODE_FLAG flags) final;
 			void TreePop() final;
@@ -123,12 +126,12 @@ namespace JinEngine
 			bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, J_GUI_INPUT_TEXT_FLAG flags) final;
 			bool InputMultilineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, J_GUI_INPUT_TEXT_FLAG flags) final;
 			bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG flags, int step) final;
-			bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG flags, const char* format, float step) final;
+			bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG flags, const uint formatDigit, float step) final;
 		public:
-			bool SliderInt(const std::string& name, int* value, int vMin, int vMax, const char* format, J_GUI_SLIDER_FLAG flags) final;
-			bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const char* format, J_GUI_SLIDER_FLAG flags) final;
-			bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, const char* format, J_GUI_SLIDER_FLAG flags) final;
-			bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const char* format, J_GUI_SLIDER_FLAG flags) final;
+			bool SliderInt(const std::string& name, int* value, int vMin, int vMax,  J_GUI_SLIDER_FLAG flags) final;
+			bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const uint formatDigit, J_GUI_SLIDER_FLAG flags) final;
+			bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG flags) final;
+			bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const uint formatDigit, J_GUI_SLIDER_FLAG flags) final;
 		public:
 			bool BeginTabBar(const std::string& name, J_GUI_TAB_BAR_FLAG flags) final;
 			void EndTabBar() final;
@@ -306,17 +309,19 @@ namespace JinEngine
 			JVector2<float> GetWindowMenuBarSize()const noexcept final;
 			JVector2<float> GetWindowTitleBarSize()const noexcept final;
 			int GetWindowOrder(const GuiID windowID)const noexcept final;
-			bool GetWindowInfo(const std::string& wndName, _Out_ JGuiWindowInfo& info)const noexcept final;
-			bool GetWindowInfo(const GuiID windowID, _Out_ JGuiWindowInfo& info)const noexcept final;
-			bool GetCurrentWindowInfo(_Out_ JGuiWindowInfo& info)const noexcept final;
+			bool GetWindowInfo(const std::string& wndName, _Inout_ JGuiWindowInfo& info)const noexcept final;
+			bool GetWindowInfo(const GuiID windowID, _Inout_ JGuiWindowInfo& info)const noexcept final;
+			bool GetCurrentWindowInfo(_Inout_ JGuiWindowInfo& info)const noexcept final;
 			std::vector<JGuiWindowInfo> GetDisplayedWindowInfo(const bool isSortedBackToFront)const noexcept final;
+			std::set<GuiID> GetWindowOpendTreeNodeID(const GuiID windowID)const noexcept final;
 			void SetNextWindowPos(const JVector2<float>& pos, J_GUI_CONDIITON flag)noexcept final;
 			void SetNextWindowSize(const JVector2<float>& size, J_GUI_CONDIITON flag)noexcept final;
-			void SetNextWindowFocus()noexcept final;
+			void SetNextWindowFocus()noexcept final; 
 			bool IsCurrentWindowFocused(J_GUI_FOCUS_FLAG flag)const noexcept final; 
 			void FocusWindow(const GuiID windowID)final;
 			void FocusCurrentWindow() final;
 			void RestoreFromMaximize(const GuiID windowID, const std::vector<GuiID>& preTabItemID) final;
+			GuiID CalCurrentWindowItemID(const std::string& label)const noexcept final;
 		public:
 			JVector2<float> GetLastItemRectMin()const noexcept final;
 			JVector2<float> GetLastItemRectMax()const noexcept final;
@@ -338,11 +343,11 @@ namespace JinEngine
 			void PopItemWidth()noexcept final;
 #pragma endregion
 #pragma region Docking 
-			bool GetDockNodeInfoByWindowName(const std::string& windowName, _Out_ JGuiDockNodeInfo& info)const noexcept final;
-			bool GetDockNodeInfo(const std::string& dockNodeName, _Out_ JGuiDockNodeInfo& info)const noexcept final;
-			bool GetDockNodeInfo(const GuiID dockID, _Out_ JGuiDockNodeInfo& info)const noexcept final; 
-			bool GetDockNodeHostWindowInfo(const GuiID childDockID, _Out_ JGuiWindowInfo& info) const noexcept final;
-			bool GetCurrentDockNodeInfo(_Out_ JGuiDockNodeInfo& info)const noexcept final;
+			bool GetDockNodeInfoByWindowName(const std::string& windowName, _Inout_ JGuiDockNodeInfo& info)const noexcept final;
+			bool GetDockNodeInfo(const std::string& dockNodeName, _Inout_ JGuiDockNodeInfo& info)const noexcept final;
+			bool GetDockNodeInfo(const GuiID dockID, _Inout_ JGuiDockNodeInfo& info)const noexcept final;
+			bool GetDockNodeHostWindowInfo(const GuiID childDockID, _Inout_ JGuiWindowInfo& info) const noexcept final;
+			bool GetCurrentDockNodeInfo(_Inout_ JGuiDockNodeInfo& info)const noexcept final;
 			bool HasDockNode(const std::string& dockNodeName)const noexcept final;
 			bool CanUseDockHirechary()noexcept final;
 			void BuildDockHirechary(const std::vector<std::unique_ptr<JGuiDockBuildNode>>& nodeVec) final;

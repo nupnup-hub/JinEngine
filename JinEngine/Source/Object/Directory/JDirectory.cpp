@@ -258,7 +258,7 @@ namespace JinEngine
 	}
 	std::wstring JDirectory::GetMetaFilePath()const noexcept
 	{
-		return GetPath() + Core::JFileConstant::GetMetaFileFormat();
+		return GetPath() + Core::JFileConstant::GetMetaFileFormatW();
 	}
 	uint JDirectory::GetChildernDirctoryCount()const noexcept
 	{
@@ -547,12 +547,15 @@ namespace JinEngine
 
 		auto loadData = static_cast<JDirectory::LoadData*>(data);
 		auto& pathData = loadData->pathData;
-		std::wifstream stream;
-		stream.open(pathData.engineMetaFileWPath, std::ios::in | std::ios::binary);
+
+		JFileIOTool tool;
+		if (!tool.Begin(pathData.engineMetaFileWPath, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
+			return nullptr;
+
 		std::unique_ptr<JDirectory::InitData> initData = std::make_unique<JDirectory::InitData>(loadData->parent);
-		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetaData(stream, initData.get());
-		stream.close();
-		 
+		Core::J_FILE_IO_RESULT loadMetaRes = LoadMetaData(tool, initData.get());
+		tool.Close();
+		  
 		if (loadMetaRes == Core::J_FILE_IO_RESULT::SUCCESS)
 		{
 			initData->name = pathData.name;
@@ -570,34 +573,36 @@ namespace JinEngine
 		JUserPtr<JDirectory> dirUser;
 		dirUser.ConnnectChild(storeData->obj);
 
-		std::wofstream stream;
-		stream.open(dirUser->GetMetaFilePath(), std::ios::out | std::ios::binary);
-		Core::J_FILE_IO_RESULT res = StoreMetaData(stream, storeData);
-		stream.close();
+		JFileIOTool tool;
+		if (!tool.Begin(dirUser->GetMetaFilePath(), JFileIOTool::TYPE::JSON))
+			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+		 
+		Core::J_FILE_IO_RESULT res = StoreMetaData(tool, storeData);
+		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return res;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(std::wifstream& stream, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::LoadMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JDirectory::InitData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		if (!stream.is_open() || stream.eof())
+		if(!tool.CanLoad())
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
 
 		auto dirInit = static_cast<JDirectory::InitData*>(data);
-		JObjectFileIOHelper::LoadObjectIden(stream, dirInit->guid, dirInit->flag);
+		JObjectFileIOHelper::LoadObjectIden(tool, dirInit->guid, dirInit->flag);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
-	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(std::wofstream& stream, Core::JDITypeDataBase* data)
+	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreMetaData(JFileIOTool& tool, Core::JDITypeDataBase* data)
 	{
 		if (!Core::JDITypeDataBase::IsValidChildData(data, JDirectory::StoreData::StaticTypeInfo()))
 			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
-		if (!stream.is_open() || stream.eof())
-			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
+		if (!tool.CanStore())
+			return Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 
 		auto dirStore = static_cast<JDirectory::StoreData*>(data);
-		JObjectFileIOHelper::StoreObjectIden(stream, dirStore->obj.Get());
+		JObjectFileIOHelper::StoreObjectIden(tool, dirStore->obj.Get());
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 	void FileInterface::ConvertToActFileData(const JUserPtr<JResourceObject>& rObj) noexcept

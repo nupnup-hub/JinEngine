@@ -5,8 +5,10 @@
 #include "../GameObject/JGameObject.h"
 #include "../GameObject/JGameObjectPrivate.h"
 #include"../../Core/Utility/JCommonUtility.h"
+#include"../../Core/File/JFileIOHelper.h"
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include<fstream> 
+
 namespace JinEngine
 {
 	class JComponent::JComponentImpl : public Core::JTypeImplBase
@@ -63,22 +65,22 @@ namespace JinEngine
 		return JObject::InitData::IsValidData() && owner != nullptr;
 	}
 
-	JComponent::LoadData::LoadData(JUserPtr<JGameObject> owner, std::wifstream& stream, const size_t typeGuid)
-		:owner(owner), stream(stream), loadTypeInfo(_JReflectionInfo::Instance().GetTypeInfo(typeGuid))
+	JComponent::LoadData::LoadData(JUserPtr<JGameObject> owner, JFileIOTool& tool, const size_t typeGuid)
+		:owner(owner), tool(tool), loadTypeInfo(_JReflectionInfo::Instance().GetTypeInfo(typeGuid))
 	{}
 	JComponent::LoadData::~LoadData()
 	{}
 	bool JComponent::LoadData::IsValidData()const noexcept
 	{
-		return owner != nullptr && stream.is_open() && loadTypeInfo != nullptr;
+		return owner != nullptr && tool.CanLoad() && loadTypeInfo != nullptr;
 	}
 
-	JComponent::StoreData::StoreData(JUserPtr<JComponent> comp, std::wofstream& stream)
-		:JObject::StoreData(comp), stream(stream)
+	JComponent::StoreData::StoreData(JUserPtr<JComponent> comp, JFileIOTool& tool)
+		:JObject::StoreData(comp), tool(tool)
 	{}
 	bool JComponent::StoreData::IsValidData()const noexcept
 	{
-		return JObject::StoreData::IsValidData() && stream.is_open();
+		return JObject::StoreData::IsValidData() && tool.CanStore();
 	}
 
 	J_OBJECT_TYPE JComponent::GetObjectType()const noexcept
@@ -169,13 +171,13 @@ namespace JinEngine
 		comp->impl->DeRegisterInstance();
 	}
 
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(const JUserPtr<JGameObject>& invoker, std::wifstream& stream, const size_t typeGuid)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateLoadAssetDIData(const JUserPtr<JGameObject>& invoker, JFileIOTool& tool, const size_t typeGuid)
 	{
-		return std::make_unique<JComponent::LoadData>(invoker, stream, typeGuid);
+		return std::make_unique<JComponent::LoadData>(invoker, tool, typeGuid);
 	}
-	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateStoreAssetDIData(const JUserPtr<JComponent>& comp, std::wofstream& stream)
+	std::unique_ptr<Core::JDITypeDataBase> AssetDataIOInterface::CreateStoreAssetDIData(const JUserPtr<JComponent>& comp, JFileIOTool& tool)
 	{
-		return std::make_unique<JComponent::StoreData>(comp, stream);
+		return std::make_unique<JComponent::StoreData>(comp, tool);
 	}
 
 	void ActivateInterface::Activate(const JUserPtr<JComponent>& ptr)noexcept

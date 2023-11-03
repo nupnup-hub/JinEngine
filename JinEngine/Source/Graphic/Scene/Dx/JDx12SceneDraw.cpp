@@ -17,12 +17,12 @@
 #include"../../FrameResource/JCameraConstants.h" 
 #include"../../FrameResource/JLightConstants.h"     
 #include"../../Shader/Dx/JDx12ShaderDataHolder.h"
-#include"../../Utility/JD3DUtility.h"
+#include"../../Utility/Dx/JD3DUtility.h"
 #include"../../../Core/Exception/JExceptionMacro.h"
 #include"../../../Object/Component/Animator/JAnimator.h" 
-#include"../../../Object/Component/Camera/JCamera.h" 
+#include"../../../Object/Component/Camera/JCamera.h"  
 #include"../../../Object/Component/Transform/JTransform.h" 
-#include"../../../Object/Component/RenderItem/JRenderItem.h" 
+#include"../../../Object/Component/RenderItem/JRenderItem.h"  
 #include"../../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../../Object/Resource/Material/JMaterial.h"
 #include"../../../Object/Resource/Shader/JShader.h"
@@ -30,6 +30,7 @@
 #include"../../../Object/GameObject/JGameObject.h"
 #include"../../../Application/JApplicationEngine.h"
  
+
 namespace JinEngine::Graphic
 {
 	namespace Private
@@ -57,36 +58,23 @@ namespace JinEngine::Graphic
 		{
 			return std::vector<CD3DX12_STATIC_SAMPLER_DESC>
 			{
-				//PointWrap
+
+				//pointClamp
 				CD3DX12_STATIC_SAMPLER_DESC(0, // shaderRegister
 					D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
-					D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
-					D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
-					D3D12_TEXTURE_ADDRESS_MODE_WRAP), // addressW
+					D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+					D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+					D3D12_TEXTURE_ADDRESS_MODE_CLAMP), // addressW
 
-					//pointClamp
+					//linearWrap
 					CD3DX12_STATIC_SAMPLER_DESC(1, // shaderRegister
-						D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP), // addressW
-
-						//linearWrap
-					CD3DX12_STATIC_SAMPLER_DESC(2, // shaderRegister
 						D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
 						D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
 						D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
 						D3D12_TEXTURE_ADDRESS_MODE_WRAP), // addressW
 
-						//linearClamp
-					CD3DX12_STATIC_SAMPLER_DESC(3, // shaderRegister
-						D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP), // addressW
-
 						//anisotropicWrap
-					CD3DX12_STATIC_SAMPLER_DESC(4, // shaderRegister
+					CD3DX12_STATIC_SAMPLER_DESC(2, // shaderRegister
 						D3D12_FILTER_ANISOTROPIC, // filter
 						D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
 						D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
@@ -94,18 +82,9 @@ namespace JinEngine::Graphic
 						0.0f,                             // mipLODBias
 						8),				                  // maxAnisotropy
 
-						//anisotropicClamp
-					CD3DX12_STATIC_SAMPLER_DESC(5, // shaderRegister
-						D3D12_FILTER_ANISOTROPIC, // filter
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
-						0.0f,                              // mipLODBias
-						8),                                // maxAnisotropy
-
 					//shadow cube not cmp
-					CD3DX12_STATIC_SAMPLER_DESC(6, // shaderRegister
-						D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, // filter
+					CD3DX12_STATIC_SAMPLER_DESC(3, // shaderRegister
+						D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
 						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
 						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
 						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
@@ -115,29 +94,18 @@ namespace JinEngine::Graphic
 						D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK),
 
 					//shadow pcss find bloker
-					CD3DX12_STATIC_SAMPLER_DESC(7, // shaderRegister
-						//D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT,
-						D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
-						0.0f,                               // mipLODBias
-						16,                                 // maxAnisotropy
-						D3D12_COMPARISON_FUNC_LESS_EQUAL),
-
-					//shadow pcss filter
-					CD3DX12_STATIC_SAMPLER_DESC(8, // shaderRegister
-						D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR,
+					CD3DX12_STATIC_SAMPLER_DESC(4, // shaderRegister
+						D3D12_FILTER_MIN_MAG_MIP_LINEAR,
 						//D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
+						D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressU
+						D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressV
+						D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressW
 						0.0f,                               // mipLODBias
 						16,                                 // maxAnisotropy
 						D3D12_COMPARISON_FUNC_LESS_EQUAL),
 
 					//shadow linear point cmp
-					CD3DX12_STATIC_SAMPLER_DESC(9, // shaderRegister
+					CD3DX12_STATIC_SAMPLER_DESC(5, // shaderRegister
 						D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
 						D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressU
 						D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressV
@@ -152,7 +120,7 @@ namespace JinEngine::Graphic
 		{
 			switch (primitiveType)
 			{
-			case JinEngine::J_SHADER_PRIMITIVE_TYPE::DEFAULT:
+			case JinEngine::J_SHADER_PRIMITIVE_TYPE::TRIANGLE:
 				return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;	// defualt value
 			case JinEngine::J_SHADER_PRIMITIVE_TYPE::LINE:
 				return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
@@ -257,7 +225,7 @@ namespace JinEngine::Graphic
 
 		const int dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, 0);
 		const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, 0);
- 
+
 		ID3D12Resource* dsResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
 		ID3D12Resource* rtResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtvVecIndex);
 
@@ -325,25 +293,7 @@ namespace JinEngine::Graphic
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = dx12Gm->GetCpuDsvDescriptorHandle(dsvHeapIndex);
 
 		JD3DUtility::ResourceTransition(cmdList, dsResource, D3D12_RESOURCE_STATE_DEPTH_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
-		JD3DUtility::ResourceTransition(cmdList, rtResource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);	 
-		
-		ID3D12Resource* hdResource = nullptr;
-		if (cInterface.HasCullingData(J_CULLING_TYPE::HD_OCCLUSION))
-		{
-			hdResource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, cInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION));
-			JD3DUtility::ResourceTransition(cmdList, hdResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PREDICATION);
-		}
-		/*else
-		{			
-			//Debug
-			auto firstcam = helper.scene->FindFirstSelectedCamera(false);
-			if (firstcam != nullptr && firstcam->AllowHdOcclusionCulling())
-			{
-				auto cullInterface = firstcam->CullingUserInterface();
-				hdResource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, cullInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION));
-				JD3DUtility::ResourceTransition(cmdList, hdResource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PREDICATION);
-			}
-		}*/
+		JD3DUtility::ResourceTransition(cmdList, rtResource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 		cmdList->ClearRenderTargetView(rtv, dx12Gm->GetBackBufferClearColor(), 0, nullptr);
 		cmdList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
@@ -357,12 +307,9 @@ namespace JinEngine::Graphic
 		const std::vector<JUserPtr<JGameObject>>& objVec02 = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_OBJECT, Core::J_MESHGEOMETRY_TYPE::STATIC);
 		const std::vector<JUserPtr<JGameObject>>& objVec03 = helper.GetGameObjectCashVec(J_RENDER_LAYER::SKY, Core::J_MESHGEOMETRY_TYPE::STATIC);
 		const std::vector<JUserPtr<JGameObject>>& objVec04 = helper.GetGameObjectCashVec(J_RENDER_LAYER::DEBUG_UI, Core::J_MESHGEOMETRY_TYPE::STATIC);
- 
+		 
 		DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec00, helper, JDrawCondition(helper, false, true, helper.allowDrawDebug));
 		DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec01, helper, JDrawCondition(helper, helper.scene->IsActivatedSceneTime(), true, helper.allowDrawDebug));
-		DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec01, helper, JDrawCondition(helper, helper.scene->IsActivatedSceneTime(), true, helper.allowDrawDebug));
-		if (helper.allowOcclusionCulling && helper.cam->AllowHdOcclusionCulling())
-			cmdList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
 		if (helper.allowDrawDebug)
 			DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec02, helper, JDrawCondition());
 		DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec03, helper, JDrawCondition());
@@ -379,12 +326,9 @@ namespace JinEngine::Graphic
 			cmdList->OMSetRenderTargets(1, &rtv, true, &editorDsv);
 			DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec04, helper, JDrawCondition());
 			JD3DUtility::ResourceTransition(cmdList, debugResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
-		}
-
+		}  
 		JD3DUtility::ResourceTransition(cmdList, rtResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
 		JD3DUtility::ResourceTransition(cmdList, dsResource, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
-		if (hdResource != nullptr)
-			JD3DUtility::ResourceTransition(cmdList, hdResource, D3D12_RESOURCE_STATE_PREDICATION, D3D12_RESOURCE_STATE_COMMON);
 	}
 	void JDx12SceneDraw::DrawSceneRenderTargetMultiThread(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper)
 	{
@@ -426,11 +370,10 @@ namespace JinEngine::Graphic
 
 		DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec00, helper, JDrawCondition(helper, false, true, helper.allowDrawDebug));
 		DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec01, helper, JDrawCondition(helper, helper.scene->IsActivatedSceneTime(), true, helper.allowDrawDebug));
-		if (helper.allowOcclusionCulling && helper.cam->AllowHdOcclusionCulling())
-			cmdList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
+		//if (helper.allowOcclusionCulling && helper.cam->AllowHdOcclusionCulling())
+		//	cmdList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
 		if (helper.allowDrawDebug)
 			DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec02, helper, JDrawCondition());
-
 		DrawGameObject(cmdList, dx12Frame, dx12Gm, dx12Cm, objVec03, helper, JDrawCondition());
 	}
 	void JDx12SceneDraw::DrawSceneDebugUI(const JGraphicSceneDrawSet* drawSet, const JDrawHelper& helper)
@@ -483,26 +426,6 @@ namespace JinEngine::Graphic
 		const JDrawHelper& helper,
 		const JDrawCondition& condition)
 	{
-		ID3D12Resource* hdOccResource = nullptr;
-		if (condition.allowHDOcclusionCulling && helper.cam->AllowHdOcclusionCulling())
-		{
-			auto cullInterface = helper.cam->CullingUserInterface();
-			hdOccResource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, cullInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION));
-		}
-
-		//Debug
-		//Scene Observer로 main cam hd occ Debug시 가끔 main cam에 hd occ 가시성결과가 비정확할때가 있는데(hd occ opion on, off시 한번이라도 업데이트 하면 정상작동)
-		//Debug 이외에는 문제가 발생하지않으며 그 문제도 한번에 업데이트로 없어지므로 굳이 특정하지않고 사용하도록한다.
-		/*if (condition.allowHDOcclusionCulling && condition.allowAllCullingResult)
-		{
-			auto firstcam = helper.scene->FindFirstSelectedCamera(false);
-			if (firstcam != nullptr && firstcam->AllowHdOcclusionCulling())
-			{ 
-				auto cullInterface = firstcam->CullingUserInterface();
-				hdOccResource = dx12Cm->GetResource(J_CULLING_TYPE::HD_OCCLUSION, cullInterface.GetArrayIndex(J_CULLING_TYPE::HD_OCCLUSION));
-			}
-		}*/
-		const bool canUseHd = hdOccResource != nullptr;
 		uint objectCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JObjectConstants));
 		uint skinCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JAnimationConstants));
 
@@ -514,34 +437,34 @@ namespace JinEngine::Graphic
 		uint ed = gameObjCount;
 		if (helper.CanDispatchWorkIndex())
 			helper.DispatchWorkIndex(gameObjCount, st, ed);
-
-		auto cullUser = helper.GetCullInterface(); 
+		 
+		auto cullUser = helper.GetCullInterface();
 		for (uint i = st; i < ed; ++i)
 		{
 			JRenderItem* renderItem = gameObject[i]->GetRenderItem().Get();
 			const uint objFrameIndex = helper.GetObjectFrameIndex(renderItem);
-			const uint boundFrameIndex = helper.GetBoundingFrameIndex(renderItem);
+			const uint boundFrameIndex = helper.GetBoundingFrameIndex(renderItem);  
 
 			if (condition.allowCulling && cullUser.IsCulled(boundFrameIndex))
 				continue;
 
 			if (condition.allowAllCullingResult && helper.RefelectOtherCamCullig(boundFrameIndex))
 				continue;
-
+			 
 			JUserPtr<JMeshGeometry> mesh = renderItem->GetMesh();
 			const D3D12_VERTEX_BUFFER_VIEW vertexPtr = dx12Gm->VertexBufferView(mesh);
 			const D3D12_INDEX_BUFFER_VIEW indexPtr = dx12Gm->IndexBufferView(mesh);
 
 			cmdList->IASetVertexBuffers(0, 1, &vertexPtr);
 			cmdList->IASetIndexBuffer(&indexPtr);
-			cmdList->IASetPrimitiveTopology(renderItem->GetPrimitiveType());
-
+			cmdList->IASetPrimitiveTopology(JD3DUtility::ConvertRenderPrimitive(renderItem->GetPrimitiveType()));
+			 
 			JAnimator* animator = gameObject[i]->GetComponentWithParent<JAnimator>().Get();
 			const uint submeshCount = (uint)mesh->GetTotalSubmeshCount();
 
 			if (condition.allowDebugOutline && gameObject[i]->IsSelected())
 				cmdList->OMSetStencilRef(Constants::outlineStencilRef);
-			 
+
 			for (uint j = 0; j < submeshCount; ++j)
 			{
 				const JShader* shader = renderItem->GetValidMaterial(j)->GetShader().Get();
@@ -561,14 +484,12 @@ namespace JinEngine::Graphic
 				{
 					D3D12_GPU_VIRTUAL_ADDRESS skinObjCBAddress = skinCB->GetGPUVirtualAddress() + helper.GetAnimationFrameIndex(animator) * skinCBByteSize;
 					cmdList->SetGraphicsRootConstantBufferView(Constants::skinCBIndex, skinObjCBAddress);
-				}
-				if (canUseHd)
-					cmdList->SetPredication(hdOccResource, boundFrameIndex * 8, D3D12_PREDICATION_OP_EQUAL_ZERO);
+				} 
 				cmdList->DrawIndexedInstanced(mesh->GetSubmeshIndexCount(j), 1, mesh->GetSubmeshStartIndexLocation(j), mesh->GetSubmeshBaseVertexLocation(j), 0);
 			}
 			if (condition.allowDebugOutline && gameObject[i]->IsSelected())
 				cmdList->OMSetStencilRef(Constants::commonStencilRef);
-		}
+		} 
 	}
 	void JDx12SceneDraw::NotifyChangeGraphicShaderMacro(JGraphicDevice* device, const JGraphicInfo& info)
 	{
@@ -613,8 +534,8 @@ namespace JinEngine::Graphic
 		std::wstring pixelShaderPath = JApplicationEngine::ShaderPath() + L"\\PixelShader.hlsl";
 
 		auto d3dMacro = JDxShaderDataUtil::ToD3d12Macro(initData.macro[initData.layoutType]);
-		holder->vs = JD3DUtility::CompileShader(vertexShaderPath, d3dMacro.data(), "VS", "vs_5_1");
-		holder->ps = JD3DUtility::CompileShader(pixelShaderPath, d3dMacro.data(), "PS", "ps_5_1");
+		holder->vs = JDxShaderDataUtil::CompileShader(vertexShaderPath, d3dMacro.data(), "VS", "vs_5_1");
+		holder->ps = JDxShaderDataUtil::CompileShader(pixelShaderPath, d3dMacro.data(), "PS", "ps_5_1");
 	}
 	void JDx12SceneDraw::StuffInputLayout(_Out_ std::vector<D3D12_INPUT_ELEMENT_DESC>& outInputLayout, const J_SHADER_VERTEX_LAYOUT vertexLayoutFlag)
 	{
@@ -666,7 +587,7 @@ namespace JinEngine::Graphic
 			};
 		}
 
-		newShaderPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		newShaderPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT); 
 		newShaderPso.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 		if (extraType == J_GRAPHIC_SHADER_EXTRA_FUNCTION::STENCIL_WRITE_ALWAYS)
 		{
@@ -789,8 +710,8 @@ namespace JinEngine::Graphic
 			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 		// create a root signature with a single slot which points to a descriptor length consisting of a single constant buffer
-		ComPtr<ID3DBlob> serializedRootSig = nullptr;
-		ComPtr<ID3DBlob> errorBlob = nullptr;
+		Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSig = nullptr;
+		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
 		HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
 			serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
 

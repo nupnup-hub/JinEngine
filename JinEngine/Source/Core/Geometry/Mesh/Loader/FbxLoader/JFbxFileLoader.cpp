@@ -400,7 +400,7 @@ namespace JinEngine
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 					idx[j] = index;
-					positionXm[j] = controlPoint[controlPointIndex].position.ToXmF();
+					positionXm[j] = controlPoint[controlPointIndex].position.ToSimilar<XMFLOAT3>();
 
 					hasUv = LoadTextureUV(mesh, controlPointIndex, mesh->GetTextureUVIndex(i, index), textureXm[j]);
 					hasNormal = LoadNormal(mesh, controlPointIndex, vertexCount, normalXm[j]);
@@ -462,7 +462,7 @@ namespace JinEngine
 					uint index = indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 					idx[j] = index;
-					positionXm[j] = controlPoint[controlPointIndex].position.ToXmF();
+					positionXm[j] = controlPoint[controlPointIndex].position.ToSimilar<XMFLOAT3>();
 
 					hasUv = LoadTextureUV(mesh, controlPointIndex, mesh->GetTextureUVIndex(i, index), textureXm[j]);
 					hasNormal = LoadNormal(mesh, controlPointIndex, vertexCount, normalXm[j]);

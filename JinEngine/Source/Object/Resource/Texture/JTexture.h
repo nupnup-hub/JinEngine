@@ -1,4 +1,5 @@
 #pragma once
+#include"JTextureType.h"
 #include"../JResourceObject.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceType.h" 
 #include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
@@ -43,6 +44,7 @@ namespace JinEngine
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
 		public:
 			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
+			J_TEXTURE_RESOLUTION resoultion;
 		public:
 			LoadMetaData(const JUserPtr<JDirectory>& directory);
 		};
@@ -65,7 +67,10 @@ namespace JinEngine
 		uint GetTextureWidth()const noexcept;
 		uint GetTextureHeight()const noexcept;
 		Graphic::J_GRAPHIC_RESOURCE_TYPE GetTextureType()const noexcept;
+		J_TEXTURE_RESOLUTION GetTextureResolution()const noexcept;
+	public:
 		void SetTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE textureType)noexcept;
+		void SetTextureResolution(const J_TEXTURE_RESOLUTION resolutionType)noexcept;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;  

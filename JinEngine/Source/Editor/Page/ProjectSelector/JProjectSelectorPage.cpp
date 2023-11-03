@@ -10,7 +10,7 @@ namespace JinEngine
 {
 	namespace Editor
 	{
-		JProjectSelectorPage::JProjectSelectorPage()
+		JProjectSelectorPage::JProjectSelectorPage(std::unique_ptr<JEditorProjectInterface>&& pInterface)
 			: JEditorPage("ProjectSelectorPage",
 				std::make_unique<JEditorAttribute>(),
 				J_EDITOR_PAGE_NONE)
@@ -18,7 +18,8 @@ namespace JinEngine
 			projectHub = std::make_unique<JProjectSelectorHub>("Project Selector",
 				std::make_unique<JEditorAttribute>(),
 				GetPageType(), 
-				J_EDITOR_WINDOW_NONE);
+				J_EDITOR_WINDOW_NONE,
+				std::move(pInterface));
 
 			std::vector<JEditorWindow*> windows
 			{
@@ -80,7 +81,7 @@ namespace JinEngine
 			backgroundTexture.Clear();
 			JEditorPage::DoDeActivate();
 		}
-		void JProjectSelectorPage::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj)
+		void JProjectSelectorPage::OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)
 		{
 			if (iden == GetGuid())
 				return;
