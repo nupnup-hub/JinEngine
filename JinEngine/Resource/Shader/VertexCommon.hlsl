@@ -1,3 +1,4 @@
+
 struct MaterialData
 {
 	float4 albedoColor;
@@ -29,22 +30,24 @@ cbuffer cbSkinned : register(b1)
 	float4x4 objBoneTransforms[256];
 };
 
-//432
+//432 => 240
 cbuffer cbCamera : register(b4)
 {
-	float4x4 camView;
-	float4x4 camInvView;
+	//float4x4 camView;
+	//float4x4 camInvView;
 	float4x4 camProj;
-	float4x4 camInvProj;
+	float4x4 camProjTex;
+	//float4x4 camInvProj;
 	float4x4 camViewProj;
-	float4x4 camInvViewProj;
+	//float4x4 camViewProjTex;
+	//float4x4 camInvViewProj;
 	float2 camRenderTargetSize;
 	float2 camInvRenderTargetSize;
 	float3 camEyePosW;
 	float camNearZ;
 	float camFarZ;
 	uint csmLocalIndex; //aligned by registered time
-	uint cameraPad00;
+	int cameraPad00;
 	uint cameraPad01;
 };
 

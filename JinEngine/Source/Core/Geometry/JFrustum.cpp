@@ -111,7 +111,7 @@ namespace JinEngine::Core
 	{
 		XMVECTOR q = XMLoadFloat4(&frustum.Orientation);
 
-		XMVECTOR f = XMVector3Normalize(XMVector3Rotate(JVector3F::Forward().ToXmV(), q));
+		XMVECTOR f = XMVector3Normalize(XMVector3Rotate(JVector3F::Front().ToXmV(), q));
 		XMVECTOR u = XMVector3Normalize(XMVector3Rotate(JVector3F::Up().ToXmV(), q));
 		XMVECTOR r = XMVector3Normalize(XMVector3Rotate(JVector3F::Right().ToXmV(), q));
 

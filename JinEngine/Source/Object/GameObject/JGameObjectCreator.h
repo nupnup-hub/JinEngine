@@ -39,9 +39,9 @@ namespace JinEngine
 			const J_OBJECT_FLAG flag,
 			const J_DEFAULT_SHAPE meshType,
 			const J_DEFAULT_MATERIAL matType, 
-			const bool isDebugUI,
-			const bool isLine,
-			const J_RENDERITEM_ACCELERATOR_MASK acceleratorMask); 
+			const bool isDebugUI = false,
+			const bool isLine = false,
+			const J_RENDERITEM_ACCELERATOR_MASK acceleratorMask = ACCELERATOR_NOT_ALLOW_ALL);
 		static JUserPtr<JGameObject> CreateDebugLineShape(JUserPtr<JGameObject> parent,
 			const J_OBJECT_FLAG flag,
 			const J_DEFAULT_SHAPE meshType,

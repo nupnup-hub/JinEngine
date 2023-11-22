@@ -335,42 +335,42 @@ namespace JinEngine
 					} 
 					case J_DEFAULT_MATERIAL::DEBUG_RED:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.75f, 0.1f, 0.1f, 0.8f), false);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.85f, 0.2f, 0.2f, 0.9f), false);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_GREEN:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.1f, 0.75f, 0.1f, 0.8f), false);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.2f, 0.85f, 0.2f, 0.9f), false);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_BLUE:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.1f, 0.1f, 0.75f, 0.8f), false);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.2f, 0.2f, 0.85f, 0.9f), false);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_YELLOW:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.75f, 0.75f, 0.05f, 0.8f), false);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.85f, 0.85f, 0.05f, 0.9f), false);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_LINE_RED:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.75f, 0.1f, 0.1f, 0.8f), true);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.85f, 0.2f, 0.2f, 0.9f), true);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_LINE_GREEN:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.1f, 0.75f, 0.1f, 0.8f), true);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.2f, 0.85f, 0.2f, 0.9f), true);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_LINE_BLUE:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.1f, 0.1f, 0.75f, 0.8f), true);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.2f, 0.2f, 0.75f, 0.9f), true);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW:
 					{
-						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.75f, 0.75f, 0.05f, 0.8f), true);
+						newMaterial = debugLam(matDir, name, guid, flag, JVector4<float>(0.75f, 0.75f, 0.05f, 0.9f), true);
 						break;
 					}
 					case J_DEFAULT_MATERIAL::DEBUG_LINE_GRAY:
@@ -403,7 +403,7 @@ namespace JinEngine
 			auto createLineBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLineBoundingBox(); };
 			auto createTriangleBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateTriangleBoundingBox(); };
 			auto createBFrustumLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingFrustum(); };
-			auto createCircleLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCircle(1.2f, 1.1f); };
+			auto createCircleLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCircle(0.5f, 0.4988f); };
 			auto createScaleArrowLam = [](JDefaultGeometryGenerator& geoGen)
 			{
 				Core::JStaticMeshData cyilinderMesh = geoGen.CreateCylinder(0.125f, 0.125f, 2.04f, 10, 10);
@@ -423,7 +423,8 @@ namespace JinEngine
 				cyilinderMesh.SetName(L"ScaleArrow");
 				return cyilinderMesh;
 			};
-			auto createLineLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLine(3); };
+			auto createLineLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLine(4); };
+			auto createBConeLineLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingCone(); };
 
 			using CreateStaticMesh = Core::JStaticCallableType<Core::JStaticMeshData, JDefaultGeometryGenerator&>;
 			std::unordered_map<J_DEFAULT_SHAPE, CreateStaticMesh::Callable> callableVec
@@ -438,7 +439,8 @@ namespace JinEngine
 				{J_DEFAULT_SHAPE::BOUNDING_FRUSTUM, (CreateStaticMesh::Ptr)createBFrustumLam},
 				{J_DEFAULT_SHAPE::CIRCLE, (CreateStaticMesh::Ptr)createCircleLam},
 				{J_DEFAULT_SHAPE::SCALE_ARROW, (CreateStaticMesh::Ptr)createScaleArrowLam},
-				{J_DEFAULT_SHAPE::LINE, (CreateStaticMesh::Ptr)createLineLam}
+				{J_DEFAULT_SHAPE::LINE, (CreateStaticMesh::Ptr)createLineLam},
+				{J_DEFAULT_SHAPE::BOUNDING_CONE_LINE, (CreateStaticMesh::Ptr)createBConeLineLam}
 			};
 
 			JDefaultGeometryGenerator geoGen;

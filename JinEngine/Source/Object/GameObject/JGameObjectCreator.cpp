@@ -8,6 +8,7 @@
 #include"../Component/RenderItem/JRenderItem.h"
 #include"../Component/Camera/JCamera.h"
 #include"../Component/JComponentCreator.h"
+#include"../Component/JComponentHint.h"
 #include"../../Core/Guid/JGuidCreator.h"
 #include"../../Core/Identity/JIdenCreator.h"
  
@@ -27,6 +28,8 @@ namespace JinEngine
 				return L"PointLight";
 			case JinEngine::J_LIGHT_TYPE::SPOT:
 				return L"SpotLight";
+			case JinEngine::J_LIGHT_TYPE::RECT:
+				return L"RectLight";
 			case JinEngine::J_LIGHT_TYPE::COUNT:
 				break;
 			default:
@@ -39,7 +42,7 @@ namespace JinEngine
 	class JGameObject;
 	std::wstring JGameObjectCreatorInterface::GetDefaultLitName(const J_LIGHT_TYPE type)noexcept
 	{
-		return Private::GetDefualtLightName(type);
+		return JCUtil::StrToWstr(Core::GetName(type, true, true));
 	}
 	JUserPtr<JGameObject> JGameObjectCreatorInterface::CreateRoot(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JScene>& ownerScene)
 	{

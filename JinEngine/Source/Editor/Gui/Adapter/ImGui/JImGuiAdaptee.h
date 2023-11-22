@@ -115,7 +115,8 @@ namespace JinEngine
 			void EndGroup() final;
 			void Text(const std::string& text)const noexcept final;
 			bool CheckBox(const std::string& checkName, bool& v) final;
-			bool Button(const std::string& btnName, const JVector2<float>& jVec2) final; 
+			bool Button(const std::string& btnName, const JVector2<float>& jVec2, J_GUI_BUTTON_FLAG flag) final;
+			bool ArrowButton(const std::string& name, const JVector2<float>& jVec2, const float arrowScale, J_GUI_BUTTON_FLAG flag, J_GUI_CARDINAL_DIR dir)final;
 			bool IsTreeNodeOpend(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags) final;
 			bool TreeNodeEx(const std::string& nodeName, J_GUI_TREE_NODE_FLAG flags) final;
 			void TreePop() final;
@@ -291,8 +292,9 @@ namespace JinEngine
 			void NewLine()noexcept final;
 			void SameLine()noexcept final;
 			void Separator()noexcept final;
-			void Indent()noexcept final;
-			void UnIndent()noexcept final;
+			void Indent(const float width)noexcept final;
+			void UnIndent(const float width)noexcept final;
+			float IndentMovementPixel(const float width)const noexcept final;
 		public:
 			// Work Area: Position of the viewport minus task bars, menus bars, status bars (>= Pos)
 			JVector2<float> GetMainWorkPos()const noexcept final;

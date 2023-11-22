@@ -43,6 +43,15 @@ namespace JinEngine
 			Graphic::JFrameDirty>;
 		//first extra is occlusion 
 	}
+	namespace Private
+	{
+		static constexpr float minSsaoRadius = 0.0f;
+		static constexpr float maxSsaoRadius = 16.0f;
+		static constexpr float minSsaoFade = minSsaoRadius;
+		static constexpr float maxSsaoFade = maxSsaoRadius;
+		static constexpr float minSsaoEpsilon = minSsaoRadius;
+		static constexpr float maxSsaoEpsilon = maxSsaoRadius;
+	}
 
 	class JCamera::JCameraImpl : public Core::JTypeImplBase,
 		public CameraFrameUpdate,
@@ -65,8 +74,11 @@ namespace JinEngine
 		JMatrix4x4 mProj;
 		DirectX::BoundingFrustum mCamFrustum;
 	public:
+		JVector2F rtSizeRate = JVector2F::One();
+	public:
 		//JTransform* ownerTransform;
 		J_CAMERA_STATE camState = J_CAMERA_STATE::RENDER;
+		REGISTER_GUI_GROUP(camera)
 		// Cache frustum properties.
 		REGISTER_PROPERTY_EX(camNear, GetNear, SetNear, GUI_SLIDER(Constants::minCamFrustumNear, Constants::maxCamFrustumFar, true))
 		float camNear = 0.0f;
@@ -90,6 +102,14 @@ namespace JinEngine
 		REGISTER_PROPERTY_EX(occlusionCulingFrequency, GetOcclusionCullingFrequency, SetOcclusionCullingFrequency, GUI_SLIDER(Graphic::Constants::cullingUpdateFrequencyMin, Graphic::Constants::cullingUpdateFrequencyMax, true))
 		float occlusionCulingFrequency = 0;
 	public:
+		REGISTER_GUI_GROUP(Ssao)
+		REGISTER_METHOD_GUI_WIDGET(SsaoRadius, GetSsaoRadius, SetSsaoRadius, GUI_SLIDER(Private::minSsaoRadius, Private::maxSsaoRadius, true, false, 3, GUI_GROUP_USER(Ssao)))
+		REGISTER_METHOD_GUI_WIDGET(SsaoFadeStart, GetSsaoFadeStart, SetSsaoFadeStart, GUI_SLIDER(Private::minSsaoFade, Private::maxSsaoFade, true, false, 3, GUI_GROUP_USER(Ssao)))
+		REGISTER_METHOD_GUI_WIDGET(SsaoFadeEnd, GetSsaoFadeEnd, SetSsaoFadeEnd, GUI_SLIDER(Private::minSsaoFade, Private::maxSsaoFade, true, false, 3, GUI_GROUP_USER(Ssao)))
+		REGISTER_METHOD_GUI_WIDGET(SsaoSurfaceEpsilon, GetSsaoSurfaceEpsilon, SetSsaoSurfaceEpsilon, GUI_SLIDER(Private::minSsaoEpsilon, Private::maxSsaoEpsilon, true, false, 3, GUI_GROUP_USER(Ssao)))
+		REGISTER_METHOD_GUI_WIDGET(SsaoType, GetSsaoType, SetSsaoType, GUI_ENUM_COMBO(Graphic::J_SSAO_TYPE, "", GUI_GROUP_USER(Ssao)))
+		Graphic::JSsaoDesc ssaoDesc;
+	public:
 		REGISTER_PROPERTY_EX(isOrtho, IsOrthoCamera, SetOrthoCamera, GUI_CHECKBOX())
 		bool isOrtho = false;
 		REGISTER_PROPERTY_EX(allowDisplayDepthMap, AllowDisplayDepthMap, SetAllowDisplaySceneDepthMap, GUI_CHECKBOX())
@@ -106,14 +126,18 @@ namespace JinEngine
 		bool allowDisplayOccCullingDepthMap = false;
 		bool allowAllCamCullResult = false;	//use editor cam for check space spatial result
 	public:
+		REGISTER_PROPERTY_EX(allowSsao, AllowSsao, SetAllowSsao, GUI_CHECKBOX())
+		bool allowSsao = false;
+	public:
 		//Caution
 		//Impl생성자에서 interface class 참조시 interface class가 함수내에서 impl을 참조할 경우 error
 		//impl이 아직 생성되지 않았으므로
 		JCameraImpl(const InitData& initData, JCamera* thisCamRaw)
-		{}
-		~JCameraImpl()
-		{  
+		{
+			rtSizeRate = initData.rtSizeRate;
 		}
+		~JCameraImpl()
+		{ }
 	public:
 		float GetNear()const noexcept
 		{    
@@ -133,7 +157,7 @@ namespace JinEngine
 			return JMathHelper::RadToDeg * GetFovX();
 		}
 		float GetFovY()const noexcept
-		{
+		{ 
 			return camFov;
 		}
 		float GetFovYDegree()const noexcept
@@ -198,6 +222,30 @@ namespace JinEngine
 		{
 			return thisPointer->GetOwner()->GetOwnerGuid();
 		} 
+		JVector2F GetRtSize()const noexcept
+		{
+			return JWindow::GetDisplaySize() * rtSizeRate;
+		}
+		float GetSsaoRadius()const noexcept
+		{
+			return ssaoDesc.radius;
+		}
+		float GetSsaoFadeStart()const noexcept
+		{
+			return ssaoDesc.fadeStart;
+		}
+		float GetSsaoFadeEnd()const noexcept
+		{
+			return ssaoDesc.fadeEnd;
+		}
+		float GetSsaoSurfaceEpsilon()const noexcept
+		{
+			return ssaoDesc.surfaceEpsilon;
+		}
+		Graphic::J_SSAO_TYPE GetSsaoType()const noexcept
+		{
+			return ssaoDesc.ssaoType;
+		}
 	public:
 		void SetNear(const float value)noexcept
 		{
@@ -262,6 +310,14 @@ namespace JinEngine
 			else
 				CalPerspectiveLens();
 		}
+		void SetFrustumCullingFrequency(const float value)noexcept
+		{
+			frustumCulingFrequency = value;
+		}
+		void SetOcclusionCullingFrequency(const float value)noexcept
+		{
+			occlusionCulingFrequency = value;
+		}
 		//value가 bool type일경우에만 justCallFunc을 사용할수있다
 		//justCallFunc는 값을 변경하지않고 함수내에서 value per 기능을 수행한다
 		void SetAllowDisplaySceneDepthMap(const bool value)noexcept
@@ -278,9 +334,9 @@ namespace JinEngine
 			if (justCallFunc || thisPointer->IsActivated())
 			{
 				if (value)
-					CreateLayerDepthDebugResource();
+					CreateLayerDepthDebugResource(GetRtSize());
 				else
-					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
+					DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
 			}
 			SetFrameDirty();
 		}
@@ -298,9 +354,9 @@ namespace JinEngine
 			if (justCallFunc || thisPointer->IsActivated())
 			{
 				if (value)
-					CreateDebugDepthStencil();
+					CreateDebugDepthStencil(GetRtSize());
 				else
-					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL);
+					DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_LAYER_DEPTH_STENCIL);
 			}
 			SetFrameDirty();
 		}
@@ -360,8 +416,8 @@ namespace JinEngine
 				{
 					DeRegisterOccPassFrameData();
 					DeRegisterHzbOccPassFrameData();
-					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
-					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP);
+					DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
+					DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP);
 					DestroyCullingData(Graphic::J_CULLING_TYPE::HZB_OCCLUSION);
 					PopHzbOccCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 					if (AllowDisplayOccCullingDepthMap())
@@ -421,7 +477,7 @@ namespace JinEngine
 				if (value)
 					CreateOcclusionDepthDebug(allowHzbOcclusionCulling);
 				else
-					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG);
+					DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG);
 			}
 			SetFrameDirty();
 		}
@@ -430,13 +486,33 @@ namespace JinEngine
 			allowAllCamCullResult = value;
 			SetFrameDirty();
 		}
-		void SetFrustumCullingFrequency(const float value)noexcept
+		void SetAllowSsao(const bool value)
 		{
-			frustumCulingFrequency = value;
+			SetAllowSsaoEx(value, false);
 		}
-		void SetOcclusionCullingFrequency(const float value)noexcept
+		void SetAllowSsaoEx(const bool value, const bool justCallFunc)
 		{
-			occlusionCulingFrequency = value;
+			if (!justCallFunc && allowSsao == value)
+				return;
+
+			if (!justCallFunc)
+				allowSsao = value;
+			if (justCallFunc || thisPointer->IsActivated())
+			{
+				if (value)
+				{
+					auto gUser = GetInfo(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);
+					CreateOption(gUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
+					CreateOption(gUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::AMBIENT_OCCLISION_MAP);
+				}
+				else
+				{
+					auto gUser = GetInfo(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);
+					DestroyGraphicOption(gUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
+					DestroyGraphicOption(gUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::AMBIENT_OCCLISION_MAP);
+				}
+			}
+			SetFrameDirty();
 		}
 		void SetCameraState(const J_CAMERA_STATE state)noexcept
 		{
@@ -455,6 +531,64 @@ namespace JinEngine
 					DeActivate();
 			}
 			SetFrameDirty();
+		}
+		void SetRenderTargetRate(const JVector2F rate)noexcept
+		{
+			if (rtSizeRate == rate || rate.x == 0 || rate.y == 0)
+				return;
+
+			rtSizeRate = rate;
+			if (HasResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON))
+			{
+				DeActivate();
+				Activate();
+			}
+			SetFrameDirty();
+		}
+		void SetSsaoDesc(const Graphic::JSsaoDesc& newDesc)
+		{
+			if (ssaoDesc == newDesc)
+				return;
+			ssaoDesc = newDesc;
+			if (thisPointer->IsActivated() && allowSsao)
+			{
+				auto gUser = GetInfo(Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);
+				DestroyGraphicOption(gUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
+				DestroyGraphicOption(gUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::AMBIENT_OCCLISION_MAP);
+				CreateOption(gUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP);
+				CreateOption(gUser, Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::AMBIENT_OCCLISION_MAP);
+			}
+			SetFrameDirty();
+		}
+		void SetSsaoRadius(const float value)noexcept
+		{
+			Graphic::JSsaoDesc newDesc = ssaoDesc;
+			newDesc.radius = std::clamp(value, Private::minSsaoRadius, Private::maxSsaoRadius);
+			SetSsaoDesc(newDesc);
+		}
+		void SetSsaoFadeStart(const float value)noexcept
+		{
+			Graphic::JSsaoDesc newDesc = ssaoDesc;
+			newDesc.fadeStart = std::clamp(value, Private::minSsaoFade, newDesc.fadeEnd);
+			SetSsaoDesc(newDesc);
+		}
+		void SetSsaoFadeEnd(const float value)noexcept
+		{
+			Graphic::JSsaoDesc newDesc = ssaoDesc;
+			newDesc.fadeEnd = std::clamp(value, newDesc.fadeStart, Private::maxSsaoFade);
+			SetSsaoDesc(newDesc);
+		}
+		void SetSsaoSurfaceEpsilon(const float value)noexcept
+		{
+			Graphic::JSsaoDesc newDesc = ssaoDesc;
+			newDesc.surfaceEpsilon = std::clamp(value, Private::minSsaoEpsilon, Private::maxSsaoEpsilon);
+			SetSsaoDesc(newDesc);
+		}
+		void SetSsaoType(const Graphic::J_SSAO_TYPE type)noexcept
+		{
+			Graphic::JSsaoDesc newDesc = ssaoDesc;
+			newDesc.ssaoType = type;
+			SetSsaoDesc(newDesc);
 		}
 	public:
 		bool IsOrthoCamera()const noexcept
@@ -493,6 +627,10 @@ namespace JinEngine
 		{
 			return AllowHzbOcclusionCulling() || AllowHdOcclusionCulling();
 		}
+		bool AllowSsao()const noexcept
+		{
+			return allowSsao;
+		}
 	public:
 		void CalPerspectiveLens() noexcept
 		{
@@ -521,8 +659,8 @@ namespace JinEngine
 			//if (JApplicationVariable::GetApplicationState() == J_APPLICATION_STATE::EDIT_GAME)
 			RegisterCameraFrameData();
 			RegisterCsmTargetInterface();
-			CreateRenderTargetTexture();
-			CreateSceneDepthStencil();
+			CreateRenderTargetTexture(GetRtSize());
+			CreateSceneDepthStencil(GetRtSize());
 			if (allowDisplayDepthMap)
 				SetAllowDisplaySceneDepthMapEx(true, true);
 			if (allowDisplayDebug)
@@ -533,7 +671,8 @@ namespace JinEngine
 				SetAllowHzbOcclusionCullingEx(true, true);
 			if (allowHdOcclusionCulling)
 				SetAllowHdOcclusionCullingEx(true, true); 
-   
+			if(allowSsao)
+				SetAllowSsaoEx(true, true);
 			if (thisPointer->GetOwner()->GetOwnerScene()->GetUseCaseType() == J_SCENE_USE_CASE_TYPE::TWO_DIMENSIONAL_PREVIEW)
 				AddDrawSceneRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
 			else
@@ -555,6 +694,8 @@ namespace JinEngine
 				SetAllowHzbOcclusionCullingEx(false, true);
 			if (allowHdOcclusionCulling)
 				SetAllowHdOcclusionCullingEx(false, true);
+			if (allowSsao)
+				SetAllowSsaoEx(false, true);
 			//if (allowDisplayOccCullingDepthMap)
 			//	SetAllowDisplayOccCullingDepthMapEx(false, true);
 			 
@@ -569,22 +710,25 @@ namespace JinEngine
 		{ 
 			const XMMATRIX view = mView.LoadXM();
 			const XMMATRIX proj = mProj.LoadXM();
+			const XMMATRIX tex = JMatrix4x4::NdcToTextureSpaceXM();
 
 			XMVECTOR viewVec = XMMatrixDeterminant(view);
 			XMVECTOR projVec = XMMatrixDeterminant(proj);
 
 			const XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+			XMVECTOR viewProjVec = XMMatrixDeterminant(viewProj);
 			const XMMATRIX invView = XMMatrixInverse(&viewVec, view);
 			const XMMATRIX invProj = XMMatrixInverse(&projVec, proj);
-			XMVECTOR viewProjVec = XMMatrixDeterminant(viewProj);
 			const XMMATRIX invViewProj = XMMatrixInverse(&viewProjVec, viewProj);
-
-			constant.view.StoreXM(XMMatrixTranspose(view));
-			constant.invView.StoreXM(XMMatrixTranspose(invView));
+			  
+			//constant.view.StoreXM(XMMatrixTranspose(view));
+			//constant.invView.StoreXM(XMMatrixTranspose(invView));
 			constant.proj.StoreXM(XMMatrixTranspose(proj));
-			constant.invProj.StoreXM(XMMatrixTranspose(invProj));
+			constant.projTex.StoreXM(XMMatrixTranspose(XMMatrixMultiply(proj, tex)));
 			constant.viewProj.StoreXM(XMMatrixTranspose(viewProj));
-			constant.invViewProj.StoreXM(XMMatrixTranspose(invViewProj));		 
+			//constant.viewProjTex.StoreXM(XMMatrixTranspose(XMMatrixMultiply(viewProj, tex)));
+			//constant.invProj.StoreXM(XMMatrixTranspose(invProj));
+			//constant.invViewProj.StoreXM(XMMatrixTranspose(invViewProj));		 
 			constant.renderTargetSize = JVector2<float>(GetRenderViewWidth(), GetRenderViewHeight());
 			constant.invRenderTargetSize = JVector2<float>(1.0f / GetRenderViewWidth(), 1.0f / GetRenderViewHeight());
 			constant.eyePosW = thisPointer->GetTransform()->GetPosition();
@@ -679,7 +823,6 @@ namespace JinEngine
 			mProj = JMatrix4x4::Identity();
 			 
 			const JVector2F displaySize = JWindow::GetDisplaySize();
-
 			SetAspect(displaySize.x / displaySize.y);
 			SetOrthoViewWidth(displaySize.x);
 			SetOrthoViewHeight(displaySize.y);
@@ -806,7 +949,7 @@ namespace JinEngine
 	JMatrix4x4 JCamera::GetProj4x4()const noexcept
 	{
 		return impl->mProj;
-	}
+	} 
 	DirectX::BoundingFrustum JCamera::GetBoundingFrustum()const noexcept
 	{
 		return impl->GetBoundingFrustum();
@@ -871,6 +1014,14 @@ namespace JinEngine
 	{
 		return impl->camState;
 	}
+	JVector2F JCamera::GetRenderTargetRate()const noexcept
+	{
+		return impl->rtSizeRate;
+	}
+	Graphic::JSsaoDesc JCamera::GetSsaoDesc()const noexcept
+	{
+		return impl->ssaoDesc;
+	}
 	void JCamera::SetNear(float value)noexcept
 	{
 		impl->SetNear(value);
@@ -931,9 +1082,21 @@ namespace JinEngine
 	{
 		impl->SetAllowDisplayOccCullingDepthMap(value);
 	}
+	void JCamera::SetAllowSsao(const bool value)noexcept
+	{
+		impl->SetAllowSsao(value);
+	}
 	void JCamera::SetCameraState(const J_CAMERA_STATE state)noexcept
 	{
 		impl->SetCameraState(state);
+	}
+	void JCamera::SetRenderTargetRate(const JVector2F rate)noexcept
+	{
+		impl->SetRenderTargetRate(rate);
+	}
+	void JCamera::SetSsaoDesc(const Graphic::JSsaoDesc& desc)noexcept
+	{
+		impl->SetSsaoDesc(desc);
 	}
 	bool JCamera::IsFrameDirted()const noexcept
 	{
@@ -977,6 +1140,10 @@ namespace JinEngine
 	bool JCamera::AllowDisplayOccCullingDepthMap()const noexcept
 	{
 		return impl->AllowDisplayOccCullingDepthMap();
+	}
+	bool JCamera::AllowSsao()const noexcept
+	{
+		return impl->AllowSsao();
 	}
 	void JCamera::DoActivate()noexcept
 	{
@@ -1057,20 +1224,23 @@ namespace JinEngine
 		bool isActivated;
 
 		J_CAMERA_STATE camState;
-		JVector3<float> pos;
-		float camNear;
-		float camFar;
-		float camFov;
-		float camAspect;
-		float camOrthoViewWidth;
-		float camOrthoViewHeight;
-		bool isOrtho;
-		bool allowDisplayDepthMap;
-		bool allowDisplayDebug;
-		bool allowFrustumCulling;
-		bool allowHzbOcclusionCulling;
-		bool allowHdOcclusionCulling;
-		bool allowDisplayOccCullingDepthMap;
+		JVector3F pos = JVector3F::Zero();
+		float camNear = 0;
+		float camFar = 0;
+		float camFov = 0;
+		float camAspect = 0;
+		float camOrthoViewWidth = 0;
+		float camOrthoViewHeight = 0;
+		bool isOrtho = false;
+		bool allowDisplayDepthMap = false;
+		bool allowDisplayDebug = false;
+		bool allowFrustumCulling = false;
+		bool allowHzbOcclusionCulling = false;
+		bool allowHdOcclusionCulling = false;
+		bool allowDisplayOccCullingDepthMap = false;
+		bool allowSsao = false;
+		JVector2F rtSizeRate = JVector2F::One();
+		Graphic::JSsaoDesc ssaoDesc;
 
 		auto loadData = static_cast<JCamera::LoadData*>(data);
 		JFileIOTool& tool = loadData->tool;
@@ -1092,8 +1262,18 @@ namespace JinEngine
 		JObjectFileIOHelper::LoadAtomicData(tool, allowHzbOcclusionCulling, "AllowHzbOcclusionCulling:");
 		JObjectFileIOHelper::LoadAtomicData(tool, allowHdOcclusionCulling, "AllowHdOcclusionCulling:");
 		JObjectFileIOHelper::LoadAtomicData(tool, allowDisplayOccCullingDepthMap, "AllowDislplayCullingDepthMap:");
+		JObjectFileIOHelper::LoadAtomicData(tool, allowSsao, "AllowSsao:");
+		JObjectFileIOHelper::LoadVector2(tool, rtSizeRate, "RtSizeRate:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssaoDesc.radius, "SsaoRadius:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssaoDesc.fadeStart, "SsaoFadeStart:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssaoDesc.fadeEnd, "SsaoFadeEnd:");
+		JObjectFileIOHelper::LoadAtomicData(tool, ssaoDesc.surfaceEpsilon, "SsaoSurfaceEpsilon:");
+		JObjectFileIOHelper::LoadEnumData(tool, ssaoDesc.ssaoType, "SsaoType:");
 
-		auto idenUser = cPrivate.GetCreateInstanceInterface().BeginCreate(std::make_unique<JCamera::InitData>(guid, flag, owner), &cPrivate);
+		auto initData = std::make_unique<JCamera::InitData>(guid, flag, owner);
+		initData->rtSizeRate = rtSizeRate;
+
+		auto idenUser = cPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &cPrivate);
 		JUserPtr<JCamera> camUser;
 		camUser.ConnnectChild(idenUser);
 
@@ -1114,12 +1294,15 @@ namespace JinEngine
 		else
 			impl->CalPerspectiveLens();
 
+		impl->SetSsaoDesc(ssaoDesc);
 		impl->SetAllowDisplaySceneDepthMap(allowDisplayDepthMap);
 		impl->SetAllowDisplayDebug(allowDisplayDebug);
 		impl->SetAllowFrustumCulling(allowFrustumCulling);
 		impl->SetAllowHzbOcclusionCulling(allowHzbOcclusionCulling);
 		impl->SetAllowHdOcclusionCulling(allowHdOcclusionCulling);
 		impl->SetAllowDisplayOccCullingDepthMap(allowDisplayOccCullingDepthMap);
+		impl->SetAllowSsao(allowSsao);
+		impl->SetRenderTargetRate(rtSizeRate);
 		impl->SetCameraState(camState);
 		if (!isActivated)
 			camUser->DeActivate();
@@ -1156,7 +1339,13 @@ namespace JinEngine
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowHzbOcclusionCulling, "AllowHzbOcclusionCulling:");
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowHdOcclusionCulling, "AllowHdOcclusionCulling:");
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowDisplayOccCullingDepthMap, "AllowDislplayCullingDepthMap:");
-
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->allowSsao, "AllowSsao:");
+		JObjectFileIOHelper::StoreVector2(tool, impl->rtSizeRate, "RtSizeRate:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssaoDesc.radius, "SsaoRadius:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssaoDesc.fadeStart, "SsaoFadeStart:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssaoDesc.fadeEnd, "SsaoFadeEnd:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->ssaoDesc.surfaceEpsilon, "SsaoSurfaceEpsilon:");
+		JObjectFileIOHelper::StoreEnumData(tool, impl->ssaoDesc.ssaoType, "SsaoType:");
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
 

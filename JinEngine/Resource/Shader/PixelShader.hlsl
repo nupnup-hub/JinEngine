@@ -1,5 +1,5 @@
 #include "VertexLayout.hlsl"
-#include "ShadowMapCal.hlsl"
+#include "ShadowCalculate.hlsl"
  
 #if defined(DEBUG)
 float4 PS(VertexOut pin) : SV_Target
@@ -26,7 +26,7 @@ float4 PS(VertexOut pin) : SV_Target
 }
 #else
 float4 PS(VertexOut pin) : SV_Target
-{
+{ 
 	MaterialData matData = materialData[objMaterialIndex];
 	float4 albedoColor = matData.albedoColor;  
 	//float roughness = textureMaps[matData.roughnessMapIndex].Sample(gsamAnisotropicClamp, pin.TexC).r;
@@ -49,7 +49,7 @@ float4 PS(VertexOut pin) : SV_Target
 	normalW =  normalize(mul(normalT, TBN));
 #endif
 	//float4 ambient = sceneAmbientLight * albedoColor;
-
+	
 #ifdef ROUGHNESS_MAP
 #endif
 
@@ -67,6 +67,10 @@ float4 PS(VertexOut pin) : SV_Target
 	float4 litColor = directLight;
 	//litColor.rgb += roughness * fresnelFactor;
 	litColor.a = albedoColor.a;
+//#ifdef USE_SSAO
+//	normalMap[pin.posH.xy] = normalW.xy;
+//#endif
+	
 #ifdef AMBIENT_OCCLUSION_MAP
 	float ambientFactor = textureMaps[matData.ambientMapIndex].Sample(samAnisotropicWrap, texC).x;
 	return litColor * ambientFactor;

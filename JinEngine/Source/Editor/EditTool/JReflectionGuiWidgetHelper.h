@@ -7,6 +7,7 @@
 #include<unordered_map>
 #include<string> 
 #include<memory>
+#include<stack>
 
 namespace JinEngine
 {
@@ -23,12 +24,23 @@ namespace JinEngine
 		//info is declared reflect system
 		class JReflectionGuiWidgetHelper
 		{
+		public:
+			struct WidgetOption
+			{
+			public:
+				float nameSpaceOffset = 0;
+			};
 		private:
 			const size_t guid;
-			JEditorWindow* ownerWnd;
+			JEditorWindow* ownerWnd; 
+		private:
+			bool isTableOpen = false;
 		public:
 			JReflectionGuiWidgetHelper(JEditorWindow* ownerWnd);
 			~JReflectionGuiWidgetHelper();
+		public:
+			void BeginGuiWidget(const Core::JUserPtr<Core::JIdentifier>& obj);
+			void EndGuiWidget();
 		public:
 			void UpdateGuiWidget(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo);
 			void Clear();

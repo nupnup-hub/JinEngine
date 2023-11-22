@@ -108,8 +108,11 @@ namespace JinEngine::Core
 		CurrentData& current = currentStack.top();
 		const bool isArray = current.ptr->isArray();
 
+		if (current.ptr->isNull())
+			return false;
+
 		if (isArray)
-		{
+		{ 
 			int index = current.iter.index();
 			if (!current.ptr->isValidIndex(index))
 				return false;

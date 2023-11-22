@@ -3,6 +3,7 @@
 #include"../JResourceObject.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceType.h" 
 #include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
+#include"../../../Graphic/Image/JImageProcessingDesc.h"
 
 namespace JinEngine
 {
@@ -17,7 +18,10 @@ namespace JinEngine
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
 		public:
 			const std::wstring oridataPath;
+		public:
 			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
+			Graphic::JMipmapGenerateDesc mipMapDesc;
+			J_TEXTURE_RESOLUTION resoultion;
 		public:
 			InitData(const uint8 formatIndex,
 				const JUserPtr<JDirectory>& directory,
@@ -43,6 +47,7 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
 		public:
+			Graphic::JMipmapGenerateDesc mipMapDesc;
 			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
 			J_TEXTURE_RESOLUTION resoultion;
 		public:

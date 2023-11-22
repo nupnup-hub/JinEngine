@@ -394,7 +394,7 @@ namespace JinEngine
 			}
 		}
 		JDrawHelper JDrawHelper::CreateDrawSceneHelper(const JDrawHelper& ori, const JWeakPtr<JCamera>& cam)noexcept
-		{
+		{ 
 			JDrawHelper newHelper = ori;
 			newHelper.SettingDrawScene(cam);
 			return newHelper;

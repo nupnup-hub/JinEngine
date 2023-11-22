@@ -145,7 +145,7 @@ namespace JinEngine
 
 	class JPointLight::JPointLightImpl : public Core::JTypeImplBase,
 		public LitFrameUpdate,
-		public Graphic::JGraphicWideSingleResourceHolder<3>,	//shadowMap, debug, rtv(for vsm)
+		public Graphic::JGraphicWideSingleResourceHolder<2>,	//shadowMap, debug
 		//public Graphic::JGraphicTypePerSingleResourceHolder,
 		public Graphic::JGraphicDrawListCompInterface,
 		public Graphic::JCullingInterface
@@ -160,8 +160,8 @@ namespace JinEngine
 		REGISTER_PROPERTY_EX(power, GetPower, SetPower, GUI_SLIDER(Private::minPower, Private::maxPower, true, false))
 		float power = Private::InitPower();
 		REGISTER_PROPERTY_EX(range, GetRange, SetRange, GUI_SLIDER(Constants::lightNear, Constants::lightMaxFar, true, false))
-		float range = 100.0f;
-		REGISTER_PROPERTY_EX(radius, GetRadius, SetRadius, GUI_SLIDER(0, Constants::lightMaxFar, true, false, 3, GUI_ENUM_CONDITION_USER(LightType, J_LIGHT_TYPE::SPOT, J_LIGHT_TYPE::POINT)))
+		float range = 32.0f;
+		REGISTER_PROPERTY_EX(radius, GetRadius, SetRadius, GUI_SLIDER(0, Constants::lightMaxFar, true, false, 3))
 		float radius = 0.0f;
 	public:
 		//managed by light type  
@@ -173,6 +173,7 @@ namespace JinEngine
 	public:
 		JMatrix4x4 view[(uint)POINT_LIT_DIR::COUNT];
 		JMatrix4x4 proj;
+		JVector3F worldRight;
 	public:
 		JPointLightImpl(const InitData& initData, JPointLight* thisLitRaw) {}
 		~JPointLightImpl() {}
@@ -212,7 +213,7 @@ namespace JinEngine
 		{
 			DirectX::BoundingBox bbox;
 			bbox.Center = GetTransform()->GetWorldPosition().ToSimilar<XMFLOAT3>();
-			bbox.Extents = XMFLOAT3(radius, radius, radius);
+			bbox.Extents = XMFLOAT3(range, range, range);
 			return bbox;
 		}
 		JUserPtr<JTransform> GetTransform()const noexcept
@@ -287,7 +288,7 @@ namespace JinEngine
 		}
 		void SetRadius(const float newRadius)noexcept
 		{
-			radius = std::clamp(newRadius, 0.0f, range);
+			radius = std::clamp(newRadius, 0.0f, Constants::lightMaxFar);
 			SetFrameDirty();
 		}
 	public:
@@ -340,7 +341,7 @@ namespace JinEngine
 		}
 		void DestroyShadowMapDebugResource()
 		{
-			DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
+			DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
 		}
 	public:
 		void Activate()noexcept
@@ -369,10 +370,18 @@ namespace JinEngine
 			const XMMATRIX ndcM = JMatrix4x4::NdcToTextureSpaceXM();
 			for (uint i = 0; i < Graphic::Constants::cubeMapPlaneCount; ++i)		 
 				constant.shadowMapTransform[i].StoreXM(XMMatrixTranspose(XMMatrixMultiply(XMMatrixMultiply(view[i].LoadXM(), projM), ndcM)));
-			 
+ 
+			auto t = GetTransform();
+			const JVector3F pos = t->GetPosition();
+			const JVector3F right = t->GetRight();
+			const XMVECTOR worldQ = t->GetWorldQuaternion().ToXmV();
+
+			constant.midPosition = t->GetWorldPosition();
+			constant.sidePosition[0] = XMVector3Rotate((pos + right * radius).ToXmV(), worldQ);
+			constant.sidePosition[1] = XMVector3Rotate((pos - right * radius).ToXmV(), worldQ);
+
 			constant.color = thisPointer->GetColor();
-			constant.power = power;
-			constant.position = GetTransform()->GetWorldPosition();
+			constant.power = power; 
 			constant.frustumNear = GetFrustumNear();
 			constant.frustumFar = GetFrustumFar();
 			constant.radius = radius;
@@ -382,6 +391,7 @@ namespace JinEngine
 			constant.hasShadowMap = IsShadowActivated();
 			constant.shadowMapSize = thisPointer->GetShadowMapSize();
 			constant.shadowMapInvSize = 1.0f / constant.shadowMapSize;
+			constant.bias = thisPointer->GetBias(); 
 			PointLitFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JShadowMapCubeDrawConstants& constant)noexcept final
@@ -396,6 +406,7 @@ namespace JinEngine
 			for (uint i = 0; i < (uint)POINT_LIT_DIR::COUNT; ++i)
 				Private::CalView(GetTransform(), (POINT_LIT_DIR)i, GetFrustumNear(), view[i]);
 			proj.StoreXM(Private::CalProj(GetFrustumNear(), GetFrustumFar()));
+			worldRight = GetTransform()->GetWorldRight();
 		}
 	public:
 		static bool DoCopy(JPointLight* from, JPointLight* to)
@@ -403,7 +414,7 @@ namespace JinEngine
 			from->impl->SetAllowFrustumCulling(to->impl->AllowFrustumCulling());
 			from->impl->SetPower(to->impl->GetPower());
 			from->impl->SetRange(to->impl->GetRange());
-			from->impl->SetRadius(to->impl->GetRadius());
+			from->impl->SetRadius(to->impl->GetRadius()); 
 
 			to->impl->SetFrameDirty();
 			return true;

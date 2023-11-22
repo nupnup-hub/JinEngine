@@ -342,7 +342,7 @@ namespace JinEngine
 			}
 			else
 				return false;
-		}
+		} 
 		void JTypeInfo::ExecuteTypeCallOnece()
 		{
 			for (const auto& data : option.widgetHandleVec)

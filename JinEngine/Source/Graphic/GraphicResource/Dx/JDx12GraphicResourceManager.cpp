@@ -18,10 +18,10 @@
 #include"../../../../ThirdParty/DirectX/TK/Inc/WICTextureLoader.h" 
 #include"../../../../ThirdParty/DirectX/TK/Inc/ResourceUploadBatch.h" 
 #include"../../../../ThirdParty/Tif/tiffio.h"
-#include<DirectXColors.h>
+#include<DirectXColors.h> 
 //Debug
 //#include<fstream>
-//#include"../../Core/File/JFileIOHelper.h" 
+//#include"../../Core/File/JFileIOHelper.h"  
 namespace JinEngine
 {
 	namespace Graphic
@@ -54,7 +54,7 @@ namespace JinEngine
 			static constexpr uint vertexCapacity = INT_MAX;	//mesh 갯수만큼 할당가능
 			static constexpr uint indexCapacity = INT_MAX;		//mesh 갯수만큼 할당가능
  
-			static uint GraphicResourceViewFixedCount(const J_GRAPHIC_BIND_TYPE bType)
+			static uint InitGraphicResourceViewFixedCount(const J_GRAPHIC_BIND_TYPE bType)
 			{
 				switch (bType)
 				{
@@ -207,9 +207,9 @@ namespace JinEngine
 					case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
 						return 0;
 					case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
-						return initResourceCapacity * JGraphicResourceManager::GetOcclusionMipMapViewCapacity();
+						return initResourceCapacity * JGraphicResourceManager::GetOcclusionMipmapViewCapacity();
 					case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
-						return initResourceCapacity * JGraphicResourceManager::GetOcclusionMipMapViewCapacity();
+						return initResourceCapacity * JGraphicResourceManager::GetOcclusionMipmapViewCapacity();
 					default:
 						break;
 					}
@@ -383,6 +383,8 @@ namespace JinEngine
 				switch (opType)
 				{
 				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING:
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP:
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::AMBIENT_OCCLISION_MAP:
 				{
 					switch (bType)
 					{
@@ -418,7 +420,7 @@ namespace JinEngine
 			static uint InitGraphicResourceTotalViewCapaicty(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType)
 			{
 				return InitGraphicResourceViewCapacity(rType, bType) + InitGraphicResourceAdditionalViewCapacity(rType, bType);
-			}
+			}		
 
 			static Microsoft::WRL::ComPtr<ID3D12Resource> CreateOcclusionQueryResult(ID3D12Device* device, const size_t capa)
 			{
@@ -551,7 +553,7 @@ namespace JinEngine
 				}
 			}
 			  
-			static D3D12_RESOURCE_STATES GetPostProcessingInitState(const J_GRAPHIC_RESOURCE_TYPE type)
+			static D3D12_RESOURCE_STATES GraphicOptionInitState(const J_GRAPHIC_RESOURCE_TYPE type)
 			{
 				//for post processing
 				switch (type)
@@ -576,11 +578,82 @@ namespace JinEngine
 					return D3D12_RESOURCE_STATE_COMMON;
 				}
 			}
+			static void GraphicOptionProperty(const J_GRAPHIC_RESOURCE_OPTION_TYPE type,
+				_Inout_ D3D12_RESOURCE_DESC& desc,
+				_Inout_ D3D12_HEAP_PROPERTIES& heapProperties,
+				_Inout_ D3D12_HEAP_FLAGS& heapFlags,
+				_Inout_ DXGI_FORMAT& clearFormat)
+			{
+				switch (type)
+				{
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING:
+				{
+					desc.Flags = Core::AddSQValueEnum(desc.Flags, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+					break;
+				}
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP:
+				{ 
+					desc.Flags = Core::AddSQValueEnum(desc.Flags, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+					desc.Format = DXGI_FORMAT_R16G16_TYPELESS;
+					heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+					heapFlags = D3D12_HEAP_FLAG_NONE;
+					clearFormat = DXGI_FORMAT_R16G16_FLOAT;
+					break;
+				} 
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::AMBIENT_OCCLISION_MAP:
+				{
+					desc.Flags = Core::AddSQValueEnum(desc.Flags, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+					desc.Format = DXGI_FORMAT_R16_TYPELESS;
+					heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+					heapFlags = D3D12_HEAP_FLAG_NONE;
+					clearFormat = DXGI_FORMAT_R16_FLOAT;
+					break;
+				}
+				default:
+					break;
+				}
+			}
+			static bool CanCreateMipmap(const J_GRAPHIC_RESOURCE_TYPE rType)
+			{
+				switch (rType)
+				{
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
+					return true;
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
+					return true;
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
+					return true;
+				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE:
+					return true;
+				default:
+					break;
+				}
+			}
+			static uint MPBCount(const J_GRAPHIC_BIND_TYPE bType)
+			{
+				switch (bType)
+				{
+				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+					return 0;
+				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+					return 0;
+				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+					return JDx12GraphicResourceManager::MPBCapactiy();
+				case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+					return JDx12GraphicResourceManager::MPBCapactiy();
+				default:
+					return 0;
+				}
+			}
 		}
 
-		JDx12GraphicResourceManager::BindDesc::BindDesc(ID3D12Device* device, const uint resourceIndex)
+		JDx12GraphicResourceManager::BindDesc::BindDesc(ID3D12Device* device, const uint resourceIndex, const bool useMipmap)
 			:device(device), 
-			resourceIndex(resourceIndex)
+			resourceIndex(resourceIndex),
+			useMipmap(useMipmap)
+		{}
+		JDx12GraphicResourceManager::BindOptionDesc::BindOptionDesc(const BindDesc& resourceBindDesc)
+			: resourceBindDesc(resourceBindDesc)
 		{}
 
 		/*
@@ -622,7 +695,7 @@ namespace JinEngine
 					}
 					else
 					{
-						typeDesc[i].viewInfo[j].offset = Private::GraphicResourceViewFixedCount(bType);
+						typeDesc[i].viewInfo[j].offset = Private::InitGraphicResourceViewFixedCount(bType);
 						totalView[j] = typeDesc[i].viewInfo[j].offset + typeDesc[i].viewInfo[j].capacity;
 					}
 				}
@@ -643,7 +716,7 @@ namespace JinEngine
 					const uint srvIndex = (uint)J_GRAPHIC_BIND_TYPE::SRV;
 					const uint lastResourceIndex = (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT - 1;
 
-					typeDesc[i].viewInfo[uavIndex].offset = Private::GraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::UAV) +
+					typeDesc[i].viewInfo[uavIndex].offset = Private::InitGraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::UAV) +
 						typeDesc[lastResourceIndex].viewInfo[srvIndex].offset +
 						typeDesc[lastResourceIndex].viewInfo[srvIndex].capacity;
 					totalView[uavIndex] = typeDesc[i].viewInfo[uavIndex].offset + typeDesc[i].viewInfo[uavIndex].capacity;
@@ -682,6 +755,7 @@ namespace JinEngine
 		}
 		void JDx12GraphicResourceManager::Clear()
 		{
+			mpb.Clear();
 			for (uint i = 0; i < (uint)J_GRAPHIC_RESOURCE_TYPE::COUNT; ++i)
 			{
 				resource[i].clear();
@@ -770,6 +844,16 @@ namespace JinEngine
 		CD3DX12_GPU_DESCRIPTOR_HANDLE JDx12GraphicResourceManager::GetFirstGpuSrvDescriptorHandle(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
 		{
 			return GetGpuSrvDescriptorHandle(typeDesc[(int)rType].viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].offset);
+		}
+		CD3DX12_CPU_DESCRIPTOR_HANDLE JDx12GraphicResourceManager::GetMPBCpuDescriptorHandle(const Core::JDataHandle& handle, const J_GRAPHIC_BIND_TYPE bType)const noexcept
+		{ 
+			auto info = mpb.Get(handle);
+			return info != nullptr ? GetCpuDescriptorHandle(bType, info->index[(uint)bType]) : CD3DX12_CPU_DESCRIPTOR_HANDLE();
+		}
+		CD3DX12_GPU_DESCRIPTOR_HANDLE JDx12GraphicResourceManager::GetMPBGpuDescriptorHandle(const Core::JDataHandle& handle, const J_GRAPHIC_BIND_TYPE bType)const noexcept
+		{
+			auto info = mpb.Get(handle);
+			return info != nullptr ? GetGpuDescriptorHandle(bType, info->index[(uint)bType]) : CD3DX12_GPU_DESCRIPTOR_HANDLE();
 		}
 		ID3D12DescriptorHeap* JDx12GraphicResourceManager::GetDescriptorHeap(const J_GRAPHIC_BIND_TYPE bType)const noexcept
 		{
@@ -878,9 +962,25 @@ namespace JinEngine
 				total += typeDesc[i].viewInfo[(int)bType].capacity;
 			return total;
 		}
+		ResourceHandle JDx12GraphicResourceManager::GetResourceGpuHandle(const J_GRAPHIC_BIND_TYPE bType, int index)const noexcept
+		{
+			return (ResourceHandle)GetGpuDescriptorHandle(bType, index).ptr;
+		}
+		ResourceHandle JDx12GraphicResourceManager::GetMPBResourceCpuHandle(const Core::JDataHandle& handle, const J_GRAPHIC_BIND_TYPE bType)const noexcept
+		{
+			return (ResourceHandle)GetMPBCpuDescriptorHandle(handle, bType).ptr;
+		}
+		ResourceHandle JDx12GraphicResourceManager::GetMPBResourceGpuHandle(const Core::JDataHandle& handle, const J_GRAPHIC_BIND_TYPE bType)const noexcept
+		{
+			return (ResourceHandle)GetMPBGpuDescriptorHandle(handle, bType).ptr;
+		}
 		ID3D12Resource* JDx12GraphicResourceManager::GetResource(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept
 		{
 			return resource[(int)rType][index]->resourceHolder->GetResource();
+		}
+		ID3D12Resource* JDx12GraphicResourceManager::GetOptionResource(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, int index)const noexcept
+		{
+			return resource[(int)rType][index]->optionHolderSet->holder[(uint)opType]->GetResource();
 		}
 		JGraphicResourceInfo* JDx12GraphicResourceManager::GetInfo(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept
 		{
@@ -1115,7 +1215,7 @@ namespace JinEngine
 			const uint occWidth,
 			const uint occHeight,
 			_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo,
-			_Out_ JUserPtr<JGraphicResourceInfo>& outOccMipMapInfo)
+			_Out_ JUserPtr<JGraphicResourceInfo>& outOccMipmapInfo)
 		{
 			static constexpr J_GRAPHIC_RESOURCE_TYPE fRType = J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP;
 			static constexpr J_GRAPHIC_RESOURCE_TYPE sRType = J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP;
@@ -1146,7 +1246,7 @@ namespace JinEngine
 			mipMapDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 			mipMapDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-			Microsoft::WRL::ComPtr<ID3D12Resource> occMipMapResource;
+			Microsoft::WRL::ComPtr<ID3D12Resource> occMipmapResource;
 			CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
 			ThrowIfFailedG(data.device->CreateCommittedResource(
 				&heapProperties,
@@ -1154,12 +1254,12 @@ namespace JinEngine
 				&mipMapDesc,
 				D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
 				nullptr,
-				IID_PPV_ARGS(&occMipMapResource)));
-			CreateResourceInfo(sRType, std::move(occMipMapResource));
+				IID_PPV_ARGS(&occMipmapResource)));
+			CreateResourceInfo(sRType, std::move(occMipmapResource));
 
 			resourceIndex = resource[(int)sRType].size() - 1;
-			BindHZBOcclusionDepthMipMap(BindDesc(data.device, resourceIndex));
-			outOccMipMapInfo = resource[(int)sRType][resourceIndex];
+			BindHZBOcclusionDepthMipmap(BindDesc(data.device, resourceIndex));
+			outOccMipmapInfo = resource[(int)sRType][resourceIndex];
 			Private::EndCreation(device, data);
 		}
 		JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::CreateOcclusionResourceDebug(JGraphicDevice* device,
@@ -1209,7 +1309,7 @@ namespace JinEngine
 			Private::EndCreation(device, data);
 			return  result;
 		}
-		JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::Create2DTexture(JGraphicDevice* device, const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
+		JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::Create2DTexture(JGraphicDevice* device, const JTextureCreateDesc& createDesc)
 		{
 			static constexpr J_GRAPHIC_RESOURCE_TYPE rType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
 			if (!CanCreateResource(rType, device))
@@ -1220,53 +1320,47 @@ namespace JinEngine
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> newResource = nullptr;
 			Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer = nullptr;
+
 			std::unique_ptr<DirectX::ResourceUploadBatch> uploadBatch = nullptr;
 			uint heapIndex = GetHeapIndex(rType, J_GRAPHIC_BIND_TYPE::SRV);
-			HRESULT res;
-		 
-			const bool isFirst = JCUtil::GetFileFormat(path) != Core::JFileConstant::GetFileFormatW();
+			const bool isFirst = JCUtil::GetFileFormat(createDesc.path) != Core::JFileConstant::GetFileFormatW();
+			D3D12_RESOURCE_FLAGS flag = createDesc.allowUav ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
 			JUserPtr<JGraphicResourceInfo> resourceUser = nullptr;	 
-			if (oriFormat == L".dds")
+			HRESULT res;
+
+			if (createDesc.oriFormat == L".dds")
 			{
 				res = DirectX::CreateDDSTextureFromFile12(data.device,
 					data.commandList,
-					path.c_str(),
+					createDesc.path.c_str(),
 					newResource,
 					uploadBuffer,
-					maxSize);
+					createDesc.maxSize,
+					nullptr,
+					flag);
 			}
 			else
 			{
 				uploadBatch = std::make_unique<DirectX::ResourceUploadBatch>(data.device);
 				uploadBatch->Begin(); 
-				res = DirectX::CreateWICTextureFromFileEx(data.device, *uploadBatch, path.c_str(), maxSize, D3D12_RESOURCE_FLAG_NONE, DirectX::WIC_LOADER_FORCE_RGBA32, newResource.GetAddressOf());
-				//res = DirectX::CreateWICTextureFromFile(data.device, *uploadBatch, path.c_str(), &newResource, false, maxSize);
+				res = DirectX::CreateWICTextureFromFileEx(data.device, *uploadBatch, createDesc.path.c_str(), createDesc.maxSize, flag, DirectX::WIC_LOADER_FORCE_RGBA32, newResource.GetAddressOf());
 				uploadBatch->End(data.commandQueue); 
-				
-				/*
-				res = LoadTextureFromFile(path,
-					oriFormat,
-					data.device,
-					GetCpuSrvDescriptorHandle(heapIndex),
-					newResource,
-					uploadBuffer,
-					maxSize);
-				
-				*/
 			}
 			if (SUCCEEDED(res))
 			{
 				std::wstring folder;
 				std::wstring name;
 				std::wstring format;
-				JCUtil::DecomposeFilePath(path, folder, name, format);
+				JCUtil::DecomposeFilePath(createDesc.path, folder, name, format);
 
 				CreateResourceInfo(rType, std::move(newResource));
 
 				const uint resourceIndex = resource[(int)rType].size() - 1;
-				Bind2DTexture(BindDesc(data.device, resourceIndex));
+				Bind2DTexture(BindDesc(data.device, resourceIndex, createDesc.useMipmap));
 				resourceUser = resource[(int)rType][resourceIndex];
 			}
+			else
+				MessageBox(0, L"FAIL", 0, 0);
 			Private::EndCreation(device, data);
 			if (SUCCEEDED(res) && !data.startCommandThisCreation)
 			{
@@ -1280,7 +1374,7 @@ namespace JinEngine
 			uploadBatch = nullptr;
 			return resourceUser;
 		}
-		JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::CreateCubeMap(JGraphicDevice* device, const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
+		JUserPtr<JGraphicResourceInfo> JDx12GraphicResourceManager::CreateCubeMap(JGraphicDevice* device, const JTextureCreateDesc& createDesc)
 		{
 			static constexpr J_GRAPHIC_RESOURCE_TYPE rType = J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE;
 			if (!CanCreateResource(rType, device))
@@ -1291,16 +1385,21 @@ namespace JinEngine
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> newResource;
 			Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer;
+
 			uint heapIndex = GetHeapIndex(rType, J_GRAPHIC_BIND_TYPE::SRV);
-			bool res = false;
+			D3D12_RESOURCE_FLAGS flag = createDesc.allowUav ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
 			JUserPtr<JGraphicResourceInfo> resourceUser = nullptr;
-			if (oriFormat == L".dds")
+			bool res = false;
+			if (createDesc.oriFormat == L".dds")
 			{
 				res = DirectX::CreateDDSTextureFromFile12(data.device,
 					data.commandList,
-					path.c_str(),
+					createDesc.path.c_str(),
 					newResource,
-					uploadBuffer) == S_OK;
+					uploadBuffer,
+					createDesc.maxSize,
+					nullptr,
+					flag) == S_OK;
 			}
 			else
 				assert(L"InValid cube map format");
@@ -1309,12 +1408,12 @@ namespace JinEngine
 				std::wstring folder;
 				std::wstring name;
 				std::wstring format;
-				JCUtil::DecomposeFilePath(path, folder, name, format);
+				JCUtil::DecomposeFilePath(createDesc.path, folder, name, format);
 
 				CreateResourceInfo(rType, std::move(newResource));
 
 				const uint resourceIndex = resource[(int)rType].size() - 1;
-				BindCubeMap(BindDesc(data.device, resourceIndex));
+				BindCubeMap(BindDesc(data.device, resourceIndex, createDesc.useMipmap));
 				resourceUser = resource[(int)rType][resourceIndex];
 			}
 			Private::EndCreation(device, data);
@@ -1530,12 +1629,11 @@ namespace JinEngine
 		{
 			return CreateBuffer(J_GRAPHIC_RESOURCE_TYPE::INDEX, device, index.data(), sizeof(uint16) * index.size());
 		}
-		bool JDx12GraphicResourceManager::CreatePostProcessingTexture(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo>& info)
+		bool JDx12GraphicResourceManager::CreateOption(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
 		{
 			if (info == nullptr || !IsSameDevice(info.Get()))
 				return false;
-
-			static constexpr J_GRAPHIC_RESOURCE_OPTION_TYPE opType = J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING;
+			 
 			const J_GRAPHIC_RESOURCE_TYPE rType = info->GetGraphicResourceType();
 			if(!JGraphicResourceType::CanUseOption(opType, rType) || !CanCreateOptionResource(opType, rType))
 				return false;
@@ -1548,19 +1646,21 @@ namespace JinEngine
 			Private::StartCreation(device, data);
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> newResource = nullptr;
-			D3D12_HEAP_PROPERTIES pHeapProperties;
-			D3D12_HEAP_FLAGS pHeapFlag;
+			D3D12_HEAP_PROPERTIES heapProperties;
+			D3D12_HEAP_FLAGS heapFlag;
 
 			auto dxResource = dxInfo->resourceHolder->GetResource(); 
 			auto resourceDesc = dxResource->GetDesc();
-			dxResource->GetHeapProperties(&pHeapProperties, &pHeapFlag);
-			  
-			CD3DX12_CLEAR_VALUE optClear(resourceDesc.Format, GetBlackColor());
+			auto clearFormat = resourceDesc.Format;
+			dxResource->GetHeapProperties(&heapProperties, &heapFlag);  
+			Private::GraphicOptionProperty(opType, resourceDesc, heapProperties, heapFlag, clearFormat);
+		  
+			CD3DX12_CLEAR_VALUE optClear(clearFormat, GetBlackColor());
 			ThrowIfFailedHr(data.device->CreateCommittedResource(
-				&pHeapProperties,
-				pHeapFlag,
+				&heapProperties,
+				heapFlag,
 				&resourceDesc,
-				Private::GetPostProcessingInitState(rType),
+				Private::GraphicOptionInitState(rType),
 				&optClear,
 				IID_PPV_ARGS(&newResource)));
 			 
@@ -1671,7 +1771,7 @@ namespace JinEngine
 		}
 		void JDx12GraphicResourceManager::CreateOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, JDx12GraphicResourceInfo* dxInfo,  Microsoft::WRL::ComPtr<ID3D12Resource>&& resource)
 		{
-			if (dxInfo == nullptr)
+			if (dxInfo == nullptr || resource == nullptr)
 				return;
 
 			dxInfo->SetOption(opType, std::make_unique<JDx12GraphicResourceHolder>(std::move(resource))); 
@@ -1691,7 +1791,7 @@ namespace JinEngine
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP:
 				return &JDx12GraphicResourceManager::BindOcclusionDepthMap;
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP:
-				return &JDx12GraphicResourceManager::BindHZBOcclusionDepthMipMap;
+				return &JDx12GraphicResourceManager::BindHZBOcclusionDepthMipmap;
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG:
 				return &JDx12GraphicResourceManager::BindHZBOcclusionDebug;
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D:
@@ -1706,6 +1806,20 @@ namespace JinEngine
 				return &JDx12GraphicResourceManager::BindShadowMapArray;
 			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE:
 				return &JDx12GraphicResourceManager::BindShadowMapCube;
+			default:
+				return nullptr;
+			}
+		}
+		JDx12GraphicResourceManager::BindOptionViewPtr JDx12GraphicResourceManager::GetResourceBindOptionViewPtr(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
+		{
+			switch (opType)
+			{
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING:
+				return &JDx12GraphicResourceManager::BindPostProcessing;
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP:
+				return &JDx12GraphicResourceManager::BindNormalMap;
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::AMBIENT_OCCLISION_MAP:
+				return &JDx12GraphicResourceManager::BindAmibientOcclusionMap;
 			default:
 				return nullptr;
 			}
@@ -1924,7 +2038,7 @@ namespace JinEngine
 			++desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::DSV].count;
 			++desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].count;
 		}
-		void JDx12GraphicResourceManager::BindHZBOcclusionDepthMipMap(const BindDesc& bDesc)
+		void JDx12GraphicResourceManager::BindHZBOcclusionDepthMipmap(const BindDesc& bDesc)
 		{
 			static constexpr J_GRAPHIC_RESOURCE_TYPE rType = J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP;
 			JDx12GraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)rType];
@@ -1938,7 +2052,7 @@ namespace JinEngine
 			uint nowHeight = resourcePtr->GetDesc().Height;
 
 			uint occlusionCount = 0;
-			uint occlusionMipmapViewCapacity = GetOcclusionMipMapViewCapacity();
+			uint occlusionMipmapViewCapacity = GetOcclusionMipmapViewCapacity();
 			uint minOcclusionSize = GetOcclusionMinSize();
 
 			while (occlusionCount != occlusionMipmapViewCapacity &&
@@ -1987,7 +2101,7 @@ namespace JinEngine
 			uint nowHeight = resourcePtr->GetDesc().Height;
 
 			uint occlusionCount = 0;
-			uint occlusionMipmapViewCapacity = GetOcclusionMipMapViewCapacity();
+			uint occlusionMipmapViewCapacity = GetOcclusionMipmapViewCapacity();
 			uint minOcclusionSize = GetOcclusionMinSize();
 
 			while (occlusionCount != occlusionMipmapViewCapacity &&
@@ -2069,7 +2183,7 @@ namespace JinEngine
 			ZeroMemory(&srvDesc, sizeof(srvDesc));
 			srvDesc.Format = resourceDesc.Format;
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-			srvDesc.Texture2D.MipLevels = resourceDesc.MipLevels;
+			srvDesc.Texture2D.MipLevels = bDesc.useMipmap ? resourceDesc.MipLevels : 1;
 			srvDesc.Texture2D.MostDetailedMip = 0;
 			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 			 
@@ -2096,7 +2210,7 @@ namespace JinEngine
 			srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 			srvDesc.TextureCube.MostDetailedMip = 0;
-			srvDesc.TextureCube.MipLevels = resourcePtr->GetDesc().MipLevels;
+			srvDesc.TextureCube.MipLevels = bDesc.useMipmap ? resourcePtr->GetDesc().MipLevels : 1;
 			srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 			srvDesc.Format = resourcePtr->GetDesc().Format;
 
@@ -2143,9 +2257,43 @@ namespace JinEngine
 				D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 				uavDesc.Format = resourceDesc.Format;
 				uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-				uavDesc.Texture2D.MipSlice = resourceDesc.MipLevels;
+				uavDesc.Texture2D.MipSlice = 0;
 
-				BindPostProcessing(bDesc, rType, srvDesc, uavDesc, true);
+				BindOptionDesc opDesc(bDesc);
+				opDesc.rType = rType;
+				opDesc.srvDesc = srvDesc;
+				opDesc.uavDesc = uavDesc;
+				opDesc.allowBindResource[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
+
+				BindPostProcessing(opDesc);
+			}
+			if (handlePtr->HasOptional(J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP))
+			{
+				D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+				uavDesc.Format = DXGI_FORMAT_R16G16_FLOAT;
+				uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+				uavDesc.Texture2D.MipSlice = 0;
+				 
+				BindOptionDesc opDesc(bDesc);
+				opDesc.rType = rType;
+				opDesc.srvDesc = srvDesc;
+				opDesc.srvDesc.Format = DXGI_FORMAT_R16G16_FLOAT;
+				opDesc.uavDesc = uavDesc;
+				BindNormalMap(opDesc);
+			}
+			if (handlePtr->HasOptional(J_GRAPHIC_RESOURCE_OPTION_TYPE::AMBIENT_OCCLISION_MAP))
+			{
+				D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+				uavDesc.Format = DXGI_FORMAT_R16_FLOAT;
+				uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+				uavDesc.Texture2D.MipSlice = 0;
+				 
+				BindOptionDesc opDesc(bDesc);
+				opDesc.rType = rType;
+				opDesc.srvDesc = srvDesc;
+				opDesc.srvDesc.Format = DXGI_FORMAT_R16_FLOAT;
+				opDesc.uavDesc = uavDesc;
+				BindAmibientOcclusionMap(opDesc);
 			}
 		} 
 		void JDx12GraphicResourceManager::BindShadowMap(const BindDesc& bDesc)
@@ -2191,9 +2339,15 @@ namespace JinEngine
 				D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 				uavDesc.Format = resourceDesc.Format;
 				uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-				uavDesc.Texture2D.MipSlice = resourceDesc.MipLevels;
+				uavDesc.Texture2D.MipSlice = 0;
 
-				BindPostProcessing(bDesc, rType, srvDesc, uavDesc, true);
+				BindOptionDesc opDesc(bDesc);
+				opDesc.rType = rType;
+				opDesc.srvDesc = srvDesc;
+				opDesc.uavDesc = uavDesc;
+				opDesc.allowBindResource[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
+
+				BindPostProcessing(opDesc);
 			}
 		}
 		void JDx12GraphicResourceManager::BindShadowMapArray(const BindDesc& bDesc)
@@ -2242,9 +2396,15 @@ namespace JinEngine
 				D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 				uavDesc.Format = resourceDesc.Format;
 				uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-				uavDesc.Texture2D.MipSlice = resourceDesc.MipLevels;
+				uavDesc.Texture2D.MipSlice = 0;
 
-				BindPostProcessing(bDesc, type, srvDesc, uavDesc, true);
+				BindOptionDesc opDesc(bDesc);
+				opDesc.rType = type;
+				opDesc.srvDesc = srvDesc;
+				opDesc.uavDesc = uavDesc;
+				opDesc.allowBindResource[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
+
+				BindPostProcessing(opDesc);
 			}
 		}
 		void JDx12GraphicResourceManager::BindShadowMapCube(const BindDesc& bDesc)
@@ -2293,27 +2453,30 @@ namespace JinEngine
 				D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 				uavDesc.Format = resourceDesc.Format;
 				uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-				uavDesc.Texture2D.MipSlice = resourceDesc.MipLevels;
+				uavDesc.Texture2D.MipSlice = 0;
 
-				BindPostProcessing(bDesc, type, srvDesc, uavDesc, true);
+				BindOptionDesc opDesc(bDesc);
+				opDesc.rType = type;
+				opDesc.srvDesc = srvDesc;
+				opDesc.uavDesc = uavDesc;
+				opDesc.allowBindResource[(uint)J_GRAPHIC_BIND_TYPE::UAV] = true;
+
+				BindPostProcessing(opDesc);
 			}
 		}
-		void JDx12GraphicResourceManager::BindPostProcessing(const BindDesc& bDesc, 
-			const J_GRAPHIC_RESOURCE_TYPE rType, 
-			const D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc, 
-			const D3D12_UNORDERED_ACCESS_VIEW_DESC& uavDesc,
-			const bool bindResourceUav)
+		void JDx12GraphicResourceManager::BindPostProcessing(const BindOptionDesc& opDesc)
 		{
 			static constexpr J_GRAPHIC_RESOURCE_OPTION_TYPE opType = J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING;
-			JDx12GraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)rType]; 
-			ID3D12Resource* resourcePtr = GetResource(rType, bDesc.resourceIndex);
-			JDx12GraphicResourceInfo* handlePtr = resource[int(rType)][bDesc.resourceIndex].Get();
-			 
-			if (bindResourceUav)
+			JDx12GraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)opDesc.rType];
+			JDx12GraphicResourceInfo* handlePtr = resource[int(opDesc.rType)][opDesc.resourceBindDesc.resourceIndex].Get();
+			ID3D12Resource* resourcePtr = GetResource(opDesc.rType, opDesc.resourceBindDesc.resourceIndex);
+			ID3D12Resource* optResourcePtr = handlePtr->optionHolderSet->holder[(uint)opType]->GetResource(); 
+
+			if (opDesc.allowBindResource[(uint)J_GRAPHIC_BIND_TYPE::UAV])
 			{
 				const int uavNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].GetNextViewIndex();
 				SetViewCount(handlePtr, J_GRAPHIC_BIND_TYPE::UAV, uavNextViewIndex);
-				bDesc.device->CreateUnorderedAccessView(resourcePtr, nullptr, &uavDesc, GetCpuSrvDescriptorHandle(uavNextViewIndex));
+				opDesc.resourceBindDesc.device->CreateUnorderedAccessView(resourcePtr, nullptr, &opDesc.uavDesc, GetCpuSrvDescriptorHandle(uavNextViewIndex));
 				++desc.viewInfo[(uint)J_GRAPHIC_BIND_TYPE::UAV].count;
 			}
 
@@ -2322,18 +2485,157 @@ namespace JinEngine
 	 
 			SetOptionViewCount(handlePtr, J_GRAPHIC_BIND_TYPE::SRV, opType, srvNextViewIndex);
 			SetOptionViewCount(handlePtr, J_GRAPHIC_BIND_TYPE::UAV, opType, uavNextViewIndex);
-
-			bDesc.device->CreateShaderResourceView(resourcePtr, &srvDesc, GetCpuSrvDescriptorHandle(srvNextViewIndex));
-			bDesc.device->CreateUnorderedAccessView(resourcePtr, nullptr, &uavDesc, GetCpuSrvDescriptorHandle(uavNextViewIndex));
+			  
+			opDesc.resourceBindDesc.device->CreateShaderResourceView(optResourcePtr, &opDesc.srvDesc, GetCpuSrvDescriptorHandle(srvNextViewIndex));
+			opDesc.resourceBindDesc.device->CreateUnorderedAccessView(optResourcePtr, nullptr, &opDesc.uavDesc, GetCpuSrvDescriptorHandle(uavNextViewIndex));
 
 			++desc.viewInfo[(uint)J_GRAPHIC_BIND_TYPE::SRV].count;
 			++desc.viewInfo[(uint)J_GRAPHIC_BIND_TYPE::UAV].count;
+		}
+		void JDx12GraphicResourceManager::BindNormalMap(const BindOptionDesc& opDesc)
+		{
+			static constexpr J_GRAPHIC_RESOURCE_OPTION_TYPE opType = J_GRAPHIC_RESOURCE_OPTION_TYPE::NORMAL_MAP;
+			JDx12GraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)opDesc.rType]; 
+			JDx12GraphicResourceInfo* handlePtr = resource[int(opDesc.rType)][opDesc.resourceBindDesc.resourceIndex].Get();
+			ID3D12Resource* resourcePtr = GetResource(opDesc.rType, opDesc.resourceBindDesc.resourceIndex);
+			ID3D12Resource* optResourcePtr = handlePtr->optionHolderSet->holder[(uint)opType]->GetResource();
+
+			const int srvNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].GetNextViewIndex();
+			const int uavNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].GetNextViewIndex();
+
+			SetOptionViewCount(handlePtr, J_GRAPHIC_BIND_TYPE::SRV, opType, srvNextViewIndex);
+			SetOptionViewCount(handlePtr, J_GRAPHIC_BIND_TYPE::UAV, opType, uavNextViewIndex);
+
+			opDesc.resourceBindDesc.device->CreateShaderResourceView(optResourcePtr, &opDesc.srvDesc, GetCpuSrvDescriptorHandle(srvNextViewIndex));
+			opDesc.resourceBindDesc.device->CreateUnorderedAccessView(optResourcePtr, nullptr, &opDesc.uavDesc, GetCpuSrvDescriptorHandle(uavNextViewIndex));
+
+			++desc.viewInfo[(uint)J_GRAPHIC_BIND_TYPE::SRV].count;
+			++desc.viewInfo[(uint)J_GRAPHIC_BIND_TYPE::UAV].count;
+		}
+		void JDx12GraphicResourceManager::BindAmibientOcclusionMap(const BindOptionDesc& opDesc)
+		{
+			static constexpr J_GRAPHIC_RESOURCE_OPTION_TYPE opType = J_GRAPHIC_RESOURCE_OPTION_TYPE::AMBIENT_OCCLISION_MAP;
+			JDx12GraphicResourceManager::ResourceTypeDesc& desc = typeDesc[(int)opDesc.rType]; 
+			JDx12GraphicResourceInfo* handlePtr = resource[int(opDesc.rType)][opDesc.resourceBindDesc.resourceIndex].Get();
+			ID3D12Resource* resourcePtr = GetResource(opDesc.rType, opDesc.resourceBindDesc.resourceIndex);
+			ID3D12Resource* optResourcePtr = handlePtr->optionHolderSet->holder[(uint)opType]->GetResource();
+
+			const int srvNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::SRV].GetNextViewIndex();
+			const int uavNextViewIndex = desc.viewInfo[(int)J_GRAPHIC_BIND_TYPE::UAV].GetNextViewIndex();
+
+			SetOptionViewCount(handlePtr, J_GRAPHIC_BIND_TYPE::SRV, opType, srvNextViewIndex);
+			SetOptionViewCount(handlePtr, J_GRAPHIC_BIND_TYPE::UAV, opType, uavNextViewIndex);
+
+			opDesc.resourceBindDesc.device->CreateShaderResourceView(optResourcePtr, &opDesc.srvDesc, GetCpuSrvDescriptorHandle(srvNextViewIndex));
+			opDesc.resourceBindDesc.device->CreateUnorderedAccessView(optResourcePtr, nullptr, &opDesc.uavDesc, GetCpuSrvDescriptorHandle(uavNextViewIndex));
+
+			++desc.viewInfo[(uint)J_GRAPHIC_BIND_TYPE::SRV].count;
+			++desc.viewInfo[(uint)J_GRAPHIC_BIND_TYPE::UAV].count;
+		}
+		bool JDx12GraphicResourceManager::CopyResource(JGraphicDevice* device, const JUserPtr<JGraphicResourceInfo>& from, const JUserPtr<JGraphicResourceInfo>& to)
+		{
+			if (device == nullptr || !IsSameDevice(device) || from == nullptr || to == nullptr)
+				return false;
+
+			Private::DeviceData data(device);
+			Private::StartCreation(device, data);
+			auto fromR = GetResource(from->GetGraphicResourceType(), from->GetArrayIndex());
+			auto toR = GetResource(to->GetGraphicResourceType(), to->GetArrayIndex());
+
+			JD3DUtility::ResourceTransition(data.commandList, fromR, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			JD3DUtility::ResourceTransition(data.commandList, toR, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+			data.commandList->CopyResource(toR, fromR);
+			JD3DUtility::ResourceTransition(data.commandList, toR, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			JD3DUtility::ResourceTransition(data.commandList, fromR, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			 
+			Private::EndCreation(device, data);
+			return true;
+		}
+		bool JDx12GraphicResourceManager::SettingMipmapBind(JGraphicDevice* device, const JUserPtr<JGraphicResourceInfo>& info, const bool isReadOnly, _Out_ std::vector<Core::JDataHandle>& handle)
+		{ 
+			handle.clear();
+			if (device == nullptr || !IsSameDevice(device) || info == nullptr || !Private::CanCreateMipmap(info->GetGraphicResourceType()) || !mpb.CanAdd())
+				return false;
+			 
+			auto resource = static_cast<JDx12GraphicResourceInfo*>(info.Get())->resourceHolder->GetResource();
+			auto desc = resource->GetDesc(); 
+			if (mpb.GetEmptyCount() < desc.MipLevels || desc.MipLevels < 2)
+				return false;
+
+			Private::DeviceData data(device);
+			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
+			ZeroMemory(&srvDesc, sizeof(srvDesc));
+			srvDesc.Format = desc.Format;
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; 
+			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+			D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+			uavDesc.Format = desc.Format;
+			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D; 
+
+			if (info->GetGraphicResourceType() == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
+			{
+				srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+				uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+			}
+
+			const uint mipLevelCount = desc.MipLevels;
+			for (uint i = 0; i < mipLevelCount; ++i)
+			{ 
+				srvDesc.Texture2D.MostDetailedMip = i;
+				srvDesc.Texture2D.MipLevels = 1;
+				srvDesc.Texture2D.ResourceMinLODClamp = i;
+				uavDesc.Texture2D.MipSlice = i; 
+
+				auto mpbInfo = JPtrUtil::MakeOwnerPtr<MPBInfo>();
+				mpbInfo->info = info;
+				mpbInfo->index[(uint)J_GRAPHIC_BIND_TYPE::SRV] = GetMPBOffset(J_GRAPHIC_BIND_TYPE::SRV) + mpb.GetValidIndex();
+				data.device->CreateShaderResourceView(resource, &srvDesc, GetCpuSrvDescriptorHandle(mpbInfo->index[(uint)J_GRAPHIC_BIND_TYPE::SRV]));
+
+				if (!isReadOnly)
+				{
+					mpbInfo->index[(uint)J_GRAPHIC_BIND_TYPE::UAV] = GetMPBOffset(J_GRAPHIC_BIND_TYPE::UAV) + mpb.GetValidIndex();
+					data.device->CreateUnorderedAccessView(resource, nullptr, &uavDesc, GetCpuSrvDescriptorHandle(mpbInfo->index[(uint)J_GRAPHIC_BIND_TYPE::UAV]));
+				}
+				handle.push_back(mpb.Add(std::move(mpbInfo)));
+			}  
+			return true;
+		}
+		void JDx12GraphicResourceManager::DestroyMPB(JGraphicDevice* device, Core::JDataHandle& handle)
+		{
+			if (device == nullptr || !IsSameDevice(device))
+				return;
+			 
+			mpb.Remove(handle); 
+		}
+		uint JDx12GraphicResourceManager::GetMPBOffset(const J_GRAPHIC_BIND_TYPE bType)const noexcept
+		{
+			switch (bType)
+			{
+			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::RTV:
+				return 0;
+			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::DSV:
+				return 0;
+			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::SRV:
+			{
+				return GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::SRV) + GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::UAV) +
+					Private::InitGraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::SRV) + Private::InitGraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::UAV);
+			}
+			case JinEngine::Graphic::J_GRAPHIC_BIND_TYPE::UAV:
+			{
+				return GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::SRV) + GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::UAV) +
+					Private::InitGraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::SRV) + Private::InitGraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::UAV) +
+					Private::MPBCount(J_GRAPHIC_BIND_TYPE::SRV);
+			}
+			default:
+				return 0;
+			}
 		}
 		void JDx12GraphicResourceManager::BuildRtvDescriptorHeaps(ID3D12Device* device)
 		{
 			D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
 			rtvHeapDesc.NumDescriptors = GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::RTV) +
-				Private::GraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::RTV);
+				Private::InitGraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::RTV);
 			rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 			rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			rtvHeapDesc.NodeMask = 0;
@@ -2344,7 +2646,7 @@ namespace JinEngine
 		{
 			D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
 			dsvHeapDesc.NumDescriptors = GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::DSV) +
-				Private::GraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::DSV);
+				Private::InitGraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::DSV);
 			dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 			dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			dsvHeapDesc.NodeMask = 0;
@@ -2357,8 +2659,11 @@ namespace JinEngine
 			srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 			srvHeapDesc.NumDescriptors = GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::SRV) +
 				GetTotalViewCapacity(J_GRAPHIC_BIND_TYPE::UAV) +
-				Private::GraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::SRV) +
-				Private::GraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::UAV);
+				Private::InitGraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::SRV) +
+				Private::InitGraphicResourceViewFixedCount(J_GRAPHIC_BIND_TYPE::UAV) + 
+				Private::MPBCount(J_GRAPHIC_BIND_TYPE::SRV) + 
+				Private::MPBCount(J_GRAPHIC_BIND_TYPE::UAV);
+			 
 			srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 			ThrowIfFailedHr(device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(srvHeap.GetAddressOf())));
 			srvHeap->SetName(L"SrvHeap");

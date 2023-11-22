@@ -7,6 +7,7 @@
 #include"../../../../Object/JObjectModifyInterface.h"
 #include"../../../../Object/Resource/Scene/Accelerator/JAcceleratorType.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
+#include"../../../../Graphic/JGraphicConstants.h"
 
 namespace JinEngine
 {
@@ -22,30 +23,15 @@ namespace JinEngine
 		class JEditorSceneCoordGrid;
 		class JEditorCameraControl;
 		class JEditorTransformTool;
+		class JEditorGeometryTool;
 		class JEditorMenuBar;
 		class JEditorMenuNode;
 		class JEditorMouseIdenDragBox;
+		class JEditorIdentifierList;
+
 		class JSceneObserver final : public JEditorWindow, public JObjectModifyInterface
 		{
 		private:
-			struct FrustumInfo
-			{
-			public:
-				JUserPtr<JGameObject> root;
-				JUserPtr<JGameObject> nearFrustum;
-				JUserPtr<JGameObject> farFrustum;
-			public:
-				JUserPtr<JCamera> cam;
-			public:
-				FrustumInfo(const JUserPtr<JCamera>& cam);
-			public:
-				void Create(const JUserPtr<JGameObject>& parent);
-				void Clear();
-			public:
-				void Update();
-			public:
-				bool IsValid()const noexcept;
-			};
 			struct EditorOption
 			{
 			public:
@@ -89,6 +75,16 @@ namespace JinEngine
 				void Initialize();
 				void Clear();
 			};
+			struct TextureDebug
+			{
+			public:
+				std::vector<Graphic::ResourceHandle> gpuHandle;
+				std::vector<Core::JDataHandle> dataHandle;
+			public:
+				float sizeFactor = 0.25f;
+			public:
+				bool HasValidHandle()const noexcept;
+			};
 		public:
 			using BeginScenePlayF = Core::JSFunctorType<void>;
 			using EndScenePlayF = Core::JSFunctorType<void>;
@@ -101,7 +97,7 @@ namespace JinEngine
 			using MenuSwitchIconOnF = typename Core::JSFunctorType<void, JSceneObserver*>;
 			using MenuSwitchIconOffF = typename Core::JSFunctorType<void, JSceneObserver*>;
 		private:
-			static constexpr uint menuSwitchIconCount = 7;
+			static constexpr uint menuSwitchIconCount = 8;
 		private:
 			std::unique_ptr<BeginScenePlayF::Functor> beginScenePlayF;
 			std::unique_ptr<EndScenePlayF::Functor> endScenePlayF;
@@ -115,21 +111,23 @@ namespace JinEngine
 			std::unique_ptr<MenuSwitchIconOnF::Functor> switchIconOnFunctorVec[menuSwitchIconCount];
 			std::unique_ptr<MenuSwitchIconOffF::Functor> switchIconOffFunctorVec[menuSwitchIconCount];
 		private:
-			JUserPtr<JScene> scene;
-			//JUserPtr<JGameObject> selectedGobj;
-			std::unordered_map<size_t, FrustumInfo> camFrustumMap;
+			JUserPtr<JScene> scene; 
 		private:
 			std::unique_ptr<JEditorSceneCoordGrid> coordGrid;
 			std::unique_ptr<JEditorBinaryTreeView> editBTreeView;
 			std::unique_ptr<JEditorCameraControl> editCamCtrl;
 			std::unique_ptr<JEditorMouseIdenDragBox> mouseBBox;
+			std::unique_ptr<JEditorIdentifierList> idenList;
 			std::unique_ptr<JEditorTransformTool> positionTool;
 			std::unique_ptr<JEditorTransformTool> rotationTool;
 			std::unique_ptr<JEditorTransformTool> scaleTool;
+			std::unique_ptr<JEditorGeometryTool> geoTool;
 		private:
 			std::vector<JUserPtr<JTexture>> menuIconTexture;	//cashing
 			std::vector<JUserPtr<JTexture>> sceneIconTexture;	//cashing
 			std::vector<JEditorTransformTool*> toolVec;
+		private:
+			std::unique_ptr<TextureDebug> textureDebug;
 		private:
 			EditorOption editOption;
 			EditorCamData editCamData;
@@ -179,9 +177,9 @@ namespace JinEngine
 		private:
 			void ShadowMapViewerOnScreen();
 			void RenderResultOnScreen();
+			void TextureDetailOnScreen();		 
 		private:
-			void UpdateMainCamFrustum()noexcept;
-			void CreateCamFrustum(JUserPtr<JCamera> cam)noexcept;
+			void UpdateMainCamFrustum()noexcept; 
 		private:
 			void ActivateTransformToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type);
 			void DeActivateTransformToolType(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE type);

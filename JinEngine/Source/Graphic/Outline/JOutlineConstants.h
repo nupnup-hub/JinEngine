@@ -14,16 +14,16 @@ namespace JinEngine
 			JVector4<float> colors[8] =
 			{
 				JVector4<float>(0.0f ,0.0f, 0.0f, 0.0f),
-				JVector4<float>(1.0f ,0.0f, 0.0f, 1.0f),	//same as DefaultColor
-				JVector4<float>(1.0f ,0.5f, 0.0f, 1.0f),
-				JVector4<float>(1.0f ,1.0f, 0.0f, 1.0f),
-				JVector4<float>(0.0f ,1.0f, 0.0f, 1.0f),
-				JVector4<float>(0.0f ,0.0f, 1.0f, 1.0f),
-				JVector4<float>(0.5f ,0.0f, 0.75f, 1.0f),
-				JVector4<float>(0.05f ,0.05f, 0.05f, 1.0f)
+				JVector4<float>(0.85f ,0.2f, 0.2f, 0.9f),	//same as DefaultColor
+				JVector4<float>(0.85f ,0.425f, 0.2f, 0.9f),
+				JVector4<float>(0.85f ,0.85f, 0.2f, 0.9f),
+				JVector4<float>(0.2f ,0.85f, 0.2f, 0.9f),
+				JVector4<float>(0.2f ,0.2f, 0.85f, 0.9f),
+				JVector4<float>(0.425f ,0.2f, 0.75f, 0.9f),
+				JVector4<float>(0.05f ,0.05f, 0.05f, 0.9f)
 			};
 			float threshold = 0.01f;
-			float thickness = 4;
+			float thickness = 2;
 			uint offset = 0;
 			uint width = 0;
 			uint height = 0;

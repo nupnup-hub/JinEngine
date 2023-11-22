@@ -19,17 +19,14 @@ namespace JinEngine
 			bool allowDrawGui = true; 
 		public:
 			//Shadow option
-			bool useDirectionalLightPcm = false;
-			bool useDirectionalLightPcmHighQuality = false;
-			bool useDirectionalLightPcss = true; 
-			bool usePointLightPcm = true; 
-			bool usePointLightPcmHighQuality = false;
-			bool usePointLightPcss = false;
-			bool useSpotLightPcm = true; 
-			bool useSpotLightPcmHighQuality = false;
-			bool useSpotLightPcss = false;
+			bool useHighQualityShadow = true; //dLit pcss other light pcf 32
+			bool useMiddleQualityShadow = false; //all light pcf 32
+			bool useLowQualityShadow = false;	//all light pcf 16
 		public:
-//Test option----------------------------------------------
+			bool useSsao = false;		//screen space ambient occlusion
+			bool useHbao = false;		//horizontal based ambient occlusion
+		public:
+		//Test option----------------------------------------------
 			//BRDF masking
 			bool useSmithMasking = true;
 			bool useTorranceMaskig = false;

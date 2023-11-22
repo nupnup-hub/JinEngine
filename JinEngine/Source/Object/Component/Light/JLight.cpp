@@ -60,6 +60,8 @@ namespace JinEngine
 		REGISTER_PROPERTY_EX(shadowResolution, GetShadowResolution, TryCallSetShadowResolution, GUI_ENUM_COMBO(J_SHADOW_RESOLUTION, "-a {v} x {v};"))
 		J_SHADOW_RESOLUTION shadowResolution = J_SHADOW_RESOLUTION::MEDIUM;
 	public:
+		REGISTER_PROPERTY_EX(bias, GetBias, SetBias, GUI_SLIDER(-1.0f, 1.0f, true, false, 5))
+		float bias = 0.0f;
 		REGISTER_PROPERTY_EX(penumbraWidth, GetPenumbraWidth, SetPenumbraWidth, GUI_SLIDER(minPenumbraWidth, maxPenumbraWidth, true, false))
 		float penumbraWidth = 1.0f;
 		REGISTER_PROPERTY_EX(penumbraBlockerScale, GetPenumbraBlockerWidth, SetPenumbraBlockerWidth, GUI_SLIDER(minPenumbraWidth, maxPenumbraWidth, true, false))
@@ -87,6 +89,10 @@ namespace JinEngine
 		JVector3<float> GetColor()const noexcept
 		{
 			return color;
+		}
+		float GetBias()const noexcept
+		{
+			return bias;
 		}
 		float GetPenumbraWidth()const noexcept
 		{
@@ -117,6 +123,11 @@ namespace JinEngine
 			allowDisplayShadowMap = value;
 			SetFrameDirty();
 		} 
+		void SetBias(const float value)
+		{
+			bias = std::clamp(value, -1.0f, 1.0f);
+			SetFrameDirty();
+		}
 		void SetPenumbraWidth(const float value)noexcept
 		{
 			penumbraWidth = std::clamp(value, minPenumbraWidth, maxPenumbraWidth);
@@ -164,6 +175,7 @@ namespace JinEngine
 			from->SetShadowResolution(to->GetShadowResolutionType());
 			from->SetAllowDisplayShadowMap(to->AllowDisplayShadowMap());
 			from->SetShadow(to->IsShadowActivated());
+			from->SetBias(to->GetBias());
 
 			to->impl->SetFrameDirty();
 			return true;
@@ -263,6 +275,10 @@ namespace JinEngine
 	{
 		return impl->GetShadowMapSize();
 	}
+	float JLight::GetBias()const noexcept
+	{
+		return impl->GetBias();
+	}
 	float JLight::GetPenumbraWidth()const noexcept
 	{
 		return impl->GetPenumbraWidth();
@@ -286,6 +302,10 @@ namespace JinEngine
 	void JLight::SetAllowDisplayShadowMap(const bool value)noexcept
 	{
 		impl->SetAllowDisplayShadowMap(value);
+	}
+	void JLight::SetBias(const float value)noexcept
+	{
+		impl->SetBias(value);
 	}
 	void JLight::SetPenumbraWidth(const float value)noexcept
 	{
@@ -364,6 +384,7 @@ namespace JinEngine
 		std::wstring guide; 
 		JVector3<float> sColor;
 		J_SHADOW_RESOLUTION sShadowResolutionType;
+		float sBias = 0;
 		float sPenumbraWidth = 0;
 		float sPenumbraBlockerScale = 0;
 		bool sOnShadow = 0;
@@ -371,6 +392,7 @@ namespace JinEngine
 
 		JObjectFileIOHelper::LoadVector3(tool, sColor, "Color:");
 		JObjectFileIOHelper::LoadEnumData(tool, sShadowResolutionType, "ShadowResolution:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sBias, "Bias:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sPenumbraWidth, "PenumbraWidth:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sPenumbraBlockerScale, "PenumbraBlockerScale:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sOnShadow, "OnShadow:");
@@ -378,6 +400,7 @@ namespace JinEngine
 
 		user->SetColor(sColor);
 		user->SetShadowResolution(sShadowResolutionType);
+		user->SetBias(sBias);
 		user->SetPenumbraWidth(sPenumbraWidth);
 		user->SetPenumbraBlockerWidth(sPenumbraBlockerScale);
 		user->SetAllowDisplayShadowMap(sAllowDisplayShadowMap);
@@ -391,6 +414,7 @@ namespace JinEngine
 		 
 		JObjectFileIOHelper::StoreVector3(tool, user->GetColor(), "Color:");
 		JObjectFileIOHelper::StoreEnumData(tool, user->GetShadowResolutionType(), "ShadowResolution:");
+		JObjectFileIOHelper::StoreAtomicData(tool, user->GetBias(), "Bias:");
 		JObjectFileIOHelper::StoreAtomicData(tool, user->GetPenumbraWidth(), "PenumbraWidth:");
 		JObjectFileIOHelper::StoreAtomicData(tool, user->GetPenumbraBlockerWidth(), "PenumbraBlockerScale:");
 		JObjectFileIOHelper::StoreAtomicData(tool, user->IsShadowActivated(), "OnShadow:");
@@ -399,7 +423,7 @@ namespace JinEngine
 	}
  
 	void FrameDirtyInterface::RegisterFrameDirtyListener(JLight* lit, Graphic::JFrameDirty* listener, const size_t guid)noexcept
-	{
+	{ 
 		lit->impl->RegisterFrameDirtyListener(listener, guid);
 	}
 	void FrameDirtyInterface::DeRegisterFrameDirtyListener(JLight* lit, const size_t guid)noexcept

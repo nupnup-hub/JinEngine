@@ -1,0 +1,110 @@
+#pragma once
+
+#if !defined(CSM_MAX_COUNT)
+#define CSM_MAX_COUNT 8
+#endif
+ 
+#if !defined(CUBE_MAP_FACE_COUNT)
+#define CUBE_MAP_FACE_COUNT 6
+#endif
+
+#define DIRECTONAL_LIGHT_NON_SHADOW_MAP -1
+#define DIRECTONAL_LIGHT_HAS_NORMAL_SHADOW_MAP 0
+#define DIRECTONAL_LIGHT_HAS_CSM 1
+ 
+//272byte
+struct DirectionalLightData
+{
+	float4x4 view;
+	float4x4 viewProj;
+	float4x4 shadowMapTransform;
+	float3 color;
+	int shadowMapIndex;
+	float3 direction;
+	int shadowMapType; //-1 not, 0 normal, 1 csm, 2 cube
+	float2 frustumSize;
+	float frustumNear;
+	float frustumFar;
+	float penumbraScale;
+	float penumbraBlockerScale;
+	int csmDataIndex; //data start index
+	float shadowMapSize;
+	float shadowMapInvSize;
+	float tanAngle;
+	float bias;
+	uint dLightPad00;
+};
+//336byte
+struct CsmData
+{
+	float4 scale[CSM_MAX_COUNT]; // (projM * textureM) scale
+	float4 posOffset[CSM_MAX_COUNT]; // (projM * textureM) translate
+	//float2 frustumSize[CSM_MAX_COUNT];
+	float frustumNear[CSM_MAX_COUNT];
+	float frustumFar[CSM_MAX_COUNT];
+	float mapMinBorder; //default value is 0
+	float mapMaxBorder; //default value is 1
+	float levelBlendRate;
+	uint count;
+};
+//464byte
+struct PointLightData
+{
+	float4x4 shadowMapTransform[CUBE_MAP_FACE_COUNT];
+	float3 midPosition;
+	float power;
+	float3 sidePosition[2];
+	float radius;
+	float frustumNear;
+	float3 color;
+	float frustumFar;
+	float penumbraScale;
+	float penumbraBlockerScale;
+	float shadowMapIndex;
+	int hasShadowMap;
+	float shadowMapSize;
+	float shadowMapInvSize;
+	float bias;
+};
+//144 + 32byte
+struct SpotLightData
+{
+	float4x4 shadowMapTransform;
+	float3 color;
+	float power;
+	float3 position;
+	float frustumNear;
+	float3 direction;
+	float frustumFar;
+	float innerConeAngle;
+	float outerConeAngle;
+	float penumbraScale;
+	float penumbraBlockerScale;
+	int shadowMapIndex;
+	uint hasShadowMap;
+	float shadowMapSize;
+	float shadowMapInvSize;
+	float bias;
+	uint sLightPad00;
+	uint sLightPad01;
+	uint sLightPad02;
+};
+
+struct RectLightData
+{
+	float4x4 shadowMapTransform;
+	float3 origin;
+	float power;
+	float3 extents;
+	float frustumNear;
+	float3 axis[3];
+	float3 color; 
+	float frustumFar;
+	uint isTwoSide;
+	int shadowMapIndex;
+	uint hasShadowMap;
+	int sourceTextureIndex;
+	int rLightPad00;
+	int rLightPad01;
+	int rLightPad02;
+};

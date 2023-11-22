@@ -41,13 +41,13 @@
 #include"../../../../Develop/Debug/JDevelopDebug.h"
 #endif 
 
-#define THREAD_DIM_X_SYMBOL "DIMX"
-#define THREAD_DIM_Y_SYMBOL "DIMY"
-#define THREAD_DIM_Z_SYMBOL "DIMZ"
+#define THREAD_DIM_X_SYMBOL L"DIMX"
+#define THREAD_DIM_Y_SYMBOL L"DIMY"
+#define THREAD_DIM_Z_SYMBOL L"DIMZ"
 
-#define HZB_SAMPLING_COUNT_SYMBOL "DOWN_SAMPLING_COUNT"
-#define HZB_OCC_QUERY_COUNT_SYMBOL "OCCLUSION_QUERY_COUNT" 
-#define HZB_PERSPECTIVE_DEPTH_MAP_SYMBOL "PERSPECTIVE_DEPTH_MAP"
+#define HZB_SAMPLING_COUNT_SYMBOL L"DOWN_SAMPLING_COUNT"
+#define HZB_OCC_QUERY_COUNT_SYMBOL L"OCCLUSION_QUERY_COUNT" 
+#define HZB_PERSPECTIVE_DEPTH_MAP_SYMBOL L"PERSPECTIVE_DEPTH_MAP"
 
 namespace JinEngine::Graphic
 {
@@ -56,8 +56,8 @@ namespace JinEngine::Graphic
 		//shadow map draw root
 		static constexpr int depthMapBuffIndex = 0;	//same as objCB(graphic root)
 		static constexpr int mipMapBuffIndex = depthMapBuffIndex + 1;
-		static constexpr int lastMipMapInex = mipMapBuffIndex + 1;
-		static constexpr int objectBuffIndex = lastMipMapInex + 1;
+		static constexpr int lastMipmapInex = mipMapBuffIndex + 1;
+		static constexpr int objectBuffIndex = lastMipmapInex + 1;
 		static constexpr int queryResultIndex = objectBuffIndex + 1;
 		static constexpr int depthMapInfoCBIndex = queryResultIndex + 1;
 		static constexpr int computePassCBIndex = depthMapInfoCBIndex + 1;
@@ -191,9 +191,9 @@ namespace JinEngine::Graphic
 		}
 		static void StuffComputeShaderCommonMacro(_Out_ JComputeShaderInitData& initHelper, const JDx12HZBOccCulling::COMPUTE_TYPE type)
 		{
-			initHelper.macro.push_back({ THREAD_DIM_X_SYMBOL, std::to_string(initHelper.dispatchInfo.threadDim.x) });
-			initHelper.macro.push_back({ THREAD_DIM_Y_SYMBOL, std::to_string(initHelper.dispatchInfo.threadDim.y) });
-			initHelper.macro.push_back({ THREAD_DIM_Z_SYMBOL, std::to_string(initHelper.dispatchInfo.threadDim.z) });
+			initHelper.macro.push_back({ THREAD_DIM_X_SYMBOL, std::to_wstring(initHelper.dispatchInfo.threadDim.x) });
+			initHelper.macro.push_back({ THREAD_DIM_Y_SYMBOL, std::to_wstring(initHelper.dispatchInfo.threadDim.y) });
+			initHelper.macro.push_back({ THREAD_DIM_Z_SYMBOL, std::to_wstring(initHelper.dispatchInfo.threadDim.z) });
 		}
 		static JShaderType::CompileInfo ComputeShaderCompileInfo(const JDx12HZBOccCulling::COMPUTE_TYPE type)
 		{
@@ -201,17 +201,17 @@ namespace JinEngine::Graphic
 			switch (type)
 			{
 			case COMPUTE_TYPE::HZB_COPY_PERSPECTIVE:
-				return JShaderType::CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBCopyDepthMap");
+				return JShaderType::CompileInfo(L"Hierarchical z-buffer.hlsl", L"HZBCopyDepthMap");
 			case COMPUTE_TYPE::HZB_COPY_ORTHOLOGIC:
-				return JShaderType::CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBCopyDepthMap");
+				return JShaderType::CompileInfo(L"Hierarchical z-buffer.hlsl", L"HZBCopyDepthMap");
 			case COMPUTE_TYPE::HZB_DOWN_SAMPLING:
-				return JShaderType::CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBDownSampling");
+				return JShaderType::CompileInfo(L"Hierarchical z-buffer.hlsl", L"HZBDownSampling");
 			case COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE:
-				return JShaderType::CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBOcclusion");
+				return JShaderType::CompileInfo(L"Hierarchical z-buffer.hlsl", L"HZBOcclusion");
 			case COMPUTE_TYPE::HZB_CULLING_ORTHOLOGIC:
-				return JShaderType::CompileInfo(L"Hierarchical z-buffer.hlsl", "HZBOcclusion");
+				return JShaderType::CompileInfo(L"Hierarchical z-buffer.hlsl", L"HZBOcclusion");
 			default:
-				return JShaderType::CompileInfo(L"Error", "Error");
+				return JShaderType::CompileInfo(L"Error", L"Error");
 			}
 		}
 		static void StuffSamplingInitHelper(_Out_ JComputeShaderInitData& initHelper,
@@ -258,7 +258,7 @@ namespace JinEngine::Graphic
 				 
 				initHelper.dispatchInfo.taskOriCount = graphicInfo.occlusionWidth * graphicInfo.occlusionHeight;
 				if (type == COMPUTE_TYPE::HZB_COPY_PERSPECTIVE)
-					initHelper.macro.push_back({ HZB_PERSPECTIVE_DEPTH_MAP_SYMBOL, "1" });
+					initHelper.macro.push_back({ HZB_PERSPECTIVE_DEPTH_MAP_SYMBOL, L"1" });
 				StuffComputeShaderCommonMacro(initHelper, type);
 			};
 
@@ -333,9 +333,9 @@ namespace JinEngine::Graphic
 					initHelper.dispatchInfo.groupDim = JVector3<uint>(queryCount / warpFactor, 1, 1);
 					initHelper.dispatchInfo.taskOriCount = queryCount;
 				}
-				initHelper.macro.push_back({ HZB_OCC_QUERY_COUNT_SYMBOL, std::to_string(queryCount) });
+				initHelper.macro.push_back({ HZB_OCC_QUERY_COUNT_SYMBOL, std::to_wstring(queryCount) });
 				if (type == COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE)
-					initHelper.macro.push_back({ HZB_PERSPECTIVE_DEPTH_MAP_SYMBOL, "1" });
+					initHelper.macro.push_back({ HZB_PERSPECTIVE_DEPTH_MAP_SYMBOL, L"1" });
 				StuffComputeShaderCommonMacro(initHelper, type);
 				break;
 			}
@@ -575,7 +575,7 @@ namespace JinEngine::Graphic
 		{
 			const int occVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP, i);
 			const int occHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP, J_GRAPHIC_BIND_TYPE::DSV, i);
-			//const uint occMipMapVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP, i);
+			//const uint occMipmapVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP, i);
 
 			D3D12_VIEWPORT mViewport = { 0.0f, 0.0f,(float)helper.info.occlusionWidth, (float)helper.info.occlusionHeight, 0.0f, 1.0f };
 			D3D12_RECT mScissorRect = { 0, 0, helper.info.occlusionWidth, helper.info.occlusionHeight };
@@ -735,7 +735,9 @@ namespace JinEngine::Graphic
 			const uint viewCount = destInfo->GetViewCount(J_GRAPHIC_BIND_TYPE::SRV);
 			for (uint j = 0; j < viewCount; ++j)
 			{
-				JDx12GraphicDepthMapDebugHandleSet handleSet(occlusionSize,
+				JDx12GraphicDepthMapDebugTaskSet handleSet(dx12Device,
+					dx12Gm,
+					occlusionSize,
 					camNear,
 					camFar,
 					isPerspective,
@@ -771,10 +773,10 @@ namespace JinEngine::Graphic
 		for (uint i = 0; i < dataCount; ++i)
 		{
 			const int occVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP, i);
-			const int occMipMapVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP, i);
+			const int occMipmapVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP, i);
 
 			auto occDsInfo = dx12Gm->GetDxInfo(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP, occVecIndex);
-			auto occMipMapInfo = dx12Gm->GetDxInfo(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP, occMipMapVecIndex);
+			auto occMipmapInfo = dx12Gm->GetDxInfo(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP, occMipmapVecIndex);
 			uint occPassFrameIndex = 0;
 
 			if (helper.cam != nullptr)
@@ -785,8 +787,8 @@ namespace JinEngine::Graphic
 			DepthMapDownSampling(cmdList,
 				dx12Frame,
 				dx12Gm->GetGpuSrvDescriptorHandle(occDsInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
-				dx12Gm->GetGpuSrvDescriptorHandle(occMipMapInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
-				dx12Gm->GetGpuSrvDescriptorHandle(occMipMapInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::UAV)),
+				dx12Gm->GetGpuSrvDescriptorHandle(occMipmapInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
+				dx12Gm->GetGpuSrvDescriptorHandle(occMipmapInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::UAV)),
 				helper.info.occlusionMapCount,
 				dx12Gm->GetDescriptorSize(J_GRAPHIC_BIND_TYPE::SRV),
 				occPassFrameIndex,
@@ -794,7 +796,7 @@ namespace JinEngine::Graphic
 			OcclusionCulling(cmdList,
 				dx12Frame,
 				dx12Cm,
-				dx12Gm->GetGpuSrvDescriptorHandle(occMipMapInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
+				dx12Gm->GetGpuSrvDescriptorHandle(occMipmapInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
 				occPassFrameIndex,
 				helper.GetCullInterface(),
 				isPerspective);
@@ -822,7 +824,7 @@ namespace JinEngine::Graphic
 		D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = dx12Frame->hzbOccReqCB->GetResource()->GetGPUVirtualAddress() + passCBIndex * passCBByteSize;
 
 		commandList->SetComputeRootDescriptorTable(depthMapBuffIndex, depthMapSrvHandle);
-		commandList->SetComputeRootDescriptorTable(lastMipMapInex, mipMapUavHandle);
+		commandList->SetComputeRootDescriptorTable(lastMipmapInex, mipMapUavHandle);
 		commandList->SetComputeRootConstantBufferView(depthMapInfoCBIndex, occDepthMapInfoCB->GetResource()->GetGPUVirtualAddress());
 		commandList->SetComputeRootConstantBufferView(computePassCBIndex, passCBAddress);
 
@@ -842,7 +844,7 @@ namespace JinEngine::Graphic
 			destHandle.Offset(i + 1, srvDescriptorSize);
 
 			commandList->SetComputeRootDescriptorTable(mipMapBuffIndex, srcHandle);
-			commandList->SetComputeRootDescriptorTable(lastMipMapInex, destHandle);
+			commandList->SetComputeRootDescriptorTable(lastMipmapInex, destHandle);
 
 			D3D12_GPU_VIRTUAL_ADDRESS depthMapCBAddress = occDepthMapInfoCB->GetResource()->GetGPUVirtualAddress() + i * depthMapInfoCBByteSize;
 			commandList->SetComputeRootConstantBufferView(depthMapInfoCBIndex, depthMapCBAddress);
@@ -907,7 +909,7 @@ namespace JinEngine::Graphic
 		// Create root CBV. 
 		slotRootParameter[depthMapBuffIndex].InitAsDescriptorTable(1, &depthMapTable);
 		slotRootParameter[mipMapBuffIndex].InitAsDescriptorTable(1, &mipmapTable);
-		slotRootParameter[lastMipMapInex].InitAsDescriptorTable(1, &lastMipmapTable);
+		slotRootParameter[lastMipmapInex].InitAsDescriptorTable(1, &lastMipmapTable);
 
 		slotRootParameter[objectBuffIndex].InitAsShaderResourceView(2);
 		slotRootParameter[queryResultIndex].InitAsUnorderedAccessView(1, 1);
@@ -1004,9 +1006,8 @@ namespace JinEngine::Graphic
 	}
 	void JDx12HZBOccCulling::CompileShader(JDx12ComputeShaderDataHolder* holder, const JComputeShaderInitData& initData, const COMPUTE_TYPE type)
 	{
-		JShaderType::CompileInfo compileInfo = ComputeShaderCompileInfo(type); 
-		auto macro = JDxShaderDataUtil::ToD3d12Macro(initData.macro);
-		holder->cs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, macro.data(), compileInfo.functionName, "cs_5_1");
+		JShaderType::CompileInfo compileInfo = ComputeShaderCompileInfo(type);  
+		holder->cs = JDxShaderDataUtil::CompileShader(compileInfo.filePath, initData.macro, compileInfo.functionName, L"cs_6_0");
 		holder->dispatchInfo = initData.dispatchInfo;
 	}
 	void JDx12HZBOccCulling::StuffPso(JDx12ComputeShaderDataHolder* holder, JDx12GraphicDevice* dx12Device, const JComputeShaderInitData& initData, const COMPUTE_TYPE type)

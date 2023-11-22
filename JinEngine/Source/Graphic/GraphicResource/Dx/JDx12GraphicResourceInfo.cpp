@@ -6,6 +6,7 @@ namespace JinEngine::Graphic
 	namespace Private
 	{ 
 	}
+	 
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicResourceInfo::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
@@ -18,12 +19,26 @@ namespace JinEngine::Graphic
 	{
 		return resourceHolder->GetHeight();
 	}
-	ResourceHandle JDx12GraphicResourceInfo::GetResourceHandle(const J_GRAPHIC_BIND_TYPE bindType, const uint bIndex)const noexcept
+	uint JDx12GraphicResourceInfo::GetMipmapCount()const noexcept
+	{
+		return resourceHolder->GetResource()->GetDesc().MipLevels;
+	}
+	ResourceHandle JDx12GraphicResourceInfo::GetResourceGpuHandle(const J_GRAPHIC_BIND_TYPE bindType, const uint bIndex)const noexcept
 	{  
 		if (GetViewCount(bindType) <= bIndex)
 			return nullptr;
 		 
 		CD3DX12_GPU_DESCRIPTOR_HANDLE handle = getHandlePtr(manager, bindType, GetHeapIndexStart(bindType) + bIndex);
+		//cast uint64 to void*
+		//void*는 uint64주소가 아니라 값으로 채워진다.
+		return (ResourceHandle)handle.ptr;
+	}
+	ResourceHandle JDx12GraphicResourceInfo::GetResourceOptionGpuHandle(const J_GRAPHIC_BIND_TYPE bindType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint bIndex)const noexcept
+	{
+		if (GetOptionViewCount(bindType, opType) <= bIndex)
+			return nullptr;
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE handle = getHandlePtr(manager, bindType, GetOptionHeapIndexStart(bindType, opType) + bIndex);
 		//cast uint64 to void*
 		//void*는 uint64주소가 아니라 값으로 채워진다.
 		return (ResourceHandle)handle.ptr;
@@ -36,16 +51,28 @@ namespace JinEngine::Graphic
 			static_cast<JDxGraphicResourceHolderInterface*>(resourceHolder.get())->SetPrivateName(fName);
 		}
 	}
-	void JDx12GraphicResourceInfo::SetOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, std::unique_ptr<JDx12GraphicResourceHolder>&& holder)
+	/*
+	void JDx12GraphicResourceInfo::SetPostProcessLog(const uint64 frame)noexcept
 	{
-		if (holder == nullptr || HasOptional(opType))
+		if (!HasOptional(J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING))
+			return;
+
+		if (optionHolderSet->postProcessLog.lastUpdatedFrame != frame)
+			optionHolderSet->postProcessLog.isLastUpdatedPostProcessResource = false;
+
+		optionHolderSet->postProcessLog.lastUpdatedFrame = frame;
+	}
+	*/
+	void JDx12GraphicResourceInfo::SetOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, std::unique_ptr<JDx12GraphicResourceHolder> optionHolder)
+	{
+		if (optionHolder == nullptr || HasOptional(opType))
 			return;
 
 		TryCreateOptionViewInfo();
-		if (optionHolderSet != nullptr)
+		if (optionHolderSet == nullptr)
 			optionHolderSet = std::make_unique< JDx12GraphicResourceInfo::OptionHolderSet>();
 
-		optionHolderSet->holder[(uint)opType] = std::move(holder);
+		optionHolderSet->holder[(uint)opType] = std::move(optionHolder);
 	}
 	bool JDx12GraphicResourceInfo::HasOptional(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept
 	{

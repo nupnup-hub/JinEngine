@@ -339,6 +339,10 @@ namespace JinEngine
 		{
 			return (uint)selectedObjMap.size();
 		}
+		JUserPtr<Core::JIdentifier> JEditorWindow::GetFirstSelectedObject()const noexcept
+		{
+			return selectedObjMap.size() > 0 ? selectedObjMap.begin()->second : nullptr;
+		}
 		std::vector<JUserPtr<Core::JIdentifier>> JEditorWindow::GetSelectedObjectVec()const noexcept
 		{
 			std::vector<JUserPtr<Core::JIdentifier>> vec;

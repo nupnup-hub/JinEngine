@@ -70,11 +70,11 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12GraphicDevice::CreateRefResourceObject(const JGraphicDeviceInitSet& dataSet)
 	{
-		if (dataSet.gResourceM == nullptr || dataSet.gResourceM->GetDeviceType() != GetDeviceType())
+		if (dataSet.graphicResourceM == nullptr || dataSet.graphicResourceM->GetDeviceType() != GetDeviceType())
 			return false;
 
 		D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msQualityLevels;
-		msQualityLevels.Format = static_cast<JDx12GraphicResourceManager*>(dataSet.gResourceM)->GetBackBufferFormat();
+		msQualityLevels.Format = static_cast<JDx12GraphicResourceManager*>(dataSet.graphicResourceM)->GetBackBufferFormat();
 		msQualityLevels.SampleCount = 4;
 		msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
 		msQualityLevels.NumQualityLevels = 0;
@@ -205,6 +205,21 @@ namespace JinEngine::Graphic
 	{
 		return !stCommand;
 	}
+	void JDx12GraphicDevice::CalViewportAndRect(const JVector2F rtSize, _Out_ D3D12_VIEWPORT& viweport, _Out_ D3D12_RECT& rect)const noexcept
+	{
+		viweport = screenViewport;
+		rect = scissorRect;
+		if (rtSize.x < viweport.Width)
+		{
+			viweport.Width = rtSize.x;
+			rect.right = rtSize.x;
+		}
+		if (rtSize.y < viweport.Height)
+		{
+			viweport.Height = rtSize.y;
+			rect.bottom = rtSize.y;
+		}
+	}
 	void JDx12GraphicDevice::Present()
 	{
 		ThrowIfFailedG(swapChain->Present(syncInterval, 0));
@@ -300,7 +315,7 @@ namespace JinEngine::Graphic
 			text += L"\n";
 			OutputDebugString(text.c_str());
 
-			LogOutputDisplayModes(output, static_cast<JDx12GraphicResourceManager*>(dataSet.gResourceM)->GetBackBufferFormat());
+			LogOutputDisplayModes(output, static_cast<JDx12GraphicResourceManager*>(dataSet.graphicResourceM)->GetBackBufferFormat());
 			ReleaseCom(output);
 			++i;
 		}
@@ -355,7 +370,7 @@ namespace JinEngine::Graphic
 	}
 	void JDx12GraphicDevice::CreateSwapChain(const JGraphicDeviceInitSet& dataSet)
 	{
-		static_cast<JDx12GraphicResourceManager*>(dataSet.gResourceM)->CreateSwapChainBuffer(d3dDevice.Get(),
+		static_cast<JDx12GraphicResourceManager*>(dataSet.graphicResourceM)->CreateSwapChainBuffer(d3dDevice.Get(),
 			dxgiFactory.Get(),
 			commandQueue.Get(),
 			swapChain,
@@ -381,6 +396,6 @@ namespace JinEngine::Graphic
 		screenViewport.Height = static_cast<float>(dataSet.info.height);
 		screenViewport.MinDepth = 0.0f;
 		screenViewport.MaxDepth = 1.0f;
-		scissorRect = { 0, 0,dataSet.info.width, dataSet.info.height };
+		scissorRect = { 0, 0, dataSet.info.width, dataSet.info.height };
 	}
 }

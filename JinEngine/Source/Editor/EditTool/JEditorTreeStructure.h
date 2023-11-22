@@ -22,12 +22,16 @@ namespace JinEngine
 		public:
 			void Begin();
 			void End();
-		public: 
+		public:  
 			bool DisplayTreeNode(const std::string& label, J_GUI_TREE_NODE_FLAG_ flags, const bool isFocus, const bool isActivated, const bool isSelected);
 			bool CheckTreeNodeIsOpen(const std::string& label, J_GUI_TREE_NODE_FLAG_ flags, const bool isFocus, const bool isActivated, const bool isSelected);
 		public:
+			void TreePop();
+		public:
 			void LoadData(JFileIOTool& tool);
 			void StoreData(JFileIOTool& tool, const GuiID wndID);
+		public:
+			J_GUI_TREE_NODE_FLAG_ GetBaseFlag()const noexcept;
 		};
 	}
 }

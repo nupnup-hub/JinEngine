@@ -23,6 +23,21 @@ namespace JinEngine
 	{
 		static JTexturePrivate tPrivate;
 	}
+	namespace Private
+	{
+		static Graphic::JMipmapGenerateDesc InitMipmapGenerateDesc()
+		{
+			Graphic::JMipmapGenerateDesc desc;
+			desc.type = Graphic::J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT;
+			desc.kernelSize = Graphic::J_KENEL_SIZE::_3x3;
+			desc.sharpnessFactor = 2.5f;
+			return desc;
+		}
+		 
+		static constexpr float minMipmapSharpness = 0.001f;
+		static constexpr float maxMipmapSharpness = 32;
+	}
+	
 
 	class JTexture::JTextureImpl : public Core::JTypeImplBase,
 		public JClearableInterface, 
@@ -36,12 +51,20 @@ namespace JinEngine
 		REGISTER_PROPERTY_EX(resolution, GetTextureResolution, SetTextureResolution, GUI_ENUM_COMBO(J_TEXTURE_RESOLUTION, "-a {v} x {v}; -c {v} != 0;"))
 		J_TEXTURE_RESOLUTION resolution = J_TEXTURE_RESOLUTION::ORIGINAL;
 	public:
+		Graphic::JMipmapGenerateDesc mipMapGenerateDesc = Private::InitMipmapGenerateDesc();
+		REGISTER_GUI_ENUM_CONDITION(TextureMipmapType, Graphic::J_GRAPHIC_MIP_MAP_TYPE, GetMipmapType, true)
+		REGISTER_METHOD_GUI_WIDGET(MipmapType, GetMipmapType, SetMipmapType, GUI_ENUM_COMBO(Graphic::J_GRAPHIC_MIP_MAP_TYPE))
+		REGISTER_METHOD_GUI_WIDGET(MipmapKernelSize, GetMipmapKernelSize, SetMipmapKernelSize, GUI_ENUM_COMBO(Graphic::J_KENEL_SIZE))
+		REGISTER_METHOD_GUI_WIDGET(MipmapSharpness, GetMipmapSharpnessFactor, SetMipmapSharpnessFactor, GUI_SLIDER(Private::minMipmapSharpness, Private::maxMipmapSharpness, true))
+	public:
 		JTextureImpl(const InitData& initData, JTexture* thisTexRaw)
 		{
 			if (IsValidTextureType(initData.textureType))
 				textureType = initData.textureType;
 			else
 				textureType = Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D;
+			resolution = initData.resoultion;
+			mipMapGenerateDesc = initData.mipMapDesc;
 		}
 		~JTextureImpl()
 		{ 
@@ -58,6 +81,18 @@ namespace JinEngine
 		J_TEXTURE_RESOLUTION GetTextureResolution()const noexcept
 		{
 			return resolution;
+		}
+		Graphic::J_GRAPHIC_MIP_MAP_TYPE GetMipmapType()const noexcept
+		{
+			return mipMapGenerateDesc.type;
+		}
+		Graphic::J_KENEL_SIZE GetMipmapKernelSize()const noexcept
+		{
+			return mipMapGenerateDesc.kernelSize;
+		}
+		float GetMipmapSharpnessFactor()const noexcept
+		{
+			return mipMapGenerateDesc.sharpnessFactor;
 		}
 	public:
 		void SetTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE newTextureType)noexcept
@@ -78,13 +113,66 @@ namespace JinEngine
 				return;
 
 			resolution = newResolution;
-			DestroyTexture();
-			ReadTextureData(); 
-			JResourceObjectPrivate::EventInterface::NotifyEvent(thisPointer.Get(), 
-				J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE,
-				std::make_unique<JResourceUpdateEvDesc>(JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_AND_REAR_OF_FRAME_BUFFER));
+			if (HasGraphicResourceHandle())
+			{
+				DestroyGraphicResource();
+				ReadTextureData();
+				JResourceObjectPrivate::EventInterface::NotifyEvent(thisPointer.Get(),
+					J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE,
+					std::make_unique<JResourceUpdateEvDesc>(JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_AND_REAR_OF_FRAME_BUFFER));
+			}	
 		}
-		//void SetTextureResolution
+		void SetMipmapDesc(const Graphic::JMipmapGenerateDesc& newDesc)
+		{
+			if (newDesc == mipMapGenerateDesc)
+				return;
+
+			const bool changedExceptType =(mipMapGenerateDesc.kernelSize != newDesc.kernelSize ||
+				mipMapGenerateDesc.sharpnessFactor != newDesc.sharpnessFactor) && mipMapGenerateDesc.type == newDesc.type;
+			const bool denyModifyMipmap = changedExceptType && mipMapGenerateDesc.type != Graphic::J_GRAPHIC_MIP_MAP_TYPE::GAUSSIAN && 
+				mipMapGenerateDesc.type != Graphic::J_GRAPHIC_MIP_MAP_TYPE::KAISER;
+
+			if (HasGraphicResourceHandle() && !denyModifyMipmap)
+			{
+				if (newDesc.type == Graphic::J_GRAPHIC_MIP_MAP_TYPE::NONE || newDesc.type == Graphic::J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT)
+				{
+					mipMapGenerateDesc = newDesc;
+					DestroyGraphicResource();
+					ReadTextureData();
+					JResourceObjectPrivate::EventInterface::NotifyEvent(thisPointer.Get(),
+						J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE,
+						std::make_unique<JResourceUpdateEvDesc>(JResourceUpdateEvDesc::USER_ACTION::UPDATE_USER_AND_REAR_OF_FRAME_BUFFER));
+				}
+				else
+				{
+					auto createDesc = CreateTextureCreateDesc();
+					createDesc.mipMapDesc = newDesc;
+
+					if (SetMipmap(GetFirstInfo(), createDesc))
+						mipMapGenerateDesc = newDesc;
+				}
+			}
+			else
+				mipMapGenerateDesc = newDesc;
+		}
+		void SetMipmapType(const Graphic::J_GRAPHIC_MIP_MAP_TYPE mipmapType)noexcept
+		{
+			Graphic::JMipmapGenerateDesc newDesc = mipMapGenerateDesc;
+			newDesc.type = mipmapType;
+			SetMipmapDesc(newDesc);
+		}
+		void SetMipmapKernelSize(const Graphic::J_KENEL_SIZE kenelType)noexcept
+		{
+			Graphic::JMipmapGenerateDesc newDesc = mipMapGenerateDesc;
+			newDesc.kernelSize = kenelType;
+			SetMipmapDesc(newDesc);
+		}
+		void SetMipmapSharpnessFactor(const float sharpness)noexcept
+		{
+			Graphic::JMipmapGenerateDesc newDesc = mipMapGenerateDesc;
+			newDesc.sharpnessFactor = std::clamp(sharpness, Private::minMipmapSharpness, Private::maxMipmapSharpness);
+			SetMipmapDesc(newDesc);
+		}
 	public:
 		static bool IsValidTextureType(const Graphic::J_GRAPHIC_RESOURCE_TYPE type)
 		{
@@ -115,6 +203,10 @@ namespace JinEngine
 			}
 			
 		}
+		void AdjustMipmap()
+		{
+			mipMapGenerateDesc.type = GetFirstInfo()->GetMipmapType();
+		}
 	public:
 		void StuffResource()
 		{
@@ -129,28 +221,38 @@ namespace JinEngine
 			if (thisPointer->IsValid())
 			{
 				if (HasGraphicResourceHandle())
-					DestroyTexture(); 
+					DestroyGraphicResource(); 
 				thisPointer->SetValid(false);
 			}
+		}
+		Graphic::JTextureCreateDesc CreateTextureCreateDesc()
+		{
+			return Graphic::JTextureCreateDesc(thisPointer->GetPath(), thisPointer->GetFormat(), (uint)resolution, CreateMipmapGenerateDesc());
+		}
+		Graphic::JMipmapGenerateDesc CreateMipmapGenerateDesc()
+		{
+			return mipMapGenerateDesc;
 		}
 	public:
 		bool ReadTextureData()
 		{
 			if (!HasGraphicResourceHandle())
-			{
+			{ 
 				if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
 				{
-					if (Create2DTexture((uint)resolution, thisPointer->GetPath(), thisPointer->GetFormat()))
+					if (Create2DTexture(CreateTextureCreateDesc()))
 					{ 
 						AdjustResoultion();
+						AdjustMipmap();
 						return true;
 					}
 				}
 				else if (textureType == Graphic::J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
 				{
-					if (CreateCubeMap((uint)resolution, thisPointer->GetPath(), thisPointer->GetFormat()))
+					if (CreateCubeMap(CreateTextureCreateDesc()))
 					{
 						AdjustResoultion();
+						AdjustMipmap();
 						return true;
 					}
 				}
@@ -395,11 +497,12 @@ namespace JinEngine
 				pathData.engineFileWPath,
 				metadata.textureType);
 
+			initData->resoultion = metadata.resoultion;
+			initData->mipMapDesc = metadata.mipMapDesc;
+
 			auto idenUser = tPrivate.GetCreateInstanceInterface().BeginCreate(std::move(initData), &tPrivate);
 			newTex.ConnnectChild(idenUser); 
 		}
-		if (newTex != nullptr)
-			newTex->impl->textureType = metadata.textureType;
 		return newTex;
 	}
 	Core::J_FILE_IO_RESULT AssetDataIOInterface::StoreAssetData(Core::JDITypeDataBase* data)
@@ -419,9 +522,12 @@ namespace JinEngine
 		auto loadMetaData = static_cast<JTexture::LoadMetaData*>(data);
 		if (LoadCommonMetaData(tool, loadMetaData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-
+		 
 		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->textureType, "TextureType"); 
 		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->resoultion, "Resoultion");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->mipMapDesc.type, "MipmapType");
+		JObjectFileIOHelper::LoadEnumData(tool, loadMetaData->mipMapDesc.kernelSize, "MipmapKernelSize");
+		JObjectFileIOHelper::LoadAtomicData(tool, loadMetaData->mipMapDesc.sharpnessFactor, "MipmapSharpnessFactor");
 		tool.Close();
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}
@@ -439,9 +545,12 @@ namespace JinEngine
 
 		if (StoreCommonMetaData(tool, storeData) != Core::J_FILE_IO_RESULT::SUCCESS)
 			return Core::J_FILE_IO_RESULT::FAIL_STREAM_ERROR;
-	 
+	  
 		JObjectFileIOHelper::StoreEnumData(tool, tex->GetTextureType(), "TextureType");
 		JObjectFileIOHelper::StoreEnumData(tool, tex->GetTextureResolution(), "Resoultion");
+		JObjectFileIOHelper::StoreEnumData(tool, tex->impl->mipMapGenerateDesc.type, "MipmapType");
+		JObjectFileIOHelper::StoreEnumData(tool, tex->impl->mipMapGenerateDesc.kernelSize, "MipmapKernelSize");
+		JObjectFileIOHelper::StoreAtomicData(tool, tex->impl->mipMapGenerateDesc.sharpnessFactor, "MipmapSharpnessFactor");
 		tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 		return Core::J_FILE_IO_RESULT::SUCCESS;
 	}

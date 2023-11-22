@@ -2,13 +2,14 @@
 #include"../JGraphicInfo.h"
 #include"../JGraphicOption.h"
 #include"../Device/JGraphicDeviceUser.h"
-#include"../Blur/JBlurDesc.h"
+#include"../Image/JImageProcessingDesc.h"
 #include"../../Core/Interface/JValidInterface.h"
 #include"../../Core/Math/JVector.h"
+#include"../../Core/Handle/JDataHandleStructure.h"
 #include<memory>
 
 namespace JinEngine
-{
+{ 
 	namespace Graphic
 	{
 		/**
@@ -23,8 +24,8 @@ namespace JinEngine
 		class JFrameResource;
 		class JDepthTest;
 		class JDepthMapDebug;
-		class JCullingUserInterface;
-		class JBlur;
+		class JCullingUserInterface; 
+		class JImageProcessing;
 
 		struct JGraphicBaseDataSet
 		{
@@ -40,14 +41,14 @@ namespace JinEngine
 			const JGraphicInfo& info;
 			const JGraphicOption& option;
 		public:
-			JGraphicResourceManager* gResourceM;
+			JGraphicResourceManager* graphicResourceM;
 		public:
-			JGraphicDeviceInitSet(const JGraphicInfo& info, const JGraphicOption& option, JGraphicResourceManager* gResourceM);
+			JGraphicDeviceInitSet(const JGraphicInfo& info, const JGraphicOption& option, JGraphicResourceManager* graphicResourceM);
 		};
 		struct JGraphicGuiInitSet
 		{ 
 		public:
-			JGraphicResourceManager* gResourceM;
+			JGraphicResourceManager* graphicResourceM;
 			JGraphicDevice* gDevice;
 		};
 		struct JGraphicDrawReferenceSet : public Core::JValidInterface
@@ -57,7 +58,7 @@ namespace JinEngine
 			const JGraphicOption& option;
 		public:
 			JGraphicDevice* device;
-			JGraphicResourceManager* gResourceM;
+			JGraphicResourceManager* graphicResourceM;
 			JCullingManager* cullingM;
 		public:
 			JFrameResource* currFrame;
@@ -65,17 +66,17 @@ namespace JinEngine
 			JDepthMapDebug* depthDebug;
 			JDepthTest* depthTest;
 		public:
-			JBlur* blur;
+			JImageProcessing* image;
 		public:
 			JGraphicDrawReferenceSet(const JGraphicInfo& info, 
 				const JGraphicOption& option,
 				JGraphicDevice* device,
-				JGraphicResourceManager* gResourceM,
+				JGraphicResourceManager* graphicResourceM,
 				JCullingManager* cullingM,
 				JFrameResource* currFrame,
 				JDepthMapDebug* depthDebug,
 				JDepthTest* depthTest,
-				JBlur* blur);
+				JImageProcessing* image);
 		};
 
 		//device type per draw data set 
@@ -100,24 +101,25 @@ namespace JinEngine
 			JGraphicDepthMapDrawSet(JFrameResource* currFrame, JGraphicResourceManager* graphicResourceM, JCullingManager* cullingM);
 			JGraphicDepthMapDrawSet(const JGraphicOccDrawSet* drawSet);
 		};
- 
-		struct JGraphicDepthMapDebugObjectSet : public JGraphicDeviceUser, public Core::JValidInterface
+   
+		struct JGraphicDepthMapDebugTaskSet : public JGraphicDeviceUser, public Core::JValidInterface
 		{
 		public:
-			JGraphicResourceManager* graphicResourceM;
-		public: 
-			JGraphicDepthMapDebugObjectSet(JGraphicResourceManager* graphicResourceM);
-		};
- 
-		struct JGraphicDepthMapDebugHandleSet : public JGraphicDeviceUser, public Core::JValidInterface
-		{
+			JGraphicDevice* gDevice = nullptr;
+			JGraphicResourceManager* graphicResourceM = nullptr;
 		public:
-			JVector2<uint> size;
-			float nearF;
-			float farF;
-			bool isPerspective;
+			JVector2<uint> size = JVector2<uint>::Zero();
+			float nearF = 0;
+			float farF = 0;
+			bool isPerspective = true;
 		public:
-			JGraphicDepthMapDebugHandleSet(const JVector2<uint> size, const float nearF, const float farF, const bool isPerspective);
+			JGraphicDepthMapDebugTaskSet(JGraphicDevice* gDevice, JGraphicResourceManager* graphicResourceM);
+			JGraphicDepthMapDebugTaskSet(JGraphicDevice* gDevice, 
+				JGraphicResourceManager* graphicResourceM,
+				const JVector2<uint> size, 
+				const float nearF, 
+				const float farF, 
+				const bool isPerspective);
 		};
 
 		struct JGraphicSceneDrawSet : public JGraphicDeviceUser, public Core::JValidInterface
@@ -141,13 +143,13 @@ namespace JinEngine
 			JFrameResource* currFrame;
 			JGraphicResourceManager* graphicResourceM;
 			JCullingManager* cullingM;
-			JBlur* blur;
+			JImageProcessing* image;
 		public:
 			JGraphicShadowMapDrawSet(JGraphicDevice* device,
 				JFrameResource* currFrame,
 				JGraphicResourceManager* graphicResourceM,
 				JCullingManager* cullingM,
-				JBlur* blur);
+				JImageProcessing* image);
 		};
 
 		struct JGraphicOccDrawSet : public JGraphicDeviceUser, public Core::JValidInterface
@@ -197,22 +199,14 @@ namespace JinEngine
 		public:
 			JGraphicHdOccExtractSet(JCullingManager* cullingM);
 		};
-
-		struct JGraphicOutlineObjectSet : public JGraphicDeviceUser, public Core::JValidInterface
+ 
+		struct JGraphicOutlineDrawSet : public JGraphicDeviceUser, public Core::JValidInterface
 		{
 		public:
 			JGraphicDevice* device;
 			JGraphicResourceManager* graphicResourceM;
 		public:
-			JGraphicOutlineObjectSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM);
-		};
-
-		struct JGraphicOutlineHandleSet : public JGraphicDeviceUser, public Core::JValidInterface
-		{
-		public:
-			JGraphicResourceManager* graphicResourceM;
-		public:
-			JGraphicOutlineHandleSet(JGraphicResourceManager* graphicResourceM);
+			JGraphicOutlineDrawSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM);
 		};
 		
 		struct JGraphicBlurTaskSet : public JGraphicDeviceUser, public Core::JValidInterface
@@ -222,6 +216,31 @@ namespace JinEngine
 			std::unique_ptr<JBlurDesc> desc;
 		public:
 			JGraphicBlurTaskSet(JGraphicDevice* device, std::unique_ptr<JBlurDesc>&& desc);
+		};
+
+		struct JGraphicDownSampleTaskSet : public JGraphicDeviceUser, public Core::JValidInterface
+		{
+		public:
+			JGraphicDevice* device;
+			JGraphicResourceManager* graphicResourceM;
+			std::unique_ptr<JDownSampleDesc> desc; 
+		public:
+			std::vector<Core::JDataHandle> handle;
+		public:
+			JGraphicDownSampleTaskSet(JGraphicDevice* device,
+				JGraphicResourceManager* graphicResourceM,
+				std::unique_ptr<JDownSampleDesc>&& desc,
+				std::vector<Core::JDataHandle>&& handle);
+		};
+		 
+		struct JGraphicSsaoTaskSet : public JGraphicDeviceUser, public Core::JValidInterface
+		{
+		public:
+			JGraphicDevice* device;
+			JGraphicResourceManager* graphicResourceM; 
+			JFrameResource* currFrame; 
+		public:
+			JGraphicSsaoTaskSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM, JFrameResource* currFrame);
 		};
 
 		//draw scene single thread
@@ -235,8 +254,8 @@ namespace JinEngine
 			std::unique_ptr<JGraphicOccDebugDrawSet> occDebug;
 			std::unique_ptr<JGraphicHzbOccComputeSet> hzbCompute;
 			std::unique_ptr<JGraphicHdOccExtractSet> hdExtract;
-			std::unique_ptr<JGraphicDepthMapDebugObjectSet> depthMapDebug;
-			std::unique_ptr<JGraphicOutlineObjectSet> outline; 
+			std::unique_ptr<JGraphicDepthMapDebugTaskSet> depthMapDebug;
+			std::unique_ptr<JGraphicOutlineDrawSet> outline; 
 		};
 
 		struct JGraphicBeginFrameSet
@@ -253,8 +272,9 @@ namespace JinEngine
 			std::unique_ptr<JGraphicOccDebugDrawSet> occDebug;
 			std::unique_ptr<JGraphicHzbOccComputeSet> hzbCompute;
 			std::unique_ptr<JGraphicHdOccExtractSet> hdExtract;
-			std::unique_ptr<JGraphicDepthMapDebugObjectSet> depthMapDebug;
-			std::unique_ptr<JGraphicOutlineObjectSet> outline;
+			std::unique_ptr<JGraphicDepthMapDebugTaskSet> depthMapDebug;
+			std::unique_ptr<JGraphicOutlineDrawSet> outline;
+			std::unique_ptr<JGraphicSsaoTaskSet> ssao;
 		};
 
 		struct JGraphicEndConditonSet

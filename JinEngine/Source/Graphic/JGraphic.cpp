@@ -13,8 +13,8 @@
 #include"ShadowMap/JCsmManager.h"
 #include"DepthMap/JDepthMapDebug.h"
 #include"DepthMap/JDepthTest.h" 
-#include"Buffer/JGraphicBuffer.h" 
-#include"Blur/JBlur.h" 
+#include"Buffer/JGraphicBuffer.h"  
+#include"Image/JImageProcessing.h"
 #include"Culling/JCullingInfo.h"
 #include"Culling/JCullingManager.h"
 #include"Culling/Frustum/JFrustumCulling.h"
@@ -69,6 +69,8 @@
 #include"../Object/Component/Light/JPointLightPrivate.h"
 #include"../Object/Component/Light/JSpotLight.h"
 #include"../Object/Component/Light/JSpotLightPrivate.h"
+#include"../Object/Component/Light/JRectLight.h"
+#include"../Object/Component/Light/JRectLightPrivate.h"
 
 #include"../Object/Resource/JResourceObjectDefualtData.h"
 #include"../Object/Resource/JResourceManager.h"
@@ -92,7 +94,7 @@
 #include"../Application/JApplicationEngine.h"
 #include"../Application/JApplicationEnginePrivate.h"
 #include"../Application/JApplicationProject.h"  
-   
+ 
 namespace JinEngine
 {
 	using namespace DirectX;
@@ -111,8 +113,9 @@ namespace JinEngine
 			JDirectionalLightConstants dLight;
 			JPointLightConstants pLight;
 			JSpotLightConstants sLight;
+			JRectLightConstants rLight;
 			JCsmConstants csmInfo;
-			JShadowMapArrayDrawConstants csmDraw;				//cascade shadow map
+			JShadowMapArrayDrawConstants csmDraw;		//cascade shadow map
 			JShadowMapCubeDrawConstants cubeShadowMap;	//cube shadow map
 			JShadowMapDrawConstants normalShadowMap;	//normal shadow map
 			JHzbOccComputeConstants hzbOccCmpute;
@@ -124,6 +127,8 @@ namespace JinEngine
 			//always exist until enigne end
 			JUserPtr<JTexture> missing;
 			JUserPtr<JTexture> bluseNoise;
+			JUserPtr<JTexture> ltcMat;
+			JUserPtr<JTexture> ltcAmp;
 		public:
 			void Clear()
 			{
@@ -140,7 +145,7 @@ namespace JinEngine
 			* newFirst, newSecond중 하나만 true값을 가지며
 			* 입력값이 비정확할경우 newFirst을 true로 한다.
 			*/
-			static void SwitchBoolValue(bool& newFirst, bool& newSecond, bool& oldFirst, bool& oldSecond)
+			static void SwitchBoolValue(bool& newFirst, bool& newSecond, bool& oldFirst, bool& oldSecond, const bool selectFirstIfAllFail = true)
 			{
 				if (newFirst && newSecond)
 				{
@@ -152,7 +157,7 @@ namespace JinEngine
 					if (newFirst && newSecond)
 						newSecond = false;
 				}
-				else if (!newFirst && !newSecond)
+				else if (!newFirst && !newSecond && selectFirstIfAllFail)
 				{
 					if (oldFirst)
 						newFirst = oldFirst;
@@ -166,7 +171,7 @@ namespace JinEngine
 			* newFirst, newSecond, newThird 중 하나만 true값을 가지며
 			* 입력값이 비정확할경우 newFirst을 true로 한다.
 			*/
-			static void SwitchBoolValue(bool& newFirst, bool& newSecond, bool& newThird, bool& oldFirst, bool& oldSecond, bool& oldThird)
+			static void SwitchBoolValue(bool& newFirst, bool& newSecond, bool& newThird, bool& oldFirst, bool& oldSecond, bool& oldThird, const bool selectFirstIfAllFail = true)
 			{
 				int trueCount = newFirst + newSecond + newThird; 
 				if (trueCount > 1)
@@ -182,7 +187,7 @@ namespace JinEngine
 					if (trueCount > 1)
 						newSecond = newThird = false;
 				}
-				else if (trueCount == 0)
+				else if (trueCount == 0 && selectFirstIfAllFail)
 				{
 					if (oldFirst)
 						newFirst = oldFirst;
@@ -195,7 +200,7 @@ namespace JinEngine
 						newFirst = true;
 				}
 			}
-			static void SwitchBoolValue(bool& newFirst, bool& newSecond, bool& newThird, bool& newForth, bool& oldFirst, bool& oldSecond, bool& oldThird, bool& oldForth)
+			static void SwitchBoolValue(bool& newFirst, bool& newSecond, bool& newThird, bool& newForth, bool& oldFirst, bool& oldSecond, bool& oldThird, bool& oldForth, const bool selectFirstIfAllFail = true)
 			{
 				int trueCount = newFirst + newSecond + newThird + newForth;
 				if (trueCount > 1)
@@ -213,7 +218,7 @@ namespace JinEngine
 					if (trueCount > 1)
 						newSecond = newThird = newForth = false;
 				}
-				else if (trueCount == 0)
+				else if (trueCount == 0 && selectFirstIfAllFail)
 				{
 					if (oldFirst)
 						newFirst = oldFirst;
@@ -247,6 +252,8 @@ namespace JinEngine
 			JGraphicInfo info;
 			JGraphicOption option;
 			JUpdateHelper updateHelper;
+			//전체 opaque object 만큼 할당된 object vec
+			//hard ware occlusion이나 object align이 필요할때 결과를 담을 vector로써 사용된다.
 			JAlignedObject alignedObject;
 			JConstantCash contCash;
 		private:
@@ -263,7 +270,7 @@ namespace JinEngine
 			std::unique_ptr<JDepthMapDebug> depthMapDebug;
 			std::unique_ptr<JDepthTest> depthTest;
 			std::unique_ptr<JOutline> outlineHelper; 
-			std::unique_ptr<JBlur> blur;
+			std::unique_ptr<JImageProcessing> imageP;
 			std::unique_ptr<JGraphicDrawReferenceSet> drawRefSet;
 		private:
 			std::unique_ptr<WorkerThreadF::Functor> workerFunctor;
@@ -284,11 +291,11 @@ namespace JinEngine
 			//CallOnece
 			void IntializeGraphicInfo()
 			{
-				const uint occMipMapViewCapa = JGraphicResourceManager::GetOcclusionMipMapViewCapacity();
-				info.occlusionWidth = std::pow(2, occMipMapViewCapa - 1);
-				info.occlusionHeight = std::pow(2, occMipMapViewCapa - 1);
+				const uint occMipmapViewCapa = JGraphicResourceManager::GetOcclusionMipmapViewCapacity();
+				info.occlusionWidth = std::pow(2, occMipmapViewCapa - 1);
+				info.occlusionHeight = std::pow(2, occMipmapViewCapa - 1);
 				info.occlusionMinSize = JGraphicResourceManager::GetOcclusionMinSize();
-				info.occlusionMapCapacity = occMipMapViewCapa;
+				info.occlusionMapCapacity = occMipmapViewCapa;
 				info.occlusionMapCount = JMathHelper::Log2Int(info.occlusionWidth) - JMathHelper::Log2Int(JGraphicResourceManager::GetOcclusionMinSize()) + 1;
 				info.frameThreadCount = _JThreadManager::Instance().GetReservedSpaceCount(Core::J_THREAD_USE_CASE_TYPE::GRAPHIC_DRAW);
 			}
@@ -305,6 +312,7 @@ namespace JinEngine
 				auto dLitGetElementLam = []() {return JFrameUpdateData::GetTotalFrameCount(J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT); };
 				auto pLitGetElementLam = []() {return JFrameUpdateData::GetTotalFrameCount(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT); };
 				auto sLitGetElementLam = []() {return JFrameUpdateData::GetTotalFrameCount(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT); };
+				auto rLitGetElementLam = []() {return JFrameUpdateData::GetTotalFrameCount(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT); };
 				auto csmInfoGetElementLam = []() {return JFrameUpdateData::GetTotalFrameCount(J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO); };
 				auto shadowMapDrawingGetElementLam = []() {return JFrameUpdateData::GetTotalFrameCount(J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW); };
 				auto shadowMapArrayDrawingGetElementLam = []() {return JFrameUpdateData::GetTotalFrameCount(J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW); };
@@ -321,10 +329,10 @@ namespace JinEngine
 					{J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA, camGetElementLam},{J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL, materialGetElementLam},
 					{J_UPLOAD_FRAME_RESOURCE_TYPE::BOUNDING_OBJECT, boundObjGetElementLam},	{J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT, dLitGetElementLam},
 					{J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, pLitGetElementLam},	{J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, sLitGetElementLam},
-					{J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO, csmInfoGetElementLam},	{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, shadowMapDrawingGetElementLam},
-					{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW, shadowMapArrayDrawingGetElementLam},	{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW, shadowMapCubeDrawingGetElementLam},
-					{J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS, hzbRequestorGetElementLam}, {J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, hzbObjectGetElementLam},
-					{J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS, depthTestGetElementLam}
+					{J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, rLitGetElementLam}, {J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO, csmInfoGetElementLam},	
+					{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, shadowMapDrawingGetElementLam}, {J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW, shadowMapArrayDrawingGetElementLam},	
+					{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW, shadowMapCubeDrawingGetElementLam}, {J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS, hzbRequestorGetElementLam},
+					{J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, hzbObjectGetElementLam}, {J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS, depthTestGetElementLam}
 				}; 
 
 				using NotifyUpdateCapacity = JUpdateHelper::NotifyUpdateCapacityT::Callable;
@@ -442,15 +450,12 @@ namespace JinEngine
 						newGraphicOption.isHDOcclusionAcitvated = false;
 				}
 				bool needRecompileGraphicShader = false;
-				needRecompileGraphicShader |= (option.useDirectionalLightPcm != newGraphicOption.useDirectionalLightPcm);
-				needRecompileGraphicShader |= (option.useDirectionalLightPcmHighQuality != newGraphicOption.useDirectionalLightPcmHighQuality);
-				needRecompileGraphicShader |= (option.useDirectionalLightPcss != newGraphicOption.useDirectionalLightPcss); 
-				needRecompileGraphicShader |= (option.usePointLightPcm != newGraphicOption.usePointLightPcm); 
-				needRecompileGraphicShader |= (option.usePointLightPcmHighQuality != newGraphicOption.usePointLightPcmHighQuality);
-				needRecompileGraphicShader |= (option.usePointLightPcss != newGraphicOption.usePointLightPcss);
-				needRecompileGraphicShader |= (option.useSpotLightPcm != newGraphicOption.useSpotLightPcm); 
-				needRecompileGraphicShader |= (option.useSpotLightPcmHighQuality != newGraphicOption.useSpotLightPcmHighQuality);
-				needRecompileGraphicShader |= (option.useSpotLightPcss != newGraphicOption.useSpotLightPcss);
+				needRecompileGraphicShader |= (option.useHighQualityShadow != newGraphicOption.useHighQualityShadow);
+				needRecompileGraphicShader |= (option.useMiddleQualityShadow != newGraphicOption.useMiddleQualityShadow);
+				needRecompileGraphicShader |= (option.useLowQualityShadow != newGraphicOption.useLowQualityShadow);
+
+				needRecompileGraphicShader |= (option.useSsao != newGraphicOption.useSsao);
+				needRecompileGraphicShader |= (option.useHbao != newGraphicOption.useHbao);
 
 				needRecompileGraphicShader |= (option.useSmithMasking != newGraphicOption.useSmithMasking);
 				needRecompileGraphicShader |= (option.useTorranceMaskig != newGraphicOption.useTorranceMaskig);
@@ -465,12 +470,10 @@ namespace JinEngine
  
 				SwitchBoolValue(newGraphicOption.isHDOcclusionAcitvated, newGraphicOption.isHZBOcclusionActivated,
 					option.isHDOcclusionAcitvated, option.isHZBOcclusionActivated);
-				SwitchBoolValue(newGraphicOption.useDirectionalLightPcss, newGraphicOption.useDirectionalLightPcmHighQuality, newGraphicOption.useDirectionalLightPcm,
-					option.useDirectionalLightPcss, option.useDirectionalLightPcmHighQuality, option.useDirectionalLightPcm);
-				SwitchBoolValue(newGraphicOption.usePointLightPcss, newGraphicOption.usePointLightPcmHighQuality, newGraphicOption.usePointLightPcm,
-					option.usePointLightPcss, option.usePointLightPcmHighQuality, option.usePointLightPcm);
-				SwitchBoolValue(newGraphicOption.useSpotLightPcss, newGraphicOption.useSpotLightPcmHighQuality, newGraphicOption.useSpotLightPcm,
-					option.useSpotLightPcss, option.useSpotLightPcmHighQuality, option.useSpotLightPcm);
+				SwitchBoolValue(newGraphicOption.useHighQualityShadow, newGraphicOption.useMiddleQualityShadow, newGraphicOption.useLowQualityShadow,
+					option.useHighQualityShadow, option.useMiddleQualityShadow, option.useLowQualityShadow);
+
+				SwitchBoolValue(newGraphicOption.useSsao, newGraphicOption.useHbao, option.useSsao, option.useHbao, false);
 
 				SwitchBoolValue(newGraphicOption.useSmithMasking, newGraphicOption.useTorranceMaskig,
 					option.useSmithMasking, option.useTorranceMaskig);
@@ -490,48 +493,70 @@ namespace JinEngine
 				}
 			}
 		public:
-			JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilResource()
+			JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilResource(uint textureWidth, uint textureHeight)
 			{
-				return graphicResourceM->CreateSceneDepthStencilResource(device.get(), info.width, info.height);
+				if (textureWidth == 0 || textureHeight == 0)
+					return nullptr;
+				return graphicResourceM->CreateSceneDepthStencilResource(device.get(), textureWidth, textureHeight);
 			}
-			JUserPtr<JGraphicResourceInfo> CreateDebugDepthStencilResource()
+			JUserPtr<JGraphicResourceInfo> CreateDebugDepthStencilResource(uint textureWidth, uint textureHeight)
 			{
-				return graphicResourceM->CreateDebugDepthStencilResource(device.get(), info.width, info.height);
+				if (textureWidth == 0 || textureHeight == 0)
+					return nullptr;
+				return graphicResourceM->CreateDebugDepthStencilResource(device.get(), textureWidth, textureHeight);
 			}
 			JUserPtr<JGraphicResourceInfo> CreateLayerDepthDebugResource(uint textureWidth, uint textureHeight)
 			{
-				if (textureWidth == 0 )
-					textureWidth = info.width; 
-				if (textureHeight == 0)
-					textureHeight = info.height;
-
-				return graphicResourceM->CreateLayerDepthDebugResource(device.get(), info.width, info.height);
+				if (textureWidth == 0 || textureHeight == 0)
+					return nullptr;
+				return graphicResourceM->CreateLayerDepthDebugResource(device.get(), textureWidth, textureHeight);
 			}
-			void CreateHZBOcclusionResource(_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo, _Out_ JUserPtr<JGraphicResourceInfo>& outOccMipMapInfo)
+			void CreateHZBOcclusionResource(_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo, _Out_ JUserPtr<JGraphicResourceInfo>& outOccMipmapInfo)
 			{
 				graphicResourceM->CreateHZBOcclusionResource(device.get(), info.occlusionWidth, 
 					info.occlusionHeight,
-					outOccDsInfo, outOccMipMapInfo);
+					outOccDsInfo, outOccMipmapInfo);
 			}
 			JUserPtr<JGraphicResourceInfo> CreateOcclusionResourceDebug(const bool isHzb)
 			{
 				return graphicResourceM->CreateOcclusionResourceDebug(device.get(), info.occlusionWidth, info.occlusionHeight, isHzb);
 			}
-			JUserPtr<JGraphicResourceInfo> Create2DTexture(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
+			JUserPtr<JGraphicResourceInfo> Create2DTexture(JTextureCreateDesc createDesc)
 			{
-				return graphicResourceM->Create2DTexture(device.get(), maxSize, path, oriFormat);
+				createDesc.useMipmap = createDesc.mipMapDesc.type != J_GRAPHIC_MIP_MAP_TYPE::NONE;
+				auto userPtr = graphicResourceM->Create2DTexture(device.get(), createDesc);
+				if (userPtr != nullptr)
+				{
+					if (!createDesc.useMipmap)
+						userPtr->SetMipmapType(J_GRAPHIC_MIP_MAP_TYPE::NONE);
+					else if (userPtr != nullptr && createDesc.mipMapDesc.type != J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT)
+					{
+						if (!CreateMipmap(userPtr, createDesc))
+							userPtr->SetMipmapType(J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT);
+					}
+				}
+				return userPtr;
 			}
-			JUserPtr<JGraphicResourceInfo> CreateCubeMap(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
+			JUserPtr<JGraphicResourceInfo> CreateCubeMap(JTextureCreateDesc createDesc)
 			{
-				return graphicResourceM->CreateCubeMap(device.get(), maxSize, path, oriFormat);
+				createDesc.useMipmap = createDesc.mipMapDesc.type != J_GRAPHIC_MIP_MAP_TYPE::NONE;
+				auto userPtr = graphicResourceM->CreateCubeMap(device.get(), createDesc);
+				if (userPtr != nullptr)
+				{
+					if (!createDesc.useMipmap)
+						userPtr->SetMipmapType(J_GRAPHIC_MIP_MAP_TYPE::NONE);
+					else if (userPtr != nullptr && createDesc.mipMapDesc.type != J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT)
+					{
+						if (!CreateMipmap(userPtr, createDesc))
+							userPtr->SetMipmapType(J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT);
+					}
+				}
+				return userPtr; 
 			}
 			JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(uint textureWidth, uint textureHeight)
 			{
-				if (textureWidth == 0)
-					textureWidth = info.width;
-				if (textureHeight == 0)
-					textureHeight = info.height;
-
+				if (textureWidth == 0 || textureHeight == 0)
+					return nullptr;
 				return graphicResourceM->CreateRenderTargetTexture(device.get(), textureWidth, textureHeight);
 			}	
 			JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(const uint textureWidth, const uint textureHeight)
@@ -573,13 +598,82 @@ namespace JinEngine
 			}
 			bool CreateOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)
 			{
-				switch (opType)
+				return graphicResourceM->CreateOption(device.get(), info, opType);
+			}
+			bool CreateMipmap(const JUserPtr<JGraphicResourceInfo>& srcInfo, JTextureCreateDesc& createDesc)
+			{
+				if (srcInfo == nullptr || createDesc.mipMapDesc.type == J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT || createDesc.mipMapDesc.type == J_GRAPHIC_MIP_MAP_TYPE::NONE)
+					return false;
+			
+				JUserPtr<JGraphicResourceInfo> modInfo = nullptr;
+				if (srcInfo->GetGraphicResourceType() == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D)
 				{
-				case JinEngine::Graphic::J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING:
-					return graphicResourceM->CreatePostProcessingTexture(device.get(), info);
+					createDesc.allowUav = true;
+					modInfo = graphicResourceM->Create2DTexture(device.get(), createDesc);
+					createDesc.allowUav = false;
+				}
+				else if (srcInfo->GetGraphicResourceType() == J_GRAPHIC_RESOURCE_TYPE::TEXTURE_CUBE)
+				{
+					createDesc.allowUav = true;
+					modInfo = graphicResourceM->CreateCubeMap(device.get(), createDesc);
+					createDesc.allowUav = false;
+				}
+				else
+				{
+					//추가로 custom mipmap이 필요한 J_GRAPHIC_RESOURCE_TYPE이 있을경우 수정필요.
+					return false;
+				}
+				if (modInfo == nullptr)
+					return false;
+
+				const JMipmapGenerateDesc& mipmapDesc = createDesc.mipMapDesc;
+				JVector2F imageSize = JVector2F(srcInfo->GetWidth(), srcInfo->GetHeight());
+				uint mipCount = srcInfo->GetMipmapCount();
+
+				std::unique_ptr<JDownSampleDesc> desc;
+				switch (mipmapDesc.type)
+				{  
+				case JinEngine::Graphic::J_GRAPHIC_MIP_MAP_TYPE::BOX:
+				{
+					desc = std::make_unique<JBoxDownSampleDesc>(imageSize, mipCount);
+					break;
+				}
+				case JinEngine::Graphic::J_GRAPHIC_MIP_MAP_TYPE::GAUSSIAN:
+				{
+					desc = std::make_unique<JGaussianDownSampleDesc>(imageSize, mipmapDesc.kernelSize, mipCount, mipmapDesc.sharpnessFactor);
+					break;
+				}
+				case JinEngine::Graphic::J_GRAPHIC_MIP_MAP_TYPE::KAISER:
+				{	
+					desc = std::make_unique<JKaiserDownSampleDesc>(imageSize, mipmapDesc.kernelSize, mipCount, mipmapDesc.sharpnessFactor);
+					break;
+				}
 				default:
 					break;
 				}
+
+				device->FlushCommandQueue();
+				device->StartPublicCommand();			
+				std::unique_ptr<JGraphicDownSampleTaskSet> taskSet;
+				adapter->SettingMipmapGenerationTask(option.deviceType, *drawRefSet, srcInfo, modInfo, std::move(desc), taskSet);
+				if (taskSet != nullptr)
+				{
+					JDrawHelper helper(info, option, alignedObject);
+					imageP->ApplyMipmapGeneration(taskSet.get(), helper);
+					device->EndPublicCommand();
+					device->FlushCommandQueue();
+
+					device->FlushCommandQueue();
+					device->StartPublicCommand();
+					graphicResourceM->CopyResource(device.get(), modInfo, srcInfo);
+					srcInfo->SetMipmapType(mipmapDesc.type);
+				}			 
+				device->EndPublicCommand();
+				device->FlushCommandQueue();
+
+				graphicResourceM->DestroyGraphicTextureResource(device.get(), modInfo.Release());
+				ClearMipmapBind(taskSet->handle);
+				return true;
 			}
 			bool DestroyGraphicTextureResource(JGraphicResourceInfo* info)
 			{
@@ -594,6 +688,33 @@ namespace JinEngine
 					return false;
 
 				return graphicResourceM->DestroyGraphicOption(device.get(), info, optype);
+			}
+			bool MipmapBindForDebug(const JUserPtr<JGraphicResourceInfo>& gRInfo, _Out_ std::vector<ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle)
+			{
+				gpuHandle.clear();
+				dataHandle.clear();
+				if (gRInfo == nullptr)
+					return false;
+
+				const uint mipmapCount = gRInfo->GetMipmapCount();
+				if (mipmapCount < 2)
+					return false;
+				 
+				if (!graphicResourceM->SettingMipmapBind(device.get(), gRInfo, true, dataHandle))
+					return false;
+
+				const uint count = dataHandle.size();
+				gpuHandle.resize(count);
+				for (uint i = 0; i < count; ++i)
+					gpuHandle[i] = graphicResourceM->GetMPBResourceGpuHandle(dataHandle[i], J_GRAPHIC_BIND_TYPE::SRV);
+				return true;
+			}
+			void ClearMipmapBind(_In_ std::vector<Core::JDataHandle>& dataHandle)
+			{ 
+				//mipmap은 순차적으로 할당되며 해제는 마지막에 할당된 handle부터 수행한다.(DataStructure valind index가 가장 앞에 index를 가리키도록...)
+				const int count = (int)dataHandle.size();
+				for (int i = count - 1; i >=0; --i)
+					graphicResourceM->DestroyMPB(device.get(), dataHandle[i]);
 			}
 		public:
 			JUserPtr<JCullingInfo> CreateFrsutumCullingResultBuffer()
@@ -1006,14 +1127,22 @@ namespace JinEngine
 					contCash.missing = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::MISSING);
 				if (contCash.bluseNoise == nullptr)
 					contCash.bluseNoise = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::BLUE_NOISE);
+				if (contCash.ltcMat == nullptr)
+					contCash.ltcMat = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::LTC_MAT);
+				if (contCash.ltcAmp == nullptr)
+					contCash.ltcAmp = _JResourceManager::Instance().GetDefaultTexture(J_DEFAULT_TEXTURE::LTC_AMP);
 
 				auto missingInterface = contCash.missing->GraphicResourceUserInterface();
 				auto blueNoiseInterface = contCash.bluseNoise->GraphicResourceUserInterface();
+				auto ltcMatInterface = contCash.ltcMat->GraphicResourceUserInterface();
+				auto ltcAmpInterface = contCash.ltcAmp->GraphicResourceUserInterface();
 
 				contCash.enginePass.missingTextureIndex = missingInterface.GetFirstResourceArrayIndex();
 				contCash.enginePass.bluseNoiseTextureIndex = blueNoiseInterface.GetFirstResourceArrayIndex();
 				contCash.enginePass.bluseNoiseTextureSize = blueNoiseInterface.GetFirstResourceSize();
 				contCash.enginePass.invBluseNoiseTextureSize = blueNoiseInterface.GetFirstResourceInvSize();
+				contCash.enginePass.ltcMatTextureIndex = ltcMatInterface.GetFirstResourceArrayIndex();
+				contCash.enginePass.ltcAmpTextureIndex = ltcAmpInterface.GetFirstResourceArrayIndex();
 
 				auto currPassCB = currFrameResource->GetGraphicBufferBase(J_UPLOAD_FRAME_RESOURCE_TYPE::ENGINE_PASS);
 				currPassCB->CopyData(frameIndex, &contCash.enginePass);
@@ -1139,7 +1268,8 @@ namespace JinEngine
 				const uint hzbOccQueryCount = scene->GetComponetCount(J_COMPONENT_TYPE::ENGINE_DEFIENED_RENDERITEM);
 				const uint hzbOccQueryOffset = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT].uploadOffset;
 
-				uint litCount[(uint)J_LIGHT_TYPE::COUNT] = {0, 0, 0}; 
+				uint litCount[(uint)J_LIGHT_TYPE::COUNT] = {0, 0, 0, 0};  
+				int minFrameIndex[(uint)J_LIGHT_TYPE::COUNT] = { INT_MAX, INT_MAX, INT_MAX, INT_MAX };
 
 				bool hasLitUpdate = false;
 				const bool hasObjectHotUpdate = target->updateInfo->hotObjUpdateCount;
@@ -1160,12 +1290,17 @@ namespace JinEngine
 					updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].setDirty | 
 					updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW].setDirty | 
 					hasObjectHotUpdate,
+
+					updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT].setDirty |
+					updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW].setDirty |
+					hasObjectHotUpdate,
 				};
 			  
 				using LitFrameUpdateInterface = JLightPrivate::FrameUpdateInterface;
 				using DLitFrameUpdateInterface = JDirectionalLightPrivate::FrameUpdateInterface;
 				using PLitFrameUpdateInterface = JPointLightPrivate::FrameUpdateInterface;
 				using SLitFrameUpdateInterface = JSpotLightPrivate::FrameUpdateInterface;
+				using ALitFrameUpdateInterface = JRectLightPrivate::FrameUpdateInterface;
 				using SceneFrameIndexInterface = JScenePrivate::FrameIndexInterface;
 
 				struct LitUpdateHelper
@@ -1206,6 +1341,12 @@ namespace JinEngine
 							static_cast<SLitFrameUpdateInterface&>(frameUpdateInterface).UpdateFrame(sLight, contCash.sLight);
 							currFrame.CopyData(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, litFrameIndex, &contCash.sLight);
 						}	
+						else if (litType == J_LIGHT_TYPE::RECT)
+						{
+							JRectLight* rLight = static_cast<JRectLight*>(light);
+							static_cast<ALitFrameUpdateInterface&>(frameUpdateInterface).UpdateFrame(rLight, contCash.rLight);
+							currFrame.CopyData(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, litFrameIndex, &contCash.rLight);
+						}
 						info->lightUpdateCount += !isRecopy;
 					}
 					void UpdateShadowFrame(JLight* light,
@@ -1252,6 +1393,12 @@ namespace JinEngine
 						{
 							JSpotLight* sLight = static_cast<JSpotLight*>(light);
 							static_cast<SLitFrameUpdateInterface&>(frameUpdateInterface).UpdateFrame(sLight, contCash.normalShadowMap);
+							currFrame.CopyData(J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, shadowMapFrameIndex, &contCash.normalShadowMap);
+						}
+						else if (litType == J_LIGHT_TYPE::RECT)
+						{
+							JRectLight* sLight = static_cast<JRectLight*>(light);
+							static_cast<ALitFrameUpdateInterface&>(frameUpdateInterface).UpdateFrame(sLight, contCash.normalShadowMap);
 							currFrame.CopyData(J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, shadowMapFrameIndex, &contCash.normalShadowMap);
 						}
 						info->shadowMapUpdateCount += !isRecopy; 
@@ -1305,7 +1452,7 @@ namespace JinEngine
 					bool forcedSetFrameDirtyValue = forcedSetFrameDirty[(uint)litType];
 					if (light->GetShadowMapType() == J_SHADOW_MAP_TYPE::CSM)
 						forcedSetFrameDirtyValue |= hasCamHotUpdate;
-
+	
 					if (frameUpdateInterface.UpdateStart(light, forcedSetFrameDirtyValue))
 					{				   
 						litUpdateHelper.UpdateLitFrame(light, lp, updateInfo, true, false);
@@ -1328,18 +1475,25 @@ namespace JinEngine
 							litUpdateHelper.UpdateOccFrame(light, lp, updateInfo, hzbOccQueryCount, hzbOccQueryOffset, true);
 					}
 					++litCount[(uint)litType];
+
+					int frameIndex = frameUpdateInterface.GetLitFrameIndex(light);
+					if (frameIndex < minFrameIndex[(uint)litType])
+						minFrameIndex[(uint)litType] = frameIndex;
 				}
 				 
-				contCash.scenePass.directionalLitSt = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].uploadOffset;
-				contCash.scenePass.directionalLitEd = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].uploadOffset + litCount[(uint)J_LIGHT_TYPE::DIRECTIONAL];
-				contCash.scenePass.pointLitSt = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].uploadOffset;
-				contCash.scenePass.pointLitEd = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].uploadOffset + litCount[(uint)J_LIGHT_TYPE::POINT];
-				contCash.scenePass.spotLitSt = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].uploadOffset;
-				contCash.scenePass.spotLitEd = updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].uploadOffset + litCount[(uint)J_LIGHT_TYPE::SPOT];
+				contCash.scenePass.directionalLitSt = minFrameIndex[(int)J_LIGHT_TYPE::DIRECTIONAL];
+				contCash.scenePass.directionalLitEd = minFrameIndex[(int)J_LIGHT_TYPE::DIRECTIONAL] + litCount[(uint)J_LIGHT_TYPE::DIRECTIONAL];
+				contCash.scenePass.pointLitSt = minFrameIndex[(int)J_LIGHT_TYPE::POINT];
+				contCash.scenePass.pointLitEd = minFrameIndex[(int)J_LIGHT_TYPE::POINT] + litCount[(uint)J_LIGHT_TYPE::POINT];
+				contCash.scenePass.spotLitSt = minFrameIndex[(int)J_LIGHT_TYPE::SPOT];
+				contCash.scenePass.spotLitEd = minFrameIndex[(int)J_LIGHT_TYPE::SPOT] + litCount[(uint)J_LIGHT_TYPE::SPOT];
+				contCash.scenePass.rectLitSt = minFrameIndex[(int)J_LIGHT_TYPE::RECT];
+				contCash.scenePass.rectLitEd = minFrameIndex[(int)J_LIGHT_TYPE::RECT] + litCount[(uint)J_LIGHT_TYPE::RECT];
 	 
 				updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].uploadCountPerTarget = litCount[(uint)J_LIGHT_TYPE::DIRECTIONAL];
 				updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].uploadCountPerTarget = litCount[(uint)J_LIGHT_TYPE::POINT];
 				updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].uploadCountPerTarget = litCount[(uint)J_LIGHT_TYPE::SPOT];
+				updateHelper.uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT].uploadCountPerTarget = litCount[(uint)J_LIGHT_TYPE::RECT];
 			}
 			void UpdateSceneRequestor(_Inout_ JGraphicDrawTarget* target)
 			{
@@ -1442,7 +1596,7 @@ namespace JinEngine
 					currFrameResource,
 					depthMapDebug.get(),
 					depthTest.get(),
-					blur.get());
+					imageP.get());
 
 				if (allowDrawScene)
 				{
@@ -1607,6 +1761,7 @@ namespace JinEngine
 		private:
 			void WorkerThread(uint threadIndex)
 			{
+				//mostly handle drawing object
 				JGraphicThreadOccTaskSet occTaskSet;
 				JGraphicThreadShadowMapTaskSet shadowMapTaskSet;
 				JGraphicThreadSceneTaskSet sceneTaskSet;
@@ -1699,6 +1854,7 @@ namespace JinEngine
 			//for multi thread
 			void BeginFrame()
 			{
+				//mostly handle binding resource
 				JGraphicBeginFrameSet dataSet;
 				adapter->SettingBeginFrame(option.deviceType, *drawRefSet, dataSet);
 	 
@@ -1759,6 +1915,7 @@ namespace JinEngine
 				adapter->SettingMidFrame(option.deviceType, *drawRefSet, dataSet);		   
 				sceneDraw->BindResource(dataSet.bind.get());
 				 
+				//mostly handle compute shader task or drawing debug
 				const uint drawListCount = JGraphicDrawList::GetListCount();
 				JDrawHelper helper(info, option, alignedObject);
 				for (uint i = 0; i < drawListCount; ++i)
@@ -1852,6 +2009,17 @@ namespace JinEngine
 						depthMapDebug->DrawLitDepthDebug(dataSet.depthMapDebug.get(),
 							JDrawHelper::CreateDrawShadowMapHelper(helper, data->jLight));
 					}
+					if (option.useSsao || option.useHbao)
+					{
+						for (const auto& data : drawTarget->sceneRequestor)
+						{
+							if (!data->canDrawThisFrame)
+								continue;
+
+							imageP->ApplySsao(dataSet.ssao.get(), 
+								JDrawHelper::CreateDrawSceneHelper(helper, data->jCamera));
+						}
+					}
 					for (const auto& data : drawTarget->sceneRequestor)
 					{
 						if (!data->canDrawThisFrame)
@@ -1913,7 +2081,7 @@ namespace JinEngine
 				depthMapDebug = adapter->CreateDepthMapDebug(option.deviceType);
 				depthTest = adapter->CreateDepthTest(option.deviceType);
 				outlineHelper = adapter->CreateOutlineDraw(option.deviceType);
-				blur = adapter->CreateBlur(option.deviceType);
+				imageP = adapter->CreateImageProcessing(option.deviceType);
 
 				csmM = std::make_unique<JCsmManager>();
 				frustumHelper = std::make_unique<JFrustumCulling>();
@@ -1933,8 +2101,8 @@ namespace JinEngine
 				device->FlushCommandQueue(); 
 				device->StartPublicCommand();
  
-				blur->Clear();
-				blur.reset();
+				imageP->Clear();
+				imageP.reset();
 
 				outlineHelper->Clear();
 				outlineHelper.reset();
@@ -2010,7 +2178,7 @@ namespace JinEngine
 				depthMapDebug->Initialize(device.get(), graphicResourceM.get(), info);
 				depthTest->Initialize(device.get(), graphicResourceM.get(), info);
 				outlineHelper->Initialize(device.get(), graphicResourceM.get(), info);
-				blur->Initialize(device.get(), graphicResourceM.get(), info);
+				imageP->Initialize(device.get(), graphicResourceM.get(), info);
 				device->EndPublicCommand();
 				device->FlushCommandQueue(); 
 				return res;
@@ -2051,15 +2219,11 @@ namespace JinEngine
 				JFileIOHelper::LoadAtomicData(tool, newOption.allowHZBCorrectFail, "AllowHZBCorrectFail:");
 				JFileIOHelper::LoadAtomicData(tool, newOption.allowDebugOutline, "AllowOutline:");
 				JFileIOHelper::LoadAtomicData(tool, newOption.allowMultiThread, "AllowMultiThread:");
-				JFileIOHelper::LoadAtomicData(tool, newOption.useDirectionalLightPcm, "UseDirectionalLightPcm:");
-				JFileIOHelper::LoadAtomicData(tool, newOption.useDirectionalLightPcmHighQuality, "UseDirectionalLightPcmHighQuality:");
-				JFileIOHelper::LoadAtomicData(tool, newOption.useDirectionalLightPcss, "UseDirectionalLightPcss:");
-				JFileIOHelper::LoadAtomicData(tool, newOption.usePointLightPcm, "UsePointLightPcm:");
-				JFileIOHelper::LoadAtomicData(tool, newOption.usePointLightPcmHighQuality, "UsePointLightPcmHighQuality:");
-				JFileIOHelper::LoadAtomicData(tool, newOption.usePointLightPcss, "UsePointLightPcss:");
-				JFileIOHelper::LoadAtomicData(tool, newOption.useSpotLightPcm, "UseSpotLightPcm:");
-				JFileIOHelper::LoadAtomicData(tool, newOption.useSpotLightPcmHighQuality, "UseSpotLightPcmHighQuality:");
-				JFileIOHelper::LoadAtomicData(tool, newOption.useSpotLightPcss, "UseSpotLightPcss:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.useHighQualityShadow, "UseHighQualityShadow:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.useMiddleQualityShadow, "UseMiddleQualityShadow:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.useLowQualityShadow, "UseLowQualityShadow:"); 
+				JFileIOHelper::LoadAtomicData(tool, newOption.useSsao, "UseSsao:");
+				JFileIOHelper::LoadAtomicData(tool, newOption.useHbao, "UseHbao:");
 				tool.PopStack();
 				tool.Close();
 				SetOption(newOption);
@@ -2099,15 +2263,12 @@ namespace JinEngine
 				JFileIOHelper::StoreAtomicData(tool, option.allowDebugOutline, "AllowOutline:");
 				JFileIOHelper::StoreAtomicData(tool, option.allowMultiThread, "AllowMultiThread:");
 
-				JFileIOHelper::StoreAtomicData(tool, option.useDirectionalLightPcm, "UseDirectionalLightPcm:");
-				JFileIOHelper::StoreAtomicData(tool, option.useDirectionalLightPcmHighQuality, "UseDirectionalLightPcmHighQuality:");
-				JFileIOHelper::StoreAtomicData(tool, option.useDirectionalLightPcss, "UseDirectionalLightPcss:");
-				JFileIOHelper::StoreAtomicData(tool, option.usePointLightPcm, "UsePointLightPcm:");
-				JFileIOHelper::StoreAtomicData(tool, option.usePointLightPcmHighQuality, "UsePointLightPcmHighQuality:");
-				JFileIOHelper::StoreAtomicData(tool, option.usePointLightPcss, "UsePointLightPcss:");
-				JFileIOHelper::StoreAtomicData(tool, option.useSpotLightPcm, "UseSpotLightPcm:");
-				JFileIOHelper::StoreAtomicData(tool, option.useSpotLightPcmHighQuality, "UseSpotLightPcmHighQuality:");
-				JFileIOHelper::StoreAtomicData(tool, option.useSpotLightPcss, "UseSpotLightPcss:");
+				JFileIOHelper::StoreAtomicData(tool, option.useHighQualityShadow, "UseHighQualityShadow:");
+				JFileIOHelper::StoreAtomicData(tool, option.useMiddleQualityShadow, "UseMiddleQualityShadow:");
+				JFileIOHelper::StoreAtomicData(tool, option.useLowQualityShadow, "UseLowQualityShadow:");
+
+				JFileIOHelper::StoreAtomicData(tool, option.useSsao, "UseSsao:");
+				JFileIOHelper::StoreAtomicData(tool, option.useHbao, "UseHbao:");
 				tool.PopStack();
 				tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
 			}
@@ -2169,33 +2330,33 @@ namespace JinEngine
 		using DebugInterface = JGraphicPrivate::DebugInterface; 
 		using MainAccess = JGraphicPrivate::MainAccess;
 
-		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateSceneDepthStencilResource()
+		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateSceneDepthStencilResource(uint textureWidth, uint textureHeight)
 		{
-			return JinEngine::JGraphic::Instance().impl->CreateSceneDepthStencilResource();
+			return JinEngine::JGraphic::Instance().impl->CreateSceneDepthStencilResource(textureWidth, textureHeight);
 		}
-		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateDebugDepthStencilResource()
+		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateDebugDepthStencilResource(uint textureWidth, uint textureHeight)
 		{
-			return JinEngine::JGraphic::Instance().impl->CreateDebugDepthStencilResource();
+			return JinEngine::JGraphic::Instance().impl->CreateDebugDepthStencilResource(textureWidth, textureHeight);
 		}
 		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateLayerDepthDebugResource(uint textureWidth, uint textureHeight)
 		{
 			return JinEngine::JGraphic::Instance().impl->CreateLayerDepthDebugResource(textureWidth, textureHeight);
 		}
-		void ResourceInterface::CreateHZBOcclusionResource(_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo, _Out_ JUserPtr<JGraphicResourceInfo>& outOccMipMapInfo)
+		void ResourceInterface::CreateHZBOcclusionResource(_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo, _Out_ JUserPtr<JGraphicResourceInfo>& outOccMipmapInfo)
 		{
-			JinEngine::JGraphic::Instance().impl->CreateHZBOcclusionResource(outOccDsInfo, outOccMipMapInfo);
+			JinEngine::JGraphic::Instance().impl->CreateHZBOcclusionResource(outOccDsInfo, outOccMipmapInfo);
 		} 
 		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateOcclusionResourceDebug(const bool isHzb)
 		{
 			return JinEngine::JGraphic::Instance().impl->CreateOcclusionResourceDebug(isHzb);
 		}
-		JUserPtr<JGraphicResourceInfo> ResourceInterface::Create2DTexture(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
+		JUserPtr<JGraphicResourceInfo> ResourceInterface::Create2DTexture(const JTextureCreateDesc& createDesc)
 		{
-			return JinEngine::JGraphic::Instance().impl->Create2DTexture(maxSize, path, oriFormat);
+			return JinEngine::JGraphic::Instance().impl->Create2DTexture(createDesc);
 		}
-		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateCubeMap(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat)
+		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateCubeMap(const JTextureCreateDesc& createDesc)
 		{
-			return JinEngine::JGraphic::Instance().impl->CreateCubeMap(maxSize, path, oriFormat);
+			return JinEngine::JGraphic::Instance().impl->CreateCubeMap(createDesc);
 		}
 		JUserPtr<JGraphicResourceInfo> ResourceInterface::CreateRenderTargetTexture(uint textureWidth, uint textureHeight)
 		{
@@ -2241,6 +2402,10 @@ namespace JinEngine
 		{
 			return JinEngine::JGraphic::Instance().impl->DestroyGraphicOption(info, optype);
 		}
+		bool ResourceInterface::SetMipmap(const JUserPtr<JGraphicResourceInfo>& info, JTextureCreateDesc createDesc)
+		{
+			return JinEngine::JGraphic::Instance().impl->CreateMipmap(info, createDesc);
+		}
 		JOwnerPtr<JGraphicShaderDataHolderBase> ResourceInterface::StuffGraphicShaderPso(const JGraphicShaderInitData& shaderData)
 		{
 			return JinEngine::JGraphic::Instance().impl->StuffGraphicShaderPso(shaderData);
@@ -2248,6 +2413,14 @@ namespace JinEngine
 		JOwnerPtr<JComputeShaderDataHolderBase> ResourceInterface::StuffComputeShaderPso(const JComputeShaderInitData& shaderData)
 		{
 			return JinEngine::JGraphic::Instance().impl->StuffComputeShaderPso(shaderData);
+		}
+		bool ResourceInterface::MipmapBindForDebug(const JUserPtr<JGraphicResourceInfo>& info, _Out_ std::vector<ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle)
+		{ 
+			return JinEngine::JGraphic::Instance().impl->MipmapBindForDebug(info, gpuHandle, dataHandle);
+		}
+		void ResourceInterface::ClearMipmapBind(_In_ std::vector<Core::JDataHandle>& dataHandle)
+		{
+			JinEngine::JGraphic::Instance().impl->ClearMipmapBind(dataHandle);
 		}
 
 		JUserPtr<JCullingInfo> CullingInterface::CreateFrsutumCullingResultBuffer()

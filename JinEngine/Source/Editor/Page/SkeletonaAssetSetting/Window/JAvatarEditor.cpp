@@ -281,8 +281,8 @@ namespace JinEngine
 			std::string label = JCUtil::WstrToU8Str(targetSkeleton->GetJointName(index)) + "##" + GetName() + "Explorer";
 			bool arrowHovered= JGui::IsTreeNodeArrowHovered(label);
 			bool isSelected = selectJointIndex == index;
-
-			bool isNodeOpen = treeStrcture->DisplayTreeNode(label.c_str(), J_GUI_TREE_NODE_FLAG_FRAMED | J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW, IsFocus(), true, isSelected);
+			 
+			bool isNodeOpen = treeStrcture->DisplayTreeNode(label.c_str(), treeStrcture->GetBaseFlag(), IsFocus(), true, isSelected);
 			if ((JGui::IsLastItemClicked(Core::J_MOUSE_BUTTON::LEFT) || JGui::IsLastItemClicked(Core::J_MOUSE_BUTTON::RIGHT)) && !arrowHovered)
 			{
 				if (isSelected)

@@ -5,6 +5,9 @@
 #include"../../Object/Component/Camera/JCamera.h"  
 #include"../../Object/Component/Transform/JTransform.h"
 #include"../../Object/Component/RenderItem/JRenderItem.h" 
+#include"../../Object/Component/Light/JPointLight.h"
+#include"../../Object/Component/Light/JSpotLight.h" 
+#include"../../Object/Component/Light/JRectLight.h" 
 #include"../../Object/GameObject/JGameObject.h"  
 #include"../../Object/GameObject/JGameObjectCreator.h"   
 #include"../../Object/Resource/Mesh/JMeshGeometry.h" 
@@ -16,12 +19,12 @@
 #include"../../Core/Geometry/JRay.h"
 #include"../../Core/Geometry/JBBox.h"
 #include"../../Core/Math/JMathHelper.h"  
- 
+
 using namespace DirectX;
 namespace JinEngine
 {
 	namespace Editor
-	{		
+	{
 		namespace Private
 		{
 			static constexpr float initCentetScalefactor = 0.25f;
@@ -36,7 +39,7 @@ namespace JinEngine
 			}
 			//determine mouse delta direction by cam and arrow world position
 			static JVector3F GetMouseDeltaDirFactor(JGameObject* tool, JCamera* cam)
-			{ 
+			{
 				const JMatrix4x4 camWorld = cam->GetTransform()->GetWorldMatrix4x4();
 				const JMatrix4x4 arrowWorld = tool->GetTransform()->GetWorldMatrix4x4();
 				const JVector3F dir = JVector3F(arrowWorld._41 - camWorld._41,
@@ -46,8 +49,8 @@ namespace JinEngine
 				//In world coord
 				//cam.z > arrow.z x dir 반전
 				//cam.x < arrow.x z dir 반전(mouse left move => move z factor * -1)
-				return XMFLOAT3(dir.z >= 0 ? 1 : -1, 1, dir.x >= 0 ? -1 : 1); 
-			} 
+				return XMFLOAT3(dir.z >= 0 ? 1 : -1, 1, dir.x >= 0 ? -1 : 1);
+			}
 			static JVector3F GetMidPosByPoint(const JUserPtr<JGameObject>& selected)
 			{
 				return selected->GetTransform()->GetWorldPosition();
@@ -56,7 +59,7 @@ namespace JinEngine
 			{
 				JVector3F p = JVector3F::Zero();
 				for (const auto& data : selected)
-					p += data->GetTransform()->GetWorldPosition();	 
+					p += data->GetTransform()->GetWorldPosition();
 				return p / selected.size();
 			}
 			static JVector3F GetMidPosByBBox(const std::vector<JUserPtr<JGameObject>>& selected)
@@ -71,9 +74,9 @@ namespace JinEngine
 				return selected.IsValid();
 			}
 			static bool IsValidSelected(const std::vector<JUserPtr<JGameObject>>& selected)noexcept
-			{ 
+			{
 				for (const auto& data : selected)
-				{ 
+				{
 					if (data != nullptr)
 						return true;
 				}
@@ -86,13 +89,13 @@ namespace JinEngine
 			return !obj->HasFlag(OBJECT_FLAG_UNEDITABLE);
 		}
 		JVector2F JEditorGameObjectSurpportTool::CalUiScale(const JVector3F& posW, const JVector2F fixedScale, const JUserPtr<JCamera>& cam)
-		{		
+		{
 			//scale factor
 			//x = r * clipX * tan(x) * z;
 			//y = r * clipY * tan(y) * z;
 			//z = cam to selcted distance(cam view)
 
-			const JVector2F wndSize = JGui::GetWindowSize();  
+			const JVector2F wndSize = JGui::GetWindowSize();
 			const JVector2F clipSpace = (fixedScale / wndSize) * 0.5f;
 
 			//cam to seleceted distance
@@ -135,7 +138,7 @@ namespace JinEngine
 			const J_DEFAULT_SHAPE shape,
 			const JVector3F initRotation,
 			const JVector3F initMovePos)
-		{ 
+		{
 			J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
 			JUserPtr<JGameObject> newArrow = JGCI::CreateShape(debugRoot, flag, shape);
 			JUserPtr<JTransform> transform = newArrow->GetTransform();
@@ -149,7 +152,7 @@ namespace JinEngine
 				rItem->SetMaterial(j, material);
 			rItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_UI);
 
-			arrow = newArrow;
+			arrow = newArrow; 
 		}
 
 		void JEditorTransformTool::Arrow::Clear()
@@ -168,7 +171,7 @@ namespace JinEngine
 			material->SetAlbedoColor((matColor + Private::GetHoveredDeepFactor()));
 		}
 		void JEditorTransformTool::Arrow::OffSelectedColor()noexcept
-		{ 
+		{
 			material->SetAlbedoColor(matColor);
 		}
 
@@ -182,17 +185,17 @@ namespace JinEngine
 			lastSelected.Clear();
 		}
 
-		JEditorTransformTool::JEditorTransformTool(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType, 
+		JEditorTransformTool::JEditorTransformTool(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType,
 			const J_DEFAULT_SHAPE shape,
 			const float sizeRate)
-			:toolType(toolType), 
-			shape(shape), 
-			sizeRate(sizeRate), 
+			:toolType(toolType),
+			shape(shape),
+			sizeRate(sizeRate),
 			transformUpdatePtr(GetUpdateTransformPtr(toolType)),
 			hasCenter(toolType != J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::ROTATION_ARROW)
 		{
 			mesh = _JResourceManager::Instance().GetDefaultMeshGeometry(shape);
-			 
+
 			if (hasCenter)
 			{
 				JUserPtr<JDirectory> dir = _JResourceManager::Instance().GetEditorResourceDirectory();
@@ -220,7 +223,7 @@ namespace JinEngine
 				arrow[i].CreateMaterial(color[i]);
 		}
 		JEditorTransformTool::~JEditorTransformTool()
-		{ 
+		{
 			for (uint i = 0; i < 3; ++i)
 				arrow[i].Clear();
 			if (transformArrowRoot.IsValid())
@@ -239,11 +242,11 @@ namespace JinEngine
 			Update(selected, cam, sceneImageScreenMinPoint, canSelectToolObject);
 		}
 		void JEditorTransformTool::Update(const std::vector<JUserPtr<JGameObject>>& selected,
-			const JUserPtr<JCamera>& cam, 
+			const JUserPtr<JCamera>& cam,
 			const JVector2F& sceneImageScreenMinPoint,
 			const bool canSelectToolObject)
 		{
-			UpdateStart(); 
+			UpdateStart();
 			if (!IsValid() || !Private::IsValidSelected(selected))
 			{
 				if (IsDragging())
@@ -254,11 +257,11 @@ namespace JinEngine
 				{
 					JVector3F midPos = Private::GetMidPosByPoint(uData.lastSelected);
 					UpdateArrowPosition(midPos, cam);
-					uData.lastPos = midPos; 
+					uData.lastPos = midPos;
 				}
 				return;
 			}
-			 
+
 			JVector3F midPos = Private::GetMidPosByPoint(selected);
 			UpdateArrowPosition(midPos, cam);
 			UpdateArrowDragging(selected, cam, sceneImageScreenMinPoint, canSelectToolObject);
@@ -296,23 +299,27 @@ namespace JinEngine
 			{
 				return XMVector3TransformCoord((v - XMVectorSet(0.5f, 0.5f, 0.0f, 0.0f)) * XMVectorSet(2.0f, 2.0f, 0.0f, 0.0f) * z, m);
 			};
- 
+
 			const JVector2F wndSize = JGui::GetWindowSize();
 			const float fixedFactor = wndSize.x > wndSize.y ? wndSize.x * 0.075f : wndSize.y * 0.075f;
 
 			const JVector2F sizeRate = CalUiScale(posW, JVector2F(fixedFactor, fixedFactor), cam);
 			const BoundingBox arrowBBox = arrow[0].arrow->GetRenderItem()->GetMesh()->GetBoundingBox();
 			const float arrowLength = arrowBBox.Extents.x > arrowBBox.Extents.y ? arrowBBox.Extents.x : arrowBBox.Extents.y;
-			const XMFLOAT3 newScale = XMFLOAT3(sizeRate.x / arrowLength, sizeRate.y / arrowLength, sizeRate.x / arrowLength);
-			   
-			transformArrowRoot->GetTransform()->SetScale(newScale);
+			const JVector3F newScale = JVector3F(sizeRate.x / arrowLength, sizeRate.y / arrowLength, sizeRate.x / arrowLength);
+
+			if (toolType == J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::ROTATION_ARROW)
+				transformArrowRoot->GetTransform()->SetScale(newScale + JVector3F(2, 2, 2));
+			else
+				transformArrowRoot->GetTransform()->SetScale(newScale);
+			 
 			if (hasCenter)
 			{
 				const BoundingBox centerBBox = arrowCenter->GetRenderItem()->GetMesh()->GetBoundingBox();
 				const float centerLength = centerBBox.Extents.x > centerBBox.Extents.y ? centerBBox.Extents.x : centerBBox.Extents.y;
 				const float centerRate = (arrowLength / centerLength) * Private::initCentetScalefactor;
 				arrowCenter->GetTransform()->SetScale(XMFLOAT3(centerRate, centerRate, centerRate));
-			} 
+			}
 
 			//caution!
 			//world pos를 지정해서 움직이기때문에 transformArrowRoot에 부모에 transform에 영향을 받을 수 있으므로
@@ -332,7 +339,7 @@ namespace JinEngine
 			const JVector2F& sceneImageScreenMinPoint,
 			const bool canSelectToolObject)
 		{
-			const JVector2F windowPos  = JGui::GetWindowPos();
+			const JVector2F windowPos = JGui::GetWindowPos();
 			const JVector2F windowSize = JGui::GetWindowSize();
 
 			if (!IsDragging())
@@ -358,7 +365,7 @@ namespace JinEngine
 							break;
 						}
 					}
-					 
+
 					if (JGui::IsMouseDown(Core::J_MOUSE_BUTTON::LEFT) && canSelectToolObject)
 						OnDragging();
 				}
@@ -392,7 +399,7 @@ namespace JinEngine
 			}
 		}
 		void JEditorTransformTool::UpdateSelectedPosition(JEditorTransformTool* tool, const std::vector<JUserPtr<JGameObject>>& selected, const JUserPtr<JCamera>& cam)noexcept
-		{ 
+		{
 			const JVector3F deltaDir = Private::GetMouseDeltaDirFactor(tool->transformArrowRoot.Get(), cam.Get());
 			const JVector2F nowMosePos = JGui::GetMousePos();
 
@@ -400,7 +407,7 @@ namespace JinEngine
 			const float distance = tool->transformArrowRoot->GetTransform()->GetDistance(cam->GetTransform());
 			delta.y = -delta.y;
 			delta *= (distance / cam->GetFar()) * 1.5f;
-			 
+
 			JVector3F added = JVector3F::Zero();
 			if (tool->uData.hoveringIndex == 0)
 				added.x += delta.x * deltaDir.x;
@@ -408,7 +415,7 @@ namespace JinEngine
 				added.y += delta.y * deltaDir.y;
 			else if (tool->uData.hoveringIndex == 2)
 				added.z += delta.x * deltaDir.z;
-			 
+
 			for (const auto& data : selected)
 			{
 				auto t = data->GetTransform().Get();
@@ -418,8 +425,8 @@ namespace JinEngine
 				tool->SetModifiedBit(selected[0]->GetOwnerScene(), true);
 		}
 		void JEditorTransformTool::UpdateSelectedRotation(JEditorTransformTool* tool, const std::vector<JUserPtr<JGameObject>>& selected, const JUserPtr<JCamera>& cam)noexcept
-		{ 
-			const float dRotFactor = 0.5f;   
+		{
+			const float dRotFactor = 0.5f;
 			const JVector2F nowMosePos = JGui::GetMousePos();
 			JVector2F delta = nowMosePos - tool->uData.preWorldMousePos;
 			delta.x = std::clamp(delta.x, -dRotFactor, dRotFactor);
@@ -442,7 +449,7 @@ namespace JinEngine
 		}
 		void JEditorTransformTool::UpdateSelectedScale(JEditorTransformTool* tool, const std::vector<JUserPtr<JGameObject>>& selected, const JUserPtr<JCamera>& cam)noexcept
 		{
-			const float dPosFactor = 0.1f; 
+			const float dPosFactor = 0.1f;
 			const JVector3F deltaDir = Private::GetMouseDeltaDirFactor(tool->transformArrowRoot.Get(), cam.Get());
 			const JVector2F nowMosePos = JGui::GetMousePos();
 			JVector2F delta = nowMosePos - tool->uData.preWorldMousePos;
@@ -462,7 +469,7 @@ namespace JinEngine
 				auto t = data->GetTransform().Get();
 				t->SetScale(t->GetScale() + added);
 			}
-			if(selected.size() > 0)
+			if (selected.size() > 0)
 				tool->SetModifiedBit(selected[0]->GetOwnerScene(), true);
 		}
 		void JEditorTransformTool::ActivateTool()noexcept
@@ -485,7 +492,7 @@ namespace JinEngine
 			JActivatedInterface::DoDeActivate();
 		}
 		void JEditorTransformTool::CreateToolObject()noexcept
-		{  
+		{
 			//world기준 pos, rot, scale을 지정해서 Set을 호출하므로 부모 transform에 영향을 피하기위해
 			//transformArrowRoot에 부모는 debugRoot으로 지정
 			J_OBJECT_FLAG flag = OBJECT_FLAG_EDITOR_OBJECT;
@@ -493,7 +500,7 @@ namespace JinEngine
 
 			//x y z 
 			if (toolType == J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::POSITION_ARROW)
-			{ 
+			{
 				JVector3F rot[3]
 				{
 					JVector3F{0, 0, -90}, JVector3F{0, 0, 0}, JVector3F{90, 0, 0},
@@ -503,7 +510,7 @@ namespace JinEngine
 					arrow[i].Initialze(newTransformArrowRoot, shape, rot[i], pos);
 			}
 			else if (toolType == J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::ROTATION_ARROW)
-			{ 
+			{
 				JVector3F rot[3]
 				{
 					JVector3F{0, 90, 0}, JVector3F{90, 0, 0}, JVector3F{0, 0, 0},
@@ -513,7 +520,7 @@ namespace JinEngine
 					arrow[i].Initialze(newTransformArrowRoot, shape, rot[i], pos);
 			}
 			else
-			{ 
+			{
 				JVector3F rot[3]
 				{
 					JVector3F{0, 0, -90}, JVector3F{0, 0, 0}, JVector3F{90, 0, 0},
@@ -533,24 +540,24 @@ namespace JinEngine
 				arrowCenter = newArrowCenter;
 			}
 			transformArrowRoot = newTransformArrowRoot;
-			 
+
 			OffDragging();
-			SetValid(true); 
+			SetValid(true);
 		}
 		void JEditorTransformTool::DestroyToolObject()noexcept
-		{	 
-			OffDragging(); 
+		{
+			OffDragging();
 			if (transformArrowRoot.IsValid())
 				JGameObject::BeginDestroy(transformArrowRoot.Get());
-			SetValid(false); 
+			SetValid(false);
 		}
 		J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE JEditorTransformTool::GetToolType()const noexcept
 		{
 			return toolType;
 		}
 		uint JEditorTransformTool::GetShapeLength()const noexcept
-		{ 
-			return JVector3F(mesh->GetBoundingBox().Extents).Length() * 2; 
+		{
+			return JVector3F(mesh->GetBoundingBox().Extents).Length() * 2;
 		}
 		JUserPtr<JGameObject> JEditorTransformTool::GetLastSelected()const noexcept
 		{
@@ -568,7 +575,7 @@ namespace JinEngine
 		bool JEditorTransformTool::IsLastUpdateSelected()const noexcept
 		{
 			return uData.isLastUpdateSelected;
-		} 
+		}
 		bool JEditorTransformTool::IsHovering()const noexcept
 		{
 			return uData.hoveringIndex != invalidIndex;
@@ -589,7 +596,7 @@ namespace JinEngine
 				{
 					if (arrow[i].arrow->GetGuid() == hitObj->GetGuid())
 						return true;
-				} 
+				}
 			}
 			else
 				return false;
@@ -601,7 +608,7 @@ namespace JinEngine
 			uData.preWorldMousePos = JGui::GetMousePos();
 		}
 		void JEditorTransformTool::OffDragging()noexcept
-		{ 
+		{
 			uData.isDragging = false;
 		}
 		void JEditorTransformTool::OnHovering(const int newArrowIndex)noexcept
@@ -612,13 +619,443 @@ namespace JinEngine
 					arrow[uData.hoveringIndex].OffSelectedColor();
 				uData.hoveringIndex = newArrowIndex;
 				arrow[uData.hoveringIndex].SetSelectedColor();
-			} 
+			}
 		}
 		void JEditorTransformTool::OffHovering()noexcept
 		{
 			if (uData.hoveringIndex != invalidIndex)
 				arrow[uData.hoveringIndex].OffSelectedColor();
 			uData.hoveringIndex = invalidIndex;
+		}
+
+		JEditorGeometryTool::FrustumView::FrustumView(const JUserPtr<JCamera>& cam, const JUserPtr<JGameObject>& parent)
+		{
+			if (cam != nullptr && parent != nullptr && root == nullptr)
+			{
+				targetCam = cam;
+				root = JICI::Create<JGameObject>(targetCam->GetName() + L" Debug Frustum Root",
+					Core::MakeGuid(),
+					OBJECT_FLAG_EDITOR_OBJECT,
+					parent);
+
+				nearFrustum = JGCI::CreateDebugLineShape(root,
+					OBJECT_FLAG_EDITOR_OBJECT,
+					J_DEFAULT_SHAPE::BOUNDING_FRUSTUM,
+					J_DEFAULT_MATERIAL::DEBUG_LINE_RED,
+					true);
+
+				farFrustum = JGCI::CreateDebugLineShape(root,
+					OBJECT_FLAG_EDITOR_OBJECT,
+					J_DEFAULT_SHAPE::BOUNDING_FRUSTUM,
+					J_DEFAULT_MATERIAL::DEBUG_LINE_RED,
+					true);
+			}
+		}
+		JEditorGeometryTool::FrustumView::~FrustumView()
+		{
+			Clear();
+		}
+		void JEditorGeometryTool::FrustumView::Clear()
+		{
+			if (root.IsValid())
+				JGameObject::BeginDestroy(root.Release());
+		}
+		void JEditorGeometryTool::FrustumView::Update()
+		{
+			if (!IsValid())
+				return;
+
+			JVector3F nearScale;
+			JVector3F farScale;
+			JUserPtr<JTransform> tarTransform = nullptr;
+			if (targetCam != nullptr)
+			{
+				const float camNearWidth = targetCam->GetNearViewWidth();
+				const float camNearHeight = targetCam->GetNearViewHeight();
+				const float camFarWidth = targetCam->GetFarViewWidth();
+				const float camFarHeight = targetCam->GetFarViewHeight();
+				const float camNear = targetCam->GetNear();
+				const float camFar = targetCam->GetFar();
+				const float minimizeFactor = 1.0f / 32.0f;
+
+				nearScale = JVector3<float>(camNearWidth, camNearHeight, camNear);
+				farScale = JVector3<float>(camFarWidth * minimizeFactor, camFarHeight * minimizeFactor, camFar * minimizeFactor);
+				tarTransform = targetCam->GetTransform();
+			}
+			if (tarTransform == nullptr)
+				return;
+
+			JVector3F worldP = tarTransform->GetWorldPosition();
+			JVector3F worldR = tarTransform->GetWorldRotation();
+
+			nearFrustum->GetTransform()->SetScale(nearScale);
+			nearFrustum->GetTransform()->SetRotation(worldR);
+			nearFrustum->GetTransform()->SetPosition(worldP);
+
+			farFrustum->GetTransform()->SetScale(farScale);
+			farFrustum->GetTransform()->SetRotation(worldR);
+			farFrustum->GetTransform()->SetPosition(worldP);
+		}
+		size_t JEditorGeometryTool::FrustumView::GetTargetGuid()const noexcept
+		{
+			return targetCam->GetGuid();
+		}
+		Core::JTypeInfo& JEditorGeometryTool::FrustumView::GetTargetTypeInfo() const noexcept
+		{
+			return targetCam->GetTypeInfo();
+		}
+		void JEditorGeometryTool::FrustumView::SetMaterial(const JUserPtr<JMaterial>& mat)
+		{
+			nearFrustum->GetRenderItem()->SetMaterial(0, mat);
+			farFrustum->GetRenderItem()->SetMaterial(0, mat); 
+		}
+		bool JEditorGeometryTool::FrustumView::IsValid()const noexcept
+		{
+			return root != nullptr && nearFrustum != nullptr && farFrustum != nullptr && (targetCam != nullptr && targetCam->IsActivated());
+		}
+
+		JEditorGeometryTool::SphereView::SphereView(const JUserPtr<JPointLight>& lit, const JUserPtr<JGameObject>& parent)
+		{
+			if (lit != nullptr && parent != nullptr && root == nullptr)
+			{
+				targetPoint = lit;
+				root = JICI::Create<JGameObject>(lit->GetName() + L" Debug Sphere Root",
+					Core::MakeGuid(),
+					OBJECT_FLAG_EDITOR_OBJECT,
+					parent);
+
+				xyCircle = JGCI::CreateDebugShape(root, L"xy circle", OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::CIRCLE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW);
+				xzCircle = JGCI::CreateDebugShape(root, L"xz circle", OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::CIRCLE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW);
+				yzCircle = JGCI::CreateDebugShape(root, L"yz circle", OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::CIRCLE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW);
+			}
+		}
+		JEditorGeometryTool::SphereView::~SphereView()
+		{ 
+			Clear();
+		}
+		void JEditorGeometryTool::SphereView::Clear()
+		{
+			if (root.IsValid())
+				JGameObject::BeginDestroy(root.Release());
+		}
+		void JEditorGeometryTool::SphereView::Update()
+		{
+			JVector3F worldP;
+			JVector3F worldR;
+			float radius = 0;
+
+			JUserPtr<JTransform> transform = nullptr;
+
+			if (targetPoint != nullptr)
+			{
+				transform = targetPoint->GetOwner()->GetTransform();
+				radius = targetPoint->GetRange();
+			}
+			if (transform == nullptr)
+				return;
+
+			worldP = transform->GetWorldPosition();
+			worldR = transform->GetWorldRotation();
+
+			float meshRadius = xyCircle->GetRenderItem()->GetMesh()->GetBoundingSphereRadius();
+			float rate = 1.0f / meshRadius;
+			float xyScale = radius * rate;
+			//circle x = n, y = m,  z = 0
+			xyCircle->GetTransform()->SetScale(JVector3F(xyScale, xyScale, 1.0f));
+			xyCircle->GetTransform()->SetRotation(worldR);
+			xyCircle->GetTransform()->SetPosition(worldP);
+
+			xzCircle->GetTransform()->SetScale(JVector3F(xyScale, xyScale, 1.0f));
+			xzCircle->GetTransform()->SetRotation(JVector3F(90, 0, 0) + worldR);
+			xzCircle->GetTransform()->SetPosition(worldP);
+
+			yzCircle->GetTransform()->SetScale(JVector3F(xyScale, xyScale, 1.0f));
+			yzCircle->GetTransform()->SetRotation(JVector3F(0, 90, 0) + worldR);
+			yzCircle->GetTransform()->SetPosition(worldP);
+		}
+		size_t JEditorGeometryTool::SphereView::GetTargetGuid()const noexcept
+		{
+			return targetPoint->GetGuid();
+		}
+		Core::JTypeInfo& JEditorGeometryTool::SphereView::GetTargetTypeInfo() const noexcept
+		{
+			return targetPoint->GetTypeInfo();
+		}
+		void JEditorGeometryTool::SphereView::SetMaterial(const JUserPtr<JMaterial>& mat)
+		{
+			xyCircle->GetRenderItem()->SetMaterial(0, mat);
+			xzCircle->GetRenderItem()->SetMaterial(0, mat);
+			yzCircle->GetRenderItem()->SetMaterial(0, mat);
+		}
+		bool JEditorGeometryTool::SphereView::IsValid()const noexcept
+		{
+			return root != nullptr && xyCircle != nullptr && xzCircle != nullptr && yzCircle != nullptr && targetPoint != nullptr && targetPoint->IsActivated() &&
+				targetPoint->GetOwner()->IsSelected();
+		}
+
+		JEditorGeometryTool::ConeView::ConeView(const JUserPtr<JSpotLight>& lit, const JUserPtr<JGameObject>& parent)
+		{
+			if (lit != nullptr && parent != nullptr && root == nullptr)
+			{
+				targetSpot = lit;
+				root = JICI::Create<JGameObject>(lit->GetName() + L" Debug Spot Root",
+					Core::MakeGuid(),
+					OBJECT_FLAG_EDITOR_OBJECT,
+					parent);
+
+				boundingCone = JGCI::CreateDebugShape(root, L"bounding cone_L", 
+					OBJECT_FLAG_EDITOR_OBJECT, 
+					J_DEFAULT_SHAPE::BOUNDING_CONE_LINE,
+					J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW, false, true);
+			}
+		}
+		JEditorGeometryTool::ConeView::~ConeView()
+		{
+			Clear();
+		}
+		void JEditorGeometryTool::ConeView::Clear()
+		{
+			if (root.IsValid())
+				JGameObject::BeginDestroy(root.Release());
+		}
+		void JEditorGeometryTool::ConeView::Update()
+		{ 
+			JVector3F dirction;
+			float range = 0;
+			float outAngle = 0;
+
+			JUserPtr<JTransform> transform = nullptr;
+			if (targetSpot != nullptr)
+			{
+				transform = targetSpot->GetOwner()->GetTransform();
+				dirction = targetSpot->GetDirection();
+				range = targetSpot->GetRange();
+				outAngle = targetSpot->GetOuterConeAngle();
+			}
+			if (transform == nullptr)
+				return;
+
+			//bounding
+			float radius = 0.5f; 
+			float hypotenuse = range / cos(outAngle);
+			float bottomRadius = hypotenuse * sin(outAngle);
+			 
+			//boundingCone face z+
+			boundingCone->GetTransform()->SetScale(JVector3F(bottomRadius, bottomRadius, range));
+			boundingCone->GetTransform()->SetRotation(transform->GetWorldRotation() + JVector3F(90, 0, 0));
+			boundingCone->GetTransform()->SetPosition(transform->GetWorldPosition());
+		}
+		size_t JEditorGeometryTool::ConeView::GetTargetGuid()const noexcept
+		{
+			return targetSpot->GetGuid();
+		}
+		Core::JTypeInfo& JEditorGeometryTool::ConeView::GetTargetTypeInfo() const noexcept
+		{
+			return targetSpot->GetTypeInfo();
+		}
+		void JEditorGeometryTool::ConeView::SetMaterial(const JUserPtr<JMaterial>& mat)
+		{
+			boundingCone->GetRenderItem()->SetMaterial(0, mat); 
+		}
+		bool JEditorGeometryTool::ConeView::IsValid()const noexcept
+		{
+			return root != nullptr && boundingCone != nullptr && targetSpot != nullptr && targetSpot->IsActivated() && targetSpot->GetOwner()->IsSelected();
+		}
+
+		JEditorGeometryTool::RectView::RectView(const JUserPtr<JRectLight>& lit, const JUserPtr<JGameObject>& parent)
+		{
+			if (lit != nullptr && parent != nullptr && root == nullptr)
+			{
+				targetRect = lit;
+				root = JICI::Create<JGameObject>(lit->GetName() + L" Debug Rect Root",
+					Core::MakeGuid(),
+					OBJECT_FLAG_EDITOR_OBJECT,
+					parent);
+
+				for(int i = 0; i < 4; ++i)
+					line[i] = JGCI::CreateDebugLineShape(root, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW, false);
+			}
+		}
+		void JEditorGeometryTool::RectView::Clear()
+		{
+			if (root.IsValid())
+				JGameObject::BeginDestroy(root.Release());
+		}
+		void JEditorGeometryTool::RectView::Update()
+		{
+			JVector3F worldP;
+			JVector3F worldR;
+			JVector4F worldQ; 
+			JVector2F areaSize; 
+			JUserPtr<JTransform> transform = nullptr;
+			if (targetRect != nullptr)
+			{
+				transform = targetRect->GetOwner()->GetTransform();
+				areaSize = targetRect->GetAreaSize();
+			}
+			if (transform == nullptr)
+				return;
+
+			worldP = transform->GetWorldPosition();
+			worldQ = transform->GetWorldQuaternion(); 
+			worldR = JMathHelper::ToEulerAngle(worldQ);
+
+			float length = line[0]->GetRenderItem()->GetMesh()->GetBoundingBoxExtent().y * 2;
+			float rate = 1.0f / length;
+
+			//r - l - u - b
+			JVector3F scale[4] = { JVector3F(1.0f, rate * areaSize.y, 1.0f), JVector3F(1.0f, rate * areaSize.y, 1.0f), JVector3F(1.0f, rate * areaSize.x, 1.0f), JVector3F(1.0f, rate * areaSize.x, 1.0f) };
+			JVector3F rotation[4] = { JVector3F(0, 0, 0), JVector3F(0, 0, 0), JVector3F(0, 0, 90), JVector3F(0, 0, 90)};
+			JVector3F position[4] = { JVector3F(areaSize.x * 0.5f, 0, 0), JVector3F(-areaSize.x * 0.5f, 0, 0), JVector3F(0, areaSize.y * 0.5f, 0), JVector3F(0, -areaSize.y * 0.5f, 0) };
+
+			for (int i = 0; i < 4; ++i)
+			{
+				line[i]->GetTransform()->SetScale(scale[i]);
+				line[i]->GetTransform()->SetRotation(worldR + rotation[i]);
+				line[i]->GetTransform()->SetPosition(worldP + XMVector3Rotate(position[i].ToXmV(), worldQ.ToXmV()));
+			}
+		}
+		JEditorGeometryTool::RectView::~RectView()
+		{
+			Clear();
+		}
+		size_t JEditorGeometryTool::RectView::GetTargetGuid()const noexcept
+		{
+			return targetRect->GetGuid();
+		}
+		Core::JTypeInfo& JEditorGeometryTool::RectView::GetTargetTypeInfo() const noexcept
+		{
+			return targetRect->GetTypeInfo();
+		}
+		void JEditorGeometryTool::RectView::SetMaterial(const JUserPtr<JMaterial>& mat)
+		{ 
+			for (int i = 0; i < 4; ++i)
+				line[i]->GetRenderItem()->SetMaterial(0, mat);
+		}
+		bool JEditorGeometryTool::RectView::IsValid()const noexcept
+		{
+			return root != nullptr && line[0] != nullptr && targetRect != nullptr && targetRect->IsActivated() && targetRect->GetOwner()->IsSelected();
+		}
+
+		JEditorGeometryTool::~JEditorGeometryTool()
+		{
+			Clear();
+		}
+		J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE JEditorGeometryTool::GetToolType()const noexcept
+		{
+			return J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE::GEO_VIEW;
+		}
+		void JEditorGeometryTool::TryCreateGeoView(const std::vector<JUserPtr<JGameObject>>& idenVec, const JUserPtr<JGameObject>& parent)
+		{
+			for (const auto& data : idenVec)
+			{ 
+				auto litVec = data->GetComponents(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
+				for (const auto& litData : litVec)
+				{
+					J_LIGHT_TYPE litType = static_cast<JLight*>(litData.Get())->GetLightType();
+					if (litType == J_LIGHT_TYPE::POINT)
+						CreateSphereView(Core::ConnectChildUserPtr<JPointLight>(litData), parent);
+					else if (litType == J_LIGHT_TYPE::SPOT)
+						CreateSpotView(Core::ConnectChildUserPtr<JSpotLight>(litData), parent);
+					else if (litType == J_LIGHT_TYPE::RECT)
+						CreateRectView(Core::ConnectChildUserPtr<JRectLight>(litData),parent);
+				}
+			}
+		}
+		bool JEditorGeometryTool::CreateFrustumView(const JUserPtr<JCamera>& cam, const JUserPtr<JGameObject>& parent)
+		{
+			if (cam == nullptr || HasGeo(cam->GetGuid()))
+				return false;
+			 
+			return CreateGeoView(std::make_unique<FrustumView>(cam, parent), cam->GetGuid());
+		}
+		bool JEditorGeometryTool::CreateSphereView(const JUserPtr<JPointLight>& lit, const JUserPtr<JGameObject>& parent)
+		{
+			if (lit == nullptr || HasGeo(lit->GetGuid()))
+				return false;
+
+			return CreateGeoView(std::make_unique<SphereView>(lit, parent), lit->GetGuid());
+		}
+		bool JEditorGeometryTool::CreateSpotView(const JUserPtr<JSpotLight>& lit, const JUserPtr<JGameObject>& parent)
+		{
+			if (lit == nullptr || HasGeo(lit->GetGuid()))
+				return false;
+			 
+			return CreateGeoView(std::make_unique<ConeView>(lit, parent), lit->GetGuid());
+		}
+		bool JEditorGeometryTool::CreateRectView(const JUserPtr<JRectLight>& lit, const JUserPtr<JGameObject>& parent)
+		{
+			if (lit == nullptr || HasGeo(lit->GetGuid()))
+				return false;
+			 
+			return CreateGeoView(std::make_unique<RectView>(lit, parent), lit->GetGuid());
+		}
+		bool JEditorGeometryTool::CreateGeoView(std::unique_ptr<GeometryView>&& view, const size_t guid)
+		{
+			//HasGeo(guid)
+			if (view == nullptr || !view->IsValid())
+				return false;
+			 
+			geoSet.emplace(guid);
+			geoView.push_back(std::move(view));
+			return true;
+		}
+		void JEditorGeometryTool::DestroyView(const size_t guid)
+		{
+			if (!HasGeo(guid))
+				return;
+
+			for (int i = 0; i < geoView.size(); ++i)
+			{
+				if (geoView[i]->GetTargetGuid() == guid)
+				{
+					geoSet.erase(geoView[i]->GetTargetGuid());
+					geoView.erase(geoView.begin() + i);
+					return;
+				}
+			}
+		}
+		void JEditorGeometryTool::Clear()
+		{
+			geoSet.clear();
+			for (const auto& data : geoView)
+				data->Clear();
+			geoView.clear();
+		}
+		void JEditorGeometryTool::ClearTarget(Core::JTypeInfo& type)
+		{
+			for (int i = 0; i < geoView.size(); ++i)
+			{
+				if (geoView[i]->GetTargetTypeInfo().IsChildOf(type))
+				{
+					geoSet.erase(geoView[i]->GetTargetGuid());
+					geoView.erase(geoView.begin() + i);
+					--i;
+				}
+			}
+		}
+		void JEditorGeometryTool::Update()
+		{
+			std::vector<uint> invalidVec;
+			const uint count = (uint)geoView.size();
+			for (uint i = 0; i < count; ++i)
+			{
+				if (!geoView[i]->IsValid())
+					invalidVec.push_back(i);
+				else
+					geoView[i]->Update();
+			}
+
+			const int invalidCount = (int)invalidVec.size();
+			for (int i = invalidCount - 1; i >= 0; --i)
+			{
+				geoSet.erase(geoView[invalidVec[i]]->GetTargetGuid());
+				geoView.erase(geoView.begin() + invalidVec[i]);
+			}
+		}
+		bool JEditorGeometryTool::HasGeo(const size_t guid)
+		{
+			return geoSet.find(guid) != geoSet.end();
 		}
 	}
 }

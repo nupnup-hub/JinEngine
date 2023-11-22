@@ -16,6 +16,7 @@ namespace JinEngine
 		class JSceneObserver;
 		class JObjectDetail;
 		class JEditorMenuBar;
+		class JEditorAniContInterface;
 		class JEditorAniContPage final : public JEditorPage, public JResourceEventManager::Listener
 		{
 		private:
@@ -31,6 +32,8 @@ namespace JinEngine
 			std::unique_ptr<JObjectDetail> aniContDetail;
 		private:
 			std::unique_ptr<JEditorMenuBar> menuBar; 
+		private:
+			std::vector<JEditorAniContInterface*> contEditVec;
 		private:
 			bool setWndOptionOnce = false;
 		public:
@@ -58,6 +61,7 @@ namespace JinEngine
 			void BuildMenuNode();
 		private:
 			void OnEvent(const size_t& iden, const J_RESOURCE_EVENT_TYPE& eventType, JResourceObject* jRobj, JResourceEventDesc* desc)final;
+			void OnEvent(const size_t& iden, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)final;
 		};
 	}
 }

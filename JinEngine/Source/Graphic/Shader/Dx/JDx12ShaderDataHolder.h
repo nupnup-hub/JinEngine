@@ -5,6 +5,7 @@
 #include<vector>
 #include<wrl.h> 
 #include<d3d12.h> 
+#include<dxcapi.h>
 
 namespace JinEngine
 {
@@ -13,11 +14,11 @@ namespace JinEngine
 		class JDx12GraphicShaderDataHolder final: public JGraphicShaderDataHolder
 		{
 		public:
-			Microsoft::WRL::ComPtr<ID3DBlob> vs = nullptr;
-			Microsoft::WRL::ComPtr<ID3DBlob> hs = nullptr;
-			Microsoft::WRL::ComPtr<ID3DBlob> ds = nullptr;
-			Microsoft::WRL::ComPtr<ID3DBlob> gs = nullptr;
-			Microsoft::WRL::ComPtr<ID3DBlob> ps = nullptr;
+			Microsoft::WRL::ComPtr<IDxcBlob> vs = nullptr;
+			Microsoft::WRL::ComPtr<IDxcBlob> hs = nullptr;
+			Microsoft::WRL::ComPtr<IDxcBlob> ds = nullptr;
+			Microsoft::WRL::ComPtr<IDxcBlob> gs = nullptr;
+			Microsoft::WRL::ComPtr<IDxcBlob> ps = nullptr;
 			std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
 		public:
 			//Main pso
@@ -41,7 +42,7 @@ namespace JinEngine
 		class JDx12ComputeShaderDataHolder final : public JComputeShaderDataHolder
 		{
 		public:
-			Microsoft::WRL::ComPtr<ID3DBlob> cs = nullptr;							//Variable
+			Microsoft::WRL::ComPtr<IDxcBlob> cs = nullptr;							//Variable
 			Microsoft::WRL::ComPtr<ID3D12PipelineState> pso = nullptr;				//Constants 
 			ID3D12RootSignature* RootSignature = nullptr;							//Variable
 		public:

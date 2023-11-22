@@ -26,7 +26,7 @@ namespace JinEngine
 			public:
 				J_GRAPHIC_DEVICE_TYPE GetDeviceType() const noexcept;
 			};
-		private:
+		private: 
 			D3D12_VIEWPORT screenViewport;
 			D3D12_RECT scissorRect; 
 		private: 
@@ -77,6 +77,8 @@ namespace JinEngine
 			bool IsSupportPublicCommand()const noexcept final; 
 			bool IsPublicCommandStared()const noexcept final;
 			bool CanStartPublicCommand()const noexcept final;
+		public:
+			void CalViewportAndRect(const JVector2F rtSize, _Out_ D3D12_VIEWPORT& viweport, _Out_ D3D12_RECT& rect)const noexcept;
 		public: 
 			void Present();
 			void Signal();

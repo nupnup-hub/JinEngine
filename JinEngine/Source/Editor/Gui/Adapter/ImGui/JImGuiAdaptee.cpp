@@ -120,8 +120,9 @@ namespace JinEngine::Editor
 			colors[ImGuiCol_TableHeaderBg] = JVector4F(0.00f, 0.00f, 0.00f, 0.52f);
 			colors[ImGuiCol_TableBorderStrong] = JVector4F(0.00f, 0.00f, 0.00f, 0.52f);
 			colors[ImGuiCol_TableBorderLight] = JVector4F(0.28f, 0.28f, 0.28f, 0.29f);
-			colors[ImGuiCol_TableRowBg] = JVector4F(0.00f, 0.00f, 0.00f, 0.00f);
-			colors[ImGuiCol_TableRowBgAlt] = JVector4F(1.00f, 1.00f, 1.00f, 0.06f);
+			//colors[ImGuiCol_TableRowBg] = JVector4F(0.00f, 0.00f, 0.00f, 0.00f);
+			colors[ImGuiCol_TableRowBg] = JVector4F(1.00f, 1.00f, 1.00f, 0.12f);
+			colors[ImGuiCol_TableRowBgAlt] = JVector4F(1.00f, 1.00f, 1.00f, 0.12f);
 			colors[ImGuiCol_TextSelectedBg] = JVector4F(0.20f, 0.22f, 0.23f, 1.00f);
 			colors[ImGuiCol_DragDropTarget] = JVector4F(0.33f, 0.67f, 0.86f, 1.00f);
 			colors[ImGuiCol_NavHighlight] = JVector4F(1.00f, 0.00f, 0.00f, 1.00f);
@@ -249,12 +250,26 @@ namespace JinEngine::Editor
 				imguiFlag |= ImGuiTreeNodeFlags_DefaultOpen;
 			if (Core::HasSQValueEnum(flag, J_GUI_TREE_NODE_FLAG_EXTEND_HIT_BOX_WIDTH))
 				imguiFlag |= ImGuiTreeNodeFlags_SpanAvailWidth;
+			if (Core::HasSQValueEnum(flag, J_GUI_TREE_NODE_FLAG_EXTEND_FULL_WIDTH))
+				imguiFlag |= ImGuiTreeNodeFlags_SpanFullWidth;
 			if (Core::HasSQValueEnum(flag, J_GUI_TREE_NODE_FLAG_FRAMED))
 				imguiFlag |= ImGuiTreeNodeFlags_Framed;
 			if (Core::HasSQValueEnum(flag, J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW))
 				imguiFlag |= ImGuiTreeNodeFlags_OpenOnArrow;
 
 			return (ImGuiTreeNodeFlags_)imguiFlag;
+		}
+		static ImGuiButtonFlags_ ConvertButtonFlag(const J_GUI_BUTTON_FLAG flag)noexcept
+		{
+			ImGuiButtonFlags imguiFlag = ImGuiButtonFlags_None;
+			if (Core::HasSQValueEnum(flag, J_GUI_BUTTON_FLAG_MOUSE_BUTTION_LEFT))
+				imguiFlag |= ImGuiButtonFlags_MouseButtonLeft;
+			if (Core::HasSQValueEnum(flag, J_GUI_BUTTON_FLAG_MOUSE_BUTTION_RIGHT))
+				imguiFlag |= ImGuiButtonFlags_MouseButtonRight;
+			if (Core::HasSQValueEnum(flag, J_GUI_BUTTON_FLAG_MOUSE_BUTTION_MIDDLE))
+				imguiFlag |= ImGuiButtonFlags_MouseButtonMiddle;
+
+			return (ImGuiButtonFlags_)imguiFlag;
 		}
 		static ImGuiSelectableFlags_ ConvertSelectableFlag(const J_GUI_SELECTABLE_FLAG flag)noexcept
 		{
@@ -511,12 +526,16 @@ namespace JinEngine::Editor
 			return ImGuiDir_None;
 		}
 		static void* ConvertGraphicGpuHandle(const JGuiImageInfo& info)
-		{
-			Graphic::JGraphicResourceUserInterface handleUser = info.gUserAccess->GraphicResourceUserInterface();
+		{ 
 			if (info.useFirstHandle)
-				return handleUser.GetFirstGpuHandle(info.bType);
+			{
+				if (info.handle != nullptr)
+					return info.handle;
+				else
+					return info.gUserAccess->GraphicResourceUserInterface().GetFirstGpuHandle(info.bType);
+			}
 			else
-				return handleUser.GetGpuHandle(info.rType, info.bType, info.bIndex, info.dataIndex);
+				return info.gUserAccess->GraphicResourceUserInterface().GetGpuHandle(info.rType, info.bType, info.bIndex, info.dataIndex);
 		}
 		static bool StuffWindowInfo(ImGuiWindow* wnd, _Out_ JGuiWindowInfo& info)
 		{
@@ -1001,7 +1020,7 @@ namespace JinEngine::Editor
 #pragma endregion
 #pragma region Widget
 	bool JImGuiAdaptee::BeginWindow(const std::string& name, bool* pOpen, J_GUI_WINDOW_FLAG flags)
-	{
+	{ 
 		if (pOpen)
 			return ImGui::Begin(name.c_str(), pOpen, ConvertWindowFlag(flags));
 		else
@@ -1051,16 +1070,26 @@ namespace JinEngine::Editor
 	{
 		return ImGui::Checkbox(checkName.c_str(), &v);
 	}
-	bool JImGuiAdaptee::Button(const std::string& btnName, const JVector2<float>& jVec2)
+	bool JImGuiAdaptee::Button(const std::string& btnName, const JVector2<float>& jVec2, J_GUI_BUTTON_FLAG flag)
 	{
-		return ImGui::Button(btnName.c_str(), jVec2);
+		return ImGui::ButtonEx(btnName.c_str(), jVec2, ConvertButtonFlag(flag));
 	} 
+	bool JImGuiAdaptee::ArrowButton(const std::string& name, const JVector2<float>& jVec2, const float arrowScale, J_GUI_BUTTON_FLAG flag, J_GUI_CARDINAL_DIR dir)
+	{
+		if (jVec2 == JVector2F::Zero())
+		{
+			float sz = ImGui::GetFrameHeight();
+			return ImGui::CustomArrowButton(name.c_str(), ConvertDirType(dir), JVector2F(sz, sz) * arrowScale, ConvertButtonFlag(flag), arrowScale);
+		}
+		else
+			return ImGui::CustomArrowButton(name.c_str(), ConvertDirType(dir), jVec2 * arrowScale, ConvertButtonFlag(flag), arrowScale);
+	}
 	bool JImGuiAdaptee::IsTreeNodeOpend(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags)
 	{
 		return ImGui::TreeNodeBehaviorIsOpen(ImGui::GetID((name + "##TreeNode").c_str()), flags);
 	}
 	bool JImGuiAdaptee::TreeNodeEx(const std::string& nodeName, J_GUI_TREE_NODE_FLAG flags)
-	{
+	{ 
 		return ImGui::TreeNodeEx(nodeName.c_str(), ConvertTreeNodeFlag(flags));
 	}
 	void JImGuiAdaptee::TreePop()
@@ -1131,11 +1160,11 @@ namespace JinEngine::Editor
 		return isInputEnd;
 	}
 	bool JImGuiAdaptee::InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG flags, int step)
-	{
+	{  
 		return ImGui::InputInt(name.c_str(), value, step, 100, ConvertInputTextFlag(flags));
 	}
 	bool JImGuiAdaptee::InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG flags, const uint formatDigit, float step)
-	{
+	{ 
 		return ImGui::InputFloat(name.c_str(), value, step, 100, ConvertFloattingFormat(formatDigit), ConvertInputTextFlag(flags));
 	}
 	bool JImGuiAdaptee::SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG flags)
@@ -1195,7 +1224,7 @@ namespace JinEngine::Editor
 		ImGui::TableNextRow();
 	}
 	void JImGuiAdaptee::TableSetColumnIndex(const int index)
-	{
+	{ 
 		ImGui::TableSetColumnIndex(index);
 	}
 	bool JImGuiAdaptee::BeginMainMenuBar()
@@ -1275,8 +1304,7 @@ namespace JinEngine::Editor
 		const JVector2<float>& uv1,
 		const JVector4<float>& tintCol,
 		const JVector4<float>& borderCol)
-	{
-		auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
+	{ 
 		if (!info.IsValid())
 			InvalidImage(size, uv0, uv1);
 		else
@@ -1692,13 +1720,21 @@ namespace JinEngine::Editor
 	{
 		ImGui::Separator();
 	}
-	void JImGuiAdaptee::Indent()noexcept
+	void JImGuiAdaptee::Indent(const float width)noexcept
 	{
-		ImGui::Indent();
+		ImGui::Indent(width);
 	}
-	void JImGuiAdaptee::UnIndent()noexcept
+	void JImGuiAdaptee::UnIndent(const float width)noexcept
 	{
-		ImGui::Unindent();
+		ImGui::Unindent(width);
+	}
+	float JImGuiAdaptee::IndentMovementPixel(const float width)const noexcept
+	{ 
+		//Is same as Indent formula
+		ImGuiContext& g = *GImGui;
+		ImGuiWindow* window = ImGui::GetCurrentWindow();
+		float indentX = (width != 0.0f) ? width : g.Style.IndentSpacing;
+		return  window->DC.Indent.x +  indentX + window->DC.ColumnsOffset.x;
 	}
 
 	JVector2<float> JImGuiAdaptee::GetMainWorkPos()const noexcept

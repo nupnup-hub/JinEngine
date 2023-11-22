@@ -9,11 +9,11 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorCameraControl;
-		class JSceneCameraList;
+		class JEditorIdentifierList;
 		class JSceneViewer final : public JEditorWindow
 		{
 		private:
-			std::unique_ptr<JSceneCameraList> camList;
+			std::unique_ptr<JEditorIdentifierList> camList;
 			//JUserPtr<JTexture> shiroBack;
 		private: 
 			JUserPtr<JScene> scene;

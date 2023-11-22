@@ -24,9 +24,12 @@ namespace JinEngine::Editor
 			if (data != loadedOpendNodeID.end())
 				JGui::SetNextItemOpen(true);
 		}
+		JGui::PushStyle(J_GUI_STYLE::FRAME_ROUNDING, 0);
+		JGui::PushStyle(J_GUI_STYLE::FRAME_BORDER_SIZE, 0);
 		JGui::PushTreeNodeColorSet(isFocus, isActivated, isSelected);
 		const bool isNodeOpen = JGui::TreeNodeEx(label, flags);
 		JGui::PopTreeNodeColorSet(isActivated, isSelected);
+		JGui::PopStyle(2);
 		return isNodeOpen;
 	}
 	bool JEditorTreeStructure::CheckTreeNodeIsOpen(const std::string& label, J_GUI_TREE_NODE_FLAG_ flags, const bool isFocus, const bool isActivated, const bool isSelected)
@@ -42,6 +45,10 @@ namespace JinEngine::Editor
 		const bool isNodeOpen = JGui::IsTreeNodeOpend(label, flags);
 		JGui::PopTreeNodeColorSet(isActivated, isSelected);
 		return isNodeOpen;
+	}
+	void JEditorTreeStructure::TreePop()
+	{
+		JGui::TreePop();
 	}
 	void JEditorTreeStructure::LoadData(JFileIOTool& tool)
 	{
@@ -83,5 +90,11 @@ namespace JinEngine::Editor
 		}	 
 		tool.PopStack();
 		tool.PopStack();
+	}
+	J_GUI_TREE_NODE_FLAG_ JEditorTreeStructure::GetBaseFlag()const noexcept
+	{
+		return J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW |
+			J_GUI_TREE_NODE_FLAG_EXTEND_FULL_WIDTH |
+			J_GUI_TREE_NODE_FLAG_FRAMED;
 	}
 }

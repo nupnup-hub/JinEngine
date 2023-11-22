@@ -210,6 +210,26 @@ namespace JinEngine
 		newSentence += oriSentence.substr(offset);
 		return newSentence;
 	}
+	std::wstring JCUtil::ToLowercase(std::wstring oriSentence, uint st)
+	{
+		const uint count = (uint)oriSentence.size();
+		for (uint i = st; i < count; ++i)
+		{
+			if (iswupper(oriSentence[i]))
+				oriSentence[i] = (char)towlower(oriSentence[i]);
+		}
+		return oriSentence;
+	}
+	std::string JCUtil::ToLowercase(std::string oriSentence, uint st)
+	{
+		const uint count = (uint)oriSentence.size();
+		for (uint i = st; i < count; ++i)
+		{
+			if (isupper(oriSentence[i]))
+				oriSentence[i] = (char)tolower(oriSentence[i]);
+		}
+		return oriSentence;
+	}
 	std::wstring JCUtil::CompressWstring(const std::wstring& wstr, const uint lange)noexcept
 	{
 		if (wstr.size() > lange)
@@ -374,7 +394,7 @@ namespace JinEngine
 		}		 
 	}
 	bool JCUtil::Contain(const std::string& source, const std::string& target, const bool caseSensitive)noexcept
-	{
+	{ 
 		if (caseSensitive)
 			return source.find(target) != std::string::npos;
 		else

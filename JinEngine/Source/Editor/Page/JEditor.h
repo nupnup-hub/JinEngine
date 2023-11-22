@@ -12,10 +12,11 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JEditorAttribute;  
-		class JEditor : public Core::JEventListener<size_t, J_EDITOR_EVENT, JEditorEvStruct*>
+		using EditorEventListener = Core::JEventListener<size_t, J_EDITOR_EVENT, JEditorEvStruct*>;
+		class JEditor : public EditorEventListener
 		{
 		public:
-			using EventF = Core::JSFunctorType<void, JEditor&, J_EDITOR_EVENT, JEditorEvStruct&>;
+			using EventF = Core::JSFunctorType<void, JEditor&, J_EDITOR_EVENT, JEditorEvStruct&>; 
 		protected:
 			using ClearTaskF = Core::JSFunctorType<void, std::vector<size_t>>;
 		private: 

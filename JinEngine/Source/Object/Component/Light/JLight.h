@@ -37,6 +37,7 @@ namespace JinEngine
 		uint GetShadowResolution()const noexcept;
 		J_SHADOW_RESOLUTION GetShadowResolutionType()const noexcept;
 		uint GetShadowMapSize()const noexcept;
+		float GetBias()const noexcept;
 		float GetPenumbraWidth()const noexcept;
 		float GetPenumbraBlockerWidth()const noexcept;
 		virtual J_LIGHT_TYPE GetLightType()const noexcept = 0;
@@ -49,6 +50,7 @@ namespace JinEngine
 		virtual void SetShadow(const bool value)noexcept;
 		virtual void SetShadowResolution(const J_SHADOW_RESOLUTION sQuality)noexcept;
 		virtual void SetAllowDisplayShadowMap(const bool value)noexcept;
+		void SetBias(const float value)noexcept;
 		void SetPenumbraWidth(const float value)noexcept;
 		void SetPenumbraBlockerWidth(const float value)noexcept;
 	public: 

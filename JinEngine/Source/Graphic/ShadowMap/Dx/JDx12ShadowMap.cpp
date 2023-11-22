@@ -3,7 +3,7 @@
 #include"../../JGraphicOption.h"
 #include"../../JGraphicUpdateHelper.h"
 #include"../../DataSet/Dx/JDx12GraphicDataSet.h"
-#include"../../Blur/Dx/JDx12Blur.h"
+#include"../../Image/Dx/JDx12ImageProcessing.h"
 #include"../../Culling/Occlusion/JHZBOccCulling.h"
 #include"../../Culling/JCullingInterface.h"
 #include"../../Culling/Dx/JDx12CullingManager.h"
@@ -81,12 +81,12 @@ namespace JinEngine::Graphic
 			{
 			case JinEngine::Core::J_MESHGEOMETRY_TYPE::STATIC:
 			{
-				macro.push_back({ "STATIC", "1" });
+				macro.push_back({ L"STATIC", L"1" });
 				break;
 			}
 			case JinEngine::Core::J_MESHGEOMETRY_TYPE::SKINNED:
 			{
-				macro.push_back({ "SKINNED", "2" });
+				macro.push_back({ L"SKINNED", L"2" });
 				break;
 			}
 			default:
@@ -99,18 +99,18 @@ namespace JinEngine::Graphic
 			{
 			case JinEngine::J_SHADOW_MAP_TYPE::NORMAL:
 			{
-				macro.push_back({ "NORMALSM", "1" });
+				macro.push_back({ L"NORMALSM", L"1" });
 				break;
 			}
 			case JinEngine::J_SHADOW_MAP_TYPE::CSM:
 			{
-				macro.push_back({ "ARRAY", "2" });
-				macro.push_back({ "ARRAY_COUNT", std::to_string(JCsmOption::maxCountOfSplit) });
+				macro.push_back({ L"ARRAY", L"2" });
+				macro.push_back({ L"ARRAY_COUNT", std::to_wstring(JCsmOption::maxCountOfSplit) });
 				break;
 			}
 			case JinEngine::J_SHADOW_MAP_TYPE::CUBE:
 			{
-				macro.push_back({ "CUBE", "3" });
+				macro.push_back({ L"CUBE", L"3" });
 				break;
 			}
 			default:
@@ -119,8 +119,8 @@ namespace JinEngine::Graphic
 		}
 		static void StuffCsmMacro(std::vector<JMacroSet>& macro, const uint count)noexcept
 		{
-			macro.push_back({ "ARRAY", "2" });
-			macro.push_back({ "ARRAY_COUNT", std::to_string(count) });
+			macro.push_back({ L"ARRAY", L"2" });
+			macro.push_back({ L"ARRAY_COUNT", std::to_wstring(count) });
 		}
 		static bool CanUseGs(const J_SHADOW_MAP_TYPE smType)noexcept
 		{
@@ -503,11 +503,10 @@ namespace JinEngine::Graphic
 		std::wstring gShaderPath = JApplicationEngine::ShaderPath() + L"\\ShadowMapDraw.hlsl";
 		const uint smIndex = (uint)smType;
 
-		data.inputLayout = GetInputLayout(meshType);
-		std::vector<D3D_SHADER_MACRO> d3dMacro = JDxShaderDataUtil::ToD3d12Macro(macroSet);
-		data.vs = JDxShaderDataUtil::CompileShader(gShaderPath, d3dMacro.data(), "VS", "vs_5_1"); 
+		data.inputLayout = GetInputLayout(meshType); 
+		data.vs = JDxShaderDataUtil::CompileShader(gShaderPath, macroSet, L"VS", L"vs_6_0");
 		if (CanUseGs(smType))
-			data.gs = JDxShaderDataUtil::CompileShader(gShaderPath, d3dMacro.data(), "GS", "gs_5_1");
+			data.gs = JDxShaderDataUtil::CompileShader(gShaderPath, macroSet, L"GS", L"gs_6_0");
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC newShaderPso;
 		ZeroMemory(&newShaderPso, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));

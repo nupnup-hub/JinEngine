@@ -25,13 +25,13 @@ namespace JinEngine
 				return "DiagramList##" + uniqueLabel;
 			}
 		}
-		 
+
 		DEFAULT_CD_REQUESTOR(JAnimationDiagramListCreationFunctor, JAnimationDiagramList)
- 
-		JAnimationDiagramList::JAnimationDiagramList(const std::string& name,
-			std::unique_ptr<JEditorAttribute> attribute,
-			const J_EDITOR_PAGE_TYPE ownerPageType,
-			const J_EDITOR_WINDOW_FLAG windowFlag)
+
+			JAnimationDiagramList::JAnimationDiagramList(const std::string& name,
+				std::unique_ptr<JEditorAttribute> attribute,
+				const J_EDITOR_PAGE_TYPE ownerPageType,
+				const J_EDITOR_WINDOW_FLAG windowFlag)
 			:JEditorWindow(name, std::move(attribute), ownerPageType, windowFlag)
 		{
 			editorString = std::make_unique<JEditorStringMap>();
@@ -52,7 +52,7 @@ namespace JinEngine
 			createNewDiagramNode->RegisterSelectBind(std::make_unique< RequestEvF::CompletelyBind>(*creation->reqCreateStateEvF, this));
 			destroyDigamraNode->RegisterSelectBind(std::make_unique< RequestEvF::CompletelyBind>(*creation->reqDestroyEvF, this));
 			destroyDigamraNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
-			 
+
 			diagramListPopup = std::make_unique<JEditorPopupMenu>(Private::DiagramListName(GetName()), std::move(diagramListRootNode));
 			diagramListPopup->AddPopupNode(std::move(createNewDiagramNode));
 			diagramListPopup->AddPopupNode(std::move(destroyDigamraNode));
@@ -117,7 +117,7 @@ namespace JinEngine
 			{
 				static_cast<JAnimationController*>(Core::GetRawPtr(creationHint.openDataHint))->CreateFSMdiagram(guid);
 			};
-			 
+
 			creation->creation.GetCreationInterface()->RegisterCanCreationF(canCreateDiagramLam);
 			creation->creation.GetCreationInterface()->RegisterObjectCreationF(createDiagramLam);
 		}
@@ -125,10 +125,10 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::ANIMATION_DIAGRAM_LIST;
 		}
-		void JAnimationDiagramList::Initialize(JUserPtr<JAnimationController> newAniCont)noexcept
+		void JAnimationDiagramList::SetAnimationController(const JUserPtr<JAnimationController>& newAniCont)
 		{
-			aniCont = newAniCont; 
-		}
+			aniCont = newAniCont;
+		}	 
 		void JAnimationDiagramList::UpdateWindow()
 		{
 			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | J_GUI_WINDOW_FLAG_NO_COLLAPSE);
@@ -141,7 +141,7 @@ namespace JinEngine
 			CloseWindow();
 		}
 		void JAnimationDiagramList::BuildDiagramList()
-		{ 
+		{
 			J_GUI_TABLE_FLAG_ flag = J_GUI_TABLE_FLAG_BORDERS | J_GUI_TABLE_FLAG_REORDERABLE | J_GUI_TABLE_FLAG_HIDEABLE;
 			if (aniCont.IsValid() && JGui::BeginTable("##DiagramListTable" + GetName(), 1, flag))
 			{
@@ -155,11 +155,11 @@ namespace JinEngine
 					JGui::TableNextRow();
 					JGui::TableSetColumnIndex(0);
 
-					const bool isSelect = IsSelectedObject(diagramVec[i]->GetGuid()); 
+					const bool isSelect = IsSelectedObject(diagramVec[i]->GetGuid());
 					const JVector2<float> preCursorPos = JGui::GetCursorScreenPos();
 					JGui::PushTreeNodeColorSet(IsFocus(), true, isSelect);
 					if (JGui::Selectable(JGui::CreateGuiLabel(diagramVec[i], GetName() + "Selectable"), &isSelect))
-					{ 
+					{
 						RequestPushSelectObject(diagramVec[i]);
 						SetContentsClick(true);
 					}
@@ -171,12 +171,12 @@ namespace JinEngine
 						if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::RIGHT))
 							SetContentsClick(true);
 					}
-			 
+
 				}
 				JGui::EndTable();
 			}
 			if (aniCont.IsValid())
-				UpdatePopup(PopupSetting(diagramListPopup.get(), editorString.get())); 
+				UpdatePopup(PopupSetting(diagramListPopup.get(), editorString.get()));
 		}
 		void JAnimationDiagramList::DoActivate()noexcept
 		{
@@ -194,14 +194,14 @@ namespace JinEngine
 		}
 		void JAnimationDiagramList::DoSetClose()noexcept
 		{
-			aniCont.Clear(); 
+			aniCont.Clear();
 		}
 		void JAnimationDiagramList::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* ev)
 		{
 			JEditorWindow::OnEvent(senderGuid, eventType, ev);
 
 			if (senderGuid == GetGuid())
-				return; 
+				return;
 
 			if (eventType == J_EDITOR_EVENT::MOUSE_CLICK)
 				diagramListPopup->SetOpen(false);

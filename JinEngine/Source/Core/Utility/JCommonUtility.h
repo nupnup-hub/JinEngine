@@ -61,6 +61,9 @@ namespace JinEngine
 		static std::wstring ChangeWord(const std::wstring& oriSentence, const std::wstring& fromWord, const std::wstring& toWord);
 		static std::string ChangeWord(const std::string& oriSentence, const std::string& fromWord, const std::string& toWord);
 
+		static std::wstring ToLowercase(std::wstring oriSentence, uint st = 0);
+		static std::string ToLowercase(std::string oriSentence, uint st = 0);
+
 		static std::wstring CompressWstring(const std::wstring& wstr, const uint length)noexcept;
 		static std::string CompressString(const std::string& str, const uint length)noexcept;
 

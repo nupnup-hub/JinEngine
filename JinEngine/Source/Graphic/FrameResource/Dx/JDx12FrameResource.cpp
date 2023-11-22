@@ -109,6 +109,7 @@ namespace JinEngine::Graphic
 		csmBuffer = std::make_unique<JDx12GraphicBuffer<JCsmConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
 		pLightBuffer = std::make_unique<JDx12GraphicBuffer<JPointLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
 		sLightBuffer = std::make_unique<JDx12GraphicBuffer<JSpotLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
+		rLightBuffer = std::make_unique<JDx12GraphicBuffer<JRectLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
 		hzbOccObjectBuffer = std::make_unique<JDx12GraphicBuffer<JHzbOccObjectConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
      
 		objectCB = std::make_unique<JDx12GraphicBuffer<JObjectConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
@@ -128,6 +129,7 @@ namespace JinEngine::Graphic
 		csmBuffer->Build(device, gInfo.minCapacity);
 		pLightBuffer->Build(device, gInfo.minCapacity);
 		sLightBuffer->Build(device, gInfo.minCapacity);
+		rLightBuffer->Build(device, gInfo.minCapacity);
 		hzbOccObjectBuffer->Build(device, gInfo.minCapacity);
 
 		objectCB->Build(device, gInfo.minCapacity);
@@ -149,6 +151,7 @@ namespace JinEngine::Graphic
 			{J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO, csmBuffer.get()},
 			{J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT, pLightBuffer.get()},
 			{J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, sLightBuffer.get()},
+			{J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, rLightBuffer.get()},
 			{J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT, objectCB.get()},
 			{J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION, skinnedCB.get()},
 			{J_UPLOAD_FRAME_RESOURCE_TYPE::ENGINE_PASS, enginePassCB.get()},

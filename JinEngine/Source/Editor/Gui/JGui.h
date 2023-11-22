@@ -37,6 +37,8 @@ namespace JinEngine
 			static std::string CreateGuiLabel(const std::string& name, const std::string& uniqueLabel) noexcept;
 			static std::string CreateGuiLabel(const std::string& name, const size_t guid) noexcept;
 			static std::string CreateGuiLabel(const std::string& name, const size_t guid, const std::string& uniqueLabel) noexcept;
+			static std::string CreateGuiLabel(const size_t guid, const std::string& uniqueLabel) noexcept;
+			static std::string CreatePreviewName(Core::JIdentifier* iden) noexcept;
 #pragma endregion
 #pragma region Color
 		public:
@@ -173,7 +175,8 @@ namespace JinEngine
 			static void Text(const std::string& text);
 			static void Text(const std::string& text, const float fontScale);
 			static bool CheckBox(const std::string& name, bool& v);
-			static bool Button(const std::string& name, const JVector2<float>& jVec2 = { 0,0 });
+			static bool Button(const std::string& name, const JVector2<float>& jVec2 = { 0,0 }, J_GUI_BUTTON_FLAG_ flag = J_GUI_BUTTON_FLAG_MOUSE_BUTTION_LEFT);
+			static bool ArrowButton(const std::string& name, const JVector2<float>& jVec2 = { 0,0 }, const float arrowScale = 1.0f, J_GUI_BUTTON_FLAG_ flag = J_GUI_BUTTON_FLAG_MOUSE_BUTTION_LEFT, J_GUI_CARDINAL_DIR dir = J_GUI_CARDINAL_DIR::DOWN);
 			static bool IsTreeNodeOpend(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags); 
 			static bool TreeNodeEx(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags = J_GUI_TREE_NODE_FLAG_NONE);
 			static void TreePop();
@@ -183,8 +186,8 @@ namespace JinEngine
 			static bool InputText(const std::string& name, std::string& buff, const size_t size, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputMultilineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
-			static bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, int step = 1);
-			static bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const float formatDigit = 3, float step = 0.0f);
+			static bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, int step = 1, uint inputWidthRate = 1);
+			static bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const float formatDigit = 3, float step = 0.0f, uint inputWidthRate = 1);
 		public:
 			static bool SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
 			static bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const float formatDigit, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
@@ -396,8 +399,9 @@ namespace JinEngine
 			static void NewLine()noexcept;
 			static void SameLine()noexcept;
 			static void Separator()noexcept;
-			static void Indent()noexcept;
-			static void UnIndent()noexcept;
+			static void Indent(const float width = 0)noexcept;
+			static void UnIndent(const float width = 0)noexcept;
+			static float IndentMovementPixel(const float width = 0)noexcept;
 		public:
 			//Window 
 			// Work Area

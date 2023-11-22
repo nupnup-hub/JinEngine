@@ -25,7 +25,7 @@
 #include"../../../Graphic/ShadowMap/JCsmHandlerInterface.h"  
 #include<Windows.h>
 #include<fstream>
-  
+   
 using namespace DirectX;
 namespace JinEngine
 {
@@ -168,9 +168,6 @@ namespace JinEngine
 		JMatrix4x4 view;
 		JMatrix4x4 proj;
 	public:
-		REGISTER_PROPERTY_EX(bias, GetBias, SetBias, GUI_SLIDER(-1.0f, 1.0f, true, false, 5))
-		float bias = 0.0f;
-	public:
 		//REGISTER_PROPERTY_EX(onCsm, IsCsmActivated, SetCsm, GUI_CHECKBOX(GUI_BOOL_CONDITION_REF_USER(OnShadow, true)))
 		REGISTER_GUI_BOOL_CONDITION(OnShadow, IsShadowActivated, true)
 		REGISTER_GUI_BOOL_CONDITION(OnCsm, onCsm, false)
@@ -273,10 +270,6 @@ namespace JinEngine
 		{
 			return GetCsmOptionRef().GetLevelBlendRate();
 		}
-		float GetBias()const noexcept
-		{
-			return bias;
-		}
 	public:  
 		void SetShadow(const bool value, const bool isManual = false)noexcept
 		{
@@ -376,8 +369,8 @@ namespace JinEngine
 				{
 					DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::DEPTH_TEST_PASS);
 					DeRegisterLightFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS);
-					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
-					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP);
+					DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
+					DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP);
 					DestroyCullingData(Graphic::J_CULLING_TYPE::HZB_OCCLUSION);
 					PopHzbOccCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 					if (AllowDisplayOccCullingDepthMap())
@@ -429,7 +422,7 @@ namespace JinEngine
 				if (value)
 					CreateOcclusionDepthDebug(AllowHzbOcclusionCulling());
 				else
-					DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG);
+					DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG);
 			}
 			SetFrameDirty();
 		}
@@ -456,11 +449,6 @@ namespace JinEngine
 		void SetLevelBlendRate(const float value)noexcept
 		{
 			GetCsmOptionRef().SetLevelBlendRate(value);
-			SetFrameDirty();
-		}
-		void SetBias(const float value)
-		{
-			bias = std::clamp(value, -1.0f, 1.0f);
 			SetFrameDirty();
 		}
 	public:
@@ -547,7 +535,7 @@ namespace JinEngine
 		}
 		void DestroyShadowMapDebugResource()
 		{
-			DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
+			DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
 		}
 	public:
 		void Activate()
@@ -600,7 +588,7 @@ namespace JinEngine
 				constant.shadowMapTransform.StoreXM(XMMatrixTranspose(GetShadowMapTransform()));
 				constant.shadowMapIndex = GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0);
 			}  
-
+		 
 			constant.shadowMapType = (uint)GetShadowMapType();
 			constant.color = thisPointer->GetColor();
 			constant.direction = CalLightWorldDir(GetTransform());
@@ -612,7 +600,7 @@ namespace JinEngine
 			constant.shadowMapSize = thisPointer->GetShadowMapSize();
 			constant.shadowMapInvSize = 1.0f / constant.shadowMapSize;
 			constant.tanAngle = XMVectorGetX(DirectX::XMVector3AngleBetweenNormals(constant.direction.ToXmV(), GetInitDir()));
-			constant.bias = bias;
+			constant.bias = thisPointer->GetBias();
 			DirLitFrame::MinusMovedDirty();  	 
 		}
 		void UpdateFrame(Graphic::JCsmConstants& constant, const uint index)noexcept final
@@ -1057,8 +1045,7 @@ namespace JinEngine
 		size_t guid = 0;
 		J_OBJECT_FLAG flag = OBJECT_FLAG_NONE;
 		bool isActivated = false;
-		bool sOnCsm = false;
-		float sBias = 0;
+		bool sOnCsm = false; 
 		float sSplitBlendRate = 0;
 		uint sSplitCount = 0;
 		float sShadowDistance = 0;
@@ -1077,15 +1064,13 @@ namespace JinEngine
 		litUser.ConnnectChild(idenUser);
 
 		JLightPrivate::AssetDataIOInterface::LoadLightData(tool, litUser);
-		JObjectFileIOHelper::LoadAtomicData(tool, sOnCsm, "OnCsm:");
-		JObjectFileIOHelper::LoadAtomicData(tool, sBias, "Bias:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sOnCsm, "OnCsm:"); 
 		JObjectFileIOHelper::LoadAtomicData(tool, sSplitBlendRate, "CsmSplitBlendRate:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sSplitCount, "CsmSplitCount:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sShadowDistance, "CsmShadowDistance:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sLevelBlendRate, "CsmLevelBlendRate:");
 
-		litUser->SetCsm(sOnCsm); 
-		litUser->impl->SetBias(sBias);
+		litUser->SetCsm(sOnCsm);  
 		litUser->impl->SetSplitBlendRate(sSplitBlendRate);
 		litUser->impl->SetSplitCount(sSplitCount);
 		litUser->impl->SetShadowDistance(sShadowDistance);
@@ -1112,8 +1097,7 @@ namespace JinEngine
 
 		JObjectFileIOHelper::StoreComponentIden(tool, lit.Get());
 		JLightPrivate::AssetDataIOInterface::StoreLightData(tool, lit);
-		JObjectFileIOHelper::StoreAtomicData(tool, impl->onCsm, "OnCsm:");
-		JObjectFileIOHelper::StoreAtomicData(tool, impl->bias, "Bias:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->onCsm, "OnCsm:"); 
 		JObjectFileIOHelper::StoreAtomicData(tool, option.GetSplitBlendRate(), "CsmSplitBlendRate:");
 		JObjectFileIOHelper::StoreAtomicData(tool, option.GetSplitCount(), "CsmSplitCount:");
 		JObjectFileIOHelper::StoreAtomicData(tool, option.GetShadowDistance(), "CsmShadowDistance:");

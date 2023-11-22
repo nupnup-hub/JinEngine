@@ -287,6 +287,14 @@ namespace JinEngine::Editor
 	{
 		return  name + "##" + std::to_string(guid) + uniqueLabel;
 	}
+	std::string JGui::CreateGuiLabel(const size_t guid, const std::string& uniqueLabel) noexcept
+	{
+		return "##" + std::to_string(guid) + uniqueLabel;
+	}
+	std::string JGui::CreatePreviewName(Core::JIdentifier* iden) noexcept
+	{
+		return iden != nullptr ? JCUtil::WstrToU8Str(iden->GetName()) : "";
+	}
 #pragma endregion
 
 #pragma region Color
@@ -774,10 +782,15 @@ namespace JinEngine::Editor
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::CHECKBOX);
 		return Private::Adaptee()->CheckBox(name, v);
 	}
-	bool JGui::Button(const std::string& name, const JVector2<float>& jVec2)
+	bool JGui::Button(const std::string& name, const JVector2<float>& jVec2, J_GUI_BUTTON_FLAG_ flag)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::BUTTON);
-		return Private::Adaptee()->Button(name, jVec2);
+		return Private::Adaptee()->Button(name, jVec2, (J_GUI_BUTTON_FLAG)flag);
+	}
+	bool JGui::ArrowButton(const std::string& name, const JVector2<float>& jVec2, const float arrowScale, J_GUI_BUTTON_FLAG_ flag, J_GUI_CARDINAL_DIR dir)
+	{
+		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::BUTTON);
+		return Private::Adaptee()->ArrowButton(name, jVec2, arrowScale, (J_GUI_BUTTON_FLAG)flag, dir);
 	}
 	bool JGui::IsTreeNodeOpend(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags)
 	{
@@ -823,14 +836,16 @@ namespace JinEngine::Editor
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::INPUT);
 		return Private::Adaptee()->InputMultilineText(name, buff, result, size, (J_GUI_INPUT_TEXT_FLAG)flags);
 	}
-	bool JGui::InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG_ flags, int step)
+	bool JGui::InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG_ flags, int step, uint inputWidthRate)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::INPUT);
+		SetNextItemWidth(GetAlphabetSize().x * (std::numeric_limits<float>::digits * 0.375f * inputWidthRate));
 		return Private::Adaptee()->InputInt(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, step);
 	}
-	bool JGui::InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags, const float formatDigit, float step)
+	bool JGui::InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags, const float formatDigit, float step, uint inputWidthRate)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::INPUT);
+		SetNextItemWidth(GetAlphabetSize().x * (std::numeric_limits<float>::digits * 0.375f * inputWidthRate));
 		return Private::Adaptee()->InputFloat(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, formatDigit, step);
 	}
 	bool JGui::SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags)
@@ -995,7 +1010,6 @@ namespace JinEngine::Editor
 		const JVector4<float>& tintCol,
 		const JVector4<float>& borderCol)
 	{
-		auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
 		if (!info.IsValid())
 			InvalidImage(size);
 		else if (info.useFirstHandle)
@@ -1006,8 +1020,9 @@ namespace JinEngine::Editor
 				info.extraPerImagePtr(0);
 		}
 		else if (info.displayAllType)
-		{
+		{ 
 			uint imageCount = 0;
+			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
 			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetDataCount(info.rType);
 			for (uint i = 0; i < dataCount; ++i)
 			{
@@ -1026,6 +1041,7 @@ namespace JinEngine::Editor
 		}
 		else
 		{
+			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
 			const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, info.dataIndex);
 			for (uint i = 0; i < viewCount; ++i)
 			{
@@ -1097,7 +1113,6 @@ namespace JinEngine::Editor
 		const JVector2<float>& uvMin,
 		const JVector2<float>& uvMax)
 	{
-		auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
 		if (!info.IsValid())
 			AddInvalidImage(pMin, pMax, isFront, color, uvMin, uvMax);
 		else if (info.useFirstHandle)
@@ -1110,6 +1125,7 @@ namespace JinEngine::Editor
 		else if (info.displayAllType)
 		{
 			uint imageCount = 0;
+			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
 			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetDataCount(info.rType);
 			for (uint i = 0; i < dataCount; ++i)
 			{
@@ -1129,6 +1145,7 @@ namespace JinEngine::Editor
 		}
 		else
 		{
+			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
 			const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, info.dataIndex);
 			for (uint i = 0; i < viewCount; ++i)
 			{
@@ -1150,7 +1167,6 @@ namespace JinEngine::Editor
 		const JVector2<float>& uvMin,
 		const JVector2<float>& uvMax)
 	{
-		auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
 		if (!info.IsValid())
 			AddRoundedInvalidImage(pMin, pMax, isFront, rounding, flag, color, uvMin, uvMax);
 		else if (info.useFirstHandle)
@@ -1163,6 +1179,7 @@ namespace JinEngine::Editor
 		else if (info.displayAllType)
 		{
 			uint imageCount = 0;
+			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
 			const uint dataCount = info.gUserAccess->GraphicResourceUserInterface().GetDataCount(info.rType);
 			for (uint i = 0; i < dataCount; ++i)
 			{
@@ -1182,6 +1199,7 @@ namespace JinEngine::Editor
 		}
 		else
 		{
+			auto gRInterface = info.gUserAccess->GraphicResourceUserInterface();
 			const uint viewCount = gRInterface.GetViewCount(info.rType, info.bType, info.dataIndex);
 			for (uint i = 0; i < viewCount; ++i)
 			{
@@ -1440,13 +1458,17 @@ namespace JinEngine::Editor
 	{
 		Private::Adaptee()->Separator();
 	}
-	void JGui::Indent()noexcept
+	void JGui::Indent(const float width)noexcept
 	{
-		Private::Adaptee()->Indent();
+		Private::Adaptee()->Indent(width);
 	}
-	void JGui::UnIndent()noexcept
+	void JGui::UnIndent(const float width)noexcept
 	{
-		Private::Adaptee()->UnIndent();
+		Private::Adaptee()->UnIndent(width);
+	}
+	float JGui::IndentMovementPixel(const float width)noexcept
+	{
+		return Private::Adaptee()->IndentMovementPixel(width);
 	}
 	JVector2<float> JGui::GetMainWorkPos()noexcept
 	{

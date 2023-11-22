@@ -50,9 +50,9 @@ namespace JinEngine
 		{
 		public:
 			std::wstring filePath;
-			std::string functionName;
+			std::wstring functionName;
 		public:
-			CompileInfo(const std::wstring& fileName, const std::string& functionName)
+			CompileInfo(const std::wstring& fileName, const std::wstring& functionName)
 				:filePath(JApplicationEngine::ShaderPath() + L"\\" + fileName), functionName(functionName) {}
 		};
 	public:

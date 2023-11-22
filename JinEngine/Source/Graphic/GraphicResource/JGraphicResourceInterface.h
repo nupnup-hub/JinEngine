@@ -2,6 +2,7 @@
 #include"JGraphicResourceType.h"
 #include"JGraphicResourceInfo.h" 
 #include"../JGraphicConstants.h" 
+#include"../Image/JImageProcessingDesc.h"
 #include"../../Core/JCoreEssential.h"
 #include"../../Core/Reflection/JTypeImplBase.h"
 #include"../../Core/Math/JVector.h"
@@ -16,6 +17,7 @@ namespace JinEngine
 	{
 		struct JStaticMeshVertex;
 		struct JSkinnedMeshVertex;
+		class JDataHandle;
 	}
 	namespace Graphic
 	{ 
@@ -36,14 +38,14 @@ namespace JinEngine
 		class JGraphicResourceInterface : public Core::JTypeImplInterfacePointerHolder<JGraphicResourceInterface>
 		{
 		protected:
-			bool CreateSceneDepthStencil();
-			bool CreateDebugDepthStencil();
-			bool CreateLayerDepthDebugResource(const JVector2<uint> size = JVector2<uint>(0, 0));
+			bool CreateSceneDepthStencil(const JVector2<uint> size);
+			bool CreateDebugDepthStencil(const JVector2<uint> size);
+			bool CreateLayerDepthDebugResource(const JVector2<uint> size);
 			bool CreateHzbOcclusionResource(); 
 			bool CreateOcclusionDepthDebug(const bool isHzb);
-			bool Create2DTexture(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat);
-			bool CreateCubeMap(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat);
-			bool CreateRenderTargetTexture(const JVector2<uint> size = JVector2<uint>(0, 0));
+			bool Create2DTexture(const JTextureCreateDesc& createDesc);
+			bool CreateCubeMap(const JTextureCreateDesc& createDesc);
+			bool CreateRenderTargetTexture(const JVector2<uint> size);
 			bool CreateShadowMapTexture(const uint size);
 			bool CreateShadowMapTextureArray(const uint size, const uint count);
 			bool CreateShadowMapTextureCube(const uint size);
@@ -53,7 +55,14 @@ namespace JinEngine
 			bool CreateIndexBuffer(std::vector<uint16>& index);
 			bool CreateOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE option);
 		protected:
-			bool DestroyTexture(JUserPtr<JGraphicResourceInfo>& info);
+			bool DestroyGraphicResource(JUserPtr<JGraphicResourceInfo>& info);
+			bool DestroyGraphicOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE option);
+		protected:
+			/**
+			* @no mipmap일 경우와 graphic api defined로 mipmap을 변경하고 싶은경우 해당하는 resource를 다시 만들 필요가있으며
+			* @그밖에 경우에만 desc에 맞는 새로운 mipmap을 생성
+			*/
+			bool SetMipmap(const JUserPtr<JGraphicResourceInfo>& info, const JTextureCreateDesc& createDesc);
 		private:
 			virtual void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo) = 0; 
 		public:
@@ -66,13 +75,16 @@ namespace JinEngine
 			int GetOptionHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)const noexcept;
 			uint GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept;
 			Graphic::ResourceHandle GetGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint bIndex, const uint dataIndex) const noexcept;
+			Graphic::ResourceHandle GetOptionGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint bIndex, const uint dataIndex) const noexcept;
 			virtual uint GetDataCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0;
 		public:
 			int GetFirstResourceArrayIndex()const noexcept;
+			int GetFirstResourceHeapStart(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
 			JVector2F GetFirstResourceSize()const noexcept;
 			JVector2F GetFirstResourceInvSize()const noexcept;
 			J_GRAPHIC_RESOURCE_TYPE GetFirstResourceType()const noexcept;
 			Graphic::ResourceHandle GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType) const noexcept;
+			J_GRAPHIC_MIP_MAP_TYPE GetFirstMipmapType()const noexcept;
 		protected:
 			virtual JUserPtr<JGraphicResourceInfo> GetInfo(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept = 0;
 			virtual JUserPtr<JGraphicResourceInfo> GetFirstInfo()const noexcept = 0;
@@ -84,13 +96,20 @@ namespace JinEngine
 			bool HasFirstOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType);
 			virtual bool HasSpace(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0;  
 			virtual bool AllowHoldMultiHold(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept = 0;
+		public:
+			//Debug
+			/**
+			* @brief for debug texture mipmap
+			*/
+			bool TryFirstResourceMipmapBind(_Out_ std::vector<Graphic::ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle)const;
+			static void ClearFirstResourceMipmapBind(_Inout_ std::vector<Core::JDataHandle>& dataHandle);
 		};
 		class JGraphicSingleResourceHolder : public JGraphicResourceInterface
 		{ 
 		private:
 			JUserPtr<JGraphicResourceInfo> info = nullptr;
 		protected:
-			bool DestroyTexture();
+			bool DestroyGraphicResource();
 		private:
 			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo);
 		public:
@@ -110,7 +129,7 @@ namespace JinEngine
 		private:
 			JUserPtr<JGraphicResourceInfo> info[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 		protected:
-			void DestroyTexture(const J_GRAPHIC_RESOURCE_TYPE rType);
+			void DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType);
 			void DestroyAllTexture();
 		private:
 			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo);
@@ -141,8 +160,8 @@ namespace JinEngine
 		private:
 			MultiResourceInfo info; 
 		protected:
-			void DestroyTexture(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex);
-			void DestroyTexture(const J_GRAPHIC_RESOURCE_TYPE rType);
+			void DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex);
+			void DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType);
 			void DestroyAllTexture(); 
 		private:
 			void AddInfo(const JUserPtr<JGraphicResourceInfo>& newInfo);
@@ -162,7 +181,7 @@ namespace JinEngine
 		private:
 			JUserPtr<JGraphicResourceInfo> info[count];
 		protected: 
-			void DestroyTexture(const J_GRAPHIC_RESOURCE_TYPE rType)
+			void DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType)
 			{
 				int index = GetIndex(rType);
 				if (index == invalidIndex)
@@ -219,6 +238,10 @@ namespace JinEngine
 			{ 
 				return GetIndex(rType) == invalidIndex;
 			}
+			bool HasResource(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
+			{
+				return GetIndex(rType) != invalidIndex;
+			}
 			bool AllowHoldMultiHold(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept
 			{
 				return false;
@@ -238,7 +261,7 @@ namespace JinEngine
 			JUserPtr<JGraphicResourceInfo> info[singleCount];
 			std::vector<JUserPtr<JGraphicResourceInfo>> multiInfo[multiCount];
 		protected:
-			void DestroyTexture(const J_GRAPHIC_RESOURCE_TYPE rType)
+			void DestroyGraphicResource(const J_GRAPHIC_RESOURCE_TYPE rType)
 			{
 				int multiIndex = GetMultiVecIndex(rType);
 				if (multiIndex != invalidIndex)
@@ -417,8 +440,10 @@ namespace JinEngine
 			int GetOptionHeapIndexStart(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)const noexcept;
 			uint GetViewCount(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint dataIndex)const noexcept;
 			Graphic::ResourceHandle GetGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const uint bIndex, const uint dataIndex) const noexcept;
+			Graphic::ResourceHandle GetOptionGpuHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint bIndex, const uint dataIndex) const noexcept;
 		public:
 			int GetFirstResourceArrayIndex()const noexcept;
+			int GetFirstResourceHeapStart(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
 			JVector2F GetFirstResourceSize()const noexcept;
 			JVector2F GetFirstResourceInvSize()const noexcept;
 			/**
@@ -426,12 +451,20 @@ namespace JinEngine
 			*/
 			J_GRAPHIC_RESOURCE_TYPE GetFirstResourceType()const noexcept;
 			Graphic::ResourceHandle GetFirstGpuHandle(const J_GRAPHIC_BIND_TYPE bType) const noexcept;
+			J_GRAPHIC_MIP_MAP_TYPE GetFirstMipmapType()const noexcept;
 		public:
 			bool IsValidHandle(const J_GRAPHIC_RESOURCE_TYPE rType, const uint dataIndex)const noexcept;
 			bool HasHandle(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept;
 			bool HasFirstHandle()const noexcept;
-			bool HasOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex);
-			bool HasFirstOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType);
+			bool HasOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint dataIndex)const noexcept;
+			bool HasFirstOption(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept;
+		public:
+			//Debug
+			/**
+			* @brief for debug texture mipmap
+			*/
+			bool TryFirstResourceMipmapBind(_Out_ std::vector<Graphic::ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle)const;
+			static void ClearFirstResourceMipmapBind(_Inout_ std::vector<Core::JDataHandle>& dataHandle);
 		};
 	}
 }

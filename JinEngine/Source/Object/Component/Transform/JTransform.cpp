@@ -27,13 +27,12 @@ namespace JinEngine
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JTransformImpl)
 	public:
 		JWeakPtr<JTransform> thisPointer = nullptr;
-	public:
-		REGISTER_GUI_TABLE_GROUP(Transform, true, "Name", "x", "y", "z")
-		REGISTER_PROPERTY_EX(position, GetPosition, SetPosition, GUI_INPUT(false, GUI_TABLE_GROUP_USER(Transform, 3, true)))
+	public: 
+		REGISTER_PROPERTY_EX(position, GetPosition, SetPosition, GUI_INPUT(false))
 		mutable JVector3<float> position;
-		REGISTER_PROPERTY_EX(rotation, GetRotation, SetRotation, GUI_INPUT(false, GUI_TABLE_GROUP_USER(Transform, 3, true)))
+		REGISTER_PROPERTY_EX(rotation, GetRotation, SetRotation, GUI_INPUT(false))
 		mutable JVector3<float> rotation;
-		REGISTER_PROPERTY_EX(scale, GetScale, SetScale, GUI_INPUT(false, GUI_TABLE_GROUP_USER(Transform, 3, true)))
+		REGISTER_PROPERTY_EX(scale, GetScale, SetScale, GUI_INPUT(false))
 		mutable JVector3<float> scale;
 		mutable JMatrix4x4 world;
 		mutable JVector3<float> tFront;
@@ -44,6 +43,10 @@ namespace JinEngine
 		{}
 		~JTransformImpl() {}
 	public:
+		JTransform* GetParent()const noexcept
+		{
+			return IsRoot() ? nullptr : thisPointer->GetOwner()->GetTransform().Get();
+		}
 		JVector3<float> GetPosition()const noexcept
 		{ 
 			return position;
@@ -67,7 +70,7 @@ namespace JinEngine
 			return JVector3<float>(world._41, world._42, world._43);
 		}
 		JVector4<float> GetWorldQuaternion()const noexcept
-		{
+		{ 
 			XMVECTOR s;
 			XMVECTOR q;
 			XMVECTOR t;
@@ -104,8 +107,7 @@ namespace JinEngine
 	public:
 		void SetTransform(const JVector3<float>& nPosition, const JVector3<float>& nRotation, const JVector3<float>& nScale)noexcept
 		{
-			if (thisPointer->GetOwner()->IsRoot() || 
-				(position == nPosition && rotation == nRotation && scale == nScale))
+			if (IsRoot() ||  (position == nPosition && rotation == nRotation && scale == nScale))
 				return;
 
 			position = nPosition;
@@ -116,7 +118,7 @@ namespace JinEngine
 		void SetPosition(const JVector3<float>& value)noexcept
 		{
 			position.SetNanToZero();
-			if (thisPointer->GetOwner()->IsRoot() || position == value)
+			if (IsRoot() || position == value)
 				return;
 
 			position = value;
@@ -125,7 +127,7 @@ namespace JinEngine
 		void SetRotation(const JVector3<float>& euler)noexcept
 		{
 			rotation.SetNanToZero();
-			if (thisPointer->GetOwner()->IsRoot() || rotation == euler)
+			if (IsRoot() || rotation == euler)
 				return;
 
 			rotation = euler;
@@ -147,7 +149,7 @@ namespace JinEngine
 
 			tRight = XMVector3Rotate(JVector3F::Right().ToXmV(), q);
 			tUp = XMVector3Rotate(JVector3F::Up().ToXmV(), q);
-			tFront = XMVector3Rotate(JVector3F::Forward().ToXmV(), q);
+			tFront = XMVector3Rotate(JVector3F::Front().ToXmV(), q);
   
 			UpdateTopDown();
 		}
@@ -165,9 +167,14 @@ namespace JinEngine
 			SetFrameDirty();
 		}
 	public:
+		bool IsRoot()const noexcept
+		{
+			return thisPointer->GetOwner()->IsRoot();
+		}
+	public:
 		void LookAt(const JVector3<float>& target, const JVector3<float>& worldUp)noexcept
 		{
-			if (thisPointer->GetOwner()->IsRoot())
+			if (IsRoot())
 				return;
 			 
 			tFront = (target - position).Normalize();
@@ -243,10 +250,10 @@ namespace JinEngine
 
 			tRight = JVector3<float>::Right();
 			tUp = JVector3<float>::Up();
-			tFront = JVector3<float>::Forward();
+			tFront = JVector3<float>::Front();
 			world = JMatrix4x4::Identity(); 
 
-			if (!thisPointer->GetOwner()->IsRoot())
+			if (!IsRoot())
 				UpdateWorld();
 		}
 	public:
@@ -330,6 +337,10 @@ namespace JinEngine
 	{
 		return impl->GetWorldPosition();
 	}
+	JVector3<float> JTransform::GetWorldRotation()const noexcept
+	{ 
+		return JMathHelper::ToEulerAngle(GetWorldQuaternion());
+	}
 	JVector4<float> JTransform::GetWorldQuaternion()const noexcept
 	{
 		return impl->GetWorldQuaternion();
@@ -342,10 +353,6 @@ namespace JinEngine
 	{
 		return impl->world.LoadXM();
 	} 
-	DirectX::XMMATRIX JTransform::GetLocalMatrix()const noexcept
-	{
-		return impl->GetLocalMatrix();
-	}
 	JVector3<float> JTransform::GetRight()const noexcept
 	{
 		return impl->GetRight();
@@ -357,6 +364,18 @@ namespace JinEngine
 	JVector3<float> JTransform::GetFront()const noexcept
 	{
 		return impl->GetFront();
+	}
+	JVector3<float> JTransform::GetWorldRight()const noexcept
+	{ 
+		return impl->IsRoot() ? impl->GetRight() : XMVector3Normalize(XMVector3Rotate(JVector3F::Right().ToXmV(), impl->GetParent()->GetWorldQuaternion().ToXmV()));
+	}
+	JVector3<float> JTransform::GetWorldUp()const noexcept
+	{
+		return impl->IsRoot() ? impl->GetUp() : XMVector3Normalize(XMVector3Rotate(JVector3F::Up().ToXmV(), impl->GetParent()->GetWorldQuaternion().ToXmV()));
+	}
+	JVector3<float> JTransform::GetWorldFront()const noexcept
+	{
+		return impl->IsRoot() ? impl->GetFront() : XMVector3Normalize(XMVector3Rotate(JVector3F::Front().ToXmV(), impl->GetParent()->GetWorldQuaternion().ToXmV()));
 	}
 	float JTransform::GetDistance(const JUserPtr<JTransform>& t)const noexcept
 	{ 

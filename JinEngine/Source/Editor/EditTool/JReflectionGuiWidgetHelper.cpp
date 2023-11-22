@@ -1,5 +1,6 @@
 #include"JReflectionGuiWidgetHelper.h"
 #include"JEditorSearchBarHelper.h"
+#include"JEditorTreeStructure.h"
 #include"../Event/JEditorEvent.h"
 #include"../Gui/JGui.h"
 #include"../Gui/JGuiImageInfo.h"
@@ -42,8 +43,10 @@ namespace JinEngine
 	namespace Editor
 	{
 		class JGuiWidgetDisplayHandle;
-		class JGuiWidgetGroupHandle;
+		class JGuiWidgetExtraHandle;
+		class JGuiTableHandle;
 		class JGuiConditionHandle;
+		class JGuiGroupHandle;
 		namespace
 		{
 			//update data
@@ -71,21 +74,26 @@ namespace JinEngine
 				}
 			};
 
-			//user private data
+			//user(mostly JEditorWindow) private data
 			struct UserData
 			{
 			public:
 				std::unordered_map<std::string, std::unique_ptr<JGuiWidgetDisplayHandle>> guiWidgetHandleMap;
-				std::unordered_map<std::string, std::unique_ptr<JGuiWidgetGroupHandle>> guiGroupHandleMap;
+				std::unordered_map<std::string, std::unique_ptr<JGuiWidgetExtraHandle>> guiExtraHandleMap;
+			public:
+				std::set<std::string> guiGroupSet;		//stack groupInfoName
 			public:
 				JEditorWindow* editorWnd;
+			public:
+				float nameSpaceOffset = 0;
 			public:
 				bool allowDisplayParent = true;
 				bool allowDisplayName = true;
 				bool allowSameLine = false;
 			public:
 				//Inner
-				bool isActivatedTable = false;
+				bool isInnerTableActviated = false;
+				bool useInnerTable = false;
 			public:
 				UserData(JEditorWindow* editorWnd)
 					:editorWnd(editorWnd)
@@ -94,13 +102,14 @@ namespace JinEngine
 				void InitOptionValue()
 				{
 					allowDisplayParent = allowDisplayName = true;
-					allowSameLine = isActivatedTable = false;
+					allowSameLine = isInnerTableActviated = false;
+					nameSpaceOffset = 0;
 				}
 			public:
 				void Clear()
 				{
 					guiWidgetHandleMap.clear();
-					guiGroupHandleMap.clear();
+					guiExtraHandleMap.clear();
 				}
 			};
 
@@ -137,8 +146,10 @@ namespace JinEngine
 			}
 			//forward declaration 
 			static std::unique_ptr<JGuiWidgetDisplayHandle> MakeGuiHandle(Core::JParameterHint pHint, Core::JGuiWidgetInfo* widgetInfo);
-			static std::unique_ptr<JGuiWidgetGroupHandle> MakeExtraGroupHandle(Core::JGuiWidgetInfo* widgetInfo);
-			static std::unique_ptr<JGuiConditionHandle> MakeExtraConditionHandle(Core::JGuiWidgetInfo* widgetInfo);
+			static std::unique_ptr<JGuiTableHandle> MakeExtraTableHandle(Core::JGuiWidgetInfo* widgetInfo);
+			static std::unique_ptr<JGuiConditionHandle> MakeExtraConditionHandle(Core::JGuiWidgetInfo* widgetInfo); 
+			static std::unique_ptr<JGuiGroupHandle> MakeExtraGroupHandle(const UpdateData& updateData);
+			static std::string MakeExtraMapKey(Core::JGuiExtraFunctionUserInfo* info, const UpdateData& updateData);
 			static void SettingDisplayTypeInfo(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo, UserData* userData);
 			static void SettingUpdateData(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo, UserData* userData);
 			static void DisplayWidget(UpdateData& updateData, UserData* userData);
@@ -162,15 +173,18 @@ namespace JinEngine
 				else
 					return "##" + updateData.handleBase->GetName() + std::to_string(updateData.widgetIndex) + label;
 			}
-			void TrySameLine(UserData* userData)const noexcept
+			static void TrySameLine(UserData* userData)noexcept
 			{
 				if (userData->allowSameLine)
 					JGui::SameLine();
 			}
-			void DisplayName(UpdateData& updateData, UserData* userData)const noexcept
+			static void DisplayName(UpdateData& updateData, UserData* userData)noexcept
 			{
 				if (userData->allowDisplayName)
+				{ 
+					JGui::SetCursorScreenPos(JGui::GetCursorScreenPos() + JVector2F(userData->nameSpaceOffset, 0));
 					JGui::Text(updateData.handleBase->GetName());
+				}
 			}
 		};
 		class JGuiObjectValueInterface : public JObjectModifyInterface
@@ -357,15 +371,17 @@ namespace JinEngine
 				(*userData->editorWnd->GetEvFunctor())(*userData->editorWnd, J_EDITOR_EVENT::T_BIND_FUNC, *evStruct);
 			}
 		};
-
-		class JGuiWidgetGroupHandle
+ 
+		class JGuiWidgetExtraHandle
 		{
 		public:
-			virtual void Update(JGuiWidgetDisplayHandle* widgetHandle, UpdateData& updateData, UserData* userData, const bool displayWidget) = 0;
+			virtual ~JGuiWidgetExtraHandle() = default;
+		public:
+			virtual Core::J_GUI_EXTRA_FUNCTION_TYPE GetExtraFuncType()const noexcept = 0;
 		};
-		//GuiTable 
+		//GuiTable(Unuse)
 		//For gui widget grouping
-		class JGuiTableHandle : public JGuiWidgetGroupHandle
+		class JGuiTableHandle : public JGuiWidgetExtraHandle
 		{
 		private:
 			using SuccessUpdateCount = int;
@@ -380,7 +396,12 @@ namespace JinEngine
 		private:
 			static const J_GUI_TABLE_COLUMN_FLAG_ columnDefaultFlag = J_GUI_TABLE_COLUMN_FLAG_WIDTH_STRETCH;
 		public:
-			void Update(JGuiWidgetDisplayHandle* widgetHandle, UpdateData& updateData, UserData* userData, const bool canDisplayWidget)final
+			Core::J_GUI_EXTRA_FUNCTION_TYPE GetExtraFuncType()const noexcept final
+			{
+				return Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE;
+			}
+		public:
+			void Update(JGuiWidgetDisplayHandle* widgetHandle, UpdateData& updateData, UserData* userData, const bool canDisplayWidget)
 			{
 				Core::JGuiExtraFunctionUserInfo* extraUserInfo = GetExtraUserInfo(updateData, Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE);
 				if (extraUserInfo == nullptr)
@@ -428,12 +449,12 @@ namespace JinEngine
 			void Begin(Core::JGuiTableInfo* tableInfo)
 			{
 				const uint columnCount = tableInfo->GetColumnCount();
-				isOpen = JGui::BeginTable("##GuiTable" + tableInfo->GetName(), columnCount, flag);
+				isOpen = JGui::BeginTable("##GuiInnerTable" + tableInfo->GetName(), columnCount, flag);
 				if (isOpen)
 				{
 					for (uint i = 0; i < columnCount; ++i)
 						JGui::TableSetupColumn(tableInfo->GetColumnGuide(i), columnDefaultFlag);
-					JGui::TableHeadersRow();
+					//JGui::TableHeadersRow();
 					JGui::TableNextRow();
 					rowIndex = 0;
 					columnIndex = 0;
@@ -488,8 +509,13 @@ namespace JinEngine
 				columnIndex = 0;
 			}
 		};
-		class JGuiConditionHandle
+		class JGuiConditionHandle : public JGuiWidgetExtraHandle
 		{
+		public:
+			Core::J_GUI_EXTRA_FUNCTION_TYPE GetExtraFuncType()const noexcept final
+			{
+				return Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE;
+			}
 		public:
 			static bool PassCondition(UpdateData& updateData)
 			{
@@ -720,7 +746,7 @@ namespace JinEngine
 				Core::JPropertyInfo* boolPropertyInfo = nullptr;
 				Core::JMethodInfo* boolMethodInfo = nullptr;
 
-				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(condUser->GetRefParamOwnerName());
+				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(condUser->GetRefOwnerName());
 				Core::JParameterHint pHint = refPropertyInfo->GetHint();
 				Core::JTypeInfo* refTypeInfo = _JReflectionInfo::Instance().GetTypeInfo(pHint.valueTypeFullName);
 
@@ -728,14 +754,14 @@ namespace JinEngine
 				{
 					if (condInfo->IsRefMethod())
 					{
-						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), refPropertyInfo, &boolImplOwner, &boolMethodInfo);
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefOwnerName(), refPropertyInfo, &boolImplOwner, &boolMethodInfo);
 						if (boolImplOwner == nullptr || boolMethodInfo == nullptr || boolMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool || boolMethodInfo->ParameterCount() > 0)
 							return false;
 						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolMethodInfo);
 					}
 					else
 					{
-						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), refPropertyInfo, &boolImplOwner, &boolPropertyInfo);
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefOwnerName(), refPropertyInfo, &boolImplOwner, &boolPropertyInfo);
 						if (boolImplOwner == nullptr || boolPropertyInfo == nullptr || boolPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
 							return false;
 						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolImplOwner, boolPropertyInfo);
@@ -745,14 +771,14 @@ namespace JinEngine
 				{
 					if (condInfo->IsRefMethod())
 					{
-						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), &boolOwner, &boolMethodInfo);
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefOwnerName(), &boolOwner, &boolMethodInfo);
 						if (boolOwner == nullptr || boolMethodInfo == nullptr || boolMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool || boolMethodInfo->ParameterCount() > 0)
 							return false;
 						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolMethodInfo);
 					}
 					else
 					{
-						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefParamOwnerName(), &boolOwner, &boolPropertyInfo);
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefOwnerName(), &boolOwner, &boolPropertyInfo);
 						if (boolOwner == nullptr || boolPropertyInfo == nullptr || boolPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Bool)
 							return false;
 						value = JGuiObjectValueInterface{}.UnsafeGetValue<bool>(boolOwner, boolPropertyInfo);
@@ -766,22 +792,36 @@ namespace JinEngine
 			{
 				Core::JIdentifier* enumOwner = nullptr;
 				Core::JPropertyInfo* enumPropertyInfo = nullptr;
+				Core::JMethodInfo* enumMethodInfo = nullptr;
 
 				Core::JGuiEnumParamConditionInfo* condInfo = static_cast<Core::JGuiEnumParamConditionInfo*>(conditionInfo);
 				Core::JGuiEnumParamConditionUserInfoInterface* condUser = static_cast<Core::JGuiEnumParamConditionUserInfoInterface*>(extraUser);
 				
 				Core::JEnum value = 0;
 				if (condUser->IsOwnRefParam())
-					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), &enumOwner, &enumPropertyInfo);
+				{
+					if (condInfo->IsRefMethod())
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), &enumOwner, &enumMethodInfo);
+						if (enumOwner == nullptr || enumMethodInfo == nullptr || enumMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumMethodInfo);
+					}
+					else
+					{
+						if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+							return false;
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), &enumOwner, &enumPropertyInfo);
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo);
+					}
+				}
 				else
 				{
-					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), condUser->GetRefParamOwnerName(), &enumOwner, &enumPropertyInfo);
+					if (!PassRefEnumCondition(updateData, condInfo, condUser, value))
+						return false; 
 				}
 				
-				if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
-					return false;
-
-				return condUser->OnTrigger(JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo));
+				return condUser->OnTrigger(value);
 			}
 			static bool PassImplEnumCondition(UpdateData& updateData,
 				Core::JGuiExtraFunctionUserInfo* extraUser,
@@ -789,6 +829,7 @@ namespace JinEngine
 			{
 				Core::JTypeImplBase* enumOwner = nullptr;
 				Core::JPropertyInfo* enumPropertyInfo = nullptr;
+				Core::JMethodInfo* enumMethodInfo = nullptr;
 
 				Core::JGuiEnumParamConditionInfo* condInfo = static_cast<Core::JGuiEnumParamConditionInfo*>(conditionInfo);
 				Core::JGuiEnumParamConditionUserInfoInterface* condUser = static_cast<Core::JGuiEnumParamConditionUserInfoInterface*>(extraUser);
@@ -796,10 +837,20 @@ namespace JinEngine
 				Core::JEnum value = 0;
 				if (condUser->IsOwnRefParam())
 				{
-					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), &enumOwner, &enumPropertyInfo);
-					if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
-						return false;
-					value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo);
+					if (condInfo->IsRefMethod())
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), &enumOwner, &enumMethodInfo);
+						if (enumOwner == nullptr || enumMethodInfo == nullptr || enumMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumMethodInfo);
+					}
+					else
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), &enumOwner, &enumPropertyInfo);
+						if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo);
+					}
 				}
 				else
 				{
@@ -819,25 +870,92 @@ namespace JinEngine
 				Core::JPropertyInfo* enumPropertyInfo = nullptr;
 				Core::JMethodInfo* enumMethodInfo = nullptr;
 
-				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(condUser->GetRefParamOwnerName());
+				Core::JPropertyInfo* refPropertyInfo = updateData.handleBase->GetTypeInfo()->GetProperty(condUser->GetRefOwnerName());
 				Core::JParameterHint pHint = refPropertyInfo->GetHint();
 				Core::JTypeInfo* refTypeInfo = _JReflectionInfo::Instance().GetTypeInfo(pHint.valueTypeFullName);
 
 				if (refTypeInfo != nullptr && refTypeInfo->HasImplTypeInfo())
 				{
-					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), condUser->GetRefParamOwnerName(), refPropertyInfo, &enumImplOwner, &enumPropertyInfo);
-					if (enumImplOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
-						return false;
-					value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumImplOwner, enumPropertyInfo);
+					if (condInfo->IsRefMethod())
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefOwnerName(), &enumOwner, &enumMethodInfo);
+						if (enumOwner == nullptr || enumMethodInfo == nullptr || enumMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumMethodInfo);
+					}
+					else
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefOwnerName(), refPropertyInfo, &enumImplOwner, &enumPropertyInfo);
+						if (enumImplOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumImplOwner, enumPropertyInfo);
+					}
 				}
 				else
 				{
-					GetReferenceParameterInfo(updateData, condInfo->GetRefParamName(), condUser->GetRefParamOwnerName(), &enumOwner, &enumPropertyInfo);
-					if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
-						return false;
-					value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo);
+					if (condInfo->IsRefMethod())
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefOwnerName(), &enumOwner, &enumMethodInfo);
+						if (enumOwner == nullptr || enumMethodInfo == nullptr || enumMethodInfo->GetReturnHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumMethodInfo);
+					}
+					else
+					{
+						GetReferenceParameterInfo(updateData, condInfo->GetRefName(), condUser->GetRefOwnerName(), &enumOwner, &enumPropertyInfo);
+						if (enumOwner == nullptr || enumPropertyInfo == nullptr || enumPropertyInfo->GetHint().jDataEnum != Core::J_PARAMETER_TYPE::Enum)
+							return false;
+						value = JGuiObjectValueInterface{}.UnsafeGetValue<Core::JEnum>(enumOwner, enumPropertyInfo);
+					}
 				}
 				return true;
+			}
+		};
+		class JGuiGroupHandle : public JGuiWidgetExtraHandle
+		{
+		public:
+			JEditorTreeStructure treeSturcture;
+			int userCount = 0;
+			bool canDisplayContents = false;
+		public:
+			Core::J_GUI_EXTRA_FUNCTION_TYPE GetExtraFuncType()const noexcept final
+			{
+				return Core::J_GUI_EXTRA_FUNCTION_TYPE::GROUP;
+			}
+		public:
+			JGuiGroupHandle(const UpdateData& updateData)
+			{ 
+				Core::JGuiExtraFunctionUserInfo* groupUserInfo = updateData.GetWidgetInfo()->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::GROUP).Get();
+				Core::JGuiGroupInfo* groupInfo = static_cast<Core::JGuiGroupInfo*>(groupUserInfo->GetExtraFunctionInfo().Get());
+				canDisplayContents = groupInfo->IsOpen();
+			}
+		public:
+			void Update(const UpdateData& updateData, UserData* userData)
+			{
+				Core::JGuiWidgetInfo* widgetInfo = updateData.GetWidgetInfo();
+				Core::JGuiExtraFunctionUserInfo* groupUserInfo = widgetInfo->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::GROUP).Get();
+				Core::JGuiGroupInfo* groupInfo = static_cast<Core::JGuiGroupInfo*>(groupUserInfo->GetExtraFunctionInfo().Get());
+				 
+				const std::string key = MakeExtraMapKey(groupUserInfo, updateData);
+				if (userData->guiGroupSet.find(key) == userData->guiGroupSet.end())
+				{
+					userData->guiGroupSet.emplace(key);
+					JGui::TableSetColumnIndex(0);
+					//JGui::SetCursorScreenPos(JGui::GetCursorScreenPos() + JVector2F(userData->nameSpaceOffset, 0));
+					treeSturcture.Begin();
+					canDisplayContents = treeSturcture.DisplayTreeNode(JGui::CreateGuiLabel(groupUserInfo->GetExtraFunctionName(), updateData.obj->GetGuid()), treeSturcture.GetBaseFlag(), false, canDisplayContents, false);
+					treeSturcture.End(); 
+					JGui::TableNextRow(); 
+					groupInfo->SetOpenTrigger(canDisplayContents);
+					userCount = 0;
+				}
+				++userCount;
+				if(userCount == groupInfo->GetUserCount() && canDisplayContents)
+					treeSturcture.TreePop();
+			}
+			bool CanDisplayContents()const noexcept
+			{
+				return canDisplayContents;
 			}
 		};
 
@@ -889,17 +1007,14 @@ namespace JinEngine
 			void Update(UpdateData& updateData, UserData* userData)final
 			{
 				buff = GetValue<T>(updateData);
-				TrySameLine(userData);
-				DisplayName(updateData, userData);
-				TrySameLine(userData);
-
 				Core::JGuiInputInfo* inputInfo = static_cast<Core::JGuiInputInfo*>(updateData.GetWidgetInfo());
 				bool res = false;
+				const bool displayPerFixedData = updateData.GetWidgetInfo()->IsExtraFunctionUser(Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE);
 				constexpr bool canUseFixed = std::is_integral_v<T> || std::is_floating_point_v<T>;
 				if constexpr (!canUseFixed)
-					res = ClassifyInputType(updateData);
+					res = ClassifyInputType(updateData, displayPerFixedData);
 				else if (!inputInfo->HasValidFixedParameter())
-					res = ClassifyInputType(updateData);
+					res = ClassifyInputType(updateData, displayPerFixedData);
 				else
 				{
 					Core::J_PARAMETER_TYPE fixedParam = inputInfo->GetFixedParameter();
@@ -937,56 +1052,106 @@ namespace JinEngine
 					else
 						RequestSetValue<T>(updateData, userData, buff);
 				}
-				++exeCount;
-				if (exeCount == exeMaxCount)
-					exeCount = 0;
+				if (displayPerFixedData)
+				{
+					++exeCount;
+					if (exeCount == exeMaxCount)
+						exeCount = 0;
+				}
 			}
 		private:
-			bool ClassifyInputType(UpdateData& updateData)
-			{
+			bool ClassifyInputType(UpdateData& updateData, const bool displayPerFixedData)
+			{			 
 				if constexpr (std::is_same_v<T, DirectX::XMINT2> ||
 					std::is_same_v<T, DirectX::XMFLOAT2> ||
 					std::is_same_v<T, JVector2<ValueType>>)
 				{
-					if (exeCount == 0)
-						return InputOnScreen(buff.x, MakeUniqueLabel(updateData) + "00");
+					if (displayPerFixedData)
+					{
+						if (exeCount == 0)
+							return InputOnScreen(buff.x, MakeUniqueLabel(updateData) + "00");
+						else
+							return InputOnScreen(buff.y, MakeUniqueLabel(updateData) + "01");
+					}
 					else
-						return InputOnScreen(buff.y, MakeUniqueLabel(updateData) + "01");
+					{ 
+						bool res = InputOnScreen(buff.x, MakeUniqueLabel(updateData) + "00", "x", false);
+						res |= InputOnScreen(buff.y, MakeUniqueLabel(updateData) + "01", "y", true);
+						return res;
+					}
 				}
 				else if constexpr (std::is_same_v<T, DirectX::XMINT3> ||
 					std::is_same_v<T, DirectX::XMFLOAT3> ||
 					std::is_same_v<T, JVector3<ValueType>>)
 				{
-					if (exeCount == 0)
-						return InputOnScreen(buff.x, MakeUniqueLabel(updateData) + "00");
-					else if (exeCount == 1)
-						return InputOnScreen(buff.y, MakeUniqueLabel(updateData) + "01");
+					if (displayPerFixedData)
+					{
+						if (exeCount == 0)
+							return InputOnScreen(buff.x, MakeUniqueLabel(updateData) + "00");
+						else if (exeCount == 1)
+							return InputOnScreen(buff.y, MakeUniqueLabel(updateData) + "01");
+						else
+							return InputOnScreen(buff.z, MakeUniqueLabel(updateData) + "02");
+					}
 					else
-						return InputOnScreen(buff.z, MakeUniqueLabel(updateData) + "02");
+					{
+
+						bool res = InputOnScreen(buff.x, MakeUniqueLabel(updateData) + "00", "x", false);
+						res |= InputOnScreen(buff.y, MakeUniqueLabel(updateData) + "01", "y", true);
+						res |= InputOnScreen(buff.z, MakeUniqueLabel(updateData) + "02", "z", true);
+						return res;
+					}
 				}
 				else if constexpr (std::is_same_v<T, DirectX::XMINT4> ||
 					std::is_same_v<T, DirectX::XMFLOAT4> ||
 					std::is_same_v<T, JVector4<ValueType>>)
 				{
-					if (exeCount == 0)
-						return InputOnScreen(buff.x, MakeUniqueLabel(updateData) + "00");
-					else if (exeCount == 1)
-						return InputOnScreen(buff.y, MakeUniqueLabel(updateData) + "01");
-					else if (exeCount == 2)
-						return InputOnScreen(buff.z, MakeUniqueLabel(updateData) + "02");
+					if (displayPerFixedData)
+					{
+						if (exeCount == 0)
+							return InputOnScreen(buff.x, MakeUniqueLabel(updateData) + "00");
+						else if (exeCount == 1)
+							return InputOnScreen(buff.y, MakeUniqueLabel(updateData) + "01");
+						else if (exeCount == 2)
+							return InputOnScreen(buff.z, MakeUniqueLabel(updateData) + "02");
+						else
+							return InputOnScreen(buff.w, MakeUniqueLabel(updateData) + "03");
+					}
 					else
-						return InputOnScreen(buff.w, MakeUniqueLabel(updateData) + "03");
+					{
+						bool res = InputOnScreen(buff.x, MakeUniqueLabel(updateData) + "00", "x", false);
+						res |= InputOnScreen(buff.y, MakeUniqueLabel(updateData) + "01", "y", true);
+						res |= InputOnScreen(buff.z, MakeUniqueLabel(updateData) + "02", "z", true);
+						res |= InputOnScreen(buff.w, MakeUniqueLabel(updateData) + "02", "w", true);
+						return res;
+					}
 				}
 				else
 					return InputOnScreen(buff, MakeUniqueLabel(updateData) + "00");
 			}
 			template<typename InputType>
-			bool InputOnScreen(InputType& data, const std::string& uniqSymbol)
+			bool InputOnScreen(InputType& data, const std::string& uniqSymbol, const uint inputWidthRate = 1.0f)
 			{
 				if constexpr (std::is_integral_v<InputType>)
 					return JGui::InputInt("##GuiInputIntHandle" + uniqSymbol, &data, flag);
 				else if constexpr (std::is_floating_point_v<InputType>)
 					return JGui::InputFloat("##GuiInputFloatHandle" + uniqSymbol, &data, flag);
+				else if constexpr (std::is_same_v <std::string, InputType>)
+					return JGui::InputText("##GuiInputStringHandle" + uniqSymbol, data, flag);
+				else
+					return false;
+			}
+			template<typename InputType>
+			bool InputOnScreen(InputType& data, const std::string& uniqSymbol, const std::string& label, const bool useSameLine, const uint inputWidthRate = 1.0f)
+			{ 
+				if(useSameLine)
+					JGui::SameLine();
+				JGui::Text(label);
+				JGui::SameLine();
+				if constexpr (std::is_integral_v<InputType>)
+					return JGui::InputInt("##GuiInputIntHandle" + uniqSymbol, &data, flag, inputWidthRate);
+				else if constexpr (std::is_floating_point_v<InputType>)
+					return JGui::InputFloat("##GuiInputFloatHandle" + uniqSymbol, &data, flag, inputWidthRate);
 				else if constexpr (std::is_same_v <std::string, InputType>)
 					return JGui::InputText("##GuiInputStringHandle" + uniqSymbol, data, flag);
 				else
@@ -1333,12 +1498,9 @@ namespace JinEngine
 			}
 			void Update(UpdateData& updateData, UserData* userData) final
 			{
-				TrySameLine(userData);
-				DisplayName(updateData, userData);
 				Begin(updateData, userData);
 				if constexpr (std::is_base_of_v<JObject, ValueType>)
 					SelectedPreviewOnScreen(&selectedPreview, selectedObj);
-				TrySameLine(userData);
 				bool isOpen = false;
 				if constexpr (isUser)
 				{
@@ -1426,8 +1588,6 @@ namespace JinEngine
 			void Update(UpdateData& updateData, UserData* userData) final
 			{
 				const bool isRenderItemMaterial = updateData.obj->GetTypeInfo().IsA<JRenderItem>() && std::is_base_of_v<JMaterial, ValueType>;
-				TrySameLine(userData);
-				DisplayName(updateData, userData);
 				Begin(updateData, userData);
 				for (uint i = 0; i < containerCount; ++i)
 				{
@@ -1535,9 +1695,8 @@ namespace JinEngine
 				if (!IsConveribleParam(hint))
 					return;
 
-				value = GetValue<bool>(updateData);
-				TrySameLine(userData);
-				if (JGui::CheckBox(GetDisplayName("GuiCheckbox" + MakeUniqueLabel(updateData), updateData, userData), value))
+				value = GetValue<bool>(updateData); 
+				if (JGui::CheckBox("##GuiCheckBox" + MakeUniqueLabel(updateData), value))
 				{
 					if (hint.jDataEnum == Core::J_PARAMETER_TYPE::Int)
 						RequestSetValue<int>(updateData, userData, value);
@@ -1583,9 +1742,7 @@ namespace JinEngine
 			}
 			void Update(UpdateData& updateData, UserData* userData)final
 			{
-				value = GetValue<T>(updateData);
-				DisplayName(updateData, userData);
-				JGui::SameLine();
+				value = GetValue<T>(updateData); 
 				if (isSupportInput)
 				{
 					JGui::SetNextItemWidth(JGui::GetSliderWidth());
@@ -1654,10 +1811,7 @@ namespace JinEngine
 			}
 			void Update(UpdateData& updateData, UserData* userData)final
 			{
-				color = GetValue<T>(updateData);
-				TrySameLine(userData);
-				DisplayName(updateData, userData);
-				TrySameLine(userData);
+				color = GetValue<T>(updateData); 
 				if constexpr (Core::JVectorDetermine<T>::value)
 				{
 					if constexpr (T::GetDigitCount() == 3)
@@ -1706,10 +1860,7 @@ namespace JinEngine
 		public:
 			void Initialize(UpdateData& updateData, UserData* userData) final {}
 			void Update(UpdateData& updateData, UserData* userData) final
-			{
-				TrySameLine(userData);
-				DisplayName(updateData, userData);
-				JGui::SameLine();
+			{ 
 				T value = GetValue<T>(updateData);
 				if constexpr (std::is_same_v< ValueType, std::string>)
 				{
@@ -1789,8 +1940,7 @@ namespace JinEngine
 
 					Core::JEnum enumValue = UnsafeGetValue<Core::JEnum>(updateData);
 					int selectedIndex = enumInfo->GetEnumIndex(enumValue);
-
-					TrySameLine(userData);
+					 
 					const std::string comboLabel = "##GuiEnumComboBox" + MakeUniqueLabel(updateData);
 					if (JGui::BeginCombo(comboLabel, DisplayName(enumComboInfo, enumInfo, enumValue), J_GUI_COMBO_FLAG_HEIGHT_LARGE))
 					{
@@ -1820,7 +1970,7 @@ namespace JinEngine
 			{
 				const std::vector<Core::JCommandToken>& token = guiInfo->GetToken();
 				const uint count = (uint)token.size();
-				bool canApplyCmd = true;
+				bool canApplyCmd = false;
 				std::string cmdType;
 
 				std::string contents;
@@ -1987,12 +2137,8 @@ namespace JinEngine
 			}
 			void Update(UpdateData& updateData, UserData* userData) final
 			{
-				container = GetValue<T>(updateData);
-				TrySameLine(userData);
-				DisplayName(updateData, userData);
-				TrySameLine(userData);
-				JGui::BeginGroup();
-				JGui::SetNextWindowSize(JGui::GetClientWindowSize() * 0.3f);
+				container = GetValue<T>(updateData); 
+				JGui::SetNextItemWidth(JGui::GetWindowSize().x * 0.5f);
 				const uint containerCount = (uint)container.size();
 				if (JGui::BeginListBox("##GulList" + MakeUniqueLabel(updateData)))
 				{
@@ -2009,8 +2155,9 @@ namespace JinEngine
 					JGui::BeginTable("##GuiListTable" + MakeUniqueLabel(updateData), columnMax, flag);
 					for (uint i = 0; i < columnMax; ++i)
 						JGui::TableSetupColumn(option->GetGuiWidgetInfoHandle(i)->GetName(), columnDefaultFlag);
-					JGui::TableHeadersRow();
+					//JGui::TableHeadersRow();
 
+					userData->useInnerTable = true;
 					if (rowMax > 0)
 					{
 						JGui::TableNextRow();
@@ -2019,18 +2166,19 @@ namespace JinEngine
 							if (canDisplayElementGui)
 							{
 								userData->allowDisplayName = false;
-								userData->isActivatedTable = true;
+								userData->isInnerTableActviated = true;
 								if constexpr (isUser)
 									SettingDisplayTypeInfo(container[i], &container[i]->GetTypeInfo(), userData);
 								else
 									SettingDisplayTypeInfo(Core::GetUserPtr(container[i]), &container[i]->GetTypeInfo(), userData);
-								userData->isActivatedTable = false;
+								userData->isInnerTableActviated = false;
 								userData->allowDisplayName = true;
 							}
 							if (i + 1 < containerCount)
 								JGui::TableNextRow();
 						}
 					}
+					userData->useInnerTable = false;
 					JGui::EndTable();
 					JGui::EndListBox();
 				}
@@ -2038,8 +2186,7 @@ namespace JinEngine
 				{
 					if (JGui::Button("Add New Object"))
 						(*createElementPtr)(updateData.obj);
-				}
-				JGui::EndGroup();
+				} 
 			}
 		};
 
@@ -2319,15 +2466,11 @@ namespace JinEngine
 				}
 				return nullptr;
 			}
-			static std::unique_ptr<JGuiWidgetGroupHandle> MakeExtraPropertyGroupHandle(Core::JGuiWidgetInfo* widgetInfo)
+			static std::unique_ptr<JGuiTableHandle> MakeExtraTableHandle(Core::JGuiWidgetInfo* widgetInfo)
 			{
-				Core::JGuiExtraFunctionUserInfo* groupUserInfo = widgetInfo->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE).Get();
-				if (groupUserInfo != nullptr)
-				{
-					auto info = groupUserInfo->GetExtraFunctionInfo(); 
-					if (info->GetExtraFunctionType() == Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE)
-						return std::make_unique<JGuiTableHandle>();
-				}
+				Core::JGuiExtraFunctionUserInfo* tableUserInfo = widgetInfo->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE).Get();
+				if (tableUserInfo != nullptr)
+					return std::make_unique<JGuiTableHandle>();
 				return nullptr;
 			}
 			static std::unique_ptr<JGuiConditionHandle> MakeExtraConditionHandle(Core::JGuiWidgetInfo* widgetInfo)
@@ -2336,6 +2479,17 @@ namespace JinEngine
 				if (condUserInfo != nullptr)
 					return std::make_unique<JGuiConditionHandle>();
 				return nullptr;
+			}
+			static std::unique_ptr<JGuiGroupHandle> MakeExtraGroupHandle(const UpdateData& updateData)
+			{
+				Core::JGuiExtraFunctionUserInfo* groupUserInfo = updateData.GetWidgetInfo()->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::GROUP).Get();
+				if (groupUserInfo != nullptr)
+					return std::make_unique<JGuiGroupHandle>(updateData);
+				return nullptr;
+			}
+			static std::string MakeExtraMapKey(Core::JGuiExtraFunctionUserInfo* info, const UpdateData& updateData)
+			{
+				return info->GetExtraFunctionName() + std::to_string(updateData.obj->GetGuid());
 			}
 			static void SettingDisplayTypeInfo(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo, UserData* userData)
 			{
@@ -2385,7 +2539,7 @@ namespace JinEngine
 
 					updateData.updateTypeInfo = typeInfo;
 					updateData.handleBase = typeOption->GetGuiWidgetInfoHandle(i).Get();
-					if (userData->isActivatedTable)
+					if (userData->isInnerTableActviated)
 						JGui::TableSetColumnIndex(i);
 					const uint innerWidgetInfoCount = updateData.handleBase->GetWidgetInfoCount();
 					for (uint j = 0; j < innerWidgetInfoCount; ++j)
@@ -2416,58 +2570,110 @@ namespace JinEngine
 				if (widgetHandle == userData->guiWidgetHandleMap.end())
 					return; 
 
+				//condition handle은 variable을 소유하지 않기때문에 필요할때마다 생성해서 사용.
 				auto condHandle = MakeExtraConditionHandle(updateData.GetWidgetInfo());
 				bool failCondition = condHandle != nullptr && !condHandle->PassCondition(updateData);
 
-				Core::JGuiExtraFunctionUserInfo* groupUserInfo = updateData.GetWidgetInfo()->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE).Get();
+				Core::JGuiExtraFunctionUserInfo* groupUserInfo = updateData.GetWidgetInfo()->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::GROUP).Get();
+				Core::JGuiExtraFunctionUserInfo* tableUserInfo = updateData.GetWidgetInfo()->GetExtraFunctionUserInfo(Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE).Get();
+				bool canDisplayWidget = !failCondition;
 				if (groupUserInfo != nullptr)
 				{
-					const std::string groupMapKey = groupUserInfo->GetExtraFunctionName() + std::to_string(updateData.obj->GetGuid());
-					auto groupData = userData->guiGroupHandleMap.find(groupMapKey);
-					if (groupData == userData->guiGroupHandleMap.end())
+					const std::string extraMapKey = MakeExtraMapKey(groupUserInfo, updateData);
+					auto extraData = userData->guiExtraHandleMap.find(extraMapKey);
+					if (extraData == userData->guiExtraHandleMap.end())
 					{
-						std::unique_ptr<JGuiWidgetGroupHandle> groupHandle = MakeExtraPropertyGroupHandle(updateData.GetWidgetInfo());
-						if (groupHandle != nullptr)
-							userData->guiGroupHandleMap.emplace(groupMapKey, std::move(groupHandle));
-						groupData = userData->guiGroupHandleMap.find(groupMapKey);
+						std::unique_ptr<JGuiWidgetExtraHandle> extraHandle = MakeExtraGroupHandle(updateData);
+						if (extraHandle != nullptr)
+							userData->guiExtraHandleMap.emplace(extraMapKey, std::move(extraHandle));
+						extraData = userData->guiExtraHandleMap.find(extraMapKey);
 					}
 
-					if (groupData != userData->guiGroupHandleMap.end())
+					if (extraData != userData->guiExtraHandleMap.end())
 					{
-						if (failCondition)
-							groupData->second->Update(widgetHandle->second.get(), updateData, userData, false);
-						else
-							groupData->second->Update(widgetHandle->second.get(), updateData, userData, true);
-					}
-					else
-					{
-						if (failCondition)
-							return;
-						widgetHandle->second->Update(updateData, userData);
+						auto groupHandle = static_cast<JGuiGroupHandle*>(extraData->second.get());
+						groupHandle->Update(updateData, userData);
+						canDisplayWidget &= groupHandle->CanDisplayContents();
 					}
 				}
-				else
+				if (tableUserInfo != nullptr)
 				{
-					if (failCondition)
-						return;
+					const std::string extraMapKey = MakeExtraMapKey(tableUserInfo, updateData);
+					auto extraData = userData->guiExtraHandleMap.find(extraMapKey);
+					if (extraData == userData->guiExtraHandleMap.end())
+					{
+						std::unique_ptr<JGuiWidgetExtraHandle> extraHandle = MakeExtraTableHandle(updateData.GetWidgetInfo());
+						if (extraHandle != nullptr)
+							userData->guiExtraHandleMap.emplace(extraMapKey, std::move(extraHandle));
+						extraData = userData->guiExtraHandleMap.find(extraMapKey);
+					}
+
+					if (extraData != userData->guiExtraHandleMap.end())
+					{
+						auto tableHandle = static_cast<JGuiTableHandle*>(extraData->second.get());
+						if (failCondition)
+							tableHandle->Update(widgetHandle->second.get(), updateData, userData, false);
+						else
+							tableHandle->Update(widgetHandle->second.get(), updateData, userData, true);
+					}
+				}
+				if (canDisplayWidget)
+				{
+					if (!userData->useInnerTable)
+					{
+						JGui::TableSetColumnIndex(0);
+						JGuiWidgetDisplayHandle::DisplayName(updateData, userData);
+						JGui::TableSetColumnIndex(1);
+					} 
 					widgetHandle->second->Update(updateData, userData);
+					if (!userData->useInnerTable)
+						JGui::TableNextRow();
 				}
 			}
 		}
 
 		JReflectionGuiWidgetHelper::JReflectionGuiWidgetHelper(JEditorWindow* ownerWnd)
 			:guid(Core::MakeGuid()), ownerWnd(ownerWnd)
-		{
+		{ 
 			PrivateDataMap::Data().emplace(guid, std::make_unique<UserData>(ownerWnd));
 		}
 		JReflectionGuiWidgetHelper::~JReflectionGuiWidgetHelper()
 		{
 			PrivateDataMap::Data().erase(guid);
 		}
+		void JReflectionGuiWidgetHelper::BeginGuiWidget(const Core::JUserPtr<Core::JIdentifier>& obj)
+		{ 
+			static constexpr uint columnCount = 2;	//name + gui
+			J_GUI_TABLE_FLAG_ tableFalg = J_GUI_TABLE_FLAG_BORDER_V | J_GUI_TABLE_FLAG_RESIZABLE | 
+				J_GUI_TABLE_FLAG_BORDER_OUTHER_H | J_GUI_TABLE_FLAG_ROW_BG | J_GUI_TABLE_FLAG_CONTEXT_MENU_IN_BODY;
+			//J_GUI_TABLE_FLAG_SIZING_FIXED_FIT
+			static const J_GUI_TABLE_COLUMN_FLAG_ columnFlag = J_GUI_TABLE_COLUMN_FLAG_WIDTH_STRETCH;
+
+			isTableOpen = JGui::BeginTable(JGui::CreateGuiLabel(obj->GetGuid(), "GuiHelperTable"), columnCount, tableFalg);
+			if (isTableOpen)
+			{
+				for (uint i = 0; i < columnCount; ++i)
+					JGui::TableSetupColumn("", columnFlag);
+				//JGui::TableHeadersRow();
+				JGui::TableNextRow(); 
+			}
+
+			auto userData = PrivateDataMap::Data().find(guid)->second.get();
+			userData->guiGroupSet.clear();
+		}
+		void JReflectionGuiWidgetHelper::EndGuiWidget()
+		{
+			if (isTableOpen)
+			{
+				JGui::EndTable();
+				isTableOpen = false;
+			}
+		}
 		void JReflectionGuiWidgetHelper::UpdateGuiWidget(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo)
 		{
 			auto userData = PrivateDataMap::Data().find(guid)->second.get();
 			userData->InitOptionValue();
+			userData->nameSpaceOffset = JGui::IndentMovementPixel();
 
 			SettingDisplayTypeInfo(obj, typeInfo, userData);
 		}

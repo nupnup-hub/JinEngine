@@ -18,11 +18,18 @@ namespace JinEngine::Editor
 		const bool useFirstHandle)
 		: gUserAccess(gUserAccess), rType(rType), bType(bType), useFirstHandle(useFirstHandle)
 	{}
+	JGuiImageInfo::JGuiImageInfo(Graphic::ResourceHandle handle)
+		: handle(handle), useFirstHandle(true)
+	{}
+
 	bool JGuiImageInfo::IsValid()const noexcept
 	{
-		if (gUserAccess == nullptr)
+		if (gUserAccess == nullptr && handle == nullptr)
 			return false;
-		if (useFirstHandle)
+
+		if (handle != nullptr)
+			return true;
+		else if (useFirstHandle)
 			return gUserAccess->GraphicResourceUserInterface().HasFirstHandle();
 		else if (displayAllType)
 			return gUserAccess->GraphicResourceUserInterface().HasHandle(rType);

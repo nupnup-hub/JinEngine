@@ -42,6 +42,9 @@ VertexOut VS(VertexIn vin)
 	VertexOut vout = (VertexOut)0.0f;
 	MaterialData matData = materialData[objMaterialIndex];
 
+	//hlsl은 column major를 사용하며
+	//d3d에 경우 shader에 보낼 matrix를 transpose하면 raw major형식으로 계산가능.
+	
 	float4 posW = mul(float4(vin.posL, 1.0f), objWorld);
 	vout.posW = posW.xyz;
 	vout.normalW = mul(vin.normalL, (float3x3)objWorld);

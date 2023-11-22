@@ -5,6 +5,7 @@
 #include"../../Object/Component/Light/JDirectionalLight.h"
 #include"../../Object/Component/Light/JPointLight.h"
 #include"../../Object/Component/Light/JSpotLight.h"
+#include"../../Object/Component/Light/JRectLight.h"
 #include"../../Object/Component/RenderItem/JRenderItem.h"
 #include"../../Object/Resource/JResourceManager.h"
 #include"../../Object/Resource/Mesh/JMeshGeometry.h"
@@ -26,6 +27,8 @@ namespace JinEngine
 			return JICI::Create<JPointLight>(owner);
 		else if (type == J_LIGHT_TYPE::SPOT)
 			return JICI::Create<JSpotLight>(owner);
+		else if (type == J_LIGHT_TYPE::RECT)
+			return JICI::Create<JRectLight>(owner);
 		else
 			return nullptr;
 	}

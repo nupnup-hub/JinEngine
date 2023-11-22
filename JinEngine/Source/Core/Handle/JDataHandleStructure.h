@@ -102,6 +102,14 @@ namespace JinEngine
 				else
 					return nullptr;
 			} 
+			int GetValidIndex()const noexcept
+			{
+				return validIndex;
+			}
+			int GetEmptyCount()const noexcept
+			{ 
+				return arrState.size() - arrState.count();
+			}
 		protected:
 			Type* Get(const uint index)const noexcept
 			{

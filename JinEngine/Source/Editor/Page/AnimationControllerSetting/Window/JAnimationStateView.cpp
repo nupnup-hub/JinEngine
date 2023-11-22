@@ -262,11 +262,17 @@ namespace JinEngine
 		{
 			return J_EDITOR_WINDOW_TYPE::ANIMATION_STATE_VIEW;
 		}
-		void JAnimationStateView::Initialize(JUserPtr<JAnimationController> newAnicont)noexcept
+		void JAnimationStateView::SetAnimationController(const JUserPtr<JAnimationController>& newAniCont)
 		{
-			aniCont = newAnicont;
+			aniCont = newAniCont;
+			selectedDiagram = aniCont->GetDiagramByIndex(0);
 			RegisterViewGraphGroup(aniCont.Get());
 		}
+		void JAnimationStateView::SetSelecteObject(JUserPtr<Core::JIdentifier> newSelected)
+		{
+			RequestPushSelectObject(newSelected);
+			SetContentsClick(true);
+		} 
 		void JAnimationStateView::UpdateWindow()
 		{ 
 			const bool hoveredGraphObj = stateGraph->IsLastUpdateHoveredNode() || stateGraph->IsLastUpdateSeletedEdge();
@@ -288,6 +294,9 @@ namespace JinEngine
 			bool isHoveredContents = false;
 			stateGraph->ClearNode();
 			stateGraph->SetGridSize(2000);
+			if (aniCont.IsValid() && selectedDiagram == nullptr)
+				selectedDiagram = aniCont->GetDiagramByIndex(0);
+
 			if (aniCont.IsValid() && selectedDiagram.IsValid())
 			{
 				const uint stateCount = selectedDiagram->GetStateCount();
@@ -347,11 +356,6 @@ namespace JinEngine
 			}
 			else
 				stateGraph->OnScreen();
-		}
-		void JAnimationStateView::SetSelecteObject(JUserPtr<Core::JIdentifier> newSelected)
-		{
-			RequestPushSelectObject(newSelected);
-			SetContentsClick(true);
 		}
 		void JAnimationStateView::RegisterViewGraphGroup(JAnimationController* aniCont)noexcept
 		{

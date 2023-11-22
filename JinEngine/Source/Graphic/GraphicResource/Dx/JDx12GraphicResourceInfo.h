@@ -16,8 +16,15 @@ namespace JinEngine
 		private:
 			struct OptionHolderSet
 			{
+				//struct PostProcessLog
+				//{
+				////public:
+				//	uint64 lastUpdatedFrame = 0;
+				//	bool isLastUpdatedPostProcessResource = false;
+				//};
 			public:
-				std::unique_ptr<JDx12GraphicResourceHolder> holder[(uint)J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNT];		 
+				std::unique_ptr<JDx12GraphicResourceHolder> holder[(uint)J_GRAPHIC_RESOURCE_OPTION_TYPE::COUNT];
+				//PostProcessLog postProcessLog;
 			};
 		private:
 			friend class JDx12GraphicResourceManager;
@@ -25,18 +32,20 @@ namespace JinEngine
 			JDx12GraphicResourceManager* manager = nullptr;
 			GetHandlePtr getHandlePtr = nullptr;
 		private:
-			std::unique_ptr<JDx12GraphicResourceHolder> resourceHolder; 
-			std::unique_ptr<OptionHolderSet> optionHolderSet;
+			std::unique_ptr<JDx12GraphicResourceHolder> resourceHolder = nullptr;
+			std::unique_ptr<OptionHolderSet> optionHolderSet = nullptr;
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final; 
 			uint GetWidth()const noexcept final;
 			uint GetHeight()const noexcept final;
-			ResourceHandle GetResourceHandle(const J_GRAPHIC_BIND_TYPE bindType, const uint bIndex = 0)const noexcept final;
+			uint GetMipmapCount()const noexcept final;
+			ResourceHandle GetResourceGpuHandle(const J_GRAPHIC_BIND_TYPE bindType, const uint bIndex = 0)const noexcept final;
+			ResourceHandle GetResourceOptionGpuHandle(const J_GRAPHIC_BIND_TYPE bindType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint bIndex = 0)const noexcept final;
 		public:
 			//Graphic resource type name + L": " + name 
 			void SetPrivateName(const std::wstring& name = L"")noexcept final; 
 		private:
-			void SetOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, std::unique_ptr<JDx12GraphicResourceHolder>&& holder);
+			void SetOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, std::unique_ptr<JDx12GraphicResourceHolder> optionHolder);
 		public:
 			bool HasOptional(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept final;
 		public:

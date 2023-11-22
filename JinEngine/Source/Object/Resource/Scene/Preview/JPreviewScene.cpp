@@ -7,6 +7,7 @@
 #include"../../../Component/Transform/JTransform.h" 
 #include"../../../../Core/Guid/JGuidCreator.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
+#include"../../../../Window/JWindow.h"
 
 namespace JinEngine
 {
@@ -39,7 +40,8 @@ namespace JinEngine
 		scene = newScene;
 		camera = scene->FindFirstSelectedCamera(true);  
 		camera->SetAllowFrustumCulling(false);
-		camera->SetAllowHzbOcclusionCulling(false); 
+		camera->SetAllowHzbOcclusionCulling(false);  
+		camera->SetRenderTargetRate(JVector2F(128, 128) / JWindow::GetDisplaySize());
 	}
 	bool JPreviewScene::UseQuadShape()const noexcept
 	{
@@ -95,7 +97,7 @@ namespace JinEngine
 		const float objRadius,
 		const JVector3<float>& additionalPos)noexcept
 	{
-		JVector3<float> camNewPos{ objCenter.x + additionalPos.x, objCenter.y + additionalPos.y, objCenter.z + (objRadius * 1.25f) + additionalPos.z };
+		JVector3<float> camNewPos{ objCenter.x + additionalPos.x, objCenter.y + additionalPos.y, objCenter.z + (objRadius * 1.01f) + additionalPos.z };
 		camera->GetTransform()->SetPosition(camNewPos);
 		//camera->SetOrthoCamera(); 
 		//camera->SetOrthoViewSize(objRadius * 1.325f, objRadius * 1.325f);

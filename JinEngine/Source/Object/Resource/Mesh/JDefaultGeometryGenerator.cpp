@@ -569,7 +569,7 @@ namespace JinEngine
 	}
 	Core::JStaticMeshData JDefaultGeometryGenerator::CreateCircle(float outRadius, float innerRadius)
 	{
-		const int segments = 32;
+		const int segments = 64;
 		const int vertexCount = (segments + 1) * 2;
 		const int indexCount = (vertexCount - 2) * 3 + 6;
 		std::vector<Core::JStaticMeshVertex> vertices(vertexCount);
@@ -609,29 +609,111 @@ namespace JinEngine
 		}
 		return Core::JStaticMeshData(L"Circle", std::move(indices), false, false, std::move(vertices));
 	}
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateLine(const uint thickness)
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateLine(uint thickness)
 	{
-		const float padding = 0.05f;
+		const float padding = 0.0001f;
 		std::vector<Core::JStaticMeshVertex> vertices(thickness * 2);
 		std::vector<uint> indices(thickness * 2);
 
 		float xFactor = 0;
-		int divFactor = thickness / 2;
+		int divFactor = thickness / 2.0f;
 		if (thickness % 2)
-			xFactor = padding * -(divFactor - 1) - padding * -0.5f;
+			xFactor = padding * -(divFactor - 1) - padding;
 		else
 			xFactor = padding * -divFactor;
-
+		 
 		for (uint i = 0; i < thickness; ++i)
 		{
-			vertices[i].position = JVector3<float>(xFactor, -0.5f, 0.0f);
-			vertices[i + 1].position = JVector3<float>(xFactor, 0.5f, 0.0f);
+			vertices[i * 2].position = JVector3<float>(xFactor, -0.5f, 0.0f);
+			vertices[i * 2 + 1].position = JVector3<float>(xFactor, 0.5f, 0.0f);
 			xFactor += padding;
 
-			indices[i] = i;
-			indices[i + 1] = i + 1;
+			indices[i * 2] = i * 2;
+			indices[i * 2 + 1] = i * 2 + 1;
 		}
 		return Core::JStaticMeshData(L"Line", std::move(indices), false, false, std::move(vertices));
+	}
+	Core::JStaticMeshData JDefaultGeometryGenerator::CreateBoundingCone()
+	{ 
+		float outRadius = 0.5f;;
+		float innerRadius = 0.4988f;
+		float middleRadius = innerRadius + (outRadius - innerRadius) * 0.5f;
+
+		const int segments = 64;
+		const int vertexCount = (segments + 1) * 2;
+		const int indexCount = (vertexCount - 2) * 3 + 6;
+		const int lineCount = 8;
+		static constexpr int lineThickness = 4;
+		const float padding = 0.0001f;
+ 
+		std::vector<Core::JStaticMeshVertex> vertices(vertexCount + lineCount * lineThickness * 2);
+		std::vector<uint> indices(indexCount + lineCount * lineThickness * 2);
+
+		float theta = 2.0f * XM_PI;
+		vertices[0].position.x = innerRadius * std::cos(theta);
+		vertices[0].position.y = innerRadius * std::sin(theta);
+		vertices[0].position.z = 1;
+
+		vertices[1].position.x = outRadius * std::cos(theta);
+		vertices[1].position.y = outRadius * std::sin(theta);
+		vertices[1].position.z = 1;
+
+		int indexOffset = 0;
+		int vertexOffset = 0;
+
+		int loopCount = segments + 1;
+		float piRate = 1.0f / segments;
+
+		for (int i = 1; i < loopCount; i++)
+		{
+			vertexOffset += 2;
+			theta = 2.0f * XM_PI * ((float)((segments + 1) - i) / segments - piRate);
+			vertices[vertexOffset].position.x = innerRadius * std::cos(theta);
+			vertices[vertexOffset].position.y = innerRadius * std::sin(theta);
+			vertices[vertexOffset].position.z = 1.0f;
+
+			vertices[vertexOffset + 1].position.x = outRadius * std::cos(theta);
+			vertices[vertexOffset + 1].position.y = outRadius * std::sin(theta);
+			vertices[vertexOffset + 1].position.z = 1.0f;
+
+			indices[indexOffset] = vertexOffset - 2;
+			indices[indexOffset + 1] = vertexOffset - 1;
+			indices[indexOffset + 2] = vertexOffset;
+			indices[indexOffset + 3] = vertexOffset - 1;
+			indices[indexOffset + 4] = vertexOffset + 1;
+			indices[indexOffset + 5] = vertexOffset;
+
+			indexOffset += 6;
+		} 
+		vertexOffset += 2;
+		for (int i = 0; i < lineCount; ++i)
+		{
+			theta = 2.0f * XM_PI * ((lineCount - i) / (float)lineCount);
+			float x = middleRadius * std::cos(theta);
+			float y = middleRadius * std::sin(theta);
+ 
+			vertices[vertexOffset].position = JVector3<float>(0.0f, 0.0f, 0.0f);
+			vertices[vertexOffset + 1].position = JVector3<float>(x - padding, y, 1.0f);
+			vertices[vertexOffset + 2].position = JVector3<float>(0.0f, 0.0f, 0.0f);
+			vertices[vertexOffset + 3].position = JVector3<float>(x, y + padding, 1.0f);
+			vertices[vertexOffset + 4].position = JVector3<float>(0.0f, 0.0f, 0.0f);
+			vertices[vertexOffset + 5].position = JVector3<float>(x + padding, y, 1.0f);
+			vertices[vertexOffset + 6].position = JVector3<float>(0.0f, 0.0f, 0.0f);
+			vertices[vertexOffset + 7].position = JVector3<float>(x, y - padding, 1.0f);
+
+			indices[indexOffset] = vertexOffset;
+			indices[indexOffset + 1] = vertexOffset + 1;
+			indices[indexOffset + 2] = vertexOffset + 2;
+			indices[indexOffset + 3] = vertexOffset + 3;
+			indices[indexOffset + 4] = vertexOffset + 4;
+			indices[indexOffset + 5] = vertexOffset + 5;
+			indices[indexOffset + 6] = vertexOffset + 6;
+			indices[indexOffset + 7] = vertexOffset + 7;
+
+			vertexOffset += 8;
+			indexOffset += 8;
+		}
+		return Core::JStaticMeshData(L"BoundingCone_L", std::move(indices), false, false, std::move(vertices));
 	}
 	void JDefaultGeometryGenerator::Subdivide(Core::JStaticMeshData& meshData)
 	{
@@ -754,7 +836,6 @@ namespace JinEngine
 		// 
 		// Build bottom cap.
 		//
-
 		uint baseIndex = (uint)meshData.GetVertexCount();
 		float y = -0.5f * height;
 

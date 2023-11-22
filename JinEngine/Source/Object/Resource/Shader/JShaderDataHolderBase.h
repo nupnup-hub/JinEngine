@@ -51,8 +51,8 @@ namespace JinEngine
 	struct JMacroSet
 	{
 	public:
-		std::string name;
-		std::string value;
+		std::wstring name;
+		std::wstring value;
 	};
 	struct JGraphicShaderInitData
 	{

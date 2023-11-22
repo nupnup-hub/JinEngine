@@ -2,6 +2,7 @@
 #include"Window/JAnimationDiagramList.h"
 #include"Window/JAnimationParameterList.h"
 #include"Window/JAnimationStateView.h"
+#include"Window/JEditorAniContInterface.h"
 #include"../JEditorPageShareData.h"
 #include"../JEditorAttribute.h"  
 #include"../CommonWindow/View/JSceneObserver.h" 
@@ -23,6 +24,14 @@ namespace JinEngine
 {
 	namespace Editor
 	{
+		namespace
+		{
+			static void NotifySetAnimationControll(const std::vector<JEditorAniContInterface*>& vec, const JUserPtr<JAnimationController> aniCont)
+			{
+				for (const auto& data : vec)
+					data->SetAnimationController(aniCont);
+			}
+		}
 		JEditorAniContPage::JEditorAniContPage()
 			:JEditorPage("AniContSettingPage",
 				std::make_unique<JEditorAttribute>(),
@@ -58,6 +67,7 @@ namespace JinEngine
 				aniContObserver.get(),
 				aniContDetail.get()
 			};
+			contEditVec = { diagramList.get(),conditionList.get(),stateView.get()};
 			AddWindow(windows);
 		}
 		JEditorAniContPage::~JEditorAniContPage()
@@ -91,6 +101,9 @@ namespace JinEngine
 		}
 		void JEditorAniContPage::UpdatePage()
 		{
+			if (aniCont == nullptr)
+			{ 
+			}
 			if (setWndOptionOnce)
 			{
 				JGui::SetNextWindowSize(JGui::GetMainWorkSize(), J_GUI_CONDIITON_ONCE);
@@ -152,11 +165,9 @@ namespace JinEngine
 			if (aniPreviweScene.IsValid())
 				JObject::BeginDestroy(aniPreviweScene.Release());
 			aniPreviweScene = newScene;
-
-			diagramList->Initialize(aniCont);
-			conditionList->Initialize(aniCont);
-			stateView->Initialize(aniCont);
+			 
 			aniContObserver->Initialize(aniPreviweScene, L"AniCont Preview Cam");
+			NotifySetAnimationControll(contEditVec, aniCont);
 			return true;
 		}
 		void JEditorAniContPage::DoSetClose()noexcept
@@ -168,18 +179,13 @@ namespace JinEngine
 		void JEditorAniContPage::DoActivate()noexcept
 		{
 			JEditorPage::DoActivate();
-			JEditor::AddEventNotification(*JEditorEvent::EvInterface(),
-				GetGuid(),
-				J_EDITOR_EVENT::PUSH_SELECT_OBJECT,
-				JEditorEvent::RegisterEvStruct(std::make_unique<JEditorPushSelectObjectEvStruct>(GetPageType(),
-					J_EDITOR_WINDOW_TYPE::TEST_WINDOW,
-					aniCont->GetDiagramByIndex(0), 
-					JEditorEvStruct::RANGE::ALL)));
-			 
+
 			ResourceEvListener::AddEventListener(*JResourceObject::EvInterface(), GetGuid(), J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE);
+			EditorEventListener::AddEventListener(*JEditorEvent::EvInterface(), GetGuid(), J_EDITOR_EVENT::PUSH_SELECT_OBJECT);
 		}
 		void JEditorAniContPage::DoDeActivate()noexcept
 		{
+			EditorEventListener::RemoveListener(*JEditorEvent::EvInterface(), GetGuid());
 			ResourceEvListener::RemoveListener(*JResourceObject::EvInterface(), GetGuid());
 			JEditorPage::DoDeActivate();
 
@@ -248,6 +254,25 @@ namespace JinEngine
 						JObject::BeginDestroy(aniPreviweScene.Release());
 				}
 			}
+		}
+		void JEditorAniContPage::OnEvent(const size_t& iden, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStruct)
+		{
+			if (iden == GetGuid())
+				return;
+
+			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT)
+			{
+				JEditorPushSelectObjectEvStruct* ev = static_cast<JEditorPushSelectObjectEvStruct*>(eventStruct);
+				if (ev->selectObjVec[0].IsValid() && ev->selectObjVec[0]->GetTypeInfo().IsA<JAnimationController>())
+				{
+					if (aniCont != nullptr && aniCont->GetGuid() == ev->selectObjVec[0]->GetGuid())
+						return;
+
+					aniCont = Core::ConnectChildUserPtr<JAnimationController>(ev->selectObjVec[0]);
+					NotifySetAnimationControll(contEditVec, aniCont);
+				}
+			}
+
 		}
 	};
 }

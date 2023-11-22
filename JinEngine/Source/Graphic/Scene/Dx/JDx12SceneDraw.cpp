@@ -5,7 +5,7 @@
 #include"../../JGraphicOption.h" 
 #include"../../Device/Dx/JDx12GraphicDevice.h"
 #include"../../DataSet/Dx/JDx12GraphicDataSet.h"
-#include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
+#include"../../GraphicResource/Dx/JDx12GraphicResourceManager.h" 
 #include"../../Culling/Dx/JDx12CullingManager.h"
 #include"../../Culling/JCullingInterface.h"
 #include"../../Culling/JCullingInfo.h"
@@ -82,19 +82,8 @@ namespace JinEngine::Graphic
 						0.0f,                             // mipLODBias
 						8),				                  // maxAnisotropy
 
-					//shadow cube not cmp
-					CD3DX12_STATIC_SAMPLER_DESC(3, // shaderRegister
-						D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
-						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
-						0.0f,                               // mipLODBias
-						16,                                 // maxAnisotropy
-						D3D12_COMPARISON_FUNC_LESS_EQUAL,
-						D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK),
-
 					//shadow pcss find bloker
-					CD3DX12_STATIC_SAMPLER_DESC(4, // shaderRegister
+					CD3DX12_STATIC_SAMPLER_DESC(3, // shaderRegister
 						D3D12_FILTER_MIN_MAG_MIP_LINEAR,
 						//D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
 						D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressU
@@ -104,8 +93,30 @@ namespace JinEngine::Graphic
 						16,                                 // maxAnisotropy
 						D3D12_COMPARISON_FUNC_LESS_EQUAL),
 
-					//shadow linear point cmp
+
+					//LTC
+					CD3DX12_STATIC_SAMPLER_DESC(4, // shaderRegister
+						D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR,
+						//D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
+						0.0f,
+						16,
+						D3D12_COMPARISON_FUNC_LESS_EQUAL,
+						D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK),
+
+					//LTC source texture
 					CD3DX12_STATIC_SAMPLER_DESC(5, // shaderRegister
+						D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+						//D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+						D3D12_TEXTURE_ADDRESS_MODE_CLAMP  // addressW
+					),
+
+					//shadow linear point cmp
+					CD3DX12_STATIC_SAMPLER_DESC(6, // shaderRegister
 						D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
 						D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressU
 						D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressV
@@ -200,6 +211,7 @@ namespace JinEngine::Graphic
 		dx12Frame->dLightBuffer->SetGraphicsRootShaderResourceView(cmdList, Constants::dLitBuffIndex);
 		dx12Frame->pLightBuffer->SetGraphicsRootShaderResourceView(cmdList, Constants::pLitBuffIndex);
 		dx12Frame->sLightBuffer->SetGraphicsRootShaderResourceView(cmdList, Constants::sLitBuffIndex);
+		dx12Frame->rLightBuffer->SetGraphicsRootShaderResourceView(cmdList, Constants::rLitBuffIndex);
 		dx12Frame->csmBuffer->SetGraphicsRootShaderResourceView(cmdList, Constants::csmBuffIndex);
 		dx12Frame->materialBuffer->SetGraphicsRootShaderResourceView(cmdList, Constants::matBuffIndex);
 
@@ -281,13 +293,9 @@ namespace JinEngine::Graphic
 		const int camFrameIndex = helper.GetCamFrameIndex();
 		const int sceneFrameIndex = helper.GetPassFrameIndex();
 
-		const D3D12_VIEWPORT viewPort = dx12Device->GetViewPort();
-		const D3D12_RECT rect = dx12Device->GetRect();
-		cmdList->RSSetViewports(1, &viewPort);
-		cmdList->RSSetScissorRects(1, &rect);
-
 		ID3D12Resource* dsResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
 		ID3D12Resource* rtResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtvVecIndex);
+		D3D12_RESOURCE_DESC rtDesc = rtResource->GetDesc();
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv = dx12Gm->GetCpuRtvDescriptorHandle(rtvHeapIndex);
 		CD3DX12_CPU_DESCRIPTOR_HANDLE dsv = dx12Gm->GetCpuDsvDescriptorHandle(dsvHeapIndex);
@@ -298,6 +306,12 @@ namespace JinEngine::Graphic
 		cmdList->ClearRenderTargetView(rtv, dx12Gm->GetBackBufferClearColor(), 0, nullptr);
 		cmdList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 		cmdList->OMSetRenderTargets(1, &rtv, true, &dsv);
+
+		D3D12_VIEWPORT viewPort;
+		D3D12_RECT rect;
+		dx12Device->CalViewportAndRect(JVector2F(rtDesc.Width, rtDesc.Height), viewPort, rect);
+		cmdList->RSSetViewports(1, &viewPort);
+		cmdList->RSSetScissorRects(1, &rect);
 
 		dx12Frame->scenePassCB->SetGraphicCBBufferView(cmdList, Constants::scenePassCBIndex, sceneFrameIndex);
 		dx12Frame->cameraCB->SetGraphicCBBufferView(cmdList, Constants::camCBIndex, camFrameIndex);
@@ -344,14 +358,22 @@ namespace JinEngine::Graphic
 
 		auto gRInterface = helper.cam->GraphicResourceUserInterface();
 
+		const int rtvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);
 		const int rtvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_BIND_TYPE::RTV, 0);
 		const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, 0);
 
 		const int camFrameIndex = helper.GetCamFrameIndex();
 		const int sceneFrameIndex = helper.GetPassFrameIndex();
 
-		const D3D12_VIEWPORT viewPort = dx12Device->GetViewPort();
-		const D3D12_RECT rect = dx12Device->GetRect();
+		ID3D12Resource* rtResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtvVecIndex);
+		D3D12_RESOURCE_DESC rtDesc = rtResource->GetDesc();
+
+		D3D12_VIEWPORT viewPort;
+		D3D12_RECT rect;
+		dx12Device->CalViewportAndRect(JVector2F(rtDesc.Width, rtDesc.Height), viewPort, rect);
+
+		//const D3D12_VIEWPORT viewPort = dx12Device->GetViewPort();
+		//const D3D12_RECT rect = dx12Device->GetRect();
 		cmdList->RSSetViewports(1, &viewPort);
 		cmdList->RSSetScissorRects(1, &rect);
 
@@ -389,13 +411,18 @@ namespace JinEngine::Graphic
 		ID3D12GraphicsCommandList* cmdList = dx12DrawSet->cmdList;
 
 		auto gRInterface = helper.cam->GraphicResourceUserInterface();
+		const int rtvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);
 		const int rtvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_BIND_TYPE::RTV, 0);
 
 		const int camFrameIndex = helper.GetCamFrameIndex();
 		const int sceneFrameIndex = helper.GetPassFrameIndex();
 
-		const D3D12_VIEWPORT viewPort = dx12Device->GetViewPort();
-		const D3D12_RECT rect = dx12Device->GetRect();
+		ID3D12Resource* rtResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtvVecIndex);
+		D3D12_RESOURCE_DESC rtDesc = rtResource->GetDesc();
+
+		D3D12_VIEWPORT viewPort;
+		D3D12_RECT rect;
+		dx12Device->CalViewportAndRect(JVector2F(rtDesc.Width, rtDesc.Height), viewPort, rect);
 		cmdList->RSSetViewports(1, &viewPort);
 		cmdList->RSSetScissorRects(1, &rect);
 
@@ -498,13 +525,13 @@ namespace JinEngine::Graphic
 
 		ReBuildRootSignature(static_cast<JDx12GraphicDevice*>(device)->GetDevice(), info);
 	}
-	JOwnerPtr<JGraphicShaderDataHolderBase> JDx12SceneDraw::CreateGraphicShader(JGraphicDevice* device, JGraphicResourceManager* gResourceM, const JGraphicShaderInitData& initData)
+	JOwnerPtr<JGraphicShaderDataHolderBase> JDx12SceneDraw::CreateGraphicShader(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM, const JGraphicShaderInitData& initData)
 	{
 		if (!IsSameDevice(device))
 			return nullptr;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(gResourceM);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(graphicResourceM);
 		auto holder = Core::JPtrUtil::MakeOwnerPtr<JDx12GraphicShaderDataHolder>();
 
 		CompileShader(holder.Get(), initData);
@@ -532,10 +559,9 @@ namespace JinEngine::Graphic
 	{
 		std::wstring vertexShaderPath = JApplicationEngine::ShaderPath() + L"\\VertexShader.hlsl";
 		std::wstring pixelShaderPath = JApplicationEngine::ShaderPath() + L"\\PixelShader.hlsl";
-
-		auto d3dMacro = JDxShaderDataUtil::ToD3d12Macro(initData.macro[initData.layoutType]);
-		holder->vs = JDxShaderDataUtil::CompileShader(vertexShaderPath, d3dMacro.data(), "VS", "vs_5_1");
-		holder->ps = JDxShaderDataUtil::CompileShader(pixelShaderPath, d3dMacro.data(), "PS", "ps_5_1");
+		 
+		holder->vs = JDxShaderDataUtil::CompileShader(vertexShaderPath, initData.macro[(uint)initData.layoutType], L"VS", L"vs_6_0");
+		holder->ps = JDxShaderDataUtil::CompileShader(pixelShaderPath, initData.macro[(uint)initData.layoutType], L"PS", L"ps_6_0");
 	}
 	void JDx12SceneDraw::StuffInputLayout(_Out_ std::vector<D3D12_INPUT_ELEMENT_DESC>& outInputLayout, const J_SHADER_VERTEX_LAYOUT vertexLayoutFlag)
 	{
@@ -674,7 +700,7 @@ namespace JinEngine::Graphic
 
 		CD3DX12_DESCRIPTOR_RANGE shadowMapCubeTable;
 		shadowMapCubeTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, info.bindingShadowTextureCubeCapacity, 2, 4);
-
+ 
 		CD3DX12_ROOT_PARAMETER slotRootParameter[Constants::graphicRootSignatureSlotCount];
 
 		// Create root CBV.
@@ -691,7 +717,8 @@ namespace JinEngine::Graphic
 		slotRootParameter[Constants::dLitBuffIndex].InitAsShaderResourceView(0, 0);
 		slotRootParameter[Constants::pLitBuffIndex].InitAsShaderResourceView(0, 1);
 		slotRootParameter[Constants::sLitBuffIndex].InitAsShaderResourceView(0, 2);
-		slotRootParameter[Constants::csmBuffIndex].InitAsShaderResourceView(0, 3);
+		slotRootParameter[Constants::rLitBuffIndex].InitAsShaderResourceView(0, 3);
+		slotRootParameter[Constants::csmBuffIndex].InitAsShaderResourceView(0, 4);
 		//Material Buff
 		slotRootParameter[Constants::matBuffIndex].InitAsShaderResourceView(1);
 		//Texture Buff
@@ -700,6 +727,7 @@ namespace JinEngine::Graphic
 		slotRootParameter[Constants::textureShadowMapBuffIndex].InitAsDescriptorTable(1, &shadowMapTable, D3D12_SHADER_VISIBILITY_ALL);
 		slotRootParameter[Constants::textureShadowMapArrayBuffIndex].InitAsDescriptorTable(1, &shadowMapArryTable, D3D12_SHADER_VISIBILITY_ALL);
 		slotRootParameter[Constants::textureShadowMapCubeBuffIndex].InitAsDescriptorTable(1, &shadowMapCubeTable, D3D12_SHADER_VISIBILITY_ALL);
+		//slotRootParameter[Constants::textureNormalMapIndex].InitAsDescriptorTable(1, &normalMapTable, D3D12_SHADER_VISIBILITY_ALL);
 
 		const std::vector<CD3DX12_STATIC_SAMPLER_DESC> sam = Private::Sampler();
 

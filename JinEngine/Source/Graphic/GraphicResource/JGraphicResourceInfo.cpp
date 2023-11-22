@@ -45,6 +45,10 @@ namespace JinEngine
 		{
 			return optionalInfo != nullptr ? optionalInfo->viewInfo[(uint)opType][(uint)bindType].count : 0;
 		}
+		J_GRAPHIC_MIP_MAP_TYPE JGraphicResourceInfo::GetMipmapType()const noexcept
+		{
+			return mipMapType;
+		}
 		void JGraphicResourceInfo::SetArrayIndex(const int newValue)noexcept
 		{
 			resourceArrayIndex = newValue;
@@ -70,6 +74,10 @@ namespace JinEngine
 				return;
 
 			optionalInfo->viewInfo[(uint)opType][(uint)bindType].count = newValue;
+		} 
+		void JGraphicResourceInfo::SetMipmapType(const J_GRAPHIC_MIP_MAP_TYPE newMipmapType)noexcept
+		{
+			mipMapType = newMipmapType;
 		}
 		bool JGraphicResourceInfo::HasView(const J_GRAPHIC_BIND_TYPE bindType)const noexcept
 		{

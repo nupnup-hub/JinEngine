@@ -16,9 +16,9 @@ namespace JinEngine
 			JMatrix4x4 view = JMatrix4x4::Identity();
 			JMatrix4x4 viewProj = JMatrix4x4::Identity();
 			JMatrix4x4 shadowMapTransform = JMatrix4x4::Identity(); 
-			JVector3<float> color = { 0.8f, 0.8f, 0.8f };
+			JVector3F color = { 0.8f, 0.8f, 0.8f };
 			int shadowMapIndex = 0;
-			JVector3<float> direction = JVector3<float>::Down();
+			JVector3F direction = JVector3F::Down();
 			int shadowMapType = 0;  //-1 is not 0 = norma, 1 = csm, 2 = cube
 			JVector2F frustumSize;
 			float frustumNear = 0;
@@ -47,27 +47,29 @@ namespace JinEngine
 		struct JPointLightConstants
 		{
 			JMatrix4x4 shadowMapTransform[Constants::cubeMapPlaneCount];
-			JVector3<float> color = { 0.8f, 0.8f, 0.8f };
+			JVector3F midPosition;
 			float power = 1.0f;
-			JVector3<float> position = { 0, 0, 0 };
-			float frustumNear = 0;
-			float frustumFar = 0;
+			JVector3F sidePosition[2];
 			float radius = 0;
+			float frustumNear = 0;
+			JVector3F color = { 0.8f, 0.8f, 0.8f };
+			float frustumFar = 0;
 			float penumbraScale = 0;
 			float penumbraBlockerScale = 0;
 			int shadowMapIndex = 0;
 			uint hasShadowMap = 0; 
 			float shadowMapSize = 0;
 			float shadowMapInvSize = 0;
+			float bias = 0; 
 		};
 		struct JSpotLightConstants
 		{
 			JMatrix4x4 shadowMapTransform = JMatrix4x4::Identity();
-			JVector3<float> color = { 0.8f, 0.8f, 0.8f };
+			JVector3F color = { 0.8f, 0.8f, 0.8f };
 			float power = 1.0f;
-			JVector3<float> position;
+			JVector3F position;
 			float frustumNear = 0;
-			JVector3<float> direction;
+			JVector3F direction;
 			float frustumFar = 0;
 			float innerConeAngle = 0;	//cos
 			float outerConeAngle = 0;	//cos
@@ -77,6 +79,28 @@ namespace JinEngine
 			uint hasShadowMap = 0;  
 			float shadowMapSize = 0;
 			float shadowMapInvSize = 0;
+			float bias = 0;
+			uint sLightPad00 = 0;
+			uint sLightPad01 = 0;
+			uint sLightPad02 = 0;
 		}; 
+		struct JRectLightConstants
+		{ 
+			JMatrix4x4 shadowMapTransform = JMatrix4x4::Identity();
+			JVector3F origin;
+			float power = 1.0f;
+			JVector3F extents;
+			float frustumNear = 0;
+			JVector3F axis[3];
+			JVector3F color = { 0.8f, 0.8f, 0.8f };
+			float frustumFar = 0;
+			uint isTwoSide = 0;
+			int shadowMapIndex = 0;
+			uint hasShadowMap = 0;
+			int sourceTextureIndex = invalidIndex;
+			int rectLightPad00 = 0;
+			int rectLightPad01 = 0;
+			int rectLightPad02 = 0;
+		};
 	}
 }

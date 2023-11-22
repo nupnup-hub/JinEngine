@@ -36,23 +36,17 @@ namespace JinEngine
 				isChanged |= JGui::CheckBox("Allow Multithread##JGraphicOptionSetting", option.allowMultiThread); 
 				JGui::Separator();
 				JGui::Text("Shadow");
-				isChanged |= JGui::CheckBox("Use DirectionalLight Pcm##JGraphicOptionSetting", option.useDirectionalLightPcm);
+				isChanged |= JGui::CheckBox("Use HighQuality Shadow##JGraphicOptionSetting", option.useHighQualityShadow);
 				JGui::SameLine();
-				isChanged |= JGui::CheckBox("Use DirectionalLight Pcm HighQuality##JGraphicOptionSetting", option.useDirectionalLightPcmHighQuality);
+				isChanged |= JGui::CheckBox("Use Middle Quality Shadow##JGraphicOptionSetting", option.useMiddleQualityShadow);
 				JGui::SameLine();
-				isChanged |= JGui::CheckBox("Use DirectionalLight Pcss##JGraphicOptionSetting", option.useDirectionalLightPcss);
-				 
-				isChanged |= JGui::CheckBox("Use PointLight Pcm##JGraphicOptionSetting", option.usePointLightPcm);
+				isChanged |= JGui::CheckBox("Use Low Quality Shadow##JGraphicOptionSetting", option.useLowQualityShadow);
+				JGui::Separator();
+
+				JGui::Text("Ssao");
+				isChanged |= JGui::CheckBox("Use SSAO##JGraphicOptionSetting", option.useSsao);
 				JGui::SameLine();
-				isChanged |= JGui::CheckBox("Use PointLight Pcm HighQuality##JGraphicOptionSetting", option.usePointLightPcmHighQuality);
-				JGui::SameLine();
-				isChanged |= JGui::CheckBox("Use PointLight Pcss##JGraphicOptionSetting", option.usePointLightPcss);
-				 
-				isChanged |= JGui::CheckBox("Use SpotLight Pcm##JGraphicOptionSetting", option.useSpotLightPcm);
-				JGui::SameLine();
-				isChanged |= JGui::CheckBox("Use SpotLight Pcm HighQuality##JGraphicOptionSetting", option.useSpotLightPcmHighQuality);
-				JGui::SameLine();
-				isChanged |= JGui::CheckBox("Use SpotLight Pcss##JGraphicOptionSetting", option.useSpotLightPcss);
+				isChanged |= JGui::CheckBox("Use HBAO##JGraphicOptionSetting", option.useHbao);
 				JGui::Separator();
 
 				JGui::Text("BRDF Masking");

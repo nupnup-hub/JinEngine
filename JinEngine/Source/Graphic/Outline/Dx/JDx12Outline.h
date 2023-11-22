@@ -27,8 +27,8 @@ namespace JinEngine
 			void UpdatePassBuf(const uint width, const uint height, const uint stencilRefOffset) final;
 		public:
 			//util func extract data and call DrawOutline
-			void DrawCamOutline(const JGraphicOutlineObjectSet* drawSet, const JDrawHelper& helper) final;
-			void DrawOutline(const JGraphicOutlineHandleSet* drawSet, const JDrawHelper& helper) final;
+			void DrawCamOutline(const JGraphicOutlineDrawSet* drawSet, const JDrawHelper& helper) final;
+			void DrawOutline(const JGraphicOutlineDrawSet* drawSet, const JDrawHelper& helper) final;
 		private:
 			void DrawOutline(ID3D12GraphicsCommandList* cmdList,
 				JDx12GraphicResourceManager* dx12Gm,

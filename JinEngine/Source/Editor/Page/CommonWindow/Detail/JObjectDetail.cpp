@@ -69,7 +69,6 @@ namespace JinEngine
 		}
 		void JObjectDetail::GameObjectDetailOnScreen(JUserPtr<JGameObject> gObj)
 		{
-			auto compVec = gObj->GetAllComponent();
 			/*
 			J_GUI_TREE_NODE_FLAG_DEFAULT_OPEN = 1 << 0,
 			J_GUI_TREE_NODE_FLAG_EXTEND_HIT_BOX_WIDTH = 1 << 1,
@@ -81,16 +80,17 @@ namespace JinEngine
 				J_GUI_TREE_NODE_FLAG_FRAMED |
 				J_GUI_TREE_NODE_FLAG_DEFAULT_OPEN;
 
+			auto compVec = gObj->GetAllComponent();
 			for (const auto& comp : compVec)
-			{
-				JGui::BeginGroup();
-				JGui::Separator(); 
+			{ 
+				//JGui::Separator(); 
 				if (JGui::TreeNodeEx(JGui::CreateGuiLabel(Core::ErasePrefixJ(comp->GetTypeInfo().Name()), comp->GetGuid(), GetName() + "TreeNode"), baseFlags))
-				{
-					JGui::TreePop();
+				{ 
+					JGui::TreePop(); 
+					guiHelper->BeginGuiWidget(comp);
 					guiHelper->UpdateGuiWidget(comp, &comp->GetTypeInfo());
-				}
-				JGui::EndGroup();
+					guiHelper->EndGuiWidget();
+				} 
 			}
 
 			if (JGui::Button("AddComponent"))
@@ -127,20 +127,19 @@ namespace JinEngine
 			}
 		}
 		void JObjectDetail::ObjectOnScreen(JUserPtr<Core::JIdentifier> fObj)
-		{
-			JGui::BeginGroup();
+		{ 
 			J_GUI_TREE_NODE_FLAG_ baseFlags = J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW |
 				J_GUI_TREE_NODE_FLAG_EXTEND_HIT_BOX_WIDTH |
 				J_GUI_TREE_NODE_FLAG_FRAMED |
 				J_GUI_TREE_NODE_FLAG_DEFAULT_OPEN;
-
 			JGui::Separator(); 
 			if (JGui::TreeNodeEx(JGui::CreateGuiLabel(Core::ErasePrefixJ(fObj->GetTypeInfo().Name()), fObj->GetGuid(), GetName() + "TreeNode"), baseFlags))
 			{
-				JGui::TreePop();
+				JGui::TreePop(); 
+				guiHelper->BeginGuiWidget(fObj);
 				guiHelper->UpdateGuiWidget(fObj, &fObj->GetTypeInfo());
-			}
-			JGui::EndGroup();
+				guiHelper->EndGuiWidget();
+			} 
 		}
 		void JObjectDetail::DoActivate()noexcept
 		{

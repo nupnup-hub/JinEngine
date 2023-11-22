@@ -36,7 +36,9 @@ namespace JinEngine
 			int resourceArrayIndex = -1;   
 		private:
 			ResourceViewInfo viewInfo[(int)J_GRAPHIC_BIND_TYPE::COUNT];
-			std::unique_ptr<OptionResourceViewInfo> optionalInfo;
+			std::unique_ptr<OptionResourceViewInfo> optionalInfo; 
+		private:
+			J_GRAPHIC_MIP_MAP_TYPE mipMapType = J_GRAPHIC_MIP_MAP_TYPE::GRAPHIC_API_DEFAULT;
 		public:
 			J_GRAPHIC_RESOURCE_TYPE GetGraphicResourceType()const noexcept;
 			int GetArrayIndex()const noexcept; 
@@ -46,7 +48,10 @@ namespace JinEngine
 			uint GetOptionViewCount(const J_GRAPHIC_BIND_TYPE bindType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept;
 			virtual uint GetWidth()const noexcept = 0;
 			virtual uint GetHeight()const noexcept = 0; 
-			virtual ResourceHandle GetResourceHandle(const J_GRAPHIC_BIND_TYPE bindType, const uint bIndex = 0)const noexcept = 0;
+			virtual uint GetMipmapCount()const noexcept = 0;
+			virtual ResourceHandle GetResourceGpuHandle(const J_GRAPHIC_BIND_TYPE bindType, const uint bIndex = 0)const noexcept = 0;
+			virtual ResourceHandle GetResourceOptionGpuHandle(const J_GRAPHIC_BIND_TYPE bindType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint bIndex = 0)const noexcept = 0;
+			J_GRAPHIC_MIP_MAP_TYPE GetMipmapType()const noexcept;
 		public:
 			virtual void SetPrivateName(const std::wstring& name)noexcept = 0;
 			void SetArrayIndex(const int newValue)noexcept; 
@@ -54,6 +59,7 @@ namespace JinEngine
 			void SetHeapOptionIndexStart(const J_GRAPHIC_BIND_TYPE bindType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const int newValue);
 			void SetViewCount(const J_GRAPHIC_BIND_TYPE bindType, const uint newValue);
 			void SetOptionViewCount(const J_GRAPHIC_BIND_TYPE bindType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const uint newValue);
+			void SetMipmapType(J_GRAPHIC_MIP_MAP_TYPE newMipmapType)noexcept;
 		public:
 			bool HasView(const J_GRAPHIC_BIND_TYPE bindType)const noexcept;
 			virtual bool HasOptional(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept = 0;

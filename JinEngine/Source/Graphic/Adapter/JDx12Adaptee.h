@@ -8,6 +8,8 @@ namespace JinEngine
 		class JDx12Adaptee final : public JGraphicAdaptee
 		{
 		public:
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+		public:
 			std::unique_ptr<JGraphicDevice> CreateDevice() final;
 			std::unique_ptr<JGraphicResourceManager> CreateGraphicResourceManager() final;
 			std::unique_ptr<JCullingManager> CreateCullingManager() final;
@@ -20,13 +22,13 @@ namespace JinEngine
 			std::unique_ptr<JHardwareOccCulling> CreateHdOcc() final;
 			std::unique_ptr<JHZBOccCulling> CreateHzbOcc() final;
 			std::unique_ptr<JOutline> CreateOutlineDraw() final;
-			std::unique_ptr<JBlur> CreateBlur()final;
+			std::unique_ptr<JImageProcessing> CreateImageProcessing()final;
 		public:
-			//main thread(use single thread)
+			//pre, post process(bind or set resource state...) --- main  thread
 			bool BeginDrawSceneSingleThread(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet) final;
 			bool EndDrawSceneSingeThread(const JGraphicDrawReferenceSet& drawRefSet) final;
 		public:
-			//child thread
+			//pre, post process(bind or set resource state...) --- child  thread
 			bool SettingBeginFrame(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicBeginFrameSet& dataSet) final;
 			bool ExecuteBeginFrame(const JGraphicDrawReferenceSet& drawRefSet)final;
 			bool SettingMidFrame(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicMidFrameSet& dataSet) final;
@@ -34,7 +36,7 @@ namespace JinEngine
 			bool SettingEndFrame(const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond) final;
 			bool ExecuteEndFrame(const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond) final;
 		public:
-			//child thread
+			//create task set and notify task done --- child thread
 			bool SettingDrawOccTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadOccTaskSet& dataSet) final;
 			bool NotifyCompleteDrawOccTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex)final;
 			bool SettingDrawShadowMapTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadShadowMapTaskSet& dataSet) final;
@@ -42,12 +44,26 @@ namespace JinEngine
 			bool SettingDrawSceneTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadSceneTaskSet& dataSet) final;
 			bool NotifyCompleteDrawSceneTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex)final;
 		public:
-			//main thread(use multi thread)
+			//manage event handle --- main thread
 			bool ExecuteDrawOccTask(const JGraphicDrawReferenceSet& drawRefSet) final; 
 			bool ExecuteDrawShadowMapTask(const JGraphicDrawReferenceSet& drawRefSet) final; 
 			bool ExecuteDrawSceneTask(const JGraphicDrawReferenceSet& drawRefSet) final;
 		public:
-			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+			//common(others) 
+			bool SettingBlurTask(const JGraphicDrawReferenceSet& drawRefSet,
+				const ResourceHandle from,
+				const ResourceHandle to,
+				std::unique_ptr<JBlurDesc>&& desc,
+				_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet) final;
+			bool SettingBlurTask(const JGraphicDrawReferenceSet& drawRefSet,
+				const JUserPtr<JGraphicResourceInfo>& info,
+				std::unique_ptr<JBlurDesc>&& desc,
+				_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet) final;
+			bool SettingMipmapGenerationTask(const JGraphicDrawReferenceSet& drawRefSet,
+				const JUserPtr<JGraphicResourceInfo>& srcInfo,
+				const JUserPtr<JGraphicResourceInfo>& modInfo,
+				std::unique_ptr<JDownSampleDesc>&& desc,
+				_Out_ std::unique_ptr<JGraphicDownSampleTaskSet>& dataSet) final; 
 		};
 	}
 }

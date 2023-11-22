@@ -18,8 +18,9 @@ namespace JinEngine
 		class JIdentifier; 
 		enum class J_GUI_EXTRA_FUNCTION_TYPE
 		{ 
-			TABLE,
-			CONDITION, 
+			TABLE,		//Unuse
+			CONDITION,	//widget display condition
+			GROUP,		//manage widget list by group(open and close ...)
 			COUNT,
 		}; 
 
@@ -106,20 +107,19 @@ namespace JinEngine
 			{
 			public:
 				//ref param을 소유하고 있는 class에 typeInfo로부터 param을 불러오기위한 name
-				const std::string refParamOwnerName;
+				const std::string refOwnerName;
 			public:
-				RefParamInfo(const std::string& refParamOwnerName);
+				RefParamInfo(const std::string& refOwnerName);
 			};
 		private:
 			std::unique_ptr<RefParamInfo> refParamInfo; 
 		public:
 			JGuiParamConditionUserInfoBase(const JGuiExtraFunctionInfoMapName infoMapName);
-			JGuiParamConditionUserInfoBase(const JGuiExtraFunctionInfoMapName infoMapName, const std::string& refParamOwnerName);
+			JGuiParamConditionUserInfoBase(const JGuiExtraFunctionInfoMapName infoMapName, const std::string& refOwnerName);
 		public: 
-			std::string GetRefParamOwnerName()const noexcept;
+			std::string GetRefOwnerName()const noexcept;
 			bool IsOwnRefParam()const noexcept;
 		};
-
 		class JGuiBoolParmConditionUserInfo : public JGuiParamConditionUserInfoBase
 		{
 			DECLARE_CHILD_CLASS_TYPE_LIST(JGuiBoolParmConditionUserInfo, JGuiParamConditionUserInfoBase)
@@ -131,7 +131,6 @@ namespace JinEngine
 		public:
 			bool OnTrigger(const bool value)const noexcept;
 		};
-
 		class JGuiEnumParamConditionUserInfoInterface : public JGuiParamConditionUserInfoBase
 		{
 			DECLARE_CHILD_CLASS_TYPE_LIST(JGuiEnumParamConditionUserInfoInterface, JGuiParamConditionUserInfoBase)
@@ -141,7 +140,6 @@ namespace JinEngine
 		public:
 			virtual bool OnTrigger(const JEnum value)const noexcept = 0; 
 		};
-
 		template<int buffCount>
 		class JGuiEnumParamConditionUserInfo : public JGuiEnumParamConditionUserInfoInterface
 		{
@@ -151,8 +149,8 @@ namespace JinEngine
 			JEnum condValue[buffCount];
 		public:
 			template<typename ...Param>
-			JGuiEnumParamConditionUserInfo(const JGuiExtraFunctionInfoMapName infoMapName, const std::string& refParamOwnerName, Param... value)
-				: JGuiEnumParamConditionUserInfoInterface(infoMapName, refParamOwnerName)
+			JGuiEnumParamConditionUserInfo(const JGuiExtraFunctionInfoMapName infoMapName, const std::string& refOwnerName, Param... value)
+				: JGuiEnumParamConditionUserInfoInterface(infoMapName, refOwnerName)
 			{
 				int i = 0;
 				((condValue[i++] = (JEnum)value), ...);
@@ -169,12 +167,18 @@ namespace JinEngine
 			}
 		};
 
+		class JGuiGroupUserInfo : public JGuiExtraFunctionUserInfo
+		{
+			DECLARE_CHILD_CLASS_TYPE_LIST(JGuiGroupUserInfo, JGuiExtraFunctionUserInfo)
+		public:
+			JGuiGroupUserInfo(const JGuiExtraFunctionInfoMapName infoMapName);
+		};
+
 		//controll gui extra action
 		//ex) table groupping, display condition, type conditon
 		//scenario
 		//1.. declare group info by GUI_GROUP... macro
 		//2.. memeber gui send JGuiGroupMemberInfo
-
 		class JGuiExtraFunctionInfo
 		{
 			DECLARE_BASE_CLASS_TYPE_LIST(JGuiExtraFunctionInfo)
@@ -182,13 +186,17 @@ namespace JinEngine
 			template<typename T> friend class JOwnerPtr;
 		private:
 			const std::string extraFunctionName;
+			int userCount = 0;
 		public:
 			JGuiExtraFunctionInfo(const std::string& extraFunctionName);
 		protected:
 			virtual ~JGuiExtraFunctionInfo() = default;
 		public:
 			std::string GetName()const noexcept;
+			int GetUserCount()const noexcept;
 			virtual J_GUI_EXTRA_FUNCTION_TYPE GetExtraFunctionType()const noexcept = 0; 
+		public:
+			virtual void NotifyAddMember(JGuiExtraFunctionUserInfo* user);
 		};
 
 		class JGuiTableInfo : public JGuiExtraFunctionInfo
@@ -221,7 +229,7 @@ namespace JinEngine
 			uint GetColumnCount()const noexcept;
 			uint GetRowCount()const noexcept;
 		public:
-			void NotifyAddMember(JGuiExtraFunctionUserInfo* user);
+			void NotifyAddMember(JGuiExtraFunctionUserInfo* user)final;
 		};
 
 		//Set gui enum condition 
@@ -232,7 +240,6 @@ namespace JinEngine
 		 
 		//Caution! enum need to declare enum not enum class
 		//or REGISTER_ENUM, REGISTER_ENUM_CLASS
-
 		class JGuiConditionInfo : public JGuiExtraFunctionInfo
 		{
 			DECLARE_CHILD_CLASS_TYPE_LIST(JGuiConditionInfo, JGuiExtraFunctionInfo)
@@ -242,7 +249,6 @@ namespace JinEngine
 			virtual J_GUI_EXTRA_CONDITION_TYPE GetConditionType()const noexcept = 0;
 			J_GUI_EXTRA_FUNCTION_TYPE GetExtraFunctionType()const noexcept;
 		};
-
 		class JGuiBoolParamConditionInfo : public JGuiConditionInfo
 		{
 			DECLARE_CHILD_CLASS_TYPE_LIST(JGuiBoolParamConditionInfo, JGuiConditionInfo)
@@ -259,19 +265,38 @@ namespace JinEngine
 		public:
 			bool IsRefMethod()const noexcept;
 		};
-
 		class JGuiEnumParamConditionInfo : public JGuiConditionInfo
 		{
 			DECLARE_CHILD_CLASS_TYPE_LIST(JGuiEnumParamConditionInfo, JGuiConditionInfo)
 		private:
 			const std::string enumName;
-			const std::string refParamName;		//condition trigger parameter
+			const std::string refName;		//condition trigger parameter
+			const bool isRefMethod;
 		public:
-			JGuiEnumParamConditionInfo(const std::string& extraFunctionName, const std::string& enumName, const std::string& refParamName);
+			JGuiEnumParamConditionInfo(const std::string& extraFunctionName, 
+				const std::string& enumName,
+				const std::string& refName,
+				const bool isRefMethod);
 		public:
 			J_GUI_EXTRA_CONDITION_TYPE GetConditionType()const noexcept final;
 			std::string GetEnumName()const noexcept;
-			std::string GetRefParamName()const noexcept;
+			std::string GetRefName()const noexcept;
+		public:
+			bool IsRefMethod()const noexcept;
+		};
+
+		class JGuiGroupInfo : public JGuiExtraFunctionInfo
+		{ 
+		private: 
+			bool isOpen = false;
+		public:
+			JGuiGroupInfo(const std::string& extraFunctionName);
+		public: 
+			J_GUI_EXTRA_FUNCTION_TYPE GetExtraFunctionType()const noexcept;
+		public:
+			void SetOpenTrigger(const bool value)noexcept;
+		public:
+			bool IsOpen()const noexcept; 
 		};
 
 		class JGuiExtraFunctionInfoMap
@@ -324,6 +349,7 @@ namespace JinEngine
 			void SetExtraFunctionUserInfo(const JUserPtr<JGuiExtraFunctionInfo>& info, JOwnerPtr<JGuiExtraFunctionUserInfo>&& userInfo);
 		public:
 			bool IsExtraFunctionUser()const noexcept;
+			bool IsExtraFunctionUser(const J_GUI_EXTRA_FUNCTION_TYPE type)const noexcept;
 		public:
 			/**
 			* JGuiWidgetInfo중에 일부 JGuiExtraFunctionUserInfo는 다른 class에 JGuiExtraFunctionInfo를 참조하며
@@ -528,5 +554,6 @@ namespace JinEngine
 		};
 
 #pragma endregion
+
 	}
 }

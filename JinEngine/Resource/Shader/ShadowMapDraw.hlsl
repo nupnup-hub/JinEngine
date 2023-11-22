@@ -5,7 +5,6 @@
 #define ARRAY_COUNT ARRAY_MAX_COUNT
 #endif
  
-
 #define CUBE_MAP_FACE 6
   
 #if defined(USE_VSM)

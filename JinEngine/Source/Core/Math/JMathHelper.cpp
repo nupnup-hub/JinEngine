@@ -221,7 +221,7 @@ namespace JinEngine
 	JVector4<float> JMathHelper::EulerToQuaternion(const JVector3<float>& e)noexcept
 	{
 		return PitchYawRollToQuaternion(e.x * DegToRad, e.y * DegToRad, e.z * DegToRad);
-	}
+	} 
 	JVector3<float> JMathHelper::ToEulerAngle(const JVector4<float>& q)noexcept
 	{
 		float sqw = q.w * q.w;

@@ -24,7 +24,7 @@ namespace JinEngine
 		class JHardwareOccCulling;
 		class JHZBOccCulling;
 		class JOutline;
-		class JBlur;
+		class JImageProcessing;
 
 		class JGraphicAdapter
 		{
@@ -45,13 +45,13 @@ namespace JinEngine
 			std::unique_ptr<JHardwareOccCulling> CreateHdOcc(const J_GRAPHIC_DEVICE_TYPE deviceType);
 			std::unique_ptr<JHZBOccCulling> CreateHzbOcc(const J_GRAPHIC_DEVICE_TYPE deviceType);
 			std::unique_ptr<JOutline> CreateOutlineDraw(const J_GRAPHIC_DEVICE_TYPE deviceType);
-			std::unique_ptr<JBlur> CreateBlur(const J_GRAPHIC_DEVICE_TYPE deviceType);
+			std::unique_ptr<JImageProcessing> CreateImageProcessing(const J_GRAPHIC_DEVICE_TYPE deviceType);
 		public: 
-			//main thread(use single thread)
+			//pre, post process(bind or set resource state...) --- main  thread
 			void BeginDrawSceneSingleThread(const J_GRAPHIC_DEVICE_TYPE deviceType,const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet);
 			void EndDrawSceneSingeThread(const J_GRAPHIC_DEVICE_TYPE deviceType,const JGraphicDrawReferenceSet& drawRefSet);
 		public:
-			//child thread
+			//pre, post process(bind or set resource state...) --- child  thread
 			void SettingBeginFrame(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicBeginFrameSet& dataSet);
 			void ExecuteBeginFrame(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
 			void SettingMidFrame(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicMidFrameSet& dataSet);
@@ -59,7 +59,7 @@ namespace JinEngine
 			void SettingEndFrame(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond);
 			void ExecuteEndFrame(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond);
 		public:
-			//child thread
+			//create task set and notify task done --- child thread
 			void SettingDrawOccTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadOccTaskSet& dataSet);
 			void NotifyCompleteDrawOccTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex);
 			void SettingDrawShadowMapTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadShadowMapTaskSet& dataSet);
@@ -67,10 +67,32 @@ namespace JinEngine
 			void SettingDrawSceneTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadSceneTaskSet& dataSet);
 			void NotifyCompleteDrawSceneTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex);
 		public:
-			//main thread(use multi thread)
+			//manage event handle --- main thread
 			void ExecuteDrawOccTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
 			void ExecuteDrawSceneTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
 			void ExecuteDrawShadowMapTask(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
+		public:
+			//common 
+			/**
+			* @brief Generate custom mipmap in modInfo and copy to srcInfo
+			*/ 
+			bool SettingBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType,
+				const JGraphicDrawReferenceSet& drawRefSet,
+				const ResourceHandle from,
+				const ResourceHandle to,
+				std::unique_ptr<JBlurDesc>&& desc,
+				_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet);
+			bool SettingBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType,
+				const JGraphicDrawReferenceSet& drawRefSet,
+				const JUserPtr<JGraphicResourceInfo>& info,
+				std::unique_ptr<JBlurDesc>&& desc,
+				_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet);
+			bool SettingMipmapGenerationTask(const J_GRAPHIC_DEVICE_TYPE deviceType, 
+				const JGraphicDrawReferenceSet& drawRefSet,
+				const JUserPtr<JGraphicResourceInfo>& srcInfo,
+				const JUserPtr<JGraphicResourceInfo>& modInfo,
+				std::unique_ptr<JDownSampleDesc>&& desc,
+				_Out_ std::unique_ptr<JGraphicDownSampleTaskSet>& dataSet);
 		private:
 			JGraphicAdaptee* GetAdaptee(const J_GRAPHIC_DEVICE_TYPE deviceType);
 		public:

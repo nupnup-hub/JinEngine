@@ -314,7 +314,7 @@ namespace JinEngine
 			//JOwnerPtr<JTypeBase> ReleaseInstance(IdentifierType iden)noexcept;
 		private:
 			bool AddPropertyInfo(JPropertyInfo* newProperty);
-			bool AddMethodInfo(JMethodInfo* newMethod);
+			bool AddMethodInfo(JMethodInfo* newMethod); 
 		private:
 			void ExecuteTypeCallOnece();
 		private:

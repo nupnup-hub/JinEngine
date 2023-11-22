@@ -5,6 +5,7 @@
 namespace JinEngine
 {
 	//has sequence dependency
+	//has to definition project per J_DEFAULT_TEXTURE in JResourceObjectDefualtData.h
 	enum class J_DEFAULT_TEXTURE
 	{
 		NONE = 0, 
@@ -33,7 +34,10 @@ namespace JinEngine
 		DIRECTIONAL_LIGHT,
 		POINT_LIGHT,
 		SPOT_LIGHT,
+		RECT_LIGHT,
 		CAMERA,
+		LTC_MAT,	//32x32
+		LTC_AMP,	//32x32
 		PROJECT_SELECTOR_BACKGROUND
 	};
 
@@ -49,6 +53,10 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_TEXTURE::MISSING:
 				return true;
 			case JinEngine::J_DEFAULT_TEXTURE::BLUE_NOISE:
+				return true;
+			case JinEngine::J_DEFAULT_TEXTURE::LTC_MAT:
+				return true;
+			case JinEngine::J_DEFAULT_TEXTURE::LTC_AMP:
 				return true;
 			default:
 				return false;
@@ -110,8 +118,14 @@ namespace JinEngine
 				return L"PointLight.png";
 			case JinEngine::J_DEFAULT_TEXTURE::SPOT_LIGHT:
 				return L"SpotLight.png";
+			case JinEngine::J_DEFAULT_TEXTURE::RECT_LIGHT:
+				return L"RectLight.png";
 			case JinEngine::J_DEFAULT_TEXTURE::CAMERA:
 				return L"Camera.png";
+			case JinEngine::J_DEFAULT_TEXTURE::LTC_MAT:
+				return L"LTC_Mat.dds";
+			case JinEngine::J_DEFAULT_TEXTURE::LTC_AMP:
+				return L"LTC_Amp.dds";
 			case JinEngine::J_DEFAULT_TEXTURE::PROJECT_SELECTOR_BACKGROUND:
 				return L"Shiro_Background.jpg";
 			default:

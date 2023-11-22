@@ -1,4 +1,5 @@
 #pragma once
+#include"JEditorAniContInterface.h"
 #include"../../JEditorWindow.h"   
 #include"../../../String/JEditorStringMap.h"
 #include"../../../EditTool/JEditorViewStructure.h"
@@ -18,7 +19,7 @@ namespace JinEngine
 		class JEditorStringMap;
 
 		class JAnimationStateViewCreationFunctor;
-		class JAnimationStateView final : public JEditorWindow
+		class JAnimationStateView final : public JEditorWindow, public JEditorAniContInterface
 		{ 
 		private:
 			JUserPtr<JAnimationController> aniCont;
@@ -42,12 +43,13 @@ namespace JinEngine
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
-			void Initialize(JUserPtr<JAnimationController> aniCont)noexcept;
+			void SetAnimationController(const JUserPtr<JAnimationController>& newAniCont)final;
+		private:
+			void SetSelecteObject(JUserPtr<Core::JIdentifier> newSelected);
+		public: 
 			void UpdateWindow()final; 
 		private:
 			void BuildDiagramView();
-		private:
-			void SetSelecteObject(JUserPtr<Core::JIdentifier> newSelected); 
 		private:
 			void RegisterViewGraphGroup(JAnimationController* newAnicont)noexcept;
 		protected:

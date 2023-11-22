@@ -221,12 +221,14 @@ namespace JinEngine::Graphic
 		{
 			const int dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, 0);
 			const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, 0);
-
-			ID3D12Resource* dsResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
+		
 			JGraphicResourceInfo* dsInfo = dx12Gm->GetInfo(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
+			ID3D12Resource* dsResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
+			D3D12_RESOURCE_DESC desc = dsResource->GetDesc();
 
-			const D3D12_VIEWPORT viewPort = dx12Device->GetViewPort();
-			const D3D12_RECT rect = dx12Device->GetRect();
+			D3D12_VIEWPORT viewPort;
+			D3D12_RECT rect;
+			dx12Device->CalViewportAndRect(JVector2F(desc.Width, desc.Height), viewPort, rect);
 			cmdList->RSSetViewports(1, &viewPort);
 			cmdList->RSSetScissorRects(1, &rect);
 
@@ -274,9 +276,13 @@ namespace JinEngine::Graphic
 		{
 			const int dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, 0);
 			const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, 0);
+			
+			ID3D12Resource* dsResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
+			D3D12_RESOURCE_DESC desc = dsResource->GetDesc();
 
-			const D3D12_VIEWPORT viewPort = dx12Device->GetViewPort();
-			const D3D12_RECT rect = dx12Device->GetRect();
+			D3D12_VIEWPORT viewPort;
+			D3D12_RECT rect;
+			dx12Device->CalViewportAndRect(JVector2F(desc.Width, desc.Height), viewPort, rect);
 			cmdList->RSSetViewports(1, &viewPort);
 			cmdList->RSSetScissorRects(1, &rect);
 

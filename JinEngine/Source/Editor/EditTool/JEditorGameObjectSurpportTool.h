@@ -7,12 +7,16 @@
 #include"../../Core/Math/JVector.h"
 #include"../../Object/JObjectModifyInterface.h"
 #include"../../Object/Resource/Mesh/JDefaultShapeType.h"
+#include"../../Object/Resource/Material/JDefaultMaterialType.h"
 #include"../../Object/Resource/Scene/Accelerator/JAcceleratorType.h"
-
+#include<set>
 namespace JinEngine
 {
 	class JGameObject;
 	class JCamera;
+	class JRectLight;
+	class JPointLight;
+	class JSpotLight;
 	class JObject;
 	class JScene;
 	class JMaterial;
@@ -94,7 +98,7 @@ namespace JinEngine
 			Arrow arrow[arrowCount];
 		private:
 			//update data
-			UpdateData uData;
+			UpdateData uData;  
 		public:
 			JEditorTransformTool(const J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE toolType,
 				const J_DEFAULT_SHAPE shape, 
@@ -157,6 +161,150 @@ namespace JinEngine
 			void OnHovering(const int newArrowIndex)noexcept;
 			void OffHovering()noexcept;
 			//static void SetTransformPosition()
+		};
+		class JEditorGeometryTool : public JEditorGameObjectSurpportTool
+		{ 
+		public:
+			enum class VIEW_TYPE
+			{
+				FRUSTUM,
+				SPHERE,
+				SPOT,
+				RECT
+			};
+		private:
+			class GeometryView
+			{
+			public:
+				virtual ~GeometryView() = default;
+			public:
+				virtual void Clear() = 0;
+			public:
+				virtual void Update() = 0;
+			public:
+				virtual size_t GetTargetGuid() const noexcept = 0;
+				virtual Core::JTypeInfo& GetTargetTypeInfo() const noexcept = 0;
+			public:
+				virtual void SetMaterial(const JUserPtr<JMaterial>& mat) = 0;
+			public:
+				virtual bool IsValid()const noexcept = 0;
+			};
+			class FrustumView : public GeometryView
+			{
+			public:
+				JUserPtr<JGameObject> root;
+				JUserPtr<JGameObject> nearFrustum;
+				JUserPtr<JGameObject> farFrustum;
+			public:
+				JUserPtr<JCamera> targetCam;
+			public:
+				FrustumView(const JUserPtr<JCamera>& cam, const JUserPtr<JGameObject>& parent);
+				~FrustumView();
+			public: 
+				void Clear()final;
+			public:
+				void Update()final;
+			public:
+				size_t GetTargetGuid()const noexcept final;
+				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final;
+			public:
+				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
+			public:
+				bool IsValid()const noexcept final;
+			};
+			class SphereView : public GeometryView
+			{
+			public:
+				JUserPtr<JGameObject> root;
+				JUserPtr<JGameObject> xyCircle;
+				JUserPtr<JGameObject> xzCircle;
+				JUserPtr<JGameObject> yzCircle;
+			public:
+				JUserPtr<JPointLight> targetPoint;
+			public:
+				SphereView(const JUserPtr<JPointLight>& lit, const JUserPtr<JGameObject>& parent);
+				~SphereView();
+			public: 
+				void Clear()final;
+			public:
+				void Update()final;
+			public:
+				size_t GetTargetGuid()const noexcept final;
+				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final;
+			public:
+				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
+			public:
+				bool IsValid()const noexcept;
+			};
+			class ConeView : public GeometryView
+			{
+			public:
+				JUserPtr<JGameObject> root; 
+				JUserPtr<JGameObject> boundingCone;
+			public:
+				JUserPtr<JSpotLight> targetSpot;
+			public:
+				ConeView(const JUserPtr<JSpotLight>& lit, const JUserPtr<JGameObject>& parent);
+				~ConeView();
+			public: 
+				void Clear()final;
+			public:
+				void Update()final;
+			public:
+				size_t GetTargetGuid()const noexcept final;
+				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final;
+			public:
+				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
+			public:
+				bool IsValid()const noexcept;
+			};
+			class RectView : public GeometryView
+			{
+			public:
+				JUserPtr<JGameObject> root;
+				JUserPtr<JGameObject> line[4];
+			public:
+				JUserPtr<JRectLight> targetRect;
+			public:
+				RectView(const JUserPtr<JRectLight>& lit, const JUserPtr<JGameObject>& parent);
+				~RectView();
+			public: 
+				void Clear()final;
+			public:
+				void Update()final;
+			public:
+				size_t GetTargetGuid()const noexcept final;
+				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final;
+			public:
+				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
+			public:
+				bool IsValid()const noexcept;
+			};
+		private: 
+			std::vector<std::unique_ptr<GeometryView>> geoView;
+			std::set<size_t> geoSet;
+		public:
+			~JEditorGeometryTool();
+		public:
+			J_EDITOR_GAMEOBJECT_SUPPORT_TOOL_TYPE GetToolType()const noexcept final;
+		public:
+			void TryCreateGeoView(const std::vector<JUserPtr<JGameObject>>& idenVec, const JUserPtr<JGameObject>& parent);
+		public:
+			bool CreateFrustumView(const JUserPtr<JCamera>& cam, const JUserPtr<JGameObject>& parent);
+			bool CreateSphereView(const JUserPtr<JPointLight>& lit, const JUserPtr<JGameObject>& parent);
+			bool CreateSpotView(const JUserPtr<JSpotLight>& lit, const JUserPtr<JGameObject>& parent);
+			bool CreateRectView(const JUserPtr<JRectLight>& lit, const JUserPtr<JGameObject>& parent);
+		private:
+			bool CreateGeoView(std::unique_ptr<GeometryView>&& view, const size_t guid);
+		public:
+			void DestroyView(const size_t guid);
+		public:
+			void Clear();
+			void ClearTarget(Core::JTypeInfo& type); 
+		public:
+			void Update();
+		public:
+			bool HasGeo(const size_t guid);
 		};
 	}
 }

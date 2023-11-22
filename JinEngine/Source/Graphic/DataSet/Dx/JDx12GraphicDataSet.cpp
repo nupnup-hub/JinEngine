@@ -4,7 +4,7 @@
 #include"../../FrameResource/JFrameResource.h"
 #include"../../DepthMap/JDepthTest.h"
 #include"../../DepthMap/JDepthMapDebug.h"
-#include"../../Blur/JBlur.h"
+#include"../../Image/JImageProcessing.h"
 
 namespace JinEngine::Graphic
 {
@@ -23,7 +23,7 @@ namespace JinEngine::Graphic
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
-
+ 
 	JDx12GraphicDepthMapDrawSet::JDx12GraphicDepthMapDrawSet(JFrameResource* currFrame,
 		JGraphicResourceManager* graphicResourceM,
 		JCullingManager* cullingM,
@@ -43,32 +43,30 @@ namespace JinEngine::Graphic
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
-
-	JDx12GraphicDepthMapDebugObjectSet::JDx12GraphicDepthMapDebugObjectSet(JGraphicResourceManager* graphicResourceM, ID3D12GraphicsCommandList* cmdList)
-		:JGraphicDepthMapDebugObjectSet(graphicResourceM), cmdList(cmdList)
+ 
+	JDx12GraphicDepthMapDebugTaskSet::JDx12GraphicDepthMapDebugTaskSet(JGraphicDevice* gDevice, JGraphicResourceManager* graphicResourceM, ID3D12GraphicsCommandList* cmdList)
+		:JGraphicDepthMapDebugTaskSet(gDevice, graphicResourceM), cmdList(cmdList), useHandle(false)
 	{
-		if (graphicResourceM != nullptr || cmdList == nullptr)
-			SetValid(false);
-		else
-			SetValid(IsSameDevice(graphicResourceM));
+		SetValid(gDevice != nullptr && graphicResourceM != nullptr && IsSameDevice(gDevice) && IsSameDevice(graphicResourceM));
 	}
-	J_GRAPHIC_DEVICE_TYPE JDx12GraphicDepthMapDebugObjectSet::GetDeviceType()const noexcept
-	{
-		return J_GRAPHIC_DEVICE_TYPE::DX12;
-	}
-
-	JDx12GraphicDepthMapDebugHandleSet::JDx12GraphicDepthMapDebugHandleSet(const JVector2<uint> size,
+	JDx12GraphicDepthMapDebugTaskSet::JDx12GraphicDepthMapDebugTaskSet(JGraphicDevice* gDevice, 
+		JGraphicResourceManager* graphicResourceM,
+		const JVector2<uint> size,
 		const float nearF,
 		const float farF,
 		const bool isPerspective,
 		ID3D12GraphicsCommandList* cmdList,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle)
-		:JGraphicDepthMapDebugHandleSet(size, nearF, farF, isPerspective), cmdList(cmdList), srcHandle(srcHandle), destHandle(destHandle)
+		:JGraphicDepthMapDebugTaskSet(gDevice, graphicResourceM, size, nearF, farF, isPerspective),
+		cmdList(cmdList),
+		srcHandle(srcHandle),
+		destHandle(destHandle),
+		useHandle(true)
 	{
-		SetValid(true);
+		SetValid(gDevice != nullptr && graphicResourceM != nullptr && IsSameDevice(gDevice) && IsSameDevice(graphicResourceM));
 	}
-	J_GRAPHIC_DEVICE_TYPE JDx12GraphicDepthMapDebugHandleSet::GetDeviceType()const noexcept
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicDepthMapDebugTaskSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
@@ -94,14 +92,14 @@ namespace JinEngine::Graphic
 		JFrameResource* currFrame,
 		JGraphicResourceManager* graphicResourceM,
 		JCullingManager* cullingM,
-		JBlur* blur,
+		JImageProcessing* image,
 		ID3D12GraphicsCommandList* cmdList) :
-		JGraphicShadowMapDrawSet(device, currFrame, graphicResourceM, cullingM, blur), cmdList(cmdList)
+		JGraphicShadowMapDrawSet(device, currFrame, graphicResourceM, cullingM, image), cmdList(cmdList)
 	{
-		if (device == nullptr || currFrame == nullptr || graphicResourceM == nullptr || cullingM == nullptr || blur == nullptr || cmdList == nullptr)
+		if (device == nullptr || currFrame == nullptr || graphicResourceM == nullptr || cullingM == nullptr || image == nullptr || cmdList == nullptr)
 			SetValid(false);
 		else
-			SetValid(IsSameDevice(device) && IsSameDevice(currFrame) && IsSameDevice(graphicResourceM) && IsSameDevice(cullingM) && IsSameDevice(blur));
+			SetValid(IsSameDevice(device) && IsSameDevice(currFrame) && IsSameDevice(graphicResourceM) && IsSameDevice(cullingM) && IsSameDevice(image));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicShadowMapDrawSet::GetDeviceType()const noexcept
 	{
@@ -172,34 +170,30 @@ namespace JinEngine::Graphic
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
-
-	JDx12GraphicOutlineObjectSet::JDx12GraphicOutlineObjectSet(JGraphicDevice* device,
+ 
+	JDx12GraphicOutlineDrawSet::JDx12GraphicOutlineDrawSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM, ID3D12GraphicsCommandList* cmdList)
+		:JGraphicOutlineDrawSet(device, graphicResourceM), cmdList(cmdList), useHandle(false)
+	{
+		SetValid(device != nullptr && graphicResourceM != nullptr && cmdList != nullptr && IsSameDevice(device) && IsSameDevice(graphicResourceM));
+	}
+	JDx12GraphicOutlineDrawSet::JDx12GraphicOutlineDrawSet(JGraphicDevice* device, 
 		JGraphicResourceManager* graphicResourceM,
-		ID3D12GraphicsCommandList* cmdList)
-		:JGraphicOutlineObjectSet(device, graphicResourceM), cmdList(cmdList)
-	{
-		if (device == nullptr || graphicResourceM == nullptr)
-			SetValid(false);
-		else
-			SetValid(IsSameDevice(device) && IsSameDevice(graphicResourceM));
-	}
-	J_GRAPHIC_DEVICE_TYPE JDx12GraphicOutlineObjectSet::GetDeviceType()const noexcept
-	{
-		return J_GRAPHIC_DEVICE_TYPE::DX12;
-	}
-
-	JDx12GraphicOutlineHandleSet::JDx12GraphicOutlineHandleSet(JGraphicResourceManager* graphicResourceM,
 		ID3D12GraphicsCommandList* cmdList,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE depthMapHandle,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE stencilMapHandle)
-		:JGraphicOutlineHandleSet(graphicResourceM), cmdList(cmdList), depthMapHandle(depthMapHandle), stencilMapHandle(stencilMapHandle)
+		: JGraphicOutlineDrawSet(device, graphicResourceM),
+		cmdList(cmdList),
+		depthMapHandle(depthMapHandle), 
+		stencilMapHandle(stencilMapHandle),
+		useHandle(true)
 	{
-		SetValid(cmdList != nullptr);
+		SetValid(device != nullptr && graphicResourceM != nullptr  && cmdList != nullptr && IsSameDevice(device) && IsSameDevice(graphicResourceM));
 	}
-	J_GRAPHIC_DEVICE_TYPE JDx12GraphicOutlineHandleSet::GetDeviceType()const noexcept
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicOutlineDrawSet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
+
 	JDx12GraphicBlurApplySet::JDx12GraphicBlurApplySet(JGraphicDevice* device,
 		std::unique_ptr<JBlurDesc>&& desc,
 		ID3D12GraphicsCommandList* cmdList,
@@ -207,11 +201,45 @@ namespace JinEngine::Graphic
 		CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle)
 		:JGraphicBlurTaskSet(device, std::move(desc)), cmdList(cmdList), srcHandle(srcHandle), destHandle(destHandle)
 	{
-		SetValid(cmdList != nullptr);
+		SetValid(device != nullptr && cmdList != nullptr && IsSameDevice(device));
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicBlurApplySet::GetDeviceType()const noexcept
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 
+			 
+	JDx12GraphicDownSampleApplySet::JDx12GraphicDownSampleApplySet(JGraphicDevice* device,
+		JGraphicResourceManager* graphicResourceM,
+		std::unique_ptr<JDownSampleDesc>&& desc,
+		std::vector<Core::JDataHandle>&& handle,
+		ID3D12GraphicsCommandList* cmdList,
+		CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
+		CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle)
+		:JGraphicDownSampleTaskSet(device, graphicResourceM, std::move(desc), std::move(handle)),
+		cmdList(cmdList), 
+		srcHandle(srcHandle), 
+		destHandle(destHandle)
+	{
+		SetValid(device != nullptr && graphicResourceM != nullptr && cmdList != nullptr && IsSameDevice(device) && IsSameDevice(graphicResourceM));
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicDownSampleApplySet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
+
+	JDx12GraphicSsaoTaskSet::JDx12GraphicSsaoTaskSet(JGraphicDevice* device,
+		JGraphicResourceManager* graphicResourceM, 
+		JFrameResource* currFrame,
+		ID3D12GraphicsCommandList* cmdList)
+		:JGraphicSsaoTaskSet(device, graphicResourceM, currFrame), 
+		cmdList(cmdList)
+	{
+		SetValid(device != nullptr && graphicResourceM != nullptr && currFrame != nullptr && cmdList != nullptr &&
+			IsSameDevice(device)&& IsSameDevice(currFrame) && IsSameDevice(graphicResourceM));
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12GraphicSsaoTaskSet::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
+	}
 }

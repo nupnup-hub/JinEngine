@@ -60,12 +60,12 @@ namespace JinEngine
 			constants.world.StoreXM(XMMatrixTranspose(XMMatrixAffineTransformation(s, zero, q, t)));
 			outlineCB->CopyData(0, constants);
 		}
-		void JDx12Outline::DrawCamOutline(const JGraphicOutlineObjectSet* drawSet, const JDrawHelper& helper)
+		void JDx12Outline::DrawCamOutline(const JGraphicOutlineDrawSet* drawSet, const JDrawHelper& helper)
 		{
 			if (!IsSameDevice(drawSet) || !helper.allowDrawDebug)
 				return;
 
-			const JDx12GraphicOutlineObjectSet* dx12Set = static_cast<const JDx12GraphicOutlineObjectSet*>(drawSet);
+			const JDx12GraphicOutlineDrawSet* dx12Set = static_cast<const JDx12GraphicOutlineDrawSet*>(drawSet);
 			JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(dx12Set->device);
 			JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(dx12Set->graphicResourceM);
 			ID3D12GraphicsCommandList* cmdList = dx12Set->cmdList;
@@ -76,15 +76,17 @@ namespace JinEngine
 
 			const int dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, 0);
 			const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, 0);
-
+	
+			JDx12GraphicResourceInfo* depthInfo = dx12Gm->GetDxInfo(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
 			ID3D12Resource* rtResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtvVecIndex);
-			auto depthInfo = dx12Gm->GetDxInfo(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
+			D3D12_RESOURCE_DESC desc = rtResource->GetDesc();
 
 			CD3DX12_CPU_DESCRIPTOR_HANDLE rtv = dx12Gm->GetCpuRtvDescriptorHandle(rtvHeapIndex);
 			JD3DUtility::ResourceTransition(cmdList, rtResource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-			const D3D12_VIEWPORT viewPort = dx12Device->GetViewPort();
-			const D3D12_RECT rect = dx12Device->GetRect();
+			D3D12_VIEWPORT viewPort;
+			D3D12_RECT rect;
+			dx12Device->CalViewportAndRect(JVector2F(desc.Width, desc.Height), viewPort, rect);
 			cmdList->RSSetViewports(1, &viewPort);
 			cmdList->RSSetScissorRects(1, &rect);
 			cmdList->OMSetRenderTargets(1, &rtv, true, nullptr);
@@ -95,14 +97,16 @@ namespace JinEngine
 				dx12Gm->GetGpuSrvDescriptorHandle(depthInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV) + 1));
 			JD3DUtility::ResourceTransition(cmdList, rtResource, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_GENERIC_READ);
 		}
-		void JDx12Outline::DrawOutline(const JGraphicOutlineHandleSet* drawSet, const JDrawHelper& helper)
+		void JDx12Outline::DrawOutline(const JGraphicOutlineDrawSet* drawSet, const JDrawHelper& helper)
 		{
 			if (!IsSameDevice(drawSet) || !helper.allowDrawDebug)
 				return;
 
-			const JDx12GraphicOutlineHandleSet* dx12Set = static_cast<const JDx12GraphicOutlineHandleSet*>(drawSet);
+			const JDx12GraphicOutlineDrawSet* dx12Set = static_cast<const JDx12GraphicOutlineDrawSet*>(drawSet);
 			JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(dx12Set->graphicResourceM);
 			ID3D12GraphicsCommandList* cmdList = dx12Set->cmdList;
+			if (!dx12Set->useHandle)
+				return;
 
 			DrawOutline(cmdList, dx12Gm, dx12Set->depthMapHandle, dx12Set->stencilMapHandle);
 		}
@@ -178,13 +182,12 @@ namespace JinEngine
 			mRootSignature->SetName(L"Outline RootSignature");
 		}
 		void JDx12Outline::BuildPso(ID3D12Device* device, const DXGI_FORMAT& rtvFormat, const DXGI_FORMAT& dsvFormat)
-		{
-			D3D_SHADER_MACRO macro{ NULL, NULL };
+		{ 
 			std::wstring gShaderPath = JApplicationEngine::ShaderPath() + L"\\Outline.hlsl";
 
 			gShaderData = std::make_unique<JDx12GraphicShaderDataHolder>();
-			gShaderData->vs = JDxShaderDataUtil::CompileShader(gShaderPath, &macro, "VS", "vs_5_1");
-			gShaderData->ps = JDxShaderDataUtil::CompileShader(gShaderPath, &macro, "PS", "ps_5_1");
+			gShaderData->vs = JDxShaderDataUtil::CompileShader(gShaderPath, L"VS", L"vs_6_0");
+			gShaderData->ps = JDxShaderDataUtil::CompileShader(gShaderPath, L"PS", L"ps_6_0");
 			gShaderData->inputLayout =
 			{
 				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },

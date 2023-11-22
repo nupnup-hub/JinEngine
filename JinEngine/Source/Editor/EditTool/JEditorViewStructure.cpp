@@ -1006,25 +1006,25 @@ namespace JinEngine
 			uint groupCount = 0;
 			 
 			JFileIOHelper::LoadAtomicData(tool, groupCount, "GroupCount");
-			tool.PushExistStack("GroupInfo");
+			tool.PushExistStack("GroupData");
 
 			for (uint i = 0; i < groupCount; ++i)
 			{
 				tool.PushExistStack();
 				size_t groupGuid = 0;
 				uint nodeCount = 0;
-				JFileIOHelper::LoadAtomicData(tool, groupGuid);
-				JFileIOHelper::LoadAtomicData(tool, nodeCount);
+				JFileIOHelper::LoadAtomicData(tool, groupGuid, "GroupGuid");
+				JFileIOHelper::LoadAtomicData(tool, nodeCount, "NodeCount");
 				Private::AddGroupData(GetGuid(), groupGuid);
 
-				tool.PushExistStack("NodeInfo");
+				tool.PushExistStack("NodeData");
 				for (uint j = 0; j < nodeCount; ++j)
 				{
 					tool.PushExistStack();
 					size_t nodeGuid = 0;
 					JVector2<float> center;
-					JFileIOHelper::LoadAtomicData(tool, nodeGuid);
-					JFileIOHelper::LoadVector2(tool, center);
+					JFileIOHelper::LoadAtomicData(tool, nodeGuid, "NodeGuid");
+					JFileIOHelper::LoadVector2(tool, center, "Center");
 					Private::AddNodeData(GetGuid(), groupGuid, nodeGuid);
 					Private::GetNodeData(GetGuid(), groupGuid, nodeGuid)->center = center;
 					tool.PopStack();

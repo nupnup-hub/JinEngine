@@ -167,6 +167,10 @@ namespace JinEngine
 				std::make_unique<JEditorPopupNode>("Spot Light", J_EDITOR_POPUP_NODE_TYPE::LEAF, createLightNode.get());
 			editorString->AddString(createSpotLightNode->GetNodeId(), { "Spot Light", u8"스팟 라이트" });
 
+			std::unique_ptr<JEditorPopupNode> createRectLightNode =
+				std::make_unique<JEditorPopupNode>("Spot Light", J_EDITOR_POPUP_NODE_TYPE::LEAF, createLightNode.get());
+			editorString->AddString(createRectLightNode->GetNodeId(), { "Rect Light", u8"사각 라이트" });
+
 			std::unique_ptr<JEditorPopupNode> destroyNode =
 				std::make_unique<JEditorPopupNode>("Destroy JGameObject", J_EDITOR_POPUP_NODE_TYPE::LEAF, explorerPopupRootNode.get(), true);
 			editorString->AddString(destroyNode->GetNodeId(), { "Destroy JGameObject", u8"게임오브젝트 삭제" });
@@ -194,6 +198,7 @@ namespace JinEngine
 			createDirectionalLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creation->reqLightCreationEvF, this, J_LIGHT_TYPE::DIRECTIONAL));
 			createPointLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creation->reqLightCreationEvF, this, J_LIGHT_TYPE::POINT));
 			createSpotLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creation->reqLightCreationEvF, this, J_LIGHT_TYPE::SPOT));
+			createRectLightNode->RegisterSelectBind(std::make_unique<RequestLightCreationEvF::CompletelyBind>(*creation->reqLightCreationEvF, this, J_LIGHT_TYPE::RECT));
 
 			destroyNode->RegisterSelectBind(std::make_unique<RequestDestructionEvF::CompletelyBind>(*creation->reqDestructionEvF, this));
 			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
@@ -213,6 +218,7 @@ namespace JinEngine
 			explorerPopup->AddPopupNode(std::move(createDirectionalLightNode));
 			explorerPopup->AddPopupNode(std::move(createPointLightNode));
 			explorerPopup->AddPopupNode(std::move(createSpotLightNode));
+			explorerPopup->AddPopupNode(std::move(createRectLightNode));
 			explorerPopup->AddPopupNode(std::move(destroyNode));
 			explorerPopup->AddPopupNode(std::move(renameNode));
 		}
@@ -440,10 +446,6 @@ namespace JinEngine
 			const bool isSelected = IsSelectedObject(objGuid);
 			const bool isActivated = gObj->IsActivated();
 
-			const J_GUI_TREE_NODE_FLAG_ baseFlags = J_GUI_TREE_NODE_FLAG_OPEN_ON_ARROW |
-				J_GUI_TREE_NODE_FLAG_EXTEND_HIT_BOX_WIDTH |
-				J_GUI_TREE_NODE_FLAG_FRAMED;
-
 			//if(!isSelected && gObj->IsSelectedbyEditor())
 			//	RequestPushSelectObject(Core::GetUserPtr(gObj));
 			 
@@ -454,7 +456,7 @@ namespace JinEngine
 				{
 					//can't select and hover
 					//fixed hover object when start rename ev
-					isNodeOpen = treeStrcture->CheckTreeNodeIsOpen(JGui::CreateGuiLabel(objName, objGuid, GetName() + "TreeNode"), baseFlags, IsFocus(), isActivated, isSelected);
+					isNodeOpen = treeStrcture->CheckTreeNodeIsOpen(JGui::CreateGuiLabel(objName, objGuid, GetName() + "TreeNode"), treeStrcture->GetBaseFlag(), IsFocus(), isActivated, isSelected);
 					DisplayActSignalWidget(gObj, false);
 					renameHelper->Update(isNodeOpen);
 				}
@@ -462,7 +464,7 @@ namespace JinEngine
 				{ 
 					if (isAcivatedSearch)
 						JGui::SetNextItemOpen(true);	
-					isNodeOpen = treeStrcture->DisplayTreeNode(JGui::CreateGuiLabel(objName, objGuid, GetName() + "TreeNode"), baseFlags, IsFocus(), isActivated, isSelected);
+					isNodeOpen = treeStrcture->DisplayTreeNode(JGui::CreateGuiLabel(objName, objGuid, GetName() + "TreeNode"), treeStrcture->GetBaseFlag(), IsFocus(), isActivated, isSelected);
 					if (JGui::IsLastItemHovered())
 						SetHoveredObject(gObj);
 

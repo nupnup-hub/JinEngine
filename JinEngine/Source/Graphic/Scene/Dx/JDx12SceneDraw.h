@@ -53,7 +53,7 @@ namespace JinEngine
 				const JDrawCondition& condition);
 		public:
 			void NotifyChangeGraphicShaderMacro(JGraphicDevice* device, const JGraphicInfo& info)final;
-			JOwnerPtr<JGraphicShaderDataHolderBase> CreateGraphicShader(JGraphicDevice* device, JGraphicResourceManager* gResourceM, const JGraphicShaderInitData& initData)final;
+			JOwnerPtr<JGraphicShaderDataHolderBase> CreateGraphicShader(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM, const JGraphicShaderInitData& initData)final;
 		private:
 			void CompileShader(JDx12GraphicShaderDataHolder* holder, const JGraphicShaderInitData& initData);
 			void StuffInputLayout(_Out_ std::vector<D3D12_INPUT_ELEMENT_DESC>& outInputLayout, const J_SHADER_VERTEX_LAYOUT vertexLayoutFlag);

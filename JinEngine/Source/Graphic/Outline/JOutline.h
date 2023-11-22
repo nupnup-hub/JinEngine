@@ -18,8 +18,8 @@ namespace JinEngine
 		public:
 			virtual void UpdatePassBuf(const uint width, const uint height, const uint stencilRefOffset) = 0;
 		public: 
-			virtual void DrawCamOutline(const JGraphicOutlineObjectSet* drawSet, const JDrawHelper& helper) = 0;
-			virtual void DrawOutline(const JGraphicOutlineHandleSet* drawSet, const JDrawHelper& helper) = 0;
+			virtual void DrawCamOutline(const JGraphicOutlineDrawSet* drawSet, const JDrawHelper& helper) = 0;
+			virtual void DrawOutline(const JGraphicOutlineDrawSet* drawSet, const JDrawHelper& helper) = 0;
 		};
 	}
 }

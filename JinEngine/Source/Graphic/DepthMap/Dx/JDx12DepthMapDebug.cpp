@@ -48,12 +48,12 @@ namespace JinEngine::Graphic
 	{
 		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	} 
-	void JDx12DepthMapDebug::DrawCamDepthDebug(const JGraphicDepthMapDebugObjectSet* debugSet, const JDrawHelper& helper)
+	void JDx12DepthMapDebug::DrawCamDepthDebug(const JGraphicDepthMapDebugTaskSet* debugSet, const JDrawHelper& helper)
 	{
 		if (!IsSameDevice(debugSet) || !helper.allowDrawDepthMap)
 			return;
  
-		const JDx12GraphicDepthMapDebugObjectSet* dx12Set = static_cast<const JDx12GraphicDepthMapDebugObjectSet*>(debugSet);
+		const JDx12GraphicDepthMapDebugTaskSet* dx12Set = static_cast<const JDx12GraphicDepthMapDebugTaskSet*>(debugSet);
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(dx12Set->graphicResourceM);
 		ID3D12GraphicsCommandList* cmdList = dx12Set->cmdList;
 
@@ -86,12 +86,12 @@ namespace JinEngine::Graphic
 				helper.cam->GetFar());
 		}
 	}
-	void JDx12DepthMapDebug::DrawLitDepthDebug(const JGraphicDepthMapDebugObjectSet* debugSet, const JDrawHelper& helper)
+	void JDx12DepthMapDebug::DrawLitDepthDebug(const JGraphicDepthMapDebugTaskSet* debugSet, const JDrawHelper& helper)
 	{
 		if (!IsSameDevice(debugSet) || !helper.allowDrawDepthMap)
 			return;
 
-		const JDx12GraphicDepthMapDebugObjectSet* dx12Set = static_cast<const JDx12GraphicDepthMapDebugObjectSet*>(debugSet);
+		const JDx12GraphicDepthMapDebugTaskSet* dx12Set = static_cast<const JDx12GraphicDepthMapDebugTaskSet*>(debugSet);
 		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(dx12Set->graphicResourceM);
 		ID3D12GraphicsCommandList* cmdList = dx12Set->cmdList;
 
@@ -140,20 +140,26 @@ namespace JinEngine::Graphic
 			}
 		}
 	}
-	void JDx12DepthMapDebug::DrawLinearDepthDebug(const JGraphicDepthMapDebugHandleSet* debugSet)
+	void JDx12DepthMapDebug::DrawLinearDepthDebug(const JGraphicDepthMapDebugTaskSet* debugSet)
 	{
 		if (!IsSameDevice(debugSet))
 			return;
 
-		const JDx12GraphicDepthMapDebugHandleSet* dx12Set = static_cast<const JDx12GraphicDepthMapDebugHandleSet*>(debugSet);	
+		const JDx12GraphicDepthMapDebugTaskSet* dx12Set = static_cast<const JDx12GraphicDepthMapDebugTaskSet*>(debugSet);	
+		if (!dx12Set->useHandle)
+			return;
+
 		DrawLinearDepthDebug(dx12Set->cmdList, dx12Set->srcHandle, dx12Set->destHandle, dx12Set->size, dx12Set->nearF, dx12Set->farF);
 	}
-	void JDx12DepthMapDebug::DrawNonLinearDepthDebug(const JGraphicDepthMapDebugHandleSet* debugSet)
+	void JDx12DepthMapDebug::DrawNonLinearDepthDebug(const JGraphicDepthMapDebugTaskSet* debugSet)
 	{
 		if (!IsSameDevice(debugSet))
 			return;
 		 
-		const JDx12GraphicDepthMapDebugHandleSet* dx12Set = static_cast<const JDx12GraphicDepthMapDebugHandleSet*>(debugSet);
+		const JDx12GraphicDepthMapDebugTaskSet* dx12Set = static_cast<const JDx12GraphicDepthMapDebugTaskSet*>(debugSet);
+		if (!dx12Set->useHandle)
+			return;
+
 		DrawNonLinearDepthDebug(dx12Set->cmdList, dx12Set->srcHandle, dx12Set->destHandle, dx12Set->size, dx12Set->nearF, dx12Set->farF, dx12Set->isPerspective);
 	}
 	void JDx12DepthMapDebug::DrawLinearDepthDebug(ID3D12GraphicsCommandList* commandList,
@@ -256,22 +262,20 @@ namespace JinEngine::Graphic
 			IID_PPV_ARGS(cRootSignature.GetAddressOf())));
 
 		cRootSignature->SetName(L"DepthDebug RootSignature");
-
-		D3D_SHADER_MACRO macro{ NULL, NULL };
+		 
 		std::wstring computeShaderPath = JApplicationEngine::ShaderPath() + L"\\DepthMapDebug.hlsl";
-
 		linearDepthMapShaderData = std::make_unique<JDx12ComputeShaderDataHolder>();
-		linearDepthMapShaderData->cs = JDxShaderDataUtil::CompileShader(computeShaderPath, &macro, "LinearMap", "cs_5_1");
+		linearDepthMapShaderData->cs = JDxShaderDataUtil::CompileShader(computeShaderPath, L"LinearMap", L"cs_6_0");
 
-		std::vector<JMacroSet> set; 
-		set.push_back(JMacroSet{ "PERSPECTIVE_DEPTH_MAP", "1"});
-		std::vector<D3D_SHADER_MACRO> macroVec = JDxShaderDataUtil::ToD3d12Macro(set);
+		std::vector<JMacroSet> macroSet; 
+		macroSet.push_back({ L"PERSPECTIVE_DEPTH_MAP", L"1"});
+		//macroSet.push_back({ NULL, NULL });
 
 		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE] = std::make_unique<JDx12ComputeShaderDataHolder>();
-		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE]->cs = JDxShaderDataUtil::CompileShader(computeShaderPath, macroVec.data(), "NonLinearMap", "cs_5_1");
-
+		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::PERSPECTIVE]->cs = JDxShaderDataUtil::CompileShader(computeShaderPath, macroSet, L"NonLinearMap", L"cs_6_0");
+		
 		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC] = std::make_unique<JDx12ComputeShaderDataHolder>();
-		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC]->cs = JDxShaderDataUtil::CompileShader(computeShaderPath, &macro, "NonLinearMap", "cs_5_1");
+		nonLinearDepthMapShaderData[(uint)J_GRAPHIC_PROJECTION_TYPE::ORTHOLOGIC]->cs = JDxShaderDataUtil::CompileShader(computeShaderPath,  L"NonLinearMap", L"cs_6_0");
 
 		D3D12_COMPUTE_PIPELINE_STATE_DESC newShaderPso;
 		ZeroMemory(&newShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));

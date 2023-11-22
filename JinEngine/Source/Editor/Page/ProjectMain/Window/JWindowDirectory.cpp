@@ -506,14 +506,11 @@ namespace JinEngine
 		}
 		void JWindowDirectory::DirectoryViewOnScreen(const JUserPtr<JDirectory>& directory, const bool canSelect)
 		{
-			J_GUI_TREE_NODE_FLAG_ baseFlags = J_GUI_TREE_NODE_FLAG_EXTEND_HIT_BOX_WIDTH |
-				J_GUI_TREE_NODE_FLAG_FRAMED;
-
 			bool isSelected = opendDirctory->GetGuid() == directory->GetGuid();
 			if (lastUpdateOpenNewDir && opendDirctory->IsParent(directory.Get()))
 				JGui::SetNextItemOpen(true);
   
-			bool isNodeOpen = treeStrcture->DisplayTreeNode(JGui::CreateGuiLabel(directory, GetName()), baseFlags, IsFocus(), true, isSelected);
+			bool isNodeOpen = treeStrcture->DisplayTreeNode(JGui::CreateGuiLabel(directory, GetName()), treeStrcture->GetBaseFlag(), IsFocus(), true, isSelected);
 			auto draggingResult = TryGetDraggingTarget();
 			if (draggingResult.IsValid())
 			{

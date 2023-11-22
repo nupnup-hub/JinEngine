@@ -4,6 +4,7 @@
 #include<functional>   
 #include <cmath>
 #include<string>
+#include<algorithm>
 #include"../JCoreEssential.h"
 
 namespace JinEngine
@@ -269,6 +270,16 @@ namespace JinEngine
 		static JVector2 Max(const JVector2& a, const JVector2& b)noexcept
 		{
 			return JVector2(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y);
+		}
+		void Clamp(const JVector2& value, const T minV, const T maxV)noexcept
+		{
+			x = std::clamp(value.x, minV, maxV);
+			y = std::clamp(value.y, minV, maxV);
+		}
+		void Clamp(const JVector2& value, const JVector2& minV, const JVector2& maxV)noexcept
+		{
+			x = std::clamp(value.x, minV.x, maxV.x);
+			y = std::clamp(value.y, minV.y, maxV.y);
 		}
 	public:
 		float Length()const noexcept
@@ -576,7 +587,7 @@ namespace JinEngine
 		{
 			return JVector3(0, -1, 0);
 		}
-		static JVector3 Forward()noexcept
+		static JVector3 Front()noexcept
 		{
 			return JVector3(0, 0, 1);
 		}

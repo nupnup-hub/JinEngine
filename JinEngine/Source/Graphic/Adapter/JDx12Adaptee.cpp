@@ -1,5 +1,5 @@
 #include"JDx12Adaptee.h"
-
+#include"../JGraphicUpdateHelper.h"
 #include"../DataSet/Dx/JDx12GraphicDataSet.h"
 #include"../Culling/Dx/JDx12CullingManager.h"
 #include"../DepthMap/Dx/JDx12DepthMapDebug.h"
@@ -12,10 +12,9 @@
 #include"../Culling/Occlusion/Dx/JDx12HZBOccCulling.h"
 #include"../Scene/Dx/JDx12SceneDraw.h"
 #include"../ShadowMap/Dx/JDx12ShadowMap.h" 
-#include"../Blur/Dx/JDx12Blur.h"
+#include"../Image/Dx/JDx12ImageProcessing.h"
 #include"../FrameResource/Dx/JDx12FrameResource.h"
 #include"../Utility/Dx/JD3DUtility.h" 
-
 
 namespace JinEngine::Graphic
 {
@@ -35,6 +34,10 @@ namespace JinEngine::Graphic
 			return dx12Gm->GetCpuRtvDescriptorHandle(dx12Gm->GetDxInfo(J_GRAPHIC_RESOURCE_TYPE::SWAP_CHAN, dx12Device->GetBackBufferIndex())->
 				GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::RTV));
 		}
+	}
+	J_GRAPHIC_DEVICE_TYPE JDx12Adaptee::GetDeviceType()const noexcept
+	{
+		return J_GRAPHIC_DEVICE_TYPE::DX12;
 	}
 	std::unique_ptr<JGraphicDevice> JDx12Adaptee::CreateDevice()
 	{
@@ -80,19 +83,19 @@ namespace JinEngine::Graphic
 	std::unique_ptr<JOutline> JDx12Adaptee::CreateOutlineDraw()
 	{
 		return std::make_unique<JDx12Outline>();
-	}
-	std::unique_ptr<JBlur> JDx12Adaptee::CreateBlur()
+	} 
+	std::unique_ptr<JImageProcessing> JDx12Adaptee::CreateImageProcessing()
 	{
-		return std::make_unique<JDx12Blur>();
+		return std::make_unique<JDx12ImageProcessing>();
 	}
 	bool JDx12Adaptee::BeginDrawSceneSingleThread(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet)
 	{
-		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.gResourceM) ||
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.graphicResourceM) ||
 			!IsSameDevice(drawRefSet.currFrame) || !IsSameDevice(drawRefSet.cullingM) || !IsSameDevice(drawRefSet.depthDebug))
 			return false;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.gResourceM);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12CullingManager* dx12Cm = static_cast<JDx12CullingManager*>(drawRefSet.cullingM);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
 		 
@@ -108,22 +111,22 @@ namespace JinEngine::Graphic
 
 		dataSet.bind = std::make_unique<JDx12GraphicBindSet>(dx12Frame, dx12Gm, dx12Cm, cmdList);
 		dataSet.sceneDraw = std::make_unique<JDx12GraphicSceneDrawSet>(dx12Device, dx12Frame, dx12Gm, dx12Cm, cmdList);
-		dataSet.shadowMapDraw = std::make_unique<JDx12GraphicShadowMapDrawSet>(dx12Device, dx12Frame, dx12Gm, dx12Cm, drawRefSet.blur, cmdList);
+		dataSet.shadowMapDraw = std::make_unique<JDx12GraphicShadowMapDrawSet>(dx12Device, dx12Frame, dx12Gm, dx12Cm, drawRefSet.image, cmdList);
 		dataSet.occDraw = std::make_unique<JDx12GraphicOccDrawSet>(dx12Device, dx12Frame, dx12Gm, dx12Cm, drawRefSet.depthTest, cmdList);
 		dataSet.occDebug = std::make_unique<JDx12GraphicOccDebugDrawSet>(dx12Device, dx12Gm, drawRefSet.depthDebug, cmdList);
 		dataSet.hzbCompute = std::make_unique<JDx12GraphicHzbOccComputeSet>(dx12Frame, dx12Gm, dx12Cm, cmdList);
 		dataSet.hdExtract = std::make_unique<JDx12GraphicHdOccExtractSet>(dx12Cm, cmdList);
-		dataSet.depthMapDebug = std::make_unique<JDx12GraphicDepthMapDebugObjectSet>(dx12Gm, cmdList);
-		dataSet.outline = std::make_unique<JDx12GraphicOutlineObjectSet>(dx12Device, dx12Gm, cmdList); 
+		dataSet.depthMapDebug = std::make_unique<JDx12GraphicDepthMapDebugTaskSet>(dx12Device, dx12Gm, cmdList);
+		dataSet.outline = std::make_unique<JDx12GraphicOutlineDrawSet>(dx12Device, dx12Gm, cmdList);
 		return true;
 	}
 	bool JDx12Adaptee::EndDrawSceneSingeThread(const JGraphicDrawReferenceSet& drawRefSet)
 	{
-		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.gResourceM) || !IsSameDevice(drawRefSet.currFrame))
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.graphicResourceM) || !IsSameDevice(drawRefSet.currFrame))
 			return false;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.gResourceM);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
 
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_MAIN_THREAD_ORDER::BEGIN);
@@ -134,11 +137,11 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12Adaptee::SettingBeginFrame(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicBeginFrameSet& dataSet)
 	{
-		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.gResourceM) || !IsSameDevice(drawRefSet.currFrame))
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.graphicResourceM) || !IsSameDevice(drawRefSet.currFrame))
 			return false;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.gResourceM);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
 		 
 		dx12Frame->ResetCmd(drawRefSet.info.frameThreadCount);
@@ -165,25 +168,26 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12Adaptee::SettingMidFrame(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicMidFrameSet& dataSet)
 	{
-		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.gResourceM) ||
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.graphicResourceM) ||
 			!IsSameDevice(drawRefSet.currFrame) || !IsSameDevice(drawRefSet.cullingM) || !IsSameDevice(drawRefSet.depthDebug))
 			return false;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.gResourceM);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12CullingManager* dx12Cm = static_cast<JDx12CullingManager*>(drawRefSet.cullingM);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
 
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_MAIN_THREAD_ORDER::MID);
 		SettingDescriptorHeaps(dx12Gm, cmdList);
-
+ 
 		dataSet.bind = std::make_unique<JDx12GraphicBindSet>(dx12Frame, dx12Gm, dx12Cm, cmdList);
 		dataSet.sceneDraw = std::make_unique<JDx12GraphicSceneDrawSet>(dx12Device, dx12Frame, dx12Gm, dx12Cm, cmdList);
 		dataSet.occDebug = std::make_unique<JDx12GraphicOccDebugDrawSet>(dx12Device, dx12Gm, drawRefSet.depthDebug, cmdList);
 		dataSet.hzbCompute = std::make_unique<JDx12GraphicHzbOccComputeSet>(dx12Frame, dx12Gm, dx12Cm, cmdList);
 		dataSet.hdExtract = std::make_unique<JDx12GraphicHdOccExtractSet>(dx12Cm, cmdList);
-		dataSet.depthMapDebug = std::make_unique<JDx12GraphicDepthMapDebugObjectSet>(dx12Gm, cmdList);
-		dataSet.outline = std::make_unique<JDx12GraphicOutlineObjectSet>(dx12Device, dx12Gm, cmdList);
+		dataSet.depthMapDebug = std::make_unique<JDx12GraphicDepthMapDebugTaskSet>(dx12Device, dx12Gm, cmdList);
+		dataSet.outline = std::make_unique<JDx12GraphicOutlineDrawSet>(dx12Device, dx12Gm, cmdList);
+		dataSet.ssao = std::make_unique<JDx12GraphicSsaoTaskSet>(dx12Device, dx12Gm, dx12Frame, cmdList);
 		return true;
 	}
 	bool JDx12Adaptee::ExecuteMidFrame(const JGraphicDrawReferenceSet& drawRefSet)
@@ -202,11 +206,11 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12Adaptee::SettingEndFrame(const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond)
 	{
-		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.gResourceM) || !IsSameDevice(drawRefSet.currFrame))
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.graphicResourceM) || !IsSameDevice(drawRefSet.currFrame))
 			return false;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.gResourceM);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
 
 		//J_MAIN_THREAD_ORDER::END reset 안됬을시 처리필요  
@@ -231,11 +235,11 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12Adaptee::ExecuteEndFrame(const JGraphicDrawReferenceSet& drawRefSet, const JGraphicEndConditonSet cond)
 	{
-		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.gResourceM) || !IsSameDevice(drawRefSet.currFrame))
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device) || !IsSameDevice(drawRefSet.graphicResourceM) || !IsSameDevice(drawRefSet.currFrame))
 			return false;
 
 		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.gResourceM);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_MAIN_THREAD_ORDER::END);
 
@@ -266,10 +270,10 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12Adaptee::SettingDrawOccTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadOccTaskSet& dataSet)
 	{
-		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.gResourceM) || !IsSameDevice(drawRefSet.currFrame))
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.graphicResourceM) || !IsSameDevice(drawRefSet.currFrame))
 			return false;
 
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.gResourceM);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_THREAD_TASK_TYPE::OCC, threadIndex);
 
@@ -290,17 +294,17 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12Adaptee::SettingDrawShadowMapTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadShadowMapTaskSet& dataSet)
 	{
-		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.gResourceM) || !IsSameDevice(drawRefSet.currFrame))
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.graphicResourceM) || !IsSameDevice(drawRefSet.currFrame))
 			return false;
 
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.gResourceM);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
 
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_THREAD_TASK_TYPE::SHADOW_MAP, threadIndex);
 		SettingDescriptorHeaps(dx12Gm, cmdList);
 
 		dataSet.bind = std::make_unique<JDx12GraphicBindSet>(dx12Frame, dx12Gm, drawRefSet.cullingM, cmdList);
-		dataSet.shadowMapDraw = std::make_unique<JDx12GraphicShadowMapDrawSet>(drawRefSet.device, dx12Frame, dx12Gm, drawRefSet.cullingM, drawRefSet.blur, cmdList);
+		dataSet.shadowMapDraw = std::make_unique<JDx12GraphicShadowMapDrawSet>(drawRefSet.device, dx12Frame, dx12Gm, drawRefSet.cullingM, drawRefSet.image, cmdList);
 		return true;
 	}
 	bool JDx12Adaptee::NotifyCompleteDrawShadowMapTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex)
@@ -316,10 +320,10 @@ namespace JinEngine::Graphic
 	}
 	bool JDx12Adaptee::SettingDrawSceneTask(const JGraphicDrawReferenceSet& drawRefSet, const uint threadIndex, _Inout_ JGraphicThreadSceneTaskSet& dataSet)
 	{
-		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.gResourceM) || !IsSameDevice(drawRefSet.currFrame))
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.graphicResourceM) || !IsSameDevice(drawRefSet.currFrame))
 			return false;
 
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.gResourceM);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
 		JDx12FrameResource* dx12Frame = static_cast<JDx12FrameResource*>(drawRefSet.currFrame);
 
 		ID3D12GraphicsCommandList* cmdList = dx12Frame->GetCmd(J_THREAD_TASK_TYPE::SCENE, threadIndex);
@@ -380,8 +384,65 @@ namespace JinEngine::Graphic
 		commandQueue->ExecuteCommandLists(drawRefSet.info.frameThreadCount, dx12Frame->GetBatchCmd(J_THREAD_TASK_TYPE::SCENE));
 		return true;
 	}
-	J_GRAPHIC_DEVICE_TYPE JDx12Adaptee::GetDeviceType()const noexcept
+	bool JDx12Adaptee::SettingBlurTask(const JGraphicDrawReferenceSet& drawRefSet,
+		const ResourceHandle from,
+		const ResourceHandle to,
+		std::unique_ptr<JBlurDesc>&& desc,
+		_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet)
 	{
-		return J_GRAPHIC_DEVICE_TYPE::DX12;
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device))
+			return false;
+
+		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
+		ID3D12GraphicsCommandList* cmdList = dx12Device->GetPublicCmdList();
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle;
+		CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle;
+		srcHandle.ptr = (UINT64)from;
+		destHandle.ptr = (UINT64)to;
+
+		dataSet = std::make_unique<JDx12GraphicBlurApplySet>(dx12Device, std::move(desc), cmdList, srcHandle, destHandle);
+		return true;
+	}
+	bool JDx12Adaptee::SettingBlurTask(const JGraphicDrawReferenceSet& drawRefSet,
+		const JUserPtr<JGraphicResourceInfo>& info,
+		std::unique_ptr<JBlurDesc>&& desc,
+		_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet)
+	{
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device))
+			return false;
+
+		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
+	 
+		auto dx12Info = static_cast<JDx12GraphicResourceInfo*>(info.Get());
+		if (!info->HasView(J_GRAPHIC_BIND_TYPE::UAV) || !dx12Info->HasOptional(J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING))
+			return false;
+		//수정필요
+		return false;
+	}
+	bool JDx12Adaptee::SettingMipmapGenerationTask(const JGraphicDrawReferenceSet& drawRefSet,
+		const JUserPtr<JGraphicResourceInfo>& srcInfo,
+		const JUserPtr<JGraphicResourceInfo>& modInfo,
+		std::unique_ptr<JDownSampleDesc>&& desc,
+		_Out_ std::unique_ptr<JGraphicDownSampleTaskSet>& dataSet)
+	{
+		if (!drawRefSet.IsValid() || !IsSameDevice(drawRefSet.device))
+			return false;
+
+		std::vector<Core::JDataHandle> handle;
+		if (!drawRefSet.graphicResourceM->SettingMipmapBind(drawRefSet.device, modInfo, false, handle))
+			return false;
+
+		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(drawRefSet.device);
+		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(drawRefSet.graphicResourceM);
+		ID3D12GraphicsCommandList* cmdList = dx12Device->GetPublicCmdList();
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle = dx12Gm->GetMPBGpuDescriptorHandle(handle[0], J_GRAPHIC_BIND_TYPE::SRV);		//0.. n-1
+		CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle = dx12Gm->GetMPBGpuDescriptorHandle(handle[1], J_GRAPHIC_BIND_TYPE::UAV);			//1.. n
+		SettingDescriptorHeaps(dx12Gm, cmdList);
+
+		dataSet = std::make_unique<JDx12GraphicDownSampleApplySet>(dx12Device, dx12Gm, std::move(desc), std::move(handle), cmdList, srcHandle, destHandle);
+		return true;
 	}
 }

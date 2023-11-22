@@ -93,9 +93,8 @@ namespace JinEngine
 		void GetComponents(const J_COMPONENT_TYPE compType, std::vector<JUserPtr<JComponent>>& result)const noexcept
 		{
 			for (const auto& data : componentVec)
-			{
-				int index = JCUtil::GetIndex(componentVec, searchPtr, compType);
-				if (index != -1)
+			{ 
+				if (data->GetComponentType() == compType)
 					result.push_back(data);
 			}
 		}

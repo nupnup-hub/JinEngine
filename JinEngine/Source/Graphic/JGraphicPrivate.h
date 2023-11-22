@@ -1,7 +1,8 @@
 #pragma once
+#include"JGraphicConstants.h"
 #include"GraphicResource/JGraphicResourceType.h"  
 #include"FrameResource/JFrameResourceEnum.h"   
-#include"../Core/JCoreEssential.h" 
+#include"../Core/JCoreEssential.h"  
 #include<string>
  
 namespace JinEngine
@@ -15,6 +16,7 @@ namespace JinEngine
 	class JMain;
 	namespace Core
 	{
+		class JDataHandle;
 		class JGraphicException;
 		struct JStaticMeshVertex;
 		struct JSkinnedMeshVertex;
@@ -38,6 +40,7 @@ namespace JinEngine
 		class JGuiBackendDataAdapter;
 		class JGuiBackendInterface;
 		struct JGuiInitData; 
+		struct JMipmapGenerateDesc;
 
 		class JGraphicPrivate
 		{
@@ -51,14 +54,14 @@ namespace JinEngine
 				friend class JCullingInterface;			//for create occ resource
 			private:
 				//private name is for debug
-				static JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilResource();
-				static JUserPtr<JGraphicResourceInfo> CreateDebugDepthStencilResource();
-				static JUserPtr<JGraphicResourceInfo> CreateLayerDepthDebugResource(uint textureWidth = 0, uint textureHeight = 0);
-				static void CreateHZBOcclusionResource(_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo, _Out_ JUserPtr<JGraphicResourceInfo>& outOccMipMapInfo);
+				static JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilResource(uint textureWidth, uint textureHeight);
+				static JUserPtr<JGraphicResourceInfo> CreateDebugDepthStencilResource(uint textureWidth, uint textureHeight);
+				static JUserPtr<JGraphicResourceInfo> CreateLayerDepthDebugResource(uint textureWidth,  uint textureHeight);
+				static void CreateHZBOcclusionResource(_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo, _Out_ JUserPtr<JGraphicResourceInfo>& outOccMipmapInfo);
 				static JUserPtr<JGraphicResourceInfo> CreateOcclusionResourceDebug(const bool isHzb);
-				static JUserPtr<JGraphicResourceInfo> Create2DTexture(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat);
-				static JUserPtr<JGraphicResourceInfo> CreateCubeMap(const uint maxSize, const std::wstring& path, const std::wstring& oriFormat);
-				static JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(uint textureWidth = 0, uint textureHeight = 0);
+				static JUserPtr<JGraphicResourceInfo> Create2DTexture(const JTextureCreateDesc& createDesc);
+				static JUserPtr<JGraphicResourceInfo> CreateCubeMap(const JTextureCreateDesc& createDesc);
+				static JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(uint textureWidth, uint textureHeight);
 				static JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(const uint textureWidth, const uint textureHeight);
 				static JUserPtr<JGraphicResourceInfo> CreateShadowMapTextureArray(const uint textureWidth, const uint textureHeight, const uint count);
 				static JUserPtr<JGraphicResourceInfo> CreateShadowMapTextureCube(const uint textureWidth, const uint textureHeight);
@@ -71,8 +74,14 @@ namespace JinEngine
 				static bool DestroyGraphicTextureResource(JGraphicResourceInfo* info);
 				static bool DestroyGraphicOption(JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE optype);
 			private:
+				static bool SetMipmap(const JUserPtr<JGraphicResourceInfo>& info, JTextureCreateDesc createDesc);
+			private:
 				static JOwnerPtr<JGraphicShaderDataHolderBase> StuffGraphicShaderPso(const JGraphicShaderInitData& shaderData);
 				static JOwnerPtr<JComputeShaderDataHolderBase> StuffComputeShaderPso(const JComputeShaderInitData& shaderData);
+			private:
+				//Debug
+				static bool MipmapBindForDebug(const JUserPtr<JGraphicResourceInfo>& info, _Out_ std::vector<ResourceHandle>& gpuHandle, _Out_ std::vector<Core::JDataHandle>& dataHandle);
+				static void ClearMipmapBind( _In_ std::vector<Core::JDataHandle>& dataHandle);
 			};
 			class CullingInterface
 			{

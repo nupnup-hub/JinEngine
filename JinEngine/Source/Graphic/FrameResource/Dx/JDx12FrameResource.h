@@ -46,6 +46,7 @@ namespace JinEngine
 			std::unique_ptr<JDx12GraphicBuffer<JCsmConstants>> csmBuffer = nullptr;
 			std::unique_ptr<JDx12GraphicBuffer<JPointLightConstants>> pLightBuffer = nullptr;
 			std::unique_ptr<JDx12GraphicBuffer<JSpotLightConstants>> sLightBuffer = nullptr;
+			std::unique_ptr<JDx12GraphicBuffer<JRectLightConstants>> rLightBuffer = nullptr;	
 		public:
 			std::unique_ptr<JDx12GraphicBuffer<JObjectConstants>> objectCB = nullptr;
 			std::unique_ptr<JDx12GraphicBuffer<JAnimationConstants>> skinnedCB = nullptr;

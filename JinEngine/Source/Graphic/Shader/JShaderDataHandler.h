@@ -29,7 +29,7 @@ namespace JinEngine
 		{
 		public:
 			virtual void NotifyChangeGraphicShaderMacro(JGraphicDevice* device, const JGraphicInfo& info) = 0;
-			virtual JOwnerPtr<JGraphicShaderDataHolderBase> CreateGraphicShader(JGraphicDevice* device, JGraphicResourceManager* gResourceM, const JGraphicShaderInitData& initDara) = 0;
+			virtual JOwnerPtr<JGraphicShaderDataHolderBase> CreateGraphicShader(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM, const JGraphicShaderInitData& initDara) = 0;
 		public:
 			void RecompileShader(JShader* shader); 
 		};
@@ -42,7 +42,7 @@ namespace JinEngine
 		class JComputeShaderDataHandler
 		{
 		public: 
-			virtual JOwnerPtr<JComputeShaderDataHolderBase> CreateComputeShader(JGraphicDevice* device, JGraphicResourceManager* gResourceM, const JComputeShaderInitData& initDara) = 0;
+			virtual JOwnerPtr<JComputeShaderDataHolderBase> CreateComputeShader(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM, const JComputeShaderInitData& initDara) = 0;
 		public:
 			void RecompileShader(JShader* shader); 
 		};

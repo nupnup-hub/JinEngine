@@ -4,6 +4,9 @@
 #define USE_PERSPECTIVE 1
 #endif
 
+#define CORRECT_FAIL_DELTA_RATE 0.1f
+#define CORRECT_FAIL_LOOP_COUNT  (uint) (1.0f / CORRECT_FAIL_DELTA_RATE)
+
 struct ObjectInfo
 {
 	float3 coners[8];
@@ -83,8 +86,6 @@ cbuffer cbPass : register(b1)
 
 static const float maxDistance = -100000;
 static const float minDistance = 100000;
-static const float correctFailDeltaRate = 0.1f;
-static const uint correctFailLoopCount = (uint) (1.0f / correctFailDeltaRate);
 //occMap size max is 512
 //512 is less than thread and group max dim
 
@@ -275,6 +276,7 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 
 	float nowMinDist = maxDistance;
 	uint minIndex = 0;
+	[unroll]
 	for (uint i = 0; i < 6; ++i)
 	{
 		float dist = length(nearPoint[i]);
@@ -347,6 +349,7 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	float minY = maxDistance;
 	float maxY = minDistance;
 
+	[unroll]
 	for (uint i = 0; i < 8; ++i)
 	{
 		if (bboxPointNdc[i].x < minX)
@@ -403,11 +406,11 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 			bboxPointNdc[5] - center,
 			bboxPointNdc[6] - center,
 			bboxPointNdc[7] - center
-		};
+		}; 
 
-		for (uint i = 1; i < correctFailLoopCount; ++i)
+		for (uint i = 0; i < CORRECT_FAIL_LOOP_COUNT; ++i)
 		{ 
-			const float rate = correctFailDeltaRate * i;
+			const float rate = CORRECT_FAIL_DELTA_RATE * (i + 1);
 			compareDepth00 = mipmap.SampleLevel(occFrameSam, center + (centerToCorner[0] * rate), lod).r;
 			compareDepth01 = mipmap.SampleLevel(occFrameSam, center + (centerToCorner[1] * rate), lod).r;
 			compareDepth02 = mipmap.SampleLevel(occFrameSam, center + (centerToCorner[2] * rate), lod).r;
@@ -419,8 +422,9 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 			finalCompareDepth = max(max(compareDepth00, max(compareDepth01, max(compareDepth02, compareDepth03))),
 				max(compareDepth04, max(compareDepth05, max(compareDepth06, compareDepth07))));
 
+			[branch]
 			if (centerDepth <= finalCompareDepth)
-				i = correctFailLoopCount;
+				i = CORRECT_FAIL_LOOP_COUNT;
 		} 
 	}
 

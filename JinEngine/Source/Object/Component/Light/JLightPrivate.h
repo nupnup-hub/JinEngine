@@ -7,6 +7,8 @@ namespace JinEngine
 	class JDirectionalLight;
 	class JPointLight;
 	class JSpotLight;
+	class JRectLight;
+
 	namespace Graphic
 	{
 		class JGraphic;  
@@ -75,6 +77,7 @@ namespace JinEngine
 			friend class JDirectionalLight;
 			friend class JPointLight;
 			friend class JSpotLight;
+			friend class JRectLight;
 		private:
 			//almost JFrameDirtyListener is impl class
 			static void RegisterFrameDirtyListener(JLight* lit, Graphic::JFrameDirty* listener, const size_t guid)noexcept;

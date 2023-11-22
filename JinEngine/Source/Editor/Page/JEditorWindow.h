@@ -113,6 +113,7 @@ namespace JinEngine
 			PassSelectedAboveOneF::Functor* GetPassSelectedAboveOneFunctor()noexcept;
 			JUserPtr<Core::JIdentifier> GetHoveredObject()const noexcept;
 			uint GetSelectedObjectCount()const noexcept;  
+			JUserPtr<Core::JIdentifier> GetFirstSelectedObject()const noexcept;
 			std::vector<JUserPtr<Core::JIdentifier>> GetSelectedObjectVec()const noexcept;
 			template<typename T>
 			std::vector<JUserPtr<T>> GetSelectedObjectVec()const noexcept

@@ -65,25 +65,25 @@ namespace JinEngine::Graphic
 			}
 			return std::vector<D3D12_INPUT_ELEMENT_DESC>();
 		}
-		static std::vector<D3D_SHADER_MACRO> GetShaderMacro(const JDepthTest::TEST_TYPE testType)
+		static std::vector<JMacroSet> GetShaderMacro(const JDepthTest::TEST_TYPE testType)
 		{
-			std::vector<D3D_SHADER_MACRO> macro;
+			std::vector<JMacroSet> macro;
 			switch (testType)
 			{
 			case JinEngine::Graphic::JDepthTest::TEST_TYPE::QUERY_TEST:
 			{
-				macro.push_back({ "OCCLUSION_QUERY", "1" });
+				macro.push_back({ L"OCCLUSION_QUERY", L"1" });
 				break;
 			}
 			case JinEngine::Graphic::JDepthTest::TEST_TYPE::QUERY_TEST_PASS:
 			{
-				macro.push_back({ "OCCLUSION_QUERY", "1" });
+				macro.push_back({ L"OCCLUSION_QUERY", L"1" });
 				break;
 			}
 			default:
 				break;
 			}
-			macro.push_back({ NULL, NULL });
+			//macro.push_back({ NULL, NULL });
 			return macro;
 		}
 	}
@@ -286,10 +286,9 @@ namespace JinEngine::Graphic
 			gShaderData[type] = std::make_unique<JDx12GraphicShaderDataHolder>();
 			auto gShaderDataPtr = gShaderData[type].get();
 
-			std::vector<D3D_SHADER_MACRO> macro = Private::GetShaderMacro(type);
-
+			std::vector<JMacroSet> macro = Private::GetShaderMacro(type);
 			gShaderDataPtr->inputLayout = Private::GetInputLayout(Core::J_MESHGEOMETRY_TYPE::STATIC);
-			gShaderDataPtr->vs = JDxShaderDataUtil::CompileShader(gShaderPath, macro.data(), "VS", "vs_5_1");
+			gShaderDataPtr->vs = JDxShaderDataUtil::CompileShader(gShaderPath, macro, L"VS", L"vs_6_0");
 
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC newShaderPso;
 			ZeroMemory(&newShaderPso, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));

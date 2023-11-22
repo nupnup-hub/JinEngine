@@ -411,7 +411,7 @@ namespace JinEngine
 
 namespace ReflectionData
 		{
-
+//Unuse
 #define REGISTER_GUI_TABLE_GROUP(tableName, ...)																\
 																										\
 			inline static struct GuiTable##tableName													\
@@ -436,23 +436,37 @@ namespace ReflectionData
 			}GuiBoolCondition##conditioName;																	\
 
 
-#define REGISTER_GUI_ENUM_CONDITION(conditioName, enumName, refParamName)																\
+#define REGISTER_GUI_ENUM_CONDITION(conditioName, enumName, refName, isMethod)																\
 																										\
 			inline static struct GuiEnumCondition##conditioName												\
 			{																							\
 			public:																						\
 				GuiEnumCondition##conditioName()																\
 				{																						\
-					JinEngine::Core::JGuiExtraFunctionInfoMap::Register(JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiEnumParamConditionInfo>(#conditioName, #enumName, #refParamName));	\
+					JinEngine::Core::JGuiExtraFunctionInfoMap::Register(JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiEnumParamConditionInfo>(#conditioName, #enumName, #refName, isMethod));	\
 				}																						\
 			}GuiEnumCondition##conditioName;																	\
 		
+
+#define REGISTER_GUI_GROUP(groupName)																	\
+																										\
+			inline static struct GuiGroup##groupName													\
+			{																							\
+			public:																						\
+				GuiGroup##groupName()																	\
+				{																						\
+					JinEngine::Core::JGuiExtraFunctionInfoMap::Register(JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiGroupInfo>(#groupName));	\
+				}																						\
+			}GuiGroup##groupName;																	\
+
 		}
 
 #pragma endregion
 
 #pragma region Create GUI
 
+//Ex User----------------------------------------------------------------------------------------------------
+//Unuse
 /*
 Condition ref value type중에서 JTypaBase line 객체들은 rawPtr, userPtr, weakPtr만 ref값으로 허용한다.
 */
@@ -487,8 +501,11 @@ Condition ref value type중에서 JTypaBase line 객체들은 rawPtr, userPtr, weakPtr�
 * @param enum ...conditionValue
 * @brief use other class defined group enum group
 */
-#define GUI_ENUM_CONDITION_REF_USER(conditionName, refParamOwnerName, ...) JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiEnumParamConditionUserInfo<J_COUNT(__VA_ARGS__)>>(#conditionName, #refParamOwnerName, __VA_ARGS__)
+#define GUI_ENUM_CONDITION_REF_USER(conditionName, refOwnerName, ...) JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiEnumParamConditionUserInfo<J_COUNT(__VA_ARGS__)>>(#conditionName, #refOwnerName, __VA_ARGS__)
 
+#define GUI_GROUP_USER(groupName) JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiGroupUserInfo>(#groupName)
+
+//Gui----------------------------------------------------------------------------------------------------
 /**
 * @param bool isEnterToReturn
 * @param J_PARAMETER_TYPE fixedType(option)
@@ -546,7 +563,7 @@ Condition ref value type중에서 JTypaBase line 객체들은 rawPtr, userPtr, weakPtr�
 * @param std::string extraFuntionUserInfo(option)
 */
 #define GUI_LIST(listType, canDisplayElementGui, createElementPtr, ...)  JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiListInfo>(listType, canDisplayElementGui, createElementPtr, __VA_ARGS__) 
-
+		  
 #pragma endregion
 
 #pragma region OPTION

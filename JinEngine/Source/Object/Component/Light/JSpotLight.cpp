@@ -96,7 +96,7 @@ namespace JinEngine
 
 	class JSpotLight::JSpotLightImpl : public Core::JTypeImplBase,
 		public LitFrameUpdate,
-		public Graphic::JGraphicWideSingleResourceHolder<3>,	//shadowMap, debug, rtv(for vsm)
+		public Graphic::JGraphicWideSingleResourceHolder<2>,	//shadowMap, debug, rtv(for vsm)
 		public Graphic::JGraphicDrawListCompInterface,
 		public Graphic::JCullingInterface
 	{
@@ -330,7 +330,7 @@ namespace JinEngine
 		}
 		void DestroyShadowMapDebugResource()
 		{
-			DestroyTexture(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
+			DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
 		}
 	public:
 		void Activate()noexcept
@@ -372,6 +372,7 @@ namespace JinEngine
 			constant.hasShadowMap = IsShadowActivated();
 			constant.shadowMapSize = thisPointer->GetShadowMapSize();
 			constant.shadowMapInvSize = 1.0f / constant.shadowMapSize;
+			constant.bias = thisPointer->GetBias();
 			SpotLitFrame::MinusMovedDirty();
 		}
 		void UpdateFrame(Graphic::JShadowMapDrawConstants& constant)noexcept final
@@ -503,6 +504,10 @@ namespace JinEngine
 	DirectX::BoundingBox JSpotLight::GetBBox()const noexcept
 	{
 		return impl->GetBBox();
+	}
+	JVector3F JSpotLight::GetDirection()const noexcept
+	{
+		return Private::CalLightWorldDir(impl->GetTransform());
 	}
 	void JSpotLight::SetShadow(const bool value)noexcept
 	{

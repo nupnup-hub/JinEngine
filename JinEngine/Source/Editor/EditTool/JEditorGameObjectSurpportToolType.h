@@ -11,6 +11,7 @@ namespace JinEngine
 			POSITION_ARROW,
 			ROTATION_ARROW,
 			SCALE_ARROW,
+			GEO_VIEW,
 			COUNT
 		};	 
 	}

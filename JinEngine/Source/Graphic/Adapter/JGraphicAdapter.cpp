@@ -1,5 +1,4 @@
-#include"JGraphicAdapter.h"  
-#include"../Blur/JBlur.h"
+#include"JGraphicAdapter.h"   
 #include"../Culling/JCullingManager.h"
 #include"../DepthMap/JDepthMapDebug.h"
 #include"../DepthMap/JDepthTest.h"
@@ -8,6 +7,7 @@
 #include"../Outline/JOutline.h"
 #include"../Culling/Occlusion/JHardwareOccCulling.h"
 #include"../Culling/Occlusion/JHZBOccCulling.h"
+#include"../Image/JImageProcessing.h"
 #include"../Scene/JSceneDraw.h"
 #include"../ShadowMap/JShadowMap.h" 
 #include"../FrameResource/JFrameResource.h" 
@@ -103,12 +103,12 @@ namespace JinEngine::Graphic
 		 
 		return GetAdaptee(deviceType)->CreateOutlineDraw();
 	}  
-	std::unique_ptr<JBlur> JGraphicAdapter::CreateBlur(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	std::unique_ptr<JImageProcessing> JGraphicAdapter::CreateImageProcessing(const J_GRAPHIC_DEVICE_TYPE deviceType)
 	{
 		if (!IsSameDevice(deviceType))
 			return nullptr;
 
-		return GetAdaptee(deviceType)->CreateBlur();
+		return GetAdaptee(deviceType)->CreateImageProcessing();
 	}
 	void JGraphicAdapter::BeginDrawSceneSingleThread(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet)
 	{
@@ -229,6 +229,41 @@ namespace JinEngine::Graphic
 
 		GetAdaptee(deviceType)->ExecuteDrawSceneTask(drawRefSet);
 	}
+	bool JGraphicAdapter::SettingBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType,
+		const JGraphicDrawReferenceSet& drawRefSet,
+		const ResourceHandle from,
+		const ResourceHandle to,
+		std::unique_ptr<JBlurDesc>&& desc,
+		_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet)
+	{
+		if (!IsSameDevice(deviceType))
+			return false;
+
+		GetAdaptee(deviceType)->SettingBlurTask(drawRefSet, from, to, std::move(desc), dataSet);
+	}
+	bool JGraphicAdapter::SettingBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType,
+		const JGraphicDrawReferenceSet& drawRefSet,
+		const JUserPtr<JGraphicResourceInfo>& info,
+		std::unique_ptr<JBlurDesc>&& desc,
+		_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet)
+	{
+		if (!IsSameDevice(deviceType))
+			return false;
+
+		GetAdaptee(deviceType)->SettingBlurTask(drawRefSet, info, std::move(desc), dataSet);
+	}
+	bool JGraphicAdapter::SettingMipmapGenerationTask(const J_GRAPHIC_DEVICE_TYPE deviceType,
+		const JGraphicDrawReferenceSet& drawRefSet,
+		const JUserPtr<JGraphicResourceInfo>& srcInfo,
+		const JUserPtr<JGraphicResourceInfo>& modInfo,
+		std::unique_ptr<JDownSampleDesc>&& desc,
+		_Out_ std::unique_ptr<JGraphicDownSampleTaskSet>& dataSet)
+	{
+		if (!IsSameDevice(deviceType))
+			return false;
+
+		GetAdaptee(deviceType)->SettingMipmapGenerationTask(drawRefSet, srcInfo, modInfo, std::move(desc), dataSet);
+	} 
 	JGraphicAdaptee* JGraphicAdapter::GetAdaptee(const J_GRAPHIC_DEVICE_TYPE deviceType)
 	{
 		return adaptee[(uint)deviceType].get();

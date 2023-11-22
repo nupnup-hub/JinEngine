@@ -53,7 +53,8 @@ namespace JinEngine
 		Core::JStaticMeshData CreateTriangleBoundingBox();
 		Core::JStaticMeshData CreateBoundingFrustum(); 
 		Core::JStaticMeshData CreateCircle(float outRadius, float innerRadius);
-		Core::JStaticMeshData CreateLine(const uint thickness);
+		Core::JStaticMeshData CreateLine(uint thickness);
+		Core::JStaticMeshData CreateBoundingCone();
 	private:
 		void Subdivide(Core::JStaticMeshData& meshData);
 		Core::JStaticMeshVertex MidPoint(const Core::JStaticMeshVertex& v0, const Core::JStaticMeshVertex& v1);

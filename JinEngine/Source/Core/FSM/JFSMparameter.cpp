@@ -19,7 +19,7 @@ namespace JinEngine
 		class JFSMparameter::JFSMparameterImpl : public JTypeImplBase
 		{
 			REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JFSMparameterImpl)
-			REGISTER_GUI_ENUM_CONDITION(ParameterType, J_FSM_PARAMETER_VALUE_TYPE, paramType)
+			REGISTER_GUI_ENUM_CONDITION(ParameterType, J_FSM_PARAMETER_VALUE_TYPE, paramType, false)
 		public:
 			JWeakPtr<JFSMparameter> thisPointer;
 		public:

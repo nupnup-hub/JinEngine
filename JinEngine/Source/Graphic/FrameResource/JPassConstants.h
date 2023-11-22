@@ -14,6 +14,10 @@ namespace JinEngine
 			int bluseNoiseTextureIndex = 0;		//always exist until engine end
 			JVector2F bluseNoiseTextureSize;
 			JVector2F invBluseNoiseTextureSize;
+			int ltcMatTextureIndex = 0;
+			int ltcAmpTextureIndex = 0;
+			int passPad00 = 0;
+			int paddPad01 = 0;
 		};
 		struct JScenePassConstants
 		{ 
@@ -25,6 +29,10 @@ namespace JinEngine
 			uint pointLitEd = 0;
 			uint spotLitSt = 0;
 			uint spotLitEd = 0;
+			uint rectLitSt = 0;
+			uint rectLitEd = 0;
+			uint scenePassPad00 = 0;
+			uint scenePassPad01 = 0;
 		};
 	}
 }

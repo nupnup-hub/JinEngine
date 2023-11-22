@@ -34,18 +34,22 @@ namespace JinEngine
 		DirectX::XMVECTOR GetQuaternion()const noexcept;
 		JVector3<float> GetScale()const noexcept;
 		JVector3<float> GetWorldPosition()const noexcept;
+		JVector3<float> GetWorldRotation()const noexcept;
 		JVector4<float> GetWorldQuaternion()const noexcept;
-		JMatrix4x4 GetWorldMatrix4x4()const noexcept;
+		JMatrix4x4 GetWorldMatrix4x4()const noexcept; 
 		DirectX::XMMATRIX GetWorldMatrix()const noexcept;
-		DirectX::XMMATRIX GetLocalMatrix()const noexcept;
 		JVector3<float> GetRight()const noexcept;
 		JVector3<float> GetUp()const noexcept;
 		JVector3<float> GetFront()const noexcept;
+		JVector3<float> GetWorldRight()const noexcept;
+		JVector3<float> GetWorldUp()const noexcept;
+		JVector3<float> GetWorldFront()const noexcept;
 		float GetDistance(const JUserPtr<JTransform>& t)const noexcept;
 	public:
 		void SetTransform(const JMatrix4x4& transform)noexcept;
 		void SetTransform(const JVector3<float>& position, const JVector3<float>& rotation, const JVector3<float>& scale)noexcept;
 		void SetPosition(const JVector3<float>& value)noexcept;
+		//Euler
 		void SetRotation(const JVector3<float>& value)noexcept;
 		void SetRotation(const JVector4<float>& q)noexcept;
 		void SetScale(const JVector3<float>& value)noexcept;

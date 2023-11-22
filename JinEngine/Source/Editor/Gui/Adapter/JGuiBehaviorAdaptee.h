@@ -132,7 +132,8 @@ namespace JinEngine
 			virtual void EndGroup() = 0;
 			virtual void Text(const std::string& text)const noexcept = 0;
 			virtual bool CheckBox(const std::string& checkName, bool& v) = 0;
-			virtual bool Button(const std::string& btnName, const JVector2<float>& jVec2) = 0; 
+			virtual bool Button(const std::string& btnName, const JVector2<float>& jVec2, J_GUI_BUTTON_FLAG flag) = 0;
+			virtual bool ArrowButton(const std::string& name, const JVector2<float>& jVec2, const float arrowScale, J_GUI_BUTTON_FLAG flag, J_GUI_CARDINAL_DIR dir) = 0;
 			virtual bool IsTreeNodeOpend(const std::string& name, J_GUI_TREE_NODE_FLAG_ flags) = 0;
 			virtual bool TreeNodeEx(const std::string& nodeName, J_GUI_TREE_NODE_FLAG flags) = 0;
 			virtual void TreePop() = 0;
@@ -308,8 +309,9 @@ namespace JinEngine
 			virtual void NewLine()noexcept = 0;
 			virtual void SameLine()noexcept = 0;
 			virtual void Separator()noexcept = 0;
-			virtual void Indent()noexcept = 0;
-			virtual void UnIndent()noexcept = 0;
+			virtual void Indent(const float width)noexcept = 0;
+			virtual void UnIndent(const float width)noexcept = 0;
+			virtual float IndentMovementPixel(const float width)const noexcept = 0;
 		public:
 			// Work Area
 			virtual JVector2<float> GetMainWorkPos()const noexcept = 0;

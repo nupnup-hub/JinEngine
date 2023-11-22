@@ -273,7 +273,8 @@ namespace JinEngine
 			const bool canCreateCulling = useCaseType == J_SCENE_USE_CASE_TYPE::MAIN || useCaseType == J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW;
 			mainCam = JGCI::CreateCamera(root, L"MainCamera", Core::MakeGuid(), objFlag, canCreateCulling);
 			
-			mainCam->GetComponent<JCamera>()->SetCameraState(J_CAMERA_STATE::RENDER);
+			auto cam = mainCam->GetComponent<JCamera>();
+			cam->SetCameraState(J_CAMERA_STATE::RENDER);
 			JUserPtr<JGameObject> lit = JGCI::CreateLight(root, L"MainLight", Core::MakeGuid(), objFlag, J_LIGHT_TYPE::DIRECTIONAL);
 			if (is3DScene)
 				lit->GetComponent<JLight>()->SetShadow(true);

@@ -44,7 +44,7 @@ namespace JinEngine
 		static DirectX::XMMATRIX ApplyQuaternion(const JMatrix4x4& m, const JVector4<float>& q)noexcept;
 		static JVector4<float> PitchYawRollToQuaternion(float pitch, float yaw, float roll)noexcept;
 		static JVector4<float> EulerToQuaternion(float x, float y, float z)noexcept;
-		static JVector4<float> EulerToQuaternion(const JVector3<float>& e)noexcept; 
+		static JVector4<float> EulerToQuaternion(const JVector3<float>& e)noexcept;  
 		static JVector3<float> ToEulerAngle(const JVector4<float>& q)noexcept;
 		static float NormalizeAngle(float angle)noexcept;
 		static JVector3<float> NormalizeAngles(const JVector3<float>& angles)noexcept; 

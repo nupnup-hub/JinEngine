@@ -55,7 +55,7 @@ namespace JinEngine
 			return count < capacity;
 		}
 
-		uint JGraphicResourceManager::GetOcclusionMipMapViewCapacity()noexcept
+		uint JGraphicResourceManager::GetOcclusionMipmapViewCapacity()noexcept
 		{
 			return Private::occlusionMipmapViewCapacity;
 		}

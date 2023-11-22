@@ -31,6 +31,7 @@ namespace JinEngine
 		if (isLine)
 			mat->SetPrimitiveType(J_SHADER_PRIMITIVE_TYPE::LINE);
 		mat->SetAlbedoColor(color); 
+		mat->SetNonCulling(true);
 		UpdateShaderInterface::OnUpdateShaderTrigger(mat);
 		UpdateShaderInterface::UpdateShader(mat);
 	}

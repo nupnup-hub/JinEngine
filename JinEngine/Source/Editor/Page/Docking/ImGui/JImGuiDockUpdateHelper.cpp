@@ -193,7 +193,7 @@ namespace JinEngine
 
 			int actCount = Private::ActivatedWindowCount(Private::GetDockNodeRoot(dockNode));
 			if (actCount == 1)
-			{
+			{ 
 				isLastWindow = true;
 				isLockMove = true; 
 			}
@@ -232,7 +232,7 @@ namespace JinEngine
 				}
 
 				if (leafCount == 2 && tabItemCount == 1 && isSameId)
-				{
+				{ 
 					isLastDock = true;
 					isLockMove = true; 
 					return;
@@ -266,16 +266,16 @@ namespace JinEngine
 			const ImRect titleBarRect = wnd->TitleBarRect();
 			if (dockNode->TabBar == nullptr || !JGui::IsMouseInRect(titleBarRect.Min, titleBarRect.GetSize()))
 				return;
-
+			 
 			const uint tabItemSize = dockNode->TabBar->Tabs.Size;
-			if (tabItemSize < 2)
+			if (tabItemSize == 0)
 				return;
-
+			 
 			const ImRect lastTabItemRect = dockNode->TabBar->Tabs[tabItemSize - 1].Window->DockTabItemRect;
 			const bool canRestrict = lastTabItemRect.Max.x <= ImGui::GetMousePos().x;
 			if (!canRestrict)
 				return;
-			
+			 
 			isLockMove = true; 
 			//isLockOver = isLockSplit = true; 
 		}

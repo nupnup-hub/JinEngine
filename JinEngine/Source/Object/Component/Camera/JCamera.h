@@ -4,6 +4,7 @@
 #include"../../../Graphic/Frameresource/JFrameUpdateUserAccess.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
 #include"../../../Graphic/Culling/JCullingUserAccess.h" 
+#include"../../../Graphic/Image/JImageProcessingDesc.h"
 #include"../../../Core/Math/JMatrix.h"
 #include<DirectXCollision.h>
 
@@ -22,6 +23,8 @@ namespace JinEngine
 		class InitData final : public JComponent::InitData
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(InitData)
+		public:
+			JVector2F rtSizeRate = JVector2F::One();
 		public:
 			InitData(const JUserPtr<JGameObject>& owner);
 			InitData(const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
@@ -44,7 +47,7 @@ namespace JinEngine
 		DirectX::XMMATRIX GetView()const noexcept;
 		JMatrix4x4 GetView4x4()const noexcept;
 		DirectX::XMMATRIX GetProj()const noexcept;  
-		JMatrix4x4 GetProj4x4()const noexcept;
+		JMatrix4x4 GetProj4x4()const noexcept; 
 		/*
 		* @return world bounding frustum
 		*/
@@ -67,6 +70,8 @@ namespace JinEngine
 		float GetFarViewWidth()const noexcept;
 		float GetFarViewHeight()const noexcept;
 		J_CAMERA_STATE GetCameraState()const noexcept; 
+		JVector2F GetRenderTargetRate()const noexcept;
+		Graphic::JSsaoDesc GetSsaoDesc()const noexcept;
 	public:
 		void SetNear(const float value)noexcept;
 		void SetFar(const float value) noexcept;
@@ -83,7 +88,10 @@ namespace JinEngine
 		void SetAllowHzbOcclusionCulling(const bool value)noexcept;
 		void SetAllowHdOcclusionCulling(const bool value)noexcept;
 		void SetAllowDisplayOccCullingDepthMap(const bool value)noexcept;
+		void SetAllowSsao(const bool value)noexcept;
 		void SetCameraState(const J_CAMERA_STATE state)noexcept;
+		void SetRenderTargetRate(const JVector2F rate)noexcept;		//default 1,1 = client window size
+		void SetSsaoDesc(const Graphic::JSsaoDesc& desc)noexcept;
 	public: 
 		bool IsFrameDirted()const noexcept;
 		bool IsOrthoCamera()const noexcept; 
@@ -95,6 +103,7 @@ namespace JinEngine
 		bool AllowHzbOcclusionCulling()const noexcept final;
 		bool AllowHdOcclusionCulling()const noexcept final;
 		bool AllowDisplayOccCullingDepthMap()const noexcept final;
+		bool AllowSsao()const noexcept;
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final; 

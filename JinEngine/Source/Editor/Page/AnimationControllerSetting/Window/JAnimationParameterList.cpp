@@ -218,10 +218,10 @@ public:
 		{
 			return J_EDITOR_WINDOW_TYPE::ANIMATION_CONDITION_LIST;
 		}
-		void JAnimationParameterList::Initialize(JUserPtr<JAnimationController> newAniCont)noexcept
+		void JAnimationParameterList::SetAnimationController(const JUserPtr<JAnimationController>& newAniCont)
 		{
 			aniCont = newAniCont;
-		}
+		} 
 		void JAnimationParameterList::UpdateWindow()
 		{
 			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | J_GUI_WINDOW_FLAG_NO_COLLAPSE);

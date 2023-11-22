@@ -17,11 +17,11 @@ namespace JinEngine::Graphic
 	}
 	uint JDx12GraphicResourceHolder::GetWidth()const noexcept
 	{
-		return resource->GetDesc().Height;
+		return resource->GetDesc().Width;
 	}
 	uint JDx12GraphicResourceHolder::GetHeight()const noexcept
 	{
-		return resource->GetDesc().Width;
+		return resource->GetDesc().Height;
 	}
 	ID3D12Resource* JDx12GraphicResourceHolder::GetResource() const noexcept
 	{

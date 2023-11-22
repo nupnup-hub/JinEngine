@@ -1,8 +1,9 @@
+#pragma once
 #include"VertexCommon.hlsl"
-#include "LightingUtil.hlsl"
-#include "DepthFunc.hlsl"
-
-#define JINENGINE_PIXEL_COMMON 1
+#include"Material.hlsl"
+#include"LightDefine.hlsl"
+#include"DepthFunc.hlsl"
+ 
 #define PARALLAX_STEP 4 
 #define PARALLAX_SCALE	0.03125f //	1 / 16 .. 1/ 32
 
@@ -12,8 +13,9 @@
 StructuredBuffer<DirectionalLightData> directionalLight : register(t0, space0);
 StructuredBuffer<PointLightData> pointLight : register(t0, space1);
 StructuredBuffer<SpotLightData> spotLight : register(t0, space2);
-StructuredBuffer<CsmData> csmData : register(t0, space3);
-
+StructuredBuffer<RectLightData> rectLight : register(t0, space3);
+StructuredBuffer<CsmData> csmData : register(t0, space4);
+ 
 #ifdef TEXTURE_2D_COUNT
 Texture2D textureMaps[TEXTURE_2D_COUNT] : register(t2, space0);
 #endif
@@ -29,18 +31,22 @@ Texture2DArray shadowArray[SHADOW_MAP_ARRAY_COUNT] : register(t2, space3);
 #ifdef SHADOW_MAP_CUBE_COUNT
 TextureCube shadowCubeMap[SHADOW_MAP_CUBE_COUNT] : register(t2, space4);
 #endif
+//#ifdef USE_SSAO
+//RWTexture2D<float2> normalMap : register(u0);
+//#endif
 // Put in space1, so the texture array does not overlap with these resources.  
 // The texture array will occupy registers t0, t1, ..., t3 in space0. 
 //RWBuffer<float> shadowFactor : register(u0);
  
 SamplerState samPointClamp       : register(s0);
 SamplerState samLinearWrap       : register(s1); 
-SamplerState samAnisotropicWrap  : register(s2); 
-SamplerState samCubeShadow : register(s3);
-SamplerState samPcssBloker : register(s4); 
-SamplerComparisonState samCmpLinearPointShadow : register(s5);
+SamplerState samAnisotropicWrap  : register(s2);  
+SamplerState samPcssBloker : register(s3); 
+SamplerState samLTC : register(s4);
+SamplerState samLTCSample : register(s5);
+SamplerComparisonState samCmpLinearPointShadow : register(s6);
 
-//32
+//48
 cbuffer cbEnginePass : register(b2)
 { 
     float appTotalTime;
@@ -49,9 +55,13 @@ cbuffer cbEnginePass : register(b2)
 	int bluseNoiseTextureIndex;
 	float2 bluseNoiseTextureSize;
 	float2 invBluseNoiseTextureSize;
+	int ltcMatTextureIndex;
+	int ltcAmpTextureIndex;
+	int passPad00;
+	int paddPad01;
 };
 
-//32
+//48
 cbuffer cbScenePass : register(b3)
 {
     float sceneTotalTime;
@@ -62,6 +72,10 @@ cbuffer cbScenePass : register(b3)
     uint pointLitEd;
     uint spotLitSt;    
     uint spotLitEd;
+	uint rectLitSt;
+	uint rectLitEd;
+	uint scenePassPad00;
+	uint scenePassPad01;
 };
 
 //b0 + b2 + b3 => 256 * 3

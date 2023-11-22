@@ -54,11 +54,11 @@ namespace JinEngine
 			return useColumnCount;
 		}
 
-		JGuiParamConditionUserInfoBase::RefParamInfo::RefParamInfo(const std::string& refParamOwnerName)
-			:refParamOwnerName(refParamOwnerName)
+		JGuiParamConditionUserInfoBase::RefParamInfo::RefParamInfo(const std::string& refOwnerName)
+			:refOwnerName(refOwnerName)
 		{}
 		JGuiParamConditionUserInfoBase::JGuiParamConditionUserInfoBase(const JGuiExtraFunctionInfoMapName infoMapName)
-			:JGuiExtraFunctionUserInfo(infoMapName), refParamInfo(nullptr)
+			: JGuiExtraFunctionUserInfo(infoMapName), refParamInfo(nullptr)
 		{}
 		JGuiParamConditionUserInfoBase::JGuiParamConditionUserInfoBase(const JGuiExtraFunctionInfoMapName infoMapName, const std::string& refParamOwnerName)
 			: JGuiExtraFunctionUserInfo(infoMapName)
@@ -66,9 +66,9 @@ namespace JinEngine
 			if (!refParamOwnerName.empty())
 				refParamInfo = std::make_unique<RefParamInfo>(refParamOwnerName);
 		}
-		std::string JGuiParamConditionUserInfoBase::GetRefParamOwnerName()const noexcept
+		std::string JGuiParamConditionUserInfoBase::GetRefOwnerName()const noexcept
 		{
-			return refParamInfo != nullptr ? refParamInfo->refParamOwnerName : std::string();
+			return refParamInfo != nullptr ? refParamInfo->refOwnerName : std::string();
 		}
 		bool JGuiParamConditionUserInfoBase::IsOwnRefParam()const noexcept
 		{
@@ -89,18 +89,32 @@ namespace JinEngine
 		JGuiEnumParamConditionUserInfoInterface::JGuiEnumParamConditionUserInfoInterface(const JGuiExtraFunctionInfoMapName infoMapName)
 			: JGuiParamConditionUserInfoBase(infoMapName)
 		{}
-		JGuiEnumParamConditionUserInfoInterface::JGuiEnumParamConditionUserInfoInterface(const JGuiExtraFunctionInfoMapName infoMapName, const std::string& refParamOwnerName)
-			: JGuiParamConditionUserInfoBase(infoMapName, refParamOwnerName)
+		JGuiEnumParamConditionUserInfoInterface::JGuiEnumParamConditionUserInfoInterface(const JGuiExtraFunctionInfoMapName infoMapName, const std::string& refOwnerName)
+			: JGuiParamConditionUserInfoBase(infoMapName, refOwnerName)
+		{}
+
+		JGuiGroupUserInfo::JGuiGroupUserInfo(const JGuiExtraFunctionInfoMapName infoMapName)
+			: JGuiExtraFunctionUserInfo(infoMapName)
 		{}
 
 		JGuiExtraFunctionInfo::JGuiExtraFunctionInfo(const std::string& extraFunctionName)
-			:extraFunctionName(extraFunctionName)
+			: extraFunctionName(extraFunctionName)
 		{}
 		std::string JGuiExtraFunctionInfo::GetName()const noexcept
 		{
 			return extraFunctionName;
 		}
- 
+		int JGuiExtraFunctionInfo::GetUserCount()const noexcept
+		{
+			return userCount;
+		}
+		void JGuiExtraFunctionInfo::NotifyAddMember(JGuiExtraFunctionUserInfo* user)
+		{
+			if (user == nullptr)
+				return;
+			++userCount;
+		}
+
 		bool JGuiTableInfo::IsFirstColunmGuide()const noexcept
 		{
 			return isFirstColumnGuide;
@@ -123,9 +137,10 @@ namespace JinEngine
 		}
 		void JGuiTableInfo::NotifyAddMember(JGuiExtraFunctionUserInfo* user)
 		{
+			JGuiExtraFunctionInfo::NotifyAddMember(user);
 			if (user == nullptr)
 				return;
-	 
+
 			if (user->GetExtraFunctionName() == GetName())
 				++rowCount;
 		}
@@ -144,7 +159,7 @@ namespace JinEngine
 			:JGuiConditionInfo(extraFunctionName), refName(refName), isRefMethod(isRefMethod)
 		{}
 		J_GUI_EXTRA_CONDITION_TYPE JGuiBoolParamConditionInfo::GetConditionType()const noexcept
-		{ 
+		{
 			return J_GUI_EXTRA_CONDITION_TYPE::BOOLEAN_PARAM;
 		}
 		std::string JGuiBoolParamConditionInfo::GetRefName()const noexcept
@@ -156,20 +171,46 @@ namespace JinEngine
 			return isRefMethod;
 		}
 
-		JGuiEnumParamConditionInfo::JGuiEnumParamConditionInfo(const std::string& extraFunctionName, const std::string& enumName, const std::string& refParamName)
-			:JGuiConditionInfo(extraFunctionName), enumName(enumName), refParamName(refParamName)
+		JGuiEnumParamConditionInfo::JGuiEnumParamConditionInfo(const std::string& extraFunctionName,
+			const std::string& enumName,
+			const std::string& refName,
+			const bool isRefMethod)
+			:JGuiConditionInfo(extraFunctionName),
+			enumName(enumName),
+			refName(refName),
+			isRefMethod(isRefMethod)
 		{}
 		J_GUI_EXTRA_CONDITION_TYPE JGuiEnumParamConditionInfo::GetConditionType()const noexcept
-		{  
+		{
 			return J_GUI_EXTRA_CONDITION_TYPE::ENUM_PARAM;
 		}
 		std::string JGuiEnumParamConditionInfo::GetEnumName()const noexcept
 		{
 			return enumName;
 		}
-		std::string JGuiEnumParamConditionInfo::GetRefParamName()const noexcept
+		std::string JGuiEnumParamConditionInfo::GetRefName()const noexcept
 		{
-			return refParamName;
+			return refName;
+		}
+		bool JGuiEnumParamConditionInfo::IsRefMethod()const noexcept
+		{
+			return isRefMethod;
+		}
+
+		JGuiGroupInfo::JGuiGroupInfo(const std::string& extraFunctionName)
+			:JGuiExtraFunctionInfo(extraFunctionName)
+		{}
+		J_GUI_EXTRA_FUNCTION_TYPE JGuiGroupInfo::GetExtraFunctionType()const noexcept
+		{
+			return J_GUI_EXTRA_FUNCTION_TYPE::GROUP;
+		}
+		void JGuiGroupInfo::SetOpenTrigger(const bool value)noexcept
+		{
+			isOpen = value;
+		}
+		bool JGuiGroupInfo::IsOpen()const noexcept
+		{
+			return isOpen;
 		}
 
 		void JGuiExtraFunctionInfoMap::Register(JOwnerPtr<JGuiExtraFunctionInfo>&& info)
@@ -193,32 +234,23 @@ namespace JinEngine
 		}
 		void JGuiWidgetInfo::SetExtraFunctionUserInfo(const JUserPtr<JGuiExtraFunctionInfo>& info, JOwnerPtr<JGuiExtraFunctionUserInfo>&& userInfo)
 		{
-			if (info == nullptr)
+			if (info == nullptr || userInfo == nullptr)
 				return;
 
 			const J_GUI_EXTRA_FUNCTION_TYPE type = info->GetExtraFunctionType();
-			isExtraFunctionUser = true;
-			switch (type)
+			if (extraUserInfo[(int)type] == nullptr)
 			{
-			case JinEngine::Core::J_GUI_EXTRA_FUNCTION_TYPE::TABLE:
-			{
-				if (extraUserInfo[(int)type] == nullptr)
-					extraUserInfo[(int)type] = std::move(userInfo);
-				break;
-			}
-			case JinEngine::Core::J_GUI_EXTRA_FUNCTION_TYPE::CONDITION:
-			{
-				if (extraUserInfo[(int)type] == nullptr)
-					extraUserInfo[(int)type] = std::move(userInfo);
-				break;
-			}
-			default:
-				break;
+				extraUserInfo[(int)type] = std::move(userInfo);
+				extraUserInfo[(int)type]->GetExtraFunctionInfo()->NotifyAddMember(extraUserInfo[(int)type].Get());
 			}
 		}
 		bool JGuiWidgetInfo::IsExtraFunctionUser()const noexcept
 		{
 			return isExtraFunctionUser;
+		}
+		bool JGuiWidgetInfo::IsExtraFunctionUser(const J_GUI_EXTRA_FUNCTION_TYPE type)const noexcept
+		{
+			return extraUserInfo[(int)type] != nullptr;
 		}
 		void JGuiWidgetInfo::TryReSettingExtraUserInfo()
 		{
@@ -230,7 +262,7 @@ namespace JinEngine
 
 				JUserPtr<JGuiExtraFunctionInfo> info = invalidExtraUserInfo[i]->GetExtraFunctionInfo();
 				if (info != nullptr)
-					SetExtraFunctionUserInfo(info, std::move(invalidExtraUserInfo[i])); 
+					SetExtraFunctionUserInfo(info, std::move(invalidExtraUserInfo[i]));
 			}
 			invalidExtraUserInfo.clear();
 		}
@@ -243,9 +275,9 @@ namespace JinEngine
 			: JGuiWidgetInfo(),
 			isEnterToReturn(isEnterToReturn),
 			fixedParam(fixedParam)
-		{} 
+		{}
 		J_GUI_WIDGET_TYPE JGuiInputInfo::GetSupportWidgetType()const noexcept
-		{ 
+		{
 			return J_GUI_WIDGET_TYPE::INPUT;
 		}
 		J_PARAMETER_TYPE JGuiInputInfo::GetFixedParameter()const noexcept
@@ -376,7 +408,7 @@ namespace JinEngine
 		}
 		std::vector<JCommandToken> JGuiEnumComboBoxInfo::CreateToken(std::string displayCommand)
 		{
-			return JSimpleCompiler::Scan(displayCommand);
+			return displayCommand.empty() ? std::vector<JCommandToken> {} : JSimpleCompiler::Scan(displayCommand);
 		}
 
 		JGuiListInfo::JGuiListInfo(const J_GUI_LIST_TYPE listType, const bool canDisplayElementGui, CreateElementPtr createElementPtr)

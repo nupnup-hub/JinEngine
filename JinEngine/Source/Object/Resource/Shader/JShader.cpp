@@ -21,47 +21,43 @@ namespace JinEngine
 	namespace
 	{
 //Graphic Shader Macro Symbol  
-#define TEXTURE_2D_COUNT_SYMBOL "TEXTURE_2D_COUNT"
-#define TEXTURE_CUBE_COUNT_SYMBOL "CUBE_MAP_COUNT"
-#define SHADOW_MAP_COUNT_SYMBOL "SHADOW_MAP_COUNT"
-#define SHADOW_MAP_ARRAY_COUNT_SYMBOL "SHADOW_MAP_ARRAY_COUNT"
-#define SHADOW_MAP_CUBE_COUNT_SYMBOL "SHADOW_MAP_CUBE_COUNT"
+#define TEXTURE_2D_COUNT_SYMBOL L"TEXTURE_2D_COUNT"
+#define TEXTURE_CUBE_COUNT_SYMBOL L"CUBE_MAP_COUNT"
+#define SHADOW_MAP_COUNT_SYMBOL L"SHADOW_MAP_COUNT"
+#define SHADOW_MAP_ARRAY_COUNT_SYMBOL L"SHADOW_MAP_ARRAY_COUNT"
+#define SHADOW_MAP_CUBE_COUNT_SYMBOL L"SHADOW_MAP_CUBE_COUNT"
+		 
+#define USE_DIRECTIONAL_LIGHT_PCF L"USE_DIRECTIONAL_LIGHT_PCF"
+#define USE_DIRECTIONAL_LIGHT_PCSS L"USE_DIRECTIONAL_LIGHT_PCSS"  
 
-#define PCM_NORMAL_QUALITY_COUNT 16
-#define PCM_HIGH_QUALITY_COUNT 32
+#define USE_POINT_LIGHT_PCF L"USE_POINT_LIGHT_PCF"   
+#define USE_POINT_LIGHT_PCSS L"USE_POINT_LIGHT_PCSS"   
 
-#define USE_DIRECTIONAL_LIGHT_PCM "USE_DIRECTIONAL_LIGHT_PCM"
-#define USE_DIRECTIONAL_LIGHT_PCSS "USE_DIRECTIONAL_LIGHT_PCSS" 
-#define USE_DIRECTIONAL_LIGHT_PCM_16_SAMPLE "USE_DIRECTIONAL_LIGHT_PCM_16_SAMPLE" 
-#define USE_DIRECTIONAL_LIGHT_PCM_32_SAMPLE "USE_DIRECTIONAL_LIGHT_PCM_32_SAMPLE" 
+#define USE_SPOT_LIGHT_PCF L"USE_SPOT_LIGHT_PCF"    
+#define USE_SPOT_LIGHT_PCSS L"USE_SPOT_LIGHT_PCSS"   
 
-#define USE_POINT_LIGHT_PCM "USE_POINT_LIGHT_PCM"   
-#define USE_POINT_LIGHT_PCSS "USE_POINT_LIGHT_PCSS"  
-#define USE_POINT_LIGHT_PCM_16_SAMPLE "USE_POINT_LIGHT_PCM_16_SAMPLE"
-#define USE_POINT_LIGHT_PCM_32_SAMPLE "USE_POINT_LIGHT_PCM_32_SAMPLE"
+#define USE_PCF_16_SAMPLE L"USE_PCF_16_SAMPLE" 
+#define USE_PCF_32_SAMPLE L"USE_PCF_32_SAMPLE" 
 
-#define USE_SPOT_LIGHT_PCM "USE_SPOT_LIGHT_PCM"    
-#define USE_SPOT_LIGHT_PCSS "USE_SPOT_LIGHT_PCSS"   
-#define USE_SPOT_LIGHT_PCM_16_SAMPLE "USE_SPOT_LIGHT_PCM_16_SAMPLE" 
-#define USE_SPOT_LIGHT_PCM_32_SAMPLE "USE_SPOT_LIGHT_PCM_32_SAMPLE" 
+#define USE_BRDF_SMITH_MASKING L"USE_BRDF_SMITH_MASKING"  
+#define USE_BRDF_TORRANCE_MASKING L"USE_BRDF_TORRANCE_MASKING"  
 
-#define USE_BRDF_SMITH_MASKING "USE_BRDF_SMITH_MASKING"  
-#define USE_BRDF_TORRANCE_MASKING "USE_BRDF_TORRANCE_MASKING"  
+#define USE_BRDF_GGX_NDF L"USE_BRDF_GGX_NDF"  
+#define USE_BRDF_BECKMANN_NDF L"USE_BRDF_BECKMANN_NDF"  
+#define USE_BRDF_BLINN_PHONG_NDF L"USE_BRDF_BLINN_PHONG_NDF"  
+#define USE_BRDF_ISOTROPY_NDF L"USE_BRDF_ISOTROPY_NDF"  
 
-#define USE_BRDF_GGX_NDF "USE_BRDF_GGX_NDF"  
-#define USE_BRDF_BECKMANN_NDF "USE_BRDF_BECKMANN_NDF"  
-#define USE_BRDF_BLINN_PHONG_NDF "USE_BRDF_BLINN_PHONG_NDF"  
-#define USE_BRDF_ISOTROPY_NDF "USE_BRDF_ISOTROPY_NDF"  
-
-#define USE_BRDF_DISNEY_DIFFUSE "USE_BRDF_DISNEY_DIFFUSE"  
-#define USE_BRDF_HAMMON_DIFFUSE "USE_BRDF_HAMMON_DIFFUSE"  
-#define USE_BRDF_SHIRELY_DIFFUSE "USE_BRDF_SHIRELY_DIFFUSE"  
-#define USE_BRDF_LAMBERTIAN_DIFFUSE "USE_BRDF_LAMBERTIAN_DIFFUSE"  
+#define USE_BRDF_DISNEY_DIFFUSE L"USE_BRDF_DISNEY_DIFFUSE"  
+#define USE_BRDF_HAMMON_DIFFUSE L"USE_BRDF_HAMMON_DIFFUSE"  
+#define USE_BRDF_SHIRELY_DIFFUSE L"USE_BRDF_SHIRELY_DIFFUSE"  
+#define USE_BRDF_LAMBERTIAN_DIFFUSE L"USE_BRDF_LAMBERTIAN_DIFFUSE"  
 
 //Compute Shader Macro Symbol ";
-#define THREAD_DIM_X_SYMBOL "DIMX"
-#define THREAD_DIM_Y_SYMBOL "DIMY"
-#define THREAD_DIM_Z_SYMBOL "DIMZ"
+#define THREAD_DIM_X_SYMBOL L"DIMX"
+#define THREAD_DIM_Y_SYMBOL L"DIMY"
+#define THREAD_DIM_Z_SYMBOL L"DIMZ"
+
+//#define USE_SSAO L"USE_SSAO" 
 
 	}
 	namespace
@@ -69,23 +65,23 @@ namespace JinEngine
 		static const std::unordered_map<J_GRAPHIC_SHADER_FUNCTION, const JMacroSet> shaderFuncMacroMap
 		{
 			//{SHADER_FUNCTION_NONE, {"", ""}},
-			{SHADER_FUNCTION_ALBEDO_MAP, {"ALBEDO_MAP", "1"}},
-			{SHADER_FUNCTION_ALBEDO_MAP_ONLY, {"ALBEDO_MAP_ONLY", "2"}},
-			{SHADER_FUNCTION_NORMAL_MAP, {"NORMAL_MAP", "3"}},
-			{SHADER_FUNCTION_HEIGHT_MAP, {"HEIGHT_MAP", "4"}},
-			{SHADER_FUNCTION_ROUGHNESS_MAP,{ "ROUGHNESS_MAP", "5"}},
-			{SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP, {"AMBIENT_OCCLUSION_MAP", "6"}}, 
-			{SHADER_FUNCTION_SHADOW, {"SHADOW", "7"}},
-			{SHADER_FUNCTION_LIGHT, {"LIGHT", "8"}},
-			{SHADER_FUNCTION_SKY, {"SKY", "9"}},
-			{SHADER_FUNCTION_ALPHA_CLIP, {"ALPHA_CLIP", "10"}}, 
-			{SHADER_FUNCTION_DEBUG, {"DEBUG", "11"}}
+			{SHADER_FUNCTION_ALBEDO_MAP, {L"ALBEDO_MAP", L"1"}},
+			{SHADER_FUNCTION_ALBEDO_MAP_ONLY, {L"ALBEDO_MAP_ONLY", L"2"}},
+			{SHADER_FUNCTION_NORMAL_MAP, {L"NORMAL_MAP", L"3"}},
+			{SHADER_FUNCTION_HEIGHT_MAP, {L"HEIGHT_MAP", L"4"}},
+			{SHADER_FUNCTION_ROUGHNESS_MAP,{ L"ROUGHNESS_MAP", L"5"}},
+			{SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP, {L"AMBIENT_OCCLUSION_MAP", L"6"}},
+			{SHADER_FUNCTION_SHADOW, {L"SHADOW", L"7"}},
+			{SHADER_FUNCTION_LIGHT, {L"LIGHT", L"8"}},
+			{SHADER_FUNCTION_SKY, {L"SKY", L"9"}},
+			{SHADER_FUNCTION_ALPHA_CLIP, {L"ALPHA_CLIP", L"10"}},
+			{SHADER_FUNCTION_DEBUG, {L"DEBUG", L"11"}}
 		};
 		//std::unordered_map<J_COMPUTE_SHADER_FUNCTION, std::unique_ptr<JShader::CSInitHelperCallable>> JShader::computeShaderHelperMap;
 		static const std::unordered_map<J_SHADER_VERTEX_LAYOUT, const JMacroSet> vertexLayoutMacroMap
 		{
-			{SHADER_VERTEX_LAYOUT_STATIC, {"STATIC", "1"}},
-			{SHADER_VERTEX_LAYOUT_SKINNED, {"SKINNED", "2"}}
+			{SHADER_VERTEX_LAYOUT_STATIC, {L"STATIC", L"1"}},
+			{SHADER_VERTEX_LAYOUT_SKINNED, {L"SKINNED", L"2"}}
 		};
 	}
 
@@ -262,74 +258,58 @@ namespace JinEngine
 						initHelper.macro[i].push_back(data.second);
 				}
 
-				initHelper.macro[i].push_back({ TEXTURE_2D_COUNT_SYMBOL, std::to_string(info.binding2DTextureCapacity) });
-				initHelper.macro[i].push_back({ TEXTURE_CUBE_COUNT_SYMBOL, std::to_string(info.bindingCubeMapCapacity) });
-				initHelper.macro[i].push_back({ SHADOW_MAP_COUNT_SYMBOL,std::to_string(info.bindingShadowTextureCapacity) });
-				initHelper.macro[i].push_back({ SHADOW_MAP_ARRAY_COUNT_SYMBOL, std::to_string(info.bindingShadowTextureArrayCapacity) });
-				initHelper.macro[i].push_back({ SHADOW_MAP_CUBE_COUNT_SYMBOL,std::to_string(info.bindingShadowTextureCubeCapacity) });
+				initHelper.macro[i].push_back({ TEXTURE_2D_COUNT_SYMBOL, std::to_wstring(info.binding2DTextureCapacity) });
+				initHelper.macro[i].push_back({ TEXTURE_CUBE_COUNT_SYMBOL, std::to_wstring(info.bindingCubeMapCapacity) });
+				initHelper.macro[i].push_back({ SHADOW_MAP_COUNT_SYMBOL,std::to_wstring(info.bindingShadowTextureCapacity) });
+				initHelper.macro[i].push_back({ SHADOW_MAP_ARRAY_COUNT_SYMBOL, std::to_wstring(info.bindingShadowTextureArrayCapacity) });
+				initHelper.macro[i].push_back({ SHADOW_MAP_CUBE_COUNT_SYMBOL,std::to_wstring(info.bindingShadowTextureCubeCapacity) });
 
 				//Shadow
-				if (option.useDirectionalLightPcm)
+				if (option.useHighQualityShadow)
 				{
-					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCM, std::to_string(1) });
-					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCM_16_SAMPLE, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCSS, std::to_wstring(1) });
+					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCF, std::to_wstring(1) });
+					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCF, std::to_wstring(1) });
+					initHelper.macro[i].push_back({ USE_PCF_32_SAMPLE, std::to_wstring(1) });
 				}
-				if (option.useDirectionalLightPcmHighQuality)
+				else if (option.useMiddleQualityShadow)
 				{
-					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCM, std::to_string(1) });
-					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCM_32_SAMPLE, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCF, std::to_wstring(1) });
+					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCF, std::to_wstring(1) });
+					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCF, std::to_wstring(1) });
+					initHelper.macro[i].push_back({ USE_PCF_32_SAMPLE, std::to_wstring(1) });
 				}
-				if (option.useDirectionalLightPcss)
-					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCSS, std::to_string(1) }); 
-
-				if (option.usePointLightPcm)
-				{ 
-					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCM, std::to_string(1) });
-					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCM_16_SAMPLE, std::to_string(1) });
-				}
-				if (option.usePointLightPcmHighQuality)
+				else if (option.useLowQualityShadow)
 				{
-					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCM, std::to_string(1) });
-					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCM_32_SAMPLE, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCF, std::to_wstring(1) });
+					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCF, std::to_wstring(1) });
+					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCF, std::to_wstring(1) });
+					initHelper.macro[i].push_back({ USE_PCF_16_SAMPLE, std::to_wstring(1) });
 				}
-				if (option.usePointLightPcss)
-					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCSS, std::to_string(1) });
-
-				if (option.useSpotLightPcm)
-				{ 
-					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCM, std::to_string(1) });
-					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCM_16_SAMPLE, std::to_string(1) });
-				}
-				if (option.useSpotLightPcmHighQuality)
-				{
-					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCM, std::to_string(1) });
-					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCM_32_SAMPLE, std::to_string(1) });
-				}
-				if (option.useSpotLightPcss)
-					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCSS, std::to_string(1) });
 
 				//BRDF
 				if (option.useSmithMasking)
-					initHelper.macro[i].push_back({ USE_BRDF_SMITH_MASKING, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_BRDF_SMITH_MASKING, std::to_wstring(1) });
 				if (option.useTorranceMaskig)
-					initHelper.macro[i].push_back({ USE_BRDF_TORRANCE_MASKING, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_BRDF_TORRANCE_MASKING, std::to_wstring(1) });
 				if (option.useGGXNDF)
-					initHelper.macro[i].push_back({ USE_BRDF_GGX_NDF, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_BRDF_GGX_NDF, std::to_wstring(1) });
 				if (option.useBeckmannNDF)
-					initHelper.macro[i].push_back({ USE_BRDF_BECKMANN_NDF, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_BRDF_BECKMANN_NDF, std::to_wstring(1) });
 				if (option.useBlinnPhongNDF)
-					initHelper.macro[i].push_back({ USE_BRDF_BLINN_PHONG_NDF, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_BRDF_BLINN_PHONG_NDF, std::to_wstring(1) });
 				if (option.useIsotropy)
-					initHelper.macro[i].push_back({ USE_BRDF_ISOTROPY_NDF, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_BRDF_ISOTROPY_NDF, std::to_wstring(1) });
 				if (option.useDisneyDiffuse)
-					initHelper.macro[i].push_back({ USE_BRDF_DISNEY_DIFFUSE, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_BRDF_DISNEY_DIFFUSE, std::to_wstring(1) });
 				if (option.useHammonDiffuse)
-					initHelper.macro[i].push_back({ USE_BRDF_HAMMON_DIFFUSE, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_BRDF_HAMMON_DIFFUSE, std::to_wstring(1) });
 				if (option.useShirleyDiffuse)
-					initHelper.macro[i].push_back({ USE_BRDF_SHIRELY_DIFFUSE, std::to_string(1) });
+					initHelper.macro[i].push_back({ USE_BRDF_SHIRELY_DIFFUSE, std::to_wstring(1) });
 				if (option.useLambertianDiffuse)
-					initHelper.macro[i].push_back({ USE_BRDF_LAMBERTIAN_DIFFUSE, std::to_string(1) });
-
+					initHelper.macro[i].push_back({ USE_BRDF_LAMBERTIAN_DIFFUSE, std::to_wstring(1) });
+				//if(option.useSsao  || option.useHbao)
+				//	initHelper.macro[i].push_back({ USE_SSAO, std::to_wstring(1) });
 				//initHelper.macro[i].push_back(shaderFuncMacroMap.find(SHADER_FUNCTION_NONE)->second);
 			}
 			initHelper.gFunctionFlag = gFunctionFlag;
@@ -393,9 +373,9 @@ namespace JinEngine
 		}
 		static void StuffComputeShaderCommonMacro(_Out_ JComputeShaderInitData& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 		{ 
-			initHelper.macro.push_back({ THREAD_DIM_X_SYMBOL, std::to_string(initHelper.dispatchInfo.threadDim.x) });
-			initHelper.macro.push_back({ THREAD_DIM_Y_SYMBOL, std::to_string(initHelper.dispatchInfo.threadDim.y) });
-			initHelper.macro.push_back({ THREAD_DIM_Z_SYMBOL, std::to_string(initHelper.dispatchInfo.threadDim.z) });
+			initHelper.macro.push_back({ THREAD_DIM_X_SYMBOL, std::to_wstring(initHelper.dispatchInfo.threadDim.x) });
+			initHelper.macro.push_back({ THREAD_DIM_Y_SYMBOL, std::to_wstring(initHelper.dispatchInfo.threadDim.y) });
+			initHelper.macro.push_back({ THREAD_DIM_Z_SYMBOL, std::to_wstring(initHelper.dispatchInfo.threadDim.z) });
 		}
 	public:
 		void ClearShaderData()

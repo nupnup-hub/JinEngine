@@ -88,6 +88,23 @@ namespace JinEngine
 		{
 			return JCUtil::StrToWstr(GetName(value));
 		}
+		template<typename T, std::enable_if_t<std::is_enum_v<T>, int> = 0>
+		static std::string GetName(T value, const bool eraseUnderbar, const bool toLowercase)
+		{
+			JEnumInfo* jEnumInfo = _JReflectionInfo::Instance().GetEnumInfo(typeid(RemoveAll_T<T>).name());
+			if (jEnumInfo != nullptr)
+			{
+				std::string str = jEnumInfo->Name();
+				if (eraseUnderbar)
+					str = JCUtil::EraseChar(str, '_');
+				if (toLowercase)
+					str = JCUtil::ToLowercase(str, 1);
+				return str;
+			}
+			else
+				return "UnKnown";
+		}
+
 
 		static JTypeBase* GetRawPtr(const size_t typeGuid, const size_t objGuid)
 		{

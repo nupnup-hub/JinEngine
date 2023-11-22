@@ -5,7 +5,7 @@
 
 namespace JinEngine
 {
-	REGISTER_ENUM_CLASS(J_LIGHT_TYPE, short, DIRECTIONAL = 0, POINT, SPOT)
+	REGISTER_ENUM_CLASS(J_LIGHT_TYPE, short, DIRECTIONAL = 0, POINT, SPOT, RECT)
 
 	//affect shadow map texture size
 	REGISTER_ENUM_CLASS(J_SHADOW_RESOLUTION, int, LOWEST = 256,
@@ -41,6 +41,8 @@ namespace JinEngine
 				return J_SHADOW_MAP_TYPE::CUBE;
 			case JinEngine::J_LIGHT_TYPE::SPOT:
 				return J_SHADOW_MAP_TYPE::NORMAL;
+			case JinEngine::J_LIGHT_TYPE::RECT:
+				return J_SHADOW_MAP_TYPE::NORMAL;
 			default:
 				break;
 			}
@@ -56,6 +58,8 @@ namespace JinEngine
 				return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT;
 			case JinEngine::J_LIGHT_TYPE::SPOT:
 				return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT;
+			case JinEngine::J_LIGHT_TYPE::RECT:
+				return Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT;
 			default:
 				break;
 			}

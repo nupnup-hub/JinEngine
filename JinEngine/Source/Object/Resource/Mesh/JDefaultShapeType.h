@@ -20,6 +20,7 @@ namespace JinEngine
 		CIRCLE,
 		SCALE_ARROW,
 		LINE,
+		BOUNDING_CONE_LINE,
 		DRAGON,
 		COUNT,
 	};
@@ -61,7 +62,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_SHAPE::DRAGON:
 				return false;
 			default:
-				return L"Error";
+				return false;
 			}
 		}
 		static bool IsExternalFile(const J_DEFAULT_SHAPE type)
@@ -107,6 +108,8 @@ namespace JinEngine
 				return L"ScaleArrow";
 			case JinEngine::J_DEFAULT_SHAPE::LINE:
 				return L"Line";
+			case JinEngine::J_DEFAULT_SHAPE::BOUNDING_CONE_LINE:
+				return L"BoundingCone_L";
 			case JinEngine::J_DEFAULT_SHAPE::DRAGON:
 				return L"_Dragon.fbx";
 			default:

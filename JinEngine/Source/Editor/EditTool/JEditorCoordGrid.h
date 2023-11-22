@@ -39,8 +39,8 @@ namespace JinEngine
 		private: 
 			JUserPtr<JGameObject> coordGrid;
 		private:
-			int lineCount = 128;	//ex) lineCount = 2 => create row line 2 and column line 2
-			int lineScale = 128;
+			int lineCount = 256;	//ex) lineCount = 2 => create row line 2 and column line 2
+			int lineScale = 256;
 			int lineStep = 4;
 		public:
 			void MakeCoordGrid(const JUserPtr<JGameObject>& parent);

@@ -27,11 +27,11 @@ namespace JinEngine
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		public:
-			void DrawCamDepthDebug(const JGraphicDepthMapDebugObjectSet* debugSet, const JDrawHelper& helper)final;
-			void DrawLitDepthDebug(const JGraphicDepthMapDebugObjectSet* debugSet, const JDrawHelper& helper)final;
+			void DrawCamDepthDebug(const JGraphicDepthMapDebugTaskSet* debugSet, const JDrawHelper& helper)final;
+			void DrawLitDepthDebug(const JGraphicDepthMapDebugTaskSet* debugSet, const JDrawHelper& helper)final;
 		public:
-			void DrawLinearDepthDebug(const JGraphicDepthMapDebugHandleSet* debugSet)final;
-			void DrawNonLinearDepthDebug(const JGraphicDepthMapDebugHandleSet* debugSet)final;
+			void DrawLinearDepthDebug(const JGraphicDepthMapDebugTaskSet* debugSet)final;
+			void DrawNonLinearDepthDebug(const JGraphicDepthMapDebugTaskSet* debugSet)final;
 		private:
 			void DrawLinearDepthDebug(ID3D12GraphicsCommandList* commandList,
 				const CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,

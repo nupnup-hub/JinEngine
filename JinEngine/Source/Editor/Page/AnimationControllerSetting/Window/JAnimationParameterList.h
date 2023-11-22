@@ -1,4 +1,5 @@
 #pragma once
+#include"JEditorAniContInterface.h"
 #include"../../JEditorWindow.h"   
 #include"../../../../Core/FSM/JFSMparameterValueType.h"
 
@@ -17,7 +18,7 @@ namespace JinEngine
 
 		class JAnimationParameterListCreationFunctor;
 		class JAnimationParameterListSettingFunctor;
-		class JAnimationParameterList final : public JEditorWindow
+		class JAnimationParameterList final : public JEditorWindow, public JEditorAniContInterface
 		{
 		private:
 			JUserPtr<JAnimationController> aniCont;
@@ -42,7 +43,8 @@ namespace JinEngine
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
 		public:
-			void Initialize(JUserPtr<JAnimationController> newAniCont)noexcept;
+			void SetAnimationController(const JUserPtr<JAnimationController>& newAniCont)final;
+		public: 
 			void UpdateWindow()final;
 		private:
 			void BuildParameterList();

@@ -1,4 +1,3 @@
-
 /*
 * Convert Ndc depth to linear depth (Perpective)
 */
