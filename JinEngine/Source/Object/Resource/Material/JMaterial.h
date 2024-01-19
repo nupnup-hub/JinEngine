@@ -1,6 +1,6 @@
 #pragma once  
 #include"../JResourceObject.h"   
-#include"../Shader/JShaderFunctionEnum.h"
+#include"../Shader/JShaderEnum.h"
 #include"../Shader/JShaderCondition.h" 
 #include"../../../Graphic/Frameresource/JFrameUpdateUserAccess.h"
 #include"../../../Core/Math/JMatrix.h"
@@ -52,6 +52,7 @@ namespace JinEngine
 		JUserPtr<JTexture> GetAlbedoMap() const noexcept;
 		JUserPtr<JTexture> GetNormalMap() const noexcept;
 		JUserPtr<JTexture> GetHeightMap() const noexcept;
+		JUserPtr<JTexture> GetMetallicMap() const noexcept;
 		JUserPtr<JTexture> GetRoughnessMap() const noexcept;
 		JUserPtr<JTexture> GetAmbientOcclusionMap() const noexcept;
 		JShaderCondition GetShaderCondition()const noexcept;
@@ -65,6 +66,7 @@ namespace JinEngine
 		void SetAlbedoMap(JUserPtr<JTexture> texture) noexcept;
 		void SetNormalMap(JUserPtr<JTexture>texture) noexcept;
 		void SetHeightMap(JUserPtr<JTexture> texture) noexcept;
+		void SetMetallicMap(JUserPtr<JTexture> texture) noexcept;
 		void SetRoughnessMap(JUserPtr<JTexture> texture) noexcept;
 		void SetAmbientOcclusionMap(JUserPtr<JTexture> texture) noexcept;
 		void SetShadow(const bool value)noexcept;

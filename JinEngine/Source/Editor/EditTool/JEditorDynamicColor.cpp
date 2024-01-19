@@ -83,12 +83,12 @@ namespace JinEngine::Editor
 	}
 	bool JEditorDynamicSpotColor::PushPoint(JVector2F scaledPoint)
 	{
-		point.push_back(ClampVec2(scaledPoint, -1.0f, 1.0f));
+		point.push_back(JVector2F::Clamp(scaledPoint, -1.0f, 1.0f));
 		return true;
 	}
 	bool JEditorDynamicSpotColor::PushPoint(JVector2F unScaledPoint, const JVector2F& maxPoint)
 	{
-		point.push_back(ClampVec2((unScaledPoint / maxPoint) * 2 - JVector2F(1.0f, 1.0f), -1.0f, 1.0f));
+		point.push_back(JVector2F::Clamp((unScaledPoint / maxPoint) * 2 - JVector2F(1.0f, 1.0f), -1.0f, 1.0f));
 		return true;
 	}
 	bool JEditorDynamicSpotColor::PopPoint()

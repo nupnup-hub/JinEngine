@@ -120,7 +120,7 @@ namespace JinEngine::Editor
 		return JGui::IsMouseInRect(canvasMin, canvasMax - canvasMin);
 	}
 	bool JEditorMouseDragBox::CanDeActivate()const noexcept
-	{
+	{ 
 		return !JGui::IsMouseDragging(Core::J_MOUSE_BUTTON::LEFT) || 
 			uData.stWndPos != JGui::GetWindowPos() ||
 			uData.stWndSize != JGui::GetWindowSize();

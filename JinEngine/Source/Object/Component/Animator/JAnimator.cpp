@@ -43,9 +43,9 @@ namespace JinEngine
 	public:
 		JWeakPtr<JAnimator> thisPointer;
 	public:
-		REGISTER_PROPERTY_EX(skeletonAsset, GetSkeletonAsset, SetSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
+		REGISTER_PROPERTY_EX(skeletonAsset, GetSkeletonAsset, SetSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, false))
 		JUserPtr<JSkeletonAsset> skeletonAsset;
-		REGISTER_PROPERTY_EX(animationController, GetAnimatorController, SetAnimatorController, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
+		REGISTER_PROPERTY_EX(animationController, GetAnimatorController, SetAnimatorController, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, false))
 		JUserPtr<JAnimationController> animationController;
 		Core::JGameTimer* userTimer = nullptr;
 		std::unique_ptr<JAnimationUpdateData> animationUpdateData;

@@ -18,7 +18,7 @@ namespace JinEngine::Editor
 		{
 			J_GUI_WINDOW_FLAG_ flag = J_GUI_WINDOW_FLAG_NO_TITLE_BAR | J_GUI_WINDOW_FLAG_NO_SAVE | J_GUI_WINDOW_FLAG_NO_DOCKING;
 			flag = Core::AddSQValue(flag, dataSet.customWindowFlag);
-			if (dataSet.winodwSize != JVector2F::Zero())
+			if (!(dataSet.winodwSize == JVector2F::Zero()))
 				JGui::SetNextWindowSize(dataSet.winodwSize);
 			JGui::SetCursorPosX(0);
 			JGui::BeginWindow(("##JEditorIdentifierList" + dataSet.unqLabel), 0, flag);

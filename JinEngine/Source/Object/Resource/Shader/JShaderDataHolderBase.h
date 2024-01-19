@@ -1,7 +1,7 @@
 #pragma once
 #include"../../../Core/JCoreEssential.h"
 #include"../../../Core/Math/JVector.h"
-#include"JShaderFunctionEnum.h"
+#include"JShaderEnum.h"
 #include"JShaderCondition.h"
 #include<string>
 namespace JinEngine
@@ -57,16 +57,26 @@ namespace JinEngine
 	struct JGraphicShaderInitData
 	{
 	public:
-		std::vector<JMacroSet> macro[SHADER_VERTEX_COUNT]; 
+		struct MacroOptipn
+		{
+		public:
+			bool allowLightCulling = true;
+		};
+	public:
+		std::vector<JMacroSet> macro[(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
+		J_GRAPHIC_SHADER_TYPE shaderType;
 		J_GRAPHIC_SHADER_FUNCTION gFunctionFlag;
-		J_SHADER_VERTEX_LAYOUT layoutType;
+		J_GRAPHIC_SHADER_VERTEX_LAYOUT layoutType;
+		J_GRAPHIC_RENDERING_PROCESS processType;
 		JShaderCondition condition; 
+	public:
+		MacroOptipn macroOption;
 	};
 	struct JComputeShaderInitData
 	{
 	public:
 		std::vector<JMacroSet> macro; 
-		J_COMPUTE_SHADER_FUNCTION cFunctionFlag;
+		J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
 		JComputeShaderDataHolderBase::DispatchInfo dispatchInfo;
 	};
 }

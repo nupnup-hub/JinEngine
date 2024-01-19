@@ -32,6 +32,16 @@ namespace JinEngine
 		static JMaterialPrivate mPrivate;
 	}
 			
+	enum class MATERIAL_TEXTURE
+	{
+		ALBEDO,
+		NORMAL,
+		HEIGHT,
+		METALLIC,
+		ROUGHNESS,
+		AMBIENT,
+		COUNT
+	};
 	class JMaterial::JMaterialImpl : public Core::JTypeImplBase,
 		public MaterialFrameUpdate,
 		public JResourceObjectUserInterface
@@ -49,19 +59,21 @@ namespace JinEngine
 		REGISTER_PROPERTY_EX(roughness, GetRoughness, SetRoughness, GUI_SLIDER(0.0f, 1.0f))
 		float roughness = 0.75f;
 		REGISTER_PROPERTY_EX(albedoColor, GetAlbedoColor, SetAlbedoColor, GUI_COLOR_PICKER(true))
-		JVector4<float> albedoColor = { 0.75f, 0.75f, 0.75f, 0.65f };
+		JVector4<float> albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		JMatrix4x4 matTransform = JMatrix4x4::Identity();
 	public:
 		//Texture
-		REGISTER_PROPERTY_EX(albedoMap, GetAlbedoMap, SetAlbedoMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
+		REGISTER_PROPERTY_EX(albedoMap, GetAlbedoMap, SetAlbedoMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
 		JUserPtr<JTexture> albedoMap;
-		REGISTER_PROPERTY_EX(normalMap, GetNormalMap, SetNormalMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
+		REGISTER_PROPERTY_EX(normalMap, GetNormalMap, SetNormalMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
 		JUserPtr<JTexture> normalMap;
-		REGISTER_PROPERTY_EX(heightMap, GetHeightMap, SetHeightMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
+		REGISTER_PROPERTY_EX(heightMap, GetHeightMap, SetHeightMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
 		JUserPtr<JTexture> heightMap;
-		REGISTER_PROPERTY_EX(roughnessMap, GetRoughnessMap, SetRoughnessMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
+		REGISTER_PROPERTY_EX(metallicMap, GetMetallicMap, SetMetallicMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
+		JUserPtr<JTexture>metallicMap;
+		REGISTER_PROPERTY_EX(roughnessMap, GetRoughnessMap, SetRoughnessMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
 		JUserPtr<JTexture>roughnessMap;
-		REGISTER_PROPERTY_EX(ambientOcclusionMap, GetAmbientOcclusionMap, SetAmbientOcclusionMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
+		REGISTER_PROPERTY_EX(ambientOcclusionMap, GetAmbientOcclusionMap, SetAmbientOcclusionMap, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
 		JUserPtr<JTexture> ambientOcclusionMap;
 	public:
 		//Shader function option
@@ -115,6 +127,10 @@ namespace JinEngine
 		{
 			return heightMap;
 		}
+		JUserPtr<JTexture> GetMetallicMap() const noexcept
+		{
+			return metallicMap;
+		}
 		JUserPtr<JTexture> GetRoughnessMap() const noexcept
 		{
 			return roughnessMap;
@@ -129,6 +145,7 @@ namespace JinEngine
 			if (albedoMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_ALBEDO_MAP);
 			if (normalMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_NORMAL_MAP);
 			if (heightMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_HEIGHT_MAP);
+			if (metallicMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_METALLIC_MAP);
 			if (roughnessMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_ROUGHNESS_MAP);
 			if (ambientOcclusionMap != nullptr) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP);
 			if (shadow) gFunction = Core::AddSQValueEnum(gFunction, SHADER_FUNCTION_SHADOW);
@@ -175,6 +192,10 @@ namespace JinEngine
 		void SetHeightMap(JUserPtr<JTexture> newTexture) noexcept
 		{
 			SetTexture(heightMap, newTexture, SHADER_FUNCTION_HEIGHT_MAP);
+		}
+		void SetMetallicMap(JUserPtr<JTexture> newTexture) noexcept
+		{
+			SetTexture(metallicMap, newTexture, SHADER_FUNCTION_METALLIC_MAP);
 		}
 		void SetRoughnessMap(JUserPtr<JTexture> newTexture) noexcept
 		{
@@ -376,6 +397,10 @@ namespace JinEngine
 		{
 			return heightMap.IsValid();
 		}
+		bool HasMetallicMapTexture() const noexcept
+		{
+			return metallicMap.IsValid();
+		}
 		bool HasRoughnessMapTexture() const noexcept
 		{
 			return roughnessMap.IsValid();
@@ -397,15 +422,17 @@ namespace JinEngine
 		{
 			const size_t tarGuid = texture->GetGuid();
 			if (HasAlbedoMapTexture() && albedoMap->GetGuid() == tarGuid)
-				SetAlbedoMap(JUserPtr< JTexture>{});
+				SetAlbedoMap(JUserPtr<JTexture>{});
 			if (HasNormalMapTexture() && normalMap->GetGuid() == tarGuid)
-				SetNormalMap(JUserPtr< JTexture>{});
+				SetNormalMap(JUserPtr<JTexture>{});
 			if (HasHeightMapTexture() && heightMap->GetGuid() == tarGuid)
-				SetHeightMap(JUserPtr< JTexture>{});
+				SetHeightMap(JUserPtr<JTexture>{});
+			if (HasMetallicMapTexture() && metallicMap->GetGuid() == tarGuid)
+				SetMetallicMap(JUserPtr<JTexture>{});
 			if (HasRoughnessMapTexture() && roughnessMap->GetGuid() == tarGuid)
-				SetRoughnessMap(JUserPtr< JTexture>{});
+				SetRoughnessMap(JUserPtr<JTexture>{});
 			if (HasAmbientOcclusionMapTexture() && ambientOcclusionMap->GetGuid() == tarGuid)
-				SetAmbientOcclusionMap(JUserPtr< JTexture>{});
+				SetAmbientOcclusionMap(JUserPtr<JTexture>{});
 		}
 	public:
 		void OnResourceRef()
@@ -413,6 +440,7 @@ namespace JinEngine
 			CallOnResourceReference(albedoMap.Get());
 			CallOnResourceReference(normalMap.Get());
 			CallOnResourceReference(heightMap.Get());
+			CallOnResourceReference(metallicMap.Get());
 			CallOnResourceReference(roughnessMap.Get());
 			CallOnResourceReference(ambientOcclusionMap.Get());
 		}
@@ -421,6 +449,7 @@ namespace JinEngine
 			CallOffResourceReference(albedoMap.Get());
 			CallOffResourceReference(normalMap.Get());
 			CallOffResourceReference(heightMap.Get());
+			CallOffResourceReference(metallicMap.Get());
 			CallOffResourceReference(roughnessMap.Get());
 			CallOffResourceReference(ambientOcclusionMap.Get());
 		}
@@ -432,19 +461,10 @@ namespace JinEngine
 
 			if (eventType == J_RESOURCE_EVENT_TYPE::ERASE_RESOURCE)
 			{
-				const size_t objGuid = jRobj->GetGuid();
-				if (albedoMap.IsValid() && albedoMap->GetGuid() == objGuid)
-					SetAlbedoMap(JUserPtr<JTexture>{});
-				if (normalMap.IsValid() && normalMap->GetGuid() == objGuid)
-					SetNormalMap(JUserPtr<JTexture>{});
-				if (heightMap.IsValid() && heightMap->GetGuid() == objGuid)
-					SetHeightMap(JUserPtr<JTexture>{});
-				if (roughnessMap.IsValid() && roughnessMap->GetGuid() == objGuid)
-					SetRoughnessMap(JUserPtr<JTexture>{});
-				if (ambientOcclusionMap.IsValid() && ambientOcclusionMap->GetGuid() == objGuid)
-					SetAmbientOcclusionMap(JUserPtr<JTexture>{});
-
-				if (shader != nullptr && shader->GetGuid() == objGuid)
+				const size_t objGuid = jRobj->GetGuid(); 
+				if (jRobj->GetResourceType() == J_RESOURCE_TYPE::TEXTURE)
+					PopTexture(static_cast<JTexture*>(jRobj));
+				else if (shader != nullptr && shader->GetGuid() == objGuid)
 					SetShader(nullptr);
 			}
 			else if (eventType == J_RESOURCE_EVENT_TYPE::UPDATE_RESOURCE && 
@@ -488,6 +508,8 @@ namespace JinEngine
 				constant.normalMapIndex = normalMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
 			if (heightMap.IsValid())
 				constant.heightMapIndex = heightMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
+			if (metallicMap.IsValid())
+				constant.metallicMapIndex = metallicMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
 			if (roughnessMap.IsValid())
 				constant.roughnessMapIndex = roughnessMap->GraphicResourceUserInterface().GetFirstResourceArrayIndex();
 			if (ambientOcclusionMap.IsValid())
@@ -535,6 +557,7 @@ namespace JinEngine
 			JUserPtr<JTexture> sAlbedoMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "AlbedoMap");
 			JUserPtr<JTexture> sNormalMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "NormalMap");
 			JUserPtr<JTexture> sHeightMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "HeightMap");
+			JUserPtr<JTexture> sMetallicMap =  JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "MetallicMap");
 			JUserPtr<JTexture> sRoughnessMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "RoughnessMap");
 			JUserPtr<JTexture> sAmbientOcclusionMap = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "AmbientOcclusionMap");
 			tool.Close();
@@ -559,6 +582,7 @@ namespace JinEngine
 			SetAlbedoMap(sAlbedoMap);
 			SetNormalMap(sNormalMap);
 			SetHeightMap(sHeightMap);
+			SetMetallicMap(sMetallicMap);
 			SetRoughnessMap(sRoughnessMap);
 			SetAmbientOcclusionMap(sAmbientOcclusionMap);
 			canUpdateShader = true;
@@ -592,6 +616,7 @@ namespace JinEngine
 			JObjectFileIOHelper::_StoreHasIden(tool, albedoMap.Get(), "AlbedoMap");
 			JObjectFileIOHelper::_StoreHasIden(tool, normalMap.Get(), "NormalMap");
 			JObjectFileIOHelper::_StoreHasIden(tool, heightMap.Get(), "HeightMap");
+			JObjectFileIOHelper::_StoreHasIden(tool, metallicMap.Get(), "MetallicMap");
 			JObjectFileIOHelper::_StoreHasIden(tool, roughnessMap.Get(), "RoughnessMap");
 			JObjectFileIOHelper::_StoreHasIden(tool, ambientOcclusionMap.Get(), "AmbientOcclusionMap");
 
@@ -729,6 +754,10 @@ namespace JinEngine
 	{
 		return impl->GetHeightMap();
 	}
+	JUserPtr<JTexture> JMaterial::GetMetallicMap() const noexcept
+	{
+		return impl->GetMetallicMap();
+	}
 	JUserPtr<JTexture> JMaterial::GetRoughnessMap() const noexcept
 	{
 		return impl->GetRoughnessMap();
@@ -776,6 +805,10 @@ namespace JinEngine
 	void JMaterial::SetHeightMap(JUserPtr<JTexture> texture) noexcept
 	{
 		impl->SetHeightMap(texture);
+	}
+	void JMaterial::SetMetallicMap(JUserPtr<JTexture> texture) noexcept
+	{
+		impl->SetMetallicMap(texture);
 	}
 	void JMaterial::SetRoughnessMap(JUserPtr<JTexture> texture) noexcept
 	{

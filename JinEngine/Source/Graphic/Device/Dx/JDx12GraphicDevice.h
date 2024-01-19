@@ -78,7 +78,7 @@ namespace JinEngine
 			bool IsPublicCommandStared()const noexcept final;
 			bool CanStartPublicCommand()const noexcept final;
 		public:
-			void CalViewportAndRect(const JVector2F rtSize, _Out_ D3D12_VIEWPORT& viweport, _Out_ D3D12_RECT& rect)const noexcept;
+			void CalViewportAndRect(const JVector2F rtSize, const bool restrictRange, _Out_ D3D12_VIEWPORT& viweport, _Out_ D3D12_RECT& rect)const noexcept;
 		public: 
 			void Present();
 			void Signal();

@@ -112,7 +112,7 @@ namespace JinEngine
 				}
 				JGui::EndTabBar();
 			}
-
+			 
 			if(tabBarHelper->IsOpenNewTab())
 				selectedLogIndex = invalidIndex;
 			  
@@ -148,7 +148,7 @@ namespace JinEngine
 				std::sort(logVec.begin(), logVec.end(), logCompareLam);
 
 				//logVec 갯수가 변경됬을경우(clear, pop)
-				if (logVec.size() >= selectedLogIndex)
+				if (logVec.size() <= selectedLogIndex)
 					selectedLogIndex = invalidIndex;
 
 				JGui::Separator();
@@ -168,6 +168,14 @@ namespace JinEngine
 					if (selectedLogIndex != invalidIndex)
 						seletableStr = logVec[selectedLogIndex]->GetLog() + "\n time: " + logVec[selectedLogIndex]->GetTime().ToString();
 					JGui::Separator();
+				}
+				JGui::Separator();
+				if (selectedLogIndex != invalidIndex)
+				{
+					JGui::PushTreeNodeColorSet(true, true, true);
+					textAlign.Update(seletableStr, titleSize, false);
+					JGui::Selectable(textAlign.LeftAligned() + "##JLogViewerSelected");
+					JGui::PopTreeNodeColorSet(true, true);
 				}
 				JGui::EndListBox();
 			}
@@ -192,8 +200,6 @@ namespace JinEngine
 				JGui::PopButtonColorDeActSet();
 
 			//JGui::SetCursorPosY(nowCursorPos.y + restSize.y * 0.75f);
-			if (selectedLogIndex != invalidIndex)
-				JGui::Text(seletableStr);
 			JGui::SetCurrentWindowFontScale(1);
 			JGui::PopColor();
 		}

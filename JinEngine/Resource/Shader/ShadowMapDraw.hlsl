@@ -96,7 +96,7 @@ struct VertexOut
 struct GsOut
 {
 	float4 posH		: SV_POSITION;
-	uint rTIndex	: SV_RenderTargetArrayIndex;
+	uint rtIndex	: SV_RenderTargetArrayIndex;
 };
 #if defined(STATIC)
 VertexOut VS(VertexIn vin)
@@ -130,7 +130,7 @@ void GS(triangle VertexOut input[3], inout TriangleStream<GsOut> output)
 	for (int i = 0; i < ARRAY_COUNT; ++i)
 	{
 		GsOut gsOut;
-		gsOut.rTIndex = i;
+		gsOut.rtIndex = i;
 		for (int j = 0; j < 3; j++)
 		{
 			//can add bias
@@ -177,7 +177,7 @@ struct VertexOut
 struct GsOut
 {
 	float4 posH		: SV_POSITION;
-	uint rTIndex	: SV_RenderTargetArrayIndex;
+	uint rtIndex	: SV_RenderTargetArrayIndex;
 };
 #if defined(STATIC)
 VertexOut VS(VertexIn vin)
@@ -211,7 +211,7 @@ void GS(triangle VertexOut input[3], inout TriangleStream<GsOut> output)
 	for (int i = 0; i < CUBE_MAP_FACE; ++i)
 	{
 		GsOut gsOut;
-		gsOut.rTIndex = i;
+		gsOut.rtIndex = i;
 		for (uint j = 0; j < 3; j++)
 		{
 			gsOut.posH = mul(input[j].posW, shadowCubeT[i]);

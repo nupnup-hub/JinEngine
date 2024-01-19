@@ -9,6 +9,7 @@
 #include"../../Resource/Scene/JScenePrivate.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/File/JFileConstant.h" 
+#include"../../../Core/Func/JFuncList.h"
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Math/JMathHelper.h"
 #include"../../../Graphic/JGraphic.h"  
@@ -32,6 +33,7 @@ namespace JinEngine
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT, Graphic::JSpotLightConstants&>,
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, Graphic::JShadowMapDrawConstants&>>,
 			Graphic::JFrameDirty>;
+		using JCullingSingleHolder = Graphic::JCullingSingleHolder<Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM>;
 	}
 	namespace
 	{
@@ -41,7 +43,7 @@ namespace JinEngine
 	namespace Private
 	{
 		static constexpr float minPower = 0.1f;
-		static constexpr float maxPower = 2.0f;
+		static constexpr float maxPower = 4.0f;
 		static constexpr float minConeDegAngle = 7.5f;
 		static constexpr float maxConeDegAngle = 60.0f;
 		static constexpr float maxOuterConeDegAngle = 75.0f; 
@@ -61,7 +63,7 @@ namespace JinEngine
 		}
 		static constexpr float InitOuterConeAngle()noexcept
 		{
-			return 30.0f * JMathHelper::DegToRad;
+			return 31.0f * JMathHelper::DegToRad;
 		}
 		static constexpr float InitSpotAspect()noexcept
 		{
@@ -96,24 +98,31 @@ namespace JinEngine
 
 	class JSpotLight::JSpotLightImpl : public Core::JTypeImplBase,
 		public LitFrameUpdate,
-		public Graphic::JGraphicWideSingleResourceHolder<2>,	//shadowMap, debug, rtv(for vsm)
+		public Graphic::JGraphicWideSingleResourceHolder<2>,	//shadowMap, debug,
 		public Graphic::JGraphicDrawListCompInterface,
-		public Graphic::JCullingInterface
+		public JCullingSingleHolder
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSpotLightImpl)
 	public:
 		using SpotLitFrame = JFrameInterface1;
 		using ShadowMapDrawFrame = JFrameInterface2;
+	private:
+		enum MANAGED_SET
+		{
+			MANAGED_SET_SHADOW_MAP = 0,
+			MANAGED_SET_DISPLAY_SHADOW_MAP,		//for debugging
+			MANAGED_SET_FRUSTUM_CULLING,
+			MANAGED_SET_COUNT
+		};
+		using ManageFuncList = Core::JFuncList<MANAGED_SET_COUNT, JSpotLight::JSpotLightImpl, const bool>;
 	public:
 		JMatrix4x4 view;
 		JMatrix4x4 proj;
 	public:
 		JWeakPtr<JSpotLight> thisPointer;
-	public:
-		REGISTER_PROPERTY_EX(power, GetPower, SetPower, GUI_SLIDER(Private::minPower, Private::maxPower, true, false))
-		float power = Private::InitPower();
-		REGISTER_PROPERTY_EX(range, GetRange, SetRange, GUI_SLIDER(Constants::lightNear, Constants::lightMaxFar, true, false))
-		float range = 100.0f;
+	public: 
+		REGISTER_PROPERTY_EX(range, GetRange, SetRange, GUI_SLIDER(Constants::localLightMinDistance, Constants::localLightMaxDistance, true, false))
+		float range = 32.0f;
 		REGISTER_PROPERTY_EX(innerConeAngle, GetInnerConeDegAngle, SetInnerConeDegAngle, GUI_SLIDER(Private::minConeDegAngle, Private::maxConeDegAngle, true, false))
 		float innerConeAngle = Private::InitInnerConeAngle();
 		REGISTER_PROPERTY_EX(outerConeAngle, GetOuterConeDegAngle, SetOuterConeDegAngle, GUI_SLIDER(Private::minConeDegAngle, Private::maxOuterConeDegAngle, true, false))
@@ -140,16 +149,12 @@ namespace JinEngine
 		}
 		float GetFrustumNear()const noexcept
 		{
-			return Constants::lightNear;
+			return Constants::localLightMinDistance;
 		}
 		float GetFrustumFar()const noexcept
 		{
 			return range;
-		}
-		float GetPower()const noexcept
-		{
-			return power;
-		}
+		} 
 		float GetRange()const noexcept
 		{
 			return range;
@@ -192,19 +197,22 @@ namespace JinEngine
 		{
 			return XMMatrixMultiply(XMMatrixMultiply(view.LoadXM(), proj.LoadXM()), JMatrix4x4::NdcToTextureSpaceXM());
 		}
-	public:
-		//value가 bool type일경우에만 justCallFunc을 사용할수있다
-		//justCallFunc는 값을 변경하지않고 함수내에서 value per 기능을 수행한다
-		void SetShadow(const bool value, const bool isManual = false)noexcept
+		int GetResourceDataIndex(const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_TASK_TYPE taskType)const noexcept
 		{
-			if (thisPointer->IsActivated() || isManual)
-			{
-				if (thisPointer->IsShadowActivated())
-					CreateShadowMapResource();
-				else
-					DestroyShadowMapResource();
+			switch (rType)
+			{ 
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
+				return 0;
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:
+				return 0; 
+			default:
+				return invalidIndex;
 			}
-			SetFrameDirty();
+		}
+	public: 
+		void SetShadow(bool value)noexcept
+		{  
+			SetFuncList().InvokePassCondition(MANAGED_SET_SHADOW_MAP, this, std::forward<bool>(value));
 		}
 		void SetShadowResolution(const J_SHADOW_RESOLUTION newShadowResolution)noexcept
 		{
@@ -215,51 +223,21 @@ namespace JinEngine
 			}
 			SetFrameDirty();
 		}
-		void SetAllowDisplayShadowMap(const bool value)
+		void SetAllowDisplayShadowMap(bool value)
 		{
-			SetAllowDisplayShadowMapEx(value, false);
-		}
-		void SetAllowDisplayShadowMapEx(const bool value, const bool justCallFunc = false)
+			SetFuncList().InvokePassCondition(MANAGED_SET_DISPLAY_SHADOW_MAP, this, std::forward<bool>(value));
+		} 
+		void SetAllowFrustumCulling(bool value)noexcept
 		{
-			if (justCallFunc || thisPointer->IsActivated())
-			{
-				if (value)
-					CreateShadowMapDebugResource();
-				else
-					DestroyShadowMapDebugResource();
-			}
-			SetFrameDirty();
-		}
-		void SetAllowFrustumCulling(const bool value, const bool justCallFunc = false)noexcept
-		{
-			if (!justCallFunc && allowFrustumCulling == value)
+			if (allowFrustumCulling == value)
 				return;
 
-			if (!justCallFunc)
-				allowFrustumCulling = value;
-			if (justCallFunc || thisPointer->IsActivated())
-			{
-				if (value)
-				{
-					CreateFrustumCullingData();
-					AddFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
-				}
-				else
-				{
-					DestroyCullingData(Graphic::J_CULLING_TYPE::FRUSTUM);
-					PopFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
-				}
-			}
-			SetFrameDirty();
-		}
-		void SetPower(const float newPower)noexcept
-		{
-			power = std::clamp(newPower, Private::minPower, Private::maxPower);
-			SetFrameDirty();
-		}
+			allowFrustumCulling = value;
+			SetFuncList().InvokePassCondition(MANAGED_SET_FRUSTUM_CULLING, this, std::forward<bool>(value));
+		} 
 		void SetRange(const float newRange)noexcept
 		{
-			range = std::clamp(newRange, Constants::lightNear, Constants::lightMaxFar);
+			range = std::clamp(newRange, Constants::localLightMinDistance, Constants::localLightMaxDistance);
 			SetFrameDirty();
 		}
 		void SetInnerConeAngle(const float newAngle)noexcept
@@ -280,10 +258,19 @@ namespace JinEngine
 		{
 			SetOuterConeAngle(newAngle * JMathHelper::DegToRad);
 		}
+		static ManageFuncList& SetFuncList()
+		{
+			static ManageFuncList setFuncList;
+			return setFuncList;
+		}
 	public:
 		bool IsShadowActivated()const noexcept
 		{
 			return thisPointer->IsShadowActivated();
+		}
+		bool AllowDisplayShadowMap()const noexcept
+		{
+			return thisPointer->AllowDisplayShadowMap();
 		}
 		bool AllowFrustumCulling()const noexcept
 		{
@@ -304,7 +291,7 @@ namespace JinEngine
 	public:
 		void CreateShadowMapResource()noexcept
 		{
-			CreateShadowMapTexture(thisPointer->GetShadowMapSize());
+			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP);
 			CreateFrustumCullingData();
 
 			if (thisPointer->AllowDisplayShadowMap())
@@ -325,30 +312,24 @@ namespace JinEngine
 			PopFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 		};
 		void CreateShadowMapDebugResource()
-		{
-			CreateLayerDepthDebugResource(JVector2<uint>(thisPointer->GetShadowMapSize(), thisPointer->GetShadowMapSize()));
+		{ 
+			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 		}
 		void DestroyShadowMapDebugResource()
 		{
-			DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
+			DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 		}
 	public:
 		void Activate()noexcept
 		{
 			RegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
-			if (thisPointer->IsShadowActivated())
-				SetShadow(true, true);
-			if (allowFrustumCulling)
-				SetAllowFrustumCulling(true, true);
+			SetFuncList().InvokeAll(this, true, true); 
 		}
 		void DeActivate()noexcept
 		{
 			//has order dependency
 			DeRegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
-			if (thisPointer->IsShadowActivated())
-				SetShadow(false, true);
-			if (allowFrustumCulling)
-				SetAllowFrustumCulling(false, true);
+			SetFuncList().InvokeAll(this, true, false);
 			DestroyAllCullingData();
 			DestroyAllTexture();
 		}
@@ -359,13 +340,14 @@ namespace JinEngine
 				constant.shadowMapTransform.StoreXM(XMMatrixTranspose(GetShadowMapTransform()));
 			  
 			constant.color = thisPointer->GetColor(); 
-			constant.power = power;
+			constant.power = thisPointer->GetPower();
 			constant.position = Private::CalLightWorldPos(GetTransform());
 			constant.frustumNear = GetFrustumNear();
 			constant.direction = Private::CalLightWorldDir(GetTransform());
 			constant.frustumFar = GetFrustumFar();
-			constant.innerConeAngle = cos(innerConeAngle);
-			constant.outerConeAngle = cos(outerConeAngle);
+			constant.innerConeCosAngle = cos(innerConeAngle);
+			constant.outerConeCosAngle = cos(outerConeAngle);
+			constant.outerConeAngle = outerConeAngle;
 			constant.penumbraScale = thisPointer->GetPenumbraWidth();
 			constant.penumbraBlockerScale = thisPointer->GetPenumbraBlockerWidth();
 			constant.shadowMapIndex = IsShadowActivated() ? GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0) : 0;
@@ -388,8 +370,7 @@ namespace JinEngine
 	public:
 		static bool DoCopy(JSpotLight* from, JSpotLight* to)
 		{
-			from->impl->SetAllowFrustumCulling(to->impl->AllowFrustumCulling());
-			from->impl->SetPower(to->impl->GetPower());
+			from->impl->SetAllowFrustumCulling(to->impl->AllowFrustumCulling()); 
 			from->impl->SetRange(to->impl->GetRange());
 			from->impl->SetInnerConeAngle(to->impl->GetInnerConeAngle());
 			from->impl->SetOuterConeAngle(to->impl->GetOuterConeAngle());
@@ -399,7 +380,7 @@ namespace JinEngine
 		}
 	public:
 		void NotifyReAlloc()
-		{
+		{ 
 			if (thisPointer.IsValid())
 			{
 				JLightPrivate::FrameDirtyInterface::DeRegisterFrameDirtyListener(thisPointer.Get(), thisPointer->GetGuid());
@@ -446,7 +427,45 @@ namespace JinEngine
 		{
 			Core::JIdentifier::RegisterPrivateInterface(JSpotLight::StaticTypeInfo(), lPrivate);
 			IMPL_REALLOC_BIND(JSpotLight::JSpotLightImpl, thisPointer)
-				SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT);
+			SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT);
+
+			auto setShadowMapLam = [](JSpotLightImpl* impl, const bool value)
+			{
+				if (value)
+					impl->CreateShadowMapResource();
+				else
+					impl->DestroyShadowMapResource();
+				impl->SetFrameDirty();
+			};
+			auto setDisplayShadowMapLam = [](JSpotLightImpl* impl, const bool value)
+			{
+				if (value)
+					impl->CreateShadowMapDebugResource();
+				else
+					impl->DestroyShadowMapDebugResource();
+				impl->SetFrameDirty();
+			};
+			auto setFrustumCullingLam = [](JSpotLightImpl* impl, const bool value)
+			{
+				if (value)
+				{
+					impl->CreateFrustumCullingData();
+					impl->AddFrustumCullingRequest(impl->thisPointer->GetOwner()->GetOwnerScene(), impl->thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
+				}
+				else
+				{
+					impl->DestroyCullingData(Graphic::J_CULLING_TYPE::FRUSTUM);
+					impl->PopFrustumCullingRequest(impl->thisPointer->GetOwner()->GetOwnerScene(), impl->thisPointer);
+				}
+				impl->SetFrameDirty();
+			};
+
+			using SetCallable = Core::JStaticCallable<void, JSpotLightImpl*, const bool>;
+			using CondCallable = Core::JMemberCNCallable<JSpotLightImpl, bool>;
+
+			SetFuncList().Register(std::make_unique<SetCallable>(setShadowMapLam), std::make_unique<CondCallable>(&JSpotLightImpl::IsShadowActivated), MANAGED_SET_SHADOW_MAP);
+			SetFuncList().Register(std::make_unique<SetCallable>(setDisplayShadowMapLam), std::make_unique<CondCallable>(&JSpotLightImpl::AllowDisplayShadowMap), MANAGED_SET_DISPLAY_SHADOW_MAP);
+			SetFuncList().Register(std::make_unique<SetCallable>(setFrustumCullingLam), std::make_unique<CondCallable>(&JSpotLightImpl::AllowFrustumCulling), MANAGED_SET_FRUSTUM_CULLING);
 		}
 	};
 
@@ -477,6 +496,14 @@ namespace JinEngine
 	{
 		return impl->GetShadowMapType();
 	}
+	float JSpotLight::GetMinPower()const noexcept
+	{
+		return Private::minPower;
+	}
+	float JSpotLight::GetMaxPower()const noexcept
+	{
+		return Private::maxPower;
+	}
 	float JSpotLight::GetFrustumNear()const noexcept
 	{
 		return impl->GetFrustumNear();
@@ -484,10 +511,6 @@ namespace JinEngine
 	float JSpotLight::GetFrustumFar()const noexcept
 	{
 		return impl->GetFrustumFar();
-	}
-	float JSpotLight::GetPower()const noexcept
-	{
-		return impl->GetPower();
 	}
 	float JSpotLight::GetRange()const noexcept
 	{
@@ -532,11 +555,7 @@ namespace JinEngine
 
 		JLight::SetAllowDisplayShadowMap(value);
 		impl->SetAllowDisplayShadowMap(value);
-	}
-	void JSpotLight::SetPower(const float power)noexcept
-	{
-		impl->SetPower(power);
-	}
+	} 
 	void JSpotLight::SetRange(const float range)noexcept
 	{
 		impl->SetRange(range);
@@ -647,8 +666,7 @@ namespace JinEngine
 		J_OBJECT_FLAG flag;
 		bool isActivated;
 
-		float sRange; 
-		float sPower;
+		float sRange;  
 		float sInnerAngle;
 		float sOuterConeAngle;
 
@@ -661,13 +679,11 @@ namespace JinEngine
 		JUserPtr<JSpotLight> litUser;
 		litUser.ConnnectChild(idenUser);
 
-		JLightPrivate::AssetDataIOInterface::LoadLightData(tool, litUser);
-		JObjectFileIOHelper::LoadAtomicData(tool, sPower, "Power:");
+		JLightPrivate::AssetDataIOInterface::LoadLightData(tool, litUser); 
 		JObjectFileIOHelper::LoadAtomicData(tool, sRange, "Range:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sInnerAngle, "InnerConeAngle:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sOuterConeAngle, "OuterConeAngle:");
-
-		litUser->SetPower(sPower);
+		 
 		litUser->SetRange(sRange);
 		litUser->impl->innerConeAngle = sInnerAngle;
 		litUser->impl->outerConeAngle = sOuterConeAngle;
@@ -693,8 +709,7 @@ namespace JinEngine
 		JFileIOTool& tool = storeData->tool;
 
 		JObjectFileIOHelper::StoreComponentIden(tool, lit.Get());
-		JLightPrivate::AssetDataIOInterface::StoreLightData(tool, lit);
-		JObjectFileIOHelper::StoreAtomicData(tool, impl->power, "Power:");
+		JLightPrivate::AssetDataIOInterface::StoreLightData(tool, lit); 
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->range, "Range:");
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->innerConeAngle, "InnerConeAngle:");
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->outerConeAngle, "OuterConeAngle:");
@@ -784,7 +799,7 @@ namespace JinEngine
 		if (lit->GetLightType() != J_LIGHT_TYPE::SPOT)
 			return false;
 
-		return static_cast<JSpotLight*>(lit)->impl->ShadowMapDrawFrame::HasMovedDirty();
+		return static_cast<JSpotLight*>(lit)->impl->SpotLitFrame::HasMovedDirty();
 	}
 	bool FrameUpdateInterface::HasShadowMapRecopyRequest(JLight* lit)noexcept
 	{

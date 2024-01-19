@@ -113,6 +113,9 @@ namespace JinEngine
 			else if constexpr (std::is_enum_v<ValueType>)
 				x = y = (ValueType)0;
 		}
+		JVector2(const ValueType v)
+			: x(v), y(v)
+		{}
 		JVector2(const ValueType x, const ValueType y)
 			: x(x), y(y)
 		{}
@@ -215,9 +218,13 @@ namespace JinEngine
 			x /= rhs;
 			y /= rhs;
 		}
+		bool operator==(const JVector2& data)
+		{
+			return x == data.x && y == data.y;
+		}
 		bool operator!=(const JVector2& data) const
 		{
-			return x != data.x && y != data.y;
+			return x != data.x || y != data.y;
 		}
 		bool operator==(const JVector2& data) const
 		{
@@ -271,15 +278,19 @@ namespace JinEngine
 		{
 			return JVector2(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y);
 		}
-		void Clamp(const JVector2& value, const T minV, const T maxV)noexcept
+		static JVector2 Clamp(const JVector2& value, const T minV, const T maxV)noexcept
 		{
-			x = std::clamp(value.x, minV, maxV);
-			y = std::clamp(value.y, minV, maxV);
+			JVector2 newV;
+			newV.x = std::clamp(value.x, minV, maxV);
+			newV.y = std::clamp(value.y, minV, maxV);
+			return newV;
 		}
-		void Clamp(const JVector2& value, const JVector2& minV, const JVector2& maxV)noexcept
+		static JVector2 Clamp(const JVector2& value, const JVector2& minV, const JVector2& maxV)noexcept
 		{
-			x = std::clamp(value.x, minV.x, maxV.x);
-			y = std::clamp(value.y, minV.y, maxV.y);
+			JVector2 newV;
+			newV.x = std::clamp(value.x, minV.x, maxV.x);
+			newV.y = std::clamp(value.y, minV.y, maxV.y);
+			return newV;
 		}
 	public:
 		float Length()const noexcept
@@ -371,6 +382,9 @@ namespace JinEngine
 			else if constexpr (std::is_enum_v<ValueType>)
 				x = y = z = (ValueType)0;
 		}
+		JVector3(const ValueType v)
+			: x(v), y(v), z(v)
+		{}
 		JVector3(const ValueType x, const ValueType y, const ValueType z)
 			: x(x), y(y), z(z)
 		{}
@@ -493,9 +507,13 @@ namespace JinEngine
 			y /= rhs;
 			z /= rhs;
 		}
+		bool operator==(const JVector3& data)
+		{
+			return x == data.x && y == data.y && z == data.z;
+		}
 		bool operator!=(const JVector3& data) const
 		{
-			return x != data.x && y != data.y && z != data.z;
+			return x != data.x || y != data.y || z != data.z;
 		}
 		bool operator==(const JVector3& data) const
 		{
@@ -558,8 +576,24 @@ namespace JinEngine
 			return JVector3(a.x < b.x ? a.x : b.x, a.y < b.y ? a.y : b.y, a.z < b.z ? a.z : b.z);
 		}
 		static JVector3 Max(const JVector3& a, const JVector3& b)noexcept
-		{
+		{ 
 			return JVector3(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y, a.z > b.z ? a.z : b.z);
+		}
+		static JVector3 Clamp(const JVector3& value, const T minV, const T maxV)noexcept
+		{
+			JVector3 newV;
+			newV.x = std::clamp(value.x, minV, maxV);
+			newV.y = std::clamp(value.y, minV, maxV);
+			newV.z = std::clamp(value.z, minV, maxV);
+			return newV;
+		} 
+		static JVector3 Clamp(const JVector3& value, const JVector3& minV, const JVector3& maxV)noexcept
+		{
+			JVector3 newV;
+			newV.x = std::clamp(value.x, minV.x, maxV.x);
+			newV.y = std::clamp(value.y, minV.y, maxV.y);
+			newV.z = std::clamp(value.z, minV.z, maxV.z);
+			return newV;
 		}
 	public:
 		float Length()const noexcept
@@ -632,11 +666,15 @@ namespace JinEngine
 		{
 			return std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z);
 		}
-	public:
+	public: 
 		//For PrameterInfo
 		static constexpr uint GetDigitCount()noexcept
 		{
 			return 3;
+		}
+		T GetMaxElemet()const noexcept
+		{
+			return x > y ? (x > z ? x : z) : (y > z ? y : z); 
 		}
 	public:
 		void SetNanToZero()
@@ -704,6 +742,9 @@ namespace JinEngine
 			else if constexpr (std::is_enum_v<ValueType>)
 				x = y = z = w = (ValueType)0;
 		}
+		JVector4(const ValueType v)
+			: x(v), y(v), z(v), w(v)
+		{}
 		JVector4(const ValueType x, const ValueType y, const ValueType z, const ValueType w)
 			: x(x), y(y), z(z), w(w)
 		{}
@@ -851,9 +892,13 @@ namespace JinEngine
 			z /= rhs;
 			w /= rhs;
 		}
+		bool operator==(const JVector4& data)
+		{
+			return x == data.x && y == data.y && z == data.z && w == data.w;
+		}
 		bool operator!=(const JVector4& data)
 		{
-			return x != data.x && y != data.y && z != data.z && w != data.w;
+			return x != data.x || y != data.y || z != data.z || w != data.w;
 		}
 		ValueType& operator[](const uint index)noexcept
 		{
@@ -911,6 +956,24 @@ namespace JinEngine
 		{
 			return JVector4(a.x > b.x ? a.x : b.x, a.y > b.y ? a.y : b.y, a.z > b.z ? a.z : b.z, a.w > b.w ? a.w : b.w);
 		}
+		static JVector4 Clamp(const JVector4& value, const T minV, const T maxV)noexcept
+		{
+			JVector4 newV;
+			newV.x = std::clamp(value.x, minV, maxV);
+			newV.y = std::clamp(value.y, minV, maxV);
+			newV.z = std::clamp(value.z, minV, maxV);
+			newV.w = std::clamp(value.w, minV, maxV);
+			return newV;
+		}
+		static JVector4 Clamp(const JVector4& value, const JVector4& minV, const JVector4& maxV)noexcept
+		{
+			JVector4 newV;
+			newV.x = std::clamp(value.x, minV.x, maxV.x);
+			newV.y = std::clamp(value.y, minV.y, maxV.y);
+			newV.z = std::clamp(value.z, minV.z, maxV.z);
+			newV.w = std::clamp(value.w, minV.w, maxV.w);
+			return newV;
+		}
 	public:
 		float Length()const noexcept
 		{
@@ -959,6 +1022,10 @@ namespace JinEngine
 		static constexpr uint GetDigitCount()noexcept
 		{
 			return 4;
+		}
+		T GetMaxElemet()const noexcept
+		{
+			return x > y ? (x > z ? (x > w ? x : w) : (z > w ? z : w)) : (y > z ? (y > w ? y : w) : (z > w ? z : w) );
 		}
 	};
 

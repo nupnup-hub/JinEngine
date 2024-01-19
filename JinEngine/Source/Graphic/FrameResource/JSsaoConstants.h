@@ -1,27 +1,35 @@
 #pragma once 
 #include"../../Core/Math/JVector.h"
 #include"../../Core/Math/JMatrix.h"
-
+#include"../Image/JImageProcessingConstants.h"
+#include"../Image/JImageProcessingEnum.h"
 namespace JinEngine
 {
 	namespace Graphic
 	{
 		struct JSsaoConstants
 		{
-			JMatrix4x4 proj;
-			JMatrix4x4 invProj;
-			JMatrix4x4 projTex;
-			JVector4<float>   offsetVectors[14];
-
-			// For SsaoBlur.hlsl
-			JVector4<float> blurWeights[3];
-			JVector2<float> invRenderTargetSize = { 0.0f, 0.0f };
-
-			// Coordinates given in view space.
-			float occlusionRadius = 0.5f;
-			float occlusionFadeStart = 0.2f;
-			float occlusionFadeEnd = 2.0f;
-			float surfaceEpsilon = 0.05f;
+			JMatrix4x4 camView;
+			JMatrix4x4 camProj;
+			float radius;
+			float radius2;
+			float bias;
+			float sharpness;
+			JVector2F camNearFar;
+			JVector2F camRtSize;
+			JVector2F camInvRtSize;
+			JVector2F aoRtSize;
+			JVector2F aoInvRtSize;
+			JVector2F aoInvQuaterRtSize;
+			JVector2F uvToViewA;
+			JVector2F uvToViewB;
+			JVector2F viewPortTopLeft;
+			float radiusToScreen;
+			float negInvR2;
+			float tanBias;
+			float smallScaleAOAmount;
+			float largeScaleAOAmount;
+			float camNearMulFar;
 		};
 	}
 }

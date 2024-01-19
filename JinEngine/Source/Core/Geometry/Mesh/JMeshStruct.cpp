@@ -41,7 +41,7 @@ namespace JinEngine
 			normal(n),
 			texC(uv),
 			tangentU(t.x, t.y, t.z)
-		{ 
+		{
 			int i = 0;
 			for (; i < blendWeightPair.size() && i < 4; ++i)
 			{
@@ -81,16 +81,34 @@ namespace JinEngine
 			texC(u, v),
 			tangentU(tx, ty, tz)
 		{}
-
-		JMeshData::JMeshData() {}
+		J1BytePosVertex::J1BytePosVertex(const JVector4<int8>& position)
+			:position(position)
+		{}
+		J1BytePosVertex J1BytePosVertex::Encode(const JStaticMeshVertex& vertex)
+		{
+			J1BytePosVertex v;
+			v.position.x = (vertex.position.x == 1.0f) ? 127 : (int)(vertex.position.x * 128.0f);
+			v.position.y = (vertex.position.y == 1.0f) ? 127 : (int)(vertex.position.y * 128.0f);
+			v.position.z = (vertex.position.z == 1.0f) ? 127 : (int)(vertex.position.z * 128.0f);
+			v.position.w = 0;
+			return v;
+		}
+		JStaticMeshVertex J1BytePosVertex::Decode(const J1BytePosVertex& vertex)
+		{
+			JStaticMeshVertex v;
+			v.position.x = (vertex.position.x == 127) ? 1.0f : (int)(vertex.position.x / 128.0f);
+			v.position.y = (vertex.position.y == 127) ? 1.0f : (int)(vertex.position.y / 128.0f);
+			v.position.z = (vertex.position.z == 127) ? 1.0f : (int)(vertex.position.z / 128.0f);
+			return v;
+		}
+		 
 		JMeshData::JMeshData(const std::wstring& name,
 			const size_t guid,
 			std::vector<uint>&& indices,
 			const bool hasUV,
 			const bool hasNormal)
-			:name(name), guid(guid), indices(std::move(indices)), hasUV(hasUV), hasNormal(hasNormal)
+			: name(name), guid(guid), indices(std::move(indices)), hasUV(hasUV), hasNormal(hasNormal)
 		{}
-
 		void JMeshData::InverseIndex()noexcept
 		{
 			uint indicesCount = GetIndexCount(); ;
@@ -188,7 +206,7 @@ namespace JinEngine
 			const uint vertexOffset = GetVertexCount();
 			const uint indexOffset = GetIndexCount();
 			const uint newTotalIndexCount = indexOffset + addedCount;
-			const bool isOver16Bit = newTotalIndexCount >= 1 << 16;
+			const bool isOver16Bit = newTotalIndexCount >= (1 << 16);
 
 			indices.resize(newTotalIndexCount);
 			for (uint i = 0; i < addedCount; ++i)
@@ -312,6 +330,73 @@ namespace JinEngine
 			JMeshData::AddPositionOffset(offsetPos);
 		}
 
+		JLowMeshData::JLowMeshData(const std::wstring& name,
+			const size_t guid,
+			std::vector<uint>&& indices,
+			const bool hasUV,
+			const bool hasNormal,
+			std::vector<J1BytePosVertex>&& vertices)
+			:JMeshData(name, guid, std::move(indices), hasUV, hasNormal), vertices(std::move(vertices))
+		{}
+		JLowMeshData::JLowMeshData(const std::wstring& name,
+			std::vector<uint>&& indices,
+			const bool hasUV,
+			const bool hasNormal,
+			std::vector<J1BytePosVertex>&& vertices)
+			: JMeshData(name, Core::MakeGuid(), std::move(indices), hasUV, hasNormal), vertices(std::move(vertices))
+		{}
+		JLowMeshData::JLowMeshData(const std::wstring& name,
+			std::vector<uint>&& indices,
+			const bool hasUV,
+			const bool hasNormal,
+			const std::vector<JStaticMeshVertex>& vertices)
+			: JMeshData(name, Core::MakeGuid(), std::move(indices), hasUV, hasNormal), vertices(ConvertVertex(vertices))
+		{}
+		J_MESHGEOMETRY_TYPE JLowMeshData::GetMeshType()const noexcept
+		{
+			return J_MESHGEOMETRY_TYPE::STATIC;
+		}
+		uint JLowMeshData::GetVertexCount()const noexcept
+		{
+			return (uint)vertices.size();
+		}
+		JVector3<float> JLowMeshData::GetPosition(const uint index)const noexcept
+		{
+
+		}
+		J1BytePosVertex JLowMeshData::GetVertex(const uint index)const noexcept
+		{
+			return vertices[index];
+		}
+		void JLowMeshData::SetVertex(const uint index, const J1BytePosVertex& vertex)const noexcept
+		{
+			vertices[index] = vertex;
+		}
+		void JLowMeshData::SetVertexPositionScale(const float rate)noexcept
+		{
+			for (auto& data : vertices)
+			{
+				data.position.x *= rate;
+				data.position.y *= rate;
+				data.position.z *= rate;
+			}
+		} 
+		void JLowMeshData::AddPositionOffset(const JVector3<float>& offsetPos)noexcept
+		{
+			const uint vCount = GetVertexCount();
+			for (uint i = 0; i < vCount; ++i)
+				vertices[i].position += JVector4F(offsetPos, 0.0f);
+			JMeshData::AddPositionOffset(offsetPos);
+		}
+		std::vector<J1BytePosVertex> JLowMeshData::ConvertVertex(const std::vector<JStaticMeshVertex>& staticVertex)
+		{
+			const uint vertexCount = (uint)staticVertex.size();
+			std::vector<J1BytePosVertex> lowMeshData(vertexCount);
+			for(uint i = 0; i < vertexCount; ++i)
+				lowMeshData[i] = J1BytePosVertex::Encode(staticVertex[i]);
+			return lowMeshData;
+		}
+
 		uint JMeshGroup::GetTotalVertexCount()noexcept
 		{
 			const uint meshCount = GetMeshDataCount();
@@ -355,15 +440,25 @@ namespace JinEngine
 			if (staticMeshData.size() <= index)
 				return nullptr;
 			else
-				return &staticMeshData[index];
+				return staticMeshData[index].get();
 		}
 		J_MESHGEOMETRY_TYPE JStaticMeshGroup::GetMeshGroupType()const noexcept
 		{
 			return J_MESHGEOMETRY_TYPE::STATIC;
 		}
-		void JStaticMeshGroup::AddMeshData(JStaticMeshData&& meshData) noexcept
+		uint JStaticMeshGroup::GetVertexSize()const noexcept
+		{
+			return sizeof(JStaticMeshVertex);
+		} 
+		void JStaticMeshGroup::AddMeshData(std::unique_ptr<JStaticMeshData>&& meshData) noexcept
 		{
 			staticMeshData.push_back(std::move(meshData));
+		}
+		std::unique_ptr<JStaticMeshData> JStaticMeshGroup::PopMeshData(const uint index)noexcept
+		{
+			std::unique_ptr<JStaticMeshData> mesh = std::move(staticMeshData[index]);
+			staticMeshData.erase(staticMeshData.begin() + index);
+			return std::move(mesh);
 		}
 
 		uint JSkinnedMeshGroup::GetMeshDataCount()const noexcept
@@ -375,11 +470,15 @@ namespace JinEngine
 			if (skinnedMeshData.size() <= index)
 				return nullptr;
 			else
-				return &skinnedMeshData[index];
+				return skinnedMeshData[index].get();
 		}
 		J_MESHGEOMETRY_TYPE JSkinnedMeshGroup::GetMeshGroupType()const noexcept
 		{
 			return J_MESHGEOMETRY_TYPE::SKINNED;
+		}
+		uint JSkinnedMeshGroup::GetVertexSize()const noexcept
+		{
+			return sizeof(JSkinnedMeshVertex);
 		}
 		JUserPtr<JIdentifier> JSkinnedMeshGroup::GetSkeletonAsset()const noexcept
 		{
@@ -389,9 +488,42 @@ namespace JinEngine
 		{
 			skeletonAsset = newSkeletonAsset;
 		}
-		void JSkinnedMeshGroup::AddMeshData(JSkinnedMeshData&& meshData) noexcept
+		void JSkinnedMeshGroup::AddMeshData(std::unique_ptr<JSkinnedMeshData>&& meshData) noexcept
 		{
 			skinnedMeshData.push_back(std::move(meshData));
+		}
+		std::unique_ptr<JSkinnedMeshData> JSkinnedMeshGroup::PopMeshData(const uint index)noexcept
+		{
+			std::unique_ptr<JSkinnedMeshData> mesh = std::move(skinnedMeshData[index]);
+			skinnedMeshData.erase(skinnedMeshData.begin() + index);
+			return std::move(mesh);
+		}
+
+		uint JLowMeshGroup::GetMeshDataCount()const noexcept
+		{
+			return (uint)lowMeshData.size();
+		}
+		JMeshData* JLowMeshGroup::GetMeshData(const uint index)noexcept
+		{
+			return lowMeshData[index].get();
+		}
+		J_MESHGEOMETRY_TYPE JLowMeshGroup::GetMeshGroupType()const noexcept
+		{
+			return J_MESHGEOMETRY_TYPE::STATIC;
+		}
+		uint JLowMeshGroup::GetVertexSize()const noexcept
+		{
+			return sizeof(J1BytePosVertex);
+		}
+		void JLowMeshGroup::AddMeshData(std::unique_ptr<JLowMeshData>&& meshData) noexcept
+		{
+			lowMeshData.push_back(std::move(meshData));
+		}
+		std::unique_ptr<JLowMeshData> JLowMeshGroup::PopMeshData(const uint index)noexcept
+		{
+			std::unique_ptr<JLowMeshData> mesh = std::move(lowMeshData[index]);
+			lowMeshData.erase(lowMeshData.begin() + index);
+			return std::move(mesh);
 		}
 	}
 }

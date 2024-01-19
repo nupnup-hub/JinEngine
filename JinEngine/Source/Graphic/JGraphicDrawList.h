@@ -32,6 +32,7 @@ namespace JinEngine
 		public:
 			bool isUpdated = false;
 			bool canDrawThisFrame = false; 
+			bool passNextFrame = false;
 		public:
 			JShadowMapDrawRequestor(const JUserPtr<JLight>& jLight, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency);
 			~JShadowMapDrawRequestor();
@@ -78,9 +79,9 @@ namespace JinEngine
 		{
 		public:
 			JUserPtr<JComponent> comp;
-			const J_GRAPHIC_DRAW_FREQUENCY updateFrequency;
+			const J_GRAPHIC_DRAW_FREQUENCY updateFrequency; 
 		public:
-			bool isUpdated = false; 
+			bool isUpdated = false;  
 			bool canDrawThisFrame = false;
 			bool keepCanDrawTrigger = false; 
 		public:
@@ -111,7 +112,7 @@ namespace JinEngine
 				uint hotObjUpdateCount = 0;
 				uint hotAniUpdateCount = 0;
 				uint hotCamUpdateCount = 0;
-				uint hotLitghtUpdateCount = 0;  
+				uint hotLitghtUpdateCount = 0;   
 			public:
 				uint thisFrameObjCount = 0;
 				uint lastFrameObjCount = 0;
@@ -120,7 +121,8 @@ namespace JinEngine
 			public:
 				bool sceneUpdated = false;
 				bool shadowUpdated = false;  
-				bool occCullingUpdated = false;
+				bool hzbOccCullingUpdated = false;
+				bool hdOccCullingUpdated = false;
 			public:
 				bool nextSceneUpdate = false;
 			private:

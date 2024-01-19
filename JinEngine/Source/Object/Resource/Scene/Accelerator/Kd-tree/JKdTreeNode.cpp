@@ -100,8 +100,24 @@ namespace JinEngine
 				SetVisible(info);
 			else
 			{
-				left->Culling(info);
-				right->Culling(info);
+				if (info.allowCullingOrderedByDistance)
+				{
+					if (IsNearRight(info))
+					{
+						right->Culling(info);
+						left->Culling(info);
+					}
+					else
+					{
+						left->Culling(info);
+						right->Culling(info);
+					}
+				}
+				else
+				{
+					left->Culling(info);
+					right->Culling(info);
+				}
 			}
 		}
 	}
@@ -281,7 +297,17 @@ namespace JinEngine
 					if (IsIntersectCullingFrustum(info, bbox))
 						SetCulling(info, rItem);
 					else
+					{
+						if (info.allowPushVisibleObjVec)
+						{
+							for(const auto& data: innerGameObject)
+							{
+								(*info.appAlignedObjVec)[info.pushedCount] = data;
+								++info.pushedCount;
+							}
+						}
 						OffCulling(info, rItem);
+					}
 				}
 			}
 		}
@@ -326,6 +352,17 @@ namespace JinEngine
 	bool JKdTreeNode::HasGameObject(const size_t guid)noexcept
 	{
 		return JCUtil::GetTypeIndex(innerGameObject, guid) != JCUtil::searchFail;
+	}
+	bool JKdTreeNode::IsNearRight(const JAcceleratorCullingInfo& info)
+	{
+		float centerFactor = 0;
+		if (splitType == J_KDTREE_NODE_SPLIT_AXIS::X)
+			centerFactor = bbox.Center.x;
+		else if (splitType == J_KDTREE_NODE_SPLIT_AXIS::Y)
+			centerFactor = bbox.Center.y;
+		else
+			centerFactor = bbox.Center.z;
+		return info.pos[(int)splitType] > centerFactor;
 	}
 	bool JKdTreeNode::IsNearRight(const JAcceleratorAlignInfo& info)
 	{

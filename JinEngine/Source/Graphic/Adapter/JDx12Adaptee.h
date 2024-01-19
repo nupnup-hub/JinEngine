@@ -15,14 +15,17 @@ namespace JinEngine
 			std::unique_ptr<JCullingManager> CreateCullingManager() final;
 			void CreateFrameResource(_Out_ std::unique_ptr<JFrameResource>(&frame)[Constants::gNumFrameResources]) final;
 		public:
-			std::unique_ptr<JDepthMapDebug> CreateDepthMapDebug() final;
+			std::unique_ptr<JGraphicDebug> CreateDebug() final;
 			std::unique_ptr<JDepthTest> CreateDepthTest() final;
 			std::unique_ptr<JShadowMap> CreateShadowMapDraw() final;
 			std::unique_ptr<JSceneDraw> CreateSceneDraw() final;
 			std::unique_ptr<JHardwareOccCulling> CreateHdOcc() final;
 			std::unique_ptr<JHZBOccCulling> CreateHzbOcc() final;
+			std::unique_ptr<JLightCulling> CreateLightCulling() final;
 			std::unique_ptr<JOutline> CreateOutlineDraw() final;
 			std::unique_ptr<JImageProcessing> CreateImageProcessing()final;
+		public:
+			void BeginUpdateStart(const JGraphicDrawReferenceSet& drawRefSet) final;
 		public:
 			//pre, post process(bind or set resource state...) --- main  thread
 			bool BeginDrawSceneSingleThread(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet) final;
@@ -54,16 +57,16 @@ namespace JinEngine
 				const ResourceHandle from,
 				const ResourceHandle to,
 				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet) final;
+				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet) final;
 			bool SettingBlurTask(const JGraphicDrawReferenceSet& drawRefSet,
 				const JUserPtr<JGraphicResourceInfo>& info,
 				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet) final;
+				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet) final;
 			bool SettingMipmapGenerationTask(const JGraphicDrawReferenceSet& drawRefSet,
 				const JUserPtr<JGraphicResourceInfo>& srcInfo,
 				const JUserPtr<JGraphicResourceInfo>& modInfo,
 				std::unique_ptr<JDownSampleDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicDownSampleTaskSet>& dataSet) final; 
+				_Out_ std::unique_ptr<JGraphicDownSampleComputeSet>& dataSet) final; 
 		};
 	}
 }

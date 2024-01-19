@@ -1,15 +1,9 @@
 #include"JHardwareOccCulling.h" 
 
-namespace JinEngine
+namespace JinEngine::Graphic
 {
-	namespace Graphic
+	bool JHardwareOccCulling::IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept
 	{
-		void JHardwareOccCulling::Initialize()
-		{
-
-		}
-		void JHardwareOccCulling::Clear()
-		{ 
-		}
+		return taskType == J_GRAPHIC_TASK_TYPE::HD_CULLING;
 	}
 }

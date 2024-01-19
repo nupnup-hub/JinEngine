@@ -11,7 +11,7 @@
 #include<wrl/client.h>  
 #include<d3d12.h>
 #include<dxgi1_4.h>  
-  
+
 namespace JinEngine
 {
 	namespace Editor
@@ -26,30 +26,60 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(JDx12GraphicResourceManager)
 		private:
+			using CommonBinDesc = JGraphicResourceBindDesc;
 			struct BindDesc
 			{
 			public:
 				ID3D12Device* device = nullptr;
 				uint resourceIndex = 0;
 			public:
-				bool useMipmap = true;
+				CommonBinDesc cDesc;
 			public:
-				BindDesc(ID3D12Device* device, const uint resourceIndex, const bool useMipmap = true);
+				bool useMipmap = false;
+			public:
+				BindDesc(ID3D12Device* device, const uint resourceIndex, const JGraphicResourceCreationDesc& cDesc, const bool useMipmap = false);
+				BindDesc(ID3D12Device* device, const uint resourceIndex, const CommonBinDesc& cDesc = CommonBinDesc(), const bool useMipmap = false);
 			};
-			struct BindOptionDesc
+			struct BindDetailDesc
 			{
 			public:
 				const BindDesc& resourceBindDesc;
 				J_GRAPHIC_RESOURCE_TYPE rType;
+			public:
+				//for graphic option
+				D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+				D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
 				D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
 				D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
+			public:
+				ID3D12Resource* counterResource = nullptr;	//for uav
+			public:
 				bool allowBindResource[(uint)J_GRAPHIC_BIND_TYPE::COUNT];
 			public:
-				BindOptionDesc(const BindDesc& resourceBindDesc);
+				BindDetailDesc(const BindDesc& resourceBindDesc);
+			public:
+				//init common desc
+				void InitDsv(const bool isArray);
+				void InitRtv(const D3D12_RESOURCE_DESC& resourceDesc, const bool isArray);
+				void InitSrv(const D3D12_RESOURCE_DESC& resourceDesc, const bool isArray);
+				void InitUav(const D3D12_RESOURCE_DESC& resourceDesc, const bool isArray, ID3D12Resource* counterResource = nullptr);
+			public:
+				void SetDsv(const D3D12_DEPTH_STENCIL_VIEW_DESC& desc);
+				void SetRtv(const D3D12_RENDER_TARGET_VIEW_DESC& desc);
+				void SetSrv(const D3D12_SHADER_RESOURCE_VIEW_DESC& desc);
+				void SetUav(const D3D12_UNORDERED_ACCESS_VIEW_DESC& desc);
+			public:
+				void ClearAllowTrigger();
+			};
+			struct ExtraOption
+			{
+			public:
+				bool bindResourceManually = false;
 			};
 		private:
+			using CreationProcessPtr = JUserPtr<JGraphicResourceInfo>(JDx12GraphicResourceManager::*)(const J_GRAPHIC_RESOURCE_TYPE, JGraphicDevice*, const JGraphicResourceCreationDesc&, const ExtraOption&);
 			using BindViewPtr = void(JDx12GraphicResourceManager::*)(const BindDesc&);
-			using BindOptionViewPtr = void(JDx12GraphicResourceManager::*)(const BindOptionDesc&);
+			using BindOptionViewPtr = void(JDx12GraphicResourceManager::*)(const BindDetailDesc&);
 			using MPBStructure = Core::JDataHandleStructure<MPBCapactiy(), MPBInfo, true>;
 		private:
 			//friend class JGraphic;
@@ -63,12 +93,9 @@ namespace JinEngine
 			uint cbvSrvUavDescriptorSize = 0;
 		private:
 			std::vector<JOwnerPtr<JDx12GraphicResourceInfo>> resource[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
-			ResourceTypeDesc typeDesc[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT]; 
+			ResourceTypeDesc typeDesc[(uint)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 		private:
 			JUserPtr<JGraphicResourceInfo> defaultSceneDsInfo;	//cashing
-		private:
-			const DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-			const DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		private:
 			MPBStructure mpb;
 		public:
@@ -97,13 +124,13 @@ namespace JinEngine
 			CD3DX12_GPU_DESCRIPTOR_HANDLE GetMPBGpuDescriptorHandle(const Core::JDataHandle& handle, const J_GRAPHIC_BIND_TYPE bType)const noexcept;
 			ID3D12DescriptorHeap* GetDescriptorHeap(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
 			uint GetDescriptorSize(const J_GRAPHIC_BIND_TYPE bType)const noexcept;
-			DXGI_FORMAT GetBackBufferFormat()const noexcept;
-			DXGI_FORMAT GetDepthStencilFormat()const noexcept;
-			DirectX::XMVECTORF32 GetBlackColor()const noexcept; 
-			DirectX::XMVECTORF32 GetBackBufferClearColor()const noexcept;
+			static DXGI_FORMAT GetBackBufferFormat()noexcept;
+			static DXGI_FORMAT GetDepthStencilFormat()noexcept;
+			static DirectX::XMVECTORF32 GetBlackColor()noexcept;
+			static DirectX::XMVECTORF32 GetBackBufferClearColor()noexcept;
 			D3D12_VERTEX_BUFFER_VIEW VertexBufferView(const JUserPtr<JMeshGeometry>& mesh)const noexcept;
 			D3D12_INDEX_BUFFER_VIEW IndexBufferView(const JUserPtr<JMeshGeometry>& mesh)const noexcept;
-		public: 
+		public:
 			static uint GetSwapChainBufferCount()noexcept;
 			uint GetResourceCount(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;
 			uint GetResourceCapacity(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;
@@ -117,15 +144,20 @@ namespace JinEngine
 			ResourceHandle GetMPBResourceGpuHandle(const Core::JDataHandle& handle, const J_GRAPHIC_BIND_TYPE bType)const noexcept final;
 			ID3D12Resource* GetResource(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept;
 			ID3D12Resource* GetOptionResource(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, int index)const noexcept;
-			JGraphicResourceInfo* GetInfo(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept final; 
+			JGraphicResourceInfo* GetInfo(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept final;
 			JDx12GraphicResourceInfo* GetDxInfo(const J_GRAPHIC_RESOURCE_TYPE rType, int index)const noexcept;
 			JDx12GraphicResourceInfo* GetDefaultSceneDsInfo()const noexcept;
 		private:
 			uint GetHeapIndex(const J_GRAPHIC_RESOURCE_TYPE rType, const J_GRAPHIC_BIND_TYPE bType);
 		public:
 			bool CanCreateResource(const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;
-			bool CanCreateResource(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, JGraphicDevice* device)noexcept;
+			bool CanCreateResource(const J_GRAPHIC_RESOURCE_TYPE rType, JGraphicDevice* device)noexcept;
 			bool CanCreateOptionResource(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const J_GRAPHIC_RESOURCE_TYPE rType)const noexcept final;
+		public:
+			static void CreateUploadBuffer(ID3D12Device* device,
+				ID3D12Resource* resource,
+				ID3D12Resource** uploadBuffer,
+				const uint subResourceCount = 1);
 		public:
 			void CreateSwapChainBuffer(ID3D12Device* device,
 				IDXGIFactory4* dxgiFactory,
@@ -135,37 +167,19 @@ namespace JinEngine
 				const uint height,
 				bool m4xMsaaState,
 				uint m4xMsaaQuality);
-			JUserPtr<JGraphicResourceInfo> CreateSceneDepthStencilResource(JGraphicDevice* device, const uint viewWidth, const uint viewHeight)final;
-			//for display scene depth stencil map
-			//for debug ui or debug object
-			JUserPtr<JGraphicResourceInfo> CreateDebugDepthStencilResource(JGraphicDevice* device, const uint viewWidth, const uint viewHeight)final;
-			JUserPtr<JGraphicResourceInfo> CreateLayerDepthDebugResource(JGraphicDevice* device, const uint viewWidth, const uint viewHeight)final;
-			void CreateHZBOcclusionResource(JGraphicDevice* device,
-				const uint occWidth,
-				const uint occHeight,
-				_Out_ JUserPtr<JGraphicResourceInfo>& outOccDsInfo,
-				_Out_ JUserPtr<JGraphicResourceInfo>& outOccMipmapInfo)final;
-			JUserPtr<JGraphicResourceInfo> CreateOcclusionResourceDebug(JGraphicDevice* device,
-				const uint occWidth,
-				const uint occHeight,
-				const bool isHzb)final;
-			JUserPtr<JGraphicResourceInfo> Create2DTexture(JGraphicDevice* device, const JTextureCreateDesc& createDesc)final;
-			JUserPtr<JGraphicResourceInfo> CreateCubeMap(JGraphicDevice* device, const JTextureCreateDesc& createDesc)final;
-			JUserPtr<JGraphicResourceInfo> CreateRenderTargetTexture(JGraphicDevice* device, const uint width, const uint height)final; 
-			JUserPtr<JGraphicResourceInfo> CreateShadowMapTexture(JGraphicDevice* device, const uint width, const uint height)final;
-			JUserPtr<JGraphicResourceInfo> CreateShadowMapTextureArray(JGraphicDevice* device, const uint width, const uint height, const uint coun)final;
-			JUserPtr<JGraphicResourceInfo> CreateShadowMapTextureCube(JGraphicDevice* device, const uint width, const uint height)final;
-			JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(JGraphicDevice* device, const std::vector<Core::JStaticMeshVertex>& vertex) final;
-			JUserPtr<JGraphicResourceInfo> CreateVertexBuffer(JGraphicDevice* device, const std::vector<Core::JSkinnedMeshVertex>& vertex) final;
-			JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(JGraphicDevice* device, const std::vector<uint32>& index) final;
-			JUserPtr<JGraphicResourceInfo> CreateIndexBuffer(JGraphicDevice* device, const std::vector<uint16>& index) final;
+			JUserPtr<JGraphicResourceInfo> CreateResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType)final;
 			bool CreateOption(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)final;
 			bool DestroyGraphicTextureResource(JGraphicDevice* device, JGraphicResourceInfo* info)final;
 			bool DestroyGraphicOption(JGraphicDevice* device, JUserPtr<JGraphicResourceInfo>& info, const J_GRAPHIC_RESOURCE_OPTION_TYPE optype)final;
 		private: 
-			void CreateResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, Microsoft::WRL::ComPtr<ID3D12Resource>&& resource);
-			JUserPtr<JGraphicResourceInfo> CreateBuffer(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, JGraphicDevice* device, const void* bufferData, size_t bufferByteSize);			 
-			void CreateOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, JDx12GraphicResourceInfo* dxInfo,  Microsoft::WRL::ComPtr<ID3D12Resource>&& resource);
+			JUserPtr<JGraphicResourceInfo> CommonCreationProcess(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType, const ExtraOption& extraOption = ExtraOption());
+			JUserPtr<JGraphicResourceInfo> CreateOcclusionResourceDebug(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc);
+			JUserPtr<JGraphicResourceInfo> CreateTexture2D(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc);
+			JUserPtr<JGraphicResourceInfo> CreateCubeMap(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc);
+			JUserPtr<JGraphicResourceInfo> CreateLightLinkedList(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc); 
+			JUserPtr<JGraphicResourceInfo> CreateBuffer(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType);
+			void CreateResourceInfo(const J_GRAPHIC_RESOURCE_TYPE rType, Microsoft::WRL::ComPtr<ID3D12Resource>&& resource);
+			bool CreateOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, JDx12GraphicResourceInfo* dxInfo, Microsoft::WRL::ComPtr<ID3D12Resource>&& resource);
 		private:
 			BindViewPtr GetResourceBindViewPtr(const J_GRAPHIC_RESOURCE_TYPE rType);
 			BindOptionViewPtr GetResourceBindOptionViewPtr(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType);
@@ -176,20 +190,34 @@ namespace JinEngine
 			void BindSwapChain(const BindDesc& bDesc);
 			void BindMainDepthStencil(const BindDesc& bDesc);
 			void BindDebugDepthStencil(const BindDesc& bDesc);
-			void BindLayerDetphMapDebug(const BindDesc& bDesc);
+			void BindDebugMap(const BindDesc& bDesc);
 			void BindOcclusionDepthMap(const BindDesc& bDesc);
 			void BindHZBOcclusionDepthMipmap(const BindDesc& bDesc);
 			void BindHZBOcclusionDebug(const BindDesc& bDesc);
 			void BindHdOcclusionDebug(const BindDesc& bDesc);
 			void Bind2DTexture(const BindDesc& bDesc);
 			void BindCubeMap(const BindDesc& bDesc);
-			void BindRenderTarget(const BindDesc& bDesc); 
+			void BindRenderTarget(const BindDesc& bDesc);
+			void BindRenderTargetForLigthCull(const BindDesc& bDesc);
 			void BindShadowMap(const BindDesc& bDesc);
 			void BindShadowMapArray(const BindDesc& bDesc);
-			void BindShadowMapCube(const BindDesc& bDesc);  
-			void BindPostProcessing(const BindOptionDesc& opDesc);
-			void BindNormalMap(const BindOptionDesc& opDesc);
-			void BindAmibientOcclusionMap(const BindOptionDesc& opDesc);
+			void BindShadowMapCube(const BindDesc& bDesc);
+			void BindLightLinkedList(const BindDesc& bDesc);
+			void BindLightClusterOffsetBuffer(const BindDesc& bDesc);
+			void BindSsaoMap(const BindDesc& bDesc);
+			void BindSsaoIntermediateMap(const BindDesc& bDesc);
+			void BindSsaoInterleaveMap(const BindDesc& bDesc);
+			void BindSsaoDepthMap(const BindDesc& bDesc);
+			void BindSsaoDepthInterleaveMap(const BindDesc& bDesc);
+			void BindAlbedoMap(const BindDetailDesc& opDesc);
+			void BindNormalMap(const BindDetailDesc& opDesc);
+			void BindTangentMap(const BindDetailDesc& opDesc);
+			void BindLightingPropertyMap(const BindDetailDesc& opDesc);
+			void BindBlur(const BindDetailDesc& opDesc);
+			void CommonBind(const BindDetailDesc& opDesc);
+			void CommonOptionBind(const BindDetailDesc& opDesc, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType);
+		public:
+			bool ReAllocTypePerAllResource(JGraphicDevice* device, const JGraphicResourceCreationDesc& creationDesc, const J_GRAPHIC_RESOURCE_TYPE rType) final;
 		public:
 			bool CopyResource(JGraphicDevice* device, const JUserPtr<JGraphicResourceInfo>& from, const JUserPtr<JGraphicResourceInfo>& to) final;
 		public:
@@ -199,7 +227,7 @@ namespace JinEngine
 		private:
 			void BuildRtvDescriptorHeaps(ID3D12Device* device);
 			void BuildDsvDescriptorHeaps(ID3D12Device* device);
-			void BuildSrvDescriptorHeaps(ID3D12Device* device); 
+			void BuildSrvDescriptorHeaps(ID3D12Device* device);
 		public:
 			void ResizeWindow(const JGraphicBaseDataSet& base, JGraphicDevice* device)final;
 		public:

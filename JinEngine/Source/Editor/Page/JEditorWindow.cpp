@@ -198,7 +198,7 @@ namespace JinEngine
 			}
 		}
 		void JEditorWindow::UpdateMouseClick()
-		{
+		{ 
 			const bool isMouseInWindow = JGui::IsMouseInRect(JGui::GetWindowPos(), JGui::GetWindowSize());
 			if (IsFocus() && IsActivated() && isMouseInWindow)
 			{

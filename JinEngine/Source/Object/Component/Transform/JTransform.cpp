@@ -110,21 +110,30 @@ namespace JinEngine
 			if (IsRoot() ||  (position == nPosition && rotation == nRotation && scale == nScale))
 				return;
 
-			position = nPosition;
-			rotation = nRotation;
-			scale = nScale;
+			SetPositionEx(nPosition, false);
+			SetRotationEx(nRotation, false);
+			SetScaleEx(nScale, false); 
 			UpdateTopDown();
 		}
 		void SetPosition(const JVector3<float>& value)noexcept
+		{
+			SetPositionEx(value);
+		}
+		void SetPositionEx(const JVector3<float>& value, const bool updateTopDown = true)noexcept
 		{
 			position.SetNanToZero();
 			if (IsRoot() || position == value)
 				return;
 
 			position = value;
-			UpdateTopDown();
-		}
+			if (updateTopDown)
+				UpdateTopDown();
+		} 
 		void SetRotation(const JVector3<float>& euler)noexcept
+		{
+			SetRotationEx(euler);
+		}
+		void SetRotationEx(const JVector3<float>& euler, const bool updateTopDown = true)noexcept
 		{
 			rotation.SetNanToZero();
 			if (IsRoot() || rotation == euler)
@@ -150,17 +159,22 @@ namespace JinEngine
 			tRight = XMVector3Rotate(JVector3F::Right().ToXmV(), q);
 			tUp = XMVector3Rotate(JVector3F::Up().ToXmV(), q);
 			tFront = XMVector3Rotate(JVector3F::Front().ToXmV(), q);
-  
-			UpdateTopDown();
+			if (updateTopDown)
+				UpdateTopDown();
 		}
 		void SetScale(const JVector3<float>& value)noexcept
+		{
+			SetScaleEx(value);
+		}
+		void SetScaleEx(const JVector3<float>& value, const bool updateTopDown = true)noexcept
 		{
 			scale.SetNanToZero();
 			if (thisPointer->GetOwner()->IsRoot() || scale == value)
 				return;
 
 			scale = value;
-			UpdateTopDown();
+			if(updateTopDown)
+				UpdateTopDown();
 		}
 		void SetFrameDirtyTrigger()
 		{
@@ -386,8 +400,8 @@ namespace JinEngine
 		XMVECTOR positionV;
 		XMVECTOR rotationV;
 		XMVECTOR scaleV;
-		XMMatrixDecompose(&positionV, &rotationV, &scaleV, transform.LoadXM());	 
-		SetTransform(positionV, rotationV, scaleV);
+		XMMatrixDecompose(&scaleV, &rotationV, &positionV, transform.LoadXM());
+		SetTransform(positionV, JMathHelper::ToEulerAngle(rotationV), scaleV);
 	}
 	void JTransform::SetTransform(const JVector3<float>& position, const JVector3<float>& rotation, const JVector3<float>& scale)noexcept
 	{

@@ -42,7 +42,7 @@ namespace JinEngine
 	class JGameObject;
 	std::wstring JGameObjectCreatorInterface::GetDefaultLitName(const J_LIGHT_TYPE type)noexcept
 	{
-		return JCUtil::StrToWstr(Core::GetName(type, true, true));
+		return JCUtil::StrToWstr(Core::GetEnumName(type, true, true));
 	}
 	JUserPtr<JGameObject> JGameObjectCreatorInterface::CreateRoot(const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JScene>& ownerScene)
 	{
@@ -130,7 +130,7 @@ namespace JinEngine
 	{
 		JUserPtr<JGameObject> newGameObj = JICI::Create<JGameObject>(name, Core::MakeGuid(), flag, parent);
 		auto cam = JCCI::CreateCamera(newGameObj);
-		cam->SetAllowDisplayDebug(true);
+		cam->SetAllowDisplayDebugObject(true);
 		cam->SetAllowFrustumCulling(false);
 		cam->SetAllowHzbOcclusionCulling(false);
 		return newGameObj;

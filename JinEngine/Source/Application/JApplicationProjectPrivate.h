@@ -1,6 +1,6 @@
 #pragma once
 #include<string> 
-#include"JApplicationState.h"  
+#include"JApplicationType.h"  
 #include"../Core/Func/Functor/JFunctor.h"
 #include"../Core/File/JFileIOResult.h"
 

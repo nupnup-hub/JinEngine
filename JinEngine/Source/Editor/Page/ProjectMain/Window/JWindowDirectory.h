@@ -15,6 +15,7 @@ namespace JinEngine
 	class JDirectory; 
 	class JResourceObject;
 	class JObject;
+	class JResourceObjectImportDesc;
 
 	namespace Editor
 	{
@@ -32,9 +33,19 @@ namespace JinEngine
 			public JObjectModifyInterface
 		{ 
 		private:
+			struct ImportData
+			{
+			public:
+				std::vector<std::unique_ptr<JResourceObjectImportDesc>> importDesc;
+				std::vector<J_RESOURCE_TYPE> importRType;
+				JUserPtr<JDirectory> folder; 
+				int descIndex = 0;
+				bool isActivatedImportWindow = false; 
+			};
+		private:
 			JUserPtr<JDirectory> root;
 			JUserPtr<JDirectory> opendDirctory; 
-			bool lastUpdateOpenNewDir = false;
+			bool lastUpdateOpenNewDir = false; 
 		private:
 			std::unique_ptr<JWindowDirectoryCreationFunctor> creation;
 			std::unique_ptr<JWindowDirectorySettingFunctor> setting;
@@ -46,6 +57,8 @@ namespace JinEngine
 			std::unique_ptr<JEditorPopupMenu>fileviewPopup; 
 			std::unique_ptr<JEditorSearchBarHelper> searchBarHelper;
 			std::unique_ptr<JEditorTreeStructure> treeStrcture;
+		private:
+			ImportData importData;
 		private:
 			static constexpr float selectorIconMaxRate = 0.075f;
 			static constexpr float selectorIconMinRate = 0.035f;
@@ -73,6 +86,9 @@ namespace JinEngine
 			void BuildPopup(); 
 		public:
 			J_EDITOR_WINDOW_TYPE GetWindowType()const noexcept final;
+		private:
+			void SetImportSetting(const bool value)noexcept;
+			void SwitchImportSetting()noexcept;
 		public:
 			void Initialize();
 			void UpdateWindow()final;
@@ -82,7 +98,7 @@ namespace JinEngine
 			//Ret is NewOpend Directory
 			void DirectoryViewOnScreen(const JUserPtr<JDirectory>& directory, const bool canSelect);
 			void FileViewOnScreen();  
-			void ImportFile(); 
+			void ImportSettingOnScreen(); 
 		private:
 			void OpenNewDirectory(JUserPtr<JDirectory> newOpendDirectory);
 			void CreateDirectoryPreview(const JUserPtr<JDirectory>& directory, const bool hasNameMask, const std::wstring& mask = L"");

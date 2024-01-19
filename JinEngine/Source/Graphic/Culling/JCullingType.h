@@ -9,8 +9,15 @@ namespace JinEngine
 		{
 			FRUSTUM,
 			HZB_OCCLUSION,
-			HD_OCCLUSION,
+			HD_OCCLUSION,  
 			COUNT
-		}; 
+		};  
+
+		enum class J_CULLING_TARGET
+		{
+			RENDERITEM,
+			LIGHT,
+			COUNT
+		};
 	}
 }

@@ -51,7 +51,7 @@ namespace JinEngine::Graphic
 		if (resource != nullptr)
 			resource->Unmap(0, nullptr);
 	}
-	void JDx12GraphicResourceHolder::Clear()
+	void JDx12GraphicResourceHolder::Clear()noexcept
 	{
 		if (resource == nullptr)
 			return;
@@ -64,13 +64,14 @@ namespace JinEngine::Graphic
 		{
 			D3D12_RESOURCE_DESC desc = resource->GetDesc();
 			if (pHeapProperties.Type == D3D12_HEAP_TYPE_UPLOAD)
-				resource.Reset();
+				resource = nullptr;
 			else if (desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
-				resource.Reset();
+				resource = nullptr;
 			else
 			{ 
-				resource->Release(); 
-				resource.Reset();
+				resource->Release();
+				resource = nullptr;
+				//if(resource != nullptr)
 			}	 
 		}
 	}

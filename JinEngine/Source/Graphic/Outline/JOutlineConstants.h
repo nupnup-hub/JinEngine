@@ -8,7 +8,8 @@ namespace JinEngine
 	{ 
 		struct JOutlineConstants
 		{
-			JMatrix4x4 world = JMatrix4x4::Identity();
+			//instead use ndc vertex
+			//JMatrix4x4 world = JMatrix4x4::Identity();
 
 			//invalid red ornage yellow green blue purple black
 			JVector4<float> colors[8] =

@@ -11,7 +11,7 @@ namespace JinEngine
 		class JEditorCameraControl : public JObjectModifyInterface
 		{
 		private:
-			JVector2<float> preMousePos;
+			JVector2<float> preMousePos = JVector2<float>::Zero();
 			//mulitiple cam pos delta
 			float movementFactor = 1.0f;
 		public:

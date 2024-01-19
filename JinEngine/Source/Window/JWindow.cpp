@@ -28,7 +28,7 @@ namespace JinEngine
 
 		namespace
 		{
-			static constexpr float minWindowRate = 0.4f;
+			static constexpr float minWindowRate = 0.35f;
 		}
 		using WindowCloseConfirmF = JWindowPrivate::MainAccess::CloseConfirmF;
 		class JWindowImpl : public Core::JEventManager<size_t, J_WINDOW_EVENT>
@@ -508,7 +508,15 @@ namespace JinEngine
 				break;
 			case WM_KEYUP:
 				//inputManager.UpKey(wParam);
+				break;			 
+			case WM_SETFOCUS:
+			{ 
 				break;
+			}
+			case WM_KILLFOCUS:
+			{ 
+				break;
+			}
 			case WM_DISPLAYCHANGE:
 			{
 				Impl::Instance().SetDisplayInfo();

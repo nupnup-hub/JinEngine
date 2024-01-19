@@ -13,6 +13,14 @@ namespace JinEngine
 		*/
 		class JCullingManager;
 		class JCullingResultHolder;
+
+		//record last updated information
+		struct JCullingUpdatedInfo
+		{
+		public:
+			uint updatedStartIndex = 0;
+			uint updatedCount = 0;
+		};
 		class JCullingInfo final
 		{ 
 			REGISTER_CLASS_USE_ALLOCATOR(JCullingInfo) 
@@ -22,12 +30,12 @@ namespace JinEngine
 			JCullingManager* manager;  
 		private:
 			std::unique_ptr<JCullingResultHolder> resultHolder;
+			std::vector<JCullingUpdatedInfo> updatedInfo;
 		private: 
 			const J_CULLING_TYPE cullingType;
 			int arrayIndex = -1;
 		private:
-			float updateFrequency = 1.0f;
-			float updatePerObjectRate = 1.0f;
+			float updateFrequency = 1.0f; 
 		private:
 			//culling이 분할 update을 할시 모든 부분이 update 될시 true
 			bool isUpdateEnd = true;
@@ -35,13 +43,15 @@ namespace JinEngine
 		public:
 			int GetArrayIndex()const noexcept; 
 			uint GetResultBufferSize()const noexcept;
+			uint GetUpdatedInfoCount()const noexcept;
+			JCullingUpdatedInfo GetUpdateddInfo(const uint index)const noexcept;
 			J_CULLING_TYPE GetCullingType()const noexcept; 
-			float GetUpdateFrequency()const noexcept;
-			float GetUpdatePerObjectRate()const noexcept;
+			J_CULLING_TARGET GetCullingTarget()const noexcept;
+			float GetUpdateFrequency()const noexcept; 
 		public: 
 			void SetArrayIndex(const int newValue)noexcept; 
-			void SetUpdateFrequency(const bool value)noexcept;
-			void SetUpdatePerObjectRate(const bool value)noexcept;
+			void SetUpdatedInfo(const JCullingUpdatedInfo& info, const uint index)noexcept;
+			void SetUpdateFrequency(const bool value)noexcept; 
 			void SetUpdateEnd(const bool value)noexcept;
 		public:
 			/**
@@ -59,7 +69,10 @@ namespace JinEngine
 		public:
 			static bool Destroy(JCullingInfo* info);
 		private:
-			JCullingInfo(JCullingManager* manager, const J_CULLING_TYPE cullingType, std::unique_ptr<JCullingResultHolder>&& resultHolder); 
+			JCullingInfo(JCullingManager* manager, 
+				const J_CULLING_TYPE cullingType, 
+				const uint updatedInfoCount,
+				std::unique_ptr<JCullingResultHolder>&& resultHolder); 
 			~JCullingInfo();
 		};
 	}

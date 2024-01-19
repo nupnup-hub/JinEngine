@@ -455,15 +455,17 @@ namespace JinEngine
 			using GetElemntVecPtr = std::vector<JUserPtr<JIdentifier>>(*)(JUserPtr<JIdentifier>);
 		private:  
 			const J_GUI_SELECTOR_IMAGE imageType;
-			const bool hasSizeSlider;
+			const bool isReadOnly;
+			const bool hasSizeSlider; 
 		private:
 			GetElemntVecPtr getElementVecPtr = nullptr;
 		public: 
-			JGuiSelectorInfo(const J_GUI_SELECTOR_IMAGE imageType, const bool hasSizeSlider, GetElemntVecPtr getElementVecPtr = nullptr);
+			JGuiSelectorInfo(const J_GUI_SELECTOR_IMAGE imageType, const bool isReadOnly, const bool hasSizeSlider, GetElemntVecPtr getElementVecPtr = nullptr);
 			template<typename ...Param>
-			JGuiSelectorInfo(const J_GUI_SELECTOR_IMAGE imageType, const bool hasSizeSlider, GetElemntVecPtr getElementVecPtr, Param... var)
+			JGuiSelectorInfo(const J_GUI_SELECTOR_IMAGE imageType, const bool isReadOnly, const bool hasSizeSlider, GetElemntVecPtr getElementVecPtr, Param... var)
 				: JGuiWidgetInfo(std::forward<Param>(var)...),
 				imageType(imageType),
+				isReadOnly(isReadOnly),
 				hasSizeSlider(hasSizeSlider),
 				getElementVecPtr(getElementVecPtr)
 			{ }
@@ -473,6 +475,7 @@ namespace JinEngine
 			J_GUI_SELECTOR_IMAGE GetPreviewImageType()const noexcept;
 			GetElemntVecPtr GetElementVecPtr()const noexcept;
 		public:
+			bool IsReadOnly()const noexcept;
 			bool HasSizeSlider()const noexcept;
 		};
 		class JGuiReadOnlyTextInfo : public JGuiWidgetInfo

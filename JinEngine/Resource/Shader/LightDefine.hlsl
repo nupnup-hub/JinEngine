@@ -11,7 +11,7 @@
 #define DIRECTONAL_LIGHT_NON_SHADOW_MAP -1
 #define DIRECTONAL_LIGHT_HAS_NORMAL_SHADOW_MAP 0
 #define DIRECTONAL_LIGHT_HAS_CSM 1
- 
+
 //272byte
 struct DirectionalLightData
 {
@@ -19,20 +19,20 @@ struct DirectionalLightData
 	float4x4 viewProj;
 	float4x4 shadowMapTransform;
 	float3 color;
-	int shadowMapIndex;
+	float power; 
 	float3 direction;
-	int shadowMapType; //-1 not, 0 normal, 1 csm, 2 cube
-	float2 frustumSize;
 	float frustumNear;
+	float2 frustumSize;
 	float frustumFar;
 	float penumbraScale;
 	float penumbraBlockerScale;
 	int csmDataIndex; //data start index
+	int shadowMapIndex;
+	int shadowMapType; //-1 not, 0 normal, 1 csm, 2 cube
 	float shadowMapSize;
 	float shadowMapInvSize;
 	float tanAngle;
-	float bias;
-	uint dLightPad00;
+	float bias; 
 };
 //336byte
 struct CsmData
@@ -60,11 +60,12 @@ struct PointLightData
 	float frustumFar;
 	float penumbraScale;
 	float penumbraBlockerScale;
-	float shadowMapIndex;
-	int hasShadowMap;
+	int shadowMapIndex;
+	uint hasShadowMap;
 	float shadowMapSize;
 	float shadowMapInvSize;
 	float bias;
+	uint pLightPad00;
 };
 //144 + 32byte
 struct SpotLightData
@@ -76,7 +77,8 @@ struct SpotLightData
 	float frustumNear;
 	float3 direction;
 	float frustumFar;
-	float innerConeAngle;
+	float innerConeCosAngle;
+	float outerConeCosAngle;
 	float outerConeAngle;
 	float penumbraScale;
 	float penumbraBlockerScale;
@@ -86,8 +88,7 @@ struct SpotLightData
 	float shadowMapInvSize;
 	float bias;
 	uint sLightPad00;
-	uint sLightPad01;
-	uint sLightPad02;
+	uint sLightPad01; 
 };
 
 struct RectLightData
@@ -95,15 +96,16 @@ struct RectLightData
 	float4x4 shadowMapTransform;
 	float3 origin;
 	float power;
-	float3 extents;
-	float frustumNear;
 	float3 axis[3];
-	float3 color; 
+	float3 color;  
+	float2 extents;
+	int sourceTextureIndex;
+	float frustumNear;
 	float frustumFar;
-	uint isTwoSide;
+	float barndoorLength;
+	float barndoorCosAngle;
 	int shadowMapIndex;
 	uint hasShadowMap;
-	int sourceTextureIndex;
 	int rLightPad00;
 	int rLightPad01;
 	int rLightPad02;

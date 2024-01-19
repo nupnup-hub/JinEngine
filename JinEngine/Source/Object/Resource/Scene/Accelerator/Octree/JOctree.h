@@ -21,6 +21,10 @@ namespace JinEngine
 		uint minSize = 32;
 		uint octreeSizeSquare = 9;
 		uint octreeSize = 1 << octreeSizeSquare;
+		//2023-12-29 note
+		//해당 node보다 훨씬작은 object가 저장되는 경우를 막기위해(Contain = pass child, intersect = store this node)
+		//loosefactor사용
+		//node 크기와 저장될 object에크기가 엇비슷할때 공간구조 효율이 가장 좋다.
 		float looseFactor = 2;
 		//2022-11-04~ JOctree is looseOctree 
 		static constexpr bool isLooseOctree = true;
@@ -45,8 +49,7 @@ namespace JinEngine
 	public:
 		void Culling(JAcceleratorCullingInfo& info)noexcept final;
 		void Intersect(JAcceleratorIntersectInfo& info)const noexcept final;
-		void Contain(JAcceleratorContainInfo& info)const noexcept final;
-		//미구현
+		void Contain(JAcceleratorContainInfo& info)const noexcept final; 
 		void AlignedObject(JAcceleratorAlignInfo& info, _Out_ std::vector<JUserPtr<JGameObject>>& aligned, _Out_ int& validCount)const noexcept;
 	public:
 		void UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept final;

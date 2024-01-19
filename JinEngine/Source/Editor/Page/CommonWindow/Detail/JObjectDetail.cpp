@@ -32,7 +32,7 @@ namespace JinEngine
 		}
 		void JObjectDetail::UpdateWindow()
 		{
-			EnterWindow(J_GUI_WINDOW_FLAG_NO_SCROLL_BAR | J_GUI_WINDOW_FLAG_NO_COLLAPSE);
+			EnterWindow(J_GUI_WINDOW_FLAG_NO_COLLAPSE);
 			UpdateDocking();
 			if (IsActivated())
 			{
@@ -83,12 +83,15 @@ namespace JinEngine
 			auto compVec = gObj->GetAllComponent();
 			for (const auto& comp : compVec)
 			{ 
-				//JGui::Separator(); 
+				JGui::Separator(); 
 				if (JGui::TreeNodeEx(JGui::CreateGuiLabel(Core::ErasePrefixJ(comp->GetTypeInfo().Name()), comp->GetGuid(), GetName() + "TreeNode"), baseFlags))
 				{ 
 					JGui::TreePop(); 
-					guiHelper->BeginGuiWidget(comp);
+					guiHelper->BeginGuiWidget(comp, gObj->GetGuid());
 					guiHelper->UpdateGuiWidget(comp, &comp->GetTypeInfo());
+					auto lastSelected = guiHelper->GetLastSelected();
+					if (lastSelected != nullptr)
+						RequestPushSelectObject(lastSelected);
 					guiHelper->EndGuiWidget();
 				} 
 			}
@@ -136,8 +139,11 @@ namespace JinEngine
 			if (JGui::TreeNodeEx(JGui::CreateGuiLabel(Core::ErasePrefixJ(fObj->GetTypeInfo().Name()), fObj->GetGuid(), GetName() + "TreeNode"), baseFlags))
 			{
 				JGui::TreePop(); 
-				guiHelper->BeginGuiWidget(fObj);
+				guiHelper->BeginGuiWidget(fObj, fObj->GetGuid());
 				guiHelper->UpdateGuiWidget(fObj, &fObj->GetTypeInfo());
+				auto lastSelected = guiHelper->GetLastSelected();
+				if (lastSelected != nullptr)
+					RequestPushSelectObject(lastSelected);
 				guiHelper->EndGuiWidget();
 			} 
 		}
@@ -157,22 +163,22 @@ namespace JinEngine
 		void JObjectDetail::OnEvent(const size_t& senderGuid, const J_EDITOR_EVENT& eventType, JEditorEvStruct* eventStructure)
 		{ 
 			JEditorWindow::OnEvent(senderGuid, eventType, eventStructure);
-			if (!eventStructure->CanExecuteOtherEv(senderGuid, GetGuid()))
-				return;
+			const bool canExecuteCallerEv = eventStructure->CanExecuteCallerEv(senderGuid, GetGuid());
+			const bool canExecuteOthterEv = eventStructure->CanExecuteOtherEv(senderGuid, GetGuid());
 
 			if (eventType == J_EDITOR_EVENT::PUSH_SELECT_OBJECT && eventStructure->pageType == GetOwnerPageType())
 			{
 				JEditorPushSelectObjectEvStruct* evstruct = static_cast<JEditorPushSelectObjectEvStruct*>(eventStructure);
-				auto newSelected = evstruct->GetFirstMatchedTypeObject(Core::JIdentifier::StaticTypeInfo());				
+				auto newSelected = evstruct->GetFirstMatchedTypeObject(Core::JIdentifier::StaticTypeInfo());
 				const bool isSame = newSelected.IsValid() && selected.IsValid() && newSelected->GetGuid() == selected->GetGuid();
 				if (!isSame)
 				{
 					selected.ConnnectChild(std::move(newSelected));
 					guiHelper->Clear();
-					searchBarHelper->ClearInputBuffer(); 
+					searchBarHelper->ClearInputBuffer();
 				}
 			}
-			else if (eventType == J_EDITOR_EVENT::POP_SELECT_OBJECT && eventStructure->pageType == GetOwnerPageType())
+			else if (canExecuteOthterEv && eventType == J_EDITOR_EVENT::POP_SELECT_OBJECT && eventStructure->pageType == GetOwnerPageType())
 			{
 				if (!selected.IsValid())
 					return;
@@ -182,7 +188,7 @@ namespace JinEngine
 				{
 					selected.Clear();
 					guiHelper->Clear();
-					searchBarHelper->ClearInputBuffer(); 
+					searchBarHelper->ClearInputBuffer();
 				}
 			}
 		}

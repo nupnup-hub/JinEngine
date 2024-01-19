@@ -52,17 +52,20 @@ namespace JinEngine
 			constants.height = height;
 
 			//Quad Mesh값에 따라 설정
+			//instead use ndc vertex
+			/*
 			const XMVECTOR s = XMVectorSet(2, 2, 1, 1);
 			const XMVECTOR t = XMVectorSet(-1, 1, 0, 1);
 			const XMVECTOR q = XMVectorSet(0, 0, 0, 1);
 			const XMVECTOR zero = XMVectorSet(0, 0, 0, 1);
 
 			constants.world.StoreXM(XMMatrixTranspose(XMMatrixAffineTransformation(s, zero, q, t)));
+			*/
 			outlineCB->CopyData(0, constants);
 		}
 		void JDx12Outline::DrawCamOutline(const JGraphicOutlineDrawSet* drawSet, const JDrawHelper& helper)
 		{
-			if (!IsSameDevice(drawSet) || !helper.allowDrawDebug)
+			if (!IsSameDevice(drawSet) || !helper.allowDrawDebugObject)
 				return;
 
 			const JDx12GraphicOutlineDrawSet* dx12Set = static_cast<const JDx12GraphicOutlineDrawSet*>(drawSet);
@@ -71,11 +74,14 @@ namespace JinEngine
 			ID3D12GraphicsCommandList* cmdList = dx12Set->cmdList;
 
 			auto gRInterface = helper.cam->GraphicResourceUserInterface();
-			const int rtvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, 0);
-			const int rtvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_BIND_TYPE::RTV, 0);
+			const uint rtDataIndex = gRInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
+			const uint dsDataIndex = gRInterface.GetResourceDataIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_TASK_TYPE::SCENE_DRAW);
 
-			const int dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, 0);
-			const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, 0);
+			const int rtvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtDataIndex);
+			const int rtvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, J_GRAPHIC_BIND_TYPE::RTV, rtDataIndex);
+
+			const int dsvVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsDataIndex);
+			const int dsvHeapIndex = gRInterface.GetHeapIndexStart(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, J_GRAPHIC_BIND_TYPE::DSV, dsDataIndex);
 	
 			JDx12GraphicResourceInfo* depthInfo = dx12Gm->GetDxInfo(J_GRAPHIC_RESOURCE_TYPE::SCENE_LAYER_DEPTH_STENCIL, dsvVecIndex);
 			ID3D12Resource* rtResource = dx12Gm->GetResource(J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON, rtvVecIndex);
@@ -86,7 +92,7 @@ namespace JinEngine
 
 			D3D12_VIEWPORT viewPort;
 			D3D12_RECT rect;
-			dx12Device->CalViewportAndRect(JVector2F(desc.Width, desc.Height), viewPort, rect);
+			dx12Device->CalViewportAndRect(JVector2F(desc.Width, desc.Height), true, viewPort, rect);
 			cmdList->RSSetViewports(1, &viewPort);
 			cmdList->RSSetScissorRects(1, &rect);
 			cmdList->OMSetRenderTargets(1, &rtv, true, nullptr);
@@ -99,7 +105,7 @@ namespace JinEngine
 		}
 		void JDx12Outline::DrawOutline(const JGraphicOutlineDrawSet* drawSet, const JDrawHelper& helper)
 		{
-			if (!IsSameDevice(drawSet) || !helper.allowDrawDebug)
+			if (!IsSameDevice(drawSet) || !helper.allowDrawDebugObject)
 				return;
 
 			const JDx12GraphicOutlineDrawSet* dx12Set = static_cast<const JDx12GraphicOutlineDrawSet*>(drawSet);
@@ -121,7 +127,7 @@ namespace JinEngine
 			cmdList->SetGraphicsRootConstantBufferView(2, outlineCB->GetResource()->GetGPUVirtualAddress());
 			cmdList->SetPipelineState(gShaderData->pso.Get());
 
-			JUserPtr<JMeshGeometry> mesh = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::QUAD);
+			JUserPtr<JMeshGeometry> mesh = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::FULL_SCREEN_QUAD);
 
 			const D3D12_VERTEX_BUFFER_VIEW vertexPtr = dx12Gm->VertexBufferView(mesh);
 			const D3D12_INDEX_BUFFER_VIEW indexPtr = dx12Gm->IndexBufferView(mesh);
@@ -192,8 +198,7 @@ namespace JinEngine
 			{
 				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 				{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-				{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 			};
 
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC newShaderPso;

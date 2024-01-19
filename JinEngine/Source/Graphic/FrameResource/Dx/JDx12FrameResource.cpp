@@ -104,13 +104,13 @@ namespace JinEngine::Graphic
 			return JCUtil::StrToWstr(Core::GetName(type));
 		};
 
-		materialBuffer = std::make_unique<JDx12GraphicBuffer<JMaterialConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
-		dLightBuffer = std::make_unique<JDx12GraphicBuffer<JDirectionalLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
-		csmBuffer = std::make_unique<JDx12GraphicBuffer<JCsmConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
-		pLightBuffer = std::make_unique<JDx12GraphicBuffer<JPointLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
-		sLightBuffer = std::make_unique<JDx12GraphicBuffer<JSpotLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
-		rLightBuffer = std::make_unique<JDx12GraphicBuffer<JRectLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
-		hzbOccObjectBuffer = std::make_unique<JDx12GraphicBuffer<JHzbOccObjectConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_COMMON);
+		materialBuffer = std::make_unique<JDx12GraphicBuffer<JMaterialConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL), J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER);
+		dLightBuffer = std::make_unique<JDx12GraphicBuffer<JDirectionalLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER);
+		csmBuffer = std::make_unique<JDx12GraphicBuffer<JCsmConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO), J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER);
+		pLightBuffer = std::make_unique<JDx12GraphicBuffer<JPointLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER);
+		sLightBuffer = std::make_unique<JDx12GraphicBuffer<JSpotLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER);
+		rLightBuffer = std::make_unique<JDx12GraphicBuffer<JRectLightConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER);
+		hzbOccObjectBuffer = std::make_unique<JDx12GraphicBuffer<JHzbOccObjectConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER);
      
 		objectCB = std::make_unique<JDx12GraphicBuffer<JObjectConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT), J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
 		skinnedCB = std::make_unique<JDx12GraphicBuffer<JAnimationConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION), J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
@@ -123,7 +123,8 @@ namespace JinEngine::Graphic
 		smArrayDrawCB = std::make_unique<JDx12GraphicBuffer<JShadowMapArrayDrawConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW), J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
 		smCubeDrawCB = std::make_unique<JDx12GraphicBuffer<JShadowMapCubeDrawConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW), J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
 		smDrawCB = std::make_unique<JDx12GraphicBuffer<JShadowMapDrawConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW), J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
-
+		ssaoCB = std::make_unique<JDx12GraphicBuffer<JSsaoConstants>>(nameLam(J_UPLOAD_FRAME_RESOURCE_TYPE::SSAO_PASS), J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT);
+		
 		materialBuffer->Build(device, gInfo.minCapacity);
 		dLightBuffer->Build(device, gInfo.minCapacity);
 		csmBuffer->Build(device, gInfo.minCapacity);
@@ -143,8 +144,9 @@ namespace JinEngine::Graphic
 		smArrayDrawCB->Build(device, gInfo.minCapacity);
 		smCubeDrawCB->Build(device, gInfo.minCapacity);
 		smDrawCB->Build(device, gInfo.minCapacity);
+		ssaoCB->Build(device, gInfo.minCapacity);
 
-		std::unordered_map<J_UPLOAD_FRAME_RESOURCE_TYPE, JGraphicBufferBase*> uploadBufferMap =
+		std::unordered_map<J_UPLOAD_FRAME_RESOURCE_TYPE, JDx12GraphicBufferInterface*> uploadBufferMap =
 		{
 			{J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL, materialBuffer.get()},
 			{J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT, dLightBuffer.get()},
@@ -163,7 +165,8 @@ namespace JinEngine::Graphic
 			{J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT, hzbOccObjectBuffer.get()},
 			{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_ARRAY_DRAW, smArrayDrawCB.get()},
 			{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW, smCubeDrawCB.get()},
-			{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, smDrawCB.get()}
+			{J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, smDrawCB.get()},
+			{J_UPLOAD_FRAME_RESOURCE_TYPE::SSAO_PASS, ssaoCB.get()}
 		};
 		for (uint i = 0; i < (uint)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT; ++i)
 			bufferVec[i] = nullptr;
@@ -206,6 +209,10 @@ namespace JinEngine::Graphic
 	{ 
 		return bufferVec[(uint)type];
 	}
+	JDx12GraphicBufferInterface* JDx12FrameResource::GetDx12Buffer(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept
+	{
+		return bufferVec[(uint)type];
+	}
 	uint JDx12FrameResource::GetElementCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept
 	{ 
 		return bufferVec[(uint)type]->GetElementCount();
@@ -244,8 +251,7 @@ namespace JinEngine::Graphic
 			return;
 
 		//Caution
-		//초기화시 기존 object들 setFrameDirty 호출 필요!
-		bufferVec[(uint)type]->Clear();
+		//초기화시 기존 object들 setFrameDirty 호출 필요! 
 		bufferVec[(uint)type]->Build(device, newCount);
 	}
 	void JDx12FrameResource::ResetCmd(const J_MAIN_THREAD_ORDER type)

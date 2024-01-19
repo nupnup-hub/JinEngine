@@ -106,13 +106,17 @@ namespace JinEngine
 			return pageFlag;
 		}
 		bool JEditorPage::GetPublicState(const J_EDITOR_PAGE_PUBLIC_STATE stateType)const noexcept
-		{
+		{ 
 			switch (stateType)
 			{
 			case JinEngine::Editor::J_EDITOR_PAGE_PUBLIC_STATE::INPUT_LOCK:
 				return state.isInputLock;
+			case JinEngine::Editor::J_EDITOR_PAGE_PUBLIC_STATE::MAXIMIZE:
+				return state.isMaximize;
+			case JinEngine::Editor::J_EDITOR_PAGE_PUBLIC_STATE::MINIMIZE:
+				return state.isMinimize;
 			default:
-				break;
+				return false;
 			}
 		}
 		uint JEditorPage::GetOpenWindowCount()const noexcept

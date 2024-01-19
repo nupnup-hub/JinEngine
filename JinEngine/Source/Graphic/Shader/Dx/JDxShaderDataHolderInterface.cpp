@@ -1,5 +1,7 @@
 #include"JDxShaderDataHolderInterface.h"
 #include"../../../Core/Exception/JExceptionMacro.h"
+#include"../../../Core/Utility/JCommonUtility.h"
+#include"../../../Develop/Debug/JDevelopDebug.h"
 #include <D3Dcompiler.h>   
 
 namespace JinEngine::Graphic
@@ -16,8 +18,18 @@ namespace JinEngine::Graphic
             //macro[setCount] = { NULL, NULL };
             return macro;
         }
+        std::vector<D3D_SHADER_MACRO> ToD3dMacro(const std::vector<JMacroSet>& set)noexcept
+        {
+            const uint setCount = (uint)set.size();
+            const uint macroCount = setCount;
+            std::vector<D3D_SHADER_MACRO> macro(macroCount);
+            for (uint i = 0; i < setCount; ++i)
+                macro[i] = {JCUtil::WstrToU8Str(set[i].name).c_str(),  JCUtil::WstrToU8Str(set[i].value).c_str() };
+            //macro[setCount] = { NULL, NULL };
+            return macro;
+        }
         static Microsoft::WRL::ComPtr<ID3DBlob> CompileShaderUseOldApi(const std::wstring& filename,
-            const D3D_SHADER_MACRO* defines,
+            const std::vector<JMacroSet>& macroSet,
             const std::string& entrypoint,
             const std::string& target)
         {
@@ -28,7 +40,8 @@ namespace JinEngine::Graphic
             Microsoft::WRL::ComPtr<ID3DBlob> byteCode = nullptr;
             Microsoft::WRL::ComPtr<ID3DBlob> errors;
 
-            ThrowIfFailedHr(D3DCompileFromFile(filename.c_str(), defines, D3D_COMPILE_STANDARD_FILE_INCLUDE,
+            std::vector<D3D_SHADER_MACRO> macro = ToD3dMacro(macroSet);
+            ThrowIfFailedHr(D3DCompileFromFile(filename.c_str(), macro.data(), D3D_COMPILE_STANDARD_FILE_INCLUDE,
                 entrypoint.c_str(), target.c_str(), compileFlags, 0, &byteCode, &errors));
 
             if (errors != nullptr)
@@ -36,7 +49,7 @@ namespace JinEngine::Graphic
 
             return byteCode;
         }
-//https://github.com/microsoft/DirectXShaderCompiler/wiki/Using-dxc.exe-and-dxcompiler.dll
+        //https://github.com/microsoft/DirectXShaderCompiler/wiki/Using-dxc.exe-and-dxcompiler.dll
         static Microsoft::WRL::ComPtr<IDxcBlob> CompileShaderUseNewApi(const std::wstring& filename,
             const std::vector<JMacroSet>& macroSet,
             const std::wstring& entrypoint,
@@ -78,7 +91,7 @@ namespace JinEngine::Graphic
             Microsoft::WRL::ComPtr<IDxcOperationResult> pResult;
             HRESULT hr = pCompiler->Compile(&source, pArgs->GetArguments(), pArgs->GetCount(), pIncludeHandler.Get(), IID_PPV_ARGS(&pResult));
             if (SUCCEEDED(hr))
-                pResult->GetStatus(&hr);
+                pResult->GetStatus(&hr); 
             if (FAILED(hr))
             {
                 if (pResult)
@@ -88,7 +101,20 @@ namespace JinEngine::Graphic
                     if (SUCCEEDED(hr) && errorsBlob)
                     {
                         std::string err = (const char*)errorsBlob->GetBufferPointer();
-                        MessageBoxA(0, err.c_str(), "Compilation failed with errors", 0); 
+                        if (Develop::JDevelopDebug::IsActivate())
+                        { 
+                            if (!Develop::JDevelopDebug::HasLogHandler("ShaderCompileError"))
+                                Develop::JDevelopDebug::CreatePublicLogHandler("ShaderCompileError");
+
+                            Develop::JDevelopDebug::PushLog("Shader compile error");
+                            Develop::JDevelopDebug::PushLog("ShaderCompileError", L"File: " + filename);
+                            Develop::JDevelopDebug::PushLog("ShaderCompileError", L"Entry: " + entrypoint);
+                            Develop::JDevelopDebug::PushLog("ShaderCompileError", L"Target: " + target);
+                            Develop::JDevelopDebug::PushLog("ShaderCompileError", "Contents \n" + err);
+                            Develop::JDevelopDebug::Write();
+                        }
+                        else
+                            MessageBoxA(0, err.c_str(), "Compilation failed with errors", 0); 
                     }
                 } 
             }
@@ -108,6 +134,12 @@ namespace JinEngine::Graphic
         const std::wstring& entrypoint,
         const std::wstring& target)
     {
+       // auto underLine = target.find_first_of(L"_");
         return Private::CompileShaderUseNewApi(filename, macroSet, entrypoint, target);
+        //auto versionNumber = JCUtil::WstringToInt(target.substr(underLine + 1, 1));
+        //if (versionNumber >= 6)
+        //    return Private::CompileShaderUseNewApi(filename, macroSet, entrypoint, target);
+        //else
+        //    return Private::CompileShaderUseOldApi(filename, macroSet, JCUtil::WstrToU8Str(entrypoint), JCUtil::WstrToU8Str(target));
     }
 }

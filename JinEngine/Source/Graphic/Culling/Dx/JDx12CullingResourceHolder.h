@@ -11,26 +11,81 @@ namespace JinEngine
 		class JDx12CullingResourceHolder : public JCullingResultHolder
 		{
 		public:
-			virtual ID3D12Resource* GetResource()const noexcept = 0;
-		public:
+			virtual ID3D12Resource* GetResource()const noexcept = 0;  
+		public: 
 			bool IsGpuResource()const noexcept final;
 			bool CanSetValue()const noexcept final; 
+		public:
+			virtual void SutffClearValue(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* uploadBuffer) = 0;
+		};
+		
+		class JDx12ReadBackResourceInterface : public JDx12CullingResourceHolder
+		{
+		public:
+			virtual void CopyOnCpuBuffer(const uint stIndex, const uint count)noexcept = 0;
+		public:
+			J_GRAPHIC_BUFFER_TYPE GetBufferType()const noexcept final;
+		public:
+			virtual void SetCurrent(const uint frameIndex) = 0;  
 		};
 
-		class JHzbDx12CullingResultHolder final : public JDx12CullingResourceHolder
+		class JDx12FrustumCullingResultHolder final : public JDx12ReadBackResourceInterface
+		{
+		public:
+			using ResultType = uint32;
+		private:
+			//JDx12GraphicBuffer<ResultType> result;
+			JDx12GraphicBuffer<ResultType> readBack[Constants::gNumFrameResources];
+			JDx12GraphicBuffer<ResultType>* current = nullptr;
+			ResultType* cpuBuffer = nullptr;
+			const J_CULLING_TARGET target;
+		public:
+			JDx12FrustumCullingResultHolder(const J_CULLING_TARGET target, const uint frameInedx);
+			~JDx12FrustumCullingResultHolder();
+		public:
+			void Culling(const uint index, const bool value)noexcept final;
+			void CopyOnCpuBuffer(const uint stIndex, const uint count)noexcept final;
+		public:
+			uint GetBufferSize()const noexcept final;
+			J_CULLING_TARGET GetCullingTarget()const noexcept final;
+			/*
+			* @return ReadBack
+			*/
+			ID3D12Resource* GetResource()const noexcept final;  
+		public:
+			/*
+			* @brief 0 is non culling 1 is culling
+			*/
+			bool IsCulled(const uint index)const noexcept final;
+		public:
+			void SetCurrent(const uint frameIndex) final;
+		public:
+			void Build(JGraphicDevice* device, const uint newCapacity);
+			void Clear();
+			void SutffClearValue(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* uploadBuffer)final;
+		};
+		class JHzbDx12CullingResultHolder final : public JDx12ReadBackResourceInterface
 		{
 		public:
 			using ResultType = uint;
 		private:
-			JDx12GraphicBuffer<ResultType> readBack;	//read back ...  hzb compute시 ua buffer에 쓰인 값을 복사받는다(in JDx12HZBOccCulling)
+			//read back ...  hzb compute시 ua buffer에 쓰인 값을 복사받는다(in JDx12HZBOccCulling)
+			JDx12GraphicBuffer<ResultType> readBack[Constants::gNumFrameResources];
+			JDx12GraphicBuffer<ResultType>* current = nullptr;
+			ResultType* cpuBuffer = nullptr;
+			const J_CULLING_TARGET target;
 		public:
-			JHzbDx12CullingResultHolder();
+			JHzbDx12CullingResultHolder(const J_CULLING_TARGET target, const uint frameInedx);
 			~JHzbDx12CullingResultHolder();
 		public:
 			void Culling(const uint index, const bool value)noexcept final;
+			void CopyOnCpuBuffer(const uint stIndex, const uint count)noexcept final;
 		public:
-			uint GetBuffSize()const noexcept final;
+			uint GetBufferSize()const noexcept final;
+			J_CULLING_TARGET GetCullingTarget()const noexcept final;
 			ID3D12Resource* GetResource()const noexcept final;
+		public:
+			void SetCurrent(const uint frameIndex) final;
 		public:
 			/*
 			* @brief 0 is non culling 1 is culling
@@ -39,28 +94,32 @@ namespace JinEngine
 		public:
 			void Build(JGraphicDevice* device, const uint newCapacity);
 			void Clear();
+			void SutffClearValue(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* uploadBuffer)final;
 		};
-
-		class JHdDx12CullingResultHolder final : public JDx12CullingResourceHolder
+		class JHdDx12CullingResultHolder final : public JDx12ReadBackResourceInterface
 		{
 		public:
 			using ResultType = uint64;
-		private:
-			//JDx12GraphicBuffer<ResultType> result;
-			JDx12GraphicBuffer<ResultType> readBack;
+		private: 
+			JDx12GraphicBuffer<ResultType> readBack[Constants::gNumFrameResources];
+			JDx12GraphicBuffer<ResultType>* current = nullptr;
+			ResultType* cpuBuffer = nullptr;
+			const J_CULLING_TARGET target;
 		public:
-			JHdDx12CullingResultHolder();
+			JHdDx12CullingResultHolder(const J_CULLING_TARGET target, const uint frameIndex);
 			~JHdDx12CullingResultHolder();
 		public:
 			void Culling(const uint index, const bool value)noexcept final;
+			void CopyOnCpuBuffer(const uint stIndex, const uint count)noexcept final;
 		public:
-			uint GetBuffSize()const noexcept final;
+			uint GetBufferSize()const noexcept final;
+			J_CULLING_TARGET GetCullingTarget()const noexcept final;
 			/*
 			* @return ReadBack
 			*/
-			ID3D12Resource* GetResource()const noexcept final;
-			ID3D12Resource* GetPredictResource()const noexcept;
-			ID3D12Resource* GetReadBackResource()const noexcept;
+			ID3D12Resource* GetResource()const noexcept final; 
+		public:
+			void SetCurrent(const uint frameIndex) final;
 		public:
 			/*
 			* @brief 1 is non culling 0 is culling
@@ -69,6 +128,7 @@ namespace JinEngine
 		public:
 			void Build(JGraphicDevice* device, const uint newCapacity);
 			void Clear();
+			void SutffClearValue(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* uploadBuffer)final;
 		};
 	}
 }

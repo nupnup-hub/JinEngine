@@ -134,6 +134,58 @@ namespace JinEngine
 	{
 		FindContainNotSort(info);
 	}
+	void JOctreeNode::AlignLeafNode(const JAcceleratorAlignInfo& info, std::vector<JUserPtr<JGameObject>>& alignGameObject, uint& index)noexcept
+	{
+		if (index >= alignGameObject.size())
+			return;
+
+		if (IsLeafNode())
+		{
+			bool canAdd = true;
+			if (info.tool == JAcceleratorAlignInfo::ALIGN_TOOL::FRUSTUM && info.hasCullingArea)
+				canAdd = info.cullingFrustum.Intersects(boundingBox) == ContainmentType::DISJOINT;
+
+			if (info.alignPassCondPtr != nullptr)
+			{
+				for (const auto& data : innerGameObject)
+				{
+					if(info.alignPassCondPtr(data.Get()))
+					{
+						alignGameObject[index] = data;
+						++index;
+					}
+				}
+			}
+			else
+			{
+				for (const auto& data : innerGameObject)
+				{
+					alignGameObject[index] = data;
+					++index;
+				}
+			} 
+		}
+		else
+		{
+			struct DataSet
+			{
+			public:
+				int order;
+				float length;
+			};
+			DataSet dataSet[childCount];
+			for (uint i = 0; i < childCount; ++i)
+			{
+				dataSet[i].order = i;
+				dataSet[i].length = (childrenNode[i]->boundingBox.Center - info.pos).Length();
+			} 
+			auto compareLam = [](const DataSet& a, const DataSet& b) {return a.order < b.order; };
+			std::sort(dataSet, dataSet + childCount, compareLam);
+
+			for (uint i = 0; i < childCount; ++i)
+				childrenNode[dataSet[i].order]->AlignLeafNode(info, alignGameObject, index);
+		}
+	}
 	bool JOctreeNode::AddGameObject(JUserPtr<JGameObject> gameObj, bool isLooseOctree)noexcept
 	{
 		JUserPtr<JRenderItem> rItem = gameObj->GetRenderItem();
@@ -254,17 +306,26 @@ namespace JinEngine
 
 			const BoundingOrientedBox oriBBox = rItem->GetOrientedBoundingBox();
 			const ContainmentType res = Contain(info, oriBBox);
-			if (res == ContainmentType::CONTAINS)
-				OffCulling(info, rItem);
-			else if (res == ContainmentType::INTERSECTS)
+
+			if (res == ContainmentType::DISJOINT)
+				SetCulling(info, rItem);
+			else
 			{
-				if (IsIntersectCullingFrustum(info, oriBBox))
+				if(res == ContainmentType::INTERSECTS && IsIntersectCullingFrustum(info, oriBBox))
 					SetCulling(info, rItem);
 				else
+				{
 					OffCulling(info, rItem);
+					if ( info.allowPushVisibleObjVec)
+					{
+						for (const auto& data : innerGameObject)
+						{
+							(*info.appAlignedObjVec)[info.pushedCount] = data;
+							++info.pushedCount;
+						}
+					}
+				}
 			}
-			else
-				SetCulling(info, rItem);
 		}
 	}
 	/*

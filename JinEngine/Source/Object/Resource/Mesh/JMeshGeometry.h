@@ -1,5 +1,6 @@
 #pragma once
 #include"../JResourceObject.h" 
+#include"../JResourceObjectImporter.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
 #include"../../../Core/Geometry/Mesh/JMeshType.h" 
 #include<DirectXCollision.h> 
@@ -12,6 +13,17 @@ namespace JinEngine
 	}
 	class JMeshGeometryPrivate;
 	class JMaterial;
+	 
+
+	class JMeshGeometryImportDesc : public JResourceObjectImportDesc
+	{
+		REGISTER_CLASS_ONLY_USE_TYPEINFO(JMeshGeometryImportDesc)
+	public:
+		bool useSplitMesh = false;		//ignore split mesh if skinned geometry
+	public:
+		JMeshGeometryImportDesc(const Core::JFileImportHelpData& importPathData);
+	};
+
 	class JMeshGeometry : public JResourceObject,
 		public Graphic::JGraphicResourceUserAccess
 	{

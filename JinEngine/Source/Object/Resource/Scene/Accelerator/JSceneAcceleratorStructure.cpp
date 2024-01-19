@@ -129,7 +129,7 @@ namespace JinEngine
 			}
 		}
 		if (!cullingOnece && !info.useJFrustum)
-			info.cullUser.OffCullingArray(Graphic::J_CULLING_TYPE::FRUSTUM);
+			info.cullUser.OffCullingArray(Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM);
 	}
 	void JSceneAcceleratorStructure::Intersect(JAcceleratorIntersectInfo& info)const noexcept
 	{ 

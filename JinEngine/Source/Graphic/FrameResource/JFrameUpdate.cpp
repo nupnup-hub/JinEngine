@@ -1,31 +1,56 @@
 #include"JFrameUpdate.h"
 #include"../JGraphicPrivate.h"
-
+ 
 namespace JinEngine
 {
 	namespace Graphic
 	{
 		namespace
 		{
+			struct JFrameUpdateAreaInfo
+			{
+			public:
+				size_t guid = 0;
+				int holderCount = 0;
+			public:
+				JFrameUpdateAreaInfo(size_t guid, int initCount)
+					:guid(guid), holderCount(initCount)
+				{} 
+			};
 			struct JFrameUpdateIndexHolderInfo
 			{
 			public:
-				JFrameUpdateData* ptr;
-				size_t areaGuid; 
+				JFrameUpdateData* ptr = nullptr;
+				JFrameUpdateAreaInfo* areaInfo = nullptr;
 			public:
-				JFrameUpdateIndexHolderInfo(JFrameUpdateData* ptr, const size_t areaGuid)
-					:ptr(ptr), areaGuid(areaGuid)
-				{}
+				JFrameUpdateIndexHolderInfo(JFrameUpdateData* ptr, JFrameUpdateAreaInfo* areaInfo)
+					:ptr(ptr), areaInfo(areaInfo)
+				{ } 
 			};
-			static std::vector<JFrameUpdateIndexHolderInfo> holderVec[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT];
-		 
-			static int GetAreaStIndex(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const size_t areaGuid)
-			{  
-				auto& vec = holderVec[(int)type];
+			using AreaInfoVec = std::vector<std::unique_ptr<JFrameUpdateAreaInfo>>;
+			using FrameUpdateHolderVec = std::vector<JFrameUpdateIndexHolderInfo>;
+
+			static AreaInfoVec areaInfoVec[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT];
+			static FrameUpdateHolderVec holderVec[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT];
+
+			static int GetAreaVecIndex(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const size_t areaGuid) noexcept
+			{
+				AreaInfoVec& vec = areaInfoVec[(int)type];
 				const int count = (int)vec.size();
 				for (int i = 0; i < count; ++i)
 				{
-					if (vec[i].areaGuid == areaGuid)
+					if (vec[i]->guid == areaGuid)
+						return i;
+				}
+				return invalidIndex;
+			}
+			static int GetAreaStIndex(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const size_t areaGuid)
+			{
+				FrameUpdateHolderVec& vec = holderVec[(int)type];
+				const int count = (int)vec.size();
+				for (int i = 0; i < count; ++i)
+				{
+					if (vec[i].areaInfo->guid == areaGuid)
 						return i;
 				}
 				return invalidIndex;
@@ -34,11 +59,11 @@ namespace JinEngine
 			{
 				if (areaSt != invalidIndex)
 				{
-					auto& vec = holderVec[(int)type];
+					FrameUpdateHolderVec& vec = holderVec[(int)type];
 					const int count = (int)vec.size();
 					for (int i = areaSt; i < count; ++i)
 					{
-						if (vec[i].areaGuid != areaGuid)
+						if (vec[i].areaInfo->guid != areaGuid)
 							return i - 1;
 					}
 					return count - 1;
@@ -46,12 +71,12 @@ namespace JinEngine
 				return invalidIndex;
 			}
 			static int GetAreaEdIndex(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const size_t areaGuid)
-			{			 
+			{
 				return GetAreaEdIndex(type, areaGuid, GetAreaStIndex(type, areaGuid));
 			}
 			static int GetArrayIndex(const J_UPLOAD_FRAME_RESOURCE_TYPE type, JFrameUpdateData* ptr)noexcept
 			{
-				auto& vec = holderVec[(int)type];
+				FrameUpdateHolderVec& vec = holderVec[(int)type];
 				const uint count = (uint)vec.size();
 				for (uint i = 0; i < count; ++i)
 				{
@@ -61,34 +86,46 @@ namespace JinEngine
 				return invalidIndex;
 			}
 		}
-  
+
 		int JFrameUpdateData::GetFrameIndex()const noexcept
 		{
 			return index;
-		} 
+		}
 		int JFrameUpdateData::GetFrameIndexSize()const noexcept
 		{
 			return indexSize;
 		}
 		uint JFrameUpdateData::GetTotalRegistedCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type)
 		{
-			return holderVec[(int)type].size();
+			return (uint)holderVec[(int)type].size();
 		}
 		uint JFrameUpdateData::GetTotalFrameCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type)
-		{
+		{ 
+			//만약 frame holderVec[index].ptr이 nullptr 이면
+			//memory extend시에 호출되는 NotifyReAlloc에서 ReRegister를 호출하지 않았는지 확인해보자.
 			const uint registeredCount = GetTotalRegistedCount(type);
-			return registeredCount == 0 ? 0 : holderVec[(int)type][registeredCount - 1].ptr->index + holderVec[(int)type][registeredCount - 1].ptr->indexSize;
+			return registeredCount == 0 ? 0 : (holderVec[(int)type][registeredCount - 1].ptr->index + holderVec[(int)type][registeredCount - 1].ptr->indexSize);
+		}
+		uint JFrameUpdateData::GetAreaRegistedCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const size_t areaGuid)
+		{
+			int index = GetAreaVecIndex(type, areaGuid);
+			return index != invalidIndex ? areaInfoVec[(int)type][index]->holderCount : 0;
+		}
+		uint JFrameUpdateData::GetAreaRegistedOffset(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const size_t areaGuid)
+		{
+			int result = GetAreaStIndex(type, areaGuid);
+			return result == invalidIndex ? 0 : result;
 		}
 		void JFrameUpdateData::SetUploadIndex(const int value) noexcept
-		{ 
+		{
 			index = value;
-		} 
+		}
 		void JFrameUpdateData::SetMovedDirty()noexcept
-		{  
+		{
 			movedDataDirty = Constants::gNumFrameResources;
 		}
 		void JFrameUpdateData::MinusMovedDirty()noexcept
-		{ 
+		{
 			--movedDataDirty;
 			if (movedDataDirty < 0)
 				movedDataDirty = 0;
@@ -103,7 +140,7 @@ namespace JinEngine
 		}
 		void JFrameUpdateData::RegisterFrameData(const J_UPLOAD_FRAME_RESOURCE_TYPE type,
 			JFrameUpdateData* holder,
-			const size_t areaGuid, 
+			const size_t areaGuid,
 			const ushort indexSize,
 			const uint8 sortOrder)
 		{
@@ -113,7 +150,7 @@ namespace JinEngine
 			holder->indexSize = indexSize;
 			holder->sortOrder = sortOrder;
 
-			const int areaSt = GetAreaStIndex(type, areaGuid); 
+			const int areaSt = GetAreaStIndex(type, areaGuid);
 			const int areaEd = GetAreaEdIndex(type, areaGuid, areaSt);
 			if (areaEd == invalidIndex)
 				PushBack(type, holder, areaGuid);
@@ -121,14 +158,14 @@ namespace JinEngine
 				Insert(type, holder, areaGuid, areaSt, areaEd);
 		}
 		void JFrameUpdateData::DeRegisterFrameData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, JFrameUpdateData* holder)
-		{	 
+		{
 			if (holder == nullptr || !holder->HasValidFrameIndex())
 				return;
 
 			Pop(type, holder);
 		}
 		void JFrameUpdateData::ReRegisterFrameData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, JFrameUpdateData* holder)
-		{ 
+		{
 			//check is registed
 			if (holder == nullptr || !holder->HasValidFrameIndex())
 				return;
@@ -138,9 +175,10 @@ namespace JinEngine
 		}
 		bool JFrameUpdateData::PushBack(const J_UPLOAD_FRAME_RESOURCE_TYPE type, JFrameUpdateData* holder, const size_t areaGuid)
 		{
-			auto& vec = holderVec[(int)type];
-			const int count = vec.size(); 
-
+			FrameUpdateHolderVec& vec = holderVec[(int)type];
+			AreaInfoVec& areaVec = areaInfoVec[(int)type];
+			const int count = vec.size();
+ 
 			if (count == 0)
 			{
 				holder->index = 0;
@@ -148,11 +186,12 @@ namespace JinEngine
 			}
 			else
 			{
-				auto ptr = vec[count - 1].ptr;
+				JFrameUpdateData* ptr = vec[count - 1].ptr;
 				holder->index = ptr->index + ptr->indexSize;
 				holder->number = ptr->number + 1;
-			} 
-			vec.emplace_back(JFrameUpdateIndexHolderInfo(holder, areaGuid));
+			}
+			areaVec.push_back(std::make_unique<JFrameUpdateAreaInfo>(areaGuid, 1)); 
+			vec.push_back(JFrameUpdateIndexHolderInfo(holder, areaVec[areaVec.size() - 1].get()));
 			return true;
 		}
 		bool JFrameUpdateData::Insert(const J_UPLOAD_FRAME_RESOURCE_TYPE type,
@@ -160,11 +199,13 @@ namespace JinEngine
 			const size_t areaGuid,
 			const int areaStIndex,
 			const int areaEdIndex)
-		{ 
-			auto& vec = holderVec[(int)type]; 		 
+		{
+			FrameUpdateHolderVec& vec = holderVec[(int)type];
+			AreaInfoVec& areaVec = areaInfoVec[(int)type];
+ 
 			int insertIndex = -1;
 			if (holder->sortOrder != UCHAR_MAX)
-			{ 
+			{
 				for (int i = areaStIndex; i <= areaEdIndex; ++i)
 				{
 					if (vec[i].ptr->sortOrder > holder->sortOrder)
@@ -172,32 +213,44 @@ namespace JinEngine
 						insertIndex = i;
 						break;
 					}
-				} 
+				}
 			}
 			//holder->sortOrder == -1 or holder->sortOrder is last
 			if (insertIndex == invalidIndex)
 				insertIndex = areaEdIndex + 1;
 
-			auto& insertHolder = vec[insertIndex - 1];
+			JFrameUpdateIndexHolderInfo& insertHolder = vec[insertIndex - 1];
 			holder->index = insertHolder.ptr->index + insertHolder.ptr->indexSize;
 			holder->number = insertHolder.ptr->number + 1;
-
-			vec.insert(vec.begin() + insertIndex, JFrameUpdateIndexHolderInfo(holder, areaGuid));
+			 
+			JFrameUpdateAreaInfo* areaInfo = insertHolder.areaInfo;
+			vec.insert(vec.begin() + insertIndex, JFrameUpdateIndexHolderInfo(holder, areaInfo));
+			++areaInfo->holderCount;
 
 			const int count = (int)vec.size();
 			for (int i = insertIndex + 1; i < count; ++i)
 			{
 				vec[i].ptr->index += holder->indexSize;
 				++vec[i].ptr->number;
-				vec[i].ptr->SetMovedDirty();
-			}
+				vec[i].ptr->SetMovedDirty(); 
+			} 
 			return true;
 		}
 		bool JFrameUpdateData::Pop(const J_UPLOAD_FRAME_RESOURCE_TYPE type, JFrameUpdateData* holder)
-		{ 
-			const int arrayIndex = GetArrayIndex(type, holder); 
-			auto& vec = holderVec[(int)type]; 
-			vec.erase(vec.begin() + arrayIndex);
+		{
+			//const int arrayIndex = GetArrayIndex(type, holder); 
+			const int arrayIndex = holder->number;
+
+			FrameUpdateHolderVec& vec = holderVec[(int)type];
+			AreaInfoVec& areaVec = areaInfoVec[(int)type];
+
+			JFrameUpdateAreaInfo* areaInfo = vec[arrayIndex].areaInfo;
+			const size_t areaGuid = areaInfo->guid;
+
+			vec.erase(vec.begin() + arrayIndex); 
+			--areaInfo->holderCount;
+			if (areaInfo->holderCount == 0)
+				areaVec.erase(areaVec.begin() + GetAreaVecIndex(type, areaGuid));
 
 			const int indexSize = holder->indexSize;
 			const int count = (int)vec.size();

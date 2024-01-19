@@ -44,6 +44,9 @@ namespace JinEngine
 
 		static constexpr float minPenumbraNearPlane = 0;
 		static constexpr float maxPenumbraNearPlane = 100000.0f;
+
+		static constexpr float minPower = 0.1f;
+		static constexpr float maxPower = 16.0f;
 	}
 	 
 	class JLight::JLightImpl : public Core::JTypeImplBase,
@@ -55,6 +58,9 @@ namespace JinEngine
 	public:
 		REGISTER_PROPERTY_EX(color, GetColor, SetColor, GUI_COLOR_PICKER(false))
 		JVector3<float> color = { 0.8f, 0.8f, 0.8f };
+	public:
+		REGISTER_PROPERTY_EX(power, GetPower, SetPower, GUI_SLIDER(minPower, maxPower, true, false))
+		float power = 1.0f;
 	public:
 		//type별 크기제한 필요
 		REGISTER_PROPERTY_EX(shadowResolution, GetShadowResolution, TryCallSetShadowResolution, GUI_ENUM_COMBO(J_SHADOW_RESOLUTION, "-a {v} x {v};"))
@@ -90,6 +96,10 @@ namespace JinEngine
 		{
 			return color;
 		}
+		float GetPower()const noexcept
+		{
+			return power;
+		}
 		float GetBias()const noexcept
 		{
 			return bias;
@@ -104,8 +114,8 @@ namespace JinEngine
 		}
 	public: 
 		void SetColor(const JVector3<float>& newColor)noexcept
-		{
-			color = newColor;
+		{ 
+			color = JVector3F::Clamp(newColor, JVector3F::Zero(), JVector3F::PositiveOne());
 			SetFrameDirty();
 		}
 		void SetShadow(const bool value)noexcept
@@ -123,7 +133,12 @@ namespace JinEngine
 			allowDisplayShadowMap = value;
 			SetFrameDirty();
 		} 
-		void SetBias(const float value)
+		void SetPower(const float value)noexcept
+		{
+			power = std::clamp(value, thisPointer->GetMinPower(), thisPointer->GetMaxPower());
+			SetFrameDirty();
+		}
+		void SetBias(const float value)noexcept
 		{
 			bias = std::clamp(value, -1.0f, 1.0f);
 			SetFrameDirty();
@@ -175,6 +190,7 @@ namespace JinEngine
 			from->SetShadowResolution(to->GetShadowResolutionType());
 			from->SetAllowDisplayShadowMap(to->AllowDisplayShadowMap());
 			from->SetShadow(to->IsShadowActivated());
+			from->SetPower(to->GetPower());
 			from->SetBias(to->GetBias());
 
 			to->impl->SetFrameDirty();
@@ -275,6 +291,10 @@ namespace JinEngine
 	{
 		return impl->GetShadowMapSize();
 	}
+	float JLight::GetPower()const noexcept
+	{
+		return impl->GetPower();
+	}
 	float JLight::GetBias()const noexcept
 	{
 		return impl->GetBias();
@@ -303,6 +323,10 @@ namespace JinEngine
 	{
 		impl->SetAllowDisplayShadowMap(value);
 	}
+	void JLight::SetPower(const float value)noexcept
+	{
+		impl->SetPower(value);
+	}
 	void JLight::SetBias(const float value)noexcept
 	{
 		impl->SetBias(value);
@@ -326,6 +350,10 @@ namespace JinEngine
 	bool JLight::AllowDisplayShadowMap()const noexcept
 	{
 		return impl->AllowDisplayShadowMap();
+	}
+	bool JLight::AllowLightCulling()const noexcept
+	{
+		return false;
 	}
 	void JLight::DoActivate()noexcept
 	{
@@ -384,6 +412,7 @@ namespace JinEngine
 		std::wstring guide; 
 		JVector3<float> sColor;
 		J_SHADOW_RESOLUTION sShadowResolutionType;
+		float sPower = 0;
 		float sBias = 0;
 		float sPenumbraWidth = 0;
 		float sPenumbraBlockerScale = 0;
@@ -392,6 +421,7 @@ namespace JinEngine
 
 		JObjectFileIOHelper::LoadVector3(tool, sColor, "Color:");
 		JObjectFileIOHelper::LoadEnumData(tool, sShadowResolutionType, "ShadowResolution:");
+		JObjectFileIOHelper::LoadAtomicData(tool, sPower, "Power:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sBias, "Bias:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sPenumbraWidth, "PenumbraWidth:");
 		JObjectFileIOHelper::LoadAtomicData(tool, sPenumbraBlockerScale, "PenumbraBlockerScale:");
@@ -400,6 +430,7 @@ namespace JinEngine
 
 		user->SetColor(sColor);
 		user->SetShadowResolution(sShadowResolutionType);
+		user->SetPower(sPower);
 		user->SetBias(sBias);
 		user->SetPenumbraWidth(sPenumbraWidth);
 		user->SetPenumbraBlockerWidth(sPenumbraBlockerScale);
@@ -414,6 +445,7 @@ namespace JinEngine
 		 
 		JObjectFileIOHelper::StoreVector3(tool, user->GetColor(), "Color:");
 		JObjectFileIOHelper::StoreEnumData(tool, user->GetShadowResolutionType(), "ShadowResolution:");
+		JObjectFileIOHelper::StoreAtomicData(tool, user->GetPower(), "Power:");
 		JObjectFileIOHelper::StoreAtomicData(tool, user->GetBias(), "Bias:");
 		JObjectFileIOHelper::StoreAtomicData(tool, user->GetPenumbraWidth(), "PenumbraWidth:");
 		JObjectFileIOHelper::StoreAtomicData(tool, user->GetPenumbraBlockerWidth(), "PenumbraBlockerScale:");

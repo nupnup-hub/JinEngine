@@ -1,12 +1,13 @@
 #include"JGraphicAdapter.h"   
 #include"../Culling/JCullingManager.h"
-#include"../DepthMap/JDepthMapDebug.h"
+#include"../Debug/JGraphicDebug.h"
 #include"../DepthMap/JDepthTest.h"
 #include"../Device/JGraphicDevice.h"
 #include"../GraphicResource/JGraphicResourceManager.h" 
 #include"../Outline/JOutline.h"
 #include"../Culling/Occlusion/JHardwareOccCulling.h"
 #include"../Culling/Occlusion/JHZBOccCulling.h"
+#include"../Culling/Light/JLightCulling.h"
 #include"../Image/JImageProcessing.h"
 #include"../Scene/JSceneDraw.h"
 #include"../ShadowMap/JShadowMap.h" 
@@ -54,12 +55,12 @@ namespace JinEngine::Graphic
 			isSuccess = isSuccess && frame[i] != nullptr;
 		return isSuccess;
 	}
-	std::unique_ptr<JDepthMapDebug> JGraphicAdapter::CreateDepthMapDebug(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	std::unique_ptr<JGraphicDebug> JGraphicAdapter::CreateDebug(const J_GRAPHIC_DEVICE_TYPE deviceType)
 	{
 		if (!IsSameDevice(deviceType))
 			return nullptr;
 		 
-		return GetAdaptee(deviceType)->CreateDepthMapDebug();
+		return GetAdaptee(deviceType)->CreateDebug();
 	}
 	std::unique_ptr<JDepthTest> JGraphicAdapter::CreateDepthTest(const J_GRAPHIC_DEVICE_TYPE deviceType)
 	{
@@ -96,6 +97,13 @@ namespace JinEngine::Graphic
  
 		return GetAdaptee(deviceType)->CreateHzbOcc();
 	}
+	std::unique_ptr<JLightCulling> JGraphicAdapter::CreateLightCulling(const J_GRAPHIC_DEVICE_TYPE deviceType)
+	{
+		if (!IsSameDevice(deviceType))
+			return nullptr;
+
+		return GetAdaptee(deviceType)->CreateLightCulling();
+	}
 	std::unique_ptr<JOutline> JGraphicAdapter::CreateOutlineDraw(const J_GRAPHIC_DEVICE_TYPE deviceType)
 	{
 		if (!IsSameDevice(deviceType))
@@ -109,6 +117,13 @@ namespace JinEngine::Graphic
 			return nullptr;
 
 		return GetAdaptee(deviceType)->CreateImageProcessing();
+	}
+	void JGraphicAdapter::BeginUpdateStart(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet)
+	{
+		if (!IsSameDevice(deviceType))
+			return;
+
+		return GetAdaptee(deviceType)->BeginUpdateStart(drawRefSet);
 	}
 	void JGraphicAdapter::BeginDrawSceneSingleThread(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet)
 	{
@@ -234,7 +249,7 @@ namespace JinEngine::Graphic
 		const ResourceHandle from,
 		const ResourceHandle to,
 		std::unique_ptr<JBlurDesc>&& desc,
-		_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet)
+		_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet)
 	{
 		if (!IsSameDevice(deviceType))
 			return false;
@@ -245,7 +260,7 @@ namespace JinEngine::Graphic
 		const JGraphicDrawReferenceSet& drawRefSet,
 		const JUserPtr<JGraphicResourceInfo>& info,
 		std::unique_ptr<JBlurDesc>&& desc,
-		_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet)
+		_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet)
 	{
 		if (!IsSameDevice(deviceType))
 			return false;
@@ -257,12 +272,12 @@ namespace JinEngine::Graphic
 		const JUserPtr<JGraphicResourceInfo>& srcInfo,
 		const JUserPtr<JGraphicResourceInfo>& modInfo,
 		std::unique_ptr<JDownSampleDesc>&& desc,
-		_Out_ std::unique_ptr<JGraphicDownSampleTaskSet>& dataSet)
+		_Out_ std::unique_ptr<JGraphicDownSampleComputeSet>& dataSet)
 	{
 		if (!IsSameDevice(deviceType))
 			return false;
 
-		GetAdaptee(deviceType)->SettingMipmapGenerationTask(drawRefSet, srcInfo, modInfo, std::move(desc), dataSet);
+		return GetAdaptee(deviceType)->SettingMipmapGenerationTask(drawRefSet, srcInfo, modInfo, std::move(desc), dataSet);
 	} 
 	JGraphicAdaptee* JGraphicAdapter::GetAdaptee(const J_GRAPHIC_DEVICE_TYPE deviceType)
 	{

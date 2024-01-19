@@ -36,7 +36,7 @@
 
 //Debug
 #include"../Develop/Debug/JDevelopDebugMain.h"
-#define SKIP_SELECTOR
+//#define SKIP_SELECTOR
 #ifdef SKIP_SELECTOR
 #define _SKIP_SELECTOR
 #endif
@@ -110,7 +110,7 @@ namespace JinEngine
 
 			JEngineTimer::Data().Start();
 			JEngineTimer::Data().Reset();
-
+			JApplicationEnginePrivate::MainAccess::EnterUpdateLoop();
 			while (true)
 			{ 
 				std::optional<int> encode = WindowMainAccess::ProcessMessages();
@@ -133,6 +133,7 @@ namespace JinEngine
 					WindowMainAccess::CloseWindow();
 				} 
 			}
+			JApplicationEnginePrivate::MainAccess::ExitUpdateLoop();
 		}
 		void RunEngine()
 		{
@@ -151,7 +152,7 @@ namespace JinEngine
 			editorManager.OpenProject(GraphicMainAccess::GetGuiInitData(), CreateEditorProjectInterface());
 			JEngineTimer::Data().Start();
 			JEngineTimer::Data().Reset();
-
+			JApplicationEnginePrivate::MainAccess::EnterUpdateLoop();
 			while (true)
 			{
 				std::optional<int> encode = WindowMainAccess::ProcessMessages();
@@ -172,7 +173,8 @@ namespace JinEngine
 					{ 
 					case JinEngine::JMain::JMainImpl::END_FRAME_EVENT::RELOAD_PROJECT:
 					{
-						ReLoadProject();				 
+						ReLoadProject();	
+						break;
 					}
 					default:
 						break;
@@ -186,6 +188,7 @@ namespace JinEngine
 					ProjectMainAccess::CloseProject();
 				}
 			}
+			JApplicationEnginePrivate::MainAccess::ExitUpdateLoop();
 		}
 		void TryRunEngine()
 		{
@@ -305,7 +308,7 @@ namespace JinEngine
 			Develop::JDevelopDebugMain::Clear();
 		}
 		void CloseProject()
-		{
+		{ 
 			GraphicMainAccess::FlushCommandQueue();
 			GraphicMainAccess::WriteLastRsTexture();
 			editorManager.StorePage();

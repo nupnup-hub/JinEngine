@@ -26,6 +26,7 @@ namespace JinEngine
 	class JLight;
 	class JRenderItem;
 	class JMeshGeometry;
+	struct JAcceleratorCullingInfo;
 
 	class JScenePrivate : public JResourceObjectPrivate
 	{
@@ -115,6 +116,7 @@ namespace JinEngine
 			friend class Graphic::JFrustumCulling;
 		private:
 			static void ViewCulling(const JUserPtr<JScene>& scene, const JUserPtr<JComponent>& comp)noexcept; 
+			static void ViewCulling(const JUserPtr<JScene>& scene, JAcceleratorCullingInfo& info)noexcept;
 		};
 		class DebugInterface
 		{

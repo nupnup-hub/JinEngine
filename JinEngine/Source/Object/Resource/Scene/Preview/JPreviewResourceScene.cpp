@@ -19,10 +19,17 @@
 #include"../../../../Application/JApplicationProject.h"
 #include"../../../../Core/Utility/JCommonUtility.h"
 #include"../../../../Core/Guid/JGuidCreator.h"
-#include"../../../../Core/Identity/JIdenCreator.h"
+#include"../../../../Core/Identity/JIdenCreator.h" 
 
 namespace JinEngine
 { 
+	namespace Private
+	{
+		static JVector2F PreviewPadRate()noexcept
+		{
+			return JVector2F(0, 0);
+		}
+	}
 	JPreviewResourceScene::JPreviewResourceScene(_In_ JUserPtr<JResourceObject> resource, const J_PREVIEW_DIMENSION previewDimension, const J_PREVIEW_FLAG previewFlag)
 		:JPreviewScene(resource, previewDimension, previewFlag)
 	{
@@ -92,11 +99,17 @@ namespace JinEngine
 
 		JUserPtr<JGameObject> shapeObj = JICI::Create<JGameObject>(mesh->GetName(), Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, scene->GetRootGameObject());
 		JUserPtr<JRenderItem> renderItem = JCCI::CreateRenderItem(shapeObj, mesh);
+		auto& rM = _JResourceManager::Instance();
 
-		const JVector3<float> center = renderItem->GetMesh()->GetBoundingSphereCenter();
-		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
-
-		AdjustCamera(center, radius);
+		AdjustSceneSettingData adjustData;
+		adjustData.targetTransform = shapeObj->GetTransform();
+		adjustData.targetRenderItem = renderItem;
+		adjustData.pad = Private::PreviewPadRate() * renderItem->GetBoundingSphere().Radius; 
+		if (rM.GetDefaultGuid(J_DEFAULT_SHAPE::CUBE) == mesh->GetGuid())
+			adjustData.additionalPosRate = JVector3F(1.0f, 0.5f, 0);
+		else if(rM.GetDefaultGuid(J_DEFAULT_SHAPE::GRID) == mesh->GetGuid())
+			adjustData.additionalPosRate = JVector3F(0, 0.5f, 0);
+		AdjustScene(adjustData); 
 		return true;
 	}
 	bool JPreviewResourceScene::MakeMaterialPreviewScene()noexcept
@@ -110,10 +123,13 @@ namespace JinEngine
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 
 		renderItem->SetMaterial(0, material);
-		const JVector3<float> center = renderItem->GetMesh()->GetBoundingSphereCenter();
-		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
 
-		AdjustCamera(center, radius);
+		AdjustSceneSettingData adjustData;
+		adjustData.targetTransform = shapeObj->GetTransform();
+		adjustData.targetRenderItem = renderItem;
+		adjustData.pad = Private::PreviewPadRate() * renderItem->GetBoundingSphere().Radius;
+		adjustData.targetTransform = shapeObj->GetTransform();
+		AdjustScene(adjustData);
 		return true;
 	}
 	bool JPreviewResourceScene::MakeUserTexturePreviewScene()noexcept
@@ -144,12 +160,14 @@ namespace JinEngine
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 		renderItem->SetMaterial(0, newTextureMat);
 		
-		const JVector3<float> center = renderItem->GetMesh()->GetBoundingSphereCenter();
-		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
+		AdjustSceneSettingData adjustData;
+		adjustData.targetTransform = shapeObj->GetTransform();
+		adjustData.targetRenderItem = renderItem;
+		adjustData.useFixedPad = true;
 
 		SetTextureMaterial(newTextureMat);
 		SetUseQuadShapeTrigger(shapeType == J_DEFAULT_SHAPE::QUAD);
-		AdjustCamera(center, radius);
+		AdjustScene(adjustData);
 		return true;
 	}
 	bool JPreviewResourceScene::MakeEditorTexturePreviewScene(const J_DEFAULT_TEXTURE editorTextureType)noexcept
@@ -183,12 +201,14 @@ namespace JinEngine
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 		renderItem->SetMaterial(0, newTextureMat);
 
-		const JVector3<float> center = renderItem->GetMesh()->GetBoundingSphereCenter();
-		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
+		AdjustSceneSettingData adjustData; 
+		adjustData.targetTransform = shapeObj->GetTransform();
+		adjustData.targetRenderItem = renderItem;
+		adjustData.useFixedPad = true;
 
 		SetTextureMaterial(newTextureMat);
 		SetUseQuadShapeTrigger(shapeType == J_DEFAULT_SHAPE::QUAD);
-		AdjustCamera(center, radius);
+		AdjustScene(adjustData);
 		return true;
 	}
 }

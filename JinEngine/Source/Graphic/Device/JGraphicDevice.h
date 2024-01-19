@@ -49,7 +49,13 @@ namespace JinEngine
 			virtual void StartPublicCommand() = 0;
 			//if !IsSupportPublicCommand just return false
 			virtual void EndPublicCommand() = 0;
-			virtual void FlushCommandQueue() = 0; 
+			virtual void FlushCommandQueue() = 0;  
+		public:
+			//execute FlushCommandQueue and StartPublicCommand if CanStartPublicCommand
+			void StartPublicCommandSet(bool& startCommandThisFunc);
+			//execute EndPublicCommand and FlushCommandQueue if startCommandThisFunc == true
+			void EndPublicCommandSet(const bool startCommandThisFunc);
+			void ReStartPublicCommandSet();
 		public:
 			virtual void UpdateWait(const GraphicFence frameFence) = 0;
 		public:

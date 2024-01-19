@@ -1,7 +1,7 @@
 #pragma once  
 #include"JDxShaderDataHolderInterface.h"
 #include"../../../Core/Math/JVector.h" 
-#include"../../../Object/Resource/Shader/JShaderFunctionEnum.h"
+#include"../../../Object/Resource/Shader/JShaderEnum.h"
 #include<vector>
 #include<wrl.h> 
 #include<d3d12.h> 
@@ -44,7 +44,7 @@ namespace JinEngine
 		public:
 			Microsoft::WRL::ComPtr<IDxcBlob> cs = nullptr;							//Variable
 			Microsoft::WRL::ComPtr<ID3D12PipelineState> pso = nullptr;				//Constants 
-			ID3D12RootSignature* RootSignature = nullptr;							//Variable
+			//ID3D12RootSignature* RootSignature = nullptr;							//Variable
 		public:
 			JDx12ComputeShaderDataHolder();
 			~JDx12ComputeShaderDataHolder();

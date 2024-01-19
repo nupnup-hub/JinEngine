@@ -7,7 +7,7 @@
 #include"Material/JDefaultMaterialType.h"
 #include"Mesh/JDefaultShapeType.h"
 #include"Shader/JDefaultShaderType.h"
-#include"Shader/JShaderFunctionEnum.h"
+#include"Shader/JShaderEnum.h"
 #include"Texture/JDefaulTextureType.h"  
 #include"JResourceObjectUserInterface.h"
 //#include"../../Core/Identity/JIdentifier.h"
@@ -31,7 +31,7 @@ namespace JinEngine
 		static const std::vector<J_DEFAULT_TEXTURE> projectTextureType;		 
 		const size_t guid = Core::MakeGuid();
 	private:
-		//isUse가 설정된 default resource만 보관
+		//isUsed가 설정된 default resource만 보관
 		//그 외에 default는 이미 생성되있으면 그 객체를 생성되 있지않으면 file을 통해서 load후 전달
 		std::unordered_map<size_t, JUserPtr<JResourceObject>> defaultResourceMap;
 	private:
@@ -64,18 +64,37 @@ namespace JinEngine
 				return JUserPtr<CastT>{};
 		}
 		template<typename EnumName>
-		void RegisterDefaultResource(const EnumName key, const JUserPtr<JFile>& file, const bool isUse)
+		size_t GetDefaultResourceGuid(const EnumName key, _Out_ bool& isSuccess)
 		{
 			if constexpr (std::is_same_v<EnumName, J_DEFAULT_TEXTURE>)
-				DoRegisterDefaultResource(key, file, isUse, defaultTextureGuidMap);
+				return DoGetDefaultResourceGuid(key, defaultTextureGuidMap, isSuccess);
 			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_GRAPHIC_SHADER>)
-				DoRegisterDefaultResource(key, file, isUse, defaultGraphicShaderGuidMap);
+				return DoGetDefaultResourceGuid(key, defaultGraphicShaderGuidMap, isSuccess);
 			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_COMPUTE_SHADER>)
-				DoRegisterDefaultResource(key, file, isUse, defaultComputeShaderGuidMap);
-			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_MATERIAL>)			
-				DoRegisterDefaultResource(key, file, isUse, defaultMaterialGuidMap);
+				return DoGetDefaultResourceGuid(key, defaultComputeShaderGuidMap, isSuccess);
+			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_MATERIAL>)
+				return DoGetDefaultResourceGuid(key, defaultMaterialGuidMap, isSuccess);
 			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_SHAPE>)
-				DoRegisterDefaultResource(key, file, isUse, defaultMeshGuidMap);
+				return DoGetDefaultResourceGuid(key, defaultMeshGuidMap, isSuccess);
+			else
+			{
+				isSuccess = false;
+				return 0;
+			}
+		}
+		template<typename EnumName>
+		void RegisterDefaultResource(const EnumName key, const JUserPtr<JFile>& file, const bool isUsed)
+		{
+			if constexpr (std::is_same_v<EnumName, J_DEFAULT_TEXTURE>)
+				DoRegisterDefaultResource(key, file, isUsed, defaultTextureGuidMap);
+			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_GRAPHIC_SHADER>)
+				DoRegisterDefaultResource(key, file, isUsed, defaultGraphicShaderGuidMap);
+			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_COMPUTE_SHADER>)
+				DoRegisterDefaultResource(key, file, isUsed, defaultComputeShaderGuidMap);
+			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_MATERIAL>)			
+				DoRegisterDefaultResource(key, file, isUsed, defaultMaterialGuidMap);
+			else if constexpr (std::is_same_v<EnumName, J_DEFAULT_SHAPE>)
+				DoRegisterDefaultResource(key, file, isUsed, defaultMeshGuidMap);
 		}
 	private:
 		template<typename CastT,  typename EnumName, typename GuidMap>
@@ -100,13 +119,30 @@ namespace JinEngine
 				return JUserPtr<CastT>{};
 		}
 		template<typename EnumName, typename GuidMap>
+		size_t DoGetDefaultResourceGuid(const EnumName key, GuidMap& map, _Out_ bool& isSuccess)
+		{
+			auto guidData = map.find(key);
+			if (guidData != map.end())
+			{
+				isSuccess = true;
+				return guidData->second;
+			}
+			else
+			{
+				isSuccess = false;
+				return 0;
+			}
+		}
+		template<typename EnumName, typename GuidMap>
 		void DoRegisterDefaultResource(const EnumName key,
 			const JUserPtr<JFile>& file,
-			const bool isUse,
+			const bool isUsed,
 			GuidMap& map)
 		{
 			map.emplace(key, file->GetResourceGuid());
-			if (isUse)
+			//isUsed = true이며 resource가 load되지 않았을경우
+			//resource을 file에서 불러온다.
+			if (isUsed)
 			{
 				JUserPtr<JResourceObject> user = file->TryGetResourceUser();
 				defaultResourceMap.emplace(user->GetGuid(), user);

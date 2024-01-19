@@ -1,5 +1,5 @@
 #pragma once
-#include"JShaderFunctionEnum.h"
+#include"JShaderEnum.h"
 #include"JShaderCondition.h"
 #include"../../JObjectFlag.h"
 
@@ -109,7 +109,7 @@ namespace JinEngine
 			}
 		 */
 		}
-		static bool IsDefaultUse(const J_DEFAULT_COMPUTE_SHADER cType)
+		static bool IsDefaultUsed(const J_DEFAULT_COMPUTE_SHADER cType)
 		{
 			switch (cType)
 			{ 

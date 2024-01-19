@@ -152,7 +152,7 @@ namespace JinEngine
 				rItem->SetMaterial(j, material);
 			rItem->SetRenderLayer(J_RENDER_LAYER::DEBUG_UI);
 
-			arrow = newArrow; 
+			arrow = newArrow;
 		}
 
 		void JEditorTransformTool::Arrow::Clear()
@@ -253,7 +253,7 @@ namespace JinEngine
 					OffDragging();
 				if (IsHovering())
 					OffHovering();
-				if (cam != nullptr && uData.lastPos != uData.InvalidPos())
+				if (cam != nullptr && !(uData.lastPos == uData.InvalidPos()) && uData.lastSelected != nullptr)
 				{
 					JVector3F midPos = Private::GetMidPosByPoint(uData.lastSelected);
 					UpdateArrowPosition(midPos, cam);
@@ -312,7 +312,7 @@ namespace JinEngine
 				transformArrowRoot->GetTransform()->SetScale(newScale + JVector3F(2, 2, 2));
 			else
 				transformArrowRoot->GetTransform()->SetScale(newScale);
-			 
+
 			if (hasCenter)
 			{
 				const BoundingBox centerBBox = arrowCenter->GetRenderItem()->GetMesh()->GetBoundingBox();
@@ -598,8 +598,7 @@ namespace JinEngine
 						return true;
 				}
 			}
-			else
-				return false;
+			return false;
 		}
 		void JEditorTransformTool::OnDragging()noexcept
 		{
@@ -707,7 +706,7 @@ namespace JinEngine
 		void JEditorGeometryTool::FrustumView::SetMaterial(const JUserPtr<JMaterial>& mat)
 		{
 			nearFrustum->GetRenderItem()->SetMaterial(0, mat);
-			farFrustum->GetRenderItem()->SetMaterial(0, mat); 
+			farFrustum->GetRenderItem()->SetMaterial(0, mat);
 		}
 		bool JEditorGeometryTool::FrustumView::IsValid()const noexcept
 		{
@@ -724,13 +723,13 @@ namespace JinEngine
 					OBJECT_FLAG_EDITOR_OBJECT,
 					parent);
 
-				xyCircle = JGCI::CreateDebugShape(root, L"xy circle", OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::CIRCLE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW);
-				xzCircle = JGCI::CreateDebugShape(root, L"xz circle", OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::CIRCLE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW);
-				yzCircle = JGCI::CreateDebugShape(root, L"yz circle", OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::CIRCLE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW);
+				xyCircle = JGCI::CreateDebugShape(root, L"xy circle", OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::CIRCLE, J_DEFAULT_MATERIAL::DEBUG_YELLOW);
+				xzCircle = JGCI::CreateDebugShape(root, L"xz circle", OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::CIRCLE, J_DEFAULT_MATERIAL::DEBUG_YELLOW);
+				yzCircle = JGCI::CreateDebugShape(root, L"yz circle", OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::CIRCLE, J_DEFAULT_MATERIAL::DEBUG_YELLOW);
 			}
 		}
 		JEditorGeometryTool::SphereView::~SphereView()
-		{ 
+		{
 			Clear();
 		}
 		void JEditorGeometryTool::SphereView::Clear()
@@ -803,8 +802,8 @@ namespace JinEngine
 					OBJECT_FLAG_EDITOR_OBJECT,
 					parent);
 
-				boundingCone = JGCI::CreateDebugShape(root, L"bounding cone_L", 
-					OBJECT_FLAG_EDITOR_OBJECT, 
+				boundingCone = JGCI::CreateDebugShape(root, L"bounding cone_L",
+					OBJECT_FLAG_EDITOR_OBJECT,
 					J_DEFAULT_SHAPE::BOUNDING_CONE_LINE,
 					J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW, false, true);
 			}
@@ -819,7 +818,7 @@ namespace JinEngine
 				JGameObject::BeginDestroy(root.Release());
 		}
 		void JEditorGeometryTool::ConeView::Update()
-		{ 
+		{
 			JVector3F dirction;
 			float range = 0;
 			float outAngle = 0;
@@ -836,10 +835,10 @@ namespace JinEngine
 				return;
 
 			//bounding
-			float radius = 0.5f; 
+			float radius = 0.5f;
 			float hypotenuse = range / cos(outAngle);
 			float bottomRadius = hypotenuse * sin(outAngle);
-			 
+
 			//boundingCone face z+
 			boundingCone->GetTransform()->SetScale(JVector3F(bottomRadius, bottomRadius, range));
 			boundingCone->GetTransform()->SetRotation(transform->GetWorldRotation() + JVector3F(90, 0, 0));
@@ -855,7 +854,7 @@ namespace JinEngine
 		}
 		void JEditorGeometryTool::ConeView::SetMaterial(const JUserPtr<JMaterial>& mat)
 		{
-			boundingCone->GetRenderItem()->SetMaterial(0, mat); 
+			boundingCone->GetRenderItem()->SetMaterial(0, mat);
 		}
 		bool JEditorGeometryTool::ConeView::IsValid()const noexcept
 		{
@@ -872,8 +871,12 @@ namespace JinEngine
 					OBJECT_FLAG_EDITOR_OBJECT,
 					parent);
 
-				for(int i = 0; i < 4; ++i)
-					line[i] = JGCI::CreateDebugLineShape(root, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW, false);
+				for (int i = 0; i < 4; ++i)
+					innerLine[i] = JGCI::CreateDebugLineShape(root, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW, false);
+				for (int i = 0; i < 4; ++i)
+					edgeLine[i] = JGCI::CreateDebugLineShape(root, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW, false);
+				for (int i = 0; i < 4; ++i)
+					outerLine[i] = JGCI::CreateDebugLineShape(root, OBJECT_FLAG_EDITOR_OBJECT, J_DEFAULT_SHAPE::LINE, J_DEFAULT_MATERIAL::DEBUG_LINE_YELLOW, false);
 			}
 		}
 		void JEditorGeometryTool::RectView::Clear()
@@ -885,8 +888,8 @@ namespace JinEngine
 		{
 			JVector3F worldP;
 			JVector3F worldR;
-			JVector4F worldQ; 
-			JVector2F areaSize; 
+			XMVECTOR worldQ;
+			JVector2F areaSize;
 			JUserPtr<JTransform> transform = nullptr;
 			if (targetRect != nullptr)
 			{
@@ -897,23 +900,89 @@ namespace JinEngine
 				return;
 
 			worldP = transform->GetWorldPosition();
-			worldQ = transform->GetWorldQuaternion(); 
-			worldR = JMathHelper::ToEulerAngle(worldQ);
+			worldQ = transform->GetWorldQuaternion().ToXmV();
+			worldR = JMathHelper::ToEulerAngle(worldQ).ToXmV();
 
-			float length = line[0]->GetRenderItem()->GetMesh()->GetBoundingBoxExtent().y * 2;
+			float length = innerLine[0]->GetRenderItem()->GetMesh()->GetBoundingBoxExtent().y * 2;
 			float rate = 1.0f / length;
 
 			//r - l - u - b
-			JVector3F scale[4] = { JVector3F(1.0f, rate * areaSize.y, 1.0f), JVector3F(1.0f, rate * areaSize.y, 1.0f), JVector3F(1.0f, rate * areaSize.x, 1.0f), JVector3F(1.0f, rate * areaSize.x, 1.0f) };
-			JVector3F rotation[4] = { JVector3F(0, 0, 0), JVector3F(0, 0, 0), JVector3F(0, 0, 90), JVector3F(0, 0, 90)};
-			JVector3F position[4] = { JVector3F(areaSize.x * 0.5f, 0, 0), JVector3F(-areaSize.x * 0.5f, 0, 0), JVector3F(0, areaSize.y * 0.5f, 0), JVector3F(0, -areaSize.y * 0.5f, 0) };
+			JVector3F innerScale[4]{ JVector3F(1.0f, rate * areaSize.y, 1.0f) , JVector3F(1.0f, rate * areaSize.y, 1.0f) , JVector3F(1.0f, rate * areaSize.x, 1.0f) , JVector3F(1.0f, rate * areaSize.x, 1.0f) };
+			JVector3F innerRotation[4]{ JVector3F(0, 0, 0), JVector3F(0, 0, 0), JVector3F(0, 0, 90), JVector3F(0, 0, 90) };
+			JVector3F innerPosition[4]{ JVector3F(areaSize.x * 0.5f, 0, 0), JVector3F(-areaSize.x * 0.5f, 0, 0), JVector3F(0, areaSize.y * 0.5f, 0), JVector3F(0, -areaSize.y * 0.5f, 0) };
 
 			for (int i = 0; i < 4; ++i)
 			{
-				line[i]->GetTransform()->SetScale(scale[i]);
-				line[i]->GetTransform()->SetRotation(worldR + rotation[i]);
-				line[i]->GetTransform()->SetPosition(worldP + XMVector3Rotate(position[i].ToXmV(), worldQ.ToXmV()));
+				innerLine[i]->GetTransform()->SetScale(innerScale[i]);
+				innerLine[i]->GetTransform()->SetRotation(worldR + innerRotation[i]);
+				innerLine[i]->GetTransform()->SetPosition(worldP + XMVector3Rotate(innerPosition[i].ToXmV(), worldQ));
 			}
+
+			float barnAngle = targetRect->GetBarndoorAngle() * JMathHelper::DegToRad;
+			float barnCosAngle = std::cos(barnAngle) * std::cos(barnAngle);
+			float barnSinAngle = 1 - barnCosAngle;
+			float barnLength = targetRect->GetBarndoorLength();
+			float halfBarnLength = barnLength * 0.5f;
+
+			XMVECTOR worldRight = transform->GetWorldRight().ToXmV();
+			XMVECTOR worldUp = transform->GetWorldUp().ToXmV();
+			XMVECTOR worldFront = transform->GetWorldFront().ToXmV();
+
+			float barnConerRate = barnCosAngle * barnLength;
+			float barnFrontRate = barnSinAngle * barnLength;
+
+			JVector3F outerPositionOffset[4]
+			{
+				worldRight * barnConerRate + worldFront * barnFrontRate,
+				 -worldRight * barnConerRate + worldFront * barnFrontRate,
+				worldUp * barnConerRate + worldFront * barnFrontRate,
+				-worldUp * barnConerRate + worldFront * barnFrontRate
+			};
+			for (int i = 0; i < 4; ++i)
+			{
+				outerLine[i]->GetTransform()->SetScale(innerScale[i] + JVector3F(0, barnConerRate * 2 * rate, 0));
+				outerLine[i]->GetTransform()->SetRotation(worldR + innerRotation[i]);
+				outerLine[i]->GetTransform()->SetPosition(worldP + XMVector3Rotate(innerPosition[i].ToXmV(), worldQ) + outerPositionOffset[i]);
+			}
+			float barnH = sqrt(barnLength * barnLength + barnLength * barnLength);
+			float lineLength = barnSinAngle * barnLength + barnCosAngle * barnH;
+
+			float linePosX = barnLength * 0.5f * barnCosAngle;
+			float linePosY = barnLength * 0.5f * barnCosAngle;
+			float linePosZ = barnLength * 0.5f * barnSinAngle;
+
+			//R L U D 
+			//Top-right, bottom-left, top-left, bottm-right
+			JVector3F areaSizeOffset[4]
+			{
+				worldUp * areaSize.y * 0.5f,
+				-worldUp * areaSize.y * 0.5f,
+				-worldRight * areaSize.x * 0.5f,
+				worldRight * areaSize.x * 0.5f
+			}; 
+			JVector3F linePosition[4]
+			{
+				JVector3F::Right() * linePosX + JVector3F::Up() * linePosY + JVector3F::Front() * linePosZ,
+				JVector3F::Right() * -linePosX - JVector3F::Up() * linePosY + JVector3F::Front() * linePosZ,
+				JVector3F::Right() * -linePosX + JVector3F::Up() * linePosY + JVector3F::Front() * linePosZ,
+				JVector3F::Right()* linePosX - JVector3F::Up() * linePosY + JVector3F::Front() * linePosZ
+			};
+			for (int i = 0; i < 4; ++i)
+			{
+				auto innerPos = innerLine[i]->GetTransform()->GetWorldPosition() + areaSizeOffset[i];
+				auto linePos = innerLine[i]->GetTransform()->GetWorldPosition() + areaSizeOffset[i] + XMVector3Rotate(linePosition[i].ToXmV(), worldQ);
+
+				auto srcPos = XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
+				auto destPos = XMVector3Normalize(linePosition[i].ToXmV());
+
+				auto axis = XMVector3Normalize(XMVector3Cross(srcPos, destPos));
+				auto betAngle = XMVector3AngleBetweenNormals(srcPos, destPos);
+				auto q =XMQuaternionRotationAxis(axis, XMVectorGetX(betAngle));
+				  
+				edgeLine[i]->GetTransform()->SetScale(JVector3F(1, (linePos - innerPos).Length() * 2, 1));
+				edgeLine[i]->GetTransform()->SetRotation(JMathHelper::ToEulerAngle(DirectX::XMQuaternionMultiply(q, worldQ)));
+				edgeLine[i]->GetTransform()->SetPosition(linePos);
+			} 
 		}
 		JEditorGeometryTool::RectView::~RectView()
 		{
@@ -928,13 +997,17 @@ namespace JinEngine
 			return targetRect->GetTypeInfo();
 		}
 		void JEditorGeometryTool::RectView::SetMaterial(const JUserPtr<JMaterial>& mat)
-		{ 
+		{
 			for (int i = 0; i < 4; ++i)
-				line[i]->GetRenderItem()->SetMaterial(0, mat);
+				innerLine[i]->GetRenderItem()->SetMaterial(0, mat);
+			for (int i = 0; i < 4; ++i)
+				edgeLine[i]->GetRenderItem()->SetMaterial(0, mat);
+			for (int i = 0; i < 4; ++i)
+				outerLine[i]->GetRenderItem()->SetMaterial(0, mat);
 		}
 		bool JEditorGeometryTool::RectView::IsValid()const noexcept
 		{
-			return root != nullptr && line[0] != nullptr && targetRect != nullptr && targetRect->IsActivated() && targetRect->GetOwner()->IsSelected();
+			return root != nullptr && targetRect != nullptr && targetRect->IsActivated() && targetRect->GetOwner()->IsSelected();
 		}
 
 		JEditorGeometryTool::~JEditorGeometryTool()
@@ -948,7 +1021,7 @@ namespace JinEngine
 		void JEditorGeometryTool::TryCreateGeoView(const std::vector<JUserPtr<JGameObject>>& idenVec, const JUserPtr<JGameObject>& parent)
 		{
 			for (const auto& data : idenVec)
-			{ 
+			{
 				auto litVec = data->GetComponents(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
 				for (const auto& litData : litVec)
 				{
@@ -958,7 +1031,7 @@ namespace JinEngine
 					else if (litType == J_LIGHT_TYPE::SPOT)
 						CreateSpotView(Core::ConnectChildUserPtr<JSpotLight>(litData), parent);
 					else if (litType == J_LIGHT_TYPE::RECT)
-						CreateRectView(Core::ConnectChildUserPtr<JRectLight>(litData),parent);
+						CreateRectView(Core::ConnectChildUserPtr<JRectLight>(litData), parent);
 				}
 			}
 		}
@@ -966,7 +1039,7 @@ namespace JinEngine
 		{
 			if (cam == nullptr || HasGeo(cam->GetGuid()))
 				return false;
-			 
+
 			return CreateGeoView(std::make_unique<FrustumView>(cam, parent), cam->GetGuid());
 		}
 		bool JEditorGeometryTool::CreateSphereView(const JUserPtr<JPointLight>& lit, const JUserPtr<JGameObject>& parent)
@@ -980,14 +1053,14 @@ namespace JinEngine
 		{
 			if (lit == nullptr || HasGeo(lit->GetGuid()))
 				return false;
-			 
+
 			return CreateGeoView(std::make_unique<ConeView>(lit, parent), lit->GetGuid());
 		}
 		bool JEditorGeometryTool::CreateRectView(const JUserPtr<JRectLight>& lit, const JUserPtr<JGameObject>& parent)
 		{
 			if (lit == nullptr || HasGeo(lit->GetGuid()))
 				return false;
-			 
+
 			return CreateGeoView(std::make_unique<RectView>(lit, parent), lit->GetGuid());
 		}
 		bool JEditorGeometryTool::CreateGeoView(std::unique_ptr<GeometryView>&& view, const size_t guid)
@@ -995,7 +1068,7 @@ namespace JinEngine
 			//HasGeo(guid)
 			if (view == nullptr || !view->IsValid())
 				return false;
-			 
+
 			geoSet.emplace(guid);
 			geoView.push_back(std::move(view));
 			return true;

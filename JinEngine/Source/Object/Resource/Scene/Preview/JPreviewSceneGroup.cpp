@@ -15,7 +15,10 @@ namespace JinEngine
 	{
 		maxCapacity = initMaxCapacity;
 	}
-	JPreviewSceneGroup::~JPreviewSceneGroup() {}
+	JPreviewSceneGroup::~JPreviewSceneGroup()
+	{
+		Clear();
+	}
 	size_t JPreviewSceneGroup::GetGuid()const noexcept
 	{
 		return guid;

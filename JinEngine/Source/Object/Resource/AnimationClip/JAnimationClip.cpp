@@ -44,7 +44,7 @@ namespace JinEngine
 		std::vector<Core::JAnimationSample>animationSample;			//fixed
 		size_t skeletonHash;			//fixed
 	public:
-		REGISTER_PROPERTY_EX(clipSkeletonAsset, GetClipSkeletonAsset, SetClipSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false))
+		REGISTER_PROPERTY_EX(clipSkeletonAsset, GetClipSkeletonAsset, SetClipSkeletonAsset, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::NONE, false, false))
 		JUserPtr<JSkeletonAsset> clipSkeletonAsset;
 		uint32 length;
 		float framePerSecond;
@@ -515,8 +515,11 @@ namespace JinEngine
 
 			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 
-			auto fbxMeshImportC = [](JUserPtr<JDirectory> dir, const Core::JFileImportHelpData importPathData) -> std::vector<JUserPtr<JResourceObject>>
-			{
+			auto fbxMeshImportC = [](const JResourceObjectImportDesc* desc) -> std::vector<JUserPtr<JResourceObject>>
+			{				
+				const Core::JFileImportHelpData& importPathData = desc->importPathData;
+				const JUserPtr<JDirectory>& dir = desc->dir;
+
 				std::vector<JUserPtr<JResourceObject>> res;
 				using FbxFileTypeInfo = Core::JFbxFileLoader::FbxFileTypeInfo;
 				FbxFileTypeInfo info = JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);

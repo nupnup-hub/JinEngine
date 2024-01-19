@@ -43,7 +43,7 @@ namespace JinEngine
 			JObjectFileIOHelper::LoadAtomicData(tool, meshCount, "MeshCount:");
 			JObjectFileIOHelper::LoadAtomicData(tool, totalVertexCount, "TotalVertexCount:");
 			JObjectFileIOHelper::LoadAtomicData(tool, totalIndexCount, "TotalIndexCount:");
-
+			 
 			tool.PushExistStack("MeshData");
 			for (uint i = 0; i < meshCount; ++i)
 			{
@@ -88,7 +88,7 @@ namespace JinEngine
 				JObjectFileIOHelper::LoadAtomicData(tool, hasUV, "HasUV:");
 				JObjectFileIOHelper::LoadAtomicData(tool, hasNormal, "HasNormal:");
 				tool.PopStack();
-				meshGroup->AddMeshData(Core::JStaticMeshData{ name , guid, std::move(indices),hasUV, hasNormal, std::move(vertices) });
+				meshGroup->AddMeshData(std::make_unique< Core::JStaticMeshData>(name , guid, std::move(indices),hasUV, hasNormal, std::move(vertices)));
 			} 
 			tool.PopStack();
 			tool.PushExistStack("MaterialData");
@@ -183,7 +183,8 @@ namespace JinEngine
 		static void RegisterTypeData()
 		{
 			Core::JIdentifier::RegisterPrivateInterface(JStaticMeshGeometry::StaticTypeInfo(), sPrivate);
-			IMPL_REALLOC_BIND(JStaticMeshGeometry::JStaticMeshGeometryImpl, thisPointer)
+			IMPL_REALLOC_BIND(JStaticMeshGeometry::JStaticMeshGeometryImpl, thisPointer);
+			SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT_TO_CHILD);
 		}
 	};
 

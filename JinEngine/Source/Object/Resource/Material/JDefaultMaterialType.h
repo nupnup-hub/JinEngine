@@ -69,14 +69,10 @@ namespace JinEngine
 				return (J_OBJECT_FLAG)(OBJECT_FLAG_AUTO_GENERATED | OBJECT_FLAG_UNDESTROYABLE | OBJECT_FLAG_UNEDITABLE | OBJECT_FLAG_HIDDEN | OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 			}
 		}
-		static bool IsDefaultUse(const J_DEFAULT_MATERIAL type)
+		static bool IsDefaultUsed(const J_DEFAULT_MATERIAL type)
 		{
 			switch (type)
 			{
-			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_STANDARD:
-				return false;
-			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SKY:
-				return false; 
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_RED:
 				return true;
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_GREEN:
@@ -97,6 +93,16 @@ namespace JinEngine
 				return true;
 			case JinEngine::J_DEFAULT_MATERIAL::DEBUG_LINE_BLACK:
 				return true; 
+			default:
+				return false;
+			}
+		}
+		static bool UseTexture(const J_DEFAULT_MATERIAL type)
+		{
+			switch (type)
+			{
+			case JinEngine::J_DEFAULT_MATERIAL::DEFAULT_SKY:
+				return true;
 			default:
 				return false;
 			}

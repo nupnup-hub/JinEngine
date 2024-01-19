@@ -7,6 +7,8 @@
 #define CORRECT_FAIL_DELTA_RATE 0.1f
 #define CORRECT_FAIL_LOOP_COUNT  (uint) (1.0f / CORRECT_FAIL_DELTA_RATE)
 
+#define BIAS 0.05f
+
 struct ObjectInfo
 {
 	float3 coners[8];
@@ -235,7 +237,7 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 
 	if (threadIndex < validQueryOffset || validQueryRange <= threadIndex || !object[threadIndex].isValid)
 		return;
-
+ 
 	if (usePerspective == 1 && CullBBox(object[threadIndex].center, object[threadIndex].extents) > 0)
 	{ 
 		queryResult[queryIndex] = 1; 
@@ -291,7 +293,7 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	float centerDepth = 0; 
 
 #ifdef DEBUG
-	float4 clipNearH = float4(0, 0, 0, 0);
+	float4 clipNearH = float4(0, 0, 0, 1.0f);
 	float3 clipNearC = float3(0, 0, 0);
 #endif
 
@@ -319,7 +321,7 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 #endif
 #endif
 	}
-
+	
 	const float4 bboxPointH[8] =
 	{
 		mul(bboxPointV[0], camProj),
@@ -395,7 +397,7 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 		//mipmap.GetDimensions(lod, textureWidth, textureHeight, numberOfLevels);
   
 		const float2 center = (bboxPointNdc[0] + bboxPointNdc[1] + bboxPointNdc[2] + bboxPointNdc[3] +
-			bboxPointNdc[4] + bboxPointNdc[5] + bboxPointNdc[6] + bboxPointNdc[7]) / 8;
+			bboxPointNdc[4] + bboxPointNdc[5] + bboxPointNdc[6] + bboxPointNdc[7]) / 8.0f;
 		const float2 centerToCorner[8] =
 		{
 			bboxPointNdc[0] - center,
@@ -428,7 +430,7 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 		} 
 	}
 
-	if (centerDepth <= finalCompareDepth)
+	if ((centerDepth - BIAS) <= finalCompareDepth)
 		queryResult[queryIndex] = 0;
 	else
 		queryResult[queryIndex] = 1;
@@ -437,7 +439,6 @@ void HZBOcclusion(int3 dispatchThreadID : SV_DispatchThreadID)
 	hzbDebugInfo[threadIndex].threadIndex = threadIndex;
 	hzbDebugInfo[threadIndex].queryIndex = queryIndex;
 	hzbDebugInfo[threadIndex].cullingRes = 1;
-
 
 	hzbDebugInfo[threadIndex].cullingRes = queryResult[queryIndex];
 	hzbDebugInfo[threadIndex].centerDepth = centerDepth;

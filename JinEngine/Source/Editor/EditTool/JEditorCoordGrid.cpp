@@ -6,6 +6,7 @@
 #include"../../Object/Component/Transform/JTransform.h"
 #include"../../Object/Resource/JResourceManager.h"
 #include"../../Object/Resource/Material/JMaterial.h"
+#include"../../Object/Resource/Mesh//JMeshGeometry.h"
 
 namespace JinEngine
 {
@@ -19,7 +20,7 @@ namespace JinEngine
 			static constexpr int minLineStep = 1;
 			static constexpr int minLineScale = 1;
 
-			static constexpr int maxLineCount = 512;
+			static constexpr int maxLineCount = 256;
 			static constexpr int maxLineStep = 64;
 			static constexpr int maxLineScale = maxLineCount * maxLineStep;
 		}
@@ -28,6 +29,8 @@ namespace JinEngine
 			static int ModifyLineCount(int newLineCount, const int preLineCount) noexcept
 			{
 				newLineCount = std::clamp(newLineCount, Private::minLineCount, Private::maxLineCount);
+				return newLineCount % 2 ? newLineCount + 1 : newLineCount;
+				/*
 				if (newLineCount == Private::minLineCount || newLineCount == Private::maxLineCount)
 					return newLineCount;
 
@@ -36,6 +39,7 @@ namespace JinEngine
 				else
 					return preLineCount * 2;
 				return newLineCount;
+				*/
 			}
 		}
 
@@ -104,10 +108,18 @@ namespace JinEngine
 			minZoom = std::clamp(-newMinZoom, -Private::zoomRateRange, 0.0f);
 		}
 
+		JEditorSceneCoordGrid::JEditorSceneCoordGrid()
+		{
+			lineCount = 256;
+			lineStep = 2;
+			SetLineScale();
+		}
 		void JEditorSceneCoordGrid::MakeCoordGrid(const JUserPtr<JGameObject>& parent)
 		{
 			coordGrid = JICI::Create<JGameObject>(L"SceneCoordGridRoot", Core::MakeGuid(), OBJECT_FLAG_EDITOR_OBJECT, parent);
-			const float posFactor = (lineCount / 2) * -lineStep;
+			float posFactor = (lineCount / 2) * -lineStep;
+			if ((lineCount % 2) == 0)
+				posFactor += lineStep * 0.5f;
 
 			//Line is yUp
 			for (int i = 0; i < lineCount; ++i)
@@ -164,7 +176,7 @@ namespace JinEngine
 		int JEditorSceneCoordGrid::GetLineCount()const noexcept
 		{
 			return lineCount;
-		}
+		} 
 		int JEditorSceneCoordGrid::GetLineStep()const noexcept
 		{
 			return lineStep;
@@ -224,8 +236,12 @@ namespace JinEngine
 		}
 		void JEditorSceneCoordGrid::SetLineScale()noexcept
 		{
-			int newLineScale = lineCount * lineStep;
-			lineScale = std::clamp(newLineScale, Private::minLineScale, Private::maxLineScale);
+			auto line = _JResourceManager::Instance().GetDefaultMeshGeometry(J_DEFAULT_SHAPE::LINE);
+			float length = line->GetBoundingBoxExtent().y * 2;
+
+			int newLineScale = ((lineCount - 1) * lineStep) / length;
+			//int newLineScale = lineCount * lineStep;
+			lineScale = newLineScale; //std::clamp(newLineScale, Private::minLineScale, Private::maxLineScale);
 			if (coordGrid != nullptr)
 			{
 				auto children = coordGrid->GetChildren();

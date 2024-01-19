@@ -2,13 +2,12 @@
 #include<string> 
 #include<memory>
 #include<vector>
-#include"JApplicationState.h" 
+#include"JApplicationType.h" 
 #include"../Core/JCoreEssential.h" 
 #include"../Core/Platform/JLanguageType.h"     
 #include"../Core/Time/JRealTime.h"
 #include"../Core/Module/JModuleMacro.h"
-#include"../Core/Utility/JMacroUtility.h"
- 
+#include"../Core/Utility/JMacroUtility.h" 
 
 namespace JinEngine
 {

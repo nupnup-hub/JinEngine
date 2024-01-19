@@ -2,8 +2,14 @@
 * Convert Ndc depth to linear depth (Perpective)
 */
 float LinearDepth(const float v, const float near, const float far)
-{ 
+{
+#if 1
 	return ((far * near) / (far - v * (far - near)) - near) / (far - near);
+#else 	
+	float c1 = far / near;
+	float c0 = 1.0 - c1; 
+	return 1.0f / (c0 * v + c1); 
+#endif
 }
 /*
 * Convert linear depth to Ndc depth (Perpective)

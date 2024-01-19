@@ -7,6 +7,7 @@
 #include"../../../../Object/JObjectModifyInterface.h"
 #include"../../../../Object/Resource/Scene/Accelerator/JAcceleratorType.h"
 #include"../../../../Object/Resource/Mesh/JDefaultShapeType.h"
+#include"../../../../Object/Component/Light/JLightType.h"
 #include"../../../../Graphic/JGraphicConstants.h"
 
 namespace JinEngine
@@ -35,7 +36,7 @@ namespace JinEngine
 			struct EditorOption
 			{
 			public:
-				bool allowDisplayDebug = true;
+				bool allowDisplayDebugging = true;
 				bool allowFrustumCulling = false;
 				bool allowOccCulling = false;
 				bool allowReflectCullingResult = false;
@@ -52,6 +53,13 @@ namespace JinEngine
 			struct TestData
 			{
 			public:
+				enum class OBJ_TYPE
+				{
+					SHAPE,
+					LIGHT,
+					COUNT
+				};
+			public:
 				static constexpr int minObjCount = 0;
 				static constexpr int maxObjCount = 100;
 				static constexpr int matCount = 7;
@@ -60,7 +68,9 @@ namespace JinEngine
 				int yCount = 1;
 				int zCount = 1;
 			public:
+				OBJ_TYPE objType = OBJ_TYPE::SHAPE;
 				J_DEFAULT_SHAPE meshType = J_DEFAULT_SHAPE::CUBE;
+				J_LIGHT_TYPE litType = J_LIGHT_TYPE::POINT;
 			public:
 				JVector3<float> offsetPos = JVector3<float>(0, 0, 0);
 				JVector3<float> offsetRot = JVector3<float>(0, 0, 0);
@@ -74,7 +84,7 @@ namespace JinEngine
 			public:
 				void Initialize();
 				void Clear();
-			};
+			}; 
 			struct TextureDebug
 			{
 			public:
@@ -157,15 +167,18 @@ namespace JinEngine
 			void UpdateWindow()final;
 		private:
 			void UpdateMouseWheel()final;
-		private:
+		private: 
+			//camera, light icon
 			void DisplaySceneIcon(const JVector2F sceneImagePos, const bool canSelectIcon, _Out_ bool& hasSelected);
-		private:
+		private: 
+			//bind node event func per J_OBSERVER_SETTING_TYPE
 			void CreateMenuLeafNode(JEditorMenuNode* parent, J_OBSERVER_SETTING_TYPE type)noexcept;
 			void SelectObserverSettingNode(const J_OBSERVER_SETTING_TYPE type)noexcept;
 			void ActivateObserverSetting(const J_OBSERVER_SETTING_TYPE type)noexcept;
 			void DeActivateObserverSetting(const J_OBSERVER_SETTING_TYPE type)noexcept;
 			void UpdateObserverSetting(const J_OBSERVER_SETTING_TYPE type)noexcept;
 		private:
+			//J_OBSERVER_SETTING_TYPE update func
 			void SceneAcceleratorOptionOnScreen();
 			void EditorCameraOptionOnScreen();
 			void EngineTestOptionOnScreen();	//For testing engine performance
@@ -199,6 +212,7 @@ namespace JinEngine
 		private:
 			//Debug
 			void CreateShapeGroup();
+			void CreateLightGroup();
 			//void CreateDebugMaterial()noexcept;
 			//void DestroyDebugMaterial()noexcept;
 		private:

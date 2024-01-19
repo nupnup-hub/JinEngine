@@ -23,7 +23,7 @@ namespace JinEngine
 				parent->left = this;
 			else
 				parent->right = this;
-		}
+		} 
 	}
 	JBvhNode::~JBvhNode() {}
 	void JBvhNode::CreateDebugGameObject(const JUserPtr<JGameObject>& parent, bool onlyLeafNode)noexcept
@@ -96,8 +96,24 @@ namespace JinEngine
 				SetInVisible(info);
 			else
 			{
-				left->Culling(info);
-				right->Culling(info);
+				if (info.allowCullingOrderedByDistance)
+				{
+					if (IsNearRight(info))
+					{
+						right->Culling(info);
+						left->Culling(info);
+					}
+					else
+					{
+						left->Culling(info);
+						right->Culling(info);
+					}
+				}
+				else
+				{
+					left->Culling(info);
+					right->Culling(info);
+				} 
 			}
 		}
 	}
@@ -306,7 +322,14 @@ namespace JinEngine
 		{
 			JUserPtr<JRenderItem> rItem = innerGameObject->GetRenderItem();
 			if ((rItem->GetAcceleratorMask() & ACCELERATOR_ALLOW_CULLING) > 0)
+			{
+				if (info.allowPushVisibleObjVec)
+				{
+					(*info.appAlignedObjVec)[info.pushedCount] = innerGameObject;
+					++info.pushedCount;
+				}
 				OffCulling(info, rItem);
+			}
 		}
 		else
 		{
@@ -324,7 +347,14 @@ namespace JinEngine
 				if (camInParentBBox && IsIntersectCullingFrustum(info, rItem->GetOrientedBoundingBox()))
 					SetCulling(info, rItem);
 				else
+				{
+					if (info.allowPushVisibleObjVec)
+					{
+						(*info.appAlignedObjVec)[info.pushedCount] = innerGameObject;
+						++info.pushedCount;
+					}
 					OffCulling(info, rItem);
+				}
 			}
 		}
 		else
@@ -396,6 +426,10 @@ namespace JinEngine
 	bool JBvhNode::IsContainNode(const DirectX::BoundingBox& boundBox)const noexcept
 	{
 		return bbox.Contains(boundBox) == ContainmentType::CONTAINS;
+	}
+	bool JBvhNode::IsNearRight(const JAcceleratorCullingInfo& info)
+	{
+		return (left->bbox.Center - info.pos).Length() > (right->bbox.Center - info.pos).Length();
 	}
 	bool JBvhNode::IsNearRight(const JAcceleratorAlignInfo& info)
 	{

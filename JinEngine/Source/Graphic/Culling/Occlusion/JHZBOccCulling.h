@@ -20,7 +20,8 @@ namespace JinEngine
 			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info) = 0;
 			virtual void Clear() = 0;
 		public:
-			virtual bool CanReadBackDebugInfo()const noexcept = 0;
+			virtual bool CanReadBackDebugInfo()const noexcept = 0; 
+			bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
 		public:
 			virtual void NotifyBuildNewHzbOccBuffer(JGraphicDevice* device, const size_t initCapacity, const JUserPtr<JCullingInfo>& cullingInfo) = 0;
 			virtual void NotifyReBuildHzbOccBuffer(JGraphicDevice* device, const size_t capacity, const std::vector<JUserPtr<JCullingInfo>>& cullingInfo) = 0;
@@ -34,7 +35,6 @@ namespace JinEngine
 		public:
 			virtual void DrawOcclusionDepthMap(const JGraphicOccDrawSet* occDrawSet, const JDrawHelper& helper) = 0;
 			virtual void DrawOcclusionDepthMapMultiThread(const JGraphicOccDrawSet* occDrawSet, const JDrawHelper& helper) = 0;
-			virtual void DrawOcclusionDebugMap(const JGraphicOccDebugDrawSet* occDebugDrawSet, const JDrawHelper& helper) = 0;
 		public:
 			virtual void ComputeOcclusionCulling(const JGraphicHzbOccComputeSet* computeSet, const JDrawHelper& helper) = 0;
 		};

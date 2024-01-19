@@ -81,6 +81,7 @@ namespace JinEngine
 		bool IsChildNode(const uint pNodeNumber)const noexcept;
 		bool HasGameObject(const size_t guid)noexcept;
 	private:
+		bool IsNearRight(const JAcceleratorCullingInfo& info);
 		bool IsNearRight(const JAcceleratorAlignInfo& info);
 	public:
 		void AddInnerGameObject(const JUserPtr<JGameObject>& newInnerGameObject)noexcept;

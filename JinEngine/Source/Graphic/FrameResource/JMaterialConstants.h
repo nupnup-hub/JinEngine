@@ -21,9 +21,9 @@ namespace JinEngine
 			uint albedoMapIndex = 1;
 			uint normalMapIndex = 1;
 			uint heightMapIndex = 1;
+			uint metallicMapIndex = 1;
 			uint roughnessMapIndex = 1;
-			uint ambientOcclusionMapIndex = 1;
-			uint matPad = 0;
+			uint ambientOcclusionMapIndex = 1; 
 		};
 	}
 }

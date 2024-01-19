@@ -1,13 +1,18 @@
+#include"FilterCommon.hlsl"
+
 Texture2D srcTexture : register(t0);
 RWTexture2D<float4> destTexture : register(u0);
-
-cbuffer DownSamplingInfo : register(b0)
+ 
+cbuffer cbDownSamplePass : register(b0)
 {
-	uint2 srcSize;
-	uint2 destSize;
-	uint srcMipLevel;
-	uint samplingState;
-	uint2 dispatchDim; 
+	uint2 srcSize;					//8
+	uint2 destSize;					//16
+	uint4 dataSet;					//x = srcMipLevel, y = samplingState, zw = dispatchDim  
+};
+
+cbuffer cbKenel : register(b1)
+{ 
+	float4x2 kernel[KERNEL_MAX_SIZE]; //224 	 
 };
 
 SamplerState samLinearClamp : register(s0);
@@ -17,55 +22,34 @@ SamplerState samLinearClamp : register(s0);
 #define WIDTH_ODD_HEIGHT_EVEN 3
 #define WIDTH_HEIGHT_ODD 4
 #define BLUR_FACTOR 2
-
-#ifdef USE_3x3_KERNEL
-#define RADIUS 1
-#elif USE_5x5_KERNEL
-#define RADIUS 2
-#elif USE_7x7_KERNEL
-#define RADIUS 3
-#elif USE_2x2_KERNEL
-#define RADIUS 1
-#define KERNEL_COUNT_IS_EVEN_NUMBER 1
-#endif
-
-#ifdef RADIUS
-#ifdef KERNEL_COUNT_IS_EVEN_NUMBER
-#define KENEL_SIZE RADIUS * 2
-#define KENEL_START -RADIUS + 1
-#define KENEL_END RADIUS
-#define KENEL_OFFSET RADIUS - 1
-
-#else
-#define KENEL_SIZE RADIUS * 2 + 1
-#define KENEL_START -RADIUS
-#define KENEL_END RADIUS
-#define KENEL_OFFSET RADIUS
-#endif
-
-cbuffer KernelData : register(b1)
-{
-	float kernel[KENEL_SIZE][KENEL_SIZE];
-	uint kernelPad00;
-	uint kernelPad01;
-	uint kernelPad02;
-};
+  
 float4 SampleSrcTexure(float2 uv)
 {
 	const float2 texelSize = 1.0f / srcSize;
+	const uint srcMipLevel = dataSet.x;
 	float4 sum = float4(0, 0, 0, 0);
 	[unroll]
-	for (int i = KENEL_START; i <= KENEL_END; ++i)
+	for (int i = KERNEL_START; i <= KERNEL_END; ++i)
 	{
+#ifdef USE_3x3_KERNEL
+	float localKernel[KERNEL_SIZE] = {kernel[i][0].x, kernel[i][0].y, kernel[i][1].x};
+#elif USE_5x5_KERNEL
+	float localKernel[KERNEL_SIZE]= {kernel[i][0].x, kernel[i][0].y, kernel[i][1].x, kernel[i][1].y, kernel[i][2].x};
+#elif USE_7x7_KERNEL
+	float localKernel[KERNEL_SIZE]= {kernel[i][0].x, kernel[i][0].y, kernel[i][1].x, kernel[i][1].y, kernel[i][2].x, kernel[i][2].y, kernel[i][3].x};
+#elif USE_2x2_KERNEL
+	float localKernel[KERNEL_SIZE] = {kernel[i][0].x, kernel[i][0].y};
+#else
+	float localKernel[KERNEL_SIZE] = { 0, 0, 0 };
+#endif 
 		[unroll]
-		for (int j = KENEL_START; j <= KENEL_END; ++j)
+		for (int j = KERNEL_START; j <= KERNEL_END; ++j)
 		{
-			sum += srcTexture.SampleLevel(samLinearClamp, uv + texelSize * int2(i, j), srcMipLevel) * kernel[i + KENEL_OFFSET][j + KENEL_OFFSET];
+			sum += srcTexture.SampleLevel(samLinearClamp, uv + texelSize * int2(i, j), srcMipLevel) * localKernel[j + KERNEL_OFFSET];
 		}
 	}
 	return sum;
-}
-#endif
+} 
  
 #if defined (DIMX) && defined (DIMY)
 [numthreads(DIMX, DIMY, 1)]
@@ -78,7 +62,9 @@ void DownSamplingUseBox(int3 dispatchThreadID : SV_DispatchThreadID)
 	uint textureYFactor = dispatchThreadID.y;
 	const float2 texelSize = 1.0f / srcSize;
 	const uint maxPixelCount = destSize.x * destSize.y;
-	
+	const uint srcMipLevel = dataSet.x;
+	const uint2 dispatchDim = uint2(dataSet.z, dataSet.w);
+
 	while (maxPixelCount > (textureXFactor + (textureYFactor * destSize.x)))
 	{
 		int2 destIndex = int2(textureXFactor, textureYFactor);
@@ -132,7 +118,7 @@ void DownSamplingUseBox(int3 dispatchThreadID : SV_DispatchThreadID)
 		}
 	}
 }
-#ifdef RADIUS
+#ifdef KERNEL_RADIUS
 [numthreads(DIMX, DIMY, 1)]
 void DownSamplingUseKernel(int3 dispatchThreadID : SV_DispatchThreadID)
 {
@@ -143,6 +129,9 @@ void DownSamplingUseKernel(int3 dispatchThreadID : SV_DispatchThreadID)
 	uint textureYFactor = dispatchThreadID.y;
 	const float2 texelSize = 1.0f / srcSize;
 	const uint maxPixelCount = destSize.x * destSize.y;
+	const uint samplingState = dataSet.y;
+	const uint2 dispatchDim = uint2(dataSet.z, dataSet.w);
+
 	uint xMod = srcSize.x % 2;
 	uint yMod = srcSize.y % 2;
 	uint dimension = 0;

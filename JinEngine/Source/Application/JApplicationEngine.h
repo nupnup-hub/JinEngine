@@ -1,7 +1,7 @@
 	#pragma once
 #include<string>
 #include<vector>
-#include"JApplicationState.h" 
+#include"JApplicationType.h" 
 #include"../Core/Platform/JLanguageType.h"     
 
 namespace JinEngine
@@ -36,6 +36,7 @@ namespace JinEngine
 			static std::vector<std::string> GetAppVersion()noexcept;
 		public:
 			static J_APPLICATION_STATE GetApplicationState()noexcept;
+			static J_APPLICATION_SUB_STATE GetApplicationSubState()noexcept;
 			static Core::J_LANGUAGE_TYPE GetLanguageType()noexcept;
 			static std::vector<std::wstring> GetDefaultFolderPath()noexcept;
 		public:

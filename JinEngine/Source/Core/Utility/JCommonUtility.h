@@ -438,7 +438,7 @@ namespace JinEngine
 
 			if (exitB != nullptr)
 				(*exitB)(node);
-		}
+		} 
 	};
 
 	using JCUtil = JCommonUtility;

@@ -103,7 +103,7 @@ namespace JinEngine
 	{
 		if (allNodes.size() < 3)
 			return;
-
+		  
 		info.acceleratorMaxDepth = JMathHelper::PowerOfTwoExponent(allNodes.size());
 		info.alignMaxDepth = info.acceleratorMaxDepth * info.AlignRangeRate();
 	 

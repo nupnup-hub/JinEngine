@@ -38,7 +38,7 @@ namespace JinEngine
 			// Fence value to mark commands up to this fence point.  This lets us
 			// check if these frame resources are still in use by the GPU.
 			GraphicFence fence = 0;
-		public:
+		private:
 			// We cannot update a cbuffer until the GPU is done processing the commands
 			// that reference it.  So each frame needs their own cbuffers.
 			std::unique_ptr<JDx12GraphicBuffer<JMaterialConstants>> materialBuffer = nullptr;
@@ -47,7 +47,7 @@ namespace JinEngine
 			std::unique_ptr<JDx12GraphicBuffer<JPointLightConstants>> pLightBuffer = nullptr;
 			std::unique_ptr<JDx12GraphicBuffer<JSpotLightConstants>> sLightBuffer = nullptr;
 			std::unique_ptr<JDx12GraphicBuffer<JRectLightConstants>> rLightBuffer = nullptr;	
-		public:
+		private:
 			std::unique_ptr<JDx12GraphicBuffer<JObjectConstants>> objectCB = nullptr;
 			std::unique_ptr<JDx12GraphicBuffer<JAnimationConstants>> skinnedCB = nullptr;
 			std::unique_ptr<JDx12GraphicBuffer<JEnginePassConstants>> enginePassCB = nullptr;
@@ -56,18 +56,20 @@ namespace JinEngine
 			std::unique_ptr<JDx12GraphicBuffer<JShadowMapArrayDrawConstants>> smArrayDrawCB = nullptr;
 			std::unique_ptr<JDx12GraphicBuffer<JShadowMapCubeDrawConstants>> smCubeDrawCB = nullptr;
 			std::unique_ptr<JDx12GraphicBuffer<JShadowMapDrawConstants>> smDrawCB = nullptr;
-		public:
+		private:
 			//Bounding
 			std::unique_ptr<JDx12GraphicBuffer<JBoundingObjectConstants>> bundingObjectCB = nullptr;
-		public:
+		private:
 			//depth test
 			std::unique_ptr<JDx12GraphicBuffer<JDepthTestPassConstants>> depthTestPassCB = nullptr;
-		public:
+		private:
 			//occ
 			std::unique_ptr<JDx12GraphicBuffer<JHzbOccComputeConstants>> hzbOccReqCB = nullptr;
 			std::unique_ptr<JDx12GraphicBuffer<JHzbOccObjectConstants>> hzbOccObjectBuffer = nullptr;
 		private:
-			JGraphicBufferBase* bufferVec[(uint)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT];
+			std::unique_ptr<JDx12GraphicBuffer<JSsaoConstants>> ssaoCB = nullptr;
+		private:
+			JDx12GraphicBufferInterface* bufferVec[(uint)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT];
 		private:
 			int framePerThread = 0;
 		public:
@@ -81,6 +83,7 @@ namespace JinEngine
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 			JGraphicBufferBase* GetGraphicBufferBase(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept final;
+			JDx12GraphicBufferInterface* GetDx12Buffer(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept;
 			uint GetElementCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept final;
 			GraphicFence GetFenceValue()const noexcept; 
 			ID3D12GraphicsCommandList* GetCmd(const J_MAIN_THREAD_ORDER type)const noexcept;	//Main thread

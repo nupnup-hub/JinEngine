@@ -17,12 +17,13 @@ namespace JinEngine
 		class JFrameResource;
 
 		//Draw object
-		class JDepthMapDebug;
+		class JGraphicDebug;
 		class JDepthTest;
 		class JShadowMap;
 		class JSceneDraw;
 		class JHardwareOccCulling;
 		class JHZBOccCulling;
+		class JLightCulling;
 		class JOutline;
 		class JImageProcessing;
 		class JGraphicResourceInfo;
@@ -35,14 +36,17 @@ namespace JinEngine
 			virtual std::unique_ptr<JCullingManager> CreateCullingManager() = 0;
 			virtual void CreateFrameResource(_Out_ std::unique_ptr<JFrameResource>(&frame)[Constants::gNumFrameResources]) = 0;
 		public:
-			virtual std::unique_ptr<JDepthMapDebug> CreateDepthMapDebug() = 0;
+			virtual std::unique_ptr<JGraphicDebug> CreateDebug() = 0;
 			virtual std::unique_ptr<JDepthTest> CreateDepthTest() = 0;
 			virtual std::unique_ptr<JShadowMap> CreateShadowMapDraw() = 0;
 			virtual std::unique_ptr<JSceneDraw> CreateSceneDraw() = 0;
 			virtual std::unique_ptr<JHardwareOccCulling> CreateHdOcc() = 0;
 			virtual std::unique_ptr<JHZBOccCulling> CreateHzbOcc() = 0;
+			virtual std::unique_ptr<JLightCulling> CreateLightCulling() = 0;
 			virtual std::unique_ptr<JOutline> CreateOutlineDraw() = 0;
 			virtual std::unique_ptr<JImageProcessing> CreateImageProcessing() = 0;
+		public:
+			virtual void BeginUpdateStart(const JGraphicDrawReferenceSet& drawRefSet) = 0;
 		public:
 			//pre, post process(bind or set resource state...) --- main  thread
 			virtual bool BeginDrawSceneSingleThread(const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet) = 0;
@@ -74,16 +78,16 @@ namespace JinEngine
 				const ResourceHandle from,
 				const ResourceHandle to,
 				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet) = 0;
+				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet) = 0;
 			virtual bool SettingBlurTask(const JGraphicDrawReferenceSet& drawRefSet,
 				const JUserPtr<JGraphicResourceInfo>& info,
 				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet) = 0;
+				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet) = 0;
 			virtual bool SettingMipmapGenerationTask(const JGraphicDrawReferenceSet& drawRefSet,
 				const JUserPtr<JGraphicResourceInfo>& srcInfo,
 				const JUserPtr<JGraphicResourceInfo>& modInfo,
 				std::unique_ptr<JDownSampleDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicDownSampleTaskSet>& dataSet) = 0; 
+				_Out_ std::unique_ptr<JGraphicDownSampleComputeSet>& dataSet) = 0; 
 		};
 	}
 }

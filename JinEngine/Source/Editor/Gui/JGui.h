@@ -139,6 +139,7 @@ namespace JinEngine
 			*/
 			static bool IsMouseInRect(const JVector2<float>& position, const JVector2<float>& size)noexcept; 
 			static bool IsMouseInCurrentWindow()noexcept;
+			static bool IsMouseInLastItem()noexcept;
 			/**
 			* @brief use min, max point
 			*/
@@ -171,9 +172,29 @@ namespace JinEngine
 			static void EndPopup();
 			static void BeginGroup();
 			static void EndGroup();
-			static void Text(const std::wstring& text);
 			static void Text(const std::string& text);
+			static void Text(const std::wstring& text);
+			static void Text(const wchar_t* text);
+			static void Text(const char* text);
 			static void Text(const std::string& text, const float fontScale);
+			static void Text(const std::wstring& text, const float fontScale);
+			template<typename ...Param>
+			static void Text(Param... value)
+			{
+				std::string text;
+				((AddText(text, value)), ...);
+				Text(text);
+			}
+			template<typename T>
+			static void AddText(std::string& str, T value)
+			{
+				if constexpr (std::is_integral_v<decltype(value)> || std::is_floating_point_v<decltype(value)>)
+					str += std::to_string(value) + " ";
+				else if constexpr (std::is_same_v<std::string, T>)
+					str += value + " ";
+				else if constexpr (std::is_same_v<std::wstring, T>)
+					str += JCUtil::WstrToU8Str(value) + " ";
+			}
 			static bool CheckBox(const std::string& name, bool& v);
 			static bool Button(const std::string& name, const JVector2<float>& jVec2 = { 0,0 }, J_GUI_BUTTON_FLAG_ flag = J_GUI_BUTTON_FLAG_MOUSE_BUTTION_LEFT);
 			static bool ArrowButton(const std::string& name, const JVector2<float>& jVec2 = { 0,0 }, const float arrowScale = 1.0f, J_GUI_BUTTON_FLAG_ flag = J_GUI_BUTTON_FLAG_MOUSE_BUTTION_LEFT, J_GUI_CARDINAL_DIR dir = J_GUI_CARDINAL_DIR::DOWN);
@@ -186,12 +207,16 @@ namespace JinEngine
 			static bool InputText(const std::string& name, std::string& buff, const size_t size, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
 			static bool InputMultilineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE);
-			static bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, int step = 1, uint inputWidthRate = 1);
-			static bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const float formatDigit = 3, float step = 0.0f, uint inputWidthRate = 1);
+			static bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, int step = 1, uint inputWidthRate = 2);
+			static bool InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, int step = 1, uint inputWidthRate = 2);
+			static bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const float formatDigit = 3, float step = 0.0f, uint inputWidthRate = 1); 
+			static bool InputFloatClamp(const std::string& name, float* value, const float minV, const float maxV, J_GUI_INPUT_TEXT_FLAG_ flags = J_GUI_INPUT_TEXT_FLAG_NONE, const float formatDigit = 3, float step = 0.0f, uint inputWidthRate = 1);
 		public:
 			static bool SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
+			static bool SliderInt(const std::string& name, uint* value, uint vMin, uint vMax, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
 			static bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const float formatDigit, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
 			static bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
+			static bool VSliderInt(const std::string& name, JVector2<float> size, uint* value, uint vMin, uint vMax, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
 			static bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const float formatDigit, J_GUI_SLIDER_FLAG_ flags = J_GUI_SLIDER_FLAG_NONE);
 		public:
 			static bool BeginTabBar(const std::string& name, J_GUI_TAB_BAR_FLAG_ flags = J_GUI_TAB_BAR_FLAG_NONE);
@@ -205,7 +230,7 @@ namespace JinEngine
 			static void TableSetupColumn(const std::string& name, J_GUI_TABLE_COLUMN_FLAG_ flags = J_GUI_TABLE_COLUMN_FLAG_NONE, float initWeight = 0);
 			static void TableHeadersRow();
 			static void TableNextRow();
-			static void TableSetColumnIndex(const int index);
+			static bool TableSetColumnIndex(const int index);
 		public:
 			static bool BeginMainMenuBar();
 			static void EndMainMenuBar();
@@ -282,6 +307,10 @@ namespace JinEngine
 		public:
 			//Custom Widget 
 			//display one image
+			static bool ImageSelectable(const std::string name,
+				JGuiImageInfo info,  
+				const JVector2<float>& size,
+				const bool useRestoreCursorPos);
 			static bool ImageSelectable(const std::string name,
 				JGuiImageInfo info,
 				bool& pressed,
@@ -424,6 +453,7 @@ namespace JinEngine
 			static JVector2<float> GetWindowMenuBarSize()noexcept;
 			//current window titlebar size
 			static JVector2<float> GetWindowTitleBarSize()noexcept;
+			static JVector2<float> GetWindowScrollPos()noexcept;
 			//get displayed window order back to front
 			//return -1 if didn't display
 			static int GetWindowOrder(const GuiID windowID)noexcept;
@@ -445,6 +475,7 @@ namespace JinEngine
 			//item : button, slider, input...
 			static JVector2<float> GetLastItemRectMin()noexcept;
 			static JVector2<float> GetLastItemRectMax()noexcept;
+			static JVector2<float> GetLastItemRectPos()noexcept;
 			static JVector2<float> GetLastItemRectSize()noexcept;
 			static void SetNextItemWidth(const float width)noexcept;
 			static void SetNextItemOpen(const bool value, J_GUI_CONDIITON flag = J_GUI_CONDIITON_NONE)noexcept;

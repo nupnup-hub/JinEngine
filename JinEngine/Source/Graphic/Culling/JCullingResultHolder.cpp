@@ -11,7 +11,8 @@ namespace JinEngine::Graphic
 	*  cullingResult항상 유효한 값을 가지고
 	*  RAII를 따른다
 	*/
-	JFrustumCullingResultHolder::JFrustumCullingResultHolder()
+	JFrustumCullingResultHolder::JFrustumCullingResultHolder(const J_CULLING_TARGET target)
+		:target(target)
 	{}
 	JFrustumCullingResultHolder::~JFrustumCullingResultHolder()
 	{
@@ -22,9 +23,17 @@ namespace JinEngine::Graphic
 		if(capacity > index)
 			cullingResult[index] = value;
 	}
-	uint JFrustumCullingResultHolder::GetBuffSize()const noexcept
+	uint JFrustumCullingResultHolder::GetBufferSize()const noexcept
 	{
 		return (uint)capacity;
+	}
+	J_GRAPHIC_BUFFER_TYPE JFrustumCullingResultHolder::GetBufferType()const noexcept
+	{
+		return J_GRAPHIC_BUFFER_TYPE::CPU;
+	}
+	J_CULLING_TARGET JFrustumCullingResultHolder::GetCullingTarget()const noexcept
+	{
+		return target;
 	}
 	bool JFrustumCullingResultHolder::IsCulled(const uint index)const noexcept
 	{

@@ -1,6 +1,8 @@
 #pragma once
 #include"../../Core/Func/Callable/JCallable.h"
 #include"../../Core/Singleton/JSingletonHolder.h"
+#include"../../Core/DI/JDIDataBase.h"
+#include"../../Core/File/JFilePathData.h"
 #include"JResourceObjectType.h"
 #include<string>
 #include<vector>
@@ -16,9 +18,21 @@ namespace JinEngine
 		struct JFileImportHelpData;
 		template<typename T> class JCreateUsingNew;
 	}
+ 
+	class JResourceObjectImportDesc : public Core::JDITypeDataBase
+	{
+		REGISTER_CLASS_ONLY_USE_TYPEINFO(JResourceObjectImportDesc)
+	public: 
+		Core::JFileImportHelpData importPathData;
+		JUserPtr<JDirectory> dir;
+	public: 
+		JResourceObjectImportDesc(const Core::JFileImportHelpData& importPathData, const JUserPtr<JDirectory>& dir = nullptr);
+	};
 
+	//.fbx처럼 하나의 format에 여려 resourceType이 포함되어있을때 유효한 resourceType을 분류하는 함수
+	//.jpg, .png처럼 resource가 명확한 경우 등록할 필요가 없다.
 	using ClassifyResourceTypeF = Core::JStaticCallableType<std::vector<J_RESOURCE_TYPE>, const Core::JFileImportHelpData>;
-	using ImportResourceF = Core::JStaticCallableType<std::vector<JUserPtr<JResourceObject>>, JUserPtr<JDirectory>, const Core::JFileImportHelpData>;
+	using ImportResourceF = Core::JStaticCallableType<std::vector<JUserPtr<JResourceObject>>, const JResourceObjectImportDesc*>;
 
 	class JResourceObjectImporterImpl
 	{
@@ -37,7 +51,8 @@ namespace JinEngine
 		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportResourceF::Ptr ptr)noexcept;
 		void AddFormatInfo(const std::wstring& format, const J_RESOURCE_TYPE rType, ImportResourceF::Ptr iptr, ClassifyResourceTypeF::Ptr cptr)noexcept;
 	public:
-		std::vector<JUserPtr<JResourceObject>> ImportResource(JUserPtr<JDirectory> dir, const Core::JFileImportHelpData& importPathdata)noexcept;
+		std::vector<JUserPtr<JResourceObject>> ImportResource(const JResourceObjectImportDesc* desc)noexcept;
+		std::vector<J_RESOURCE_TYPE> DeterminFileResourceType(const Core::JFileImportHelpData importPathData)const noexcept;
 	public:
 		bool IsValidFormat(const std::wstring& format)const noexcept;
 	private:

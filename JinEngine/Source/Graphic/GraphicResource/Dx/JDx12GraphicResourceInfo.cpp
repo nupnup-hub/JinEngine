@@ -51,10 +51,17 @@ namespace JinEngine::Graphic
 			static_cast<JDxGraphicResourceHolderInterface*>(resourceHolder.get())->SetPrivateName(fName);
 		}
 	}
+	void JDx12GraphicResourceInfo::SetPrivateOptionName(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const std::wstring& name)noexcept
+	{
+		if (!HasOption(opType))
+			return;
+
+		optionHolderSet->holder[(uint)opType]->GetResource()->SetName(name.c_str());
+	}
 	/*
 	void JDx12GraphicResourceInfo::SetPostProcessLog(const uint64 frame)noexcept
 	{
-		if (!HasOptional(J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING))
+		if (!HasOption(J_GRAPHIC_RESOURCE_OPTION_TYPE::POST_PROCESSING))
 			return;
 
 		if (optionHolderSet->postProcessLog.lastUpdatedFrame != frame)
@@ -65,7 +72,7 @@ namespace JinEngine::Graphic
 	*/
 	void JDx12GraphicResourceInfo::SetOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, std::unique_ptr<JDx12GraphicResourceHolder> optionHolder)
 	{
-		if (optionHolder == nullptr || HasOptional(opType))
+		if (optionHolder == nullptr || HasOption(opType))
 			return;
 
 		TryCreateOptionViewInfo();
@@ -74,10 +81,10 @@ namespace JinEngine::Graphic
 
 		optionHolderSet->holder[(uint)opType] = std::move(optionHolder);
 	}
-	bool JDx12GraphicResourceInfo::HasOptional(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept
+	bool JDx12GraphicResourceInfo::HasOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept
 	{
 		return optionHolderSet != nullptr && optionHolderSet->holder[(uint)opType] != nullptr;
-	}
+	} 
 	JDx12GraphicResourceInfo::JDx12GraphicResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, 
 		JDx12GraphicResourceManager* manager,
 		std::unique_ptr<JDx12GraphicResourceHolder>&& resourceHolder,

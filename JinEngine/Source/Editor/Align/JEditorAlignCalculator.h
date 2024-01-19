@@ -253,9 +253,9 @@ namespace JinEngine
 		private:
 			std::string text;
 			JVector2<float> size;
-			bool useCompress = true;
-			int linePerAlpabet = 0;
 			float lineLength = 0;
+			int linePerAlpabet = 0;
+			bool useCompress = true; 
 		public:
 			void Update(const std::string& text, const JVector2<float>& size, const bool useCompress);
 		public:
@@ -268,6 +268,7 @@ namespace JinEngine
 			uint CalTextLengthRange(const std::string& calText, const float length)const;
 			uint CalTextAreaRange(const std::string& calText, const float area)const;
 		};
+
 		class JEditorCursorPosCalculator
 		{
 		public:

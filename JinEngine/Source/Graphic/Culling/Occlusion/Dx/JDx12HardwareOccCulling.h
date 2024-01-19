@@ -16,7 +16,9 @@ namespace JinEngine
 				static constexpr float minResolveRate = 1.0f / deadlineFrame;
 			public:
 				size_t bufferCapacity = 0;		//cashed data when CalculateRate()
-				size_t countOffset = 0;
+				size_t offset = 0;
+				size_t count = 0;
+				uint updateCycle = 0;
 				float resolveRate = 0.0f;
 			public:
 				bool updateAllObject = false;
@@ -24,13 +26,18 @@ namespace JinEngine
 			public:
 				UpdateData(const size_t capacity, const size_t gpuMemoryBusWidth);
 			public:
+				bool CanPassThisFrame(const uint frameResourceIndex)const noexcept;
+			public:
 				//split two exponent (1, 1/2, 1/4.... 1/128)
 				void CalculateRate(const size_t capacity);
 				//split gpuMemoryBusWidth(g) (g, 1/2g, 1/3g, 1/4g.... 1/128.0f)
 				void CalculateRate(const size_t capacity, const size_t gpuMemoryBusWidth);
+			private:
+				uint CalculateCount()const noexcept;
+				void CalcuateUpdateCycle() noexcept;
 			public:
 				//Update countOffset and out(offset, count)
-				void Update(_Out_ size_t& offset, _Out_ size_t& count);
+				void Update();
 				void Reset();
 			};
 		private:

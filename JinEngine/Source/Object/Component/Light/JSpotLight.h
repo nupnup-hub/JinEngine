@@ -26,9 +26,10 @@ namespace JinEngine
 		const Graphic::JCullingUserInterface CullingUserInterface()const noexcept final;
 		J_LIGHT_TYPE GetLightType()const noexcept final;
 		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept final;
+		float GetMinPower()const noexcept;
+		float GetMaxPower()const noexcept;
 		float GetFrustumNear()const noexcept final;
 		float GetFrustumFar()const noexcept final;
-		float GetPower()const noexcept;
 		float GetRange()const noexcept;
 		float GetInnerConeAngle()const noexcept; 
 		float GetOuterConeAngle()const noexcept;
@@ -37,8 +38,7 @@ namespace JinEngine
 	public:
 		void SetShadow(const bool value)noexcept final;
 		void SetShadowResolution(const J_SHADOW_RESOLUTION sQuality)noexcept final;
-		void SetAllowDisplayShadowMap(const bool value)noexcept final;
-		void SetPower(const float power)noexcept;
+		void SetAllowDisplayShadowMap(const bool value)noexcept final; 
 		void SetRange(const float range)noexcept;
 		void SetInnerConeAngle(const float spotAngle)noexcept; 
 		void SetOuterConeAngle(const float spotAngle)noexcept;
@@ -49,7 +49,7 @@ namespace JinEngine
 		bool PassDefectInspection()const noexcept final;
 		bool AllowFrustumCulling()const noexcept final;
 		bool AllowHzbOcclusionCulling()const noexcept final;
-		bool AllowHdOcclusionCulling()const noexcept final;
+		bool AllowHdOcclusionCulling()const noexcept final; 
 		bool AllowDisplayOccCullingDepthMap()const noexcept final;
 	protected:
 		void DoActivate()noexcept final;

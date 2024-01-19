@@ -130,10 +130,8 @@ namespace JinEngine
 		DirectX::BoundingSphere JDirectXCollisionEx::CreateBoundingSphere(const DirectX::XMVECTOR vMin, const DirectX::XMVECTOR vMax)noexcept
 		{
 			DirectX::BoundingSphere sphere;
-			XMStoreFloat3(&sphere.Center, 0.5f * (vMin + vMax));
-			XMFLOAT3 dis;
-			XMStoreFloat3(&dis, XMVector3Length(vMax - (0.5f * (vMin + vMax))));
-			sphere.Radius = (float)sqrt(pow(dis.x, 2) + pow(dis.y, 2) + pow(dis.z, 2));
+			XMStoreFloat3(&sphere.Center, 0.5f * (vMin + vMax)); 
+			sphere.Radius = XMVectorGetX(XMVector3Length(vMax - (0.5f * (vMin + vMax))));
 			return sphere;
 		}
 	}

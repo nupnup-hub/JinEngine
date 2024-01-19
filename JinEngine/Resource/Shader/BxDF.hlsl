@@ -156,18 +156,38 @@ float3 ShirelyDiffuse(const float3 albedoColor, const float3 f0, const float3 no
 	const float nV = (1.0f - saturate(dot(normal, viewVec)));
 	return (21.0f / (20.0f * PI)) * (float3(1.0f, 1.0f, 1.0f) - f0) * albedoColor * (1.0f - (nl * nl * nl * nl * nl)) * (1.0f - (nV * nV * nV * nV * nV));
 }
+float3 OrenNayarDiffuse(float3 albedoColor, 
+const float3 normal,
+const float3 lightVec,
+const float3 viewVec,
+const float3 halfVec, 
+float roughness)
+{
+	const float dotNL = dot(normal, lightVec);
+	const float dotNV = dot(normal, viewVec);
+	const float dotVH = dot(viewVec, halfVec); 
+	
+	float a = roughness * roughness;
+	float s = a; // / ( 1.29 + 0.5 * a );
+	float s2 = s * s;
+	float VoL = 2 * dotVH * dotVH - 1; // double angle identity
+	float Cosri = VoL - dotNV * dotNL;
+	float c1 = 1 - 0.5 * s2 / (s2 + 0.33f);
+	float c2 = 0.45 * s2 / (s2 + 0.09f) * Cosri * (Cosri >= 0 ? rcp(max(dotNL, dotNV)) : 1);
+	return albedoColor / PI * (c1 + c2) * (1 + roughness * 0.5f);
+}
 //Hard diffuse---------
 float3 DisneyDiffuse(const float3 diffuseColor,
 const float3 normal,
 const float3 lightVec,
 const float3 viewVec,
 const float3 halfVec,
-const float roughness,
-const float kss)
+const float roughness)
 {
 	const float dotNL = dot(normal, lightVec);
 	const float dotNV = dot(normal, viewVec);
-#if 1
+#if 0
+	const float kss = 0.75f;
 	const float dotNH = dot(normal, halfVec);
 	const float dotHL = dot(halfVec, lightVec);
 	const float dotHL2 = dotHL * dotHL;

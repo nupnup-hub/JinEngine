@@ -124,7 +124,7 @@ namespace JinEngine
 
 			sceneUpdated = false;
 			shadowUpdated = false;
-			occCullingUpdated = false;
+			hzbOccCullingUpdated = hdOccCullingUpdated = false;
 
 			if (observationFrame != nullptr && observationFrame->IsFrameDirted())
 				sceneUpdated = true;
@@ -143,10 +143,14 @@ namespace JinEngine
 			if (shadowUpdateFactor > 0)
 				shadowUpdated = true;
 			 
-			const uint occUpdateHotFactor = hotObjUpdateCount + hotAniUpdateCount;
-			occCullingUpdated = occUpdateHotFactor || hasObjRecopy;
+			//const uint occUpdateHotFactor = hotObjUpdateCount + hotAniUpdateCount + hasObjRecopy;
+			const uint occUpdateFactor = objUpdateCount + aniUpdateCount + hasObjRecopy;
+			const uint occUpdateHotFactor = hotObjUpdateCount + hotAniUpdateCount + hasObjRecopy;
+
+			hdOccCullingUpdated = occUpdateFactor;
+			hzbOccCullingUpdated = occUpdateFactor;
 			if (thisFrameObjCount < lastFrameObjCount)
-				shadowUpdated = occCullingUpdated = true;
+				shadowUpdated = hdOccCullingUpdated = hzbOccCullingUpdated = true;
 
 			lastFrameObjCount = thisFrameObjCount;
 			nextSceneUpdate = false;
@@ -170,6 +174,9 @@ namespace JinEngine
 			{
 				data->isUpdated = false;
 				data->canDrawThisFrame = false;
+				if (data->passNextFrame)
+					data->canDrawThisFrame = true;
+				data->passNextFrame = false;
 			}
 			for (const auto& data : frustumCullingRequestor)
 			{
@@ -183,12 +190,13 @@ namespace JinEngine
 			}
 			for (const auto& data : hdOccCullingRequestor)
 			{
-				data->isUpdated = false; 
+				data->isUpdated = false;  
 				data->canDrawThisFrame = false;
 			}
 		}
 		void JGraphicDrawTarget::EndUpdate()
 		{ 
+			//manage drawing trigger
 			updateInfo->EndUpdate();
 			for (const auto& data : sceneRequestor)
 			{
@@ -199,6 +207,8 @@ namespace JinEngine
 			{
 				if (updateInfo->shadowUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
+				if (data->passNextFrame)
+					data->canDrawThisFrame = false;
 			}
 			for (const auto& data : frustumCullingRequestor)
 			{
@@ -209,17 +219,17 @@ namespace JinEngine
 			}
 			for (const auto& data : hzbOccCullingRequestor)
 			{
-				if (updateInfo->occCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
+				if (updateInfo->hzbOccCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
 				if (data->keepCanDrawTrigger)
 					data->canDrawThisFrame = true;
 			}
 			for (const auto& data : hdOccCullingRequestor)
 			{
-				if (updateInfo->occCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
+				if (updateInfo->hdOccCullingUpdated || data->isUpdated || data->updateFrequency == J_GRAPHIC_DRAW_FREQUENCY::ALWAYS)
 					data->canDrawThisFrame = true;
 				if (data->keepCanDrawTrigger)
-					data->canDrawThisFrame = true; 
+					data->canDrawThisFrame = true;
 			}
 		}
 
@@ -301,7 +311,7 @@ namespace JinEngine
 			rawPtr->isUpdated = true;
 			mapData.shadow.emplace(jLight->GetGuid(), rawPtr);
 
-			drawList[index]->shadowRequestor.emplace_back(std::move(unqPtr));
+			drawList[index]->shadowRequestor.emplace_back(std::move(unqPtr)); 
 		}
 		void JGraphicDrawList::AddDrawSceneRequest(const JUserPtr<JScene>& scene, const JUserPtr<JCamera>& jCamera, const J_GRAPHIC_DRAW_FREQUENCY updateFrequency)noexcept
 		{
@@ -397,7 +407,7 @@ namespace JinEngine
 				int reqIndex = GetShadowReqIndex(index, jComp);
 				if (reqIndex == -1)
 					return;
-
+				 
 				mapData.shadow.erase(drawList[index]->shadowRequestor[reqIndex]->jLight->GetGuid());
 				drawList[index]->shadowRequestor.erase(drawList[index]->shadowRequestor.begin() + reqIndex);
 				drawList[index]->updateInfo->nextSceneUpdate = true; 

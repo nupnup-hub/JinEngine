@@ -7,6 +7,7 @@
 #include"../JResourceObjectHint.h"
 #include"../Mesh/JMeshGeometry.h" 
 #include"../Material/JMaterial.h"    
+#include"../../Component/Light/JLight.h"
 //#include"../JResourceManager.h" 
  
 #include"../../Component/JComponentHint.h"
@@ -61,7 +62,7 @@ namespace JinEngine
 		public Graphic::JFrameUpdateData
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JSceneImpl)
-	public:
+	public: 
 		JWeakPtr<JScene> thisPointer = nullptr;
 	public:
 		JUserPtr<JGameObject> root = nullptr;
@@ -78,7 +79,7 @@ namespace JinEngine
 	public:
 		JSceneImpl(const InitData& initData, JScene* thisSceneRaw)
 			:debugRootGuid(Core::MakeGuid()), useCaseType(initData.useCaseType)
-		{
+		{ 
 			if (useCaseType == J_SCENE_USE_CASE_TYPE::MAIN ||
 				useCaseType == J_SCENE_USE_CASE_TYPE::THREE_DIMENSIONAL_PREVIEW)
 				accelerator = std::make_unique<JSceneAcceleratorStructure>(); 
@@ -388,7 +389,7 @@ namespace JinEngine
 
 				if (accelerator != nullptr)
 					accelerator->AddGameObject(jRItem->GetOwner());
-			}
+			} 
 			return true;
 		}
 		bool DeRegisterComponent(const JUserPtr<JComponent>& component)noexcept
@@ -437,8 +438,7 @@ namespace JinEngine
 				//objectLayer[rIndex][mIndex].push_back(jOwner);
 				if (accelerator != nullptr)
 					accelerator->RemoveGameObject(jOwner);
-			}
-
+			} 
 			cashVec.erase(cashVec.begin() + hitIndex); 
 			return true;
 		}
@@ -484,6 +484,11 @@ namespace JinEngine
 			}
 		}
 	public:
+		bool AllowLightCulling()const noexcept
+		{
+			return useCaseType == J_SCENE_USE_CASE_TYPE::MAIN;
+		}
+	public:
 		void ViewCulling(const Graphic::JCullingUserInterface& cullUser, const DirectX::BoundingFrustum& frustum)
 		{
 			JAcceleratorCullingInfo info(cullUser, frustum);
@@ -493,6 +498,10 @@ namespace JinEngine
 		{
 			JAcceleratorCullingInfo info(cullUser, bbox);
 			accelerator->Culling(info);
+		}
+		void ViewCulling(JAcceleratorCullingInfo& cullInfo)
+		{ 
+			accelerator->Culling(cullInfo);
 		}
 		void InitializeAccelerator()noexcept
 		{
@@ -553,13 +562,12 @@ namespace JinEngine
 			JGameObjectPrivate::ActivateInterface::Activate(debugRoot);
 			SetAllComponentFrameDirty();
 			if (accelerator != nullptr)
-				accelerator->Activate();
+				accelerator->Activate(); 
 		}
 		void DeActivate()
-		{
+		{ 
 			if (accelerator != nullptr)
 				accelerator->DeAcitvate();
-
 			JGameObjectPrivate::ActivateInterface::DeActivate(root);
 			JGameObjectPrivate::ActivateInterface::DeActivate(debugRoot);
 			ClearResource();
@@ -632,6 +640,7 @@ namespace JinEngine
 		void NotifyReAlloc()
 		{
 			ReRegisterFrameData(Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS, this);
+			RegisterInterfacePointer();
 		}
 	public:
 		void Initialize(InitData* initData)
@@ -650,6 +659,9 @@ namespace JinEngine
 		void RegisterThisPointer(JScene* scene)
 		{
 			thisPointer = Core::GetWeakPtr(scene);
+		}
+		void RegisterInterfacePointer()
+		{  
 		}
 		static void RegisterTypeData()
 		{ 
@@ -707,7 +719,7 @@ namespace JinEngine
 	Core::JIdentifierPrivate& JScene::PrivateInterface()const noexcept
 	{
 		return sPrivate;
-	}
+	} 
 	J_RESOURCE_TYPE JScene::GetResourceType()const noexcept
 	{
 		return GetStaticResourceType();
@@ -768,13 +780,13 @@ namespace JinEngine
 	{
 		return impl->GetComponentVec(cType);
 	}
-	JUserPtr<JComponent> JScene::GetDirectionalLight()const noexcept
+	JUserPtr<JLight> JScene::GetFirstDirectionalLight()const noexcept
 	{
 		auto& vec = impl->GetComponentCashVec(J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT);
 		for (const auto& data : vec)
 		{
 			if (static_cast<JLight*>(data.Get())->GetLightType() == J_LIGHT_TYPE::DIRECTIONAL)
-				return data;
+				return Core::ConnectChildUserPtr<JLight>(data);
 		}
 		return nullptr;
 	}
@@ -833,6 +845,10 @@ namespace JinEngine
 	bool JScene::HasComponent(const J_COMPONENT_TYPE cType)const noexcept
 	{
 		return impl->HasComponent(cType);
+	}
+	bool JScene::AllowLightCulling()const noexcept
+	{
+		return impl->AllowLightCulling();
 	}
 	bool JScene::CanUseAcceleratorUtility(const J_ACCELERATOR_LAYER layer, const J_ACCELERATOR_TYPE type)const noexcept
 	{
@@ -912,6 +928,7 @@ namespace JinEngine
 		JResourceObjectPrivate::CreateInstanceInterface::Initialize(createdPtr, initData);
 		JScene* scene = static_cast<JScene*>(createdPtr);
 		scene->impl->RegisterThisPointer(scene);
+		scene->impl->RegisterInterfacePointer();
 		scene->impl->Initialize(static_cast<JScene::InitData*>(initData));
 	}
 	bool CreateInstanceInterface::CanCreateInstance(Core::JDITypeDataBase* initData)const noexcept
@@ -1152,15 +1169,23 @@ namespace JinEngine
 	{
 		const J_COMPONENT_TYPE compType = comp->GetComponentType();
 		if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-		{
+		{ 
 			JCamera* cam = static_cast<JCamera*>(comp.Get());
-			scene->impl->ViewCulling(cam->CullingUserInterface(), cam->GetBoundingFrustum());
+			JAcceleratorCullingInfo info(cam->CullingUserInterface(), cam->GetBoundingFrustum());
+
+			ViewCulling(scene, info); 
 		}
 		else if (compType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
 		{
 			JLight* lit = static_cast<JLight*>(comp.Get()); 
-			scene->impl->ViewCulling(lit->CullingUserInterface(), lit->GetBBox());
+			JAcceleratorCullingInfo info(lit->CullingUserInterface(), lit->GetBBox());
+
+			ViewCulling(scene, info);
 		}
+	}
+	void CullingInterface::ViewCulling(const JUserPtr<JScene>& scene, JAcceleratorCullingInfo& info)noexcept
+	{
+		scene->impl->ViewCulling(info);
 	}
  
 	void DebugInterface::BuildDebugTree(const JUserPtr<JScene>& scene, J_ACCELERATOR_TYPE type, const J_ACCELERATOR_LAYER layer, _Out_ Editor::JEditorBinaryTreeView& tree)noexcept

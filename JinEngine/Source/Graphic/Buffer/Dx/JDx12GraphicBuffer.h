@@ -6,33 +6,47 @@
 #include"../../../../ThirdParty/DirectX/Tk/Src/d3dx12.h"
 #include<d3d12.h>
 #include<wrl/client.h>
- 
+
 namespace JinEngine
 {
 	namespace Graphic
 	{
+		class JDx12GraphicBufferInterface : public JDxGraphicBufferInterface
+		{
+		public:
+			virtual ID3D12Resource* GetResource()const noexcept = 0;
+		public:
+			virtual void SetGraphicCBBufferView(ID3D12GraphicsCommandList* commandList, const uint rootIndex, const uint addressOffset) = 0;
+			virtual void SetComputeCBBufferView(ID3D12GraphicsCommandList* commandList, const uint rootIndex, const uint addressOffset) = 0;
+			virtual void SetGraphicsRootShaderResourceView(ID3D12GraphicsCommandList* commandList, const uint rootIndex) = 0;
+		};
 		template<typename T>
-		class JDx12GraphicBuffer final : public JDxGraphicBufferInterface
+		class JDx12GraphicBuffer final : public JDx12GraphicBufferInterface
 		{
 		private:
-			const std::wstring name;
+			std::wstring name;
 		private:
 			JDx12GraphicResourceHolder holder;
 			BYTE* mappedData = nullptr;
 			uint elementcount = 0;
 			uint elementByteSize = 0;
-			const J_GRAPHIC_BUFFER_TYPE type;
+			J_GRAPHIC_BUFFER_TYPE type;
 		public:
 			bool canMapped = false;
 		public:
+			JDx12GraphicBuffer()
+				:name(L""), type(J_GRAPHIC_BUFFER_TYPE::COMMON)
+			{}
 			JDx12GraphicBuffer(const std::wstring& name, const J_GRAPHIC_BUFFER_TYPE type)
 				:name(name), type(type)
-			{ }
+			{}
 			JDx12GraphicBuffer(const JDx12GraphicBuffer& rhs) = delete;
 			JDx12GraphicBuffer& operator=(const JDx12GraphicBuffer& rhs) = delete;
+			JDx12GraphicBuffer(JDx12GraphicBuffer&& rhs) = default;
+			JDx12GraphicBuffer& operator=(JDx12GraphicBuffer&& rhs) = default;
 			~JDx12GraphicBuffer()
 			{
-				Clear();
+				ClearOwnResource();
 			}
 		public:
 			void Build(JGraphicDevice* device, const uint newElementcount) final
@@ -40,6 +54,8 @@ namespace JinEngine
 				if (!IsSameDevice(device))
 					return;
 
+				if(IsValid())
+					Clear();
 				elementcount = newElementcount;
 				elementByteSize = sizeof(T);
 
@@ -58,28 +74,28 @@ namespace JinEngine
 
 				if (type == J_GRAPHIC_BUFFER_TYPE::READ_BACK)
 				{
-					CD3DX12_HEAP_PROPERTIES uploadProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
-					CD3DX12_RESOURCE_DESC uploadDesc = CD3DX12_RESOURCE_DESC::Buffer(elementByteSize * elementcount);
+					CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
+					CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(elementByteSize * elementcount);
 
 					ThrowIfFailedHr(d3d12Device->CreateCommittedResource(
-						&uploadProperty,
+						&heapProperty,
 						D3D12_HEAP_FLAG_NONE,
-						&uploadDesc,
+						&desc,
 						D3D12_RESOURCE_STATE_COMMON,
 						nullptr,
 						IID_PPV_ARGS(&buffer)));
-					canMapped = true; 
+					canMapped = true;
 				}
 				else if (type == J_GRAPHIC_BUFFER_TYPE::UNORDERED_ACCEESS)
 				{
-					CD3DX12_HEAP_PROPERTIES uploadProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-					CD3DX12_RESOURCE_DESC uploadDesc = CD3DX12_RESOURCE_DESC::Buffer(elementByteSize * elementcount,
+					CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+					CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(elementByteSize * elementcount,
 						D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
 					ThrowIfFailedHr(d3d12Device->CreateCommittedResource(
-						&uploadProperty,
+						&heapProperty,
 						D3D12_HEAP_FLAG_NONE,
-						&uploadDesc,
+						&desc,
 						D3D12_RESOURCE_STATE_COMMON,
 						//초기상태설정시 D3D12_RESOURCE_STATE_UNORDERED_ACCESS은 무시되며 자동으로 D3D12_RESOURCE_STATE_COMMON으로
 						//내부에서 설정되며 리소스 사용시 D3D12_RESOURCE_STATE_UNORDERED_ACCESS로 수동변환이 필요하다
@@ -103,20 +119,37 @@ namespace JinEngine
 						nullptr,
 						IID_PPV_ARGS(&buffer)));
 				}
-				else
-				{ 
+				else if (type == J_GRAPHIC_BUFFER_TYPE::UPLOAD_BUFFER || type == J_GRAPHIC_BUFFER_TYPE::UPLOAD_CONSTANT)
+				{
 					//upload
-					CD3DX12_HEAP_PROPERTIES uploadProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-					CD3DX12_RESOURCE_DESC uploadDesc = CD3DX12_RESOURCE_DESC::Buffer(elementByteSize * elementcount);
+					CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+					CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(elementByteSize * elementcount);
 					ThrowIfFailedHr(d3d12Device->CreateCommittedResource(
-						&uploadProperty,
+						&heapProperty,
 						D3D12_HEAP_FLAG_NONE,
-						&uploadDesc,
+						&desc,
 						D3D12_RESOURCE_STATE_GENERIC_READ,
 						nullptr,
 						IID_PPV_ARGS(&buffer)));
 					canMapped = true;
 				}
+				else if (type == J_GRAPHIC_BUFFER_TYPE::COMMON)
+				{
+					//common
+					CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+					CD3DX12_RESOURCE_DESC desc = CD3DX12_RESOURCE_DESC::Buffer(elementByteSize * elementcount);
+
+					ThrowIfFailedHr(d3d12Device->CreateCommittedResource(
+						&heapProperty,
+						D3D12_HEAP_FLAG_NONE,
+						&desc,
+						D3D12_RESOURCE_STATE_COMMON,
+						nullptr,
+						IID_PPV_ARGS(&buffer)));
+				}
+				else
+					return;
+
 				buffer->SetName(name.c_str());
 				holder.Swap(std::move(buffer));
 				if (canMapped)
@@ -125,11 +158,30 @@ namespace JinEngine
 			}
 			void Clear()noexcept final
 			{
-				if (canMapped && IsValid())
-					holder.UnMap();
-				mappedData = nullptr;
-				holder.Clear();
+				ClearOwnResource();
 				SetValid(false);
+			}
+			void StuffValue(ID3D12GraphicsCommandList* cmdList,
+				ID3D12Resource* uploadBuffer,
+				const D3D12_RESOURCE_STATES beforeState,
+				const D3D12_RESOURCE_STATES afterState,
+				const T* data)
+			{
+				if (type != J_GRAPHIC_BUFFER_TYPE::READ_BACK || type != J_GRAPHIC_BUFFER_TYPE::COMMON)
+					return;
+				 
+				JD3DUtility::UploadData(cmdList, holder.GetResource(), uploadBuffer, beforeState, afterState, data, elementcount, elementByteSize, 1);
+			}
+			void SutffClearValue(ID3D12GraphicsCommandList* cmdList,
+				ID3D12Resource* uploadBuffer,
+				const D3D12_RESOURCE_STATES beforeState,
+				const D3D12_RESOURCE_STATES afterState,
+				const T clearValue)
+			{
+				if (type != J_GRAPHIC_BUFFER_TYPE::READ_BACK || type != J_GRAPHIC_BUFFER_TYPE::COMMON)
+					return;
+
+				JD3DUtility::UploadClearData(cmdList, holder.GetResource(), uploadBuffer, beforeState, afterState, clearValue, elementcount, elementByteSize);
 			}
 		public:
 			void CopyData(const int elementIndex, const void* data)final
@@ -161,24 +213,24 @@ namespace JinEngine
 			{
 				return J_GRAPHIC_DEVICE_TYPE::DX12;
 			}
-			T GetData(const uint index)
+			T GetData(const uint index)const noexcept
 			{
 				return (T)mappedData[index * elementByteSize];
 			}
-			ID3D12Resource* GetResource()const noexcept
+			ID3D12Resource* GetResource()const noexcept final
 			{
 				return holder.GetResource();
 			}
 		public:
-			void SetGraphicCBBufferView(ID3D12GraphicsCommandList* commandList, const uint rootIndex, const uint addressOffset)
+			void SetGraphicCBBufferView(ID3D12GraphicsCommandList* commandList, const uint rootIndex, const uint addressOffset)final
 			{
 				commandList->SetGraphicsRootConstantBufferView(rootIndex, holder.GetResource()->GetGPUVirtualAddress() + addressOffset * elementByteSize);
 			}
-			void SetComputeCBBufferView(ID3D12GraphicsCommandList* commandList, const uint rootIndex, const uint addressOffset)
+			void SetComputeCBBufferView(ID3D12GraphicsCommandList* commandList, const uint rootIndex, const uint addressOffset)final
 			{
 				commandList->SetComputeRootConstantBufferView(rootIndex, holder.GetResource()->GetGPUVirtualAddress() + addressOffset * elementByteSize);
 			}
-			void SetGraphicsRootShaderResourceView(ID3D12GraphicsCommandList* commandList, const uint rootIndex)
+			void SetGraphicsRootShaderResourceView(ID3D12GraphicsCommandList* commandList, const uint rootIndex)final
 			{
 				commandList->SetGraphicsRootShaderResourceView(rootIndex, holder.GetResource()->GetGPUVirtualAddress());
 			}
@@ -186,6 +238,16 @@ namespace JinEngine
 			bool CanMappedCpuPointer()const noexcept
 			{
 				return true;
+			}
+		private:
+			void ClearOwnResource()noexcept
+			{
+				if (canMapped && mappedData != nullptr)
+					holder.UnMap();
+				//if (canMapped && IsValid())
+				//	holder.UnMap();
+				mappedData = nullptr;
+				holder.Clear();
 			}
 		};
 	}

@@ -70,7 +70,6 @@ namespace JinEngine
 		public:
 			void DrawOcclusionDepthMap(const JGraphicOccDrawSet* occDrawSet, const JDrawHelper& helper) final;
 			void DrawOcclusionDepthMapMultiThread(const JGraphicOccDrawSet* occDrawSet, const JDrawHelper& helper)final;
-			void DrawOcclusionDebugMap(const JGraphicOccDebugDrawSet* occDebugDrawSet, const JDrawHelper& helper)final;
 		public:
 			void ComputeOcclusionCulling(const JGraphicHzbOccComputeSet* computeSet, const JDrawHelper& helper) final;
 		private:
@@ -88,7 +87,7 @@ namespace JinEngine
 				JDx12CullingManager* dx12Cm,
 				CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle,
 				const uint passCBIndex,
-				const JCullingUserInterface& cullUser,
+				const JUserPtr<JCullingInfo>& cullInfo,
 				const bool isPerspective);
 		private:
 			void BuildRootSignature(JGraphicDevice* device, const uint occlusionDsvCapacity);

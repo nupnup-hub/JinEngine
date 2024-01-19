@@ -5,7 +5,7 @@
 #include"Material/JDefaultMaterialType.h"
 #include"Mesh/JDefaultShapeType.h"
 #include"Shader/JDefaultShaderType.h"
-#include"Shader/JShaderFunctionEnum.h"
+#include"Shader/JShaderEnum.h"
 #include"Texture/JDefaulTextureType.h"   
 #include"../../Core/Func/Functor/JFunctor.h"
 
@@ -51,6 +51,12 @@ namespace JinEngine
 		JUserPtr<JDirectory> GetProjectContentsDirectory()const noexcept;
 		JUserPtr<JDirectory> GetEditorResourceDirectory()const noexcept;
 		JUserPtr<JDirectory> GetActivatedDirectory()const noexcept;
+	public:
+		size_t GetDefaultGuid(const J_DEFAULT_SHAPE type)const noexcept;
+		size_t GetDefaultGuid(const J_DEFAULT_MATERIAL type)const noexcept;
+		size_t GetDefaultGuid(const J_DEFAULT_TEXTURE type)const noexcept;
+		size_t GetDefaultGuid(const J_DEFAULT_GRAPHIC_SHADER type)const noexcept;
+		size_t GetDefaultGuid(const J_DEFAULT_COMPUTE_SHADER type)const noexcept;
 	public:
 		uint GetResourceCount(const Core::JTypeInfo& info)const noexcept;
 		JUserPtr<JResourceObject> GetResource(const Core::JTypeInfo& info, const size_t guid)const noexcept;

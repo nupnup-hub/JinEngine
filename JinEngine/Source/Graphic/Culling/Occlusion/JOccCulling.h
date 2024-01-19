@@ -1,6 +1,5 @@
 #pragma once 
-#include"../../Device/JGraphicDeviceUser.h"
-#include"../../DataSet/JGraphicDataSet.h"
+#include"../../JGraphicTaskInterface.h"  
 #include"../../Thread/JGraphicMultiThreadDrawInterface.h"
 
 namespace JinEngine
@@ -9,7 +8,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		struct JDrawHelper;
-		class JOccCulling : public JGraphicDeviceUser, public JGraphicMultiThreadDrawInterface
+		class JOccCulling : public JGraphicTaskInterface, public JGraphicMultiThreadDrawInterface
 		{     
 		public:
 			~JOccCulling() = default;

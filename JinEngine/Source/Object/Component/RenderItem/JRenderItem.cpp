@@ -7,7 +7,7 @@
 #include"../../GameObject/JGameObject.h"
 #include"../../Resource/JResourceManager.h" 
 #include"../../Resource/JResourceObjectUserInterface.h"
-#include"../../Resource/Shader/JShaderFunctionEnum.h" 
+#include"../../Resource/Shader/JShaderEnum.h" 
 #include"../../Resource/Mesh/JMeshGeometry.h"
 #include"../../Resource/Material/JMaterial.h" 
 #include"../../Resource/Material/JMaterialPrivate.h"  
@@ -38,7 +38,7 @@ namespace JinEngine
 		static auto isAvailableoverlapLam = []() {return false; };
 		static JRenderItemPrivate rPrivate;
 
-		static constexpr float bboxScaleFactor = 1.05f;
+		static constexpr float bboxScaleFactor = 1.025f;
 	}
  
 	class JRenderItem::JRenderItemImpl : public Core::JTypeImplBase,
@@ -53,9 +53,9 @@ namespace JinEngine
 	public:
 		JWeakPtr<JRenderItem> thisPointer = nullptr;
 	public:
-		REGISTER_PROPERTY_EX(mesh, GetMesh, SetMesh, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
+		REGISTER_PROPERTY_EX(mesh, GetMesh, SetMesh, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
 		JUserPtr<JMeshGeometry> mesh;
-		REGISTER_PROPERTY_EX(material, GetMaterialVec, SetMaterialVec, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, true))
+		REGISTER_PROPERTY_EX(material, GetMaterialVec, SetMaterialVec, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, true))
 		std::vector<JUserPtr<JMaterial>> material; 
 	public:
 		JMatrix4x4 textureTransform = JMatrix4x4::Identity();
@@ -64,9 +64,11 @@ namespace JinEngine
 	public:
 		J_RENDERITEM_ACCELERATOR_MASK acceleratorMask = ACCELERATOR_ALLOW_ALL;
 	public:
-		bool isActivated = false;
+		bool isActivated = false; 
 		REGISTER_PROPERTY_EX(isOccluder, IsOccluder, SetOccluder, GUI_CHECKBOX())
 		bool isOccluder = false;
+		REGISTER_PROPERTY_EX(isIgnoreCullingResult, IsIgnoreCullingResult, SetIgnoreCullingResult, GUI_CHECKBOX())
+		bool isIgnoreCullingResult = false;
 	public:
 		JRenderItemImpl(const InitData& initData, JRenderItem* thisRitemRaw)
 			:renderLayer(initData.layer), acceleratorMask(initData.acceleratorMask)
@@ -151,6 +153,10 @@ namespace JinEngine
 		{
 			if (mesh.IsValid())
 			{
+				DirectX::BoundingSphere res;
+				mesh->GetBoundingSphere().Transform(res, thisPointer->GetOwner()->GetTransform()->GetWorldMatrix());
+				return res;
+				/* old		
 				JTransform* ownerTransform = thisPointer->GetOwner()->GetTransform().Get(); 
 				XMVECTOR s;
 				XMVECTOR q;
@@ -174,6 +180,7 @@ namespace JinEngine
 					gameObjSphereRad *= scale.z;
 
 				return DirectX::BoundingSphere(gameObjSphereCenter.ToSimilar<XMFLOAT3>(), gameObjSphereRad);
+				*/
 			}
 			else
 				return DirectX::BoundingSphere();
@@ -250,10 +257,18 @@ namespace JinEngine
 		{ 
 			isOccluder = value;
 		}
+		void SetIgnoreCullingResult(const bool value)noexcept
+		{
+			isIgnoreCullingResult = value;
+		}
 	public:
 		bool IsOccluder()const noexcept
 		{
 			return isOccluder;
+		}
+		bool IsIgnoreCullingResult()const noexcept
+		{
+			return isIgnoreCullingResult;
 		}
 	public:
 		static bool DoCopy(JRenderItem* from, JRenderItem* to)
@@ -308,10 +323,10 @@ namespace JinEngine
 		void Activate()
 		{  
 			RegisterRItemFrameData();
-			isActivated = true;
+			isActivated = true; 
 		}
 		void DeActivate()
-		{
+		{ 
 			DeRegisterRItemFrameData();
 			isActivated = false;
 		}
@@ -559,6 +574,10 @@ namespace JinEngine
 	{
 		return impl->IsOccluder();
 	}
+	bool JRenderItem::IsIgnoreCullingResult()const noexcept
+	{
+		return impl->IsIgnoreCullingResult();
+	}
 	bool JRenderItem::PassDefectInspection()const noexcept
 	{
 		if (JComponent::PassDefectInspection() && impl->mesh.IsValid())
@@ -644,6 +663,7 @@ namespace JinEngine
 		J_RENDERITEM_ACCELERATOR_MASK acceleratorMask;
 		uint materialCount;
 		bool isOccluder;
+		bool isIgnoreCullingResult;
 
 		auto loadData = static_cast<JRenderItem::LoadData*>(data);
 		JFileIOTool& tool = loadData->tool;
@@ -656,7 +676,8 @@ namespace JinEngine
 		FILE_ASSERTION(JObjectFileIOHelper::LoadEnumData(tool, acceleratorMask, "AcceleratorMask:"));
 		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, materialCount, "MaterialCount:"));
 		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, isOccluder, "IsOccluder:"));
-		
+		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, isIgnoreCullingResult, "IsIgnoreCullingResult:"));
+
 		std::vector<JUserPtr<JMaterial>>materialVec(materialCount);
 		tool.PushExistStack("Material");
 		for (uint i = 0; i < materialCount; ++i)
@@ -705,6 +726,7 @@ namespace JinEngine
 		JObjectFileIOHelper::StoreEnumData(tool, impl->acceleratorMask, "AcceleratorMask:");
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->material.size(), "MaterialCount:");
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->isOccluder, "IsOccluder:");
+		JObjectFileIOHelper::StoreAtomicData(tool, impl->isIgnoreCullingResult, "IsIgnoreCullingResult:");
 
 		tool.PushArrayOwner("Material");
 		for (uint i = 0; i < impl->material.size(); ++i)

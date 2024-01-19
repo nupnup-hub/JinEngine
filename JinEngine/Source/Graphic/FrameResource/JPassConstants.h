@@ -15,9 +15,9 @@ namespace JinEngine
 			JVector2F bluseNoiseTextureSize;
 			JVector2F invBluseNoiseTextureSize;
 			int ltcMatTextureIndex = 0;
-			int ltcAmpTextureIndex = 0;
-			int passPad00 = 0;
-			int paddPad01 = 0;
+			int ltcAmpTextureIndex = 0; 
+			float clusterMinDepth = 0;
+			int paddPad00 = 0;
 		};
 		struct JScenePassConstants
 		{ 

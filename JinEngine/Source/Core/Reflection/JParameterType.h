@@ -11,6 +11,7 @@ namespace JinEngine
 			Void,
 			Bool, 
 			Int, //short , int, long,  size_t 
+			Uint,
 			Float, 
 			String,
 			JVector2,	//Reflection support JVector<float> or JVector<int> or JVector<std::string>

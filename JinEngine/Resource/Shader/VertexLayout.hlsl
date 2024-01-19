@@ -1,5 +1,15 @@
 
-#if defined(DEBUG)
+#if defined(FULL_SCREEN_QUAD)
+struct VertexIn
+{
+	float3 posL    : POSITION;
+};
+struct VertexOut
+{
+	float4 posH    : SV_POSITION; 
+	float3 dir : DIRECTION;
+};
+#elif defined(DEBUG)
 struct VertexIn
 {
 	float3 posL    : POSITION;

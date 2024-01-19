@@ -223,7 +223,8 @@ namespace JinEngine
 		if (parent == nullptr)
 			return;
 
-		if (parent->HasRenderItem() && IsValidLayer(parent->GetRenderItem()->GetRenderLayer()))
+		auto rItem = parent->GetRenderItem();
+		if (rItem != nullptr && rItem->IsActivated() && rItem->GetMesh() != nullptr && IsValidLayer(rItem->GetRenderLayer()))
 			vec.push_back(parent);
 
 		std::vector<JUserPtr<JGameObject>> children = parent->GetChildren();

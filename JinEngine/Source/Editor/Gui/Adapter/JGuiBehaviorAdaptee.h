@@ -144,11 +144,14 @@ namespace JinEngine
 			virtual bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, J_GUI_INPUT_TEXT_FLAG flags) = 0;
 			virtual bool InputMultilineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, J_GUI_INPUT_TEXT_FLAG flags) = 0;
 			virtual bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG flags, int step) = 0;
+			virtual bool InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG flags, int step) = 0;
 			virtual bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG flags, const uint formatDigit, float step) = 0;
 		public:
 			virtual bool SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG flags) = 0;
+			virtual bool SliderInt(const std::string& name, uint* value, uint vMin, uint vMax, J_GUI_SLIDER_FLAG flags) = 0;
 			virtual bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const uint formatDigit, J_GUI_SLIDER_FLAG flags) = 0;
 			virtual bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG flags) = 0;
+			virtual bool VSliderInt(const std::string& name, JVector2<float> size, uint* value, uint vMin, uint vMax, J_GUI_SLIDER_FLAG flags) = 0;
 			virtual bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const uint formatDigit, J_GUI_SLIDER_FLAG flags) = 0;
 		public:
 			virtual bool BeginTabBar(const std::string& name, J_GUI_TAB_BAR_FLAG flags) = 0;
@@ -162,7 +165,7 @@ namespace JinEngine
 			virtual void TableSetupColumn(const std::string& name, J_GUI_TABLE_COLUMN_FLAG flags, float initWeight) = 0;
 			virtual void TableHeadersRow() = 0;
 			virtual void TableNextRow() = 0;
-			virtual void TableSetColumnIndex(const int index) = 0;
+			virtual bool TableSetColumnIndex(const int index) = 0;
 		public:
 			virtual bool BeginMainMenuBar() = 0;
 			virtual void EndMainMenuBar() = 0;
@@ -327,6 +330,7 @@ namespace JinEngine
 			virtual JVector2<float> GetRestWindowContentsSize()const noexcept = 0; 
 			virtual JVector2<float> GetWindowMenuBarSize()const noexcept = 0;
 			virtual JVector2<float> GetWindowTitleBarSize()const noexcept = 0; 
+			virtual JVector2<float> GetWindowScrollPos()const noexcept = 0;
 			virtual int GetWindowOrder(const GuiID windowID)const noexcept = 0;
 			virtual bool GetWindowInfo(const std::string& wndName, _Inout_ JGuiWindowInfo& info)const noexcept = 0;
 			virtual bool GetWindowInfo(const GuiID windowID, _Inout_ JGuiWindowInfo& info)const noexcept = 0;

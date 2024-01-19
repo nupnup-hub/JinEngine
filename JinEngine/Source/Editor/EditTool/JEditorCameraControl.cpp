@@ -25,6 +25,10 @@ namespace JinEngine
 		JEditorCameraControl::~JEditorCameraControl() {}
 		void JEditorCameraControl::Update(const JUserPtr<JCamera>& cam, float x, float y, const J_GUI_FOCUS_FLAG_ wndFocusFlag)
 		{
+			if (std::isnan(x))
+				x = preMousePos.x;
+			if (std::isnan(y))
+				y = preMousePos.y;
 			if (JGui::IsCurrentWindowFocused(wndFocusFlag))
 			{
 				if (JGui::IsMouseHoveringRect(JGui::GetWindowPos(), JGui::GetWindowPos() + JGui::GetWindowSize()))

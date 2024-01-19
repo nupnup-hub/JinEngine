@@ -5,7 +5,7 @@
 namespace JinEngine
 {
 	namespace Graphic
-	{
+	{ 
 		struct JDx12GraphicBindSet final : public JGraphicBindSet
 		{
 		public:
@@ -34,30 +34,16 @@ namespace JinEngine
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};
 
-		struct JDx12GraphicDepthMapDebugTaskSet final : public JGraphicDepthMapDebugTaskSet
+		struct JDx12GraphicDebugRsComputeSet final : public JGraphicDebugRsComputeSet
 		{
 		public:
-			ID3D12GraphicsCommandList* cmdList;
-		public:
-			CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle;
-			CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle;
-		public:
-			bool useHandle = false;
+			ID3D12GraphicsCommandList* cmdList; 
 		public: 
-			JDx12GraphicDepthMapDebugTaskSet(JGraphicDevice* gDevice, JGraphicResourceManager* graphicResourceM, ID3D12GraphicsCommandList* cmdList);
-			JDx12GraphicDepthMapDebugTaskSet(JGraphicDevice* gDevice, 
-				JGraphicResourceManager* graphicResourceM, 
-				const JVector2<uint> size,
-				const float nearF,
-				const float farF, 
-				const bool isPerspective,
-				ID3D12GraphicsCommandList* cmdList,
-				CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
-				CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle);
+			JDx12GraphicDebugRsComputeSet(JGraphicDevice* gDevice, JGraphicResourceManager* graphicResourceM, ID3D12GraphicsCommandList* cmdList);
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};
-
+		 
 		struct JDx12GraphicSceneDrawSet final : public JGraphicSceneDrawSet
 		{
 		public:
@@ -101,20 +87,7 @@ namespace JinEngine
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};
-
-		struct JDx12GraphicOccDebugDrawSet final : public JGraphicOccDebugDrawSet
-		{
-		public:
-			ID3D12GraphicsCommandList* cmdList;
-		public:
-			JDx12GraphicOccDebugDrawSet(JGraphicDevice* device,
-				JGraphicResourceManager* graphicResourceM,
-				JDepthMapDebug* depthDebug,
-				ID3D12GraphicsCommandList* cmdList);
-		public:
-			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
-		};
-
+ 
 		struct JDx12GraphicHzbOccComputeSet final : public JGraphicHzbOccComputeSet
 		{
 		public:
@@ -156,14 +129,14 @@ namespace JinEngine
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};
 
-		struct JDx12GraphicBlurApplySet : public JGraphicBlurTaskSet
+		struct JDx12GraphicBlurComputeSet : public JGraphicBlurComputeSet
 		{
 		public:
 			ID3D12GraphicsCommandList* cmdList;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle;
 		public:
-			JDx12GraphicBlurApplySet(JGraphicDevice* device,
+			JDx12GraphicBlurComputeSet(JGraphicDevice* device,
 				std::unique_ptr<JBlurDesc>&& desc,
 				ID3D12GraphicsCommandList* cmdList,
 				CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle,
@@ -172,7 +145,7 @@ namespace JinEngine
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};
 
-		struct JDx12GraphicDownSampleApplySet : public JGraphicDownSampleTaskSet
+		struct JDx12GraphicDownSampleComputeSet : public JGraphicDownSampleComputeSet
 		{
 		public:
 			ID3D12GraphicsCommandList* cmdList;
@@ -180,7 +153,7 @@ namespace JinEngine
 			CD3DX12_GPU_DESCRIPTOR_HANDLE srcHandle;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE destHandle;
 		public:
-			JDx12GraphicDownSampleApplySet(JGraphicDevice* device,
+			JDx12GraphicDownSampleComputeSet(JGraphicDevice* device,
 				JGraphicResourceManager* graphicResourceM,
 				std::unique_ptr<JDownSampleDesc>&& desc,
 				std::vector<Core::JDataHandle>&& handle,
@@ -191,14 +164,40 @@ namespace JinEngine
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
 		};
 
-		struct JDx12GraphicSsaoTaskSet : public JGraphicSsaoTaskSet
+		struct JDx12GraphicSsaoComputeSet : public JGraphicSsaoComputeSet
 		{
 		public:
 			ID3D12GraphicsCommandList* cmdList;  
 		public:
-			JDx12GraphicSsaoTaskSet(JGraphicDevice* device,
+			JDx12GraphicSsaoComputeSet(JGraphicDevice* device,
 				JGraphicResourceManager* graphicResourceM,
 				JFrameResource* currFrame, 
+				ID3D12GraphicsCommandList* cmdList);
+		public:
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+		};
+
+		struct JDx12GraphicLightCullingTaskSet : public JGraphicLightCullingTaskSet
+		{
+		public:
+			ID3D12GraphicsCommandList* cmdList;
+		public:
+			JDx12GraphicLightCullingTaskSet(JGraphicDevice* device,
+				JGraphicResourceManager* graphicResourceM,
+				JCullingManager* cullingManager,
+				JFrameResource* currFrame,
+				ID3D12GraphicsCommandList* cmdList);
+		public:
+			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;
+		};
+
+		struct JDx12GraphicLightCullingDebugDrawSet : public JGraphicLightCullingDebugDrawSet
+		{
+		public: 
+			ID3D12GraphicsCommandList* cmdList;
+		public:
+			JDx12GraphicLightCullingDebugDrawSet(JGraphicDevice* device,
+				JGraphicResourceManager* graphicResourceM,
 				ID3D12GraphicsCommandList* cmdList);
 		public:
 			J_GRAPHIC_DEVICE_TYPE GetDeviceType()const noexcept final;

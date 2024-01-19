@@ -42,6 +42,54 @@ namespace JinEngine
 		static constexpr uint useGraphicResourceCount = 2;
 	}
 
+	struct MaterialIntermediateData
+	{
+	public:
+		template<typename T>
+		static constexpr bool CanConvert()
+		{
+			return std::is_base_of_v<T, Core::JFbxMaterial> || std::is_base_of_v<T, Core::JObjFileMaterial>;
+		}
+	public:
+		std::wstring name;
+	public:
+		JVector4F albedoColor = { 0.75f, 0.75f, 0.75f, 0.65f };	
+		float metallic = 0.25f;			
+		float roughness = 0.75f;	
+	public: 
+		std::wstring albedoMapName;
+		std::wstring normalMapName; 
+		std::wstring heightMapName;
+		std::wstring roughnessMapName; 
+		std::wstring ambientMapName;
+	public:
+		MaterialIntermediateData(const Core::JFbxMaterial& fbxmat)
+			:name(JCUtil::U8StrToWstr(fbxmat.name)),
+			albedoColor(fbxmat.albedoColor),
+			metallic(fbxmat.metallic),
+			roughness(fbxmat.roughness),
+			albedoMapName(fbxmat.albedoMapName.empty() ? L"" : JCUtil::U8StrToWstr(fbxmat.albedoMapName)),
+			normalMapName(fbxmat.normalMapName.empty() ? L"" : JCUtil::U8StrToWstr(fbxmat.normalMapName)),
+			heightMapName(fbxmat.heightMapName.empty() ? L"" : JCUtil::U8StrToWstr(fbxmat.heightMapName)),
+			roughnessMapName(fbxmat.roughnessMapName.empty() ? L"" : JCUtil::U8StrToWstr(fbxmat.roughnessMapName)),
+			ambientMapName(fbxmat.ambientMapName.empty() ? L"" : JCUtil::U8StrToWstr(fbxmat.ambientMapName))
+		{
+
+		}
+		MaterialIntermediateData(const Core::JObjFileMaterial& objmat)
+			:name(objmat.name),
+			albedoColor(objmat.albedo),
+			//metallic(fbxmat.metallic),
+			//roughness(fbxmat.roughness),
+			albedoMapName(objmat.albedoMapName),
+			normalMapName(objmat.normalMapName),
+			heightMapName(objmat.heightMapName),
+			//roughnessMapName(objmat.roughnessMapName),
+			ambientMapName(objmat.ambientMapName)
+		{
+
+		}
+	};
 	class SubmeshGeometry
 	{
 	private:
@@ -147,7 +195,7 @@ namespace JinEngine
 			return hasNormal;
 		}
 	};
-
+ 
 	class JMeshGeometry::JMeshGeometryImpl : public Core::JTypeImplBase,
 		public JResourceObjectUserInterface,
 		public JClearableInterface,
@@ -213,15 +261,29 @@ namespace JinEngine
 		uint GetSubmeshStartIndexLocation(const uint index)const noexcept
 		{
 			return submeshes.size() > index ? submeshes[index].GetIndexStart() : 0;
-		}
+		} 
 		std::wstring GetSubMeshName(const uint index)const noexcept
 		{
 			return submeshes.size() > index ? submeshes[index].GetName() : L"InValidAccess";
+		} 
+		REGISTER_METHOD(GetSubMeshMaterialVec)
+		REGISTER_METHOD_READONLY_GUI_WIDGET(SubMeshMaterial, GetSubMeshMaterialVec, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE,  true, false))
+		std::vector<JUserPtr<JMaterial>> GetSubMeshMaterialVec()const noexcept
+		{
+			const uint count = (uint)submeshes.size();
+			std::vector<JUserPtr<JMaterial>> matVec(count);
+			for (uint i = 0; i < count; ++i)
+				matVec[i] = submeshes[i].GetMaterial();
+			return matVec;
 		}
 		JUserPtr<JMaterial> GetSubmeshMaterial(const uint index)const noexcept
 		{
 			return submeshes.size() > index ? submeshes[index].GetMaterial() : JUserPtr<JMaterial>{};
 		}
+		int GetResourceDataIndex(const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_TASK_TYPE taskType)const noexcept
+		{
+			return (rType == Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX || rType == Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX) ? 0 : invalidIndex;
+		} 
 	public:
 		void UpdateMeshBound()noexcept
 		{
@@ -254,13 +316,116 @@ namespace JinEngine
 				CallOffResourceReference(submeshes[i].GetMaterial().Get());
 		}
 	public:
+		template<typename T>
+		static void ConvertJEMaterial(Core::JMeshGroup& group,
+			std::unordered_map<size_t, T> matData,
+			const J_OBJECT_FLAG flag,
+			const JUserPtr<JDirectory>& parentDir)
+		{
+			if constexpr (!MaterialIntermediateData::CanConvert<T>())
+				return;
+
+			if (parentDir == nullptr)
+				return;
+
+			JUserPtr<JDirectory> matDir = JICI::Create<JDirectory>(L"Material", Core::MakeGuid(), OBJECT_FLAG_NONE, parentDir);
+			JUserPtr<JDirectory> textureDir = nullptr;
+			 
+			std::unordered_map<std::wstring, JUserPtr<JMaterial>> newMatmap;
+			const uint count = group.GetMeshDataCount();
+			for (uint i = 0; i < count; ++i)
+			{
+				auto meshData = group.GetMeshData(i);
+				auto mapData = matData.find(meshData->GetGuid());
+				if (mapData == matData.end() || mapData->second.size() == 0)
+					continue;
+
+				MaterialIntermediateData interMat(mapData->second[0]); 
+				auto newMatData = newMatmap.find(interMat.name);
+				if (newMatData != newMatmap.end())
+				{
+					meshData->SetMaterial(newMatData->second);
+					continue;
+				}
+				 
+				JUserPtr<JMaterial> newMaterial = JICI::Create<JMaterial>(interMat.name,
+					Core::MakeGuid(),
+					flag,
+					GetDefaultFormatIndex(),
+					matDir);
+
+				newMaterial->SetAlbedoColor(interMat.albedoColor);
+				newMaterial->SetMetallic(interMat.metallic);
+				newMaterial->SetRoughness(interMat.roughness);
+				using SetTexturePtr = void(JMaterial::*)(JUserPtr<JTexture> texture);
+				constexpr uint funcCount = 5;
+
+				std::wstring nameRef[funcCount]
+				{
+					interMat.albedoMapName,
+					interMat.normalMapName,
+					interMat.heightMapName,
+					interMat.roughnessMapName,
+					interMat.ambientMapName
+				};
+				SetTexturePtr func[funcCount]
+				{
+					&JMaterial::SetAlbedoMap, 
+					&JMaterial::SetNormalMap,
+					&JMaterial::SetHeightMap,
+					&JMaterial::SetRoughnessMap,
+					&JMaterial::SetAmbientOcclusionMap,
+				};
+				for (uint j = 0; j < funcCount; ++j)
+				{
+					if (textureDir == nullptr)
+						textureDir = JICI::Create<JDirectory>(L"Texture", Core::MakeGuid(), OBJECT_FLAG_NONE, parentDir);
+					
+					const JResourceObjectImportDesc importDesc(Core::JFileImportHelpData{ nameRef[j] }, textureDir);
+					auto res = JResourceObjectImporter::Instance().ImportResource(&importDesc);
+					(newMaterial.Get()->*func[j])(Core::ConvertChildUserPtr<JTexture>(res[0])); 
+				}		
+				meshData->SetMaterial(newMaterial);
+				newMatmap.emplace(interMat.name, newMaterial);
+			}
+		} 
+		template<typename T>
+		static auto SplitMeshGroup(_Inout_ T* group)
+			->std::vector<std::unique_ptr<typename Core::TypeCondition<T, std::is_base_of_v<Core::JMeshGroup, T>>::Type>>
+			//->std::conditional_t<std::is_base_of_v<Core::JMeshGroup, T>, std::vector<T>, void>
+		{ 
+			const uint meshDataCount = group->GetMeshDataCount();
+			std::vector<std::unique_ptr<T>> splitMeshGroup(meshDataCount);
+
+			T* oriGroup = static_cast<T*>(group);
+			for (uint i = 0; i < meshDataCount; ++i)
+			{
+				splitMeshGroup[i] = std::make_unique<T>();
+				splitMeshGroup[i]->AddMeshData(oriGroup->PopMeshData(0));
+			}
+			return std::move(splitMeshGroup);
+		}
 		void TryCreateMeshGroupMaterial(Core::JMeshGroup* meshGroup)
 		{
-			const uint submeshCount = (uint)meshGroup->GetMeshDataCount();
-			JUserPtr<JDirectory> matDir = thisPointer->GetDirectory()->GetChildDirctoryByName(L"Material");
+			JUserPtr<JDirectory> parentDir = thisPointer->GetDirectory()->GetParent();
+			JUserPtr<JDirectory> matDir = parentDir->GetChildDirctoryByName(L"Material");
 			if (matDir == nullptr)
-				matDir = JICI::Create<JDirectory>(L"Material", Core::MakeGuid(), OBJECT_FLAG_NONE, thisPointer->GetDirectory());
+			{
+				JUserPtr<JDirectory> modelDir = parentDir->GetChildDirctoryByName(L"Model");
+				if (modelDir != nullptr)
+				{
+					//imported
+					matDir = JICI::Create<JDirectory>(L"Material", Core::MakeGuid(), OBJECT_FLAG_NONE, parentDir);
+				}
+				else
+				{
+					//engine default
+					matDir = thisPointer->GetDirectory();
+					//matDir = JICI::Create<JDirectory>(L"Material", Core::MakeGuid(), OBJECT_FLAG_NONE, thisPointer->GetDirectory());
+				} 
+			}
 
+			const uint submeshCount = (uint)meshGroup->GetMeshDataCount();
 			for (uint i = 0; i < submeshCount; ++i)
 			{
 				if (meshGroup->GetMeshData(i)->GetMaterial().IsValid())
@@ -296,7 +461,7 @@ namespace JinEngine
 						meshGroup->GetMeshData(i)->GetGuid());
 				}
 			}
-
+			
 			for (uint i = 0; i < submeshCount; ++i)
 			{
 				if (meshGroup->GetMeshData(i)->GetMeshType() == Core::J_MESHGEOMETRY_TYPE::STATIC)
@@ -304,6 +469,7 @@ namespace JinEngine
 				else
 					submeshes[i].SetMesh(*static_cast<Core::JSkinnedMeshData*>(meshGroup->GetMeshData(i)), vertexCount, indexCount);
 
+				submeshes[i].SetMaterial(Core::ConnectChildUserPtr<JMaterial>(meshGroup->GetMeshData(i)->GetMaterial()));
 				vertexCount += submeshes[i].GetVertexCount();
 				indexCount += submeshes[i].GetIndexCount();
 			}
@@ -325,7 +491,8 @@ namespace JinEngine
 						vertex[vertexOffset + j] = meshdata->GetVertex(j);
 					vertexOffset += subMeshVertexCount;
 				}
-				CreateVertexBuffer(vertex); 
+
+				CreateResource(std::make_unique<Graphic::JBufferCreationDesc>(vertex.data(), vertexBufferByteSize), Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX);
 			}
 			else
 			{
@@ -342,7 +509,7 @@ namespace JinEngine
 						vertex[vertexOffset + j] = meshdata->GetVertex(j);
 					vertexOffset += subMeshVertexCount;
 				} 
-				CreateVertexBuffer(vertex);
+				CreateResource(std::make_unique<Graphic::JBufferCreationDesc>(vertex.data(), vertexBufferByteSize), Graphic::J_GRAPHIC_RESOURCE_TYPE::VERTEX);
 			}
 
 			if (indexCount >= 1 << 16)
@@ -360,7 +527,7 @@ namespace JinEngine
 						index32[indicesOffset + j] = meshdata->GetIndex(j);
 					indicesOffset += subMeshIndexCount;
 				}
-				CreateIndexBuffer(index32);
+				CreateResource(std::make_unique<Graphic::JBufferCreationDesc>(index32.data(), indexBufferByteSize), Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX);
 			}
 			else
 			{
@@ -377,7 +544,7 @@ namespace JinEngine
 						index16[indicesOffset + j] = meshdata->GetIndex(j);
 					indicesOffset += subMeshIndexCount;
 				}
-				CreateIndexBuffer(index16);
+				CreateResource(std::make_unique<Graphic::JBufferCreationDesc>(index16.data(), indexBufferByteSize), Graphic::J_GRAPHIC_RESOURCE_TYPE::INDEX);
 			}
 			if (thisPointer->IsActivated())
 			{
@@ -397,7 +564,7 @@ namespace JinEngine
 					auto& pA = static_cast<JMeshGeometryPrivate::AssetDataIOInterface&>(p.GetAssetDataIOInterface());
 					auto groupData = pA.ReadMeshGroupData(thisPointer->GetPath());
 					if (ImportMesh(groupData.get()))
-						thisPointer->SetValid(true);
+						thisPointer->SetValid(true); 
 				}
 			}
 		}
@@ -486,10 +653,10 @@ namespace JinEngine
 			RegisterRTypeInfo(rTypeHint, rTypeCFunc, RTypePrivateFunc{});
 
 			//JResourceObject*, const std::wstring, JDirectory*, const std::wstring>
-			auto fbxClassifyC = [](const Core::JFileImportHelpData importPathdata) -> std::vector<J_RESOURCE_TYPE>
+			auto fbxClassifyC = [](const Core::JFileImportHelpData importPathData) -> std::vector<J_RESOURCE_TYPE>
 			{
 				using FbxFileTypeInfo = Core::JFbxFileLoader::FbxFileTypeInfo;
-				FbxFileTypeInfo info = JFbxFileLoader::Instance().GetFileTypeInfo(importPathdata.oriFilePath);
+				FbxFileTypeInfo info = JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
 				if (info.typeInfo == Core::J_FBXRESULT::FAIL)
 					return {};
 
@@ -501,29 +668,34 @@ namespace JinEngine
 
 				return resVec;
 			};
-			auto fbxMeshImportC = [](JUserPtr<JDirectory> dir, const Core::JFileImportHelpData importPathData) -> std::vector<JUserPtr<JResourceObject>>
+			auto fbxMeshImportC = [](const JResourceObjectImportDesc* desc) -> std::vector<JUserPtr<JResourceObject>>
 			{
+				const JMeshGeometryImportDesc* meshDesc = static_cast<const JMeshGeometryImportDesc*>(desc);
+				const Core::JFileImportHelpData& importPathData = meshDesc->importPathData;
+				const JUserPtr<JDirectory>& dir = meshDesc->dir;
+
 				std::vector<JUserPtr<JResourceObject>> res;
 				using FbxFileTypeInfo = Core::JFbxFileLoader::FbxFileTypeInfo;
 				FbxFileTypeInfo info = JFbxFileLoader::Instance().GetFileTypeInfo(importPathData.oriFilePath);
-
-				JUserPtr<JMeshGeometry> newMesh = nullptr;
+				 
 				JUserPtr<JSkeletonAsset> newSkeleton = nullptr;
 				if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
 				{
 					std::unique_ptr<Core::JSkinnedMeshGroup> skinnedGroup = std::make_unique<Core::JSkinnedMeshGroup>();
 					std::vector<Core::Joint> joint;
-					Core::J_FBXRESULT loadRes = JFbxFileLoader::Instance().LoadFbxMeshFile(importPathData.oriFilePath, *skinnedGroup, joint);
+					Core::JFbxMaterialMap materialMap;
+					Core::J_FBXRESULT loadRes = JFbxFileLoader::Instance().LoadFbxMeshFile(importPathData.oriFilePath, *skinnedGroup, joint, materialMap);
 					if (loadRes == Core::J_FBXRESULT::FAIL)
 						return { nullptr };
 					 
 					JUserPtr<JDirectory> fileDir = dir->GetChildDirctoryByName(importPathData.name);
 					if (fileDir == nullptr)
 						fileDir = JICI::Create<JDirectory>(importPathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, dir);
-
+					
+					ConvertJEMaterial(*skinnedGroup, materialMap, (J_OBJECT_FLAG)importPathData.flag, fileDir);
+					
 					const size_t skeletonGuid = Core::MakeGuid();
 					const size_t skinnedMeshGuid = Core::MakeGuid();
-
 					JUserPtr<JDirectory> modelDir = JICI::Create<JDirectory>(L"Model", Core::MakeGuid(), OBJECT_FLAG_NONE, fileDir);
 					if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_SKELETON))
 					{
@@ -540,13 +712,17 @@ namespace JinEngine
 					}
 					if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
 					{
-						newMesh = JICI::Create<JSkinnedMeshGeometry>(importPathData.name,
+						JUserPtr<JMeshGeometry> newMesh = JICI::Create<JSkinnedMeshGeometry>(importPathData.name,
 							skinnedMeshGuid,
 							(J_OBJECT_FLAG)importPathData.flag,
 							RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
 							modelDir,
 							std::move(skinnedGroup));
 						res.push_back(newMesh);
+
+						const uint subMeshCount = (uint)newMesh->GetTotalSubmeshCount();
+						for (uint i = 0; i < subMeshCount; ++i)
+							res.push_back(newMesh->GetSubmeshMaterial(i));
 					}
 					if (newSkeleton != nullptr)
 						res.push_back(newSkeleton);
@@ -554,7 +730,8 @@ namespace JinEngine
 				else
 				{
 					std::unique_ptr<Core::JStaticMeshGroup> staticMeshGroup = std::make_unique<Core::JStaticMeshGroup>();
-					Core::J_FBXRESULT loadRes = JFbxFileLoader::Instance().LoadFbxMeshFile(importPathData.oriFilePath, *staticMeshGroup);
+					Core::JFbxMaterialMap materialMap;
+					Core::J_FBXRESULT loadRes = JFbxFileLoader::Instance().LoadFbxMeshFile(importPathData.oriFilePath, *staticMeshGroup, materialMap);
 					if (loadRes == Core::J_FBXRESULT::FAIL)
 						return { nullptr };
 
@@ -562,33 +739,61 @@ namespace JinEngine
 					if (fileDir == nullptr)
 						fileDir = JICI::Create<JDirectory>(importPathData.name, Core::MakeGuid(), OBJECT_FLAG_NONE, dir);
 
+					ConvertJEMaterial(*staticMeshGroup, materialMap, (J_OBJECT_FLAG)importPathData.flag, fileDir);
 					JUserPtr<JDirectory> modelDir = JICI::Create<JDirectory>(L"Model", Core::MakeGuid(), OBJECT_FLAG_NONE, fileDir);
 					if (HasSQValueEnum(info.typeInfo, Core::J_FBXRESULT::HAS_MESH))
 					{
-						newMesh = JICI::Create<JStaticMeshGeometry>(importPathData.name,
-							Core::MakeGuid(),
-							(J_OBJECT_FLAG)importPathData.flag,
-							RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
-							modelDir,
-							std::move(staticMeshGroup));
-						res.push_back(newMesh);
+						if (meshDesc->useSplitMesh)
+						{ 
+							auto splitGroup = SplitMeshGroup(staticMeshGroup.get());
+							for (auto& data : splitGroup)
+							{
+								auto meshData = data->GetMeshData(0);
+								if (meshData == nullptr)
+									continue;
+								 
+								JUserPtr<JMeshGeometry> newMesh = JICI::Create<JStaticMeshGeometry>(meshData->GetName(),
+									Core::MakeGuid(),
+									(J_OBJECT_FLAG)importPathData.flag,
+									RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
+									modelDir,
+									std::move(data));
+								res.push_back(newMesh);
+
+								const uint subMeshCount = (uint)newMesh->GetTotalSubmeshCount();
+								for (uint i = 0; i < subMeshCount; ++i)
+									res.push_back(newMesh->GetSubmeshMaterial(i));
+							}
+						}
+						else
+						{
+							JUserPtr<JMeshGeometry> newMesh = JICI::Create<JStaticMeshGeometry>(importPathData.name,
+								Core::MakeGuid(),
+								(J_OBJECT_FLAG)importPathData.flag,
+								RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
+								modelDir,
+								std::move(staticMeshGroup));
+							res.push_back(newMesh);
+
+							const uint subMeshCount = (uint)newMesh->GetTotalSubmeshCount();
+							for (uint i = 0; i < subMeshCount; ++i)
+								res.push_back(newMesh->GetSubmeshMaterial(i));
+						}
 					}
 				}
-				if (newMesh != nullptr)
-				{
-					const uint subMeshCount = (uint)newMesh->GetTotalSubmeshCount();
-					for (uint i = 0; i < subMeshCount; ++i)
-						res.push_back(newMesh->GetSubmeshMaterial(i));
-				}
+
 				return res;
 			};
-			auto objMeshImportC = [](JUserPtr<JDirectory> dir, const Core::JFileImportHelpData importPathData) -> std::vector<JUserPtr<JResourceObject>>
-			{
-				std::vector<JUserPtr<JResourceObject>> res;
-				Core::JObjFileMeshData objMeshData;
-				std::vector<Core::JObjFileMatData> objMatData;
+			auto objMeshImportC = [](const JResourceObjectImportDesc* desc) -> std::vector<JUserPtr<JResourceObject>>
+			{				
+				const JMeshGeometryImportDesc* meshDesc = static_cast<const JMeshGeometryImportDesc*>(desc);
+				const Core::JFileImportHelpData& importPathData = meshDesc->importPathData;
+				const JUserPtr<JDirectory>& dir = meshDesc->dir;
+
+				std::unique_ptr<Core::JStaticMeshGroup> meshGroup = std::make_unique<Core::JStaticMeshGroup>();
+				Core::ObjMaterialMap objMatData;
 				JUserPtr<JMeshGeometry> newMesh = nullptr;
-				if (JObjFileLoader::Instance().LoadObjFile(importPathData, objMeshData, objMatData))
+				if (JObjFileLoader::Instance().LoadObjFile(importPathData, *meshGroup, objMatData))
 				{
 					JUserPtr<JDirectory> fileDir = dir->GetChildDirctoryByName(importPathData.name);
 					if (fileDir == nullptr)
@@ -600,8 +805,10 @@ namespace JinEngine
 						(J_OBJECT_FLAG)importPathData.flag,
 						RTypeCommonCall::CallFormatIndex(GetStaticResourceType(), importPathData.format),
 						modelDir,
-						std::make_unique<Core::JStaticMeshGroup>(objMeshData.meshGroup));
+						std::move(meshGroup));
 				}
+
+				std::vector<JUserPtr<JResourceObject>> res;
 				if (newMesh != nullptr)
 				{
 					res.push_back(newMesh);
@@ -618,6 +825,10 @@ namespace JinEngine
 			IMPL_REALLOC_BIND(JMeshGeometry::JMeshGeometryImpl, thisPointer)
 		}
 	};
+
+	JMeshGeometryImportDesc::JMeshGeometryImportDesc(const Core::JFileImportHelpData& importPathData)
+		:JResourceObjectImportDesc(importPathData)
+	{}
 
 	JMeshGeometry::InitData::InitData(const Core::JTypeInfo& type, 
 		const uint8 formatIndex,
@@ -784,7 +995,7 @@ namespace JinEngine
 	}
 	void CreateInstanceInterface::TryDestroyUnUseData(Core::JIdentifier* createdPtr)noexcept
 	{
-		static_cast<JMeshGeometry*>(createdPtr)->impl->meshGroupData.reset();
+		static_cast<JMeshGeometry*>(createdPtr)->impl->meshGroupData = nullptr;
 	} 
 
 	void DestroyInstanceInterface::Clear(Core::JIdentifier* ptr, const bool isForced)

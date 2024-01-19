@@ -6,14 +6,7 @@
 namespace JinEngine
 {
 	namespace Core
-	{
-		struct JObjFileMeshData
-		{
-		public:
-			JStaticMeshGroup meshGroup;
-			std::vector<std::wstring> materialName; 
-		};
-
+	{  
 		enum class JOBJ_MATERIAL_FLAG
 		{
 			NONE,
@@ -27,34 +20,26 @@ namespace JinEngine
 			HAS_DECAL_T = 1 << 7,
 		};
 
-		struct JObjFileMatData
+		struct JObjFileMaterial
 		{
 		public:
 			std::wstring name;
-			std::wstring albedoTName;
-			std::wstring normalTName;
-			std::wstring heightTName;
-			std::wstring ambientTName;
-			//미구현
-			std::wstring specularColorTName;
-			//미구현
-			std::wstring specularHighlightTName;
-			std::wstring alphaTName;
-			//미구현
-			std::wstring decalTName;
+			std::wstring albedoMapName;
+			std::wstring normalMapName;
+			std::wstring heightMapName;
+			std::wstring ambientMapName; 
+			std::wstring specularColorMapName; 
+			std::wstring specularHighlightMapName;
+			std::wstring alphaMapName; 
+			std::wstring decalMapName;
 
 			//미구현
-			JVector4<float> ambient;
-			JVector4<float> albedo;
-			//미구현
-			JVector4<float> specular;
-			//미구현
-			JVector4<float> transmissionFilterColor;
-			//미구현
-			float specularWeight;
-			//미구현
-			float opaqueFactor;
-			//미구현
+			JVector4F ambient;
+			JVector4F albedo;
+			JVector4F specular;
+			JVector4F transmissionFilterColor;
+			float specularWeight; 
+			float opaqueFactor; 
 			float opticalDensity;
 
 			JOBJ_MATERIAL_FLAG flag;

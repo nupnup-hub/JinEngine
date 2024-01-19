@@ -127,11 +127,14 @@ namespace JinEngine
 			bool InputText(const std::string& name, std::string& buff, std::string& result, const std::string& hint, J_GUI_INPUT_TEXT_FLAG flags) final;
 			bool InputMultilineText(const std::string& name, std::string& buff, std::string& result, const JVector2<float>& size, J_GUI_INPUT_TEXT_FLAG flags) final;
 			bool InputInt(const std::string& name, int* value, J_GUI_INPUT_TEXT_FLAG flags, int step) final;
+			bool InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG flags, int step);
 			bool InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG flags, const uint formatDigit, float step) final;
 		public:
 			bool SliderInt(const std::string& name, int* value, int vMin, int vMax,  J_GUI_SLIDER_FLAG flags) final;
+			bool SliderInt(const std::string& name, uint* value, uint vMin, uint vMax, J_GUI_SLIDER_FLAG flags) final;
 			bool SliderFloat(const std::string& name, float* value, float vMin, float vMax, const uint formatDigit, J_GUI_SLIDER_FLAG flags) final;
 			bool VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG flags) final;
+			bool VSliderInt(const std::string& name, JVector2<float> size, uint* value, uint vMin, uint vMax, J_GUI_SLIDER_FLAG flags) final;
 			bool VSliderFloat(const std::string& name, JVector2<float> size, float* value, float vMin, float vMax, const uint formatDigit, J_GUI_SLIDER_FLAG flags) final;
 		public:
 			bool BeginTabBar(const std::string& name, J_GUI_TAB_BAR_FLAG flags) final;
@@ -145,7 +148,7 @@ namespace JinEngine
 			void TableSetupColumn(const std::string& name, J_GUI_TABLE_COLUMN_FLAG flags, float initWeight) final;
 			void TableHeadersRow() final;
 			void TableNextRow() final;
-			void TableSetColumnIndex(const int index) final;
+			bool TableSetColumnIndex(const int index) final;
 		public:
 			bool BeginMainMenuBar() final;
 			void EndMainMenuBar() final;
@@ -310,6 +313,7 @@ namespace JinEngine
 			JVector2<float> GetRestWindowContentsSize()const noexcept final;
 			JVector2<float> GetWindowMenuBarSize()const noexcept final;
 			JVector2<float> GetWindowTitleBarSize()const noexcept final;
+			JVector2<float> GetWindowScrollPos()const noexcept final;
 			int GetWindowOrder(const GuiID windowID)const noexcept final;
 			bool GetWindowInfo(const std::string& wndName, _Inout_ JGuiWindowInfo& info)const noexcept final;
 			bool GetWindowInfo(const GuiID windowID, _Inout_ JGuiWindowInfo& info)const noexcept final;

@@ -1,7 +1,18 @@
 #include "VertexLayout.hlsl"
 #include "VertexCommon.hlsl" 
-
-#if defined(DEBUG)
+ 
+#if defined(FULL_SCREEN_QUAD)
+VertexOut VS(VertexIn vin)
+{
+	VertexOut vout = (VertexOut) 0.0f;
+	 
+	//Practical Rendering & Computation dx11 chapter 11
+	float3 posV = mul(float4(vin.posL, 1.0f), camInvProj).xyz;
+	vout.dir = float3(posV.xy / posV.z, 1.0f);
+	vout.posH = float4(vin.posL, 1.0f); 
+	return vout;
+}
+#elif defined(DEBUG)
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;
@@ -10,7 +21,6 @@ VertexOut VS(VertexIn vin)
 	vout.posH = mul(posW, camViewProj);
 	return vout;
 }
-
 #elif defined(SKY)
 VertexOut VS(VertexIn vin)
 {
@@ -21,7 +31,6 @@ VertexOut VS(VertexIn vin)
 	vout.posH = mul(posW, camViewProj).xyww;
 	return vout;
 }
-
 #elif defined(ALBEDO_MAP_ONLY)
 VertexOut VS(VertexIn vin)
 {
@@ -34,8 +43,7 @@ VertexOut VS(VertexIn vin)
 	vout.texC = mul(texC, matData.matTransform).xy;
 
 	return vout;
-}
-
+} 
 #elif defined(STATIC)
 VertexOut VS(VertexIn vin)
 {

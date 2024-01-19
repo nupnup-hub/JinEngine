@@ -153,17 +153,19 @@ namespace JinEngine
 		frustum(frustum),
 		hasCullingArea(false),
 		useJFrustum(false),
-		useBBox(false)
+		useBBox(false),
+		pos(frustum.Origin)
 	{}
 	JAcceleratorCullingInfo::JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,
 		DirectX::BoundingFrustum camFrustum,
 		DirectX::BoundingFrustum cullingFrustum)
 		:cullUser(cullUser),
-		frustum(frustum),
+		frustum(camFrustum),
 		cullingFrustum(cullingFrustum),
 		hasCullingArea(true),
 		useJFrustum(false),
-		useBBox(false)
+		useBBox(false),
+		pos(camFrustum.Origin)
 	{}
 	JAcceleratorCullingInfo::JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,
 		const DirectX::BoundingBox bbox)
@@ -171,7 +173,8 @@ namespace JinEngine
 		bbox(bbox),
 		hasCullingArea(false),
 		useJFrustum(false),
-		useBBox(true)
+		useBBox(true),
+		pos(bbox.Center)
 	{}
 
 	JAcceleratorAlignInfo::JAcceleratorAlignInfo(const J_ACCELERATOR_LAYER layer,
@@ -217,7 +220,7 @@ namespace JinEngine
 		case JinEngine::JAcceleratorAlignInfo::ALIGN_RANGE::QUARTER_DEPTH:
 			return 0.25f;
 		default:
-			break;
+			return 0;
 		}
 	}
 

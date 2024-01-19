@@ -37,11 +37,14 @@ namespace JinEngine
 		uint GetShadowResolution()const noexcept;
 		J_SHADOW_RESOLUTION GetShadowResolutionType()const noexcept;
 		uint GetShadowMapSize()const noexcept;
+		float GetPower()const noexcept;
 		float GetBias()const noexcept;
 		float GetPenumbraWidth()const noexcept;
 		float GetPenumbraBlockerWidth()const noexcept;
 		virtual J_LIGHT_TYPE GetLightType()const noexcept = 0;
 		virtual J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept = 0;
+		virtual float GetMinPower()const noexcept = 0;
+		virtual float GetMaxPower()const noexcept = 0;
 		virtual float GetFrustumNear()const noexcept = 0;
 		virtual float GetFrustumFar()const noexcept = 0;
 		virtual DirectX::BoundingBox GetBBox()const noexcept = 0;
@@ -50,6 +53,7 @@ namespace JinEngine
 		virtual void SetShadow(const bool value)noexcept;
 		virtual void SetShadowResolution(const J_SHADOW_RESOLUTION sQuality)noexcept;
 		virtual void SetAllowDisplayShadowMap(const bool value)noexcept;
+		void SetPower(const float value)noexcept;
 		void SetBias(const float value)noexcept;
 		void SetPenumbraWidth(const float value)noexcept;
 		void SetPenumbraBlockerWidth(const float value)noexcept;
@@ -57,6 +61,7 @@ namespace JinEngine
 		bool IsShadowActivated()const noexcept;
 		bool IsAvailableOverlap()const noexcept final; 
 		bool AllowDisplayShadowMap()const noexcept; 
+		bool AllowLightCulling()const noexcept final;
 	protected:
 		void DoActivate()noexcept override;
 		void DoDeActivate()noexcept override;

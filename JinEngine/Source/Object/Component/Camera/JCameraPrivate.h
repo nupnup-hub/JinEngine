@@ -9,6 +9,7 @@ namespace JinEngine
 		struct JCameraConstants;
 		struct JDepthTestPassConstants;
 		struct JHzbOccComputeConstants;
+		struct JSsaoConstants;
 		struct JDrawCondition; 
 		struct JDrawHelper;
 		class JGraphic;
@@ -56,18 +57,21 @@ namespace JinEngine
 			static bool UpdateStart(JCamera* cam, const bool isUpdateForced)noexcept;
 			static void UpdateFrame(JCamera* cam, Graphic::JCameraConstants& constants)noexcept;
 			static void UpdateFrame(JCamera* cam, Graphic::JDepthTestPassConstants& constant)noexcept;
-			static void UpdateFrame(JCamera* cam, Graphic::JHzbOccComputeConstants& constants, const uint queryCount, const uint queryOffset)noexcept;
+			static void UpdateFrame(JCamera* cam, Graphic::JHzbOccComputeConstants& constant, const uint queryCount, const uint queryOffset)noexcept;
+			static void UpdateFrame(JCamera* cam, Graphic::JSsaoConstants& constant)noexcept;
 			static void UpdateEnd(JCamera* cam)noexcept; 
 		private:
 			static int GetCamFrameIndex(JCamera* cam)noexcept;
 			static int GetDepthTestPassFrameIndex(JCamera* cam)noexcept;
 			static int GetHzbOccComputeFrameIndex(JCamera* cam)noexcept;
+			static int GetSsaoFrameIndex(JCamera* cam)noexcept;
 		private:
 			static bool IsLastFrameHotUpdated(JCamera* cam)noexcept;
 			static bool IsLastUpdated(JCamera* cam)noexcept;
 			static bool HasCamRecopyRequest(JCamera* cam)noexcept;
 			static bool HasDepthTestPassRecopyRequest(JCamera* cam)noexcept; 
 			static bool HasHzbOccComputeRecopyRequest(JCamera* cam)noexcept;
+			static bool HasSsaoRecopyRequest(JCamera* cam)noexcept;
 		};
 		class FrameIndexInterface final
 		{
@@ -77,6 +81,7 @@ namespace JinEngine
 			static int GetCamFrameIndex(JCamera* cam)noexcept;
 			static int GetDepthTestPassFrameIndex(JCamera* cam)noexcept;
 			static int GetHzbOccComputeFrameIndex(JCamera* cam)noexcept;
+			static int GetSsaoFrameIndex(JCamera* cam)noexcept;
 		};
 		class EditorSettingInterface final
 		{

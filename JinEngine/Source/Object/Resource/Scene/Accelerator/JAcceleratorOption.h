@@ -51,10 +51,17 @@ namespace JinEngine
 	public:
 		DirectX::BoundingBox bbox; 
 	public:
+		JVector3F pos;
+	public:
+		std::vector<JUserPtr<JGameObject>>* appAlignedObjVec;	//kd-tree has overlap
+		int pushedCount = 0;
+	public:
 		bool hasCullingArea;
 		//JFustum은 아직 미개발이므로 DirectX::BoundingFrustum 주로 사용한다
 		bool useJFrustum = false;
 		bool useBBox = false;
+		bool allowPushVisibleObjVec = false;
+		bool allowCullingOrderedByDistance = false;
 	public:
 		JAcceleratorCullingInfo(const Graphic::JCullingUserInterface& cullUser,
 			DirectX::BoundingFrustum camFrustum);

@@ -27,10 +27,13 @@ namespace JinEngine
 		J_LIGHT_TYPE GetLightType()const noexcept final;
 		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept final;
 		JVector2F GetAreaSize()const noexcept;
+		float GetMinPower()const noexcept final;
+		float GetMaxPower()const noexcept final;
 		float GetFrustumNear()const noexcept final;
-		float GetFrustumFar()const noexcept final;
-		float GetPower()const noexcept;
+		float GetFrustumFar()const noexcept final; 
 		float GetRange()const noexcept;
+		float GetBarndoorLength()const noexcept;
+		float GetBarndoorAngle()const noexcept;
 		DirectX::BoundingBox GetBBox()const noexcept final;
 		JVector3F GetDirection()const noexcept;
 		JUserPtr<JTexture> GetSourceTexture()const noexcept;
@@ -39,14 +42,15 @@ namespace JinEngine
 		void SetShadowResolution(const J_SHADOW_RESOLUTION sQuality)noexcept final;
 		void SetAllowDisplayShadowMap(const bool value)noexcept final;
 		void SetAreaSize(const JVector2F newSize)noexcept;
-		void SetTwoSide(const bool value)noexcept;
-		void SetPower(const float power)noexcept;
+		//void SetTwoSide(const bool value)noexcept; 
 		void SetRange(const float range)noexcept;
+		void SetBarndoorLength(const float newLength)noexcept;
+		void SetBarndoorAngle(const float newAngle)noexcept;
 		void SetSourceTexture(const JUserPtr<JTexture>& srcTexture)noexcept;
 	public:
 		bool IsFrameDirted()const noexcept final;
 		bool IsCsmActivated()const noexcept;
-		bool IsTwoSide()const noexcept;
+		//bool IsTwoSide()const noexcept;
 		bool CanAllocateCsm()const noexcept;
 		bool PassDefectInspection()const noexcept final;
 		bool AllowFrustumCulling()const noexcept final;

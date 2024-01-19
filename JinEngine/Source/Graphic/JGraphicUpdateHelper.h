@@ -29,14 +29,16 @@ namespace JinEngine
 		struct JGraphicOption;
 		class JGraphicDrawTarget;
 		class JGraphic; 
+
+		using GameObjectVec = std::vector<JUserPtr<JGameObject>>;
 		struct JUpdateHelper
 		{
 		public:
-			using GetElementCountT = Core::JStaticCallableType<uint>;
-			using GetElementMultiCountT = Core::JStaticCallableType<void>;
+			using GetElementCountT = Core::JStaticCallableType<uint>; 
 			using GetElementCapacityT = Core::JStaticCallableType<uint>;
 			using ReBuildUploadDataT = Core::JStaticCallableType<uint>;
 			using NotifyUpdateCapacityT = Core::JStaticCallableType<void>; 
+			using ExtraUpdateListenerT = Core::JStaticCallableType<void>;
 		public:
 			using SetCapacityT = Core::JStaticCallableType<void>;
 		public:
@@ -86,9 +88,10 @@ namespace JinEngine
 			UploadUpdateData uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::COUNT];	//frame upload resource 
 			BindingTextureData bData[(int)J_GRAPHIC_RESOURCE_TYPE::COUNT];
 			bool hasRebuildCondition;
-			bool hasRecompileShader;
+			bool hasRecompileShader; 
 		public:
-			std::vector<std::unique_ptr<GetElementMultiCountT::Callable>> getElementMultiCount;
+			std::vector<std::unique_ptr<ExtraUpdateListenerT::Callable>> extraUpdateListener;
+			//std::vector<std::unique_ptr<GetElementMultiCountT::Callable>> getElementMultiCount;
 		public:
 			void BeginUpdatingDrawTarget();
 			void EndUpdatingDrawTarget();
@@ -96,17 +99,22 @@ namespace JinEngine
 			void Clear();
 			void RegisterCallable(J_UPLOAD_FRAME_RESOURCE_TYPE type, GetElementCountT::Ptr getCountPtr);
 			void RegisterCallable(J_GRAPHIC_RESOURCE_TYPE type, GetElementCountT::Ptr* getCountPtr, GetElementCapacityT::Ptr* getCapaPtr);
-			void RegisterCallable(GetElementMultiCountT::Ptr getMultiCountPtr);
+			//void RegisterCallable(GetElementMultiCountT::Ptr getMultiCountPtr);
 			void RegisterListener(J_UPLOAD_FRAME_RESOURCE_TYPE type, std::unique_ptr<NotifyUpdateCapacityT::Callable>&& listner);
+			void RegisterExListener(std::unique_ptr<ExtraUpdateListenerT::Callable>&& callable);
 			void WriteGraphicInfo(JGraphicInfo& info)const noexcept;
 			void NotifyUpdateFrameCapacity(JGraphic& grpahic);
 		}; 
-		struct JAlignedObject
+		struct JGameObjectBuffer
 		{
 		public:
-			using ObjectVec = std::vector<JUserPtr<JGameObject>>;
+			using OpaqueVec = std::vector<JUserPtr<JGameObject>>;
+			using OpaqueVecPerCam = std::vector<OpaqueVec>;
 		public:
-			std::vector<ObjectVec>opaqueVec;
+			OpaqueVec common;
+			OpaqueVecPerCam aligned;		//applied frustum culling
+		public:
+			void ClearAlignedVecElement();
 		};
 		//draw data
 		struct JDrawHelper
@@ -118,12 +126,14 @@ namespace JinEngine
 			{
 				SCENE,
 				SHADOW_MAP,
-				OCC
+				FRUSTUM_CULLING,
+				OCC,
+				LIT_CULLING
 			};
 		public:
 			const JGraphicInfo& info;
 			const JGraphicOption& option;
-			const JAlignedObject& alignedObj;	//for hd
+			JGameObjectBuffer& objVec;	//for hd
 		public:
 			JGraphicDrawTarget* drawTarget = nullptr;  
 		public:
@@ -134,18 +144,23 @@ namespace JinEngine
 			JWeakPtr<JLight> lit = nullptr;    
 		public:
 			int threadCount = -1;
-			int threadIndex = -1;
+			int threadIndex = -1; 
 		private:
 			DRAW_TYPE drawType = DRAW_TYPE::SCENE;
 		public:  
-			J_COMPONENT_TYPE occCompType; 
+			J_COMPONENT_TYPE cullingCompType; 
 		public:
-			bool allowDrawDepthMap = false;
-			bool allowDrawDebug = false;		//draw outline and debug layer object
+			bool allowDrawShadowMap = false;
+			bool allowDrawDebugMap = false;
+			bool allowDrawDebugObject = false;		//draw outline and debug layer object
 			bool allowFrustumCulling = true;
-			bool allowOcclusionCulling = true;
-			bool allowDrawOccDepthMap= false;	//for debug
+			bool allowHzbOcclusionCulling = true;  
+			bool allowHdOcclusionCulling = true;
+			bool allowDrawOccDepthMap = false;
 			bool allowMutilthreadDraw = false;
+			bool allowLightCulling = false;
+			bool allowLightCullingDebug = false; 
+			bool allowSsao = false;
 		public:
 			bool RefelectOtherCamCullig(const uint rItemIndex)const noexcept;  
 		public:
@@ -158,6 +173,7 @@ namespace JinEngine
 			int GetCamFrameIndex()const noexcept;
 			int GetCamDepthTestPassFrameIndex()const noexcept;
 			int GetCamHzbOccComputeFrameIndex()const noexcept;
+			int GetCamSsaoFrameIndex()const noexcept;
 			int GetShadowMapDrawFrameIndex()const noexcept;
 			int GetLitDepthTestPassFrameIndex()const noexcept;
 			int GetLitHzbOccComputeFrameIndex()const noexcept;
@@ -171,12 +187,12 @@ namespace JinEngine
 			void SetTheadInfo(const uint threadCount, const uint threadIndex)noexcept;
 			void SetAllowMultithreadDraw(const bool value)noexcept;
 		public: 
-			void SettingOccCulling(const JWeakPtr<JComponent>& comp)noexcept;
 			void SettingDrawShadowMap(const JWeakPtr<JLight>& lit)noexcept;
 			void SettingDrawScene(const JWeakPtr<JCamera>& cam)noexcept;
-		public:
-			bool CanDrawShadowMap()const noexcept;
-			bool CanOccCulling()const noexcept;
+			void SettingFrustumCulling(const JWeakPtr<JComponent>& comp)noexcept;
+			void SettingOccCulling(const JWeakPtr<JComponent>& comp)noexcept;
+			void SettingLightCulling(const JWeakPtr<JCamera>& cam);
+		public:  
 			bool CanDispatchWorkIndex()const noexcept; 
 			bool UsePerspectiveProjection()const noexcept;
 		public:
@@ -184,28 +200,32 @@ namespace JinEngine
 		public:
 			static JDrawHelper CreateDrawSceneHelper(const JDrawHelper& ori, const JWeakPtr<JCamera>& cam)noexcept;
 			static JDrawHelper CreateDrawShadowMapHelper(const JDrawHelper& ori, const JWeakPtr<JLight>& lit)noexcept;
+			static JDrawHelper CreateFrustumCullingHelper(const JDrawHelper& ori, const JWeakPtr<JComponent>& comp)noexcept;
 			static JDrawHelper CreateOccCullingHelper(const JDrawHelper& ori, const JWeakPtr<JComponent>& comp)noexcept;
+			static JDrawHelper CreateLitCullingHelper(const JDrawHelper& ori, const JWeakPtr<JCamera>& cam)noexcept;
 		private:
-			JDrawHelper(const JGraphicInfo& info, const JGraphicOption& option, const JAlignedObject& alignedObj);
+			JDrawHelper(const JGraphicInfo& info, const JGraphicOption& option, JGameObjectBuffer& objVec);
 		};
 		//draw detail condition
 		struct JDrawCondition
-		{
+		{ 
 		public:
 			bool allowAnimation = false;
 		public: 
 			bool allowCulling = false;
-			bool allowHzbOcclusionCulling = false;
-			bool allowHDOcclusionCulling = false;
+			bool allowOcclusionCulling = false; 
 		public:
 			bool allowDebugOutline = false;
-			bool allowAllCullingResult = false;	//for check other cam spacespatial   
+			bool allowAllCullingResult = false;	//for check other cam spacespatial    
+		public:
+			bool onlyDrawOccluder = false; //it is valid in hzb, hd occluder draw
 		public: 
 			JDrawCondition() = default;
 			JDrawCondition(const JDrawHelper& helper,
 				const bool newAllowAnimation,
 				const bool newAllowCulling,
-				const bool newAllowDebugOutline);
+				const bool newAllowDebugOutline,
+				const bool onlyDrawOccluder = false);
 		}; 
 	}
 }

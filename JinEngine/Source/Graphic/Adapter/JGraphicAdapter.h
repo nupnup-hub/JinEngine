@@ -17,12 +17,13 @@ namespace JinEngine
 		class JFrameResource;
 
 		//Draw object
-		class JDepthMapDebug;
+		class JGraphicDebug;
 		class JDepthTest;
 		class JShadowMap;
 		class JSceneDraw;
 		class JHardwareOccCulling;
 		class JHZBOccCulling;
+		class JLightCulling;
 		class JOutline;
 		class JImageProcessing;
 
@@ -38,14 +39,18 @@ namespace JinEngine
 			std::unique_ptr<JCullingManager> CreateCullingManager(const J_GRAPHIC_DEVICE_TYPE deviceType);
 			bool CreateFrameResource(const J_GRAPHIC_DEVICE_TYPE deviceType, _Out_ std::unique_ptr<JFrameResource>(&frame)[Constants::gNumFrameResources]);
 		public:
-			std::unique_ptr<JDepthMapDebug> CreateDepthMapDebug(const J_GRAPHIC_DEVICE_TYPE deviceType);
+			std::unique_ptr<JGraphicDebug> CreateDebug(const J_GRAPHIC_DEVICE_TYPE deviceType);
 			std::unique_ptr<JDepthTest> CreateDepthTest(const J_GRAPHIC_DEVICE_TYPE deviceType);
 			std::unique_ptr<JShadowMap> CreateShadowMapDraw(const J_GRAPHIC_DEVICE_TYPE deviceType);
 			std::unique_ptr<JSceneDraw> CreateSceneDraw(const J_GRAPHIC_DEVICE_TYPE deviceType);
 			std::unique_ptr<JHardwareOccCulling> CreateHdOcc(const J_GRAPHIC_DEVICE_TYPE deviceType);
 			std::unique_ptr<JHZBOccCulling> CreateHzbOcc(const J_GRAPHIC_DEVICE_TYPE deviceType);
+			std::unique_ptr<JLightCulling> CreateLightCulling(const J_GRAPHIC_DEVICE_TYPE deviceType);
 			std::unique_ptr<JOutline> CreateOutlineDraw(const J_GRAPHIC_DEVICE_TYPE deviceType);
 			std::unique_ptr<JImageProcessing> CreateImageProcessing(const J_GRAPHIC_DEVICE_TYPE deviceType);
+		public:
+			//called after update wait
+			void BeginUpdateStart(const J_GRAPHIC_DEVICE_TYPE deviceType, const JGraphicDrawReferenceSet& drawRefSet);
 		public: 
 			//pre, post process(bind or set resource state...) --- main  thread
 			void BeginDrawSceneSingleThread(const J_GRAPHIC_DEVICE_TYPE deviceType,const JGraphicDrawReferenceSet& drawRefSet, _Inout_ JGraphicDrawSceneSTSet& dataSet);
@@ -81,18 +86,18 @@ namespace JinEngine
 				const ResourceHandle from,
 				const ResourceHandle to,
 				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet);
+				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet);
 			bool SettingBlurTask(const J_GRAPHIC_DEVICE_TYPE deviceType,
 				const JGraphicDrawReferenceSet& drawRefSet,
 				const JUserPtr<JGraphicResourceInfo>& info,
 				std::unique_ptr<JBlurDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicBlurTaskSet>& dataSet);
+				_Out_ std::unique_ptr<JGraphicBlurComputeSet>& dataSet);
 			bool SettingMipmapGenerationTask(const J_GRAPHIC_DEVICE_TYPE deviceType, 
 				const JGraphicDrawReferenceSet& drawRefSet,
 				const JUserPtr<JGraphicResourceInfo>& srcInfo,
 				const JUserPtr<JGraphicResourceInfo>& modInfo,
 				std::unique_ptr<JDownSampleDesc>&& desc,
-				_Out_ std::unique_ptr<JGraphicDownSampleTaskSet>& dataSet);
+				_Out_ std::unique_ptr<JGraphicDownSampleComputeSet>& dataSet);
 		private:
 			JGraphicAdaptee* GetAdaptee(const J_GRAPHIC_DEVICE_TYPE deviceType);
 		public:

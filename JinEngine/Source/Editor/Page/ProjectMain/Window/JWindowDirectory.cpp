@@ -24,8 +24,10 @@
 #include"../../../../Object/Directory/JFile.h"
 #include"../../../../Object/Resource/Scene/JScene.h"
 #include"../../../../Object/Resource/AnimationController/JAnimationController.h"
-#include"../../../../Object/Resource/Material/JMaterial.h"  
+#include"../../../../Object/Resource/Material/JMaterial.h" 
+#include"../../../../Object/Resource/Mesh/JMeshGeometry.h" 
 #include"../../../../Object/Resource/Scene/Preview/JPreviewScene.h" 
+#include"../../../../Object/Resource/Texture/JTexture.h" 
 #include"../../../../Object/Resource/JResourceManager.h" 
 #include"../../../../Object/Resource/JResourceObjectPrivate.h" 
 #include"../../../../Object/Resource/JResourceObjectImporter.h" 
@@ -115,13 +117,13 @@ namespace JinEngine
 		{
 		public:
 			using RenameF = Core::JSFunctorType<void, JWindowDirectory*>;
-			using ImportResourceF = Core::JMFunctorType<JWindowDirectory, void>;
+			using SwitchImportResourceF = Core::JMFunctorType<JWindowDirectory, void>;
 			using ImportPostProcessF = Core::JSFunctorType<void, JWindowDirectory*, std::vector<JUserPtr<JResourceObject>>>;
 			using MoveFIleF = Core::JMFunctorType<JWindowDirectory, void, JUserPtr<JDirectory>, JUserPtr<JObject>>;
 			using OpenNewDirectoryF = Core::JMFunctorType<JWindowDirectory, void, JUserPtr<JDirectory>>;
 		public:
 			std::unique_ptr<RenameF::Functor> renameF;
-			std::unique_ptr<ImportResourceF::Functor> importResourceF;
+			std::unique_ptr<SwitchImportResourceF::Functor> swtichImportResourceF;
 			std::unique_ptr<ImportPostProcessF::Functor> importPostProcessF;
 			std::unique_ptr<MoveFIleF::Functor> moveFileF;
 			std::unique_ptr<OpenNewDirectoryF::Functor> openNewDirF; 
@@ -304,14 +306,14 @@ namespace JinEngine
 				wndDir->SetModifiedBit(wndDir->GetHoveredObject(), true);
 			};
 
-			using ImportResourceF = JWindowDirectorySettingFunctor::ImportResourceF;
+			using SwitchImportResourceF = JWindowDirectorySettingFunctor::SwitchImportResourceF;
 			using ImportPostProcessF = JWindowDirectorySettingFunctor::ImportPostProcessF;
 			using RenameF = JWindowDirectorySettingFunctor::RenameF;
 			using MoveFIleF = JWindowDirectorySettingFunctor::MoveFIleF;
 			using OpenNewDirectoryF = JWindowDirectorySettingFunctor::OpenNewDirectoryF;
 
 			setting = std::make_unique<JWindowDirectorySettingFunctor>();
-			setting->importResourceF = std::make_unique<ImportResourceF::Functor>(&JWindowDirectory::ImportFile, this);
+			setting->swtichImportResourceF = std::make_unique<SwitchImportResourceF::Functor>(&JWindowDirectory::SwitchImportSetting, this);
 			setting->importPostProcessF = std::make_unique<ImportPostProcessF::Functor>(importedResourcePostProcessFLam);
 			setting->renameF = std::make_unique<RenameF::Functor>(renameLam);
 			setting->moveFileF = std::make_unique< MoveFIleF::Functor>(&JWindowDirectory::MoveFile, this);
@@ -391,10 +393,10 @@ namespace JinEngine
 			destroyNode->RegisterSelectBind(std::make_unique<RequestDestructionEvF::CompletelyBind>(*creation->reqDestructionEvF, this));
 			destroyNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedAboveOneFunctor(), this));
 
-			using ImportResourceF = JWindowDirectorySettingFunctor::ImportResourceF;
+			using SwitchImportResourceF = JWindowDirectorySettingFunctor::SwitchImportResourceF;
 			using RenameF = JWindowDirectorySettingFunctor::RenameF;
 
-			importNode->RegisterSelectBind(std::make_unique<ImportResourceF::CompletelyBind>(*setting->importResourceF));
+			importNode->RegisterSelectBind(std::make_unique<SwitchImportResourceF::CompletelyBind>(*setting->swtichImportResourceF));
 			renameFileNode->RegisterSelectBind(std::make_unique<RenameF::CompletelyBind>(*setting->renameF, this));
 			renameFileNode->RegisterEnableBind(std::make_unique<JEditorPopupNode::EnableF::CompletelyBind>(*GetPassSelectedOneFunctor(), this));
 
@@ -416,6 +418,21 @@ namespace JinEngine
 		J_EDITOR_WINDOW_TYPE JWindowDirectory::GetWindowType()const noexcept
 		{
 			return J_EDITOR_WINDOW_TYPE::WINDOW_DIRECTORY;
+		}
+		void JWindowDirectory::SetImportSetting(const bool value)noexcept
+		{
+			importData.isActivatedImportWindow = value;
+			if (value)
+				importData.folder = opendDirctory;
+			else if (!value)
+			{
+				importData.importDesc.clear();
+				importData.importRType.clear();
+			}
+		}
+		void JWindowDirectory::SwitchImportSetting()noexcept
+		{
+			SetImportSetting(!importData.isActivatedImportWindow);
 		}
 		void JWindowDirectory::Initialize()
 		{
@@ -471,6 +488,7 @@ namespace JinEngine
 				BuildDirectoryView();
 				JGui::SameLine();
 				BuildFileView();
+				ImportSettingOnScreen();
 			}
 			CloseWindow();
 		}
@@ -698,38 +716,178 @@ namespace JinEngine
 				renameHelper->UpdateMultiline(renameRectSize, false);
 			}
 		}
-		void JWindowDirectory::ImportFile()
+		void JWindowDirectory::ImportSettingOnScreen()
 		{
-			if (!opendDirctory.IsValid())
+			if (!importData.isActivatedImportWindow)
 				return;
 
-			std::vector<std::wstring> path;
-			if (JWindow::SelectMultiFile(path, L"please, select resource file"))
+			if (importData.isActivatedImportWindow && JApplicationEngine::GetApplicationState() != J_APPLICATION_STATE::EDIT_GAME)
+				SwitchImportSetting();
+
+			bool isOpen = importData.isActivatedImportWindow;
+			J_GUI_WINDOW_FLAG_ flag = J_GUI_WINDOW_FLAG_NO_DOCKING | J_GUI_WINDOW_FLAG_NO_SAVE;
+			 
+			if (JGui::BeginWindow("Import Setting", &isOpen, flag))
 			{
-				std::vector<JUserPtr<JResourceObject>> totalRes;
-				for (const auto& data : path)
+				static constexpr float textRate = 0.7f;
+				const JVector2F windowSize = JGui::GetWindowSize();
+				const JVector2F alphabetSize = JGui::GetAlphabetSize();
+				const JVector2F textBarSize = JVector2F(windowSize.x * textRate, alphabetSize.y);
+				const uint textCount = textBarSize.x / alphabetSize.x;
+
+				JGui::Separator();
+				JGui::Text("Folder: ");
+				JGui::SameLine();
+
+				std::string folderPath = importData.folder != nullptr ? JCUtil::WstrToU8Str(importData.folder->GetPath()) : "None";
+				std::string compressFolderPath = JCUtil::CompressStringPath(folderPath, textCount);
+
+				if (JGui::BeginCombo("##Import FolderPath combo", compressFolderPath))
 				{
-					Core::JFileImportHelpData pathData{ data };
-					if (JResourceObjectImporter::Instance().IsValidFormat(pathData.format))
+					static constexpr float comoboTextRate = textRate * 0.9f;
+					const JVector2F comboTextSize = JVector2F(windowSize.x * textRate, alphabetSize.y);
+					const uint comboTextCount = comboTextSize.x / alphabetSize.x;
+
+					auto dirRawVec = JDirectory::StaticTypeInfo().GetInstanceRawPtrVec();
+					for (const auto& data : dirRawVec)
 					{
-						std::filesystem::path p{ data };
-						size_t fileSize = std::filesystem::file_size(p);
-						if (JWindow::HasStorageSpace(opendDirctory->GetPath(), fileSize))
-						{
-							std::vector<JUserPtr<JResourceObject>> res = JResourceObjectImporter::Instance().ImportResource(opendDirctory, pathData);	
-							totalRes.insert(totalRes.end(), std::make_move_iterator(res.begin()), std::make_move_iterator(res.end()));
-						}
-						else
-							MessageBox(0, data.c_str(), (L"Can't find disk space " + std::to_wstring(fileSize) + L"byte").c_str(), 0);
+						auto dir = static_cast<JDirectory*>(data);
+						if (dir->HasFlag(OBJECT_FLAG_HIDDEN))
+							continue;
+						 
+						if (JGui::Selectable(JCUtil::CompressStringPath(JCUtil::WstrToU8Str(dir->GetPath()), comboTextCount)))
+							importData.folder = Core::GetUserPtr(dir);
 					}
-					else
-						MessageBox(0, data.c_str(), L"Is not valid format", 0);
+					JGui::EndCombo();
+				}
+				 
+				JGui::SameLine();
+				if (JGui::Button("Search##Directory ImportSettingOnScreen"))
+				{
+					std::wstring path;
+					if (JWindow::SelectDirectory(path, L"please, select resource file"))
+					{
+						auto dir = _JResourceManager::Instance().GetDirectory(path);
+						if(dir != nullptr)
+							importData.folder = dir;
+					}
 				}
 
-				if (totalRes.size() > 0)
-					RequestImportPostProccess(std::move(totalRes));
+				JGui::Separator();
+				JGui::Text("File: "); 
+				JGui::SameLine();
+				if (JGui::Button("Search##File ImportSettingOnScreen"))
+				{
+					std::vector<std::wstring> path;
+					if (JWindow::SelectMultiFile(path, L"please, select resource file"))
+					{
+						importData.importDesc.clear();
+						importData.descIndex = 0;
+						for (const auto& data : path)
+						{
+							Core::JFileImportHelpData pathData{ data };
+							size_t fileSizeSum = 0;
+							if (!JResourceObjectImporter::Instance().IsValidFormat(pathData.format))
+							{
+								MessageBox(0, data.c_str(), L"Is not valid format", 0);
+								continue;
+							}
+
+							std::filesystem::path p{ data };
+							size_t fileSize = std::filesystem::file_size(p);
+							fileSizeSum += fileSize;
+
+							if (!JWindow::HasStorageSpace(opendDirctory->GetPath(), fileSizeSum))
+							{
+								MessageBox(0, data.c_str(), (L"Can't find disk space " + std::to_wstring(fileSize) + L"byte").c_str(), 0);
+								continue;
+							}
+
+							std::vector<J_RESOURCE_TYPE> rType = JResourceObjectImporter::Instance().DeterminFileResourceType(pathData);
+							for (const auto& data : rType)
+							{
+								switch (data)
+								{
+								case JinEngine::J_RESOURCE_TYPE::MESH:
+								{
+									importData.importRType.push_back(data);
+									importData.importDesc.push_back(std::make_unique<JMeshGeometryImportDesc>(pathData));
+									break;
+								}
+								case JinEngine::J_RESOURCE_TYPE::TEXTURE:
+								{
+									importData.importRType.push_back(data);
+									importData.importDesc.push_back(std::make_unique<JTextureImportDesc>(pathData));
+									break;
+								}
+								case JinEngine::J_RESOURCE_TYPE::ANIMATION_CLIP:
+								{
+									importData.importRType.push_back(data);
+									importData.importDesc.push_back(std::make_unique<JResourceObjectImportDesc>(pathData));
+									break;
+								}
+								default:
+									break;
+								}
+							}			 
+						}
+					}
+				}
+				if (importData.importDesc.size() > importData.descIndex)
+				{
+					auto desc = importData.importDesc[importData.descIndex].get();
+					JGui::Text(std::to_string(importData.descIndex) +". " + 
+						JCUtil::WstrToU8Str(desc->importPathData.fullName) + "(" +
+						Core::GetName(importData.importRType[importData.descIndex]) + ")");
+
+					if (desc->GetTypeInfo().IsChildOf<JMeshGeometryImportDesc>())
+					{
+						auto meshDesc = static_cast<JMeshGeometryImportDesc*>(desc);
+						JGui::CheckBox("UseSplit", meshDesc->useSplitMesh);
+					}
+					else if (desc->GetTypeInfo().IsChildOf<JTextureImportDesc>())
+					{
+						auto textureDesc = static_cast<JTextureImportDesc*>(desc);
+						JGui::CheckBox("UseMipmap", textureDesc->useMipmap);
+					}
+				}
+				int maxIndex = importData.importDesc.size() - 1;
+				if (maxIndex < 0)
+					maxIndex = 0;
+				JGui::SliderInt("##Desc Index Slider ImportSettingOnScreen", &importData.descIndex, 0, maxIndex, J_GUI_SLIDER_FLAG_ALWAYS_CLAMP);
+
+				JVector2F nextCursorPos;
+				nextCursorPos.x = windowSize.x - alphabetSize.x * 16 - JGui::GetFramePadding().x * 2;;
+				//nextCursorPos.y = windowSize.y - alphabetSize.y * 2 - JGui::GetFramePadding().y * 2;
+
+				JGui::Separator();
+				JGui::SetCursorPosX(nextCursorPos.x);
+
+				if (importData.folder == nullptr)
+					JGui::PushButtonColorDeActSet();
+				if (JGui::Button("Import##File ImportSettingOnScreen") && importData.folder != nullptr)
+				{
+					std::vector<JUserPtr<JResourceObject>> totalRes;
+					for (auto& data : importData.importDesc)
+					{
+						data->dir = importData.folder;
+						std::vector<JUserPtr<JResourceObject>> res = JResourceObjectImporter::Instance().ImportResource(data.get());
+						totalRes.insert(totalRes.end(), std::make_move_iterator(res.begin()), std::make_move_iterator(res.end()));
+					}
+					if (totalRes.size() > 0)
+						RequestImportPostProccess(std::move(totalRes));
+					isOpen = false;
+				}
+				if (importData.folder == nullptr)
+					JGui::PopButtonColorDeActSet();
+				JGui::SameLine();
+				if (JGui::Button("Cancel##File ImportSettingOnScreen"))
+					isOpen = false;
+				JGui::EndWindow();
 			}
-		}
+			if (isOpen != importData.isActivatedImportWindow)
+				SwitchImportSetting();
+		} 
 		void JWindowDirectory::OpenNewDirectory(JUserPtr<JDirectory> newOpendDirectory)
 		{
 			if (!newOpendDirectory.IsValid())

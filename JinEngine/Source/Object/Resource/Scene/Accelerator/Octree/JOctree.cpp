@@ -81,7 +81,12 @@ namespace JinEngine
 	}
 	void JOctree::AlignedObject(JAcceleratorAlignInfo& info, _Out_ std::vector<JUserPtr<JGameObject>>& aligned, _Out_ int& validCount)const noexcept
 	{
-		
+		if (rootNodeCash == nullptr)
+			return; 
+
+		uint index = 0;
+		rootNodeCash->AlignLeafNode(info, aligned, index);
+		validCount = index;
 	}
 	void JOctree::UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
 	{

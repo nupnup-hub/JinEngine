@@ -4,14 +4,42 @@
 #include"../../../../Utility/JCommonUtility.h"
 #include"../../../../Math/JMathHelper.h"   
 #include"../../../../Animation/Joint.h" 
- 
+#include"../../../../../Object/Resource/Material/JMaterial.h"
+#include"../../../../../Core/Identity/JIdenCreator.h"
 
+//#include"../../../../../Develop/Debug/JDevelopDebug.h"
 //#include"../../File/JFileIOHelper.h"
 using namespace DirectX;
 namespace JinEngine
 {
 	namespace Core
 	{  
+		namespace Private
+		{
+			static JVector4F ZUpToYUpxMinus90()noexcept
+			{
+				return { 0.707107f, 0.0f, 0.0f, -0.707107f };
+			}
+			static JMatrix4x4 YUpRToYUpL()noexcept
+			{
+				return { -1,0,0,0,
+					0,1,0,0,
+					0,0,1,0,
+					0,0,0,1 };
+			}
+			static JMatrix4x4 ZUpRToYUpL()noexcept
+			{
+				return {-1,0,0,0,
+					0,0,-1,0,
+					0,1,0,0,
+					0,0,0,1};
+			}
+			static JVector3F Convert(const FbxPropertyT<FbxDouble3>& d)noexcept
+			{ 
+				return JVector3F(d.Get()[0], d.Get()[1], d.Get()[2]);
+			}
+			static constexpr int failUpDirSearch = -2;
+		}
 		JFbxFileLoader::~JFbxFileLoader()
 		{
 			if (fbxManager != nullptr)
@@ -19,7 +47,7 @@ namespace JinEngine
 				fbxManager->Destroy();
 			}
 		}
-		J_FBXRESULT JFbxFileLoader::LoadFbxMeshFile(const std::string& path, JStaticMeshGroup& meshGroup)
+		J_FBXRESULT JFbxFileLoader::LoadFbxMeshFile(const std::string& path, JStaticMeshGroup& meshGroup, JFbxMaterialMap& materialMap)
 		{
 			if (fbxManager == nullptr)
 			{
@@ -40,9 +68,11 @@ namespace JinEngine
 			//fbx file 내용을 scene으로 가져온다
 			if (importer->Import(scene))
 			{
-				//++num;
+				//++num; 
 				FbxGlobalSettings& settings = scene->GetGlobalSettings();
-				resizeRate = 0.01f / settings.GetSystemUnit().GetMultiplier();
+
+				dataSet = std::make_unique<FbxLoadDataSet>();
+				dataSet->resizeRate = 0.01f / settings.GetSystemUnit().GetMultiplier();
 				//settings.SetSystemUnit(FbxSystemUnit::cm);
 				//settings.GetSystemUnit().ConvertScene(scene);
 				//resizeRate = 0.01f;
@@ -56,18 +86,15 @@ namespace JinEngine
 				FbxGeometryConverter geometryConverter(fbxManager);
 				geometryConverter.Triangulate(scene, true);
 				J_FBXRESULT result;
-
-				vertexIndexMap.clear();
-				vertexCount = 0; 
-				LoadNode(rootNode, meshGroup);
-
+				  
+				LoadMaterial(scene);
+				LoadNode(rootNode, meshGroup, materialMap);
 				if (meshGroup.GetMeshDataCount() > 0)
 					result = J_FBXRESULT::HAS_MESH;
-
-				controlPoint.clear();
-				vertexIndexMap.clear();
+				 
 				scene->Destroy();
 				importer->Destroy();
+				dataSet = nullptr;
 				return result;
 			}
 			else
@@ -77,7 +104,7 @@ namespace JinEngine
 				return J_FBXRESULT::FAIL;
 			}
 		}
-		J_FBXRESULT JFbxFileLoader::LoadFbxMeshFile(const std::string& path, JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint)
+		J_FBXRESULT JFbxFileLoader::LoadFbxMeshFile(const std::string& path, JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint, JFbxMaterialMap& materialMap)
 		{
 			if (fbxManager == nullptr)
 			{ 
@@ -99,7 +126,9 @@ namespace JinEngine
 			if (importer->Import(scene))
 			{ 
 				FbxGlobalSettings& settings = scene->GetGlobalSettings();
-				resizeRate = 0.01f / settings.GetSystemUnit().GetMultiplier();
+
+				dataSet = std::make_unique<FbxLoadDataSet>();
+				dataSet->resizeRate = 0.01f / settings.GetSystemUnit().GetMultiplier();
 				//settings.SetSystemUnit(FbxSystemUnit::cm);
 				//settings.GetSystemUnit().ConvertScene(scene);
 				//resizeRate = 0.01f;
@@ -112,10 +141,9 @@ namespace JinEngine
 				FbxGeometryConverter geometryConverter(fbxManager);
 				geometryConverter.Triangulate(scene, true);
 				J_FBXRESULT result;
-
-				vertexIndexMap.clear();
-				vertexCount = 0;
+				 
 				//hasRootJoint = true;
+				LoadMaterial(scene);
 
 				JFbxSkeleton fbxSkeleton;
 				LoadJoint(rootNode, -1, -1, -1, fbxSkeleton);
@@ -123,7 +151,7 @@ namespace JinEngine
 				//ProcessSkeletonHierarchy(rootNode, fbxSkeleton);
 				//fbxSkeleton.joint[0].parentIndex == 0 add emptyNode in front
 				bool hasSkeleton = fbxSkeleton.jointCount > 0;			 
-				LoadNode(rootNode, meshGroup, fbxSkeleton);
+				LoadNode(rootNode, meshGroup, fbxSkeleton, materialMap);
 
 				if (hasSkeleton)
 				{
@@ -131,12 +159,10 @@ namespace JinEngine
 					CheckModelAxis(meshGroup, joint);
 					result = (J_FBXRESULT)((int)result | (int)J_FBXRESULT::HAS_SKELETON);
 				}
-
-				fbxSkeleton.joint.clear();
-				controlPoint.clear();
-				vertexIndexMap.clear();
+				fbxSkeleton.joint.clear(); 
 				scene->Destroy();
 				importer->Destroy();
+				dataSet = nullptr;
 				return result;
 			}
 			else
@@ -167,20 +193,17 @@ namespace JinEngine
 			//fbx file 내용을 scene으로 가져온다
 			if (importer->Import(scene))
 			{
-				//++num;
+				dataSet = std::make_unique<FbxLoadDataSet>();
 
-				// 씬 내에서 삼각형화 할 수 있는 모든 노드를 삼각형화 시킨다.
 				FbxNode* rootNode = scene->GetRootNode();
 				SetSceneAxis(scene, rootNode);
 
 				FbxGeometryConverter geometryConverter(fbxManager);
 				geometryConverter.Triangulate(scene, true);
 				J_FBXRESULT result;
-
-				vertexIndexMap.clear();
-				vertexCount = 0;
+				 
 				//hasRootJoint = true;
-
+				 
 				JFbxSkeleton fbxSkeleton;
 				LoadJoint(rootNode, -1, -1, -1, fbxSkeleton);
 
@@ -198,11 +221,10 @@ namespace JinEngine
 						totalName += JCUtil::U8StrToWstr(fbxSkeleton.joint[i].name);
 					jfbxAniData.skeletonHash = JCUtil::CalculateGuid(totalName);
 				}
-				fbxSkeleton.joint.clear();
-				controlPoint.clear();
-				vertexIndexMap.clear();
+				fbxSkeleton.joint.clear(); 
 				scene->Destroy();
 				importer->Destroy();
+				dataSet = nullptr;
 				return result;
 			}
 			else
@@ -240,14 +262,15 @@ namespace JinEngine
 					res.typeInfo = J_FBXRESULT::HAS_ANIMATION;
 				}
 
-				uint meshCount = 0;
-				uint jointCount = 0;
-				GetMeshCount(scene->GetRootNode(), meshCount, res);
-				GetJointCount(scene->GetRootNode(), jointCount, res);
+				res.meshCount = 0;
+				res.jointCount = 0;
+				res.materialCount = scene->GetMaterialCount();
+				GetMeshCount(scene->GetRootNode(), res.meshCount, res);
+				GetJointCount(scene->GetRootNode(), res.jointCount, res);
 
-				if (meshCount > 0)
+				if (res.meshCount > 0)
 					res.typeInfo = (J_FBXRESULT)((int)res.typeInfo | (int)J_FBXRESULT::HAS_MESH);
-				if (jointCount > 0)
+				if (res.jointCount > 0)
 					res.typeInfo = (J_FBXRESULT)((int)res.typeInfo | (int)J_FBXRESULT::HAS_SKELETON);
 
 				scene->Destroy();
@@ -292,28 +315,29 @@ namespace JinEngine
 			for (uint i = 0; i < childCount; ++i)
 				GetJointCount(node->GetChild(i), count, typeInfo);
 		}
-		void JFbxFileLoader::LoadNode(FbxNode* node, JStaticMeshGroup& meshGroup)
+		void JFbxFileLoader::LoadNode(FbxNode* node, JStaticMeshGroup& meshGroup, JFbxMaterialMap& materialMap)
 		{
-			FbxNodeAttribute* nodeAttribute = node->GetNodeAttribute();
+			FbxNodeAttribute* nodeAttribute = node->GetNodeAttribute();	 
 			if (nodeAttribute)
 			{
 				if (nodeAttribute->GetAttributeType() == FbxNodeAttribute::eMesh)
 				{
 					LoadControlPoint(node->GetMesh()); 
 					SortBlendingWeight();
-					JStaticMeshData staticMesh = LoadStaticMesh(node);
-					if (staticMesh.IsValid())
+					std::unique_ptr<JStaticMeshData> staticMesh = LoadStaticMesh(node);
+					if (staticMesh->IsValid())
 					{
-						staticMesh.InverseIndex();
-						meshGroup.AddMeshData(std::move(staticMesh));
-					}
+						StuffMaterial(node, materialMap, staticMesh->GetGuid());
+						staticMesh->InverseIndex();
+						meshGroup.AddMeshData(std::move(staticMesh));				 
+					} 
 				}
 			}
 			const uint childCount = node->GetChildCount();
 			for (uint i = 0; i < childCount; ++i)
-				LoadNode(node->GetChild(i), meshGroup);
+				LoadNode(node->GetChild(i), meshGroup, materialMap);
 		}
-		void JFbxFileLoader::LoadNode(FbxNode* node, JSkinnedMeshGroup& meshGroup, JFbxSkeleton& skeleton)
+		void JFbxFileLoader::LoadNode(FbxNode* node, JSkinnedMeshGroup& meshGroup, JFbxSkeleton& skeleton, JFbxMaterialMap& materialMap)
 		{
 			FbxNodeAttribute* nodeAttribute = node->GetNodeAttribute();
 			if (nodeAttribute)
@@ -324,17 +348,18 @@ namespace JinEngine
 					LoadSkinnedMeshInfo(node, skeleton);
 					SortBlendingWeight();
 					  
-					JSkinnedMeshData skinnedMesh = LoadSkinnedMesh(node, skeleton);
-					if (skinnedMesh.IsValid())
+					std::unique_ptr<JSkinnedMeshData> skinnedMesh = LoadSkinnedMesh(node, skeleton);
+					if (skinnedMesh->IsValid())
 					{
-						skinnedMesh.InverseIndex();
-						meshGroup.AddMeshData(std::move(skinnedMesh));
-					}
+						StuffMaterial(node, materialMap, skinnedMesh->GetGuid());
+						skinnedMesh->InverseIndex();
+						meshGroup.AddMeshData(std::move(skinnedMesh));				
+					} 
 				}
 			}
 			const uint childCount = node->GetChildCount();
 			for (uint i = 0; i < childCount; ++i)
-				LoadNode(node->GetChild(i), meshGroup, skeleton);
+				LoadNode(node->GetChild(i), meshGroup, skeleton, materialMap);
 		}
 		void JFbxFileLoader::LoadJoint(FbxNode* node, int depth, int index, int parentIndex, JFbxSkeleton& skeleton)
 		{
@@ -376,19 +401,25 @@ namespace JinEngine
 			for (uint i = 0; i < childCount; ++i)
 				LoadJoint(node->GetChild(i), depth + 1, (int)skeleton.joint.size(), index, skeleton);
 		}
-		JStaticMeshData JFbxFileLoader::LoadStaticMesh(FbxNode* node)
+		std::unique_ptr<JStaticMeshData> JFbxFileLoader::LoadStaticMesh(FbxNode* node)
 		{
 			FbxMesh* mesh = node->GetMesh();
 			if (!mesh->GetNode())
-				return JStaticMeshData{};
+				return std::make_unique<JStaticMeshData>();
  
 			std::vector<JStaticMeshVertex> vertices;
 			std::vector<uint32> indices;
 
 			uint triangleCount = mesh->GetPolygonCount();
 			uint idx[3];
-			vertexCount = 0;
+			dataSet->vertexCount = 0;
+			dataSet->vertexIndexMap.clear();
 
+			DirectX::XMFLOAT3 positionXm[3];
+			DirectX::XMFLOAT2 textureXm[3];
+			DirectX::XMFLOAT3 normalXm[3];
+			DirectX::XMFLOAT3 biNormalXm[3];
+			DirectX::XMFLOAT4 tangentXm[3];
 			for (uint i = 0; i < triangleCount; ++i)
 			{
 				bool hasNormal;
@@ -397,17 +428,17 @@ namespace JinEngine
 				bool hasTangent;
 				for (uint j = 0; j < 3; ++j)
 				{
-					uint index = indexingOrder[j];
+					uint index = dataSet->indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 					idx[j] = index;
-					positionXm[j] = controlPoint[controlPointIndex].position.ToSimilar<XMFLOAT3>();
+					positionXm[j] = dataSet->controlPoint[controlPointIndex].position.ToSimilar<XMFLOAT3>();
 
 					hasUv = LoadTextureUV(mesh, controlPointIndex, mesh->GetTextureUVIndex(i, index), textureXm[j]);
-					hasNormal = LoadNormal(mesh, controlPointIndex, vertexCount, normalXm[j]);
-					hasBinormal = LoadBinormal(mesh, controlPointIndex, vertexCount, biNormalXm[j]);
-					hasTangent = LoadTangent(mesh, controlPointIndex, vertexCount, tangentXm[j]);
-					textureXm[j].y = 1 - textureXm[j].y; 
-					++vertexCount;
+					hasNormal = LoadNormal(mesh, controlPointIndex, dataSet->vertexCount, normalXm[j]);
+					hasBinormal = LoadBinormal(mesh, controlPointIndex, dataSet->vertexCount, biNormalXm[j]);
+					hasTangent = LoadTangent(mesh, controlPointIndex, dataSet->vertexCount, tangentXm[j]);
+					textureXm[j].y = 1 - textureXm[j].y;
+					++dataSet->vertexCount;
 				}
 
 				if (!hasTangent)
@@ -417,40 +448,45 @@ namespace JinEngine
 				 
 				for (uint j = 0; j < 3; ++j)
 				{
-					uint index = indexingOrder[j];
+					uint index = dataSet->indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 					  
 					JStaticMeshVertex newVertex(positionXm[j], normalXm[j], textureXm[j], tangentXm[j]);
-					size_t guid = MakeVertexMapKey(positionXm[j], textureXm[j], normalXm[j], biNormalXm[j], tangentXm[j], controlPoint[controlPointIndex].isSkin);
+					size_t guid = MakeVertexMapKey(positionXm[j], textureXm[j], normalXm[j], biNormalXm[j], tangentXm[j], dataSet->controlPoint[controlPointIndex].isSkin);
 				
-					auto data = vertexIndexMap.find(guid);
-					if (data != vertexIndexMap.end())
-						indices.push_back(data->second);
+					auto mapData = dataSet->vertexIndexMap.find(guid);
+					if (mapData != dataSet->vertexIndexMap.end())
+						indices.push_back(mapData->second);
 					else
 					{
 						uint vertexIndex = (uint)vertices.size();
-						vertexIndexMap.emplace(guid, vertexIndex);
+						dataSet->vertexIndexMap.emplace(guid, vertexIndex);
 						indices.push_back(vertexIndex);
 						vertices.push_back(newVertex);
 					}
 				}
 			}
-			return JStaticMeshData{ JCUtil::StrToWstr(node->GetName()), MakeGuid(), std::move(indices), true, true, std::move(vertices)};
+			return std::make_unique<JStaticMeshData>(JCUtil::StrToWstr(node->GetName()), MakeGuid(), std::move(indices), true, true, std::move(vertices));
 		}
-		JSkinnedMeshData JFbxFileLoader::LoadSkinnedMesh(FbxNode* node, JFbxSkeleton& skeleton)
+		std::unique_ptr<JSkinnedMeshData> JFbxFileLoader::LoadSkinnedMesh(FbxNode* node, JFbxSkeleton& skeleton)
 		{
 			FbxMesh* mesh = node->GetMesh();
 			if (!mesh->GetNode())
-				return JSkinnedMeshData{};
+				return std::make_unique<JSkinnedMeshData>(); 
 
 			std::vector<JSkinnedMeshVertex> vertices;
 			std::vector<uint32> indices;
 
 			uint triangleCount = mesh->GetPolygonCount();
 			uint idx[3];
-			vertexCount = 0;
-			vertexIndexMap.clear();
+			dataSet->vertexCount = 0;
+			dataSet->vertexIndexMap.clear();
 
+			DirectX::XMFLOAT3 positionXm[3];
+			DirectX::XMFLOAT2 textureXm[3];
+			DirectX::XMFLOAT3 normalXm[3];
+			DirectX::XMFLOAT3 biNormalXm[3];
+			DirectX::XMFLOAT4 tangentXm[3];
 			for (uint i = 0; i < triangleCount; ++i)
 			{
 				bool hasNormal = false;
@@ -459,18 +495,18 @@ namespace JinEngine
 				bool hasTangent = false;
 				for (uint j = 0; j < 3; ++j)
 				{
-					uint index = indexingOrder[j];
+					uint index = dataSet->indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 					idx[j] = index;
-					positionXm[j] = controlPoint[controlPointIndex].position.ToSimilar<XMFLOAT3>();
+					positionXm[j] = dataSet->controlPoint[controlPointIndex].position.ToSimilar<XMFLOAT3>();
 
 					hasUv = LoadTextureUV(mesh, controlPointIndex, mesh->GetTextureUVIndex(i, index), textureXm[j]);
-					hasNormal = LoadNormal(mesh, controlPointIndex, vertexCount, normalXm[j]);
-					hasBinormal = LoadBinormal(mesh, controlPointIndex, vertexCount, biNormalXm[j]);
-					hasTangent = LoadTangent(mesh, controlPointIndex, vertexCount, tangentXm[j]);
+					hasNormal = LoadNormal(mesh, controlPointIndex, dataSet->vertexCount, normalXm[j]);
+					hasBinormal = LoadBinormal(mesh, controlPointIndex, dataSet->vertexCount, biNormalXm[j]);
+					hasTangent = LoadTangent(mesh, controlPointIndex, dataSet->vertexCount, tangentXm[j]);
 
-					textureXm[j].y = 1 - textureXm[j].y; 
-					++vertexCount;
+					textureXm[j].y = 1 - textureXm[j].y;
+					++dataSet->vertexCount;
 				}
 
 				if (!hasTangent)
@@ -478,28 +514,28 @@ namespace JinEngine
 
 				for (uint j = 0; j < 3; ++j)
 				{
-					uint index = indexingOrder[j];
+					uint index = dataSet->indexingOrder[j];
 					int controlPointIndex = mesh->GetPolygonVertex(i, index);
 
-					size_t guid = MakeVertexMapKey(positionXm[j], textureXm[j], normalXm[j], biNormalXm[j], tangentXm[j], controlPoint[controlPointIndex].isSkin);
-					auto data = vertexIndexMap.find(guid);
+					size_t guid = MakeVertexMapKey(positionXm[j], textureXm[j], normalXm[j], biNormalXm[j], tangentXm[j], dataSet->controlPoint[controlPointIndex].isSkin);
+					auto data = dataSet->vertexIndexMap.find(guid);
 					
-					if (data != vertexIndexMap.end())
+					if (data != dataSet->vertexIndexMap.end())
 						indices.push_back(data->second);
 					else
 					{   
-						JSkinnedMeshVertex newVertex(positionXm[j], normalXm[j], textureXm[j], tangentXm[j], controlPoint[controlPointIndex].blendingInfo);
+						JSkinnedMeshVertex newVertex(positionXm[j], normalXm[j], textureXm[j], tangentXm[j], dataSet->controlPoint[controlPointIndex].blendingInfo);
 						uint32 vertexIndex = (uint32)vertices.size();
-						vertexIndexMap.emplace(guid, vertexIndex);
+						dataSet->vertexIndexMap.emplace(guid, vertexIndex);
 
 						indices.push_back(vertexIndex);
 						vertices.push_back(newVertex);
 
 						JVector3 pos = JVector3<float>(positionXm[j].x, positionXm[j].y, positionXm[j].z);
-						for (int k = 0; k < controlPoint[controlPointIndex].blendingInfo.size(); ++k)
+						for (int k = 0; k < dataSet->controlPoint[controlPointIndex].blendingInfo.size(); ++k)
 						{
-							int jointIndex = controlPoint[controlPointIndex].blendingInfo[k].blendingIndex;
-							if (controlPoint[controlPointIndex].blendingInfo[k].blendingWeight > 0.5f)
+							int jointIndex = dataSet->controlPoint[controlPointIndex].blendingInfo[k].blendingIndex;
+							if (dataSet->controlPoint[controlPointIndex].blendingInfo[k].blendingWeight > 0.5f)
 							{
 								if (skeleton.joint[jointIndex].min > pos)
 									skeleton.joint[jointIndex].min = pos;
@@ -511,23 +547,23 @@ namespace JinEngine
 				}
 			}
 
-			return JSkinnedMeshData{JCUtil::StrToWstr(node->GetName()), MakeGuid(), std::move(indices), true, true, std::move(vertices) };
+			return  std::make_unique<JSkinnedMeshData>(JCUtil::StrToWstr(node->GetName()), MakeGuid(), std::move(indices), true, true, std::move(vertices));
 		}
 		void JFbxFileLoader::LoadControlPoint(FbxMesh* mesh)
 		{  
 			uint count = mesh->GetControlPointsCount();
 
-			controlPoint.clear();
-			controlPoint.resize(count);
+			dataSet->controlPoint.clear();
+			dataSet->controlPoint.resize(count);
 			FbxVector4 trans;
 			for (uint i = 0; i < count; ++i)
 			{
 				trans = mesh->GetControlPointAt(i);
 				SetLeftHandPosition(trans);
-				controlPoint[i].position.x = static_cast<float>(trans[0]);
-				controlPoint[i].position.y = static_cast<float>(trans[1]);
-				controlPoint[i].position.z = static_cast<float>(trans[2]);
-				ResizeVertexPosition(controlPoint[i].position);
+				dataSet->controlPoint[i].position.x = static_cast<float>(trans[0]);
+				dataSet->controlPoint[i].position.y = static_cast<float>(trans[1]);
+				dataSet->controlPoint[i].position.z = static_cast<float>(trans[2]);
+				ResizeVertexPosition(dataSet->controlPoint[i].position);
 			}
 		}
 		bool JFbxFileLoader::LoadTextureUV(const FbxMesh* mesh, int controlPointIndex, int inTextureUVIndex, XMFLOAT2& outUV)
@@ -840,20 +876,20 @@ namespace JinEngine
 						JBlendingIndexWeightPair blend;
 						blend.blendingIndex = (BYTE)jointIndex;
 						blend.blendingWeight = (float)boneWeights[k];
-						controlPoint[pCtrlPtIdx[k]].blendingInfo.push_back(blend);
-						controlPoint[pCtrlPtIdx[k]].isSkin = true;
+						dataSet->controlPoint[pCtrlPtIdx[k]].blendingInfo.push_back(blend);
+						dataSet->controlPoint[pCtrlPtIdx[k]].isSkin = true;
 					}
 				}
 			}
 			JBlendingIndexWeightPair blendingIndexWeightPair;
 			blendingIndexWeightPair.blendingIndex = 0;
 			blendingIndexWeightPair.blendingWeight = 0;
-			uint controlPointSize = (uint)controlPoint.size();
+			uint controlPointSize = (uint)dataSet->controlPoint.size();
 			for (uint i = 0; i < controlPointSize; ++i)
 			{
-				for (uint j = (uint)controlPoint[i].blendingInfo.size(); j < 4; ++j)
+				for (uint j = (uint)dataSet->controlPoint[i].blendingInfo.size(); j < 4; ++j)
 				{
-					controlPoint[i].blendingInfo.push_back(blendingIndexWeightPair);
+					dataSet->controlPoint[i].blendingInfo.push_back(blendingIndexWeightPair);
 				}
 			}
 		}
@@ -906,12 +942,195 @@ namespace JinEngine
 			}
 			return J_FBXRESULT::HAS_ANIMATION;
 		}
+		void JFbxFileLoader::LoadMaterial(FbxScene* scene)
+		{ 
+			if (scene == nullptr)
+				return;
+ 
+			uint matCount = scene->GetMaterialCount();
+			for (uint i = 0; i < matCount; ++i)
+			{
+				FbxSurfaceMaterial* fbxMaterial = scene->GetMaterial(i);
+				if (fbxMaterial == nullptr)
+					continue;
+
+				std::string name = fbxMaterial->GetName(); 
+				if (dataSet->mateiralMap.find(name) != dataSet->mateiralMap.end())
+					continue;
+				 
+				JFbxMaterial newMaterial;
+				newMaterial.name = name;
+				if (fbxMaterial->GetClassId().Is(FbxSurfaceLambert::ClassId))
+				{
+					FbxSurfaceLambert* lam = FbxCast< FbxSurfaceLambert>(fbxMaterial);
+					newMaterial.albedoColor = JVector4F(Private::Convert(lam->Diffuse), lam->DiffuseFactor); 
+					//Develop::JDevelopDebug::PushLog("Lambert Material: " + name);
+				}
+				else if (fbxMaterial->GetClassId().Is(FbxSurfacePhong::ClassId))
+				{
+					FbxSurfacePhong* phong = FbxCast< FbxSurfacePhong>(fbxMaterial);
+					newMaterial.albedoColor = JVector4F(Private::Convert(phong->Diffuse), phong->DiffuseFactor);
+					newMaterial.roughness = std::clamp((float)(1.0f - phong->Shininess.Get()), 0.0f, 1.0f); 
+					//Develop::JDevelopDebug::PushLog("Phong Material: " + name);
+				}
+				else
+				{ 
+					//Develop::JDevelopDebug::PushLog("Other Material: " + name);
+				} 
+				FbxProperty emissive = fbxMaterial->FindProperty(fbxMaterial->sEmissive);
+				FbxProperty emissiveFactor = fbxMaterial->FindProperty(fbxMaterial->sEmissiveFactor);
+				FbxProperty ambient = fbxMaterial->FindProperty(fbxMaterial->sAmbient);
+				FbxProperty ambientFactor = fbxMaterial->FindProperty(fbxMaterial->sAmbientFactor);
+				FbxProperty diffuse = fbxMaterial->FindProperty(fbxMaterial->sDiffuse);
+				FbxProperty diffuseFactor = fbxMaterial->FindProperty(fbxMaterial->sDiffuseFactor);
+				
+				FbxProperty specular = fbxMaterial->FindProperty(fbxMaterial->sSpecular);
+				FbxProperty specularFactor = fbxMaterial->FindProperty(fbxMaterial->sSpecularFactor);
+				FbxProperty shininess = fbxMaterial->FindProperty(fbxMaterial->sShininess);
+				FbxProperty bump = fbxMaterial->FindProperty(fbxMaterial->sBump);
+				FbxProperty normalMap = fbxMaterial->FindProperty(fbxMaterial->sNormalMap);
+				FbxProperty bumpFactor = fbxMaterial->FindProperty(fbxMaterial->sBumpFactor);
+
+				FbxProperty transparentColor = fbxMaterial->FindProperty(fbxMaterial->sTransparentColor);
+				FbxProperty transparencyFactor = fbxMaterial->FindProperty(fbxMaterial->sTransparencyFactor);
+				FbxProperty reflection = fbxMaterial->FindProperty(fbxMaterial->sReflection);
+				FbxProperty reflectionFactor = fbxMaterial->FindProperty(fbxMaterial->sReflectionFactor);
+				FbxProperty displacementColor = fbxMaterial->FindProperty(fbxMaterial->sDisplacementColor);
+				FbxProperty displacementFactor = fbxMaterial->FindProperty(fbxMaterial->sDisplacementFactor);
+				FbxProperty vectorDisplacementColor = fbxMaterial->FindProperty(fbxMaterial->sVectorDisplacementColor);
+				FbxProperty vectorDisplacementFactor = fbxMaterial->FindProperty(fbxMaterial->sVectorDisplacementFactor);
+
+				std::string emissiveName;
+				std::string emissiveFactorName;
+				std::string ambientName;
+				std::string ambientFactorName;
+				std::string diffuseName;
+				std::string diffuseFactorName;
+
+				std::string specularName;
+				std::string specularFactorName;
+				std::string shininessName;
+				std::string bumpName;
+				std::string normalMapName;
+				std::string bumpFactorName;
+
+				std::string transparentColorName;
+				std::string transparencyFactorName;
+				std::string reflectionName;
+				std::string reflectionFactorName;
+				std::string displacementColorName;
+				std::string displacementFactorName;
+				std::string vectorDisplacementColorName;
+				std::string vectorDisplacementFactorName;
+
+				LoadTexture(emissive, emissiveName);
+				LoadTexture(emissiveFactor, emissiveFactorName);
+				LoadTexture(ambient, ambientName);
+				LoadTexture(ambientFactor, ambientFactorName);
+				LoadTexture(diffuse, diffuseName);
+				LoadTexture(diffuseFactor, diffuseFactorName);
+				LoadTexture(specular, specularName);
+				LoadTexture(specularFactor, specularFactorName);
+				LoadTexture(shininess, shininessName);
+				LoadTexture(bump, bumpName);
+				LoadTexture(normalMap, normalMapName);
+				LoadTexture(bumpFactor, bumpFactorName);
+				LoadTexture(transparentColor, transparentColorName);
+				LoadTexture(transparencyFactor, transparencyFactorName);
+				LoadTexture(reflection, reflectionName);
+				LoadTexture(reflectionFactor, reflectionFactorName);
+				LoadTexture(displacementColor, displacementColorName);
+				LoadTexture(displacementFactor, displacementFactorName);
+				LoadTexture(vectorDisplacementColor, vectorDisplacementColorName);
+				LoadTexture(vectorDisplacementFactor, vectorDisplacementFactorName);
+
+				newMaterial.albedoMapName = diffuseName;
+				newMaterial.normalMapName = bumpName.empty() ? normalMapName : bumpName;
+				newMaterial.heightMapName = displacementColorName;
+				newMaterial.metalicMapName = reflectionName;
+				newMaterial.roughnessMapName = shininessName;
+				newMaterial.ambientMapName = ambientName;
+				/*			
+				Develop::JDevelopDebug::PushLog("emissive: " + emissiveName);
+				Develop::JDevelopDebug::PushLog("emissiveFactor: " + emissiveFactorName);
+				Develop::JDevelopDebug::PushLog("ambient: " + ambientName);
+				Develop::JDevelopDebug::PushLog("ambientFactor: " + ambientFactorName);
+				Develop::JDevelopDebug::PushLog("diffuse: " + diffuseName);
+				Develop::JDevelopDebug::PushLog("diffuseFactor: " + diffuseFactorName);
+				Develop::JDevelopDebug::PushLog("specular: " + specularName);
+				Develop::JDevelopDebug::PushLog("specularFactor: " + specularFactorName);
+				Develop::JDevelopDebug::PushLog("shininess: " + shininessName);
+				Develop::JDevelopDebug::PushLog("bump: " + bumpName);
+				Develop::JDevelopDebug::PushLog("normalMap: " + normalMapName);
+				Develop::JDevelopDebug::PushLog("bumpFactor: " + bumpFactorName);
+				Develop::JDevelopDebug::PushLog("transparentColor: " + transparentColorName);
+				Develop::JDevelopDebug::PushLog("transparencyFactor: " + transparencyFactorName);
+				Develop::JDevelopDebug::PushLog("reflection: " + reflectionName);
+				Develop::JDevelopDebug::PushLog("reflectionFactor: " + reflectionFactorName);
+				Develop::JDevelopDebug::PushLog("displacementColor: " + displacementColorName);
+				Develop::JDevelopDebug::PushLog("displacementFactor: " + displacementFactorName);
+				Develop::JDevelopDebug::PushLog("vectorDisplacementColor: " + vectorDisplacementColorName);
+				Develop::JDevelopDebug::PushLog("vectorDisplacementFactor: " + vectorDisplacementFactorName);
+				*/
+				/*
+				LoadTexture(diffuse, newMaterial.albedoMapName);
+				LoadTexture(normal, newMaterial.normalMapName);
+				LoadTexture(bump, newMaterial.bumpMapName);
+				LoadTexture(ambient, newMaterial.ambientMapName);
+				LoadTexture(displacementColor, newMaterial.heightMapName);
+				LoadTexture(shiness, newMaterial.roughnessMapName);
+				LoadTexture(reflection, newMaterial.metalicMapName);
+			 
+				LoadTexture(emissive, newMaterial.emissiveName);
+				LoadTexture(specular, newMaterial.specularName);
+				LoadTexture(transparentColor, newMaterial.transparentColorName);
+				LoadTexture(vectorDisplacementColor, newMaterial.vectorDisplacementColorName); 
+
+				Develop::JDevelopDebug::PushLog("Albedo: " + newMaterial.albedoColor.ToString());
+				Develop::JDevelopDebug::PushLog("Roughness: " + std::to_string(newMaterial.roughness));
+				Develop::JDevelopDebug::PushLog("Metalic: " + std::to_string(newMaterial.metallic));
+				Develop::JDevelopDebug::PushLog("AlbedoMap: " + newMaterial.albedoMapName);
+				Develop::JDevelopDebug::PushLog("NormalMap: " + newMaterial.normalMapName);
+				Develop::JDevelopDebug::PushLog("BumpMapName: " + newMaterial.bumpMapName);
+				Develop::JDevelopDebug::PushLog("AmbientMap: " + newMaterial.ambientMapName);
+				Develop::JDevelopDebug::PushLog("HeightMap: " + newMaterial.heightMapName);
+				Develop::JDevelopDebug::PushLog("RoughnessMapName: " + newMaterial.roughnessMapName);
+				Develop::JDevelopDebug::PushLog("MetalicMapName: " + newMaterial.metalicMapName);
+
+				Develop::JDevelopDebug::PushLog("EmissiveName: " + newMaterial.emissiveName);
+				Develop::JDevelopDebug::PushLog("SpecularName: " + newMaterial.specularName);
+				Develop::JDevelopDebug::PushLog("TransparentColorName: " + newMaterial.transparentColorName);
+				Develop::JDevelopDebug::PushLog("VectorDisplacementColorName: " + newMaterial.vectorDisplacementColorName);
+				*/
+
+				dataSet->mateiralMap.emplace(name, newMaterial);
+			}
+		} 
+		bool JFbxFileLoader::LoadTexture(FbxProperty& prop, std::string& path)
+		{
+			path = "";
+			const uint layerTextureCount = prop.GetSrcObjectCount(FbxCriteria::ObjectType(FbxLayeredTexture::ClassId));
+			if (layerTextureCount != 0)
+			{
+				FbxLayeredTexture* layeredTexture = FbxCast<FbxLayeredTexture>(prop.GetSrcObject(FbxCriteria::ObjectType(FbxLayeredTexture::ClassId), 0));
+				FbxFileTexture* texture = FbxCast<FbxFileTexture>(layeredTexture->GetSrcObject<FbxTexture>(0));
+				path = texture->GetFileName();
+				return true;
+			}
+			const uint textureCount = prop.GetSrcObjectCount(FbxCriteria::ObjectType(FbxTexture::ClassId));
+			if (textureCount == 0)
+				return false; 
+
+			FbxFileTexture* texture = FbxCast<FbxFileTexture>(prop.GetSrcObject(FbxCriteria::ObjectType(FbxTexture::ClassId), 0));
+			path = texture->GetFileName();
+			return true;
+		}
 		void JFbxFileLoader::SortBlendingWeight()
 		{
-			uint count = (uint)controlPoint.size();
+			uint count = (uint)dataSet->controlPoint.size();
 			for (uint i = 0; i < count; ++i)
 			{
-				sort(controlPoint[i].blendingInfo.begin(), controlPoint[i].blendingInfo.end(), CompareBlendingWeight);
+				sort(dataSet->controlPoint[i].blendingInfo.begin(), dataSet->controlPoint[i].blendingInfo.end(), CompareBlendingWeight);
 			}
 		}
 		void JFbxFileLoader::StuffSkletonData(JFbxSkeleton& fbxSkeleton, std::vector<Joint>& joint)
@@ -975,6 +1194,20 @@ namespace JinEngine
 				}
 			}  
 		}
+		void JFbxFileLoader::StuffMaterial(FbxNode* node, JFbxMaterialMap& materialMap, const size_t meshGuid)
+		{
+			std::vector<JFbxMaterial> matVec;
+			const uint matCount = node->GetMaterialCount();
+			for (uint i = 0; i < matCount; ++i)
+			{
+				auto material = node->GetMaterial(i);
+				auto mapData = dataSet->mateiralMap.find(material->GetName());
+				if (mapData == dataSet->mateiralMap.end())
+					continue;
+				matVec.push_back(mapData->second);
+			}
+			materialMap.emplace(meshGuid, std::move(matVec));
+		}
 		FbxAMatrix JFbxFileLoader::GetGeometryTransformation(FbxNode* inNode)
 		{
 			if (!inNode)
@@ -995,7 +1228,7 @@ namespace JinEngine
 			FbxAxisSystem::EUpVector modelUpV;
 			GetModelYUP(joint, modelUpDir, modelUpV);
 
-			if (modelUpDir != failUpDirSearch && (modelUpV != sceneUpV || modelUpDir != sceneUpDir))
+			if (modelUpDir != Private::failUpDirSearch && (modelUpV != dataSet->sceneUpV || modelUpDir != dataSet->sceneUpDir))
 				ConvertAxis(meshGroup, joint, modelUpDir, modelUpV);
 		}
 		void JFbxFileLoader::GetModelYUP(std::vector<Joint>& joint, int& outUpDir, FbxAxisSystem::EUpVector& outUpAxis)noexcept
@@ -1019,7 +1252,7 @@ namespace JinEngine
 
 			if (i == jointCount)
 			{
-				outUpDir = failUpDirSearch;
+				outUpDir = Private::failUpDirSearch;
 				return;
 			}
 
@@ -1067,27 +1300,28 @@ namespace JinEngine
 		}
 		void JFbxFileLoader::SetLeftHandPosition(FbxVector4& t)noexcept
 		{
-			if (sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp)
+			if (dataSet->sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp)
 				t.Set(-t.mData[0], t.mData[1], t.mData[2]);
-			else if (sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaZUp)
+			else if (dataSet->sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaZUp)
 				t.Set(-t.mData[0], t.mData[2], -t.mData[1]);
 		}
 		void JFbxFileLoader::SetLeftHandQuaternion(FbxQuaternion& q)noexcept
 		{
-			if (sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp)
+			if (dataSet->sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp)
 				q.Set(q.mData[0], -q.mData[1], -q.mData[2], q.mData[3]);
-			else if (sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaZUp)
+			else if (dataSet->sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaZUp)
 			{
 				q.Set(q.mData[0], -q.mData[1], -q.mData[2], q.mData[3]);
-				FbxQuaternion x90{ ZUpToYUpxMinus90.x, ZUpToYUpxMinus90.y, ZUpToYUpxMinus90.z, ZUpToYUpxMinus90.w };
+				JVector4F zUpToYUpxMinus90 = Private::ZUpToYUpxMinus90();
+				FbxQuaternion x90(zUpToYUpxMinus90.x, zUpToYUpxMinus90.y, zUpToYUpxMinus90.z, zUpToYUpxMinus90.w);
 				q = x90 * q;
 			}
 		}
 		void JFbxFileLoader::SetLeftHandScale(FbxVector4& s)noexcept
 		{
-			if (sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp)
+			if (dataSet->sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp)
 				s.Set(s.mData[0], s.mData[1], s.mData[2]);
-			else if (sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaZUp)
+			else if (dataSet->sceneAxis == FbxAxisSystem::EPreDefinedAxisSystem::eMayaZUp)
 				s.Set(s.mData[0], s.mData[2], s.mData[1]);
 		}
 		void JFbxFileLoader::SetRotationDegreeToRadian(FbxAMatrix& mat)noexcept
@@ -1107,30 +1341,30 @@ namespace JinEngine
 
 			//FbxAxisSystem::OpenGL.ConvertChildren(root, FbxAxisSystem::OpenGL);
 			//FbxAxisSystem::DirectX.DeepConvertScene(scene);
-			sceneAxisSystem = scene->GetGlobalSettings().GetAxisSystem();
-			sceneUpDir = 0;
-			sceneFrontDir = 0;
-			sceneUpV = sceneAxisSystem.GetUpVector(sceneUpDir);
-			sceneFrontV = sceneAxisSystem.GetFrontVector(sceneFrontDir);
-			sceneCoordSys = sceneAxisSystem.GetCoorSystem();
+			dataSet->sceneAxisSystem = scene->GetGlobalSettings().GetAxisSystem();
+			dataSet->sceneUpDir = 0;
+			dataSet->sceneFrontDir = 0;
+			dataSet->sceneUpV = dataSet->sceneAxisSystem.GetUpVector(dataSet->sceneUpDir);
+			dataSet->sceneFrontV = dataSet->sceneAxisSystem.GetFrontVector(dataSet->sceneFrontDir);
+			dataSet->sceneCoordSys = dataSet->sceneAxisSystem.GetCoorSystem();
 
-			if (sceneCoordSys == FbxAxisSystem::ECoordSystem::eRightHanded)
+			if (dataSet->sceneCoordSys == FbxAxisSystem::ECoordSystem::eRightHanded)
 			{
-				if (sceneUpV == FbxAxisSystem::EUpVector::eYAxis)
+				if (dataSet->sceneUpV == FbxAxisSystem::EUpVector::eYAxis)
 				{
-					sceneAxis = FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp;
-					sceneAxisSystem = FbxAxisSystem::MayaYUp;
+					dataSet->sceneAxis = FbxAxisSystem::EPreDefinedAxisSystem::eMayaYUp;
+					dataSet->sceneAxisSystem = FbxAxisSystem::MayaYUp;
 				}
-				else if (sceneUpV == FbxAxisSystem::EUpVector::eZAxis)
+				else if (dataSet->sceneUpV == FbxAxisSystem::EUpVector::eZAxis)
 				{
-					sceneAxis = FbxAxisSystem::EPreDefinedAxisSystem::eMayaZUp;
-					sceneAxisSystem = FbxAxisSystem::MayaZUp;
+					dataSet->sceneAxis = FbxAxisSystem::EPreDefinedAxisSystem::eMayaZUp;
+					dataSet->sceneAxisSystem = FbxAxisSystem::MayaZUp;
 				}
 			}
 			else
 			{
-				sceneAxis = FbxAxisSystem::EPreDefinedAxisSystem::eDirectX;
-				sceneAxisSystem = FbxAxisSystem::DirectX;
+				dataSet->sceneAxis = FbxAxisSystem::EPreDefinedAxisSystem::eDirectX;
+				dataSet->sceneAxisSystem = FbxAxisSystem::DirectX;
 			}
 		}
 		void JFbxFileLoader::ConvertFbaToJM(FbxAMatrix& fbxM, JMatrix4x4& m)noexcept
@@ -1143,12 +1377,12 @@ namespace JinEngine
 		}
 		void JFbxFileLoader::ConvertAxis(JSkinnedMeshGroup& meshGroup, std::vector<Joint>& joint, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept
 		{
-			switch (sceneUpV)
+			switch (dataSet->sceneUpV)
 			{
 			case FbxAxisSystem::EUpVector::eXAxis:
 				break;
 			case FbxAxisSystem::EUpVector::eYAxis:
-				if (modelUpV == FbxAxisSystem::EUpVector::eZAxis && sceneUpDir == modelUpDir)
+				if (modelUpV == FbxAxisSystem::EUpVector::eZAxis && dataSet->sceneUpDir == modelUpDir)
 				{
 					uint jointCount = (uint)joint.size();
 					XMVECTOR sV;
@@ -1195,12 +1429,12 @@ namespace JinEngine
 		}
 		void JFbxFileLoader::ConvertPosition(JVector3<float>& position, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept
 		{
-			switch (sceneUpV)
+			switch (dataSet->sceneUpV)
 			{
 			case FbxAxisSystem::EUpVector::eXAxis:
 				break;
 			case FbxAxisSystem::EUpVector::eYAxis:
-				if (modelUpV == FbxAxisSystem::EUpVector::eZAxis && modelUpDir == sceneUpDir)
+				if (modelUpV == FbxAxisSystem::EUpVector::eZAxis && modelUpDir == dataSet->sceneUpDir)
 				{
 					JVector3<float> oldPosition = position;
 					position.y = oldPosition.z;
@@ -1215,14 +1449,14 @@ namespace JinEngine
 		}
 		void JFbxFileLoader::ConvertQuaternion(JVector4<float>& quaternion, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept
 		{
-			switch (sceneUpV)
+			switch (dataSet->sceneUpV)
 			{
 			case FbxAxisSystem::EUpVector::eXAxis:
 				break;
 			case FbxAxisSystem::EUpVector::eYAxis:
-				if (modelUpV == FbxAxisSystem::EUpVector::eZAxis && modelUpDir == sceneUpDir)
+				if (modelUpV == FbxAxisSystem::EUpVector::eZAxis && modelUpDir == dataSet->sceneUpDir)
 				{
-					XMVECTOR modQ = XMQuaternionMultiply(XMLoadFloat4(&ZUpToYUpxMinus90), quaternion.ToXmV());
+					XMVECTOR modQ = XMQuaternionMultiply(Private::ZUpToYUpxMinus90().ToXmV(), quaternion.ToXmV());
 					quaternion = modQ;
 				}
 				break;
@@ -1234,12 +1468,12 @@ namespace JinEngine
 		}
 		void JFbxFileLoader::ConvertScale(JVector3<float>& scale, int modelUpDir, FbxAxisSystem::EUpVector modelUpV)noexcept
 		{
-			switch (sceneUpV)
+			switch (dataSet->sceneUpV)
 			{
 			case FbxAxisSystem::EUpVector::eXAxis:
 				break;
 			case FbxAxisSystem::EUpVector::eYAxis:
-				if (modelUpV == FbxAxisSystem::EUpVector::eZAxis && modelUpDir == sceneUpDir)
+				if (modelUpV == FbxAxisSystem::EUpVector::eZAxis && modelUpDir == dataSet->sceneUpDir)
 				{
 					JVector3<float> oldScale = scale;
 					scale.y = oldScale.z;
@@ -1280,15 +1514,15 @@ namespace JinEngine
 		}
 		void JFbxFileLoader::ResizeMatrix(JMatrix4x4& m)noexcept
 		{
-			m._41 *= resizeRate;
-			m._42 *= resizeRate;
-			m._43 *= resizeRate;
+			m._41 *= dataSet->resizeRate;
+			m._42 *= dataSet->resizeRate;
+			m._43 *= dataSet->resizeRate;
 		}
 		void JFbxFileLoader::ResizeVertexPosition(JVector3<float>& vertexPosition)noexcept
 		{
-			vertexPosition.x *= resizeRate;
-			vertexPosition.y *= resizeRate;
-			vertexPosition.z *= resizeRate;
+			vertexPosition.x *= dataSet->resizeRate;
+			vertexPosition.y *= dataSet->resizeRate;
+			vertexPosition.z *= dataSet->resizeRate;
 		} 
 	}
 }

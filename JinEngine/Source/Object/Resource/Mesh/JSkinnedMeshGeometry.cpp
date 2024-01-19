@@ -122,7 +122,7 @@ namespace JinEngine
 				JObjectFileIOHelper::LoadAtomicData(tool, hasUV, "HasUV:");
 				JObjectFileIOHelper::LoadAtomicData(tool, hasNormal, "HasNormal:");
 				tool.PopStack();
-				meshGroup->AddMeshData(Core::JSkinnedMeshData{ name , guid, std::move(indices), hasUV, hasNormal, std::move(vertices) });
+				meshGroup->AddMeshData(std::make_unique<Core::JSkinnedMeshData>( name , guid, std::move(indices), hasUV, hasNormal, std::move(vertices)));
 			}
 			tool.PopStack();
 			tool.PushExistStack("MaterialData");
@@ -256,7 +256,8 @@ namespace JinEngine
 		static void RegisterTypeData()
 		{
 			Core::JIdentifier::RegisterPrivateInterface(JSkinnedMeshGeometry::StaticTypeInfo(), sPrivate);
-			IMPL_REALLOC_BIND(JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl, thisPointer)
+			IMPL_REALLOC_BIND(JSkinnedMeshGeometry::JSkinnedMeshGeometryImpl, thisPointer);
+			SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT_TO_CHILD);
 		}
 	};
 

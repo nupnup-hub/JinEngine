@@ -217,11 +217,5 @@ namespace JinEngine
 	{
 		return JVector4<T>(v.x * f, v.y * f, v.z * f, v.w * f);
 	} 
-
-
-	template<typename T>
-	static JVector2<T> ClampVec2(const JVector2<T>& a, const T minT, const T maxT)noexcept
-	{
-		return JVector2<T>(std::clamp(a.x, minT, maxT), std::clamp(a.y, minT, maxT));
-	}
+	 
 }

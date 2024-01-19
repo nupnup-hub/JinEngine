@@ -19,73 +19,6 @@
 namespace JinEngine
 {
 	namespace
-	{
-//Graphic Shader Macro Symbol  
-#define TEXTURE_2D_COUNT_SYMBOL L"TEXTURE_2D_COUNT"
-#define TEXTURE_CUBE_COUNT_SYMBOL L"CUBE_MAP_COUNT"
-#define SHADOW_MAP_COUNT_SYMBOL L"SHADOW_MAP_COUNT"
-#define SHADOW_MAP_ARRAY_COUNT_SYMBOL L"SHADOW_MAP_ARRAY_COUNT"
-#define SHADOW_MAP_CUBE_COUNT_SYMBOL L"SHADOW_MAP_CUBE_COUNT"
-		 
-#define USE_DIRECTIONAL_LIGHT_PCF L"USE_DIRECTIONAL_LIGHT_PCF"
-#define USE_DIRECTIONAL_LIGHT_PCSS L"USE_DIRECTIONAL_LIGHT_PCSS"  
-
-#define USE_POINT_LIGHT_PCF L"USE_POINT_LIGHT_PCF"   
-#define USE_POINT_LIGHT_PCSS L"USE_POINT_LIGHT_PCSS"   
-
-#define USE_SPOT_LIGHT_PCF L"USE_SPOT_LIGHT_PCF"    
-#define USE_SPOT_LIGHT_PCSS L"USE_SPOT_LIGHT_PCSS"   
-
-#define USE_PCF_16_SAMPLE L"USE_PCF_16_SAMPLE" 
-#define USE_PCF_32_SAMPLE L"USE_PCF_32_SAMPLE" 
-
-#define USE_BRDF_SMITH_MASKING L"USE_BRDF_SMITH_MASKING"  
-#define USE_BRDF_TORRANCE_MASKING L"USE_BRDF_TORRANCE_MASKING"  
-
-#define USE_BRDF_GGX_NDF L"USE_BRDF_GGX_NDF"  
-#define USE_BRDF_BECKMANN_NDF L"USE_BRDF_BECKMANN_NDF"  
-#define USE_BRDF_BLINN_PHONG_NDF L"USE_BRDF_BLINN_PHONG_NDF"  
-#define USE_BRDF_ISOTROPY_NDF L"USE_BRDF_ISOTROPY_NDF"  
-
-#define USE_BRDF_DISNEY_DIFFUSE L"USE_BRDF_DISNEY_DIFFUSE"  
-#define USE_BRDF_HAMMON_DIFFUSE L"USE_BRDF_HAMMON_DIFFUSE"  
-#define USE_BRDF_SHIRELY_DIFFUSE L"USE_BRDF_SHIRELY_DIFFUSE"  
-#define USE_BRDF_LAMBERTIAN_DIFFUSE L"USE_BRDF_LAMBERTIAN_DIFFUSE"  
-
-//Compute Shader Macro Symbol ";
-#define THREAD_DIM_X_SYMBOL L"DIMX"
-#define THREAD_DIM_Y_SYMBOL L"DIMY"
-#define THREAD_DIM_Z_SYMBOL L"DIMZ"
-
-//#define USE_SSAO L"USE_SSAO" 
-
-	}
-	namespace
-	{
-		static const std::unordered_map<J_GRAPHIC_SHADER_FUNCTION, const JMacroSet> shaderFuncMacroMap
-		{
-			//{SHADER_FUNCTION_NONE, {"", ""}},
-			{SHADER_FUNCTION_ALBEDO_MAP, {L"ALBEDO_MAP", L"1"}},
-			{SHADER_FUNCTION_ALBEDO_MAP_ONLY, {L"ALBEDO_MAP_ONLY", L"2"}},
-			{SHADER_FUNCTION_NORMAL_MAP, {L"NORMAL_MAP", L"3"}},
-			{SHADER_FUNCTION_HEIGHT_MAP, {L"HEIGHT_MAP", L"4"}},
-			{SHADER_FUNCTION_ROUGHNESS_MAP,{ L"ROUGHNESS_MAP", L"5"}},
-			{SHADER_FUNCTION_AMBIENT_OCCLUSION_MAP, {L"AMBIENT_OCCLUSION_MAP", L"6"}},
-			{SHADER_FUNCTION_SHADOW, {L"SHADOW", L"7"}},
-			{SHADER_FUNCTION_LIGHT, {L"LIGHT", L"8"}},
-			{SHADER_FUNCTION_SKY, {L"SKY", L"9"}},
-			{SHADER_FUNCTION_ALPHA_CLIP, {L"ALPHA_CLIP", L"10"}},
-			{SHADER_FUNCTION_DEBUG, {L"DEBUG", L"11"}}
-		};
-		//std::unordered_map<J_COMPUTE_SHADER_FUNCTION, std::unique_ptr<JShader::CSInitHelperCallable>> JShader::computeShaderHelperMap;
-		static const std::unordered_map<J_SHADER_VERTEX_LAYOUT, const JMacroSet> vertexLayoutMacroMap
-		{
-			{SHADER_VERTEX_LAYOUT_STATIC, {L"STATIC", L"1"}},
-			{SHADER_VERTEX_LAYOUT_SKINNED, {L"SKINNED", L"2"}}
-		};
-	}
-
-	namespace
 	{ 
 		static JShaderPrivate sPrivate;
 	}
@@ -144,9 +77,14 @@ namespace JinEngine
 	public:
 		JWeakPtr<JShader> thisPointer = nullptr;
 	public: 
-		JOwnerPtr<JGraphicShaderDataHolderBase> gShaderData[SHADER_VERTEX_COUNT]{ nullptr, nullptr }; 
-		JOwnerPtr<JComputeShaderDataHolderBase> cShaderData = nullptr;
-		//std::unique_ptr<JGraphicShaderData>gShaderData[SHADER_VERTEX_COUNT]{ nullptr, nullptr };
+		//graphic forward
+		JOwnerPtr<JGraphicShaderDataHolderBase> gFShaderData[(uint)J_GRAPHIC_SHADER_TYPE::COUNT][(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
+		//graphic deferred geometry
+		JOwnerPtr<JGraphicShaderDataHolderBase> gDGShaderData[(uint)J_GRAPHIC_SHADER_TYPE::COUNT][(uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT];
+	public:
+		//compute
+		JOwnerPtr<JComputeShaderDataHolderBase> cShaderData = nullptr; 
+	public:
 		J_GRAPHIC_SHADER_FUNCTION gFunctionFlag = SHADER_FUNCTION_NONE;
 		J_COMPUTE_SHADER_FUNCTION cFunctionFlag = J_COMPUTE_SHADER_FUNCTION::NONE;
 	public:
@@ -156,8 +94,7 @@ namespace JinEngine
 			:gFunctionFlag(initData.gFunctionFlag),
 			cFunctionFlag(initData.cFunctionFlag),
 			condition(initData.condition)
-		{ 
-		}
+		{}
 		~JShaderImpl()
 		{}
 	public:
@@ -168,7 +105,7 @@ namespace JinEngine
 	public:
 		void SetGraphicShaderFunctionFlag(const J_GRAPHIC_SHADER_FUNCTION newFunctionFlag)
 		{
-			if (gFunctionFlag != newFunctionFlag || !HasShaderData())
+			if (gFunctionFlag != newFunctionFlag || !HasGraphicShaderData())
 			{
 				gFunctionFlag = newFunctionFlag;
 				if (thisPointer->IsActivated())
@@ -177,7 +114,7 @@ namespace JinEngine
 		}
 		void SetComputeShaderFunctionFlag(const J_COMPUTE_SHADER_FUNCTION newFunctionFlag)
 		{
-			if (cFunctionFlag != newFunctionFlag || !HasShaderData())
+			if (cFunctionFlag != newFunctionFlag || !HasComputeShaderData())
 			{
 				cFunctionFlag = newFunctionFlag;
 				if (thisPointer->IsActivated())
@@ -185,20 +122,30 @@ namespace JinEngine
 			}
 		}
 	public:
-		bool HasShaderData()const noexcept
+		bool HasGraphicShaderData()const noexcept
 		{
 			bool hasData = true;
-			for (uint i = 0; i < (uint)SHADER_VERTEX_COUNT; ++i)
-				hasData = hasData && (gShaderData[i] != nullptr);
+			for (uint i = 0; i < (uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT; ++i)
+				hasData = hasData && (gFShaderData[i] != nullptr);
 			return hasData;
+		}
+		bool HasComputeShaderData()const noexcept
+		{ 
+			return cShaderData != nullptr;
 		}
 	public:
 		void RecompileGraphicShader()
 		{
 			if (thisPointer->IsActivated())
 			{
-				for (uint i = 0; i < SHADER_VERTEX_COUNT; ++i)
-					gShaderData[i].Clear();
+				for (uint i = 0; i < (uint)J_GRAPHIC_SHADER_TYPE::COUNT; ++i)
+				{
+					for (uint j = 0; j < (uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT; ++j)
+					{
+						gFShaderData[i][j] = nullptr;
+						gDGShaderData[i][j] = nullptr;
+					}
+				}
 				CompileShdaer();
 			}
 		}
@@ -226,10 +173,28 @@ namespace JinEngine
 			StuffInitHelper(initHelper, gFunctionFlag, condition);
 
 			using GResourceInterface = Graphic::JGraphicPrivate::ResourceInterface;
-			for (uint i = 0; i < SHADER_VERTEX_COUNT; ++i)
+			for (uint i = 0; i < (uint)J_GRAPHIC_SHADER_TYPE::COUNT; ++i)
 			{
-				initHelper.layoutType = (J_SHADER_VERTEX_LAYOUT)i;
-				gShaderData[i] = GResourceInterface::StuffGraphicShaderPso(initHelper);
+				for (uint j = 0; j < (uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT; ++j)
+				{
+					initHelper.shaderType = (J_GRAPHIC_SHADER_TYPE)i;
+					initHelper.layoutType = (J_GRAPHIC_SHADER_VERTEX_LAYOUT)j;
+					initHelper.processType = J_GRAPHIC_RENDERING_PROCESS::FORWARD;
+					gFShaderData[i][j] = GResourceInterface::StuffGraphicShaderPso(initHelper);
+				}
+			}
+			if (!JGraphic::Instance().GetGraphicOption().allowDeferred)
+				return;
+			    
+			for (uint i = 0; i < (uint)J_GRAPHIC_SHADER_TYPE::COUNT; ++i)
+			{
+				for (uint j = 0; j < (uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT; ++j)
+				{
+					initHelper.shaderType = (J_GRAPHIC_SHADER_TYPE)i;
+					initHelper.layoutType = (J_GRAPHIC_SHADER_VERTEX_LAYOUT)j;
+					initHelper.processType = J_GRAPHIC_RENDERING_PROCESS::DEFERRED_GEOMETRY;
+					gDGShaderData[i][j] = GResourceInterface::StuffGraphicShaderPso(initHelper);
+				}
 			}
 		}
 		void CompileComputeShader()
@@ -243,80 +208,22 @@ namespace JinEngine
 				cShaderData = GResourceInterface::StuffComputeShaderPso(initHelper);
 			}
 		}
-		static void StuffInitHelper(_Out_ JGraphicShaderInitData& initHelper, const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, const JShaderCondition& cond)noexcept
+		static void StuffInitHelper(_Out_ JGraphicShaderInitData& initHelper,
+			const J_GRAPHIC_SHADER_FUNCTION gFunctionFlag, 
+			const JShaderCondition& cond)noexcept
 		{
-			Graphic::JGraphicInfo info = JGraphic::Instance().GetGraphicInfo();
-			Graphic::JGraphicOption option = JGraphic::Instance().GetGraphicOption();
-
-			for (uint i = 0; i < (uint)J_SHADER_VERTEX_LAYOUT::SHADER_VERTEX_COUNT; ++i)
-			{
-				J_SHADER_VERTEX_LAYOUT layount = (J_SHADER_VERTEX_LAYOUT)i;
-				initHelper.macro[i].push_back(vertexLayoutMacroMap.find(layount)->second);
-				for (const auto& data : shaderFuncMacroMap)
-				{
-					if ((data.first & gFunctionFlag) > 0)
-						initHelper.macro[i].push_back(data.second);
-				}
-
-				initHelper.macro[i].push_back({ TEXTURE_2D_COUNT_SYMBOL, std::to_wstring(info.binding2DTextureCapacity) });
-				initHelper.macro[i].push_back({ TEXTURE_CUBE_COUNT_SYMBOL, std::to_wstring(info.bindingCubeMapCapacity) });
-				initHelper.macro[i].push_back({ SHADOW_MAP_COUNT_SYMBOL,std::to_wstring(info.bindingShadowTextureCapacity) });
-				initHelper.macro[i].push_back({ SHADOW_MAP_ARRAY_COUNT_SYMBOL, std::to_wstring(info.bindingShadowTextureArrayCapacity) });
-				initHelper.macro[i].push_back({ SHADOW_MAP_CUBE_COUNT_SYMBOL,std::to_wstring(info.bindingShadowTextureCubeCapacity) });
-
-				//Shadow
-				if (option.useHighQualityShadow)
-				{
-					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCSS, std::to_wstring(1) });
-					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCF, std::to_wstring(1) });
-					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCF, std::to_wstring(1) });
-					initHelper.macro[i].push_back({ USE_PCF_32_SAMPLE, std::to_wstring(1) });
-				}
-				else if (option.useMiddleQualityShadow)
-				{
-					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCF, std::to_wstring(1) });
-					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCF, std::to_wstring(1) });
-					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCF, std::to_wstring(1) });
-					initHelper.macro[i].push_back({ USE_PCF_32_SAMPLE, std::to_wstring(1) });
-				}
-				else if (option.useLowQualityShadow)
-				{
-					initHelper.macro[i].push_back({ USE_DIRECTIONAL_LIGHT_PCF, std::to_wstring(1) });
-					initHelper.macro[i].push_back({ USE_POINT_LIGHT_PCF, std::to_wstring(1) });
-					initHelper.macro[i].push_back({ USE_SPOT_LIGHT_PCF, std::to_wstring(1) });
-					initHelper.macro[i].push_back({ USE_PCF_16_SAMPLE, std::to_wstring(1) });
-				}
-
-				//BRDF
-				if (option.useSmithMasking)
-					initHelper.macro[i].push_back({ USE_BRDF_SMITH_MASKING, std::to_wstring(1) });
-				if (option.useTorranceMaskig)
-					initHelper.macro[i].push_back({ USE_BRDF_TORRANCE_MASKING, std::to_wstring(1) });
-				if (option.useGGXNDF)
-					initHelper.macro[i].push_back({ USE_BRDF_GGX_NDF, std::to_wstring(1) });
-				if (option.useBeckmannNDF)
-					initHelper.macro[i].push_back({ USE_BRDF_BECKMANN_NDF, std::to_wstring(1) });
-				if (option.useBlinnPhongNDF)
-					initHelper.macro[i].push_back({ USE_BRDF_BLINN_PHONG_NDF, std::to_wstring(1) });
-				if (option.useIsotropy)
-					initHelper.macro[i].push_back({ USE_BRDF_ISOTROPY_NDF, std::to_wstring(1) });
-				if (option.useDisneyDiffuse)
-					initHelper.macro[i].push_back({ USE_BRDF_DISNEY_DIFFUSE, std::to_wstring(1) });
-				if (option.useHammonDiffuse)
-					initHelper.macro[i].push_back({ USE_BRDF_HAMMON_DIFFUSE, std::to_wstring(1) });
-				if (option.useShirleyDiffuse)
-					initHelper.macro[i].push_back({ USE_BRDF_SHIRELY_DIFFUSE, std::to_wstring(1) });
-				if (option.useLambertianDiffuse)
-					initHelper.macro[i].push_back({ USE_BRDF_LAMBERTIAN_DIFFUSE, std::to_wstring(1) });
-				//if(option.useSsao  || option.useHbao)
-				//	initHelper.macro[i].push_back({ USE_SSAO, std::to_wstring(1) });
-				//initHelper.macro[i].push_back(shaderFuncMacroMap.find(SHADER_FUNCTION_NONE)->second);
-			}
+			//앞으로 graphic shader에 macro는 JGraphicShaderDataHandler에 하위클래스에서 stuff 하도록한다. --2023/12/28--
 			initHelper.gFunctionFlag = gFunctionFlag;
 			initHelper.condition = cond;
-		}
-		static void StuffInitHelper(_Out_ JComputeShaderInitData& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)noexcept
+		} 
+		static void StuffInitHelper(_Out_ JComputeShaderInitData& initHelper,
+			J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 		{
+			//앞으로 hzb에 대한 shader option control은 JShader객체를 통해서가아닌
+			//Graphic Option을 통해서 이루어지게 한다.
+			//그러므로 JHZBOccCulling 하위 class들이 Shader data를 소유하고 graphic option변경에 따라 graphic이 이들을 호출해
+			//shader를 새 option에 따라 재컴파일한다.
+			/*
 			auto calThreadDim = [](const uint ori, const uint length, const uint devideFactor, uint& devideCount) -> uint
 			{
 				devideCount = 0;
@@ -331,20 +238,13 @@ namespace JinEngine
 				else
 					return result;
 			};
-			using GpuInfo = Core::JHardwareInfo::GpuInfo;
-
-			/*
-
-			//앞으로 hzb에 대한 shader option control은 JShader객체를 통해서가아닌 
-			//Graphic Option을 통해서 이루어지게 한다.
-			//그러므로 JHZBOccCulling 하위 class들이 Shader data를 소유하고 graphic option변경에 따라 graphic이 이들을 호출해
-			//shader를 새 option에 따라 재컴파일한다.
+			using GpuInfo = Core::JHardwareInfo::GpuInfo;		
 			auto InitHZBMaps = [](_Out_ JComputeShaderInitData& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
 			{
 				std::vector<GpuInfo> gpuInfo = Core::JHardwareInfo::GetGpuInfo();
 				Graphic::JGraphicInfo graphicInfo = JGraphic::Instance().GetGraphicInfo();
 
-				//수정필요 
+				//수정필요
 				//thread per group factor가 하드코딩됨
 				//이후 amd graphic info 추가와 동시에 수정할 예정
 				uint warpFactor = gpuInfo[0].vendor == Core::J_GRAPHIC_VENDOR::AMD ? 64 : 32;
@@ -362,7 +262,7 @@ namespace JinEngine
 			};
 
 			*/
-			
+
 			switch (cFunctionFlag)
 			{
 			default:
@@ -371,23 +271,26 @@ namespace JinEngine
 			//initHelper.macro.push_back({ NULL, NULL });
 			initHelper.cFunctionFlag = cFunctionFlag;
 		}
-		static void StuffComputeShaderCommonMacro(_Out_ JComputeShaderInitData& initHelper, const J_COMPUTE_SHADER_FUNCTION cFunctionFlag)
-		{ 
-			initHelper.macro.push_back({ THREAD_DIM_X_SYMBOL, std::to_wstring(initHelper.dispatchInfo.threadDim.x) });
-			initHelper.macro.push_back({ THREAD_DIM_Y_SYMBOL, std::to_wstring(initHelper.dispatchInfo.threadDim.y) });
-			initHelper.macro.push_back({ THREAD_DIM_Z_SYMBOL, std::to_wstring(initHelper.dispatchInfo.threadDim.z) });
-		}
 	public:
 		void ClearShaderData()
 		{
-			for (int i = 0; i < SHADER_VERTEX_COUNT; ++i)
+			for (uint i = 0; i < (uint)J_GRAPHIC_SHADER_TYPE::COUNT; ++i)
 			{
-				if (gShaderData[i] != nullptr)
+				for (uint j = 0; j < (uint)J_GRAPHIC_SHADER_VERTEX_LAYOUT::COUNT; ++j)
 				{
-					gShaderData[i]->Clear();
-					gShaderData[i].Clear();
+					if (gFShaderData[i][j] != nullptr)
+					{
+						gFShaderData[i][j]->Clear();
+						gFShaderData[i][j].Clear();
+					}
+					if (gDGShaderData[i][j] != nullptr)
+					{
+						gDGShaderData[i][j]->Clear();
+						gDGShaderData[i][j].Clear();
+					}
 				}
 			}
+			 
 			if (cShaderData != nullptr)
 			{
 				cShaderData->Clear();
@@ -483,10 +386,21 @@ namespace JinEngine
 		static std::vector<std::wstring> format{ L".shader" };
 		return format;
 	}
-	JUserPtr<JGraphicShaderDataHolderBase> JShader::GetGraphicData(const J_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
+	JUserPtr<JGraphicShaderDataHolderBase> JShader::GetGraphicData(const J_GRAPHIC_RENDERING_PROCESS processType, const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
 	{
-		return impl->gShaderData[(uint)vertexLayout];
+		if (processType == J_GRAPHIC_RENDERING_PROCESS::DEFERRED_GEOMETRY)
+			return impl->gDGShaderData[(uint)type][(uint)vertexLayout];
+		else
+			return impl->gFShaderData[(uint)type][(uint)vertexLayout];
 	}
+	JUserPtr<JGraphicShaderDataHolderBase> JShader::GetGraphicForwardData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
+	{
+		return impl->gFShaderData[(uint)type][(uint)vertexLayout];
+	}
+	JUserPtr<JGraphicShaderDataHolderBase> JShader::GetGraphicDeferredData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept
+	{
+		return impl->gDGShaderData[(uint)type][(uint)vertexLayout];
+	} 
 	JUserPtr<JComputeShaderDataHolderBase> JShader::GetComputeData()const noexcept
 	{
 		return impl->cShaderData;

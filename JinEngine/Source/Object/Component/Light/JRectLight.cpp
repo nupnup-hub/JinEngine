@@ -11,6 +11,7 @@
 #include"../../Resource/JResourceObjectUserInterface.h"
 #include"../../../Core/Guid/JGuidCreator.h" 
 #include"../../../Core/File/JFileConstant.h" 
+#include"../../../Core/Func/JFuncList.h" 
 #include"../../../Core/Reflection/JTypeImplBase.h"
 #include"../../../Core/Math/JMathHelper.h"
 #include"../../../Graphic/JGraphic.h"  
@@ -20,7 +21,7 @@
 #include"../../../Graphic/Frameresource/JFrameUpdate.h"
 #include"../../../Graphic/Culling/JCullingInterface.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceInterface.h"
-#include"../../../Graphic/JGraphicDrawListInterface.h"   
+#include"../../../Graphic/JGraphicDrawListInterface.h"    
 
 using namespace DirectX;
 namespace JinEngine
@@ -31,6 +32,7 @@ namespace JinEngine
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT, Graphic::JRectLightConstants&>,
 			Graphic::JFrameUpdateInterface<Graphic::J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW, Graphic::JShadowMapDrawConstants&>>,
 			Graphic::JFrameDirty>;
+		using JCullingSingleHolder = Graphic::JCullingSingleHolder<Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM>;
 	}
 	namespace
 	{ 
@@ -41,13 +43,14 @@ namespace JinEngine
 		static constexpr float minPower = 0.1f;
 		static constexpr float maxPower = 8.0f;
 		static constexpr float frustumNear = 1.0f;	 
+		static constexpr float maxBarndoorLength = 64;
 		static constexpr float InitPower()noexcept
 		{
 			return 1.0f;
 		}
 		static JVector2F InitSize()noexcept
 		{
-			return JVector2F(2, 2);
+			return JVector2F(4, 4);
 		}
 		static XMVECTOR GetInitDir()
 		{
@@ -75,32 +78,42 @@ namespace JinEngine
 		public Graphic::JGraphicWideSingleResourceHolder<2>,	//shadowMap, debug
 		//public Graphic::JGraphicTypePerSingleResourceHolder,
 		public Graphic::JGraphicDrawListCompInterface,
-		public Graphic::JCullingInterface
+		public JCullingSingleHolder
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE_IMPL(JRectLightImpl)
 	public:
 		using RectLitFrame = JFrameInterface1;
 		using ShadowMapDrawFrame = JFrameInterface2;
+	private:
+		enum MANAGED_SET
+		{
+			MANAGED_SET_SHADOW_MAP = 0,
+			MANAGED_SET_DISPLAY_SHADOW_MAP,		//for debugging
+			MANAGED_SET_FRUSTUM_CULLING,
+			MANAGED_SET_COUNT
+		};
+		using ManageFuncList = Core::JFuncList<MANAGED_SET_COUNT, JRectLight::JRectLightImpl, const bool>;
 	public:
 		JWeakPtr<JRectLight> thisPointer; 
 	public:
 		REGISTER_PROPERTY_EX(areaSize, GetAreaSize, SetAreaSize, GUI_INPUT(false))
 		JVector2F areaSize = Private::InitSize();
+	public: 
+		REGISTER_PROPERTY_EX(range, GetRange, SetRange, GUI_SLIDER(Constants::localLightMinDistance, Constants::localLightMaxDistance, true, false))
+		float range = 32.0f;
+		REGISTER_PROPERTY_EX(barndoorLength, GetBarndoorLength, SetBarndoorLength, GUI_SLIDER(0, Private::maxBarndoorLength, true, false))
+		float barndoorLength = 0;
+		REGISTER_PROPERTY_EX(barndoorAngle, GetBarndoorAngle, SetBarndoorAngle, GUI_SLIDER(0, 90, true, false))
+		float barndoorAngle = 90;
 	public:
-		REGISTER_PROPERTY_EX(power, GetPower, SetPower, GUI_SLIDER(Private::minPower, Private::maxPower, true, false))
-		float power = Private::InitPower();
-		REGISTER_PROPERTY_EX(range, GetRange, SetRange, GUI_SLIDER(Constants::lightNear, Constants::lightMaxFar, true, false))
-		float range = 100.0f;
-	public:
-		REGISTER_PROPERTY_EX(isTwoSide, IsTwoSide, SetTwoSide, GUI_CHECKBOX())
-		bool isTwoSide = false;
+		//REGISTER_PROPERTY_EX(isTwoSide, IsTwoSide, SetTwoSide, GUI_CHECKBOX())
+		//bool isTwoSide = false;
 		bool allowFrustumCulling = false;
 	public:
-		REGISTER_PROPERTY_EX(sourceTexture, GetSourceTexture, SetSourceTexture, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false))
+		REGISTER_PROPERTY_EX(sourceTexture, GetSourceTexture, SetSourceTexture, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::IMAGE, false, false))
 		JUserPtr<JTexture> sourceTexture;
 	public:
-		JVector4F worldQ;
-		JVector3F axis[3];
+		JVector3F worldAxis[3]; 
 		JMatrix4x4 view;
 		JMatrix4x4 proj;
 	public:
@@ -108,8 +121,7 @@ namespace JinEngine
 		~JRectLightImpl() {}
 	public:
 		J_LIGHT_TYPE GetLightType()const noexcept
-		{ 
-			sizeof(JRectLightImpl); 
+		{   
 			return J_LIGHT_TYPE::RECT;
 		}
 		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept
@@ -127,14 +139,18 @@ namespace JinEngine
 		float GetFrustumFar()const noexcept
 		{
 			return range;
-		}
-		float GetPower()const noexcept
-		{
-			return power;
 		} 
 		float GetRange()const noexcept
 		{
 			return range;
+		}
+		float GetBarndoorLength()const noexcept
+		{
+			return barndoorLength;
+		}
+		float GetBarndoorAngle()const noexcept
+		{
+			return barndoorAngle;
 		}
 		DirectX::BoundingBox GetBBox()const noexcept
 		{
@@ -151,17 +167,22 @@ namespace JinEngine
 		{
 			return sourceTexture;
 		}
-	public:
-		void SetShadow(const bool value, const bool isManual = false)noexcept
+		int GetResourceDataIndex(const Graphic::J_GRAPHIC_RESOURCE_TYPE rType, const Graphic::J_GRAPHIC_TASK_TYPE taskType)const noexcept
 		{
-			if (thisPointer->IsActivated() || isManual)
+			switch (rType)
 			{
-				if (value)
-					CreateShadowMapResource();
-				else
-					DestroyShadowMapResource();
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP:
+				return 0;
+			case JinEngine::Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP:	//(아직 rect light shadow는 미구현 이다.)
+				return 0;
+			default:
+				return invalidIndex;
 			}
-			SetFrameDirty();
+		}
+	public:
+		void SetShadow(bool value)noexcept
+		{
+			SetFuncList().InvokePassCondition(MANAGED_SET_SHADOW_MAP, this, std::forward<bool>(value));
 		}
 		void SetShadowResolution(const J_SHADOW_RESOLUTION newShadowResolution)noexcept
 		{
@@ -172,47 +193,27 @@ namespace JinEngine
 			}
 			SetFrameDirty();
 		}
-		void SetAllowDisplayShadowMap(const bool value, const bool isManual = false)
-		{
-			if (thisPointer->IsActivated() || isManual)
-			{
-				if (value)
-					CreateShadowMapDebugResource();
-				else
-					DestroyShadowMapDebugResource();
-			}
-			SetFrameDirty();
+		void SetAllowDisplayShadowMap(bool value)
+		{ 
+			SetFuncList().InvokePassCondition(MANAGED_SET_DISPLAY_SHADOW_MAP, this, std::forward<bool>(value));
 		}
-		void SetAllowFrustumCulling(const bool value, const bool justCallFunc = false)noexcept
+		void SetAllowFrustumCulling(bool value)noexcept
 		{
-			if (!justCallFunc && allowFrustumCulling == value)
+			if (allowFrustumCulling == value)
 				return;
 
-			if (!justCallFunc)
-				allowFrustumCulling = value;
-			if (justCallFunc || thisPointer->IsActivated())
-			{
-				if (value)
-				{
-					CreateFrustumCullingData();
-					AddFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
-				}
-				else
-				{
-					DestroyCullingData(Graphic::J_CULLING_TYPE::FRUSTUM);
-					PopFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
-				}
-			}
-			SetFrameDirty();
+			allowFrustumCulling = value;
+			SetFuncList().InvokePassCondition(MANAGED_SET_FRUSTUM_CULLING, this, std::forward<bool>(value));
 		}
 		void SetAreaSize(const JVector2F newAreaSize) noexcept
 		{
 			if (areaSize == newAreaSize)
 				return;
 
-			areaSize.Clamp(newAreaSize, 0, Constants::lightMaxDistance);
+			areaSize = JVector2F::Clamp(newAreaSize, 0, Constants::localLightMaxDistance);
 			SetFrameDirty();
 		}
+		/*
 		void SetTwoSide(const bool value)noexcept
 		{
 			if (value == isTwoSide)
@@ -220,17 +221,28 @@ namespace JinEngine
 
 			isTwoSide = value;
 			SetFrameDirty();
-		}
-		void SetPower(const float newPower)noexcept
-		{
-			power = std::clamp(newPower, Private::minPower, Private::maxPower);
-			SetFrameDirty();
-		}
+		}*/ 
 		void SetRange(const float newRange)noexcept
 		{
-			range = std::clamp(newRange, Constants::lightNear, Constants::lightMaxFar);
+			range = std::clamp(newRange, Constants::localLightMinDistance, Constants::localLightMaxDistance);
 			SetFrameDirty();
 		} 
+		void SetBarndoorLength(const float newLength)noexcept
+		{ 
+			if (barndoorLength == newLength)
+				return;
+
+			barndoorLength = std::clamp(newLength, 0.0f, Private::maxBarndoorLength);
+			SetFrameDirty();
+		}
+		void SetBarndoorAngle(const float newAngle)noexcept
+		{
+			if (barndoorAngle == newAngle)
+				return;
+
+			barndoorAngle = std::clamp(newAngle, 0.0f, 90.0f);
+			SetFrameDirty();
+		}
 		void SetSourceTexture(const JUserPtr<JTexture>& newSourceTexture)noexcept
 		{
 			CallOffResourceReference(sourceTexture.Get());
@@ -238,14 +250,19 @@ namespace JinEngine
 			CallOnResourceReference(sourceTexture.Get());
 			SetFrameDirty();
 		}
+		static ManageFuncList& SetFuncList()
+		{
+			static ManageFuncList setFuncList;
+			return setFuncList;
+		}
 	public:
 		bool IsShadowActivated()const noexcept
 		{
 			return thisPointer->IsShadowActivated();
 		}
-		bool IsTwoSide()const noexcept
+		bool AllowDisplayShadowMap()const noexcept
 		{
-			return isTwoSide;
+			return thisPointer->AllowDisplayShadowMap();
 		}
 		bool AllowFrustumCulling()const noexcept
 		{
@@ -266,7 +283,7 @@ namespace JinEngine
 	public:
 		void CreateShadowMapResource()noexcept
 		{
-			CreateShadowMapTextureCube(thisPointer->GetShadowMapSize());
+			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP_CUBE);
 			CreateFrustumCullingData();
 			if (thisPointer->AllowDisplayShadowMap())
 				CreateShadowMapDebugResource();
@@ -287,50 +304,47 @@ namespace JinEngine
 			PopFrustumCullingRequest(thisPointer->GetOwner()->GetOwnerScene(), thisPointer);
 		};
 		void CreateShadowMapDebugResource()
-		{
-			CreateLayerDepthDebugResource(JVector2<uint>(thisPointer->GetShadowMapSize(), thisPointer->GetShadowMapSize()));
+		{ 
+			CreateResource(JVector2F(thisPointer->GetShadowMapSize()), Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 		}
 		void DestroyShadowMapDebugResource()
 		{
-			DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::LAYER_DEPTH_MAP_DEBUG);
+			DestroyGraphicResource(Graphic::J_GRAPHIC_RESOURCE_TYPE::DEBUG_MAP);
 		}
 	public:
 		void Activate()noexcept
 		{
 			RegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
-			if (thisPointer->IsShadowActivated())
-				SetShadow(true, true);
-			if (allowFrustumCulling)
-				SetAllowFrustumCulling(true, true);
+			SetFuncList().InvokeAll(this, true, true);
+			SetFrameDirty(); 
 		}
 		void DeActivate()noexcept
 		{
 			//has order dependency
 			DeRegisterLightFrameData(JLightType::LitToFrameR(GetLightType()));
-			if (thisPointer->IsShadowActivated())
-				SetShadow(false, true);
-			if (allowFrustumCulling)
-				SetAllowFrustumCulling(false, true);
+			SetFuncList().InvokeAll(this, true, false);
 			DestroyAllCullingData();
 			DestroyAllTexture();
 		}
 	public:
 		void UpdateFrame(Graphic::JRectLightConstants& constant)noexcept final
-		{
+		{  
 			const XMMATRIX projM = proj.LoadXM();
 			const XMMATRIX ndcM = JMatrix4x4::NdcToTextureSpaceXM();
-			 
+			  
 			constant.shadowMapTransform.StoreXM(XMMatrixTranspose(XMMatrixMultiply(XMMatrixMultiply(view.LoadXM(), projM), ndcM)));
 			constant.origin = GetTransform()->GetWorldPosition();
-			constant.extents = JVector3F(areaSize * 0.5f, 0.0f);
-			constant.axis[0] = axis[0];
-			constant.axis[1] = axis[1];
-			constant.axis[2] = axis[2];
+			constant.extents = areaSize * 0.5f;
+			constant.axis[0] = worldAxis[0];
+			constant.axis[1] = worldAxis[1];
+			constant.axis[2] = worldAxis[2];
 			constant.color = thisPointer->GetColor();
-			constant.power = power; 
+			constant.power = thisPointer->GetPower();  
 			constant.frustumNear = GetFrustumNear();
 			constant.frustumFar = GetFrustumFar();
-			constant.isTwoSide = isTwoSide;
+			constant.barndoorLength = barndoorLength;
+			constant.barndoorCosAngle = std::cos(JMathHelper::DegToRad * barndoorAngle);
+			//constant.isTwoSide = isTwoSide;
 			constant.shadowMapIndex = IsShadowActivated() ? GetResourceArrayIndex(Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP, 0) : 0;
 			constant.hasShadowMap = IsShadowActivated(); 
 			constant.sourceTextureIndex = sourceTexture != nullptr ? sourceTexture->GraphicResourceUserInterface().GetFirstResourceArrayIndex() : invalidIndex;
@@ -346,16 +360,14 @@ namespace JinEngine
 			auto t = GetTransform();
 			view.StoreXM(Private::CalView(t));
 			proj.StoreXM(Private::CalProj(GetFrustumNear(), GetFrustumFar())); 
-			worldQ = t->GetWorldQuaternion();
-			axis[0] = t->GetWorldRight();
-			axis[1] = t->GetWorldUp();
-			axis[2] = t->GetWorldFront();
+			worldAxis[0] = t->GetWorldRight();
+			worldAxis[1] = t->GetWorldUp();
+			worldAxis[2] = t->GetWorldFront();
 		}
 	public:
 		static bool DoCopy(JRectLight* from, JRectLight* to)
 		{
-			from->impl->SetAllowFrustumCulling(to->impl->AllowFrustumCulling());
-			from->impl->SetPower(to->impl->GetPower());
+			from->impl->SetAllowFrustumCulling(to->impl->AllowFrustumCulling()); 
 			from->impl->SetRange(to->impl->GetRange()); 
 
 			to->impl->SetFrameDirty();
@@ -433,6 +445,44 @@ namespace JinEngine
 			Core::JIdentifier::RegisterPrivateInterface(JRectLight::StaticTypeInfo(), lPrivate);
 			IMPL_REALLOC_BIND(JRectLight::JRectLightImpl, thisPointer)
 			SET_GUI_FLAG(Core::J_GUI_OPTION_FLAG::J_GUI_OPTION_DISPLAY_PARENT);
+
+			auto setShadowMapLam = [](JRectLightImpl* impl, const bool value)
+			{
+				if (value)
+					impl->CreateShadowMapResource();
+				else
+					impl->DestroyShadowMapResource();
+				impl->SetFrameDirty();
+			};
+			auto setDisplayShadowMapLam = [](JRectLightImpl* impl, const bool value)
+			{
+				if (value)
+					impl->CreateShadowMapDebugResource();
+				else
+					impl->DestroyShadowMapDebugResource();
+				impl->SetFrameDirty();
+			};
+			auto setFrustumCullingLam = [](JRectLightImpl* impl, const bool value)
+			{
+				if (value)
+				{
+					impl->CreateFrustumCullingData();
+					impl->AddFrustumCullingRequest(impl->thisPointer->GetOwner()->GetOwnerScene(), impl->thisPointer, Graphic::J_GRAPHIC_DRAW_FREQUENCY::UPDATED);
+				}
+				else
+				{
+					impl->DestroyCullingData(Graphic::J_CULLING_TYPE::FRUSTUM);
+					impl->PopFrustumCullingRequest(impl->thisPointer->GetOwner()->GetOwnerScene(), impl->thisPointer);
+				}
+				impl->SetFrameDirty();
+			};
+
+			using SetCallable = Core::JStaticCallable<void, JRectLightImpl*, const bool>;
+			using CondCallable = Core::JMemberCNCallable<JRectLightImpl, bool>;
+
+			SetFuncList().Register(std::make_unique<SetCallable>(setShadowMapLam), std::make_unique<CondCallable>(&JRectLightImpl::IsShadowActivated), MANAGED_SET_SHADOW_MAP);
+			SetFuncList().Register(std::make_unique<SetCallable>(setDisplayShadowMapLam), std::make_unique<CondCallable>(&JRectLightImpl::AllowDisplayShadowMap), MANAGED_SET_DISPLAY_SHADOW_MAP);
+			SetFuncList().Register(std::make_unique<SetCallable>(setFrustumCullingLam), std::make_unique<CondCallable>(&JRectLightImpl::AllowFrustumCulling), MANAGED_SET_FRUSTUM_CULLING);
 		}
 	};
 
@@ -460,6 +510,14 @@ namespace JinEngine
 	{
 		return impl->GetAreaSize();
 	}
+	float JRectLight::GetMinPower()const noexcept
+	{
+		return Private::minPower;
+	}
+	float JRectLight::GetMaxPower()const noexcept
+	{
+		return Private::maxPower;
+	}
 	float JRectLight::GetFrustumNear()const noexcept
 	{
 		return impl->GetFrustumNear();
@@ -468,14 +526,18 @@ namespace JinEngine
 	{
 		return impl->GetFrustumFar();
 	}
-	float JRectLight::GetPower()const noexcept
-	{
-		return impl->GetPower();
-	}
 	float JRectLight::GetRange()const noexcept
 	{
 		return impl->GetRange();
 	} 
+	float JRectLight::GetBarndoorLength()const noexcept
+	{
+		return impl->GetBarndoorLength();
+	}
+	float JRectLight::GetBarndoorAngle()const noexcept
+	{
+		return impl->GetBarndoorAngle();
+	}
 	DirectX::BoundingBox JRectLight::GetBBox()const noexcept
 	{
 		return impl->GetBBox();
@@ -493,8 +555,10 @@ namespace JinEngine
 		if (value == IsShadowActivated())
 			return;
 
-		JLight::SetShadow(value);
-		impl->SetShadow(value);
+		//shadow map 미구현 이기때문에 pass
+		JLight::SetShadow(false);
+		//JLight::SetShadow(value);
+	//	impl->SetShadow(value);
 	}
 	void JRectLight::SetShadowResolution(const J_SHADOW_RESOLUTION sQuality)noexcept
 	{
@@ -508,26 +572,33 @@ namespace JinEngine
 	{
 		if (value == AllowDisplayShadowMap())
 			return;
-
-		JLight::SetAllowDisplayShadowMap(value);
-		impl->SetAllowDisplayShadowMap(value);
+		 
+		//shadow map 미구현 이기때문에 pass
+		JLight::SetAllowDisplayShadowMap(false);
+		//JLight::SetAllowDisplayShadowMap(value);
+		//impl->SetAllowDisplayShadowMap(value);
 	}
 	void JRectLight::SetAreaSize(const JVector2F newSize)noexcept
 	{
 		impl->SetAreaSize(newSize);
 	}
+	/*
 	void JRectLight::SetTwoSide(const bool value)noexcept
 	{
 		impl->SetTwoSide(value);
-	}
-	void JRectLight::SetPower(const float power)noexcept
-	{
-		impl->SetPower(power);
-	}
+	}*/ 
 	void JRectLight::SetRange(const float range)noexcept
 	{
 		impl->SetRange(range);
 	} 
+	void JRectLight::SetBarndoorLength(const float newLength)noexcept
+	{
+		impl->SetBarndoorLength(newLength);
+	}
+	void JRectLight::SetBarndoorAngle(const float newAngle)noexcept
+	{
+		impl->SetBarndoorAngle(newAngle);
+	}
 	void JRectLight::SetSourceTexture(const JUserPtr<JTexture>& srcTexture)noexcept
 	{
 		impl->SetSourceTexture(srcTexture);
@@ -636,10 +707,9 @@ namespace JinEngine
 		size_t guid;
 		J_OBJECT_FLAG flag;
 		bool isActivated;
-		JVector2F sAreaSize;
-		float sPower;
+		JVector2F sAreaSize; 
 		float sRange; 
-		bool sIsTwoSize;
+		//bool sIsTwoSize;
 
 		auto loadData = static_cast<JRectLight::LoadData*>(data);
 		JFileIOTool& tool = loadData->tool;
@@ -651,16 +721,14 @@ namespace JinEngine
 		litUser.ConnnectChild(idenUser);
 
 		JLightPrivate::AssetDataIOInterface::LoadLightData(tool, litUser);
-		JObjectFileIOHelper::LoadVector2(tool, sAreaSize, "AreaSize:");
-		JObjectFileIOHelper::LoadAtomicData(tool, sPower, "Power:");
+		JObjectFileIOHelper::LoadVector2(tool, sAreaSize, "AreaSize:"); 
 		JObjectFileIOHelper::LoadAtomicData(tool, sRange, "Range:"); 
-		JObjectFileIOHelper::LoadAtomicData(tool, sIsTwoSize, "IsTwoSize:");
+		//JObjectFileIOHelper::LoadAtomicData(tool, sIsTwoSize, "IsTwoSize:");
 		JUserPtr<JTexture> sSourceTexture = JObjectFileIOHelper::_LoadHasIden<JTexture>(tool, "SourceTexture:");
 
-		litUser->SetAreaSize(sAreaSize);
-		litUser->SetPower(sPower);
+		litUser->SetAreaSize(sAreaSize); 
 		litUser->SetRange(sRange); 
-		litUser->SetTwoSide(sIsTwoSize);
+		//litUser->SetTwoSide(sIsTwoSize);
 		litUser->SetSourceTexture(sSourceTexture);
 		if (!isActivated)
 			litUser->DeActivate();
@@ -683,10 +751,9 @@ namespace JinEngine
 
 		JObjectFileIOHelper::StoreComponentIden(tool, lit.Get());
 		JLightPrivate::AssetDataIOInterface::StoreLightData(tool, lit);
-		JObjectFileIOHelper::StoreVector2(tool, impl->areaSize, "AreaSize:");
-		JObjectFileIOHelper::StoreAtomicData(tool, impl->power, "Power:");
+		JObjectFileIOHelper::StoreVector2(tool, impl->areaSize, "AreaSize:"); 
 		JObjectFileIOHelper::StoreAtomicData(tool, impl->range, "Range:"); 
-		JObjectFileIOHelper::StoreAtomicData(tool, impl->isTwoSide, "IsTwoSize:");
+		//JObjectFileIOHelper::StoreAtomicData(tool, impl->isTwoSide, "IsTwoSize:");
 		JObjectFileIOHelper::_StoreHasIden(tool, impl->sourceTexture.Get(), "SourceTexture:");
 
 		return Core::J_FILE_IO_RESULT::SUCCESS;
@@ -774,7 +841,7 @@ namespace JinEngine
 		if (lit->GetLightType() != J_LIGHT_TYPE::RECT)
 			return false;
 
-		return static_cast<JRectLight*>(lit)->impl->ShadowMapDrawFrame::HasMovedDirty();
+		return static_cast<JRectLight*>(lit)->impl->RectLitFrame::HasMovedDirty();
 	}
 	bool FrameUpdateInterface::HasShadowMapRecopyRequest(JLight* lit)noexcept
 	{

@@ -542,7 +542,7 @@ Condition ref value type¡ﬂø°º≠ JTypaBase line ∞¥√ºµÈ¿∫ rawPtr, userPtr, weakPtr∏
 * @param FunctionPointer getElementVecPtr(option)
 * @param std::string extraFuntionUserInfo(option)
 */
-#define GUI_SELECTOR(imageLevel, hasSizeSlider, ...)	JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiSelectorInfo>(imageLevel, hasSizeSlider, __VA_ARGS__)
+#define GUI_SELECTOR(imageLevel, isReadOnly, hasSizeSlider, ...)	JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiSelectorInfo>(imageLevel, isReadOnly, hasSizeSlider, __VA_ARGS__)
 /**
 * @param std::string extraFuntionUserInfo(option)
 */
@@ -563,7 +563,7 @@ Condition ref value type¡ﬂø°º≠ JTypaBase line ∞¥√ºµÈ¿∫ rawPtr, userPtr, weakPtr∏
 * @param std::string extraFuntionUserInfo(option)
 */
 #define GUI_LIST(listType, canDisplayElementGui, createElementPtr, ...)  JinEngine::Core::JPtrUtil::MakeOwnerPtr<JinEngine::Core::JGuiListInfo>(listType, canDisplayElementGui, createElementPtr, __VA_ARGS__) 
-		  
+		   
 #pragma endregion
 
 #pragma region OPTION

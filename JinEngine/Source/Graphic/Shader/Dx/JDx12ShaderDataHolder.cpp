@@ -6,8 +6,7 @@ namespace JinEngine::Graphic
 		:JGraphicShaderDataHolder()
 	{}
 	JDx12GraphicShaderDataHolder::~JDx12GraphicShaderDataHolder()
-	{
-		Clear();
+	{ 
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12GraphicShaderDataHolder::GetDeviceType()const noexcept
 	{
@@ -38,8 +37,7 @@ namespace JinEngine::Graphic
 		:JComputeShaderDataHolder()
 	{}
 	JDx12ComputeShaderDataHolder::~JDx12ComputeShaderDataHolder()
-	{
-		Clear();
+	{ 
 	}
 	J_GRAPHIC_DEVICE_TYPE JDx12ComputeShaderDataHolder::GetDeviceType()const noexcept 
 	{
@@ -48,7 +46,6 @@ namespace JinEngine::Graphic
 	void JDx12ComputeShaderDataHolder::Clear()
 	{
 		cs.Reset();
-		pso.Reset();
-		RootSignature = nullptr;
+		pso.Reset(); 
 	}
 }

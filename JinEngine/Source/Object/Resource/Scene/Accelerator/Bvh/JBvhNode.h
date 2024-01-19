@@ -78,6 +78,7 @@ namespace JinEngine
 		bool IsLeftNode()const noexcept;
 		bool IsContainNode(const DirectX::BoundingBox& boundBox)const noexcept;
 	private:
+		bool IsNearRight(const JAcceleratorCullingInfo& info);
 		bool IsNearRight(const JAcceleratorAlignInfo& info);
 	private:
 		JBvhNode* FindRightLeafNode()noexcept;

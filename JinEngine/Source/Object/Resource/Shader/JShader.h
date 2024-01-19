@@ -1,5 +1,5 @@
 #pragma once  
-#include"JShaderFunctionEnum.h" 
+#include"JShaderEnum.h" 
 #include"JShaderCondition.h"  
 #include"../JResourceObject.h"
 #include"../../../Core/Geometry/Mesh/JMeshType.h"   
@@ -9,7 +9,7 @@ namespace JinEngine
 	class JShaderPrivate;
 	class JGraphicShaderDataHolderBase;
 	class JComputeShaderDataHolderBase;
-
+	 
 	class JShader final : public JResourceObject
 	{
 		REGISTER_CLASS_IDENTIFIER_LINE(JShader)
@@ -49,7 +49,9 @@ namespace JinEngine
 		std::wstring GetFormat()const noexcept final;
 		static std::vector<std::wstring> GetAvailableFormat()noexcept;
 	public:
-		JUserPtr<JGraphicShaderDataHolderBase> GetGraphicData(const J_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
+		JUserPtr<JGraphicShaderDataHolderBase> GetGraphicData(const J_GRAPHIC_RENDERING_PROCESS processType, const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
+		JUserPtr<JGraphicShaderDataHolderBase> GetGraphicForwardData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
+		JUserPtr<JGraphicShaderDataHolderBase> GetGraphicDeferredData(const J_GRAPHIC_SHADER_TYPE type, const J_GRAPHIC_SHADER_VERTEX_LAYOUT vertexLayout)const noexcept;
 		JUserPtr<JComputeShaderDataHolderBase> GetComputeData()const noexcept;
 		JVector3<uint> GetComputeGroupDim()const noexcept;
 		J_GRAPHIC_SHADER_FUNCTION GetShaderGFunctionFlag()const noexcept;

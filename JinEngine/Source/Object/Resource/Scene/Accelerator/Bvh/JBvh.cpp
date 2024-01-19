@@ -121,9 +121,16 @@ namespace JinEngine
 			{
 				ContainmentType res = info.frustum.Contains(rItem->GetBoundingBox());
 				if (res == ContainmentType::CONTAINS || res == ContainmentType::INTERSECTS)
-					info.cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+				{
+					info.cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+					if (info.allowPushVisibleObjVec)
+					{
+						(*info.appAlignedObjVec)[info.pushedCount] = innerGameObjectCandidate;
+						++info.pushedCount;
+					}
+				}
 				else if (res == ContainmentType::DISJOINT)
-					info.cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+					info.cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 			}
 		}
 	}
@@ -167,16 +174,19 @@ namespace JinEngine
 		 
 		info.acceleratorMaxDepth = JMathHelper::PowerOfTwoExponent(allNodes.size());
 		info.alignMaxDepth = info.acceleratorMaxDepth * info.AlignRangeRate();
-		validCount = leafNodeMap.size();
 		if (allNodes.size() > 1)
 		{
 			uint index = 0;
 			root->AlignLeafNode(info, aligned, index, 0);
 			if (aligned.size() != index)
 				aligned.resize(index);
+			validCount = index;
 		}
 		else if (innerGameObjectCandidate != nullptr)
+		{
 			aligned[0] = innerGameObjectCandidate;
+			validCount = 1;
+		}
 	}
 	void JBvh::UpdateGameObject(const JUserPtr<JGameObject>& gameObject)noexcept
 	{
@@ -221,7 +231,7 @@ namespace JinEngine
 			JAcceleratorOption option = GetCommonOption();
 			option.innerRoot = nullptr;
 			SetCommonOption(option);
-		}
+		} 
 	}
 	J_ACCELERATOR_TYPE JBvh::GetType()const noexcept
 	{

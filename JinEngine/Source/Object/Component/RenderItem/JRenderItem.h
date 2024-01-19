@@ -74,7 +74,11 @@ namespace JinEngine
 	public: 
 		bool IsFrameDirted()const noexcept final;
 		bool IsAvailableOverlap()const noexcept final;
+		/**
+		* @brief it is valid in hzb occ & hardware occ
+		*/
 		bool IsOccluder()const noexcept;
+		bool IsIgnoreCullingResult()const noexcept;
 		bool PassDefectInspection()const noexcept final; 
 	protected:
 		void DoActivate()noexcept final;

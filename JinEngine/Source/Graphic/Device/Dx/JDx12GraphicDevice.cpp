@@ -35,16 +35,16 @@ namespace JinEngine::Graphic
 
 #if defined(GRAPIC_DEBUG) 
 		Microsoft::WRL::ComPtr<ID3D12InfoQueue> d3dInfoQueue;
-		if (SUCCEEDED(d3dDevice.As(&d3dInfoQueue))) 
+		if (SUCCEEDED(d3dDevice.As(&d3dInfoQueue)))
 		{
 			//d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
 			//d3dInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
 			D3D12_MESSAGE_ID hide[1] =
-			{ 
+			{
 				//RESOLVE_QUERY_INVALID_QUERY_STATE
 				//occ hd query는 항상 유효한 파라미터만 참조하므로 resolve시 정확하지않은 data를 가져와도 된다.
 				//D3D12_MESSAGE_ID에 정의되어있지않으므로 오류번호로 대체
-				(D3D12_MESSAGE_ID)1319	 
+				(D3D12_MESSAGE_ID)1319
 			};
 			D3D12_INFO_QUEUE_FILTER filter = {};
 			filter.DenyList.NumIDs = static_cast<UINT>(std::size(hide));
@@ -205,20 +205,29 @@ namespace JinEngine::Graphic
 	{
 		return !stCommand;
 	}
-	void JDx12GraphicDevice::CalViewportAndRect(const JVector2F rtSize, _Out_ D3D12_VIEWPORT& viweport, _Out_ D3D12_RECT& rect)const noexcept
+	void JDx12GraphicDevice::CalViewportAndRect(const JVector2F rtSize, const bool restrictRange, _Out_ D3D12_VIEWPORT& viweport, _Out_ D3D12_RECT& rect)const noexcept
 	{
 		viweport = screenViewport;
 		rect = scissorRect;
-		if (rtSize.x < viweport.Width)
+
+		if (restrictRange)
 		{
-			viweport.Width = rtSize.x;
-			rect.right = rtSize.x;
+			if (rtSize.x < viweport.Width)
+			{
+				viweport.Width = rtSize.x;
+				rect.right = rtSize.x;
+			}
+			if (rtSize.y < viweport.Height)
+			{
+				viweport.Height = rtSize.y;
+				rect.bottom = rtSize.y;
+			}
 		}
-		if (rtSize.y < viweport.Height)
+		else
 		{
-			viweport.Height = rtSize.y;
-			rect.bottom = rtSize.y;
-		}
+			viweport.Width = rect.right = rtSize.x;
+			viweport.Height = rect.bottom = rtSize.y;
+		} 
 	}
 	void JDx12GraphicDevice::Present()
 	{

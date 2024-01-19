@@ -175,7 +175,7 @@ namespace JinEngine
 			}
 			JVector4F GetCanvasDeltaColor()const noexcept
 			{
-				return JVector4F(JVector3F((Graphic::Constants::backBufferClearColor * 0.325f).xyz), 0);
+				return JVector4F(JVector3F((Graphic::Constants::BackBufferClearColor() * 0.325f).xyz), 0);
 				//return JVector4F(0.2125f, 0.098f, 0.098f, 0);
 				//return JVector4F(0.25f, 0.098f, 0.125f, 0.05f);
 				//return JVector4F(0.098f, 0.098f, 0.098f, 0);

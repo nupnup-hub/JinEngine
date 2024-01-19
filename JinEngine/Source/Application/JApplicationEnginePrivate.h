@@ -1,5 +1,5 @@
 #pragma once 
-#include"JApplicationState.h"  
+#include"JApplicationType.h"  
 
 namespace JinEngine
 { 
@@ -19,6 +19,10 @@ namespace JinEngine
 				static bool MakeEngineFolder();
 			private:
 				static void SetApplicationState(const J_APPLICATION_STATE newState)noexcept;
+				static void SetApplicationSubState(const J_APPLICATION_SUB_STATE newSubState)noexcept;
+			private:
+				static void EnterUpdateLoop();
+				static void ExitUpdateLoop();
 			};
 		};
 		//using JApplicationVariable = Application::JApplicationVariable; 

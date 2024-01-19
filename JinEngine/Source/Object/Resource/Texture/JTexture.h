@@ -1,12 +1,23 @@
 #pragma once
 #include"JTextureType.h"
 #include"../JResourceObject.h"
+#include"../JResourceObjectImporter.h"
 #include"../../../Graphic/GraphicResource/JGraphicResourceType.h" 
 #include"../../../Graphic/GraphicResource/JGraphicResourceUserAccess.h"
 #include"../../../Graphic/Image/JImageProcessingDesc.h"
 
 namespace JinEngine
 {
+
+	class JTextureImportDesc : public JResourceObjectImportDesc
+	{
+		REGISTER_CLASS_ONLY_USE_TYPEINFO(JTextureImportDesc)
+	public:
+		bool useMipmap = false;		 
+	public:
+		JTextureImportDesc(const Core::JFileImportHelpData& importPathData);
+	};
+
 	class JTexturePrivate;
 	class JTexture final: public JResourceObject, public Graphic::JGraphicResourceUserAccess
 	{
@@ -20,7 +31,7 @@ namespace JinEngine
 			const std::wstring oridataPath;
 		public:
 			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
-			Graphic::JMipmapGenerateDesc mipMapDesc;
+			Graphic::JMipmapGenerationDesc mipMapDesc;
 			J_TEXTURE_RESOLUTION resoultion;
 		public:
 			InitData(const uint8 formatIndex,
@@ -47,7 +58,7 @@ namespace JinEngine
 		{
 			REGISTER_CLASS_ONLY_USE_TYPEINFO(LoadMetaData)
 		public:
-			Graphic::JMipmapGenerateDesc mipMapDesc;
+			Graphic::JMipmapGenerationDesc mipMapDesc;
 			Graphic::J_GRAPHIC_RESOURCE_TYPE textureType;
 			J_TEXTURE_RESOLUTION resoultion;
 		public:
@@ -60,7 +71,7 @@ namespace JinEngine
 		std::unique_ptr<JTextureImpl> impl;
 	public:
 		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
-		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
+		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final; 
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{

@@ -15,7 +15,7 @@ namespace JinEngine
 		public:
 			virtual ~JGraphicBufferBase() = default;
 		public:
-			virtual void Build(JGraphicDevice* device, const uint elementcount) = 0;
+			virtual void Build(JGraphicDevice* device, const uint elementcount) = 0; 
 			virtual void Clear()noexcept = 0;
 		public:
 			virtual void CopyData(const int elementIndex, const void* data) = 0;

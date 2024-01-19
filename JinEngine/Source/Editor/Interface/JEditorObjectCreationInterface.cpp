@@ -129,8 +129,7 @@ namespace JinEngine
 			uint failCount = 0;
 			JEditorWindow* editorWnd = creationHint.editorWnd;
 			for (const auto& data : guidVec)
-			{ 
-				DestroySingle(data, useTransition, creationHint);
+			{  
 				if (!DestroySingle(data, useTransition, creationHint))
 				{
 					JEditorTransition::Instance().Log("Destruction Fail", "Count: " + std::to_string(failCount));

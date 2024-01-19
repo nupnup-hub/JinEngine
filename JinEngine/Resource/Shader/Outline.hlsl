@@ -8,8 +8,7 @@ sampler sam : register(s0);
 cbuffer cbPass : register(b0)
 {
 	//0 is invalid color {0,0,0,}
-	//1.. 7 is valid color
-	float4x4 world;
+	//1.. 7 is valid color 
 	float4 colors[8];
 	float threshold;
 	float thickness;
@@ -35,7 +34,8 @@ struct VertexOut
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;
-	vout.PosH = mul(float4(vin.PosL, 1.0f), world);
+	//has to -1 ~ 1 ndc range for transform screen pos
+	vout.PosH = float4(vin.PosL, 1.0f);
 	vout.TexC = vin.TexC;
 	return vout;
 }

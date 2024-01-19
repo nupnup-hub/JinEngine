@@ -44,10 +44,11 @@ namespace JinEngine
 		public:
 			//Graphic resource type name + L": " + name 
 			void SetPrivateName(const std::wstring& name = L"")noexcept final; 
+			void SetPrivateOptionName(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const std::wstring& name)noexcept final;
 		private:
 			void SetOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, std::unique_ptr<JDx12GraphicResourceHolder> optionHolder);
 		public:
-			bool HasOptional(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept final;
+			bool HasOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept final; 
 		public:
 			JDx12GraphicResourceInfo(const J_GRAPHIC_RESOURCE_TYPE graphicResourceType, 
 				JDx12GraphicResourceManager* manager,

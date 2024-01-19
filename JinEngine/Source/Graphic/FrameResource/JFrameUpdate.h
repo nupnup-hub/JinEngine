@@ -34,6 +34,9 @@ namespace JinEngine
 			int GetFrameIndexSize()const noexcept;
 			static uint GetTotalRegistedCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type);
 			static uint GetTotalFrameCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type);
+			static uint GetAreaRegistedCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const size_t areaGuid);
+			//count 0 ~ areaStart
+			static uint GetAreaRegistedOffset(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const size_t areaGuid);
 		protected:
 			void SetUploadIndex(const int value) noexcept; 
 			void SetMovedDirty()noexcept;

@@ -10,10 +10,10 @@ namespace JinEngine
 		{
 		public:
 			JVector2F imageSize;	
-			J_KENEL_SIZE kernelSize;
+			J_KERNEL_SIZE kernelSize;
 			int mipLevel = 0;
 		public:
-			JBlurDesc(const JVector2F imageSize, const J_KENEL_SIZE kernelSize, const int mipLevel = 0)
+			JBlurDesc(const JVector2F imageSize, const J_KERNEL_SIZE kernelSize, const int mipLevel = 0)
 				:imageSize(imageSize), kernelSize(kernelSize)
 			{}
 		public:
@@ -22,7 +22,7 @@ namespace JinEngine
 		struct JBoxBlurDesc : public JBlurDesc
 		{
 		public:
-			JBoxBlurDesc(const JVector2F imageSize, const J_KENEL_SIZE kernelSize)
+			JBoxBlurDesc(const JVector2F imageSize, const J_KERNEL_SIZE kernelSize)
 				:JBlurDesc(imageSize, kernelSize)
 			{}
 		public:
@@ -36,7 +36,7 @@ namespace JinEngine
 		public:
 			float sigma = 1.0f;
 		public:
-			JGaussianBlurDesc(const JVector2F imageSize, const J_KENEL_SIZE kernelSize, const float sigma = 1.0f)
+			JGaussianBlurDesc(const JVector2F imageSize, const J_KERNEL_SIZE kernelSize, const float sigma = 1.0f)
 				:JBlurDesc(imageSize, kernelSize), sigma(sigma)
 			{}
 		public:
@@ -50,10 +50,10 @@ namespace JinEngine
 		{
 		public:
 			JVector2F imageSize;
-			J_KENEL_SIZE kernelSize;
+			J_KERNEL_SIZE kernelSize;
 			int mipLevelCount;
 		public:
-			JDownSampleDesc(const JVector2F imageSize, const J_KENEL_SIZE kernelSize, const int mipLevelCount)
+			JDownSampleDesc(const JVector2F imageSize, const J_KERNEL_SIZE kernelSize, const int mipLevelCount)
 				:imageSize(imageSize), kernelSize(kernelSize), mipLevelCount(mipLevelCount)
 			{}
 		public:
@@ -63,7 +63,7 @@ namespace JinEngine
 		{ 
 		public:
 			JBoxDownSampleDesc(const JVector2F imageSize, const int mipLevelCount)
-				:JDownSampleDesc(imageSize, J_KENEL_SIZE::_2x2, mipLevelCount)
+				:JDownSampleDesc(imageSize, J_KERNEL_SIZE::_3x3, mipLevelCount)
 			{}
 		public:
 			J_DOWN_SAMPLING_TYPE GetDownSampleType()const noexcept final
@@ -76,7 +76,7 @@ namespace JinEngine
 		public:  
 			float sigma = 1.0f;
 		public:
-			JGaussianDownSampleDesc(const JVector2F imageSize, const J_KENEL_SIZE kernelSize, const int mipLevelCount, const float sigma)
+			JGaussianDownSampleDesc(const JVector2F imageSize, const J_KERNEL_SIZE kernelSize, const int mipLevelCount, const float sigma)
 				:JDownSampleDesc(imageSize, kernelSize, mipLevelCount), sigma(sigma)
 			{}
 		public:
@@ -90,7 +90,7 @@ namespace JinEngine
 		public: 
 			float beta = 1.0f;
 		public:
-			JKaiserDownSampleDesc(const JVector2F imageSize, const J_KENEL_SIZE kernelSize, const int mipLevelCount, const float beta)
+			JKaiserDownSampleDesc(const JVector2F imageSize, const J_KERNEL_SIZE kernelSize, const int mipLevelCount, const float beta)
 				:JDownSampleDesc(imageSize, kernelSize, mipLevelCount), beta(beta)
 			{}
 		public:
@@ -103,28 +103,38 @@ namespace JinEngine
 		struct JSsaoDesc
 		{  
 		public:
-			float radius = 0.5f;
-			float fadeStart = 0.2f;
-			float fadeEnd = 1.0f;
-			float surfaceEpsilon = 0.05f;
+			float radius = 0.5f; 
+			float bias = 0.0f;
+			float sharpness = 1.0f;
+		public:
+			//hbad
+			float smallAoScale = 0.6f;
+			float largeAoScale = 0.125f;
+		public:
+			bool useBlur = true;
+		public:
+			J_KERNEL_SIZE blurKenelSize = J_KERNEL_SIZE::_3x3;
 		public:
 			J_SSAO_TYPE ssaoType = J_SSAO_TYPE::DEFAULT;
+			J_SSAO_SAMPLE_TYPE sampleType = J_SSAO_SAMPLE_TYPE::NORMAL;
+			J_SSAO_BLUR_TYPE blurType = J_SSAO_BLUR_TYPE::BILATERAL;
 		public:
 			JSsaoDesc() = default;
-			JSsaoDesc(const float radius,
-				const float fadeStart,
-				const float fadeEnd,
-				const float surfaceEpsilon)
-				:radius(radius), fadeStart(fadeStart), fadeEnd(fadeEnd), surfaceEpsilon(surfaceEpsilon)
+			JSsaoDesc(const float radius, const float bias)
+				:radius(radius), bias(bias)
 			{}
 		public:
 			bool operator==(const JSsaoDesc& desc)
 			{
-				return radius == desc.radius && 
-					fadeStart == desc.fadeStart && 
-					fadeEnd == desc.fadeEnd && 
-					surfaceEpsilon == desc.surfaceEpsilon &&
-					ssaoType == desc.ssaoType;
+				return radius == desc.radius &&
+					bias == desc.bias &&
+					sharpness == desc.sharpness &&
+					blurKenelSize == desc.blurKenelSize &&
+					ssaoType == desc.ssaoType &&
+					sampleType == desc.sampleType &&
+					blurType == desc.blurType &&
+					smallAoScale == desc.smallAoScale && 
+					largeAoScale == desc.largeAoScale;
 			}
 		};  
 	}

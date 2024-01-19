@@ -62,7 +62,7 @@ namespace JinEngine
 				int maxThreadsPerBlock;
 				int maxBlocksPerMultiProcessor;
 				JVector3<int> maxThreadsDim;
-				JVector3<int> maxGridDim;		 
+				JVector3<int> maxGridDim;	 
 			};  
 		public: 
 			static CpuInfo GetCpuInfo();

@@ -944,6 +944,10 @@ namespace JinEngine
 		Private::TraversalDirectroy(path.c_str(), destroyPtr, cond);
 		return _wrmdir(path.c_str()) == 0 ? Core::J_FILE_IO_RESULT::SUCCESS : Core::J_FILE_IO_RESULT::FAIL_INVALID_DATA;
 	}
+	 bool JFileIOHelper::HasFile(const std::wstring& path)
+	{
+		 return _waccess(path.c_str(), 00) != -1;
+	}
 	std::string JFileIOHelper::FileToString(const std::string& path)
 	{
 		std::ifstream stream;

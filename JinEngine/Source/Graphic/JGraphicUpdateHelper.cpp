@@ -100,13 +100,19 @@ namespace JinEngine
 			bData[(int)type].getTextureCapacity = std::make_unique<GetElementCapacityT::Callable>(*getCapaPtr);
 			bData[(int)type].hasCallable = true;
 		}
+		/*
 		void JUpdateHelper::RegisterCallable(GetElementMultiCountT::Ptr getMultiCountPtr)
 		{
 			getElementMultiCount.push_back(std::make_unique<GetElementMultiCountT::Callable>(getMultiCountPtr));
 		}
+		*/
 		void JUpdateHelper::RegisterListener(J_UPLOAD_FRAME_RESOURCE_TYPE type, std::unique_ptr<NotifyUpdateCapacityT::Callable>&& listner)
 		{
 			uData[(int)type].notifyUpdateCapacity.push_back(std::move(listner));
+		}
+		void JUpdateHelper::RegisterExListener(std::unique_ptr<ExtraUpdateListenerT::Callable>&& callable)
+		{
+			extraUpdateListener.push_back(std::move(callable));
 		}
 		void JUpdateHelper::WriteGraphicInfo(JGraphicInfo& info)const noexcept
 		{
@@ -115,18 +121,24 @@ namespace JinEngine
 			info.upScenePassCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS].count;
 			info.upAniCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION].count;
 			info.upCameraCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA].count;
-			info.updLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].count;
-			info.uppLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].count;
-			info.upsLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].count;
+			info.upDLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].count;
+			info.upPLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].count;
+			info.upSLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].count;
+			info.upRLightCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT].count;
 			info.upCsmCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CASCADE_SHADOW_MAP_INFO].count;
 			info.upCubeShadowMapCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_CUBE_DRAW].count;
 			info.upNormalShadowMapCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SHADOW_MAP_DRAW].count;
 			info.upMaterialCount = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL].count;
+
 			info.upObjCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::OBJECT].capacity;
 			info.upEnginePassCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::ENGINE_PASS].capacity;
 			info.upScenePassCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SCENE_PASS].capacity;
 			info.upAniCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::ANIMATION].capacity;
 			info.upCameraCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::CAMERA].capacity; 
+			info.upDLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::DIRECTIONAL_LIGHT].capacity;
+			info.upPLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::POINT_LIGHT].capacity;
+			info.upSLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::SPOT_LIGHT].capacity;
+			info.upRLightCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::RECT_LIGHT].capacity;
 			info.upMaterialCapacity = uData[(int)J_UPLOAD_FRAME_RESOURCE_TYPE::MATERIAL].capacity;
 
 			info.binding2DTextureCount = bData[(int)J_GRAPHIC_RESOURCE_TYPE::TEXTURE_2D].count;
@@ -152,10 +164,21 @@ namespace JinEngine
 						(*uData[i].notifyUpdateCapacity[j])(nullptr);
 				}
 			}
+			for (const auto& data : extraUpdateListener)
+				(*data)(nullptr);
 		}
 		
-		JDrawHelper::JDrawHelper(const JGraphicInfo& info, const JGraphicOption& option, const JAlignedObject& alignedObj)
-			:info(info), option(option), alignedObj(alignedObj)
+		void JGameObjectBuffer::ClearAlignedVecElement()
+		{
+			for (auto& data : aligned)
+			{
+				if(data.size() > 0)
+					data.clear();
+			}
+		}
+
+		JDrawHelper::JDrawHelper(const JGraphicInfo& info, const JGraphicOption& option, JGameObjectBuffer& objVec)
+			:info(info), option(option), objVec(objVec)
 		{}
 		bool JDrawHelper::RefelectOtherCamCullig(const uint rItemIndex)const noexcept
 		{
@@ -169,7 +192,7 @@ namespace JinEngine
 					continue;
 
 				auto cullingInterface = data->jCamera->CullingUserInterface(); 
-				if (cullingInterface.IsCulled(rItemIndex))
+				if (cullingInterface.IsCulled(J_CULLING_TARGET::RENDERITEM, rItemIndex))
 					return true;
 			}
 			return false;
@@ -178,9 +201,9 @@ namespace JinEngine
 		{
 			if (drawType == DRAW_TYPE::OCC)
 			{
-				if (occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
 					return cam->GraphicResourceUserInterface();
-				if (occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
 					return lit->GraphicResourceUserInterface();
 			}
 			return JGraphicResourceUserInterface();
@@ -191,9 +214,18 @@ namespace JinEngine
 				return cam->CullingUserInterface();
 			else if (drawType == DRAW_TYPE::OCC)
 			{
-				if (occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
 					return cam->CullingUserInterface();
-				else if (occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+				else if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+					return lit->CullingUserInterface();
+				else
+					return nullptr;
+			}
+			else if (drawType == DRAW_TYPE::FRUSTUM_CULLING)
+			{
+				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+					return cam->CullingUserInterface();
+				else if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
 					return lit->CullingUserInterface();
 				else
 					return nullptr;
@@ -207,9 +239,16 @@ namespace JinEngine
 				return cam.Get();
 			else if (drawType == DRAW_TYPE::OCC)
 			{
-				if (occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
 					return cam.Get();
-				else if (occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+				else if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+					return lit.Get();
+			}
+			else if (drawType == DRAW_TYPE::FRUSTUM_CULLING)
+			{
+				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+					return cam.Get();
+				else if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
 					return lit.Get();
 			}
 			return nullptr;
@@ -234,6 +273,10 @@ namespace JinEngine
 		{
 			return CamFrameIndexInterface::GetHzbOccComputeFrameIndex(cam.Get());
 		} 
+		int JDrawHelper::GetCamSsaoFrameIndex()const noexcept
+		{
+			return CamFrameIndexInterface::GetSsaoFrameIndex(cam.Get());
+		}
 		int JDrawHelper::GetShadowMapDrawFrameIndex()const noexcept
 		{ 
 			JLightPrivate* lp = static_cast<JLightPrivate*>(&lit->PrivateInterface());
@@ -279,62 +322,79 @@ namespace JinEngine
 		{
 			allowMutilthreadDraw = option.allowMultiThread && value;
 		}
-		void JDrawHelper::SettingOccCulling(const JWeakPtr<JComponent>& comp)noexcept
-		{
-			Graphic::JCullingUserAccess* userAccess = nullptr;
-			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-			{
-				cam = Core::ConnectChildUserPtr<JCamera>(comp); 
-				userAccess = cam.Get();
-				//draw depth map + mipmap 
-				occCompType = J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
-			}
-			else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
-			{
-				lit = Core::ConnectChildUserPtr<JLight>(comp); 
-				userAccess = lit.Get();
-				//draw depth map  
-				occCompType = J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT;
-			}
-			drawType = DRAW_TYPE::OCC;		
-			 
-			if (userAccess != nullptr)
-			{
-				allowFrustumCulling = userAccess->AllowFrustumCulling();
-				allowOcclusionCulling = userAccess->AllowHzbOcclusionCulling() || userAccess->AllowHdOcclusionCulling();
-				allowDrawOccDepthMap = userAccess->AllowDisplayOccCullingDepthMap();
-			}
-		}
 		void JDrawHelper::SettingDrawShadowMap(const JWeakPtr<JLight>& lit)noexcept
 		{
 			JDrawHelper::lit = lit;
 			drawType = DRAW_TYPE::SHADOW_MAP; 
 
-			allowDrawDepthMap = lit->AllowDisplayShadowMap();
+			allowDrawShadowMap = lit->IsShadowActivated();
+			allowDrawDebugMap = lit->AllowDisplayShadowMap();
+			allowDrawOccDepthMap = lit->AllowDisplayOccCullingDepthMap();
 		}
 		void JDrawHelper::SettingDrawScene(const JWeakPtr<JCamera>& cam)noexcept
 		{
 			JDrawHelper::cam = cam;
 			drawType = DRAW_TYPE::SCENE;
 
-			allowDrawDepthMap = cam->AllowDisplayDepthMap();
-			allowDrawDebug = cam->AllowDisplayDebug();
+			allowDrawDebugMap = cam->AllowDisplayRenderResult();
+			allowDrawDebugObject = cam->AllowDisplayDebugObject();
 			allowFrustumCulling = cam->AllowFrustumCulling();
-			allowOcclusionCulling = (cam->AllowHzbOcclusionCulling() && option.isHZBOcclusionActivated) || 
-				(cam->AllowHdOcclusionCulling() && option.isHDOcclusionAcitvated);
-			allowDrawOccDepthMap = cam->AllowDisplayOccCullingDepthMap();
+			allowHzbOcclusionCulling = cam->AllowHzbOcclusionCulling();
+			allowHdOcclusionCulling = cam->AllowHdOcclusionCulling();
+			allowDrawOccDepthMap = (allowHzbOcclusionCulling || allowHdOcclusionCulling) && cam->AllowDisplayOccCullingDepthMap();
+			allowSsao = cam->AllowSsao() && option.CanUseSSAO();
 		}
-		bool JDrawHelper::CanDrawShadowMap()const noexcept
+		void JDrawHelper::SettingFrustumCulling(const JWeakPtr<JComponent>& comp)noexcept
 		{
-			return lit != nullptr && lit->IsShadowActivated();
+			drawType = DRAW_TYPE::FRUSTUM_CULLING;
+			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+			{
+				cam = Core::ConnectChildUserPtr<JCamera>(comp);
+				cullingCompType = J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
+			}
+			else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+			{
+				lit = Core::ConnectChildUserPtr<JLight>(comp);
+				cullingCompType = J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT;
+			}
 		}
-		bool JDrawHelper::CanOccCulling()const noexcept
+		void JDrawHelper::SettingOccCulling(const JWeakPtr<JComponent>& comp)noexcept
 		{
-			const bool isOcclusionActivated = option.IsHDOccActivated() || option.IsHZBOccActivated();
-			const bool canCullingStart = (cam != nullptr && (cam->AllowHzbOcclusionCulling() || cam->AllowHdOcclusionCulling())) ||
-				lit != nullptr && lit->AllowHzbOcclusionCulling();
+			Graphic::JCullingUserAccess* userAccess = nullptr;
+			if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+			{
+				cam = Core::ConnectChildUserPtr<JCamera>(comp);
+				userAccess = cam.Get();
+				//draw depth map + mipmap 
+				cullingCompType = J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
+			}
+			else if (comp->GetComponentType() == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+			{
+				lit = Core::ConnectChildUserPtr<JLight>(comp);
+				userAccess = lit.Get();
+				//draw depth map  
+				cullingCompType = J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT;
+			}
+			drawType = DRAW_TYPE::OCC;
 
-			return isOcclusionActivated && canCullingStart;
+			if (userAccess != nullptr)
+			{
+				const bool isOcclusionActivated = option.isOcclusionQueryActivated;
+				allowFrustumCulling = userAccess->AllowFrustumCulling();
+				if (isOcclusionActivated)
+				{
+					allowHzbOcclusionCulling = userAccess->AllowHzbOcclusionCulling();
+					allowHdOcclusionCulling = userAccess->AllowHdOcclusionCulling();
+					allowDrawOccDepthMap = (allowHzbOcclusionCulling || allowHdOcclusionCulling) && userAccess->AllowDisplayOccCullingDepthMap();
+				}
+			}
+		}
+		void JDrawHelper::SettingLightCulling(const JWeakPtr<JCamera>& cam)
+		{
+			JDrawHelper::cam = cam;
+			drawType = DRAW_TYPE::LIT_CULLING;
+			allowLightCulling = cam->AllowLightCulling() && option.isLightCullingActivated;
+			allowLightCullingDebug = cam->AllowDisplayLightCullingDebug() && option.allowDebugLightCulling;
 		}
 		bool JDrawHelper::CanDispatchWorkIndex()const noexcept
 		{
@@ -354,7 +414,7 @@ namespace JinEngine
 				isPerspective = lit->GetLightType() == J_LIGHT_TYPE::POINT || lit->GetLightType() == J_LIGHT_TYPE::SPOT;
 			else if (drawType == DRAW_TYPE::OCC)
 			{
-				if (occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+				if (cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
 					isPerspective = !cam->IsOrthoCamera();
 				else
 					isPerspective = lit->GetLightType() == J_LIGHT_TYPE::POINT || lit->GetLightType() == J_LIGHT_TYPE::SPOT;
@@ -405,34 +465,39 @@ namespace JinEngine
 			newHelper.SettingDrawShadowMap(lit);
 			return newHelper;
 		}
+		JDrawHelper JDrawHelper::CreateFrustumCullingHelper(const JDrawHelper& ori, const JWeakPtr<JComponent>& comp)noexcept
+		{
+			JDrawHelper newHelper = ori;
+			newHelper.SettingFrustumCulling(comp);
+			return newHelper;
+		}
 		JDrawHelper JDrawHelper::CreateOccCullingHelper(const JDrawHelper& ori, const JWeakPtr<JComponent>& comp)noexcept
 		{
 			JDrawHelper newHelper = ori;
 			newHelper.SettingOccCulling(comp);
 			return newHelper;
 		}
+		JDrawHelper JDrawHelper::CreateLitCullingHelper(const JDrawHelper& ori, const JWeakPtr<JCamera>& cam)noexcept
+		{
+			JDrawHelper newHelper = ori;
+			newHelper.SettingLightCulling(cam);
+			return newHelper;
+		}
 
 		JDrawCondition::JDrawCondition(const JDrawHelper& helper,
 			const bool newAllowAnimation,
 			const bool newAllowCulling,
-			const bool newAllowDebugOutline)
-			:allowAnimation(allowAnimation)
+			const bool newAllowDebugOutline,
+			const bool onlyDrawOccluder)
+			:allowAnimation(allowAnimation),
+			onlyDrawOccluder(onlyDrawOccluder)
 		{
 			allowAnimation = newAllowAnimation; 
-			allowCulling = newAllowCulling;
-			allowHzbOcclusionCulling = newAllowCulling &&
-				helper.allowOcclusionCulling &&
-				helper.option.isOcclusionQueryActivated && helper.option.isHZBOcclusionActivated;
-			allowHDOcclusionCulling = newAllowCulling &&
-				helper.allowOcclusionCulling &&
-				helper.option.isOcclusionQueryActivated && helper.option.isHDOcclusionAcitvated;
-			allowDebugOutline = newAllowDebugOutline && helper.allowDrawDebug && helper.option.allowDebugOutline;
+			allowCulling = newAllowCulling; 
+			allowDebugOutline = newAllowDebugOutline && helper.allowDrawDebugObject && helper.option.allowDebugOutline;
 			allowAllCullingResult = helper.cam != nullptr && CamEditorSettingInterface::AllowAllCullingResult(helper.cam);
 			if (allowAllCullingResult)
-			{
-				allowHzbOcclusionCulling = newAllowCulling;
-				allowHDOcclusionCulling = newAllowCulling;
-			}
+				allowCulling = newAllowCulling;
 		}
 	}
 }

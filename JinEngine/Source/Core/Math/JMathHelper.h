@@ -11,6 +11,7 @@ namespace JinEngine
 	{
 	public: 
 		static constexpr float Pi = 3.1415926535f;
+		static constexpr float Epsilon = 1.e-6f;
 		static constexpr float DegToRad = Pi / 180;
 		static constexpr float RadToDeg = 180 / Pi;
 	public:

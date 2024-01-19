@@ -8,7 +8,7 @@
 #include"../../../JGraphicOption.h"
 #include"../../../JGraphicUpdateHelper.h"
 #include"../../../DepthMap/Dx/JDx12DepthTest.h"
-#include"../../../DepthMap/Dx/JDx12DepthMapDebug.h"
+#include"../../../Debug/Dx/JDx12GraphicDebug.h"
 #include"../../../Shader/Dx/JDx12ShaderDataHolder.h" 
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceInfo.h"
 #include"../../../GraphicResource/Dx/JDx12GraphicResourceManager.h"
@@ -49,6 +49,8 @@
 #define HZB_OCC_QUERY_COUNT_SYMBOL L"OCCLUSION_QUERY_COUNT" 
 #define HZB_PERSPECTIVE_DEPTH_MAP_SYMBOL L"PERSPECTIVE_DEPTH_MAP"
 
+#define HZB_DEBUG_SYMBOL L"DEBUG"
+
 namespace JinEngine::Graphic
 {
 	namespace
@@ -63,18 +65,18 @@ namespace JinEngine::Graphic
 		static constexpr int computePassCBIndex = depthMapInfoCBIndex + 1;
 		static constexpr int debugPassCBIndex = computePassCBIndex + 1;
 		//static constexpr int slotCount = computePassCBIndex + 1;
-#ifdef _DEBUG
-		static constexpr bool allowHzbDebug = true;
-		static constexpr int slotCount = debugPassCBIndex + 1;
-#else
+#if defined (GRAPIC_DEBUG) && defined(DEVELOP)
 		static constexpr bool allowHzbDebug = false;
+		static constexpr int slotCount = allowHzbDebug ? debugPassCBIndex + 1 : computePassCBIndex + 1;
+#else
+		static constexpr const bool allowHzbDebug = false;
 		static constexpr int slotCount = computePassCBIndex + 1;
 #endif
 	}
 	namespace
 	{
 		static void _StreamOutDebugInfo(JHlslDebug<JHZBDebugInfo>* debugInfo, const std::wstring& path)
-		{
+		{ 
 			if (!allowHzbDebug)
 				return;
 
@@ -123,22 +125,32 @@ namespace JinEngine::Graphic
 				tool.PopStack();
 			}
 			tool.Close(JFileIOTool::CLOSE_OPTION_JSON_STORE_DATA);
+
 		}
 		static void _StreamOutDebugBufferInfo(JHlslDebug<JHZBDebugInfo>* debugInfo)
-		{
-#if defined(DEVELOP)
-			if (!allowHzbDebug || !Develop::JDevelopDebug::IsActivate())
+		{ 
+			if (!allowHzbDebug)
+				return; 
+
+			static int trigger = 0;
+			if (!Develop::JDevelopDebug::IsActivate())
+			{
+				trigger = 1;
 				return;
+			}
+			///else if (trigger == 0)
+			//	return;
+			//--trigger;
 
 			int count = 0;
 			JHZBDebugInfo* info = debugInfo->Map(count);
 			auto rawVec = JRenderItem::StaticTypeInfo().GetInstanceRawPtrVec();
 
 			Develop::JDevelopDebug::PushLog("OccResult.. OutCount: " + std::to_string(count));
-			for (uint i = 0; i < 3; ++i)
+			for (uint i = 0; i < rawVec.size(); ++i)
 			{
-				if (rawVec.size() <= i)
-					break;
+				//if (rawVec.size() <= i)
+				//	break;
 
 				JRenderItem* rItem = static_cast<JRenderItem*>(rawVec[info[i].queryIndex]);
 				Develop::JDevelopDebug::PushLog(L"Name: " + rItem->GetOwner()->GetName());
@@ -187,7 +199,6 @@ namespace JinEngine::Graphic
 				Develop::JDevelopDebug::PushLog("compareDepth7: " + std::to_string(info[i].compareDepth[7]));
 			}
 			Develop::JDevelopDebug::Write();
-#endif
 		}
 		static void StuffComputeShaderCommonMacro(_Out_ JComputeShaderInitData& initHelper, const JDx12HZBOccCulling::COMPUTE_TYPE type)
 		{
@@ -247,10 +258,10 @@ namespace JinEngine::Graphic
 				//이후 amd graphic info 추가와 동시에 수정할 예정
 				uint warpFactor = gpuInfo[0].vendor == Core::J_GRAPHIC_VENDOR::AMD ? 64 : 32;
 				uint groupDimX = (uint)std::ceil((float)graphicInfo.occlusionWidth / float(gpuInfo[0].maxThreadsDim.x));
-				uint groupDimY = graphicInfo.occlusionHeight;
-
+				uint groupDimY = graphicInfo.occlusionHeight < gpuInfo[0].maxThreadsDim.y ? graphicInfo.occlusionHeight : gpuInfo[0].maxThreadsDim.y;
+					 
 				//textuer size is always 2 squared
-				uint threadDimX = graphicInfo.occlusionWidth;
+				uint threadDimX = graphicInfo.occlusionWidth < gpuInfo[0].maxThreadsDim.x ? graphicInfo.occlusionWidth : gpuInfo[0].maxThreadsDim.x;
 				uint threadDimY = (uint)std::ceil((float)graphicInfo.occlusionHeight / float(gpuInfo[0].maxGridDim.y));
 
 				initHelper.dispatchInfo.threadDim = JVector3<uint>(threadDimX, threadDimY, 1);
@@ -336,6 +347,8 @@ namespace JinEngine::Graphic
 				initHelper.macro.push_back({ HZB_OCC_QUERY_COUNT_SYMBOL, std::to_wstring(queryCount) });
 				if (type == COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE)
 					initHelper.macro.push_back({ HZB_PERSPECTIVE_DEPTH_MAP_SYMBOL, L"1" });
+				if(allowHzbDebug)
+					initHelper.macro.push_back({ HZB_DEBUG_SYMBOL, L"1" });
 				StuffComputeShaderCommonMacro(initHelper, type);
 				break;
 			}
@@ -400,8 +413,7 @@ namespace JinEngine::Graphic
 	{
 		BuildOccDebugBuffer(device, initCapacity, cullingInfo);
 
-		cullingInfo->SetUpdateFrequency(1.0f);
-		cullingInfo->SetUpdatePerObjectRate(1.0f);
+		cullingInfo->SetUpdateFrequency(1.0f); 
 		cullingInfo->SetUpdateEnd(true);
 	}
 	void JDx12HZBOccCulling::NotifyReBuildHzbOccBuffer(JGraphicDevice* device, const size_t capacity, const std::vector<JUserPtr<JCullingInfo>>& cullingInfo)
@@ -410,8 +422,7 @@ namespace JinEngine::Graphic
 		ReBuildObjectConstants(device, capacity);
 		for (const auto& data : cullingInfo)
 		{
-			data->SetUpdateFrequency(1.0f);
-			data->SetUpdatePerObjectRate(1.0f);
+			data->SetUpdateFrequency(1.0f); 
 			data->SetUpdateEnd(true);
 		}
 	}
@@ -557,10 +568,7 @@ namespace JinEngine::Graphic
 	}
 	void JDx12HZBOccCulling::DrawOcclusionDepthMap(const JGraphicOccDrawSet* occDrawSet, const JDrawHelper& helper)
 	{
-		if (!IsSameDevice(occDrawSet))
-			return;
-
-		if (!helper.CanOccCulling() || !helper.GetCullingUserAccess()->AllowHzbOcclusionCulling())
+		if (!IsSameDevice(occDrawSet) || !helper.allowHzbOcclusionCulling)
 			return;
 
 		const JDx12GraphicOccDrawSet* dx12DrawSet = static_cast<const JDx12GraphicOccDrawSet*>(occDrawSet);
@@ -570,6 +578,36 @@ namespace JinEngine::Graphic
 
 		//cmdList->SetGraphicsRootSignature(mRootSignature.Get());
 		auto gRInterface = helper.GetOccGResourceInterface();
+		auto cInterface = helper.GetCullInterface();
+
+		const bool hasFrustumCulling = cInterface.HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
+		std::vector<JUserPtr<JGameObject>> alignedVec;
+		if (!hasAlignedData)
+		{
+			JAcceleratorAlignInfo alignInfo;
+			if (helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+			{
+				alignInfo = JAcceleratorAlignInfo(J_ACCELERATOR_LAYER::COMMON_OBJECT,
+					J_ACCELERATOR_TYPE::BVH,
+					helper.cam->GetBoundingFrustum(),
+					true);
+			}
+			else if (helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+			{
+				alignInfo = JAcceleratorAlignInfo(J_ACCELERATOR_LAYER::COMMON_OBJECT,
+					J_ACCELERATOR_TYPE::BVH,
+					helper.lit->GetOwner()->GetTransform()->GetWorldPosition());
+			}
+			alignInfo.alignPassCondPtr = [](JGameObject* obj)
+			{
+				return obj->GetRenderItem()->IsOccluder();
+			};
+			alignInfo.alignRange = JAcceleratorAlignInfo::ALIGN_RANGE::ALL;
+			alignedVec = helper.scene->AlignedObject(alignInfo);
+		}
+
+		const uint camFrustumIndex = cInterface.GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
 		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
 		for (uint i = 0; i < dataCount; ++i)
 		{
@@ -590,45 +628,28 @@ namespace JinEngine::Graphic
 			cmdList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 			cmdList->OMSetRenderTargets(0, nullptr, false, &dsv);
 
-			JAcceleratorAlignInfo alignInfo;
-			if (helper.occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+			JDx12GraphicDepthMapDrawSet depthMapSet(dx12DrawSet);
+			if (hasAlignedData)
 			{
-				alignInfo = JAcceleratorAlignInfo(J_ACCELERATOR_LAYER::COMMON_OBJECT,
-					J_ACCELERATOR_TYPE::BVH,
-					helper.cam->GetBoundingFrustum(), false);
-				//true);
+				occDrawSet->depthTest->DrawSceneBoundingBox(&depthMapSet,
+					helper.objVec.aligned[camFrustumIndex],
+					helper,
+					JDrawCondition(helper, false, true, false, true));
 			}
 			else
 			{
-				alignInfo = JAcceleratorAlignInfo(J_ACCELERATOR_LAYER::COMMON_OBJECT,
-					J_ACCELERATOR_TYPE::BVH,
-					helper.lit->GetOwner()->GetTransform()->GetWorldPosition());
+				//draw specific count
+				occDrawSet->depthTest->DrawSceneBoundingBox(&depthMapSet,
+					alignedVec,
+					helper,
+					JDrawCondition(helper, false, true, false, true));
 			}
-
-			//caution 
-			//kd tree activated 되있어야함
-			alignInfo.alignPassCondPtr = [](JGameObject* obj)
-			{
-				return obj->GetRenderItem()->IsOccluder();
-			};
-			alignInfo.alignRange = JAcceleratorAlignInfo::ALIGN_RANGE::ALL;
-			//draw specific count
-
-			JDx12GraphicDepthMapDrawSet depthMapSet(dx12DrawSet);
-			occDrawSet->depthTest->DrawSceneBoundingBox(&depthMapSet,
-				helper.scene->AlignedObject(alignInfo),
-				helper,
-				JDrawCondition(helper, false, true, false));
-
 			JD3DUtility::ResourceTransition(cmdList, occDepthMap, D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ);
 		}
 	}
 	void JDx12HZBOccCulling::DrawOcclusionDepthMapMultiThread(const JGraphicOccDrawSet* occDrawSet, const JDrawHelper& helper)
 	{
-		if (!IsSameDevice(occDrawSet))
-			return;
-
-		if (!helper.CanOccCulling() || !helper.GetCullingUserAccess()->AllowHzbOcclusionCulling())
+		if (!IsSameDevice(occDrawSet) || !helper.allowHzbOcclusionCulling)
 			return;
 
 		const JDx12GraphicOccDrawSet* dx12DrawSet = static_cast<const JDx12GraphicOccDrawSet*>(occDrawSet);
@@ -638,6 +659,36 @@ namespace JinEngine::Graphic
 
 		//cmdList->SetGraphicsRootSignature(mRootSignature.Get());
 		auto gRInterface = helper.GetOccGResourceInterface();
+		auto cInterface = helper.GetCullingUserAccess();
+
+		const bool hasFrustumCulling = cInterface->CullingUserInterface().HasCullingData(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
+		const bool hasAlignedData = hasFrustumCulling && helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA;
+		std::vector<JUserPtr<JGameObject>> alignedVec;
+		if (!hasAlignedData)
+		{
+			JAcceleratorAlignInfo alignInfo;
+			if (helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+			{
+				alignInfo = JAcceleratorAlignInfo(J_ACCELERATOR_LAYER::COMMON_OBJECT,
+					J_ACCELERATOR_TYPE::BVH,
+					helper.cam->GetBoundingFrustum(),
+					true);
+			}
+			else if (helper.cullingCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_LIGHT)
+			{
+				alignInfo = JAcceleratorAlignInfo(J_ACCELERATOR_LAYER::COMMON_OBJECT,
+					J_ACCELERATOR_TYPE::BVH,
+					helper.lit->GetOwner()->GetTransform()->GetWorldPosition());
+			}
+			alignInfo.alignPassCondPtr = [](JGameObject* obj)
+			{
+				return obj->GetRenderItem()->IsOccluder();
+			};
+			alignInfo.alignRange = JAcceleratorAlignInfo::ALIGN_RANGE::ALL;
+			alignedVec = helper.scene->AlignedObject(alignInfo);
+		}
+
+		const uint camFrustumIndex = helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::FRUSTUM, J_CULLING_TARGET::RENDERITEM);
 		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
 		for (uint i = 0; i < dataCount; ++i)
 		{
@@ -651,106 +702,21 @@ namespace JinEngine::Graphic
 			D3D12_CPU_DESCRIPTOR_HANDLE dsv = dx12Gm->GetCpuDsvDescriptorHandle(occHeapIndex);
 			cmdList->OMSetRenderTargets(0, nullptr, false, &dsv);
 
-			JAcceleratorAlignInfo alignInfo;
-			if (helper.occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
+			JDx12GraphicDepthMapDrawSet depthMapSet(dx12DrawSet);
+			if (hasAlignedData)
 			{
-				alignInfo = JAcceleratorAlignInfo(J_ACCELERATOR_LAYER::COMMON_OBJECT,
-					J_ACCELERATOR_TYPE::BVH,
-					helper.cam->GetBoundingFrustum(),
-					true);
+				occDrawSet->depthTest->DrawSceneBoundingBox(&depthMapSet,
+					helper.objVec.aligned[camFrustumIndex],
+					helper,
+					JDrawCondition(helper, false, true, false, true));
 			}
 			else
-			{
-				alignInfo = JAcceleratorAlignInfo(J_ACCELERATOR_LAYER::COMMON_OBJECT,
-					J_ACCELERATOR_TYPE::BVH,
-					helper.lit->GetOwner()->GetTransform()->GetWorldPosition());
-			}
-
-			alignInfo.alignPassCondPtr = [](JGameObject* obj)
-			{
-				return obj->GetRenderItem()->IsOccluder();
-			};
-			alignInfo.alignRange = JAcceleratorAlignInfo::ALIGN_RANGE::ALL;
-			//draw specific count
-			JDx12GraphicDepthMapDrawSet depthMapSet(dx12DrawSet);
-			occDrawSet->depthTest->DrawSceneBoundingBox(&depthMapSet,
-				helper.scene->AlignedObject(alignInfo),
-				helper,
-				JDrawCondition(helper, false, true, false));
-		}
-	}
-	void JDx12HZBOccCulling::DrawOcclusionDebugMap(const JGraphicOccDebugDrawSet* occDebugDrawSet, const JDrawHelper& helper)
-	{
-		if (!IsSameDevice(occDebugDrawSet))
-			return;
-
-		if (!helper.CanOccCulling() ||
-			!helper.allowDrawOccDepthMap ||
-			!helper.GetCullingUserAccess()->AllowHzbOcclusionCulling())
-			return;
-
-		const JDx12GraphicOccDebugDrawSet* dx12DrawSet = static_cast<const JDx12GraphicOccDebugDrawSet*>(occDebugDrawSet);
-		JDx12GraphicDevice* dx12Device = static_cast<JDx12GraphicDevice*>(dx12DrawSet->device);
-		JDx12GraphicResourceManager* dx12Gm = static_cast<JDx12GraphicResourceManager*>(dx12DrawSet->graphicResourceM);
-		ID3D12GraphicsCommandList* cmdList = dx12DrawSet->cmdList;
-
-		JVector2<uint> occlusionSize = JVector2<uint>(helper.info.occlusionWidth, helper.info.occlusionHeight);
-		float camNear = 0;
-		float camFar = 0;
-		bool isNonlinear = true;
-		bool isPerspective = helper.UsePerspectiveProjection();
-
-		if (helper.occCompType == J_COMPONENT_TYPE::ENGINE_DEFIENED_CAMERA)
-		{
-			camNear = helper.cam->GetNear();
-			camFar = helper.cam->GetFar();
-		}
-		else
-		{
-			camNear = helper.lit->GetFrustumNear();
-			camFar = helper.lit->GetFrustumFar();
-		}
-
-		J_GRAPHIC_RESOURCE_TYPE srcType;
-		J_GRAPHIC_RESOURCE_TYPE destType;
-		if (helper.option.IsHZBOccActivated())
-		{
-			srcType = J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MIP_MAP;
-			//Debug and mipmap viwe count is same 
-			destType = J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP_DEBUG;
-			isNonlinear = false;
-		}
-		else
-			return;
-
-		auto gRInterface = helper.GetOccGResourceInterface();
-		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
-		for (uint i = 0; i < dataCount; ++i)
-		{
-			auto srcInfo = dx12Gm->GetDxInfo(srcType, gRInterface.GetResourceArrayIndex(srcType, i));
-			auto destInfo = dx12Gm->GetDxInfo(destType, gRInterface.GetResourceArrayIndex(destType, i));
-			if (srcInfo == nullptr || destInfo == nullptr)
-				return;
-
-			const uint viewCount = destInfo->GetViewCount(J_GRAPHIC_BIND_TYPE::SRV);
-			for (uint j = 0; j < viewCount; ++j)
-			{
-				JDx12GraphicDepthMapDebugTaskSet handleSet(dx12Device,
-					dx12Gm,
-					occlusionSize,
-					camNear,
-					camFar,
-					isPerspective,
-					cmdList,
-					dx12Gm->GetGpuSrvDescriptorHandle(srcInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV) + j),
-					dx12Gm->GetGpuSrvDescriptorHandle(destInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::UAV) + j));
-				if (isNonlinear)
-					dx12DrawSet->depthDebug->DrawNonLinearDepthDebug(&handleSet);
-				else
-					dx12DrawSet->depthDebug->DrawLinearDepthDebug(&handleSet);
-				//mipmap
-				if (helper.option.IsHZBOccActivated())
-					occlusionSize /= 2.0f;
+			{ 		  
+				//draw specific count
+				occDrawSet->depthTest->DrawSceneBoundingBox(&depthMapSet,
+					alignedVec,
+					helper,
+					JDrawCondition(helper, false, true, false, true));
 			}
 		}
 	}
@@ -765,11 +731,11 @@ namespace JinEngine::Graphic
 		JDx12CullingManager* dx12Cm = static_cast<JDx12CullingManager*>(dx12ComputeSet->cullingM);
 		ID3D12GraphicsCommandList* cmdList = dx12ComputeSet->cmdList;
 
-		const bool isPerspective = helper.UsePerspectiveProjection();
 		auto gRInterface = helper.GetOccGResourceInterface();
+		auto cInfo = dx12Cm->GetCullingInfo(J_CULLING_TYPE::HZB_OCCLUSION, helper.GetCullInterface().GetArrayIndex(J_CULLING_TYPE::HZB_OCCLUSION, J_CULLING_TARGET::RENDERITEM));
+		const bool isPerspective = helper.UsePerspectiveProjection(); 
 		const uint dataCount = gRInterface.GetDataCount(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP);
-
-		auto cInterface = helper.GetCullInterface();
+		 
 		for (uint i = 0; i < dataCount; ++i)
 		{
 			const int occVecIndex = gRInterface.GetResourceArrayIndex(J_GRAPHIC_RESOURCE_TYPE::OCCLUSION_DEPTH_MAP, i);
@@ -798,11 +764,16 @@ namespace JinEngine::Graphic
 				dx12Cm,
 				dx12Gm->GetGpuSrvDescriptorHandle(occMipmapInfo->GetHeapIndexStart(J_GRAPHIC_BIND_TYPE::SRV)),
 				occPassFrameIndex,
-				helper.GetCullInterface(),
+				cInfo,
 				isPerspective);
 		}
 		//ComputeOcclusionCulling은 항상 single thread에서 수행된다.
-		dx12Cm->GetCullingInfo(J_CULLING_TYPE::HZB_OCCLUSION, cInterface.GetArrayIndex(J_CULLING_TYPE::HZB_OCCLUSION))->SetUpdateEnd(true);
+		//dx12Cm->GetCullingInfo(J_CULLING_TYPE::HZB_OCCLUSION, cInterface.GetArrayIndex(J_CULLING_TYPE::HZB_OCCLUSION, J_CULLING_TARGET::RENDERITEM))->SetUpdateEnd(true);
+		
+		JCullingUpdatedInfo updatedInfo;
+		updatedInfo.updatedStartIndex = 0;
+		updatedInfo.updatedCount = cInfo->GetResultBufferSize(); 
+		cInfo->SetUpdatedInfo(updatedInfo, helper.info.currFrameResourceIndex);
 	}
 	void JDx12HZBOccCulling::DepthMapDownSampling(ID3D12GraphicsCommandList* commandList,
 		JDx12FrameResource* dx12Frame,
@@ -819,10 +790,12 @@ namespace JinEngine::Graphic
 
 		JDx12ComputeShaderDataHolder* copyShader = isPerspective ? shader[(uint)COMPUTE_TYPE::HZB_COPY_PERSPECTIVE].get() : shader[(uint)COMPUTE_TYPE::HZB_COPY_ORTHOLOGIC].get();
 		commandList->SetPipelineState(copyShader->pso.Get());
-
+ 
+		JDx12GraphicBufferInterface* passCBBuffer = dx12Frame->GetDx12Buffer(J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS);
+		
 		uint passCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JHzbOccComputeConstants));
-		D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = dx12Frame->hzbOccReqCB->GetResource()->GetGPUVirtualAddress() + passCBIndex * passCBByteSize;
-
+		D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = passCBBuffer->GetResource()->GetGPUVirtualAddress() + passCBIndex * passCBByteSize;
+	 
 		commandList->SetComputeRootDescriptorTable(depthMapBuffIndex, depthMapSrvHandle);
 		commandList->SetComputeRootDescriptorTable(lastMipmapInex, mipMapUavHandle);
 		commandList->SetComputeRootConstantBufferView(depthMapInfoCBIndex, occDepthMapInfoCB->GetResource()->GetGPUVirtualAddress());
@@ -857,20 +830,23 @@ namespace JinEngine::Graphic
 		JDx12CullingManager* dx12Cm,
 		CD3DX12_GPU_DESCRIPTOR_HANDLE mipMapStHandle,
 		const uint passCBIndex,
-		const JCullingUserInterface& cullUser,
+		const JUserPtr<JCullingInfo>& cullInfo,
 		const bool isPerspective)
 	{
+		JDx12GraphicBufferInterface* passCBBuffer = dx12Frame->GetDx12Buffer(J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_COMPUTE_PASS);
+		JDx12GraphicBufferInterface* objectCBBuffer = dx12Frame->GetDx12Buffer(J_UPLOAD_FRAME_RESOURCE_TYPE::HZB_OCC_OBJECT);
+
 		uint passCBByteSize = JD3DUtility::CalcConstantBufferByteSize(sizeof(JHzbOccComputeConstants));
-		D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = dx12Frame->hzbOccReqCB->GetResource()->GetGPUVirtualAddress() + passCBIndex * passCBByteSize;
+		D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = passCBBuffer->GetResource()->GetGPUVirtualAddress() + passCBIndex * passCBByteSize;
 
 		commandList->SetComputeRootDescriptorTable(mipMapBuffIndex, mipMapStHandle);
-		commandList->SetComputeRootShaderResourceView(objectBuffIndex, dx12Frame->hzbOccObjectBuffer->GetResource()->GetGPUVirtualAddress());
+		commandList->SetComputeRootShaderResourceView(objectBuffIndex, objectCBBuffer->GetResource()->GetGPUVirtualAddress());
 		commandList->SetComputeRootUnorderedAccessView(queryResultIndex, occQueryOutBuffer->GetResource()->GetGPUVirtualAddress());
 		commandList->SetComputeRootConstantBufferView(computePassCBIndex, passCBAddress);
-
+		 
 		//Debug
 		if constexpr (allowHzbDebug)
-			occDebugBuffer[cullUser.GetArrayIndex(J_CULLING_TYPE::HZB_OCCLUSION)]->SettingCompute(commandList);
+			occDebugBuffer[cullInfo->GetArrayIndex()]->SettingCompute(commandList);
 
 		JDx12ComputeShaderDataHolder* occShader = isPerspective ? shader[(uint)COMPUTE_TYPE::HZB_CULLING_PERSPECTIVE].get() : shader[(uint)COMPUTE_TYPE::HZB_CULLING_ORTHOLOGIC].get();
 		commandList->SetPipelineState(occShader->pso.Get());
@@ -879,7 +855,7 @@ namespace JinEngine::Graphic
 		JVector3<uint> groupDim = occShader->dispatchInfo.groupDim;
 		commandList->Dispatch(groupDim.x, groupDim.y, groupDim.z);
 
-		auto resource = dx12Cm->GetResource(J_CULLING_TYPE::HZB_OCCLUSION, cullUser.GetArrayIndex(J_CULLING_TYPE::HZB_OCCLUSION));
+		auto resource = dx12Cm->GetResource(J_CULLING_TYPE::HZB_OCCLUSION, cullInfo->GetArrayIndex());
 		JD3DUtility::ResourceTransition(commandList, occQueryOutBuffer->GetResource(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
 		JD3DUtility::ResourceTransition(commandList, resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
 		commandList->CopyResource(resource, occQueryOutBuffer->GetResource());
@@ -887,7 +863,7 @@ namespace JinEngine::Graphic
 		JD3DUtility::ResourceTransition(commandList, occQueryOutBuffer->GetResource(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON);
 
 		if constexpr (allowHzbDebug)
-			occDebugBuffer[cullUser.GetArrayIndex(J_CULLING_TYPE::HZB_OCCLUSION)]->End(commandList);
+			occDebugBuffer[cullInfo->GetArrayIndex()]->End(commandList);
 	}
 	void JDx12HZBOccCulling::BuildRootSignature(JGraphicDevice* device, const uint occlusionDsvCapacity)
 	{
@@ -1016,7 +992,7 @@ namespace JinEngine::Graphic
 		ZeroMemory(&newShaderPso, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
 		newShaderPso.pRootSignature = mRootSignature.Get();
 
-		holder->RootSignature = newShaderPso.pRootSignature;
+		//holder->RootSignature = newShaderPso.pRootSignature;
 		newShaderPso.CS =
 		{
 			reinterpret_cast<BYTE*>(holder->cs->GetBufferPointer()),

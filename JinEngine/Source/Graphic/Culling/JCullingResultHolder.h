@@ -1,7 +1,8 @@
 #pragma once
-#include"../../Core/JCoreEssential.h"
+#include"JCullingType.h"
 #include"../Buffer/JGraphicBuffer.h"
 #include"../Buffer/JBufferType.h"
+#include"../../Core/JCoreEssential.h"
 #include<string>
 
 namespace JinEngine
@@ -16,20 +17,24 @@ namespace JinEngine
 		public:
 			virtual void Culling(const uint index, const bool value)noexcept = 0;
 		public:
-			virtual uint GetBuffSize()const noexcept = 0;
+			virtual uint GetBufferSize()const noexcept = 0; 
+			virtual J_GRAPHIC_BUFFER_TYPE GetBufferType()const noexcept = 0;
+			virtual J_CULLING_TARGET GetCullingTarget()const noexcept = 0;
 		public:
 			virtual bool IsCulled(const uint index)const noexcept = 0;
 			virtual bool IsGpuResource()const noexcept = 0;
 			virtual bool CanSetValue()const noexcept = 0;
 		};
-
+		 
+		//cpu only
 		class JFrustumCullingResultHolder final : public JCullingResultHolder
 		{
 		private:
 			bool* cullingResult = nullptr;
 			size_t capacity = 0;
+			const J_CULLING_TARGET target;
 		public:
-			JFrustumCullingResultHolder();
+			JFrustumCullingResultHolder(const J_CULLING_TARGET target);
 			~JFrustumCullingResultHolder();
 		public:
 			/*
@@ -37,7 +42,9 @@ namespace JinEngine
 			*/
 			void Culling(const uint index, const bool value)noexcept final;
 		public:
-			uint GetBuffSize()const noexcept final;
+			uint GetBufferSize()const noexcept final;
+			J_GRAPHIC_BUFFER_TYPE GetBufferType()const noexcept final;
+			J_CULLING_TARGET GetCullingTarget()const noexcept final;
 		public:
 			bool IsCulled(const uint index)const noexcept final;
 			bool IsGpuResource()const noexcept final;

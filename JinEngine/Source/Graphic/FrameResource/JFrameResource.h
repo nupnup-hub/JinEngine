@@ -14,7 +14,7 @@
 #include"JOcclusionConstants.h"
 #include"JShadowMapConstants.h"
 #include"JDepthTestConstants.h"
-
+#include"JSsaoConstants.h"
 namespace JinEngine
 {
 	namespace Graphic
@@ -30,6 +30,7 @@ namespace JinEngine
 		public:
 			virtual JGraphicBufferBase* GetGraphicBufferBase(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept = 0;
 			virtual uint GetElementCount(const J_UPLOAD_FRAME_RESOURCE_TYPE type)const noexcept = 0;
+			uint GetLocalLightCount()const noexcept;
 			virtual GraphicFence GetFenceValue()const noexcept = 0; 
 		public:
 			void CopyData(const J_UPLOAD_FRAME_RESOURCE_TYPE type, const int elementIndex, const void* data);

@@ -54,7 +54,7 @@ namespace JinEngine
 				UpdateMouseWheel();		  
  
 				auto preCursor = JGui::GetCursorPos();
-				if (selectedCam.IsValid())
+				if (selectedCam.IsValid() && selectedCam->IsActivated())
 				{
 					editorCamCtrl->Update(selectedCam, JGui::GetMousePos().x, JGui::GetMousePos().y, J_GUI_FOCUS_FLAG_CHILD_WINDOW);
 					JGuiImageInfo info(selectedCam.Get(), Graphic::J_GRAPHIC_RESOURCE_TYPE::RENDER_RESULT_COMMON);

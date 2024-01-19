@@ -1,4 +1,6 @@
-#pragma once  
+#pragma once   
+#include"../JGraphicEnum.h"
+
 namespace JinEngine
 { 
 	namespace Graphic

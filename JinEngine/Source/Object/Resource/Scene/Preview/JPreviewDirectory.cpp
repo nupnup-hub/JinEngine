@@ -56,12 +56,15 @@ namespace JinEngine
 		JUserPtr<JRenderItem> renderItem = shapeObj->GetRenderItem();
 
 		renderItem->SetMaterial(0, newTextureMat);
-		const JVector3<float> center = renderItem->GetMesh()->GetBoundingSphereCenter();
-		const float radius = renderItem->GetMesh()->GetBoundingSphereRadius();
+
+		AdjustSceneSettingData adjustData;
+		adjustData.targetTransform = shapeObj->GetTransform();
+		adjustData.targetRenderItem = renderItem;
+		adjustData.useFixedPad = true;
 
 		SetTextureMaterial(newTextureMat);
 		SetUseQuadShapeTrigger(true);
-		AdjustCamera(center, radius);
+		AdjustScene(adjustData);
 		return true;
 	}
 }

@@ -1,4 +1,12 @@
+#include"CBCameraDefine.hlsl"
+#include"CBEngineDefine.hlsl"
 
+//cbuffer && StructuredBuffer aligned 16byte
+//dx12 cbuffer aligned 256byte
+
+//constants buffer에서 array사용시 
+//float4보다 작은 데이터 타입은 float4로 패킹된다.
+//ex) float -> float4(valid, empty, empty, empty) ... cpu에서 buffer size계산시 주의하자.
 struct MaterialData
 {
 	float4 albedoColor;
@@ -8,13 +16,31 @@ struct MaterialData
 	uint albedoMapIndex;
 	uint normalMapIndex;
 	uint heightMapIndex;
+	uint metallicMapIndex;
 	uint roughnessMapIndex;
-	uint ambientMapIndex;
-	uint materialObjPad;
+	uint ambientMapIndex; 
 };
+ 
+//48
+cbuffer cbScenePass : register(b1)
+{
+	float sceneTotalTime;
+	float sceneDeltaTime;
+	uint directionalLitSt;
+	uint directionalLitEd;
+	uint pointLitSt;
+	uint pointLitEd;
+	uint spotLitSt;
+	uint spotLitEd;
+	uint rectLitSt;
+	uint rectLitEd;
+	uint scenePassPad00;
+	uint scenePassPad01;
+};  
 
+#ifndef DEFERRED_SHADING  
 //144
-cbuffer cbObject : register(b0)
+cbuffer cbObject : register(b3)
 {
 	float4x4 objWorld;
 	float4x4 objTexTransform;
@@ -23,32 +49,10 @@ cbuffer cbObject : register(b0)
 	uint objPad01;
 	uint objPad02;
 };
-
 //16384
-cbuffer cbSkinned : register(b1)
+cbuffer cbSkinned : register(b4)
 {
 	float4x4 objBoneTransforms[256];
 };
-
-//432 => 240
-cbuffer cbCamera : register(b4)
-{
-	//float4x4 camView;
-	//float4x4 camInvView;
-	float4x4 camProj;
-	float4x4 camProjTex;
-	//float4x4 camInvProj;
-	float4x4 camViewProj;
-	//float4x4 camViewProjTex;
-	//float4x4 camInvViewProj;
-	float2 camRenderTargetSize;
-	float2 camInvRenderTargetSize;
-	float3 camEyePosW;
-	float camNearZ;
-	float camFarZ;
-	uint csmLocalIndex; //aligned by registered time
-	int cameraPad00;
-	uint cameraPad01;
-};
-
 StructuredBuffer<MaterialData> materialData : register(t1);
+#endif

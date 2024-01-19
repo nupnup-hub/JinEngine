@@ -1,9 +1,8 @@
 #pragma once
 #include"../../Core/Math/JVector.h"
-#include"../../Core/Pointer/JOwnerPtr.h"
-
+#include"../../Core/Pointer/JOwnerPtr.h" 
 namespace JinEngine
-{
+{ 
 	class JGameObject; 
 	namespace Editor
 	{
@@ -39,24 +38,26 @@ namespace JinEngine
 		private: 
 			JUserPtr<JGameObject> coordGrid;
 		private:
-			int lineCount = 256;	//ex) lineCount = 2 => create row line 2 and column line 2
-			int lineScale = 256;
-			int lineStep = 4;
+			int lineCount = 0;	//ex) lineCount = 2 => create row line 2 and column line 2
+			int lineScale = 0;
+			int lineStep = 0;
+		public:
+			JEditorSceneCoordGrid();
 		public:
 			void MakeCoordGrid(const JUserPtr<JGameObject>& parent);
 			void Clear();
 		public: 
 			void Update(const JVector2<float> xzMoveOffset);
 		public:
-			int GetLineCount()const noexcept; 
+			int GetLineCount()const noexcept;  
 			int GetLineStep()const noexcept;
-			int GetMinLineCount()const noexcept; 
+			int GetMinLineCount()const noexcept;  
 			int GetMinLineStep()const noexcept;
-			int GetMaxLineCount()const noexcept; 
+			int GetMaxLineCount()const noexcept;  
 			int GetMaxLineStep()const noexcept;
 		public:
 			//create row line x and column line x.
-			void SetLineCount(const int value)noexcept;
+			void SetLineCount(const int value)noexcept; 
 			void SetLineStep(const int value)noexcept;
 		private:
 			void SetLineScale()noexcept;

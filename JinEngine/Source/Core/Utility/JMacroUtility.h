@@ -187,6 +187,7 @@ namespace JinEngine
 
 #define J_COMPILE_ERROR_MESSAGE(msg)  message(msg)			
  
+#define SIZE_OF_ARRAY(a) (sizeof(a)/sizeof((a)[0]))
 
 
     }

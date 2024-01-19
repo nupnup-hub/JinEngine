@@ -39,8 +39,10 @@ namespace JinEngine
 			JReflectionGuiWidgetHelper(JEditorWindow* ownerWnd);
 			~JReflectionGuiWidgetHelper();
 		public:
-			void BeginGuiWidget(const Core::JUserPtr<Core::JIdentifier>& obj);
+			void BeginGuiWidget(const Core::JUserPtr<Core::JIdentifier>& obj, const size_t userGuid);
 			void EndGuiWidget();
+		public:
+			JUserPtr<Core::JIdentifier> GetLastSelected()const noexcept;
 		public:
 			void UpdateGuiWidget(const Core::JUserPtr<Core::JIdentifier>& obj, Core::JTypeInfo* typeInfo);
 			void Clear();

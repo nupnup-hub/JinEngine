@@ -105,6 +105,9 @@ namespace JinEngine
 				const float sizeRate);
 			~JEditorTransformTool();
 		public:
+			//추후 추가사항(낮은 우선순위)
+			//update 이전 transform, 이후 tranform값을 mouse dragging off시 addBind해서 
+			//do, undo가 가능하게 한다.
 			void Update(const JUserPtr<JGameObject>& selected,
 				const JUserPtr<JCamera>& cam,
 				const JVector2F& sceneImageScreenMinPoint,
@@ -183,7 +186,7 @@ namespace JinEngine
 				virtual void Update() = 0;
 			public:
 				virtual size_t GetTargetGuid() const noexcept = 0;
-				virtual Core::JTypeInfo& GetTargetTypeInfo() const noexcept = 0;
+				virtual Core::JTypeInfo& GetTargetTypeInfo() const noexcept = 0; 
 			public:
 				virtual void SetMaterial(const JUserPtr<JMaterial>& mat) = 0;
 			public:
@@ -206,7 +209,7 @@ namespace JinEngine
 				void Update()final;
 			public:
 				size_t GetTargetGuid()const noexcept final;
-				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final;
+				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final; 
 			public:
 				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
 			public:
@@ -230,7 +233,7 @@ namespace JinEngine
 				void Update()final;
 			public:
 				size_t GetTargetGuid()const noexcept final;
-				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final;
+				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final; 
 			public:
 				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
 			public:
@@ -252,7 +255,7 @@ namespace JinEngine
 				void Update()final;
 			public:
 				size_t GetTargetGuid()const noexcept final;
-				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final;
+				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final; 
 			public:
 				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
 			public:
@@ -262,7 +265,9 @@ namespace JinEngine
 			{
 			public:
 				JUserPtr<JGameObject> root;
-				JUserPtr<JGameObject> line[4];
+				JUserPtr<JGameObject> innerLine[4];
+				JUserPtr<JGameObject> edgeLine[4];
+				JUserPtr<JGameObject> outerLine[4];
 			public:
 				JUserPtr<JRectLight> targetRect;
 			public:
@@ -274,12 +279,12 @@ namespace JinEngine
 				void Update()final;
 			public:
 				size_t GetTargetGuid()const noexcept final;
-				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final;
+				Core::JTypeInfo& GetTargetTypeInfo() const noexcept final; 
 			public:
 				void SetMaterial(const JUserPtr<JMaterial>& mat) final;
 			public:
 				bool IsValid()const noexcept;
-			};
+			}; 
 		private: 
 			std::vector<std::unique_ptr<GeometryView>> geoView;
 			std::set<size_t> geoSet;

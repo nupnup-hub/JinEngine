@@ -654,6 +654,10 @@ namespace JinEngine::Editor
 	{
 		return IsMouseInRect(GetWindowPos(), GetWindowSize());
 	}
+	bool JGui::IsMouseInLastItem()noexcept
+	{
+		return IsMouseInRect(GetLastItemRectPos() - GetWindowScrollPos(), GetLastItemRectSize());
+	}
 	bool JGui::IsMouseInRectMM(const JVector2<float>& min, const JVector2<float>& max)noexcept
 	{
 		return Private::Adaptee()->IsMouseInRect(min, max);
@@ -768,6 +772,14 @@ namespace JinEngine::Editor
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::TEXT);
 		Private::Adaptee()->Text(text);
 	}
+	void JGui::Text(const char* text)
+	{
+		Text(std::string(text));
+	}
+	void JGui::Text(const wchar_t* text)
+	{
+		Text(std::wstring(text));
+	}
 	void JGui::Text(const std::string& text, const float fontScale)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::TEXT);
@@ -776,6 +788,10 @@ namespace JinEngine::Editor
 		Private::Adaptee()->SetCurrentWindowFontScale(fontScale);
 		Private::Adaptee()->Text(text);
 		Private::Adaptee()->SetCurrentWindowFontScale(preFontScale);
+	}
+	void JGui::Text(const std::wstring& text, const float fontScale)
+	{
+		Text(JCUtil::WstrToU8Str(text), fontScale);
 	}
 	bool JGui::CheckBox(const std::string& name, bool& v)
 	{
@@ -842,13 +858,31 @@ namespace JinEngine::Editor
 		SetNextItemWidth(GetAlphabetSize().x * (std::numeric_limits<float>::digits * 0.375f * inputWidthRate));
 		return Private::Adaptee()->InputInt(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, step);
 	}
+	bool JGui::InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG_ flags, int step, uint inputWidthRate)
+	{
+		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::INPUT);
+		SetNextItemWidth(GetAlphabetSize().x * (std::numeric_limits<float>::digits * 0.375f * inputWidthRate));
+		return Private::Adaptee()->InputInt(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, step);
+	}
 	bool JGui::InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG_ flags, const float formatDigit, float step, uint inputWidthRate)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::INPUT);
 		SetNextItemWidth(GetAlphabetSize().x * (std::numeric_limits<float>::digits * 0.375f * inputWidthRate));
 		return Private::Adaptee()->InputFloat(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, formatDigit, step);
 	}
+	bool JGui::InputFloatClamp(const std::string& name, float* value, const float minV, const float maxV, J_GUI_INPUT_TEXT_FLAG_ flags, const float formatDigit, float step, uint inputWidthRate)
+	{  
+		bool isInput = InputFloat(name, value, (J_GUI_INPUT_TEXT_FLAG)flags, formatDigit, step);
+		if (isInput)
+			*value = std::clamp(*value, minV, maxV);
+		return isInput;
+	}
 	bool JGui::SliderInt(const std::string& name, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags)
+	{
+		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SLIDER);
+		return Private::Adaptee()->SliderInt(name, value, vMin, vMax, (J_GUI_SLIDER_FLAG)flags);
+	}
+	bool JGui::SliderInt(const std::string& name, uint* value, uint vMin, uint vMax, J_GUI_SLIDER_FLAG_ flags)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SLIDER);
 		return Private::Adaptee()->SliderInt(name, value, vMin, vMax, (J_GUI_SLIDER_FLAG)flags);
@@ -859,6 +893,11 @@ namespace JinEngine::Editor
 		return Private::Adaptee()->SliderFloat(name, value, vMin, vMax, formatDigit, (J_GUI_SLIDER_FLAG)flags);
 	}
 	bool JGui::VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG_ flags)
+	{
+		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SLIDER);
+		return Private::Adaptee()->VSliderInt(name, size, value, vMin, vMax, (J_GUI_SLIDER_FLAG)flags);
+	}
+	bool JGui::VSliderInt(const std::string& name, JVector2<float> size, uint* value, uint vMin, uint vMax, J_GUI_SLIDER_FLAG_ flags)
 	{
 		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SLIDER);
 		return Private::Adaptee()->VSliderInt(name, size, value, vMin, vMax, (J_GUI_SLIDER_FLAG)flags);
@@ -912,9 +951,9 @@ namespace JinEngine::Editor
 	{
 		Private::Adaptee()->TableNextRow();
 	}
-	void JGui::TableSetColumnIndex(const int index)
+	bool JGui::TableSetColumnIndex(const int index)
 	{
-		Private::Adaptee()->TableSetColumnIndex(index);
+		return Private::Adaptee()->TableSetColumnIndex(index);
 	}
 	bool JGui::BeginMainMenuBar()
 	{
@@ -1212,6 +1251,15 @@ namespace JinEngine::Editor
 		}
 	}
 	bool JGui::ImageSelectable(const std::string name,
+		JGuiImageInfo info, 
+		const JVector2<float>& size,
+		const bool useRestoreCursorPos)
+	{
+		bool temp = false;
+		Private::Impl()->AddActWidgetCount(Core::J_GUI_WIDGET_TYPE::SELECTALBE);
+		return Private::Adaptee()->ImageSelectable(name, info, temp, false, size, useRestoreCursorPos);
+	}
+	bool JGui::ImageSelectable(const std::string name,
 		JGuiImageInfo info,
 		bool& pressed,
 		bool changeValueIfPreesd,
@@ -1496,7 +1544,7 @@ namespace JinEngine::Editor
 	}
 	JVector2<float> JGui::GetDefaultClientWindowMinSize()noexcept
 	{
-		return JWindow::GetClientSize() * 0.15f;
+		return JWindow::GetClientSize() * 0.075f;
 	}
 	JVector2<float> JGui::GetWindowPos()noexcept
 	{
@@ -1526,6 +1574,10 @@ namespace JinEngine::Editor
 	{
 		return Private::Adaptee()->GetWindowTitleBarSize();
 	} 
+	JVector2<float> JGui::GetWindowScrollPos()noexcept
+	{
+		return Private::Adaptee()->GetWindowScrollPos();
+	}
 	int JGui::GetWindowOrder(const GuiID windowID)noexcept
 	{
 		return Private::Adaptee()->GetWindowOrder(windowID);
@@ -1598,6 +1650,10 @@ namespace JinEngine::Editor
 	JVector2<float> JGui::GetLastItemRectMax()noexcept
 	{
 		return Private::Adaptee()->GetLastItemRectMax();
+	}
+	JVector2<float> JGui::GetLastItemRectPos()noexcept
+	{
+		return Private::Adaptee()->GetLastItemRectMin();
 	}
 	JVector2<float> JGui::GetLastItemRectSize()noexcept
 	{

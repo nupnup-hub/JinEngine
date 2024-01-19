@@ -1,6 +1,5 @@
 #pragma once  
-#include"../DataSet/JGraphicDataSet.h"
-#include"../Device/JGraphicDeviceUser.h" 
+#include"../JGraphicTaskInterface.h"
 #include"../Thread/JGraphicMultiThreadDrawInterface.h"
 #include"../../Core/JCoreEssential.h"   
 #include"../../Core/Pointer/JOwnerPtr.h"   
@@ -12,11 +11,13 @@ namespace JinEngine
 	{
 		struct JGraphicInfo;
 		struct JDrawHelper;
-		class JShadowMap : public JGraphicDeviceUser, public JGraphicMultiThreadDrawInterface
+		class JShadowMap : public JGraphicTaskInterface, public JGraphicMultiThreadDrawInterface
 		{
 		public:
 			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info) = 0;
 			virtual void Clear() = 0;
+		public:
+			bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
 		public:
 			virtual void BindResource(const JGraphicBindSet* bindSet) = 0;
 		public:

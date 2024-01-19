@@ -20,6 +20,7 @@ namespace JinEngine
 			static std::wstring engineSlnPath;
 
 			static J_APPLICATION_STATE applicationState;
+			static J_APPLICATION_SUB_STATE applicationSubState;
 			static Core::J_LANGUAGE_TYPE engineLanguage;
  
 			static std::vector<std::string> versionList
@@ -111,6 +112,10 @@ namespace JinEngine
 		{
 			return Private::applicationState;
 		}
+		J_APPLICATION_SUB_STATE JApplicationEngine::GetApplicationSubState()noexcept
+		{
+			return Private::applicationSubState;
+		}
 		Core::J_LANGUAGE_TYPE JApplicationEngine::GetLanguageType()noexcept
 		{
 			return Private::engineLanguage;
@@ -187,6 +192,18 @@ namespace JinEngine
 		void MainAccess::SetApplicationState(const J_APPLICATION_STATE newState)noexcept
 		{
 			Private::applicationState = newState;
+		}
+		void MainAccess::SetApplicationSubState(const J_APPLICATION_SUB_STATE newSubState)noexcept
+		{
+			Private::applicationSubState = newSubState;
+		} 
+		void MainAccess::EnterUpdateLoop()
+		{
+			SetApplicationSubState(J_APPLICATION_SUB_STATE::UPDATE_LOOP);
+		}
+		void MainAccess::ExitUpdateLoop()
+		{
+			SetApplicationSubState(J_APPLICATION_SUB_STATE::IDLE);
 		}
 	}
 }

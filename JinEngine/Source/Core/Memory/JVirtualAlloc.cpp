@@ -6,7 +6,7 @@
 #include<Windows.h> 
 #include<string>
 #include<fstream>
- 
+  
 namespace JinEngine
 {
 	namespace Core
@@ -521,7 +521,7 @@ namespace JinEngine
 
 			allocablePaegHead = new PageInfo();
 			allocablePaegHead->pageIndex = preReservePageCount;
-			 
+			  
 			return true;
 		}
 	};

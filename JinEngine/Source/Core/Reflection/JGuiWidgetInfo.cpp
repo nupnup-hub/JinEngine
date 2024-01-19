@@ -292,6 +292,7 @@ namespace JinEngine
 		{
 			return fixedParam == J_PARAMETER_TYPE::Bool ||
 				fixedParam == J_PARAMETER_TYPE::Int ||
+				fixedParam == J_PARAMETER_TYPE::Uint ||
 				fixedParam == J_PARAMETER_TYPE::Float;
 		}
 
@@ -363,9 +364,10 @@ namespace JinEngine
 			return hasRgbInput;
 		}
 
-		JGuiSelectorInfo::JGuiSelectorInfo(const J_GUI_SELECTOR_IMAGE imageType, const bool hasSizeSlider, GetElemntVecPtr getElementVecPtr)
+		JGuiSelectorInfo::JGuiSelectorInfo(const J_GUI_SELECTOR_IMAGE imageType, const bool isReadOnly, const bool hasSizeSlider, GetElemntVecPtr getElementVecPtr)
 			:JGuiWidgetInfo(),
 			imageType(imageType),
+			isReadOnly(isReadOnly),
 			hasSizeSlider(hasSizeSlider),
 			getElementVecPtr(getElementVecPtr)
 		{}
@@ -380,6 +382,10 @@ namespace JinEngine
 		JGuiSelectorInfo::GetElemntVecPtr JGuiSelectorInfo::GetElementVecPtr()const noexcept
 		{
 			return getElementVecPtr;
+		}
+		bool JGuiSelectorInfo::IsReadOnly()const noexcept
+		{
+			return isReadOnly;
 		}
 		bool JGuiSelectorInfo::HasSizeSlider()const noexcept
 		{

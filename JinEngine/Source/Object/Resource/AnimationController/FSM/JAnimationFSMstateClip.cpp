@@ -28,7 +28,7 @@ namespace JinEngine
 	public:
 		JWeakPtr<JAnimationFSMstateClip> thisPointer = nullptr;
 	public:
-		REGISTER_PROPERTY_EX(clip, GetClip, SetClip, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::ICON, true))
+		REGISTER_PROPERTY_EX(clip, GetClip, SetClip, GUI_SELECTOR(Core::J_GUI_SELECTOR_IMAGE::ICON, false, true))
 		JUserPtr<JAnimationClip> clip;
 	public:
 		JAnimationFSMstateClipImpl(const InitData& initData, JAnimationFSMstateClip* thisFsmClipRaw)

@@ -26,8 +26,19 @@ namespace JinEngine
 			static constexpr int outlineStencilRef= 2;
 			static constexpr int outlineStencilRange = 7;
 			static constexpr int cubeMapPlaneCount = 6;
-			static const JVector4F backBufferClearColor = JVector4F(0.45490196f, 0.54117647f, 0.63137255f, 1.0f);
-			static const JVector4F blackClearColor = JVector4F(0, 0, 0, 0);
+
+			static JVector4F BackBufferClearColor()noexcept
+			{
+				return  JVector4F(0.45490196f, 0.54117647f, 0.63137255f, 1.0f);
+			} 
+			static JVector4F BlackColor()noexcept
+			{
+				return   JVector4F(0, 0, 0, 0);
+			} 
+			static JVector4F WhileColor()noexcept
+			{
+				return JVector4F(1.0f, 1.0f, 1.0f, 1.0f);
+			} 
 		}
 	}
 }

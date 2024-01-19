@@ -83,11 +83,11 @@ namespace JinEngine
 
 			if (doIdent)
 				JGui::Indent();
-			 
-			const JVector2<float> itemSize = JGui::GetLastItemRectSize();
+			  
+			//const JVector2<float> itemSize = JGui::GetLastItemRectSize();
 			if (JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::LEFT) || JGui::IsMouseClicked(Core::J_MOUSE_BUTTON::RIGHT))
 			{
-				if (!JGui::IsMouseInRect(itemPos, itemSize))
+				if (!JGui::IsMouseInLastItem)
 					Clear();
 			} 
 		}

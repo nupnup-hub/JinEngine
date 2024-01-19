@@ -1,0 +1,39 @@
+#ifndef CLUSTER_DIM_X
+#define CLUSTER_DIM_X 24 
+#endif
+
+#ifndef CLUSTER_DIM_Y
+#define CLUSTER_DIM_Y 12 
+#endif
+
+#ifndef CLUSTER_DIM_Z
+#define CLUSTER_DIM_Z 128 
+#endif
+
+#ifndef NEAR_CLUST
+#define NEAR_CLUST 50.0f
+#endif
+
+#ifndef LIGHT_PER_CLUSTER
+#define LIGHT_PER_CLUSTER 30
+#endif
+ 
+#define LINKED_LIST_INDEX_PER_BYTE 4	 
+#define CLUSTER_MAX_DEPTH 255.0f
+#define CLUSTER_LIGHT_TYPE_PER_BIT 8
+#define CLUSTER_LIGHT_ID_PER_BIT 24
+#define CLUSTER_LIGHT_NODE_PER_BIT 32
+#define CLUSTER_BIT (CLUSTER_LIGHT_TYPE_PER_BIT + CLUSTER_LIGHT_ID_PER_BIT + CLUSTER_LIGHT_NODE_PER_BIT)
+
+#define CLUSTER_LIGHT_ID_RANGE 0xFFFFFF					 
+#define CLUSTER_LIGHT_INVALID_ID 0x3FFFFFFF				 
+
+#define POINT_LIGHT_TYPE_VALUE 0
+#define SPOT_LIGHT_TYPE_VALUE 1
+#define RECT_LIGHT_TYPE_VALUE 2
+
+struct LinkedLightID
+{
+	uint lightID;
+	uint link;
+};

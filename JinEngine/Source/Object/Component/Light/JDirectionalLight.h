@@ -25,7 +25,9 @@ namespace JinEngine
 		const Graphic::JGraphicResourceUserInterface GraphicResourceUserInterface()const noexcept final;
 		const Graphic::JCullingUserInterface CullingUserInterface()const noexcept final;
 		J_LIGHT_TYPE GetLightType()const noexcept final;
-		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept final;   
+		J_SHADOW_MAP_TYPE GetShadowMapType()const noexcept final; 
+		float GetMinPower()const noexcept;
+		float GetMaxPower()const noexcept;
 		float GetFrustumNear()const noexcept final;
 		float GetFrustumFar()const noexcept final;
 		DirectX::BoundingBox GetBBox()const noexcept final;
@@ -51,6 +53,7 @@ namespace JinEngine
 		bool AllowHzbOcclusionCulling()const noexcept final;
 		bool AllowHdOcclusionCulling()const noexcept final;
 		bool AllowDisplayOccCullingDepthMap()const noexcept final;
+
 	protected:
 		void DoActivate()noexcept final;
 		void DoDeActivate()noexcept final;

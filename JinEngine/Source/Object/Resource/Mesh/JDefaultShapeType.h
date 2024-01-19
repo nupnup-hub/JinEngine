@@ -12,7 +12,11 @@ namespace JinEngine
 		GRID,
 		SPHERE,
 		CYILINDER,
-		QUAD,
+		QUAD,		//has to transform clip space
+		FULL_SCREEN_QUAD,	//vertics range -1 ~ 1(xy), 0(z), hasn't to transform clip space
+		LOW_CONE,
+		LOW_SPHERE,
+		LOW_HEMI_SPHERE,
 		BOUNDING_BOX_LINE,
 		BOUNDING_BOX_TRIANGLE,
 		BOUNDING_FRUSTUM,
@@ -21,7 +25,7 @@ namespace JinEngine
 		SCALE_ARROW,
 		LINE,
 		BOUNDING_CONE_LINE,
-		DRAGON,
+		DRAGON, 
 		COUNT,
 	};
 
@@ -29,21 +33,21 @@ namespace JinEngine
 	{ 
 	public:
 		static constexpr int debugTypeSt = (int)J_DEFAULT_SHAPE::BOUNDING_BOX_LINE;
-		static bool IsDefaultUse(const J_DEFAULT_SHAPE type)
+		static bool IsDefaultUsed(const J_DEFAULT_SHAPE type)
 		{
 			switch (type)
-			{
-			case JinEngine::J_DEFAULT_SHAPE::EMPTY:
-				return false;
+			{ 
 			case JinEngine::J_DEFAULT_SHAPE::CUBE:
-				return true;
-			case JinEngine::J_DEFAULT_SHAPE::GRID:
-				return false;
-			case JinEngine::J_DEFAULT_SHAPE::SPHERE:
-				return false;
-			case JinEngine::J_DEFAULT_SHAPE::CYILINDER:
-				return false;
+				return true; 
 			case JinEngine::J_DEFAULT_SHAPE::QUAD:
+				return true;
+			case JinEngine::J_DEFAULT_SHAPE::FULL_SCREEN_QUAD:
+				return true;
+			case JinEngine::J_DEFAULT_SHAPE::LOW_CONE:
+				return true;
+			case JinEngine::J_DEFAULT_SHAPE::LOW_SPHERE:
+				return true;
+			case JinEngine::J_DEFAULT_SHAPE::LOW_HEMI_SPHERE:
 				return true;
 			case JinEngine::J_DEFAULT_SHAPE::BOUNDING_BOX_LINE:
 				return true;
@@ -51,16 +55,8 @@ namespace JinEngine
 				return true;
 			case JinEngine::J_DEFAULT_SHAPE::BOUNDING_FRUSTUM:
 				return true;
-			case JinEngine::J_DEFAULT_SHAPE::POSITION_ARROW:
-				return false;
-			case JinEngine::J_DEFAULT_SHAPE::CIRCLE:
-				return false;
-			case JinEngine::J_DEFAULT_SHAPE::SCALE_ARROW:
-				return false;
 			case JinEngine::J_DEFAULT_SHAPE::LINE:
-				return true;
-			case JinEngine::J_DEFAULT_SHAPE::DRAGON:
-				return false;
+				return true; 
 			default:
 				return false;
 			}
@@ -72,7 +68,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_SHAPE::POSITION_ARROW:
 				return true;
 			case JinEngine::J_DEFAULT_SHAPE::DRAGON:
-				return true;
+				return true; 
 			default:
 				return false;
 			}
@@ -94,6 +90,14 @@ namespace JinEngine
 				return L"Cyilinder";
 			case JinEngine::J_DEFAULT_SHAPE::QUAD:
 				return L"Quad";
+			case JinEngine::J_DEFAULT_SHAPE::FULL_SCREEN_QUAD:
+				return L"FullScreenQuad";
+			case JinEngine::J_DEFAULT_SHAPE::LOW_CONE:
+				return L"LowCone";
+			case JinEngine::J_DEFAULT_SHAPE::LOW_SPHERE:
+				return L"LowSphere";
+			case JinEngine::J_DEFAULT_SHAPE::LOW_HEMI_SPHERE:
+				return L"LowHemiSphere";
 			case JinEngine::J_DEFAULT_SHAPE::BOUNDING_BOX_LINE:
 				return L"BoundingBox_L";
 			case JinEngine::J_DEFAULT_SHAPE::BOUNDING_BOX_TRIANGLE:
@@ -111,7 +115,7 @@ namespace JinEngine
 			case JinEngine::J_DEFAULT_SHAPE::BOUNDING_CONE_LINE:
 				return L"BoundingCone_L";
 			case JinEngine::J_DEFAULT_SHAPE::DRAGON:
-				return L"_Dragon.fbx";
+				return L"_Dragon.fbx"; 
 			default:
 				return L"Error";
 			}

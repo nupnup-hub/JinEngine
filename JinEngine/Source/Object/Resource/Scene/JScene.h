@@ -6,7 +6,7 @@
 #include"Accelerator/Octree/JOctreeOption.h"
 #include"Accelerator/Kd-tree/JKdTreeOption.h"
 #include"../../Component/JComponentType.h"
-#include"../../Component/RenderItem/JRenderLayer.h"
+#include"../../Component/RenderItem/JRenderLayer.h" 
 #include<memory>
 #include<vector>  
 #include<DirectXCollision.h>
@@ -72,7 +72,7 @@ namespace JinEngine
 	private:
 		std::unique_ptr<JSceneImpl> impl;
 	public:
-		Core::JIdentifierPrivate& PrivateInterface()const noexcept final;
+		Core::JIdentifierPrivate& PrivateInterface()const noexcept final; 
 		J_RESOURCE_TYPE GetResourceType()const noexcept final;
 		static constexpr J_RESOURCE_TYPE GetStaticResourceType()noexcept
 		{
@@ -92,7 +92,7 @@ namespace JinEngine
 		J_SCENE_USE_CASE_TYPE GetUseCaseType()const noexcept; 
 		std::vector<JUserPtr<JGameObject>> GetGameObjectVec()const noexcept;
 		std::vector<JUserPtr<JComponent>> GetComponentVec(const J_COMPONENT_TYPE cType)const noexcept;
-		JUserPtr<JComponent> GetDirectionalLight()const noexcept;
+		JUserPtr<JLight> GetFirstDirectionalLight()const noexcept;
 		JOctreeOption GetOctreeOption(const J_ACCELERATOR_LAYER layer)const noexcept;
 		JBvhOption GetBvhOption(const J_ACCELERATOR_LAYER layer)const noexcept;
 		JKdTreeOption GetKdTreeOption(const J_ACCELERATOR_LAYER layer)const noexcept;		
@@ -115,6 +115,7 @@ namespace JinEngine
 		bool IsMainScene()const noexcept;
 		bool IsAcceleratorActivated()const noexcept;
 		bool HasComponent(const J_COMPONENT_TYPE cType)const noexcept;
+		bool AllowLightCulling()const noexcept;
 		bool CanUseAcceleratorUtility(const J_ACCELERATOR_LAYER layer, const J_ACCELERATOR_TYPE type)const noexcept;
 	public:
 		JUserPtr<JGameObject> FindGameObject(const size_t guid)noexcept;

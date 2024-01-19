@@ -27,8 +27,6 @@ namespace JinEngine
 		public:
 			JUserPtr<JGameObject> owner = nullptr;
 		public:
-
-		public:
 			InitData(const Core::JTypeInfo& typeInfo, const JUserPtr<JGameObject>& owner);
 			InitData(const Core::JTypeInfo& typeInfo, const std::wstring& name, const size_t guid, const J_OBJECT_FLAG flag, const JUserPtr<JGameObject>& owner);
 		public:

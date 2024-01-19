@@ -16,11 +16,26 @@ namespace JinEngine
 	class JMaterial;
 	class JScene;
 	class JCamera;  
+	class JTransform;
+	class JRenderItem;
 
 	class JPreviewScene
 	{ 
 	private:
 		friend class JPreviewSceneGroup;
+	protected:
+		struct AdjustSceneSettingData
+		{
+		public: 
+			JVector2F pad = JVector2F::Zero();				//valid in 2d preview
+			JVector3F additionalPos = JVector3F::Zero();	//valid in 3d preview
+			JVector3F additionalPosRate = JVector3F::Zero();	//valid in 2d preview
+		public:
+			JUserPtr<JTransform> targetTransform;					//preview target
+			JUserPtr<JRenderItem> targetRenderItem;					//preview target
+		public:
+			bool useFixedPad = false;			//valid in 2dTexture
+		};
 	private:
 		const size_t guid;
 	private:
@@ -54,21 +69,11 @@ namespace JinEngine
 	public:
 		void Clear()noexcept;
 	protected: 
-		void AdjustCamera(_In_ const JVector3<float>& objCenter, 
-			const float objRadius, 
-			const JVector3<float>& additionalPos = JVector3<float>(0,0,0))noexcept;
+		void AdjustScene(const AdjustSceneSettingData& data)noexcept;
 	private:
-		void Adjust2DTextureCamera(const JVector3<float>& objCenter,
-			const float objRadius,
-			const JVector3<float>& additionalPos)noexcept;
-		void Adjust2DOtherCamera(const JVector3<float>& objCenter,
-			const float objRadius,
-			const JVector3<float>& additionalPos)noexcept;
-		void Adjust3DFixedCamera(const JVector3<float>& objCenter,
-			const float objRadius,
-			const JVector3<float>& additionalPos)noexcept;
-		void Adjust3DNonFixedCamera(const JVector3<float>& objCenter, 
-			const float objRadius,
-			const JVector3<float>& additionalPos)noexcept;
+		void Adjust2DTextureScene(const AdjustSceneSettingData& data)noexcept;
+		void Adjust2DScene(const AdjustSceneSettingData& data)noexcept;
+		void Adjust3DFixedScene(const AdjustSceneSettingData& data)noexcept;
+		void Adjust3DNonFixedScene(const AdjustSceneSettingData& data)noexcept;
 	};
 }

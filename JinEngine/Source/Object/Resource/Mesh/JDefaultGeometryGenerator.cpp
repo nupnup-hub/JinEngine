@@ -10,7 +10,7 @@ namespace JinEngine
 //***************************************************************************************
 	using namespace DirectX;
 
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateCube(const float width,
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateCube(const float width,
 		const float height,
 		const float depth,
 		uint numSubdivisions)
@@ -90,7 +90,7 @@ namespace JinEngine
 		i[30] = 20; i[31] = 21; i[32] = 22;
 		i[33] = 20; i[34] = 22; i[35] = 23;
 
-		Core::JStaticMeshData meshData(L"Cube", std::move(i), true, true, std::move(v));
+		std::unique_ptr<Core::JStaticMeshData> meshData = std::make_unique<Core::JStaticMeshData>(L"Cube", std::move(i), true, true, std::move(v));
 		// Put a cap on the number of subdivisions.
 		numSubdivisions = std::min<uint>(numSubdivisions, 6u);
 		for (uint i = 0; i < numSubdivisions; ++i)
@@ -99,9 +99,7 @@ namespace JinEngine
 		return meshData;
 	}
 
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateSphere(const float radius,
-		const uint slicecount,
-		const uint stackcount)
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateSphere(float radius, uint slicecount, uint stackcount)
 	{
 		//
 		// Compute the vertices stating at the top pole and moving down the stacks.
@@ -109,12 +107,14 @@ namespace JinEngine
 		// Poles: note that there will be texture coordinate distortion as there is
 		// not a unique point on the texture map to assign to the pole when mapping
 		// a rectangular texture onto a sphere.
+
 		Core::JStaticMeshVertex topVertex(0.0f, radius, 0.0f, 0.0f, +1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 		Core::JStaticMeshVertex bottomVertex(0.0f, -radius, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
 
 		std::vector<Core::JStaticMeshVertex> vertices;
 		vertices.push_back(topVertex);
 
+		//float phiStep = XM_PI / (isHemiSphere ? (stackcount * 2.0f) : stackcount);
 		float phiStep = XM_PI / stackcount;
 		float thetaStep = 2.0f * XM_PI / slicecount;
 
@@ -122,7 +122,6 @@ namespace JinEngine
 		for (uint i = 1; i <= stackcount - 1; ++i)
 		{
 			float phi = i * phiStep;
-
 			// vertices of ring.
 			for (uint j = 0; j <= slicecount; ++j)
 			{
@@ -204,9 +203,109 @@ namespace JinEngine
 		}
 
 		//Core::JStaticMeshData meshData{L"Cube", std::move(i), true, true, std::move(v)};
-		return Core::JStaticMeshData{ L"Sphere", std::move(indices), true, true, std::move(vertices) };
+		return std::make_unique<Core::JStaticMeshData>(L"Sphere", std::move(indices), true, true, std::move(vertices));
 	}
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateGeosphere(const float radius, uint numSubdivisions)
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateHemiSphere(float radius, uint slicecount, uint stackcount)
+	{
+		//
+		// Compute the vertices stating at the top pole and moving down the stacks.
+		//
+		// Poles: note that there will be texture coordinate distortion as there is
+		// not a unique point on the texture map to assign to the pole when mapping
+		// a rectangular texture onto a sphere.
+		 
+		Core::JStaticMeshVertex topVertex(0.0f, radius, 0.0f, 0.0f, +1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+		Core::JStaticMeshVertex bottomVertex(0.0f, -radius, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+
+		std::vector<Core::JStaticMeshVertex> vertices;
+		vertices.push_back(topVertex);
+		 
+		float phiStep = XM_PI / (stackcount * 2.0f);
+		float thetaStep = 2.0f * XM_PI / slicecount;
+		 
+		// Compute vertices for each stack ring (do not count the poles as rings).
+		for (uint i = 1; i <= stackcount; ++i)
+		{
+			float phi = i * phiStep;
+			// vertices of ring.
+			for (uint j = 0; j <= slicecount; ++j)
+			{
+				float theta = j * thetaStep;
+
+				Core::JStaticMeshVertex v;
+
+				// spherical to cartesian
+				v.position.x = radius * sinf(phi) * cosf(theta);
+				//v.position.y = radius * cosf(phi);
+				v.position.y = -radius + (radius * 2) * cosf(phi);
+				v.position.z = radius * sinf(phi) * sinf(theta);
+
+				// Partial derivative of P with respect to theta
+				v.tangentU.x = -radius * sinf(phi) * sinf(theta);
+				v.tangentU.y = 0.0f;
+				v.tangentU.z = +radius * sinf(phi) * cosf(theta);
+
+				v.tangentU = XMVector3Normalize(v.tangentU.ToXmV());
+				v.normal = XMVector3Normalize(v.position.ToXmV());
+
+				v.texC.x = theta / XM_2PI;
+				v.texC.y = phi / XM_PI;
+
+				vertices.push_back(v);
+			}
+		}
+		vertices.push_back(bottomVertex);
+		//
+		// Compute indices for top stack.  The top stack was written first to the vertex buffer
+		// and connects the top pole to the first ring.
+		//
+
+		std::vector<uint> indices;
+		for (uint i = 1; i <= slicecount; ++i)
+		{
+			indices.push_back(0);
+			indices.push_back(i + 1);
+			indices.push_back(i);
+		}
+
+		//
+		// Compute indices for inner stacks (not connected to poles).
+		//
+
+		// Offset the indices to the index of the first vertex in the first ring.
+		// This is just skipping the top pole vertex.
+		uint baseIndex = 1;
+		uint ringVertexcount = slicecount + 1;
+		for (uint i = 0; i < stackcount - 1; ++i)
+		{
+			for (uint j = 0; j < slicecount; ++j)
+			{
+				indices.push_back(baseIndex + i * ringVertexcount + j);
+				indices.push_back(baseIndex + i * ringVertexcount + j + 1);
+				indices.push_back(baseIndex + (i + 1) * ringVertexcount + j);
+
+				indices.push_back(baseIndex + (i + 1) * ringVertexcount + j);
+				indices.push_back(baseIndex + i * ringVertexcount + j + 1);
+				indices.push_back(baseIndex + (i + 1) * ringVertexcount + j + 1);
+			}
+		}
+
+		// South pole vertex was added last.
+		uint southPoleIndex = (uint)vertices.size() - 1;
+
+		// Offset the indices to the index of the first vertex in the last ring.
+		baseIndex = southPoleIndex - ringVertexcount;
+
+		for (uint i = 0; i < slicecount; ++i)
+		{
+			indices.push_back(southPoleIndex);
+			indices.push_back(baseIndex + i);
+			indices.push_back(baseIndex + i + 1);
+		}
+		 
+		return std::make_unique<Core::JStaticMeshData>(L"HemiSphere", std::move(indices), true, true, std::move(vertices));
+	}
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateGeosphere(const float radius, uint numSubdivisions)
 	{
 		// Put a cap on the number of subdivisions.
 		numSubdivisions = std::min<uint>(numSubdivisions, 6u);
@@ -238,17 +337,17 @@ namespace JinEngine
 		for (uint i = 0; i < 12; ++i)
 			vertices[i].position = pos[i];
 
-		Core::JStaticMeshData meshData{ L"GeoSphere", std::move(indices), true, true, std::move(vertices) };
+		std::unique_ptr<Core::JStaticMeshData> meshData = std::make_unique<Core::JStaticMeshData>(L"GeoSphere", std::move(indices), true, true, std::move(vertices));
 
 		for (uint i = 0; i < numSubdivisions; ++i)
 			Subdivide(meshData);
 
 		// Project vertices onto sphere and scale.
-		const uint vertexCount = meshData.GetVertexCount();
+		const uint vertexCount = meshData->GetVertexCount();
 		for (uint i = 0; i < vertexCount; ++i)
 		{
 			// Project onto unit sphere.
-			XMVECTOR n = XMVector3Normalize(meshData.GetPosition(i).ToXmV());
+			XMVECTOR n = XMVector3Normalize(meshData->GetPosition(i).ToXmV());
 
 			// Project onto sphere.
 			XMVECTOR p = radius * n;
@@ -276,20 +375,24 @@ namespace JinEngine
 			v.tangentU.z = +radius * sinf(phi) * cosf(theta);
 
 			v.tangentU = XMVector3Normalize(v.tangentU.ToXmV());
-			meshData.SetVertex(i, v);
+			meshData->SetVertex(i, v);
 		}
 
-		return meshData;
+		return std::move(meshData);
 	}
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateCylinder(const float bottomRadius,
-		const float topRadius,
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateCylinder(const float bottomRadius,
+		float topRadius,
 		const float height,
 		const uint slicecount,
-		const uint stackcount)
+		const uint stackcount,
+		const bool isCone,
+		const float ySt)
 	{
 		//
 		// Build Stacks.
 		// 
+		if (isCone)
+			topRadius = 0;
 		std::vector<Core::JStaticMeshVertex> vertices;
 		std::vector<uint> indices;
 
@@ -300,7 +403,7 @@ namespace JinEngine
 		// Compute vertices for each stack ring starting at the bottom and moving up.
 		for (uint i = 0; i < ringcount; ++i)
 		{
-			float y = -0.5f * height + i * stackHeight;
+			float y = -0.5f * height + i * stackHeight + ySt;
 			float r = bottomRadius + i * radiusStep;
 
 			// vertices of ring
@@ -369,13 +472,19 @@ namespace JinEngine
 				indices.push_back(i * ringVertexcount + j + 1);
 			}
 		}
-		Core::JStaticMeshData meshData(L"Cylinder", std::move(indices), true, true, std::move(vertices));
-		BuildCylinderTopCap(bottomRadius, topRadius, height, slicecount, stackcount, meshData);
-		BuildCylinderBottomCap(bottomRadius, topRadius, height, slicecount, stackcount, meshData);
+		std::wstring name;
+		if (topRadius == 0)
+			name = L"Cone";
+		else
+			name = L"Cylinder";
 
-		return meshData;
+		std::unique_ptr<Core::JStaticMeshData> meshData = std::make_unique<Core::JStaticMeshData>(name, std::move(indices), true, true, std::move(vertices));
+		BuildCylinderTopCap(bottomRadius, topRadius, height, slicecount, stackcount, meshData.get(), ySt);
+		BuildCylinderBottomCap(bottomRadius, topRadius, height, slicecount, stackcount, meshData.get(), ySt);
+
+		return std::move(meshData);
 	}
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateGrid(const float width,
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateGrid(const float width,
 		const float depth,
 		const uint m,
 		const uint n)
@@ -434,9 +543,9 @@ namespace JinEngine
 			}
 		}
 
-		return Core::JStaticMeshData(L"Grid", std::move(indices), true, true, std::move(vertices));
+		return std::make_unique<Core::JStaticMeshData>(L"Grid", std::move(indices), true, true, std::move(vertices));
 	}
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateQuad(const float x,
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateQuad(const float x,
 		const float y,
 		const float w,
 		const float h,
@@ -445,43 +554,41 @@ namespace JinEngine
 		std::vector<Core::JStaticMeshVertex> vertices(4);
 		std::vector<uint> indices(6);
 
-		// position coordinates specified in NDC space.
-
 		vertices[0] = Core::JStaticMeshVertex(
-			x, y - h, depth,
+			x, y + h, depth,
 			0.0f, 0.0f, -1.0f,
-			0.0f, 1.0f,
+			0.0f, 0.0f,
 			1.0f, 0.0f, 0.0f);
 
 		vertices[1] = Core::JStaticMeshVertex(
 			x, y, depth,
 			0.0f, 0.0f, -1.0f,
-			0.0f, 0.0f,
+			0.0f, 1.0f,
 			1.0f, 0.0f, 0.0f);
 
 		vertices[2] = Core::JStaticMeshVertex(
-			x + w, y, depth,
+			x + w, y + h, depth,
 			0.0f, 0.0f, -1.0f,
 			1.0f, 0.0f,
 			1.0f, 0.0f, 0.0f);
 
 		vertices[3] = Core::JStaticMeshVertex(
-			x + w, y - h, depth,
+			x + w, y, depth,
 			0.0f, 0.0f, -1.0f,
 			1.0f, 1.0f,
 			1.0f, 0.0f, 0.0f);
 
 		indices[0] = 0;
-		indices[1] = 1;
-		indices[2] = 2;
+		indices[1] = 2;
+		indices[2] = 1;
 
-		indices[3] = 0;
+		indices[3] = 1;
 		indices[4] = 2;
 		indices[5] = 3;
 
-		return Core::JStaticMeshData(L"Quad", std::move(indices), true, true, std::move(vertices));
+		return std::make_unique<Core::JStaticMeshData>(L"Quad", std::move(indices), true, true, std::move(vertices));
 	}
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateLineBoundingBox()
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateLineBoundingBox()
 	{
 		std::vector<Core::JStaticMeshVertex> vertices(8);
 		vertices[0].position = JVector3<float>(-0.5f, -0.5f, -0.5f);
@@ -508,9 +615,9 @@ namespace JinEngine
 			2, 6,
 			3, 7
 		};
-		return Core::JStaticMeshData(L"Bounding Box_L", std::move(indices), false, false, std::move(vertices));
+		return std::make_unique<Core::JStaticMeshData>(L"Bounding Box_L", std::move(indices), false, false, std::move(vertices));
 	}
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateTriangleBoundingBox()
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateTriangleBoundingBox()
 	{
 		std::vector<Core::JStaticMeshVertex> vertices(8);
 		vertices[0].position = JVector3<float>(-0.5f, 0.5f, -0.5);
@@ -542,9 +649,9 @@ namespace JinEngine
 			0, 3, 4,
 			0, 4, 7
 		};
-		return Core::JStaticMeshData(L"Bounding Box_T", std::move(indices), false, false, std::move(vertices));
+		return std::make_unique<Core::JStaticMeshData>(L"Bounding Box_T", std::move(indices), false, false, std::move(vertices));
 	}
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateBoundingFrustum()
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateBoundingFrustum()
 	{
 		std::vector<Core::JStaticMeshVertex> vertices(5);
 		vertices[0].position = JVector3<float>(0, 0, 0);
@@ -565,9 +672,9 @@ namespace JinEngine
 			2, 3
 		};
 
-		return Core::JStaticMeshData(L"Bounding Frustum", std::move(indices), false, false, std::move(vertices));
+		return std::make_unique<Core::JStaticMeshData>(L"Bounding Frustum", std::move(indices), false, false, std::move(vertices));
 	}
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateCircle(float outRadius, float innerRadius)
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateCircle(float outRadius, float innerRadius)
 	{
 		const int segments = 64;
 		const int vertexCount = (segments + 1) * 2;
@@ -607,9 +714,9 @@ namespace JinEngine
 
 			indexOffset += 6;
 		}
-		return Core::JStaticMeshData(L"Circle", std::move(indices), false, false, std::move(vertices));
+		return std::make_unique<Core::JStaticMeshData>(L"Circle", std::move(indices), false, false, std::move(vertices));
 	}
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateLine(uint thickness)
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateLine(uint thickness)
 	{
 		const float padding = 0.0001f;
 		std::vector<Core::JStaticMeshVertex> vertices(thickness * 2);
@@ -621,7 +728,7 @@ namespace JinEngine
 			xFactor = padding * -(divFactor - 1) - padding;
 		else
 			xFactor = padding * -divFactor;
-		 
+
 		for (uint i = 0; i < thickness; ++i)
 		{
 			vertices[i * 2].position = JVector3<float>(xFactor, -0.5f, 0.0f);
@@ -631,10 +738,10 @@ namespace JinEngine
 			indices[i * 2] = i * 2;
 			indices[i * 2 + 1] = i * 2 + 1;
 		}
-		return Core::JStaticMeshData(L"Line", std::move(indices), false, false, std::move(vertices));
+		return std::make_unique<Core::JStaticMeshData>(L"Line", std::move(indices), false, false, std::move(vertices));
 	}
-	Core::JStaticMeshData JDefaultGeometryGenerator::CreateBoundingCone()
-	{ 
+	std::unique_ptr<Core::JStaticMeshData> JDefaultGeometryGenerator::CreateBoundingCone()
+	{
 		float outRadius = 0.5f;;
 		float innerRadius = 0.4988f;
 		float middleRadius = innerRadius + (outRadius - innerRadius) * 0.5f;
@@ -645,7 +752,7 @@ namespace JinEngine
 		const int lineCount = 8;
 		static constexpr int lineThickness = 4;
 		const float padding = 0.0001f;
- 
+
 		std::vector<Core::JStaticMeshVertex> vertices(vertexCount + lineCount * lineThickness * 2);
 		std::vector<uint> indices(indexCount + lineCount * lineThickness * 2);
 
@@ -684,14 +791,14 @@ namespace JinEngine
 			indices[indexOffset + 5] = vertexOffset;
 
 			indexOffset += 6;
-		} 
+		}
 		vertexOffset += 2;
 		for (int i = 0; i < lineCount; ++i)
 		{
 			theta = 2.0f * XM_PI * ((lineCount - i) / (float)lineCount);
 			float x = middleRadius * std::cos(theta);
 			float y = middleRadius * std::sin(theta);
- 
+
 			vertices[vertexOffset].position = JVector3<float>(0.0f, 0.0f, 0.0f);
 			vertices[vertexOffset + 1].position = JVector3<float>(x - padding, y, 1.0f);
 			vertices[vertexOffset + 2].position = JVector3<float>(0.0f, 0.0f, 0.0f);
@@ -713,12 +820,12 @@ namespace JinEngine
 			vertexOffset += 8;
 			indexOffset += 8;
 		}
-		return Core::JStaticMeshData(L"BoundingCone_L", std::move(indices), false, false, std::move(vertices));
+		return std::make_unique<Core::JStaticMeshData>(L"BoundingCone_L", std::move(indices), false, false, std::move(vertices));
 	}
-	void JDefaultGeometryGenerator::Subdivide(Core::JStaticMeshData& meshData)
+	void JDefaultGeometryGenerator::Subdivide(std::unique_ptr<Core::JStaticMeshData>& meshData)
 	{
 		// Save a copy of the input geometry.
-		Core::JStaticMeshData inputCopy = meshData;
+		Core::JStaticMeshData inputCopy = *meshData;
 
 		//       v1
 		//       *
@@ -771,7 +878,7 @@ namespace JinEngine
 			indices.push_back(i * 6 + 1);
 			indices.push_back(i * 6 + 4);
 		}
-		meshData = Core::JStaticMeshData(inputCopy.GetName(),
+		meshData = std::make_unique<Core::JStaticMeshData>(inputCopy.GetName(),
 			inputCopy.GetGuid(),
 			std::move(indices),
 			inputCopy.HasUV(),
@@ -795,49 +902,57 @@ namespace JinEngine
 
 		return v;
 	}
-	void JDefaultGeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius, float height,
-		uint slicecount, uint stackcount, Core::JStaticMeshData& meshData)
+	void JDefaultGeometryGenerator::BuildCylinderTopCap(float bottomRadius,
+		float topRadius,
+		float height,
+		uint slicecount,
+		uint stackcount,
+		Core::JStaticMeshData* meshData,
+		const float ySt)
 	{
-		uint baseIndex = (uint)meshData.GetVertexCount();
-
-		float y = 0.5f * height;
-		float dTheta = 2.0f * XM_PI / slicecount;
-
-		// Duplicate cap ring vertices because the texture coordinates and normals differ.
-		for (uint i = 0; i <= slicecount; ++i)
+		uint baseIndex = (uint)meshData->GetVertexCount();
+		float y = 0.5f * height + ySt;
+		if (topRadius != 0)
 		{
-			float x = topRadius * cosf(i * dTheta);
-			float z = topRadius * sinf(i * dTheta);
+			float dTheta = 2.0f * XM_PI / slicecount;
+			// Duplicate cap ring vertices because the texture coordinates and normals differ.
+			for (uint i = 0; i <= slicecount; ++i)
+			{
+				float x = topRadius * cosf(i * dTheta);
+				float z = topRadius * sinf(i * dTheta);
 
-			// Scale down by the height to try and make top cap texture coord area
-			// proportional to base.
-			float u = x / height + 0.5f;
-			float v = z / height + 0.5f;
+				// Scale down by the height to try and make top cap texture coord area
+				// proportional to base.
+				float u = x / height + 0.5f;
+				float v = z / height + 0.5f;
 
-			meshData.AddVertex(Core::JStaticMeshVertex(x, y, z, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
+				meshData->AddVertex(Core::JStaticMeshVertex(x, y, z, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
+			}
 		}
-
 		// Cap center vertex.
-		meshData.AddVertex(Core::JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
-
+		meshData->AddVertex(Core::JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
 		// Index of center vertex.
-		uint centerIndex = (uint)meshData.GetVertexCount() - 1;
-
+		uint centerIndex = (uint)meshData->GetVertexCount() - 1;
 		for (uint i = 0; i < slicecount; ++i)
 		{
-			meshData.AddIndex(centerIndex);
-			meshData.AddIndex(baseIndex + i + 1);
-			meshData.AddIndex(baseIndex + i);
+			meshData->AddIndex(centerIndex);
+			meshData->AddIndex(baseIndex + i + 1);
+			meshData->AddIndex(baseIndex + i);
 		}
 	}
-	void JDefaultGeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height,
-		uint slicecount, uint stackcount, Core::JStaticMeshData& meshData)
+	void JDefaultGeometryGenerator::BuildCylinderBottomCap(float bottomRadius,
+		float topRadius,
+		float height,
+		uint slicecount,
+		uint stackcount,
+		Core::JStaticMeshData* meshData,
+		const float ySt)
 	{
 		// 
 		// Build bottom cap.
 		//
-		uint baseIndex = (uint)meshData.GetVertexCount();
-		float y = -0.5f * height;
+		uint baseIndex = (uint)meshData->GetVertexCount();
+		float y = -0.5f * height + ySt;
 
 		// vertices of ring
 		float dTheta = 2.0f * XM_PI / slicecount;
@@ -852,20 +967,20 @@ namespace JinEngine
 			float v = z / height + 0.5f;
 
 			//수정필요
-			meshData.AddVertex(Core::JStaticMeshVertex(x, y, z, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
+			meshData->AddVertex(Core::JStaticMeshVertex(x, y, z, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u, v));
 		}
 
 		// Cap center vertex.
-		meshData.AddVertex(Core::JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
+		meshData->AddVertex(Core::JStaticMeshVertex(0.0f, y, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f));
 
 		// Cache the index of center vertex.
-		uint centerIndex = (uint)meshData.GetVertexCount() - 1;
+		uint centerIndex = (uint)meshData->GetVertexCount() - 1;
 
 		for (uint i = 0; i < slicecount; ++i)
 		{
-			meshData.AddIndex(centerIndex);
-			meshData.AddIndex(baseIndex + i);
-			meshData.AddIndex(baseIndex + i + 1);
+			meshData->AddIndex(centerIndex);
+			meshData->AddIndex(baseIndex + i);
+			meshData->AddIndex(baseIndex + i + 1);
 		}
 	}
 }

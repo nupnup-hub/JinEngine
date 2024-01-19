@@ -5,18 +5,22 @@ namespace JinEngine::Graphic
 	JGraphicBaseDataSet::JGraphicBaseDataSet(const JGraphicInfo& info, const JGraphicOption& option)
 		:info(info), option(option)
 	{}
+
 	JGraphicDeviceInitSet::JGraphicDeviceInitSet(const JGraphicInfo& info, const JGraphicOption& option, JGraphicResourceManager* graphicResourceM)
 		: info(info), option(option), graphicResourceM(graphicResourceM)
 	{}
+
 	JGraphicDrawReferenceSet::JGraphicDrawReferenceSet(const JGraphicInfo& info,
 		const JGraphicOption& option,
 		JGraphicDevice* device,
 		JGraphicResourceManager* graphicResourceM,
 		JCullingManager* cullingM,
 		JFrameResource* currFrame,
-		JDepthMapDebug* depthDebug,
+		JGraphicDebug* depthDebug,
 		JDepthTest* depthTest,
-		JImageProcessing* image)
+		JImageProcessing* image,
+		const int currFrameIndex,
+		const int nextFrameIndex)
 		: info(info), 
 		option(option),
 		device(device),
@@ -25,7 +29,9 @@ namespace JinEngine::Graphic
 		currFrame(currFrame),
 		depthDebug(depthDebug),
 		depthTest(depthTest),
-		image(image)
+		image(image),
+		currFrameIndex(currFrameIndex),
+		nextFrameIndex(nextFrameIndex)
 	{
 		if (device != nullptr && graphicResourceM != nullptr && cullingM != nullptr && currFrame != nullptr &&
 			depthDebug != nullptr && depthTest != nullptr && image != nullptr)
@@ -33,6 +39,13 @@ namespace JinEngine::Graphic
 		else
 			SetValid(false);
 	}
+
+	JGraphicShaderCompileSet::JGraphicShaderCompileSet(JGraphicDevice* device, const JGraphicBaseDataSet& base)
+		:device(device), base(base)
+	{}
+	JGraphicShaderCompileSet::JGraphicShaderCompileSet(JGraphicDevice* device, const JGraphicInfo& info, const JGraphicOption& option)
+		: device(device), base(JGraphicBaseDataSet(info, option))
+	{}
 
 	JGraphicBindSet::JGraphicBindSet(JFrameResource* currFrame, JGraphicResourceManager* graphicResourceM, JCullingManager* cullingManager)
 		:currFrame(currFrame), graphicResourceM(graphicResourceM), cullingManager(cullingManager)
@@ -45,17 +58,9 @@ namespace JinEngine::Graphic
 		: currFrame(drawSet->currFrame), graphicResourceM(drawSet->graphicResourceM), cullingM(drawSet->cullingM)
 	{}
  
-	JGraphicDepthMapDebugTaskSet::JGraphicDepthMapDebugTaskSet(JGraphicDevice* gDevice, JGraphicResourceManager* graphicResourceM)
-		: gDevice(gDevice), graphicResourceM(graphicResourceM)
-	{}
-	JGraphicDepthMapDebugTaskSet::JGraphicDepthMapDebugTaskSet(JGraphicDevice* gDevice,
-		JGraphicResourceManager* graphicResourceM,
-		const JVector2<uint> size,
-		const float nearF,
-		const float farF,
-		const bool isPerspective)
-		: gDevice(gDevice), graphicResourceM(graphicResourceM), size(size), nearF(nearF), farF(farF), isPerspective(isPerspective)
-	{}
+	JGraphicDebugRsComputeSet::JGraphicDebugRsComputeSet(JGraphicDevice* gDevice, JGraphicResourceManager* graphicResourceM)
+		: device(device), graphicResourceM(graphicResourceM)
+	{}	 
 
 	JGraphicSceneDrawSet::JGraphicSceneDrawSet(JGraphicDevice* device,
 		JFrameResource* currFrame,
@@ -83,13 +88,7 @@ namespace JinEngine::Graphic
 		cullingM(cullingM),
 		depthTest(depthTest)
 	{}
-
-	JGraphicOccDebugDrawSet::JGraphicOccDebugDrawSet(JGraphicDevice* device,
-		JGraphicResourceManager* graphicResourceM,
-		JDepthMapDebug* depthDebug)
-		:device(device), graphicResourceM(graphicResourceM), depthDebug(depthDebug)
-	{}
-
+	 
 	JGraphicHzbOccComputeSet::JGraphicHzbOccComputeSet(JFrameResource* currFrame,
 		JGraphicResourceManager* graphicResourceM,
 		JCullingManager* cullingM)
@@ -106,19 +105,30 @@ namespace JinEngine::Graphic
 		: device(device), graphicResourceM(graphicResourceM)
 	{}
 
-	JGraphicBlurTaskSet::JGraphicBlurTaskSet(JGraphicDevice* device, std::unique_ptr<JBlurDesc>&& desc)
+	JGraphicBlurComputeSet::JGraphicBlurComputeSet(JGraphicDevice* device, std::unique_ptr<JBlurDesc>&& desc)
 		: device(device), desc(std::move(desc))
 	{}
 
-	JGraphicDownSampleTaskSet::JGraphicDownSampleTaskSet(JGraphicDevice* device, 
+	JGraphicDownSampleComputeSet::JGraphicDownSampleComputeSet(JGraphicDevice* device, 
 		JGraphicResourceManager* graphicResourceM, 
 		std::unique_ptr<JDownSampleDesc>&& desc,
 		std::vector<Core::JDataHandle>&& handle)
 		: device(device), graphicResourceM(graphicResourceM), desc(std::move(desc)), handle(std::move(handle))
 	{}
 
-	JGraphicSsaoTaskSet::JGraphicSsaoTaskSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM, JFrameResource* currFrame)
+	JGraphicSsaoComputeSet::JGraphicSsaoComputeSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM, JFrameResource* currFrame)
 		: device(device), graphicResourceM(graphicResourceM), currFrame(currFrame)
+	{}
+
+	JGraphicLightCullingTaskSet::JGraphicLightCullingTaskSet(JGraphicDevice* device,
+		JGraphicResourceManager* graphicResourceM,
+		JCullingManager* cullingManager,
+		JFrameResource* currFrame)
+		: device(device), graphicResourceM(graphicResourceM), cullingManager(cullingManager), currFrame(currFrame)
+	{}
+
+	JGraphicLightCullingDebugDrawSet::JGraphicLightCullingDebugDrawSet(JGraphicDevice* device, JGraphicResourceManager* graphicResourceM)
+		: device(device), graphicResourceM(graphicResourceM)
 	{}
 
 	JGraphicEndConditonSet::JGraphicEndConditonSet(const bool isSceneDrawn)

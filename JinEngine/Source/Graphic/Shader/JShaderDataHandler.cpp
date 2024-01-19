@@ -4,7 +4,7 @@
 
 namespace JinEngine::Graphic
 { 
-	void JGraphicShaderDataHandler::RecompileShader(JShader* shader)
+	void JGraphicShaderDataHandler::RecompileUserShader(JShader* shader)
 	{
 		JShaderPrivate::CompileInterface::RecompileGraphicShader(shader);
 	}

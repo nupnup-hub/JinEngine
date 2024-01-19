@@ -416,12 +416,12 @@ namespace JinEngine
 			UpdateDocking(); 
  
 			if (IsActivated() && root.IsValid())
-			{
+			{ 
 				UpdateMouseClick();
-				searchBarHelper->UpdateSearchBar();
+				searchBarHelper->UpdateSearchBar();			 
 				treeStrcture->Begin();
 				BuildObjectExplorer();
-				treeStrcture->End();
+				treeStrcture->End();  
 			}
 			CloseWindow();
 		}

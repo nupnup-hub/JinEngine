@@ -2,7 +2,8 @@
 #include"GraphicResource/JGraphicResourceType.h"
 #include"JGraphicOption.h" 
 #include"JGraphicInfo.h" 
-#include<d3d12.h>
+#include"JGraphicEvent.h"
+#include"../Core/Event/JEventManager.h"   
  
 namespace JinEngine
 {
@@ -13,6 +14,12 @@ namespace JinEngine
 	namespace Graphic
 	{
 		class JGraphicPrivate; 
+		 
+		using GraphicEventManager = Core::JEventManager<size_t, J_GRAPHIC_EVENT_TYPE, JGraphicEventStruct*>;
+		using GraphicEventInterface = GraphicEventManager::Interface;
+		using GraphicEventPtr = GraphicEventInterface::OnEventPtr;
+		using GraphicEventListener = GraphicEventInterface::Listener;
+	 
 		class JGraphic
 		{
 		private:
@@ -28,10 +35,12 @@ namespace JinEngine
 			std::unique_ptr<JGraphicImpl> impl;
 		public:
 			JGraphicInfo GetGraphicInfo()const noexcept;
-			JGraphicOption GetGraphicOption()const noexcept;
+			JGraphicOption GetGraphicOption()const noexcept; 
 			void GetLastDeviceErrorInfo(_Out_ std::wstring& errorCode, _Out_ std::wstring& errorMsg)const noexcept;
 		public:
 			void SetGraphicOption(JGraphicOption newGraphicOption)noexcept;
+		public: 
+			GraphicEventInterface* EventInterface()noexcept; 
 		private:
 			JGraphic();
 			~JGraphic();

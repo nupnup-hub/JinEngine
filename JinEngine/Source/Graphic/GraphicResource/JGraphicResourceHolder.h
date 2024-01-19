@@ -18,7 +18,7 @@ namespace JinEngine
 		public:
 			virtual bool HasValidResource()const noexcept = 0;
 		public:
-			virtual void Clear() = 0;
+			virtual void Clear()noexcept = 0;
 		};
 	}
 }

@@ -17,20 +17,20 @@ namespace JinEngine
 			JMatrix4x4 viewProj = JMatrix4x4::Identity();
 			JMatrix4x4 shadowMapTransform = JMatrix4x4::Identity(); 
 			JVector3F color = { 0.8f, 0.8f, 0.8f };
-			int shadowMapIndex = 0;
+			float power = 0;
 			JVector3F direction = JVector3F::Down();
-			int shadowMapType = 0;  //-1 is not 0 = norma, 1 = csm, 2 = cube
-			JVector2F frustumSize;
 			float frustumNear = 0;
+			JVector2F frustumSize;
 			float frustumFar = 0;
 			float penumbraScale = 0;
 			float penumbraBlockerScale = 0;
 			int csmDataIndex = 0;
+			int shadowMapIndex = 0; 
+			int shadowMapType = 0;  //-1 is not 0 = norma, 1 = csm, 2 = cube
 			float shadowMapSize = 0;
-			float shadowMapInvSize = 0;
+			float shadowMapInvSize = 0;	 
 			float tanAngle = 0;
 			float bias = 0;
-			uint dLightPad00 = 0;
 		};
 		struct JCsmConstants
 		{ 
@@ -61,6 +61,7 @@ namespace JinEngine
 			float shadowMapSize = 0;
 			float shadowMapInvSize = 0;
 			float bias = 0; 
+			uint pLightPad00 = 0;
 		};
 		struct JSpotLightConstants
 		{
@@ -71,8 +72,9 @@ namespace JinEngine
 			float frustumNear = 0;
 			JVector3F direction;
 			float frustumFar = 0;
-			float innerConeAngle = 0;	//cos
-			float outerConeAngle = 0;	//cos
+			float innerConeCosAngle = 0;	//cos
+			float outerConeCosAngle = 0;	//cos
+			float outerConeAngle = 0;
 			float penumbraScale = 0;
 			float penumbraBlockerScale = 0;
 			int shadowMapIndex = 0;
@@ -81,24 +83,24 @@ namespace JinEngine
 			float shadowMapInvSize = 0;
 			float bias = 0;
 			uint sLightPad00 = 0;
-			uint sLightPad01 = 0;
-			uint sLightPad02 = 0;
+			uint sLightPad01 = 0; 
 		}; 
 		struct JRectLightConstants
 		{ 
 			JMatrix4x4 shadowMapTransform = JMatrix4x4::Identity();
 			JVector3F origin;
 			float power = 1.0f;
-			JVector3F extents;
-			float frustumNear = 0;
 			JVector3F axis[3];
-			JVector3F color = { 0.8f, 0.8f, 0.8f };
-			float frustumFar = 0;
-			uint isTwoSide = 0;
+			JVector3F color = { 0.8f, 0.8f, 0.8f }; 
+			JVector2F extents;
+			int sourceTextureIndex = invalidIndex;
+			float frustumNear;
+			float frustumFar;
+			float barndoorLength;
+			float barndoorCosAngle;
 			int shadowMapIndex = 0;
 			uint hasShadowMap = 0;
-			int sourceTextureIndex = invalidIndex;
-			int rectLightPad00 = 0;
+			int rectLightPad00 = 0; 
 			int rectLightPad01 = 0;
 			int rectLightPad02 = 0;
 		};

@@ -84,8 +84,8 @@ namespace JinEngine::Editor
 			colors[ImGuiCol_FrameBgHovered] = JVector4F(0.4f, 0.4f, 0.4532f, 0.8f);
 			colors[ImGuiCol_FrameBgActive] = JVector4F(0.55f, 0.55f, 0.62f, 1.00f);
 			colors[ImGuiCol_TitleBg] = JVector4F(0.15f, 0.15f, 0.17f, 1.00f);
-			colors[ImGuiCol_TitleBgActive] = JVector4F(JVector3F(Graphic::Constants::backBufferClearColor.xyz) * 0.75f, 1.0f);//JVector4F(0.2f, 0.2f, 0.225f, 1.00f);
-			colors[ImGuiCol_TitleBgCollapsed] = JVector4F(JVector3F(Graphic::Constants::backBufferClearColor.xyz) * 0.325f, 1.0f);	 //JVector4F(0.125f, 0.125f, 0.125f, 1.00f);							   //JVector4F(0.125f, 0.125f, 0.125f, 1.00f);
+			colors[ImGuiCol_TitleBgActive] = JVector4F(JVector3F(Graphic::Constants::BackBufferClearColor().xyz) * 0.75f, 1.0f);//JVector4F(0.2f, 0.2f, 0.225f, 1.00f);
+			colors[ImGuiCol_TitleBgCollapsed] = JVector4F(JVector3F(Graphic::Constants::BackBufferClearColor().xyz) * 0.325f, 1.0f);	 //JVector4F(0.125f, 0.125f, 0.125f, 1.00f);							   //JVector4F(0.125f, 0.125f, 0.125f, 1.00f);
 			colors[ImGuiCol_MenuBarBg] = JVector4F(0.15f, 0.15f, 0.17f, 1.00f);
 			colors[ImGuiCol_ScrollbarBg] = JVector4F(0.05f, 0.05f, 0.05f, 0.54f);
 			colors[ImGuiCol_ScrollbarGrab] = JVector4F(0.34f, 0.34f, 0.34f, 0.74f);
@@ -107,8 +107,8 @@ namespace JinEngine::Editor
 			colors[ImGuiCol_ResizeGripHovered] = JVector4F(0.44f, 0.44f, 0.44f, 0.29f);
 			colors[ImGuiCol_ResizeGripActive] = JVector4F(0.40f, 0.44f, 0.47f, 1.00f);
 			colors[ImGuiCol_Tab] = JVector4F(0.14f, 0.14f, 0.14f, 1.00f);
-			colors[ImGuiCol_TabHovered] = Graphic::Constants::backBufferClearColor; //JVector4F(0.14f, 0.14f, 0.25f, 1.00f);				
-			colors[ImGuiCol_TabActive] = Graphic::Constants::backBufferClearColor;	//JVector4F(0.14f, 0.14f, 0.25f, 1.00f);
+			colors[ImGuiCol_TabHovered] = Graphic::Constants::BackBufferClearColor(); //JVector4F(0.14f, 0.14f, 0.25f, 1.00f);				
+			colors[ImGuiCol_TabActive] = Graphic::Constants::BackBufferClearColor();	//JVector4F(0.14f, 0.14f, 0.25f, 1.00f);
 			colors[ImGuiCol_TabUnfocused] = JVector4F(0.14f, 0.14f, 0.14f, 1.00f);
 			colors[ImGuiCol_TabUnfocusedActive] = JVector4F(0.25f, 0.25f, 0.25f, 1.00f);
 			colors[ImGuiCol_DockingPreview] = JVector4F(0.33f, 0.67f, 0.86f, 1.00f);
@@ -336,8 +336,11 @@ namespace JinEngine::Editor
 				imguiFlag |= ImGuiTableFlags_BordersInnerV;
 			if (Core::HasSQValueEnum(flag, J_GUI_TABLE_FLAG_BORDER_OUTHER_V))
 				imguiFlag |= ImGuiTableFlags_BordersOuterV;
-
-			return (ImGuiTableFlags_)imguiFlag;
+			if (Core::HasSQValueEnum(flag, J_GUI_TABLE_FLAG_SCROLLX))
+				imguiFlag |= ImGuiTableFlags_ScrollX;
+			if (Core::HasSQValueEnum(flag, J_GUI_TABLE_FLAG_SCROLLY))
+				imguiFlag |= ImGuiTableFlags_ScrollY;
+			return (ImGuiTableFlags_)(imguiFlag | ImGuiTableFlags_NoSavedSettings);
 		}
 		static ImGuiTableColumnFlags_ ConvertTableColumnFlag(const J_GUI_TABLE_COLUMN_FLAG flag)noexcept
 		{
@@ -855,7 +858,7 @@ namespace JinEngine::Editor
 		return ImGui::GetIO().FontGlobalScale;
 	}
 	float JImGuiAdaptee::GetCurrentWindowFontScale()const noexcept
-	{
+	{ 
 		return ImGui::GetCurrentWindow()->FontWindowScale;
 	}
 	void JImGuiAdaptee::SetGlobalFontScale(const float scale)noexcept
@@ -927,7 +930,7 @@ namespace JinEngine::Editor
 		return ImGui::IsMouseDragging(ConvertMouseBtnType(btn));
 	}
 	bool JImGuiAdaptee::IsMouseInRect(const JVector2<float>& min, const JVector2<float>& max)const noexcept
-	{
+	{ 
 		return ImGui::IsMouseHoveringRect(min, max, false);
 		/*
 			ImVec2 mousePos = ImGui::GetMousePos();
@@ -1163,6 +1166,10 @@ namespace JinEngine::Editor
 	{  
 		return ImGui::InputInt(name.c_str(), value, step, 100, ConvertInputTextFlag(flags));
 	}
+	bool JImGuiAdaptee::InputInt(const std::string& name, uint* value, J_GUI_INPUT_TEXT_FLAG flags, int step)
+	{
+		return ImGui::InputInt(name.c_str(), value, step, 100, ConvertInputTextFlag(flags));
+	}
 	bool JImGuiAdaptee::InputFloat(const std::string& name, float* value, J_GUI_INPUT_TEXT_FLAG flags, const uint formatDigit, float step)
 	{ 
 		return ImGui::InputFloat(name.c_str(), value, step, 100, ConvertFloattingFormat(formatDigit), ConvertInputTextFlag(flags));
@@ -1171,11 +1178,19 @@ namespace JinEngine::Editor
 	{
 		return ImGui::SliderInt(name.c_str(), value, vMin, vMax, "%d", ConvertSliderFlag(flags));
 	}
+	bool JImGuiAdaptee::SliderInt(const std::string& name, uint* value, uint vMin, uint vMax, J_GUI_SLIDER_FLAG flags)
+	{
+		return ImGui::SliderInt(name.c_str(), value, vMin, vMax, "%d", ConvertSliderFlag(flags));
+	}
 	bool JImGuiAdaptee::SliderFloat(const std::string& name, float* value, float vMin, float vMax, const uint formatDigit, J_GUI_SLIDER_FLAG flags)
 	{
 		return ImGui::SliderFloat(name.c_str(), value, vMin, vMax, ConvertFloattingFormat(formatDigit), ConvertSliderFlag(flags));
 	}
 	bool JImGuiAdaptee::VSliderInt(const std::string& name, JVector2<float> size, int* value, int vMin, int vMax, J_GUI_SLIDER_FLAG flags)
+	{
+		return ImGui::VSliderInt(name.c_str(), size, value, vMin, vMax, "%d", ConvertSliderFlag(flags));
+	}
+	bool JImGuiAdaptee::VSliderInt(const std::string& name, JVector2<float> size, uint* value, uint vMin, uint vMax, J_GUI_SLIDER_FLAG flags)
 	{
 		return ImGui::VSliderInt(name.c_str(), size, value, vMin, vMax, "%d", ConvertSliderFlag(flags));
 	}
@@ -1223,9 +1238,9 @@ namespace JinEngine::Editor
 	{
 		ImGui::TableNextRow();
 	}
-	void JImGuiAdaptee::TableSetColumnIndex(const int index)
+	bool JImGuiAdaptee::TableSetColumnIndex(const int index)
 	{ 
-		ImGui::TableSetColumnIndex(index);
+		return ImGui::TableSetColumnIndex(index);
 	}
 	bool JImGuiAdaptee::BeginMainMenuBar()
 	{
@@ -1792,6 +1807,10 @@ namespace JinEngine::Editor
 	JVector2<float> JImGuiAdaptee::GetWindowTitleBarSize()const noexcept
 	{
 		return ImGui::GetCurrentWindow()->TitleBarRect().GetSize();
+	}
+	JVector2<float> JImGuiAdaptee::GetWindowScrollPos()const noexcept
+	{
+		return ImGui::GetCurrentWindow()->Scroll;
 	}
 	int JImGuiAdaptee::GetWindowOrder(const GuiID windowID)const noexcept
 	{

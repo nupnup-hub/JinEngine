@@ -1,82 +1,89 @@
 #pragma once
-#include"VertexCommon.hlsl"
+#include"LightClusterCommon.hlsl"
+#include"VertexCommon.hlsl"  
+#include"DepthFunc.hlsl"
+#include"Math.hlsl"
+
+#ifdef DEFERRED_GEOMETRY
+#include"Material.hlsl"
+#elif DEFERRED_SHADING
 #include"Material.hlsl"
 #include"LightDefine.hlsl"
-#include"DepthFunc.hlsl"
- 
+#else
+#include"Material.hlsl"
+#include"LightDefine.hlsl"
+#endif
+
 #define PARALLAX_STEP 4 
 #define PARALLAX_SCALE	0.03125f //	1 / 16 .. 1/ 32
 
-//cbuffer && StructuredBuffer aligned 16byte
-//dx12 cbuffer aligned 256byte
-
+#ifndef TEXTURE_2D_COUNT
+#define TEXTURE_2D_COUNT 0
+#endif
+#ifndef CUBE_MAP_COUNT
+#define CUBE_MAP_COUNT 0
+#endif
+#ifndef SHADOW_MAP_COUNT
+#define SHADOW_MAP_COUNT 0
+#endif
+#ifndef SHADOW_MAP_ARRAY_COUNT
+#define SHADOW_MAP_ARRAY_COUNT 0
+#endif
+#ifndef SHADOW_MAP_CUBE_COUNT
+#define SHADOW_MAP_CUBE_COUNT 0
+#endif
+ 
+#ifdef DEFERRED_GEOMETRY 
+Texture2D textureMaps[TEXTURE_2D_COUNT] : register(t2, space0);
+TextureCube cubeMap[CUBE_MAP_COUNT] : register(t2, space1);
+#else
 StructuredBuffer<DirectionalLightData> directionalLight : register(t0, space0);
 StructuredBuffer<PointLightData> pointLight : register(t0, space1);
 StructuredBuffer<SpotLightData> spotLight : register(t0, space2);
 StructuredBuffer<RectLightData> rectLight : register(t0, space3);
 StructuredBuffer<CsmData> csmData : register(t0, space4);
- 
-#ifdef TEXTURE_2D_COUNT
+
 Texture2D textureMaps[TEXTURE_2D_COUNT] : register(t2, space0);
-#endif
-#ifdef CUBE_MAP_COUNT
-TextureCube cubeMap[CUBE_MAP_COUNT]: register(t2, space1);
-#endif
-#ifdef SHADOW_MAP_COUNT
+TextureCube cubeMap[CUBE_MAP_COUNT] : register(t2, space1);
 Texture2D shadowMaps[SHADOW_MAP_COUNT] : register(t2, space2);
-#endif
-#ifdef SHADOW_MAP_ARRAY_COUNT
 Texture2DArray shadowArray[SHADOW_MAP_ARRAY_COUNT] : register(t2, space3);
-#endif
-#ifdef SHADOW_MAP_CUBE_COUNT
 TextureCube shadowCubeMap[SHADOW_MAP_CUBE_COUNT] : register(t2, space4);
 #endif
-//#ifdef USE_SSAO
-//RWTexture2D<float2> normalMap : register(u0);
-//#endif
-// Put in space1, so the texture array does not overlap with these resources.  
-// The texture array will occupy registers t0, t1, ..., t3 in space0. 
-//RWBuffer<float> shadowFactor : register(u0);
+
+#ifndef G_BUFFER_LAYER_COUNT
+#define G_BUFFER_LAYER_COUNT 4
+#endif
+
+#define G_BUFFER_ALBEDO_COLOR 0
+#define G_BUFFER_NORMAL 1		//x,y,z = norma, w = gBufferFlag(useVase)
+#define G_BUFFER_TANGENT 2
+#define G_BUFFER_LIGHT_PROP 3
+
+#define G_BUFFER_STANDARD_TYPE 0
+#define G_BUFFER_ALBEDO_ONLY_TYPE 1
+
+#if DEFERRED_SHADING
+Texture2D gBuffer[G_BUFFER_LAYER_COUNT] : register(t2, space5);
+#endif
+
+#if !defined (DEFERRED_GEOMETRY) && defined (LIGHT_CLUSTER)
+Texture2D depthMap : register(t2, space6); //this depth map is pre frame result if forward
+ByteAddressBuffer startOffsetBuffer : register(t2, space7);
+StructuredBuffer<LinkedLightID> linkedLightList : register(t2, space8);
+#elif defined (DEFERRED_SHADING)
+Texture2D depthMap : register(t2, space6); //this depth map is pre frame result if forward
+#endif
  
-SamplerState samPointClamp       : register(s0);
-SamplerState samLinearWrap       : register(s1); 
-SamplerState samAnisotropicWrap  : register(s2);  
-SamplerState samPcssBloker : register(s3); 
-SamplerState samLTC : register(s4);
-SamplerState samLTCSample : register(s5);
-SamplerComparisonState samCmpLinearPointShadow : register(s6);
-
-//48
-cbuffer cbEnginePass : register(b2)
-{ 
-    float appTotalTime;
-    float aapDeltaTime;
-	int missingTextureIndex;
-	int bluseNoiseTextureIndex;
-	float2 bluseNoiseTextureSize;
-	float2 invBluseNoiseTextureSize;
-	int ltcMatTextureIndex;
-	int ltcAmpTextureIndex;
-	int passPad00;
-	int paddPad01;
-};
-
-//48
-cbuffer cbScenePass : register(b3)
-{
-    float sceneTotalTime;
-    float sceneDeltaTime;
-    uint directionalLitSt;   
-    uint directionalLitEd;
-    uint pointLitSt;  
-    uint pointLitEd;
-    uint spotLitSt;    
-    uint spotLitEd;
-	uint rectLitSt;
-	uint rectLitEd;
-	uint scenePassPad00;
-	uint scenePassPad01;
-};
+SamplerState samPointClamp : register(s0);
+SamplerState samPointWrap : register(s1);
+SamplerState samLinearWrap : register(s2);
+SamplerState samAnisotropicWrap : register(s3);
+#ifndef DEFERRED_GEOMETRY
+SamplerState samPcssBloker : register(s4);
+SamplerState samLTC : register(s5);
+SamplerState samLTCSample : register(s6);
+SamplerComparisonState samCmpLinearPointShadow : register(s7);
+#endif
 
 //b0 + b2 + b3 => 256 * 3
 //b2 = 16384
@@ -94,23 +101,13 @@ float4x4 Identity()
         0.0f, 0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 0.0f, 1.0f);
 }
- 
-float3x3 CalTBN(float3 unitNormalW, float3 tangentW)
+float2 PallaxMapping(Texture2D heightMap, const float3 viewDir, const float2 texC)
 {
-    // Build orthonormal basis.
-	float3 N = unitNormalW;
-	float3 T = normalize(tangentW - dot(tangentW, N) * N);
-	float3 B = cross(N, T);
-
-	return float3x3(T, B, N);
-}
-float2 PallaxMapping(const float3 viewDir, const float2 texC, const int heightMapIndex)
-{
-	float height = textureMaps[heightMapIndex].Sample(samAnisotropicWrap, texC).r * 0.1f;
+	float height = heightMap.Sample(samAnisotropicWrap, texC).r * 0.1f;
 	return texC + (height * viewDir.xy); 
 }
 // Shifting UV by using Parallax Mapping
-float2 ApplyParallaxOffset(float2 uv, float3 vDir, int normalMapIndex, int heightMapIndex)
+float2 ApplyParallaxOffset(Texture2D normalMap, Texture2D heightMap, float2 uv, float3 vDir)
 {
 	//float2 scale = (PARALLAX_SCALE * width) / (2.0f * PARALLAX_STEP * width);
 	float2 scale = PARALLAX_SCALE / (2.0f * PARALLAX_STEP);
@@ -119,8 +116,8 @@ float2 ApplyParallaxOffset(float2 uv, float3 vDir, int normalMapIndex, int heigh
 	for (int i = 0; i < PARALLAX_STEP; ++i)
 	{
     // This code can be replaced with fetching parallax map for parallax variable(h * nz)
-		float nz = (textureMaps[normalMapIndex].Sample(samAnisotropicWrap, uv) * 2.0 - 1.0).z;
-		float h = textureMaps[heightMapIndex].Sample(samAnisotropicWrap, uv).r;
+		float nz = (normalMap.Sample(samAnisotropicWrap, uv) * 2.0 - 1.0).z;
+		float h = heightMap.Sample(samAnisotropicWrap, uv).r;
 		uv += pdir * (nz * h);
 	}
 	return uv;

@@ -15,20 +15,28 @@ namespace JinEngine
 		} 
 		uint JCullingInfo::GetResultBufferSize()const noexcept
 		{
-			return resultHolder->GetBuffSize();
+			return resultHolder->GetBufferSize();
+		}
+		uint JCullingInfo::GetUpdatedInfoCount()const noexcept
+		{
+			return (uint)updatedInfo.size();
+		}
+		JCullingUpdatedInfo JCullingInfo::GetUpdateddInfo(const uint index)const noexcept
+		{
+			return updatedInfo[index];
 		}
 		J_CULLING_TYPE JCullingInfo::GetCullingType()const noexcept
 		{
 			return cullingType;
 		}  
+		J_CULLING_TARGET JCullingInfo::GetCullingTarget()const noexcept
+		{
+			return resultHolder->GetCullingTarget();
+		}
 		float JCullingInfo::GetUpdateFrequency()const noexcept
 		{
 			return updateFrequency;
-		}
-		float JCullingInfo::GetUpdatePerObjectRate()const noexcept
-		{
-			return updatePerObjectRate;
-		}
+		} 
 		void JCullingInfo::SetArrayIndex(const int newValue)noexcept
 		{
 			arrayIndex = newValue;
@@ -36,10 +44,10 @@ namespace JinEngine
 		void JCullingInfo::SetUpdateFrequency(const bool value)noexcept
 		{
 			updateFrequency = value;
-		}
-		void JCullingInfo::SetUpdatePerObjectRate(const bool value)noexcept
+		} 
+		void JCullingInfo::SetUpdatedInfo(const JCullingUpdatedInfo& info, const uint index)noexcept
 		{
-			updatePerObjectRate = value;
+			updatedInfo[index] = info;
 		}
 		void JCullingInfo::SetUpdateEnd(const bool value)noexcept
 		{
@@ -69,11 +77,16 @@ namespace JinEngine
 		{
 			return JGraphicPrivate::CullingInterface::DestroyCullignData(info);;
 		}
-		JCullingInfo::JCullingInfo(JCullingManager* manager, const J_CULLING_TYPE cullingType, std::unique_ptr<JCullingResultHolder>&& resultHolder)
+		JCullingInfo::JCullingInfo(JCullingManager* manager,
+			const J_CULLING_TYPE cullingType,
+			const uint updatedInfoCount,
+			std::unique_ptr<JCullingResultHolder>&& resultHolder)
 			:manager(manager), 
 			cullingType(cullingType),
 			resultHolder(std::move(resultHolder))
-		{ }
+		{
+			updatedInfo.resize(updatedInfoCount);
+		}
 		JCullingInfo::~JCullingInfo()
 		{
 			resultHolder = nullptr;

@@ -468,6 +468,7 @@ namespace JinEngine
 		static Core::J_FILE_IO_RESULT DevideFile(const std::wstring& from, const std::vector<std::wstring> to);
 		static Core::J_FILE_IO_RESULT DestroyFile(const std::wstring& path);
 		static Core::J_FILE_IO_RESULT DestroyDirectory(const std::wstring& path);
+		static bool HasFile(const std::wstring& path);
 	public:
 		/**
 		* @return empty if invalid path

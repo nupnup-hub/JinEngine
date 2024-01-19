@@ -217,6 +217,21 @@ namespace JinEngine
 						SearchDirectory(next, searchProjectFolder, onlyDeafultFolder, subDirFlag);
 				}
 			}
+			else
+			{
+				if (!Core::HasSQValueEnum(subDirFlag, OBJECT_FLAG_UNDESTROYABLE) && wcscmp(findFileData.cFileName, L".") && wcscmp(findFileData.cFileName, L".."))
+				{
+					Core::JAssetFileLoadPathData pathData(parentDir->GetPath() + L"\\" + findFileData.cFileName);
+					if (pathData.format == Core::JFileConstant::GetMetaFileFormatW())
+					{
+						const std::wstring name = JCUtil::GetFileNameWithOutFormat(findFileData.cFileName);
+						const std::wstring dirPath = parentDir->GetPath() + L"\\" + name;
+						const std::wstring assetPath = parentDir->GetPath() + L"\\" + name + Core::JFileConstant::GetFileFormatW();
+						if (!JFileIOHelper::HasFile(dirPath) && !JFileIOHelper::HasFile(assetPath))
+							JFileIOHelper::DestroyFile(pathData.engineMetaFileWPath);
+					}
+				}
+			}
 			bResult = FindNextFile(hFindFile, &findFileData);
 		}
 		FindClose(hFindFile);
@@ -253,8 +268,18 @@ namespace JinEngine
 	{
 		Core::JAssetFileLoadPathData pathData(directory->GetPath() + L"\\" + fileName);
 		if (pathData.format != Core::JFileConstant::GetFileFormatW())
+		{
+			if (pathData.format == Core::JFileConstant::GetMetaFileFormatW() && !Core::HasSQValueEnum(directory->GetFlag(), OBJECT_FLAG_UNDESTROYABLE))
+			{
+				const std::wstring dirPath = directory->GetPath() + L"\\" + pathData.name;
+				const std::wstring assetPath = directory->GetPath() + L"\\" + pathData.name + Core::JFileConstant::GetFileFormatW();
+				
+				//asset file이 없는 경우 삭제 (directory는 meta만 있으므로 제외)
+				if (!JFileIOHelper::HasFile(dirPath) && !JFileIOHelper::HasFile(assetPath))
+					JFileIOHelper::DestroyFile(pathData.engineMetaFileWPath);
+			}
 			return;
-
+		}
 		JFileIOTool tool;
 		if (!tool.Begin(pathData.engineMetaFileWPath, JFileIOTool::TYPE::JSON, JFileIOTool::BEGIN_OPTION_JSON_TRY_LOAD_DATA))
 			return;

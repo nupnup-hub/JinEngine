@@ -32,12 +32,26 @@ namespace JinEngine
 		{
 			return info != nullptr ? info->resultHolder.get() : nullptr;
 		}
+		std::vector<JOwnerPtr<JCullingInfo>>& JCullingManager::GetCullinginfoRefVec(const J_CULLING_TYPE type)noexcept
+		{
+			return cullingInfo[(uint)type];
+		}
 		void JCullingManager::ReBuildBuffer(const J_CULLING_TYPE type, JGraphicDevice* device, const size_t capacity)
 		{
 			auto& typeVec = cullingInfo[(uint)type];
 			const uint count = (uint)cullingInfo[(uint)type].size();
 			for (uint i = 0; i < count; ++i)
 				ReBuildBuffer(typeVec[i].Get(), device, capacity, i);		
+		}
+		void JCullingManager::ReBuildBuffer(const J_CULLING_TYPE type, JGraphicDevice* device, const size_t capacity, const J_CULLING_TARGET bufferTarget)
+		{
+			auto& typeVec = cullingInfo[(uint)type];
+			const uint count = (uint)cullingInfo[(uint)type].size();
+			for (uint i = 0; i < count; ++i)
+			{
+				if(Core::HasSQValueEnum(typeVec[i]->GetCullingTarget(), bufferTarget))
+					ReBuildBuffer(typeVec[i].Get(), device, capacity, i);
+			}
 		}
 		JUserPtr<JCullingInfo> JCullingManager::PostCreation(JOwnerPtr<JCullingInfo>&& newInfo, const J_CULLING_TYPE type)
 		{

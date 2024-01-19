@@ -1,6 +1,5 @@
 #pragma once
-#include"../Device/JGraphicDeviceUser.h"
-#include"../DataSet/JGraphicDataSet.h"
+#include"../JGraphicTaskInterface.h" 
 #include"../../Core/Pointer/JOwnerPtr.h" 
 #include<vector>
 
@@ -15,7 +14,7 @@ namespace JinEngine
 		struct JDrawHelper;
 		struct JDrawCondition;
 
-		class JDepthTest : public JGraphicDeviceUser
+		class JDepthTest : public JGraphicTaskInterface
 		{
 		public:
 			enum class TEST_TYPE
@@ -28,6 +27,8 @@ namespace JinEngine
 		public:
 			virtual void Initialize(JGraphicDevice* device, JGraphicResourceManager* gM, const JGraphicInfo& info) = 0;
 			virtual void Clear() = 0;
+		public:
+			bool IsSupported(const J_GRAPHIC_TASK_TYPE taskType)const noexcept final;
 		public:
 			virtual void DrawSceneBoundingBox(const JGraphicDepthMapDrawSet* drawSet,
 				const std::vector<JUserPtr<JGameObject>>& gameObject,

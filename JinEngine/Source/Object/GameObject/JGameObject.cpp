@@ -694,6 +694,8 @@ namespace JinEngine
 		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, isActivated, Core::JFileConstant::GetActivatedSymbol()));
 		if (isSelected)
 			newGameObject->impl->Select();
+		if (!isActivated)
+			newGameObject->DeActivate();
 
 		int componentCount;
 		FILE_ASSERTION(JObjectFileIOHelper::LoadAtomicData(tool, componentCount, "ComponentCount:"));
@@ -723,9 +725,7 @@ namespace JinEngine
 		{ 
 			loadData->parent = newGameObject; 
 			LoadAssetData(loadData);
-		}
-		if (!isActivated)
-			newGameObject->DeActivate();
+		} 
 
 		return newGameObject;
 	}

@@ -396,6 +396,8 @@ namespace JinEngine
 		static constexpr bool IsRvalueRef_V = std::is_rvalue_reference_v<T>;
 		template<typename T>
 		static constexpr bool IsRefernce_V = std::is_reference_v<T>;
+		template<typename T>
+		static constexpr bool IsNumber_V = std::is_floating_point_v<RemoveAll_T<T>> || std::_Is_character_or_bool<RemoveAll_T<T>> || std::is_integral_v<RemoveAll_T<T>>;
 #pragma endregion
 
 #pragma region Method

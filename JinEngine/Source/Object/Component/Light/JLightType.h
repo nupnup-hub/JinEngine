@@ -103,6 +103,21 @@ namespace JinEngine
 			}
 			return Graphic::J_GRAPHIC_RESOURCE_TYPE::SHADOW_MAP;
 		}
+	public:
+		static constexpr uint GetGlobalLightCount()
+		{
+			//Directinal light
+			return 1;
+		}
+		static constexpr uint GetLocalLightCount()
+		{
+			//Point light, Spot light, Rect light
+			return 3;
+		}
+		static constexpr uint GetLocalLightOffset()
+		{
+			return 1;
+		}
 	};
 
 }

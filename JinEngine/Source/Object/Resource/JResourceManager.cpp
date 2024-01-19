@@ -219,7 +219,7 @@ namespace JinEngine
 			for (uint i = 0; i < textureCount; ++i)
 			{ 
 				const J_OBJECT_FLAG objFlag = JDefaultTexture::GetFlag(textureType[i]);
-				const bool isUse = JDefaultTexture::IsDefaultUse(textureType[i]);
+				const bool isUsed = JDefaultTexture::IsDefaultUse(textureType[i]);
 				std::wstring foldernam;
 				std::wstring name;
 				std::wstring format;
@@ -227,7 +227,7 @@ namespace JinEngine
 				JUserPtr<JFile> file = textureDir->SearchFile(name, format);
 				 
 				if (file != nullptr)
-					defaultData->RegisterDefaultResource(textureType[i], file, isUse);
+					defaultData->RegisterDefaultResource(textureType[i], file, isUsed);
 				else
 				{
 					const std::wstring oriPath = Core::JFileConstant::MakeFilePath(textureDir->GetPath(), JDefaultTexture::GetName(textureType[i]));
@@ -238,7 +238,7 @@ namespace JinEngine
 					
 					JUserPtr<JTexture> newTexture = JICI::Create<JTexture>(name, guid, objFlag, JResourceObject::GetFormatIndex<JTexture>(format),textureDir, oriPath, gTextureType);
 					ThrowIfFailedN(newTexture != nullptr);
-					defaultData->RegisterDefaultResource(textureType[i], textureDir->SearchFile(guid), isUse);
+					defaultData->RegisterDefaultResource(textureType[i], textureDir->SearchFile(guid), isUsed);
 					StoreResource(newTexture); 				 
 				}
 			}
@@ -254,17 +254,17 @@ namespace JinEngine
 				const JShaderCondition psoCondition = JDefaultShader::GetShaderGraphicPso(type);
 				const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
 				//use all default shader
-				const bool isUse = JDefaultShader::IsDefaultUse(type);
+				const bool isUsed = JDefaultShader::IsDefaultUse(type);
 				std::wstring shaderName = JShaderType::ConvertToName(shaderF, psoCondition.UniqueID());
 				JUserPtr<JFile> file = shaderDir->GetDirectoryFileByFullName(shaderName, format);
 
 				if (file != nullptr)
-					defaultData->RegisterDefaultResource(type, file, isUse);
+					defaultData->RegisterDefaultResource(type, file, isUsed);
 				else
 				{
 					JUserPtr<JShader> newShader = JICI::Create<JShader>(objF, shaderF, psoCondition);
 					ThrowIfFailedN(newShader != nullptr);
-					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFileByFullName(newShader->GetName(), format), isUse);
+					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFileByFullName(newShader->GetName(), format), isUsed);
 				}
 			}
 
@@ -274,16 +274,16 @@ namespace JinEngine
 				const J_COMPUTE_SHADER_FUNCTION shaderF = JDefaultShader::GetComputeShaderFunction(type);
 				const J_OBJECT_FLAG objF = JDefaultShader::GetObjectFlag(type);
 
-				const bool isUse = JDefaultShader::IsDefaultUse(type);
+				const bool isUsed = JDefaultShader::IsDefaultUsed(type);
 				std::wstring shaderName = JShaderType::ConvertToName(shaderF);
 				JUserPtr<JFile> file = shaderDir->GetDirectoryFileByFullName(shaderName, format);
 				if (file != nullptr)
-					defaultData->RegisterDefaultResource(type, file, isUse);
+					defaultData->RegisterDefaultResource(type, file, isUsed);
 				else
 				{
 					JUserPtr<JShader> newShader = JICI::Create<JShader>(objF, SHADER_FUNCTION_NONE, JShaderCondition(), shaderF);
 					ThrowIfFailedN(newShader != nullptr);
-					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFileByFullName(newShader->GetName(), format), isUse);
+					defaultData->RegisterDefaultResource(type, shaderDir->GetDirectoryFileByFullName(newShader->GetName(), format), isUsed);
 				}
 			}
 		}
@@ -309,12 +309,39 @@ namespace JinEngine
 				//BasicMaterial format is all .mat( default format)
 				const J_DEFAULT_MATERIAL type = (J_DEFAULT_MATERIAL)i;
 				const J_OBJECT_FLAG flag = JDefaultMateiral::GetFlag(type);
-				const bool isUse = JDefaultMateiral::IsDefaultUse(type);
+				const bool isUsed = JDefaultMateiral::IsDefaultUsed(type);
+				const bool useTexture = JDefaultMateiral::UseTexture(type);
 
 				const std::wstring name = JDefaultMateiral::ConvertToName(type);
 				JUserPtr<JFile> file = matDir->SearchFile(name, format);
 				if (file != nullptr)
-					defaultData->RegisterDefaultResource(type, file, isUse);
+				{
+					defaultData->RegisterDefaultResource(type, file, isUsed);
+					//개발과정에 편의를 위해 추가한 함수.
+					//이전 test project와 현재 버전에 호환을 위해 종속성이 있는 material에 대한 검사
+					if (useTexture)
+					{
+						bool hasToStore = false;
+						auto mat = defaultData->GetDefaultResource<JMaterial>(type);
+						switch (type)
+						{
+						case J_DEFAULT_MATERIAL::DEFAULT_SKY:
+						{ 
+							if (!mat->HasAlbedoMapTexture())
+							{
+								hasToStore = true;
+								JDefaultMaterialSetting::SetSky(mat, thisManager->GetDefaultTexture(J_DEFAULT_TEXTURE::DEFAULT_SKY));
+								mat->SetAlbedoColor(JVector4F::One());
+							}
+							break;
+						}
+						default:
+							break;
+						} 
+						if(hasToStore)
+							StoreResource(mat);
+					}
+				}
 				else
 				{
 					JUserPtr<JMaterial> newMaterial = nullptr;
@@ -331,6 +358,7 @@ namespace JinEngine
 					{
 						newMaterial = JICI::Create<JMaterial>(name, guid, flag, JMaterial::GetDefaultFormatIndex(), matDir);
 						JDefaultMaterialSetting::SetSky(newMaterial, thisManager->GetDefaultTexture(J_DEFAULT_TEXTURE::DEFAULT_SKY));
+						newMaterial->SetAlbedoColor(JVector4F::One());
 						break;
 					} 
 					case J_DEFAULT_MATERIAL::DEBUG_RED:
@@ -388,45 +416,49 @@ namespace JinEngine
 					}
 
 					ThrowIfFailedN(newMaterial != nullptr);
-					defaultData->RegisterDefaultResource(type, matDir->SearchFile(guid), isUse);
+					defaultData->RegisterDefaultResource(type, matDir->SearchFile(guid), isUsed);
 					StoreResource(newMaterial); 
 				}
 			}
 		}
 		void CreateDefaultMesh()
-		{
+		{ 
 			auto createCubeLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCube(1, 1, 1, 3); };
 			auto createGridLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateGrid(40.0f, 60.0f, 60, 40); };
 			auto createSphereLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateSphere(0.5f, 20, 20); };
-			auto createCylinderLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20); };
-			auto createQuadLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateQuad(0.0f, 0.0f, 1.0f, 1.0f, 0.0f); };
+			auto createCylinderLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20, false); };
+			auto createQuadLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateQuad(-0.5f, -0.5f, 1.0f, 1.0f, 0.0f); };
+			auto createNdcQuadLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateQuad(-1.0f, -1.0f, 2.0f, 2.0f, 0.0f); };
+			auto createLowConeLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCylinder(1.0f, 0, 1.0f, 6, 6, true, -0.5f); };
+			auto createLowSphereLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateSphere(1.0f, 6, 6); };
+			auto createLowHemiSphereLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateHemiSphere(1.0f, 6, 6); };
 			auto createLineBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLineBoundingBox(); };
 			auto createTriangleBBoxLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateTriangleBoundingBox(); };
 			auto createBFrustumLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingFrustum(); };
-			auto createCircleLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCircle(0.5f, 0.4988f); };
+			auto createCircleLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateCircle(0.5f, 0.495f); };
 			auto createScaleArrowLam = [](JDefaultGeometryGenerator& geoGen)
 			{
-				Core::JStaticMeshData cyilinderMesh = geoGen.CreateCylinder(0.125f, 0.125f, 2.04f, 10, 10);
-				Core::JStaticMeshData cubeMesh = geoGen.CreateCube(0.5f, 0.5f, 0.5f, 1);
+				std::unique_ptr<Core::JStaticMeshData> cyilinderMesh = geoGen.CreateCylinder(0.125f, 0.125f, 2.04f, 10, 10, false);
+				std::unique_ptr<Core::JStaticMeshData> cubeMesh = geoGen.CreateCube(0.5f, 0.5f, 0.5f, 1);
 
-				const DirectX::BoundingBox cyilinderBBox = cyilinderMesh.GetBBox();
-				const DirectX::BoundingBox cubeBBox = cubeMesh.GetBBox();
+				const DirectX::BoundingBox cyilinderBBox = cyilinderMesh->GetBBox();
+				const DirectX::BoundingBox cubeBBox = cubeMesh->GetBBox();
 
 				const float cyilinderYOffset = (-cyilinderBBox.Center.y) + cyilinderBBox.Extents.y;
 				const float cubeYOffset = cyilinderYOffset + cyilinderBBox.Center.y + cyilinderBBox.Extents.y + cubeBBox.Center.y;
 				JVector3<float> cyilinderOffset = JVector3<float>(0, cyilinderYOffset, 0);
 				JVector3<float> cubeOffset = JVector3<float>(0, cubeYOffset, 0);
 
-				cyilinderMesh.AddPositionOffset(cyilinderOffset);
-				cubeMesh.AddPositionOffset(cubeOffset);
-				cyilinderMesh.Merge(cubeMesh);
-				cyilinderMesh.SetName(L"ScaleArrow");
+				cyilinderMesh->AddPositionOffset(cyilinderOffset);
+				cubeMesh->AddPositionOffset(cubeOffset);
+				cyilinderMesh->Merge(*cubeMesh);
+				cyilinderMesh->SetName(L"ScaleArrow");
 				return cyilinderMesh;
 			};
 			auto createLineLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateLine(4); };
 			auto createBConeLineLam = [](JDefaultGeometryGenerator& geoGen) {return geoGen.CreateBoundingCone(); };
 
-			using CreateStaticMesh = Core::JStaticCallableType<Core::JStaticMeshData, JDefaultGeometryGenerator&>;
+			using CreateStaticMesh = Core::JStaticCallableType<std::unique_ptr<Core::JStaticMeshData>, JDefaultGeometryGenerator&>;
 			std::unordered_map<J_DEFAULT_SHAPE, CreateStaticMesh::Callable> callableVec
 			{
 				{J_DEFAULT_SHAPE::CUBE, (CreateStaticMesh::Ptr)createCubeLam},
@@ -434,6 +466,10 @@ namespace JinEngine
 				{J_DEFAULT_SHAPE::SPHERE, (CreateStaticMesh::Ptr)createSphereLam},
 				{J_DEFAULT_SHAPE::CYILINDER, (CreateStaticMesh::Ptr)createCylinderLam},
 				{J_DEFAULT_SHAPE::QUAD, (CreateStaticMesh::Ptr)createQuadLam},
+				{J_DEFAULT_SHAPE::FULL_SCREEN_QUAD, (CreateStaticMesh::Ptr)createNdcQuadLam},
+				{J_DEFAULT_SHAPE::LOW_CONE, (CreateStaticMesh::Ptr)createLowConeLam},
+				{J_DEFAULT_SHAPE::LOW_SPHERE, (CreateStaticMesh::Ptr)createLowSphereLam},
+				{J_DEFAULT_SHAPE::LOW_HEMI_SPHERE, (CreateStaticMesh::Ptr)createLowHemiSphereLam},
 				{J_DEFAULT_SHAPE::BOUNDING_BOX_LINE, (CreateStaticMesh::Ptr)createLineBBoxLam},
 				{J_DEFAULT_SHAPE::BOUNDING_BOX_TRIANGLE, (CreateStaticMesh::Ptr)createTriangleBBoxLam},
 				{J_DEFAULT_SHAPE::BOUNDING_FRUSTUM, (CreateStaticMesh::Ptr)createBFrustumLam},
@@ -451,7 +487,7 @@ namespace JinEngine
 			{
 				const J_DEFAULT_SHAPE shapeType = (J_DEFAULT_SHAPE)i;
 				const Core::J_MESHGEOMETRY_TYPE meshType = JDefaultShape::GetMeshType(shapeType);
-				const bool isUse = JDefaultShape::IsDefaultUse(shapeType);
+				const bool isUsed = JDefaultShape::IsDefaultUsed(shapeType);
 				const bool isExternalFile = JDefaultShape::IsExternalFile(shapeType);
 
 				//Contain format
@@ -470,9 +506,9 @@ namespace JinEngine
 					if (file != nullptr)
 					{
 						if (meshType == Core::J_MESHGEOMETRY_TYPE::STATIC)
-							defaultData->RegisterDefaultResource(shapeType, file, isUse);
+							defaultData->RegisterDefaultResource(shapeType, file, isUsed);
 						else if (meshType == Core::J_MESHGEOMETRY_TYPE::SKINNED)
-							defaultData->RegisterDefaultResource(shapeType, file, isUse);
+							defaultData->RegisterDefaultResource(shapeType, file, isUsed);
 						else
 							assert("MeshType Error");
 					}
@@ -491,12 +527,14 @@ namespace JinEngine
 							OBJECT_FLAG_HIDDEN | 
 							OBJECT_FLAG_RESTRICT_CONTROL_IDENTIFICABLE);
 						Core::JFileImportHelpData pathData{ projectDefualDir->GetPath() + L"\\" + meshName, objFlag };
-						std::vector<JUserPtr<JResourceObject>> result = JResourceObjectImporter::Instance().ImportResource(projectDefualDir, pathData);
+						
+						const JResourceObjectImportDesc importDesc(pathData, projectDefualDir);
+						std::vector<JUserPtr<JResourceObject>> result = JResourceObjectImporter::Instance().ImportResource(&importDesc);
 						for (const auto& data : result)
 						{
 							if (data->GetResourceType() == J_RESOURCE_TYPE::MESH)
 							{
-								defaultData->RegisterDefaultResource(shapeType, JDirectory::SearchFile(data->GetGuid()), isUse);
+								defaultData->RegisterDefaultResource(shapeType, JDirectory::SearchFile(data->GetGuid()), isUsed);
 								break;
 							}
 						}
@@ -508,9 +546,9 @@ namespace JinEngine
 					if (file != nullptr)
 					{
 						if (meshType == Core::J_MESHGEOMETRY_TYPE::STATIC)
-							defaultData->RegisterDefaultResource(shapeType, file, isUse);
+							defaultData->RegisterDefaultResource(shapeType, file, isUsed);
 						else if (meshType == Core::J_MESHGEOMETRY_TYPE::SKINNED)
-							defaultData->RegisterDefaultResource(shapeType, file, isUse);
+							defaultData->RegisterDefaultResource(shapeType, file, isUsed);
 						else
 							assert("MeshType Error");
 					}
@@ -518,8 +556,9 @@ namespace JinEngine
 					{
 						if (meshType == Core::J_MESHGEOMETRY_TYPE::STATIC)
 						{
-							Core::JStaticMeshData staticMeshData = callableVec.find(shapeType)->second(nullptr, geoGen);
-							staticMeshData.CreateBoundingObject();
+							std::unique_ptr<Core::JStaticMeshData> staticMeshData = callableVec.find(shapeType)->second(nullptr, geoGen);
+							staticMeshData->CreateBoundingObject();
+							staticMeshData->SetName(meshName);
 
 							std::unique_ptr<Core::JStaticMeshGroup> group = std::make_unique<Core::JStaticMeshGroup>();
 							group->AddMeshData(std::move(staticMeshData));
@@ -538,7 +577,7 @@ namespace JinEngine
 								JMeshGeometry::GetDefaultFormatIndex(), projectDefualDir, std::move(group));
 									 
 							ThrowIfFailedN(newMesh != nullptr);
-							defaultData->RegisterDefaultResource(shapeType, projectDefualDir->SearchFile(guid), isUse);
+							defaultData->RegisterDefaultResource(shapeType, projectDefualDir->SearchFile(guid), isUsed);
 						}
 						else if (meshType == Core::J_MESHGEOMETRY_TYPE::SKINNED)
 						{
@@ -548,6 +587,12 @@ namespace JinEngine
 						else
 							assert("MeshType Error");
 					}
+				}
+			
+				if (shapeType == J_DEFAULT_SHAPE::QUAD || shapeType == J_DEFAULT_SHAPE::FULL_SCREEN_QUAD)
+				{
+					auto subMat = defaultData->GetDefaultResource<JStaticMeshGeometry>(shapeType)->GetSubmeshMaterial(0);
+					subMat->SetNonCulling(true);
 				}
 			}
 		}
@@ -606,6 +651,31 @@ namespace JinEngine
 	{
 		bool(*ptr)(JDirectory*) = [](JDirectory* dir) {return dir->IsActivated(); };
 		return GetByCondition(ptr, false);
+	}
+	size_t JResourceManager::GetDefaultGuid(const J_DEFAULT_SHAPE type)const noexcept
+	{
+		bool isSuccess = false;
+		return impl->defaultData->GetDefaultResourceGuid(type, isSuccess);
+	}
+	size_t JResourceManager::GetDefaultGuid(const J_DEFAULT_MATERIAL type)const noexcept
+	{
+		bool isSuccess = false;
+		return impl->defaultData->GetDefaultResourceGuid(type, isSuccess);
+	}
+	size_t JResourceManager::GetDefaultGuid(const J_DEFAULT_TEXTURE type)const noexcept
+	{
+		bool isSuccess = false;
+		return impl->defaultData->GetDefaultResourceGuid(type, isSuccess);
+	}
+	size_t JResourceManager::GetDefaultGuid(const J_DEFAULT_GRAPHIC_SHADER type)const noexcept
+	{
+		bool isSuccess = false;
+		return impl->defaultData->GetDefaultResourceGuid(type, isSuccess);
+	}
+	size_t JResourceManager::GetDefaultGuid(const J_DEFAULT_COMPUTE_SHADER type)const noexcept
+	{
+		bool isSuccess = false;
+		return impl->defaultData->GetDefaultResourceGuid(type, isSuccess);
 	}
 	uint JResourceManager::GetResourceCount(const Core::JTypeInfo& info)const noexcept
 	{

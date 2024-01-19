@@ -71,7 +71,7 @@ namespace JinEngine
 		float GetFarViewHeight()const noexcept;
 		J_CAMERA_STATE GetCameraState()const noexcept; 
 		JVector2F GetRenderTargetRate()const noexcept;
-		Graphic::JSsaoDesc GetSsaoDesc()const noexcept;
+		Graphic::JSsaoDesc GetSsaoDesc()const noexcept; 
 	public:
 		void SetNear(const float value)noexcept;
 		void SetFar(const float value) noexcept;
@@ -82,8 +82,8 @@ namespace JinEngine
 		void SetOrthoViewHeight(const float value) noexcept;	// for Ortho
 		void SetOrthoViewSize(const float width, const float height) noexcept;	// for Ortho
 		void SetOrthoCamera(const bool value)noexcept;
-		void SetAllowDisplaySceneDepthMap(const bool value)noexcept;
-		void SetAllowDisplayDebug(const bool value)noexcept;
+		void SetAllowDisplayRenderResult(const bool value)noexcept;
+		void SetAllowDisplayDebugObject(const bool value)noexcept;
 		void SetAllowFrustumCulling(const bool value)noexcept;
 		void SetAllowHzbOcclusionCulling(const bool value)noexcept;
 		void SetAllowHdOcclusionCulling(const bool value)noexcept;
@@ -97,12 +97,14 @@ namespace JinEngine
 		bool IsOrthoCamera()const noexcept; 
 		bool IsAvailableOverlap()const noexcept final;
 		bool PassDefectInspection()const noexcept final; 
-		bool AllowDisplayDepthMap()const noexcept;
-		bool AllowDisplayDebug()const noexcept;
+		bool AllowDisplayRenderResult()const noexcept;
+		bool AllowDisplayDebugObject()const noexcept;
 		bool AllowFrustumCulling()const noexcept final;
 		bool AllowHzbOcclusionCulling()const noexcept final;
 		bool AllowHdOcclusionCulling()const noexcept final;
 		bool AllowDisplayOccCullingDepthMap()const noexcept final;
+		bool AllowLightCulling()const noexcept final;
+		bool AllowDisplayLightCullingDebug()const noexcept;
 		bool AllowSsao()const noexcept;
 	protected:
 		void DoActivate()noexcept final;

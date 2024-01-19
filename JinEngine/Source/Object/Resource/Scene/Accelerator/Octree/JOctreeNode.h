@@ -35,6 +35,7 @@ namespace JinEngine
 		void Culling(JAcceleratorCullingInfo& info)noexcept;
 		void FindIntersect(JAcceleratorIntersectInfo& info)const noexcept;
 		void FindContain(JAcceleratorContainInfo& info)const noexcept;
+		void AlignLeafNode(const JAcceleratorAlignInfo& info, std::vector<JUserPtr<JGameObject>>& alignGameObject, uint& index)noexcept;
 	public:
 		bool AddGameObject(JUserPtr<JGameObject> gameObj, bool isLooseOctree)noexcept;
 		bool AddNeighborNode(JOctreeNode* octreeNode)noexcept;

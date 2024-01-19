@@ -33,7 +33,7 @@ namespace JinEngine
 			BYTE* Map()const noexcept;
 			void UnMap()const noexcept;
 		public:
-			void Clear() final;
+			void Clear()noexcept final;
 		};
 	}
 }

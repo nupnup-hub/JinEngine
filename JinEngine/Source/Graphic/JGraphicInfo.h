@@ -6,7 +6,7 @@ namespace JinEngine
 	namespace Graphic
 	{
 		struct JGraphicInfo
-		{
+		{ 
 		public:
 			static constexpr uint minCapacity = 4;
 		public:
@@ -20,9 +20,10 @@ namespace JinEngine
 			uint upEnginePassCount = 0;
 			uint upScenePassCount = 0;
 			uint upCameraCount = 0;
-			uint updLightCount = 0;  
-			uint uppLightCount = 0;
-			uint upsLightCount = 0;
+			uint upDLightCount = 0;  
+			uint upPLightCount = 0;
+			uint upSLightCount = 0;
+			uint upRLightCount = 0;
 			uint upCsmCount = 0;
 			uint upCubeShadowMapCount = 0;
 			uint upNormalShadowMapCount = 0;
@@ -34,7 +35,10 @@ namespace JinEngine
 			uint upEnginePassCapacity = minCapacity;
 			uint upScenePassCapacity = minCapacity;
 			uint upCameraCapacity = minCapacity;
-			uint upLightCapacity = minCapacity;
+			uint upDLightCapacity = minCapacity;
+			uint upPLightCapacity = minCapacity;
+			uint upSLightCapacity = minCapacity;
+			uint upRLightCapacity = minCapacity;
 			uint upSmLightCapacity = minCapacity;
 			uint upMaterialCapacity = minCapacity;
 		public:
@@ -59,7 +63,9 @@ namespace JinEngine
 			uint occlusionMapCount = 0;
 			uint occlusionMapCapacity = 0;
 		public:
-			uint frameThreadCount = 0;
+			uint frameThreadCount = 0; 
+		public:
+			int currFrameResourceIndex = 0; 
 		};
 	}
 }

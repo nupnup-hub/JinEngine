@@ -436,6 +436,8 @@ namespace JinEngine
 				{
 					if constexpr (std::is_same_v<T, bool>)
 						return J_PARAMETER_TYPE::Bool;
+					else if constexpr(std::is_unsigned_v<T>)
+						return J_PARAMETER_TYPE::Uint;
 					else
 						return J_PARAMETER_TYPE::Int;
 				}

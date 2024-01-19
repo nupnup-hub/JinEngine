@@ -54,6 +54,7 @@ namespace JinEngine
 			J_GRAPHIC_MIP_MAP_TYPE GetMipmapType()const noexcept;
 		public:
 			virtual void SetPrivateName(const std::wstring& name)noexcept = 0;
+			virtual void SetPrivateOptionName(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const std::wstring& name)noexcept = 0;
 			void SetArrayIndex(const int newValue)noexcept; 
 			void SetHeapIndexStart(const J_GRAPHIC_BIND_TYPE bindType, const int newValue);
 			void SetHeapOptionIndexStart(const J_GRAPHIC_BIND_TYPE bindType, const J_GRAPHIC_RESOURCE_OPTION_TYPE opType, const int newValue);
@@ -62,7 +63,7 @@ namespace JinEngine
 			void SetMipmapType(J_GRAPHIC_MIP_MAP_TYPE newMipmapType)noexcept;
 		public:
 			bool HasView(const J_GRAPHIC_BIND_TYPE bindType)const noexcept;
-			virtual bool HasOptional(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept = 0;
+			virtual bool HasOption(const J_GRAPHIC_RESOURCE_OPTION_TYPE opType)const noexcept = 0; 
 		public: 
 			static bool Destroy(JGraphicResourceInfo* info);  
 		protected:

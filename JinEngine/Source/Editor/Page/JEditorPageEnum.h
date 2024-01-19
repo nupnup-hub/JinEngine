@@ -15,7 +15,8 @@ namespace JinEngine
 		enum class J_EDITOR_PAGE_PUBLIC_STATE
 		{
 			INPUT_LOCK,
-			MAXIMIZE
+			MAXIMIZE,
+			MINIMIZE
 		};
 
 		enum J_EDITOR_PAGE_FLAG

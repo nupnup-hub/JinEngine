@@ -34,12 +34,12 @@ namespace JinEngine
 	void JAcceleratorNode::SetCulling(JAcceleratorCullingInfo& info, const JUserPtr<JRenderItem>& rItem)noexcept
 	{
 		using RItemFrameIndexInteface = JRenderItemPrivate::FrameIndexInterface;
-		info.cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+		info.cullUser.SetCulling(Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 	}
 	void JAcceleratorNode::OffCulling(JAcceleratorCullingInfo& info, const JUserPtr<JRenderItem>& rItem)noexcept
 	{
 		using RItemFrameIndexInteface = JRenderItemPrivate::FrameIndexInterface;
-		info.cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
+		info.cullUser.OffCulling(Graphic::J_CULLING_TYPE::FRUSTUM, Graphic::J_CULLING_TARGET::RENDERITEM, RItemFrameIndexInteface::GetBoundingFrameIndex(rItem.Get()));
 	}
 	bool JAcceleratorNode::IsContain(const JAcceleratorContainInfo& info, const BoundingBox& bbox)const noexcept
 	{
